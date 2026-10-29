@@ -504,7 +504,7 @@ class LevelWriter:
                     pane = self.uname(f"__pane_{room['id']}_{i}")
                     quad = self.t.sub("QuadMesh", {"size": f"Vector2({f(op['w'])}, {f(op['h'])})"})
                     glass = self.mat("glass", {"transparency": "1", "albedo_color": "Color(0.85, 0.9, 0.95, 0.12)", "roughness": "0.05", "cull_mode": "2"})
-                    self.t.node(pane, "MeshInstance3D", "Glass", {"transform": xform(s2g(at(0)), 0 if axis == "y" else 90), "mesh": quad, "material_override": glass},
+                    self.t.node(pane, "MeshInstance3D", "Glass", {"transform": xform(s2g(at(0)), 0 if axis == "y" else 90), "mesh": quad, "material_override": glass, "cast_shadow": "0"},   # glass casts no shadow: a headlight sweep outside shines in through it
                                 {"pane": {"room": room["id"], "w": op["w"], "h": op["h"]}})
 
     def gi(self):

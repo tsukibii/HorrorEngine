@@ -366,7 +366,7 @@
        "sill": 0.9,
        "window": true,
        "shaft": true,
-       "sweep": {"every": 30, "secs": 3}
+       "sweep": {"every": 30, "secs": 3, "out": 2.5}
       },
       {
        "wall": "s",

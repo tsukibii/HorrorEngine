@@ -4,7 +4,7 @@
 ## the other over `secs`, aimed through the window into the room, so the frame's shadow crosses the ceiling and
 ## highlights slide over metal and wet floors; off between passes. Settings (the story's `sweep` on a window,
 ## STORY_FORMAT §2): `every` seconds between passes (40; 0: only when fired), `secs` a pass (3), `out`, `span` metres
-## each way (10), `energy`, `color`, `aim` metres inside the window the beam points at (1.5). `fire()` starts one now (the story's `sweep` action, a room's windows);
+## each way (10), `energy` (10), `color`, `aim` metres inside the window the beam points at (1.5). `fire()` starts one now (the story's `sweep` action, a room's windows);
 ## `passing` while one runs. Drawn from the clock and a seed, so the passes come the same on every run.
 class_name HSSweep
 extends Node3D
@@ -43,6 +43,7 @@ static func make(window_at_: Vector3, outward_: Vector3, along_: Vector3, s: Dic
 	sw.lamp.shadow_enabled = true
 	sw.lamp.shadow_blur = 1.5
 	sw.lamp.light_size = 0.2
+	sw.lamp.light_volumetric_fog_energy = 0.15                            # the haze outside the glass barely glows: at full the window read as a white card, not a beam crossing the room
 	sw.lamp.visible = false
 	sw.add_child(sw.lamp)
 	return sw

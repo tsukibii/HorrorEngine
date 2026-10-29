@@ -11,40 +11,40 @@ the to-do built there, with the Studio's eyes from the side, a small nose and th
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## 0. Next: the local session on the 3090 (left 2026-10-29, late evening, on `godot-support`)
+## 0. Next (left 2026-10-29, night, on `godot-support`, after the local session on the 3090)
 
-The user paused the cloud session because the Godot and browser checks crawl here (software Vulkan, SwiftShader:
-LOOKPLUGIN eight minutes, TESTROOM over thirty, a lookshot three). **Everything is pushed** (`4ca3dec` the five Light
-Kit pieces, then this). The local session does, in this order, with `GPU=1` and the real Godot (docs/RUN_LOCALLY.md):
+The local session (docs/RUN_LOCALLY.md) ran everything the cloud couldn't, in CONTINUE's order, and fixed forward:
+- **LOOKPLUGIN**: its ten red rows weren't the plugin. The check had set the cloud's lavapipe ICD path (absent on the
+  user's machine: Godot fell back to OpenGL unnoticed) and Hyprland had tiled Godot's window to 941 × 1030 (every
+  pixel box off). Every Godot script now sets that ICD only when it exists, fails on an OpenGL fallback, prefers Xvfb
+  (the card draws through Vulkan there; no window to resize), makes the check projects unresizable, and the demo runs
+  at `--fixed-fps 60`; the demo's sweep measure was passing by accident (its beam never crossed the camera's view in
+  sequence) and aims across the room now. LESSONS has both. 29 s on the card, all green.
+- **TESTROOM**: green first time in 3.2 min, the typed thought included: the cloud's reds were SwiftShader's frame.
+- **PLAY**: red three times, each a pacing race in the check hidden by the cloud's slow frames (the name box's focus,
+  the eye still rising after a crouch, the glimpse beat's own 1.4 s): fixed in the checks, and the HUD focuses the
+  name box at once (LESSONS). GDPEOPLE: the pupil finder caught the character's black fringe (the cloud's test
+  character is bald): the Godot side writes the eyeball's radius on the picture, the finder looks only inside it and
+  the hair is hidden for the eye pictures; `--person lol` here.
+- **GDTESTROOM** green; then the pieces in Godot (`tools/godot/sheet.py`, `lookshot.gd --sweep=<room>` holds a car
+  mid-pass): the **sweep** got in only after three fixes (the export's panes cast shadows; the test room's car ran
+  past the yard's wall, `out` 2.5 now; the lamp's fog glow made the window a white card, 0.15 now): GODOT_LOOK §1d,
+  `docs/godot_sheets/2026-10-29_local_sweep.jpg`. The **shafts**: a ladder of strengths 0.5, 1, 2, 4 by day and at
+  dusk for the user to pick from (`2026-10-29_local_shafts.jpg`): 1 already reads as a beam by day on the card, dusk
+  is too weak for any, night has no window light. The **yard's caustics** reach the lobby's wall (faint at the
+  story's scale, `2026-10-29_local_sweep.jpg`'s last cell). The **square light patch under a distant counter**
+  (GODOT_LOOK §7) didn't show from the kitchen's door at day with GI and SSIL flipped either way: ask the user which
+  counter and room, and what time of day.
+- Playwright on this machine: the global install is missing; `NODE_PATH=<a folder with playwright@1.56 installed>`
+  matched the cached Chromium 1194 (RUN_LOCALLY's step 2 should say which version the cache holds).
 
-1. **Run what was left running here, and fix forward:**
-   - `python tools/godot/plugin_check.py` (LOOKPLUGIN). Its last run here had one red row: the demo's headlight
-     sweep measure (`sweep_passing` 0: the pass was over before the shot at the cloud's frame rate). The fix is in
-     (`demo.gd`'s sweep stage holds the car mid-pass with a 100000 s pass and aims it 5 m in) but unverified.
-   - `node tools/director/testroom.mjs` (TESTROOM, the desk's server running). It failed twice here on the lobby
-     scene's typed-thought check (a partial "One th…" never sampled): LESSONS says that check needs the machine to
-     itself, but the second time nothing else ran, so it may be real. Look at the desk's Watch of `s_hello` and
-     whether the thought types out; the suspects are stage.js's new per-frame work (the sweeps' tick, `flickerK` on
-     every light, the bath's pattern spot as one more three.js light) slowing SwiftShader's frame past the typing.
-   - `python tools/godot_export.py --game TestRoom001 --testroom` (GDTESTROOM: passed here), then open the export
-     in Godot and **look**: the dying power lamp and the corridor's fluorescent, the caustics on the bath's ceiling,
-     the lobby's shafts by day (the story's time, or the lookshot's `--time=day`) and the car passing its first
-     window every half minute (or a `{"sweep": "lobby"}` beat), the iris closing against a lamp and sitting a stop
-     under at night. The cloud's pictures: `docs/godot_sheets/2026-10-29_lightkit.jpg`.
-   The user's last note before pausing: the patterns were drawn from Chilla's Art's wet night street (The Closing
-   Shift: puddles, metal and shop windows carrying the lights), so they belong on the shinier, wetter, outdoor things,
-   not ceilings as a rule; the bath's ceiling caustic became the puddle under the yard's lamp lighting the lobby's
-   wall, and every room got a ReflectionProbe (metal and wet floors reflecting their room). Look at both in Godot;
-   the cloud couldn't see the reference screenshots themselves (images in another session's transcript don't come
-   through), so judge the placement against them yourself.
-2. **Then the open items from the user's runs**: the square light patch under a distant counter (GODOT_LOOK §7);
-   whether the shafts want more or less (`strength`; the window light's `light_volumetric_fog_energy`, 4); whether
-   the splashes' glints read at a real frame rate (sparse by design: `docs/godot_sheets/2026-10-29_splashes.jpg`).
+**Open, for the user:** pick a shaft strength from the ladder (or leave 1); say where the square light patch was;
+whether the splashes' glints read at a real frame rate (only the game itself shows that: `godot-mono --path
+Saved/Godot/TestRoom001`); run the game and look at the car passing the lobby's first window (every half minute at
+night) and the yard's caustics. **Then** §3 below and GODOT_LOOK §7.
+
 3. **What the desk doesn't draw yet** of the five: the pattern itself (a spot aimed at its target stands in), the
    shaft, the sweep's shadows; and a `sweep` quick beat in templates.js if a game wants one from the desk.
-
-Each is one commit, pushed to `godot-support`; CHECKS, GDTESTROOM, GDEXPORT, GDPLAY, LOOKPLUGIN, DESK, CMDS, PLAY
-and TESTROOM before each push.
 
 ## 0b. Latest (2026-10-29, on `godot-support`): the test demo plays in Godot, with its look, effects, sounds, menu and guide
 

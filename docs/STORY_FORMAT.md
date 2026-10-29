@@ -106,7 +106,9 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
   A window's **`sweep`** (true, or `{"every": 40, "secs": 3, "out": 6, "span": 10, "energy": 10, "aim": 1.5}`) is a car passing
   outside now and then at night: headlights sliding along the street, aimed in through the glass, the frame's
   shadow crossing the ceiling (Godot: HSSweep; the desk slides the lamp without shadows); `every` 0 means only when
-  the `sweep` action fires one. After Light Kit's Sweep.
+  the `sweep` action fires one. After Light Kit's Sweep. `out` is where the street runs: when the window gives onto
+  a room of the level (TestRoom001's yard, four metres deep), keep the car inside it (`"out": 2.5`), or its wall
+  stands between the headlights and the glass.
 - `locked_by` is an item, or `flag:<name>`.
 - `swing` is `in` (into the room that holds the door), `out`, or `slide`: a sliding door (fusuma, shoji, a modern
   sliding door, a glass door onto a balcony), which has no swing.

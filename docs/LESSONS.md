@@ -1090,7 +1090,10 @@ running beside it on the cloud's four cores. SwiftShader already spends about a 
 Playwright's click waits for the button to hold still over two frames, so with the cores shared the wait ran out. The
 same steps passed when the run had the machine to itself. In the cloud, run nothing heavy beside a browser check, not
 even the offline ones. On the user's machine, with `GPU=1` (docs/RUN_LOCALLY.md), a frame is milliseconds and this
-doesn't arise.
+doesn't arise. Confirmed 2026-10-29: TESTROOM's typed-thought check went red twice in the cloud, once with nothing
+else running, and passed first time on the 3090 in 3.2 minutes with the rest of the suite running beside it; the
+thought's typing is paced by the clock and SwiftShader's frame was slower than a letter. A browser timing check that
+fails only in the cloud is read on the card before anything is changed.
 
 ## A spot light projects only through its shadows (2026-10-29)
 
@@ -1114,3 +1117,31 @@ A background chain began `until ! ps -p $(pgrep -f "lookshot.gd" ...)`: the patt
 whose command line held the words, so it waited forever, and three chains queued behind its logs waited with it.
 CLAUDE.md's rule about `pgrep -f` and `pkill -f` covers `until` loops too: a chain that waits for a process should
 wait for its log's last line, or for a PID taken from a variable, never for a name that is also in its own command.
+
+## A Godot check that measured a different renderer and a different window (2026-10-29, the local run)
+
+The first LOOKPLUGIN run on the 3090 came back with ten red rows and no error. Two things had gone wrong at once,
+neither of them the plugin. First, the check set `VK_ICD_FILENAMES` to the cloud's lavapipe driver file, which doesn't
+exist on the user's machine; the Vulkan loader then found no driver at all and Godot fell back to OpenGL, with a
+warning in its output the check never read: no SSR, no volumetric fog, no compositor effects, no auto exposure, so the
+wet floor, the shaft, the softener and the iris measured the same on and off. Second, with a display, Godot opened a
+real window and Hyprland tiled it to 941 × 1030, so every measure's pixel box fell on another part of the picture (the
+oil sphere's glint box measured a black pool). Now every Godot script sets the lavapipe ICD only when that file
+exists, fails on Godot's "switching to OpenGL 3" line, prefers Xvfb whenever `xvfb-run` is there (the card still draws
+through Vulkan under it, and no window manager touches the window), and the check projects are `resizable=false`
+(a tiling manager floats a fixed-size window). The plugin check runs with `--fixed-fps 60`, so a stage's frame counts
+mean the same seconds on the card as in the cloud. Two rules: a check that measures pixels must first assert the
+renderer and the picture's size it measured in; and a stage that passed alone (`--only`) but not in sequence
+(the sweep: its beam never crossed the camera's view, the alone run had another camera) was passing by accident.
+
+## A browser check that passed only because the cloud was slow (2026-10-29, the local run)
+
+PLAY went red three times in a row on the 3090, each time one step further, and each red was the check's own pacing,
+not the desk's: the name box takes focus 30 ms after it appears and the card typed before that (the thought then said
+the placeholder's name); after a crouch the eye rises over a second and `goTo` aimed from where it still was, so the
+first tick after carried the reticle off the small thing; the kitchen's glimpse beat shows its thought 1.4 s after the
+room's edge and the step looked 1.37 s after it. On SwiftShader every one of these had been hidden by the slow frames.
+The fixes are in the checks (wait for the box to have the keys, for the eye to settle, for the beat's own time) and
+one in the HUD (the box focused at once as well as after its timer). The rule: a wait in a browser check is for a
+state the page can show (focus, a settled value, the clock past the beat's own sum), never for a frame count or a
+guessed margin; and a check that only ever ran on a slow machine hasn't been run.

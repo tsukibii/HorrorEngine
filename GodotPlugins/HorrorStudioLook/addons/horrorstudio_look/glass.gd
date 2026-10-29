@@ -21,6 +21,7 @@ static func material(size_m: Vector2, seed: float = 1.0, settings: Dictionary = 
 static func pane(mi: MeshInstance3D, size_m: Vector2, seed: float = 1.0, settings: Dictionary = {}) -> ShaderMaterial:
 	var m := material(size_m, seed, settings)
 	mi.material_override = m
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF   # glass: a light outside (a headlight sweep) shines in through it
 	return m
 
 

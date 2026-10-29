@@ -4,7 +4,7 @@
 extends SceneTree
 var g
 var n := 0
-var o := {"node": "", "at": "", "time": "", "gi": "none", "ao": "0", "ssil": "0", "power": "1", "vhs": "off", "shot": "res://look.png", "wait": "30", "amb": "", "take": "", "cast": "", "behave": "", "mirrors": "0", "state": "", "tape": "", "shadows": "2"}
+var o := {"node": "", "at": "", "time": "", "gi": "none", "ao": "0", "ssil": "0", "power": "1", "vhs": "off", "shot": "res://look.png", "wait": "30", "amb": "", "take": "", "cast": "", "behave": "", "sweep": "", "mirrors": "0", "state": "", "tape": "", "shadows": "2"}
 var done := false
 var placed := false
 var baked := false
@@ -36,6 +36,14 @@ func _process(_d: float) -> bool:
 			rt.place(Vector3(float(p[0]), 0.0, -float(p[1])), float(p[2]) if p.size() > 2 else 90.0, float(p[3]) if p.size() > 3 else 0.0)
 		if o["time"] != "":
 			g.set_time(o["time"])
+		if o["sweep"] != "":                              # a car's headlights held mid-pass outside the room's windows: --sweep=lobby (or all)
+			rt.sweep(null if o["sweep"] == "all" else o["sweep"])
+			for sw in rt.sweeps:
+				if sw["node"].passing():
+					sw["node"].secs = 100000.0          # the pass made very long, then its clock run on to mid-pass: held there for the picture
+					sw["node"].clock += 0.5 * sw["node"].secs
+					sw["node"]._process(0.0)
+					print("LOOKSHOT sweep %s lamp at %s energy %.1f visible %s aimed %s" % [sw["room"], sw["node"].lamp.global_position, sw["node"].lamp.light_energy, sw["node"].lamp.visible, -sw["node"].lamp.global_transform.basis.z])
 		if o["behave"] != "":                             # a cast member set going: --behave=aoi,path,r_atrium (or aoi,at,spot_id)
 			var b: PackedStringArray = o["behave"].split(",")
 			var spec := {"as": b[1] if b.size() > 1 else "idle"}

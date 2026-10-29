@@ -99,7 +99,11 @@ through it (Light Kit's motes, the same sin product), and the window's spot has 
 beam shows, the frame's shadow cut into it by the light's own shadow map. Nothing drawn by hand: the renderer's fog
 carries the light, so the beam is right from every angle. Effects Low turns the haze off and the shafts with it.
 The demo lays one from a window-sized spot on the left wall and measures the air inside the beam brighter than
-beside it (LOOKPLUGIN); TestRoom001's lobby windows have them.
+beside it (LOOKPLUGIN); TestRoom001's lobby windows have them. **Seen on the 3090** (2026-10-29,
+`docs/godot_sheets/2026-10-29_local_shafts.jpg`, strengths 0.5, 1, 2 and 4 by day and at dusk, side-on): by day a
+strength of 1 already reads as a beam into the room, 2 a fuller one, 4 a fog bank; at dusk the window's light is
+too weak for any of them, and at night there is none (a lamp outside would give one). The default stays 1; the
+user picks from the ladder.
 
 **Headlight sweeps** (`sweep.gd`, `HSSweep`; after Light Kit's Sweep actor, 2026-10-29): a car passing outside a
 window at night. A window with `sweep` (STORY_FORMAT §2) gets a marker at its middle from the export; at run time
@@ -109,7 +113,14 @@ headlight height, `span` metres each way over `secs`, aimed in through the windo
 ceiling and the highlights slide over metal and wet floors; off between passes. The story's `sweep` action fires one
 on a room's windows now (`every` 0: only then). The desk slides the same lamp without shadows. The demo fires one in
 its closed room and measures the ceiling and wall brighter mid-pass (LOOKPLUGIN); TestRoom001's lobby has one every
-half minute, and GDTESTROOM fires it and watches the lamp slide along outside the south wall.
+half minute, and GDTESTROOM fires it and watches the lamp slide along outside the south wall. **Seen on the 3090**
+(2026-10-29, `docs/godot_sheets/2026-10-29_local_sweep.jpg`): nothing came in at first, for two reasons that aren't
+the sweep's: the export's window panes cast shadows (glass is `cast_shadow` off now, in the export and in
+`HSGlass.pane`), and the test room's car ran six metres out, past the yard's own wall (its `out` is 2.5 now, inside
+the yard). Then the window read as a white card: the lamp's volumetric fog energy lit the haze right outside the
+glass; it's 0.15 on the sweep's lamp now, and the pass reads as it should: the window's rectangle of light on the
+far wall and ceiling with the frame's shadow, at energy 10. `lookshot.gd --sweep=<room>` holds a car mid-pass for a
+picture.
 
 **The iris** (`HSLook.iris`, after Light Kit's Sky exposure, 2026-10-29): auto exposure on the camera
 (CameraAttributesPractical), the eye settling over about a second as a camcorder's iris does, held a stop under at
