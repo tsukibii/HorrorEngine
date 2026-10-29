@@ -80,6 +80,12 @@ and TIME: it falls at its own speed, wraps at the box's floor, leans and drifts 
 and fades near the eye (a drop a hand away would be a bar) and at the box's top and bottom. Additive, soft along and
 across. No particle system to tick: a few hundred streaks in a room, a few thousand outdoors, two triangles each.
 `follow` a node to keep the rain round the player outside.
+**Splashes** (`splash.gdshader`, the rain's "Splashes" child, 2026-10-29): where the streaks land, on the box's floor,
+a third as many seats as streaks, each a quad laid flat that every cycle (about two landings a second, each at its
+own pace) flashes a point, widens a thin ring that fades as it grows (6 cm at its widest) and throws a few spikes up
+round it; additive and unshaded, so on the wet floor they read as glints, on a dry one as a faint stipple. The demo
+shoots the floor with and without them and measures what they add (`splash_glow`, LOOKPLUGIN). `set_splashes(off)`
+for a cheaper rain.
 
 
 ## 5. Wet and oiled skin (`skin_wet.gdshader`, `HSSkin`): HumanShaders implemented
@@ -138,6 +144,25 @@ skinLit skin and the figure of cylinders; the beads' domes bend the normal in a 
 keeps what the run set per cast member and puts it on any body she's given later (a model switched, a new level);
 Play's `skin` action and the Watch's `skin` cues call it. A sheet of the five states on the Studio's test export:
 `Saved/Story/_look/desk_skin.png` (made by hand; TESTROOM checks the kitchen's beat lands on Aoi's body).
+
+## 5b. Mirrors (`mirror.gdshader`, `HSMirror`)
+
+Chilla's Art's bathrooms have a mirror you can't not look in. Screen-space reflections can't give one (the room
+behind the player is off screen), so the plugin does it the way games do: `HSMirror.attach(mesh, surface, camera)`
+hangs a SubViewport of its own under the mirror's mesh with a second camera in it, and every frame the glass is in
+view and the eye on its side, reflects the player's camera through the glass's plane (its middle and facing measured
+from the surface's own triangles, area-weighted, the side settled by the mesh's normals) and renders the room into it
+at 288 lines (its width by the window's aspect). The glass's shader doesn't read the picture by SCREEN_UV: it
+projects each point of the glass through that camera's own view-projection (passed in each frame), so the texel is
+the one that camera gave that point, and the parity, the angle and the frame come out right whatever the mirror's
+shape and however it hangs. The reflection is unshaded (it carries its own light) with a `gain` for what the second
+tone-mapping takes back, a tint and a faint dust film. The mirror itself and the wall it hangs on (the body a ray
+finds just behind the glass) go on layer 20, which the second camera doesn't draw: a mirror never shows its own wall
+or itself, and the camera's near plane sits at the glass's nearest corner, so what's beyond the wall stays out. Out
+of view the viewport stops drawing. In a game every kit `mirror` (a panel with its `kit_mirror` face) and every
+prop tagged `mirror` gets one at the level's load (`mirror_attach` in play.gd; GDTESTROOM looks into the bath's).
+The demo hangs one on its back wall and measures the bulb's glint in it (LOOKPLUGIN). The cost is a second render
+of the room per mirror in view: keep mirrors to the rooms that need one. Not yet: a mirror seen in a mirror.
 
 ## 6. The story's words, and the check
 

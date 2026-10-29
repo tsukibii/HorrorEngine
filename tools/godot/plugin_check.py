@@ -84,6 +84,8 @@ def main():
     checks.append(("the realism preset changes the picture", abs(rep["realism"]["mean"] - rep["plain"]["mean"]) > 0.002))
     checks.append(("the blood is red", rep["blood"]["red"] > 400))
     checks.append(("the rain moves between frames", rep.get("rain_motion", 0) > 0.002))
+    checks.append(("the splashes glint on the floor where the rain lands (brighter than the same floor without them)", rep.get("splash_glow", 0) > 0.0005))
+    checks.append(("the mirror reflects the room (the bulb's glint in its upper half: a peak well over the wall beside it and over its own lower half; drawn every frame it's in view)", rep["mirror_top"]["max"] > rep["mirror_wall"]["mean"] * 1.2 and rep["mirror_top"]["max"] > rep["mirror_bottom"]["max"] * 1.6 and rep.get("mirror_frames", 0) >= 20))
     checks.append(("the sweat glints (a brighter peak than dry skin)", rep["skin_sweat"]["max"] > rep["skin_dry"]["max"] * 1.02))
     checks.append(("the oil glosses (the fill light's glint, a tight bright spot dry skin hasn't)", rep["glint_oil"]["max"] > rep["glint_dry"]["max"] * 1.15))
     ok = True

@@ -995,6 +995,19 @@ func _initialize() -> void:
 			var r := await enter_room("door_bath", "bath")
 			if r != "":
 				return r
+			var mir = rt.things["bath_mirror"].get("mirror")           # the bath's mirror reflects the room (HSMirror): seen, its camera draws
+			if mir == null or not (mir is HSMirror):
+				return "the bath's mirror has no reflection: " + str(mir)
+			var mp: Vector3 = mir.mi.global_transform * mir.centre
+			rt.place(Vector3(mp.x, 0, mp.z + 1.4), 90.0, 0.0)          # in front of it, facing it (yaw 90: the runtime's forward is -z)
+			await game_wait(0.3)
+			if not mir.active or mir.frames < 3:
+				return "the mirror doesn't draw when looked at: active %s, frames %d, last %s, player %s yaw %s" % [mir.active, mir.frames, JSON.stringify(mir.last), rt.player.pos, rt.player.yaw]
+			# (headless: no picture to read; LOOKPLUGIN measures the reflection) its camera behind the glass, looking back out, drawing
+			var ep: Vector3 = mir.mcam.global_position
+			var fwd: Vector3 = -mir.mcam.global_transform.basis.z
+			if not (ep.z < mp.z - 0.5 and fwd.z > 0.9 and mir.mcam.near > 0.5 and mir.view.render_target_update_mode == SubViewport.UPDATE_ALWAYS):
+				return "the mirror's camera: at %s looking %s, near %.2f, update %d (the glass at %s)" % [ep, fwd, mir.mcam.near, mir.view.render_target_update_mode, mp]
 			await use("bath_tap", 0.6)
 			r = await ticked("t12_tap")
 			if r != "":

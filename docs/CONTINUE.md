@@ -47,6 +47,9 @@ for a search on realistic smoke and steam (docs/research/godot_smoke.md). Built,
   beside it), **the cast's stand-ins as their bodies** (the bake's shaped body or a Studio export, arms down), every
   baked body on HSSkin. TestRoom001 rains in its yard, its lobby's windows wear the rain, its second chores stain is
   blood, four rooms wear the demo shelf's sets. The night's pictures: `docs/godot_sheets/2026-10-29_look.jpg`.
+  **Later that morning**: the desk's stage drawing the `skin` word (`tools/shared/skinwet.js`), **rain splashes**
+  where the streaks land (`splash.gdshader`), **real mirrors** (`HSMirror`, GODOT_LOOK §5b: the camera reflected into
+  a viewport of its own, every kit mirror in a game; the bath's checked); LightmapGI ruled out (editor-only).
 **Open, for the user:** a run on the 3090 (`python tools/godot_export.py --game TestRoom001 --testroom`, then the
 game itself: `godot --path Saved/Godot/TestRoom001`; the cost of the realism preset with nineteen VoxelGIs, the rain
 and the wet floors there; `tools/godot/plugin_check.py` and `people_check.py` for the plugin's pictures), a look at

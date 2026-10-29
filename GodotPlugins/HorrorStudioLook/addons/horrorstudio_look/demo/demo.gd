@@ -8,6 +8,7 @@
 extends SceneTree
 
 var out_dir := "res://"
+var only := ""                 # --only=<stage>: that stage alone (its setup after the realism preset), for a quick look
 var n := 0
 var stage := 0
 var env: Environment
@@ -15,18 +16,22 @@ var world: Node3D
 var cam: Camera3D
 var floor_mi: MeshInstance3D
 var rain: HSRain = null
+var nosplash: Image = null
+var mirror_q: MeshInstance3D = null
 var spheres: Array = []
 var report := {}
 var prev: Image = null
 var skin_mode := false
 
-const STAGES := ["plain", "realism", "wet", "blood_rain", "skin"]
+const STAGES := ["plain", "realism", "wet", "blood_rain", "mirror", "skin"]
 
 
 func _initialize() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--out="):
 			out_dir = a.substr(6)
+		if a.begins_with("--only="):
+			only = a.substr(7)
 	root.size = Vector2i(1280, 720)
 	world = Node3D.new()
 	root.add_child(world)
@@ -79,6 +84,10 @@ func _initialize() -> void:
 	world.add_child(fill)
 	stage = 0
 	HSLook.apply(root, env, "plain")
+	if only != "" and STAGES.has(only):
+		stage = STAGES.find(only)
+		HSLook.apply(root, env, "realism")
+		setup(only)
 
 
 func box(size: Vector3, at: Vector3, col: Color, rough: float) -> MeshInstance3D:
@@ -119,6 +128,21 @@ func measure(img: Image, x0: int, y0: int, x1: int, y1: int) -> Dictionary:
 	return {"mean": sum / max(cnt, 1), "max": mx, "red": red}
 
 
+## where a flat quad lands in the picture (pixels)
+func screen_rect(q: MeshInstance3D, size: Vector2) -> Rect2i:
+	var lo := Vector2(1e9, 1e9)
+	var hi := Vector2(-1e9, -1e9)
+	for sx in [-0.5, 0.5]:
+		for sy in [-0.5, 0.5]:
+			var s := cam.unproject_position(q.global_transform * Vector3(sx * size.x, sy * size.y, 0))
+			lo = lo.min(s)
+			hi = hi.max(s)
+	var vs := root.get_visible_rect().size
+	lo = lo.clamp(Vector2.ZERO, vs - Vector2(1, 1))
+	hi = hi.clamp(Vector2.ZERO, vs - Vector2(1, 1))
+	return Rect2i(Vector2i(lo) + Vector2i(2, 2), Vector2i(hi - lo) - Vector2i(4, 4))
+
+
 func diff(a: Image, b: Image, x0: int, y0: int, x1: int, y1: int) -> float:
 	var s := 0.0
 	var cnt := 0
@@ -135,6 +159,11 @@ func _process(_d: float) -> bool:
 	n += 1
 	if STAGES[stage] == "blood_rain" and n == 16 and prev == null:
 		prev = root.get_texture().get_image()  # a frame before the shot: the rain has moved by it
+	if STAGES[stage] == "blood_rain" and n == 20 and rain != null:
+		rain.set_splashes(false)                # a frame without the splashes, to measure what they add to the floor
+	if STAGES[stage] == "blood_rain" and n == 22 and rain != null:
+		nosplash = root.get_texture().get_image()
+		rain.set_splashes(true)
 	if n < 24:                                 # the first frames: TAA settles, the lamp's shadow maps
 		return false
 	var name: String = STAGES[stage]
@@ -153,7 +182,26 @@ func _process(_d: float) -> bool:
 			report["blood"] = measure(img, 0, 300, 1280, 720)
 			if prev != null:
 				report["rain_motion"] = diff(prev, img, 300, 100, 980, 500)
+			if nosplash != null:                 # the floor in view (the rain's box reaches it): the splashes' glints, over the same floor without them
+				var with_ := measure(img, 200, 480, 1080, 720)
+				var without := measure(nosplash, 200, 480, 1080, 720)
+				report["splash_glow"] = with_["mean"] - without["mean"]
+				report["splash_peak"] = with_["max"] - without["max"]
 			prev = null
+		"mirror":
+			var img := shot("mirror")
+			var r := screen_rect(mirror_q, Vector2(1.0, 1.4))
+			var top := measure(img, r.position.x, r.position.y, r.end.x, int((r.position.y + r.end.y) / 2))
+			var bottom := measure(img, r.position.x, int((r.position.y + r.end.y) / 2), r.end.x, r.end.y)
+			var wall := measure(img, max(r.position.x - 160, 0), r.position.y, max(r.position.x - 10, 1), r.end.y)   # the wall beside it
+			report["mirror_top"] = top
+			report["mirror_bottom"] = bottom
+			report["mirror_wall"] = wall
+			var hm := mirror_q.get_node("Mirror") as HSMirror
+			report["mirror_frames"] = hm.frames
+			hm.view.get_texture().get_image().save_png(out_dir.path_join("mirror_view.png"))   # what the mirror's camera sees
+			print("MIRROR normal ", hm.normal, " centre ", hm.centre, " corners ", hm.corners.size(), " in frustum ", cam.is_position_in_frustum(mirror_q.global_transform * hm.centre), " d ", (cam.global_position - mirror_q.global_transform * hm.centre).dot(mirror_q.global_transform.basis * hm.normal))
+			print("MIRROR eye ", hm.mcam.global_position, " near ", hm.mcam.near, " active ", hm.active, " vp ", hm.mat.get_shader_parameter("mirror_vp"))
 		"skin":
 			var img := shot("skin")
 			report["skin_dry"] = measure(img, 170, 160, 480, 560)
@@ -163,10 +211,17 @@ func _process(_d: float) -> bool:
 			report["glint_sweat"] = measure(img, 640, 360, 800, 560)
 			report["glint_oil"] = measure(img, 955, 360, 1110, 560)
 	stage += 1
-	if stage >= STAGES.size():
+	if stage >= STAGES.size() or only != "":
 		finish()
 		return true
-	match STAGES[stage]:
+	setup(STAGES[stage])
+	n = 0
+	return false
+
+
+## a stage's things, put in before its frames run
+func setup(name: String) -> void:
+	match name:
 		"realism":
 			HSLook.apply(root, env, "realism")
 		"wet":
@@ -188,6 +243,18 @@ func _process(_d: float) -> bool:
 			world.add_child(rain)
 			rain.position = Vector3(0, 1.5, -0.5)
 			prev = null
+		"mirror":
+			if rain != null:
+				rain.visible = false
+			mirror_q = MeshInstance3D.new()
+			var mq := QuadMesh.new()
+			mq.size = Vector2(1.0, 1.4)
+			mirror_q.mesh = mq
+			world.add_child(mirror_q)
+			mirror_q.position = Vector3(0.3, 1.6, -2.99)
+			var sb := StaticBody3D.new()                   # the mirror's body, so the ray finds the wall behind it and not the glass
+			world.add_child(sb)
+			HSMirror.attach(mirror_q, 0, cam, 288)
 		"skin":
 			cam.position = Vector3(0, 1.0, 1.2)
 			cam.look_at(Vector3(0, 1.0, -0.8))
@@ -208,8 +275,6 @@ func _process(_d: float) -> bool:
 				world.add_child(mi)
 				spheres.append(mi)
 				i += 1
-	n = 0
-	return false
 
 
 func finish() -> void:

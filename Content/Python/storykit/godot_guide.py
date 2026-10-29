@@ -211,13 +211,14 @@ hob's glow, flames, the cup filling, the pour, drips, the clock's hands, screens
 {fig(pictures, 'kitchen_fx_kettle.png', 'The kettle boiling: its steam at the spout, the hob\'s ring glowing under the pot.')}
 {fig(pictures, 'kitchen_fx_table.png', 'The cup filled and steaming, the cigarette burning in the ashtray, the phone\'s call, the TV\'s static.')}
 """))
-    body.append(section("look", 10, "The look: the realism preset, rain, wet floors, blood, wet skin", f"""
+    body.append(section("look", 10, "The look: the realism preset, rain, wet floors, mirrors, blood, wet skin", f"""
 <p>The look comes from the studio's own plugin, <code>addons/horrorstudio_look/</code> (its README says how to use each part in any Godot project):
 <b>game.look</b> in story.json names the preset <code>HSLook</code> applies at the start, <b>{e(g.get('look', 'realism'))}</b> here: <code>realism</code> is screen-space
 reflections, ambient occlusion and indirect light, a little glow, a thin haze, AgX and temporal anti-aliasing (TAA alone: MSAA switches the reflections off in 4.7);
 <code>plain</code> turns it all off. The pause menu's Anti-aliasing row picks Off, FXAA, TAA or TSR over it.</p>
 <p><b>game.weather</b> <code>rain</code> (this game: <b>{e(g.get('weather', 'clear'))}</b>) puts rain in every room with no <code>ceiling</code> (<code>HSRain</code>, a box of
-streaks moved by the vertex shader) and wets its floor (<code>HSWet</code>: the damp, pools that carry the lights, the rain's rings on them), with the shelf's rain heard there.
+streaks moved by the vertex shader, splashes where they land) and wets its floor (<code>HSWet</code>: the damp, pools that carry the lights, the rain's rings on them), with the shelf's rain heard there.
+Every kit <code>mirror</code> reflects the room for real (<code>HSMirror</code>: the camera reflected through the glass into a viewport of its own while the mirror is in view).
 A <code>clean</code> stain of kind <code>blood</code> wears <code>HSBlood</code>'s splat (a ragged pool, flung drops, glossy, fading as it's scrubbed). <code>HSSkin</code> is
 HumanShaders' skin shader with a wetness layer (a sweat film, beads, drips, oil) for the characters: the story's <code>skin</code> action
 (<code>{{"skin": "aoi", "wet": 0.7, "sweat": 0.5}}</code> in a beat or a cue) puts it on a cast member's bodies and keeps it till set again. To change a number, edit the preset in <code>look.gd</code> or the

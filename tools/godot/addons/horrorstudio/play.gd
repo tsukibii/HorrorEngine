@@ -387,6 +387,7 @@ func enter_level(lid: String) -> void:
 	panes = []
 	weather_attach()
 	blood_attach()
+	mirror_attach()
 	standin_bodies()
 	if physics != null:
 		physics.clear()
@@ -1774,6 +1775,39 @@ static func arms_down(sk: Skeleton3D) -> void:
 
 
 ## a `clean` stain of kind blood wears the blood splat (blood.gdshader) on a quad over its block; scrubbing fades it
+## every mirror on the level (a kit panel with a `kit_mirror` face, or a prop tagged mirror) reflects the room for
+## real (HSMirror: the player's camera reflected through the glass into a viewport of its own, drawn while it's in view)
+var mirrors: Array = []
+func mirror_attach() -> void:
+	mirrors = []
+	for id in things:
+		var t: Dictionary = things[id]
+		var m = t.get("mesh")
+		if m == null or not (m is MeshInstance3D):
+			continue
+		var tags: Array = t["tags"]
+		var kit: String = str(t["piece"].get("kit", ""))
+		if not (kit == "mirror" or tags.has("tag:mirror")):
+			continue
+		var target: MeshInstance3D = null                 # the kit's glass (the art child's kit_mirror surface), else the block itself
+		var s := -1
+		var art = t["node"].get_node_or_null("art")
+		if art != null:
+			for mi in art.find_children("*", "MeshInstance3D", true, false):
+				s = HSMirror.mirror_surface(mi)
+				if s >= 0:
+					target = mi
+					break
+		if target == null and m.visible:
+			target = m
+			s = 0
+		if target == null:
+			continue
+		var hm := HSMirror.attach(target, s, game.camera, 288)
+		t["mirror"] = hm
+		mirrors.append(hm)
+
+
 func blood_attach() -> void:
 	for id in things:
 		var t: Dictionary = things[id]

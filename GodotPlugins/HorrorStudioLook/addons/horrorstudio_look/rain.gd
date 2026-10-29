@@ -1,7 +1,9 @@
 ## Rain (rain.gdshader; docs/GODOT_LOOK.md): a box of falling streaks, `HSRain.make(size, count)` as a node placed at
 ## the box's middle (a room with no ceiling, the ground outside a window), or `follow` a node (the camera) so the rain
 ## stays round the player outdoors. `strength` 0..1 is the downpour; `wind` the lean. A few hundred streaks are
-## enough in a room, a few thousand outside; each is two triangles moved in the vertex shader.
+## enough in a room, a few thousand outside; each is two triangles moved in the vertex shader. Where they land, on the
+## box's floor, `splashes` (on by default: a child MultiMesh "Splashes", splash.gdshader): a flash, a widening ring and
+## spikes at seats over the floor, as many as a third of the streaks; `set_splashes(on)`.
 class_name HSRain
 extends MultiMeshInstance3D
 
@@ -10,7 +12,10 @@ extends MultiMeshInstance3D
 @export var strength: float = 0.45
 @export var wind: float = 0.25
 @export var follow: Node3D = null
+@export var splashes: bool = true
 var mat: ShaderMaterial
+var splash_mat: ShaderMaterial
+var splash_node: MultiMeshInstance3D
 
 
 static func make(size_: Vector3, count_: int = 600, strength_: float = 0.45) -> HSRain:
@@ -44,12 +49,43 @@ func _ready() -> void:
 	material_override = mat
 	cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	custom_aabb = AABB(-size * 0.5 - Vector3(1, 1, 1), size + Vector3(2, 2, 2))
+	splash_node = MultiMeshInstance3D.new()
+	splash_node.name = "Splashes"
+	var sm := MultiMesh.new()
+	sm.transform_format = MultiMesh.TRANSFORM_3D
+	sm.use_custom_data = true
+	var sq := QuadMesh.new()
+	sq.size = Vector2(1, 1)
+	sm.mesh = sq
+	var ns: int = max(count / 3, 40)
+	sm.instance_count = ns
+	for i in ns:
+		sm.set_instance_transform(i, Transform3D.IDENTITY)
+		sm.set_instance_custom_data(i, Color(rng.randf(), rng.randf(), rng.randf(), rng.randf()))
+	splash_node.multimesh = sm
+	splash_mat = ShaderMaterial.new()
+	splash_mat.shader = load("res://addons/horrorstudio_look/splash.gdshader")
+	splash_mat.set_shader_parameter("box_size", size)
+	splash_mat.set_shader_parameter("strength", strength)
+	splash_node.material_override = splash_mat
+	splash_node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	splash_node.custom_aabb = AABB(-size * 0.5 - Vector3(1, 1, 1), size + Vector3(2, 2, 2))
+	splash_node.visible = splashes
+	add_child(splash_node)
+
+
+func set_splashes(on: bool) -> void:
+	splashes = on
+	if splash_node != null:
+		splash_node.visible = on
 
 
 func set_strength(k: float) -> void:
 	strength = clamp(k, 0.0, 1.0)
 	if mat != null:
 		mat.set_shader_parameter("strength", strength)
+	if splash_mat != null:
+		splash_mat.set_shader_parameter("strength", strength)
 
 
 func _process(_dt: float) -> void:
