@@ -230,6 +230,14 @@ loads, every verb in the games has a part).
    pseudo-realism preset (`game.look`; SSR, SSAO, SSIL, glow, haze, AgX, TAA alone: MSAA switches SSR off in 4.7),
    wet floors, blood, rain (`game.weather`), wet or oiled skin on HumanShaders. LOOKPLUGIN pictures and measures
    each in a demo room; GDTESTROOM checks the yard's rain and wet floor and the chores room's blood.
+   **The cast's stand-ins as their bodies** (2026-10-29, `play.gd` `standin_bodies`): in play a cast member's
+   stand-in is their body, a Character Studio export (`game/people/`, HSSkin and HSEye) or the bake's shaped MHR
+   body (`game/previs/Body_<cid>.glb`, HSSkin), read by GLTFDocument at run time (the importer's skeleton has other
+   bone frames), its feet on the stand-in's floor, turned to face the stand-in's forward, its arms brought down from
+   the T-pose (`arms_down`: 52° about the skeleton's z as a global pose, the axis and sign found by trying); the
+   capsules hidden under it. It glides on its behaviour's path until the motion sets come (GAMEPLAY_PLAN).
+   `tests/lookshot.gd --behave=aoi,path,r_atrium --cast=aoi` sets a cast member going and puts the eye in front of
+   them: `godot_reference/look_standin.png`.
    **M_StudioSurface done** (2026-10-29, `LevelWriter.surface`): a room's `look` and a prop's `mat` (`mat:<ref>`
    tags) become world-aligned StandardMaterial3Ds (triplanar in world space, tiled by the set's `tile_m`, albedo,
    roughness, AO, a packed ORM, the normal with a DirectX map's green flipped) with the maps copied into

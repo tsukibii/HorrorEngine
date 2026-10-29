@@ -386,6 +386,7 @@ func enter_level(lid: String) -> void:
 		lifesound = LifeSoundC.new(self)
 	weather_attach()
 	blood_attach()
+	standin_bodies()
 	if physics != null:
 		physics.clear()
 	physics = PhysC.new(self)
@@ -1664,6 +1665,75 @@ func weather_attach() -> void:
 		if game.sfx_index.has("rain"):
 			shelf_sound("rain", rain.global_position, -6.0, null)
 	HSWet.wet_floors(game.level, ids, {"wetness": 0.9, "puddles": 0.6, "puddle_scale": 1.2, "ripples": 1.0})
+
+
+## the cast's stand-ins as their bodies: a Character Studio export (`previs_body` people/<name>, game/people/) with its
+## skin and eyes, else the bake's shaped MHR body (game/previs/Body_<cid>.glb) on HSSkin, its arms brought down from
+## the bind pose (ARMS_DOWN degrees about the skeleton's x, set as a global pose); the cylinders stay under it, hidden, as the
+## figure's size. A body glides on its behaviour's path until the motions come (GAMEPLAY_PLAN: the motion sets).
+const ARMS_DOWN := 52.0
+var standins: Dictionary = {}        # cid -> the body node under the stand-in
+
+
+func standin_bodies() -> void:
+	standins = {}
+	for cid in cast_nodes:
+		var n: Node3D = cast_nodes[cid]
+		var c: Dictionary = game.story.cast.get(cid, {}) if game.story.cast is Dictionary else {}
+		var pb := str(c.get("previs_body", ""))
+		var file := ""
+		var people := false
+		if pb.begins_with("people/") and ResourceLoader.exists("res://game/people/" + pb.substr(7) + ".glb"):
+			file = "res://game/people/" + pb.substr(7) + ".glb"
+			people = true
+		elif ResourceLoader.exists("res://game/previs/Body_" + cid + ".glb") or FileAccess.file_exists("res://game/previs/Body_" + cid + ".glb"):
+			file = "res://game/previs/Body_" + cid + ".glb"
+		if file == "":
+			continue
+		var body: Node3D = glb_scene(file)             # read by GLTFDocument, not the importer: its bone frames are the file's own (arms_down counts on them)
+		if body == null:
+			continue
+		body.name = "body_" + cid
+		n.add_child(body)
+		for ch in n.get_children():                  # the cylinders hidden under it
+			if ch is MeshInstance3D:
+				ch.visible = false
+		var lo := INF
+		for mi in body.find_children("*", "MeshInstance3D", true, false):
+			if mi.mesh != null:
+				lo = min(lo, (mi.global_transform * mi.get_aabb()).position.y - n.global_position.y)
+		if lo != INF:
+			body.position.y = -lo                    # its feet on the stand-in's floor
+		body.rotation_degrees.y = 180.0               # the export faces +z, the stand-in's forward is -z
+		for sk in body.find_children("*", "Skeleton3D", true, false):
+			arms_down(sk)
+		HSSkin.wear(body, {})
+		if people:
+			HSEye.wear(body, file)
+		standins[cid] = body
+
+
+## a glb read at run time (GLTFDocument): the file's own node and bone frames, the same on every machine
+static func glb_scene(path: String) -> Node3D:
+	if not FileAccess.file_exists(path):
+		return null
+	var doc := GLTFDocument.new()
+	var st := GLTFState.new()
+	if doc.append_from_file(path, st) != OK:
+		return null
+	return doc.generate_scene(st)
+
+
+## the T-pose's arms down to the sides: the upper arms turned about the body's forward axis (the bone's rest frame
+## turned with them)
+static func arms_down(sk: Skeleton3D) -> void:
+	for pair in [["l_uparm", -1.0], ["r_uparm", 1.0]]:
+		var bi := sk.find_bone(pair[0])
+		if bi < 0:
+			continue
+		var g: Transform3D = sk.get_bone_global_rest(bi)
+		var turned := Basis(Vector3(0, 0, 1), deg_to_rad(ARMS_DOWN * float(pair[1]))) * g.basis   # about the skeleton's z: down in the frontal plane (the sign tried)
+		sk.set_bone_global_pose(bi, Transform3D(turned, g.origin))
 
 
 ## a `clean` stain of kind blood wears the blood splat (blood.gdshader) on a quad over its block; scrubbing fades it

@@ -1,13 +1,14 @@
 ## A picture of the game at a spot, at a time of day, lit one way or another (the lighting trial, GODOT_PLAN §4; the
 ## guide's pictures): --node=n_x --at=x,y,yaw,pitch (story metres, degrees) --time=day|dusk|night
-## --gi=none|sdfgi|voxel --ao=0|1 --ssil=0|1 --power=0|1 --vhs=off|camcorder|worn --amb=ENERGY --take=id,id (into the row) --shot=PATH [--wait=N frames]
+## --gi=none|sdfgi|voxel --ao=0|1 --ssil=0|1 --power=0|1 --vhs=off|camcorder|worn --amb=ENERGY --take=id,id (into the row) --behave=cid,as[,route or spot] (a cast member set going) --cast=id (the eye in front of their stand-in) --shot=PATH [--wait=N frames]
 extends SceneTree
 var g
 var n := 0
-var o := {"node": "", "at": "", "time": "", "gi": "none", "ao": "0", "ssil": "0", "power": "1", "vhs": "off", "shot": "res://look.png", "wait": "30", "amb": "", "take": ""}
+var o := {"node": "", "at": "", "time": "", "gi": "none", "ao": "0", "ssil": "0", "power": "1", "vhs": "off", "shot": "res://look.png", "wait": "30", "amb": "", "take": "", "cast": "", "behave": ""}
 var done := false
 var placed := false
 var baked := false
+var cast_placed := false
 
 
 func _initialize() -> void:
@@ -35,6 +36,12 @@ func _process(_d: float) -> bool:
 			rt.place(Vector3(float(p[0]), 0.0, -float(p[1])), float(p[2]) if p.size() > 2 else 90.0, float(p[3]) if p.size() > 3 else 0.0)
 		if o["time"] != "":
 			g.set_time(o["time"])
+		if o["behave"] != "":                             # a cast member set going: --behave=aoi,path,r_atrium (or aoi,at,spot_id)
+			var b: PackedStringArray = o["behave"].split(",")
+			var spec := {"as": b[1] if b.size() > 1 else "idle"}
+			if b.size() > 2:
+				spec["route" if spec["as"] == "path" else "at"] = b[2]
+			rt.behave(b[0], spec)
 		if o["take"] != "":                               # things into the inventory's row, shown (its live slots pictured)
 			for id in o["take"].split(","):
 				if rt.things.has(id):
@@ -82,6 +89,16 @@ func _process(_d: float) -> bool:
 		n = 0
 		return false
 	if n >= int(o["wait"]):
+		if o["cast"] != "" and not cast_placed and rt.cast_nodes.has(o["cast"]):   # the player put in front of a cast member's stand-in, 2.2 m off, facing them
+			cast_placed = true
+			var cn: Node3D = rt.cast_nodes[o["cast"]]
+			var fwd: Vector3 = -cn.global_transform.basis.z
+			var at: Vector3 = cn.global_position + fwd * 2.2
+			var yaw: float = rad_to_deg(atan2(-(cn.global_position.z - at.z), cn.global_position.x - at.x))   # the story's compass: east 0, north 90
+			rt.place(Vector3(at.x, 0.0, at.z), yaw, -8.0)
+			print("LOOKSHOT cast %s at %s, visible %s" % [o["cast"], cn.global_position, cn.visible])
+			n = int(o["wait"]) - 3                        # a few frames for the eye to move
+			return false
 		done = true
 		var img := root.get_texture().get_image()
 		img.save_png(o["shot"])

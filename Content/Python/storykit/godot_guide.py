@@ -168,7 +168,10 @@ try (the runtime reads the node's position: the scene's stand-ins and the player
 <p><b>The camera</b> in a recorded scene is the recording's: the desk's camera modes (hard, soft, free: how far the player may look round) are kept as the
 scene's <code>look</code> cone. To change a shot, change it on the desk (the Camera tab of the clip) and record again.</p>
 <p><b>Behaviours</b> (a cast member walks to the sofa and sits, patrols, hides and seeks) are the story's <code>behave</code> cues and tasks; the runtime's
-<code>behaviours.gd</code> plays them on the stand-ins between scenes.</p>
+<code>behaviours.gd</code> plays them on the stand-ins between scenes. <b>The stand-ins are the cast's bodies</b>: a Character Studio export
+(<code>game/people/&lt;name&gt;.glb</code>, with its skin and eyes) or the bake's shaped body (<code>game/previs/Body_&lt;cast&gt;.glb</code>) on the skin shader, read at
+run time, its arms brought down from the bind pose (<code>play.gd</code> <code>ARMS_DOWN</code>); it glides on its path until the motions come. Without either, a figure of
+capsules stands in.</p>
 """))
     body.append(section("lights", 7, "The lights, the time of day, baking", """
 <p>Every story light is an <code>OmniLight3D</code> in the level with <code>metadata/light</code> (its kind: bulb, lamp, candle...; its room; its flicker; whether
