@@ -20,6 +20,8 @@ func _initialize() -> void:
 		var n: Node3D = ps.instantiate()
 		var kinds: Dictionary = {}
 		var bad := 0
+		var arts := 0                    # the kit's and the library's meshes instanced in their blocks, with geometry
+		var empty := 0
 		for ch in n.get_children():
 			if ch.has_meta("piece"):
 				var p = JSON.parse_string(ch.get_meta("piece"))
@@ -27,7 +29,14 @@ func _initialize() -> void:
 					bad += 1
 					continue
 				kinds[p["kind"]] = int(kinds.get(p["kind"], 0)) + 1
-		print("GDEXPORT level %s: %d nodes %s%s" % [lid, n.get_child_count(), JSON.stringify(kinds), "" if bad == 0 else " BAD META %d" % bad])
+			var art = ch.get_node_or_null("art")
+			if art != null:
+				arts += 1
+				if art.find_children("*", "MeshInstance3D", true, false).is_empty():
+					empty += 1
+		print("GDEXPORT level %s: %d nodes %s, %d art meshes%s%s" % [lid, n.get_child_count(), JSON.stringify(kinds), arts, "" if empty == 0 else " (%d EMPTY)" % empty, "" if bad == 0 else " BAD META %d" % bad])
+		if empty:
+			ok = false
 		if bad:
 			ok = false
 		n.free()

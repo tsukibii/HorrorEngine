@@ -23,6 +23,8 @@ import shutil
 import zipfile
 from pathlib import Path
 
+from . import kit as KIT
+from . import library as LIB
 from . import life as LIFE
 from . import plan as P
 from . import storylib as L
@@ -113,11 +115,12 @@ class Tscn:
         self.ext.append((rid, path, rtype))
         return f'ExtResource("{rid}")'
 
-    def node(self, name, ntype, parent, props=None, meta=None):
+    def node(self, name, ntype, parent, props=None, meta=None, instance=None):
+        """ntype a node type, or instance an ExtResource(...) PackedScene instanced here (ntype then ignored)."""
         p = dict(props or {})
         for k, v in (meta or {}).items():
             p[f"metadata/{k}"] = gstr(json.dumps(v, ensure_ascii=False, separators=(",", ":")))
-        self.nodes.append((name, ntype, parent, p))
+        self.nodes.append((name, ntype if not instance else ("instance", instance), parent, p))
         return name if parent is None else (f"{parent}/{name}" if parent != "." else name)
 
     def text(self):
@@ -132,7 +135,8 @@ class Tscn:
                 out.append(f"{k} = {v}")
             out.append("")
         for name, ntype, parent, props in self.nodes:
-            head = f'[node name="{name}" type="{ntype}"' + (f' parent="{parent}"' if parent is not None else "") + "]"
+            kind = f"instance={ntype[1]}" if isinstance(ntype, tuple) else f'type="{ntype}"'
+            head = f'[node name="{name}" {kind}' + (f' parent="{parent}"' if parent is not None else "") + "]"
             out.append(head)
             for k, v in props.items():
                 out.append(f"{k} = {v}")
@@ -141,11 +145,57 @@ class Tscn:
 
 
 class LevelWriter:
-    def __init__(self, story, lid, pieces, time):
+    def __init__(self, story, lid, pieces, time, meshes_out=None):
         self.story, self.lid, self.pieces, self.time = story, lid, pieces, time
         self.t = Tscn(f"level_{node_name(lid)}")
         self.mats = {}
         self.names = set()
+        self.meshes_out = Path(meshes_out) if meshes_out else None   # game/meshes/: the kit's and the library's glbs copied here
+        self.arts = {}                                                 # ref -> ExtResource(...), once each
+        self.art_count = 0
+
+    def art_of(self, ref):
+        """The library mesh a piece shows (art:<ref>: the kit's kit/<type>_<hash>, or basemesh/<name>), copied into the
+        project as game/meshes/<lib>/<name>.glb and an ext_resource; None without the file."""
+        if self.meshes_out is None:
+            return None
+        if ref in self.arts:
+            return self.arts[ref]
+        src = LIB.mesh_file(ref)
+        if not src.exists():
+            self.arts[ref] = None
+            return None
+        dst = self.meshes_out / src.parent.name / src.name
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        if not dst.exists():
+            shutil.copy(src, dst)
+        self.arts[ref] = self.t.extres(f"res://game/meshes/{src.parent.name}/{src.name}", "PackedScene")
+        return self.arts[ref]
+
+    def art_transform(self, p, ref):
+        """Where the mesh sits in its block (the desk's kitIn and dress): a kit thing's origin is its base's centre
+        (a door leaf's its hinge axis), so it goes at the block's base; a library mesh is centred and rested on the
+        base, scaled evenly into the box unless the piece is `real`."""
+        w, d, h = p["size"]
+        if ref.startswith("kit/"):
+            px = py = 0.0
+            kit = p.get("kit") or ((p.get("d") or {}).get("kit") if isinstance((p.get("d") or {}).get("kit"), dict) else None)
+            if p["kind"] == "door" and kit:
+                r = KIT.resolve(kit)
+                if r.get("style") not in ("slide", "shoji"):          # kit.js hingeAxis: the barrel's axis, in the leaf's own space
+                    kr = min(0.012, max(0.003, float(r.get("barrel") or 0.013) / 2))
+                    px = (1 if r.get("hinge") == "right" else -1) * (w / 2 - kr * 0.5)
+                    py = -d / 2 + kr * 0.5
+            return xform((px, -h / 2, -py)), 1.0                      # item (x across, y deep, z up) -> the block's (x, up, -y)
+        b = glb_bounds(LIB.mesh_file(ref))
+        if b is None:
+            return xform((0, -h / 2, 0)), 1.0
+        lo, hi = b
+        size = [hi[i] - lo[i] for i in range(3)]
+        k = 1.0 if "real" in p["tags"] else min([want / sz for want, sz in zip((w, h, d), size) if sz > 0.001] or [1.0])
+        c = [(lo[i] + hi[i]) / 2 for i in range(3)]
+        pos = (-c[0] * k, -lo[1] * k - h / 2, -c[2] * k)
+        return f"Transform3D({f(k)}, 0, 0, 0, {f(k)}, 0, 0, 0, {f(k)}, {f(pos[0])}, {f(pos[1])}, {f(pos[2])})", k
 
     def mat(self, key, extra=None):
         k = key if not extra else key + "|" + json.dumps(extra, sort_keys=True)
@@ -211,7 +261,15 @@ class LevelWriter:
             mesh = self.t.sub("BoxMesh", {"size": v3(w, h, d), "add_uv2": "true"})
             shape = self.t.sub("BoxShape3D", {"size": v3(w, h, d)})
         mprops = {"mesh": mesh, "material_override": self.mat(key, {"transparency": "1", "albedo_color": col(MATS["stain"][0], 0.85)} if key == "stain" else None)}
+        art = next((t[4:] for t in tags if t.startswith("art:")), None) if p["kind"] in ("mesh", "door") else None
+        ext = self.art_of(art) if art else None
+        if ext:                                       # the mesh in its block; the block stays, unseen, for the cursor and the walls
+            mprops["visible"] = "false"
         self.t.node("mesh", "MeshInstance3D", name, mprops)
+        if ext:
+            xf, k = self.art_transform(p, art)
+            self.t.node("art", None, name, {"transform": xf}, instance=ext)
+            self.art_count += 1
         if not hollow and use != "clean":
             sprops = {"shape": shape}
             if hidden:
@@ -356,15 +414,100 @@ renderer/rendering_method="forward_plus"
 '''
 
 
+def glb_bounds(path):
+    """A glb's bounds in its own space from its accessors' min and max, each node's transform applied: (lo, hi), or None."""
+    try:
+        data = Path(path).read_bytes()
+        if data[:4] != b"glTF":
+            return None
+        n = int.from_bytes(data[12:16], "little")
+        j = json.loads(data[20:20 + n].decode("utf-8"))
+    except (OSError, ValueError):
+        return None
+    acc, meshes, nodes = j.get("accessors", []), j.get("meshes", []), j.get("nodes", [])
+    lo, hi = [1e9] * 3, [-1e9] * 3
+
+    def mul(m, v):
+        return [m[0] * v[0] + m[4] * v[1] + m[8] * v[2] + m[12], m[1] * v[0] + m[5] * v[1] + m[9] * v[2] + m[13], m[2] * v[0] + m[6] * v[1] + m[10] * v[2] + m[14]]
+
+    def mat_of(node):
+        if "matrix" in node:
+            return node["matrix"]
+        t, r, s = node.get("translation", [0, 0, 0]), node.get("rotation", [0, 0, 0, 1]), node.get("scale", [1, 1, 1])
+        x, y, z, w = r
+        R = [1 - 2 * (y * y + z * z), 2 * (x * y + z * w), 2 * (x * z - y * w),
+             2 * (x * y - z * w), 1 - 2 * (x * x + z * z), 2 * (y * z + x * w),
+             2 * (x * z + y * w), 2 * (y * z - x * w), 1 - 2 * (x * x + y * y)]
+        return [R[0] * s[0], R[1] * s[0], R[2] * s[0], 0, R[3] * s[1], R[4] * s[1], R[5] * s[1], 0, R[6] * s[2], R[7] * s[2], R[8] * s[2], 0, t[0], t[1], t[2], 1]
+
+    def matmul(a, b):
+        return [sum(a[k * 4 + r] * b[c * 4 + k] for k in range(4)) for c in range(4) for r in range(4)]
+
+    def walk(i, parent):
+        node = nodes[i]
+        m = matmul(parent, mat_of(node))
+        if "mesh" in node:
+            for prim in meshes[node["mesh"]].get("primitives", []):
+                a = acc[prim["attributes"]["POSITION"]]
+                if "min" in a and "max" in a:
+                    for cx in (a["min"][0], a["max"][0]):
+                        for cy in (a["min"][1], a["max"][1]):
+                            for cz in (a["min"][2], a["max"][2]):
+                                v = mul(m, [cx, cy, cz])
+                                for q in range(3):
+                                    lo[q], hi[q] = min(lo[q], v[q]), max(hi[q], v[q])
+        for c in node.get("children", []):
+            walk(c, m)
+
+    ident = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
+    roots = j.get("scenes", [{}])[j.get("scene", 0)].get("nodes", list(range(len(nodes))))
+    for i in roots:
+        walk(i, ident)
+    return (lo, hi) if lo[0] < 1e8 else None
+
+
 def rec_file(key):
     """a recording's key ("c3=good|c7=") as a file name's part: letters, digits, - and +"""
     return "".join(ch if (ch.isalnum() or ch in "_-") else ("-" if ch == "=" else "+" if ch == "|" else "_") for ch in key)
 
 
-def export(game, out=None, make_zip=False):
-    """The project for a game, into out (Saved/Godot/<game> by default); returns {"dir", "zip", "levels", "pieces"}."""
+def godot_bin():
+    """Godot 4.7 on this machine: $GODOT, godot, or godot-mono (the user's), or None."""
+    import os  # noqa: PLC0415
+    for c in [os.environ.get("GODOT"), "godot", "godot-mono"]:
+        if c and shutil.which(c):
+            return shutil.which(c)
+    return None
+
+
+def import_project(out, timeout=600):
+    """Godot's import of the project (its .godot/ folder): the glb meshes the levels instance load only once imported.
+    The editor does it on opening the project; here so a headless run can too. Quiet when Godot isn't on the PATH."""
+    import subprocess  # noqa: PLC0415
+    g = godot_bin()
+    if not g:
+        return False
+    try:
+        subprocess.run([g, "--headless", "--path", str(out), "--import"], capture_output=True, text=True, timeout=timeout)
+    except (subprocess.TimeoutExpired, OSError):
+        return False
+    return True
+
+
+def export(game, out=None, make_zip=False, do_import=True):
+    """The project for a game, into out (Saved/Godot/<game> by default); returns {"dir", "zip", "levels", "pieces", "arts"}.
+    The kit's meshes the game needs are built first (tools/kit_build.py, when node is there) and go in with the
+    library's; the project is then imported once so they load headless (do_import)."""
     story, path = L.load(game)
     pieces = P.plan(story)
+    arts = 0
+    try:
+        import subprocess  # noqa: PLC0415
+        specs = ROOT / "Saved" / "kit" / f"{game}.json"
+        if KIT.write_specs(story, specs) and shutil.which("node"):
+            subprocess.run([shutil.which("node"), str(ROOT / "tools" / "kit" / "build.mjs"), "--specs", str(specs)], capture_output=True, text=True, timeout=900)
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        pass
     out = Path(out) if out else OUT / game
     if out.exists():
         shutil.rmtree(out)
@@ -407,10 +550,13 @@ def export(game, out=None, make_zip=False):
     levels = []
     for lid in story.get("levels", {}):
         t = (story.get("game") or {}).get("time") or L.TIME_DEFAULT
-        lw = LevelWriter(story, lid, pieces, t)
+        lw = LevelWriter(story, lid, pieces, t, out / "game" / "meshes")
         (out / "game" / "levels" / f"{lid}.tscn").write_text(lw.write(), encoding="utf-8")
         levels.append(lid)
-    (out / "game" / "export.json").write_text(json.dumps({"game": game, "story": str(path), "levels": levels, "pieces": len(pieces), "bake": (previs / "preview.json").exists(), "bodies": baked,
+        arts += lw.art_count
+    if arts and do_import:
+        import_project(out)
+    (out / "game" / "export.json").write_text(json.dumps({"game": game, "story": str(path), "levels": levels, "pieces": len(pieces), "arts": arts, "bake": (previs / "preview.json").exists(), "bodies": baked,
                                                           "engine": L.engine_version()}, indent=1), encoding="utf-8")
     (out / ".gitignore").write_text(".godot/\n", encoding="utf-8")
     z = None
@@ -420,4 +566,4 @@ def export(game, out=None, make_zip=False):
             for fp in sorted(out.rglob("*")):
                 if fp.is_file() and ".godot" not in fp.parts:
                     zf.write(fp, Path(game) / fp.relative_to(out))
-    return {"dir": str(out), "zip": str(z) if z else None, "levels": levels, "pieces": len(pieces)}
+    return {"dir": str(out), "zip": str(z) if z else None, "levels": levels, "pieces": len(pieces), "arts": arts}

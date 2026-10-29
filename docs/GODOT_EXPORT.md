@@ -144,6 +144,13 @@ loads, every verb in the games has a part).
    `c3=good|c7=`; the export a file each, `scenes/<sid>__<key>.json`), and the scene player switches to the branch's
    recording at the answer, its timeline mapped onto it (measured: the night scene's painting answer, no frame held).
    Not yet: a cast member's models per scene.
+   **The things' meshes** (2026-10-29): the export builds the kit's meshes the game needs (`tools/kit_build.py`, the
+   glbs the Unreal importer uses too) and copies them and the library's into `game/meshes/<lib>/`, each instanced in
+   its block (`art` under the StaticBody3D, the box mesh hidden, its collision kept): a kit thing at the block's
+   base, a kit door's leaf on its hinge axis, a library mesh centred and rested on the base and scaled evenly into
+   the box unless `real` (the desk's kitIn and dress; the glb's bounds read from its accessors). The project is
+   imported once after writing (`import_project`), so the glbs load headless; GDEXPORT counts the art meshes and
+   fails on an empty one. Picture: `godot_reference/kitchen_kit.png`.
 4. **The look** (GODOT_PLAN §6): UltraVHS and Light Kit as shaders and nodes, measured; M_StudioSurface; the
    characters' shaders on HumanShaders (§2 of the plan) with the Studio's colours and patterns checked side by side.
 5. **The rest of §6**: the lives' effects, hiding, reverb, the HUD themes, the pause menu, the little things.
