@@ -6,6 +6,11 @@ settings for pseudo realism (baked lighting with overplayed effects like blood a
 brain; our games are small); a realistic sweaty wet skin shader, and oiled up; the HumanShaders repo implemented;
 our own plugins kept in a folder that gets passed in, not inside the exported projects".
 
+**The pictures:** `docs/godot_sheets/2026-10-29_look.jpg`, a contact sheet of the night's work (the inventory, the
+shelf's sets, the rain, the wet floor, blood, the stand-in, the Studio's character dry, sweating and oiled, its eye,
+the tape, the preset); the full frames in `Saved/Story/TestRoom001/godot_reference/` and `Saved/Story/_look/` on
+the machine that made them.
+
 **Where it is:** `GodotPlugins/HorrorStudioLook/addons/horrorstudio_look/` (its README for anyone, its CLAUDE.md for
 changing it). The export copies it into every game (`addons/horrorstudio_look/`, GODOT_EXPORT §3); the runtime uses
 it through the story's words (§5). The check: `python tools/godot/plugin_check.py` (LOOKPLUGIN), a demo room

@@ -172,6 +172,7 @@ scene's <code>look</code> cone. To change a shot, change it on the desk (the Cam
 (<code>game/people/&lt;name&gt;.glb</code>, with its skin and eyes) or the bake's shaped body (<code>game/previs/Body_&lt;cast&gt;.glb</code>) on the skin shader, read at
 run time, its arms brought down from the bind pose (<code>play.gd</code> <code>ARMS_DOWN</code>); it glides on its path until the motions come. Without either, a figure of
 capsules stands in.</p>
+{fig(pictures, 'look_standin.png', 'A cast member on her route: her own body as the stand-in.')}
 """))
     body.append(section("lights", 7, "The lights, the time of day, baking", """
 <p>Every story light is an <code>OmniLight3D</code> in the level with <code>metadata/light</code> (its kind: bulb, lamp, candle...; its room; its flicker; whether
@@ -197,6 +198,7 @@ world-aligned material (triplanar, tiled by the set's metres, so a block's stret
 Unreal side's M_StudioSurface. This export wears {info.get('surfaced', 0)} such surfaces from {len(info.get('surface_sets', []))} sets. A room with no
 <code>look</code> keeps the exporter's plain colour per kind (wall, floor, trim, prop...). To swap a texture, change the set in the story and export
 again, or change the material on the wall's <code>MeshInstance3D</code> (it stays until the next export).</p>
+{fig(pictures, 'look_corridor_pbr.png', 'The corridor wearing the shelf\'s planks and plaster, tiled by their real size.')}
 {fig(pictures, 'kitchen_kit.png', 'The kitchen: the kit\'s things (a kettle, a hob, a rice cooker, a clock) in their blocks.')}
 """))
     body.append(section("fx", 9, "The little things and their effects", f"""
@@ -219,12 +221,15 @@ streaks moved by the vertex shader) and wets its floor (<code>HSWet</code>: the 
 A <code>clean</code> stain of kind <code>blood</code> wears <code>HSBlood</code>'s splat (a ragged pool, flung drops, glossy, fading as it's scrubbed). <code>HSSkin</code> is
 HumanShaders' skin shader with a wetness layer (a sweat film, beads, drips, oil) for the characters. To change a number, edit the preset in <code>look.gd</code> or the
 shader's uniforms; to check it, the plugin's demo (<code>demo/demo.gd</code>) pictures and measures each part.</p>
+{fig(pictures, 'look_yard_rain.png', 'The yard in the rain: the streaks, the floor wet with pools carrying the sky.')}
+{fig(pictures, 'look_chores_blood.png', 'A blood stain: a glossy pool with flung drops, scrubbed away by the chore.')}
 """))
     body.append(section("hud", 11, "The HUD, its theme, the pause menu", f"""
 <p>The HUD is built by <code>hud.gd</code> (the objective and the to-do list top left, the line and the choices at the bottom, the cursor's dot and prompt,
 the inventory row (the things themselves, each shown slot a small viewport of its own world with a copy of the thing's mesh fitted into it, the one in the hand turning; nothing drawn for the rest), the chapter card, the fade). Its colours, surfaces and radii come from the theme: <code>game.ui_theme</code> in story.json names
 one of <code>glass</code> (the default), <code>glass-rose</code>, <code>neumorph</code>, <code>plain</code>; <code>theme.gd</code> turns it into a Godot Theme. Add a theme by adding
 an entry to its <code>THEMES</code>. This game wears <b>{e(g.get('ui_theme', 'glass'))}</b>.</p>
+{fig(pictures, 'inventory_live.png', 'The inventory row: the things themselves, the one in the hand in the middle, turning.')}
 <p>The pause menu (<kbd>Esc</kbd>, <code>menu.gd</code>): the controls, Resume, Save game (three slots and the autosave, in <code>user://saves_{e(game)}.json</code>),
 Settings (Display, Graphics, Audio; stepped with <kbd>A</kbd>/<kbd>D</kbd>; each row names the Godot setting it maps to; the ones Godot can apply, it applies),
 Quit. Settings live in <code>user://horrorstudio_settings.json</code>.</p>
