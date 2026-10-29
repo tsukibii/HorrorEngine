@@ -317,6 +317,66 @@ func edited_stitch(nid: String, st: Dictionary) -> Dictionary:
 	return out
 
 
+## a scene's timeline as the user may have edited it in Godot (game/acts/<folder>/scene.tscn, GODOT_EXPORT §3): the
+## Animation `scene` (the camera's tracks along the recording, the lines and cues as a method track's keys), with the
+## track indices the scene player samples; null when there's no file
+func edited_scene(nid: String) -> Variant:
+	if not acts_read:
+		edited_stitch(nid, {})
+	var folder = acts_index.get(nid)
+	if folder == null:
+		return null
+	var path := "res://game/acts/%s/scene.tscn" % str(folder)
+	if not FileAccess.file_exists(path):
+		return null
+	var ps = load(path)
+	if ps == null or not (ps is PackedScene):
+		return null
+	var inst = ps.instantiate()
+	var ap = inst.get_node_or_null("Anim") if inst != null else null
+	if ap == null or not ap.has_animation("scene"):
+		if inst != null:
+			inst.free()
+		return null
+	var an: Animation = ap.get_animation("scene").duplicate(true)
+	inst.free()
+	var ed := {"anim": an, "pos": -1, "rot": -1, "fov": -1, "marks": -1, "lines": [], "cues": []}
+	for i in an.get_track_count():
+		var path_i := str(an.track_get_path(i))
+		match an.track_get_type(i):
+			Animation.TYPE_POSITION_3D:
+				if path_i.begins_with("Camera"):
+					ed["pos"] = i
+			Animation.TYPE_ROTATION_3D:
+				if path_i.begins_with("Camera"):
+					ed["rot"] = i
+			Animation.TYPE_VALUE:
+				if path_i.ends_with("fov"):
+					ed["fov"] = i
+			Animation.TYPE_METHOD:
+				ed["marks"] = i
+				for k in an.track_get_key_count(i):
+					var m := str(an.method_track_get_name(i, k))
+					if m == "line":
+						ed["lines"].append(an.track_get_key_time(i, k))
+					elif m == "cue":
+						ed["cues"].append(an.track_get_key_time(i, k))
+	return ed
+
+
+## the camera the edited timeline gives at a moment of the recording (bake time): the keys interpolated
+static func edited_camera(ed: Dictionary, t: float) -> Dictionary:
+	var an: Animation = ed["anim"]
+	var out := {}
+	if int(ed["pos"]) >= 0 and int(ed["rot"]) >= 0:
+		var pos: Vector3 = an.position_track_interpolate(int(ed["pos"]), t)
+		var q: Quaternion = an.rotation_track_interpolate(int(ed["rot"]), t)
+		out["xf"] = Transform3D(Basis(q), pos)
+	if int(ed["fov"]) >= 0:
+		out["fov"] = float(an.value_track_interpolate(int(ed["fov"]), t))
+	return out
+
+
 ## the level a stitch or scene happens in (storylib.level_of)
 func level_of(node: Dictionary) -> String:
 	if node.has("level") and node["level"]:

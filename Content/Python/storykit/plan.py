@@ -326,6 +326,8 @@ def plan(story, level=None):
             out.append(dict(p, kind="spot", pos=t.pos, size=(0, 0, 0), shape=None, tags=_tags(t)))
         elif u == "trigger":
             out.append(dict(p, kind="trigger", pos=t.centre, size=t.size, shape=None, tags=_tags(t)))
+        elif u == "leak":                                # water running down a wall from here (GODOT_LOOK §2: a wet band, drips)
+            out.append(dict(p, kind="leak", pos=t.pos, size=(float(t.d.get("width", 0.4)), 0, 0), shape=None, tags=_tags(t, [f"wall:{t.d.get('wall', 'n')}"])))
         elif u == "light":
             lift = 0.12 if isinstance(t.d.get("on"), str) else 0.0
             out.append(dict(p, kind="light", pos=(t.pos[0], t.pos[1], t.pos[2] + lift), size=(0, 0, 0), shape=None,

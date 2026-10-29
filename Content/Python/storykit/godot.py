@@ -419,6 +419,31 @@ class LevelWriter:
             "light_size": f(LIGHT_SIZE.get(kind, 0.06)), "shadow_blur": "1.5"},    # a bulb or a lamp has a size: penumbras, not a cut edge (look.gd shadows())
             {"piece": self.piece_meta(p), "light": light_meta})
 
+    def leak(self, p):
+        """Water running down a wall (HSLeak): a marker at the leak's top with its words; the runtime wets a band of the
+        room's wall below it and drops drips from it."""
+        d = p.get("d") or {}
+        wall = d.get("wall", "n")
+        room = next((r for r in (self.story["levels"][self.lid].get("rooms") or []) if r.get("id") == p.get("room")), None)
+        at = self.room_at(p.get("room"))
+        floor_y = at[2]
+        axis = (1, 0, 0) if wall in ("n", "s") else (0, 1, 0)            # the wall runs along x (n, s) or y (e, w)
+        inward = {"n": (0, -1, 0), "s": (0, 1, 0), "e": (-1, 0, 0), "w": (1, 0, 0)}[wall]
+        if room is not None:                                              # the leak on the wall's own face, whatever its `at` says
+            _ax, v, _lo, _hi = L.wall_line(room, wall)
+            pos = list(p["pos"])
+            if wall in ("n", "s"):
+                pos[1] = v + inward[1] * 0.05
+            else:
+                pos[0] = v + inward[0] * 0.05
+        else:
+            pos = list(p["pos"])
+        g = s2g(pos)
+        self.t.node(self.uname(p["id"]), "Node3D", "Things", {"transform": xform(g)},
+                    {"piece": self.piece_meta(p),
+                     "leak": {"room": p.get("room"), "wall": wall, "axis": list(s2g(axis)), "inward": list(s2g(inward)), "width": float(d.get("width", 0.4)),
+                              "top": g[1], "bottom": floor_y, "drip": float(d.get("drip", 2.6)), "wet": float(d.get("wet", 0.8))}})
+
     def room_at(self, room_id):
         """A room's origin (story metres): a prop's `at` is room-local, as is a pattern's `aim`."""
         for r in (self.story.get("levels", {}).get(self.lid, {}) or {}).get("rooms", []) or []:
@@ -541,6 +566,8 @@ class LevelWriter:
                 self.spot(p, "__start")
             elif k == "person":
                 self.person(p)
+            elif k == "leak":
+                self.leak(p)
         self.gi()
         # a stand-in per cast member (the importer's cast_standins): hidden at the start; behaviours and scenes move it
         st = things.get(self.story["levels"][self.lid]["start"])
@@ -640,6 +667,163 @@ def _cam_keys(frames, fps, every=3):
     return pos, rot, fov
 
 
+def _glb_nodes(path):
+    """A glb's nodes from its JSON chunk: [{name, parent, trs (4x4 rows)}] and its first skin's joints (node indices)."""
+    import struct  # noqa: PLC0415
+    raw = Path(path).read_bytes()
+    if raw[:4] != b"glTF":
+        return [], []
+    ln = struct.unpack("<I", raw[12:16])[0]
+    j = json.loads(raw[20:20 + ln])
+    nodes = []
+    for n in j.get("nodes", []):
+        if "matrix" in n:
+            m = n["matrix"]                                        # column-major 16
+            trs = [[m[0], m[4], m[8], m[12]], [m[1], m[5], m[9], m[13]], [m[2], m[6], m[10], m[14]], [0, 0, 0, 1]]
+        else:
+            t = n.get("translation", [0, 0, 0])
+            q = n.get("rotation", [0, 0, 0, 1])
+            sc = n.get("scale", [1, 1, 1])
+            x, y, z, w = q
+            r = [[1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
+                 [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
+                 [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)]]
+            trs = [[r[0][0] * sc[0], r[0][1] * sc[1], r[0][2] * sc[2], t[0]], [r[1][0] * sc[0], r[1][1] * sc[1], r[1][2] * sc[2], t[1]],
+                   [r[2][0] * sc[0], r[2][1] * sc[1], r[2][2] * sc[2], t[2]], [0, 0, 0, 1]]
+        nodes.append({"name": n.get("name", ""), "parent": -1, "trs": trs, "mesh": n.get("mesh"), "skin": n.get("skin")})
+    for i, n in enumerate(j.get("nodes", [])):
+        for c in n.get("children", []):
+            nodes[c]["parent"] = i
+    joints = (j.get("skins") or [{}])[0].get("joints", [])
+    return nodes, joints
+
+
+def _m4mul(a, b):
+    return [[sum(a[i][k] * b[k][j] for k in range(4)) for j in range(4)] for i in range(4)]
+
+
+def _m4inv(m):
+    """The inverse of a rigid-ish transform (rotation, scale, translation) by its 3x3 and origin."""
+    a = [[m[i][j] for j in range(3)] for i in range(3)]
+    det = (a[0][0] * (a[1][1] * a[2][2] - a[1][2] * a[2][1]) - a[0][1] * (a[1][0] * a[2][2] - a[1][2] * a[2][0]) + a[0][2] * (a[1][0] * a[2][1] - a[1][1] * a[2][0])) or 1e-12
+    inv = [[(a[1][1] * a[2][2] - a[1][2] * a[2][1]) / det, (a[0][2] * a[2][1] - a[0][1] * a[2][2]) / det, (a[0][1] * a[1][2] - a[0][2] * a[1][1]) / det],
+           [(a[1][2] * a[2][0] - a[1][0] * a[2][2]) / det, (a[0][0] * a[2][2] - a[0][2] * a[2][0]) / det, (a[0][2] * a[1][0] - a[0][0] * a[1][2]) / det],
+           [(a[1][0] * a[2][1] - a[1][1] * a[2][0]) / det, (a[0][1] * a[2][0] - a[0][0] * a[2][1]) / det, (a[0][0] * a[1][1] - a[0][1] * a[1][0]) / det]]
+    t = [m[0][3], m[1][3], m[2][3]]
+    o = [-(inv[i][0] * t[0] + inv[i][1] * t[1] + inv[i][2] * t[2]) for i in range(3)]
+    return [[inv[0][0], inv[0][1], inv[0][2], o[0]], [inv[1][0], inv[1][1], inv[1][2], o[1]], [inv[2][0], inv[2][1], inv[2][2], o[2]], [0, 0, 0, 1]]
+
+
+def _quat_of(m):
+    """A unit quaternion (x, y, z, w) from a 3x3 (rows) with its scale taken out."""
+    import math  # noqa: PLC0415
+    cols = [[m[0][j], m[1][j], m[2][j]] for j in range(3)]
+    cols = [[v / (math.sqrt(sum(x * x for x in c)) or 1.0) for v in c] for c in cols]
+    r = [[cols[j][i] for j in range(3)] for i in range(3)]
+    tr = r[0][0] + r[1][1] + r[2][2]
+    if tr > 0:
+        sq = math.sqrt(tr + 1.0) * 2
+        return ((r[2][1] - r[1][2]) / sq, (r[0][2] - r[2][0]) / sq, (r[1][0] - r[0][1]) / sq, 0.25 * sq)
+    if r[0][0] > r[1][1] and r[0][0] > r[2][2]:
+        sq = math.sqrt(1.0 + r[0][0] - r[1][1] - r[2][2]) * 2
+        return (0.25 * sq, (r[0][1] + r[1][0]) / sq, (r[0][2] + r[2][0]) / sq, (r[2][1] - r[1][2]) / sq)
+    if r[1][1] > r[2][2]:
+        sq = math.sqrt(1.0 + r[1][1] - r[0][0] - r[2][2]) * 2
+        return ((r[0][1] + r[1][0]) / sq, 0.25 * sq, (r[1][2] + r[2][1]) / sq, (r[0][2] - r[2][0]) / sq)
+    sq = math.sqrt(1.0 + r[2][2] - r[0][0] - r[1][1]) * 2
+    return ((r[0][2] + r[2][0]) / sq, (r[1][2] + r[2][1]) / sq, 0.25 * sq, (r[1][0] - r[0][1]) / sq)
+
+
+def _body_tracks(sc, cid, entry, glb_path, fps, every=3):
+    """A cast member's recorded body as Godot tracks (bakeplay.gd's show, written out): for every bone that moves, its
+    local pose per picked frame from the bake's skinning matrices (the global pose first: the matrix, its linear part
+    over skin_lin, times the glb's global rest; then local under its parent's global), and for every face shape that
+    moves, its weight. Returns (skeleton path inside the glb's scene, mesh path, bone tracks, face tracks), or None."""
+    import math  # noqa: PLC0415
+    nodes, joints = _glb_nodes(glb_path)
+    if not nodes or not joints:
+        return None
+    by_name = {n["name"]: i for i, n in enumerate(nodes)}
+    glob = {}
+
+    def global_of(i):
+        if i in glob:
+            return glob[i]
+        n = nodes[i]
+        g = nodes[i]["trs"] if n["parent"] < 0 else _m4mul(global_of(n["parent"]), n["trs"])
+        glob[i] = g
+        return g
+
+    joint_set = set(joints)
+    root_joint = next((ji for ji in joints if nodes[ji]["parent"] < 0 or nodes[ji]["parent"] not in joint_set), joints[0])
+    chain = []
+    pi = nodes[root_joint]["parent"]
+    while pi >= 0:
+        chain.append(nodes[pi]["name"])
+        pi = nodes[pi]["parent"]
+    chain = chain[::-1]                                       # the glb's own root node sits under the instance (the importer's scene root)
+    skel_path = "/".join(chain + ["Skeleton3D"])
+    mesh_node = next((n["name"] for n in nodes if n.get("skin") is not None and n.get("mesh") is not None), None)
+    mesh_path = f"{skel_path}/{mesh_node}" if mesh_node else None
+    names = entry.get("bones", [])
+    k = float(entry.get("skin_lin", 100))
+    frames = sc.get("frames", [])
+    picks = list(range(0, len(frames), every))
+    if frames and picks[-1] != len(frames) - 1:
+        picks.append(len(frames) - 1)
+    parent_of = {}
+    for ji in joints:
+        p = nodes[ji]["parent"]
+        parent_of[nodes[ji]["name"]] = nodes[p]["name"] if p in joint_set else None
+    bone_keys = {nm: [] for nm in names if nm in by_name}
+    for fi in picks:
+        f = frames[fi]
+        m = (f.get("skin") or {}).get(cid)
+        if not m:
+            continue
+        G = {}
+        for i, nm in enumerate(names):
+            o = i * 12
+            if o + 12 > len(m) or nm not in by_name:
+                continue
+            M = [[m[o] / k, m[o + 3] / k, m[o + 6] / k, m[o + 9]], [m[o + 1] / k, m[o + 4] / k, m[o + 7] / k, m[o + 10]],
+                 [m[o + 2] / k, m[o + 5] / k, m[o + 8] / k, m[o + 11]], [0, 0, 0, 1]]
+            G[nm] = _m4mul(M, global_of(by_name[nm]))
+        t = fi / float(fps)
+        for nm, g in G.items():
+            par = parent_of.get(nm)
+            pg = G.get(par) if par else None
+            if par and pg is None:
+                pg = global_of(by_name[par])
+            local = _m4mul(_m4inv(pg), g) if pg is not None else g
+            q = _quat_of(local)
+            bone_keys[nm].append((t, local[0][3], local[1][3], local[2][3], q))
+    bones = []
+    for nm, keys in bone_keys.items():
+        if len(keys) < 2:
+            continue
+        rest = nodes[by_name[nm]]["trs"]                        # the bone's rest under its parent: a bone posed off it needs a track, still or not
+        rp, rq = (rest[0][3], rest[1][3], rest[2][3]), _quat_of(rest)
+        off = lambda x, p, q: max(abs(x[1] - p[0]), abs(x[2] - p[1]), abs(x[3] - p[2])) > 0.002 or abs(abs(sum(a * b for a, b in zip(x[4], q))) - 1.0) > 2e-5   # noqa: E731
+        p0, q0 = keys[0][1:4], keys[0][4]
+        moves = any(off(x, p0, q0) for x in keys)
+        if moves:
+            bones.append((nm, keys))
+        elif off(keys[0], rp, rq):
+            bones.append((nm, [keys[0], keys[-1]]))             # held off its rest the whole scene: two keys
+    faces = []
+    shapes = (entry.get("face") or [])
+    for si, shape in enumerate(shapes):
+        keys = []
+        for fi in picks:
+            w = ((frames[fi].get("face") or {}).get(cid))
+            if w and si < len(w):
+                keys.append((fi / float(fps), float(w[si])))
+        if keys and max(v for _, v in keys) > 0.01:
+            faces.append((shape, keys))
+    return skel_path, mesh_path, bones, faces
+
+
 def write_scene_act(acts, folder, nid, node, story, bake):
     """A scene's folder: scene.tscn with the Camera3D the Animation `scene` drives along the recording, the lines as a
     method track's keys (StoryScene.line) and the events as cues (StoryScene.cue). Only with a recording of the scene."""
@@ -677,12 +861,38 @@ def write_scene_act(acts, folder, nid, node, story, bake):
     if marks:
         vals = ", ".join("{" + f'"args": {gvar(m[2])}, "method": &{gstr(m[1])}' + "}" for m in marks)
         track("method", ".", "{" + f'"times": PackedFloat32Array({", ".join(f(m[0]) for m in marks)}), "transitions": PackedFloat32Array({", ".join("1" for _ in marks)}), "values": [{vals}]' + "}")
+    # the bodies: each cast member's glb instanced, its bones and face shapes as tracks from the recording
+    bodies = []
+    for cid in sc.get("cast", []):
+        entry = ((bake or {}).get("bodies") or {}).get(cid)
+        if not entry:
+            continue
+        model = (sc.get("models") or {}).get(cid) if isinstance(sc.get("models"), dict) else None
+        if model and isinstance(entry.get("models"), dict) and model in entry["models"]:
+            entry = entry["models"][model]
+        glb = acts.parent / "previs" / str(entry.get("file", ""))
+        if not glb.exists():
+            continue
+        got = _body_tracks(sc, cid, entry, glb, fps)
+        if not got:
+            continue
+        skel_path, mesh_path, bones, faces = got
+        bname = f"Body_{node_name(cid)}"
+        for nm, keys in bones:
+            track("position_3d", f"{bname}/{skel_path}:{nm}", "PackedFloat32Array(" + ", ".join(f"{f(x[0])}, 1, {f(x[1])}, {f(x[2])}, {f(x[3])}" for x in keys) + ")")
+            track("rotation_3d", f"{bname}/{skel_path}:{nm}", "PackedFloat32Array(" + ", ".join(f"{f(x[0])}, 1, {f(x[4][0])}, {f(x[4][1])}, {f(x[4][2])}, {f(x[4][3])}" for x in keys) + ")")
+        if mesh_path:
+            for shape, keys in faces:
+                track("value", f"{bname}/{mesh_path}:blend_shapes/{shape}", "{" + f'"times": PackedFloat32Array({", ".join(f(x[0]) for x in keys)}), "transitions": PackedFloat32Array({", ".join("1" for _ in keys)}), "update": 0, "values": [{", ".join(f(x[1]) for x in keys)}]' + "}")
+        bodies.append((bname, f"res://game/previs/{entry.get('file')}", len(bones), len(faces)))
     anim = t.sub("Animation", props)
     lib = t.sub("AnimationLibrary", {"_data": "{" + f'"scene": {anim}' + "}"})
     cam = {"fov": f(fov[0][1]) if fov else "75.0", "near": "0.05", "current": "true"}
     if pos:
         cam["transform"] = f"Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, {f(pos[0][1])}, {f(pos[0][2])}, {f(pos[0][3])})"
     t.node("Camera", "Camera3D", ".", cam)
+    for bname, path, nb, nf in bodies:
+        t.node(bname, None, ".", {}, {"body": {"bones": nb, "faces": nf}}, instance=t.extres(path, "PackedScene"))
     t.node("Anim", "AnimationPlayer", ".", {"libraries": "{" + f'"": {lib}' + "}", "autoplay": gstr("scene")})
     (acts / folder).mkdir(exist_ok=True)
     (acts / folder / "scene.tscn").write_text(t.text(), encoding="utf-8")

@@ -278,9 +278,17 @@ loads, every verb in the games has a part).
    recorded scene's folder gets `scene.tscn`, a `StoryScene` root with a Camera3D the Animation `scene` drives
    along the recording (position, rotation and fov keys, one every three frames) and the lines and the events as
    keys of a method track (`line`, `cue`), so the sequence shows on Godot's timeline and the camera scrubs in the
-   editor; what plays in the game is still the recording (bakeplay.gd: the bodies, the faces, the lights), so an
-   edit to the timeline doesn't play back yet (the next cut: the bodies' bone and blend-shape tracks, and the scene
-   player taking its camera and cues from the Animation when one exists).
+   editor. **Its edits play back** (2026-10-30, the second cut): when the file exists the scene player takes the
+   eye from its camera keys (`story.gd edited_scene`, `edited_camera`: the keys interpolated at the recording's
+   time) and a line's or a cue's moment from the method track's keys, mapped by their order onto this run's clips and
+   cues (the recording's time onto the run's by the seg that plays the same), so a camera key dragged in Godot, or a
+   line's key moved, plays; the bodies, the faces and the lights are still the recording's. GDEXPORT moves the
+   first camera key a metre up in the file and reads the eye moved. **The bodies on the timeline**: each cast
+   member's body glb is instanced in the scene (`Body_<cid>`, its imported scene) and the Animation carries, from
+   the bake's skinning matrices, a position and a rotation track per bone that moves (every third frame and the
+   last; the global pose first, then local under its parent, as bakeplay poses them) and a value track per face
+   shape that moves (the bake's 72 weights on the mesh's blend shapes), so she moves in the editor's scrub; GDEXPORT
+   seeks the Animation and measures the head bone against the recording's head joint at a few frames.
 5. **The rest of §6**: the lives' effects, hiding, reverb, the HUD themes, the pause menu, the little things.
 6. **The guide** (GODOT_PLAN §7), grown with each step above (each step adds its page), its pictures by driving Godot.
 7. **The re-export** (§5), once there's a project someone has edited.

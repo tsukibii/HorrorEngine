@@ -1119,6 +1119,27 @@ func _initialize() -> void:
 			return ""))
 
 	await station("n_bath", func():
+		await step("the bath's old leak: water running down its west wall (HSLeak: the wall's band wet, no pools; a drop every couple of seconds)", func():
+			var lk = null
+			for x in rt.leaks:
+				if x["id"] == "bath_leak":
+					lk = x
+			if lk == null or not (lk["node"] is HSLeak) or lk["walls"].is_empty():
+				return "the bath's leak: " + str(lk)
+			var mi: MeshInstance3D = lk["walls"][0]
+			var mm = mi.material_override
+			if not (mm is ShaderMaterial) or mm.shader != HSWet.shader() or not bool(mm.get_shader_parameter("band_on")) or float(mm.get_shader_parameter("puddles")) != 0.0:
+				return "the wall under the leak should wear the wet band: " + str(mm)
+			if absf(float(mm.get_shader_parameter("band_top")) - 2.85) > 0.01 or absf(float(mm.get_shader_parameter("wetness")) - 0.85) > 0.01 or absf(float(mm.get_shader_parameter("band_half")) - 0.225) > 0.001:
+				return "the band's words: top %s wet %s half %s" % [mm.get_shader_parameter("band_top"), mm.get_shader_parameter("wetness"), mm.get_shader_parameter("band_half")]
+			var c: Vector3 = mm.get_shader_parameter("band_centre")
+			if absf(c.x - (-4.95)) > 0.02 or absf(c.z - (-27.4)) > 0.02:          # on the west wall's face (story x -5, y 27.4)
+				return "the band's centre should be on the west wall's face: " + str(c)
+			var d0: int = lk["node"].drops
+			await game_wait(4.6)
+			if lk["node"].drops < d0 + 2:
+				return "two drops should have fallen in 4.6 s: %d" % (lk["node"].drops - d0)
+			return "")
 		await step("12 · Hiding: the tap turned on (running: ticks); in the locker (hidden), the room changes while you're not looking (the towel gone, writing on the mirror: ticks)", func():
 			place(1.5, 27.5, 180)
 			var r := await enter_room("door_bath", "bath")
@@ -1143,6 +1164,8 @@ func _initialize() -> void:
 			var fwd: Vector3 = -mir.mcam.global_transform.basis.z
 			if not (ep.z < mp.z - 0.5 and fwd.z > 0.9 and mir.mcam.near > 0.5 and mir.view.render_target_update_mode == SubViewport.UPDATE_ALWAYS):
 				return "the mirror's camera: at %s looking %s, near %.2f, update %d (the glass at %s)" % [ep, fwd, mir.mcam.near, mir.view.render_target_update_mode, mp]
+			if not (mir.layer >= 11 and mir.layer <= 19) or (mir.mcam.cull_mask & (1 << (mir.layer - 1))) != 0 or mir.mi.layers != (1 << (mir.layer - 1)):   # its own layer, which its camera doesn't draw (a mirror seen in a mirror, never itself)
+				return "the mirror's own layer: %d, its camera's mask %d, its glass's layers %d" % [mir.layer, mir.mcam.cull_mask, mir.mi.layers]
 			rt.mirrors_quality(0)                                      # the menu's Reflections Low: the glass dull, no render
 			await game_wait(0.1)
 			if mir.enabled or mir.active or mir.view.render_target_update_mode != SubViewport.UPDATE_DISABLED:

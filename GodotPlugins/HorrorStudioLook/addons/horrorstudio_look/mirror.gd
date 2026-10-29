@@ -3,14 +3,18 @@
 ## the mirror is in view and the eye is on its side; the glass reads the texel that camera gave each of its points,
 ## through the camera's view-projection (so the image is never mirrored the wrong way round). The wall the mirror
 ## hangs on is put on the hidden layer for that camera (a mirror never shows its own wall) and the near plane is set
-## at the glass, so what's behind the wall stays out (they go on layer 20 alone: the player's camera draws every layer,
-## a mirror's camera all but that one; so one mirror's wall is missing from another's reflection). `HSMirror.attach(mesh_instance, surface, camera, size)` on a
+## at the glass, so what's behind the wall stays out. Each mirror and its wall go on a layer of their own (11 to 19,
+## the first free one; past nine mirrors, 20 shared): the player's camera draws every layer, a mirror's camera all
+## but its own (and 20, the softener's), so **a mirror seen in a mirror** shows its last frame, a frame late, and
+## never itself (2026-10-30). `HSMirror.attach(mesh_instance, surface, camera, size)` on a
 ## kit panel's `kit_mirror` surface or any quad; `res` the picture's height in pixels (its width by the window's
 ## aspect); `active` false when the mirror is out of view (the viewport then isn't drawn).
 class_name HSMirror
 extends Node3D
 
-const HIDDEN_LAYER := 20
+const HIDDEN_LAYER := 20            # the softener's layer, and the mirrors' past the ninth
+const OWN_LAYERS := [11, 12, 13, 14, 15, 16, 17, 18, 19]
+var layer := HIDDEN_LAYER            # this mirror's own layer (its glass and its wall)
 
 var mi: MeshInstance3D
 var surface := 0
@@ -53,7 +57,22 @@ static func mirror_surface(mi_: MeshInstance3D) -> int:
 	return -1
 
 
+## the first of the mirrors' layers no live mirror holds (a mirror's layer is its own and its wall's)
+static func free_layer(tree: SceneTree) -> int:
+	var taken := {}
+	if tree != null:
+		for m in tree.get_nodes_in_group("hs_mirror"):
+			if m is HSMirror:
+				taken[m.layer] = true
+	for l in OWN_LAYERS:
+		if not taken.has(l):
+			return l
+	return HIDDEN_LAYER
+
+
 func _ready() -> void:
+	add_to_group("hs_mirror")
+	layer = free_layer(get_tree())
 	_measure()
 	view = SubViewport.new()
 	view.name = "View"
@@ -70,7 +89,7 @@ func _ready() -> void:
 	add_child(view)
 	mcam = Camera3D.new()
 	mcam.name = "Eye"
-	mcam.cull_mask = cam.cull_mask & ~(1 << (HIDDEN_LAYER - 1))
+	mcam.cull_mask = cam.cull_mask & ~(1 << (HIDDEN_LAYER - 1)) & ~(1 << (layer - 1))   # not itself, nor the softener; the other mirrors' glass it sees
 	mcam.near = 0.05
 	var w3 := get_viewport().find_world_3d() if get_viewport() != null else null
 	if w3 != null and w3.environment != null:        # the room's own light, but tone-mapped once: the glass's picture goes through the main pass's tone map
@@ -89,7 +108,7 @@ func _ready() -> void:
 	mat.set_shader_parameter("mirror_tex", view.get_texture())
 	mat.set_shader_parameter("active", 0.0)
 	mi.set_surface_override_material(surface, mat)
-	mi.layers = 1 << (HIDDEN_LAYER - 1)     # a mirror doesn't see itself (no reading the picture it's drawing): layer 20 alone, which the player's camera draws and this one doesn't
+	mi.layers = 1 << (layer - 1)            # a mirror doesn't see itself (no reading the picture it's drawing): its own layer, which the player's camera and the other mirrors' draw and this one doesn't
 	_hide_wall()
 
 
@@ -159,9 +178,9 @@ func _hide_wall() -> void:
 	if col == null or not (col is Node):
 		return
 	for v in col.find_children("*", "VisualInstance3D", true, false):
-		v.layers = 1 << (HIDDEN_LAYER - 1)
+		v.layers = 1 << (layer - 1)
 	if col is VisualInstance3D:
-		col.layers = 1 << (HIDDEN_LAYER - 1)
+		col.layers = 1 << (layer - 1)
 
 
 ## off: the glass dull, nothing rendered; on: reflecting again from the next frame it's in view

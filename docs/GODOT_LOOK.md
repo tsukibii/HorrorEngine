@@ -163,6 +163,19 @@ much with no rain's rings, and from 0.5 the steps in it are wet ones; TestRoom00
 shows a wet floor (its own `wet`, or the rain) darker and glossy (`wetFloor` in stage.js: a clear coat, the roughness
 down), the pools being Godot's.
 
+## 2b. Wet walls under a leak (`leak.gd`, `HSLeak`; the wet shader's band)
+
+A prop with `use: leak` (STORY_FORMAT §2: its `wall`, `at` and `z`, `width`, `drip`, `wet`) is water coming in at a
+point on a wall. The export writes a marker on the wall's face; at level load the runtime finds the room's wall
+pieces of that side and HSLeak puts the wet shader on them with its band: the wall wet only in a strip below the leak,
+`width` wide at the top and nearly twice that at the floor as the water spreads, running in rivulets (a noise along
+the wall), drying in patches toward the floor, dark and glossy (the damp's darkening and the roughness down: the
+lamp's reflection lands in it through SSR), no pools and no rings. Drops fall from the top every `drip` seconds to
+a ring on the floor (lifefx's drip, on its own node). The desk draws the band as a dark glossy strip on the wall's
+face, the drips not. The demo wets the left wall from near its ceiling and measures the band's peak over the dry wall
+and its mean under it (LOOKPLUGIN); TestRoom001's bath has its old leak on the west wall, and GDTESTROOM checks the
+band's words on the wall and counts the drops.
+
 ## 3. Blood (`blood.gdshader`, `HSBlood`)
 
 A splat drawn by the shader from a seed: a pool whose radius wanders with the angle (fbm, a few lobes), deep red in
@@ -287,6 +300,14 @@ The demo hangs one on its back wall and measures the bulb's glint in it (LOOKPLU
 of the room per mirror in view: keep mirrors to the rooms that need one; the pause menu's Reflections row switches
 them off at Low (dull glass) and halves them at Medium (`set_quality`). Not yet: a mirror seen in a mirror.
 
+**A mirror seen in a mirror** (2026-10-30, CONTINUE's second step): each mirror and its wall sit on a layer of their
+own (11 to 19, the first free one; the tenth onward share 20), and a mirror's camera draws every layer but its own
+(and the softener's 20), so another mirror's glass is in its picture with that mirror's last frame on it, a frame
+late, and a mirror never draws itself (no reading the picture it's writing). Two bounces, not an endless hall: the
+third would need a third render. The demo's mirror stage has a second mirror facing the first across the room and
+measures the second's glass inside the first's picture: the room's bulb glints there, brighter than the wall beside
+(LOOKPLUGIN); the bath's mirror in GDTESTROOM sits on its own layer.
+
 ## 6. The story's words, and the check
 
 - `game.look`: `realism` (the default) or `plain` (STORY_FORMAT §9.1); `game.weather`: `rain` puts HSRain over every
@@ -310,7 +331,7 @@ them off at Low (dull glass) and halves them at Medium (`set_quality`). Not yet:
   reference lights and beside Godot's lit, flat and eye pictures, and measures the face's skin colour as ratios in
   both: for `lol`, red over green 1.27 in the Studio and 1.23 in Godot, blue over green 0.85 and 0.86); still open:
   the skin's own light (studioSkin's numbers) onto HSSkin's sliders, and the eye's colour measured close in both.
-- Wet walls under a leak; a mirror seen in a mirror.
+- ~~Wet walls under a leak~~ (§2b, 2026-10-30); ~~a mirror seen in a mirror~~ (§5b, 2026-10-30).
 - Seen by the user (2026-10-29): a square patch of light under a distant counter that goes when you come close.
   Most likely a VoxelGI cell at its coarse distance (the per-room probes meet at the counter), else the SSIL at a
   distance. To look at with a card: picture it from far and near, flip GI and SSIL off in the menu, see which goes.

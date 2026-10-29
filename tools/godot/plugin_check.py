@@ -104,6 +104,11 @@ def main():
     ir = rep.get("iris", {})
     checks.append(("the iris: against a bright light the eye closes (the same light with the iris off is brighter), and night holds it a stop under",
                    ir.get("open", 0) > ir.get("closed", 9) * 1.12 and ir.get("night", 9) < ir.get("closed", 0) * 0.8))
+    checks.append(("a leak's band on the wall: wet, the wall's lit face carries the lamp (brighter peak than dry) and darker between, and drops have fallen",
+                   rep.get("leak_wet", {}).get("max", 0) > rep.get("leak_dry", {}).get("max", 9) * 1.04 and rep.get("leak_wet", {}).get("mean", 9) < rep.get("leak_dry", {}).get("mean", 0) * 1.0 and rep.get("leak_drops", 0) >= 2))
+    ml = rep.get("mirror2_layers", {})
+    checks.append(("a mirror seen in a mirror: the second mirror's glass in the first's picture holds a picture (a bright peak well over its mean, not a flat wall), each mirror on its own layer, never itself",
+                   ml.get("second_seen_by_first") is True and ml.get("first_not_itself") is True and ml.get("first") != ml.get("second") and rep.get("mirror2_in_first", {}).get("max", 0) > 0.3 and rep.get("mirror2_in_first", {}).get("max", 0) > rep.get("mirror2_in_first", {}).get("mean", 9) * 2.0))
     ok = True
     for what, good in checks:
         print(("  ok  " if good else "  BAD ") + what)

@@ -22,6 +22,14 @@ static func canon(v: Variant) -> Variant:
 	return v
 
 
+## the bake's joint names (the figure's: pelvis, head...), from game/previs/index.json
+func story_index_joints() -> Array:
+	if not FileAccess.file_exists("res://game/previs/index.json"):
+		return []
+	var idx = JSON.parse_string(FileAccess.get_file_as_string("res://game/previs/index.json"))
+	return idx.get("joints", []) if idx is Dictionary else []
+
+
 func _initialize() -> void:
 	create_timer(120.0, true, false, true).timeout.connect(func() -> void: print("watchdog"); quit(1))
 	var story = Story.load_file("res://game/story.json")
@@ -149,6 +157,101 @@ func _initialize() -> void:
 		if sn != null:
 			sn.free()
 	print("GDEXPORT acts: %d recorded scenes as timelines to scrub (the camera along the recording, the lines as keys)" % timelines)
+	# the bodies on the timeline: the first recorded scene's body instanced, its bone tracks seeked at a few frames, the head bone on the recording's head joint
+	var bodied := 0
+	for nid in story.flow:
+		if story.flow[nid].get("type") != "scene" or not story.acts_index.has(nid):
+			continue
+		var spath := "res://game/acts/%s/scene.tscn" % str(story.acts_index[nid])
+		if not FileAccess.file_exists(spath):
+			continue
+		var sn = load(spath).instantiate()
+		var body = null
+		for c in sn.get_children():
+			if c.has_meta("body"):
+				body = c
+		if body == null:
+			sn.free()
+			continue
+		var sid := str(story.flow[nid].get("ref"))
+		var jpath := "res://game/previs/scenes/%s.json" % sid
+		var rec = JSON.parse_string(FileAccess.get_file_as_string(jpath)) if FileAccess.file_exists(jpath) else null
+		var sk: Skeleton3D = null
+		for c in body.find_children("*", "Skeleton3D", true, false):
+			sk = c
+		var ap: AnimationPlayer = sn.get_node("Anim")
+		var joints: Array = story_index_joints()
+		var hj := joints.find("head")
+		var bmeta = JSON.parse_string(str(body.get_meta("body")))                                                      # read before the scene goes
+		var nbones: int = int(bmeta.get("bones", 0)) if bmeta is Dictionary else 0
+		var worst := 0.0
+		var measured := 0
+		if sk != null and rec is Dictionary and hj >= 0 and sk.find_bone("c_head") >= 0:
+			root.add_child(sn)
+			var fps: float = float(rec.get("fps", 30))
+			var frames: Array = rec.get("frames", [])
+			for fi in [0, int(frames.size() / 3), int(frames.size() * 2 / 3), frames.size() - 1]:
+				ap.play("scene")
+				ap.seek(fi / fps, true)
+				ap.advance(0.0)
+				await process_frame                                  # the mixer's poses land on the skeleton over a frame
+				await process_frame
+				var cid := str(body.name).trim_prefix("Body_")
+				var f: Dictionary = frames[fi]
+				var jb = (f.get("bodies", {}) as Dictionary).get(cid)
+				if jb == null or jb[hj] == null:
+					continue
+				var j: Array = jb[hj]
+				var rec_head := Vector3(float(j[0]), float(j[2]), float(j[1])) / 100.0
+				var head: Vector3 = sk.global_transform * sk.get_bone_global_pose(sk.find_bone("c_head")).origin
+				worst = max(worst, (head - rec_head).length())
+				measured += 1
+			ap.stop()
+			await process_frame
+			root.remove_child(sn)
+		sn.queue_free()                                     # not free(): the mixer's and the skeleton's deferred work still name it this frame
+		await process_frame
+		if measured < 3 or worst > 0.12:
+			printerr("GDEXPORT FAIL: %s's body on the timeline: head %.3f m off the recording over %d frames (the bone tracks)" % [nid, worst, measured])
+			ok = false
+		else:
+			print("GDEXPORT acts: %s's body on the timeline, its head within %.3f m of the recording at %d frames (%d bone tracks)" % [nid, worst, measured, nbones])
+			bodied += 1
+		break
+	# an edit in a scene.tscn plays: the first camera position key moved a metre up in the file, the scene player's camera reads it moved (the file put back after)
+	var first_scene = null
+	for nid in story.flow:
+		if story.flow[nid].get("type") == "scene" and story.acts_index.has(nid) and FileAccess.file_exists("res://game/acts/%s/scene.tscn" % str(story.acts_index[nid])):
+			first_scene = nid
+			break
+	if first_scene != null:
+		var spath := "res://game/acts/%s/scene.tscn" % str(story.acts_index[first_scene])
+		var ed0 = story.edited_scene(first_scene)
+		var c0: Dictionary = story.edited_camera(ed0, 0.0) if ed0 != null else {}
+		var txt := FileAccess.get_file_as_string(spath)
+		var rx := RegEx.new()
+		rx.compile("tracks/0/keys = PackedFloat32Array\\(([-0-9.e]+), 1, ([-0-9.e]+), ([-0-9.e]+), ([-0-9.e]+)")
+		var m := rx.search(txt)
+		if ed0 == null or not c0.has("xf") or m == null:
+			printerr("GDEXPORT FAIL: the scene timeline of %s has no camera to edit (%s)" % [first_scene, c0])
+			ok = false
+		else:
+			var y0 := float(m.get_string(3))
+			var edited_txt := txt.substr(0, m.get_start(3)) + str(y0 + 1.0) + txt.substr(m.get_end(3))
+			var f := FileAccess.open(spath, FileAccess.WRITE)
+			f.store_string(edited_txt)
+			f.close()
+			var ed1 = story.edited_scene(first_scene)
+			var c1: Dictionary = story.edited_camera(ed1, 0.0) if ed1 != null else {}
+			f = FileAccess.open(spath, FileAccess.WRITE)
+			f.store_string(txt)
+			f.close()
+			var moved: float = float(c1["xf"].origin.y) - float(c0["xf"].origin.y) if c1.has("xf") else -9.0
+			if abs(moved - 1.0) > 0.02:
+				printerr("GDEXPORT FAIL: a camera key edited in %s should move the eye a metre up (moved %.3f)" % [spath, moved])
+				ok = false
+			else:
+				print("GDEXPORT acts: a camera key edited by hand in a scene's timeline moves the scene's eye (%s)" % first_scene)
 	if acts_bad:
 		ok = false
 	var main: PackedScene = load("res://addons/horrorstudio/main.tscn")

@@ -1380,6 +1380,7 @@
        ],
        "tag": "bathtub"
       },
+      {"id": "bath_leak", "use": "leak", "wall": "w", "at": [0.08, 2.4], "z": 2.85, "width": 0.45, "drip": 2.2, "wet": 0.85},
       {
        "id": "bath_lamp",
        "use": "light",

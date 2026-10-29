@@ -438,6 +438,21 @@ def check_world(story, things, r):
                 r.warn(f"{t.id}: the code {p.get('code')} isn't written in any note, line or inspect text")
         if u == "inspect" and p.get("line") and p["line"] not in lines:
             r.err(f"{t.id}: line {p['line']!r} doesn't exist")
+        if u == "leak":                                 # water running down a wall: a wet band below it, drips (GODOT_LOOK §2)
+            wl = p.get("wall", "n")
+            if wl not in L.WALLS:
+                r.err(f"{t.id}: leak wall {wl!r}: n, e, s or w")
+            for k, lo, hi in (("width", 0.05, 5), ("drip", 0, 60), ("wet", 0, 1)):
+                if k in p and not (isinstance(p[k], (int, float)) and lo <= p[k] <= hi):
+                    r.err(f"{t.id}: leak {k} is a number {lo} to {hi}")
+            rm = next((x for lv in story.get("levels", {}).values() for x in lv.get("rooms", []) if x.get("id") == t.room), None)
+            if rm is not None and wl in L.WALLS:
+                _ax, v, _lo, _hi = L.wall_line(rm, wl)
+                near = abs((t.pos[1] if wl in ("n", "s") else t.pos[0]) - v)
+                if near > 0.35:
+                    r.warn(f"{t.id}: the leak's at is {near:.2f} m from its {wl} wall (it runs down that wall; put it by it)")
+                if L.wall_skipped(rm, wl, 0, L.wall_length(rm, wl)):
+                    r.warn(f"{t.id}: the {wl} wall is one the room skips (the room beside it builds it): the leak wets nothing")
         if u == "light" and p.get("kind", "bulb") not in ("bulb", "candle", "lamp", "fire"):
             r.err(f"{t.id}: light kind {p.get('kind')!r}")
         if u == "light":                                # its flicker's mode (tools/shared/flicker.js, flicker.gd)

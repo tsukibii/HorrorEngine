@@ -2,8 +2,9 @@
 ## of type scene into game/acts/<nn>_<node>/scene.tscn when the desk's recording exists: a Camera3D the Animation
 ## `scene` drives along the bake (position, rotation and fov keys, thinned), and the lines and the cues as keys of a
 ## method track calling `line` and `cue` here, so the sequence shows on Godot's timeline and the camera can be scrubbed
-## in the editor (open the level beside it). What plays in the game is still the recording (bakeplay.gd); edits here
-## don't play back yet.
+## in the editor (open the level beside it). The game plays the recording's bodies (bakeplay.gd) and takes the camera
+## from these keys and the lines' and cues' moments from the method track's (scene_player.gd, story.gd
+## edited_scene), so a camera key dragged here, or a line's key moved, plays (2026-10-30).
 @tool
 class_name StoryScene
 extends Node3D

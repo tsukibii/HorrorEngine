@@ -42,7 +42,7 @@ static func wet(mi: MeshInstance3D, settings: Dictionary = {}) -> ShaderMaterial
 		m.set_shader_parameter("use_texture", true)
 		if old is StandardMaterial3D and old.uv1_triplanar:
 			m.set_shader_parameter("world_uv", true)       # a world-aligned surface keeps its place
-	for k in ["wetness", "puddles", "puddle_scale", "ripples", "ripple_rate", "water_tint", "edge"]:
+	for k in ["wetness", "puddles", "puddle_scale", "ripples", "ripple_rate", "water_tint", "edge", "band_on", "band_centre", "band_axis", "band_half", "band_top", "band_bottom", "band_feather"]:
 		if settings.has(k):
 			m.set_shader_parameter(k, settings[k])
 	mi.set_meta(META, old)

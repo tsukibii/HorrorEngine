@@ -19,6 +19,14 @@ uniform float ripples : hint_range(0.0, 1.0) = 0.0;        // rain hitting the p
 uniform float ripple_rate = 1.0;
 uniform vec4 water_tint : source_color = vec4(0.04, 0.05, 0.06, 1.0);
 uniform float edge = 0.12;                                 // the damp rim round a pool (in the noise's units)
+// a leak's band (HSLeak): the wall wet in a strip below where the water comes in, running down in streaks, no pools
+uniform bool band_on = false;
+uniform vec3 band_centre = vec3(0.0);                      // world: the leak's top, on the wall's face
+uniform vec3 band_axis = vec3(1.0, 0.0, 0.0);              // world: along the wall
+uniform float band_half = 0.2;                             // metres each way at the top
+uniform float band_top = 2.8;
+uniform float band_bottom = 0.0;
+uniform float band_feather = 0.12;
 
 varying vec3 wpos;
 
@@ -71,9 +79,23 @@ void fragment() {
 	vec3 base = albedo.rgb;
 	if (use_texture) base *= texture(texture_albedo, world_uv ? wpos.xz * uv1_scale.xz : UV).rgb;
 	float water, damp;
-	pool(wpos.xz, water, damp);
-	water *= step(0.001, wetness);
 	float wet = wetness;
+	if (band_on) {                                       // the leak's band: wider as it runs down and spreads, streaks in it, dry outside
+		float along = dot(wpos - band_centre, band_axis);
+		float down = clamp((band_top - wpos.y) / max(band_top - band_bottom, 0.1), 0.0, 1.0);
+		float half_ = band_half * (1.0 + 0.9 * down);
+		float side = 1.0 - smoothstep(half_, half_ + band_feather, abs(along));
+		float ends = (1.0 - smoothstep(band_top - 0.02, band_top + 0.06, wpos.y)) * smoothstep(band_bottom - 0.05, band_bottom + 0.25, wpos.y);
+		float streak = 0.55 + 0.45 * vnoise(vec2(along * 22.0, wpos.y * 0.9));   // the water runs in rivulets, not a flat sheet
+		float thin = 1.0 - 0.5 * down * (1.0 - vnoise(vec2(along * 9.0 + 3.0, wpos.y * 0.4)));   // drying toward the floor, in patches
+		float mask = side * ends * streak * thin;
+		wet = wetness * mask;
+		water = 0.0;
+		damp = mask;
+	} else {
+		pool(wpos.xz, water, damp);
+		water *= step(0.001, wetness);
+	}
 	// the damp darkens and tightens the highlight everywhere; a pool is water: its own colour over the dark floor
 	vec3 col = base * mix(1.0, 0.55, wet) * mix(1.0, 0.75, damp * wet);
 	col = mix(col, mix(col * 0.6, water_tint.rgb, 0.55), water);

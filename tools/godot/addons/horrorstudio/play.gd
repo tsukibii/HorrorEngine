@@ -322,6 +322,7 @@ func enter_level(lid: String) -> void:
 	solid = []
 	lights = []
 	sweeps = []
+	leaks = []
 	cast_nodes = {}
 	light_state = {}
 	lenses = []
@@ -329,7 +330,10 @@ func enter_level(lid: String) -> void:
 	if not kept.has(lid):
 		kept[lid] = {"vis": {}, "doors": {}, "bodies": {}}
 	var k: Dictionary = kept[lid]
+	var leak_nodes: Array = []
 	for n in game.pieces():
+		if n is Node3D and n.has_meta("leak"):
+			leak_nodes.append(n)
 		if n is FogVolume and n.has_meta("shaft"):                        # a window's light shaft (HSShaft): the beam's shader onto the export's FogVolume
 			HSShaft.wear(n, JSON.parse_string(n.get_meta("shaft")))
 		if n is Node3D and n.has_meta("sweep") and not (n is Light3D):   # a car passing outside a window now and then (HSSweep)
@@ -373,6 +377,20 @@ func enter_level(lid: String) -> void:
 				t["swing"] = sw
 				if float(d["deg"]) != 0.0:
 					swing_door(t, float(d["deg"]))
+	for n in leak_nodes:                                             # water running down a wall (HSLeak): the band on the room's wall below the leak, the drips
+		var lm: Dictionary = JSON.parse_string(n.get_meta("leak"))
+		var prefix: String = str(lm.get("room", "")) + "__wall_" + str(lm.get("wall", "n"))
+		var meshes: Array = []
+		for id in by_id:
+			if str(id).begins_with(prefix) and by_id[id].get("mesh") != null:
+				meshes.append(by_id[id]["mesh"])
+		var ax: Array = lm.get("axis", [1, 0, 0])
+		var inw: Array = lm.get("inward", [0, 0, 1])
+		var lk := HSLeak.make(meshes, {"centre": n.global_position, "axis": Vector3(float(ax[0]), float(ax[1]), float(ax[2])), "inward": Vector3(float(inw[0]), float(inw[1]), float(inw[2])),
+			"width": float(lm.get("width", 0.4)), "top": float(lm.get("top", n.global_position.y)), "bottom": float(lm.get("bottom", 0.0)), "drip": float(lm.get("drip", 2.6)), "wet": float(lm.get("wet", 0.8))})
+		n.add_child(lk)
+		var pid = JSON.parse_string(n.get_meta("piece")).get("id") if n.has_meta("piece") else n.name
+		leaks.append({"id": pid, "room": lm.get("room"), "node": lk, "walls": meshes})
 	triggers = []
 	for id in by_id:
 		var t: Dictionary = by_id[id]
@@ -895,6 +913,7 @@ func swing_door(t: Dictionary, deg: float) -> void:
 
 
 var sweeps: Array = []               # the windows' headlight sweeps: {room, node (HSSweep)}
+var leaks: Array = []                # water running down walls: {id, room, node (HSLeak)}
 ## the story's `sweep` action: a car passes the room's windows now
 func sweep(room) -> void:
 	for sw in sweeps:
@@ -1881,6 +1900,10 @@ func standin_body(cid: String) -> void:
 	if people:
 		HSEye.wear(body, file)
 	standins[cid] = body
+	var mesh_names: Array = []                       # said once a body, so a stand-in wearing the wrong file or an unskinned mesh can be read off the console
+	for mi in body.find_children("*", "MeshInstance3D", true, false):
+		mesh_names.append(str(mi.name))
+	print("standin %s wears %s (%s): %d skin surfaces on %s" % [cid, file, "a Character Studio export" if people else "the bake's body", standin_mats[cid].size(), ", ".join(mesh_names)])
 
 
 ## the `skin` action: a cast member's skin wet, sweating, dripping, oiled (0..1 each; the keys left out stay): on her

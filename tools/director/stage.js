@@ -476,6 +476,19 @@ export class Stage {
         this.world.add(m); if (!p.tags.includes("hollow") && !hidden && m.userData.use !== "clean") this.solid.push(m);     // a door frame: you see and walk through it; a stain: you walk over it
         if (p.tags.some(t => t.startsWith("kit:")) && p.d && p.d.kit !== undefined) this.kitIn(m, p.d.kit, h);
         else if (artRef && LIBRARY.meshes.has(artRef)) this.pending.push(this.dress(m, artRef, [w, h, d], p.tags.includes("real")));
+      } else if (p.kind === "leak") {       // water running down a wall (Godot: HSLeak's band and drips): here a dark glossy strip on the wall's face, wider as it runs down
+        const rm = ((((story.levels || {})[p.level] || {}).rooms) || []).find(r => r.id === p.room), wall = (p.tags.find(t => t.startsWith("wall:")) || "wall:n").slice(5);
+        if (rm) {
+          const [x0, y0, z0] = rm.at, [rw, rd] = rm.size, width = +(p.d && p.d.width) || 0.4, top = p.pos[2], bottom = z0, h = Math.max(0.1, top - bottom);
+          const v = { n: y0 + rd, s: y0, e: x0 + rw, w: x0 }[wall], inward = { n: [0, -1], s: [0, 1], e: [-1, 0], w: [1, 0] }[wall];
+          const cx = wall === "n" || wall === "s" ? p.pos[0] : v + inward[0] * 0.052, cy = wall === "n" || wall === "s" ? v + inward[1] * 0.052 : p.pos[1];
+          const geo = new THREE.PlaneGeometry(width * 1.4, h); const pos = geo.attributes.position;   // the strip spreads as it runs down: its top narrower
+          for (let i = 0; i < pos.count; i++) if (pos.getY(i) > 0) pos.setX(i, pos.getX(i) / 1.9);
+          const mat = new THREE.MeshPhysicalMaterial({ color: 0x1a1a1c, transparent: true, opacity: 0.42 * Math.min(1, +(p.d && p.d.wet) || 0.8) / 0.8, roughness: 0.08, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.08, depthWrite: false });
+          const m = new THREE.Mesh(geo, mat); m.position.copy(s2t(cx, cy, bottom + h / 2));
+          m.rotation.y = { n: 0, s: Math.PI, e: -Math.PI / 2, w: Math.PI / 2 }[wall];     // facing into the room (a plane faces +z: story south)
+          m.userData = { id: p.id, kind: "leak", room: p.room }; this.world.add(m);
+        }
       } else if (p.kind === "light") {
         const kind = (p.d && p.d.kind) || "bulb";
         const [col, inten, dist] = { bulb: [0xffc98a, 2.2, 7], candle: [0xffa84a, 1.0, 3.5], lamp: [0xffd2a0, 1.6, 5], fire: [0xff8a3a, 3, 9] }[kind] || [0xffc98a, 2, 7];

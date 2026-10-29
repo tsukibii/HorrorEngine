@@ -11,6 +11,34 @@ the to-do built there, with the Studio's eyes from the side, a small nose and th
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
+## 0a. The cloud session after (2026-10-30, small hours): §0's four pieces built, and a stand-in bug from the user
+
+All four of §0 are in, each measured where the cloud could (GDTESTROOM, GDEXPORT, GDPLAY, DESK, LOOKPLUGIN):
+**the leak** (`use: leak`, GODOT_LOOK §2b: the wet shader's band on the wall below it, HSLeak's drips; the desk's
+dark strip; the bath's west wall), **a mirror in a mirror** (§5b: each mirror on a layer of its own, 11 to 19; the
+demo's second mirror), **the timeline's edits playing back** (GODOT_EXPORT §3: the scene player takes its eye from
+scene.tscn's camera keys and the lines' and cues' moments from the method track, mapped onto the run by the seg that
+plays the same; GDEXPORT moves a key and reads the eye moved) and **the bodies on the timeline** (a cast member's glb
+instanced in scene.tscn with bone and blend-shape tracks from the bake, every third frame, only what moves: 35 bones
+and 36 shapes for Aoi's lobby scene, 760 KB; GDEXPORT seeks it and measures the head bone on the recording's head
+joint). **For the user:** open `Saved/Godot/TestRoom001/game/acts/02_n_hello/scene.tscn` beside the lab level and
+scrub: the camera along the recording, Aoi moving; `python tools/godot/plugin_check.py` for the leak and the two
+mirrors pictured on the card (the cloud's: `docs/godot_sheets/2026-10-30_leak_mirror.jpg`).
+
+**Open: the user's stand-in bug** (2026-10-30, their words: "in director I chose an actual designed character to
+test but in game I only see this base mesh; after switching to the designed character it now has weird splotches
+of skin colour mixed with the default grey"). Not reproduced here: the cloud's `_studiotest` export worn by Aoi
+(`previs_body: people/_studiotest`, a scratch export in `Saved/Godot/_peopletest`) is what the next lines check.
+The first symptom (the base mesh) is `standin_file` falling through to the bake's body: the export copies
+`Content/Studio/People/<name>/export/<name>.glb` into `game/people/` only when that file exists, so a character the
+desk shows from `People/<name>/export/` but whose glb isn't named `<name>.glb`, or a stale copy already in
+`game/people/`, would do it; the second (the splotches) is in HSSkin.wear on their export's meshes (the skin rule
+by name, the albedo texture, the tone) or in that character's baked albedo itself. play.gd now prints a line per
+stand-in at level load (`standin <cid> wears <file> (...): N skin surfaces on <meshes>`): ask the user for that
+line from Godot's output, the character's folder name under `Content/Studio/People/`, and a run of
+`python tools/godot/people_check.py --person <name>` on the card (GDPEOPLE pictures that export in Godot on the
+skin shader: if the splotches are there, it's the export or the shader; if not, it's the stand-in's wear).
+
 ## 0. Next: the cloud session (left 2026-10-29, late night, on `godot-support`, after the local session on the 3090)
 
 The user's handoff (their words: continue the ones that haven't been started back in the cloud, since the GPU-heavy

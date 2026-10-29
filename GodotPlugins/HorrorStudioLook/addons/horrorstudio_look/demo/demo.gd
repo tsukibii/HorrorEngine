@@ -18,6 +18,7 @@ var floor_mi: MeshInstance3D
 var rain: HSRain = null
 var nosplash: Image = null
 var mirror_q: MeshInstance3D = null
+var mirror2_q: MeshInstance3D = null
 var spheres: Array = []
 var report := {}
 var prev: Image = null
@@ -33,11 +34,14 @@ var shaft_off: Image = null
 var sweep_n: HSSweep = null
 var sweep_before: Image = null
 var iris_lamp: OmniLight3D = null
+var leak_n: HSLeak = null
+var leak_wall: MeshInstance3D = null
+var leak_dry: Image = null
 var iris_means: Dictionary = {}
 var splash_peak := 0.0
 var splash_n := 0
 
-const STAGES := ["plain", "realism", "wet", "blood_rain", "mirror", "skin", "soften_off", "soften", "pattern", "shaft", "sweep", "iris"]
+const STAGES := ["plain", "realism", "wet", "blood_rain", "mirror", "skin", "soften_off", "soften", "pattern", "shaft", "sweep", "iris", "leak"]
 
 
 func _initialize() -> void:
@@ -244,6 +248,12 @@ func _process(_d: float) -> bool:
 		sweep_n.clock += 0.5 * sweep_n.secs
 	if STAGES[stage] == "sweep" and n < 90:
 		return false
+	if STAGES[stage] == "leak":
+		if n == 40 and leak_n != null:
+			leak_dry = root.get_texture().get_image()         # the wall dry (the band at zero), then wet
+			leak_n.set_wet(0.85)
+		if n < 160:                                           # frames for the drips (the check runs at a fixed 60 fps: two seconds)
+			return false
 	if STAGES[stage] == "iris":
 		if n == 60:
 			iris_means["settled"] = measure(root.get_texture().get_image(), 300, 100, 980, 620)["mean"]
@@ -290,7 +300,22 @@ func _process(_d: float) -> bool:
 			report["mirror_wall"] = wall
 			var hm := mirror_q.get_node("Mirror") as HSMirror
 			report["mirror_frames"] = hm.frames
-			hm.view.get_texture().get_image().save_png(out_dir.path_join("mirror_view.png"))   # what the mirror's camera sees
+			var mv: Image = hm.view.get_texture().get_image()
+			mv.save_png(out_dir.path_join("mirror_view.png"))   # what the mirror's camera sees
+			var hm2 := mirror2_q.get_node("Mirror") as HSMirror   # the second mirror as the first's camera sees it: its glass with the room in it, not a hole or a flat wall
+			var lo := Vector2(1e9, 1e9)
+			var hi := Vector2(-1e9, -1e9)
+			var vs := Vector2(mv.get_width(), mv.get_height())
+			for sx in [-0.5, 0.5]:
+				for sy in [-0.5, 0.5]:
+					var sp := hm.mcam.unproject_position(mirror2_q.global_transform * Vector3(sx * 1.0, sy * 1.4, 0)) / Vector2(hm.view.size) * vs
+					lo = lo.min(sp)
+					hi = hi.max(sp)
+			lo = lo.clamp(Vector2.ZERO, vs - Vector2(2, 2))
+			hi = hi.clamp(Vector2.ZERO, vs - Vector2(1, 1))
+			var in2 := measure(mv, int(lo.x) + 1, int(lo.y) + 1, max(int(hi.x), int(lo.x) + 2), max(int(hi.y), int(lo.y) + 2))
+			report["mirror2_in_first"] = in2
+			report["mirror2_layers"] = {"first": hm.layer, "second": hm2.layer, "second_seen_by_first": (hm.mcam.cull_mask & (1 << (hm2.layer - 1))) != 0, "first_not_itself": (hm.mcam.cull_mask & (1 << (hm.layer - 1))) == 0, "active2": hm2.active}
 			print("MIRROR normal ", hm.normal, " centre ", hm.centre, " corners ", hm.corners.size(), " in frustum ", cam.is_position_in_frustum(mirror_q.global_transform * hm.centre), " d ", (cam.global_position - mirror_q.global_transform * hm.centre).dot(mirror_q.global_transform.basis * hm.normal))
 			print("MIRROR eye ", hm.mcam.global_position, " near ", hm.mcam.near, " active ", hm.active, " vp ", hm.mat.get_shader_parameter("mirror_vp"))
 		"skin":
@@ -310,6 +335,24 @@ func _process(_d: float) -> bool:
 			if name == "soften":
 				var sft := HSSoften.on(cam)
 				report["soften_frames"] = sft.frames if sft != null else -1
+		"leak":
+			var img := shot("leak")
+			var lo := Vector2(1e9, 1e9)                                       # the band's strip on the left wall's face, in the picture
+			var hi := Vector2(-1e9, -1e9)
+			for wy in [0.3, 2.6]:
+				for wz in [-1.4, -0.2]:
+					var sp := cam.unproject_position(Vector3(-3.99, wy, wz))
+					lo = lo.min(sp)
+					hi = hi.max(sp)
+			var vs := root.get_visible_rect().size
+			lo = lo.clamp(Vector2.ZERO, vs - Vector2(2, 2))
+			hi = hi.clamp(Vector2.ZERO, vs - Vector2(1, 1))
+			var box := Rect2i(Vector2i(lo) + Vector2i(2, 2), Vector2i(hi - lo) - Vector2i(4, 4))
+			var wet_ := measure(img, box.position.x, box.position.y, box.end.x, box.end.y)
+			var dry := measure(leak_dry, box.position.x, box.position.y, box.end.x, box.end.y) if leak_dry != null else wet_
+			report["leak_wet"] = wet_
+			report["leak_dry"] = dry
+			report["leak_drops"] = leak_n.drops if leak_n != null else 0
 		"iris":
 			var img := shot("iris")
 			iris_means["night"] = measure(img, 300, 100, 980, 620)["mean"]
@@ -395,6 +438,14 @@ func setup(name: String) -> void:
 			var sb := StaticBody3D.new()                   # the mirror's body, so the ray finds the wall behind it and not the glass
 			world.add_child(sb)
 			HSMirror.attach(mirror_q, 0, cam, 288)
+			mirror2_q = MeshInstance3D.new()               # a second mirror on the right wall, facing the first across the room: seen in the first, with the room's bulb in it
+			var mq2 := QuadMesh.new()
+			mq2.size = Vector2(1.0, 1.4)
+			mirror2_q.mesh = mq2
+			world.add_child(mirror2_q)
+			mirror2_q.position = Vector3(3.99, 1.6, -1.2)
+			mirror2_q.rotation_degrees.y = -90.0
+			HSMirror.attach(mirror2_q, 0, cam, 288)
 		"soften_off":
 			for sp in spheres:
 				sp.visible = false
@@ -415,6 +466,17 @@ func setup(name: String) -> void:
 			world.add_child(glow_q)
 		"soften":
 			HSSoften.attach(cam).set_amounts(0.9, 7.0, 1.6, 0.25)
+		"leak":
+			if iris_lamp != null:
+				iris_lamp.light_energy = 0.0
+			HSLook.iris(root, false)
+			cam.position = Vector3(-1.2, 1.4, 1.2)
+			cam.look_at(Vector3(-4.0, 1.3, -0.8))                              # the left wall, a leak running down it from near the ceiling
+			for c in world.get_children():
+				if c is MeshInstance3D and c.position.x < -4.0 and c.mesh is BoxMesh and (c.mesh as BoxMesh).size.x < 0.2:
+					leak_wall = c
+			leak_n = HSLeak.make([leak_wall], {"centre": Vector3(-3.99, 2.8, -0.8), "axis": Vector3(0, 0, 1), "inward": Vector3(1, 0, 0), "width": 0.5, "top": 2.8, "bottom": 0.0, "drip": 0.5, "wet": 0.0})
+			world.add_child(leak_n)
 		"iris":
 			if sweep_n != null:
 				sweep_n.visible = false

@@ -23,6 +23,9 @@ var look_off: Vector2 = Vector2.ZERO
 var look_cone: Array = [0, 0]
 var bake_stats: Dictionary = {}    # the last baked scene measured: frames, head_err, cam_path, mismatch
 var live := false                  # the scene playing is live (camera.mode live): the eye stays the player's, no cuts (STORY_FORMAT §3)
+var edited = null                  # the scene's timeline as edited in Godot (story.gd edited_scene): the camera's keys, the lines' and cues' moments
+var line_at: Dictionary = {}       # a clip seg -> the run time its line shows (the edited timeline's key, mapped onto this run)
+var edited_used := 0               # frames the edited camera drove (the checks read it)
 
 
 func _unhandled_input(ev: InputEvent) -> void:
@@ -90,6 +93,45 @@ func bake_camera(fi: int, cam: Camera3D) -> void:
 	cam.global_transform = xf
 	var vp := get_viewport().get_visible_rect().size
 	cam.fov = StoryC.vfov(c["hfov"], (vp.x / vp.y) if vp.y > 0 else 16.0 / 9.0)
+
+
+## the edited timeline's camera at a moment of the recording onto the eye (with the player's look within the cone)
+func edited_camera_to(bt: float, cam: Camera3D) -> void:
+	var e: Dictionary = StoryC.edited_camera(edited, bt)
+	if e.has("xf"):
+		var xf: Transform3D = e["xf"]
+		if look_off != Vector2.ZERO:
+			xf.basis = xf.basis * Basis(Vector3.UP, deg_to_rad(look_off.x)) * Basis(Vector3.RIGHT, deg_to_rad(look_off.y))
+		cam.global_transform = xf
+		edited_used += 1
+	if e.has("fov"):
+		cam.fov = float(e["fov"])
+
+
+## the run time of a moment of the recording (bake time): the bake seg it falls in, as far along the run's seg that plays the same
+func run_t_of(tl: Dictionary, bt: float) -> Variant:
+	var clips: Array = tl["v"].get("clips", [])
+	for s in tl["segs"]:
+		var b = bmap.get(seg_key(s, clips))
+		if b == null:
+			continue
+		if bt >= float(b["start"]) - 0.001 and bt <= float(b["end"]) + 0.001:
+			return float(s["start"]) + clamp(bt - float(b["start"]), 0.0, float(s["end"]) - float(s["start"]))
+	return null
+
+
+## the lines' and cues' moments from the edited timeline's keys, by their order, onto this run's clips and cues
+func _edited_moments(tl: Dictionary) -> void:
+	line_at = {}
+	var clip_segs: Array = []
+	for s in tl["segs"]:
+		if s["type"] == "clip" and not s.has("answer"):
+			clip_segs.append(s)
+	var keys: Array = edited.get("lines", [])
+	for i in min(keys.size(), clip_segs.size()):
+		var rt_ = run_t_of(tl, float(keys[i]))
+		if rt_ != null:
+			line_at[clip_segs[i]] = rt_
 
 
 func bake_measure() -> void:
@@ -228,6 +270,9 @@ func play(sc: Dictionary, nid: String, sid: String) -> Variant:
 	bmap = {}
 	look_off = Vector2.ZERO
 	bake_stats = {}
+	edited = null
+	line_at = {}
+	edited_used = 0
 	if game.bake != null:
 		var b = BakeC.new(game, game.bake)
 		if b.open(sid):
@@ -256,6 +301,14 @@ func play(sc: Dictionary, nid: String, sid: String) -> Variant:
 		var c0: Dictionary = bk.camera_of(0)
 		to_t = c0["xf"]
 		to_fov = StoryC.vfov(c0["hfov"], (vp.x / vp.y) if vp.y > 0 else 16.0 / 9.0)
+		edited = story().edited_scene(nid)            # a scene.tscn in game/acts: its camera keys drive the eye, its line and cue keys the moments
+		if edited != null:
+			var e0: Dictionary = StoryC.edited_camera(edited, 0.0)
+			if e0.has("xf"):
+				to_t = e0["xf"]
+			if e0.has("fov"):
+				to_fov = float(e0["fov"])
+			_edited_moments(tl)
 	if live:                                        # the eye stays the player's: no move, only any black lifted
 		if from_black > 0.01:
 			await game.fade(0.0, 0.05 if en.get("kind") == "cut" else float(en.get("secs", 0.6)))
@@ -285,6 +338,13 @@ func play(sc: Dictionary, nid: String, sid: String) -> Variant:
 	T = 0.0
 	var spoken = null
 	var cues := cue_times(tl, v)
+	if edited != null:                               # a cue's moment moved in Godot: the k-th cue key onto the k-th cue
+		var ck: Array = edited.get("cues", [])
+		for i in min(ck.size(), cues.size()):
+			var rt_ = run_t_of(tl, float(ck[i]))
+			if rt_ != null:
+				cues[i]["t"] = rt_
+		cues.sort_custom(func(x, y): return x["t"] < y["t"])
 	var t0: float = float(R["secs"])
 	while game.run != null and T < float(tl["total"]):
 		await get_tree().process_frame
@@ -301,7 +361,10 @@ func play(sc: Dictionary, nid: String, sid: String) -> Variant:
 				if bk.show(fi, rt):
 					bake_measure()
 				if not live:                             # a live scene: the bodies act, the camera and the seams' black are the recording's alone
-					bake_camera(fi, cam)
+					if edited != null:
+						edited_camera_to(float(bt), cam)
+					else:
+						bake_camera(fi, cam)
 					game.hud.set_fade(bk.black_of(fi))
 			else:
 				bake_stats["held"] = int(bake_stats.get("held", 0)) + 1
@@ -349,13 +412,15 @@ func play(sc: Dictionary, nid: String, sid: String) -> Variant:
 			tl = story().timeline(sc, picks, R["flags"], R["counters"])
 			if bk != null:
 				bake_map(sc, sid, picks)
+				if edited != null:
+					_edited_moments(tl)
 			var rs = null
 			for s in tl["segs"]:
 				if s["type"] == "reply" and s["clip"]["id"] == c["id"]:
 					rs = s
 			T = float(rs["end"]) if rs != null else T
 			continue
-		if seg != null and seg["type"] == "clip" and spoken != seg:
+		if seg != null and seg["type"] == "clip" and spoken != seg and T >= float(line_at.get(seg, 0.0)):   # a line's moment moved in Godot shows there
 			spoken = seg
 			var c: Dictionary = seg["clip"]
 			var who: String = game.hud.named(story().cast_name(c["who"])) if (c.get("who") != null and not c.get("think", false)) else ""
