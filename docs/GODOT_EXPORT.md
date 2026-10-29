@@ -96,7 +96,9 @@ The rule (CHARACTER_STUDIO.md §2): editable at every stage, a receipt on each b
   last export wrote and this one didn't goes if unchanged, stays if they changed it; files they added anywhere are
   never touched (`custom/` folders are theirs by convention). The export's report lists the kept files
   (`export.json` `kept`, the CLI's lines, the desk's Export panel). GDEXPORT changes a level file by hand and
-  re-exports: the change survives, the new one is beside it.
+  re-exports: the change survives, the new one is beside it. Godot's own sidecars (`.import`, `.uid`) and its
+  `.godot/` are never in the receipt (2026-10-29: a receipt written after an import had listed them, and the next
+  re-export took them for stale and removed them, so nothing with a texture loaded).
 - Not built: nodes the user adds inside a generated scene (a `hand` group) lifted out and put back into the new
   file; today a changed scene file is kept whole. The runtime add-on is copied on every export (the plugins live in
   the repo: a change there reaches every game).

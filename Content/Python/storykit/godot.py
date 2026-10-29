@@ -597,9 +597,10 @@ def sha1_of(path):
 
 
 def generated_files(out):
-    """Every file the export wrote, by its path in the project (the import's .godot/ and the receipt itself left out)."""
+    """Every file the export wrote, by its path in the project (the import's .godot/, Godot's own .import and .uid
+    sidecars, and the receipt itself left out: they're the editor's, never stale)."""
     for fp in sorted(out.rglob("*")):
-        if fp.is_file() and ".godot" not in fp.parts and fp.relative_to(out) != MANIFEST:
+        if fp.is_file() and ".godot" not in fp.parts and fp.relative_to(out) != MANIFEST and fp.suffix not in (".import", ".uid"):
             yield fp.relative_to(out).as_posix()
 
 
