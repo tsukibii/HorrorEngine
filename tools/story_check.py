@@ -801,6 +801,8 @@ def check_scene(sid, sc, story, things, r):
                     r.err(f"scene {sid}: models: {cid!r} isn't in the cast")
                 elif v != "default" and v not in (c.get("models") or {}):
                     r.err(f"scene {sid}: models: {cid} has no model {v!r} ({', '.join(['default', *(c.get('models') or {})])})")
+                elif v != "default" and str(c.get("previs_body", "")).startswith("people/") and not str((c.get("models") or {}).get(v, "")).startswith("people/"):
+                    r.warn(f"scene {sid}: models: {cid} wears {v!r} from here on, whose body is {c['models'][v]!r} (the plain desk body), while their default is the Character Studio character {c['previs_body']!r}: in the game they turn into the plain grey body at this scene (point the model at a character, or drop the pick)")
     for edge in ("enter", "exit"):
         if sc.get(edge) and sc[edge].get("kind") not in TRANSITIONS:
             r.err(f"scene {sid}: {edge} kind {sc[edge].get('kind')!r} (one of {', '.join(sorted(TRANSITIONS))})")
