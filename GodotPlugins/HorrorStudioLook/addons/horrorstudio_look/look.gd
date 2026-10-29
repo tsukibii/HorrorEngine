@@ -108,6 +108,26 @@ static func quality(env: Environment, q: Dictionary) -> void:
 		env.ssil_enabled = false
 
 
+## the shadows' softness (the pause menu's Shadows row: 0 Low, 1 Medium, 2 High, 3 Epic): the filter over the shadow
+## maps (hard, soft, softer with the lights' size as penumbras) and the atlas each light's map is cut from (a bigger one
+## gives every light more pixels: the edge of a door's shadow at the top of its frame was a staircase with 4096 shared
+## by twenty lights, the user's run of 2026-10-29). Lights carry their own `light_size` and `shadow_blur` (the export
+## gives bulbs 6 cm, lamps 15 cm); this sets the rest.
+static func shadows(vp: Viewport, q: int) -> void:
+	var filt: Array = [RenderingServer.SHADOW_QUALITY_HARD, RenderingServer.SHADOW_QUALITY_SOFT_MEDIUM, RenderingServer.SHADOW_QUALITY_SOFT_HIGH, RenderingServer.SHADOW_QUALITY_SOFT_ULTRA]
+	var k: int = clampi(q, 0, 3)
+	RenderingServer.positional_soft_shadow_filter_set_quality(filt[k])
+	RenderingServer.directional_soft_shadow_filter_set_quality(filt[k])
+	if vp != null:
+		vp.positional_shadow_atlas_size = [2048, 4096, 8192, 8192][k]
+		vp.positional_shadow_atlas_16_bits = k < 2
+		vp.positional_shadow_atlas_quad_0 = Viewport.SHADOW_ATLAS_QUADRANT_SUBDIV_4       # a few big maps for the lights nearest the eye...
+		vp.positional_shadow_atlas_quad_1 = Viewport.SHADOW_ATLAS_QUADRANT_SUBDIV_16
+		vp.positional_shadow_atlas_quad_2 = Viewport.SHADOW_ATLAS_QUADRANT_SUBDIV_64      # ...and smaller ones for the rest of a level's lights
+		vp.positional_shadow_atlas_quad_3 = Viewport.SHADOW_ATLAS_QUADRANT_SUBDIV_64
+	RenderingServer.directional_shadow_atlas_set_size([2048, 4096, 8192, 8192][k], k < 2)
+
+
 ## a player's anti-aliasing choice over the preset (the pause menu: Off, FXAA, TAA, TSR; TSR is TAA with FSR 2)
 static func set_aa(vp: Viewport, choice: int) -> void:
 	if vp == null:

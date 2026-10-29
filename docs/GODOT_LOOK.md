@@ -50,6 +50,15 @@ main scene and shows only in play, when `game.vhs` names a preset (TestRoom001 n
 the preset back on a slower machine (`HSLook.quality`: Reflections Low no SSR, Medium half its steps; Post-processing
 Low no glow, SSAO or SSIL, Medium no SSIL; Effects Low no haze; Global illumination Low no SSIL), never add to it.
 
+**Shadows** (`HSLook.shadows(viewport, q)`, the menu's Shadows row, 2026-10-29: the user saw a staircase along the
+top of the front door's shadow with TAA on): the filter over the shadow maps (Low hard, Medium soft, High softer,
+Epic ultra: the lights' sizes become penumbras) and the positional atlas (2048, 4096, 8192, 8192; sixteen bits
+below High), its quadrants cut four, sixteen, sixty-four, sixty-four ways so the nearest lights get big maps and the
+rest of a level's twenty-odd small ones; the sun's map the same sizes. The export gives every light a size
+(`light_size`: a bulb 6 cm, a lamp 15 cm, a candle 2 cm, a fire 30 cm) and `shadow_blur` 1.5, and writes the High
+values into `project.godot`. The game applies the saved row at start, the menu when it changes; the lookshot's
+`--shadows=0|1|2` pictures the difference.
+
 ## 2. Wet surfaces (`wet.gdshader`, `HSWet`)
 
 Light Kit's Puddle (UnrealPlugins/LightKit): "one irregular puddle, deep and mirror-smooth in the middle, damp at

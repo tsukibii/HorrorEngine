@@ -25,6 +25,12 @@ The user's answers, newest first. They override the plan, the research and the d
 - **"camhybrid is buggy: the LED UI doesn't work, we don't see steam when turning things on."** The softener had
   been a quad reading the screen texture (the opaque pass only) and painted over every transparent thing; it's a
   CompositorEffect after the transparents now, and the test room checks a digit and the kettle's steam survive it.
+- **"camhybrid needs strengthening towards camcorder: I like the sharpening and the reduction of fisheye, but we
+  over-reduced to the point it lost its aesthetic; give me five screenshots to pick from."** Five strengths between
+  the two pictured (`docs/godot_sheets/2026-10-29_camhybrid_pick.jpg`); the one picked becomes `camhybrid`.
+- **"The shadows feel a bit rough even with anti-aliasing and TAA: hard edges on the front door at the top."** The
+  shadow maps' filter was Godot's default (soft low) over a 4096 atlas shared by twenty lights: soft high over 8192
+  now, the lights with a size and a blur, the menu's Shadows row wired (GODOT_LOOK §1).
 
 - **"Let's remove the forced turn away (look up) after we interact with the person; in general let's make a note to
   avoid that effect, as upon testing it breaks immersion."** The rule, for every runtime and every stitch: the

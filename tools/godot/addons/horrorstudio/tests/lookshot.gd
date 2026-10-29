@@ -1,10 +1,10 @@
 ## A picture of the game at a spot, at a time of day, lit one way or another (the lighting trial, GODOT_PLAN §4; the
 ## guide's pictures): --node=n_x --at=x,y,yaw,pitch (story metres, degrees) --time=day|dusk|night
-## --gi=none|sdfgi|voxel --ao=0|1 --ssil=0|1 --power=0|1 --vhs=off|camcorder|worn --amb=ENERGY --take=id,id (into the row) --behave=cid,as[,route or spot] (a cast member set going) --cast=id (the eye in front of their stand-in) --state=id:state,id:state (little things set going) --mirrors=1 (each mirror's own picture beside the shot) --shot=PATH [--wait=N frames]
+## --gi=none|sdfgi|voxel --ao=0|1 --ssil=0|1 --power=0|1 --vhs=off|camcorder|camhybrid|worn --tape=key=val,key=val[;soften=near,far,px,least] (over the preset) --shadows=0|1|2 (the menu's row: hard, soft, softest) --amb=ENERGY --take=id,id (into the row) --behave=cid,as[,route or spot] (a cast member set going) --cast=id (the eye in front of their stand-in) --state=id:state,id:state (little things set going) --mirrors=1 (each mirror's own picture beside the shot) --shot=PATH [--wait=N frames]
 extends SceneTree
 var g
 var n := 0
-var o := {"node": "", "at": "", "time": "", "gi": "none", "ao": "0", "ssil": "0", "power": "1", "vhs": "off", "shot": "res://look.png", "wait": "30", "amb": "", "take": "", "cast": "", "behave": "", "mirrors": "0", "state": ""}
+var o := {"node": "", "at": "", "time": "", "gi": "none", "ao": "0", "ssil": "0", "power": "1", "vhs": "off", "shot": "res://look.png", "wait": "30", "amb": "", "take": "", "cast": "", "behave": "", "mirrors": "0", "state": "", "tape": "", "shadows": "2"}
 var done := false
 var placed := false
 var baked := false
@@ -62,6 +62,19 @@ func _process(_d: float) -> bool:
 		if o["power"] == "0":
 			rt.power("off")
 		g.get_node("VHS").preset(o["vhs"])
+		if o["tape"] != "":                               # the tape's knobs over the preset: --tape=distortion=0.06,luma_blur=0.9;soften=0.9,6,1.6,0.4
+			var vhsn = g.get_node("VHS")
+			for part in o["tape"].split(";"):
+				if part.begins_with("soften="):
+					var a: PackedStringArray = part.substr(7).split(",")
+					if a.size() >= 4:
+						HSSoften.attach(g.camera).set_amounts(float(a[0]), float(a[1]), float(a[2]), float(a[3]))
+					continue
+				for kv in part.split(","):
+					var p2: PackedStringArray = kv.split("=")
+					if p2.size() == 2:
+						vhsn.mat.set_shader_parameter(p2[0], float(p2[1]))
+		HSLook.shadows(get_root(), int(o["shadows"]))
 		if o["gi"] == "voxelrooms" and g.level != null:        # a VoxelGI per room: cells fine enough for 10 cm walls
 			var rooms: Array = g.story.levels[g.level_id].get("rooms", [])
 			for r in rooms:

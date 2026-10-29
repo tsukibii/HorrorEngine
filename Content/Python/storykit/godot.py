@@ -373,6 +373,7 @@ class LevelWriter:
         return {"pivot": pivot, "hinge": hinge, "slide": slide, "w": w, "handle_z": (kit or {}).get("handle_z"), "handle_in": (kit or {}).get("handle_in")}
 
     def light(self, p):
+        LIGHT_SIZE = {"bulb": 0.06, "lamp": 0.15, "candle": 0.02, "fire": 0.3}
         d = p.get("d") or {}
         kind = d.get("kind") or "bulb"
         c, inten, dist = LIGHTS.get(kind, LIGHTS["bulb"])
@@ -380,7 +381,8 @@ class LevelWriter:
         name = self.uname(p["id"])
         self.t.node(name, "OmniLight3D", "Lights", {
             "transform": xform(s2g(p["pos"])), "light_color": col(c), "light_energy": f(inten if lit else 0.0),
-            "omni_range": f(dist), "omni_attenuation": "1.6", "shadow_enabled": "true"},
+            "omni_range": f(dist), "omni_attenuation": "1.6", "shadow_enabled": "true",
+            "light_size": f(LIGHT_SIZE.get(kind, 0.06)), "shadow_blur": "1.5"},    # a bulb or a lamp has a size: penumbras, not a cut edge (look.gd shadows())
             {"piece": self.piece_meta(p), "light": {"kind": kind, "room": p.get("room"), "flicker": float(d.get("flicker") or 0), "base": inten, "on": lit}})
 
     def trigger(self, p):
@@ -510,6 +512,12 @@ enabled=PackedStringArray("res://addons/horrorstudio_look/plugin.cfg")
 [rendering]
 
 renderer/rendering_method="forward_plus"
+lights_and_shadows/positional_shadow/soft_shadow_filter_quality=4
+lights_and_shadows/positional_shadow/atlas_size=8192
+lights_and_shadows/positional_shadow/atlas_16_bits=false
+lights_and_shadows/directional_shadow/soft_shadow_filter_quality=4
+lights_and_shadows/directional_shadow/size=8192
+lights_and_shadows/directional_shadow/16_bits=false
 '''
 
 

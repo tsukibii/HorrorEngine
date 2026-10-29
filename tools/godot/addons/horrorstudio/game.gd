@@ -68,6 +68,7 @@ func _ready() -> void:
 	hud.wear(str(story.game.get("ui_theme", "glass")))
 	if envn != null and envn.environment != null:        # the look (game.look: realism, the default, or plain; HorrorStudioLook's HSLook)
 		HSLook.apply(get_viewport(), envn.environment, str(story.game.get("look", "realism")))
+	HSLook.shadows(get_viewport(), int(load("res://addons/horrorstudio/menu.gd").load_settings().get("shadows", 2)))   # the shadows' filter and atlas (the menu's row)
 	var vhsn = get_node_or_null("VHS")
 	if vhsn != null:                             # the camcorder look (game.vhs: camcorder, worn, nightmare; off when the game names none)
 		vhsn.preset(str(story.game.get("vhs", "off")))

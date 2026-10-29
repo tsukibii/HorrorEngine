@@ -25,7 +25,7 @@ const SETTINGS := [
 			{"id": "quality", "label": "Quality", "values": ["Low", "Medium", "High", "Epic", "Custom"], "def": 2, "ue": "scalability <0-3>"},
 			{"id": "scale", "label": "Resolution scale", "values": ["50 %", "67 %", "75 %", "100 %"], "def": 3, "ue": "r.ScreenPercentage", "godot": "Viewport.scaling_3d_scale"},
 			{"id": "aa", "label": "Anti-aliasing", "values": ["Off", "FXAA", "TAA", "TSR"], "def": 2, "ue": "r.AntiAliasingMethod", "godot": "Viewport.screen_space_aa / use_taa"},
-			{"id": "shadows", "label": "Shadows", "values": QUALITY, "def": 2, "sg": true, "ue": "sg.ShadowQuality", "godot": "rendering/lights_and_shadows"},
+			{"id": "shadows", "label": "Shadows", "values": QUALITY, "def": 2, "sg": true, "ue": "sg.ShadowQuality", "godot": "HSLook.shadows: the filter (hard to ultra soft) and the atlas (2048 to 8192)"},
 			{"id": "gi", "label": "Global illumination", "values": QUALITY, "def": 2, "sg": true, "ue": "sg.GlobalIlluminationQuality", "godot": "rendering/global_illumination (Low: no SSIL)"},
 			{"id": "reflections", "label": "Reflections", "values": QUALITY, "def": 2, "sg": true, "ue": "sg.ReflectionQuality", "godot": "Environment.ssr (Low off, Medium half the steps); the mirrors (Low off, Medium half size)"},
 			{"id": "textures", "label": "Textures", "values": QUALITY, "def": 2, "sg": true, "ue": "sg.TextureQuality", "godot": "rendering/textures"},
@@ -415,6 +415,7 @@ static func apply(st: Dictionary, hud_) -> void:
 		if hud_.env != null and g != null and g.get("story") != null:               # the look's preset, then the Graphics rows paring it back
 			HSLook.apply(vp, hud_.env, str(g.story.game.get("look", "realism")))
 			HSLook.quality(hud_.env, st)
+			HSLook.shadows(vp, int(st.get("shadows", 2)))                          # the shadows' filter and atlas
 			if g.get("play") != null and g.play != null:
 				g.play.mirrors_quality(int(st.get("reflections", 2)))     # the mirrors too (a second render of the room each)
 		HSLook.set_aa(vp, clampi(int(st.get("aa", 2)), 0, 3))                      # Off, FXAA, TAA (the default), TSR (TAA with FSR 2)
