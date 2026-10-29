@@ -49,6 +49,17 @@ lamp, the cabinet and the walls lie in the pools and slide as the eye moves. A f
 (the export's world-aligned materials, GODOT_EXPORT §8) keeps its planks or tiles: the wet shader samples it by its
 place in the world (`world_uv`), as the triplanar material did.
 
+**A puddle as a decal** (`HSWet.puddle(parent, at, size, seed)`): Light Kit's Puddle for any surface: a `Decal`
+whose maps are made in code from a seed (five soft blobs summed with a ragged edge: the pool's alpha, the water's
+dark tint; an ORM map with roughness 0.03 in the pool, so SSR mirrors in it; a flat normal), damp at its rim.
+
+**Window panes** (`glass.gdshader`, `HSGlass`): the export writes a quad of glass in every window opening
+(`__pane_<room>_<i>`, `metadata/pane`); the runtime rains on them with `game.weather` (`HSGlass.set_rain`): a grid
+of cells a couple of centimetres across, a drop in some sliding down at its own pace with a wobble and a trail of
+beads above it, a second finer layer, and a mist of static droplets; each drop a little dome whose slope bends what's
+seen through the glass (the screen behind, read through the drop's normal) and catches the lights; dry, the glass is
+clear with the room's lights in it. GDTESTROOM checks the lobby's two panes wear it with the rain on.
+
 ## 3. Blood (`blood.gdshader`, `HSBlood`)
 
 A splat drawn by the shader from a seed: a pool whose radius wanders with the angle (fbm, a few lobes), deep red in
@@ -131,7 +142,6 @@ bodies with their tone, a Studio export with its paint; GDTESTROOM checks Aoi's 
 - The characters: the Studio's paint and eye measured beside the Studio's own render (the three.js side), not only
   against the baked texture and by the pupil's shift; the wetness as a story word (a scene sweating her); the
   skin's own light (studioSkin: the Unreal side's M_StudioSkin numbers) onto HSSkin's sliders.
-- Puddles as decals for any surface (`Decal` with ORM: a ready-made in `HSWet` next), wet walls (rain running down
-  glass: the window shader), splashes where the streaks land.
+- Splashes where the streaks land; the rain's sound following the player; wet walls under a leak.
 - A rain that follows the player outdoors through a level (today each open room has its own box).
 - A `look` per level or scene (today the game's).

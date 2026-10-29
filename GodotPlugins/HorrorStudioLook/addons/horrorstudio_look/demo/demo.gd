@@ -175,6 +175,15 @@ func _process(_d: float) -> bool:
 			HSBlood.splat(world, Vector3(0.9, 0.0, -0.3), Vector3.UP, 0.8, 3.0)
 			HSBlood.splat(world, Vector3(-1.0, 1.2, -3.0), Vector3.BACK, 0.7, 5.0)
 			HSBlood.splat(world, Vector3(-0.3, 0.0, 0.9), Vector3.UP, 0.35, 8.0)
+			HSWet.puddle(world, Vector3(-1.6, 0.0, 1.2), 0.9, 3)   # one puddle as a decal, beside the wet floor's pools
+			var pane := MeshInstance3D.new()                           # a window pane with the rain running down it
+			var qm := QuadMesh.new()
+			qm.size = Vector2(1.2, 1.1)
+			pane.mesh = qm
+			world.add_child(pane)
+			pane.position = Vector3(2.2, 1.3, 0.4)
+			pane.rotation_degrees.y = -25.0
+			HSGlass.set_rain(HSGlass.pane(pane, Vector2(1.2, 1.1), 2.0), 0.9)
 			rain = HSRain.make(Vector3(7, 3, 6), 900, 0.6)
 			world.add_child(rain)
 			rain.position = Vector3(0, 1.5, -0.5)

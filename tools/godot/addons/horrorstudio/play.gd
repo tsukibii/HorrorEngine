@@ -384,6 +384,7 @@ func enter_level(lid: String) -> void:
 		lifesound.stop()
 	else:
 		lifesound = LifeSoundC.new(self)
+	panes = []
 	weather_attach()
 	blood_attach()
 	standin_bodies()
@@ -1665,6 +1666,14 @@ func weather_attach() -> void:
 		if game.sfx_index.has("rain"):
 			shelf_sound("rain", rain.global_position, -6.0, null)
 	HSWet.wet_floors(game.level, ids, {"wetness": 0.9, "puddles": 0.6, "puddle_scale": 1.2, "ripples": 1.0})
+	for n in game.level.get_children():                 # the rain on every window's pane
+		if n is MeshInstance3D and n.has_meta("pane"):
+			var pm = JSON.parse_string(n.get_meta("pane"))
+			var w: float = float(pm.get("w", 1.2)) if pm is Dictionary else 1.2
+			var h: float = float(pm.get("h", 1.1)) if pm is Dictionary else 1.1
+			var m := HSGlass.pane(n, Vector2(w, h), float(hash(n.name) % 977) / 31.0)
+			HSGlass.set_rain(m, 0.9)
+			panes.append(n)
 
 
 ## the cast's stand-ins as their bodies: a Character Studio export (`previs_body` people/<name>, game/people/) with its
@@ -1673,6 +1682,7 @@ func weather_attach() -> void:
 ## figure's size. A body glides on its behaviour's path until the motions come (GAMEPLAY_PLAN: the motion sets).
 const ARMS_DOWN := 52.0
 var standins: Dictionary = {}        # cid -> the body node under the stand-in
+var panes: Array = []                # the windows' panes wearing the rain
 
 
 func standin_bodies() -> void:

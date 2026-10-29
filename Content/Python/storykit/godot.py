@@ -47,7 +47,7 @@ MATS = {
     "wall": (0x55524d, 0.95), "floor": (0x3a342d, 1.0), "ceiling": (0x2c2c2e, 1.0), "door": (0x5a3a20, 0.8),
     "prop": (0x5d6f86, 0.8), "use": (0x4f8a5c, 0.8), "trim": (0xcfc8b8, 0.55), "mirror": (0xb8c4cc, 0.05, 0.9),
     "screen": (0x0c0d10, 0.2), "paper": (0xb59a7a, 0.9), "white": (0xe4e2dc, 0.5), "person": (0x9a8fa8, 0.8),
-    "cast": (0xc8c2b6, 0.8), "stain": (0x3a2a1a, 1.0),
+    "cast": (0xc8c2b6, 0.8), "stain": (0x3a2a1a, 1.0), "glass": (0xd8e4ee, 0.05),
 }
 BY_TAG = {"mirror": "mirror", "tv": "screen", "poster": "paper", "calendar": "paper", "frame": "paper", "board": "white",
           "air_conditioner": "white", "light_switch": "white"}
@@ -429,6 +429,12 @@ class LevelWriter:
                 self.t.node(name, "SpotLight3D", ".", {
                     "transform": xform(a, yaw + 180), "light_color": col(wc), "light_energy": f(wk * area), "spot_range": f(wd),
                     "spot_angle": "63", "spot_attenuation": "1.5"}, {"window": {"room": room["id"], "area": area, "energy": wk * area}})
+                if op.get("window"):                      # the pane: a quad of glass in the opening (HSGlass; the runtime rains on it)
+                    pane = self.uname(f"__pane_{room['id']}_{i}")
+                    quad = self.t.sub("QuadMesh", {"size": f"Vector2({f(op['w'])}, {f(op['h'])})"})
+                    glass = self.mat("glass", {"transparency": "1", "albedo_color": "Color(0.85, 0.9, 0.95, 0.12)", "roughness": "0.05", "cull_mode": "2"})
+                    self.t.node(pane, "MeshInstance3D", ".", {"transform": xform(s2g(at(0)), 0 if axis == "y" else 90), "mesh": quad, "material_override": glass},
+                                {"pane": {"room": room["id"], "w": op["w"], "h": op["h"]}})
 
     def gi(self):
         """A VoxelGI per room (GODOT_PLAN §4's trial: the bounce of the room's own lights; a level-wide one misses the

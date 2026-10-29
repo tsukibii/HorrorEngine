@@ -12,7 +12,8 @@ the VHS layer in `main.tscn`, `puff.gdshader` from lifefx.gd). A change here rea
 | `look.gd` | the presets as one dictionary each (`PRESETS`): the viewport's anti-aliasing and the environment's effects; `apply`, `set_aa` |
 | `vhs.gd`, `vhs.gdshader`, `vhs_hold.gdshader` | UltraVHS: the presets as dictionaries of the shader's uniforms (`CAMCORDER` the base), the layer's node; the history viewport (the last frame copied by `vhs_hold`) for the ghosting |
 | `puff.gdshader` | the little things' puffs (lifefx.gd makes the MultiMesh) |
-| `wet.gd`, `wet.gdshader` | wet floors: the pool mask (fbm in world space), the rings (a grid of drops per cell, their age from TIME) |
+| `wet.gd`, `wet.gdshader` | wet floors: the pool mask (fbm in world space), the rings (a grid of drops per cell, their age from TIME); `puddle` a Decal with maps made in code |
+| `glass.gd`, `glass.gdshader` | window panes: the drops (cells with a drop sliding down, beads above it, a mist) as a slope bending the screen behind |
 | `blood.gd`, `blood.gdshader` | the splat (the pool's radius by angle, satellite drops in a cell grid, drips in lanes) |
 | `rain.gd`, `rain.gdshader` | the streaks (a MultiMesh of quads; the vertex shader places each from its custom data and TIME) |
 | `eye.gd`, `eye.gdshader` | the Studio's eye (people.py's `_FRAME` and `EYE_COLOR` in GLSL; `handed` −1 for Godot's binormal); `records` reads the glb's JSON chunk for `studioEye` |

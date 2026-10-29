@@ -372,6 +372,8 @@ func _initialize() -> void:
 				return "the yard's floor isn't wet: " + str(yard_floor)
 			if not g.level.get_node_or_null("Rain_lobby") == null:
 				return "rain in the lobby (it has a ceiling)"
+			if rt.panes.size() != 2 or rt.panes.any(func(pn): return not (pn.material_override is ShaderMaterial) or pn.material_override.shader != HSGlass.shader() or float(pn.material_override.get_shader_parameter("rain")) <= 0.0):
+				return "the lobby's two panes should wear the glass with the rain on it: " + str(rt.panes.size())
 			rt.sounds_heard.clear()
 			place(1.5, -8.5, 0)
 			var x0: float = rt.player.pos.x
