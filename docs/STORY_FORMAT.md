@@ -513,6 +513,11 @@ with `{"tick": "<id>"}` at the end of that beat, not by its own trigger (the sto
   `{"torch": "on"}` or `"off"`); its beam comes from the right hand and follows the look a moment late. Its own settings
   ride on the item, `"torch": {"kelvin": 3200, "cone": 20, "range": 12, "strength": 6}` (an old warm one; the default
   is 5200 K, a 26° cone, 18 m). Taken away (`take`), it goes off. The check fails a `torch` with no flashlight item
+- `skin`: **a cast member's skin** (DECISIONS 2026-10-29; docs/GODOT_LOOK.md §5): `{"skin": "aoi", "wet": 0.7,
+  "sweat": 0.5}`: `wet` the sweat film (a sheen, the skin a touch darker), `sweat` beads standing on it, `drips` runs,
+  `oil` oiled up, each 0..1 (left out: unchanged; 0 takes it off). From a beat, a scene's cue or an answer's `do`; it
+  stays on her bodies (the stand-in's, a scene's) till set again. The Godot export plays it on the skin shader; the
+  desk records it (its stage doesn't draw it yet); Unreal not yet
 - `show`, `hide`, `move` (`to` a spot), `objective`
 - `state`: a little thing to one of its states, `{"state": "kitchen_kettle", "to": "heating"}`: in a beat, a scene's
   cue (on its clip edge: what lasts counts from there) or an answer's `do`. States carry on through the run

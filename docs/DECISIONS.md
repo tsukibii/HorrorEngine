@@ -12,6 +12,8 @@ The user's answers, newest first. They override the plan, the research and the d
   brain; our games are pretty small scale)"; "a realistic sweaty wet skin filter and shader, and oiled up"; "implement
   that human shader repo"; and **"instead of exporting the plugins and having them inside GitHub, keep our plugins
   in a folder that gets passed in"**: `GodotPlugins/HorrorStudioLook/`, copied into every export (docs/GODOT_LOOK.md).
+- Claude's call on the way to say it in a story: the new word `skin` (STORY_FORMAT §9.8: a cast member's `wet`,
+  `sweat`, `drips`, `oil`), played by the Godot export, recorded by the desk; the user may want it elsewhere.
 
 ## 2026-10-28, late night (Godot: Claude's picks, parity first)
 

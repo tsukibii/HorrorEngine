@@ -3991,6 +3991,11 @@
        "face": "player"
       },
       {
+       "skin": "aoi",
+       "wet": 0.6,
+       "sweat": 0.4
+      },
+      {
        "state": "kitchen_ashtray",
        "to": "lit"
       },

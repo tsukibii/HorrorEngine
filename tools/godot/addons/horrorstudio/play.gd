@@ -1682,6 +1682,8 @@ func weather_attach() -> void:
 ## figure's size. A body glides on its behaviour's path until the motions come (GAMEPLAY_PLAN: the motion sets).
 const ARMS_DOWN := 52.0
 var standins: Dictionary = {}        # cid -> the body node under the stand-in
+var standin_mats: Dictionary = {}    # cid -> its skin materials (HSSkin)
+var skin_wet: Dictionary = {}        # cid -> {wet, sweat, drips, oil}: the `skin` action, on every body she wears
 var panes: Array = []                # the windows' panes wearing the rain
 
 
@@ -1717,10 +1719,35 @@ func standin_bodies() -> void:
 		body.rotation_degrees.y = 180.0               # the export faces +z, the stand-in's forward is -z
 		for sk in body.find_children("*", "Skeleton3D", true, false):
 			arms_down(sk)
-		HSSkin.wear(body, {})
+		standin_mats[cid] = HSSkin.wear(body, skin_wet.get(cid, {}))
 		if people:
 			HSEye.wear(body, file)
 		standins[cid] = body
+
+
+## the `skin` action: a cast member's skin wet, sweating, dripping, oiled (0..1 each; the keys left out stay): on her
+## stand-in's body now, on a scene's body as it's made (bakeplay), and remembered for her next bodies
+func skin_set(cid: String, a: Dictionary) -> void:
+	var cur: Dictionary = skin_wet.get(cid, {}).duplicate()
+	for k in ["wet", "sweat", "drips", "oil"]:
+		if a.has(k):
+			cur[k] = float(a[k])
+	skin_wet[cid] = cur
+	for m in standin_mats.get(cid, []):
+		HSSkin.set_wet(m, skin_settings(cid))
+	var sp = game.scene_player
+	if sp != null and sp.bk != null and sp.bk.bodies.has(cid):
+		for m in sp.bk.bodies[cid].get("skin_mats", []):
+			HSSkin.set_wet(m, skin_settings(cid))
+
+
+## HSSkin's words for a cast member's skin (the story's `wet` is the shader's `wetness`)
+func skin_settings(cid: String) -> Dictionary:
+	var w: Dictionary = skin_wet.get(cid, {})
+	var out := {}
+	for k in w:
+		out["wetness" if k == "wet" else k] = w[k]
+	return out
 
 
 ## a glb read at run time (GLTFDocument): the file's own node and bone frames, the same on every machine

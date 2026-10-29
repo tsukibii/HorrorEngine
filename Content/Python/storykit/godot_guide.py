@@ -219,7 +219,8 @@ reflections, ambient occlusion and indirect light, a little glow, a thin haze, A
 <p><b>game.weather</b> <code>rain</code> (this game: <b>{e(g.get('weather', 'clear'))}</b>) puts rain in every room with no <code>ceiling</code> (<code>HSRain</code>, a box of
 streaks moved by the vertex shader) and wets its floor (<code>HSWet</code>: the damp, pools that carry the lights, the rain's rings on them), with the shelf's rain heard there.
 A <code>clean</code> stain of kind <code>blood</code> wears <code>HSBlood</code>'s splat (a ragged pool, flung drops, glossy, fading as it's scrubbed). <code>HSSkin</code> is
-HumanShaders' skin shader with a wetness layer (a sweat film, beads, drips, oil) for the characters. To change a number, edit the preset in <code>look.gd</code> or the
+HumanShaders' skin shader with a wetness layer (a sweat film, beads, drips, oil) for the characters: the story's <code>skin</code> action
+(<code>{{"skin": "aoi", "wet": 0.7, "sweat": 0.5}}</code> in a beat or a cue) puts it on a cast member's bodies and keeps it till set again. To change a number, edit the preset in <code>look.gd</code> or the
 shader's uniforms; to check it, the plugin's demo (<code>demo/demo.gd</code>) pictures and measures each part.</p>
 {fig(pictures, 'look_yard_rain.png', 'The yard in the rain: the streaks, the floor wet with pools carrying the sky.')}
 {fig(pictures, 'look_chores_blood.png', 'A blood stain: a glossy pool with flung drops, scrubbed away by the chore.')}

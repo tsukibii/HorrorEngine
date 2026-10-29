@@ -712,6 +712,10 @@ func _initialize() -> void:
 				return JSON.stringify(t)
 			if req.get("who") == null or not str(g.hud.named(req["who"])).contains("Aoi"):
 				return "the request has no name by it: " + JSON.stringify(req)
+			var sw: Dictionary = rt.skin_wet.get("aoi", {})           # the `skin` action: she sweats in the kitchen, on her stand-in's body
+			var sm: Array = rt.standin_mats.get("aoi", [])
+			if float(sw.get("wet", 0)) != 0.6 or float(sw.get("sweat", 0)) != 0.4 or sm.is_empty() or float(sm[0].get_shader_parameter("wetness")) != 0.6:
+				return "her skin: " + JSON.stringify(sw) + " on %d materials" % sm.size()
 			var k := await use("kitchen_kettle", 0.7)
 			if not str(k.get("label", "")).to_lower().contains("switch on"):
 				return "the kettle says " + JSON.stringify(k)

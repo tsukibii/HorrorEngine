@@ -93,6 +93,10 @@ of its `fragment()` and in two lines of its `light()` (marked `HS`):
   colour deeper (a gamma of 1.18 and a touch brighter). In `light()`, the base reflectivity rises to water's 4 % where
   the layer is glossy and the double lobe collapses to one.
 
+**The story's word** (2026-10-29, STORY_FORMAT §9.8): `{"skin": "aoi", "wet": 0.7, "sweat": 0.5}` in a beat, a
+cue or an answer's `do` puts it on her bodies (the stand-in's now, a scene's as it's made) and keeps it till set
+again (`play.gd` `skin_set`, `skin_wet`); TestRoom001's kitchen has her sweating, GDTESTROOM checks it.
+
 `HSSkin.material(albedo_texture, settings, tone)` wires HumanShaders' lightwarp, noise and micro-detail textures from
 `res://HumanShaders/` and gives every sampler the shader reads a flat default (a flat normal, white maps), so a
 sphere with no maps lights the same as a character missing one. `HSSkin.wear(node, settings)` puts it on a Studio
@@ -142,8 +146,8 @@ bodies with their tone, a Studio export with its paint; GDTESTROOM checks Aoi's 
 ## 7. What's left
 
 - The characters: the Studio's paint and eye measured beside the Studio's own render (the three.js side), not only
-  against the baked texture and by the pupil's shift; the wetness as a story word (a scene sweating her); the
-  skin's own light (studioSkin: the Unreal side's M_StudioSkin numbers) onto HSSkin's sliders.
+  against the baked texture and by the pupil's shift; the skin's own light (studioSkin: the Unreal side's
+  M_StudioSkin numbers) onto HSSkin's sliders; the desk's stage drawing the `skin` word too.
 - Splashes where the streaks land; the rain's sound following the player; wet walls under a leak.
 - A rain that follows the player outdoors through a level (today each open room has its own box).
 - A `look` per level or scene (today the game's).

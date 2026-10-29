@@ -32,7 +32,8 @@ BOARDS = {}                 # the board games this game's tables can have (story
 ACTIONS = {"say", "think", "sound", "music", "light", "door", "show", "hide", "move", "objective", "flag", "unflag",
            "give", "take", "wait", "fade", "lookat", "shot", "seq", "anim", "stalker", "trick", "checkpoint", "done",
            "karma", "count", "scene", "behave", "ask", "state", "todo", "tick", "fail", "untodo", "chapter", "name", "torch",
-           "power", "skip"}
+           "power", "skip", "skin"}
+SKIN_KEYS = ("wet", "sweat", "drips", "oil")            # a cast member's skin (docs/GODOT_LOOK.md §5): each 0..1
 ASK_SECS = 3.0              # the walker's time to answer an ask
 MUSIC = {"silence", "calm", "uneasy", "dread", "chase"}
 LIGHT_SET = {"on", "off", "flicker", "dim"}
@@ -1241,6 +1242,14 @@ def check_action(bid, a, story, things, r, stage=None):
     elif k == "skip":                                   # time skipped: the little things live through it at once
         if not isinstance(v, (int, float)) or isinstance(v, bool) or not 0 < v <= 7 * 86400:
             r.err(f"{bid}: skip {v!r}: the seconds skipped (5400: an hour and a half; a week at most)")
+    elif k == "skin":                                   # a cast member's skin: wet, sweating, dripping, oiled (0..1 each; left out: unchanged)
+        if v not in cast:
+            r.err(f"{bid}: skin {v!r} isn't a cast member")
+        if not any(x in a for x in SKIN_KEYS):
+            r.err(f"{bid}: skin takes {', '.join(SKIN_KEYS)} (0..1 each)")
+        for x in SKIN_KEYS:
+            if x in a and (isinstance(a[x], bool) or not isinstance(a[x], (int, float)) or not 0 <= a[x] <= 1):
+                r.err(f"{bid}: skin {x} {a[x]!r}: a number 0..1")
     elif k == "torch":                                  # the flashlight: on, off, flicker, dead, works
         if v not in TORCH_SET:
             r.err(f"{bid}: torch {v!r} (one of {', '.join(sorted(TORCH_SET))})")

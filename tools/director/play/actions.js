@@ -58,6 +58,7 @@ register("action", "hide", { run: (v, a, rt) => rt.setVisible(v, false) });
 register("action", "door", { run: (v, a, rt) => rt.door(v, a.set || "open") });
 register("action", "light", { run: (v, a, rt) => rt.light(v, a.room, a.set || "on") });
 register("action", "torch", { run: (v, a, rt) => rt.torchSet(v) });
+register("action", "skin", { run: (v, a, rt) => { (rt.skinWet = rt.skinWet || {})[v] = { ...(rt.skinWet?.[v] || {}), ...Object.fromEntries(["wet", "sweat", "drips", "oil"].filter(k => a[k] != null).map(k => [k, +a[k]])) }; } });   // a cast member's skin (GODOT_LOOK §5): kept for the Godot export's shader; the desk's stage doesn't draw it yet
 register("action", "power", { run: (v, a, rt) => rt.power(v, a.level) });   // the power cut (the electric lights dark, the switches dead), or back   // the flashlight: on, off, flicker, dead, works (torch.js)
 register("action", "wait", { run: (v, a, rt) => rt.wait(+v || 0) });
 register("action", "fade", { run: (v, a, rt) => rt.fade(v === "out" ? 1 : 0, +(a.secs ?? 1)) });

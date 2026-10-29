@@ -18,7 +18,7 @@ export const KINDS = {
 };
 // the key's string, or each string in its list, names an entry of the kind
 const VALUE = {
-  cast: ["who", "behave", "seeker", "vs", "caught", "face", "look", "lookat", "at", "arrived"],
+  cast: ["who", "behave", "seeker", "vs", "caught", "face", "look", "lookat", "at", "arrived", "skin"],
   item: ["item", "pickup", "give", "take", "needs", "locked_by", "with"],   // `with`: what a stain needs in the hand
   note: ["note", "read"],
   sound: ["sound"],
