@@ -1293,6 +1293,7 @@
       3
      ],
      "floor": "water",
+     "wet": 0.8,
      "light": "dim",
      "kind": "bath",
      "name": "Bath",

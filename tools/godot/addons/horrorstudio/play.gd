@@ -1651,9 +1651,16 @@ func weather_attach() -> void:
 	rain_sounds = []
 	wet_rooms = []
 	var lvl: Dictionary = game.story.levels.get(level, {})
+	var rooms: Array = lvl.get("rooms", [])
+	if game.level != null:
+		for r in rooms:                                 # a room's own `wet` (STORY_FORMAT §2): its floor damp with pools, no rain's rings; wet steps from 0.5
+			var w: float = float(r.get("wet", 0.0))
+			if w > 0.0:
+				HSWet.wet_floors(game.level, [r["id"]], {"wetness": w, "puddles": w * 0.7, "puddle_scale": 1.0, "ripples": 0.0})
+				if w >= 0.5:
+					wet_rooms.append(r["id"])
 	if str(lvl.get("weather", game.story.game.get("weather", "clear"))) != "rain" or game.level == null:   # the level's own weather over the game's
 		return
-	var rooms: Array = game.story.levels.get(level, {}).get("rooms", [])
 	var open: Array = []
 	for r in rooms:
 		var c = r.get("ceiling", true)
@@ -1675,7 +1682,9 @@ func weather_attach() -> void:
 			var rp = play_sfx("rain", rain.global_position, -6.0)     # (play_sfx, not shelf_sound: the level loads before the run is active)
 			if rp != null:
 				rain_sounds.append({"p": rp, "room": str(r["id"]), "at": rain.global_position})
-	wet_rooms = ids
+	for id in ids:
+		if not wet_rooms.has(id):
+			wet_rooms.append(id)
 	HSWet.wet_floors(game.level, ids, {"wetness": 0.9, "puddles": 0.6, "puddle_scale": 1.2, "ripples": 1.0})
 	for n in game.level.get_children():                 # the rain on every window's pane
 		if n is MeshInstance3D and n.has_meta("pane"):

@@ -308,6 +308,9 @@ def check_world(story, things, r):
                         r.err(f"room {rm['id']}: trim {k}: {v!r} (skirting, cornice, casing, threshold: heights or widths in metres, 0 for none)")
             if rm.get("kind") is not None and rm["kind"] not in L.ROOM_KINDS:
                 r.warn(f"room {rm['id']}: kind {rm['kind']!r} isn't one of {', '.join(L.ROOM_KINDS)}")
+            wet = rm.get("wet")                             # a wet floor without rain (§2: pools in Godot, wet steps from 0.5)
+            if wet is not None and not (isinstance(wet, (int, float)) and 0 <= wet <= 1):
+                r.err(f"room {rm['id']}: wet {wet!r}: a number 0..1")
             for op in rm.get("openings", []):
                 if op.get("wall") not in L.WALLS:
                     r.err(f"room {rm['id']}: opening wall {op.get('wall')!r}")

@@ -1004,6 +1004,12 @@ func _initialize() -> void:
 			var r := await enter_room("door_bath", "bath")
 			if r != "":
 				return r
+			var bath_floor = null                                      # the bath's own `wet` 0.8: its floor on the wet shader, no rain's rings, wet steps
+			for ch in g.level.get_children():
+				if ch.has_meta("piece") and str(ch.get_meta("piece")).contains("\"bath__floor\""):
+					bath_floor = ch.get_node_or_null("mesh")
+			if bath_floor == null or not (bath_floor.material_override is ShaderMaterial) or bath_floor.material_override.shader != HSWet.shader() or float(bath_floor.material_override.get_shader_parameter("ripples")) != 0.0 or not rt.wet_rooms.has("bath"):
+				return "the bath's floor isn't wet by its own word: " + str(bath_floor) + " wet rooms " + str(rt.wet_rooms)
 			var mir = rt.things["bath_mirror"].get("mirror")           # the bath's mirror reflects the room (HSMirror): seen, its camera draws
 			if mir == null or not (mir is HSMirror):
 				return "the bath's mirror has no reflection: " + str(mir)

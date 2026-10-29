@@ -86,6 +86,10 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
   builder colours and labels by it and gives some kinds their built-ins (below); `name` is its label (optional,
   any text, Japanese welcome); `dir` is the way a `stairs` room climbs (`n e s w`).
 - `ceiling: false` for outdoors.
+- `wet` (0..1, optional): a wet floor without rain (a bathroom, a cellar): in the Godot export the floor wears the
+  look plugin's wet (the damp darkening, pools that carry the lights, no rings: GODOT_LOOK §2) by that much, and from
+  0.5 every step in the room is a wet one, on the desk's Play too. (Rain, `game.weather`, wets a room with no
+  ceiling by itself.)
 - `look`: library texture sets for its surfaces, `{"floor": "ambientcg/WoodFloor041", "walls": "...", "ceiling": "..."}`
   (docs/ASSETS.md). Grey until fetched.
 

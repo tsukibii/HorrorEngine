@@ -65,6 +65,9 @@ beads above it, a second finer layer, and a mist of static droplets; each drop a
 seen through the glass (the screen behind, read through the drop's normal) and catches the lights; dry, the glass is
 clear with the room's lights in it. GDTESTROOM checks the lobby's two panes wear it with the rain on.
 
+A room's own `wet` (STORY_FORMAT §2, 2026-10-29: a bathroom's floor, a cellar's) wears the same shader by that
+much with no rain's rings, and from 0.5 the steps in it are wet ones; TestRoom001's bath is 0.8.
+
 ## 3. Blood (`blood.gdshader`, `HSBlood`)
 
 A splat drawn by the shader from a seed: a pool whose radius wanders with the angle (fbm, a few lobes), deep red in
