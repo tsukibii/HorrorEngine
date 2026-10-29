@@ -103,7 +103,7 @@ jitter on the floating prompt), never enough to hurt reading.
 
 The settings menu's Film grain row (play/menu.js, `grain`) becomes the player's cap on noise; brightness stays its own.
 
-**In the Godot export** (2026-10-29): `addons/horrorstudio/vhs.gdshader` is this filter, the plugin's three passes in
+**In the Godot export** (2026-10-29): `addons/horrorstudio_look/vhs.gdshader` (GodotPlugins/HorrorStudioLook) is this filter, the plugin's three passes in
 one canvas shader under the HUD (so the HUD stays sharp, §4), with the plugin's presets and night mode; `game.vhs`
 names the preset (STORY_FORMAT §9.1); GODOTLOOK measures it against the plugin's own reference.
 

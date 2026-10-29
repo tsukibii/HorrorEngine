@@ -200,8 +200,7 @@ loads, every verb in the games has a part).
    tape sampling; the tape's luma low-pass and edge enhancement, chroma bleed and shift, tracking, head switching,
    noise, dropouts; the screen's pillarbox and scanlines) in one canvas shader on a layer under the HUD, the presets
    camcorder, worn and nightmare, night mode (the black turning blue with the time of day), the menu's Film grain as
-   the noise's cap, the story's new word `game.vhs` (STORY_FORMAT §9.1, the check). No persistence yet (ghosting
-   needs the last frame: a SubViewport later). **GODOTLOOK** renders the plugin's chart through it and measures it
+   the noise's cap, the story's new word `game.vhs` (STORY_FORMAT §9.1, the check). **Persistence** (2026-10-29): a viewport of its own copies the screen's last frame each frame (`vhs_hold.gdshader`) and the tape mixes it in by the preset's Ghosting (0.15, 0.2, 0.3); GODOTLOOK takes the chart out for a frame and measures the ghost it leaves. **GODOTLOOK** renders the plugin's chart through it and measures it
    beside the numpy reference: edge rise 5.0 / 5.0, halo 0.119 / 0.111, chroma 2.2 / 2.4, black 0.046 / 0.049.
    Pictures: `Saved/Story/TestRoom001/godot_reference/kitchen_vhs_*.png`.
    **The inventory's row as the things themselves** (2026-10-29, `hud.gd` `inventory`, after the user: the common way,

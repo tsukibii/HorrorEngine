@@ -35,6 +35,9 @@ uniform float dropouts = 0.0;
 uniform float scanlines = 0.0;
 uniform float glitch = 0.0;
 uniform int frame = 0;
+uniform sampler2D history_tex : filter_linear, repeat_disable;   // the last frame (vhs.gd's history viewport)
+uniform float ghosting : hint_range(0.0, 0.95) = 0.0;           // how much of it stays (persistence)
+uniform bool has_history = false;
 
 uint hash_u(uint x) {
 	x ^= x >> 16u; x *= 0x7feb352du; x ^= x >> 15u; x *= 0x846ca68bu; x ^= x >> 16u;
@@ -171,6 +174,9 @@ void fragment() {
 			}
 		}
 		vec3 c = clamp(yiq_to_rgb(vec3(yv, iq)), 0.0, 1.0);
+		if (has_history && ghosting > 0.0) {            // persistence: a little of the last frame stays (the camera tube, the deck's comb filter)
+			c = mix(c, texture(history_tex, SCREEN_UV).rgb, ghosting);
+		}
 		float line = tape_uv.y * tape_size.y - 0.5;
 		c *= 1.0 - scanlines * (0.5 - 0.5 * cos(line * 6.2831853));
 		COLOR = vec4(mix(clean, c, strength), 1.0);

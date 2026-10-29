@@ -115,5 +115,4 @@ bodies with their tone, a Studio export with its paint; GDTESTROOM checks Aoi's 
 - Puddles as decals for any surface (`Decal` with ORM: a ready-made in `HSWet` next), wet walls (rain running down
   glass: the window shader), splashes where the streaks land.
 - A rain that follows the player outdoors through a level (today each open room has its own box).
-- The tape's ghosting (a last-frame viewport), listed in GODOT_EXPORT §8.
 - A `look` per level or scene (today the game's).
