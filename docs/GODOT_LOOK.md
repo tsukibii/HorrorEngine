@@ -79,6 +79,9 @@ A MultiMesh of thin quads, each placed by the vertex shader from its custom data
 and TIME: it falls at its own speed, wraps at the box's floor, leans and drifts with the wind, turns to the camera,
 and fades near the eye (a drop a hand away would be a bar) and at the box's top and bottom. Additive, soft along and
 across. No particle system to tick: a few hundred streaks in a room, a few thousand outdoors, two triangles each.
+**Lit** (2026-10-29, later): a streak carries only a faint glow of its own (`strength`, as emission) and catches
+every light that reaches it in the shader's `light()` (`lit`, the gain): the flashlight's beam fills with rain, a
+lamp's cone over the yard shows the fall, the dark between them hardly any, the way rain is seen.
 `follow` a node to keep the rain round the player outside.
 **Splashes** (`splash.gdshader`, the rain's "Splashes" child, 2026-10-29): where the streaks land, on the box's floor,
 a third as many seats as streaks, each a quad laid flat that every cycle (about two landings a second, each at its
