@@ -2,6 +2,7 @@
 ## shows on the HUD's log as "not in Play yet", so a stitch still runs end to end and the gap is visible.
 extends RefCounted
 
+const Typing := preload("res://addons/horrorstudio/typing.gd")
 const VERBS := ["objective", "todo", "tick", "fail", "untodo", "think", "skip", "name", "say", "ask", "flag", "unflag", "give", "take",
 	"karma", "count", "state", "show", "hide", "door", "light", "torch", "power", "wait", "fade", "lookat", "sound", "music",
 	"checkpoint", "chapter", "done", "scene", "behave", "trick"]
@@ -49,7 +50,8 @@ func run(a: Dictionary, rt) -> void:
 		"untodo":
 			rt.todo.remove(val)
 		"think":
-			rt.hud.line(val, "", line_secs(val), true)
+			var typed: float = Typing.typed_secs(rt.hud.named(val), rt.hud.named(a["retype"]) if a.get("retype") != null else null, bool(a.get("breaks", false)))
+			rt.hud.line(val, "", max(1.5, typed + (0.4 if a.get("breaks", false) else 1.0)) if typed > 0 else line_secs(val), true, {"retype": a.get("retype"), "breaks": a.get("breaks", false)} if typed > 0 else null)
 		"skip":
 			rt.skip_time(float(val))
 		"name":

@@ -106,6 +106,7 @@ var step_count: int = 0
 var cast_walk: Dictionary = {}
 var cast_step: Dictionary = {}
 var sounds_heard: Array = []
+var todo_log: Array = []
 var light_state: Dictionary = {}
 var rolls: Dictionary = {}
 var since: float = 0.0
@@ -335,7 +336,7 @@ func enter_level(lid: String) -> void:
 		var t: Dictionary = by_id[id]
 		var d: Dictionary = t["piece"].get("d", {})
 		var pk = d.get("peephole")
-		if pk != null and pk != false:
+		if pk != null and not (pk is bool and pk == false):
 			var z := float(pk) if (pk is float or pk is int) else LENS["z"]
 			for side in [1, -1]:
 				var l := _attach_disc(t, Vector3(0.0, -float(t["size"][2]) / 2.0 + z, side * (float(t["size"][1]) / 2.0 + 0.006)), side, "%s:peephole:%s" % [id, "a" if side > 0 else "b"], "peephole")
@@ -544,6 +545,8 @@ func point_in(t: Dictionary, x: float, y: float, z: float) -> bool:
 
 # ---- what the story's parts call ----------------------------------------------------------------------------
 func emit(ev: Dictionary) -> void:
+	if ev.get("type") == "todo":
+		todo_log.append("%s:%s" % [ev.get("id"), ev.get("state")])
 	if listener.is_valid():
 		listener.call(ev)
 	if todo != null:
@@ -605,10 +608,10 @@ func sound(id, at) -> void:
 		shelf_sound(n, at)
 
 
-func shelf_sound(name: String, at = null, db: float = 0.0) -> void:
+func shelf_sound(name: String, at = null, db: float = 0.0, floor_ = null) -> void:
 	if not active:
 		return
-	sounds_heard.append({"n": name, "at": at, "db": db, "clock": clock})
+	sounds_heard.append({"n": name, "at": at, "db": db, "clock": clock, "floor": floor_})
 	if sounds_heard.size() > 400:
 		sounds_heard.pop_front()
 
@@ -752,7 +755,7 @@ func swing_door(t: Dictionary, deg: float) -> void:
 
 func powered(lid = null) -> bool:
 	var k = kept.get(lid if lid != null else level)
-	return k == null or k.get("power", true) != false
+	return k == null or not (k.get("power", true) is bool and k.get("power", true) == false)
 
 
 func power(set_to, lid = null) -> void:
@@ -761,7 +764,7 @@ func power(set_to, lid = null) -> void:
 		kept[l] = {"vis": {}, "doors": {}, "bodies": {}}
 	var k: Dictionary = kept[l]
 	var on: bool = set_to != "off"
-	if on == (k.get("power", true) != false):
+	if on == (not (k.get("power", true) is bool and k.get("power", true) == false)):
 		return
 	k["power"] = on
 	hud.log("the power is back" if on else "the power's out")
@@ -926,7 +929,9 @@ func roll(t: Dictionary, s: Dictionary) -> void:
 # ---- the inventory: taking a thing, the one in the hand, setting it down -------------------------------------
 func is_torch(item) -> bool:
 	var it = story.items.get(str(item), null)
-	return it != null and it.get("torch") != null and it["torch"] != false
+	if it == null or it.get("torch") == null:
+		return false
+	return not (it["torch"] is bool and it["torch"] == false)
 
 
 func torch_item() -> Variant:
@@ -1298,7 +1303,7 @@ func behave(cid, spec: Dictionary) -> void:
 		hud.log("behaviour not in Play yet: %s" % as_)
 		return
 	var n := {"cid": cid, "as": as_, "s": BehavioursC.settings_of(as_, spec), "st": {}, "pos": npc["pos"] if npc != null else null, "yaw": float(npc["yaw"]) if npc != null else 0.0,
-		"level": npc["level"] if npc != null else null, "pose": "idle", "walking": false, "t0": clock}
+		"level": npc["level"] if npc != null else level, "pose": "idle", "walking": false, "t0": clock}
 	npcs[cid] = n
 	BehavioursC.start(as_, n, self, n["s"])
 
@@ -1320,7 +1325,7 @@ func draw_npcs(dt: float) -> void:
 # ---- being seen ---------------------------------------------------------------------------------------------------
 func sight_of(n: Dictionary) -> Variant:
 	var s = n["s"].get("sees")
-	if s == null or s == false:
+	if s == null or (s is bool and s == false):
 		return null
 	var c := SIGHT.duplicate()
 	if s is Dictionary:
@@ -1474,7 +1479,7 @@ func use(press: bool) -> void:
 		return
 	if name != "":
 		var r = await interactables.use(name, t, self, setting(name))
-		if r == false:
+		if r is bool and r == false:
 			return
 	emit({"type": "use", "id": t["id"]})
 
@@ -1794,7 +1799,7 @@ func ability_steps(dt: float) -> void:
 	last_step["floor"] = floor_
 	last_step["clock"] = clock
 	step_count += 1
-	shelf_sound(name, null, float(s["crouchDb"] if player.crouched else (s["runDb"] if player.running else s["db"])))
+	shelf_sound(name, null, float(s["crouchDb"] if player.crouched else (s["runDb"] if player.running else s["db"])), floor_)
 
 
 func cast_steps(dt: float) -> void:
@@ -1915,6 +1920,7 @@ func tick(dt: float) -> void:
 		if float(u["flicker"]) > 0:
 			k *= 1.0 - float(u["flicker"]) * 0.5 * max(0.0, sin(T * 13.7) * sin(T * 7.3))
 		t["node"].light_energy = float(u["base"]) * k
+	life_lights()
 	if torch_hot != null:
 		if torch_item() == null:
 			torch["on"] = false
@@ -1933,7 +1939,23 @@ func tick(dt: float) -> void:
 	if holding != null:
 		hold_tick(dt)
 	emit({"type": "tick"})
-	hud.tick()
+
+
+## a little thing with a `light` (a candle's): lit while its state's fx has a light (the desk's lifefx)
+func life_lights() -> void:
+	if lives == null:
+		return
+	for id in lives.things:
+		var d: Dictionary = lives.things[id]["d"]
+		if not d.has("light") or not light_state.has(d["light"]):
+			continue
+		var s = lives.at(id, now())
+		var lit := false
+		if s != null and s["def"] != null:
+			for fx in s["def"].get("fx", []):
+				if fx is Dictionary and fx.get("fx") == "light":
+					lit = true
+		light_state[d["light"]]["on"] = lit
 
 
 func kept_level() -> Dictionary:

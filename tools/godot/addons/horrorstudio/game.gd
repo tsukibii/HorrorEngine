@@ -32,6 +32,7 @@ var life_things: Dictionary = {}
 var run = null
 var progress: Dictionary = {"visited": {}, "endings": []}
 var watch_end = null
+var ending_words: String = ""
 var time_of_day: String = "night"
 var fading = null
 
@@ -194,7 +195,13 @@ func play_round(st: Dictionary, nid: String, n: Dictionary) -> Variant:
 	run["results"][nid] = res
 	karma_act(pl.get("on", {}).get(res, []))
 	run["answers"].append("%s: %s" % [st.get("title", nid), res])
-	if res != results[0] and (pl.get("spots", []) as Array).size() >= 1:
+	if res != results[0] and (pl.get("spots", []) as Array).size() > 1:
+		var sl: Array = []
+		for sp in pl["spots"]:
+			sl.append({"label": str(sp).replace("_", " ")})
+		var j = await hud.choose({"prompt": "Where did she find you?", "options": sl, "secs": null})
+		run["found_at"] = pl["spots"][j] if (j >= 0 and j < sl.size()) else pl["spots"][0]
+	elif res != results[0] and (pl.get("spots", []) as Array).size() == 1:
 		run["found_at"] = pl["spots"][0]
 	run["secs"] = float(run["secs"]) + float(pl.get("secs", 0))
 	await fade(1.0, 0.4)
@@ -350,7 +357,9 @@ func watch(from_nid = null, snap = null) -> void:
 func ending(nid: String, n: Dictionary) -> void:
 	var death: bool = n.get("kind") == "death"
 	hud.set_fade(0.8 if death else 0.6)
-	var text := "%s\n\n%s\n%.1f min of story time on this path\nkarma %s" % ["YOU DIED" if death else "ENDING · " + str(n.get("kind", "")), hud.named(n.get("text", "")), float(run["secs"]) / 60.0, JSON.stringify(run["karma"])]
+	var words: String = hud.named(n.get("text", ""))
+	ending_words = words
+	var text := "%s\n\n%s\n%.1f min of story time on this path\nkarma %s" % ["YOU DIED" if death else "ENDING · " + str(n.get("kind", "")), words, float(run["secs"]) / 60.0, JSON.stringify(run["karma"])]
 	watch_end = n.get("title", nid)
 	hud.objective(null)
 	hud.todo([], false)

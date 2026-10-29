@@ -150,7 +150,12 @@ static func ja_secs(t: String) -> float:
 	return morae / 6.5 + pauses
 
 
+const Typing := preload("res://addons/horrorstudio/typing.gd")
+
+
 static func clip_secs(c: Dictionary) -> float:
+	if c.get("think", false) and (c.get("retype") != null or c.get("breaks", false)):
+		return max(1.5, Typing.typed_secs(str(c.get("en", "")), c.get("retype"), bool(c.get("breaks", false))) + (0.4 if c.get("breaks", false) else 1.0))
 	if c.has("dur") and c["dur"] != null:
 		var tr: Dictionary = c.get("trim", {})
 		return max(0.1, float(c["dur"]) - float(tr.get("in", 0)) - float(tr.get("out", 0)))

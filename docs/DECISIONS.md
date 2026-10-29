@@ -2,6 +2,17 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-28, late night (Godot: Claude's picks, parity first)
+
+- **"Do whatever you think is right, keep working on this till the test demo director is 1:1 in Godot"** (the
+  controls fine-tuned later): the goal is the desk's Play of the Pilot and TestRoom001 playing the same in Godot
+  (GDPLAY, the test room's stations), then the rest of GODOT_PLAN §6.
+- Claude's picks on GODOT_EXPORT §4: **numbered folders with the act first**, never renumbering a folder the user has
+  files in without saying so; **animations baked** from the desk's bake; **GDScript only** in the export.
+- Claude's call on the order: **parity first, editability second**: the first exports keep the story's data as data
+  (the runtime reads it) and the levels as `.tscn`; the Inspector resources for beats and the AnimationPlayer
+  timelines come once the Pilot plays the same (GODOT_EXPORT §3 stands as the shape to reach).
+
 ## 2026-10-28, night (Godot: start; GDScript)
 
 - **Start the Godot work** ("I merged in main, pull it in and start working on this"): main (`dev-002`) merged into

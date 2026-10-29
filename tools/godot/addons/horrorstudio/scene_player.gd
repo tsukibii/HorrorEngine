@@ -167,6 +167,7 @@ func play(sc: Dictionary, nid: String, sid: String) -> Variant:
 		if game.run == null:
 			break
 		T += get_process_delta_time()
+		rt.draw_npcs(get_process_delta_time())
 		while cues.size() and float(cues[0]["t"]) <= T:
 			fire_cue(cues.pop_front(), t0)
 		if skip_asked:
@@ -218,8 +219,8 @@ func play(sc: Dictionary, nid: String, sid: String) -> Variant:
 		if seg != null and seg["type"] == "clip" and spoken != seg:
 			spoken = seg
 			var c: Dictionary = seg["clip"]
-			var who: String = story().cast_name(c["who"]) if (c.get("who") != null and not c.get("think", false)) else ""
-			game.hud.line(c.get("en", ""), who, float(seg["dur"]) + 0.3, bool(c.get("think", false)))
+			var who: String = game.hud.named(story().cast_name(c["who"])) if (c.get("who") != null and not c.get("think", false)) else ""
+			game.hud.line(c.get("en", ""), who, float(seg["dur"]) + 0.3, bool(c.get("think", false)), {"retype": c.get("retype"), "breaks": c.get("breaks", false)} if c.get("think", false) else null)
 		elif seg != null and seg["type"] == "seam" and spoken != seg:
 			spoken = seg
 			if ["blink", "dip", "flicker"].has(seg["seam"].get("kind")):

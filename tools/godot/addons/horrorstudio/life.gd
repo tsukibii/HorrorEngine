@@ -230,7 +230,9 @@ func at(id, t = null) -> Variant:
 	var secs = secs_of(data, th["life"], th["d"], en["state"])
 	var kept: float = float(en["spent"].get(en["state"], 0.0)) if (def != null and def.get("keep")) else 0.0
 	var p: float = min(1.0, (kept + age) / secs) if (secs != null and secs > 0) else 0.0
-	return {"state": en["state"], "since": en["since"], "age": age, "secs": secs, "p": p, "def": def, "life": th["life"]}
+	var spent: Dictionary = en["spent"].duplicate()
+	spent[en["state"]] = kept + age
+	return {"state": en["state"], "since": en["since"], "age": age, "secs": secs, "p": p, "spent": spent, "def": def, "life": th["life"]}
 
 
 func ready(id, t = null) -> bool:
@@ -242,7 +244,7 @@ func ready(id, t = null) -> bool:
 
 func acts(id, t = null) -> Array:
 	var th = things.get(id)
-	if th == null or th["d"].get("acts") == false:
+	if th == null or (th["d"].get("acts") is bool and th["d"].get("acts") == false):
 		return []
 	var s = at(id, t)
 	var out: Array = []

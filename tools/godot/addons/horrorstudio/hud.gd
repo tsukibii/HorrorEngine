@@ -38,6 +38,8 @@ var cursor_label: String = ""
 var cursor_name: String = ""
 var line_until: float = 0.0
 var line_text: String = ""
+var typing = null
+const Typing := preload("res://addons/horrorstudio/typing.gd")
 var line_think: bool = false
 var modal_up: bool = false
 var choice_keys: Array = []
@@ -260,13 +262,36 @@ func chapter(title, sub, secs: float) -> void:
 func line(text, who, secs: float, think: bool, how = null) -> void:
 	line_text = named(text)
 	line_think = think
-	if line_text != "":
-		lines_shown.append(line_text)
+	typing = null
+	line_until = Time.get_ticks_msec() / 1000.0 + secs
+	who_el.text = str(who if who != null else "")
+	if how is Dictionary and (how.get("retype") != null or how.get("breaks", false)):
+		typing = {"text": line_text, "retype": named(how["retype"]) if how.get("retype") != null else null, "breaks": bool(how.get("breaks", false)), "t": 0.0, "shown": null}
+		type_tick(0.0)
+		return
+	_show_line(line_text)
+
+
+## a thought typing itself out: what shows t seconds in (typing.gd), every change of it kept in lines_shown
+func type_tick(dt: float) -> void:
+	if typing == null:
+		return
+	typing["t"] += dt
+	var s: Dictionary = Typing.typed_at(typing["text"], typing["retype"], typing["breaks"], typing["t"])
+	var shown: String = Typing.glitched(s["shown"], s["glitch"], int(floor(typing["t"] * 20))) if s["glitch"] > 0 else s["shown"]
+	if shown != typing["shown"]:
+		typing["shown"] = shown
+		_show_line(shown)
+	if s["done"]:
+		typing = null
+
+
+func _show_line(words: String) -> void:
+	if words != "":
+		lines_shown.append(words)
 		if lines_shown.size() > 200:
 			lines_shown.pop_front()
-	line_el.text = ("(%s)" % line_text) if think else line_text
-	who_el.text = str(who if who != null else "")
-	line_until = Time.get_ticks_msec() / 1000.0 + secs
+	line_el.text = ("(%s)" % words) if line_think else words
 
 
 func log(text: String) -> void:
@@ -354,7 +379,12 @@ func inventory(list: Array, at: int, shown: bool, peek: bool) -> void:
 	inv_name.visible = inv_box.visible
 
 
-func tick() -> void:
+func _process(delta: float) -> void:
+	tick(delta)
+
+
+func tick(dt: float = 0.0) -> void:
+	type_tick(dt)
 	if line_until > 0 and Time.get_ticks_msec() / 1000.0 > line_until:
 		line_el.text = ""
 		who_el.text = ""
@@ -464,6 +494,7 @@ func choose(spec: Dictionary) -> Variant:
 	choice_over = false
 	choice_sel = 0
 	for c in choice_el.get_children():
+		choice_el.remove_child(c)
 		c.queue_free()
 	var opts: Array = spec.get("options", [])
 	for i in opts.size():
@@ -480,7 +511,7 @@ func choose(spec: Dictionary) -> Variant:
 	if spec.get("prompt") != null and str(spec["prompt"]) != "":
 		line_el.text = named(spec["prompt"])
 		line_text = named(spec["prompt"])
-		who_el.text = str(spec.get("who", "") if spec.get("who") != null else "")
+		who_el.text = named(spec.get("who", "") if spec.get("who") != null else "")
 		line_until = 0.0
 	choice_el.visible = true
 	choice_bar.visible = spec.get("secs") != null and float(spec.get("secs", 0)) > 0

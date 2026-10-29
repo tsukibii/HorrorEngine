@@ -128,6 +128,8 @@ loads, every verb in the games has a part).
 2. **The exporter v1**: `game.tres`, the flow, the levels, the cast's bodies, the scenes (the bake into Animations,
    the takes' audio), the stitches, the data; the zip; the desk's Export button (`/api/godot/export/<G>`); GDEXPORT.
 3. **The runtime v1**: enough of §7 for the Pilot to be played start to end in Godot; GDPLAY ok.
+   Then TestRoom001 station by station: **GDTESTROOM** ok (every station's checks as the desk's TESTROOM makes them; the
+   typing effects, the little things' lights, the round's spots, the names as words all ported on the way).
 4. **The look** (GODOT_PLAN §6): UltraVHS and Light Kit as shaders and nodes, measured; M_StudioSurface; the
    characters' shaders on HumanShaders (§2 of the plan) with the Studio's colours and patterns checked side by side.
 5. **The rest of §6**: the lives' effects, hiding, reverb, the HUD themes, the pause menu, the little things.
