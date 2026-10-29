@@ -318,7 +318,8 @@
        ],
        "z": 2.3,
        "kelvin": 2400
-      }
+      },
+      {"id": "yard_puddle_light", "use": "light", "kind": "lamp", "lit": true, "at": [7.4, 2.4], "z": 0.03, "pattern": "caustics", "aim": [7.4, 3.95, 1.5], "spread": 70, "scale": 0.45, "speed": 0.5, "open": 0.25}
      ]
     },
     {
@@ -1378,7 +1379,6 @@
        ],
        "tag": "bathtub"
       },
-      {"id": "bath_caustic", "use": "light", "kind": "lamp", "lit": true, "at": [1.2, 1.0], "z": 0.7, "pattern": "caustics", "aim": [1.2, 1.0, 3.0], "spread": 80, "scale": 0.4, "speed": 0.5, "open": 0.3},
       {
        "id": "bath_lamp",
        "use": "light",

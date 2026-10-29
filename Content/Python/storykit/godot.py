@@ -517,6 +517,11 @@ class LevelWriter:
             c = s2g((x0 + w / 2, y0 + d / 2, z0 + h / 2))
             self.t.node(self.uname(f"__gi_{room['id']}"), "VoxelGI", "GI", {"transform": xform(c), "size": v3(w + 1.0, h + 1.0, d + 1.0), "subdiv": "0"},
                         {"gi": {"room": room["id"]}})
+            # a reflection probe per room too (Light Kit's one Box Reflection Capture per room): metal, glossy cabinets
+            # and wet floors reflect their own room where the screen-space reflections can't reach (off-screen, behind)
+            self.t.node(self.uname(f"__probe_{room['id']}"), "ReflectionProbe", "GI", {"transform": xform(c), "size": v3(w + 0.2, h + 0.2, d + 0.2),
+                        "update_mode": "0", "box_projection": "true", "interior": "true", "max_distance": f(max(w, d, h) * 2.0), "intensity": "1.0"},
+                        {"probe": {"room": room["id"]}})
 
     def write(self):
         things = L.index(self.story)[0]

@@ -31,6 +31,12 @@ Kit pieces, then this). The local session does, in this order, with `GPU=1` and 
      the lobby's shafts by day (the story's time, or the lookshot's `--time=day`) and the car passing its first
      window every half minute (or a `{"sweep": "lobby"}` beat), the iris closing against a lamp and sitting a stop
      under at night. The cloud's pictures: `docs/godot_sheets/2026-10-29_lightkit.jpg`.
+   The user's last note before pausing: the patterns were drawn from Chilla's Art's wet night street (The Closing
+   Shift: puddles, metal and shop windows carrying the lights), so they belong on the shinier, wetter, outdoor things,
+   not ceilings as a rule; the bath's ceiling caustic became the puddle under the yard's lamp lighting the lobby's
+   wall, and every room got a ReflectionProbe (metal and wet floors reflecting their room). Look at both in Godot;
+   the cloud couldn't see the reference screenshots themselves (images in another session's transcript don't come
+   through), so judge the placement against them yourself.
 2. **Then the open items from the user's runs**: the square light patch under a distant counter (GODOT_LOOK §7);
    whether the shafts want more or less (`strength`; the window light's `light_volumetric_fog_energy`, 4); whether
    the splashes' glints read at a real frame rate (sparse by design: `docs/godot_sheets/2026-10-29_splashes.jpg`).

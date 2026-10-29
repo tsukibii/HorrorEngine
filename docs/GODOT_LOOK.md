@@ -80,7 +80,15 @@ passing (slow noise, `open` the cover). `scale` is metres on the aimed surface: 
 worked out from the spread and the distance (the export writes it), so a 60 cm caustic is 60 cm on the wall. A
 pattern flickers with its light (the flicker modes multiply the energy). The desk shows such a light as a spot aimed
 at its target, the pattern itself only in Godot. The demo throws caustics on the back wall and measures the light
-and dark across it and that it moves (LOOKPLUGIN); TestRoom001's bath has one on its ceiling.
+and dark across it and that it moves (LOOKPLUGIN). **Where they belong** (the user, 2026-10-29, on the Chilla's
+Art references the kit was drawn from: The Closing Shift's wet night street, its puddles and shop windows carrying
+the lights): the patterns are for the shinier, wetter, outdoor things, not ceilings as a rule: caustics from a rain
+puddle under a street lamp thrown up the wall beside it, moonlight through leaves onto wet ground, a blind's stripes
+across a desk by a window; TestRoom001's example is the puddle under the yard's lamp lighting the lobby's wall. The
+reflections those references show (metal, wet ground, windows) come from the wet floors (§2), the glass panes (§4),
+the mirrors (§5b) and, since that evening, **a ReflectionProbe per room** (the kit's one Box Reflection Capture a
+room: the export writes one beside each room's VoxelGI, box-projected, interior, updated once), so metal and glossy
+things reflect their room where the screen-space reflections can't reach.
 
 **Light shafts** (`shaft.gd`, `HSShaft`, `shaft.gdshader`; after Light Kit's Window shaft card, 2026-10-29): the beam a
 window throws into a room, dust drifting in it. The realism preset's haze is Godot's volumetric fog, and every light

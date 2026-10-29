@@ -383,6 +383,21 @@ func _initialize() -> void:
 			var wl: Array = g.level.get_node("Lights").get_children().filter(func(c): return c is SpotLight3D and c.has_meta("window") and float(c.light_volumetric_fog_energy) >= 4.0 and c.shadow_enabled)
 			if wl.size() != 2:
 				return "the lobby's window lights should light the haze with shadows: %d" % wl.size()
+			var cl = rt.by_id.get("yard_puddle_light")                    # the puddle under the yard's lamp throws its light up the wall (a pattern light: a spot aimed at the wall, caustics in its projector)
+			if cl == null or not (cl["node"] is SpotLight3D):
+				return "the puddle's light should be a spot: " + str(cl)
+			var sp: SpotLight3D = cl["node"]
+			var hp = HSPattern.on(sp)
+			if hp == null or hp.kind != "caustics" or not sp.shadow_enabled:
+				return "no caustics on the puddle's light: %s" % [hp]
+			var beam: Vector3 = -sp.global_transform.basis.z
+			if beam.z > -0.4 or beam.y < 0.5 or absf(sp.spot_angle - 35.0) > 0.01:         # up the lobby's south wall (north of the yard: Godot -z) from the ground
+				return "the puddle's light should aim up the wall: beam %s, angle %.1f" % [beam, sp.spot_angle]
+			if DisplayServer.get_name() != "headless" and (sp.light_projector == null or hp.textures.size() < 40):
+				return "the caustic loop isn't drawn: %d frames" % hp.textures.size()
+			var probes: Array = g.level.get_node("GI").get_children().filter(func(c): return c is ReflectionProbe)   # a reflection probe per room: metal and wet floors reflect their room
+			if probes.size() < 10 or probes.any(func(pr): return pr.update_mode != ReflectionProbe.UPDATE_ONCE or not pr.box_projection):
+				return "the rooms' reflection probes: %d" % probes.size()
 			var ca = g.camera.attributes                                   # the iris: auto exposure on the camera, settling over about a second
 			if not (ca is CameraAttributesPractical) or not ca.auto_exposure_enabled or absf(ca.auto_exposure_speed - 1.0) > 0.01 or absf(ca.auto_exposure_scale - 0.4) > 0.01:
 				return "the iris should be on by day: " + str(ca)
@@ -1085,22 +1100,6 @@ func _initialize() -> void:
 			return ""))
 
 	await station("n_bath", func():
-		await step("the caustics on the bath's ceiling: the tub's light a spot aimed up, its pattern drawn into its projector (HSPattern)", func():
-			var cl = rt.by_id.get("bath_caustic")
-			if cl == null or not (cl["node"] is SpotLight3D):
-				return "the caustic light should be a spot: " + str(cl)
-			var sp: SpotLight3D = cl["node"]
-			var hp = sp.get_node_or_null("Pattern")
-			if hp == null or not (hp is HSPattern) or hp.kind != "caustics" or hp.frames_wanted != 40:
-				return "no pattern on the caustic light: %s" % [hp]
-			if DisplayServer.get_name() != "headless" and (sp.light_projector == null or hp.textures.size() < 40):   # headless draws nothing: the loop can't be made there
-				return "the caustic loop isn't drawn: %d frames, projector %s" % [hp.textures.size(), sp.light_projector]
-			var up: Vector3 = -sp.global_transform.basis.z
-			if up.y < 0.9 or absf(sp.spot_angle - 40.0) > 0.01 or (hp.mat != null and float(hp.mat.get_shader_parameter("metres")) < 3.0):
-				return "the spot should aim straight up with a 40 degree half cone, its pattern metres from the distance: up %s, angle %.1f" % [up, sp.spot_angle]
-			if rt.light_energy("bath_caustic") <= 0.0:
-				return "the caustic light is dark"
-			return "")
 		await step("12 · Hiding: the tap turned on (running: ticks); in the locker (hidden), the room changes while you're not looking (the towel gone, writing on the mirror: ticks)", func():
 			place(1.5, 27.5, 180)
 			var r := await enter_room("door_bath", "bath")
