@@ -1,6 +1,7 @@
 // The director's stage: a scene's level in greybox (the same plan the Unreal importer builds), the cast as previs
 // figures, and the player's eye. Plays a scene's clips on its elastic timeline with blends, seams and camera moves;
 // renders storyboard frames; finds which body parts the player can see; exports the blocking as glTF for Unreal.
+import { flickerOf, flickerK } from "../shared/flicker.js";
 import { typedSecs } from "./play/typing.js";
 import * as THREE from "three";
 import * as M from "./motion.js";
@@ -153,6 +154,8 @@ export function shotFor(d) { return ["ecu", "cu", "mcu", "ms", "fs", "ws"].find(
 export const SEAM_SECS = { none: 0, blink: 0.2, glance: 1, flicker: 0.4, occlude: 0.8, cutaway: 1.5, turn: 0, stumble: 1, dip: 2, jcut: 0, heartbeat: 0.6 };
 
 export const s2t = (x, y, z) => new THREE.Vector3(x, z, -y);       // story (x east, y north, z up) -> three (y up)
+const sm01 = x => { const t = Math.min(1, Math.max(0, x)); return t * t * (3 - 2 * t); };
+const sweepGap = (z, k) => z.every <= 0 ? Infinity : z.every * (0.7 + 0.6 * (((z.seed * 374761393 + k * 668265263) & 0xffff) / 65536));   // sweep.gd's _gap
 
 // the time of day (STORY_FORMAT §3.1; storylib's TIMES, flow_outs, flow_times): a scene's own `time`, else the time it
 // was when the flow got there, from the scene it branched from back to game.time
@@ -473,9 +476,14 @@ export class Stage {
       } else if (p.kind === "light") {
         const kind = (p.d && p.d.kind) || "bulb";
         const [col, inten, dist] = { bulb: [0xffc98a, 2.2, 7], candle: [0xffa84a, 1.0, 3.5], lamp: [0xffd2a0, 1.6, 5], fire: [0xff8a3a, 3, 9] }[kind] || [0xffc98a, 2, 7];
-        const l = new THREE.PointLight(col, (p.d && p.d.lit === false) ? 0 : inten, dist, 1.6);
+        let l;
+        if (p.d && p.d.pattern && Array.isArray(p.d.aim)) {                     // a patterned light: a spot aimed where the pattern falls (the pattern itself is the Godot build's, HSPattern)
+          l = new THREE.SpotLight(col, (p.d && p.d.lit === false) ? 0 : inten, dist, (p.d.spread || 50) * Math.PI / 360, 0.5, 1.6);
+          const rm = ((((story.levels || {})[p.level] || {}).rooms) || []).find(r => r.id === p.room), at = (rm && rm.at) || [0, 0, 0];
+          l.target.position.copy(s2t(at[0] + p.d.aim[0], at[1] + p.d.aim[1], (at[2] || 0) + p.d.aim[2])); this.world.add(l.target);
+        } else l = new THREE.PointLight(col, (p.d && p.d.lit === false) ? 0 : inten, dist, 1.6);
         l.position.copy(s2t(...p.pos));
-        l.userData = { id: p.id, room: p.room, base: l.intensity, flicker: (p.d && p.d.flicker) || 0, kind };   // kind: a candle or a fire burns through a power cut
+        l.userData = Object.assign({ id: p.id, room: p.room, base: l.intensity, kind }, flickerOf(p.d || {}, p.id));   // kind: a candle or a fire burns through a power cut; the flicker's mode (tools/shared/flicker.js)
         this.world.add(l); this.lights.push(l);
       } else if (p.kind === "person") {
         const cid = (p.tags.find(t => t.startsWith("cast:")) || "").slice(5);
@@ -493,7 +501,7 @@ export class Stage {
       if (this.skin[cid] && f.setWet) f.setWet(this.skin[cid]);
       this.world.add(f.group); this.cast[cid] = f;
     }
-    this.windows = [];                     // a soft light just inside every window, into the room (Light Kit Window's sky fill)
+    this.windows = []; this.sweeps = [];   // a soft light just inside every window, into the room (Light Kit Window's sky fill); the headlight sweeps
     for (const room of ((story.levels || {})[level] || {}).rooms || []) for (const op of room.openings || []) {
       if (!op.window && !((op.sill || 0) > 0.05)) continue;
       const [x0, y0, z0] = room.at, [w, d] = room.size;
@@ -504,11 +512,38 @@ export class Stage {
       const l = new THREE.SpotLight(0xffffff, 1, 6, 1.1, 1, 1.5);
       l.position.copy(s2t(...at(0.05))); l.target.position.copy(s2t(...at(2))); l.userData = { window: room.id, area: op.w * op.h };
       this.world.add(l, l.target); this.windows.push(l);
+      if (op.sweep) {                      // a car passing outside now and then (Godot: HSSweep; here the same lamp sliding by, no shadows)
+        const sw = typeof op.sweep === "object" ? op.sweep : {}, outward = axis === "y" ? [0, -inward, 0] : [-inward, 0, 0], alongV = axis === "y" ? [1, 0, 0] : [0, 1, 0];
+        const lamp = new THREE.SpotLight(0xf2eacc, 0, 40, 22 * Math.PI / 180, 0.6, 1.2); lamp.visible = false;
+        this.world.add(lamp, lamp.target);
+        this.sweeps.push({ lamp, room: room.id, at: s2t(...at(0)), outward: s2t(...outward), along: s2t(...alongV), inside: s2t(...at(1.5)),
+          every: sw.every !== undefined ? +sw.every : 40, secs: Math.max(0.5, +sw.secs || 3), out: sw.out !== undefined ? +sw.out : 6, span: sw.span !== undefined ? +sw.span : 10,
+          energy: sw.energy !== undefined ? +sw.energy : 10, seed: +sw.seed || 1, clock: 0, started: -1, passes: 0, next: 0 });
+        const z = this.sweeps[this.sweeps.length - 1]; z.next = sweepGap(z, 0);
+      }
     }
     this.applyTime();
     if (Stage.LIVES) { this.life = this.life || new LifeFX(this, Stage.LIVES); this.life.attach(); }   // steam, smoke, glows...
   }
   setTime(t) { this.time = TIME_LOOK[t] ? t : TIME_DEFAULT; this.applyTime(); }
+  // the headlight sweeps (sweep.gd's maths): a pass every so often, or fired; the lamp slides along the street outside, aimed in through the glass
+  fireSweeps(room) { for (const z of this.sweeps || []) if (!room || z.room === room) z.started = z.clock; }
+  sweeping(room) { return (this.sweeps || []).some(z => (!room || z.room === room) && z.started >= 0 && z.clock - z.started < z.secs); }
+  sweepTick(dt) {
+    for (const z of this.sweeps || []) {
+      z.clock += dt;
+      if (z.started < 0 && z.clock >= z.next) z.started = z.clock;
+      if (z.started < 0) continue;
+      const u = (z.clock - z.started) / z.secs;
+      if (u >= 1) { z.started = -1; z.passes++; z.next = z.clock + sweepGap(z, z.passes); z.lamp.visible = false; z.lamp.intensity = 0; continue; }
+      const x = (u * 2 - 1) * z.span;
+      z.lamp.visible = true;
+      z.lamp.position.copy(z.at).addScaledVector(z.outward, z.out).addScaledVector(z.along, x); z.lamp.position.y -= 0.9;
+      z.lamp.target.position.copy(z.inside);
+      const ends = sm01(u / 0.15) * (1 - sm01((u - 0.85) / 0.15));
+      z.lamp.intensity = z.energy * ends;
+    }
+  }
   applyTime() {
     const L = TIME_LOOK[this.time] || TIME_LOOK[TIME_DEFAULT];
     this.scene.background.set(L.sky); this.scene.fog.color.set(L.sky);
@@ -1083,9 +1118,10 @@ export class Stage {
       c.fov = state.cam.fov;                                         // a cutaway is a head turn, not a lens
       c.updateProjectionMatrix();
     }
+    this.sweepTick(this._sweepT === undefined ? 0 : Math.max(0, T - this._sweepT)); this._sweepT = T;
     for (const l of this.lights) {
       let k = 1;
-      if (l.userData.flicker) k *= 1 - l.userData.flicker * 0.5 * Math.max(0, Math.sin(T * 13.7) * Math.sin(T * 7.3));
+      k *= flickerK(l.userData, T);
       if (state.flicker) k *= 0.05;
       l.intensity = l.userData.base * k;
     }

@@ -9,6 +9,7 @@ import { runAll } from "./actions.js";
 import { playShelf, shelfName } from "../sfx.js";
 import { interactableOf } from "./interactables.js";
 import "./abilities.js";
+import { flickerK, flickerOn } from "../../shared/flicker.js";
 import { castSteps } from "./steps.js";
 import { Torch } from "./torch.js";
 import "./clean.js";
@@ -348,23 +349,27 @@ export class PlayRuntime {
   // the power (the `power` action, a breaker): kept per level; cut, every electric light is dark at render (each keeps
   // its own on or off for when it comes back: candles and fire burn on) and the switches are dead; back, they flicker up
   powered(level = this.level) { const k = this.kept && this.kept[level]; return !k || k.power !== false; }
+  sweep(room) { this.stage.fireSweeps(room); this.hud.log(`a car passes ${room || "outside"}`); }   // the story's `sweep` action: a car passes the room's windows now
+  sweeping(room) { return this.stage.sweeping(room); }
   power(set, level = this.level) {
     const k = (this.kept = this.kept || {})[level] = this.kept[level] || { vis: {}, doors: {}, bodies: {} }, on = set !== "off";
     if (on === (k.power !== false)) return;
     k.power = on; this.hud.log(on ? "the power is back" : "the power's out");
     if (on && level === this.level) for (const l of this.stage.lights) if (ELECTRIC(l)) {   // flickering up for a moment, then its own flicker again
       const u = l.userData; if (u.flicker0 === undefined) u.flicker0 = u.flicker || 0;
-      u.flicker = Math.max(u.flicker0, 0.8); u.surge = this.clock + 0.9;
+      u.flicker = Math.max(u.flicker0, 0.8); u.surge = this.clock + 0.9; flickerOn(u, this.clock);   // a tube's starter clicks
     }
     this.emit({ type: "power", on });
   }
   light(id, room, set) {
     const ls = id ? [this.byId[id]].filter(Boolean) : this.stage.lights.filter(l => l.userData.room === room);
     for (const l of ls) {
+      const was = l.userData.on;
       if (set === "toggle") l.userData.on = !l.userData.on;
       else if (set === "on" || set === "off") l.userData.on = set === "on";
       else if (set === "flicker") { l.userData.on = true; l.userData.flicker = Math.max(0.6, l.userData.flicker || 0); }
       else if (set === "dim") { l.userData.on = true; l.userData.dim = 0.35; }
+      if (l.userData.on && !was) flickerOn(l.userData, this.clock);   // switched on: a tube stutters on
     }
   }
   wait(secs) { return new Promise(res => this.waits.push({ at: this.clock + secs, res })); }
@@ -934,9 +939,10 @@ export class PlayRuntime {
     for (const l of this.stage.lights) {
       const u = l.userData; let k = u.on && (this.powered() || !ELECTRIC(l)) ? (u.dim || 1) : 0;
       if (u.surge && T >= u.surge) { u.flicker = u.flicker0 || 0; delete u.surge; }   // back after the power's flicker-up
-      if (u.flicker) k *= 1 - u.flicker * 0.5 * Math.max(0, Math.sin(T * 13.7) * Math.sin(T * 7.3));
+      k *= flickerK(u, T);                                                           // its mode (tools/shared/flicker.js)
       l.intensity = (u.base || 1) * k;
     }
+    this.stage.sweepTick(dt);                            // the windows' headlight sweeps
     this.handTick(dt);
     if (this.torchLight) { if (!this.torchItem()) this.torchLight.on = false; this.ability("torch", "update", dt); }   // taken away: off
     for (const a of [...this.anims]) { a.t += dt; const k = Math.min(1, a.t / a.secs); a.fn(k); if (k >= 1) { this.anims.splice(this.anims.indexOf(a), 1); a.done(); } }

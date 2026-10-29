@@ -59,6 +59,55 @@ rest of a level's twenty-odd small ones; the sun's map the same sizes. The expor
 values into `project.godot`. The game applies the saved row at start, the menu when it changes; the lookshot's
 `--shadows=0|1|2` pictures the difference.
 
+**Flicker modes** (`flicker.gd`, `HSFlicker`; the desk's `tools/shared/flicker.js` the same curves; after Light Kit's
+Flicker component, 2026-10-29): a light's `mode` (STORY_FORMAT §2): `fluorescent` steady, then every `interval`
+seconds or so a stutter of quick drops; `dying` drops out often, sometimes for a while, and sits at three quarters
+between; `candle` a fast, small, restless wobble; `pulse` a slow breath at `rate` a second; `custom` your `letters` at
+`rate` a second (a off, m as placed, z double). `flicker` 0..1 is how much of it (a mode alone is all of it; none is
+the old wobble). A tube switched on, or the power coming back, stutters on for a moment. Everything is drawn from
+the clock and a seed from the light's id: a light flickers the same way on every run, and the same way on the desk.
+TestRoom001's power lamp is a dying tube, the corridor's second lamp a fluorescent; GDTESTROOM watches the dying one
+drop out and sit under full between, DESK checks each curve.
+
+**Light patterns** (`pattern.gd`, `HSPattern`, `pattern.gdshader`; after Light Kit's Pattern actor, the same four
+light functions, 2026-10-29): moving light with nothing moving. A light with a `pattern` (STORY_FORMAT §2) is
+exported as a SpotLight3D aimed at its `aim`, its cone `spread` wide; at run time HSPattern draws the pattern into a
+small viewport under the light every frame (256 px, a canvas shader by TIME) and makes it the light's projector, so
+it falls where the light is aimed. `caustics` water's light (two layers of moving cells, their edges bright) on a
+ceiling or a wall; `leaves` sun or moon through a swaying canopy (noise warped by a slow wave, cut at its `open`);
+`blinds` a venetian blind's stripes (`scale` a slat, `angle` their tilt, `open` how far); `clouds` cloud shadows
+passing (slow noise, `open` the cover). `scale` is metres on the aimed surface: the viewport's width in metres is
+worked out from the spread and the distance (the export writes it), so a 60 cm caustic is 60 cm on the wall. A
+pattern flickers with its light (the flicker modes multiply the energy). The desk shows such a light as a spot aimed
+at its target, the pattern itself only in Godot. The demo throws caustics on the back wall and measures the light
+and dark across it and that it moves (LOOKPLUGIN); TestRoom001's bath has one on its ceiling.
+
+**Light shafts** (`shaft.gd`, `HSShaft`, `shaft.gdshader`; after Light Kit's Window shaft card, 2026-10-29): the beam a
+window throws into a room, dust drifting in it. The realism preset's haze is Godot's volumetric fog, and every light
+lights it, so a window's spot already makes a faint beam; a window with `shaft` (STORY_FORMAT §2) gets a FogVolume
+box laid along its light (the glass's width and height, `reach` metres into the room) whose fog shader thickens the
+haze inside the beam, full at the window and fading along it and at its sides, with the dust as slow clumps sinking
+through it (Light Kit's motes, the same sin product), and the window's spot has its volumetric energy raised so the
+beam shows, the frame's shadow cut into it by the light's own shadow map. Nothing drawn by hand: the renderer's fog
+carries the light, so the beam is right from every angle. Effects Low turns the haze off and the shafts with it.
+The demo lays one from a window-sized spot on the left wall and measures the air inside the beam brighter than
+beside it (LOOKPLUGIN); TestRoom001's lobby windows have them.
+
+**Headlight sweeps** (`sweep.gd`, `HSSweep`; after Light Kit's Sweep actor, 2026-10-29): a car passing outside a
+window at night. A window with `sweep` (STORY_FORMAT §2) gets a marker at its middle from the export; at run time
+HSSweep hangs a SpotLight3D off it (the two headlights as one wide beam, with shadows) that every `every` seconds or
+so (0.7 to 1.3 of it, from a seed: the same on every run) slides along the street `out` metres from the glass at
+headlight height, `span` metres each way over `secs`, aimed in through the window, so the frame's shadow crosses the
+ceiling and the highlights slide over metal and wet floors; off between passes. The story's `sweep` action fires one
+on a room's windows now (`every` 0: only then). The desk slides the same lamp without shadows. The demo fires one in
+its closed room and measures the ceiling and wall brighter mid-pass (LOOKPLUGIN); TestRoom001's lobby has one every
+half minute, and GDTESTROOM fires it and watches the lamp slide along outside the south wall.
+
+**The iris** (`HSLook.iris`, after Light Kit's Sky exposure, 2026-10-29): auto exposure on the camera
+(CameraAttributesPractical), the eye settling over about a second as a camcorder's iris does, held a stop under at
+night so night doesn't turn grey (the scale halved; game.gd's set_time). On with any look but `plain`. The demo
+switches a bright light on and measures the jump, the settle and the night's step down.
+
 ## 2. Wet surfaces (`wet.gdshader`, `HSWet`)
 
 Light Kit's Puddle (UnrealPlugins/LightKit): "one irregular puddle, deep and mirror-smooth in the middle, damp at

@@ -100,7 +100,13 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
 ```
 
 - `at` is the opening's centre, measured from the wall's west end (n and s walls) or south end (e and w walls).
-- `window: true` is a hole with a `sill`.
+- `window: true` is a hole with a `sill`. A window's **`shaft`** (true, or 0..1 how strong) is the beam its light
+  throws into the room, dust drifting in it (Godot: HSShaft, a thicker haze along the window's light; needs the
+  look's haze; `reach` metres, 3; `dust` 0..1), after Light Kit's Window shaft. The desk doesn't draw it.
+  A window's **`sweep`** (true, or `{"every": 40, "secs": 3, "out": 6, "span": 10, "energy": 10, "aim": 1.5}`) is a car passing
+  outside now and then at night: headlights sliding along the street, aimed in through the glass, the frame's
+  shadow crossing the ceiling (Godot: HSSweep; the desk slides the lamp without shadows); `every` 0 means only when
+  the `sweep` action fires one. After Light Kit's Sweep.
 - `locked_by` is an item, or `flag:<name>`.
 - `swing` is `in` (into the room that holds the door), `out`, or `slide`: a sliding door (fusuma, shoji, a modern
   sliding door, a glass door onto a balcony), which has no swing.
@@ -193,7 +199,7 @@ class path, `…_C`) is that door's Blueprint, in place of class_map's `door`.
 | `note` | `note` |
 | `inspect` | `text`, optional `line`. In Play a small thing (its longest side 0.6 m or less) is taken up in the hands (DECISIONS 2026-10-28, later): itself in front of the eye, a drag turns it (a photo turned over to read its back), `text` under it, Esc puts it back; a bigger one shows `text` on a card. `{"use": id}` is heard once it's put back |
 | `switch` | `light` |
-| `light` | `kind` (`bulb candle lamp fire`), `lit`, `flicker` 0..1, `lumens`, `radius`, `kelvin` (place with `z` or `on`) |
+| `light` | `kind` (`bulb candle lamp fire`), `lit`, `flicker` 0..1 (how much), `mode` (which: `fluorescent` a tube's stutter every `interval` s or so, `dying` drops out often and never quite full, `candle` a flame's restless wobble, `pulse` a slow breath at `rate` a second, `custom` your `letters` at `rate` a second: a off, m as placed, z double; none: a plain wobble; a `mode` with no `flicker` is the whole of it; a tube switched on stutters on; after Light Kit's Flicker, the same curves on the desk and in Godot), `lumens`, `radius`, `kelvin` (place with `z` or `on`); **a pattern in its light**: `pattern` (`caustics` water's light on a ceiling or a wall, `leaves` sun or moon through swaying trees, `blinds` a venetian blind's stripes, `clouds` cloud shadows passing) with `aim` [x, y, z] where it falls (the light becomes a spot aimed there), `spread` its cone in degrees (50), `scale` metres per feature, `speed`, `open` 0..1 (the canopy's or the slats' openness, the water's own light, the cloud cover), `angle` the slats' degrees; after Light Kit's Pattern; Godot draws it (the desk shows the spot aimed) |
 | `breaker` | the breaker box (DECISIONS 2026-10-28): a click throws it, the level's power goes off or comes back (the lights flickering up), and `{"use": id}` is heard. While the power's out (the `power` action) every bulb and lamp in the level is dark (each keeps its own on or off for when it's back; candles and fires burn on) and a `switch` only clicks: **No power** |
 | `locker` | (hide inside: a click gets in, a click gets out) `inside` (a spot: where the player stands in it and the way they face; default its middle, facing its `rot`), `see_through` 0..1 (from inside its walls are slats, this much of them gaps; default `game.see_through`, else 0.6). The player's look stays in a cone out of it; `{"hidden": true}` (or the locker's id) holds while they're in |
 | `roll` | a die (`shape: "box 0.3 0.3 0.3"`, six faces): a click throws it from the player's hand, physics rolls it, and when it settles the face on top is heard as `{"rolled": id}` |
@@ -510,6 +516,7 @@ with `{"tick": "<id>"}` at the end of that beat, not by its own trigger (the sto
   line, a thought, an answer, an objective, a to-do, a note) is that name; before it, `game.player_name` ("Alex" when
   unset). It's kept with the run (a checkpoint has it). The walker counts 8 s for the typing. Not in Unreal yet
 - `light` (`set`: `on off flicker dim`; or `room`), `door` (`set`: `lock unlock open close slam`)
+- `sweep`: a room: a car passes its windows that have a `sweep` now (§2), the headlights across the ceiling.
 - `power`: `off` cuts the level's power (every bulb and lamp dark, the switches dead; candles and fires burn on), `on`
   brings it back, flickering up; `level` names another level than the player's. The check warns at a cut nothing
   brings back (no breaker, no `power: on`)

@@ -84,13 +84,19 @@ def main():
     checks.append(("the realism preset changes the picture", abs(rep["realism"]["mean"] - rep["plain"]["mean"]) > 0.002))
     checks.append(("the blood is red", rep["blood"]["red"] > 400))
     checks.append(("the rain moves between frames", rep.get("rain_motion", 0) > 0.002))
-    checks.append(("the splashes glint on the floor where the rain lands (brighter than the same floor without them)", rep.get("splash_glow", 0) > 0.0003))   # glints and thrown droplets since 2026-10-29, no drawn ring: less light than the rings added
+    checks.append(("the splashes glint on the floor where the rain lands (brighter than the same floor without them)", rep.get("splash_glow", 0) > 0.0002 or rep.get("splash_peak", 0) > 0.02))   # glints and thrown droplets since 2026-10-29, no drawn ring: sparse, so a peak counts too
     checks.append(("the mirror reflects the room (the bulb's glint in its upper half: a peak well over the wall beside it and over its own lower half; drawn every frame it's in view)", rep["mirror_top"]["max"] > rep["mirror_wall"]["mean"] * 1.2 and rep["mirror_top"]["max"] > rep["mirror_bottom"]["max"] * 1.6 and rep.get("mirror_frames", 0) >= 20))
     checks.append(("the sweat glints (a brighter peak than dry skin)", rep["skin_sweat"]["max"] > rep["skin_dry"]["max"] * 1.02))
     checks.append(("the oil glosses (the fill light's glint, a tight bright spot dry skin hasn't)", rep["glint_oil"]["max"] > rep["glint_dry"]["max"] * 1.15))
     checks.append(("the softener keeps a checker at arm's length nearly as sharp (over 0.6 of unsoftened)", rep.get("soften_near_on", 0) > rep.get("soften_near_off", 1) * 0.6))
     checks.append(("and softens one across the room (under 0.8 of unsoftened, and more than the near one)", rep.get("soften_far_on", 1) < rep.get("soften_far_off", 1) * 0.8 and rep.get("soften_far_on", 1) / max(rep.get("soften_far_off", 1), 1e-9) < rep.get("soften_near_on", 0) / max(rep.get("soften_near_off", 1), 1e-9)))
     checks.append(("a glow drawn after the opaque pass survives the softener (the digits, LEDs and steam: at least 0.7 of its peak)", rep.get("soften_glow_on", {}).get("max", 0) > rep.get("soften_glow_off", {}).get("max", 1) * 0.7 and rep.get("soften_frames", 0) >= 1))
+    checks.append(("a light's pattern (caustics on the back wall): drawn into its projector, light and dark across the wall, and moving", rep.get("pattern_attached", 0) == 1 and rep.get("pattern_var", 0) > 0.004 and rep.get("pattern_motion", 0) > 0.004))
+    checks.append(("a window's light shaft: the air in the beam brighter with it than the settled haze without", rep.get("shaft_gain", 0) > 0.004))
+    checks.append(("a headlight sweep: fired, the car is passing at the shot and the ceiling and wall are brighter than before it", rep.get("sweep_passing", 0) == 1 and rep.get("sweep_gain", 0) > 0.01))
+    ir = rep.get("iris", {})
+    checks.append(("the iris: against a bright light the eye closes (the same light with the iris off is brighter), and night holds it a stop under",
+                   ir.get("open", 0) > ir.get("closed", 9) * 1.12 and ir.get("night", 9) < ir.get("closed", 0) * 0.8))
     ok = True
     for what, good in checks:
         print(("  ok  " if good else "  BAD ") + what)

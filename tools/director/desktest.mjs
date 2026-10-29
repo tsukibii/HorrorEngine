@@ -605,5 +605,23 @@ print(json.dumps({"typed": [L.typed_secs(t, r, b) for t, r, b in d["texts"]], "c
     : fail("typed faults: " + out.split("\n").filter(l => /skip|breaks|retype/.test(l)).join(" | "));
 }
 
+// ---- the flicker modes (tools/shared/flicker.js): each curve does what its word says, from the clock alone
+{
+  const F = await import("../shared/flicker.js");
+  const run = (d, secs = 30, id = "lamp") => { const u = F.flickerOf(d, id); const ks = []; for (let t = 0; t < secs; t += 1 / 60) ks.push(F.flickerK(u, t)); return ks; };
+  const stats = ks => ({ lo: Math.min(...ks), hi: Math.max(...ks), drops: ks.filter(k => k < 0.3).length / ks.length, mid: [...ks].sort((a, b) => a - b)[ks.length >> 1] });
+  const flu = stats(run({ mode: "fluorescent", interval: 4 })), dy = stats(run({ mode: "dying", interval: 4 })), ca = stats(run({ mode: "candle" }));
+  const pu = run({ mode: "pulse", rate: 0.5 }, 4), cu = run({ mode: "custom", letters: "amz", rate: 3 }, 1), plain = stats(run({ flicker: 0.5 })), none = stats(run({}));
+  const half = stats(run({ mode: "dying", flicker: 0.5, interval: 4 }));
+  const a = run({ mode: "dying", interval: 4 }, 10, "lamp"), b = run({ mode: "dying", interval: 4 }, 10, "lamp"), c = run({ mode: "dying", interval: 4 }, 10, "other");
+  const same = a.every((k, i) => k === b[i]), differs = a.some((k, i) => k !== c[i]);
+  flu.drops > 0.005 && flu.drops < 0.2 && flu.hi === 1 && dy.drops > 0.05 && dy.mid < 0.9 && dy.mid > 0.6 && ca.lo > 0.75 && ca.hi < 1.25 && ca.hi > 1.02
+    && Math.abs(pu[0] - 1) < 1e-6 && Math.abs(pu[60] - 0.5) < 0.02 && Math.abs(pu[120] - 1) < 0.02
+    && Math.abs(cu[0] - 0) < 1e-9 && Math.abs(cu[20] - 1) < 1e-9 && Math.abs(cu[40] - 25 / 12) < 1e-9
+    && plain.lo < 0.8 && plain.hi === 1 && none.lo === 1 && none.hi === 1 && half.lo > dy.lo && half.lo >= 0.5 && same && differs
+    ? ok(`the flicker modes: a fluorescent stutters ${(flu.drops * 100).toFixed(1)} % of the time, a dying one drops out ${(dy.drops * 100).toFixed(0)} % of the time and sits at ${dy.mid.toFixed(2)} between, a candle wobbles ${ca.lo.toFixed(2)} to ${ca.hi.toFixed(2)}, a pulse breathes, custom letters read a m z, half the amount halves the drop, the same light the same on every run`)
+    : fail("flicker: " + JSON.stringify({ flu, dy, ca, pu: [pu[0], pu[60], pu[120]], cu: [cu[0], cu[20], cu[40]], plain, none, half, same, differs }));
+}
+
 console.log(fails.length ? `DESK FAILED (${fails.length})` : "DESK ok");
 process.exit(fails.length ? 1 : 0);

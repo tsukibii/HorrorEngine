@@ -128,6 +128,26 @@ static func shadows(vp: Viewport, q: int) -> void:
 	RenderingServer.directional_shadow_atlas_set_size([2048, 4096, 8192, 8192][k], k < 2)
 
 
+## the iris (after Light Kit's Sky exposure, 2026-10-29): the eye settling over about a second, as a camcorder's iris
+## does, and at night held a stop under so night doesn't turn grey. Auto exposure on the viewport's camera
+## (CameraAttributesPractical): `speed` how fast it settles (1 is about a second), `scale` the brightness it settles
+## to (0.4), halved at night. `HSLook.iris(viewport, true, night)` after `apply`; off puts a plain attributes back.
+static func iris(vp: Viewport, on: bool, night: bool = false, speed: float = 1.0, scale: float = 0.4) -> CameraAttributesPractical:
+	if vp == null:
+		return null
+	var cam := vp.get_camera_3d()
+	if cam == null:
+		return null
+	var ca: CameraAttributesPractical = cam.attributes if cam.attributes is CameraAttributesPractical else CameraAttributesPractical.new()
+	ca.auto_exposure_enabled = on
+	ca.auto_exposure_speed = speed
+	ca.auto_exposure_scale = scale * (0.5 if night else 1.0)
+	ca.auto_exposure_min_sensitivity = 50.0
+	ca.auto_exposure_max_sensitivity = 1600.0
+	cam.attributes = ca
+	return ca
+
+
 ## a player's anti-aliasing choice over the preset (the pause menu: Off, FXAA, TAA, TSR; TSR is TAA with FSR 2)
 static func set_aa(vp: Viewport, choice: int) -> void:
 	if vp == null:

@@ -1091,3 +1091,26 @@ Playwright's click waits for the button to hold still over two frames, so with t
 same steps passed when the run had the machine to itself. In the cloud, run nothing heavy beside a browser check, not
 even the offline ones. On the user's machine, with `GPU=1` (docs/RUN_LOCALLY.md), a frame is milliseconds and this
 doesn't arise.
+
+## A spot light projects only through its shadows (2026-10-29)
+
+A SpotLight3D with a `light_projector` lit nothing: the wall under it went dark, with any texture, even plain white.
+It lights again the moment `shadow_enabled` is on. Godot's projector sampling rides on the spot's shadow atlas slot,
+so without shadows there is no projection and the light's whole contribution goes with it. HSPattern switches the
+spot's shadows on itself and says so. Measured in the plugin's own project (`Saved/Godot/_lookplugin/`), five runs of
+a ten-line scene: when a light does nothing, try it bare (no projector, no pattern) before suspecting the pattern.
+
+## A projector that changes every frame doesn't show (2026-10-29)
+
+The first HSPattern drew its caustics into a SubViewport each frame and made the ViewportTexture the spot's
+projector. The renderer copies a projector into its atlas once, when it's added, so the light showed one frame of the
+viewport, or nothing. The loop is drawn once at load instead, a frame a frame into plain ImageTextures, and the
+projector is swapped among them (each copied into the atlas once). Anything the renderer atlases (projectors,
+decals) wants a texture that stands still.
+
+## A chain that waited for itself (2026-10-29)
+
+A background chain began `until ! ps -p $(pgrep -f "lookshot.gd" ...)`: the pattern matched the chain's own shell,
+whose command line held the words, so it waited forever, and three chains queued behind its logs waited with it.
+CLAUDE.md's rule about `pgrep -f` and `pkill -f` covers `until` loops too: a chain that waits for a process should
+wait for its log's last line, or for a PID taken from a variable, never for a name that is also in its own command.

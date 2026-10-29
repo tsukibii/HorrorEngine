@@ -377,6 +377,30 @@ func _initialize() -> void:
 				return "rain in the lobby (it has a ceiling)"
 			if rt.panes.size() != 2 or rt.panes.any(func(pn): return not (pn.material_override is ShaderMaterial) or pn.material_override.shader != HSGlass.shader() or float(pn.material_override.get_shader_parameter("rain")) <= 0.0):
 				return "the lobby's two panes should wear the glass with the rain on it: " + str(rt.panes.size())
+			var shafts: Array = g.level.get_node("Lights").get_children().filter(func(c): return c is FogVolume and c.has_meta("shaft"))   # the lobby's windows throw shafts (HSShaft on the export's FogVolumes)
+			if shafts.size() != 2 or shafts.any(func(fv): return not (fv.material is ShaderMaterial) or fv.material.shader != HSShaft.shader() or fv.size.z < 2.9):
+				return "the lobby's two window shafts: %d, %s" % [shafts.size(), shafts.map(func(fv): return [fv.material, fv.size])]
+			var wl: Array = g.level.get_node("Lights").get_children().filter(func(c): return c is SpotLight3D and c.has_meta("window") and float(c.light_volumetric_fog_energy) >= 4.0 and c.shadow_enabled)
+			if wl.size() != 2:
+				return "the lobby's window lights should light the haze with shadows: %d" % wl.size()
+			var ca = g.camera.attributes                                   # the iris: auto exposure on the camera, settling over about a second
+			if not (ca is CameraAttributesPractical) or not ca.auto_exposure_enabled or absf(ca.auto_exposure_speed - 1.0) > 0.01 or absf(ca.auto_exposure_scale - 0.4) > 0.01:
+				return "the iris should be on by day: " + str(ca)
+			if rt.sweeps.size() != 1 or rt.sweeps[0]["room"] != "lobby" or not (rt.sweeps[0]["node"] is HSSweep):   # the lobby's first window: a car passes now and then (HSSweep)
+				return "the lobby's sweep: " + str(rt.sweeps)
+			rt.sweep("lobby")
+			await frames(3)
+			var swn: HSSweep = rt.sweeps[0]["node"]
+			if not rt.sweeping("lobby") or not swn.lamp.visible or swn.lamp.light_energy <= 0.0 or not swn.lamp.shadow_enabled:
+				return "the car should be passing: passing %s, lamp visible %s energy %.2f" % [rt.sweeping("lobby"), swn.lamp.visible, swn.lamp.light_energy]
+			var lp0: Vector3 = swn.lamp.global_position
+			await game_wait(1.0)
+			var lp1: Vector3 = swn.lamp.global_position
+			if lp0.distance_to(lp1) < 2.0 or absf(lp1.z - lp0.z) > 0.01 or lp1.z < 5.5:    # along the street (x), outside the south wall (Godot z beyond 5)
+				return "the headlights should slide along the street outside: from %s to %s" % [lp0, lp1]
+			await game_wait(2.5)
+			if rt.sweeping("lobby") or swn.lamp.visible:
+				return "the car should have passed"
 			if rt.rain_sounds.size() < 1 or not (rt.rain_sounds[0]["p"] is AudioStreamPlayer3D):    # the shelf's rain in the yard, riding with you while you're in it
 				return "no rain heard in the yard: " + str(rt.rain_sounds)
 			place(1.5, -8.5, 0)
@@ -681,6 +705,22 @@ func _initialize() -> void:
 			await frames(3)
 			if rt.light_energy("power_candle_light") != 0:
 				return "the candle's light is still on"
+			var u: Dictionary = rt.light_state["power_lamp"]                  # the lamp is a dying tube (its `mode`): it drops out now and then, never quite full between
+			if u.get("mode") != "dying" or float(u.get("interval", 0)) != 4.0 or float(u.get("flicker", 0)) <= 0.0:
+				return "the power lamp's flicker mode: " + JSON.stringify({"mode": u.get("mode"), "interval": u.get("interval"), "flicker": u.get("flicker")})
+			var es: Array = []
+			var t0: float = rt.clock
+			while rt.clock < t0 + 6.0:
+				await frames(1)
+				es.append(rt.light_energy("power_lamp"))
+			es.sort()
+			var lo: float = es[0]
+			var mid: float = es[es.size() / 2]
+			if not (lo < float(u["base"]) * 0.5 and mid > float(u["base"]) * 0.6 and mid < float(u["base"]) * 0.9):
+				return "the dying lamp over six seconds: lowest %.2f, mostly %.2f of %.2f (it should drop out and sit under full between)" % [lo, mid, float(u["base"])]
+			var f: Dictionary = rt.light_state["corr_lamp_2"]
+			if f.get("mode") != "fluorescent" or float(f.get("flicker", 0)) != 0.3:
+				return "the corridor's second lamp should be a fluorescent at 0.3: " + JSON.stringify({"mode": f.get("mode"), "flicker": f.get("flicker")})
 			return ""))
 
 	await station("n_store", func():
@@ -1045,6 +1085,22 @@ func _initialize() -> void:
 			return ""))
 
 	await station("n_bath", func():
+		await step("the caustics on the bath's ceiling: the tub's light a spot aimed up, its pattern drawn into its projector (HSPattern)", func():
+			var cl = rt.by_id.get("bath_caustic")
+			if cl == null or not (cl["node"] is SpotLight3D):
+				return "the caustic light should be a spot: " + str(cl)
+			var sp: SpotLight3D = cl["node"]
+			var hp = sp.get_node_or_null("Pattern")
+			if hp == null or not (hp is HSPattern) or hp.kind != "caustics" or hp.frames_wanted != 40:
+				return "no pattern on the caustic light: %s" % [hp]
+			if DisplayServer.get_name() != "headless" and (sp.light_projector == null or hp.textures.size() < 40):   # headless draws nothing: the loop can't be made there
+				return "the caustic loop isn't drawn: %d frames, projector %s" % [hp.textures.size(), sp.light_projector]
+			var up: Vector3 = -sp.global_transform.basis.z
+			if up.y < 0.9 or absf(sp.spot_angle - 40.0) > 0.01 or (hp.mat != null and float(hp.mat.get_shader_parameter("metres")) < 3.0):
+				return "the spot should aim straight up with a 40 degree half cone, its pattern metres from the distance: up %s, angle %.1f" % [up, sp.spot_angle]
+			if rt.light_energy("bath_caustic") <= 0.0:
+				return "the caustic light is dark"
+			return "")
 		await step("12 · Hiding: the tap turned on (running: ticks); in the locker (hidden), the room changes while you're not looking (the towel gone, writing on the mirror: ticks)", func():
 			place(1.5, 27.5, 180)
 			var r := await enter_room("door_bath", "bath")
@@ -1194,6 +1250,9 @@ func _initialize() -> void:
 			var rr := {"time": g.run["time"], "clock": rt.state_of("lobby_clock")}
 			if rr["time"] != "night" or rr["clock"] != "stopped":
 				return JSON.stringify(rr)
+			var ca2 = g.camera.attributes                                  # at night the iris holds a stop under (its scale halved)
+			if not (ca2 is CameraAttributesPractical) or absf(ca2.auto_exposure_scale - 0.2) > 0.01:
+				return "the iris should be a stop under at night: " + str(ca2.auto_exposure_scale if ca2 != null else null)
 			return ""))
 
 	await station("n_night", func():

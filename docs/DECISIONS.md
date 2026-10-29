@@ -36,6 +36,11 @@ The user's answers, newest first. They override the plan, the research and the d
   break the immersion: we are aiming for realism, not stylisation."** The splashes draw no ring now: a landing glint,
   a wet sheen and a few thrown droplets, and the wet floor's own ripple rings bend the reflection per pixel
   (GODOT_LOOK §4).
+- **"Build all five (the Light Kit pieces the Godot side lacked), flicker modes and patterns first."** In that
+  order: the flicker modes (`mode` on a light: fluorescent, dying, candle, pulse, custom; the same curves on the desk
+  and in Godot), the light patterns, the shafts with dust, the headlight sweeps, the adaptive exposure. Built that
+  evening (GODOT_LOOK §1): `mode` on a light; `pattern` with `aim` on a light (Godot projects only through a shadowed
+  spot: found there); `shaft` and `sweep` on a window, the `sweep` action; the iris with any look but plain.
 
 - **"Let's remove the forced turn away (look up) after we interact with the person; in general let's make a note to
   avoid that effect, as upon testing it breaks immersion."** The rule, for every runtime and every stitch: the

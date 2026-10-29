@@ -59,7 +59,8 @@ register("action", "door", { run: (v, a, rt) => rt.door(v, a.set || "open") });
 register("action", "light", { run: (v, a, rt) => rt.light(v, a.room, a.set || "on") });
 register("action", "torch", { run: (v, a, rt) => rt.torchSet(v) });
 register("action", "skin", { run: (v, a, rt) => { (rt.skinWet = rt.skinWet || {})[v] = Object.assign(rt.stage.setSkin(v, a), { byWord: true }); } });   // a cast member's skin wet, sweating, dripping or oiled (§9.8): drawn on her body by the stage (skinwet.js), as Godot's HSSkin draws it
-register("action", "power", { run: (v, a, rt) => rt.power(v, a.level) });   // the power cut (the electric lights dark, the switches dead), or back   // the flashlight: on, off, flicker, dead, works (torch.js)
+register("action", "power", { run: (v, a, rt) => rt.power(v, a.level) });
+register("action", "sweep", { run: (v, a, rt) => rt.sweep(v) });   // a car passes the room's windows (their `sweep`) now   // the power cut (the electric lights dark, the switches dead), or back   // the flashlight: on, off, flicker, dead, works (torch.js)
 register("action", "wait", { run: (v, a, rt) => rt.wait(+v || 0) });
 register("action", "fade", { run: (v, a, rt) => rt.fade(v === "out" ? 1 : 0, +(a.secs ?? 1)) });
 register("action", "lookat", { run: (v, a, rt) => rt.lookAt(v, +(a.secs ?? 1)) });

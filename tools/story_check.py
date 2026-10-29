@@ -32,11 +32,13 @@ BOARDS = {}                 # the board games this game's tables can have (story
 ACTIONS = {"say", "think", "sound", "music", "light", "door", "show", "hide", "move", "objective", "flag", "unflag",
            "give", "take", "wait", "fade", "lookat", "shot", "seq", "anim", "stalker", "trick", "checkpoint", "done",
            "karma", "count", "scene", "behave", "ask", "state", "todo", "tick", "fail", "untodo", "chapter", "name", "torch",
-           "power", "skip", "skin"}
+           "power", "skip", "skin", "sweep"}
 SKIN_KEYS = ("wet", "sweat", "drips", "oil")            # a cast member's skin (docs/GODOT_LOOK.md §5): each 0..1
 ASK_SECS = 3.0              # the walker's time to answer an ask
 MUSIC = {"silence", "calm", "uneasy", "dread", "chase"}
 LIGHT_SET = {"on", "off", "flicker", "dim"}
+FLICKER_MODES = {"fluorescent", "dying", "candle", "pulse", "custom"}   # a light's `mode` (STORY_FORMAT §2)
+PATTERNS = {"caustics", "leaves", "blinds", "clouds"}                     # a light's `pattern` (STORY_FORMAT §2)
 TORCH_SET = {"on", "off", "flicker", "dead", "works"}   # the flashlight (an item with `torch`): dead flickers out, works is new batteries
 TORCH_KEYS = {"kelvin": (1500, 12000), "cone": (5, 120), "range": (1, 60), "strength": (0.1, 100)}
 DOOR_SET = {"lock", "unlock", "open", "close", "slam"}
@@ -320,6 +322,26 @@ def check_world(story, things, r):
                     r.err(f"room {rm['id']}: opening at {op['at']} (w {op['w']}) runs off the {op['wall']} wall ({length} m)")
                 if op.get("sill", 0) + op["h"] > rm["size"][2]:
                     r.err(f"room {rm['id']}: opening on {op['wall']} is taller than the room")
+                if "sweep" in op:                       # a car passing outside now and then (HSSweep): true, or its words
+                    sw = op["sweep"]
+                    if not op.get("window"):
+                        r.err(f"room {rm['id']}: a sweep goes on a window (the opening on {op['wall']} at {op['at']} isn't one)")
+                    if not (isinstance(sw, bool) or isinstance(sw, dict)):
+                        r.err(f"room {rm['id']}: sweep is true, or its words (every, secs, out, span, energy)")
+                    elif isinstance(sw, dict):
+                        for key, lo, hi in (("every", 0, 3600), ("secs", 0.5, 30), ("out", -20, 60), ("span", 1, 60), ("energy", 0, 100), ("aim", 0.2, 30)):
+                            if key in sw and not (isinstance(sw[key], (int, float)) and lo <= sw[key] <= hi):
+                                r.err(f"room {rm['id']}: a sweep's {key} is a number {lo} to {hi}")
+                if "shaft" in op:                       # a window's light shaft (HSShaft): true, or 0..1 how strong
+                    sh = op["shaft"]
+                    if not op.get("window"):
+                        r.err(f"room {rm['id']}: a shaft goes on a window (the opening on {op['wall']} at {op['at']} isn't one)")
+                    if not (isinstance(sh, bool) or isinstance(sh, (int, float)) and 0 <= sh <= 1):
+                        r.err(f"room {rm['id']}: shaft is true, or 0..1")
+                    if "reach" in op and not (isinstance(op["reach"], (int, float)) and 0.5 <= op["reach"] <= 20):
+                        r.err(f"room {rm['id']}: a shaft's reach is metres, 0.5 to 20")
+                    if "dust" in op and not (isinstance(op["dust"], (int, float)) and 0 <= op["dust"] <= 1):
+                        r.err(f"room {rm['id']}: a shaft's dust is 0..1")
                 if L.wall_skipped(rm, op["wall"], op["at"] - op["w"] / 2, op["at"] + op["w"] / 2):
                     r.err(f"room {rm['id']}: opening at {op['at']} on {op['wall']} is on a stretch it skips (put it on the room that builds that wall)")
                 if op.get("door") and op["door"].get("kit") is not None:
@@ -415,6 +437,35 @@ def check_world(story, things, r):
             r.err(f"{t.id}: line {p['line']!r} doesn't exist")
         if u == "light" and p.get("kind", "bulb") not in ("bulb", "candle", "lamp", "fire"):
             r.err(f"{t.id}: light kind {p.get('kind')!r}")
+        if u == "light":                                # its flicker's mode (tools/shared/flicker.js, flicker.gd)
+            if "mode" in p and p["mode"] not in FLICKER_MODES:
+                r.err(f"{t.id}: light mode {p.get('mode')!r}: one of {', '.join(sorted(FLICKER_MODES))}")
+            for k, lo in (("interval", 0.1), ("rate", 0.01)):
+                if k in p and not (isinstance(p[k], (int, float)) and p[k] >= lo):
+                    r.err(f"{t.id}: light {k} is a number of at least {lo}")
+            if "letters" in p and not (isinstance(p["letters"], str) and p["letters"] and re.fullmatch(r"[a-zA-Z]+", p["letters"])):
+                r.err(f"{t.id}: light letters are a to z (a off, m as placed, z double)")
+            if "flicker" in p and not (isinstance(p["flicker"], (int, float)) and 0 <= p["flicker"] <= 1):
+                r.err(f"{t.id}: light flicker is 0..1")
+            if "pattern" in p:                          # a pattern in its light (HSPattern): a spot aimed at `aim`
+                if p["pattern"] not in PATTERNS:
+                    r.err(f"{t.id}: light pattern {p.get('pattern')!r}: one of {', '.join(sorted(PATTERNS))}")
+                aim = p.get("aim")
+                if not (isinstance(aim, list) and len(aim) == 3 and all(isinstance(x, (int, float)) for x in aim)):
+                    r.err(f"{t.id}: a light with a pattern needs aim [x, y, z] (story metres: where the pattern falls)")
+                elif list(aim) == list(t.pos):
+                    r.err(f"{t.id}: aim is where the light is")
+                if "spread" in p and not (isinstance(p["spread"], (int, float)) and 5 <= p["spread"] <= 170):
+                    r.err(f"{t.id}: spread is the cone in degrees, 5 to 170")
+                for k, lo in (("scale", 0.001), ("speed", 0.0)):
+                    if k in p and not (isinstance(p[k], (int, float)) and p[k] >= lo):
+                        r.err(f"{t.id}: light {k} is a number")
+                if "open" in p and not (isinstance(p["open"], (int, float)) and 0 <= p["open"] <= 1):
+                    r.err(f"{t.id}: open is 0..1")
+                if "angle" in p and not isinstance(p["angle"], (int, float)):
+                    r.err(f"{t.id}: angle is degrees")
+            elif any(k in p for k in ("aim", "spread", "open", "angle")):
+                r.warn(f"{t.id}: aim, spread, open and angle go with a pattern; this light has none")
         if u == "locker":                               # Play puts the player inside: its `inside` spot, else its middle
             ins = p.get("inside")
             if ins is not None and (ins not in things or things[ins].use != "spot" or things[ins].level != t.level):
@@ -1244,6 +1295,10 @@ def check_action(bid, a, story, things, r, stage=None):
             r.err(f"{bid}: power level {a['level']!r} isn't a level")
         if v == "off" and not any(t.use == "breaker" for t in things.values()) and '"power": "on"' not in json.dumps(story.get("stitches", {})):
             r.warn(f"{bid}: power off, and nothing brings it back (no breaker, no power on)")
+    elif k == "sweep":                                  # a car passes a room's windows now (their `sweep`)
+        rooms_with = {rm["id"] for lv in story.get("levels", {}).values() for rm in lv.get("rooms", []) if any(op.get("sweep") for op in rm.get("openings", []))}
+        if v not in rooms_with:
+            r.err(f"{bid}: sweep {v!r}: not a room with a window that has a sweep ({', '.join(sorted(rooms_with)) or 'none'})")
     elif k == "think":                                  # the player's thought, typing itself out if it breaks or retypes (§9.15)
         if not isinstance(v, str) or not v.strip():
             r.err(f"{bid}: think is the thought's words")

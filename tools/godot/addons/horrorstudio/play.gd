@@ -321,6 +321,7 @@ func enter_level(lid: String) -> void:
 	doors = {}
 	solid = []
 	lights = []
+	sweeps = []
 	cast_nodes = {}
 	light_state = {}
 	lenses = []
@@ -329,6 +330,11 @@ func enter_level(lid: String) -> void:
 		kept[lid] = {"vis": {}, "doors": {}, "bodies": {}}
 	var k: Dictionary = kept[lid]
 	for n in game.pieces():
+		if n is FogVolume and n.has_meta("shaft"):                        # a window's light shaft (HSShaft): the beam's shader onto the export's FogVolume
+			HSShaft.wear(n, JSON.parse_string(n.get_meta("shaft")))
+		if n is Node3D and n.has_meta("sweep") and not (n is Light3D):   # a car passing outside a window now and then (HSSweep)
+			var sm: Dictionary = JSON.parse_string(n.get_meta("sweep"))
+			sweeps.append({"room": sm.get("room"), "node": HSSweep.attach(n, sm)})
 		if n.has_meta("piece"):
 			var p = JSON.parse_string(n.get_meta("piece"))
 			if not (p is Dictionary):
@@ -348,6 +354,10 @@ func enter_level(lid: String) -> void:
 				lights.append(t)
 				var lm = JSON.parse_string(n.get_meta("light")) if n.has_meta("light") else {}
 				light_state[p["id"]] = {"on": bool(lm.get("on", true)), "flicker": float(lm.get("flicker", 0)), "base": float(lm.get("base", LIT)), "dim": null, "surge": null, "flicker0": null, "kind": lm.get("kind", "bulb"), "room": lm.get("room")}
+				light_state[p["id"]].merge(HSFlicker.of(lm, str(p["id"])), true)   # its flicker's mode, interval, rate, letters, seed (flicker.gd)
+				if n.has_meta("pattern") and n is SpotLight3D:              # its pattern (caustics, leaves, blinds, clouds) drawn into the light's projector (HSPattern)
+					var pm: Dictionary = JSON.parse_string(n.get_meta("pattern"))
+					HSPattern.attach(n, pm, float(pm.get("distance", 3.0)))
 			if t["kind"] == "trigger" and n.has_meta("trigger"):
 				t["trigger"] = JSON.parse_string(n.get_meta("trigger"))
 			if t["kind"] == "person" and _tag(tags, "cast:") != null and tags.has("standin"):
@@ -884,6 +894,18 @@ func swing_door(t: Dictionary, deg: float) -> void:
 		o["node"].transform = nt
 
 
+var sweeps: Array = []               # the windows' headlight sweeps: {room, node (HSSweep)}
+## the story's `sweep` action: a car passes the room's windows now
+func sweep(room) -> void:
+	for sw in sweeps:
+		if room == null or sw["room"] == room:
+			sw["node"].fire()
+
+
+func sweeping(room = null) -> bool:
+	return sweeps.any(func(sw): return (room == null or sw["room"] == room) and sw["node"].passing())
+
+
 func powered(lid = null) -> bool:
 	var k = kept.get(lid if lid != null else level)
 	return k == null or not (k.get("power", true) is bool and k.get("power", true) == false)
@@ -907,6 +929,7 @@ func power(set_to, lid = null) -> void:
 					u["flicker0"] = u["flicker"]
 				u["flicker"] = max(float(u["flicker0"]), 0.8)
 				u["surge"] = clock + 0.9
+				HSFlicker.on(u, clock)                           # a tube's starter clicks
 	emit({"type": "power", "on": on})
 
 
@@ -925,6 +948,7 @@ func light(id, room, set_to: String) -> void:
 				ls.append(t["id"])
 	for lid in ls:
 		var u: Dictionary = light_state[lid]
+		var was: bool = u["on"]
 		match set_to:
 			"toggle":
 				u["on"] = not u["on"]
@@ -936,6 +960,8 @@ func light(id, room, set_to: String) -> void:
 			"dim":
 				u["on"] = true
 				u["dim"] = 0.35
+		if u["on"] and not was:
+			HSFlicker.on(u, clock)                                   # switched on: a tube stutters on
 
 
 func light_energy(id) -> float:
@@ -2378,8 +2404,7 @@ func tick(dt: float) -> void:
 		if u["surge"] != null and T >= float(u["surge"]):
 			u["flicker"] = float(u["flicker0"]) if u["flicker0"] != null else 0.0
 			u["surge"] = null
-		if float(u["flicker"]) > 0:
-			k *= 1.0 - float(u["flicker"]) * 0.5 * max(0.0, sin(T * 13.7) * sin(T * 7.3))
+		k *= HSFlicker.k(u, T)                                    # its flicker by mode (flicker.gd, as the desk's)
 		k *= float(scene_light_k.get(t["id"], 1.0))
 		t["node"].light_energy = float(u["base"]) * k
 	life_lights()

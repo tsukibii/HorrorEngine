@@ -69,7 +69,15 @@ Ceilings, Doors, Things, Lights, Glass, Triggers, Spots, People, GI; `game.piece
 `camhybrid` tape** (VHS.md §5: the camcorder with half the fisheye and its blur only with distance, `HSSoften` a
 depth-aware softener on the camera; `docs/godot_sheets/2026-10-29_camhybrid.jpg`). **Their third**: under camhybrid
 the LED digits and the steam had vanished (the softener had been a quad over the screen texture, the opaque pass
-only); it's a CompositorEffect after the transparents now (`2026-10-29_camhybrid_led.jpg`). Open from those runs: the
+only); it's a CompositorEffect after the transparents now (`2026-10-29_camhybrid_led.jpg`). **Then, that evening**:
+`camhybrid` at the strength they picked from seven (between B and C), softer shadows (the filter, the atlas, the
+lights' size and blur, the menu's Shadows row), the rain's splashes without rings (glints and thrown droplets, the
+wet floor's ripple per pixel), and **the five Light Kit pieces the Godot side lacked** (their "build all five"):
+flicker `mode`s (fluorescent, dying, candle, pulse, custom; the same curves on the desk, `tools/shared/flicker.js`,
+and in Godot, `flicker.gd`), light `pattern`s (caustics, leaves, blinds, clouds drawn into a shadowed spot's
+projector, `HSPattern`), window `shaft`s (a FogVolume along the window's light, `HSShaft`), window `sweep`s and the
+`sweep` action (a car's headlights sliding past, `HSSweep`) and the iris (auto exposure, a stop under at night,
+`HSLook.iris`); GODOT_LOOK §1 has each with its measure; TestRoom001 wears one of each. Open from those runs: the
 square light patch under a distant counter (GODOT_LOOK §7).
 
 **Open, for the user:** a run on the 3090 (`python tools/godot_export.py --game TestRoom001 --testroom`, then the

@@ -25,8 +25,19 @@ var skin_mode := false
 var near_q: MeshInstance3D = null      # the softener's stage: a fine checker close, one far, a glow between
 var far_q: MeshInstance3D = null
 var glow_q: MeshInstance3D = null
+var pat_spot: SpotLight3D = null       # the pattern stage: caustics thrown on the back wall
+var pat_prev: Image = null
+var splash_sum := 0.0
+var shaft_fv: HSShaft = null
+var shaft_off: Image = null
+var sweep_n: HSSweep = null
+var sweep_before: Image = null
+var iris_lamp: OmniLight3D = null
+var iris_means: Dictionary = {}
+var splash_peak := 0.0
+var splash_n := 0
 
-const STAGES := ["plain", "realism", "wet", "blood_rain", "mirror", "skin", "soften_off", "soften"]
+const STAGES := ["plain", "realism", "wet", "blood_rain", "mirror", "skin", "soften_off", "soften", "pattern", "shaft", "sweep", "iris"]
 
 
 func _initialize() -> void:
@@ -206,6 +217,40 @@ func _process(_d: float) -> bool:
 	if STAGES[stage] == "blood_rain" and n == 22 and rain != null:
 		nosplash = root.get_texture().get_image()
 		rain.set_splashes(true)
+	if STAGES[stage] == "blood_rain" and n >= 24 and n < 30 and rain != null:   # six frames with the splashes: their glints are sparse, one still can miss them
+		var m := measure(root.get_texture().get_image(), 200, 480, 1080, 720)
+		splash_sum += m["mean"]
+		splash_peak = max(splash_peak, m["max"])
+		splash_n += 1
+		if n < 29:
+			return false
+	if STAGES[stage] == "pattern" and n == 70:
+		pat_prev = root.get_texture().get_image()  # frames before the shot: the caustics have moved by it (the loop drawn by then)
+	if STAGES[stage] == "pattern" and n < 90:
+		return false
+	if STAGES[stage] == "shaft" and n == 40 and shaft_fv != null:
+		shaft_off = root.get_texture().get_image()   # the haze settled without the beam; then the beam, and frames for it to settle
+		shaft_fv.visible = true
+	if STAGES[stage] == "shaft" and n < 90:
+		return false
+	if STAGES[stage] == "sweep" and n == 30 and sweep_n != null:
+		sweep_before = root.get_texture().get_image()
+		sweep_n.fire()                                     # the car, held mid-pass for the shot (the pass made very long: the frames here are slow)
+		sweep_n.started = sweep_n.clock - 0.5 * sweep_n.secs
+	if STAGES[stage] == "sweep" and n < 60:
+		return false
+	if STAGES[stage] == "iris":
+		if n == 60:
+			iris_means["settled"] = measure(root.get_texture().get_image(), 300, 100, 980, 620)["mean"]
+			iris_lamp.light_energy = 30.0                        # a bright light on: the iris closes against it
+		if n == 150:
+			iris_means["closed"] = measure(root.get_texture().get_image(), 300, 100, 980, 620)["mean"]
+			HSLook.iris(root, false)                             # the iris off: the same light, the eye wide open
+		if n == 210:
+			iris_means["open"] = measure(root.get_texture().get_image(), 300, 100, 980, 620)["mean"]
+			HSLook.iris(root, true, true)                        # night: held a stop under
+		if n < 280:
+			return false
 	if n < 24:                                 # the first frames: TAA settles, the lamp's shadow maps
 		return false
 	var name: String = STAGES[stage]
@@ -225,10 +270,9 @@ func _process(_d: float) -> bool:
 			if prev != null:
 				report["rain_motion"] = diff(prev, img, 300, 100, 980, 500)
 			if nosplash != null:                 # the floor in view (the rain's box reaches it): the splashes' glints, over the same floor without them
-				var with_ := measure(img, 200, 480, 1080, 720)
 				var without := measure(nosplash, 200, 480, 1080, 720)
-				report["splash_glow"] = with_["mean"] - without["mean"]
-				report["splash_peak"] = with_["max"] - without["max"]
+				report["splash_glow"] = splash_sum / max(splash_n, 1) - without["mean"]
+				report["splash_peak"] = splash_peak - without["max"]
 			prev = null
 		"mirror":
 			var img := shot("mirror")
@@ -261,6 +305,44 @@ func _process(_d: float) -> bool:
 			if name == "soften":
 				var sft := HSSoften.on(cam)
 				report["soften_frames"] = sft.frames if sft != null else -1
+		"iris":
+			var img := shot("iris")
+			iris_means["night"] = measure(img, 300, 100, 980, 620)["mean"]
+			report["iris"] = iris_means
+		"sweep":
+			var img := shot("sweep")
+			var box := Rect2i(300, 40, 700, 260)                          # the ceiling and the back wall the headlights cross
+			var with_ := measure(img, box.position.x, box.position.y, box.end.x, box.end.y)
+			var before := measure(sweep_before, box.position.x, box.position.y, box.end.x, box.end.y) if sweep_before != null else with_
+			report["sweep_on"] = with_
+			report["sweep_before"] = before
+			report["sweep_gain"] = with_["mean"] - before["mean"]
+			report["sweep_passing"] = 1 if sweep_n != null and sweep_n.passing() else 0
+		"shaft":
+			var img := shot("shaft")
+			var box := Rect2i(360, 150, 420, 200)                        # the air the beam crosses, against the dark back of the room
+			var with_ := measure(img, box.position.x, box.position.y, box.end.x, box.end.y)
+			var without := measure(shaft_off, box.position.x, box.position.y, box.end.x, box.end.y) if shaft_off != null else with_
+			report["shaft_on"] = with_
+			report["shaft_off"] = without
+			report["shaft_gain"] = with_["mean"] - without["mean"]
+		"pattern":
+			var img := shot("pattern")
+			var box := Rect2i(420, 180, 180, 150)                        # the back wall left of the mirror, where the spot lands
+			report["pattern_lit"] = measure(img, box.position.x, box.position.y, box.end.x, box.end.y)
+			var sum := 0.0
+			var sq := 0.0
+			var cnt := 0
+			for y in range(box.position.y, box.end.y, 2):
+				for x in range(box.position.x, box.end.x, 2):
+					var l := img.get_pixel(x, y).get_luminance()
+					sum += l
+					sq += l * l
+					cnt += 1
+			report["pattern_var"] = sq / cnt - (sum / cnt) * (sum / cnt)   # the caustics' light and dark over the wall
+			report["pattern_motion"] = diff(pat_prev, img, box.position.x, box.position.y, box.end.x, box.end.y) if pat_prev != null else 0.0
+			var hp = pat_spot.get_node_or_null("Pattern")
+			report["pattern_attached"] = 1 if hp != null and hp is HSPattern and pat_spot.light_projector != null and hp.textures.size() == 40 else 0
 	stage += 1
 	if stage >= STAGES.size() or only != "":
 		finish()
@@ -327,6 +409,63 @@ func setup(name: String) -> void:
 			world.add_child(glow_q)
 		"soften":
 			HSSoften.attach(cam).set_amounts(0.9, 7.0, 1.6, 0.25)
+		"iris":
+			if sweep_n != null:
+				sweep_n.visible = false
+			cam.position = Vector3(0, 1.3, 2.4)
+			cam.look_at(Vector3(0, 1.2, -2.0))
+			iris_lamp = OmniLight3D.new()
+			iris_lamp.light_energy = 0.0
+			iris_lamp.omni_range = 8.0
+			world.add_child(iris_lamp)
+			iris_lamp.position = Vector3(0.0, 2.2, 0.0)
+			HSLook.iris(root, true, false)
+		"sweep":
+			if shaft_fv != null:
+				shaft_fv.visible = false
+			for c in world.get_children():
+				if c is SpotLight3D and c.light_volumetric_fog_energy >= 4.0:
+					c.visible = false                                          # the shaft stage's window light
+			cam.position = Vector3(1.5, 1.3, 2.4)
+			cam.look_at(Vector3(-1.5, 1.6, -1.5))
+			sweep_n = HSSweep.make(Vector3(-3.9, 1.5, -0.6), Vector3(-1, 0, 0), Vector3(0, 0, 1), {"every": 0, "secs": 100000.0, "out": -1.0, "span": 2.5, "energy": 20.0, "aim": 5.0})   # inside the demo's closed room: "outside" is a metre in, the beam on across the room
+			world.add_child(sweep_n)
+		"shaft":
+			if pat_spot != null:
+				pat_spot.visible = false
+			cam.position = Vector3(1.5, 1.3, 2.4)
+			cam.look_at(Vector3(-1.5, 1.2, -1.5))
+			var win := SpotLight3D.new()                                       # a window-sized light on the left wall, into the room and a little down
+			win.light_color = Color(0.8, 0.88, 1.0)
+			win.light_energy = 5.0
+			win.spot_range = 7.0
+			win.spot_angle = 32.0
+			win.shadow_enabled = true
+			win.light_volumetric_fog_energy = 4.0
+			world.add_child(win)
+			win.position = Vector3(-3.9, 1.9, -0.6)
+			win.look_at(Vector3(1.0, 0.3, -0.9))
+			shaft_fv = HSShaft.make(Vector3(-3.9, 1.9, -0.6), Vector3(4.9, -1.6, -0.3), 1.0, 1.1, 4.0, {"strength": 1.0, "dust": 0.6})
+			shaft_fv.visible = false
+			world.add_child(shaft_fv)
+		"pattern":
+			HSSoften.detach(cam)
+			if near_q != null:
+				near_q.visible = false
+				far_q.visible = false
+				glow_q.visible = false
+			cam.position = Vector3(0, 1.3, 2.0)
+			cam.look_at(Vector3(0, 1.4, -3.0))
+			pat_spot = SpotLight3D.new()                                       # a lamp low by the back wall, its light through water onto it
+			pat_spot.light_color = Color(0.75, 0.9, 1.0)
+			pat_spot.light_energy = 6.0
+			pat_spot.spot_range = 6.0
+			pat_spot.spot_angle = 32.0
+			pat_spot.shadow_enabled = true                                    # a projector needs the spot's shadows on
+			world.add_child(pat_spot)
+			pat_spot.position = Vector3(0.0, 0.6, -0.4)
+			pat_spot.look_at(Vector3(0.0, 1.6, -3.0))
+			HSPattern.attach(pat_spot, {"pattern": "caustics", "scale": 0.5, "speed": 0.8, "open": 0.3}, 2.8)
 		"skin":
 			cam.position = Vector3(0, 1.0, 1.2)
 			cam.look_at(Vector3(0, 1.0, -0.8))

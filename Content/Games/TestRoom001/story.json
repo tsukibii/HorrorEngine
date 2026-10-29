@@ -363,7 +363,9 @@
        "w": 1.2,
        "h": 1.1,
        "sill": 0.9,
-       "window": true
+       "window": true,
+       "shaft": true,
+       "sweep": {"every": 30, "secs": 3}
       },
       {
        "wall": "s",
@@ -371,7 +373,8 @@
        "w": 1.2,
        "h": 1.1,
        "sill": 0.9,
-       "window": true
+       "window": true,
+       "shaft": true
       }
      ],
      "props": [
@@ -619,7 +622,7 @@
         15
        ],
        "z": 2.9,
-       "flicker": 0.3
+       "flicker": 0.3, "mode": "fluorescent", "interval": 5
       },
       {
        "id": "corr_lamp_3",
@@ -1375,6 +1378,7 @@
        ],
        "tag": "bathtub"
       },
+      {"id": "bath_caustic", "use": "light", "kind": "lamp", "lit": true, "at": [1.2, 1.0], "z": 0.7, "pattern": "caustics", "aim": [1.2, 1.0, 3.0], "spread": 80, "scale": 0.4, "speed": 0.5, "open": 0.3},
       {
        "id": "bath_lamp",
        "use": "light",
@@ -1463,7 +1467,8 @@
         4.5,
         4.5
        ],
-       "z": 1.45
+       "z": 1.45,
+       "mode": "dying", "interval": 4
       },
       {
        "id": "power_bench",

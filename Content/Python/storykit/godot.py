@@ -52,6 +52,7 @@ MATS = {
 BY_TAG = {"mirror": "mirror", "tv": "screen", "poster": "paper", "calendar": "paper", "frame": "paper", "board": "white",
           "air_conditioner": "white", "light_switch": "white"}
 # the desk's lights by kind: colour, strength (the stage's units: Godot energy about the same), reach (m)
+PATTERNS = ("caustics", "leaves", "blinds", "clouds")    # a light's `pattern` (HSPattern; story_check's PATTERNS)
 LIGHTS = {"bulb": (0xffc98a, 2.2, 7), "candle": (0xffa84a, 1.0, 3.5), "lamp": (0xffd2a0, 1.6, 5), "fire": (0xff8a3a, 3, 9)}
 # the time of day (stage.js TIME_LOOK): the sky, the ambient (colour, strength), the window light (colour, strength, reach)
 TIME_LOOK = {
@@ -90,6 +91,22 @@ def xform(pos, yaw=0.0):
     a = math.radians(yaw)
     c, s = math.cos(a), math.sin(a)
     return f"Transform3D({f(c)}, 0, {f(s)}, 0, 1, 0, {f(-s)}, 0, {f(c)}, {f(pos[0])}, {f(pos[1])}, {f(pos[2])})"
+
+
+def look_xform(pos, target, up=(0.0, 1.0, 0.0)):
+    """Transform3D at pos (Godot) looking at target down its -Z (a spot light's beam), as Godot's look_at."""
+    fx, fy, fz = target[0] - pos[0], target[1] - pos[1], target[2] - pos[2]
+    n = math.sqrt(fx * fx + fy * fy + fz * fz) or 1.0
+    zx, zy, zz = -fx / n, -fy / n, -fz / n                          # the basis' z axis points back from the target
+    if abs(zy) > 0.999:
+        up = (0.0, 0.0, 1.0)                                       # straight up or down: another up
+    ux, uy, uz = up
+    xx, xy, xz = uy * zz - uz * zy, uz * zx - ux * zz, ux * zy - uy * zx   # x = up × z
+    m = math.sqrt(xx * xx + xy * xy + xz * xz) or 1.0
+    xx, xy, xz = xx / m, xy / m, xz / m
+    yx, yy, yz = zy * xz - zz * xy, zz * xx - zx * xz, zx * xy - zy * xx   # y = z × x
+    # the text form's twelve numbers are the basis' rows (as xform writes a turn): row i holds the axes' i-th parts
+    return f"Transform3D({f(xx)}, {f(yx)}, {f(zx)}, {f(xy)}, {f(yy)}, {f(zy)}, {f(xz)}, {f(yz)}, {f(zz)}, {f(pos[0])}, {f(pos[1])}, {f(pos[2])})"
 
 
 def gstr(s):
@@ -379,11 +396,36 @@ class LevelWriter:
         c, inten, dist = LIGHTS.get(kind, LIGHTS["bulb"])
         lit = d.get("lit") is not False
         name = self.uname(p["id"])
+        light_meta = dict({"kind": kind, "room": p.get("room"), "base": inten, "on": lit},
+                          **{k: d[k] for k in ("flicker", "mode", "interval", "rate", "letters") if k in d})   # the flicker and its mode (flicker.gd: a mode with no flicker is all of it)
+        if d.get("pattern") in PATTERNS and isinstance(d.get("aim"), list) and len(d["aim"]) == 3:
+            # a pattern in its light (HSPattern): a spot aimed at `aim` (room metres), its cone `spread` wide; the
+            # runtime draws the pattern into its projector; the distance to the aim sizes the pattern in metres
+            at = self.room_at(p.get("room"))
+            aim = s2g([float(d["aim"][i]) + at[i] for i in range(3)])
+            pos = s2g(p["pos"])
+            dist = max(0.1, math.dist(pos, aim))
+            spread = float(d.get("spread", 50))
+            self.t.node(name, "SpotLight3D", "Lights", {
+                "transform": look_xform(pos, aim), "light_color": col(c), "light_energy": f((inten if lit else 0.0) * 1.5),
+                "spot_range": f(max(dist * 1.6, dist + 1.0)), "spot_angle": f(spread / 2), "spot_angle_attenuation": "0.8", "shadow_enabled": "true",
+                "light_size": f(LIGHT_SIZE.get(kind, 0.06)), "shadow_blur": "1.5"},
+                {"piece": self.piece_meta(p), "light": light_meta,
+                 "pattern": dict({"pattern": d["pattern"], "distance": round(dist, 3)}, **{k: d[k] for k in ("scale", "speed", "open", "angle") if k in d})})
+            return
         self.t.node(name, "OmniLight3D", "Lights", {
             "transform": xform(s2g(p["pos"])), "light_color": col(c), "light_energy": f(inten if lit else 0.0),
             "omni_range": f(dist), "omni_attenuation": "1.6", "shadow_enabled": "true",
             "light_size": f(LIGHT_SIZE.get(kind, 0.06)), "shadow_blur": "1.5"},    # a bulb or a lamp has a size: penumbras, not a cut edge (look.gd shadows())
-            {"piece": self.piece_meta(p), "light": {"kind": kind, "room": p.get("room"), "flicker": float(d.get("flicker") or 0), "base": inten, "on": lit}})
+            {"piece": self.piece_meta(p), "light": light_meta})
+
+    def room_at(self, room_id):
+        """A room's origin (story metres): a prop's `at` is room-local, as is a pattern's `aim`."""
+        for r in (self.story.get("levels", {}).get(self.lid, {}) or {}).get("rooms", []) or []:
+            if r.get("id") == room_id:
+                at = r.get("at") or [0, 0, 0]
+                return [float(at[0]), float(at[1]), float(at[2]) if len(at) > 2 else 0.0]
+        return [0.0, 0.0, 0.0]
 
     def trigger(self, p):
         w, d, h = p["size"]
@@ -436,9 +478,28 @@ class LevelWriter:
                 # a spot light looks down its -Z: aim it from a at b
                 dx, dy, dz = b[0] - a[0], b[1] - a[1], b[2] - a[2]
                 yaw = math.degrees(math.atan2(-dz, dx)) - 90   # the desk's yaw convention (character +Z faces rot+90)
-                self.t.node(name, "SpotLight3D", "Lights", {
-                    "transform": xform(a, yaw + 180), "light_color": col(wc), "light_energy": f(wk * area), "spot_range": f(wd),
-                    "spot_angle": "63", "spot_attenuation": "1.5"}, {"window": {"room": room["id"], "area": area, "energy": wk * area}})
+                shaft = op.get("shaft")
+                shaft_k = (1.0 if shaft is True else float(shaft)) if shaft not in (None, False) else 0.0
+                props = {"transform": xform(a, yaw + 180), "light_color": col(wc), "light_energy": f(wk * area), "spot_range": f(wd),
+                         "spot_angle": "63", "spot_attenuation": "1.5"}
+                if shaft_k > 0:                           # the beam shows in the haze, the frame's shadow cut into it (HSShaft)
+                    props.update({"light_volumetric_fog_energy": f(4.0 * shaft_k), "shadow_enabled": "true", "shadow_blur": "1.5"})
+                self.t.node(name, "SpotLight3D", "Lights", props, {"window": {"room": room["id"], "area": area, "energy": wk * area}})
+                sweep = op.get("sweep")
+                if sweep not in (None, False):            # a car passing outside now and then (HSSweep): a marker at the window's middle, the sweep made at run time
+                    sw = dict(sweep) if isinstance(sweep, dict) else {}
+                    outward = (0, -inward, 0) if axis == "y" else (-inward, 0, 0)
+                    along_v = (1, 0, 0) if axis == "y" else (0, 1, 0)
+                    self.t.node(self.uname(f"__sweep_{room['id']}_{i}"), "Node3D", "Lights", {"transform": xform(s2g(at(0)))},
+                                {"sweep": dict({"room": room["id"], "outward": list(s2g(outward)), "along": list(s2g(along_v))},
+                                               **{k: sw[k] for k in ("every", "secs", "out", "span", "energy", "aim", "seed") if k in sw})})
+                if shaft_k > 0:                           # a FogVolume laid along the window's light: its fog shader the beam and its dust
+                    reach = float(op.get("reach", 3.0))
+                    n = math.sqrt(dx * dx + dy * dy + dz * dz) or 1.0
+                    centre = (a[0] + dx / n * reach / 2, a[1] + dy / n * reach / 2, a[2] + dz / n * reach / 2)
+                    self.t.node(self.uname(f"__shaft_{room['id']}_{i}"), "FogVolume", "Lights",
+                                {"transform": look_xform(centre, b), "size": v3(op["w"] * 1.15, op["h"] * 1.15, reach), "shape": "1"},
+                                {"shaft": {"room": room["id"], "strength": shaft_k, "dust": float(op.get("dust", 0.5)), "drift": float(op.get("drift", 0.12)), "reach": reach}})
                 if op.get("window"):                      # the pane: a quad of glass in the opening (HSGlass; the runtime rains on it)
                     pane = self.uname(f"__pane_{room['id']}_{i}")
                     quad = self.t.sub("QuadMesh", {"size": f"Vector2({f(op['w'])}, {f(op['h'])})"})

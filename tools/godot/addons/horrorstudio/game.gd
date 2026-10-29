@@ -69,6 +69,7 @@ func _ready() -> void:
 	if envn != null and envn.environment != null:        # the look (game.look: realism, the default, or plain; HorrorStudioLook's HSLook)
 		HSLook.apply(get_viewport(), envn.environment, str(story.game.get("look", "realism")))
 	HSLook.shadows(get_viewport(), int(load("res://addons/horrorstudio/menu.gd").load_settings().get("shadows", 2)))   # the shadows' filter and atlas (the menu's row)
+	HSLook.iris(get_viewport(), str(story.game.get("look", "realism")) != "plain", time_of_day == "night")   # the camcorder's iris: auto exposure settling over a second, a stop under at night
 	var vhsn = get_node_or_null("VHS")
 	if vhsn != null:                             # the camcorder look (game.vhs: camcorder, worn, nightmare; off when the game names none)
 		vhsn.preset(str(story.game.get("vhs", "off")))
@@ -188,6 +189,8 @@ func set_time(t: String) -> void:
 	var vhsn = get_node_or_null("VHS")
 	if vhsn != null:
 		vhsn.set_night(1.0 if time_of_day == "night" else 0.0)   # the tape's black turns blue at night (UltraVHS's night mode)
+	if story != null:
+		HSLook.iris(get_viewport(), str(story.game.get("look", "realism")) != "plain", time_of_day == "night")   # the iris a stop under at night
 	var e: Environment = env.environment
 	e.background_color = L["sky"]
 	e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
