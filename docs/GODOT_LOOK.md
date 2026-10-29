@@ -85,7 +85,9 @@ a third as many seats as streaks, each a quad laid flat that every cycle (about 
 own pace) flashes a point, widens a thin ring that fades as it grows (6 cm at its widest) and throws a few spikes up
 round it; additive and unshaded, so on the wet floor they read as glints, on a dry one as a faint stipple. The demo
 shoots the floor with and without them and measures what they add (`splash_glow`, LOOKPLUGIN). `set_splashes(off)`
-for a cheaper rain.
+for a cheaper rain. In a game the shelf's rain is heard at the open room's middle from indoors and rides with the
+player once they're in it (`rain_follow` in play.gd), and every step taken in that room is a wet one (`step_wet`,
+on the desk too: steps.js).
 
 
 ## 5. Wet and oiled skin (`skin_wet.gdshader`, `HSSkin`): HumanShaders implemented
@@ -188,6 +190,6 @@ of the room per mirror in view: keep mirrors to the rooms that need one. Not yet
 - The characters: the Studio's paint and eye measured beside the Studio's own render (the three.js side), not only
   against the baked texture and by the pupil's shift; the skin's own light (studioSkin: the Unreal side's
   M_StudioSkin numbers) onto HSSkin's sliders.
-- Splashes where the streaks land; the rain's sound following the player; wet walls under a leak.
+- Wet walls under a leak; a mirror seen in a mirror.
 - A rain that follows the player outdoors through a level (today each open room has its own box).
 - A `look` per level or scene (today the game's).

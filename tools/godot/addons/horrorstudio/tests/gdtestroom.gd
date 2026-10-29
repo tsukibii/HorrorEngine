@@ -374,6 +374,13 @@ func _initialize() -> void:
 				return "rain in the lobby (it has a ceiling)"
 			if rt.panes.size() != 2 or rt.panes.any(func(pn): return not (pn.material_override is ShaderMaterial) or pn.material_override.shader != HSGlass.shader() or float(pn.material_override.get_shader_parameter("rain")) <= 0.0):
 				return "the lobby's two panes should wear the glass with the rain on it: " + str(rt.panes.size())
+			if rt.rain_sounds.size() < 1 or not (rt.rain_sounds[0]["p"] is AudioStreamPlayer3D):    # the shelf's rain in the yard, riding with you while you're in it
+				return "no rain heard in the yard: " + str(rt.rain_sounds)
+			place(1.5, -8.5, 0)
+			await game_wait(0.2)
+			var rp: AudioStreamPlayer3D = rt.rain_sounds[0]["p"]
+			if not rt.inside.has("yard") or rp.global_position.distance_to(rt.eye_pos()) > 0.05:
+				return "the rain's sound should ride with the player in the yard: at %s, the eye at %s, inside %s" % [rp.global_position, rt.eye_pos(), rt.inside.keys()]
 			rt.sounds_heard.clear()
 			place(1.5, -8.5, 0)
 			var x0: float = rt.player.pos.x
@@ -396,6 +403,8 @@ func _initialize() -> void:
 			var st := steps_on()
 			if st.is_empty() or st.any(func(f): return f != "dirt"):
 				return "steps in the yard: " + JSON.stringify(st)
+			if not str(rt.last_step.get("name", "")).begins_with("step_wet"):     # the yard's in the rain (game.weather): the steps sound wet
+				return "steps in the rain should be wet: " + str(rt.last_step)
 			var stepped: Array = rt.audio_log.filter(func(a): return str(a["n"]).begins_with("step_"))   # the steps' sounds loaded
 			if stepped.is_empty() or stepped.any(func(a): return not a["loaded"]):
 				return "the steps off the shelf: " + JSON.stringify(stepped.slice(0, 3))

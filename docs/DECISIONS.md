@@ -14,6 +14,12 @@ The user's answers, newest first. They override the plan, the research and the d
   in a folder that gets passed in"**: `GodotPlugins/HorrorStudioLook/`, copied into every export (docs/GODOT_LOOK.md).
 - Claude's call on the way to say it in a story: the new word `skin` (STORY_FORMAT §9.8: a cast member's `wet`,
   `sweat`, `drips`, `oil`), played by the Godot export, recorded by the desk; the user may want it elsewhere.
+- Claude's calls later that morning (the user still away): the desk's stage draws `skin` too (skinwet.js); **every
+  kit mirror reflects for real** in Godot (HSMirror: a second camera into a viewport, the glass projecting its
+  view; a mirror's own wall and itself kept out of its picture, so two mirrors in one room is for later; a second
+  render of the room per mirror in view: a bathroom's worth, not a hall of them); rain splashes where it lands; in
+  the rain's room the rain is heard all round you and every step is a wet one, on the desk too; a level's own
+  `weather` over the game's (STORY_FORMAT §2). LightmapGI stays out: its bake is editor-only in 4.7.
 
 ## 2026-10-28, late night (Godot: Claude's picks, parity first)
 

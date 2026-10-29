@@ -187,6 +187,8 @@ const snapFor = nid => {                               // the run's state on rea
       if (!(eye < 1.2)) throw new Error("crouched, the eye at " + eye);
       const steps = await page.evaluate(() => window.__steps);
       if (!steps.length || steps.some(f => f !== "dirt")) throw new Error("steps in the yard: " + JSON.stringify(steps));
+      const lastName = await page.evaluate(() => window.__dd.play.lastStep.name);     // the yard's in the rain (game.weather): the steps sound wet
+      if (!/^step_wet/.test(lastName)) throw new Error("steps in the rain should be wet: " + lastName);
     });
     await step("the front door: a click opens it (the task ticks), through it into the lobby (it ticks), and the station ends", async () => {
       await place(1.5, -5.9, 90); await use("front_door", 1.0); await gameWait(1.0);

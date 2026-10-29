@@ -265,6 +265,9 @@ def check_world(story, things, r):
         check_spoken(f"line {k}", ln, cast, r)
     for lid, lvl in story.get("levels", {}).items():
         rooms = {rm["id"]: rm for rm in lvl.get("rooms", [])}
+        lw = lvl.get("weather")                        # a level's own weather over the game's (§2)
+        if lw is not None and lw not in ("clear", "rain"):
+            r.err(f"level {lid}: weather {lw!r}: clear or rain")
         start = things.get(lvl.get("start"))
         if not start or start.use != "spot" or start.level != lid:
             r.err(f"level {lid}: start {lvl.get('start')!r} isn't a spot in it")

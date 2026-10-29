@@ -639,13 +639,13 @@ func sound(id, at) -> void:
 		shelf_sound(n, at)
 
 
-func shelf_sound(name: String, at = null, db: float = 0.0, floor_ = null) -> void:
+func shelf_sound(name: String, at = null, db: float = 0.0, floor_ = null) -> Node:
 	if not active:
-		return
+		return null
 	sounds_heard.append({"n": name, "at": at, "db": db, "clock": clock, "floor": floor_})
 	if sounds_heard.size() > 400:
 		sounds_heard.pop_front()
-	play_sfx(name, at, db)
+	return play_sfx(name, at, db)
 
 
 ## where a sound is placed: a thing (its node), a cast member (her stand-in, else her behaviour's spot), a point
@@ -667,7 +667,7 @@ func sound_pos(at) -> Variant:
 
 ## a sound off the shelf (game/sfx/, docs/SFX.md): placed in the room when it has a place (quieter across it, from its
 ## side), else on the player; looping ones loop as the shelf says. Headless, the stream still loads: audio_log says
-func play_sfx(name: String, at = null, db: float = 0.0) -> void:
+func play_sfx(name: String, at = null, db: float = 0.0) -> Node:
 	var s: Dictionary = game.sfx_index.get(name, {})
 	var st: AudioStream = sfx_stream(name, str(s.get("file", "")))
 	var pos = sound_pos(at)
@@ -675,7 +675,7 @@ func play_sfx(name: String, at = null, db: float = 0.0) -> void:
 	if audio_log.size() > 200:
 		audio_log.pop_front()
 	if st == null:
-		return
+		return null
 	var p = null
 	for q in sfx_players:
 		if is_instance_valid(q) and not q.playing and ((q is AudioStreamPlayer3D) == (pos != null)):
@@ -683,7 +683,7 @@ func play_sfx(name: String, at = null, db: float = 0.0) -> void:
 			break
 	if p == null:
 		if sfx_players.size() >= 24:
-			return
+			return null
 		p = AudioStreamPlayer3D.new() if pos != null else AudioStreamPlayer.new()
 		if p is AudioStreamPlayer3D:
 			p.unit_size = 1.0
@@ -698,6 +698,7 @@ func play_sfx(name: String, at = null, db: float = 0.0) -> void:
 	if "loop" in st:
 		st.loop = bool(s.get("loop", false))
 	p.play()
+	return p
 
 
 func sfx_stream(name: String, file: String) -> AudioStream:
@@ -1643,8 +1644,13 @@ func set_stain(t: Dictionary, opacity: float) -> void:
 # ---- the look plugin on the level (HorrorStudioLook): the weather, blood -----------------------------------------
 ## `game.weather` rain: streaks fall through every room with no ceiling, its floor wet with pools and the rain's
 ## rings on them, the shelf's rain heard there
+var rain_sounds: Array = []          # {p: the rain's player, room, at}: the shelf's rain in each open room (rain_follow)
+var wet_rooms: Array = []            # the open rooms' ids while it rains: steps there sound wet
 func weather_attach() -> void:
-	if str(game.story.game.get("weather", "clear")) != "rain" or game.level == null:
+	rain_sounds = []
+	wet_rooms = []
+	var lvl: Dictionary = game.story.levels.get(level, {})
+	if str(lvl.get("weather", game.story.game.get("weather", "clear"))) != "rain" or game.level == null:   # the level's own weather over the game's
 		return
 	var rooms: Array = game.story.levels.get(level, {}).get("rooms", [])
 	var open: Array = []
@@ -1664,8 +1670,11 @@ func weather_attach() -> void:
 		game.level.add_child(rain)
 		rain.global_position = Vector3(float(at[0]) + size.x / 2.0, float(at[2]) + size.y / 2.0, -(float(at[1]) + size.z / 2.0))
 		ids.append(r["id"])
-		if game.sfx_index.has("rain"):
-			shelf_sound("rain", rain.global_position, -6.0, null)
+		if game.sfx_index.has("rain"):              # heard at the room's middle from indoors, all round you once you're in it (rain_follow)
+			var rp = play_sfx("rain", rain.global_position, -6.0)     # (play_sfx, not shelf_sound: the level loads before the run is active)
+			if rp != null:
+				rain_sounds.append({"p": rp, "room": str(r["id"]), "at": rain.global_position})
+	wet_rooms = ids
 	HSWet.wet_floors(game.level, ids, {"wetness": 0.9, "puddles": 0.6, "puddle_scale": 1.2, "ripples": 1.0})
 	for n in game.level.get_children():                 # the rain on every window's pane
 		if n is MeshInstance3D and n.has_meta("pane"):
@@ -2103,7 +2112,9 @@ func ability_steps(dt: float) -> void:
 	step_at -= 1
 	var floor_ := floor_under()
 	var fam: String = FLOOR_STEPS.get(floor_, "step_wood")
-	if fam == "step_wood" and randf() < float(s["creak"]):
+	if wet_rooms.any(func(r): return inside.has(str(r))):   # out in the rain: the ground's wet whatever it is
+		fam = "step_wet"
+	elif fam == "step_wood" and randf() < float(s["creak"]):
 		fam = "step_creaky"
 	var name := _pick_step(last_step, fam)
 	last_step["name"] = name
@@ -2147,11 +2158,23 @@ func _process(delta: float) -> void:
 	tick(min(0.05, delta))
 
 
+## the rain's sound rides with the player while they stand in its room (it's all round them there), else sits at
+## the room's middle, heard through the doorway (a room's volume trigger carries the room's id)
+func rain_follow() -> void:
+	for rs in rain_sounds:
+		var p = rs["p"]
+		if p == null or not is_instance_valid(p) or not (p is AudioStreamPlayer3D):
+			continue
+		p.global_position = eye_pos() if inside.has(rs["room"]) else rs["at"]
+
+
 func tick(dt: float) -> void:
 	clock += dt
 	if lives != null:
 		lives.advance(now())
 		life_events()
+	if not rain_sounds.is_empty():
+		rain_follow()
 	var p := player
 	if moving != null:
 		var M: Dictionary = moving
