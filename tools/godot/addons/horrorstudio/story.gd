@@ -287,6 +287,36 @@ func timeline(sc: Dictionary, picks: Dictionary = {}, flags: Dictionary = {}, co
 	return {"segs": segs, "total": t, "v": v, "go": go}
 
 
+## a task as the user may have edited it in Godot (game/acts/<folder>/stitch.tscn, the export's editable layer,
+## GODOT_EXPORT §3): its StoryStitch's fields and its StoryBeat children in order, else the story's own
+var acts_index: Dictionary = {}
+var acts_read := false
+func edited_stitch(nid: String, st: Dictionary) -> Dictionary:
+	if not acts_read:
+		acts_read = true
+		if FileAccess.file_exists("res://game/acts/index.json"):
+			var parsed = JSON.parse_string(FileAccess.get_file_as_string("res://game/acts/index.json"))
+			if parsed is Dictionary:
+				acts_index = parsed
+	var folder = acts_index.get(nid)
+	if folder == null:
+		return st
+	var path := "res://game/acts/%s/stitch.tscn" % str(folder)
+	if not FileAccess.file_exists(path):
+		return st
+	var ps = load(path)
+	if ps == null or not (ps is PackedScene):
+		return st
+	var inst = ps.instantiate()
+	if inst == null or not inst.has_method("to_stitch"):
+		if inst != null:
+			inst.free()
+		return st
+	var out: Dictionary = inst.to_stitch()
+	inst.free()
+	return out
+
+
 ## the level a stitch or scene happens in (storylib.level_of)
 func level_of(node: Dictionary) -> String:
 	if node.has("level") and node["level"]:

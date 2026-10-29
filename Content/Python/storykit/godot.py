@@ -553,6 +553,192 @@ class LevelWriter:
         return self.t.text()
 
 
+def gvar(v, depth=0):
+    """A JSON value as Godot's text-resource literal (a Dictionary or Array the Inspector edits): strings quoted as
+    Godot reads them, ints and floats as themselves, true/false/null."""
+    if isinstance(v, bool):
+        return "true" if v else "false"
+    if v is None:
+        return "null"
+    if isinstance(v, int):
+        return str(v)
+    if isinstance(v, float):
+        return f(v) if v == v else "0.0"
+    if isinstance(v, str):
+        return gstr(v)
+    if isinstance(v, (list, tuple)):
+        return "[" + ", ".join(gvar(x, depth + 1) for x in v) + "]"
+    if isinstance(v, dict):
+        return "{" + ", ".join(f"{gstr(str(k))}: {gvar(x, depth + 1)}" for k, x in v.items()) + "}"
+    return gstr(str(v))
+
+
+def play_order(story):
+    """The flow's nodes in play order (breadth first from the start, as the desk's flow_times walks it), the ones no
+    path reaches after, in the story's order."""
+    flow = story.get("flow", {})
+    order, seen = [], set()
+    todo, i = [story.get("game", {}).get("start")], 0
+    while i < len(todo):
+        nid = todo[i]
+        i += 1
+        if nid not in flow or nid in seen:
+            continue
+        seen.add(nid)
+        order.append(nid)
+        todo += [o for o in L.flow_outs(story, nid) if o]
+    order += [nid for nid in flow if nid not in seen]
+    return order
+
+
+def _cam_keys(frames, fps, every=3):
+    """The bake's camera as Godot keys: (time, x, y, z) and (time, qx, qy, qz, qw) and (time, fov), one every `every`
+    frames and the last (bakeplay.gd's camera_of: Unreal centimetres with three's axes -> metres, y up; the basis
+    looking along the recorded forward with the recorded up)."""
+    import math  # noqa: PLC0415
+    pos, rot, fov = [], [], []
+    picks = list(range(0, len(frames), every))
+    if frames and picks[-1] != len(frames) - 1:
+        picks.append(len(frames) - 1)
+    for i in picks:
+        c = frames[i].get("cam")
+        if not c or len(c) < 10:
+            continue
+        t = i / float(fps)
+        px, py, pz = c[0] / 100.0, c[2] / 100.0, c[1] / 100.0
+        fx, fy, fz = c[3], c[5], c[4]
+        ux, uy, uz = c[6], c[8], c[7]
+        fl = math.sqrt(fx * fx + fy * fy + fz * fz) or 1.0
+        fx, fy, fz = fx / fl, fy / fl, fz / fl
+        if abs(ux * fx + uy * fy + uz * fz) > 0.99 or (ux * ux + uy * uy + uz * uz) < 1e-6:
+            ux, uy, uz = 0.0, 1.0, 0.0
+        # Godot's camera looks down -Z: basis z = -forward, x = up × z, y = z × x
+        zx, zy, zz = -fx, -fy, -fz
+        xx, xy, xz = uy * zz - uz * zy, uz * zx - ux * zz, ux * zy - uy * zx
+        xl = math.sqrt(xx * xx + xy * xy + xz * xz) or 1.0
+        xx, xy, xz = xx / xl, xy / xl, xz / xl
+        yx, yy, yz = zy * xz - zz * xy, zz * xx - zx * xz, zx * xy - zy * xx
+        m = [[xx, yx, zx], [xy, yy, zy], [xz, yz, zz]]          # columns x, y, z
+        tr = m[0][0] + m[1][1] + m[2][2]
+        if tr > 0:
+            sq = math.sqrt(tr + 1.0) * 2
+            qw, qx, qy, qz = 0.25 * sq, (m[2][1] - m[1][2]) / sq, (m[0][2] - m[2][0]) / sq, (m[1][0] - m[0][1]) / sq
+        elif m[0][0] > m[1][1] and m[0][0] > m[2][2]:
+            sq = math.sqrt(1.0 + m[0][0] - m[1][1] - m[2][2]) * 2
+            qw, qx, qy, qz = (m[2][1] - m[1][2]) / sq, 0.25 * sq, (m[0][1] + m[1][0]) / sq, (m[0][2] + m[2][0]) / sq
+        elif m[1][1] > m[2][2]:
+            sq = math.sqrt(1.0 + m[1][1] - m[0][0] - m[2][2]) * 2
+            qw, qx, qy, qz = (m[0][2] - m[2][0]) / sq, (m[0][1] + m[1][0]) / sq, 0.25 * sq, (m[1][2] + m[2][1]) / sq
+        else:
+            sq = math.sqrt(1.0 + m[2][2] - m[0][0] - m[1][1]) * 2
+            qw, qx, qy, qz = (m[1][0] - m[0][1]) / sq, (m[0][2] + m[2][0]) / sq, (m[1][2] + m[2][1]) / sq, 0.25 * sq
+        pos.append((t, px, py, pz))
+        rot.append((t, qx, qy, qz, qw))
+        hf = float(c[9])                                       # the bake's horizontal fov; Godot's Camera3D fov is vertical for a 16:9 frame
+        vf = 2 * math.degrees(math.atan(math.tan(math.radians(hf) / 2) * 9 / 16))
+        fov.append((t, vf))
+    return pos, rot, fov
+
+
+def write_scene_act(acts, folder, nid, node, story, bake):
+    """A scene's folder: scene.tscn with the Camera3D the Animation `scene` drives along the recording, the lines as a
+    method track's keys (StoryScene.line) and the events as cues (StoryScene.cue). Only with a recording of the scene."""
+    sid = node.get("ref")
+    sc = ((bake or {}).get("scenes") or {}).get(sid)
+    if not sc or not sc.get("frames"):
+        return False
+    fps = float(sc.get("fps") or 30)
+    total = float(sc.get("total") or (len(sc["frames"]) / fps))
+    t = Tscn(node_name(nid), "Node3D")
+    root_script = t.extres("res://addons/horrorstudio/edit/story_scene.gd", "Script")
+    t.nodes[0][3].update({"script": root_script, "node_id": gstr(nid), "scene_id": gstr(sid), "total": f(total)})
+    pos, rot, fov = _cam_keys(sc["frames"], fps)
+    props = {"resource_name": gstr("scene"), "length": f(total), "step": f(1.0 / fps)}
+    k = 0
+
+    def track(ttype, path, keys):
+        nonlocal k
+        props[f"tracks/{k}/type"] = gstr(ttype)
+        props[f"tracks/{k}/imported"] = "false"
+        props[f"tracks/{k}/enabled"] = "true"
+        props[f"tracks/{k}/path"] = f"NodePath({gstr(path)})"
+        props[f"tracks/{k}/interp"] = "1"
+        props[f"tracks/{k}/loop_wrap"] = "true"
+        props[f"tracks/{k}/keys"] = keys
+        k += 1
+
+    if pos:
+        track("position_3d", "Camera", "PackedFloat32Array(" + ", ".join(f"{f(x[0])}, 1, {f(x[1])}, {f(x[2])}, {f(x[3])}" for x in pos) + ")")
+        track("rotation_3d", "Camera", "PackedFloat32Array(" + ", ".join(f"{f(x[0])}, 1, {f(x[1])}, {f(x[2])}, {f(x[3])}, {f(x[4])}" for x in rot) + ")")
+        track("value", "Camera:fov", "{" + f'"times": PackedFloat32Array({", ".join(f(x[0]) for x in fov)}), "transitions": PackedFloat32Array({", ".join("1" for _ in fov)}), "update": 0, "values": [{", ".join(f(x[1]) for x in fov)}]' + "}")
+    marks = [(float(sb.get("t0", 0)), "line", [str(sb.get("who", "")), str(sb.get("en", "")), str(sb.get("ja", ""))]) for sb in sc.get("subs", [])]
+    marks += [(float(ev.get("t", ev.get("t0", 0)) or 0), "cue", [json.dumps(ev, ensure_ascii=False, separators=(",", ":"))]) for ev in sc.get("events", []) if isinstance(ev, dict)]
+    marks.sort(key=lambda m: m[0])
+    if marks:
+        vals = ", ".join("{" + f'"args": {gvar(m[2])}, "method": &{gstr(m[1])}' + "}" for m in marks)
+        track("method", ".", "{" + f'"times": PackedFloat32Array({", ".join(f(m[0]) for m in marks)}), "transitions": PackedFloat32Array({", ".join("1" for _ in marks)}), "values": [{vals}]' + "}")
+    anim = t.sub("Animation", props)
+    lib = t.sub("AnimationLibrary", {"_data": "{" + f'"scene": {anim}' + "}"})
+    cam = {"fov": f(fov[0][1]) if fov else "75.0", "near": "0.05", "current": "true"}
+    if pos:
+        cam["transform"] = f"Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, {f(pos[0][1])}, {f(pos[0][2])}, {f(pos[0][3])})"
+    t.node("Camera", "Camera3D", ".", cam)
+    t.node("Anim", "AnimationPlayer", ".", {"libraries": "{" + f'"": {lib}' + "}", "autoplay": gstr("scene")})
+    (acts / folder).mkdir(exist_ok=True)
+    (acts / folder / "scene.tscn").write_text(t.text(), encoding="utf-8")
+    return True
+
+
+def write_acts(out, story, bake=None):
+    """The editable layer (docs/GODOT_EXPORT.md §3): one folder a flow node in play order, game/acts/<nn>_<node>/;
+    a stitch node gets stitch.tscn, a StoryStitch root (its fields) with a StoryBeat child a beat (when, do, optional,
+    if, the rest), which the runtime reads back when the task plays (story.gd edited_stitch); acts/index.json names
+    each node's folder; _ORDER.md the walk. Returns how many it wrote."""
+    acts = out / "game" / "acts"
+    acts.mkdir(parents=True, exist_ok=True)
+    order = play_order(story)
+    index, lines, n = {}, ["# The flow in play order (breadth first from the start); a task's folder holds its stitch.tscn", ""], 0
+    for k, nid in enumerate(order, 1):
+        node = story["flow"][nid]
+        folder = f"{k:02d}_{node_name(nid)}"
+        index[nid] = folder
+        lines.append(f"{k:02d}. `{nid}` ({node.get('type')}" + (f" {node.get('ref')}" if node.get("ref") else "") + ")" + (f" -> {node.get('next')}" if node.get("next") else ""))
+        if node.get("type") == "scene":
+            if write_scene_act(acts, folder, nid, node, story, bake):
+                n += 1
+            continue
+        if node.get("type") != "stitch" or node.get("ref") not in story.get("stitches", {}):
+            continue
+        st = story["stitches"][node["ref"]]
+        t = Tscn(node_name(nid), "Node")
+        root_script = t.extres("res://addons/horrorstudio/edit/story_stitch.gd", "Script")
+        beat_script = t.extres("res://addons/horrorstudio/edit/story_beat.gd", "Script")
+        t.nodes[0][3].update({"script": root_script, "node_id": gstr(nid), "ref": gstr(node["ref"]),
+                              "fields": gvar({k2: v for k2, v in st.items() if k2 != "beats"})})
+        used = set()
+        for j, b in enumerate(st.get("beats", [])):
+            bid = str(b.get("id") or f"beat_{j + 1}")
+            name = node_name(bid)
+            while name in used:
+                name += "_"
+            used.add(name)
+            extra = {k2: v for k2, v in b.items() if k2 not in ("id", "when", "do", "optional", "if")}
+            props = {"script": beat_script, "id": gstr(bid), "when": gvar(b.get("when", {})), "do": gvar(b.get("do", []))}
+            if b.get("optional"):
+                props["optional"] = "true"
+            if b.get("if"):
+                props["only_if"] = gvar(b["if"] if isinstance(b["if"], list) else [b["if"]])
+            if extra:
+                props["extra"] = gvar(extra)
+            t.node(name, "Node", ".", props)
+        (acts / folder).mkdir(exist_ok=True)
+        (acts / folder / "stitch.tscn").write_text(t.text(), encoding="utf-8")
+        n += 1
+    (acts / "index.json").write_text(json.dumps(index, indent=1), encoding="utf-8")
+    (acts / "_ORDER.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return n
+
+
 def project_godot(story):
     title = (story.get("game") or {}).get("title") or "HorrorStudio game"
     return f'''; Engine configuration file.
@@ -851,11 +1037,12 @@ def export(game, out=None, make_zip=False, do_import=True):
             if ref.startswith("kit/") and LIB.mesh_info(ref):
                 kit_index[ref] = LIB.mesh_info(ref)
     (out / "game" / "kit.json").write_text(json.dumps(kit_index, separators=(",", ":")), encoding="utf-8")
+    acts = write_acts(out, story, pv if (previs / "preview.json").exists() else None)   # the editable layer: the tasks as scenes with their beats in the Inspector, the scenes as timelines to scrub
     sfx = ROOT / "Content" / "Studio" / "SFX"                      # the sound shelf (docs/SFX.md, CC0): every sound and its index
     if (sfx / "index.json").exists():
         shutil.copytree(sfx, out / "game" / "sfx", ignore=shutil.ignore_patterns("*.import", "__pycache__"))
     import datetime  # noqa: PLC0415
-    info = {"game": game, "story": str(path), "levels": levels, "pieces": len(pieces), "arts": arts, "surfaced": surfaced, "surface_sets": sorted(surface_sets), "bake": (previs / "preview.json").exists(), "bodies": baked,
+    info = {"game": game, "story": str(path), "levels": levels, "pieces": len(pieces), "arts": arts, "acts": acts, "surfaced": surfaced, "surface_sets": sorted(surface_sets), "bake": (previs / "preview.json").exists(), "bodies": baked,
             "bodies_list": sorted(f.name[5:-4] for f in previs.glob("Body_*.glb")) if previs.exists() else [], "engine": L.engine_version(), "godot": "4.7",
             "made": datetime.datetime.now().strftime("%Y-%m-%d %H:%M")}
     kept = []

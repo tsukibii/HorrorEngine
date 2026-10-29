@@ -43,6 +43,17 @@ skipped; a typewriter blip only after a playtest), **Godot 100%: every Unreal go
 items below are void; the Unreal docs and code stay as history and as the numbers Godot matches), and **the motion
 sets on the stand-ins wait** until the user says they've made some basic Kimodo sets (they'll say when).
 
+**Then, the same night, the leftover Godot parts** (the user: "finish the left over godot parts"), each its own
+commit: the desk draws the pattern, the shaft and the sweep (`tools/director/lightfx.js`; no shadow maps on the
+desk: they broke every shader of the stage on the card); a cast member's models per scene in Godot; a `look` per
+level; one rain box riding with the player; GDSTUDIO (the Studio's own render beside Godot's, measured); and **the
+editable layer's first cut** (GODOT_EXPORT §8: every task a scene in `game/acts/` with its beats in the Inspector,
+read back by the runtime when it plays; every recorded scene a timeline to scrub, its camera along the recording and
+its lines and cues as keys; GDEXPORT checks both). **Left of GODOT_LOOK §7 and GODOT_EXPORT §3:** wet walls under
+a leak and a mirror seen in a mirror (not started); the timeline's edits playing back (the scene player taking its
+camera and cues from the Animation when one exists) and the bodies' bone and blend-shape tracks on it; a per-scene
+look preset would need a word that isn't `look` (that's the look-at).
+
 **Open, for the user:** pick a shaft strength from the ladder (or leave 1); say where the square light patch was;
 whether the splashes' glints read at a real frame rate (only the game itself shows that: `godot-mono --path
 Saved/Godot/TestRoom001`); run the game and look at the car passing the lobby's first window (every half minute at
@@ -129,7 +140,7 @@ splashes and the mirror read as meant; the arms-down pose of the stand-ins; the 
 preset's numbers (GODOT_LOOK §1) want pushing further or back, whether the puff shader should go back onto the desk's
 stage, and whether a mirror should be drawn for real on the desk's stage too (today the desk's mirror is a metallic
 grey; Godot's reflects). **Next** (GODOT_EXPORT §8, GODOT_LOOK §7): ~~the
-voices (the takes' audio)~~ (scrapped, DECISIONS 2026-10-29, night), the Inspector resources and AnimationPlayer timelines (§3), ~~a cast member's models per
+voices (the takes' audio)~~ (scrapped, DECISIONS 2026-10-29, night), the Inspector resources and AnimationPlayer timelines (§3: the tasks as scenes with their beats in the Inspector built 2026-10-29, night, read back by the runtime; the scenes written as timelines to scrub (the camera along the recording, the lines and cues as keys), their edits not played back yet), ~~a cast member's models per
 scene~~ (done 2026-10-29, night, GODOT_EXPORT §8), the Studio's paint and eye measured beside the Studio's own render (the three.js side), ~~the motion sets on
 the stand-ins (GAMEPLAY_PLAN)~~ (waiting on the user's Kimodo sets), ~~splashes where the rain lands~~ (done that morning); and from GODOT_LOOK §7 that night: a `look` per level (STORY_FORMAT §2) and one rain box riding with the player (GODOT_LOOK §4, `docs/godot_sheets/2026-10-29_local_rain_follow.jpg`). (The desk's stage draws the `skin` word since the
 morning of the 29th: `tools/shared/skinwet.js`, GODOT_LOOK §5.)

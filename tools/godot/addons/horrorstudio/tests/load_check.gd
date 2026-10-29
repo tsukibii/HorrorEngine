@@ -3,6 +3,25 @@
 extends SceneTree
 const Story := preload("res://addons/horrorstudio/story.gd")
 
+## a value in one form for comparing: JSON's numbers are all floats, a .tscn literal keeps ints; keys sorted
+static func canon(v: Variant) -> Variant:
+	if v is Dictionary:
+		var out := {}
+		var keys: Array = v.keys()
+		keys.sort()
+		for k in keys:
+			out[str(k)] = canon(v[k])
+		return out
+	if v is Array:
+		var a := []
+		for x in v:
+			a.append(canon(x))
+		return a
+	if v is int:
+		return float(v)
+	return v
+
+
 func _initialize() -> void:
 	create_timer(120.0, true, false, true).timeout.connect(func() -> void: print("watchdog"); quit(1))
 	var story = Story.load_file("res://game/story.json")
@@ -56,6 +75,82 @@ func _initialize() -> void:
 		if bad:
 			ok = false
 		n.free()
+	# the editable layer: every task's stitch.tscn loads and reads back as story.json has it (its beats in order)
+	var acts := 0
+	var acts_bad := 0
+	for nid in story.flow:
+		var n0: Dictionary = story.flow[nid]
+		if n0.get("type") != "stitch":
+			continue
+		var st0: Dictionary = story.stitches.get(n0.get("ref"), {})
+		story.acts_read = false
+		var st1: Dictionary = story.edited_stitch(nid, {"missing": true})
+		if st1.has("missing"):
+			printerr("GDEXPORT FAIL: no act scene for %s" % nid)
+			acts_bad += 1
+			continue
+		acts += 1
+		var b0: Array = st0.get("beats", [])
+		var b1: Array = st1.get("beats", [])
+		if b0.size() != b1.size() or JSON.stringify(st0.get("title", null)) != JSON.stringify(st1.get("title", null)):
+			printerr("GDEXPORT FAIL: %s reads back with %d beats for %d" % [nid, b1.size(), b0.size()])
+			acts_bad += 1
+			continue
+		for i in b0.size():
+			if JSON.stringify(canon(b0[i].get("when", {}))) != JSON.stringify(canon(b1[i].get("when", {}))) or JSON.stringify(canon(b0[i].get("do", []))) != JSON.stringify(canon(b1[i].get("do", []))) or str(b0[i].get("id", "")) != str(b1[i].get("id", "")):
+				printerr("GDEXPORT FAIL: %s beat %s reads back differently: %s / %s" % [nid, b0[i].get("id"), JSON.stringify(b0[i]), JSON.stringify(b1[i])])
+				acts_bad += 1
+	# an edit in a stitch.tscn plays: the first task's title changed in the file reads back changed (the file put back after)
+	var first_nid = null
+	for nid in story.flow:
+		if story.flow[nid].get("type") == "stitch" and story.acts_index.has(nid):
+			first_nid = nid
+			break
+	if first_nid != null:
+		var path := "res://game/acts/%s/stitch.tscn" % str(story.acts_index[first_nid])
+		var txt := FileAccess.get_file_as_string(path)
+		var edited := txt.replace("fields = {\"title\": \"", "fields = {\"title\": \"EDITED IN GODOT ")
+		if edited == txt:
+			edited = txt.replace("fields = {", "fields = {\"title\": \"EDITED IN GODOT\", ")
+		var f := FileAccess.open(path, FileAccess.WRITE)
+		f.store_string(edited)
+		f.close()
+		var ps2 = ResourceLoader.load(path, "PackedScene", ResourceLoader.CACHE_MODE_IGNORE)
+		var got := ""
+		if ps2 != null:
+			var inst = ps2.instantiate()
+			got = str(inst.to_stitch().get("title", ""))
+			inst.free()
+		f = FileAccess.open(path, FileAccess.WRITE)
+		f.store_string(txt)
+		f.close()
+		if not got.begins_with("EDITED IN GODOT"):
+			printerr("GDEXPORT FAIL: a title edited in %s didn't read back (got %s)" % [path, got])
+			acts_bad += 1
+		else:
+			print("GDEXPORT acts: a beat file edited by hand plays as edited (%s)" % first_nid)
+	print("GDEXPORT acts: %d tasks as editable scenes, every beat read back as the story has it" % acts)
+	var timelines := 0
+	for nid in story.flow:
+		if story.flow[nid].get("type") != "scene" or not story.acts_index.has(nid):
+			continue
+		var spath := "res://game/acts/%s/scene.tscn" % str(story.acts_index[nid])
+		if not FileAccess.file_exists(spath):
+			continue
+		var sps = load(spath)
+		var sn = sps.instantiate() if sps != null else null
+		var ap = sn.get_node_or_null("Anim") if sn != null else null
+		var an: Animation = ap.get_animation("scene") if ap != null and ap.has_animation("scene") else null
+		if an == null or an.length <= 0.0 or an.get_track_count() < 1 or abs(an.length - float(sn.total)) > 0.05:
+			printerr("GDEXPORT FAIL: %s has no scrubbable timeline (%s)" % [nid, spath])
+			ok = false
+		else:
+			timelines += 1
+		if sn != null:
+			sn.free()
+	print("GDEXPORT acts: %d recorded scenes as timelines to scrub (the camera along the recording, the lines as keys)" % timelines)
+	if acts_bad:
+		ok = false
 	var main: PackedScene = load("res://addons/horrorstudio/main.tscn")
 	var g := main.instantiate()
 	root.add_child(g)

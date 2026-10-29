@@ -138,8 +138,15 @@ and a <code>do</code> (actions: <code>objective</code>, <code>todo</code>, <code
 word is listed in <code>docs/STORY_FORMAT.md</code> of HorrorStudio; the runtime's <code>conditions.gd</code> and <code>actions.gd</code> have one case each.</p>
 <div class="tip"><b>The better route</b> is the desk: add the scene there (a card on the board, its script typed as "Mari: words"), let it record the scene
 with the cast's real bodies, and export again. The recording (<code>game/previs</code>) only exists for scenes the desk baked.</div>
-<div class="notyet"><b>Not built yet:</b> scenes as Godot scenes with an AnimationPlayer timeline and tasks as nodes with Inspector resources
-(GODOT_EXPORT.md §3). For now the story is data and the runtime plays it; the editor shows the levels, the bodies and the recordings as files.</div>
+<div class="tip"><b>The tasks are editable here</b>: every task is a scene in <code>game/acts/&lt;nn&gt;_&lt;node&gt;/stitch.tscn</code> (numbered in play order;
+<code>acts/_ORDER.md</code> lists them). Open one: its root holds the task's words (title, objective, timer), and each child is a beat with its <b>when</b> (a trigger as
+the story writes it, <code>{"enter": "kitchen"}</code>) and its <b>do</b> (the actions in order, <code>[{"say": "mari_001"}, {"wait": 0.8}]</code>) as a Dictionary and an
+Array in the Inspector; drag beats to reorder, duplicate or delete them. The game reads the scene when the task plays, so your edit plays at once. A re-export keeps a
+file you changed and writes the new one beside it. The words are the desk's (STORY_FORMAT §4).</div>
+<div class="tip"><b>The scenes scrub here</b>: a recorded scene's folder holds <code>scene.tscn</code>: a camera the <code>scene</code> animation drives along the recording and the
+lines and cues as keys on its method track; open it beside the level to scrub the sequence on Godot's timeline.</div>
+<div class="notyet"><b>Not built yet:</b> edits to that timeline playing back (the game still plays the recording: the bodies, the faces, the lights), and the bodies' bone
+and blend-shape tracks on it.</div>
 """))
     body.append(section("anim", 4, "Bringing in a new animation", """
 <p>A scene's motion here is the desk's recording: every bone of each cast member, every frame, in <code>game/previs/scenes/&lt;scene&gt;.json</code>
@@ -161,8 +168,7 @@ its length (how long the scene holds on it) comes from the take's measured <code
 can type itself out and correct itself (<code>retype</code>) or break off (<code>breaks</code>); the runtime's <code>typing.gd</code> plays that.</p>
 <p>The faces: each recorded frame carries the 72 weights of MHR's face shapes per cast member (<code>face</code>), set on the body's blend shapes; they come from the
 desk's Expressions tab (a video of a face solved by MediaPipe). A new expression goes in there and the scene is recorded again.</p>
-<div class="notyet"><b>Not built yet:</b> the voices. The takes' audio isn't exported (the desk shows subtitles only, so does this); when it is, each clip's
-take lands beside its scene's recording as an .ogg and plays on its line.</div>
+<div class="tip"><b>No voices, by choice</b> (DECISIONS 2026-10-29): the lines are text, typed out as the desk shows them; a typewriter blip may come after a playtest.</div>
 """))
     body.append(section("marks", 6, "Moving the cast, the marks and the camera", """
 <p><b>Spots</b> are the marks: in the level's <code>.tscn</code> every <code>Marker3D</code> whose piece is a spot (<code>metadata/piece.kind == "spot"</code>), named after the

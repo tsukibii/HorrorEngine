@@ -267,6 +267,20 @@ loads, every verb in the games has a part).
    the runtime bakes each once when the level loads and keeps the data in `user://gi/<game>/` (28 MB for
    TestRoom001's nineteen rooms), so the bounce is there from the first run; SSAO is on in the main scene's
    environment. Headless runs skip the bake (the dummy renderer).
+   **The editable layer, first cut** (2026-10-29, night; §3's "tasks the user can edit"): the export writes
+   `game/acts/<nn>_<node>/stitch.tscn` for every task, numbered in play order (`acts/_ORDER.md`, `acts/index.json`):
+   a `StoryStitch` root (its fields) with a `StoryBeat` child a beat, each beat's `when` and `do` as a Dictionary and
+   an Array the Inspector edits (Godot's own editors, not a field per verb as §3 drew it: the words are the desk's,
+   STORY_FORMAT §4), `optional`, `only_if`, `extra`; beats dragged to reorder, duplicated, deleted. When a task plays
+   the runtime reads the scene back (`story.gd edited_stitch`), so an edit in Godot plays without the desk; a
+   re-export keeps a changed file and writes the new one beside it (§5). GDEXPORT loads every act, reads each beat
+   back as story.json has it, and edits a title in the file to see it play. **The scenes as timelines to scrub**: a
+   recorded scene's folder gets `scene.tscn`, a `StoryScene` root with a Camera3D the Animation `scene` drives
+   along the recording (position, rotation and fov keys, one every three frames) and the lines and the events as
+   keys of a method track (`line`, `cue`), so the sequence shows on Godot's timeline and the camera scrubs in the
+   editor; what plays in the game is still the recording (bakeplay.gd: the bodies, the faces, the lights), so an
+   edit to the timeline doesn't play back yet (the next cut: the bodies' bone and blend-shape tracks, and the scene
+   player taking its camera and cues from the Animation when one exists).
 5. **The rest of §6**: the lives' effects, hiding, reverb, the HUD themes, the pause menu, the little things.
 6. **The guide** (GODOT_PLAN §7), grown with each step above (each step adds its page), its pictures by driving Godot.
 7. **The re-export** (§5), once there's a project someone has edited.
