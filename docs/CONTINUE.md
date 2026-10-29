@@ -6,8 +6,8 @@ lash sets), on 2026-10-27 on `clothing-expanded`, and last on `dev-002`: the fou
 dashboard and the writers' room; 2026-10-28 the flashlight, cleaning, the peephole, the power cut, footsteps, the
 latch, examining, skin v2; then TestRoom001, the Unreal note, the skin after HumanShaders and expression loops; and
 on `game-research-001`: The Visitor's research, abstract and chart, the director's to-do; merged into `dev-002` and
-the to-do built there, with the Studio's eyes from the side, a small nose and the face's bake) on
-`claude/experiments-afk`. Read this
+the to-do built there, with the Studio's eyes from the side, a small nose and the face's bake; 2026-10-28 and 29 on
+`godot-support`: the Godot export, its runtime, its look, the look plugin). Read this
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
@@ -30,24 +30,32 @@ for a search on realistic smoke and steam (docs/research/godot_smoke.md). Built,
   new story word), **Light Kit's times of day** as nodes (the sun, the sky, the haze, the grade), and **the lighting
   trial** (GODOT_PLAN §4: a VoxelGI per room baked at run time gives the bounce, SSAO the corners; SDFGI and a
   level-wide VoxelGI miss the greybox's thin walls; the sheets in `Saved/Story/TestRoom001/godot_reference/`).
-- **2026-10-29, afternoon** (DECISIONS that day): **the inventory's row as the things themselves** (`hud.gd`: a
-  slot a small viewport of its own world, only the shown ones drawn), and **the HorrorStudio Look plugin**
-  (`GodotPlugins/HorrorStudioLook/`, docs/GODOT_LOOK.md, copied into every export: the pseudo-realism preset with
-  TAA (MSAA kills SSR), UltraVHS and the puffs moved there, wet floors with pools and rain's rings, blood, rain, wet
-  and oiled skin on HumanShaders' skin shader; `game.look`, `game.weather`; LOOKPLUGIN measures each part; TestRoom001
-  rains in its yard and its second chores stain is blood). **The Studio's character in Godot on HSSkin** (GDPEOPLE,
-  `tools/godot/people_check.py`: `_studiotest`'s export, made here by STUDIO's export step alone (`ONLY="export for
-  the desk"`; the whole run times out on the CPU at the procedural skin step), flat-lit and measured against its own
-  paint, then dry, sweating and oiled; **its eyes on the Studio's eye** (`HSEye`: the refracting cornea as a Godot
-  shader, the pupil's shift at a slant measured); every baked body in a scene wears HSSkin; the export copies the
-  cast's `people/<name>` glbs into `game/people/`).
-**Open, for the user:** a run on the 3090 (`python tools/godot_export.py --game TestRoom001 --testroom`, the sheets
-with `tools/godot/sheet.py`; the cost of nineteen VoxelGIs), a look at the pictures (the steam, the menu, the tape),
-and whether the puff shader should go back onto the desk's stage. **Next** (GODOT_EXPORT §8): VoxelGI per room
-written by the export and baked at load (cached), ~~the PBR shelf's surfaces (M_StudioSurface)~~ (done 2026-10-29: world-aligned materials, `game/textures/`), the characters' look on
-HumanShaders (GODOT_PLAN §2; the wet skin shader and `HSSkin.wear` are ready for the export), ~~the little things' sounds~~ (done 2026-10-29, `lifesound.gd`), the voices (the takes' audio), ~~the inventory's pictures~~ (done as live models, 2026-10-29),
-~~ghosting on the tape~~ (done 2026-10-29), the Inspector resources and AnimationPlayer timelines (§3), the
-~~re-export's receipt (§5)~~ (done 2026-10-29: the manifest, changed files kept with the new beside), a cast member's models per scene.
+- **2026-10-29, afternoon and night** (DECISIONS that day; the user away about seven hours, the checks run here one
+  at a time, each step its own commit, `6a5765c` to the last): **the inventory's row as the things themselves**
+  (`hud.gd`: a slot a small viewport of its own world, only the shown ones drawn); **the HorrorStudio Look plugin**
+  (`GodotPlugins/HorrorStudioLook/`, docs/GODOT_LOOK.md, copied into every export, the user's "keep our plugins in a
+  folder that gets passed in"): the pseudo-realism preset (SSR, SSAO, SSIL, glow, a thin haze, AgX, TAA alone since
+  MSAA switches SSR off; the pause menu's Graphics rows pare it back), UltraVHS and the puffs moved there, **the tape's
+  persistence**, wet floors with pools and rain's rings, puddles as decals, blood (a `clean` stain of kind blood wears
+  it), rain in every room with no ceiling (`game.weather`), **window panes** written by the export with the rain
+  running down them, wet and oiled skin on HumanShaders' skin shader, **the Studio's eye** (the refracting cornea as
+  a shader; Godot's binormal runs the other way: `handed` −1); `game.look`, `game.weather` (STORY_FORMAT §9.1);
+  LOOKPLUGIN pictures and measures each part, GDPEOPLE a Character Studio export on the skin and the eye (flat-lit
+  against its own paint; dry, sweating, oiled; the pupil moved by the cornea). **The shelf's texture sets on the
+  rooms** (world-aligned materials, `game/textures/`), **the little things' sounds** (`lifesound.gd`, the recipes
+  rendered into loops), **the re-export's receipt** (`.desk/manifest.json`: a file changed by hand kept, the new one
+  beside it), **the cast's stand-ins as their bodies** (the bake's shaped body or a Studio export, arms down), every
+  baked body on HSSkin. TestRoom001 rains in its yard, its lobby's windows wear the rain, its second chores stain is
+  blood, four rooms wear the demo shelf's sets. The night's pictures: `docs/godot_sheets/2026-10-29_look.jpg`.
+**Open, for the user:** a run on the 3090 (`python tools/godot_export.py --game TestRoom001 --testroom`, then the
+game itself: `godot --path Saved/Godot/TestRoom001`; the cost of the realism preset with nineteen VoxelGIs, the rain
+and the wet floors there; `tools/godot/plugin_check.py` and `people_check.py` for the plugin's pictures), a look at
+the sheet (does the wet floor, the blood, the rain on the glass and the sweat read as meant; the arms-down pose of the
+stand-ins; the eye's size), whether the realism preset's numbers (GODOT_LOOK §1) want pushing further or back, and
+whether the puff shader should go back onto the desk's stage. **Next** (GODOT_EXPORT §8, GODOT_LOOK §7): the
+voices (the takes' audio), the Inspector resources and AnimationPlayer timelines (§3), a cast member's models per
+scene, the Studio's paint and eye measured beside the Studio's own render (the three.js side), the wetness as a
+story word (a scene sweating her), the motion sets on the stand-ins (GAMEPLAY_PLAN), splashes where the rain lands.
 
 ## 0a. Before that (2026-10-28, night, on `godot-support`): Godot started, the export analysed, waiting on the user
 

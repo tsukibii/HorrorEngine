@@ -26,11 +26,11 @@ const SETTINGS := [
 			{"id": "scale", "label": "Resolution scale", "values": ["50 %", "67 %", "75 %", "100 %"], "def": 3, "ue": "r.ScreenPercentage", "godot": "Viewport.scaling_3d_scale"},
 			{"id": "aa", "label": "Anti-aliasing", "values": ["Off", "FXAA", "TAA", "TSR"], "def": 2, "ue": "r.AntiAliasingMethod", "godot": "Viewport.screen_space_aa / use_taa"},
 			{"id": "shadows", "label": "Shadows", "values": QUALITY, "def": 2, "sg": true, "ue": "sg.ShadowQuality", "godot": "rendering/lights_and_shadows"},
-			{"id": "gi", "label": "Global illumination", "values": QUALITY, "def": 2, "sg": true, "ue": "sg.GlobalIlluminationQuality", "godot": "rendering/global_illumination"},
-			{"id": "reflections", "label": "Reflections", "values": QUALITY, "def": 2, "sg": true, "ue": "sg.ReflectionQuality", "godot": "Environment.ssr"},
+			{"id": "gi", "label": "Global illumination", "values": QUALITY, "def": 2, "sg": true, "ue": "sg.GlobalIlluminationQuality", "godot": "rendering/global_illumination (Low: no SSIL)"},
+			{"id": "reflections", "label": "Reflections", "values": QUALITY, "def": 2, "sg": true, "ue": "sg.ReflectionQuality", "godot": "Environment.ssr (Low off, Medium half the steps)"},
 			{"id": "textures", "label": "Textures", "values": QUALITY, "def": 2, "sg": true, "ue": "sg.TextureQuality", "godot": "rendering/textures"},
-			{"id": "effects", "label": "Effects", "values": QUALITY, "def": 2, "sg": true, "ue": "sg.EffectsQuality", "godot": "the little things' puffs"},
-			{"id": "post", "label": "Post-processing", "values": QUALITY, "def": 2, "sg": true, "ue": "sg.PostProcessQuality", "godot": "Environment.glow / ssao"},
+			{"id": "effects", "label": "Effects", "values": QUALITY, "def": 2, "sg": true, "ue": "sg.EffectsQuality", "godot": "Environment.volumetric_fog (Low off)"},
+			{"id": "post", "label": "Post-processing", "values": QUALITY, "def": 2, "sg": true, "ue": "sg.PostProcessQuality", "godot": "Environment.glow / ssao / ssil (Low off, Medium no SSIL)"},
 			{"id": "view", "label": "View distance", "values": QUALITY, "def": 2, "sg": true, "ue": "sg.ViewDistanceQuality", "godot": "Camera3D.far"}]}]},
 	{"id": "audio", "title": "Audio", "groups": [
 		{"title": "Volume", "rows": [
@@ -410,6 +410,10 @@ static func apply(st: Dictionary, hud_) -> void:
 	Engine.max_fps = [30, 60, 120, 144, 0][clampi(int(st.get("fps", 1)), 0, 4)]
 	if hud_ != null and hud_.is_inside_tree():
 		var vp: Viewport = hud_.get_viewport()
+		var g = hud_.get_parent()
+		if hud_.env != null and g != null and g.get("story") != null:               # the look's preset, then the Graphics rows paring it back
+			HSLook.apply(vp, hud_.env, str(g.story.game.get("look", "realism")))
+			HSLook.quality(hud_.env, st)
 		HSLook.set_aa(vp, clampi(int(st.get("aa", 2)), 0, 3))                      # Off, FXAA, TAA (the default), TSR (TAA with FSR 2)
 		vp.scaling_3d_scale = [0.5, 0.67, 0.75, 1.0][clampi(int(st.get("scale", 3)), 0, 3)]
 	for pair in [["master", "Master"], ["music", "Music"], ["sfx", "SFX"], ["voices", "Voice"]]:

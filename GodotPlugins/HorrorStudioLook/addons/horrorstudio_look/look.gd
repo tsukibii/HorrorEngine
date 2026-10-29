@@ -82,6 +82,32 @@ static func apply(vp: Viewport, env: Environment, name: String = "realism") -> D
 	return p
 
 
+## the pause menu's Graphics rows over the preset (0 Low, 1 Medium, 2 High, 3 Epic): the preset's effects pared back,
+## never added. reflections: Low no SSR, Medium half the steps; post: Low no glow, SSAO or SSIL, Medium no SSIL;
+## effects: Low no haze; gi: Low no SSIL. Apply the preset first, then this.
+static func quality(env: Environment, q: Dictionary) -> void:
+	if env == null:
+		return
+	var refl: int = int(q.get("reflections", 2))
+	var post: int = int(q.get("post", 2))
+	var fx: int = int(q.get("effects", 2))
+	var gi: int = int(q.get("gi", 2))
+	if refl <= 0:
+		env.ssr_enabled = false
+	elif refl == 1 and env.ssr_enabled:
+		env.ssr_max_steps = int(env.ssr_max_steps / 2)
+	if post <= 0:
+		env.glow_enabled = false
+		env.ssao_enabled = false
+		env.ssil_enabled = false
+	elif post == 1:
+		env.ssil_enabled = false
+	if fx <= 0:
+		env.volumetric_fog_enabled = false
+	if gi <= 0:
+		env.ssil_enabled = false
+
+
 ## a player's anti-aliasing choice over the preset (the pause menu: Off, FXAA, TAA, TSR; TSR is TAA with FSR 2)
 static func set_aa(vp: Viewport, choice: int) -> void:
 	if vp == null:

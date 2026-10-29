@@ -34,7 +34,9 @@ screen-space effects that a big scene can't afford are cheap here, and they're t
 | Grade | contrast 1.08, saturation 1.04 | pushed a touch past neutral, under the tape (UltraVHS) when the game wears it |
 | GI | the export's VoxelGI per room (baked at the first load, cached) | GODOT_PLAN §4: SDFGI and one big VoxelGI miss 10 cm walls |
 
-`plain` is everything off (Filmic, no AA, no effects): a look at the geometry.
+`plain` is everything off (Filmic, no AA, no effects): a look at the geometry. The pause menu's Graphics rows pare
+the preset back on a slower machine (`HSLook.quality`: Reflections Low no SSR, Medium half its steps; Post-processing
+Low no glow, SSAO or SSIL, Medium no SSIL; Effects Low no haze; Global illumination Low no SSIL), never add to it.
 
 ## 2. Wet surfaces (`wet.gdshader`, `HSWet`)
 
