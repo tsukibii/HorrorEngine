@@ -951,6 +951,13 @@ or `nightmare`; left out or `off`, the picture is as it is. The Godot export pla
 under the HUD (its black turning blue at night, the menu's Film grain capping the noise); Unreal's UltraVHS component
 takes the same preset. The desk doesn't show it yet (VHS.md §9).
 
+**The look** (docs/GODOT_LOOK.md): `game.look` names the look plugin's preset the Godot export plays under, `realism`
+(the default: baked bounce with the effects overplayed: screen-space reflections, ambient occlusion and indirect
+light, a little glow, a thin haze, AgX, temporal anti-aliasing) or `plain` (all of it off). `game.weather`: `rain`
+puts rain in every room with no `ceiling`, its floor wet with pools that carry the lights and the rain's rings, the
+shelf's rain heard there; `clear` (the default) nothing. A `clean` stain of kind `blood` wears the plugin's blood: a
+pool with a ragged edge and flung drops, glossy, fading as it's scrubbed.
+
 **Hiding places' default:** `game.see_through` (0..1), how much of a locker's slats are gaps when the locker doesn't say.
 
 ### 9.11 Room acoustics

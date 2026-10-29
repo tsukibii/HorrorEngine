@@ -203,7 +203,18 @@ hob's glow, flames, the cup filling, the pour, drips, the clock's hands, screens
 {fig(pictures, 'kitchen_fx_kettle.png', 'The kettle boiling: its steam at the spout, the hob\'s ring glowing under the pot.')}
 {fig(pictures, 'kitchen_fx_table.png', 'The cup filled and steaming, the cigarette burning in the ashtray, the phone\'s call, the TV\'s static.')}
 """))
-    body.append(section("hud", 10, "The HUD, its theme, the pause menu", f"""
+    body.append(section("look", 10, "The look: the realism preset, rain, wet floors, blood, wet skin", f"""
+<p>The look comes from the studio's own plugin, <code>addons/horrorstudio_look/</code> (its README says how to use each part in any Godot project):
+<b>game.look</b> in story.json names the preset <code>HSLook</code> applies at the start, <b>{e(g.get('look', 'realism'))}</b> here: <code>realism</code> is screen-space
+reflections, ambient occlusion and indirect light, a little glow, a thin haze, AgX and temporal anti-aliasing (TAA alone: MSAA switches the reflections off in 4.7);
+<code>plain</code> turns it all off. The pause menu's Anti-aliasing row picks Off, FXAA, TAA or TSR over it.</p>
+<p><b>game.weather</b> <code>rain</code> (this game: <b>{e(g.get('weather', 'clear'))}</b>) puts rain in every room with no <code>ceiling</code> (<code>HSRain</code>, a box of
+streaks moved by the vertex shader) and wets its floor (<code>HSWet</code>: the damp, pools that carry the lights, the rain's rings on them), with the shelf's rain heard there.
+A <code>clean</code> stain of kind <code>blood</code> wears <code>HSBlood</code>'s splat (a ragged pool, flung drops, glossy, fading as it's scrubbed). <code>HSSkin</code> is
+HumanShaders' skin shader with a wetness layer (a sweat film, beads, drips, oil) for the characters. To change a number, edit the preset in <code>look.gd</code> or the
+shader's uniforms; to check it, the plugin's demo (<code>demo/demo.gd</code>) pictures and measures each part.</p>
+"""))
+    body.append(section("hud", 11, "The HUD, its theme, the pause menu", f"""
 <p>The HUD is built by <code>hud.gd</code> (the objective and the to-do list top left, the line and the choices at the bottom, the cursor's dot and prompt,
 the inventory row (the things themselves, each shown slot a small viewport of its own world with a copy of the thing's mesh fitted into it, the one in the hand turning; nothing drawn for the rest), the chapter card, the fade). Its colours, surfaces and radii come from the theme: <code>game.ui_theme</code> in story.json names
 one of <code>glass</code> (the default), <code>glass-rose</code>, <code>neumorph</code>, <code>plain</code>; <code>theme.gd</code> turns it into a Godot Theme. Add a theme by adding
@@ -213,7 +224,7 @@ Settings (Display, Graphics, Audio; stepped with <kbd>A</kbd>/<kbd>D</kbd>; each
 Quit. Settings live in <code>user://horrorstudio_settings.json</code>.</p>
 {fig(pictures, 'menu_root.png', 'The pause menu: the controls on the left, the pages on the right.')}
 """))
-    body.append(section("sound", 11, "The music and the sounds", """
+    body.append(section("sound", 12, "The music and the sounds", """
 <p><b>The sound shelf</b> is in <code>game/sfx/</code> (240 CC0 effects; <code>index.json</code> names each with its tags and length). A story sound names one with
 <code>file: "sfx/&lt;name&gt;"</code>; the runtime's <code>play_sfx</code> plays it placed in the room (an <code>AudioStreamPlayer3D</code> at the thing or the cast member) or on
 the player. The footsteps pick by the room's floor, the knocks, the slams and the latch by name. Add your own sound: drop the file in
@@ -222,7 +233,7 @@ the player. The footsteps pick by the room's floor, the knocks, the slams and th
 own sounds (the kettle's rising hiss, the phone's buzz: the desk synthesises them). Audio buses named Music, SFX and Voice make the menu's volumes
 work per kind: add them in Project → Audio Buses.</div>
 """))
-    body.append(section("build", 12, "Building for Windows and Linux", """
+    body.append(section("build", 13, "Building for Windows and Linux", """
 <ol>
 <li>Editor → <span class="ui">Manage Export Templates</span>: download the templates for this Godot version once.</li>
 <li>Project → <span class="ui">Export</span>: add a preset <b>Linux</b> (x86_64) and one <b>Windows Desktop</b>. Leave <span class="ui">Export With Debug</span> off for a release.</li>
@@ -234,7 +245,7 @@ godot --headless --export-release "Windows Desktop" build/game.exe</pre></li>
 project passed before it was zipped can be run again headless: <code>godot --headless --path . -s res://addons/horrorstudio/tests/load_check.gd</code>
 (every level loads, the story reads, the start is reached).</p>
 """))
-    body.append(section("reexport", 13, "What a re-export from the desk touches", """
+    body.append(section("reexport", 14, "What a re-export from the desk touches", """
 <p>The desk writes this whole project again on every export: <code>project.godot</code>, <code>addons/horrorstudio/</code>, <code>HumanShaders/</code>, everything under
 <code>game/</code>, and this guide. <b>Anything you change in those files is overwritten</b>, your own files beside them are not (the export writes into a fresh
 folder; when you unzip over an old one, your extra files stay). So keep your own work out of the written files: your scenes in <code>custom/</code>, your scripts

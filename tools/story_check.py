@@ -1507,6 +1507,12 @@ def check_flow(story, things, r):
     vhs = story["game"].get("vhs")                     # the camcorder look (docs/VHS.md): UltraVHS's preset, in Godot's export and Unreal
     if vhs is not None and vhs not in ("off", "camcorder", "worn", "nightmare"):
         r.err(f"game.vhs {vhs!r}: off, camcorder, worn or nightmare")
+    look = story["game"].get("look")                   # the look (HorrorStudioLook's HSLook presets, docs/GODOT_LOOK.md)
+    if look is not None and look not in ("realism", "plain"):
+        r.err(f"game.look {look!r}: realism or plain")
+    weather = story["game"].get("weather")             # rain in the rooms with no ceiling (HorrorStudioLook: HSRain, HSWet)
+    if weather is not None and weather not in ("clear", "rain"):
+        r.err(f"game.weather {weather!r}: clear or rain")
     th = story["game"].get("ui_theme")                 # the Play HUD's theme: a file in tools/director/play/ui/themes
     if th is not None and not (Path(__file__).resolve().parent / "director" / "play" / "ui" / "themes" / f"{th}.css").is_file():
         r.err(f"game.ui_theme {th!r}: no tools/director/play/ui/themes/{th}.css")

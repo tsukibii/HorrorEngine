@@ -30,11 +30,19 @@ for a search on realistic smoke and steam (docs/research/godot_smoke.md). Built,
   new story word), **Light Kit's times of day** as nodes (the sun, the sky, the haze, the grade), and **the lighting
   trial** (GODOT_PLAN §4: a VoxelGI per room baked at run time gives the bounce, SSAO the corners; SDFGI and a
   level-wide VoxelGI miss the greybox's thin walls; the sheets in `Saved/Story/TestRoom001/godot_reference/`).
+- **2026-10-29, afternoon** (DECISIONS that day): **the inventory's row as the things themselves** (`hud.gd`: a
+  slot a small viewport of its own world, only the shown ones drawn), and **the HorrorStudio Look plugin**
+  (`GodotPlugins/HorrorStudioLook/`, docs/GODOT_LOOK.md, copied into every export: the pseudo-realism preset with
+  TAA (MSAA kills SSR), UltraVHS and the puffs moved there, wet floors with pools and rain's rings, blood, rain, wet
+  and oiled skin on HumanShaders' skin shader; `game.look`, `game.weather`; LOOKPLUGIN measures each part; TestRoom001
+  rains in its yard and its second chores stain is blood). The Studio's character on HSSkin waits on a Studio export
+  (STUDIO ran here as far as the procedural skin step, which timed out on the CPU: `People/_studiotest` has a body
+  but no `export/`).
 **Open, for the user:** a run on the 3090 (`python tools/godot_export.py --game TestRoom001 --testroom`, the sheets
 with `tools/godot/sheet.py`; the cost of nineteen VoxelGIs), a look at the pictures (the steam, the menu, the tape),
 and whether the puff shader should go back onto the desk's stage. **Next** (GODOT_EXPORT §8): VoxelGI per room
 written by the export and baked at load (cached), the PBR shelf's surfaces (M_StudioSurface), the characters' look on
-HumanShaders (GODOT_PLAN §2), the little things' sounds, the voices (the takes' audio), ~~the inventory's pictures~~ (done as live models, 2026-10-29),
+HumanShaders (GODOT_PLAN §2; the wet skin shader and `HSSkin.wear` are ready for the export), the little things' sounds, the voices (the takes' audio), ~~the inventory's pictures~~ (done as live models, 2026-10-29),
 ghosting on the tape (a last-frame viewport), the Inspector resources and AnimationPlayer timelines (§3), the
 re-export's receipt (§5), a cast member's models per scene.
 

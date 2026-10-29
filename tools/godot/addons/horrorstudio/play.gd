@@ -378,6 +378,8 @@ func enter_level(lid: String) -> void:
 
 	lifefx = LifeFxC.new(self, game.kit_index)   # the little things' effects, on this level's things
 	lifefx.attach()
+	weather_attach()
+	blood_attach()
 	if physics != null:
 		physics.clear()
 	physics = PhysC.new(self)
@@ -1620,10 +1622,68 @@ func hold_tick(dt: float) -> void:
 
 func set_stain(t: Dictionary, opacity: float) -> void:
 	var m = t.get("mesh")
+	if t.has("blood") and is_instance_valid(t["blood"]):
+		HSBlood.set_opacity(t["blood"].material_override, opacity)
+		return
 	if m != null and m.material_override != null:
 		var mat: StandardMaterial3D = m.material_override
 		var c := mat.albedo_color
 		mat.albedo_color = Color(c.r, c.g, c.b, 0.85 * opacity)
+
+
+# ---- the look plugin on the level (HorrorStudioLook): the weather, blood -----------------------------------------
+## `game.weather` rain: streaks fall through every room with no ceiling, its floor wet with pools and the rain's
+## rings on them, the shelf's rain heard there
+func weather_attach() -> void:
+	if str(game.story.game.get("weather", "clear")) != "rain" or game.level == null:
+		return
+	var rooms: Array = game.story.levels.get(level, {}).get("rooms", [])
+	var open: Array = []
+	for r in rooms:
+		var c = r.get("ceiling", true)
+		if c is bool and c == false:
+			open.append(r)
+	if open.is_empty():
+		return
+	var ids: Array = []
+	for r in open:
+		var at: Array = r["at"]
+		var sz: Array = r["size"]
+		var size := Vector3(float(sz[0]), float(sz[2]), float(sz[1]))
+		var rain := HSRain.make(size, int(clamp(size.x * size.z * 25.0, 200, 2500)), 0.55)
+		rain.name = "Rain_" + str(r["id"])
+		game.level.add_child(rain)
+		rain.global_position = Vector3(float(at[0]) + size.x / 2.0, float(at[2]) + size.y / 2.0, -(float(at[1]) + size.z / 2.0))
+		ids.append(r["id"])
+		if game.sfx_index.has("rain"):
+			shelf_sound("rain", rain.global_position, -6.0, null)
+	HSWet.wet_floors(game.level, ids, {"wetness": 0.9, "puddles": 0.6, "puddle_scale": 1.2, "ripples": 1.0})
+
+
+## a `clean` stain of kind blood wears the blood splat (blood.gdshader) on a quad over its block; scrubbing fades it
+func blood_attach() -> void:
+	for id in things:
+		var t: Dictionary = things[id]
+		if t["use"] != "clean":
+			continue
+		var d: Dictionary = t["piece"].get("d", {}) if t["piece"].get("d") is Dictionary else {}
+		if str(d.get("stain", "dirt")) != "blood":
+			continue
+		var m = t.get("mesh")
+		if m == null:
+			continue
+		var q := MeshInstance3D.new()
+		q.name = "blood"
+		var qm := QuadMesh.new()
+		var sz: Array = t["size"]
+		qm.size = Vector2(float(sz[0]), float(sz[1]))
+		q.mesh = qm
+		q.material_override = HSBlood.material(float(hash(str(id)) % 1000) / 37.0, {"pool": 0.75, "drops": 0.7})
+		q.rotation_degrees = Vector3(-90, 0, 0)
+		q.position = Vector3(0, float(sz[2]) / 2.0 + 0.003, 0)
+		t["node"].add_child(q)
+		m.visible = false
+		t["blood"] = q
 
 
 func middle_of(t: Dictionary) -> Vector3:

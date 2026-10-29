@@ -214,6 +214,12 @@ loads, every verb in the games has a part).
    TextureRect, not a SubViewportContainer (that would set every slot to draw every frame). GDTESTROOM station 5
    checks the slots (one a thing shown, its own world, a mesh in it, the middle one the hand's and live, the others
    once); `tests/lookshot.gd --take=id,id` pictures it: `godot_reference/inventory_live.png`.
+   **The look plugin** (2026-10-29, docs/GODOT_LOOK.md): our own pieces of the look live in
+   `GodotPlugins/HorrorStudioLook/addons/horrorstudio_look/` and the export copies them in (the user: our plugins in
+   a folder that gets passed in, not inside the exported projects): UltraVHS and the puffs moved there; the
+   pseudo-realism preset (`game.look`; SSR, SSAO, SSIL, glow, haze, AgX, TAA alone: MSAA switches SSR off in 4.7),
+   wet floors, blood, rain (`game.weather`), wet or oiled skin on HumanShaders. LOOKPLUGIN pictures and measures
+   each in a demo room; GDTESTROOM checks the yard's rain and wet floor and the chores room's blood.
    **Light Kit's times of day** (2026-10-29): `game.gd`'s `set_time` is the sky rig as nodes, the numbers of
    BLENDER_LOOK §2's table: the sun or the moon (a DirectionalLight3D: 50° up from 135° by day, 6° at dusk, the
    moon at night, their colours), a procedural sky (zenith and horizon per time; night a navy, never black), the

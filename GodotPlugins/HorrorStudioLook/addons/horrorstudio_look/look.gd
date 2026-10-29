@@ -1,0 +1,91 @@
+## The studio's look for a Godot game (docs/GODOT_LOOK.md): the pseudo-realism preset. Small games lit by baked bounce
+## (a VoxelGI per room) with the effects overplayed: screen-space reflections so wet floors, blood and glossy things
+## carry the lights, SSAO and SSIL for the corners, a little glow on the practicals, a thin volumetric haze, AgX's
+## filmic curve with the contrast pushed; temporal anti-aliasing alone (MSAA switches the screen-space reflections
+## off in 4.7, measured in the plugin's check; TAA settles the reflections and the specular). `HSLook.apply(viewport, environment, "realism")` on any project;
+## "plain" turns all of it off (flat shading for a look at the geometry). The story names it: `game.look`.
+class_name HSLook
+
+const PRESETS := {
+	"realism": {
+		"taa": true, "msaa": Viewport.MSAA_DISABLED, "ssaa": Viewport.SCREEN_SPACE_AA_DISABLED, "debanding": true,   # MSAA kills SSR (measured, 4.7): TAA alone
+		"tonemap": Environment.TONE_MAPPER_AGX, "exposure": 1.2, "white": 1.0,
+		"ssr": true, "ssr_steps": 128, "ssr_fade_in": 0.15, "ssr_fade_out": 2.0, "ssr_tolerance": 0.2,
+		"ssao": true, "ssao_radius": 1.0, "ssao_intensity": 2.5, "ssao_power": 1.5, "ssao_detail": 0.5,
+		"ssil": true, "ssil_radius": 2.5, "ssil_intensity": 1.2,
+		"glow": true, "glow_intensity": 0.55, "glow_strength": 1.0, "glow_bloom": 0.04, "glow_threshold": 1.05, "glow_blend": Environment.GLOW_BLEND_MODE_SOFTLIGHT,
+		"haze": true, "haze_density": 0.012, "haze_anisotropy": 0.55, "haze_albedo": Color(0.85, 0.9, 1.0),
+		"adjust": true, "contrast": 1.08, "saturation": 1.04, "brightness": 1.0,
+	},
+	"plain": {
+		"taa": false, "msaa": Viewport.MSAA_DISABLED, "ssaa": Viewport.SCREEN_SPACE_AA_DISABLED, "debanding": false,
+		"tonemap": Environment.TONE_MAPPER_FILMIC, "exposure": 1.0, "white": 1.0,
+		"ssr": false, "ssao": false, "ssil": false, "glow": false, "haze": false, "adjust": false,
+	},
+}
+
+
+## the preset on a viewport (its anti-aliasing) and an environment (everything else); unknown names are "realism"
+static func apply(vp: Viewport, env: Environment, name: String = "realism") -> Dictionary:
+	var p: Dictionary = PRESETS.get(name, PRESETS["realism"])
+	if vp != null:
+		vp.use_taa = bool(p["taa"])
+		vp.msaa_3d = p["msaa"]
+		vp.screen_space_aa = p["ssaa"]
+		vp.use_debanding = bool(p["debanding"])
+	if env != null:
+		env.tonemap_mode = p["tonemap"]
+		env.tonemap_exposure = float(p["exposure"])
+		env.tonemap_white = float(p["white"])
+		env.ssr_enabled = bool(p["ssr"])
+		if env.ssr_enabled:
+			env.ssr_max_steps = int(p["ssr_steps"])
+			env.ssr_fade_in = float(p["ssr_fade_in"])
+			env.ssr_fade_out = float(p["ssr_fade_out"])
+			env.ssr_depth_tolerance = float(p["ssr_tolerance"])
+		env.ssao_enabled = bool(p["ssao"])
+		if env.ssao_enabled:
+			env.ssao_radius = float(p["ssao_radius"])
+			env.ssao_intensity = float(p["ssao_intensity"])
+			env.ssao_power = float(p["ssao_power"])
+			env.ssao_detail = float(p["ssao_detail"])
+		env.ssil_enabled = bool(p["ssil"])
+		if env.ssil_enabled:
+			env.ssil_radius = float(p["ssil_radius"])
+			env.ssil_intensity = float(p["ssil_intensity"])
+		env.glow_enabled = bool(p["glow"])
+		if env.glow_enabled:
+			env.glow_intensity = float(p["glow_intensity"])
+			env.glow_strength = float(p["glow_strength"])
+			env.glow_bloom = float(p["glow_bloom"])
+			env.glow_hdr_threshold = float(p["glow_threshold"])
+			env.glow_blend_mode = p["glow_blend"]
+			env.set_glow_level(0, 0.0)
+			env.set_glow_level(1, 0.0)
+			env.set_glow_level(2, 1.0)
+			env.set_glow_level(3, 0.0)
+			env.set_glow_level(4, 1.0)
+			env.set_glow_level(5, 0.0)
+			env.set_glow_level(6, 0.0)
+		env.volumetric_fog_enabled = bool(p["haze"])
+		if env.volumetric_fog_enabled:
+			env.volumetric_fog_density = float(p["haze_density"])
+			env.volumetric_fog_anisotropy = float(p["haze_anisotropy"])
+			env.volumetric_fog_albedo = p["haze_albedo"]
+			env.volumetric_fog_gi_inject = 0.5
+			env.volumetric_fog_ambient_inject = 0.3
+		env.adjustment_enabled = bool(p["adjust"])
+		if env.adjustment_enabled:
+			env.adjustment_contrast = float(p["contrast"])
+			env.adjustment_saturation = float(p["saturation"])
+			env.adjustment_brightness = float(p["brightness"])
+	return p
+
+
+## a player's anti-aliasing choice over the preset (the pause menu: Off, FXAA, TAA, TSR; TSR is TAA with FSR 2)
+static func set_aa(vp: Viewport, choice: int) -> void:
+	if vp == null:
+		return
+	vp.use_taa = choice >= 2
+	vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA if choice == 1 else Viewport.SCREEN_SPACE_AA_DISABLED
+	vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_FSR2 if choice == 3 else Viewport.SCALING_3D_MODE_BILINEAR

@@ -31,7 +31,7 @@ func _ready() -> void:
 	rect.set_anchors_preset(Control.PRESET_FULL_RECT)
 	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	mat = ShaderMaterial.new()
-	mat.shader = load("res://addons/horrorstudio/vhs.gdshader")
+	mat.shader = load("res://addons/horrorstudio_look/vhs.gdshader")
 	rect.material = mat
 	add_child(rect)
 	preset(preset_name)

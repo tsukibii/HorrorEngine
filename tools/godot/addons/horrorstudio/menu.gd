@@ -24,7 +24,7 @@ const SETTINGS := [
 		{"title": "Graphics", "rows": [
 			{"id": "quality", "label": "Quality", "values": ["Low", "Medium", "High", "Epic", "Custom"], "def": 2, "ue": "scalability <0-3>"},
 			{"id": "scale", "label": "Resolution scale", "values": ["50 %", "67 %", "75 %", "100 %"], "def": 3, "ue": "r.ScreenPercentage", "godot": "Viewport.scaling_3d_scale"},
-			{"id": "aa", "label": "Anti-aliasing", "values": ["Off", "FXAA", "TAA", "TSR"], "def": 3, "ue": "r.AntiAliasingMethod", "godot": "Viewport.screen_space_aa / use_taa"},
+			{"id": "aa", "label": "Anti-aliasing", "values": ["Off", "FXAA", "TAA", "TSR"], "def": 2, "ue": "r.AntiAliasingMethod", "godot": "Viewport.screen_space_aa / use_taa"},
 			{"id": "shadows", "label": "Shadows", "values": QUALITY, "def": 2, "sg": true, "ue": "sg.ShadowQuality", "godot": "rendering/lights_and_shadows"},
 			{"id": "gi", "label": "Global illumination", "values": QUALITY, "def": 2, "sg": true, "ue": "sg.GlobalIlluminationQuality", "godot": "rendering/global_illumination"},
 			{"id": "reflections", "label": "Reflections", "values": QUALITY, "def": 2, "sg": true, "ue": "sg.ReflectionQuality", "godot": "Environment.ssr"},
@@ -408,6 +408,10 @@ static func apply(st: Dictionary, hud_) -> void:
 			var sizes := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080), Vector2i(2560, 1440), Vector2i(3840, 2160)]
 			DisplayServer.window_set_size(sizes[clampi(int(st.get("resolution", 2)), 0, 4)])
 	Engine.max_fps = [30, 60, 120, 144, 0][clampi(int(st.get("fps", 1)), 0, 4)]
+	if hud_ != null and hud_.is_inside_tree():
+		var vp: Viewport = hud_.get_viewport()
+		HSLook.set_aa(vp, clampi(int(st.get("aa", 2)), 0, 3))                      # Off, FXAA, TAA (the default), TSR (TAA with FSR 2)
+		vp.scaling_3d_scale = [0.5, 0.67, 0.75, 1.0][clampi(int(st.get("scale", 3)), 0, 3)]
 	for pair in [["master", "Master"], ["music", "Music"], ["sfx", "SFX"], ["voices", "Voice"]]:
 		var bus := AudioServer.get_bus_index(pair[1])
 		if bus >= 0:

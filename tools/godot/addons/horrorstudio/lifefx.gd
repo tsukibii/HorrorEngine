@@ -23,7 +23,7 @@ var shader_puff: Shader = null
 
 func puff_shader() -> Shader:
 	if shader_puff == null:
-		shader_puff = load("res://addons/horrorstudio/puff.gdshader")
+		shader_puff = load("res://addons/horrorstudio_look/puff.gdshader")
 	return shader_puff
 var last_T: float = -1.0
 

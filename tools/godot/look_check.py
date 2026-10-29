@@ -15,7 +15,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 TOOLS = ROOT / "UnrealPlugins" / "UltraVHS" / "Tools"
-ADDON = ROOT / "tools" / "godot" / "addons" / "horrorstudio"
+ADDON = ROOT / "GodotPlugins" / "HorrorStudioLook" / "addons" / "horrorstudio_look"
 OUT = ROOT / "Saved" / "Godot" / "_look"
 
 LOOK_GD = '''extends SceneTree
@@ -73,9 +73,9 @@ def main():
     shutil.copy(ADDON / "vhs.gd", OUT / "vhs.gd")
     shutil.copy(ADDON / "vhs.gdshader", OUT / "vhs.gdshader")
     (OUT / "look.gd").write_text(LOOK_GD.replace('load("res://vhs.gd")', 'load("res://vhs.gd")'), encoding="utf-8")
-    # the add-on's shader path inside vhs.gd is res://addons/horrorstudio/vhs.gdshader: the same file here
-    (OUT / "addons" / "horrorstudio").mkdir(parents=True)
-    shutil.copy(ADDON / "vhs.gdshader", OUT / "addons" / "horrorstudio" / "vhs.gdshader")
+    # the shader path inside vhs.gd is res://addons/horrorstudio_look/vhs.gdshader: the same file here
+    (OUT / "addons" / "horrorstudio_look").mkdir(parents=True)
+    shutil.copy(ADDON / "vhs.gdshader", OUT / "addons" / "horrorstudio_look" / "vhs.gdshader")
     env = dict(os.environ)
     env.setdefault("VK_ICD_FILENAMES", "/usr/share/vulkan/icd.d/lvp_icd.json")
     cmd = [g, "--path", str(OUT), "--rendering-driver", "vulkan", "-s", "res://look.gd"]

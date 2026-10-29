@@ -46,7 +46,9 @@
      "say": "the guide"
     }
    ]
-  }
+  },
+  "look": "realism",
+  "weather": "rain"
  },
  "cast": {
   "aoi": {

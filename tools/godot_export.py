@@ -82,6 +82,10 @@ def main():
             if not guide.exists() or game not in guide.read_text(encoding="utf-8"):
                 print(f"  GDEXPORT FAIL: no guide for {game}")
                 ok = False
+            for part in ("addons/horrorstudio_look/plugin.cfg", "addons/horrorstudio_look/look.gd", "HumanShaders/skin_shader.gdshader"):
+                if not (Path(r["dir"]) / part).exists():            # the plugins (GodotPlugins/) copied in
+                    print(f"  GDEXPORT FAIL: {part} missing from the export")
+                    ok = False
             code, out = run_godot(r["dir"], "res://addons/horrorstudio/tests/load_check.gd")
             print("\n".join("  " + ln for ln in out.splitlines()[-12:]))
             if code != 0 or "GDEXPORT ok" not in out:

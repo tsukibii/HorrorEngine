@@ -7,6 +7,8 @@ opens it in Godot (Mono or standard: it's GDScript) and keeps working in it.
 What's written (parity first, GODOT_EXPORT §3 is the shape to reach):
   project.godot                        Forward+, the title, the main scene (the add-on's), GDScript only
   addons/horrorstudio/                 the runtime (tools/godot/addons/horrorstudio, copied)
+  addons/horrorstudio_look/            the look plugin (GodotPlugins/HorrorStudioLook, copied: UltraVHS, the realism
+                                       preset, puffs, rain, wet floors, blood, wet skin; docs/GODOT_LOOK.md)
   HumanShaders/                        GodotPlugins/HumanShaders (copied; its own files refer to res://HumanShaders/)
   game/story.json                      the story as data (the runtime reads it: flow, stitches, scenes, items...)
   game/lives.json                      the little things' lives (Content/Studio/Life/lives.json)
@@ -33,6 +35,7 @@ from . import storylib as L
 ROOT = L.ROOT
 ADDON = ROOT / "tools" / "godot" / "addons" / "horrorstudio"
 HUMAN = ROOT / "GodotPlugins" / "HumanShaders"
+LOOK = ROOT / "GodotPlugins" / "HorrorStudioLook" / "addons" / "horrorstudio_look"
 LIVES = L.STUDIO / "Life" / "lives.json"
 OUT = ROOT / "Saved" / "Godot"
 
@@ -528,6 +531,7 @@ def export(game, out=None, make_zip=False, do_import=True):
     (out / "game" / "levels").mkdir(parents=True)
     (out / "project.godot").write_text(project_godot(story), encoding="utf-8")
     shutil.copytree(ADDON, out / "addons" / "horrorstudio", ignore=shutil.ignore_patterns(".godot", "*.uid.bak"))
+    shutil.copytree(LOOK, out / "addons" / "horrorstudio_look", ignore=shutil.ignore_patterns(".godot", "*.uid.bak"))
     if HUMAN.exists():
         shutil.copytree(HUMAN, out / "HumanShaders", ignore=shutil.ignore_patterns("*.import"))
     (out / "game" / "story.json").write_text(json.dumps(story, ensure_ascii=False, indent=0), encoding="utf-8")

@@ -2,6 +2,17 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-29, afternoon (the look in Godot, the inventory as models, our plugins in a folder)
+
+- **The inventory shows the things themselves**, "the 3D model scaled down into an inventory-size slot, only the ones
+  showing rendered", not pictures (the user: more common than rendering inventory photos). Built: `hud.gd`'s row.
+- **Then, while the user is away (about seven hours):** "the shades we made for rain reflections, rain, reflective
+  materials inspired by Chilla's Art" ported to Godot; "a default anti-aliasing and the most aesthetic settings for
+  pseudo realism (baked realism lighting with overplayed effects like blood and reflective surfaces to trick the
+  brain; our games are pretty small scale)"; "a realistic sweaty wet skin filter and shader, and oiled up"; "implement
+  that human shader repo"; and **"instead of exporting the plugins and having them inside GitHub, keep our plugins
+  in a folder that gets passed in"**: `GodotPlugins/HorrorStudioLook/`, copied into every export (docs/GODOT_LOOK.md).
+
 ## 2026-10-28, late night (Godot: Claude's picks, parity first)
 
 - **"Do whatever you think is right, keep working on this till the test demo director is 1:1 in Godot"** (the

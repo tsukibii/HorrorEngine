@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://addons/horrorstudio/game.gd" id="game"]
-[ext_resource type="Script" path="res://addons/horrorstudio/vhs.gd" id="vhs"]
+[ext_resource type="Script" path="res://addons/horrorstudio_look/vhs.gd" id="vhs"]
 
 [sub_resource type="Environment" id="env"]
 background_mode = 1

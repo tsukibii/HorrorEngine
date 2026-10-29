@@ -361,6 +361,17 @@ func _initialize() -> void:
 			var t := tasks()
 			if t[0]["id"] != "t1_door" or t[1]["id"] != "t1_in" or t.any(func(x): return x["state"] != "open"):
 				return "the list " + JSON.stringify(t)
+			var rain = g.level.get_node_or_null("Rain_yard")         # game.weather rain: the yard has no ceiling, so it rains there
+			if rain == null or not (rain is HSRain) or rain.multimesh == null or rain.multimesh.instance_count < 200:
+				return "no rain in the yard: " + str(rain)
+			var yard_floor = null
+			for ch in g.level.get_children():
+				if ch.has_meta("piece") and str(ch.get_meta("piece")).contains("\"yard__floor\""):
+					yard_floor = ch.get_node_or_null("mesh")
+			if yard_floor == null or not (yard_floor.material_override is ShaderMaterial) or yard_floor.material_override.shader != HSWet.shader():
+				return "the yard's floor isn't wet: " + str(yard_floor)
+			if not g.level.get_node_or_null("Rain_lobby") == null:
+				return "rain in the lobby (it has a ceiling)"
 			rt.sounds_heard.clear()
 			place(1.5, -8.5, 0)
 			var x0: float = rt.player.pos.x
@@ -765,6 +776,9 @@ func _initialize() -> void:
 			var r := await enter_room("door_chores", "chores")
 			if r != "":
 				return r
+			var bl = rt.things["chores_stain_2"].get("blood")                 # the blood stain wears the splat (HSBlood), the block's mesh hidden
+			if bl == null or not (bl.material_override is ShaderMaterial) or bl.material_override.shader != HSBlood.shader() or rt.things["chores_stain_2"]["mesh"].visible:
+				return "the blood stain has no splat: " + str(bl)
 			var s0 := await go_to("chores_stain", 1.0)
 			if s0.get("cursor") != "locked":
 				return "the mud without the mop: " + JSON.stringify(s0)

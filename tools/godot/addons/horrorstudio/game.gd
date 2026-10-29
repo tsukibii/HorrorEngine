@@ -66,6 +66,8 @@ func _ready() -> void:
 	if envn != null and envn.environment != null:
 		hud.env = envn.environment
 	hud.wear(str(story.game.get("ui_theme", "glass")))
+	if envn != null and envn.environment != null:        # the look (game.look: realism, the default, or plain; HorrorStudioLook's HSLook)
+		HSLook.apply(get_viewport(), envn.environment, str(story.game.get("look", "realism")))
 	var vhsn = get_node_or_null("VHS")
 	if vhsn != null:                             # the camcorder look (game.vhs: camcorder, worn, nightmare; off when the game names none)
 		vhsn.preset(str(story.game.get("vhs", "off")))
