@@ -132,6 +132,36 @@ func enter_level(lid: String, fresh: bool = false) -> void:
 			if p is Dictionary:
 				things[p["id"]] = {"node": n, "piece": p}
 	set_time(time_of_day)
+	bake_gi(lid)
+
+
+## the rooms' VoxelGIs (the export writes one a room, unbaked): baked once here and kept in user://, so the bounce is
+## there from the first run and the next start loads it. Not headless (the dummy renderer can't bake).
+func bake_gi(lid: String) -> void:
+	if DisplayServer.get_name() == "headless" or level == null:
+		return
+	var gis: Array = []
+	for n in level.get_children():
+		if n is VoxelGI:
+			gis.append(n)
+	if gis.is_empty():
+		return
+	var dir := "user://gi/%s" % str(story.game.get("id", "game"))
+	DirAccess.make_dir_recursive_absolute(dir)
+	var baked := 0
+	for vg in gis:
+		var path := "%s/%s_%s.res" % [dir, lid, vg.name]
+		if FileAccess.file_exists(path):
+			var d = load(path)
+			if d is VoxelGIData:
+				vg.data = d
+				continue
+		vg.bake(level)
+		if vg.data != null:
+			ResourceSaver.save(vg.data, path)
+			baked += 1
+	if baked:
+		print("baked %d of the rooms' VoxelGIs into %s" % [baked, dir])
 
 
 func set_time(t: String) -> void:

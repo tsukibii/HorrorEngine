@@ -10,6 +10,7 @@ ambient_light_source = 2
 ambient_light_color = Color(0.48, 0.525, 0.667, 1)
 ambient_light_energy = 0.22
 tonemap_mode = 2
+ssao_enabled = true
 
 [node name="Game" type="Node" ]
 script = ExtResource("game")

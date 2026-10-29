@@ -212,7 +212,10 @@ loads, every verb in the games has a part).
    the tape; `tools/godot/sheet.py` makes a contact sheet of them: `godot_reference/times_sheet.png` (the lobby's open
    door at day, dusk and night, the power cut, SDFGI, VoxelGI), `gi_sheet.png` (the lighting trial of GODOT_PLAN §4
    in the corridor at night: direct lights only, SDFGI, VoxelGI baked at run time, each with SSAO and SSIL, the
-   power cut).
+   power cut). **After the trial**: the export writes a VoxelGI per room (its box plus a metre, 64 cells, unbaked);
+   the runtime bakes each once when the level loads and keeps the data in `user://gi/<game>/` (28 MB for
+   TestRoom001's nineteen rooms), so the bounce is there from the first run; SSAO is on in the main scene's
+   environment. Headless runs skip the bake (the dummy renderer).
 5. **The rest of §6**: the lives' effects, hiding, reverb, the HUD themes, the pause menu, the little things.
 6. **The guide** (GODOT_PLAN §7), grown with each step above (each step adds its page), its pictures by driving Godot.
 7. **The re-export** (§5), once there's a project someone has edited.

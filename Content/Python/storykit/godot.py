@@ -362,6 +362,17 @@ class LevelWriter:
                     "transform": xform(a, yaw + 180), "light_color": col(wc), "light_energy": f(wk * area), "spot_range": f(wd),
                     "spot_angle": "63", "spot_attenuation": "1.5"}, {"window": {"room": room["id"], "area": area, "energy": wk * area}})
 
+    def gi(self):
+        """A VoxelGI per room (GODOT_PLAN §4's trial: the bounce of the room's own lights; a level-wide one misses the
+        10 cm walls): its box plus a metre, 64 cells. Unbaked here (baking is the renderer's): the runtime bakes each
+        once when the level loads and keeps the result in user://."""
+        for room in (self.story["levels"][self.lid].get("rooms") or []):
+            x0, y0, z0 = room["at"]
+            w, d, h = room["size"]
+            c = s2g((x0 + w / 2, y0 + d / 2, z0 + h / 2))
+            self.t.node(self.uname(f"__gi_{room['id']}"), "VoxelGI", ".", {"transform": xform(c), "size": v3(w + 1.0, h + 1.0, d + 1.0), "subdiv": "0"},
+                        {"gi": {"room": room["id"]}})
+
     def write(self):
         things = L.index(self.story)[0]
         for p in self.pieces:
@@ -380,6 +391,7 @@ class LevelWriter:
                 self.spot(p, "__start")
             elif k == "person":
                 self.person(p)
+        self.gi()
         # a stand-in per cast member (the importer's cast_standins): hidden at the start; behaviours and scenes move it
         st = things.get(self.story["levels"][self.lid]["start"])
         for cid, c in (self.story.get("cast") or {}).items():
