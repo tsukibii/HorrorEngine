@@ -2,6 +2,13 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-29, the user's return (the Godot button: a plain project, no windows)
+
+- "When I click Godot, it just launches in headless 3 times and closes (via director), is there a way to just export
+  it as an individual godot project to manually load into godot?" The three launches were the guide's pictures
+  (`--pictures`, added that morning) and the import. The button now writes only the project folder
+  (`Saved/Godot/<G>/`, its `project.godot` opened by hand in Godot 4.7) and the zip; the pictures stay a CLI option.
+
 ## 2026-10-29, afternoon (the look in Godot, the inventory as models, our plugins in a folder)
 
 - **The inventory shows the things themselves**, "the 3D model scaled down into an inventory-size slot, only the ones

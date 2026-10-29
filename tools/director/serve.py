@@ -595,8 +595,9 @@ class Handler(BaseHTTPRequestHandler):
             out.write_text(json.dumps(data, separators=(",", ":")), encoding="utf-8")
             return self.send(200, {"ok": True, "path": str(out.relative_to(ROOT)), "kb": round(out.stat().st_size / 1024)})
         if parts[:3] == ["api", "godot", "export"] and len(parts) == 4 and self.game_path(parts[3]):   # the game as a Godot project (.zip) with its guide
-            pics = ["--pictures"] if any(shutil.which(c) for c in [os.environ.get("GODOT") or "", "godot", "godot-mono"] if c) else []   # the guide's pictures when Godot is on the machine
-            r = subprocess.run([sys.executable, str(ROOT / "tools" / "godot_export.py"), "--game", parts[3], "--zip", *pics],
+            # the button writes the project and its zip, nothing more: no Godot windows (the guide's pictures are the CLI's --pictures;
+            # DECISIONS 2026-10-29, the user's return: "export it as an individual godot project to manually load into godot")
+            r = subprocess.run([sys.executable, str(ROOT / "tools" / "godot_export.py"), "--game", parts[3], "--zip"],
                                capture_output=True, text=True, encoding="utf-8", timeout=2400, cwd=str(ROOT))
             out = ROOT / "Saved" / "Godot" / parts[3]
             z = out.with_suffix(".zip")

@@ -2643,10 +2643,10 @@ $("#godot").onclick = async () => {                 // the game as a Godot proje
     const pv = await bakePreview(watchStage, S, PLAN, FILES, 30, (i, n, id) => { $("#gdState").textContent = `recording the scenes… ${i + 1}/${n} (${id})`; }, GLTFExporter, saveBody);
     await api("/api/preview/" + encodeURIComponent(GAME), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(pv) });
   } catch (e) { $("#gdState").className = "err"; $("#gdState").textContent = "The recording failed: " + e.message; return; }
-  $("#gdState").textContent = "writing the project (the kit's meshes, the import, the guide's pictures by Godot: a minute or two)…";
+  $("#gdState").textContent = "writing the project (the kit's meshes, then Godot's one-time import of it, headless: a minute or two)…";
   let j; try { j = await api("/api/godot/export/" + encodeURIComponent(GAME), { method: "POST" }); }
   catch (e) { $("#gdState").className = "err"; $("#gdState").textContent = "The export failed: " + e.message; if (e.body && e.body.output) box.append(el("pre", {}, e.body.output)); return; }
-  $("#gdState").textContent = j.ok ? `Exported: ${j.zip} (${j.kb} KB). Unzip it anywhere and open project.godot in Godot 4.7.` : "The export failed.";
+  $("#gdState").textContent = j.ok ? `Exported. The project is the folder ${j.dir}: open its project.godot in Godot 4.7 (Import, or drop the folder on the project list). The same as a zip: ${j.zip} (${j.kb} KB).` : "The export failed.";
   if (j.guide) box.append(el("p", {}, el("a", { href: j.guide, target: "_blank" }, "Open the project's guide"), " (it's inside the zip too: guide/index.html)"));
   if (j.kept && j.kept.length) box.append(el("p", { class: "muted" }, `Kept yours (changed since the last export): ${j.kept.join(", ")}. The desk's new version of each is beside it as <name>.desk.<ext>.`));
   box.append(el("pre", {}, (j.output || "").split("\n").slice(-20).join("\n")));
