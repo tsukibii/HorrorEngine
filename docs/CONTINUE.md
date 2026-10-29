@@ -54,7 +54,9 @@ for a search on realistic smoke and steam (docs/research/godot_smoke.md). Built,
   ruled out (editor-only); the rain lit by the lights that reach it; the re-export's receipt leaving Godot's
   sidecars alone (they'd been taken for stale); the mirrors on the menu's Reflections row; the guide's own pictures
   made at the export (`--pictures`, the desk's button too); a room's own `wet` (the bath; the desk's stage shows a
-  wet floor dark and glossy, Godot gives it the pools). The morning's pictures:
+  wet floor dark and glossy, Godot gives it the pools); a cast member out in the rain wet by herself, dry again
+  indoors (Aoi at the front door). The checks that morning: STORY, DESK, CMDS, REFS, KIT, DASH, LOOKPLUGIN,
+  GDPEOPLE, GODOTLOOK, GDEXPORT, GDPLAY, GDTESTROOM, TESTROOM, all ok before each push. The morning's pictures:
   `docs/godot_sheets/2026-10-29_morning.jpg`.
 **Open, for the user:** a run on the 3090 (`python tools/godot_export.py --game TestRoom001 --testroom`, then the
 game itself: `godot --path Saved/Godot/TestRoom001`; the cost of the realism preset with nineteen VoxelGIs, the rain
