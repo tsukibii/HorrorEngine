@@ -94,6 +94,31 @@ def main():
     else:
         print("  BAD  no paint or no skin pixels measured: " + json.dumps(rep))
         ok = False
+    # the eye: the Studio's refracting cornea on the export's eyeballs; at a slant the iris lies elsewhere than with
+    # the cornea bending nothing (IOR 1): the pupil's centre in the two pictures differs
+    try:
+        from PIL import Image
+        import numpy as np
+        def pupil(f):
+            im = np.asarray(Image.open(keep / f).convert("L")).astype(float) / 255.0
+            h, w = im.shape
+            c = im[h // 2 - h // 4:h // 2 + h // 4, w // 2 - w // 4:w // 2 + w // 4]   # the middle of the frame: the eye
+            ys, xs = np.nonzero(c < 0.06)
+            return (float(xs.mean()), float(ys.mean()), int(xs.size)) if xs.size else None
+        eyes_on = bool(rep.get("eyes"))
+        print(("  ok  " if eyes_on else "  BAD ") + "the eyes on the Studio's eye shader: " + ", ".join(rep.get("eyes", [])))
+        ok = ok and eyes_on
+        a, b, c = pupil("people_eye_front.png"), pupil("people_eye_slant.png"), pupil("people_eye_slant_flat.png")
+        if a and b and c:
+            shift = ((b[0] - c[0]) ** 2 + (b[1] - c[1]) ** 2) ** 0.5
+            bent = shift > 1.0
+            print(("  ok  " if bent else "  BAD ") + "at a slant the cornea moves the iris: the pupil's centre %.1f px from where IOR 1 reads it (front %d px of pupil, slant %d)" % (shift, a[2], b[2]))
+            ok = ok and bent
+        else:
+            print("  BAD  no pupil found in the eye pictures: " + json.dumps([a, b, c]))
+            ok = False
+    except ImportError:
+        print("  (PIL or numpy missing: the eye not measured)")
     print("  pictures in " + str(keep))
     if not ok:
         print("GDPEOPLE FAIL")

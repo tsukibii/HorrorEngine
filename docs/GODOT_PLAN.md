@@ -30,7 +30,9 @@ like, and that must come across the same:
   `EYE_STYLES`), the lashes and brows (`browlash.js`), the whole looks (`looks.js`);
 - **the eye's refraction**: our eye puts the iris behind a refracting cornea (DECISIONS 2026-10-26); HumanShaders'
   eye only does parallax. Keep our refraction (its HLSL for Unreal, `M_StudioEye`, is the same maths) and take
-  HumanShaders' sclera SSS and wetness around it.
+  HumanShaders' sclera SSS and wetness around it. **Built 2026-10-29** as `HSEye` in the look plugin
+  (docs/GODOT_LOOK.md §5): the same maths as a Godot shader on the export's eyeballs; the sclera SSS and the
+  wetness shader still to take.
 
 So a character exported from the Studio carries its paint and its settings (as `extras.studioEye` already does for
 the eyes), and the Godot import sets HumanShaders' uniforms from them, with our patterns added to its shaders where

@@ -16,7 +16,9 @@ var who: Node3D
 var mats: Array = []
 var lights: Array = []
 var report := {}
-const STAGES := ["flat", "lit", "wet", "oil"]
+const STAGES := ["flat", "lit", "wet", "oil", "eye_front", "eye_slant", "eye_slant_flat"]
+var eyes: Dictionary = {}
+var eye_centre := Vector3.ZERO
 
 
 func _initialize() -> void:
@@ -53,6 +55,13 @@ func _initialize() -> void:
 	world.add_child(who)
 	mats = HSSkin.wear(who, {})
 	report["skin_mats"] = mats.size()
+	eyes = HSEye.wear(who, glb)                      # the Studio's eye: the refracting cornea on the export's eyeballs
+	report["eyes"] = eyes.keys()
+	for mi in who.find_children("*", "MeshInstance3D", true, false):
+		if mi.name.ends_with("_eye_L") and mi.mesh != null:
+			var a: AABB = mi.global_transform * mi.get_aabb()
+			eye_centre = a.get_center()
+	report["eye_centre"] = [eye_centre.x, eye_centre.y, eye_centre.z]
 	var tex = mats[0].get_shader_parameter("texture_albedo") if mats.size() else null
 	report["paint"] = tex_mean(tex) if tex is Texture2D else null
 	# the head: the top of the skin mesh's bounds
@@ -154,5 +163,17 @@ func _process(_d: float) -> bool:
 		"oil":
 			for m in mats:
 				HSSkin.set_wet(m, {"wetness": 0.0, "sweat": 0.0, "drips": 0.0, "oil": 1.0})
+		"eye_front":                                   # the left eye close, straight on: the iris behind its glass
+			for m in mats:
+				HSSkin.set_wet(m, {"oil": 0.0})
+			cam.fov = 6.0
+			cam.position = eye_centre + Vector3(0, 0, 0.6)
+			cam.look_at(eye_centre)
+		"eye_slant":                                   # from 35° above: the iris slides against the limbus (refraction)
+			cam.position = eye_centre + Vector3(0, 0.6 * sin(deg_to_rad(35)), 0.6 * cos(deg_to_rad(35)))
+			cam.look_at(eye_centre)
+		"eye_slant_flat":                              # the same with the cornea bending nothing (IOR 1): the shift measured against it
+			for k in eyes:
+				eyes[k].set_shader_parameter("ior", 1.0)
 	n = 0
 	return false

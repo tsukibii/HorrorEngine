@@ -15,6 +15,7 @@ the VHS layer in `main.tscn`, `puff.gdshader` from lifefx.gd). A change here rea
 | `wet.gd`, `wet.gdshader` | wet floors: the pool mask (fbm in world space), the rings (a grid of drops per cell, their age from TIME) |
 | `blood.gd`, `blood.gdshader` | the splat (the pool's radius by angle, satellite drops in a cell grid, drips in lanes) |
 | `rain.gd`, `rain.gdshader` | the streaks (a MultiMesh of quads; the vertex shader places each from its custom data and TIME) |
+| `eye.gd`, `eye.gdshader` | the Studio's eye (people.py's `_FRAME` and `EYE_COLOR` in GLSL; `handed` −1 for Godot's binormal); `records` reads the glb's JSON chunk for `studioEye` |
 | `skin.gd`, `skin_wet.gdshader` | HumanShaders' skin shader with the wetness layer (the lines marked `HS`); `skin.gd` wires HumanShaders' textures and flat defaults |
 | `demo/demo.gd` | the demo scene and the measures (`report.json`) |
 | `demo/people.gd` | a Character Studio export on HSSkin: flat-lit against its paint, lit dry, sweating, oiled (`people.json`) |
@@ -34,6 +35,8 @@ the VHS layer in `main.tscn`, `puff.gdshader` from lifefx.gd). A change here rea
 
 - **MSAA switches SSR off** in Godot 4.7 (measured in the check, 2026-10-29): the realism preset uses TAA alone.
   Don't add MSAA back without looking at the wet floor.
+- The eye's `debug` uniform (1 where the iris is read, 2 the view in the tangent space, 3 the tangent) paints the
+  numbers as colours; read them back through the sRGB curve (the picture encodes the linear value).
 - The shaders take no textures they aren't given: `skin.gd` sets flat normals and white maps, so a sphere with no
   maps lights the same as a character with them left out. Keep that when adding a sampler.
 - A new piece: a class with a static `make`/`material`/`apply`, a shader beside it, a stage in `demo.gd` with a

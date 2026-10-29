@@ -38,8 +38,9 @@ for a search on realistic smoke and steam (docs/research/godot_smoke.md). Built,
   rains in its yard and its second chores stain is blood). **The Studio's character in Godot on HSSkin** (GDPEOPLE,
   `tools/godot/people_check.py`: `_studiotest`'s export, made here by STUDIO's export step alone (`ONLY="export for
   the desk"`; the whole run times out on the CPU at the procedural skin step), flat-lit and measured against its own
-  paint, then dry, sweating and oiled; every baked body in a scene wears HSSkin; the export copies the cast's
-  `people/<name>` glbs into `game/people/`).
+  paint, then dry, sweating and oiled; **its eyes on the Studio's eye** (`HSEye`: the refracting cornea as a Godot
+  shader, the pupil's shift at a slant measured); every baked body in a scene wears HSSkin; the export copies the
+  cast's `people/<name>` glbs into `game/people/`).
 **Open, for the user:** a run on the 3090 (`python tools/godot_export.py --game TestRoom001 --testroom`, the sheets
 with `tools/godot/sheet.py`; the cost of nineteen VoxelGIs), a look at the pictures (the steam, the menu, the tape),
 and whether the puff shader should go back onto the desk's stage. **Next** (GODOT_EXPORT §8): VoxelGI per room

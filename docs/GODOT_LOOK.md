@@ -81,10 +81,23 @@ sphere with no maps lights the same as a character missing one. `HSSkin.wear(nod
 export's skin meshes (named skin, body, head, face; not the eyes, lashes, brows, hair, teeth), each keeping its baked
 albedo.
 
+**The Studio's eye** (`eye.gdshader`, `HSEye`; M_StudioEye's maths from `storykit/people.py`, eye.js's): the
+export's eyeball carries its paint baked flat (Epic's layout) and, in its material's extras, `studioEye` (the shape:
+the limbus, the cornea's dome, the iris's plane; the paint's numbers). `HSEye.wear(node, glb)` reads them from the
+glb's own JSON (Godot's importer keeps no material extras) and puts the shader on each eye: the eye's point from the
+UV and the shape, the view brought into the eye's frame through the mesh's tangent space (the export's tangents lie
+along the eye's +x; **Godot's binormal runs the other way from three's and Unreal's: `handed` is −1**, found when the
+pupil came out as a bar), bent at the dome by Snell's law onto the iris's plane, the iris read there, the white where
+the point is, the limbus darker at a slant, the iris as a shallow bowl under the cornea's own normal on the clear
+coat (the catchlights are the room's), no shine of its own under the glass. GDPEOPLE pictures the left eye close,
+straight on and from 35° above, and the same slant with the cornea bending nothing (IOR 1): the pupil's centre lies
+elsewhere (first run 1.3 px at 1280×720 with a 6° lens). Not measured yet: the same eye beside the Studio's own
+render (the three.js side), which would also settle the sign of the picture's V by measurement rather than by the
+bar.
+
 **The Studio's character on it** (GDPEOPLE, `tools/godot/people_check.py`, `demo/people.gd`): a Character Studio
 export (`People/<name>/export/<name>.glb`, STUDIO makes `_studiotest`) loaded in a Godot project of its own, its skin
-mesh (`<name>_skin`, its paint baked on MHR's UVs) worn by HSSkin, its eyes as the export bakes them (the eye's
-refraction is still to do: `tools/shared/eye.js` as a Godot shader), pictured as a medium close-up: flat-lit under a
+mesh (`<name>_skin`, its paint baked on MHR's UVs) worn by HSSkin, its eyes on HSEye, pictured as a medium close-up: flat-lit under a
 white ambient, where the picture's skin is measured against the export's own paint (the Studio's colours come across:
 each channel within 0.7 to 1.6 of the paint and the hue kept within 25 %; first run 1.14, 1.19, 1.23, the 4 % of
 specular ambient over the paint), then under a key and a rim dry, sweating (beads, the sheen, runs) and oiled.
@@ -110,8 +123,9 @@ bodies with their tone, a Studio export with its paint; GDTESTROOM checks Aoi's 
 
 ## 7. What's left
 
-- The characters: the eye's refraction as a Godot shader (GODOT_PLAN §2) and the Studio's paint measured beside the
-  Studio's own render, not only against the baked texture; the wetness as a story word (a scene sweating her).
+- The characters: the Studio's paint and eye measured beside the Studio's own render (the three.js side), not only
+  against the baked texture and by the pupil's shift; the wetness as a story word (a scene sweating her); the
+  skin's own light (studioSkin: the Unreal side's M_StudioSkin numbers) onto HSSkin's sliders.
 - Puddles as decals for any surface (`Decal` with ORM: a ready-made in `HSWet` next), wet walls (rain running down
   glass: the window shader), splashes where the streaks land.
 - A rain that follows the player outdoors through a level (today each open room has its own box).
