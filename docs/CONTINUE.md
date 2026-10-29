@@ -59,9 +59,11 @@ for a search on realistic smoke and steam (docs/research/godot_smoke.md). Built,
 **Open, for the user:** a run on the 3090 (`python tools/godot_export.py --game TestRoom001 --testroom`, then the
 game itself: `godot --path Saved/Godot/TestRoom001`; the cost of the realism preset with nineteen VoxelGIs, the rain
 and the wet floors there; `tools/godot/plugin_check.py` and `people_check.py` for the plugin's pictures), a look at
-the sheet (does the wet floor, the blood, the rain on the glass and the sweat read as meant; the arms-down pose of the
-stand-ins; the eye's size), whether the realism preset's numbers (GODOT_LOOK §1) want pushing further or back, and
-whether the puff shader should go back onto the desk's stage. **Next** (GODOT_EXPORT §8, GODOT_LOOK §7): the
+the sheets (the night's and the morning's: does the wet floor, the blood, the rain on the glass, the sweat, the
+splashes and the mirror read as meant; the arms-down pose of the stand-ins; the eye's size), whether the realism
+preset's numbers (GODOT_LOOK §1) want pushing further or back, whether the puff shader should go back onto the desk's
+stage, and whether a mirror should be drawn for real on the desk's stage too (today the desk's mirror is a metallic
+grey; Godot's reflects). **Next** (GODOT_EXPORT §8, GODOT_LOOK §7): the
 voices (the takes' audio), the Inspector resources and AnimationPlayer timelines (§3), a cast member's models per
 scene, the Studio's paint and eye measured beside the Studio's own render (the three.js side), the motion sets on
 the stand-ins (GAMEPLAY_PLAN), splashes where the rain lands. (The desk's stage draws the `skin` word since the
