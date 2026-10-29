@@ -724,8 +724,16 @@ func _initialize() -> void:
 			var ck: Dictionary = fx.get("kitchen_clock", {})
 			if not ck.has("hands"):
 				return "the clock's hands: " + JSON.stringify(ck)
+			var hd: Array = rt.lifesound.heard                     # the sounds made from their recipes (lifesound.gd): the switch once, the rumble while it heats
+			if hd.filter(func(h): return h["key"] == "kitchen_kettle:switch" and h["what"] == "once").is_empty() or not rt.lifesound.playing().has("kitchen_kettle:kettle"):
+				return "the kettle's sounds: " + JSON.stringify(hd.slice(-6)) + " playing " + JSON.stringify(rt.lifesound.playing())
+			if not rt.lifesound.playing().has("kitchen_clock:tick"):
+				return "the clock doesn't tick: " + JSON.stringify(rt.lifesound.playing())
 			if not await until(func(): return rt.state_of("kitchen_kettle") == "boiling", 9000):
 				return "boiling: never"
+			await game_wait(0.2)
+			if not rt.lifesound.playing().has("kitchen_kettle:kettle_boil") or rt.lifesound.playing().has("kitchen_kettle:kettle"):
+				return "at the boil the rumble should give way to the roar: " + JSON.stringify(rt.lifesound.playing())
 			await game_wait(0.5)
 			var boiling: Dictionary = rt.lifefx.report().get("kitchen_kettle", {})
 			if not (float(boiling.get("steam", 0)) > 0.5):            # boiling: steam at the spout at full rate

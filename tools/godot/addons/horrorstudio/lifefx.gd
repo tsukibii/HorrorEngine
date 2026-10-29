@@ -4,7 +4,7 @@
 ## a function of the run's time and the thing's states (life.gd: `at` for now, `history` for what was going on), at
 ## the kit's sockets (game/kit.json, from the kit index: item space x across, y deep, z up from the base). Nothing here
 ## is in a ray's way (the effects are plain nodes the cursor never sees: play.gd's ray looks at the blocks). The sounds
-## (lifesound.js) are not ported yet.
+## are lifesound.gd's.
 extends RefCounted
 
 const NO_FX := ["light"]      # a candle's light: play.gd's life_lights

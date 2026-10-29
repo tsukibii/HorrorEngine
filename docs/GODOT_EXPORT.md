@@ -162,8 +162,15 @@ loads, every verb in the games has a part).
    what each thing shows; GDTESTROOM checks the kettle's LED and steam, the hob's glow and digits, the cup's fill, the
    cigarette's burn, the clock's hands and the TV's static. Pictures: `godot_reference/kitchen_fx_*.png`. The puffs
    draw through `puff.gdshader` (noise-eroded soft discs, spun, lit from above, faded into the scene behind, alpha
-   blended: docs/research/godot_smoke.md, after the user found the first additive blobs too fake). Not yet: their
-   sounds (lifesound.js's synthesis).
+   blended: docs/research/godot_smoke.md, after the user found the first additive blobs too fake). **Their sounds**
+   (2026-10-29, `lifesound.gd`, lifesound.js ported): each recipe (noise, RBJ biquads, tones with a vibrato, blips
+   that slide, bursts that decay, amplitude modulation) rendered once into a 22 kHz looping wave (two seconds, or the
+   figure's period: the phone's 2.2 s, the clock's tick and tock in two) and played placed at the thing; a state's
+   `sound` while it lasts with its level ramping (`level: [from, to]` over the state's secs), its `enter` sounds once
+   as it starts (the switch, the click, the beep, the igniter, the tune); what the desk modulates live is the player's
+   pitch (the kettle's low band opening, the pour climbing with the cup, the whistle rising); the drip's plink when
+   the drop lands. `heard` and `playing()` for the checks: GDTESTROOM hears the kettle's switch and rumble, the
+   clock's tick, the roar taking over at the boil.
    **The sound shelf** (2026-10-29): the export copies `Content/Studio/SFX` (CC0, 6 MB) into `game/sfx/` with its
    index; `play_sfx` plays a shelf sound placed in the room (an AudioStreamPlayer3D at the thing or the cast member,
    inverse distance, from a pool) or on the player, looping as the shelf says, the stream loaded at run time when

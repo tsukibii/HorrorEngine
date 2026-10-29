@@ -110,9 +110,11 @@ var audio_log: Array = []            # every shelf sound played: {n, loaded, at}
 var sfx_streams: Dictionary = {}     # name -> AudioStream, loaded once
 var sfx_players: Array = []          # a pool of AudioStreamPlayer3D / AudioStreamPlayer under the world
 const LifeFxC := preload("res://addons/horrorstudio/lifefx.gd")
+const LifeSoundC := preload("res://addons/horrorstudio/lifesound.gd")
 const PhysC := preload("res://addons/horrorstudio/physics.gd")
 var physics = null                   # physics.gd: the thing in the hand, the dice
 var lifefx = null                    # the little things' effects (lifefx.gd), on this level
+var lifesound = null                 # the little things' sounds (lifesound.gd), made from their recipes, placed
 var scene_light_k: Dictionary = {}
 var baked_cast: Dictionary = {}      # cast ids whose baked body is showing (their stand-ins hidden)   # a scene's recorded flicker: a multiplier a light while the bake plays
 var todo_log: Array = []
@@ -378,6 +380,10 @@ func enter_level(lid: String) -> void:
 
 	lifefx = LifeFxC.new(self, game.kit_index)   # the little things' effects, on this level's things
 	lifefx.attach()
+	if lifesound != null:
+		lifesound.stop()
+	else:
+		lifesound = LifeSoundC.new(self)
 	weather_attach()
 	blood_attach()
 	if physics != null:
@@ -2088,6 +2094,8 @@ func tick(dt: float) -> void:
 	life_lights()
 	if lifefx != null:
 		lifefx.update(now())
+	if lifesound != null:
+		lifesound.update(now())
 	if physics != null:
 		physics.tick(dt)
 	if torch_hot != null:

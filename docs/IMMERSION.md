@@ -101,6 +101,9 @@ player notices only by them. `life.js` `States.skip` moves every one's clock bac
 
 ## 5. Into Unreal
 
+**In Godot (2026-10-29) all of this is built** (docs/GODOT_EXPORT.md §8): `lifefx.gd` the effects at the kit's
+sockets, `lifesound.gd` the sounds from these same recipes rendered into loops at run time, `life.gd` the lives.
+
 **What goes across now:** the kit's meshes, as for every kit prop (`tools/kit/build.mjs`), and on each prop with a
 life the tags `life:<name>` and `state:<state>` (where it starts; `storykit/plan.py`). RUNNER_SPEC.md has the `state`
 word for the StoryRunner. In Unreal a little thing is a still mesh for now, as a carried plushie is.

@@ -232,9 +232,11 @@ Quit. Settings live in <code>user://horrorstudio_settings.json</code>.</p>
 <code>file: "sfx/&lt;name&gt;"</code>; the runtime's <code>play_sfx</code> plays it placed in the room (an <code>AudioStreamPlayer3D</code> at the thing or the cast member) or on
 the player. The footsteps pick by the room's floor, the knocks, the slams and the latch by name. Add your own sound: drop the file in
 <code>game/sfx/&lt;category&gt;/</code>, add it to <code>index.json</code>, name it in story.json.</p>
-<div class="notyet"><b>Not built yet:</b> the music (the score room's cues, rendered to .ogg and played by the scenes' moods) and the little things'
-own sounds (the kettle's rising hiss, the phone's buzz: the desk synthesises them). Audio buses named Music, SFX and Voice make the menu's volumes
-work per kind: add them in Project → Audio Buses.</div>
+<p><b>The little things' sounds</b> (<code>lifesound.gd</code>) are made from their recipes at run time, no files: the kettle's rumble rising to the boil's roar, the hob's hum,
+the clock's tick, the tap, the phone's ring, the switch, the beep, the rice cooker's tune; each rendered once into a short loop and played where the thing is,
+its level following the state's age. To change one, edit its recipe in <code>render()</code>; to replace it with a recording, put the wave in <code>wavs</code> under its name.</p>
+<div class="notyet"><b>Not built yet:</b> the music (the score room's cues, rendered to .ogg and played by the scenes' moods). Audio buses named Music, SFX and Voice
+make the menu's volumes work per kind: add them in Project → Audio Buses.</div>
 """))
     body.append(section("build", 13, "Building for Windows and Linux", """
 <ol>
