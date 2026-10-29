@@ -18,6 +18,13 @@ var tex_gas: Texture2D = null
 var quad: QuadMesh = null
 var sm_add: Dictionary = {}   # colour hex -> an additive billboard material
 var shader_clip: Shader = null
+var shader_puff: Shader = null
+
+
+func puff_shader() -> Shader:
+	if shader_puff == null:
+		shader_puff = load("res://addons/horrorstudio/puff.gdshader")
+	return shader_puff
 var last_T: float = -1.0
 
 
@@ -490,16 +497,18 @@ func item(it: Dictionary, st: Dictionary, hist: Array, T: float, dt: float) -> v
 # ---- puffs: soft round points born on a schedule from a socket (steam, smoke) ---------------------------------------
 func puffs_new(kind: String, fine: bool) -> Dictionary:
 	var o: Dictionary
+	# the desk's schedule and sizes (lifefx.js); the alphas for alpha blending (the desk adds its puffs)
 	if kind == "steam" and fine:
-		o = {"color": Color(0.93, 0.95, 0.96), "rate": 14.0, "life": 2.0, "size": [0.008, 0.05], "rise": 0.08, "speed": 0.03, "spread": 0.015, "curl": 0.02, "alpha": 0.14}
+		o = {"color": Color(0.93, 0.95, 0.96), "rate": 14.0, "life": 2.0, "size": [0.012, 0.06], "rise": 0.08, "speed": 0.03, "spread": 0.015, "curl": 0.02, "alpha": 0.3, "spin": 1.2}
 	elif kind == "steam":
-		o = {"color": Color(0.95, 0.96, 0.97), "rate": 48.0, "life": 1.8, "size": [0.016, 0.13], "rise": 0.22, "speed": 0.4, "spread": 0.05, "curl": 0.04, "alpha": 0.13}
+		o = {"color": Color(0.95, 0.96, 0.97), "rate": 48.0, "life": 1.8, "size": [0.024, 0.16], "rise": 0.22, "speed": 0.4, "spread": 0.05, "curl": 0.04, "alpha": 0.26, "spin": 1.0}
 	else:
-		o = {"color": Color(0.67, 0.71, 0.76), "rate": 30.0, "life": 2.2, "size": [0.004, 0.03], "rise": 0.15, "speed": 0.02, "spread": 0.01, "curl": 0.03, "alpha": 0.55}
+		o = {"color": Color(0.36, 0.37, 0.4), "rate": 30.0, "life": 2.2, "size": [0.006, 0.045], "rise": 0.15, "speed": 0.02, "spread": 0.01, "curl": 0.03, "alpha": 0.5, "spin": 1.6}
 	var n: int = int(ceil(o["rate"] * o["life"])) + 2
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.use_colors = true
+	mm.use_custom_data = true                  # x the puff's age, y its seed, z its spin (puff.gdshader)
 	mm.mesh = QuadMesh.new()
 	mm.mesh.size = Vector2.ONE
 	mm.instance_count = n
@@ -507,15 +516,9 @@ func puffs_new(kind: String, fine: bool) -> Dictionary:
 		mm.set_instance_transform(i, Transform3D(Basis().scaled(Vector3.ZERO), Vector3(0, -99, 0)))
 	var mi := MultiMeshInstance3D.new()
 	mi.multimesh = mm
-	var m := StandardMaterial3D.new()
-	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD if kind == "steam" else BaseMaterial3D.BLEND_MODE_MIX
-	m.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-	m.billboard_keep_scale = true              # each puff's size is its instance's scale
-	m.vertex_color_use_as_albedo = true
-	m.albedo_texture = glow_tex()
-	m.disable_receive_shadows = true
+	var m := ShaderMaterial.new()                # soft noise-eroded discs, lit, faded into the scene (puff.gdshader)
+	m.shader = puff_shader()
+	m.set_shader_parameter("color", o["color"])
 	mi.material_override = m
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	world().add_child(mi)
@@ -536,7 +539,7 @@ func puffs_update(P: Dictionary, T: float, dt: float, p: Vector3, dir: Vector3, 
 		var up2 := side.cross(dir)
 		var at := p + side * cos(a) * rr + up2 * sin(a) * rr
 		var vel := dir * float(o["speed"]) + Vector3.UP * float(o["rise"]) + (side * cos(a) + up2 * sin(a)) * float(o["spread"]) * (hash2(seed, i + 3) * 2.0 - 1.0)
-		var slot := {"i": i, "t0": T, "p": at, "v": vel, "curl": hash2(seed, i + 9) * TAU}
+		var slot := {"i": i, "t0": T, "p": at, "v": vel, "curl": hash2(seed, i + 9) * TAU, "seed": hash2(seed, i + 21), "spin": (hash2(seed, i + 33) * 2.0 - 1.0) * float(o.get("spin", 1.0))}
 		if born.size() < P["n"]:
 			born.append(slot)
 		else:
@@ -553,7 +556,8 @@ func puffs_update(P: Dictionary, T: float, dt: float, p: Vector3, dir: Vector3, 
 		var pos: Vector3 = b["p"] + b["v"] * age + Vector3(sin(b["curl"] + age * 2.0), 0, cos(b["curl"] + age * 1.7)) * float(o["curl"]) * u
 		mm.set_instance_transform(b["i"], Transform3D(Basis().scaled(Vector3.ONE * size), pos))
 		var c: Color = o["color"]
-		mm.set_instance_color(b["i"], Color(c.r, c.g, c.b, float(o["alpha"]) * (1.0 - u) * min(1.0, u * 6.0)))
+		mm.set_instance_color(b["i"], Color(c.r, c.g, c.b, float(o["alpha"]) * (1.0 - u * u) * min(1.0, u * 6.0)))
+		mm.set_instance_custom_data(b["i"], Color(u, float(b["seed"]), float(b["spin"]), 0.0))
 	P["node"].visible = born.size() > 0
 
 

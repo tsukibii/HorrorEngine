@@ -160,8 +160,10 @@ loads, every verb in the games has a part).
    hands and the pendulum (a slot's surface split into its own node and turned), the rattling lid, screens (static, a
    programme, a phone's lock screen and call), the buzz, the cigarette burnt back by a clip shader. `report()` says
    what each thing shows; GDTESTROOM checks the kettle's LED and steam, the hob's glow and digits, the cup's fill, the
-   cigarette's burn, the clock's hands and the TV's static. Pictures: `godot_reference/kitchen_fx_*.png`. Not yet:
-   their sounds (lifesound.js's synthesis).
+   cigarette's burn, the clock's hands and the TV's static. Pictures: `godot_reference/kitchen_fx_*.png`. The puffs
+   draw through `puff.gdshader` (noise-eroded soft discs, spun, lit from above, faded into the scene behind, alpha
+   blended: docs/research/godot_smoke.md, after the user found the first additive blobs too fake). Not yet: their
+   sounds (lifesound.js's synthesis).
    **The sound shelf** (2026-10-29): the export copies `Content/Studio/SFX` (CC0, 6 MB) into `game/sfx/` with its
    index; `play_sfx` plays a shelf sound placed in the room (an AudioStreamPlayer3D at the thing or the cast member,
    inverse distance, from a pool) or on the player, looping as the shelf says, the stream loaded at run time when
