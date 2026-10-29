@@ -78,8 +78,10 @@ ceiling or a wall; `leaves` sun or moon through a swaying canopy (noise warped b
 `blinds` a venetian blind's stripes (`scale` a slat, `angle` their tilt, `open` how far); `clouds` cloud shadows
 passing (slow noise, `open` the cover). `scale` is metres on the aimed surface: the viewport's width in metres is
 worked out from the spread and the distance (the export writes it), so a 60 cm caustic is 60 cm on the wall. A
-pattern flickers with its light (the flicker modes multiply the energy). The desk shows such a light as a spot aimed
-at its target, the pattern itself only in Godot. The demo throws caustics on the back wall and measures the light
+pattern flickers with its light (the flicker modes multiply the energy). The desk draws the pattern too since
+2026-10-29, night (`tools/director/lightfx.js`: the same four functions in JavaScript into a loop of small textures,
+one a frame at load, cycled back and forth and worn by the spot as its `map`, which three.js projects through the
+spot's shadow camera). The demo throws caustics on the back wall and measures the light
 and dark across it and that it moves (LOOKPLUGIN). **Where they belong** (the user, 2026-10-29, on the Chilla's
 Art references the kit was drawn from: The Closing Shift's wet night street, its puddles and shop windows carrying
 the lights): the patterns are for the shinier, wetter, outdoor things, not ceilings as a rule: caustics from a rain
@@ -98,6 +100,8 @@ haze inside the beam, full at the window and fading along it and at its sides, w
 through it (Light Kit's motes, the same sin product), and the window's spot has its volumetric energy raised so the
 beam shows, the frame's shadow cut into it by the light's own shadow map. Nothing drawn by hand: the renderer's fog
 carries the light, so the beam is right from every angle. Effects Low turns the haze off and the shafts with it.
+The desk draws a shaft as a see-through additive box along the window's light with the fog shader's density (the
+ends, the sides, the dust's clumps), as bright as the window's light is of a full day's (`lightfx.js`, `Shaft`).
 The demo lays one from a window-sized spot on the left wall and measures the air inside the beam brighter than
 beside it (LOOKPLUGIN); TestRoom001's lobby windows have them. **Seen on the 3090** (2026-10-29,
 `docs/godot_sheets/2026-10-29_local_shafts.jpg`, strengths 0.5, 1, 2 and 4 by day and at dusk, side-on): by day a
@@ -111,7 +115,10 @@ HSSweep hangs a SpotLight3D off it (the two headlights as one wide beam, with sh
 so (0.7 to 1.3 of it, from a seed: the same on every run) slides along the street `out` metres from the glass at
 headlight height, `span` metres each way over `secs`, aimed in through the window, so the frame's shadow crosses the
 ceiling and the highlights slide over metal and wet floors; off between passes. The story's `sweep` action fires one
-on a room's windows now (`every` 0: only then). The desk slides the same lamp without shadows. The demo fires one in
+on a room's windows now (`every` 0: only then). The desk slides the same lamp, with shadows since 2026-10-29, night
+(the stage's shadow maps are on; only the lights that ask cast any: a sweep's lamp, a patterned spot); the desk's
+quick beat "A car passes" (templates.js) fires one as the player enters a zone, and gives the room's first window a
+sweep that only fires if none has one. The demo fires one in
 its closed room and measures the ceiling and wall brighter mid-pass (LOOKPLUGIN); TestRoom001's lobby has one every
 half minute, and GDTESTROOM fires it and watches the lamp slide along outside the south wall. **Seen on the 3090**
 (2026-10-29, `docs/godot_sheets/2026-10-29_local_sweep.jpg`): nothing came in at first, for two reasons that aren't

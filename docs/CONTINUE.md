@@ -48,8 +48,9 @@ whether the splashes' glints read at a real frame rate (only the game itself sho
 Saved/Godot/TestRoom001`); run the game and look at the car passing the lobby's first window (every half minute at
 night) and the yard's caustics. **Then** §3 below and GODOT_LOOK §7.
 
-3. **What the desk doesn't draw yet** of the five: the pattern itself (a spot aimed at its target stands in), the
-   shaft, the sweep's shadows; and a `sweep` quick beat in templates.js if a game wants one from the desk.
+3. ~~What the desk doesn't draw yet of the five~~ Done (2026-10-29, night): the desk draws the pattern itself (the
+   same four functions in JavaScript as the spot's `map`), the shaft (a see-through box along the window's light) and
+   the sweep's shadows (`tools/director/lightfx.js`, stage.js's shadow maps), and "A car passes" is a quick beat.
 
 ## 0b. Latest (2026-10-29, on `godot-support`): the test demo plays in Godot, with its look, effects, sounds, menu and guide
 

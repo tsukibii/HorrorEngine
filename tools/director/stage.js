@@ -9,6 +9,7 @@ import * as K3 from "./kit3.js";
 import * as KIT from "./kit.js";
 import { BodyFigure } from "./bodies.js";
 import { LifeFX } from "./lifefx.js";
+import { PatternLoop, Shaft } from "./lightfx.js";   // a light's pattern, a window's shaft drawn here too (GODOT_LOOK §1)
 import { GLTFLoader } from "./vendor/GLTFLoader.js";
 import { wearEye } from "../shared/eye.js";
 import { stainMaterial } from "./stain.js";
@@ -427,6 +428,8 @@ export class Stage {
     this.things = plan.things;
     this.uncull(); this._rooms = null;                // what Play left out of sight comes back first (cull)
     this.world.clear(); this.lights = []; this.solid = []; this.cast = {}; this.pending = []; this._through = new Set();
+    for (const pl of this.patterns || []) pl.dispose();
+    this.patterns = []; this.shafts = [];
     const mats = {
       wall: new THREE.MeshStandardMaterial({ color: 0x55524d, roughness: 0.95 }),
       floor: new THREE.MeshStandardMaterial({ color: 0x3a342d, roughness: 1 }),
@@ -483,6 +486,7 @@ export class Stage {
           l.target.position.copy(s2t(at[0] + p.d.aim[0], at[1] + p.d.aim[1], (at[2] || 0) + p.d.aim[2])); this.world.add(l.target);
         } else l = new THREE.PointLight(col, (p.d && p.d.lit === false) ? 0 : inten, dist, 1.6);
         l.position.copy(s2t(...p.pos));
+        if (l.isSpotLight && p.d && p.d.pattern) { const pl = new PatternLoop(l, p.d, l.position.distanceTo(l.target.position)); this.patterns.push(pl); this.world.add(pl.mesh); }   // the pattern itself where the light lands, as HSPattern draws it
         l.userData = Object.assign({ id: p.id, room: p.room, base: l.intensity, kind }, flickerOf(p.d || {}, p.id));   // kind: a candle or a fire burns through a power cut; the flicker's mode (tools/shared/flicker.js)
         this.world.add(l); this.lights.push(l);
       } else if (p.kind === "person") {
@@ -512,6 +516,10 @@ export class Stage {
       const l = new THREE.SpotLight(0xffffff, 1, 6, 1.1, 1, 1.5);
       l.position.copy(s2t(...at(0.05))); l.target.position.copy(s2t(...at(2))); l.userData = { window: room.id, area: op.w * op.h };
       this.world.add(l, l.target); this.windows.push(l);
+      if (op.shaft) {                      // the window's light shaft (Godot: HSShaft; here a see-through box along the light with the same density)
+        const sh = new Shaft(l.position.clone(), l.target.position.clone(), op.w, op.h, op.shaft === true ? 1 : +op.shaft || 1, op);
+        this.world.add(sh.mesh); this.shafts.push(sh);
+      }
       if (op.sweep) {                      // a car passing outside now and then (Godot: HSSweep; here the same lamp sliding by, no shadows)
         const sw = typeof op.sweep === "object" ? op.sweep : {}, outward = axis === "y" ? [0, -inward, 0] : [-inward, 0, 0], alongV = axis === "y" ? [1, 0, 0] : [0, 1, 0];
         const lamp = new THREE.SpotLight(0xf2eacc, 0, 40, 22 * Math.PI / 180, 0.6, 1.2); lamp.visible = false;
@@ -529,7 +537,10 @@ export class Stage {
   // the headlight sweeps (sweep.gd's maths): a pass every so often, or fired; the lamp slides along the street outside, aimed in through the glass
   fireSweeps(room) { for (const z of this.sweeps || []) if (!room || z.room === room) z.started = z.clock; }
   sweeping(room) { return (this.sweeps || []).some(z => (!room || z.room === room) && z.started >= 0 && z.clock - z.started < z.secs); }
-  sweepTick(dt) {
+  sweepTick(dt) {                        // and the patterns' loops and the shafts' dust with it (Play and the Watch both call this a frame)
+    this._fxT = (this._fxT || 0) + dt;
+    for (const pl of this.patterns || []) pl.tick(dt, this.solid, pl.spot.userData.base ? pl.spot.intensity / pl.spot.userData.base : 1);
+    for (const sh of this.shafts || []) sh.tick(this._fxT);
     for (const z of this.sweeps || []) {
       z.clock += dt;
       if (z.started < 0 && z.clock >= z.next) z.started = z.clock;
@@ -550,6 +561,7 @@ export class Stage {
     this.amb.color.set(L.amb[0]); this.amb.intensity = L.amb[1];
     this.hemi.color.set(L.hemi[0]); this.hemi.groundColor.set(L.hemi[1]); this.hemi.intensity = L.hemi[2];
     for (const l of this.windows) { l.color.set(L.win[0]); l.intensity = L.win[1] * l.userData.area; l.distance = L.win[2]; }
+    for (const sh of this.shafts || []) sh.light(L.win[0], L.win[1] / TIME_LOOK.day.win[1]);   // the beam as bright as the window's light is of a full day's
   }
 
   fileFor(c) { return (c && c.previs_body) || (this.story && this.story.game && this.story.game.previs_body) || this.defaultBody; }

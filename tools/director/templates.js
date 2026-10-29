@@ -137,6 +137,10 @@ export const BEATS = [
   { id: "speaks", label: "She speaks on entering", icon: "say", hint: "a line from the Database as the player comes in",
     blanks: [{ key: "zone", label: "When the player enters", kind: "zone" }, { key: "line", label: "The line", kind: "line" }],
     build: (v, S, id) => ({ id: id("b_says"), when: { enter: v.zone || "" }, do: [{ say: v.line || "" }] }) },
+  { id: "car", label: "A car passes", icon: "light", hint: "headlights sweep in through the room's windows as the player comes in (a window with a sweep)",
+    blanks: [{ key: "zone", label: "When the player enters", kind: "zone" }, { key: "room", label: "The room with the window", kind: "room" }],
+    build: (v, S, id) => ({ id: id("b_car"), when: { enter: v.zone || "" }, do: [{ sweep: v.room || "" }] }),
+    level: (v, S) => windowSweep(S, v.room) },
   { id: "checkpoint", label: "A checkpoint", icon: "save", hint: "the game saves when the player gets here",
     blanks: [{ key: "zone", label: "When the player enters", kind: "zone" }],
     build: (v, S, id) => ({ id: id("b_save"), when: { enter: v.zone || "" }, do: [{ checkpoint: true }] }) },
@@ -184,4 +188,12 @@ export function buildTask(S, tpl, values, { level = null } = {}) {
   if (tpl.level) tpl.level(values, S);
   return { tid, stitch: st, round: tpl.round || null, id };
 }
-export function buildBeat(S, tpl, values) { return tpl.build(values, S, ider(S)); }
+export function buildBeat(S, tpl, values) { if (tpl.level) tpl.level(values, S); return tpl.build(values, S, ider(S)); }
+// the room's first window gets a sweep that only fires (every 0) when none of its windows has one: the car's beat needs one
+function windowSweep(S, room) {
+  for (const lv of Object.values(S.levels || {})) for (const r of lv.rooms || []) {
+    if (r.id !== room) continue;
+    const wins = (r.openings || []).filter(o => o.window);
+    if (wins.length && !wins.some(o => o.sweep)) wins[0].sweep = { every: 0 };
+  }
+}
