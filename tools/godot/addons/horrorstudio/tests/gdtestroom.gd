@@ -451,6 +451,9 @@ func _initialize() -> void:
 			var st := steps_on()
 			if st.is_empty() or st.any(func(f): return f != "tile"):
 				return "the steps in the lobby: " + JSON.stringify(st)
+			var tv: Dictionary = rt.lifefx.report().get("kitchen_tv", {})     # static since the lobby's scene set it
+			if tv.get("screen") != "static" or int(tv.get("screen_frame", -1)) < 0:
+				return "the TV: " + JSON.stringify(tv)
 			await game_wait(0.6)
 			var lens := ""
 			for id in ["front_door:peephole:a", "front_door:peephole:b"]:
@@ -643,6 +646,20 @@ func _initialize() -> void:
 			await game_wait(0.3)
 			if state("kitchen_kettle") != "heating":
 				return "not heating: " + str(state("kitchen_kettle"))
+			await game_wait(2.0)
+			var fx: Dictionary = rt.lifefx.report()        # the kettle's effects at its sockets (lifefx.gd): its LED, its digits, steam coming
+			var kk: Dictionary = fx.get("kitchen_kettle", {})
+			if not (kk.get("led") is float and kk["led"] > 0.5) or not kk.has("steam"):
+				return "the kettle's effects: " + JSON.stringify(kk)
+			var ck: Dictionary = fx.get("kitchen_clock", {})
+			if not ck.has("hands"):
+				return "the clock's hands: " + JSON.stringify(ck)
+			if not await until(func(): return rt.state_of("kitchen_kettle") == "boiling", 9000):
+				return "boiling: never"
+			await game_wait(0.5)
+			var boiling: Dictionary = rt.lifefx.report().get("kitchen_kettle", {})
+			if not (float(boiling.get("steam", 0)) > 0.5):            # boiling: steam at the spout at full rate
+				return "the boiling kettle's steam: " + JSON.stringify(boiling)
 			r = await ticked("t6_kettle", "the kettle boiled")
 			if r != "":
 				return r
@@ -672,6 +689,12 @@ func _initialize() -> void:
 			r = await ticked("t6_hob", "the pot simmering")
 			if r != "":
 				return r
+			var fx2: Dictionary = rt.lifefx.report()
+			var hob: Dictionary = fx2.get("kitchen_hob", {})
+			var mug: Dictionary = fx2.get("kitchen_mug", {})
+			var ash: Dictionary = fx2.get("kitchen_ashtray", {})
+			if not (float(hob.get("glow", 0)) > 0.3) or not (hob.get("digits") is String) or not (float(mug.get("fill", 0)) > 0.5) or not ash.has("burn"):
+				return "the hob's glow, the cup's fill, the cigarette: " + JSON.stringify({"hob": hob, "mug": mug, "ashtray": ash})
 			if not await until(func(): return rt.state_of("kitchen_phone") == "ringing", 3000):
 				return "the phone ringing: never (%s)" % str(rt.state_of("kitchen_phone"))
 			var p := await use("kitchen_phone", 0.6)

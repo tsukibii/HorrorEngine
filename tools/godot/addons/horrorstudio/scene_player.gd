@@ -276,6 +276,8 @@ func play(sc: Dictionary, nid: String, sid: String) -> Variant:
 			break
 		T += get_process_delta_time()
 		rt.draw_npcs(get_process_delta_time())
+		if rt.lifefx != null:
+			rt.lifefx.update(t0 + T)
 		if bk != null:
 			var bt = bake_t(tl, T)
 			if bt != null:

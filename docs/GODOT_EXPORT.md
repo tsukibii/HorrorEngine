@@ -151,6 +151,17 @@ loads, every verb in the games has a part).
    the box unless `real` (the desk's kitIn and dress; the glb's bounds read from its accessors). The project is
    imported once after writing (`import_project`), so the glbs load headless; GDEXPORT counts the art meshes and
    fails on an empty one. Picture: `godot_reference/kitchen_kit.png`.
+   **The little things' effects** (2026-10-29, `lifefx.gd`, lifefx.js ported): the kit's build writes each mesh's
+   sockets and slots into the kit index (`build.mjs`), the export's `game/kit.json` carries them, and the effects run
+   at the sockets every tick in Play and during scenes: steam and smoke as puffs (a MultiMesh of billboards born on
+   the desk's schedule, the same rates, sizes and alphas), LEDs and embers, digits (Label3D), the hob's rings glowing
+   (the slot's surface material, emissive, plus a glow), candle and gas flames, the cup's fill (the inner profile
+   turned), the pour (the kettle lifted and tipped over the cup, a stream), drips and the running tap, the clock's
+   hands and the pendulum (a slot's surface split into its own node and turned), the rattling lid, screens (static, a
+   programme, a phone's lock screen and call), the buzz, the cigarette burnt back by a clip shader. `report()` says
+   what each thing shows; GDTESTROOM checks the kettle's LED and steam, the hob's glow and digits, the cup's fill, the
+   cigarette's burn, the clock's hands and the TV's static. Pictures: `godot_reference/kitchen_fx_*.png`. Not yet:
+   their sounds (lifesound.js's synthesis) and the sound shelf.
 4. **The look** (GODOT_PLAN §6): UltraVHS and Light Kit as shaders and nodes, measured; M_StudioSurface; the
    characters' shaders on HumanShaders (§2 of the plan) with the Studio's colours and patterns checked side by side.
 5. **The rest of §6**: the lives' effects, hiding, reverb, the HUD themes, the pause menu, the little things.

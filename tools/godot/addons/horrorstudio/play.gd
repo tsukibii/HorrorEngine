@@ -106,6 +106,8 @@ var step_count: int = 0
 var cast_walk: Dictionary = {}
 var cast_step: Dictionary = {}
 var sounds_heard: Array = []
+const LifeFxC := preload("res://addons/horrorstudio/lifefx.gd")
+var lifefx = null                    # the little things' effects (lifefx.gd), on this level
 var scene_light_k: Dictionary = {}
 var baked_cast: Dictionary = {}      # cast ids whose baked body is showing (their stand-ins hidden)   # a scene's recorded flicker: a multiplier a light while the bake plays
 var todo_log: Array = []
@@ -363,6 +365,8 @@ func enter_level(lid: String) -> void:
 		if by_id.has(id):
 			by_id[id]["node"].global_transform = k["bodies"][id]
 
+	lifefx = LifeFxC.new(self, game.kit_index)   # the little things' effects, on this level's things
+	lifefx.attach()
 
 func _tag(tags: Array, pre: String):
 	for t in tags:
@@ -1927,6 +1931,8 @@ func tick(dt: float) -> void:
 		k *= float(scene_light_k.get(t["id"], 1.0))
 		t["node"].light_energy = float(u["base"]) * k
 	life_lights()
+	if lifefx != null:
+		lifefx.update(now())
 	if torch_hot != null:
 		if torch_item() == null:
 			torch["on"] = false

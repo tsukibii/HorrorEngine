@@ -501,6 +501,7 @@ def export(game, out=None, make_zip=False, do_import=True):
     story, path = L.load(game)
     pieces = P.plan(story)
     arts = 0
+    kit_index = {}
     try:
         import subprocess  # noqa: PLC0415
         specs = ROOT / "Saved" / "kit" / f"{game}.json"
@@ -554,6 +555,10 @@ def export(game, out=None, make_zip=False, do_import=True):
         (out / "game" / "levels" / f"{lid}.tscn").write_text(lw.write(), encoding="utf-8")
         levels.append(lid)
         arts += lw.art_count
+        for ref in lw.arts:                               # the kit things' sockets and slots (lifefx.gd), by their ref
+            if ref.startswith("kit/") and LIB.mesh_info(ref):
+                kit_index[ref] = LIB.mesh_info(ref)
+    (out / "game" / "kit.json").write_text(json.dumps(kit_index, separators=(",", ":")), encoding="utf-8")
     if arts and do_import:
         import_project(out)
     (out / "game" / "export.json").write_text(json.dumps({"game": game, "story": str(path), "levels": levels, "pieces": len(pieces), "arts": arts, "bake": (previs / "preview.json").exists(), "bodies": baked,
