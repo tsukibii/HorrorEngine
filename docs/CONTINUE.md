@@ -11,21 +11,32 @@ the to-do built there, with the Studio's eyes from the side, a small nose and th
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## 0. Latest (2026-10-29, on `godot-support`): the Pilot and TestRoom001 play in Godot; the bake plays
+## 0. Latest (2026-10-29, on `godot-support`): the test demo plays in Godot, with its look, effects, sounds, menu and guide
 
-The user said keep going till the test demo is 1:1 in Godot (DECISIONS 2026-10-28, late night). Built, each its own
-commit: the exporter (a Godot project per game as text, GDEXPORT), the runtime add-on in GDScript (the desk's Play
-ported file by file: play.gd, conditions, actions, interactables, behaviours, todo, life, hud, the flow walker in
-game.gd, scene_player), **GDPLAY** (the Pilot to its good ending), **GDTESTROOM** (TestRoom001's 21 stations, the death
-and retry, the doll's cutscene, every check the desk's testroom.mjs makes; on the way: typing.gd, the candle's light,
-the round's second question, the names as words), and **the bake played** (`tools/godot/bake.mjs` records the Watch
-headless; `bakeplay.gd` poses the shaped MHR body from the skinning matrices and drives the camera and lights; a
-picture `Saved/Story/TestRoom001/godot_reference/s_hello_6s.png`). The desk's own TESTROOM ran here too: its states
-and Godot's agree in flags, karma, counters, items, doors, names and times; the little things' timers differ by the
-drivers' pace. **Next** (GODOT_EXPORT §8, GODOT_PLAN §8): MHR's 72 face shapes into the exported body (the faces),
-the lighting trial, the look (UltraVHS and Light Kit as Godot shaders), the Studio's character look on HumanShaders,
-the little things' effects and sounds, the inventory's pictures, physics (the die, the plushie), the .html guide, the
-export button on the desk, the Inspector resources and AnimationPlayer timelines.
+The user said keep going till the test demo is 1:1 in Godot (DECISIONS 2026-10-28, late night), and mid-way asked
+for a search on realistic smoke and steam (docs/research/godot_smoke.md). Built, each its own commit (the log from
+`09b5f28` to `a4dfb58`), the checks ok before each push (GDEXPORT, GDPLAY, GDTESTROOM, GODOTLOOK, DESK, CMDS):
+- **The runtime**: the desk's Play ported to GDScript; **GDPLAY** (the Pilot) and **GDTESTROOM** (TestRoom001's 21
+  stations, the death and retry, the doll's cutscene); the desk's own TESTROOM ran here and its states agree.
+- **The scenes from the desk's recording** (`tools/godot/bake.mjs`, `bakeplay.gd`): the camera, the shaped MHR body
+  posed from the skinning matrices, MHR's 72 face shapes as the body's morph targets, every reply branch its own
+  recording, the lights' flicker.
+- **The things' meshes** (the kit's glbs and the library's instanced in their blocks), **the little things' effects**
+  (`lifefx.gd` at the kit's sockets; the puffs through `puff.gdshader` after the smoke research), **the sound shelf**
+  placed in the room, **physics** (the thing in the hand, the plushie, the die as a rigid body), **the pause menu and
+  the HUD's themes** (`menu.gd`, `theme.gd`), **the guide** in every export (`storykit/godot_guide.py`), **the
+  desk's Godot button** (the bake, the zip, the guide), the launcher's Godot section, `--node=<id>`.
+- **The look**: **UltraVHS** as `vhs.gdshader` (GODOTLOOK measures it against the plugin's reference; `game.vhs` the
+  new story word), **Light Kit's times of day** as nodes (the sun, the sky, the haze, the grade), and **the lighting
+  trial** (GODOT_PLAN §4: a VoxelGI per room baked at run time gives the bounce, SSAO the corners; SDFGI and a
+  level-wide VoxelGI miss the greybox's thin walls; the sheets in `Saved/Story/TestRoom001/godot_reference/`).
+**Open, for the user:** a run on the 3090 (`python tools/godot_export.py --game TestRoom001 --testroom`, the sheets
+with `tools/godot/sheet.py`; the cost of nineteen VoxelGIs), a look at the pictures (the steam, the menu, the tape),
+and whether the puff shader should go back onto the desk's stage. **Next** (GODOT_EXPORT §8): VoxelGI per room
+written by the export and baked at load (cached), the PBR shelf's surfaces (M_StudioSurface), the characters' look on
+HumanShaders (GODOT_PLAN §2), the little things' sounds, the voices (the takes' audio), the inventory's pictures,
+ghosting on the tape (a last-frame viewport), the Inspector resources and AnimationPlayer timelines (§3), the
+re-export's receipt (§5), a cast member's models per scene.
 
 ## 0a. Before that (2026-10-28, night, on `godot-support`): Godot started, the export analysed, waiting on the user
 
