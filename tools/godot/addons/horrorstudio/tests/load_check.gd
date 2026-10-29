@@ -11,6 +11,14 @@ func _initialize() -> void:
 		quit(1)
 		return
 	var ok := true
+	var surfaced := 0
+	var info: Dictionary = {}
+	var ef := FileAccess.open("res://game/export.json", FileAccess.READ)
+	if ef != null:
+		var parsed = JSON.parse_string(ef.get_as_text())
+		if parsed is Dictionary:
+			info = parsed
+	var levels_last = story.levels.keys().back() if story.levels is Dictionary else null
 	for lid in story.levels:
 		var ps: PackedScene = load("res://game/levels/%s.tscn" % lid)
 		if ps == null:
@@ -29,12 +37,20 @@ func _initialize() -> void:
 					bad += 1
 					continue
 				kinds[p["kind"]] = int(kinds.get(p["kind"], 0)) + 1
+				var mi = ch.get_node_or_null("mesh")        # a surface off the shelf: a world-aligned material with its maps
+				if mi is MeshInstance3D and mi.material_override is StandardMaterial3D and mi.material_override.albedo_texture != null and mi.material_override.uv1_triplanar:
+					surfaced += 1
 			var art = ch.get_node_or_null("art")
 			if art != null:
 				arts += 1
 				if art.find_children("*", "MeshInstance3D", true, false).is_empty():
 					empty += 1
 		print("GDEXPORT level %s: %d nodes %s, %d art meshes%s%s" % [lid, n.get_child_count(), JSON.stringify(kinds), arts, "" if empty == 0 else " (%d EMPTY)" % empty, "" if bad == 0 else " BAD META %d" % bad])
+		if lid == levels_last:
+			var want := int(info.get("surfaced", 0))
+			print("GDEXPORT surfaces: %d pieces wear a texture set off the shelf (the export made %d; sets %s)" % [surfaced, want, JSON.stringify(info.get("surface_sets", []))])
+			if surfaced != want:
+				ok = false
 		if empty:
 			ok = false
 		if bad:

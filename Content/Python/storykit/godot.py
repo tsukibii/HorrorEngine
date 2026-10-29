@@ -12,6 +12,8 @@ What's written (parity first, GODOT_EXPORT §3 is the shape to reach):
   HumanShaders/                        GodotPlugins/HumanShaders (copied; its own files refer to res://HumanShaders/)
   game/story.json                      the story as data (the runtime reads it: flow, stitches, scenes, items...)
   game/people/<name>.glb               the cast's Character Studio exports (previs_body "people/<name>"), for HSSkin
+  game/textures/<set>/                 the texture sets the rooms' `look` and the props' `mat` name (the PBR shelf, the
+                                       library): world-aligned triplanar StandardMaterial3Ds, M_StudioSurface's part
   game/lives.json                      the little things' lives (Content/Studio/Life/lives.json)
   game/levels/<level>.tscn             each level: plan.py's pieces as nodes (StaticBody3D blocks with a mesh and a
                                        collision shape, doors, OmniLight3D lights, Area3D triggers, Marker3D spots,
@@ -156,6 +158,8 @@ class LevelWriter:
         self.mats = {}
         self.names = set()
         self.meshes_out = Path(meshes_out) if meshes_out else None   # game/meshes/: the kit's and the library's glbs copied here
+        self.surfaces = {}                                 # a library texture set's material, by ref (surface())
+        self.surfaced = 0                                  # the pieces wearing one
         self.arts = {}                                                 # ref -> ExtResource(...), once each
         self.art_count = 0
 
@@ -176,6 +180,60 @@ class LevelWriter:
             shutil.copy(src, dst)
         self.arts[ref] = self.t.extres(f"res://game/meshes/{src.parent.name}/{src.name}", "PackedScene")
         return self.arts[ref]
+
+    def surface(self, ref):
+        """A library texture set (a room's `look`, a prop's `mat`: `mat:<ref>`) as a world-aligned material, the Unreal
+        side's M_StudioSurface (docs/ASSETS.md §5): its maps copied into game/textures/<set>/ (a DirectX normal's
+        green flipped for Godot), tiled by the set's metres through triplanar UVs so a block's stretched UVs don't
+        matter; None when the set isn't on the shelf (the block keeps its colour)."""
+        if self.meshes_out is None:
+            return None
+        if ref in self.surfaces:
+            return self.surfaces[ref]
+        self.surfaces[ref] = None
+        meta = LIB.texture_meta(ref)
+        src = LIB.texture_dir(ref)
+        if not meta or not src.is_dir() or "albedo" not in meta.get("maps", {}):
+            return None
+        safe = re.sub(r"[^A-Za-z0-9_]+", "_", ref)
+        dst = self.meshes_out.parent / "textures" / safe
+        dst.mkdir(parents=True, exist_ok=True)
+        maps = meta["maps"]
+        props = {}
+        tile = float(meta.get("tile_m") or 2.0)
+        props["uv1_triplanar"] = "true"
+        props["uv1_world_triplanar"] = "true"
+        props["uv1_scale"] = v3(1.0 / tile, 1.0 / tile, 1.0 / tile)
+        props["texture_filter"] = "5"                      # linear with mipmaps, anisotropic
+        for slot, prop in (("albedo", "albedo_texture"), ("rough", "roughness_texture"), ("ao", "ao_texture"), ("metal", "metallic_texture")):
+            if slot in maps and (src / maps[slot]).exists():
+                if not (dst / maps[slot]).exists():
+                    shutil.copy(src / maps[slot], dst / maps[slot])
+                props[prop] = self.t.extres(f"res://game/textures/{safe}/{maps[slot]}", "Texture2D")
+        if "ao_texture" in props:
+            props["ao_enabled"] = "true"
+            props["ao_texture_channel"] = "0"
+        if "roughness_texture" in props:
+            props["roughness_texture_channel"] = "0"
+        if "orm" in maps and "roughness_texture" not in props and (src / maps["orm"]).exists():   # a packed AO / rough / metal map
+            if not (dst / maps["orm"]).exists():
+                shutil.copy(src / maps["orm"], dst / maps["orm"])
+            orm = self.t.extres(f"res://game/textures/{safe}/{maps['orm']}", "Texture2D")
+            props.update({"ao_enabled": "true", "ao_texture": orm, "ao_texture_channel": "0", "roughness_texture": orm, "roughness_texture_channel": "1"})
+        normal = maps.get("normal") or maps.get("normal_dx")
+        if normal and (src / normal).exists():
+            out_name = normal
+            if meta.get("normal") == "dx" or "normal_dx" in maps and maps["normal_dx"] == normal:
+                out_name = re.sub(r"\.(png|jpe?g)$", "", normal) + "_gl.png"
+                if not (dst / out_name).exists():
+                    out_name = flip_green(src / normal, dst / out_name) and out_name
+            elif not (dst / out_name).exists():
+                shutil.copy(src / normal, dst / out_name)
+            if out_name:
+                props["normal_enabled"] = "true"
+                props["normal_texture"] = self.t.extres(f"res://game/textures/{safe}/{out_name}", "Texture2D")
+        self.surfaces[ref] = self.t.sub("StandardMaterial3D", props)
+        return self.surfaces[ref]
 
     def art_transform(self, p, ref):
         """Where the mesh sits in its block (the desk's kitIn and dress): a kit thing's origin is its base's centre
@@ -266,6 +324,12 @@ class LevelWriter:
             mesh = self.t.sub("BoxMesh", {"size": v3(w, h, d), "add_uv2": "true"})
             shape = self.t.sub("BoxShape3D", {"size": v3(w, h, d)})
         mprops = {"mesh": mesh, "material_override": self.mat(key, {"transparency": "1", "albedo_color": col(MATS["stain"][0], 0.85)} if key == "stain" else None)}
+        mat_ref = next((t[4:] for t in tags if t.startswith("mat:")), None)    # a room's look or a prop's mat: the set off the shelf
+        if mat_ref and key != "stain":
+            surf = self.surface(mat_ref)
+            if surf:
+                mprops["material_override"] = surf
+                self.surfaced += 1
         art = next((t[4:] for t in tags if t.startswith("art:")), None) if p["kind"] in ("mesh", "door") else None
         ext = self.art_of(art) if art else None
         if ext:                                       # the mesh in its block; the block stays, unseen, for the cursor and the walls
@@ -431,6 +495,22 @@ renderer/rendering_method="forward_plus"
 '''
 
 
+def flip_green(src, dst):
+    """A DirectX normal map (Y down) as the OpenGL one Godot reads (Y up): the green channel inverted. False without PIL."""
+    try:
+        from PIL import Image
+    except ImportError:
+        return False
+    try:
+        im = Image.open(src).convert("RGB")
+        r, g, b = im.split()
+        g = g.point(lambda v: 255 - v)
+        Image.merge("RGB", (r, g, b)).save(dst)
+        return True
+    except (OSError, ValueError):
+        return False
+
+
 def glb_bounds(path):
     """A glb's bounds in its own space from its accessors' min and max, each node's transform applied: (lo, hi), or None."""
     try:
@@ -518,6 +598,8 @@ def export(game, out=None, make_zip=False, do_import=True):
     story, path = L.load(game)
     pieces = P.plan(story)
     arts = 0
+    surfaced = 0
+    surface_sets = set()
     kit_index = {}
     try:
         import subprocess  # noqa: PLC0415
@@ -583,6 +665,8 @@ def export(game, out=None, make_zip=False, do_import=True):
         (out / "game" / "levels" / f"{lid}.tscn").write_text(lw.write(), encoding="utf-8")
         levels.append(lid)
         arts += lw.art_count
+        surfaced += lw.surfaced
+        surface_sets.update(r for r, m in lw.surfaces.items() if m)
         for ref in lw.arts:                               # the kit things' sockets and slots (lifefx.gd), by their ref
             if ref.startswith("kit/") and LIB.mesh_info(ref):
                 kit_index[ref] = LIB.mesh_info(ref)
@@ -590,10 +674,10 @@ def export(game, out=None, make_zip=False, do_import=True):
     sfx = ROOT / "Content" / "Studio" / "SFX"                      # the sound shelf (docs/SFX.md, CC0): every sound and its index
     if (sfx / "index.json").exists():
         shutil.copytree(sfx, out / "game" / "sfx", ignore=shutil.ignore_patterns("*.import", "__pycache__"))
-    if arts and do_import:
+    if (arts or surfaced) and do_import:
         import_project(out)
     import datetime  # noqa: PLC0415
-    info = {"game": game, "story": str(path), "levels": levels, "pieces": len(pieces), "arts": arts, "bake": (previs / "preview.json").exists(), "bodies": baked,
+    info = {"game": game, "story": str(path), "levels": levels, "pieces": len(pieces), "arts": arts, "surfaced": surfaced, "surface_sets": sorted(surface_sets), "bake": (previs / "preview.json").exists(), "bodies": baked,
             "bodies_list": sorted(f.name[5:-4] for f in previs.glob("Body_*.glb")) if previs.exists() else [], "engine": L.engine_version(), "godot": "4.7",
             "made": datetime.datetime.now().strftime("%Y-%m-%d %H:%M")}
     (out / "game" / "export.json").write_text(json.dumps(info, indent=1), encoding="utf-8")

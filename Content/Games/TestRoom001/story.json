@@ -450,7 +450,11 @@
        ],
        "rot": 90
       }
-     ]
+     ],
+     "look": {
+      "floor": "pbr/Tiles/cracked_tiles",
+      "walls": "pbr/Plaster/stained_plaster"
+     }
     },
     {
      "id": "corridor",
@@ -646,7 +650,11 @@
        ],
        "rot": 270
       }
-     ]
+     ],
+     "look": {
+      "floor": "pbr/Wood/worn_planks",
+      "walls": "pbr/Plaster/stained_plaster"
+     }
     },
     {
      "id": "keys",
@@ -1487,7 +1495,11 @@
        ],
        "z": 0.95
       }
-     ]
+     ],
+     "look": {
+      "floor": "pbr/Concrete/damp_concrete",
+      "walls": "pbr/Concrete/damp_concrete"
+     }
     },
     {
      "id": "kitchen",
@@ -1685,7 +1697,11 @@
        ],
        "z": 2.9
       }
-     ]
+     ],
+     "look": {
+      "floor": "pbr/Tiles/cracked_tiles",
+      "walls": "pbr/Stone/Walls/grimy_brick"
+     }
     },
     {
      "id": "chores",

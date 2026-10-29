@@ -40,7 +40,9 @@ tightens its highlight (roughness ×0.45); pools lie where a world-space fbm dip
 `puddle_scale` the pools' size), each mirror-smooth (roughness 0.035, specular 0.9, the colour the water's tint over
 the dark floor) with a damp rim just outside its edge; `ripples` puts rain on them: a grid of cells, a drop every
 1.2 to 2.8 s in each, its ring growing and fading, as a gradient on the normal. SSR does the reflecting (§1), so the
-lamp, the cabinet and the walls lie in the pools and slide as the eye moves.
+lamp, the cabinet and the walls lie in the pools and slide as the eye moves. A floor wearing a set off the shelf
+(the export's world-aligned materials, GODOT_EXPORT §8) keeps its planks or tiles: the wet shader samples it by its
+place in the world (`world_uv`), as the triplanar material did.
 
 ## 3. Blood (`blood.gdshader`, `HSBlood`)
 

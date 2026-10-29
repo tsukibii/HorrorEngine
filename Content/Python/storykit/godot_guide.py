@@ -188,9 +188,12 @@ moving lights, baked lightmaps per state) is the next step of the look.</div>
 <code>art</code>: the kit's mesh or the library's, instanced from <code>game/meshes/</code>. To swap a prop, point <code>art</code> at another glb (the editor: select it,
 change its instanced scene), or replace the file in <code>game/meshes/</code>. Keep the box: the cursor and the walls are the boxes. This export has
 {info.get('arts', 0)} such meshes.</p>
-<p>A room's surfaces take a material from the story's <code>look</code> (the floor's <code>floor</code> word sets the footsteps too). The exporter's materials are
-plain colours per kind (wall, floor, trim, prop...); the PBR shelf's sets (<code>assets/pbr</code>) and the library's textures come with the look pass.
-In the meantime, a material override on a wall's <code>MeshInstance3D</code> stays until the next export.</p>
+<p>A room's surfaces take their texture set from the story's <code>look</code> (<code>{{"floor": "pbr/Wood/worn_planks", "walls": ...}}</code>; a prop's
+<code>mat</code>; the floor's <code>floor</code> word sets the footsteps too): the set's maps are copied into <code>game/textures/&lt;set&gt;/</code> and worn as a
+world-aligned material (triplanar, tiled by the set's metres, so a block's stretched UVs don't matter; a DirectX normal's green flipped for Godot): the
+Unreal side's M_StudioSurface. This export wears {info.get('surfaced', 0)} such surfaces from {len(info.get('surface_sets', []))} sets. A room with no
+<code>look</code> keeps the exporter's plain colour per kind (wall, floor, trim, prop...). To swap a texture, change the set in the story and export
+again, or change the material on the wall's <code>MeshInstance3D</code> (it stays until the next export).</p>
 {fig(pictures, 'kitchen_kit.png', 'The kitchen: the kit\'s things (a kettle, a hob, a rice cooker, a clock) in their blocks.')}
 """))
     body.append(section("fx", 9, "The little things and their effects", f"""

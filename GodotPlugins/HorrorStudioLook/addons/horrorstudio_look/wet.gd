@@ -38,6 +38,8 @@ static func wet(mi: MeshInstance3D, settings: Dictionary = {}) -> ShaderMaterial
 	if tex != null:
 		m.set_shader_parameter("texture_albedo", tex)
 		m.set_shader_parameter("use_texture", true)
+		if old is StandardMaterial3D and old.uv1_triplanar:
+			m.set_shader_parameter("world_uv", true)       # a world-aligned surface keeps its place
 	for k in ["wetness", "puddles", "puddle_scale", "ripples", "ripple_rate", "water_tint", "edge"]:
 		if settings.has(k):
 			m.set_shader_parameter(k, settings[k])

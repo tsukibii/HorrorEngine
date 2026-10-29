@@ -220,6 +220,13 @@ loads, every verb in the games has a part).
    pseudo-realism preset (`game.look`; SSR, SSAO, SSIL, glow, haze, AgX, TAA alone: MSAA switches SSR off in 4.7),
    wet floors, blood, rain (`game.weather`), wet or oiled skin on HumanShaders. LOOKPLUGIN pictures and measures
    each in a demo room; GDTESTROOM checks the yard's rain and wet floor and the chores room's blood.
+   **M_StudioSurface done** (2026-10-29, `LevelWriter.surface`): a room's `look` and a prop's `mat` (`mat:<ref>`
+   tags) become world-aligned StandardMaterial3Ds (triplanar in world space, tiled by the set's `tile_m`, albedo,
+   roughness, AO, a packed ORM, the normal with a DirectX map's green flipped) with the maps copied into
+   `game/textures/<set>/`; a set not on the shelf leaves the block its colour. TestRoom001's lobby, corridor,
+   kitchen and power room wear the demo shelf's sets (`tools/pbr.py demo`); GDEXPORT counts the pieces wearing one
+   against the export's own count; pictures `godot_reference/look_*_pbr.png`. HSWet samples a world-aligned floor
+   by its place, so a wet textured floor keeps its planks.
    **Light Kit's times of day** (2026-10-29): `game.gd`'s `set_time` is the sky rig as nodes, the numbers of
    BLENDER_LOOK §2's table: the sun or the moon (a DirectionalLight3D: 50° up from 135° by day, 6° at dusk, the
    moon at night, their colours), a procedural sky (zenith and horizon per time; night a navy, never black), the

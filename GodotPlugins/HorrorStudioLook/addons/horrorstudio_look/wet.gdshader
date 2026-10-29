@@ -9,6 +9,7 @@ render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_sc
 uniform vec4 albedo : source_color = vec4(0.23, 0.2, 0.18, 1.0);
 uniform sampler2D texture_albedo : source_color, hint_default_white, filter_linear_mipmap, repeat_enable;
 uniform bool use_texture = false;
+uniform bool world_uv = false;             // a world-aligned floor (the export's triplanar surfaces): sampled by its place
 uniform vec3 uv1_scale = vec3(1.0);
 uniform float roughness : hint_range(0.0, 1.0) = 1.0;
 uniform float wetness : hint_range(0.0, 1.0) = 0.8;        // the damp: darker, a sheen
@@ -68,7 +69,7 @@ void vertex() {
 
 void fragment() {
 	vec3 base = albedo.rgb;
-	if (use_texture) base *= texture(texture_albedo, UV).rgb;
+	if (use_texture) base *= texture(texture_albedo, world_uv ? wpos.xz * uv1_scale.xz : UV).rgb;
 	float water, damp;
 	pool(wpos.xz, water, damp);
 	water *= step(0.001, wetness);
