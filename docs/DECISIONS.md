@@ -8,6 +8,10 @@ The user's answers, newest first. They override the plan, the research and the d
   later, but only after game testing, if I want it)."** So no takes' audio in the Godot export (GODOT_EXPORT §8's
   "voices" step is skipped), no MiniMax voice work; the lines are text, typed out as they are (EXPRESSIONS_PLAN's
   typewriter blip waits for a playtest and their yes).
+- **"Let's skip the motion sets for now until I actually make some Kimodo motions; I will tell you when I've made
+  some basic sets."** So the motion sets on the stand-ins (PERFORMANCE_PLAN §2, PATTERNS_PLAN §5) wait: nothing
+  built for them in the desk or in Godot until the user says their basic sets exist; the cast's stand-ins keep the
+  blocking pose and the behaviours' stubs.
 - **"Make a note to scrap any goals for Unreal; we are going to use Godot 100% for this project now: Unreal is too
   heavy and currently can't be used in cloud sessions."** Every Unreal goal is dropped: no StoryRunner, no
   `storykit.generate` or `importer` work, no UNREAL_NEXT, no UltraVHS or Light Kit plugin work beyond what the Godot

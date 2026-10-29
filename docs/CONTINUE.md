@@ -39,8 +39,9 @@ The local session (docs/RUN_LOCALLY.md) ran everything the cloud couldn't, in CO
   matched the cached Chromium 1194 (RUN_LOCALLY's step 2 should say which version the cache holds).
 
 **Decided after this (DECISIONS 2026-10-29, night):** no voiced lines for now (GODOT_EXPORT §8's voices step is
-skipped; a typewriter blip only after a playtest), and **Godot 100%: every Unreal goal is scrapped** (§4's Unreal
-items below are void; the Unreal docs and code stay as history and as the numbers Godot matches).
+skipped; a typewriter blip only after a playtest), **Godot 100%: every Unreal goal is scrapped** (§4's Unreal
+items below are void; the Unreal docs and code stay as history and as the numbers Godot matches), and **the motion
+sets on the stand-ins wait** until the user says they've made some basic Kimodo sets (they'll say when).
 
 **Open, for the user:** pick a shaft strength from the ladder (or leave 1); say where the square light patch was;
 whether the splashes' glints read at a real frame rate (only the game itself shows that: `godot-mono --path
@@ -128,8 +129,8 @@ preset's numbers (GODOT_LOOK §1) want pushing further or back, whether the puff
 stage, and whether a mirror should be drawn for real on the desk's stage too (today the desk's mirror is a metallic
 grey; Godot's reflects). **Next** (GODOT_EXPORT §8, GODOT_LOOK §7): ~~the
 voices (the takes' audio)~~ (scrapped, DECISIONS 2026-10-29, night), the Inspector resources and AnimationPlayer timelines (§3), a cast member's models per
-scene, the Studio's paint and eye measured beside the Studio's own render (the three.js side), the motion sets on
-the stand-ins (GAMEPLAY_PLAN), splashes where the rain lands. (The desk's stage draws the `skin` word since the
+scene, the Studio's paint and eye measured beside the Studio's own render (the three.js side), ~~the motion sets on
+the stand-ins (GAMEPLAY_PLAN)~~ (waiting on the user's Kimodo sets), splashes where the rain lands. (The desk's stage draws the `skin` word since the
 morning of the 29th: `tools/shared/skinwet.js`, GODOT_LOOK §5.)
 
 ## 0a. Before that (2026-10-28, night, on `godot-support`): Godot started, the export analysed, waiting on the user
