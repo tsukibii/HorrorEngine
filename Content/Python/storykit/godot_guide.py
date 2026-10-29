@@ -225,7 +225,7 @@ hob's glow, flames, the cup filling, the pour, drips, the clock's hands, screens
 reflections, ambient occlusion and indirect light, a little glow, a thin haze, AgX and temporal anti-aliasing (TAA alone: MSAA switches the reflections off in 4.7);
 <code>plain</code> turns it all off. The pause menu's Anti-aliasing row picks Off, FXAA, TAA or TSR over it. <b>In the editor</b> a level scene shows none of
 this (the game applies it at start): enable the plugin (Project → Project Settings → Plugins → HorrorStudio Look) and add an <code>HSLookEnvironment</code> node to the
-level scene to edit under the look; it steps aside when the game runs. The tape (<code>game.vhs</code>: camcorder, camhybrid, worn, nightmare) shows only in play; <code>camhybrid</code> is the camcorder with half the fisheye
+level scene to edit under the look; it steps aside when the game runs. The tape (<code>game.vhs</code>: camcorder, camhybrid, worn, nightmare) shows only in play; <code>camhybrid</code> is the camcorder with less fisheye
 and its blur only with distance (what's close stays almost sharp).</p>
 <p><b>game.weather</b> <code>rain</code> (this game: <b>{e(g.get('weather', 'clear'))}</b>) puts rain in every room with no <code>ceiling</code> (<code>HSRain</code>, a box of
 streaks moved by the vertex shader, splashes where they land) and wets its floor (<code>HSWet</code>: the damp, pools that carry the lights, the rain's rings on them), with the shelf's rain heard there.

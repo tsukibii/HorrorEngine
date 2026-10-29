@@ -27,7 +27,8 @@ The user's answers, newest first. They override the plan, the research and the d
   CompositorEffect after the transparents now, and the test room checks a digit and the kettle's steam survive it.
 - **"camhybrid needs strengthening towards camcorder: I like the sharpening and the reduction of fisheye, but we
   over-reduced to the point it lost its aesthetic; give me five screenshots to pick from."** Five strengths between
-  the two pictured (`docs/godot_sheets/2026-10-29_camhybrid_pick.jpg`); the one picked becomes `camhybrid`.
+  the two pictured (`docs/godot_sheets/2026-10-29_camhybrid_pick.jpg`). **"Something between B and C"**: their
+  midpoint is `camhybrid` (fisheye 0.062, blur 0.88, the softener half a pixel at 0.85 m to 1.55 px at 5.75 m).
 - **"The shadows feel a bit rough even with anti-aliasing and TAA: hard edges on the front door at the top."** The
   shadow maps' filter was Godot's default (soft low) over a 4096 atlas shared by twenty lights: soft high over 8192
   now, the lights with a size and a blur, the menu's Shadows row wired (GODOT_LOOK §1).

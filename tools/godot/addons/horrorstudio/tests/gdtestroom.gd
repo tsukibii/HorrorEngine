@@ -449,7 +449,7 @@ func _initialize() -> void:
 			vhsn.preset("camhybrid")
 			await frames(2)
 			var sft = HSSoften.on(g.camera)                            # on the camera's compositor, after the transparents (the digits, the steam and the glows stay)
-			if sft == null or float(sft.far_m) != 7.0 or float(vhsn.mat.get_shader_parameter("distortion")) != 0.045:
+			if sft == null or absf(float(sft.far_m) - 5.75) > 0.001 or absf(float(vhsn.mat.get_shader_parameter("distortion")) - 0.062) > 0.001:
 				return "camhybrid: softener %s, distortion %s" % [sft, vhsn.mat.get_shader_parameter("distortion")]
 			if sft.effect_callback_type != CompositorEffect.EFFECT_CALLBACK_TYPE_POST_TRANSPARENT:
 				return "the softener should run after the transparents: %d" % sft.effect_callback_type

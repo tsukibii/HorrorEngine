@@ -13,7 +13,7 @@ const CAMCORDER := {"tape_lines": 480.0, "crop_4x3": true, "distortion": 0.085, 
 	"luma_noise": 0.0, "chroma_noise": 0.0, "tracking_jitter": 0.0, "tracking_error": 0.0, "head_switch": 0.0, "dropouts": 0.0, "scanlines": 0.0, "glitch": 0.0, "ghosting": 0.15}
 const PRESETS := {
 	"camcorder": {},
-	"camhybrid": {"distortion": 0.045, "luma_blur": 0.5, "chroma_blur": 1.4, "sharpen": 1.1, "vignette": 0.07, "ghosting": 0.12, "soften": [0.9, 7.0, 1.6, 0.25]},   # the user's (2026-10-29): the camcorder with half the fisheye, its blur only with distance (HSSoften: near, far, pixels, least)
+	"camhybrid": {"distortion": 0.062, "luma_blur": 0.88, "chroma_blur": 1.65, "sharpen": 1.06, "vignette": 0.074, "ghosting": 0.13, "soften": [0.85, 5.75, 1.55, 0.55]},   # the user's (2026-10-29): the camcorder with less fisheye and its blur mostly with distance (HSSoften: near, far, pixels, least); the strength they picked from seven (between B and C on docs/godot_sheets/2026-10-29_camhybrid_pick.jpg)
 	"worn": {"saturation": 0.7, "luma_blur": 1.6, "chroma_blur": 3.0, "chroma_shift": 1.5, "luma_noise": 0.25, "chroma_noise": 0.35, "tracking_jitter": 0.4, "head_switch": 0.6, "dropouts": 0.3, "ghosting": 0.2},
 	"nightmare": {"tape_lines": 360.0, "saturation": 0.55, "black_level": Vector3(0.06, 0.045, 0.045), "white_level": Vector3(0.74, 0.72, 0.70), "luma_blur": 1.8, "chroma_blur": 4.5,
 		"chroma_shift": 3.0, "luma_noise": 0.5, "chroma_noise": 0.7, "tracking_jitter": 1.0, "tracking_error": 0.5, "head_switch": 1.0, "dropouts": 1.0, "scanlines": 0.15, "ghosting": 0.3},

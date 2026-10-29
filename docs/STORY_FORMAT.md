@@ -961,8 +961,8 @@ the first time she finds you, a tease the second, the third is a death.
 only colours, radii, shadows and the font; the layout is the same for every game.
 
 **The camcorder look** (docs/VHS.md): `game.vhs` names UltraVHS's preset the game is shot on, `camcorder` (clean),
-`camhybrid` (the user's, 2026-10-29: the camcorder with half the fisheye and its blur only with distance, what's close
-almost sharp), `worn` or `nightmare`; left out or `off`, the picture is as it is. The Godot export plays it as a shader over the picture
+`camhybrid` (the user's, 2026-10-29: the camcorder with less fisheye and its blur mostly with distance, what's close
+nearly sharp; the strength they picked from seven), `worn` or `nightmare`; left out or `off`, the picture is as it is. The Godot export plays it as a shader over the picture
 under the HUD (its black turning blue at night, the menu's Film grain capping the noise); Unreal's UltraVHS component
 takes the same preset. The desk doesn't show it yet (VHS.md §9).
 
