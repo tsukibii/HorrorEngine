@@ -79,6 +79,8 @@ func _ready() -> void:
 		env2.tonemap_exposure = 1.0
 		env2.glow_enabled = false
 		env2.adjustment_enabled = false
+		env2.ssr_enabled = false                       # a reflection needs no reflections of its own (nor indirect light): half the second render's cost
+		env2.ssil_enabled = false
 		mcam.environment = env2
 	view.add_child(mcam)
 	mcam.current = true

@@ -166,7 +166,8 @@ at 288 lines (its width by the window's aspect). The glass's shader doesn't read
 projects each point of the glass through that camera's own view-projection (passed in each frame), so the texel is
 the one that camera gave that point, and the parity, the angle and the frame come out right whatever the mirror's
 shape and however it hangs. The second camera renders through a copy of the room's environment with a linear tone
-map, no glow and no grade, so the glass's picture is tone-mapped once, by the main pass, like everything round it;
+map, no glow, no grade, and no screen-space reflections or indirect light of its own (a reflection needs none: the
+second render costs half as much), so the glass's picture is tone-mapped once, by the main pass, like everything round it;
 the reflection is unshaded (it carries its own light), with a tint and a faint dust film. The mirror itself and the wall it hangs on (the body a ray
 finds just behind the glass) go on layer 20 alone, which the player's camera draws and the second camera doesn't: a
 mirror never shows its own wall or itself (so one mirror's wall is missing from another's reflection: two mirrors in
