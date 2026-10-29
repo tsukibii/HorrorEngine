@@ -57,7 +57,8 @@
    "height": 1.6,
    "subject": "she",
    "skin": "#c99f84",
-   "previs_body": "MHR.fbx"
+   "previs_body": "MHR.fbx",
+   "models": {"second": "MHR.fbx"}
   }
  },
  "items": {
@@ -2397,6 +2398,7 @@
   },
   "annex": {
    "start": "annex_start",
+   "look": "plain",
    "rooms": [
     {
      "id": "annex_hall",
@@ -2605,6 +2607,7 @@
  },
  "scenes": {
   "s_hello": {
+    "models": {"aoi": "second"},
    "title": "Aoi in the lobby",
    "level": "lab",
    "stage": {

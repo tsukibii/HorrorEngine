@@ -364,17 +364,30 @@ func _initialize() -> void:
 			var t := tasks()
 			if t[0]["id"] != "t1_door" or t[1]["id"] != "t1_in" or t.any(func(x): return x["state"] != "open"):
 				return "the list " + JSON.stringify(t)
-			var rain = g.level.get_node_or_null("Rain_yard")         # game.weather rain: the yard has no ceiling, so it rains there
+			var rain = g.level.get_node_or_null("Rain")              # game.weather rain: one box for the level, riding with the eye, its drops only in the rooms with no ceiling (the yard)
 			if rain == null or not (rain is HSRain) or rain.multimesh == null or rain.multimesh.instance_count < 200:
-				return "no rain in the yard: " + str(rain)
+				return "no rain: " + str(rain)
+			var rooms_n = rain.mat.get_shader_parameter("rooms_n")
+			var e: Vector3 = rt.eye_pos()
+			if int(rooms_n) < 1 or not rain.mat.get_shader_parameter("follow") or abs(rain.global_position.x - e.x) > 0.05 or abs(rain.global_position.z - e.z) > 0.05:
+				return "the rain box: rooms %s, follow %s, at %s against the eye %s" % [rooms_n, rain.mat.get_shader_parameter("follow"), rain.global_position, e]
 			var yard_floor = null
 			for ch in g.pieces():
 				if ch.has_meta("piece") and str(ch.get_meta("piece")).contains("\"yard__floor\""):
 					yard_floor = ch.get_node_or_null("mesh")
 			if yard_floor == null or not (yard_floor.material_override is ShaderMaterial) or yard_floor.material_override.shader != HSWet.shader():
 				return "the yard's floor isn't wet: " + str(yard_floor)
-			if not g.level.get_node_or_null("Rain_lobby") == null:
-				return "rain in the lobby (it has a ceiling)"
+			var lo: PackedVector4Array = rain.mat.get_shader_parameter("rooms_lo")
+			var hi: PackedVector4Array = rain.mat.get_shader_parameter("rooms_hi")
+			var yard_box := false                                    # the yard's box among them (13 by 4 m, south of the lobby: Godot z 5 to 9); the lobby (a ceiling) in none
+			var lobby_box := false
+			for i in int(rooms_n):
+				if hi[i].x - lo[i].x >= 12.9 and hi[i].z - lo[i].z >= 3.9 and lo[i].z >= 4.99 and hi[i].z <= 9.01:
+					yard_box = true
+				if lo[i].z < 4.99 and hi[i].z > 0.01 and lo[i].x < 1.5 and hi[i].x > 1.5:
+					lobby_box = true
+			if lo.size() != 8 or not yard_box or lobby_box:
+				return "the rain's room boxes: %s / %s" % [lo, hi]
 			if rt.panes.size() != 2 or rt.panes.any(func(pn): return not (pn.material_override is ShaderMaterial) or pn.material_override.shader != HSGlass.shader() or float(pn.material_override.get_shader_parameter("rain")) <= 0.0):
 				return "the lobby's two panes should wear the glass with the rain on it: " + str(rt.panes.size())
 			var shafts: Array = g.level.get_node("Lights").get_children().filter(func(c): return c is FogVolume and c.has_meta("shaft"))   # the lobby's windows throw shafts (HSShaft on the export's FogVolumes)
@@ -559,6 +572,12 @@ func _initialize() -> void:
 					return "the bake: " + JSON.stringify(bs)
 				if not (bs.get("skin_aoi") is bool and bs["skin_aoi"]):             # her skin on HumanShaders' skin shader (HSSkin), her tone kept
 					return "her skin isn't on the skin shader: " + JSON.stringify(bs)
+				if FileAccess.file_exists("res://game/previs/Body_aoi__second.glb") and not str(bs.get("body_aoi", "")).ends_with("Body_aoi__second.glb"):   # the scene picks her "second" model (STORY_FORMAT §3.1): played on that model's body
+					return "the scene's model: " + str(bs.get("body_aoi", ""))
+			if g.run.get("models", {}).get("aoi") != "second":                  # and the run carries the pick from here on
+				return "the run's models: " + JSON.stringify(g.run.get("models", {}))
+			if rt.standins.has("aoi") and FileAccess.file_exists("res://game/previs/Body_aoi__second.glb") and not str(rt.standins["aoi"].get_meta("file", "")).ends_with("Body_aoi__second.glb"):
+				return "her stand-in after the scene: " + str(rt.standins["aoi"].get_meta("file", ""))
 			return ""))
 
 	await station("n_front", func():
@@ -1284,6 +1303,8 @@ func _initialize() -> void:
 		await step("18 · The annex (another level): dark, a checkpoint; the note read (ticks); the fusebox says it needs the fuse, takes it (gone from the pocket), and the power comes on (ticks)", func():
 			if not await until(func(): return rt.level == "annex" and not rt.powered(), 1800):
 				return "the annex, dark: never"
+			if g.look_now != "plain" or g.get_node("Env").environment.ssr_enabled:   # the annex's own look is plain (STORY_FORMAT §2): the effects off there
+				return "the annex's look: %s, ssr %s" % [g.look_now, g.get_node("Env").environment.ssr_enabled]
 			await use("annex_note", 0.6)
 			await frames(5)
 			if g.hud.panel_el == null:

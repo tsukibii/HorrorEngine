@@ -68,7 +68,12 @@ func make_bodies(world: Node3D) -> void:
 		var b := {"node": null, "skeleton": null, "map": {}, "rests": {}, "parts": [], "joints": index.get("joints", [])}
 		var skinned: bool = index.get("bodies", {}).has(cid)
 		if skinned:
-			var file: String = index["bodies"][cid]["file"]
+			var entry: Dictionary = index["bodies"][cid]
+			var model = (sc.get("models", {}) if sc.get("models") is Dictionary else {}).get(cid)   # the model worn in this scene (the bake records it on that body)
+			if model != null and (entry.get("models", {}) is Dictionary) and entry["models"].has(model):
+				entry = entry["models"][model]
+			var file: String = entry["file"]
+			b["file"] = file
 			var ps = game.body_scene(cid, file)
 			if ps != null:
 				var n: Node3D = ps.instantiate()
@@ -89,7 +94,7 @@ func make_bodies(world: Node3D) -> void:
 							for nm in shapes:
 								b["face_idx"].append(mi.find_blend_shape_by_name(str(nm)))
 							break
-					var names: Array = index["bodies"][cid]["bones"]
+					var names: Array = entry["bones"]
 					for i in names.size():
 						var bi := sk.find_bone(str(names[i]))
 						if bi >= 0:

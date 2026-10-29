@@ -14,6 +14,10 @@ uniform vec4 color : source_color = vec4(0.72, 0.78, 0.9, 1.0);
 uniform float strength : hint_range(0.0, 1.0) = 0.45;
 uniform float wind = 0.25;                 // sideways lean, 0..1
 uniform float lit = 1.6;                   // how much of a light reaching a streak it shows
+uniform bool follow = false;               // the box rides with the player (play.gd): each drop keeps a world seat (a lattice the box's size), so walking doesn't drag the rain along
+uniform int rooms_n = 0;                   // the open rooms it rains in, as world boxes (min xyz, max xyz): a drop outside them all isn't drawn (none: everywhere in the box)
+uniform vec4 rooms_lo[8];
+uniform vec4 rooms_hi[8];
 
 varying float va;
 varying vec2 vuv;
@@ -23,14 +27,26 @@ void vertex() {
 	vec4 c = INSTANCE_CUSTOM;              // xyz the drop's seat in the box 0..1, w its phase
 	float v = speed * (0.8 + 0.5 * c.w);
 	vec3 p = c.xyz * box_size - box_size * 0.5;
+	vec3 origin = MODEL_MATRIX[3].xyz;
+	if (follow) {                          // the drop's seat on a world lattice the box's size, the copy nearest the box's middle
+		vec2 w = c.xz * box_size.xz;
+		vec2 wpos = w + box_size.xz * floor((origin.xz - w) / box_size.xz + 0.5);
+		p.xz = wpos - origin.xz;
+	}
 	float fallen = mod(c.y * box_size.y + TIME * v, box_size.y);
 	p.y = box_size.y * 0.5 - fallen;
+	float inroom = rooms_n == 0 ? 1.0 : 0.0;
+	vec3 wp = origin + p;
+	for (int i = 0; i < 8; i++) {
+		if (i >= rooms_n) break;
+		if (wp.x >= rooms_lo[i].x && wp.x <= rooms_hi[i].x && wp.z >= rooms_lo[i].z && wp.z <= rooms_hi[i].z && wp.y >= rooms_lo[i].y - 0.5 && wp.y <= rooms_hi[i].y + 0.5) inroom = 1.0;
+	}
 	p.x += sin(TIME * 0.7 + c.w * 6.2831) * 0.15 * wind + wind * 0.6 * fallen * 0.15;
 	vec3 fall = normalize(vec3(wind * 0.35, -1.0, 0.0));
 	vec3 right = INV_VIEW_MATRIX[0].xyz;
 	vec3 pos = p + right * VERTEX.x * width - fall * (VERTEX.y + 0.5) * streak;
 	float dcam = length((VIEW_MATRIX * vec4((MODEL_MATRIX * vec4(pos, 1.0)).xyz, 1.0)).xyz);
-	va = smoothstep(0.25, 0.9, dcam) * smoothstep(0.0, 0.3, fallen) * smoothstep(0.0, 0.3, box_size.y - fallen);
+	va = smoothstep(0.25, 0.9, dcam) * smoothstep(0.0, 0.3, fallen) * smoothstep(0.0, 0.3, box_size.y - fallen) * inroom;
 	vuv = vec2(VERTEX.x + 0.5, VERTEX.y + 0.5);
 	VERTEX = pos;
 }

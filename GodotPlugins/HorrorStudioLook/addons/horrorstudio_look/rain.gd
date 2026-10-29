@@ -74,6 +74,28 @@ func _ready() -> void:
 	add_child(splash_node)
 
 
+## the box rides with the player (play.gd moves it): the drops keep world seats, and only the open rooms get them
+func set_follow(on: bool) -> void:
+	for m in [mat, splash_mat]:
+		if m != null:
+			m.set_shader_parameter("follow", on)
+
+
+## the open rooms it rains in, as world boxes [[lo: Vector3, hi: Vector3], ...] (up to 8; none: the whole box)
+func set_rooms(boxes: Array) -> void:
+	var lo := PackedVector4Array()
+	var hi := PackedVector4Array()
+	for i in 8:
+		var b: Array = boxes[i] if i < boxes.size() else [Vector3.ZERO, Vector3.ZERO]
+		lo.append(Vector4(b[0].x, b[0].y, b[0].z, 0.0))
+		hi.append(Vector4(b[1].x, b[1].y, b[1].z, 0.0))
+	for m in [mat, splash_mat]:
+		if m != null:
+			m.set_shader_parameter("rooms_n", min(boxes.size(), 8))
+			m.set_shader_parameter("rooms_lo", lo)
+			m.set_shader_parameter("rooms_hi", hi)
+
+
 func set_splashes(on: bool) -> void:
 	splashes = on
 	if splash_node != null:

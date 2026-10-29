@@ -129,9 +129,9 @@ splashes and the mirror read as meant; the arms-down pose of the stand-ins; the 
 preset's numbers (GODOT_LOOK §1) want pushing further or back, whether the puff shader should go back onto the desk's
 stage, and whether a mirror should be drawn for real on the desk's stage too (today the desk's mirror is a metallic
 grey; Godot's reflects). **Next** (GODOT_EXPORT §8, GODOT_LOOK §7): ~~the
-voices (the takes' audio)~~ (scrapped, DECISIONS 2026-10-29, night), the Inspector resources and AnimationPlayer timelines (§3), a cast member's models per
-scene, the Studio's paint and eye measured beside the Studio's own render (the three.js side), ~~the motion sets on
-the stand-ins (GAMEPLAY_PLAN)~~ (waiting on the user's Kimodo sets), splashes where the rain lands. (The desk's stage draws the `skin` word since the
+voices (the takes' audio)~~ (scrapped, DECISIONS 2026-10-29, night), the Inspector resources and AnimationPlayer timelines (§3), ~~a cast member's models per
+scene~~ (done 2026-10-29, night, GODOT_EXPORT §8), the Studio's paint and eye measured beside the Studio's own render (the three.js side), ~~the motion sets on
+the stand-ins (GAMEPLAY_PLAN)~~ (waiting on the user's Kimodo sets), ~~splashes where the rain lands~~ (done that morning); and from GODOT_LOOK §7 that night: a `look` per level (STORY_FORMAT §2) and one rain box riding with the player (GODOT_LOOK §4, `docs/godot_sheets/2026-10-29_local_rain_follow.jpg`). (The desk's stage draws the `skin` word since the
 morning of the 29th: `tools/shared/skinwet.js`, GODOT_LOOK §5.)
 
 ## 0a. Before that (2026-10-28, night, on `godot-support`): Godot started, the export analysed, waiting on the user

@@ -66,8 +66,9 @@ func _ready() -> void:
 	if envn != null and envn.environment != null:
 		hud.env = envn.environment
 	hud.wear(str(story.game.get("ui_theme", "glass")))
-	if envn != null and envn.environment != null:        # the look (game.look: realism, the default, or plain; HorrorStudioLook's HSLook)
+	if envn != null and envn.environment != null:        # the look (game.look: realism, the default, or plain; HorrorStudioLook's HSLook; a level's own over it, enter_level)
 		HSLook.apply(get_viewport(), envn.environment, str(story.game.get("look", "realism")))
+		look_now = str(story.game.get("look", "realism"))
 	HSLook.shadows(get_viewport(), int(load("res://addons/horrorstudio/menu.gd").load_settings().get("shadows", 2)))   # the shadows' filter and atlas (the menu's row)
 	HSLook.iris(get_viewport(), str(story.game.get("look", "realism")) != "plain", time_of_day == "night")   # the camcorder's iris: auto exposure settling over a second, a stop under at night
 	var vhsn = get_node_or_null("VHS")
@@ -101,9 +102,29 @@ func _ready() -> void:
 ## the level's scene instanced into the World; every node with a piece registered by its id. `fresh`: the level as the
 ## story builds it, even if it's the one that's there (a run's first time)
 ## a cast member's baked body (previs/Body_<who>.glb) as a scene, loaded once; null without one
+## a scene's `models` (STORY_FORMAT §3.1): which model each cast member wears from this scene on, carried in the run
+## down every way after it till a later scene sets another or "default"; the stand-ins in the level dressed again
+func wear_models(sc: Dictionary) -> void:
+	if run == null:
+		return
+	var m: Dictionary = sc.get("models", {}) if sc.get("models") is Dictionary else {}
+	if not run.has("models") or not (run["models"] is Dictionary):
+		run["models"] = {}
+	for cid in m:
+		var v = m[cid]
+		var before = run["models"].get(cid)
+		if v == null or str(v) == "" or str(v) == "default":
+			run["models"].erase(cid)
+		else:
+			run["models"][cid] = str(v)
+		if play != null and run["models"].get(cid) != before:
+			play.standin_redress(str(cid))
+
+
 func body_scene(cid: String, file: String) -> Variant:
-	if body_scenes.has(cid):
-		return body_scenes[cid]
+	var ck := cid + "|" + file                      # a cast member's models are bodies of their own (Body_<cid>__<model>.glb)
+	if body_scenes.has(ck):
+		return body_scenes[ck]
 	var path := "res://game/previs/" + file
 	var ps = load(path) if ResourceLoader.exists(path) else null
 	if ps == null and FileAccess.file_exists(path):   # not imported yet (a headless run): read the glb itself
@@ -115,7 +136,7 @@ func body_scene(cid: String, file: String) -> Variant:
 				ps = PackedScene.new()
 				ps.pack(n)
 				n.free()
-	body_scenes[cid] = ps
+	body_scenes[ck] = ps
 	return ps
 
 
@@ -136,7 +157,26 @@ func enter_level(lid: String, fresh: bool = false) -> void:
 			if p is Dictionary:
 				things[p["id"]] = {"node": n, "piece": p}
 	set_time(time_of_day)
+	set_look(look_of_level(lid))
 	bake_gi(lid)
+
+
+## the look a level plays under: its own `look` (STORY_FORMAT §2), else the game's (§9.1)
+func look_of_level(lid: String) -> String:
+	var lv: Dictionary = story.levels.get(lid, {}) if story.levels is Dictionary else {}
+	return str(lv.get("look", story.game.get("look", "realism")))
+
+
+var look_now := ""
+## the look plugin's preset on the game now (realism or plain), with the iris that goes with it
+func set_look(name: String) -> void:
+	if name == look_now:
+		return
+	look_now = name
+	var envn = get_node_or_null("Env")
+	if envn != null and envn.environment != null:
+		HSLook.apply(get_viewport(), envn.environment, name)
+	HSLook.iris(get_viewport(), name != "plain", time_of_day == "night")
 
 
 const FOLDERS := ["Ground", "Walls", "Ceilings", "Doors", "Things", "Lights", "Glass", "Triggers", "Spots", "People", "GI"]   # the export's folders in a level, by kind
@@ -190,7 +230,7 @@ func set_time(t: String) -> void:
 	if vhsn != null:
 		vhsn.set_night(1.0 if time_of_day == "night" else 0.0)   # the tape's black turns blue at night (UltraVHS's night mode)
 	if story != null:
-		HSLook.iris(get_viewport(), str(story.game.get("look", "realism")) != "plain", time_of_day == "night")   # the iris a stop under at night
+		HSLook.iris(get_viewport(), (look_now if look_now != "" else str(story.game.get("look", "realism"))) != "plain", time_of_day == "night")   # the iris a stop under at night
 	var e: Environment = env.environment
 	e.background_color = L["sky"]
 	e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
@@ -437,6 +477,7 @@ func watch(from_nid = null, snap = null) -> void:
 			set_time(run["time"])
 		if n.get("type") == "scene":
 			var sc0: Dictionary = story.scenes.get(n.get("ref"), {})
+			wear_models(sc0)                                       # the models the scene picks are worn from here on (STORY_FORMAT §3.1)
 			if sc0.get("pick_by") == "found_at" and run.get("found_at") != null and sc0.get("variants", {}).has(run["found_at"]):
 				sc0 = sc0.duplicate()
 				sc0["pick"] = run["found_at"]

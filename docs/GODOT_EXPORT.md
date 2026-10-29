@@ -149,7 +149,7 @@ loads, every verb in the games has a part).
    every combination of a scene's answers (silence too, at most 16 a scene) as its own recording (`recordings`, keyed
    `c3=good|c7=`; the export a file each, `scenes/<sid>__<key>.json`), and the scene player switches to the branch's
    recording at the answer, its timeline mapped onto it (measured: the night scene's painting answer, no frame held).
-   Not yet: a cast member's models per scene.
+   **A cast member's models per scene** (2026-10-29, night): a scene's `models` are carried in the run from that scene on (`game.wear_models`, STORY_FORMAT §3.1), the stand-in in the level dressed again in the model's body (`play.standin_redress`: a Character Studio export for `people/<name>`, else the bake's `Body_<cid>__<model>.glb`), and the bake's scene player poses the model's body (bake.js records each scene on the bodies its cast wear there); TestRoom001's Aoi has a `second` model the lobby scene picks, GDTESTROOM checks the scene's body and her stand-in after it.
    **The things' meshes** (2026-10-29): the export builds the kit's meshes the game needs (`tools/kit_build.py`, the
    glbs the Unreal importer uses too) and copies them and the library's into `game/meshes/<lib>/`, each instanced in
    its block (`art` under the StaticBody3D, the box mesh hidden, its collision kept): a kit thing at the block's

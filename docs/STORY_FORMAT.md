@@ -61,6 +61,8 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
 - `start` is a spot.
 - `weather` (optional): this level's weather, `clear` or `rain`, over `game.weather` (§9.1): an outdoors level in the
   rain, the house dry.
+- `look` (optional): this level's look, `realism` or `plain`, over `game.look` (§9.1): a flat-lit annex, a dream
+  level with the effects off (a scene's `look` is its look-at, §3.4: no per-scene preset).
 - `routes` (optional): named walks for the cast in play (`behave` path and patrol, §4), each a list of the level's
   spots in order, with a `wait` (seconds, facing the spot's `rot`) and a `pose` (the pose library) where she stops:
   `"routes": {"r_hall": {"points": [{"at": "hall_back", "wait": 2, "pose": "look_left"}, "hall_near"], "mode": "pingpong"}}`.
@@ -982,7 +984,8 @@ light, a little glow, a thin haze, AgX, temporal anti-aliasing) or `plain` (all 
 puts rain in every room with no `ceiling`, its floor wet with pools that carry the lights and the rain's rings,
 splashes where it lands, the shelf's rain heard there (all round you once you're in the room, at the room's middle
 from indoors) and every step in that room wet (the desk's Play the same); `clear` (the default) nothing; a level's
-own `weather` (§2) overrides it. A `clean` stain of kind `blood` wears the plugin's blood: a
+own `weather` (§2) overrides it, and a level's own `look` (§2) overrides `game.look`. A `clean` stain of kind
+`blood` wears the plugin's blood: a
 pool with a ragged edge and flung drops, glossy, fading as it's scrubbed.
 
 **Hiding places' default:** `game.see_through` (0..1), how much of a locker's slats are gaps when the locker doesn't say.

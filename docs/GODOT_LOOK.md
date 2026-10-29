@@ -195,6 +195,14 @@ player once they're in it (`rain_follow` in play.gd), and every step taken in th
 on the desk too: steps.js).
 
 
+**One box that rides with the player** (2026-10-29, night; GODOT_LOOK §7's "a rain that follows the player"): the
+runtime makes one HSRain for the level, a dozen metres across and the open rooms' full height, moved to the eye's
+x and z every tick (`rain_follow`); its drops keep seats on a world lattice the box's size (the shader's `follow`:
+walking doesn't drag the rain along, the nearest copy of each seat is drawn), and only inside the open rooms (the
+shader's `rooms_lo`/`rooms_hi`, up to eight world boxes: a drop over a roofed room isn't drawn; the splashes the
+same). So a street needn't be one huge thin box, nor a box a room; the rain's sound stays one player a room, riding
+with you indoors. GDTESTROOM checks the box at the eye, its one room box the yard's.
+
 ## 5. Wet and oiled skin (`skin_wet.gdshader`, `HSSkin`): HumanShaders implemented
 
 HumanShaders' skin shader (MIT, MatMADNESS; GODOT_PLAN §2 is the plan for the Studio's look on it) is the base, kept
@@ -304,5 +312,4 @@ them off at Low (dull glass) and halves them at Medium (`set_quality`). Not yet:
 - Seen by the user (2026-10-29): a square patch of light under a distant counter that goes when you come close.
   Most likely a VoxelGI cell at its coarse distance (the per-room probes meet at the counter), else the SSIL at a
   distance. To look at with a card: picture it from far and near, flip GI and SSIL off in the menu, see which goes.
-- A rain that follows the player outdoors through a level (today each open room has its own box).
-- A `look` per level or scene (today the game's).
+- A `look` per scene (a level has its own since 2026-10-29, night: STORY_FORMAT §2; a scene's `look` is its look-at, so a per-scene preset would want another word).

@@ -1711,8 +1711,12 @@ func set_stain(t: Dictionary, opacity: float) -> void:
 var rain_sounds: Array = []          # {p: the rain's player, room, at}: the shelf's rain in each open room (rain_follow)
 var wet_rooms: Array = []            # the open rooms' ids while it rains, and the rooms with their own `wet`: steps there sound wet
 var rain_rooms: Array = []           # the open rooms' ids while it rains: a cast member out there gets wet (rain_wet)
+const RAIN_BOX := 12.0               # metres across: the level's one rain box, riding with the player
+var rain_box: HSRain = null
+var rain_box_y := 0.0
 func weather_attach() -> void:
 	rain_sounds = []
+	rain_box = null
 	wet_rooms = []
 	rain_rooms = []
 	var lvl: Dictionary = game.story.levels.get(level, {})
@@ -1734,19 +1738,34 @@ func weather_attach() -> void:
 	if open.is_empty():
 		return
 	var ids: Array = []
+	var boxes: Array = []                            # the open rooms as world boxes: the one rain box only draws drops inside them
+	var top := 0.0
+	var floor_y := INF
 	for r in open:
 		var at: Array = r["at"]
 		var sz: Array = r["size"]
-		var size := Vector3(float(sz[0]), float(sz[2]), float(sz[1]))
-		var rain := HSRain.make(size, int(clamp(size.x * size.z * 25.0, 200, 2500)), 0.55)
-		rain.name = "Rain_" + str(r["id"])
-		game.level.add_child(rain)
-		rain.global_position = Vector3(float(at[0]) + size.x / 2.0, float(at[2]) + size.y / 2.0, -(float(at[1]) + size.z / 2.0))
+		var lo := Vector3(float(at[0]), float(at[2]), -(float(at[1]) + float(sz[1])))
+		var hi := Vector3(float(at[0]) + float(sz[0]), float(at[2]) + float(sz[2]), -float(at[1]))
+		boxes.append([lo, hi])
+		top = max(top, hi.y)
+		floor_y = min(floor_y, lo.y)
 		ids.append(r["id"])
+		var middle := (lo + hi) * 0.5
 		if game.sfx_index.has("rain"):              # heard at the room's middle from indoors, all round you once you're in it (rain_follow)
-			var rp = play_sfx("rain", rain.global_position, -6.0)     # (play_sfx, not shelf_sound: the level loads before the run is active)
+			var rp = play_sfx("rain", middle, -6.0)     # (play_sfx, not shelf_sound: the level loads before the run is active)
 			if rp != null:
-				rain_sounds.append({"p": rp, "room": str(r["id"]), "at": rain.global_position})
+				rain_sounds.append({"p": rp, "room": str(r["id"]), "at": middle})
+	# one box of rain for the level that rides with the player (GODOT_LOOK §7: a street needn't be one huge thin box, nor a box a room):
+	# a dozen metres across, the open rooms' full height, its drops on a world lattice, drawn only inside the open rooms
+	var size := Vector3(RAIN_BOX, max(top - floor_y, 2.5) + 0.5, RAIN_BOX)
+	rain_box = HSRain.make(size, 3000, 0.55)
+	rain_box.name = "Rain"
+	game.level.add_child(rain_box)
+	rain_box_y = floor_y + size.y / 2.0 - 0.25
+	var e0: Vector3 = eye_pos()
+	rain_box.global_position = Vector3(e0.x, rain_box_y, e0.z)
+	rain_box.set_follow(true)
+	rain_box.set_rooms(boxes)
 	for id in ids:
 		if not wet_rooms.has(id):
 			wet_rooms.append(id)
@@ -1776,39 +1795,92 @@ var panes: Array = []                # the windows' panes wearing the rain
 func standin_bodies() -> void:
 	standins = {}
 	for cid in cast_nodes:
-		var n: Node3D = cast_nodes[cid]
-		var c: Dictionary = game.story.cast.get(cid, {}) if game.story.cast is Dictionary else {}
-		var pb := str(c.get("previs_body", ""))
-		var file := ""
-		var people := false
-		if pb.begins_with("people/") and ResourceLoader.exists("res://game/people/" + pb.substr(7) + ".glb"):
-			file = "res://game/people/" + pb.substr(7) + ".glb"
-			people = true
-		elif ResourceLoader.exists("res://game/previs/Body_" + cid + ".glb") or FileAccess.file_exists("res://game/previs/Body_" + cid + ".glb"):
-			file = "res://game/previs/Body_" + cid + ".glb"
-		if file == "":
-			continue
-		var body: Node3D = glb_scene(file)             # read by GLTFDocument, not the importer: its bone frames are the file's own (arms_down counts on them)
-		if body == null:
-			continue
-		body.name = "body_" + cid
-		n.add_child(body)
-		for ch in n.get_children():                  # the cylinders hidden under it
-			if ch is MeshInstance3D:
-				ch.visible = false
-		var lo := INF
-		for mi in body.find_children("*", "MeshInstance3D", true, false):
-			if mi.mesh != null:
-				lo = min(lo, (mi.global_transform * mi.get_aabb()).position.y - n.global_position.y)
-		if lo != INF:
-			body.position.y = -lo                    # its feet on the stand-in's floor
-		body.rotation_degrees.y = 180.0               # the export faces +z, the stand-in's forward is -z
-		for sk in body.find_children("*", "Skeleton3D", true, false):
-			arms_down(sk)
-		standin_mats[cid] = HSSkin.wear(body, skin_wet.get(cid, {}))
-		if people:
-			HSEye.wear(body, file)
-		standins[cid] = body
+		standin_body(str(cid))
+
+
+## a model's name as the bake files it: Body_<cid>__<tag>.glb (bake.js: the name's runs of anything but letters and digits as one _)
+static func model_tag(name: String) -> String:
+	var out := ""
+	var gap := false
+	for ch in name:
+		if (ch >= "a" and ch <= "z") or (ch >= "A" and ch <= "Z") or (ch >= "0" and ch <= "9"):
+			if gap and out != "":
+				out += "_"
+			gap = false
+			out += ch
+		else:
+			gap = true
+	if gap and out != "":
+		out += "_"
+	return out
+
+
+## the file a cast member's stand-in wears now: the model the run carries (a scene's pick, STORY_FORMAT §3.1), else
+## their default body: a Character Studio export (people/<name>) or the bake's shaped body; {file, people}
+func standin_file(cid: String) -> Dictionary:
+	var c: Dictionary = game.story.cast.get(cid, {}) if game.story.cast is Dictionary else {}
+	var model = (game.run.get("models", {}) if game.run != null and game.run.get("models") is Dictionary else {}).get(cid)
+	var refs: Array = []
+	if model != null and (c.get("models", {}) is Dictionary) and c["models"].has(model):
+		var ref := str(c["models"][model])
+		if ref.begins_with("people/"):
+			refs.append({"file": "res://game/people/" + ref.substr(7) + ".glb", "people": true})
+		refs.append({"file": "res://game/previs/Body_" + cid + "__" + model_tag(str(model)) + ".glb", "people": false})
+	var pb := str(c.get("previs_body", ""))
+	if pb.begins_with("people/"):
+		refs.append({"file": "res://game/people/" + pb.substr(7) + ".glb", "people": true})
+	refs.append({"file": "res://game/previs/Body_" + cid + ".glb", "people": false})
+	for r in refs:
+		if ResourceLoader.exists(r["file"]) or FileAccess.file_exists(r["file"]):
+			return r
+	return {"file": "", "people": false}
+
+
+## the stand-in dressed again (a scene picked another model for them): the old body off, the new one on
+func standin_redress(cid: String) -> void:
+	if not cast_nodes.has(cid):
+		return
+	var old = standins.get(cid)
+	if old != null and is_instance_valid(old):
+		if old.get_meta("file", "") == standin_file(cid)["file"]:
+			return
+		old.queue_free()
+		standins.erase(cid)
+		standin_mats.erase(cid)
+	standin_body(cid)
+
+
+func standin_body(cid: String) -> void:
+	if not cast_nodes.has(cid):
+		return
+	var n: Node3D = cast_nodes[cid]
+	var sf := standin_file(cid)
+	var file: String = sf["file"]
+	var people: bool = sf["people"]
+	if file == "":
+		return
+	var body: Node3D = glb_scene(file)             # read by GLTFDocument, not the importer: its bone frames are the file's own (arms_down counts on them)
+	if body == null:
+		return
+	body.set_meta("file", file)
+	body.name = "body_" + cid
+	n.add_child(body)
+	for ch in n.get_children():                  # the cylinders hidden under it
+		if ch is MeshInstance3D:
+			ch.visible = false
+	var lo := INF
+	for mi in body.find_children("*", "MeshInstance3D", true, false):
+		if mi.mesh != null:
+			lo = min(lo, (mi.global_transform * mi.get_aabb()).position.y - n.global_position.y)
+	if lo != INF:
+		body.position.y = -lo                    # its feet on the stand-in's floor
+	body.rotation_degrees.y = 180.0               # the export faces +z, the stand-in's forward is -z
+	for sk in body.find_children("*", "Skeleton3D", true, false):
+		arms_down(sk)
+	standin_mats[cid] = HSSkin.wear(body, skin_wet.get(cid, {}))
+	if people:
+		HSEye.wear(body, file)
+	standins[cid] = body
 
 
 ## the `skin` action: a cast member's skin wet, sweating, dripping, oiled (0..1 each; the keys left out stay): on her
@@ -2312,6 +2384,9 @@ func live_tick(dt: float) -> void:
 ## the rain's sound rides with the player while they stand in its room (it's all round them there), else sits at
 ## the room's middle, heard through the doorway (a room's volume trigger carries the room's id)
 func rain_follow() -> void:
+	if rain_box != null and is_instance_valid(rain_box):      # the rain box rides with the eye (its drops keep their world seats)
+		var e: Vector3 = eye_pos()
+		rain_box.global_position = Vector3(e.x, rain_box_y, e.z)
 	for rs in rain_sounds:
 		var p = rs["p"]
 		if p == null or not is_instance_valid(p) or not (p is AudioStreamPlayer3D):

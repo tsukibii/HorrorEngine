@@ -13,6 +13,10 @@ uniform float radius = 0.045;              // metres: how far the droplets get
 uniform float rate = 2.2;                  // landings a second at each seat
 uniform vec4 color : source_color = vec4(0.8, 0.86, 0.95, 1.0);
 uniform float strength : hint_range(0.0, 1.0) = 0.45;
+uniform bool follow = false;               // as rain.gdshader: a world lattice when the box rides with the player
+uniform int rooms_n = 0;
+uniform vec4 rooms_lo[8];
+uniform vec4 rooms_hi[8];
 
 varying vec2 vuv;
 varying float vt;
@@ -25,6 +29,18 @@ void vertex() {
 	vec4 c = INSTANCE_CUSTOM;              // xz the seat in the box 0..1, y a phase, w its own pace and seed
 	float t = fract(TIME * rate * (0.7 + 0.6 * c.w) + c.y);
 	vec3 p = vec3(c.x * box_size.x - box_size.x * 0.5, -box_size.y * 0.5 + 0.004, c.z * box_size.z - box_size.z * 0.5);
+	vec3 origin = MODEL_MATRIX[3].xyz;
+	if (follow) {
+		vec2 w = c.xz * box_size.xz;
+		vec2 wpos = w + box_size.xz * floor((origin.xz - w) / box_size.xz + 0.5);
+		p.xz = wpos - origin.xz;
+	}
+	float inroom = rooms_n == 0 ? 1.0 : 0.0;
+	vec3 wp = origin + p;
+	for (int i = 0; i < 8; i++) {
+		if (i >= rooms_n) break;
+		if (wp.x >= rooms_lo[i].x && wp.x <= rooms_hi[i].x && wp.z >= rooms_lo[i].z && wp.z <= rooms_hi[i].z) inroom = 1.0;
+	}
 	float r = radius * (0.5 + 0.5 * c.w);
 	vec3 pos = p + vec3(VERTEX.x * 2.0 * r, 0.0, VERTEX.y * 2.0 * r);   // the quad laid flat, as wide as the droplets fly
 	vuv = VERTEX.xy * 2.0;
@@ -32,7 +48,7 @@ void vertex() {
 	vseed = c.w * 17.0 + floor(TIME * rate * (0.7 + 0.6 * c.w) + c.y);  // a new throw each landing
 	vk = 0.6 + 0.4 * c.w;
 	float dcam = length((VIEW_MATRIX * vec4((MODEL_MATRIX * vec4(pos, 1.0)).xyz, 1.0)).xyz);
-	vk *= smoothstep(0.2, 0.6, dcam) * (1.0 - smoothstep(5.0, 9.0, dcam));   // not under the eye, not across the room
+	vk *= smoothstep(0.2, 0.6, dcam) * (1.0 - smoothstep(5.0, 9.0, dcam)) * inroom;   // not under the eye, not across the room, not outside the open rooms
 	VERTEX = pos;
 }
 
