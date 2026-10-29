@@ -21,6 +21,20 @@ const Y_UP = new THREE.Vector3(0, 1, 0);
 // textures (but where a texture cuts a shape out, as a hair card's does), no physical shading, the eyes plain, the
 // picture at one pixel per pixel; Blender's solid view. The materials come back as they were when it's turned off
 const SIMPLE = new WeakMap(), PLAIN_TINT = new THREE.Color(0xb8b8b8);
+// how wet a room's floor is (STORY_FORMAT §2 `wet`, or 0.9 in the rain for a room with no ceiling: the level's weather, else the game's)
+function wetOfRoom(story, level, rid) {
+  const lv = ((story || {}).levels || {})[level] || {}, r = (lv.rooms || []).find(x => x.id === rid); if (!r) return 0;
+  const rain = (lv.weather ?? ((story || {}).game || {}).weather) === "rain" && r.ceiling === false;
+  return Math.max(0, Math.min(1, Math.max(+(r.wet || 0), rain ? 0.9 : 0)));
+}
+// the floor's material wet by that much: darker, the roughness down, a clear coat over it (the Godot export's wet shader has the pools; here the sheen)
+const WET_MATS = new Map();
+function wetFloor(base, wet) {
+  const key = base.uuid + "|" + wet.toFixed(2); let m = WET_MATS.get(key); if (m) return m;
+  m = new THREE.MeshPhysicalMaterial({ color: base.color.clone().multiplyScalar(1 - 0.35 * wet), map: base.map || null, roughness: Math.max(0.1, (base.roughness ?? 1) * (1 - 0.8 * wet)), metalness: 0,
+    clearcoat: 0.7 * wet, clearcoatRoughness: 0.12, emissive: base.emissive ? base.emissive.clone() : new THREE.Color(0), side: base.side });
+  m.userData = Object.assign({}, base.userData, { wet }); WET_MATS.set(key, m); return m;
+}
 function simpleOf(m) {
   if (Array.isArray(m)) { const a = m.map(simpleOf); return a.some(Boolean) ? a.map((x, i) => x || m[i]) : null; }
   if (!m || m.userData.simple || !(m.isMeshStandardMaterial || m.isMeshPhysicalMaterial || m.isMeshPhongMaterial || m.isMeshLambertMaterial && m.map)) return null;
@@ -435,6 +449,7 @@ export class Stage {
         let mat = p.kind === "mesh" ? (p.tags.some(t => t.startsWith("trim:")) ? mats.trim : tagged ? mats[tagged] : p.tags.some(t => t.startsWith("use:")) ? mats.use : mats.prop) : mats[p.kind];
         const matRef = (p.tags.find(t => t.startsWith("mat:")) || "").slice(4), artRef = (p.tags.find(t => t.startsWith("art:")) || "").slice(4);
         if (matRef && LIBRARY.textures[matRef] && p.shape === "box") { mat = libMaterial(matRef); tileUVs(geo, w, h, d, mat.userData.tile); }
+        if (p.kind === "floor") { const wet = wetOfRoom(story, level, p.room); if (wet > 0) mat = wetFloor(mat, wet); }   // a wet room (its `wet`, or the rain): the floor dark and glossy
         const painted = p.kind === "mesh" && p.shape === "box" && PAINTED.things[p.id];   // painted on its template: its UVs from the layout, at the block's own size
         if (painted) { mat = paintedMaterial(painted); layUVs(geo.attributes.position, geo.attributes.normal, geo.attributes.uv, Object.assign({}, painted, { size: [w, d, h] })); }
         const m = new THREE.Mesh(geo, mat);

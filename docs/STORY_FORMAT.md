@@ -88,8 +88,8 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
 - `ceiling: false` for outdoors.
 - `wet` (0..1, optional): a wet floor without rain (a bathroom, a cellar): in the Godot export the floor wears the
   look plugin's wet (the damp darkening, pools that carry the lights, no rings: GODOT_LOOK §2) by that much, and from
-  0.5 every step in the room is a wet one, on the desk's Play too. (Rain, `game.weather`, wets a room with no
-  ceiling by itself.)
+  0.5 every step in the room is a wet one, on the desk's Play too; the desk's stage shows the floor darker and
+  glossy by it. (Rain, `game.weather`, wets a room with no ceiling by itself, on the stage too.)
 - `look`: library texture sets for its surfaces, `{"floor": "ambientcg/WoodFloor041", "walls": "...", "ceiling": "..."}`
   (docs/ASSETS.md). Grey until fetched.
 
