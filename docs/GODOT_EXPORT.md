@@ -204,6 +204,16 @@ loads, every verb in the games has a part).
    needs the last frame: a SubViewport later). **GODOTLOOK** renders the plugin's chart through it and measures it
    beside the numpy reference: edge rise 5.0 / 5.0, halo 0.119 / 0.111, chroma 2.2 / 2.4, black 0.046 / 0.049.
    Pictures: `Saved/Story/TestRoom001/godot_reference/kitchen_vhs_*.png`.
+   **The inventory's row as the things themselves** (2026-10-29, `hud.gd` `inventory`, after the user: the common way,
+   the model scaled into the slot and only the shown ones drawn, not pictures): each shown slot is a small SubViewport
+   with a world of its own (a warm key, a blue rim, a cool fill, an orthographic camera three-quarters from above)
+   holding a copy of the thing's mesh (the kit's or the library's, else its block; `physics.gd`'s `copy_of`, made at
+   the pickup) fitted to the slot; the one in the hand bigger, turning, its name under it; the side ones dimmer. Only
+   the row's five slots exist, the side ones rendered once when the row changes (`UPDATE_ONCE`), the middle one every
+   frame while the row shows; a thing scrolled out of the row has no model anywhere. The viewport's texture goes in a
+   TextureRect, not a SubViewportContainer (that would set every slot to draw every frame). GDTESTROOM station 5
+   checks the slots (one a thing shown, its own world, a mesh in it, the middle one the hand's and live, the others
+   once); `tests/lookshot.gd --take=id,id` pictures it: `godot_reference/inventory_live.png`.
    **Light Kit's times of day** (2026-10-29): `game.gd`'s `set_time` is the sky rig as nodes, the numbers of
    BLENDER_LOOK §2's table: the sun or the moon (a DirectionalLight3D: 50° up from 135° by day, 6° at dusk, the
    moon at night, their colours), a procedural sky (zenith and horizon per time; night a navy, never black), the

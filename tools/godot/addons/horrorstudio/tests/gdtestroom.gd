@@ -643,6 +643,24 @@ func _initialize() -> void:
 					return r
 			if rt.inv.size() < 3:
 				return "the row holds %d" % rt.inv.size()
+			var slots: Array = g.hud.inv_box.get_children()        # the row's slots: the tins themselves in small viewports of their own world
+			if slots.size() != min(rt.inv.size(), 5):              # the key and the fuse are in it too from the start
+				return "the row shows %d slots for %d things" % [slots.size(), rt.inv.size()]
+			var mids := 0
+			for sl in slots:
+				var vp = sl.get_node_or_null("Frame/View")
+				if vp == null or not vp.own_world_3d or not vp.transparent_bg:
+					return "a slot without its own world: " + str(sl.name)
+				if vp.find_children("*", "MeshInstance3D", true, false).is_empty():
+					return "a slot with no model in it: " + str(sl.name)
+				if int(sl.get_meta("d")) == 0:
+					mids += 1
+					if vp.render_target_update_mode != SubViewport.UPDATE_WHEN_VISIBLE or sl.get_meta("id") != rt.carried()["id"]:
+						return "the middle slot isn't the one in the hand, drawn live"
+				elif not [SubViewport.UPDATE_ONCE, SubViewport.UPDATE_DISABLED].has(vp.render_target_update_mode):   # once, then off
+					return "a side slot drawn every frame: " + str(sl.name)
+			if mids != 1:
+				return "%d middle slots" % mids
 			await use("store_box", 0.8)
 			await game_wait(0.3)
 			if rt.carried() == null or rt.carried()["id"] != "store_box":

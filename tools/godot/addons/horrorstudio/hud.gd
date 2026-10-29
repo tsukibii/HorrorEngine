@@ -155,6 +155,7 @@ func _ready() -> void:
 	var foot := VBoxContainer.new()
 	foot.name = "Footer"
 	foot.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	foot.grow_vertical = Control.GROW_DIRECTION_BEGIN        # grows up from the bottom edge as the row and a choice need
 	foot.position = Vector2(0, -150)
 	foot.alignment = BoxContainer.ALIGNMENT_END
 	foot.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -396,10 +397,33 @@ func modal(up: bool) -> void:
 		hint_el.visible = false
 
 
+## the inventory's row: the things themselves, scaled into the slots. Each shown slot is a small viewport with a world
+## of its own (its own lights and air) holding a copy of the thing's mesh, fitted to the slot and seen three-quarters
+## from above; the one in the hand bigger, turning slowly, its name under it. Only the shown slots have a viewport (at
+## most SHOWN): the side ones are drawn once when the row changes, the middle one every frame while the row shows;
+## a thing scrolled out of the row has no model anywhere. (The common way: the model in a render target, not a picture.)
+const SLOT := 56
+var inv_models: Dictionary = {}       # id -> the icon's model (a copy of the thing), kept while it's in the row
+var inv_turn: Array = []              # the pivots to turn (the middle slot's)
+
+
 func inventory(list: Array, at: int, shown: bool, peek: bool) -> void:
 	for c in inv_box.get_children():
+		var m = c.get_meta("model") if c.has_meta("model") else null
+		if m != null and is_instance_valid(m) and m.get_parent() != null:
+			m.get_parent().remove_child(m)                 # the model outlives its slot
 		c.queue_free()
+	inv_turn = []
+	var ids := {}
+	for it in list:
+		ids[it["id"]] = true
+	for id in inv_models.keys():
+		if not ids.has(id):
+			if is_instance_valid(inv_models[id]):
+				inv_models[id].queue_free()
+			inv_models.erase(id)
 	var n := list.size()
+	var row: Array = []                                # [d, item]: the hand's in the middle, the others either side
 	for i in n:
 		var d := i - at
 		if n > 0:
@@ -408,15 +432,144 @@ func inventory(list: Array, at: int, shown: bool, peek: bool) -> void:
 				d -= n
 		if abs(d) > (SHOWN - 1) / 2:
 			continue
-		var l := _label(list[i]["name"], 14 if d == 0 else 11)
-		l.set_meta("id", list[i]["id"])
-		l.set_meta("d", d)
-		if d != 0:
-			l.modulate = Color(1, 1, 1, 0.5)
-		inv_box.add_child(l)
+		row.append([d, list[i]])
+	row.sort_custom(func(a, b): return a[0] < b[0])
+	for r in row:
+		inv_box.add_child(inv_slot(r[1], r[0]))
 	inv_name.text = named(list[at]["name"]) if (at >= 0 and at < n) else ""
 	inv_box.visible = n > 0 and shown
 	inv_name.visible = inv_box.visible
+	hint_el.position.y = -30 - (SLOT + 56 if inv_box.visible else 0)   # the hints lifted over the row
+
+
+## one slot: a frosted panel, the viewport, its world (a cool fill, a warm key, a rim), the camera and the model
+func inv_slot(it: Dictionary, d: int) -> Control:
+	var box := PanelContainer.new()
+	box.name = "Slot_" + str(it["id"])
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.05, 0.06, 0.08, 0.55 if d == 0 else 0.35)
+	sb.set_corner_radius_all(6)
+	sb.border_color = Color(1, 1, 1, 0.35 if d == 0 else 0.12)
+	sb.set_border_width_all(1)
+	sb.set_content_margin_all(2)
+	box.add_theme_stylebox_override("panel", sb)
+	box.set_meta("d", d)
+	box.set_meta("id", it["id"])
+	if d != 0:
+		box.modulate = Color(1, 1, 1, 0.55 if abs(d) == 1 else 0.3)
+	var sz := SLOT + (20 if d == 0 else 0)
+	var vc := TextureRect.new()                     # the viewport's texture shown here (a SubViewportContainer would set
+	vc.name = "Frame"                                # the update mode itself: every slot every frame)
+	vc.custom_minimum_size = Vector2(sz, sz)
+	vc.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	vc.stretch_mode = TextureRect.STRETCH_SCALE
+	box.add_child(vc)
+	var vp := SubViewport.new()
+	vp.name = "View"
+	vp.own_world_3d = true
+	vp.transparent_bg = true
+	vp.size = Vector2i(sz, sz)
+	vp.msaa_3d = Viewport.MSAA_4X
+	vp.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE if d == 0 else SubViewport.UPDATE_ONCE
+	vc.add_child(vp)
+	vc.texture = vp.get_texture()
+	var env := Environment.new()
+	env.background_mode = Environment.BG_COLOR
+	env.background_color = Color(0, 0, 0, 0)
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = Color(0.55, 0.62, 0.75)
+	env.ambient_light_energy = 0.7
+	var w := World3D.new()
+	w.environment = env
+	vp.world_3d = w
+	var key := DirectionalLight3D.new()
+	key.name = "Key"
+	key.light_color = Color(1.0, 0.93, 0.82)
+	key.light_energy = 1.5
+	key.rotation_degrees = Vector3(-42, 35, 0)
+	vp.add_child(key)
+	var rim := DirectionalLight3D.new()
+	rim.name = "Rim"
+	rim.light_color = Color(0.6, 0.7, 1.0)
+	rim.light_energy = 0.8
+	rim.rotation_degrees = Vector3(-15, -150, 0)
+	vp.add_child(rim)
+	var cam := Camera3D.new()
+	cam.name = "Camera"
+	cam.projection = Camera3D.PROJECTION_ORTHOGONAL
+	cam.size = 1.25
+	cam.near = 0.05
+	cam.far = 20.0
+	cam.position = Vector3(0, 0, 6).rotated(Vector3.RIGHT, deg_to_rad(-24)).rotated(Vector3.UP, deg_to_rad(32))
+	cam.look_at_from_position(cam.position, Vector3.ZERO, Vector3.UP)
+	vp.add_child(cam)
+	var turn := Node3D.new()
+	turn.name = "Turn"
+	vp.add_child(turn)
+	var model = inv_models.get(it["id"])
+	if model == null or not is_instance_valid(model):
+		model = it.get("model")
+		if model == null or not is_instance_valid(model):
+			model = inv_placeholder(it)
+		inv_models[it["id"]] = model
+	var fit := Node3D.new()
+	fit.name = "Fit"
+	turn.add_child(fit)
+	fit.add_child(model)
+	var b := bounds_of(model)
+	var big: float = max(b.size.x, max(b.size.y, b.size.z))
+	var k: float = (1.0 / big) if big > 1e-6 else 1.0
+	fit.scale = Vector3(k, k, k)
+	fit.position = -b.get_center() * k
+	box.set_meta("model", model)
+	if d == 0:
+		inv_turn.append(turn)
+	return box
+
+
+func _exit_tree() -> void:
+	for id in inv_models:                              # the models out of the row's slots have no parent: freed by hand
+		var m = inv_models[id]
+		if is_instance_valid(m) and not m.is_inside_tree():
+			m.free()
+	inv_models = {}
+
+
+## a thing with no mesh to copy (a pickup whose art never loaded): a small box in its place
+static func inv_placeholder(it: Dictionary) -> Node3D:
+	var mi := MeshInstance3D.new()
+	mi.name = "placeholder"
+	var bm := BoxMesh.new()
+	bm.size = Vector3(0.2, 0.2, 0.2)
+	mi.mesh = bm
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color(0.6, 0.6, 0.6)
+	mi.material_override = m
+	return mi
+
+
+## the meshes' bounds under a node, in that node's space (the node need not be in the tree)
+static func bounds_of(n: Node3D) -> AABB:
+	var box := AABB()
+	var first := true
+	var ms: Array = n.find_children("*", "MeshInstance3D", true, false)
+	if n is MeshInstance3D:
+		ms.append(n)
+	for m in ms:
+		if m.mesh == null:
+			continue
+		var xf := Transform3D.IDENTITY
+		var p: Node = m
+		while p != null and p != n:
+			if p is Node3D:
+				xf = p.transform * xf
+			p = p.get_parent()
+		var a: AABB = xf * m.get_aabb()
+		box = a if first else box.merge(a)
+		first = false
+	if first:
+		box = AABB(Vector3(-0.1, -0.1, -0.1), Vector3(0.2, 0.2, 0.2))
+	return box
 
 
 func _process(delta: float) -> void:
@@ -425,6 +578,10 @@ func _process(delta: float) -> void:
 
 func tick(dt: float = 0.0) -> void:
 	type_tick(dt)
+	if inv_box.visible:
+		for t in inv_turn:
+			if is_instance_valid(t):
+				t.rotation.y += dt * 0.7                   # the one in the hand turns on its slot
 	if line_until > 0 and Time.get_ticks_msec() / 1000.0 > line_until:
 		line_el.text = ""
 		who_el.text = ""

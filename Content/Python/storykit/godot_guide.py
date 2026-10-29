@@ -205,7 +205,7 @@ hob's glow, flames, the cup filling, the pour, drips, the clock's hands, screens
 """))
     body.append(section("hud", 10, "The HUD, its theme, the pause menu", f"""
 <p>The HUD is built by <code>hud.gd</code> (the objective and the to-do list top left, the line and the choices at the bottom, the cursor's dot and prompt,
-the inventory row, the chapter card, the fade). Its colours, surfaces and radii come from the theme: <code>game.ui_theme</code> in story.json names
+the inventory row (the things themselves, each shown slot a small viewport of its own world with a copy of the thing's mesh fitted into it, the one in the hand turning; nothing drawn for the rest), the chapter card, the fade). Its colours, surfaces and radii come from the theme: <code>game.ui_theme</code> in story.json names
 one of <code>glass</code> (the default), <code>glass-rose</code>, <code>neumorph</code>, <code>plain</code>; <code>theme.gd</code> turns it into a Godot Theme. Add a theme by adding
 an entry to its <code>THEMES</code>. This game wears <b>{e(g.get('ui_theme', 'glass'))}</b>.</p>
 <p>The pause menu (<kbd>Esc</kbd>, <code>menu.gd</code>): the controls, Resume, Save game (three slots and the autosave, in <code>user://saves_{e(game)}.json</code>),

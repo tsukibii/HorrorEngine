@@ -1,10 +1,10 @@
 ## A picture of the game at a spot, at a time of day, lit one way or another (the lighting trial, GODOT_PLAN §4; the
 ## guide's pictures): --node=n_x --at=x,y,yaw,pitch (story metres, degrees) --time=day|dusk|night
-## --gi=none|sdfgi|voxel --ao=0|1 --ssil=0|1 --power=0|1 --vhs=off|camcorder|worn --amb=ENERGY --shot=PATH [--wait=N frames]
+## --gi=none|sdfgi|voxel --ao=0|1 --ssil=0|1 --power=0|1 --vhs=off|camcorder|worn --amb=ENERGY --take=id,id (into the row) --shot=PATH [--wait=N frames]
 extends SceneTree
 var g
 var n := 0
-var o := {"node": "", "at": "", "time": "", "gi": "none", "ao": "0", "ssil": "0", "power": "1", "vhs": "off", "shot": "res://look.png", "wait": "30", "amb": ""}
+var o := {"node": "", "at": "", "time": "", "gi": "none", "ao": "0", "ssil": "0", "power": "1", "vhs": "off", "shot": "res://look.png", "wait": "30", "amb": "", "take": ""}
 var done := false
 var placed := false
 var baked := false
@@ -35,6 +35,12 @@ func _process(_d: float) -> bool:
 			rt.place(Vector3(float(p[0]), 0.0, -float(p[1])), float(p[2]) if p.size() > 2 else 90.0, float(p[3]) if p.size() > 3 else 0.0)
 		if o["time"] != "":
 			g.set_time(o["time"])
+		if o["take"] != "":                               # things into the inventory's row, shown (its live slots pictured)
+			for id in o["take"].split(","):
+				if rt.things.has(id):
+					rt.take(rt.things[id])
+			rt.inv_shown = true
+			rt.inv_draw(false)
 		var e: Environment = g.env.environment
 		if o["amb"] != "":
 			e.ambient_light_energy = float(o["amb"])      # the flat fill down, so a GI's bounce shows for itself

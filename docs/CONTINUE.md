@@ -34,7 +34,7 @@ for a search on realistic smoke and steam (docs/research/godot_smoke.md). Built,
 with `tools/godot/sheet.py`; the cost of nineteen VoxelGIs), a look at the pictures (the steam, the menu, the tape),
 and whether the puff shader should go back onto the desk's stage. **Next** (GODOT_EXPORT §8): VoxelGI per room
 written by the export and baked at load (cached), the PBR shelf's surfaces (M_StudioSurface), the characters' look on
-HumanShaders (GODOT_PLAN §2), the little things' sounds, the voices (the takes' audio), the inventory's pictures,
+HumanShaders (GODOT_PLAN §2), the little things' sounds, the voices (the takes' audio), ~~the inventory's pictures~~ (done as live models, 2026-10-29),
 ghosting on the tape (a last-frame viewport), the Inspector resources and AnimationPlayer timelines (§3), the
 re-export's receipt (§5), a cast member's models per scene.
 

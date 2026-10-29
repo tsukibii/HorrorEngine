@@ -1046,6 +1046,7 @@ func take(t: Dictionary) -> void:
 	var e := {"id": id, "item": d.get("item"), "name": title_of(t) if title_of(t) != null else name_of(t), "kind": "carry" if t["use"] == "carry" else "pickup", "level": level, "thing": t}
 	inv.append(e)
 	inv_at = inv.size() - 1
+	e["icon"] = PhysC.copy_of(t)                  # a copy of it for the row's slot (hud.gd inventory: the model, not a picture)
 	if physics != null:
 		physics.take(e)                           # a copy of it for the hand
 	inv_draw(true)
@@ -1093,7 +1094,7 @@ func inv_toggle() -> void:
 func inv_draw(peek: bool) -> void:
 	var lst: Array = []
 	for e in inv:
-		lst.append({"id": e["id"], "name": e["name"]})
+		lst.append({"id": e["id"], "name": e["name"], "model": e.get("icon")})
 	hud.inventory(lst, inv_at, inv_shown, peek)
 
 
