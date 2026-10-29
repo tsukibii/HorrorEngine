@@ -49,16 +49,31 @@ export async function bodyGlb(fig, GLTFExporter) {
   const src = skinnedOf(fig); if (!src) return null;
   const k = bindScale(src), K = new THREE.Matrix4().makeScale(k, k, k);
   const geo = new THREE.BufferGeometry(), P = src.geometry.attributes.position.clone(), MP = src.geometry.morphAttributes.position || [], inf = src.morphTargetInfluences || [];
+  const dict = src.morphTargetDictionary || {}, faceIdx = "shape_c_45" in dict ? Array.from({ length: 72 }, (_, i) => dict["shape_c_" + (45 + i)] ?? -1) : null;   // MHR's 72 face shapes: kept as targets, not baked
+  const rel = !!src.geometry.morphTargetsRelative;
   for (let m = 0; m < MP.length; m++) {
-    const w = inf[m]; if (!w) continue;
-    for (let v = 0; v < P.count; v++) P.setXYZ(v, P.getX(v) + MP[m].getX(v) * w, P.getY(v) + MP[m].getY(v) * w, P.getZ(v) + MP[m].getZ(v) * w);
+    const w = inf[m]; if (!w || (faceIdx && faceIdx.includes(m))) continue;
+    for (let v = 0; v < P.count; v++) P.setXYZ(v, P.getX(v) + (MP[m].getX(v) - (rel ? 0 : P.getX(v))) * w, P.getY(v) + (MP[m].getY(v) - (rel ? 0 : P.getY(v))) * w, P.getZ(v) + (MP[m].getZ(v) - (rel ? 0 : P.getZ(v))) * w);
   }
   geo.setAttribute("position", P);
+  let faceNames = null;
+  if (faceIdx && faceIdx.every(i => i >= 0)) {                      // the face shapes as the glb's morph targets (deltas), named as the bake names them
+    const M = (FACES.M && FACES.M.mhr) || Array.from({ length: 72 }, (_, i) => "face_" + i), base = src.geometry.attributes.position;
+    geo.morphAttributes.position = faceIdx.map(m => { const a = MP[m], d = new Float32Array(a.count * 3);
+      for (let v = 0; v < a.count; v++) { d[v * 3] = a.getX(v) - (rel ? 0 : base.getX(v)); d[v * 3 + 1] = a.getY(v) - (rel ? 0 : base.getY(v)); d[v * 3 + 2] = a.getZ(v) - (rel ? 0 : base.getZ(v)); }
+      return new THREE.BufferAttribute(d, 3); });
+    geo.morphTargetsRelative = true; faceNames = M.slice(0, 72);
+  }
   if (src.geometry.attributes.normal) geo.setAttribute("normal", src.geometry.attributes.normal.clone());   // the file's smooth normals
   geo.setAttribute("skinIndex", src.geometry.attributes.skinIndex.clone());
   geo.setAttribute("skinWeight", src.geometry.attributes.skinWeight.clone());
   if (src.geometry.index) geo.setIndex(src.geometry.index.clone());
-  geo.applyMatrix4(new THREE.Matrix4().multiplyMatrices(K, src.bindMatrix));      // into the bind space, in metres
+  const toBind = new THREE.Matrix4().multiplyMatrices(K, src.bindMatrix), morphs = geo.morphAttributes.position || [];
+  geo.morphAttributes.position = [];                                             // (applyMatrix4 would add the translation to the deltas)
+  geo.applyMatrix4(toBind);                                                      // into the bind space, in metres
+  const lin = new THREE.Matrix3().setFromMatrix4(toBind), tv = new THREE.Vector3();
+  for (const a of morphs) { for (let v = 0; v < a.count; v++) { tv.fromBufferAttribute(a, v).applyMatrix3(lin); a.setXYZ(v, tv.x, tv.y, tv.z); } }
+  if (morphs.length) geo.morphAttributes.position = morphs;
   if (!geo.attributes.normal) geo.computeVertexNormals();                          // (the FBX's vertices aren't shared: recomputed ones come out flat)
   // the skeleton again: each bone where it was bound (scaled to metres), its rotation kept and its scale dropped
   const bones = src.skeleton.bones, idx = new Map(bones.map((b, i) => [b, i])), world = [], fresh = [];
@@ -79,11 +94,12 @@ export async function bodyGlb(fig, GLTFExporter) {
   group.updateMatrixWorld(true);
   const mesh = new THREE.SkinnedMesh(geo, new THREE.MeshStandardMaterial({ color: 0xc9c0b2, roughness: 0.8 }));
   mesh.name = "body_mesh"; group.add(mesh); group.updateMatrixWorld(true);
+  if (faceNames) { mesh.morphTargetInfluences = new Array(72).fill(0); mesh.morphTargetDictionary = Object.fromEntries(faceNames.map((n, i) => [n, i])); }
   mesh.bind(new THREE.Skeleton(fresh), new THREE.Matrix4());
   const bind = [];
   world.forEach(w => { tp.setFromMatrixPosition(w); bind.push(r4(tp.x), r4(tp.y), r4(tp.z)); });
   const glb = await new GLTFExporter().parseAsync(group, { binary: true });
-  return { glb: new Blob([glb], { type: "model/gltf-binary" }), bones: bones.map(b => b.name), bind };
+  return { glb: new Blob([glb], { type: "model/gltf-binary" }), bones: bones.map(b => b.name), bind, face: faceNames };
 }
 
 const ue = v => [+(v.x * 100).toFixed(1), +(v.z * 100).toFixed(1), +(v.y * 100).toFixed(1)];
@@ -179,7 +195,7 @@ export async function bakePreview(stage, story, plan, files, fps = 30, onProgres
     for (const who of Object.keys(stage.cast)) {
       const b = await bodyGlb(stage.cast[who], GLTFExporter); if (!b) continue;
       await saveBody(who, b.glb);
-      out.bodies[who] = { file: `Body_${who}.glb`, bones: b.bones, bind: b.bind, skin_lin: SKIN_LIN };
+      out.bodies[who] = { file: `Body_${who}.glb`, bones: b.bones, bind: b.bind, skin_lin: SKIN_LIN, face: b.face };   // face: the glb's morph targets, the bake's 72 in order
     }
     for (const [who, c] of Object.entries(story.cast || {})) for (const name of Object.keys(c.models || {})) {   // each model's body
       if (!out.bodies[who]) continue;

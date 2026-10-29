@@ -17,6 +17,7 @@ try {
   const r = await page.evaluate(async game => {
     const { bakePreview } = await import("/bake.js"), { GLTFExporter } = await import("/vendor/GLTFExporter.js");
     const dd = window.__dd, bodies = [];
+    await dd.loadBodies();                                        // the cast's bodies (MHR.fbx, a Studio export) before the stage is recorded
     const saveBody = async (who, blob) => { bodies.push(who); await fetch(`/api/export/${encodeURIComponent(game)}/Body_${encodeURIComponent(who)}.glb`, { method: "POST", body: blob }); };
     const pv = await bakePreview(dd.watchStage, dd.S, dd.PLAN, dd.FILES, 30, () => {}, GLTFExporter, saveBody);
     const res = await fetch("/api/preview/" + encodeURIComponent(game), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(pv) });

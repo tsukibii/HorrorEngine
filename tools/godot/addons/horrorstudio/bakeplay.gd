@@ -13,6 +13,7 @@ var fps: float = 30.0
 var bodies: Dictionary = {}           # cid -> {node, skeleton, map: bake bone -> idx, rests: idx -> global rest, parts: [MeshInstance3D] (cylinders)}
 var frame_at: int = -1
 var frames_shown: int = 0
+var face_max: float = 0.0            # the strongest face weight set so far (a measure)
 
 
 static func three(v: Array) -> Vector3:   # the bake's Unreal centimetres (x, y = three z, z = three y) -> metres, y up
@@ -72,6 +73,14 @@ func make_bodies(world: Node3D) -> void:
 				if sk != null:
 					b["node"] = n
 					b["skeleton"] = sk
+					var shapes: Array = index.get("face_shapes", [])      # the face: the bake's 72 weights onto the glb's morph targets
+					for mi in n.find_children("*", "MeshInstance3D", true, false):
+						if mi.mesh != null and mi.mesh.get_blend_shape_count() > 0:
+							b["face_mesh"] = mi
+							b["face_idx"] = []
+							for nm in shapes:
+								b["face_idx"].append(mi.find_blend_shape_by_name(str(nm)))
+							break
 					var names: Array = index["bodies"][cid]["bones"]
 					for i in names.size():
 						var bi := sk.find_bone(str(names[i]))
@@ -132,6 +141,16 @@ func show(fi: int, rt) -> bool:
 		b["node"].visible = there
 		if not there:
 			continue
+		if b.has("face_mesh"):
+			var w = f.get("face", {}).get(cid, null)
+			var mi: MeshInstance3D = b["face_mesh"]
+			var idx: Array = b["face_idx"]
+			for i in idx.size():
+				if idx[i] >= 0:
+					var v: float = float(w[i]) if (w != null and i < w.size()) else 0.0
+					mi.set_blend_shape_value(idx[i], v)
+					if v > face_max:
+						face_max = v
 		if b["skeleton"] != null and f.get("skin", {}).has(cid):
 			var m: Array = f["skin"][cid]
 			var sk: Skeleton3D = b["skeleton"]

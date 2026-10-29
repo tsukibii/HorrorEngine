@@ -439,7 +439,7 @@ func _initialize() -> void:
 				return JSON.stringify({"karma": R["karma"], "met": R["flags"].has("met_aoi"), "tv": R["lives"].at("kitchen_tv", float(R["secs"]) + 999)["state"]})
 			if g.bake != null:   # the scene played from the desk's bake: its frames shown, her skinned body's head on the recorded joint
 				var bs: Dictionary = g.scene_player.bake_stats
-				if int(bs.get("frames", 0)) < 100 or float(bs.get("head_err", 9)) > 0.12 or float(bs.get("mismatch", 9)) > 0.05:
+				if int(bs.get("frames", 0)) < 100 or float(bs.get("head_err", 9)) > 0.12 or float(bs.get("mismatch", 9)) > 0.05 or float(bs.get("face_max", 0)) < 0.2:
 					return "the bake: " + JSON.stringify(bs)
 			return ""))
 
