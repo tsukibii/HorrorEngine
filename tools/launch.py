@@ -120,6 +120,7 @@ TOOLS = [
     ("Godot", "Godot export check (every game exported and opened headless)", "tools/godot_export.py --check", {}),
     ("Godot", "Godot look check (UltraVHS's chart through the export's tape shader, measured)", "tools/godot/look_check.py", {}),
     ("Godot", "The look plugin's check (its demo room pictured and measured: wet floors, blood, rain, wet skin)", "tools/godot/plugin_check.py", {}),
+    ("Godot", "A Character Studio export in Godot on the skin shader (GDPEOPLE: flat-lit against its paint, dry, sweating, oiled)", "tools/godot/people_check.py", {}),
     ("Godot", "The Pilot played in Godot (GDPLAY)", "tools/godot_export.py --game Pilot --play", {}),
     ("Godot", "TestRoom001 played in Godot station by station (GDTESTROOM)", "tools/godot_export.py --game TestRoom001 --testroom", {}),
 

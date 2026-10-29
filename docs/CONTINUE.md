@@ -35,9 +35,11 @@ for a search on realistic smoke and steam (docs/research/godot_smoke.md). Built,
   (`GodotPlugins/HorrorStudioLook/`, docs/GODOT_LOOK.md, copied into every export: the pseudo-realism preset with
   TAA (MSAA kills SSR), UltraVHS and the puffs moved there, wet floors with pools and rain's rings, blood, rain, wet
   and oiled skin on HumanShaders' skin shader; `game.look`, `game.weather`; LOOKPLUGIN measures each part; TestRoom001
-  rains in its yard and its second chores stain is blood). The Studio's character on HSSkin waits on a Studio export
-  (STUDIO ran here as far as the procedural skin step, which timed out on the CPU: `People/_studiotest` has a body
-  but no `export/`).
+  rains in its yard and its second chores stain is blood). **The Studio's character in Godot on HSSkin** (GDPEOPLE,
+  `tools/godot/people_check.py`: `_studiotest`'s export, made here by STUDIO's export step alone (`ONLY="export for
+  the desk"`; the whole run times out on the CPU at the procedural skin step), flat-lit and measured against its own
+  paint, then dry, sweating and oiled; every baked body in a scene wears HSSkin; the export copies the cast's
+  `people/<name>` glbs into `game/people/`).
 **Open, for the user:** a run on the 3090 (`python tools/godot_export.py --game TestRoom001 --testroom`, the sheets
 with `tools/godot/sheet.py`; the cost of nineteen VoxelGIs), a look at the pictures (the steam, the menu, the tape),
 and whether the puff shader should go back onto the desk's stage. **Next** (GODOT_EXPORT §8): VoxelGI per room

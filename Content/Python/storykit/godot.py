@@ -11,6 +11,7 @@ What's written (parity first, GODOT_EXPORT §3 is the shape to reach):
                                        preset, puffs, rain, wet floors, blood, wet skin; docs/GODOT_LOOK.md)
   HumanShaders/                        GodotPlugins/HumanShaders (copied; its own files refer to res://HumanShaders/)
   game/story.json                      the story as data (the runtime reads it: flow, stitches, scenes, items...)
+  game/people/<name>.glb               the cast's Character Studio exports (previs_body "people/<name>"), for HSSkin
   game/lives.json                      the little things' lives (Content/Studio/Life/lives.json)
   game/levels/<level>.tscn             each level: plan.py's pieces as nodes (StaticBody3D blocks with a mesh and a
                                        collision shape, doors, OmniLight3D lights, Area3D triggers, Marker3D spots,
@@ -535,6 +536,16 @@ def export(game, out=None, make_zip=False, do_import=True):
     if HUMAN.exists():
         shutil.copytree(HUMAN, out / "HumanShaders", ignore=shutil.ignore_patterns("*.import"))
     (out / "game" / "story.json").write_text(json.dumps(story, ensure_ascii=False, indent=0), encoding="utf-8")
+    people = 0                                        # the cast's Character Studio exports (previs_body / models "people/<name>"): game/people/<name>.glb
+    for c in (story.get("cast") or {}).values():
+        for ref in [c.get("previs_body")] + list((c.get("models") or {}).values()):
+            if isinstance(ref, str) and ref.startswith("people/"):
+                name = ref[7:]
+                src = L.STUDIO / "People" / name / "export" / f"{name}.glb"
+                if src.exists() and not (out / "game" / "people" / f"{name}.glb").exists():
+                    (out / "game" / "people").mkdir(parents=True, exist_ok=True)
+                    shutil.copy(src, out / "game" / "people" / f"{name}.glb")
+                    people += 1
     previs = L.GAMES / game / "Previs"                 # the desk's bake (tools/godot/bake.mjs, or the desk's Generate): the scenes as recorded
     baked = 0
     if (previs / "preview.json").exists():

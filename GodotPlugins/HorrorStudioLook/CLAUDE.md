@@ -17,6 +17,7 @@ the VHS layer in `main.tscn`, `puff.gdshader` from lifefx.gd). A change here rea
 | `rain.gd`, `rain.gdshader` | the streaks (a MultiMesh of quads; the vertex shader places each from its custom data and TIME) |
 | `skin.gd`, `skin_wet.gdshader` | HumanShaders' skin shader with the wetness layer (the lines marked `HS`); `skin.gd` wires HumanShaders' textures and flat defaults |
 | `demo/demo.gd` | the demo scene and the measures (`report.json`) |
+| `demo/people.gd` | a Character Studio export on HSSkin: flat-lit against its paint, lit dry, sweating, oiled (`people.json`) |
 
 ## Checking it
 
@@ -24,6 +25,7 @@ the VHS layer in `main.tscn`, `puff.gdshader` from lifefx.gd). A change here rea
   into `Saved/Story/_look/godot_plugin/` and measured: the lamp's reflection in the wet floor brighter than in the
   dry, the rain moving between frames, the blood's red, the sweat's glint and the oil's glint over dry skin. Look at
   the pictures after a change, not only the numbers.
+- `python tools/godot/people_check.py` (GDPEOPLE): a Studio export's skin on HSSkin, its colour against its paint.
 - `python tools/godot/look_check.py` (GODOTLOOK): the tape against UltraVHS's numpy reference.
 - `python tools/godot_export.py --game TestRoom001 --testroom` (GDTESTROOM): the yard's rain and wet floor, the blood
   stain's splat, in the game.

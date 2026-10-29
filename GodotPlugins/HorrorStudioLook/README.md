@@ -23,7 +23,8 @@ and micro-detail textures: `../HumanShaders`, copy it beside). Enabling the plug
 there's nothing to register, every piece is a class (`HSLook`, `HSWet`, `HSBlood`, `HSRain`, `HSSkin`) or a shader.
 
 The demo: `godot --path PROJECT -s res://addons/horrorstudio_look/demo/demo.gd -- --out=DIR` pictures a room with
-each piece and writes `report.json` with the measures.
+each piece and writes `report.json` with the measures; `demo/people.gd -- --glb=res://people/NAME.glb --out=DIR` a
+Character Studio export (or any glb whose skin mesh is named `..._skin`) on the skin, flat-lit, dry, sweating, oiled.
 
 ## Licences
 

@@ -98,6 +98,9 @@ func bake_measure() -> void:
 		if h != null and j != null:
 			bake_stats["head_err"] = max(float(bake_stats.get("head_err", 0.0)), (h - j).length())
 	bake_stats["frames"] = bk.frames_shown
+	for cid in bk.bodies:                       # each skinned body's skin on HSSkin (HumanShaders), its tone kept
+		var sm: Array = bk.bodies[cid].get("skin_mats", [])
+		bake_stats["skin_" + str(cid)] = not sm.is_empty() and sm[0] is ShaderMaterial and sm[0].shader == HSSkin.shader() and sm[0].get_shader_parameter("albedo") != Color(1, 1, 1)
 	bake_stats["face_max"] = bk.face_max
 	var sk: Array = []
 	for cid in bk.bodies:

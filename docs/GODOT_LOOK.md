@@ -77,8 +77,18 @@ of its `fragment()` and in two lines of its `light()` (marked `HS`):
 `res://HumanShaders/` and gives every sampler the shader reads a flat default (a flat normal, white maps), so a
 sphere with no maps lights the same as a character missing one. `HSSkin.wear(node, settings)` puts it on a Studio
 export's skin meshes (named skin, body, head, face; not the eyes, lashes, brows, hair, teeth), each keeping its baked
-albedo. **The Studio's character on it** (the eye's refraction, the paint's patterns, the side-by-side measure of
-GODOT_PLAN §2) is the next step: it waits on a Studio export (STUDIO makes `People/_studiotest`; see CONTINUE §0).
+albedo.
+
+**The Studio's character on it** (GDPEOPLE, `tools/godot/people_check.py`, `demo/people.gd`): a Character Studio
+export (`People/<name>/export/<name>.glb`, STUDIO makes `_studiotest`) loaded in a Godot project of its own, its skin
+mesh (`<name>_skin`, its paint baked on MHR's UVs) worn by HSSkin, its eyes as the export bakes them (the eye's
+refraction is still to do: `tools/shared/eye.js` as a Godot shader), pictured as a medium close-up: flat-lit under a
+white ambient, where the picture's skin is measured against the export's own paint (the Studio's colours come across:
+each channel within 0.7 to 1.6 of the paint and the hue kept within 25 %; first run 1.14, 1.19, 1.23, the 4 % of
+specular ambient over the paint), then under a key and a rim dry, sweating (beads, the sheen, runs) and oiled.
+Pictures in `Saved/Story/_look/godot_people/`. In a game, the export copies every cast member's `people/<name>` body
+into `game/people/`, and **every baked body in a scene wears HSSkin** (`bakeplay.gd` `make_bodies`: the desk's MHR
+bodies with their tone, a Studio export with its paint; GDTESTROOM checks Aoi's at station 1).
 
 ## 6. The story's words, and the check
 
@@ -98,8 +108,8 @@ GODOT_PLAN §2) is the next step: it waits on a Studio export (STUDIO makes `Peo
 
 ## 7. What's left
 
-- The characters: the Studio's export on HSSkin with the eye's refraction and the paint (GODOT_PLAN §2), measured
-  beside the Studio.
+- The characters: the eye's refraction as a Godot shader (GODOT_PLAN §2) and the Studio's paint measured beside the
+  Studio's own render, not only against the baked texture; the wetness as a story word (a scene sweating her).
 - Puddles as decals for any surface (`Decal` with ORM: a ready-made in `HSWet` next), wet walls (rain running down
   glass: the window shader), splashes where the streaks land.
 - A rain that follows the player outdoors through a level (today each open room has its own box).

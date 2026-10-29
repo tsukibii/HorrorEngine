@@ -481,6 +481,8 @@ func _initialize() -> void:
 				var bs: Dictionary = g.scene_player.bake_stats
 				if int(bs.get("frames", 0)) < 100 or float(bs.get("head_err", 9)) > 0.12 or float(bs.get("mismatch", 9)) > 0.05 or float(bs.get("face_max", 0)) < 0.2 or int(bs.get("held", 0)) > 0:
 					return "the bake: " + JSON.stringify(bs)
+				if not (bs.get("skin_aoi") is bool and bs["skin_aoi"]):             # her skin on HumanShaders' skin shader (HSSkin), her tone kept
+					return "her skin isn't on the skin shader: " + JSON.stringify(bs)
 			return ""))
 
 	await station("n_front", func():

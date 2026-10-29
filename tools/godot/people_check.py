@@ -1,0 +1,106 @@
+"""GDPEOPLE: a Character Studio export in Godot on the look plugin's skin (HSSkin: HumanShaders' skin shader with the
+wetness layer): the glb in a Godot project of its own, its skin worn, pictured under xvfb as a medium close-up flat-lit
+(its colour measured against the export's own baked paint), lit dry, sweating and oiled. Pictures in
+Saved/Story/_look/godot_people/. Ends "GDPEOPLE ok". Needs a Studio export (STUDIO makes People/_studiotest).
+
+    python tools/godot/people_check.py [--person NAME] [--keep DIR]
+"""
+import argparse
+import json
+import os
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+PLUGIN = ROOT / "GodotPlugins" / "HorrorStudioLook" / "addons" / "horrorstudio_look"
+HUMAN = ROOT / "GodotPlugins" / "HumanShaders"
+PEOPLE = ROOT / "Content" / "Studio" / "People"
+OUT = ROOT / "Saved" / "Godot" / "_people"
+KEEP = ROOT / "Saved" / "Story" / "_look" / "godot_people"
+
+PROJECT = '''config_version=5
+
+[application]
+
+config/name="HorrorStudio people check"
+config/features=PackedStringArray("4.7", "Forward Plus")
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+
+[rendering]
+
+renderer/rendering_method="forward_plus"
+'''
+
+
+def godot_bin():
+    for c in [os.environ.get("GODOT"), "godot", "godot-mono"]:
+        if c and shutil.which(c):
+            return shutil.which(c)
+    return None
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--person", default="_studiotest")
+    ap.add_argument("--keep", default=str(KEEP))
+    a = ap.parse_args()
+    g = godot_bin()
+    if not g:
+        print("GDPEOPLE FAIL: no godot")
+        return 1
+    glb = PEOPLE / a.person / "export" / f"{a.person}.glb"
+    if not glb.exists():
+        print(f"GDPEOPLE FAIL: no export at {glb} (the Character Studio's Export for desk / Unreal, or STUDIO)")
+        return 1
+    if OUT.exists():
+        shutil.rmtree(OUT)
+    (OUT / "addons").mkdir(parents=True)
+    (OUT / "people").mkdir()
+    (OUT / "project.godot").write_text(PROJECT, encoding="utf-8")
+    shutil.copytree(PLUGIN, OUT / "addons" / "horrorstudio_look")
+    shutil.copytree(HUMAN, OUT / "HumanShaders", ignore=shutil.ignore_patterns("*.import"))
+    shutil.copy(glb, OUT / "people" / glb.name)
+    env = dict(os.environ)
+    env.setdefault("VK_ICD_FILENAMES", "/usr/share/vulkan/icd.d/lvp_icd.json")
+    subprocess.run([g, "--headless", "--path", str(OUT), "--import"], capture_output=True, text=True, timeout=900)
+    keep = Path(a.keep)
+    keep.mkdir(parents=True, exist_ok=True)
+    cmd = [g, "--path", str(OUT), "--rendering-driver", "vulkan", "-s", "res://addons/horrorstudio_look/demo/people.gd", "--", f"--glb=res://people/{glb.name}", f"--out={keep}"]
+    if not os.environ.get("DISPLAY"):
+        cmd = ["xvfb-run", "-a"] + cmd
+    r = subprocess.run(cmd, capture_output=True, text=True, timeout=1200, env=env)
+    text = "\n".join(l for l in (r.stdout + r.stderr).splitlines() if l and "ALSA" not in l and "snd_" not in l and "ERR_CANT_OPEN" not in l)
+    bad = [l for l in text.splitlines() if "SCRIPT ERROR" in l or "SHADER ERROR" in l or "PEOPLE FAIL" in l]
+    if bad or "PEOPLE {" not in text:
+        print(text[-3000:])
+        print("GDPEOPLE FAIL: the demo didn't run clean")
+        return 1
+    rep = json.loads((keep / "people.json").read_text(encoding="utf-8"))
+    paint, flat = rep.get("paint") or {}, rep.get("flat") or {}
+    ok = rep.get("skin_mats", 0) >= 1
+    print(("  ok  " if ok else "  BAD ") + "the skin on HSSkin (%d materials)" % rep.get("skin_mats", 0))
+    if paint and flat:
+        ratios = [flat[c] / max(paint[c], 1e-3) for c in "rgb"]
+        close = all(0.7 < r < 1.6 for r in ratios) and max(ratios) / min(ratios) < 1.25      # flat-lit: the paint's colour, its hue kept
+        print(("  ok  " if close else "  BAD ") + "flat-lit, the skin reads as its baked paint: picture %s against paint %s (ratios %s)" % (
+            [round(flat[c], 3) for c in "rgb"], [round(paint[c], 3) for c in "rgb"], [round(x, 2) for x in ratios]))
+        ok = ok and close
+    else:
+        print("  BAD  no paint or no skin pixels measured: " + json.dumps(rep))
+        ok = False
+    print("  pictures in " + str(keep))
+    if not ok:
+        print("GDPEOPLE FAIL")
+        return 1
+    print("GDPEOPLE ok")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

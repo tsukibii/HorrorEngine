@@ -80,6 +80,7 @@ func make_bodies(world: Node3D) -> void:
 				if sk != null:
 					b["node"] = n
 					b["skeleton"] = sk
+					b["skin_mats"] = HSSkin.wear(n, {})          # the body's skin on HumanShaders' skin shader (its tone kept; a Studio export its baked paint)
 					var shapes: Array = index.get("face_shapes", [])      # the face: the bake's 72 weights onto the glb's morph targets
 					for mi in n.find_children("*", "MeshInstance3D", true, false):
 						if mi.mesh != null and mi.mesh.get_blend_shape_count() > 0:
