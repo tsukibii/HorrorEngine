@@ -25,6 +25,7 @@ from pathlib import Path
 
 from . import kit as KIT
 from . import library as LIB
+from . import godot_guide as GUIDE
 from . import life as LIFE
 from . import plan as P
 from . import storylib as L
@@ -564,8 +565,12 @@ def export(game, out=None, make_zip=False, do_import=True):
         shutil.copytree(sfx, out / "game" / "sfx", ignore=shutil.ignore_patterns("*.import", "__pycache__"))
     if arts and do_import:
         import_project(out)
-    (out / "game" / "export.json").write_text(json.dumps({"game": game, "story": str(path), "levels": levels, "pieces": len(pieces), "arts": arts, "bake": (previs / "preview.json").exists(), "bodies": baked,
-                                                          "engine": L.engine_version()}, indent=1), encoding="utf-8")
+    import datetime  # noqa: PLC0415
+    info = {"game": game, "story": str(path), "levels": levels, "pieces": len(pieces), "arts": arts, "bake": (previs / "preview.json").exists(), "bodies": baked,
+            "bodies_list": sorted(f.name[5:-4] for f in previs.glob("Body_*.glb")) if previs.exists() else [], "engine": L.engine_version(), "godot": "4.7",
+            "made": datetime.datetime.now().strftime("%Y-%m-%d %H:%M")}
+    (out / "game" / "export.json").write_text(json.dumps(info, indent=1), encoding="utf-8")
+    GUIDE.write_guide(out, game, story, info, ROOT / "Saved" / "Story" / game / "godot_reference")   # the guide (GODOT_PLAN §7)
     (out / ".gitignore").write_text(".godot/\n", encoding="utf-8")
     z = None
     if make_zip:

@@ -164,6 +164,14 @@ class Handler(BaseHTTPRequestHandler):
             f = (ROOT / "tools" / "shared" if parts[0] == "shared" else ROOT / "Content" / "Studio" / "Env") / parts[1]
             if f.is_file():
                 return self.send(200, f.read_bytes(), "text/javascript" if f.suffix == ".js" else "application/octet-stream")
+        if parts[0] == "godot" and len(parts) >= 3 and ".." not in parts and self.game_path(parts[1]):          # an exported Godot project's guide and pictures
+            f = ROOT / "Saved" / "Godot" / parts[1]
+            for q in parts[2:]:
+                f = f / q
+            if f.is_file() and (ROOT / "Saved" / "Godot" / parts[1]).resolve() in f.resolve().parents:
+                import mimetypes  # noqa: PLC0415
+                return self.send(200, f.read_bytes(), mimetypes.guess_type(f.name)[0] or "application/octet-stream")
+            return self.send(404, {"error": "no such file in the export"})
         if parts[0] == "boardgames" and len(parts) == 3 and parts[2].endswith(".js") and self.game_path(parts[1]):   # a board game's rules: the game's own, else the studio's
             for d in (L.GAMES / parts[1] / "BoardGames", L.BOARD_GAMES):
                 if (d / parts[2]).is_file() and d.resolve() in (d / parts[2]).resolve().parents:
@@ -585,6 +593,14 @@ class Handler(BaseHTTPRequestHandler):
             data = json.loads(self.body().decode("utf-8"))
             out.write_text(json.dumps(data, separators=(",", ":")), encoding="utf-8")
             return self.send(200, {"ok": True, "path": str(out.relative_to(ROOT)), "kb": round(out.stat().st_size / 1024)})
+        if parts[:3] == ["api", "godot", "export"] and len(parts) == 4 and self.game_path(parts[3]):   # the game as a Godot project (.zip) with its guide
+            r = subprocess.run([sys.executable, str(ROOT / "tools" / "godot_export.py"), "--game", parts[3], "--zip"],
+                               capture_output=True, text=True, encoding="utf-8", timeout=1800, cwd=str(ROOT))
+            out = ROOT / "Saved" / "Godot" / parts[3]
+            z = out.with_suffix(".zip")
+            return self.send(200 if r.returncode == 0 else 500, {"ok": r.returncode == 0, "output": (r.stdout + r.stderr)[-4000:], "dir": str(out.relative_to(ROOT)),
+                                                                "zip": str(z.relative_to(ROOT)) if z.exists() else None, "kb": round(z.stat().st_size / 1024) if z.exists() else 0,
+                                                                "guide": f"/godot/{parts[3]}/guide/index.html" if (out / "guide" / "index.html").exists() else None})
         if parts[:3] == ["api", "unreal", "generate"] and len(parts) == 4 and self.game_path(parts[3]):
             import unreal_link as UL  # noqa: PLC0415 - tools/: the checks, then the build in Unreal
             return self.send(200, UL.generate(parts[3]))

@@ -128,6 +128,9 @@ room, the dashboard, the flow board's arrow editing):
 
 ## 7. A guide in every exported project
 
+**Built 2026-10-29** (`storykit/godot_guide.py`; the desk's Godot button and the launcher's Godot section run the
+export): the sections below, each honest about what the export does now and what waits (GODOT_EXPORT §8).
+
 Each exported project carries **an .html guide** (an app to read in the browser, like the desk's `guide.html`, with
 pictures made by driving Godot under xvfb as GUIDE makes the desk's): how to change anything in that project in
 Godot, step by step. At least: the folders and what's in each; playing it and jumping to any scene; adding an

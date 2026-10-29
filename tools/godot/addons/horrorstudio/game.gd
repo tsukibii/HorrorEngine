@@ -74,7 +74,11 @@ func _ready() -> void:
 		bake = JSON.parse_string(FileAccess.get_file_as_string("res://game/previs/index.json"))
 	set_time(story.game.get("time", StoryC.TIME_DEFAULT))
 	if autostart:
-		call_deferred("watch", null, null)
+		var from = null                              # --node=<id> after --: the story from that node (the guide's "jump to any point")
+		for a in OS.get_cmdline_user_args():
+			if a.begins_with("--node="):
+				from = a.substr(7)
+		call_deferred("watch", from, {"flags": [], "items": [], "karma": {"karma": 0.0}, "counters": {}, "states": {}, "trail": []} if from != null else null)
 
 
 ## the level's scene instanced into the World; every node with a piece registered by its id. `fresh`: the level as the

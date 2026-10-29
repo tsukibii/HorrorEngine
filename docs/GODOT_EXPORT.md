@@ -187,6 +187,13 @@ loads, every verb in the games has a part).
    through the environment's adjustment, the buses' volumes, the subtitles and their size; `user://
    horrorstudio_settings.json`), Quit as a footer choice (to title: the Watch stops; to desktop). Pictures:
    `godot_reference/menu_root.png`, `menu_settings.png`. GDTESTROOM opens it, saves to a slot and resumes.
+   **The guide and the desk's button** (2026-10-29): every export carries `guide/index.html` (`storykit/godot_guide.py`,
+   GODOT_PLAN §7: the folders, playing and `--node=<id>` to jump anywhere, an in-between scene, a new animation,
+   lines and faces, the cast's marks and the camera, the lights and baking, textures and props, the little things,
+   the HUD, theme and menu, the sounds, building for Windows and Linux, what a re-export touches; honest "not built
+   yet" boxes; the checks' pictures from `Saved/Story/<G>/godot_reference/`). The desk's **Godot** button (beside
+   Unreal) records the scenes, runs the export with `--zip` (`/api/godot/export/<G>`) and links the guide
+   (`/godot/<G>/guide/index.html`); the launcher has the export and the checks under Godot. GDEXPORT checks the guide.
 4. **The look** (GODOT_PLAN §6): UltraVHS and Light Kit as shaders and nodes, measured; M_StudioSurface; the
    characters' shaders on HumanShaders (§2 of the plan) with the Studio's colours and patterns checked side by side.
 5. **The rest of §6**: the lives' effects, hiding, reverb, the HUD themes, the pause menu, the little things.

@@ -78,6 +78,10 @@ def main():
         r = G.export(game, a.out if a.game else None, a.zip)
         print(f"exported {game}: {r['pieces']} pieces, levels {', '.join(r['levels'])} -> {r['dir']}" + (f", {r['zip']}" if r["zip"] else ""))
         if a.check:
+            guide = Path(r["dir"]) / "guide" / "index.html"
+            if not guide.exists() or game not in guide.read_text(encoding="utf-8"):
+                print(f"  GDEXPORT FAIL: no guide for {game}")
+                ok = False
             code, out = run_godot(r["dir"], "res://addons/horrorstudio/tests/load_check.gd")
             print("\n".join("  " + ln for ln in out.splitlines()[-12:]))
             if code != 0 or "GDEXPORT ok" not in out:
