@@ -387,6 +387,32 @@ func _initialize() -> void:
 			if stepped.is_empty() or stepped.any(func(a): return not a["loaded"]):
 				return "the steps off the shelf: " + JSON.stringify(stepped.slice(0, 3))
 			return "")
+		await step("the pause menu: Esc holds the game and opens it in the HUD's theme, Save game saves to a slot, Esc twice resumes", func():
+			await game_wait(0.5)
+			var sf := ProjectSettings.globalize_path("user://saves_TestRoom001.json")   # a fresh slot each run
+			if FileAccess.file_exists(sf):
+				DirAccess.remove_absolute(sf)
+			await press("Escape")
+			await frames(3)
+			if not rt.held or g.hud.menu == null or not g.hud.menu.up:
+				return "the menu didn't open (held %s)" % rt.held
+			if g.hud.menu.controls_box.get_child_count() < 6 or g.hud.theme_name == "":
+				return "the controls on the left: %d rows, theme %s" % [g.hud.menu.controls_box.get_child_count(), g.hud.theme_name]
+			rt.key_event("S", true)
+			rt.key_event("Enter", true)
+			await frames(2)
+			if g.hud.menu.at != "save":
+				return "Save game page: at " + g.hud.menu.at
+			rt.key_event("Enter", true)
+			await frames(2)
+			if not g.hud.menu.saves.has("1") or not FileAccess.file_exists("user://saves_TestRoom001.json"):
+				return "slot 1 not saved: " + JSON.stringify(g.hud.menu.saves)
+			rt.key_event("Escape", true)
+			rt.key_event("Escape", true)
+			await frames(3)
+			if rt.held or g.hud.menu.up:
+				return "didn't resume (held %s, up %s)" % [rt.held, g.hud.menu.up]
+			return "")
 		await step("the front door: a click opens it (the task ticks), through it into the lobby (it ticks), and the station ends", func():
 			place(1.5, -5.9, 90)
 			await use("front_door", 1.0)

@@ -218,6 +218,10 @@ func key_event(code: String, down: bool, repeat: bool = false) -> void:
 	if examining != null and down and (code == "Escape" or code == "E"):
 		hud._finish_panel(true)
 		return
+	if held and hud.menu != null and hud.menu.up:
+		if down:
+			hud.menu.key(code)
+		return
 	if not active or busy:
 		return
 	if down and code == "Escape":
@@ -1271,6 +1275,8 @@ func chapter(title, a: Dictionary) -> void:
 func autosave(where) -> void:
 	if run != null:
 		run["autosave"] = {"where": where if where != null else story.game.get("title", "game"), "secs": float(run["secs"]) + clock}
+	if hud.menu != null:
+		hud.menu.autosave(str(story.game.get("id", "game")), str(where if where != null else story.game.get("title", "game")), now())
 
 
 func game_title() -> String:
@@ -1675,17 +1681,25 @@ func run_choice(n: Dictionary) -> Dictionary:
 	return o
 
 
+## Esc: the game holds and the pause menu opens over the HUD (menu.gd); it comes back on Resume, or ends on Quit
 func pause() -> void:
 	if held:
-		held = false
-		busy = false
-		hud.log("")
-		since = clock
 		return
 	held = true
 	busy = true
 	keys = {}
-	hud.log("paused (Esc)")
+	if hud.menu == null:
+		hud.log("paused (Esc)")
+		return
+	var r = await hud.menu.open({"game": str(story.game.get("id", "game")), "where": str(story.game.get("title", "")), "secs": now(), "has": {"torch": torch_item() != null}})
+	held = false
+	busy = false
+	since = clock
+	if r is Dictionary and r.has("quit"):
+		if r["quit"] == "desktop":
+			get_tree().quit()
+		elif on_quit.is_valid():
+			on_quit.call()
 
 
 func hold() -> void:

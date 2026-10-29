@@ -178,6 +178,15 @@ loads, every verb in the games has a part).
    bounce, friction and damping, thrown from the hand against the level's own static bodies, its pips drawn on a
    six-surface mesh, the face on top read when it sleeps (or after 8 s), `rolled` heard then. GDTESTROOM checks the
    plushie's copy in the hand and the die thrown, settled off its start, on the floor.
+   **The pause menu and the themes** (2026-10-29, `menu.gd`, `theme.gd`): Esc holds the game and the menu opens in
+   the HUD's theme (`game.ui_theme`: glass, glass-rose, neumorph, plain as Godot Themes: text, surface, border,
+   radii, the keys): the controls on the left as key tiles with what each does, Resume, Save game (three slots and
+   the autosave, in `user://saves_<game>.json`; a chapter's and a checkpoint's autosave lands there), Settings
+   (Display, Graphics, Audio: the desk's rows with their Unreal names and the Godot name each maps to, stepped with
+   A/D, levels as dashes; applied where Godot can: the window mode and size, VSync, the frame rate limit, brightness
+   through the environment's adjustment, the buses' volumes, the subtitles and their size; `user://
+   horrorstudio_settings.json`), Quit as a footer choice (to title: the Watch stops; to desktop). Pictures:
+   `godot_reference/menu_root.png`, `menu_settings.png`. GDTESTROOM opens it, saves to a slot and resumes.
 4. **The look** (GODOT_PLAN §6): UltraVHS and Light Kit as shaders and nodes, measured; M_StudioSurface; the
    characters' shaders on HumanShaders (§2 of the plan) with the Studio's colours and patterns checked side by side.
 5. **The rest of §6**: the lives' effects, hiding, reverb, the HUD themes, the pause menu, the little things.

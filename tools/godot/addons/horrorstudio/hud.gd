@@ -56,6 +56,46 @@ var player_name: String = "Alex"
 var words: Callable = Callable()
 var chapter_up: bool = false
 var lines_shown: Array = []
+const ThemeC := preload("res://addons/horrorstudio/theme.gd")
+const MenuC := preload("res://addons/horrorstudio/menu.gd")
+var theme_name: String = "glass"
+var menu = null                              # the pause menu (menu.gd), under the root
+var subs_on: bool = true
+var sub_scale: float = 1.0
+var brightness: float = 1.0
+var env: Environment = null                  # the world's, for brightness
+
+
+## the game's theme (game.ui_theme: glass, glass-rose, neumorph, plain) on everything, and the pause menu in it
+func wear(name: String) -> void:
+	theme_name = name if ThemeC.THEMES.has(name) or name == "glass-rose" else "glass"
+	root.theme = ThemeC.make(theme_name)
+	if menu != null:
+		menu.queue_free()
+	menu = MenuC.new(self, theme_name)
+	root.add_child(menu)
+	MenuC.apply(MenuC.load_settings(), self)
+
+
+## the rest of the HUD steps back while the menu is up (the desk's `paused`)
+func paused(on: bool) -> void:
+	for ch in root.get_children():
+		if ch == menu or ch == fade_el:
+			continue
+		if on:
+			ch.set_meta("was_visible", ch.visible)
+			ch.visible = false
+		elif ch.has_meta("was_visible"):
+			ch.visible = ch.get_meta("was_visible")
+
+
+func apply_settings() -> void:
+	line_el.add_theme_font_size_override("font_size", int(round(20 * sub_scale)))
+	line_el.visible = subs_on
+	who_el.visible = subs_on
+	if env != null:
+		env.adjustment_enabled = abs(brightness - 1.0) > 0.01
+		env.adjustment_brightness = brightness
 
 func _ready() -> void:
 	layer = 10

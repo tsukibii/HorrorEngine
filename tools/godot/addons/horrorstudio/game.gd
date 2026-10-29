@@ -52,6 +52,10 @@ func _ready() -> void:
 	hud.name = "Hud"
 	add_child(hud)
 	hud.words = func(w): return story.word_of(w, run["flags"] if run != null else {}, run["counters"] if run != null else {})
+	var envn = get_node_or_null("Env")
+	if envn != null and envn.environment != null:
+		hud.env = envn.environment
+	hud.wear(str(story.game.get("ui_theme", "glass")))
 	scene_player = ScenePlayerC.new()
 	scene_player.name = "ScenePlayer"
 	scene_player.game = self
