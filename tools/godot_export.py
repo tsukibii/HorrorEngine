@@ -77,11 +77,27 @@ def main():
     for game in games:
         r = G.export(game, a.out if a.game else None, a.zip)
         print(f"exported {game}: {r['pieces']} pieces, levels {', '.join(r['levels'])} -> {r['dir']}" + (f", {r['zip']}" if r["zip"] else ""))
+        for rel in r.get("kept", []):                       # a re-export: the files the user changed stay, the new ones beside them
+            print(f"  kept yours: {rel} (the desk's new version beside it as {G.desk_name(rel)})")
         if a.check:
             guide = Path(r["dir"]) / "guide" / "index.html"
             if not guide.exists() or game not in guide.read_text(encoding="utf-8"):
                 print(f"  GDEXPORT FAIL: no guide for {game}")
                 ok = False
+            if game == games[-1]:                           # the receipt: a file changed by hand survives a re-export, the new one beside it
+                lvl = Path(r["dir"]) / "game" / "levels" / f"{r['levels'][0]}.tscn"
+                mine = lvl.read_text(encoding="utf-8") + "\n; mine\n"
+                lvl.write_text(mine, encoding="utf-8")
+                r2 = G.export(game, a.out if a.game else None, False, do_import=False)
+                beside = lvl.with_name(lvl.stem + ".desk.tscn")
+                if lvl.read_text(encoding="utf-8") != mine or not beside.exists() or r2.get("kept") != [lvl.relative_to(r["dir"]).as_posix()]:
+                    print(f"  GDEXPORT FAIL: a re-export didn't keep a changed file ({r2.get('kept')})")
+                    ok = False
+                else:
+                    print(f"  GDEXPORT re-export: kept {r2['kept'][0]}, the new one beside it")
+                lvl.write_text(beside.read_text(encoding="utf-8"), encoding="utf-8")    # back to the desk's, for the checks after
+                beside.unlink()
+                G.write_manifest(Path(r["dir"]))
             for part in ("addons/horrorstudio_look/plugin.cfg", "addons/horrorstudio_look/look.gd", "HumanShaders/skin_shader.gdshader"):
                 if not (Path(r["dir"]) / part).exists():            # the plugins (GodotPlugins/) copied in
                     print(f"  GDEXPORT FAIL: {part} missing from the export")

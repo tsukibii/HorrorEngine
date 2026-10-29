@@ -577,6 +577,82 @@ def godot_bin():
     return None
 
 
+# ---- the receipt (docs/GODOT_EXPORT.md §5): what the export wrote, so a re-export keeps what the user changed ---------
+MANIFEST = Path(".desk") / "manifest.json"
+
+
+def sha1_of(path):
+    import hashlib  # noqa: PLC0415
+    h = hashlib.sha1()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def generated_files(out):
+    """Every file the export wrote, by its path in the project (the import's .godot/ and the receipt itself left out)."""
+    for fp in sorted(out.rglob("*")):
+        if fp.is_file() and ".godot" not in fp.parts and fp.relative_to(out) != MANIFEST:
+            yield fp.relative_to(out).as_posix()
+
+
+def read_manifest(out):
+    p = out / MANIFEST
+    if not p.exists():
+        return None
+    try:
+        m = json.loads(p.read_text(encoding="utf-8"))
+        return m.get("files") if isinstance(m.get("files"), dict) else None
+    except ValueError:
+        return None
+
+
+def write_manifest(out):
+    import datetime  # noqa: PLC0415
+    files = {rel: sha1_of(out / rel) for rel in generated_files(out)}
+    (out / ".desk").mkdir(exist_ok=True)
+    (out / MANIFEST).write_text(json.dumps({"written": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), "files": files}, indent=1), encoding="utf-8")
+    return files
+
+
+def desk_name(rel):
+    """The new version's name beside a file the user kept: game/levels/annex.tscn -> game/levels/annex.desk.tscn."""
+    p = Path(rel)
+    return (p.parent / (p.stem + ".desk" + p.suffix)).as_posix() if p.suffix else rel + ".desk"
+
+
+def merge_export(new, final, old_manifest):
+    """The fresh export (new) into the project the user has (final), by the last receipt: a generated file they
+    changed is kept, the new one written beside it as <name>.desk.<ext>; one they left is overwritten; a stale one
+    (generated last time, not this time, unchanged) goes; anything of theirs the export never wrote is untouched.
+    Returns the kept files."""
+    kept = []
+    written = set()
+    for rel in generated_files(new):
+        src = new / rel
+        dst = final / rel
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        if dst.exists() and rel in old_manifest and sha1_of(dst) != old_manifest[rel]:
+            beside = final / desk_name(rel)
+            shutil.copy(src, beside)
+            kept.append(rel)
+            written.add(desk_name(rel))
+        else:
+            shutil.copy(src, dst)
+            written.add(rel)
+            if rel in old_manifest and (final / desk_name(rel)).exists():   # theirs taken back: the sibling goes
+                (final / desk_name(rel)).unlink()
+    for rel in old_manifest:
+        if rel in written or rel in kept:
+            continue
+        stale = final / rel
+        if stale.exists() and sha1_of(stale) == old_manifest[rel]:
+            stale.unlink()
+    shutil.rmtree(new)
+    return kept
+
+
 def import_project(out, timeout=600):
     """Godot's import of the project (its .godot/ folder): the glb meshes the levels instance load only once imported.
     The editor does it on opening the project; here so a headless run can too. Quiet when Godot isn't on the PATH."""
@@ -608,7 +684,9 @@ def export(game, out=None, make_zip=False, do_import=True):
             subprocess.run([shutil.which("node"), str(ROOT / "tools" / "kit" / "build.mjs"), "--specs", str(specs)], capture_output=True, text=True, timeout=900)
     except (OSError, ValueError, subprocess.TimeoutExpired):
         pass
-    out = Path(out) if out else OUT / game
+    final = Path(out) if out else OUT / game
+    old_manifest = read_manifest(final)                   # a re-export: the receipt of the last one (§5), None the first time
+    out = final.with_name(final.name + ".new") if old_manifest is not None else final
     if out.exists():
         shutil.rmtree(out)
     (out / "game" / "levels").mkdir(parents=True)
@@ -674,15 +752,21 @@ def export(game, out=None, make_zip=False, do_import=True):
     sfx = ROOT / "Content" / "Studio" / "SFX"                      # the sound shelf (docs/SFX.md, CC0): every sound and its index
     if (sfx / "index.json").exists():
         shutil.copytree(sfx, out / "game" / "sfx", ignore=shutil.ignore_patterns("*.import", "__pycache__"))
-    if (arts or surfaced) and do_import:
-        import_project(out)
     import datetime  # noqa: PLC0415
     info = {"game": game, "story": str(path), "levels": levels, "pieces": len(pieces), "arts": arts, "surfaced": surfaced, "surface_sets": sorted(surface_sets), "bake": (previs / "preview.json").exists(), "bodies": baked,
             "bodies_list": sorted(f.name[5:-4] for f in previs.glob("Body_*.glb")) if previs.exists() else [], "engine": L.engine_version(), "godot": "4.7",
             "made": datetime.datetime.now().strftime("%Y-%m-%d %H:%M")}
+    kept = []
+    if old_manifest is not None:                           # merged into the project the user has: theirs kept, the new beside
+        kept = merge_export(out, final, old_manifest)
+        out = final
+    info["kept"] = kept
     (out / "game" / "export.json").write_text(json.dumps(info, indent=1), encoding="utf-8")
     GUIDE.write_guide(out, game, story, info, ROOT / "Saved" / "Story" / game / "godot_reference")   # the guide (GODOT_PLAN §7)
     (out / ".gitignore").write_text(".godot/\n", encoding="utf-8")
+    write_manifest(out)
+    if (arts or surfaced) and do_import:
+        import_project(out)
     z = None
     if make_zip:
         z = out.parent / f"{game}.zip"
@@ -690,4 +774,4 @@ def export(game, out=None, make_zip=False, do_import=True):
             for fp in sorted(out.rglob("*")):
                 if fp.is_file() and ".godot" not in fp.parts:
                     zf.write(fp, Path(game) / fp.relative_to(out))
-    return {"dir": str(out), "zip": str(z) if z else None, "levels": levels, "pieces": len(pieces), "arts": arts}
+    return {"dir": str(out), "zip": str(z) if z else None, "levels": levels, "pieces": len(pieces), "arts": arts, "kept": kept}

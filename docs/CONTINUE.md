@@ -46,7 +46,7 @@ and whether the puff shader should go back onto the desk's stage. **Next** (GODO
 written by the export and baked at load (cached), ~~the PBR shelf's surfaces (M_StudioSurface)~~ (done 2026-10-29: world-aligned materials, `game/textures/`), the characters' look on
 HumanShaders (GODOT_PLAN §2; the wet skin shader and `HSSkin.wear` are ready for the export), ~~the little things' sounds~~ (done 2026-10-29, `lifesound.gd`), the voices (the takes' audio), ~~the inventory's pictures~~ (done as live models, 2026-10-29),
 ~~ghosting on the tape~~ (done 2026-10-29), the Inspector resources and AnimationPlayer timelines (§3), the
-re-export's receipt (§5), a cast member's models per scene.
+~~re-export's receipt (§5)~~ (done 2026-10-29: the manifest, changed files kept with the new beside), a cast member's models per scene.
 
 ## 0a. Before that (2026-10-28, night, on `godot-support`): Godot started, the export analysed, waiting on the user
 

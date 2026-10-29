@@ -251,12 +251,13 @@ project passed before it was zipped can be run again headless: <code>godot --hea
 (every level loads, the story reads, the start is reached).</p>
 """))
     body.append(section("reexport", 14, "What a re-export from the desk touches", """
-<p>The desk writes this whole project again on every export: <code>project.godot</code>, <code>addons/horrorstudio/</code>, <code>HumanShaders/</code>, everything under
-<code>game/</code>, and this guide. <b>Anything you change in those files is overwritten</b>, your own files beside them are not (the export writes into a fresh
-folder; when you unzip over an old one, your extra files stay). So keep your own work out of the written files: your scenes in <code>custom/</code>, your scripts
-extending the runtime's rather than editing them, your materials as overrides saved as <code>.tres</code> in <code>custom/</code> and set on the nodes after an export.</p>
-<div class="notyet"><b>Planned</b> (GODOT_EXPORT.md §5): a receipt of every generated file's hash (<code>.desk/manifest.json</code>), so a re-export can tell what you
-edited and leave it, asking only where both changed the same thing, like the desk's own three-way merge.</div>
+<p>The desk writes this whole project again on every export: <code>project.godot</code>, the add-ons, <code>HumanShaders/</code>, everything under
+<code>game/</code>, and this guide. <b>It keeps a receipt</b> (<code>.desk/manifest.json</code>: the hash of every file it wrote), so a re-export into this folder can tell
+what you changed: a written file you edited is <b>kept as yours</b>, with the desk's new version beside it as <code>&lt;name&gt;.desk.&lt;ext&gt;</code> (look at it, take what you
+want, delete it); a file you left alone is overwritten; files you added anywhere are never touched. The export's panel on the desk and <code>game/export.json</code>
+(<code>kept</code>) list what was kept. Keep your own work in files of your own where you can: your scenes in <code>custom/</code>, your scripts extending the runtime's
+rather than editing them, your materials as <code>.tres</code> in <code>custom/</code>.</p>
+<div class="notyet"><b>Not yet:</b> nodes you add inside a generated scene lifted out and put back into the new file; today a scene you changed is kept whole.</div>
 """))
     toc = "".join(f'<li><a href="#{sid}">{e(t)}</a></li>' for sid, t in [("start", "Opening and playing it"), ("folders", "The folders"), ("scene", "An in-between scene"), ("anim", "A new animation"),
                                                                        ("lines", "Lines, takes, faces"), ("marks", "Cast, marks, camera"), ("lights", "Lights and time of day"), ("props", "Textures and props"),

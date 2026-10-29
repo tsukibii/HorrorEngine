@@ -89,13 +89,17 @@ Props' `use` is the same: a `StoryUse` resource on the prop's node.
 ## 5. Re-export: keeping the user's hand work
 
 The rule (CHARACTER_STUDIO.md §2): editable at every stage, a receipt on each bake. Here:
-- `.desk/manifest.json` holds the hash of every file the exporter wrote. On a re-export a file whose content still
-  matches its last hash is overwritten; one the user changed is **kept**, the new version written beside it as
-  `<name>.desk.tscn`, and the export's report lists them (the desk shows it, as its merge toast does).
-- Inside a generated scene, nodes the user adds go in the group **`hand`** (or under a `Hand` node): the exporter
-  reads the old file, lifts those nodes out and puts them back into the new one. Files the user adds anywhere are
-  never touched; `custom/` folders are theirs by convention.
-- The runtime add-on is versioned; a re-export updates it only when its version is newer and it's unchanged.
+- **Built (2026-10-29):** `.desk/manifest.json` holds the hash of every file the exporter wrote. On a re-export the
+  project is written fresh beside the old one and merged in (`merge_export`): a file whose content still matches its
+  last hash is overwritten; one the user changed is **kept**, the new version written beside it as
+  `<name>.desk.<ext>` (taken back by hand when they want it; gone again once theirs matches the receipt); a file the
+  last export wrote and this one didn't goes if unchanged, stays if they changed it; files they added anywhere are
+  never touched (`custom/` folders are theirs by convention). The export's report lists the kept files
+  (`export.json` `kept`, the CLI's lines, the desk's Export panel). GDEXPORT changes a level file by hand and
+  re-exports: the change survives, the new one is beside it.
+- Not built: nodes the user adds inside a generated scene (a `hand` group) lifted out and put back into the new
+  file; today a changed scene file is kept whole. The runtime add-on is copied on every export (the plugins live in
+  the repo: a change there reaches every game).
 
 ## 6. Lighting in the export (GODOT_PLAN §4)
 

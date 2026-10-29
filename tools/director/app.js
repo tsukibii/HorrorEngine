@@ -2633,6 +2633,7 @@ $("#godot").onclick = async () => {                 // the game as a Godot proje
   catch (e) { $("#gdState").className = "err"; $("#gdState").textContent = "The export failed: " + e.message; if (e.body && e.body.output) box.append(el("pre", {}, e.body.output)); return; }
   $("#gdState").textContent = j.ok ? `Exported: ${j.zip} (${j.kb} KB). Unzip it anywhere and open project.godot in Godot 4.7.` : "The export failed.";
   if (j.guide) box.append(el("p", {}, el("a", { href: j.guide, target: "_blank" }, "Open the project's guide"), " (it's inside the zip too: guide/index.html)"));
+  if (j.kept && j.kept.length) box.append(el("p", { class: "muted" }, `Kept yours (changed since the last export): ${j.kept.join(", ")}. The desk's new version of each is beside it as <name>.desk.<ext>.`));
   box.append(el("pre", {}, (j.output || "").split("\n").slice(-20).join("\n")));
 };
 $("#generate").onclick = async () => {

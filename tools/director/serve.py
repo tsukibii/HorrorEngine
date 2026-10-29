@@ -598,7 +598,12 @@ class Handler(BaseHTTPRequestHandler):
                                capture_output=True, text=True, encoding="utf-8", timeout=1800, cwd=str(ROOT))
             out = ROOT / "Saved" / "Godot" / parts[3]
             z = out.with_suffix(".zip")
-            return self.send(200 if r.returncode == 0 else 500, {"ok": r.returncode == 0, "output": (r.stdout + r.stderr)[-4000:], "dir": str(out.relative_to(ROOT)),
+            kept = []                                       # a re-export: the files changed by hand it kept (the receipt, GODOT_EXPORT §5)
+            try:
+                kept = json.loads((out / "game" / "export.json").read_text(encoding="utf-8")).get("kept", [])
+            except (OSError, ValueError):
+                kept = []
+            return self.send(200 if r.returncode == 0 else 500, {"ok": r.returncode == 0, "output": (r.stdout + r.stderr)[-4000:], "dir": str(out.relative_to(ROOT)), "kept": kept,
                                                                 "zip": str(z.relative_to(ROOT)) if z.exists() else None, "kb": round(z.stat().st_size / 1024) if z.exists() else 0,
                                                                 "guide": f"/godot/{parts[3]}/guide/index.html" if (out / "guide" / "index.html").exists() else None})
         if parts[:3] == ["api", "unreal", "generate"] and len(parts) == 4 and self.game_path(parts[3]):
