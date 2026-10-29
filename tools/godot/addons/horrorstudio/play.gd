@@ -106,6 +106,8 @@ var step_count: int = 0
 var cast_walk: Dictionary = {}
 var cast_step: Dictionary = {}
 var sounds_heard: Array = []
+var scene_light_k: Dictionary = {}
+var baked_cast: Dictionary = {}      # cast ids whose baked body is showing (their stand-ins hidden)   # a scene's recorded flicker: a multiplier a light while the bake plays
 var todo_log: Array = []
 var light_state: Dictionary = {}
 var rolls: Dictionary = {}
@@ -1315,6 +1317,9 @@ func draw_npcs(dt: float) -> void:
 		var node = cast_nodes.get(cid)
 		if node == null:
 			continue
+		if baked_cast.has(cid):           # a scene's recorded body stands in for the stand-in while the bake plays
+			node.visible = false
+			continue
 		node.visible = n["pos"] != null and n["level"] == level
 		if not node.visible:
 			continue
@@ -1919,6 +1924,7 @@ func tick(dt: float) -> void:
 			u["surge"] = null
 		if float(u["flicker"]) > 0:
 			k *= 1.0 - float(u["flicker"]) * 0.5 * max(0.0, sin(T * 13.7) * sin(T * 7.3))
+		k *= float(scene_light_k.get(t["id"], 1.0))
 		t["node"].light_energy = float(u["base"]) * k
 	life_lights()
 	if torch_hot != null:

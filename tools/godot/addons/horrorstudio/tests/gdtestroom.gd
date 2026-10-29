@@ -21,6 +21,7 @@ var from_nid = null
 var from_i := 0
 var ref_dir := ""
 var states: Dictionary = {}
+var ticked_all: Array = []
 
 
 func snap_for(nid: String) -> Dictionary:
@@ -309,7 +310,10 @@ func record(nid: String) -> void:
 	fl.sort()
 	var it: Array = rt.items.keys()
 	it.sort()
-	states[nid] = {"flags": fl, "karma": R["karma"], "counters": R["counters"], "time": R["time"], "name": R["name"], "ticked": rt.todo_log.duplicate(),
+	for t in rt.todo_log:                 # the run's ticks, kept across a retry's new runtime (the desk's log is one for the run)
+		if not ticked_all.has(t):
+			ticked_all.append(t)
+	states[nid] = {"flags": fl, "karma": R["karma"].duplicate(true), "counters": R["counters"].duplicate(true), "time": R["time"], "name": R["name"], "ticked": ticked_all.duplicate(),
 		"level": rt.level, "power": rt.powered(), "items": it, "doors": doors, "things": things}
 	if ref_dir != "":
 		DirAccess.make_dir_recursive_absolute(ref_dir)
@@ -409,8 +413,8 @@ func _initialize() -> void:
 				n += 1
 				if (g.play != null and g.play.active) or node() != "n_hello":
 					break
-				if rt.cast_nodes["aoi"].visible:
-					xs.append(rt.cast_nodes["aoi"].position.x)
+				if rt.npcs.has("aoi") and rt.npcs["aoi"]["pos"] != null:   # her body track (the behaviour), under the bake's body
+					xs.append(rt.npcs["aoi"]["pos"].x)
 				await process_frame
 			var subs: Array = g.hud.lines_shown
 			var said := ["Good. Then let's begin.", "The corridor's yours. I'll be watching.", "One thing a room. Fine."]
@@ -433,6 +437,10 @@ func _initialize() -> void:
 			var R = g.run
 			if float(R["karma"].get("karma", 0)) != 1 or not R["flags"].has("met_aoi") or R["lives"].at("kitchen_tv", float(R["secs"]) + 999)["state"] != "static":
 				return JSON.stringify({"karma": R["karma"], "met": R["flags"].has("met_aoi"), "tv": R["lives"].at("kitchen_tv", float(R["secs"]) + 999)["state"]})
+			if g.bake != null:   # the scene played from the desk's bake: its frames shown, her skinned body's head on the recorded joint
+				var bs: Dictionary = g.scene_player.bake_stats
+				if int(bs.get("frames", 0)) < 100 or float(bs.get("head_err", 9)) > 0.12 or float(bs.get("mismatch", 9)) > 0.05:
+					return "the bake: " + JSON.stringify(bs)
 			return ""))
 
 	await station("n_front", func():

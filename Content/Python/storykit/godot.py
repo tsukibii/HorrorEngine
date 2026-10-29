@@ -369,6 +369,21 @@ def export(game, out=None, make_zip=False):
     if HUMAN.exists():
         shutil.copytree(HUMAN, out / "HumanShaders", ignore=shutil.ignore_patterns("*.import"))
     (out / "game" / "story.json").write_text(json.dumps(story, ensure_ascii=False, indent=0), encoding="utf-8")
+    previs = L.GAMES / game / "Previs"                 # the desk's bake (tools/godot/bake.mjs, or the desk's Generate): the scenes as recorded
+    baked = 0
+    if (previs / "preview.json").exists():
+        pv = json.loads((previs / "preview.json").read_text(encoding="utf-8"))
+        (out / "game" / "previs" / "scenes").mkdir(parents=True, exist_ok=True)
+        index = {k: v for k, v in pv.items() if k != "scenes"}
+        index["scenes"] = {}
+        for sid, sc in pv.get("scenes", {}).items():      # the frames a file a scene; the index keeps each scene's facts
+            index["scenes"][sid] = {k: v for k, v in sc.items() if k not in ("frames", "subs", "events", "lights")}
+            index["scenes"][sid]["frames"] = len(sc.get("frames", []))
+            (out / "game" / "previs" / "scenes" / f"{sid}.json").write_text(json.dumps(sc, separators=(",", ":")), encoding="utf-8")
+        (out / "game" / "previs" / "index.json").write_text(json.dumps(index, separators=(",", ":")), encoding="utf-8")
+        for f in sorted(previs.glob("Body_*.glb")):
+            shutil.copy(f, out / "game" / "previs" / f.name)
+            baked += 1
     if LIVES.exists():
         shutil.copy(LIVES, out / "game" / "lives.json")
     lt = {}                                            # the little things with a life: {id: {life, d}} (app.js lifeThings)
@@ -386,7 +401,7 @@ def export(game, out=None, make_zip=False):
         lw = LevelWriter(story, lid, pieces, t)
         (out / "game" / "levels" / f"{lid}.tscn").write_text(lw.write(), encoding="utf-8")
         levels.append(lid)
-    (out / "game" / "export.json").write_text(json.dumps({"game": game, "story": str(path), "levels": levels, "pieces": len(pieces),
+    (out / "game" / "export.json").write_text(json.dumps({"game": game, "story": str(path), "levels": levels, "pieces": len(pieces), "bake": (previs / "preview.json").exists(), "bodies": baked,
                                                           "engine": L.engine_version()}, indent=1), encoding="utf-8")
     (out / ".gitignore").write_text(".godot/\n", encoding="utf-8")
     z = None

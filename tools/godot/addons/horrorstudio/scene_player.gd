@@ -9,6 +9,7 @@ extends Node
 const StoryC := preload("res://addons/horrorstudio/story.gd")
 
 const BLEND := {"kind": "blend", "secs": 0.8}
+const BakeC := preload("res://addons/horrorstudio/bakeplay.gd")
 
 var game
 var playing: bool = false
@@ -16,6 +17,63 @@ var T: float = 0.0
 var title: String = ""
 var skip_asked: bool = false
 var tl_now: Dictionary = {}
+var bk = null                      # the scene's recording while one plays (bakeplay.gd)
+var bmap: Dictionary = {}          # this run's timeline segs -> the bake's, by what they play
+var look_off: Vector2 = Vector2.ZERO
+var look_cone: Array = [0, 0]
+var bake_stats: Dictionary = {}    # the last baked scene measured: frames, head_err, cam_path, mismatch
+
+
+func _unhandled_input(ev: InputEvent) -> void:
+	if playing and bk != null and ev is InputEventMouseMotion:   # the player looks round the recorded view, within the scene's cone
+		look_off.x = clamp(look_off.x - ev.relative.x * 0.08, -float(look_cone[0]), float(look_cone[0]))
+		look_off.y = clamp(look_off.y - ev.relative.y * 0.08, -float(look_cone[1]), float(look_cone[1]))
+
+
+static func seg_key(seg: Dictionary, clips: Array) -> String:
+	var t: String = seg["type"]
+	if t == "clip" or t == "event" or t == "reply":
+		return t + ":" + str(seg["clip"]["id"])
+	if t == "seam":
+		var i: int = int(seg.get("i", -1))
+		return "seam:" + (str(clips[i]["id"]) if i >= 0 and i < clips.size() else str(seg["start"]))
+	return t + ":" + str(seg["start"])
+
+
+## the bake's time for this run's time T: the same clip, seam, event or reply as far along; null where the bake has
+## no such moment (a reply's other branch: the last frame holds)
+func bake_t(tl: Dictionary, T: float) -> Variant:
+	var seg = _seg_at(tl, T)
+	if seg == null:
+		return null
+	var b = bmap.get(seg_key(seg, tl["v"].get("clips", [])))
+	if b == null:
+		return null
+	return float(b["start"]) + clamp(T - float(seg["start"]), 0.0, float(b["end"]) - float(b["start"]))
+
+
+func bake_camera(fi: int, cam: Camera3D) -> void:
+	var c: Dictionary = bk.camera_of(fi)
+	var xf: Transform3D = c["xf"]
+	if look_off != Vector2.ZERO:
+		xf.basis = xf.basis * Basis(Vector3.UP, deg_to_rad(look_off.x)) * Basis(Vector3.RIGHT, deg_to_rad(look_off.y))
+	cam.global_transform = xf
+	var vp := get_viewport().get_visible_rect().size
+	cam.fov = StoryC.vfov(c["hfov"], (vp.x / vp.y) if vp.y > 0 else 16.0 / 9.0)
+
+
+func bake_measure() -> void:
+	for cid in bk.bodies:
+		var h = bk.bone_pos(cid, "c_head")
+		var j = bk.joint_pos(cid, "head")
+		if h != null and j != null:
+			bake_stats["head_err"] = max(float(bake_stats.get("head_err", 0.0)), (h - j).length())
+	bake_stats["frames"] = bk.frames_shown
+	var sk: Array = []
+	for cid in bk.bodies:
+		if bk.bodies[cid]["skeleton"] != null:
+			sk.append(cid)
+	bake_stats["skinned"] = sk
 
 
 ## the dev skip: to the next event or reply, else the scene's end
@@ -125,6 +183,26 @@ func play(sc: Dictionary, nid: String, sid: String) -> Variant:
 			n.position = sp["node"].global_position
 			n.rotation_degrees = Vector3(0, float(sp["piece"].get("yaw", 0)) + 90.0, 0)
 			n.visible = true
+	bk = null
+	bmap = {}
+	look_off = Vector2.ZERO
+	bake_stats = {}
+	if game.bake != null:
+		var b = BakeC.new(game, game.bake)
+		if b.open(sid):
+			bk = b
+			var btl: Dictionary = story().timeline(sc, {}, {}, {}, true)   # the bake's own timeline: every line, the first answers
+			var bclips: Array = btl["v"].get("clips", [])
+			for s in btl["segs"]:
+				bmap[seg_key(s, bclips)] = s
+			bake_stats["mismatch"] = abs(float(btl["total"]) - bk.total())
+			look_cone = bk.sc.get("look", [30, 18])
+			bk.make_bodies(game.world)
+			for cid in bk.bodies:
+				rt.baked_cast[cid] = true
+				if rt.cast_nodes.has(cid):
+					rt.cast_nodes[cid].visible = false
+			bk.show(0, rt)
 	var eye := eye_of(v)
 	var look_id = (v.get("camera", {}) as Dictionary).get("look", null)
 	var target = target_pos(look_id) if look_id != null else null
@@ -137,6 +215,10 @@ func play(sc: Dictionary, nid: String, sid: String) -> Variant:
 		to_t = Transform3D(Basis(Vector3.UP, deg_to_rad(yaw - 90.0)), eye)
 	var vp := get_viewport().get_visible_rect().size
 	var to_fov := StoryC.vfov(float(story().game.get("fov", StoryC.FOV_H)), (vp.x / vp.y) if vp.y > 0 else 16.0 / 9.0)
+	if bk != null:
+		var c0: Dictionary = bk.camera_of(0)
+		to_t = c0["xf"]
+		to_fov = StoryC.vfov(c0["hfov"], (vp.x / vp.y) if vp.y > 0 else 16.0 / 9.0)
 	if en.get("kind", "blend") == "blend":
 		var secs: float = max(0.05, float(en.get("secs", 0.8)))
 		var t := 0.0
@@ -168,6 +250,14 @@ func play(sc: Dictionary, nid: String, sid: String) -> Variant:
 			break
 		T += get_process_delta_time()
 		rt.draw_npcs(get_process_delta_time())
+		if bk != null:
+			var bt = bake_t(tl, T)
+			if bt != null:
+				var fi: int = bk.frame_of(bt)
+				if bk.show(fi, rt):
+					bake_measure()
+				bake_camera(fi, cam)
+				game.hud.set_fade(bk.black_of(fi))
 		while cues.size() and float(cues[0]["t"]) <= T:
 			fire_cue(cues.pop_front(), t0)
 		if skip_asked:
@@ -223,8 +313,15 @@ func play(sc: Dictionary, nid: String, sid: String) -> Variant:
 			game.hud.line(c.get("en", ""), who, float(seg["dur"]) + 0.3, bool(c.get("think", false)), {"retype": c.get("retype"), "breaks": c.get("breaks", false)} if c.get("think", false) else null)
 		elif seg != null and seg["type"] == "seam" and spoken != seg:
 			spoken = seg
-			if ["blink", "dip", "flicker"].has(seg["seam"].get("kind")):
+			if bk == null and ["blink", "dip", "flicker"].has(seg["seam"].get("kind")):
 				_blink(float(seg["end"]) - float(seg["start"]))
+	if bk != null:
+		rt.baked_cast.clear()
+		for cid in bk.bodies:
+			if rt.cast_nodes.has(cid) and v.get("stage", {}).has(cid):
+				rt.cast_nodes[cid].visible = true
+		bk.close(rt)
+		bk = null
 	if game.run == null:
 		playing = false
 		return null

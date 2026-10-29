@@ -130,6 +130,15 @@ loads, every verb in the games has a part).
 3. **The runtime v1**: enough of §7 for the Pilot to be played start to end in Godot; GDPLAY ok.
    Then TestRoom001 station by station: **GDTESTROOM** ok (every station's checks as the desk's TESTROOM makes them; the
    typing effects, the little things' lights, the round's spots, the names as words all ported on the way).
+   **The bake played** (`bakeplay.gd`, 2026-10-29): `tools/godot/bake.mjs` records the Watch as the desk's Generate does
+   (the scenes' camera, bodies, skinning matrices, black, lights, 30 fps; each cast member's shaped body as a glb); the
+   export splits it a file a scene (`game/previs/index.json`, `scenes/<sid>.json`, `Body_<who>.glb`) and the scene
+   player drives the camera, a skinned body posed from the matrices (every bone's global pose first, then each as a
+   local under its parent: the bake's bone order isn't parents first) and the lights' flicker from it, mapping its own
+   timeline onto the bake's by clip (the bake plays every line and the first answers; a reply's other branch holds the
+   last frame). Measured: the skinned head within 8 cm of the recorded joint; a picture `tests/sceneshot.gd`. Not yet:
+   the faces (the exported body carries no morph targets: MHR's 72 shapes have to go into the glb), a cast member's
+   models per scene, the reply branches as their own recordings (the desk could bake each branch).
 4. **The look** (GODOT_PLAN §6): UltraVHS and Light Kit as shaders and nodes, measured; M_StudioSurface; the
    characters' shaders on HumanShaders (§2 of the plan) with the Studio's colours and patterns checked side by side.
 5. **The rest of §6**: the lives' effects, hiding, reverb, the HUD themes, the pause menu, the little things.

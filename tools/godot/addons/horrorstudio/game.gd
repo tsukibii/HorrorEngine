@@ -33,6 +33,8 @@ var run = null
 var progress: Dictionary = {"visited": {}, "endings": []}
 var watch_end = null
 var ending_words: String = ""
+var bake = null                    # the desk's bake (game/previs/index.json): the scenes as recorded, or null
+var body_scenes: Dictionary = {}   # cast id -> the PackedScene of its baked body
 var time_of_day: String = "night"
 var fading = null
 
@@ -56,6 +58,8 @@ func _ready() -> void:
 		lives_data = JSON.parse_string(FileAccess.get_file_as_string("res://game/lives.json"))
 	if FileAccess.file_exists("res://game/life_things.json"):
 		life_things = JSON.parse_string(FileAccess.get_file_as_string("res://game/life_things.json"))
+	if FileAccess.file_exists("res://game/previs/index.json"):
+		bake = JSON.parse_string(FileAccess.get_file_as_string("res://game/previs/index.json"))
 	set_time(story.game.get("time", StoryC.TIME_DEFAULT))
 	if autostart:
 		call_deferred("watch", null, null)
@@ -63,6 +67,25 @@ func _ready() -> void:
 
 ## the level's scene instanced into the World; every node with a piece registered by its id. `fresh`: the level as the
 ## story builds it, even if it's the one that's there (a run's first time)
+## a cast member's baked body (previs/Body_<who>.glb) as a scene, loaded once; null without one
+func body_scene(cid: String, file: String) -> Variant:
+	if body_scenes.has(cid):
+		return body_scenes[cid]
+	var path := "res://game/previs/" + file
+	var ps = load(path) if ResourceLoader.exists(path) else null
+	if ps == null and FileAccess.file_exists(path):   # not imported yet (a headless run): read the glb itself
+		var doc := GLTFDocument.new()
+		var st := GLTFState.new()
+		if doc.append_from_file(path, st) == OK:
+			var n = doc.generate_scene(st)
+			if n != null:
+				ps = PackedScene.new()
+				ps.pack(n)
+				n.free()
+	body_scenes[cid] = ps
+	return ps
+
+
 func enter_level(lid: String, fresh: bool = false) -> void:
 	if level_id == lid and level != null and not fresh:
 		return

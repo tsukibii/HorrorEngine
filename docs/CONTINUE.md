@@ -11,7 +11,23 @@ the to-do built there, with the Studio's eyes from the side, a small nose and th
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## 0. Latest (2026-10-28, night, on `godot-support`): Godot started, the export analysed, waiting on the user
+## 0. Latest (2026-10-29, on `godot-support`): the Pilot and TestRoom001 play in Godot; the bake plays
+
+The user said keep going till the test demo is 1:1 in Godot (DECISIONS 2026-10-28, late night). Built, each its own
+commit: the exporter (a Godot project per game as text, GDEXPORT), the runtime add-on in GDScript (the desk's Play
+ported file by file: play.gd, conditions, actions, interactables, behaviours, todo, life, hud, the flow walker in
+game.gd, scene_player), **GDPLAY** (the Pilot to its good ending), **GDTESTROOM** (TestRoom001's 21 stations, the death
+and retry, the doll's cutscene, every check the desk's testroom.mjs makes; on the way: typing.gd, the candle's light,
+the round's second question, the names as words), and **the bake played** (`tools/godot/bake.mjs` records the Watch
+headless; `bakeplay.gd` poses the shaped MHR body from the skinning matrices and drives the camera and lights; a
+picture `Saved/Story/TestRoom001/godot_reference/s_hello_6s.png`). The desk's own TESTROOM ran here too: its states
+and Godot's agree in flags, karma, counters, items, doors, names and times; the little things' timers differ by the
+drivers' pace. **Next** (GODOT_EXPORT §8, GODOT_PLAN §8): MHR's 72 face shapes into the exported body (the faces),
+the lighting trial, the look (UltraVHS and Light Kit as Godot shaders), the Studio's character look on HumanShaders,
+the little things' effects and sounds, the inventory's pictures, physics (the die, the plushie), the .html guide, the
+export button on the desk, the Inspector resources and AnimationPlayer timelines.
+
+## 0a. Before that (2026-10-28, night, on `godot-support`): Godot started, the export analysed, waiting on the user
 
 The user said to start the Godot side (DECISIONS 2026-10-28, night; the plan docs/GODOT_PLAN.md): main (`dev-002`)
 merged in, Godot 4.7 set up on the cloud (`tools/godot_setup.sh`, GODOT ok: headless and a picture under xvfb on

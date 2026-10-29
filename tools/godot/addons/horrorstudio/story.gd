@@ -222,7 +222,8 @@ static func reply_go(o) -> Array:
 
 ## the scene's timeline (stage.js timeline): segments {type: clip|seam|event|reply|hold, start, end, ...}, elastic
 ## (every length from its clip); picks: {clip id: reply option id, or null}; run_flags/counters: the lines left out
-func timeline(sc: Dictionary, picks: Dictionary = {}, flags: Dictionary = {}, counters: Dictionary = {}) -> Dictionary:
+## all_lines: every line whatever the flags (the desk's script and its bake play them all)
+func timeline(sc: Dictionary, picks: Dictionary = {}, flags: Dictionary = {}, counters: Dictionary = {}, all_lines: bool = false) -> Dictionary:
 	var v := version(sc)
 	var clips: Array = v.get("clips", [])
 	var segs: Array = []
@@ -231,7 +232,7 @@ func timeline(sc: Dictionary, picks: Dictionary = {}, flags: Dictionary = {}, co
 	var i := 0
 	while i < clips.size():
 		var c: Dictionary = clips[i]
-		if not holds(c, flags, counters):
+		if not all_lines and not holds(c, flags, counters):
 			i += 1
 			continue
 		if i > 0 and c.has("seam") and c["seam"] is Dictionary and SEAM_SECS.get(c["seam"].get("kind", ""), 0.0) > 0:
