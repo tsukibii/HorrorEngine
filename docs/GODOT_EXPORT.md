@@ -161,7 +161,14 @@ loads, every verb in the games has a part).
    programme, a phone's lock screen and call), the buzz, the cigarette burnt back by a clip shader. `report()` says
    what each thing shows; GDTESTROOM checks the kettle's LED and steam, the hob's glow and digits, the cup's fill, the
    cigarette's burn, the clock's hands and the TV's static. Pictures: `godot_reference/kitchen_fx_*.png`. Not yet:
-   their sounds (lifesound.js's synthesis) and the sound shelf.
+   their sounds (lifesound.js's synthesis).
+   **The sound shelf** (2026-10-29): the export copies `Content/Studio/SFX` (CC0, 6 MB) into `game/sfx/` with its
+   index; `play_sfx` plays a shelf sound placed in the room (an AudioStreamPlayer3D at the thing or the cast member,
+   inverse distance, from a pool) or on the player, looping as the shelf says, the stream loaded at run time when
+   the project isn't imported yet; the story's `sound` actions, the steps, the knocks, slams, the latch, the
+   flashlight and the scenes' sound cues all go through it; `audio_log` says what played (headless, the audio server
+   is a dummy: the streams load, nothing is heard). GDTESTROOM checks the steps' and the knock's sounds loaded and
+   placed.
 4. **The look** (GODOT_PLAN §6): UltraVHS and Light Kit as shaders and nodes, measured; M_StudioSurface; the
    characters' shaders on HumanShaders (§2 of the plan) with the Studio's colours and patterns checked side by side.
 5. **The rest of §6**: the lives' effects, hiding, reverb, the HUD themes, the pause menu, the little things.

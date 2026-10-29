@@ -171,7 +171,10 @@ func fire_cue(c: Dictionary, t0: float) -> void:
 		run()["lives"].skip(t0 + float(c["t"]), float(d["skip"]))
 	elif d.has("sound"):
 		if rt != null:
-			rt.sounds_heard.append({"n": str(story().sounds.get(str(d["sound"]), {}).get("file", "")).substr(4), "at": d.get("at"), "clock": rt.clock})
+			var sn: String = str(story().sounds.get(str(d["sound"]), {}).get("file", ""))
+			rt.sounds_heard.append({"n": sn.substr(4) if sn.begins_with("sfx/") else sn, "at": d.get("at"), "clock": rt.clock})
+			if sn.begins_with("sfx/"):
+				rt.play_sfx(sn.substr(4), d.get("at"))
 	elif d.has("light") and rt != null:
 		rt.light(d["light"], d.get("room"), d.get("set", "on"))
 	elif d.has("trick") and rt != null and d["trick"] == "lights_die":

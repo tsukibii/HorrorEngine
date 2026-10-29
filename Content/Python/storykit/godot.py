@@ -559,6 +559,9 @@ def export(game, out=None, make_zip=False, do_import=True):
             if ref.startswith("kit/") and LIB.mesh_info(ref):
                 kit_index[ref] = LIB.mesh_info(ref)
     (out / "game" / "kit.json").write_text(json.dumps(kit_index, separators=(",", ":")), encoding="utf-8")
+    sfx = ROOT / "Content" / "Studio" / "SFX"                      # the sound shelf (docs/SFX.md, CC0): every sound and its index
+    if (sfx / "index.json").exists():
+        shutil.copytree(sfx, out / "game" / "sfx", ignore=shutil.ignore_patterns("*.import", "__pycache__"))
     if arts and do_import:
         import_project(out)
     (out / "game" / "export.json").write_text(json.dumps({"game": game, "story": str(path), "levels": levels, "pieces": len(pieces), "arts": arts, "bake": (previs / "preview.json").exists(), "bodies": baked,

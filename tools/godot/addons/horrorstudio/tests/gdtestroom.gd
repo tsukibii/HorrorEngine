@@ -383,6 +383,9 @@ func _initialize() -> void:
 			var st := steps_on()
 			if st.is_empty() or st.any(func(f): return f != "dirt"):
 				return "steps in the yard: " + JSON.stringify(st)
+			var stepped: Array = rt.audio_log.filter(func(a): return str(a["n"]).begins_with("step_"))   # the steps' sounds loaded
+			if stepped.is_empty() or stepped.any(func(a): return not a["loaded"]):
+				return "the steps off the shelf: " + JSON.stringify(stepped.slice(0, 3))
 			return "")
 		await step("the front door: a click opens it (the task ticks), through it into the lobby (it ticks), and the station ends", func():
 			place(1.5, -5.9, 90)
@@ -473,6 +476,9 @@ func _initialize() -> void:
 				return r2
 			if knocks() == 0 and not g.hud.logs.any(func(l): return str(l).contains("knock")):
 				return "no knock heard"
+			var played: Array = rt.audio_log.filter(func(a): return str(a["n"]).begins_with("knock"))   # off the shelf, placed at the door
+			if played.is_empty() or not played[0]["loaded"] or played[0]["at"] == null:
+				return "the knock off the shelf: " + JSON.stringify(played.slice(0, 2))
 			await press("S")
 			await game_wait(0.3)
 			return "")

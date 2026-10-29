@@ -33,6 +33,7 @@ var run = null
 var progress: Dictionary = {"visited": {}, "endings": []}
 var watch_end = null
 var ending_words: String = ""
+var sfx_index: Dictionary = {}     # game/sfx/index.json: the sound shelf (name -> file, loop...)
 var kit_index: Dictionary = {}     # game/kit.json: the kit things' sockets and slots, by their mesh ref (lifefx.gd)
 var bake = null                    # the desk's bake (game/previs/index.json): the scenes as recorded, or null
 var body_scenes: Dictionary = {}   # cast id -> the PackedScene of its baked body
@@ -59,6 +60,10 @@ func _ready() -> void:
 		lives_data = JSON.parse_string(FileAccess.get_file_as_string("res://game/lives.json"))
 	if FileAccess.file_exists("res://game/life_things.json"):
 		life_things = JSON.parse_string(FileAccess.get_file_as_string("res://game/life_things.json"))
+	if FileAccess.file_exists("res://game/sfx/index.json"):
+		var sj = JSON.parse_string(FileAccess.get_file_as_string("res://game/sfx/index.json"))
+		if sj is Dictionary:
+			sfx_index = sj.get("sounds", {})
 	if FileAccess.file_exists("res://game/kit.json"):
 		kit_index = JSON.parse_string(FileAccess.get_file_as_string("res://game/kit.json"))
 	if FileAccess.file_exists("res://game/previs/index.json"):

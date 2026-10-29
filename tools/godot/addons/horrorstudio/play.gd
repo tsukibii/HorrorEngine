@@ -106,6 +106,9 @@ var step_count: int = 0
 var cast_walk: Dictionary = {}
 var cast_step: Dictionary = {}
 var sounds_heard: Array = []
+var audio_log: Array = []            # every shelf sound played: {n, loaded, at}
+var sfx_streams: Dictionary = {}     # name -> AudioStream, loaded once
+var sfx_players: Array = []          # a pool of AudioStreamPlayer3D / AudioStreamPlayer under the world
 const LifeFxC := preload("res://addons/horrorstudio/lifefx.gd")
 var lifefx = null                    # the little things' effects (lifefx.gd), on this level
 var scene_light_k: Dictionary = {}
@@ -278,6 +281,8 @@ func ability_crouch(dt: float) -> void:
 func enter_level(lid: String) -> void:
 	if level == lid and game.level != null and game.level_id == lid:
 		return
+	stop_sfx()                                 # the old level's loops end with it
+	sfx_players = []
 	var first := not kept.has(lid)
 	if first or game.level_id != lid:
 		game.enter_level(lid, first)
@@ -620,6 +625,84 @@ func shelf_sound(name: String, at = null, db: float = 0.0, floor_ = null) -> voi
 	sounds_heard.append({"n": name, "at": at, "db": db, "clock": clock, "floor": floor_})
 	if sounds_heard.size() > 400:
 		sounds_heard.pop_front()
+	play_sfx(name, at, db)
+
+
+## where a sound is placed: a thing (its node), a cast member (her stand-in, else her behaviour's spot), a point
+func sound_pos(at) -> Variant:
+	if at is Vector3:
+		return at
+	if at == null:
+		return null
+	var t = by_id.get(at)
+	if t != null:
+		return t["node"].global_position
+	if cast_nodes.has(at):
+		return cast_nodes[at].global_position
+	var n = npcs.get(at)
+	if n != null and n["pos"] != null:
+		return n["pos"]
+	return null
+
+
+## a sound off the shelf (game/sfx/, docs/SFX.md): placed in the room when it has a place (quieter across it, from its
+## side), else on the player; looping ones loop as the shelf says. Headless, the stream still loads: audio_log says
+func play_sfx(name: String, at = null, db: float = 0.0) -> void:
+	var s: Dictionary = game.sfx_index.get(name, {})
+	var st: AudioStream = sfx_stream(name, str(s.get("file", "")))
+	var pos = sound_pos(at)
+	audio_log.append({"n": name, "loaded": st != null, "at": pos})
+	if audio_log.size() > 200:
+		audio_log.pop_front()
+	if st == null:
+		return
+	var p = null
+	for q in sfx_players:
+		if is_instance_valid(q) and not q.playing and ((q is AudioStreamPlayer3D) == (pos != null)):
+			p = q
+			break
+	if p == null:
+		if sfx_players.size() >= 24:
+			return
+		p = AudioStreamPlayer3D.new() if pos != null else AudioStreamPlayer.new()
+		if p is AudioStreamPlayer3D:
+			p.unit_size = 1.0
+			p.max_distance = 30.0
+			p.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
+		game.world.add_child(p)
+		sfx_players.append(p)
+	p.stream = st
+	p.volume_db = db
+	if p is AudioStreamPlayer3D:
+		p.global_position = pos
+	if "loop" in st:
+		st.loop = bool(s.get("loop", false))
+	p.play()
+
+
+func sfx_stream(name: String, file: String) -> AudioStream:
+	if sfx_streams.has(name):
+		return sfx_streams[name]
+	var st: AudioStream = null
+	if file != "":
+		var path := "res://game/sfx/" + file
+		if ResourceLoader.exists(path):
+			st = load(path)
+		elif FileAccess.file_exists(path):
+			if file.ends_with(".ogg"):
+				st = AudioStreamOggVorbis.load_from_file(path)
+			elif file.ends_with(".wav"):
+				st = AudioStreamWAV.load_from_file(path)
+			elif file.ends_with(".mp3"):
+				st = AudioStreamMP3.load_from_file(path)
+	sfx_streams[name] = st
+	return st
+
+
+func stop_sfx() -> void:
+	for q in sfx_players:
+		if is_instance_valid(q):
+			q.stop()
 
 
 func set_visible(id, on: bool, restoring: bool = false) -> void:
