@@ -448,13 +448,18 @@ func _initialize() -> void:
 			var vhsn = g.get_node("VHS")
 			vhsn.preset("camhybrid")
 			await frames(2)
-			var sft = g.camera.get_node_or_null("Soften")
-			if sft == null or not (sft is HSSoften) or float(sft.mat.get_shader_parameter("far_m")) != 7.0 or float(vhsn.mat.get_shader_parameter("distortion")) != 0.045:
+			var sft = HSSoften.on(g.camera)                            # on the camera's compositor, after the transparents (the digits, the steam and the glows stay)
+			if sft == null or float(sft.far_m) != 7.0 or float(vhsn.mat.get_shader_parameter("distortion")) != 0.045:
 				return "camhybrid: softener %s, distortion %s" % [sft, vhsn.mat.get_shader_parameter("distortion")]
+			if sft.effect_callback_type != CompositorEffect.EFFECT_CALLBACK_TYPE_POST_TRANSPARENT:
+				return "the softener should run after the transparents: %d" % sft.effect_callback_type
+			await frames(4)
+			if sft.rd != null and (not sft.ready_ or sft.frames < 1):   # headless has no rendering device: the pass can't run there
+				return "the softener's pass didn't run: ready %s, frames %d" % [sft.ready_, sft.frames]
 			vhsn.preset("off")
 			await frames(2)
-			if is_instance_valid(sft) and not sft.is_queued_for_deletion():
-				return "off should free the softener"
+			if HSSoften.on(g.camera) != null:
+				return "off should take the softener off the compositor"
 			return "")
 		await step("the front door: a click opens it (the task ticks), through it into the lobby (it ticks), and the station ends", func():
 			place(1.5, -5.9, 90)

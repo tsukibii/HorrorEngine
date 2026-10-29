@@ -88,6 +88,9 @@ def main():
     checks.append(("the mirror reflects the room (the bulb's glint in its upper half: a peak well over the wall beside it and over its own lower half; drawn every frame it's in view)", rep["mirror_top"]["max"] > rep["mirror_wall"]["mean"] * 1.2 and rep["mirror_top"]["max"] > rep["mirror_bottom"]["max"] * 1.6 and rep.get("mirror_frames", 0) >= 20))
     checks.append(("the sweat glints (a brighter peak than dry skin)", rep["skin_sweat"]["max"] > rep["skin_dry"]["max"] * 1.02))
     checks.append(("the oil glosses (the fill light's glint, a tight bright spot dry skin hasn't)", rep["glint_oil"]["max"] > rep["glint_dry"]["max"] * 1.15))
+    checks.append(("the softener keeps a checker at arm's length nearly as sharp (over 0.6 of unsoftened)", rep.get("soften_near_on", 0) > rep.get("soften_near_off", 1) * 0.6))
+    checks.append(("and softens one across the room (under 0.8 of unsoftened, and more than the near one)", rep.get("soften_far_on", 1) < rep.get("soften_far_off", 1) * 0.8 and rep.get("soften_far_on", 1) / max(rep.get("soften_far_off", 1), 1e-9) < rep.get("soften_near_on", 0) / max(rep.get("soften_near_off", 1), 1e-9)))
+    checks.append(("a glow drawn after the opaque pass survives the softener (the digits, LEDs and steam: at least 0.7 of its peak)", rep.get("soften_glow_on", {}).get("max", 0) > rep.get("soften_glow_off", {}).get("max", 1) * 0.7 and rep.get("soften_frames", 0) >= 1))
     ok = True
     for what, good in checks:
         print(("  ok  " if good else "  BAD ") + what)

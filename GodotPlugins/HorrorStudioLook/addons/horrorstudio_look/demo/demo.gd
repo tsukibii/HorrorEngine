@@ -22,8 +22,11 @@ var spheres: Array = []
 var report := {}
 var prev: Image = null
 var skin_mode := false
+var near_q: MeshInstance3D = null      # the softener's stage: a fine checker close, one far, a glow between
+var far_q: MeshInstance3D = null
+var glow_q: MeshInstance3D = null
 
-const STAGES := ["plain", "realism", "wet", "blood_rain", "mirror", "skin"]
+const STAGES := ["plain", "realism", "wet", "blood_rain", "mirror", "skin", "soften_off", "soften"]
 
 
 func _initialize() -> void:
@@ -143,6 +146,45 @@ func screen_rect(q: MeshInstance3D, size: Vector2) -> Rect2i:
 	return Rect2i(Vector2i(lo) + Vector2i(2, 2), Vector2i(hi - lo) - Vector2i(4, 4))
 
 
+## how sharp a box of the picture is: the variance of its Laplacian (edges strong or smeared)
+func sharpness(img: Image, r: Rect2i) -> float:
+	var sum := 0.0
+	var sq := 0.0
+	var cnt := 0
+	for y in range(r.position.y + 1, r.end.y - 1):
+		for x in range(r.position.x + 1, r.end.x - 1):
+			var l := 4.0 * img.get_pixel(x, y).get_luminance() - img.get_pixel(x - 1, y).get_luminance() - img.get_pixel(x + 1, y).get_luminance() - img.get_pixel(x, y - 1).get_luminance() - img.get_pixel(x, y + 1).get_luminance()
+			sum += l
+			sq += l * l
+			cnt += 1
+	if cnt == 0:
+		return 0.0
+	var m := sum / cnt
+	return sq / cnt - m * m
+
+
+func checker_quad(size: float, cells: int, at: Vector3) -> MeshInstance3D:
+	var img := Image.create(64, 64, false, Image.FORMAT_RGB8)
+	for y in 64:
+		for x in 64:
+			var on := ((x / 8) + (y / 8)) % 2 == 0
+			img.set_pixel(x, y, Color(0.9, 0.9, 0.9) if on else Color(0.1, 0.1, 0.1))
+	var tex := ImageTexture.create_from_image(img)
+	var q := MeshInstance3D.new()
+	var qm := QuadMesh.new()
+	qm.size = Vector2(size, size)
+	q.mesh = qm
+	var m := StandardMaterial3D.new()
+	m.albedo_texture = tex
+	m.uv1_scale = Vector3(cells / 8.0, cells / 8.0, 1.0)
+	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED                # its contrast the texture's own, wherever the lamp is
+	q.material_override = m
+	q.position = at
+	world.add_child(q)
+	return q
+
+
 func diff(a: Image, b: Image, x0: int, y0: int, x1: int, y1: int) -> float:
 	var s := 0.0
 	var cnt := 0
@@ -210,6 +252,15 @@ func _process(_d: float) -> bool:
 			report["glint_dry"] = measure(img, 325, 360, 480, 560)      # the lower right of each sphere: the fill's glint
 			report["glint_sweat"] = measure(img, 640, 360, 800, 560)
 			report["glint_oil"] = measure(img, 955, 360, 1110, 560)
+		"soften_off", "soften":
+			var img := shot(name)
+			var tag := "off" if name == "soften_off" else "on"
+			report["soften_near_" + tag] = sharpness(img, screen_rect(near_q, Vector2(0.5, 0.5)))
+			report["soften_far_" + tag] = sharpness(img, screen_rect(far_q, Vector2(3.0, 3.0)))
+			report["soften_glow_" + tag] = measure(img, screen_rect(glow_q, Vector2(0.12, 0.12)).position.x - 2, screen_rect(glow_q, Vector2(0.12, 0.12)).position.y - 2, screen_rect(glow_q, Vector2(0.12, 0.12)).end.x + 2, screen_rect(glow_q, Vector2(0.12, 0.12)).end.y + 2)
+			if name == "soften":
+				var sft := HSSoften.on(cam)
+				report["soften_frames"] = sft.frames if sft != null else -1
 	stage += 1
 	if stage >= STAGES.size() or only != "":
 		finish()
@@ -255,6 +306,27 @@ func setup(name: String) -> void:
 			var sb := StaticBody3D.new()                   # the mirror's body, so the ray finds the wall behind it and not the glass
 			world.add_child(sb)
 			HSMirror.attach(mirror_q, 0, cam, 288)
+		"soften_off":
+			for sp in spheres:
+				sp.visible = false
+			cam.position = Vector3(0, 1.2, 2.5)
+			cam.look_at(Vector3(0, 1.2, -5.0))
+			near_q = checker_quad(0.5, 32, Vector3(-0.45, 1.05, 1.8))          # 0.7 m from the eye
+			far_q = checker_quad(3.0, 32, Vector3(0.8, 1.4, -2.9))            # 5.4 m
+			glow_q = MeshInstance3D.new()                                      # a glow drawn in the transparent pass (an LED, a digit, steam)
+			var gm := QuadMesh.new()
+			gm.size = Vector2(0.12, 0.12)
+			glow_q.mesh = gm
+			var m := StandardMaterial3D.new()
+			m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+			m.albedo_color = Color(1.0, 0.6, 0.2, 1.0)
+			glow_q.material_override = m
+			glow_q.position = Vector3(1.0, 0.3, 0.0)                           # 2.5 m, low on the right, clear of both checkers
+			world.add_child(glow_q)
+		"soften":
+			HSSoften.attach(cam).set_amounts(0.9, 7.0, 1.6, 0.25)
 		"skin":
 			cam.position = Vector3(0, 1.0, 1.2)
 			cam.look_at(Vector3(0, 1.0, -0.8))

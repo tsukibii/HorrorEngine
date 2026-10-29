@@ -67,7 +67,9 @@ over a card; **Q lowers the thing in the hand**. **Their second run** (the after
 Godot too (its copy was shown again every frame); **the exported level in folders by kind** (Ground, Walls,
 Ceilings, Doors, Things, Lights, Glass, Triggers, Spots, People, GI; `game.pieces()` reads through them); **the
 `camhybrid` tape** (VHS.md §5: the camcorder with half the fisheye and its blur only with distance, `HSSoften` a
-depth-aware softener on the camera; `docs/godot_sheets/2026-10-29_camhybrid.jpg`). Open from those runs: the
+depth-aware softener on the camera; `docs/godot_sheets/2026-10-29_camhybrid.jpg`). **Their third**: under camhybrid
+the LED digits and the steam had vanished (the softener had been a quad over the screen texture, the opaque pass
+only); it's a CompositorEffect after the transparents now (`2026-10-29_camhybrid_led.jpg`). Open from those runs: the
 square light patch under a distant counter (GODOT_LOOK §7).
 
 **Open, for the user:** a run on the 3090 (`python tools/godot_export.py --game TestRoom001 --testroom`, then the

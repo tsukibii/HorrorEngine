@@ -22,6 +22,9 @@ The user's answers, newest first. They override the plan, the research and the d
   much on objects that are closer; close to something it should be almost sharp, still some softening: call it
   `camhybrid`."** The new preset: half the fisheye, the tape's own blur a third, and the softener (`HSSoften`, a
   depth-aware post-process on the camera): sharp to 0.9 m but for a quarter pixel, fully soft from 7 m.
+- **"camhybrid is buggy: the LED UI doesn't work, we don't see steam when turning things on."** The softener had
+  been a quad reading the screen texture (the opaque pass only) and painted over every transparent thing; it's a
+  CompositorEffect after the transparents now, and the test room checks a digit and the kettle's steam survive it.
 
 - **"Let's remove the forced turn away (look up) after we interact with the person; in general let's make a note to
   avoid that effect, as upon testing it breaks immersion."** The rule, for every runtime and every stitch: the

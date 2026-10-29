@@ -1,10 +1,10 @@
 ## A picture of the game at a spot, at a time of day, lit one way or another (the lighting trial, GODOT_PLAN §4; the
 ## guide's pictures): --node=n_x --at=x,y,yaw,pitch (story metres, degrees) --time=day|dusk|night
-## --gi=none|sdfgi|voxel --ao=0|1 --ssil=0|1 --power=0|1 --vhs=off|camcorder|worn --amb=ENERGY --take=id,id (into the row) --behave=cid,as[,route or spot] (a cast member set going) --cast=id (the eye in front of their stand-in) --mirrors=1 (each mirror's own picture beside the shot) --shot=PATH [--wait=N frames]
+## --gi=none|sdfgi|voxel --ao=0|1 --ssil=0|1 --power=0|1 --vhs=off|camcorder|worn --amb=ENERGY --take=id,id (into the row) --behave=cid,as[,route or spot] (a cast member set going) --cast=id (the eye in front of their stand-in) --state=id:state,id:state (little things set going) --mirrors=1 (each mirror's own picture beside the shot) --shot=PATH [--wait=N frames]
 extends SceneTree
 var g
 var n := 0
-var o := {"node": "", "at": "", "time": "", "gi": "none", "ao": "0", "ssil": "0", "power": "1", "vhs": "off", "shot": "res://look.png", "wait": "30", "amb": "", "take": "", "cast": "", "behave": "", "mirrors": "0"}
+var o := {"node": "", "at": "", "time": "", "gi": "none", "ao": "0", "ssil": "0", "power": "1", "vhs": "off", "shot": "res://look.png", "wait": "30", "amb": "", "take": "", "cast": "", "behave": "", "mirrors": "0", "state": ""}
 var done := false
 var placed := false
 var baked := false
@@ -42,6 +42,11 @@ func _process(_d: float) -> bool:
 			if b.size() > 2:
 				spec["route" if spec["as"] == "path" else "at"] = b[2]
 			rt.behave(b[0], spec)
+		if o["state"] != "":                              # little things set going: --state=kitchen_rice:cooking,kitchen_kettle:heating
+			for pair in o["state"].split(","):
+				var kv: PackedStringArray = pair.split(":")
+				if kv.size() == 2:
+					rt.set_state(kv[0], kv[1], "look")
 		if o["take"] != "":                               # things into the inventory's row, shown (its live slots pictured)
 			for id in o["take"].split(","):
 				if rt.things.has(id):

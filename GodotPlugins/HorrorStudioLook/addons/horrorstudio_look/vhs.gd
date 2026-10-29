@@ -103,16 +103,14 @@ func preset(name: String) -> void:
 	mat.set_shader_parameter("strength", strength)
 
 
-## the softener on the viewport's camera (HSSoften) for a preset that asks for it ([near, far, pixels, least]), off for one that doesn't
+## the softener on the viewport's camera's compositor (HSSoften) for a preset that asks for it ([near, far, pixels, least]), off for one that doesn't
 func _soften(amounts) -> void:
 	var vp := get_viewport()
 	var cam: Camera3D = vp.get_camera_3d() if vp != null else null
 	if cam == null:
 		return
-	var have = cam.get_node_or_null("Soften")
 	if amounts == null or not (amounts is Array):
-		if have != null:
-			have.off()
+		Soften.detach(cam)
 		return
 	var sft = Soften.attach(cam)
 	sft.set_amounts(float(amounts[0]), float(amounts[1]), float(amounts[2]), float(amounts[3]) if amounts.size() > 3 else 0.25)
