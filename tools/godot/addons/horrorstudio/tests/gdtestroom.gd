@@ -629,7 +629,14 @@ func _initialize() -> void:
 			if r != "":
 				return r
 			await use("store_plush", 0.8)
-			return await ticked("t5_plush")))
+			r = await ticked("t5_plush")
+			if r != "":
+				return r
+			await game_wait(0.4)
+			var hd = rt.physics.hand                            # the plushie in the hand: its copy sprung after the hand, soft
+			if hd == null or hd["s"]["name"] != "plushie" or not hd["node"].visible or hd["node"].get_child_count() == 0:
+				return "the plushie in the hand: " + JSON.stringify({"hand": hd != null, "kind": hd["s"]["name"] if hd != null else null})
+			return ""))
 
 	await station("n_kitchen", func():
 		await step("6 · Little things: Aoi asks for the kettle (her name by the task); a click switches it on, it boils by itself and ticks, and she walks off and sits", func():
@@ -784,12 +791,19 @@ func _initialize() -> void:
 			var r := await enter_room("door_games", "games")
 			if r != "":
 				return r
+			var die0: Vector3 = rt.by_id["games_die"]["node"].global_position
 			var d := await use("games_die", 1.1)
 			if d.get("cursor") != "roll":
 				return "the die: " + JSON.stringify(d)
+			await frames(3)
+			if not rt.physics.rolling("games_die"):
+				return "the die isn't rolling (a rigid body thrown)"
 			r = await ticked("t9_die", "the die settled")
 			if r != "":
 				return r
+			var die1: Vector3 = rt.by_id["games_die"]["node"].global_position
+			if die1.distance_to(die0) < 0.03 or die1.y < 0.05 or die1.y > 1.2:
+				return "the die settled at %s from %s" % [die1, die0]
 			await use("games_table", 1.0)
 			if not await until(func(): return not g.hud.choice_over, 6000):
 				return "the game's call never came"

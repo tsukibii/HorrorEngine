@@ -169,6 +169,13 @@ loads, every verb in the games has a part).
    flashlight and the scenes' sound cues all go through it; `audio_log` says what played (headless, the audio server
    is a dummy: the streams load, nothing is heard). GDTESTROOM checks the steps' and the knock's sounds loaded and
    placed.
+   **Physics** (2026-10-29, `physics.gd`, physics.js ported onto Godot's own bodies): the thing in the hand is a copy
+   of it (its art or its block) sprung after the hand each frame with its kind's stiffness and give, dipping with
+   each step, kept off the walls; a plushie squashes and stretches with the hand's acceleration and its top leans
+   (the copy tilted from its base: the desk bends the mesh in a shader); a die is a RigidBody3D with the kind's mass,
+   bounce, friction and damping, thrown from the hand against the level's own static bodies, its pips drawn on a
+   six-surface mesh, the face on top read when it sleeps (or after 8 s), `rolled` heard then. GDTESTROOM checks the
+   plushie's copy in the hand and the die thrown, settled off its start, on the floor.
 4. **The look** (GODOT_PLAN §6): UltraVHS and Light Kit as shaders and nodes, measured; M_StudioSurface; the
    characters' shaders on HumanShaders (§2 of the plan) with the Studio's colours and patterns checked side by side.
 5. **The rest of §6**: the lives' effects, hiding, reverb, the HUD themes, the pause menu, the little things.

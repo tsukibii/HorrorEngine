@@ -110,6 +110,8 @@ var audio_log: Array = []            # every shelf sound played: {n, loaded, at}
 var sfx_streams: Dictionary = {}     # name -> AudioStream, loaded once
 var sfx_players: Array = []          # a pool of AudioStreamPlayer3D / AudioStreamPlayer under the world
 const LifeFxC := preload("res://addons/horrorstudio/lifefx.gd")
+const PhysC := preload("res://addons/horrorstudio/physics.gd")
+var physics = null                   # physics.gd: the thing in the hand, the dice
 var lifefx = null                    # the little things' effects (lifefx.gd), on this level
 var scene_light_k: Dictionary = {}
 var baked_cast: Dictionary = {}      # cast ids whose baked body is showing (their stand-ins hidden)   # a scene's recorded flicker: a multiplier a light while the bake plays
@@ -372,6 +374,9 @@ func enter_level(lid: String) -> void:
 
 	lifefx = LifeFxC.new(self, game.kit_index)   # the little things' effects, on this level's things
 	lifefx.attach()
+	if physics != null:
+		physics.clear()
+	physics = PhysC.new(self)
 
 func _tag(tags: Array, pre: String):
 	for t in tags:
@@ -994,25 +999,13 @@ func end(r: Dictionary) -> void:
 
 # ---- a die (use: roll): thrown ahead, its face heard when it settles (no physics yet: a moment, then a face) ----
 func rolling(id) -> bool:
-	return rolls.has(id)
+	return physics != null and physics.rolling(id)
 
 
+## a die thrown from the hand (physics.gd): forward and a little up, spinning; `rolled` with its face when it settles
 func roll(t: Dictionary, s: Dictionary) -> void:
-	var id = t["id"]
-	rolls[id] = true
-	var a := deg_to_rad(float(player.yaw))
-	var fwd := Vector3(cos(a), 0, -sin(a))
-	var at: Vector3 = player.pos + fwd * 1.4
-	await wait(1.2)
-	if stopped:
-		return
-	var h := float(t["size"][2])
-	t["node"].transform = Transform3D(Basis(Vector3.UP, randf() * TAU), Vector3(at.x, ground_at(at, 0.5) + h / 2.0, at.z))
-	kept[level]["bodies"][id] = t["node"].transform
-	rolls.erase(id)
-	var face := 1 + randi() % 6
-	hud.log("rolled %d" % face)
-	emit({"type": "rolled", "id": id, "face": face})
+	if physics != null:
+		physics.throw_die(t, s)
 
 
 # ---- the inventory: taking a thing, the one in the hand, setting it down -------------------------------------
@@ -1049,6 +1042,8 @@ func take(t: Dictionary) -> void:
 	var e := {"id": id, "item": d.get("item"), "name": title_of(t) if title_of(t) != null else name_of(t), "kind": "carry" if t["use"] == "carry" else "pickup", "level": level, "thing": t}
 	inv.append(e)
 	inv_at = inv.size() - 1
+	if physics != null:
+		physics.take(e)                           # a copy of it for the hand
 	inv_draw(true)
 	if e["item"] != null:
 		give(e["item"])
@@ -1067,6 +1062,8 @@ func inv_has(id) -> bool:
 func inv_remove(id) -> void:
 	for i in inv.size():
 		if inv[i]["id"] == id:
+			if physics != null:
+				physics.release(inv[i])
 			inv.remove_at(i)
 			if inv.is_empty():
 				inv_at = -1
@@ -2016,6 +2013,8 @@ func tick(dt: float) -> void:
 	life_lights()
 	if lifefx != null:
 		lifefx.update(now())
+	if physics != null:
+		physics.tick(dt)
 	if torch_hot != null:
 		if torch_item() == null:
 			torch["on"] = false
