@@ -34,6 +34,9 @@ screen-space effects that a big scene can't afford are cheap here, and they're t
 | Grade | contrast 1.08, saturation 1.04 | pushed a touch past neutral, under the tape (UltraVHS) when the game wears it |
 | GI | the export's VoxelGI per room (baked at the first load, cached) | GODOT_PLAN §4: SDFGI and one big VoxelGI miss 10 cm walls |
 
+LightmapGI stays out: its `bake()` is editor-only in 4.7 (no such method from a script; measured 2026-10-29 with a probe
+under xvfb), so an export's light can't be baked headless where the checks run. The VoxelGI per room is the baked GI.
+
 `plain` is everything off (Filmic, no AA, no effects): a look at the geometry. The pause menu's Graphics rows pare
 the preset back on a slower machine (`HSLook.quality`: Reflections Low no SSR, Medium half its steps; Post-processing
 Low no glow, SSAO or SSIL, Medium no SSIL; Effects Low no haze; Global illumination Low no SSIL), never add to it.
@@ -77,6 +80,7 @@ and TIME: it falls at its own speed, wraps at the box's floor, leans and drifts 
 and fades near the eye (a drop a hand away would be a bar) and at the box's top and bottom. Additive, soft along and
 across. No particle system to tick: a few hundred streaks in a room, a few thousand outdoors, two triangles each.
 `follow` a node to keep the rain round the player outside.
+
 
 ## 5. Wet and oiled skin (`skin_wet.gdshader`, `HSSkin`): HumanShaders implemented
 
@@ -127,6 +131,14 @@ Pictures in `Saved/Story/_look/godot_people/`. In a game, the export copies ever
 into `game/people/`, and **every baked body in a scene wears HSSkin** (`bakeplay.gd` `make_bodies`: the desk's MHR
 bodies with their tone, a Studio export with its paint; GDTESTROOM checks Aoi's at station 1).
 
+**The desk draws the same layer** (`tools/shared/skinwet.js`, 2026-10-29): the film, beads, drips and oil as here
+(the same hashes and numbers), patched into three's standard material over the desk's clay MHR body, a Studio export's
+skinLit skin and the figure of cylinders; the beads' domes bend the normal in a frame from the screen's derivatives
+(no tangents on the desk's bodies), the layer's 4 % goes into skinlight.js's highlight (`swGloss`). `Stage.setSkin`
+keeps what the run set per cast member and puts it on any body she's given later (a model switched, a new level);
+Play's `skin` action and the Watch's `skin` cues call it. A sheet of the five states on the Studio's test export:
+`Saved/Story/_look/desk_skin.png` (made by hand; TESTROOM checks the kitchen's beat lands on Aoi's body).
+
 ## 6. The story's words, and the check
 
 - `game.look`: `realism` (the default) or `plain` (STORY_FORMAT §9.1); `game.weather`: `rain` puts HSRain over every
@@ -147,7 +159,7 @@ bodies with their tone, a Studio export with its paint; GDTESTROOM checks Aoi's 
 
 - The characters: the Studio's paint and eye measured beside the Studio's own render (the three.js side), not only
   against the baked texture and by the pupil's shift; the skin's own light (studioSkin: the Unreal side's
-  M_StudioSkin numbers) onto HSSkin's sliders; the desk's stage drawing the `skin` word too.
+  M_StudioSkin numbers) onto HSSkin's sliders.
 - Splashes where the streaks land; the rain's sound following the player; wet walls under a leak.
 - A rain that follows the player outdoors through a level (today each open room has its own box).
 - A `look` per level or scene (today the game's).

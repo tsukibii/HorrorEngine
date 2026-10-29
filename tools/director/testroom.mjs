@@ -344,6 +344,8 @@ const snapFor = nid => {                               // the run's state on rea
       await enterRoom("door_kitchen", "kitchen");
       const t = await tasks(); if (!t.some(x => x.id === "t6_kettle")) throw new Error(JSON.stringify(t));
       if (!/Aoi/.test(await page.textContent('.ph-task[data-id="t6_kettle"]'))) throw new Error("the request has no name by it");
+      const sw = await page.evaluate(() => { const st = window.__dd.watchStage, f = st.cast.aoi; return { set: st.skin.aoi, worn: f.wet, kind: f.constructor.name }; });   // the task's `skin` beat: she sweats in the kitchen, drawn on her body (skinwet.js)
+      if (!sw.set || sw.set.wet !== 0.6 || sw.set.sweat !== 0.4 || !sw.worn || sw.worn.wet !== 0.6 || sw.worn.sweat !== 0.4) throw new Error("her skin: " + JSON.stringify(sw));
       const k = await use("kitchen_kettle", 0.7); if (!/switch on/i.test(k.label)) throw new Error("the kettle says " + k.label);
       await gameWait(0.3); if ((await state("kitchen_kettle")) !== "heating") throw new Error("not heating");
       await ticked("t6_kettle", "the kettle boiled");

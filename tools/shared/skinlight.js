@@ -50,7 +50,11 @@ void RE_Direct_Skin(const in IncidentLight directLight, const in vec3 geometryPo
   #endif
   vec3 H = normalize(V + L);
   float NdotL = saturate(dot(N, L)), NdotV = saturate(dot(N, V)), NdotH = saturate(dot(N, H)), LdotH = saturate(dot(L, H));
-  vec3 f0 = vec3(0.04 * slSpec * slSpec);
+  #ifdef SW_GLOSS
+    vec3 f0 = vec3(0.04 * mix(slSpec * slSpec, 1.0, swGloss));   // the wet layer's own 4 % (skinwet.js) where it lies
+  #else
+    vec3 f0 = vec3(0.04 * slSpec * slSpec);
+  #endif
   float f90 = clamp(50.0 * f0.g, 0.0, 1.0), m = 1.0 - LdotH, m5 = m * m * m * m * m;
   vec3 F = f0 + (f90 - f0) * m5;
   float a = material.roughness * material.roughness;

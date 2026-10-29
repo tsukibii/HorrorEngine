@@ -8,6 +8,7 @@ import { GLTFLoader } from "./vendor/GLTFLoader.js";
 import { FBXLoader } from "./vendor/FBXLoader.js";
 import * as SkeletonUtils from "./vendor/SkeletonUtils.js";
 import { skinLit, setSkinLit } from "../shared/skinlight.js";
+import { skinWet, setSkinWet, wetOf } from "../shared/skinwet.js";   // the story's `skin` word: wet, sweating, dripping, oiled
 
 const norm = s => s.toLowerCase().replace(/mixamorig\d*/g, "").replace(/[^a-z0-9]/g, "");
 const SIDED = {   // previs joint (without side) -> candidate names, X = the side ("l"/"left", "r"/"right")
@@ -233,10 +234,13 @@ export class BodyFigure {
     };
     clay.customProgramCacheKey = () => "inkcel-squash";
     this.model.traverse(o => { if (o.isMesh) { if (!opts.keepMaterials) o.material = clay; o.frustumCulled = false; o.castShadow = false; } });
+    this.skinMats = opts.keepMaterials ? [] : [clay];           // the materials the `skin` word wets (setWet)
     if (opts.keepMaterials) this.model.traverse(o => {      // a Studio export's skin, lit as the Studio lights it (its studioSkin; its maps: the relief, the roughness, the thinness)
       const m = o.isMesh && o.material, sk = m && m.userData && m.userData.studioSkin;
       if (sk && !m.userData.skinLit) { skinLit(m, { thin: "map" }); setSkinLit(m, sk); }
+      if (sk && !this.skinMats.includes(m)) this.skinMats.push(m);
     });
+    for (const m of this.skinMats) skinWet(m);
     const { map, missing } = mapBones(this.model);
     this.map = map; this.missing = missing;
     this.ok = missing.length <= 2;
@@ -543,6 +547,8 @@ export class BodyFigure {
     }
     this.model.updateMatrixWorld(true);
   }
+  setWet(s) { for (const m of this.skinMats) setSkinWet(m, s); }     // the `skin` word: {wet, sweat, drips, oil} (skinwet.js)
+  get wet() { return this.skinMats.length ? wetOf(this.skinMats[0]) : null; }
   setColor(c) { this.model.traverse(o => { if (o.isMesh && o.material && o.material.color) o.material.color.set(c); }); }
   update(pos) {                                  // pos: previs joint -> Vector3 in character space (+ "soma:" joints)
     this.pos = pos;

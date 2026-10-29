@@ -54,8 +54,9 @@ the sheet (does the wet floor, the blood, the rain on the glass and the sweat re
 stand-ins; the eye's size), whether the realism preset's numbers (GODOT_LOOK §1) want pushing further or back, and
 whether the puff shader should go back onto the desk's stage. **Next** (GODOT_EXPORT §8, GODOT_LOOK §7): the
 voices (the takes' audio), the Inspector resources and AnimationPlayer timelines (§3), a cast member's models per
-scene, the Studio's paint and eye measured beside the Studio's own render (the three.js side), the desk's stage
-drawing the `skin` word (built for Godot, 2026-10-29: a scene sweating her), the motion sets on the stand-ins (GAMEPLAY_PLAN), splashes where the rain lands.
+scene, the Studio's paint and eye measured beside the Studio's own render (the three.js side), the motion sets on
+the stand-ins (GAMEPLAY_PLAN), splashes where the rain lands. (The desk's stage draws the `skin` word since the
+morning of the 29th: `tools/shared/skinwet.js`, GODOT_LOOK §5.)
 
 ## 0a. Before that (2026-10-28, night, on `godot-support`): Godot started, the export analysed, waiting on the user
 

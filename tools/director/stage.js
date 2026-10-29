@@ -13,6 +13,7 @@ import { wearEye } from "../shared/eye.js";
 import { stainMaterial } from "./stain.js";
 import * as FACE from "../shared/face.js";      // tools/shared (served at /shared: the page sits at the root)
 import { layUVs } from "./painted.js";
+import { skinWet, setSkinWet, wetOf } from "../shared/skinwet.js";   // the story's `skin` word on the figure of cylinders too
 import { behaviourOf } from "./play/behaviours.js";   // a scene's behave cues play Play's own behaviours (a body track)
 import { settingsOf } from "./play/parts.js";
 const Y_UP = new THREE.Vector3(0, 1, 0);
@@ -329,6 +330,7 @@ export class Figure {
     this.lib = lib; this.height = height || 1.7;
     this.group = new THREE.Group();
     this.mat = new THREE.MeshStandardMaterial({ color, roughness: 0.85, emissive: 0x15120e });
+    skinWet(this.mat); this.skinMats = [this.mat];
     this.bones = [];
     for (const j of lib.joints) {
       if (!j.parent || j.name === "head_end") continue;
@@ -343,6 +345,8 @@ export class Figure {
     this.group.add(this.nose);
     this.pos = null;
   }
+  setWet(w) { setSkinWet(this.mat, w); }                     // the `skin` word (skinwet.js)
+  get wet() { return wetOf(this.mat); }
   setColor(c) { this.mat.color.set(c); }
   update(pos) {                                   // pos: joint -> Vector3 in character space
     this.pos = pos;
@@ -388,6 +392,7 @@ export class Stage {
     this.world = new THREE.Group(); this.scene.add(this.world);
     this.lights = []; this.solid = []; this.cast = {}; this.things = {}; this.level = null;
     this.bodies = {}; this.defaultBody = null;      // loaded body templates by file name (app.js fills them)
+    this.skin = {};                                   // cast id -> {wet, sweat, drips, oil}: the story's `skin` word as the run has set it (setSkin)
     this.free = null;                               // free (orbit) camera state when inspecting from outside
     this.look = { yaw: 0, pitch: 0 };               // the player's own look inside a soft cone
     this.resize();
@@ -470,6 +475,7 @@ export class Stage {
     for (const [cid, c] of Object.entries(story.cast || {})) {
       const f = this.makeFigure(this.dressed(cid, c));
       f.group.visible = false;
+      if (this.skin[cid] && f.setWet) f.setWet(this.skin[cid]);
       this.world.add(f.group); this.cast[cid] = f;
     }
     this.windows = [];                     // a soft light just inside every window, into the room (Light Kit Window's sky fill)
@@ -527,8 +533,20 @@ export class Stage {
       const f = this.makeFigure(d);
       f.group.position.copy(old.group.position); f.group.quaternion.copy(old.group.quaternion); f.group.visible = old.group.visible;
       (old.group.parent || this.world).add(f.group); if (old.group.parent) old.group.parent.remove(old.group);
+      if (this.skin[cid] && f.setWet) f.setWet(this.skin[cid]);
       this.cast[cid] = f;
     }
+  }
+  // the story's `skin` word (STORY_FORMAT §9.8): a cast member's skin wet, sweating, dripping or oiled, on the body she
+  // wears now and on any she's given later (a model switched, a new level); merged with what's set already, returned;
+  // setSkin(null) clears everyone (a new run)
+  setSkin(cid, a) {
+    if (cid === null) { for (const [id, f] of Object.entries(this.cast)) if (f.setWet) f.setWet({ wet: 0, sweat: 0, drips: 0, oil: 0 }); this.skin = {}; return null; }
+    const s = Object.assign({}, this.skin[cid] || {});
+    for (const k of ["wet", "sweat", "drips", "oil"]) if (a && a[k] != null) s[k] = Math.max(0, Math.min(1, +a[k]));
+    this.skin[cid] = s;
+    const f = this.cast[cid]; if (f && f.setWet) f.setWet(s);
+    return s;
   }
 
   // ---- a scene's timeline (elastic: every length comes from its clip) ----------------------------------------

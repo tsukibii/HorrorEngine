@@ -2021,6 +2021,17 @@ function watchSound(c) {
   const o = c.at && ((watchStage.cast || {})[c.at] || (watchStage.byId || {})[c.at]), pos = o && o.getWorldPosition ? o.getWorldPosition(o.position.clone()) : null;     // (a spare vector)
   playShelf(n, pos ? { pos, camera: watchStage.camera } : {});
 }
+// a scene's skin cues (§9.8: a cast member wet, sweating, dripping, oiled), at their times on its timeline
+function skinCues(tl, ver) {
+  const out = [];
+  for (const cu of ver.cues || []) {
+    if (!cu.do || !cu.do.skin) continue;
+    const a = cu.at || {}, sg = tl.segs.find(s => s.type === "clip" && s.clip.id === a.clip && !s.answer);
+    if (sg) out.push({ t: (a.edge === "end" ? sg.end : sg.start) + (+a.offset || 0), who: cu.do.skin, a: cu.do });
+  }
+  return out.sort((x, y) => x.t - y.t);
+}
+function watchSkin(c) { const s = watchStage.setSkin(c.who, c.a); if (RUN && RUN.play) (RUN.play.skinWet = RUN.play.skinWet || {})[c.who] = s; }
 // a scene's sound cues, at their times on its timeline: the ones off the sound shelf play in the Watch (sfx.js)
 function soundCues(tl, ver) {
   const out = [];
@@ -2085,12 +2096,14 @@ async function watchScene(sc, nid, sid, k) {
   let T = 0, last = performance.now(), spoken = null, warned = null;
   const cues = stateCues(tl, sc), t0 = RUN ? RUN.secs : 0;   // the little things set by its cues, at their clip edges
   const sounds = soundCues(tl, sc);                         // and its sounds, off the shelf
+  const skins = skinCues(tl, sc);                           // and its cast's skin, wet or oiled
   while (RUN && T < tl.total) {
     await new Promise(r => requestAnimationFrame(r));
     if (!RUN) break;                                       // stopped while it waited for the frame
     const now = performance.now(); T += (now - last) / 1000; last = now;
     while (cues.length && cues[0].t <= T && RUN.lives) { const c = cues.shift(); if (c.skip) RUN.lives.skip(t0 + c.t, c.skip); else RUN.lives.set(c.id, c.to, t0 + c.t); }
     while (sounds.length && sounds[0].t <= T) { const c = sounds.shift(); if (T - c.t < 0.5) watchSound(c); }
+    while (skins.length && skins[0].t <= T) watchSkin(skins.shift());
     const st = watchStage.stateAt(tl, T, FILES, LOOK);
     if (st.seg && st.seg.type === "event" && !RUN.done.has(st.seg)) { RUN.done.add(st.seg); const ev = st.seg.event, res = await runEvent(ev); RUN.results[nid] = res; karmaAct((ev.on || {})[res]);
       if (ev.type === "choose") { const o = (ev.options || []).find(x => x.id === res); if (o && o.karma !== undefined) { addKarma(RUN.karma, o.karma); RUN.answers.push(`${o.label} (${JSON.stringify(o.karma)})`); } }
@@ -2118,6 +2131,7 @@ async function watchScene(sc, nid, sid, k) {
     if (RUN.skip) { RUN.skip = false; const ne = tl.segs.find(s => (s.type === "event" && s.start > T && !RUN.done.has(s)) || (s.type === "reply" && s.start > T && !replied.has(s.clip.id))); if (ne) { T = ne.start; continue; } break; }   // dev skip: to the next event or reply, else the scene's end
   }
   if (RUN) while (cues.length && RUN.lives) { const c = cues.shift(); if (c.skip) RUN.lives.skip(t0 + c.t, c.skip); else RUN.lives.set(c.id, c.to, t0 + c.t); }   // skipped to its end: its states still change
+  if (RUN) while (skins.length) watchSkin(skins.shift());
   stopTakes(); paintLine(watchHud().line, "");          // the scene's last line goes with it (play may follow straight on)
   if (!RUN) return;
   RUN.secs += tl.total; wclock();
@@ -2333,6 +2347,7 @@ async function watch(fromNid, snap) {
   if (!S) return;
   stopWatch();
   RUN = { secs: 0, flags: new Set(), results: {}, timers: [], trail: [], done: new Set(), karma: {}, counters: {}, answers: [], items: new Set() };
+  if (watchStage) watchStage.setSkin(null);                 // everyone's skin dry again (the `skin` word)
   RUN.lives = new States(LIVES, lifeThings()).start(0);   // the little things: their states through the whole run
   watchStage.soundOn = $("#wThings").checked;
   if (snap) Object.assign(RUN, JSON.parse(JSON.stringify(snap)), { flags: new Set(snap.flags || []), timers: [], done: new Set(), trail: [...(snap.trail || [])], items: new Set(snap.items || []) });
