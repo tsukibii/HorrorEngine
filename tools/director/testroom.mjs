@@ -465,7 +465,9 @@ const snapFor = nid => {                               // the run's state on rea
       await ticked("t11_photo");
       await use("library_shelf", 1.0); await page.waitForSelector(".ph-panel", { timeout: 30000 });
       if (!/labelled with your name/.test(await page.textContent(".ph-panel"))) throw new Error("the shelf's card");
-      await closePanel(); await ticked("t11_shelf");
+      await page.evaluate(() => document.querySelector(".ph-panel").click());     // a click puts a card of words away, like Esc
+      await until(() => !document.querySelector(".ph-panel"), null, "the card closed by a click", 30000);
+      await ticked("t11_shelf");
     });
     await step("the painting looked at two seconds (ticks): the secret, a note slips out (found_painting), and it reads", async () => {
       await goTo("library_painting", 1.6, true); await gameWait(2.6);

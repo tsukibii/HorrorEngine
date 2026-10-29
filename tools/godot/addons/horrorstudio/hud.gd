@@ -395,6 +395,8 @@ func modal(up: bool) -> void:
 	modal_up = up
 	if up:
 		hint_el.visible = false
+	cursor_el.visible = not up                    # no dot and no "Look" over a card (the user's note, 2026-10-29)
+	prompt_el.visible = not up
 
 
 ## the inventory's row: the things themselves, scaled into the slots. Each shown slot is a small viewport with a world
@@ -638,7 +640,7 @@ func panel(spec: Dictionary) -> Variant:
 		text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		text.custom_minimum_size = Vector2(500, 0)
 		v.add_child(text)
-		v.add_child(_label("Esc  Close", 12))
+		v.add_child(_label("Esc or click  Close", 12))
 	root.add_child(panel_el)
 	modal(true)
 	var v2 = await panel_done
@@ -652,6 +654,14 @@ func _finish_panel(v) -> void:
 	panel_el = null
 	modal(false)
 	panel_done.emit(v)
+
+
+## a click while a card of words is up puts it away (a name or a code card keeps waiting for its keys): true when it took it
+func panel_click() -> bool:
+	if panel_el == null or panel_spec.has("name") or panel_spec.has("code"):
+		return false
+	_finish_panel(true)
+	return true
 
 
 ## a key while a card is up: true when it took it

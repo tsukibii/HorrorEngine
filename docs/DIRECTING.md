@@ -6,6 +6,11 @@ What the director's desk encodes, and why. Read before plotting a game.
 
 ## 1. In first person, the camera is the player's eyes
 
+**The eye is never turned for the player after an interaction** (the user, 2026-10-29, testing in Godot: a forced
+turn after talking to someone "breaks immersion"). A scene hands the eye back exactly where its camera ended, a card
+or a thing looked at leaves it where it was, a `lookat` beat is a slow turn the story asks for on purpose, never a
+reset. If a moment needs the eye somewhere, lead it (a sound, a light, her line), don't move it.
+
 - **The cutscene stays in the player's head.** Resident Evil 7 and Village keep their cutscenes in first person:
   characters talk into the camera, and the player is never shown from outside. Village even returns to first person
   for cutscenes after adding a third-person mode. We do the same, so there's no cinematic camera to stage and every

@@ -213,5 +213,8 @@ them off at Low (dull glass) and halves them at Medium (`set_quality`). Not yet:
   against the baked texture and by the pupil's shift; the skin's own light (studioSkin: the Unreal side's
   M_StudioSkin numbers) onto HSSkin's sliders.
 - Wet walls under a leak; a mirror seen in a mirror.
+- Seen by the user (2026-10-29): a square patch of light under a distant counter that goes when you come close.
+  Most likely a VoxelGI cell at its coarse distance (the per-room probes meet at the counter), else the SSIL at a
+  distance. To look at with a card: picture it from far and near, flip GI and SSIL off in the menu, see which goes.
 - A rain that follows the player outdoors through a level (today each open room has its own box).
 - A `look` per level or scene (today the game's).

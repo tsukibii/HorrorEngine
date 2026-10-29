@@ -187,6 +187,8 @@ func _unhandled_input(ev: InputEvent) -> void:
 		ability_look(ev.relative.x, ev.relative.y)
 	elif ev is InputEventMouseButton and ev.pressed:
 		if ev.button_index == MOUSE_BUTTON_LEFT:
+			if hud.panel_el != null and hud.panel_click():      # a card of words (a note, a thing looked at): a click puts it away, like Esc
+				return
 			if not mouse_captured and active and not busy:
 				capture_mouse(true)
 			elif active and not busy and playing == null:
@@ -962,11 +964,12 @@ func panel(spec: Dictionary) -> Variant:
 	return await modal(func(): return await hud.panel(spec))
 
 
+## looking at a thing (`use: inspect`): its name and words on a card; the thing stays where it is (the desk takes a small
+## one up in the hands; here the card alone, so a shelf doesn't vanish while you read it: the user's note, 2026-10-29);
+## Esc, E or a click puts the card away
 func examine(t: Dictionary, title: String, text: String) -> void:
 	examining = t
-	t["node"].visible = false
 	await modal(func(): return await hud.examine({"title": title, "text": text}))
-	t["node"].visible = true
 	examining = null
 
 

@@ -200,12 +200,13 @@ export class Hud {
       const p = mk("div", "ph-exam"), card = mk("div", "ph-card"), hint = mk("div", "ph-exam-hint", "drag to turn it");
       card.append(mk("div", "ph-title", named(spec.title) || ""));
       if (spec.text) card.append(mk("div", "ph-text", named(spec.text)));
-      const back = mk("button", "ph-btn ph-close"); back.append(key("Esc"), mk("span", "", "Put it back"));
+      const back = mk("button", "ph-btn ph-close"); back.append(key("Esc"), mk("span", "", "Put it back (or click)"));
       card.append(back); p.append(hint, card);
       let drag = null, finish;
       p.onpointerdown = e => { if (e.target.closest(".ph-card")) return; drag = { x: e.clientX, y: e.clientY }; p.classList.add("turning"); try { p.setPointerCapture(e.pointerId); } catch (x) { } };
-      p.onpointermove = e => { if (!drag) return; spec.turn(e.clientX - drag.x, e.clientY - drag.y); drag = { x: e.clientX, y: e.clientY }; };
-      p.onpointerup = p.onpointercancel = () => { drag = null; p.classList.remove("turning"); };
+      p.onpointermove = e => { if (!drag) return; moved += Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y); spec.turn(e.clientX - drag.x, e.clientY - drag.y); drag = { x: e.clientX, y: e.clientY }; };
+      let moved = 0;
+      p.onpointerup = p.onpointercancel = e => { const was = drag; drag = null; p.classList.remove("turning"); if (was && moved < 4 && e.type === "pointerup") finish(); moved = 0; };   // a click (no drag) puts it back, like Esc
       const kd = e => { if (e.key === "Escape" || e.code === "KeyE") { e.preventDefault(); finish(); } };
       finish = () => { window.removeEventListener("keydown", kd, true); p.remove(); this.modal(null); done(true); };
       back.onclick = () => finish();
@@ -237,8 +238,9 @@ export class Hud {
         card.append(shown, pad);
         p.keys = e => { if (/^\d$/.test(e.key)) press(e.key); else if (e.key === "Backspace") press("⌫"); else if (e.key === "Enter") press("OK"); };
       } else card.append(mk("div", "ph-text", named(spec.text) || ""));
-      const close = mk("button", "ph-btn ph-close"); close.append(key("Esc"), mk("span", "", "Close")); close.onclick = () => finish(spec.code ? null : true);
+      const close = mk("button", "ph-btn ph-close"); close.append(key("Esc"), mk("span", "", spec.name || spec.code ? "Close" : "Close (or click)")); close.onclick = () => finish(spec.code ? null : true);
       card.append(close); p.append(card);
+      if (!spec.name && !spec.code) p.onclick = e => { if (!e.target.closest("button")) finish(true); };   // a card of words: a click anywhere puts it away, like Esc
       const kd = e => { if (e.key === "Escape") { e.preventDefault(); finish(null); } else if (p.keys) p.keys(e); };
       finish = v => { window.removeEventListener("keydown", kd, true); p.remove(); this.modal(null); done(v); };
       window.addEventListener("keydown", kd, true);

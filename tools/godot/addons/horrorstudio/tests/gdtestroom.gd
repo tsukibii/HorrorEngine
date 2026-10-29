@@ -985,7 +985,16 @@ func _initialize() -> void:
 			await frames(5)
 			if g.hud.panel_el == null or not str(g.hud.panel_el.find_child("Text", true, false).text).contains("labelled with your name"):
 				return "the shelf's card"
-			await close_panel()
+			if not rt.things["library_shelf"]["node"].visible or g.hud.cursor_el.visible or g.hud.prompt_el.visible:   # the shelf stays in view under its card, the dot and "Look" don't
+				return "the shelf's card: the shelf gone %s, the dot %s, the word %s" % [not rt.things["library_shelf"]["node"].visible, g.hud.cursor_el.visible, g.hud.prompt_el.visible]
+			var click := InputEventMouseButton.new()           # a left click puts the card away, like Esc
+			click.button_index = MOUSE_BUTTON_LEFT
+			click.pressed = true
+			rt._unhandled_input(click)
+			if not await until(func(): return g.hud.panel_el == null, 3000):
+				return "a click didn't close the card"
+			if not g.hud.cursor_el.visible:
+				return "the dot should be back after the card"
 			return await ticked("t11_shelf"))
 		await step("the painting looked at two seconds (ticks): the secret, a note slips out (found_painting), and it reads", func():
 			var r := await go_to("library_painting", 1.6, true)

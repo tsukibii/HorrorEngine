@@ -2,6 +2,19 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-29, the user's first Godot run (the test room on their machine)
+
+- **"Let's remove the forced turn away (look up) after we interact with the person; in general let's make a note to
+  avoid that effect, as upon testing it breaks immersion."** The rule, for every runtime and every stitch: the
+  player's eye is never moved for them after an interaction; a scene hands the eye back exactly where its camera
+  ended, a card leaves it where it was. (DIRECTING §1 carries it. Which moment turned the eye is being pinned down.)
+- Reading a thing (`inspect`, a note): the "Look" dot and word don't sit over the card, and **a left click puts the
+  card away** as Esc does (a name or a code card still waits for its keys). The desk the same (a click with no drag).
+- **A thing looked at stays where it is in Godot** (the shelf had vanished while its card was up: the desk takes a
+  small thing up in the hands, Godot showed the card and hid the thing even when it was a shelf).
+- Noted, to look at later: a square patch of light under a distant counter that goes when you come close (the
+  VoxelGI's cells seen from afar, most likely; GODOT_LOOK §7).
+
 ## 2026-10-29, the user's return (the Godot button: a plain project, no windows)
 
 - "When I click Godot, it just launches in headless 3 times and closes (via director), is there a way to just export
