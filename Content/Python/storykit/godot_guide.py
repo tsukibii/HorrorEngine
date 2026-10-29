@@ -85,6 +85,8 @@ The flags and items the stations before it leave are not set then: a scene that 
 <p><b>The controls:</b> <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> walk, <kbd>Shift</kbd> run, <kbd>C</kbd> crouch, the mouse looks, a click uses what the dot is on,
 <kbd>E</kbd> the inventory row, the wheel turns it, <kbd>G</kbd> puts the thing in the hand down, <kbd>F</kbd> the flashlight once you have it, <kbd>Esc</kbd> the pause menu.
 In a scene the mouse looks round within the scene's cone; <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> or <kbd>A</kbd>/<kbd>D</kbd> and <kbd>Enter</kbd> answer a choice.</p>
+{fig(pictures, 'start_day.png', 'The start, by day (made by Godot at the export: --pictures).')}
+{fig(pictures, 'scene_first.png', 'The first scene, three seconds in, played from the desk\'s recording.')}
 {fig(pictures, 's_hello_6s.png', 'A scene played from the desk\'s recording: the cast member\'s own body, the camera where the desk put it.')}
 <table><tr><th>Node</th><th>Type</th><th>Plays</th><th>Title</th></tr>{nodes_rows}</table>
 """))
@@ -174,7 +176,7 @@ run time, its arms brought down from the bind pose (<code>play.gd</code> <code>A
 capsules stands in.</p>
 {fig(pictures, 'look_standin.png', 'A cast member on her route: her own body as the stand-in.')}
 """))
-    body.append(section("lights", 7, "The lights, the time of day, baking", """
+    body.append(section("lights", 7, "The lights, the time of day, baking", f"""
 <p>Every story light is an <code>OmniLight3D</code> in the level with <code>metadata/light</code> (its kind: bulb, lamp, candle...; its room; its flicker; whether
 it starts lit). The power cut, the breaker, <code>light</code> actions and the scenes' recorded flicker all drive <code>light_energy</code> at run time, so
 these lights must stay dynamic. Windows are <code>SpotLight3D</code>s with <code>metadata/window</code>, set by the time of day.</p>
@@ -184,8 +186,10 @@ sky's colour, the ambient and the windows from <code>TIME_LOOK</code> (day, dusk
 <code>MeshInstance3D</code>s to <code>Static</code> global illumination mode (they carry UV2 already: <code>add_uv2</code>), and press <span class="ui">Bake Lightmaps</span>.
 Keep the story lights dynamic. A level with more than one lighting state (the power cut) wants one bake per state: GODOT_EXPORT.md §6 lays out the
 plan (a LightmapGI per state, swapped by the runtime).</p>
-<div class="notyet"><b>Not built yet:</b> the export doesn't bake. The lighting trial (GODOT_PLAN.md §4: the hall lit three ways, VoxelGI for the
-moving lights, baked lightmaps per state) is the next step of the look.</div>
+<p><b>What the export bakes:</b> a <code>VoxelGI</code> per room, baked at the game's first load and kept in <code>user://gi/</code> (the lighting trial,
+GODOT_PLAN.md §4: it gives the bounce the thin walls need). <code>LightmapGI</code>'s bake is the editor's alone (no script can call it in 4.7), so it stays
+yours to press.</p>
+{fig(pictures, 'start_night.png', 'The same start at night: the sky, the windows and the ambient from the time of day.')}
 """))
     body.append(section("props", 8, "Swapping a texture or a prop", f"""
 <p>A thing in a level is a <code>StaticBody3D</code>: its box (<code>mesh</code>, hidden when the thing has a real mesh; its <code>shape</code> for walking into) and, under it,

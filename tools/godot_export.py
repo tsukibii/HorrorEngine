@@ -10,6 +10,7 @@
 Godot: $GODOT, else `godot`, else `godot-mono` (the user's machine; tools/godot_setup.sh on a cloud session).
 """
 import argparse
+import json
 import os
 import shutil
 import subprocess
@@ -61,6 +62,45 @@ def run_godot(project, script, extra=(), xvfb=False, timeout=240):
     return r.returncode, "\n".join(lines)
 
 
+def first_scene(story):
+    """The first scene the flow reaches from its start (the guide's picture of a scene), or None."""
+    flow = story.get("flow", {})
+    nid = (story.get("game") or {}).get("start")
+    seen = set()
+    while nid in flow and nid not in seen and len(seen) < 60:
+        seen.add(nid)
+        n = flow[nid]
+        if n.get("type") == "scene":
+            return nid
+        nid = n.get("next") or ((n.get("options") or [{}])[0].get("next") if n.get("options") else None)
+    return None
+
+
+def make_pictures(game, r):
+    """The guide's own pictures, by Godot under xvfb into Saved/Story/<game>/godot_reference/: the start by day and
+    by night (lookshot.gd), the first scene three seconds in from the bake when there is one (sceneshot.gd); then the
+    guide written again with them. Slow on a CPU (a minute each); seconds on a card."""
+    ref = ROOT / "Saved" / "Story" / game / "godot_reference"
+    ref.mkdir(parents=True, exist_ok=True)
+    out = Path(r["dir"])
+    story = json.loads((out / "game" / "story.json").read_text(encoding="utf-8"))
+    shots = [("start_day.png", "res://addons/horrorstudio/tests/lookshot.gd", ["--time=day", "--gi=voxel", "--ao=1", "--ssil=1", "--wait=40"]),
+             ("start_night.png", "res://addons/horrorstudio/tests/lookshot.gd", ["--time=night", "--gi=voxel", "--ao=1", "--ssil=1", "--wait=40"])]
+    sc = first_scene(story)
+    if sc and (out / "game" / "previs").is_dir():
+        shots.append(("scene_first.png", "res://addons/horrorstudio/tests/sceneshot.gd", [f"--node={sc}", "--at=3"]))
+    ok = True
+    for name, script, extra in shots:
+        dst = ref / name
+        code, text = run_godot(out, script, ["--", *extra, f"--shot={dst}"], xvfb=True, timeout=900)
+        good = code == 0 and dst.exists()
+        print(f"  {'picture' if good else 'no picture'}: {name}" + ("" if good else f" ({text.strip().splitlines()[-1][:160] if text.strip() else code})"))
+        ok = ok and good
+    G.rewrite_guide(out, game)
+    print(f"  guide written again with {sum(1 for n, _s, _e in shots if (ref / n).exists())} of its pictures")
+    return ok
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--game")
@@ -68,6 +108,7 @@ def main():
     ap.add_argument("--zip", action="store_true")
     ap.add_argument("--check", action="store_true", help="GDEXPORT: export every game (or --game) and open it headless")
     ap.add_argument("--shot", help="a picture from the start, under xvfb")
+    ap.add_argument("--pictures", action="store_true", help="the guide's pictures made by Godot (the start by day and by night, the first scene from the bake), then the guide written again")
     ap.add_argument("--play", action="store_true", help="GDPLAY: the Pilot played headless to its good ending (needs --game Pilot)")
     ap.add_argument("--testroom", action="store_true", help="GDTESTROOM: TestRoom001 played station by station (needs --game TestRoom001)")
     ap.add_argument("--from", dest="from_nid", help="GDTESTROOM: start from a station")
@@ -105,6 +146,9 @@ def main():
             code, out = run_godot(r["dir"], "res://addons/horrorstudio/tests/load_check.gd")
             print("\n".join("  " + ln for ln in out.splitlines()[-12:]))
             if code != 0 or "GDEXPORT ok" not in out:
+                ok = False
+        if a.pictures:
+            if not make_pictures(game, r):
                 ok = False
         if a.shot:
             shot = Path(a.shot).resolve()

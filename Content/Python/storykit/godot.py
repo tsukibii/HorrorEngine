@@ -660,6 +660,15 @@ def merge_export(new, final, old_manifest):
     return kept
 
 
+def rewrite_guide(out, game):
+    """The guide written again for an export that's there (its pictures made since: tools/godot_export.py --pictures)."""
+    out = Path(out)
+    story, _path = L.load(game)
+    info = json.loads((out / "game" / "export.json").read_text(encoding="utf-8"))
+    GUIDE.write_guide(out, game, story, info, ROOT / "Saved" / "Story" / game / "godot_reference")
+    write_manifest(out)
+
+
 def import_project(out, timeout=600):
     """Godot's import of the project (its .godot/ folder): the glb meshes the levels instance load only once imported.
     The editor does it on opening the project; here so a headless run can too. Quiet when Godot isn't on the PATH."""

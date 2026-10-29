@@ -117,6 +117,7 @@ TOOLS = [
     ("Godot", "Export a game as its own Godot 4.7 project (.zip in Saved/Godot, with a guide to editing it; record the scenes on the desk first)", "tools/godot_export.py --game {game} --zip", {}),
     ("Godot", "Record a game's scenes for the export (the desk running)", "node tools/godot/bake.mjs --game {game}", {}),
     ("Godot", "Godot check (4.7 runs headless and draws a lit box)", "tools/godot/check.sh", {}),
+    ("Godot", "Pictures for a game's guide, made by Godot (the start by day and night, the first scene from the bake), the guide written again", "tools/godot_export.py --game {game} --pictures", {}),
     ("Godot", "Godot export check (every game exported and opened headless)", "tools/godot_export.py --check", {}),
     ("Godot", "Godot look check (UltraVHS's chart through the export's tape shader, measured)", "tools/godot/look_check.py", {}),
     ("Godot", "The look plugin's check (its demo room pictured and measured: wet floors, blood, rain, wet skin)", "tools/godot/plugin_check.py", {}),
