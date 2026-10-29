@@ -2,6 +2,20 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-29, night, after the local run (the Godot thread)
+
+- **"We are scrapping voiced lines from the game for now (might add a typewriter sound effect as the text appears
+  later, but only after game testing, if I want it)."** So no takes' audio in the Godot export (GODOT_EXPORT §8's
+  "voices" step is skipped), no MiniMax voice work; the lines are text, typed out as they are (EXPRESSIONS_PLAN's
+  typewriter blip waits for a playtest and their yes).
+- **"Make a note to scrap any goals for Unreal; we are going to use Godot 100% for this project now: Unreal is too
+  heavy and currently can't be used in cloud sessions."** Every Unreal goal is dropped: no StoryRunner, no
+  `storykit.generate` or `importer` work, no UNREAL_NEXT, no UltraVHS or Light Kit plugin work beyond what the Godot
+  side ports from them, no MetaHuman route (the Character Studio's MHR characters are the cast). The Unreal docs,
+  plugins and code stay in the repo as history and as the source of the numbers the Godot side matches
+  (`UnrealPlugins/UltraVHS/Tools/measure.py`, Light Kit's curves). The Godot export is the game. CLAUDE.md's header
+  says so.
+
 ## 2026-10-29, the user's first Godot run (the test room on their machine)
 
 - **"The intro cutscene feels too choppy: we can tell we are cutting to a new shot, I want one fluid scene. The

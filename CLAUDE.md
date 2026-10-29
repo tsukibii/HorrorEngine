@@ -1,7 +1,12 @@
 # HorrorStudio: notes for Claude
 
-One Unreal Engine 5.8 project that makes short (2.5 to 3 hour) first-person horror games, one after another. Every
-game lives in this project (docs/STUDIO.md), so shaders, systems and tools are built once.
+One project that makes short (2.5 to 3 hour) first-person horror games, one after another. Every game lives in this
+project (docs/STUDIO.md), so shaders, systems and tools are built once. **The games ship from Godot** (DECISIONS
+2026-10-29, night: "Godot 100% for this project now"): the desk's story is exported as a Godot 4.7 project
+(docs/GODOT_PLAN.md, docs/GODOT_EXPORT.md, `tools/godot_export.py`). The Unreal side (the `.uproject`, `Source/`,
+`UnrealPlugins/`, `storykit.importer`/`generate`, docs/UNREAL_*) is history: nothing is built for it any more; its
+numbers (UltraVHS's measures, Light Kit's curves) are what the Godot side matches. **Lines are text, not voice**
+(same day): no takes' audio in the export; a typewriter blip only after a playtest, if the user wants it.
 
 **The split:**
 - **The user** writes rough stories and makes the MetaHumans, the takes (MiniMax, Japanese voice, close-up face
