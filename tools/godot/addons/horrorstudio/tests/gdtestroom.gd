@@ -521,6 +521,9 @@ func _initialize() -> void:
 			var p := {"peeping": rt.player.peeping["door"] if rt.player.peeping != null else null, "aoi": rt.npcs["aoi"]["as"] if rt.npcs.has("aoi") else null, "y": -rt.npcs["aoi"]["pos"].z if rt.npcs.has("aoi") and rt.npcs["aoi"]["pos"] != null else 0.0}
 			if p["peeping"] != "front_door" or p["aoi"] != "idle" or not (float(p["y"]) < -5):
 				return "at the lens: " + JSON.stringify(p)
+			var aw := float(rt.skin_wet.get("aoi", {}).get("wet", 0.0))     # out in the yard's rain: her skin wets by itself
+			if not (aw > 0.1):
+				return "Aoi out in the rain should be wet by now: %s" % aw
 			var r2 := await ticked("t2_peep")
 			if r2 != "":
 				return r2

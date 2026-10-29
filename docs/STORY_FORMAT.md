@@ -522,7 +522,9 @@ with `{"tick": "<id>"}` at the end of that beat, not by its own trigger (the sto
 - `skin`: **a cast member's skin** (DECISIONS 2026-10-29; docs/GODOT_LOOK.md §5): `{"skin": "aoi", "wet": 0.7,
   "sweat": 0.5}`: `wet` the sweat film (a sheen, the skin a touch darker), `sweat` beads standing on it, `drips` runs,
   `oil` oiled up, each 0..1 (left out: unchanged; 0 takes it off). From a beat, a scene's cue or an answer's `do`; it
-  stays on her bodies (the stand-in's, a scene's) till set again. The Godot export plays it on the skin shader; the
+  stays on her bodies (the stand-in's, a scene's) till set again. Out in the rain (`game.weather`, a room with no
+  ceiling) a cast member wets by herself, toward 0.8 in a few seconds, and dries in about a minute once she's in,
+  unless the word has set her: then hers is hers till the word changes it. The Godot export plays it on the skin shader; the
   desk's stage draws it the same way on her body (the clay MHR body, a Studio export's skin, the figure of cylinders:
   `tools/shared/skinwet.js`) in Play and in the Watch (a scene's cue at its clip edge); Unreal not yet
 - `show`, `hide`, `move` (`to` a spot), `objective`

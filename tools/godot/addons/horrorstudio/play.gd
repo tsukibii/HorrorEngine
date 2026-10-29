@@ -1646,10 +1646,12 @@ func set_stain(t: Dictionary, opacity: float) -> void:
 ## `game.weather` rain: streaks fall through every room with no ceiling, its floor wet with pools and the rain's
 ## rings on them, the shelf's rain heard there
 var rain_sounds: Array = []          # {p: the rain's player, room, at}: the shelf's rain in each open room (rain_follow)
-var wet_rooms: Array = []            # the open rooms' ids while it rains: steps there sound wet
+var wet_rooms: Array = []            # the open rooms' ids while it rains, and the rooms with their own `wet`: steps there sound wet
+var rain_rooms: Array = []           # the open rooms' ids while it rains: a cast member out there gets wet (rain_wet)
 func weather_attach() -> void:
 	rain_sounds = []
 	wet_rooms = []
+	rain_rooms = []
 	var lvl: Dictionary = game.story.levels.get(level, {})
 	var rooms: Array = lvl.get("rooms", [])
 	if game.level != null:
@@ -1685,6 +1687,7 @@ func weather_attach() -> void:
 	for id in ids:
 		if not wet_rooms.has(id):
 			wet_rooms.append(id)
+	rain_rooms = ids
 	HSWet.wet_floors(game.level, ids, {"wetness": 0.9, "puddles": 0.6, "puddle_scale": 1.2, "ripples": 1.0})
 	for n in game.level.get_children():                 # the rain on every window's pane
 		if n is MeshInstance3D and n.has_meta("pane"):
@@ -1747,11 +1750,13 @@ func standin_bodies() -> void:
 
 ## the `skin` action: a cast member's skin wet, sweating, dripping, oiled (0..1 each; the keys left out stay): on her
 ## stand-in's body now, on a scene's body as it's made (bakeplay), and remembered for her next bodies
-func skin_set(cid: String, a: Dictionary) -> void:
+func skin_set(cid: String, a: Dictionary, by_word: bool = true) -> void:
 	var cur: Dictionary = skin_wet.get(cid, {}).duplicate()
 	for k in ["wet", "sweat", "drips", "oil"]:
 		if a.has(k):
 			cur[k] = float(a[k])
+	if by_word:
+		cur["by_word"] = true                          # the story's word: hers till the word changes it (the rain leaves her alone)
 	skin_wet[cid] = cur
 	for m in standin_mats.get(cid, []):
 		HSSkin.set_wet(m, skin_settings(cid))
@@ -1766,8 +1771,31 @@ func skin_settings(cid: String) -> Dictionary:
 	var w: Dictionary = skin_wet.get(cid, {})
 	var out := {}
 	for k in w:
-		out["wetness" if k == "wet" else k] = w[k]
+		if k != "by_word":
+			out["wetness" if k == "wet" else k] = w[k]
 	return out
+
+
+## out in the rain a cast member's skin wets by itself (toward 0.8 in a few seconds) and dries slowly once she's in
+## (about a minute), unless the story's `skin` word has set her: then hers is hers till the word changes it
+func rain_wet(dt: float) -> void:
+	for cid in npcs:
+		var n: Dictionary = npcs[cid]
+		if n.get("pos") == null:
+			continue
+		var sw: Dictionary = skin_wet.get(cid, {})
+		if sw.get("by_word", false):
+			continue
+		var p: Vector3 = n["pos"]
+		var out := false
+		for t in triggers:
+			if rain_rooms.has(t["id"]) and point_in(t, p.x, -p.z, p.y + 0.5):
+				out = true
+				break
+		var cur := float(sw.get("wet", 0.0))
+		var nw: float = min(0.8, cur + 0.15 * dt) if out else max(0.0, cur - 0.02 * dt)
+		if nw != cur:
+			skin_set(cid, {"wet": nw}, false)
 
 
 ## a glb read at run time (GLTFDocument): the file's own node and bone frames, the same on every machine
@@ -2193,6 +2221,8 @@ func tick(dt: float) -> void:
 		life_events()
 	if not rain_sounds.is_empty():
 		rain_follow()
+	if not rain_rooms.is_empty() or not skin_wet.is_empty():
+		rain_wet(dt)
 	var p := player
 	if moving != null:
 		var M: Dictionary = moving

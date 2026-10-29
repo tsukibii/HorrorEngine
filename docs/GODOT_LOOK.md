@@ -152,7 +152,10 @@ bodies with their tone, a Studio export with its paint; GDTESTROOM checks Aoi's 
 skinLit skin and the figure of cylinders; the beads' domes bend the normal in a frame from the screen's derivatives
 (no tangents on the desk's bodies), the layer's 4 % goes into skinlight.js's highlight (`swGloss`). `Stage.setSkin`
 keeps what the run set per cast member and puts it on any body she's given later (a model switched, a new level);
-Play's `skin` action and the Watch's `skin` cues call it. A sheet of the five states on the Studio's test export:
+Play's `skin` action and the Watch's `skin` cues call it. Out in the rain a cast member wets by herself on both
+runtimes (`rain_wet` in play.gd, `rainWet` in runtime.js: toward 0.8 in a few seconds, dry again in about a minute
+indoors), unless the story's word has set her (`by_word`): TestRoom001's Aoi at the front door is wet when you look
+through the peephole. A sheet of the five states on the Studio's test export:
 `Saved/Story/_look/desk_skin.png` (made by hand; TESTROOM checks the kitchen's beat lands on Aoi's body).
 
 ## 5b. Mirrors (`mirror.gdshader`, `HSMirror`)

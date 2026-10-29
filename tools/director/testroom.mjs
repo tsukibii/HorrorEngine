@@ -258,6 +258,8 @@ const snapFor = nid => {                               // the run's state on rea
       await click(); await gameWait(0.5);
       const p = await page.evaluate(() => { const rt = window.__dd.play, n = rt.npcs.aoi; return { peeping: rt.player.peeping && rt.player.peeping.door, aoi: n && n.as, y: n && -n.pos.z }; });
       if (p.peeping !== "front_door" || p.aoi !== "idle" || !(p.y < -5)) throw new Error("at the lens: " + JSON.stringify(p));
+      const wet = await page.evaluate(() => (((window.__dd.play.skinWet || {}).aoi) || {}).wet || 0);     // out in the yard's rain: her skin wets by itself
+      if (!(wet > 0.1)) throw new Error("Aoi out in the rain should be wet by now: " + wet);
       await ticked("t2_peep");
       if (!(await page.evaluate(() => window.__knocks)) && !/knock/.test(await page.evaluate(() => document.querySelector(".ph-log").textContent))) throw new Error("no knock heard");
       await press("KeyS"); await gameWait(0.3);

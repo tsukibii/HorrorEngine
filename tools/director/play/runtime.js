@@ -658,6 +658,20 @@ export class PlayRuntime {
     const n = this.npcs[cid] = { cid, as, s: settingsOf(b, spec), st: {}, pos: npc && npc.pos, yaw: npc ? npc.yaw : 0, level: npc && npc.level, pose: "idle", walking: false, t0: this.clock };
     b.start(n, this, n.s);
   }
+  // out in the rain a cast member's skin wets by itself (toward 0.8 in a few seconds) and dries slowly once she's in
+  // (about a minute), unless the story's `skin` word has set her (byWord): then hers is hers till the word changes it
+  rainWet(dt) {
+    const lv = ((this.story.levels || {})[this.level] || {}), rain = (lv.weather ?? (this.story.game || {}).weather) === "rain";
+    const rooms = rain ? (lv.rooms || []).filter(r => r.ceiling === false).map(r => r.id) : [];
+    if (!rooms.length && !this.skinWet) return;
+    for (const [cid, n] of Object.entries(this.npcs)) {
+      if (!n.pos) continue;
+      const s = (this.skinWet || {})[cid]; if (s && s.byWord) continue;
+      const out = this.triggers.some(t => rooms.includes(t.id) && this.pointIn(t, n.pos.x, -n.pos.z, n.pos.y + 0.5));
+      const cur = +((s || {}).wet || 0), nw = out ? Math.min(0.8, cur + 0.15 * dt) : Math.max(0, cur - 0.02 * dt);
+      if (nw !== cur) (this.skinWet = this.skinWet || {})[cid] = this.stage.setSkin(cid, { wet: nw });
+    }
+  }
   drawNpcs(dt) {
     const lib = this.stage.lib, X = new THREE.Vector3(1, 0, 0);
     for (const n of Object.values(this.npcs)) {
@@ -906,6 +920,7 @@ export class PlayRuntime {
     if (this.torchLight) { if (!this.torchItem()) this.torchLight.on = false; this.ability("torch", "update", dt); }   // taken away: off
     for (const a of [...this.anims]) { a.t += dt; const k = Math.min(1, a.t / a.secs); a.fn(k); if (k >= 1) { this.anims.splice(this.anims.indexOf(a), 1); a.done(); } }
     this.drawNpcs(dt);
+    this.rainWet(dt);
     this.watch(dt);
     if (!this.busy && !this.playing && !p.peeping) this.updateCursor(dt);
     if (this.holding) this.holdTick(dt);
