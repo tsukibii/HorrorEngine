@@ -11,7 +11,45 @@ the to-do built there, with the Studio's eyes from the side, a small nose and th
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## 0. Next (left 2026-10-29, night, on `godot-support`, after the local session on the 3090)
+## 0. Next: the cloud session (left 2026-10-29, late night, on `godot-support`, after the local session on the 3090)
+
+The user's handoff (their words: continue the ones that haven't been started back in the cloud, since the GPU-heavy
+ones were done locally). Everything is pushed (`ca3e053` the last). Four pieces, in this order, each its own commit
+with its checks before the push; all of them are code whose checks run headless (GDEXPORT, GDTESTROOM, GDPLAY take a
+minute or two in the cloud), and only their pictures wait for the user's eyes:
+
+1. **Wet walls under a leak** (GODOT_LOOK §7): a story word on a room or a prop for where water runs down a wall
+   (grow STORY_FORMAT, `story_check.py` and the runtime in one commit, as the rule says; a name that isn't taken:
+   `leak` on a prop with `at` and a `drip`), HSWet's wetness on a band of the wall below it (no pools, no rings), the
+   drips as lifefx's (`lifefx.gd` has the tap's), a stage in the plugin's demo measured by LOOKPLUGIN (the band's glint
+   over the dry wall), the desk's stage drawing the band dark and glossy as it does a wet floor. TestRoom001's bath
+   gets one (its ceiling's old leak), GDTESTROOM checks the wall's material.
+2. **A mirror seen in a mirror** (GODOT_LOOK §5b): HSMirror's viewport renders the room without the other mirrors'
+   reflections (they draw their glass flat); one bounce more: a mirror's camera sees the other mirror's last frame
+   (its viewport texture, a frame late), never itself. The demo's stage puts two mirrors facing; LOOKPLUGIN measures
+   the bulb's glint twice in the first one. The cloud draws a viewport in a viewport slowly on lavapipe: keep that
+   stage's views small (`HSMirror.attach(..., 288)` is the size) and expect the check to take longer than eight
+   minutes there; the user looks at the picture on the card.
+3. **The timeline's edits playing back** (GODOT_EXPORT §8, the editable layer's second cut): the scene player takes
+   its camera and its lines' and cues' moments from `game/acts/<folder>/scene.tscn`'s Animation when the file exists
+   (`story.gd` gets `edited_scene(nid)` as `edited_stitch` is; the camera track sampled by the bake's frame, the
+   method track's keys mapped onto the timeline's clips by their order), so a camera key dragged in Godot plays;
+   GDEXPORT edits a camera key in the file and sees the scene's eye move (as it edits a title now). The bake the
+   checks need isn't in git (`Content/Games/<G>/Previs/` is ignored): `node tools/godot/bake.mjs --game TestRoom001`
+   on the desk's server makes it (a browser job on SwiftShader: slow, it has worked there); it carries Aoi's
+   `second` model and the lobby scene's pick, both in the pushed story.
+4. **The bodies on the timeline**: each cast member's recorded skinning as bone tracks (position and rotation per
+   bone from the bake's matrices, as bakeplay.gd poses them: every bone's global pose first, then local under its
+   parent) and the 72 face weights as blend-shape tracks on the body's mesh, so the Animation moves her in the
+   editor; keys thinned; the file size watched (a 24 s scene at 30 fps over 70 bones is large: every third frame
+   and only the bones that move). GDEXPORT loads it and measures the head joint against the recording at a few
+   frames, as GDTESTROOM does for the bake.
+
+**For the user, after:** the leak and the two mirrors pictured on the card (`python tools/godot/plugin_check.py`), a
+scene scrubbed in Godot's editor (open `Saved/Godot/TestRoom001/game/acts/02_n_hello/scene.tscn` beside the lab
+level: the camera along the recording, Aoi moving once step 4 is in), and the three judgement calls below.
+
+## 0z. The local session on the 3090 (2026-10-29, night)
 
 The local session (docs/RUN_LOCALLY.md) ran everything the cloud couldn't, in CONTINUE's order, and fixed forward:
 - **LOOKPLUGIN**: its ten red rows weren't the plugin. The check had set the cloud's lavapipe ICD path (absent on the
