@@ -235,7 +235,7 @@ an entry to its <code>THEMES</code>. This game wears <b>{e(g.get('ui_theme', 'gl
 {fig(pictures, 'inventory_live.png', 'The inventory row: the things themselves, the one in the hand in the middle, turning.')}
 <p>The pause menu (<kbd>Esc</kbd>, <code>menu.gd</code>): the controls, Resume, Save game (three slots and the autosave, in <code>user://saves_{e(game)}.json</code>),
 Settings (Display, Graphics, Audio; stepped with <kbd>A</kbd>/<kbd>D</kbd>; each row names the Godot setting it maps to; the ones Godot can apply, it applies:
-the Graphics rows pare the look's preset back on a slower machine: Reflections Low turns the screen-space reflections off, Post-processing Low the glow,
+the Graphics rows pare the look's preset back on a slower machine: Reflections Low turns the screen-space reflections and the mirrors off (Medium: half the steps, half-size mirrors), Post-processing Low the glow,
 SSAO and SSIL, Effects Low the haze; Anti-aliasing picks Off, FXAA, TAA or TSR; Resolution scale the 3D scale),
 Quit. Settings live in <code>user://horrorstudio_settings.json</code>.</p>
 {fig(pictures, 'menu_root.png', 'The pause menu: the controls on the left, the pages on the right.')}

@@ -24,6 +24,7 @@ var corners: Array = []        # the glass's extent, the mesh's space
 var block := false             # a closed block rather than one face: the thin axis faces, either side toward the eye
 var half := 0.0                 # the block's half thickness along it
 var res := 288
+var enabled := true            # set_enabled(false): the glass dull, no render (the menu's Reflections Low)
 var active := false
 var frames := 0
 var last: Dictionary = {}       # the last frame's reckoning (the checks read it)
@@ -161,6 +162,20 @@ func _hide_wall() -> void:
 		col.layers = 1 << (HIDDEN_LAYER - 1)
 
 
+## off: the glass dull, nothing rendered; on: reflecting again from the next frame it's in view
+func set_enabled(on: bool) -> void:
+	enabled = on
+
+
+## the picture's size: 0 off, 1 half the lines, 2 and up the full res (the pause menu's Reflections row)
+func set_quality(q: int) -> void:
+	set_enabled(q > 0)
+	if view != null:
+		var aspect: float = float(view.size.x) / max(float(view.size.y), 1.0)
+		var lines: int = res if q >= 2 else int(res / 2)
+		view.size = Vector2i(int(lines * aspect), lines)
+
+
 func _process(_dt: float) -> void:
 	if cam == null or not is_instance_valid(cam) or view == null:
 		return
@@ -173,7 +188,7 @@ func _process(_dt: float) -> void:
 			n = -n
 		p = p + n * half
 	var d := (eye - p).dot(n)
-	var seen := d > 0.02 and mi.is_visible_in_tree()
+	var seen := enabled and d > 0.02 and mi.is_visible_in_tree()
 	if seen:
 		var any := false
 		for c in corners:

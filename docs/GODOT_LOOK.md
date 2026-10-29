@@ -170,7 +170,8 @@ stays out. Out
 of view the viewport stops drawing. In a game every kit `mirror` (a panel with its `kit_mirror` face) and every
 prop tagged `mirror` gets one at the level's load (`mirror_attach` in play.gd; GDTESTROOM looks into the bath's).
 The demo hangs one on its back wall and measures the bulb's glint in it (LOOKPLUGIN). The cost is a second render
-of the room per mirror in view: keep mirrors to the rooms that need one. Not yet: a mirror seen in a mirror.
+of the room per mirror in view: keep mirrors to the rooms that need one; the pause menu's Reflections row switches
+them off at Low (dull glass) and halves them at Medium (`set_quality`). Not yet: a mirror seen in a mirror.
 
 ## 6. The story's words, and the check
 

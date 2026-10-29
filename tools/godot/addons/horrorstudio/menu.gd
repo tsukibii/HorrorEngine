@@ -27,7 +27,7 @@ const SETTINGS := [
 			{"id": "aa", "label": "Anti-aliasing", "values": ["Off", "FXAA", "TAA", "TSR"], "def": 2, "ue": "r.AntiAliasingMethod", "godot": "Viewport.screen_space_aa / use_taa"},
 			{"id": "shadows", "label": "Shadows", "values": QUALITY, "def": 2, "sg": true, "ue": "sg.ShadowQuality", "godot": "rendering/lights_and_shadows"},
 			{"id": "gi", "label": "Global illumination", "values": QUALITY, "def": 2, "sg": true, "ue": "sg.GlobalIlluminationQuality", "godot": "rendering/global_illumination (Low: no SSIL)"},
-			{"id": "reflections", "label": "Reflections", "values": QUALITY, "def": 2, "sg": true, "ue": "sg.ReflectionQuality", "godot": "Environment.ssr (Low off, Medium half the steps)"},
+			{"id": "reflections", "label": "Reflections", "values": QUALITY, "def": 2, "sg": true, "ue": "sg.ReflectionQuality", "godot": "Environment.ssr (Low off, Medium half the steps); the mirrors (Low off, Medium half size)"},
 			{"id": "textures", "label": "Textures", "values": QUALITY, "def": 2, "sg": true, "ue": "sg.TextureQuality", "godot": "rendering/textures"},
 			{"id": "effects", "label": "Effects", "values": QUALITY, "def": 2, "sg": true, "ue": "sg.EffectsQuality", "godot": "Environment.volumetric_fog (Low off)"},
 			{"id": "post", "label": "Post-processing", "values": QUALITY, "def": 2, "sg": true, "ue": "sg.PostProcessQuality", "godot": "Environment.glow / ssao / ssil (Low off, Medium no SSIL)"},
@@ -414,6 +414,8 @@ static func apply(st: Dictionary, hud_) -> void:
 		if hud_.env != null and g != null and g.get("story") != null:               # the look's preset, then the Graphics rows paring it back
 			HSLook.apply(vp, hud_.env, str(g.story.game.get("look", "realism")))
 			HSLook.quality(hud_.env, st)
+			if g.get("play") != null and g.play != null:
+				g.play.mirrors_quality(int(st.get("reflections", 2)))     # the mirrors too (a second render of the room each)
 		HSLook.set_aa(vp, clampi(int(st.get("aa", 2)), 0, 3))                      # Off, FXAA, TAA (the default), TSR (TAA with FSR 2)
 		vp.scaling_3d_scale = [0.5, 0.67, 0.75, 1.0][clampi(int(st.get("scale", 3)), 0, 3)]
 	for pair in [["master", "Master"], ["music", "Music"], ["sfx", "SFX"], ["voices", "Voice"]]:

@@ -110,6 +110,7 @@ var audio_log: Array = []            # every shelf sound played: {n, loaded, at}
 var sfx_streams: Dictionary = {}     # name -> AudioStream, loaded once
 var sfx_players: Array = []          # a pool of AudioStreamPlayer3D / AudioStreamPlayer under the world
 const LifeFxC := preload("res://addons/horrorstudio/lifefx.gd")
+const MenuC := preload("res://addons/horrorstudio/menu.gd")      # the saved settings (the mirrors follow the Reflections row)
 const LifeSoundC := preload("res://addons/horrorstudio/lifesound.gd")
 const PhysC := preload("res://addons/horrorstudio/physics.gd")
 var physics = null                   # physics.gd: the thing in the hand, the dice
@@ -1815,6 +1816,14 @@ func mirror_attach() -> void:
 		var hm := HSMirror.attach(target, s, game.camera, 288)
 		t["mirror"] = hm
 		mirrors.append(hm)
+	mirrors_quality(int(MenuC.load_settings().get("reflections", 2)))
+
+
+## the pause menu's Reflections row on the mirrors: Low off (dull glass), Medium half the lines, else full
+func mirrors_quality(q: int) -> void:
+	for hm in mirrors:
+		if is_instance_valid(hm):
+			hm.set_quality(q)
 
 
 func blood_attach() -> void:

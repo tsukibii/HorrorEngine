@@ -1017,6 +1017,14 @@ func _initialize() -> void:
 			var fwd: Vector3 = -mir.mcam.global_transform.basis.z
 			if not (ep.z < mp.z - 0.5 and fwd.z > 0.9 and mir.mcam.near > 0.5 and mir.view.render_target_update_mode == SubViewport.UPDATE_ALWAYS):
 				return "the mirror's camera: at %s looking %s, near %.2f, update %d (the glass at %s)" % [ep, fwd, mir.mcam.near, mir.view.render_target_update_mode, mp]
+			rt.mirrors_quality(0)                                      # the menu's Reflections Low: the glass dull, no render
+			await game_wait(0.1)
+			if mir.enabled or mir.active or mir.view.render_target_update_mode != SubViewport.UPDATE_DISABLED:
+				return "Reflections Low should switch the mirror off: enabled %s active %s" % [mir.enabled, mir.active]
+			rt.mirrors_quality(2)
+			await game_wait(0.2)
+			if not mir.active:
+				return "the mirror should reflect again at Reflections High"
 			await use("bath_tap", 0.6)
 			r = await ticked("t12_tap")
 			if r != "":
