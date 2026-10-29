@@ -15,7 +15,8 @@ the VHS layer in `main.tscn`, `puff.gdshader` from lifefx.gd). A change here rea
 | `wet.gd`, `wet.gdshader` | wet floors: the pool mask (fbm in world space), the rings (a grid of drops per cell, their age from TIME); `puddle` a Decal with maps made in code |
 | `glass.gd`, `glass.gdshader` | window panes: the drops (cells with a drop sliding down, beads above it, a mist) as a slope bending the screen behind |
 | `blood.gd`, `blood.gdshader` | the splat (the pool's radius by angle, satellite drops in a cell grid, drips in lanes) |
-| `rain.gd`, `rain.gdshader` | the streaks (a MultiMesh of quads; the vertex shader places each from its custom data and TIME) |
+| `rain.gd`, `rain.gdshader`, `splash.gdshader` | the streaks (a MultiMesh of quads; the vertex shader places each from its custom data and TIME; lit in `light()` by every light that reaches them) and the splashes where they land (a second MultiMesh under the rain: a flash, a ring, spikes from a seat and a phase) |
+| `mirror.gd`, `mirror.gdshader` | a real mirror: `HSMirror` reflects the camera through the glass's plane (its middle and facing measured from the surface's triangles; a closed block's thin axis, the side toward the eye) into a SubViewport each frame it's in view, the shader projecting each point of the glass through that camera's view-projection; the mirror and its wall on layer 20 alone; `set_quality` for the menu |
 | `eye.gd`, `eye.gdshader` | the Studio's eye (people.py's `_FRAME` and `EYE_COLOR` in GLSL; `handed` −1 for Godot's binormal); `records` reads the glb's JSON chunk for `studioEye` |
 | `skin.gd`, `skin_wet.gdshader` | HumanShaders' skin shader with the wetness layer (the lines marked `HS`); `skin.gd` wires HumanShaders' textures and flat defaults |
 | `demo/demo.gd` | the demo scene and the measures (`report.json`) |
@@ -25,7 +26,8 @@ the VHS layer in `main.tscn`, `puff.gdshader` from lifefx.gd). A change here rea
 
 - `python tools/godot/plugin_check.py` (LOOKPLUGIN): the demo in a project of its own under xvfb, each part pictured
   into `Saved/Story/_look/godot_plugin/` and measured: the lamp's reflection in the wet floor brighter than in the
-  dry, the rain moving between frames, the blood's red, the sweat's glint and the oil's glint over dry skin. Look at
+  dry, the rain moving between frames, the splashes' glow on the floor, the mirror's glint, the blood's red, the
+  sweat's glint and the oil's glint over dry skin. `--only=<stage>` runs one stage alone for a quick look. Look at
   the pictures after a change, not only the numbers.
 - `python tools/godot/people_check.py` (GDPEOPLE): a Studio export's skin on HSSkin, its colour against its paint.
 - `python tools/godot/look_check.py` (GODOTLOOK): the tape against UltraVHS's numpy reference.
