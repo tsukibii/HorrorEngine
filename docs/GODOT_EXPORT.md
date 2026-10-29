@@ -196,6 +196,15 @@ loads, every verb in the games has a part).
    (`/godot/<G>/guide/index.html`); the launcher has the export and the checks under Godot. GDEXPORT checks the guide.
 4. **The look** (GODOT_PLAN §6): UltraVHS and Light Kit as shaders and nodes, measured; M_StudioSurface; the
    characters' shaders on HumanShaders (§2 of the plan) with the Studio's colours and patterns checked side by side.
+   **UltraVHS done** (2026-10-29, `vhs.gdshader`, `vhs.gd`): the plugin's three passes (the camera's lens, sensor and
+   tape sampling; the tape's luma low-pass and edge enhancement, chroma bleed and shift, tracking, head switching,
+   noise, dropouts; the screen's pillarbox and scanlines) in one canvas shader on a layer under the HUD, the presets
+   camcorder, worn and nightmare, night mode (the black turning blue with the time of day), the menu's Film grain as
+   the noise's cap, the story's new word `game.vhs` (STORY_FORMAT §9.1, the check). No persistence yet (ghosting
+   needs the last frame: a SubViewport later). **GODOTLOOK** renders the plugin's chart through it and measures it
+   beside the numpy reference: edge rise 5.0 / 5.0, halo 0.119 / 0.111, chroma 2.2 / 2.4, black 0.046 / 0.049.
+   Pictures: `Saved/Story/TestRoom001/godot_reference/kitchen_vhs_*.png`. Next: Light Kit's times of day as a sun,
+   sky, haze and grade; then the lighting trial (SDFGI, VoxelGI baked at run time, SSAO/SSIL) as a contact sheet.
 5. **The rest of §6**: the lives' effects, hiding, reverb, the HUD themes, the pause menu, the little things.
 6. **The guide** (GODOT_PLAN §7), grown with each step above (each step adds its page), its pictures by driving Godot.
 7. **The re-export** (§5), once there's a project someone has edited.

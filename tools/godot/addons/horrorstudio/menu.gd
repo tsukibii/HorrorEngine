@@ -415,6 +415,9 @@ static func apply(st: Dictionary, hud_) -> void:
 			AudioServer.set_bus_volume_db(bus, linear_to_db(max(0.0001, k)))
 			AudioServer.set_bus_mute(bus, k <= 0.0)
 	if hud_ != null:
+		var vhsn = hud_.get_parent().get_node_or_null("VHS") if hud_.get_parent() != null else null
+		if vhsn != null:
+			vhsn.set_grain_cap(1.0 if int(st.get("grain", 1)) == 1 else 0.0)   # Film grain: the player's cap on the tape's noise
 		hud_.subs_on = int(st.get("subs", 1)) == 1
 		hud_.sub_scale = [0.85, 1.0, 1.2][clampi(int(st.get("sub_size", 1)), 0, 2)]
 		hud_.brightness = 0.6 + float(st.get("brightness", 5)) * 0.08

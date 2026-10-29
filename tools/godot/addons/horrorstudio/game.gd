@@ -56,6 +56,9 @@ func _ready() -> void:
 	if envn != null and envn.environment != null:
 		hud.env = envn.environment
 	hud.wear(str(story.game.get("ui_theme", "glass")))
+	var vhsn = get_node_or_null("VHS")
+	if vhsn != null:                             # the camcorder look (game.vhs: camcorder, worn, nightmare; off when the game names none)
+		vhsn.preset(str(story.game.get("vhs", "off")))
 	scene_player = ScenePlayerC.new()
 	scene_player.name = "ScenePlayer"
 	scene_player.game = self
@@ -124,6 +127,9 @@ func enter_level(lid: String, fresh: bool = false) -> void:
 func set_time(t: String) -> void:
 	time_of_day = t if TIME_LOOK.has(t) else StoryC.TIME_DEFAULT
 	var L: Dictionary = TIME_LOOK[time_of_day]
+	var vhsn = get_node_or_null("VHS")
+	if vhsn != null:
+		vhsn.set_night(1.0 if time_of_day == "night" else 0.0)   # the tape's black turns blue at night (UltraVHS's night mode)
 	var e: Environment = env.environment
 	e.background_color = L["sky"]
 	e.ambient_light_color = L["amb"][0]

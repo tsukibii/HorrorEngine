@@ -1504,6 +1504,9 @@ def check_flow(story, things, r):
     st = story["game"].get("see_through")              # the hiding places' default (a locker's own wins)
     if st is not None and not (isinstance(st, (int, float)) and 0 <= st <= 1):
         r.err(f"game.see_through {st!r}: a number 0..1")
+    vhs = story["game"].get("vhs")                     # the camcorder look (docs/VHS.md): UltraVHS's preset, in Godot's export and Unreal
+    if vhs is not None and vhs not in ("off", "camcorder", "worn", "nightmare"):
+        r.err(f"game.vhs {vhs!r}: off, camcorder, worn or nightmare")
     th = story["game"].get("ui_theme")                 # the Play HUD's theme: a file in tools/director/play/ui/themes
     if th is not None and not (Path(__file__).resolve().parent / "director" / "play" / "ui" / "themes" / f"{th}.css").is_file():
         r.err(f"game.ui_theme {th!r}: no tools/director/play/ui/themes/{th}.css")
