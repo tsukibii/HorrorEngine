@@ -811,8 +811,9 @@ def check_scene(sid, sc, story, things, r):
                     lk = seam.get("look")
                     if lk and lk not in things and lk not in stage:
                         r.err(f"{cw}: seam look {lk!r} isn't a thing or someone on stage")
-                    if seam["kind"] == "glance" and cam.get("mode") == "hard":
-                        r.warn(f"{cw}: a glance needs the player's look (soft or free camera); with a hard camera use blink or cutaway")
+                    if seam["kind"] in ("glance", "cutaway"):
+                        r.warn(f"{cw}: a {seam['kind']} turns the player's eye for them, deprecated (DECISIONS 2026-10-29: it breaks the "
+                               f"immersion); use blink, flicker, occlude or dip")
             if c.get("shot") and c["shot"] not in L.SHOT_TYPES:
                 r.err(f"{cw}: shot {c['shot']!r} (one of {', '.join(L.SHOT_TYPES)})")
             for k, v in (c.get("cam") or {}).items():

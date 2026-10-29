@@ -296,10 +296,10 @@ is one take**, at most `clip_max` seconds. A longer speech is several clips, and
 | `kind` | What the player gets | Fits |
 |---|---|---|
 | `blink` | a 0.15 s black blink, as if their own eyes closed | anything; the default |
-| `glance` (`look`) | the soft camera drifts to `look` (a flicker, a noise) for about a second while the cut happens off-screen, then drifts back | soft and free cameras |
+| `glance` (`look`) | **deprecated** (DECISIONS 2026-10-29: the eye turned for the player breaks the immersion; a STORY warning): the soft camera drifted to `look` for about a second while the cut happened off-screen, then back | nothing new |
 | `flicker` | the lights stutter, and the cut sits in the dark frame | lit rooms with a practical light |
 | `occlude` | something passes between the player and the actor (a swinging lamp, smoke, another figure) | staged moments |
-| `cutaway` (`look`) | a hard cut to an insert (hands, an object, a photo) and back | hard and soft cameras |
+| `cutaway` (`look`) | **deprecated** (as `glance`): a hard cut to an insert (hands, an object, a photo) and back | nothing new |
 | `turn` | the takes end and begin with the actor turned away or head down (written into the take's acting note) | any camera; costs nothing |
 | `stumble` | the player is jolted (shake, look down) | after a scare or a struggle |
 | `dip` | a longer fade through black (time passes) | between beats of one scene |

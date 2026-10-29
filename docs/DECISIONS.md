@@ -7,7 +7,11 @@ The user's answers, newest first. They override the plan, the research and the d
 - **"Let's remove the forced turn away (look up) after we interact with the person; in general let's make a note to
   avoid that effect, as upon testing it breaks immersion."** The rule, for every runtime and every stitch: the
   player's eye is never moved for them after an interaction; a scene hands the eye back exactly where its camera
-  ended, a card leaves it where it was. (DIRECTING §1 carries it. Which moment turned the eye is being pinned down.)
+  ended, a card leaves it where it was. (DIRECTING §1 carries it.) The moment: the lobby scene's `glance` seam, the
+  camera eased up to the lamp while Aoi walked to the bench and back to her: "it forcefully made us look at the
+  ceiling after we interact with the npc and they move to sit down, then makes us look back at them". So the seams
+  that move the eye, `glance` and `cutaway`, are **deprecated** (a STORY warning, like the quick-time events; the
+  runtimes still play old ones) and the three games' glances are blinks now.
 - Reading a thing (`inspect`, a note): the "Look" dot and word don't sit over the card, and **a left click puts the
   card away** as Esc does (a name or a code card still waits for its keys). The desk the same (a click with no drag).
 - **A thing looked at stays where it is in Godot** (the shelf had vanished while its card was up: the desk takes a

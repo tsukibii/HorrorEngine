@@ -2717,8 +2717,7 @@
      "id": "c3",
      "who": "aoi",
      "seam": {
-      "kind": "glance",
-      "look": "lobby_lamp"
+      "kind": "blink"
      },
      "en": "How are you feeling today?",
      "act": "head tilted, waiting",

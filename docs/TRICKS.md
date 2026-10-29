@@ -21,10 +21,10 @@ invisible:
 | Seam | What happens | Notes |
 |---|---|---|
 | `blink` | 0.12 to 0.18 s of black: the player's own blink | Use a slightly soft fade-in, not a hard pop. A blink every few seconds during long scenes makes the real seam blinks invisible: blink sometimes when there's no cut too |
-| `glance` | The soft camera eases to the `look` target, about 25 to 40°, over 0.35 s; holds 0.4 s (the cut happens here); eases back | Give the player a reason: the lamp flickers, a door creaks, a shadow moves. It feels like looking away in real life |
+| `glance` | **Deprecated** (DECISIONS 2026-10-29: tested, it reads as the eye wrenched away and back; a STORY warning). It eased the soft camera to the `look` target over 0.35 s, held, eased back | Give the player a reason: the lamp flickers, a door creaks, a shadow moves. It feels like looking away in real life |
 | `flicker` | The practical light drops for 2 to 4 frames, and the cut lands in the dark | Lights already flicker in these games, so nobody counts them |
 | `occlude` | A swinging bulb throws the actor into shadow, smoke drifts across, a second figure walks between | Costs one cue |
-| `cutaway` | A hard cut to an insert (her hands, the photo, the key) and back | Cinematic, so use it sparingly in first person |
+| `cutaway` | **Deprecated** (as `glance`). A hard cut to an insert (her hands, the photo, the key) and back | Cinematic, so use it sparingly in first person |
 | `stumble` | Camera shake and a look down; the cut happens at the bottom | After grabs, near misses, falls |
 | `dip` | A longer fade through black: time has passed | A scene in two halves |
 | `jcut` | The next take's voice starts 0.3 s before its picture, while the face is hidden by any of the above | Hides that the delivery restarts |
