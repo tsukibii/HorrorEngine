@@ -41,7 +41,9 @@ under xvfb), so an export's light can't be baked headless where the checks run. 
 look at start (`game.gd`, from `game.look`), so a level scene opened in Godot's editor shows none of it. The plugin,
 enabled in Project Settings → Plugins, registers **HSLookEnvironment** (`look_env.gd`): a WorldEnvironment with a
 `preset` that wears it in the editor's viewport and frees itself in a running game (one WorldEnvironment per scene
-tree). Drop one into the level scene to edit under the look; the tape (UltraVHS) is a CanvasLayer of the game's
+tree). The export enables the plugin in `project.godot`, so the node is there to add (search "HSLook" in Add Child
+Node; a plain WorldEnvironment with `look_env.gd` attached is the same thing). Drop one into the level scene to edit
+under the look; the tape (UltraVHS) is a CanvasLayer of the game's
 main scene and shows only in play, when `game.vhs` names a preset (TestRoom001 names none: off).
 
 `plain` is everything off (Filmic, no AA, no effects): a look at the geometry. The pause menu's Graphics rows pare
