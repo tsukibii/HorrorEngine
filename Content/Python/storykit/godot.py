@@ -356,6 +356,11 @@ renderer/rendering_method="forward_plus"
 '''
 
 
+def rec_file(key):
+    """a recording's key ("c3=good|c7=") as a file name's part: letters, digits, - and +"""
+    return "".join(ch if (ch.isalnum() or ch in "_-") else ("-" if ch == "=" else "+" if ch == "|" else "_") for ch in key)
+
+
 def export(game, out=None, make_zip=False):
     """The project for a game, into out (Saved/Godot/<game> by default); returns {"dir", "zip", "levels", "pieces"}."""
     story, path = L.load(game)
@@ -377,9 +382,13 @@ def export(game, out=None, make_zip=False):
         index = {k: v for k, v in pv.items() if k != "scenes"}
         index["scenes"] = {}
         for sid, sc in pv.get("scenes", {}).items():      # the frames a file a scene; the index keeps each scene's facts
-            index["scenes"][sid] = {k: v for k, v in sc.items() if k not in ("frames", "subs", "events", "lights")}
+            index["scenes"][sid] = {k: v for k, v in sc.items() if k not in ("frames", "subs", "events", "lights", "recordings")}
             index["scenes"][sid]["frames"] = len(sc.get("frames", []))
-            (out / "game" / "previs" / "scenes" / f"{sid}.json").write_text(json.dumps(sc, separators=(",", ":")), encoding="utf-8")
+            recs = sc.get("recordings") or {}             # the reply branches, a file each: <sid>__<key>.json
+            index["scenes"][sid]["recordings"] = {k: rec_file(k) for k in recs}
+            (out / "game" / "previs" / "scenes" / f"{sid}.json").write_text(json.dumps({k: v for k, v in sc.items() if k != "recordings"}, separators=(",", ":")), encoding="utf-8")
+            for key, rec in recs.items():
+                (out / "game" / "previs" / "scenes" / f"{sid}__{rec_file(key)}.json").write_text(json.dumps(rec, separators=(",", ":")), encoding="utf-8")
         (out / "game" / "previs" / "index.json").write_text(json.dumps(index, separators=(",", ":")), encoding="utf-8")
         for f in sorted(previs.glob("Body_*.glb")):
             shutil.copy(f, out / "game" / "previs" / f.name)

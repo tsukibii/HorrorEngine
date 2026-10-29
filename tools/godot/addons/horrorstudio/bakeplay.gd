@@ -13,6 +13,7 @@ var fps: float = 30.0
 var bodies: Dictionary = {}           # cid -> {node, skeleton, map: bake bone -> idx, rests: idx -> global rest, parts: [MeshInstance3D] (cylinders)}
 var frame_at: int = -1
 var frames_shown: int = 0
+var recording: String = ""           # the reply branch playing ("" the default: every first answer)
 var face_max: float = 0.0            # the strongest face weight set so far (a measure)
 
 
@@ -30,10 +31,16 @@ func _init(game_, index_: Dictionary) -> void:
 	fps = float(index.get("fps", 30))
 
 
-## the scene's recording from its file; false when the bake has none for it
-func open(sid_: String) -> bool:
+## the scene's recording from its file (key: a reply branch's, "" the default); false when the bake has none for it
+func open(sid_: String, key: String = "") -> bool:
 	sid = sid_
+	var recs: Dictionary = index.get("scenes", {}).get(sid, {}).get("recordings", {})
 	var path := "res://game/previs/scenes/%s.json" % sid
+	if key != "":
+		if not recs.has(key):
+			return false
+		path = "res://game/previs/scenes/%s__%s.json" % [sid, recs[key]]
+	recording = key
 	if not FileAccess.file_exists(path):
 		return false
 	var d = JSON.parse_string(FileAccess.get_file_as_string(path))

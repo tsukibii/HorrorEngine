@@ -40,12 +40,41 @@ static func seg_key(seg: Dictionary, clips: Array) -> String:
 	return t + ":" + str(seg["start"])
 
 
+## the reply branch's recording for the picks made so far (the rest their first answers): the bake's key
+func reply_key(sc: Dictionary, picks: Dictionary) -> String:
+	var out: Array = []
+	for c in StoryC.version(sc).get("clips", []):
+		if c.has("reply") and c["reply"] is Dictionary:
+			var opts: Array = c["reply"].get("options", [])
+			var first = opts[0].get("id") if opts.size() else null
+			var p = picks[c["id"]] if picks.has(c["id"]) else first
+			out.append("%s=%s" % [c["id"], "" if p == null else str(p)])
+	return "|".join(out)
+
+
+## the bake onto this run's timeline: the recording of the branch picked (the default when every answer is the first
+## one, or the branch wasn't recorded) and the segs mapped by what they play
+func bake_map(sc: Dictionary, sid: String, picks: Dictionary) -> void:
+	var key := reply_key(sc, picks)
+	if key == reply_key(sc, {}):
+		key = ""
+	if key != bk.recording and not bk.open(sid, key):
+		bk.open(sid, bk.recording)
+	var btl: Dictionary = story().timeline(sc, picks, {}, {}, true)   # the bake's own timeline: every line, these answers
+	var bclips: Array = btl["v"].get("clips", [])
+	bmap = {}
+	for s in btl["segs"]:
+		bmap[seg_key(s, bclips)] = s
+	bake_stats["mismatch"] = abs(float(btl["total"]) - bk.total())
+	bake_stats["recording"] = bk.recording
+
+
 ## the bake's time for this run's time T: the same clip, seam, event or reply as far along; null where the bake has
 ## no such moment (a reply's other branch: the last frame holds)
 func bake_t(tl: Dictionary, T: float) -> Variant:
 	var seg = _seg_at(tl, T)
 	if seg == null:
-		return null
+		return bk.total() if T >= float(tl["total"]) - 0.05 else null   # past the end: the last frame
 	var b = bmap.get(seg_key(seg, tl["v"].get("clips", [])))
 	if b == null:
 		return null
@@ -192,11 +221,7 @@ func play(sc: Dictionary, nid: String, sid: String) -> Variant:
 		var b = BakeC.new(game, game.bake)
 		if b.open(sid):
 			bk = b
-			var btl: Dictionary = story().timeline(sc, {}, {}, {}, true)   # the bake's own timeline: every line, the first answers
-			var bclips: Array = btl["v"].get("clips", [])
-			for s in btl["segs"]:
-				bmap[seg_key(s, bclips)] = s
-			bake_stats["mismatch"] = abs(float(btl["total"]) - bk.total())
+			bake_map(sc, sid, picks)
 			look_cone = bk.sc.get("look", [30, 18])
 			bk.make_bodies(game.world)
 			for cid in bk.bodies:
@@ -259,6 +284,8 @@ func play(sc: Dictionary, nid: String, sid: String) -> Variant:
 					bake_measure()
 				bake_camera(fi, cam)
 				game.hud.set_fade(bk.black_of(fi))
+			else:
+				bake_stats["held"] = int(bake_stats.get("held", 0)) + 1
 		while cues.size() and float(cues[0]["t"]) <= T:
 			fire_cue(cues.pop_front(), t0)
 		if skip_asked:
@@ -301,6 +328,8 @@ func play(sc: Dictionary, nid: String, sid: String) -> Variant:
 				game.karma_act(o.get("sets", []))
 			R["answers"].append("%s: %s" % [c["id"], o.get("label", "") if o != null else "(silence)"])
 			tl = story().timeline(sc, picks, R["flags"], R["counters"])
+			if bk != null:
+				bake_map(sc, sid, picks)
 			var rs = null
 			for s in tl["segs"]:
 				if s["type"] == "reply" and s["clip"]["id"] == c["id"]:

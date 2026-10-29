@@ -250,7 +250,7 @@ func timeline(sc: Dictionary, picks: Dictionary = {}, flags: Dictionary = {}, co
 			var rp: Dictionary = c["reply"]
 			var opts: Array = []
 			for o in rp.get("options", []):
-				if holds(o, flags, counters):
+				if all_lines or holds(o, flags, counters):
 					opts.append(o)
 			var picked = picks[c["id"]] if picks.has(c["id"]) else (opts[0].get("id") if opts.size() else null)
 			var want = rp.get("timeout") if picked == null else picked

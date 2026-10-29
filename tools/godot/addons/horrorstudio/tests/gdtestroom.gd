@@ -439,7 +439,7 @@ func _initialize() -> void:
 				return JSON.stringify({"karma": R["karma"], "met": R["flags"].has("met_aoi"), "tv": R["lives"].at("kitchen_tv", float(R["secs"]) + 999)["state"]})
 			if g.bake != null:   # the scene played from the desk's bake: its frames shown, her skinned body's head on the recorded joint
 				var bs: Dictionary = g.scene_player.bake_stats
-				if int(bs.get("frames", 0)) < 100 or float(bs.get("head_err", 9)) > 0.12 or float(bs.get("mismatch", 9)) > 0.05 or float(bs.get("face_max", 0)) < 0.2:
+				if int(bs.get("frames", 0)) < 100 or float(bs.get("head_err", 9)) > 0.12 or float(bs.get("mismatch", 9)) > 0.05 or float(bs.get("face_max", 0)) < 0.2 or int(bs.get("held", 0)) > 0:
 					return "the bake: " + JSON.stringify(bs)
 			return ""))
 
@@ -1014,7 +1014,14 @@ func _initialize() -> void:
 			if not (ran > 5400 and ran < 5400 + 3600):
 				return "the kitchen clock after the skip ran %.0f s (an hour and a half skipped)" % ran
 			g.hud.choice_key("2")
-			return await scene()))
+			var r2 := await scene()
+			if r2 != "":
+				return r2
+			if g.bake != null:   # the answer's branch played from its own recording, no frame held
+				var bs: Dictionary = g.scene_player.bake_stats
+				if bs.get("recording", "") != "c4=painting" or int(bs.get("held", 0)) > 0 or float(bs.get("mismatch", 9)) > 0.05:
+					return "the bake's branch: " + JSON.stringify(bs)
+			return ""))
 
 	await station("n_annex", func():
 		await step("18 · The annex (another level): dark, a checkpoint; the note read (ticks); the fusebox says it needs the fuse, takes it (gone from the pocket), and the power comes on (ticks)", func():

@@ -116,10 +116,10 @@ function eventOf(ev, story) {
   return out;
 }
 
-export function bakeScene(stage, story, plan, sc, files, fps) {
+export function bakeScene(stage, story, plan, sc, files, fps, picks = {}) {
   const v = version(sc), level = v.level || Object.keys(story.levels)[0];
   stage.setWorld(plan, story, level);
-  const tl = stage.timeline(v), n = Math.max(1, Math.ceil(tl.total * fps) + 1);
+  const tl = stage.timeline(v, picks), n = Math.max(1, Math.ceil(tl.total * fps) + 1);
   const cast = Object.keys(v.stage || {}).filter(c => stage.cast[c]);
   const joints = stage.lib.joints.map(j => j.name);
   const frames = [], subs = [], events = [], lights = {};
@@ -157,6 +157,26 @@ export function bakeScene(stage, story, plan, sc, files, fps) {
            time: sc.time || null };                       // its own time of day (null: it keeps the time it was)
 }
 
+// a scene's reply branches as pick sets (clip id -> option id, null for silence), keyed "c3=good|c7=": every
+// combination but the default (each first answer), at most MAX_RECS of them
+const MAX_RECS = 16;
+export function replyKey(sc, picks) {
+  const v = version(sc), out = [];
+  for (const c of v.clips || []) if (c.reply) { const first = ((c.reply.options || [])[0] || {}).id; const p = c.id in picks ? picks[c.id] : first; out.push(`${c.id}=${p === null || p === undefined ? "" : p}`); }
+  return out.join("|");
+}
+function replyCombos(sc) {
+  const v = version(sc), replies = (v.clips || []).filter(c => c.reply);
+  if (!replies.length) return [];
+  let combos = [{}];
+  for (const c of replies) {
+    const ids = (c.reply.options || []).map(o => o.id).concat([null]);
+    combos = combos.flatMap(p => ids.map(id => Object.assign({}, p, { [c.id]: id })));
+  }
+  const def = replyKey(sc, {});
+  return combos.map(p => [replyKey(sc, p), p]).filter(([k]) => k !== def).slice(0, MAX_RECS);
+}
+
 function stitchOf(st, n, story) {
   const flags = [], objective = ((st.beats || []).flatMap(b => b.do || []).find(a => a.objective) || {}).objective || "";
   for (const b of st.beats || []) for (const a of b.do || []) if (a.flag && !b.secret) flags.push(a.flag);
@@ -187,6 +207,8 @@ export async function bakePreview(stage, story, plan, files, fps = 30, onProgres
     const models = (fm[nodeOf(ids[i])] || {}).models || {};
     stage.models = filesOf(models);                               // its cast in the models they wear there (setWorld dresses them)
     out.scenes[ids[i]] = Object.assign(bakeScene(stage, story, plan, story.scenes[ids[i]], files, fps), { models });
+    const recs = replyCombos(story.scenes[ids[i]]);               // the reply branches, each its own recording (the default: every first answer)
+    if (recs.length) out.scenes[ids[i]].recordings = Object.fromEntries(recs.map(([key, picks]) => [key, bakeScene(stage, story, plan, story.scenes[ids[i]], files, fps, picks)]));
   }
   stage.models = {};
   out.bodies = {};                                 // each cast member's body, exported once (any scene's figure will do)

@@ -139,8 +139,11 @@ loads, every verb in the games has a part).
    last frame). Measured: the skinned head within 8 cm of the recorded joint; a picture `tests/sceneshot.gd`. **The
    faces**: the body glb carries MHR's 72 face shapes as morph targets (bake.js keeps them as targets instead of baking
    them, named as the bake names its weights), and each frame's weights go onto the mesh's blend shapes (measured: the
-   lobby scene's lip pucker at 1.0; `godot_reference/s_hello_face.png`). Not yet: a cast member's models per scene,
-   the reply branches as their own recordings (the desk could bake each branch).
+   lobby scene's lip pucker at 1.0; `godot_reference/s_hello_face.png`). **The reply branches**: the bake records
+   every combination of a scene's answers (silence too, at most 16 a scene) as its own recording (`recordings`, keyed
+   `c3=good|c7=`; the export a file each, `scenes/<sid>__<key>.json`), and the scene player switches to the branch's
+   recording at the answer, its timeline mapped onto it (measured: the night scene's painting answer, no frame held).
+   Not yet: a cast member's models per scene.
 4. **The look** (GODOT_PLAN §6): UltraVHS and Light Kit as shaders and nodes, measured; M_StudioSurface; the
    characters' shaders on HumanShaders (§2 of the plan) with the Studio's colours and patterns checked side by side.
 5. **The rest of §6**: the lives' effects, hiding, reverb, the HUD themes, the pause menu, the little things.
