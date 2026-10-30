@@ -60,12 +60,35 @@ async function open(name) {
   $("#mode").value = ST.mode;
   rebuild(); drawMap(); inspect(); viewTools();
   status(`${name}: ${count()}`);
+  syncInsides();
 }
 function normal(S) {
   S = S || SP.blankStreet("street");
   for (const k of LISTS) S[k] = Array.isArray(S[k]) ? S[k] : [];
   S.look = S.look || {}; S.time = S.time || "dusk";
   return S;
+}
+// ---- insides: a building whose inside is a set's level (made in the scene builder): its rooms read from the set, so
+// its outside's doors and windows are the level's; read again whenever the street opens or the set is picked
+let SETS = [];
+async function loadSets() { try { SETS = (await api("/api/sets")).sets || []; } catch (e) { SETS = []; } return SETS; }
+async function levelOf(set, level) {
+  const j = await api("/api/story/" + encodeURIComponent("set:" + set)), L = j.story.levels || {};
+  const id = level && L[level] ? level : Object.keys(L)[0];
+  return { id, level: L[id], mtime: j.mtime };
+}
+async function syncInside(b, quiet) {
+  const ins = b.inside; if (!ins || !ins.set) return false;
+  let got; try { got = await levelOf(ins.set, ins.level); } catch (e) { if (!quiet) toast(`no set called ${ins.set}: make it in the scene builder (its game picker: Sets, + new set…)`); return false; }
+  const rooms = SG.insideRooms(got.level);
+  if (JSON.stringify(rooms) === JSON.stringify(ins.rooms) && ins.level === got.id) return false;
+  ins.rooms = rooms; ins.level = got.id; Object.assign(b, SG.insideSize(b));
+  return true;
+}
+async function syncInsides() {
+  const changedOnes = [];
+  for (const b of ST.street.buildings) if (b.inside && b.inside.set && await syncInside(b, true)) changedOnes.push(b.id);
+  if (changedOnes.length) { changed(); toast(`${changedOnes.join(", ")}: its inside followed its set's changes`); }
 }
 const count = () => { const S = ST.street; return `${S.roads.length} streets, ${S.buildings.length} buildings, ${S.things.length} things, ${S.fences.length} fences, ${S.shots.length} shots`; };
 async function save() {
@@ -334,7 +357,7 @@ function frameMap() {
   ST.view.s = clamp(Math.min(MW / (b[2] - b[0] + 16), MH / (b[3] - b[1] + 16)), 1.5, 80);
 }
 const THING_COLOURS = { Lights: "#e8c060", "Poles and wires": "#b0aca4", "Shop and street": "#7fb3d5", Road: "#e08a50", People: "#d58fb5" };
-const FENCE_COLOURS = { mesh: "#9aa3aa", wood: "#a0784f", panel: "#c6cacd", block: "#a6a39c", blockmesh: "#a6a39c", rail: "#7d8288", bamboo: "#b4a36a", slats: "#8a6a4a" };
+const FENCE_COLOURS = { mesh: "#9aa3aa", wood: "#a0784f", panel: "#c6cacd", block: "#a6a39c", blockmesh: "#a6a39c", rail: "#7d8288", bamboo: "#b4a36a", slats: "#8a6a4a", gate: "#5c6066", accordion: "#d9534f", chain: "#cccccc" };
 function drawMap() {
   if (!ST.street) return;
   const box = svg.getBoundingClientRect(); MW = box.width || MW; MH = box.height || MH;
@@ -607,9 +630,10 @@ function placeTool(from, to, dragged, e) {
     if (!dragged) to = [from[0] + 6, from[1]];
     const f = { id: newId("fence"), kind: t.kind, from, to }; ST.street.fences.push(f); sel = { list: "fences", id: f.id };
   } else if (t.what === "building") {
-    const b = Object.assign({ id: newId("b") }, JSON.parse(JSON.stringify(t.proto)), { turn: 0 });
+    const b = Object.assign({ id: newId(t.walkin ? t.style : "b") }, JSON.parse(JSON.stringify(t.proto)), { turn: 0 });
     snapBuilding(b, from[0], from[1], e.altKey); ST.street.buildings.push(b); sel = { list: "buildings", id: b.id };
-    t.proto = SP.makeBuilding(t.style, Math.floor(Math.random() * 1e9));   // the next one differs
+    if (t.walkin) syncInside(b).then(ok => { if (ok) { snapBuilding(b, b.at[0], b.at[1], e.altKey); changed(); } });
+    else t.proto = SP.makeBuilding(t.style, Math.floor(Math.random() * 1e9));   // the next one differs
   } else if (t.what === "thing") {
     const th = Object.assign({ id: newId(t.kind) , kind: t.kind, turn: 0 }, t.extra || {});
     snapThing(th, from[0], from[1], e.altKey); ST.street.things.push(th); sel = { list: "things", id: th.id };
@@ -631,6 +655,8 @@ function palette() {
   const btn = (t, label, title, colour) => el("button", { "data-tool": toolKey(t), title, on: { click: () => setTool(ST.tool && toolKey(ST.tool) === toolKey(t) ? null : t) } }, colour ? el("i", { style: `background:${colour}` }) : null, label);
   L.append(el("h2", {}, "Streets"), el("div", { class: "pal" }, ...Object.entries(ROADS).map(([k, R]) => btn({ what: "road", kind: k, proto: R.proto, width: R.proto.width }, R.label, R.note, "#3a3d42"))));
   L.append(el("h2", {}, "Buildings"), el("div", { class: "pal" }, ...Object.entries(SP.STYLES).map(([k, S]) => btn({ what: "building", style: k, proto: SP.makeBuilding(k, 7 + k.length) }, S.label, `${S.note} (after ${S.ref})`, "#bdb8ae"))));
+  L.append(el("h2", {}, "Buildings to walk into"), el("div", { class: "pal" }, ...Object.entries(SP.WALKINS).map(([k, S]) => btn({ what: "building", style: k, proto: SP.walkIn(k), walkin: true }, S.label, S.note, "#d9a441"))),
+    el("div", { class: "hint" }, "Their insides are sets from the scene builder: the doors are the set's own. Any building can take one (its inspector: Inside)."));
   const cats = {};
   for (const [k, K] of Object.entries(SG.THING_KINDS)) (cats[K.cat] = cats[K.cat] || []).push([k, K]);
   for (const [cat, list] of Object.entries(cats)) L.append(el("h2", {}, cat), el("div", { class: "pal" }, ...list.map(([k, K]) => btn({ what: "thing", kind: k }, K.label, K.note, THING_COLOURS[cat]))));
@@ -792,7 +818,7 @@ function drawPanel(P, b = ST.sel && ST.sel.list === "buildings" ? selected() : n
   }
   (b.parts || []).forEach((p, i) => {
     if ((p.face || "front") !== P.face) return;
-    for (const rc of partRects(b, p, fi)) {
+    for (const rc of SG.partCopies([p]).flatMap(q => partRects(b, q, fi))) {
       const on = sel.part === i;
       o.push(`<rect x="${u2x(rc[0])}" y="${z2y(rc[3])}" width="${Math.max(3, (rc[2] - rc[0]) * vs.s)}" height="${Math.max(3, (rc[3] - rc[1]) * vs.s)}" fill="${on ? "#d9a44133" : "#6fb3d911"}" stroke="${on ? "#d9a441" : "#6fb3d9aa"}" stroke-width="${on ? 2 : 1}" data-part="${i}" data-base="${rc[4]}" style="cursor:move"><title>${esc((SG.PART_KINDS[p.kind] || {}).label || p.kind)}${p.text ? ": " + esc(p.text) : ""}</title></rect>`);
       if (on) for (const [cx, cz, h] of [[rc[2], rc[3], "ne"], [rc[0], rc[1], "sw"], [rc[2], rc[1], "se"], [rc[0], rc[3], "nw"]]) o.push(`<rect x="${u2x(cx) - 5}" y="${z2y(cz) - 5}" width="10" height="10" fill="#d9a441" stroke="#000" data-phandle="${h}" data-base="${rc[4]}" style="cursor:nwse-resize"/>`);
@@ -1044,6 +1070,17 @@ function inspectBuilding(b) {
   insp.append(field("size", el("div", { class: "row" }, num(b, "w", { min: 2, unit: "wide" }), num(b, "d", { min: 2, unit: "deep (m)" }))));
   insp.append(field("floors", el("div", { class: "row" }, num(b, "floors", { min: 1, step: 1, int: true }), "ground", num(b, "gh", { min: 2, step: 0.1 }), "others", num(b, "fh", { min: 2, step: 0.1, unit: "m" }))));
   insp.append(field("turned", el("div", { class: "row" }, num(b, "turn", { step: 15, unit: "°" }), el("button", { on: { click: () => { pushUndo(); snapBuilding(b, b.at[0], b.at[1], false); changed(); } } }, "Face the street"))));
+  insp.append(insideSection(b));
+  if (b.inside && b.inside.set) {                                     // the outside of a set: its windows and doors are the set's
+    b.roof = b.roof || { kind: "hip" };
+    const rf = b.roof;
+    insp.append(section("Roof", field("roof", pick(rf, "kind", SG.ROOF_KINDS, { def: "hip", redraw: true })),
+      ["gable", "hip", "shed"].includes(rf.kind) ? field("slope", el("div", { class: "row" }, num(rf, "pitch", { def: 24, step: 1, unit: "°" }), "eaves out", num(rf, "over", { def: 0.6, step: 0.05, unit: "m" }))) : null));
+    b.parts = b.parts || [];
+    insp.append(section(["On the walls", el("button", { on: { click: () => tab("facade") } }, "open the facade")], el("div", { class: "list" }, ...b.parts.map((p, i) => el("div", { class: "it", on: { click: () => { ST.sel = { list: "buildings", id: b.id, part: i }; inspect(); renderFacades(); } } }, el("span", {}, `${(SG.PART_KINDS[p.kind] || {}).label || p.kind}${p.text ? ": " + p.text : ""}`), el("small", {}, p.face || "front"))))));
+    insp.append(section("Materials", ...["wall", "trim", "tiles", "roof_flat", "concrete", "rail"].map(s => lookRow(b, s))));
+    return;
+  }
   b.faces = b.faces || {}; const fr = b.faces.front = b.faces.front || {};
   insp.append(section("Front", field("windows", el("div", { class: "row" }, pick(fr, "win", SG.WIN_STYLES, { def: "punched" }), "per floor", num(fr, "cols", { min: 0, step: 1, int: true }))),
     field("window size", el("div", { class: "row" }, num(fr, "ww", { def: 1.3, step: 0.1 }), "×", num(fr, "wh", { def: 1.4, step: 0.1 }), "sill", num(fr, "sill", { def: 0.85, step: 0.05, unit: "m" }))),
@@ -1070,6 +1107,40 @@ function inspectBuilding(b) {
   const used = new Set(); const piece = ST.pieces.find(x => x.id === b.id); if (piece) for (const s of Object.keys(piece.G)) used.add(SG.slotBase(s));
   insp.append(section("Materials", el("div", { class: "hint" }, "A colour, or a set from the PBR shelf (its real size kept)."),
     ...["wall", "wall2", "trim", "frame", "glass", "door", "shutter", "tiles", "roof_flat", "concrete", "metal", "rail", "awning", "wood_dark", "lattice"].filter(s => used.has(s)).map(s => lookRow(b, s))));
+}
+function insideSection(b) {
+  const ins = b.inside || {}, has = !!ins.set;
+  const sel = el("select", { on: { change: async e => {
+    const v = e.target.value; pushUndo();
+    if (!v) { delete b.inside; changed(); return; }
+    b.inside = Object.assign({ rows: 1, floors: 1, raise: 0.15 }, b.inside || {}, { set: v, level: "", rooms: [] });
+    if (await syncInside(b)) snapBuilding(b, b.at[0], b.at[1], false);
+    changed();
+  } } }, new Option("(none: just its outside)", ""));
+  for (const n of SETS) sel.append(new Option("set: " + n, n));
+  sel.value = has ? ins.set : "";
+  const kids = [field("inside", sel, "A set from the scene builder: its rooms go inside, its outside doors and windows are cut where the set has them")];
+  if (has) {
+    const fr = (ins.rooms || []).length ? SG.insideFrame(ins) : null;
+    kids.push(field("its rooms", el("span", { class: "hint" }, fr ? `${ins.rooms.length} rooms, ${r1(fr.W)} × ${r1(fr.D)} m, its way in on the ${{ s: "south", n: "north", e: "east", w: "west" }[fr.side]} (turned to the front)` : "not read yet")));
+    const resize = () => Object.assign(b, SG.insideSize(b));
+    kids.push(field("copies", el("div", { class: "row" }, num(ins, "rows", { def: 1, min: 1, step: 1, int: true, after: resize }), "side by side,", num(ins, "floors", { def: 1, min: 1, max: 4, step: 1, int: true, after: resize }), "floors")),
+      field("its floor", el("div", { class: "row" }, num(ins, "raise", { def: 0.15, min: 0, step: 0.05, after: resize }), el("small", {}, "m above the ground (steps up to its doors)"))),
+      el("div", { class: "row", style: "display:flex;gap:4px;flex-wrap:wrap;margin-top:4px" },
+        el("button", { title: "read the set again (it's read whenever the street opens)", on: { click: async () => { pushUndo(); if (await syncInside(b)) { changed(); toast("its inside followed the set"); } else toast("the set hasn't changed"); } } }, "Read the set again"),
+        el("a", { href: `builder.html?game=${encodeURIComponent("set:" + ins.set)}`, target: "builder", style: "color:var(--accent);font-size:12px;align-self:center" }, "open the set in the scene builder"),
+        Math.round(+ins.floors || 1) > 1 ? el("button", { title: "a walkway along the front of the upper floors, a railing on it, and a stair up from the ground at its left end", on: { click: () => { pushUndo(); addWalkway(b); changed(); } } }, "+ walkway and stairs") : null),
+      el("div", { class: "hint", style: "margin-top:4px" }, "In Godot: the .glb has a marker (insides/inside_<id>_<floor>_<copy>) where each copy's level goes; put the set's level scene there and its door is this one."));
+  }
+  return section("Inside (a set you can walk into)", ...kids);
+}
+// a motel's (or a flats') way up: a walkway along the front of each upper floor and a stair at its left end
+function addWalkway(b) {
+  const sz = SG.insideSize(b), floors = Math.round(+b.inside.floors || 1), fl = SG.insideFloors(b), top = fl[fl.length - 1];
+  b.parts = (b.parts || []).filter(p => !p.walkway);
+  b.parts.push({ kind: "balcony", face: "front", x: 0, w: r2(sz.w), out: 1.3, floors: [2, floors], rail: "rail", slot: "concrete", walkway: true });
+  b.parts.push({ kind: "stairs", face: "left", x: r2(sz.d / 2 - 2.6), w: 5.2, h: r2(fl[1].z0), out: 1.1, dir: 1, slot: "concrete", walkway: true });
+  void top;
 }
 function inspectFloor(b, face, k) {
   const f = (b.faces = b.faces || {})[face] = b.faces[face] || {};
@@ -1102,6 +1173,7 @@ function inspectPart(b, p, i) {
     if (e.target.checked) { const row = fi.rows.find(r => (+p.z || 0) >= r.z0 && (+p.z || 0) < r.z0 + r.h) || fi.rows[0]; p.floors = [row.k, fi.rows.length]; p.z = r2((+p.z || 0) - row.z0); }
     else { const row = fi.rows.find(r => r.k === p.floors[0]) || fi.rows[0]; p.z = r2((+p.z || 0) + row.z0); delete p.floors; }
   }, true) } }), " on every floor"), every ? el("span", { class: "row" }, "from", num(p.floors, 0, { min: 1, step: 1, int: true }), "to", num(p.floors, 1, { min: 1, step: 1, int: true })) : null)));
+  insp.append(field("along", el("div", { class: "row" }, num(p, "repeat", { def: 1, min: 1, step: 1, int: true }), "of them,", num(p, "gap", { def: 3, step: 0.05 }), el("small", {}, "m apart (a lamp by each door)"))));
   if (p.kind === "sign" || p.kind === "vsign") {
     insp.append(field("words", text(p, "text")), field("colours", el("div", { class: "row" }, "letters", el("input", { type: "color", value: p.fg || "#ffffff", on: { input: e => edit(() => { p.fg = e.target.value; }) } }), "board", el("input", { type: "color", value: p.bg || "#202024", on: { input: e => edit(() => { p.bg = e.target.value; }) } }), check(p, "lit", "lit", { def: true }))),
       field("written", pick(p, "dir", { h: "across", v: "top to bottom", r: "turned (up the board)" }, { def: p.kind === "vsign" ? "v" : "h" })));
@@ -1141,9 +1213,10 @@ function inspectFence(f) {
   insp.append(field("kind", pick(f, "kind", Object.fromEntries(Object.entries(SG.FENCE_KINDS).map(([k, v]) => [k, v.label])), { redraw: true })));
   insp.append(field("length", el("span", { class: "hint" }, `${r1(Math.hypot(f.to[0] - f.from[0], f.to[1] - f.from[1]))} m (drag its ends; Shift keeps it square)`)));
   insp.append(field("height", num(f, "h", { def: K.h, step: 0.1, unit: "m" })));
-  insp.append(field("posts every", num(f, "step", { def: K.step, step: 0.1, unit: "m" })));
+  if (f.kind === "gate" || f.kind === "accordion") insp.append(field("open", el("div", { class: "row" }, el("input", { type: "range", min: 0, max: 100, value: Math.round((f.open ?? (f.kind === "accordion" ? 0.5 : 0)) * 100), on: { input: e => edit(() => { f.open = +e.target.value / 100; }) } }), el("small", {}, "shut to open (open: no collider in Godot)"))));
+  else if (f.kind !== "chain") insp.append(field("posts every", num(f, "step", { def: K.step, step: 0.1, unit: "m" })));
   f.look = f.look || {};
-  const slots = { mesh: ["chainlink", "post"], wood: ["boards", "wood"], panel: ["panel", "post"], block: ["blocks", "concrete"], blockmesh: ["blocks", "chainlink", "post"], rail: ["post"], bamboo: ["bamboo", "wood_dark"], slats: ["wood", "wood"] }[f.kind] || [];
+  const slots = { mesh: ["chainlink", "post"], wood: ["boards", "wood"], panel: ["panel", "post"], block: ["blocks", "concrete"], blockmesh: ["blocks", "chainlink", "post"], rail: ["post"], bamboo: ["bamboo", "wood_dark"], slats: ["wood", "wood"], gate: ["rail", "steel", "bars"], accordion: ["red", "white"], chain: ["steel", "white"] }[f.kind] || [];
   insp.append(section("Materials", ...[...new Set(slots)].map(s => lookRow(f, s))));
 }
 function inspectShot(s) {
@@ -1202,7 +1275,7 @@ async function exportStreet() {
   const g = S3.exportGroup(root, ST.street, ST.pieces, ST.lights, SG.blockers(ST.street, ST.pieces), { insides: insideMarkers(), lamps: $("#glbLamps").checked });
   return S3.exportGlb(g, GLTFExporter);
 }
-const insideMarkers = () => [];
+const insideMarkers = () => ST.street.buildings.flatMap(b => SG.insideMarkers(b, SG.footing(b, terrain())));
 $("#glb").onclick = async () => {
   try {
     const bin = await exportStreet(), a = document.createElement("a");
@@ -1250,7 +1323,7 @@ new ResizeObserver(() => { drawMap(); renderAll(); renderFacades(); }).observe(d
 // ---- off it goes ----------------------------------------------------------------------------------------------------
 (async () => {
   palette(); facadeBar();
-  await S3.loadShelf();
+  await S3.loadShelf(); await loadSets();
   try {
     await loadNames();
     const want = Q.get("street") || (() => { try { return localStorage.getItem("street.name"); } catch (e) { return null; } })();
@@ -1263,7 +1336,7 @@ new ResizeObserver(() => { drawMap(); renderAll(); renderFacades(); }).observe(d
   ST.ready = true; window.__streetReady = true;
 })();
 // for the checks: the street's group, a build now, the build cache emptied
-window.__root = () => root; window.__rebuild = () => rebuild(); window.__clearCache = () => { BUILT.clear(); if (root) { for (const v of root.userData.chunks.values()) S3.disposeChunk(v.group); root.userData.chunks = new Map(); } };
+window.__terrain = () => terrain(); window.__root = () => root; window.__rebuild = () => rebuild(); window.__clearCache = () => { BUILT.clear(); if (root) { for (const v of root.userData.chunks.values()) S3.disposeChunk(v.group); root.userData.chunks = new Map(); } };
 // for the checks: draw a shot at a size, straight away
 window.__shot = (id, w, h) => {
   const s = ST.street.shots.find(x => x.id === id); if (!s) return false;

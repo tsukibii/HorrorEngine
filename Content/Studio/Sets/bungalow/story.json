@@ -1,0 +1,1277 @@
+{
+ "format": 3,
+ "game": {
+  "id": "bungalow",
+  "title": "Bungalow (a single-storey house round an engawa)",
+  "start": "n_start",
+  "target_min": 0,
+  "voice": "ja",
+  "text": "en",
+  "clip_max": 8,
+  "subtitles": [
+   "en",
+   "zh"
+  ],
+  "built_with": {
+   "engine": "0.6.0",
+   "format": 3
+  }
+ },
+ "cast": {
+  "someone": {
+   "name": "Someone",
+   "metahuman": null,
+   "height": 1.7
+  }
+ },
+ "items": {},
+ "notes": {},
+ "lines": {},
+ "sounds": {},
+ "levels": {
+  "bungalow": {
+   "start": "start",
+   "rooms": [
+    {
+     "id": "path",
+     "at": [
+      4.55,
+      -2.4,
+      0
+     ],
+     "size": [
+      0.91,
+      1.5,
+      2.4
+     ],
+     "floor": "dirt",
+     "light": "dim",
+     "ceiling": false,
+     "kind": "garden",
+     "name": "Garden path",
+     "skip": [
+      "e",
+      "s",
+      "w"
+     ],
+     "openings": [
+      {
+       "wall": "n",
+       "at": 0.455,
+       "w": 0.7,
+       "h": 2.1
+      }
+     ],
+     "props": [
+      {
+       "id": "start",
+       "use": "spot",
+       "at": [
+        0.45,
+        0.5
+       ],
+       "rot": 90
+      }
+     ]
+    },
+    {
+     "id": "engawa_s",
+     "at": [
+      1,
+      -0.9,
+      0
+     ],
+     "size": [
+      8,
+      0.9,
+      2.4
+     ],
+     "floor": "wood",
+     "light": "dim",
+     "ceiling": false,
+     "kind": "engawa",
+     "name": "Front engawa",
+     "skip": [
+      [
+       "n",
+       0,
+       3.55
+      ],
+      [
+       "n",
+       4.46,
+       8
+      ],
+      "s"
+     ],
+     "openings": [
+      {
+       "wall": "n",
+       "at": 4.005,
+       "w": 0.7,
+       "h": 2,
+       "door": {
+        "id": "front_door",
+        "swing": "slide"
+       }
+      }
+     ],
+     "props": [
+      {
+       "id": "engawa_s_fx_floor",
+       "kit": {
+        "preset": "wide_planks",
+        "size": [
+         7.9,
+         0.8,
+         0.015
+        ]
+       },
+       "at": [
+        4,
+        0.45
+       ]
+      }
+     ]
+    },
+    {
+     "id": "entry",
+     "at": [
+      4.55,
+      0,
+      0
+     ],
+     "size": [
+      0.91,
+      3,
+      2.4
+     ],
+     "floor": "tile",
+     "light": "dim",
+     "kind": "genkan",
+     "name": "Entrance passage",
+     "skip": [
+      "n",
+      "e",
+      "s",
+      "w"
+     ],
+     "props": [
+      {
+       "id": "entry_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        0.455,
+        1.5
+       ],
+       "z": 2.32,
+       "kelvin": 3000,
+       "lumens": 683
+      },
+      {
+       "id": "entry_fx_switch",
+       "at": [
+        0.057,
+        2.5
+       ],
+       "rot": 90,
+       "z": 1.14,
+       "tag": "light_switch",
+       "kit": {
+        "preset": "switch_jp_1",
+        "size": [
+         0.07,
+         0.012,
+         0.12
+        ]
+       },
+       "use": "switch",
+       "light": "entry_fx_light"
+      },
+      {
+       "id": "entry_fx_floor",
+       "kit": {
+        "preset": "stone_450",
+        "size": [
+         0.81,
+         2.9,
+         0.015
+        ]
+       },
+       "at": [
+        0.455,
+        1.5
+       ]
+      }
+     ]
+    },
+    {
+     "id": "kyakuma",
+     "at": [
+      1,
+      0,
+      0
+     ],
+     "size": [
+      3.55,
+      3,
+      2.4
+     ],
+     "floor": "carpet",
+     "light": "dim",
+     "kind": "washitsu",
+     "name": "Kyaku-ma (guest room)",
+     "skip": [
+      "n"
+     ],
+     "openings": [
+      {
+       "wall": "e",
+       "at": 1.5,
+       "w": 1.6,
+       "h": 2,
+       "door": {
+        "id": "entry_kyakuma_door",
+        "swing": "slide"
+       }
+      },
+      {
+       "wall": "s",
+       "at": 1.775,
+       "w": 2.6,
+       "h": 2,
+       "door": {
+        "id": "kyakuma_engawa_s_door",
+        "swing": "slide"
+       }
+      },
+      {
+       "wall": "w",
+       "at": 1.5,
+       "w": 1.6,
+       "h": 2,
+       "door": {
+        "id": "kyakuma_storage_w_door",
+        "swing": "slide"
+       }
+      }
+     ],
+     "props": [
+      {
+       "id": "kyakuma_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        1.775,
+        1.5
+       ],
+       "z": 2.32,
+       "kelvin": 2700,
+       "lumens": 2662
+      },
+      {
+       "id": "kyakuma_fx_switch",
+       "at": [
+        3.493,
+        2.5
+       ],
+       "rot": 270,
+       "z": 1.14,
+       "tag": "light_switch",
+       "kit": {
+        "preset": "switch_jp_1",
+        "size": [
+         0.07,
+         0.012,
+         0.12
+        ]
+       },
+       "use": "switch",
+       "light": "kyakuma_fx_light"
+      },
+      {
+       "id": "kyakuma_fx_floor",
+       "kit": {
+        "preset": "tatami",
+        "size": [
+         3.45,
+         2.9,
+         0.055
+        ]
+       },
+       "at": [
+        1.775,
+        1.5
+       ]
+      }
+     ]
+    },
+    {
+     "id": "ima",
+     "at": [
+      5.46,
+      0,
+      0
+     ],
+     "size": [
+      3.54,
+      3,
+      2.4
+     ],
+     "floor": "carpet",
+     "light": "dim",
+     "kind": "washitsu",
+     "name": "I-ma (living room)",
+     "openings": [
+      {
+       "wall": "w",
+       "at": 1.5,
+       "w": 1.6,
+       "h": 2,
+       "door": {
+        "id": "entry_ima_door",
+        "swing": "slide"
+       }
+      },
+      {
+       "wall": "s",
+       "at": 1.77,
+       "w": 2.6,
+       "h": 2,
+       "door": {
+        "id": "ima_engawa_s_door",
+        "swing": "slide"
+       }
+      },
+      {
+       "wall": "n",
+       "at": 1.77,
+       "w": 2.4,
+       "h": 2,
+       "door": {
+        "id": "ima_engawa_m_door",
+        "swing": "slide"
+       }
+      },
+      {
+       "wall": "e",
+       "at": 1.4,
+       "w": 0.7,
+       "h": 2,
+       "door": {
+        "id": "ima_wet_door",
+        "swing": "in"
+       }
+      }
+     ],
+     "props": [
+      {
+       "id": "ima_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        1.77,
+        1.5
+       ],
+       "z": 2.32,
+       "kelvin": 2700,
+       "lumens": 2655
+      },
+      {
+       "id": "ima_fx_switch",
+       "at": [
+        0.057,
+        2.5
+       ],
+       "rot": 90,
+       "z": 1.14,
+       "tag": "light_switch",
+       "kit": {
+        "preset": "switch_jp_1",
+        "size": [
+         0.07,
+         0.012,
+         0.12
+        ]
+       },
+       "use": "switch",
+       "light": "ima_fx_light"
+      },
+      {
+       "id": "ima_fx_floor",
+       "kit": {
+        "preset": "tatami",
+        "size": [
+         3.44,
+         2.9,
+         0.055
+        ]
+       },
+       "at": [
+        1.77,
+        1.5
+       ]
+      },
+      {
+       "id": "someone_spot",
+       "use": "spot",
+       "at": [
+        7.0,
+        1.4
+       ],
+       "rot": 270
+      }
+     ]
+    },
+    {
+     "id": "wet",
+     "at": [
+      9,
+      0.6,
+      0
+     ],
+     "size": [
+      1,
+      1.6,
+      2.4
+     ],
+     "floor": "tile",
+     "light": "dim",
+     "kind": "washroom",
+     "name": "Wet room",
+     "skip": [
+      "w"
+     ],
+     "props": [
+      {
+       "id": "wet_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        0.5,
+        0.8
+       ],
+       "z": 2.32,
+       "kelvin": 4000,
+       "lumens": 400
+      },
+      {
+       "id": "wet_fx_switch",
+       "at": [
+        0.057,
+        1.35
+       ],
+       "rot": 90,
+       "z": 1.14,
+       "tag": "light_switch",
+       "kit": {
+        "preset": "switch_jp_1",
+        "size": [
+         0.07,
+         0.012,
+         0.12
+        ]
+       },
+       "use": "switch",
+       "light": "wet_fx_light"
+      },
+      {
+       "id": "wet_fx_floor",
+       "kit": {
+        "preset": "tile_300",
+        "size": [
+         0.9,
+         1.5,
+         0.01
+        ]
+       },
+       "at": [
+        0.5,
+        0.8
+       ]
+      }
+     ]
+    },
+    {
+     "id": "toilet",
+     "at": [
+      9,
+      2.2,
+      0
+     ],
+     "size": [
+      1,
+      0.8,
+      2.4
+     ],
+     "floor": "tile",
+     "light": "dim",
+     "kind": "toilet",
+     "skip": [
+      "n",
+      "s",
+      "w"
+     ],
+     "props": [
+      {
+       "id": "toilet_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        0.5,
+        0.4
+       ],
+       "z": 2.32,
+       "kelvin": 3000,
+       "lumens": 200
+      },
+      {
+       "id": "toilet_fx_floor",
+       "kit": {
+        "preset": "tile_300",
+        "size": [
+         0.9,
+         0.7,
+         0.01
+        ]
+       },
+       "at": [
+        0.5,
+        0.4
+       ]
+      }
+     ]
+    },
+    {
+     "id": "storage_w",
+     "at": [
+      0,
+      0,
+      0
+     ],
+     "size": [
+      1,
+      5.5,
+      2.4
+     ],
+     "floor": "wood",
+     "light": "dim",
+     "kind": "storage",
+     "skip": [
+      "e"
+     ]
+    },
+    {
+     "id": "engawa_m",
+     "at": [
+      4.55,
+      3,
+      0
+     ],
+     "size": [
+      6.05,
+      0.9,
+      2.4
+     ],
+     "floor": "wood",
+     "light": "dim",
+     "kind": "engawa",
+     "name": "Inner engawa",
+     "skip": [
+      [
+       "n",
+       0.91,
+       6.05
+      ],
+      [
+       "s",
+       0.91,
+       4.45
+      ],
+      "w"
+     ],
+     "openings": [
+      {
+       "wall": "s",
+       "at": 0.455,
+       "w": 0.7,
+       "h": 2.1
+      },
+      {
+       "wall": "s",
+       "at": 4.95,
+       "w": 0.7,
+       "h": 2,
+       "door": {
+        "id": "engawa_m_toilet_door",
+        "swing": "in"
+       }
+      },
+      {
+       "wall": "n",
+       "at": 0.455,
+       "w": 0.7,
+       "h": 2,
+       "door": {
+        "id": "engawa_m_closet_k_door",
+        "swing": "slide"
+       }
+      }
+     ],
+     "props": [
+      {
+       "id": "engawa_m_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        3.025,
+        0.45
+       ],
+       "z": 2.32,
+       "kelvin": 3000,
+       "lumens": 1361
+      },
+      {
+       "id": "engawa_m_fx_switch",
+       "at": [
+        1.005,
+        0.057
+       ],
+       "rot": 180,
+       "z": 1.14,
+       "tag": "light_switch",
+       "kit": {
+        "preset": "switch_jp_1",
+        "size": [
+         0.07,
+         0.012,
+         0.12
+        ]
+       },
+       "use": "switch",
+       "light": "engawa_m_fx_light"
+      },
+      {
+       "id": "engawa_m_fx_floor",
+       "kit": {
+        "preset": "wide_planks",
+        "size": [
+         5.95,
+         0.8,
+         0.015
+        ]
+       },
+       "at": [
+        3.025,
+        0.45
+       ]
+      }
+     ]
+    },
+    {
+     "id": "kitchen",
+     "at": [
+      1,
+      3,
+      0
+     ],
+     "size": [
+      3.55,
+      3.4,
+      2.4
+     ],
+     "floor": "tile",
+     "light": "dim",
+     "kind": "kitchen",
+     "openings": [
+      {
+       "wall": "s",
+       "at": 1.775,
+       "w": 1.6,
+       "h": 2,
+       "door": {
+        "id": "kyakuma_kitchen_door",
+        "swing": "slide"
+       }
+      },
+      {
+       "wall": "n",
+       "at": 1.065,
+       "w": 0.8,
+       "h": 2,
+       "door": {
+        "id": "kitchen_engawa_n_door",
+        "swing": "in"
+       }
+      },
+      {
+       "wall": "w",
+       "at": 1.7,
+       "w": 1.2,
+       "h": 1.1,
+       "sill": 0.9,
+       "window": true
+      }
+     ],
+     "props": [
+      {
+       "id": "kitchen_fx_kitchen",
+       "kit": {
+        "preset": "kitchen_run",
+        "size": [
+         2.55,
+         0.65,
+         0.85
+        ]
+       },
+       "at": [
+        3.155,
+        1.7
+       ],
+       "rot": 270,
+       "tag": "kitchen_counter"
+      },
+      {
+       "id": "kitchen_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        1.775,
+        1.7
+       ],
+       "z": 2.32,
+       "kelvin": 4000,
+       "lumens": 3017
+      },
+      {
+       "id": "kitchen_fx_switch",
+       "at": [
+        2.775,
+        0.057
+       ],
+       "rot": 180,
+       "z": 1.14,
+       "tag": "light_switch",
+       "kit": {
+        "preset": "switch_jp_1",
+        "size": [
+         0.07,
+         0.012,
+         0.12
+        ]
+       },
+       "use": "switch",
+       "light": "kitchen_fx_light"
+      },
+      {
+       "id": "kitchen_fx_floor",
+       "kit": {
+        "preset": "oak_planks",
+        "size": [
+         3.45,
+         3.3,
+         0.015
+        ]
+       },
+       "at": [
+        1.775,
+        1.7
+       ]
+      },
+      {
+       "id": "kitchen_fx_win1",
+       "kit": {
+        "preset": "window_slide",
+        "size": [
+         1.2,
+         0.22,
+         1.125
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        0.06,
+        1.7
+       ],
+       "rot": 90,
+       "z": 0.875,
+       "in_wall": true,
+       "of": "kitchen_w_window"
+      }
+     ]
+    },
+    {
+     "id": "closet_k",
+     "at": [
+      4.55,
+      3.9,
+      0
+     ],
+     "size": [
+      0.91,
+      2.5,
+      2.4
+     ],
+     "floor": "wood",
+     "light": "dim",
+     "kind": "closet",
+     "skip": [
+      "n",
+      "e",
+      "s",
+      "w"
+     ],
+     "props": [
+      {
+       "id": "closet_k_fx_floor",
+       "kit": {
+        "preset": "oak_planks",
+        "size": [
+         0.81,
+         2.4,
+         0.015
+        ]
+       },
+       "at": [
+        0.455,
+        1.25
+       ]
+      }
+     ]
+    },
+    {
+     "id": "master",
+     "at": [
+      5.46,
+      3.9,
+      0
+     ],
+     "size": [
+      2.74,
+      2.5,
+      2.4
+     ],
+     "floor": "carpet",
+     "light": "dim",
+     "kind": "washitsu",
+     "name": "Main bedroom",
+     "skip": [
+      "n"
+     ],
+     "openings": [
+      {
+       "wall": "s",
+       "at": 1.37,
+       "w": 1.6,
+       "h": 2,
+       "door": {
+        "id": "engawa_m_master_door",
+        "swing": "slide"
+       }
+      }
+     ],
+     "props": [
+      {
+       "id": "master_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        1.37,
+        1.25
+       ],
+       "z": 2.32,
+       "kelvin": 2700,
+       "lumens": 1713
+      },
+      {
+       "id": "master_fx_switch",
+       "at": [
+        2.37,
+        0.057
+       ],
+       "rot": 180,
+       "z": 1.14,
+       "tag": "light_switch",
+       "kit": {
+        "preset": "switch_jp_1",
+        "size": [
+         0.07,
+         0.012,
+         0.12
+        ]
+       },
+       "use": "switch",
+       "light": "master_fx_light"
+      },
+      {
+       "id": "master_fx_floor",
+       "kit": {
+        "preset": "tatami",
+        "size": [
+         2.64,
+         2.4,
+         0.055
+        ]
+       },
+       "at": [
+        1.37,
+        1.25
+       ]
+      }
+     ]
+    },
+    {
+     "id": "veranda",
+     "at": [
+      8.2,
+      3.9,
+      0
+     ],
+     "size": [
+      2.4,
+      2.5,
+      2.4
+     ],
+     "floor": "wood",
+     "light": "dim",
+     "kind": "living",
+     "name": "Sunroom",
+     "skip": [
+      "n",
+      "w"
+     ],
+     "openings": [
+      {
+       "wall": "s",
+       "at": 1.2,
+       "w": 1.6,
+       "h": 2,
+       "door": {
+        "id": "engawa_m_veranda_door",
+        "swing": "slide"
+       }
+      },
+      {
+       "wall": "e",
+       "at": 1.25,
+       "w": 1.8,
+       "h": 1.1,
+       "sill": 0.9,
+       "window": true
+      }
+     ],
+     "props": [
+      {
+       "id": "veranda_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        1.2,
+        1.25
+       ],
+       "z": 2.32,
+       "kelvin": 2700,
+       "lumens": 1500
+      },
+      {
+       "id": "veranda_fx_switch",
+       "at": [
+        0.2,
+        0.057
+       ],
+       "rot": 180,
+       "z": 1.14,
+       "tag": "light_switch",
+       "kit": {
+        "preset": "switch_jp_1",
+        "size": [
+         0.07,
+         0.012,
+         0.12
+        ]
+       },
+       "use": "switch",
+       "light": "veranda_fx_light"
+      },
+      {
+       "id": "veranda_fx_floor",
+       "kit": {
+        "preset": "oak_planks",
+        "size": [
+         2.3,
+         2.4,
+         0.015
+        ]
+       },
+       "at": [
+        1.2,
+        1.25
+       ]
+      },
+      {
+       "id": "veranda_fx_win1",
+       "kit": {
+        "preset": "window_slide",
+        "size": [
+         1.8,
+         0.22,
+         1.125
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        2.34,
+        1.25
+       ],
+       "rot": 270,
+       "z": 0.875,
+       "in_wall": true,
+       "of": "veranda_e_window"
+      }
+     ]
+    },
+    {
+     "id": "engawa_n",
+     "at": [
+      0,
+      6.4,
+      0
+     ],
+     "size": [
+      10.6,
+      0.9,
+      2.4
+     ],
+     "floor": "wood",
+     "light": "dim",
+     "ceiling": false,
+     "kind": "engawa",
+     "name": "Back engawa",
+     "skip": [
+      "n",
+      [
+       "s",
+       1,
+       4.55
+      ]
+     ],
+     "openings": [
+      {
+       "wall": "s",
+       "at": 6.83,
+       "w": 1.8,
+       "h": 2,
+       "door": {
+        "id": "master_engawa_n_door",
+        "swing": "slide"
+       }
+      },
+      {
+       "wall": "s",
+       "at": 9.4,
+       "w": 1.6,
+       "h": 2,
+       "door": {
+        "id": "veranda_engawa_n_door",
+        "swing": "slide"
+       }
+      }
+     ],
+     "props": [
+      {
+       "id": "engawa_n_fx_floor",
+       "kit": {
+        "preset": "wide_planks",
+        "size": [
+         10.5,
+         0.8,
+         0.015
+        ]
+       },
+       "at": [
+        5.3,
+        0.45
+       ]
+      }
+     ]
+    }
+   ],
+   "links": [
+    {
+     "a": "path",
+     "b": "engawa_s",
+     "via": null
+    },
+    {
+     "a": "engawa_s",
+     "b": "entry",
+     "via": "front_door"
+    },
+    {
+     "a": "kyakuma",
+     "b": "entry",
+     "via": "entry_kyakuma_door"
+    },
+    {
+     "a": "ima",
+     "b": "entry",
+     "via": "entry_ima_door"
+    },
+    {
+     "a": "engawa_m",
+     "b": "entry",
+     "via": null
+    },
+    {
+     "a": "kyakuma",
+     "b": "engawa_s",
+     "via": "kyakuma_engawa_s_door"
+    },
+    {
+     "a": "ima",
+     "b": "engawa_s",
+     "via": "ima_engawa_s_door"
+    },
+    {
+     "a": "kitchen",
+     "b": "kyakuma",
+     "via": "kyakuma_kitchen_door"
+    },
+    {
+     "a": "kyakuma",
+     "b": "storage_w",
+     "via": "kyakuma_storage_w_door"
+    },
+    {
+     "a": "ima",
+     "b": "engawa_m",
+     "via": "ima_engawa_m_door"
+    },
+    {
+     "a": "ima",
+     "b": "wet",
+     "via": "ima_wet_door"
+    },
+    {
+     "a": "engawa_m",
+     "b": "toilet",
+     "via": "engawa_m_toilet_door"
+    },
+    {
+     "a": "master",
+     "b": "engawa_m",
+     "via": "engawa_m_master_door"
+    },
+    {
+     "a": "veranda",
+     "b": "engawa_m",
+     "via": "engawa_m_veranda_door"
+    },
+    {
+     "a": "engawa_m",
+     "b": "closet_k",
+     "via": "engawa_m_closet_k_door"
+    },
+    {
+     "a": "kitchen",
+     "b": "engawa_n",
+     "via": "kitchen_engawa_n_door"
+    },
+    {
+     "a": "engawa_n",
+     "b": "master",
+     "via": "master_engawa_n_door"
+    },
+    {
+     "a": "engawa_n",
+     "b": "veranda",
+     "via": "veranda_engawa_n_door"
+    }
+   ],
+   "trim": {
+    "skirting": 0.06,
+    "casing": 0.06,
+    "threshold": 0.012
+   }
+  }
+ },
+ "scenes": {
+  "s_first": {
+   "title": "First words",
+   "level": "bungalow",
+   "stage": {
+    "someone": "someone_spot"
+   },
+   "view": "start",
+   "camera": {
+    "mode": "soft",
+    "look": "someone",
+    "cone": [
+     30,
+     18
+    ]
+   },
+   "clips": [
+    {
+     "id": "c1",
+     "who": "someone",
+     "ja": "……",
+     "en": "...",
+     "act": "looks up"
+    }
+   ]
+  }
+ },
+ "stitches": {
+  "t_start": {
+   "title": "Start",
+   "level": "bungalow",
+   "beats": [
+    {
+     "id": "b_start",
+     "when": {
+      "start": true
+     },
+     "do": [
+      {
+       "fade": "in",
+       "secs": 2
+      },
+      {
+       "done": true
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "flow": {
+  "n_start": {
+   "type": "stitch",
+   "ref": "t_start",
+   "next": "n_first"
+  },
+  "n_first": {
+   "type": "scene",
+   "ref": "s_first",
+   "next": "e_end",
+   "final": true
+  },
+  "e_end": {
+   "type": "ending",
+   "kind": "good",
+   "title": "The end"
+  }
+ },
+ "secrets": {}
+}

@@ -197,7 +197,7 @@ export function group(S, pieces, mats, opts = {}) {
   for (const p of pieces) {
     if (!p._n) p._n = ++SERIAL;
     const bb = boundsOf(p); if (!bb) continue;
-    const key = p.type === "ground" || p.type === "wires" || p.type === "road" ? p.type + ":" + p.id : `${Math.floor((bb.lo[0] + bb.hi[0]) / 2 / cell)},${Math.floor((bb.lo[1] + bb.hi[1]) / 2 / cell)}`;
+    const key = p.type === "ground" || p.type === "wires" || p.type === "road" || p.type === "inside" ? p.type + ":" + p.id : `${Math.floor((bb.lo[0] + bb.hi[0]) / 2 / cell)},${Math.floor((bb.lo[1] + bb.hi[1]) / 2 / cell)}`;
     if (!chunks.has(key)) chunks.set(key, []);
     chunks.get(key).push(p);
     index[p.id] = { type: p.type, chunk: key, lo: [bb.lo[0], bb.lo[2], -bb.hi[1]], hi: [bb.hi[0], bb.hi[2], -bb.lo[1]] };
@@ -352,6 +352,7 @@ export function exportGroup(root, S, pieces, lights, blockers, opts = {}) {
   const visual = new THREE.Group(); visual.name = "visual"; out.add(visual);
   const made = new Map();
   for (const ch of root.children) {
+    if (ch.name.startsWith("chunk_inside")) continue;               // the stand-in rooms: the level's own scene goes there
     const g = new THREE.Group(); g.name = ch.name;
     for (const m of ch.children) if (m.isMesh) { const c = m.material.vertexColors ? byColour(m, exportMaterial(m.material, made), made) : new THREE.Mesh(m.geometry, exportMaterial(m.material, made)); c.name = m.name; g.add(c); }
     visual.add(g);

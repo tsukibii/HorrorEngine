@@ -165,3 +165,22 @@ export function blankStreet(name) {
     roads: [{ id: "road1", from: [0, -30], to: [0, 30], width: 6, walks: [2, 2], kerb: 0.15, edge: [0, 0], centre: "dashed", marks: [] }],
     buildings: [], things: [], fences: [], shots: [] };
 }
+
+// buildings to walk into (DECISIONS 2026-10-30, later night): their insides are sets from the scene builder (one floor
+// each for now); the street builds their outsides round them, the doors the set's own
+export const WALKINS = {
+  motel: { label: "Motel", set: "motel_room", note: "a row of the same room on two floors, a walkway and a stair up to the upper doors (the set: motel_room)" },
+  bungalow: { label: "Bungalow", set: "bungalow", note: "a single-storey house round an engawa, its floor raised, steps up to its doors (the set: bungalow)" },
+};
+export function walkIn(kind) {
+  if (kind === "motel") return { style: "motel", w: 22, d: 6.6, floors: 2, seed: 1, inside: { set: "motel_room", rows: 6, floors: 2, raise: 0.15, rooms: [] },
+    look: { wall: "#d9d2c4", trim: "#a39d92", concrete: "#9a968e", rail: "#4d5560" }, roof: { kind: "flat", parapet: 0.6 },
+    parts: [{ kind: "balcony", face: "front", x: 0, w: 22, out: 1.3, floors: [2, 2], rail: "rail", slot: "concrete", walkway: true },
+            { kind: "stairs", face: "left", x: 0.7, w: 5.2, h: 3.05, out: 1.1, dir: 1, slot: "concrete", walkway: true },
+            { kind: "sign", face: "front", x: 0, z: 5.75, w: 4.4, h: 0.9, text: "MOTEL さくら", fg: "#ff6a8a", bg: "#1d1a22" },
+            { kind: "lamp", face: "front", x: -9.45, z: 1.95, floors: [1, 2], repeat: 6, gap: 3.6, color: "#ffe2b0", power: 3 },
+            { kind: "ac", face: "front", x: -8.55, z: 0, out: 0.32, floors: [1, 2], repeat: 6, gap: 3.6 },
+            { kind: "pipe", face: "front", x: -10.9, z: 0, h: 3.05, w: 0.12, out: 1.22, repeat: 7, gap: 3.63, slot: "rail" }] };
+  return { style: "bungalow", w: 11, d: 10.1, floors: 1, seed: 1, inside: { set: "bungalow", rows: 1, floors: 1, raise: 0.45, rooms: [] },
+    look: { wall: "#cfc5b3", trim: "#6b5a49", tiles: "#3d4148" }, roof: { kind: "hip", pitch: 24, over: 0.8 }, parts: [] };
+}

@@ -46,6 +46,18 @@ for (const r of (S.roads || []).slice(0, 3)) { const f = SG.roadPath(r), s = f.L
   out.rays.push({ name: r.id + ":road", at: g3(c[0], c[1], c[2] + 30), want: c[2] + 0.004 });
   if (f.walks[1] > 0.3) out.rays.push({ name: r.id + ":walk", at: g3(w[0], w[1], w[2] + 30), want: w[2] + f.kerb }); }
 for (const b of (S.buildings || []).filter(b => !b.inside).slice(0, 3)) { const foot = SG.footing(b, T), h = SG.buildingHeight(b); out.rays.push({ name: b.id + ":roof", at: g3(b.at[0], b.at[1], foot.z + h + 40), want: foot.z + h, tol: 0.2 }); }
+// an inside's door: a ray from a metre outside it, level, toward it, must go in (the shell's hole is open); a walkway: to stand on
+for (const b of (S.buildings || []).filter(b => b.inside && (b.inside.rooms || []).length).slice(0, 2)) {
+  const foot = SG.footing(b, T), fr = SG.insideFrame(b.inside), ol = SG.insideOutline(fr.rooms), rows = Math.max(1, Math.round(+b.inside.rows || 1));
+  const e = ol.edges.find(e => (e.holes || []).some(h => !h.window)); if (!e) continue;
+  const h = e.holes.find(h => !h.window), mid = (h.a0 + h.a1) / 2, lv = e.axis === "x" ? [mid, e.v] : [e.v, mid];
+  const L2 = (x, y) => { const [u, v] = fr.toLocal(x, y); return [u - fr.W * rows / 2 + fr.W / 2, v]; };
+  const p0 = L2(...lv), p1 = L2(lv[0] + e.n[0], lv[1] + e.n[1]), z = foot.z + (+b.inside.raise || 0.15) + 1.0;
+  const w0 = SG.place([p0[0], p0[1], z], { at: b.at, turn: b.turn }), w1 = SG.place([p1[0], p1[1], z], { at: b.at, turn: b.turn }), d = [w0[0] - w1[0], w0[1] - w1[1]];
+  out.rays.push({ name: b.id + ":door", at: g3(w1[0], w1[1], w1[2]), dir: g3(d[0], d[1], 0), farther: 1.4 });
+  const walk = (b.parts || []).find(p => p.kind === "balcony" && p.walkway);
+  if (walk) { const fl = SG.insideFloors(b), zf = fl[1] ? fl[1].z0 : fl[0].z0, q = SG.place([0, -b.d / 2 - (+walk.out || 1.3) / 2, 0], { at: b.at, turn: b.turn }); out.rays.push({ name: b.id + ":walkway", at: g3(q[0], q[1], foot.z + zf + 20), want: foot.z + zf, tol: 0.05 }); }
+}
 const P = SG.build(S); for (const p of P) for (const L of p.lights || []) if (!L.shop) out.lamps++;
 out.insides = (S.buildings || []).filter(b => b.inside).map(b => b.id);
 console.log(JSON.stringify(out));
@@ -81,6 +93,12 @@ for want in expect["insides"]:
 for ray in expect["rays"]:
     ln = next((x for x in lines if x.startswith(f"GDPROBE ray {ray['name']} ")), None)
     got = float(ln.split()[-1]) if ln else None
+    if "farther" in ray:                                              # a ray through a door: it hits nothing before it's inside
+        if got is None or got < ray["farther"]:
+            errs.append(f"a ray through {ray['name']} stopped {got} m in: the shell closes the door")
+        else:
+            print(f"  a ray through {ray['name']}: nothing for {got:.2f} m (it's open)")
+        continue
     if got is None or abs(got - ray["want"]) > ray.get("tol", 0.06):
         errs.append(f"a ray onto {ray['name']} landed at {got}, the street says {ray['want']:.3f}")
     else:

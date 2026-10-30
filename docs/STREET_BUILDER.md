@@ -182,6 +182,47 @@ Story space (x east, y north, z up) is Godot's (x, z, -y), as the game's own exp
 level built at the same place. `python tools/godot/street_check.py [--street N]` (GDSTREET) does exactly this in a
 project of its own and checks it: rays land on the road, the pavement and the roofs where the street says.
 
+## 5c. Buildings to walk into: a set inside
+
+The user (DECISIONS 2026-10-30, later night): "integrate the interiors we designed into the street map... a motel...
+sync the door shape and let a player enter, exit; we also need stairs so they could reach the second floor, maybe
+gates... we will stick to 1 floor for our game interiors for now; the other scenario is a bungalow; I don't know if the
+interior builder already builds the exterior."
+
+**What the scene builder builds outside**: only the backs of its rooms' walls (10 cm, in the rooms' own colours, cut
+round their doors and windows) and a flat ceiling slab on top. No roof, no eaves, no plinth, no outside materials, nothing
+for a car park or a walkway. So the street builds the outside, round the level:
+
+- **An inside**: any building's inspector, *Inside*, picks a **set** (a place made in the scene builder,
+  `Content/Studio/Sets/<name>`; *open the set in the scene builder* is beside it). The street reads the set's level, its
+  rooms on the ground floor, and keeps them in the building (`inside.rooms`); it reads them again whenever the street
+  opens (STREET fails if a set changed since and the street wasn't opened). The building turns the level so its way in
+  (a door on an outside wall, one called `front_...` first) faces the building's front, and takes its size.
+- **Its outside**: the enclosed rooms' outline (any shape the rooms make: an L, a T), a wall 5 cm outside the level's
+  own, **the level's outside doors and windows cut through it at their places and sizes** (the doors' shapes are the
+  set's: there's nothing to keep in step by hand), no wall where the level has none (an open veranda), a plinth down to
+  the ground, the floor `raise`d (a Japanese house's 45 cm) with steps up to each door, one roof over the rooms (hip,
+  gable, flat...; over each room when they're scattered), the building's own parts on its box (a canopy, signs, lamps).
+  Inside, a dark stand-in for each room (so a door shows a room), never exported.
+- **Copies**: `rows` side by side and `floors` stacked: **a motel** or a block of flats, a set a room. *+ walkway and
+  stairs* adds a walkway along the front of the upper floors with a railing and a stair up to it at the left end.
+- **The palette's** *Buildings to walk into*: **Motel** (the set `motel_room`: a room, a bath and a closet, its door
+  with a peephole and a latch; six rooms on two floors, a walkway on posts, a stair, a lamp by each door, AC units, a
+  neon sign) and **Bungalow** (the set `bungalow`: the scene builder's single-storey house round an engawa, raised 45
+  cm, one hip roof with deep eaves).
+- **Gates** (fences): a two-leaf barred gate, the red and white folding gate across a car park's way in, a chain between
+  two posts; `open` 0 to 1 (an open gate has no collider). **Parking bays** are a road mark.
+- **In Godot**: the street's .glb has the shell with its door holes open (its colliders are its walls, not a block), the
+  walkway and the stair to walk on, and in `insides` a node for each copy, `inside_<building>_<floor>_<copy>`, at the
+  level's origin and turned as it is, its set in its metadata: put the set's level scene there (as a child of it) and the
+  level's door stands in the shell's doorway: open it and walk in. GDSTREET casts a ray through a motel door and a
+  bungalow door (nothing in the way) and onto the walkway (3.05 m up).
+- One floor a set for now (the user); a two-storey interior would need its stairs inside the set.
+
+The example street **hill_motel**: a winding road climbing 8.5 m, the motel and its car park (bays, the folding gate,
+a block wall with mesh, a chain) at the bottom, the bungalow up the hill behind a block wall with a gate, houses the
+rest of the way (Fill), and three shots.
+
 ## 6. Checks
 
 - `python tools/street.py check` (STREET, in check_all): every style at six seeds, every window and ground floor
@@ -195,7 +236,7 @@ project of its own and checks it: rays land on the road, the pavement and the ro
   its shot with its white line where the photo has it).
 - `python tools/godot/street_check.py [--street N]` (GDSTREET, the desk's server running, Godot 4.7): the street's .glb
   imported in a Godot project of its own: its colliders, occluders, lamps, colours and insides' markers, rays onto
-  the road, the pavement and three roofs.
+  the road, the pavement and three roofs, through an inside's door (open) and onto a motel's walkway.
 - `python tools/street.py shot <name> [shot]` (or `node tools/director/streetshot.mjs`): the street drawn through a
   shot into `Saved/Streets/<name>/`, and beside its photo: the photo, the drawing, the two blended.
 
@@ -222,6 +263,9 @@ white tower** on the corner. A shot each, framed as its reference was (not match
 lane's). 89 buildings and 224 things in 88,000 triangles.
 
 ## 8. Not yet
+
+- An inside's level placed in Godot by the export itself (today: a marker where it goes; the game's own export of the
+  set's level is dropped there by hand).
 
 - Streets into Godot: the .glb is exported by hand for now; a game's level taking a street (and the scene builder's
   enterable buildings put into it through a building's door) is the next step to plan with the user.

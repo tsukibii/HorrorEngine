@@ -112,6 +112,30 @@ sane("fences", SG.build({ fences: Object.keys(SG.FENCE_KINDS).map((k, i) => ({ i
   if (a.find(p => p.id === "c1") === b.find(p => p.id === "c1")) errs.push("the cache kept a building whose floors changed");
   if (JSON.stringify(b.map(p => p.G)) !== JSON.stringify(SG.build(town).map(p => p.G))) errs.push("a build from the cache isn't the same as a fresh one");
 }
+// 5c. a building with a set inside: every outside door and window of the set cut through its shell at its place, a
+// marker for every copy (rows x floors), its plan size the shell's, its walls hollow (colliders round its doors)
+const SETS_DIR = path.join(ROOT, "Content/Studio/Sets"), setLevel = (set, level) => { const f = path.join(SETS_DIR, set, "story.json"); if (!fs.existsSync(f)) return null; const L = JSON.parse(fs.readFileSync(f, "utf8")).levels || {}; return L[level] || Object.values(L)[0] || null; };
+for (const [set, extra] of [["motel_room", { rows: 4, floors: 2 }], ["bungalow", { raise: 0.45 }]]) {
+  const lv = setLevel(set); if (!lv) continue;
+  const ins = Object.assign({ set, rooms: SG.insideRooms(lv) }, extra), b = Object.assign({ id: set, at: [3, -2], turn: 35, inside: ins }, SG.insideSize({ inside: ins }));
+  const P = SG.build({ buildings: [b], ground: false }), L = `the set ${set} inside a building`;
+  sane(L, P, () => BUDGET.building);
+  if (!P.find(p => p.type === "inside")) errs.push(`${L}: no stand-in rooms`);
+  const ol = SG.insideOutline(SG.insideFrame(ins).rooms), holes = ol.edges.reduce((a, e) => a + (e.holes || []).length, 0);
+  const outside = ins.rooms.filter(r => r.ceiling !== false).reduce((a, r) => a + (r.openings || []).filter(o => { const nb = ins.rooms.some(q => q !== r && q.ceiling !== false && touches(r, o, q)); return !nb; }).length, 0);
+  if (holes < 1 || holes < outside) errs.push(`${L}: ${holes} holes in its shell for ${outside} outside doors and windows`);
+  const M = SG.insideMarkers(b, { z: 0, low: 0 }), want = (extra.rows || 1) * (extra.floors || 1);
+  if (M.length !== want || !M.every(m => m.meta.set === set)) errs.push(`${L}: ${M.length} markers (${want} copies)`);
+  const sz = SG.insideSize(b), bb = (() => { const p = P.find(p => p.type === "building"), lo = [Infinity, Infinity], hi = [-Infinity, -Infinity]; for (const g of Object.values(p.G)) for (let i = 0; i < g.pos.length; i += 3) { lo[0] = Math.min(lo[0], g.pos[i]); hi[0] = Math.max(hi[0], g.pos[i]); } return hi[0] - lo[0]; })();
+  void bb; if (!(sz.w > 0 && sz.d > 0)) errs.push(`${L}: no size`);
+  const B = SG.blockers({ buildings: [b] }, P)[set];
+  if (!B || B.boxes.length < 8) errs.push(`${L}: its walls aren't hollow colliders (${B ? B.boxes.length : 0} boxes)`);
+}
+function touches(r, o, q) {                                           // the room behind an opening, if one's there
+  const [x0, y0] = r.at, [w, d] = r.size, at = +o.at || 0;
+  const p = { n: [x0 + at, y0 + d + 0.05], s: [x0 + at, y0 - 0.05], e: [x0 + w + 0.05, y0 + at], w: [x0 - 0.05, y0 + at] }[o.wall];
+  return p && p[0] > q.at[0] && p[0] < q.at[0] + q.size[0] && p[1] > q.at[1] && p[1] < q.at[1] + q.size[1];
+}
 // 6. the streets
 const DIR = path.join(ROOT, "Content/Studio/Streets"), KNOWN = { roads: ["id", "from", "to"], buildings: ["id", "at", "w", "d", "floors"], things: ["id", "kind", "at"], fences: ["id", "kind", "from", "to"], shots: ["id", "eye", "look"] };
 const names = fs.existsSync(DIR) ? fs.readdirSync(DIR).filter(n => fs.existsSync(path.join(DIR, n, "street.json")) && (!only || n === only)) : [];
@@ -125,7 +149,13 @@ for (const name of names) {
     if (ids.has(p.id)) errs.push(`${L}: the id ${p.id} twice`); ids.add(p.id);
   }
   for (const b of S.buildings || []) {
-    if (b.style && SP && !SP.STYLES[b.style]) warns.push(`${L}: ${b.id}: no style ${b.style}`);
+    if (b.style && SP && !SP.STYLES[b.style] && !(SP.WALKINS || {})[b.style]) warns.push(`${L}: ${b.id}: no style ${b.style}`);
+    if (b.inside && b.inside.set) {                                   // its rooms are still its set's (the page reads them again on opening)
+      const lv = setLevel(b.inside.set, b.inside.level);
+      if (!lv) errs.push(`${L}: ${b.id}: its inside is the set ${b.inside.set}, which isn't in Content/Studio/Sets`);
+      else if (JSON.stringify(SG.insideRooms(lv)) !== JSON.stringify(b.inside.rooms)) errs.push(`${L}: ${b.id}: the set ${b.inside.set} has changed since the street read it: open the street in the page (it reads it again) and save`);
+      const sz = SG.insideSize(b); if (Math.abs(sz.w - b.w) > 0.01 || Math.abs(sz.d - b.d) > 0.01) errs.push(`${L}: ${b.id}: its size ${b.w} x ${b.d} isn't its inside's ${sz.w} x ${sz.d}`);
+    }
     for (const pt of b.parts || []) if (!SG.PART_KINDS[pt.kind]) errs.push(`${L}: ${b.id}: no part kind ${pt.kind}`);
     for (const [f, r] of Object.entries(b.refs || {})) if (!/^refs\//.test(r.file || "")) errs.push(`${L}: ${b.id}: its ${f} photo isn't in refs/`);
   }

@@ -32,6 +32,11 @@ func _initialize():
 	var space = s.get_world_3d().direct_space_state
 	for r in expect.get("rays", []):
 		var p = Vector3(r.at[0], r.at[1], r.at[2])
+		if r.has("dir"):                                              # level, toward a door: how far it gets
+			var d = Vector3(r.dir[0], r.dir[1], r.dir[2]).normalized()
+			var h2 = space.intersect_ray(PhysicsRayQueryParameters3D.create(p, p + d * 6.0))
+			print("GDPROBE ray ", r.name, " ", (h2.position - p).length() if h2 else 6.0)
+			continue
 		var hit = space.intersect_ray(PhysicsRayQueryParameters3D.create(p, p + Vector3(0, -80, 0)))
 		print("GDPROBE ray ", r.name, " ", hit.get("position", Vector3(0, -999, 0)).y)
 	quit(0)

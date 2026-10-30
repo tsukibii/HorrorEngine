@@ -18,7 +18,7 @@ export const SLOTS = {
   wood: ["#5b412d", 0.75], wood_dark: ["#2f231a", 0.8], lattice: ["#4c3526", 0.8, 0, "a"], paper: ["#f2d9a6", 0.9, 0, "e"],
   awning: ["#7d2f2a", 0.9], metal: ["#899096", 0.45, 0.65], pipe: ["#a3a5a7", 0.55, 0.3], ac: ["#e2e0db", 0.6], fan: ["#2b2d31", 0.8, 0, "t"],
   tank: ["#d7dbdf", 0.5], glassblock: ["#b8cfd6", 0.25, 0, "t"], grime: ["#6f6c66", 0.95],
-  asphalt: ["#2a3033", 0.95], plinth: ["#6c6862", 0.95], pavement: ["#7a766f", 0.9, 0, "t"], kerb: ["#9b978f", 0.85], paint: ["#e9e7e0", 0.7], paint_y: ["#e2a33a", 0.7],
+  asphalt: ["#2a3033", 0.95], plinth: ["#6c6862", 0.95], inside: ["#4b4641", 1], inside_floor: ["#5a4a3a", 1], pavement: ["#7a766f", 0.9, 0, "t"], kerb: ["#9b978f", 0.85], paint: ["#e9e7e0", 0.7], paint_y: ["#e2a33a", 0.7],
   ground: ["#38393b", 1], gravel: ["#6d6a64", 1],
   pole: ["#b3b0a9", 0.85], steel: ["#5f656b", 0.45, 0.7], lamp: ["#fff0cf", 0.4, 0, "e"], lamp_cool: ["#eef4ff", 0.4, 0, "e"], wire: ["#18181a", 0.8],
   hazard: ["#e0b42c", 0.6, 0, "t"], chainlink: ["#8c949b", 0.5, 0.6, "a"], boards: ["#7b5b3f", 0.8, 0, "a"], panel: ["#c6cacd", 0.5, 0.4, "t"],
@@ -353,6 +353,12 @@ export const PART_KINDS = {
   rail: { label: "Railing", w: 3, h: 1.1, z: 3, out: 0.05, note: "a railing along the wall" },
   noren: { label: "Noren curtain", w: 1.2, h: 0.6, z: 1.6, out: 0.12, note: "a short shop curtain over a door" },
 };
+// a part repeated along its face (`repeat` of them, `gap` m apart): a lamp by each door, a post under a walkway
+export function partCopies(parts) {
+  const out2 = [];
+  for (const p of parts || []) { const n = Math.max(1, Math.min(60, Math.round(num(p.repeat, 1)))), g = num(p.gap, 3); for (let i = 0; i < n; i++) out2.push(i ? Object.assign({}, p, { x: num(p.x, 0) + i * g, repeat: 1 }) : p); }
+  return out2;
+}
 const fillOf = (p, R) => p.lit === false ? "glass" : p.lit === true ? "lit" : (R() < 0.5 ? "lit" : "glass");
 function partHoles(b, F, parts, rows, R) {
   const H = [];
@@ -625,13 +631,14 @@ function roofThing(o, t, T, R, key) {
 
 // ---- a building --------------------------------------------------------------------------------------------------------
 export function buildingParts(b, foot) {
+  if (b.inside && Array.isArray(b.inside.rooms) && b.inside.rooms.length) return insideParts(b, foot);
   const o = out(), R = rng(num(b.seed, 1)), { rows, tiers } = floorsOf(b);
   const drop = foot ? foot.z - foot.low : 0;
   if (drop > 0.03) {                                                  // on a slope: its walls carried down to the lowest ground under it
     const T0 = tiers[0];
     for (const F of Object.values(faceFrames(T0.x0, T0.y0, T0.x1, T0.y1, 0))) fquad(o, b.plinth || "plinth", F, 0, F.W, -drop - 0.05, 0.001, 0);
   }
-  const parts = Array.isArray(b.parts) ? b.parts : [];
+  const parts = partCopies(Array.isArray(b.parts) ? b.parts : []);
   const signs = o.signs;
   tiers.forEach((T, ti) => {
     const frames = faceFrames(T.x0, T.y0, T.x1, T.y1, 0);
@@ -677,9 +684,208 @@ export function buildingParts(b, foot) {
   return o;
 }
 
+// ---- a building with a set's level inside it (docs/STREET_BUILDER.md §5c): the street builds its outside round the
+// level's rooms. `inside`: {set, level, rooms (the level's rooms as the page last read them: at, size, ceiling, skip,
+// openings), rows (copies side by side), floors (copies stacked: a motel), raise (its floor above the ground), skin}.
+// The rooms' outline (any shape the rooms make) gets a wall a little outside the level's own, the level's outside
+// doors and windows cut through it at their places and sizes (so the doors are the level's), walls only where the level
+// builds them (an open veranda stays open), a plinth to the ground, steps up to a raised floor, a roof. The rooms inside
+// are drawn as a dark stand-in (piece `<id>__inside`, never exported: in Godot the level's own scene goes there, at the
+// marker `insideMarkers` gives).
+export const INSIDE_SKIN = 0.1, INSIDE_GAP = 0.05;                   // the shell's thickness, outside the level's wall's face
+const LT = 0.1;                                                      // the scene builder's wall (storylib.WALL_T)
+// the level's rooms turned so its way in faces the building's front (-y), its middle at the building's middle
+export function insideFrame(ins) {
+  const rooms = (ins.rooms || []).filter(r => Math.abs(num((r.at || [])[2], 0)) < 0.01);
+  const xs = rooms.flatMap(r => [r.at[0], r.at[0] + r.size[0]]), ys = rooms.flatMap(r => [r.at[1], r.at[1] + r.size[1]]);
+  const box = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+  // its way in: a door on an outside wall (one called front_* first), else the south
+  let side = ins.front;
+  if (!side) {
+    const out = rooms.flatMap(r => (r.openings || []).filter(o => !o.window && r.ceiling !== false && edgeOutside(rooms, r, o.wall)).map(o => ({ o, w: o.wall })));
+    const pick = out.find(x => /front|entr|main/i.test((x.o.door && x.o.door.id) || "")) || out[0];
+    side = pick ? pick.w : "s";
+  }
+  const rot = { s: 0, e: 90, n: 180, w: 270 }[side] || 0;           // turned so that side faces -y
+  const cx = (box[0] + box[2]) / 2, cy = (box[1] + box[3]) / 2, a = -rot * Math.PI / 180, c = Math.round(Math.cos(a)), sn = Math.round(Math.sin(a));
+  const toLocal = (x, y) => [(x - cx) * c - (y - cy) * sn, (x - cx) * sn + (y - cy) * c];
+  const W = rot % 180 ? box[3] - box[1] : box[2] - box[0], D = rot % 180 ? box[2] - box[0] : box[3] - box[1];
+  const H = Math.max(...rooms.filter(r => r.ceiling !== false).map(r => num(r.size[2], 2.6)), 2.4);
+  return { rooms, box, rot, toLocal, W, D, H, side, cx, cy };
+}
+function edgeOutside(rooms, r, wall) {                                // a room's wall with no enclosed room behind it (anywhere along it)
+  const [x0, y0] = r.at, [w, d] = r.size, line = { n: [x0, y0 + d, x0 + w, y0 + d], s: [x0, y0, x0 + w, y0], e: [x0 + w, y0, x0 + w, y0 + d], w: [x0, y0, x0, y0 + d] }[wall];
+  const mid = [(line[0] + line[2]) / 2, (line[1] + line[3]) / 2], nrm = { n: [0, 1], s: [0, -1], e: [1, 0], w: [-1, 0] }[wall];
+  const p = [mid[0] + nrm[0] * 0.05, mid[1] + nrm[1] * 0.05];
+  return !rooms.some(q => q !== r && q.ceiling !== false && p[0] > q.at[0] && p[0] < q.at[0] + q.size[0] && p[1] > q.at[1] && p[1] < q.at[1] + q.size[1]);
+}
+// the enclosed rooms' outline: its edges ({a, b} in the level's space, its outward normal, built or open) and the openings
+// on each, found on a grid of the rooms' own edges
+export function insideOutline(rooms) {
+  const shut = rooms.filter(r => r.ceiling !== false);
+  const xs = [...new Set(shut.flatMap(r => [r.at[0], r.at[0] + r.size[0]]).map(v => Math.round(v * 1000) / 1000))].sort((a, b) => a - b);
+  const ys = [...new Set(shut.flatMap(r => [r.at[1], r.at[1] + r.size[1]]).map(v => Math.round(v * 1000) / 1000))].sort((a, b) => a - b);
+  const inRoom = (x, y) => shut.some(r => x > r.at[0] && x < r.at[0] + r.size[0] && y > r.at[1] && y < r.at[1] + r.size[1]);
+  const cov = (i, j) => i >= 0 && j >= 0 && i < xs.length - 1 && j < ys.length - 1 && inRoom((xs[i] + xs[i + 1]) / 2, (ys[j] + ys[j + 1]) / 2);
+  // a stretch of a room's wall line that the level builds: on that line, along its side, not skipped
+  const built = (axis, v, a0, a1) => rooms.some(r => {
+    const [x0, y0] = r.at, [w, d] = r.size;
+    for (const [wall, lv, lo, hi] of axis === "x" ? [["s", y0, x0, x0 + w], ["n", y0 + d, x0, x0 + w]] : [["w", x0, y0, y0 + d], ["e", x0 + w, y0, y0 + d]]) {
+      if (Math.abs(lv - v) > 0.002 || a0 < lo - 0.002 || a1 > hi + 0.002) continue;
+      const sk = r.skip || [];
+      if (sk.includes(wall)) continue;
+      const m = (a0 + a1) / 2 - lo;
+      if (sk.some(x => Array.isArray(x) && x[0] === wall && m >= num(x[1], 0) - 0.002 && m <= num(x[2], 0) + 0.002)) continue;
+      return true;
+    }
+    return false;
+  });
+  const pieces = [];
+  for (let i = 0; i + 1 < xs.length; i++) for (let j = 0; j + 1 < ys.length; j++) {
+    if (!cov(i, j)) continue;
+    if (!cov(i, j - 1)) pieces.push({ axis: "x", v: ys[j], a0: xs[i], a1: xs[i + 1], n: [0, -1] });
+    if (!cov(i, j + 1)) pieces.push({ axis: "x", v: ys[j + 1], a0: xs[i], a1: xs[i + 1], n: [0, 1] });
+    if (!cov(i - 1, j)) pieces.push({ axis: "y", v: xs[i], a0: ys[j], a1: ys[j + 1], n: [-1, 0] });
+    if (!cov(i + 1, j)) pieces.push({ axis: "y", v: xs[i + 1], a0: ys[j], a1: ys[j + 1], n: [1, 0] });
+  }
+  for (const p of pieces) p.built = built(p.axis, p.v, p.a0, p.a1);
+  // merged along their lines (the same side, the same built), each end convex or not (how far the shell runs past it)
+  pieces.sort((p, q) => (p.axis + p.n + p.v).localeCompare(q.axis + q.n + q.v) || p.v - q.v || p.a0 - q.a0);
+  const edges = [];
+  for (const p of pieces) {
+    const e = edges[edges.length - 1];
+    if (e && e.axis === p.axis && e.v === p.v && e.n[0] === p.n[0] && e.n[1] === p.n[1] && e.built === p.built && Math.abs(e.a1 - p.a0) < 1e-6) e.a1 = p.a1;
+    else edges.push(Object.assign({}, p));
+  }
+  const coveredAt = (x, y) => [[-1, -1], [1, -1], [1, 1], [-1, 1]].filter(([dx, dy]) => inRoom(x + dx * 0.01, y + dy * 0.01)).length;
+  for (const e of edges) for (const end of ["a0", "a1"]) {
+    const [x, y] = e.axis === "x" ? [e[end], e.v] : [e.v, e[end]];
+    e[end === "a0" ? "c0" : "c1"] = coveredAt(x, y) === 3 ? -1 : 1;         // 3 of the 4 squares round it inside: a corner turning in
+  }
+  // the openings on the outside edges, from whichever room keeps them
+  for (const r of rooms) for (const o of r.openings || []) {
+    const [x0, y0] = r.at, [w, d] = r.size, at = num(o.at, 0), hw = num(o.w, 0.9) / 2;
+    const [axis, v, base] = { n: ["x", y0 + d, x0], s: ["x", y0, x0], e: ["y", x0 + w, y0], w: ["y", x0, y0] }[o.wall] || [];
+    if (!axis) continue;
+    const e = edges.find(e => e.axis === axis && Math.abs(e.v - v) < 0.002 && base + at > e.a0 - 0.002 && base + at < e.a1 + 0.002);
+    if (!e) continue;
+    (e.holes = e.holes || []).push({ a0: base + at - hw, a1: base + at + hw, z0: num(o.sill, 0), z1: num(o.sill, 0) + num(o.h, 2.1), window: !!o.window, door: o.door || null });
+  }
+  return { edges, xs, ys };
+}
+export function insideParts(b, foot) {
+  const o = out(), ins = b.inside, fr = insideFrame(ins), { edges } = insideOutline(fr.rooms);
+  const rows = Math.max(1, Math.round(num(ins.rows, 1))), floors = Math.max(1, Math.min(4, Math.round(num(ins.floors, 1))));
+  const raise = num(ins.raise, 0.15), slab = 0.3, H = fr.H, storey = H + LT + slab, drop = foot ? foot.z - foot.low : 0;
+  const skinSlot = ins.slot || "wall", T = INSIDE_SKIN, G = LT / 2 + INSIDE_GAP;      // the shell's face: G out from the room's edge, T thick
+  const W = fr.W, D = fr.D, totalW = W * rows;
+  const copyAt = (k) => -totalW / 2 + W * (k + 0.5);                 // the copy's middle along the building
+  const L2 = (x, y, k) => { const [u, v] = fr.toLocal(x, y); return [u + copyAt(k), v]; };
+  const inside = out();
+  for (let f = 0; f < floors; f++) {
+    const z0 = raise + f * storey, zTop = z0 + H + LT;
+    for (let k = 0; k < rows; k++) {
+      for (const e of edges) {
+        // between two copies the walls are shared: the outline's sides that face another copy aren't outside
+        const nrmL = (() => { const [u0, v0] = fr.toLocal(0, 0), [u1, v1] = fr.toLocal(e.n[0], e.n[1]); return [u1 - u0, v1 - v0]; })();
+        if (Math.abs(nrmL[0]) > 0.5 && ((nrmL[0] < 0 && k > 0) || (nrmL[0] > 0 && k < rows - 1))) continue;
+        const [ax, ay] = e.axis === "x" ? [e.a0, e.v] : [e.v, e.a0], [bx, by] = e.axis === "x" ? [e.a1, e.v] : [e.v, e.a1];
+        let A = L2(ax, ay, k), B = L2(bx, by, k);
+        const N = [nrmL[0], nrmL[1], 0], U = [-N[1], N[0], 0];         // the face runs left to right seen from outside
+        const swap = (B[0] - A[0]) * U[0] + (B[1] - A[1]) * U[1] < 0;
+        if (swap) [A, B] = [B, A];
+        const ext0 = swap ? e.c1 : e.c0, ext1 = swap ? e.c0 : e.c1;
+        const len = Math.hypot(B[0] - A[0], B[1] - A[1]), s0 = -(G + T) * Math.max(0, ext0) + (ext0 < 0 ? G : 0), s1 = len + (G + T) * Math.max(0, ext1) - (ext1 < 0 ? G : 0);
+        const F = { name: "inside", o: [A[0] + N[0] * G + U[0] * s0, A[1] + N[1] * G + U[1] * s0, 0], U, N, W: s1 - s0 };
+        const zb = f === 0 ? -drop - 0.05 : z0 - slab;
+        if (!e.built) {                                              // an open side: the shell stops, an end cap each side
+          for (const u of [0, F.W]) fbox(o, skinSlot, F, u - 0.001, u + 0.001, zb, zTop, 0, T);
+          continue;
+        }
+        const holes = (e.holes || []).map(h => { const p0 = L2(...(e.axis === "x" ? [h.a0, e.v] : [e.v, h.a0]), k), p1 = L2(...(e.axis === "x" ? [h.a1, e.v] : [e.v, h.a1]), k);
+          const u0 = (p0[0] - F.o[0]) * U[0] + (p0[1] - F.o[1]) * U[1], u1 = (p1[0] - F.o[0]) * U[0] + (p1[1] - F.o[1]) * U[1];
+          return { u0: Math.min(u0, u1), u1: Math.max(u0, u1), z0: z0 + h.z0, z1: z0 + h.z1, window: h.window }; }).filter(h => h.u1 - h.u0 > 0.05);
+        for (const [a, bb, p, q] of wallRects(F.W, zb, zTop, holes.map(h => Object.assign({}, h)))) {
+          fquad(o, skinSlot, F, a, bb, p, q, T);
+          const c0 = fp(F, a, p, -G + LT / 2), c1 = fp(F, bb, q, T);           // its collider: the level's wall and the shell, as one
+          (o.col = o.col || []).push([[Math.min(c0[0], c1[0]), Math.min(c0[1], c1[1]), p], [Math.max(c0[0], c1[0]), Math.max(c0[1], c1[1]), q]]);
+        }
+        for (const h of holes) {                                     // the hole's sides, from the shell's face back to the level's wall
+          const Fh = Object.assign({}, F, { o: [F.o[0] - N[0] * G, F.o[1] - N[1] * G, 0] });
+          poly(o, "trim", [fp(Fh, h.u0, h.z0, G + T), fp(Fh, h.u0, h.z0, LT / 2), fp(Fh, h.u0, h.z1, LT / 2), fp(Fh, h.u0, h.z1, G + T)], [U[0], U[1], 0]);
+          poly(o, "trim", [fp(Fh, h.u1, h.z0, G + T), fp(Fh, h.u1, h.z0, LT / 2), fp(Fh, h.u1, h.z1, LT / 2), fp(Fh, h.u1, h.z1, G + T)], [-U[0], -U[1], 0]);
+          poly(o, "trim", [fp(Fh, h.u0, h.z1, G + T), fp(Fh, h.u1, h.z1, G + T), fp(Fh, h.u1, h.z1, LT / 2), fp(Fh, h.u0, h.z1, LT / 2)], [0, 0, -1]);
+          if (h.z0 > z0 + 0.02) poly(o, "trim", [fp(Fh, h.u0, h.z0, G + T), fp(Fh, h.u1, h.z0, G + T), fp(Fh, h.u1, h.z0, LT / 2), fp(Fh, h.u0, h.z0, LT / 2)], [0, 0, 1]);
+          else if (f === 0 && raise > 0.12 && !h.window) {            // a step up to a raised floor, under a door
+            fbox(o, "concrete", F, h.u0 - 0.15, h.u1 + 0.15, -drop, z0 - Math.min(0.2, raise / 2), T, T + 0.35);
+            if (raise > 0.3) fbox(o, "concrete", F, h.u0 - 0.15, h.u1 + 0.15, -drop, z0 - raise + 0.18, T + 0.35, T + 0.65);
+          }
+        }
+        if (f > 0) fbox(o, "trim", F, 0, F.W, z0 - slab, z0 - slab + 0.12, T, T + 0.06);   // the floor's edge between the storeys
+      }
+      // the stand-in rooms: dark, facing in (the level goes here in Godot)
+      for (const r of fr.rooms) {
+        if (r.ceiling === false) continue;
+        const p0 = L2(r.at[0], r.at[1], k), p1 = L2(r.at[0] + r.size[0], r.at[1] + r.size[1], k), x0 = Math.min(p0[0], p1[0]), x1 = Math.max(p0[0], p1[0]), y0 = Math.min(p0[1], p1[1]), y1 = Math.max(p0[1], p1[1]), h = num(r.size[2], H);
+        poly(inside, "inside_floor", [[x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0]], [0, 0, 1]);
+        poly(inside, "inside", [[x0, y0, z0 + h], [x1, y0, z0 + h], [x1, y1, z0 + h], [x0, y1, z0 + h]], [0, 0, -1]);
+        poly(inside, "inside", [[x0, y0, z0], [x1, y0, z0], [x1, y0, z0 + h], [x0, y0, z0 + h]], [0, 1, 0]); poly(inside, "inside", [[x0, y1, z0], [x1, y1, z0], [x1, y1, z0 + h], [x0, y1, z0 + h]], [0, -1, 0]);
+        poly(inside, "inside", [[x0, y0, z0], [x0, y1, z0], [x0, y1, z0 + h], [x0, y0, z0 + h]], [1, 0, 0]); poly(inside, "inside", [[x1, y0, z0], [x1, y1, z0], [x1, y1, z0 + h], [x1, y0, z0 + h]], [-1, 0, 0]);
+      }
+    }
+  }
+  // the roof: over the outline's box when the rooms fill most of it, else over each room
+  const zTop = raise + (floors - 1) * storey + H + LT, shut = fr.rooms.filter(r => r.ceiling !== false);
+  const sb = [Math.min(...shut.map(r => r.at[0])), Math.min(...shut.map(r => r.at[1])), Math.max(...shut.map(r => r.at[0] + r.size[0])), Math.max(...shut.map(r => r.at[1] + r.size[1]))];
+  const area = shut.reduce((a, r) => a + r.size[0] * r.size[1], 0), boxA = (sb[2] - sb[0]) * (sb[3] - sb[1]);
+  const roof = Object.assign({ kind: "hip", pitch: 24, over: 0.6 }, b.roof || {});
+  const c0 = [L2(sb[0], sb[1], 0), L2(sb[2], sb[3], 0)], c1 = [L2(sb[0], sb[1], rows - 1), L2(sb[2], sb[3], rows - 1)], all = [...c0, ...c1];
+  const tiers = area / boxA > 0.85 ? [{ x0: Math.min(...all.map(p => p[0])) - G - T, y0: Math.min(...all.map(p => p[1])) - G - T, x1: Math.max(...all.map(p => p[0])) + G + T, y1: Math.max(...all.map(p => p[1])) + G + T, z1: zTop }]
+    : [].concat(...Array.from({ length: rows }, (_, k) => shut.map(r => { const p0 = L2(r.at[0], r.at[1], k), p1 = L2(r.at[0] + r.size[0], r.at[1] + r.size[1], k); return { x0: Math.min(p0[0], p1[0]) - G - T, y0: Math.min(p0[1], p1[1]) - G - T, x1: Math.max(p0[0], p1[0]) + G + T, y1: Math.max(p0[1], p1[1]) + G + T, z1: zTop }; })));
+  for (const t of tiers) {
+    if (roof.kind === "flat" || roof.kind === "rail" || roof.kind === "none") box(o, "roof_flat", t.x0, t.y0, t.z1, t.x1, t.y1, t.z1 + 0.08, "-z");
+    else roofGen(o, Object.assign({}, b, { id: b.id, roof: Object.assign({}, roof, { things: [] }), roofWall: skinSlot }), Object.assign({ z0: 0 }, t), rng(1));
+    if (roof.kind !== "flat" && roof.kind !== "rail" && roof.kind !== "none") box(o, skinSlot, t.x0, t.y0, t.z1 - 0.02, t.x1, t.y1, t.z1, "-z");   // the top's lid under the roof
+  }
+  if (roof.kind === "flat" || roof.kind === "rail") for (const t of tiers) for (const F of Object.values(faceFrames(t.x0, t.y0, t.x1, t.y1, 0))) {
+    if (roof.kind === "rail") railGen(o, F, 0.05, F.W - 0.05, t.z1, t.z1 + 1.1, -0.06); else fbox(o, skinSlot, F, 0, F.W, t.z1, t.z1 + num(roof.parapet, 0.5), -0.12, 0);
+  }
+  // its own parts (a walkway, stairs, a canopy, signs...) on the box round it all
+  const R = rng(num(b.seed, 1)), frames = faceFrames(-totalW / 2 - G - T, -D / 2 - G - T, totalW / 2 + G + T, D / 2 + G + T, 0);
+  for (const p of partCopies(b.parts)) partGen(o, b, frames[p.face || "front"], p, insideFloors(b), R, o.signs);
+  o.inside = inside;
+  return o;
+}
+export function insideFloors(b) {
+  const fr = insideFrame(b.inside), raise = num(b.inside.raise, 0.15), storey = fr.H + LT + 0.3, n = Math.max(1, Math.min(4, Math.round(num(b.inside.floors, 1))));
+  return Array.from({ length: n }, (_, f) => ({ k: f + 1, z0: raise + f * storey, h: storey }));
+}
+// the box an inside-building takes on the plan (its w and d: the shell round all its copies)
+export function insideSize(b) {
+  const fr = insideFrame(b.inside), rows = Math.max(1, Math.round(num(b.inside.rows, 1))), e = 2 * (LT / 2 + INSIDE_GAP + INSIDE_SKIN);
+  return { w: Math.round((fr.W * rows + e) * 1000) / 1000, d: Math.round((fr.D + e) * 1000) / 1000, h: insideFloors(b).slice(-1)[0].z0 + fr.H + LT };
+}
+// where each copy's level goes (Godot: its scene, its origin there, turned): [{name, at, turn, meta}] in the street
+export function insideMarkers(b, foot) {
+  if (!b.inside || !(b.inside.rooms || []).length) return [];
+  const ins = b.inside, fr = insideFrame(ins), rows = Math.max(1, Math.round(num(ins.rows, 1))), floors = Math.max(1, Math.min(4, Math.round(num(ins.floors, 1))));
+  const raise = num(ins.raise, 0.15), storey = fr.H + LT + 0.3, out2 = [];
+  for (let f = 0; f < floors; f++) for (let k = 0; k < rows; k++) {
+    const [u, v] = fr.toLocal(0, 0), at = place([u - fr.W * rows / 2 + fr.W * (k + 0.5), v, raise + f * storey], { at: b.at, turn: b.turn, z: foot ? foot.z : 0 });
+    out2.push({ name: `inside_${b.id}_${f + 1}_${k + 1}`, at, turn: num(b.turn, 0) - fr.rot, meta: { set: ins.set || "", level: ins.level || "", floor: f + 1, copy: k + 1 } });
+  }
+  return out2;
+}
+// a level's rooms as the street keeps them (what its outside needs: their places, sizes, ceilings, skips and openings)
+export function insideRooms(level) {
+  return (level && level.rooms || []).map(r => ({ id: r.id, at: r.at, size: r.size, ceiling: r.ceiling !== false ? undefined : false, skip: r.skip && r.skip.length ? r.skip : undefined,
+    openings: (r.openings || []).map(o => Object.fromEntries(Object.entries({ wall: o.wall, at: o.at, w: o.w, h: o.h, sill: o.sill || undefined, window: o.window || undefined, door: o.door ? { id: o.door.id } : undefined }).filter(([, v]) => v !== undefined))) }))
+    .map(r => Object.fromEntries(Object.entries(r).filter(([, v]) => v !== undefined)));
+}
+
 // ---- roads: a smooth line through their points (from, via..., to), each point with its height ------------------------
 export const ROAD_DEFAULT = { width: 6, walks: [2, 2], kerb: 0.15, edge: [0, 0], centre: "dashed" };
-export const MARK_KINDS = { stop: "stop line", text: "words (止まれ)", zebra: "zebra crossing", diamond: "crossing ahead (◇)", arrow: "arrow", line: "a line across" };
+export const MARK_KINDS = { stop: "stop line", text: "words (止まれ)", zebra: "zebra crossing", diamond: "crossing ahead (◇)", arrow: "arrow", line: "a line across", bays: "parking bays" };
 // the points a road passes through, each [x, y, z]: `z` a number (all of it), one a point, or [at from, at to] (between
 // them by distance)
 export function roadPoints(r) {
@@ -823,6 +1029,12 @@ export function roadParts(r, others = [], index = 0) {
       case "stop": strip("paint", s, s + num(m.len, 0.45), x - mw / 2, x + mw / 2, z); break;
       case "line": strip(m.slot || "paint", s, s + num(m.len, 0.15), x - mw / 2, x + mw / 2, z); break;
       case "zebra": { const len = num(m.len, 4); for (let q = -mw / 2; q + 0.45 <= mw / 2 + 1e-6; q += 0.9) strip("paint", s, s + len, x + q, x + q + 0.45, z); break; }
+      case "bays": {                                                // a car park's bays: a line across every `gap` m, `w` deep, a line along their back
+        const len = num(m.len, 20), gap = num(m.gap, 2.5), bw = num(m.w, 5);
+        for (let a = 0; a <= len + 1e-6; a += gap) strip("paint", s + a - 0.06, s + a + 0.06, x - bw / 2, x + bw / 2, z);
+        strip("paint", s, s + len, x + bw / 2 - 0.12, x + bw / 2, z);
+        break;
+      }
       case "diamond": {
         const len = num(m.len, 3), hw = Math.min(mw, 1.6) / 2, pts = [[0, 0], [len / 2, -hw], [len, 0], [len / 2, hw]];
         for (let i = 0; i < 4; i++) { const [a0, b0] = pts[i], [a1, b1] = pts[(i + 1) % 4], d = Math.hypot(a1 - a0, b1 - b0), na = -(b1 - b0) / d * 0.07, nb = (a1 - a0) / d * 0.07;
@@ -1082,6 +1294,9 @@ export const FENCE_KINDS = {
   rail: { label: "Pipe railing", h: 1.0, step: 2.0, note: "posts and two rails (a guardrail, a canal's edge)" },
   bamboo: { label: "Bamboo", h: 1.8, step: 1.8, note: "a bamboo screen fence (the old town)" },
   slats: { label: "Wooden slats", h: 1.8, step: 2.0, note: "horizontal slats on posts (a modern house's screen)" },
+  gate: { label: "Gate (two leaves)", h: 1.3, step: 0, note: "a steel gate of bars between two posts, its two leaves shut (open: how far, 0 to 1)" },
+  accordion: { label: "Folding gate", h: 1.1, step: 0, note: "the striped folding (accordion) gate across a car park's way in, half drawn (open: 0 to 1)" },
+  chain: { label: "Chain", h: 0.75, step: 0, note: "a chain hung between two short posts (a car park's way in at night)" },
 };
 export function fenceParts(f, surface) {
   const o = out(), K = FENCE_KINDS[f.kind] || FENCE_KINDS.mesh, [ax, ay] = f.from, [bx, by] = f.to, L = Math.hypot(bx - ax, by - ay);
@@ -1129,6 +1344,35 @@ export function fenceParts(f, surface) {
     case "rail": {
       for (const x of bays) cyl(o, post, [clamp(x, 0.04, L - 0.04), 0, 0], [clamp(x, 0.04, L - 0.04), 0, h], 0.035, 8);
       for (const z of [h - 0.03, h * 0.55]) cyl(o, f.slot || "post", [0, 0, z], [L, 0, z], 0.03, 8);
+      break;
+    }
+    case "gate": {                                                    // two posts, two barred leaves meeting in the middle (swung by `open`)
+      const op = clamp(num(f.open, 0), 0, 1) * 85 * Math.PI / 180, pw = 0.12, lw = (L - 2 * pw) / 2;
+      box(o, f.post || "steel", 0, -pw / 2, 0, pw, pw / 2, h + 0.15); box(o, f.post || "steel", L - pw, -pw / 2, 0, L, pw / 2, h + 0.15);
+      for (const side of [0, 1]) {
+        const hx = side ? L - pw : pw, dir = side ? -1 : 1, a = side ? Math.PI - op : op;
+        const along = [Math.cos(a) * dir * (side ? -1 : 1), Math.sin(a) * (side ? 1 : 1)], tip = [hx + along[0] * lw, along[1] * lw];
+        for (const z of [0.1, h - 0.05]) bar(o, f.slot || "rail", [hx, 0, z], [tip[0], tip[1], z], 0.05, 0.04);
+        bar(o, f.slot || "rail", [tip[0], tip[1], 0.08], [tip[0], tip[1], h], 0.05, 0.04);
+        two(o, "bars", [[hx, 0, 0.12], [tip[0], tip[1], 0.12], [tip[0], tip[1], h - 0.07], [hx, 0, h - 0.07]], [-along[1], along[0], 0]);
+      }
+      break;
+    }
+    case "accordion": {                                               // the folding gate: a lattice of thin diagonals on little wheels, drawn `open` back to its post
+      const op = clamp(num(f.open, 0.5), 0, 0.95), len = Math.max(0.4, L * (1 - op)), n = Math.max(3, Math.round(len / 0.32));
+      box(o, f.post || "white", 0, -0.08, 0, 0.16, 0.08, h + 0.1); box(o, f.post || "white", L - 0.12, -0.06, 0, L, 0.06, h * 0.6);
+      for (let i = 0; i < n; i++) {
+        const x0 = 0.16 + (len - 0.16) * i / n, x1 = 0.16 + (len - 0.16) * (i + 1) / n;
+        bar(o, i % 2 ? "red" : "white", [x0, 0, 0.12], [x1, 0, h], 0.035, 0.03); bar(o, i % 2 ? "white" : "red", [x0, 0, h], [x1, 0, 0.12], 0.035, 0.03);
+        cyl(o, "rubber", [x1, -0.04, 0.05], [x1, 0.04, 0.05], 0.05, 6);
+      }
+      box(o, "white", 0.16, -0.03, h - 0.04, len, 0.03, h + 0.04); box(o, "white", 0.16, -0.03, 0.08, len, 0.03, 0.14);
+      break;
+    }
+    case "chain": {
+      for (const x of [0.06, L - 0.06]) { cyl(o, f.post || "white", [x, 0, 0], [x, 0, h], 0.05, 8); cyl(o, "red", [x, 0, h - 0.18], [x, 0, h - 0.1], 0.052, 8, 0.052, false); }
+      const pts = []; for (let k = 0; k <= 12; k++) { const t = k / 12; pts.push([0.06 + (L - 0.12) * t, 0, h - 0.12 - 0.35 * 4 * t * (1 - t)]); }
+      tube(o, "steel", pts, 0.012, 4);
       break;
     }
     case "bamboo": {
@@ -1194,7 +1438,12 @@ export function build(street, cache) {
   const roadsKey = JSON.stringify(roads);
   const safe = (id, type, make) => { try { return Object.assign({ id, type }, make()); } catch (e) { return { id, type, G: {}, signs: [], lights: [], error: e.message }; } };
   roads.forEach((r, i) => pieces.push(memo("r|" + i + "|" + roadsKey, () => safe(r.id, "road", () => roadParts(r, roads.filter(q => q !== r), i)))));
-  for (const b of buildings) { const foot = footing(b, T); pieces.push(memo("b|" + JSON.stringify(b) + "|" + foot.z + "|" + foot.low, () => safe(b.id, "building", () => placeAll(buildingParts(b, foot), Object.assign({}, b, { z: foot.z }))))); }
+  for (const b of buildings) {
+    const foot = footing(b, T), key = "b|" + JSON.stringify(b) + "|" + foot.z + "|" + foot.low;
+    const p = memo(key, () => safe(b.id, "building", () => placeAll(buildingParts(b, foot), Object.assign({}, b, { z: foot.z }))));
+    pieces.push(p);
+    if (p.inside) pieces.push(memo(key + "|inside", () => Object.assign({ id: b.id + "__inside", type: "inside", of: b.id, signs: [], lights: [] }, placeAll(p.inside, Object.assign({}, b, { z: foot.z })))));
+  }
   const placed = things.map(t => Object.assign({}, t, { z: T.surface(...(t.at || [0, 0])) + num(t.lift, 0) }));
   for (const t of placed) pieces.push(memo("t|" + JSON.stringify(t), () => safe(t.id, "thing", () => placeAll(thingParts(t), t))));
   for (const f of fences) pieces.push(memo("f|" + JSON.stringify(f) + "|" + (T.flat ? "" : roadsKey), () => safe(f.id, "fence", () => fenceParts(f, T.surface))));
@@ -1272,10 +1521,19 @@ export function blockers(S, pieces) {
   if (byId._ground) out._ground = { boxes: [], occ: [], surface: surf(byId._ground, ["ground"]) };
   for (const b of S.buildings || []) {
     const foot = footing(b, T), piece = Object.assign({}, b, { z: foot.z }), { tiers } = floorsOf(b), boxes = [], occ = [];
-    tiers.forEach((t, i) => {
+    if (b.inside && (b.inside.rooms || []).length) {                     // hollow: its walls (the doors' holes open), not a block
+      for (const [lo, hi] of buildingParts(b, foot).col || []) boxes.push(boxAt(piece, lo, hi));
+    } else tiers.forEach((t, i) => {
       boxes.push(boxAt(piece, [t.x0, t.y0, i === 0 ? foot.low - foot.z - 0.1 : t.z0], [t.x1, t.y1, t.z1]));
       if (t.x1 - t.x0 > 1.2 && t.y1 - t.y0 > 1.2 && t.z1 - t.z0 > 1.2) occ.push(boxAt(piece, [t.x0 + 0.25, t.y0 + 0.25, t.z0 + 0.4], [t.x1 - 0.25, t.y1 - 0.25, t.z1 - 0.3]));
     });
+    const fl = b.inside && (b.inside.rooms || []).length ? insideFloors(b) : floorsOf(b).rows;
+    for (const p of b.parts || []) if (p.kind === "balcony") {              // a balcony's slab (a motel's walkway): to walk on
+      const F = faceFrames(-num(b.w, 8) / 2, -num(b.d, 10) / 2, num(b.w, 8) / 2, num(b.d, 10) / 2, 0)[p.face || "front"], K = PART_KINDS.balcony;
+      const w = num(p.w, K.w), out2 = num(p.out, K.out), c = F.W / 2 + num(p.x, 0);
+      const zs = Array.isArray(p.floors) ? fl.filter(r => r.k >= p.floors[0] && r.k <= (p.floors[1] || p.floors[0])).map(r => r.z0 + num(p.z, 0)) : [num(p.z, K.z)];
+      for (const z of zs) { const a = fp(F, c - w / 2, z, 0), bb = fp(F, c + w / 2, z, out2); boxes.push(boxAt(piece, [Math.min(a[0], bb[0]), Math.min(a[1], bb[1]), z - 0.16], [Math.max(a[0], bb[0]), Math.max(a[1], bb[1]), z])); }
+    }
     for (const p of b.parts || []) if (p.kind === "stairs") {                // a stair up the wall: a ramp to its top, its landing
       const K = PART_KINDS.stairs, F = faceFrames(-num(b.w, 8) / 2, -num(b.d, 10) / 2, num(b.w, 8) / 2, num(b.d, 10) / 2, 0)[p.face || "front"];
       const w = num(p.w, K.w), h = num(p.h, K.h), out2 = num(p.out, K.out), c = F.W / 2 + num(p.x, 0), z = num(p.z, 0), dir = num(p.dir, 1) < 0 ? -1 : 1;
@@ -1295,6 +1553,7 @@ export function blockers(S, pieces) {
   }
   for (const f of S.fences || []) {
     const K = FENCE_KINDS[f.kind] || FENCE_KINDS.mesh, [ax, ay] = f.from, [bx, by] = f.to, L = Math.hypot(bx - ax, by - ay); if (L < 0.05) continue;
+    if ((f.kind === "gate" || f.kind === "accordion") && num(f.open, f.kind === "accordion" ? 0.5 : 0) >= 0.5) continue;   // an open gate: the way through
     const step = num(f.step, K.step), n = Math.max(1, step > 0 ? Math.round(L / step) : 1), h = num(f.h, K.h), boxes = [];
     for (let i = 0; i < n; i++) {
       const s0 = L * i / n, s1 = L * (i + 1) / n, p0 = [ax + (bx - ax) * s0 / L, ay + (by - ay) * s0 / L], p1 = [ax + (bx - ax) * s1 / L, ay + (by - ay) * s1 / L];

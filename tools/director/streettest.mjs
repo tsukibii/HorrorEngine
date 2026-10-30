@@ -130,6 +130,39 @@ try {
   if (glb.readUInt32LE(0) !== 0x46546C67 || glb.length < 20000) fail(`the .glb isn't one (${glb.length} bytes)`);
   console.log(`saved and read back; .glb ${Math.round(glb.length / 1024)} KB`);
 
+  // a street bent by its middle dot, then sloped in the inspector; a motel from the palette, its rooms its set's
+  await page.click("#tabMap");
+  await page.evaluate(() => { window.ST.view = { cx: 0, cy: 0, s: 6 }; window.ST.sel = { list: "roads", id: window.ST.street.roads[0].id }; window.__rebuild(); });
+  await page.evaluate(() => document.querySelector("#map").dispatchEvent(new Event("pointerleave")));
+  await page.waitForTimeout(200);
+  const dot = await page.evaluate(() => { const c = document.querySelector('#map [data-handle="mid0"]'); if (!c) return null; const r = c.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; });
+  if (!dot) fail("a picked street has no dot in its middle to bend it by");
+  else {
+    await page.mouse.move(...dot); await page.mouse.down(); await page.mouse.move(dot[0] + 20, dot[1], { steps: 3 }); await page.mouse.move(dot[0] + 48, dot[1], { steps: 4 }); await page.mouse.up();
+    S = await ST();
+    const r0 = S.roads[0];
+    if (!(Array.isArray(r0.via) && r0.via.length === 1 && Math.abs(r0.via[0][0] - r0.from[0]) > 5)) fail("dragging the street's middle dot didn't bend it there: " + JSON.stringify(r0.via));
+    const rise = page.locator("#inspector .prop", { has: page.locator("label", { hasText: /^a slope$/ }) }).locator("input").first();
+    await rise.fill("3"); await rise.dispatchEvent("input");
+    S = await ST();
+    const zs = S.roads[0].z || [];
+    if (!(zs.length === 3 && Math.abs(zs[2] - zs[0] - 3) < 0.01 && zs[1] > zs[0] && zs[1] < zs[2])) fail("the slope didn't make the street climb 3 m: " + JSON.stringify(zs));
+    else console.log(`bent and sloped: through ${JSON.stringify(S.roads[0].via[0])}, heights ${JSON.stringify(zs)}`);
+  }
+  if (fs.existsSync(path.join(ROOT, "Content/Studio/Sets/motel_room/story.json"))) {
+    await page.click("#left >> text=Motel");
+    const [mx, my] = await at(-40, 20); await page.mouse.click(mx, my);
+    const synced = await page.waitForFunction(() => { const b = window.ST.street.buildings.find(b => b.style === "motel"); return b && b.inside.rooms.length ? b.id : null; }, null, { timeout: 20000 }).then(h => h.jsonValue(), () => null);
+    if (!synced) fail("a motel from the palette didn't read its set's rooms");
+    else {
+      const glb = Buffer.from(await page.evaluate(() => window.__exportGodot()), "base64"), jl = glb.readUInt32LE(12), J = JSON.parse(glb.subarray(20, 20 + jl).toString("utf8"));
+      const marks = J.nodes.filter(n => (n.name || "").startsWith("inside_" + synced));
+      const motel = (await ST()).buildings.find(b => b.id === synced), want = (motel.inside.rows || 1) * (motel.inside.floors || 1);
+      if (marks.length !== want || !marks.every(n => n.extras && n.extras.set === "motel_room")) fail(`the motel's export has ${marks.length} markers for its ${want} rooms`);
+      else console.log(`a motel from the palette: ${motel.inside.rooms.length} rooms from its set, ${marks.length} markers in the .glb`);
+    }
+  }
+
   // the Shibuya lane through its shot: drawn, not blank, the road's paint where the photo has it
   if (fs.existsSync(path.join(ROOT, "Content/Studio/Streets/shibuya_lane/street.json"))) {
     await page.goto(URL0 + "street.html?street=shibuya_lane&shot=photo");
