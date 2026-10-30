@@ -38,10 +38,17 @@ var leak_n: HSLeak = null
 var leak_wall: MeshInstance3D = null
 var leak_dry: Image = null
 var iris_means: Dictionary = {}
+var hair_mats: Array = []             # the hair stage: a head of cards on HSHair, pictured dull, lit, retro and stepped
+var hair_box := Rect2i(400, 100, 480, 480)
+var hair_crown := Rect2i(560, 255, 160, 75)   # the band just under the hair's top, where the key's highlight rings the crown
+var hair_dull: Image = null
+var hair_lit: Image = null
+var hair_retro: Image = null
+var hair_key: OmniLight3D = null
 var splash_peak := 0.0
 var splash_n := 0
 
-const STAGES := ["plain", "realism", "wet", "blood_rain", "mirror", "skin", "soften_off", "soften", "pattern", "shaft", "sweep", "iris", "leak"]
+const STAGES := ["plain", "realism", "wet", "blood_rain", "mirror", "skin", "soften_off", "soften", "pattern", "shaft", "sweep", "iris", "leak", "hair"]
 
 
 func _initialize() -> void:
@@ -248,6 +255,24 @@ func _process(_d: float) -> bool:
 		sweep_n.clock += 0.5 * sweep_n.secs
 	if STAGES[stage] == "sweep" and n < 90:
 		return false
+	if STAGES[stage] == "hair":
+		if n == 40:
+			hair_dull = root.get_texture().get_image()           # the highlights off: what the strands' own shade gives
+			hair_dull.save_png(out_dir.path_join("hair_dull.png"))
+			for m in hair_mats:
+				HSHair.set_look(m, {"shine": 1.0})
+		if n == 70:
+			hair_lit = root.get_texture().get_image()            # lit: the anisotropic highlight along the strands
+			hair_lit.save_png(out_dir.path_join("hair_lit.png"))
+			for m in hair_mats:
+				HSHair.set_look(m, {"retro": true})
+		if n == 100:
+			hair_retro = root.get_texture().get_image()          # retro: unlit, eight colour levels, the PSX's dither
+			hair_retro.save_png(out_dir.path_join("hair_retro.png"))
+			for m in hair_mats:
+				HSHair.set_look(m, {"dither": false})
+		if n < 130:                                              # then the levels without the dither: the stage's own picture
+			return false
 	if STAGES[stage] == "leak":
 		if n == 40 and leak_n != null:
 			leak_dry = root.get_texture().get_image()         # the wall dry (the band at zero), then wet
@@ -353,6 +378,21 @@ func _process(_d: float) -> bool:
 			report["leak_wet"] = wet_
 			report["leak_dry"] = dry
 			report["leak_drops"] = leak_n.drops if leak_n != null else 0
+		"hair":
+			var img := shot("hair")
+			var b := hair_box
+			report["hair_dull"] = measure(hair_dull, b.position.x, b.position.y, b.end.x, b.end.y) if hair_dull != null else {}
+			report["hair_lit"] = measure(hair_lit, b.position.x, b.position.y, b.end.x, b.end.y) if hair_lit != null else {}
+			var c := hair_crown
+			report["hair_crown_dull"] = measure(hair_dull, c.position.x, c.position.y, c.end.x, c.end.y) if hair_dull != null else {}
+			report["hair_crown_lit"] = measure(hair_lit, c.position.x, c.position.y, c.end.x, c.end.y) if hair_lit != null else {}
+			report["hair_lit_colours"] = colours(hair_lit, c) if hair_lit != null else 0       # over the crown band: hair, not the wall behind it
+			report["hair_retro_colours"] = colours(hair_retro, c) if hair_retro != null else 0
+			report["hair_steps_colours"] = colours(img, c)
+			report["hair_retro_grain"] = grain(hair_retro, c) if hair_retro != null else 0.0
+			report["hair_steps_grain"] = grain(img, c)
+			report["hair_lit_grain"] = grain(hair_lit, c) if hair_lit != null else 0.0
+			report["hair_surfaces"] = hair_mats.size()
 		"iris":
 			var img := shot("iris")
 			iris_means["night"] = measure(img, 300, 100, 980, 620)["mean"]
@@ -466,6 +506,37 @@ func setup(name: String) -> void:
 			world.add_child(glow_q)
 		"soften":
 			HSSoften.attach(cam).set_amounts(0.9, 7.0, 1.6, 0.25)
+		"hair":
+			if leak_n != null:
+				leak_n.visible = false
+			cam.look_at_from_position(Vector3(0.5, 1.5, 0.35), Vector3(0.5, 1.42, -0.8))
+			var head := MeshInstance3D.new()                                  # a head: a sphere on the skin shader under a cap of hair cards
+			var sm := SphereMesh.new()
+			sm.radius = 0.11
+			sm.height = 0.22
+			head.mesh = sm
+			head.material_override = HSSkin.material(null, {}, Color(0.78, 0.56, 0.47))
+			head.position = Vector3(0.5, 1.42, -0.8)
+			world.add_child(head)
+			var hair := MeshInstance3D.new()
+			hair.name = "hair_cards"
+			hair.mesh = hair_cards(Vector3(0.5, 1.42, -0.8), 0.11, 240, 0.3)
+			var bm := StandardMaterial3D.new()                               # as a glb comes in: a standard material with the atlas
+			bm.albedo_texture = hair_atlas()
+			bm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+			hair.mesh.surface_set_material(0, bm)                           # (a material_override would mask the surface's new one)
+			world.add_child(hair)
+			hair_mats = HSHair.wear(hair, {"shine": 0.0})                 # worn by its name; the highlights off till the dull picture
+			hair_key = OmniLight3D.new()                                      # a key to the side and above: the highlight's streak across the crown
+			hair_key.light_energy = 3.0
+			hair_key.omni_range = 4.0
+			hair_key.position = Vector3(1.4, 2.3, -0.2)
+			world.add_child(hair_key)
+			if cam.is_inside_tree():
+				var lo := cam.unproject_position(Vector3(0.5, 1.42, -0.8))
+				hair_box = Rect2i(int(lo.x) - 200, int(lo.y) - 260, 400, 420).intersection(Rect2i(0, 0, 1280, 720))
+				var top := cam.unproject_position(Vector3(0.5, 1.42 + 0.11 + 0.1, -0.8))   # the hair's top (the cards stand a little off the scalp)
+				hair_crown = Rect2i(int(lo.x) - 80, int(top.y) + 5, 160, 75).intersection(Rect2i(0, 0, 1280, 720))
 		"leak":
 			if iris_lamp != null:
 				iris_lamp.light_energy = 0.0
@@ -549,6 +620,93 @@ func setup(name: String) -> void:
 				world.add_child(mi)
 				spheres.append(mi)
 				i += 1
+
+
+## a cap of hair cards over a sphere: strips from the scalp out and down, u across the atlas, v root 0 to tip 1
+func hair_cards(centre: Vector3, r: float, count: int, length: float) -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	var golden := PI * (3.0 - sqrt(5.0))
+	for i in count:
+		var y := 1.0 - float(i) / float(count) * 0.9                      # the upper 90% of the sphere
+		var rad := sqrt(max(0.0, 1.0 - y * y))
+		var th := golden * float(i)
+		var nrm := Vector3(cos(th) * rad, y, sin(th) * rad)
+		var root := centre + nrm * r
+		var w := 0.045
+		var segs := 6
+		var u0 := rng.randf() * 0.6
+		var verts: Array = []
+		for s in segs + 1:
+			var t := float(s) / float(segs)
+			var dir := nrm.lerp(Vector3(0, -1, 0), t * 0.85).normalized()
+			var p := root + nrm * (0.01 * (1.0 - t)) + dir * length * t + Vector3(0, -0.5, 0) * length * t * t * 0.3
+			var side := dir.cross(nrm).normalized()
+			if side.length() < 0.5:
+				side = Vector3(1, 0, 0)
+			verts.append([p - side * w * 0.5, p + side * w * 0.5, t, nrm])
+		for s in segs:
+			var a: Array = verts[s]
+			var b: Array = verts[s + 1]
+			for tri in [[a[0], a[1], b[1]], [a[0], b[1], b[0]]]:
+				for v in tri:
+					var is_a: bool = v == a[0] or v == a[1]
+					var left: bool = v == a[0] or v == b[0]
+					st.set_normal(a[3] if is_a else b[3])
+					st.set_uv(Vector2(u0 + (0.0 if left else 0.4), (a[2] if is_a else b[2])))
+					st.set_color(Color(1, 1, 1))
+					st.add_vertex(v)
+	return st.commit()
+
+
+## a strand atlas made in code: strands as thin columns in a dark brown with their own brightness, the alpha their coverage
+func hair_atlas() -> ImageTexture:
+	var w := 256
+	var h := 256
+	var im := Image.create(w, h, true, Image.FORMAT_RGBA8)
+	im.fill(Color(0, 0, 0, 0))
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 3
+	for k in 90:
+		var x0 := rng.randf() * float(w)
+		var drift := rng.randf_range(-6.0, 6.0)
+		var bright := rng.randf_range(0.5, 1.0)
+		var wid := rng.randf_range(1.0, 2.5)
+		for y in h:
+			var x := x0 + drift * float(y) / float(h)
+			for dx in int(ceil(wid)) + 1:
+				var xi := int(floor(x)) + dx
+				var cover := clamp(wid - float(dx), 0.0, 1.0)
+				if xi >= 0 and xi < w and cover > 0.0:
+					var c := Color(0.30 * bright, 0.19 * bright, 0.11 * bright, max(im.get_pixel(xi, y).a, cover))
+					im.set_pixel(xi, y, c)
+	im.generate_mipmaps()
+	return ImageTexture.create_from_image(im)
+
+
+## how many colours a box of the picture holds (at 6 bits a channel): few on a stepped picture, thousands on a lit one
+func colours(img: Image, b: Rect2i) -> int:
+	var seen := {}
+	for y in range(max(0, b.position.y), min(img.get_height(), b.end.y)):
+		for x in range(max(0, b.position.x), min(img.get_width(), b.end.x)):
+			var c := img.get_pixel(x, y)
+			seen[(int(c.r * 63.0) << 12) | (int(c.g * 63.0) << 6) | int(c.b * 63.0)] = true
+	return seen.size()
+
+
+## the picture's grain in a box: the mean difference between neighbouring pixels (a dither's checker raises it)
+func grain(img: Image, b: Rect2i) -> float:
+	var sum := 0.0
+	var n_ := 0
+	for y in range(max(0, b.position.y), min(img.get_height(), b.end.y)):
+		for x in range(max(0, b.position.x), min(img.get_width(), b.end.x) - 1):
+			var c := img.get_pixel(x, y)
+			var d := img.get_pixel(x + 1, y)
+			sum += abs(c.get_luminance() - d.get_luminance())
+			n_ += 1
+	return sum / max(1, n_)
 
 
 func finish() -> void:

@@ -25,6 +25,20 @@ joint). **For the user:** open `Saved/Godot/TestRoom001/game/acts/02_n_hello/sce
 scrub: the camera along the recording, Aoi moving; `python tools/godot/plugin_check.py` for the leak and the two
 mirrors pictured on the card (the cloud's: `docs/godot_sheets/2026-10-30_leak_mirror.jpg`).
 
+**The user's three asks after that** (2026-10-30, morning; "Ah that sorta worked"): (1) the visitor at the
+peephole showed her back: not the level (her idle has `face: "player"`), the runtime: `standin_body` turned a
+Studio export 180° on a wrong note about the stand-in's forward (it's +z, the desk's figure's), so every export
+faced away from what it faced; worn unturned now, lookshot's `--cast` fixed with it, pictured from a metre in
+front of her spot (GODOT_EXPORT §8). (2) **HSHair** (GODOT_LOOK §5c): the Studio's hair look on any imported
+model's card hair, brows and lashes, with the PSX dither as the story's `hair` word (`{"retro": true}` on the
+game or a cast member; `flat`, `steps`, `dither`, `gain`, `shine`, `soft`, `cut` each); worn by every stand-in and
+every scene's body; the demo's `hair` stage measures it. (3) **Scenes play the designed character**: bakeplay
+instances the Character Studio export itself (posed from the same skinning matrices: the bake was made on its
+skeleton) when the story or the bake's index says the body is `people/<name>` (GODOT_EXPORT §8); the face stays
+neutral there for now. Other realism enhancers for imported models still open: a cloth sheen on the tailor's
+garments (their fabric's roughness and a velvet rim), hashed alpha on hair under TAA, the export's
+`studioSkin` numbers onto HSSkin's sliders (§7).
+
 **Open: the user's stand-in bug** (2026-10-30, their words: "in director I chose an actual designed character to
 test but in game I only see this base mesh; after switching to the designed character it now has weird splotches
 of skin colour mixed with the default grey"). Not reproduced here: the cloud's `_studiotest` export worn by Aoi

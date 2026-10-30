@@ -1807,6 +1807,7 @@ func weather_attach() -> void:
 const ARMS_DOWN := 52.0
 var standins: Dictionary = {}        # cid -> the body node under the stand-in
 var standin_mats: Dictionary = {}    # cid -> its skin materials (HSSkin)
+var standin_hair: Dictionary = {}    # cid -> its hair materials (HSHair: the salon's cards, brows and lashes, on the Studio's hair look)
 var skin_wet: Dictionary = {}        # cid -> {wet, sweat, drips, oil}: the `skin` action, on every body she wears
 var panes: Array = []                # the windows' panes wearing the rain
 
@@ -1866,6 +1867,7 @@ func standin_redress(cid: String) -> void:
 		old.queue_free()
 		standins.erase(cid)
 		standin_mats.erase(cid)
+		standin_hair.erase(cid)
 	standin_body(cid)
 
 
@@ -1893,17 +1895,30 @@ func standin_body(cid: String) -> void:
 			lo = min(lo, (mi.global_transform * mi.get_aabb()).position.y - n.global_position.y)
 	if lo != INF:
 		body.position.y = -lo                    # its feet on the stand-in's floor
-	body.rotation_degrees.y = 180.0               # the export faces +z, the stand-in's forward is -z
+	# the export faces +z, and +z is the stand-in's front (the node turns its +z to the spot's rot, as the desk's figure: stage.js yawToThree), so it's worn unturned
 	for sk in body.find_children("*", "Skeleton3D", true, false):
 		arms_down(sk)
 	standin_mats[cid] = HSSkin.wear(body, skin_wet.get(cid, {}))
+	standin_hair[cid] = HSHair.wear(body, hair_look(cid))
 	if people:
 		HSEye.wear(body, file)
 	standins[cid] = body
 	var mesh_names: Array = []                       # said once a body, so a stand-in wearing the wrong file or an unskinned mesh can be read off the console
 	for mi in body.find_children("*", "MeshInstance3D", true, false):
 		mesh_names.append(str(mi.name))
-	print("standin %s wears %s (%s): %d skin surfaces on %s" % [cid, file, "a Character Studio export" if people else "the bake's body", standin_mats[cid].size(), ", ".join(mesh_names)])
+	print("standin %s wears %s (%s): %d skin surfaces, %d hair surfaces on %s" % [cid, file, "a Character Studio export" if people else "the bake's body", standin_mats[cid].size(), standin_hair[cid].size(), ", ".join(mesh_names)])
+
+
+## the hair look a cast member's bodies wear (STORY_FORMAT §2 `hair`): the game's over the plugin's defaults, theirs over the game's
+func hair_look(cid: String) -> Dictionary:
+	var out := {}
+	var g = story.game.get("hair") if story.game is Dictionary else null
+	if g is Dictionary:
+		out.merge(g, true)
+	var c = story.cast.get(cid) if story.cast is Dictionary else null
+	if c is Dictionary and c.get("hair") is Dictionary:
+		out.merge(c["hair"], true)
+	return out
 
 
 ## the `skin` action: a cast member's skin wet, sweating, dripping, oiled (0..1 each; the keys left out stay): on her

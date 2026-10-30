@@ -218,6 +218,7 @@ export async function bakePreview(stage, story, plan, files, fps = 30, onProgres
       const b = await bodyGlb(stage.cast[who], GLTFExporter); if (!b) continue;
       await saveBody(who, b.glb);
       out.bodies[who] = { file: `Body_${who}.glb`, bones: b.bones, bind: b.bind, skin_lin: SKIN_LIN, face: b.face };   // face: the glb's morph targets, the bake's 72 in order
+      const pf = stage.fileFor(story.cast[who]); if (typeof pf === "string" && pf.startsWith("people/")) out.bodies[who].people = pf.slice(7);   // recorded on a Character Studio export: Godot plays the export itself (bakeplay)
     }
     for (const [who, c] of Object.entries(story.cast || {})) for (const name of Object.keys(c.models || {})) {   // each model's body
       if (!out.bodies[who]) continue;
@@ -226,6 +227,7 @@ export async function bakePreview(stage, story, plan, files, fps = 30, onProgres
       const tag = name.replace(/[^A-Za-z0-9]+/g, "_");
       await saveBody(`${who}__${tag}`, b.glb);
       (out.bodies[who].models = out.bodies[who].models || {})[name] = { file: `Body_${who}__${tag}.glb`, bones: b.bones, bind: b.bind };
+      const mf = modelFile(story, who, name); if (typeof mf === "string" && mf.startsWith("people/")) out.bodies[who].models[name].people = mf.slice(7);
     }
     stage.models = {};
   }

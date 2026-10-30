@@ -118,7 +118,7 @@ func _process(_d: float) -> bool:
 		if o["cast"] != "" and not cast_placed and rt.cast_nodes.has(o["cast"]):   # the player put in front of a cast member's stand-in, 2.2 m off, facing them
 			cast_placed = true
 			var cn: Node3D = rt.cast_nodes[o["cast"]]
-			var fwd: Vector3 = -cn.global_transform.basis.z
+			var fwd: Vector3 = cn.global_transform.basis.z          # a stand-in's front is its +z (its yaw + 90, as the desk's figure)
 			var at: Vector3 = cn.global_position + fwd * 2.2
 			var yaw: float = rad_to_deg(atan2(-(cn.global_position.z - at.z), cn.global_position.x - at.x))   # the story's compass: east 0, north 90
 			rt.place(Vector3(at.x, 0.0, at.z), yaw, -8.0)

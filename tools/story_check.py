@@ -205,6 +205,11 @@ def check_library(story, r):
     if missing:
         r.warn(f"{len(missing)} library assets not fetched yet ({', '.join(missing[:4])}{' ...' if len(missing) > 4 else ''}): "
                f"`python tools/cc0.py fetch`")
+    if "hair" in story.get("game", {}):
+        check_hair(r, "game", story["game"]["hair"])
+    for c, v in story.get("cast", {}).items():
+        if "hair" in v:
+            check_hair(r, f"cast {c}", v["hair"])
     bodies = [("game", story.get("game", {}).get("previs_body"))] + [(c, v.get("previs_body")) for c, v in story.get("cast", {}).items()]
     for c, v in story.get("cast", {}).items():          # a cast member's models (STORY_FORMAT §2): named variants, each a body
         ms = v.get("models")
@@ -227,6 +232,28 @@ def check_library(story, r):
                 r.warn(f"{who}: previs_body {f}: no Export for desk / Unreal of {name or '?'} from the Character Studio on this machine (the director falls back)")
         elif f and not (L.STUDIO / "Bodies" / f).exists():
             r.warn(f"{who}: previs_body {f} isn't in Content/Studio/Bodies on this machine (the director falls back)")
+
+
+HAIR_WORDS = {"retro": bool, "flat": bool, "dither": bool, "steps": (2, 64), "gain": (0.2, 3.0), "shine": (0.0, 3.0), "soft": (0.0, 1.0), "cut": (0.0, 1.0)}
+
+
+def check_hair(r, where, h):
+    """The hair look on an imported model's hair (STORY_FORMAT §2 `hair`, GODOT_LOOK §5c): `retro` (unlit, 8 colour
+    steps and the PSX's dither at once), or each of `flat`, `steps`, `dither`, `gain`, `shine`, `soft`, `cut`."""
+    if not isinstance(h, dict):
+        r.err(f"{where}: hair: an object ({{\"retro\": true}}, or flat, steps, dither, gain, shine, soft, cut)")
+        return
+    for k, v in h.items():
+        spec = HAIR_WORDS.get(k)
+        if spec is None:
+            r.err(f"{where}: hair: {k!r} isn't a hair word ({', '.join(HAIR_WORDS)})")
+        elif spec is bool:
+            if not isinstance(v, bool):
+                r.err(f"{where}: hair: {k} is on or off (true/false)")
+        elif not isinstance(v, (int, float)) or isinstance(v, bool) or not spec[0] <= v <= spec[1]:
+            r.err(f"{where}: hair: {k} is a number {spec[0]} to {spec[1]}")
+        elif k == "steps" and int(v) != v:
+            r.err(f"{where}: hair: steps is a whole number of colour levels")
 
 
 def story_locks(story):

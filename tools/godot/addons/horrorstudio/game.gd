@@ -125,7 +125,7 @@ func body_scene(cid: String, file: String) -> Variant:
 	var ck := cid + "|" + file                      # a cast member's models are bodies of their own (Body_<cid>__<model>.glb)
 	if body_scenes.has(ck):
 		return body_scenes[ck]
-	var path := "res://game/previs/" + file
+	var path := file if file.begins_with("res://") else "res://game/previs/" + file
 	var ps = load(path) if ResourceLoader.exists(path) else null
 	if ps == null and FileAccess.file_exists(path):   # not imported yet (a headless run): read the glb itself
 		var doc := GLTFDocument.new()

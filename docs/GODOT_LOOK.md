@@ -308,6 +308,40 @@ third would need a third render. The demo's mirror stage has a second mirror fac
 measures the second's glass inside the first's picture: the room's bulb glints there, brighter than the wall beside
 (LOOKPLUGIN); the bath's mirror in GDTESTROOM sits on its own layer.
 
+## 5c. Hair on imported models (`hair.gdshader`, `HSHair`)
+
+A Character Studio export's hair is the salon's cards (`hair_static`, a skinned mesh per swinging lock) with a
+strand atlas whose alpha is its coverage, and its brows and lashes are strands the same way; a glb from anywhere
+with card hair is the same shape. Godot imported them as plain StandardMaterial3Ds: lit like paper, no highlight
+along the strands, hard-cut edges. `HSHair.wear(node, look)` puts the Studio's hair look
+(`tools/character/hairshader.js`, the same maths) on every mesh whose name says hair, lash or brow (never the
+scalp, a plain dark cap), each keeping its atlas and colour:
+
+- **the tangent along the strand** from the card's UVs in the fragment shader (dP/dv from the screen derivatives:
+  the glb carries no tangents, and the strands run along v), so Kajiya-Kay works on any card hair;
+- **two highlights** from each of the scene's lights (`light()`): a tight white one and a broad one in the hair's
+  colour, shifted apart along the strand (`shift1`, `shift2`), the roots in the strands' shade; a wrapped diffuse so
+  a card's back isn't black; a rim; cards drawn from both sides, the normal flipped on the back;
+- **soft edges** (`soft`): the coverage's cut feathered, the tips fading out, a card seen edge-on fading (no spikes
+  in profile), as the salon's Soft edges; `cut` the coverage a pixel needs;
+- **the retro look as toggles** (the story's `hair`, STORY_FORMAT §2, on the game or a cast member; the user's ask
+  2026-10-30, the PSX dither for any model brought in): `flat` unlit (the atlas's colours, `gain`, whatever the
+  light: ALBEDO zero and the colour as EMISSION), `steps` the colours in so many levels and `dither` the PSX's
+  4x4 ordered dither between them in the screen's pixels, both in the screen's gamma as the Studio quantises its
+  frame; `retro` is all three (flat, 8 steps, the dither). Lit (not flat) the steps and dither quantise the
+  strands' colour before the light, so the banding is the hair's, not the room's: a spatial shader can't
+  quantise its lit result.
+
+Worn in play on every stand-in's body (`play.hair_look`: `game.hair` under the cast member's `hair`) and on a
+scene's bodies (bakeplay). The demo's `hair` stage (LOOKPLUGIN): a sphere head under 240 cards made in code with
+an atlas of 90 strands, pictured with the highlights off, lit, retro and stepped without the dither; the measures:
+the lit crown band brighter than the dull one by 5% (24% measured), the stepped picture's colours over that band (at 6
+bits a channel) under half the lit one's (265 against 1013), the dithered picture's grain there (the mean step between
+neighbouring pixels) over the stepped one's by 1.3 (0.019 against 0.009; the dither's own colours under AgX and TAA
+put the retro count at 419).
+Not yet: a hashed alpha under TAA for softer edges (the plain scissor keeps the headless pictures measurable), the
+salon's inner colour and clump shades (the atlas's G and B channels are baked into the export's albedo already).
+
 ## 6. The story's words, and the check
 
 - `game.look`: `realism` (the default) or `plain` (STORY_FORMAT §9.1); `game.weather`: `rain` puts HSRain over every
@@ -315,6 +349,8 @@ measures the second's glass inside the first's picture: the room's bulb glints t
   (`HSWet.wet_floors`), and plays the shelf's rain there; a `clean` stain of kind `blood` wears HSBlood.
   TestRoom001 wears both (its yard rains; the chores room's second stain is blood); GDTESTROOM checks them at
   stations 1 and 7.
+- `game.hair` and a cast member's `hair` (§5c): the hair look on imported models' hair; the check knows the words
+  and their ranges (`check_hair`).
 - **LOOKPLUGIN** (`tools/godot/plugin_check.py`): the demo (`demo/demo.gd`) in a project of its own under xvfb:
   a room with a lamp (its bulb emissive, so it has something to reflect), a cool fill, a table and a glossy cabinet;
   pictured plain, with the realism preset, with the floor wet, with blood (on the floor, up the wall) and rain, and

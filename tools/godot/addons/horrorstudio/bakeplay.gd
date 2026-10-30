@@ -73,6 +73,9 @@ func make_bodies(world: Node3D) -> void:
 			if model != null and (entry.get("models", {}) is Dictionary) and entry["models"].has(model):
 				entry = entry["models"][model]
 			var file: String = entry["file"]
+			var people: String = people_of(cid, model, entry)   # a Character Studio character: the recording was made on its export's skeleton, so the export itself plays it (hair, clothes, its eyes), not the bake's plain copy of its skin
+			if people != "":
+				file = "res://game/people/" + people + ".glb"
 			b["file"] = file
 			var ps = game.body_scene(cid, file)
 			if ps != null:
@@ -86,6 +89,10 @@ func make_bodies(world: Node3D) -> void:
 					b["node"] = n
 					b["skeleton"] = sk
 					b["skin_mats"] = HSSkin.wear(n, rt_skin(cid))   # the body's skin on HumanShaders' skin shader (its tone kept; a Studio export its baked paint), as wet as the story left her
+					b["hair_mats"] = HSHair.wear(n, rt_hair(cid))   # its hair, brows and lashes on the Studio's hair look (the story's `hair` word)
+					if people != "":
+						HSEye.wear(n, file)
+					print("scene body %s wears %s (%s): %d skin, %d hair surfaces" % [cid, file, "a Character Studio export" if people != "" else "the bake's body", b["skin_mats"].size(), b["hair_mats"].size()])
 					var shapes: Array = index.get("face_shapes", [])      # the face: the bake's 72 weights onto the glb's morph targets
 					for mi in n.find_children("*", "MeshInstance3D", true, false):
 						if mi.mesh != null and mi.mesh.get_blend_shape_count() > 0:
@@ -119,6 +126,31 @@ func make_bodies(world: Node3D) -> void:
 				n.add_child(m)
 				b["parts"].append(m)
 		bodies[cid] = b
+
+
+## the Character Studio character a cast member wears in this scene, when the game carries its export: the bake's
+## record of the body it recorded on (`people` in the index, bake.js), else the story's own word (the scene's model's
+## body or their previs_body `people/<name>`: the desk recorded on that export, its bones named as MHR's)
+func people_of(cid: String, model, entry: Dictionary) -> String:
+	var name := str(entry.get("people", ""))
+	if name == "":
+		var c: Dictionary = game.story.cast.get(cid, {}) if game != null and game.story.cast is Dictionary else {}
+		var ref := ""
+		if model != null and (c.get("models", {}) is Dictionary) and c["models"].has(model):
+			ref = str(c["models"][model])
+		else:
+			ref = str(c.get("previs_body", ""))
+		if ref.begins_with("people/"):
+			name = ref.substr(7)
+	if name == "":
+		return ""
+	var path := "res://game/people/" + name + ".glb"
+	return name if (ResourceLoader.exists(path) or FileAccess.file_exists(path)) else ""
+
+
+func rt_hair(cid: String) -> Dictionary:
+	var rt = game.play if game != null and "play" in game else null
+	return rt.hair_look(cid) if rt != null and rt.has_method("hair_look") else {}
 
 
 func rt_skin(cid: String) -> Dictionary:

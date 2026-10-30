@@ -149,6 +149,20 @@ loads, every verb in the games has a part).
    every combination of a scene's answers (silence too, at most 16 a scene) as its own recording (`recordings`, keyed
    `c3=good|c7=`; the export a file each, `scenes/<sid>__<key>.json`), and the scene player switches to the branch's
    recording at the answer, its timeline mapped onto it (measured: the night scene's painting answer, no frame held).
+   **A Character Studio character in a recorded scene, and the stand-in's face** (2026-10-30): a scene's body was
+   the bake's `Body_<cid>.glb` whatever the cast member wears: bake.js exports the figure's first skinned mesh with a
+   flat material, so a Character Studio character played her scenes as a grey copy of her skin (the user: "the
+   initial character you see in test isn't the model but the person behind the door is"). Now bakeplay
+   (`people_of`) instances the export itself (`game/people/<name>.glb`) when the bake's index says the body was
+   recorded on it (`bodies[cid].people`, bake.js) or the story's word is `people/<name>` (the cast member's
+   `previs_body` or the scene's model's body), and poses it from the same skinning matrices: the recording was
+   made on that export's skeleton (the desk dresses the figure by the story), so its bones' names and rests are
+   the bake's. Its skin on HSSkin, its eyes on HSEye, its hair on HSHair; the face stays neutral (the export has
+   no morph targets: the desk plays expressions on an export through its corners' MHR points, not yet in Godot).
+   And the stand-in's body was turned 180° ("the export faces +z, the stand-in's forward is -z"): wrong, the
+   stand-in's front is its +z (its yaw + 90, as the desk's figure), so every export showed its back to whatever it
+   faced (TestRoom001's visitor at the peephole faces the player, `face: "player"`, and the user saw her back).
+   Worn unturned now; lookshot's `--cast` stands the eye in front of +z.
    **A cast member's models per scene** (2026-10-29, night): a scene's `models` are carried in the run from that scene on (`game.wear_models`, STORY_FORMAT §3.1), the stand-in in the level dressed again in the model's body (`play.standin_redress`: a Character Studio export for `people/<name>`, else the bake's `Body_<cid>__<model>.glb`), and the bake's scene player poses the model's body (bake.js records each scene on the bodies its cast wear there); TestRoom001's Aoi has a `second` model the lobby scene picks, GDTESTROOM checks the scene's body and her stand-in after it.
    **The things' meshes** (2026-10-29): the export builds the kit's meshes the game needs (`tools/kit_build.py`, the
    glbs the Unreal importer uses too) and copies them and the library's into `game/meshes/<lib>/`, each instanced in
