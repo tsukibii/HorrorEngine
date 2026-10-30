@@ -208,19 +208,24 @@ func bake_gi(lid: String) -> void:
 	var dir := "user://gi/%s" % str(story.game.get("id", "game"))
 	DirAccess.make_dir_recursive_absolute(dir)
 	var baked := 0
+	var dropped := 0
 	for vg in gis:
 		var path := "%s/%s_%s.res" % [dir, lid, vg.name]
 		if FileAccess.file_exists(path):
-			var d = load(path)
-			if d is VoxelGIData:
+			var d = ResourceLoader.load(path, "VoxelGIData", ResourceLoader.CACHE_MODE_REUSE)
+			if d is VoxelGIData and (d as VoxelGIData).get_bounds().size.length() > 0.0:   # a kept bake: whole (a file cut short, or saved empty, has no bounds and would print an error a frame)
 				vg.data = d
 				continue
+			DirAccess.remove_absolute(path)                                       # broken: thrown away and baked again
+			dropped += 1
 		vg.bake(level)
-		if vg.data != null:
+		if vg.data != null and vg.data.get_bounds().size.length() > 0.0:
 			ResourceSaver.save(vg.data, path)
 			baked += 1
-	if baked:
-		print("baked %d of the rooms' VoxelGIs into %s" % [baked, dir])
+		elif vg.data != null:
+			vg.data = null                                                        # a bake that found nothing: no data is better than empty data
+	if baked or dropped:
+		print("baked %d of the rooms' VoxelGIs into %s (%d kept ones were broken and thrown away)" % [baked, dir, dropped])
 
 
 func set_time(t: String) -> void:

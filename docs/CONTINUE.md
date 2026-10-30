@@ -44,7 +44,9 @@ now the desk's brass ring and dark glass, and the latch's thumb turn with it: GO
 they can't open on the desk but can in Godot**: not reproduced (the headless tests click the test room's doors
 open); the likely causes given to them (the pointer lock not taken, a kit door's handle being a dumb mesh on
 both runtimes, a story lock); awaiting what the reticle says there. If it's the handle: a kit door's
-`attach:<door>` parts should count as the door for the reticle in both runtimes.
+`attach:<door>` parts should count as the door for the reticle in both runtimes. And **thousands of VoxelGI
+"bounds" errors** after their pull: a broken kept bake in `user://gi/`; validated, thrown away and rebaked now
+(GODOT_EXPORT §8).
 
 **Open: the user's stand-in bug** (2026-10-30, their words: "in director I chose an actual designed character to
 test but in game I only see this base mesh; after switching to the designed character it now has weird splotches

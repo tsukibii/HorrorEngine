@@ -149,6 +149,12 @@ loads, every verb in the games has a part).
    every combination of a scene's answers (silence too, at most 16 a scene) as its own recording (`recordings`, keyed
    `c3=good|c7=`; the export a file each, `scenes/<sid>__<key>.json`), and the scene player switches to the branch's
    recording at the answer, its timeline mapped onto it (measured: the night scene's painting answer, no frame held).
+   **A kept VoxelGI bake that's broken** (2026-10-30, the user: thousands of `!p_data.has("bounds")` errors a
+   minute after a pull): `game.bake_gi` keeps each room's bake in `user://gi/<game>/<level>_<probe>.res` and
+   loaded whatever was there; a file cut short (the game closed mid-save) or saved empty has no bounds, and Godot
+   prints that error on every load and every frame after. Now a kept file is checked (`get_bounds()` non-zero)
+   before it's worn, a broken one is deleted and the room baked again, a bake that found nothing isn't saved, and
+   the console says how many were thrown away. By hand: delete `~/.local/share/godot/app_userdata/<project>/gi/`.
    **The peephole's lens and the latch's thumb turn drawn** (2026-10-30, the user: "in director tool I see a peephole
    but in godot I dont"): `play.gd`'s `_attach_disc` made each one a bare Node3D for the reticle, nothing to see.
    Now it carries the desk's geometry (peephole.js, latch.js): a brass ring round dark glass on both faces of the
