@@ -29,6 +29,18 @@ Sample placing `asset props/<name>` passed STORY and GDEXPORT. **For the user:**
    at `Saved/Props/sheet.png`.
 2. `python tools/propgen.py library`, to get them into the library for stories.
 
+Then, from the user's second message (2026-10-30, late):
+
+- **Liquids that stay level and slosh in Godot** (PROPGEN.md §10): the look plugin's HSLiquidFill. The game attaches
+  it in `enter_level`. A fill table from the inside's own shape keeps a tipped bottle's volume.
+- **The pill bottle** (`pills`): tinted vial, swappable sticker, tablets settled inside.
+
+40 recipes. GDPROPS ok with the liquids upright and tipped; PROPGEN, GDEXPORT, GDPLAY, LOOKPLUGIN (nodes) and CHECKS
+ok.
+
+**GDTESTROOM fails at station 6 in this cloud with or without the change:** "Aoi's skin on 0 materials", her body
+wanting a Studio export the fresh container lacks. Worth a run on the user's machine.
+
 Next if wanted (PROPGEN.md §9): food tins, a flashlight, batteries, a bucket, a crate, a die, a book; a recipe page
 with a PBR picker.
 
