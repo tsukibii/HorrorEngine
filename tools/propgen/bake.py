@@ -5,14 +5,32 @@ attribute such as its creases' curvature, as an emission)."""
 import numpy as np
 
 
-def raster(m, px, attrs, mat=None):
+def tangent_frames(m):
+    """Per triangle (in tris() order): the directions u and v run on the surface (tangent, bitangent), unit."""
+    t, tuv, _ = m.tris()
+    p0, p1, p2 = m.v[t[:, 0]], m.v[t[:, 1]], m.v[t[:, 2]]
+    e1, e2 = p1 - p0, p2 - p0
+    d1, d2 = tuv[:, 1] - tuv[:, 0], tuv[:, 2] - tuv[:, 0]
+    det = d1[:, 0] * d2[:, 1] - d2[:, 0] * d1[:, 1]
+    r = np.where(np.abs(det) > 1e-14, 1.0 / np.where(np.abs(det) > 1e-14, det, 1.0), 0.0)[:, None]
+    T = (e1 * d2[:, 1:2] - e2 * d1[:, 1:2]) * r
+    B = (e2 * d1[:, 0:1] - e1 * d2[:, 0:1]) * r
+    T /= np.maximum(np.linalg.norm(T, axis=1, keepdims=True), 1e-12)
+    B /= np.maximum(np.linalg.norm(B, axis=1, keepdims=True), 1e-12)
+    return T, B
+
+
+def raster(m, px, attrs, mat=None, face_attrs=None):
     """{name: (px, px, k)} the attributes (name -> (n, k) per vertex) at each texel's centre, and `hit` (px, px): the
-    texels a triangle covers. Rows top first (v = 1 at row 0). Only faces of material index `mat`, if given."""
+    texels a triangle covers. Rows top first (v = 1 at row 0). Only faces of material index `mat`, if given.
+    face_attrs: name -> (triangles, k) values per triangle (tris() order), laid flat over its texels."""
     t, tuv, tf = m.tris()
+    fa = face_attrs or {}
     if mat is not None:
         keep = m.fm[tf] == mat
         t, tuv, tf = t[keep], tuv[keep], tf[keep]
-    out = {k: np.zeros((px, px, x.shape[1]), np.float32) for k, x in attrs.items()}
+        fa = {k: x[keep] for k, x in fa.items()}
+    out = {k: np.zeros((px, px, x.shape[1]), np.float32) for k, x in list(attrs.items()) + list(fa.items())}
     hit = np.zeros((px, px), bool)
     P = np.stack([tuv[..., 0] * px - 0.5, (1 - tuv[..., 1]) * px - 0.5], -1)
     lo = np.floor(P.min(1)).astype(np.int64)
@@ -41,6 +59,8 @@ def raster(m, px, attrs, mat=None):
         hit[yy, xx] = True
         for k, x in attrs.items():
             out[k][yy, xx] = ww[:, 0, None] * x[t[i, 0]] + ww[:, 1, None] * x[t[i, 1]] + ww[:, 2, None] * x[t[i, 2]]
+        for k, x in fa.items():
+            out[k][yy, xx] = x[i]
     out["hit"] = hit
     return out
 

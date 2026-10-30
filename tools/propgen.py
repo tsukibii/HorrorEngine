@@ -16,6 +16,9 @@ exported. No image or 3D generator anywhere.
                                                        a story places one with "shape": "asset props/<name>"
                                                        (or "art": "props/<name>" on a block), the Godot export
                                                        copies it into the game
+    python tools/propgen.py pbr                        the PBR shelf's sets (assets/pbr/): a material's "pbr" names one
+    python tools/propgen.py pbr-add NAME FILES...      a set onto the shelf from its maps (any names: _albedo, _diff,
+                                                       _normal, _nor_gl, _rough...; or a folder or a .zip)
     python tools/propgen.py all [family...]            every recipe (or a family's)
     python tools/propgen.py sheet [names...]           a contact sheet of their previews: Saved/Props/sheet.png
     python tools/propgen.py check                      PROPGEN: a few recipes made small and measured
@@ -83,6 +86,36 @@ def main():
         return
     if argv[0] == "list":
         cmd_list()
+        return
+    if argv[0] == "pbr":
+        sys.path.insert(0, os.path.join(ROOT, "Content", "Python"))
+        from storykit import pbr as PBR
+        sets = PBR.scan(write=True)
+        if not sets:
+            print(f"no sets on the shelf ({PBR.ROOT}): put a set's folder or .zip there, or `propgen.py pbr-add NAME FILES...`")
+        for ref, m in sets.items():
+            print(f"  {ref:36s} tile {m.get('tile_m', 2.0)} m  maps: {', '.join(sorted(m['maps']))}  ({m.get('source', '')})")
+        return
+    if argv[0] == "pbr-add":
+        sys.path.insert(0, os.path.join(ROOT, "Content", "Python"))
+        from storykit import pbr as PBR
+        if len(argv) < 3:
+            sys.exit("pbr-add NAME FILES... (a category with a slash: Metal/brushed)")
+        dst = PBR.ROOT.joinpath(*argv[1].split("/"))
+        dst.mkdir(parents=True, exist_ok=True)
+        for f in argv[2:]:
+            if os.path.isdir(f):
+                for g in os.listdir(f):
+                    if os.path.splitext(g)[1].lower() in PBR.IMG:
+                        shutil.copy(os.path.join(f, g), dst / g)
+            else:
+                shutil.copy(f, dst / os.path.basename(f))
+        sets = PBR.scan(write=True)
+        ref = "pbr/" + argv[1]
+        m = sets.get(ref)
+        if not m:
+            sys.exit(f"{ref}: no colour map among those files (its name should end in albedo, diff, col, color, basecolor...)")
+        print(f"PROPGEN pbr {ref}: {', '.join(sorted(m['maps']))} (tile {m.get('tile_m')} m; set it on the shelf page or in its meta.json)")
         return
     if argv[0] == "library":
         from propgen import recipes

@@ -34,6 +34,7 @@ class Thing:
         self.density = {}
         self.view = None
         self.sharp_angle = None
+        self.texel_paint = None     # fn(material name, canvas, texels): paint by each texel's place (an imported mesh)
 
     def material(self, name, kind="paint", px=None, alpha=False, double=False, color="#808080", rough=0.5, metal=0.0, specular=None):
         self.mats[name] = dict(kind=kind, px=px or int(self.spec.get("tex", 1024)), alpha=alpha, double=double,
@@ -188,7 +189,12 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
     for mi, (mname, mt) in enumerate(th.mats.items()):
         cv = canvases[mname]
         px = mt["px"]
-        tex = BK.raster(th.low, px, {"rest": th.low.a.get("rest", th.low.v), "nrm": vn, "curv": kl[:, None]}, mat=th.low.mats.index(mname))
+        fa = None
+        if th.texel_paint:
+            T, B = BK.tangent_frames(th.low)
+            fa = {"tan": T, "bit": B}
+        tex = BK.raster(th.low, px, {"rest": th.low.a.get("rest", th.low.v), "nrm": vn, "curv": kl[:, None]}, mat=th.low.mats.index(mname),
+                        face_attrs=fa)
         tex["curv"] = tex["curv"][..., 0]
         key = f"{name}_{mname}_tmp"
 
@@ -202,8 +208,10 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
         tex["ao"] = a_ao
         if key in cb:
             tex["curv"] = (fit(cb[key])[..., 0] - 0.5) * 2
+        if th.texel_paint:
+            th.texel_paint(mname, cv, tex)
         S.wear(cv, tex, {**wspec, **(th.mats[mname].get("wear") or {})}, mt["kind"], seed + 7 * mi, th.density.get(mname, 4.0))
-        det = S.height_normal(cv.height, th.density.get(mname, 4.0), float(spec.get("relief", 1.0)))
+        det = S.combine_normals(cv.nrm, S.height_normal(cv.height, th.density.get(mname, 4.0), float(spec.get("relief", 1.0))))
         if key in nb:
             base = fit(nb[key])[..., :3] * 2 - 1
             base /= np.maximum(np.linalg.norm(base, axis=-1, keepdims=True), 1e-9)

@@ -128,9 +128,12 @@ class Canvas:
         self.metal = np.full((h, w), metal, np.float32)
         self.height = np.zeros((h, w), np.float32)
         self.opacity = np.ones((h, w), np.float32)
+        self.nrm = np.zeros((h, w, 3), np.float32)            # a tangent-space normal laid by a PBR set (0 0 1: none)
+        self.nrm[..., 2] = 1.0
         self.used = np.zeros((h, w), bool)
 
-    def lay(self, y0, x0, cov, color=None, rough=None, metal=None, height=None, alpha=1.0, add_height=False, opacity=None):
+    def lay(self, y0, x0, cov, color=None, rough=None, metal=None, height=None, alpha=1.0, add_height=False, opacity=None,
+            normal=None):
         """Composite a coverage patch at (y0, x0): each given property laid over what's there."""
         hh, ww = cov.shape
         y1, x1 = min(y0 + hh, self.h), min(x0 + ww, self.w)
@@ -150,6 +153,11 @@ class Canvas:
                 reg = getattr(self, name)[y0:y1, x0:x1]
                 v = val if np.ndim(val) == 0 else np.asarray(val)[:y1 - y0, :x1 - x0]
                 reg += (v - reg) * c
+        if normal is not None:
+            reg = self.nrm[y0:y1, x0:x1]
+            nv = np.asarray(normal, np.float32)[:y1 - y0, :x1 - x0]
+            reg += (nv - reg) * c[..., None]
+            reg /= np.maximum(np.linalg.norm(reg, axis=-1, keepdims=True), 1e-6)
         if height is not None:
             reg = self.height[y0:y1, x0:x1]
             v = height if np.ndim(height) == 0 else np.asarray(height)[:y1 - y0, :x1 - x0]
@@ -239,9 +247,10 @@ class Frame:
             np.maximum(reg, c, out=reg)
         return out
 
-    def lay(self, y0, x0, cov, color=None, rough=None, metal=None, height=None, alpha=1.0, add_height=False, opacity=None):
+    def lay(self, y0, x0, cov, color=None, rough=None, metal=None, height=None, alpha=1.0, add_height=False, opacity=None,
+            normal=None):
         self.cv.lay(y0, x0, cov, None if color is None else rgb(color) if not isinstance(color, np.ndarray) or color.ndim == 1 else color,
-                    rough, metal, height, alpha, add_height, opacity)
+                    rough, metal, height, alpha, add_height, opacity, normal)
 
     def lay_island(self, cov, **props):
         """A coverage the island's size (cov_of, a pattern) laid with props."""
@@ -331,6 +340,31 @@ class Frame:
             sp.pop("height", None)
             self.lay_island(cov, **sp)
         self.fill_polys(polys, **props)
+
+    def pbr(self, ref, tile=None, rot=0.0, offset=(0.0, 0.0), tint=None, mask=None, alpha=1.0, normal_strength=1.0):
+        """A PBR set off the shelf (pbr/<name>, or a folder) laid over the island at its real size: `tile` metres a repeat
+        (the set's own tile_m if not given), turned `rot` degrees; its colour (tinted), roughness, metalness and normal."""
+        from . import pbrset
+        st = pbrset.load(ref)
+        X, Y = self.grid()
+        tm = (tile or st.tile_m) * 1000.0
+        a = math.radians(rot)
+        u = (X * math.cos(a) + Y * math.sin(a)) / tm + offset[0]
+        v = (-X * math.sin(a) + Y * math.cos(a)) / tm + offset[1]
+        smp = st.sample(u, v)
+        cov = np.ones_like(X) if mask is None else mask
+        col = smp["albedo"]
+        if tint is not None:
+            col = col * rgb(tint)[None, None] * 1.0
+        n = smp["normal"].copy()
+        if rot:
+            c, s_ = math.cos(a), math.sin(a)
+            nx, ny = n[..., 0] * c - n[..., 1] * s_, n[..., 0] * s_ + n[..., 1] * c
+            n[..., 0], n[..., 1] = nx, ny
+        n[..., :2] *= normal_strength
+        n /= np.maximum(np.linalg.norm(n, axis=-1, keepdims=True), 1e-6)
+        self.lay_island(cov, color=col.astype(np.float32), rough=smp["rough"], metal=smp["metal"], alpha=alpha,
+                        normal=n.astype(np.float32))
 
     def image(self, path_or_array, x=0.0, y=0.0, w=None, h=None, **props):
         """A picture (an RGBA array 0-1, rows top first, or a PNG path) laid over the island's rect (x, y, w, h mm)."""

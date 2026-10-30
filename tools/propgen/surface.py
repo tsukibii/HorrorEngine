@@ -31,7 +31,25 @@ KINDS = {
                 "stain": "#5b4d36", "stain_rough": 0.7},
     "filter":  {"dirt": "#4a3a28", "dust": "#a8a090", "scratch": ("#e8d8b8", 0.0, 0.9), "edge": ("#e0d0b0", 0.0, 0.9),
                 "stain": "#6e4a22", "stain_rough": 0.85},
+    # varnished wood: a scratch cuts to the pale wood under the finish, worn edges lose the finish (lighter, duller)
+    "wood":    {"dirt": "#2a1f16", "dust": "#a59d8e", "scratch": ("lighter", 0.0, 0.8), "edge": ("lighter", 0.0, 0.75),
+                "stain": "#3a2414", "stain_rough": 0.5},
+    # cloth: no scratches to speak of (pilling: a little lighter), rubbed edges lighter and flat, stains soak in
+    "fabric":  {"dirt": "#2c2822", "dust": "#9c968a", "scratch": ("lighter", 0.0, 1.0), "edge": ("lighter", 0.0, 1.0),
+                "stain": "#4a3a28", "stain_rough": 1.0},
+    # bare steel and cutlery: scratches catch the light (brighter, smoother), edges polished by hands
+    "steel":   {"dirt": "#2b2924", "dust": "#a09a8e", "scratch": ("#e3e6e9", 1.0, 0.18), "edge": ("#eceef0", 1.0, 0.14),
+                "stain": "#6a5034", "stain_rough": 0.55},
 }
+
+
+def _target(c, col):
+    """A wear colour: '#hex', or 'lighter' / 'darker' than what's there (wood under its varnish, cloth rubbed)."""
+    if c == "lighter":
+        return np.clip(col * 1.35 + 0.06, 0, 1)
+    if c == "darker":
+        return col * 0.6
+    return rgb(c)[None]
 
 
 def _ss(e0, e1, x):
@@ -109,7 +127,7 @@ def wear(cv, tex, w, kind="paint", seed=0, density=4.0, mask=None):
         n = N.fbm3(P / 1.5, seed + 41, 3) * 0.5 + 0.5
         m = _ss(0.25, 0.7, np.clip(cu * 2.0, 0, 1) * (0.4 + 1.1 * n) * w["edges"] * 1.4)
         c, mt, rr = k["edge"]
-        col = blend(col, rgb(c), m)
+        col = col + (_target(c, col) - col) * m[:, None]
         metal = metal + (mt - metal) * m
         rough = rough + (rr - rough) * m
     if w.get("scratches"):
@@ -124,7 +142,7 @@ def wear(cv, tex, w, kind="paint", seed=0, density=4.0, mask=None):
             tot = np.maximum(tot, _ss(0.965, 0.99, line))
         m = tot * _ss(0.45, 0.75, patches + 0.25 * (w["scratches"] - 0.5)) * min(1.0, 0.3 + w["scratches"])
         c, mt, rr = k["scratch"]
-        col = blend(col, rgb(c), m * 0.85)
+        col = col + (_target(c, col) - col) * (m * 0.85)[:, None]
         metal = metal + (mt - metal) * m * 0.85
         rough = rough + (rr - rough) * m * 0.85
     if w.get("dust"):
