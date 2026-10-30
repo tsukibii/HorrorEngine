@@ -6,6 +6,7 @@ extends CanvasLayer
 
 signal panel_done(value)
 signal choice_done(index)
+signal choosing(on)                # a choice up (true) and done (false): play frees the mouse for it and takes it back after
 
 const SHOWN := 5
 
@@ -29,7 +30,8 @@ var chapter_el: VBoxContainer
 var chapter_t: Label
 var chapter_s: Label
 var panel_el: PanelContainer = null
-var choice_el: HBoxContainer = null
+var choice_el: VBoxContainer = null   # the options' rows, in choice_box
+var choice_box: PanelContainer = null  # the glass panel round them
 var choice_bar: ProgressBar = null
 var board_el: Label
 
@@ -201,10 +203,15 @@ func _ready() -> void:
 	var dock := CenterContainer.new()
 	dock.name = "Dock"
 	foot.add_child(dock)
-	choice_el = HBoxContainer.new()
+	choice_box = PanelContainer.new()                  # the options on the theme's glass, a row each (the user's ask, 2026-10-30)
+	choice_box.name = "ChoiceBox"
+	choice_box.visible = false
+	choice_box.custom_minimum_size = Vector2(460, 0)
+	dock.add_child(choice_box)
+	choice_el = VBoxContainer.new()
 	choice_el.name = "Choice"
-	choice_el.visible = false
-	dock.add_child(choice_el)
+	choice_el.add_theme_constant_override("separation", 4)
+	choice_box.add_child(choice_el)
 	choice_bar = ProgressBar.new()
 	choice_bar.name = "ChoiceBar"
 	choice_bar.custom_minimum_size = Vector2(240, 4)
@@ -738,35 +745,72 @@ func choose(spec: Dictionary) -> Variant:
 	var opts: Array = spec.get("options", [])
 	for i in opts.size():
 		var o = opts[i]
-		var l := _label("", 16)
 		var lab: String = named(o.get("label", "") if o is Dictionary else o)
 		var think = o.get("think") if o is Dictionary else null
-		l.text = "%d  %s%s" % [i + 1, lab, ("\n   " + named(think)) if think != null else ""]
-		l.name = "Opt%d" % i
-		l.set_meta("label", lab)
-		choice_el.add_child(l)
-		if i < opts.size() - 1:
-			choice_el.add_child(_label("  —  ", 16))
+		var b := _choice_row(i, lab, named(think) if think != null else "")
+		choice_el.add_child(b)
 	if spec.get("prompt") != null and str(spec["prompt"]) != "":
 		line_el.text = named(spec["prompt"])
 		line_text = named(spec["prompt"])
 		who_el.text = named(spec.get("who", "") if spec.get("who") != null else "")
 		line_until = 0.0
-	choice_el.visible = true
+	choice_box.visible = true
 	choice_bar.visible = spec.get("secs") != null and float(spec.get("secs", 0)) > 0
 	choice_bar.value = 100
 	choice_t0 = Time.get_ticks_msec() / 1000.0
 	modal(true)
 	_mark_choice()
+	choosing.emit(true)
 	var i = await choice_done
 	return i
+
+
+## an option as a row of the panel: "1.  the words", its thought under it smaller, the hover lighting it, a click picking it
+func _choice_row(i: int, lab: String, think: String) -> Button:
+	var c := ThemeC.colors(theme_name)
+	var b := Button.new()
+	b.name = "Opt%d" % i
+	b.set_meta("label", lab)
+	b.text = "%d.  %s%s" % [i + 1, lab, ("\n      " + think) if think != "" else ""]
+	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	b.focus_mode = Control.FOCUS_NONE
+	b.mouse_filter = Control.MOUSE_FILTER_STOP
+	b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	b.add_theme_font_size_override("font_size", 17)
+	var idle := ThemeC.box(c, c["radius"], Color(0, 0, 0, 0), Color(0, 0, 0, 0))
+	idle.shadow_size = 0
+	idle.content_margin_top = 7
+	idle.content_margin_bottom = 7
+	var lit := ThemeC.box(c, c["radius"], Color(c["accent"].r, c["accent"].g, c["accent"].b, 0.16), Color(c["accent"].r, c["accent"].g, c["accent"].b, 0.45))
+	lit.shadow_size = 0
+	lit.content_margin_top = 7
+	lit.content_margin_bottom = 7
+	b.set_meta("idle", idle)
+	b.set_meta("lit", lit)
+	for st in ["normal", "focus", "disabled"]:
+		b.add_theme_stylebox_override(st, idle)
+	b.add_theme_stylebox_override("hover", lit)
+	b.add_theme_stylebox_override("pressed", lit)
+	for fc in ["font_color", "font_focus_color"]:
+		b.add_theme_color_override(fc, c["text"])
+	for fc in ["font_hover_color", "font_pressed_color", "font_hover_pressed_color"]:
+		b.add_theme_color_override(fc, c["accent"])
+	b.mouse_entered.connect(_choice_hover.bind(i))
+	b.pressed.connect(_finish_choice.bind(i))
+	return b
+
+
+func _choice_hover(i: int) -> void:
+	choice_sel = i
+	_mark_choice()
 
 
 func _mark_choice() -> void:
 	var i := 0
 	for c in choice_el.get_children():
 		if c.has_meta("label"):
-			c.modulate = Color(1, 1, 1, 1) if i == choice_sel else Color(1, 1, 1, 0.55)
+			c.add_theme_stylebox_override("normal", c.get_meta("lit") if i == choice_sel else c.get_meta("idle"))   # the row the keys are on, lit as the hover lights it
+			c.add_theme_color_override("font_color", ThemeC.colors(theme_name)["accent"] if i == choice_sel else ThemeC.colors(theme_name)["text"])
 			i += 1
 
 
@@ -774,13 +818,14 @@ func _finish_choice(i: int) -> void:
 	if choice_over:
 		return
 	choice_over = true
-	choice_el.visible = false
+	choice_box.visible = false
 	choice_bar.visible = false
 	if choice_spec.get("prompt") != null:
 		line_el.text = ""
 		line_text = ""
 		who_el.text = ""
 	modal(false)
+	choosing.emit(false)
 	choice_done.emit(i)
 
 
@@ -793,11 +838,11 @@ func choice_key(key: String) -> bool:
 		if i < n:
 			_finish_choice(i)
 		return true
-	if key == "A" or key == "Left":
+	if key == "A" or key == "Left" or key == "W" or key == "Up":
 		choice_sel = max(0, choice_sel - 1)
 		_mark_choice()
 		return true
-	if key == "D" or key == "Right":
+	if key == "D" or key == "Right" or key == "S" or key == "Down":
 		choice_sel = min(n - 1, choice_sel + 1)
 		_mark_choice()
 		return true

@@ -33,10 +33,21 @@ screen-space effects that a big scene can't afford are cheap here, and they're t
 | Glow | soft light, intensity 0.55, threshold 1.05, levels 3 and 5 | the bulbs and the screens bloom a little; soft light keeps the mids from washing |
 | Haze | volumetric fog, density 0.012, anisotropy 0.55 | the thin air of a dark house: light beams through doorways, the far end of a corridor softer |
 | Grade | contrast 1.08, saturation 1.04 | pushed a touch past neutral, under the tape (UltraVHS) when the game wears it |
-| GI | the export's VoxelGI per room (baked at the first load, cached) | GODOT_PLAN §4: SDFGI and one big VoxelGI miss 10 cm walls |
+| GI | none from the export (since 2026-10-30, noon): yours, made in Godot | the user's decision below |
 
-LightmapGI stays out: its `bake()` is editor-only in 4.7 (no such method from a script; measured 2026-10-29 with a probe
-under xvfb), so an export's light can't be baked headless where the checks run. The VoxelGI per room is the baked GI.
+**The lighting is made by hand in Godot** (DECISIONS 2026-10-30, noon, after a day of view-dependent light: the
+per-room VoxelGIs' voxels, SSIL, the fog shafts, then a scripted lightmap bake that took twenty minutes a state in
+the cloud). The export writes no VoxelGI, reflection probe or LightmapGI; the story's own lamps (`use: light`:
+switches, the power, flicker) and the windows' fill stay, being the story's. You add the GI, the probes and the
+effects with the plugin's nodes (§0, the effects as nodes), in a level of a versioned export (GODOT_EXPORT §8), and
+carry them to the next version by copy and paste. The export marks every moving thing (a door's leaf, its handle
+and hinge half, a pickup, a thing to carry or roll) `gi_mode` dynamic, so a LightmapGI you add bakes around them and
+lights them by its probes. The runtime's `lighting` word (STORY_FORMAT §9.1): `on` gives the time of day's sky, sun
+and ambient unless the level carries its own WorldEnvironment or DirectionalLight3D (yours win, its Env wears your
+environment); `off` is the test light (a flat grey ambient, a soft key without shadows, the look plain, no fog, no
+iris), for playing a scene before its lighting is made. LightmapGI's `bake()` is the editor's alone in 4.7 (no
+script can call it; a plugin pressing its button works, LESSONS 2026-10-30, but takes twenty minutes a state on the
+cloud's CPU renderer): press Bake Lightmaps yourself.
 
 **In the editor** (2026-10-29, the user's return: "how do I apply the look for the test scene"): a game applies its
 look at start (`game.gd`, from `game.look`), so a level scene opened in Godot's editor shows none of it. The plugin,
@@ -89,7 +100,7 @@ the lights): the patterns are for the shinier, wetter, outdoor things, not ceili
 puddle under a street lamp thrown up the wall beside it, moonlight through leaves onto wet ground, a blind's stripes
 across a desk by a window; TestRoom001's example is the puddle under the yard's lamp lighting the lobby's wall. The
 reflections those references show (metal, wet ground, windows) come from the wet floors (§2), the glass panes (§4),
-the mirrors (§5b) and, since that evening, **a ReflectionProbe per room** (the kit's one Box Reflection Capture a
+the mirrors (§5b) and, from that evening till the next noon (the lighting handed to the user), **a ReflectionProbe per room** (the kit's one Box Reflection Capture a
 room: the export writes one beside each room's VoxelGI, box-projected, interior, updated once), so metal and glossy
 things reflect their room where the screen-space reflections can't reach.
 

@@ -2,6 +2,23 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-30, noon (the user, after the lightmap bake took hours in the cloud)
+
+- **"I think this isn't practical. What we should do is I manually handle the lighting, you make a plugin that's easy
+  to drag and drop the effects you've created and modify/customize them, and when we import a scene into Godot we don't
+  worry about lighting."** So the export writes no lighting of its own (no VoxelGI, probes or lightmaps; the bake
+  pipeline built that morning dropped before its commit); the story's lamps and windows stay. The look plugin's
+  effects become nodes to drag in and tune (GODOT_LOOK §0). This supersedes the morning's baked approach below.
+- **"Instead of on each export we overwrite the folder, we incrementally go up a version so I can copy and paste some
+  of the prior setup (e.g. the lighting nodes) from a previous project."** Every export is a new folder,
+  `Saved/Godot/<Game>_v001`, `_v002`... (GODOT_EXPORT §8); the checks keep a scratch folder of their own.
+- **"Similar to the vhs: camcorder var, could we add `lighting: off` meaning we can play and test our scenes without
+  any lighting, but it's not pitch dark because lighting doesn't matter in this demo mode (almost like a viewport
+  play test)."** `game.lighting`: `on` (the default) or `off` (STORY_FORMAT §9.1).
+- **"The multiple choice intro dialogue doesn't work (I can't click anything), and I don't like the layout separated
+  with ---: it should be a glass panel like the other objects, with numbered rows (1. 2. 3.) to select, hover the
+  mouse over one to click."** Done in Godot: hud.gd's choice is the theme's glass panel with a row per option.
+
 ## 2026-10-30, morning, after the night's batch
 
 - **"Is there a way to just bake the lighting (for windowed areas), and for rooms just make the lighting with

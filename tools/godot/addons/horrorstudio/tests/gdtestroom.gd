@@ -410,9 +410,8 @@ func _initialize() -> void:
 				return "the puddle's light should aim up the wall: beam %s, angle %.1f" % [beam, sp.spot_angle]
 			if DisplayServer.get_name() != "headless" and (sp.light_projector == null or hp.textures.size() < 40):
 				return "the caustic loop isn't drawn: %d frames" % hp.textures.size()
-			var probes: Array = g.level.get_node("GI").get_children().filter(func(c): return c is ReflectionProbe)   # a reflection probe per room: metal and wet floors reflect their room
-			if probes.size() < 10 or probes.any(func(pr): return pr.update_mode != ReflectionProbe.UPDATE_ONCE or not pr.box_projection):
-				return "the rooms' reflection probes: %d" % probes.size()
+			if g.level.find_children("*", "VoxelGI", true, false).size() or g.level.find_children("*", "ReflectionProbe", true, false).size() or g.level.find_children("*", "LightmapGI", true, false).size():
+				return "the export should leave the lighting to the user: no VoxelGI, probe or lightmap in the level (DECISIONS 2026-10-30, noon)"
 			var ca = g.camera.attributes                                   # the iris: auto exposure on the camera, settling over about a second
 			if not (ca is CameraAttributesPractical) or not ca.auto_exposure_enabled or absf(ca.auto_exposure_speed - 1.0) > 0.01 or absf(ca.auto_exposure_scale - 0.4) > 0.01:
 				return "the iris should be on by day: " + str(ca)
@@ -537,7 +536,12 @@ func _initialize() -> void:
 			if who_q != "the guide":
 				return "her name at her question: %s (the guide till you've met her)" % JSON.stringify(who_q)
 			var xq: float = rt.cast_nodes["aoi"].position.x
-			g.hud.choice_key("1")
+			var rows: Array = g.hud.choice_el.get_children().filter(func(c): return c is Button)   # the choice as the user asked (2026-10-30): a glass panel of numbered rows, the mouse free to click one
+			if not g.hud.choice_box.visible or rows.size() < 2 or not str(rows[0].text).begins_with("1.") or rt.mouse_captured:
+				return "the choice's panel: shown %s, %d rows, first %s, the mouse still captured %s" % [g.hud.choice_box.visible, rows.size(), JSON.stringify(rows[0].text if rows.size() else ""), rt.mouse_captured]
+			rows[0].pressed.emit()                                         # a click on its first row
+			if not g.hud.choice_over:
+				return "a click on the choice's first row didn't pick it"
 			var xs: Array = []
 			var n := 0
 			var line_seen := 0                                           # frames a line was up and its label drawn with the words in it (the user, 2026-10-30: no dialogue seen in a cutscene)

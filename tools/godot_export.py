@@ -124,8 +124,14 @@ def main():
     games = [a.game] if a.game else L.games()
     ok = True
     for game in games:
-        r = G.export(game, a.out if a.game else None, a.zip)
-        print(f"exported {game}: {r['pieces']} pieces, levels {', '.join(r['levels'])} -> {r['dir']}" + (f", {r['zip']}" if r["zip"] else ""))
+        if a.out and a.game:
+            dest = a.out
+        elif a.check or a.play or a.testroom:              # the checks' own scratch project, overwritten each run: never a version
+            dest = G.CHECK_OUT / game
+        else:
+            dest = None                                  # a new version: Saved/Godot/<game>_v<NNN> (DECISIONS 2026-10-30, noon)
+        r = G.export(game, dest, a.zip)
+        print(f"exported {game}" + (f" as version {r['version']}" if r.get("version") else "") + f": {r['pieces']} pieces, levels {', '.join(r['levels'])} -> {r['dir']}" + (f", {r['zip']}" if r["zip"] else ""))
         for rel in r.get("kept", []):                       # a re-export: the files the user changed stay, the new ones beside them
             print(f"  kept yours: {rel} (the desk's new version beside it as {G.desk_name(rel)})")
         if a.check:
@@ -137,7 +143,7 @@ def main():
                 lvl = Path(r["dir"]) / "game" / "levels" / f"{r['levels'][0]}.tscn"
                 mine = lvl.read_text(encoding="utf-8") + "\n; mine\n"
                 lvl.write_text(mine, encoding="utf-8")
-                r2 = G.export(game, a.out if a.game else None, False, do_import=False)
+                r2 = G.export(game, dest, False, do_import=False)
                 beside = lvl.with_name(lvl.stem + ".desk.tscn")
                 if lvl.read_text(encoding="utf-8") != mine or not beside.exists() or r2.get("kept") != [lvl.relative_to(r["dir"]).as_posix()]:
                     print(f"  GDEXPORT FAIL: a re-export didn't keep a changed file ({r2.get('kept')})")
@@ -147,6 +153,26 @@ def main():
                 lvl.write_text(beside.read_text(encoding="utf-8"), encoding="utf-8")    # back to the desk's, for the checks after
                 beside.unlink()
                 G.write_manifest(Path(r["dir"]))
+            if game == games[-1]:                           # versions: two exports with no folder given are two new folders, numbered, the first untouched
+                vroot = G.CHECK_OUT / "_versions"
+                if vroot.exists():
+                    shutil.rmtree(vroot)
+                keep_out = G.OUT
+                G.OUT = vroot
+                try:
+                    v1 = G.export(game, None, False, do_import=False)
+                    stamp = (Path(v1["dir"]) / "project.godot").read_text(encoding="utf-8")
+                    v2 = G.export(game, None, False, do_import=False)
+                    names = [d.name for d in G.versions(game, vroot)]
+                    good = names == [f"{game}_v001", f"{game}_v002"] and v1["version"] == 1 and v2["version"] == 2 \
+                        and (Path(v1["dir"]) / "project.godot").read_text(encoding="utf-8") == stamp and " v2\"" in (Path(v2["dir"]) / "project.godot").read_text(encoding="utf-8") \
+                        and G.latest(game, vroot) == Path(v2["dir"]) and "custom_user_dir_name" in stamp
+                    print("  GDEXPORT versions: " + ", ".join(names) + (" (the first untouched, the latest the second, one user folder)" if good else " BAD"))
+                    if not good:
+                        ok = False
+                finally:
+                    G.OUT = keep_out
+                    shutil.rmtree(vroot, ignore_errors=True)
             for part in ("addons/horrorstudio_look/plugin.cfg", "addons/horrorstudio_look/look.gd", "HumanShaders/skin_shader.gdshader"):
                 if not (Path(r["dir"]) / part).exists():            # the plugins (GodotPlugins/) copied in
                     print(f"  GDEXPORT FAIL: {part} missing from the export")

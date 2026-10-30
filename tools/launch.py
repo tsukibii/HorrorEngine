@@ -114,7 +114,7 @@ TOOLS = [
     ("Pages", "Pigment test (projected art as pigment)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/pigment.html"}),
     ("Pages", "Kimodo demo", "tools/kimodo.py demo", {"url": "http://127.0.0.1:7860"}),
 
-    ("Godot", "Export a game as its own Godot 4.7 project (.zip in Saved/Godot, with a guide to editing it; record the scenes on the desk first)", "tools/godot_export.py --game {game} --zip", {}),
+    ("Godot", "Export a game as its own Godot 4.7 project, a new version each time (Saved/Godot/<game>_v001, _v002... and its .zip, with a guide to editing it; record the scenes on the desk first)", "tools/godot_export.py --game {game} --zip", {}),
     ("Godot", "Record a game's scenes for the export (the desk running)", "node tools/godot/bake.mjs --game {game}", {}),
     ("Godot", "Godot check (4.7 runs headless and draws a lit box)", "tools/godot/check.sh", {}),
     ("Godot", "Pictures for a game's guide, made by Godot (the start by day and night, the first scene from the bake), the guide written again", "tools/godot_export.py --game {game} --pictures", {}),

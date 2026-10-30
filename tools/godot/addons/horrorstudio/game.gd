@@ -168,9 +168,8 @@ func enter_level(lid: String, fresh: bool = false) -> void:
 			var p = JSON.parse_string(n.get_meta("piece"))
 			if p is Dictionary:
 				things[p["id"]] = {"node": n, "piece": p}
-	set_time(time_of_day)
 	set_look(look_of_level(lid))
-	bake_gi(lid)
+	set_time(time_of_day)                          # (after the look: set_time ends with the lighting's mode, apply_lighting)
 
 
 ## the look a level plays under: its own `look` (STORY_FORMAT §2), else the game's (§9.1)
@@ -206,50 +205,6 @@ func pieces(lvl: Node = null) -> Array:
 	return out
 
 
-## the rooms' VoxelGIs (the export writes one a room, unbaked): baked once here and kept in user://, so the bounce is
-## there from the first run and the next start loads it. Not headless (the dummy renderer can't bake).
-var bad_gi: Dictionary = {}                     # kept VoxelGI bakes found broken this run (their paths): not read twice
-
-
-func bake_gi(lid: String) -> void:
-	if DisplayServer.get_name() == "headless" or level == null:
-		return
-	var gis: Array = []
-	for n in pieces():
-		if n is VoxelGI:
-			gis.append(n)
-	if gis.is_empty():
-		return
-	var dir := "user://gi/%s" % str(story.game.get("id", "game"))
-	DirAccess.make_dir_recursive_absolute(dir)
-	var baked := 0
-	var dropped := 0
-	for vg in gis:
-		var path := "%s/%s_%s.res" % [dir, lid, vg.name]
-		if FileAccess.file_exists(path) and not bad_gi.has(path):
-			var d = ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_IGNORE)   # read afresh: a cached copy of a broken one would fool the check
-			if d is VoxelGIData and (d as VoxelGIData).get_bounds().size.length() > 0.0 and ((d as VoxelGIData).get_bounds().size - vg.size).length() < 0.05:   # a kept bake: whole (a file cut short, or saved empty, has no bounds and would print an error a frame) and this probe's own size (a re-export that resized it needs a new one)
-				vg.data = d
-				continue
-			bad_gi[path] = true                                                   # never read again this run
-			var size := -1
-			var f := FileAccess.open(path, FileAccess.READ)
-			if f != null:
-				size = f.get_length()
-				f.close()
-			var err := DirAccess.remove_absolute(ProjectSettings.globalize_path(path))   # broken: thrown away and baked again
-			print("a kept VoxelGI bake is broken or stale: %s (%d bytes, read as %s, bounds %s against the probe's %s): removed (%s), baked again" % [path, size, d.get_class() if d != null else "nothing", str(d.get_bounds()) if d is VoxelGIData else "-", str(vg.size), error_string(err)])
-			dropped += 1
-		vg.bake(level)
-		if vg.data != null and vg.data.get_bounds().size.length() > 0.0:
-			ResourceSaver.save(vg.data, path)
-			baked += 1
-		elif vg.data != null:
-			vg.data = null                                                        # a bake that found nothing: no data is better than empty data
-	if baked or dropped:
-		print("baked %d of the rooms' VoxelGIs into %s (%d kept ones were broken and thrown away)" % [baked, dir, dropped])
-
-
 func set_time(t: String) -> void:
 	time_of_day = t if TIME_LOOK.has(t) else StoryC.TIME_DEFAULT
 	var L: Dictionary = TIME_LOOK[time_of_day]
@@ -258,6 +213,10 @@ func set_time(t: String) -> void:
 		vhsn.set_night(1.0 if time_of_day == "night" else 0.0)   # the tape's black turns blue at night (UltraVHS's night mode)
 	if story != null:
 		HSLook.iris(get_viewport(), (look_now if look_now != "" else str(story.game.get("look", "realism"))) != "plain", time_of_day == "night")   # the iris a stop under at night
+	if not our_sky():                                # the user's own sky and sun in the level, or the flat test light: the time of day leaves them alone
+		_windows_by_time(L)
+		apply_lighting()
+		return
 	var e: Environment = env.environment
 	e.background_color = L["sky"]
 	e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
@@ -298,6 +257,11 @@ func set_time(t: String) -> void:
 	e.fog_sky_affect = 0.0
 	e.adjustment_enabled = true
 	e.adjustment_saturation = float(L["sat"])
+	_windows_by_time(L)
+	apply_lighting()
+
+
+func _windows_by_time(L: Dictionary) -> void:
 	if level == null:
 		return
 	for n in pieces():
@@ -306,6 +270,71 @@ func set_time(t: String) -> void:
 			n.light_color = L["win"][0]
 			n.light_energy = L["win"][1] * float(w.get("area", 1.0))
 			n.spot_range = L["win"][2]
+
+
+## the lighting is the user's, made in Godot (DECISIONS 2026-10-30, noon); the game's `lighting` word picks how the runtime
+## helps: `on` (the default) the time of day's sky, sun and ambient (game.gd TIME_LOOK) unless the level carries its own
+## WorldEnvironment or DirectionalLight3D (then theirs rule and the runtime leaves the sky alone); `off` a flat test light
+## for playing a scene before its lighting is made: an even grey ambient and a soft key without shadows, the look
+## plain, no fog, no iris, the sun hidden: nothing pitch dark, nothing to judge the light by (STORY_FORMAT §9.1)
+func lighting_mode() -> String:
+	return "off" if story != null and str(story.game.get("lighting", "on")) == "off" else "on"
+
+
+## the level's own WorldEnvironment (the user's), if it has one
+func level_env() -> WorldEnvironment:
+	if level == null:
+		return null
+	for n in level.find_children("*", "WorldEnvironment", true, false):
+		return n
+	return null
+
+
+## the time of day's sky and sun are the runtime's to set: lighting on and nothing of the user's in the level
+func our_sky() -> bool:
+	if lighting_mode() == "off":
+		return false
+	if level_env() != null:
+		return false
+	return level == null or level.find_children("*", "DirectionalLight3D", true, false).is_empty()
+
+
+func apply_lighting() -> void:
+	var sun = get_node_or_null("Sun")
+	var key = get_node_or_null("TestLight")
+	if lighting_mode() == "off":
+		if sun != null:
+			sun.visible = false
+		if key == null:
+			key = DirectionalLight3D.new()
+			key.name = "TestLight"
+			key.shadow_enabled = false
+			key.light_energy = 0.55
+			add_child(key)
+			key.global_transform = Transform3D(Basis(), Vector3(2, 4, 3)).looking_at(Vector3.ZERO, Vector3.UP)
+		key.visible = true
+		var e: Environment = env.environment if env != null else null
+		if e != null:
+			HSLook.apply(get_viewport(), e, "plain")
+			e.background_mode = Environment.BG_COLOR
+			e.background_color = Color(0.32, 0.34, 0.38)
+			e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+			e.ambient_light_color = Color(1, 1, 1)
+			e.ambient_light_energy = 0.75
+			e.fog_enabled = false
+			e.volumetric_fog_enabled = false
+			e.adjustment_enabled = false
+		HSLook.iris(get_viewport(), false)
+		return
+	if key != null:
+		key.visible = false
+	var theirs := level_env()
+	if theirs != null and env != null and theirs.environment != null and env.environment != theirs.environment:
+		env.environment = theirs.environment                     # one environment in the world: theirs (our Env node wears it)
+		if hud != null:
+			hud.env = theirs.environment
+	if sun != null:
+		sun.visible = our_sky()
 
 
 ## the black over everything, eased over secs (the desk's fade)

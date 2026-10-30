@@ -162,6 +162,21 @@ loads, every verb in the games has a part).
    prints that error on every load and every frame after. Now a kept file is checked (`get_bounds()` non-zero)
    before it's worn, a broken one is deleted and the room baked again, a bake that found nothing isn't saved, and
    the console says how many were thrown away. By hand: delete `~/.local/share/godot/app_userdata/<project>/gi/`.
+   **Versions, and the lighting left to the user** (2026-10-30, noon, DECISIONS): every export is a new folder,
+   `Saved/Godot/<Game>_v001`, `_v002`... (`godot.next_version`; its zip `<Game>_v003.zip` beside it; the project's name
+   carries the version; every version shares one user folder, `horrorstudio_<game id>`, so saves and settings carry
+   over), so the lighting set up by hand in one version is there to copy into the next. `godot.latest(game)` is the
+   newest (the desk's Godot button reports it and serves its guide; `tools/godot/sheet.py` pictures it). The checks
+   (GDEXPORT, GDPLAY, GDTESTROOM) export into a scratch project of their own, `Saved/Godot/_check/<Game>`, overwritten
+   each run with the receipt's merge as before; GDEXPORT also exports twice into a scratch root and checks the two
+   versions. The export writes no lighting of its own any more: no VoxelGI, reflection probe or lightmap (GODOT_LOOK
+   §1); moving things are dynamic GI for a LightmapGI you add. **The dialogue choice** (the user: "I can't click
+   anything", and the options run together with dashes): in a live scene the input handler passed only the walking
+   keys, so the number keys never reached the choice, and the mouse stayed captured for looking; now while a choice
+   is up every key goes to it and the mouse is free (`hud.choosing`, play's `_on_choosing`, taken back after), and the
+   options are the theme's glass panel with a row per answer, `1.  Ready.`, lit under the mouse or the keys (W/S and
+   the arrows move, a number or Enter picks), a click picking it (`docs/godot_sheets/2026-10-30_choice_panel.png`;
+   GDTESTROOM clicks the lobby's first row through its button and checks the mouse freed).
    **The peephole's lens and the latch's thumb turn drawn** (2026-10-30, the user: "in director tool I see a peephole
    but in godot I dont"): `play.gd`'s `_attach_disc` made each one a bare Node3D for the reticle, nothing to see.
    Now it carries the desk's geometry (peephole.js, latch.js): a brass ring round dark glass on both faces of the

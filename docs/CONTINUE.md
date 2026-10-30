@@ -90,6 +90,14 @@ line from Godot's output, the character's folder name under `Content/Studio/Peop
 `python tools/godot/people_check.py --person <name>` on the card (GDPEOPLE pictures that export in Godot on the
 skin shader: if the splotches are there, it's the export or the shader; if not, it's the stand-in's wear).
 
+**The lighting handed to the user** (DECISIONS 2026-10-30, noon, after the scripted lightmap bake took hours in the
+cloud): the export writes no lighting of its own (no VoxelGI, probes or lightmaps; moving things dynamic GI), the
+runtime's `game.lighting` is `on` (the time of day's sky and sun unless a level has its own WorldEnvironment or sun)
+or `off` (a flat test light); every export a new version folder (`Saved/Godot/<G>_v001`...; the checks in
+`Saved/Godot/_check/`); the dialogue choice a glass panel of rows, clickable (it wasn't: a live scene passed only
+the walking keys, and the mouse stayed captured). **Next: the effects as drag-and-drop nodes** in the look plugin
+(GODOT_LOOK §0): the user's ask, in progress.
+
 ## 0. Next: the cloud session (left 2026-10-29, late night, on `godot-support`, after the local session on the 3090)
 
 The user's handoff (their words: continue the ones that haven't been started back in the cloud, since the GPU-heavy

@@ -41,6 +41,37 @@ HUMAN = ROOT / "GodotPlugins" / "HumanShaders"
 LOOK = ROOT / "GodotPlugins" / "HorrorStudioLook" / "addons" / "horrorstudio_look"
 LIVES = L.STUDIO / "Life" / "lives.json"
 OUT = ROOT / "Saved" / "Godot"
+CHECK_OUT = OUT / "_check"                 # the checks' own projects (GDEXPORT, GDPLAY, GDTESTROOM): overwritten each run, never a version
+
+
+def versions(game, root=None):
+    """A game's exported versions, oldest first: Saved/Godot/<game>_v001, _v002... (DECISIONS 2026-10-30, noon: every
+    export a new folder, so the lighting set up in one can be copied from it into the next)."""
+    import re  # noqa: PLC0415
+    base = Path(root) if root else OUT
+    out = []
+    if base.exists():
+        for d in base.iterdir():
+            m = re.fullmatch(re.escape(game) + r"_v(\d+)", d.name)
+            if m and d.is_dir():
+                out.append((int(m.group(1)), d))
+    return [d for _n, d in sorted(out)]
+
+
+def latest(game, root=None):
+    """The newest export of a game (its last version; the old unversioned Saved/Godot/<game> when it has none), or None."""
+    v = versions(game, root)
+    if v:
+        return v[-1]
+    old = (Path(root) if root else OUT) / game
+    return old if (old / "project.godot").exists() else None
+
+
+def next_version(game, root=None):
+    """The folder the next export of a game goes to, and its number."""
+    v = versions(game, root)
+    n = (int(v[-1].name.rsplit("_v", 1)[1]) + 1) if v else 1
+    return (Path(root) if root else OUT) / f"{game}_v{n:03d}", n
 
 # the desk's stage materials (stage.js setWorld): colour, roughness, [metalness]
 MATS = {
@@ -359,6 +390,8 @@ class LevelWriter:
         ext = self.art_of(art) if art else None
         if ext:                                       # the mesh in its block; the block stays, unseen, for the cursor and the walls
             mprops["visible"] = "false"
+        if p["kind"] == "door" or any(t.startswith("door_part:") and t != "door_part:frame" for t in tags) or use in ("pickup", "carry", "roll"):
+            mprops["gi_mode"] = "2"                    # it moves (a leaf, its handle, a thing taken up): a LightmapGI the user adds lights it by its probes, never bakes it in place
         self.t.node("mesh", "MeshInstance3D", path, mprops)
         if ext:
             xf, k = self.art_transform(p, art)
@@ -532,29 +565,6 @@ class LevelWriter:
                     self.t.node(pane, "MeshInstance3D", "Glass", {"transform": xform(s2g(at(0)), 0 if axis == "y" else 90), "mesh": quad, "material_override": glass, "cast_shadow": "0"},   # glass casts no shadow: a headlight sweep outside shines in through it
                                 {"pane": {"room": room["id"], "w": op["w"], "h": op["h"]}})
 
-    def gi(self):
-        """A VoxelGI per room (GODOT_PLAN §4's trial: the bounce of the room's own lights; a level-wide one misses the
-        10 cm walls): its box plus 30 cm (the walls in, the neighbours' lit floors out: a metre reached into them and
-        their lamps lit this room's voxels through the wall), its cells by its longest side so a voxel is 10 cm or
-        under (64 to 6.4 m, 128 to 12.8, 256 beyond, never 512: a 30 m corridor at 64 cells had 47 cm voxels and
-        light leaking in at the base of every wall, the user's "bright gaps on the floor", 2026-10-30; at 256 its
-        voxels are 12 cm, and the tighter box keeps the neighbours' lit floors out, which was the leak's source).
-        Unbaked here
-        (baking is the renderer's): the runtime bakes each once when the level loads and keeps the result in user://."""
-        for room in (self.story["levels"][self.lid].get("rooms") or []):
-            x0, y0, z0 = room["at"]
-            w, d, h = room["size"]
-            c = s2g((x0 + w / 2, y0 + d / 2, z0 + h / 2))
-            longest = max(w, d, h) + 0.3
-            subdiv = 0 if longest <= 6.4 else 1 if longest <= 12.8 else 2
-            self.t.node(self.uname(f"__gi_{room['id']}"), "VoxelGI", "GI", {"transform": xform(c), "size": v3(w + 0.3, h + 0.3, d + 0.3), "subdiv": str(subdiv)},
-                        {"gi": {"room": room["id"]}})
-            # a reflection probe per room too (Light Kit's one Box Reflection Capture per room): metal, glossy cabinets
-            # and wet floors reflect their own room where the screen-space reflections can't reach (off-screen, behind)
-            self.t.node(self.uname(f"__probe_{room['id']}"), "ReflectionProbe", "GI", {"transform": xform(c), "size": v3(w + 0.2, h + 0.2, d + 0.2),
-                        "update_mode": "0", "box_projection": "true", "interior": "true", "max_distance": f(max(w, d, h) * 2.0), "intensity": "1.0"},
-                        {"probe": {"room": room["id"]}})
-
     def write(self):
         things = L.index(self.story)[0]
         for p in self.pieces:
@@ -575,7 +585,6 @@ class LevelWriter:
                 self.person(p)
             elif k == "leak":
                 self.leak(p)
-        self.gi()
         # a stand-in per cast member (the importer's cast_standins): hidden at the start; behaviours and scenes move it
         st = things.get(self.story["levels"][self.lid]["start"])
         for cid, c in (self.story.get("cast") or {}).items():
@@ -956,7 +965,7 @@ def write_acts(out, story, bake=None):
     return n
 
 
-def project_godot(story):
+def project_godot(story, version=None):
     title = (story.get("game") or {}).get("title") or "HorrorStudio game"
     return f'''; Engine configuration file.
 ; Written by the director's desk (tools/godot_export.py); the game's own settings go here too.
@@ -965,7 +974,9 @@ config_version=5
 
 [application]
 
-config/name={gstr(title)}
+config/name={gstr(title + (f" v{version}" if version else ""))}
+config/use_custom_user_dir=true
+config/custom_user_dir_name={gstr("horrorstudio_" + re.sub(r"[^A-Za-z0-9_]+", "_", str((story.get("game") or {}).get("id") or title)))}
 run/main_scene="res://addons/horrorstudio/main.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 
@@ -1173,7 +1184,9 @@ def import_project(out, timeout=600):
 
 
 def export(game, out=None, make_zip=False, do_import=True):
-    """The project for a game, into out (Saved/Godot/<game> by default); returns {"dir", "zip", "levels", "pieces", "arts"}.
+    """The project for a game: a new version folder (Saved/Godot/<game>_v<NNN>, next_version) when out is None, else into
+    out, overwritten with the receipt's merge (the checks' scratch projects); returns {"dir", "zip", "levels", "pieces", "arts",
+    "version"}. Every version shares one user:// folder (horrorstudio_<game id>): saves and settings carry over.
     The kit's meshes the game needs are built first (tools/kit_build.py, when node is there) and go in with the
     library's; the project is then imported once so they load headless (do_import)."""
     story, path = L.load(game)
@@ -1189,13 +1202,17 @@ def export(game, out=None, make_zip=False, do_import=True):
             subprocess.run([shutil.which("node"), str(ROOT / "tools" / "kit" / "build.mjs"), "--specs", str(specs)], capture_output=True, text=True, timeout=900)
     except (OSError, ValueError, subprocess.TimeoutExpired):
         pass
-    final = Path(out) if out else OUT / game
-    old_manifest = read_manifest(final)                   # a re-export: the receipt of the last one (§5), None the first time
+    version = None
+    if out:
+        final = Path(out)
+    else:
+        final, version = next_version(game)              # a new folder each export (DECISIONS 2026-10-30, noon)
+    old_manifest = read_manifest(final)                   # a re-export into the same folder (the checks' scratch): the receipt of the last one (§5), None the first time
     out = final.with_name(final.name + ".new") if old_manifest is not None else final
     if out.exists():
         shutil.rmtree(out)
     (out / "game" / "levels").mkdir(parents=True)
-    (out / "project.godot").write_text(project_godot(story), encoding="utf-8")
+    (out / "project.godot").write_text(project_godot(story, version), encoding="utf-8")
     shutil.copytree(ADDON, out / "addons" / "horrorstudio", ignore=shutil.ignore_patterns(".godot", "*.uid.bak"))
     shutil.copytree(LOOK, out / "addons" / "horrorstudio_look", ignore=shutil.ignore_patterns(".godot", "*.uid.bak"))
     if HUMAN.exists():
@@ -1274,15 +1291,16 @@ def export(game, out=None, make_zip=False, do_import=True):
     if (arts or surfaced) and do_import:
         import_project(out)
     z = zip_project(out, game) if make_zip else None
-    return {"dir": str(out), "zip": str(z) if z else None, "levels": levels, "pieces": len(pieces), "arts": arts, "kept": kept}
+    return {"dir": str(out), "zip": str(z) if z else None, "levels": levels, "pieces": len(pieces), "arts": arts, "kept": kept, "version": version}
 
 
 def zip_project(out, game):
-    """The project as <game>.zip beside it (Godot's .godot/ left out): the file the desk's button hands over."""
+    """The project as <folder>.zip beside it (Godot's .godot/ left out): the file the desk's button hands over
+    (TestRoom001_v003.zip for a version)."""
     out = Path(out)
-    z = out.parent / f"{game}.zip"
+    z = out.parent / f"{out.name}.zip"
     with zipfile.ZipFile(z, "w", zipfile.ZIP_DEFLATED) as zf:
         for fp in sorted(out.rglob("*")):
             if fp.is_file() and ".godot" not in fp.parts:
-                zf.write(fp, Path(game) / fp.relative_to(out))
+                zf.write(fp, Path(out.name) / fp.relative_to(out))
     return z

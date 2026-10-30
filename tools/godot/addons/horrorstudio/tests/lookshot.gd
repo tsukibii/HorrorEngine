@@ -1,10 +1,10 @@
 ## A picture of the game at a spot, at a time of day, lit one way or another (the lighting trial, GODOT_PLAN §4; the
 ## guide's pictures): --node=n_x --at=x,y,yaw,pitch (story metres, degrees) --time=day|dusk|night
-## --gi=none|sdfgi|voxel --ao=0|1 --ssil=0|1 --power=0|1 --vhs=off|camcorder|camhybrid|worn --tape=key=val,key=val[;soften=near,far,px,least] (over the preset) --shadows=0|1|2 (the menu's row: hard, soft, softest) --amb=ENERGY --take=id,id (into the row) --behave=cid,as[,route or spot] (a cast member set going) --cast=id (the eye in front of their stand-in) --state=id:state,id:state (little things set going) --mirrors=1 (each mirror's own picture beside the shot) --shot=PATH [--wait=N frames]
+## --choice="Question|first|second|third" (a choice up over the picture, its first row lit) --gi=none|sdfgi|voxel --ao=0|1 --ssil=0|1 --power=0|1 --vhs=off|camcorder|camhybrid|worn --tape=key=val,key=val[;soften=near,far,px,least] (over the preset) --shadows=0|1|2 (the menu's row: hard, soft, softest) --amb=ENERGY --take=id,id (into the row) --behave=cid,as[,route or spot] (a cast member set going) --cast=id (the eye in front of their stand-in) --state=id:state,id:state (little things set going) --mirrors=1 (each mirror's own picture beside the shot) --shot=PATH [--wait=N frames]
 extends SceneTree
 var g
 var n := 0
-var o := {"node": "", "at": "", "time": "", "gi": "none", "ao": "0", "ssil": "0", "power": "1", "vhs": "off", "shot": "res://look.png", "wait": "30", "amb": "", "take": "", "cast": "", "behave": "", "sweep": "", "mirrors": "0", "state": "", "tape": "", "shadows": "2"}
+var o := {"node": "", "at": "", "time": "", "gi": "none", "ao": "0", "ssil": "0", "power": "1", "vhs": "off", "shot": "res://look.png", "wait": "30", "amb": "", "take": "", "cast": "", "behave": "", "sweep": "", "mirrors": "0", "state": "", "tape": "", "shadows": "2", "choice": ""}
 var done := false
 var placed := false
 var baked := false
@@ -115,6 +115,14 @@ func _process(_d: float) -> bool:
 		n = 0
 		return false
 	if n >= int(o["wait"]):
+		if o["choice"] != "" and g.hud.choice_over:            # a choice up over the picture (the HUD's glass panel of rows), not awaited
+			var parts: PackedStringArray = o["choice"].split("|")
+			var opts: Array = []
+			for i in range(1, parts.size()):
+				opts.append({"label": parts[i]})
+			g.hud.choose({"prompt": parts[0], "who": "Aoi", "options": opts})
+			n = int(o["wait"]) - 4                        # a few frames for the panel to be drawn
+			return false
 		if o["cast"] != "" and not cast_placed and rt.cast_nodes.has(o["cast"]):   # the player put in front of a cast member's stand-in, 2.2 m off, facing them
 			cast_placed = true
 			var cn: Node3D = rt.cast_nodes[o["cast"]]

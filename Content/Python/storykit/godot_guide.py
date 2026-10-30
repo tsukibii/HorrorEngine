@@ -196,9 +196,12 @@ sky's colour, the ambient and the windows from <code>TIME_LOOK</code> (day, dusk
 <code>MeshInstance3D</code>s to <code>Static</code> global illumination mode (they carry UV2 already: <code>add_uv2</code>), and press <span class="ui">Bake Lightmaps</span>.
 Keep the story lights dynamic. A level with more than one lighting state (the power cut) wants one bake per state: GODOT_EXPORT.md §6 lays out the
 plan (a LightmapGI per state, swapped by the runtime).</p>
-<p><b>What the export bakes:</b> a <code>VoxelGI</code> per room, baked at the game's first load and kept in <code>user://gi/</code> (the lighting trial,
-GODOT_PLAN.md §4: it gives the bounce the thin walls need). <code>LightmapGI</code>'s bake is the editor's alone (no script can call it in 4.7), so it stays
-yours to press.</p>
+<p><b>The lighting is yours</b> (since 2026-10-30): the export writes the story's lamps and the windows' fill and nothing else, no GI, no probes. Add a
+<code>LightmapGI</code> or <code>VoxelGI</code>, probes, your own <code>WorldEnvironment</code> and sun, and the look plugin's effects (its nodes in Add Node, its ready-made
+scenes in <code>addons/horrorstudio_look/presets/</code>) to a level; the doors and the things you pick up are already dynamic GI, so a bake goes round them.
+Your own WorldEnvironment or sun in a level takes over from the time of day's. To play before the lighting's made, set the story's
+<code>game.lighting</code> to <code>off</code>: a flat, even test light. Every export is a new folder (<code>&lt;game&gt;_v001</code>, <code>_v002</code>...), so copy your lighting
+nodes from the last one.</p>
 {fig(pictures, 'start_night.png', 'The same start at night: the sky, the windows and the ambient from the time of day.')}
 """))
     body.append(section("props", 8, "Swapping a texture or a prop", f"""

@@ -979,6 +979,12 @@ nearly sharp; the strength they picked from seven), `worn` or `nightmare`; left 
 under the HUD (its black turning blue at night, the menu's Film grain capping the noise); Unreal's UltraVHS component
 takes the same preset. The desk doesn't show it yet (VHS.md §9).
 
+**The lighting** (DECISIONS 2026-10-30, noon: the lighting is made by hand in Godot, the export leaves it alone): `game.lighting`
+is `on` (the default: the runtime gives the time of day's sky, sun and ambient, and stands back for a level that carries
+its own WorldEnvironment or DirectionalLight3D) or `off` (a test mode, like the editor's viewport: a flat grey ambient and
+a soft key without shadows, the look plain, no fog, no iris; nothing pitch dark, for playing a scene before its lighting
+is made). The story's own lamps (`use: light`, switches, the power, flicker) work in both.
+
 **The grade** (docs/GODOT_LOOK.md §1d): `game.grade` names the film-style colour grade over the finished picture
 (under the HUD, over the tape): `cinema` (the default: a gentle teal-and-orange, a soft vignette, fine grain),
 `teal-orange`, `cold`, `sodium`, `bleach`, `noir`, `warm`, or `none`; or an object `{"preset": "cold", "vignette":

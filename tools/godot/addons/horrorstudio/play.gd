@@ -135,6 +135,8 @@ func setup(game_, run_, opts: Dictionary = {}) -> void:
 	game = game_
 	story = game.story
 	hud = game.hud
+	if not hud.choosing.is_connected(_on_choosing):
+		hud.choosing.connect(_on_choosing)
 	run = run_
 	if run != null:
 		flags = run["flags"]
@@ -191,6 +193,10 @@ func _input(ev: InputEvent) -> void:
 
 
 func _unhandled_input(ev: InputEvent) -> void:
+	if hud != null and not hud.choice_over:                 # a choice up: its keys go to it (a live scene's walking keys never did: the user's "I can't pick anything", 2026-10-30), the mouse is free for its rows
+		if ev is InputEventKey:
+			key_event(OS.get_keycode_string(ev.physical_keycode), ev.pressed, ev.echo)
+		return
 	if ev is InputEventMouseMotion and mouse_captured and (active or live_scene) and not busy:
 		ability_look(ev.relative.x, ev.relative.y)
 	elif live_scene and ev is InputEventKey:                   # a live scene: only the walk's keys
@@ -218,6 +224,19 @@ func _unhandled_input(ev: InputEvent) -> void:
 		hud.progress(null)
 	elif ev is InputEventKey:
 		key_event(OS.get_keycode_string(ev.physical_keycode), ev.pressed, ev.echo)
+
+
+## a choice up: the mouse freed to hover and click its rows, the walk stopped; taken back for the look when it's done
+var _captured_before_choice := false
+
+
+func _on_choosing(on: bool) -> void:
+	if on:
+		_captured_before_choice = mouse_captured
+		keys = {}
+		capture_mouse(false)
+	elif _captured_before_choice:
+		capture_mouse(true)
 
 
 func capture_mouse(on: bool) -> void:

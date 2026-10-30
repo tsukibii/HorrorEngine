@@ -112,6 +112,19 @@ def face_name(n):
     return n if n and not n.startswith(".") and all(ch.isalnum() or ch in "_-." for ch in n) else None
 
 
+
+def latest_export(game):
+    """A game's newest Godot export: Saved/Godot/<game>_v<NNN> with the highest number (DECISIONS 2026-10-30, noon), or None."""
+    import re  # noqa: PLC0415
+    best = None
+    base = ROOT / "Saved" / "Godot"
+    if base.exists():
+        for d in base.iterdir():
+            m = re.fullmatch(re.escape(game) + r"_v(\d+)", d.name)
+            if m and d.is_dir() and (best is None or int(m.group(1)) > best[0]):
+                best = (int(m.group(1)), d)
+    return best[1] if best else None
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         pass
@@ -166,10 +179,11 @@ class Handler(BaseHTTPRequestHandler):
             if f.is_file():
                 return self.send(200, f.read_bytes(), "text/javascript" if f.suffix == ".js" else "application/octet-stream")
         if parts[0] == "godot" and len(parts) >= 3 and ".." not in parts and self.game_path(parts[1]):          # an exported Godot project's guide and pictures
-            f = ROOT / "Saved" / "Godot" / parts[1]
+            base = latest_export(parts[1]) or (ROOT / "Saved" / "Godot" / parts[1])   # the newest version's guide
+            f = base
             for q in parts[2:]:
                 f = f / q
-            if f.is_file() and (ROOT / "Saved" / "Godot" / parts[1]).resolve() in f.resolve().parents:
+            if f.is_file() and base.resolve() in f.resolve().parents:
                 import mimetypes  # noqa: PLC0415
                 return self.send(200, f.read_bytes(), mimetypes.guess_type(f.name)[0] or "application/octet-stream")
             return self.send(404, {"error": "no such file in the export"})
@@ -599,7 +613,7 @@ class Handler(BaseHTTPRequestHandler):
             # DECISIONS 2026-10-29, the user's return: "export it as an individual godot project to manually load into godot")
             r = subprocess.run([sys.executable, str(ROOT / "tools" / "godot_export.py"), "--game", parts[3], "--zip"],
                                capture_output=True, text=True, encoding="utf-8", timeout=2400, cwd=str(ROOT))
-            out = ROOT / "Saved" / "Godot" / parts[3]
+            out = latest_export(parts[3]) or (ROOT / "Saved" / "Godot" / parts[3])   # the version this export made (Saved/Godot/<G>_v<NNN>)
             z = out.with_suffix(".zip")
             kept = []                                       # a re-export: the files changed by hand it kept (the receipt, GODOT_EXPORT §5)
             try:

@@ -46,9 +46,12 @@ def main():
     ap.add_argument("--cols", type=int, default=3)
     ap.add_argument("--scale", type=float, default=0.5)
     a = ap.parse_args()
-    project = ROOT / "Saved" / "Godot" / a.game
-    if not (project / "project.godot").exists():
+    sys.path.insert(0, str(ROOT / "Content" / "Python"))
+    from storykit import godot as G  # noqa: PLC0415
+    project = G.latest(a.game)                         # the newest version (a new export when there's none)
+    if project is None:
         subprocess.run([sys.executable, str(ROOT / "tools" / "godot_export.py"), "--game", a.game], check=True)
+        project = G.latest(a.game)
     tmp = ROOT / "Saved" / "Godot" / f"_sheet_{a.game}"
     tmp.mkdir(parents=True, exist_ok=True)
     pics = []

@@ -1145,3 +1145,16 @@ The fixes are in the checks (wait for the box to have the keys, for the eye to s
 one in the HUD (the box focused at once as well as after its timer). The rule: a wait in a browser check is for a
 state the page can show (focus, a settled value, the clock past the beat's own sum), never for a frame count or a
 guessed margin; and a check that only ever ran on a slow machine hasn't been run.
+
+## A lightmap bake that worked by hand and baked nothing from a fresh export (2026-10-30)
+
+- **The editor's file system has to know a folder before a bake writes into it.** LightmapGI's bake writes each
+  light texture (`<data>.exr`) and asks the editor to import it; a folder made after the editor's startup scan isn't
+  in its tree, so the import fails (`Can't find file ... during file reimport`, then `BAKE_ERROR_CANT_CREATE_IMAGE`)
+  and the data comes out with no meshes. The export makes `game/lightmaps/` (with a README, so a zip keeps it), and
+  the bake plugin rescans the file system if it ever has to make it.
+- **The editor writes a LightmapGIData only at a scene save or at quit.** A level baked for several states (the times
+  of day, the lamps on and off) on one LightmapGI would keep only the last; the plugin saves each state's data with
+  `ResourceSaver.save` right after its bake.
+- The story: the hand run baked 473 meshes because an earlier run had already made the folder; the first GDBAKE from
+  a fresh export baked twice and registered none. The annex (a ten-second bake) was the quick test bench.

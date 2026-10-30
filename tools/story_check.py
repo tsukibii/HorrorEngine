@@ -1646,6 +1646,9 @@ def check_flow(story, things, r):
                     r.err(f"game.grade: {k} is three numbers (red, green, blue)")
             elif not isinstance(v, (int, float)) or isinstance(v, bool) or not spec[0] <= v <= spec[1]:
                 r.err(f"game.grade: {k} is a number {spec[0]} to {spec[1]}")
+    lighting = story["game"].get("lighting")           # the runtime's help with the light (DECISIONS 2026-10-30, noon: the lighting is made in Godot)
+    if lighting is not None and lighting not in ("on", "off"):
+        r.err(f"game.lighting {lighting!r}: on (the time of day's sky and sun unless the level has its own) or off (a flat test light)")
     look = story["game"].get("look")                   # the look (HorrorStudioLook's HSLook presets, docs/GODOT_LOOK.md)
     if look is not None and look not in ("realism", "plain"):
         r.err(f"game.look {look!r}: realism or plain")
