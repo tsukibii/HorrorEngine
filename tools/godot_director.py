@@ -179,6 +179,17 @@ def quiet(text):
     return "\n".join(l for l in text.splitlines() if not any(w in l for w in ("ALSA", "snd_", "ERR_CANT_OPEN", "at: cleanup", "at: clear (core")))
 
 
+def import_all(out, tries=3):
+    """Godot's import of the project, again until the body is in: one `--import` pass sometimes leaves the FBX for the
+    next (the sample was once made without Mari's body)."""
+    for _ in range(tries):
+        run_godot(["--headless", "--path", str(out), "--import"], timeout=900)
+        body = out / "bodies" / "MHR.fbx"
+        if not body.exists() or ((out / "bodies" / "MHR.fbx.import").exists() and any((out / ".godot" / "imported").glob("MHR.fbx-*.scn"))):
+            return True
+    return False
+
+
 def new(out, title="My HorrorStudio game", sample=False, link=False):
     out = Path(out).resolve()
     if out.exists() and any(out.iterdir()):
@@ -187,13 +198,13 @@ def new(out, title="My HorrorStudio game", sample=False, link=False):
     (out / "project.godot").write_text(project_godot(title), encoding="utf-8")
     install(out, link)
     (out / "main.tscn").write_text(FIRST_SCENE.format(title=G.gstr(title)), encoding="utf-8")
-    code, text = run_godot(["--headless", "--path", str(out), "--import"], timeout=900)
+    import_all(out)
     if sample:
         code, text = run_godot(["--headless", "--path", str(out), "-s", "res://addons/horrorstudio_director/tests/make_sample.gd"], timeout=300)
         if "SAMPLE ok" not in text:
             print(quiet(text)[-3000:])
             sys.exit("the sample wasn't made")
-        run_godot(["--headless", "--path", str(out), "--import"], timeout=900)
+        import_all(out)
     print(f"DIRECTOR project {out}: open it in Godot 4.7 (the HorrorStudio dock is on the right), F5 plays main.tscn")
     return out
 

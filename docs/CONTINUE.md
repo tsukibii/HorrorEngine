@@ -11,6 +11,43 @@ the to-do built there, with the Studio's eyes from the side, a small nose and th
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
+## 0. The Director-Godot session (2026-10-30, night; branch `Director-Godot`)
+
+The user asked for a Godot plugin to build the games in Godot itself, no desk in between (DECISIONS 2026-10-30,
+night). Built, each step checked and pushed: **HorrorStudio Director** (`GodotPlugins/HorrorStudioDirector`,
+docs/GODOT_DIRECTOR.md is the user's guide, the plugin's CLAUDE.md the map):
+- **Nodes**: the level's (HSLevel, HSRoom with doors cutting their own openings, HSDoor, HSThing with fifteen uses,
+  HSTrigger, HSSpot, HSPath, HSActor; the user's lights by name) and the story's (HSGame, HSChapter, HSTask with
+  HSTodos, HSEvent when/if/then on HSWhen and HSAction resources, HSDialogue with HSLines and HSOption answers,
+  HSChoice, HSEnding); steps play in the tree's order; where an event sits is when it listens.
+- **compile.gd** turns them into the runtime's story at play; **HSGame** starts the runtime with it (levels as
+  templates), F9's panel, the editor's dock told where the player is; F6 on a level plays it alone.
+- **The runtime** grew for it (STORY_FORMAT and the story check with it): `game.collision: physics` (collide.gd: a
+  capsule against whatever collides, physics rays for the cursor and sight), `game.track_steps` (`@<step>` flags),
+  `move` (the player to a spot), `anim` and a behaviour's `rest`, a beat's `repeat`/`every`, `item:<id>` in an `if`,
+  `use: talk`, a project's own sound files; `game.gd` takes `story_data`, `level_scenes`, `on_step`, `on_play`;
+  pieces anywhere in a level (the group `hs_piece`). The export's games are unchanged (GDPLAY, GDEXPORT; GDTESTROOM
+  stations 1-5 and 7 on: station 6 fails the same on main in a fresh cloud container, no stand-in bodies there).
+- **The dock** under the Inspector: Story (the quest log, + Add, drag to reorder, Play from here, ▶ where the game
+  is), Events (sentences and nine templates: the user's jumpscare in an area after flags first), Flags (set where,
+  checked where, ⚠ never set), Things, Add (click, or drag into the 3D view), Check, Kimodo.
+- **Kimodo**: a room sent as the demo's stage (kimodo/stage.gd, the format `kimodo.py stage` writes), an .npz brought
+  back (kimodo/npz.gd) and retargeted onto the character's own skeleton (kimodo/retarget.gd, the desk's bodies.js way;
+  MHR, SOMA, Godot's humanoid profile, Mixamo), played as her idle or walk or by an event.
+- **tools/godot_director.py**: `new <folder> [--sample]`, `install <folder> [--link]`, `check` (DIRECTOR: the sample
+  played to its good ending, the Kimodo link measured, a level alone, the editor driven). The launcher's Godot
+  section has all three.
+
+**For the user to try** (on their machine, Godot 4.7): `python tools/godot_director.py new ~/Games/Sample --sample`,
+open it, F5 (walk to the letter, the kitchen, the key, Mari, the bedroom, the wardrobe), then the dock's tabs; F9 in
+the game. Then a level of their own from their notes (docs/GODOT_DIRECTOR.md §1's table), and the Kimodo round trip
+with a real motion (the sample's idle is a made one). What to ask them: whether the dock under the Inspector suits
+them (Godot lets it move), which event templates they want next, and which of their models need a BoneMap for the
+retarget (MHR from the Character Studio works as it is).
+
+**Open** (GODOT_DIRECTOR §9): fingers and MHR's twist bones in the retarget; a kit thing or a CC0 prop in one click; an
+event inside a dialogue; no way back from a Director game to the desk (the scene is the game).
+
 ## 0a. The cloud session after (2026-10-30, small hours): §0's four pieces built, and a stand-in bug from the user
 
 All four of §0 are in, each measured where the cloud could (GDTESTROOM, GDEXPORT, GDPLAY, DESK, LOOKPLUGIN):

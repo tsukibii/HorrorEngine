@@ -12,6 +12,19 @@ the fix.
 
 ## This project
 
+- **A Godot node's setup for play runs once, in the copy that plays** (the Director, 2026-10-30): a scene's children
+  are `_ready` before their parent, so a level under the HSGame had set itself up (recentred, colliders, pieces) before
+  the game could take it up as a template, and the runtime's copy would have done it again. The HSGame raises a flag
+  in `_enter_tree` (which runs before the children's `_ready`) and the level's nodes wait for the copy.
+- **Placing the player inside an area isn't entering it:** the runtime's `place` counts the triggers it lands in as
+  already entered, so a test that teleports into a jumpscare's area never fires it; walk in from outside. Found twice
+  (the Director's play check, then its level-alone check).
+- **A Skeleton3D out of the tree doesn't update its poses:** a test that set bone poses and read global poses got the
+  rest every frame (a motion with no travel, a 16 cm "error"); put it in the tree and `force_update_all_bone_transforms()`.
+- **Switching something off for what's hidden needs its way back:** characters are hidden while a level loads, so switching collision
+  off for every hidden thing switched hers off for good; whatever shows a thing again must switch its collision back
+  (draw_npcs does now).
+
 - **A headless test waits on the game's clock, not the wall's:** on slow frames (the cloud's software GPU) the
   runtime clamps each step, so a second of real time is less play; fixed `waitForTimeout`s raced every walk, sit,
   turn and meter. `gameWait`/`hold` in playtest.js wait for `rt.clock` (and stop when play ends: a walk that answers

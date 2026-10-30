@@ -9,6 +9,7 @@ plugins live here, once, not in the exported projects.
 | Folder | What | Licence |
 |---|---|---|
 | `HorrorStudioLook/` | **ours**: the studio's look as one add-on (`addons/horrorstudio_look/`): the pseudo-realism preset (SSR, SSAO, SSIL, glow, haze, AgX, TAA), UltraVHS as a canvas shader, the little things' puffs, wet floors with puddles and rain's rings, blood, rain, wet or oiled skin on HumanShaders' skin shader; a demo that pictures and measures each (docs/GODOT_LOOK.md, `tools/godot/plugin_check.py`) | ours; the skin shader keeps HumanShaders' MIT |
+| `HorrorStudioDirector/` | **ours**: build the game in Godot itself (`addons/horrorstudio_director/`, docs/GODOT_DIRECTOR.md): drag-and-drop nodes for the level and the story, events (when, if, then), a dock (the story in play order, events, flags, things, add, check, Kimodo), compiled at play into the runtime's story; `tools/godot_director.py new` makes a project with it | ours |
 | `HumanShaders/` | [matmadness/HumanShaders](https://github.com/matmadness/HumanShaders): a skin shader (Burley diffuse, skin SSS, a light-warp ramp, translucency, micro detail, double specular), an eye shader (iris parallax from a heightmap, sclera SSS) and an eye-wetness visual shader. Godot 4.5+ | code MIT; its textures MIT and CC BY 4.0 (credit the author if a game ships them) |
 
 ## Using one in a Godot project
