@@ -84,5 +84,18 @@
  "key_brass": {"label": "a brass house key, worn in a pocket", "family": "key", "kind": "house", "bow": "round", "metal": "brass",
    "finish": "scratched", "cuts": [3, 1, 4, 1, 5], "seed": 1, "wear": {"edges": 0.5, "grime": 0.3}},
  "key_skeleton": {"label": "an old iron key, rusted", "family": "key", "kind": "skeleton", "metal": "iron", "finish": "cast",
-   "age": "rust", "age_amount": 0.5, "seed": 2, "wear": {"dirt": 0.4, "edges": 0.4}}
+   "age": "rust", "age_amount": 0.5, "seed": 2, "wear": {"dirt": 0.4, "edges": 0.4}},
+ "rice_bowl": {"label": "a rice bowl, blue and white (sometsuke), a chip in its lip", "family": "ware", "kind": "bowl", "seed": 1,
+   "art": {"design": "sometsuke"}, "chips": 1, "wear": {"grime": 0.15, "stains": 0.15}},
+ "plate": {"label": "a dinner plate, white with a green rim line", "family": "ware", "kind": "plate", "seed": 2,
+   "art": {"design": "glaze", "rim": "#3f6b4f"}, "glaze": "#f2efe8", "wear": {"grime": 0.1, "scratches": 0.2}},
+ "mug_stoneware": {"label": "a speckled stoneware mug, tea-stained inside", "family": "ware", "kind": "mug", "seed": 3,
+   "art": {"design": "speckled"}, "wear": {"stains": 0.4, "grime": 0.2}},
+ "glass_tumbler": {"label": "a glass tumbler, its thick base", "family": "ware", "kind": "glass", "seed": 4,
+   "wear": {"grime": 0.15, "dust": 0.2}},
+ "jar_umeboshi": {"label": "a glass jar, a tin lid, a paper label (umeboshi)", "family": "ware", "kind": "jar", "seed": 5,
+   "cap": "#c2bfb5", "wear": {"grime": 0.2, "dust": 0.3}},
+ "tokkuri": {"label": "a sake flask (tokkuri), iron-brown glaze", "family": "ware", "kind": "tokkuri", "seed": 6,
+   "glaze": "#5a3626", "art": {"design": "glaze", "crackle": 0.6}, "wear": {"grime": 0.2}},
+ "soy_bottle": {"label": "a small soy-sauce bottle, red cap", "family": "ware", "kind": "soy", "seed": 7, "wear": {"grime": 0.2}}
 }

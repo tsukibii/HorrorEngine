@@ -701,3 +701,36 @@ def flip(m):
     uv[~tri] = uv[~tri, ::-1]
     m.f, m.uv = f, uv
     return m
+
+
+def sweep(path, section, island, mat=None, closed_section=True):
+    """A cross-section carried along a path (k, 3) metres, turned with it (parallel transport): a handle, a wire, a
+    straw's bend. section (m, 2) in the path's own frame (metres). Maps along the path (v) and round the section (u)."""
+    P = np.asarray(path, float)
+    S = np.asarray(section, float)
+    k, m = len(P), len(S)
+    T = np.gradient(P, axis=0)
+    T /= np.maximum(np.linalg.norm(T, axis=1, keepdims=True), 1e-12)
+    up = np.array([0.0, 0.0, 1.0]) if abs(T[0, 2]) < 0.9 else np.array([1.0, 0.0, 0.0])
+    Nn = np.cross(up, T[0])
+    Nn /= np.linalg.norm(Nn)
+    frames = []
+    for i in range(k):
+        if i:
+            Nn = Nn - T[i] * np.dot(Nn, T[i])
+            Nn /= max(np.linalg.norm(Nn), 1e-12)
+        Bn = np.cross(T[i], Nn)
+        frames.append((Nn.copy(), Bn))
+    v = np.concatenate([P[i][None] + S[:, :1] * frames[i][0][None] + S[:, 1:2] * frames[i][1][None] for i in range(k)])
+    cols = m if closed_section else m - 1
+    faces, uvs = [], []
+    sl = np.concatenate([[0], np.cumsum(np.linalg.norm(np.diff(P, axis=0), axis=1))])
+    sl /= max(sl[-1], 1e-12)
+    for i in range(k - 1):
+        for j in range(cols):
+            j1 = (j + 1) % m
+            faces.append([i * m + j, i * m + j1, (i + 1) * m + j1, (i + 1) * m + j])
+            uvs.append(island.to_uv(np.array([j, j + 1, j + 1, j]) / cols, np.array([sl[i], sl[i], sl[i + 1], sl[i + 1]])))
+    out = Mesh(v, np.array(faces, np.int64), np.array(uvs, float), mats=[mat or island.mat])
+    out.a["rest"] = v.copy()
+    return out

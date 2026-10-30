@@ -504,6 +504,72 @@ def lacquer(f, d, rng):
         f.ellipse(cx, cy, s * 0.35, color=gold, rough=0.3, metal=0.8)
 
 
+# ---- glazes ------------------------------------------------------------------------------------------------------------
+
+def glaze(f, d, rng):
+    """A ceramic glaze: its colour and gloss, pooling darker toward the foot, a faint crackle; glass when `clear`."""
+    from . import noise as Nn
+    c = P.rgb(d.get("glaze", "#ece7dc"))
+    if d.get("clear"):
+        f.fill(color=c, rough=0.04, opacity=0.22 if d.get("part") != "lip" else 0.5)
+        return
+    f.fill(color=c, rough=0.12, metal=0.0)
+    X, Y = f.grid()
+    pool = np.clip(1 - Y / max(f.H, 1e-6), 0, 1) ** 3 if d.get("part") == "outside" else np.zeros_like(X)
+    f.lay_island(np.ones_like(X), color=(c[None, None] * (1 - 0.18 * pool[..., None])).astype(np.float32))
+    if d.get("crackle", 0.4):
+        f1, f2, _ = Nn.cells3(np.stack([X / 3.0, Y / 3.0, np.full_like(X, 1.7)], -1), int(rng.integers(1000)))
+        edge = N_edge(f2 - f1, 0.05 * 3.0)
+        f.lay_island(edge * float(d.get("crackle", 0.4)) * 0.5, color=(c * 0.7).astype(np.float32), height=-0.004, add_height=True)
+    if d.get("rim"):
+        if d.get("part") == "outside":
+            f.rect(0, f.H - 3, f.W, 3, color=d["rim"], rough=0.15)
+
+
+def N_edge(gap, w):
+    return np.clip(1 - gap / max(w, 1e-9), 0, 1)
+
+
+def sometsuke(f, d, rng):
+    """Blue and white: cobalt under a clear glaze: a band of seigaiha waves round the outside, rings at lip and foot."""
+    glaze(f, dict(d, glaze=d.get("glaze", "#f1efe8"), crackle=0.2), rng)
+    blue = d.get("accent", "#2b4a8c")
+    ink = dict(rough=0.12, metal=0.0)
+    part = d.get("part")
+    if part == "outside":
+        f.rect(0, f.H - 4.5, f.W, 0.9, color=blue, **ink)
+        f.rect(0, 2.0, f.W, 0.7, color=blue, **ink)
+        r = f.H * 0.09
+        rows = int((f.H * 0.55) / (r * 0.5))
+        for j in range(rows):
+            for i in range(int(f.W / (2 * r)) + 2):
+                cx = i * 2 * r + (r if j % 2 else 0)
+                cy = f.H * 0.25 + j * r * 0.5
+                for k in range(3):
+                    f.ring(cx, cy, r * (0.9 - 0.27 * k), r * 0.07, color=blue, alpha=0.9, **ink)
+    elif part == "inside":
+        f.rect(0, f.H - 3.0, f.W, 0.8, color=blue, **ink)
+
+
+def speckled(f, d, rng):
+    """Stoneware: an oatmeal glaze over clay full of iron, which comes through as dark specks."""
+    glaze(f, dict(d, glaze=d.get("glaze", "#d9cdb4"), crackle=0.0), rng)
+    for _ in range(int(f.W * f.H * 0.02)):
+        f.ellipse(rng.uniform(0, f.W), rng.uniform(0, f.H), rng.uniform(0.12, 0.45), color="#4a3424", rough=0.2, alpha=rng.uniform(0.5, 0.9))
+
+
+def jar_label(f, d, rng):
+    """A jar's paper label: a cream ground, a red border, the contents in a brush-like hand."""
+    paper_base(f, d.get("paper", "#efe6d0"), seed=int(rng.integers(1000)))
+    red = d.get("accent", "#a8332a")
+    ink = dict(rough=0.8, metal=0.0)
+    f.rect(0, 1.5, f.W, 1.0, color=red, **ink)
+    f.rect(0, f.H - 2.5, f.W, 1.0, color=red, **ink)
+    mid = f.W / 2
+    f.text(d.get("brand", "梅干し"), (mid, f.H * 0.55), f.H * 0.32, font="gothic_jp", color="#2a1a14", **ink)
+    f.text(d.get("sub", "UMEBOSHI · 2026"), (mid, f.H * 0.2), f.H * 0.09, font="serif", color=red, **ink)
+
+
 def mix_hex(a, b, t):
     return P.mix(a, b, t)
 
@@ -515,7 +581,8 @@ def plain(f, d, rng):
 DESIGNS = {"soda": soda, "energy": energy, "beer": beer, "coffee_can": coffee_can, "water": water, "coffee_cup": coffee_cup,
            "sleeve": sleeve, "iced": iced, "newspaper": newspaper, "newsprint": newsprint, "napkin": napkin, "fries": fries,
            "receipt": receipt, "note": note, "paper": paper, "card_plain": card_plain, "burger_box": burger_box, "kraft": kraft,
-           "wood_grain": wood_grain, "lacquer": lacquer, "plain": plain}
+           "wood_grain": wood_grain, "lacquer": lacquer, "glaze": glaze, "sometsuke": sometsuke, "speckled": speckled,
+           "jar_label": jar_label, "plain": plain}
 
 
 def draw(f, art, seed, default="plain"):
