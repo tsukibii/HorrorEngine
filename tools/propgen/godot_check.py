@@ -60,7 +60,7 @@ func _init():
 			var mesh: Mesh = mi.mesh
 			for s in mesh.get_surface_count():
 				var mat = mi.get_active_material(s)
-				var d := {"class": mat.get_class() if mat else "none"}
+				var d := {"class": mat.get_class() if mat else "none", "node": str(mi.name)}
 				if mat is BaseMaterial3D:
 					d["albedo"] = mat.albedo_texture != null
 					d["normal"] = mat.normal_enabled and mat.normal_texture != null
@@ -131,6 +131,79 @@ func _init():
 '''
 
 
+LIQUID_SCRIPT = r'''extends SceneTree
+
+# the liquids: each prop upright and tipped over beside it, its liquid worn as the game wears it (HSLiquid.auto)
+func _init():
+	var out := ""
+	var files := []
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--out="):
+			out = a.substr(6)
+		elif a.begins_with("--glb="):
+			files.append(a.substr(6))
+	var root := Node3D.new()
+	get_root().add_child(root)
+	var x := 0.0
+	var tallest := 0.0
+	for f in files:
+		for tilt in [0.0, 70.0]:
+			var inst: Node3D = load(f).instantiate()
+			root.add_child(inst)
+			inst.rotation_degrees = Vector3(0, 0, tilt)
+			var box := AABB()
+			var first := true
+			for mi in inst.find_children("*", "MeshInstance3D", true, false):
+				var b: AABB = mi.global_transform * mi.get_aabb()
+				box = b if first else box.merge(b)
+				first = false
+			inst.position = Vector3(x - box.position.x, -box.position.y, 0)
+			x += box.size.x + 0.03
+			tallest = maxf(tallest, box.size.y)
+	var n: int = load("res://addons/horrorstudio_look/liquid.gd").auto(root)
+	await process_frame
+	var rep := {"attached": n, "liquids": []}
+	for mi in root.find_children("*_liquid", "MeshInstance3D", true, false):
+		var m = mi.material_override
+		rep["liquids"].append({"name": str(mi.name), "shader": m.shader.resource_path if m is ShaderMaterial and m.shader else ""})
+	var env := WorldEnvironment.new()
+	var e := Environment.new()
+	e.background_mode = Environment.BG_COLOR
+	e.background_color = Color(0.36, 0.36, 0.37)
+	e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	e.ambient_light_color = Color(0.55, 0.56, 0.6)
+	e.ambient_light_energy = 0.7
+	e.tonemap_mode = Environment.TONE_MAPPER_AGX
+	env.environment = e
+	root.add_child(env)
+	var sun := DirectionalLight3D.new()
+	sun.rotation_degrees = Vector3(-50, -30, 0)
+	sun.light_energy = 2.0
+	sun.shadow_enabled = true
+	root.add_child(sun)
+	var floor := MeshInstance3D.new()
+	var pm := PlaneMesh.new()
+	pm.size = Vector2(20, 20)
+	floor.mesh = pm
+	var fm := StandardMaterial3D.new()
+	fm.albedo_color = Color(0.42, 0.42, 0.42)
+	floor.material_override = fm
+	root.add_child(floor)
+	var cam := Camera3D.new()
+	cam.fov = 28
+	root.add_child(cam)
+	cam.current = true
+	await process_frame
+	var dist: float = maxf(x * 0.85, tallest * 4.0) + 0.1
+	cam.look_at_from_position(Vector3(x / 2.0, tallest * 0.9 + dist * 0.18, dist), Vector3(x / 2.0, tallest * 0.4, 0), Vector3.UP)
+	for i in 12:
+		await process_frame
+	get_root().get_viewport().get_texture().get_image().save_png(out + "/godot_liquids.png")
+	print("LIQUIDS ", JSON.stringify(rep))
+	quit()
+'''
+
+
 def godot_bin():
     for c in [os.environ.get("GODOT"), "godot", "godot-mono"]:
         if c and shutil.which(c):
@@ -152,6 +225,9 @@ def main(argv):
     (PROJ / "props").mkdir(parents=True)
     (PROJ / "project.godot").write_text(PROJECT, encoding="utf-8")
     (PROJ / "check.gd").write_text(SCRIPT, encoding="utf-8")
+    (PROJ / "liquids.gd").write_text(LIQUID_SCRIPT, encoding="utf-8")
+    shutil.copytree(ROOT / "GodotPlugins" / "HorrorStudioLook" / "addons" / "horrorstudio_look", PROJ / "addons" / "horrorstudio_look",
+                    ignore=shutil.ignore_patterns("*.import", "demo"))
     metas = {}
     for n in names:
         shutil.copy(OUT / n / f"{n}.glb", PROJ / "props" / f"{n}.glb")
@@ -181,6 +257,8 @@ def main(argv):
             continue
         problems = []
         for i, s in enumerate(info["surfaces"]):
+            if s.get("node", "").endswith("_liquid"):
+                continue                                    # the liquid wears HSLiquid's shader in a game; its own material is plain
             if not s.get("albedo"):
                 problems.append(f"surface {i} has no base colour texture")
             if not s.get("normal"):
@@ -199,6 +277,26 @@ def main(argv):
         kinds = ", ".join(sorted({s["class"].replace("Material3D", "") for s in info["surfaces"]}))
         print(("  ok  " if not problems else "  BAD ") + f"{n}: {len(info['surfaces'])} surface(s) ({kinds}{'; ' + str(len(clear)) + ' see-through' if clear else ''}), "
               f"{info['tris']} triangles, {' x '.join(f'{v * 1000:.0f}' for v in info['size'])} mm" + ("; " + "; ".join(problems) if problems else ""))
+    wet = [n for n in names if metas[n].get("liquid")]
+    if wet:
+        cmd = [g, "--path", str(PROJ), "--rendering-driver", "vulkan", "-s", "res://liquids.gd", "--", f"--out={PROJ}"] + \
+              [f"--glb=res://props/{n}.glb" for n in wet]
+        if shutil.which("xvfb-run"):
+            cmd = ["xvfb-run", "-a", "-s", "-screen 0 1600x600x24"] + cmd
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=1800, env=env)
+        text = "\n".join(l for l in (r.stdout + r.stderr).splitlines() if l and "ALSA" not in l and "snd_" not in l)
+        line = next((l for l in text.splitlines() if l.startswith("LIQUIDS ")), None)
+        if line is None or "SCRIPT ERROR" in text or "SHADER ERROR" in text:
+            print(text[-3000:])
+            print("  BAD the liquids' scene didn't run clean")
+            ok = False
+        else:
+            rep = json.loads(line[8:])
+            good = [l for l in rep["liquids"] if l["shader"].endswith(("liquid.gdshader", "liquid_clear.gdshader"))]
+            fine = len(good) == 2 * len(wet) and rep["attached"] == 2 * len(wet)
+            ok = ok and fine
+            print(("  ok  " if fine else "  BAD ") + f"liquids: {len(wet)} prop(s) upright and tipped 70 degrees, HSLiquid on {rep['attached']} "
+                  f"({', '.join(sorted({l['shader'].rsplit('/', 1)[-1] for l in good}))}): {PROJ / 'godot_liquids.png'}")
     pic = PROJ / "godot_props.png"
     print(f"  the picture: {pic}")
     print("GDPROPS ok" if ok else "GDPROPS FAIL")

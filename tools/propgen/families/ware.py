@@ -115,6 +115,13 @@ def make(spec, th):
                 parts.append(lb)
         return M.join(parts, ["main"] + (["parts"] if kind in ("jar", "soy", "tokkuri") else []))
 
+    lq = spec.get("liquid")
+    if lq:
+        from .. import liquid as LQ
+        lq = lq if isinstance(lq, dict) else {"kind": lq}
+        ins = prof["inside"][::-1]
+        inner = [(max(r - 0.3, 0.0), z + 0.3) for r, z in ins]
+        th.liquid = LQ.turned(inner, I, "inside", lq.get("kind", "water"), float(lq.get("fill", 0.6)), lq.get("color"), seed)
     chips = int(spec.get("chips", 0))
     th.low = build(int(spec.get("segments", 48)), 0.006)
     th.high = build(128, 0.0012) if chips else None

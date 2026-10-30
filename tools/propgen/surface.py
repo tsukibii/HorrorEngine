@@ -194,9 +194,11 @@ def _gltf_output_group():
     return g
 
 
-def material(name, albedo, orm, normal, kind="paint", alpha=False, double_sided=False, specular=None):
+def material(name, albedo, orm, normal, kind="paint", alpha=False, double_sided=False, specular=None, tint=None):
     """A Principled material on the three images (bpy images or paths): base colour (sRGB, its alpha the opacity when
-    `alpha`), ORM (occlusion, roughness, metalness: non-colour) and the normal map (non-colour, OpenGL)."""
+    `alpha`), ORM (occlusion, roughness, metalness: non-colour) and the normal map (non-colour, OpenGL). `tint`: a
+    colour the base colour is multiplied by, which the glTF export writes as its baseColorFactor (Godot's Albedo
+    Color: change it there to tint the thing again)."""
     import bpy
 
     def img(x, data):
@@ -218,7 +220,18 @@ def material(name, albedo, orm, normal, kind="paint", alpha=False, double_sided=
     ia = t.nodes.new("ShaderNodeTexImage")
     ia.image = img(albedo, False)
     ia.location = (-500, 300)
-    t.links.new(ia.outputs["Color"], bs.inputs["Base Color"])
+    if tint is not None:
+        mul = t.nodes.new("ShaderNodeMix")
+        mul.data_type = "RGBA"
+        mul.blend_type = "MULTIPLY"
+        mul.inputs[0].default_value = 1.0
+        c = rgb(tint)
+        lin = np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+        mul.inputs[7].default_value = (*lin, 1.0)
+        t.links.new(ia.outputs["Color"], mul.inputs[6])
+        t.links.new(mul.outputs[2], bs.inputs["Base Color"])
+    else:
+        t.links.new(ia.outputs["Color"], bs.inputs["Base Color"])
     if alpha:
         t.links.new(ia.outputs["Alpha"], bs.inputs["Alpha"])
         for attr, val in (("blend_method", "BLEND"), ("surface_render_method", "BLENDED")):

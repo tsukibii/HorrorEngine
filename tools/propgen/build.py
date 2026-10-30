@@ -35,6 +35,7 @@ class Thing:
         self.view = None
         self.sharp_angle = None
         self.texel_paint = None     # fn(material name, canvas, texels): paint by each texel's place (an imported mesh)
+        self.liquid = None          # (Mesh of the container's inside, liquid.info(...)): a node of its own for Godot's shader
 
     def material(self, name, kind="paint", px=None, alpha=False, double=False, color="#808080", rough=0.5, metal=0.0, specular=None):
         self.mats[name] = dict(kind=kind, px=px or int(self.spec.get("tex", 1024)), alpha=alpha, double=double,
@@ -111,7 +112,7 @@ def export(obs, base, formats):
         op(**_filter_kwargs(op, dict(filepath=base + ".glb", export_format="GLB", use_selection=True, export_yup=True,
                                      export_apply=True, export_texcoords=True, export_normals=True, export_tangents=True,
                                      export_materials="EXPORT", export_image_format="AUTO", export_cameras=False,
-                                     export_lights=False, export_animations=False)))
+                                     export_lights=False, export_animations=False, export_extras=True)))
         out.append(base + ".glb")
     if "fbx" in formats:
         op = bpy.ops.export_scene.fbx
@@ -142,7 +143,7 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
     # set down
     pose = spec.get("pose", th.pose)
     R = D.rest_pose(th.high if th.high is not None else th.low, pose, th.axis, seed, prefer=spec.get("down", (0, 1, 0)))
-    D.place([th.high, th.low], R, float(spec.get("yaw", 0)))
+    Mx, shift = D.place([th.high, th.low] + ([th.liquid[0]] if th.liquid else []), R, float(spec.get("yaw", 0)))
     odir = os.path.join(out_dir, name)
     os.makedirs(odir, exist_ok=True)
     # Blender objects with stand-in materials (the bakes need materials to put their images in)
@@ -235,19 +236,37 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
     for i, mname in enumerate(th.low.mats):
         mt = th.mats[mname]
         pa, po, pn = files[mname]
-        mat = S.material(f"{name}_{mname}", pa, po, pn, mt["kind"], alpha=mt["alpha"], double_sided=mt["double"], specular=mt["specular"])
+        mat = S.material(f"{name}_{mname}", pa, po, pn, mt["kind"], alpha=mt["alpha"], double_sided=mt["double"], specular=mt["specular"],
+                         tint=mt.get("tint"))
         low_me.materials[i] = mat
     if high_ob is not None:
         bpy.data.objects.remove(high_ob, do_unlink=True)
     for m in temp.values():
         bpy.data.materials.remove(m)
+    liq_ob = None
+    if th.liquid:
+        from . import liquid as LQ
+        lm, ld = th.liquid
+        ax = Mx @ np.array([0.0, 0.0, 1.0])
+        tilt = math.acos(float(np.clip(ax[2], -1, 1)))
+        h_world = float(shift[2]) + LQ.level(ld["_tab"], ld["h_min"], ld["h_max"], tilt, ld["fill"])
+        plain = S.flat_material(f"{name}_liquid", ld["color"], 0.1)
+        liq_me = M.to_blender(lm, name + "_liquid", {lm.mats[0]: plain})
+        liq_ob = bpy.data.objects.new(name + "_liquid", liq_me)
+        bpy.context.scene.collection.objects.link(liq_ob)
+        # glTF is y up: Blender's (x, y, z) goes out as (x, z, -y)
+        liq_ob["propgen_liquid"] = LQ.extras(ld, (ax[0], ax[2], -ax[1]), (shift[0], shift[2], -shift[1]))
+        th.liquid_preview = LQ.preview_material(f"{name}_liquid_preview", ld, h_world)
     base = os.path.join(odir, name)
-    outs = export([low_ob], base, formats)
+    outs = export([low_ob] + ([liq_ob] if liq_ob else []), base, formats)
     pv = None
     if preview:
         pv = base + "_preview.png"
         from .stage import preview as render
-        render([low_ob], pv, samples=int(spec.get("preview_samples", 48)), gpu=gpu, **(spec.get("view") or th.view or {}))
+        if liq_ob is not None:
+            liq_ob.data.materials[0] = th.liquid_preview
+        render([low_ob] + ([liq_ob] if liq_ob else []), pv, samples=int(spec.get("preview_samples", 48)), gpu=gpu,
+               **(spec.get("view") or th.view or {}))
     lo, hi = th.low.bounds()
     rec = {"name": name, "family": spec["family"], "version": VERSION, "seed": seed, "size_m": [round(float(x), 4) for x in (hi - lo)],
            "tris": th.low.ntris(), "files": [os.path.basename(p) for p in outs], "preview": os.path.basename(pv) if pv else None,
@@ -255,6 +274,12 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
            "secs": round(time.time() - t0, 1)}
     with open(os.path.join(odir, "meta.json"), "w", encoding="utf-8") as fh:
         json.dump(rec, fh, indent=1)
+    if th.liquid:
+        rec["liquid"] = {k: th.liquid[1][k] for k in ("kind", "fill", "color", "clarity")}
+        with open(os.path.join(odir, "meta.json"), "w", encoding="utf-8") as fh:
+            json.dump(rec, fh, indent=1)
     log(f"  {name}: done in {rec['secs']}s -> {odir}")
     bpy.data.objects.remove(low_ob, do_unlink=True)
+    if liq_ob is not None:
+        bpy.data.objects.remove(liq_ob, do_unlink=True)
     return rec

@@ -1199,3 +1199,8 @@ guessed margin; and a check that only ever ran on a slow machine hasn't been run
   Blender 5.2's environment (Python 3.13, a newer NumPy) `np.cross` refused 2D vectors and a resting face pointing
   exactly down divided by zero; PROPGEN on both found them. Write 2D crosses by hand, and treat a dot product of -1 with
   a tolerance.
+- **A segment's material wins over the mesh's list:** the liquid's lathe was given `mats=["liquid"]`, but each
+  segment takes its island's material unless it names its own, so its faces went to the glass's slot (None in its
+  object) and rendered Blender's default white. A mesh built for a material of its own names it on its segments.
+- **See-through glass is mostly reflection, not white:** at 22% opacity on each of its four surfaces the glass washed
+  a dark soy sauce out to grey. Clear glass at 10% (PET 12%), the look carried by the specular.

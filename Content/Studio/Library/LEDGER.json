@@ -26,11 +26,41 @@
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe beer_can (Content/Studio/Props/presets.json)"
  },
+ "props/bottle_caps": {
+  "date": "2026-10-30",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe bottle_caps (Content/Studio/Props/presets.json)"
+ },
  "props/burger_box": {
   "date": "2026-10-30",
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe burger_box (Content/Studio/Props/presets.json)"
+ },
+ "props/chair_worn": {
+  "date": "2026-10-30",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe chair_worn (Content/Studio/Props/presets.json)"
+ },
+ "props/chef_knife": {
+  "date": "2026-10-30",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe chef_knife (Content/Studio/Props/presets.json)"
+ },
+ "props/chopsticks": {
+  "date": "2026-10-30",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe chopsticks (Content/Studio/Props/presets.json)"
+ },
+ "props/cig_butts": {
+  "date": "2026-10-30",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe cig_butts (Content/Studio/Props/presets.json)"
  },
  "props/coffee_can": {
   "date": "2026-10-30",
@@ -44,11 +74,29 @@
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe coffee_cup (Content/Studio/Props/presets.json)"
  },
+ "props/coffee_cup_crushed": {
+  "date": "2026-10-30",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe coffee_cup_crushed (Content/Studio/Props/presets.json)"
+ },
+ "props/coffee_cup_tipped": {
+  "date": "2026-10-30",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe coffee_cup_tipped (Content/Studio/Props/presets.json)"
+ },
  "props/energy_can_crushed": {
   "date": "2026-10-30",
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe energy_can_crushed (Content/Studio/Props/presets.json)"
+ },
+ "props/fork_tarnished": {
+  "date": "2026-10-30",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe fork_tarnished (Content/Studio/Props/presets.json)"
  },
  "props/fries_bag": {
   "date": "2026-10-30",
@@ -56,11 +104,47 @@
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe fries_bag (Content/Studio/Props/presets.json)"
  },
+ "props/glass_tumbler": {
+  "date": "2026-10-30",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe glass_tumbler (Content/Studio/Props/presets.json)"
+ },
  "props/iced_cup": {
   "date": "2026-10-30",
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe iced_cup (Content/Studio/Props/presets.json)"
+ },
+ "props/jar_umeboshi": {
+  "date": "2026-10-30",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe jar_umeboshi (Content/Studio/Props/presets.json)"
+ },
+ "props/key_brass": {
+  "date": "2026-10-30",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe key_brass (Content/Studio/Props/presets.json)"
+ },
+ "props/key_skeleton": {
+  "date": "2026-10-30",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe key_skeleton (Content/Studio/Props/presets.json)"
+ },
+ "props/knife": {
+  "date": "2026-10-30",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe knife (Content/Studio/Props/presets.json)"
+ },
+ "props/mug_stoneware": {
+  "date": "2026-10-30",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe mug_stoneware (Content/Studio/Props/presets.json)"
  },
  "props/napkin_crumpled": {
   "date": "2026-10-30",
@@ -86,11 +170,29 @@
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe paper_ball (Content/Studio/Props/presets.json)"
  },
+ "props/pill_bottle": {
+  "date": "2026-10-30",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe pill_bottle (Content/Studio/Props/presets.json)"
+ },
+ "props/pill_bottle_capsules": {
+  "date": "2026-10-30",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe pill_bottle_capsules (Content/Studio/Props/presets.json)"
+ },
  "props/pizza_slice_box": {
   "date": "2026-10-30",
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe pizza_slice_box (Content/Studio/Props/presets.json)"
+ },
+ "props/plate": {
+  "date": "2026-10-30",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe plate (Content/Studio/Props/presets.json)"
  },
  "props/receipt": {
   "date": "2026-10-30",
@@ -98,16 +200,64 @@
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe receipt (Content/Studio/Props/presets.json)"
  },
+ "props/rice_bowl": {
+  "date": "2026-10-30",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe rice_bowl (Content/Studio/Props/presets.json)"
+ },
  "props/soda_can": {
   "date": "2026-10-30",
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe soda_can (Content/Studio/Props/presets.json)"
  },
+ "props/soda_can_crushed": {
+  "date": "2026-10-30",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe soda_can_crushed (Content/Studio/Props/presets.json)"
+ },
+ "props/soda_can_lying": {
+  "date": "2026-10-30",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe soda_can_lying (Content/Studio/Props/presets.json)"
+ },
+ "props/soy_bottle": {
+  "date": "2026-10-30",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe soy_bottle (Content/Studio/Props/presets.json)"
+ },
+ "props/spoon": {
+  "date": "2026-10-30",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe spoon (Content/Studio/Props/presets.json)"
+ },
+ "props/tokkuri": {
+  "date": "2026-10-30",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe tokkuri (Content/Studio/Props/presets.json)"
+ },
+ "props/trash_bag": {
+  "date": "2026-10-30",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe trash_bag (Content/Studio/Props/presets.json)"
+ },
  "props/water_bottle": {
   "date": "2026-10-30",
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe water_bottle (Content/Studio/Props/presets.json)"
+ },
+ "props/water_bottle_crushed": {
+  "date": "2026-10-30",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe water_bottle_crushed (Content/Studio/Props/presets.json)"
  }
 }

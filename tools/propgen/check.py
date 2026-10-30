@@ -15,7 +15,8 @@ from .paint import read_image
 # a recipe per family: (its longest side in mm, roughly; the most triangles its game mesh may have)
 CASES = {"soda_can": (115, 6000), "soda_can_crushed": (125, 14000), "water_bottle": (205, 16000), "coffee_cup": (117, 9000),
          "paper_ball": (90, 14000), "burger_box": (140, 2000), "chair_worn": (900, 2000), "spoon": (200, 4000),
-         "key_brass": (60, 3000), "rice_bowl": (117, 8000), "cig_butts": (150, 8000), "trash_bag": (560, 10000)}
+         "key_brass": (60, 3000), "rice_bowl": (117, 8000), "cig_butts": (150, 8000), "trash_bag": (560, 10000),
+         "soy_bottle": (120, 9000), "pill_bottle": (90, 14000)}
 
 
 def _glb(path):
@@ -67,6 +68,8 @@ def run(book, out):
         j, binc = _glb(glb)
         mats = j.get("materials", [])
         for m in mats:
+            if m.get("name", "").endswith("_liquid"):
+                continue                                  # plain on purpose: Godot's liquid shader takes its place
             pbr = m.get("pbrMetallicRoughness", {})
             if "baseColorTexture" not in pbr or "metallicRoughnessTexture" not in pbr or "normalTexture" not in m:
                 problems.append(f"material {m.get('name')} lacks a texture")
@@ -81,13 +84,24 @@ def run(book, out):
             problems.append(f"{longest:.0f} mm long, against about {size_mm}")
         if rec["tris"] > budget:
             problems.append(f"{rec['tris']} triangles, over its {budget}")
+        liq = [nd for nd in j["nodes"] if "propgen_liquid" in (nd.get("extras") or {})]
+        if spec.get("liquid") or (spec.get("family") == "bottle" and spec.get("fill")):
+            if not liq:
+                problems.append("its liquid isn't in the glb")
+            else:
+                d = json.loads(liq[0]["extras"]["propgen_liquid"])
+                if len(d["table"]) != d["tilts"] * d["fills"] or not (0 <= min(d["table"]) and max(d["table"]) <= 1):
+                    problems.append("its liquid's fill table is malformed")
+        flat = []
         for mname, files in rec["textures"].items():
             alb = read_image(os.path.join(tmp, name, files[0]))[..., :3]
             if alb.std() < 0.01:
-                problems.append(f"{mname}'s colour is one flat colour")
+                flat.append(mname)
             nrm = read_image(os.path.join(tmp, name, files[2]))[..., :3] * 2 - 1
             if nrm[..., 2].mean() < 0.6:
                 problems.append(f"{mname}'s normal map faces away ({nrm[..., 2].mean():.2f})")
+        if len(flat) == len(rec["textures"]):
+            problems.append("every colour map is one flat colour (" + ", ".join(flat) + ")")
         if first is None:
             first = (name, spec, pos)
         print(("  ok  " if not problems else "  BAD ") + f"{name}: {rec['tris']} triangles, {' x '.join(f'{v:.0f}' for v in (hi - lo) * 1000)} mm, "

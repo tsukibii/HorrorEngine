@@ -89,7 +89,7 @@ Every family takes these:
 | Family | Kinds and keys | Its recipes |
 | --- | --- | --- |
 | `can` | `size` 330, 355, 350, 500, 250, 190; `opened`, `tab` (colour); `crush` {amount, at, spread, twist, bend, buckle, wrinkle, shorten, thin, squash}; `dents` {count, depth, radius} | soda_can, soda_can_lying, soda_can_crushed, energy_can_crushed, beer_can, coffee_can |
-| `bottle` | PET: `fill`, `cap`, `ribs`, `label_band`; `crush`, `crinkle` | water_bottle, water_bottle_crushed |
+| `bottle` | PET: `fill`, `liquid` (§10), `liquid_color`, `cap`, `ribs`, `label_band`; `crush`, `crinkle` | water_bottle, water_bottle_crushed |
 | `cup` | `size` 8oz, 12oz, 16oz; `lid` sip, flat or none; `sleeve`, `straw`, `straw_color`; `crush` | coffee_cup, coffee_cup_tipped, coffee_cup_crushed, iced_cup |
 | `sheet` | `size` A4, A5, news, napkin, receipt, letter or [w, h]; `back` (the other side's art); `folds` [{line, angle, radius, side, under}]; `curl`; `crumple` {amount, stiff, plastic, folds}; `wrinkle`; `drape`; `thick`, `step` | newspaper, paper_ball, napkin_crumpled, fries_bag, receipt, note_folded |
 | `box` | `kind` clamshell, slice or tray; `size`; `open` (degrees); `squash`; `dents` | burger_box, pizza_slice_box |
@@ -97,7 +97,8 @@ Every family takes these:
 | `bits` | a scatter: `kind` butts or caps, `count`, `spread` | cig_butts, bottle_caps |
 | `utensil` | `kind` spoon, teaspoon, fork, knife, chef_knife, chopsticks; `metal`, `finish`, `age`, `age_amount`, `handle`, `length` | spoon, fork_tarnished, knife, chef_knife, chopsticks |
 | `key` | `kind` house or skeleton; `bow` round, oval, square, clover, heart, grip; `cuts` [0-6 each] or `pins`; `metal`, `finish`, `age`, `tag` | key_brass, key_skeleton |
-| `ware` | `kind` bowl, donburi, plate, mug, glass, jar, tokkuri, soy; `glaze`, `clay`, `cap`, `chips`, `label_art` | rice_bowl, plate, mug_stoneware, glass_tumbler, jar_umeboshi, tokkuri, soy_bottle |
+| `ware` | `kind` bowl, donburi, plate, mug, glass, jar, tokkuri, soy; `glaze`, `clay`, `cap`, `chips`, `label_art`, `liquid` {kind, fill, color} (§10) | rice_bowl, plate, mug_stoneware (tea), glass_tumbler (water), jar_umeboshi, tokkuri (sake), soy_bottle (soy sauce) |
+| `pills` | a prescription vial: `tint` (the plastic's colour, kept as a factor so Godot retints it), `opacity`, `cap`, `cap_text`; `sticker` (its print: `rx_label` with patient, drug, directions, warning...; or `{"image": ...}`), `sticker_span`; `tablet` round, oval or capsule, `count`, `tablet_color`, `tablet_color_2` | pill_bottle, pill_bottle_capsules |
 | `import` | your own mesh, worn (§5) | chair_worn |
 
 ### Designs
@@ -277,3 +278,51 @@ dirt, PBR sets) without changing their shape.
 - A towel over a rail (the paper simulation with a collider).
 - A profile from a side photo (a turned thing's silhouette), and a page for the recipes: pick, change, see, a PBR
   picker.
+
+## 10. Liquid inside: level in Godot, sloshing
+
+The soy bottle, the glass, the tokkuri, the mug and the water bottle carry a liquid that stays level however the
+thing is turned, and swings when it's moved.
+
+- **Valve's version:** in Half-Life: Alyx it's Matt Wilde's pixel shader on the bottle. Nothing is simulated inside;
+  the liquid's plane is kept level in world space and a spring driven by the bottle's motion makes it slosh
+  ([UploadVR](https://uploadvr.com/alyx-liquid-shaders/),
+  [PC Gamer](https://www.pcgamer.com/counter-strike-2-comes-with-half-life-alyxs-most-needlessly-impressive-graphics-quirk/)).
+- **The common game technique** (the Godot ports on godotshaders.com, Minions Art's Unity one): the container's
+  inside is a closed mesh, cut by the shader at the level. Its back faces, seen through the cut, are drawn as the flat
+  surface lit by the plane's normal. Below the level, the front faces are the body with a foam line where it meets the
+  wall.
+- **What we add, because the generator knows the inside exactly:** a fill table. It's made from 24,000 points spread
+  evenly through the inside: for 24 tilts (upright to upside down) and 33 fills, the level that has that share of
+  them below it. A bottle laid on its side therefore keeps its volume, not its height, and a narrow neck fills fast as
+  it should.
+- **What the .glb carries:**
+  - A node of its own, `<name>_liquid`: the inside as a closed mesh with a plain material in the liquid's colour, so
+    an engine without the shader shows it full.
+  - Its glTF extras, `propgen_liquid` (Godot keeps them as the node's metadata `extras`): the kind and its colours
+    (body, surface, foam), the clarity, the fill, the table and its range, and the container's axis and base in the
+    mesh's own space.
+- **Godot** (the look plugin, copied into every export):
+  - `liquid.gdshaderinc` holds the shared shader code; `liquid.gdshader` is the opaque version (soy, coffee, blood) and
+    `liquid_clear.gdshader` the see-through one (water, sake, tea).
+  - `HSLiquid.attach(mesh)` wears the shader from the metadata, and `HSLiquid.auto(root)` adds an `HSLiquidFill` under
+    every such mesh.
+  - The game calls `auto` as it enters a level (game.gd `enter_level`), so a placed `asset props/soy_bottle` sloshes
+    with nothing set up.
+- **In the editor:** drop an `HSLiquidFill` under a liquid's mesh to see and change it.
+  - Its settings: `fill` (-1 keeps the prop's own), the colours (`own_colors` off to use yours), `slosh`, `settle` and
+    `swing`.
+  - The swing is Minions Art's damped spring: the mesh's velocity and spin push it, it dies away, and it sets the
+    plane's slope as an instance uniform (`wobble`), so many bottles share one material.
+- **Kinds:** `water`, `soy`, `sake`, `tea`, `coffee`, `whisky`, `medicine`, `blood` and `oil` (`liquid.LIQUIDS`), or
+  `color` for your own.
+- **The preview:** Cycles imitates the shader at rest (cut at the level in world height, back faces as the surface),
+  so the picture shows what Godot will.
+- **Checked:** GDPROPS stands each liquid prop upright with a second copy tipped 70° beside it, and checks that
+  HSLiquid wears the right shader on every one (`Saved/Props/_godot/godot_liquids.png`).
+- **Limits:**
+  - The table assumes a turned inside (any tilt direction gives the same volume), which every container here is. A
+    box-shaped tank would want a table by direction too.
+  - The FBX and OBJ carry the inside as a full mesh with no shader.
+  - A see-through liquid behind see-through glass sorts by object, as Godot does: fine for a bottle on a table, worth
+    a look in a long row of them.

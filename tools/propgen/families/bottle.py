@@ -44,6 +44,14 @@ def profile(H=205.0, R=32.5, neck=13.5, label=(60.0, 128.0), ribs=True):
     return {"base": base, "low": low, "band": band, "high": high, "shoulder": sh, "neck": nk}
 
 
+def inside(prof, H, R, spec, fill, I):
+    """The water: the inside of the wall from the push-up to the neck's top, closed, and its fill table."""
+    from .. import liquid as LQ
+    pts = prof["base"] + prof["low"][1:] + prof["band"][1:] + prof["high"][1:] + prof["shoulder"][1:] + prof["neck"][1:-1]
+    inner = [(max(r - 0.5, 0.0), z + 0.4) for r, z in pts]
+    return LQ.turned(inner, I, "water", spec.get("liquid", "water"), fill, spec.get("liquid_color"), int(spec.get("seed", 0)))
+
+
 CAP = [(0, 0.0), (8, -0.15), (13.2, -0.35), (14.9, -0.9), (15.35, -1.7), (15.35, -12.4), (15.6, -12.9), (15.6, -15.5), (14.2, -15.6)]
 
 
@@ -83,15 +91,6 @@ def make(spec, th):
         cap.a["shell"][:, 1] += H * mm
         cap.a["rest"] = cap.v.copy()
         parts = []
-        if fill > 0:
-            # the water: the inside of the wall, up to the fill line, with a flat top
-            zf = 3.5 + fill * (0.70 * H - 3.5)
-            inner = [(max(r - 0.5, 0), z + 0.4) for r, z in prof["base"] + prof["low"][1:] + prof["band"][1:] + prof["high"][1:] if z + 0.4 < zf]
-            inner.append((inner[-1][0], zf))
-            w = M.lathe([M.Seg(np.array(inner[:len(prof["base"])]) * mm, "water_top", "bottom", disc=R * mm),
-                         M.Seg(np.array(inner[len(prof["base"]) - 1:]) * mm, "water", "band"),
-                         M.Seg(np.array([inner[-1], (0, zf)]) * mm, "water_top", "top", disc=R * mm)], n, I, step=step, mats=["clear"])
-            parts.append(w)
         return M.join(parts + [pet, lab, cap])
 
     if crushed:
@@ -100,6 +99,8 @@ def make(spec, th):
     else:
         th.low = build(int(spec.get("segments", 40)), 0.008)
         th.high = None
+    if fill > 0 and not crushed:
+        th.liquid = inside(prof, H, R, spec, fill, I)
     seed = int(spec.get("seed", 0))
     c = spec.get("crush")
     for m in (th.low, th.high):
@@ -119,10 +120,10 @@ def make(spec, th):
     def paint(fr):
         for nm in ("pet", "pet_top", "pet_base"):
             f = fr[nm]
-            f.fill(color="#e9f1f4", rough=0.05, opacity=0.2)
+            f.fill(color="#e9f1f4", rough=0.05, opacity=0.12)
         fr["pet_base"].ring(fr["pet_base"].W / 2, fr["pet_base"].H / 2, 6, 0.8, height=0.08, opacity=0.35)
         for nm in ("water", "water_top"):
-            fr[nm].fill(color="#cfe6f2", rough=0.02, opacity=0.14)
+            fr[nm].fill(color="#cfe6f2", rough=0.02, opacity=0.0)
         designs.draw(fr["label"], art, seed, "water")
         f = fr["cap_side"]
         f.fill(color=capc, rough=0.42)

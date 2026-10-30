@@ -511,7 +511,7 @@ def glaze(f, d, rng):
     from . import noise as Nn
     c = P.rgb(d.get("glaze", "#ece7dc"))
     if d.get("clear"):
-        f.fill(color=c, rough=0.04, opacity=0.22 if d.get("part") != "lip" else 0.5)
+        f.fill(color=c, rough=0.04, opacity=0.1 if d.get("part") != "lip" else 0.3)
         return
     f.fill(color=c, rough=0.12, metal=0.0)
     X, Y = f.grid()
@@ -570,6 +570,39 @@ def jar_label(f, d, rng):
     f.text(d.get("sub", "UMEBOSHI · 2026"), (mid, f.H * 0.2), f.H * 0.09, font="serif", color=red, **ink)
 
 
+def rx_label(f, d, rng):
+    """A pharmacy's label: its name and cross, the Rx number, the patient, the medicine and its strength, how to take
+    it, the count, the date, the doctor; a coloured warning sticker beside it. Every name made up."""
+    paper_base(f, d.get("paper", "#f6f4ee"), fibres=0.5, seed=int(rng.integers(1000)))
+    ink, blue = d.get("ink", "#1f1f22"), d.get("accent", "#1f5fa8")
+    pi = dict(rough=0.75, metal=0.0)
+    W, H = f.W, f.H
+    x0 = W * 0.22                          # the front of the bottle is the sticker's middle
+    f.rect(0, H - 9.5, W * 0.75, 9.5, color=blue, **pi)
+    f.rect(x0, H - 7.8, 1.6, 6.0, color="#ffffff", **pi)
+    f.rect(x0 - 2.2, H - 5.6, 6.0, 1.6, color="#ffffff", **pi)
+    f.text(d.get("pharmacy", "HOLLOW CREEK PHARMACY"), (x0 + 6, H - 4.8), 2.6, font="archivo", anchor="left", color="#ffffff", fit=W * 0.46, **pi)
+    y = H - 13
+    f.text(f"Rx# {d.get('rx', '0413-2278')}    {d.get('date', '10/14/26')}", (x0, y), 1.9, font="mono", anchor="left", color=ink, **pi)
+    y -= 4.2
+    f.text(d.get("patient", "MORI, KAEDE"), (x0, y), 2.6, font="archivo", anchor="left", color=ink, fit=W * 0.48, **pi)
+    y -= 5.2
+    f.text(d.get("drug", "SOMNIRAL 10 MG TABLETS"), (x0, y), 2.4, font="archivo", anchor="left", color=ink, fit=W * 0.5, **pi)
+    y -= 4.4
+    for ln in (d.get("directions") or "TAKE 1 TABLET BY MOUTH\nAT BEDTIME. DO NOT TAKE MORE\nTHAN ONE IN A NIGHT.").replace("\\n", "\n").split("\n"):
+        f.text(ln, (x0, y), 1.7, font="mono", anchor="left", color=ink, fit=W * 0.5, **pi)
+        y -= 3.0
+    y -= 1.0
+    f.text(f"QTY: {d.get('qty', 30)}   REFILLS: {d.get('refills', 0)}   DR. {d.get('doctor', 'H. SATO')}", (x0, y), 1.5, font="mono", anchor="left",
+           color=ink, fit=W * 0.5, **pi)
+    # the warning sticker
+    wx = W * 0.76
+    f.rect(wx, H * 0.18, W * 0.16, H * 0.64, r=1.2, color=d.get("warning_color", "#f2b51f"), **pi)
+    for i, ln in enumerate((d.get("warning") or "MAY CAUSE\nDROWSINESS\n\nDO NOT\nDRINK\nALCOHOL").replace("\\n", "\n").split("\n")):
+        f.text(ln, (wx + W * 0.08, H * 0.74 - i * 3.6), 1.9, font="archivo", color=ink, fit=W * 0.14, **pi)
+    _barcode(f, W * 0.04, 2.2, W * 0.14, 4.0, rng, color=ink)
+
+
 def mix_hex(a, b, t):
     return P.mix(a, b, t)
 
@@ -582,7 +615,7 @@ DESIGNS = {"soda": soda, "energy": energy, "beer": beer, "coffee_can": coffee_ca
            "sleeve": sleeve, "iced": iced, "newspaper": newspaper, "newsprint": newsprint, "napkin": napkin, "fries": fries,
            "receipt": receipt, "note": note, "paper": paper, "card_plain": card_plain, "burger_box": burger_box, "kraft": kraft,
            "wood_grain": wood_grain, "lacquer": lacquer, "glaze": glaze, "sometsuke": sometsuke, "speckled": speckled,
-           "jar_label": jar_label, "plain": plain}
+           "jar_label": jar_label, "rx_label": rx_label, "plain": plain}
 
 
 def draw(f, art, seed, default="plain"):

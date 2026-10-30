@@ -50,6 +50,7 @@ own back before every save. Forward (-Z) is always into the room. The list and h
 | `HSWindowPane` | HSOnMesh | glass with rain on the mesh it's under (`rain`, `clarity`, `tint`, `drop_cm`, `speed`, `bend`, `size_m`, `seed`) |
 | `HSWallLeak` | HSOnMesh | water down the wall it's on (`width`, `length`, `wet`, `drip`) |
 | `HSMirrorSurface` | Node | the mesh it's under as a real mirror, in the game (`surface`, `resolution`) |
+| `HSLiquidFill` | Node | a bottle's liquid kept level and sloshing (a made prop's `<name>_liquid`, or any closed mesh of a container's inside; `fill`, its colours, `slosh`, `settle`, `swing`; the game puts one under every made prop's liquid itself) |
 | `HSCharacterLook` | Node | the character it's under on the skin, eye and hair shaders, in the game (`wetness`, `sweat`, `drips`, `oil`, `eyes`, `hair`, `glb_path`) |
 | `HSFlickerLight`, `HSFlickerSpot` | OmniLight3D, SpotLight3D | a light that flickers (`mode`, `amount`, `interval`, `rate`, `letters`, `seed`, `preview_in_editor`, `on_mains`) |
 | `HSPatternLight` | SpotLight3D | a spot throwing caustics, leaves, blinds or clouds (`pattern`, `feature_m`, `speed`, `open`, `angle`, `aim_distance`, `size_px`, `frames`, `period`) |
