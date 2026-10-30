@@ -69,7 +69,50 @@ sane("fences", SG.build({ fences: Object.keys(SG.FENCE_KINDS).map((k, i) => ({ i
     const rects = SG.wallRects(W, 0, H, holes), area = rects.reduce((s, [a, b, p, q]) => s + (b - a) * (q - p), 0) + holes.reduce((s, h) => s + (h.u1 - h.u0) * (h.z1 - h.z0), 0);
     if (Math.abs(area - W * H) > 1e-6) { errs.push(`a wall's rectangles don't tile it (${area.toFixed(4)} of ${(W * H).toFixed(4)})`); break; }
   } }
-// 5. the streets
+// 5. a curved street that climbs: through its bend at the bend's height, longer than straight, the ground following it,
+// a lamp on its pavement standing on the pavement, a building on the slope carried down to the ground by its plinth,
+// a fence's posts each on the ground under it, a pavement cut where a curved street crosses
+{
+  const hill = { roads: [{ id: "h", from: [0, -30], via: [[12, 0]], to: [0, 30], z: [0, 3, 6], width: 6, walks: [2, 2] }, { id: "x", from: [-35, -30], to: [0, -30], width: 5, walks: [1.5, 1.5] }],
+    buildings: [], things: [], fences: [] };
+  const f = SG.roadPath(hill.roads[0]), T = SG.terrain(hill), nb = f.nearest(12, 0);
+  if (nb.d > 0.05) errs.push(`a curved street misses its bend by ${nb.d.toFixed(3)} m`);
+  if (Math.abs(nb.z - 3) > 0.05) errs.push(`a curved street is ${nb.z.toFixed(2)} m up at its 3 m bend`);
+  if (!(f.L > 62 && f.L < 75)) errs.push(`a curved street is ${f.L.toFixed(1)} m long (bent through 12 m: 62 to 75)`);
+  const walkAt = f.at(nb.s - 8, f.W / 2 + 1), lampZ = T.surface(walkAt[0], walkAt[1]), roadZ = f.z(nb.s - 8);
+  if (Math.abs(lampZ - (roadZ + f.kerb)) > 0.02) errs.push(`the pavement's top is ${lampZ.toFixed(2)}, the road's ${roadZ.toFixed(2)} + the kerb`);
+  const fr = f.frame(nb.s + 9), bAt = f.at(nb.s + 9, -(f.W / 2 + f.walks[1] + 5.2));
+  hill.buildings.push({ id: "hb", at: [bAt[0], bAt[1]], turn: Math.atan2(fr.n[0], -fr.n[1]) * 180 / Math.PI, w: 8, d: 10, floors: 2, gh: 3, fh: 2.8, faces: { front: { win: "punched", ground: "door" } } });
+  hill.things.push({ id: "lamp", kind: "lamp", at: [walkAt[0], walkAt[1]] });
+  const fa = f.at(10, -(f.W / 2 + f.walks[1] + 0.5)), fb = f.at(25, -(f.W / 2 + f.walks[1] + 0.5));
+  hill.fences.push({ id: "fn", kind: "mesh", from: [fa[0], fa[1]], to: [fb[0], fb[1]] });
+  const P = SG.build(hill), get = id => P.find(p => p.id === id);
+  sane("a curved street that climbs", P, p => BUDGET[p.type] || 20000);
+  const minZ = p => { let m = Infinity; for (const g of Object.values(p.G)) for (let i = 2; i < g.pos.length; i += 3) m = Math.min(m, g.pos[i]); return m; };
+  if (Math.abs(minZ(get("lamp")) - lampZ) > 0.02) errs.push(`a lamp on a sloped pavement stands at ${minZ(get("lamp")).toFixed(2)}, the pavement's at ${lampZ.toFixed(2)}`);
+  const foot = SG.footing(hill.buildings[0], T);
+  if (!(foot.z - foot.low > 0.05) || !get("hb").G.plinth) errs.push(`a building on the slope has no plinth (it falls ${(foot.z - foot.low).toFixed(2)} m under it)`);
+  else if (Math.abs(minZ(get("hb")) - (foot.low - 0.05)) > 0.02) errs.push(`its plinth reaches ${minZ(get("hb")).toFixed(2)}, the ground under it ${foot.low.toFixed(2)}`);
+  const fg = get("fn").G.post, posts = [];
+  for (let i = 0; fg && i < fg.pos.length; i += 3) posts.push(fg.pos[i + 2]);
+  if (!posts.length || Math.abs(Math.min(...posts) - T.surface(fa[0], fa[1])) > 0.1 || Math.max(...posts) - Math.min(...posts) < 0.5) errs.push("a fence on the slope doesn't step with the ground under its posts");
+  const g = get("_ground").G.ground; let near = Infinity;
+  let gx = 0, gy = 0, gz = 0;
+  for (let i = 0; g && i < g.pos.length; i += 3) { const d = Math.hypot(g.pos[i] - 21, g.pos[i + 1]); if (d < near) { near = d; gx = g.pos[i]; gy = g.pos[i + 1]; gz = g.pos[i + 2]; } }
+  if (!(gz > 2 && Math.abs(gz - T.ground(gx, gy) + 0.06) < 0.05)) errs.push(`the ground beside the 3 m bend is at ${gz.toFixed(2)}, not following the street`);
+  const xw = get("x").G.pavement; let onRoad = !xw;
+  for (let i = 0; xw && i < xw.pos.length; i += 3) { const q = f.nearest(xw.pos[i], xw.pos[i + 1]); if (q.s > 1 && q.s < f.L - 1 && Math.abs(q.q) < f.W / 2 - 0.3) { onRoad = true; break; } }
+  if (onRoad) errs.push("a pavement runs across the curved street that crosses it");
+}
+// 5b. the cache: a piece built again only when its numbers change, and the same as built fresh
+{
+  const cache = new Map(), town = { roads: roads.slice(0, 1), buildings: [Object.assign({}, base, { id: "c1", at: [9, 0], turn: 90 }), Object.assign({}, base, { id: "c2", at: [-9, 0], turn: -90 })], things: [{ id: "c3", kind: "vending", at: [4, 3] }] };
+  const a = SG.build(town, cache); town.buildings[0].floors = 6; const b = SG.build(town, cache);
+  if (a.find(p => p.id === "c2") !== b.find(p => p.id === "c2")) errs.push("the cache built an unchanged building again");
+  if (a.find(p => p.id === "c1") === b.find(p => p.id === "c1")) errs.push("the cache kept a building whose floors changed");
+  if (JSON.stringify(b.map(p => p.G)) !== JSON.stringify(SG.build(town).map(p => p.G))) errs.push("a build from the cache isn't the same as a fresh one");
+}
+// 6. the streets
 const DIR = path.join(ROOT, "Content/Studio/Streets"), KNOWN = { roads: ["id", "from", "to"], buildings: ["id", "at", "w", "d", "floors"], things: ["id", "kind", "at"], fences: ["id", "kind", "from", "to"], shots: ["id", "eye", "look"] };
 const names = fs.existsSync(DIR) ? fs.readdirSync(DIR).filter(n => fs.existsSync(path.join(DIR, n, "street.json")) && (!only || n === only)) : [];
 const report = [];

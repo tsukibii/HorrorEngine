@@ -18,7 +18,7 @@ export const SLOTS = {
   wood: ["#5b412d", 0.75], wood_dark: ["#2f231a", 0.8], lattice: ["#4c3526", 0.8, 0, "a"], paper: ["#f2d9a6", 0.9, 0, "e"],
   awning: ["#7d2f2a", 0.9], metal: ["#899096", 0.45, 0.65], pipe: ["#a3a5a7", 0.55, 0.3], ac: ["#e2e0db", 0.6], fan: ["#2b2d31", 0.8, 0, "t"],
   tank: ["#d7dbdf", 0.5], glassblock: ["#b8cfd6", 0.25, 0, "t"], grime: ["#6f6c66", 0.95],
-  asphalt: ["#2a3033", 0.95], pavement: ["#7a766f", 0.9, 0, "t"], kerb: ["#9b978f", 0.85], paint: ["#e9e7e0", 0.7], paint_y: ["#e2a33a", 0.7],
+  asphalt: ["#2a3033", 0.95], plinth: ["#6c6862", 0.95], pavement: ["#7a766f", 0.9, 0, "t"], kerb: ["#9b978f", 0.85], paint: ["#e9e7e0", 0.7], paint_y: ["#e2a33a", 0.7],
   ground: ["#38393b", 1], gravel: ["#6d6a64", 1],
   pole: ["#b3b0a9", 0.85], steel: ["#5f656b", 0.45, 0.7], lamp: ["#fff0cf", 0.4, 0, "e"], lamp_cool: ["#eef4ff", 0.4, 0, "e"], wire: ["#18181a", 0.8],
   hazard: ["#e0b42c", 0.6, 0, "t"], chainlink: ["#8c949b", 0.5, 0.6, "a"], boards: ["#7b5b3f", 0.8, 0, "a"], panel: ["#c6cacd", 0.5, 0.4, "t"],
@@ -624,8 +624,13 @@ function roofThing(o, t, T, R, key) {
 }
 
 // ---- a building --------------------------------------------------------------------------------------------------------
-export function buildingParts(b) {
+export function buildingParts(b, foot) {
   const o = out(), R = rng(num(b.seed, 1)), { rows, tiers } = floorsOf(b);
+  const drop = foot ? foot.z - foot.low : 0;
+  if (drop > 0.03) {                                                  // on a slope: its walls carried down to the lowest ground under it
+    const T0 = tiers[0];
+    for (const F of Object.values(faceFrames(T0.x0, T0.y0, T0.x1, T0.y1, 0))) fquad(o, b.plinth || "plinth", F, 0, F.W, -drop - 0.05, 0.001, 0);
+  }
   const parts = Array.isArray(b.parts) ? b.parts : [];
   const signs = o.signs;
   tiers.forEach((T, ti) => {
@@ -668,37 +673,99 @@ export function buildingParts(b) {
     } else roofGen(o, b, T, R);
   });
   box(o, "dark", tiers[0].x0 + 0.01, tiers[0].y0 + 0.01, -0.001, tiers[0].x1 - 0.01, tiers[0].y1 - 0.01, 0.002, "-x+x-y+y-z");
+  void rows;
   return o;
 }
 
-// ---- roads -------------------------------------------------------------------------------------------------------------
+// ---- roads: a smooth line through their points (from, via..., to), each point with its height ------------------------
 export const ROAD_DEFAULT = { width: 6, walks: [2, 2], kerb: 0.15, edge: [0, 0], centre: "dashed" };
 export const MARK_KINDS = { stop: "stop line", text: "words (止まれ)", zebra: "zebra crossing", diamond: "crossing ahead (◇)", arrow: "arrow", line: "a line across" };
-export function roadFrame(r) {
-  const [ax, ay] = r.from, [bx, by] = r.to, L = Math.hypot(bx - ax, by - ay) || 1e-6;
-  const t = [(bx - ax) / L, (by - ay) / L], n = [-t[1], t[0]];      // n: the road's left (walking from `from` to `to`)
-  return { a: [ax, ay], t, n, L, W: num(r.width, 6), walks: Array.isArray(r.walks) ? r.walks.map(v => num(v, 0)) : [num(r.walks, 2), num(r.walks, 2)], kerb: num(r.kerb, 0.15) };
-}
-const at2 = (f, s, q) => [f.a[0] + f.t[0] * s + f.n[0] * q, f.a[1] + f.t[1] * s + f.n[1] * q];
-// where another road's carriageway crosses a strip of this one (q0..q1 across it): intervals along it
-function cutsOf(f, q0, q1, others) {
-  const cuts = [];
-  for (const g of others) {
-    const corners = [[0, -g.W / 2], [g.L, -g.W / 2], [g.L, g.W / 2], [0, g.W / 2]].map(([s, q]) => at2(g, s, q))
-      .map(([x, y]) => { const dx = x - f.a[0], dy = y - f.a[1]; return [dx * f.t[0] + dy * f.t[1], dx * f.n[0] + dy * f.n[1]]; });
-    let P = corners;
-    for (const [sgn, lim] of [[1, q0], [-1, q1]]) {                   // keep q >= q0, then q <= q1
-      const Q = [];
-      for (let i = 0; i < P.length; i++) {
-        const A = P[i], Bp = P[(i + 1) % P.length], ia = sgn * (A[1] - lim) >= 0, ib = sgn * (Bp[1] - lim) >= 0;
-        if (ia) Q.push(A);
-        if (ia !== ib) { const k = (lim - A[1]) / (Bp[1] - A[1]); Q.push([A[0] + (Bp[0] - A[0]) * k, lim]); }
-      }
-      P = Q; if (!P.length) break;
-    }
-    if (P.length >= 3) { const ss = P.map(p => p[0]); cuts.push([Math.min(...ss), Math.max(...ss)]); }
+// the points a road passes through, each [x, y, z]: `z` a number (all of it), one a point, or [at from, at to] (between
+// them by distance)
+export function roadPoints(r) {
+  const P = [r.from, ...(Array.isArray(r.via) ? r.via : []), r.to].map(p => [num(p[0], 0), num(p[1], 0)]);
+  const z = r.z;
+  if (Array.isArray(z) && z.length === P.length) return P.map((p, i) => [p[0], p[1], num(z[i], 0)]);
+  if (Array.isArray(z) && z.length >= 2) {
+    const d = [0]; for (let i = 1; i < P.length; i++) d.push(d[i - 1] + Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]));
+    const a = num(z[0], 0), b = num(z[z.length - 1], 0), L = d[d.length - 1] || 1;
+    return P.map((p, i) => [p[0], p[1], a + (b - a) * d[i] / L]);
   }
-  return cuts.sort((p, q) => p[0] - q[0]);
+  return P.map(p => [p[0], p[1], num(z, 0)]);
+}
+// a centripetal Catmull-Rom curve through the points (no loops, no overshoot at a sharp bend), a point every `step` m;
+// two points: the straight line, two points
+function spline(P, step) {
+  if (P.length < 3) return P.map(p => p.slice());
+  const ext = (a, b) => a.map((v, k) => 2 * v - b[k]), Q = [ext(P[0], P[1]), ...P, ext(P[P.length - 1], P[P.length - 2])], out = [P[0].slice()];
+  const dist = (u, v) => Math.pow(Math.max(1e-4, Math.hypot(v[0] - u[0], v[1] - u[1])), 0.5);
+  for (let i = 1; i + 2 < Q.length; i++) {
+    const [p0, p1, p2, p3] = [Q[i - 1], Q[i], Q[i + 1], Q[i + 2]];
+    const t0 = 0, t1 = dist(p0, p1), t2 = t1 + dist(p1, p2), t3 = t2 + dist(p2, p3);
+    const n = Math.max(1, Math.ceil(Math.hypot(p2[0] - p1[0], p2[1] - p1[1]) / step));
+    for (let k = 1; k <= n; k++) {
+      const t = t1 + (t2 - t1) * k / n, lerp = (A, B, ta, tb) => A.map((v, j) => ((tb - t) * v + (t - ta) * B[j]) / (tb - ta));
+      const A1 = lerp(p0, p1, t0, t1), A2 = lerp(p1, p2, t1, t2), A3 = lerp(p2, p3, t2, t3);
+      out.push(lerp(lerp(A1, A2, t0, t2), lerp(A2, A3, t1, t3), t1, t2));
+    }
+  }
+  return out;
+}
+// a road's line: its points along it (P, each [x, y, z]), their distances (S), directions (T); frame(s), at(s, q) (q
+// across, + to the left walking from `from` to `to`), z(s), nearest(x, y), stations(s0, s1): the points a strip bends at
+export function roadPath(r) {
+  if (r && r._path) return r._path;
+  const P = spline(roadPoints(r), 1.5), n = P.length, S = [0];
+  for (let i = 1; i < n; i++) S.push(S[i - 1] + Math.max(1e-6, Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1])));
+  const T = P.map((_, i) => { const a = P[Math.max(0, i - 1)], b = P[Math.min(n - 1, i + 1)], l = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1; return [(b[0] - a[0]) / l, (b[1] - a[1]) / l]; });
+  const L = S[n - 1], W = num(r.width, 6), walks = Array.isArray(r.walks) ? r.walks.map(v => num(v, 0)) : [num(r.walks, 2), num(r.walks, 2)];
+  const seg = s => { let lo = 0, hi = n - 1; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (S[m] <= s) lo = m; else hi = m; } return lo; };
+  const frame = s => {
+    const i = seg(Math.max(0, Math.min(L, s))), u = Math.max(-2, Math.min(3, (s - S[i]) / ((S[i + 1] - S[i]) || 1)));
+    const p = P[i].map((v, k) => v + (P[i + 1][k] - v) * u), tt = [T[i][0] + (T[i + 1][0] - T[i][0]) * Math.max(0, Math.min(1, u)), T[i][1] + (T[i + 1][1] - T[i][1]) * Math.max(0, Math.min(1, u))];
+    const l = Math.hypot(...tt) || 1, t = [tt[0] / l, tt[1] / l];
+    return { p, t, n: [-t[1], t[0]] };
+  };
+  const at = (s, q) => { const f = frame(s); return [f.p[0] + f.n[0] * q, f.p[1] + f.n[1] * q, f.p[2]]; };
+  const xs = P.map(p => p[0]), ys = P.map(p => p[1]), pad = W / 2 + Math.max(...walks) + 0.5;
+  const box = [Math.min(...xs) - pad, Math.min(...ys) - pad, Math.max(...xs) + pad, Math.max(...ys) + pad];
+  const nearest = (x, y) => {
+    let best = null;
+    for (let i = 0; i + 1 < n; i++) {
+      const a = P[i], b = P[i + 1], dx = b[0] - a[0], dy = b[1] - a[1], l2 = dx * dx + dy * dy || 1e-9;
+      let u = ((x - a[0]) * dx + (y - a[1]) * dy) / l2;
+      if (i > 0) u = Math.max(0, u); if (i + 2 < n) u = Math.min(1, u);      // past the ends: the line carries on straight
+      const cx = a[0] + dx * u, cy = a[1] + dy * u, d = Math.hypot(x - cx, y - cy);
+      if (!best || d < best.d) best = { s: S[i] + u * Math.sqrt(l2), d, cx, cy };
+    }
+    const f = frame(best.s);
+    return { s: best.s, q: (x - best.cx) * f.n[0] + (y - best.cy) * f.n[1], d: best.d, z: f.p[2] };
+  };
+  const stations = (s0, s1) => { const out = [s0]; for (let i = 0; i < n; i++) if (S[i] > s0 + 1e-6 && S[i] < s1 - 1e-6) out.push(S[i]); out.push(s1); return out; };
+  return { P, S, T, L, W, walks, kerb: num(r.kerb, 0.15), frame, at, z: s => frame(s).p[2], nearest, stations, box, curved: n > 2, id: r.id };
+}
+export const roadFrame = roadPath;                                    // (the old name)
+const inBox = (g, x, y) => x >= g.box[0] && x <= g.box[2] && y >= g.box[1] && y <= g.box[3];
+function onCarriageway(g, x, y) { if (!inBox(g, x, y)) return false; const q = g.nearest(x, y); return q.s >= 0 && q.s <= g.L && Math.abs(q.q) <= g.W / 2 + 1e-3; }
+// where another road's carriageway covers a strip of this one (q0..q1 across it): intervals along it, found by stepping
+// along and sharpened at their edges
+function cutsOf(f, q0, q1, others) {
+  if (!others.length) return [];
+  const hit = s => [q0, (q0 + q1) / 2, q1].some(q => { const [x, y] = f.at(s, q); return others.some(g => onCarriageway(g, x, y)); });
+  const step = 0.3, cuts = []; let start = null, prev = 0, prevHit = hit(0);
+  if (prevHit) start = 0;
+  for (let s = step; s < f.L + step; s += step) {
+    const sc = Math.min(s, f.L), h = hit(sc);
+    if (h !== prevHit) {
+      let a = prev, b = sc;                                            // the edge between prev and sc, by halves
+      for (let k = 0; k < 7; k++) { const m = (a + b) / 2; if (hit(m) === prevHit) a = m; else b = m; }
+      if (h) start = b; else { cuts.push([start, a]); start = null; }
+    }
+    prev = sc; prevHit = h;
+    if (sc >= f.L) break;
+  }
+  if (start !== null) cuts.push([start, f.L]);
+  return cuts;
 }
 function spans(L, cuts) {
   const out = []; let s = 0;
@@ -706,22 +773,32 @@ function spans(L, cuts) {
   if (s < L - 0.01) out.push([s, L]);
   return out.filter(([a, b]) => b - a > 0.01);
 }
+// a flat shape facing up (its winding turned so), its normal its own: a sloped road's slope
+function polyUp(o, slot, P, uv) {
+  let cx = 0, cy = 0, cz = 0;
+  for (let i = 0; i < P.length; i++) { const a = P[i], b = P[(i + 1) % P.length]; cx += (a[1] - b[1]) * (a[2] + b[2]); cy += (a[2] - b[2]) * (a[0] + b[0]); cz += (a[0] - b[0]) * (a[1] + b[1]); }
+  const l = Math.hypot(cx, cy, cz); if (l < 1e-10) return;
+  const nn = cz >= 0 ? [cx / l, cy / l, cz / l] : [-cx / l, -cy / l, -cz / l];
+  poly(o, slot, P, nn, uv);
+}
 export function roadParts(r, others = [], index = 0) {
-  const o = out(), f = roadFrame(r), W = f.W, L = f.L, zA = 0.004 + 0.0004 * (index % 8);
-  const P3 = (s, q, z) => { const [x, y] = at2(f, s, q); return [x, y, z]; };
-  const strip = (slot, s0, s1, q0, q1, z) => poly(o, slot, [P3(s0, q0, z), P3(s1, q0, z), P3(s1, q1, z), P3(s0, q1, z)], [0, 0, 1]);
+  const o = out(), f = roadPath(r), W = f.W, L = f.L, zA = 0.004 + 0.0004 * (index % 8), og = others.map(roadPath);
+  const P3 = (s, q, dz) => { const p = f.at(s, q); return [p[0], p[1], p[2] + dz]; };
+  const strip = (slot, s0, s1, q0, q1, dz) => { const st = f.stations(s0, s1); for (let i = 0; i + 1 < st.length; i++) { const a = st[i], b = st[i + 1]; polyUp(o, slot, [P3(a, q0, dz), P3(b, q0, dz), P3(b, q1, dz), P3(a, q1, dz)], [[-q0, a], [-q0, b], [-q1, b], [-q1, a]]); } };
+  const side = (slot, s0, s1, q, dz0, dz1, facing) => {                // an upright face along it at q, facing `facing` (+1 left)
+    const st = f.stations(s0, s1);
+    for (let i = 0; i + 1 < st.length; i++) { const a = st[i], b = st[i + 1], fr = f.frame((a + b) / 2); poly(o, slot, [P3(a, q, dz0), P3(b, q, dz0), P3(b, q, dz1), P3(a, q, dz1)], [fr.n[0] * facing, fr.n[1] * facing, 0]); }
+  };
   strip(r.surface || "asphalt", 0, L, -W / 2, W / 2, zA);
-  const og = others.map(roadFrame);
   // the walks: raised slabs either side, a kerb's face toward the road, cut where another road crosses
-  [[1, f.walks[0]], [-1, f.walks[1]]].forEach(([side, ww]) => {
+  [[1, f.walks[0]], [-1, f.walks[1]]].forEach(([sd, ww]) => {
     if (ww <= 0.01) return;
-    const qa = side * W / 2, qb = side * (W / 2 + ww), k = f.kerb, lo = Math.min(qa, qb), hi = Math.max(qa, qb);
+    const qa = sd * W / 2, qb = sd * (W / 2 + ww), k = f.kerb, lo = Math.min(qa, qb), hi = Math.max(qa, qb);
     for (const [s0, s1] of spans(L, cutsOf(f, lo, hi, og))) {
       strip(r.walk || "pavement", s0, s1, lo, hi, k);
-      poly(o, "kerb", [P3(s0, qa, 0), P3(s1, qa, 0), P3(s1, qa, k), P3(s0, qa, k)], [f.n[0] * -side, f.n[1] * -side, 0]);
-      poly(o, "kerb", [P3(s0, qb, 0), P3(s1, qb, 0), P3(s1, qb, k), P3(s0, qb, k)], [f.n[0] * side, f.n[1] * side, 0]);
-      for (const s of [s0, s1]) poly(o, "kerb", [P3(s, lo, 0), P3(s, hi, 0), P3(s, hi, k), P3(s, lo, k)], s === s0 ? [-f.t[0], -f.t[1], 0] : [f.t[0], f.t[1], 0]);
-      if (r.kerbStone !== false) strip("kerb", s0, s1, side > 0 ? qa : qa - 0.15 * 1, side > 0 ? qa + 0.15 : qa, k + 0.001);
+      side("kerb", s0, s1, qa, 0, k, -sd); side("kerb", s0, s1, qb, -0.05, k, sd);
+      for (const s of [s0, s1]) { const fr = f.frame(s), dir = s === s0 ? -1 : 1; poly(o, "kerb", [P3(s, lo, -0.05), P3(s, hi, -0.05), P3(s, hi, k), P3(s, lo, k)], [fr.t[0] * dir, fr.t[1] * dir, 0]); }
+      if (r.kerbStone !== false) strip("kerb", s0, s1, sd > 0 ? qa : qa - 0.15, sd > 0 ? qa + 0.15 : qa, k + 0.001);
     }
   });
   // the lines along it: the edge lines (their distance in from each edge) and the centre line, stopping at crossings
@@ -740,22 +817,23 @@ export function roadParts(r, others = [], index = 0) {
   // the marks: at metres from `from`, x across from the middle (+ to the right walking to `to`)
   for (const m of r.marks || []) {
     const s = num(m.at, 0), x = -num(m.x, 0), mw = num(m.w, W - 0.5), z = zl + 0.001;
+    const quad = (slot, pts, uv) => polyUp(o, slot, pts.map(([a, b]) => P3(s + a, x + b, z)), uv);
     switch (m.kind) {
       case "stop": strip("paint", s, s + num(m.len, 0.45), x - mw / 2, x + mw / 2, z); break;
       case "line": strip(m.slot || "paint", s, s + num(m.len, 0.15), x - mw / 2, x + mw / 2, z); break;
       case "zebra": { const len = num(m.len, 4); for (let q = -mw / 2; q + 0.45 <= mw / 2 + 1e-6; q += 0.9) strip("paint", s, s + len, x + q, x + q + 0.45, z); break; }
       case "diamond": {
-        const len = num(m.len, 3), hw = Math.min(mw, 1.6) / 2, pts = [[s, x], [s + len / 2, x - hw], [s + len, x], [s + len / 2, x + hw]];
-        for (let i = 0; i < 4; i++) { const [s0, q0] = pts[i], [s1, q1] = pts[(i + 1) % 4], d = Math.hypot(s1 - s0, q1 - q0), ns = -(q1 - q0) / d * 0.07, nq = (s1 - s0) / d * 0.07;
-          poly(o, "paint", [P3(s0 - ns, q0 - nq, z), P3(s1 - ns, q1 - nq, z), P3(s1 + ns, q1 + nq, z), P3(s0 + ns, q0 + nq, z)], [0, 0, 1]); }
+        const len = num(m.len, 3), hw = Math.min(mw, 1.6) / 2, pts = [[0, 0], [len / 2, -hw], [len, 0], [len / 2, hw]];
+        for (let i = 0; i < 4; i++) { const [a0, b0] = pts[i], [a1, b1] = pts[(i + 1) % 4], d = Math.hypot(a1 - a0, b1 - b0), na = -(b1 - b0) / d * 0.07, nb = (a1 - a0) / d * 0.07;
+          quad("paint", [[a0 - na, b0 - nb], [a1 - na, b1 - nb], [a1 + na, b1 + nb], [a0 + na, b0 + nb]]); }
         break;
       }
-      case "arrow": { const len = num(m.len, 3); strip("paint", s, s + len * 0.65, x - 0.08, x + 0.08, z); poly(o, "paint", [P3(s + len * 0.6, x - 0.35, z), P3(s + len, x, z), P3(s + len * 0.6, x + 0.35, z)], [0, 0, 1]); break; }
+      case "arrow": { const len = num(m.len, 3); strip("paint", s, s + len * 0.65, x - 0.08, x + 0.08, z); quad("paint", [[len * 0.6, -0.35], [len, 0], [len * 0.6, 0.35]]); break; }
       case "text": {                                                // read by someone driving from `from` to `to`: the first character furthest
         const chars = [...String(m.text || "止まれ")].filter(ch => ch.trim()), len = num(m.len, 2.0), gap = num(m.gap, 0.5), cw = Math.min(num(m.w, 1.1), W - 0.3);
         chars.forEach((ch, i) => {
-          const s0 = s + (chars.length - 1 - i) * (len + gap), s1 = s0 + len;
-          poly(o, "glyph:" + ch, [P3(s0, x + cw / 2, z), P3(s0, x - cw / 2, z), P3(s1, x - cw / 2, z), P3(s1, x + cw / 2, z)], [0, 0, 1], [[0, 0], [1, 0], [1, 1], [0, 1]]);
+          const a0 = (chars.length - 1 - i) * (len + gap), a1 = a0 + len;
+          quad("glyph:" + ch, [[a0, cw / 2], [a0, -cw / 2], [a1, -cw / 2], [a1, cw / 2]], [[0, 0], [1, 0], [1, 1], [0, 1]]);
         });
         break;
       }
@@ -763,6 +841,42 @@ export function roadParts(r, others = [], index = 0) {
     }
   }
   return o;
+}
+
+// ---- the ground: what's under any point. The roads set its height; between them it blends (the lots at the height of
+// the road beside them); on a road its own height, on a pavement its top -----------------------------------------------
+export function terrain(S) {
+  const paths = (S.roads || []).map(roadPath), flat = (S.roads || []).every(r => !r.z || (Array.isArray(r.z) ? r.z.every(v => !+v) : !+r.z));
+  const ground = (x, y) => {
+    if (flat || !paths.length) return 0;
+    let sw = 0, sz = 0;
+    for (const g of paths) {
+      const q = g.nearest(x, y), walk = g.walks[q.q >= 0 ? 0 : 1], e = Math.max(0, q.d - (g.W / 2 + walk));
+      if (e === 0 && q.s >= 0 && q.s <= g.L) return q.z;
+      const w = 1 / Math.pow(e * e + 0.5, 1.5); sw += w; sz += w * q.z;
+    }
+    return sz / sw;
+  };
+  const surface = (x, y) => {                                         // the top of what's there: a road, a pavement, the ground
+    for (const g of paths) {
+      if (!inBox(g, x, y)) continue;
+      const q = g.nearest(x, y); if (q.s < 0 || q.s > g.L) continue;
+      if (Math.abs(q.q) <= g.W / 2) return q.z;
+      if (Math.abs(q.q) <= g.W / 2 + g.walks[q.q >= 0 ? 0 : 1]) return q.z + g.kerb;
+    }
+    return ground(x, y);
+  };
+  return { flat, paths, ground, surface };
+}
+// a building's footing: its floor at the ground just inside its front's middle; how far the ground falls under it
+export function footing(b, T) {
+  if (b.z !== undefined && b.z !== null && b.z !== "") return { z: num(b.z, 0), low: num(b.z, 0) };
+  const w = num(b.w, 8), d = num(b.d, 10), P = l => place([l[0], l[1], 0], { at: b.at, turn: b.turn });
+  const front = P([0, -d / 2 + 0.05]), z = T.ground(front[0], front[1]);
+  if (T.flat) return { z, low: z };
+  let low = z;
+  for (const [u, v] of [[-1, -1], [0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0]]) { const p = P([u * w / 2, v * d / 2]); low = Math.min(low, T.ground(p[0], p[1])); }
+  return { z, low };
 }
 
 // ---- things: street furniture, a kind each -------------------------------------------------------------------------
@@ -968,7 +1082,7 @@ export const FENCE_KINDS = {
   bamboo: { label: "Bamboo", h: 1.8, step: 1.8, note: "a bamboo screen fence (the old town)" },
   slats: { label: "Wooden slats", h: 1.8, step: 2.0, note: "horizontal slats on posts (a modern house's screen)" },
 };
-export function fenceParts(f) {
+export function fenceParts(f, surface) {
   const o = out(), K = FENCE_KINDS[f.kind] || FENCE_KINDS.mesh, [ax, ay] = f.from, [bx, by] = f.to, L = Math.hypot(bx - ax, by - ay);
   if (L < 0.05) return o;
   const h = num(f.h, K.h), step = num(f.step, K.step), t = [(bx - ax) / L, (by - ay) / L], n = [-t[1], t[0]];
@@ -1024,9 +1138,11 @@ export function fenceParts(f) {
     }
     default: break;
   }
-  // into the street: x along the run, y its left
+  // into the street: x along the run, y its left; each post on the ground under it, the bays between leaning with it
+  const zs = bays.map(x => surface ? surface(ax + t[0] * x, ay + t[1] * x) : 0);
+  const zAt = x => { if (x <= 0) return zs[0]; for (let i = 0; i + 1 < bays.length; i++) if (x <= bays[i + 1]) return zs[i] + (zs[i + 1] - zs[i]) * (x - bays[i]) / ((bays[i + 1] - bays[i]) || 1); return zs[zs.length - 1]; };
   for (const g of Object.values(o.G)) {
-    for (let i = 0; i < g.pos.length; i += 3) { const x = g.pos[i], y = g.pos[i + 1]; g.pos[i] = ax + t[0] * x + n[0] * y; g.pos[i + 1] = ay + t[1] * x + n[1] * y; }
+    for (let i = 0; i < g.pos.length; i += 3) { const x = g.pos[i], y = g.pos[i + 1]; g.pos[i] = ax + t[0] * x + n[0] * y; g.pos[i + 1] = ay + t[1] * x + n[1] * y; g.pos[i + 2] += zAt(x); }
     for (let i = 0; i < g.nrm.length; i += 3) { const x = g.nrm[i], y = g.nrm[i + 1]; g.nrm[i] = t[0] * x + n[0] * y; g.nrm[i + 1] = t[1] * x + n[1] * y; }
   }
   return o;
@@ -1070,29 +1186,43 @@ function placeAll(o, piece) {
 }
 
 // ---- the whole street: a list of pieces, each its triangles by slot, its signs and its lights ----------------------
-export function build(street) {
-  const S = street || {}, pieces = [];
+// cache (optional): a Map the page keeps between builds; a piece whose numbers (and footing) haven't changed is reused
+export function build(street, cache) {
+  const S = street || {}, pieces = [], T = terrain(S), memo = (key, make) => { if (!cache) return make(); let v = cache.get(key); if (!v) { v = make(); cache.set(key, v); } v.used = true; return v; };
   const roads = S.roads || [], buildings = S.buildings || [], things = S.things || [], fences = S.fences || [];
-  roads.forEach((r, i) => { try { pieces.push(Object.assign({ id: r.id, type: "road" }, roadParts(r, roads.filter(q => q !== r), i))); } catch (e) { pieces.push({ id: r.id, type: "road", G: {}, signs: [], lights: [], error: e.message }); } });
-  for (const b of buildings) { try { pieces.push(Object.assign({ id: b.id, type: "building" }, placeAll(buildingParts(b), b))); } catch (e) { pieces.push({ id: b.id, type: "building", G: {}, signs: [], lights: [], error: e.message }); } }
-  for (const t of things) { try { pieces.push(Object.assign({ id: t.id, type: "thing" }, placeAll(thingParts(t), t))); } catch (e) { pieces.push({ id: t.id, type: "thing", G: {}, signs: [], lights: [], error: e.message }); } }
-  for (const f of fences) { try { pieces.push(Object.assign({ id: f.id, type: "fence" }, fenceParts(f))); } catch (e) { pieces.push({ id: f.id, type: "fence", G: {}, signs: [], lights: [], error: e.message }); } }
-  const poles = things.filter(t => t.kind === "pole");
-  if (poles.some(p => p.to)) pieces.push(Object.assign({ id: "_wires", type: "wires" }, wiresParts(poles)));
-  // the ground under it all, a margin round what's there
+  const roadsKey = JSON.stringify(roads);
+  const safe = (id, type, make) => { try { return Object.assign({ id, type }, make()); } catch (e) { return { id, type, G: {}, signs: [], lights: [], error: e.message }; } };
+  roads.forEach((r, i) => pieces.push(memo("r|" + i + "|" + roadsKey, () => safe(r.id, "road", () => roadParts(r, roads.filter(q => q !== r), i)))));
+  for (const b of buildings) { const foot = footing(b, T); pieces.push(memo("b|" + JSON.stringify(b) + "|" + foot.z + "|" + foot.low, () => safe(b.id, "building", () => placeAll(buildingParts(b, foot), Object.assign({}, b, { z: foot.z }))))); }
+  const placed = things.map(t => Object.assign({}, t, { z: T.surface(...(t.at || [0, 0])) + num(t.lift, 0) }));
+  for (const t of placed) pieces.push(memo("t|" + JSON.stringify(t), () => safe(t.id, "thing", () => placeAll(thingParts(t), t))));
+  for (const f of fences) pieces.push(memo("f|" + JSON.stringify(f) + "|" + (T.flat ? "" : roadsKey), () => safe(f.id, "fence", () => fenceParts(f, T.surface))));
+  const poles = placed.filter(t => t.kind === "pole");
+  if (poles.some(p => p.to)) pieces.push(memo("w|" + JSON.stringify(poles), () => Object.assign({ id: "_wires", type: "wires" }, wiresParts(poles))));
+  // the ground under it all, a margin round what's there: flat, one quad; on a slope, a grid following the roads
   const bb = bounds2(S);
   if (bb && S.ground !== false) {
-    const o = out(), m = num(S.margin, 12);
-    poly(o, "ground", [[bb[0] - m, bb[1] - m, 0], [bb[2] + m, bb[1] - m, 0], [bb[2] + m, bb[3] + m, 0], [bb[0] - m, bb[3] + m, 0]], [0, 0, 1]);
-    pieces.push(Object.assign({ id: "_ground", type: "ground" }, o));
+    const m = num(S.margin, 12), key = "g|" + bb.join(",") + "|" + m + "|" + (T.flat ? "" : roadsKey);
+    pieces.push(memo(key, () => {
+      const o = out(), x0 = bb[0] - m, y0 = bb[1] - m, x1 = bb[2] + m, y1 = bb[3] + m;
+      if (T.flat) poly(o, "ground", [[x0, y0, 0], [x1, y0, 0], [x1, y1, 0], [x0, y1, 0]], [0, 0, 1]);
+      else {
+        const cell = num(S.cell, 3), nx = Math.max(1, Math.ceil((x1 - x0) / cell)), ny = Math.max(1, Math.ceil((y1 - y0) / cell)), Z = [];
+        for (let j = 0; j <= ny; j++) for (let i = 0; i <= nx; i++) Z.push(T.ground(x0 + (x1 - x0) * i / nx, y0 + (y1 - y0) * j / ny) - 0.06);
+        const V = (i, j) => [x0 + (x1 - x0) * i / nx, y0 + (y1 - y0) * j / ny, Z[j * (nx + 1) + i]];
+        for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) polyUp(o, "ground", [V(i, j), V(i + 1, j), V(i + 1, j + 1), V(i, j + 1)]);
+      }
+      return Object.assign({ id: "_ground", type: "ground" }, o);
+    }));
   }
+  if (cache) for (const [k, v] of cache) { if (!v.used) cache.delete(k); else v.used = false; }
   return pieces;
 }
 // the street's extent on the plan [x0, y0, x1, y1]
 export function bounds2(S) {
   const xs = [], ys = [];
   const pt = (x, y) => { xs.push(x); ys.push(y); };
-  for (const r of S.roads || []) { const f = roadFrame(r), q = f.W / 2 + Math.max(...f.walks); for (const s of [0, f.L]) for (const qq of [-q, q]) pt(...at2(f, s, qq)); }
+  for (const r of S.roads || []) { const f = roadPath(r), q = f.W / 2 + Math.max(...f.walks); for (const p of f.P) { pt(p[0] - q, p[1] - q); pt(p[0] + q, p[1] + q); } }
   for (const b of S.buildings || []) for (const [x, y] of footprint(b)) pt(x, y);
   for (const t of S.things || []) pt(...(t.at || [0, 0]));
   for (const f of S.fences || []) { pt(...f.from); pt(...f.to); }

@@ -20,7 +20,13 @@ The page has the **palette** (left), the **map** or the **facade** (middle), and
 
 - **A street**: pick *Street*, *Lane* (one way, a white line for walkers), *Alley*, *Wide road* or *Old town road*,
   then drag on the map from one end to the other (a click makes one 30 m long). Drag its ends to move them (they snap
-  to other streets' ends; Shift keeps it square), the yellow square on its side to widen it. In the inspector: the
+  to other streets' ends and onto another street's middle, taking its height there; Shift keeps it square), the yellow
+  square on its side to widen it. **Curves**: drag the small dot in the middle of a street (or between two of its
+  points) and it bends there, a smooth curve through its points; drag a bend about, double-click it to take it out.
+  **Slopes**: in the inspector's *Heights*, each point's height (or *it rises* so many metres from start to end, or
+  *Level it*); the street climbs smoothly between them, and the ground beside it, the buildings, the things and the
+  fences follow (a building on a slope stands at its front's ground and is carried down to the lowest ground under it
+  by a plinth). In the inspector: the
   pavements each side, the kerb, the white lines, the middle line, the surface, and the **marks**: 止まれ, a stop line,
   a zebra crossing, the ◇ of a crossing ahead, an arrow, a line, each at its distance along the street.
 - **Fill a street** (the one-click way to a street that feels lived in): click a street, pick what kind of place it
@@ -107,7 +113,9 @@ turned by `turn` (degrees, anticlockwise) and set down at `at` (its middle); a r
 ```
 { "format": 1, "name": "shibuya_lane", "about": "...", "time": "dusk",
   "look": {"asphalt": "#2d3034", "wall": "pbr/concrete_03"},                 a slot: a colour or a PBR set, everywhere
-  "roads": [{"id", "from": [x, y], "to": [x, y], "width": 6 (kerb to kerb), "walks": [left, right] (m, 0 none),
+  "roads": [{"id", "from": [x, y], "to": [x, y], "via": [[x, y], ...] (bends: a smooth curve through them),
+             "z": a height, one a point (from, the bends, to), or [at from, at to],
+             "width": 6 (kerb to kerb), "walks": [left, right] (m, 0 none),
              "kerb": 0.15, "edge": [left, right] (a white line that far in from each edge, 0 none),
              "centre": "none|dashed|solid|yellow", "surface", "walk",
              "marks": [{"kind": "stop|text|zebra|diamond|arrow|line", "at": m from `from`, "x": m across (+ right),
@@ -122,13 +130,18 @@ turned by `turn` (degrees, anticlockwise) and set down at `at` (its middle); a r
                  "parts": [{"kind" (PART_KINDS), "face", "x" (from the face's middle), "z", "w", "h", "out",
                             "floors": [from, to], "text", "fg", "bg", "dir": "h|v|r", "lit", "slot", "in", ...}],
                  "refs": {"front|right|back|left": {"file": "refs/<name>", "x", "z", "w", "op", "top"}}}],
-  "things": [{"id", "kind" (THING_KINDS), "at", "turn", "z", "h", "slot", "look", "to" (a pole's next pole), ...}],
+  "things": [{"id", "kind" (THING_KINDS), "at", "turn", "lift" (above what's under it), "h", "slot", "look", "to" (a pole's next pole), ...}],
   "fences": [{"id", "kind" (FENCE_KINDS), "from", "to", "h", "step", "look"}],
   "shots": [{"id", "name", "eye": [x, y, z], "look": [x, y, z], "vfov" (degrees tall), "aspect": [w, h],
              "ref": "refs/<photo>", "op", "pins": [{"name", "px": [0..1, 0..1], "at": [x, y, z]}]}] }
 ```
 
 `pins` say where a point of the street is in the shot's photo: the check (§6) holds the shot to them.
+
+**The ground** is the roads' to say: on a road its height, on a pavement its top, between the roads a blend of the
+roads beside (the lots at their road's height). A building stands at the ground just inside its front (or its own
+`z`), things and fence posts on whatever is under them (`terrain` and `footing` in street-gen.js). A flat street's
+ground is one quad; a sloped one's a grid (`cell`, 3 m) following the roads.
 `python tools/street.py show <name>` reads a street as text.
 
 ## 5. Materials, PBR and low poly
@@ -141,7 +154,11 @@ single quad each, the pattern in its alpha). In the inspector's Materials, or th
 slot takes a colour or **a set from the PBR shelf** (`assets/pbr`): every UV is in metres, laid square on each face,
 so a set keeps its real size (`tile_m`) on anything; a cut-out keeps its cut with a set on it. The geometry is boxes,
 quads and 6 to 10-sided cylinders: a building is about a thousand triangles, a street of forty a hundred thousand or
-so. The look is flat-shaded at dusk by default: the sky, a hemisphere, the lit windows and signs glowing, the nearest
+so. **Big streets**: the street is drawn in chunks (48 m squares), each merged into one mesh a material, a building's
+own colours riding on its vertices, so ninety buildings and two hundred things are about 450 draws (they were 1,700),
+each chunk culled whole out of view; a piece is built again only when its own numbers (or the ground under it) change,
+a chunk merged again only when one of its pieces did (moving a building on that street: about 50 ms on the cloud's
+CPU drawing). The look is flat-shaded at dusk by default: the sky, a hemisphere, the lit windows and signs glowing, the nearest
 sixteen lamps and shop fronts lighting the street (AgX, as the Godot look).
 
 ## 6. Checks
@@ -185,6 +202,4 @@ lane's). 89 buildings and 224 things in 88,000 triangles.
 - Streets into Godot: the .glb is exported by hand for now; a game's level taking a street (and the scene builder's
   enterable buildings put into it through a building's door) is the next step to plan with the user.
 - Foliage (the user: "don't worry about foliage for now"): pots stand empty.
-- Curved streets and slopes: streets are straight and the ground flat.
-- Fewer draw calls: the page and the .glb keep a mesh a surface a piece (a street of ninety buildings is about two
-  thousand); a game's export should merge them by material.
+- Steps and terraces on a slope (a stair street, a retaining wall): the ground blends between the roads for now.

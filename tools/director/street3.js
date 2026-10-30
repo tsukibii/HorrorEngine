@@ -104,15 +104,29 @@ function shelfMaps(ref) {
   return (PBRTEX[key] = out);
 }
 
-// ---- materials: a slot with what's put on it (a colour, a set), kept while the street is open ---------------------
+// ---- materials: a slot with what's put on it (a colour, a set), kept while the street is open. A surface's colour
+// rides on its vertices (one material a slot, whatever colour each building's walls are: a big street stays a few
+// hundred draws); a lit slot keeps its colour in its material (its glow is that colour) --------------------------------
 export class Materials {
   constructor() { this.cache = new Map(); this.time = TIMES.dusk; this.signs = {}; }
-  // `over`: the piece's look on this slot, else the street's; a colour "#rrggbb" or "pbr/<name>"
-  get(slot, over) {
-    const key = slot + "|" + (over || "") + (slot.startsWith("sign:") ? "|" + JSON.stringify(this.signs[slot.slice(5)] || {}) : "");
+  // `over`: the piece's look on this slot, else the street's; a colour "#rrggbb" or "pbr/<name>"; vc: coloured by vertex
+  get(slot, over, vc = false) {
+    const key = slot + "|" + (over || "") + "|" + (vc ? "v" : "") + (slot.startsWith("sign:") ? "|" + JSON.stringify(this.signs[slot.slice(5)] || {}) : "");
     let m = this.cache.get(key); if (m) return m;
-    m = this.make(slot, over); m.userData.slot = slot; m.userData.over = over || "";
+    m = this.make(slot, vc ? (over && over.startsWith("pbr/") ? over : "") : over); m.userData.slot = slot; m.userData.over = over || "";
+    if (vc) { m.vertexColors = true; m.color.set("#ffffff"); m.userData.base = "#ffffff"; m.userData.vc = true; }
     this.cache.set(key, m); this.light(m); return m;
+  }
+  // the material a piece's slot draws with and the colour its vertices carry ([r, g, b], linear)
+  forMerge(slot, over) {
+    const base = SG.slotBase(slot), S = SG.SLOTS[base] || SG.SLOTS.wall, lit = (S[3] || "").includes("e");
+    const special = slot.startsWith("sign:") || slot.startsWith("glyph:") || slot.startsWith("tsign:");
+    if (special || lit) return { mat: this.get(slot, over), key: "m|" + slot + "|" + (over || "") + (slot.startsWith("sign:") ? "|" + JSON.stringify(this.signs[slot.slice(5)] || {}) : ""), rgb: WHITE };
+    const isCol = !!over && /^#[0-9a-f]{6}$/i.test(over), isPbr = !!over && over.startsWith("pbr/");
+    const pattern = (PATTERNS[base] && !PATTERNS[base].alpha) || base === "fan";
+    const col = new THREE.Color(isCol ? over : isPbr || pattern ? "#ffffff" : S[0]);
+    if (pattern && isCol) col.multiplyScalar(1.25);
+    return { mat: this.get(slot, isPbr ? over : "", true), key: "v|" + slot + "|" + (isPbr ? over : ""), rgb: [col.r, col.g, col.b] };
   }
   make(slot, over) {
     const base = SG.slotBase(slot), S = SG.SLOTS[base] || SG.SLOTS.wall, flags = S[3] || "";
@@ -137,7 +151,7 @@ export class Materials {
       return m;
     }
     const pat = PATTERNS[base] ? patternTexture(base) : null;
-    if (pat) { if (PATTERNS[base].alpha) { m.alphaMap = pat; m.alphaTest = 0.5; m.side = THREE.DoubleSide; } else { m.map = pat; m.color.set("#ffffff"); m.color.lerp(new THREE.Color(S[0]), 0.0); } }
+    if (pat) { if (PATTERNS[base].alpha) { m.alphaMap = pat; m.alphaTest = 0.5; m.side = THREE.DoubleSide; } else { m.map = pat; m.color.set("#ffffff"); } }
     if (base === "fan") { m.map = patternTexture("fan"); m.color.set("#ffffff"); }
     if (base === "paint" || base === "paint_y") { m.polygonOffset = true; m.polygonOffsetFactor = -2; m.polygonOffsetUnits = -2; }
     if (over && /^#[0-9a-f]{6}$/i.test(over)) { m.color.set(over); if (m.map && !PATTERNS[base]?.alpha && base !== "fan") m.color.set(over).multiplyScalar(1.25); m.userData.base = over; }
@@ -158,44 +172,82 @@ export class Materials {
   }
   dispose() { for (const m of this.cache.values()) { m.map?.dispose?.(); m.dispose(); } this.cache.clear(); }
 }
+const WHITE = [1, 1, 1];
 
-// ---- the street as a group: a group a piece (userData.piece {id, type}), a mesh a slot ---------------------------------
-export function geometryOf(g) {
-  const n = g.pos.length / 3, pos = new Float32Array(n * 3), nrm = new Float32Array(n * 3);
-  for (let i = 0; i < n; i++) {
-    pos[i * 3] = g.pos[i * 3]; pos[i * 3 + 1] = g.pos[i * 3 + 2]; pos[i * 3 + 2] = -g.pos[i * 3 + 1];
-    nrm[i * 3] = g.nrm[i * 3]; nrm[i * 3 + 1] = g.nrm[i * 3 + 2]; nrm[i * 3 + 2] = -g.nrm[i * 3 + 1];
-  }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-  geo.setAttribute("normal", new THREE.BufferAttribute(nrm, 3));
-  const uv = new THREE.BufferAttribute(new Float32Array(g.uv), 2);
-  geo.setAttribute("uv", uv); geo.setAttribute("uv1", uv);
-  geo.setIndex(g.idx);
-  geo.computeBoundingSphere();
-  return geo;
-}
+// ---- the street as chunks: its pieces gathered by where they stand (CHUNK m squares) and merged by material, so a big
+// street is a few hundred draws and each chunk is culled whole when out of view. A mesh's userData.ranges says which
+// piece each run of its triangles is (picking); root.userData.index each piece's chunk and bounds (three's space). A
+// chunk whose pieces haven't changed since the last build is kept as it was (opts.prev: the last build's chunks).
+export const CHUNK = 48;
 const SHADOWLESS = new Set(["lamp", "lamp_cool", "lit", "lit_cool", "shop", "lobby", "paper", "vend_lit", "headlight", "taillight", "glass", "asphalt", "pavement", "ground", "paint", "paint_y", "wire"]);
-// pieces: street-gen's build(); mats: a Materials; S: the street (its look); opts.shadows
+let SERIAL = 0;
+function boundsOf(p) {
+  if (p._bb) return p._bb;
+  const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
+  for (const g of Object.values(p.G)) for (let i = 0; i < g.pos.length; i += 3) for (let k = 0; k < 3; k++) { const v = g.pos[i + k]; if (v < lo[k]) lo[k] = v; if (v > hi[k]) hi[k] = v; }
+  return (p._bb = lo[0] === Infinity ? null : { lo, hi });
+}
+export function disposeChunk(g) { g.traverse(o => { if (o.geometry) o.geometry.dispose(); }); }
 export function group(S, pieces, mats, opts = {}) {
-  const root = new THREE.Group(); root.name = S.name || "street";
+  const cell = opts.cell || CHUNK, prev = opts.prev || null, root = new THREE.Group(); root.name = S.name || "street";
   const looks = {};
   for (const list of ["roads", "buildings", "things", "fences"]) for (const p of S[list] || []) looks[p.id] = p.look || {};
   for (const p of pieces) for (const sg of p.signs || []) mats.signs[sg.key] = sg;
+  const chunks = new Map(), index = {};
   for (const p of pieces) {
-    const g = new THREE.Group(); g.name = p.id; g.userData.piece = { id: p.id, type: p.type };
-    const own = looks[p.id] || {};
-    for (const [slot, buf] of Object.entries(p.G)) {
-      if (!buf.idx.length) continue;
-      const base = SG.slotBase(slot), over = own[slot] ?? own[base] ?? (S.look || {})[slot] ?? (S.look || {})[base];
-      const mesh = new THREE.Mesh(geometryOf(buf), mats.get(slot, over));
-      mesh.name = `${p.id}:${slot}`; mesh.userData.slot = slot;
-      if (opts.shadows) { const cast = !SHADOWLESS.has(base) && p.type !== "ground"; mesh.castShadow = cast; mesh.receiveShadow = !base.startsWith("lit") && !slot.startsWith("sign:"); }
+    if (!p._n) p._n = ++SERIAL;
+    const bb = boundsOf(p); if (!bb) continue;
+    const key = p.type === "ground" || p.type === "wires" || p.type === "road" ? p.type + ":" + p.id : `${Math.floor((bb.lo[0] + bb.hi[0]) / 2 / cell)},${Math.floor((bb.lo[1] + bb.hi[1]) / 2 / cell)}`;
+    if (!chunks.has(key)) chunks.set(key, []);
+    chunks.get(key).push(p);
+    index[p.id] = { type: p.type, chunk: key, lo: [bb.lo[0], bb.lo[2], -bb.hi[1]], hi: [bb.hi[0], bb.hi[2], -bb.lo[1]] };
+  }
+  const lookKey = JSON.stringify(S.look || {}) + "|" + !!opts.shadows, made = new Map();
+  for (const [key, list] of chunks) {
+    const sig = list.map(p => p._n).join(",") + "|" + lookKey;
+    const old = prev && prev.get(key);
+    if (old && old.sig === sig) { made.set(key, old); root.add(old.group); continue; }
+    const byMat = new Map();
+    for (const p of list) {
+      const own = looks[p.id] || {};
+      for (const [slot, buf] of Object.entries(p.G)) {
+        if (!buf.idx.length) continue;
+        const base = SG.slotBase(slot), over = own[slot] ?? own[base] ?? (S.look || {})[slot] ?? (S.look || {})[base];
+        const { mat, key: mk, rgb } = mats.forMerge(slot, over);
+        let M = byMat.get(mk); if (!M) byMat.set(mk, M = { mat, slot: base, pos: [], nrm: [], uv: [], col: [], idx: [], ranges: [] });
+        const v0 = M.pos.length / 3, t0 = M.idx.length / 3;
+        for (let i = 0; i < buf.pos.length; i += 3) { M.pos.push(buf.pos[i], buf.pos[i + 2], -buf.pos[i + 1]); M.nrm.push(buf.nrm[i], buf.nrm[i + 2], -buf.nrm[i + 1]); M.col.push(rgb[0], rgb[1], rgb[2]); }
+        for (let i = 0; i < buf.uv.length; i++) M.uv.push(buf.uv[i]);
+        for (let i = 0; i < buf.idx.length; i++) M.idx.push(buf.idx[i] + v0);
+        M.ranges.push([t0, buf.idx.length / 3, p.id]);
+      }
+    }
+    const g = new THREE.Group(); g.name = "chunk_" + key.replace(/[^A-Za-z0-9_-]+/g, "_");
+    for (const M of byMat.values()) {
+      const geo = new THREE.BufferGeometry(), n = M.pos.length / 3;
+      geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(M.pos), 3));
+      geo.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(M.nrm), 3));
+      const uv = new THREE.BufferAttribute(new Float32Array(M.uv), 2); geo.setAttribute("uv", uv); geo.setAttribute("uv1", uv);
+      geo.setAttribute("color", new THREE.BufferAttribute(new Float32Array(M.col), 3));
+      geo.setIndex(new (n > 65535 ? THREE.Uint32BufferAttribute : THREE.Uint16BufferAttribute)(M.idx, 1));
+      geo.computeBoundingSphere(); geo.computeBoundingBox();
+      const mesh = new THREE.Mesh(geo, M.mat);
+      mesh.name = `${g.name}_${M.slot}`; mesh.userData.ranges = M.ranges; mesh.userData.slot = M.slot;
+      if (opts.shadows) { mesh.castShadow = !SHADOWLESS.has(M.slot) && !key.startsWith("ground"); mesh.receiveShadow = !M.slot.startsWith("lit") && !M.mat.userData.signLit; }
       g.add(mesh);
     }
-    root.add(g);
+    made.set(key, { sig, group: g }); root.add(g);
   }
+  if (prev) for (const [k, v] of prev) if (made.get(k) !== v) disposeChunk(v.group);
+  root.userData.chunks = made; root.userData.index = index;
   return root;
+}
+// which piece a ray hit (a merged mesh's triangle runs)
+export function pieceAt(hit) {
+  const R = hit && hit.object && hit.object.userData.ranges; if (!R) return null;
+  let lo = 0, hi = R.length - 1, f = hit.faceIndex;
+  while (lo < hi) { const m = (lo + hi + 1) >> 1; if (R[m][0] <= f) lo = m; else hi = m - 1; }
+  return R[lo] && f < R[lo][0] + R[lo][1] ? R[lo][2] : null;
 }
 export function lightsOf(pieces) { const out = []; for (const p of pieces) for (const L of p.lights || []) out.push(Object.assign({ piece: p.id }, L)); return out; }
 

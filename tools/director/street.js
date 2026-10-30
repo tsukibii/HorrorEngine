@@ -52,7 +52,7 @@ async function loadNames() {
 }
 async function open(name) {
   const j = await api("/api/street/" + encodeURIComponent(name));
-  ST.name = name; ST.street = normal(j.street); ST.mtime = j.mtime; ST.dirty = false; ST.sel = null; ST.undo = []; ST.redo = [];
+  ST.name = name; ST.street = normal(j.street); ST.mtime = j.mtime; ST.dirty = false; ST.sel = null; ST.undo = []; ST.redo = []; BUILT.clear();
   try { localStorage.setItem("street.name", name); } catch (e) { }
   $("#street").value = name; $("#time").value = ST.street.time || "dusk";
   frameMap(); frameOrbit(); fillModes();
@@ -95,7 +95,7 @@ function afterRestore() { if (ST.sel && !find(ST.sel)) ST.sel = null; changed();
 let rebuildTimer = 0, rebuildAt = 0;
 // opts.inspector false: a field's own edit (don't redraw the form under the cursor); opts.soon: a drag (at most 8 a second)
 function changed(opts = {}) {
-  ST.dirty = true;
+  ST.dirty = true; ST.version = (ST.version || 0) + 1;
   drawMap();
   if (opts.inspector !== false) inspect();
   clearTimeout(rebuildTimer);
@@ -124,11 +124,14 @@ let root = null;
 // a renderer's canvas resized only when it has to (setting a canvas's size, even to the same, throws its buffer away)
 function sizeTo(r, W, H) { const c = r.domElement; if (c._w !== W || c._h !== H) { r.setSize(W, H, true); c._w = W; c._h = H; } }
 function dispose(o) { o.traverse(x => { if (x.geometry) x.geometry.dispose(); }); }
+// a piece is built again only when its own numbers change (BUILT), and a chunk merged again only when one of its pieces
+// did (street3's group keeps the rest): a big street stays quick to drag things about in
+const BUILT = new Map();
 function rebuild() {
   rebuildAt = performance.now();
-  ST.pieces = SG.build(ST.street);
-  const g = S3.group(ST.street, ST.pieces, mats, { shadows: true });
-  if (root) { scene.remove(root); dispose(root); }
+  ST.pieces = SG.build(ST.street, BUILT);
+  const g = S3.group(ST.street, ST.pieces, mats, { shadows: true, prev: root ? root.userData.chunks : null });
+  if (root) scene.remove(root);
   root = g; scene.add(root);
   ST.lights = S3.lightsOf(ST.pieces);
   look.set(ST.street.time, renderer, SG.bounds2(ST.street));
@@ -141,25 +144,21 @@ function rebuild() {
 function highlight() {
   const p = selected(); selBox.visible = false;
   if (!p || !root || ST.sel.list === "shots") return;
-  const g = root.getObjectByName(p.id); if (!g) return;
-  selBox.box.setFromObject(g); selBox.visible = !selBox.box.isEmpty();
+  const ix = root.userData.index[p.id]; if (!ix) return;
+  selBox.box.min.set(...ix.lo); selBox.box.max.set(...ix.hi); selBox.visible = true;
 }
 const shotOf = mode => mode && mode.startsWith("shot:") ? ST.street.shots.find(s => s.id === mode.slice(5)) : null;
 function eyeNow() {                                                  // where the eye is, story space
   const s = shotOf(ST.mode);
   if (s) return s.eye;
-  if (ST.mode === "walk") return [ST.walk.x, ST.walk.y, 1.65 + groundAt(ST.walk.x, ST.walk.y)];
+  if (ST.mode === "walk") return [ST.walk.x, ST.walk.y, 1.65 + surfaceAt(ST.walk.x, ST.walk.y)];
   const o = ST.orbit, c = Math.cos(o.pitch);
   return [o.t[0] - Math.sin(o.yaw) * c * o.dist, o.t[1] - Math.cos(o.yaw) * c * o.dist, o.t[2] + Math.sin(o.pitch) * o.dist];
 }
-function groundAt(x, y) {                                            // on a walk (a pavement's top) or the road
-  for (const r of ST.street.roads) {
-    const f = SG.roadFrame(r), dx = x - f.a[0], dy = y - f.a[1], s = dx * f.t[0] + dy * f.t[1], q = dx * f.n[0] + dy * f.n[1];
-    if (s < 0 || s > f.L) continue;
-    if ((q > f.W / 2 && q < f.W / 2 + f.walks[0]) || (q < -f.W / 2 && q > -f.W / 2 - f.walks[1])) return f.kerb;
-  }
-  return 0;
-}
+// the ground under a point: a road, a pavement's top, the lots between (street-gen's terrain, kept until the street changes)
+let TER = null, TERof = null;
+function terrain() { if (TERof !== ST.street || !TER || TER.v !== ST.version) { TER = SG.terrain(ST.street); TER.v = ST.version; TERof = ST.street; } return TER; }
+const surfaceAt = (x, y) => terrain().surface(x, y);
 let viewRect = { x: 0, y: 0, w: 1, h: 1 };
 function render() {
   if (!ST.street) return;
@@ -265,12 +264,9 @@ function ray(e) {
   return hits[0] || null;
 }
 function pick3d(e) {
-  const h = ray(e); if (!h) { select(null); return; }
-  let o = h.object; while (o && !o.userData.piece) o = o.parent;
-  const p = o && o.userData.piece;
-  if (!p || p.type === "ground" || p.type === "wires") { select(null); return; }
-  const list = { road: "roads", building: "buildings", thing: "things", fence: "fences" }[p.type];
-  select({ list, id: p.id });
+  const h = ray(e), id = h && S3.pieceAt(h), ix = id && root.userData.index[id];
+  if (!ix || ix.type === "ground" || ix.type === "wires") { select(null); return; }
+  select({ list: { road: "roads", building: "buildings", thing: "things", fence: "fences" }[ix.type], id });
 }
 viewEl.addEventListener("keydown", e => {
   if (["w", "a", "s", "d", "q", "e", "arrowup", "arrowdown", "arrowleft", "arrowright", "shift"].includes(e.key.toLowerCase()) && (ST.mode === "walk" || (shotOf(ST.mode) && $("#shotAdjust").checked))) {
@@ -350,21 +346,27 @@ function drawMap() {
     for (let x = Math.floor(x0 / step) * step; x <= x1; x += step) { const [px] = W2S(x, 0); out.push(`<line x1="${px}" y1="0" x2="${px}" y2="${MH}" stroke="${c}"/>`); }
     for (let y = Math.floor(y0 / step) * step; y <= y1; y += step) { const [, py] = W2S(0, y); out.push(`<line x1="0" y1="${py}" x2="${MW}" y2="${py}" stroke="${c}"/>`); }
   }
-  // roads: the walks first, then every carriageway over them (a crossing shows as road)
-  const frames = S.roads.map(r => [r, SG.roadFrame(r)]);
-  const P = (f, sv, q) => [f.a[0] + f.t[0] * sv + f.n[0] * q, f.a[1] + f.t[1] * sv + f.n[1] * q];
-  for (const [r, f] of frames) for (const [side, ww] of [[1, f.walks[0]], [-1, f.walks[1]]]) if (ww > 0.01)
-    out.push(`<polygon points="${pts([P(f, 0, side * f.W / 2), P(f, f.L, side * f.W / 2), P(f, f.L, side * (f.W / 2 + ww)), P(f, 0, side * (f.W / 2 + ww))])}" fill="#4f4c47" data-list="roads" data-id="${esc(r.id)}"/>`);
-  for (const [r, f] of frames) {
+  // roads: the walks first, then every carriageway over them (a crossing shows as road); a strip along a road's curve
+  const paths = S.roads.map(r => [r, SG.roadPath(r)]);
+  const band = (f, q0, q1) => f.S.map(sv => f.at(sv, q0)).concat(f.S.slice().reverse().map(sv => f.at(sv, q1)));
+  const along = (f, q) => f.S.map(sv => W2S(...f.at(sv, q)).map(v => v.toFixed(1)).join(",")).join(" ");
+  for (const [r, f] of paths) for (const [side, ww] of [[1, f.walks[0]], [-1, f.walks[1]]]) if (ww > 0.01)
+    out.push(`<polygon points="${pts(band(f, side * f.W / 2, side * (f.W / 2 + ww)))}" fill="#4f4c47" data-list="roads" data-id="${esc(r.id)}"/>`);
+  for (const [r, f] of paths) {
     const on = sel.list === "roads" && sel.id === r.id;
-    out.push(`<polygon points="${pts([P(f, 0, -f.W / 2), P(f, f.L, -f.W / 2), P(f, f.L, f.W / 2), P(f, 0, f.W / 2)])}" fill="#2f3237" stroke="${on ? "#d9a441" : "none"}" stroke-width="2" data-list="roads" data-id="${esc(r.id)}"/>`);
-    if (r.centre && r.centre !== "none") { const [a, b] = [W2S(...P(f, 0, 0)), W2S(...P(f, f.L, 0))]; out.push(`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="${r.centre === "yellow" ? "#d89a3a" : "#bbb"}" stroke-dasharray="${r.centre === "dashed" ? `${5 * s},${5 * s}` : "none"}" stroke-width="1" pointer-events="none"/>`); }
+    out.push(`<polygon points="${pts(band(f, -f.W / 2, f.W / 2))}" fill="#2f3237" stroke="${on ? "#d9a441" : "none"}" stroke-width="2" data-list="roads" data-id="${esc(r.id)}"/>`);
+    if (r.centre && r.centre !== "none") out.push(`<polyline points="${along(f, 0)}" fill="none" stroke="${r.centre === "yellow" ? "#d89a3a" : "#bbb"}" stroke-dasharray="${r.centre === "dashed" ? `${5 * s},${5 * s}` : "none"}" stroke-width="1" pointer-events="none"/>`);
     const [el0, er0] = Array.isArray(r.edge) ? r.edge : [r.edge || 0, r.edge || 0];
-    for (const [q, on2] of [[f.W / 2 - el0, el0 > 0], [-f.W / 2 + er0, er0 > 0]]) if (on2) { const [a, b] = [W2S(...P(f, 0, q)), W2S(...P(f, f.L, q))]; out.push(`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#ddd" stroke-width="1" pointer-events="none"/>`); }
-    for (const m of r.marks || []) { const [mx, my] = W2S(...P(f, (+m.at || 0) + 0.5, -(+m.x || 0))); out.push(`<text x="${mx}" y="${my}" font-size="10" fill="#eee" text-anchor="middle">${esc(m.kind === "text" ? m.text || "止まれ" : m.kind === "stop" ? "▬" : m.kind === "zebra" ? "▥" : m.kind === "diamond" ? "◇" : "↑")}</text>`); }
-    if (s > 3) { const [mx, my] = W2S(...P(f, f.L / 2, 0)); out.push(`<text x="${mx}" y="${my - 4}" font-size="11" fill="#8a8a92" text-anchor="middle">${esc(r.name || r.id)}</text>`); }
-    if (on) for (const h of ["from", "to"]) { const [hx, hy] = W2S(...r[h]); out.push(`<circle cx="${hx}" cy="${hy}" r="7" fill="#d9a441" stroke="#000" data-handle="${h}" style="cursor:move"/>`); }
-    if (on) { const [hx, hy] = W2S(...P(f, f.L / 2, f.W / 2)); out.push(`<rect x="${hx - 5}" y="${hy - 5}" width="10" height="10" fill="#d9a441" stroke="#000" data-handle="width" style="cursor:ew-resize"><title>drag to widen</title></rect>`); }
+    for (const [q, on2] of [[f.W / 2 - el0, el0 > 0], [-f.W / 2 + er0, er0 > 0]]) if (on2) out.push(`<polyline points="${along(f, q)}" fill="none" stroke="#ddd" stroke-width="1" pointer-events="none"/>`);
+    for (const m of r.marks || []) { const [mx, my] = W2S(...f.at((+m.at || 0) + 0.5, -(+m.x || 0))); out.push(`<text x="${mx}" y="${my}" font-size="10" fill="#eee" text-anchor="middle">${esc(m.kind === "text" ? m.text || "止まれ" : m.kind === "stop" ? "▬" : m.kind === "zebra" ? "▥" : m.kind === "diamond" ? "◇" : "↑")}</text>`); }
+    const pz = SG.roadPoints(r), sloped = pz.some(p => Math.abs(p[2]) > 1e-3);
+    if (s > 3) { const [mx, my] = W2S(...f.at(f.L / 2, 0)); out.push(`<text x="${mx}" y="${my - 4}" font-size="11" fill="#8a8a92" text-anchor="middle">${esc(r.name || r.id)}</text>`); }
+    if (on) {                                                         // its points (drag; double-click a bend to take it out) and, between them, a dot that adds one
+      const ctl = roadCtl(r), sOf = ctl.map(c => f.nearest(c[0], c[1]).s);
+      for (let i = 0; i + 1 < ctl.length; i++) { const [hx, hy] = W2S(...f.at((sOf[i] + sOf[i + 1]) / 2, 0)); out.push(`<circle cx="${hx}" cy="${hy}" r="5" fill="#141417" stroke="#d9a441" stroke-width="1.5" data-handle="mid${i}" style="cursor:copy"><title>drag to bend the street here</title></circle>`); }
+      ctl.forEach((c, i) => { const [hx, hy] = W2S(c[0], c[1]); out.push(`<circle cx="${hx}" cy="${hy}" r="${i === 0 || i === ctl.length - 1 ? 7 : 6}" fill="#d9a441" stroke="#000" data-handle="pt${i}" style="cursor:move"><title>${i === 0 ? "its start" : i === ctl.length - 1 ? "its end" : "a bend: drag it, double-click to take it out"}${sloped ? ` (${r2(pz[i][2])} m up)` : ""}</title></circle>`); if (sloped && s > 2) out.push(`<text x="${hx + 9}" y="${hy - 6}" font-size="10" fill="#d9a441">${r2(pz[i][2])} m</text>`); });
+      const [hx, hy] = W2S(...f.at(f.L / 2, f.W / 2)); out.push(`<rect x="${hx - 5}" y="${hy - 5}" width="10" height="10" fill="#d9a441" stroke="#000" data-handle="width" style="cursor:ew-resize"><title>drag to widen</title></rect>`);
+    }
   }
   // fences
   for (const fn of S.fences) {
@@ -416,16 +418,17 @@ function drawMap() {
   svg.innerHTML = out.join("");
 }
 let ghost = "";
+const roadCtl = r => [r.from, ...(Array.isArray(r.via) ? r.via : []), r.to];
 
 // snapping: a building faces the nearest street, its front on the pavement's back edge, its sides against its neighbours
 function nearRoad(x, y, reach = 8) {
   let best = null;
   for (const r of ST.street.roads) {
-    const f = SG.roadFrame(r), dx = x - f.a[0], dy = y - f.a[1], sv = dx * f.t[0] + dy * f.t[1], q = dx * f.n[0] + dy * f.n[1];
-    if (sv < -reach || sv > f.L + reach) continue;
-    const side = q >= 0 ? 1 : -1, edge = f.W / 2 + f.walks[side > 0 ? 0 : 1], d = Math.abs(q) - edge;
+    const f = SG.roadPath(r), nq = f.nearest(x, y);
+    if (nq.s < -reach || nq.s > f.L + reach) continue;
+    const side = nq.q >= 0 ? 1 : -1, edge = f.W / 2 + f.walks[side > 0 ? 0 : 1], d = Math.abs(nq.q) - edge;
     if (d > reach) continue;
-    if (!best || Math.abs(d) < Math.abs(best.d)) best = { r, f, s: sv, q, side, edge, d };
+    if (!best || Math.abs(d) < Math.abs(best.d)) best = { r, f, s: nq.s, q: nq.q, side, edge, d };
   }
   return best;
 }
@@ -440,13 +443,14 @@ function snapBuilding(b, x, y, free) {
   // against a neighbour on the same side: within 0.8 m, touch it
   for (const o of ST.street.buildings) {
     if (o === b || o.id === b.id) continue;
-    const dx = o.at[0] - f.a[0], dy = o.at[1] - f.a[1], os = dx * f.t[0] + dy * f.t[1], oq = dx * f.n[0] + dy * f.n[1];
-    if (Math.sign(oq) !== side || Math.abs(Math.abs(oq) - Math.abs(q)) > 6) continue;
+    const on = f.nearest(o.at[0], o.at[1]);
+    if (Math.sign(on.q) !== side || Math.abs(Math.abs(on.q) - Math.abs(q)) > 6) continue;
     const ohw = (Math.abs(Math.sin(rad(o.turn - b.turn))) > 0.5 ? o.d : o.w) / 2;
-    for (const target of [os + ohw + b.w / 2, os - ohw - b.w / 2]) if (Math.abs(sv - target) < 0.8) sv = target;
+    for (const target of [on.s + ohw + b.w / 2, on.s - ohw - b.w / 2]) if (Math.abs(sv - target) < 0.8) sv = target;
   }
-  b.at = [r2(f.a[0] + f.t[0] * sv + f.n[0] * q), r2(f.a[1] + f.t[1] * sv + f.n[1] * q)];
-  b.turn = facing(-side * f.n[0], -side * f.n[1]);
+  const fr = f.frame(sv), p = f.at(sv, q);
+  b.at = [r2(p[0]), r2(p[1])];
+  b.turn = facing(-side * fr.n[0], -side * fr.n[1]);
 }
 const KERB_THINGS = new Set(["lamp", "lantern", "postlamp", "pole", "sign", "mirror", "bollard", "cone"]);
 const WALL_THINGS = new Set(["vending", "postbox", "bike", "ac", "crates", "pot", "bin", "bench"]);
@@ -457,9 +461,9 @@ function snapThing(t, x, y, free) {
   let q;
   if (KERB_THINGS.has(t.kind)) q = side * (f.W / 2 + Math.min(0.4, walk / 2));
   else q = side * (f.W / 2 + Math.max(walk / 2, walk - (t.kind === "vending" ? 0.42 : t.kind === "bike" ? 0.35 : 0.3)));
-  const sv = snapV(nr.s);
-  t.at = [r2(f.a[0] + f.t[0] * sv + f.n[0] * q), r2(f.a[1] + f.t[1] * sv + f.n[1] * q)];
-  t.turn = t.kind === "bike" ? r1(deg(Math.atan2(f.t[1], f.t[0]))) : t.kind === "pole" ? r1(deg(Math.atan2(f.n[1], f.n[0]))) : facing(-side * f.n[0], -side * f.n[1]);
+  const sv = snapV(nr.s), fr = f.frame(sv), p = f.at(sv, q);
+  t.at = [r2(p[0]), r2(p[1])];
+  t.turn = t.kind === "bike" ? r1(deg(Math.atan2(fr.t[1], fr.t[0]))) : t.kind === "pole" ? r1(deg(Math.atan2(fr.n[1], fr.n[0]))) : facing(-side * fr.n[0], -side * fr.n[1]);
 }
 
 // the map's mouse
@@ -470,7 +474,19 @@ svg.addEventListener("pointerdown", e => {
   svg.setPointerCapture(e.pointerId);
   if (ST.tool && e.button === 0) { mdrag = { kind: "place", from: [snapV(wx), snapV(wy)], x0: mx, y0: my }; return; }
   const h = e.target.getAttribute("data-handle"), id = e.target.getAttribute("data-id"), list = e.target.getAttribute("data-list");
-  if (h && ST.sel && e.button === 0) { pushUndo(); mdrag = { kind: "handle", h, sel: ST.sel, orig: JSON.parse(JSON.stringify(selected())), w0: [wx, wy] }; return; }
+  if (h && ST.sel && e.button === 0) {
+    pushUndo();
+    let hh = h;
+    if (/^mid\d+$/.test(h)) {                                         // a new bend between two points, held by the mouse
+      const r = selected(), i = +h.slice(3), pz = SG.roadPoints(r);
+      r.via = Array.isArray(r.via) ? r.via : [];
+      r.via.splice(i, 0, [r2(wx), r2(wy)]);
+      if (pz.some(q => Math.abs(q[2]) > 1e-6)) { const z = SG.roadPoints(Object.assign({}, r, { z: [pz[0][2], pz[pz.length - 1][2]] })); r.z = pz.map(q => r2(q[2])); r.z.splice(i + 1, 0, r2((pz[i][2] + pz[i + 1][2]) / 2)); void z; }
+      hh = "pt" + (i + 1);
+    }
+    mdrag = { kind: "handle", h: hh, sel: ST.sel, orig: JSON.parse(JSON.stringify(selected())), w0: [wx, wy] };
+    return;
+  }
   if (id && e.button === 0) {
     if (!ST.sel || ST.sel.id !== id || ST.sel.list !== list) select({ list, id });
     mdrag = { kind: "move", list, id, orig: JSON.parse(JSON.stringify(find({ list, id }))), w0: [wx, wy], pushed: false };
@@ -493,7 +509,7 @@ svg.addEventListener("pointermove", e => {
     const o = mdrag.orig;
     if (mdrag.list === "buildings") snapBuilding(Object.assign(p, { turn: o.turn }), o.at[0] + dx, o.at[1] + dy, e.altKey);
     else if (mdrag.list === "things") snapThing(Object.assign(p, { turn: o.turn }), o.at[0] + dx, o.at[1] + dy, e.altKey);
-    else if (mdrag.list === "roads" || mdrag.list === "fences") { const d = [snapV(dx), snapV(dy)]; p.from = [r2(o.from[0] + d[0]), r2(o.from[1] + d[1])]; p.to = [r2(o.to[0] + d[0]), r2(o.to[1] + d[1])]; }
+    else if (mdrag.list === "roads" || mdrag.list === "fences") { const d = [snapV(dx), snapV(dy)]; p.from = [r2(o.from[0] + d[0]), r2(o.from[1] + d[1])]; p.to = [r2(o.to[0] + d[0]), r2(o.to[1] + d[1])]; if (o.via) p.via = o.via.map(v => [r2(v[0] + d[0]), r2(v[1] + d[1])]); }
     else if (mdrag.list === "shots") { const d = [snapV(dx), snapV(dy)]; p.eye = [r2(o.eye[0] + d[0]), r2(o.eye[1] + d[1]), o.eye[2]]; p.look = [r2(o.look[0] + d[0]), r2(o.look[1] + d[1]), o.look[2]]; }
     changed({ soon: true, inspector: false }); return;
   }
@@ -515,7 +531,13 @@ svg.addEventListener("wheel", e => {
   const [nx, ny] = S2W(mx, my); ST.view.cx += wx - nx; ST.view.cy += wy - ny; drawMap();
 }, { passive: false });
 svg.addEventListener("dblclick", e => {                              // (the pointer is captured: find what's under it)
-  const t = document.elementsFromPoint(e.clientX, e.clientY).find(x => x.getAttribute && x.getAttribute("data-list") === "buildings");
+  const under = document.elementsFromPoint(e.clientX, e.clientY), bend = under.find(x => x.getAttribute && /^pt\d+$/.test(x.getAttribute("data-handle") || ""));
+  if (bend && ST.sel && ST.sel.list === "roads") {
+    const r = selected(), i = +bend.getAttribute("data-handle").slice(2), n = roadCtl(r).length;
+    if (i > 0 && i < n - 1) { pushUndo(); r.via.splice(i - 1, 1); if (Array.isArray(r.z) && r.z.length === n) r.z.splice(i, 1); if (!r.via.length) delete r.via; changed(); }
+    return;
+  }
+  const t = under.find(x => x.getAttribute && x.getAttribute("data-list") === "buildings");
   if (t) { select({ list: "buildings", id: t.getAttribute("data-id") }); tab("facade"); }
 });
 function mouseMap(e) { const r = svg.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
@@ -531,6 +553,17 @@ function dragHandle(d, wx, wy, e) {
     return;
   }
   if (d.sel.list === "things" && d.h === "rot") { let t = deg(Math.atan2(wx - o.at[0], -(wy - o.at[1]))); if (!e.shiftKey) t = Math.round(t / 15) * 15; p.turn = r1(t); return; }
+  if (d.sel.list === "roads" && /^pt\d+$/.test(d.h)) {                    // one of its points: the ends snap to another road's
+    const i = +d.h.slice(2), ctl = roadCtl(p), last = ctl.length - 1;
+    let pt = [snapV(wx), snapV(wy)], z = null;
+    if (!e.altKey && (i === 0 || i === last)) for (const r of ST.street.roads) if (r.id !== p.id) {
+      for (const [k, c] of roadCtl(r).entries()) if (Math.hypot(c[0] - wx, c[1] - wy) < 1.5) { pt = c.slice(0, 2); z = SG.roadPoints(r)[k][2]; }
+      if (z === null) { const f = SG.roadPath(r), nq = f.nearest(wx, wy); if (nq.s > 0 && nq.s < f.L && Math.abs(nq.q) < 1.2) { const c = f.at(nq.s, 0); pt = [r2(c[0]), r2(c[1])]; z = nq.z; } }
+    }
+    if (i === 0) p.from = pt; else if (i === last) p.to = pt; else p.via[i - 1] = pt;
+    if (z !== null && Math.abs(z) > 1e-6) { p.z = SG.roadPoints(p).map(q => r2(q[2])); p.z[i] = r2(z); }
+    return;
+  }
   if ((d.sel.list === "roads" || d.sel.list === "fences") && (d.h === "from" || d.h === "to")) {
     let pt = [snapV(wx), snapV(wy)];
     if (!e.altKey) for (const r of ST.street.roads) if (r.id !== p.id) for (const end of [r.from, r.to]) if (Math.hypot(end[0] - wx, end[1] - wy) < 1.5) pt = end.slice();
@@ -538,7 +571,7 @@ function dragHandle(d, wx, wy, e) {
     if (e.shiftKey) { const dx = pt[0] - other[0], dy = pt[1] - other[1]; if (Math.abs(dx) > Math.abs(dy)) pt[1] = other[1]; else pt[0] = other[0]; }
     p[d.h] = [r2(pt[0]), r2(pt[1])]; return;
   }
-  if (d.sel.list === "roads" && d.h === "width") { const f = SG.roadFrame(o), q = Math.abs((wx - f.a[0]) * f.n[0] + (wy - f.a[1]) * f.n[1]); p.width = r2(Math.max(2, snapV(q * 2))); return; }
+  if (d.sel.list === "roads" && d.h === "width") { const q = Math.abs(SG.roadPath(o).nearest(wx, wy).q); p.width = r2(Math.max(2, snapV(q * 2))); return; }
   if (d.sel.list === "shots" && d.h === "look") { p.look = [r2(wx), r2(wy), o.look[2]]; }
 }
 
@@ -624,14 +657,16 @@ const sat = (A, B) => {                                               // two con
   return true;
 };
 const shrink = (P, k) => { const c = [P.reduce((s, p) => s + p[0], 0) / P.length, P.reduce((s, p) => s + p[1], 0) / P.length]; return P.map(p => [c[0] + (p[0] - c[0]) * k, c[1] + (p[1] - c[1]) * k]); };
-function roadPoly(r) { const f = SG.roadFrame(r), P = (sv, q) => [f.a[0] + f.t[0] * sv + f.n[0] * q, f.a[1] + f.t[1] * sv + f.n[1] * q]; return [P(0, -f.W / 2 - f.walks[1]), P(f.L, -f.W / 2 - f.walks[1]), P(f.L, f.W / 2 + f.walks[0]), P(0, f.W / 2 + f.walks[0])]; }
+// a road's corridor (carriageway and pavements) as convex pieces, one between each two of its points
+function roadQuads(r) { const f = SG.roadPath(r), a = -f.W / 2 - f.walks[1], b = f.W / 2 + f.walks[0], out = []; for (let i = 0; i + 1 < f.S.length; i++) out.push([f.at(f.S[i], a), f.at(f.S[i + 1], a), f.at(f.S[i + 1], b), f.at(f.S[i], b)].map(p => [p[0], p[1]])); return out; }
 function fillStreet(mix, what) {
   const r = ST.sel && ST.sel.list === "roads" ? selected() : ST.street.roads.length === 1 ? ST.street.roads[0] : null;
   if (!r) { toast("Pick a street first (click it on the map)"); return; }
   pushUndo();
-  const f = SG.roadFrame(r), R = SG.rng((Date.now() & 0xffffff) ^ 0x5eed), E = SP.EDGES[mix] || SP.EDGES.city, made = { buildings: 0, things: 0 };
-  const P = (sv, q) => [r2(f.a[0] + f.t[0] * sv + f.n[0] * q), r2(f.a[1] + f.t[1] * sv + f.n[1] * q)];
-  const blocked = (poly, self) => ST.street.roads.some(o => o !== r && sat(shrink(poly, 0.98), roadPoly(o))) || ST.street.buildings.some(o => o !== self && sat(shrink(poly, 0.98), SG.footprint(o)));
+  const f = SG.roadPath(r), R = SG.rng((Date.now() & 0xffffff) ^ 0x5eed), E = SP.EDGES[mix] || SP.EDGES.city, made = { buildings: 0, things: 0 };
+  const P = (sv, q) => { const p = f.at(sv, q); return [r2(p[0]), r2(p[1])]; }, N = sv => f.frame(sv).n, T = sv => f.frame(sv).t;
+  const quads = ST.street.roads.map(o => [o, roadQuads(o)]);
+  const blocked = (poly, self) => quads.some(([, Q]) => Q.some(q => sat(shrink(poly, 0.98), q))) || ST.street.buildings.some(o => o !== self && sat(shrink(poly, 0.98), SG.footprint(o)));
   if (what.buildings) for (const side of [1, -1]) {
     const edge = f.W / 2 + f.walks[side > 0 ? 0 : 1];
     let sv = 0.3;
@@ -640,7 +675,7 @@ function fillStreet(mix, what) {
       if (sv + b.w > f.L - 0.2) b.w = r2(Math.max(3.5, f.L - 0.2 - sv));
       if (sv + b.w > f.L - 0.2) break;
       const q = side * (edge + b.d / 2 + (R() < 0.25 ? r2(R() * 0.4) : 0));
-      b.at = P(sv + b.w / 2, q); b.turn = facing(-side * f.n[0], -side * f.n[1]);
+      const n = N(sv + b.w / 2); b.at = P(sv + b.w / 2, q); b.turn = facing(-side * n[0], -side * n[1]);
       if (blocked(SG.footprint(b), b)) { sv += 1; continue; }
       ST.street.buildings.push(b); made.buildings++;
       sv += b.w + (R() < 0.3 ? r2(R() * 0.5) : 0.02);
@@ -649,19 +684,19 @@ function fillStreet(mix, what) {
   const thing = (kind, sv, q, turn, extra = {}) => { const t = Object.assign({ id: newId(kind), kind, at: P(sv, q), turn }, extra); ST.street.things.push(t); made.things++; return t; };
   if (what.lamps) for (const side of [1, -1]) {
     const walk = f.walks[side > 0 ? 0 : 1], q = side * (f.W / 2 + (walk > 0.3 ? Math.min(0.4, walk / 2) : -0.3));
-    for (let sv = E.every / 2 + (side < 0 ? E.every / 2 : 0); sv < f.L - 1; sv += E.every) thing(E.lamp, sv, q, facing(-side * f.n[0], -side * f.n[1]), E.lamp === "lantern" ? { text: "" } : {});
+    for (let sv = E.every / 2 + (side < 0 ? E.every / 2 : 0); sv < f.L - 1; sv += E.every) thing(E.lamp, sv, q, facing(-side * N(sv)[0], -side * N(sv)[1]), E.lamp === "lantern" ? { text: "" } : {});
   }
   if (what.poles && E.poles) {
     const side = f.walks[0] >= f.walks[1] ? 1 : -1, walk = f.walks[side > 0 ? 0 : 1], q = side * (f.W / 2 + (walk > 0.3 ? Math.min(0.45, walk / 2) : -0.35));
     let prev = null;
-    for (let sv = 4; sv < f.L - 2; sv += 26) { const t = thing("pole", sv, q, r1(deg(Math.atan2(f.n[1], f.n[0]))), { trans: R() < 0.3 }); if (prev) prev.to = t.id; prev = t; }
+    for (let sv = 4; sv < f.L - 2; sv += 26) { const t = thing("pole", sv, q, r1(deg(Math.atan2(N(sv)[1], N(sv)[0]))), { trans: R() < 0.3 }); if (prev) prev.to = t.id; prev = t; }
   }
   if (what.clutter) for (const side of [1, -1]) {
     const walk = f.walks[side > 0 ? 0 : 1], back = f.W / 2 + walk;
     for (let sv = 2 + R() * 4; sv < f.L - 2; sv += 2.5 + R() * 6) {
       const kind = E.clutter[Math.floor(R() * E.clutter.length)];
       const t = { kind, turn: 0 }; const q = side * (walk > 0.5 ? back - (kind === "vending" ? 0.42 : 0.35) : f.W / 2 - 0.4);
-      const turn = kind === "bike" ? r1(deg(Math.atan2(f.t[1], f.t[0]))) : facing(-side * f.n[0], -side * f.n[1]);
+      const turn = kind === "bike" ? r1(deg(Math.atan2(T(sv)[1], T(sv)[0]))) : facing(-side * N(sv)[0], -side * N(sv)[1]);
       void t; thing(kind, sv, q, turn, kind === "crates" ? { n: 1 + Math.floor(R() * 3) } : kind === "car" ? { style: "van" } : {});
     }
   }
@@ -969,8 +1004,8 @@ function inspectStreet() {
 }
 function inspectRoad(r) {
   insp.append(head("Street", r));
-  const f = SG.roadFrame(r);
-  insp.append(field("length", el("span", { class: "hint" }, `${r1(f.L)} m (drag its ends on the map)`)));
+  const f = SG.roadPath(r);
+  insp.append(field("length", el("span", { class: "hint" }, `${r1(f.L)} m (drag its ends on the map; drag the dot in its middle to bend it)`)));
   insp.append(field("road width", num(r, "width", { step: 0.1, min: 2, unit: "m (kerb to kerb)" })));
   r.walks = Array.isArray(r.walks) ? r.walks : [2, 2]; r.edge = Array.isArray(r.edge) ? r.edge : [0, 0];
   insp.append(field("pavements", el("div", { class: "row" }, "left", num(r.walks, 0, { min: 0, step: 0.1 }), "right", num(r.walks, 1, { min: 0, step: 0.1 }), el("small", {}, "m"))));
@@ -978,6 +1013,16 @@ function inspectRoad(r) {
   insp.append(field("white lines", el("div", { class: "row" }, "left", num(r.edge, 0, { min: 0, step: 0.1 }), "right", num(r.edge, 1, { min: 0, step: 0.1 }), el("small", {}, "m in from the edge (0: none)"))));
   insp.append(field("middle line", pick(r, "centre", { none: "none", dashed: "dashed", solid: "solid", yellow: "orange (no passing)" })));
   insp.append(field("surface", el("div", { class: "row" }, pick(r, "surface", { asphalt: "asphalt", gravel: "gravel", pavement: "paving" }, { def: "asphalt" }), "walks", pick(r, "walk", { pavement: "paving", gravel: "gravel", asphalt: "asphalt" }, { def: "pavement" }))));
+  // its heights: each of its points', the street climbing smoothly between them (the ground, the buildings and the
+  // things beside it follow)
+  const pz = SG.roadPoints(r), ctl = roadCtl(r), hs = pz.map(q => r2(q[2]));
+  const setZ = (i, v) => edit(() => { const z = SG.roadPoints(r).map(q => r2(q[2])); z[i] = v; if (z.every(x => !x)) delete r.z; else r.z = z; });
+  const numIn = (v, on, step = 0.1) => el("input", { type: "number", step, value: v, on: { input: e => { if (e.target.value !== "") on(+e.target.value); } } });
+  insp.append(section(["Heights", el("span", { class: "hint" }, "metres up at its points: it climbs smoothly between them")],
+    ...ctl.map((c, i) => field(i === 0 ? "at its start" : i === ctl.length - 1 ? "at its end" : `at bend ${i}`, el("div", { class: "row" }, numIn(hs[i], v => setZ(i, v)), el("small", {}, "m")))),
+    field("a slope", el("div", { class: "row" }, "it rises", numIn(r2(hs[hs.length - 1] - hs[0]), v => edit(() => { const d = [0]; for (let i = 1; i < ctl.length; i++) d.push(d[i - 1] + Math.hypot(ctl[i][0] - ctl[i - 1][0], ctl[i][1] - ctl[i - 1][1])); const L = d[d.length - 1] || 1; r.z = d.map(x => r2(hs[0] + v * x / L)); if (r.z.every(x => !x)) delete r.z; }), 0.5),
+      el("small", {}, "m from start to end"), el("button", { on: { click: () => { pushUndo(); delete r.z; changed(); } } }, "Level it"))),
+    el("div", { class: "hint" }, `A street's end dropped on another street takes its height there. ${f.L > 0 ? `Steepest: ${r1(steepest(f))}%` : ""}`)));
   r.marks = r.marks || [];
   const marks = el("div", { class: "list" });
   r.marks.forEach((m, i) => marks.append(el("div", { class: "prop", style: "grid-template-columns:70px 1fr" }, el("label", {}, SG.MARK_KINDS[m.kind] || m.kind),
@@ -987,6 +1032,7 @@ function inspectRoad(r) {
   insp.append(section(["Marks on the road", el("span", { class: "hint" }, "at: metres from its first end")], marks, el("div", { class: "chips" }, ...Object.keys(SG.MARK_KINDS).map(add))));
   insp.append(section("Fill it", el("div", { class: "hint" }, "Use Fill a street on the left: buildings both sides, lamps, poles and wires, clutter.")));
 }
+function steepest(f) { let m = 0; for (let i = 0; i + 1 < f.P.length; i++) m = Math.max(m, Math.abs(f.P[i + 1][2] - f.P[i][2]) / ((f.S[i + 1] - f.S[i]) || 1)); return m * 100; }
 function inspectBuilding(b) {
   const sel = ST.sel, S = SP.STYLES[b.style] || {};
   insp.append(head(S.label || "Building", b));
@@ -1209,6 +1255,8 @@ new ResizeObserver(() => { drawMap(); renderAll(); renderFacades(); }).observe(d
   } catch (e) { status("the server didn't answer: python tools/director/serve.py (" + e.message + ")", "bad"); }
   ST.ready = true; window.__streetReady = true;
 })();
+// for the checks: the street's group, a build now, the build cache emptied
+window.__root = () => root; window.__rebuild = () => rebuild(); window.__clearCache = () => { BUILT.clear(); if (root) { for (const v of root.userData.chunks.values()) S3.disposeChunk(v.group); root.userData.chunks = new Map(); } };
 // for the checks: draw a shot at a size, straight away
 window.__shot = (id, w, h) => {
   const s = ST.street.shots.find(x => x.id === id); if (!s) return false;
