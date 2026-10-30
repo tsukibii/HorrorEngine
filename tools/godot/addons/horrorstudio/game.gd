@@ -240,6 +240,9 @@ func set_time(t: String) -> void:
 		sun = DirectionalLight3D.new()
 		sun.name = "Sun"
 		sun.shadow_enabled = true
+		# the sky's only (DECISIONS 2026-10-30, night): a sun that lights the level reached through walls into rooms'
+		# corners; the windows' fill and the user's own lights do the rooms
+		sun.sky_mode = DirectionalLight3D.SKY_MODE_SKY_ONLY
 		add_child(sun)
 	var S: Dictionary = L["sun"]
 	var el: float = deg_to_rad(float(S["elev"]))

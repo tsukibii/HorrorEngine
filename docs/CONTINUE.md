@@ -7,7 +7,8 @@ dashboard and the writers' room; 2026-10-28 the flashlight, cleaning, the peepho
 latch, examining, skin v2; then TestRoom001, the Unreal note, the skin after HumanShaders and expression loops; and
 on `game-research-001`: The Visitor's research, abstract and chart, the director's to-do; merged into `dev-002` and
 the to-do built there, with the Studio's eyes from the side, a small nose and the face's bake; 2026-10-28 and 29 on
-`godot-support`: the Godot export, its runtime, its look, the look plugin). Read this
+`godot-support`: the Godot export, its runtime, its look, the look plugin, merged into main on 2026-10-30; then
+`further-enhancements`). Read this
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
@@ -117,9 +118,9 @@ sun's shadow (gone with the sun off), and the colour flashes were the corridor's
 balanced look** (a GTX 1060 the target; the default `game.look`; its project settings applied by the plugin on enable
 and written by the export, GDEXPORT reading them back; `look_balanced.tscn` for a project of your own) and **light
 zones** (`HSLightZone` and the room_* presets: a room's box owning its lights, kept to it, reach fitted, off while
-unseen; the export a zone per room). **Open:** the sun's leak itself (Sky Only indoors, or a tighter directional
-shadow, or thicker overlapping walls and ceilings in the export: GODOT_LOOK's answer to the user's question 1, not
-built); the baking of static lights is the user's, on their machine. **Last:** the choice back on one line
+unseen; the export a zone per room). **The sun's leak** the user fixed by hand (the sun's Sky Mode *Sky Only*), and
+after the merge (PR #5, into main) it's the runtime's default too, on `further-enhancements` (DECISIONS 2026-10-30,
+night). **Open:** the baking of static lights is the user's, on their machine. **Last:** the choice back on one line
 (two answers, a dash between, A/D and Enter), and **the Unreal side removed** before the merge into main (DECISIONS
 2026-10-30, evening): the games are Godot's alone.
 

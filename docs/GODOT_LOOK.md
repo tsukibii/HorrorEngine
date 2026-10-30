@@ -144,7 +144,8 @@ effects with the plugin's nodes (§0, the effects as nodes), in a level of a ver
 carry them to the next version by copy and paste. The export marks every moving thing (a door's leaf, its handle
 and hinge half, a pickup, a thing to carry or roll) `gi_mode` dynamic, so a LightmapGI you add bakes around them and
 lights them by its probes. The runtime's `lighting` word (STORY_FORMAT §9.1): `on` gives the time of day's sky, sun
-and ambient unless the level carries its own WorldEnvironment or DirectionalLight3D (yours win, its Env wears your
+and ambient (the sun lights the sky alone, Sky Mode *Sky Only*: a sun lighting the level leaked through the
+walls into rooms' corners, DECISIONS 2026-10-30, night; the windows' fill lights the rooms) unless the level carries its own WorldEnvironment or DirectionalLight3D (yours win, its Env wears your
 environment); `off` is the test light (a flat grey ambient, a soft key without shadows, the look plain, no fog, no
 iris), for playing a scene before its lighting is made. LightmapGI's `bake()` is the editor's alone in 4.7 (no
 script can call it; a plugin pressing its button works, LESSONS 2026-10-30, but takes twenty minutes a state on the

@@ -2,6 +2,15 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-30, night (the user, after PR #5 was merged)
+
+- **The sun lights the sky only**: "We fixed the sun leak, the answer was to turn the light to just sky" (the
+  DirectionalLight3D's Sky Mode set to *Sky Only*), then "make a new branch called further-enhancements, apply this
+  default". The runtime's own sun (game.gd, the time of day) is made Sky Only: it draws the sun in the sky and lights
+  nothing, so it can't leak into the rooms' corners; the windows' fill and the user's lights do the rooms. A sun the
+  user puts in a level is theirs and keeps whatever they set. Work after the merge goes on branch
+  `further-enhancements`.
+
 ## 2026-10-30, evening (the user, after finding the sun's leak and the flicker's flashes)
 
 - **Unreal removed**: "I'm okay to merge this into main... before you do, remove all the remaining bloatware from
