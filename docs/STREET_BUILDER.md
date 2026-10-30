@@ -215,8 +215,11 @@ for a car park or a walkway. So the street builds the outside, round the level:
 - **In Godot**: the street's .glb has the shell with its door holes open (its colliders are its walls, not a block), the
   walkway and the stair to walk on, and in `insides` a node for each copy, `inside_<building>_<floor>_<copy>`, at the
   level's origin and turned as it is, its set in its metadata: put the set's level scene there (as a child of it) and the
-  level's door stands in the shell's doorway: open it and walk in. GDSTREET casts a ray through a motel door and a
-  bungalow door (nothing in the way) and onto the walkway (3.05 m up).
+  level's door stands in the shell's doorway: open it and walk in. The set itself goes into Godot through the game's
+  own export, which takes a set: `python tools/godot_export.py --game set:motel_room --zip`, its level
+  `game/levels/motel_room.tscn`. GDSTREET does exactly this: the street's .glb dropped into the set's exported project,
+  the level put at the first room's marker, a ray from outside through the street's doorway meets the set's own door
+  leaf (`motel_door`, the bungalow's `front_door`) a metre in; and a ray onto the walkway lands 3.05 m up.
 - One floor a set for now (the user); a two-storey interior would need its stairs inside the set.
 
 The example street **hill_motel**: a winding road climbing 8.5 m, the motel and its car park (bays, the folding gate,
@@ -236,7 +239,9 @@ rest of the way (Fill), and three shots.
   its shot with its white line where the photo has it).
 - `python tools/godot/street_check.py [--street N]` (GDSTREET, the desk's server running, Godot 4.7): the street's .glb
   imported in a Godot project of its own: its colliders, occluders, lamps, colours and insides' markers, rays onto
-  the road, the pavement and three roofs, through an inside's door (open) and onto a motel's walkway.
+  the road, the pavement and three roofs, through an inside's door (open) and onto a motel's walkway; with a set inside,
+  the set exported too and its level put at the marker: through the doorway a ray meets the set's own door (`--no-sets`
+  skips that part).
 - `python tools/street.py shot <name> [shot]` (or `node tools/director/streetshot.mjs`): the street drawn through a
   shot into `Saved/Streets/<name>/`, and beside its photo: the photo, the drawing, the two blended.
 
@@ -264,8 +269,8 @@ lane's). 89 buildings and 224 things in 88,000 triangles.
 
 ## 8. Not yet
 
-- An inside's level placed in Godot by the export itself (today: a marker where it goes; the game's own export of the
-  set's level is dropped there by hand).
+- An inside's level placed in Godot by the export itself (today: a marker where it goes; the set's level, exported as
+  above, is dropped there by hand).
 
 - Streets into Godot: the .glb is exported by hand for now; a game's level taking a street (and the scene builder's
   enterable buildings put into it through a building's door) is the next step to plan with the user.

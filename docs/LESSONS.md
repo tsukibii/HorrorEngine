@@ -1183,3 +1183,16 @@ guessed margin; and a check that only ever ran on a slow machine hasn't been run
   file of that name (404, the photo never showed). Split the query off first.
 - **`hidden` loses to a `display` rule:** `#facadeBox{display:flex}` showed the facade panel under the map when it was
   hidden; `[hidden]{display:none!important}` at the top of the page's style.
+
+## The street's Godot export and its insides (2026-10-30, later night)
+
+- **Godot's glTF importer leaves vertex colours off the albedo:** the merged chunks carry each building's colour on
+  their vertices (the page draws them so, one material a slot), and every wall came into Godot white (the probe:
+  "vertex-colour albedo 0"). The export now gives each colour a material of its own on the same mesh. Measure the
+  import (GDSTREET), never assume an engine reads a format as three.js does.
+- **A strip that only touches another road's edge isn't crossed by it:** the curved streets' crossing test looked at a
+  walk's very edges, and a lane ending on the cross street's pavement edge cut that pavement away across the lane's
+  mouth (GDSTREET's ray onto the walk fell through to the ground). The points it tests sit just inside the strip.
+- **Object.assign's order decides who wins:** a check built two buildings as `Object.assign({id, at}, base)`, so the
+  base's own id and place overwrote both, and "the cache kept a changed building" was the test's fault. Defaults
+  first, the thing's own fields last.

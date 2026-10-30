@@ -40,7 +40,7 @@ print(r.stdout.strip().splitlines()[-1])
 probe = r'''
 import fs from "fs"; import { pathToFileURL } from "url";
 const SG = await import(pathToFileURL(process.argv[1] + "/tools/director/street-gen.js").href);
-const S = JSON.parse(fs.readFileSync(process.argv[2], "utf8")), T = SG.terrain(S), out = { rays: [], lamps: 0, insides: [] };
+const S = JSON.parse(fs.readFileSync(process.argv[2], "utf8")), T = SG.terrain(S), out = { rays: [], lamps: 0, insides: [], doors: [] };
 const g3 = (x, y, z) => [x, z, -y];
 for (const r of (S.roads || []).slice(0, 3)) { const f = SG.roadPath(r), s = f.L / 2, c = f.at(s, 0), w = f.at(s, -(f.W / 2 + f.walks[1] / 2));
   out.rays.push({ name: r.id + ":road", at: g3(c[0], c[1], c[2] + 30), want: c[2] + 0.004 });
@@ -55,6 +55,8 @@ for (const b of (S.buildings || []).filter(b => b.inside && (b.inside.rooms || [
   const p0 = L2(...lv), p1 = L2(lv[0] + e.n[0], lv[1] + e.n[1]), z = foot.z + (+b.inside.raise || 0.15) + 1.0;
   const w0 = SG.place([p0[0], p0[1], z], { at: b.at, turn: b.turn }), w1 = SG.place([p1[0], p1[1], z], { at: b.at, turn: b.turn }), d = [w0[0] - w1[0], w0[1] - w1[1]];
   out.rays.push({ name: b.id + ":door", at: g3(w1[0], w1[1], w1[2]), dir: g3(d[0], d[1], 0), farther: 1.4 });
+  const door = (h.door || {}).id, M = SG.insideMarkers(b, foot)[0];
+  if (door && M) out.doors.push({ building: b.id, set: b.inside.set, level: b.inside.level || b.inside.set, marker: M.name, door, at: g3(w1[0], w1[1], w1[2]), dir: g3(d[0], d[1], 0) });
   const walk = (b.parts || []).find(p => p.kind === "balcony" && p.walkway);
   if (walk) { const fl = SG.insideFloors(b), zf = fl[1] ? fl[1].z0 : fl[0].z0, q = SG.place([0, -b.d / 2 - (+walk.out || 1.3) / 2, 0], { at: b.at, turn: b.turn }); out.rays.push({ name: b.id + ":walkway", at: g3(q[0], q[1], foot.z + zf + 20), want: foot.z + zf, tol: 0.05 }); }
 }
@@ -103,6 +105,30 @@ for ray in expect["rays"]:
         errs.append(f"a ray onto {ray['name']} landed at {got}, the street says {ray['want']:.3f}")
     else:
         print(f"  a ray onto {ray['name']}: {got:.3f} (the street: {ray['want']:.3f})")
+# the door test (with a set inside): the set exported as its own Godot project (the game's export takes a set), the
+# street's .glb dropped into it, the set's level put at the street's marker, a ray from outside through the doorway
+if "--no-sets" not in args:
+    for dt in {d["set"]: d for d in expect["doors"]}.values():
+        sp = ROOT / "Saved" / "Godot" / "_check" / ("set:" + dt["set"])
+        r = run([sys.executable, str(ROOT / "tools/godot_export.py"), "--check", "--game", "set:" + dt["set"]], cwd=ROOT, timeout=900)
+        if "GDEXPORT ok" not in r.stdout:
+            errs.append(f"the set {dt['set']} didn't export for the door test: " + (r.stdout + r.stderr)[-300:]); continue
+        shutil.copy(proj / "street.glb", sp / "street_check.glb")
+        (sp / "street_door.json").write_text(json.dumps(dict(dt, level=f"res://game/levels/{dt['level']}.tscn")))
+        shutil.copy(ROOT / "tools/godot/street_door_probe.gd", sp / "street_door_probe.gd")
+        run([G, "--headless", "--path", str(sp), "--import"], timeout=600)
+        r = run([G, "--headless", "--path", str(sp), "-s", "street_door_probe.gd"], timeout=300)
+        ln = next((x for x in r.stdout.splitlines() if x.startswith("GDDOOR")), "")
+        for f in ("street_check.glb", "street_check.glb.import", "street_door.json", "street_door_probe.gd"):
+            (sp / f).unlink(missing_ok=True)
+        parts = ln.split()
+        if len(parts) < 5 or parts[1] != "hit":
+            errs.append(f"the door test for {dt['building']} said: {ln or (r.stdout + r.stderr)[-300:]}"); continue
+        dist, who = float(parts[2]), parts[3]
+        if who != dt["door"] or not 0.8 <= dist <= 1.3:
+            errs.append(f"through {dt['building']}'s doorway the ray met {who} at {dist:.2f} m, not the set's door {dt['door']} (about 1 m in)")
+        else:
+            print(f"  the set {dt['set']} at {dt['marker']}: through the street's doorway a ray meets its door {who} {dist:.2f} m in")
 for e in errs:
     print("ERROR: " + e)
 print("GDSTREET ok" if not errs else f"GDSTREET FAILED ({len(errs)})")
