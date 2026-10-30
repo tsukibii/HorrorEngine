@@ -449,11 +449,59 @@ func _tag(tags: Array, pre: String):
 	return null
 
 
-## a small clear disc riding a door's leaf (a peephole's lens, a latch's thumb turn): a thing of its own for the reticle
+## a small clear disc riding a door's leaf (a peephole's lens, a latch's thumb turn): a thing of its own for the reticle,
+## drawn as the desk draws it (peephole.js, latch.js): a brass ring round dark glass; a brass rose with its bar, upright
+## open and across locked. The node's +y points out of the leaf's face (follow_leaf turns it by the side).
 func _attach_disc(door: Dictionary, local: Vector3, side: int, id: String, use: String) -> Dictionary:
 	var n := Node3D.new()
 	n.name = id.replace(":", "_")
 	game.level.add_child(n)
+	var brass := StandardMaterial3D.new()
+	brass.albedo_color = Color(0.54, 0.51, 0.45)
+	brass.metallic = 0.85
+	brass.roughness = 0.32
+	if use == "peephole":
+		var ring := MeshInstance3D.new()
+		var rm := CylinderMesh.new()
+		rm.top_radius = LENS["r"]
+		rm.bottom_radius = LENS["r"] * 1.25
+		rm.height = 0.012
+		rm.radial_segments = 20
+		ring.mesh = rm
+		ring.material_override = brass
+		n.add_child(ring)
+		var glass := MeshInstance3D.new()
+		var gm := CylinderMesh.new()
+		gm.top_radius = LENS["r"] * 0.55
+		gm.bottom_radius = LENS["r"] * 0.55
+		gm.height = 0.001
+		gm.radial_segments = 16
+		glass.mesh = gm
+		var dark := StandardMaterial3D.new()
+		dark.albedo_color = Color(0.04, 0.05, 0.06)
+		dark.metallic = 0.2
+		dark.roughness = 0.05
+		glass.material_override = dark
+		glass.position = Vector3(0, 0.0065, 0)
+		n.add_child(glass)
+	elif use == "latch":
+		var rose := MeshInstance3D.new()
+		var rm := CylinderMesh.new()
+		rm.top_radius = 0.024
+		rm.bottom_radius = 0.027
+		rm.height = 0.008
+		rm.radial_segments = 24
+		rose.mesh = rm
+		rose.material_override = brass
+		n.add_child(rose)
+		var bar := MeshInstance3D.new()
+		bar.name = "bar"
+		var bm := BoxMesh.new()
+		bm.size = Vector3(0.012, 0.016, 0.042)
+		bar.mesh = bm
+		bar.material_override = brass
+		bar.position = Vector3(0, 0.011, 0)
+		n.add_child(bar)
 	var t := {"id": id, "node": n, "piece": {"id": id, "kind": "mesh", "d": {"name": use}, "tags": [], "size": [0.12, 0.12, 0.004], "shape": "box"}, "kind": "mesh",
 		"tags": [], "size": [0.12, 0.12, 0.004], "shape": "box", "use": use, "hidden": false, "hollow": false, "door": door["id"], "local": local, "side": side, "disc": true}
 	by_id[id] = t
@@ -859,8 +907,15 @@ func on_latch_side(id) -> bool:
 	return false
 
 
+## the thumb turn's bar on each of the door's latches: upright open, across locked
 func turn_latch(id) -> void:
-	pass
+	var d = doors.get(id)
+	for x in latches:
+		if x["door"] != id:
+			continue
+		var bar = x["node"].get_node_or_null("bar")
+		if bar != null:
+			bar.rotation = Vector3(0, PI / 2.0 if (d != null and d.get("latched", false)) else 0.0, 0)
 
 
 func latch(id, on: bool) -> void:

@@ -39,7 +39,12 @@ neutral there for now. Then **"why does it look so plastic"**: HSSkin wore the e
 its normal map (the pores and wrinkles), its roughness map and its thinness; now all three and the `studioSkin`
 record go on (GODOT_LOOK §5; GDPEOPLE measures the relief). Other realism enhancers for imported models still
 open: a cloth sheen on the tailor's garments (their maps come across as albedo only), hashed alpha on hair
-under TAA.
+under TAA. Two more from the user's play: **the peephole wasn't drawn in Godot** (a bare node for the reticle;
+now the desk's brass ring and dark glass, and the latch's thumb turn with it: GODOT_EXPORT §8), and **a door
+they can't open on the desk but can in Godot**: not reproduced (the headless tests click the test room's doors
+open); the likely causes given to them (the pointer lock not taken, a kit door's handle being a dumb mesh on
+both runtimes, a story lock); awaiting what the reticle says there. If it's the handle: a kit door's
+`attach:<door>` parts should count as the door for the reticle in both runtimes.
 
 **Open: the user's stand-in bug** (2026-10-30, their words: "in director I chose an actual designed character to
 test but in game I only see this base mesh; after switching to the designed character it now has weird splotches

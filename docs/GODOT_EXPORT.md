@@ -149,6 +149,11 @@ loads, every verb in the games has a part).
    every combination of a scene's answers (silence too, at most 16 a scene) as its own recording (`recordings`, keyed
    `c3=good|c7=`; the export a file each, `scenes/<sid>__<key>.json`), and the scene player switches to the branch's
    recording at the answer, its timeline mapped onto it (measured: the night scene's painting answer, no frame held).
+   **The peephole's lens and the latch's thumb turn drawn** (2026-10-30, the user: "in director tool I see a peephole
+   but in godot I dont"): `play.gd`'s `_attach_disc` made each one a bare Node3D for the reticle, nothing to see.
+   Now it carries the desk's geometry (peephole.js, latch.js): a brass ring round dark glass on both faces of the
+   leaf; a brass rose with its bar on the room's side, upright open and turned across when locked (`turn_latch`
+   turns it). The reticle still finds the hand-wide disc, not the centimetre of ring.
    **A Character Studio character in a recorded scene, and the stand-in's face** (2026-10-30): a scene's body was
    the bake's `Body_<cid>.glb` whatever the cast member wears: bake.js exports the figure's first skinned mesh with a
    flat material, so a Character Studio character played her scenes as a grey copy of her skin (the user: "the
