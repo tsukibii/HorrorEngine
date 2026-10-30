@@ -11,6 +11,27 @@ the to-do built there, with the Studio's eyes from the side, a small nose and th
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
+## 0. The prop generator (2026-10-30, night, on `prop-gen-tool`)
+
+A side branch, not merged: **`python tools/propgen.py`** makes small props from recipes by Python in Blender
+(docs/PROPGEN.md). 38 recipes in `Content/Studio/Props/presets.json`:
+
+- **The sampler's twenty kinds of litter:** cans pristine, dented and crushed; PET bottles; coffee and iced cups;
+  newspaper, crumpled paper, napkin, fries bag, receipt, note; burger and pizza boxes; a bin bag; cigarette butts;
+  bottle caps.
+- **TestRoom001's kinds of thing:** cutlery with metal finishes, keys, kitchenware.
+- **A worn kit chair:** the `import` family with a PBR set.
+
+Checks: PROPGEN ok (12 families measured) and GDPROPS ok (Godot 4.7 reads every material back); a scratch copy of
+Sample placing `asset props/<name>` passed STORY and GDEXPORT. **For the user:**
+
+1. On your machine (Blender on the PATH): `python tools/propgen.py all`, then `python tools/propgen.py sheet`, and look
+   at `Saved/Props/sheet.png`.
+2. `python tools/propgen.py library`, to get them into the library for stories.
+
+Next if wanted (PROPGEN.md §9): food tins, a flashlight, batteries, a bucket, a crate, a die, a book; a recipe page
+with a PBR picker.
+
 ## 0a. The cloud session after (2026-10-30, small hours): §0's four pieces built, and a stand-in bug from the user
 
 All four of §0 are in, each measured where the cloud could (GDTESTROOM, GDEXPORT, GDPLAY, DESK, LOOKPLUGIN):

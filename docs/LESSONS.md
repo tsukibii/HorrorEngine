@@ -1172,3 +1172,26 @@ guessed margin; and a check that only ever ran on a slow machine hasn't been run
   `HSRain.new()` needs `rain.gd` to be `@tool` too.
 - **`surface_get_name` is ArrayMesh's alone**: a helper that matches surfaces by name must skip it for a
   primitive mesh (a SphereMesh stood in for a body and the skin's `wear` stopped there).
+
+## The prop generator (2026-10-30, night)
+
+- **An inextensible sheet squeezed only from outside stays flat in the middle:** the first paper ball came out a disc
+  with a crumpled rim. A few random folds first (the sheet already a tangle in space), then a pull on every particle
+  toward the middle as the sphere shrinks, and it crumples all through, like a ball of newsprint.
+- **Paper laid down must not set new creases:** with the crumple's plasticity on and a cloth's soft bend, a note and a
+  receipt wrinkled like fabric as they landed. Lying down springs back to the creases it has (a stiffer bend, no
+  plasticity); only the fist sets creases.
+- **A label's middle faces the front, the front is -y:** the first can showed its barcode. A lathe's UV seam goes at
+  the back (+y), so the print's middle lands at -y, which the glTF export turns into the +Z front the kit uses.
+- **Cache a font's outlines, never its Blender datablock:** a reset between recipes (`read_factory_settings`) freed the
+  font and the next label failed with "StructRNA of type VectorFont has been removed". Check a cached datablock is
+  still there before using it.
+- **Overlapping V cuts are a union, not a list:** a key's cuts deeper than their pitch, written as points, folded the
+  edge back on itself in loops and the cap tessellated to holes. Sample the edge as the deepest cut at each point and
+  keep the corners.
+- **Blender's Python module can crash on its way out:** `bpy` as a module exited 245 after every job had printed ok.
+  The entry point leaves with `os._exit` once its output is flushed.
+- **A Godot camera's look_at needs the tree:** in a SceneTree script's `_init`, a camera aimed before the first frame
+  pictured only the floor. Await a frame, then `look_at_from_position`.
+- **Look at the preview before the code:** the pizza box's lid "vanished" because, open at 38 degrees, it faced the
+  camera edge-on; its geometry was right all along.

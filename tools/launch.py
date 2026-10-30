@@ -192,6 +192,15 @@ TOOLS = [
     ("Look", "An expression from a video of a face (the desk's Expressions tab does this with Import)", "tools/face_capture.py solve {ask:Video} --out {ask:Folder}", {}),
     ("Look", "Salon reference from a turntable video (frames, key, poses, the face fit)", "tools/gshair.py run {ask:Video} --orbit --to reference --ref {ask:Reference name}", {}),
 
+    ("Props", "Prop generator: the recipes (Content/Studio/Props/presets.json)", "tools/propgen.py list", {}),
+    ("Props", "Prop generator: make one (or more) into Saved/Props (glb, fbx, obj, blend, maps, a preview; Blender)", "tools/propgen.py make {ask:Recipe name(s)}", {}),
+    ("Props", "Prop generator: make every recipe (or a family's)", "tools/propgen.py all {opt:Family (Enter: every one)}", {}),
+    ("Props", "Prop generator: a contact sheet of the made props (Saved/Props/sheet.png)", "tools/propgen.py sheet", {}),
+    ("Props", "Prop generator: made props into the library as props/<name> (a story places them with asset props/<name>)", "tools/propgen.py library", {}),
+    ("Props", "Prop generator: the PBR shelf's sets (a recipe's pbr)", "tools/propgen.py pbr", {}),
+    ("Props", "Prop generator: the made props in Godot 4.7 (GDPROPS: materials read back, pictured)", "tools/propgen.py godot", {}),
+    ("Checks", "Prop generator check (PROPGEN: a recipe of every family made small and measured; Blender)", "tools/propgen.py check", {}),
+
     ("Library", "What the story needs from the CC0 library", "tools/cc0.py needs --game {game}", {}),
     ("Library", "Fetch what the story needs", "tools/cc0.py fetch --game {game}", {}),
     ("Library", "Search props", "tools/cc0.py props {ask:Word}", {}),
