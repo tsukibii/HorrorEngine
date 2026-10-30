@@ -19,6 +19,15 @@ The user's answers, newest first. They override the plan, the research and the d
 - **"The characters/NPCs seem a bit overlit inside the game (their skin glows too bright)."** GDPEOPLE now measures
   the lit face against the export's own plain material under the same lights and holds the skin shader within
   0.85 to 1.15 of it.
+- **"Work on post processing so the game feels more professional, specifically more color grading and making sure
+  characters/npcs look more real and less like bright plastic."** A film-style grade over every game's picture
+  (HSPost, GODOT_LOOK §1d: `cinema` by default, `game.grade` to pick another or none), the skin's gloss softened
+  (§5).
+- **"I don't see dialogue in Godot for cutscenes."** Found by a new GDTESTROOM check (the line's label visible with
+  words in it through the lobby scene): a scene holds the player (`play.hold`), and hold hid the whole HUD, the
+  footer with the lines in it. Now only the play HUD steps back (the objective, the prompt, the inventory, the log)
+  and the footer stays: the lines, who says them, a reply's choices. The menu's `paused` is once each way too, and
+  its Subtitles on/off row is gone: the lines are the dialogue (no voices), never a thing to switch off.
 
 ## 2026-10-29, night, after the local run (the Godot thread)
 

@@ -979,6 +979,12 @@ nearly sharp; the strength they picked from seven), `worn` or `nightmare`; left 
 under the HUD (its black turning blue at night, the menu's Film grain capping the noise); Unreal's UltraVHS component
 takes the same preset. The desk doesn't show it yet (VHS.md §9).
 
+**The grade** (docs/GODOT_LOOK.md §1d): `game.grade` names the film-style colour grade over the finished picture
+(under the HUD, over the tape): `cinema` (the default: a gentle teal-and-orange, a soft vignette, fine grain),
+`teal-orange`, `cold`, `sodium`, `bleach`, `noir`, `warm`, or `none`; or an object `{"preset": "cold", "vignette":
+0.5, "grain": 0.3, "amount": 0.8}` with any of `amount`, `lift`, `gamma`, `gain` (three numbers each), `warmth`,
+`saturation`, `contrast`, `fade`, `vignette`, `vignette_soft`, `grain`, `aberration` over the preset.
+
 **The look** (docs/GODOT_LOOK.md): `game.look` names the look plugin's preset the Godot export plays under, `realism`
 (the default: baked bounce with the effects overplayed: screen-space reflections, ambient occlusion and indirect
 light, a little glow, a thin haze, AgX, temporal anti-aliasing) or `plain` (all of it off). `game.weather`: `rain`

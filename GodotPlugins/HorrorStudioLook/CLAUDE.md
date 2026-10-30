@@ -10,6 +10,7 @@ the VHS layer in `main.tscn`, `puff.gdshader` from lifefx.gd). A change here rea
 | File | What |
 |---|---|
 | `look.gd` | the presets as one dictionary each (`PRESETS`): the viewport's anti-aliasing and the environment's effects; `apply`, `set_aa`, `shadows` (the filter and atlas), `iris` (auto exposure, a stop under at night) |
+| `post.gd`, `post.gdshader` | the grade: `HSPost` a CanvasLayer (6) with a full-screen shader reading the screen (three-way lift/gamma/gain, warmth, saturation, contrast, fade, vignette, grain, aberration); `PRESETS` the looks, `apply` the story's `game.grade` |
 | `vhs.gd`, `vhs.gdshader`, `vhs_hold.gdshader` | UltraVHS: the presets as dictionaries of the shader's uniforms (`CAMCORDER` the base), the layer's node; the history viewport (the last frame copied by `vhs_hold`) for the ghosting |
 | `pattern.gd`, `pattern.gdshader` | a light's pattern: `HSPattern` a SubViewport under a SpotLight3D drawing caustics, leaves, blinds or clouds (Light Kit's four light functions in GLSL, `metres` the viewport's width on the aimed surface) and set as its `light_projector` |
 | `shaft.gd`, `shaft.gdshader` | a light shaft: `HSShaft` a FogVolume box along a window's light, its fog shader the beam's density (ends, sides, drifting dust clumps); the renderer's volumetric fog carries the light |

@@ -19,7 +19,7 @@ const SETTINGS := [
 			{"id": "fps", "label": "Frame rate limit", "values": ["30", "60", "120", "144", "Unlimited"], "def": 1, "ue": "t.MaxFPS", "godot": "Engine.max_fps"},
 			{"id": "brightness", "label": "Brightness", "steps": 10, "def": 5, "ue": "r.TonemapperGamma", "godot": "Environment.adjustment_brightness"},
 			{"id": "motion_blur", "label": "Motion blur", "values": ONOFF, "def": 0, "ue": "r.MotionBlurQuality", "godot": "(a post effect, later)"},
-			{"id": "grain", "label": "Film grain", "values": ONOFF, "def": 1, "ue": "PostProcess FilmGrainIntensity", "godot": "(the camcorder look, later)"}]}]},
+			{"id": "grain", "label": "Film grain", "values": ONOFF, "def": 1, "ue": "PostProcess FilmGrainIntensity", "godot": "the tape's noise and the grade's grain"}]}]},
 	{"id": "graphics", "title": "Graphics", "groups": [
 		{"title": "Graphics", "rows": [
 			{"id": "quality", "label": "Quality", "values": ["Low", "Medium", "High", "Epic", "Custom"], "def": 2, "ue": "scalability <0-3>"},
@@ -40,8 +40,7 @@ const SETTINGS := [
 			{"id": "voices", "label": "Voices", "steps": 10, "def": 9, "ue": "SoundClass Voice", "godot": "AudioServer bus Voice"},
 			{"id": "background", "label": "In the background", "values": ["Mute", "Keep playing"], "def": 0, "ue": "au.UnfocusedVolumeMultiplier", "godot": "audio/general/mute_on_focus_loss"}]},
 		{"title": "Subtitles", "rows": [
-			{"id": "subs", "label": "Subtitles", "values": ONOFF, "def": 1, "ue": "UI", "godot": "the HUD's line"},
-			{"id": "sub_size", "label": "Size", "values": ["Small", "Medium", "Large"], "def": 1, "ue": "UI", "godot": "the HUD's line"}]}]},
+			{"id": "sub_size", "label": "Size", "values": ["Small", "Medium", "Large"], "def": 1, "ue": "UI", "godot": "the HUD's line"}]}]},   # no on/off: the lines are the dialogue (DECISIONS 2026-10-29: text, no voices); a saved "subs": 0 hid every cutscene's words (the user, 2026-10-30)
 ]
 ## the controls, as the menu shows them on its left: the keys (or the mouse), what they do; `only`: while the player has it
 const CONTROLS := [
@@ -430,7 +429,10 @@ static func apply(st: Dictionary, hud_) -> void:
 		var vhsn = hud_.get_parent().get_node_or_null("VHS") if hud_.get_parent() != null else null
 		if vhsn != null:
 			vhsn.set_grain_cap(1.0 if int(st.get("grain", 1)) == 1 else 0.0)   # Film grain: the player's cap on the tape's noise
-		hud_.subs_on = int(st.get("subs", 1)) == 1
+		var postn = hud_.get_parent().get_node_or_null("Post") if hud_.get_parent() != null else null
+		if postn != null:
+			postn.set_grain_cap(1.0 if int(st.get("grain", 1)) == 1 else 0.0)   # and on the grade's
+		hud_.subs_on = true                                    # (an old settings file's "subs": 0 is ignored)
 		hud_.sub_scale = [0.85, 1.0, 1.2][clampi(int(st.get("sub_size", 1)), 0, 2)]
 		hud_.brightness = 0.6 + float(st.get("brightness", 5)) * 0.08
 		hud_.apply_settings()

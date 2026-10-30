@@ -234,6 +234,9 @@ def check_library(story, r):
             r.warn(f"{who}: previs_body {f} isn't in Content/Studio/Bodies on this machine (the director falls back)")
 
 
+GRADES = ("none", "cinema", "teal-orange", "cold", "sodium", "bleach", "noir", "warm")
+GRADE_WORDS = {"amount": (0, 1), "lift": "rgb", "gamma": "rgb", "gain": "rgb", "warmth": (-1, 1), "saturation": (0, 2), "contrast": (0.5, 2), "fade": (0, 0.3),
+               "vignette": (0, 1), "vignette_soft": (0.1, 1), "grain": (0, 1), "aberration": (0, 4)}
 HAIR_WORDS = {"retro": bool, "flat": bool, "dither": bool, "steps": (2, 64), "gain": (0.2, 3.0), "shine": (0.0, 3.0), "soft": (0.0, 1.0), "cut": (0.0, 1.0)}
 
 
@@ -1627,6 +1630,22 @@ def check_flow(story, things, r):
     vhs = story["game"].get("vhs")                     # the camcorder look (docs/VHS.md): UltraVHS's preset, in Godot's export and Unreal
     if vhs is not None and vhs not in ("off", "camcorder", "camhybrid", "worn", "nightmare"):
         r.err(f"game.vhs {vhs!r}: off, camcorder, camhybrid, worn or nightmare")
+    grade = story["game"].get("grade")                 # the grade (HSPost's presets, GODOT_LOOK §1d): a name, or {preset, amount, vignette...}
+    if grade is not None:
+        gs = grade if isinstance(grade, dict) else {"preset": grade}
+        if not isinstance(gs.get("preset", "cinema"), str) or gs.get("preset", "cinema") not in GRADES:
+            r.err(f"game.grade: preset {gs.get('preset')!r}: {', '.join(GRADES)}")
+        for k, v in gs.items():
+            if k == "preset":
+                continue
+            spec = GRADE_WORDS.get(k)
+            if spec is None:
+                r.err(f"game.grade: {k!r} isn't a grade word ({', '.join(GRADE_WORDS)})")
+            elif spec == "rgb":
+                if not (isinstance(v, list) and len(v) == 3 and all(isinstance(x, (int, float)) and not isinstance(x, bool) for x in v)):
+                    r.err(f"game.grade: {k} is three numbers (red, green, blue)")
+            elif not isinstance(v, (int, float)) or isinstance(v, bool) or not spec[0] <= v <= spec[1]:
+                r.err(f"game.grade: {k} is a number {spec[0]} to {spec[1]}")
     look = story["game"].get("look")                   # the look (HorrorStudioLook's HSLook presets, docs/GODOT_LOOK.md)
     if look is not None and look not in ("realism", "plain"):
         r.err(f"game.look {look!r}: realism or plain")

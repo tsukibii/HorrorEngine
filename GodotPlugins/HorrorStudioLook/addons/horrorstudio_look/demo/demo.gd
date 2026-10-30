@@ -45,10 +45,12 @@ var hair_dull: Image = null
 var hair_lit: Image = null
 var hair_retro: Image = null
 var hair_key: OmniLight3D = null
+var post_n: HSPost = null              # the grade stage
+var grade_plain: Image = null
 var splash_peak := 0.0
 var splash_n := 0
 
-const STAGES := ["plain", "realism", "wet", "blood_rain", "mirror", "skin", "soften_off", "soften", "pattern", "shaft", "sweep", "iris", "leak", "hair"]
+const STAGES := ["plain", "realism", "wet", "blood_rain", "mirror", "skin", "soften_off", "soften", "pattern", "shaft", "sweep", "iris", "leak", "hair", "grade"]
 
 
 func _initialize() -> void:
@@ -255,6 +257,13 @@ func _process(_d: float) -> bool:
 		sweep_n.clock += 0.5 * sweep_n.secs
 	if STAGES[stage] == "sweep" and n < 90:
 		return false
+	if STAGES[stage] == "grade":
+		if n == 30:
+			grade_plain = root.get_texture().get_image()          # ungraded, then the cinema grade on
+			grade_plain.save_png(out_dir.path_join("grade_plain.png"))
+			post_n.apply("cinema")
+		if n < 60:
+			return false
 	if STAGES[stage] == "hair":
 		if n == 40:
 			hair_dull = root.get_texture().get_image()           # the highlights off: what the strands' own shade gives
@@ -378,6 +387,13 @@ func _process(_d: float) -> bool:
 			report["leak_wet"] = wet_
 			report["leak_dry"] = dry
 			report["leak_drops"] = leak_n.drops if leak_n != null else 0
+		"grade":
+			var img := shot("grade")
+			report["grade_corner_plain"] = measure(grade_plain, 0, 0, 160, 120) if grade_plain != null else {}
+			report["grade_corner"] = measure(img, 0, 0, 160, 120)
+			report["grade_middle_plain"] = measure(grade_plain, 560, 300, 720, 420) if grade_plain != null else {}
+			report["grade_middle"] = measure(img, 560, 300, 720, 420)
+			report["grade_tint"] = tint(img, grade_plain) if grade_plain != null else {}
 		"hair":
 			var img := shot("hair")
 			var b := hair_box
@@ -506,6 +522,14 @@ func setup(name: String) -> void:
 			world.add_child(glow_q)
 		"soften":
 			HSSoften.attach(cam).set_amounts(0.9, 7.0, 1.6, 0.25)
+		"grade":
+			cam.look_at_from_position(Vector3(0.0, 1.5, 2.6), Vector3(0.0, 1.2, -2.0))   # the room: the lamp bright, the corners dark
+			if hair_key != null:
+				hair_key.visible = false
+			post_n = HSPost.new()
+			post_n.name = "Post"
+			root.add_child(post_n)
+			post_n.apply("none")
 		"hair":
 			if leak_n != null:
 				leak_n.visible = false
@@ -620,6 +644,36 @@ func setup(name: String) -> void:
 				world.add_child(mi)
 				spheres.append(mi)
 				i += 1
+
+
+## the grade's tint: over the darkest fifth of the picture's pixels, blue over red, and over the brightest fifth, red over
+## blue, each graded against plain (a teal-and-orange grade raises both)
+func tint(img: Image, plain: Image) -> Dictionary:
+	var dark := [Vector3.ZERO, Vector3.ZERO]
+	var bright := [Vector3.ZERO, Vector3.ZERO]
+	var nd := 0
+	var nb := 0
+	for y in range(0, img.get_height(), 3):
+		for x in range(0, img.get_width(), 3):
+			var p := plain.get_pixel(x, y)
+			var c := img.get_pixel(x, y)
+			var l := p.get_luminance()
+			if l < 0.12:
+				dark[0] += Vector3(p.r, p.g, p.b)
+				dark[1] += Vector3(c.r, c.g, c.b)
+				nd += 1
+			elif l > 0.5:
+				bright[0] += Vector3(p.r, p.g, p.b)
+				bright[1] += Vector3(c.r, c.g, c.b)
+				nb += 1
+	var out := {"dark_n": nd, "bright_n": nb}
+	if nd > 0:
+		out["dark_b_over_r_plain"] = dark[0].z / max(1e-4, dark[0].x)
+		out["dark_b_over_r"] = dark[1].z / max(1e-4, dark[1].x)
+	if nb > 0:
+		out["bright_r_over_b_plain"] = bright[0].x / max(1e-4, bright[0].z)
+		out["bright_r_over_b"] = bright[1].x / max(1e-4, bright[1].z)
+	return out
 
 
 ## a cap of hair cards over a sphere: strips from the scalp out and down, u across the atlas, v root 0 to tip 1

@@ -538,13 +538,22 @@ func _initialize() -> void:
 			g.hud.choice_key("1")
 			var xs: Array = []
 			var n := 0
+			var line_seen := 0                                           # frames a line was up and its label drawn with the words in it (the user, 2026-10-30: no dialogue seen in a cutscene)
+			var line_hidden := 0
 			while n < 20000:
 				n += 1
 				if (g.play != null and g.play.active) or node() != "n_hello":
 					break
 				if rt.npcs.has("aoi") and rt.npcs["aoi"]["pos"] != null:   # her body track (the behaviour), under the bake's body
 					xs.append(rt.npcs["aoi"]["pos"].x)
+				if g.hud.line_text != "":
+					if g.hud.line_el.is_visible_in_tree() and g.hud.line_el.text != "" and g.hud.line_el.modulate.a > 0.5 and g.hud.line_el.self_modulate.a > 0.5:
+						line_seen += 1
+					else:
+						line_hidden += 1
 				await process_frame
+			if line_seen == 0 or line_hidden > line_seen:
+				return "the lines' label: drawn with words on %d frames, hidden or empty on %d while a line was up (visible %s, text %s)" % [line_seen, line_hidden, g.hud.line_el.is_visible_in_tree(), JSON.stringify(g.hud.line_el.text)]
 			var subs: Array = g.hud.lines_shown
 			var said := ["Good. Then let's begin.", "The corridor's yours. I'll be watching.", "One thing a room. Fine."]
 			var skipped := "Tell me if it gets to be too much."

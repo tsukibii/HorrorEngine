@@ -74,6 +74,11 @@ func _ready() -> void:
 	var vhsn = get_node_or_null("VHS")
 	if vhsn != null:                             # the camcorder look (game.vhs: camcorder, worn, nightmare; off when the game names none)
 		vhsn.preset(str(story.game.get("vhs", "off")))
+	var post := HSPost.new()                      # the grade (game.grade: cinema by default; HSPost, GODOT_LOOK §1d), over the tape and under the HUD
+	post.name = "Post"
+	add_child(post)
+	post.apply(story.game.get("grade", "cinema"))
+	post.set_grain_cap(1.0 if int(load("res://addons/horrorstudio/menu.gd").load_settings().get("grain", 1)) == 1 else 0.0)
 	scene_player = ScenePlayerC.new()
 	scene_player.name = "ScenePlayer"
 	scene_player.game = self

@@ -2246,7 +2246,7 @@ func pause() -> void:
 func hold() -> void:
 	active = false
 	keys = {}
-	hud.root.visible = false
+	hud.held(true)                              # the play HUD back, the footer (the scene's lines) kept
 	if torch_hot != null:
 		torch_hot.light_energy = 0
 		torch_spill.light_energy = 0
@@ -2256,6 +2256,7 @@ func go() -> void:
 	if stopped:
 		return
 	hud.root.visible = true
+	hud.held(false)
 	if active:
 		return
 	active = true

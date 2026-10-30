@@ -109,6 +109,10 @@ def main():
     checks.append(("hair on an imported model: the cards worn by their name, the highlights brighten the lit crown band over the dull one, the colour steps leave the crown under half the lit one's colours, and the dither grains it over the steps alone",
                    rep.get("hair_surfaces", 0) >= 1 and rep.get("hair_crown_lit", {}).get("mean", 0) > rep.get("hair_crown_dull", {}).get("mean", 9) * 1.05
                    and rep.get("hair_steps_colours", 9e9) < rep.get("hair_lit_colours", 0) * 0.5 and rep.get("hair_retro_grain", 0) > rep.get("hair_steps_grain", 9) * 1.3))
+    gt = rep.get("grade_tint", {})
+    checks.append(("the grade (cinema): the shadows cooler and the highlights warmer than ungraded, the corners darker by the vignette, the middle kept",
+                   gt.get("dark_b_over_r", 0) > gt.get("dark_b_over_r_plain", 9) * 1.03 and gt.get("bright_r_over_b", 0) > gt.get("bright_r_over_b_plain", 9) * 1.02
+                   and rep.get("grade_corner", {}).get("mean", 9) < rep.get("grade_corner_plain", {}).get("mean", 0) * 0.9 and abs(rep.get("grade_middle", {}).get("mean", 9) - rep.get("grade_middle_plain", {}).get("mean", 0)) < 0.08))
     ml = rep.get("mirror2_layers", {})
     checks.append(("a mirror seen in a mirror: the second mirror's glass in the first's picture holds a picture (a bright peak well over its mean, not a flat wall), each mirror on its own layer, never itself",
                    ml.get("second_seen_by_first") is True and ml.get("first_not_itself") is True and ml.get("first") != ml.get("second") and rep.get("mirror2_in_first", {}).get("max", 0) > 0.3 and rep.get("mirror2_in_first", {}).get("max", 0) > rep.get("mirror2_in_first", {}).get("mean", 9) * 2.0))

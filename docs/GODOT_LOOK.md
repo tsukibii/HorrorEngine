@@ -138,6 +138,24 @@ direction I look"; the band is half a stop either way of ISO 300: the demo's bri
 night so night doesn't turn grey (the scale halved; game.gd's set_time). On with any look but `plain`. The demo
 switches a bright light on and measures the jump, the settle and the night's step down.
 
+## 1d. The grade (`post.gdshader`, `HSPost`)
+
+The user (2026-10-30, asleep): "work on post processing so the game feels more professional, specifically more
+color grading". AgX and the tape are the picture's base; a film-style grade sits over the finished picture now,
+a CanvasLayer between the tape (5) and the HUD (10) with one full-screen shader reading the screen: a three-way
+corrector (`lift` the shadows, `gamma` the mids, `gain` the highlights, each a colour), `warmth`, `saturation`,
+`contrast`, a film `fade` (the blacks lifted toward grey-blue), a `vignette` with its softness, fine `grain`
+(finer in the lights, as film's; the menu's Film grain caps it with the tape's), a touch of chromatic
+`aberration` at the edges, `amount` mixing it with the plain picture. Presets after the looks horror films are
+graded to (`HSPost.PRESETS`): **cinema** (the default for every game: a gentle teal in the shadows and orange in
+the lights, saturation 0.94, contrast 1.06, a soft vignette, grain 0.15), **teal-orange** (more of it), **cold**
+(blue-grey, desaturated), **sodium** (the street's yellow), **bleach** (bypass: desaturated, hard), **noir** (near
+mono, crushed), **warm** (amber), **none**. The story's `game.grade` (STORY_FORMAT §9.1): a name, or an object
+with `preset` and any number over it; the check knows the words and ranges. The demo's `grade` stage pictures
+the room ungraded and under cinema and measures: over the darkest fifth of the pixels blue over red rises (0.44
+to 0.75), over the brightest fifth red over blue rises (1.53 to 1.58), the corner darkens by the vignette (0.038
+to 0.029), the middle stays within 0.08.
+
 ## 2. Wet surfaces (`wet.gdshader`, `HSWet`)
 
 Light Kit's Puddle (UnrealPlugins/LightKit): "one irregular puddle, deep and mirror-smooth in the middle, damp at
@@ -280,6 +298,11 @@ indoors), unless the story's word has set her (`by_word`): TestRoom001's Aoi at 
 through the peephole. A sheet of the five states on the Studio's test export:
 `Saved/Story/_look/desk_skin.png` (made by hand; TESTROOM checks the kitchen's beat lands on Aoi's body).
 
+**Less plastic still** (2026-10-30, night, the user: "characters/npcs look more real and less like bright
+plastic"): the flat defaults softened (roughness 0.62, specular 0.35, SSS 0.45; 0.55, 0.45, 0.35 before) and the
+export's roughness map lifted by 1.4 (1.25). GDPEOPLE holds the lit face within 0.85 to 1.15 of the export's own
+plain material under the same lights.
+
 **The export's maps and numbers** (2026-10-30, the user: "why does it look so plastic and not detailed"): the
 Character Studio's export carries three maps for the skin and Godot wore one. `HSSkin.wear` took the imported
 material's albedo alone and gave the shader a flat normal and a white roughness map: every pore gone, one gloss
@@ -371,6 +394,7 @@ salon's inner colour and clump shades (the atlas's G and B channels are baked in
   stations 1 and 7.
 - `game.hair` and a cast member's `hair` (§5c): the hair look on imported models' hair; the check knows the words
   and their ranges (`check_hair`).
+- `game.grade` (§1d): the grade's preset or numbers; `cinema` when unset, `none` for the plain picture.
 - **LOOKPLUGIN** (`tools/godot/plugin_check.py`): the demo (`demo/demo.gd`) in a project of its own under xvfb:
   a room with a lamp (its bulb emissive, so it has something to reflect), a cool fill, a table and a glossy cabinet;
   pictured plain, with the realism preset, with the floor wet, with blood (on the floor, up the wall) and rain, and

@@ -32,10 +32,10 @@ static func material(albedo: Texture2D = null, settings: Dictionary = {}, tone: 
 	m.set_shader_parameter("ambient_occlusion_texture", white())
 	m.set_shader_parameter("texture_metallic", white())
 	m.set_shader_parameter("metallic_texture_channel", Vector4(1, 0, 0, 0))
-	m.set_shader_parameter("roughness", 0.55)
-	m.set_shader_parameter("specular", 0.45)
+	m.set_shader_parameter("roughness", 0.62)                        # (0.55, specular 0.45 and SSS 0.35 until 2026-10-30: "bright plastic", the user)
+	m.set_shader_parameter("specular", 0.35)
 	m.set_shader_parameter("use_subsurface_scattering", true)
-	m.set_shader_parameter("subsurface_scattering_strength", 0.35)
+	m.set_shader_parameter("subsurface_scattering_strength", 0.45)
 	m.set_shader_parameter("skin_smoothness", 4.0)
 	for pair in [["lightwarp", "Resources/lightwarp_skin1.tres"], ["texture_sss_noise", "Resources/InterleavedGradientNoise.png"], ["texture_translucency_color", "Resources/translucency_gradient.tres"]]:
 		var path: String = HUMAN + pair[1]
@@ -71,7 +71,7 @@ static func set_maps(m: ShaderMaterial, maps: Dictionary) -> void:
 		m.set_shader_parameter("micro_normal_strength", 0.15)       # the pores are in the map: the tile only breaks the highlights up
 	if maps.get("orm") is Texture2D:
 		m.set_shader_parameter("texture_roughness", maps["orm"])    # the shader reads the green, as glTF stores it
-		m.set_shader_parameter("roughness", 1.25)                    # the map rules (the flat default scales a white map), lifted a quarter: the Studio's numbers (0.3 to 0.4 on a young face) read glossier under Godot's GGX than under its own light
+		m.set_shader_parameter("roughness", 1.4)                     # the map rules (the flat default scales a white map), lifted: the Studio's numbers (0.3 to 0.4 on a young face) read glossier under Godot's GGX than under its own light (1.25 till 2026-10-30)
 		m.set_shader_parameter("texture_translucency", maps["orm"])  # its blue: how thin the skin is
 		m.set_shader_parameter("translucency", true)
 	var rec = maps.get("skin")

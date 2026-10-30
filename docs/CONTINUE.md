@@ -63,9 +63,17 @@ export's own plain material under the same lights (0.95 on `_studiotest`); if lo
 lights' energy on a brighter tone, or the SSS: `subsurface_scattering_strength` and `specular` in skin.gd are the
 knobs. **The `index_array is null` error**: a glb surface with an index buffer and nothing in it (an empty
 primitive in an export) is drawn every frame; loaded glbs are scrubbed of such surfaces now (play.gd
-`scrub_meshes`, said on the console). **Not understood yet**: their "another bug I found: the dialogue (text)
-that the person says" came through cut off; ask what they saw (the wrong words, the wrong speaker, timing, the
-typewriter) before touching it.
+`scrub_meshes`, said on the console). **The cutscene lines not seen** ("I don't see dialogue in godot for cutscenes"): a new GDTESTROOM check (the
+line's label visible with words through the lobby scene) found it: a scene holds the player and `play.hold` hid
+the whole HUD, the footer with the lines in it; now `hud.held` steps the play HUD back and keeps the footer (the
+lines, who, a reply's choices), the fade and the chapter card. The menu's `paused` is once each way too, and the
+Subtitles on/off row is gone (the lines are the dialogue). If they still see none after pulling:
+the label's words are the clip's `en` text (a game whose lines carry only `ja` shows nothing), and the HUD is
+layer 10 over the grade (6) and the tape (5). **The grade** (their last ask: "post processing
+so the game feels more professional, color grading, characters less like bright plastic"): HSPost (GODOT_LOOK
+§1d), `cinema` on every game by default, the skin's gloss softened (§5); next for the characters, if they still
+read as plastic on lol: a look at the stand-in under the lobby's lamps with `tools/godot/people_check.py`'s lit
+pictures beside a Godot lookshot of her, and the clothes' maps (albedo only).
 
 **Open: the user's stand-in bug** (2026-10-30, their words: "in director I chose an actual designed character to
 test but in game I only see this base mesh; after switching to the designed character it now has weird splotches

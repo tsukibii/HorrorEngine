@@ -77,8 +77,37 @@ func wear(name: String) -> void:
 	MenuC.apply(MenuC.load_settings(), self)
 
 
-## the rest of the HUD steps back while the menu is up (the desk's `paused`)
+## the play HUD steps back while a scene holds the player (play.gd hold/go): the objective, the prompt and cursor,
+## the inventory, the log; the footer stays (the scene's lines, who says them, a reply's choices), as do the fade and
+## the chapter card. (hold() hid the whole root till 2026-10-30, the lines with it: the user saw no dialogue in
+## a cutscene.)
+var _held := false
+
+
+func held(on: bool) -> void:
+	if on == _held:
+		return
+	_held = on
+	for ch in root.get_children():
+		if ch == menu or ch == fade_el or ch == chapter_el or ch.name == "Footer":
+			continue
+		if on:
+			ch.set_meta("held_visible", ch.visible)
+			ch.visible = false
+		elif ch.has_meta("held_visible"):
+			ch.visible = ch.get_meta("held_visible")
+
+
+## the rest of the HUD steps back while the menu is up (the desk's `paused`). Once each way: a second `paused(true)`
+## wrote every part down as hidden, so after the menu nothing came back (the footer with it: the user saw no
+## dialogue in a cutscene after using the menu, 2026-10-30)
+var _paused := false
+
+
 func paused(on: bool) -> void:
+	if on == _paused:
+		return
+	_paused = on
 	for ch in root.get_children():
 		if ch == menu or ch == fade_el:
 			continue
