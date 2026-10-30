@@ -1,0 +1,40 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="PackedScene" path="res://addons/horrorstudio_look/presets/rain.tscn" id="1"]
+[ext_resource type="PackedScene" path="res://addons/horrorstudio_look/presets/wet_floor.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://addons/horrorstudio_look/presets/window_shaft.tscn" id="3"]
+[ext_resource type="PackedScene" path="res://addons/horrorstudio_look/presets/caustics_light.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://addons/horrorstudio_look/presets/fluorescent_tube.tscn" id="5"]
+[ext_resource type="PackedScene" path="res://addons/horrorstudio_look/presets/window_pane.tscn" id="6"]
+[ext_resource type="PackedScene" path="res://addons/horrorstudio_look/presets/puddle.tscn" id="7"]
+[ext_resource type="PackedScene" path="res://addons/horrorstudio_look/presets/room_bulb.tscn" id="8"]
+
+[sub_resource type="PlaneMesh" id="floor"]
+size = Vector2(8, 8)
+
+[node name="Room" type="Node3D"]
+
+[node name="Floor" type="MeshInstance3D" parent="."]
+mesh = SubResource("floor")
+
+[node name="WetFloor" parent="Floor" instance=ExtResource("2")]
+
+[node name="Rain" parent="." instance=ExtResource("1")]
+
+[node name="WindowShaft" parent="." instance=ExtResource("3")]
+transform = Transform3D(1, 0, 0, 0, 0.825, 0.565, 0, -0.565, 0.825, 0, 2.5, 0)
+
+[node name="CausticsLight" parent="." instance=ExtResource("4")]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 2.8, 0)
+
+[node name="FluorescentTube" parent="." instance=ExtResource("5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 2.6, 0)
+
+[node name="WindowPane" parent="." instance=ExtResource("6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 1.5, -3)
+
+[node name="Puddle" parent="." instance=ExtResource("7")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1)
+
+[node name="RoomBulb" parent="." instance=ExtResource("8")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)

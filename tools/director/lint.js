@@ -145,8 +145,9 @@ export function lint(S, { things = {}, poses = null, secs = null, lives = null }
         if (who !== "player" && !cast[who]) add("error", `line ${c.id}: ${who ? who + " isn't in the cast" : "choose who says it"}`, p, c);
         if (!c.en) add("error", `line ${c.id}: no English subtitle`, p, c);
         if (c.count && !counters[c.count]) add("error", `line ${c.id}: shown by ${c.count}, which isn't a counter`, p, c);   // a line by a condition (§9.14)
-        if (i && !c.seam) add("error", `line ${c.id}: a cut with no seam to hide it (blink, glance, flicker…)`, p, c);
+        if (i && !c.seam && (v.camera || {}).mode !== "live") add("error", `line ${c.id}: a cut with no seam to hide it (blink, flicker, occlude, dip…)`, p, c);   // a live scene never cuts
         else if (i && SEAM_LOOKS.has(c.seam.kind) && !c.seam.look) add("error", `line ${c.id}: its ${c.seam.kind} seam needs something to look at`, p, c);
+        if (i && c.seam && SEAM_LOOKS.has(c.seam.kind)) add("warn", `line ${c.id}: a ${c.seam.kind} turns the player's eye for them, deprecated (DECISIONS 2026-10-29: it breaks the immersion); use blink, flicker, occlude or dip`, p, c);
         if (secs) { const t = secs(c); if (t > max + 0.01) add(c.dur ? "error" : "warn", `line ${c.id}: ${t.toFixed(1)} s${c.dur ? "" : " at speaking pace"}, over the ${max} s a take can be: split it`, p, c); }
         for (const e of ["start", "end"]) { const m = (c.body || {})[e]; if (m && !(S.motions || {})[m] && !BUILT_IN_POSES.has(m)) add("warn", `line ${c.id}: its body ${e}s from ${m}, which isn't a motion`, [...p, "body"], c); }
         if (c.event) results(c.event.on, [...p, "event", "on"], ctx);

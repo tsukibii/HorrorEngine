@@ -114,6 +114,18 @@ TOOLS = [
     ("Pages", "Pigment test (projected art as pigment)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/pigment.html"}),
     ("Pages", "Kimodo demo", "tools/kimodo.py demo", {"url": "http://127.0.0.1:7860"}),
 
+    ("Godot", "Export a game as its own Godot 4.7 project, a new version each time (Saved/Godot/<game>_v001, _v002... and its .zip, with a guide to editing it; record the scenes on the desk first)", "tools/godot_export.py --game {game} --zip", {}),
+    ("Godot", "Record a game's scenes for the export (the desk running)", "node tools/godot/bake.mjs --game {game}", {}),
+    ("Godot", "Godot check (4.7 runs headless and draws a lit box)", "tools/godot/check.sh", {}),
+    ("Godot", "Pictures for a game's guide, made by Godot (the start by day and night, the first scene from the bake), the guide written again", "tools/godot_export.py --game {game} --pictures", {}),
+    ("Godot", "Godot export check (every game exported and opened headless)", "tools/godot_export.py --check", {}),
+    ("Godot", "Godot look check (UltraVHS's chart through the export's tape shader, measured)", "tools/godot/look_check.py", {}),
+    ("Godot", "The look plugin's check (its demo room pictured and measured: wet floors, blood, rain, wet skin)", "tools/godot/plugin_check.py", {}),
+    ("Godot", "A Character Studio export in Godot on the skin shader (GDPEOPLE: flat-lit against its paint, dry, sweating, oiled)", "tools/godot/people_check.py", {}),
+    ("Godot", "A character as the Studio draws it beside Godot's render of its export (GDSTUDIO: the skin's colour alike; the Studio's server running)", "tools/godot/studio_compare.py", {}),
+    ("Godot", "The Pilot played in Godot (GDPLAY)", "tools/godot_export.py --game Pilot --play", {}),
+    ("Godot", "TestRoom001 played in Godot station by station (GDTESTROOM)", "tools/godot_export.py --game TestRoom001 --testroom", {}),
+
     ("Checks", "Every offline check, every game", "tools/check_all.py", {}),
     ("Checks", "Every offline check, one game", "tools/check_all.py --game {game}", {}),
     ("Checks", "Story check, verbose", "tools/story_check.py --game {game} -v", {}),
@@ -136,7 +148,7 @@ TOOLS = [
     ("Checks", "Writers' room check (the chart's format and check, the prompt library, the upgrade, a build through check_all)", "tools/writers/room.py check", {}),
     ("Checks", "Writers' room page test (the chart drawn in a headless browser, built)", "node tools/writers/pagetest.mjs", {}),
     ("Checks", "Blender look check (Light Kit's times, UltraVHS's camcorder; needs the Blender module)", "tools/blender_look_check.py", {}),
-    ("Story", "Kit meshes for Unreal (the importer runs it too)", "tools/kit_build.py --game {game}", {}),
+    ("Story", "Kit meshes (the Godot export builds them too)", "tools/kit_build.py --game {game}", {}),
 
     ("Story", "Notes from the desk", "tools/story.py --game {game} notes", {}),
     ("Story", "Flow graph", "tools/story.py --game {game} flow", {}),
@@ -172,10 +184,7 @@ TOOLS = [
     ("Motion", "Motion preview into the desk", "tools/motion.py --game {game} preview", {}),
     ("Motion", "Kimodo check (CUDA, token, encoder)", "tools/kimodo.py check", {}),
     ("Motion", "Retarget: motions to FBX", "tools/retarget.py --game {game} fbx", {}),
-    ("Motion", "Retarget: editor script onto the MetaHumans", "tools/retarget.py --game {game} unreal", {}),
 
-    ("Look", "MetaHuman Creator script for a cast member", "tools/metahuman.py --game {game} {ask:Cast id}", {}),
-    ("Look", "Glass-skin texture set", "tools/glass_skin.py", {}),
     ("Look", "Clothes: an outfit's contact sheet (Saved/tailor_sheet.png)", "node tools/character/tailor/sheet.mjs --outfit {ask:Outfit (e.g. work uniform)} {opt:Body (feminine, masculine, average)|--body} --out Saved/tailor_sheet.png", {}),
     ("Look", "Clothes: pictures of every outfit and design on the default model, for the Studio's picker (Content/Studio/Clothes/thumbs)", "node tools/character/tailor/thumbs.mjs", {}),
     ("Look", "Clothes in motion: an outfit walked, sat and crouched on several bodies (Saved/tailor_motion.png)", "node tools/character/tailor/motion.mjs --outfit {ask:Outfit (e.g. work uniform)} {opt:Bodies (e.g. feminine,full_masculine)|--bodies} --out Saved/tailor_motion.png", {}),
@@ -193,8 +202,6 @@ TOOLS = [
     ("Library", "Sound shelf: fetch the CC0 sound effects", "tools/sfx.py fetch", {}),
     ("Library", "Score room: fetch the added instruments", "tools/score/fetch_samples.py", {}),
 
-    ("Ship", "Package a game (dry run)", "tools/package_game.py --game {game} --dry", {}),
-    ("Ship", "Package a game", "tools/package_game.py --game {game}", {}),
 
     ("Setup", "Find Unreal, Visual Studio, git", "setup/setup.py env", {}),
     ("Setup", "Install or update Kimodo", "setup/setup.py kimodo", {}),
@@ -203,9 +210,6 @@ TOOLS = [
     ("Setup", "Face mesh setup (MediaPipe)", "tools/face_mesh.py setup", {}),
     ("Setup", "Salon reference setup (torch, OpenCV, MediaPipe, the models)", "tools/gshair.py setup", {}),
     ("Setup", "Blender module setup (retarget)", "tools/retarget.py setup", {}),
-    ("Setup", "Unreal plugins (UltraVHS, Light Kit): which are on", "tools/unreal_plugins.py", {}),
-    ("Setup", "Unreal plugins: turn on in this project and build", "tools/unreal_plugins.py on {ask:Plugins (UltraVHS LightKit)} --build", {}),
-    ("Setup", "Unreal plugins: into another project (a copy in its Plugins/)", "tools/unreal_plugins.py on {ask:Plugins (UltraVHS LightKit)} --project {ask:The other project's .uproject} --build", {}),
 ]
 
 

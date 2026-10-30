@@ -46,7 +46,9 @@
      "say": "the guide"
     }
    ]
-  }
+  },
+  "look": "realism",
+  "weather": "rain"
  },
  "cast": {
   "aoi": {
@@ -55,7 +57,8 @@
    "height": 1.6,
    "subject": "she",
    "skin": "#c99f84",
-   "previs_body": "MHR.fbx"
+   "previs_body": "MHR.fbx",
+   "models": {"second": "MHR.fbx"}
   }
  },
  "items": {
@@ -316,7 +319,8 @@
        ],
        "z": 2.3,
        "kelvin": 2400
-      }
+      },
+      {"id": "yard_puddle_light", "use": "light", "kind": "lamp", "lit": true, "at": [7.4, 2.4], "z": 0.03, "pattern": "caustics", "aim": [7.4, 3.95, 1.5], "spread": 70, "scale": 0.45, "speed": 0.5, "open": 0.25}
      ]
     },
     {
@@ -361,7 +365,9 @@
        "w": 1.2,
        "h": 1.1,
        "sill": 0.9,
-       "window": true
+       "window": true,
+       "shaft": true,
+       "sweep": {"every": 30, "secs": 3, "out": 2.5}
       },
       {
        "wall": "s",
@@ -369,7 +375,8 @@
        "w": 1.2,
        "h": 1.1,
        "sill": 0.9,
-       "window": true
+       "window": true,
+       "shaft": true
       }
      ],
      "props": [
@@ -448,7 +455,11 @@
        ],
        "rot": 90
       }
-     ]
+     ],
+     "look": {
+      "floor": "pbr/Tiles/cracked_tiles",
+      "walls": "pbr/Plaster/stained_plaster"
+     }
     },
     {
      "id": "corridor",
@@ -613,7 +624,7 @@
         15
        ],
        "z": 2.9,
-       "flicker": 0.3
+       "flicker": 0.3, "mode": "fluorescent", "interval": 5
       },
       {
        "id": "corr_lamp_3",
@@ -644,7 +655,11 @@
        ],
        "rot": 270
       }
-     ]
+     ],
+     "look": {
+      "floor": "pbr/Wood/worn_planks",
+      "walls": "pbr/Plaster/stained_plaster"
+     }
     },
     {
      "id": "keys",
@@ -1283,6 +1298,7 @@
       3
      ],
      "floor": "water",
+     "wet": 0.8,
      "light": "dim",
      "kind": "bath",
      "name": "Bath",
@@ -1364,6 +1380,7 @@
        ],
        "tag": "bathtub"
       },
+      {"id": "bath_leak", "use": "leak", "wall": "w", "at": [0.08, 2.4], "z": 2.85, "width": 0.45, "drip": 2.2, "wet": 0.85},
       {
        "id": "bath_lamp",
        "use": "light",
@@ -1452,7 +1469,8 @@
         4.5,
         4.5
        ],
-       "z": 1.45
+       "z": 1.45,
+       "mode": "dying", "interval": 4
       },
       {
        "id": "power_bench",
@@ -1485,7 +1503,11 @@
        ],
        "z": 0.95
       }
-     ]
+     ],
+     "look": {
+      "floor": "pbr/Concrete/damp_concrete",
+      "walls": "pbr/Concrete/damp_concrete"
+     }
     },
     {
      "id": "kitchen",
@@ -1683,7 +1705,11 @@
        ],
        "z": 2.9
       }
-     ]
+     ],
+     "look": {
+      "floor": "pbr/Tiles/cracked_tiles",
+      "walls": "pbr/Stone/Walls/grimy_brick"
+     }
     },
     {
      "id": "chores",
@@ -2373,6 +2399,7 @@
   },
   "annex": {
    "start": "annex_start",
+   "look": "plain",
    "rooms": [
     {
      "id": "annex_hall",
@@ -2581,6 +2608,7 @@
  },
  "scenes": {
   "s_hello": {
+    "models": {"aoi": "second"},
    "title": "Aoi in the lobby",
    "level": "lab",
    "stage": {
@@ -2588,12 +2616,8 @@
    },
    "view": "lobby_view_spot",
    "camera": {
-    "mode": "soft",
-    "look": "aoi",
-    "cone": [
-     30,
-     18
-    ]
+    "mode": "live",
+    "look": "aoi"
    },
    "mood": "calm",
    "time": "day",
@@ -2698,8 +2722,7 @@
      "id": "c3",
      "who": "aoi",
      "seam": {
-      "kind": "glance",
-      "look": "lobby_lamp"
+      "kind": "blink"
      },
      "en": "How are you feeling today?",
      "act": "head tilted, waiting",
@@ -3018,7 +3041,6 @@
        "event": {
         "type": "choose",
         "secs": 12,
-        "default": "o_silent",
         "options": [
          {
           "id": "o_trust",
@@ -3106,7 +3128,6 @@
        "event": {
         "type": "choose",
         "secs": 12,
-        "default": "o_silent",
         "options": [
          {
           "id": "o_trust",
@@ -3971,6 +3992,11 @@
        "as": "idle",
        "at": "kitchen_aoi_spot",
        "face": "player"
+      },
+      {
+       "skin": "aoi",
+       "wet": 0.6,
+       "sweat": 0.4
       },
       {
        "state": "kitchen_ashtray",

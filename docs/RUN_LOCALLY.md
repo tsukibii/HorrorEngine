@@ -20,7 +20,10 @@ One line, for the user to give Claude on their machine, for example:
    anything else. Then `git fetch origin <branch> && git checkout <branch> && git pull --ff-only`.
 2. **Once per machine:** Playwright and its Chromium (`npm install -g playwright`, then `npx playwright install
    chromium`), found by the checks through `export NODE_PATH="$(npm root -g)"` (or `PLAYWRIGHT=<path to the
-   playwright package>`); MediaPipe for the Studio's face fit (`python3 tools/face_mesh.py setup`).
+   playwright package>`); MediaPipe for the Studio's face fit (`python3 tools/face_mesh.py setup`). The Playwright
+   package must match the Chromium build in `~/.cache/ms-playwright/` (2026-10-29: `chromium-1194` there, which is
+   Playwright 1.56; the npx cache held 1.61, which wants 1228: `npm install playwright@1.56.1` in any folder and
+   `NODE_PATH=<that folder>/node_modules` was enough, no download).
 3. **The servers**, started fresh after the pull (a server already running keeps the Python it started with), each
    in its own terminal or in the background, from the project folder; both are plain Python (no packages):
    - the Character Studio, port 8793: `python3 tools/character/serve.py`;
@@ -50,3 +53,27 @@ One line, for the user to give Claude on their machine, for example:
 
 The offline checks (CHECKS, DESK, CMDS, REFS, KIT, TAILOR, POSE, SCORE, WRITERS...) need no card and stay in the
 cloud.
+
+## The Godot checks (2026-10-29)
+
+Godot's pictures are drawn on lavapipe in the cloud (a software Vulkan: a frame of the look plugin's demo takes a
+second or more, the plugin check about five minutes, a mirror's second render as much again); on the card they're
+seconds. `godot-mono` is the user's binary (DECISIONS 2026-10-18): the scripts take `$GODOT`, else `godot`, else
+`godot-mono`. No `GPU=` here: Godot finds the card itself; `--rendering-driver vulkan` is what the checks pass. The
+scripts run Godot under Xvfb whenever `xvfb-run` is installed (the card still draws through Vulkan there, and no
+window opens or gets resized by the window manager: Hyprland tiled Godot's 1280 × 720 to 941 × 1030 once and every
+pixel measure went wrong, LESSONS 2026-10-29); a check prints the renderer it got (`Vulkan ... Forward+ ... RTX
+3090`) and fails if Godot fell back to OpenGL. Measured on the 3090: LOOKPLUGIN 29 s (eight minutes in the cloud).
+
+| Check | Command | What to look at |
+|---|---|---|
+| LOOKPLUGIN | `python3 tools/godot/plugin_check.py` | the pictures in `Saved/Story/_look/godot_plugin/`: the wet floor, the blood, the lit rain and its splashes, the mirror, the skin spheres |
+| GDPEOPLE | `python3 tools/godot/people_check.py` | `Saved/Story/_look/godot_people/`: a Studio export's skin and eye |
+| GDSTUDIO | `python3 tools/godot/studio_compare.py --person NAME` | `Saved/Story/_look/godot_studio/compare.jpg`: the Studio's own render beside Godot's (the Studio's server on 8793 running) |
+| GDTESTROOM | `python3 tools/godot_export.py --game TestRoom001 --testroom` | headless: the stations; then the game itself |
+| the game | `godot-mono --path Saved/Godot/TestRoom001` | the yard in the rain (the splashes, the wet floor, the lit streaks), the bath's mirror and wet floor, Aoi sweating in the kitchen, the pause menu's Graphics rows (Reflections Low: the mirror off) |
+| the guide | `python3 tools/godot_export.py --game TestRoom001 --zip --pictures` | `Saved/Godot/TestRoom001/guide/index.html` with its pictures made by Godot (the desk's Godot button does the same) |
+
+The report: each check's last line and how long it took, and a word on the pictures: whether the wet floor, the
+blood, the rain on the glass, the sweat and the mirror read as meant (the cloud session can measure them, not
+judge them).

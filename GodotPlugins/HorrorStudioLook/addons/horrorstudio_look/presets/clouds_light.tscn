@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://addons/horrorstudio_look/nodes/pattern_light.gd" id="1"]
+
+[node name="CloudsLight" type="SpotLight3D"]
+script = ExtResource("1")
+shadow_enabled = true
+spot_range = 30.0
+spot_angle = 50.0
+light_color = Color(1, 0.96, 0.88, 1)
+light_energy = 3.0
+pattern = "clouds"
+aim_distance = 12.0

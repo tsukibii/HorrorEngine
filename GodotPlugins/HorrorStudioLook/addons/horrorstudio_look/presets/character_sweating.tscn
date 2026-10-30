@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://addons/horrorstudio_look/nodes/character_look.gd" id="1"]
+
+[node name="CharacterSweating" type="Node"]
+script = ExtResource("1")
+sweat = 0.7
+drips = 0.3

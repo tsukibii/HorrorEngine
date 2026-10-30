@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://addons/horrorstudio_look/nodes/wet_surface.gd" id="1"]
+
+[node name="WetFloorRaining" type="Node3D"]
+script = ExtResource("1")
+wetness = 0.95
+puddles = 0.8
+ripples = 0.7

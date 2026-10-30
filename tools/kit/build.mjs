@@ -34,12 +34,16 @@ for (const it of items) {
     const ref = refOf(KIT, it.kit, PR.presets, PR.version);
     if (it.ref && it.ref !== ref) throw new Error(`python names it ${it.ref}, node ${ref}: storykit/kit.py and kit.js disagree`);
     const name = ref.split("/")[1], file = path.join(MESHES, name + ".glb");
-    if (!force && fs.existsSync(file)) { kept++; continue; }
+    if (!force && fs.existsSync(file) && index[name] && index[name].sockets) { kept++; continue; }
     const b = KIT.build(it.kit, PR.presets), G = KIT.mesh(b.parts), st = KIT.stats(G);
-    fs.writeFileSync(file, KIT.glb(G, name, pivot(it.kit)));
+    const fresh = force || !fs.existsSync(file);
+    if (fresh) fs.writeFileSync(file, KIT.glb(G, name, pivot(it.kit)));
     const [w, d, h] = b.spec.size;
-    index[name] = { size_m: [w, h, d], tris: st.tris, kb: Math.round(fs.statSync(file).size / 1024), type: b.spec.type };
-    made++;
+    // the sockets its life's effects come from (item space: x across, y deep, z up from the base) and the slots its
+    // surfaces are named by (kit_<slot> in the glb), for the Godot export's lifefx
+    index[name] = { size_m: [w, h, d], tris: st.tris, kb: Math.round(fs.statSync(file).size / 1024), type: b.spec.type, pivot: pivot(it.kit),
+                    sockets: b.sockets || {}, slots: Object.keys(G) };
+    if (fresh) made++; else kept++;
   } catch (e) { bad++; console.log(`${JSON.stringify(it.kit).slice(0, 80)}: ${e.message}`); }
 }
 fs.mkdirSync(path.dirname(INDEX), { recursive: true });

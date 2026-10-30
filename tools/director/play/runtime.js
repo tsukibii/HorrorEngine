@@ -9,6 +9,7 @@ import { runAll } from "./actions.js";
 import { playShelf, shelfName } from "../sfx.js";
 import { interactableOf } from "./interactables.js";
 import "./abilities.js";
+import { flickerK, flickerOn } from "../../shared/flicker.js";
 import { castSteps } from "./steps.js";
 import { Torch } from "./torch.js";
 import "./clean.js";
@@ -73,7 +74,7 @@ export class PlayRuntime {
         if (this.wasLocked && !on && this.active && !this.busy && performance.now() - (this.resumed || 0) > 500) this.pause();   // (not the lock a resume just asked for, lost again)
         this.wasLocked = on; this.hud.locked(on);
       },
-      move: e => { if (this.active && !this.busy && document.pointerLockElement === box) this.ability("look", "mouse", e.movementX, e.movementY); },
+      move: e => { if ((this.active || this.liveScene) && !this.busy && document.pointerLockElement === box) this.ability("look", "mouse", e.movementX, e.movementY); },
       key: e => this.keyEvent(e, e.type === "keydown"),
     };
     box.addEventListener("click", this.on.click); box.addEventListener("mousedown", this.on.down); box.addEventListener("wheel", this.on.wheel, { passive: false });
@@ -102,17 +103,22 @@ export class PlayRuntime {
   get carried() { return this.inv.held; }            // the thing in the hand (the `carrying` condition)
   ability(name, fn, ...args) { const p = part("ability", name); if (p && p[fn]) p[fn](this, ...args, this.set(name)); }
   keyEvent(e, down) {
+    if (this.liveScene && !this.busy) {               // a live scene: only the walk's keys (the stitch's own keys wait)
+      if (["KeyW", "KeyA", "KeyS", "KeyD", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "ShiftLeft", "ShiftRight", "KeyC"].includes(e.code)) { e.preventDefault(); this.keys[e.code] = down; if (!this.player.seat) for (const a of ABILITIES) this.ability(a, "key", e, down); }
+      return;
+    }
     if (!this.active || this.busy) return;
     if (down && e.code === "Escape") {               // Esc without the lock (the desk) pauses too, but not an Esc meant
       e.preventDefault(); if (performance.now() - this.since > 400) this.pause(); return;   // for the scene that just ended, or the card
     }
-    if (["KeyW", "KeyA", "KeyS", "KeyD", "KeyE", "KeyG", "KeyC", "KeyF", "Space", "ShiftLeft", "ShiftRight"].includes(e.code)) e.preventDefault();
+    if (["KeyW", "KeyA", "KeyS", "KeyD", "KeyE", "KeyG", "KeyQ", "KeyC", "KeyF", "Space", "ShiftLeft", "ShiftRight"].includes(e.code)) e.preventDefault();
     if (down && this.player.peeping && ["KeyW", "KeyA", "KeyS", "KeyD", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.code)) { this.unpeep(); return; }   // a step: the eye back
     if (this.playing) return;                          // at a board game: its choices take the keys
     this.keys[e.code] = down;
     this.ability("torch", "key", e, down);             // F: the flashlight, hidden or not
     if (down && !e.repeat && e.code === "KeyE") this.inv.toggle();        // E: the inventory's row, shown or hidden
     if (down && !e.repeat && e.code === "KeyG") this.drop();              // G: the one in the hand put down
+    if (down && !e.repeat && e.code === "KeyQ") this.inv.lower(!this.inv.lowered);   // Q: lowered out of view, or raised
     if (!this.player.hiding) for (const a of ABILITIES) this.ability(a, "key", e, down);
   }
 
@@ -343,23 +349,27 @@ export class PlayRuntime {
   // the power (the `power` action, a breaker): kept per level; cut, every electric light is dark at render (each keeps
   // its own on or off for when it comes back: candles and fire burn on) and the switches are dead; back, they flicker up
   powered(level = this.level) { const k = this.kept && this.kept[level]; return !k || k.power !== false; }
+  sweep(room) { this.stage.fireSweeps(room); this.hud.log(`a car passes ${room || "outside"}`); }   // the story's `sweep` action: a car passes the room's windows now
+  sweeping(room) { return this.stage.sweeping(room); }
   power(set, level = this.level) {
     const k = (this.kept = this.kept || {})[level] = this.kept[level] || { vis: {}, doors: {}, bodies: {} }, on = set !== "off";
     if (on === (k.power !== false)) return;
     k.power = on; this.hud.log(on ? "the power is back" : "the power's out");
     if (on && level === this.level) for (const l of this.stage.lights) if (ELECTRIC(l)) {   // flickering up for a moment, then its own flicker again
       const u = l.userData; if (u.flicker0 === undefined) u.flicker0 = u.flicker || 0;
-      u.flicker = Math.max(u.flicker0, 0.8); u.surge = this.clock + 0.9;
+      u.flicker = Math.max(u.flicker0, 0.8); u.surge = this.clock + 0.9; flickerOn(u, this.clock);   // a tube's starter clicks
     }
     this.emit({ type: "power", on });
   }
   light(id, room, set) {
     const ls = id ? [this.byId[id]].filter(Boolean) : this.stage.lights.filter(l => l.userData.room === room);
     for (const l of ls) {
+      const was = l.userData.on;
       if (set === "toggle") l.userData.on = !l.userData.on;
       else if (set === "on" || set === "off") l.userData.on = set === "on";
       else if (set === "flicker") { l.userData.on = true; l.userData.flicker = Math.max(0.6, l.userData.flicker || 0); }
       else if (set === "dim") { l.userData.on = true; l.userData.dim = 0.35; }
+      if (l.userData.on && !was) flickerOn(l.userData, this.clock);   // switched on: a tube stutters on
     }
   }
   wait(secs) { return new Promise(res => this.waits.push({ at: this.clock + secs, res })); }
@@ -443,7 +453,7 @@ export class PlayRuntime {
     if (this.hand && this.hand.entry !== e) { this.hand.x.m.removeFromParent(); this.hand = null; }
     if (!e) return;
     if (!this.hand) { this.stage.scene.add(e.mesh); this.hand = { entry: e, x: inHand(e.mesh, e.physics) }; }
-    const m = this.hand.x.m, away = !this.active || !!this.playing || !!p.seat || !!p.hiding || !!p.sleeping || !!p.peeping || this.busy;
+    const m = this.hand.x.m, away = !this.active || !!this.playing || !!p.seat || !!p.hiding || !!p.sleeping || !!p.peeping || this.busy || this.inv.lowered;
     m.visible = !away; if (away) return;
     const cam = this.stage.camera, walk = Math.min(1, (p.speed || 0) / 1.2), hand = new THREE.Vector3(...this.hand.x.s.hand);
     hand.y -= Math.cos((this.stepAt ?? 0.5) * Math.PI * 2) * 0.012 * walk;      // dipping with each footstep (steps.js)
@@ -557,7 +567,7 @@ export class PlayRuntime {
   // back to where they stood
   sit(t, s) {
     const p = this.player, at = t.getWorldPosition(new THREE.Vector3());
-    p.seat = t; p.stood = { pos: p.pos.clone(), eye: p.eye };
+    p.seat = t; p.stood = { pos: p.pos.clone(), eye: p.eye }; p.seatYaw = p.yaw + 180;   // the way the seat faces: a live scene's look is 90° either side of it
     return this.tween({ pos: new THREE.Vector3(at.x, p.pos.y, at.z), eye: s.eye, yaw: p.yaw + 180, pitch: 0, secs: s.secs });
   }
   stand(s) {
@@ -658,6 +668,20 @@ export class PlayRuntime {
     const n = this.npcs[cid] = { cid, as, s: settingsOf(b, spec), st: {}, pos: npc && npc.pos, yaw: npc ? npc.yaw : 0, level: npc && npc.level, pose: "idle", walking: false, t0: this.clock };
     b.start(n, this, n.s);
   }
+  // out in the rain a cast member's skin wets by itself (toward 0.8 in a few seconds) and dries slowly once she's in
+  // (about a minute), unless the story's `skin` word has set her (byWord): then hers is hers till the word changes it
+  rainWet(dt) {
+    const lv = ((this.story.levels || {})[this.level] || {}), rain = (lv.weather ?? (this.story.game || {}).weather) === "rain";
+    const rooms = rain ? (lv.rooms || []).filter(r => r.ceiling === false).map(r => r.id) : [];
+    if (!rooms.length && !this.skinWet) return;
+    for (const [cid, n] of Object.entries(this.npcs)) {
+      if (!n.pos) continue;
+      const s = (this.skinWet || {})[cid]; if (s && s.byWord) continue;
+      const out = this.triggers.some(t => rooms.includes(t.id) && this.pointIn(t, n.pos.x, -n.pos.z, n.pos.y + 0.5));
+      const cur = +((s || {}).wet || 0), nw = out ? Math.min(0.8, cur + 0.15 * dt) : Math.max(0, cur - 0.02 * dt);
+      if (nw !== cur) (this.skinWet = this.skinWet || {})[cid] = this.stage.setSkin(cid, { wet: nw });
+    }
+  }
   drawNpcs(dt) {
     const lib = this.stage.lib, X = new THREE.Vector3(1, 0, 0);
     for (const n of Object.values(this.npcs)) {
@@ -714,7 +738,8 @@ export class PlayRuntime {
   eyePos() { return this.player.pos.clone().add(new THREE.Vector3(0, this.player.eye, 0)); }
   // what the reticle is on: the first visible thing along the ray, never a hollow piece (a kit door's frame: its block
   // spans the doorway, its drawn parts only the edges; you walk and click through it)
-  aim() { return this.ray.intersectObjects(this.stage.world.children.filter(o => o.isMesh && o.visible && !((o.userData.piece || {}).tags || []).includes("hollow")), false)[0] || null; }
+  // (nor a light effect drawn in the room: a window's shaft box, a pattern's plane (lightfx.js): the eye sees through them, so does the reticle)
+  aim() { return this.ray.intersectObjects(this.stage.world.children.filter(o => o.isMesh && o.visible && !o.userData.shaft && !o.userData.pattern && !((o.userData.piece || {}).tags || []).includes("hollow")), false)[0] || null; }
   async use(press) {
     if (this.player.sleeping || this.inChapter) return;
     if (this.player.peeping) { this.hud.press(); this.unpeep(); return; }   // a click takes the eye from the peephole
@@ -829,6 +854,22 @@ export class PlayRuntime {
                                                       // and pause again (the menu opening on every Esc); a click on the view takes it
     try { await this.box.requestPointerLock(); } catch (e) { }
   }
+  // a live scene (STORY_FORMAT §3 `camera.mode: live`): play is held (no beats, no use, no HUD) but the eye stays the
+  // player's: they look round and, standing, walk; seated, the look stays within 90° either side of the seat's facing
+  liveStart() {
+    const p = this.player; this.liveScene = true; this.keys = {}; this.liveLimit = p.limit;
+    if (p.seat) p.limit = { yaw: p.seatYaw ?? p.yaw, dy: 90, dp: 60 };
+    this.liveTick(0);
+  }
+  liveEnd() { this.liveScene = false; this.player.limit = this.liveLimit || null; this.keys = {}; }
+  liveTick(dt) {
+    const p = this.player, feet = p.pos.clone();
+    if (dt > 0 && !this.busy && !p.seat && !p.hiding && !p.sleeping && !p.peeping && !this.moving) for (const a of ["walk", "crouch", "steps"]) this.ability(a, "update", dt);
+    p.speed = dt ? p.pos.distanceTo(feet) / dt : 0;
+    const c = this.stage.camera; c.position.copy(this.eyePos()); c.rotation.order = "YXZ";
+    c.rotation.set(p.pitch * Math.PI / 180, (p.yaw - 90) * Math.PI / 180, 0);
+    c.fov = vfov(+((this.story.game || {}).fov || FOV_H), c.aspect || 16 / 9); c.updateProjectionMatrix(); c.updateMatrixWorld();
+  }
   hold() {
     this.active = false; this.keys = {}; this.hud.root.style.display = "none"; if (this.hand) this.hand.x.m.visible = false;
     this.stage.uncull();                              // a scene's eye may be anywhere: all of it drawn
@@ -899,13 +940,15 @@ export class PlayRuntime {
     for (const l of this.stage.lights) {
       const u = l.userData; let k = u.on && (this.powered() || !ELECTRIC(l)) ? (u.dim || 1) : 0;
       if (u.surge && T >= u.surge) { u.flicker = u.flicker0 || 0; delete u.surge; }   // back after the power's flicker-up
-      if (u.flicker) k *= 1 - u.flicker * 0.5 * Math.max(0, Math.sin(T * 13.7) * Math.sin(T * 7.3));
+      k *= flickerK(u, T);                                                           // its mode (tools/shared/flicker.js)
       l.intensity = (u.base || 1) * k;
     }
+    this.stage.sweepTick(dt);                            // the windows' headlight sweeps
     this.handTick(dt);
     if (this.torchLight) { if (!this.torchItem()) this.torchLight.on = false; this.ability("torch", "update", dt); }   // taken away: off
     for (const a of [...this.anims]) { a.t += dt; const k = Math.min(1, a.t / a.secs); a.fn(k); if (k >= 1) { this.anims.splice(this.anims.indexOf(a), 1); a.done(); } }
     this.drawNpcs(dt);
+    this.rainWet(dt);
     this.watch(dt);
     if (!this.busy && !this.playing && !p.peeping) this.updateCursor(dt);
     if (this.holding) this.holdTick(dt);

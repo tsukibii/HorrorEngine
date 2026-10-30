@@ -34,8 +34,8 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
 | Key | Holds |
 |---|---|
 | `format` | `2` |
-| `game` | `id`, `title`, `start` (a flow node), `target_min` (the shortest *typical* path to a normal ending must reach it: **150** for a real game), `fast_min` (the shortest *fast* path must reach it: **120**, Steam's refund window; cutscenes can't be skipped, so they count fully), `voice` (`ja`), `text` (`en`), `clip_max` (seconds one take can be: **10** for MiniMax), `fov` (the player's horizontal field of view, 90 by default: the one lens), `previs_body` (the desk's default body), `time` (the time of day the game starts at: `day`, `dusk` or `night`; `night` when unset, the studio's dark interiors; scenes change it, §3.1), `player_name` (the player's name until they type one, §4 `name`; "Alex" when unset) |
-| `cast` | `{id: {name, metahuman (asset path or null), height, shape, measures, skin, previs_body}}`: `shape` is up to 45 MHR identity numbers (the desk's Shape page writes it; zero is the average body), `measures` the body's widths in cm at that height (`{height, shoulders, chest, waist, belly, hips, thighs, arms}`, the Shape page writes them too) and `skin` a hex skin tone: what `tools/metahuman.py` gives MetaHuman Creator (docs/METAHUMAN_ROUTE.md); `previs_body` a file in `Content/Studio/Bodies` (default: MHR.fbx; after the MetaHuman is rigged, its exported body), or `people/<name>`: a Character Studio character as it was exported for the desk and Unreal (`Content/Studio/People/<name>/export/<name>.glb`), worn with its own look and its eyes, its own shape (`shape` doesn't apply), scaled to `height`; `models` her other looks, `{name: body file}` (`{"lilac eyes": "people/natsu_lilac", "wet": "people/natsu_wet"}`): variants a scene picks (§3.1 `models`), `previs_body` the default (HANDOFF_DIRECTOR_TODO §5) |
+| `game` | `id`, `title`, `start` (a flow node), `target_min` (the shortest *typical* path to a normal ending must reach it: **150** for a real game), `fast_min` (the shortest *fast* path must reach it: **120**, Steam's refund window; cutscenes can't be skipped, so they count fully), `voice` (`ja`), `text` (`en`), `clip_max` (seconds one take can be: **10** for MiniMax), `fov` (the player's horizontal field of view, 90 by default: the one lens), `previs_body` (the desk's default body), `time` (the time of day the game starts at: `day`, `dusk` or `night`; `night` when unset, the studio's dark interiors; scenes change it, §3.1), `player_name` (the player's name until they type one, §4 `name`; "Alex" when unset), `hair` (the hair look every imported model's hair wears in Godot, docs/GODOT_LOOK.md §5c: `{"retro": true}` the PSX look (unlit, eight colour levels, the ordered dither), or each of `flat`, `steps` (2 to 64), `dither`, `gain`, `shine`, `soft`, `cut`; a cast member's own `hair` over it) |
+| `cast` | `{id: {name, metahuman (asset path or null), height, shape, measures, skin, previs_body}}`: `shape` is up to 45 MHR identity numbers (the desk's Shape page writes it; zero is the average body), `measures` the body's widths in cm at that height (`{height, shoulders, chest, waist, belly, hips, thighs, arms}`, the Shape page writes them too) and `skin` a hex skin tone: what `tools/metahuman.py` gives MetaHuman Creator (docs/METAHUMAN_ROUTE.md); `previs_body` a file in `Content/Studio/Bodies` (default: MHR.fbx; after the MetaHuman is rigged, its exported body), or `people/<name>`: a Character Studio character as it was exported for the desk and Unreal (`Content/Studio/People/<name>/export/<name>.glb`), worn with its own look and its eyes, its own shape (`shape` doesn't apply), scaled to `height`; `models` her other looks, `{name: body file}` (`{"lilac eyes": "people/natsu_lilac", "wet": "people/natsu_wet"}`): variants a scene picks (§3.1 `models`), `previs_body` the default (HANDOFF_DIRECTOR_TODO §5); `hair` their own hair look over the game's (`game.hair`): the salon's cards, brows and lashes on the Studio's hair shader in Godot, `{"retro": true}` for the PSX dither, GODOT_LOOK §5c |
 | `items`, `notes`, `sounds` | `{id: {name, shape, inspect, torch}}` (`torch`: a flashlight, below), `{id: {title, text}}`, `{id: {file}}`: a sound's `file` is `sfx/<name>`, a CC0 sound off the Studio's shelf (`Content/Studio/SFX`, `tools/sfx.py list`; the check fails one that isn't on it; docs/SFX.md), or the game's own file under its Audio folder in Unreal |
 | `lines` | one-off voice outside scenes (`say`, `whisper`): `{id: {who, ja, en, mood, dur}}` |
 | `levels` | the world (§2) |
@@ -59,6 +59,10 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
 
 - Each level becomes one map: `/Game/Games/<Game>/Maps/L_<level>`.
 - `start` is a spot.
+- `weather` (optional): this level's weather, `clear` or `rain`, over `game.weather` (§9.1): an outdoors level in the
+  rain, the house dry.
+- `look` (optional): this level's look, `balanced` (the default), `realism` or `plain`, over `game.look` (§9.1): a flat-lit annex, a dream
+  level with the effects off (a scene's `look` is its look-at, §3.4: no per-scene preset).
 - `routes` (optional): named walks for the cast in play (`behave` path and patrol, §4), each a list of the level's
   spots in order, with a `wait` (seconds, facing the spot's `rot`) and a `pose` (the pose library) where she stops:
   `"routes": {"r_hall": {"points": [{"at": "hall_back", "wait": 2, "pose": "look_left"}, "hall_near"], "mode": "pingpong"}}`.
@@ -84,6 +88,10 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
   builder colours and labels by it and gives some kinds their built-ins (below); `name` is its label (optional,
   any text, Japanese welcome); `dir` is the way a `stairs` room climbs (`n e s w`).
 - `ceiling: false` for outdoors.
+- `wet` (0..1, optional): a wet floor without rain (a bathroom, a cellar): in the Godot export the floor wears the
+  look plugin's wet (the damp darkening, pools that carry the lights, no rings: GODOT_LOOK §2) by that much, and from
+  0.5 every step in the room is a wet one, on the desk's Play too; the desk's stage shows the floor darker and
+  glossy by it. (Rain, `game.weather`, wets a room with no ceiling by itself, on the stage too.)
 - `look`: library texture sets for its surfaces, `{"floor": "ambientcg/WoodFloor041", "walls": "...", "ceiling": "..."}`
   (docs/ASSETS.md). Grey until fetched.
 
@@ -94,7 +102,16 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
 ```
 
 - `at` is the opening's centre, measured from the wall's west end (n and s walls) or south end (e and w walls).
-- `window: true` is a hole with a `sill`.
+- `window: true` is a hole with a `sill`. A window's **`shaft`** (true, or 0..1 how strong) is the beam its light
+  throws into the room, dust drifting in it (Godot: HSShaft, a thicker haze along the window's light; needs the
+  look's haze; `reach` metres, 3; `dust` 0..1), after Light Kit's Window shaft. The desk draws it as a see-through
+  box along the window's light (`tools/director/lightfx.js`).
+  A window's **`sweep`** (true, or `{"every": 40, "secs": 3, "out": 6, "span": 10, "energy": 10, "aim": 1.5}`) is a car passing
+  outside now and then at night: headlights sliding along the street, aimed in through the glass, the frame's
+  shadow crossing the ceiling (Godot: HSSweep; the desk slides the same lamp, with its shadows); `every` 0 means only when
+  the `sweep` action fires one. After Light Kit's Sweep. `out` is where the street runs: when the window gives onto
+  a room of the level (TestRoom001's yard, four metres deep), keep the car inside it (`"out": 2.5`), or its wall
+  stands between the headlights and the glass.
 - `locked_by` is an item, or `flag:<name>`.
 - `swing` is `in` (into the room that holds the door), `out`, or `slide`: a sliding door (fusuma, shoji, a modern
   sliding door, a glass door onto a balcony), which has no swing.
@@ -187,7 +204,8 @@ class path, `…_C`) is that door's Blueprint, in place of class_map's `door`.
 | `note` | `note` |
 | `inspect` | `text`, optional `line`. In Play a small thing (its longest side 0.6 m or less) is taken up in the hands (DECISIONS 2026-10-28, later): itself in front of the eye, a drag turns it (a photo turned over to read its back), `text` under it, Esc puts it back; a bigger one shows `text` on a card. `{"use": id}` is heard once it's put back |
 | `switch` | `light` |
-| `light` | `kind` (`bulb candle lamp fire`), `lit`, `flicker` 0..1, `lumens`, `radius`, `kelvin` (place with `z` or `on`) |
+| `leak` | water running down a wall from here (GODOT_LOOK §2b): `wall` (`n e s w`, one the room builds), `at` by it and `z` where it comes in, `width` m at the top (0.4; it spreads as it runs), `drip` seconds between drops (2.6; 0 none), `wet` 0..1 (0.8); Godot wets a band of the wall below it (dark, glossy, in rivulets, drying toward the floor, no pools) and drops the drips; the desk draws the band |
+| `light` | `kind` (`bulb candle lamp fire`), `lit`, `flicker` 0..1 (how much), `mode` (which: `fluorescent` a tube's stutter every `interval` s or so, `dying` drops out often and never quite full, `candle` a flame's restless wobble, `pulse` a slow breath at `rate` a second, `custom` your `letters` at `rate` a second: a off, m as placed, z double; none: a plain wobble; a `mode` with no `flicker` is the whole of it; a tube switched on stutters on; after Light Kit's Flicker, the same curves on the desk and in Godot), `lumens`, `radius`, `kelvin` (place with `z` or `on`); **a pattern in its light**: `pattern` (`caustics` water's light on a ceiling or a wall, `leaves` sun or moon through swaying trees, `blinds` a venetian blind's stripes, `clouds` cloud shadows passing) with `aim` [x, y, z] where it falls (the light becomes a spot aimed there), `spread` its cone in degrees (50), `scale` metres per feature, `speed`, `open` 0..1 (the canopy's or the slats' openness, the water's own light, the cloud cover), `angle` the slats' degrees; after Light Kit's Pattern; Godot draws it (the desk shows the spot aimed) |
 | `breaker` | the breaker box (DECISIONS 2026-10-28): a click throws it, the level's power goes off or comes back (the lights flickering up), and `{"use": id}` is heard. While the power's out (the `power` action) every bulb and lamp in the level is dark (each keeps its own on or off for when it's back; candles and fires burn on) and a `switch` only clicks: **No power** |
 | `locker` | (hide inside: a click gets in, a click gets out) `inside` (a spot: where the player stands in it and the way they face; default its middle, facing its `rot`), `see_through` 0..1 (from inside its walls are slats, this much of them gaps; default `game.see_through`, else 0.6). The player's look stays in a cone out of it; `{"hidden": true}` (or the locker's id) holds while they're in |
 | `roll` | a die (`shape: "box 0.3 0.3 0.3"`, six faces): a click throws it from the player's hand, physics rolls it, and when it settles the face on top is heard as `{"rolled": id}` |
@@ -263,9 +281,9 @@ is one take**, at most `clip_max` seconds. A longer speech is several clips, and
 | `stance` | the player's eye height in this scene: `stand` (1.65 m, the default) `crouch` (1.05) `kneel` (1.2) `sit` (1.15) `lie` (0.3) `hide` (1.6, in a locker or wardrobe): first person's low and high angles |
 | `mood` | `intimate dread panic reveal calm grief chase aftermath`: the recipe (DIRECTING.md §2); the desk can apply its camera and shot defaults |
 | `time` | the time of day from this scene on: `day`, `dusk` or `night`. **Left out, the scene keeps the time it was**: the time of the scene it branched from (the nearest scene before it in the flow that set one), back to `game.time` at the start. Stitches play at the time of the scene before them; a stitch whose `chapter` has a `time` (§4: a night's sleep) passes that time on to what comes after it. The desk shows each scene's time on the board (☀ ◐ ☾) and in its picker ("as before: night (from …)"), and lights the stage, the Watch and Play by it (the sky through the windows, the ambient, a light in every window). In Unreal, Light Kit's sky follows it, with UltraVHS's night mode (UNREAL_FLOW §1c). A scene reached at different times by different paths, with no time of its own, is a STORY warning |
-| `models` | which model each cast member wears from this scene on: `{"natsu": "lilac eyes"}`, a variant of theirs (§2 `models`) or `"default"` (back to `previs_body`). **Left out, a cast member keeps the model they had**: whatever the scene the flow came from gave them, down every branch after it, until a later scene picks another or sets it back to default (as `time` carries). The desk shows a scene's choice on its board card and in its picker ("as before: …"), and dresses the stage, the Watch and Play by it; the bake writes each scene's bodies for Unreal. Branches meeting with different models on someone in a scene that doesn't pick one is a STORY warning (pick one there) |
+| `models` | which model each cast member wears from this scene on: `{"natsu": "lilac eyes"}`, a variant of theirs (§2 `models`) or `"default"` (back to `previs_body`). **Left out, a cast member keeps the model they had**: whatever the scene the flow came from gave them, down every branch after it, until a later scene picks another or sets it back to default (as `time` carries). The desk shows a scene's choice on its board card and in its picker ("as before: …"), and dresses the stage, the Watch and Play by it; the bake writes each scene's bodies for Unreal. Branches meeting with different models on someone in a scene that doesn't pick one is a STORY warning (pick one there) | In Godot the run carries the pick, the stand-in is dressed again and the bake's scene plays on that model's body (GODOT_EXPORT §8).
 | `enter`, `exit` | `{"kind": "blend"|"fade"|"cut"|"blink"|"dip", "secs": 0.8}`: how the scene comes in from the game and goes back to it. The default is `blend` (0.8 s): the view eases from wherever the player's eye is into the scene's framing, and at the end the player carries on from the scene's last view, with no black between (GAMEPLAY_PLAN §1). `fade` goes through black; `cut` is for a scare |
-| `camera.mode` | `free` (the player walks and looks), `soft` (movement stops; the look stays inside a cone round `look`, with a spring back), `hard` (a cinematic camera), `held` (an actor has hold of the player: struggles) |
+| `camera.mode` | `live` (**the eye stays the player's own**, 2026-10-29: where they stood or sat when the scene began, no cut and no shot, the cast acting in the room; standing they look and walk, seated they look within 90° either side of the seat's facing; seams and shots are ignored; the way to watch someone, DIRECTING §1), `free` (the player walks and looks), `soft` (movement stops; the look stays inside a cone round `look`, with a spring back), `hard` (a cinematic camera), `held` (an actor has hold of the player: struggles) |
 | `camera.through` | props the camera sees through (a locker's slats): the shot review and the visibility test ignore them |
 | `camera.look` | a cast id on stage, or a placed thing |
 | `camera.cone` | `[yaw°, pitch°]` either side of `look` |
@@ -290,10 +308,10 @@ is one take**, at most `clip_max` seconds. A longer speech is several clips, and
 | `kind` | What the player gets | Fits |
 |---|---|---|
 | `blink` | a 0.15 s black blink, as if their own eyes closed | anything; the default |
-| `glance` (`look`) | the soft camera drifts to `look` (a flicker, a noise) for about a second while the cut happens off-screen, then drifts back | soft and free cameras |
+| `glance` (`look`) | **deprecated** (DECISIONS 2026-10-29: the eye turned for the player breaks the immersion; a STORY warning): the soft camera drifted to `look` for about a second while the cut happened off-screen, then back | nothing new |
 | `flicker` | the lights stutter, and the cut sits in the dark frame | lit rooms with a practical light |
 | `occlude` | something passes between the player and the actor (a swinging lamp, smoke, another figure) | staged moments |
-| `cutaway` (`look`) | a hard cut to an insert (hands, an object, a photo) and back | hard and soft cameras |
+| `cutaway` (`look`) | **deprecated** (as `glance`): a hard cut to an insert (hands, an object, a photo) and back | nothing new |
 | `turn` | the takes end and begin with the actor turned away or head down (written into the take's acting note) | any camera; costs nothing |
 | `stumble` | the player is jolted (shake, look down) | after a scare or a struggle |
 | `dip` | a longer fade through black (time passes) | between beats of one scene |
@@ -369,14 +387,18 @@ keyframes, so the generated motion follows the staging approved in the desk. ANI
 
 ### 3.6 Events (quick-time events; DIRECTING.md §4)
 
-**Only `choose` is current.** `press`, `mash`, `hold`, `breath`, `aim` and `struggle` are **deprecated** (DECISIONS
-2026-10-27: they break the immersion): they still play, the story check warns, the desk offers only `choose`. A
-moment that used one becomes a dialogue answer (`choose`, its `default` the silence) or a plain scene.
+**Only `choose` is current, and it isn't timed.** `press`, `mash`, `hold`, `breath`, `aim` and `struggle` are
+**deprecated** (DECISIONS 2026-10-27: they break the immersion): they still play, the story check warns, the desk
+offers only `choose`. A moment that used one becomes a dialogue answer (`choose`) or a plain scene. **A choice waits
+for the player** (DECISIONS 2026-10-30: no quick-time events, the player must choose): no countdown, no answer taken
+for them; silence is an option of its own ("(Say nothing)"). Its `secs` is how long the moment lasts in the
+recording (the desk's bake: her face and idle while she waits); the scene holds there until an answer is picked.
+`default` is no longer used (the check warns).
 
 ```json
 "event": {"type": "struggle", "secs": 4, "pull": "back", "need": 0.6, "prompt": "Pull free!", "warn": 0.6,
           "on": {"escape": [{"door": "front_door", "set": "unlock"}]}}
-"event": {"type": "choose", "secs": 5, "prompt": "", "options": [{"id": "lie", "label": "Lie"}, {"id": "truth", "label": "Tell her"}], "default": "truth"}
+"event": {"type": "choose", "secs": 5, "prompt": "", "options": [{"id": "lie", "label": "Lie"}, {"id": "truth", "label": "Tell her"}, {"id": "quiet", "label": "(Say nothing)"}]}
 "event": {"type": "breath", "secs": 5, "prompt": "Keep still", "warn": 0.8}
 ```
 
@@ -386,7 +408,7 @@ moment that used one becomes a dialogue answer (`choose`, its `default` the sile
 | `breath` | (don't move the mouse) | success, fail |
 | `aim` | | success, fail |
 | `struggle` | `need` 0..1 (how many presses: about `need` × 20), `pull` (`back left right down any`: the way she's thrown off and the camera leans, not an input); camera `held`. The player mashes E (or Space, or the left button); escape as soon as the bar fills | escape, caught |
-| `choose` | `options [{id, label}]`, `default` (taken on timeout: silence is a choice) | the option ids |
+| `choose` | `options [{id, label}]` (silence is an option of its own); `secs` the moment's length in the recording | the option ids |
 
 - `warn` shows an "!" that many seconds before.
 - `on` runs actions per result.
@@ -504,15 +526,25 @@ with `{"tick": "<id>"}` at the end of that beat, not by its own trigger (the sto
   line, a thought, an answer, an objective, a to-do, a note) is that name; before it, `game.player_name` ("Alex" when
   unset). It's kept with the run (a checkpoint has it). The walker counts 8 s for the typing. Not in Unreal yet
 - `light` (`set`: `on off flicker dim`; or `room`), `door` (`set`: `lock unlock open close slam`)
+- `sweep`: a room: a car passes its windows that have a `sweep` now (§2), the headlights across the ceiling.
 - `power`: `off` cuts the level's power (every bulb and lamp dark, the switches dead; candles and fires burn on), `on`
   brings it back, flickering up; `level` names another level than the player's. The check warns at a cut nothing
-  brings back (no breaker, no `power: on`)
+  brings back (no breaker, no `power: on`). In Godot the lights the user adds to a level by hand go with it when they're on the mains (the look
+  plugin's flicker lights with `on_mains`, or any light in the group `hs_mains`; GODOT_LOOK §0)
 - `torch`: **the player's flashlight** (DECISIONS 2026-10-28): `on`, `off`, `flicker` (a stutter, then on), `dead` (it
   flickers out, and F only clicks until `works`: new batteries). An item with `"torch": true` is a flashlight: picked up
   (`use: pickup`) or given (`give`), it goes in the pocket, not the inventory's row, and **F** switches it (heard as
   `{"torch": "on"}` or `"off"`); its beam comes from the right hand and follows the look a moment late. Its own settings
   ride on the item, `"torch": {"kelvin": 3200, "cone": 20, "range": 12, "strength": 6}` (an old warm one; the default
   is 5200 K, a 26° cone, 18 m). Taken away (`take`), it goes off. The check fails a `torch` with no flashlight item
+- `skin`: **a cast member's skin** (DECISIONS 2026-10-29; docs/GODOT_LOOK.md §5): `{"skin": "aoi", "wet": 0.7,
+  "sweat": 0.5}`: `wet` the sweat film (a sheen, the skin a touch darker), `sweat` beads standing on it, `drips` runs,
+  `oil` oiled up, each 0..1 (left out: unchanged; 0 takes it off). From a beat, a scene's cue or an answer's `do`; it
+  stays on her bodies (the stand-in's, a scene's) till set again. Out in the rain (`game.weather`, a room with no
+  ceiling) a cast member wets by herself, toward 0.8 in a few seconds, and dries in about a minute once she's in,
+  unless the word has set her: then hers is hers till the word changes it. The Godot export plays it on the skin shader; the
+  desk's stage draws it the same way on her body (the clay MHR body, a Studio export's skin, the figure of cylinders:
+  `tools/shared/skinwet.js`) in Play and in the Watch (a scene's cue at its clip edge); Unreal not yet
 - `show`, `hide`, `move` (`to` a spot), `objective`
 - `state`: a little thing to one of its states, `{"state": "kitchen_kettle", "to": "heating"}`: in a beat, a scene's
   cue (on its clip edge: what lasts counts from there) or an answer's `do`. States carry on through the run
@@ -552,13 +584,16 @@ with `{"tick": "<id>"}` at the end of that beat, not by its own trigger (the sto
   scene that should end the stitch or branch the story is a flow node instead (or an interrupt).
 - `ask`: a **question with answers**, asked in play. The question is the footer's line, like every line: `line` (a
   line id: spoken, the speaker's name above) or `text` (a thought); the answers sit right under
-  it at the bottom centre of the frame, in one panel, the dashes between them (DECISIONS 2026-10-27, notes: the lines
-  are text, so the question reads on into its answers), while the camera's focus holds on `who` (a cast member's face)
-  or `on` (a placed thing it's about). A reply in a scene (§9.9) and a timed choice show theirs the same way. 2 to 4 `options`, each `id`, `label`, `ja` (optional, small over the label) and `do`
-  (actions run when it's picked). `secs` times it, with `default` (an answer's id) taken when time runs out. Picking
+  it near the bottom of the frame, on one line with a dash between, set as the dialogue's own words, no panel and no
+  numbers: the answer pointed at is the lines' white, the other dimmed; A and D (or the arrows) move, Enter picks, the
+  mouse points and clicks (DECISIONS 2026-10-30, evening). **Two answers at most** (the check warns past two), while the camera's focus holds on `who` (a cast member's face) or `on` (a placed thing it's
+  about). A reply in a scene (§9.9) and a scene's choice show theirs the same way. 2 `options` (4 at most, warned), each `id`,
+  `label`, `ja` (optional, small over the label) and `do` (actions run when it's picked). It waits for an answer:
+  nothing is timed (DECISIONS 2026-10-30). Picking
   one is heard as `{"answered": ask, "option": id}`, so a later beat in the stitch can follow it; to branch the
   story, the answer's `do` sets a flag and a flag choice (§5) follows it.
-  `{"ask": "q_stay", "line": "mari_014", "who": "mari", "options": [{"id": "stay", "label": "I'll stay", "do": [{"karma": 1}]}, {"id": "go", "label": "I should go"}], "secs": 8, "default": "go"}`.
+  `{"ask": "q_stay", "line": "mari_014", "who": "mari", "options": [{"id": "stay", "label": "I'll stay", "do": [{"karma": 1}]}, {"id": "go", "label": "I should go"}]}`.
+  It waits for an answer (DECISIONS 2026-10-30: `secs` and `default` are no longer used; the check warns).
   The walker (STORY, the playthrough's timing) answers with the `default`, else the first.
   A reply inside a scene (§9.9) is the scene's own; `ask` is for the player's tasks.
 - `todo`: a task on **the to-do list** (the HUD's list under the objective; DECISIONS 2026-10-27, late night): a
@@ -774,7 +809,8 @@ prints each take's prompt: `she makes a <expr> while she <voice> <d>[Japanese] <
   {"id": "o_silent", "label": "(Say nothing)", "ja": "（黙っている）", "zh": "（沉默）", "karma": -1}]}
 ```
 
-- `secs` is **30** unless given. The timeout takes `default`: silence is an answer, and can carry karma.
+- `secs` is **30** unless given: the moment's length in the recording. Nothing is picked for the player (DECISIONS
+  2026-10-30): silence is an option of its own, and can carry karma.
 - `karma` on an option is a number (the default axis) or `{"axis": n}`. A `karma` action does the same from beats,
   cues and `sets`: reactions count (`{"karma": -2}` for taking the doll).
 - A karma choice needs no result choice after it: the karma is what it's for. It can still branch with one.
@@ -927,8 +963,8 @@ card on the board (HANDOFF_DIRECTOR_TODO §1).
     `next` (the board draws the arrow, dashed blue; a card reached only this way is reached). In a triggered scene (a
     beat's `scene`) it just ends the scene: play carries on.
   The check plays every answer that goes somewhere else than its sweep's answer on a path of its own.
-- `wait` (6 s by default, 2 to 15): how long she waits. Past it her answer is skipped (`timeout: null`), or a
-  `timeout` option's answer plays (an answer to your silence).
+- `wait` (6 s by default, 2 to 15): how long her waiting lasts in the recording; then she holds until you answer
+  (DECISIONS 2026-10-30: no timed choices). `timeout` is no longer used (the check warns): give silence an option.
 - `sets`: actions when the reply is picked (a flag, karma, a count), so a reply can open a branch later through a
   flag choice; most set nothing and are there so it feels like you.
 - `wait_expr`: the face she holds while she waits, for the take's end (MiniMax).
@@ -945,6 +981,35 @@ the first time she finds you, a tease the second, the third is a death.
 **The HUD's theme** (Play mode, docs/GAMEPLAY_PLAN.md §10): `game.ui_theme` names a file in
 `tools/director/play/ui/themes/` (`glass`, barely-there frosted glass, when a game names none; `glass-rose`, the same in warm romance colours; `neumorph`, the older light kit; `plain`). A theme sets
 only colours, radii, shadows and the font; the layout is the same for every game.
+
+**The camcorder look** (docs/VHS.md): `game.vhs` names UltraVHS's preset the game is shot on, `camcorder` (clean),
+`camhybrid` (the user's, 2026-10-29: the camcorder with less fisheye and its blur mostly with distance, what's close
+nearly sharp; the strength they picked from seven), `worn` or `nightmare`; left out or `off`, the picture is as it is. The Godot export plays it as a shader over the picture
+under the HUD (its black turning blue at night, the menu's Film grain capping the noise); Unreal's UltraVHS component
+takes the same preset. The desk doesn't show it yet (VHS.md §9).
+
+**The lighting** (DECISIONS 2026-10-30, noon: the lighting is made by hand in Godot, the export leaves it alone): `game.lighting`
+is `on` (the default: the runtime gives the time of day's sky, sun and ambient, and stands back for a level that carries
+its own WorldEnvironment or DirectionalLight3D) or `off` (a test mode, like the editor's viewport: a flat grey ambient and
+a soft key without shadows, the look plain, no fog, no iris; nothing pitch dark, for playing a scene before its lighting
+is made). The story's own lamps (`use: light`, switches, the power, flicker) work in both.
+
+**The grade** (docs/GODOT_LOOK.md §1d): `game.grade` names the film-style colour grade over the finished picture
+(under the HUD, over the tape): `cinema` (the default: a gentle teal-and-orange, a soft vignette, fine grain),
+`teal-orange`, `cold`, `sodium`, `bleach`, `noir`, `warm`, or `none`; or an object `{"preset": "cold", "vignette":
+0.5, "grain": 0.3, "amount": 0.8}` with any of `amount`, `lift`, `gamma`, `gain` (three numbers each), `warmth`,
+`saturation`, `contrast`, `fade`, `vignette`, `vignette_soft`, `grain`, `aberration` over the preset.
+
+**The look** (docs/GODOT_LOOK.md): `game.look` names the look plugin's preset the Godot export plays under: `balanced`
+(the default since 2026-10-30, evening, a GTX 1060 the target: screen-space reflections, ambient occlusion, a little
+glow, a thin haze, AgX, temporal anti-aliasing; no screen-space indirect light), `realism` (the same with the
+indirect light and more of everything, for a bigger card) or `plain` (all of it off). `game.weather`: `rain`
+puts rain in every room with no `ceiling`, its floor wet with pools that carry the lights and the rain's rings,
+splashes where it lands, the shelf's rain heard there (all round you once you're in the room, at the room's middle
+from indoors) and every step in that room wet (the desk's Play the same); `clear` (the default) nothing; a level's
+own `weather` (§2) overrides it, and a level's own `look` (§2) overrides `game.look`. A `clean` stain of kind
+`blood` wears the plugin's blood: a
+pool with a ragged edge and flung drops, glossy, fading as it's scrubbed.
 
 **Hiding places' default:** `game.see_through` (0..1), how much of a locker's slats are gaps when the locker doesn't say.
 

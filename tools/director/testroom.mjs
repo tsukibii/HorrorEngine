@@ -83,7 +83,8 @@ const snapFor = nid => {                               // the run's state on rea
   // stand d metres from a thing, facing it, where nothing's in the way and the cursor lands on it (playtest.js's goTo);
   // aimed at its middle, else anywhere across its top, as a player clicks whatever part shows (a hob beside its pot);
   // look: only looked at (a painting: the reticle on it, nothing to click)
-  const goTo = (id, d = 0.9, look = false) => page.waitForFunction(() => { const rt = window.__dd.play; return rt && !rt.lookTween && !rt.moving; }, null, { timeout: 60000 }).then(() => page.evaluate(([id, d, look]) => {
+  const goTo = (id, d = 0.9, look = false) => page.waitForFunction(() => { const rt = window.__dd.play, settled = rt && Math.abs(rt.player.eye - (window.__eyePrev ?? -1)) < 0.001; if (rt) window.__eyePrev = rt.player.eye;   // the eye settled after a crouch
+    return rt && !rt.lookTween && !rt.moving && settled; }, null, { timeout: 60000 }).then(() => page.evaluate(([id, d, look]) => {
     const rt = window.__dd.play, V = rt.player.pos.constructor, o = rt.byId[id];
     if (!o) throw new Error("no " + id);
     const at = new V(); o.getWorldPosition(at);
@@ -187,6 +188,8 @@ const snapFor = nid => {                               // the run's state on rea
       if (!(eye < 1.2)) throw new Error("crouched, the eye at " + eye);
       const steps = await page.evaluate(() => window.__steps);
       if (!steps.length || steps.some(f => f !== "dirt")) throw new Error("steps in the yard: " + JSON.stringify(steps));
+      const lastName = await page.evaluate(() => window.__dd.play.lastStep.name);     // the yard's in the rain (game.weather): the steps sound wet
+      if (!/^step_wet/.test(lastName)) throw new Error("steps in the rain should be wet: " + lastName);
     });
     await step("the front door: a click opens it (the task ticks), through it into the lobby (it ticks), and the station ends", async () => {
       await place(1.5, -5.9, 90); await use("front_door", 1.0); await gameWait(1.0);
@@ -256,6 +259,8 @@ const snapFor = nid => {                               // the run's state on rea
       await click(); await gameWait(0.5);
       const p = await page.evaluate(() => { const rt = window.__dd.play, n = rt.npcs.aoi; return { peeping: rt.player.peeping && rt.player.peeping.door, aoi: n && n.as, y: n && -n.pos.z }; });
       if (p.peeping !== "front_door" || p.aoi !== "idle" || !(p.y < -5)) throw new Error("at the lens: " + JSON.stringify(p));
+      const wet = await page.evaluate(() => (((window.__dd.play.skinWet || {}).aoi) || {}).wet || 0);     // out in the yard's rain: her skin wets by itself
+      if (!(wet > 0.1)) throw new Error("Aoi out in the rain should be wet by now: " + wet);
       await ticked("t2_peep");
       if (!(await page.evaluate(() => window.__knocks)) && !/knock/.test(await page.evaluate(() => document.querySelector(".ph-log").textContent))) throw new Error("no knock heard");
       await press("KeyS"); await gameWait(0.3);
@@ -344,6 +349,8 @@ const snapFor = nid => {                               // the run's state on rea
       await enterRoom("door_kitchen", "kitchen");
       const t = await tasks(); if (!t.some(x => x.id === "t6_kettle")) throw new Error(JSON.stringify(t));
       if (!/Aoi/.test(await page.textContent('.ph-task[data-id="t6_kettle"]'))) throw new Error("the request has no name by it");
+      const sw = await page.evaluate(() => { const st = window.__dd.watchStage, f = st.cast.aoi; return { set: st.skin.aoi, worn: f.wet, kind: f.constructor.name }; });   // the task's `skin` beat: she sweats in the kitchen, drawn on her body (skinwet.js)
+      if (!sw.set || sw.set.wet !== 0.6 || sw.set.sweat !== 0.4 || !sw.worn || sw.worn.wet !== 0.6 || sw.worn.sweat !== 0.4) throw new Error("her skin: " + JSON.stringify(sw));
       const k = await use("kitchen_kettle", 0.7); if (!/switch on/i.test(k.label)) throw new Error("the kettle says " + k.label);
       await gameWait(0.3); if ((await state("kitchen_kettle")) !== "heating") throw new Error("not heating");
       await ticked("t6_kettle", "the kettle boiled");
@@ -397,6 +404,7 @@ const snapFor = nid => {                               // the run's state on rea
       await use("rest_sofa", 0.9);
       await playing(false, 60000); await scene();
       await page.waitForSelector(".ph-panel .ph-name", { timeout: 60000 });
+      await page.waitForFunction(() => (document.activeElement || {}).classList?.contains("ph-name"), null, { timeout: 10000 });   // the box has the keys before they're typed
       await page.keyboard.type("Riko"); await page.keyboard.press("Enter");
       await until(() => /Riko\. She'll write that/.test(window.__dd.play.hud.lineEl.textContent), null, "the name said");
       if ((await page.evaluate(() => window.__dd.run.name)) !== "Riko") throw new Error("the name isn't kept");
@@ -459,7 +467,9 @@ const snapFor = nid => {                               // the run's state on rea
       await ticked("t11_photo");
       await use("library_shelf", 1.0); await page.waitForSelector(".ph-panel", { timeout: 30000 });
       if (!/labelled with your name/.test(await page.textContent(".ph-panel"))) throw new Error("the shelf's card");
-      await closePanel(); await ticked("t11_shelf");
+      await page.evaluate(() => document.querySelector(".ph-panel").click());     // a click puts a card of words away, like Esc
+      await until(() => !document.querySelector(".ph-panel"), null, "the card closed by a click", 30000);
+      await ticked("t11_shelf");
     });
     await step("the painting looked at two seconds (ticks): the secret, a note slips out (found_painting), and it reads", async () => {
       await goTo("library_painting", 1.6, true); await gameWait(2.6);

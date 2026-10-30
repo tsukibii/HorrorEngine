@@ -1090,4 +1090,85 @@ running beside it on the cloud's four cores. SwiftShader already spends about a 
 Playwright's click waits for the button to hold still over two frames, so with the cores shared the wait ran out. The
 same steps passed when the run had the machine to itself. In the cloud, run nothing heavy beside a browser check, not
 even the offline ones. On the user's machine, with `GPU=1` (docs/RUN_LOCALLY.md), a frame is milliseconds and this
-doesn't arise.
+doesn't arise. Confirmed 2026-10-29: TESTROOM's typed-thought check went red twice in the cloud, once with nothing
+else running, and passed first time on the 3090 in 3.2 minutes with the rest of the suite running beside it; the
+thought's typing is paced by the clock and SwiftShader's frame was slower than a letter. A browser timing check that
+fails only in the cloud is read on the card before anything is changed.
+
+## A spot light projects only through its shadows (2026-10-29)
+
+A SpotLight3D with a `light_projector` lit nothing: the wall under it went dark, with any texture, even plain white.
+It lights again the moment `shadow_enabled` is on. Godot's projector sampling rides on the spot's shadow atlas slot,
+so without shadows there is no projection and the light's whole contribution goes with it. HSPattern switches the
+spot's shadows on itself and says so. Measured in the plugin's own project (`Saved/Godot/_lookplugin/`), five runs of
+a ten-line scene: when a light does nothing, try it bare (no projector, no pattern) before suspecting the pattern.
+
+## A projector that changes every frame doesn't show (2026-10-29)
+
+The first HSPattern drew its caustics into a SubViewport each frame and made the ViewportTexture the spot's
+projector. The renderer copies a projector into its atlas once, when it's added, so the light showed one frame of the
+viewport, or nothing. The loop is drawn once at load instead, a frame a frame into plain ImageTextures, and the
+projector is swapped among them (each copied into the atlas once). Anything the renderer atlases (projectors,
+decals) wants a texture that stands still.
+
+## A chain that waited for itself (2026-10-29)
+
+A background chain began `until ! ps -p $(pgrep -f "lookshot.gd" ...)`: the pattern matched the chain's own shell,
+whose command line held the words, so it waited forever, and three chains queued behind its logs waited with it.
+CLAUDE.md's rule about `pgrep -f` and `pkill -f` covers `until` loops too: a chain that waits for a process should
+wait for its log's last line, or for a PID taken from a variable, never for a name that is also in its own command.
+
+## A Godot check that measured a different renderer and a different window (2026-10-29, the local run)
+
+The first LOOKPLUGIN run on the 3090 came back with ten red rows and no error. Two things had gone wrong at once,
+neither of them the plugin. First, the check set `VK_ICD_FILENAMES` to the cloud's lavapipe driver file, which doesn't
+exist on the user's machine; the Vulkan loader then found no driver at all and Godot fell back to OpenGL, with a
+warning in its output the check never read: no SSR, no volumetric fog, no compositor effects, no auto exposure, so the
+wet floor, the shaft, the softener and the iris measured the same on and off. Second, with a display, Godot opened a
+real window and Hyprland tiled it to 941 × 1030, so every measure's pixel box fell on another part of the picture (the
+oil sphere's glint box measured a black pool). Now every Godot script sets the lavapipe ICD only when that file
+exists, fails on Godot's "switching to OpenGL 3" line, prefers Xvfb whenever `xvfb-run` is there (the card still draws
+through Vulkan under it, and no window manager touches the window), and the check projects are `resizable=false`
+(a tiling manager floats a fixed-size window). The plugin check runs with `--fixed-fps 60`, so a stage's frame counts
+mean the same seconds on the card as in the cloud. Two rules: a check that measures pixels must first assert the
+renderer and the picture's size it measured in; and a stage that passed alone (`--only`) but not in sequence
+(the sweep: its beam never crossed the camera's view, the alone run had another camera) was passing by accident.
+
+## A browser check that passed only because the cloud was slow (2026-10-29, the local run)
+
+PLAY went red three times in a row on the 3090, each time one step further, and each red was the check's own pacing,
+not the desk's: the name box takes focus 30 ms after it appears and the card typed before that (the thought then said
+the placeholder's name); after a crouch the eye rises over a second and `goTo` aimed from where it still was, so the
+first tick after carried the reticle off the small thing; the kitchen's glimpse beat shows its thought 1.4 s after the
+room's edge and the step looked 1.37 s after it. On SwiftShader every one of these had been hidden by the slow frames.
+The fixes are in the checks (wait for the box to have the keys, for the eye to settle, for the beat's own time) and
+one in the HUD (the box focused at once as well as after its timer). The rule: a wait in a browser check is for a
+state the page can show (focus, a settled value, the clock past the beat's own sum), never for a frame count or a
+guessed margin; and a check that only ever ran on a slow machine hasn't been run.
+
+## A lightmap bake that worked by hand and baked nothing from a fresh export (2026-10-30)
+
+- **The editor's file system has to know a folder before a bake writes into it.** LightmapGI's bake writes each
+  light texture (`<data>.exr`) and asks the editor to import it; a folder made after the editor's startup scan isn't
+  in its tree, so the import fails (`Can't find file ... during file reimport`, then `BAKE_ERROR_CANT_CREATE_IMAGE`)
+  and the data comes out with no meshes. The export makes `game/lightmaps/` (with a README, so a zip keeps it), and
+  the bake plugin rescans the file system if it ever has to make it.
+- **The editor writes a LightmapGIData only at a scene save or at quit.** A level baked for several states (the times
+  of day, the lamps on and off) on one LightmapGI would keep only the last; the plugin saves each state's data with
+  `ResourceSaver.save` right after its bake.
+- The story: the hand run baked 473 meshes because an earlier run had already made the folder; the first GDBAKE from
+  a fresh export baked twice and registered none. The annex (a ten-second bake) was the quick test bench.
+
+## Tool nodes in Godot's editor save, notify and instance by their own rules (2026-10-30)
+
+- **Nothing added or freed inside a notification sent down the tree.** The pre-save and post-save notifications
+  come through `propagate_notification`, which holds every parent busy while it runs: a leak node freeing its drips
+  there failed ("Parent node is busy") and crashed Godot. Restore what's saved (a material, an energy) right away;
+  free with `queue_free` and build again with `call_deferred`.
+- **`EditorInterface.save_scene()` runs frames while it saves** (its progress bar): an EditorPlugin's `_process`
+  that called it ran again inside it and saved again ("Task 'save' already exists", then an abort). Mark the save
+  started before calling it, and return early while it's busy.
+- **A plain script can't be instanced in the editor**, only its static functions called: a `@tool` node making an
+  `HSRain.new()` needs `rain.gd` to be `@tool` too.
+- **`surface_get_name` is ArrayMesh's alone**: a helper that matches surfaces by name must skip it for a
+  primitive mesh (a SphereMesh stood in for a body and the skin's `wear` stopped there).

@@ -10,6 +10,7 @@ Plain Python, no installs. Listens on 127.0.0.1 only.
 import json
 import re
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -111,6 +112,19 @@ def face_name(n):
     return n if n and not n.startswith(".") and all(ch.isalnum() or ch in "_-." for ch in n) else None
 
 
+
+def latest_export(game):
+    """A game's newest Godot export: Saved/Godot/<game>_v<NNN> with the highest number (DECISIONS 2026-10-30, noon), or None."""
+    import re  # noqa: PLC0415
+    best = None
+    base = ROOT / "Saved" / "Godot"
+    if base.exists():
+        for d in base.iterdir():
+            m = re.fullmatch(re.escape(game) + r"_v(\d+)", d.name)
+            if m and d.is_dir() and (best is None or int(m.group(1)) > best[0]):
+                best = (int(m.group(1)), d)
+    return best[1] if best else None
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         pass
@@ -164,6 +178,15 @@ class Handler(BaseHTTPRequestHandler):
             f = (ROOT / "tools" / "shared" if parts[0] == "shared" else ROOT / "Content" / "Studio" / "Env") / parts[1]
             if f.is_file():
                 return self.send(200, f.read_bytes(), "text/javascript" if f.suffix == ".js" else "application/octet-stream")
+        if parts[0] == "godot" and len(parts) >= 3 and ".." not in parts and self.game_path(parts[1]):          # an exported Godot project's guide and pictures
+            base = latest_export(parts[1]) or (ROOT / "Saved" / "Godot" / parts[1])   # the newest version's guide
+            f = base
+            for q in parts[2:]:
+                f = f / q
+            if f.is_file() and base.resolve() in f.resolve().parents:
+                import mimetypes  # noqa: PLC0415
+                return self.send(200, f.read_bytes(), mimetypes.guess_type(f.name)[0] or "application/octet-stream")
+            return self.send(404, {"error": "no such file in the export"})
         if parts[0] == "boardgames" and len(parts) == 3 and parts[2].endswith(".js") and self.game_path(parts[1]):   # a board game's rules: the game's own, else the studio's
             for d in (L.GAMES / parts[1] / "BoardGames", L.BOARD_GAMES):
                 if (d / parts[2]).is_file() and d.resolve() in (d / parts[2]).resolve().parents:
@@ -186,9 +209,6 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(404, {"error": "no such painting"})
         if parts[:2] == ["api", "boardgames"] and len(parts) == 3 and self.game_path(parts[2]):   # the games a table can have
             return self.send(200, {"games": [dict(m, id=k) for k, m in L.board_games(parts[2]).items()]})
-        if parts[:3] == ["api", "unreal", "status"] and len(parts) == 4 and self.game_path(parts[3]):
-            import unreal_link as UL  # noqa: PLC0415 - tools/
-            return self.send(200, UL.status(parts[3]))
         if parts[:2] == ["api", "bodies"]:
             files = sorted(f.name for f in BODIES.glob("*") if f.suffix.lower() in (".glb", ".gltf", ".fbx")) if BODIES.exists() else []
             return self.send(200, {"bodies": files + people_bodies()})
@@ -585,9 +605,21 @@ class Handler(BaseHTTPRequestHandler):
             data = json.loads(self.body().decode("utf-8"))
             out.write_text(json.dumps(data, separators=(",", ":")), encoding="utf-8")
             return self.send(200, {"ok": True, "path": str(out.relative_to(ROOT)), "kb": round(out.stat().st_size / 1024)})
-        if parts[:3] == ["api", "unreal", "generate"] and len(parts) == 4 and self.game_path(parts[3]):
-            import unreal_link as UL  # noqa: PLC0415 - tools/: the checks, then the build in Unreal
-            return self.send(200, UL.generate(parts[3]))
+        if parts[:3] == ["api", "godot", "export"] and len(parts) == 4 and self.game_path(parts[3]):   # the game as a Godot project (.zip) with its guide
+            # the button writes the project and its zip, nothing more: no Godot windows (the guide's pictures are the CLI's --pictures;
+            # DECISIONS 2026-10-29, the user's return: "export it as an individual godot project to manually load into godot")
+            r = subprocess.run([sys.executable, str(ROOT / "tools" / "godot_export.py"), "--game", parts[3], "--zip"],
+                               capture_output=True, text=True, encoding="utf-8", timeout=2400, cwd=str(ROOT))
+            out = latest_export(parts[3]) or (ROOT / "Saved" / "Godot" / parts[3])   # the version this export made (Saved/Godot/<G>_v<NNN>)
+            z = out.with_suffix(".zip")
+            kept = []                                       # a re-export: the files changed by hand it kept (the receipt, GODOT_EXPORT §5)
+            try:
+                kept = json.loads((out / "game" / "export.json").read_text(encoding="utf-8")).get("kept", [])
+            except (OSError, ValueError):
+                kept = []
+            return self.send(200 if r.returncode == 0 else 500, {"ok": r.returncode == 0, "output": (r.stdout + r.stderr)[-4000:], "dir": str(out.relative_to(ROOT)), "kept": kept,
+                                                                "zip": str(z.relative_to(ROOT)) if z.exists() else None, "kb": round(z.stat().st_size / 1024) if z.exists() else 0,
+                                                                "guide": f"/godot/{parts[3]}/guide/index.html" if (out / "guide" / "index.html").exists() else None})
         if parts[:2] == ["api", "storycheck"] and len(parts) == 3 and self.game_path(parts[2]):
             import tempfile  # noqa: PLC0415 - the desk's story as it is now, not saved yet: checked as this game's
             fd, tmp = tempfile.mkstemp(suffix=".json", prefix="desk_story_")

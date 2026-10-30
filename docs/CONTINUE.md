@@ -6,10 +6,305 @@ lash sets), on 2026-10-27 on `clothing-expanded`, and last on `dev-002`: the fou
 dashboard and the writers' room; 2026-10-28 the flashlight, cleaning, the peephole, the power cut, footsteps, the
 latch, examining, skin v2; then TestRoom001, the Unreal note, the skin after HumanShaders and expression loops; and
 on `game-research-001`: The Visitor's research, abstract and chart, the director's to-do; merged into `dev-002` and
-the to-do built there, with the Studio's eyes from the side, a small nose and the face's bake) on
-`claude/experiments-afk`. Read this
+the to-do built there, with the Studio's eyes from the side, a small nose and the face's bake; 2026-10-28 and 29 on
+`godot-support`: the Godot export, its runtime, its look, the look plugin). Read this
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
+
+## 0a. The cloud session after (2026-10-30, small hours): §0's four pieces built, and a stand-in bug from the user
+
+All four of §0 are in, each measured where the cloud could (GDTESTROOM, GDEXPORT, GDPLAY, DESK, LOOKPLUGIN):
+**the leak** (`use: leak`, GODOT_LOOK §2b: the wet shader's band on the wall below it, HSLeak's drips; the desk's
+dark strip; the bath's west wall), **a mirror in a mirror** (§5b: each mirror on a layer of its own, 11 to 19; the
+demo's second mirror), **the timeline's edits playing back** (GODOT_EXPORT §3: the scene player takes its eye from
+scene.tscn's camera keys and the lines' and cues' moments from the method track, mapped onto the run by the seg that
+plays the same; GDEXPORT moves a key and reads the eye moved) and **the bodies on the timeline** (a cast member's glb
+instanced in scene.tscn with bone and blend-shape tracks from the bake, every third frame, only what moves: 35 bones
+and 36 shapes for Aoi's lobby scene, 760 KB; GDEXPORT seeks it and measures the head bone on the recording's head
+joint). **For the user:** open `Saved/Godot/TestRoom001/game/acts/02_n_hello/scene.tscn` beside the lab level and
+scrub: the camera along the recording, Aoi moving; `python tools/godot/plugin_check.py` for the leak and the two
+mirrors pictured on the card (the cloud's: `docs/godot_sheets/2026-10-30_leak_mirror.jpg`).
+
+**The user's three asks after that** (2026-10-30, morning; "Ah that sorta worked"): (1) the visitor at the
+peephole showed her back: not the level (her idle has `face: "player"`), the runtime: `standin_body` turned a
+Studio export 180° on a wrong note about the stand-in's forward (it's +z, the desk's figure's), so every export
+faced away from what it faced; worn unturned now, lookshot's `--cast` fixed with it, pictured from a metre in
+front of her spot (GODOT_EXPORT §8). (2) **HSHair** (GODOT_LOOK §5c): the Studio's hair look on any imported
+model's card hair, brows and lashes, with the PSX dither as the story's `hair` word (`{"retro": true}` on the
+game or a cast member; `flat`, `steps`, `dither`, `gain`, `shine`, `soft`, `cut` each); worn by every stand-in and
+every scene's body; the demo's `hair` stage measures it. (3) **Scenes play the designed character**: bakeplay
+instances the Character Studio export itself (posed from the same skinning matrices: the bake was made on its
+skeleton) when the story or the bake's index says the body is `people/<name>` (GODOT_EXPORT §8); the face stays
+neutral there for now. Then **"why does it look so plastic"**: HSSkin wore the export's albedo alone, dropping
+its normal map (the pores and wrinkles), its roughness map and its thinness; now all three and the `studioSkin`
+record go on (GODOT_LOOK §5; GDPEOPLE measures the relief). Other realism enhancers for imported models still
+open: a cloth sheen on the tailor's garments (their maps come across as albedo only), hashed alpha on hair
+under TAA. Two more from the user's play: **the peephole wasn't drawn in Godot** (a bare node for the reticle;
+now the desk's brass ring and dark glass, and the latch's thumb turn with it: GODOT_EXPORT §8), and **a door
+they can't open on the desk but can in Godot**: not reproduced (the headless tests click the test room's doors
+open); the likely causes given to them (the pointer lock not taken, a kit door's handle being a dumb mesh on
+both runtimes, a story lock); awaiting what the reticle says there. If it's the handle: a kit door's
+`attach:<door>` parts should count as the door for the reticle in both runtimes. And **thousands of VoxelGI
+"bounds" errors** after their pull: a broken kept bake in `user://gi/`; validated, thrown away and rebaked now
+(GODOT_EXPORT §8). **The lighting that changed with the look** (their last note before sleep: darker looking
+down, bright gaps on the floor coming and going): three causes, each cut back (GODOT_LOOK §1, GODOT_EXPORT §8):
+the iris's five-stop range (one stop now), SSIL at 1.2 (0.45, radius 1.2), the rooms' VoxelGIs at 64 cells a
+metre into the neighbours (cells by the room's size, 30 cm past it); measured with lookshot pairs at the same
+spot level and looking down, before and after (`docs/godot_sheets/2026-10-30_look_down.jpg`: in the corridor at
+night the picture looking down was 0.70 of the level one, 0.79 after; the whole picture a third brighter after,
+the finer VoxelGIs bouncing more); their three
+pictures of a bright rectangle on a room's floor were the windows' shafts (a box of lit fog); made faint at night
+first, then, after two more pictures (the strip at the wall's foot with a dotted edge, gone when far from the
+window), the fog box replaced by a card (GODOT_LOOK §1c): the froxel grid can't draw a box's foot cleanly. **The desk's clicks** ("I still can't click or interact with anything
+when testing via director tool, it used to work"): the reticle's ray hit the shafts' see-through boxes and the
+patterns' planes before anything (the Light Kit pieces drawn on the desk since 2026-10-29): skipped now; and with
+their decision (DECISIONS 2026-10-30) the desk lights plainly by default, no effects drawn at all (the toolbar's
+Lighting shows them). **Overlit skin in Godot**: GDPEOPLE now holds the lit face within 0.85 to 1.15 of the
+export's own plain material under the same lights (0.95 on `_studiotest`); if lol still glows, it's the room's
+lights' energy on a brighter tone, or the SSS: `subsurface_scattering_strength` and `specular` in skin.gd are the
+knobs. **The `index_array is null` error**: a glb surface with an index buffer and nothing in it (an empty
+primitive in an export) is drawn every frame; loaded glbs are scrubbed of such surfaces now (play.gd
+`scrub_meshes`, said on the console). **The cutscene lines not seen** ("I don't see dialogue in godot for cutscenes"): a new GDTESTROOM check (the
+line's label visible with words through the lobby scene) found it: a scene holds the player and `play.hold` hid
+the whole HUD, the footer with the lines in it; now `hud.held` steps the play HUD back and keeps the footer (the
+lines, who, a reply's choices), the fade and the chapter card. The menu's `paused` is once each way too, and the
+Subtitles on/off row is gone (the lines are the dialogue). If they still see none after pulling:
+the label's words are the clip's `en` text (a game whose lines carry only `ja` shows nothing), and the HUD is
+layer 10 over the grade (6) and the tape (5). **The grade** (their last ask: "post processing
+so the game feels more professional, color grading, characters less like bright plastic"): HSPost (GODOT_LOOK
+§1d), `cinema` on every game by default, the skin's gloss softened (§5); next for the characters, if they still
+read as plastic on lol: a look at the stand-in under the lobby's lamps with `tools/godot/people_check.py`'s lit
+pictures beside a Godot lookshot of her, and the clothes' maps (albedo only).
+
+**Open: the user's stand-in bug** (2026-10-30, their words: "in director I chose an actual designed character to
+test but in game I only see this base mesh; after switching to the designed character it now has weird splotches
+of skin colour mixed with the default grey"). Not reproduced here: the cloud's `_studiotest` export worn by Aoi
+(`previs_body: people/_studiotest`, a scratch export in `Saved/Godot/_peopletest`) is what the next lines check.
+The first symptom (the base mesh) is `standin_file` falling through to the bake's body: the export copies
+`Content/Studio/People/<name>/export/<name>.glb` into `game/people/` only when that file exists, so a character the
+desk shows from `People/<name>/export/` but whose glb isn't named `<name>.glb`, or a stale copy already in
+`game/people/`, would do it; the second (the splotches) is in HSSkin.wear on their export's meshes (the skin rule
+by name, the albedo texture, the tone) or in that character's baked albedo itself. play.gd now prints a line per
+stand-in at level load (`standin <cid> wears <file> (...): N skin surfaces on <meshes>`): ask the user for that
+line from Godot's output, the character's folder name under `Content/Studio/People/`, and a run of
+`python tools/godot/people_check.py --person <name>` on the card (GDPEOPLE pictures that export in Godot on the
+skin shader: if the splotches are there, it's the export or the shader; if not, it's the stand-in's wear).
+
+**The lighting handed to the user** (DECISIONS 2026-10-30, noon, after the scripted lightmap bake took hours in the
+cloud): the export writes no lighting of its own (no VoxelGI, probes or lightmaps; moving things dynamic GI), the
+runtime's `game.lighting` is `on` (the time of day's sky and sun unless a level has its own WorldEnvironment or sun)
+or `off` (a flat test light); every export a new version folder (`Saved/Godot/<G>_v001`...; the checks in
+`Saved/Godot/_check/`); the dialogue choice a glass panel of rows, clickable (it wasn't: a live scene passed only
+the walking keys, and the mouse stayed captured). **Then the effects as drag-and-drop nodes** (GODOT_LOOK §0,
+built): every effect a node in Add Child Node (`HS...`, an icon each) with its settings in the inspector, 33 ready
+ones in `addons/horrorstudio_look/presets/` to drag from the FileSystem dock; they preview in the editor (rain,
+wet floors, shafts, sweeps, patterns, flicker) and save only their numbers (a wet floor's, a pane's or a leak's mesh
+gets its own material back before every save); a flicker light of the user's goes out with the story's power cut
+(`hs_mains`). LOOKPLUGIN's new part runs the presets in a game and **in the editor itself** (`--nodes` alone). **For
+the user:** open a level of the latest export, drag `presets/window_sun.tscn` or `fluorescent_tube.tscn` in, tune
+it; tell us what's missing or awkward to tune.
+
+**Then the user's three asks after trying them** (2026-10-30, afternoon, DECISIONS): **the window sun fitted to its
+window** (HSLightShaft in the opening, an orange outline to size it, the opening swept along the sunlight to the
+floor, its light aimed through: `docs/godot_sheets/2026-10-30_window_sun.jpg`); **choices wait for the player** (no
+countdown anywhere, on the desk or in Godot; `default`, an ask's `secs` and a reply's `timeout` warned as unused;
+the panel low on the screen while it's up); **only what can be seen is drawn** (every wall, floor and ceiling a box
+occluder, occlusion culling on in the project, the story's lights fading far away; GDCULL measures it: 73% fewer
+objects drawn across TestRoom001's 19 rooms, the pictures alike).
+
+**Then, the evening** (DECISIONS 2026-10-30, evening): the user found the light leaking at the wall's top was the
+sun's shadow (gone with the sun off), and the colour flashes were the corridor's fluorescent stutter. Built: **the
+balanced look** (a GTX 1060 the target; the default `game.look`; its project settings applied by the plugin on enable
+and written by the export, GDEXPORT reading them back; `look_balanced.tscn` for a project of your own) and **light
+zones** (`HSLightZone` and the room_* presets: a room's box owning its lights, kept to it, reach fitted, off while
+unseen; the export a zone per room). **Open:** the sun's leak itself (Sky Only indoors, or a tighter directional
+shadow, or thicker overlapping walls and ceilings in the export: GODOT_LOOK's answer to the user's question 1, not
+built); the baking of static lights is the user's, on their machine. **Last:** the choice back on one line
+(two answers, a dash between, A/D and Enter), and **the Unreal side removed** before the merge into main (DECISIONS
+2026-10-30, evening): the games are Godot's alone.
+
+## 0. Next: the cloud session (left 2026-10-29, late night, on `godot-support`, after the local session on the 3090)
+
+The user's handoff (their words: continue the ones that haven't been started back in the cloud, since the GPU-heavy
+ones were done locally). Everything is pushed (`ca3e053` the last). Four pieces, in this order, each its own commit
+with its checks before the push; all of them are code whose checks run headless (GDEXPORT, GDTESTROOM, GDPLAY take a
+minute or two in the cloud), and only their pictures wait for the user's eyes:
+
+1. **Wet walls under a leak** (GODOT_LOOK §7): a story word on a room or a prop for where water runs down a wall
+   (grow STORY_FORMAT, `story_check.py` and the runtime in one commit, as the rule says; a name that isn't taken:
+   `leak` on a prop with `at` and a `drip`), HSWet's wetness on a band of the wall below it (no pools, no rings), the
+   drips as lifefx's (`lifefx.gd` has the tap's), a stage in the plugin's demo measured by LOOKPLUGIN (the band's glint
+   over the dry wall), the desk's stage drawing the band dark and glossy as it does a wet floor. TestRoom001's bath
+   gets one (its ceiling's old leak), GDTESTROOM checks the wall's material.
+2. **A mirror seen in a mirror** (GODOT_LOOK §5b): HSMirror's viewport renders the room without the other mirrors'
+   reflections (they draw their glass flat); one bounce more: a mirror's camera sees the other mirror's last frame
+   (its viewport texture, a frame late), never itself. The demo's stage puts two mirrors facing; LOOKPLUGIN measures
+   the bulb's glint twice in the first one. The cloud draws a viewport in a viewport slowly on lavapipe: keep that
+   stage's views small (`HSMirror.attach(..., 288)` is the size) and expect the check to take longer than eight
+   minutes there; the user looks at the picture on the card.
+3. **The timeline's edits playing back** (GODOT_EXPORT §8, the editable layer's second cut): the scene player takes
+   its camera and its lines' and cues' moments from `game/acts/<folder>/scene.tscn`'s Animation when the file exists
+   (`story.gd` gets `edited_scene(nid)` as `edited_stitch` is; the camera track sampled by the bake's frame, the
+   method track's keys mapped onto the timeline's clips by their order), so a camera key dragged in Godot plays;
+   GDEXPORT edits a camera key in the file and sees the scene's eye move (as it edits a title now). The bake the
+   checks need isn't in git (`Content/Games/<G>/Previs/` is ignored): `node tools/godot/bake.mjs --game TestRoom001`
+   on the desk's server makes it (a browser job on SwiftShader: slow, it has worked there); it carries Aoi's
+   `second` model and the lobby scene's pick, both in the pushed story.
+4. **The bodies on the timeline**: each cast member's recorded skinning as bone tracks (position and rotation per
+   bone from the bake's matrices, as bakeplay.gd poses them: every bone's global pose first, then local under its
+   parent) and the 72 face weights as blend-shape tracks on the body's mesh, so the Animation moves her in the
+   editor; keys thinned; the file size watched (a 24 s scene at 30 fps over 70 bones is large: every third frame
+   and only the bones that move). GDEXPORT loads it and measures the head joint against the recording at a few
+   frames, as GDTESTROOM does for the bake.
+
+**For the user, after:** the leak and the two mirrors pictured on the card (`python tools/godot/plugin_check.py`), a
+scene scrubbed in Godot's editor (open `Saved/Godot/TestRoom001/game/acts/02_n_hello/scene.tscn` beside the lab
+level: the camera along the recording, Aoi moving once step 4 is in), and the three judgement calls below.
+
+## 0z. The local session on the 3090 (2026-10-29, night)
+
+The local session (docs/RUN_LOCALLY.md) ran everything the cloud couldn't, in CONTINUE's order, and fixed forward:
+- **LOOKPLUGIN**: its ten red rows weren't the plugin. The check had set the cloud's lavapipe ICD path (absent on the
+  user's machine: Godot fell back to OpenGL unnoticed) and Hyprland had tiled Godot's window to 941 × 1030 (every
+  pixel box off). Every Godot script now sets that ICD only when it exists, fails on an OpenGL fallback, prefers Xvfb
+  (the card draws through Vulkan there; no window to resize), makes the check projects unresizable, and the demo runs
+  at `--fixed-fps 60`; the demo's sweep measure was passing by accident (its beam never crossed the camera's view in
+  sequence) and aims across the room now. LESSONS has both. 29 s on the card, all green.
+- **TESTROOM**: green first time in 3.2 min, the typed thought included: the cloud's reds were SwiftShader's frame.
+- **PLAY**: red three times, each a pacing race in the check hidden by the cloud's slow frames (the name box's focus,
+  the eye still rising after a crouch, the glimpse beat's own 1.4 s): fixed in the checks, and the HUD focuses the
+  name box at once (LESSONS). GDPEOPLE: the pupil finder caught the character's black fringe (the cloud's test
+  character is bald): the Godot side writes the eyeball's radius on the picture, the finder looks only inside it and
+  the hair is hidden for the eye pictures; `--person lol` here.
+- **GDTESTROOM** green; then the pieces in Godot (`tools/godot/sheet.py`, `lookshot.gd --sweep=<room>` holds a car
+  mid-pass): the **sweep** got in only after three fixes (the export's panes cast shadows; the test room's car ran
+  past the yard's wall, `out` 2.5 now; the lamp's fog glow made the window a white card, 0.15 now): GODOT_LOOK §1d,
+  `docs/godot_sheets/2026-10-29_local_sweep.jpg`. The **shafts**: a ladder of strengths 0.5, 1, 2, 4 by day and at
+  dusk for the user to pick from (`2026-10-29_local_shafts.jpg`): 1 already reads as a beam by day on the card, dusk
+  is too weak for any, night has no window light. The **yard's caustics** reach the lobby's wall (faint at the
+  story's scale, `2026-10-29_local_sweep.jpg`'s last cell). The **square light patch under a distant counter**
+  (GODOT_LOOK §7) didn't show from the kitchen's door at day with GI and SSIL flipped either way: ask the user which
+  counter and room, and what time of day.
+- Playwright on this machine: the global install is missing; `NODE_PATH=<a folder with playwright@1.56 installed>`
+  matched the cached Chromium 1194 (RUN_LOCALLY's step 2 should say which version the cache holds).
+
+**Decided after this (DECISIONS 2026-10-29, night):** no voiced lines for now (GODOT_EXPORT §8's voices step is
+skipped; a typewriter blip only after a playtest), **Godot 100%: every Unreal goal is scrapped** (§4's Unreal
+items below are void; the Unreal docs and code stay as history and as the numbers Godot matches), and **the motion
+sets on the stand-ins wait** until the user says they've made some basic Kimodo sets (they'll say when).
+
+**Then, the same night, the leftover Godot parts** (the user: "finish the left over godot parts"), each its own
+commit: the desk draws the pattern, the shaft and the sweep (`tools/director/lightfx.js`; no shadow maps on the
+desk: they broke every shader of the stage on the card); a cast member's models per scene in Godot; a `look` per
+level; one rain box riding with the player; GDSTUDIO (the Studio's own render beside Godot's, measured); and **the
+editable layer's first cut** (GODOT_EXPORT §8: every task a scene in `game/acts/` with its beats in the Inspector,
+read back by the runtime when it plays; every recorded scene a timeline to scrub, its camera along the recording and
+its lines and cues as keys; GDEXPORT checks both). **Left of GODOT_LOOK §7 and GODOT_EXPORT §3:** wet walls under
+a leak and a mirror seen in a mirror (not started); the timeline's edits playing back (the scene player taking its
+camera and cues from the Animation when one exists) and the bodies' bone and blend-shape tracks on it; a per-scene
+look preset would need a word that isn't `look` (that's the look-at).
+
+**Open, for the user:** pick a shaft strength from the ladder (or leave 1); say where the square light patch was;
+whether the splashes' glints read at a real frame rate (only the game itself shows that: `godot-mono --path
+Saved/Godot/TestRoom001`); run the game and look at the car passing the lobby's first window (every half minute at
+night) and the yard's caustics. **Then** §3 below and GODOT_LOOK §7.
+
+3. ~~What the desk doesn't draw yet of the five~~ Done (2026-10-29, night): the desk draws the pattern itself (the
+   same four functions in JavaScript as the spot's `map`), the shaft (a see-through box along the window's light) and
+   the sweep's shadows (`tools/director/lightfx.js`, stage.js's shadow maps), and "A car passes" is a quick beat.
+
+## 0b. Latest (2026-10-29, on `godot-support`): the test demo plays in Godot, with its look, effects, sounds, menu and guide
+
+The user said keep going till the test demo is 1:1 in Godot (DECISIONS 2026-10-28, late night), and mid-way asked
+for a search on realistic smoke and steam (docs/research/godot_smoke.md). Built, each its own commit (the log from
+`09b5f28` to `a4dfb58`), the checks ok before each push (GDEXPORT, GDPLAY, GDTESTROOM, GODOTLOOK, DESK, CMDS):
+- **The runtime**: the desk's Play ported to GDScript; **GDPLAY** (the Pilot) and **GDTESTROOM** (TestRoom001's 21
+  stations, the death and retry, the doll's cutscene); the desk's own TESTROOM ran here and its states agree.
+- **The scenes from the desk's recording** (`tools/godot/bake.mjs`, `bakeplay.gd`): the camera, the shaped MHR body
+  posed from the skinning matrices, MHR's 72 face shapes as the body's morph targets, every reply branch its own
+  recording, the lights' flicker.
+- **The things' meshes** (the kit's glbs and the library's instanced in their blocks), **the little things' effects**
+  (`lifefx.gd` at the kit's sockets; the puffs through `puff.gdshader` after the smoke research), **the sound shelf**
+  placed in the room, **physics** (the thing in the hand, the plushie, the die as a rigid body), **the pause menu and
+  the HUD's themes** (`menu.gd`, `theme.gd`), **the guide** in every export (`storykit/godot_guide.py`), **the
+  desk's Godot button** (the bake, the zip, the guide), the launcher's Godot section, `--node=<id>`.
+- **The look**: **UltraVHS** as `vhs.gdshader` (GODOTLOOK measures it against the plugin's reference; `game.vhs` the
+  new story word), **Light Kit's times of day** as nodes (the sun, the sky, the haze, the grade), and **the lighting
+  trial** (GODOT_PLAN §4: a VoxelGI per room baked at run time gives the bounce, SSAO the corners; SDFGI and a
+  level-wide VoxelGI miss the greybox's thin walls; the sheets in `Saved/Story/TestRoom001/godot_reference/`).
+- **2026-10-29, afternoon and night** (DECISIONS that day; the user away about seven hours, the checks run here one
+  at a time, each step its own commit, `6a5765c` to the last): **the inventory's row as the things themselves**
+  (`hud.gd`: a slot a small viewport of its own world, only the shown ones drawn); **the HorrorStudio Look plugin**
+  (`GodotPlugins/HorrorStudioLook/`, docs/GODOT_LOOK.md, copied into every export, the user's "keep our plugins in a
+  folder that gets passed in"): the pseudo-realism preset (SSR, SSAO, SSIL, glow, a thin haze, AgX, TAA alone since
+  MSAA switches SSR off; the pause menu's Graphics rows pare it back), UltraVHS and the puffs moved there, **the tape's
+  persistence**, wet floors with pools and rain's rings, puddles as decals, blood (a `clean` stain of kind blood wears
+  it), rain in every room with no ceiling (`game.weather`), **window panes** written by the export with the rain
+  running down them, wet and oiled skin on HumanShaders' skin shader, **the Studio's eye** (the refracting cornea as
+  a shader; Godot's binormal runs the other way: `handed` −1); `game.look`, `game.weather` (STORY_FORMAT §9.1);
+  LOOKPLUGIN pictures and measures each part, GDPEOPLE a Character Studio export on the skin and the eye (flat-lit
+  against its own paint; dry, sweating, oiled; the pupil moved by the cornea). **The shelf's texture sets on the
+  rooms** (world-aligned materials, `game/textures/`), **the little things' sounds** (`lifesound.gd`, the recipes
+  rendered into loops), **the re-export's receipt** (`.desk/manifest.json`: a file changed by hand kept, the new one
+  beside it), **the cast's stand-ins as their bodies** (the bake's shaped body or a Studio export, arms down), every
+  baked body on HSSkin. TestRoom001 rains in its yard, its lobby's windows wear the rain, its second chores stain is
+  blood, four rooms wear the demo shelf's sets. The night's pictures: `docs/godot_sheets/2026-10-29_look.jpg`.
+  **Later that morning**: the desk's stage drawing the `skin` word (`tools/shared/skinwet.js`), **rain splashes**
+  where the streaks land (`splash.gdshader`), **real mirrors** (`HSMirror`, GODOT_LOOK §5b: the camera reflected into
+  a viewport of its own, every kit mirror in a game; the bath's checked, a picture of it in the guide); the rain
+  heard all round you in its room and every step there wet (the desk too); a level's own `weather`; LightmapGI
+  ruled out (editor-only); the rain lit by the lights that reach it; the re-export's receipt leaving Godot's
+  sidecars alone (they'd been taken for stale); the mirrors on the menu's Reflections row; the guide's own pictures
+  made at the export (`--pictures`, the desk's button too); a room's own `wet` (the bath; the desk's stage shows a
+  wet floor dark and glossy, Godot gives it the pools); a cast member out in the rain wet by herself, dry again
+  indoors (Aoi at the front door). The checks that morning: STORY, DESK, CMDS, REFS, KIT, DASH, LOOKPLUGIN,
+  GDPEOPLE, GODOTLOOK, GDEXPORT, GDPLAY, GDTESTROOM, TESTROOM, all ok before each push. The morning's pictures:
+  `docs/godot_sheets/2026-10-29_morning.jpg`.
+**The user's first run in Godot (2026-10-29, midday)**, and what it changed (DECISIONS that day, their words): the
+desk's Godot button writes a plain project and no windows; `HSLookEnvironment` for the look in the editor; the
+seams that turn the eye (`glance`, `cutaway`) deprecated and the games' glances blinks; **live scenes**
+(`camera.mode: live`, DIRECTING §1: the eye stays the player's, no cuts, look and walk, a 180° look seated; the
+lobby scene is live); a card closed by a click (Godot: taken in `_input`), the thing looked at staying put, no dot
+over a card; **Q lowers the thing in the hand**. **Their second run** (the afternoon): the lowered hand hidden in
+Godot too (its copy was shown again every frame); **the exported level in folders by kind** (Ground, Walls,
+Ceilings, Doors, Things, Lights, Glass, Triggers, Spots, People, GI; `game.pieces()` reads through them); **the
+`camhybrid` tape** (VHS.md §5: the camcorder with half the fisheye and its blur only with distance, `HSSoften` a
+depth-aware softener on the camera; `docs/godot_sheets/2026-10-29_camhybrid.jpg`). **Their third**: under camhybrid
+the LED digits and the steam had vanished (the softener had been a quad over the screen texture, the opaque pass
+only); it's a CompositorEffect after the transparents now (`2026-10-29_camhybrid_led.jpg`). **Then, that evening**:
+`camhybrid` at the strength they picked from seven (between B and C), softer shadows (the filter, the atlas, the
+lights' size and blur, the menu's Shadows row), the rain's splashes without rings (glints and thrown droplets, the
+wet floor's ripple per pixel), and **the five Light Kit pieces the Godot side lacked** (their "build all five"):
+flicker `mode`s (fluorescent, dying, candle, pulse, custom; the same curves on the desk, `tools/shared/flicker.js`,
+and in Godot, `flicker.gd`), light `pattern`s (caustics, leaves, blinds, clouds drawn into a shadowed spot's
+projector, `HSPattern`), window `shaft`s (a FogVolume along the window's light, `HSShaft`), window `sweep`s and the
+`sweep` action (a car's headlights sliding past, `HSSweep`) and the iris (auto exposure, a stop under at night,
+`HSLook.iris`); GODOT_LOOK §1 has each with its measure; TestRoom001 wears one of each. Open from those runs: the
+square light patch under a distant counter (GODOT_LOOK §7).
+
+**Open, for the user:** a run on the 3090 (`python tools/godot_export.py --game TestRoom001 --testroom`, then the
+game itself: `godot --path Saved/Godot/TestRoom001`; the cost of the realism preset with nineteen VoxelGIs, the rain
+and the wet floors there; `tools/godot/plugin_check.py` and `people_check.py` for the plugin's pictures), a look at
+the sheets (the night's and the morning's: does the wet floor, the blood, the rain on the glass, the sweat, the
+splashes and the mirror read as meant; the arms-down pose of the stand-ins; the eye's size), whether the realism
+preset's numbers (GODOT_LOOK §1) want pushing further or back, whether the puff shader should go back onto the desk's
+stage, and whether a mirror should be drawn for real on the desk's stage too (today the desk's mirror is a metallic
+grey; Godot's reflects). **Next** (GODOT_EXPORT §8, GODOT_LOOK §7): ~~the
+voices (the takes' audio)~~ (scrapped, DECISIONS 2026-10-29, night), the Inspector resources and AnimationPlayer timelines (§3: the tasks as scenes with their beats in the Inspector built 2026-10-29, night, read back by the runtime; the scenes written as timelines to scrub (the camera along the recording, the lines and cues as keys), their edits not played back yet), ~~a cast member's models per
+scene~~ (done 2026-10-29, night, GODOT_EXPORT §8), the Studio's paint and eye measured beside the Studio's own render (the three.js side), ~~the motion sets on
+the stand-ins (GAMEPLAY_PLAN)~~ (waiting on the user's Kimodo sets), ~~splashes where the rain lands~~ (done that morning); and from GODOT_LOOK §7 that night: a `look` per level (STORY_FORMAT §2) and one rain box riding with the player (GODOT_LOOK §4, `docs/godot_sheets/2026-10-29_local_rain_follow.jpg`). (The desk's stage draws the `skin` word since the
+morning of the 29th: `tools/shared/skinwet.js`, GODOT_LOOK §5.)
+
+## 0a. Before that (2026-10-28, night, on `godot-support`): Godot started, the export analysed, waiting on the user
+
+The user said to start the Godot side (DECISIONS 2026-10-28, night; the plan docs/GODOT_PLAN.md): main (`dev-002`)
+merged in, Godot 4.7 set up on the cloud (`tools/godot_setup.sh`, GODOT ok: headless and a picture under xvfb on
+lavapipe), **GDScript** chosen over C#, and the analysis the plan asked for before building: **docs/GODOT_EXPORT.md**
+(a plain-Python exporter writes a Godot project per game as text `.tscn`/`.tres` plus copied assets, zipped; the
+runtime as an add-on; scenes as AnimationPlayer timelines; beats as Inspector resources; the re-export's receipt;
+the order). **Waiting on the user:** GODOT_EXPORT §4's three choices (numbered folders or stable ids; baked
+animations; GDScript only) and a yes to its §8 order. Then its step 1, the trial: the Pilot's hall exported by a
+first cut of the level writer, lit three ways, pictured at three times of day and with the power cut.
 
 ## 0. Latest (2026-10-28, night, on `dev-002`): the director's to-do built, the Studio's eyes, nose and face bake
 

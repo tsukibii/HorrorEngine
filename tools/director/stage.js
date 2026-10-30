@@ -1,6 +1,7 @@
 // The director's stage: a scene's level in greybox (the same plan the Unreal importer builds), the cast as previs
 // figures, and the player's eye. Plays a scene's clips on its elastic timeline with blends, seams and camera moves;
 // renders storyboard frames; finds which body parts the player can see; exports the blocking as glTF for Unreal.
+import { flickerOf, flickerK } from "../shared/flicker.js";
 import { typedSecs } from "./play/typing.js";
 import * as THREE from "three";
 import * as M from "./motion.js";
@@ -8,11 +9,13 @@ import * as K3 from "./kit3.js";
 import * as KIT from "./kit.js";
 import { BodyFigure } from "./bodies.js";
 import { LifeFX } from "./lifefx.js";
+import { PatternLoop, Shaft } from "./lightfx.js";   // a light's pattern, a window's shaft drawn here too (GODOT_LOOK §1)
 import { GLTFLoader } from "./vendor/GLTFLoader.js";
 import { wearEye } from "../shared/eye.js";
 import { stainMaterial } from "./stain.js";
 import * as FACE from "../shared/face.js";      // tools/shared (served at /shared: the page sits at the root)
 import { layUVs } from "./painted.js";
+import { skinWet, setSkinWet, wetOf } from "../shared/skinwet.js";   // the story's `skin` word on the figure of cylinders too
 import { behaviourOf } from "./play/behaviours.js";   // a scene's behave cues play Play's own behaviours (a body track)
 import { settingsOf } from "./play/parts.js";
 const Y_UP = new THREE.Vector3(0, 1, 0);
@@ -20,6 +23,20 @@ const Y_UP = new THREE.Vector3(0, 1, 0);
 // textures (but where a texture cuts a shape out, as a hair card's does), no physical shading, the eyes plain, the
 // picture at one pixel per pixel; Blender's solid view. The materials come back as they were when it's turned off
 const SIMPLE = new WeakMap(), PLAIN_TINT = new THREE.Color(0xb8b8b8);
+// how wet a room's floor is (STORY_FORMAT §2 `wet`, or 0.9 in the rain for a room with no ceiling: the level's weather, else the game's)
+function wetOfRoom(story, level, rid) {
+  const lv = ((story || {}).levels || {})[level] || {}, r = (lv.rooms || []).find(x => x.id === rid); if (!r) return 0;
+  const rain = (lv.weather ?? ((story || {}).game || {}).weather) === "rain" && r.ceiling === false;
+  return Math.max(0, Math.min(1, Math.max(+(r.wet || 0), rain ? 0.9 : 0)));
+}
+// the floor's material wet by that much: darker, the roughness down, a clear coat over it (the Godot export's wet shader has the pools; here the sheen)
+const WET_MATS = new Map();
+function wetFloor(base, wet) {
+  const key = base.uuid + "|" + wet.toFixed(2); let m = WET_MATS.get(key); if (m) return m;
+  m = new THREE.MeshPhysicalMaterial({ color: base.color.clone().multiplyScalar(1 - 0.35 * wet), map: base.map || null, roughness: Math.max(0.1, (base.roughness ?? 1) * (1 - 0.8 * wet)), metalness: 0,
+    clearcoat: 0.7 * wet, clearcoatRoughness: 0.12, emissive: base.emissive ? base.emissive.clone() : new THREE.Color(0), side: base.side });
+  m.userData = Object.assign({}, base.userData, { wet }); WET_MATS.set(key, m); return m;
+}
 function simpleOf(m) {
   if (Array.isArray(m)) { const a = m.map(simpleOf); return a.some(Boolean) ? a.map((x, i) => x || m[i]) : null; }
   if (!m || m.userData.simple || !(m.isMeshStandardMaterial || m.isMeshPhysicalMaterial || m.isMeshPhongMaterial || m.isMeshLambertMaterial && m.map)) return null;
@@ -138,6 +155,8 @@ export function shotFor(d) { return ["ecu", "cu", "mcu", "ms", "fs", "ws"].find(
 export const SEAM_SECS = { none: 0, blink: 0.2, glance: 1, flicker: 0.4, occlude: 0.8, cutaway: 1.5, turn: 0, stumble: 1, dip: 2, jcut: 0, heartbeat: 0.6 };
 
 export const s2t = (x, y, z) => new THREE.Vector3(x, z, -y);       // story (x east, y north, z up) -> three (y up)
+const sm01 = x => { const t = Math.min(1, Math.max(0, x)); return t * t * (3 - 2 * t); };
+const sweepGap = (z, k) => z.every <= 0 ? Infinity : z.every * (0.7 + 0.6 * (((z.seed * 374761393 + k * 668265263) & 0xffff) / 65536));   // sweep.gd's _gap
 
 // the time of day (STORY_FORMAT §3.1; storylib's TIMES, flow_outs, flow_times): a scene's own `time`, else the time it
 // was when the flow got there, from the scene it branched from back to game.time
@@ -329,6 +348,7 @@ export class Figure {
     this.lib = lib; this.height = height || 1.7;
     this.group = new THREE.Group();
     this.mat = new THREE.MeshStandardMaterial({ color, roughness: 0.85, emissive: 0x15120e });
+    skinWet(this.mat); this.skinMats = [this.mat];
     this.bones = [];
     for (const j of lib.joints) {
       if (!j.parent || j.name === "head_end") continue;
@@ -343,6 +363,8 @@ export class Figure {
     this.group.add(this.nose);
     this.pos = null;
   }
+  setWet(w) { setSkinWet(this.mat, Stage.plainLight ? {} : w); }   // the `skin` word (skinwet.js); dry under plain lighting
+  get wet() { return wetOf(this.mat); }
   setColor(c) { this.mat.color.set(c); }
   update(pos) {                                   // pos: joint -> Vector3 in character space
     this.pos = pos;
@@ -373,6 +395,7 @@ export class Stage {
   static LIVES = null;           // the little things' lives (lives.json): a world with some gets their effects (lifefx.js)
   static showTrackers = true;
   static simple = false;         // the simple view: plain colours, no textures (simpleOf); every stage, the Watch's and Play's too
+  static plainLight = true;      // plain lighting (DECISIONS 2026-10-30: the desk is for the gameplay, the lighting is made in Godot): the lamps and the windows' fill stay, the light effects don't (shafts, patterns, sweeps, leak strips, wet skin); the toolbar's Lighting turns the effects on for a look
   constructor(container, lib) {
     this.lib = lib;
     this.container = container;
@@ -388,6 +411,7 @@ export class Stage {
     this.world = new THREE.Group(); this.scene.add(this.world);
     this.lights = []; this.solid = []; this.cast = {}; this.things = {}; this.level = null;
     this.bodies = {}; this.defaultBody = null;      // loaded body templates by file name (app.js fills them)
+    this.skin = {};                                   // cast id -> {wet, sweat, drips, oil}: the story's `skin` word as the run has set it (setSkin)
     this.free = null;                               // free (orbit) camera state when inspecting from outside
     this.look = { yaw: 0, pitch: 0 };               // the player's own look inside a soft cone
     this.resize();
@@ -405,6 +429,8 @@ export class Stage {
     this.things = plan.things;
     this.uncull(); this._rooms = null;                // what Play left out of sight comes back first (cull)
     this.world.clear(); this.lights = []; this.solid = []; this.cast = {}; this.pending = []; this._through = new Set();
+    for (const pl of this.patterns || []) pl.dispose();
+    this.patterns = []; this.shafts = [];
     const mats = {
       wall: new THREE.MeshStandardMaterial({ color: 0x55524d, roughness: 0.95 }),
       floor: new THREE.MeshStandardMaterial({ color: 0x3a342d, roughness: 1 }),
@@ -430,6 +456,7 @@ export class Stage {
         let mat = p.kind === "mesh" ? (p.tags.some(t => t.startsWith("trim:")) ? mats.trim : tagged ? mats[tagged] : p.tags.some(t => t.startsWith("use:")) ? mats.use : mats.prop) : mats[p.kind];
         const matRef = (p.tags.find(t => t.startsWith("mat:")) || "").slice(4), artRef = (p.tags.find(t => t.startsWith("art:")) || "").slice(4);
         if (matRef && LIBRARY.textures[matRef] && p.shape === "box") { mat = libMaterial(matRef); tileUVs(geo, w, h, d, mat.userData.tile); }
+        if (p.kind === "floor") { const wet = wetOfRoom(story, level, p.room); if (wet > 0) mat = wetFloor(mat, wet); }   // a wet room (its `wet`, or the rain): the floor dark and glossy
         const painted = p.kind === "mesh" && p.shape === "box" && PAINTED.things[p.id];   // painted on its template: its UVs from the layout, at the block's own size
         if (painted) { mat = paintedMaterial(painted); layUVs(geo.attributes.position, geo.attributes.normal, geo.attributes.uv, Object.assign({}, painted, { size: [w, d, h] })); }
         const m = new THREE.Mesh(geo, mat);
@@ -450,12 +477,31 @@ export class Stage {
         this.world.add(m); if (!p.tags.includes("hollow") && !hidden && m.userData.use !== "clean") this.solid.push(m);     // a door frame: you see and walk through it; a stain: you walk over it
         if (p.tags.some(t => t.startsWith("kit:")) && p.d && p.d.kit !== undefined) this.kitIn(m, p.d.kit, h);
         else if (artRef && LIBRARY.meshes.has(artRef)) this.pending.push(this.dress(m, artRef, [w, h, d], p.tags.includes("real")));
+      } else if (p.kind === "leak" && !Stage.plainLight) {       // water running down a wall (Godot: HSLeak's band and drips): here a dark glossy strip on the wall's face, wider as it runs down
+        const rm = ((((story.levels || {})[p.level] || {}).rooms) || []).find(r => r.id === p.room), wall = (p.tags.find(t => t.startsWith("wall:")) || "wall:n").slice(5);
+        if (rm) {
+          const [x0, y0, z0] = rm.at, [rw, rd] = rm.size, width = +(p.d && p.d.width) || 0.4, top = p.pos[2], bottom = z0, h = Math.max(0.1, top - bottom);
+          const v = { n: y0 + rd, s: y0, e: x0 + rw, w: x0 }[wall], inward = { n: [0, -1], s: [0, 1], e: [-1, 0], w: [1, 0] }[wall];
+          const cx = wall === "n" || wall === "s" ? p.pos[0] : v + inward[0] * 0.052, cy = wall === "n" || wall === "s" ? v + inward[1] * 0.052 : p.pos[1];
+          const geo = new THREE.PlaneGeometry(width * 1.4, h); const pos = geo.attributes.position;   // the strip spreads as it runs down: its top narrower
+          for (let i = 0; i < pos.count; i++) if (pos.getY(i) > 0) pos.setX(i, pos.getX(i) / 1.9);
+          const mat = new THREE.MeshPhysicalMaterial({ color: 0x1a1a1c, transparent: true, opacity: 0.42 * Math.min(1, +(p.d && p.d.wet) || 0.8) / 0.8, roughness: 0.08, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.08, depthWrite: false });
+          const m = new THREE.Mesh(geo, mat); m.position.copy(s2t(cx, cy, bottom + h / 2));
+          m.rotation.y = { n: 0, s: Math.PI, e: -Math.PI / 2, w: Math.PI / 2 }[wall];     // facing into the room (a plane faces +z: story south)
+          m.userData = { id: p.id, kind: "leak", room: p.room }; this.world.add(m);
+        }
       } else if (p.kind === "light") {
         const kind = (p.d && p.d.kind) || "bulb";
         const [col, inten, dist] = { bulb: [0xffc98a, 2.2, 7], candle: [0xffa84a, 1.0, 3.5], lamp: [0xffd2a0, 1.6, 5], fire: [0xff8a3a, 3, 9] }[kind] || [0xffc98a, 2, 7];
-        const l = new THREE.PointLight(col, (p.d && p.d.lit === false) ? 0 : inten, dist, 1.6);
+        let l;
+        if (p.d && p.d.pattern && Array.isArray(p.d.aim)) {                     // a patterned light: a spot aimed where the pattern falls (the pattern itself is the Godot build's, HSPattern)
+          l = new THREE.SpotLight(col, (p.d && p.d.lit === false) ? 0 : inten, dist, (p.d.spread || 50) * Math.PI / 360, 0.5, 1.6);
+          const rm = ((((story.levels || {})[p.level] || {}).rooms) || []).find(r => r.id === p.room), at = (rm && rm.at) || [0, 0, 0];
+          l.target.position.copy(s2t(at[0] + p.d.aim[0], at[1] + p.d.aim[1], (at[2] || 0) + p.d.aim[2])); this.world.add(l.target);
+        } else l = new THREE.PointLight(col, (p.d && p.d.lit === false) ? 0 : inten, dist, 1.6);
         l.position.copy(s2t(...p.pos));
-        l.userData = { id: p.id, room: p.room, base: l.intensity, flicker: (p.d && p.d.flicker) || 0, kind };   // kind: a candle or a fire burns through a power cut
+        if (l.isSpotLight && p.d && p.d.pattern && !Stage.plainLight) { const pl = new PatternLoop(l, p.d, l.position.distanceTo(l.target.position)); this.patterns.push(pl); this.world.add(pl.mesh); }   // the pattern itself where the light lands, as HSPattern draws it
+        l.userData = Object.assign({ id: p.id, room: p.room, base: l.intensity, kind }, flickerOf(p.d || {}, p.id));   // kind: a candle or a fire burns through a power cut; the flicker's mode (tools/shared/flicker.js)
         this.world.add(l); this.lights.push(l);
       } else if (p.kind === "person") {
         const cid = (p.tags.find(t => t.startsWith("cast:")) || "").slice(5);
@@ -470,9 +516,10 @@ export class Stage {
     for (const [cid, c] of Object.entries(story.cast || {})) {
       const f = this.makeFigure(this.dressed(cid, c));
       f.group.visible = false;
+      if (this.skin[cid] && f.setWet) f.setWet(this.skin[cid]);
       this.world.add(f.group); this.cast[cid] = f;
     }
-    this.windows = [];                     // a soft light just inside every window, into the room (Light Kit Window's sky fill)
+    this.windows = []; this.sweeps = [];   // a soft light just inside every window, into the room (Light Kit Window's sky fill); the headlight sweeps
     for (const room of ((story.levels || {})[level] || {}).rooms || []) for (const op of room.openings || []) {
       if (!op.window && !((op.sill || 0) > 0.05)) continue;
       const [x0, y0, z0] = room.at, [w, d] = room.size;
@@ -483,17 +530,52 @@ export class Stage {
       const l = new THREE.SpotLight(0xffffff, 1, 6, 1.1, 1, 1.5);
       l.position.copy(s2t(...at(0.05))); l.target.position.copy(s2t(...at(2))); l.userData = { window: room.id, area: op.w * op.h };
       this.world.add(l, l.target); this.windows.push(l);
+      if (op.shaft && !Stage.plainLight) {   // the window's light shaft (Godot: HSShaft; here a see-through box along the light with the same density)
+        const sh = new Shaft(l.position.clone(), l.target.position.clone(), op.w, op.h, op.shaft === true ? 1 : +op.shaft || 1, op);
+        this.world.add(sh.mesh); this.shafts.push(sh);
+      }
+      if (op.sweep && !Stage.plainLight) {   // a car passing outside now and then (Godot: HSSweep; here the same lamp sliding by, no shadows)
+        const sw = typeof op.sweep === "object" ? op.sweep : {}, outward = axis === "y" ? [0, -inward, 0] : [-inward, 0, 0], alongV = axis === "y" ? [1, 0, 0] : [0, 1, 0];
+        const lamp = new THREE.SpotLight(0xf2eacc, 0, 40, 22 * Math.PI / 180, 0.6, 1.2); lamp.visible = false;
+        this.world.add(lamp, lamp.target);
+        this.sweeps.push({ lamp, room: room.id, at: s2t(...at(0)), outward: s2t(...outward), along: s2t(...alongV), inside: s2t(...at(1.5)),
+          every: sw.every !== undefined ? +sw.every : 40, secs: Math.max(0.5, +sw.secs || 3), out: sw.out !== undefined ? +sw.out : 6, span: sw.span !== undefined ? +sw.span : 10,
+          energy: sw.energy !== undefined ? +sw.energy : 10, seed: +sw.seed || 1, clock: 0, started: -1, passes: 0, next: 0 });
+        const z = this.sweeps[this.sweeps.length - 1]; z.next = sweepGap(z, 0);
+      }
     }
     this.applyTime();
     if (Stage.LIVES) { this.life = this.life || new LifeFX(this, Stage.LIVES); this.life.attach(); }   // steam, smoke, glows...
   }
   setTime(t) { this.time = TIME_LOOK[t] ? t : TIME_DEFAULT; this.applyTime(); }
+  // the headlight sweeps (sweep.gd's maths): a pass every so often, or fired; the lamp slides along the street outside, aimed in through the glass
+  fireSweeps(room) { for (const z of this.sweeps || []) if (!room || z.room === room) z.started = z.clock; }
+  sweeping(room) { return (this.sweeps || []).some(z => (!room || z.room === room) && z.started >= 0 && z.clock - z.started < z.secs); }
+  sweepTick(dt) {                        // and the patterns' loops and the shafts' dust with it (Play and the Watch both call this a frame)
+    this._fxT = (this._fxT || 0) + dt;
+    for (const pl of this.patterns || []) pl.tick(dt, this.solid, pl.spot.userData.base ? pl.spot.intensity / pl.spot.userData.base : 1);
+    for (const sh of this.shafts || []) sh.tick(this._fxT);
+    for (const z of this.sweeps || []) {
+      z.clock += dt;
+      if (z.started < 0 && z.clock >= z.next) z.started = z.clock;
+      if (z.started < 0) continue;
+      const u = (z.clock - z.started) / z.secs;
+      if (u >= 1) { z.started = -1; z.passes++; z.next = z.clock + sweepGap(z, z.passes); z.lamp.visible = false; z.lamp.intensity = 0; continue; }
+      const x = (u * 2 - 1) * z.span;
+      z.lamp.visible = true;
+      z.lamp.position.copy(z.at).addScaledVector(z.outward, z.out).addScaledVector(z.along, x); z.lamp.position.y -= 0.9;
+      z.lamp.target.position.copy(z.inside);
+      const ends = sm01(u / 0.15) * (1 - sm01((u - 0.85) / 0.15));
+      z.lamp.intensity = z.energy * ends;
+    }
+  }
   applyTime() {
     const L = TIME_LOOK[this.time] || TIME_LOOK[TIME_DEFAULT];
     this.scene.background.set(L.sky); this.scene.fog.color.set(L.sky);
     this.amb.color.set(L.amb[0]); this.amb.intensity = L.amb[1];
     this.hemi.color.set(L.hemi[0]); this.hemi.groundColor.set(L.hemi[1]); this.hemi.intensity = L.hemi[2];
     for (const l of this.windows) { l.color.set(L.win[0]); l.intensity = L.win[1] * l.userData.area; l.distance = L.win[2]; }
+    for (const sh of this.shafts || []) sh.light(L.win[0], L.win[1] / TIME_LOOK.day.win[1]);   // the beam as bright as the window's light is of a full day's
   }
 
   fileFor(c) { return (c && c.previs_body) || (this.story && this.story.game && this.story.game.previs_body) || this.defaultBody; }
@@ -527,8 +609,20 @@ export class Stage {
       const f = this.makeFigure(d);
       f.group.position.copy(old.group.position); f.group.quaternion.copy(old.group.quaternion); f.group.visible = old.group.visible;
       (old.group.parent || this.world).add(f.group); if (old.group.parent) old.group.parent.remove(old.group);
+      if (this.skin[cid] && f.setWet) f.setWet(this.skin[cid]);
       this.cast[cid] = f;
     }
+  }
+  // the story's `skin` word (STORY_FORMAT §9.8): a cast member's skin wet, sweating, dripping or oiled, on the body she
+  // wears now and on any she's given later (a model switched, a new level); merged with what's set already, returned;
+  // setSkin(null) clears everyone (a new run)
+  setSkin(cid, a) {
+    if (cid === null) { for (const [id, f] of Object.entries(this.cast)) if (f.setWet) f.setWet({ wet: 0, sweat: 0, drips: 0, oil: 0 }); this.skin = {}; return null; }
+    const s = Object.assign({}, this.skin[cid] || {});
+    for (const k of ["wet", "sweat", "drips", "oil"]) if (a && a[k] != null) s[k] = Math.max(0, Math.min(1, +a[k]));
+    this.skin[cid] = s;
+    const f = this.cast[cid]; if (f && f.setWet) f.setWet(s);
+    return s;
   }
 
   // ---- a scene's timeline (elastic: every length comes from its clip) ----------------------------------------
@@ -987,7 +1081,7 @@ export class Stage {
     if (!f._faceT || f._faceF !== FACES.F) { f._faceT = FACE.faceOf(f.model, FACES.F); f._faceF = FACES.F; }   // (a Studio export's needs MHR's face loaded)
     FACE.setFace(f._faceT, w72); f._faceOn = !!w72;
   }
-  apply(tl, state, T) {          // pose the figures, aim the camera, set the lights
+  apply(tl, state, T, opts = {}) {          // pose the figures, aim the camera (not with opts.noCamera: a live scene, the eye the player's), set the lights
     const v = tl.v;
     const through = new Set((v.camera || {}).through || []);           // the props the scene's eye is inside
     for (const id of [...(this._through || [])]) if (!through.has(id)) this.seeThrough(id, 0);
@@ -1033,8 +1127,9 @@ export class Stage {
     if (state.glance && this.targetPos(state.glance.target)) target = target.clone().lerp(this.targetPos(state.glance.target), state.glance.w);
     const c = this.camera;
     this._floorY = view ? view.pos[2] : 0;
-    this.playerMark(this.free && view ? { eye, target, floor: s2t(view.pos[0], view.pos[1], view.pos[2] + 0.012) } : null);
-    if (this.free) { this.applyFree(); }
+    this.playerMark(this.free && view && !opts.noCamera ? { eye, target, floor: s2t(view.pos[0], view.pos[1], view.pos[2] + 0.012) } : null);
+    if (opts.noCamera) { }
+    else if (this.free) { this.applyFree(); }
     else {
       c.position.copy(eye);
       c.lookAt(target);
@@ -1049,9 +1144,10 @@ export class Stage {
       c.fov = state.cam.fov;                                         // a cutaway is a head turn, not a lens
       c.updateProjectionMatrix();
     }
+    this.sweepTick(this._sweepT === undefined ? 0 : Math.max(0, T - this._sweepT)); this._sweepT = T;
     for (const l of this.lights) {
       let k = 1;
-      if (l.userData.flicker) k *= 1 - l.userData.flicker * 0.5 * Math.max(0, Math.sin(T * 13.7) * Math.sin(T * 7.3));
+      k *= flickerK(l.userData, T);
       if (state.flicker) k *= 0.05;
       l.intensity = l.userData.base * k;
     }

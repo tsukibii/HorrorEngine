@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://addons/horrorstudio_look/nodes/blood_splat.gd" id="1"]
+
+[node name="BloodPool" type="Node3D"]
+script = ExtResource("1")
+size = 0.8

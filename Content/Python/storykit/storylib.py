@@ -1,5 +1,5 @@
 """Reads a game's story.json and works out where everything is. Plain Python, no `unreal` import: the offline tools
-(tools/*.py) and the editor scripts (storykit.importer etc.) both use it, so the geometry is worked out once.
+(tools/*.py) and the Godot export (storykit.godot) both use it, so the geometry is worked out once.
 
 Story space: metres, x east, y north, z up; yaw (rot) in degrees counter-clockwise from east (90 = facing north).
 Unreal space: centimetres, X = x, Y = -y, Z = z, yaw = -rot (see to_ue in importer.py).
@@ -16,7 +16,7 @@ WALL_T = 0.1          # wall thickness, centred on the room's edge
 EYE = 1.65            # the player's eye height
 SHAPE_ARGS = {"box": 3, "cyl": 2, "sphere": 1, "plane": 2, "stairs": 3}
 USES = {"door", "pickup", "note", "inspect", "switch", "light", "locker", "combo", "use_on", "trigger", "spot", "sit", "roll",
-        "carry", "game", "sleep", "clean", "breaker"}
+        "carry", "game", "sleep", "clean", "breaker", "leak"}
 STAINS = ("dirt", "mud", "blood", "water", "ash")   # a stain's kinds (use: clean; the desk's stain.js draws them)
 PHYSICS = ("rigid", "plushie")   # how a thing you carry moves: the desk's physics kinds (tools/director/play/physics.js)
 BOARD_GAMES = STUDIO / "BoardGames"   # board games' rules, one JS module each (its README.md); a game may add its own BoardGames/

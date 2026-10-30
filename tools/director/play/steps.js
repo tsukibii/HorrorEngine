@@ -18,6 +18,10 @@ const pick = (k, fam) => {                         // one of the family's sounds
   let i = Math.floor(Math.random() * (prev >= 0 ? n - 1 : n)); if (prev >= 0 && i >= prev) i++;
   k.fam = fam; k.i = i; return `${fam}_${String(i + 1).padStart(2, "0")}`;
 };
+// standing on wet ground: a room with no ceiling while the weather (the level's, else the game's) is rain, or a room
+// whose own `wet` is 0.5 or more (STORY_FORMAT §2); the Godot export's rule too
+const onWet = rt => { const lv = (rt.story.levels || {})[rt.level] || {}, rain = (lv.weather ?? (rt.story.game || {}).weather) === "rain";
+  return (lv.rooms || []).some(r => rt.inside.has(r.id) && ((rain && r.ceiling === false) || +(r.wet || 0) >= 0.5)); };
 register("ability", "steps", {
   // stride, run, crouch: metres a step walking, running and crouched; db, runDb, crouchDb: how loud against the shelf's
   // own level; creak: the chance a step on wood creaks; castStride, castDb: the cast's (placed: fainter with distance)
@@ -33,6 +37,7 @@ register("ability", "steps", {
     rt.stepAt -= 1;
     const floor = rt.floorUnder();
     let fam = FLOOR_STEPS[floor] || "step_wood";
+    if (onWet(rt)) fam = "step_wet";                 // wet ground: out in the rain, or a room with its own `wet`
     if (fam === "step_wood" && Math.random() < s.creak) fam = "step_creaky";
     const k = rt.lastStep || {}, name = pick(k, fam);
     rt.lastStep = { fam, i: k.i, name, floor, clock: rt.clock }; rt.stepCount = (rt.stepCount || 0) + 1;

@@ -1,0 +1,13 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://addons/horrorstudio_look/nodes/window_pane.gd" id="1"]
+
+[sub_resource type="QuadMesh" id="quad"]
+size = Vector2(1.2, 1.1)
+
+[node name="WindowPane" type="MeshInstance3D"]
+mesh = SubResource("quad")
+
+[node name="Glass" type="Node3D" parent="."]
+script = ExtResource("1")
+rain = 0.6

@@ -103,6 +103,25 @@ jitter on the floating prompt), never enough to hurt reading.
 
 The settings menu's Film grain row (play/menu.js, `grain`) becomes the player's cap on noise; brightness stays its own.
 
+**In the Godot export** (2026-10-29): `addons/horrorstudio_look/vhs.gdshader` (GodotPlugins/HorrorStudioLook) is this filter, the plugin's three passes in
+one canvas shader under the HUD (so the HUD stays sharp, §4), with the plugin's presets and night mode; `game.vhs`
+names the preset (STORY_FORMAT §9.1); GODOTLOOK measures it against the plugin's own reference. **`camhybrid`** (the
+user, after playing: "I love the camcorder effect but it's a tad too much: the fisheye a tiny bit too strong, the
+blurring too much on objects that are closer; close to something it should be almost sharp, still some softening"):
+the camcorder with the barrel at 0.062 (0.085 on the camcorder), the tape's own luma blur at 0.88 px (1.4) and the
+chroma blur lighter, and **the softener** (`soften.gd`, `HSSoften`: a CompositorEffect on the camera run after the
+transparents, a compute pass over the colour buffer by each pixel's depth, the blur growing from half a pixel at
+0.85 m to 1.55 px at 5.75 m; the strength the user picked from seven on `docs/godot_sheets/2026-10-29_camhybrid_pick.jpg`,
+between its B and C: the first cut, half the fisheye and a third of the blur, had "lost its aesthetic"),
+so what the eye is on stays readable and the far room melts into the tape. It runs before the tape and under the
+HUD; a mirror's or an inventory slot's camera has no compositor, so they're untouched. (Its first form, a
+full-screen quad reading the screen texture, painted over everything transparent: the little things' LED digits,
+the steam, the hob's glow. The screen texture holds only the opaque pass; the user's second run found it. The
+kitchen's rice cooker cooking and the pot steaming, the tape off and camhybrid side by side:
+`docs/godot_sheets/2026-10-29_camhybrid_led.jpg`; the plugin's demo measures a glow kept through it.) Measured at the kitchen's wall
+(`docs/godot_sheets/2026-10-29_camhybrid.jpg`, the first cut beside the camcorder): the cup at arm's length eight times
+sharper than under the camcorder, the wall at 2.5 m as soft as before, the far corner the same.
+
 ## 6. The camera's display in Unreal
 
 Cheapest and crispest: **draw the OSD inside the tape material** from a pixel-font atlas (our own 5×7 font, §7):

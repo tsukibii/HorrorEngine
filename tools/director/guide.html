@@ -91,14 +91,14 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
     <li><a href="#goto">Go to anything</a></li>
     <li><a href="#claude">Working beside Claude</a></li>
     <li><a href="#safety">Nothing gets lost</a></li>
-    <li><a href="#unreal">Into Unreal</a></li>
+    <li><a href="#godot-export">Into Godot</a></li>
     <li><a href="#keys">Every key</a></li>
   </ol>
 </nav>
 <main>
 <header class="hero">
   <h1>The director's desk</h1>
-  <p>Where a game is plotted, blocked and played before Unreal builds it. Built to feel like RPG Maker: you drag
+  <p>Where a game is plotted, blocked and played before Godot plays it. Built to feel like RPG Maker: you drag
     things where they go, pick from lists and pictures, and every command reads as a sentence. Nothing is typed as
     JSON. This guide walks through it in the order you'd use it.</p>
   <div class="chips"><span class="chip">no accounts</span><span class="chip">nothing leaves your machine</span><span class="chip">everything undoable</span><span class="chip">story.json is the truth</span></div>
@@ -113,7 +113,7 @@ python tools/director/serve.py        # or the desk on its own (DESK_PORT=8781 f
 <p>Pick the game in the top left (or <span class="ui">+ New</span> for a new one). The desk remembers the last game
   you had open.</p>
 <figure class="wide"><img src="guide/toolbar.jpg" width="1500" height="72" alt="The toolbar" loading="lazy"><figcaption>The toolbar: the game ·
-  Save, reload, the saves kept · undo and redo · the Database · Playtest, Check, Problems, Unreal · Go to, Tools, Help.</figcaption></figure>
+  Save, reload, the saves kept · undo and redo · the Database · Playtest, Check, Problems, Godot · Go to, Tools, Help.</figcaption></figure>
 <div class="cols">
   <div class="card"><h4>Flow</h4><p>The board of the whole game, the inspector for what's picked, the stage under the board.</p></div>
   <div class="card"><h4>Storyboard · Branches</h4><p>Every node in order as frames from the player's eye; the paths through the game.</p></div>
@@ -398,15 +398,15 @@ Mari: 来てくれたんだ。 / You came.         Japanese (what's recorded) an
     and save, or undo.</li>
 </ul>
 <figure class="half"><img src="guide/history.jpg" width="796" height="476" alt="The saves kept" loading="lazy"><figcaption>The saves kept, and what's different now.</figcaption></figure>
-<p>Save is always on purpose: <kbd>Ctrl</kbd>+<kbd>S</kbd>. Check and Unreal never run on a version that isn't saved.</p>
+<p>Save is always on purpose: <kbd>Ctrl</kbd>+<kbd>S</kbd>. Check and Godot never run on a version that isn't saved.</p>
 </section>
 
-<section id="unreal">
-<h2><span class="n">18</span>Into Unreal</h2>
-<p>When a stretch of the game plays right on the desk, <span class="ui">Unreal</span> saves, runs the checks, records
-  the Watch's blocking and builds the game in the editor: every level one to one, the scenes as you blocked them. The
-  desk's storyboard and blocking are the reference the Unreal build must match.</p>
-<div class="flow"><span>Plot on the board</span><i>→</i><span>Type the scenes</span><i>→</i><span>Block on the stage</span><i>→</i><span>Drop the takes</span><i>→</i><span>Playtest</span><i>→</i><span>Unreal</span></div>
+<section id="godot-export">
+<h2><span class="n">18</span>Into Godot</h2>
+<p>When a stretch of the game plays right on the desk, <span class="ui">Godot</span> saves, records the Watch's
+  blocking and exports the game as a Godot 4.7 project of its own, a new version each time, with a guide inside it.
+  The desk's storyboard and blocking are the reference the game must match.</p>
+<div class="flow"><span>Plot on the board</span><i>→</i><span>Type the scenes</span><i>→</i><span>Block on the stage</span><i>→</i><span>Drop the takes</span><i>→</i><span>Playtest</span><i>→</i><span>Godot</span></div>
 </section>
 
 <section id="keys">

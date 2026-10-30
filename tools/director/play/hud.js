@@ -137,8 +137,9 @@ export class Hud {
   // rest either side round the wheel (inventory.slot), at most SHOWN, the farther ones smaller and fainter; its name
   // under it. `shown`: E's choice; `peek`: hidden, it shows for a moment because something changed. Each thing keeps
   // its element, so the row slides as the wheel turns (one coming round the back of the wheel doesn't slide across)
-  inventory(list, at, shown, peek) {
+  inventory(list, at, shown, peek, lowered = false) {
     const n = list.length, had = new Map([...this.invRow.children].map(c => [c.dataset.id, c]));
+    this.invRow.classList.toggle("lowered", !!lowered);         // the one in the hand lowered (Q): its slot dim
     list.forEach((t, i) => {
       let c = had.get(t.id); had.delete(t.id);
       const d = slot(i, at, n), was = c ? +c.dataset.d : null;
@@ -200,12 +201,13 @@ export class Hud {
       const p = mk("div", "ph-exam"), card = mk("div", "ph-card"), hint = mk("div", "ph-exam-hint", "drag to turn it");
       card.append(mk("div", "ph-title", named(spec.title) || ""));
       if (spec.text) card.append(mk("div", "ph-text", named(spec.text)));
-      const back = mk("button", "ph-btn ph-close"); back.append(key("Esc"), mk("span", "", "Put it back"));
+      const back = mk("button", "ph-btn ph-close"); back.append(key("Esc"), mk("span", "", "Put it back (or click)"));
       card.append(back); p.append(hint, card);
       let drag = null, finish;
       p.onpointerdown = e => { if (e.target.closest(".ph-card")) return; drag = { x: e.clientX, y: e.clientY }; p.classList.add("turning"); try { p.setPointerCapture(e.pointerId); } catch (x) { } };
-      p.onpointermove = e => { if (!drag) return; spec.turn(e.clientX - drag.x, e.clientY - drag.y); drag = { x: e.clientX, y: e.clientY }; };
-      p.onpointerup = p.onpointercancel = () => { drag = null; p.classList.remove("turning"); };
+      p.onpointermove = e => { if (!drag) return; moved += Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y); spec.turn(e.clientX - drag.x, e.clientY - drag.y); drag = { x: e.clientX, y: e.clientY }; };
+      let moved = 0;
+      p.onpointerup = p.onpointercancel = e => { const was = drag; drag = null; p.classList.remove("turning"); if (was && moved < 4 && e.type === "pointerup") finish(); moved = 0; };   // a click (no drag) puts it back, like Esc
       const kd = e => { if (e.key === "Escape" || e.code === "KeyE") { e.preventDefault(); finish(); } };
       finish = () => { window.removeEventListener("keydown", kd, true); p.remove(); this.modal(null); done(true); };
       back.onclick = () => finish();
@@ -225,7 +227,7 @@ export class Hud {
         const kd = e => { if (e.key === "Enter") { e.preventDefault(); finish(inp.value.trim() || spec.name); } else if (e.key === "Escape") { e.preventDefault(); finish(spec.name); } else e.stopPropagation(); };
         finish = v => { window.removeEventListener("keydown", kd, true); p.remove(); this.modal(null); done(v); };
         window.addEventListener("keydown", kd, true);
-        this.modal(p); this.root.append(p); setTimeout(() => inp.focus(), 30);
+        this.modal(p); this.root.append(p); inp.focus(); setTimeout(() => inp.focus(), 30);   // at once (a fast machine types before a timer), and again once the pointer's release has settled
         return;
       }
       if (spec.code) {
@@ -237,8 +239,9 @@ export class Hud {
         card.append(shown, pad);
         p.keys = e => { if (/^\d$/.test(e.key)) press(e.key); else if (e.key === "Backspace") press("⌫"); else if (e.key === "Enter") press("OK"); };
       } else card.append(mk("div", "ph-text", named(spec.text) || ""));
-      const close = mk("button", "ph-btn ph-close"); close.append(key("Esc"), mk("span", "", "Close")); close.onclick = () => finish(spec.code ? null : true);
+      const close = mk("button", "ph-btn ph-close"); close.append(key("Esc"), mk("span", "", spec.name || spec.code ? "Close" : "Close (or click)")); close.onclick = () => finish(spec.code ? null : true);
       card.append(close); p.append(card);
+      if (!spec.name && !spec.code) p.onclick = e => { if (!e.target.closest("button")) finish(true); };   // a card of words: a click anywhere puts it away, like Esc
       const kd = e => { if (e.key === "Escape") { e.preventDefault(); finish(null); } else if (p.keys) p.keys(e); };
       finish = v => { window.removeEventListener("keydown", kd, true); p.remove(); this.modal(null); done(v); };
       window.addEventListener("keydown", kd, true);
@@ -247,16 +250,14 @@ export class Hud {
   }
 
   // a multiple choice (the story's `ask`): the question is the footer's line (who asks it above), the
-  // options right under it at the bottom centre (see `docked`), `secs` times it (`def`, an index, when it runs out); the
-  // camera's focus holds on whoever asks (spec.anchor() each frame, {x, y, fx, fy, speaker}) or the thing it's about;
-  // resolves with the index picked
+  // options right under it at the bottom centre (see `docked`); never timed (DECISIONS 2026-10-30: no quick-time
+  // events, the player must choose); the camera's focus holds on whoever asks (spec.anchor() each frame, {x, y, fx, fy,
+  // speaker}) or the thing it's about; resolves with the index picked
   choose(spec) {
     return new Promise(done => {
-      const c = chooser(Object.assign({ timed: !!spec.secs }, spec), i => finish(i)), kd = c.keys, f = docked(this.root, c, spec.anchor);
+      const c = chooser(Object.assign({}, spec, { timed: false }), i => finish(i)), kd = c.keys, f = docked(this.root, c, spec.anchor);
       if (spec.prompt) { paintLine(this.lineEl, spec.prompt, spec.who); this.lineUntil = 0; }
-      let over = false, t0 = performance.now();
-      const tick = () => { if (over) return; const u = (performance.now() - t0) / 1000 / spec.secs; c.bar(1 - u); if (u >= 1) return finish(spec.def ?? 0); requestAnimationFrame(tick); };
-      if (spec.secs) requestAnimationFrame(tick);                                   // timed: `def` when it runs out
+      let over = false;
       const finish = v => { if (over) return; over = true; window.removeEventListener("keydown", kd, true); f.remove(); this.modal(null); if (spec.prompt) this.lineEl.classList.remove("on"); done(v); };
       window.addEventListener("keydown", kd, true);
       this.modal(c.el);

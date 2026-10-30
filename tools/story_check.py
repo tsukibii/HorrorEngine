@@ -32,10 +32,13 @@ BOARDS = {}                 # the board games this game's tables can have (story
 ACTIONS = {"say", "think", "sound", "music", "light", "door", "show", "hide", "move", "objective", "flag", "unflag",
            "give", "take", "wait", "fade", "lookat", "shot", "seq", "anim", "stalker", "trick", "checkpoint", "done",
            "karma", "count", "scene", "behave", "ask", "state", "todo", "tick", "fail", "untodo", "chapter", "name", "torch",
-           "power", "skip"}
+           "power", "skip", "skin", "sweep"}
+SKIN_KEYS = ("wet", "sweat", "drips", "oil")            # a cast member's skin (docs/GODOT_LOOK.md §5): each 0..1
 ASK_SECS = 3.0              # the walker's time to answer an ask
 MUSIC = {"silence", "calm", "uneasy", "dread", "chase"}
 LIGHT_SET = {"on", "off", "flicker", "dim"}
+FLICKER_MODES = {"fluorescent", "dying", "candle", "pulse", "custom"}   # a light's `mode` (STORY_FORMAT §2)
+PATTERNS = {"caustics", "leaves", "blinds", "clouds"}                     # a light's `pattern` (STORY_FORMAT §2)
 TORCH_SET = {"on", "off", "flicker", "dead", "works"}   # the flashlight (an item with `torch`): dead flickers out, works is new batteries
 TORCH_KEYS = {"kelvin": (1500, 12000), "cone": (5, 120), "range": (1, 60), "strength": (0.1, 100)}
 DOOR_SET = {"lock", "unlock", "open", "close", "slam"}
@@ -53,7 +56,7 @@ SEAMS = {  # kind: (fields it needs, seconds it adds)
     "occlude": (set(), 0.8), "cutaway": ({"look"}, 1.5), "turn": (set(), 0.0), "stumble": (set(), 1.0),
     "dip": (set(), 2.0), "jcut": (set(), 0.0), "heartbeat": (set(), 0.6),
 }
-CAMERA = {"free", "soft", "hard", "held"}
+CAMERA = {"free", "soft", "hard", "held", "live"}   # live (2026-10-29): the eye stays the player's, no cuts, look and walk
 PULLS = {"back", "left", "right", "down", "any"}
 EVENTS = {"struggle", "press", "mash", "hold", "breath", "aim", "choose"}
 QTE = {"struggle", "press", "mash", "hold", "breath", "aim"}   # deprecated (DECISIONS 2026-10-27): they break the immersion
@@ -202,6 +205,11 @@ def check_library(story, r):
     if missing:
         r.warn(f"{len(missing)} library assets not fetched yet ({', '.join(missing[:4])}{' ...' if len(missing) > 4 else ''}): "
                f"`python tools/cc0.py fetch`")
+    if "hair" in story.get("game", {}):
+        check_hair(r, "game", story["game"]["hair"])
+    for c, v in story.get("cast", {}).items():
+        if "hair" in v:
+            check_hair(r, f"cast {c}", v["hair"])
     bodies = [("game", story.get("game", {}).get("previs_body"))] + [(c, v.get("previs_body")) for c, v in story.get("cast", {}).items()]
     for c, v in story.get("cast", {}).items():          # a cast member's models (STORY_FORMAT §2): named variants, each a body
         ms = v.get("models")
@@ -224,6 +232,31 @@ def check_library(story, r):
                 r.warn(f"{who}: previs_body {f}: no Export for desk / Unreal of {name or '?'} from the Character Studio on this machine (the director falls back)")
         elif f and not (L.STUDIO / "Bodies" / f).exists():
             r.warn(f"{who}: previs_body {f} isn't in Content/Studio/Bodies on this machine (the director falls back)")
+
+
+GRADES = ("none", "cinema", "teal-orange", "cold", "sodium", "bleach", "noir", "warm")
+GRADE_WORDS = {"amount": (0, 1), "lift": "rgb", "gamma": "rgb", "gain": "rgb", "warmth": (-1, 1), "saturation": (0, 2), "contrast": (0.5, 2), "fade": (0, 0.3),
+               "vignette": (0, 1), "vignette_soft": (0.1, 1), "grain": (0, 1), "aberration": (0, 4)}
+HAIR_WORDS = {"retro": bool, "flat": bool, "dither": bool, "steps": (2, 64), "gain": (0.2, 3.0), "shine": (0.0, 3.0), "soft": (0.0, 1.0), "cut": (0.0, 1.0)}
+
+
+def check_hair(r, where, h):
+    """The hair look on an imported model's hair (STORY_FORMAT §2 `hair`, GODOT_LOOK §5c): `retro` (unlit, 8 colour
+    steps and the PSX's dither at once), or each of `flat`, `steps`, `dither`, `gain`, `shine`, `soft`, `cut`."""
+    if not isinstance(h, dict):
+        r.err(f"{where}: hair: an object ({{\"retro\": true}}, or flat, steps, dither, gain, shine, soft, cut)")
+        return
+    for k, v in h.items():
+        spec = HAIR_WORDS.get(k)
+        if spec is None:
+            r.err(f"{where}: hair: {k!r} isn't a hair word ({', '.join(HAIR_WORDS)})")
+        elif spec is bool:
+            if not isinstance(v, bool):
+                r.err(f"{where}: hair: {k} is on or off (true/false)")
+        elif not isinstance(v, (int, float)) or isinstance(v, bool) or not spec[0] <= v <= spec[1]:
+            r.err(f"{where}: hair: {k} is a number {spec[0]} to {spec[1]}")
+        elif k == "steps" and int(v) != v:
+            r.err(f"{where}: hair: steps is a whole number of colour levels")
 
 
 def story_locks(story):
@@ -264,6 +297,12 @@ def check_world(story, things, r):
         check_spoken(f"line {k}", ln, cast, r)
     for lid, lvl in story.get("levels", {}).items():
         rooms = {rm["id"]: rm for rm in lvl.get("rooms", [])}
+        lw = lvl.get("weather")                        # a level's own weather over the game's (§2)
+        if lw is not None and lw not in ("clear", "rain"):
+            r.err(f"level {lid}: weather {lw!r}: clear or rain")
+        lk = lvl.get("look")                           # a level's own look over the game's (§2, §9.1)
+        if lk is not None and lk not in ("balanced", "realism", "plain"):
+            r.err(f"level {lid}: look {lk!r}: balanced, realism or plain")
         start = things.get(lvl.get("start"))
         if not start or start.use != "spot" or start.level != lid:
             r.err(f"level {lid}: start {lvl.get('start')!r} isn't a spot in it")
@@ -304,6 +343,9 @@ def check_world(story, things, r):
                         r.err(f"room {rm['id']}: trim {k}: {v!r} (skirting, cornice, casing, threshold: heights or widths in metres, 0 for none)")
             if rm.get("kind") is not None and rm["kind"] not in L.ROOM_KINDS:
                 r.warn(f"room {rm['id']}: kind {rm['kind']!r} isn't one of {', '.join(L.ROOM_KINDS)}")
+            wet = rm.get("wet")                             # a wet floor without rain (§2: pools in Godot, wet steps from 0.5)
+            if wet is not None and not (isinstance(wet, (int, float)) and 0 <= wet <= 1):
+                r.err(f"room {rm['id']}: wet {wet!r}: a number 0..1")
             for op in rm.get("openings", []):
                 if op.get("wall") not in L.WALLS:
                     r.err(f"room {rm['id']}: opening wall {op.get('wall')!r}")
@@ -313,6 +355,26 @@ def check_world(story, things, r):
                     r.err(f"room {rm['id']}: opening at {op['at']} (w {op['w']}) runs off the {op['wall']} wall ({length} m)")
                 if op.get("sill", 0) + op["h"] > rm["size"][2]:
                     r.err(f"room {rm['id']}: opening on {op['wall']} is taller than the room")
+                if "sweep" in op:                       # a car passing outside now and then (HSSweep): true, or its words
+                    sw = op["sweep"]
+                    if not op.get("window"):
+                        r.err(f"room {rm['id']}: a sweep goes on a window (the opening on {op['wall']} at {op['at']} isn't one)")
+                    if not (isinstance(sw, bool) or isinstance(sw, dict)):
+                        r.err(f"room {rm['id']}: sweep is true, or its words (every, secs, out, span, energy)")
+                    elif isinstance(sw, dict):
+                        for key, lo, hi in (("every", 0, 3600), ("secs", 0.5, 30), ("out", -20, 60), ("span", 1, 60), ("energy", 0, 100), ("aim", 0.2, 30)):
+                            if key in sw and not (isinstance(sw[key], (int, float)) and lo <= sw[key] <= hi):
+                                r.err(f"room {rm['id']}: a sweep's {key} is a number {lo} to {hi}")
+                if "shaft" in op:                       # a window's light shaft (HSShaft): true, or 0..1 how strong
+                    sh = op["shaft"]
+                    if not op.get("window"):
+                        r.err(f"room {rm['id']}: a shaft goes on a window (the opening on {op['wall']} at {op['at']} isn't one)")
+                    if not (isinstance(sh, bool) or isinstance(sh, (int, float)) and 0 <= sh <= 1):
+                        r.err(f"room {rm['id']}: shaft is true, or 0..1")
+                    if "reach" in op and not (isinstance(op["reach"], (int, float)) and 0.5 <= op["reach"] <= 20):
+                        r.err(f"room {rm['id']}: a shaft's reach is metres, 0.5 to 20")
+                    if "dust" in op and not (isinstance(op["dust"], (int, float)) and 0 <= op["dust"] <= 1):
+                        r.err(f"room {rm['id']}: a shaft's dust is 0..1")
                 if L.wall_skipped(rm, op["wall"], op["at"] - op["w"] / 2, op["at"] + op["w"] / 2):
                     r.err(f"room {rm['id']}: opening at {op['at']} on {op['wall']} is on a stretch it skips (put it on the room that builds that wall)")
                 if op.get("door") and op["door"].get("kit") is not None:
@@ -406,8 +468,52 @@ def check_world(story, things, r):
                 r.warn(f"{t.id}: the code {p.get('code')} isn't written in any note, line or inspect text")
         if u == "inspect" and p.get("line") and p["line"] not in lines:
             r.err(f"{t.id}: line {p['line']!r} doesn't exist")
+        if u == "leak":                                 # water running down a wall: a wet band below it, drips (GODOT_LOOK §2)
+            wl = p.get("wall", "n")
+            if wl not in L.WALLS:
+                r.err(f"{t.id}: leak wall {wl!r}: n, e, s or w")
+            for k, lo, hi in (("width", 0.05, 5), ("drip", 0, 60), ("wet", 0, 1)):
+                if k in p and not (isinstance(p[k], (int, float)) and lo <= p[k] <= hi):
+                    r.err(f"{t.id}: leak {k} is a number {lo} to {hi}")
+            rm = next((x for lv in story.get("levels", {}).values() for x in lv.get("rooms", []) if x.get("id") == t.room), None)
+            if rm is not None and wl in L.WALLS:
+                _ax, v, _lo, _hi = L.wall_line(rm, wl)
+                near = abs((t.pos[1] if wl in ("n", "s") else t.pos[0]) - v)
+                if near > 0.35:
+                    r.warn(f"{t.id}: the leak's at is {near:.2f} m from its {wl} wall (it runs down that wall; put it by it)")
+                if L.wall_skipped(rm, wl, 0, L.wall_length(rm, wl)):
+                    r.warn(f"{t.id}: the {wl} wall is one the room skips (the room beside it builds it): the leak wets nothing")
         if u == "light" and p.get("kind", "bulb") not in ("bulb", "candle", "lamp", "fire"):
             r.err(f"{t.id}: light kind {p.get('kind')!r}")
+        if u == "light":                                # its flicker's mode (tools/shared/flicker.js, flicker.gd)
+            if "mode" in p and p["mode"] not in FLICKER_MODES:
+                r.err(f"{t.id}: light mode {p.get('mode')!r}: one of {', '.join(sorted(FLICKER_MODES))}")
+            for k, lo in (("interval", 0.1), ("rate", 0.01)):
+                if k in p and not (isinstance(p[k], (int, float)) and p[k] >= lo):
+                    r.err(f"{t.id}: light {k} is a number of at least {lo}")
+            if "letters" in p and not (isinstance(p["letters"], str) and p["letters"] and re.fullmatch(r"[a-zA-Z]+", p["letters"])):
+                r.err(f"{t.id}: light letters are a to z (a off, m as placed, z double)")
+            if "flicker" in p and not (isinstance(p["flicker"], (int, float)) and 0 <= p["flicker"] <= 1):
+                r.err(f"{t.id}: light flicker is 0..1")
+            if "pattern" in p:                          # a pattern in its light (HSPattern): a spot aimed at `aim`
+                if p["pattern"] not in PATTERNS:
+                    r.err(f"{t.id}: light pattern {p.get('pattern')!r}: one of {', '.join(sorted(PATTERNS))}")
+                aim = p.get("aim")
+                if not (isinstance(aim, list) and len(aim) == 3 and all(isinstance(x, (int, float)) for x in aim)):
+                    r.err(f"{t.id}: a light with a pattern needs aim [x, y, z] (story metres: where the pattern falls)")
+                elif list(aim) == list(t.pos):
+                    r.err(f"{t.id}: aim is where the light is")
+                if "spread" in p and not (isinstance(p["spread"], (int, float)) and 5 <= p["spread"] <= 170):
+                    r.err(f"{t.id}: spread is the cone in degrees, 5 to 170")
+                for k, lo in (("scale", 0.001), ("speed", 0.0)):
+                    if k in p and not (isinstance(p[k], (int, float)) and p[k] >= lo):
+                        r.err(f"{t.id}: light {k} is a number")
+                if "open" in p and not (isinstance(p["open"], (int, float)) and 0 <= p["open"] <= 1):
+                    r.err(f"{t.id}: open is 0..1")
+                if "angle" in p and not isinstance(p["angle"], (int, float)):
+                    r.err(f"{t.id}: angle is degrees")
+            elif any(k in p for k in ("aim", "spread", "open", "angle")):
+                r.warn(f"{t.id}: aim, spread, open and angle go with a pattern; this light has none")
         if u == "locker":                               # Play puts the player inside: its `inside` spot, else its middle
             ins = p.get("inside")
             if ins is not None and (ins not in things or things[ins].use != "spot" or things[ins].level != t.level):
@@ -589,6 +695,8 @@ def check_reply(cw, c, story, things, lvl, stage, cast, clip_max, r, later=()):
     rp = c["reply"]
     opts = rp.get("options", [])
     ids = [o.get("id") for o in opts]
+    if len(opts) > 2:
+        r.warn(f"{cw}: a reply has {len(opts)} answers; two answers at most: the game shows them on one line with a dash between (DECISIONS 2026-10-30, evening)")
     if len(opts) < 2:
         r.warn(f"{cw}: a reply has two answers or more; this one has {len(opts)}")
     elif len(opts) > 3:
@@ -596,9 +704,10 @@ def check_reply(cw, c, story, things, lvl, stage, cast, clip_max, r, later=()):
     if None in ids or len(set(ids)) != len(ids):
         r.err(f"{cw}: reply options need unique ids")
     if not 2 <= float(rp.get("wait", L.REPLY_SECS)) <= 15:
-        r.err(f"{cw}: reply wait {rp.get('wait')} s: she waits 2 to 15 s, then carries on")
-    if rp.get("timeout") is not None and rp["timeout"] not in ids:
-        r.err(f"{cw}: reply timeout {rp['timeout']!r}: null (her answer is skipped) or an option id")
+        r.err(f"{cw}: reply wait {rp.get('wait')} s: her wait as recorded is 2 to 15 s (then she holds till you answer)")
+    if rp.get("timeout") is not None:
+        r.warn(f"{cw}: reply timeout {rp['timeout']!r}: a reply waits for the player now (DECISIONS 2026-10-30: no timed "
+               "choices), so it never plays; silence is an option of its own")
     if opts and all(o.get("if") or o.get("count") for o in opts):
         r.warn(f"{cw}: every answer has a condition (§9.14): when none holds she asks and nothing is offered; leave one without")
     for o in opts:
@@ -725,6 +834,8 @@ def check_scene(sid, sc, story, things, r):
                     r.err(f"scene {sid}: models: {cid!r} isn't in the cast")
                 elif v != "default" and v not in (c.get("models") or {}):
                     r.err(f"scene {sid}: models: {cid} has no model {v!r} ({', '.join(['default', *(c.get('models') or {})])})")
+                elif v != "default" and str(c.get("previs_body", "")).startswith("people/") and not str((c.get("models") or {}).get(v, "")).startswith("people/"):
+                    r.warn(f"scene {sid}: models: {cid} wears {v!r} from here on, whose body is {c['models'][v]!r} (the plain desk body), while their default is the Character Studio character {c['previs_body']!r}: in the game they turn into the plain grey body at this scene (point the model at a character, or drop the pick)")
     for edge in ("enter", "exit"):
         if sc.get(edge) and sc[edge].get("kind") not in TRANSITIONS:
             r.err(f"scene {sid}: {edge} kind {sc[edge].get('kind')!r} (one of {', '.join(sorted(TRANSITIONS))})")
@@ -768,7 +879,7 @@ def check_scene(sid, sc, story, things, r):
                 r.err(f"{where}: stage spot {spot!r} isn't a spot in level {lvl}")
         vcam = ver.get("camera", cam)
         look = vcam.get("look")
-        if look and look not in things and look not in stage and vcam.get("mode") != "free":
+        if look and look not in things and look not in stage and vcam.get("mode") not in ("free", "live"):
             if look in cast:
                 r.warn(f"{where}: the camera looks at {look}, who isn't on stage in this version")
             else:
@@ -792,9 +903,11 @@ def check_scene(sid, sc, story, things, r):
             check_typed(cw, c, c.get("think") is True, r)
             seam = c.get("seam")
             if i > 0:
-                if not seam:
-                    r.err(f"{cw}: a cut from {clips[i - 1].get('id')} with no seam: pick one (blink, glance, flicker, "
-                          f"occlude, cutaway, turn, stumble, dip, jcut, heartbeat; none only for the same take)")
+                if not seam and cam.get("mode") == "live":
+                    pass                                   # a live scene never cuts: the eye is the player's own
+                elif not seam:
+                    r.err(f"{cw}: a cut from {clips[i - 1].get('id')} with no seam: pick one (blink, flicker, "
+                          f"occlude, turn, stumble, dip, jcut, heartbeat; none only for the same take)")
                 elif seam.get("kind") not in SEAMS:
                     r.err(f"{cw}: seam {seam.get('kind')!r} isn't a seam")
                 else:
@@ -804,8 +917,9 @@ def check_scene(sid, sc, story, things, r):
                     lk = seam.get("look")
                     if lk and lk not in things and lk not in stage:
                         r.err(f"{cw}: seam look {lk!r} isn't a thing or someone on stage")
-                    if seam["kind"] == "glance" and cam.get("mode") == "hard":
-                        r.warn(f"{cw}: a glance needs the player's look (soft or free camera); with a hard camera use blink or cutaway")
+                    if seam["kind"] in ("glance", "cutaway"):
+                        r.warn(f"{cw}: a {seam['kind']} turns the player's eye for them, deprecated (DECISIONS 2026-10-29: it breaks the "
+                               f"immersion); use blink, flicker, occlude or dip")
             if c.get("shot") and c["shot"] not in L.SHOT_TYPES:
                 r.err(f"{cw}: shot {c['shot']!r} (one of {', '.join(L.SHOT_TYPES)})")
             for k, v in (c.get("cam") or {}).items():
@@ -851,9 +965,12 @@ def check_scene(sid, sc, story, things, r):
                 if t == "choose":
                     oids = [o.get("id") for o in ev.get("options", [])]
                     if len(oids) < 2 or None in oids or len(set(oids)) != len(oids):
-                        r.err(f"{cw}: a timed choice needs two options or more, each with a unique id and a label")
-                    if ev.get("default") not in oids:
-                        r.err(f"{cw}: a timed choice needs `default`: the option taken when the time runs out (silence is a choice)")
+                        r.err(f"{cw}: a choice needs two options or more, each with a unique id and a label")
+                    elif len(oids) > 2:
+                        r.warn(f"{cw}: a choice with {len(oids)} answers; two answers at most: the game shows them on one line with a dash between (DECISIONS 2026-10-30, evening)")
+                    if "default" in ev:
+                        r.warn(f"{cw}: a choice waits for the player now (DECISIONS 2026-10-30: no timed choices): `default` is never taken; "
+                               "silence is an option of its own")
                     for o in ev.get("options", []):
                         if not o.get("label"):
                             r.err(f"{cw}: option {o.get('id')!r} needs a label")
@@ -1141,6 +1258,8 @@ def check_action(bid, a, story, things, r, stage=None):
         if not isinstance(opts, list) or not 2 <= len(opts) <= 4 or not all(isinstance(o, dict) for o in opts):
             r.err(f"{bid}: ask {v!r}: options are 2 to 4 answers, each {{id, label, ja?, do?}}")
             return
+        if len(opts) > 2:
+            r.warn(f"{bid}: ask {v!r} has {len(opts)} answers; two answers at most: the game shows them on one line with a dash between (DECISIONS 2026-10-30, evening)")
         ids = [o.get("id") for o in opts]
         if len(set(ids)) != len(ids) or not all(isinstance(i, str) and i for i in ids):
             r.err(f"{bid}: ask {v!r}: each answer needs its own id")
@@ -1152,15 +1271,9 @@ def check_action(bid, a, story, things, r, stage=None):
             check_cond(f"{bid} ask {v} {o.get('id')}", o, story, r)
             for sub in o.get("do") or []:
                 check_action(f"{bid} ask {v} {o.get('id')}", sub, story, things, r, stage)
-        if "secs" in a and not (isinstance(a["secs"], (int, float)) and a["secs"] > 0):
-            r.err(f"{bid}: ask {v!r}: secs is a number of seconds")
-        if "secs" in a and a.get("default") not in ids:
-            r.err(f"{bid}: ask {v!r} is timed: `default` (the answer when time runs out) is one of {', '.join(map(str, ids))}")
-        elif "default" in a and a["default"] not in ids:
-            r.err(f"{bid}: ask {v!r}: default {a['default']!r} isn't one of its answers")
-        d = next((o for o in opts if o.get("id") == a.get("default")), None)
-        if d and (d.get("if") or d.get("count")):
-            r.warn(f"{bid}: ask {v!r}: its default {d.get('id')!r} has a condition: when it isn't offered, time running out picks the first that is")
+        if "secs" in a or "default" in a:
+            r.warn(f"{bid}: ask {v!r}: an ask waits for the player now (DECISIONS 2026-10-30: no timed choices): "
+                   "`secs` and `default` are never used")
         return
     if k == "todo":                                    # a task on the to-do list (STORY_FORMAT §4)
         if not isinstance(v, str) or not re.match(r"^[a-z0-9_]+$", v):
@@ -1234,6 +1347,10 @@ def check_action(bid, a, story, things, r, stage=None):
             r.err(f"{bid}: power level {a['level']!r} isn't a level")
         if v == "off" and not any(t.use == "breaker" for t in things.values()) and '"power": "on"' not in json.dumps(story.get("stitches", {})):
             r.warn(f"{bid}: power off, and nothing brings it back (no breaker, no power on)")
+    elif k == "sweep":                                  # a car passes a room's windows now (their `sweep`)
+        rooms_with = {rm["id"] for lv in story.get("levels", {}).values() for rm in lv.get("rooms", []) if any(op.get("sweep") for op in rm.get("openings", []))}
+        if v not in rooms_with:
+            r.err(f"{bid}: sweep {v!r}: not a room with a window that has a sweep ({', '.join(sorted(rooms_with)) or 'none'})")
     elif k == "think":                                  # the player's thought, typing itself out if it breaks or retypes (§9.15)
         if not isinstance(v, str) or not v.strip():
             r.err(f"{bid}: think is the thought's words")
@@ -1241,6 +1358,14 @@ def check_action(bid, a, story, things, r, stage=None):
     elif k == "skip":                                   # time skipped: the little things live through it at once
         if not isinstance(v, (int, float)) or isinstance(v, bool) or not 0 < v <= 7 * 86400:
             r.err(f"{bid}: skip {v!r}: the seconds skipped (5400: an hour and a half; a week at most)")
+    elif k == "skin":                                   # a cast member's skin: wet, sweating, dripping, oiled (0..1 each; left out: unchanged)
+        if v not in cast:
+            r.err(f"{bid}: skin {v!r} isn't a cast member")
+        if not any(x in a for x in SKIN_KEYS):
+            r.err(f"{bid}: skin takes {', '.join(SKIN_KEYS)} (0..1 each)")
+        for x in SKIN_KEYS:
+            if x in a and (isinstance(a[x], bool) or not isinstance(a[x], (int, float)) or not 0 <= a[x] <= 1):
+                r.err(f"{bid}: skin {x} {a[x]!r}: a number 0..1")
     elif k == "torch":                                  # the flashlight: on, off, flicker, dead, works
         if v not in TORCH_SET:
             r.err(f"{bid}: torch {v!r} (one of {', '.join(sorted(TORCH_SET))})")
@@ -1504,6 +1629,34 @@ def check_flow(story, things, r):
     st = story["game"].get("see_through")              # the hiding places' default (a locker's own wins)
     if st is not None and not (isinstance(st, (int, float)) and 0 <= st <= 1):
         r.err(f"game.see_through {st!r}: a number 0..1")
+    vhs = story["game"].get("vhs")                     # the camcorder look (docs/VHS.md): UltraVHS's preset, in Godot's export and Unreal
+    if vhs is not None and vhs not in ("off", "camcorder", "camhybrid", "worn", "nightmare"):
+        r.err(f"game.vhs {vhs!r}: off, camcorder, camhybrid, worn or nightmare")
+    grade = story["game"].get("grade")                 # the grade (HSPost's presets, GODOT_LOOK §1d): a name, or {preset, amount, vignette...}
+    if grade is not None:
+        gs = grade if isinstance(grade, dict) else {"preset": grade}
+        if not isinstance(gs.get("preset", "cinema"), str) or gs.get("preset", "cinema") not in GRADES:
+            r.err(f"game.grade: preset {gs.get('preset')!r}: {', '.join(GRADES)}")
+        for k, v in gs.items():
+            if k == "preset":
+                continue
+            spec = GRADE_WORDS.get(k)
+            if spec is None:
+                r.err(f"game.grade: {k!r} isn't a grade word ({', '.join(GRADE_WORDS)})")
+            elif spec == "rgb":
+                if not (isinstance(v, list) and len(v) == 3 and all(isinstance(x, (int, float)) and not isinstance(x, bool) for x in v)):
+                    r.err(f"game.grade: {k} is three numbers (red, green, blue)")
+            elif not isinstance(v, (int, float)) or isinstance(v, bool) or not spec[0] <= v <= spec[1]:
+                r.err(f"game.grade: {k} is a number {spec[0]} to {spec[1]}")
+    lighting = story["game"].get("lighting")           # the runtime's help with the light (DECISIONS 2026-10-30, noon: the lighting is made in Godot)
+    if lighting is not None and lighting not in ("on", "off"):
+        r.err(f"game.lighting {lighting!r}: on (the time of day's sky and sun unless the level has its own) or off (a flat test light)")
+    look = story["game"].get("look")                   # the look (HorrorStudioLook's HSLook presets, docs/GODOT_LOOK.md)
+    if look is not None and look not in ("balanced", "realism", "plain"):
+        r.err(f"game.look {look!r}: balanced, realism or plain")
+    weather = story["game"].get("weather")             # rain in the rooms with no ceiling (HorrorStudioLook: HSRain, HSWet)
+    if weather is not None and weather not in ("clear", "rain"):
+        r.err(f"game.weather {weather!r}: clear or rain")
     th = story["game"].get("ui_theme")                 # the Play HUD's theme: a file in tools/director/play/ui/themes
     if th is not None and not (Path(__file__).resolve().parent / "director" / "play" / "ui" / "themes" / f"{th}.css").is_file():
         r.err(f"game.ui_theme {th!r}: no tools/director/play/ui/themes/{th}.css")
@@ -1880,10 +2033,11 @@ class World:
             self.karma[k] = self.karma.get(k, 0.0) + v
 
     def answer(self, ev):
-        """The option this sweep's player takes at a timed choice: the kindest, the cruellest, or silence (the default)."""
+        """The option this sweep's player takes at a choice: the kindest, the cruellest, or the quiet one (no karma either way)."""
         opts = ev.get("options", [])
         if self.style == "silent" or not any("karma" in o for o in opts):
-            return next((o for o in opts if o.get("id") == ev.get("default")), opts[0] if opts else {})
+            quiet = [o for o in opts if not any(L.karma_of(o.get("karma")).values())]
+            return quiet[0] if quiet and any("karma" in o for o in opts) else (opts[0] if opts else {})
         score = lambda o: sum(L.karma_of(o.get("karma")).values())
         return max(opts, key=score) if self.style == "kind" else min(opts, key=score)
 

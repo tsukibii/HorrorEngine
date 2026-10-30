@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://addons/horrorstudio_look/nodes/flicker_omni.gd" id="1"]
+
+[node name="Candle" type="OmniLight3D"]
+script = ExtResource("1")
+shadow_enabled = true
+light_color = Color(1, 0.62, 0.3, 1)
+light_energy = 0.8
+omni_range = 3.5
+light_size = 0.02
+mode = "candle"
+on_mains = false

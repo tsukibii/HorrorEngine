@@ -740,8 +740,7 @@
      "id": "c2",
      "who": "mari",
      "seam": {
-      "kind": "glance",
-      "look": "hall_lamp"
+      "kind": "blink"
      },
      "ja": "お父さんの書斎に日記がある。地下室の鍵のことが書いてある。",
      "en": "Father's diary is in the study. It says where the cellar key is.",
@@ -1063,7 +1062,6 @@
         "label": "...I'll stay."
        }
       ],
-      "default": "caught",
       "on": {
        "escape": [
         {
@@ -1148,8 +1146,7 @@
         "id": "fail",
         "label": "I'm here."
        }
-      ],
-      "default": "success"
+      ]
      }
     }
    ],

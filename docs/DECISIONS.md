@@ -2,6 +2,260 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-30, evening (the user, after finding the sun's leak and the flicker's flashes)
+
+- **Unreal removed**: "I'm okay to merge this into main... before you do, remove all the remaining bloatware from
+  Unreal as we aren't going to use Unreal (the director's Unreal button too if it's easy); I think the Unreal stuff
+  slows down our test suite". Gone: the `.uproject`, `Config/`, `Source/`, `Plugins/` (UnrealClaude), `.mcp.json`,
+  `UnrealPlugins/` (UltraVHS's numpy reference and measures kept, moved to `tools/ultravhs/`), the editor-only
+  storykit modules (importer, generate, shots, surfaces, skin, people), `unreal_link`, `unreal_plugins`, `metahuman`,
+  `glass_skin`, `package_game`, `ueeye.mjs`, the class map, the glass-skin set, SETUP.md and setup.py's Unreal steps
+  (its Kimodo steps kept), the Unreal docs (UNREAL_FLOW, UNREAL_NEXT, RUNNER_SPEC, MCP_TOOLS, METAHUMAN_ROUTE), the
+  desk's Unreal button and its routes. All of it is in git history.
+- **A GTX 1060 is the target, with the realism look and its atmosphere, well optimised**: "what if we aim for 1060,
+  we want that realism look with atmosphere but very well optimized". So `balanced` is the default look (no SSIL, SSR
+  at 48 steps, a thinner haze, shadows at 4096 and 16 bits with the medium filter; the menu's Shadows Medium).
+- **A base project set up by default**: "when I start a new Godot project I also have to manually enable TAA etc and
+  all the other settings that make the game look pretty including the camhybrid; set up a base project settings with
+  everything that makes things look good (not the most intensive, a balanced one) so things don't look too sharp".
+  The plugin applies the balanced project settings when it's enabled; the export writes them; `look_balanced.tscn`
+  brings the environment, the camhybrid tape and the grade in one drop.
+- **The choice back to one line**: after a glass panel and then a glow on hover ("it pops out too much and breaks the
+  horror immersion"): "go back to our original of --- between the choices but keep it to 2 choices max, close to the
+  bottom of the frame, below the question; we don't want 1 or 2 to select: click with the mouse or move between the
+  choices with A or D (or the arrow keys) + Enter". The answers on one line with a dash between, the one pointed at
+  white and the other dimmed; no numbers; the story check warns past two answers.
+- **Light zones instead of lights placed and tuned by Claude**: "couldn't you just add some simple presets for
+  different room lights with a cubed area affected (similar to how VoxelGI looks), the zone is what will be affected
+  by lighting; I'm totally ok limiting architecture designs in my game to cubes/rectangles/boxes". `HSLightZone` and
+  the room_* presets; the export puts a zone in every room.
+
+## 2026-10-30, afternoon (the user, after trying the effect nodes)
+
+- **The window sun fitted to its window**: "the window sun can be enhanced so we can adjust the root to match the
+  window size and make it look like it's coming from the window (atm it just looks like it floats out of the
+  window)". The shaft is the window's rectangle swept along the sunlight, sized to the opening by an outline in the
+  editor, landing on the floor, its light aimed through the opening (GODOT_LOOK §0).
+- **No quick-time events: a choice waits for the player**: "can we remove quick time events, just have it require a
+  user to make a choice, move the panel lower too so it's more aesthetic". No countdown on any choice (a scene's
+  choice, a reply, an ask, a round's result); `default`, an ask's `secs` and a reply's `timeout` are no longer used
+  (the check warns); silence is an option of its own. The panel sits near the screen's foot while it's up.
+- **Only what can be seen is drawn**: "can we add optimization to the engine/default exports so we only render what
+  we can see (the typical game optimization trick)". The export's levels carry occluders (GODOT_EXPORT §8).
+
+## 2026-10-30, noon (the user, after the lightmap bake took hours in the cloud)
+
+- **"I think this isn't practical. What we should do is I manually handle the lighting, you make a plugin that's easy
+  to drag and drop the effects you've created and modify/customize them, and when we import a scene into Godot we don't
+  worry about lighting."** So the export writes no lighting of its own (no VoxelGI, probes or lightmaps; the bake
+  pipeline built that morning dropped before its commit); the story's lamps and windows stay. The look plugin's
+  effects become nodes to drag in and tune (GODOT_LOOK §0). This supersedes the morning's baked approach below.
+- **"Instead of on each export we overwrite the folder, we incrementally go up a version so I can copy and paste some
+  of the prior setup (e.g. the lighting nodes) from a previous project."** Every export is a new folder,
+  `Saved/Godot/<Game>_v001`, `_v002`... (GODOT_EXPORT §8); the checks keep a scratch folder of their own.
+- **"Similar to the vhs: camcorder var, could we add `lighting: off` meaning we can play and test our scenes without
+  any lighting, but it's not pitch dark because lighting doesn't matter in this demo mode (almost like a viewport
+  play test)."** `game.lighting`: `on` (the default) or `off` (STORY_FORMAT §9.1).
+- **"The multiple choice intro dialogue doesn't work (I can't click anything), and I don't like the layout separated
+  with ---: it should be a glass panel like the other objects, with numbered rows (1. 2. 3.) to select, hover the
+  mouse over one to click."** Done in Godot: hud.gd's choice is the theme's glass panel with a row per option.
+
+## 2026-10-30, morning, after the night's batch
+
+- **"Is there a way to just bake the lighting (for windowed areas), and for rooms just make the lighting with
+  different variations (light switches off, all on, 1 by 1 on/off), to help performance too and to stop the lighting
+  shifting around? That's the reason we added those lighting effects for later, so we could bake the more realistic
+  lighting and use tricks for reflectiveness later." "Let's go baked approach because it will be more performative
+  on lower end machines anyway."** So the Godot side moves to **baked lighting** (LightmapGI; GODOT_LOOK §1e): the
+  windows, the sun, the moon and the sky baked per time of day the level plays at; the lamps real-time for their
+  direct light and shadows (switches, the power cut, flicker, dying bulbs all still work) with their bounce baked;
+  one map per level per time with the lamps on and one with them off (the power cut), swapped at run time; a
+  single lamp switched off leaves its baked bounce (accepted, the common cheat; no map per combination). With a
+  level's lightmaps present the rooms' VoxelGIs and SSIL are off; screen-space reflections and the per-room
+  reflection probes stay for the shiny tricks. The bake runs on the user's card after the export (the desk's
+  Godot button, `godot_export.py --bake`), in the cloud on the CPU renderer for the checks. The shafts stay cards.
+
+## 2026-10-30, night, from their second Godot run (the user asleep)
+
+- **"Realistically you can disable all the shaders and lighting effects in director tool, we only need director
+  tool for the gameplay etc, actual lighting etc should be set up in Godot (for the test room though you can allow
+  director tool to just set up some generic lighting spots like you currently are but we don't need detailed
+  shadows or anything in director tool)."** So the desk lights its rooms plainly by default: the lamps and the
+  windows' fill as point and spot lights, no shadow maps (it never had them), and none of the light effects it
+  mirrored from Godot (the windows' shafts, the lights' patterns, the headlight sweeps, the leaks' strips, wet
+  skin): `Stage.plainLight`, the toolbar's Lighting button turning the effects on for a look, kept in the browser.
+  New lighting work goes to the Godot side (GodotPlugins/HorrorStudioLook, the runtime add-on), not the desk.
+- **"Fix the new weird lighting bug: the lights change based off what direction I look at, too noticeable (gets
+  darker when I look down), and I see bright gaps come through on the floor and disappear as I move and look."**
+  The iris's range cut to one stop, SSIL pared back, the rooms' VoxelGIs sized by the room, the windows' shafts
+  faint at night and faded at the floor (GODOT_LOOK §1, GODOT_EXPORT §8).
+- **"The characters/NPCs seem a bit overlit inside the game (their skin glows too bright)."** GDPEOPLE now measures
+  the lit face against the export's own plain material under the same lights and holds the skin shader within
+  0.85 to 1.15 of it.
+- **"Work on post processing so the game feels more professional, specifically more color grading and making sure
+  characters/npcs look more real and less like bright plastic."** A film-style grade over every game's picture
+  (HSPost, GODOT_LOOK §1d: `cinema` by default, `game.grade` to pick another or none), the skin's gloss softened
+  (§5).
+- **"I don't see dialogue in Godot for cutscenes."** Found by a new GDTESTROOM check (the line's label visible with
+  words in it through the lobby scene): a scene holds the player (`play.hold`), and hold hid the whole HUD, the
+  footer with the lines in it. Now only the play HUD steps back (the objective, the prompt, the inventory, the log)
+  and the footer stays: the lines, who says them, a reply's choices. The menu's `paused` is once each way too, and
+  its Subtitles on/off row is gone: the lines are the dialogue (no voices), never a thing to switch off.
+
+## 2026-10-29, night, after the local run (the Godot thread)
+
+- **"We are scrapping voiced lines from the game for now (might add a typewriter sound effect as the text appears
+  later, but only after game testing, if I want it)."** So no takes' audio in the Godot export (GODOT_EXPORT §8's
+  "voices" step is skipped), no MiniMax voice work; the lines are text, typed out as they are (EXPRESSIONS_PLAN's
+  typewriter blip waits for a playtest and their yes).
+- **"Let's skip the motion sets for now until I actually make some Kimodo motions; I will tell you when I've made
+  some basic sets."** So the motion sets on the stand-ins (PERFORMANCE_PLAN §2, PATTERNS_PLAN §5) wait: nothing
+  built for them in the desk or in Godot until the user says their basic sets exist; the cast's stand-ins keep the
+  blocking pose and the behaviours' stubs.
+- **"Make a note to scrap any goals for Unreal; we are going to use Godot 100% for this project now: Unreal is too
+  heavy and currently can't be used in cloud sessions."** Every Unreal goal is dropped: no StoryRunner, no
+  `storykit.generate` or `importer` work, no UNREAL_NEXT, no UltraVHS or Light Kit plugin work beyond what the Godot
+  side ports from them, no MetaHuman route (the Character Studio's MHR characters are the cast). The Unreal docs,
+  plugins and code stay in the repo as history and as the source of the numbers the Godot side matches
+  (`UnrealPlugins/UltraVHS/Tools/measure.py`, Light Kit's curves). The Godot export is the game. CLAUDE.md's header
+  says so.
+
+## 2026-10-29, the user's first Godot run (the test room on their machine)
+
+- **"The intro cutscene feels too choppy: we can tell we are cutting to a new shot, I want one fluid scene. The
+  player's location should remain the same as when it started, the player can still look around; standing, look
+  around and walk (stop hard-locking them); sitting, not behind the sitting direction, but a 180° look."** So the
+  new camera mode `live` (STORY_FORMAT §3, DIRECTING §1): the eye stays the player's own, no cuts, no shots, the
+  cast acting in the room; the test room's lobby scene is live. `soft` and `hard` stay for scenes that must be framed.
+- **"A way to unequip an item from our slot so we don't see it as if we are carrying it."** Q lowers the thing in
+  the hand out of view (it stays in the row, its slot dim) and raises it; the wheel raises it too.
+- **"Left clicking doesn't close anything."** The card is a Control under the pointer and ate the click before the
+  runtime saw it; taken in `_input` now.
+- **"Even unequipping still shows the item held"**: Godot's hand copy was shown again every frame; it hides while
+  lowered now.
+- **"The Godot export should be a bit more organised in the level: sub categories e.g. walls, furniture, ground."**
+  Every level's nodes sit in folders by kind: Ground, Walls, Ceilings, Doors, Things, Lights, Glass, Triggers,
+  Spots, People, GI (the runtime reads through them: `game.pieces()`).
+- **"I love the camcorder VHS effect but it's a tad too much: the fisheye a tiny bit too strong, the blurring too
+  much on objects that are closer; close to something it should be almost sharp, still some softening: call it
+  `camhybrid`."** The new preset: half the fisheye, the tape's own blur a third, and the softener (`HSSoften`, a
+  depth-aware post-process on the camera): sharp to 0.9 m but for a quarter pixel, fully soft from 7 m.
+- **"camhybrid is buggy: the LED UI doesn't work, we don't see steam when turning things on."** The softener had
+  been a quad reading the screen texture (the opaque pass only) and painted over every transparent thing; it's a
+  CompositorEffect after the transparents now, and the test room checks a digit and the kettle's steam survive it.
+- **"camhybrid needs strengthening towards camcorder: I like the sharpening and the reduction of fisheye, but we
+  over-reduced to the point it lost its aesthetic; give me five screenshots to pick from."** Five strengths between
+  the two pictured (`docs/godot_sheets/2026-10-29_camhybrid_pick.jpg`). **"Something between B and C"**: their
+  midpoint is `camhybrid` (fisheye 0.062, blur 0.88, the softener half a pixel at 0.85 m to 1.55 px at 5.75 m).
+- **"The shadows feel a bit rough even with anti-aliasing and TAA: hard edges on the front door at the top."** The
+  shadow maps' filter was Godot's default (soft low) over a 4096 atlas shared by twenty lights: soft high over 8192
+  now, the lights with a size and a blur, the menu's Shadows row wired (GODOT_LOOK §1).
+- **"You can see the rain diffractions on the puddle, I really like that, but the circle stylised rain droplets
+  break the immersion: we are aiming for realism, not stylisation."** The splashes draw no ring now: a landing glint,
+  a wet sheen and a few thrown droplets, and the wet floor's own ripple rings bend the reflection per pixel
+  (GODOT_LOOK §4).
+- **"Build all five (the Light Kit pieces the Godot side lacked), flicker modes and patterns first."** In that
+  order: the flicker modes (`mode` on a light: fluorescent, dying, candle, pulse, custom; the same curves on the desk
+  and in Godot), the light patterns, the shafts with dust, the headlight sweeps, the adaptive exposure. Built that
+  evening (GODOT_LOOK §1): `mode` on a light; `pattern` with `aim` on a light (Godot projects only through a shadowed
+  spot: found there); `shaft` and `sweep` on a window, the `sweep` action; the iris with any look but plain.
+
+- **"Let's remove the forced turn away (look up) after we interact with the person; in general let's make a note to
+  avoid that effect, as upon testing it breaks immersion."** The rule, for every runtime and every stitch: the
+  player's eye is never moved for them after an interaction; a scene hands the eye back exactly where its camera
+  ended, a card leaves it where it was. (DIRECTING §1 carries it.) The moment: the lobby scene's `glance` seam, the
+  camera eased up to the lamp while Aoi walked to the bench and back to her: "it forcefully made us look at the
+  ceiling after we interact with the npc and they move to sit down, then makes us look back at them". So the seams
+  that move the eye, `glance` and `cutaway`, are **deprecated** (a STORY warning, like the quick-time events; the
+  runtimes still play old ones) and the three games' glances are blinks now.
+- Reading a thing (`inspect`, a note): the "Look" dot and word don't sit over the card, and **a left click puts the
+  card away** as Esc does (a name or a code card still waits for its keys). The desk the same (a click with no drag).
+- **A thing looked at stays where it is in Godot** (the shelf had vanished while its card was up: the desk takes a
+  small thing up in the hands, Godot showed the card and hid the thing even when it was a shelf).
+- Noted, to look at later: a square patch of light under a distant counter that goes when you come close (the
+  VoxelGI's cells seen from afar, most likely; GODOT_LOOK §7).
+
+## 2026-10-29, the user's return (the Godot button: a plain project, no windows)
+
+- "When I click Godot, it just launches in headless 3 times and closes (via director), is there a way to just export
+  it as an individual godot project to manually load into godot?" The three launches were the guide's pictures
+  (`--pictures`, added that morning) and the import. The button now writes only the project folder
+  (`Saved/Godot/<G>/`, its `project.godot` opened by hand in Godot 4.7) and the zip; the pictures stay a CLI option.
+
+## 2026-10-29, afternoon (the look in Godot, the inventory as models, our plugins in a folder)
+
+- **The inventory shows the things themselves**, "the 3D model scaled down into an inventory-size slot, only the ones
+  showing rendered", not pictures (the user: more common than rendering inventory photos). Built: `hud.gd`'s row.
+- **Then, while the user is away (about seven hours):** "the shades we made for rain reflections, rain, reflective
+  materials inspired by Chilla's Art" ported to Godot; "a default anti-aliasing and the most aesthetic settings for
+  pseudo realism (baked realism lighting with overplayed effects like blood and reflective surfaces to trick the
+  brain; our games are pretty small scale)"; "a realistic sweaty wet skin filter and shader, and oiled up"; "implement
+  that human shader repo"; and **"instead of exporting the plugins and having them inside GitHub, keep our plugins
+  in a folder that gets passed in"**: `GodotPlugins/HorrorStudioLook/`, copied into every export (docs/GODOT_LOOK.md).
+- Claude's call on the way to say it in a story: the new word `skin` (STORY_FORMAT §9.8: a cast member's `wet`,
+  `sweat`, `drips`, `oil`), played by the Godot export, recorded by the desk; the user may want it elsewhere.
+- Claude's calls later that morning (the user still away): the desk's stage draws `skin` too (skinwet.js); **every
+  kit mirror reflects for real** in Godot (HSMirror: a second camera into a viewport, the glass projecting its
+  view; a mirror's own wall and itself kept out of its picture, so two mirrors in one room is for later; a second
+  render of the room per mirror in view: a bathroom's worth, not a hall of them); rain splashes where it lands; in
+  the rain's room the rain is heard all round you and every step is a wet one, on the desk too; a level's own
+  `weather` over the game's and a room's own `wet` (a bathroom's floor without rain: STORY_FORMAT §2); a cast member
+  out in the rain wets by herself and dries indoors, the `skin` word overriding; the desk's
+  Godot button has Godot make the guide's pictures when it's on the machine (seconds on a card). LightmapGI stays
+  out: its bake is editor-only in 4.7.
+
+## 2026-10-28, late night (Godot: Claude's picks, parity first)
+
+- **"Do whatever you think is right, keep working on this till the test demo director is 1:1 in Godot"** (the
+  controls fine-tuned later): the goal is the desk's Play of the Pilot and TestRoom001 playing the same in Godot
+  (GDPLAY, the test room's stations), then the rest of GODOT_PLAN §6.
+- Claude's picks on GODOT_EXPORT §4: **numbered folders with the act first**, never renumbering a folder the user has
+  files in without saying so; **animations baked** from the desk's bake; **GDScript only** in the export.
+- Claude's call on the order: **parity first, editability second**: the first exports keep the story's data as data
+  (the runtime reads it) and the levels as `.tscn`; the Inspector resources for beats and the AnimationPlayer
+  timelines come once the Pilot plays the same (GODOT_EXPORT §3 stands as the shape to reach).
+
+## 2026-10-28, night (Godot: start; GDScript)
+
+- **Start the Godot work** ("I merged in main, pull it in and start working on this"): main (`dev-002`) merged into
+  `godot-support`; the plan's order (GODOT_PLAN §8) from its analysis step.
+- **Godot 4.7 set up on the cloud first** ("first figure out how to set up godot mono 4.7 on yours"): Woohill's way
+  (`tools/godot_setup.sh`, `tools/godot/check.sh`: GODOT ok, headless and a picture under xvfb on lavapipe).
+- **GDScript, Claude's call** ("decide yourself whether to use gdscript or c#; since our games are math light we can
+  do gdscript if you think it's fine"): GDScript (GODOT_PLAN §3: the tested runtime is the desk's JS, no .NET in the
+  cloud, the user edits inside the editor; the user's Mono build runs it unchanged).
+
+## 2026-10-28, later (Godot: a project per game, everything Unreal never got, a guide in each)
+
+- **When the branch starts, build out for Godot all the shaders and effects never built out for Unreal** ("build out
+  all the shaders and effects we never built out for unreal for godot"): docs/GODOT_PLAN.md §6.
+- **The initial time goes into analysing the most efficient way to do it** ("spend your initial time analysing the
+  most efficient way to do this"), before building: §5, §8.
+- **Export makes a Godot project per game, ideally as a .zip** ("maybe clicking export creates a new godot project
+  .zip, rather than the unreal approach one project for all games (because godot is more lightweight)").
+- **The project's folders and sequence are easy to work in Godot's editor** ("the folder structure and sequencing
+  needs to be very ui friendly in godot so I can easily modify everything after exporting").
+- **An .html guide in each project** ("a .html app/tutorial on how to modify and edit anything in godot for each
+  project including guides on adding new inbetween scenes, porting over new animations etc"): §7.
+- **Still not started:** the user says when; the dev branch lands first.
+- Claude's calls inside that: the shared things go into each project as copies so it stands alone; a re-export must
+  keep what the user changed in Godot by hand (part of the analysis); the guide's pictures made by driving Godot, as
+  GUIDE does the desk's. From the lighting talk the same day: baked first (a bake per lighting state of a room,
+  swapped), VoxelGI only where a light moves; the three-way trial is proposed, not agreed (§4).
+
+## 2026-10-28 (Godot: a branch, HumanShaders, the port to come)
+
+- **A `godot-support` branch, with HumanShaders in a plugins folder** ("make a new branch called godot-support,
+  incorporate this plugin (pull this into a plugins folder) https://github.com/matmadness/HumanShaders"):
+  `GodotPlugins/HumanShaders/`, upstream's shader folder unchanged (UPSTREAM.md).
+- **Later, the Character Studio is translated onto these shaders, keeping the colours and patterns we designed** ("we
+  will want to translate later the character creator to use these shaders however maintain the colors, and patterns we
+  designed in character creator"): docs/GODOT_PLAN.md §2.
+- **Not now:** the user's large dev branch lands first, and what it adds gets ported too.
+- **Godot 4.7 Mono** ("that will let you port the c language stuff easier"): C# for the C++ port.
+- Claude's calls inside that: only upstream's `HumanShaders/` folder came across, not its demo project or its head
+  scans (Digital Emily 2's licence isn't stated; Infinite is CC BY 3.0); its textures are MIT and CC BY 4.0, so a game
+  that ships them credits matmadness. Our eye keeps its refracting cornea (HumanShaders' eye only does parallax).
 ## 2026-10-28, later night (the long checks on the user's machine)
 
 - **Ask for a local run when I'm here**: "how much faster would the run be locally ? If its significant (I have an
