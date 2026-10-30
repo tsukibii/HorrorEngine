@@ -80,7 +80,7 @@ kbd{border:1px solid var(--line);border-radius:3px;padding:0 4px;font-size:11px;
   <label title="What a drag snaps to">snap</label><select id="snap"><option value="0.1">10 cm</option><option value="0.25">25 cm</option><option value="0.5">50 cm</option><option value="1">1 m</option></select>
   <button id="undo" title="Undo (Ctrl+Z)">↶</button><button id="redo" title="Redo (Ctrl+Y)">↷</button>
   <button id="pbrShelf" onclick="window.open('pbr.html?from=street', 'pbrshelf')" title="The PBR shelf (assets/pbr): your texture sets; put one on any surface from the inspector's materials">PBR</button>
-  <button id="glb" title="Download the street as a .glb: a node a piece, a material a surface (for Godot or Blender)">Export .glb</button>
+  <button id="glb" title="Download the street as a .glb to drop into your Godot project's folder: its chunks, its colliders (walk on the roads, bump into the buildings), occluders, and where each inside's level goes">Export .glb</button><label title="The lamps' lights in the .glb, as Godot lights (a big street has a hundred: leave them out to light it by hand)"><input type="checkbox" id="glbLamps" checked> lamps</label>
   <button id="save" class="primary" title="Save the street (Content/Studio/Streets/<name>/street.json); Ctrl+S">Save</button>
   <span id="status">loading…</span>
 </header>

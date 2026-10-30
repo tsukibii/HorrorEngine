@@ -126,6 +126,8 @@ TOOLS = [
     ("Godot", "A character as the Studio draws it beside Godot's render of its export (GDSTUDIO: the skin's colour alike; the Studio's server running)", "tools/godot/studio_compare.py", {}),
     ("Godot", "The Pilot played in Godot (GDPLAY)", "tools/godot_export.py --game Pilot --play", {}),
     ("Godot", "TestRoom001 played in Godot station by station (GDTESTROOM)", "tools/godot_export.py --game TestRoom001 --testroom", {}),
+    ("Godot", "A street as the .glb to drop into a Godot folder (into Saved/Streets/<street>; the desk running)", "node tools/director/streetexport.mjs --street {ask:Street}", {}),
+    ("Godot", "A street imported in Godot and checked: colliders, occluders, lamps, colours (GDSTREET; the desk running)", "tools/godot/street_check.py --street {ask:Street}", {}),
 
     ("Checks", "Every offline check, every game", "tools/check_all.py", {}),
     ("Checks", "Every offline check, one game", "tools/check_all.py --game {game}", {}),

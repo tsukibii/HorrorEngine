@@ -751,7 +751,8 @@ function onCarriageway(g, x, y) { if (!inBox(g, x, y)) return false; const q = g
 // along and sharpened at their edges
 function cutsOf(f, q0, q1, others) {
   if (!others.length) return [];
-  const hit = s => [q0, (q0 + q1) / 2, q1].some(q => { const [x, y] = f.at(s, q); return others.some(g => onCarriageway(g, x, y)); });
+  const e = Math.min(0.05, (q1 - q0) / 4);                            // just inside the strip: a road that only touches its edge doesn't cut it
+  const hit = s => [q0 + e, (q0 + q1) / 2, q1 - e].some(q => { const [x, y] = f.at(s, q); return others.some(g => onCarriageway(g, x, y)); });
   const step = 0.3, cuts = []; let start = null, prev = 0, prevHit = hit(0);
   if (prevHit) start = 0;
   for (let s = step; s < f.L + step; s += step) {
@@ -1251,4 +1252,64 @@ export function project(shot, P) {
 export function pinErrors(shot) {
   const a = Array.isArray(shot.aspect) ? shot.aspect[0] / shot.aspect[1] : 16 / 9;
   return (shot.pins || []).map(p => { const q = project(shot, p.at); return { name: p.name, err: q ? Math.hypot((q[0] - p.px[0]) * a, q[1] - p.px[1]) : Infinity, at: q }; });
+}
+
+// ---- what the player bumps into, and what hides what (the Godot export, GODOT_EXPORT §8's occluders): a few boxes and
+// the walkable surfaces a piece. boxes: [{c: [x, y, z], ax: [3 unit axes], h: [3 half sizes]}] in the street;
+// surface: triangles {pos, idx} (the roads' tops and kerbs, the ground). Occluders sit inside what they stand for.
+const BLOCKERS = new Set(["lamp", "lantern", "postlamp", "pole", "sign", "mirror", "bollard", "cone"]);
+const turned = (piece) => { const a = num(piece.turn, 0) * Math.PI / 180; return [[Math.cos(a), Math.sin(a), 0], [-Math.sin(a), Math.cos(a), 0], [0, 0, 1]]; };
+const boxAt = (piece, lo, hi) => ({ c: place([(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2], piece), ax: turned(piece), h: [(hi[0] - lo[0]) / 2, (hi[1] - lo[1]) / 2, (hi[2] - lo[2]) / 2] });
+function localBounds(G) {
+  const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
+  for (const g of Object.values(G)) for (let i = 0; i < g.pos.length; i += 3) for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], g.pos[i + k]); hi[k] = Math.max(hi[k], g.pos[i + k]); }
+  return lo[0] === Infinity ? null : { lo, hi };
+}
+export function blockers(S, pieces) {
+  const T = terrain(S), out = {}, byId = Object.fromEntries((pieces || []).map(p => [p.id, p]));
+  const surf = (p, slots) => { const tris = { pos: [], idx: [] }; for (const s of slots) { const g = p && p.G[s]; if (!g) continue; const v0 = tris.pos.length / 3; tris.pos.push(...g.pos); for (const i of g.idx) tris.idx.push(i + v0); } return tris; };
+  for (const r of S.roads || []) out[r.id] = { boxes: [], occ: [], surface: surf(byId[r.id], ["asphalt", "gravel", "pavement", "kerb"]) };
+  if (byId._ground) out._ground = { boxes: [], occ: [], surface: surf(byId._ground, ["ground"]) };
+  for (const b of S.buildings || []) {
+    const foot = footing(b, T), piece = Object.assign({}, b, { z: foot.z }), { tiers } = floorsOf(b), boxes = [], occ = [];
+    tiers.forEach((t, i) => {
+      boxes.push(boxAt(piece, [t.x0, t.y0, i === 0 ? foot.low - foot.z - 0.1 : t.z0], [t.x1, t.y1, t.z1]));
+      if (t.x1 - t.x0 > 1.2 && t.y1 - t.y0 > 1.2 && t.z1 - t.z0 > 1.2) occ.push(boxAt(piece, [t.x0 + 0.25, t.y0 + 0.25, t.z0 + 0.4], [t.x1 - 0.25, t.y1 - 0.25, t.z1 - 0.3]));
+    });
+    for (const p of b.parts || []) if (p.kind === "stairs") {                // a stair up the wall: a ramp to its top, its landing
+      const K = PART_KINDS.stairs, F = faceFrames(-num(b.w, 8) / 2, -num(b.d, 10) / 2, num(b.w, 8) / 2, num(b.d, 10) / 2, 0)[p.face || "front"];
+      const w = num(p.w, K.w), h = num(p.h, K.h), out2 = num(p.out, K.out), c = F.W / 2 + num(p.x, 0), z = num(p.z, 0), dir = num(p.dir, 1) < 0 ? -1 : 1;
+      const a = fp(F, c - dir * w / 2, z, out2 / 2), bb = fp(F, c + dir * w / 2, z + h, out2 / 2), mid = place([(a[0] + bb[0]) / 2, (a[1] + bb[1]) / 2, (z + z + h) / 2 - 0.12], piece);
+      const along = [bb[0] - a[0], bb[1] - a[1], h], L = Math.hypot(...along), A = place([along[0] / L, along[1] / L, 0], { turn: b.turn }), Aw = [A[0], A[1], h / L];
+      const Nw = place([F.N[0], F.N[1], 0], { turn: b.turn }), up = cross(Aw, Nw);
+      boxes.push({ c: mid, ax: [Aw, [Nw[0], Nw[1], 0], up], h: [L / 2, out2 / 2, 0.12] });
+      if (p.landing !== false) { const e = dir > 0 ? c + w / 2 : c - w / 2 - 1.2; const l0 = fp(F, e, z + h - 0.22, 0), l1 = fp(F, e + 1.2, z + h, out2); boxes.push(boxAt(piece, [Math.min(l0[0], l1[0]), Math.min(l0[1], l1[1]), z + h - 0.22], [Math.max(l0[0], l1[0]), Math.max(l0[1], l1[1]), z + h])); }
+    }
+    out[b.id] = { boxes, occ, surface: null };
+  }
+  for (const t of S.things || []) {
+    if (t.kind === "person" || t.kind === "manhole" || t.kind === "drain") continue;
+    const piece = Object.assign({}, t, { z: T.surface(...(t.at || [0, 0])) + num(t.lift, 0) }), K = THING_KINDS[t.kind] || {}, h = num(t.h, K.h || 1);
+    if (BLOCKERS.has(t.kind)) { out[t.id] = { boxes: [boxAt(piece, [-0.12, -0.12, 0], [0.12, 0.12, h])], occ: [], surface: null }; continue; }
+    const lb = localBounds(thingParts(t).G); if (lb) out[t.id] = { boxes: [boxAt(piece, lb.lo, lb.hi)], occ: [], surface: null };
+  }
+  for (const f of S.fences || []) {
+    const K = FENCE_KINDS[f.kind] || FENCE_KINDS.mesh, [ax, ay] = f.from, [bx, by] = f.to, L = Math.hypot(bx - ax, by - ay); if (L < 0.05) continue;
+    const step = num(f.step, K.step), n = Math.max(1, step > 0 ? Math.round(L / step) : 1), h = num(f.h, K.h), boxes = [];
+    for (let i = 0; i < n; i++) {
+      const s0 = L * i / n, s1 = L * (i + 1) / n, p0 = [ax + (bx - ax) * s0 / L, ay + (by - ay) * s0 / L], p1 = [ax + (bx - ax) * s1 / L, ay + (by - ay) * s1 / L];
+      const z0 = Math.min(T.surface(...p0), T.surface(...p1)), zt = Math.max(T.surface(...p0), T.surface(...p1)) + h;
+      boxes.push({ c: [(p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2, (z0 - 0.2 + zt) / 2], ax: [[(bx - ax) / L, (by - ay) / L, 0], [-(by - ay) / L, (bx - ax) / L, 0], [0, 0, 1]], h: [(s1 - s0) / 2, 0.08, (zt - z0 + 0.2) / 2] });
+    }
+    out[f.id] = { boxes, occ: [], surface: null };
+  }
+  return out;
+}
+// a box's twelve triangles (for the collision and occluder meshes)
+export function boxTris(b, into) {
+  const P = (i, j, k) => [0, 1, 2].map(d => b.c[d] + b.ax[0][d] * i * b.h[0] + b.ax[1][d] * j * b.h[1] + b.ax[2][d] * k * b.h[2]);
+  const v0 = into.pos.length / 3, C = [[-1, -1, -1], [1, -1, -1], [1, 1, -1], [-1, 1, -1], [-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1]];
+  for (const c of C) into.pos.push(...P(...c));
+  for (const [a, b2, c, d] of [[0, 3, 2, 1], [4, 5, 6, 7], [0, 1, 5, 4], [2, 3, 7, 6], [1, 2, 6, 5], [3, 0, 4, 7]]) into.idx.push(v0 + a, v0 + b2, v0 + c, v0 + a, v0 + c, v0 + d);
+  return into;
 }

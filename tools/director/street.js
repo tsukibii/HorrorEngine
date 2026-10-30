@@ -1197,13 +1197,20 @@ $("#street").onchange = e => { if (e.target.value === "__new") newStreet(); else
 $("#time").onchange = e => { pushUndo(); ST.street.time = e.target.value; ST.dirty = true; look.set(ST.street.time, renderer, SG.bounds2(ST.street)); mats.setTime(look.time); lampsAt = null; renderAll(); status("unsaved: the time of day", "dirty"); };
 $("#snap").onchange = e => { ST.snap = +e.target.value; };
 $("#undo").onclick = undo; $("#redo").onclick = redo; $("#save").onclick = () => save().catch(e => status(e.message, "bad"));
+// the .glb for Godot: drop it into the project's folder; its colliders, occluders, lamps and the insides' places come with it
+async function exportStreet() {
+  const g = S3.exportGroup(root, ST.street, ST.pieces, ST.lights, SG.blockers(ST.street, ST.pieces), { insides: insideMarkers(), lamps: $("#glbLamps").checked });
+  return S3.exportGlb(g, GLTFExporter);
+}
+const insideMarkers = () => [];
 $("#glb").onclick = async () => {
   try {
-    const bin = await S3.exportGlb(root, GLTFExporter), a = document.createElement("a");
+    const bin = await exportStreet(), a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([bin], { type: "model/gltf-binary" })); a.download = `${ST.name}.glb`; a.click();
-    toast(`${ST.name}.glb: ${SG.stats(ST.pieces).tris} triangles`);
+    toast(`${ST.name}.glb: ${SG.stats(ST.pieces).tris} triangles: drop it into your Godot project's folder`);
   } catch (e) { status("export failed: " + e.message, "bad"); }
 };
+window.__exportGodot = async () => { const bin = new Uint8Array(await exportStreet()); let s = ""; for (let i = 0; i < bin.length; i += 0x8000) s += String.fromCharCode.apply(null, bin.subarray(i, i + 0x8000)); return btoa(s); };
 $("#mode").onchange = e => setMode(e.target.value);
 $("#addShot").onclick = () => {
   pushUndo();

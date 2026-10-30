@@ -293,24 +293,94 @@ export class Look {
   }
 }
 
-// ---- export: the street as a .glb (a node a piece, a material a slot; cut-out slots carry their pattern in alpha) ------
-export async function exportGlb(root, GLTFExporter) {
-  const clone = root.clone(true), made = new Map();
-  clone.traverse(o => {
-    if (!o.isMesh) return;
-    const m = o.material;
-    if (made.has(m)) { o.material = made.get(m); return; }
-    const e = new THREE.MeshStandardMaterial({ name: `street_${m.userData.slot || "slot"}${m.userData.over ? "_" + m.userData.over.replace(/[^a-z0-9]+/gi, "_") : ""}`,
-      color: m.color.clone(), roughness: m.roughness, metalness: m.metalness, map: m.map || null, normalMap: m.normalMap || null, roughnessMap: m.roughnessMap || null, metalnessMap: m.metalnessMap || null,
-      emissive: m.emissive.clone(), emissiveIntensity: m.emissiveIntensity, emissiveMap: m.emissiveMap || null, side: m.side });
-    if (m.alphaMap) {                                                // glTF has no alpha map: the pattern goes into the colour map's alpha
-      const img = m.alphaMap.image, c = document.createElement("canvas"); c.width = img.width; c.height = img.height;
-      const g = c.getContext("2d"); g.drawImage(img, 0, 0); const d = g.getImageData(0, 0, c.width, c.height);
-      const col = m.color; for (let i = 0; i < d.data.length; i += 4) { const a = d.data[i]; d.data[i] = col.r * 255; d.data[i + 1] = col.g * 255; d.data[i + 2] = col.b * 255; d.data[i + 3] = a; }
-      g.putImageData(d, 0, 0); const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.copy(m.alphaMap.repeat); t.colorSpace = THREE.SRGBColorSpace;
-      e.map = t; e.color.set("#ffffff"); e.alphaTest = 0.5; e.transparent = false;
+// ---- export: the street as a .glb to drop into a Godot project's folder (docs/STREET_BUILDER.md §5b). Its nodes:
+// `visual` (a node a chunk, a mesh a material, the colours on the vertices), `collision` (a `-colonly` mesh a chunk:
+// Godot makes each a StaticBody3D with its shape on import: the roads' and the ground's surfaces to walk on, a box a
+// building, a fence's bays, the things you'd bump into), `occluders` (`-occonly`: Godot's occlusion culling, inside the
+// buildings), `lamps` (the lamps' lights, KHR_lights_punctual: OmniLight3Ds) and `insides` (where a set's level goes in a
+// building, with which one in its metadata). Cut-out slots carry their pattern in the colour map's alpha.
+export const lampEnergy = power => Math.max(0.3, Math.min(3, (power || 10) / 12));   // a lamp's power (the page's) as Godot's light energy
+function exportMaterial(m, made) {
+  if (made.has(m)) return made.get(m);
+  const e = new THREE.MeshStandardMaterial({ name: `street_${m.userData.slot || "slot"}${m.userData.over && !m.userData.vc ? "_" + m.userData.over.replace(/[^a-z0-9]+/gi, "_") : ""}`,
+    color: m.color.clone(), roughness: m.roughness, metalness: m.metalness, map: m.map || null, normalMap: m.normalMap || null, roughnessMap: m.roughnessMap || null, metalnessMap: m.metalnessMap || null,
+    emissive: m.emissive.clone(), emissiveIntensity: m.emissiveIntensity, emissiveMap: m.emissiveMap || null, side: m.side, vertexColors: !!m.vertexColors });
+  if (m.alphaMap && typeof document !== "undefined") {                // glTF has no alpha map: the pattern goes into the colour map's alpha
+    const img = m.alphaMap.image, c = document.createElement("canvas"); c.width = img.width; c.height = img.height;
+    const g = c.getContext("2d"); g.drawImage(img, 0, 0); const d = g.getImageData(0, 0, c.width, c.height);
+    for (let i = 0; i < d.data.length; i += 4) { const a = d.data[i]; d.data[i] = d.data[i + 1] = d.data[i + 2] = 255; d.data[i + 3] = a; }
+    g.putImageData(d, 0, 0); const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.copy(m.alphaMap.repeat); t.colorSpace = THREE.SRGBColorSpace;
+    e.map = t; e.alphaTest = 0.5; e.transparent = false;
+  }
+  made.set(m, e); return e;
+}
+// Godot's importer leaves a glTF's vertex colours off the albedo, so the export gives each colour its own material: the
+// chunk's mesh keeps one node, a surface a colour (its triangles regrouped by the pieces' runs, which share a colour)
+function byColour(m, base, made) {
+  const geo = m.geometry, col = geo.attributes.color, idx = geo.index.array, groups = new Map();
+  for (const [t0, n] of m.userData.ranges || [[0, idx.length / 3]]) {
+    const v = idx[t0 * 3], key = [col.getX(v), col.getY(v), col.getZ(v)].map(x => x.toFixed(4)).join(",");
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push([t0, n]);
+  }
+  const out = new THREE.BufferGeometry();
+  for (const k of ["position", "normal", "uv", "uv1"]) if (geo.attributes[k]) out.setAttribute(k, geo.attributes[k]);
+  const order = [], mats = [];
+  for (const [key, rs] of groups) {
+    const start = order.length;
+    for (const [t0, n] of rs) for (let k = t0 * 3; k < (t0 + n) * 3; k++) order.push(idx[k]);
+    const ck = base.uuid + "|" + key;
+    let mat = made.get(ck);
+    if (!mat) {
+      const [r, g, b] = key.split(",").map(Number); mat = base.clone(); mat.vertexColors = false;
+      mat.color.setRGB(Math.min(1, r), Math.min(1, g), Math.min(1, b)); mat.name = `${base.name}_${mat.color.getHexString()}`; made.set(ck, mat);
     }
-    made.set(m, e); o.material = e;
+    out.addGroup(start, order.length - start, mats.length); mats.push(mat);
+  }
+  out.setIndex(new (geo.attributes.position.count > 65535 ? THREE.Uint32BufferAttribute : THREE.Uint16BufferAttribute)(order, 1));
+  return new THREE.Mesh(out, mats);
+}
+function trisMesh(name, tris) {                                     // story-space triangles as a three mesh
+  const pos = new Float32Array(tris.pos.length);
+  for (let i = 0; i < tris.pos.length; i += 3) { pos[i] = tris.pos[i]; pos[i + 1] = tris.pos[i + 2]; pos[i + 2] = -tris.pos[i + 1]; }
+  const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  geo.setIndex(new (pos.length / 3 > 65535 ? THREE.Uint32BufferAttribute : THREE.Uint16BufferAttribute)(tris.idx, 1)); geo.computeVertexNormals();
+  const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0xff00ff })); mesh.name = name; return mesh;
+}
+export function exportGroup(root, S, pieces, lights, blockers, opts = {}) {
+  const out = new THREE.Group(); out.name = (S.name || "street").replace(/[^A-Za-z0-9_]+/g, "_");
+  const visual = new THREE.Group(); visual.name = "visual"; out.add(visual);
+  const made = new Map();
+  for (const ch of root.children) {
+    const g = new THREE.Group(); g.name = ch.name;
+    for (const m of ch.children) if (m.isMesh) { const c = m.material.vertexColors ? byColour(m, exportMaterial(m.material, made), made) : new THREE.Mesh(m.geometry, exportMaterial(m.material, made)); c.name = m.name; g.add(c); }
+    visual.add(g);
+  }
+  const index = root.userData.index || {}, byChunk = new Map(), occByChunk = new Map();
+  for (const [id, B] of Object.entries(blockers)) {
+    const key = (index[id] || {}).chunk || "loose";
+    if (!byChunk.has(key)) { byChunk.set(key, { pos: [], idx: [] }); occByChunk.set(key, { pos: [], idx: [] }); }
+    const T = byChunk.get(key);
+    for (const b of B.boxes) SG.boxTris(b, T);
+    if (B.surface && B.surface.idx.length) { const v0 = T.pos.length / 3; T.pos.push(...B.surface.pos); for (const i of B.surface.idx) T.idx.push(i + v0); }
+    for (const b of B.occ) SG.boxTris(b, occByChunk.get(key));
+  }
+  const col = new THREE.Group(); col.name = "collision"; out.add(col);
+  const occ = new THREE.Group(); occ.name = "occluders"; out.add(occ);
+  for (const [key, T] of byChunk) {
+    const nm = "chunk_" + key.replace(/[^A-Za-z0-9_]+/g, "_");
+    if (T.idx.length) col.add(trisMesh(nm + "-colonly", T));
+    const O = occByChunk.get(key); if (opts.occluders !== false && O.idx.length) occ.add(trisMesh(nm + "_occ-occonly", O));
+  }
+  const lamps = new THREE.Group(); lamps.name = "lamps"; out.add(lamps);
+  if (opts.lamps !== false) lights.filter(L => !L.shop).forEach((L, i) => {
+    const pl = new THREE.PointLight(new THREE.Color(L.color || "#ffd6a0"), lampEnergy(L.power), L.dist || 12, 2);
+    pl.name = `lamp_${L.piece}_${i}`; pl.position.copy(s2t(...L.at)); lamps.add(pl);
   });
-  return new Promise((res, rej) => new GLTFExporter().parse(clone, r => res(r), e => rej(e), { binary: true }));
+  const insides = new THREE.Group(); insides.name = "insides"; out.add(insides);
+  for (const m of opts.insides || []) { const o = new THREE.Object3D(); o.name = m.name; o.position.copy(s2t(...m.at)); o.rotation.y = (m.turn || 0) * Math.PI / 180; o.userData = m.meta || {}; insides.add(o); }
+  return out;
+}
+export async function exportGlb(group, GLTFExporter) {
+  return new Promise((res, rej) => new GLTFExporter().parse(group, r => res(r), e => rej(e), { binary: true }));
 }

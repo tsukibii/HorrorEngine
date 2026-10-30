@@ -161,6 +161,27 @@ a chunk merged again only when one of its pieces did (moving a building on that 
 CPU drawing). The look is flat-shaded at dusk by default: the sky, a hemisphere, the lit windows and signs glowing, the nearest
 sixteen lamps and shop fronts lighting the street (AgX, as the Godot look).
 
+## 5b. Into Godot: drop the .glb in
+
+**Export .glb** (or `node tools/director/streetexport.mjs --street <name>`) writes one file to drop into a Godot
+project's folder (DECISIONS 2026-10-30, later: "as long as the export is as simple as drag and drop into a Godot folder").
+Godot 4.7 imports it into a scene with:
+
+- `visual`: a node a chunk (48 m), a surface a material and colour (Godot leaves a glTF's vertex colours off the albedo,
+  so the export gives each colour its own material: the reference town is 451 meshes, 84 colours).
+- `collision`: a `-colonly` mesh a chunk, which Godot turns into a StaticBody3D with its shape: the roads' and the
+  pavements' tops and kerbs, the ground, a box a building (down to the ground on a slope), a ramp a stair, a fence's
+  bays, the things you'd bump into (a pillar for a lamp, a pole or a sign; nothing for a stand-in person).
+- `occluders`: `-occonly` boxes inside the buildings, which Godot merges into one OccluderInstance3D (turn occlusion
+  culling on in the project, as the look plugin's balanced settings do).
+- `lamps`: the lamps' lights as OmniLight3Ds (energy 0.3 to 3, their reach); untick *lamps* beside the button to leave
+  them out and light the street by hand.
+- `insides`: a marker where each inside's level goes (§5c), its set in the node's metadata.
+
+Story space (x east, y north, z up) is Godot's (x, z, -y), as the game's own export, so a street lines up with a
+level built at the same place. `python tools/godot/street_check.py [--street N]` (GDSTREET) does exactly this in a
+project of its own and checks it: rays land on the road, the pavement and the roofs where the street says.
+
 ## 6. Checks
 
 - `python tools/street.py check` (STREET, in check_all): every style at six seeds, every window and ground floor
@@ -172,6 +193,9 @@ sixteen lamps and shop fronts lighting the street (AgX, as the Godot look).
   lane drawn, filled, a building's floors changed, a sign added on its facade, a photo behind it, a fence and a vending
   machine placed, a shot kept, undo, saved and read back the same, the .glb exported, the Shibuya lane drawn through
   its shot with its white line where the photo has it).
+- `python tools/godot/street_check.py [--street N]` (GDSTREET, the desk's server running, Godot 4.7): the street's .glb
+  imported in a Godot project of its own: its colliders, occluders, lamps, colours and insides' markers, rays onto
+  the road, the pavement and three roofs.
 - `python tools/street.py shot <name> [shot]` (or `node tools/director/streetshot.mjs`): the street drawn through a
   shot into `Saved/Streets/<name>/`, and beside its photo: the photo, the drawing, the two blended.
 

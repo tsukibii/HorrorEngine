@@ -2,6 +2,21 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-30, later night (the user, after the street builder's first round)
+
+- **Into Godot by hand, by dropping a file**: "as long as the export is as simple as drag and drop into a godot folder
+  I don't mind handling that part manually". The .glb carries its colliders, occluders, lamps and the insides' places
+  (STREET_BUILDER §5b); GDSTREET imports it in Godot 4.7 as the user would.
+- **Slopes and curves**: "add slopes and curved". A street is a smooth curve through its points, each with its height;
+  the ground and everything on it follow.
+- **Big streets**: "for big streets handle that how you think we should". Chunks merged by material, a piece rebuilt only
+  when it changes, occluders for Godot.
+- **The interiors in the street**: "consider how we can integrate the interiors we designed into the street map... a
+  motel... sync the door shape and let a player enter, exit; we also need stairs so they could reach the second floor,
+  maybe gates... we will stick to 1 floor for our game interiors for now; the other scenario is a bungalow; I don't know
+  if the interior builder already builds the exterior". It doesn't (plain 10 cm walls in the room's own colours, a flat
+  ceiling slab, no roof): the street builds the outside round a set's level (STREET_BUILDER §5c).
+
 ## 2026-10-30, night (the user, starting the street builder on `buildings-streets`)
 
 - **A street builder, apart from the scene builder**: "make a new branch called buildings-streets. The goal will be to
