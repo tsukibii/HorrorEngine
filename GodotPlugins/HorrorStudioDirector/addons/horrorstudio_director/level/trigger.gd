@@ -17,8 +17,7 @@ var _key := 0
 
 
 func _enter_tree() -> void:
-	if id == "":
-		id = HSDirector.snake(str(name))
+	HSDirector.auto_id(self)
 
 
 func _ready() -> void:

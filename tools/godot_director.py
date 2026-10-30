@@ -212,6 +212,7 @@ def check(keep=False):
         print(text[-4000:])
         ok = False
     ok = kimodo_check(out) and ok
+    ok = alone_check(out) and ok
     ok = editor_check(out) and ok
     print("DIRECTOR ok" if ok else "DIRECTOR FAIL")
     return 0 if ok else 1
@@ -246,6 +247,18 @@ def kimodo_check(out):
     return ok
 
 
+def alone_check(out):
+    """A level played on its own (F6 on its scene: tests/alone_check.gd): a game made round it, its events the game's."""
+    code, text = run_godot(["--headless", "--fixed-fps", "60", "--path", str(out), "-s", "res://addons/horrorstudio_director/tests/alone_check.gd"], timeout=300)
+    text = quiet(text)
+    line = next((l for l in text.splitlines() if l.startswith("ALONECHECK ")), None)
+    r = json.loads(line[len("ALONECHECK "):]) if line else {}
+    warn = [l for l in text.splitlines() if "SCRIPT ERROR" in l or "BoneAttachment" in l]
+    good = r.get("game_made") is True and r.get("active") is True and r.get("at_start") is True and "figure_scare" in r.get("beats", []) and r.get("scare") is True and not warn
+    print(("  ok  " if good else "  BAD ") + "a level played on its own (F6): a game made round it, the player at its start, its events the game's (the jumpscare fires) %s" % ("" if good else json.dumps(r) + " " + " | ".join(warn[:3])))
+    return good
+
+
 def editor_check(out):
     """The plugin in the editor itself: tests/editor_check.gd installed as a plugin of its own beside the Director's, the
     editor opened on the sample (headless: the dock's logic, no pictures), its report read."""
@@ -278,6 +291,7 @@ def editor_check(out):
         ("+ Task after the selected step, with its first to-do; undone and redone", rep.get("task_added") is True and rep.get("task_has_todo") is True and rep.get("task_undone") is True and rep.get("task_redone") is True),
         ("the jumpscare template: an area with its event (jumpscare, a thought, a flag), listed", rep.get("jumpscare_made") is True and rep.get("jumpscare_listed") is True),
         ("Add: a key placed in the selected room, a node of the scene's own", rep.get("preset_placed") is True),
+        ("a node's id follows its renames while it's the name's (%s), one typed by hand stays (%s)" % (rep.get("id_follows"), rep.get("id_kept")), rep.get("id_follows") == ["hs_thing", "old_key"] and rep.get("id_kept") == "my_key"),
         ("saved: the new nodes in the file, nothing the nodes make for themselves", rep.get("saved") is True and rep.get("saved_task") is True and rep.get("saved_nothing_made") is True),
         ("no script errors in the editor", not errs),
     ]

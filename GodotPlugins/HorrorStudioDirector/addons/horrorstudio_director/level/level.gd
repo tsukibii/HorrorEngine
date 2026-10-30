@@ -20,8 +20,7 @@ var _alone := false
 
 
 func _enter_tree() -> void:
-	if id == "":
-		id = HSDirector.snake(str(name))
+	HSDirector.auto_id(self)
 	if not Engine.is_editor_hint() and get_parent() == get_tree().root and not HSDirector.holding and get_tree().current_scene in [null, self]:
 		_alone = true                                    # played on its own (F6): its nodes wait, a game round it plays it
 		HSDirector.holding = true

@@ -14,8 +14,7 @@ extends Path3D
 
 
 func _enter_tree() -> void:
-	if id == "":
-		id = HSDirector.snake(str(name))
+	HSDirector.auto_id(self)
 	if curve == null:
 		curve = Curve3D.new()
 

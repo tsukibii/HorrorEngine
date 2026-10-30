@@ -43,6 +43,8 @@ func compile(g: Node, alone: Node = null) -> Dictionary:
 		story["levels"][lid] = lv.as_story()
 		_level_things(lv, lid)
 	_game_settings(g)
+	if alone != null:
+		_walk_events(alone, null)                       # a level played alone: its events are the game's
 	_collect_steps(g if alone == null else null)
 	_flow()
 	_check_refs()

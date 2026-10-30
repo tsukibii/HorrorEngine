@@ -12,7 +12,6 @@ extends Node
 
 
 func _enter_tree() -> void:
-	if id == "":
-		id = HSDirector.snake(str(name))
+	HSDirector.auto_id(self)
 	if title == "":
 		title = str(name)

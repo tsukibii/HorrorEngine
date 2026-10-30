@@ -30,8 +30,7 @@ var _tick := 0
 
 
 func _enter_tree() -> void:
-	if id == "":
-		id = HSDirector.snake(str(name))
+	HSDirector.auto_id(self)
 	add_to_group("hs_doors")
 
 

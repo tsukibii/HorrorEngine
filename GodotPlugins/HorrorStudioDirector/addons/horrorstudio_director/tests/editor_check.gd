@@ -170,6 +170,15 @@ func _edits() -> void:
 	var ck = _tab("Check")
 	ck.refresh()
 	rep["check_after"] = ck.summary.text
+	var th := HSThing.new()                           # added as Add Child Node names it, then renamed: its id follows the name
+	th.name = "HSThing"
+	dock.add_node(r.find_child("Hall", true, false), th, "add a thing")
+	var first: String = th.id
+	th.name = "OldKey"
+	rep["id_follows"] = [first, th.id]
+	th.id = "my_key"
+	th.name = "OlderKey"
+	rep["id_kept"] = th.id
 
 
 func _items(tree: Tree) -> Array:

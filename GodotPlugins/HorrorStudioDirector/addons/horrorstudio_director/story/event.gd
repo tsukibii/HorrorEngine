@@ -31,8 +31,7 @@ extends Node
 
 
 func _enter_tree() -> void:
-	if id == "":
-		id = HSDirector.snake(str(name))
+	HSDirector.auto_id(self)
 
 
 func _validate_property(p: Dictionary) -> void:

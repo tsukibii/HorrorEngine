@@ -44,6 +44,26 @@ static func snake(s: String) -> String:
 	return out if out != "" else "x"
 
 
+## a node's id when it first comes in (its name as an id); in the editor it follows the node's renames while it is
+## still the name's (an id typed by hand stays): an HSThing added as "HSThing" and renamed "Key" is key
+static var _named: Dictionary = {}          # (the editor) a node's instance id -> its name as an id when last seen
+
+
+static func auto_id(n: Node) -> void:
+	if str(n.get("id")) == "":
+		n.set("id", snake(str(n.name)))
+	var key := n.get_instance_id()
+	if Engine.is_editor_hint() and not _named.has(key):
+		_named[key] = snake(str(n.name))
+		n.renamed.connect(func():
+			var was := str(_named.get(key, ""))
+			var now := snake(str(n.name))
+			if str(n.get("id")) == was or str(n.get("id")) == "":
+				n.set("id", now)
+			_named[key] = now)
+		n.tree_exiting.connect(func(): if n.is_queued_for_deletion(): _named.erase(key))
+
+
 ## a node's id: its own `id`, else its name as an id
 static func id_of(n: Node) -> String:
 	if n == null:
