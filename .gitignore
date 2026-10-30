@@ -83,6 +83,8 @@ Content/Studio/Library/index/kit.json
 
 # meshes of yours (the scene builder's split hinges, anything you add as local/): not CC0, so not shared
 Content/Studio/Library/meshes/local/
+# the prop generator's game meshes (tools/propgen.py make --library, or library: made again from their recipes); index/props.json ships
+Content/Studio/Library/meshes/props/
 Content/Studio/Library/index/local.json
 
 # the PBR shelf (docs/ASSETS.md §6): your texture sets in assets/pbr/, a folder each, too big for git: nothing in it is

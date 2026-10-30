@@ -12,9 +12,15 @@ exported. No image or 3D generator anywhere.
         --formats glb --tex 2048 --no-preview          less or more of it
         --library                                      also into the library as props/<name>: a story places it
                                                        with "shape": "asset props/<name>"
+    python tools/propgen.py library [names...]         made props into the library as props/<name> (no Blender):
+                                                       a story places one with "shape": "asset props/<name>"
+                                                       (or "art": "props/<name>" on a block), the Godot export
+                                                       copies it into the game
     python tools/propgen.py all [family...]            every recipe (or a family's)
     python tools/propgen.py sheet [names...]           a contact sheet of their previews: Saved/Props/sheet.png
     python tools/propgen.py check                      PROPGEN: a few recipes made small and measured
+    python tools/propgen.py godot [names...]           GDPROPS: the made props imported by Godot 4.7, their materials
+                                                       read back, pictured (Saved/Props/_godot/godot_props.png)
 
 Blender: --blender PATH, $BLENDER, `blender` on the PATH, or Blender's Python module (python tools/retarget.py
 setup, the cloud's way). Cycles uses the graphics card when it finds one (--cpu not to).
@@ -78,6 +84,19 @@ def main():
     if argv[0] == "list":
         cmd_list()
         return
+    if argv[0] == "library":
+        from propgen import recipes
+        names = argv[1:] or sorted(n for n in os.listdir(recipes.OUT) if os.path.exists(os.path.join(recipes.OUT, n, "meta.json")))
+        for n in names:
+            mp = os.path.join(recipes.OUT, n, "meta.json")
+            if not os.path.exists(mp):
+                sys.exit(f"{n}: not made yet (python tools/propgen.py make {n})")
+            recipes.to_library(json.load(open(mp, encoding="utf-8")), recipes.OUT)
+        print(f"PROPGEN library: {len(names)} in Content/Studio/Library as props/<name>")
+        return
+    if argv[0] == "godot":
+        from propgen import godot_check
+        sys.exit(godot_check.main(argv[1:]))
     cpu = "--cpu" in argv
     if cpu:
         argv.remove("--cpu")
