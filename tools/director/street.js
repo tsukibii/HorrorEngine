@@ -121,6 +121,8 @@ const mats = new S3.Materials();
 const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 4000);
 const selBox = new THREE.Box3Helper(new THREE.Box3(), 0xd9a441); selBox.visible = false; scene.add(selBox);
 let root = null;
+// a renderer's canvas resized only when it has to (setting a canvas's size, even to the same, throws its buffer away)
+function sizeTo(r, W, H) { const c = r.domElement; if (c._w !== W || c._h !== H) { r.setSize(W, H, true); c._w = W; c._h = H; } }
 function dispose(o) { o.traverse(x => { if (x.geometry) x.geometry.dispose(); }); }
 function rebuild() {
   rebuildAt = performance.now();
@@ -162,7 +164,7 @@ let viewRect = { x: 0, y: 0, w: 1, h: 1 };
 function render() {
   if (!ST.street) return;
   const W = viewEl.clientWidth, H = viewEl.clientHeight;
-  renderer.setSize(W, H, true);
+  sizeTo(renderer, W, H);
   const s = shotOf(ST.mode);
   let rect = { x: 0, y: 0, w: W, h: H };
   if (s) {                                                           // a shot: letterboxed to its aspect
@@ -721,7 +723,7 @@ function renderFacades() {
 }
 function drawPanel(P, b = ST.sel && ST.sel.list === "buildings" ? selected() : null) {
   const W = P.view.clientWidth, H = P.view.clientHeight;
-  P.renderer.setSize(W, H, true); P.svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  sizeTo(P.renderer, W, H); P.svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
   P.root.querySelector(".pnote").textContent = b ? `${r2(faceInfo(b, P.face).W)} m wide` : "";
   if (!b) { P.renderer.clear(); P.svg.innerHTML = ""; P.img.style.display = "none"; return; }
   const fi = faceInfo(b, P.face), top = fi.H + ((b.roof && b.roof.kind && !["flat", "rail", "none"].includes(b.roof.kind)) ? 3 : 1.5);

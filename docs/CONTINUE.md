@@ -11,6 +11,26 @@ the to-do built there, with the Studio's eyes from the side, a small nose and th
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
+## 0. The street builder (2026-10-30, night, on `buildings-streets`; not merged)
+
+The user asked for a new tool (DECISIONS 2026-10-30, night): the outside world the enterable buildings go into, low
+poly and layman-simple, front and side photos pasted to trace, and the first reference recreated 1:1 in framing; then
+five more references, lamps and street things, fences of every kind (PBR-ready, low poly), maps that feel tight and
+cozy. Built (docs/STREET_BUILDER.md): **the street builder** (`tools/director/street.html`, the dashboard's tile;
+`street-gen.js` the generator in plain JS, `street3.js` the drawing, `street-presets.js` ten building styles and five
+place mixes, `Content/Studio/Streets/<name>/street.json`), its map, its facade view (parts clicked onto the wall,
+floors by dragging the roof, a photo behind each side), its 3D view (orbit, walk at 1.65 m, shots matched to a photo),
+**Fill a street** (buildings shoulder to shoulder, lamps, poles and wires, clutter), the .glb export, STREET (in
+check_all) and STREETPAGE, `tools/street.py` and `streetshot.mjs`. **shibuya_lane** matches the first photo through
+its shot `photo` (13 pins, 0.5% of the frame off on average; the lens measured as a phone's 26 mm, the eye 1.6 m);
+**reference_town** has a corner for each of the other five references, filled with the tool's own Fill. The photos
+stay out of git (`refs/`); the user has them.
+
+**What could come next** (ask first): the user's verdict on the match and the town, more references; streets into
+Godot (a level taking a street, the scene builder's enterable buildings put in through a building's door, the
+street's meshes merged by material for the export); slopes and curved streets; foliage when the user wants it; a
+grade in the page (the photo's teal and orange), if the look matters there.
+
 ## 0a. The cloud session after (2026-10-30, small hours): §0's four pieces built, and a stand-in bug from the user
 
 All four of §0 are in, each measured where the cloud could (GDTESTROOM, GDEXPORT, GDPLAY, DESK, LOOKPLUGIN):
