@@ -138,7 +138,7 @@ func scene(answers: Array = []) -> String:
 			return ""
 		if not g.hud.choice_over:
 			var k = left.pop_front() if left.size() else 1
-			g.hud.choice_key(str(k))
+			g.hud.choice_pick(int(k))
 			await frames(10)
 			continue
 		if g.scene_player.playing:
@@ -538,12 +538,21 @@ func _initialize() -> void:
 			if who_q != "the guide":
 				return "her name at her question: %s (the guide till you've met her)" % JSON.stringify(who_q)
 			var xq: float = rt.cast_nodes["aoi"].position.x
-			var rows: Array = g.hud.choice_el.get_children().filter(func(c): return c is Button)   # the choice as the user asked (2026-10-30): a glass panel of numbered rows, the mouse free to click one
-			if not g.hud.choice_box.visible or rows.size() < 2 or not str(rows[0].text).begins_with("1.") or rt.mouse_captured:
-				return "the choice's panel: shown %s, %d rows, first %s, the mouse still captured %s" % [g.hud.choice_box.visible, rows.size(), JSON.stringify(rows[0].text if rows.size() else ""), rt.mouse_captured]
-			rows[0].pressed.emit()                                         # a click on its first row
+			var rows: Array = g.hud.choice_el.get_children().filter(func(c): return c is Button)   # the choice as the user asked (2026-10-30, evening): the answers on one line, a dash between, no numbers; A/D move, the mouse free to click
+			var dashes: Array = g.hud.choice_el.get_children().filter(func(c): return c is Label and str(c.text) == "—")
+			if not g.hud.choice_box.visible or rows.size() < 2 or dashes.size() != rows.size() - 1 or str(rows[0].text).substr(0, 2).ends_with(".") or rt.mouse_captured:
+				return "the choice: shown %s, %d answers, %d dashes, first %s, the mouse still captured %s" % [g.hud.choice_box.visible, rows.size(), dashes.size(), JSON.stringify(rows[0].text if rows.size() else ""), rt.mouse_captured]
+			g.hud.choice_key("1")                                          # a number picks nothing now
+			if g.hud.choice_over:
+				return "a number key still picks an answer"
+			g.hud.choice_key("D")                                          # D moves to the second, A back to the first
+			var moved: bool = g.hud.choice_sel == 1
+			g.hud.choice_key("A")
+			if not moved or g.hud.choice_sel != 0:
+				return "A and D don't move between the answers (sel %d)" % g.hud.choice_sel
+			rows[0].pressed.emit()                                         # a click on the first answer
 			if not g.hud.choice_over:
-				return "a click on the choice's first row didn't pick it"
+				return "a click on the choice's first answer didn't pick it"
 			var xs: Array = []
 			var n := 0
 			var line_seen := 0                                           # frames a line was up and its label drawn with the words in it (the user, 2026-10-30: no dialogue seen in a cutscene)
@@ -1026,7 +1035,7 @@ func _initialize() -> void:
 			await use("games_table", 1.0)
 			if not await until(func(): return not g.hud.choice_over, 6000):
 				return "the game's call never came"
-			g.hud.choice_key("1")
+			g.hud.choice_pick(1)
 			r = await ticked("t9_game", "the game played")
 			if r != "":
 				return r
@@ -1035,7 +1044,7 @@ func _initialize() -> void:
 			var q: Array = g.hud.choice_options()
 			if not str(q[0]).contains("One more"):
 				return "her question: " + JSON.stringify(q)
-			g.hud.choice_key("1")
+			g.hud.choice_pick(1)
 			r = await ticked("t9_ask")
 			if r != "":
 				return r
@@ -1225,10 +1234,10 @@ func _initialize() -> void:
 		await step("14 · Hide and seek (a round): found in the second locker, the death scene for that locker, the retry back to the round (the pocket and the little things kept)", func():
 			if not await until(func(): return not g.hud.choice_over, 6000):
 				return "the round's card never came"
-			g.hud.choice_key("2")
+			g.hud.choice_pick(2)
 			if not await until(func(): return not g.hud.choice_over, 3000):
 				return "where she found you: never asked"
-			g.hud.choice_key("2")
+			g.hud.choice_pick(2)
 			var r := await scene()
 			if not await until(func(): return g.watch_end == "Found", 6000):
 				return "the death: never (%s, %s)" % [str(g.watch_end), r]
@@ -1244,7 +1253,7 @@ func _initialize() -> void:
 			var kept := {"items": g.run["items"].keys(), "tv": g.run["lives"].at("kitchen_tv", 0.0)["state"]}
 			if not kept["items"].has("fuse") or not kept["items"].has("flashlight") or kept["tv"] != "off":
 				return "after the retry: " + JSON.stringify(kept)
-			g.hud.choice_key("1")
+			g.hud.choice_pick(1)
 			return ""))
 
 	await station("n_run", func():
@@ -1337,7 +1346,7 @@ func _initialize() -> void:
 			var ran: float = float(s["spent"].get("running", 0)) if s != null and s.has("spent") else 0.0
 			if not (ran > 5400 and ran < 5400 + 3600):
 				return "the kitchen clock after the skip ran %.0f s (an hour and a half skipped)" % ran
-			g.hud.choice_key("2")
+			g.hud.choice_pick(2)
 			var r2 := await scene()
 			if r2 != "":
 				return r2

@@ -584,9 +584,10 @@ with `{"tick": "<id>"}` at the end of that beat, not by its own trigger (the sto
   scene that should end the stitch or branch the story is a flow node instead (or an interrupt).
 - `ask`: a **question with answers**, asked in play. The question is the footer's line, like every line: `line` (a
   line id: spoken, the speaker's name above) or `text` (a thought); the answers sit right under
-  it near the bottom of the frame, a numbered row each set as the dialogue's own lines, no panel (1. 2. 3.: the row
-  under the mouse or the keys lights up, a click or its number picks it; DECISIONS 2026-10-30), while the camera's focus holds on `who` (a cast member's face) or `on` (a placed thing it's
-  about). A reply in a scene (§9.9) and a scene's choice show theirs the same way. 2 to 4 `options`, each `id`,
+  it near the bottom of the frame, on one line with a dash between, set as the dialogue's own words, no panel and no
+  numbers: the answer pointed at is the lines' white, the other dimmed; A and D (or the arrows) move, Enter picks, the
+  mouse points and clicks (DECISIONS 2026-10-30, evening). **Two answers at most** (the check warns past two), while the camera's focus holds on `who` (a cast member's face) or `on` (a placed thing it's
+  about). A reply in a scene (§9.9) and a scene's choice show theirs the same way. 2 `options` (4 at most, warned), each `id`,
   `label`, `ja` (optional, small over the label) and `do` (actions run when it's picked). It waits for an answer:
   nothing is timed (DECISIONS 2026-10-30). Picking
   one is heard as `{"answered": ask, "option": id}`, so a later beat in the stitch can follow it; to branch the

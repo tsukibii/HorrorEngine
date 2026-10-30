@@ -12,6 +12,11 @@ The user's answers, newest first. They override the plan, the research and the d
   everything that makes things look good (not the most intensive, a balanced one) so things don't look too sharp".
   The plugin applies the balanced project settings when it's enabled; the export writes them; `look_balanced.tscn`
   brings the environment, the camhybrid tape and the grade in one drop.
+- **The choice back to one line**: after a glass panel and then a glow on hover ("it pops out too much and breaks the
+  horror immersion"): "go back to our original of --- between the choices but keep it to 2 choices max, close to the
+  bottom of the frame, below the question; we don't want 1 or 2 to select: click with the mouse or move between the
+  choices with A or D (or the arrow keys) + Enter". The answers on one line with a dash between, the one pointed at
+  white and the other dimmed; no numbers; the story check warns past two answers.
 - **Light zones instead of lights placed and tuned by Claude**: "couldn't you just add some simple presets for
   different room lights with a cubed area affected (similar to how VoxelGI looks), the zone is what will be affected
   by lighting; I'm totally ok limiting architecture designs in my game to cubes/rectangles/boxes". `HSLightZone` and

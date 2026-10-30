@@ -695,6 +695,8 @@ def check_reply(cw, c, story, things, lvl, stage, cast, clip_max, r, later=()):
     rp = c["reply"]
     opts = rp.get("options", [])
     ids = [o.get("id") for o in opts]
+    if len(opts) > 2:
+        r.warn(f"{cw}: a reply has {len(opts)} answers; two answers at most: the game shows them on one line with a dash between (DECISIONS 2026-10-30, evening)")
     if len(opts) < 2:
         r.warn(f"{cw}: a reply has two answers or more; this one has {len(opts)}")
     elif len(opts) > 3:
@@ -964,6 +966,8 @@ def check_scene(sid, sc, story, things, r):
                     oids = [o.get("id") for o in ev.get("options", [])]
                     if len(oids) < 2 or None in oids or len(set(oids)) != len(oids):
                         r.err(f"{cw}: a choice needs two options or more, each with a unique id and a label")
+                    elif len(oids) > 2:
+                        r.warn(f"{cw}: a choice with {len(oids)} answers; two answers at most: the game shows them on one line with a dash between (DECISIONS 2026-10-30, evening)")
                     if "default" in ev:
                         r.warn(f"{cw}: a choice waits for the player now (DECISIONS 2026-10-30: no timed choices): `default` is never taken; "
                                "silence is an option of its own")
@@ -1254,6 +1258,8 @@ def check_action(bid, a, story, things, r, stage=None):
         if not isinstance(opts, list) or not 2 <= len(opts) <= 4 or not all(isinstance(o, dict) for o in opts):
             r.err(f"{bid}: ask {v!r}: options are 2 to 4 answers, each {{id, label, ja?, do?}}")
             return
+        if len(opts) > 2:
+            r.warn(f"{bid}: ask {v!r} has {len(opts)} answers; two answers at most: the game shows them on one line with a dash between (DECISIONS 2026-10-30, evening)")
         ids = [o.get("id") for o in opts]
         if len(set(ids)) != len(ids) or not all(isinstance(i, str) and i for i in ids):
             r.err(f"{bid}: ask {v!r}: each answer needs its own id")

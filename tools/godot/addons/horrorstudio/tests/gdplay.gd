@@ -73,7 +73,7 @@ func scenes_until_play() -> String:
 		if g.play != null and g.play.active:
 			return ""
 		if not g.hud.choice_over:
-			g.hud.choice_key("1")
+			g.hud.choice_pick(1)
 			await frames(10)
 		elif g.scene_player.playing:
 			g.scene_player.skip()

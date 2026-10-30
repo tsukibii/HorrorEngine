@@ -188,9 +188,10 @@ objects, the same frame. **The dialogue choice** (the user: "I can't click
    anything", and the options run together with dashes): in a live scene the input handler passed only the walking
    keys, so the number keys never reached the choice, and the mouse stayed captured for looking; now while a choice
    is up every key goes to it and the mouse is free (`hud.choosing`, play's `_on_choosing`, taken back after), and the
-   options are a row per answer, `1.  Ready.`, set as the dialogue's lines with no panel or border (the user, that
-   evening: "remove the border, make it look like the normal dialogue except it highlights when you hover"), a soft
-   glow without an edge behind the row lit under the mouse or the keys (W/S and
+   answers sit on one line under the question with a dash between, as the dialogue's own words, no panel, border or
+   numbers (the user, that evening, after a glass panel and then a glow "popped out too much and broke the horror
+   immersion"): the answer pointed at is the lines' white and the other dimmed; A and D (or the arrows) move, Enter
+   picks, the mouse points and clicks; two answers at most (the story check warns past two) (W/S and
    the arrows move, a number or Enter picks), a click picking it (`docs/godot_sheets/2026-10-30_choice_panel.png`;
    GDTESTROOM clicks the lobby's first row through its button and checks the mouse freed).
    **The peephole's lens and the latch's thumb turn drawn** (2026-10-30, the user: "in director tool I see a peephole

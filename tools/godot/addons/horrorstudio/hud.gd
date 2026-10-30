@@ -30,7 +30,7 @@ var chapter_el: VBoxContainer
 var chapter_t: Label
 var chapter_s: Label
 var panel_el: PanelContainer = null
-var choice_el: VBoxContainer = null   # the options' rows, in choice_box
+var choice_el: HBoxContainer = null   # the answers on one line under the question, a dash between, in choice_box
 var choice_box: PanelContainer = null  # the glass panel round them
 var foot: VBoxContainer = null          # who, the line, a choice's panel, the inventory's row
 const FOOT_REST := 150.0                  # the footer's bottom above the screen's foot, px: the lines
@@ -205,15 +205,15 @@ func _ready() -> void:
 	var dock := CenterContainer.new()
 	dock.name = "Dock"
 	foot.add_child(dock)
-	choice_box = PanelContainer.new()                  # the options as the dialogue's own lines, a row each; no panel, no border (the user, 2026-10-30, evening)
+	choice_box = PanelContainer.new()                  # the answers as the dialogue's own words on one line, a dash between, no panel (the user, 2026-10-30, evening)
 	choice_box.name = "ChoiceBox"
 	choice_box.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	choice_box.visible = false
-	choice_box.custom_minimum_size = Vector2(460, 0)
 	dock.add_child(choice_box)
-	choice_el = VBoxContainer.new()
+	choice_el = HBoxContainer.new()
 	choice_el.name = "Choice"
-	choice_el.add_theme_constant_override("separation", 4)
+	choice_el.alignment = BoxContainer.ALIGNMENT_CENTER
+	choice_el.add_theme_constant_override("separation", 6)
 	choice_box.add_child(choice_el)
 	inv_box = HBoxContainer.new()
 	inv_box.name = "Inventory"
@@ -725,9 +725,11 @@ func panel_key(key: String) -> bool:
 	return true
 
 
-## a multiple choice (the story's ask, a reply, a scene's choice): the question is the footer's line, the options right
-## under it on their glass panel, the footer lowered toward the screen's foot while it's up; never timed (DECISIONS
-## 2026-10-30: no quick-time events, the player must choose); resolves with the index picked through choice_done
+## a choice (the story's ask, a reply, a scene's choice): the question is the footer's line, the answers on one line
+## right under it with a dash between (two at most: the story check warns past that), the footer lowered toward the
+## screen's foot while it's up; A and D (or the arrows) move between them, Enter picks, the mouse points and clicks;
+## no numbers (the user, 2026-10-30, evening); never timed (no quick-time events, the player must choose); resolves
+## with the index picked through choice_done
 func choose(spec: Dictionary) -> Variant:
 	choice_spec = spec
 	choice_over = false
@@ -740,6 +742,11 @@ func choose(spec: Dictionary) -> Variant:
 		var o = opts[i]
 		var lab: String = named(o.get("label", "") if o is Dictionary else o)
 		var think = o.get("think") if o is Dictionary else null
+		if i > 0:
+			var dash := _label("—", 18)                 # the dash between, as quiet as the dimmed answers
+			dash.name = "Dash%d" % i
+			dash.modulate = Color(1, 1, 1, CHOICE_DIM)
+			choice_el.add_child(dash)
 		var b := _choice_row(i, lab, named(think) if think != null else "")
 		choice_el.add_child(b)
 	if spec.get("prompt") != null and str(spec["prompt"]) != "":
@@ -756,46 +763,37 @@ func choose(spec: Dictionary) -> Variant:
 	return i
 
 
-## an option as a line of dialogue: "1.  the words", its thought under it, centred and shadowed as the lines are,
-## no box; the hover (or the keys) lights it in the accent over a soft glow without an edge; a click picks it
+## an answer as the dialogue's words, its thought under it, centred and shadowed as the lines are,
+## no box and no colour of its own; the answers wait dimmed, and the one under the mouse (or the keys) comes up to the
+## lines' full white (the user, 2026-10-30, evening: a glow and the accent "pop out too much and break the horror
+## immersion"); a click picks it
+const CHOICE_DIM := 0.5                   # how much of the lines' brightness an answer not pointed at keeps
+
+
 func _choice_row(i: int, lab: String, think: String) -> Button:
 	var c := ThemeC.colors(theme_name)
 	var b := Button.new()
 	b.name = "Opt%d" % i
 	b.set_meta("label", lab)
-	b.text = "%d.  %s%s" % [i + 1, lab, ("\n" + think) if think != "" else ""]
+	b.text = "%s%s" % [lab, ("\n" + think) if think != "" else ""]
 	b.alignment = HORIZONTAL_ALIGNMENT_CENTER
-	b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER  # as wide as its words: the glow sits behind them, not across the screen
+	b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	b.focus_mode = Control.FOCUS_NONE
 	b.mouse_filter = Control.MOUSE_FILTER_STOP
 	b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	b.add_theme_font_size_override("font_size", 19)
-	b.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85 if c["shadow"] else 0.0))   # the lines' dark edge, so it reads over anything
+	b.add_theme_font_size_override("font_size", 18)
+	b.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8 if c["shadow"] else 0.0))   # the lines' dark edge
 	b.add_theme_constant_override("outline_size", 4 if c["shadow"] else 0)
-	var idle := StyleBoxEmpty.new()
-	idle.content_margin_left = 22
-	idle.content_margin_right = 22
-	idle.content_margin_top = 5
-	idle.content_margin_bottom = 5
-	var lit := StyleBoxFlat.new()
-	lit.bg_color = Color(c["accent"].r, c["accent"].g, c["accent"].b, 0.13)
-	lit.set_corner_radius_all(int(c["radius"]))
-	lit.shadow_color = Color(c["accent"].r, c["accent"].g, c["accent"].b, 0.10)   # the glow, soft at its edge: no border
-	lit.shadow_size = 10
-	lit.content_margin_left = 22
-	lit.content_margin_right = 22
-	lit.content_margin_top = 5
-	lit.content_margin_bottom = 5
-	b.set_meta("idle", idle)
-	b.set_meta("lit", lit)
-	for st in ["normal", "focus", "disabled"]:
-		b.add_theme_stylebox_override(st, idle)
-	b.add_theme_stylebox_override("hover", lit)
-	b.add_theme_stylebox_override("pressed", lit)
-	for fc in ["font_color", "font_focus_color"]:
-		b.add_theme_color_override(fc, c["text"])
+	var pad := StyleBoxEmpty.new()
+	pad.content_margin_left = 18
+	pad.content_margin_right = 18
+	pad.content_margin_top = 3
+	pad.content_margin_bottom = 3
+	for st in ["normal", "focus", "disabled", "hover", "pressed", "hover_pressed"]:
+		b.add_theme_stylebox_override(st, pad)
+	var full: Color = c["text"]
 	for fc in ["font_hover_color", "font_pressed_color", "font_hover_pressed_color"]:
-		b.add_theme_color_override(fc, c["accent"])
+		b.add_theme_color_override(fc, full)
 	b.mouse_entered.connect(_choice_hover.bind(i))
 	b.pressed.connect(_finish_choice.bind(i))
 	return b
@@ -807,11 +805,13 @@ func _choice_hover(i: int) -> void:
 
 
 func _mark_choice() -> void:
+	var full: Color = ThemeC.colors(theme_name)["text"]
+	var dim := Color(full.r, full.g, full.b, full.a * CHOICE_DIM)
 	var i := 0
 	for c in choice_el.get_children():
 		if c.has_meta("label"):
-			c.add_theme_stylebox_override("normal", c.get_meta("lit") if i == choice_sel else c.get_meta("idle"))   # the row the keys are on, lit as the hover lights it
-			c.add_theme_color_override("font_color", ThemeC.colors(theme_name)["accent"] if i == choice_sel else ThemeC.colors(theme_name)["text"])
+			for fc in ["font_color", "font_focus_color"]:
+				c.add_theme_color_override(fc, full if i == choice_sel else dim)   # the one pointed at as bright as the lines, the rest waiting dimmed
 			i += 1
 
 
@@ -834,23 +834,27 @@ func choice_key(key: String) -> bool:
 	if choice_over:
 		return false
 	var n: int = choice_spec.get("options", []).size()
-	if key.length() == 1 and key >= "1" and key <= "9":
-		var i := int(key) - 1
-		if i < n:
-			_finish_choice(i)
-		return true
-	if key == "A" or key == "Left" or key == "W" or key == "Up":
+	if key == "A" or key == "Left":                    # the answers on one line: A and D (or the arrows) move, Enter picks; no numbers
 		choice_sel = max(0, choice_sel - 1)
 		_mark_choice()
 		return true
-	if key == "D" or key == "Right" or key == "S" or key == "Down":
+	if key == "D" or key == "Right":
 		choice_sel = min(n - 1, choice_sel + 1)
 		_mark_choice()
 		return true
-	if key == "Enter" or key == "Space":
+	if key == "Enter" or key == "Kp Enter" or key == "Space":
 		_finish_choice(choice_sel)
 		return true
 	return true
+
+
+## the k-th answer (1-based) picked as a player does: D (or A) to it, then Enter (the checks')
+func choice_pick(k: int) -> void:
+	while choice_sel < k - 1:
+		choice_key("D")
+	while choice_sel > k - 1:
+		choice_key("A")
+	choice_key("Enter")
 
 
 func choice_options() -> Array:
