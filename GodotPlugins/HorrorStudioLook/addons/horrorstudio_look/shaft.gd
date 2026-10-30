@@ -41,7 +41,7 @@ static func wear(fv: FogVolume, s: Dictionary = {}) -> ShaderMaterial:
 		card.name = "Card"
 		card.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		fv.add_child(card)
-	card.mesh = card_mesh(fv.size)
+	card.mesh = card_mesh(fv.size, int(s.get("slices", 5)), int(s.get("planes", 2)))
 	var m: ShaderMaterial = null
 	for si in card.mesh.get_surface_count():                   # a material a surface: the plane's share of the beam
 		var sm := ShaderMaterial.new()
@@ -65,19 +65,34 @@ static func wear(fv: FogVolume, s: Dictionary = {}) -> ShaderMaterial:
 	return m
 
 
-## the beam's planes in the box's own space (the window at +Z/2, the end at -Z/2): two crossed along it (the side
-## views) and five slices across it (the view down the beam), each a surface of its own with its share
-static func card_mesh(size: Vector3) -> ArrayMesh:
+## the beam's planes in the box's own space (the window at +Z/2, the end at -Z/2): `planes` along it (2 crossed, the
+## side views; 4 adds the diagonals) and `slices` across it (the view down the beam), each a surface of its own with
+## its share. Past five the slices gather toward the window (where the beam is brightest and seen head-on), each
+## carrying its stretch of the beam
+static func card_mesh(size: Vector3, slices: int = 5, planes: int = 2) -> ArrayMesh:
 	var am := ArrayMesh.new()
 	var z0 := size.z / 2.0
 	var z1 := -size.z / 2.0
 	var quads: Array = []                                      # [four corners, normal, weight]
-	quads.append([[Vector3(0, -size.y / 2, z0), Vector3(0, size.y / 2, z0), Vector3(0, size.y / 2, z1), Vector3(0, -size.y / 2, z1)], Vector3(1, 0, 0), 1.0])
-	quads.append([[Vector3(-size.x / 2, 0, z0), Vector3(size.x / 2, 0, z0), Vector3(size.x / 2, 0, z1), Vector3(-size.x / 2, 0, z1)], Vector3(0, 1, 0), 1.0])
-	var slices := 5
+	var lw: float = 1.0 if planes <= 2 else 0.5
+	quads.append([[Vector3(0, -size.y / 2, z0), Vector3(0, size.y / 2, z0), Vector3(0, size.y / 2, z1), Vector3(0, -size.y / 2, z1)], Vector3(1, 0, 0), lw])
+	quads.append([[Vector3(-size.x / 2, 0, z0), Vector3(size.x / 2, 0, z0), Vector3(size.x / 2, 0, z1), Vector3(-size.x / 2, 0, z1)], Vector3(0, 1, 0), lw])
+	if planes > 2:                                             # the diagonals, corner to corner
+		var a := Vector3(-size.x / 2, -size.y / 2, 0)
+		var b := Vector3(size.x / 2, size.y / 2, 0)
+		var c := Vector3(-size.x / 2, size.y / 2, 0)
+		var d := Vector3(size.x / 2, -size.y / 2, 0)
+		var zz0 := Vector3(0, 0, z0)
+		var zz1 := Vector3(0, 0, z1)
+		quads.append([[a + zz0, b + zz0, b + zz1, a + zz1], Vector3(size.y, -size.x, 0).normalized(), lw])
+		quads.append([[c + zz0, d + zz0, d + zz1, c + zz1], Vector3(size.y, size.x, 0).normalized(), lw])
+	slices = max(1, slices)
+	var gather: float = 1.0 if slices <= 5 else 1.6
 	for i in slices:
-		var z: float = lerp(z0, z1, (float(i) + 0.5) / float(slices))
-		quads.append([[Vector3(-size.x / 2, -size.y / 2, z), Vector3(size.x / 2, -size.y / 2, z), Vector3(size.x / 2, size.y / 2, z), Vector3(-size.x / 2, size.y / 2, z)], Vector3(0, 0, 1), 1.0 / float(slices)])
+		var u0: float = pow(float(i) / float(slices), gather)
+		var u1: float = pow(float(i + 1) / float(slices), gather)
+		var z: float = lerp(z0, z1, pow((float(i) + 0.5) / float(slices), gather))
+		quads.append([[Vector3(-size.x / 2, -size.y / 2, z), Vector3(size.x / 2, -size.y / 2, z), Vector3(size.x / 2, size.y / 2, z), Vector3(-size.x / 2, size.y / 2, z)], Vector3(0, 0, 1), u1 - u0])
 	for q in quads:
 		var st := SurfaceTool.new()
 		st.begin(Mesh.PRIMITIVE_TRIANGLES)

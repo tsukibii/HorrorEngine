@@ -39,10 +39,10 @@ one("blood_pool.tscn", "BloodPool", "Node3D", "blood_splat.gd", {"size": "0.8"})
 one("blood_dried.tscn", "BloodDried", "Node3D", "blood_splat.gd", {"size": "0.7", "dry": "0.85", "seed": "3.0"})
 one("blood_wall.tscn", "BloodWall", "Node3D", "blood_splat.gd", {"rotation": "Vector3(1.5708, 0, 0)", "size": "0.6", "drips": "0.6", "pool": "0.4"})
 one("wall_leak.tscn", "WallLeak", "Node3D", "wall_leak.gd")
-one("window_shaft.tscn", "WindowShaft", "Node3D", "light_shaft.gd", {"rotation": "Vector3(-0.6, 0, 0)"})
+one("window_shaft.tscn", "WindowShaft", "Node3D", "light_shaft.gd")
 scene("window_sun.tscn", [
-    ("WindowSun", "Node3D", None, N + "light_shaft.gd", {"rotation": "Vector3(-0.6, 0, 0)", "reach": "3.5"}),
-    ("Sun", "SpotLight3D", ".", None, {"light_color": "Color(1, 0.9, 0.74, 1)", "light_energy": "6.0", "shadow_enabled": "true", "spot_range": "7.0", "spot_angle": "32.0", "spot_angle_attenuation": "0.6"}),
+    ("WindowSun", "Node3D", None, N + "light_shaft.gd", {}),
+    ("Sun", "SpotLight3D", ".", None, {"light_color": "Color(1, 0.9, 0.74, 1)", "light_energy": "6.0", "shadow_enabled": "true", "light_size": "0.15", "spot_range": "9.0", "spot_angle": "20.0", "spot_angle_attenuation": "0.4"}),
 ])
 one("headlight_sweep.tscn", "HeadlightSweep", "Node3D", "headlight_sweep.gd")
 spot = {"shadow_enabled": "true", "spot_range": "8.0", "spot_angle": "38.0"}

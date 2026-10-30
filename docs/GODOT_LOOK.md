@@ -47,6 +47,21 @@ warm spot shining the same way, a child of it); `headlight_sweep`; `caustics_lig
 a scene: its root's settings are in the inspector where it's placed; for one with children (`window_sun`, `mirror`,
 `window_pane`) right-click it, Editable Children, to tune those too.
 
+**The window sun** (`HSLightShaft`, the `window_shaft` and `window_sun` presets; the user's ask that afternoon: "adjust
+the root to match the window size and make it look like it's coming from the window, at the moment it just looks like
+it floats out of the window"). The node sits in the window's opening at the glass's middle, the window's plane its
+own XY plane, forward (-Z) into the room. In the editor an orange outline shows the window's rectangle and dashes the
+beam's four edges: set `width` and `height` until the rectangle matches the opening (or scale the node). The beam is
+that rectangle swept along the sunlight (`sun_down` degrees below level, `sun_side` slanting along the wall), so at
+the glass it is exactly the opening and its sides run parallel into the room, crisp at the glass (`soft_near`) and
+softer where it lands (`soft_far`); it stops at the floor (`floor_y`, world height; `reach` caps it) instead of
+fading in mid-air. The card is HSShaft's with fourteen slices gathered toward the glass and four long planes (a shear
+on the card: the slices stay parallel to the window). With `aim_lights` the light under it (window_sun has a warm
+spot) is put three metres outside the window and aimed along the beam, so the patch it throws through the opening
+and the beam land together. Pictured from the room and from the side: `docs/godot_sheets/2026-10-30_window_sun.jpg`
+(LOOKPLUGIN's `demo/window.gd`: a wall with an opening, measured: the beam bright just inside the glass and nothing
+beside the opening, its sides parallel, its length to the floor, its light outside and aimed).
+
 **Carrying them to the next version.** An export is a new folder each time (GODOT_EXPORT §8), the level rebuilt from
 the story. Select your nodes in the old version's level, copy, open the new version's level, paste: they hold only
 their numbers, so nothing else comes along; one that goes on a mesh (a wet floor) is pasted under the new level's

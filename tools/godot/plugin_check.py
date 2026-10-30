@@ -160,7 +160,7 @@ def nodes(g, keep, env):
         ("a wet surface on the floor's mesh, the raining one with its ripples", rep.get("wet") is True and rep.get("wet_ripples") is True),
         ("a puddle's decal, blood on the floor and up the wall (dripping there)", rep.get("puddle") is True and rep.get("blood") is True),
         ("a leak's band on the wall it was dropped on", rep.get("leak") is True),
-        ("a light shaft's card as long as its reach", rep.get("shaft") is True),
+        ("a light shaft's card running to the floor (shorter than its reach)", rep.get("shaft") is True),
         ("a headlight sweep fired and passing", rep.get("sweep_passing") is True),
         ("the four pattern lights each throwing their frames", rep.get("patterns", 0) == 4),
         ("the flicker lights moving (%s)" % ", ".join(moved), len(moved) >= 5),
@@ -172,6 +172,17 @@ def nodes(g, keep, env):
         ("a node taken off: its mesh dry again", rep.get("removed_dry") is True),
         ("the grade and the tape: made when there's none, a second over the first, and the first back when it goes",
          all(rep.get(k) is True for k in ["grade_own", "grade_over", "grade_back", "tape_own", "tape_over", "tape_back"])),
+    ]
+    text = run_godot([g, "--path", str(OUT), "--rendering-driver", "vulkan", "--fixed-fps", "60", "-s", "res://addons/horrorstudio_look/demo/window.gd", "--", f"--out={keep}"], env)
+    wl = next((l for l in text.splitlines() if l.startswith("LOOKWINDOW ")), None)
+    wr = json.loads(wl[len("LOOKWINDOW "):]) if wl else {}
+    if not wl:
+        print(text[-2000:])
+    checks += [
+        ("the window sun in a window (window_sun.png): the beam bright just inside the glass and nothing beside the opening (it comes from the window)",
+         wr.get("beam_gain_in", 0) > 0.008 and wr.get("beam_gain_beside", 1) < wr.get("beam_gain_in", 0) * 0.15),
+        ("its sides parallel to the sun's way in, its slices in the window's plane, its length to the floor, its light outside aimed along it",
+         wr.get("parallel") is True and wr.get("length", 99) < wr.get("reach", 0) and wr.get("light_aimed") is True and wr.get("light_outside") is True),
     ]
     ed = editor(g, keep, env)
     checks += ed

@@ -4,4 +4,3 @@
 
 [node name="WindowShaft" type="Node3D"]
 script = ExtResource("1")
-rotation = Vector3(-0.6, 0, 0)

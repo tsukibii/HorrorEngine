@@ -44,7 +44,7 @@ own back before every save. Forward (-Z) is always into the room. The list and h
 | `HSRainBox` | Node3D | rain in a box (`size`, `count`, `strength`, `wind`, `splashes`, `follow_camera`) |
 | `HSPuddle` | Node3D | a puddle decal under it (`size`, `seed`, `depth`) |
 | `HSBloodSplat` | Node3D | blood on the surface its +Y points out of (`size`, `seed`, `dry`, `opacity`, `pool`, `ragged`, `drops`, `drips`) |
-| `HSLightShaft` | Node3D | a window's beam along its forward (`width`, `height`, `reach`, `strength`, `dust`, `drift`, `color`) |
+| `HSLightShaft` | Node3D | a window's beam, in the opening with forward into the room: the window's rectangle (`width`, `height`, an orange outline in the editor to fit) swept along the sunlight (`sun_down`, `sun_side`) to the floor (`floor_y`, `reach`), crisp at the glass and soft where it lands (`soft_near`, `soft_far`), `strength`, `dust`, `drift`, `color`; `aim_lights` puts the light under it outside, along the beam |
 | `HSHeadlightSweep` | Node3D | a car passing outside the window it sits in (`every`, `secs`, `out`, `span`, `energy`, `aim`, `seed`, `color`, `preview_every`; `fire()`) |
 | `HSWetSurface` | HSOnMesh | the mesh it's under made wet (`wetness`, `puddles`, `puddle_scale`, `ripples`, `ripple_rate`, `water_tint`, `edge`) |
 | `HSWindowPane` | HSOnMesh | glass with rain on the mesh it's under (`rain`, `clarity`, `tint`, `drop_cm`, `speed`, `bend`, `size_m`, `seed`) |
@@ -70,7 +70,7 @@ only one. In a studio export the game applies `game.look` from story.json at sta
 editing only: drop one into a level scene to see the look while you work on it.
 
 The demo: `godot --path PROJECT -s res://addons/horrorstudio_look/demo/demo.gd -- --out=DIR` pictures a room with
-each piece and writes `report.json` with the measures; `demo/nodes.gd -- --out=DIR` every preset in a room, measured,
+each piece and writes `report.json` with the measures; `demo/nodes.gd -- --out=DIR` every preset in a room, measured (`demo/window.gd` the window sun in a wall's opening),
 and a save as the editor does it (`nodes.json`, `nodes.png`); `demo/editor_test.gd` the same in the editor (the
 check installs it as a plugin); `demo/people.gd -- --glb=res://people/NAME.glb --out=DIR` a
 Character Studio export (or any glb whose skin mesh is named `..._skin`) on the skin, flat-lit, dry, sweating, oiled.

@@ -177,7 +177,7 @@ func measure() -> void:
 	rep["leak"] = got["wall_leak"].leak != null and wall.material_override is ShaderMaterial and bool(wall.material_override.get_shader_parameter("band_on"))
 	rep["leak_drops"] = got["wall_leak"].leak.drops if got["wall_leak"].leak != null else 0
 	var beam: FogVolume = got["window_shaft"].beam
-	rep["shaft"] = beam != null and beam.get_node_or_null("Card") != null and absf(beam.size.z - got["window_shaft"].reach) < 0.001
+	rep["shaft"] = beam != null and beam.get_node_or_null("Card") != null and absf(beam.size.z - got["window_shaft"].length) < 0.001 and got["window_shaft"].length < got["window_shaft"].reach
 	rep["sweep_passing"] = got["headlight_sweep"].passing() and got["headlight_sweep"].sweep.lamp.visible
 	var pats := 0
 	for k in ["caustics_light", "blinds_light", "leaves_light", "clouds_light"]:
