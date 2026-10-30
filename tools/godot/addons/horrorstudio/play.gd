@@ -340,6 +340,7 @@ func enter_level(lid: String) -> void:
 				var tod := str(game.time_of_day) if game != null else "night"
 				ss = ss.duplicate()
 				ss["strength"] = float(ss.get("strength", 1.0)) * (1.0 if tod == "day" else 0.6 if tod == "dusk" else 0.25)
+				ss["color"] = Color(1.0, 0.97, 0.9) if tod == "day" else Color(1.0, 0.85, 0.65) if tod == "dusk" else Color(0.72, 0.8, 1.0)   # the beam's colour: the sky's by day, amber at dusk, the moon's blue at night
 			HSShaft.wear(n, ss if ss is Dictionary else {})
 		if n is Node3D and n.has_meta("sweep") and not (n is Light3D):   # a car passing outside a window now and then (HSSweep)
 			var sm: Dictionary = JSON.parse_string(n.get_meta("sweep"))

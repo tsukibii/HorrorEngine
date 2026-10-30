@@ -28,7 +28,7 @@ screen-space effects that a big scene can't afford are cheap here, and they're t
 | Tonemap | AgX, exposure 1.2 | the filmic curve with the best colour under coloured lights (the warm bulb, the blue night); 1.2 because AgX sits darker than Filmic at 1.0 |
 | SSR | on, 128 steps, fade in 0.15, out 2.0, tolerance 0.2 | the overplayed reflections: wet floors, blood, the glossy cabinet, the glass-skin faces carry the lights and the room. 128 steps so the lamp across the room still lands in the puddle under it |
 | SSAO | radius 1.0, intensity 2.5, power 1.5 | the corners and the feet of things; GODOT_PLAN §4's trial found it does more for a greybox than any GI |
-| Light shafts | density 0.3 (0.5 until 2026-10-30), full by day, 0.6 at dusk, 0.25 at night, the box fading from its middle toward the floor and ceiling | a window's beam in the haze (§1c). At night in a dark room a box of lit fog read as a bright rectangle on the floor, its foot drawn crisp by the froxel grid and shifting as the eye moved (the user's pictures, 2026-10-30) |
+| Light shafts | a card (two crossed planes and five slices), density 0.3, full by day, 0.6 at dusk, 0.25 at night, coloured by the time | a window's beam (§1c). A FogVolume box till 2026-10-30: the froxel grid drew its foot on the floor as a crisp dotted rectangle that came and went with the eye (the user's pictures) |
 | SSIL | radius 1.2, intensity 0.45 (2.5 and 1.2 until 2026-10-30) | a little of the practicals' colour bleeding onto nearby walls over the VoxelGI's bounce. Pared back after the user's "bright gaps on the floor that disappear as I move and look": it's screen-space, so what it bleeds depends on what's in view, and at 1.2 it painted patches that came and went with the eye |
 | Glow | soft light, intensity 0.55, threshold 1.05, levels 3 and 5 | the bulbs and the screens bloom a little; soft light keeps the mids from washing |
 | Haze | volumetric fog, density 0.012, anisotropy 0.55 | the thin air of a dark house: light beams through doorways, the far end of a corridor softer |
@@ -93,14 +93,19 @@ the mirrors (§5b) and, since that evening, **a ReflectionProbe per room** (the 
 room: the export writes one beside each room's VoxelGI, box-projected, interior, updated once), so metal and glossy
 things reflect their room where the screen-space reflections can't reach.
 
-**Light shafts** (`shaft.gd`, `HSShaft`, `shaft.gdshader`; after Light Kit's Window shaft card, 2026-10-29): the beam a
-window throws into a room, dust drifting in it. The realism preset's haze is Godot's volumetric fog, and every light
-lights it, so a window's spot already makes a faint beam; a window with `shaft` (STORY_FORMAT §2) gets a FogVolume
-box laid along its light (the glass's width and height, `reach` metres into the room) whose fog shader thickens the
-haze inside the beam, full at the window and fading along it and at its sides, with the dust as slow clumps sinking
-through it (Light Kit's motes, the same sin product), and the window's spot has its volumetric energy raised so the
-beam shows, the frame's shadow cut into it by the light's own shadow map. Nothing drawn by hand: the renderer's fog
-carries the light, so the beam is right from every angle. Effects Low turns the haze off and the shafts with it.
+**Light shafts** (`shaft.gd`, `HSShaft`, `shaft_card.gdshader`; after Light Kit's Window shaft card, 2026-10-29; a
+card since 2026-10-30): the beam a window throws into a room, dust drifting in it. A window with `shaft`
+(STORY_FORMAT §2) gets a box laid along its light (the glass's width and height, `reach` metres into the room; the
+export writes it as a FogVolume, which now holds empty fog) and in it **a card**: two translucent planes crossed
+along the beam for the side views and five slices across it for the view down the beam, added to the picture,
+full at the window and fading along the beam and at its sides, the dust as slow clumps sinking through it (Light
+Kit's motes, the same sin product), each plane fading as it turns edge-on so together they read as one beam from
+any side; the colour by the time of day (the sky's by day, amber at dusk, the moon's blue at night) and the
+strength with it (full, 0.6, 0.25). The window's spot keeps its volumetric energy raised, so the room's haze near
+the glass carries the light too. **Why not the renderer's fog** (the first version, a FogVolume box with a fog
+shader): the froxel grid drew the box's foot on the floor as a crisp rectangle with a dotted edge that came and
+went with the eye and faded with distance (the user's pictures, 2026-10-30, twice). A card is the same from
+every seat.
 The desk draws a shaft as a see-through additive box along the window's light with the fog shader's density (the
 ends, the sides, the dust's clumps), as bright as the window's light is of a full day's (`lightfx.js`, `Shaft`).
 The demo lays one from a window-sized spot on the left wall and measures the air inside the beam brighter than

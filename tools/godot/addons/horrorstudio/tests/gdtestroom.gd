@@ -391,8 +391,10 @@ func _initialize() -> void:
 			if rt.panes.size() != 2 or rt.panes.any(func(pn): return not (pn.material_override is ShaderMaterial) or pn.material_override.shader != HSGlass.shader() or float(pn.material_override.get_shader_parameter("rain")) <= 0.0):
 				return "the lobby's two panes should wear the glass with the rain on it: " + str(rt.panes.size())
 			var shafts: Array = g.level.get_node("Lights").get_children().filter(func(c): return c is FogVolume and c.has_meta("shaft"))   # the lobby's windows throw shafts (HSShaft on the export's FogVolumes)
-			if shafts.size() != 2 or shafts.any(func(fv): return not (fv.material is ShaderMaterial) or fv.material.shader != HSShaft.shader() or fv.size.z < 2.9):
+			if shafts.size() != 2 or shafts.any(func(fv): return not (fv.material is FogMaterial) or fv.material.density > 0.0 or fv.size.z < 2.9):   # the fog emptied: the beam is a card (2026-10-30)
 				return "the lobby's two window shafts: %d, %s" % [shafts.size(), shafts.map(func(fv): return [fv.material, fv.size])]
+			if shafts.any(func(fv): var card = fv.get_node_or_null("Card"); return card == null or card.mesh == null or card.mesh.get_surface_count() != 7 or not (card.get_surface_override_material(0) is ShaderMaterial) or card.get_surface_override_material(0).shader != HSShaft.shader()):
+				return "each shaft's card: seven planes on the card shader (two along the beam, five across)"
 			var wl: Array = g.level.get_node("Lights").get_children().filter(func(c): return c is SpotLight3D and c.has_meta("window") and float(c.light_volumetric_fog_energy) >= 4.0 and c.shadow_enabled)
 			if wl.size() != 2:
 				return "the lobby's window lights should light the haze with shadows: %d" % wl.size()

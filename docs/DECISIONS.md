@@ -2,6 +2,21 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-30, morning, after the night's batch
+
+- **"Is there a way to just bake the lighting (for windowed areas), and for rooms just make the lighting with
+  different variations (light switches off, all on, 1 by 1 on/off), to help performance too and to stop the lighting
+  shifting around? That's the reason we added those lighting effects for later, so we could bake the more realistic
+  lighting and use tricks for reflectiveness later." "Let's go baked approach because it will be more performative
+  on lower end machines anyway."** So the Godot side moves to **baked lighting** (LightmapGI; GODOT_LOOK §1e): the
+  windows, the sun, the moon and the sky baked per time of day the level plays at; the lamps real-time for their
+  direct light and shadows (switches, the power cut, flicker, dying bulbs all still work) with their bounce baked;
+  one map per level per time with the lamps on and one with them off (the power cut), swapped at run time; a
+  single lamp switched off leaves its baked bounce (accepted, the common cheat; no map per combination). With a
+  level's lightmaps present the rooms' VoxelGIs and SSIL are off; screen-space reflections and the per-room
+  reflection probes stay for the shiny tricks. The bake runs on the user's card after the export (the desk's
+  Godot button, `godot_export.py --bake`), in the cloud on the CPU renderer for the checks. The shafts stay cards.
+
 ## 2026-10-30, night, from their second Godot run (the user asleep)
 
 - **"Realistically you can disable all the shaders and lighting effects in director tool, we only need director

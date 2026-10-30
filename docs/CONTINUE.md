@@ -53,8 +53,9 @@ metre into the neighbours (cells by the room's size, 30 cm past it); measured wi
 spot level and looking down, before and after (`docs/godot_sheets/2026-10-30_look_down.jpg`: in the corridor at
 night the picture looking down was 0.70 of the level one, 0.79 after; the whole picture a third brighter after,
 the finer VoxelGIs bouncing more); their three
-pictures of a bright rectangle on a room's floor were the windows' shafts (a box of lit fog at night: faint at
-night now, its box faded toward the floor). **The desk's clicks** ("I still can't click or interact with anything
+pictures of a bright rectangle on a room's floor were the windows' shafts (a box of lit fog); made faint at night
+first, then, after two more pictures (the strip at the wall's foot with a dotted edge, gone when far from the
+window), the fog box replaced by a card (GODOT_LOOK §1c): the froxel grid can't draw a box's foot cleanly. **The desk's clicks** ("I still can't click or interact with anything
 when testing via director tool, it used to work"): the reticle's ray hit the shafts' see-through boxes and the
 patterns' planes before anything (the Light Kit pieces drawn on the desk since 2026-10-29): skipped now; and with
 their decision (DECISIONS 2026-10-30) the desk lights plainly by default, no effects drawn at all (the toolbar's
