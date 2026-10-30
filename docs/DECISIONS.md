@@ -2,6 +2,19 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-30, afternoon (the user, after trying the effect nodes)
+
+- **The window sun fitted to its window**: "the window sun can be enhanced so we can adjust the root to match the
+  window size and make it look like it's coming from the window (atm it just looks like it floats out of the
+  window)". The shaft is the window's rectangle swept along the sunlight, sized to the opening by an outline in the
+  editor, landing on the floor, its light aimed through the opening (GODOT_LOOK §0).
+- **No quick-time events: a choice waits for the player**: "can we remove quick time events, just have it require a
+  user to make a choice, move the panel lower too so it's more aesthetic". No countdown on any choice (a scene's
+  choice, a reply, an ask, a round's result); `default`, an ask's `secs` and a reply's `timeout` are no longer used
+  (the check warns); silence is an option of its own. The panel sits near the screen's foot while it's up.
+- **Only what can be seen is drawn**: "can we add optimization to the engine/default exports so we only render what
+  we can see (the typical game optimization trick)". The export's levels carry occluders (GODOT_EXPORT §8).
+
 ## 2026-10-30, noon (the user, after the lightmap bake took hours in the cloud)
 
 - **"I think this isn't practical. What we should do is I manually handle the lighting, you make a plugin that's easy

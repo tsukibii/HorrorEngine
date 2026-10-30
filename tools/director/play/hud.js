@@ -250,16 +250,14 @@ export class Hud {
   }
 
   // a multiple choice (the story's `ask`): the question is the footer's line (who asks it above), the
-  // options right under it at the bottom centre (see `docked`), `secs` times it (`def`, an index, when it runs out); the
-  // camera's focus holds on whoever asks (spec.anchor() each frame, {x, y, fx, fy, speaker}) or the thing it's about;
-  // resolves with the index picked
+  // options right under it at the bottom centre (see `docked`); never timed (DECISIONS 2026-10-30: no quick-time
+  // events, the player must choose); the camera's focus holds on whoever asks (spec.anchor() each frame, {x, y, fx, fy,
+  // speaker}) or the thing it's about; resolves with the index picked
   choose(spec) {
     return new Promise(done => {
-      const c = chooser(Object.assign({ timed: !!spec.secs }, spec), i => finish(i)), kd = c.keys, f = docked(this.root, c, spec.anchor);
+      const c = chooser(Object.assign({}, spec, { timed: false }), i => finish(i)), kd = c.keys, f = docked(this.root, c, spec.anchor);
       if (spec.prompt) { paintLine(this.lineEl, spec.prompt, spec.who); this.lineUntil = 0; }
-      let over = false, t0 = performance.now();
-      const tick = () => { if (over) return; const u = (performance.now() - t0) / 1000 / spec.secs; c.bar(1 - u); if (u >= 1) return finish(spec.def ?? 0); requestAnimationFrame(tick); };
-      if (spec.secs) requestAnimationFrame(tick);                                   // timed: `def` when it runs out
+      let over = false;
       const finish = v => { if (over) return; over = true; window.removeEventListener("keydown", kd, true); f.remove(); this.modal(null); if (spec.prompt) this.lineEl.classList.remove("on"); done(v); };
       window.addEventListener("keydown", kd, true);
       this.modal(c.el);

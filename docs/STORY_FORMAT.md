@@ -387,14 +387,18 @@ keyframes, so the generated motion follows the staging approved in the desk. ANI
 
 ### 3.6 Events (quick-time events; DIRECTING.md §4)
 
-**Only `choose` is current.** `press`, `mash`, `hold`, `breath`, `aim` and `struggle` are **deprecated** (DECISIONS
-2026-10-27: they break the immersion): they still play, the story check warns, the desk offers only `choose`. A
-moment that used one becomes a dialogue answer (`choose`, its `default` the silence) or a plain scene.
+**Only `choose` is current, and it isn't timed.** `press`, `mash`, `hold`, `breath`, `aim` and `struggle` are
+**deprecated** (DECISIONS 2026-10-27: they break the immersion): they still play, the story check warns, the desk
+offers only `choose`. A moment that used one becomes a dialogue answer (`choose`) or a plain scene. **A choice waits
+for the player** (DECISIONS 2026-10-30: no quick-time events, the player must choose): no countdown, no answer taken
+for them; silence is an option of its own ("(Say nothing)"). Its `secs` is how long the moment lasts in the
+recording (the desk's bake: her face and idle while she waits); the scene holds there until an answer is picked.
+`default` is no longer used (the check warns).
 
 ```json
 "event": {"type": "struggle", "secs": 4, "pull": "back", "need": 0.6, "prompt": "Pull free!", "warn": 0.6,
           "on": {"escape": [{"door": "front_door", "set": "unlock"}]}}
-"event": {"type": "choose", "secs": 5, "prompt": "", "options": [{"id": "lie", "label": "Lie"}, {"id": "truth", "label": "Tell her"}], "default": "truth"}
+"event": {"type": "choose", "secs": 5, "prompt": "", "options": [{"id": "lie", "label": "Lie"}, {"id": "truth", "label": "Tell her"}, {"id": "quiet", "label": "(Say nothing)"}]}
 "event": {"type": "breath", "secs": 5, "prompt": "Keep still", "warn": 0.8}
 ```
 
@@ -404,7 +408,7 @@ moment that used one becomes a dialogue answer (`choose`, its `default` the sile
 | `breath` | (don't move the mouse) | success, fail |
 | `aim` | | success, fail |
 | `struggle` | `need` 0..1 (how many presses: about `need` × 20), `pull` (`back left right down any`: the way she's thrown off and the camera leans, not an input); camera `held`. The player mashes E (or Space, or the left button); escape as soon as the bar fills | escape, caught |
-| `choose` | `options [{id, label}]`, `default` (taken on timeout: silence is a choice) | the option ids |
+| `choose` | `options [{id, label}]` (silence is an option of its own); `secs` the moment's length in the recording | the option ids |
 
 - `warn` shows an "!" that many seconds before.
 - `on` runs actions per result.
@@ -580,13 +584,15 @@ with `{"tick": "<id>"}` at the end of that beat, not by its own trigger (the sto
   scene that should end the stitch or branch the story is a flow node instead (or an interrupt).
 - `ask`: a **question with answers**, asked in play. The question is the footer's line, like every line: `line` (a
   line id: spoken, the speaker's name above) or `text` (a thought); the answers sit right under
-  it at the bottom centre of the frame, in one panel, the dashes between them (DECISIONS 2026-10-27, notes: the lines
-  are text, so the question reads on into its answers), while the camera's focus holds on `who` (a cast member's face)
-  or `on` (a placed thing it's about). A reply in a scene (§9.9) and a timed choice show theirs the same way. 2 to 4 `options`, each `id`, `label`, `ja` (optional, small over the label) and `do`
-  (actions run when it's picked). `secs` times it, with `default` (an answer's id) taken when time runs out. Picking
+  it near the bottom of the frame, on one glass panel, a numbered row each (1. 2. 3.: the mouse or the keys pick one;
+  DECISIONS 2026-10-30), while the camera's focus holds on `who` (a cast member's face) or `on` (a placed thing it's
+  about). A reply in a scene (§9.9) and a scene's choice show theirs the same way. 2 to 4 `options`, each `id`,
+  `label`, `ja` (optional, small over the label) and `do` (actions run when it's picked). It waits for an answer:
+  nothing is timed (DECISIONS 2026-10-30). Picking
   one is heard as `{"answered": ask, "option": id}`, so a later beat in the stitch can follow it; to branch the
   story, the answer's `do` sets a flag and a flag choice (§5) follows it.
-  `{"ask": "q_stay", "line": "mari_014", "who": "mari", "options": [{"id": "stay", "label": "I'll stay", "do": [{"karma": 1}]}, {"id": "go", "label": "I should go"}], "secs": 8, "default": "go"}`.
+  `{"ask": "q_stay", "line": "mari_014", "who": "mari", "options": [{"id": "stay", "label": "I'll stay", "do": [{"karma": 1}]}, {"id": "go", "label": "I should go"}]}`.
+  It waits for an answer (DECISIONS 2026-10-30: `secs` and `default` are no longer used; the check warns).
   The walker (STORY, the playthrough's timing) answers with the `default`, else the first.
   A reply inside a scene (§9.9) is the scene's own; `ask` is for the player's tasks.
 - `todo`: a task on **the to-do list** (the HUD's list under the objective; DECISIONS 2026-10-27, late night): a
@@ -802,7 +808,8 @@ prints each take's prompt: `she makes a <expr> while she <voice> <d>[Japanese] <
   {"id": "o_silent", "label": "(Say nothing)", "ja": "（黙っている）", "zh": "（沉默）", "karma": -1}]}
 ```
 
-- `secs` is **30** unless given. The timeout takes `default`: silence is an answer, and can carry karma.
+- `secs` is **30** unless given: the moment's length in the recording. Nothing is picked for the player (DECISIONS
+  2026-10-30): silence is an option of its own, and can carry karma.
 - `karma` on an option is a number (the default axis) or `{"axis": n}`. A `karma` action does the same from beats,
   cues and `sets`: reactions count (`{"karma": -2}` for taking the doll).
 - A karma choice needs no result choice after it: the karma is what it's for. It can still branch with one.
@@ -955,8 +962,8 @@ card on the board (HANDOFF_DIRECTOR_TODO §1).
     `next` (the board draws the arrow, dashed blue; a card reached only this way is reached). In a triggered scene (a
     beat's `scene`) it just ends the scene: play carries on.
   The check plays every answer that goes somewhere else than its sweep's answer on a path of its own.
-- `wait` (6 s by default, 2 to 15): how long she waits. Past it her answer is skipped (`timeout: null`), or a
-  `timeout` option's answer plays (an answer to your silence).
+- `wait` (6 s by default, 2 to 15): how long her waiting lasts in the recording; then she holds until you answer
+  (DECISIONS 2026-10-30: no timed choices). `timeout` is no longer used (the check warns): give silence an option.
 - `sets`: actions when the reply is picked (a flag, karma, a count), so a reply can open a branch later through a
   flag choice; most set nothing and are there so it feels like you.
 - `wait_expr`: the face she holds while she waits, for the take's end (MiniMax).

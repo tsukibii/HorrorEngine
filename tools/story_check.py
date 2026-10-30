@@ -702,9 +702,10 @@ def check_reply(cw, c, story, things, lvl, stage, cast, clip_max, r, later=()):
     if None in ids or len(set(ids)) != len(ids):
         r.err(f"{cw}: reply options need unique ids")
     if not 2 <= float(rp.get("wait", L.REPLY_SECS)) <= 15:
-        r.err(f"{cw}: reply wait {rp.get('wait')} s: she waits 2 to 15 s, then carries on")
-    if rp.get("timeout") is not None and rp["timeout"] not in ids:
-        r.err(f"{cw}: reply timeout {rp['timeout']!r}: null (her answer is skipped) or an option id")
+        r.err(f"{cw}: reply wait {rp.get('wait')} s: her wait as recorded is 2 to 15 s (then she holds till you answer)")
+    if rp.get("timeout") is not None:
+        r.warn(f"{cw}: reply timeout {rp['timeout']!r}: a reply waits for the player now (DECISIONS 2026-10-30: no timed "
+               "choices), so it never plays; silence is an option of its own")
     if opts and all(o.get("if") or o.get("count") for o in opts):
         r.warn(f"{cw}: every answer has a condition (§9.14): when none holds she asks and nothing is offered; leave one without")
     for o in opts:
@@ -962,9 +963,10 @@ def check_scene(sid, sc, story, things, r):
                 if t == "choose":
                     oids = [o.get("id") for o in ev.get("options", [])]
                     if len(oids) < 2 or None in oids or len(set(oids)) != len(oids):
-                        r.err(f"{cw}: a timed choice needs two options or more, each with a unique id and a label")
-                    if ev.get("default") not in oids:
-                        r.err(f"{cw}: a timed choice needs `default`: the option taken when the time runs out (silence is a choice)")
+                        r.err(f"{cw}: a choice needs two options or more, each with a unique id and a label")
+                    if "default" in ev:
+                        r.warn(f"{cw}: a choice waits for the player now (DECISIONS 2026-10-30: no timed choices): `default` is never taken; "
+                               "silence is an option of its own")
                     for o in ev.get("options", []):
                         if not o.get("label"):
                             r.err(f"{cw}: option {o.get('id')!r} needs a label")
@@ -1263,15 +1265,9 @@ def check_action(bid, a, story, things, r, stage=None):
             check_cond(f"{bid} ask {v} {o.get('id')}", o, story, r)
             for sub in o.get("do") or []:
                 check_action(f"{bid} ask {v} {o.get('id')}", sub, story, things, r, stage)
-        if "secs" in a and not (isinstance(a["secs"], (int, float)) and a["secs"] > 0):
-            r.err(f"{bid}: ask {v!r}: secs is a number of seconds")
-        if "secs" in a and a.get("default") not in ids:
-            r.err(f"{bid}: ask {v!r} is timed: `default` (the answer when time runs out) is one of {', '.join(map(str, ids))}")
-        elif "default" in a and a["default"] not in ids:
-            r.err(f"{bid}: ask {v!r}: default {a['default']!r} isn't one of its answers")
-        d = next((o for o in opts if o.get("id") == a.get("default")), None)
-        if d and (d.get("if") or d.get("count")):
-            r.warn(f"{bid}: ask {v!r}: its default {d.get('id')!r} has a condition: when it isn't offered, time running out picks the first that is")
+        if "secs" in a or "default" in a:
+            r.warn(f"{bid}: ask {v!r}: an ask waits for the player now (DECISIONS 2026-10-30: no timed choices): "
+                   "`secs` and `default` are never used")
         return
     if k == "todo":                                    # a task on the to-do list (STORY_FORMAT §4)
         if not isinstance(v, str) or not re.match(r"^[a-z0-9_]+$", v):
@@ -2031,10 +2027,11 @@ class World:
             self.karma[k] = self.karma.get(k, 0.0) + v
 
     def answer(self, ev):
-        """The option this sweep's player takes at a timed choice: the kindest, the cruellest, or silence (the default)."""
+        """The option this sweep's player takes at a choice: the kindest, the cruellest, or the quiet one (no karma either way)."""
         opts = ev.get("options", [])
         if self.style == "silent" or not any("karma" in o for o in opts):
-            return next((o for o in opts if o.get("id") == ev.get("default")), opts[0] if opts else {})
+            quiet = [o for o in opts if not any(L.karma_of(o.get("karma")).values())]
+            return quiet[0] if quiet and any("karma" in o for o in opts) else (opts[0] if opts else {})
         score = lambda o: sum(L.karma_of(o.get("karma")).values())
         return max(opts, key=score) if self.style == "kind" else min(opts, key=score)
 

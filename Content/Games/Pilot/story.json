@@ -1062,7 +1062,6 @@
         "label": "...I'll stay."
        }
       ],
-      "default": "caught",
       "on": {
        "escape": [
         {
@@ -1147,8 +1146,7 @@
         "id": "fail",
         "label": "I'm here."
        }
-      ],
-      "default": "success"
+      ]
      }
     }
    ],

@@ -32,7 +32,9 @@ var chapter_s: Label
 var panel_el: PanelContainer = null
 var choice_el: VBoxContainer = null   # the options' rows, in choice_box
 var choice_box: PanelContainer = null  # the glass panel round them
-var choice_bar: ProgressBar = null
+var foot: VBoxContainer = null          # who, the line, a choice's panel, the inventory's row
+const FOOT_REST := 150.0                  # the footer's bottom above the screen's foot, px: the lines
+const FOOT_CHOOSING := 44.0               # and while a choice is up: its panel low, the view above it clear
 var board_el: Label
 
 var cursor_kind: String = "none"
@@ -47,7 +49,6 @@ var modal_up: bool = false
 var choice_keys: Array = []
 var choice_sel: int = 0
 var choice_spec: Dictionary = {}
-var choice_t0: float = 0.0
 var choice_over: bool = true
 var panel_spec: Dictionary = {}
 var panel_typed: String = ""
@@ -183,11 +184,12 @@ func _ready() -> void:
 	seen_el.visible = false
 	root.add_child(seen_el)
 	# the footer: who, the line
-	var foot := VBoxContainer.new()
+	foot = VBoxContainer.new()
 	foot.name = "Footer"
 	foot.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	foot.grow_vertical = Control.GROW_DIRECTION_BEGIN        # grows up from the bottom edge as the row and a choice need
-	foot.position = Vector2(0, -150)
+	foot.offset_top = -FOOT_REST
+	foot.offset_bottom = -FOOT_REST
 	foot.alignment = BoxContainer.ALIGNMENT_END
 	foot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(foot)
@@ -212,12 +214,6 @@ func _ready() -> void:
 	choice_el.name = "Choice"
 	choice_el.add_theme_constant_override("separation", 4)
 	choice_box.add_child(choice_el)
-	choice_bar = ProgressBar.new()
-	choice_bar.name = "ChoiceBar"
-	choice_bar.custom_minimum_size = Vector2(240, 4)
-	choice_bar.show_percentage = false
-	choice_bar.visible = false
-	foot.add_child(choice_bar)
 	inv_box = HBoxContainer.new()
 	inv_box.name = "Inventory"
 	inv_box.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -628,11 +624,6 @@ func tick(dt: float = 0.0) -> void:
 		who_el.text = ""
 		line_text = ""
 		line_until = 0.0
-	if not choice_over and choice_spec.get("secs") != null and float(choice_spec["secs"]) > 0:
-		var u := (Time.get_ticks_msec() / 1000.0 - choice_t0) / float(choice_spec["secs"])
-		choice_bar.value = max(0.0, 1.0 - u) * 100.0
-		if u >= 1.0:
-			_finish_choice(int(choice_spec.get("def", 0)))
 
 
 func fade_alpha() -> float:
@@ -733,8 +724,9 @@ func panel_key(key: String) -> bool:
 	return true
 
 
-## a multiple choice (the story's ask, a reply, a timed choice): the question is the footer's line, the options right
-## under it; `secs` times it (`def`, an index, when it runs out); resolves with the index picked through choice_done
+## a multiple choice (the story's ask, a reply, a scene's choice): the question is the footer's line, the options right
+## under it on their glass panel, the footer lowered toward the screen's foot while it's up; never timed (DECISIONS
+## 2026-10-30: no quick-time events, the player must choose); resolves with the index picked through choice_done
 func choose(spec: Dictionary) -> Variant:
 	choice_spec = spec
 	choice_over = false
@@ -755,9 +747,7 @@ func choose(spec: Dictionary) -> Variant:
 		who_el.text = named(spec.get("who", "") if spec.get("who") != null else "")
 		line_until = 0.0
 	choice_box.visible = true
-	choice_bar.visible = spec.get("secs") != null and float(spec.get("secs", 0)) > 0
-	choice_bar.value = 100
-	choice_t0 = Time.get_ticks_msec() / 1000.0
+	foot.offset_bottom = -FOOT_CHOOSING                 # lower while choosing: the panel near the screen's foot, under what's looked at
 	modal(true)
 	_mark_choice()
 	choosing.emit(true)
@@ -819,7 +809,7 @@ func _finish_choice(i: int) -> void:
 		return
 	choice_over = true
 	choice_box.visible = false
-	choice_bar.visible = false
+	foot.offset_bottom = -FOOT_REST                     # the lines back where they sit
 	if choice_spec.get("prompt") != null:
 		line_el.text = ""
 		line_text = ""

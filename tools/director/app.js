@@ -1550,7 +1550,7 @@ function clipCard(sc, ver, c, i, lvl, sid) {
     const evs = el("div", { class: "sec row" }, el("span", { class: "lab" }, "event"));
     const evHolder = { type: c.event ? c.event.type : "" };
     const evList = ["choose", ...QTE.filter(t => t === evHolder.type).map(t => [t, t + " (deprecated)"])];   // quick-time events are deprecated (DECISIONS 2026-10-27): only a clip that has one shows it
-    evs.append(sel(evHolder, "type", evList.map(t => (t === "choose" ? ["choose", "choose (a dialogue answer)"] : t)), { blank: "none", after: () => { if (!evHolder.type) delete c.event; else c.event = Object.assign({ secs: 3, prompt: "" }, c.event || {}, { type: evHolder.type }); if (evHolder.type === "choose" && !c.event.options) { c.event.options = [{ id: "a", label: "Say something" }, { id: "b", label: "Say nothing" }]; c.event.default = "b"; } touch(); renderInspector(); } }));
+    evs.append(sel(evHolder, "type", evList.map(t => (t === "choose" ? ["choose", "choose (a dialogue answer)"] : t)), { blank: "none", after: () => { if (!evHolder.type) delete c.event; else c.event = Object.assign({ secs: 3, prompt: "" }, c.event || {}, { type: evHolder.type }); if (evHolder.type === "choose" && !c.event.options) { c.event.options = [{ id: "a", label: "Say something" }, { id: "b", label: "Say nothing" }]; } touch(); renderInspector(); } }));
     if (c.event && QTE.includes(c.event.type)) pane.append(el("p", { class: "kv warn" }, `A ${c.event.type} is a quick-time event: deprecated, they break the immersion. Make it a choose (a dialogue answer), or take the event off.`));
     if (c.event) {
       const e = c.event;
@@ -2066,11 +2066,11 @@ function runReply(rp, frame, who) {
   freePointer();
   return new Promise(resolve => {
     const secs = +(rp.wait || REPLY_SECS), opts = (rp.options || []).filter(o => holds(o, RUN.flags, RUN.counters)), t0 = performance.now();   // offered by what's happened (§9.14)
-    const { box, c } = choiceBox({ options: opts.map(o => ({ label: o.label || o.id, think: o.think })), timed: true }, i => finish(opts[i].id), who);
+    const { box, c } = choiceBox({ options: opts.map(o => ({ label: o.label || o.id, think: o.think })), timed: false }, i => finish(opts[i].id), who);   // waits for an answer (DECISIONS 2026-10-30)
     let done = false;
     const finish = id => { if (done) return; done = true; window.removeEventListener("keydown", c.keys, true); box.remove(); resolve(id); };
     window.addEventListener("keydown", c.keys, true);
-    const tick = () => { if (done) return; if (!RUN) return finish(null); const u = (performance.now() - t0) / 1000; frame(u); c.bar(1 - u / secs); if (u >= secs) return finish(null); requestAnimationFrame(tick); };
+    const tick = () => { if (done) return; if (!RUN) return finish(null); frame(Math.min((performance.now() - t0) / 1000, secs)); requestAnimationFrame(tick); };   // her wait as recorded, then held
     requestAnimationFrame(tick);
   });
 }
@@ -2160,16 +2160,16 @@ async function blendIn(tl, from, secs) {
   }
 }
 const freePointer = () => { if (document.pointerLockElement) document.exitPointerLock(); };     // a card or a QTE needs the pointer
-function runChoose(ev) {              // a timed choice: the default is taken when time runs out
+function runChoose(ev) {              // a choice: it waits for the player's answer (DECISIONS 2026-10-30: no timed choices)
   freePointer();
   return new Promise(resolve => {
-    const secs = eventSecs(ev, S), opts = ev.options || [], t0 = performance.now();
-    const { box, c } = choiceBox({ options: opts.map(o => ({ label: o.label || o.id, think: o.think })), timed: true }, i => finish(opts[i].id));
+    const opts = ev.options || [];
+    const { box, c } = choiceBox({ options: opts.map(o => ({ label: o.label || o.id, think: o.think })), timed: false }, i => finish(opts[i].id));
     paintLine(watchHud().line, ev.prompt);                                          // the question is the footer's line
     let done = false;
     const finish = id => { if (done) return; done = true; window.removeEventListener("keydown", c.keys, true); box.remove(); paintLine(watchHud().line, ""); resolve(id); };
     window.addEventListener("keydown", c.keys, true);
-    const tick = () => { if (done) return; if (!RUN) return finish(ev.default); const u = (performance.now() - t0) / (secs * 1000); c.bar(1 - u); if (u >= 1) return finish(ev.default); requestAnimationFrame(tick); };
+    const tick = () => { if (done) return; if (!RUN) return finish(ev.default); requestAnimationFrame(tick); };   // only a stopped run ends it
     requestAnimationFrame(tick);
   });
 }

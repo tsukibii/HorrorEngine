@@ -468,7 +468,7 @@ func _seg_at(tl: Dictionary, t: float) -> Variant:
 	return null
 
 
-## a timed choice: the default is taken when time runs out; the other QTE kinds (deprecated) succeed by themselves
+## a choice: it waits for the player's answer (DECISIONS 2026-10-30: no timed choices); the other QTE kinds (deprecated) succeed by themselves
 func run_event(ev: Dictionary) -> Variant:
 	var secs := StoryC.event_secs(ev, story())
 	if ev.get("type") == "choose":
@@ -476,11 +476,7 @@ func run_event(ev: Dictionary) -> Variant:
 		var labels: Array = []
 		for o in opts:
 			labels.append({"label": o.get("label", o.get("id")), "think": o.get("think")})
-		var def := 0
-		for i in opts.size():
-			if opts[i].get("id") == ev.get("default"):
-				def = i
-		var i = await game.hud.choose({"prompt": ev.get("prompt", ""), "options": labels, "secs": secs, "def": def})
+		var i = await game.hud.choose({"prompt": ev.get("prompt", ""), "options": labels})
 		return opts[i].get("id") if (i >= 0 and i < opts.size()) else ev.get("default")
 	var t := get_tree().create_timer(min(secs, 1.0))
 	await t.timeout
@@ -489,7 +485,6 @@ func run_event(ev: Dictionary) -> Variant:
 
 func run_reply(rp: Dictionary, who) -> Variant:
 	var R = run()
-	var secs := float(rp.get("wait", StoryC.REPLY_SECS))
 	var opts: Array = []
 	for o in rp.get("options", []):
 		if StoryC.holds(o, R["flags"], R["counters"]):
@@ -497,5 +492,5 @@ func run_reply(rp: Dictionary, who) -> Variant:
 	var labels: Array = []
 	for o in opts:
 		labels.append({"label": o.get("label", o.get("id")), "think": o.get("think")})
-	var i = await game.hud.choose({"options": labels, "secs": secs, "def": -1})
+	var i = await game.hud.choose({"options": labels})
 	return opts[i].get("id") if (i >= 0 and i < opts.size()) else null

@@ -35,12 +35,12 @@ register("action", "name", { run: (v, a, rt) => rt.askName(v, a.default) });   /
 register("action", "say", { run: (v, a, rt) => rt.hud.line(a.line || v, a.who ? ((rt.story.cast || {})[a.who] || {}).name || a.who : "", lineSecs(a.line || v)) });
 // ask: a question with 2 to 4 answers at the bottom centre, under the question (`line`, spoken, or `text`, a thought) in
 // the footer; the camera's focus on `who` (or `on`, a thing) meanwhile. Each answer's `do` runs, and `answered` is heard
-// ({"answered": ask id, "option": its id}). `secs` times it; `default` is taken when time runs out
+// ({"answered": ask id, "option": its id}). It waits for an answer (DECISIONS 2026-10-30: no timed choices)
 register("action", "ask", {
   run: async (v, a, rt) => {
     const opts = (a.options || []).filter(o => holds(o, rt.flags, (rt.run || {}).counters)), l = a.line && (rt.story.lines || {})[a.line];   // offered by what's happened (§9.14)
     const i = await rt.choose({ prompt: l ? l.en || l.ja : a.text, who: a.who || (l && l.who), on: a.on,
-      options: opts.map(o => ({ label: o.label || o.id, think: o.think })), secs: a.secs, def: Math.max(0, opts.findIndex(o => o.id === a.default)) });
+      options: opts.map(o => ({ label: o.label || o.id, think: o.think })) });
     const o = opts[i]; if (!o) return;
     rt.emit({ type: "answered", ask: v, option: o.id });
     await runAll(o.do, rt);

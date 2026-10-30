@@ -3041,7 +3041,6 @@
        "event": {
         "type": "choose",
         "secs": 12,
-        "default": "o_silent",
         "options": [
          {
           "id": "o_trust",
@@ -3129,7 +3128,6 @@
        "event": {
         "type": "choose",
         "secs": 12,
-        "default": "o_silent",
         "options": [
          {
           "id": "o_trust",

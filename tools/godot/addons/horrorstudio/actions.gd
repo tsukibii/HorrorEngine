@@ -78,11 +78,7 @@ func run(a: Dictionary, rt) -> void:
 			var labels: Array = []
 			for o in opts:
 				labels.append({"label": o.get("label", o.get("id")), "think": o.get("think")})
-			var def := 0
-			for i in opts.size():
-				if opts[i].get("id") == a.get("default"):
-					def = i
-			var i = await rt.choose({"prompt": prompt, "who": who, "on": a.get("on"), "options": labels, "secs": a.get("secs"), "def": def})
+			var i = await rt.choose({"prompt": prompt, "who": who, "on": a.get("on"), "options": labels})   # waits for an answer (no timed choices)
 			if i < 0 or i >= opts.size():
 				return
 			var o: Dictionary = opts[i]

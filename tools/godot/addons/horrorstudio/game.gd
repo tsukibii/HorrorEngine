@@ -428,7 +428,7 @@ func play_round(st: Dictionary, nid: String, n: Dictionary) -> Variant:
 	if fast:
 		res = results[0]
 	else:
-		var i = await hud.choose({"prompt": "%s · %s" % [st.get("title", ""), pl.get("rule", "")], "options": labels, "secs": float(pl.get("secs", 30))})
+		var i = await hud.choose({"prompt": "%s · %s" % [st.get("title", ""), pl.get("rule", "")], "options": labels})
 		res = results[i] if (i >= 0 and i < results.size()) else results[0]
 	run["results"][nid] = res
 	karma_act(pl.get("on", {}).get(res, []))
@@ -437,7 +437,7 @@ func play_round(st: Dictionary, nid: String, n: Dictionary) -> Variant:
 		var sl: Array = []
 		for sp in pl["spots"]:
 			sl.append({"label": str(sp).replace("_", " ")})
-		var j = await hud.choose({"prompt": "Where did she find you?", "options": sl, "secs": null})
+		var j = await hud.choose({"prompt": "Where did she find you?", "options": sl})
 		run["found_at"] = pl["spots"][j] if (j >= 0 and j < sl.size()) else pl["spots"][0]
 	elif res != results[0] and (pl.get("spots", []) as Array).size() == 1:
 		run["found_at"] = pl["spots"][0]
