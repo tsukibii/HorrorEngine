@@ -110,9 +110,14 @@ whatever draws the file. The empty texels round each island take its edge, eight
 pull in black; the rest the islands' mean.
 - **The skin:** 4096 px on MHR's own UVs (the face takes about a quarter of the width), a JPEG in the file. **And how
   it's lit** (2026-10-28, back: the skin light, below): its relief (the pores, the wrinkles, a nail's edge) as a
-  tangent-space normal map in glTF's convention (+X along u, +Y up the picture), and one map of R 1 (no occlusion
-  yet), G the roughness (the oil, the lips' gloss, the nails' polish) and B how thin the skin is (the file's metalness
-  is 0, so its blue is free), 2048 px PNGs; the light's numbers in the skin material's `extras.studioSkin`. The desk
+  tangent-space normal map in glTF's convention (+X along u, +Y up the picture), and one map of R the ambient
+  occlusion (2026-10-30, night: `bakeOcclusion`, how much of the sky each point sees, from depth maps of the body
+  from 64 directions and of the head again finer; also the glb's occlusionTexture), G the roughness (the oil, the
+  lips' gloss, the nails' polish) and B how thin the skin is (the file's metalness is 0, so its blue is free), 2048 px
+  PNGs; the light's numbers in the skin material's `extras.studioSkin`, with the procedural skin's `age`, `pores`,
+  `poreSize`, `evenness` and `wrinkles` (Godot's detail layer picks its look from them: GODOT_LOOK §5d). The pores
+  are left out of the file's maps (their colour and relief: a 0.35 mm texel only blurred them): Godot draws them at
+  their true size, as deep and as far apart as the record's Pores and Pore spacing say. The desk
   lights the file's skin with the same `skinlight.js` (`bodies.js`, the thinness from the map's blue); Unreal makes
   **M_StudioSkin** (`storykit/people.py`, Subsurface Profile, written blind: UNREAL_FLOW §1d).
 
