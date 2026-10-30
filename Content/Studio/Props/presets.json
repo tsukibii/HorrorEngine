@@ -97,5 +97,11 @@
    "cap": "#c2bfb5", "wear": {"grime": 0.2, "dust": 0.3}},
  "tokkuri": {"label": "a sake flask (tokkuri), iron-brown glaze", "family": "ware", "kind": "tokkuri", "seed": 6,
    "glaze": "#5a3626", "art": {"design": "glaze", "crackle": 0.6}, "wear": {"grime": 0.2}},
- "soy_bottle": {"label": "a small soy-sauce bottle, red cap", "family": "ware", "kind": "soy", "seed": 7, "wear": {"grime": 0.2}}
+ "soy_bottle": {"label": "a small soy-sauce bottle, red cap", "family": "ware", "kind": "soy", "seed": 7, "wear": {"grime": 0.2}},
+ "cig_butts": {"label": "a dozen stubbed-out cigarette butts", "family": "bits", "kind": "butts", "count": 12, "seed": 3,
+   "wear": {"grime": 0.4, "dirt": 0.4, "stains": 0.3}},
+ "bottle_caps": {"label": "bottle caps, some bent by the opener", "family": "bits", "kind": "caps", "count": 8, "seed": 4,
+   "wear": {"grime": 0.3, "scratches": 0.5, "dirt": 0.3}},
+ "trash_bag": {"label": "a full bin bag, tied", "family": "sack", "seed": 2, "lumps": 8, "folds": 0.75, "tex": 1024,
+   "wear": {"dust": 0.25, "grime": 0.2}}
 }

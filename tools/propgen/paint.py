@@ -277,7 +277,7 @@ class Frame:
     def fill(self, **props):
         self.rect(-1, -1, self.W + 2, self.H + 2, **props) if not self.wrap else self.rect(0, -1, self.W, self.H + 2, **props)
 
-    def gradient(self, c0, c1, angle=90.0, t0=0.0, t1=1.0, **props):
+    def gradient(self, c0, c1, angle=90.0, t0=0.0, t1=1.0, mask=None, **props):
         """A linear gradient across the island, from c0 to c1 along `angle` degrees (90: bottom to top)."""
         X, Y = self.grid()
         a = math.radians(angle)
@@ -286,7 +286,7 @@ class Frame:
         t = np.clip(((d - lo) / max(hi - lo, 1e-9) - t0) / max(t1 - t0, 1e-9), 0, 1)
         t = t * t * (3 - 2 * t)
         col = rgb(c0)[None, None] * (1 - t[..., None]) + rgb(c1)[None, None] * t[..., None]
-        self.lay_island(np.ones_like(t), color=col, **props)
+        self.lay_island(np.ones_like(t) if mask is None else mask, color=col, **props)
 
     # -- patterns (analytic, the island's size)
     def stripes(self, period, duty=0.5, angle=0.0, offset=0.0, mask=None, **props):
