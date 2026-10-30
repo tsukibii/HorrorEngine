@@ -205,8 +205,9 @@ func _ready() -> void:
 	var dock := CenterContainer.new()
 	dock.name = "Dock"
 	foot.add_child(dock)
-	choice_box = PanelContainer.new()                  # the options on the theme's glass, a row each (the user's ask, 2026-10-30)
+	choice_box = PanelContainer.new()                  # the options as the dialogue's own lines, a row each; no panel, no border (the user, 2026-10-30, evening)
 	choice_box.name = "ChoiceBox"
+	choice_box.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	choice_box.visible = false
 	choice_box.custom_minimum_size = Vector2(460, 0)
 	dock.add_child(choice_box)
@@ -755,26 +756,36 @@ func choose(spec: Dictionary) -> Variant:
 	return i
 
 
-## an option as a row of the panel: "1.  the words", its thought under it smaller, the hover lighting it, a click picking it
+## an option as a line of dialogue: "1.  the words", its thought under it, centred and shadowed as the lines are,
+## no box; the hover (or the keys) lights it in the accent over a soft glow without an edge; a click picks it
 func _choice_row(i: int, lab: String, think: String) -> Button:
 	var c := ThemeC.colors(theme_name)
 	var b := Button.new()
 	b.name = "Opt%d" % i
 	b.set_meta("label", lab)
-	b.text = "%d.  %s%s" % [i + 1, lab, ("\n      " + think) if think != "" else ""]
-	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	b.text = "%d.  %s%s" % [i + 1, lab, ("\n" + think) if think != "" else ""]
+	b.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER  # as wide as its words: the glow sits behind them, not across the screen
 	b.focus_mode = Control.FOCUS_NONE
 	b.mouse_filter = Control.MOUSE_FILTER_STOP
 	b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	b.add_theme_font_size_override("font_size", 17)
-	var idle := ThemeC.box(c, c["radius"], Color(0, 0, 0, 0), Color(0, 0, 0, 0))
-	idle.shadow_size = 0
-	idle.content_margin_top = 7
-	idle.content_margin_bottom = 7
-	var lit := ThemeC.box(c, c["radius"], Color(c["accent"].r, c["accent"].g, c["accent"].b, 0.16), Color(c["accent"].r, c["accent"].g, c["accent"].b, 0.45))
-	lit.shadow_size = 0
-	lit.content_margin_top = 7
-	lit.content_margin_bottom = 7
+	b.add_theme_font_size_override("font_size", 19)
+	b.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85 if c["shadow"] else 0.0))   # the lines' dark edge, so it reads over anything
+	b.add_theme_constant_override("outline_size", 4 if c["shadow"] else 0)
+	var idle := StyleBoxEmpty.new()
+	idle.content_margin_left = 22
+	idle.content_margin_right = 22
+	idle.content_margin_top = 5
+	idle.content_margin_bottom = 5
+	var lit := StyleBoxFlat.new()
+	lit.bg_color = Color(c["accent"].r, c["accent"].g, c["accent"].b, 0.13)
+	lit.set_corner_radius_all(int(c["radius"]))
+	lit.shadow_color = Color(c["accent"].r, c["accent"].g, c["accent"].b, 0.10)   # the glow, soft at its edge: no border
+	lit.shadow_size = 10
+	lit.content_margin_left = 22
+	lit.content_margin_right = 22
+	lit.content_margin_top = 5
+	lit.content_margin_bottom = 5
 	b.set_meta("idle", idle)
 	b.set_meta("lit", lit)
 	for st in ["normal", "focus", "disabled"]:
