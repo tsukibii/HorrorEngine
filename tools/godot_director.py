@@ -135,6 +135,12 @@ def install(out, link=False):
     if SOMA.exists():
         shutil.copy(SOMA, kimodo / "soma77.json")
     (kimodo / "studio_root.txt").write_text(str(ROOT), encoding="utf-8")     # where Kimodo's stage file and tools/kimodo.py are
+    (kimodo / "motions").mkdir(exist_ok=True)
+    bodies = out / "bodies"                                                   # MHR (Meta's, Apache-2.0): a body to try motions on
+    bodies.mkdir(exist_ok=True)
+    for f in ("MHR.fbx", "MHR_LICENSE.txt"):
+        if (ROOT / "Content" / "Studio" / "Bodies" / f).exists():
+            shutil.copy(ROOT / "Content" / "Studio" / "Bodies" / f, bodies / f)
     pg = out / "project.godot"
     if pg.exists():
         text = pg.read_text(encoding="utf-8")
@@ -205,9 +211,39 @@ def check(keep=False):
     if "DIRECTORPLAY ok" not in text:
         print(text[-4000:])
         ok = False
+    ok = kimodo_check(out) and ok
     ok = editor_check(out) and ok
     print("DIRECTOR ok" if ok else "DIRECTOR FAIL")
     return 0 if ok else 1
+
+
+def kimodo_check(out):
+    """The Kimodo link (tests/kimodo_check.gd): a motion made on SOMA through an .npz and back, retargeted onto SOMA and onto
+    MHR, in place, and the sample's house sent as a stage from where Mari stands."""
+    code, text = run_godot(["--headless", "--path", str(out), "-s", "res://addons/horrorstudio_director/tests/kimodo_check.gd"], timeout=300)
+    line = next((l for l in quiet(text).splitlines() if l.startswith("KIMODOCHECK ")), None)
+    if line is None:
+        print(quiet(text)[-3000:])
+        print("  BAD the Kimodo check's report never came")
+        return False
+    r = json.loads(line[len("KIMODOCHECK "):])
+    kinds = r.get("stage_kinds", {})
+    checks = [
+        ("a Kimodo .npz written and read back: %s frames, %.6f m off" % (r.get("npz_frames"), r.get("npz_err", 1)), r.get("npz_frames") == 31 and r.get("npz_err", 1) < 1e-6),
+        ("onto Kimodo's own skeleton: every joint where the motion put it (%.2f cm at worst, %s)" % (r.get("soma_err_cm", 99), r.get("soma_err_at")), r.get("family_soma") == "soma" and r.get("soma_err_cm", 99) < 0.5),
+        ("onto the Character Studio's MHR: the limbs pointing SOMA's way (%.2f° at worst), the hips at its height (%.3f)" % (r.get("mhr_limb_deg", 99), r.get("mhr_hip_ratio", 0)),
+         r.get("family_mhr") == "mhr" and r.get("mhr_limb_deg", 99) < 1.0 and 0.88 < r.get("mhr_hip_ratio", 0) < 0.97),
+        ("in place: the travel gone (%.3f m of %.2f), the sway kept (%.3f m), looping" % (r.get("in_place_travel", 9), r.get("full_travel", 0), r.get("in_place_sway", 0)),
+         r.get("in_place_travel", 9) < 0.01 and abs(r.get("full_travel", 0) - 1.2) < 0.01 and r.get("in_place_sway", 0) > 0.02 and r.get("in_place_loop") is True),
+        ("the house as Kimodo's stage from Mari: %d boxes %s, %d door swings, marks %s, the hall's floor where it is from her" % (r.get("stage_boxes", 0), json.dumps(kinds), r.get("stage_arcs", 0), r.get("stage_marks")),
+         r.get("stage_boxes", 0) >= 20 and all(kinds.get(k, 0) > 0 for k in ("floor", "wall", "door", "use")) and r.get("stage_arcs") == 2
+         and any(m.endswith(":player") for m in r.get("stage_marks", [])) and r.get("stage_floor_ok") is True),
+    ]
+    ok = True
+    for what, good in checks:
+        print(("  ok  " if good else "  BAD ") + what)
+        ok = ok and good
+    return ok
 
 
 def editor_check(out):

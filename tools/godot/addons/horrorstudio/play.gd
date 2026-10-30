@@ -1638,17 +1638,17 @@ func behave(cid, spec: Dictionary) -> void:
 ## under her stand-in, looped (a Director character's Kimodo motions, GODOT_DIRECTOR §6; an export's stand-ins have
 ## none yet, so nothing plays there): `motion` while she walks or stands, `rest` at a route's waits when given
 func npc_motion(cid: String, n: Dictionary, node: Node3D) -> void:
-	var ap = anim_players.get(cid, false)
-	if ap is bool:
-		var found := node.find_children("*", "AnimationPlayer", true, false)
-		ap = found[0] if found.size() else null
-		anim_players[cid] = ap
-	if ap == null:
-		return
 	var want = n["s"].get("motion")
 	if not bool(n.get("walking", false)) and n["s"].get("rest") != null:
 		want = n["s"]["rest"]
 	if want == null:
+		return
+	var key := cid + "|" + str(want)
+	var ap = anim_players.get(key, false)
+	if ap is bool:
+		ap = player_with(node, str(want))
+		anim_players[key] = ap
+	if ap == null:
 		return
 	var nm := anim_name(ap, str(want))
 	if nm != "" and ap.current_animation != nm:
@@ -1656,6 +1656,14 @@ func npc_motion(cid: String, n: Dictionary, node: Node3D) -> void:
 		if a != null and a.loop_mode == Animation.LOOP_NONE:
 			a.loop_mode = Animation.LOOP_LINEAR              # a behaviour's motion loops (a copy in memory: the file stays as it is)
 		ap.play(nm, 0.3)
+
+
+## the AnimationPlayer under a node that has a motion (a model's own player and the Kimodo imports' can both be there)
+static func player_with(node: Node, name: String) -> AnimationPlayer:
+	for ap in node.find_children("*", "AnimationPlayer", true, false):
+		if anim_name(ap, name) != "":
+			return ap
+	return null
 
 
 ## an animation by its motion's name on a player: itself, or in any of its libraries (the Kimodo imports' `kimodo/`)
@@ -1677,15 +1685,11 @@ func play_motion(who, clip, hold_beat: bool = false) -> void:
 	if node == null:
 		hud.log("anim: no %s here" % who)
 		return
-	var found: Array = node.find_children("*", "AnimationPlayer", true, false)
-	if found.is_empty():
-		hud.log("anim: %s has no motions" % who)
-		return
-	var ap: AnimationPlayer = found[0]
-	var nm := anim_name(ap, str(clip))
-	if nm == "":
+	var ap: AnimationPlayer = player_with(node, str(clip))
+	if ap == null:
 		hud.log("anim: %s has no motion %s" % [who, clip])
 		return
+	var nm := anim_name(ap, str(clip))
 	ap.play(nm, 0.2)
 	if hold_beat:
 		var a: Animation = ap.get_animation(nm)

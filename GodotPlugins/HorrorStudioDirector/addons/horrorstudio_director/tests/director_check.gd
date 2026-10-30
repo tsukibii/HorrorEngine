@@ -170,6 +170,17 @@ func _initialize() -> void:
 		if rt.collide == null:
 			return "not on Godot's physics"
 		return "")
+	await step("Mari in her MHR body plays her idle, a motion made on Kimodo's skeleton and brought in", func():
+		var node = rt.cast_nodes.get("mari")
+		if node == null:
+			return "no Mari"
+		var ap = load("res://addons/horrorstudio/play.gd").player_with(node, "sample_idle")
+		if ap == null:
+			return "no player with sample_idle under her (the sample has no body: res://bodies/MHR.fbx?)"
+		await game_wait(0.5)
+		if not ap.is_playing() or not str(ap.current_animation).ends_with("sample_idle"):
+			return "playing %s" % ap.current_animation
+		return "")
 	await step("a wall stops the player (Godot's physics: the hall's west wall)", func():
 		rt.place(Vector3(-1.0, 0.0, 0.0), 180.0, 0.0)
 		await hold("W", 2.0)

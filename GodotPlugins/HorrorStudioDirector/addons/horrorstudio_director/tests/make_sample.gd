@@ -43,6 +43,49 @@ func act(verb: String, fields: Dictionary = {}) -> HSAction:
 	return HSAction.make(verb, fields)
 
 
+## an instanced model's own nodes are its scene's: only its root is the sample's
+func _own_all(_n: Node) -> void:
+	pass
+
+
+## a standing idle on Kimodo's SOMA skeleton (soma77.json): the arms down at the sides, breathing, a slow weight
+## shift, the head turning a little; [frames, 77, 3] as Kimodo saves it, looping
+func idle_frames(n: int) -> PackedFloat32Array:
+	var S := HSRetarget.soma()
+	var names: Array = S["names"]
+	var sk := Skeleton3D.new()
+	for i in names.size():
+		sk.add_bone(names[i])
+	for i in names.size():
+		var par = S["parents"][i]
+		var pi: int = names.find(par) if par != null else -1
+		if pi >= 0:
+			sk.set_bone_parent(i, pi)
+		var r: Array = S["rest"][i]
+		var pr: Array = S["rest"][pi] if pi >= 0 else [0, 0, 0]
+		sk.set_bone_rest(i, Transform3D(Basis(), Vector3(float(r[0]) - float(pr[0]), float(r[1]) - float(pr[1]), float(r[2]) - float(pr[2]))))
+	var out := PackedFloat32Array()
+	for f in n:
+		var t := f / float(n)
+		sk.reset_bone_poses()
+		var breathe := sin(t * TAU * 2.0)
+		var shift := sin(t * TAU)
+		sk.set_bone_pose_rotation(sk.find_bone("LeftArm"), Quaternion(Vector3(0, 0, 1), -1.25 + 0.03 * breathe))
+		sk.set_bone_pose_rotation(sk.find_bone("RightArm"), Quaternion(Vector3(0, 0, 1), 1.25 - 0.03 * breathe))
+		sk.set_bone_pose_rotation(sk.find_bone("LeftForeArm"), Quaternion(Vector3(0, 1, 0), 0.15))
+		sk.set_bone_pose_rotation(sk.find_bone("RightForeArm"), Quaternion(Vector3(0, 1, 0), -0.15))
+		sk.set_bone_pose_rotation(sk.find_bone("Chest"), Quaternion(Vector3(1, 0, 0), -0.03 * breathe))
+		sk.set_bone_pose_rotation(sk.find_bone("Head"), Quaternion(Vector3(0, 1, 0), 0.25 * sin(t * TAU + 1.0)))
+		var h := sk.find_bone("Hips")
+		sk.set_bone_pose_position(h, sk.get_bone_rest(h).origin + Vector3(0.03 * shift, 0.004 * breathe, 0))
+		sk.force_update_all_bone_transforms()
+		for i in names.size():
+			var p: Vector3 = sk.get_bone_global_pose(i).origin
+			out.append_array([p.x, p.y, p.z])
+	sk.free()
+	return out
+
+
 func _initialize() -> void:
 	root_ = HSGame.new()
 	root_.name = "Game"
@@ -96,6 +139,25 @@ func _initialize() -> void:
 	mari.face_player = true
 	mari.talk = true
 	mari.display_name = "Mari"
+	if ResourceLoader.exists("res://bodies/MHR.fbx"):           # her body: the studio's MHR, with an idle made on Kimodo's skeleton and brought in
+		var body: Node3D = (load("res://bodies/MHR.fbx") as PackedScene).instantiate()
+		own(body, mari, "Body")
+		_own_all(body)
+		var npz := ProjectSettings.globalize_path("res://kimodo/motions/sample_idle.npz")
+		DirAccess.make_dir_recursive_absolute(npz.get_base_dir())
+		HSNpz.write(npz, {"posed_joints": [[120, 77, 3], idle_frames(120)]})
+		var sk := HSRetarget.skeleton_of(body)
+		var ap := HSRetarget.player_of(mari)
+		ap.owner = root_
+		var anim := HSRetarget.animation(HSNpz.joints(HSNpz.read(npz)), sk, mari, mari, {"fps": 30.0, "loop": true})
+		DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://motions/mari"))
+		ResourceSaver.save(anim, "res://motions/mari/sample_idle.res")
+		var lib := AnimationLibrary.new()
+		lib.add_animation("sample_idle", load("res://motions/mari/sample_idle.res"))
+		ResourceSaver.save(lib, "res://motions/mari/kimodo.tres")
+		ap.add_animation_library("kimodo", load("res://motions/mari/kimodo.tres"))
+		mari.idle_motion = "sample_idle"
+		mari.height = 1.75
 	var not_now: HSEvent = own(HSEvent.new(), mari, "NotNow")
 	not_now.once = false
 	not_now.every = 0.5
