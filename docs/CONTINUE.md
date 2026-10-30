@@ -13,23 +13,27 @@ not an order. Overwrite this file at the end of the next session.
 
 ## 0. The street builder (2026-10-30, night, on `buildings-streets`; not merged)
 
-The user asked for a new tool (DECISIONS 2026-10-30, night): the outside world the enterable buildings go into, low
-poly and layman-simple, front and side photos pasted to trace, and the first reference recreated 1:1 in framing; then
-five more references, lamps and street things, fences of every kind (PBR-ready, low poly), maps that feel tight and
-cozy. Built (docs/STREET_BUILDER.md): **the street builder** (`tools/director/street.html`, the dashboard's tile;
-`street-gen.js` the generator in plain JS, `street3.js` the drawing, `street-presets.js` ten building styles and five
-place mixes, `Content/Studio/Streets/<name>/street.json`), its map, its facade view (parts clicked onto the wall,
-floors by dragging the roof, a photo behind each side), its 3D view (orbit, walk at 1.65 m, shots matched to a photo),
-**Fill a street** (buildings shoulder to shoulder, lamps, poles and wires, clutter), the .glb export, STREET (in
-check_all) and STREETPAGE, `tools/street.py` and `streetshot.mjs`. **shibuya_lane** matches the first photo through
-its shot `photo` (13 pins, 0.5% of the frame off on average; the lens measured as a phone's 26 mm, the eye 1.6 m);
-**reference_town** has a corner for each of the other five references, filled with the tool's own Fill. The photos
-stay out of git (`refs/`); the user has them.
+The user asked for a new tool (DECISIONS 2026-10-30, night and later night): the outside world the enterable buildings
+go into, low poly and layman-simple; then slopes and curves, big streets handled, a .glb to drop into a Godot folder,
+and the interiors (sets) walked into from the street. Built (docs/STREET_BUILDER.md): **the street builder**
+(`tools/director/street.html`, the dashboard's tile; `street-gen.js` the generator in plain JS, `street3.js` the drawing
+and the export, `street-presets.js` ten styles, five mixes and the walk-ins; `Content/Studio/Streets/<name>/street.json`):
+the map, the facade view (parts clicked onto the wall, floors by dragging the roof, a photo behind each side), the 3D
+view (orbit, walk, shots matched to a photo), **Fill a street**, streets that **bend** (a dot in a street's middle) and
+**climb** (heights a point; the ground, plinths, things and fence posts follow), **big streets** in 48 m chunks merged
+by material (colours on the vertices; 451 draws for the 89-building town), a piece rebuilt only when it changes, **the
+.glb for Godot** (colliders `-colonly`, occluders `-occonly`, lamps, insides' markers; a colour a material, since Godot
+leaves vertex colours off), **buildings to walk into** (a set inside: the shell round its rooms with its doors and
+windows cut through, roof, plinth, steps; rows and floors: the Motel with its walkway and stair; the Bungalow), gates.
+Streets: **shibuya_lane** (the first photo matched, 13 pins at 0.5%), **reference_town** (the other five references),
+**hill_motel** (a winding hill, the motel and its car park, the bungalow behind its gate). Sets: **motel_room**,
+**bungalow**. Checks: STREET (check_all), STREETPAGE, GDSTREET (Godot 4.7: rays onto the road, the pavement, roofs, the
+walkway; through each inside's doorway onto the set's own door with the set's level at its marker).
 
-**What could come next** (ask first): the user's verdict on the match and the town, more references; streets into
-Godot (a level taking a street, the scene builder's enterable buildings put in through a building's door, the
-street's meshes merged by material for the export); slopes and curved streets; foliage when the user wants it; a
-grade in the page (the photo's teal and orange), if the look matters there.
+**What could come next** (ask first): the user's verdict on the match, the town and the motel; more references; the
+export placing an inside's level by itself (today a marker; the set's level dropped there by hand); a two-storey
+interior (stairs inside the set); foliage when the user wants it; steps and retaining walls on a slope; a grade in the
+page (the photo's teal and orange).
 
 ## 0a. The cloud session after (2026-10-30, small hours): §0's four pieces built, and a stand-in bug from the user
 
