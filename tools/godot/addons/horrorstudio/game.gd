@@ -196,6 +196,9 @@ func pieces(lvl: Node = null) -> Array:
 
 ## the rooms' VoxelGIs (the export writes one a room, unbaked): baked once here and kept in user://, so the bounce is
 ## there from the first run and the next start loads it. Not headless (the dummy renderer can't bake).
+var bad_gi: Dictionary = {}                     # kept VoxelGI bakes found broken this run (their paths): not read twice
+
+
 func bake_gi(lid: String) -> void:
 	if DisplayServer.get_name() == "headless" or level == null:
 		return
@@ -211,12 +214,19 @@ func bake_gi(lid: String) -> void:
 	var dropped := 0
 	for vg in gis:
 		var path := "%s/%s_%s.res" % [dir, lid, vg.name]
-		if FileAccess.file_exists(path):
-			var d = ResourceLoader.load(path, "VoxelGIData", ResourceLoader.CACHE_MODE_REUSE)
+		if FileAccess.file_exists(path) and not bad_gi.has(path):
+			var d = ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_IGNORE)   # read afresh: a cached copy of a broken one would fool the check
 			if d is VoxelGIData and (d as VoxelGIData).get_bounds().size.length() > 0.0:   # a kept bake: whole (a file cut short, or saved empty, has no bounds and would print an error a frame)
 				vg.data = d
 				continue
-			DirAccess.remove_absolute(path)                                       # broken: thrown away and baked again
+			bad_gi[path] = true                                                   # never read again this run
+			var size := -1
+			var f := FileAccess.open(path, FileAccess.READ)
+			if f != null:
+				size = f.get_length()
+				f.close()
+			var err := DirAccess.remove_absolute(ProjectSettings.globalize_path(path))   # broken: thrown away and baked again
+			print("a kept VoxelGI bake is broken: %s (%d bytes, read as %s, bounds %s): removed (%s), baked again" % [path, size, d.get_class() if d != null else "nothing", str(d.get_bounds()) if d is VoxelGIData else "-", error_string(err)])
 			dropped += 1
 		vg.bake(level)
 		if vg.data != null and vg.data.get_bounds().size.length() > 0.0:
