@@ -171,7 +171,17 @@ loads, every verb in the games has a part).
    each run with the receipt's merge as before; GDEXPORT also exports twice into a scratch root and checks the two
    versions. The export writes no lighting of its own any more: no VoxelGI, reflection probe or lightmap (GODOT_LOOK
    §1); moving things are dynamic GI for a LightmapGI you add, and the look plugin's effects are nodes and presets to
-drag in (GODOT_LOOK §0), holding only their numbers so they copy from one version's level to the next. **The dialogue choice** (the user: "I can't click
+drag in (GODOT_LOOK §0), holding only their numbers so they copy from one version's level to the next. **Only what
+can be seen is drawn** (the user, 2026-10-30, afternoon: "the typical game optimization trick"): Godot already leaves
+out what's outside the view (frustum culling); the export adds occlusion culling, so what's behind a wall isn't drawn
+either. The project turns it on (`rendering/occlusion_culling/use_occlusion_culling`) and every wall, floor and
+ceiling piece carries an `occluder` (an OccluderInstance3D with a BoxOccluder3D 4 cm smaller than the piece, so
+nothing touching its face is hidden; none on a piece under 30 cm, a post or a trim): boxes need no baking, and
+the user's own meshes are culled behind them too (an occluder of their own, OccluderInstance3D, joins them). Doors
+carry none (they move). The story's lights fade out past 24 m and their shadows past 14 m (`distance_fade_*`).
+GDCULL (`python tools/godot_export.py --game TestRoom001 --cull`, under xvfb) stands the player in every room of the
+start's level looking each way and counts what's drawn with it on and off, and compares the pictures: fewer
+objects, the same frame. **The dialogue choice** (the user: "I can't click
    anything", and the options run together with dashes): in a live scene the input handler passed only the walking
    keys, so the number keys never reached the choice, and the mouse stayed captured for looking; now while a choice
    is up every key goes to it and the mouse is free (`hud.choosing`, play's `_on_choosing`, taken back after), and the

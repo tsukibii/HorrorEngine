@@ -120,13 +120,14 @@ def main():
     ap.add_argument("--play", action="store_true", help="GDPLAY: the Pilot played headless to its good ending (needs --game Pilot)")
     ap.add_argument("--testroom", action="store_true", help="GDTESTROOM: TestRoom001 played station by station (needs --game TestRoom001)")
     ap.add_argument("--from", dest="from_nid", help="GDTESTROOM: start from a station")
+    ap.add_argument("--cull", action="store_true", help="GDCULL: in every room of the start's level, what's drawn with occlusion culling on and off, and the pictures alike (under xvfb)")
     a = ap.parse_args()
     games = [a.game] if a.game else L.games()
     ok = True
     for game in games:
         if a.out and a.game:
             dest = a.out
-        elif a.check or a.play or a.testroom:              # the checks' own scratch project, overwritten each run: never a version
+        elif a.check or a.play or a.testroom or a.cull:              # the checks' own scratch project, overwritten each run: never a version
             dest = G.CHECK_OUT / game
         else:
             dest = None                                  # a new version: Saved/Godot/<game>_v<NNN> (DECISIONS 2026-10-30, noon)
@@ -204,6 +205,26 @@ def main():
             print("\n".join("  " + ln for ln in out.splitlines()[-60:]))
             if code != 0 or "GDTESTROOM ok" not in out:
                 ok = False
+        if a.cull:
+            code, out = run_godot(r["dir"], "res://addons/horrorstudio/tests/cullcheck.gd", ["--fixed-fps", "30"], xvfb=True, timeout=1600)
+            line = next((ln for ln in out.splitlines() if ln.startswith("GDCULL {")), None)
+            rep = json.loads(line[len("GDCULL "):]) if line else {}
+            checks = [
+                ("the project's occlusion culling on, the level's walls, floors and ceilings carrying occluders (%s)" % rep.get("occluders"),
+                 rep.get("setting") is True and rep.get("occluders", 0) > 0),
+                ("in %s rooms, %s views: fewer things drawn with it on (objects %s against %s, %.0f%% fewer; primitives %.0f%% fewer)" % (
+                    rep.get("rooms"), rep.get("views"), rep.get("on", {}).get("objects"), rep.get("off", {}).get("objects"),
+                    100 * rep.get("saved_objects", 0), 100 * rep.get("saved_primitives", 0)),
+                 rep.get("views", 0) > 0 and rep.get("saved_objects", 0) > 0.1),
+                ("and nothing that can be seen hidden: the pictures alike (at most %.1f%% of the frame differs, %s)" % (100 * rep.get("diff_max", 1), rep.get("worst", "")),
+                 rep.get("diff_max", 1) < 0.02),
+            ]
+            for what, good in checks:
+                print(("  ok  " if good else "  BAD ") + what)
+                ok = ok and good
+            if not line:
+                print("\n".join("  " + ln for ln in out.splitlines()[-30:]))
+            print("GDCULL ok" if all(gd for _, gd in checks) else "GDCULL FAIL")
     if a.check:
         print("GDEXPORT ok" if ok else "GDEXPORT FAIL")
         sys.exit(0 if ok else 1)

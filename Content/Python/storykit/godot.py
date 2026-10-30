@@ -85,6 +85,12 @@ BY_TAG = {"mirror": "mirror", "tv": "screen", "poster": "paper", "calendar": "pa
 # the desk's lights by kind: colour, strength (the stage's units: Godot energy about the same), reach (m)
 PATTERNS = ("caustics", "leaves", "blinds", "clouds")    # a light's `pattern` (HSPattern; story_check's PATTERNS)
 LIGHTS = {"bulb": (0xffc98a, 2.2, 7), "candle": (0xffa84a, 1.0, 3.5), "lamp": (0xffd2a0, 1.6, 5), "fire": (0xff8a3a, 3, 9)}
+# drawing only what can be seen (the user, 2026-10-30): walls, floors and ceilings carry box occluders (the project's
+# occlusion culling on), a box OCCLUDE_INSET smaller than its piece so what touches it isn't hidden, none for a piece
+# narrower than OCCLUDE_MIN (a post, a trim); the story's lights fade out with distance, their shadows sooner
+OCCLUDE_INSET = 0.04
+OCCLUDE_MIN = 0.3
+LIGHT_FADE = {"distance_fade_enabled": "true", "distance_fade_begin": "24.0", "distance_fade_shadow": "14.0", "distance_fade_length": "4.0"}
 # the time of day (stage.js TIME_LOOK): the sky, the ambient (colour, strength), the window light (colour, strength, reach)
 TIME_LOOK = {
     "day": {"sky": 0xb7c6d6, "amb": (0xd6dae2, 0.65), "win": (0xeef3ff, 20, 8)},
@@ -216,6 +222,7 @@ class LevelWriter:
         self.meshes_out = Path(meshes_out) if meshes_out else None   # game/meshes/: the kit's and the library's glbs copied here
         self.surfaces = {}                                 # a library texture set's material, by ref (surface())
         self.surfaced = 0                                  # the pieces wearing one
+        self.occluders = 0                                 # the walls, floors and ceilings hiding what's behind them
         self.arts = {}                                                 # ref -> ExtResource(...), once each
         self.art_count = 0
 
@@ -393,6 +400,13 @@ class LevelWriter:
         if p["kind"] == "door" or any(t.startswith("door_part:") and t != "door_part:frame" for t in tags) or use in ("pickup", "carry", "roll"):
             mprops["gi_mode"] = "2"                    # it moves (a leaf, its handle, a thing taken up): a LightmapGI the user adds lights it by its probes, never bakes it in place
         self.t.node("mesh", "MeshInstance3D", path, mprops)
+        if p["kind"] in ("wall", "floor", "ceiling") and p["shape"] not in ("cyl", "sphere") and not hidden and not hollow \
+                and min(w, h, d) > 0 and max(w, d) >= OCCLUDE_MIN:
+            # what's behind it isn't drawn (occlusion culling, the user's ask 2026-10-30): a box a little inside the
+            # piece, so nothing touching its face is hidden by it
+            occ = self.t.sub("BoxOccluder3D", {"size": v3(max(w - OCCLUDE_INSET, 0.01), max(h - OCCLUDE_INSET, 0.01), max(d - OCCLUDE_INSET, 0.01))})
+            self.t.node("occluder", "OccluderInstance3D", path, {"occluder": occ})
+            self.occluders += 1
         if ext:
             xf, k = self.art_transform(p, art)
             self.t.node("art", None, path, {"transform": xf}, instance=ext)
@@ -442,14 +456,14 @@ class LevelWriter:
             self.t.node(name, "SpotLight3D", "Lights", {
                 "transform": look_xform(pos, aim), "light_color": col(c), "light_energy": f((inten if lit else 0.0) * 1.5),
                 "spot_range": f(max(dist * 1.6, dist + 1.0)), "spot_angle": f(spread / 2), "spot_angle_attenuation": "0.8", "shadow_enabled": "true",
-                "light_size": f(LIGHT_SIZE.get(kind, 0.06)), "shadow_blur": "1.5"},
+                "light_size": f(LIGHT_SIZE.get(kind, 0.06)), "shadow_blur": "1.5", **LIGHT_FADE},
                 {"piece": self.piece_meta(p), "light": light_meta,
                  "pattern": dict({"pattern": d["pattern"], "distance": round(dist, 3)}, **{k: d[k] for k in ("scale", "speed", "open", "angle") if k in d})})
             return
         self.t.node(name, "OmniLight3D", "Lights", {
             "transform": xform(s2g(p["pos"])), "light_color": col(c), "light_energy": f(inten if lit else 0.0),
             "omni_range": f(dist), "omni_attenuation": "1.6", "shadow_enabled": "true",
-            "light_size": f(LIGHT_SIZE.get(kind, 0.06)), "shadow_blur": "1.5"},    # a bulb or a lamp has a size: penumbras, not a cut edge (look.gd shadows())
+            "light_size": f(LIGHT_SIZE.get(kind, 0.06)), "shadow_blur": "1.5", **LIGHT_FADE},    # a bulb or a lamp has a size: penumbras, not a cut edge (look.gd shadows())
             {"piece": self.piece_meta(p), "light": light_meta})
 
     def leak(self, p):
@@ -539,7 +553,7 @@ class LevelWriter:
                 shaft = op.get("shaft")
                 shaft_k = (1.0 if shaft is True else float(shaft)) if shaft not in (None, False) else 0.0
                 props = {"transform": xform(a, yaw + 180), "light_color": col(wc), "light_energy": f(wk * area), "spot_range": f(wd),
-                         "spot_angle": "63", "spot_attenuation": "1.5"}
+                         "spot_angle": "63", "spot_attenuation": "1.5", **LIGHT_FADE}
                 if shaft_k > 0:                           # the beam shows in the haze, the frame's shadow cut into it (HSShaft)
                     props.update({"light_volumetric_fog_energy": f(4.0 * shaft_k), "shadow_enabled": "true", "shadow_blur": "1.5"})
                 self.t.node(name, "SpotLight3D", "Lights", props, {"window": {"room": room["id"], "area": area, "energy": wk * area}})
@@ -992,6 +1006,7 @@ enabled=PackedStringArray("res://addons/horrorstudio_look/plugin.cfg")
 [rendering]
 
 renderer/rendering_method="forward_plus"
+occlusion_culling/use_occlusion_culling=true
 lights_and_shadows/positional_shadow/soft_shadow_filter_quality=4
 lights_and_shadows/positional_shadow/atlas_size=8192
 lights_and_shadows/positional_shadow/atlas_16_bits=false
@@ -1193,6 +1208,7 @@ def export(game, out=None, make_zip=False, do_import=True):
     pieces = P.plan(story)
     arts = 0
     surfaced = 0
+    occluders = 0
     surface_sets = set()
     kit_index = {}
     try:
@@ -1266,6 +1282,7 @@ def export(game, out=None, make_zip=False, do_import=True):
         levels.append(lid)
         arts += lw.art_count
         surfaced += lw.surfaced
+        occluders += lw.occluders
         surface_sets.update(r for r, m in lw.surfaces.items() if m)
         for ref in lw.arts:                               # the kit things' sockets and slots (lifefx.gd), by their ref
             if ref.startswith("kit/") and LIB.mesh_info(ref):
@@ -1276,7 +1293,7 @@ def export(game, out=None, make_zip=False, do_import=True):
     if (sfx / "index.json").exists():
         shutil.copytree(sfx, out / "game" / "sfx", ignore=shutil.ignore_patterns("*.import", "__pycache__"))
     import datetime  # noqa: PLC0415
-    info = {"game": game, "story": str(path), "levels": levels, "pieces": len(pieces), "arts": arts, "acts": acts, "surfaced": surfaced, "surface_sets": sorted(surface_sets), "bake": (previs / "preview.json").exists(), "bodies": baked,
+    info = {"game": game, "story": str(path), "levels": levels, "pieces": len(pieces), "arts": arts, "acts": acts, "surfaced": surfaced, "occluders": occluders, "surface_sets": sorted(surface_sets), "bake": (previs / "preview.json").exists(), "bodies": baked,
             "bodies_list": sorted(f.name[5:-4] for f in previs.glob("Body_*.glb")) if previs.exists() else [], "engine": L.engine_version(), "godot": "4.7",
             "made": datetime.datetime.now().strftime("%Y-%m-%d %H:%M")}
     kept = []

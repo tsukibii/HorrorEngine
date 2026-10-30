@@ -204,6 +204,9 @@ inspector; they preview in the editor and save only their numbers) to a level; a
 Your own WorldEnvironment or sun in a level takes over from the time of day's. To play before the lighting's made, set the story's
 <code>game.lighting</code> to <code>off</code>: a flat, even test light. Every export is a new folder (<code>&lt;game&gt;_v001</code>, <code>_v002</code>...), so copy your lighting
 nodes from the last one.</p>
+<p><b>Only what can be seen is drawn.</b> Every wall, floor and ceiling carries a box occluder (its <code>occluder</code> child) and
+the project has occlusion culling on, so a room behind a wall isn't drawn; the story's lights fade out far away. A big
+mesh of your own that hides things (a wardrobe, a partition) can carry an <code>OccluderInstance3D</code> with a box too.</p>
 {fig(pictures, 'start_night.png', 'The same start at night: the sky, the windows and the ambient from the time of day.')}
 """))
     body.append(section("props", 8, "Swapping a texture or a prop", f"""

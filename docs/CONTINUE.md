@@ -104,6 +104,14 @@ gets its own material back before every save); a flicker light of the user's goe
 the user:** open a level of the latest export, drag `presets/window_sun.tscn` or `fluorescent_tube.tscn` in, tune
 it; tell us what's missing or awkward to tune.
 
+**Then the user's three asks after trying them** (2026-10-30, afternoon, DECISIONS): **the window sun fitted to its
+window** (HSLightShaft in the opening, an orange outline to size it, the opening swept along the sunlight to the
+floor, its light aimed through: `docs/godot_sheets/2026-10-30_window_sun.jpg`); **choices wait for the player** (no
+countdown anywhere, on the desk or in Godot; `default`, an ask's `secs` and a reply's `timeout` warned as unused;
+the panel low on the screen while it's up); **only what can be seen is drawn** (every wall, floor and ceiling a box
+occluder, occlusion culling on in the project, the story's lights fading far away; GDCULL measures it: 73% fewer
+objects drawn across TestRoom001's 19 rooms, the pictures alike).
+
 ## 0. Next: the cloud session (left 2026-10-29, late night, on `godot-support`, after the local session on the 3090)
 
 The user's handoff (their words: continue the ones that haven't been started back in the cloud, since the GPU-heavy
