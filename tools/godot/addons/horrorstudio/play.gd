@@ -1898,7 +1898,7 @@ func standin_body(cid: String) -> void:
 	# the export faces +z, and +z is the stand-in's front (the node turns its +z to the spot's rot, as the desk's figure: stage.js yawToThree), so it's worn unturned
 	for sk in body.find_children("*", "Skeleton3D", true, false):
 		arms_down(sk)
-	standin_mats[cid] = HSSkin.wear(body, skin_wet.get(cid, {}))
+	standin_mats[cid] = HSSkin.wear(body, skin_wet.get(cid, {}), file if people else "")   # a Studio export: its relief, roughness and thinness maps and its studioSkin numbers
 	standin_hair[cid] = HSHair.wear(body, hair_look(cid))
 	if people:
 		HSEye.wear(body, file)
@@ -1906,7 +1906,16 @@ func standin_body(cid: String) -> void:
 	var mesh_names: Array = []                       # said once a body, so a stand-in wearing the wrong file or an unskinned mesh can be read off the console
 	for mi in body.find_children("*", "MeshInstance3D", true, false):
 		mesh_names.append(str(mi.name))
-	print("standin %s wears %s (%s): %d skin surfaces, %d hair surfaces on %s" % [cid, file, "a Character Studio export" if people else "the bake's body", standin_mats[cid].size(), standin_hair[cid].size(), ", ".join(mesh_names)])
+	print("standin %s wears %s (%s): %d skin surfaces (%d with the export's maps), %d hair surfaces on %s" % [cid, file, "a Character Studio export" if people else "the bake's body", standin_mats[cid].size(), with_maps(standin_mats[cid]), standin_hair[cid].size(), ", ".join(mesh_names)])
+
+
+## how many of a body's skin materials carry the export's normal map
+static func with_maps(mats: Array) -> int:
+	var k := 0
+	for m in mats:
+		if m is ShaderMaterial and m.get_shader_parameter("normal_gl") == true:
+			k += 1
+	return k
 
 
 ## the hair look a cast member's bodies wear (STORY_FORMAT §2 `hair`): the game's over the plugin's defaults, theirs over the game's

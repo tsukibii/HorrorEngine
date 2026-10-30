@@ -35,9 +35,11 @@ game or a cast member; `flat`, `steps`, `dither`, `gain`, `shine`, `soft`, `cut`
 every scene's body; the demo's `hair` stage measures it. (3) **Scenes play the designed character**: bakeplay
 instances the Character Studio export itself (posed from the same skinning matrices: the bake was made on its
 skeleton) when the story or the bake's index says the body is `people/<name>` (GODOT_EXPORT §8); the face stays
-neutral there for now. Other realism enhancers for imported models still open: a cloth sheen on the tailor's
-garments (their fabric's roughness and a velvet rim), hashed alpha on hair under TAA, the export's
-`studioSkin` numbers onto HSSkin's sliders (§7).
+neutral there for now. Then **"why does it look so plastic"**: HSSkin wore the export's albedo alone, dropping
+its normal map (the pores and wrinkles), its roughness map and its thinness; now all three and the `studioSkin`
+record go on (GODOT_LOOK §5; GDPEOPLE measures the relief). Other realism enhancers for imported models still
+open: a cloth sheen on the tailor's garments (their maps come across as albedo only), hashed alpha on hair
+under TAA.
 
 **Open: the user's stand-in bug** (2026-10-30, their words: "in director I chose an actual designed character to
 test but in game I only see this base mesh; after switching to the designed character it now has weird splotches

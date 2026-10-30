@@ -91,6 +91,15 @@ def main():
     paint, flat = rep.get("paint") or {}, rep.get("flat") or {}
     ok = rep.get("skin_mats", 0) >= 1
     print(("  ok  " if ok else "  BAD ") + "the skin on HSSkin (%d materials)" % rep.get("skin_mats", 0))
+    if rep.get("normal_maps", 0) >= 1 and rep.get("relief_map", 0) > 0.01:   # an export with the Studio's relief (pores, wrinkles): the lit face grainier with it than flattened
+        relief = rep.get("relief_lit", 0) > rep.get("relief_smooth", 9) * 1.08
+        ok = ok and relief
+        print(("  ok  " if relief else "  BAD ") + "the export's maps worn (%d normal, %d roughness and thinness, %d studioSkin records): the lit face's grain %.4f with the relief against %.4f flattened" % (
+            rep.get("normal_maps", 0), rep.get("orm_maps", 0), rep.get("studio_skin", 0), rep.get("relief_lit", 0), rep.get("relief_smooth", 0)))
+    elif rep.get("normal_maps", 0) >= 1:
+        print("  ok  the export's maps worn (%d normal, %d roughness and thinness, %d studioSkin records); its normal map is flat (mean tilt %.4f: no pores or wrinkles set on this character), so the relief isn't measured" % (rep.get("normal_maps", 0), rep.get("orm_maps", 0), rep.get("studio_skin", 0), rep.get("relief_map", 0)))
+    else:
+        print("  --  no normal map in this export (an older Export for desk / Unreal): the relief isn't measured")
     if paint and flat:
         ratios = [flat[c] / max(paint[c], 1e-3) for c in "rgb"]
         close = all(0.7 < r < 1.6 for r in ratios) and max(ratios) / min(ratios) < 1.25      # flat-lit: the paint's colour, its hue kept

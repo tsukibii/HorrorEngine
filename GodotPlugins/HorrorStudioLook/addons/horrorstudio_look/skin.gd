@@ -1,9 +1,15 @@
 ## Skin on HumanShaders (skin_wet.gdshader; docs/GODOT_LOOK.md): a skin material from a baked albedo (the Character
 ## Studio's export carries its colours on MHR's UVs) with HumanShaders' lightwarp, noise and micro detail wired in
 ## from res://HumanShaders/ (the export copies them beside the add-on), and the wetness layer's sliders:
-## `HSSkin.material(albedo_tex, {wetness, sweat, drips, oil})`; `HSSkin.set_wet(material, settings)` later (a scene
-## sweating her, a shower). `HSSkin.wear(node, settings)` puts it on every mesh under a node whose material or mesh
-## name says skin (the Studio's export names them), keeping each one's albedo texture.
+## `HSSkin.material(albedo_tex, {wetness, sweat, drips, oil}, tone, maps)`; `HSSkin.set_wet(material, settings)` later
+## (a scene sweating her, a shower). `HSSkin.wear(node, settings, glb_path)` puts it on every mesh under a node whose
+## material or mesh name says skin (the Studio's export names them), keeping each one's albedo texture and, from a
+## Character Studio export, its **relief** (the Studio's tangent-space normal map: pores, wrinkles, the nails' edges;
+## glTF's convention, no occlusion in its blue), its **roughness** (the export's ORM's green: the oily T-zone, the
+## matte cheeks, the lips) and **how thin the skin is** (the ORM's blue, the light through ears and nostrils, as the
+## shader's translucency map), and the export's own `studioSkin` numbers (the glb's material extras, read from the
+## file when its path is given): smoothness, falloff, specular, the double lobe, translucency, the wrap as the SSS.
+## Without them (the bake's plain body, the demo's spheres) the flat defaults stay.
 class_name HSSkin
 
 const HUMAN := "res://HumanShaders/"
@@ -13,7 +19,7 @@ static func shader() -> Shader:
 	return load("res://addons/horrorstudio_look/skin_wet.gdshader")
 
 
-static func material(albedo: Texture2D = null, settings: Dictionary = {}, tone: Color = Color(1, 1, 1)) -> ShaderMaterial:
+static func material(albedo: Texture2D = null, settings: Dictionary = {}, tone: Color = Color(1, 1, 1), maps: Dictionary = {}) -> ShaderMaterial:
 	var m := ShaderMaterial.new()
 	m.shader = shader()
 	m.set_shader_parameter("albedo", tone)
@@ -49,8 +55,53 @@ static func material(albedo: Texture2D = null, settings: Dictionary = {}, tone: 
 						m.set_shader_parameter("use_micro_detail", true)
 						m.set_shader_parameter("micro_detail_scale", 30.0)
 						break
+	set_maps(m, maps)
 	set_wet(m, settings)
 	return m
+
+
+## the export's maps and numbers onto a material: `normal` (glTF's convention), `orm` (G roughness, B thinness),
+## `skin` (the studioSkin record: on, smooth, fall, spec, double, trans, wrap)
+static func set_maps(m: ShaderMaterial, maps: Dictionary) -> void:
+	if maps.get("normal") is Texture2D:
+		m.set_shader_parameter("texture_normal", maps["normal"])
+		m.set_shader_parameter("normal_gl", true)
+		m.set_shader_parameter("normal_has_ao", false)
+		m.set_shader_parameter("normal_strength", 1.0)
+		m.set_shader_parameter("micro_normal_strength", 0.15)       # the pores are in the map: the tile only breaks the highlights up
+	if maps.get("orm") is Texture2D:
+		m.set_shader_parameter("texture_roughness", maps["orm"])    # the shader reads the green, as glTF stores it
+		m.set_shader_parameter("roughness", 1.25)                    # the map rules (the flat default scales a white map), lifted a quarter: the Studio's numbers (0.3 to 0.4 on a young face) read glossier under Godot's GGX than under its own light
+		m.set_shader_parameter("texture_translucency", maps["orm"])  # its blue: how thin the skin is
+		m.set_shader_parameter("translucency", true)
+	var rec = maps.get("skin")
+	if rec is Dictionary and float(rec.get("on", 1)) > 0.5:
+		if rec.has("smooth"):
+			m.set_shader_parameter("skin_smoothness", clamp(float(rec["smooth"]), 0.0, 10.0))
+		if rec.has("fall"):
+			m.set_shader_parameter("skin_fallof_smoothness", clamp(float(rec["fall"]), 0.7, 2.0))
+		if rec.has("spec"):
+			m.set_shader_parameter("specular", clamp(float(rec["spec"]), 0.0, 1.0))
+		if rec.has("double"):
+			m.set_shader_parameter("double_specularity", float(rec["double"]) > 0.5)
+		if rec.has("trans"):
+			m.set_shader_parameter("translucency_strength", clamp(float(rec["trans"]), 0.0, 2.0))
+			m.set_shader_parameter("translucency", float(rec["trans"]) > 0.0 and maps.get("orm") is Texture2D)
+		if rec.has("wrap"):
+			m.set_shader_parameter("subsurface_scattering_strength", clamp(float(rec["wrap"]), 0.0, 1.0))
+
+
+## the studioSkin records of a glb by material name (the Studio's export writes one on its skin material)
+static func records(glb_path: String) -> Dictionary:
+	var out := {}
+	if glb_path == "":
+		return out
+	var j := HSEye.gltf_json(glb_path)
+	for mat in j.get("materials", []):
+		var ex = mat.get("extras")
+		if ex is Dictionary and ex.has("studioSkin"):
+			out[str(mat.get("name", ""))] = ex["studioSkin"]
+	return out
 
 
 static var _flat: ImageTexture = null
@@ -82,9 +133,11 @@ static func set_wet(m: Material, settings: Dictionary) -> void:
 
 
 ## the skin meshes under a node (the Studio's export: a mesh or material named skin, body, head, face) given the
-## material, each keeping its own albedo texture; returns the materials made
-static func wear(node: Node, settings: Dictionary = {}) -> Array:
+## material, each keeping its own albedo texture, and its normal and ORM maps when the imported material carries them;
+## with the glb's path, its studioSkin numbers too; returns the materials made
+static func wear(node: Node, settings: Dictionary = {}, glb_path: String = "") -> Array:
 	var out: Array = []
+	var recs := records(glb_path)
 	for mi in node.find_children("*", "MeshInstance3D", true, false):
 		if mi.mesh == null:
 			continue
@@ -97,10 +150,22 @@ static func wear(node: Node, settings: Dictionary = {}) -> Array:
 				continue
 			var tex: Texture2D = null
 			var tone := Color(1, 1, 1)
+			var maps := {}
 			if old is BaseMaterial3D:
 				tex = old.albedo_texture
 				tone = old.albedo_color
-			var m := material(tex, settings, tone)
+				if old.normal_enabled and old.normal_texture != null:
+					maps["normal"] = old.normal_texture
+				if old.roughness_texture != null:
+					maps["orm"] = old.roughness_texture
+				var rec = recs.get(old.resource_name)
+				if rec == null:
+					for k in recs:
+						if k.ends_with("skin") and mi.name.ends_with("skin"):
+							rec = recs[k]
+				if rec is Dictionary:
+					maps["skin"] = rec
+			var m := material(tex, settings, tone, maps)
 			mi.set_surface_override_material(s, m)
 			out.append(m)
 	return out

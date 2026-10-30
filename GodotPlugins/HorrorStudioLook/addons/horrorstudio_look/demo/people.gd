@@ -16,7 +16,7 @@ var who: Node3D
 var mats: Array = []
 var lights: Array = []
 var report := {}
-const STAGES := ["flat", "lit", "wet", "oil", "eye_front", "eye_slant", "eye_slant_flat"]
+const STAGES := ["flat", "lit", "lit_smooth", "wet", "oil", "eye_front", "eye_slant", "eye_slant_flat"]
 var eyes: Dictionary = {}
 var eye_centre := Vector3.ZERO
 var eye_radius := 0.012
@@ -54,8 +54,34 @@ func _initialize() -> void:
 		quit(1)
 		return
 	world.add_child(who)
-	mats = HSSkin.wear(who, {})
+	mats = HSSkin.wear(who, {}, glb)                 # with the export's maps and its studioSkin numbers
 	report["skin_mats"] = mats.size()
+	var with_normal := 0
+	var with_orm := 0
+	for m in mats:
+		if m.get_shader_parameter("normal_gl") == true:
+			with_normal += 1
+		if m.get_shader_parameter("translucency") == true:
+			with_orm += 1
+	report["normal_maps"] = with_normal
+	report["orm_maps"] = with_orm
+	report["studio_skin"] = HSSkin.records(glb).size()
+	report["relief_map"] = 0.0                      # how much relief the export's normal map holds: its mean tilt (0 on a flat map)
+	for m in mats:
+		var t = m.get_shader_parameter("texture_normal")
+		if m.get_shader_parameter("normal_gl") == true and t is Texture2D:
+			var im: Image = t.get_image()
+			if im != null:
+				im = im.duplicate()
+				im.decompress()
+				var s := 0.0
+				var k := 0
+				for y in range(0, im.get_height(), 16):
+					for x in range(0, im.get_width(), 16):
+						var c := im.get_pixel(x, y)
+						s += abs(c.r - 0.5) + abs(c.g - 0.5)
+						k += 1
+				report["relief_map"] = max(float(report["relief_map"]), s / max(1, k))
 	eyes = HSEye.wear(who, glb)                      # the Studio's eye: the refracting cornea on the export's eyeballs
 	report["eyes"] = eyes.keys()
 	for mi in who.find_children("*", "MeshInstance3D", true, false):
@@ -101,6 +127,21 @@ func tex_mean(t: Texture2D) -> Dictionary:
 		return {}
 	s /= k
 	return {"r": s.x, "g": s.y, "b": s.z, "n": k}
+
+
+## the face box's grain: the mean step between neighbouring pixels of its skin (the relief's pores and wrinkles raise it)
+func face_grain(img: Image) -> float:
+	var s := 0.0
+	var k := 0
+	for y in range(200, 560):
+		for x in range(440, 839):
+			var c := img.get_pixel(x, y)
+			var d := img.get_pixel(x + 1, y)
+			if abs(c.r - c.g) < 0.02 and abs(c.g - c.b) < 0.02:
+				continue
+			s += abs(c.get_luminance() - d.get_luminance())
+			k += 1
+	return s / max(1, k)
 
 
 ## the picture's skin: the pixels of the face box that aren't the grey background, averaged
@@ -149,6 +190,12 @@ func _process(_d: float) -> bool:
 	img.save_png(out_dir.path_join("people_" + name + ".png"))
 	if name == "flat":
 		report["flat"] = face_mean(img)
+	if name == "lit":
+		report["relief_lit"] = face_grain(img)
+	if name == "lit_smooth":
+		report["relief_smooth"] = face_grain(img)
+		for m in mats:
+			m.set_shader_parameter("normal_strength", 1.0)
 	stage += 1
 	if stage >= STAGES.size():
 		var f := FileAccess.open(out_dir.path_join("people.json"), FileAccess.WRITE)
@@ -160,6 +207,9 @@ func _process(_d: float) -> bool:
 	match STAGES[stage]:
 		"lit":
 			light_it()
+		"lit_smooth":                                  # the same light with the relief flattened: what the normal map adds
+			for m in mats:
+				m.set_shader_parameter("normal_strength", 0.0)
 		"wet":
 			for m in mats:
 				HSSkin.set_wet(m, {"wetness": 0.8, "sweat": 0.8, "sweat_scale": 220.0, "drips": 0.4})

@@ -276,6 +276,22 @@ indoors), unless the story's word has set her (`by_word`): TestRoom001's Aoi at 
 through the peephole. A sheet of the five states on the Studio's test export:
 `Saved/Story/_look/desk_skin.png` (made by hand; TESTROOM checks the kitchen's beat lands on Aoi's body).
 
+**The export's maps and numbers** (2026-10-30, the user: "why does it look so plastic and not detailed"): the
+Character Studio's export carries three maps for the skin and Godot wore one. `HSSkin.wear` took the imported
+material's albedo alone and gave the shader a flat normal and a white roughness map: every pore gone, one gloss
+(0.55) everywhere on a smooth sculpt, the plastic look. Now it passes through what the glb carries: the Studio's
+**relief** (its tangent-space normal map: pores, wrinkles, the nails' edges, in glTF's convention, so the shader's
+`normal_gl` keeps its +Y and `normal_has_ao` off stops HumanShaders reading an occlusion out of its blue), the
+**roughness** (the ORM's green: the oily T-zone, the matte cheeks, the lips; the shader's `roughness` set to 1 so
+the map rules, lifted a quarter: the Studio's 0.3 to 0.4 on a young face read glossier under Godot's GGX than
+under its own light) and **how thin the skin is** (the ORM's blue as the translucency map: the light through the ears
+and nostrils), and the export's own `studioSkin` record (the glb's material extras, `HSSkin.records`): its
+smoothness, falloff, specular, double lobe, translucency and wrap (as the SSS strength). The micro-detail tile
+steps back to 0.15 under a real relief. The bake's plain body and the demo's spheres keep the flat defaults.
+GDPEOPLE reports the maps worn and measures the relief: the lit face's grain with the normal map against the same
+light with it flattened (`lit_smooth`), at least 1.08, when the map holds any relief (`_studiotest` has none set:
+its map is flat, and the check says so instead).
+
 ## 5b. Mirrors (`mirror.gdshader`, `HSMirror`)
 
 Chilla's Art's bathrooms have a mirror you can't not look in. Screen-space reflections can't give one (the room
@@ -365,8 +381,9 @@ salon's inner colour and clump shades (the atlas's G and B channels are baked in
 - The characters: ~~the Studio's paint and eye measured beside the Studio's own render~~ (GDSTUDIO, 2026-10-29,
   night: `tools/godot/studio_compare.py` pictures the character from the Studio's own view under its studio and
   reference lights and beside Godot's lit, flat and eye pictures, and measures the face's skin colour as ratios in
-  both: for `lol`, red over green 1.27 in the Studio and 1.23 in Godot, blue over green 0.85 and 0.86); still open:
-  the skin's own light (studioSkin's numbers) onto HSSkin's sliders, and the eye's colour measured close in both.
+  both: for `lol`, red over green 1.27 in the Studio and 1.23 in Godot, blue over green 0.85 and 0.86); ~~the skin's
+  own light (studioSkin's numbers) onto HSSkin's sliders~~ (2026-10-30, §5, with the export's normal and ORM maps);
+  still open: the eye's colour measured close in both, and the clothes' maps (albedo only so far).
 - ~~Wet walls under a leak~~ (§2b, 2026-10-30); ~~a mirror seen in a mirror~~ (§5b, 2026-10-30).
 - Seen by the user (2026-10-29): a square patch of light under a distant counter that goes when you come close.
   Most likely a VoxelGI cell at its coarse distance (the per-room probes meet at the counter), else the SSIL at a

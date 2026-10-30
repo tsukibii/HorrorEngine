@@ -29,6 +29,8 @@ uniform vec4 metallic_texture_channel;
 group_uniforms normal;
 uniform sampler2D texture_normal : hint_roughness_normal, filter_linear_mipmap, repeat_enable;
 uniform float normal_strength : hint_range(-16.0, 16.0) = 1.0;
+uniform bool normal_gl = false;          // HS: the map in glTF's convention (+Y up the picture: the Studio's bake), not HumanShaders' DirectX ones
+uniform bool normal_has_ao = true;       // HS: HumanShaders packs an occlusion into the normal map's blue; a plain normal map hasn't one
 
 group_uniforms micro_detail;
 uniform bool use_micro_detail = false;
@@ -106,7 +108,7 @@ vec3 custom_normal(vec3 normal_map){
 	normal_map = mix(vec3(0.5,0.5,1.0), normal_map, normal_strength);
 	vec3 normal_tangent = vec3(
 		normal_map.r * 2.0 - 1.0,  // X-axis (unchanged)
-		(1.0 - normal_map.g) * 2.0 - 1.0,  // Y-axis (inverted)
+		(normal_gl ? normal_map.g : 1.0 - normal_map.g) * 2.0 - 1.0,  // Y-axis (inverted for a DirectX map; HS: as it is for glTF's)
 		1   // Z-axis (solid blue)
 		);
 	return normalize(TBN * normal_tangent);
@@ -180,7 +182,7 @@ void fragment() {
 	//float fresnel = clamp(dot(normalize(NORMAL), normalize(VIEW)), 0.0, 1.0 );
 
 	micro_detail = texture(texture_micro_detail, base_uv * micro_detail_scale);
-	ao = texture(texture_normal, base_uv).b;
+	ao = normal_has_ao ? texture(texture_normal, base_uv).b : 1.0;   // HS
 	ao *= texture(ambient_occlusion_texture, base_uv).r;
 
 	float micro_overlay = mix(0.5, micro_detail.b, micro_ao_strength * 2.);

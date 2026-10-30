@@ -88,7 +88,7 @@ func make_bodies(world: Node3D) -> void:
 				if sk != null:
 					b["node"] = n
 					b["skeleton"] = sk
-					b["skin_mats"] = HSSkin.wear(n, rt_skin(cid))   # the body's skin on HumanShaders' skin shader (its tone kept; a Studio export its baked paint), as wet as the story left her
+					b["skin_mats"] = HSSkin.wear(n, rt_skin(cid), file if people != "" else "")   # the body's skin on HumanShaders' skin shader (its tone kept; a Studio export its baked paint, relief, roughness and thinness), as wet as the story left her
 					b["hair_mats"] = HSHair.wear(n, rt_hair(cid))   # its hair, brows and lashes on the Studio's hair look (the story's `hair` word)
 					if people != "":
 						HSEye.wear(n, file)
