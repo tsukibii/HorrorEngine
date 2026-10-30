@@ -16,15 +16,18 @@ func _enter_tree() -> void:
 	dock = DockC.new()
 	dock.name = "HorrorStudio"
 	dock.plugin = self
-	add_control_to_dock(DOCK_SLOT_RIGHT_UL, dock)
+	add_control_to_dock(DOCK_SLOT_RIGHT_BL, dock)            # under the Inspector: a row picked here is edited there, both in view
 	debugger = DebuggerC.new()
 	debugger.dock = dock
 	add_debugger_plugin(debugger)
 	scene_saved.connect(_on_saved)
 	scene_changed.connect(func(_r): dock.refresh())
+	get_tree().node_added.connect(_on_node_added)
 
 
 func _exit_tree() -> void:
+	if get_tree().node_added.is_connected(_on_node_added):
+		get_tree().node_added.disconnect(_on_node_added)
 	if debugger != null:
 		remove_debugger_plugin(debugger)
 	if dock != null:
@@ -54,5 +57,25 @@ func _on_saved(path: String) -> void:
 	var f := FileAccess.open(HSDirector.INDEX, FileAccess.WRITE)
 	if f != null:
 		f.store_string(JSON.stringify(merged, " "))
+	if dock != null:
+		dock.refresh()
+
+
+## a preset dragged from the dock into the 3D view lands as an instance of its file: made the scene's own node (its
+## curve its own), as if it had been added with Add Child Node
+func _on_node_added(n: Node) -> void:
+	if n.scene_file_path.begins_with("res://addons/horrorstudio_director/presets/"):
+		_unlink.call_deferred(n)
+
+
+func _unlink(n: Node) -> void:
+	if not is_instance_valid(n) or not n.is_inside_tree():
+		return
+	var r := EditorInterface.get_edited_scene_root()
+	if r == null or n == r or not r.is_ancestor_of(n):
+		return
+	n.scene_file_path = ""
+	if n is Path3D and n.curve != null:
+		n.curve = n.curve.duplicate()
 	if dock != null:
 		dock.refresh()

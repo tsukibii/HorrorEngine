@@ -205,8 +205,53 @@ def check(keep=False):
     if "DIRECTORPLAY ok" not in text:
         print(text[-4000:])
         ok = False
+    ok = editor_check(out) and ok
     print("DIRECTOR ok" if ok else "DIRECTOR FAIL")
     return 0 if ok else 1
+
+
+def editor_check(out):
+    """The plugin in the editor itself: tests/editor_check.gd installed as a plugin of its own beside the Director's, the
+    editor opened on the sample (headless: the dock's logic, no pictures), its report read."""
+    t = out / "addons" / "hs_director_editor_test"
+    t.mkdir(parents=True, exist_ok=True)
+    (t / "plugin.cfg").write_text('[plugin]\nname="hs director editor test"\ndescription=""\nauthor=""\nversion="1"\nscript="plugin.gd"\n', encoding="utf-8")
+    shutil.copy(DIRECTOR / "tests" / "editor_check.gd", t / "plugin.gd")
+    pg = out / "project.godot"
+    before = pg.read_text(encoding="utf-8")
+    pg.write_text(before.replace("enabled=PackedStringArray(", 'enabled=PackedStringArray("res://addons/hs_director_editor_test/plugin.cfg", ', 1), encoding="utf-8")
+    code, text = run_godot(["--headless", "--editor", "--path", str(out)], timeout=600)
+    pg.write_text(before, encoding="utf-8")
+    shutil.rmtree(t, ignore_errors=True)
+    text = quiet(text)
+    line = next((l for l in text.splitlines() if l.startswith("HSDIRECTOREDITOR ")), None)
+    errs = [l for l in text.splitlines() if ("SCRIPT ERROR" in l or "Parse Error" in l) and "hs_director_editor_test" not in l]
+    if line is None:
+        print(text[-4000:])
+        print("  BAD the editor's report never came")
+        return False
+    rep = json.loads(line[len("HSDIRECTOREDITOR "):])
+    flags = rep.get("flags_rows", [])
+    checks = [
+        ("the editor opens the sample with the plugin on: the dock found", rep.get("dock") is True),
+        ("Story: the chapter, its steps and the choice in play order (%d rows)" % rep.get("story_rows", 0), rep.get("story_has") is True),
+        ("Events: the figure's jumpscare as its sentence (when the player enters kitchen_doorway, if read_letter, then JUMPSCARE)", rep.get("events_has_scare") is True),
+        ("Flags: read_letter, promised, saw_figure and the rest (%s)" % ", ".join(flags), any(f.startswith("read_letter") for f in flags) and any(f.startswith("saw_figure") for f in flags)),
+        ("Things and Check drawn (%s)" % rep.get("check_summary", ""), rep.get("things_rows", 0) > 10 and "tasks" in rep.get("check_summary", "")),
+        ("the running game followed: ▶ on the step it's at, ● on the flags it has set", rep.get("live_now") is True and rep.get("live_flags") is True),
+        ("+ Task after the selected step, with its first to-do; undone and redone", rep.get("task_added") is True and rep.get("task_has_todo") is True and rep.get("task_undone") is True and rep.get("task_redone") is True),
+        ("the jumpscare template: an area with its event (jumpscare, a thought, a flag), listed", rep.get("jumpscare_made") is True and rep.get("jumpscare_listed") is True),
+        ("Add: a key placed in the selected room, a node of the scene's own", rep.get("preset_placed") is True),
+        ("saved: the new nodes in the file, nothing the nodes make for themselves", rep.get("saved") is True and rep.get("saved_task") is True and rep.get("saved_nothing_made") is True),
+        ("no script errors in the editor", not errs),
+    ]
+    if errs:
+        print("\n".join(errs[:12]))
+    ok = True
+    for what, good in checks:
+        print(("  ok  " if good else "  BAD ") + what)
+        ok = ok and good
+    return ok
 
 
 def main(argv):

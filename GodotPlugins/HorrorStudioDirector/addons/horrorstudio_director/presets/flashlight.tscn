@@ -1,0 +1,11 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://addons/horrorstudio_director/level/thing.gd" id="1"]
+
+[node name="Flashlight" type="Node3D"]
+script = ExtResource("1")
+use = "pickup"
+item = "flashlight"
+item_name = "Flashlight"
+flashlight = true
+display_name = "Flashlight"

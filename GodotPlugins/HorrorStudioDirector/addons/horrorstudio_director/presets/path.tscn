@@ -1,0 +1,15 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://addons/horrorstudio_director/level/path.gd" id="1"]
+
+[sub_resource type="Curve3D" id="curve"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, -2),
+"tilts": PackedFloat32Array(0, 0, 0)
+}
+point_count = 3
+
+
+[node name="Path" type="Path3D"]
+curve = SubResource("curve")
+script = ExtResource("1")
