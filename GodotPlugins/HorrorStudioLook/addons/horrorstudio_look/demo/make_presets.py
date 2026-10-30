@@ -75,5 +75,39 @@ one("tape_camhybrid.tscn", "TapeCamhybrid", "Node", "tape.gd")
 one("tape_worn.tscn", "TapeWorn", "Node", "tape.gd", {"preset": '"worn"'})
 one("character_look.tscn", "CharacterLook", "Node", "character_look.gd")
 one("character_sweating.tscn", "CharacterSweating", "Node", "character_look.gd", {"sweat": "0.7", "drips": "0.3"})
+# rooms: a light zone (a box 4 x 3 x 4 m about its middle: put it in the room's middle and size it to the room) with its
+# lights, shadows on the room's main light only (a GTX 1060's budget: one shadowed light a room)
+Z = N + "light_zone.gd"
+scene("room_bulb.tscn", [
+    ("RoomBulb", "Node3D", None, Z, {}),
+    ("Bulb", "OmniLight3D", ".", None, {"transform": "Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3, 0)", "light_color": "Color(1, 0.79, 0.54, 1)", "light_energy": "2.0", "omni_range": "6.0", "omni_attenuation": "1.4", "shadow_enabled": "true", "light_size": "0.06", "shadow_blur": "1.5"}),
+])
+scene("room_fluorescent.tscn", [
+    ("RoomFluorescent", "Node3D", None, Z, {}),
+    ("Tube", "OmniLight3D", ".", N + "flicker_omni.gd", {"transform": "Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.35, 0)", "light_color": "Color(0.9, 0.97, 1, 1)", "light_energy": "1.6", "omni_range": "6.0", "shadow_enabled": "true", "mode": '"fluorescent"', "amount": "0.4", "interval": "8.0"}),
+])
+scene("room_dying.tscn", [
+    ("RoomDying", "Node3D", None, Z, {}),
+    ("Bulb", "OmniLight3D", ".", N + "flicker_omni.gd", {"transform": "Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3, 0)", "light_color": "Color(1, 0.75, 0.5, 1)", "light_energy": "1.4", "omni_range": "6.0", "shadow_enabled": "true", "mode": '"dying"'}),
+])
+scene("room_lamp.tscn", [
+    ("RoomLamp", "Node3D", None, Z, {}),
+    ("Lamp", "OmniLight3D", ".", None, {"transform": "Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2, -0.45, 1.2)", "light_color": "Color(1, 0.72, 0.45, 1)", "light_energy": "1.2", "omni_range": "4.5", "omni_attenuation": "1.6", "shadow_enabled": "true", "light_size": "0.15", "shadow_blur": "1.5"}),
+    ("Fill", "OmniLight3D", ".", None, {"transform": "Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.0, 0.8, -1.0)", "light_color": "Color(0.55, 0.62, 0.8, 1)", "light_energy": "0.15", "omni_range": "5.0"}),
+])
+scene("room_candle.tscn", [
+    ("RoomCandle", "Node3D", None, Z, {}),
+    ("Candle", "OmniLight3D", ".", N + "flicker_omni.gd", {"transform": "Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.6, 0)", "light_color": "Color(1, 0.62, 0.3, 1)", "light_energy": "0.8", "omni_range": "3.5", "shadow_enabled": "true", "light_size": "0.02", "mode": '"candle"', "on_mains": "false"}),
+])
+scene("room_night.tscn", [
+    ("RoomNight", "Node3D", None, Z, {}),
+    ("Moonfill", "OmniLight3D", ".", None, {"transform": "Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)", "light_color": "Color(0.45, 0.55, 0.85, 1)", "light_energy": "0.25", "omni_range": "6.0"}),
+])
+scene("look_balanced.tscn", [
+    ("StudioLook", "Node", None, None, {}),
+    ("Environment", "WorldEnvironment", ".", "res://addons/horrorstudio_look/look_env.gd", {"preset": '"balanced"', "editor_only": "false"}),
+    ("Tape", "Node", ".", N + "tape.gd", {"preset": '"camhybrid"'}),
+    ("Grade", "Node", ".", N + "grade.gd", {}),
+])
 scene("look_environment.tscn", [("LookEnvironment", "WorldEnvironment", None, "res://addons/horrorstudio_look/look_env.gd", {})])
 print(len(list(D.glob("*.tscn"))))

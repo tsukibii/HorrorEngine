@@ -177,7 +177,7 @@ class Tscn:
         self.ext.append((rid, path, rtype))
         return f'ExtResource("{rid}")'
 
-    GROUPS = ("Ground", "Walls", "Ceilings", "Doors", "Things", "Lights", "Glass", "Triggers", "Spots", "People", "GI")   # the level's folders (the user, 2026-10-29: "sub categories, so it's easier to find what we're looking for")
+    GROUPS = ("Ground", "Walls", "Ceilings", "Doors", "Things", "Lights", "Glass", "Triggers", "Spots", "People", "GI", "Zones")   # the level's folders (the user, 2026-10-29: "sub categories, so it's easier to find what we're looking for")
 
     def node(self, name, ntype, parent, props=None, meta=None, instance=None):
         """ntype a node type, or instance an ExtResource(...) PackedScene instanced here (ntype then ignored). A parent
@@ -223,6 +223,7 @@ class LevelWriter:
         self.surfaces = {}                                 # a library texture set's material, by ref (surface())
         self.surfaced = 0                                  # the pieces wearing one
         self.occluders = 0                                 # the walls, floors and ceilings hiding what's behind them
+        self.zoned = 0                                     # the rooms with a light zone
         self.arts = {}                                                 # ref -> ExtResource(...), once each
         self.art_count = 0
 
@@ -607,7 +608,24 @@ class LevelWriter:
                      "yaw": 0.0, "shape": None, "d": {}, "tags": ["story", f"cast:{cid}", "hidden", "standin"]}
             self.person(piece, cast_id=cid, height=h)
         self.windows()
+        self.zones()
         return self.t.text()
+
+    def zones(self):
+        """A light zone in every room (HSLightZone, GODOT_LOOK §0; the user, 2026-10-30, evening): the room's box, which
+        owns the lights inside it (the story's lamps, its windows' light, any the user adds), keeps them to what's in
+        it, fits their reach to it and switches them off while the room can't be seen."""
+        script = None
+        for room in (self.story["levels"][self.lid].get("rooms") or []):
+            at, sz = room.get("at") or [0, 0, 0], room.get("size") or [0, 0, 0]
+            if len(sz) < 3 or min(float(sz[0]), float(sz[1]), float(sz[2])) <= 0:
+                continue
+            z0 = float(at[2]) if len(at) > 2 else 0.0
+            mid = s2g((float(at[0]) + float(sz[0]) / 2, float(at[1]) + float(sz[1]) / 2, z0 + float(sz[2]) / 2))
+            script = script or self.t.extres("res://addons/horrorstudio_look/nodes/light_zone.gd", "Script")
+            self.t.node(self.uname(f"zone_{room['id']}"), "Node3D", "Zones", {"transform": xform(mid), "script": script,
+                        "size": v3(float(sz[0]), float(sz[2]), float(sz[1]))}, {"zone": {"room": room["id"]}})
+            self.zoned += 1
 
 
 def gvar(v, depth=0):
@@ -979,6 +997,31 @@ def write_acts(out, story, bake=None):
     return n
 
 
+# the balanced look's project settings (DECISIONS 2026-10-30, evening: a GTX 1060 the target), the same as the look
+# plugin's HSLook.PROJECT (look.gd), which GDEXPORT's load check reads back against them: TAA alone, occlusion culling,
+# the shadow atlas at 4096 and 16 bits with the medium soft filter, the effects' buffers at their cheaper sizes
+PROJECT_LOOK = {
+    "rendering/anti_aliasing/quality/use_taa": True,
+    "rendering/anti_aliasing/quality/msaa_3d": 0,
+    "rendering/anti_aliasing/quality/screen_space_aa": 0,
+    "rendering/anti_aliasing/quality/use_debanding": True,
+    "rendering/occlusion_culling/use_occlusion_culling": True,
+    "rendering/lights_and_shadows/positional_shadow/atlas_size": 4096,
+    "rendering/lights_and_shadows/positional_shadow/atlas_16_bits": True,
+    "rendering/lights_and_shadows/positional_shadow/soft_shadow_filter_quality": 3,
+    "rendering/lights_and_shadows/directional_shadow/size": 4096,
+    "rendering/lights_and_shadows/directional_shadow/16_bits": True,
+    "rendering/lights_and_shadows/directional_shadow/soft_shadow_filter_quality": 3,
+    "rendering/environment/ssao/quality": 1,
+    "rendering/environment/ssao/half_size": True,
+    "rendering/environment/screen_space_reflection/roughness_quality": 1,
+    "rendering/environment/volumetric_fog/volume_size": 48,
+    "rendering/environment/volumetric_fog/volume_depth": 48,
+    "rendering/global_illumination/gi/use_half_resolution": True,
+    "rendering/textures/default_filters/anisotropic_filtering_level": 2,
+}
+
+
 def project_godot(story, version=None):
     title = (story.get("game") or {}).get("title") or "HorrorStudio game"
     return f'''; Engine configuration file.
@@ -1006,13 +1049,10 @@ enabled=PackedStringArray("res://addons/horrorstudio_look/plugin.cfg")
 [rendering]
 
 renderer/rendering_method="forward_plus"
-occlusion_culling/use_occlusion_culling=true
-lights_and_shadows/positional_shadow/soft_shadow_filter_quality=4
-lights_and_shadows/positional_shadow/atlas_size=8192
-lights_and_shadows/positional_shadow/atlas_16_bits=false
-lights_and_shadows/directional_shadow/soft_shadow_filter_quality=4
-lights_and_shadows/directional_shadow/size=8192
-lights_and_shadows/directional_shadow/16_bits=false
+''' + "".join(f"{k[len('rendering/'):]}={'true' if v is True else 'false' if v is False else v}\n" for k, v in PROJECT_LOOK.items()) + '''
+[horrorstudio]
+
+look/settings_applied=true
 '''
 
 

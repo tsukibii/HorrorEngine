@@ -7,7 +7,7 @@ LOOKPLUGIN). The pieces, the numbers behind them and what was measured: **docs/G
 
 | Piece | File | Use |
 |---|---|---|
-| **The look preset** | `look.gd` (`HSLook`) | `HSLook.apply(viewport, environment, "realism")`: pseudo-realism for small, baked-lit rooms with the effects overplayed: screen-space reflections, SSAO and SSIL, a little glow, a thin volumetric haze, AgX with the contrast pushed, TAA (no MSAA: it switches SSR off). `"plain"` turns it all off. `HSLook.set_aa(viewport, 0..3)` the player's choice (Off, FXAA, TAA, TSR) |
+| **The look preset** | `look.gd` (`HSLook`) | `HSLook.apply(viewport, environment, "balanced")` (the default: a GTX 1060's budget, no SSIL, SSR at 48 steps; `HSLook.PROJECT` its project settings, `apply_project()`), or `"realism"`: pseudo-realism for small, baked-lit rooms with the effects overplayed: screen-space reflections, SSAO and SSIL, a little glow, a thin volumetric haze, AgX with the contrast pushed, TAA (no MSAA: it switches SSR off). `"plain"` turns it all off. `HSLook.set_aa(viewport, 0..3)` the player's choice (Off, FXAA, TAA, TSR) |
 | **Shadows** | `look.gd` (`HSLook.shadows`) | `HSLook.shadows(viewport, 0..3)`: the shadow maps' filter (hard to ultra soft, the lights' `light_size` as penumbras) and the atlas (2048 to 8192, the quadrants cut for a few big maps and many small); give lights a `light_size` and a `shadow_blur` |
 | **Light patterns** | `pattern.gd` (`HSPattern`), `pattern.gdshader` | `HSPattern.attach(spot, {pattern, scale, speed, open, angle}, distance)`: caustics, leaves, blinds or cloud shadows drawn into a small viewport each frame and projected by the spot light (`light_projector`); `detach` |
 | **Flicker modes** | `flicker.gd` (`HSFlicker`) | a light's flicker by mode: fluorescent, dying, candle, pulse, custom letters; the same curves as the desk's `tools/shared/flicker.js` |
@@ -55,7 +55,13 @@ own back before every save. Forward (-Z) is always into the room. The list and h
 | `HSPatternLight` | SpotLight3D | a spot throwing caustics, leaves, blinds or clouds (`pattern`, `feature_m`, `speed`, `open`, `angle`, `aim_distance`, `size_px`, `frames`, `period`) |
 | `HSGrade` | Node | a colour grade, the level's own over the game's (`preset` fills the numbers: `lift`, `gamma`, `gain`, `warmth`, `saturation`, `contrast`, `fade`, `vignette`, `grain`, `aberration`) |
 | `HSTape` | Node | the tape, the level's own over the game's (`preset`, `strength`) |
-| `HSLookEnvironment` | WorldEnvironment | the look preset in the editor's viewport (below) |
+| `HSLightZone` | Node3D | a room's box (like VoxelGI's) owning the lights inside it: they light only what's in it (its meshes on the zone's render layer, its lights' cull mask), their reach fitted to it, off in the game while it's out of view; `size`, `keep_inside`, `fit_range`, `range_reach`, `hide_unseen`, `cull_distance`, `margin`; the room_* presets are one with its lights; the export puts one in every room |
+| `HSLookEnvironment` | WorldEnvironment | the look preset in the editor's viewport (below); `balanced` the default |
+
+**The balanced look** (a GTX 1060 the target): `HSLook.PROJECT` is the project settings that make it (TAA, the shadow
+atlas and filter, occlusion culling, the effects' buffers). Enabling the plugin applies them once, and Project >
+Tools > HorrorStudio: apply the balanced project settings applies them again. `presets/look_balanced.tscn` drops in
+the rest: the balanced environment, the camhybrid tape and the cinema grade.
 
 ## Using it in a Godot project
 

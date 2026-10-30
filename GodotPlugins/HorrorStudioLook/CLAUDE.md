@@ -9,7 +9,8 @@ the VHS layer in `main.tscn`, `puff.gdshader` from lifefx.gd). A change here rea
 
 | File | What |
 |---|---|
-| `look.gd` | the presets as one dictionary each (`PRESETS`): the viewport's anti-aliasing and the environment's effects; `apply`, `set_aa`, `shadows` (the filter and atlas), `iris` (auto exposure, a stop under at night) |
+| `look.gd` | the presets as one dictionary each (`PRESETS`: `balanced` the default, `realism`, `plain`): the viewport's anti-aliasing and the environment's effects; `PROJECT` the balanced look's project settings (`apply_project`; the export's `PROJECT_LOOK` in storykit/godot.py is the same, GDEXPORT reads them back); `apply`, `set_aa`, `shadows` (the filter and atlas), `iris` (auto exposure, a stop under at night) |
+| `plugin.gd` | registers HSLookEnvironment; applies `HSLook.PROJECT` the first time it's enabled in a project (`horrorstudio/look/settings_applied`) and from Project > Tools |
 | `post.gd`, `post.gdshader` | the grade: `HSPost` a CanvasLayer (6) with a full-screen shader reading the screen (three-way lift/gamma/gain, warmth, saturation, contrast, fade, vignette, grain, aberration); `PRESETS` the looks, `apply` the story's `game.grade` |
 | `vhs.gd`, `vhs.gdshader`, `vhs_hold.gdshader` | UltraVHS: the presets as dictionaries of the shader's uniforms (`CAMCORDER` the base), the layer's node; the history viewport (the last frame copied by `vhs_hold`) for the ghosting |
 | `pattern.gd`, `pattern.gdshader` | a light's pattern: `HSPattern` a SubViewport under a SpotLight3D drawing caustics, leaves, blinds or clouds (Light Kit's four light functions in GLSL, `metres` the viewport's width on the aimed surface) and set as its `light_projector` |
@@ -27,10 +28,12 @@ the VHS layer in `main.tscn`, `puff.gdshader` from lifefx.gd). A change here rea
 | `skin.gd`, `skin_wet.gdshader` | HumanShaders' skin shader with the wetness layer (the lines marked `HS`: the wet layer, `normal_gl` and `normal_has_ao` for a glTF normal map); `skin.gd` wires HumanShaders' textures and flat defaults, and a Studio export's normal and ORM maps and `studioSkin` record (`set_maps`, `records`) |
 | `flicker.gd` | `HSFlicker`: a light's flicker by mode (fluorescent, dying, candle, pulse, custom letters), the desk's `tools/shared/flicker.js` curves; play.gd drives the story's lights with it (moved here from the runtime add-on 2026-10-30, for the nodes) |
 | `nodes/` | **the effects as nodes** (GODOT_LOOK §0): `@tool` classes with an icon each (`icons/`) wrapping the pieces above: `HSRainBox`, `HSPuddle`, `HSBloodSplat`, `HSLightShaft` (the window's rectangle sheared along the sun: the card's transform), `HSHeadlightSweep` (make their own children, never owned, never saved); `on_mesh.gd` (`HSOnMesh`: a node under a mesh that changes its material and puts it back before a save and when removed) with `HSWetSurface`, `HSWindowPane`, `HSWallLeak`; `HSFlickerLight`/`HSFlickerSpot` (`flicker_drive.gd`: the Energy is the full light, saved at full; `on_mains` the group `hs_mains` play.gd's power cut switches), `HSPatternLight` (the projector cleared before a save); `HSMirrorSurface`, `HSCharacterLook`, `HSGrade`, `HSTape` (the game's; the grade and tape over the game's own, put back when they go) |
-| `presets/` | the ready-made nodes as scenes to drag in (33): written as text by `demo/make_presets.py`, each a node of `nodes/` with its numbers |
+| `nodes/light_zone.gd` | `HSLightZone`: a box owning the lights inside it; its meshes on a render layer of its own (2 to 10, touching zones apart), its lights' cull mask that layer, layer 1 and 11 to 20; their range fitted; off while unseen in the game; `show_light` composes a light's own visibility, the power (play.gd's mains) and the zone; all put back before a save |
+| `presets/` | the ready-made nodes as scenes to drag in (40, the room_* zones and look_balanced among them): written as text by `demo/make_presets.py`, each a node of `nodes/` with its numbers |
 | `demo/demo.gd` | the demo scene and the measures (`report.json`) |
 | `demo/nodes.gd` | every preset in a room, each measured, a save as the editor does it (`nodes.json`, `nodes.png`) |
 | `demo/window.gd` | the window sun in a wall's opening (from the room, `--view=side` from the side): the beam from the glass, parallel, to the floor; its light aimed (`window.json`) |
+| `demo/zones.gd` | two rooms with a doorway, room_bulb and room_lamp: the layers, the fitted reach, the bulb kept to its room (the next floor no brighter), the lamp off unseen, a save (`zones.json`, `zones.png`) |
 | `demo/editor_test.gd`, `demo/editor_scene.tscn` | the nodes in the editor itself: the check installs the script as a plugin, it opens the scene, sees the nodes working, saves; the check reads the file |
 | `demo/people.gd` | a Character Studio export on HSSkin: flat-lit against its paint, lit dry, sweating, oiled (`people.json`) |
 
@@ -56,6 +59,8 @@ the VHS layer in `main.tscn`, `puff.gdshader` from lifefx.gd). A change here rea
   inside those notifications (they're sent down the tree: the parent is busy, and freeing one crashed the check):
   defer it, or `queue_free`. A class a `@tool` node instances (`HSRain.new()`...) must be `@tool` itself: a plain
   script can't be instanced in the editor (static functions can be called).
+- **Render layers are shared out:** 1 everything by default (and what moves, for the light zones), 2 to 10 the light
+  zones, 11 to 19 the mirrors, 20 the softener and hidden things. A new use of layers takes from none of these.
 - **MSAA switches SSR off** in Godot 4.7 (measured in the check, 2026-10-29): the realism preset uses TAA alone.
   Don't add MSAA back without looking at the wet floor.
 - The eye's `debug` uniform (1 where the iris is read, 2 the view in the tangent space, 3 the tangent) paints the

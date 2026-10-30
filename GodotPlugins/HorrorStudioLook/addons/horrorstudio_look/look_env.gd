@@ -8,7 +8,7 @@
 class_name HSLookEnvironment
 extends WorldEnvironment
 
-@export_enum("realism", "plain") var preset: String = "realism":
+@export_enum("balanced", "realism", "plain") var preset: String = "balanced":
 	set(v):
 		preset = v
 		_wear()

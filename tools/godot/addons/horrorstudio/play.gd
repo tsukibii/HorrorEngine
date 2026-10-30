@@ -2177,9 +2177,8 @@ func mains_tick() -> void:
 	for n in get_tree().get_nodes_in_group("hs_mains"):
 		if not (n is Light3D):
 			continue
-		if not n.has_meta("hs_lit"):
-			n.set_meta("hs_lit", n.visible)                      # its own visibility, kept
-		n.visible = bool(n.get_meta("hs_lit")) and pw
+		n.set_meta("hs_power_off", not pw)
+		HSLightZone.show_light(n)                                  # its own visibility, the power and its light zone's view, together
 		if pw and n.has_method("power_on"):
 			n.power_on()
 

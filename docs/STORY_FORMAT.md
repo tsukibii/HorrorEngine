@@ -61,7 +61,7 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
 - `start` is a spot.
 - `weather` (optional): this level's weather, `clear` or `rain`, over `game.weather` (§9.1): an outdoors level in the
   rain, the house dry.
-- `look` (optional): this level's look, `realism` or `plain`, over `game.look` (§9.1): a flat-lit annex, a dream
+- `look` (optional): this level's look, `balanced` (the default), `realism` or `plain`, over `game.look` (§9.1): a flat-lit annex, a dream
   level with the effects off (a scene's `look` is its look-at, §3.4: no per-scene preset).
 - `routes` (optional): named walks for the cast in play (`behave` path and patrol, §4), each a list of the level's
   spots in order, with a `wait` (seconds, facing the spot's `rot`) and a `pose` (the pose library) where she stops:
@@ -999,9 +999,10 @@ is made). The story's own lamps (`use: light`, switches, the power, flicker) wor
 0.5, "grain": 0.3, "amount": 0.8}` with any of `amount`, `lift`, `gamma`, `gain` (three numbers each), `warmth`,
 `saturation`, `contrast`, `fade`, `vignette`, `vignette_soft`, `grain`, `aberration` over the preset.
 
-**The look** (docs/GODOT_LOOK.md): `game.look` names the look plugin's preset the Godot export plays under, `realism`
-(the default: baked bounce with the effects overplayed: screen-space reflections, ambient occlusion and indirect
-light, a little glow, a thin haze, AgX, temporal anti-aliasing) or `plain` (all of it off). `game.weather`: `rain`
+**The look** (docs/GODOT_LOOK.md): `game.look` names the look plugin's preset the Godot export plays under: `balanced`
+(the default since 2026-10-30, evening, a GTX 1060 the target: screen-space reflections, ambient occlusion, a little
+glow, a thin haze, AgX, temporal anti-aliasing; no screen-space indirect light), `realism` (the same with the
+indirect light and more of everything, for a bigger card) or `plain` (all of it off). `game.weather`: `rain`
 puts rain in every room with no `ceiling`, its floor wet with pools that carry the lights and the rain's rings,
 splashes where it lands, the shelf's rain heard there (all round you once you're in the room, at the room's middle
 from indoors) and every step in that room wet (the desk's Play the same); `clear` (the default) nothing; a level's

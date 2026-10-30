@@ -2,6 +2,21 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-30, evening (the user, after finding the sun's leak and the flicker's flashes)
+
+- **A GTX 1060 is the target, with the realism look and its atmosphere, well optimised**: "what if we aim for 1060,
+  we want that realism look with atmosphere but very well optimized". So `balanced` is the default look (no SSIL, SSR
+  at 48 steps, a thinner haze, shadows at 4096 and 16 bits with the medium filter; the menu's Shadows Medium).
+- **A base project set up by default**: "when I start a new Godot project I also have to manually enable TAA etc and
+  all the other settings that make the game look pretty including the camhybrid; set up a base project settings with
+  everything that makes things look good (not the most intensive, a balanced one) so things don't look too sharp".
+  The plugin applies the balanced project settings when it's enabled; the export writes them; `look_balanced.tscn`
+  brings the environment, the camhybrid tape and the grade in one drop.
+- **Light zones instead of lights placed and tuned by Claude**: "couldn't you just add some simple presets for
+  different room lights with a cubed area affected (similar to how VoxelGI looks), the zone is what will be affected
+  by lighting; I'm totally ok limiting architecture designs in my game to cubes/rectangles/boxes". `HSLightZone` and
+  the room_* presets; the export puts a zone in every room.
+
 ## 2026-10-30, afternoon (the user, after trying the effect nodes)
 
 - **The window sun fitted to its window**: "the window sun can be enhanced so we can adjust the root to match the

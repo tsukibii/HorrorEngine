@@ -301,8 +301,8 @@ def check_world(story, things, r):
         if lw is not None and lw not in ("clear", "rain"):
             r.err(f"level {lid}: weather {lw!r}: clear or rain")
         lk = lvl.get("look")                           # a level's own look over the game's (§2, §9.1)
-        if lk is not None and lk not in ("realism", "plain"):
-            r.err(f"level {lid}: look {lk!r}: realism or plain")
+        if lk is not None and lk not in ("balanced", "realism", "plain"):
+            r.err(f"level {lid}: look {lk!r}: balanced, realism or plain")
         start = things.get(lvl.get("start"))
         if not start or start.use != "spot" or start.level != lid:
             r.err(f"level {lid}: start {lvl.get('start')!r} isn't a spot in it")
@@ -1646,8 +1646,8 @@ def check_flow(story, things, r):
     if lighting is not None and lighting not in ("on", "off"):
         r.err(f"game.lighting {lighting!r}: on (the time of day's sky and sun unless the level has its own) or off (a flat test light)")
     look = story["game"].get("look")                   # the look (HorrorStudioLook's HSLook presets, docs/GODOT_LOOK.md)
-    if look is not None and look not in ("realism", "plain"):
-        r.err(f"game.look {look!r}: realism or plain")
+    if look is not None and look not in ("balanced", "realism", "plain"):
+        r.err(f"game.look {look!r}: balanced, realism or plain")
     weather = story["game"].get("weather")             # rain in the rooms with no ceiling (HorrorStudioLook: HSRain, HSWet)
     if weather is not None and weather not in ("clear", "rain"):
         r.err(f"game.weather {weather!r}: clear or rain")

@@ -4,6 +4,12 @@
 ## filmic curve with the contrast pushed; temporal anti-aliasing alone (MSAA switches the screen-space reflections
 ## off in 4.7, measured in the plugin's check; TAA settles the reflections and the specular). `HSLook.apply(viewport, environment, "realism")` on any project;
 ## "plain" turns all of it off (flat shading for a look at the geometry). The story names it: `game.look`.
+## **"balanced"** is the default (DECISIONS 2026-10-30, evening: the realism look with its atmosphere, well optimised,
+## a GTX 1060 the target): the same picture with what costs most and shows least taken out (no SSIL, whose
+## screen-space bounce also flashed colours as lights flickered; SSR at 48 steps, half-size roughness; SSAO as is; the
+## haze kept, thinner); its project settings (`PROJECT`: TAA, the shadow atlas at 4096 and 16 bits with the medium soft
+## filter, occlusion culling, the effects' buffers at their cheaper sizes) the export writes into every game and the
+## plugin applies to a project when it's enabled (Project > Tools > HorrorStudio: apply the balanced project settings).
 class_name HSLook
 
 const PRESETS := {
@@ -17,6 +23,16 @@ const PRESETS := {
 		"haze": true, "haze_density": 0.012, "haze_anisotropy": 0.55, "haze_albedo": Color(0.85, 0.9, 1.0),
 		"adjust": true, "contrast": 1.08, "saturation": 1.04, "brightness": 1.0,
 	},
+	"balanced": {
+		"taa": true, "msaa": Viewport.MSAA_DISABLED, "ssaa": Viewport.SCREEN_SPACE_AA_DISABLED, "debanding": true,
+		"tonemap": Environment.TONE_MAPPER_AGX, "exposure": 1.2, "white": 1.0,
+		"ssr": true, "ssr_steps": 48, "ssr_fade_in": 0.15, "ssr_fade_out": 2.0, "ssr_tolerance": 0.25,
+		"ssao": true, "ssao_radius": 1.0, "ssao_intensity": 2.2, "ssao_power": 1.5, "ssao_detail": 0.5,
+		"ssil": false,
+		"glow": true, "glow_intensity": 0.55, "glow_strength": 1.0, "glow_bloom": 0.04, "glow_threshold": 1.05, "glow_blend": Environment.GLOW_BLEND_MODE_SOFTLIGHT,
+		"haze": true, "haze_density": 0.009, "haze_anisotropy": 0.55, "haze_albedo": Color(0.85, 0.9, 1.0),
+		"adjust": true, "contrast": 1.08, "saturation": 1.04, "brightness": 1.0,
+	},
 	"plain": {
 		"taa": false, "msaa": Viewport.MSAA_DISABLED, "ssaa": Viewport.SCREEN_SPACE_AA_DISABLED, "debanding": false,
 		"tonemap": Environment.TONE_MAPPER_FILMIC, "exposure": 1.0, "white": 1.0,
@@ -25,9 +41,46 @@ const PRESETS := {
 }
 
 
-## the preset on a viewport (its anti-aliasing) and an environment (everything else); unknown names are "realism"
-static func apply(vp: Viewport, env: Environment, name: String = "realism") -> Dictionary:
-	var p: Dictionary = PRESETS.get(name, PRESETS["realism"])
+## the balanced look's project settings (a GTX 1060 at 1080p the target): what a new project needs set by hand
+## otherwise; the export writes the same into every game's project.godot (storykit/godot.py PROJECT_LOOK; GDEXPORT's
+## load check reads them back against this)
+const PROJECT := {
+	"rendering/anti_aliasing/quality/use_taa": true,                       # TAA alone: MSAA switches SSR off (4.7)
+	"rendering/anti_aliasing/quality/msaa_3d": 0,
+	"rendering/anti_aliasing/quality/screen_space_aa": 0,
+	"rendering/anti_aliasing/quality/use_debanding": true,
+	"rendering/occlusion_culling/use_occlusion_culling": true,             # what's behind a wall isn't drawn (occluders)
+	"rendering/lights_and_shadows/positional_shadow/atlas_size": 4096,
+	"rendering/lights_and_shadows/positional_shadow/atlas_16_bits": true,
+	"rendering/lights_and_shadows/positional_shadow/soft_shadow_filter_quality": 3,   # soft medium
+	"rendering/lights_and_shadows/directional_shadow/size": 4096,
+	"rendering/lights_and_shadows/directional_shadow/16_bits": true,
+	"rendering/lights_and_shadows/directional_shadow/soft_shadow_filter_quality": 3,
+	"rendering/environment/ssao/quality": 1,                                # low, at half size
+	"rendering/environment/ssao/half_size": true,
+	"rendering/environment/screen_space_reflection/roughness_quality": 1,   # low
+	"rendering/environment/volumetric_fog/volume_size": 48,
+	"rendering/environment/volumetric_fog/volume_depth": 48,
+	"rendering/global_illumination/gi/use_half_resolution": true,           # a VoxelGI or SDFGI of yours, at half resolution
+	"rendering/textures/default_filters/anisotropic_filtering_level": 2,    # 4x
+}
+
+
+## the balanced settings into this project's settings (saved): the plugin's tool menu, and once when it's enabled
+static func apply_project(save := true) -> int:
+	var n := 0
+	for k in PROJECT:
+		if ProjectSettings.get_setting(k) != PROJECT[k]:
+			ProjectSettings.set_setting(k, PROJECT[k])
+			n += 1
+	if save:
+		ProjectSettings.save()
+	return n
+
+
+## the preset on a viewport (its anti-aliasing) and an environment (everything else); unknown names are "balanced"
+static func apply(vp: Viewport, env: Environment, name: String = "balanced") -> Dictionary:
+	var p: Dictionary = PRESETS.get(name, PRESETS["balanced"])
 	if vp != null:
 		vp.use_taa = bool(p["taa"])
 		vp.msaa_3d = p["msaa"]

@@ -153,6 +153,16 @@ func _process(dt: float) -> bool:
 	if n == 165:
 		rep["grade_back"] = str(got["grade_cinema"].post.preset_name) == "cold"
 		rep["tape_back"] = str(got["tape_camhybrid"].vhs.preset_name) == "camhybrid"
+		var zl := 0
+		for r in ["room_bulb", "room_fluorescent", "room_dying", "room_lamp", "room_candle", "room_night"]:
+			if got[r].layer > 0 and not got[r].lights.is_empty():
+				zl += 1
+		rep["room_presets"] = zl
+		put("look_balanced", world, Vector3.ZERO)          # a project of your own's look in one drop (after the grade and tape's test: it brings its own)
+	if n == 170:
+		var lb: Node = got["look_balanced"]
+		var le: WorldEnvironment = lb.get_node("Environment")
+		rep["look_balanced"] = le.environment != null and le.environment.ssr_enabled and le.environment.ssr_max_steps == 48 and not le.environment.ssil_enabled and root.use_taa
 		rep["presets"] = got.size()
 		var files := 0
 		for f in DirAccess.get_files_at(P):
@@ -251,3 +261,7 @@ func add_screen_ones() -> void:
 	put("grade_noir", world, Vector3.ZERO)
 	put("tape_camhybrid", world, Vector3.ZERO)
 	put("tape_worn", world, Vector3.ZERO)
+	var k := 0
+	for r in ["room_bulb", "room_fluorescent", "room_dying", "room_lamp", "room_candle", "room_night"]:   # (zones.gd measures them in two rooms)
+		put(r, world, Vector3(-30.0 + 10.0 * k, 1.5, 30.0))
+		k += 1          # a project of your own's look in one drop: the balanced environment, the camhybrid tape, the cinema grade

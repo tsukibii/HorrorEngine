@@ -112,6 +112,15 @@ the panel low on the screen while it's up); **only what can be seen is drawn** (
 occluder, occlusion culling on in the project, the story's lights fading far away; GDCULL measures it: 73% fewer
 objects drawn across TestRoom001's 19 rooms, the pictures alike).
 
+**Then, the evening** (DECISIONS 2026-10-30, evening): the user found the light leaking at the wall's top was the
+sun's shadow (gone with the sun off), and the colour flashes were the corridor's fluorescent stutter. Built: **the
+balanced look** (a GTX 1060 the target; the default `game.look`; its project settings applied by the plugin on enable
+and written by the export, GDEXPORT reading them back; `look_balanced.tscn` for a project of your own) and **light
+zones** (`HSLightZone` and the room_* presets: a room's box owning its lights, kept to it, reach fitted, off while
+unseen; the export a zone per room). **Open:** the sun's leak itself (Sky Only indoors, or a tighter directional
+shadow, or thicker overlapping walls and ceilings in the export: GODOT_LOOK's answer to the user's question 1, not
+built); the baking of static lights is the user's, on their machine.
+
 ## 0. Next: the cloud session (left 2026-10-29, late night, on `godot-support`, after the local session on the 3090)
 
 The user's handoff (their words: continue the ones that haven't been started back in the cloud, since the GPU-heavy

@@ -47,6 +47,9 @@ func _process(dt: float) -> void:
 		live["flicker"] = e_hi - e_lo > 0.05
 		live["pane"] = root.get_node("WindowPane").material_override is ShaderMaterial
 		live["puddle"] = root.get_node("Puddle").decal != null
+		var zone = root.get_node("RoomBulb")
+		rep["zone_dbg"] = [zone.layer, zone.lights.size(), zone.get_node("Bulb").omni_range, zone.get_node("Bulb").light_cull_mask]
+		live["zone"] = zone.layer > 0 and zone.lights.size() >= 1 and zone.get_node("Bulb").omni_range < 6.0 and zone.get_node("Bulb").light_cull_mask != 0xFFFFFFFF
 		saved_at = t
 		busy = true
 		rep["saved"] = EditorInterface.save_scene() == OK

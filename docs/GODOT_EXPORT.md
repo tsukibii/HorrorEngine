@@ -178,7 +178,10 @@ either. The project turns it on (`rendering/occlusion_culling/use_occlusion_cull
 ceiling piece carries an `occluder` (an OccluderInstance3D with a BoxOccluder3D 4 cm smaller than the piece, so
 nothing touching its face is hidden; none on a piece under 30 cm, a post or a trim): boxes need no baking, and
 the user's own meshes are culled behind them too (an occluder of their own, OccluderInstance3D, joins them). Doors
-carry none (they move). The story's lights fade out past 24 m and their shadows past 14 m (`distance_fade_*`).
+carry none (they move). The story's lights fade out past 24 m and their shadows past 14 m (`distance_fade_*`). Every room also gets a
+**light zone** (the level's `Zones` folder, GODOT_LOOK §0): its lights light only the room, reach no further than it,
+and are off while it can't be seen. The project carries the balanced look's settings (GODOT_LOOK §0, a GTX 1060 the
+target), which GDEXPORT reads back.
 GDCULL (`python tools/godot_export.py --game TestRoom001 --cull`, under xvfb) stands the player in every room of the
 start's level looking each way and counts what's drawn with it on and off, and compares the pictures: fewer
 objects, the same frame. **The dialogue choice** (the user: "I can't click

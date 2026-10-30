@@ -62,6 +62,43 @@ and the beam land together. Pictured from the room and from the side: `docs/godo
 (LOOKPLUGIN's `demo/window.gd`: a wall with an opening, measured: the beam bright just inside the glass and nothing
 beside the opening, its sides parallel, its length to the floor, its light outside and aimed).
 
+**Light zones and the room presets** (`HSLightZone`, `room_bulb`, `room_fluorescent`, `room_dying`, `room_lamp`,
+`room_candle`, `room_night`; the user, 2026-10-30, evening: "presets for different room lights with a cubed area
+affected, like VoxelGI, the zone is what will be lit; I'm ok limiting the architecture to boxes"). A zone is a box
+(`size`, drawn in the editor as VoxelGI's is, coloured by its layer) that owns every light inside it, its children or
+anywhere in the scene. It does three things with them:
+
+- **Keeps them to the box** (`keep_inside`): the meshes wholly inside it (by `margin`, so a wall between two rooms
+  is in both) go on the zone's render layer, 2 to 10, chosen so that zones touching each other differ. Its lights
+  shine on that layer, on layer 1 (what moves: doors, things picked up, the cast, the little things' effects) and on
+  the mirrors' layers. A lamp never lights the next room through an open door, and costs nothing there. Shadows are
+  still cast by everything, so walls still block.
+- **Fits their reach** (`fit_range`): a light's range comes down to `range_reach` (1.25) times the box's farthest
+  corner from it, and is never raised.
+- **Switches them off unseen** (`hide_unseen`, in the game): while the eye is outside the box and the box is out of
+  view or beyond `cull_distance`, its lights are off, shadow maps and all. A power cut and a zone agree through
+  `HSLightZone.show_light`: a light shows when its own visibility, the power and its zone all say so.
+
+In the editor the layers, cull masks and ranges are shown as the game will have them, and put back before every
+save. The room presets are a zone of 4 × 3 × 4 m about its middle, with one shadowed light, a GTX 1060's budget:
+put it in the room's middle and size it to the room. The export puts a zone in every room of every level (the
+level's `Zones` folder): the story's lamps, its windows' light and any light the user adds inside are kept to their
+room and switched off out of sight. LOOKPLUGIN's `demo/zones.gd` measures it in two rooms with a doorway. The rooms
+get different layers and the wall between them both. The bulb's reach is fitted. The next room's floor, seen
+through the doorway, is no brighter with the bulb on than off, but brighter when the bulb is let out (so the measure
+can tell). The next room's lamp is off while the eye looks away and on when it looks back. A save puts everything
+back.
+
+**The balanced look for a GTX 1060** (DECISIONS 2026-10-30, evening): `game.look` `balanced` is the default (§1):
+realism's picture with SSIL off (it flashed colours as lights flickered), SSR at 48 steps, a thinner haze. Its
+project settings (`HSLook.PROJECT`: TAA alone, debanding, occlusion culling, the shadow atlas at 4096 and 16 bits with
+the medium soft filter, SSAO low at half size, SSR's roughness low, the fog's volume at 48, a GI of yours at half
+resolution, 4x anisotropic filtering) are written into every export's project.godot and applied by the plugin to a
+project of your own the first time it's enabled (again from Project > Tools > HorrorStudio: apply the balanced
+project settings). GDEXPORT reads them back. For a project of your own, `presets/look_balanced.tscn` is the rest in
+one drop: the balanced environment (kept in the game), the camhybrid tape and the cinema grade. The pause menu's
+Shadows default is Medium (the same atlas and filter).
+
 **Carrying them to the next version.** An export is a new folder each time (GODOT_EXPORT §8), the level rebuilt from
 the story. Select your nodes in the old version's level, copy, open the new version's level, paste: they hold only
 their numbers, so nothing else comes along; one that goes on a mesh (a wet floor) is pasted under the new level's
@@ -82,6 +119,9 @@ the check reads the file: only what was placed. The room with every preset in it
 What sells a small greybox room as real isn't detail, it's *soft light with bounce, contact darkening, and surfaces
 that answer the lights* (BLENDER_LOOK §1 on the user's references). The games are a few rooms at a time, so the
 screen-space effects that a big scene can't afford are cheap here, and they're turned up:
+
+`balanced` (the default since 2026-10-30, evening, a GTX 1060 the target) is this table with SSIL off, SSR at 48
+steps and a haze of 0.009; its project settings are §0's.
 
 | Setting | Realism | Why |
 |---|---|---|

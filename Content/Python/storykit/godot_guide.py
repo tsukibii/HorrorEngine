@@ -206,7 +206,11 @@ Your own WorldEnvironment or sun in a level takes over from the time of day's. T
 nodes from the last one.</p>
 <p><b>Only what can be seen is drawn.</b> Every wall, floor and ceiling carries a box occluder (its <code>occluder</code> child) and
 the project has occlusion culling on, so a room behind a wall isn't drawn; the story's lights fade out far away. A big
-mesh of your own that hides things (a wardrobe, a partition) can carry an <code>OccluderInstance3D</code> with a box too.</p>
+mesh of your own that hides things (a wardrobe, a partition) can carry an <code>OccluderInstance3D</code> with a box too.
+Every room has a <b>light zone</b> (the level's <code>Zones</code> folder): the lights inside its box light only the room, reach no
+further than it and are switched off while the room can't be seen; a light you add inside a room joins it. For rooms of
+your own, the <code>room_*</code> presets are a zone with its lights (one shadowed light a room: a GTX 1060's budget). The
+project's settings are the balanced look's (TAA, the shadow atlas and filter, the effects' buffers).</p>
 {fig(pictures, 'start_night.png', 'The same start at night: the sky, the windows and the ambient from the time of day.')}
 """))
     body.append(section("props", 8, "Swapping a texture or a prop", f"""

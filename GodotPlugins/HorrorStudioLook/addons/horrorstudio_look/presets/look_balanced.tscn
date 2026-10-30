@@ -1,0 +1,19 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://addons/horrorstudio_look/look_env.gd" id="1"]
+[ext_resource type="Script" path="res://addons/horrorstudio_look/nodes/tape.gd" id="2"]
+[ext_resource type="Script" path="res://addons/horrorstudio_look/nodes/grade.gd" id="3"]
+
+[node name="StudioLook" type="Node"]
+
+[node name="Environment" type="WorldEnvironment" parent="."]
+script = ExtResource("1")
+preset = "balanced"
+editor_only = false
+
+[node name="Tape" type="Node" parent="."]
+script = ExtResource("2")
+preset = "camhybrid"
+
+[node name="Grade" type="Node" parent="."]
+script = ExtResource("3")

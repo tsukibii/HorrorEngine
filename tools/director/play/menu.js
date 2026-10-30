@@ -29,7 +29,7 @@ export const SETTINGS = [
       { id: "quality", label: "Quality", values: [...QUALITY, "Custom"], def: 2, ue: "scalability <0-3>" },
       { id: "scale", label: "Resolution scale", values: ["50 %", "67 %", "75 %", "100 %"], def: 3, ue: "r.ScreenPercentage" },
       { id: "aa", label: "Anti-aliasing", values: ["Off", "FXAA", "TAA", "TSR"], def: 3, ue: "r.AntiAliasingMethod" },
-      { id: "shadows", label: "Shadows", values: QUALITY, def: 2, sg: true, ue: "sg.ShadowQuality" },
+      { id: "shadows", label: "Shadows", values: QUALITY, def: 1, sg: true, ue: "sg.ShadowQuality" },
       { id: "gi", label: "Global illumination", values: QUALITY, def: 2, sg: true, ue: "sg.GlobalIlluminationQuality" },
       { id: "reflections", label: "Reflections", values: QUALITY, def: 2, sg: true, ue: "sg.ReflectionQuality" },
       { id: "textures", label: "Textures", values: QUALITY, def: 2, sg: true, ue: "sg.TextureQuality" },

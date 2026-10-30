@@ -170,6 +170,7 @@ def nodes(g, keep, env):
         ("a save: the meshes' own materials back, the lights at full, no projector, nothing the nodes made in the packed scene; on again after",
          rep.get("save_materials_back") is True and rep.get("save_lights_full") is True and rep.get("save_no_projector") is True and rep.get("save_nothing_made") is True and rep.get("after_save_on") is True),
         ("a node taken off: its mesh dry again", rep.get("removed_dry") is True),
+        ("the look_balanced preset: the balanced environment (SSR at 48 steps, no SSIL) and TAA on the viewport", rep.get("look_balanced") is True),
         ("the grade and the tape: made when there's none, a second over the first, and the first back when it goes",
          all(rep.get(k) is True for k in ["grade_own", "grade_over", "grade_back", "tape_own", "tape_over", "tape_back"])),
     ]
@@ -183,6 +184,22 @@ def nodes(g, keep, env):
          wr.get("beam_gain_in", 0) > 0.008 and wr.get("beam_gain_beside", 1) < wr.get("beam_gain_in", 0) * 0.15),
         ("its sides parallel to the sun's way in, its slices in the window's plane, its length to the floor, its light outside aimed along it",
          wr.get("parallel") is True and wr.get("length", 99) < wr.get("reach", 0) and wr.get("light_aimed") is True and wr.get("light_outside") is True),
+    ]
+    text = run_godot([g, "--path", str(OUT), "--rendering-driver", "vulkan", "--fixed-fps", "60", "-s", "res://addons/horrorstudio_look/demo/zones.gd", "--", f"--out={keep}"], env)
+    zl = next((l for l in text.splitlines() if l.startswith("LOOKZONES ")), None)
+    zr = json.loads(zl[len("LOOKZONES "):]) if zl else {}
+    if not zl:
+        print(text[-2000:])
+    la, lb = (zr.get("layers") or [0, 0])
+    checks += [
+        ("the room presets' zones each own their lights on a layer of their own (%s of 6)" % rep.get("room_presets"), rep.get("room_presets") == 6),
+        ("two rooms' zones (zones.png): on different layers (%s, %s), each floor on its own, the wall between on both; the bulb's reach fitted (%.2f m of 6)" % (la, lb, zr.get("bulb_range", 0)),
+         la > 0 and lb > 0 and la != lb and zr.get("floor_a") == 1 << (la - 1) and zr.get("floor_b") == 1 << (lb - 1) and zr.get("wall_ab") == (1 << (la - 1)) | (1 << (lb - 1)) and zr.get("bulb_range", 9) < 6.0
+         and zr.get("lights") == [1, 2]),
+        ("the bulb kept to its room: the next room's floor through the doorway no brighter with it on (%.4f against %.4f), and brighter when let out (%.4f)" % (zr.get("b_floor_bulb_on", 0), zr.get("b_floor_bulb_off", 0), zr.get("b_floor_bulb_free", 0)),
+         abs(zr.get("b_floor_bulb_on", 1) - zr.get("b_floor_bulb_off", 0)) < 0.004 and zr.get("b_floor_bulb_free", 0) > zr.get("b_floor_bulb_off", 1) + 0.01),
+        ("the next room's lamp off while the eye looks away, on when it looks back", zr.get("b_lamp_away") is False and zr.get("b_lamp_back") is True),
+        ("a save puts every layer, mask and reach back, and they're on again after", zr.get("save_back") is True and zr.get("after_save") is True),
     ]
     ed = editor(g, keep, env)
     checks += ed
@@ -212,12 +229,13 @@ def editor(g, keep, env):
         return [("the nodes in the editor (no report)", False)]
     rep = json.loads(line[len("HSEDITOR "):])
     saved = (proj / "editor_scene.tscn").read_text(encoding="utf-8")
-    made = [w for w in ['name="Beam"', 'name="Card"', 'name="Sweep"', 'name="Pattern"', 'name="Leak"', 'name="Splashes"', "light_projector", "ShaderMaterial", "hs_wet_was", "material_override = SubResource"] if w in saved]
+    made = [w for w in ['name="Beam"', 'name="Card"', 'name="Sweep"', 'name="Pattern"', 'name="Leak"', 'name="Splashes"', 'name="Box"', "light_projector", "ShaderMaterial", "hs_wet_was", "material_override = SubResource",
+                        "layers =", "light_cull_mask", "hs_layers_was", "hs_zone", "omni_range"] if w in saved]
     errs = [l for l in text.splitlines() if "SCRIPT ERROR" in l or "Parse Error" in l]
     if errs:
         print("\n".join(errs[:20]))
     return [
-        ("in the editor: the rain, the wet floor, the shaft, the pattern and the flicker run in the viewport (%s)" % json.dumps(rep.get("live", {})), all(rep.get("live", {}).values()) and len(rep.get("live", {})) >= 5 and not errs),
+        ("in the editor: the rain, the wet floor, the shaft, the pattern, the flicker and a room's light zone run in the viewport (%s)" % json.dumps(rep.get("live", {})), all(rep.get("live", {}).values()) and len(rep.get("live", {})) >= 5 and not errs),
         ("in the editor: saved, the file holds only what was placed (%s)" % (", ".join(made) or "nothing made"), rep.get("saved") is True and not made),
         ("in the editor: after the save the nodes are on again", rep.get("after") is True),
     ]

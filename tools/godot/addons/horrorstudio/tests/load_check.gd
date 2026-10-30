@@ -263,5 +263,15 @@ func _initialize() -> void:
 	print("GDEXPORT start: level %s, eye at %s, fov %.1f, %d things" % [g.level_id, cam.global_position, cam.fov, g.things.size()])
 	if g.things.is_empty():
 		ok = false
+	var off: Array = []                                   # the balanced look's project settings, as the look plugin has them (HSLook.PROJECT)
+	for k in HSLook.PROJECT:
+		if ProjectSettings.get_setting(k) != HSLook.PROJECT[k]:
+			off.append("%s %s (wants %s)" % [k, ProjectSettings.get_setting(k), HSLook.PROJECT[k]])
+	print("GDEXPORT project settings: %d of the balanced look's %d as the plugin has them%s" % [HSLook.PROJECT.size() - off.size(), HSLook.PROJECT.size(), ("; off: " + ", ".join(off)) if off else ""])
+	if off:
+		ok = false
+	if str(g.story.game.get("look", "balanced")) == "balanced" and not g.env.environment.ssr_enabled:
+		print("GDEXPORT the balanced look isn't on the game's environment")
+		ok = false
 	print("GDEXPORT ok" if ok else "GDEXPORT FAIL")
 	quit(0 if ok else 1)
