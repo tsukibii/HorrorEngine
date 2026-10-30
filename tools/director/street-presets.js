@@ -155,7 +155,7 @@ export const EDGES = {
   city: { lamp: "lamp", every: 18, poles: true, clutter: ["vending", "bike", "bike", "bollard", "bin", "crates", "ac", "pot", "bike"] },
   shotengai: { lamp: "lantern", every: 9, poles: true, clutter: ["bike", "pot", "vending", "crates", "bench", "pot"] },
   residential: { lamp: "lamp", every: 22, poles: true, clutter: ["bike", "pot", "pot", "ac", "vending", "postbox"] },
-  oldtown: { lamp: "postlamp", every: 14, poles: false, clutter: ["pot", "postbox", "bench", "crates"] },
+  oldtown: { lamp: "postlamp", every: 14, poles: false, clutter: ["pot", "pot", "bench", "crates", "bin"] },
   abandoned: { lamp: "lamp", every: 25, poles: true, clutter: ["cone", "barrier", "crates", "bin", "ac"] },
 };
 

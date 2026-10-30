@@ -168,9 +168,23 @@ by casting the photo's pixels through that camera onto the ground, the shop's fr
 hold it (0.5% of the frame off on average, 1.4% at most). The photo itself is only on the user's machine
 (`refs/`, git-ignored): paste it into the shot to see the two together, or `python tools/street.py shot shibuya_lane`.
 
+## 7b. The reference town (the other five references)
+
+`Content/Studio/Streets/reference_town`: a small town with a corner for each of the user's other references, made
+the way a person would with the page (four streets drawn, each filled with its place's mix, then a few touches by
+hand): **the shopping street** (lantern lamps with their ほんちょう plates, poles and wires, an orange middle line, the ◇
+of a crossing ahead, shops with awnings and sign boards, a van), **the quiet lane** (stucco houses, their fire boxes
+and meters, vending machines, a block wall with mesh, a wooden fence, 止まれ at its mouth), **the old post town**
+(timber machiya with lattice fronts and tiled eaves, post lamps, a red post box, a bamboo fence), **the abandoned
+blocks** (concrete flats with shutters and canopies, a building site's long panels, cones and barriers) and **the
+white tower** on the corner. A shot each, framed as its reference was (not matched: the matching is the Shibuya
+lane's). 89 buildings and 224 things in 88,000 triangles.
+
 ## 8. Not yet
 
 - Streets into Godot: the .glb is exported by hand for now; a game's level taking a street (and the scene builder's
   enterable buildings put into it through a building's door) is the next step to plan with the user.
 - Foliage (the user: "don't worry about foliage for now"): pots stand empty.
 - Curved streets and slopes: streets are straight and the ground flat.
+- Fewer draw calls: the page and the .glb keep a mesh a surface a piece (a street of ninety buildings is about two
+  thousand); a game's export should merge them by material.

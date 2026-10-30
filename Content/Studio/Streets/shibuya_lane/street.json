@@ -193,9 +193,9 @@
    "fh": 2.75,
    "seed": 5,
    "look": {
-    "wall": "#c9cbc8",
-    "tiles": "#3a3f46",
-    "trim": "#b9bab6"
+    "wall": "#aeb3b3",
+    "tiles": "#353a40",
+    "trim": "#a3a7a6"
    },
    "faces": {
     "front": {
@@ -217,8 +217,8 @@
    },
    "roof": {
     "kind": "hip",
-    "pitch": 34,
-    "over": 0.5
+    "pitch": 22,
+    "over": 0.55
    },
    "parts": [
     {

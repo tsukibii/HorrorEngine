@@ -9,7 +9,7 @@ import * as SG from "./street-gen.js";
 export const s2t = (x, y, z) => new THREE.Vector3(x, z, -y);
 export const TIMES = {
   day: { label: "day", top: "#4f86c9", horizon: "#cfe0ec", ground: "#6d6a64", hemiSky: "#c5d8ec", hemiGround: "#5d5952", hemi: 1.15, sun: 2.6, sunColor: "#fff1df", sunEl: 48, sunAz: 140, lit: 0.08, lamps: false, exposure: 1.0, fog: 0.0035 },
-  dusk: { label: "dusk", top: "#aeb2c8", horizon: "#ead3cf", ground: "#3d3a38", hemiSky: "#a7bccb", hemiGround: "#3f3b39", hemi: 1.55, sun: 0.0, sunColor: "#ffc9a0", sunEl: 4, sunAz: 250, lit: 1.0, lamps: true, exposure: 1.0, fog: 0.0065 },
+  dusk: { label: "dusk", top: "#aeb2c8", horizon: "#ead3cf", ground: "#3d3a38", hemiSky: "#99b8c4", hemiGround: "#44393a", hemi: 1.6, sun: 0.0, sunColor: "#ffc9a0", sunEl: 4, sunAz: 250, lit: 1.0, lamps: true, exposure: 1.0, fog: 0.0065 },
   night: { label: "night", top: "#04060c", horizon: "#141b29", ground: "#0b0b0c", hemiSky: "#2a3550", hemiGround: "#101012", hemi: 0.22, sun: 0.0, sunColor: "#9fb3ff", sunEl: 40, sunAz: 200, lit: 1.25, lamps: true, exposure: 1.1, fog: 0.012 },
 };
 

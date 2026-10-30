@@ -18,7 +18,7 @@ export const SLOTS = {
   wood: ["#5b412d", 0.75], wood_dark: ["#2f231a", 0.8], lattice: ["#4c3526", 0.8, 0, "a"], paper: ["#f2d9a6", 0.9, 0, "e"],
   awning: ["#7d2f2a", 0.9], metal: ["#899096", 0.45, 0.65], pipe: ["#a3a5a7", 0.55, 0.3], ac: ["#e2e0db", 0.6], fan: ["#2b2d31", 0.8, 0, "t"],
   tank: ["#d7dbdf", 0.5], glassblock: ["#b8cfd6", 0.25, 0, "t"], grime: ["#6f6c66", 0.95],
-  asphalt: ["#2d3034", 0.95], pavement: ["#7a766f", 0.9, 0, "t"], kerb: ["#9b978f", 0.85], paint: ["#e9e7e0", 0.7], paint_y: ["#e2a33a", 0.7],
+  asphalt: ["#2a3033", 0.95], pavement: ["#7a766f", 0.9, 0, "t"], kerb: ["#9b978f", 0.85], paint: ["#e9e7e0", 0.7], paint_y: ["#e2a33a", 0.7],
   ground: ["#38393b", 1], gravel: ["#6d6a64", 1],
   pole: ["#b3b0a9", 0.85], steel: ["#5f656b", 0.45, 0.7], lamp: ["#fff0cf", 0.4, 0, "e"], lamp_cool: ["#eef4ff", 0.4, 0, "e"], wire: ["#18181a", 0.8],
   hazard: ["#e0b42c", 0.6, 0, "t"], chainlink: ["#8c949b", 0.5, 0.6, "a"], boards: ["#7b5b3f", 0.8, 0, "a"], panel: ["#c6cacd", 0.5, 0.4, "t"],
