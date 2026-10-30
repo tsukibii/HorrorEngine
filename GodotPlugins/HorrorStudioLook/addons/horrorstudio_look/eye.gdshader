@@ -25,6 +25,9 @@ uniform float flip_v = 1.0;           // 1 when the picture's V runs the other w
 uniform float roughness = 0.094;      // the white under the cornea
 uniform float coat_roughness = 0.036; // the cornea's wet coat
 uniform float caustic = 0.6;          // the iris lit as a shallow bowl: its side away from the light glows
+uniform float occlusion = 0.0;        // the lids' shadow on the eyeball (MetaHuman's eye occlusion as a falloff): 0 none, 1 full
+uniform vec2 opening = vec2(0.8, 0.34);    // the opening's half-width and half-height on the eyeball, eye units (the shadow's ellipse)
+uniform float sclera_bright = 1.0;    // the white's paint scaled
 uniform int debug = 0;                // 1 q (where the iris is read), 2 the view in the tangent space, 3 the frame's tangent
 
 varying vec3 v_eyeN;                  // the surface's frame in the eye's own units, per vertex
@@ -65,7 +68,14 @@ void fragment() {
 	float graze = 1.0 - clamp(-eD.z, 0.0, 1.0);
 	float extra = clamp(limbal * (1.0 + 1.5 * limbus_view * graze), 0.0, 1.0) - clamp(limbal, 0.0, 1.0);
 	iris = mix(iris, vec3(0.003, 0.0021, 0.0021), extra * smoothstep(1.0 - limbal_width - 0.3 * w, 1.0, rq));
-	ALBEDO = mix(white, iris, irisW) * mix(1.0, iris_bright, irisW);
+	ALBEDO = mix(white * sclera_bright, iris, irisW) * mix(1.0, iris_bright, irisW);
+	// the lids' shadow: darker toward the opening's edge and most under the upper lid, on the eye's own frame (it
+	// turns with the eye: a glance moves it a little), the cornea's reflections shut out there too; the layout's +y
+	// runs down the eye (measured on an export: the debug grid)
+	float up = -eP.y;
+	float oe = length(vec2(eP.x / opening.x, (up - 0.03) / opening.y));
+	float occ = clamp(occlusion * (0.75 * smoothstep(0.35, 1.0, oe) + 0.5 * smoothstep(-0.1, 0.9, up / opening.y)), 0.0, 0.85);
+	ALBEDO *= 1.0 - occ;
 	if (debug == 1) ALBEDO = vec3(q * 0.5 + 0.5, onC ? 1.0 : 0.0);
 	if (debug == 2) ALBEDO = Vt * 0.5 + 0.5;
 	if (debug == 3) ALBEDO = TANGENT * 0.5 + 0.5;
@@ -76,6 +86,7 @@ void fragment() {
 	NORMAL = normalize(TANGENT * bowl_t.x + BINORMAL * bowl_t.y + NORMAL * bowl_t.z);
 	ROUGHNESS = roughness;
 	SPECULAR = 0.5 * (1.0 - irisW);                       // under the cornea: no shine of its own
-	CLEARCOAT = 1.0;
+	CLEARCOAT = 1.0 - 0.7 * occ;
 	CLEARCOAT_ROUGHNESS = coat_roughness;
+	AO = 1.0 - occ;
 }

@@ -2,6 +2,26 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-30, night (the user: the Studio's characters less like dolls, on `realism-enhancer-skin`)
+
+- **"Take our studio creations for director/godot and make them look less like dolls and more like Unreal's
+  MetaHumans; we have a plugin that's supposed to make the skin look more realistic but I'm not noticing a huge
+  effect; if I go really close to the model it does look more real but the pores look way too large and not enough
+  micro detail."** With their screenshot of a Studio character and a sheet of MetaHuman faces. Then, once they've
+  reviewed it: "a better hair texturer too for studio so baked hair looks more realistic like MetaHuman".
+- **"I am 100% ok with adding an extra step after studio where we take the model into Blender and add realistic
+  procedural skin (presets for old, young, normal etc), lips, etc and baking them along with data for rough maps etc
+  and then bringing that into Godot if that's the best workflow, but if there is an easier one feel free."** Claude's
+  call, for their review: **no Blender step.** The finest detail can't be baked on MHR's shared UVs at a size a game
+  carries (a face's texel is 0.35 mm in the export's normal map; a pore 0.15 to 0.35 mm, a furrow 0.02), so, as
+  MetaHuman's tiling micro normal does, it's drawn live in Godot at its true size: **the skin's detail layer**
+  (GODOT_LOOK §5d: pores, furrows, the lips' lines, the colour's unevenness, from tiles `tools/skin_detail.py` makes once,
+  placed by MHR's region map), with **presets young, natural, adult and old** picked from the Studio's own age and pores
+  (or named on `HSCharacterLook`); what is the character's own, **its occlusion**, goes into the Studio's existing
+  export bake. Found on the way and fixed: HumanShaders' micro tile lay five times too big on MHR's UVs (the user's "pores
+  way too large"), Godot's screen-space scattering at HumanShaders' strength blurred the whole face to wax, and the
+  eyes glowed (now the lids' shadow and a white at 0.85). The desk stays plain (DECISIONS 2026-10-30, night).
+
 ## 2026-10-30, evening (the user, after finding the sun's leak and the flicker's flashes)
 
 - **Unreal removed**: "I'm okay to merge this into main... before you do, remove all the remaining bloatware from

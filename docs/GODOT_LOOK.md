@@ -502,6 +502,95 @@ put the retro count at 419).
 Not yet: a hashed alpha under TAA for softer edges (the plain scissor keeps the headless pictures measurable), the
 salon's inner colour and clump shades (the atlas's G and B channels are baked into the export's albedo already).
 
+## 5d. Skin that isn't a doll's: the detail at its true size (`textures/`, `HSSkin.set_detail`), DECISIONS 2026-10-30, night
+
+The user's ask (their screenshot of a Studio character beside a sheet of MetaHuman faces): "make them look less like
+dolls and more like Unreal's MetaHumans; the plugin's skin isn't a huge effect; really close up it looks more real but
+the pores look way too large and not enough micro detail". They offered a Blender step after the Studio (procedural
+skin with presets, baked) if that were the best way. **It isn't needed:** the finest detail can't be baked on MHR's
+shared UVs at any size a game carries (a face's texel is 0.35 mm in the export's 2048 normal map, 0.175 in its 4096
+paint; a pore's opening is 0.15 to 0.35 mm, the furrows between them 0.02 wide), so like MetaHuman's tiling micro
+normal it's drawn live at its size, and what is the character's own (its occlusion) goes in the Studio's existing bake.
+Nothing to run by hand: the Studio's Export and Godot do it.
+
+**What made the doll** (measured on a fresh export, `tools/godot/portrait_check.py`'s "before" row, the sheet
+`docs/godot_sheets/2026-10-30_skin_detail.jpg`):
+
+1. **HumanShaders' micro tile at five times its size.** `micro_detail_scale` 30 was made for a head that fills its
+   UVs; MHR's head spans 0.72 m of skin a UV unit (the body 1.9), so its 512 px tile lay 2.4 cm a repeat on the face
+   and 5.7 cm on the shoulders: the coarse orange peel the user saw as "pores way too large".
+2. **Godot's screen-space scattering blurring the whole colour.** HumanShaders sets `SSS_STRENGTH` to (strength × 2 +
+   thinness × 2) × a dither of 0 to 3, about 1.3 to 3 within a metre of the eye; Godot blurs the finished colour (the
+   paint and any detail with it), so the face read as wax and every pore went (the sheet's `sss` pictures: off, the
+   game's Low, High).
+3. **No colour unevenness, no occlusion.** The Studio's default look (soft cinematic: pores 0.04, evenness 0.7) bakes an
+   even paint, and the export's ORM had no occlusion (its red was 1).
+4. **Eyes that glow.** A painted white (sRGB 234) lit as a wet ball, with nothing of the lids' shadow on it.
+
+**The detail layer** (`skin_wet.gdshader`'s `skin_detail` group, marked HS; `HSSkin.set_detail`; on by itself on a
+Studio export, the bake's plain bodies and the demo's spheres keep it off):
+
+- **Three tiles made once by `tools/skin_detail.py`** (seeded numpy; SKINDETAIL checks them), lossless with their mips
+  (`.import` beside each: a normal map's RG compression would drop the cavity): `skin_pores.png` 10 mm of skin, about
+  130 openings a cm², 0.15 mm across at the median and up to 0.4, each a pit in a shallow funnel; `skin_micro.png`
+  5 mm, the furrows' network (cells 0.55 mm, finer ones 0.23 mm, wandering, fading in and out, a cushion in each cell:
+  the pebbled look that survives at a few pixels a cell); both RG the normal (OpenGL's) and B the cavity;
+  `skin_tone.png` 40 mm of the colour's unevenness (melanin's mottle and faint specks, the blood's patches, a grain).
+- **Laid at their metres, twice:** each tile again turned 37° and 1.37 times larger, so the cheek gets 250 to 300
+  pores a cm² (the reference's 310: docs/research/skin_v2.md §1) and nothing repeats; the scale from MHR's two
+  densities (`uv_metres` 0.72 and 1.9), blended where the head's islands meet the body's (a scale changing across the
+  skin would squeeze the pattern); a mip sharper than the pixel (the relief's glints survive; TAA settles them).
+- **Placed by MHR's region map** (`mhr_skin_regions.png`, from MediaPipe's points on MHR:
+  `Content/Studio/Bodies/MHR_landmarks.json`): R the pores (nose 1, the cheeks beside it 0.9, chin and forehead 0.75,
+  the rest of the face 0.55, the body 0.3, the lids 0.1, the lips none), G the furrows (the lids' crepe most, the nose
+  least), B the lips (their own lines: grooves a millimetre apart, wandering), A which density.
+- **The normal from the UVs' screen derivatives** (no tangents: Godot's binormal sign on an imported glb didn't matter),
+  full in the highlight, soft in the diffuse (HumanShaders' per-channel normals take 0.15, 0.4, 0.55 of it: the red
+  travels furthest under the skin); a pit or a furrow darker (`detail_cavity`) and duller (its specular and a rougher
+  floor); what's too fine to see once far turned into roughness (`detail_rough`), so a medium shot gets no pattern
+  (GDPORTRAIT: the player's shot's grain 0.0034 against 0.0033 without; the cheek close up 0.0037 against 0.0017).
+- **The colour's unevenness** (`tone`, `tone_red`): melanin darker and browner, the blood redder or paler, a grain;
+  its mean the paint's own (the lit face 0.97 to 0.99 of the plain one).
+- **A faint peach fuzz** (`fuzz`): a soft rim where the skin turns away, more from behind.
+- **Presets** (`HSSkin.DETAIL_PRESETS`, the user's "old, young, normal"): `young`, `natural`, `adult`, `old`, each
+  the pores' depth and size, the furrows', the cavity, the lips' lines, the roughness from afar, the fuzz, the tone,
+  the scattering; picked from the export's own procedural skin (its `studioSkin` record now carries the Studio's
+  `age`, `pores`, `poreSize`, `evenness`, `wrinkles`: seventy and over old, an adult's adult, a young even skin young,
+  else natural) or named: `HSCharacterLook`'s **Skin Detail** (auto, the four, off) and **Detail Amount**,
+  `set_detail(m, "old")`, the settings' `detail_preset`. **The Studio's own sliders ride on it** (`detail_look`): its
+  Pores deepen or soften them (0.3, its default, as the preset; 0.04, the soft cinematic look's, two thirds), its Pore
+  spacing sizes them (1.3 mm as the preset); and the Studio leaves its own pores out of the file's maps (a 0.35 mm
+  texel only blurred them into the bumps the user saw as too big): they're Godot's now. The sheet (the presets as a
+  character at the Studio's default pores gets them): `docs/godot_sheets/2026-10-30_skin_presets.jpg`.
+- **The scattering kept gentle:** `sss_scale` (0.35 young to 0.25 old) scales HumanShaders' strength; the light still
+  bleeds at a shadow's edge, the pores stay.
+
+**The occlusion** (the Studio, `albedo.js` `bakeOcclusion`): depth maps of the body from 64 directions over the sphere
+(an orthographic view of a sphere round it, one atlas of tiles), and again for the head in a sphere of its own at 512 px
+a tile (0.65 mm a texel: the nostrils, the eyes' corners, the ears); every skin texel drawn flat at its UV and tested
+against each map it faces (a cosine's weight; an occluder nearer than 9 cm counts fully, past 25 cm not at all, so the
+far arm doesn't black the hip out), smoothed over a millimetre inside each island. It's the export's ORM red (and the
+glb's occlusionTexture: the desk's three.js shades its ambient with it too); HSSkin wears it on the ambient light, a
+third on the lamps' (`ao_block_light` 0.3: their shadows do the rest) and on the specular. An export from before this
+has none, and nothing changes.
+
+**The eyes** (`eye.gdshader`, HSEye): the lids' shadow as a falloff on the eyeball (`occlusion` 0.85: darker toward the
+opening's edge, most under the upper lid; `opening` its half-width and height in eye units, 0.8 and 0.34; on the eye's
+own frame, so a glance moves it a little), the cornea's reflections shut out there too, and the white's paint at 0.85
+(`sclera_bright`). Found on the way: the eye layout's +y runs **down** the eye (a debug grid on an export).
+
+**The check:** `python tools/godot/portrait_check.py [--person NAME]` (GDPORTRAIT): the export as the game wears it,
+lit like a character reel (a big soft key from the side and above, a weak fill, a cool rim, a muted teal ground) at a
+medium close-up, a close-up, an extreme close-up of the cheek (about 9 cm across) and the player's own medium shot
+under a warm lamp, again with the layer off, measured (the cheek's grain over 1.25 times, the player's shot under 1.6
+times, the brightness within 0.85 to 1.12) and sheeted (`Saved/Story/_look/godot_portrait/sheet.jpg`); `--plugin DIR`
+pictures an older plugin for a before row, `--preset`, `--quick ecu,cu` for tuning, `--sss N` the scattering's quality.
+GDPEOPLE still measures the eye and the colours.
+
+**Not yet:** the eye's shadow fitted to each character's own opening (the skin's `extras.openings` outline is in the
+file); wrinkle maps that deepen with the face's 72 shapes (MetaHuman's animated normals); the desk (it stays plain,
+DECISIONS 2026-10-30, night); the clothes' fabric detail the same way.
+
 ## 6. The story's words, and the check
 
 - `game.look`: `realism` (the default) or `plain` (STORY_FORMAT §9.1); `game.weather`: `rain` puts HSRain over every
@@ -528,7 +617,9 @@ salon's inner colour and clump shades (the atlas's G and B channels are baked in
   reference lights and beside Godot's lit, flat and eye pictures, and measures the face's skin colour as ratios in
   both: for `lol`, red over green 1.27 in the Studio and 1.23 in Godot, blue over green 0.85 and 0.86); ~~the skin's
   own light (studioSkin's numbers) onto HSSkin's sliders~~ (2026-10-30, §5, with the export's normal and ORM maps);
-  still open: the eye's colour measured close in both, and the clothes' maps (albedo only so far).
+  ~~skin that reads as a doll's: pores five times too big, wax from the scattering, no occlusion~~ (2026-10-30, night:
+  §5d, the detail layer at its true size, the Studio's occlusion, the eyes' lid shadow); still open: the eye's colour
+  measured close in both, the eye's shadow fitted to each opening, and the clothes' maps (albedo only so far).
 - ~~Wet walls under a leak~~ (§2b, 2026-10-30); ~~a mirror seen in a mirror~~ (§5b, 2026-10-30).
 - Seen by the user (2026-10-29): a square patch of light under a distant counter that goes when you come close.
   Most likely a VoxelGI cell at its coarse distance (the per-room probes meet at the counter), else the SSIL at a

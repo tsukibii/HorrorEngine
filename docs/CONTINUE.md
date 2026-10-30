@@ -11,6 +11,30 @@ the to-do built there, with the Studio's eyes from the side, a small nose and th
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
+## 0b. `realism-enhancer-skin` (2026-10-30, night): the Studio's characters less like dolls, waiting for the user's review
+
+The user's ask (DECISIONS 2026-10-30, night): the Studio's characters in Godot looked like dolls beside MetaHumans;
+the plugin's skin did little; close up "the pores look way too large and not enough micro detail"; a Blender step
+offered. Built without one (GODOT_LOOK §5d): **the skin's detail layer** in HSSkin (pores, furrows, the lips' lines,
+the colour's unevenness at their true size from `textures/`, made by `tools/skin_detail.py`, placed by MHR's region
+map; presets young, natural, adult, old picked from the export's own age and pores, or `HSCharacterLook`'s Skin
+Detail), **the Studio's ambient occlusion** in its export (`albedo.js` `bakeOcclusion`, the ORM's red), **the
+scattering kept gentle** (`sss_scale`: HumanShaders' strength blurred the face to wax) and **the eyes' lid shadow**
+(`eye.gdshader` `occlusion`, `sclera_bright`). The sheets: `docs/godot_sheets/2026-10-30_skin_detail.jpg` (before and
+after at three distances, the eye) and `2026-10-30_skin_presets.jpg`. New checks: GDPORTRAIT
+(`tools/godot/portrait_check.py`), SKINDETAIL (`tools/skin_detail.py check`, in check_all).
+
+**For the user:** pull `realism-enhancer-skin`, re-export a character from the Character Studio (its occlusion and
+its record's age and pores come with the new export; an old export still gets the detail layer, without occlusion),
+export the game to Godot and look close; `python tools/godot/portrait_check.py --person <name>` pictures any
+character on the card. Tell us: the pores' size and strength, the presets, the eyes' shadow (`occlusion`), the skin's
+sheen (it's more matte than before), and whether the two black streaks over the face in their screenshot were salon
+locks (they're not the skin).
+
+**Next, once they say yes:** the hair texturer for the Studio's baked hair, MetaHuman-like (their second ask). Open on
+the skin: the eye's shadow fitted to each opening (the skin's `extras.openings` is in the file), wrinkle maps that
+deepen with the 72 shapes, the clothes' fabric detail the same way, the desk (plain by decision).
+
 ## 0a. The cloud session after (2026-10-30, small hours): §0's four pieces built, and a stand-in bug from the user
 
 All four of §0 are in, each measured where the cloud could (GDTESTROOM, GDEXPORT, GDPLAY, DESK, LOOKPLUGIN):

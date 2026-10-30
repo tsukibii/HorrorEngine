@@ -1172,3 +1172,16 @@ guessed margin; and a check that only ever ran on a slow machine hasn't been run
   `HSRain.new()` needs `rain.gd` to be `@tool` too.
 - **`surface_get_name` is ArrayMesh's alone**: a helper that matches surfaces by name must skip it for a
   primitive mesh (a SphereMesh stood in for a body and the skin's `wear` stopped there).
+- **A detail tile's size is metres of skin, not UV units.** HumanShaders' micro tile at 30 a UV unit was made for a
+  head that fills its UVs; on MHR's shared layout (0.72 m a UV unit on the head, 1.9 on the body) it lay 2.4 cm a
+  repeat on the face and 5.7 on the shoulders: the user's "pores way too large". Measure the layout's metres (area in
+  3D over area in UV, per triangle) before choosing a scale, and keep one scale an island (a scale that changes
+  across the skin squeezes the pattern where it changes: `uv * s(uv)` has `uv * ds` in its derivative).
+- **A visible pore is 0.15 to 0.35 mm across**, not the 0.6 mm between follicles: the first tile's 0.09 mm pits were
+  under a pixel at a close-up's 0.12 mm and nothing showed. Size a feature by what a camera sees at the shot's pixel.
+- **Godot's screen-space scattering blurs the finished colour, paint and detail with it.** HumanShaders' strength (1.3 to
+  3 within a metre of the eye) turned a face to wax and hid every pore the detail layer drew; picture a skin change
+  with the scattering off once (`portrait_check.py --sss 0`) before deciding the detail is too faint.
+- **Paint a shader's coordinates before trusting a direction.** The eye's layout runs +y down the eye, so the "upper
+  lid's" shadow first fell on the lower lid; a debug grid (`fract(eP.xy * 2)` as the colour) showed it in one picture.
+

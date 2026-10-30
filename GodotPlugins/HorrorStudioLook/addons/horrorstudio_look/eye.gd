@@ -50,7 +50,8 @@ static func params(rec: Dictionary) -> Dictionary:
 		"ior": max(1.0, float(p.get("ior", 1.336))) if real else 1.0, "iris_bright": float(p.get("irisBright", 1.0)) if real else 1.0,
 		"limbus_view": float(p.get("limbusView", 0.0)), "limbal": float(p.get("limbal", 0.5)), "limbal_width": float(p.get("limbalWidth", 0.18)),
 		"limbal_soft": float(p.get("limbalSoft", 0.0)), "caustic": float(p.get("caustic", 0.6)) if real else 0.0,
-		"roughness": 0.4 - 0.34 * gloss, "coat_roughness": 0.18 - 0.16 * gloss}
+		"roughness": 0.4 - 0.34 * gloss, "coat_roughness": 0.18 - 0.16 * gloss,
+		"occlusion": 0.85, "sclera_bright": 0.85}                        # the lids' shadow and a white that isn't paper (a doll's eyes glow: docs/GODOT_LOOK.md §5d)
 
 
 static func material(rec: Dictionary, paint: Texture2D) -> ShaderMaterial:

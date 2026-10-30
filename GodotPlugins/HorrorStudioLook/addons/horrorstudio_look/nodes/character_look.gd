@@ -1,5 +1,6 @@
 ## A character's look (HSSkin, HSEye, HSHair; docs/GODOT_LOOK.md §0): a model's skin on HumanShaders' skin shader (its
-## own colour and maps kept; wet, sweating, dripping or oiled by the numbers), a Character Studio export's eyes on the
+## own colour and maps kept; wet, sweating, dripping or oiled by the numbers; on a Studio export the skin's detail at its
+## true size, its look picked from the export or named here: §5d), a Character Studio export's eyes on the
 ## Studio's refracting eye, and card hair, lashes and brows on the hair shader. Drop it under the character (an
 ## imported glb, or any model whose meshes are named skin/body/head, eye, hair/lash/brow). Put on when the game runs.
 ## The cast the game places itself already wear it (the story's `skin` word wets them).
@@ -14,6 +15,8 @@ extends Node
 @export_range(0.0, 1.0) var sweat: float = 0.0
 @export_range(0.0, 1.0) var drips: float = 0.0
 @export_range(0.0, 1.0) var oil: float = 0.0
+@export_enum("auto", "young", "natural", "adult", "old", "off") var skin_detail: String = "auto"   ## the pores, furrows and colour's unevenness at their true size (HSSkin.DETAIL_PRESETS; auto: from the export's own age and pores)
+@export_range(0.0, 2.0) var detail_amount: float = 1.0                 ## the detail layer as a whole
 @export var eyes := true
 @export var hair := true
 @export_file("*.glb") var glb_path: String = ""  ## the export's glb (its skin and eye records); empty: the character's own file
@@ -36,7 +39,10 @@ func wear() -> void:
 	var path := glb_path if glb_path != "" else t.scene_file_path
 	materials.clear()
 	if skin:
-		materials.append_array(HSSkin.wear(t, {"wetness": wetness, "sweat": sweat, "drips": drips, "oil": oil}, path if path.ends_with(".glb") else ""))
+		var st := {"wetness": wetness, "sweat": sweat, "drips": drips, "oil": oil, "detail": 0.0 if skin_detail == "off" else detail_amount}
+		if skin_detail != "auto" and skin_detail != "off":
+			st["detail_preset"] = skin_detail
+		materials.append_array(HSSkin.wear(t, st, path if path.ends_with(".glb") else ""))
 	if eyes and path.ends_with(".glb"):
 		materials.append_array(HSEye.wear(t, path).values())
 	if hair:
