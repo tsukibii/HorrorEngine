@@ -12,7 +12,7 @@ const PRESETS := {
 		"tonemap": Environment.TONE_MAPPER_AGX, "exposure": 1.2, "white": 1.0,
 		"ssr": true, "ssr_steps": 128, "ssr_fade_in": 0.15, "ssr_fade_out": 2.0, "ssr_tolerance": 0.2,
 		"ssao": true, "ssao_radius": 1.0, "ssao_intensity": 2.5, "ssao_power": 1.5, "ssao_detail": 0.5,
-		"ssil": true, "ssil_radius": 2.5, "ssil_intensity": 1.2,
+		"ssil": true, "ssil_radius": 1.2, "ssil_intensity": 0.45,   # pared back 2026-10-30 (the user: bright patches on the floor that come and go as you look): it's screen-space, what it bleeds depends on what's in view; the rooms' VoxelGIs carry the bounce
 		"glow": true, "glow_intensity": 0.55, "glow_strength": 1.0, "glow_bloom": 0.04, "glow_threshold": 1.05, "glow_blend": Environment.GLOW_BLEND_MODE_SOFTLIGHT,
 		"haze": true, "haze_density": 0.012, "haze_anisotropy": 0.55, "haze_albedo": Color(0.85, 0.9, 1.0),
 		"adjust": true, "contrast": 1.08, "saturation": 1.04, "brightness": 1.0,
@@ -131,8 +131,11 @@ static func shadows(vp: Viewport, q: int) -> void:
 ## the iris (after Light Kit's Sky exposure, 2026-10-29): the eye settling over about a second, as a camcorder's iris
 ## does, and at night held a stop under so night doesn't turn grey. Auto exposure on the viewport's camera
 ## (CameraAttributesPractical): `speed` how fast it settles (1 is about a second), `scale` the brightness it settles
-## to (0.4), halved at night. `HSLook.iris(viewport, true, night)` after `apply`; off puts a plain attributes back.
-static func iris(vp: Viewport, on: bool, night: bool = false, speed: float = 1.0, scale: float = 0.4) -> CameraAttributesPractical:
+## to (0.4), halved at night, within `band` stops either way of the middle sensitivity (a camcorder's iris has a
+## range; five stops made the room darken whenever the eye dropped to the floor: the user, 2026-10-30; one stop
+## leaves the settling and keeps the room the room). `HSLook.iris(viewport, true, night)` after `apply`; off puts a
+## plain attributes back.
+static func iris(vp: Viewport, on: bool, night: bool = false, speed: float = 1.0, scale: float = 0.4, band: float = 0.5) -> CameraAttributesPractical:
 	if vp == null:
 		return null
 	var cam := vp.get_camera_3d()
@@ -142,8 +145,8 @@ static func iris(vp: Viewport, on: bool, night: bool = false, speed: float = 1.0
 	ca.auto_exposure_enabled = on
 	ca.auto_exposure_speed = speed
 	ca.auto_exposure_scale = scale * (0.5 if night else 1.0)
-	ca.auto_exposure_min_sensitivity = 50.0
-	ca.auto_exposure_max_sensitivity = 1600.0
+	ca.auto_exposure_min_sensitivity = 300.0 / pow(2.0, band)        # the band about ISO 300: 212 to 424 for half a stop either way
+	ca.auto_exposure_max_sensitivity = 300.0 * pow(2.0, band)
 	cam.attributes = ca
 	return ca
 

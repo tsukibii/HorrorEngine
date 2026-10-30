@@ -2,6 +2,24 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-30, night, from their second Godot run (the user asleep)
+
+- **"Realistically you can disable all the shaders and lighting effects in director tool, we only need director
+  tool for the gameplay etc, actual lighting etc should be set up in Godot (for the test room though you can allow
+  director tool to just set up some generic lighting spots like you currently are but we don't need detailed
+  shadows or anything in director tool)."** So the desk lights its rooms plainly by default: the lamps and the
+  windows' fill as point and spot lights, no shadow maps (it never had them), and none of the light effects it
+  mirrored from Godot (the windows' shafts, the lights' patterns, the headlight sweeps, the leaks' strips, wet
+  skin): `Stage.plainLight`, the toolbar's Lighting button turning the effects on for a look, kept in the browser.
+  New lighting work goes to the Godot side (GodotPlugins/HorrorStudioLook, the runtime add-on), not the desk.
+- **"Fix the new weird lighting bug: the lights change based off what direction I look at, too noticeable (gets
+  darker when I look down), and I see bright gaps come through on the floor and disappear as I move and look."**
+  The iris's range cut to one stop, SSIL pared back, the rooms' VoxelGIs sized by the room, the windows' shafts
+  faint at night and faded at the floor (GODOT_LOOK §1, GODOT_EXPORT §8).
+- **"The characters/NPCs seem a bit overlit inside the game (their skin glows too bright)."** GDPEOPLE now measures
+  the lit face against the export's own plain material under the same lights and holds the skin shader within
+  0.85 to 1.15 of it.
+
 ## 2026-10-29, night, after the local run (the Godot thread)
 
 - **"We are scrapping voiced lines from the game for now (might add a typewriter sound effect as the text appears

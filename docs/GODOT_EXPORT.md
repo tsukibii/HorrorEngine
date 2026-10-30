@@ -149,6 +149,13 @@ loads, every verb in the games has a part).
    every combination of a scene's answers (silence too, at most 16 a scene) as its own recording (`recordings`, keyed
    `c3=good|c7=`; the export a file each, `scenes/<sid>__<key>.json`), and the scene player switches to the branch's
    recording at the answer, its timeline mapped onto it (measured: the night scene's painting answer, no frame held).
+   **The rooms' VoxelGIs sized by the room** (2026-10-30, the user: "bright gaps come through on the floor and
+   disappear as I move and look"): every probe was 64 cells over its room plus a metre: the 30 m corridor had 47 cm
+   voxels, so the lamps of the rooms beside it lit its voxels through the 10 cm walls and the floor glowed at the
+   base of every wall. Now the cells follow the longest side (64 to 6.4 m, 128 to 12.8, 256 beyond, never 512: a
+   voxel 10 cm or under in a room, 12 cm in the 30 m corridor) and the box reaches 30 cm past the room, enough for its walls and none of the neighbours'
+   lit floors. A kept bake whose bounds don't match its probe (a re-export resized it) is thrown away and baked
+   again. The first start after a re-export bakes longer (seconds a room on the card at 256).
    **A kept VoxelGI bake that's broken** (2026-10-30, the user: thousands of `!p_data.has("bounds")` errors a
    minute after a pull): `game.bake_gi` keeps each room's bake in `user://gi/<game>/<level>_<probe>.res` and
    loaded whatever was there; a file cut short (the game closed mid-save) or saved empty has no bounds, and Godot

@@ -335,7 +335,12 @@ func enter_level(lid: String) -> void:
 		if n is Node3D and n.has_meta("leak"):
 			leak_nodes.append(n)
 		if n is FogVolume and n.has_meta("shaft"):                        # a window's light shaft (HSShaft): the beam's shader onto the export's FogVolume
-			HSShaft.wear(n, JSON.parse_string(n.get_meta("shaft")))
+			var ss = JSON.parse_string(n.get_meta("shaft"))
+			if ss is Dictionary:                                              # the beam by the time of day: full by day, a little at night (a glowing box in a dark room read as a bright patch on the floor: the user, 2026-10-30)
+				var tod := str(game.time_of_day) if game != null else "night"
+				ss = ss.duplicate()
+				ss["strength"] = float(ss.get("strength", 1.0)) * (1.0 if tod == "day" else 0.6 if tod == "dusk" else 0.25)
+			HSShaft.wear(n, ss if ss is Dictionary else {})
 		if n is Node3D and n.has_meta("sweep") and not (n is Light3D):   # a car passing outside a window now and then (HSSweep)
 			var sm: Dictionary = JSON.parse_string(n.get_meta("sweep"))
 			sweeps.append({"room": sm.get("room"), "node": HSSweep.attach(n, sm)})
@@ -2043,7 +2048,43 @@ static func glb_scene(path: String) -> Node3D:
 	var st := GLTFState.new()
 	if doc.append_from_file(path, st) != OK:
 		return null
-	return doc.generate_scene(st)
+	var n := doc.generate_scene(st)
+	scrub_meshes(n)
+	return n
+
+
+## a surface with an index buffer and nothing in it (a glb's empty primitive: a garment cut to nothing, a scalp with no
+## hair) makes the renderer say `draw_list_bind_index_array: index_array is null` every frame it's drawn (the user,
+## 2026-10-30): such surfaces are left out of the mesh, the rest kept with their materials
+static func scrub_meshes(root: Node) -> int:
+	if root == null:
+		return 0
+	var dropped := 0
+	for mi in root.find_children("*", "MeshInstance3D", true, false):
+		var m = mi.mesh
+		if not (m is ArrayMesh):
+			continue
+		var bad: Array = []
+		for s in m.get_surface_count():
+			var fmt: int = m.surface_get_format(s)
+			if m.surface_get_array_len(s) == 0 or ((fmt & Mesh.ARRAY_FORMAT_INDEX) != 0 and m.surface_get_array_index_len(s) == 0):
+				bad.append(s)
+		if bad.is_empty():
+			continue
+		var am := ArrayMesh.new()
+		for s in m.get_surface_count():
+			if s in bad:
+				continue
+			am.add_surface_from_arrays(m.surface_get_primitive_type(s), m.surface_get_arrays(s), m.surface_get_blend_shape_arrays(s), {}, m.surface_get_format(s))
+			am.surface_set_name(am.get_surface_count() - 1, m.surface_get_name(s))
+			am.surface_set_material(am.get_surface_count() - 1, m.surface_get_material(s))
+		for b in m.get_blend_shape_count():
+			if am.get_blend_shape_count() < m.get_blend_shape_count() and am.get_surface_count() == 0:
+				am.add_blend_shape(m.get_blend_shape_name(b))
+		mi.mesh = am
+		dropped += bad.size()
+		print("%s: %d empty surface(s) left out of its mesh (nothing to draw in them)" % [mi.name, bad.size()])
+	return dropped
 
 
 ## the T-pose's arms down to the sides: the upper arms turned about the body's forward axis (the bone's rest frame

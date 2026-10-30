@@ -91,6 +91,13 @@ def main():
     paint, flat = rep.get("paint") or {}, rep.get("flat") or {}
     ok = rep.get("skin_mats", 0) >= 1
     print(("  ok  " if ok else "  BAD ") + "the skin on HSSkin (%d materials)" % rep.get("skin_mats", 0))
+    lit, plain = rep.get("lit") or {}, rep.get("lit_plain") or {}
+    if lit and plain and plain.get("g", 0) > 0:
+        lum = lambda c: 0.2126 * c["r"] + 0.7152 * c["g"] + 0.0722 * c["b"]
+        ratio = lum(lit) / max(1e-6, lum(plain))
+        fair = 0.85 <= ratio <= 1.15
+        ok = ok and fair
+        print(("  ok  " if fair else "  BAD ") + "under the studio's lights the skin shader keeps the face as bright as the export's own plain material would (%.2f of it; 0.85 to 1.15: not overlit)" % ratio)
     if rep.get("normal_maps", 0) >= 1 and rep.get("relief_map", 0) > 0.01:   # an export with the Studio's relief (pores, wrinkles): the lit face grainier with it than flattened
         relief = rep.get("relief_lit", 0) > rep.get("relief_smooth", 9) * 1.08
         ok = ok and relief

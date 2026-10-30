@@ -46,7 +46,26 @@ open); the likely causes given to them (the pointer lock not taken, a kit door's
 both runtimes, a story lock); awaiting what the reticle says there. If it's the handle: a kit door's
 `attach:<door>` parts should count as the door for the reticle in both runtimes. And **thousands of VoxelGI
 "bounds" errors** after their pull: a broken kept bake in `user://gi/`; validated, thrown away and rebaked now
-(GODOT_EXPORT §8).
+(GODOT_EXPORT §8). **The lighting that changed with the look** (their last note before sleep: darker looking
+down, bright gaps on the floor coming and going): three causes, each cut back (GODOT_LOOK §1, GODOT_EXPORT §8):
+the iris's five-stop range (one stop now), SSIL at 1.2 (0.45, radius 1.2), the rooms' VoxelGIs at 64 cells a
+metre into the neighbours (cells by the room's size, 30 cm past it); measured with lookshot pairs at the same
+spot level and looking down, before and after (`docs/godot_sheets/2026-10-30_look_down.jpg`: in the corridor at
+night the picture looking down was 0.70 of the level one, 0.79 after; the whole picture a third brighter after,
+the finer VoxelGIs bouncing more); their three
+pictures of a bright rectangle on a room's floor were the windows' shafts (a box of lit fog at night: faint at
+night now, its box faded toward the floor). **The desk's clicks** ("I still can't click or interact with anything
+when testing via director tool, it used to work"): the reticle's ray hit the shafts' see-through boxes and the
+patterns' planes before anything (the Light Kit pieces drawn on the desk since 2026-10-29): skipped now; and with
+their decision (DECISIONS 2026-10-30) the desk lights plainly by default, no effects drawn at all (the toolbar's
+Lighting shows them). **Overlit skin in Godot**: GDPEOPLE now holds the lit face within 0.85 to 1.15 of the
+export's own plain material under the same lights (0.95 on `_studiotest`); if lol still glows, it's the room's
+lights' energy on a brighter tone, or the SSS: `subsurface_scattering_strength` and `specular` in skin.gd are the
+knobs. **The `index_array is null` error**: a glb surface with an index buffer and nothing in it (an empty
+primitive in an export) is drawn every frame; loaded glbs are scrubbed of such surfaces now (play.gd
+`scrub_meshes`, said on the console). **Not understood yet**: their "another bug I found: the dialogue (text)
+that the person says" came through cut off; ask what they saw (the wrong words, the wrong speaker, timing, the
+typewriter) before touching it.
 
 **Open: the user's stand-in bug** (2026-10-30, their words: "in director I chose an actual designed character to
 test but in game I only see this base mesh; after switching to the designed character it now has weird splotches

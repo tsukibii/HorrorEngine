@@ -363,7 +363,7 @@ export class Figure {
     this.group.add(this.nose);
     this.pos = null;
   }
-  setWet(w) { setSkinWet(this.mat, w); }                     // the `skin` word (skinwet.js)
+  setWet(w) { setSkinWet(this.mat, Stage.plainLight ? {} : w); }   // the `skin` word (skinwet.js); dry under plain lighting
   get wet() { return wetOf(this.mat); }
   setColor(c) { this.mat.color.set(c); }
   update(pos) {                                   // pos: joint -> Vector3 in character space
@@ -395,6 +395,7 @@ export class Stage {
   static LIVES = null;           // the little things' lives (lives.json): a world with some gets their effects (lifefx.js)
   static showTrackers = true;
   static simple = false;         // the simple view: plain colours, no textures (simpleOf); every stage, the Watch's and Play's too
+  static plainLight = true;      // plain lighting (DECISIONS 2026-10-30: the desk is for the gameplay, the lighting is made in Godot): the lamps and the windows' fill stay, the light effects don't (shafts, patterns, sweeps, leak strips, wet skin); the toolbar's Lighting turns the effects on for a look
   constructor(container, lib) {
     this.lib = lib;
     this.container = container;
@@ -476,7 +477,7 @@ export class Stage {
         this.world.add(m); if (!p.tags.includes("hollow") && !hidden && m.userData.use !== "clean") this.solid.push(m);     // a door frame: you see and walk through it; a stain: you walk over it
         if (p.tags.some(t => t.startsWith("kit:")) && p.d && p.d.kit !== undefined) this.kitIn(m, p.d.kit, h);
         else if (artRef && LIBRARY.meshes.has(artRef)) this.pending.push(this.dress(m, artRef, [w, h, d], p.tags.includes("real")));
-      } else if (p.kind === "leak") {       // water running down a wall (Godot: HSLeak's band and drips): here a dark glossy strip on the wall's face, wider as it runs down
+      } else if (p.kind === "leak" && !Stage.plainLight) {       // water running down a wall (Godot: HSLeak's band and drips): here a dark glossy strip on the wall's face, wider as it runs down
         const rm = ((((story.levels || {})[p.level] || {}).rooms) || []).find(r => r.id === p.room), wall = (p.tags.find(t => t.startsWith("wall:")) || "wall:n").slice(5);
         if (rm) {
           const [x0, y0, z0] = rm.at, [rw, rd] = rm.size, width = +(p.d && p.d.width) || 0.4, top = p.pos[2], bottom = z0, h = Math.max(0.1, top - bottom);
@@ -499,7 +500,7 @@ export class Stage {
           l.target.position.copy(s2t(at[0] + p.d.aim[0], at[1] + p.d.aim[1], (at[2] || 0) + p.d.aim[2])); this.world.add(l.target);
         } else l = new THREE.PointLight(col, (p.d && p.d.lit === false) ? 0 : inten, dist, 1.6);
         l.position.copy(s2t(...p.pos));
-        if (l.isSpotLight && p.d && p.d.pattern) { const pl = new PatternLoop(l, p.d, l.position.distanceTo(l.target.position)); this.patterns.push(pl); this.world.add(pl.mesh); }   // the pattern itself where the light lands, as HSPattern draws it
+        if (l.isSpotLight && p.d && p.d.pattern && !Stage.plainLight) { const pl = new PatternLoop(l, p.d, l.position.distanceTo(l.target.position)); this.patterns.push(pl); this.world.add(pl.mesh); }   // the pattern itself where the light lands, as HSPattern draws it
         l.userData = Object.assign({ id: p.id, room: p.room, base: l.intensity, kind }, flickerOf(p.d || {}, p.id));   // kind: a candle or a fire burns through a power cut; the flicker's mode (tools/shared/flicker.js)
         this.world.add(l); this.lights.push(l);
       } else if (p.kind === "person") {
@@ -529,11 +530,11 @@ export class Stage {
       const l = new THREE.SpotLight(0xffffff, 1, 6, 1.1, 1, 1.5);
       l.position.copy(s2t(...at(0.05))); l.target.position.copy(s2t(...at(2))); l.userData = { window: room.id, area: op.w * op.h };
       this.world.add(l, l.target); this.windows.push(l);
-      if (op.shaft) {                      // the window's light shaft (Godot: HSShaft; here a see-through box along the light with the same density)
+      if (op.shaft && !Stage.plainLight) {   // the window's light shaft (Godot: HSShaft; here a see-through box along the light with the same density)
         const sh = new Shaft(l.position.clone(), l.target.position.clone(), op.w, op.h, op.shaft === true ? 1 : +op.shaft || 1, op);
         this.world.add(sh.mesh); this.shafts.push(sh);
       }
-      if (op.sweep) {                      // a car passing outside now and then (Godot: HSSweep; here the same lamp sliding by, no shadows)
+      if (op.sweep && !Stage.plainLight) {   // a car passing outside now and then (Godot: HSSweep; here the same lamp sliding by, no shadows)
         const sw = typeof op.sweep === "object" ? op.sweep : {}, outward = axis === "y" ? [0, -inward, 0] : [-inward, 0, 0], alongV = axis === "y" ? [1, 0, 0] : [0, 1, 0];
         const lamp = new THREE.SpotLight(0xf2eacc, 0, 40, 22 * Math.PI / 180, 0.6, 1.2); lamp.visible = false;
         this.world.add(lamp, lamp.target);

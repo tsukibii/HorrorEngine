@@ -28,7 +28,8 @@ screen-space effects that a big scene can't afford are cheap here, and they're t
 | Tonemap | AgX, exposure 1.2 | the filmic curve with the best colour under coloured lights (the warm bulb, the blue night); 1.2 because AgX sits darker than Filmic at 1.0 |
 | SSR | on, 128 steps, fade in 0.15, out 2.0, tolerance 0.2 | the overplayed reflections: wet floors, blood, the glossy cabinet, the glass-skin faces carry the lights and the room. 128 steps so the lamp across the room still lands in the puddle under it |
 | SSAO | radius 1.0, intensity 2.5, power 1.5 | the corners and the feet of things; GODOT_PLAN §4's trial found it does more for a greybox than any GI |
-| SSIL | radius 2.5, intensity 1.2 | the practicals' colour bleeding onto nearby walls (a warm lamp on a wall) over the VoxelGI's bounce |
+| Light shafts | density 0.3 (0.5 until 2026-10-30), full by day, 0.6 at dusk, 0.25 at night, the box fading from its middle toward the floor and ceiling | a window's beam in the haze (§1c). At night in a dark room a box of lit fog read as a bright rectangle on the floor, its foot drawn crisp by the froxel grid and shifting as the eye moved (the user's pictures, 2026-10-30) |
+| SSIL | radius 1.2, intensity 0.45 (2.5 and 1.2 until 2026-10-30) | a little of the practicals' colour bleeding onto nearby walls over the VoxelGI's bounce. Pared back after the user's "bright gaps on the floor that disappear as I move and look": it's screen-space, so what it bleeds depends on what's in view, and at 1.2 it painted patches that came and went with the eye |
 | Glow | soft light, intensity 0.55, threshold 1.05, levels 3 and 5 | the bulbs and the screens bloom a little; soft light keeps the mids from washing |
 | Haze | volumetric fog, density 0.012, anisotropy 0.55 | the thin air of a dark house: light beams through doorways, the far end of a corridor softer |
 | Grade | contrast 1.08, saturation 1.04 | pushed a touch past neutral, under the tape (UltraVHS) when the game wears it |
@@ -129,7 +130,10 @@ glass; it's 0.15 on the sweep's lamp now, and the pass reads as it should: the w
 far wall and ceiling with the frame's shadow, at energy 10. `lookshot.gd --sweep=<room>` holds a car mid-pass for a
 picture.
 
-**The iris** (`HSLook.iris`, after Light Kit's Sky exposure, 2026-10-29): auto exposure on the camera
+**The iris** (`HSLook.iris`, after Light Kit's Sky exposure, 2026-10-29; its range cut to one stop 2026-10-30: five
+stops made the whole room darken when the eye dropped to the floor, the user's "the lights change based on what
+direction I look"; the band is half a stop either way of ISO 300: the demo's bright light now closes the eye by
+8% instead of 24%, night holds it at 0.80): auto exposure on the camera
 (CameraAttributesPractical), the eye settling over about a second as a camcorder's iris does, held a stop under at
 night so night doesn't turn grey (the scale halved; game.gd's set_time). On with any look but `plain`. The demo
 switches a bright light on and measures the jump, the settle and the night's step down.

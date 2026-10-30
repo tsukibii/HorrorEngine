@@ -127,12 +127,19 @@ func body_scene(cid: String, file: String) -> Variant:
 		return body_scenes[ck]
 	var path := file if file.begins_with("res://") else "res://game/previs/" + file
 	var ps = load(path) if ResourceLoader.exists(path) else null
+	if ps is PackedScene:                            # the importer's scene: its empty surfaces scrubbed once (play.gd scrub_meshes), packed again
+		var inst = ps.instantiate()
+		if load("res://addons/horrorstudio/play.gd").scrub_meshes(inst) > 0:
+			ps = PackedScene.new()
+			ps.pack(inst)
+		inst.free()
 	if ps == null and FileAccess.file_exists(path):   # not imported yet (a headless run): read the glb itself
 		var doc := GLTFDocument.new()
 		var st := GLTFState.new()
 		if doc.append_from_file(path, st) == OK:
 			var n = doc.generate_scene(st)
 			if n != null:
+				load("res://addons/horrorstudio/play.gd").scrub_meshes(n)
 				ps = PackedScene.new()
 				ps.pack(n)
 				n.free()
@@ -216,7 +223,7 @@ func bake_gi(lid: String) -> void:
 		var path := "%s/%s_%s.res" % [dir, lid, vg.name]
 		if FileAccess.file_exists(path) and not bad_gi.has(path):
 			var d = ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_IGNORE)   # read afresh: a cached copy of a broken one would fool the check
-			if d is VoxelGIData and (d as VoxelGIData).get_bounds().size.length() > 0.0:   # a kept bake: whole (a file cut short, or saved empty, has no bounds and would print an error a frame)
+			if d is VoxelGIData and (d as VoxelGIData).get_bounds().size.length() > 0.0 and ((d as VoxelGIData).get_bounds().size - vg.size).length() < 0.05:   # a kept bake: whole (a file cut short, or saved empty, has no bounds and would print an error a frame) and this probe's own size (a re-export that resized it needs a new one)
 				vg.data = d
 				continue
 			bad_gi[path] = true                                                   # never read again this run
@@ -226,7 +233,7 @@ func bake_gi(lid: String) -> void:
 				size = f.get_length()
 				f.close()
 			var err := DirAccess.remove_absolute(ProjectSettings.globalize_path(path))   # broken: thrown away and baked again
-			print("a kept VoxelGI bake is broken: %s (%d bytes, read as %s, bounds %s): removed (%s), baked again" % [path, size, d.get_class() if d != null else "nothing", str(d.get_bounds()) if d is VoxelGIData else "-", error_string(err)])
+			print("a kept VoxelGI bake is broken or stale: %s (%d bytes, read as %s, bounds %s against the probe's %s): removed (%s), baked again" % [path, size, d.get_class() if d != null else "nothing", str(d.get_bounds()) if d is VoxelGIData else "-", str(vg.size), error_string(err)])
 			dropped += 1
 		vg.bake(level)
 		if vg.data != null and vg.data.get_bounds().size.length() > 0.0:

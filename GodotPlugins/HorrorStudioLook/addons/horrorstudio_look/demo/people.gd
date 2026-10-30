@@ -16,7 +16,9 @@ var who: Node3D
 var mats: Array = []
 var lights: Array = []
 var report := {}
-const STAGES := ["flat", "lit", "lit_smooth", "wet", "oil", "eye_front", "eye_slant", "eye_slant_flat"]
+const STAGES := ["flat", "lit", "lit_smooth", "lit_plain", "wet", "oil", "eye_front", "eye_slant", "eye_slant_flat"]
+var plain_mats: Dictionary = {}                  # the export's own materials on its skin meshes, kept for the plain picture
+var skin_surfaces: Array = []                    # [mesh, surface] the skin shader went on
 var eyes: Dictionary = {}
 var eye_centre := Vector3.ZERO
 var eye_radius := 0.012
@@ -54,7 +56,16 @@ func _initialize() -> void:
 		quit(1)
 		return
 	world.add_child(who)
+	for mi in who.find_children("*", "MeshInstance3D", true, false):   # the export's own materials, for the plain picture
+		if mi.mesh != null:
+			for si in mi.mesh.get_surface_count():
+				plain_mats[[mi, si]] = mi.get_active_material(si)
 	mats = HSSkin.wear(who, {}, glb)                 # with the export's maps and its studioSkin numbers
+	for mi in who.find_children("*", "MeshInstance3D", true, false):
+		if mi.mesh != null:
+			for si in mi.mesh.get_surface_count():
+				if mi.get_surface_override_material(si) in mats:
+					skin_surfaces.append([mi, si, mi.get_surface_override_material(si)])
 	report["skin_mats"] = mats.size()
 	var with_normal := 0
 	var with_orm := 0
@@ -192,6 +203,11 @@ func _process(_d: float) -> bool:
 		report["flat"] = face_mean(img)
 	if name == "lit":
 		report["relief_lit"] = face_grain(img)
+		report["lit"] = face_mean(img)
+	if name == "lit_plain":
+		report["lit_plain"] = face_mean(img)
+		for e in skin_surfaces:                        # the skin shader back on
+			e[0].set_surface_override_material(e[1], e[2])
 	if name == "lit_smooth":
 		report["relief_smooth"] = face_grain(img)
 		for m in mats:
@@ -210,6 +226,9 @@ func _process(_d: float) -> bool:
 		"lit_smooth":                                  # the same light with the relief flattened: what the normal map adds
 			for m in mats:
 				m.set_shader_parameter("normal_strength", 0.0)
+		"lit_plain":                                   # the same light on the export's own plain material: is the skin shader overlit?
+			for e in skin_surfaces:
+				e[0].set_surface_override_material(e[1], null)
 		"wet":
 			for m in mats:
 				HSSkin.set_wet(m, {"wetness": 0.8, "sweat": 0.8, "sweat_scale": 220.0, "drips": 0.4})

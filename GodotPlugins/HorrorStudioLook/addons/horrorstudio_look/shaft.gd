@@ -29,7 +29,7 @@ static func wear(fv: FogVolume, s: Dictionary = {}) -> ShaderMaterial:
 	fv.shape = RenderingServer.FOG_VOLUME_SHAPE_BOX
 	var m := ShaderMaterial.new()
 	m.shader = load("res://addons/horrorstudio_look/shaft.gdshader")
-	m.set_shader_parameter("density", 0.5 * float(s.get("strength", 1.0)))
+	m.set_shader_parameter("density", 0.3 * float(s.get("strength", 1.0)))
 	m.set_shader_parameter("dust", float(s.get("dust", 0.5)))
 	m.set_shader_parameter("drift", float(s.get("drift", 0.12)))
 	fv.material = m

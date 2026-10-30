@@ -738,7 +738,8 @@ export class PlayRuntime {
   eyePos() { return this.player.pos.clone().add(new THREE.Vector3(0, this.player.eye, 0)); }
   // what the reticle is on: the first visible thing along the ray, never a hollow piece (a kit door's frame: its block
   // spans the doorway, its drawn parts only the edges; you walk and click through it)
-  aim() { return this.ray.intersectObjects(this.stage.world.children.filter(o => o.isMesh && o.visible && !((o.userData.piece || {}).tags || []).includes("hollow")), false)[0] || null; }
+  // (nor a light effect drawn in the room: a window's shaft box, a pattern's plane (lightfx.js): the eye sees through them, so does the reticle)
+  aim() { return this.ray.intersectObjects(this.stage.world.children.filter(o => o.isMesh && o.visible && !o.userData.shaft && !o.userData.pattern && !((o.userData.piece || {}).tags || []).includes("hollow")), false)[0] || null; }
   async use(press) {
     if (this.player.sleeping || this.inChapter) return;
     if (this.player.peeping) { this.hud.press(); this.unpeep(); return; }   // a click takes the eye from the peephole

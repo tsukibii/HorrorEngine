@@ -103,7 +103,7 @@ def main():
     checks.append(("a headlight sweep: fired, the car is passing at the shot and the ceiling and wall are brighter than before it", rep.get("sweep_passing", 0) == 1 and rep.get("sweep_gain", 0) > 0.01))
     ir = rep.get("iris", {})
     checks.append(("the iris: against a bright light the eye closes (the same light with the iris off is brighter), and night holds it a stop under",
-                   ir.get("open", 0) > ir.get("closed", 9) * 1.12 and ir.get("night", 9) < ir.get("closed", 0) * 0.8))
+                   ir.get("open", 0) > ir.get("closed", 9) * 1.05 and ir.get("night", 9) < ir.get("closed", 0) * 0.85))   # one stop of range since 2026-10-30: 1.08 and 0.80 measured (1.24 and 0.8 with five stops)
     checks.append(("a leak's band on the wall: wet, the wall's lit face carries the lamp (brighter peak than dry) and darker between, and drops have fallen",
                    rep.get("leak_wet", {}).get("max", 0) > rep.get("leak_dry", {}).get("max", 9) * 1.04 and rep.get("leak_wet", {}).get("mean", 9) < rep.get("leak_dry", {}).get("mean", 0) * 1.0 and rep.get("leak_drops", 0) >= 2))
     checks.append(("hair on an imported model: the cards worn by their name, the highlights brighten the lit crown band over the dull one, the colour steps leave the crown under half the lit one's colours, and the dither grains it over the steps alone",

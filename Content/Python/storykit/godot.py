@@ -534,13 +534,20 @@ class LevelWriter:
 
     def gi(self):
         """A VoxelGI per room (GODOT_PLAN §4's trial: the bounce of the room's own lights; a level-wide one misses the
-        10 cm walls): its box plus a metre, 64 cells. Unbaked here (baking is the renderer's): the runtime bakes each
-        once when the level loads and keeps the result in user://."""
+        10 cm walls): its box plus 30 cm (the walls in, the neighbours' lit floors out: a metre reached into them and
+        their lamps lit this room's voxels through the wall), its cells by its longest side so a voxel is 10 cm or
+        under (64 to 6.4 m, 128 to 12.8, 256 beyond, never 512: a 30 m corridor at 64 cells had 47 cm voxels and
+        light leaking in at the base of every wall, the user's "bright gaps on the floor", 2026-10-30; at 256 its
+        voxels are 12 cm, and the tighter box keeps the neighbours' lit floors out, which was the leak's source).
+        Unbaked here
+        (baking is the renderer's): the runtime bakes each once when the level loads and keeps the result in user://."""
         for room in (self.story["levels"][self.lid].get("rooms") or []):
             x0, y0, z0 = room["at"]
             w, d, h = room["size"]
             c = s2g((x0 + w / 2, y0 + d / 2, z0 + h / 2))
-            self.t.node(self.uname(f"__gi_{room['id']}"), "VoxelGI", "GI", {"transform": xform(c), "size": v3(w + 1.0, h + 1.0, d + 1.0), "subdiv": "0"},
+            longest = max(w, d, h) + 0.3
+            subdiv = 0 if longest <= 6.4 else 1 if longest <= 12.8 else 2
+            self.t.node(self.uname(f"__gi_{room['id']}"), "VoxelGI", "GI", {"transform": xform(c), "size": v3(w + 0.3, h + 0.3, d + 0.3), "subdiv": str(subdiv)},
                         {"gi": {"room": room["id"]}})
             # a reflection probe per room too (Light Kit's one Box Reflection Capture per room): metal, glossy cabinets
             # and wet floors reflect their own room where the screen-space reflections can't reach (off-screen, behind)

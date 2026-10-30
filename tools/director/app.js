@@ -70,6 +70,7 @@ async function boot() {
     watchStage = new Stage($("#watchBox"), LIB);
     $("#watchBox").prepend(watchStage.renderer.domElement);
     try { setSimple(localStorage.getItem("dd.simple") === "1"); } catch (e) { }
+    try { setLightFx(localStorage.getItem("dd.lightfx") === "1"); } catch (e) { }
     PICS = pictures();
     flowStage.lifeAt = (sc, tl, T) => {                 // a scene's little things: from where they start, its cues up to T
       const W = new States(LIVES, lifeThings()).start(0);
@@ -2607,7 +2608,7 @@ $("#keysHelp").onclick = () => {
     el("p", { class: "helpguide" }, icon("notes", 15), el("a", { href: "guide.html", target: "deskguide" }, "Open the guide"), el("span", { class: "kv" }, " · every part of the desk, in the order you'd use it, with pictures")),
     sec("The desk", [["Ctrl+K", "go to anything: a card, a line by its words, a beat, a flag, an item, or an action such as Playtest"], ["Ctrl+S", "save"], ["Ctrl+Z", "undo (outside a text box; 150 edits back)"], ["Ctrl+Shift+Z · Ctrl+Y", "redo"],
       ["Problems", "what's wrong, found as you edit: click one to go there"], ["Playtest", "the game from the start, as the player plays it"], ["Check · Unreal", "the story and level checks; the game built in Unreal"],
-      ["Simple", "the simple view, when the desk lags: plain colours, no textures (kept in this browser)"]]),
+      ["Simple", "the simple view, when the desk lags: plain colours, no textures (kept in this browser)"], ["Lighting", "the light effects (shafts, patterns, sweeps, leaks, wet skin) drawn on the desk; off by default: the lighting is made in Godot"]]),
     sec("The flow board", [["drag a card", "move it (the layout is kept in the story)"], ["drag its ●", "onto another card to connect them, or onto empty space for a new one"], ["palette", "drag Scene, Task, Choice or Ending onto the board"], ["double-click", "empty space: add a card there"], ["wheel · drag the background", "zoom · pan"], ["F · M · Delete", "fit everything · the minimap · remove the selected card"],
       ["Shift+drag · Ctrl+click", "pick several cards: a box, or one more"], ["right-click", "a card, an act or the board: copy, paste, duplicate, make an act, remove"],
       ["Ctrl+C · Ctrl+V · Ctrl+D", "copy · paste · duplicate what's picked (cards, lines, beats, commands; between games too)"], ["an act", "drag its title to move it with its cards; fold it to one card; drop a card in to join"],
@@ -2638,6 +2639,14 @@ function setSimple(on) {
   for (const st of [flowStage, watchStage]) if (st) st.render();
 }
 $("#simpleView").onclick = () => { setSimple(!Stage.simple); status(Stage.simple ? "simple view: plain colours, no textures" : "full view"); };
+// the light effects (the toolbar's Lighting; DECISIONS 2026-10-30): off, the desk lights its rooms plainly (the lamps, the windows' fill) and leaves
+// the shafts, patterns, sweeps, leak strips and wet skin to Godot; on, it draws them too, for a look. Kept in this browser
+function setLightFx(on) {
+  Stage.plainLight = !on; $("#lightFx").classList.toggle("on", !!on);
+  try { localStorage.setItem("dd.lightfx", on ? "1" : ""); } catch (e) { }
+  for (const st of [flowStage, watchStage]) if (st && st.story && st.plan) { try { st.setWorld(st.plan, st.story, st.levelId || Object.keys(st.story.levels)[0]); } catch (e) { } }
+}
+$("#lightFx").onclick = () => { setLightFx(Stage.plainLight); status(Stage.plainLight ? "plain lighting: the lamps alone, as the desk is for the gameplay" : "the light effects drawn: shafts, patterns, sweeps, leaks, wet skin"); };
 $("#godot").onclick = async () => {                 // the game as a Godot project (docs/GODOT_EXPORT.md): the bake first, then the export, zipped, with its guide
   if (DIRTY && !(await save())) { status("not saved: nothing exported"); return; }
   const box = $("#inspector"); box.innerHTML = ""; box.append(el("h2", {}, "Export to Godot"), el("p", { class: "muted", id: "gdState" }, "recording the scenes…"));
