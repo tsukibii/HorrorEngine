@@ -2664,38 +2664,6 @@ $("#godot").onclick = async () => {                 // the game as a Godot proje
   if (j.kept && j.kept.length) box.append(el("p", { class: "muted" }, `Kept yours (changed since the last export): ${j.kept.join(", ")}. The desk's new version of each is beside it as <name>.desk.<ext>.`));
   box.append(el("pre", {}, (j.output || "").split("\n").slice(-20).join("\n")));
 };
-$("#generate").onclick = async () => {
-  if (DIRTY && !(await save())) { status("not saved: nothing run"); return; }   // never check or bake a version that isn't on disk
-  const box = $("#inspector"); box.innerHTML = ""; box.append(el("h2", {}, "Generate in Unreal"), el("p", { class: "muted", id: "genState" }, "baking the scenes…"));
-  stopWatch(); await loadFiles(); await loadMade(); if (!PLAN) await replan();
-  try {                                        // the Watch, recorded: what Unreal's preview plays (bake.js)
-    const saveBody = (who, blob) => fetch(`/api/export/${encodeURIComponent(GAME)}/Body_${encodeURIComponent(who)}.glb`, { method: "POST", body: blob });
-    const pv = await bakePreview(watchStage, S, PLAN, FILES, 30, (i, n, id) => { $("#genState").textContent = `baking the scenes… ${i + 1}/${n} (${id})`; }, GLTFExporter, saveBody);
-    await api("/api/preview/" + encodeURIComponent(GAME), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(pv) });
-  } catch (e) { $("#genState").className = "err"; $("#genState").textContent = "The bake failed: " + e.message; return; }
-  $("#genState").textContent = "running the checks…";
-  let j; try { j = await api("/api/unreal/generate/" + encodeURIComponent(GAME), { method: "POST" }); }
-  catch (e) { $("#genState").className = "err"; $("#genState").textContent = "Generate failed: " + e.message + (e.body && e.body.trace ? "" : " (the desk's server log has more)"); if (e.body && e.body.trace) box.append(el("pre", {}, e.body.trace)); return; }
-  box.append(el("pre", {}, (j.checks || []).join("\n")));
-  const st = $("#genState");
-  if (!j.ok) { st.className = "err"; st.textContent = j.error; return; }
-  st.textContent = j.how === "started" ? "Starting the editor with the build (the first open takes a few minutes)…" : "Building in the open editor…";
-  const t0 = Date.now(); let misses = 0;
-  const poll = async () => {
-    let r; try { r = await api("/api/unreal/status/" + encodeURIComponent(GAME)); misses = 0; }
-    catch (e) { if (++misses > 5) { st.className = "err"; st.textContent = "Lost the desk's server: " + e.message; return; } setTimeout(poll, 3000); return; }
-    if (Date.now() - t0 > 20 * 60 * 1000 && r.state !== "done") { st.className = "err"; st.textContent = `No answer from Unreal after 20 minutes: its log is Saved/Story/${GAME}/editor.log (UNREAL_FLOW.md §1 has what to look for)`; return; }
-    if (r.state === "done") {
-      st.className = r.ok ? "ok" : "err";
-      st.textContent = r.ok ? `Built: ${Object.entries(r.levels || {}).map(([k, v]) => `${k} (${v.pieces} pieces)`).join(", ")}. ${r.open || ""} is open in Unreal.` : "Failed: " + (r.errors || []).join("; ");
-      if (r.trace) box.append(el("pre", {}, r.trace));
-      return;
-    }
-    st.textContent = `${r.state === "building" ? "Building in Unreal" : "Waiting for Unreal"}… ${Math.round((Date.now() - t0) / 1000)} s`;
-    setTimeout(poll, 2000);
-  };
-  poll();
-};
 { // the divider between the board and the stage: dragged, and kept
   const sp = $("#split"), panel = $("#stagePanel"); let h0 = null; try { h0 = +localStorage.getItem("dd.stageH"); } catch (e) { }
   if (h0 > 120) panel.style.height = h0 + "px";

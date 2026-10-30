@@ -1,5 +1,5 @@
 // A light's flicker by mode (STORY_FORMAT §2 `light`: `flicker` 0..1 how much, `mode` which; after Light Kit's
-// Flicker component, UnrealPlugins/LightKit/Source/LightKit/Private/LightKitFlicker.cpp, the same curves):
+// Flicker component, Light Kit's, the Unreal plugin it was first written for, the same curves):
 //   (none)       the old wobble: two sines beating, the amount deep
 //   fluorescent  a tube: steady, then now and then a stutter of quick drops (every `interval` s or so)
 //   dying        a failing bulb or tube: drops out often, sometimes for a while, never quite full between

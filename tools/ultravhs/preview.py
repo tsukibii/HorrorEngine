@@ -1,4 +1,5 @@
-"""UltraVHS offline: the shader's three passes in numpy, for previewing settings without Unreal.
+"""UltraVHS offline: the shader's three passes in numpy (the reference the Godot tape, vhs.gdshader, is measured
+against: GODOTLOOK; first written beside the Unreal plugin, since removed: its .usf is in git history).
 
     uv run --with numpy --with pillow python preview.py IN.png OUT.png [--preset camcorder|worn|nightmare]
         [--set Name=value ...] [--night] [--frame N] [--side-by-side]

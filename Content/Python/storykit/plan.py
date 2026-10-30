@@ -1,6 +1,6 @@
 """story.json -> a flat list of pieces to spawn (walls cut round openings, floors, ceilings, doors, props, lights,
 triggers, spots, stand-ins, the player start). Plain Python: tools/plan_view.py draws it without the editor, and
-storykit.importer only spawns what this returns, so the maths is tested once, here.
+the Godot export (storykit.godot) only writes what this returns, so the maths is tested once, here.
 
 A piece: {"id", "kind", "level", "room", "pos" (world metres: the centre for meshes and triggers, the base for
 people, lights and spots), "size" (w, d, h in metres, along the piece's own axes), "yaw" (story degrees),

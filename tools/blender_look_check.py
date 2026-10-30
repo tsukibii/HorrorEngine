@@ -17,7 +17,7 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-VHS_TOOLS = ROOT / "UnrealPlugins" / "UltraVHS" / "Tools"
+VHS_TOOLS = ROOT / "tools" / "ultravhs"
 
 
 # ---- Blender's side (run with the bpy environment's Python) ----------------------------------------------------------

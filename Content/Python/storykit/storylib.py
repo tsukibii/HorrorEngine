@@ -1,5 +1,5 @@
 """Reads a game's story.json and works out where everything is. Plain Python, no `unreal` import: the offline tools
-(tools/*.py) and the editor scripts (storykit.importer etc.) both use it, so the geometry is worked out once.
+(tools/*.py) and the Godot export (storykit.godot) both use it, so the geometry is worked out once.
 
 Story space: metres, x east, y north, z up; yaw (rot) in degrees counter-clockwise from east (90 = facing north).
 Unreal space: centimetres, X = x, Y = -y, Z = z, yaw = -rot (see to_ue in importer.py).

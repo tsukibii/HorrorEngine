@@ -1,4 +1,4 @@
-## UltraVHS over the picture (docs/VHS.md; the plugin's presets, UnrealPlugins/UltraVHS/Tools/preview.py): a layer
+## UltraVHS over the picture (docs/VHS.md; the plugin's presets, tools/ultravhs/preview.py): a layer
 ## under the HUD with the tape shader on a full-screen rect. `preset("camcorder" | "worn" | "nightmare" | "off")`,
 ## `set_night(k)` (black records as a cool blue: Light Kit's night stays blue), `strength` the one number (docs/VHS.md
 ## §5: calm about 0.45, a scare pulses to 0.8). The story's `game.vhs` names the preset; Film grain in the menu caps

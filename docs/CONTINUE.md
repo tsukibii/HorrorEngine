@@ -119,7 +119,9 @@ and written by the export, GDEXPORT reading them back; `look_balanced.tscn` for 
 zones** (`HSLightZone` and the room_* presets: a room's box owning its lights, kept to it, reach fitted, off while
 unseen; the export a zone per room). **Open:** the sun's leak itself (Sky Only indoors, or a tighter directional
 shadow, or thicker overlapping walls and ceilings in the export: GODOT_LOOK's answer to the user's question 1, not
-built); the baking of static lights is the user's, on their machine.
+built); the baking of static lights is the user's, on their machine. **Last:** the choice back on one line
+(two answers, a dash between, A/D and Enter), and **the Unreal side removed** before the merge into main (DECISIONS
+2026-10-30, evening): the games are Godot's alone.
 
 ## 0. Next: the cloud session (left 2026-10-29, late night, on `godot-support`, after the local session on the 3090)
 

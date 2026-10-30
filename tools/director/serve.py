@@ -209,9 +209,6 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(404, {"error": "no such painting"})
         if parts[:2] == ["api", "boardgames"] and len(parts) == 3 and self.game_path(parts[2]):   # the games a table can have
             return self.send(200, {"games": [dict(m, id=k) for k, m in L.board_games(parts[2]).items()]})
-        if parts[:3] == ["api", "unreal", "status"] and len(parts) == 4 and self.game_path(parts[3]):
-            import unreal_link as UL  # noqa: PLC0415 - tools/
-            return self.send(200, UL.status(parts[3]))
         if parts[:2] == ["api", "bodies"]:
             files = sorted(f.name for f in BODIES.glob("*") if f.suffix.lower() in (".glb", ".gltf", ".fbx")) if BODIES.exists() else []
             return self.send(200, {"bodies": files + people_bodies()})
@@ -623,9 +620,6 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200 if r.returncode == 0 else 500, {"ok": r.returncode == 0, "output": (r.stdout + r.stderr)[-4000:], "dir": str(out.relative_to(ROOT)), "kept": kept,
                                                                 "zip": str(z.relative_to(ROOT)) if z.exists() else None, "kb": round(z.stat().st_size / 1024) if z.exists() else 0,
                                                                 "guide": f"/godot/{parts[3]}/guide/index.html" if (out / "guide" / "index.html").exists() else None})
-        if parts[:3] == ["api", "unreal", "generate"] and len(parts) == 4 and self.game_path(parts[3]):
-            import unreal_link as UL  # noqa: PLC0415 - tools/: the checks, then the build in Unreal
-            return self.send(200, UL.generate(parts[3]))
         if parts[:2] == ["api", "storycheck"] and len(parts) == 3 and self.game_path(parts[2]):
             import tempfile  # noqa: PLC0415 - the desk's story as it is now, not saved yet: checked as this game's
             fd, tmp = tempfile.mkstemp(suffix=".json", prefix="desk_story_")

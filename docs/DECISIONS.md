@@ -4,6 +4,14 @@ The user's answers, newest first. They override the plan, the research and the d
 
 ## 2026-10-30, evening (the user, after finding the sun's leak and the flicker's flashes)
 
+- **Unreal removed**: "I'm okay to merge this into main... before you do, remove all the remaining bloatware from
+  Unreal as we aren't going to use Unreal (the director's Unreal button too if it's easy); I think the Unreal stuff
+  slows down our test suite". Gone: the `.uproject`, `Config/`, `Source/`, `Plugins/` (UnrealClaude), `.mcp.json`,
+  `UnrealPlugins/` (UltraVHS's numpy reference and measures kept, moved to `tools/ultravhs/`), the editor-only
+  storykit modules (importer, generate, shots, surfaces, skin, people), `unreal_link`, `unreal_plugins`, `metahuman`,
+  `glass_skin`, `package_game`, `ueeye.mjs`, the class map, the glass-skin set, SETUP.md and setup.py's Unreal steps
+  (its Kimodo steps kept), the Unreal docs (UNREAL_FLOW, UNREAL_NEXT, RUNNER_SPEC, MCP_TOOLS, METAHUMAN_ROUTE), the
+  desk's Unreal button and its routes. All of it is in git history.
 - **A GTX 1060 is the target, with the realism look and its atmosphere, well optimised**: "what if we aim for 1060,
   we want that realism look with atmosphere but very well optimized". So `balanced` is the default look (no SSIL, SSR
   at 48 steps, a thinner haze, shadows at 4096 and 16 bits with the medium filter; the menu's Shadows Medium).

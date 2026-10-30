@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-TOOLS = ROOT / "UnrealPlugins" / "UltraVHS" / "Tools"
+TOOLS = ROOT / "tools" / "ultravhs"          # UltraVHS's numpy reference and its measures (from the Unreal plugin, kept)
 ADDON = ROOT / "GodotPlugins" / "HorrorStudioLook" / "addons" / "horrorstudio_look"
 OUT = ROOT / "Saved" / "Godot" / "_look"
 
