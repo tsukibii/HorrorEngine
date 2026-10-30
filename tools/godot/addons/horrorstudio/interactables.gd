@@ -25,6 +25,7 @@ const SETTINGS := {
 		"sounds": ["cloth_01", "cloth_02", "cloth_03", "cloth_04"], "every": 0.36},
 	"latch": {"cursor": "use", "lock": "Lock", "unlock": "Unlock", "shut": "Close it first", "stuck": "Locked"},
 	"peephole": {"cursor": "look", "label": "Look through", "look": [32, 22]},
+	"talk": {"cursor": "talk", "label": "Talk"},
 }
 const HOLDS := ["clean"]
 

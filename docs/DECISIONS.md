@@ -2,6 +2,37 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-30, night (the user: "Director-Godot")
+
+- **The game built in Godot itself, no desk in between**: "the goal of this tool is to make a plugin for Godot, so
+  rather than going from Director -> Export to Godot, we have all the easy drag and drop functionality and filesystem
+  set up that we can just rapidly build out the game in godot without a middle man... I don't need to go through
+  director anymore, instead I can just look through my writer block notes and build the game as I want in godot."
+  So a third plugin of ours, **HorrorStudio Director** (`GodotPlugins/HorrorStudioDirector`, docs/GODOT_DIRECTOR.md):
+  drag-and-drop nodes for the level (rooms, doors, things to take, read, use, hide in or sit on, triggers, spots,
+  paths, characters) and for the story (chapters, tasks with their to-do lists, events, dialogue, choices, endings),
+  a dock to see and rearrange it all, and the runtime the export already ships underneath: the scene's nodes are
+  compiled into the same story the runtime plays, so the controls, the interactions, the HUD, the menu and the saves
+  are the export's, one runtime for both. The branch is `Director-Godot`, as asked.
+- **"Pre-packaged with all the control system/interactions"**: the runtime add-on (`tools/godot/addons/horrorstudio`)
+  comes with the plugin; a Director game moves the player with Godot's own physics (`game.collision: physics`), so
+  whatever the user builds or imports in Godot (CSG, a model with its collision) stops them and takes the cursor's
+  click; the export keeps its boxes (the desk's parity).
+- **Events the user makes**: "I want to be able to make my own events (for jumpscares etc) very easily too, like if
+  person moves on this area after they've ticked off these other boolean flags then we trigger this": an event is a
+  node: *when* (the player enters an area, uses or takes a thing, a flag is set...), *if* (flags set, flags not set,
+  items held), *then* (the actions: a jumpscare, a sound, a light, a line, a flag...), once or every time, at any time
+  or only during a task; templates for the common ones.
+- **"The most easy to use management system for event tracking, quest tracking, where you are tracking"**: the dock's
+  Story tab is the quest log (chapters, their tasks and to-do lists, in play order, dragged to reorder), Events lists
+  every event as a sentence, Flags shows where each flag is set and where it's checked (and the ones never set), and
+  while the game runs from the editor the dock shows where the player is and the flags as they're set; F9 in the game
+  shows the same.
+- **"If we can create a godot -> kimodo link that would be amazing"**: a room and a character in Godot sent to
+  Kimodo's demo as its stage (the same stage file `kimodo.py stage` writes from a story), and the motion saved there
+  (NPZ) brought back as a Godot animation on the character's own skeleton, ready to play by an event or as the
+  character's idle and walk.
+
 ## 2026-10-30, evening (the user, after finding the sun's leak and the flicker's flashes)
 
 - **Unreal removed**: "I'm okay to merge this into main... before you do, remove all the remaining bloatware from

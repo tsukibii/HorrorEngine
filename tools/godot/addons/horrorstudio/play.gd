@@ -129,6 +129,12 @@ var on_set_time: Callable = Callable()
 var on_quit: Callable = Callable()
 var on_beat: Callable = Callable()
 var on_flag: Callable = Callable()
+var on_event: Callable = Callable()       # every event as it's sent (the Director plugin's debug panel and the editor's dock)
+var on_level: Callable = Callable()       # a level entered (the Director plugin starts its characters' own behaviours there)
+const CollideC := preload("res://addons/horrorstudio/collide.gd")
+var collide = null                        # Godot's physics for the player, the cursor and sight (game.collision: physics), else null: the boxes
+var by_node: Dictionary = {}              # a thing's node -> the thing (the physics rays' hits)
+var anim_players: Dictionary = {}         # a cast member's AnimationPlayer under the stand-in (their motions), null when there's none
 
 
 func setup(game_, run_, opts: Dictionary = {}) -> void:
@@ -147,6 +153,8 @@ func setup(game_, run_, opts: Dictionary = {}) -> void:
 	on_set_time = opts.get("set_time", Callable())
 	on_quit = opts.get("quit", Callable())
 	todo = TodoC.new(self)
+	if str(story.game.get("collision", "boxes")) == "physics":
+		collide = CollideC.new(self)
 	hud.locked(false)
 	if run != null:
 		for i in run.get("items", {}):
@@ -157,6 +165,8 @@ func stop() -> void:
 	active = false
 	listener = Callable()
 	stopped = true
+	if collide != null:
+		collide.free_body()
 	for w in waits:
 		w["done"] = true
 	waits = []
@@ -312,6 +322,8 @@ func ability_walk(dt: float) -> void:
 	var r := (1 if (k.get("D", false) or k.get("Right", false)) else 0) - (1 if (k.get("A", false) or k.get("Left", false)) else 0)
 	player.running = not player.crouched and bool(k.get("Shift", false)) and f > 0
 	if f == 0 and r == 0:
+		if collide != null:
+			collide.settle(float(s["step"]))
 		return
 	var a := deg_to_rad(float(player.yaw))
 	var ln := sqrt(float(f * f + r * r))
@@ -453,6 +465,15 @@ func enter_level(lid: String) -> void:
 		if by_id.has(id):
 			by_id[id]["node"].global_transform = k["bodies"][id]
 
+	by_node = {}
+	anim_players = {}
+	for id in by_id:
+		by_node[by_id[id]["node"]] = by_id[id]
+	if collide != null:
+		collide.make()
+		for id in by_id:
+			if not by_id[id]["node"].visible:
+				CollideC.enable(by_id[id]["node"], false)
 	lifefx = LifeFxC.new(self, game.kit_index)   # the little things' effects, on this level's things
 	lifefx.attach()
 	if lifesound != null:
@@ -467,6 +488,8 @@ func enter_level(lid: String) -> void:
 	if physics != null:
 		physics.clear()
 	physics = PhysC.new(self)
+	if on_level.is_valid():
+		on_level.call(lid)
 
 func _tag(tags: Array, pre: String):
 	for t in tags:
@@ -528,6 +551,18 @@ func _attach_disc(door: Dictionary, local: Vector3, side: int, id: String, use: 
 		bar.material_override = brass
 		bar.position = Vector3(0, 0.011, 0)
 		n.add_child(bar)
+	if collide != null:                                  # Godot's physics: an area the cursor's ray finds, a little proud of the leaf
+		var area := Area3D.new()
+		area.collision_layer = CollideC.INTERACT
+		area.collision_mask = 0
+		area.monitoring = false
+		var cs := CollisionShape3D.new()
+		var bx := BoxShape3D.new()
+		bx.size = Vector3(0.12, 0.024, 0.12)
+		cs.shape = bx
+		cs.position = Vector3(0, 0.006, 0)
+		area.add_child(cs)
+		n.add_child(area)
 	var t := {"id": id, "node": n, "piece": {"id": id, "kind": "mesh", "d": {"name": use}, "tags": [], "size": [0.12, 0.12, 0.004], "shape": "box"}, "kind": "mesh",
 		"tags": [], "size": [0.12, 0.12, 0.004], "shape": "box", "use": use, "hidden": false, "hollow": false, "door": door["id"], "local": local, "side": side, "disc": true}
 	by_id[id] = t
@@ -549,7 +584,7 @@ func place_at(lid: String, spot) -> void:
 	enter_level(lid)
 	var t = things.get(spot)
 	if t != null:
-		place(Vector3(t["node"].global_position.x, 0.0, t["node"].global_position.z), float(t["piece"].get("yaw", 0)), 0.0)
+		place(Vector3(t["node"].global_position.x, t["node"].global_position.y if collide != null else 0.0, t["node"].global_position.z), float(t["piece"].get("yaw", 0)), 0.0)
 
 
 ## carry on from where a scene left the eye: no cut back to a spot
@@ -597,6 +632,9 @@ func extent(t: Dictionary) -> Dictionary:
 
 
 func move(dx: float, dz: float, s: Dictionary) -> void:
+	if collide != null:
+		collide.move(dx, dz, s)
+		return
 	player.pos.x += dx
 	player.pos.z += dz
 	for i in 3:
@@ -650,6 +688,8 @@ func push_out(s: Dictionary) -> void:
 
 
 func ground_at(pos: Vector3, step: float) -> float:
+	if collide != null:
+		return collide.ground_at(pos, step)
 	var best := -INF
 	for t in blocks():
 		var e := extent(t)
@@ -665,6 +705,8 @@ func ground_at(pos: Vector3, step: float) -> float:
 
 func floor_under(p = null) -> String:
 	var pos: Vector3 = player.pos if p == null else p
+	if collide != null:
+		return collide.floor_under(pos)
 	var best = null
 	var top := -INF
 	for t in solid:
@@ -701,6 +743,8 @@ func point_in(t: Dictionary, x: float, y: float, z: float) -> bool:
 func emit(ev: Dictionary) -> void:
 	if ev.get("type") == "todo":
 		todo_log.append("%s:%s" % [ev.get("id"), ev.get("state")])
+	if on_event.is_valid() and ev.get("type") != "tick":
+		on_event.call(ev)
 	if listener.is_valid():
 		listener.call(ev)
 	if todo != null:
@@ -760,6 +804,10 @@ func sound(id, at) -> void:
 	hud.log("♪ %s%s%s" % [id, (" at " + str(at)) if at != null else "", "" if n != "" else " (the game's own file)"])
 	if n != "":
 		shelf_sound(n, at)
+	elif f.begins_with("res://"):                        # a sound file of the project's own (the Director plugin's sounds)
+		if not game.sfx_index.has(f):
+			game.sfx_index[f] = {"file": f, "loop": bool(s.get("loop", false))}
+		shelf_sound(f, at)
 
 
 func shelf_sound(name: String, at = null, db: float = 0.0, floor_ = null) -> Node:
@@ -829,7 +877,7 @@ func sfx_stream(name: String, file: String) -> AudioStream:
 		return sfx_streams[name]
 	var st: AudioStream = null
 	if file != "":
-		var path := "res://game/sfx/" + file
+		var path := file if file.begins_with("res://") else "res://game/sfx/" + file
 		if ResourceLoader.exists(path):
 			st = load(path)
 		elif FileAccess.file_exists(path):
@@ -855,6 +903,8 @@ func set_visible(id, on: bool, restoring: bool = false) -> void:
 		hud.log("no %s in this level" % id)
 		return
 	t["node"].visible = on
+	if collide != null:
+		CollideC.enable(t["node"], on)
 	if not restoring:
 		kept[level]["vis"][id] = on
 	var i := solid.find(t)
@@ -1577,6 +1627,92 @@ func behave(cid, spec: Dictionary) -> void:
 	BehavioursC.start(as_, n, self, n["s"])
 
 
+## a cast member's motion (STORY_FORMAT §4 behave's `motion`, `rest`): the animation of that name on the AnimationPlayer
+## under her stand-in, looped (a Director character's Kimodo motions, GODOT_DIRECTOR §6; an export's stand-ins have
+## none yet, so nothing plays there): `motion` while she walks or stands, `rest` at a route's waits when given
+func npc_motion(cid: String, n: Dictionary, node: Node3D) -> void:
+	var ap = anim_players.get(cid, false)
+	if ap is bool:
+		var found := node.find_children("*", "AnimationPlayer", true, false)
+		ap = found[0] if found.size() else null
+		anim_players[cid] = ap
+	if ap == null:
+		return
+	var want = n["s"].get("motion")
+	if not bool(n.get("walking", false)) and n["s"].get("rest") != null:
+		want = n["s"]["rest"]
+	if want == null:
+		return
+	var nm := anim_name(ap, str(want))
+	if nm != "" and ap.current_animation != nm:
+		var a: Animation = ap.get_animation(nm)
+		if a != null and a.loop_mode == Animation.LOOP_NONE:
+			a.loop_mode = Animation.LOOP_LINEAR              # a behaviour's motion loops (a copy in memory: the file stays as it is)
+		ap.play(nm, 0.3)
+
+
+## an animation by its motion's name on a player: itself, or in any of its libraries (the Kimodo imports' `kimodo/`)
+static func anim_name(ap: AnimationPlayer, name: String) -> String:
+	if ap.has_animation(name):
+		return name
+	for lib in ap.get_animation_library_list():
+		if ap.has_animation(str(lib) + "/" + name):
+			return str(lib) + "/" + name
+	return ""
+
+
+## the story's `anim` (STORY_FORMAT §4): a cast member or a thing plays a motion once (`clip`), back to her behaviour's
+## after; `wait: true` holds the beat till it ends
+func play_motion(who, clip, hold_beat: bool = false) -> void:
+	var node = cast_nodes.get(who)
+	if node == null and by_id.has(who):
+		node = by_id[who]["node"]
+	if node == null:
+		hud.log("anim: no %s here" % who)
+		return
+	var found: Array = node.find_children("*", "AnimationPlayer", true, false)
+	if found.is_empty():
+		hud.log("anim: %s has no motions" % who)
+		return
+	var ap: AnimationPlayer = found[0]
+	var nm := anim_name(ap, str(clip))
+	if nm == "":
+		hud.log("anim: %s has no motion %s" % [who, clip])
+		return
+	ap.play(nm, 0.2)
+	if hold_beat:
+		var a: Animation = ap.get_animation(nm)
+		await wait(a.length if a != null else 1.0)
+
+
+## the story's `move` (STORY_FORMAT §4): a placed thing, a cast member or the player (`player`) to a spot, facing its way
+func move_thing(id, to) -> void:
+	var sp = things.get(to)
+	if sp == null:
+		hud.log("move: no spot %s" % to)
+		return
+	var at: Vector3 = sp["node"].global_position
+	var yaw := float(sp["piece"].get("yaw", 0))
+	if str(id) == "player":
+		player.seat = null
+		leave_hiding()
+		unpeep()
+		moving = null
+		place(Vector3(at.x, at.y if collide != null else 0.0, at.z), yaw, 0.0)
+		return
+	if npcs.has(id):
+		npcs[id]["pos"] = at
+		npcs[id]["yaw"] = yaw
+		return
+	var t = by_id.get(id)
+	if t == null:
+		hud.log("move: no %s here" % id)
+		return
+	t["node"].global_position = at
+	t["base"] = t["node"].transform
+	kept_level()["bodies"][id] = t["node"].global_transform
+
+
 func draw_npcs(dt: float) -> void:
 	for cid in npcs:
 		var n: Dictionary = npcs[cid]
@@ -1590,8 +1726,9 @@ func draw_npcs(dt: float) -> void:
 		node.visible = n["pos"] != null and n["level"] == level
 		if not node.visible:
 			continue
-		node.position = n["pos"]
-		node.rotation_degrees = Vector3(0, float(n["yaw"]) + 90.0, 0)
+		node.global_position = n["pos"]
+		node.global_rotation_degrees = Vector3(0, float(n["yaw"]) + 90.0, 0)
+		npc_motion(str(cid), n, node)
 
 
 # ---- being seen ---------------------------------------------------------------------------------------------------
@@ -1670,6 +1807,8 @@ func eye_pos() -> Vector3:
 
 ## a ray against the things' boxes (and cylinders as their boxes): the nearest {thing, dist, point} or null
 func ray_hit(from: Vector3, dir: Vector3, far: float, among: Array) -> Variant:
+	if collide != null:                                  # Godot's physics: whatever collides, the first hit (among is the boxes' own list)
+		return collide.ray(from, dir, far)
 	var best = null
 	for t in among:
 		var n: Node3D = t["node"]
@@ -1713,6 +1852,8 @@ func ray_hit(from: Vector3, dir: Vector3, far: float, among: Array) -> Variant:
 
 
 func aim() -> Variant:
+	if collide != null:
+		return collide.aim()
 	var cam: Camera3D = game.camera
 	var among: Array = []
 	for id in by_id:
@@ -2230,21 +2371,48 @@ func run_stitch(st: Dictionary, n: Dictionary, interrupts: Array = []) -> Dictio
 				end({"to": it.get("to"), "interrupt": true})
 				return
 		for x in beats:
-			if x["fired"] or not StoryC.flags_hold(x["b"].get("if"), flags) or not conditions.matches(x["b"].get("when"), ev, self):
+			if x["fired"] or not if_holds(x["b"].get("if")) or not conditions.matches(x["b"].get("when"), ev, self):
 				continue
 			x["fired"] = true
 			if on_beat.is_valid():
 				on_beat.call(st, x["b"], (float(run["secs"]) if run != null else 0.0) + clock)
-			_run_beat(x["b"])
+			if x["b"].get("repeat", false):
+				_run_again(x)
+			else:
+				_run_beat(x["b"])
 	go()
 	emit({"type": "start"})
 	var r = await stitch_ended
 	return r
 
 
+## a beat's `if` (STORY_FORMAT §4): flags set (`!` for not), and `item:<id>` for an item the player holds (the Director
+## plugin's events: "if they have the key")
+func if_holds(ifs) -> bool:
+	if ifs == null:
+		return true
+	for fl in (ifs if ifs is Array else [ifs]):
+		var s := str(fl)
+		var neg := s.begins_with("!")
+		if neg:
+			s = s.substr(1)
+		var has: bool = items.has(s.substr(5)) if s.begins_with("item:") else flags.has(s)
+		if has == neg:
+			return false
+	return true
+
+
 func _run_beat(b: Dictionary) -> void:
 	await actions.run_all(b.get("do", []), self)
 	ended[b.get("id")] = clock
+
+
+## a beat that fires every time (`repeat: true`, STORY_FORMAT §4): heard again once its actions are over and `every`
+## seconds have gone (1 by default: a trigger that holds, a flag, fires once a second while it holds)
+func _run_again(x: Dictionary) -> void:
+	await _run_beat(x["b"])
+	await wait(float(x["b"].get("every", 1.0)))
+	x["fired"] = false
 
 
 ## a choice by act: the first option whose `when` happens

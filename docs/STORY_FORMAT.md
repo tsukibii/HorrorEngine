@@ -213,6 +213,7 @@ class path, `…_C`) is that door's Blueprint, in place of class_map's `door`.
 | `carry` | a thing the player carries in both hands: a click picks it up into the inventory, in the hand; **G** puts it down in front of the player, on whatever is under that spot, facing them (no falling: it's simply there, and stays). Its `shape` (`box`, `cyl`, `sphere`, or `asset` for a library mesh at its size; under 1 m) is its body; `art` dresses it (any library mesh: your own goes in with `python tools/cc0.py add <file> local/<name>`), and in Play a bare plushie's block is drawn rounded, like a cushion. `physics`: how it follows the hand, `rigid` (default: stiffly) or `plushie` (light and soft: it lags and swings, squashes and stretches, bobs with the steps, its top flops behind a turn); `jiggle` 0..2 a plushie's softness (0 still, 1 a plushie, 2 jelly). `{"carrying": id}` holds while it's the one in the hand (the inventory's middle), `{"dropped": id, "in": room}` when it's put down |
 | `game` | a table with a board game: a click sits the player down at its long side (their half), leaning in over it, its rules play it out (`game`: one of `Content/Studio/BoardGames/`, or the game's own `BoardGames/`: `russian_roulette`, `high_dice`, `chohan`, `spin_the_cup`, `shell_game`, `high_card`, `blackjack`, `shinkei_suijaku`; their README has each one's results and settings), they stand up, and `{"played": id, "result": ...}` is heard. `vs` the cast member they play (else the dealer), `settings` the game's own (each named in its rules' meta; `seed` plays the same game every time; a setting's value `"flag:off_pills"` is true while that flag is set, `"!flag:off_pills"` while it isn't: his memory lies only off his pills). Needs a `shape` or a `kit`: the table |
 | `sleep` | a bed (a `kit` like `bed_single`, `futon`, or a shape): a click lies the player down on it, looking up, and the view goes dark; the story hears `{"use": id}`, and its beat plays a `chapter` (§4), which wakes them in the bed and gets them up where they stood (with no chapter they wake by themselves). `if`: a flag or a list (`"!flag"` for not) that must hold before they can sleep (the chores first); until then the bed says **Not tired yet**, and a click thinks `not_yet` (else "I'm not tired yet."), and nothing is heard |
+| `talk` | someone to talk to (the Director plugin's characters, GODOT_DIRECTOR §3: `talk` on): the cursor says **Talk**, a click is heard as `{"use": id}` (a cast member's id), and a beat on it plays the conversation (a `scene`, `say` lines, an `ask`). Not on the desk yet |
 | `clean` | a stain (DECISIONS 2026-10-28: the shift's chores): a flat block (`"shape": "box 0.6 0.4 0.01"`) drawn as a blot on what it lies on, `stain` its kind (`dirt` by default, `mud`, `blood`, `water`, `ash`). The player holds the left button on it to scrub it away: a ring fills round the reticle and it fades over `secs` of scrubbing (3 by default; let go or look away and it waits where it got to). `with`: an item that must be the one in the hand (the mop, a rag), else it says **Need the mop**. Clean, it's gone and `{"use": id}` is heard (tick a to-do with it: `"ticks": {"use": "hall_stain"}`, or `all` of several) |
 | `combo` | `code` (written in some readable text), `then` (a flag), `opens` (a door) |
 | `use_on` | `needs`, `then`, `consume` |
@@ -470,9 +471,16 @@ nobody is caught in a scene). The story check holds them to §4's rules (the spo
 ```
 
 - A stitch is the old beat language. It starts with `{"start": true}` and ends when a beat runs `{"done": true}`.
+- A beat fires once in its stitch; with `"repeat": true` it fires again every time its trigger happens, once its
+  actions are over and `every` seconds have gone (1 by default; a trigger that holds, a flag, fires once a second
+  while it holds): the light that flickers each time the player walks into the bathroom. In Godot (the Director
+  plugin's events that fire every time); the desk and the check's walker fire it once.
 - `target_min` is its intended share of the playtime (the animatic uses it, and the estimator works the real one
   out).
 - `template` names its kind, for reuse. TRICKS.md §4 lists the stitch templates.
+
+A beat's `if` lists flags that must be set (`!` for not set); in Godot `item:<id>` (or `!item:<id>`) asks for an
+item the player holds (the Director plugin's events: "if they have the key").
 
 **A beat:**
 
@@ -545,7 +553,8 @@ with `{"tick": "<id>"}` at the end of that beat, not by its own trigger (the sto
   unless the word has set her: then hers is hers till the word changes it. The Godot export plays it on the skin shader; the
   desk's stage draws it the same way on her body (the clay MHR body, a Studio export's skin, the figure of cylinders:
   `tools/shared/skinwet.js`) in Play and in the Watch (a scene's cue at its clip edge); Unreal not yet
-- `show`, `hide`, `move` (`to` a spot), `objective`
+- `show`, `hide`, `move` (`to` a spot: a placed thing, a cast member, or `player`: the player stands on the spot,
+  facing its way, wherever they were; the Director plugin's tasks start the player that way), `objective`
 - `state`: a little thing to one of its states, `{"state": "kitchen_kettle", "to": "heating"}`: in a beat, a scene's
   cue (on its clip edge: what lasts counts from there) or an answer's `do`. States carry on through the run
 - `flag`, `unflag`, `give`, `take`
@@ -555,7 +564,10 @@ with `{"tick": "<id>"}` at the end of that beat, not by its own trigger (the sto
   clock's hands jump on, 02:10 to 03:40; the tea goes cold; a cigarette burns down), and nothing else moves. In a beat,
   a scene's cue (on its clip edge) or an answer's `do`. The walk runs each one's timers through it from its state's
   start
-- `shot` (`closeup`, `who`, `line`), `seq` (a level sequence), `anim` (`clip`: a motions id)
+- `shot` (`closeup`, `who`, `line`), `seq` (a level sequence), `anim` (`clip`: a motions id): a cast member (or a
+  thing) plays it once and goes back to what her behaviour plays; `wait: true` holds the beat till it's over. In
+  Godot, the animation of that name on the AnimationPlayer under her (a Kimodo motion brought in by the Director
+  plugin, GODOT_DIRECTOR §6)
 - `stalker` (`spawn despawn patrol hunt chase`, `at`, `route`)
 - `behave`: what a cast member does in play, until another `behave` (or a scene takes them and hands them back):
   `{"behave": "mari", "as": "path", "route": "r_hall"}`. `as`: `idle` (`at` a spot, `pose`, `face` a thing, a cast
@@ -564,7 +576,8 @@ with `{"tick": "<id>"}` at the end of that beat, not by its own trigger (the sto
   `random`), `go` (`to` a spot, by way of `via`, then `then`: `idle` or `sit` there; heard as `arrived`, §9.12),
   `off` (gone). Not AI: the same steps every time, so a player can learn them.
   `motion` (any of them but `off`): a `motions` id she plays, looped: while she stands (`idle`) or sits, or while she
-  walks a `path` or a `patrol` (then `in_place`: the route moves her; a point's `pose` at its waits). Until its
+  walks a `path` or a `patrol` (then `in_place`: the route moves her; a point's `pose` at its waits). `rest`: the
+  `motions` id she plays at a route's waits instead (her idle between the walks; Godot). Until its
   Kimodo take is made, the desk plays its `block` stand-in, else the pose; Unreal plays the take (its `name`).
   `sees`: she watches for the player (`true`, or some of `angle` 90 (the cone's full width), `range` 9 m,
   `crouched` 0.55 (the reach for a crouched player), `meter` 1.2 s (to fill), `drain` 1.5 s, `calm` 3 s (after a
@@ -993,6 +1006,12 @@ is `on` (the default: the runtime gives the time of day's sky, sun and ambient, 
 its own WorldEnvironment or DirectionalLight3D) or `off` (a test mode, like the editor's viewport: a flat grey ambient and
 a soft key without shadows, the look plain, no fog, no iris; nothing pitch dark, for playing a scene before its lighting
 is made). The story's own lamps (`use: light`, switches, the power, flicker) work in both.
+
+**The collision** (DECISIONS 2026-10-30, night): `game.collision` is `boxes` (the default: the player is a circle
+against the plan's blocks, stepping onto low ones, as the desk) or `physics` (Godot's own: a capsule against whatever
+collides in the level, the cursor's click and the cast's sight by physics rays, a step walked up and a drop fallen;
+the Director plugin's games, whose levels are made in Godot out of anything). `game.track_steps` (the Director
+plugin's): every flow node the run reaches sets the flag `@<node>`, so an event can wait for "from this task on".
 
 **The grade** (docs/GODOT_LOOK.md §1d): `game.grade` names the film-style colour grade over the finished picture
 (under the HUD, over the tape): `cinema` (the default: a gentle teal-and-orange, a soft vignette, fine grain),

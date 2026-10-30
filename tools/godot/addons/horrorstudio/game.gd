@@ -49,6 +49,13 @@ var bake = null                    # the desk's bake (game/previs/index.json): t
 var body_scenes: Dictionary = {}   # cast id -> the PackedScene of its baked body
 var time_of_day: String = "night"
 var fading = null
+## the Director plugin (GodotPlugins/HorrorStudioDirector: a game built in Godot's editor, no desk): set before the
+## node enters the tree. `story_data` the story compiled from the scene's nodes (else game/story.json is read);
+## `level_scenes` each level id's PackedScene or a template node, duplicated on each entry (else game/levels/<id>.tscn);
+## `on_step` called with each flow node as the run reaches it (the editor's dock follows where the player is)
+var story_data = null
+var level_scenes: Dictionary = {}
+var on_step: Callable = Callable()
 
 @onready var world: Node3D = $World
 @onready var player: Node3D = $Player
@@ -57,7 +64,7 @@ var fading = null
 
 
 func _ready() -> void:
-	story = StoryC.load_file("res://game/story.json")
+	story = StoryC.from_data(story_data) if story_data is Dictionary else StoryC.load_file("res://game/story.json")
 	hud = HudC.new()
 	hud.name = "Hud"
 	add_child(hud)
@@ -158,8 +165,12 @@ func enter_level(lid: String, fresh: bool = false) -> void:
 	if level != null:
 		world.remove_child(level)
 		level.queue_free()
-	var ps: PackedScene = load("res://game/levels/%s.tscn" % lid)
-	level = ps.instantiate()
+	var src = level_scenes.get(lid)
+	if src is Node:                                  # a Director level: its template duplicated fresh, as an export's file is instanced
+		level = src.duplicate()
+	else:
+		var ps: PackedScene = src if src is PackedScene else load("res://game/levels/%s.tscn" % lid)
+		level = ps.instantiate()
 	world.add_child(level)
 	level_id = lid
 	things.clear()
@@ -202,7 +213,17 @@ func pieces(lvl: Node = null) -> Array:
 			out.append_array(n.get_children())
 		else:
 			out.append(n)
+	_grouped(root_, out)
 	return out
+
+
+## a Director level's pieces sit anywhere in its tree (a door in a room in a wing): the nodes in the group `hs_piece`
+## below the level, each once (the export's are its folders' children, none of them in the group)
+func _grouped(n: Node, out: Array) -> void:
+	for c in n.get_children():
+		if c.is_in_group("hs_piece") and not out.has(c):
+			out.append(c)
+		_grouped(c, out)
 
 
 func set_time(t: String) -> void:
@@ -528,6 +549,10 @@ func watch(from_nid = null, snap = null) -> void:
 		var n: Dictionary = story.flow[nid]
 		reach(nid)
 		run["trail"].append(nid)
+		if story.game.get("track_steps", false):           # a Director game: `@<node>` once the run reaches it (its events' "from this step on")
+			run["flags"]["@" + str(nid)] = true
+		if on_step.is_valid():
+			on_step.call(nid)
 		if n.get("type") == "scene" and story.scenes.get(n.get("ref"), {}).has("time"):
 			run["time"] = story.scenes[n["ref"]]["time"]
 			set_time(run["time"])

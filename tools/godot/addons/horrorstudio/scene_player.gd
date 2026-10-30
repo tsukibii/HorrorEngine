@@ -263,8 +263,8 @@ func play(sc: Dictionary, nid: String, sid: String) -> Variant:
 		var sp = game.things.get(v["stage"][cid])
 		if sp != null and rt.cast_nodes.has(cid):
 			var n: Node3D = rt.cast_nodes[cid]
-			n.position = sp["node"].global_position
-			n.rotation_degrees = Vector3(0, float(sp["piece"].get("yaw", 0)) + 90.0, 0)
+			n.global_position = sp["node"].global_position
+			n.global_rotation_degrees = Vector3(0, float(sp["piece"].get("yaw", 0)) + 90.0, 0)
 			n.visible = true
 	bk = null
 	bmap = {}
