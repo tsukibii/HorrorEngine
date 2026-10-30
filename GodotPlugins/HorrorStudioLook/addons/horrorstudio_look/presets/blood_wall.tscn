@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://addons/horrorstudio_look/nodes/blood_splat.gd" id="1"]
+
+[node name="BloodWall" type="Node3D"]
+script = ExtResource("1")
+rotation = Vector3(1.5708, 0, 0)
+size = 0.6
+drips = 0.6
+pool = 0.4

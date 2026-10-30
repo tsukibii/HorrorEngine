@@ -53,6 +53,7 @@ def quiet(text):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--keep", default=str(KEEP))
+    ap.add_argument("--nodes", action="store_true", help="only the effect nodes and their presets (a quick run)")
     a = ap.parse_args()
     g = godot_bin()
     if not g:
@@ -70,6 +71,10 @@ def main():
     r = subprocess.run([g, "--headless", "--path", str(OUT), "--import"], capture_output=True, text=True, timeout=600)
     keep = Path(a.keep)
     keep.mkdir(parents=True, exist_ok=True)
+    nodes_ok = nodes(g, keep, env)
+    if a.nodes:
+        print("LOOKPLUGIN ok" if nodes_ok else "LOOKPLUGIN FAIL")
+        return 0 if nodes_ok else 1
     cmd = [g, "--path", str(OUT), "--rendering-driver", "vulkan", "--fixed-fps", "60", "-s", "res://addons/horrorstudio_look/demo/demo.gd", "--", f"--out={keep}"]
     if shutil.which("xvfb-run"):                                          # Xvfb when it's there (the card still draws through Vulkan): a fixed-size window no window manager resizes
         cmd = ["xvfb-run", "-a"] + cmd
@@ -116,7 +121,7 @@ def main():
     ml = rep.get("mirror2_layers", {})
     checks.append(("a mirror seen in a mirror: the second mirror's glass in the first's picture holds a picture (a bright peak well over its mean, not a flat wall), each mirror on its own layer, never itself",
                    ml.get("second_seen_by_first") is True and ml.get("first_not_itself") is True and ml.get("first") != ml.get("second") and rep.get("mirror2_in_first", {}).get("max", 0) > 0.3 and rep.get("mirror2_in_first", {}).get("max", 0) > rep.get("mirror2_in_first", {}).get("mean", 9) * 2.0))
-    ok = True
+    ok = nodes_ok
     for what, good in checks:
         print(("  ok  " if good else "  BAD ") + what)
         ok = ok and good
@@ -127,6 +132,84 @@ def main():
         return 1
     print("LOOKPLUGIN ok")
     return 0
+
+
+def run_godot(cmd, env, timeout=600):
+    if shutil.which("xvfb-run"):
+        cmd = ["xvfb-run", "-a"] + cmd
+    r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, env=env)
+    return quiet(r.stdout + r.stderr)
+
+
+def nodes(g, keep, env):
+    """The effect nodes (addons/horrorstudio_look/nodes/) and every preset (presets/): in a game (demo/nodes.gd: each
+    one's work measured, a save as the editor does it), then in the editor itself (demo/editor_test.gd as a plugin:
+    a scene of presets opened, the nodes running in the editor's viewport, saved, the file holding nothing they made)."""
+    text = run_godot([g, "--path", str(OUT), "--rendering-driver", "vulkan", "--fixed-fps", "60", "-s", "res://addons/horrorstudio_look/demo/nodes.gd", "--", f"--out={keep}"], env)
+    bad = [l for l in text.splitlines() if "SCRIPT ERROR" in l or "SHADER ERROR" in l or "Parse Error" in l or "error(" in l.lower()]
+    if bad or "LOOKNODES" not in text:
+        print(text[-3000:])
+        print("  BAD the effect nodes didn't run clean")
+        return False
+    rep = json.loads((keep / "nodes.json").read_text(encoding="utf-8"))
+    fl = rep.get("flicker", {})
+    moved = [k for k, (lo, hi) in fl.items() if hi - lo > 0.05]
+    checks = [
+        ("every preset loads and goes in (%d of %d files)" % (rep.get("presets", 0), rep.get("preset_files", 0)), rep.get("presets", 0) == rep.get("preset_files", -1) and rep.get("presets", 0) >= 30),
+        ("rain: the box's streaks made", rep.get("rain") is True),
+        ("a wet surface on the floor's mesh, the raining one with its ripples", rep.get("wet") is True and rep.get("wet_ripples") is True),
+        ("a puddle's decal, blood on the floor and up the wall (dripping there)", rep.get("puddle") is True and rep.get("blood") is True),
+        ("a leak's band on the wall it was dropped on", rep.get("leak") is True),
+        ("a light shaft's card as long as its reach", rep.get("shaft") is True),
+        ("a headlight sweep fired and passing", rep.get("sweep_passing") is True),
+        ("the four pattern lights each throwing their frames", rep.get("patterns", 0) == 4),
+        ("the flicker lights moving (%s)" % ", ".join(moved), len(moved) >= 5),
+        ("a mirror's reflection attached to the game's camera, a window pane's glass", rep.get("mirror") is True and rep.get("pane") is True),
+        ("a character's skin worn (%d materials)" % rep.get("character", 0), rep.get("character", 0) >= 1),
+        ("the editor-only look environment stepping aside in the game", rep.get("look_env_freed") is True),
+        ("a save: the meshes' own materials back, the lights at full, no projector, nothing the nodes made in the packed scene; on again after",
+         rep.get("save_materials_back") is True and rep.get("save_lights_full") is True and rep.get("save_no_projector") is True and rep.get("save_nothing_made") is True and rep.get("after_save_on") is True),
+        ("a node taken off: its mesh dry again", rep.get("removed_dry") is True),
+        ("the grade and the tape: made when there's none, a second over the first, and the first back when it goes",
+         all(rep.get(k) is True for k in ["grade_own", "grade_over", "grade_back", "tape_own", "tape_over", "tape_back"])),
+    ]
+    ed = editor(g, keep, env)
+    checks += ed
+    ok = True
+    for what, good in checks:
+        print(("  ok  " if good else "  BAD ") + what)
+        ok = ok and good
+    print("  nodes: " + json.dumps(rep))
+    return ok
+
+
+def editor(g, keep, env):
+    """The nodes in the editor: a scene of presets opened by a plugin, a few hundred frames of the editor running, the
+    nodes' work seen there, the scene saved, and the saved file read back."""
+    proj = OUT
+    (proj / "addons" / "hs_editor_test").mkdir(parents=True, exist_ok=True)
+    (proj / "addons" / "hs_editor_test" / "plugin.cfg").write_text('[plugin]\nname="hs editor test"\ndescription=""\nauthor=""\nversion="1"\nscript="plugin.gd"\n')
+    shutil.copy(PLUGIN / "demo" / "editor_test.gd", proj / "addons" / "hs_editor_test" / "plugin.gd")
+    pg = (proj / "project.godot").read_text(encoding="utf-8")
+    if "[editor_plugins]" not in pg:
+        (proj / "project.godot").write_text(pg + '\n[editor_plugins]\n\nenabled=PackedStringArray("res://addons/hs_editor_test/plugin.cfg")\n', encoding="utf-8")
+    shutil.copy(PLUGIN / "demo" / "editor_scene.tscn", proj / "editor_scene.tscn")
+    text = run_godot([g, "--editor", "--path", str(proj), "--rendering-driver", "vulkan"], env, timeout=600)
+    line = next((l for l in text.splitlines() if l.startswith("HSEDITOR ")), None)
+    if line is None:
+        print(text[-3000:])
+        return [("the nodes in the editor (no report)", False)]
+    rep = json.loads(line[len("HSEDITOR "):])
+    saved = (proj / "editor_scene.tscn").read_text(encoding="utf-8")
+    made = [w for w in ['name="Beam"', 'name="Card"', 'name="Sweep"', 'name="Pattern"', 'name="Leak"', 'name="Splashes"', "light_projector", "ShaderMaterial", "hs_wet_was", "material_override = SubResource"] if w in saved]
+    errs = [l for l in text.splitlines() if "SCRIPT ERROR" in l or "Parse Error" in l]
+    if errs:
+        print("\n".join(errs[:20]))
+    return [
+        ("in the editor: the rain, the wet floor, the shaft, the pattern and the flicker run in the viewport (%s)" % json.dumps(rep.get("live", {})), all(rep.get("live", {}).values()) and len(rep.get("live", {})) >= 5 and not errs),
+        ("in the editor: saved, the file holds only what was placed (%s)" % (", ".join(made) or "nothing made"), rep.get("saved") is True and not made),
+        ("in the editor: after the save the nodes are on again", rep.get("after") is True),
+    ]
 
 
 if __name__ == "__main__":

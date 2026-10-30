@@ -10,7 +10,7 @@ LOOKPLUGIN). The pieces, the numbers behind them and what was measured: **docs/G
 | **The look preset** | `look.gd` (`HSLook`) | `HSLook.apply(viewport, environment, "realism")`: pseudo-realism for small, baked-lit rooms with the effects overplayed: screen-space reflections, SSAO and SSIL, a little glow, a thin volumetric haze, AgX with the contrast pushed, TAA (no MSAA: it switches SSR off). `"plain"` turns it all off. `HSLook.set_aa(viewport, 0..3)` the player's choice (Off, FXAA, TAA, TSR) |
 | **Shadows** | `look.gd` (`HSLook.shadows`) | `HSLook.shadows(viewport, 0..3)`: the shadow maps' filter (hard to ultra soft, the lights' `light_size` as penumbras) and the atlas (2048 to 8192, the quadrants cut for a few big maps and many small); give lights a `light_size` and a `shadow_blur` |
 | **Light patterns** | `pattern.gd` (`HSPattern`), `pattern.gdshader` | `HSPattern.attach(spot, {pattern, scale, speed, open, angle}, distance)`: caustics, leaves, blinds or cloud shadows drawn into a small viewport each frame and projected by the spot light (`light_projector`); `detach` |
-| **Flicker modes** | `../horrorstudio/flicker.gd` (`HSFlicker`, the runtime add-on) | a light's flicker by mode: fluorescent, dying, candle, pulse, custom letters; the same curves as the desk's `tools/shared/flicker.js` |
+| **Flicker modes** | `flicker.gd` (`HSFlicker`) | a light's flicker by mode: fluorescent, dying, candle, pulse, custom letters; the same curves as the desk's `tools/shared/flicker.js` |
 | **Light shafts** | `shaft.gd` (`HSShaft`), `shaft_card.gdshader` | `HSShaft.make(at, into, width, height, reach, {strength, dust, drift, color})` a window's beam as a card: two crossed translucent planes along it and five slices across it, added, fading along and at the sides, dust drifting in it, each plane fading as it turns edge-on (the node is a FogVolume holding empty fog, the card its child); `HSShaft.light(spot, k)` raises the window light's volumetric energy for the haze near the glass |
 | **Headlight sweeps** | `sweep.gd` (`HSSweep`) | `HSSweep.make(window_at, outward, along, {every, secs, out, span, energy})` a spot light that slides along the street outside a window every so often, aimed in, the frame's shadow across the ceiling; `fire()` a car now; `attach(marker, settings)` on the export's marker |
 | **The iris** | `look.gd` (`HSLook.iris`) | `HSLook.iris(viewport, on, night)`: auto exposure on the camera settling over about a second, a stop under at night |
@@ -28,6 +28,35 @@ LOOKPLUGIN). The pieces, the numbers behind them and what was measured: **docs/G
 | **Hair** | `hair.gd` (`HSHair`), `hair.gdshader` | the Studio's hair look on an imported model's card hair (a Character Studio export's salon bake, its brows and lashes, any glb with card hair): anisotropic highlights along the strands from the scene's lights (the tangent from the card's UVs), soft tips and edge-on fades; the retro look as toggles: `flat` (unlit), `steps` (colour levels), `dither` (the PSX's 4x4 ordered dither), `retro` all three. `HSHair.material(atlas, look)`, `wear(node, look)` on every mesh named hair, lash or brow (not the scalp), `set_look(material, look)` later |
 | **Wet skin** | `skin.gd` (`HSSkin`), `skin_wet.gdshader` | HumanShaders' skin shader (MIT, MatMADNESS: `../HumanShaders`) with a wetness layer: `wetness` the sweat film, `sweat` beads standing on the skin as little domes with glints, `drips` runs, `oil` oiled up (one tight gloss, the colour deeper). `HSSkin.material(albedo_texture, {wetness, sweat, drips, oil}, tone, maps)`; `wear(node, settings, glb_path)` on a character's skin meshes, with a Character Studio export's relief (its normal map), roughness and thinness (its ORM) and its `studioSkin` numbers read from the glb; `set_wet(material, settings)` later |
 
+## The effects as nodes: drag and drop
+
+Every effect is also a node to drop into a scene and tune in the inspector (`nodes/`), and `presets/` holds 33 ready
+ones (rain, a downpour, wet floors, a puddle, blood on a floor and up a wall, a leak, a window's shaft and its sun,
+a headlight sweep, caustics, blinds, leaves and clouds lights, a fluorescent tube, a dying bulb, a candle, an alarm,
+a faulty neon, a mirror, a rainy window pane, grades, tapes, a character's look): drag one from the FileSystem dock
+into the level, or Add Child Node and type `HS`. They preview in the editor where they can (the rain falls, the dust
+drifts, the floor is wet, the lights flicker, the patterns move) and save only their numbers: what they make inside
+themselves is never saved, and a node that changes a mesh's material (a wet floor, a pane, a leak) puts the mesh's
+own back before every save. Forward (-Z) is always into the room. The list and how each works: docs/GODOT_LOOK.md §0.
+
+| Node | Base | What |
+|---|---|---|
+| `HSRainBox` | Node3D | rain in a box (`size`, `count`, `strength`, `wind`, `splashes`, `follow_camera`) |
+| `HSPuddle` | Node3D | a puddle decal under it (`size`, `seed`, `depth`) |
+| `HSBloodSplat` | Node3D | blood on the surface its +Y points out of (`size`, `seed`, `dry`, `opacity`, `pool`, `ragged`, `drops`, `drips`) |
+| `HSLightShaft` | Node3D | a window's beam along its forward (`width`, `height`, `reach`, `strength`, `dust`, `drift`, `color`) |
+| `HSHeadlightSweep` | Node3D | a car passing outside the window it sits in (`every`, `secs`, `out`, `span`, `energy`, `aim`, `seed`, `color`, `preview_every`; `fire()`) |
+| `HSWetSurface` | HSOnMesh | the mesh it's under made wet (`wetness`, `puddles`, `puddle_scale`, `ripples`, `ripple_rate`, `water_tint`, `edge`) |
+| `HSWindowPane` | HSOnMesh | glass with rain on the mesh it's under (`rain`, `clarity`, `tint`, `drop_cm`, `speed`, `bend`, `size_m`, `seed`) |
+| `HSWallLeak` | HSOnMesh | water down the wall it's on (`width`, `length`, `wet`, `drip`) |
+| `HSMirrorSurface` | Node | the mesh it's under as a real mirror, in the game (`surface`, `resolution`) |
+| `HSCharacterLook` | Node | the character it's under on the skin, eye and hair shaders, in the game (`wetness`, `sweat`, `drips`, `oil`, `eyes`, `hair`, `glb_path`) |
+| `HSFlickerLight`, `HSFlickerSpot` | OmniLight3D, SpotLight3D | a light that flickers (`mode`, `amount`, `interval`, `rate`, `letters`, `seed`, `preview_in_editor`, `on_mains`) |
+| `HSPatternLight` | SpotLight3D | a spot throwing caustics, leaves, blinds or clouds (`pattern`, `feature_m`, `speed`, `open`, `angle`, `aim_distance`, `size_px`, `frames`, `period`) |
+| `HSGrade` | Node | a colour grade, the level's own over the game's (`preset` fills the numbers: `lift`, `gamma`, `gain`, `warmth`, `saturation`, `contrast`, `fade`, `vignette`, `grain`, `aberration`) |
+| `HSTape` | Node | the tape, the level's own over the game's (`preset`, `strength`) |
+| `HSLookEnvironment` | WorldEnvironment | the look preset in the editor's viewport (below) |
+
 ## Using it in a Godot project
 
 Copy `addons/horrorstudio_look/` into the project's `addons/` (keep the name: the scripts load their shaders by
@@ -41,7 +70,9 @@ only one. In a studio export the game applies `game.look` from story.json at sta
 editing only: drop one into a level scene to see the look while you work on it.
 
 The demo: `godot --path PROJECT -s res://addons/horrorstudio_look/demo/demo.gd -- --out=DIR` pictures a room with
-each piece and writes `report.json` with the measures; `demo/people.gd -- --glb=res://people/NAME.glb --out=DIR` a
+each piece and writes `report.json` with the measures; `demo/nodes.gd -- --out=DIR` every preset in a room, measured,
+and a save as the editor does it (`nodes.json`, `nodes.png`); `demo/editor_test.gd` the same in the editor (the
+check installs it as a plugin); `demo/people.gd -- --glb=res://people/NAME.glb --out=DIR` a
 Character Studio export (or any glb whose skin mesh is named `..._skin`) on the skin, flat-lit, dry, sweating, oiled.
 
 ## Licences

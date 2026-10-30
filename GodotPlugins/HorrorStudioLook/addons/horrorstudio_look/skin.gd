@@ -143,7 +143,7 @@ static func wear(node: Node, settings: Dictionary = {}, glb_path: String = "") -
 			continue
 		for s in mi.mesh.get_surface_count():
 			var old = mi.get_active_material(s)
-			var names: String = (mi.name + " " + mi.mesh.surface_get_name(s) + " " + (old.resource_name if old != null else "")).to_lower()
+			var names: String = (mi.name + " " + (mi.mesh.surface_get_name(s) if mi.mesh is ArrayMesh else "") + " " + (old.resource_name if old != null else "")).to_lower()
 			if not (names.contains("skin") or names.contains("body") or names.contains("head") or names.contains("face")):
 				continue
 			if names.contains("eye") or names.contains("lash") or names.contains("brow") or names.contains("hair") or names.contains("teeth") or names.contains("tongue"):

@@ -95,8 +95,14 @@ cloud): the export writes no lighting of its own (no VoxelGI, probes or lightmap
 runtime's `game.lighting` is `on` (the time of day's sky and sun unless a level has its own WorldEnvironment or sun)
 or `off` (a flat test light); every export a new version folder (`Saved/Godot/<G>_v001`...; the checks in
 `Saved/Godot/_check/`); the dialogue choice a glass panel of rows, clickable (it wasn't: a live scene passed only
-the walking keys, and the mouse stayed captured). **Next: the effects as drag-and-drop nodes** in the look plugin
-(GODOT_LOOK §0): the user's ask, in progress.
+the walking keys, and the mouse stayed captured). **Then the effects as drag-and-drop nodes** (GODOT_LOOK §0,
+built): every effect a node in Add Child Node (`HS...`, an icon each) with its settings in the inspector, 33 ready
+ones in `addons/horrorstudio_look/presets/` to drag from the FileSystem dock; they preview in the editor (rain,
+wet floors, shafts, sweeps, patterns, flicker) and save only their numbers (a wet floor's, a pane's or a leak's mesh
+gets its own material back before every save); a flicker light of the user's goes out with the story's power cut
+(`hs_mains`). LOOKPLUGIN's new part runs the presets in a game and **in the editor itself** (`--nodes` alone). **For
+the user:** open a level of the latest export, drag `presets/window_sun.tscn` or `fluorescent_tube.tscn` in, tune
+it; tell us what's missing or awkward to tune.
 
 ## 0. Next: the cloud session (left 2026-10-29, late night, on `godot-support`, after the local session on the 3090)
 

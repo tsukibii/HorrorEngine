@@ -1,0 +1,16 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://addons/horrorstudio_look/nodes/light_shaft.gd" id="1"]
+
+[node name="WindowSun" type="Node3D"]
+script = ExtResource("1")
+rotation = Vector3(-0.6, 0, 0)
+reach = 3.5
+
+[node name="Sun" type="SpotLight3D" parent="."]
+light_color = Color(1, 0.9, 0.74, 1)
+light_energy = 6.0
+shadow_enabled = true
+spot_range = 7.0
+spot_angle = 32.0
+spot_angle_attenuation = 0.6

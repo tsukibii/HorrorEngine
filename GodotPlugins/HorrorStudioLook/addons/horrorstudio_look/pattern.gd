@@ -8,6 +8,7 @@
 ## `period` seconds (5); blinds one). `metres` is worked out from the light's spread and the distance to what it's
 ## aimed at, so a 60 cm caustic is 60 cm on the wall. The spot's shadows are switched on: Godot projects only through
 ## a shadowed spot (without, the light goes dark). After Light Kit's Pattern actor; the same four light functions.
+@tool
 class_name HSPattern
 extends Node
 

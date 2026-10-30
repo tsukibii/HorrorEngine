@@ -198,7 +198,9 @@ Keep the story lights dynamic. A level with more than one lighting state (the po
 plan (a LightmapGI per state, swapped by the runtime).</p>
 <p><b>The lighting is yours</b> (since 2026-10-30): the export writes the story's lamps and the windows' fill and nothing else, no GI, no probes. Add a
 <code>LightmapGI</code> or <code>VoxelGI</code>, probes, your own <code>WorldEnvironment</code> and sun, and the look plugin's effects (its nodes in Add Node, its ready-made
-scenes in <code>addons/horrorstudio_look/presets/</code>) to a level; the doors and the things you pick up are already dynamic GI, so a bake goes round them.
+scenes in <code>addons/horrorstudio_look/presets/</code>: rain, wet floors, puddles, blood, a leak, a window's shaft and sun, a headlight sweep, caustics and
+blinds lights, a fluorescent tube, a dying bulb, a candle, a mirror, a rainy pane, grades and tapes, dragged in from the FileSystem dock and tuned in the
+inspector; they preview in the editor and save only their numbers) to a level; a flicker light of theirs goes out with the story's power cut. The doors and the things you pick up are already dynamic GI, so a bake goes round them.
 Your own WorldEnvironment or sun in a level takes over from the time of day's. To play before the lighting's made, set the story's
 <code>game.lighting</code> to <code>off</code>: a flat, even test light. Every export is a new folder (<code>&lt;game&gt;_v001</code>, <code>_v002</code>...), so copy your lighting
 nodes from the last one.</p>

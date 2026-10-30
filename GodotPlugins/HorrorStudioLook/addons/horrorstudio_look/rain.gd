@@ -4,6 +4,7 @@
 ## enough in a room, a few thousand outside; each is two triangles moved in the vertex shader. Where they land, on the
 ## box's floor, `splashes` (on by default: a child MultiMesh "Splashes", splash.gdshader): a flash, a widening ring and
 ## spikes at seats over the floor, as many as a third of the streaks; `set_splashes(on)`.
+@tool
 class_name HSRain
 extends MultiMeshInstance3D
 

@@ -170,7 +170,8 @@ loads, every verb in the games has a part).
    (GDEXPORT, GDPLAY, GDTESTROOM) export into a scratch project of their own, `Saved/Godot/_check/<Game>`, overwritten
    each run with the receipt's merge as before; GDEXPORT also exports twice into a scratch root and checks the two
    versions. The export writes no lighting of its own any more: no VoxelGI, reflection probe or lightmap (GODOT_LOOK
-   §1); moving things are dynamic GI for a LightmapGI you add. **The dialogue choice** (the user: "I can't click
+   §1); moving things are dynamic GI for a LightmapGI you add, and the look plugin's effects are nodes and presets to
+drag in (GODOT_LOOK §0), holding only their numbers so they copy from one version's level to the next. **The dialogue choice** (the user: "I can't click
    anything", and the options run together with dashes): in a live scene the input handler passed only the walking
    keys, so the number keys never reached the choice, and the mouse stayed captured for looking; now while a choice
    is up every key goes to it and the mouse is free (`hud.choosing`, play's `_on_choosing`, taken back after), and the

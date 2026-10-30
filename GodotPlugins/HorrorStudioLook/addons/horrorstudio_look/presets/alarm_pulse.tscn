@@ -1,0 +1,11 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://addons/horrorstudio_look/nodes/flicker_omni.gd" id="1"]
+
+[node name="AlarmPulse" type="OmniLight3D"]
+script = ExtResource("1")
+light_color = Color(1, 0.12, 0.08, 1)
+light_energy = 2.0
+omni_range = 6.0
+mode = "pulse"
+rate = 0.8

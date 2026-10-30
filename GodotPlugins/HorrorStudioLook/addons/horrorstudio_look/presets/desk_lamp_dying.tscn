@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://addons/horrorstudio_look/nodes/flicker_spot.gd" id="1"]
+
+[node name="DeskLampDying" type="SpotLight3D"]
+script = ExtResource("1")
+shadow_enabled = true
+light_color = Color(1, 0.82, 0.6, 1)
+light_energy = 3.0
+spot_range = 3.0
+spot_angle = 40.0
+rotation = Vector3(-1.5708, 0, 0)
+mode = "dying"

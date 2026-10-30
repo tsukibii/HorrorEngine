@@ -16,6 +16,52 @@ changing it). The export copies it into every game (`addons/horrorstudio_look/`,
 it through the story's words (§5). The check: `python tools/godot/plugin_check.py` (LOOKPLUGIN), a demo room
 pictured with each part and measured (§6), the pictures in `Saved/Story/_look/godot_plugin/`.
 
+## 0. The effects as nodes: drag, drop, tune (`nodes/`, `presets/`)
+
+Written 2026-10-30 after the user's "I manually handle the lighting, you make a plugin that's easy to drag and drop
+the effects you've created and modify/customize them". Every effect below is also a node with its settings in the
+inspector, and the folder `addons/horrorstudio_look/presets/` holds ready-made ones: **drag a preset from the
+FileSystem dock into the level** (or Add Child Node and type `HS`), move it, and tune it in the inspector. The plugin
+needn't be enabled: the nodes are classes (`class_name`, each with its icon), so they're in Add Child Node anyway.
+
+Four kinds, by what they work on:
+
+| Kind | Nodes | How |
+|---|---|---|
+| **Things of their own** | `HSRainBox`, `HSPuddle`, `HSBloodSplat`, `HSLightShaft`, `HSHeadlightSweep` | drop it where it goes. It makes its streaks, decal, quad, card or lamp as children of its own that are never saved (no owner), so the scene file holds only the node and its numbers. They run in the editor: the rain falls, the dust drifts, a sweep passes every `preview_every` seconds |
+| **On a mesh you have** | `HSWetSurface`, `HSWindowPane`, `HSWallLeak` (all `HSOnMesh`), `HSMirrorSurface`, `HSCharacterLook` | drop it under the mesh (or the node holding the meshes, or set `target`). The first three change the meshes' materials while they're there, in the editor too, and put the meshes' own back before every save (the editor's pre-save notification) and when removed, so a re-export's level and yours never fight over a material. The mirror reflects and the character wears its skin, eyes and hair when the game runs (they need its camera and its glb) |
+| **Lights with behaviour** | `HSFlickerLight` (omni), `HSFlickerSpot`, `HSPatternLight` (spot) | the light itself, its effect in the inspector beside its own settings. A flicker multiplies the Energy you set (the light at full), previewed in the editor, saved at full; `on_mains` puts it in the group `hs_mains`, which the game's power cut switches off and on (any light of yours in that group too). A pattern light draws its loop when the scene starts and is saved without it |
+| **Over the picture** | `HSGrade`, `HSTape` | the level's own grade or tape while it's loaded, over the story's `game.grade` and `game.vhs`, which come back when it goes; in a project of your own they add the layer themselves. Picking a grade's `preset` fills its numbers to tune from. Seen when the game runs (a screen effect isn't drawn in the editor's 3D view) |
+
+Orientation, the same for every node that has one: **forward (-Z, the way the node looks) is into the room.** A
+shaft's beam runs along it (tilt the node down for the sun); a sweep's and a leak's node sit at the window or on the
+wall with forward into the room and X along the street or the wall; a blood splat lies on the surface its +Y (the
+green arrow) points out of.
+
+The presets (`presets/*.tscn`, 33): `rain`, `downpour`; `wet_floor`, `wet_floor_raining` (ripples), `damp_floor`;
+`puddle`; `blood_pool`, `blood_dried`, `blood_wall`; `wall_leak`; `window_shaft`, `window_sun` (the shaft with a
+warm spot shining the same way, a child of it); `headlight_sweep`; `caustics_light`, `blinds_light`, `leaves_light`,
+`clouds_light`; `fluorescent_tube`, `dying_bulb`, `candle`, `alarm_pulse`, `faulty_neon`, `desk_lamp_dying`;
+`mirror` (a glass quad with its reflection), `window_pane` (a quad with rain on it); `grade_cinema`, `grade_cold`,
+`grade_noir`; `tape_camhybrid`, `tape_worn`; `character_look`, `character_sweating`; `look_environment`. A preset is
+a scene: its root's settings are in the inspector where it's placed; for one with children (`window_sun`, `mirror`,
+`window_pane`) right-click it, Editable Children, to tune those too.
+
+**Carrying them to the next version.** An export is a new folder each time (GODOT_EXPORT §8), the level rebuilt from
+the story. Select your nodes in the old version's level, copy, open the new version's level, paste: they hold only
+their numbers, so nothing else comes along; one that goes on a mesh (a wet floor) is pasted under the new level's
+floor, since the floor itself is the export's.
+
+**Checked:** LOOKPLUGIN's nodes part (`python tools/godot/plugin_check.py --nodes` alone): `demo/nodes.gd` drops
+every preset into a room and measures each (the rain made, the floor wet, the decal, the blood dripping on the wall,
+the leak's band, the shaft's card, the sweep passing, the four patterns thrown, the flicker lights moving, the mirror
+attached, the pane, the skin worn), then saves as the editor does (the meshes' own materials back, the lights at full,
+no projector, nothing made in the packed scene; on again after), takes a node off (its floor dry), and runs the
+grade and the tape over each other; then `demo/editor_test.gd` opens a scene of presets **in the editor itself**,
+sees the rain, the wet floor, the shaft, the pattern, the flicker, the pane and the puddle working there, saves, and
+the check reads the file: only what was placed. The room with every preset in it:
+`docs/godot_sheets/2026-10-30_nodes.jpg`.
+
 ## 1. The preset: pseudo-realism for small rooms (`look.gd`, `HSLook`)
 
 What sells a small greybox room as real isn't detail, it's *soft light with bounce, contact darkening, and surfaces

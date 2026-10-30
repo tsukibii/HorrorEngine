@@ -62,7 +62,7 @@ static func wear(node: Node, look: Dictionary = {}) -> Array:
 			continue
 		for s in mi.mesh.get_surface_count():
 			var old = mi.get_active_material(s)
-			var names: String = mi.name + " " + mi.mesh.surface_get_name(s) + " " + (old.resource_name if old != null else "")
+			var names: String = mi.name + " " + (mi.mesh.surface_get_name(s) if mi.mesh is ArrayMesh else "") + " " + (old.resource_name if old != null else "")
 			if not is_hair(names):
 				continue
 			if old is ShaderMaterial and old.shader == shader():

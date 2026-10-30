@@ -335,6 +335,7 @@ func enter_level(lid: String) -> void:
 	if first or game.level_id != lid:
 		game.enter_level(lid, first)
 	level = lid
+	mains_was = null                                             # a new level: its own lights on the mains looked at again
 	by_id = {}
 	things = {}
 	doors = {}
@@ -2159,6 +2160,28 @@ func mirrors_quality(q: int) -> void:
 	for hm in mirrors:
 		if is_instance_valid(hm):
 			hm.set_quality(q)
+	for n in get_tree().get_nodes_in_group("hs_mirrors"):      # the user's own mirrors (HSMirrorSurface, the look plugin's nodes)
+		n.set_quality(q)
+
+
+## the lights the user placed by hand on the mains (the look plugin's flicker lights with on_mains, or any light put
+## in the group hs_mains): out in a power cut, on again with it (a tube's starter clicking)
+var mains_was = null
+
+
+func mains_tick() -> void:
+	var pw := powered()
+	if pw == mains_was:
+		return
+	mains_was = pw
+	for n in get_tree().get_nodes_in_group("hs_mains"):
+		if not (n is Light3D):
+			continue
+		if not n.has_meta("hs_lit"):
+			n.set_meta("hs_lit", n.visible)                      # its own visibility, kept
+		n.visible = bool(n.get_meta("hs_lit")) and pw
+		if pw and n.has_method("power_on"):
+			n.power_on()
 
 
 func blood_attach() -> void:
@@ -2646,6 +2669,7 @@ func tick(dt: float) -> void:
 		k *= HSFlicker.k(u, T)                                    # its flicker by mode (flicker.gd, as the desk's)
 		k *= float(scene_light_k.get(t["id"], 1.0))
 		t["node"].light_energy = float(u["base"]) * k
+	mains_tick()
 	life_lights()
 	if lifefx != null:
 		lifefx.update(now())

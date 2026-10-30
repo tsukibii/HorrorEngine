@@ -5,6 +5,7 @@
 ## wall split by its openings is several), settings {centre (world, the top on the wall's face), axis (along the
 ## wall), inward (into the room), width, top, bottom, drip (seconds between drops; 0 none), wet 0..1}; the node goes
 ## anywhere in the tree (its drops are placed in the world). `set_wet(k)` dries it or wets it again.
+@tool
 class_name HSLeak
 extends Node3D
 

@@ -1158,3 +1158,17 @@ guessed margin; and a check that only ever ran on a slow machine hasn't been run
   `ResourceSaver.save` right after its bake.
 - The story: the hand run baked 473 meshes because an earlier run had already made the folder; the first GDBAKE from
   a fresh export baked twice and registered none. The annex (a ten-second bake) was the quick test bench.
+
+## Tool nodes in Godot's editor save, notify and instance by their own rules (2026-10-30)
+
+- **Nothing added or freed inside a notification sent down the tree.** The pre-save and post-save notifications
+  come through `propagate_notification`, which holds every parent busy while it runs: a leak node freeing its drips
+  there failed ("Parent node is busy") and crashed Godot. Restore what's saved (a material, an energy) right away;
+  free with `queue_free` and build again with `call_deferred`.
+- **`EditorInterface.save_scene()` runs frames while it saves** (its progress bar): an EditorPlugin's `_process`
+  that called it ran again inside it and saved again ("Task 'save' already exists", then an abort). Mark the save
+  started before calling it, and return early while it's busy.
+- **A plain script can't be instanced in the editor**, only its static functions called: a `@tool` node making an
+  `HSRain.new()` needs `rain.gd` to be `@tool` too.
+- **`surface_get_name` is ArrayMesh's alone**: a helper that matches surfaces by name must skip it for a
+  primitive mesh (a SphereMesh stood in for a body and the skin's `wear` stopped there).

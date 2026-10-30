@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://addons/horrorstudio_look/nodes/pattern_light.gd" id="1"]
+
+[node name="BlindsLight" type="SpotLight3D"]
+script = ExtResource("1")
+shadow_enabled = true
+spot_range = 8.0
+spot_angle = 38.0
+light_color = Color(1, 0.88, 0.7, 1)
+light_energy = 5.0
+pattern = "blinds"
+open = 0.45

@@ -23,6 +23,7 @@ const DEFAULTS := {"amount": 1.0, "lift": Vector3(0, 0, 0), "gamma": Vector3(1, 
 var rect: ColorRect
 var mat: ShaderMaterial
 var preset_name: String = "none"
+var last = "none"                      # the grade applied last (a level's HSGrade puts it back)
 
 
 func _ready() -> void:
@@ -53,6 +54,7 @@ static func settings_of(name: String) -> Dictionary:
 
 ## the grade: a preset name, or a Dictionary with `preset` and any of the numbers over it; "none" or "" is off
 func apply(grade) -> void:
+	last = grade
 	var s: Dictionary = {}
 	if grade is Dictionary:
 		preset_name = str(grade.get("preset", "cinema"))

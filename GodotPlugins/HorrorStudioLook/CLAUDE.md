@@ -25,7 +25,12 @@ the VHS layer in `main.tscn`, `puff.gdshader` from lifefx.gd). A change here rea
 | `eye.gd`, `eye.gdshader` | the Studio's eye (people.py's `_FRAME` and `EYE_COLOR` in GLSL; `handed` −1 for Godot's binormal); `records` reads the glb's JSON chunk for `studioEye` |
 | `hair.gd`, `hair.gdshader` | the Studio's hair look (hairshader.js's Kajiya-Kay and retro maths) on imported card hair: `HSHair.wear` by mesh name (hair, lash, brow); the tangent from the UVs' screen derivatives in `fragment()`, the highlights in `light()`, the retro quantisation on the albedo (lit) or the emission (flat) |
 | `skin.gd`, `skin_wet.gdshader` | HumanShaders' skin shader with the wetness layer (the lines marked `HS`: the wet layer, `normal_gl` and `normal_has_ao` for a glTF normal map); `skin.gd` wires HumanShaders' textures and flat defaults, and a Studio export's normal and ORM maps and `studioSkin` record (`set_maps`, `records`) |
+| `flicker.gd` | `HSFlicker`: a light's flicker by mode (fluorescent, dying, candle, pulse, custom letters), the desk's `tools/shared/flicker.js` curves; play.gd drives the story's lights with it (moved here from the runtime add-on 2026-10-30, for the nodes) |
+| `nodes/` | **the effects as nodes** (GODOT_LOOK §0): `@tool` classes with an icon each (`icons/`) wrapping the pieces above: `HSRainBox`, `HSPuddle`, `HSBloodSplat`, `HSLightShaft`, `HSHeadlightSweep` (make their own children, never owned, never saved); `on_mesh.gd` (`HSOnMesh`: a node under a mesh that changes its material and puts it back before a save and when removed) with `HSWetSurface`, `HSWindowPane`, `HSWallLeak`; `HSFlickerLight`/`HSFlickerSpot` (`flicker_drive.gd`: the Energy is the full light, saved at full; `on_mains` the group `hs_mains` play.gd's power cut switches), `HSPatternLight` (the projector cleared before a save); `HSMirrorSurface`, `HSCharacterLook`, `HSGrade`, `HSTape` (the game's; the grade and tape over the game's own, put back when they go) |
+| `presets/` | the ready-made nodes as scenes to drag in (33): written as text by `demo/make_presets.py`, each a node of `nodes/` with its numbers |
 | `demo/demo.gd` | the demo scene and the measures (`report.json`) |
+| `demo/nodes.gd` | every preset in a room, each measured, a save as the editor does it (`nodes.json`, `nodes.png`) |
+| `demo/editor_test.gd`, `demo/editor_scene.tscn` | the nodes in the editor itself: the check installs the script as a plugin, it opens the scene, sees the nodes working, saves; the check reads the file |
 | `demo/people.gd` | a Character Studio export on HSSkin: flat-lit against its paint, lit dry, sweating, oiled (`people.json`) |
 
 ## Checking it
@@ -44,6 +49,12 @@ the VHS layer in `main.tscn`, `puff.gdshader` from lifefx.gd). A change here rea
 
 ## Rules
 
+- **A node saves only its numbers.** What a node makes goes in as a child with no owner (never saved); anything it
+  changes on a node that is saved (a mesh's material, a light's energy or projector) goes back on
+  `NOTIFICATION_EDITOR_PRE_SAVE` and on again (deferred) on `NOTIFICATION_EDITOR_POST_SAVE`. Never add or free a child
+  inside those notifications (they're sent down the tree: the parent is busy, and freeing one crashed the check):
+  defer it, or `queue_free`. A class a `@tool` node instances (`HSRain.new()`...) must be `@tool` itself: a plain
+  script can't be instanced in the editor (static functions can be called).
 - **MSAA switches SSR off** in Godot 4.7 (measured in the check, 2026-10-29): the realism preset uses TAA alone.
   Don't add MSAA back without looking at the wet floor.
 - The eye's `debug` uniform (1 where the iris is read, 2 the view in the tangent space, 3 the tangent) paints the
@@ -51,5 +62,5 @@ the VHS layer in `main.tscn`, `puff.gdshader` from lifefx.gd). A change here rea
 - The shaders take no textures they aren't given: `skin.gd` sets flat normals and white maps, so a sphere with no
   maps lights the same as a character with them left out. Keep that when adding a sampler.
 - A new piece: a class with a static `make`/`material`/`apply`, a shader beside it, a stage in `demo.gd` with a
-  measure, a row in `README.md` and docs/GODOT_LOOK.md, and the runtime wiring in `play.gd`/`game.gd` through a
+  measure, its node in `nodes/` (and a preset or two in `presets/`, measured in `demo/nodes.gd`), a row in `README.md` and docs/GODOT_LOOK.md, and the runtime wiring in `play.gd`/`game.gd` through a
   story word (STORY_FORMAT §9.1, `story_check.py`).

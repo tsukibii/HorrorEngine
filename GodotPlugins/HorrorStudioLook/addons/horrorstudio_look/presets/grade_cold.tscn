@@ -1,0 +1,16 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://addons/horrorstudio_look/nodes/grade.gd" id="1"]
+
+[node name="GradeCold" type="Node"]
+script = ExtResource("1")
+preset = "cold"
+lift = Vector3(0, 0.012, 0.035)
+gamma = Vector3(0.98, 1, 1.04)
+gain = Vector3(1, 1, 1)
+warmth = -0.45
+saturation = 0.8
+contrast = 1.06
+vignette = 0.35
+grain = 0.2
+aberration = 0.0

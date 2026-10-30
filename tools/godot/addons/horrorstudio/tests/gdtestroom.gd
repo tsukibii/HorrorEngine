@@ -27,6 +27,8 @@ var ticked_all: Array = []
 const FOLDERS_OF := ["Ground", "Walls", "Ceilings", "Doors", "Things", "Lights", "Glass", "Triggers", "Spots", "People", "GI"]
 
 
+var mains: Light3D = null          # the power station's hand-placed light (a look plugin preset on the mains)
+
 func snap_for(nid: String) -> Dictionary:
 	var s := {"flags": [], "items": [], "karma": {"karma": 0.0}, "counters": {}, "states": {}, "trail": []}
 	for n in ORDER.slice(0, ORDER.find(nid)):
@@ -712,6 +714,9 @@ func _initialize() -> void:
 	await station("n_power", func():
 		await step("4 · Power: into the power room, the power cuts (the lamps dark, the candle burning on, the switch only clicks: No power)", func():
 			place(1.5, 2.5, 0)
+			mains = (load("res://addons/horrorstudio_look/presets/fluorescent_tube.tscn") as PackedScene).instantiate()   # a light of the user's own (the look plugin's preset), on the mains
+			g.level.add_child(mains)
+			mains.position = Vector3(2.0, 2.4, -2.0)
 			var r := await enter_room("door_power", "power")
 			if r != "":
 				return r
@@ -721,6 +726,8 @@ func _initialize() -> void:
 			var L := {"lamp": rt.light_energy("power_lamp"), "candle": rt.light_energy("power_candle_light"), "corridor": rt.light_energy("corr_lamp_1")}
 			if L["lamp"] != 0 or L["corridor"] != 0 or not (L["candle"] > 0):
 				return JSON.stringify(L)
+			if mains.visible:
+				return "a hand-placed light on the mains still on in the cut"
 			var s := await go_to("power_switch", 0.7)
 			if s.get("cursor") != "locked" or not str(s.get("label", "")).to_lower().contains("no power"):
 				return "the switch in the cut: " + JSON.stringify(s)
@@ -734,6 +741,9 @@ func _initialize() -> void:
 			await game_wait(1.2)
 			if not rt.powered():
 				return "no power"
+			if not mains.visible:
+				return "the hand-placed light on the mains not back with the power"
+			mains.queue_free()
 			var r := await ticked("t4_breaker")
 			if r != "":
 				return r

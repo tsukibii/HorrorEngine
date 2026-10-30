@@ -525,7 +525,8 @@ with `{"tick": "<id>"}` at the end of that beat, not by its own trigger (the sto
 - `sweep`: a room: a car passes its windows that have a `sweep` now (§2), the headlights across the ceiling.
 - `power`: `off` cuts the level's power (every bulb and lamp dark, the switches dead; candles and fires burn on), `on`
   brings it back, flickering up; `level` names another level than the player's. The check warns at a cut nothing
-  brings back (no breaker, no `power: on`)
+  brings back (no breaker, no `power: on`). In Godot the lights the user adds to a level by hand go with it when they're on the mains (the look
+  plugin's flicker lights with `on_mains`, or any light in the group `hs_mains`; GODOT_LOOK §0)
 - `torch`: **the player's flashlight** (DECISIONS 2026-10-28): `on`, `off`, `flicker` (a stutter, then on), `dead` (it
   flickers out, and F only clicks until `works`: new batteries). An item with `"torch": true` is a flashlight: picked up
   (`use: pickup`) or given (`give`), it goes in the pocket, not the inventory's row, and **F** switches it (heard as

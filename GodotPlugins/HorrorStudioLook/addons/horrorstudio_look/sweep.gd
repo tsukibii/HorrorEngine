@@ -6,6 +6,7 @@
 ## STORY_FORMAT §2): `every` seconds between passes (40; 0: only when fired), `secs` a pass (3), `out`, `span` metres
 ## each way (10), `energy` (10), `color`, `aim` metres inside the window the beam points at (1.5). `fire()` starts one now (the story's `sweep` action, a room's windows);
 ## `passing` while one runs. Drawn from the clock and a seed, so the passes come the same on every run.
+@tool
 class_name HSSweep
 extends Node3D
 
