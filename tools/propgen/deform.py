@@ -228,15 +228,16 @@ def _rot_to(n, target=(0, 0, -1)):
     """The rotation matrix turning unit vector n onto target."""
     a = np.asarray(n, float) / np.linalg.norm(n)
     b = np.asarray(target, float)
-    v = np.cross(a, b)
     c = float(np.dot(a, b))
-    if np.linalg.norm(v) < 1e-9:
-        if c > 0:
-            return np.eye(3)
-        perp = np.array([1, 0, 0]) if abs(a[0]) < 0.9 else np.array([0, 1, 0])
+    if c > 1 - 1e-10:
+        return np.eye(3)
+    if c < -1 + 1e-8:
+        # half a turn about any axis across them
+        perp = np.array([1.0, 0.0, 0.0]) if abs(a[0]) < 0.9 else np.array([0.0, 1.0, 0.0])
         v = np.cross(a, perp)
         v /= np.linalg.norm(v)
         return 2 * np.outer(v, v) - np.eye(3)
+    v = np.cross(a, b)
     vx = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
     return np.eye(3) + vx + vx @ vx * (1 / (1 + c))
 

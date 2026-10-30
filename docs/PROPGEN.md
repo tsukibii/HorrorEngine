@@ -57,6 +57,9 @@ python tools/propgen.py check                             # PROPGEN
   `<name>_<material>_albedo.png`, `_orm.png` and `_normal.png`, `<name>_preview.png`, and `meta.json` (the resolved
   recipe, size, triangles, time).
 - **Time.** About 20 to 40 s a prop on the cloud's 4 CPUs (half of it the preview); much less on the 3090.
+- **Blender versions.** Tested on Blender 4.2 (the cloud's module) and Blender 5.2 LTS (Python 3.13): PROPGEN ok on
+  both, every format written. Only `bpy` and the numpy Blender ships are used; no add-ons beyond the bundled
+  exporters.
 
 ## 3. A recipe
 

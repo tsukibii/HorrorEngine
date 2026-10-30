@@ -491,7 +491,9 @@ def _outline(s, font, tracking, line):
             hl = np.array([b.handle_left[:2] for b in bp])
             p0, p1, p2, p3 = co, hr, np.roll(hl, -1, 0), np.roll(co, -1, 0)
             # a straight segment needs one point, a curve ten
-            dev = np.maximum(np.abs(np.cross(p3 - p0, p1 - p0)), np.abs(np.cross(p3 - p0, p2 - p0)))
+            def cross2(a, b):
+                return a[:, 0] * b[:, 1] - a[:, 1] * b[:, 0]
+            dev = np.maximum(np.abs(cross2(p3 - p0, p1 - p0)), np.abs(cross2(p3 - p0, p2 - p0)))
             curved = dev > 1e-6 * np.maximum(np.linalg.norm(p3 - p0, axis=1), 1e-9)
             t = np.arange(10) / 10.0
             pts = []

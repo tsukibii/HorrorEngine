@@ -1195,3 +1195,7 @@ guessed margin; and a check that only ever ran on a slow machine hasn't been run
   pictured only the floor. Await a frame, then `look_at_from_position`.
 - **Look at the preview before the code:** the pizza box's lid "vanished" because, open at 38 degrees, it faced the
   camera edge-on; its geometry was right all along.
+- **Run the tool on the user's Blender too:** the cloud has Blender 4.2's module, the user's Arch machine a 5.x. Under
+  Blender 5.2's environment (Python 3.13, a newer NumPy) `np.cross` refused 2D vectors and a resting face pointing
+  exactly down divided by zero; PROPGEN on both found them. Write 2D crosses by hand, and treat a dot product of -1 with
+  a tolerance.
