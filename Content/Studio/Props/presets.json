@@ -70,5 +70,19 @@
    "kit": "dining_chair", "seed": 3,
    "materials": {"*": {"kind": "wood"}, "kit_wood": {"pbr": "pbr/Wood/worn_planks", "tile": 0.45}},
    "dents": {"count": 12, "depth": 1.2, "radius": 18}, "detail": 6, "tex": 1024,
-   "wear": {"edges": 0.7, "scratches": 0.6, "dirt": 0.45, "dust": 0.35, "grime": 0.3, "stains": 0.15}}
+   "wear": {"edges": 0.7, "scratches": 0.6, "dirt": 0.45, "dust": 0.35, "grime": 0.3, "stains": 0.15}},
+ "spoon": {"label": "a table spoon, years of washing up: swirl marks", "family": "utensil", "kind": "spoon", "finish": "swirl",
+   "seed": 1, "wear": {"grime": 0.15, "scratches": 0.3}},
+ "fork_tarnished": {"label": "an old silver fork, tarnished", "family": "utensil", "kind": "fork", "metal": "silver", "finish": "polished",
+   "age": "tarnish", "age_amount": 0.35, "seed": 2, "wear": {"grime": 0.3, "dirt": 0.35}},
+ "knife": {"label": "a table knife, brushed", "family": "utensil", "kind": "knife", "finish": "brushed", "seed": 3,
+   "wear": {"scratches": 0.3}},
+ "chef_knife": {"label": "a chef's knife, wooden scales and rivets", "family": "utensil", "kind": "chef_knife", "finish": "brushed",
+   "seed": 4, "handle": "#4a2c1a", "wear": {"scratches": 0.35, "grime": 0.2}},
+ "chopsticks": {"label": "a pair of lacquered chopsticks", "family": "utensil", "kind": "chopsticks", "seed": 5,
+   "art": {"design": "lacquer", "color": "#6e1a16"}},
+ "key_brass": {"label": "a brass house key, worn in a pocket", "family": "key", "kind": "house", "bow": "round", "metal": "brass",
+   "finish": "scratched", "cuts": [3, 1, 4, 1, 5], "seed": 1, "wear": {"edges": 0.5, "grime": 0.3}},
+ "key_skeleton": {"label": "an old iron key, rusted", "family": "key", "kind": "skeleton", "metal": "iron", "finish": "cast",
+   "age": "rust", "age_amount": 0.5, "seed": 2, "wear": {"dirt": 0.4, "edges": 0.4}}
 }

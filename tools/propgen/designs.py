@@ -465,6 +465,45 @@ def kraft(f, d, rng):
         f.text(d.get("tagline", "PIZZA AL TAGLIO"), (cx, cy - R * 0.42), R * 0.14, font="bebas", tracking=0.25, color=dark, alpha=0.85, **ink)
 
 
+# ---- wood and lacquer ---------------------------------------------------------------------------------------------------
+
+def wood_grain(f, d, rng):
+    """Wood along the island's length: growth rings as bands of early and late wood bent by the grain's wander, fine
+    pores in the relief, a satin oil finish."""
+    from . import noise as Nn
+    X, Y = f.grid()
+    base = P.rgb(d.get("color", "#8a5a36"))
+    dark = base * 0.62
+    light = np.clip(base * 1.22, 0, 1)
+    off = rng.uniform(-50, 50, 2)
+    wander = Nn.fbm3(np.stack([X / 60.0 + off[0], Y / 12.0, np.full_like(X, off[1])], -1), int(rng.integers(1000)), 3)
+    rings = (Y + 6.0 * wander) / float(d.get("ring", 2.2))
+    band = 0.5 + 0.5 * np.sin(rings * 2 * math.pi) ** 3
+    fleck = Nn.fbm3(np.stack([X / 8.0, Y / 0.6, np.full_like(X, off[0])], -1), int(rng.integers(1000)), 2) * 0.5 + 0.5
+    t = np.clip(band * 0.75 + fleck * 0.25, 0, 1)[..., None]
+    col = light[None, None] * (1 - t) + dark[None, None] * t
+    pores = Nn.fbm3(np.stack([X / 3.0, Y / 0.18, np.full_like(X, off[1])], -1), int(rng.integers(1000)), 2)
+    f.lay_island(np.ones_like(X), color=col.astype(np.float32), rough=np.clip(0.45 + 0.15 * t[..., 0], 0, 1).astype(np.float32),
+                 metal=0.0, height=(pores * 0.015 - 0.01 * t[..., 0]).astype(np.float32))
+
+
+def lacquer(f, d, rng):
+    """Lacquered chopsticks: deep red (or black) with a soft gloss, gold bands and a scatter of petals near the top."""
+    base = d.get("color", "#7a1f1a")
+    gold = d.get("accent", "#c9a24a")
+    f.fill(color=base, rough=0.18, metal=0.0)
+    f.gradient(P.mix(base, "#000000", 0.35), base, angle=90, t0=0.0, t1=0.4, rough=0.18, metal=0.0)
+    for y in (f.H * 0.72, f.H * 0.74):
+        f.rect(0, y, f.W, 0.8, color=gold, rough=0.25, metal=0.9)
+    for _ in range(int(d.get("petals", 10))):
+        cx, cy = rng.uniform(0, f.W), rng.uniform(f.H * 0.78, f.H * 0.97)
+        s = rng.uniform(0.8, 1.4)
+        for k in range(5):
+            a = k * 2 * math.pi / 5 + rng.uniform(0, 1)
+            f.ellipse(cx + math.cos(a) * s, cy + math.sin(a) * s, s * 0.7, s * 0.45, rot=math.degrees(a), color="#f2c6cf", rough=0.3)
+        f.ellipse(cx, cy, s * 0.35, color=gold, rough=0.3, metal=0.8)
+
+
 def mix_hex(a, b, t):
     return P.mix(a, b, t)
 
@@ -476,7 +515,7 @@ def plain(f, d, rng):
 DESIGNS = {"soda": soda, "energy": energy, "beer": beer, "coffee_can": coffee_can, "water": water, "coffee_cup": coffee_cup,
            "sleeve": sleeve, "iced": iced, "newspaper": newspaper, "newsprint": newsprint, "napkin": napkin, "fries": fries,
            "receipt": receipt, "note": note, "paper": paper, "card_plain": card_plain, "burger_box": burger_box, "kraft": kraft,
-           "plain": plain}
+           "wood_grain": wood_grain, "lacquer": lacquer, "plain": plain}
 
 
 def draw(f, art, seed, default="plain"):

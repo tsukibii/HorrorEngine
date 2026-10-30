@@ -196,6 +196,8 @@ def bake(kind, low, high=None, px=1024, samples=16, extrude=0.003, reach=0.012, 
     src = high or low
     if kind == "EMIT":
         for slot in src.material_slots:
+            if slot.material is None:
+                continue
             tree = slot.material.node_tree
             out = next(n for n in tree.nodes if n.type == "OUTPUT_MATERIAL" and n.is_active_output)
             link = out.inputs["Surface"].links[0] if out.inputs["Surface"].links else None

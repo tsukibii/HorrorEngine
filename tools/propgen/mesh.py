@@ -129,12 +129,13 @@ class Seg:
     radius `disc` metres), into which island; `sharp` marks a hard edge at its start."""
 
     def __init__(self, pts, island, map="band", mat=None, sharp=False, step=None, disc=None, cap=None, cap_at="end", cap_island=None,
-                 cap_mirror=None):
+                 cap_mirror=None, cap_fill=None):
         self.pts = np.asarray(pts, float).reshape(-1, 2)
         self.island, self.map, self.mat, self.sharp, self.step, self.disc = island, map, mat, sharp, step, disc
         self.cap, self.cap_at = cap, cap_at          # loft only: close the outline at this segment's end (or start)
         self.cap_island = cap_island                 # ... mapped from above into this island (its own, or they overlap)
         self.cap_mirror = cap_mirror                 # ... mirrored to read from below (a 'down' cap is, unless False)
+        self.cap_fill = cap_fill                     # ... with points inside it every cap_fill metres (so it can bend)
 
 
 def arclen(pts):
@@ -474,81 +475,205 @@ def offset_poly(poly, o):
     return p + b * (o / cosh)[:, None]
 
 
-def loft(outline, segs, islands, mats=None):
+def loft(outline, segs, islands, mats=None, hole_island=None):
     """A profile swept round a closed outline instead of turned round an axis: `segs` like lathe's, each point
-    (offset from the outline, z) in metres. A segment that ends at the middle (`cap`: 'down' or 'up') closes with the
-    outline's face there. Bands map along the outline's length (u) and the profile's (v); caps map from above."""
-    outline = np.asarray(outline, float)
-    k = len(outline)
-    rings, ring_seg = [], []
+    (offset from the outline, z) in metres (offset < 0: into the material). `outline` is one loop (k, 2, anticlockwise)
+    or a list: the outline, then holes (clockwise), each swept with the same profile. A segment with `cap` ('down' or
+    'up') closes the shape at its end (or start) with the outline's face there, holes left open (concave outlines are
+    tessellated properly). Bands map along each loop's length (u) and the profile's (v), a hole's into `hole_island`;
+    caps map from above (mirrored when they face down, unless cap_mirror is False)."""
+    from mathutils import Vector
+    from mathutils.geometry import tessellate_polygon
+    loops = [np.asarray(outline, float)] if isinstance(outline, np.ndarray) else [np.asarray(x, float) for x in outline]
+    prof, ring_seg = [], []
     for si, s in enumerate(segs):
         pts = resample(s.pts, s.step) if s.step else s.pts
-        if rings and np.allclose(rings[-1][1], pts[0]):
+        if prof and np.allclose(prof[-1], pts[0]):
             pts = pts[1:]
-        for o, z in pts:
-            rings.append((offset_poly(outline, o), (o, z)))
+        for p in pts:
+            prof.append(np.asarray(p, float))
             ring_seg.append(si)
+    nr = len(prof)
     names = list(mats or [])
-    V, F, UV, FM = [], [], [], []
-    verts = np.concatenate([np.concatenate([r, np.full((k, 1), z)], 1) for r, (o, z) in rings])
-    per = np.concatenate([[0], np.cumsum(np.linalg.norm(np.diff(np.concatenate([outline, outline[:1]]), axis=0), axis=1))])
-    u = per / per[-1]
-    lo, hi = outline.min(0), outline.max(0)
+    allp = np.concatenate(loops)
+    lo, hi = allp.min(0), allp.max(0)
+    span = np.maximum(hi - lo, 1e-9)
+    base, verts = [], []
+    off = 0
+    for lp in loops:
+        base.append(off)
+        for o, z in prof:
+            verts.append(np.concatenate([offset_poly(lp, o), np.full((len(lp), 1), z)], 1))
+        off += len(lp) * nr
+    verts = np.concatenate(verts)
+    F, UV, FM = [], [], []
+    extra_v = []
+
+    def vid(li, r, j):
+        k = len(loops[li])
+        return base[li] + r * k + (j % k)
+
     for si, s in enumerate(segs):
-        isl = islands[s.island]
-        m = s.mat or isl.mat
-        if m not in names:
-            names.append(m)
         idx = [i for i, g in enumerate(ring_seg) if g == si]
         if not idx:
             continue
         start = idx[0] - 1 if si and idx[0] > 0 else idx[0]
         chain = list(range(start, idx[-1] + 1))
-        if s.map == "band":
-            sl = np.concatenate([[0], np.cumsum([math.hypot(rings[b][1][0] - rings[a][1][0], rings[b][1][1] - rings[a][1][1])
-                                                 for a, b in zip(chain[:-1], chain[1:])])])
-            tot = max(sl[-1], 1e-9)
+        m = s.mat or islands[s.island].mat
+        if m not in names:
+            names.append(m)
+        sl = np.concatenate([[0], np.cumsum([np.linalg.norm(prof[b] - prof[a]) for a, b in zip(chain[:-1], chain[1:])])])
+        tot = max(sl[-1], 1e-9)
+        for li, lp in enumerate(loops):
+            k = len(lp)
+            isl = islands[hole_island] if li and hole_island else islands[s.island]
+            per = np.concatenate([[0], np.cumsum(np.linalg.norm(np.diff(np.concatenate([lp, lp[:1]]), axis=0), axis=1))])
+            u = per / per[-1]
             for ci in range(len(chain) - 1):
                 r0, r1 = chain[ci], chain[ci + 1]
                 for j in range(k):
-                    j1 = (j + 1) % k
-                    F.append([r0 * k + j, r0 * k + j1, r1 * k + j1, r1 * k + j])
-                    uu0, uu1 = u[j], u[j + 1]
-                    UV.append(isl.to_uv(np.array([uu0, uu1, uu1, uu0]), np.array([sl[ci], sl[ci], sl[ci + 1], sl[ci + 1]]) / tot))
-                    FM.append(names.index(m))
-        else:
-            for ci in range(len(chain) - 1):
-                r0, r1 = chain[ci], chain[ci + 1]
-                for j in range(k):
-                    j1 = (j + 1) % k
-                    F.append([r0 * k + j, r0 * k + j1, r1 * k + j1, r1 * k + j])
-                    q = verts[[r0 * k + j, r0 * k + j1, r1 * k + j1, r1 * k + j], :2]
-                    a = (q - lo) / np.maximum(hi - lo, 1e-9)
-                    a = a * 0.9 + 0.05
-                    if s.map == "bottom":
-                        a[:, 0] = 1 - a[:, 0]
-                    UV.append(isl.to_uv(a[:, 0], a[:, 1]))
+                    F.append([vid(li, r0, j), vid(li, r0, j + 1), vid(li, r1, j + 1), vid(li, r1, j)])
+                    if s.map == "band":
+                        UV.append(isl.to_uv(np.array([u[j], u[j + 1], u[j + 1], u[j]]), np.array([sl[ci], sl[ci], sl[ci + 1], sl[ci + 1]]) / tot))
+                    else:
+                        q = verts[[vid(li, r0, j), vid(li, r0, j + 1), vid(li, r1, j + 1), vid(li, r1, j)], :2]
+                        a = (q - lo) / span * 0.9 + 0.05
+                        if s.map == "bottom":
+                            a[:, 0] = 1 - a[:, 0]
+                        UV.append(isl.to_uv(a[:, 0], a[:, 1]))
                     FM.append(names.index(m))
         if s.cap:
-            isl = islands[s.cap_island or s.island]
+            cisl = islands[s.cap_island or s.island]
             ri = chain[-1] if s.cap_at == "end" else chain[0]
-            ctr = len(verts) + len(V)
-            V.append(np.append(rings[ri][0].mean(0), rings[ri][1][1]))
-            for j in range(k):
-                j1 = (j + 1) % k
-                tri = [ri * k + j, ri * k + j1, ctr] if s.cap == "up" else [ri * k + j1, ri * k + j, ctr]
-                pts = np.array([verts[t, :2] if t < len(verts) else V[-1][:2] for t in tri])
-                a = (pts - lo) / np.maximum(hi - lo, 1e-9) * 0.9 + 0.05
-                if s.cap_mirror if s.cap_mirror is not None else (s.map == "bottom" or s.cap == "down"):
-                    a[:, 0] = 1 - a[:, 0]
+            rings2d = [verts[base[li] + ri * len(lp): base[li] + (ri + 1) * len(lp), :2] for li, lp in enumerate(loops)]
+            flat = np.concatenate(rings2d)
+            ids = np.concatenate([base[li] + ri * len(lp) + np.arange(len(lp)) for li, lp in enumerate(loops)])
+            if s.cap_fill:
+                inner = _fill_points(rings2d, s.cap_fill)
+                tris = _cdt(rings2d, inner)
+                if len(inner):
+                    ids = np.concatenate([ids, len(verts) + len(extra_v) + np.arange(len(inner))])
+                    extra_v.extend(np.concatenate([inner, np.full((len(inner), 1), prof[ri][1])], 1))
+                    flat = np.concatenate([flat, inner])
+            else:
+                tris = tessellate_polygon([[Vector((x, y, 0.0)) for x, y in r2] for r2 in rings2d])
+            mirror = s.cap_mirror if s.cap_mirror is not None else (s.map == "bottom" or s.cap == "down")
+            for t3 in tris:
+                a_, b_, c_ = t3
+                p0, p1, p2 = flat[a_], flat[b_], flat[c_]
+                ccw = (p1[0] - p0[0]) * (p2[1] - p0[1]) - (p1[1] - p0[1]) * (p2[0] - p0[0]) > 0
+                if ccw != (s.cap == "up"):
+                    b_, c_ = c_, b_
+                tri = [ids[a_], ids[b_], ids[c_]]
+                pts = flat[[a_, b_, c_]]
+                aa = (pts - lo) / span * 0.9 + 0.05
+                if mirror:
+                    aa[:, 0] = 1 - aa[:, 0]
                 F.append(tri + [-1])
-                UV.append(np.concatenate([isl.to_uv(a[:, 0], a[:, 1]), [[0, 0]]]))
+                UV.append(np.concatenate([cisl.to_uv(aa[:, 0], aa[:, 1]), [[0, 0]]]))
                 FM.append(names.index(m))
-    v = np.concatenate([verts] + ([np.array(V)] if V else []))
-    out = Mesh(v, np.array(F, np.int64), np.array(UV, float), mats=names)
+    if extra_v:
+        verts = np.concatenate([verts, np.array(extra_v)])
+    out = Mesh(verts, np.array(F, np.int64), np.array(UV, float), mats=names)
     out.fm = np.array(FM, np.int64)
-    out.a["rest"] = v.copy()
+    out.a["rest"] = verts.copy()
     return out
+
+
+def _in_poly(poly, pts):
+    x, y = pts[:, 0], pts[:, 1]
+    ins = np.zeros(len(pts), bool)
+    px, py = poly[:, 0], poly[:, 1]
+    j = len(poly) - 1
+    for i in range(len(poly)):
+        ins ^= ((py[i] > y) != (py[j] > y)) & (x < (px[j] - px[i]) * (y - py[i]) / (py[j] - py[i] + 1e-30) + px[i])
+        j = i
+    return ins
+
+
+def _fill_points(rings2d, step):
+    """Points on a grid every `step` inside the outline (rings2d[0]), outside its holes, half a step from any edge."""
+    outer = rings2d[0]
+    lo, hi = outer.min(0), outer.max(0)
+    xs = np.arange(lo[0] + step / 2, hi[0], step)
+    ys = np.arange(lo[1] + step / 2, hi[1], step * 0.866)
+    pts = np.array([(x + (step / 2 if i % 2 else 0), y) for i, y in enumerate(ys) for x in xs])
+    if not len(pts):
+        return np.zeros((0, 2))
+    ok = _in_poly(outer, pts)
+    for h in rings2d[1:]:
+        ok &= ~_in_poly(h, pts)
+    pts = pts[ok]
+    for r in rings2d:
+        a, b = r, np.roll(r, -1, 0)
+        ab = b - a
+        L2 = np.maximum((ab ** 2).sum(1), 1e-30)
+        keep = np.ones(len(pts), bool)
+        for i in range(0, len(pts), 2048):
+            p = pts[i:i + 2048, None, :]
+            t = np.clip(((p - a[None]) * ab[None]).sum(2) / L2[None], 0, 1)
+            d = np.linalg.norm(p - (a[None] + t[..., None] * ab[None]), axis=2).min(1)
+            keep[i:i + 2048] = d > step * 0.5
+        pts = pts[keep]
+    return pts
+
+
+def _cdt(rings2d, inner):
+    """Triangles over the outline and its holes with the inner points in them (indices: the rings' points in order,
+    then the inner ones)."""
+    from mathutils import Vector
+    from mathutils.geometry import delaunay_2d_cdt
+    pts = np.concatenate(rings2d + ([inner] if len(inner) else []))
+    faces, o = [], 0
+    for r in rings2d:
+        faces.append(list(range(o, o + len(r))))
+        o += len(r)
+    vc, _, fcs, orig_v, _, _ = delaunay_2d_cdt([Vector(p) for p in pts], [], faces, 1, 1e-12)
+    mapv = [ov[0] if ov else -1 for ov in orig_v]
+    out = []
+    for f in fcs:
+        idx = [mapv[i] for i in f]
+        if min(idx) < 0:
+            continue
+        c = pts[idx].mean(0)[None]
+        if any(_in_poly(h, c)[0] for h in rings2d[1:]):
+            continue
+        out.append(idx)
+    return out
+
+
+def slab(loops, thick, bevel, islands, top="top", bottom="bottom", edge="edge", hole_edge=None, steps=3, mat=None, fill=None):
+    """A flat part cut from a sheet `thick` metres thick with its edges rounded (a quarter circle of `bevel` at the top
+    and at the bottom, `steps` rings each): the outline (and holes) as loft loops; top and bottom faces from above
+    and below, the edge band all round."""
+    b = min(bevel, thick / 2 * 0.999)
+    h = thick / 2
+    arc_t = [(-b * (1 - math.cos(a)), h - b + b * math.sin(a)) for a in np.linspace(math.pi / 2, 0, steps + 1)]
+    arc_b = [(-b * (1 - math.cos(a)), -h + b - b * math.sin(a)) for a in np.linspace(0, math.pi / 2, steps + 1)]
+    prof = arc_t + (arc_b if h - b > 1e-9 else arc_b[1:])
+    # two runs: down to the last step (the top face capped at its start), then the last step (the bottom capped at its end)
+    segs = [Seg(np.array(prof[:-1]), edge, "band", mat=mat, cap="up", cap_at="start", cap_island=top, cap_mirror=False, cap_fill=fill),
+            Seg(np.array(prof[-2:]), edge, "band", mat=mat, cap="down", cap_at="end", cap_island=bottom, cap_fill=fill)]
+    return loft(loops, segs, islands, hole_island=hole_edge)
+
+
+def weld(m, tol=1e-7):
+    """Vertices at one place made one (faces renumbered; UVs stay per corner)."""
+    key = np.round(m.v / tol).astype(np.int64)
+    _, first, inv = np.unique(key, axis=0, return_index=True, return_inverse=True)
+    inv = inv.ravel()
+    f = m.f.copy()
+    f[f >= 0] = inv[f[f >= 0]]
+    order = np.argsort(first)
+    remap = np.empty_like(order)
+    remap[order] = np.arange(len(order))
+    f[f >= 0] = remap[f[f >= 0]]
+    m.v = m.v[first[order]]
+    m.a = {k: x[first[order]] for k, x in m.a.items()}
+    m.f = f
+    if len(m.sharp):
+        m.sharp = remap[inv[m.sharp]]
+    return m
 
 
 def resample_loop(poly, step):
@@ -556,7 +681,10 @@ def resample_loop(poly, step):
     p = np.asarray(poly, float)
     out = []
     for a, b in zip(p, np.roll(p, -1, 0)):
-        n = max(1, int(math.ceil(np.linalg.norm(b - a) / step)))
+        L = np.linalg.norm(b - a)
+        if L < 1e-9:
+            continue
+        n = max(1, int(math.ceil(L / step)))
         for k in range(n):
             out.append(a + (b - a) * k / n)
     return np.array(out)
