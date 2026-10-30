@@ -970,15 +970,22 @@ func latch_side(t: Dictionary) -> int:
 	var floor_t = by_id.get("%s__floor" % t["room"])
 	if floor_t == null:
 		return 1
-	var b: Transform3D = t["base"]
-	var d: Vector3 = floor_t["node"].position - b.origin
+	var b: Transform3D = _global_base(t)
+	var d: Vector3 = floor_t["node"].global_position - b.origin
 	return 1 if d.dot(b.basis * Vector3(0, 0, 1)) >= 0 else -1
+
+
+## a thing's resting transform in the world (its base is in its parent's space: the export's folders sit at the
+## origin, a Director door sits in its room)
+func _global_base(t: Dictionary) -> Transform3D:
+	var par = t["node"].get_parent()
+	return (par.global_transform if par is Node3D else Transform3D()) * (t["base"] as Transform3D)
 
 
 func on_latch_side(id) -> bool:
 	for x in latches:
 		if x["door"] == id:
-			var b: Transform3D = by_id[id]["base"]
+			var b: Transform3D = _global_base(by_id[id])
 			return (player.pos - b.origin).dot(b.basis * Vector3(0, 0, 1)) * float(x["side"]) > 0
 	return false
 
@@ -1724,6 +1731,9 @@ func draw_npcs(dt: float) -> void:
 			node.visible = false
 			continue
 		node.visible = n["pos"] != null and n["level"] == level
+		if collide != null and (not node.has_meta("hs_collides") or node.get_meta("hs_collides") != node.visible):   # Godot's physics: she stops the player and takes the click only while she's there
+			CollideC.enable(node, node.visible)
+			node.set_meta("hs_collides", node.visible)
 		if not node.visible:
 			continue
 		node.global_position = n["pos"]

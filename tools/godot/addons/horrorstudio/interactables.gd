@@ -33,6 +33,8 @@ const HOLDS := ["clean"]
 ## the part for a thing: its `use` (a door is a door); a little thing with something to do is `life`
 func name_of(t: Dictionary, rt) -> String:
 	var p: Dictionary = t["piece"]
+	if p.get("id") == null:                      # a wall of the level's that's no thing (Godot's physics: collide.gd's stub)
+		return ""
 	if p.get("kind") == "door":
 		return "door"
 	var u = t.get("use")

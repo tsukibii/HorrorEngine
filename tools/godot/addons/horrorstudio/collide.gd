@@ -154,7 +154,7 @@ func thing_of(col) -> Variant:
 
 
 func stub(col) -> Dictionary:
-	return {"id": null, "kind": "wall", "node": col, "piece": {}, "tags": [], "size": [0, 0, 0], "use": null, "hollow": false}
+	return {"id": null, "kind": "wall", "node": col, "piece": {"id": null, "kind": "wall"}, "tags": [], "size": [0, 0, 0], "use": null, "hollow": false}
 
 
 ## a ray against the level's colliders (and the clickable areas with `areas`): {thing, dist, point, normal} or null

@@ -56,6 +56,7 @@ var fading = null
 var story_data = null
 var level_scenes: Dictionary = {}
 var on_step: Callable = Callable()
+var on_play: Callable = Callable()        # called with the play node the moment it's made (before it enters a level)
 
 @onready var world: Node3D = $World
 @onready var player: Node3D = $Player
@@ -387,6 +388,8 @@ func play_rt() -> Variant:
 		play.name = "Play"
 		add_child(play)
 		play.setup(self, run, {"play_scene": func(sid): return await play_triggered(sid), "set_time": func(t): run["time"] = t; set_time(t), "quit": func(): stop_watch()})
+		if on_play.is_valid():
+			on_play.call(play)
 	return play
 
 
