@@ -114,3 +114,6 @@ playtest_fail.png
 testroom_fail.png
 exprtest_fail.png
 vendor/garmentcode/
+
+# the street builder's photos (pasted references, mostly not ours): beside each street, never in git
+Content/Studio/Streets/*/refs/

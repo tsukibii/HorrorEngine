@@ -1172,3 +1172,14 @@ guessed margin; and a check that only ever ran on a slow machine hasn't been run
   `HSRain.new()` needs `rain.gd` to be `@tool` too.
 - **`surface_get_name` is ArrayMesh's alone**: a helper that matches surfaces by name must skip it for a
   primitive mesh (a SphereMesh stood in for a body and the skin's `wear` stopped there).
+
+## The street builder's page (2026-10-30)
+
+- **A captured pointer's click lands on the capturer:** the map captures the pointer on press (so a drag keeps going
+  off its edge), so the double-click that opens a building's facade came to the SVG itself, not the building under it,
+  and did nothing (STREETPAGE's first run). Find what's under the pointer with `document.elementsFromPoint`.
+- **Encode a path, not its query:** a pasted photo's file is kept as `refs/b1_front.png?v=<time>` (so the browser
+  reloads a new one); `encodeURIComponent` on every part of it turned the `?` into `%3F` and the server looked for a
+  file of that name (404, the photo never showed). Split the query off first.
+- **`hidden` loses to a `display` rule:** `#facadeBox{display:flex}` showed the facade panel under the map when it was
+  hidden; `[hidden]{display:none!important}` at the top of the page's style.

@@ -106,6 +106,7 @@ TOOLS = [
     ("Pages", "Director's desk", "tools/director/serve.py", {"url": "http://127.0.0.1:8780"}),
     ("Pages", "Score room (music)", "tools/score/serve.py", {"url": "http://127.0.0.1:8791"}),
     ("Pages", "Scene builder (floor plans)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/builder.html"}),
+    ("Pages", "Street builder (the streets and the outsides of buildings: the map the enterable buildings go into)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/street.html"}),
     ("Pages", "Face mesh: photos to a head", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/face.html"}),
     ("Pages", "Character Studio (body, face, skin, hair in the salon, clothes)", "tools/character/serve.py", {"url": "http://127.0.0.1:8793"}),
     ("Pages", "Salon (hair as locks: strands, sheets, bundles, against a locked reference video)", "tools/character/serve.py", {"url": "http://127.0.0.1:8793/salon.html"}),
@@ -138,6 +139,8 @@ TOOLS = [
     ("Checks", "Texture templates check (the placeholder things' layouts, the .ora, the desk's UVs)", "tools/uv_templates.py check", {}),
     ("Checks", "Expressions test (the library in the desk, headless browser; the desk running)", "node tools/director/exprtest.mjs", {}),
     ("Checks", "Kit check (presets and kit props)", "node tools/kit/check.mjs", {}),
+    ("Checks", "Street check (every building style, part, thing and fence; every street; each shot against its photo)", "tools/street.py check", {}),
+    ("Checks", "Street page test (the street builder in a headless browser; the desk running)", "node tools/director/streettest.mjs", {}),
     ("Checks", "Tailor check (every clothing design on seven bodies)", "node tools/character/tailor/check.mjs", {}),
     ("Checks", "Play mode test (the Pilot walked, headless browser; the desk running)", "node tools/director/playtest.js", {}),
     ("Checks", "Test room (TestRoom001 played station by station, headless browser; the desk running; the reference for Unreal)", "node tools/director/testroom.mjs", {}),
@@ -161,6 +164,11 @@ TOOLS = [
     ("Story", "Texture templates for Krita (every placeholder thing, or one; into Art/Textures)", "tools/uv_templates.py --game {game} {opt:A thing's id (Enter: every one)}", {}),
     ("Story", "Texture templates: what's painted, what's stale", "tools/uv_templates.py --game {game} list", {}),
     ("Story", "New game", "tools/story.py new {ask:New game's name}", {}),
+
+    ("Streets", "Streets: what each one holds", "tools/street.py list", {}),
+    ("Streets", "A street as text", "tools/street.py show {ask:Street}", {}),
+    ("Streets", "A street drawn through its shot, beside its photo (into Saved/Streets; the desk running)", "tools/street.py shot {ask:Street} {opt:Shot (Enter: photo)}", {}),
+    ("Streets", "New street", "tools/street.py new {ask:New street's name}", {}),
 
     ("Script", "Writers' room: the sessions", "tools/writers/room.py list", {}),
     ("Script", "Writers' room: what the page shows now", "tools/writers/room.py now", {}),

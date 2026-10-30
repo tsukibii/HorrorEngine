@@ -2,6 +2,29 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-30, night (the user, starting the street builder on `buildings-streets`)
+
+- **A street builder, apart from the scene builder**: "make a new branch called buildings-streets. The goal will be to
+  be able to create aesthetic but low-poly buildings and streets like this; this should be a new tool in the dashboard,
+  not the existing interior building one: it's for building the map we'd place the enterable buildings into
+  (enterable buildings are ones we build with the current tool); this new one is more for aesthetics". So
+  `tools/director/street.html` (docs/STREET_BUILDER.md), its streets in `Content/Studio/Streets/<name>/street.json`.
+- **Very simple to use**: "very simple to use like our existing tools for building things (easy to add protrusions,
+  windows, doors, roofs etc), should have the ability to paste in a front and side view reference, should be super
+  easy to use that even a layman can use it". The facade view: the front and a side flat on, a photo pasted behind
+  each, parts clicked onto the wall, floors by dragging the roof.
+- **The first reference matched, 1:1 framing**: "try make the tool and recreate the shot in image 1, 1:1 (without the
+  photorealism but with the same framing and composition)". `shibuya_lane`, its shot `photo`, held to the photo by
+  pins (STREET).
+- **More kinds of buildings and streets, and the things in them**: after five more references (a white tower with a
+  glass-block stairwell, a quiet stucco house front, a shopping street of lantern lamps under a mountain, abandoned
+  concrete flats with shutters, an old post town at dusk): "don't worry about foliage for now, but if you could add
+  simple assets for street lamps and other stuff like that it would be great, also fences, different types of fences,
+  metal mesh, long, wooden; should be easy to apply PBR to but also be low poly count. We want the overall maps to feel
+  tight and filled so the user doesn't feel isolated but instead cozy, even in horror creepy games". So a building
+  style per reference, lamps, poles and wires, street things, eight fences, every surface a slot that takes a PBR set
+  at its real size, and *Fill a street*: buildings shoulder to shoulder, lamps, wires and clutter in one click.
+
 ## 2026-10-30, evening (the user, after finding the sun's leak and the flicker's flashes)
 
 - **Unreal removed**: "I'm okay to merge this into main... before you do, remove all the remaining bloatware from
