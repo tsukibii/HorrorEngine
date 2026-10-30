@@ -132,8 +132,7 @@ def make(spec, th):
         f = fr["cap_top"]
         f.fill(color=capc, rough=0.38)
         f.ring(f.W / 2, f.H / 2, 13.0, 0.5, height=0.1)
-        f.text((art.get("brand") or "MIZUHO")[:8], (f.W / 2, f.H / 2), 3.0, font="archivo", height=0.08, add_height=True,
-               color=capc, alpha=0.0)
+        f.text((art.get("brand") or "MIZUHO")[:8], (f.W / 2, f.H / 2), 3.0, font="archivo", height=0.08, add_height=True)
 
     th.paint = paint
     th.view = {"azim": -12} if not crushed else {}

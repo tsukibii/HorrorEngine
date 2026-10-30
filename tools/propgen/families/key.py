@@ -135,7 +135,7 @@ def make(spec, th):
                 # the warding grooves along the blade (its relief) and a maker's mark on the bow
                 for gy, gw in ((0.5, 0.8), (-1.6, 0.7)):
                     f.rect(f.W * 0.38, f.H / 2 + gy * (1 if nm == "top" else -1), f.W * 0.55, gw, height=-0.25, add_height=True, alpha=1.0)
-                f.text(spec.get("mark", "KEYWAY"), (f.W * 0.17, f.H * 0.18), 1.6, font="archivo", height=-0.04, add_height=True, alpha=0.0)
+                f.text(spec.get("mark", "KEYWAY"), (f.W * 0.17, f.H * 0.18), 1.6, font="archivo", height=-0.04, add_height=True)
             if tag:
                 f = fr["top"]
                 f.ellipse(f.W * 0.17, f.H / 2, 12.5, color=tag, rough=0.5, metal=0.0)

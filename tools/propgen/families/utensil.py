@@ -282,7 +282,7 @@ def make(spec, th):
                      age=age, age_amount=float(spec.get("age_amount", 0.4)))
         if kind == "knife":
             f = fr["top"]
-            f.text(art.get("stamp", "STAINLESS"), (L * 0.56, f.H / 2 + 1.5), 1.4, font="archivo", height=-0.01, add_height=True, alpha=0.0)
+            f.text(art.get("stamp", "STAINLESS"), (L * 0.56, f.H / 2 + 1.5), 1.4, font="archivo", height=-0.01, add_height=True)
         if kind == "chef_knife":
             for nm in ("h_top", "h_bottom", "h_edge"):
                 designs.draw(fr[nm], {"design": "wood_grain", "color": spec.get("handle", "#5a3622"), "part": nm}, seed + 3, "wood_grain")

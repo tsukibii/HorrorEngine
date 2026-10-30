@@ -157,7 +157,7 @@ def make(spec, th):
             else:
                 f.line([(cx - 4, cx - 4), (cx + 4, cx + 4)], 0.5, color="#111111", height=-0.2)
                 f.line([(cx - 4, cx + 4), (cx + 4, cx - 4)], 0.5, color="#111111", height=-0.2)
-                f.text("PS 6", (cx, cx - 20), 2.2, font="archivo", height=0.06, add_height=True, alpha=0)
+                f.text("PS 6", (cx, cx - 20), 2.2, font="archivo", height=0.06, add_height=True)
             fr["lid_side"].fill(color=lc, rough=0.42)
         if straw:
             f = fr["straw"]
