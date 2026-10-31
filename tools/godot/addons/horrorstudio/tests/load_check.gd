@@ -42,8 +42,11 @@ func _initialize() -> void:
 	var shared: Dictionary = {}          # a material file's path -> the instances the pieces wear (one: loaded once, shared)
 	var held: Array = []                 # kept alive across the levels, so a level loaded after another gets the same one
 	var unfiled := 0                     # a set's material that isn't the game's file for it (game/materials/)
-	var slots := 0                       # kit things' slots dressed (the story's `mats`) with the game's <Name>_uv.tres
+	var slots := 0                       # kit surfaces dressed (the story's `mats`) with the game's <Name>_uv.tres
 	var slots_bad := 0
+	var slot_want: Dictionary = {}       # a thing (a door with its parts one) -> the slots its mats name
+	var slot_got: Dictionary = {}        # -> the slots its surfaces were dressed for
+	var tone := RegEx.create_from_string("_\\d+$")
 	var info: Dictionary = {}
 	var ef := FileAccess.open("res://game/export.json", FileAccess.READ)
 	if ef != null:
@@ -81,13 +84,28 @@ func _initialize() -> void:
 						shared[mat.resource_path] = ids
 						held.append(mat)
 			var art = ch.get_node_or_null("art")
-			if art != null and art.has_method("dress"):      # a kit thing's slots dressed (slot_materials.gd): out of a tree, by hand
+			if art != null and art.has_method("dress") and ch.has_meta("piece"):   # a kit thing's slots dressed (slot_materials.gd): out of a tree, by hand
+				var pc = JSON.parse_string(ch.get_meta("piece"))
+				var who: String = pc["id"]
+				for t in pc["tags"]:
+					if String(t).begins_with("door:"):
+						who = String(t).substr(5)
+				var want: Dictionary = slot_want.get(who, {})
+				for k in art.slots:
+					want[k] = true
+				slot_want[who] = want
 				slots += int(art.dress())
+				var got: Dictionary = slot_got.get(who, {})
 				for mi in art.find_children("*", "MeshInstance3D", true, false):
 					for i in mi.mesh.get_surface_count():
 						var sm: Material = mi.mesh.surface_get_material(i)
-						if sm != null and art.slots.values().has(sm) and not (sm.resource_path.begins_with("res://game/materials/") and sm.resource_path.ends_with("_uv.tres")):
+						if sm == null or not art.slots.values().has(sm):
+							continue
+						if not (sm.resource_path.begins_with("res://game/materials/") and sm.resource_path.ends_with("_uv.tres")):
 							slots_bad += 1
+						got[tone.sub(mi.mesh.surface_get_name(i).trim_prefix("kit_"), "")] = true
+						got[mi.mesh.surface_get_name(i).trim_prefix("kit_")] = true
+				slot_got[who] = got
 			if art != null:
 				arts += 1
 				if art.find_children("*", "MeshInstance3D", true, false).is_empty():
@@ -102,18 +120,24 @@ func _initialize() -> void:
 			for path in shared:
 				if shared[path].size() != 1:
 					many += 1
-			var files := 0                    # the sets' files (a colour's has no maps: not counted above)
-			for ref in info.get("materials", {}):
-				if not String(ref).begins_with("#"):
-					files += 1
+			var files := 0                    # the sets' files, world-aligned and for blocks that move (a colour's has no maps)
+			for table in ["materials", "moving_materials"]:
+				for ref in info.get(table, {}):
+					if not String(ref).begins_with("#"):
+						files += 1
 			print("GDEXPORT materials: %d files in game/materials/ (the export wrote %d), each loaded once and shared by its pieces%s%s" % [
 				shared.size(), files, "" if many == 0 else " (%d LOADED TWICE)" % many, "" if unfiled == 0 else " (%d pieces wear a set NOT FROM ITS FILE)" % unfiled])
 			if many or unfiled or (want > 0 and shared.size() != files):
 				ok = false
-			var want_slots := int(info.get("slots_dressed", 0))
-			print("GDEXPORT kit slots: %d surfaces dressed by the story's mats (the export dressed %d slots), each wearing its set's _uv file%s" % [
-				slots, want_slots, "" if slots_bad == 0 else " (%d NOT)" % slots_bad])
-			if slots < want_slots or slots_bad:
+			var want_things := int(info.get("slots_dressed", 0))
+			var short: Array = []             # a slot a thing's mats name that none of its surfaces wears
+			for who in slot_want:
+				for k in slot_want[who]:
+					if not slot_got.get(who, {}).has(k):
+						short.append("%s %s" % [who, k])
+			print("GDEXPORT kit slots: %d things dressed by the story's mats (the export dressed %d), %d surfaces wearing their set's _uv file%s%s" % [
+				slot_want.size(), want_things, slots, "" if slots_bad == 0 else " (%d NOT)" % slots_bad, "" if short.is_empty() else " (UNDRESSED: %s)" % ", ".join(short)])
+			if slot_want.size() != want_things or slots_bad or not short.is_empty():
 				ok = false
 		if empty:
 			ok = false

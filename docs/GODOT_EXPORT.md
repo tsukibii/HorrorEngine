@@ -82,7 +82,10 @@ so give those their own UV'd material).
   depend on which level came first.
 - **Sets from anywhere**: the shelf's own, your attached folders' (ASSETS §6: copied into the project from where they
   are), the library's, a tuned one (made before the levels are written when this machine hasn't it yet).
-- **A kit thing's slots** (its `mats`: a sofa's fabric, a fridge's body) wear **`<Name>_uv.tres`**: the same maps,
+- **A block that moves** (a plain door's slab with a `mat`, a thing taken up) wears **`<Name>_obj.tres`**: the same
+  maps, triplanar in the block's own space (`uv1_world_triplanar` off), so the set rides with it as it swings instead
+  of sliding across it (`moving_materials` in export.json).
+- **A kit thing's slots** (its `mats`: a sofa's fabric, a fridge's body, a switch's plastic, a kit door's parts) wear **`<Name>_uv.tres`**: the same maps,
   laid by the mesh's own UVs (the kit's are metres) rather than the world, so they ride with a thing that moves. The
   export puts `addons/horrorstudio/slot_materials.gd` on the thing's instanced kit mesh with its `slots` (slot ->
   material file); a `@tool` script, so the editor shows them too: each `kit_<slot>` surface (and its tones,
@@ -93,7 +96,9 @@ so give those their own UV'd material).
   (*Actions › Extract Materials*) writes them to a folder by name if you want them as files.
 - `export.json`'s `materials` maps each set's ref to its file (`slot_materials` the `_uv` ones, `slots_dressed` how many
   slots); GDEXPORT's load check finds every surfaced piece wearing its set's file from `game/materials/`, each file
-  loaded once and shared (`GDEXPORT materials: …`), and every dressed slot wearing its `_uv` file (`GDEXPORT kit slots: …`).
+  loaded once and shared (`GDEXPORT materials: …`, the `_obj` ones counted with them), and every thing whose slots
+  are dressed (a door with its parts one thing) wearing each slot its `mats` names, from its `_uv` file (`GDEXPORT
+  kit slots: …`).
 
 **Sequencing the user can see:** a scene's whole timeline is one Animation (`scene`): a position/rotation track for
 the camera (the bake's, at 30 fps, keys thinned), bone tracks per cast member (the bake's skin matrices turned into

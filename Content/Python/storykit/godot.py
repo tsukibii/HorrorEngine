@@ -262,17 +262,18 @@ class Materials:
         name = SET_RES.sub("", ref.rstrip("/").rsplit("/", 1)[-1]) or ref.rsplit("/", 1)[-1]
         return re.sub(r"[^A-Za-z0-9_\-]+", "_", name).strip("_") or "material"
 
-    def res(self, ref, uv=False):
-        """The set's material file, res://game/materials/<Name>.tres (world-aligned: blocks, anything static), or with
-        `uv` <Name>_uv.tres (the same maps laid by the mesh's UVs in metres: a kit thing's slots, which may move),
-        written the first time it's asked for; None when the set isn't on this machine's shelf (the block keeps the
-        exporter's colour)."""
-        key = (ref, "uv") if uv else ref
+    def res(self, ref, mode="world"):
+        """The set's material file, written the first time it's asked for; None when the set isn't on this machine's
+        shelf (the block keeps the exporter's colour). Its maps are laid three ways, a file each, all sharing them:
+        res://game/materials/<Name>.tres world-aligned (blocks, anything that stays put: seamless from block to block),
+        <Name>_uv.tres by the mesh's UVs in metres (a kit thing's slots, a kit door's parts), <Name>_obj.tres by the
+        block's own shape (a block that moves: a plain door's slab, a thing taken up: it rides with it)."""
+        key = ref if mode == "world" else (ref, mode)
         if key in self.files:
             return self.files[key]
         self.files[key] = None
         base = self.names.get(ref) or self.base_name(ref)
-        name = base + ("_uv" if uv else "")
+        name = base + ("" if mode == "world" else "_" + mode)
         folder = self.out / "game" / "materials"
         props, ext = {"resource_name": gstr(name)}, []
 
@@ -293,10 +294,11 @@ class Materials:
             res = f"res://game/materials/{base}"
             maps = meta["maps"]
             tile = float(meta.get("tile_m") or 2.0)
-            if uv:                                         # the kit's UVs are metres: one repeat a tile_m
+            if mode == "uv":                               # the kit's UVs are metres: one repeat a tile_m
                 props["uv1_scale"] = v3(1.0 / tile, 1.0 / tile, 1.0)
-            else:
-                props.update({"uv1_triplanar": "true", "uv1_world_triplanar": "true", "uv1_scale": v3(1.0 / tile, 1.0 / tile, 1.0 / tile)})
+            else:                                          # triplanar in the world's space, or the block's own (it moves)
+                props.update({"uv1_triplanar": "true", "uv1_world_triplanar": "true" if mode == "world" else "false",
+                              "uv1_scale": v3(1.0 / tile, 1.0 / tile, 1.0 / tile)})
             props["texture_filter"] = "5"                  # linear with mipmaps, anisotropic
             for slot, prop in (("albedo", "albedo_texture"), ("rough", "roughness_texture"), ("ao", "ao_texture"), ("metal", "metallic_texture")):
                 if slot in maps and (src / maps[slot]).exists():
@@ -341,7 +343,7 @@ class LevelWriter:
         self.meshes_out = Path(meshes_out) if meshes_out else None   # game/meshes/: the kit's and the library's glbs copied here
         self.surfaces = {}                                 # a library texture set's material, by ref (surface())
         self.slot_mats = {}                                # a set's material laid by UVs (a kit thing's slot), by ref
-        self.slots_dressed = 0                             # kit slots dressed (the story's `mats`)
+        self.dressed = set()                               # the things with slots dressed (the story's `mats`; a door with its parts one)
         self.slot_script = None
         self.surfaced = 0                                  # the pieces wearing one
         self.occluders = 0                                 # the walls, floors and ceilings hiding what's behind them
@@ -367,20 +369,24 @@ class LevelWriter:
         self.arts[ref] = self.t.extres(f"res://game/meshes/{src.parent.name}/{src.name}", "PackedScene")
         return self.arts[ref]
 
-    def surface(self, ref):
-        """A texture set (a room's `look`, a prop's `mat`: `mat:<ref>`) as the game's material file for it (Materials:
-        game/materials/<Name>.tres, written once, shared by every piece on every level), an ext_resource here once;
-        None when the set isn't on the shelf (the block keeps its colour)."""
+    def surface(self, ref, moving=False):
+        """A texture set (a room's `look`, a prop's or a door's `mat`: `mat:<ref>`) as the game's material file for it
+        (Materials: game/materials/<Name>.tres, written once, shared by every piece on every level; <Name>_obj.tres for
+        a block that moves, so the set rides with it), an ext_resource here once; None when the set isn't on the shelf
+        (the block keeps its colour)."""
         if self.materials is None:
             return None
-        if ref not in self.surfaces:
-            path = self.materials.res(ref)
-            self.surfaces[ref] = self.t.extres(path, "Material") if path else None
-        return self.surfaces[ref]
+        key = (ref, "obj") if moving else ref
+        if key not in self.surfaces:
+            path = self.materials.res(ref, "obj" if moving else "world")
+            self.surfaces[key] = self.t.extres(path, "Material") if path else None
+        return self.surfaces[key]
 
-    def slots(self, tags):
-        """A kit thing's slots dressed (its `mats`: matslot:<slot>:<ref> tags) as the slot_materials.gd script's
-        `slots`: {slot: the game's <Name>_uv.tres for the set}, as Godot's text writes a Dictionary; None when none."""
+    def slots(self, p):
+        """A kit thing's slots dressed (its `mats`: matslot:<slot>:<ref> tags; a kit door's on each of its parts) as the
+        slot_materials.gd script's `slots`: {slot: the game's <Name>_uv.tres for the set}, as Godot's text writes a
+        Dictionary; None when none."""
+        tags = p["tags"]
         if self.materials is None:
             return None
         got = []
@@ -388,13 +394,13 @@ class LevelWriter:
             if t.startswith("matslot:"):
                 slot, _, ref = t[8:].partition(":")
                 if ref not in self.slot_mats:
-                    path = self.materials.res(ref, uv=True)
+                    path = self.materials.res(ref, "uv")
                     self.slot_mats[ref] = self.t.extres(path, "Material") if path else None
                 if self.slot_mats[ref]:
                     got.append(f"{gstr(slot)}: {self.slot_mats[ref]}")
         if not got:
             return None
-        self.slots_dressed += len(got)
+        self.dressed.add(next((t[5:] for t in tags if t.startswith("door:")), p["id"]))
         if self.slot_script is None:
             self.slot_script = self.t.extres("res://addons/horrorstudio/slot_materials.gd", "Script")
         return "{\n" + ",\n".join(got) + "\n}"
@@ -489,8 +495,9 @@ class LevelWriter:
             shape = self.t.sub("BoxShape3D", {"size": v3(w, h, d)})
         mprops = {"mesh": mesh, "material_override": self.mat(key, {"transparency": "1", "albedo_color": col(MATS["stain"][0], 0.85)} if key == "stain" else None)}
         mat_ref = next((t[4:] for t in tags if t.startswith("mat:")), None)    # a room's look or a prop's mat: the set off the shelf
+        moves = p["kind"] == "door" or any(t.startswith("door_part:") and t != "door_part:frame" for t in tags) or use in ("pickup", "carry", "roll")
         if mat_ref and key != "stain":
-            surf = self.surface(mat_ref)
+            surf = self.surface(mat_ref, moves)
             if surf:
                 mprops["material_override"] = surf
                 self.surfaced += 1
@@ -498,7 +505,7 @@ class LevelWriter:
         ext = self.art_of(art) if art else None
         if ext:                                       # the mesh in its block; the block stays, unseen, for the cursor and the walls
             mprops["visible"] = "false"
-        if p["kind"] == "door" or any(t.startswith("door_part:") and t != "door_part:frame" for t in tags) or use in ("pickup", "carry", "roll"):
+        if moves:
             mprops["gi_mode"] = "2"                    # it moves (a leaf, its handle, a thing taken up): a LightmapGI the user adds lights it by its probes, never bakes it in place
         self.t.node("mesh", "MeshInstance3D", path, mprops)
         if p["kind"] in ("wall", "floor", "ceiling") and p["shape"] not in ("cyl", "sphere") and not hidden and not hollow \
@@ -511,7 +518,7 @@ class LevelWriter:
         if ext:
             xf, k = self.art_transform(p, art)
             aprops = {"transform": xf}
-            slots = self.slots(tags) if art.startswith("kit/") else None
+            slots = self.slots(p) if art.startswith("kit/") else None
             if slots:                                  # its slots dressed: the script on the instanced kit mesh
                 aprops.update({"script": self.slot_script, "slots": slots})
             self.t.node("art", None, path, aprops, instance=ext)
@@ -1435,9 +1442,9 @@ def export(game, out=None, make_zip=False, do_import=True):
         levels.append(lid)
         arts += lw.art_count
         surfaced += lw.surfaced
-        slots_dressed += lw.slots_dressed
+        slots_dressed += len(lw.dressed)
         occluders += lw.occluders
-        surface_sets.update(r for r, m in lw.surfaces.items() if m)
+        surface_sets.update(r if isinstance(r, str) else r[0] for r, m in lw.surfaces.items() if m)
         for ref in lw.arts:                               # the kit things' sockets and slots (lifefx.gd), by their ref
             if ref.startswith("kit/") and LIB.mesh_info(ref):
                 kit_index[ref] = LIB.mesh_info(ref)
@@ -1449,7 +1456,8 @@ def export(game, out=None, make_zip=False, do_import=True):
     import datetime  # noqa: PLC0415
     info = {"game": game, "story": str(path), "levels": levels, "pieces": len(pieces), "arts": arts, "acts": acts, "surfaced": surfaced, "occluders": occluders, "surface_sets": sorted(surface_sets),
             "materials": {r: m for r, m in sorted(mats.files.items(), key=lambda kv: str(kv[0])) if m and isinstance(r, str)},
-            "slot_materials": {r[0]: m for r, m in sorted(mats.files.items(), key=lambda kv: str(kv[0])) if m and isinstance(r, tuple)},
+            "slot_materials": {r[0]: m for r, m in sorted(mats.files.items(), key=lambda kv: str(kv[0])) if m and isinstance(r, tuple) and r[1] == "uv"},
+            "moving_materials": {r[0]: m for r, m in sorted(mats.files.items(), key=lambda kv: str(kv[0])) if m and isinstance(r, tuple) and r[1] == "obj"},
             "slots_dressed": slots_dressed, "bake": (previs / "preview.json").exists(), "bodies": baked,
             "bodies_list": sorted(f.name[5:-4] for f in previs.glob("Body_*.glb")) if previs.exists() else [], "engine": L.engine_version(), "godot": "4.7",
             "made": datetime.datetime.now().strftime("%Y-%m-%d %H:%M")}
