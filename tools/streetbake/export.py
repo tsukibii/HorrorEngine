@@ -241,6 +241,8 @@ def tidy_uvs(objs):
 
 
 def export_glb(path):
+    for o in [o for o in bpy.data.objects if o.type == "LIGHT" and o.data.type == "SUN" and "glb_energy" not in o]:
+        bpy.data.objects.remove(o)                      # the look's sun: Godot's light is set by hand there (DECISIONS 2026-10-30)
     bpy.ops.export_scene.gltf(filepath=str(path), export_format="GLB", export_extras=True, export_lights=True,
                               export_import_convert_lighting_mode="RAW", export_yup=True, export_apply=False,
                               export_texcoords=True, export_normals=True, export_materials="EXPORT",

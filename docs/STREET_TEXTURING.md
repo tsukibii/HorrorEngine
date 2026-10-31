@@ -61,6 +61,16 @@ In `Saved/Streets/shibuya_lane/blender/`:
 - **The finishes the lane uses** are in `Content/Studio/Streets/shibuya_lane/finish.json`. Francfranc's facade is
   `panel`, two far buildings are `tile`, one is `concrete`, and the rest are `render` by their slots.
 
+**The lane painted from its photo** (2026-10-31, docs/STREET_PAINT.md): in the paint page, each building and the
+street-wide surfaces wear the material library's sets (Francfranc's pink precast panels, the far buildings' 45 × 95
+tiles, sprayed mortar and ALC, new asphalt, grey pavers), with decals laid in the photo's shot (torn posters and damp
+on the kiosk, oil, a manhole and a drain grate on the road, gum and litter on the pavement, rain streaks on a facade).
+
+**The sky is physical** (docs/research/photoreal.md §3): Blender's Nishita sky for dusk and day (`scene.py` `SKY`: the
+sun's elevation and turn, the air, dust and ozone), the sun a light of its own (its disc off), calibrated against the
+photo by measuring them. The middle tones are 0.022 against 0.022 linear, the sky's band 0.044 against 0.050, the road
+0.009 against 0.012. The sun stays out of the .glb, since Godot's light is set by hand there. Night keeps the gradient.
+
 **Times on the cloud's 4 CPUs (no graphics card):**
 - the wear atlas: 4 minutes (Cycles' bakes 1.7, numpy 2);
 - the 15 sets: 4 minutes, once for every street (made again only when the finishes' code changes);

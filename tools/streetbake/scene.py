@@ -96,7 +96,7 @@ _REFS = []
 def pbr_ref(name):
     """A surface the street put a shelf set on (a piece's or the street's `look`, the paint page): its material's name
     carries the set ('street_wall_pbr_Procedural_jp_tile45_white') -> (the slot, 'pbr/Procedural/jp_tile45_white')."""
-    s = name[len("street_"):] if name.startswith("street_") else name
+    s, _ = parse(name)                                  # its colour's suffix off (a vertex-coloured material's)
     i = s.find("_pbr_")
     if i < 0:
         return None
@@ -351,6 +351,25 @@ TIME = {
 }
 
 
+# the physical sky (Blender's Nishita) for a time of day: the sun's elevation and turn (degrees), the sky's strength,
+# the air, dust and ozone, the sun as a light (its strength, colour, the disc's angle); research/photoreal.md §3: the
+# sky's soft light and its bounce are most of a lane's realism. Night keeps the gradient (no sun to model)
+SKY = {
+    "dusk": dict(elev=1.5, rot=0.0, strength=0.5, air=1.3, dust=3.5, ozone=1.2, sun=0.06, sun_col="#ffb27a", angle=1.5),
+    "day": dict(elev=38.0, rot=215.0, strength=0.22, air=1.0, dust=1.5, ozone=1.0, sun=4.0, sun_col="#fff2e0", angle=0.6),
+}
+
+
+def _nishita():
+    try:
+        t = bpy.data.node_groups.new("_probe", "ShaderNodeTree")
+        ok = "NISHITA" in [i.identifier for i in t.nodes.new("ShaderNodeTexSky").bl_rna.properties["sky_type"].enum_items]
+        bpy.data.node_groups.remove(t)
+        return ok
+    except Exception:  # noqa: BLE001 - an older or newer Blender: the gradient
+        return False
+
+
 def world(time="dusk"):
     z, h, u, s, _, _ = TIME.get(time, TIME["dusk"])
     w = bpy.data.worlds.new("street_" + time)
@@ -361,6 +380,22 @@ def world(time="dusk"):
     nb = NB(nt)
     out = nb.node("ShaderNodeOutputWorld")
     bg = nb.node("ShaderNodeBackground")
+    k = SKY.get(time)
+    if k and _nishita():
+        sky = nb.node("ShaderNodeTexSky", sky_type="NISHITA")
+        sky.sun_disc = False                            # the sun is a light of its own: sampled cleanly
+        sky.sun_elevation, sky.sun_rotation = math.radians(k["elev"]), math.radians(k["rot"])
+        sky.air_density, sky.dust_density, sky.ozone_density = k["air"], k["dust"], k["ozone"]
+        nt.links.new(sky.outputs["Color"], bg.inputs["Color"])
+        nb.put(k["strength"], bg.inputs["Strength"])
+        nt.links.new(bg.outputs[0], out.inputs["Surface"])
+        sun = bpy.data.lights.new("sun_" + time, "SUN")
+        sun.energy, sun.color, sun.angle = k["sun"], srgb(k["sun_col"])[:3], math.radians(k["angle"])
+        so = bpy.data.objects.new("sun_" + time, sun)
+        bpy.context.scene.collection.objects.link(so)
+        el, az = math.radians(k["elev"]), math.radians(k["rot"])
+        so.rotation_euler = (math.pi / 2 - el, 0.0, az + math.pi / 2)   # its light along the sky's own sun
+        return
     d = nb.vmath("NORMALIZE", nb.node("ShaderNodeTexCoord").outputs["Generated"])
     _, _, dz = nb.sep(d)
     sky = nb.mix(nb.ramp(dz, 0.0, 0.55), srgb(h), srgb(z))
@@ -373,7 +408,7 @@ def world(time="dusk"):
 def lamps(time="dusk"):
     _, _, _, _, watts, colour = TIME.get(time, TIME["dusk"])
     for o in bpy.data.objects:
-        if o.type == "LIGHT":
+        if o.type == "LIGHT" and o.data.type != "SUN":                # the street's lamps (the sky's sun is its own)
             o.data.energy = watts
             o.data.shadow_soft_size = 0.06
             if o.name.startswith("lamp_vending"):

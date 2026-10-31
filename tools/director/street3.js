@@ -315,7 +315,8 @@ export class Look {
 export const lampEnergy = power => Math.max(0.3, Math.min(3, (power || 10) / 12));   // a lamp's power (the page's) as Godot's light energy
 function exportMaterial(m, made) {
   if (made.has(m)) return made.get(m);
-  const e = new THREE.MeshStandardMaterial({ name: `street_${m.userData.slot || "slot"}${m.userData.over && !m.userData.vc ? "_" + m.userData.over.replace(/[^a-z0-9]+/gi, "_") : ""}`,
+  const over = m.userData.over && (!m.userData.vc || m.userData.over.startsWith("pbr/")) ? m.userData.over : "";   // a set painted on: in its name, for the bake
+  const e = new THREE.MeshStandardMaterial({ name: `street_${m.userData.slot || "slot"}${over ? "_" + over.replace(/[^a-z0-9]+/gi, "_") : ""}`,
     color: m.color.clone(), roughness: m.roughness, metalness: m.metalness, map: m.map || null, normalMap: m.normalMap || null, roughnessMap: m.roughnessMap || null, metalnessMap: m.metalnessMap || null,
     emissive: m.emissive.clone(), emissiveIntensity: m.emissiveIntensity, emissiveMap: m.emissiveMap || null, side: m.side, vertexColors: !!m.vertexColors,
     transparent: !!m.userData.decal, depthWrite: !m.userData.decal });                    // a decal blends over what's under it
@@ -406,8 +407,9 @@ export async function texturesReady(group, ms = 30000) {
   const maps = new Set();
   group.traverse(o => { for (const m of [].concat(o.material || [])) for (const k of ["map", "normalMap", "roughnessMap", "metalnessMap", "aoMap", "emissiveMap", "alphaMap"]) if (m[k]) maps.add([m, k]); });
   const ok = img => img && (img.width || img.naturalWidth) > 0;
+  const loading = t => !t.image || (typeof HTMLImageElement !== "undefined" && t.image instanceof HTMLImageElement && !t.image.complete);   // three gives a texture its image when it comes
   const t0 = performance.now();
-  while ([...maps].some(([m, k]) => m[k] && m[k].image instanceof HTMLImageElement && !ok(m[k].image) && !m[k].image.complete) && performance.now() - t0 < ms)
+  while ([...maps].some(([m, k]) => m[k] && loading(m[k])) && performance.now() - t0 < ms)
     await new Promise(r => setTimeout(r, 100));
   for (const [m, k] of maps) { const im = m[k] && m[k].image; if (m[k] && (!im || (im instanceof HTMLImageElement && !ok(im)))) m[k] = null; }
 }

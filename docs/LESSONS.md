@@ -1231,3 +1231,16 @@ guessed margin; and a check that only ever ran on a slow machine hasn't been run
   an outline are joined: each cut where it's inside another's volume (a convex solid each; on a face of both, the
   first keeps it), and every roof a closed solid, so the cut leaves no hole.
 
+## The paint page and the physical sky (2026-10-31)
+
+- **three.js gives a texture its image only when it arrives:** a `TextureLoader` texture's `image` is undefined until
+  then. The .glb export's wait for pictures looked for "an image not complete" and saw nothing to wait for, so every
+  decal went out without its picture. Wait while a texture has no image, or an incomplete one.
+- **A material's name carries what the bake needs to know:** surfaces coloured by vertex drop their look from the
+  material's name, so the street-wide paint (asphalt, pavers) was baked with the old finishes. A painted set now
+  stays in the name, and the bake reads it back through the colour's suffix. Read the bake's MATERIALS line after any
+  change to naming.
+- **A physical sky isn't calibrated by its defaults:** Nishita at strength 0.9 made the lane five times the photo's
+  brightness. Measure (the median, the road, the sky's band, each against the photo) and scale the sky, not the
+  exposure, so the shop windows and lamps keep their balance with it.
+
