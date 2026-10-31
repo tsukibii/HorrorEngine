@@ -31,6 +31,13 @@ character on the card. Tell us: the pores' size and strength, the presets, the e
 sheen (it's more matte than before), and whether the two black streaks over the face in their screenshot were salon
 locks (they're not the skin).
 
+**STUDIO in the cloud** (SwiftShader, about 50 minutes a run): two full runs stopped at steps this branch doesn't touch
+(the skin light's shadow edge measured after the whole flow, 10500 px against 1.2 × 11023, though that step passes on
+its own on this branch and on the original; then a 30 s click timeout at "the eye refracts", which the first run had
+passed); the export's skin maps assertion, the part this branch changes (the pores left out of the normal map), checked
+with the test's own code on an export with painted nails: relief 39 (8 wanted), roughness 0.32, 4112 thin pixels, the
+occlusion map on. A local run on the card (`GPU=1`, docs/RUN_LOCALLY.md) is the full answer.
+
 **Next, once they say yes:** the hair texturer for the Studio's baked hair, MetaHuman-like (their second ask). Open on
 the skin: the eye's shadow fitted to each opening (the skin's `extras.openings` is in the file), wrinkle maps that
 deepen with the 72 shapes, the clothes' fabric detail the same way, the desk (plain by decision).
