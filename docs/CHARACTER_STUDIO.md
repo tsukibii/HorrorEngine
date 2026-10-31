@@ -55,7 +55,7 @@ The user, after TAU's bake (since removed, below): "The texture of the procedura
 generated is very bad, they move up too upwards" (TAU's Straight preset stands its lashes at 70 to 80° off the lid line,
 and our tidy turned them up further to keep them off the eye), with four references (a brow, an eye at three-quarter, an
 eye from the front, a MetaHuman head without its hair); then "could you make an easy eyebrow editor tool where I manually
-can add and adjust the eyebrows and eyelashes inside an easy wrapper?" Built: **Face, Brows & lashes by hand**
+can add and adjust the eyebrows and eyelashes inside an easy wrapper?" Built: **Face, Brows & lashes by hand** (since its own tab, **Brows & lashes**, before Hair, its first part **Fine hairs (shaped on the face)**, the clumped ones under it: DECISIONS 2026-10-31, the last)
 (`tools/character/groom.js`, the editor in `index.html`).
 
 - **Use them** puts them in place of the clumped brows and lashes below; **Mirror** does each change on both sides.

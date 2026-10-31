@@ -1,4 +1,4 @@
-// Brows and lashes (Character Studio, the Face tab): cards for the salon's hair shader (hairshader.js) and strand atlases
+// Brows and lashes (Character Studio, the Brows & lashes tab, the clumped ones): cards for the salon's hair shader (hairshader.js) and strand atlases
 // of their own (the brows hairtex.js's makeAtlas: clumps that draw together into points; the lashes lashAtlas, one fine
 // strand to a cell: every lash is one hair). Our own code. No physics: the lashes are rooted on the lid's edge (the eye's smoothed opening, index.html's outline()), lie
 // along the lid's rim to its front edge (the line runs along the rim's back, where it meets the eye; lashes grow from

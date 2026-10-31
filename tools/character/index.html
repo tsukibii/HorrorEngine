@@ -70,7 +70,7 @@
 <body>
 <header>
   <b>CHARACTER STUDIO</b>
-  <nav id="tabs"><button data-tab="body" class="on">Body</button><button data-tab="face">Face</button><button data-tab="expr">Expressions</button><button data-tab="skin">Skin</button><button data-tab="layers">Layers</button><button data-tab="hair">Hair</button><button data-tab="clothes">Clothes</button><button data-tab="acc">Accessories</button></nav>
+  <nav id="tabs"><button data-tab="body" class="on">Body</button><button data-tab="face">Face</button><button data-tab="expr">Expressions</button><button data-tab="skin">Skin</button><button data-tab="layers">Layers</button><button data-tab="brows">Brows &amp; lashes</button><button data-tab="hair">Hair</button><button data-tab="clothes">Clothes</button><button data-tab="acc">Accessories</button></nav>
   <select id="who" title="Each character keeps its pictures and settings in Content/Studio/People/&lt;name&gt;/ (git-ignored)"></select>
   <input id="newName" placeholder="new character" style="width:120px"> <button id="make">New</button>
   <button id="save" title="The settings into Content/Studio/People/&lt;name&gt;/character.json">Save</button>
@@ -112,12 +112,15 @@
       <p class="note" id="bakeNote"></p>
       <h3>Fit</h3>
       <div id="faceRows"></div>
-      <h3>Brows and lashes</h3>
-      <div id="browRows"></div>
       <h3>Mouth</h3>
       <div id="teethRows"></div>
       <div id="lipRows"></div>
       <label class="tog"><input type="checkbox" id="relative" checked><span>Expressions against this face<small>Full lips read as a pout to MediaPipe; this keeps them from counting as an expression.</small></span></label>
+    </section>
+
+    <section data-tab="brows" hidden>
+      <p class="note">Two kinds, both made here on the face: <b>fine hairs</b> (each hair its own strand, shaped by dragging on the face) or the <b>clumped</b> ones below (sliders and styles only). With fine hairs on, they take the clumped ones' place.</p>
+      <div id="browRows"></div>
     </section>
 
     <section data-tab="expr" hidden>
@@ -309,7 +312,7 @@ function tab(name) {
   if (salon) { try { localStorage.setItem("studio:tab", name); } catch (e) { } return; }
   document.querySelectorAll("aside section").forEach(x => { x.hidden = x.dataset.tab !== name; });
   if (typeof showGarmentHandles === "function") showGarmentHandles();
-  if (["face", "expr", "skin", "layers", "hair", "acc"].includes(name) && orbit.focus !== "head") $('#views button[data-v="head"]').click();
+  if (["face", "brows", "expr", "skin", "layers", "hair", "acc"].includes(name) && orbit.focus !== "head") $('#views button[data-v="head"]').click();
   try { localStorage.setItem("studio:tab", name); } catch (e) { }
 }
 for (const b of document.querySelectorAll("#tabs button")) b.onclick = () => tab(b.dataset.tab);
@@ -2407,7 +2410,7 @@ for (const U of Object.values(BLU)) { U.alphaCut.value = 0.3; U.ambientC.value.s
 const BLM = { lash: new THREE.Mesh(new THREE.BufferGeometry(), hairMaterial(BLU.lash)), line: new THREE.Mesh(new THREE.BufferGeometry(), hairMaterial(BLU.line)), brow: new THREE.Mesh(new THREE.BufferGeometry(), hairMaterial(BLU.brow)) };
 BLM.lash.material.userData.file = () => ({ atlas: BL.LASH_ATLAS, look: BL.LOOKS[st.lash.look] });   // the strands' atlas and colours: what the export bakes them from (fileLook)
 BLM.line.material.userData.file = () => ({ atlas: BL.LINE_ATLAS, look: BL.LOOKS[st.lash.look] });
-BLM.brow.material.userData.file = () => ({ atlas: fineBrows() ? BL.LASH_ATLAS : BL.ATLAS, look: BL.LOOKS[st.brow.look] });   // (the base mesh's brow hairs and the ones by hand: one to a card, the lashes' atlas)
+BLM.brow.material.userData.file = () => ({ atlas: fineBrows() ? BL.LASH_ATLAS : BL.ATLAS, look: BL.LOOKS[st.brow.look] });   // (the fine brow hairs: one to a card, the lashes' atlas)
 BLM.fill = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshStandardMaterial({ vertexColors: true, transparent: true, depthWrite: false, roughness: 0.9, side: THREE.DoubleSide }));   // the brows' fill, see-through
 Object.entries({ lash: "lashes", line: "lash_line", brow: "brows", fill: "brow_fill" }).forEach(([k, nm]) => { BLM[k].name = nm; });   // named in the file (each its own material and record there: Godot's HSHair reads them by name)
 for (const m of Object.values(BLM)) { m.renderOrder = 3; m.frustumCulled = false; m.visible = false; rig.add(m); }   // after the eyeballs, which draw over what's in the openings
@@ -2640,10 +2643,10 @@ window.__groomBrowScreen = side => {                  // a stroke's points along
 };
 window.__groomNow = () => { if (!GROOMNOW || !BLLIDS) return null; const G = { lashes: [] };   // (the checks: the left eye's lashes with where along the lid each grows)
   for (const side of ["L", "R"]) { const l = GR.lashStrands({ lid: BLLIDS[side], F: GROOMNOW.F, U: GROOMNOW.U, mm: GROOMNOW.mm }, side, st.groom); G.lashes.push(...l.strands); } return G; };
-function groomPanel(box, sets) {                       // the Face tab's section: on, mirror, Edit on the face, the brows' and lashes' styles and sliders
-  box.append(el("h4", { textContent: "Brows & lashes by hand" }));
+function groomPanel(box, sets) {                       // the Brows & lashes tab's first part: on, mirror, Edit on the face, the brows' and lashes' styles and sliders
+  box.append(el("h3", { textContent: "Fine hairs (shaped on the face)" }));
   const on = el("input", { type: "checkbox" }), mirror = el("input", { type: "checkbox" }), edit = el("button", { textContent: "Edit on the face" });
-  box.append(el("label", { className: "tog" }, on, el("span", {}, "Use them", el("small", { textContent: "The brows and lashes you shape here, in place of the clumped ones below: fine hairs lying on the skin, lashes swept forward and out, after MetaHuman's." }))),
+  box.append(el("label", { className: "tog" }, on, el("span", {}, "Use fine hairs", el("small", { textContent: "The brows and lashes you shape here, in place of the clumped ones below: fine hairs lying on the skin, lashes swept forward and out, after MetaHuman's." }))),
              el("label", { className: "tog" }, mirror, el("span", {}, "Mirror", el("small", { textContent: "A handle or a brush on one side does the same on the other." }))),
              el("div", { className: "row" }, edit), el("small", { className: "note", textContent: "Edit on the face: drag the yellow circles on a brow's top and bottom edge to shape it, the blue squares at the lashes' tips to lift, sweep or lengthen them; the brushes add hair, thin it out or comb its flow. Alt-drag turns the view." }));
   on.onchange = () => { st.groom.on = on.checked; if (on.checked) { st.lash.on = st.brow.on = true; } UNSAVED = true; blSet.all(); browLash(); };
@@ -2661,8 +2664,8 @@ function groomPanel(box, sets) {                       // the Face tab's section
     d.append(el("div", { className: "row" }, reset)); box.append(d);
     sets.push(() => { for (const [k] of sliders) sl[k](st.groom[key][k]); });
   };
-  part("brow", "Brows by hand", GR.BROW_STYLES, GR.BROW_SLIDERS);
-  part("lash", "Lashes by hand", GR.LASH_STYLES, GR.LASH_SLIDERS);
+  part("brow", "Brows", GR.BROW_STYLES, GR.BROW_SLIDERS);
+  part("lash", "Lashes", GR.LASH_STYLES, GR.LASH_SLIDERS);
   sets.push(() => { on.checked = !!st.groom.on; mirror.checked = st.groom.mirror !== false; edit.textContent = GROOMEDIT ? "Done editing" : "Edit on the face"; });
 }
 // the edit mode: a bar over the view (views, the blink, the brushes, Done), the handles, the brush's circle
@@ -2691,7 +2694,7 @@ function groomView(yawDeg) {                           // the eyes and the brows
 }
 function groomEdit(on) {
   GROOMEDIT = on;
-  if (on) { if (!st.groom.on) { st.groom.on = true; st.lash.on = st.brow.on = true; UNSAVED = true; } if (TAB !== "face") document.querySelector('#tabs button[data-tab="face"]').click(); browLash(); groomView(0); }
+  if (on) { if (!st.groom.on) { st.groom.on = true; st.lash.on = st.brow.on = true; UNSAVED = true; } if (TAB !== "brows") document.querySelector('#tabs button[data-tab="brows"]').click(); browLash(); groomView(0); }
   else { GBRUSH = ""; GT.querySelectorAll("button[data-brush]").forEach(x => x.classList.toggle("on", x.dataset.brush === "")); GC.style.display = "none"; if (+GT.blink.value) setBlink(0); }
   blSet.all();
 }
@@ -2709,7 +2712,7 @@ function ghPoint(h) {                                  // a handle's place now (
   return h.kind === "brow" ? N.edges[h.side]?.[h.edge]?.[h.k] : N.tips[h.side]?.[h.k];
 }
 function placeGroom() {
-  const show = GROOMEDIT && TAB === "face" && orbit.focus !== "pov";
+  const show = GROOMEDIT && TAB === "brows" && orbit.focus !== "pov";
   GT.hidden = !show; GRH.box.hidden = !(show && !!GROOMNOW && !GBRUSH); if (GRH.box.hidden) return;
   const r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
   for (const h of GRH.list) {
@@ -2810,7 +2813,8 @@ addEventListener("message", e => { if (e.origin === location.origin && e.data &&
 const blSet = {};
 {
   const box = $("#browRows"), sets = [];
-  groomPanel(box, sets);                               // the brows and lashes by hand first (groom.js)
+  groomPanel(box, sets);                               // the fine hairs first (groom.js), then the clumped ones (browlash.js)
+  box.append(el("h3", { textContent: "Clumped (sliders only)" }));
   const part = (o, label, controls, looks, help) => {
     const on = el("input", { type: "checkbox" }), look = el("select", {}, ...Object.entries(BL.LOOKS).filter(([k]) => k.startsWith(looks)).map(([k, l]) => el("option", { value: k, textContent: l.label })));
     box.append(el("label", { className: "tog" }, on, el("span", {}, label, el("small", { textContent: help }))), el("div", { className: "row" }, el("span", { textContent: "Look" }), look, el("output")));

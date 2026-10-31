@@ -1,4 +1,4 @@
-// GROOM: the Character Studio's brows and lashes by hand (groom.js; Face, "Brows & lashes by hand", Edit on the face;
+// GROOM: the Character Studio's brows and lashes by hand (groom.js; the Brows & lashes tab, Fine hairs, Edit on the face;
 // docs/CHARACTER_STUDIO.md §2b), driven in a headless browser on a character (PERSON, else _studiotest, else the first):
 // the edit mode and its handles; the brows' hairs on the skin and about Hairs of them; the lashes after MetaHuman's
 // (the middle ones rising 1 to 3 mm over the lid, never more than 35° up, the outer ones swept out toward the temple,
@@ -25,7 +25,7 @@ try {
   await page.selectOption("#who", NAME);
   await page.waitForFunction(n => window.__body.who === n && window.__body.POS[12001] !== 0, NAME, { timeout: 180000 });
   await page.waitForTimeout(4000);
-  await page.click('#tabs button[data-tab="face"]');
+  await page.click('#tabs button[data-tab="brows"]');
   await B(() => { const B = window.__body; B.st.groom = null; });   // (a clean start: the defaults, below)
   await B(() => { const B = window.__body; B.st.groom = window.__groomFresh(); B.browLash(); });
   await B(() => [...document.querySelectorAll("button")].find(b => b.textContent === "Edit on the face").click());

@@ -1,4 +1,4 @@
-// The brow and lash editor's hairs (the Character Studio's Face tab, "Brows & lashes by hand"; docs/CHARACTER_STUDIO.md
+// The brow and lash editor's hairs (the Character Studio's Brows & lashes tab, "Fine hairs"; docs/CHARACTER_STUDIO.md
 // §2b). After the user's references (MetaHuman faces, 2026-10-31): a brow is a band of fine hairs lying flat on the
 // skin, the front ones up, the body's swept out and a little up, the tail's out and down, the top and bottom rows
 // leaning toward the middle; the upper lashes leave the lid's edge forward, ease up into a gentle curl and sweep out

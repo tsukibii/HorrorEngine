@@ -20,6 +20,11 @@ The user's answers, newest first. They override the plan, the research and the d
   `tools/character/tau.js`, docs/TAU_HAIR.md and TAUHAIR are removed. The remote `tau-transfer` branch is left for
   the user to delete (asked).
 
+- **"I think I get confused cus the UI is split so apart, I'd almost rather just have a tab for eyelashes/eyebrows
+  before hair."** Done: the Studio's **Brows & lashes** tab, between Layers and Hair: first the fine hairs (shaped on the
+  face: the editor's handles and brushes, the old "by hand"), then the clumped ones (sliders and styles only); the Face
+  tab keeps the look, the pictures, the fit and the mouth.
+
 ## 2026-10-31, the night, later (the user: TAU's eyes on our faces, on `realism-enhancer-skin`)
 
 - **"Before you continue one thing you could maybe do is look how the eyes are modelled in the default TAU blend and make

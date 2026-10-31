@@ -11,7 +11,7 @@
 // settings; at a Fit of 0 the t-shirt clings to the body and doesn't hang; a PBR set chosen from files named as Unreal's are (albedo, normal-dx, roughness)
 // goes onto the shelf as assets/pbr/studiotest_denim (the files' leading _ taken off) and onto the pants, its DirectX
 // normal turned for three.js; the PBR shelf page shows it, a map chosen by hand there is kept, and the set goes;
-// the Hair tab is the salon on this character (its body saved for it), brows and lashes switch in the Face tab; the anime
+// the Hair tab is the salon on this character (its body saved for it), brows and lashes switch in the Brows & lashes tab; the anime
 // lash styles gather the lashes into spikes and the natural one spreads them; the anime pink makeup paints the liner from
 // the lashes' roots and pink under the eye, and its look turns the lashes on; the three drawn eye shapes are lash styles
 // (the fox's sweep, the half-lidded's lashes down over the eye, the doll's spikes) with a liner each; the second
@@ -616,7 +616,7 @@ const png = rgb => {
     await page.click('#tabs button[data-tab="body"]');
   });
   await step("anime lashes after the user's references: the anime styles gather the lashes into separate spikes with gaps between them, every other spike shorter, the lower lashes pointing down the skin; the natural style spreads them evenly and level; a style sets every slider; the styles are grouped in the picker", async () => {
-    await page.click('#tabs button[data-tab="face"]');
+    await page.click('#tabs button[data-tab="brows"]');
     const groups = await page.$$eval("#browRows select optgroup", gs => gs.map(g => g.label));
     if (!groups.some(g => /anime/i.test(g)) || !groups.some(g => /natural/i.test(g))) throw new Error("the style picker's groups: " + JSON.stringify(groups));
     const r = await page.evaluate(async () => {
@@ -634,7 +634,7 @@ const png = rgb => {
     await page.click('#tabs button[data-tab="body"]');
   });
   await step("the three eye shapes the user drew, as lashes and liner: the fox almond's lashes sweep to the outer corner, long there and short at the inner; the half-lidded eye's point down over the eye; the round doll's are short spikes all round; each look sets its style and its liner", async () => {
-    await page.click('#tabs button[data-tab="face"]');
+    await page.click('#tabs button[data-tab="brows"]');
     const r = await page.evaluate(async () => {
       const b = window.__body, BL = await import("./browlash.js");
       const at = k => { Object.assign(b.st.lash, BL.styleOf(k), { on: true }); b.browLash(); const c = b.browlash; return { sweep: c.sweep, lift: c.lift, spike: c.spike, drop: c.drop, cards: c.lashes, rim: c.rim }; };
@@ -687,7 +687,7 @@ const png = rgb => {
     console.log(`       under the eye, red over green ${plain.toFixed(1)} plain and ${pink.toFixed(1)} with the preset; the liner's band ${u.band.toFixed(2)} mm wide in the lid's middle, from the lashes' roots ${u.ahead.toFixed(1)} mm ahead of the lid line`);
   });
   await step("the five lash sets of the user's second reference (docs/research/lash_reference.md): sparse (men, older) the fewest and shortest, glam volume long and dense in soft spikes, fluffy mink the fullest with neighbours crossing, doll volume swept up highest with the longest lower lashes, natural medium separated; a look each with its makeup (the lower liner, a tinted waterline) and, for the old man, greying lashes and ash brows", async () => {
-    await page.click('#tabs button[data-tab="face"]');
+    await page.click('#tabs button[data-tab="brows"]');
     const groups = await page.$$eval("#browRows select optgroup", gs => gs.map(g => [g.label, g.children.length]));
     if (!groups.some(([g, n]) => /second reference/.test(g) && n === 5)) throw new Error("the style picker's groups: " + JSON.stringify(groups));
     const r = await page.evaluate(async () => {
