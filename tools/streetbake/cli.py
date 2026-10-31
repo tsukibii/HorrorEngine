@@ -59,10 +59,12 @@ def street_json(name):
 
 
 def street_glb(name, fresh=False):
-    """The street's .glb as the page exports it (Saved/Streets/<name>/<name>.glb), made again when the street changed."""
+    """The street's .glb as the page exports it (Saved/Streets/<name>/<name>.glb), made again when the street changed, or
+    the generator or the export did (a fix there, the kerbs' ramps, reaches the next bake)."""
     src = STREETS / name / "street.json"
     out = ROOT / "Saved" / "Streets" / name / f"{name}.glb"
-    if out.exists() and out.stat().st_mtime >= src.stat().st_mtime and not fresh:
+    made_of = [src] + [ROOT / "tools" / "director" / f for f in ("street-gen.js", "street3.js")]
+    if out.exists() and out.stat().st_mtime >= max(f.stat().st_mtime for f in made_of) and not fresh:
         return out
     node = shutil.which("node")
     if not node:
