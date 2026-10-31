@@ -61,6 +61,7 @@ async function open(name) {
   rebuild(); drawMap(); inspect(); viewTools();
   status(`${name}: ${count()}`);
   syncInsides();
+  S3.prepareLooks(ST.street, () => { if (ST.name === name) rebuild(); });   // looks painted in Street paint: their made sets
 }
 function normal(S) {
   S = S || SP.blankStreet("street");
@@ -1007,12 +1008,14 @@ function section(title, ...kids) { return el("div", { class: "sec" }, el("h3", {
 function lookRow(owner, slot) {                                      // a surface: its colour, or a set from the shelf
   owner.look = owner.look || {};
   const cur = owner.look[slot], base = SG.SLOTS[slot] ? SG.SLOTS[slot][0] : "#888888";
-  const colour = el("input", { type: "color", value: /^#[0-9a-f]{6}$/i.test(cur || "") ? cur : base, on: { input: e => edit(() => { owner.look[slot] = e.target.value; }) } });
-  const shelf = el("select", { style: "max-width:150px", on: { change: e => edit(() => { if (e.target.value) owner.look[slot] = e.target.value; else if ((owner.look[slot] || "").startsWith("pbr/")) delete owner.look[slot]; }, true) } }, new Option("colour", ""));
-  for (const ref of Object.keys(S3.SHELF.sets).sort()) shelf.append(new Option(ref.slice(4), ref));
-  shelf.value = (cur || "").startsWith("pbr/") ? cur : "";
+  const made = S3.isLookObj(cur), ref = made ? cur.set : typeof cur === "string" ? cur : "";   // a set tinted or layered in Street paint
+  const colour = el("input", { type: "color", value: /^#[0-9a-f]{6}$/i.test(ref) ? ref : base, on: { input: e => edit(() => { owner.look[slot] = e.target.value; }) } });
+  const shelf = el("select", { style: "max-width:150px", on: { change: e => edit(() => { const v = owner.look[slot]; if (e.target.value) owner.look[slot] = e.target.value; else if (S3.isLookObj(v) || (v || "").startsWith("pbr/")) delete owner.look[slot]; }, true) } }, new Option("colour", ""));
+  for (const r of Object.keys(S3.SHELF.sets).filter(r => !r.startsWith("pbr/_made/")).sort()) shelf.append(new Option(r.slice(4), r));
+  shelf.value = ref.startsWith("pbr/") ? ref : "";
   const reset = el("button", { title: "back to the default", on: { click: () => edit(() => { delete owner.look[slot]; }, true) } }, "↺");
-  return field(SLOT_LABELS[slot] || slot, el("div", { class: "row" }, colour, shelf, cur ? reset : null));
+  const note = made ? el("small", { class: "dim", title: "tinted or layered in Street paint (paint.html): a set picked here replaces it" }, " + Street paint's") : null;
+  return field(SLOT_LABELS[slot] || slot, el("div", { class: "row" }, colour, shelf, note, cur ? reset : null));
 }
 function inspect() {
   insp.innerHTML = "";
@@ -1283,6 +1286,7 @@ $("#snap").onchange = e => { ST.snap = +e.target.value; };
 $("#undo").onclick = undo; $("#redo").onclick = redo; $("#save").onclick = () => save().catch(e => status(e.message, "bad"));
 // the .glb for Godot: drop it into the project's folder; its colliders, occluders, lamps and the insides' places come with it
 async function exportStreet() {
+  if (await S3.prepareLooks(ST.street)) rebuild();                     // looks tuned in Street paint: their made sets in the .glb
   const g = S3.exportGroup(root, ST.street, ST.pieces, ST.lights, SG.blockers(ST.street, ST.pieces), { insides: insideMarkers(), lamps: $("#glbLamps").checked });
   return S3.exportGlb(g, GLTFExporter);
 }

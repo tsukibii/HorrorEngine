@@ -6,6 +6,7 @@
 // wires, its shots) and builds, each shot's pins landing where its photo has them.
 // Ends "STREET ok".   node tools/director/streetcheck.mjs [--street NAME]
 import fs from "fs";
+import { execFileSync } from "child_process";
 import path from "path";
 import { fileURLToPath, pathToFileURL } from "url";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -294,9 +295,17 @@ for (const name of names) {
     if (!DECAL_KINDS.has(d.kind)) errs.push(`${L}: ${d.id}: no decal kind ${d.kind}`);
     if (!Array.isArray(d.n) || Math.abs(Math.hypot(...d.n) - 1) > 0.02) errs.push(`${L}: ${d.id}: its normal isn't one long`);
   }
-  for (const [where, look] of [["the street", S.look || {}], ...["roads", "buildings", "things", "fences"].flatMap(l => (S[l] || []).map(x => [x.id, x.look || {}]))])
-    for (const [slot, v] of Object.entries(look)) if (typeof v === "string" && v.startsWith("pbr/") && !fs.existsSync(path.join(ROOT, "assets", v)))
-      warns.push(`${L}: ${where}'s ${slot} wears ${v}, not on this machine's shelf (python tools/street.py library, or your own set)`);
+  // every look (a colour, a set, or a set tuned and layered in the paint page): checked by storykit/pbrmix.py, the code
+  // that makes them, so the check and the page never disagree on what a look may say
+  const looks = [["the street", S.look || {}], ...["roads", "buildings", "things", "fences"].flatMap(l => (S[l] || []).map(x => [x.id, x.look || {}]))]
+    .flatMap(([where, look]) => Object.entries(look).map(([slot, v]) => [where, slot, v]));
+  if (looks.length) {
+    const res = JSON.parse(execFileSync(process.env.PYTHON || "python3", ["-m", "storykit.pbrmix"], { cwd: path.join(ROOT, "Content/Python"), input: JSON.stringify(looks.map(x => x[2])) }).toString());
+    looks.forEach(([where, slot, v], i) => {
+      for (const e of res[i][0]) errs.push(`${L}: ${where}'s ${slot}: ${e}`);
+      for (const w of res[i][1]) warns.push(`${L}: ${where}'s ${slot} wears ${typeof v === "string" ? v : v.set}: ${w} (python tools/street.py library, or your own set)`);
+    });
+  }
   const pieces = SG.build(S), tris = sane(L, pieces, p => BUDGET[p.type] || 20000), st = SG.stats(pieces);
   let pins = "";
   for (const s of S.shots || []) {

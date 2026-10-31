@@ -95,8 +95,46 @@ export async function loadDecals() {
   DECALS.loaded = true; return DECALS;
 }
 export async function loadShelf() {
-  try { const r = await (await fetch("/api/pbr")).json(); SHELF.sets = r.sets || {}; } catch (e) { SHELF.sets = {}; }
+  try { const r = await (await fetch("/api/pbr")).json(); SHELF.sets = Object.assign(r.sets || {}, MADE.sets); } catch (e) { SHELF.sets = Object.assign({}, MADE.sets); }
   SHELF.loaded = true; return SHELF;
+}
+// ---- a look: "#rrggbb", "pbr/<set>", or a set with what's done to it ({set, tint, contrast..., layers}: STREET_PAINT §3b).
+// An object paints with the set the desk's server makes of it (storykit/pbrmix.py, pbr/_made/<hash>): asked for once,
+// kept here; until it's made, the set it's made from stands in. `version` changes when one arrives (chunks rebuild).
+export const MADE = { refs: {}, sets: {}, version: 0, asking: new Map() };
+const canonKey = v => JSON.stringify(v, (k, x) => x && typeof x === "object" && !Array.isArray(x) ? Object.fromEntries(Object.keys(x).sort().map(k2 => [k2, x[k2]])) : x);
+export const isLookObj = v => !!v && typeof v === "object" && typeof v.set === "string";
+export function lookRef(v) {
+  if (!isLookObj(v)) return v || "";
+  const k = canonKey(v);
+  return MADE.refs[k] || v.set;
+}
+// every look on a street (its own and its pieces'), objects first made into sets; resolves when they're all known
+export function looksOf(S) {
+  const out = [];
+  for (const L of [S.look || {}, ...["roads", "buildings", "things", "fences"].flatMap(l => (S[l] || []).map(x => x.look || {}))]) for (const v of Object.values(L)) out.push(v);
+  return out;
+}
+export async function prepareLooks(S, onMade) {
+  const want = looksOf(S).filter(isLookObj).filter(v => !MADE.refs[canonKey(v)]);
+  const uniq = [...new Map(want.map(v => [canonKey(v), v])).values()];
+  if (!uniq.length) return 0;
+  const keys = uniq.map(canonKey), pending = keys.filter(k => !MADE.asking.has(k));
+  if (pending.length) {
+    const ask = fetch("/api/pbr/made", { method: "POST", body: JSON.stringify({ looks: pending.map(k => uniq[keys.indexOf(k)]) }) }).then(r => r.json()).then(j => {
+      (j.made || []).forEach((x, i) => {
+        const k = pending[i]; MADE.asking.delete(k);
+        if (!x.ref) { console.warn("a look couldn't be made:", x.error); MADE.refs[k] = uniq[keys.indexOf(k)].set; return; }
+        MADE.refs[k] = x.ref;
+        if (x.meta) { MADE.sets[x.ref] = x.meta; SHELF.sets[x.ref] = x.meta; }
+      });
+      MADE.version++;
+    }).catch(e => { for (const k of pending) MADE.asking.delete(k); console.warn("the looks weren't made:", e); });
+    for (const k of pending) MADE.asking.set(k, ask);
+  }
+  await Promise.all(keys.map(k => MADE.asking.get(k)).filter(Boolean));
+  if (onMade) onMade();
+  return uniq.length;
 }
 const encPath = p => p.split("/").map(encodeURIComponent).join("/");
 const PBRTEX = {};
@@ -215,7 +253,7 @@ export function group(S, pieces, mats, opts = {}) {
     chunks.get(key).push(p);
     index[p.id] = { type: p.type, chunk: key, lo: [bb.lo[0], bb.lo[2], -bb.hi[1]], hi: [bb.hi[0], bb.hi[2], -bb.lo[1]] };
   }
-  const lookKey = JSON.stringify(S.look || {}) + "|" + !!opts.shadows, made = new Map();
+  const lookKey = JSON.stringify(S.look || {}) + "|" + !!opts.shadows + "|" + MADE.version, made = new Map();
   for (const [key, list] of chunks) {
     const sig = list.map(p => p._n).join(",") + "|" + lookKey;
     const old = prev && prev.get(key);
@@ -225,7 +263,7 @@ export function group(S, pieces, mats, opts = {}) {
       const own = looks[p.id] || {};
       for (const [slot, buf] of Object.entries(p.G)) {
         if (!buf.idx.length) continue;
-        const base = SG.slotBase(slot), over = own[slot] ?? own[base] ?? (S.look || {})[slot] ?? (S.look || {})[base];
+        const base = SG.slotBase(slot), over = lookRef(own[slot] ?? own[base] ?? (S.look || {})[slot] ?? (S.look || {})[base]);
         const { mat, key: mk, rgb } = mats.forMerge(slot, over);
         let M = byMat.get(mk); if (!M) byMat.set(mk, M = { mat, slot: base, pos: [], nrm: [], uv: [], col: [], idx: [], ranges: [] });
         const v0 = M.pos.length / 3, t0 = M.idx.length / 3;

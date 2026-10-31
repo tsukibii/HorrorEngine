@@ -1,9 +1,13 @@
 // The street paint page (docs/STREET_PAINT.md), after the prop generator's page: a street from the street builder in
-// 3D, the material library (tools/streetbake/library.py, baked onto the PBR shelf) and the decals (decals.py) as
-// pictures. Click a surface to paint it with one: this building's (road's, thing's) surface, or every one like it on
-// the street (a piece's `look`, or the street's: the street builder's own words, so it shows there too). Zoom in and
-// lay decals, move them, size and turn them. Save, then run the street through Blender from the page (`street.py look`
-// for its shot beside its photo, `bake` for Godot) with its log and its pictures.
+// 3D, the PBR sets (the project's pbr/ by category, your own in assets/pbr; the first library made in code folded away)
+// and the decals (decals.py) as pictures. Pick a set, tune it in the brush (a tint, brightness, contrast, saturation,
+// hue, a fade, its shine and relief, its size and turn) and layer over it (another set in patches or by its own mask:
+// moss, prints, scuffs; the bake's wear: grime, streaks, worn edges, damp), then click a surface to paint it: this
+// building's (road's, thing's) surface, or every one like it on the street (a piece's `look`, or the street's: the
+// street builder's own words, so it shows there too). A tuned look is a set the desk's server makes (storykit/
+// pbrmix.py), so what's seen here is what Blender bakes and Godot gets. Zoom in and lay decals, move them, size and turn
+// them. Save, then run the street through Blender from the page (`street.py look` for its shot beside its photo, `bake`
+// for Godot) with its log and its pictures.
 import * as THREE from "three";
 import * as SG from "./street-gen.js";
 import * as S3 from "./street3.js";
@@ -17,13 +21,16 @@ function el(tag, attrs = {}, ...kids) {
 }
 const Q = new URLSearchParams(location.search);
 const ST = { name: "", S: null, mtime: 0, dirty: false, undo: [], redo: [], mode: "paint", scope: "one", mat: null, colour: null,
-  decal: null, sel: null, pieces: [], lights: [], light: Q.get("light") || "day", busy: false };
+  brush: null, target: null, live: true, decal: null, sel: null, pieces: [], lights: [], light: Q.get("light") || "day", busy: false };
 window.PT = ST;
 const status = (t, cls = "") => { const s = $("#status"); s.textContent = t; s.className = cls; };
 const t2s = v => [v.x, -v.z, v.y];                                   // three's space -> the street's (z up)
 const r3 = v => Math.round(v * 1000) / 1000;
 const LISTS = ["roads", "buildings", "things", "fences", "decals"];
 const LIB_ORDER = ["walls", "tiles", "siding", "concrete", "metal", "roofs", "roads", "pavements", "other", "your sets"];
+const CAT_ORDER = ["road", "asphalt", "concrete", "wall", "building", "roofing_tiles", "metal", "plastic", "gravel", "floor", "foliage", "effects"];
+const catName = c => String(c || "your sets").replace(/_/g, " ");
+const encPath = p => p.split("/").map(encodeURIComponent).join("/");
 
 // ---- the view -------------------------------------------------------------------------------------------------------
 const viewEl = $("#view");
@@ -79,7 +86,15 @@ function itemOf(id) {
   return null;
 }
 const nameOf = it => it ? `${it.item.name || it.item.id} (${it.list.slice(0, -1)})` : "the street";
-const lookName = v => !v ? "its own colour" : v.startsWith("pbr/") ? ((S3.SHELF.sets[v] || {}).label || v.split("/").pop()) : v;
+const lookName = v => {
+  if (!v) return "its own colour";
+  if (S3.isLookObj(v)) {
+    const m = S3.SHELF.sets[v.set] || {}, n = (v.layers || []).length;
+    const bits = [v.tint && "tinted", v.fade && "faded", v.contrast !== undefined && v.contrast !== 1 && "contrast", n && `${n} layer${n > 1 ? "s" : ""}`].filter(Boolean);
+    return (m.label || v.set.split("/").pop()) + ` (${bits.join(", ") || "tuned"})`;
+  }
+  return v.startsWith("pbr/") ? ((S3.SHELF.sets[v] || {}).label || v.split("/").pop()) : v;
+};
 function lookOn(id, slot) { const it = itemOf(id); return (it && (it.item.look || {})[slot]) || (ST.S.look || {})[slot] || ""; }
 
 async function loadStreets() {
@@ -101,6 +116,7 @@ async function openStreet(name) {
   BUILT.clear(); if (root) { scene.remove(root); root = null; }
   frameStreet();
   rebuild(); poll(true);
+  S3.prepareLooks(ST.S, () => { if (ST.name === name) rebuild(); });   // tuned looks: their made sets, then drawn
   status(`${name}: ${(ST.S.buildings || []).length} buildings, ${(ST.S.decals || []).length} decals`);
   $("#toStreet").href = "street.html?street=" + encodeURIComponent(name);
 }
@@ -126,30 +142,146 @@ function undo(redo = false) {
   to.push(JSON.stringify(ST.S)); ST.S = JSON.parse(from.pop());
   if (ST.sel && !(ST.S.decals || []).some(d => d.id === ST.sel)) ST.sel = null;
   changed(redo ? "redone" : "undone"); rebuild(); selUI();
+  S3.prepareLooks(ST.S, () => rebuild());
 }
 
 // ---- the library and the decals ---------------------------------------------------------------------------------------
 function libraryUI() {
   const box = $("#lib"); box.innerHTML = "";
-  const groups = {};
+  const groups = {}, old = {};
   for (const [ref, m] of Object.entries(S3.SHELF.sets)) {
-    const lib = ref.startsWith("pbr/Procedural/jp_");
-    if (ref.startsWith("pbr/Procedural/") && !lib) continue;           // the bake's own finishes: tints, not paints
-    (groups[lib ? m.group || "other" : "your sets"] ||= []).push([ref, m]);
+    if (ref.startsWith("pbr/_made/")) continue;                         // a tuned look's set: the brush shows it
+    if (ref.startsWith("pbr/Procedural/")) { if (ref.startsWith("pbr/Procedural/jp_")) (old[m.group || "other"] ||= []).push([ref, m]); continue; }
+    (groups[m.category || "your sets"] ||= []).push([ref, m]);
   }
-  for (const g of Object.keys(groups).sort((a, b) => LIB_ORDER.indexOf(a) - LIB_ORDER.indexOf(b))) {
-    box.append(el("h3", {}, g));
-    const grid = el("div", { class: "grid" });
-    for (const [ref, m] of groups[g].sort((a, b) => (a[1].label || a[0]).localeCompare(b[1].label || b[0]))) {
-      const pic = ref.startsWith("pbr/Procedural/jp_") ? `${m.base}/_lit.jpg` : `${m.base}/${encodeURIComponent(m.thumb || m.maps.albedo)}`;
-      const card = el("div", { class: "card" + (ST.mat === ref ? " on" : ""), title: `${m.label || ref}\n${ref}, ${m.tile_m} m a repeat`, "data-ref": ref },
-        el("img", { src: `${pic}?s=${m.stamp || ""}`, loading: "lazy", alt: "" }), el("span", {}, m.label || ref.split("/").pop()));
-      card.onclick = () => { ST.mat = ref; ST.colour = null; setMode("paint"); libraryUI(); };
-      grid.append(card);
-    }
-    box.append(grid);
+  const rank = k => { const i = CAT_ORDER.indexOf(k); return i < 0 ? 100 : i; };
+  for (const g of Object.keys(groups).sort((a, b) => rank(a) - rank(b) || a.localeCompare(b))) box.append(el("h3", {}, catName(g)), cards(groups[g]));
+  if (Object.keys(old).length) {                                       // the first library, procedural: kept, folded away
+    const det = el("details", { class: "old" }, el("summary", {}, "made in code (the first library)"));
+    for (const g of Object.keys(old).sort((a, b) => LIB_ORDER.indexOf(a) - LIB_ORDER.indexOf(b))) det.append(el("h3", {}, g), cards(old[g]));
+    box.append(det);
   }
-  if (!Object.keys(groups).length) box.append(el("p", {}, "The library isn't on the shelf yet: python tools/street.py library"));
+  if (!Object.keys(groups).length && !Object.keys(old).length) box.append(el("p", {}, "No PBR sets on the shelf (pbr/ in the project, or assets/pbr)"));
+}
+function cards(list) {
+  const grid = el("div", { class: "grid" });
+  for (const [ref, m] of list.sort((a, b) => (a[1].label || a[0]).localeCompare(b[1].label || b[0]))) {
+    const pic = ref.startsWith("pbr/Procedural/jp_") ? `${encPath(m.base)}/_lit.jpg` : `${encPath(m.base)}/${encodeURIComponent(m.thumb || m.maps.albedo)}`;
+    const card = el("div", { class: "card" + (ST.mat === ref && !ST.colour ? " on" : ""), title: `${m.label || ref}\n${ref}, ${m.tile_m} m a repeat${m.source ? ", " + m.source : ""}`, "data-ref": ref },
+      el("img", { src: `${pic}?s=${m.stamp || ""}`, loading: "lazy", alt: "" }), el("span", {}, m.label || ref.split("/").pop()));
+    card.onclick = () => { ST.mat = ref; ST.brush = { set: ref }; ST.colour = null; ST.target = null; setMode("paint"); libraryUI(); brushUI(); };
+    grid.append(card);
+  }
+  return grid;
+}
+
+// ---- the brush: the set picked, tuned and layered (a look object: STREET_PAINT §3b); changes go onto the surface painted
+// or picked up last while "tune the last surface" is on -----------------------------------------------------------------
+const ADJ = [["brightness", "brightness", 0, 2, 0.01, 1], ["contrast", "contrast", 0, 2.5, 0.01, 1], ["saturation", "saturation", 0, 2, 0.01, 1],
+  ["hue", "hue", -180, 180, 1, 0], ["fade", "fade", 0, 1, 0.01, 0], ["roughness", "roughness", 0, 2, 0.01, 1], ["bump", "relief", 0, 3, 0.01, 1], ["scale", "size", 0.25, 4, 0.05, 1]];
+function brushValue() {
+  if (ST.colour) return ST.colour;
+  const b = ST.brush; if (!b || !b.set) return null;
+  const out = { set: b.set };
+  for (const [k, , , , , d] of ADJ) if (b[k] !== undefined && Math.abs(b[k] - d) > 1e-6) out[k] = b[k];
+  if (b.turn) out.turn = b.turn;
+  if (b.tint) { out.tint = b.tint; if (b.tint_amount !== undefined && b.tint_amount !== 1) out.tint_amount = b.tint_amount; }
+  if (b.layers && b.layers.length) out.layers = b.layers.map(L => Object.fromEntries(Object.entries(L).filter(([, v]) => v !== "" && v !== undefined)));
+  return Object.keys(out).length === 1 ? out.set : out;
+}
+const fmt = v => Math.abs(v) >= 10 ? String(Math.round(v)) : String(Math.round(v * 100) / 100);
+function slider(obj, k, label, lo, hi, step, d) {
+  const val = obj[k] ?? d, out = el("output", {}, fmt(val));
+  const r = el("input", { type: "range", min: lo, max: hi, step, value: val });
+  r.oninput = () => { out.textContent = fmt(+r.value); };
+  r.onchange = () => { obj[k] = +r.value; brushChanged(); };
+  r.ondblclick = () => { obj[k] = d; brushChanged(); };
+  return el("div", { class: "sl", title: `double-click: back to ${d}` }, el("span", {}, label), r, out);
+}
+function tintRow(obj, fallback) {
+  const on = el("input", { type: "checkbox" }), col = el("input", { type: "color", value: obj.tint || fallback });
+  on.checked = !!obj.tint;
+  on.onchange = () => { obj.tint = on.checked ? col.value : ""; brushChanged(); };
+  col.onchange = () => { obj.tint = col.value; on.checked = true; brushChanged(); };
+  return el("div", { class: "row" }, el("label", { title: "its colour becomes this one, its light and dark kept" }, on, " tint"), col);
+}
+function setOptions() {
+  const by = {};
+  for (const [ref, m] of Object.entries(S3.SHELF.sets)) if (!ref.startsWith("pbr/_made/") && !(ref.startsWith("pbr/Procedural/") && !ref.startsWith("pbr/Procedural/jp_"))) (by[m.category || "your sets"] ||= []).push([ref, m]);
+  return Object.keys(by).sort().map(c => { const g = document.createElement("optgroup"); g.label = catName(c); for (const [ref, m] of by[c]) g.append(new Option(m.label || ref.split("/").pop(), ref)); return g; });
+}
+const LAYER_SET = ["pbr/foliage/Moss002_1K-PNG", "pbr/effects/Fingerprints006_1K-PNG"];
+function layerUI(b, L, i) {
+  const box = el("div", { class: "layer" });
+  const del = el("button", { title: "take this layer off", onclick: () => { b.layers.splice(i, 1); brushChanged(); } }, "×");
+  const up = el("button", { title: "under the one before it", onclick: () => { if (i > 0) { [b.layers[i - 1], b.layers[i]] = [b.layers[i], b.layers[i - 1]]; brushChanged(); } } }, "↑");
+  if (L.wear) {
+    const k = el("select", {}, ...[["grime", "grime"], ["streaks", "rain streaks"], ["edges", "worn edges"], ["damp", "damp patches"]].map(([v, t]) => new Option(t, v)));
+    k.value = L.wear; k.onchange = () => { L.wear = k.value; brushChanged(); };
+    box.append(el("div", { class: "top" }, el("small", { class: "dim" }, "wear"), k, up, del), slider(L, "amount", "amount", 0, 2, 0.05, 1),
+      el("small", { class: "dim" }, "Blender's wear on this surface (and Godot's): 0 none, 1 as the street wears, 2 twice. Seen in its render."));
+    return box;
+  }
+  if (L.decal) {                                                     // a decal scattered over it: the street's decals, as a layer
+    const k = el("select", {}, ...Object.entries(S3.DECALS.list).map(([v, d]) => new Option(d.label || v, v)));
+    k.value = L.decal; k.onchange = () => { L.decal = k.value; brushChanged(); };
+    const spin = el("input", { type: "checkbox" }); spin.checked = !!L.spin; spin.onchange = () => { L.spin = spin.checked ? 1 : 0; brushChanged(); };
+    const aff = el("select", { title: "what it changes" }, ...[["all", "colour and shine"], ["colour", "colour only"], ["shine", "shine only"]].map(([v, t]) => new Option(t, v)));
+    aff.value = L.affects || "all"; aff.onchange = () => { L.affects = aff.value; brushChanged(); };
+    box.append(el("div", { class: "top" }, el("small", { class: "dim" }, "decals"), k, up, del), el("div", { class: "row" }, el("label", { title: "each turned at random" }, spin, " turned"), aff),
+      slider(L, "count", "how many", 1, 30, 1, 3), slider(L, "size", "their size", 0.2, 3, 0.05, 1), slider(L, "amount", "amount", 0, 1, 0.01, 1), slider(L, "seed", "seed", 1, 50, 1, 1));
+    return box;
+  }
+  const s = el("select", {}, ...setOptions()); s.value = L.set; s.onchange = () => { L.set = s.value; brushChanged(); };
+  const mask = el("select", { title: "where it lies" }, ...[["patches", "in patches"], ["own", "by its own mask"], ["own+patches", "its mask, in patches"], ["all", "all over"]].map(([v, t]) => new Option(t, v)));
+  mask.value = L.mask || "patches"; mask.onchange = () => { L.mask = mask.value; brushChanged(); };
+  const aff = el("select", { title: "what it changes" }, ...[["all", "colour, shine, relief"], ["shine", "shine and relief"], ["colour", "colour only"]].map(([v, t]) => new Option(t, v)));
+  aff.value = L.affects || "all"; aff.onchange = () => { L.affects = aff.value; brushChanged(); };
+  box.append(el("div", { class: "top" }, s, up, del), el("div", { class: "row" }, mask, aff), slider(L, "amount", "amount", 0, 1, 0.01, 1));
+  if ((L.mask || "patches").includes("patches"))
+    box.append(slider(L, "coverage", "coverage", 0, 1, 0.01, 0.5), slider(L, "size", "patches m", 0.1, 5, 0.05, 1), slider(L, "softness", "softness", 0, 1, 0.01, 0.5), slider(L, "seed", "seed", 1, 50, 1, 1));
+  box.append(slider(L, "scale", "its size", 0.25, 4, 0.05, 1), tintRow(L, "#5a6a3a"), slider(L, "brightness", "brightness", 0, 2, 0.01, 1));
+  return box;
+}
+const targetName = () => { const t = ST.target; if (!t) return ""; return t.all ? "every " + t.slot : nameOf(itemOf(t.id)) + "'s " + t.slot; };
+function brushUI() {
+  const box = $("#brush"), b = ST.brush;
+  box.hidden = !b || !b.set || !!ST.colour;
+  if (box.hidden) return;
+  box.innerHTML = "";
+  const v = brushValue(), ref = S3.lookRef(v), m = S3.SHELF.sets[ref] || S3.SHELF.sets[b.set] || {};
+  const pic = m.base ? `${encPath(m.base)}/${encodeURIComponent(m.thumb || (m.maps || {}).albedo || "")}?s=${m.stamp || ""}` : "";
+  box.append(el("div", { class: "head" }, el("img", { src: pic, alt: "" }), el("b", {}, lookName(v)),
+    el("button", { title: "the set as it comes", onclick: () => { ST.brush = { set: b.set }; brushChanged(); } }, "reset")));
+  box.append(tintRow(b, "#a09890"), slider(b, "tint_amount", "tint amount", 0, 1, 0.01, 1));
+  for (const [k, lab, lo, hi, st, d] of ADJ) box.append(slider(b, k, lab, lo, hi, st, d));
+  const turn = el("select", {}, ...[0, 90, 180, 270].map(a => new Option(a + "°", a))); turn.value = String(b.turn || 0);
+  turn.onchange = () => { b.turn = +turn.value; brushChanged(); };
+  box.append(el("div", { class: "row" }, "turned", turn));
+  box.append(el("h3", {}, "layers over it"));
+  (b.layers || []).forEach((L, i) => box.append(layerUI(b, L, i)));
+  box.append(el("div", { class: "row" },
+    el("button", { title: "another set over this one: moss, prints, scuffs, stains", onclick: () => { (b.layers ||= []).push({ set: LAYER_SET.find(r => S3.SHELF.sets[r]) || b.set, amount: 0.6, mask: "patches", coverage: 0.3, size: 0.8, seed: b.layers.length + 1 }); brushChanged(); } }, "+ a set over it"),
+    el("button", { title: "decals scattered over it, a few each repeat: scuffs, prints, gum, cracks, stains, stickers", onclick: () => { (b.layers ||= []).push({ decal: S3.DECALS.list.scuffs ? "scuffs" : Object.keys(S3.DECALS.list)[0], count: 3, seed: b.layers.length + 1 }); brushChanged(); } }, "+ decals"),
+    el("button", { title: "the bake's grime, rain streaks, worn edges or damp on this surface", onclick: () => { (b.layers ||= []).push({ wear: "grime", amount: 1.5 }); brushChanged(); } }, "+ wear")));
+  const live = el("input", { type: "checkbox" }); live.checked = ST.live; live.onchange = () => { ST.live = live.checked; };
+  box.append(el("div", { class: "row" }, el("label", { title: "changes here go onto the surface painted or picked up last" }, live, ` tune ${ST.target ? targetName() : "the last surface painted"}`)));
+}
+let tuneAt = 0;
+function brushChanged() {
+  const v = brushValue();
+  if (ST.live && ST.target && v) {
+    if (performance.now() - tuneAt > 900) pushUndo();                // a run of changes is one undo
+    tuneAt = performance.now();
+    setLook(ST.target, v);
+    changed(`${targetName()}: ${lookName(v)}`);
+    rebuild();
+  }
+  brushUI();
+  if (S3.isLookObj(v)) {
+    status("making the set…", "dirty");
+    S3.prepareLooks({ look: { brush: v }, ...(ST.live && ST.target ? ST.S : {}) }, () => { rebuild(); brushUI(); status(ST.dirty ? "unsaved: " + lookName(v) : lookName(v), ST.dirty ? "dirty" : ""); });
+  }
 }
 function decalsUI() {
   const box = $("#decals"); box.innerHTML = "";
@@ -217,36 +349,42 @@ function hover(h) {
 }
 function hud(h) {
   const box = $("#hud");
-  if (!h) { box.textContent = ST.mode === "paint" ? (ST.mat || ST.colour ? `paint with ${lookName(ST.mat || ST.colour)}: click a surface` : "pick a material on the left") : ST.decal ? `click to lay ${S3.DECALS.list[ST.decal]?.label || ST.decal}` : "pick a decal on the left"; return; }
+  if (!h) { box.textContent = ST.mode === "paint" ? (brushValue() ? `paint with ${lookName(brushValue())}: click a surface` : "pick a material on the left") : ST.decal ? `click to lay ${S3.DECALS.list[ST.decal]?.label || ST.decal}` : "pick a decal on the left"; return; }
   const it = itemOf(h.id);
   if (h.object.material.userData.decal) { box.textContent = `${S3.DECALS.list[h.object.material.userData.decal]?.label || "a decal"}: click to select it`; return; }
   const now = lookOn(h.id, h.slot), every = ST.scope === "all" || !it;
   box.textContent = `${every ? "every " + h.slot + " on the street" : nameOf(it) + ": its " + h.slot} · now ${lookName(now)}`
-    + (ST.mode === "paint" ? ` · click: ${ST.mat || ST.colour ? lookName(ST.mat || ST.colour) : "pick a material first"}, Alt-click: pick this one up` : "");
+    + (ST.mode === "paint" ? ` · click: ${brushValue() ? lookName(brushValue()) : "pick a material first"}, Alt-click: pick this one up` : "");
 }
 
 // ---- painting ----------------------------------------------------------------------------------------------------------
+function setLook(t, value) {                                       // a look on a target: {id, slot, all}
+  const it = t.all ? null : itemOf(t.id);
+  if (!it) { ST.S.look = ST.S.look || {}; if (value) ST.S.look[t.slot] = value; else delete ST.S.look[t.slot]; return; }
+  const x = it.item; x.look = x.look || {};
+  if (value) x.look[t.slot] = value; else delete x.look[t.slot];
+  if (x.inside && x.inside.from) x.inside.own = true;              // a walk-in building painted here keeps its own outside
+}
 function paint(h, value) {
   if (!h || h.object.material.userData.decal) return;
   const it = itemOf(h.id);
   if (it && it.list === "decals") return;
   pushUndo();
-  if (ST.scope === "all" || !it) {
-    ST.S.look = ST.S.look || {};
-    if (value) ST.S.look[h.slot] = value; else delete ST.S.look[h.slot];
-  } else {
-    const x = it.item; x.look = x.look || {};
-    if (value) x.look[h.slot] = value; else delete x.look[h.slot];
-    if (x.inside && x.inside.from) x.inside.own = true;              // a walk-in building painted here keeps its own outside
-  }
-  changed(`${ST.scope === "all" || !it ? "every " + h.slot : nameOf(it) + "'s " + h.slot}: ${lookName(value)}`);
-  hoverKey = ""; rebuild(); hover(h);
+  const t = { id: h.id, slot: h.slot, all: ST.scope === "all" || !it };
+  setLook(t, value);
+  ST.target = value ? t : null;
+  changed(`${t.all ? "every " + h.slot : nameOf(it) + "'s " + h.slot}: ${lookName(value)}`);
+  hoverKey = ""; rebuild(); hover(h); brushUI();
+  if (S3.isLookObj(value)) S3.prepareLooks(ST.S, () => { rebuild(); brushUI(); });
 }
 function pickUp(h) {
-  const v = lookOn(h.id, h.slot);
-  if (v && v.startsWith("pbr/")) { ST.mat = v; ST.colour = null; libraryUI(); }
-  else if (v) { ST.colour = v; ST.mat = null; $("#colour").value = v; libraryUI(); }
-  status(`picked up ${lookName(v)}`);
+  const v = lookOn(h.id, h.slot), it = itemOf(h.id);
+  if (S3.isLookObj(v)) { ST.mat = v.set; ST.brush = JSON.parse(JSON.stringify(v)); ST.colour = null; }
+  else if (typeof v === "string" && v.startsWith("pbr/")) { ST.mat = v; ST.brush = { set: v }; ST.colour = null; }
+  else if (v) { ST.colour = v; ST.mat = null; ST.brush = null; $("#colour").value = v; }
+  ST.target = { id: h.id, slot: h.slot, all: !(it && (it.item.look || {})[h.slot] !== undefined) };
+  libraryUI(); brushUI();
+  status(`picked up ${lookName(v)}: the brush tunes ${targetName()}`);
 }
 
 // ---- decals ------------------------------------------------------------------------------------------------------------
@@ -301,7 +439,8 @@ cv.addEventListener("pointerdown", e => {
   if (ST.mode === "paint") {
     if (!h) return;
     if (e.altKey) { pickUp(h); return; }
-    if (ST.mat || ST.colour) paint(h, ST.mat || ST.colour);
+    const v = brushValue();
+    if (v) paint(h, v);
     return;
   }
   // decals: one under the pointer is picked (and dragged); else a new one is laid
@@ -394,12 +533,12 @@ $("#light").onchange = e => { ST.light = e.target.value; look.set(ST.light, rend
 $("#undo").onclick = () => undo(); $("#redo").onclick = () => undo(true); $("#save").onclick = () => save();
 $("#modePaint").onclick = () => setMode("paint"); $("#modeDecal").onclick = () => setMode("decal");
 for (const r of document.querySelectorAll("input[name=scope]")) r.onchange = e => { ST.scope = e.target.value; hoverKey = ""; };
-$("#useColour").onclick = () => { ST.colour = $("#colour").value; ST.mat = null; setMode("paint"); libraryUI(); hud(null); };
-$("#clear").onclick = () => { ST.colour = ST.mat = null; ST.clearing = true; libraryUI(); status("click a surface to take its paint off", "dirty"); };
+$("#useColour").onclick = () => { ST.colour = $("#colour").value; ST.mat = null; ST.brush = null; setMode("paint"); libraryUI(); brushUI(); hud(null); };
+$("#clear").onclick = () => { ST.colour = ST.mat = null; ST.brush = null; ST.clearing = true; libraryUI(); brushUI(); status("click a surface to take its paint off", "dirty"); };
 $("#lookBtn").onclick = () => runBlender("look"); $("#bakeBtn").onclick = () => runBlender("bake");
 window.addEventListener("beforeunload", e => { if (ST.dirty) { e.preventDefault(); e.returnValue = ""; } });
 // clearing: a click with nothing picked and "clear" pressed takes the paint off
-cv.addEventListener("pointerdown", e => { if (ST.clearing && e.button === 0 && ST.mode === "paint" && !ST.mat && !ST.colour) { const h = hitAt(e); if (h) paint(h, null); } }, true);
+cv.addEventListener("pointerdown", e => { if (ST.clearing && e.button === 0 && ST.mode === "paint" && !brushValue()) { const h = hitAt(e); if (h) paint(h, null); } }, true);
 
 (async function boot() {
   await Promise.all([S3.loadShelf(), S3.loadDecals()]);
@@ -411,6 +550,11 @@ cv.addEventListener("pointerdown", e => { if (ST.clearing && e.button === 0 && S
 window.__paint = {
   at(fx, fy) { const r = cv.getBoundingClientRect(); return hitAt({ clientX: r.left + fx * r.width, clientY: r.top + fy * r.height }); },
   paintAt(fx, fy, ref, scope = "one") { ST.scope = scope; const h = this.at(fx, fy); if (h) paint(h, ref); return h && { id: h.id, slot: h.slot }; },
+  pickAt(fx, fy) { const h = this.at(fx, fy); if (h) pickUp(h); return h && { id: h.id, slot: h.slot }; },
+  brush(set) { ST.mat = set; ST.brush = { set }; ST.colour = null; ST.target = null; brushUI(); return ST.brush; },
+  tune(fn) { fn(ST.brush); brushChanged(); return brushValue(); },
+  made: () => S3.prepareLooks(ST.S),
+  lookRef: v => S3.lookRef(v),
   decalAt(fx, fy, kind) { const h = this.at(fx, fy); if (!h) return null; const d = decalAt(h, kind); pushUndo(); (ST.S.decals = ST.S.decals || []).push(d); changed("a decal"); rebuild(); return d; },
   view(o) { Object.assign(orbit, o); $("#shot").value = ""; draw(); },
   shot(id) { $("#shot").value = id; draw(); },
