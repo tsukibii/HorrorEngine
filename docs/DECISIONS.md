@@ -2,6 +2,14 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-31, small hours (the user, on the floors)
+
+- **Kit floors take a material**: "yes make the floors take a material" (offered: a kit floor dressed rather than taken
+  up when its room's floor is painted). Painting a floor paints its kit floor's boards (and the room's own floor under
+  them); a set that paints its own tiles, boards or mats lays the kit floor out by them, its real gaps in the set's
+  seams (found in the set's maps: storykit/pbrcells.py); a plain set gives each board its own cut; a mosaic too fine to
+  build lies as one board. The gaps (and a tatami's borders) can be painted on their own.
+
 ## 2026-10-31, small hours (the user, on the lights)
 
 - **Lights as furniture, no light sources exported**: "we don't need to export actual Godot light sources, I'd rather

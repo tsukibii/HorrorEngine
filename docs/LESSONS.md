@@ -1337,3 +1337,19 @@ guessed margin; and a check that only ever ran on a slow machine hasn't been run
   looked like a sheet floating over the road (the user saw it). Paint lies 5 mm up (over the clash test's 4 mm), a
   mark over another only where they overlap, and nothing that lies on a surface casts a shadow, in every renderer:
   check a close-up under a low sun after any change to how things are layered.
+
+## Kit floors taking a material (2026-10-31)
+
+- **What's drawn is the plan's piece, not the story's thing:** the stage built a kit thing from `p.d.kit` (the story's
+  own spec), so a floor the plan had laid out by its set's cells (`p.kit`, with `cells`) was drawn with the kit's own
+  pattern and each board a random cut: two grids, the painted seams across the real gaps. When the plan derives
+  anything for a piece (a spec, a size, a tag), every drawer reads the piece (`p.kit`); the story's `d` is for what
+  the plan doesn't touch. Check a derived spec by looking at it drawn, not only at the plan's JSON.
+- **The .glb's `1 - v` is a metre in a set's UVs:** kit UVs are metres and the export writes v as `1 - v`, so Godot
+  laid every set a metre off the desk's (invisible on random cuts, wrong on a floor laid out by its set). A material
+  scaling metre UVs takes it back with `uv1_offset` (`-1 / tile`, mod 1).
+- **A set's label isn't its contents:** "black marble" on the shelf is ambientCG's SurfaceImperfections020, an overlay
+  with an opacity map, so on a floor the stage cut most of each tile away. Look at a set's maps (an `opacity` map is
+  a cut-out) before putting it on a surface that must be solid.
+- **After `openPreset`, wait for that preset's own plan:** the replan is debounced and async, and the last level's
+  plan is still `B.plan`, so a test that only waits for "a plan" can aim its rays at the previous world.
