@@ -1204,3 +1204,21 @@ guessed margin; and a check that only ever ran on a slow machine hasn't been run
   object) and rendered Blender's default white. A mesh built for a material of its own names it on its segments.
 - **See-through glass is mostly reflection, not white:** at 22% opacity on each of its four surfaces the glass washed
   a dark soy sauce out to grey. Clear glass at 10% (PET 12%), the look carried by the specular.
+
+## The prop generator's occult, kitchen and sinks (2026-10-31)
+
+- **Never seed from `hash()` of a string:** Python salts string hashes per process, so the candles' drips landed in a
+  different place every run and the same recipe stopped making the same mesh. Seeds come from `noise.rng(seed, ...)`
+  or from an index, never `hash`.
+- **Smooth normals over a big cap with only its rim's points shade in stripes:** a wax puddle's top was one fan of
+  long triangles from its edge, each corner's normal tipped by the bevel beside it, and it rendered striped. Put
+  points inside big caps (`fill`), and give hard surfaces normals weighted by face area (`th.weighted`), so a flat face
+  shades flat whatever its bevel does.
+- **A lathe's faces look to the right of its profile:** a pot's lid written from its middle out had its top facing
+  into itself. Walk a top from its rim inward, and its underside, first, from the middle out.
+- **Scale every part to metres at the same step:** the sinks' ring strips were built in millimetres and never scaled,
+  so the basin came out a kilometre wide beside metre-sized taps, and the preview, fitted to the whole, showed no taps
+  and no water at all. Build in mm and multiply by `MM` at the one place each part is made; a part 1000 times the
+  others is the first thing to look for when something vanishes.
+- **Rust is a few spots, not a coat:** the tetsubin's `rust` age at a quarter strength covered it in orange blotches
+  like a leopard. Cast iron reads black; its rust goes in as small, rare patches.

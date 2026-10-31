@@ -269,8 +269,8 @@ def main(argv):
         if want:
             gx, gy, gz = info["size"]
             have = [gx, gz, gy]                                       # Godot's x, y up, z: the meta's Blender x, y, z up
-            off = max(abs(a - b) / max(b, 1e-3) for a, b in zip(have, want))
-            if off > 0.02:
+            # 2%, or a millimetre and a half on a thing that thin (a sheet of paper laid flat: Godot reports to the mm)
+            if any(abs(a - b) > max(0.02 * b, 0.0015) for a, b in zip(have, want)):
                 problems.append(f"size {[round(v, 3) for v in have]} against {want}")
         clear = [s for s in info["surfaces"] if s.get("transparency", 0)]
         ok = ok and not problems

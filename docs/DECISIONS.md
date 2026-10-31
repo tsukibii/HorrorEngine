@@ -2,6 +2,20 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-31 (the user, on `prop-gen-tool`)
+
+- **More of the prop generator, the occult and the kitchen**: "Can you add some more occult props, wax candles,
+  altars, japanese occult stuff, add some better cooking pots and maybe do a better textured version of the rice
+  cooker and kettle, make some better sinks etc". So new families, nothing made before changed (as the night's rule
+  says): `candle`; talismans as a design (`ofuda`) and `charm` (ema, omamori), `rope` (a shimenawa), `doll` (a
+  wara-ningyo, a kokeshi), `shrine` (a hokora, a sanbō, an orin, a kōro, an offering table); `cookware`, `appliance` (a
+  rice cooker, an electric kettle), `sink`. Altars are put together from those pieces; a butsudan or a kamidana is
+  furniture (the kit's), and masks and statues want a sculpt (PROPGEN.md §12).
+- **Liquid inside, Half-Life: Alyx's way, and a pill bottle** (earlier the same night): "an effect that makes it look
+  like there is liquid inside ... a godot shader that uses the shape of the bottles interior", "a pill container
+  that's slightly tinted (or easily tintable), with a sticker that's easy to change ... and have tablets inside too".
+  The liquid node and its fill table, HSLiquid in the look plugin (PROPGEN.md §10), and the `pills` family.
+
 ## 2026-10-30, night (the user, on a branch of its own: `prop-gen-tool`)
 
 - **A prop generator like the Free Street Litter Sampler's**: "Figure out ... how they did it ... I want a tool for

@@ -876,3 +876,93 @@ def spline(pts, step):
             b2 = (t3 - t) / (t3 - t1) * a2 + (t - t1) / (t3 - t1) * a3
             out.append((t2 - t) / (t2 - t1) * b1 + (t - t1) / (t2 - t1) * b2)
     return np.array(out)
+
+
+def rperim(w, d, c):
+    """The length round a rounded rectangle w x d with corners of radius c (an rbox's side band, its island's width)."""
+    c = min(c, w / 2, d / 2)
+    return 2 * (w - 2 * c) + 2 * (d - 2 * c) + 2 * math.pi * c
+
+
+def rrect_ring(cx, cy, w, d, c, n, z=0.0):
+    """n points round a rounded rectangle (w x d, corners of radius c) about (cx, cy) at height z, anticlockwise from
+    the middle of its +x side, evenly by length: rings of one rectangle and its insets line up point for point."""
+    c = max(min(c, w / 2 - 1e-6, d / 2 - 1e-6), 1e-6)
+    hw, hd = w / 2, d / 2
+    pts, k = [], 16
+    pts.append(np.stack([np.full(4, hw), np.linspace(0, hd - c, 4)], 1))
+    for (ox, oy, a0) in ((hw - c, hd - c, 0), (-hw + c, hd - c, 90), (-hw + c, -hd + c, 180), (hw - c, -hd + c, 270)):
+        a = np.radians(a0 + np.linspace(0, 90, k))
+        pts.append(np.stack([ox + c * np.cos(a), oy + c * np.sin(a)], 1))
+        nxt = {0: (-hw + c, hd), 90: (-hw, -hd + c), 180: (hw - c, -hd), 270: (hw, 0)}[a0]
+        last = pts[-1][-1]
+        pts.append(np.stack([np.linspace(last[0], nxt[0], 4), np.linspace(last[1], nxt[1], 4)], 1))
+    poly = np.concatenate(pts)
+    seg = np.linalg.norm(np.diff(poly, axis=0), axis=1)
+    keep = np.concatenate([[True], seg > 1e-9])
+    poly = poly[keep]
+    s = np.concatenate([[0], np.cumsum(np.linalg.norm(np.diff(poly, axis=0), axis=1))])
+    t = np.linspace(0, s[-1], n, endpoint=False)
+    x = np.interp(t, s, poly[:, 0])
+    y = np.interp(t, s, poly[:, 1])
+    return np.stack([cx + x, cy + y, np.full(n, z)], 1)
+
+
+def ring_strip(rings, segs, islands, mats=None):
+    """Rings of points (each (n, 3), anticlockwise seen from above, all the same n), joined in order into one surface:
+    a basin, a sink's deck and its bowl, what a lathe can't turn. `segs`: (first ring, last ring, island, map) runs;
+    map 'band' (u round the rings, v along the walk) or 'plan' (u, v from x, y over the run's box: a deck, a floor).
+    The faces look to the right of the walk, as a lathe's do: out going up the outside, up going in over a top, in
+    going down into a bowl."""
+    R = np.asarray(rings, float)
+    k, n, _ = R.shape
+    names = list(mats or [])
+    d = np.linalg.norm(R[1:] - R[:-1], axis=2).mean(1)
+    acc = np.concatenate([[0], np.cumsum(d)])
+    F, UV, FM = [], [], []
+    jj = np.arange(n)
+    j1 = (jj + 1) % n
+    for a, b, isl_name, mp in segs:
+        isl = islands[isl_name]
+        if isl.mat not in names:
+            names.append(isl.mat)
+        mi = names.index(isl.mat)
+        per = np.linalg.norm(np.roll(R[a], -1, 0) - R[a], axis=1)
+        u = np.concatenate([[0], np.cumsum(per)]) / max(per.sum(), 1e-12)
+        sub = R[a:b + 1, :, :2].reshape(-1, 2)
+        lo, span = sub.min(0), np.maximum(sub.max(0) - sub.min(0), 1e-12)
+        L = max(acc[b] - acc[a], 1e-12)
+        for i in range(a, b):
+            f = np.stack([i * n + jj, i * n + j1, (i + 1) * n + j1, (i + 1) * n + jj], 1)
+            if mp == "band":
+                v0, v1 = (acc[i] - acc[a]) / L, (acc[i + 1] - acc[a]) / L
+                uu = np.stack([u[jj], u[jj + 1], u[jj + 1], u[jj]], 1)
+                vv = np.tile([v0, v0, v1, v1], (n, 1))
+            else:
+                q = np.stack([R[i, jj, :2], R[i, j1, :2], R[i + 1, j1, :2], R[i + 1, jj, :2]], 1)
+                aa = (q - lo) / span
+                uu, vv = aa[..., 0], aa[..., 1]
+            F.append(f)
+            UV.append(isl.to_uv(uu, vv))
+            FM.append(np.full(n, mi))
+    out = Mesh(R.reshape(-1, 3), np.concatenate(F), np.concatenate(UV), mats=names)
+    out.fm = np.concatenate(FM)
+    out.a["rest"] = out.v.copy()
+    return out
+
+
+def toward(ring, centre, ellipse=None, t=1.0, z=None):
+    """A ring moved toward a curve point for point: an ellipse (a, b) round `centre` (or the centre itself), by t
+    (0: the ring, 1: the curve), each point to the curve's point at its own angle; z if given."""
+    r = np.asarray(ring, float).copy()
+    c = np.asarray(centre, float)
+    ang = np.arctan2(r[:, 1] - c[1], r[:, 0] - c[0])
+    if ellipse is None:
+        tgt = np.stack([np.full(len(r), c[0]), np.full(len(r), c[1])], 1)
+    else:
+        a, b = ellipse
+        tgt = np.stack([c[0] + a * np.cos(ang), c[1] + b * np.sin(ang)], 1)
+    r[:, :2] = r[:, :2] * (1 - t) + tgt * t
+    if z is not None:
+        r[:, 2] = z
+    return r

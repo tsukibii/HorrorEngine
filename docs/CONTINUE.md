@@ -41,8 +41,27 @@ ok.
 **GDTESTROOM fails at station 6 in this cloud with or without the change:** "Aoi's skin on 0 materials", her body
 wanting a Studio export the fresh container lacks. Worth a run on the user's machine.
 
-Next if wanted (PROPGEN.md §9): food tins, a flashlight, batteries, a bucket, a crate, a die, a book; a recipe page
-with a PBR picker.
+Then, the user's third message (2026-10-31): **the occult, the kitchen and the sinks**, eight new families with 42
+recipes, 82 recipes in all:
+
+- **Candles:** pillar, church, black, red, a taper in a brass candlestick, a votive in sooty glass, a cluster;
+  `socket_flame` at each wick.
+- **Japanese occult:** ofuda in a brush hand with vermilion seals (`sheet` with the `ofuda` design), ema, omamori, a
+  shimenawa with shide, a wara-ningyo nailed through its name, a kokeshi.
+- **Shrine and altar things:** a hokora (one sealed with an ofuda), a sanbō, an orin, a kōro, an offering table.
+- **Cookware, appliances and sinks:** saucepan, stockpot (broth), frying pan, yukihira (miso), donabe, tetsubin,
+  enamel pot; a rice cooker (modern and 1980s); electric kettles; a kitchen sink and a washbasin (with water, with
+  blood).
+
+New in the tool: weighted normals for hard surfaces, `rbox`, `tube`, `spline`, ring strips (shapes a lathe can't
+turn), and sockets as empties in the glb under the kit's names (PROPGEN.md §11-12). PROPGEN ok (22 recipes measured),
+GDPROPS ok on all 42 (four liquids upright and tipped), CHECKS ok; all 42 in the library. The look plugin and the
+game's export weren't touched, so GDPLAY and GDTESTROOM weren't rerun. **For the user:** `python tools/propgen.py
+make <names>` and `sheet` on your machine (GPU), and say which need another pass.
+
+Next if wanted (PROPGEN.md §9): a life on a generated prop (a generated kettle boiling, a candle burning down: the
+sockets are there), food tins, a flashlight, batteries, a bucket, a crate, a die, a book; a recipe page with a PBR
+picker.
 
 ## 0a. The cloud session after (2026-10-30, small hours): §0's four pieces built, and a stand-in bug from the user
 

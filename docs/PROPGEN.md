@@ -99,6 +99,14 @@ Every family takes these:
 | `key` | `kind` house or skeleton; `bow` round, oval, square, clover, heart, grip; `cuts` [0-6 each] or `pins`; `metal`, `finish`, `age`, `tag` | key_brass, key_skeleton |
 | `ware` | `kind` bowl, donburi, plate, mug, glass, jar, tokkuri, soy; `glaze`, `clay`, `cap`, `chips`, `label_art`, `liquid` {kind, fill, color} (§10) | rice_bowl, plate, mug_stoneware (tea), glass_tumbler (water), jar_umeboshi, tokkuri (sake), soy_bottle (soy sauce) |
 | `pills` | a prescription vial: `tint` (the plastic's colour, kept as a factor so Godot retints it), `opacity`, `cap`, `cap_text`; `sticker` (its print: `rx_label` with patient, drug, directions, warning...; or `{"image": ...}`), `sticker_span`; `tablet` round, oval or capsule, `count`, `tablet_color`, `tablet_color_2` | pill_bottle, pill_bottle_capsules |
+| `candle` | `kind` pillar, church, taper (in a brass candlestick: `holder`, `patina`), votive (in sooty glass: `soot`), cluster (`count`); `burn` 0 (new) to 1, `drips`, `color`, `puddle`; `socket_flame` at each wick (`flame_0`... in a cluster) | candle_pillar, candle_church, candle_black, candle_red, candle_taper, candle_votive, candle_cluster |
+| `charm` | `kind` ema (a hinoki plaque: `art` {motif torii or disc, mark, text, shrine}, `back` {wish, name}) or omamori (a brocade pouch: `art` {color, pattern seigaiha, kikko or dots, text}, `back` {name}, `puff`); `cord` [two colours]; `socket_hang` | ema, ema_curse, omamori, omamori_blue |
+| `rope` | a shimenawa hung in a sag: `span`, `sag`, `thick`, `taper` (1 even, < 1 thick in the middle), `strands`, `shide` (zigzag paper), `fusa` (straw tassels), `straw`, `paper`; `socket_end_a`, `socket_end_b` | shimenawa, shimenawa_old |
+| `doll` | `kind` wara (a straw effigy: `name` on its chest slip, `nails` 0-3 gosun kugi, `straw`, `strays`; `socket_nail_tip`, `socket_nail_head`) or kokeshi (turned and painted: `height`, `colors` [red, green, black], `wood`, `eyes` sleepy or open) | wara_ningyo, wara_ningyo_cursed, kokeshi, kokeshi_old |
+| `shrine` | `kind` hokora (a wayside shrine: `roof` copper or wood, `wood`, `sealed` with an ofuda across its doors, `seal_text`), sanbo (`offering` salt, rice or none), orin (a brass bowl on its cushion, its striker: `cushion`, `metal`; `socket_strike`), koro (an incense burner: `sticks`, `stick`, `fallen`, `patina`; `socket_tip_1`... as the kit's incense), an (the eight-legged offering table: `length`, `depth`, `height`) | hokora, hokora_sealed, sanbo, sanbo_rice, orin, koro, offering_table |
+| `cookware` | `kind` saucepan, stockpot, frypan, yukihira, donabe, tetsubin, enamel; `lid`, `liquid` (§10), `tint` (the heat's colours on steel), `scrape` (a pan's coating), `color`, `decal`, `chips` (enamel), `rust` (iron); sockets steam, rim, lid, handle, vent, spout as the kit's pots | saucepan, stockpot, stockpot_broth, frying_pan, yukihira (miso), donabe, tetsubin, enamel_pot |
+| `appliance` | `kind` rice_cooker (`style` modern or retro, `time` on its LCD, `color`, `accent`, `brand`; sockets lcd, led_warm, led_cook, vent, button) or kettle (`finish` steel or white, `brand`; sockets spout, lid, switch, led, base) | rice_cooker, rice_cooker_retro, electric_kettle, electric_kettle_white |
+| `sink` | `kind` kitchen (pressed stainless: a basin, a ribbed drainboard, a basket strainer, a gooseneck mixer) or basin (glazed fireclay: an oval bowl, two pillar taps, a bottle trap); `liquid` standing in it, `rust`, `limescale`, `crazing`, `glaze`; sockets spout (`spout_cold`), handle, drain | kitchen_sink, kitchen_sink_water, washbasin, washbasin_blood |
 | `import` | your own mesh, worn (§5) | chair_worn |
 
 ### Designs
@@ -112,11 +120,18 @@ A design draws a print from a few fields (`designs.py`). Each is a function on a
 - **Card:** `burger_box`, `kraft`, `card_plain`.
 - **Wood and lacquer:** `wood_grain`, `lacquer`.
 - **Glazes:** `glaze`, `sometsuke`, `speckled`, `jar_label`.
+- **Talismans and charms:** `ofuda` (a paper talisman for a `sheet`: `text` brushed down the middle, `side` [right,
+  left], `seal` and `seal2` stamped in vermilion, `border`, `age_tint`, `paper`, `ink`), `ema` (`part` front or back),
+  `brocade` (`color`, `thread`, `pattern`, `text`, `name`). For your own designs: `designs.tate(frame, words, x,
+  y_top, size, rng)` writes down a column, right to left at a newline, each character a little off as a brush leaves
+  it; `designs.stamp(frame, x, y, size, chars, rng)` presses a seal, square or round, white characters cut out of
+  red or red characters in a red border, the ink uneven.
 
 Fonts are in `tools/propgen/fonts/`: OFL and Apache fonts from Google Fonts, with their licences beside them. Only the
 rendered textures ship in a game, never the fonts (the OFL leaves what they draw free). Name one by its key (`anton`,
 `bebas`, `archivo`, `pacifico`, `lobster`, `fraktur`, `serif`, `serif_bold`, `typewriter`, `marker`, `mono`,
-`bungee`, `righteous`, `rubik`, `gothic_jp` for Japanese) or by a .ttf path.
+`bungee`, `righteous`, `rubik`, `gothic_jp` for Japanese, `brush_jp` for a calligrapher's hand: Yuji Syuku, cut to
+kana, full-width forms and JIS level 1 kanji, 3,649 characters) or by a .ttf path.
 
 ### Metal finishes (`finish.py`)
 
@@ -254,8 +269,10 @@ dirt, PBR sets) without changing their shape.
   a `sheet`.
 - **The mop's head:** strands; the stick and bucket are easy.
 - **The kit's living little things** (kettle, hob, saucepan, rice cooker, clock, phone, ashtray with a burning
-  cigarette): they have sockets and lives the desk and Godot drive (steam at the spout, a clock's hands), so they stay
-  kit things. A generated twin would lose its sockets. Wear them with `import` instead.
+  cigarette): they have lives the desk and Godot drive (steam at the spout, a clock's hands). The generated pots,
+  kettles, rice cookers, candles and incense now carry their sockets under the kit's names (§11), so a life can find
+  them, but nothing wires a life to a generated prop yet (§9). Until then the kit's own stay the living ones; wear
+  them with `import`.
 - **The keypad, fusebox and breaker:** boxes with printed panels. Possible, but the kit's plates and panels already
   draw them.
 
@@ -272,6 +289,8 @@ dirt, PBR sets) without changing their shape.
 
 ## 9. Next, if wanted
 
+- A life on a generated prop: the kit's lives (`Content/Studio/Life/lives.json`) found by the glb's sockets, so a
+  generated kettle boils and a candle burns down in Play and in Godot.
 - Food tins (a three-piece tin: side seam, beads, paper label), a flashlight, batteries and a fuse.
 - A bucket and a bin with handles, a wooden crate, dice, a book or diary (cover, page block, spine), a phone card or
   a ticket.
@@ -326,3 +345,51 @@ thing is turned, and swings when it's moved.
   - The FBX and OBJ carry the inside as a full mesh with no shader.
   - A see-through liquid behind see-through glass sorts by object, as Godot does: fine for a bottle on a table, worth
     a look in a long row of them.
+- **Not only turned things:** a sink's basin isn't turned, so its points come from its own rings (`sink._liquid`); a
+  sink isn't tipped, so the table's tilts don't matter there. `broth`, `miso` and `curry` join the kinds for the pots.
+
+## 11. Sockets, hard surfaces and shapes a lathe can't turn
+
+- **Sockets:** a family sets `th.sockets[name] = (point, direction)`, and the .glb carries an empty node
+  `socket_<name>` there, its arrow (+Y in Godot) along the direction, a child of the prop's mesh; meta.json lists them.
+  They're where a flame, smoke, steam or a light goes. The names are the kit's (KIT.md §9), so the two read alike:
+  `flame` (candles), `tip_1`... (incense), `spout`, `lid`, `steam`, `rim`, `handle`, `vent` (pots and kettles), `lcd`,
+  `led_warm`, `led_cook`, `button` (a rice cooker), `switch`, `led`, `base` (a kettle), `drain` (sinks), `hang`
+  (charms), `end_a`, `end_b` (a rope), `nail_tip` (a straw doll), `strike` (an orin).
+- **Hard surfaces:** `th.weighted = <angle>` gives the game mesh normals weighted by face area (`mesh.weighted_normals`;
+  per corner, from the faces round it within the angle). A big flat face then shades flat and its rounded bevel takes
+  the highlight, however few faces the bevel has. That's the hard-surface trick that keeps a box's edges soft without
+  the polygons. The shrine things, cookware, appliances and sinks use it; a recipe's `weighted` overrides it.
+- **Rounded boxes:** `mesh.rbox(size, bevel, islands, top, bottom, side, corner=, fill=, step=)` is a slab of a rounded
+  footprint. `fill` puts points inside its big faces (their normals stay true) and `step` rings up its sides.
+  `mesh.rperim` gives its side band's length for the island.
+- **Tubes:** `mesh.tube(path, radii, island, caps=)` is a sweep with a radius per point and closed ends (bundles of
+  straw, ropes, handles, a kettle's spout). `mesh.ring_path` gives a closed circle for a binding or a loop. `mesh.spline`
+  draws a smooth curve through a few points, its points only where it bends: a belly, a dome, a gooseneck.
+- **Shapes a lathe can't turn:** `mesh.ring_strip(rings, runs, islands)` joins rings of points (each anticlockwise,
+  all the same count) into one surface. A run maps as a `band` (round and along) or a `plan` (from above).
+  `mesh.rrect_ring` gives a rounded rectangle's ring and its insets point for point; `mesh.toward` moves a ring onto
+  an ellipse or a circle by angle. The kitchen sink is a ring strip from its rolled edge, across the deck, down the
+  basin to the drain, and the washbasin one from its underside, over its rim and down its bowl.
+- **A lathe's faces look to the right of its profile:** up the outside, a profile walking up faces out. A lid's top
+  must therefore walk from its rim in to the middle, with its underside first from the middle out (cookware's lids do).
+
+## 12. The occult, the kitchen and the sinks: what's made and what doesn't fit
+
+- **Made:**
+  - Candles burned to any point.
+  - Paper talismans in a brush hand with vermilion seals, ema and omamori.
+  - A shimenawa with its shide and tassels.
+  - A straw effigy nailed through its victim's name, and a kokeshi.
+  - A hokora (it can be sealed), a sanbō with offerings, an orin, a kōro with its incense burning, an offering table.
+  - Seven pots and pans, a rice cooker in two eras, two electric kettles, a kitchen sink and a washbasin (water or
+    blood can stand in them).
+- **Altars:** an altar here is put together from the pieces: the offering table with a sanbō, candles, the kōro, the
+  orin, ofuda and a shimenawa over it. A butsudan or a kamidana (a cabinet with doors and drawers, a shelf shrine) is
+  furniture, so it belongs to the kit, worn with `import`; the hokora covers the small shrine.
+- **Doesn't fit a generator:**
+  - Masks (a noh or an oni mask), statues (a jizō, a komainu, a fox) and hina dolls: sculpted faces. They want a
+    sculpt or the Character Studio, as the porcelain doll does (§7).
+  - A torii is building scale (the scene builder's).
+  - Hair and real cloth: the wara-ningyo is bundles and stalks, not loose straw, and the omamori's brocade is a print
+    on a puffed pouch.
