@@ -25,16 +25,11 @@ def brand_mark(f, spec, at, size, color, width):
     """The maker's mark at `at` (mm on the island): your own picture (`logo`: a PNG path from the project folder, or
     {"image": path, "w": its width in mm, "rough": 0.3}; its alpha cuts it out, its height kept to its width), or else
     the name (`brand`) in a font (`brand_font`, any of paint.FONT_FILES or a .ttf path) and a colour (`brand_color`)."""
-    import os
     from .. import paint as P
-    from .. import recipes
     logo = spec.get("logo")
     if logo:
         lg = logo if isinstance(logo, dict) else {"image": logo}
-        path = lg["image"]
-        if not os.path.isabs(path) and not os.path.exists(path):
-            path = os.path.join(recipes.ROOT, path)
-        img = P.read_image(path)
+        img = P.read_image(lg["image"])
         w = float(lg.get("w", width))
         h = w * img.shape[0] / img.shape[1]
         f.image(img, at[0] - w / 2, at[1] - h / 2, w, h, rough=float(lg.get("rough", 0.3)), height=0.01)

@@ -83,11 +83,16 @@ Every family takes these:
 | `pose` | `stand`, `lie`, `auto` (the stablest face), `any` (a stable face by the seed), `upside`; `yaw` turns it, `down` picks which side lies down |
 | `view` | the preview camera: `azim`, `elev`, `lens` |
 | `relief`, `ao_gamma`, `sharp_angle` | fine-tuning: the print's emboss strength, the occlusion's depth, hard edges past that angle |
+| `pbr` | a PBR set off the shelf over a material's own paint: `{"main": "pbr/Wood/oak"}`, or `{"main": {"set": "pbr/Wood/oak", "tile": 0.8, "rot": 0, "tint": "#c8b090", "alpha": 1, "normal": 1, "islands": ["top"]}}` (`tile` metres a repeat; `alpha` under 1 lets the paint show through; `islands` only those parts); `"*"` every material |
+| `decals` | your pictures on any part: `[{"image": "Content/Studio/Props/images/logo.png", "island": "front", "x": 75, "y": 50, "w": 40, "h": 20, "rough": 0.3, "metal": 0, "alpha": 1, "height": 0.01}]`, `x` and `y` its middle in mm across and up the island (its middle if not given), `w` its width (a third of the island), `h` from the picture's shape; meta.json lists a prop's islands with their sizes (the page draws them) |
 
 ### Making your own
 
-Three ways, from a one-off to a family of your own:
+Four ways, from clicking to a family of your own:
 
+0. **The page** (§13): `python tools/propgen/serve.py`, then http://127.0.0.1:8797. Every recipe is a card with its
+   picture; open one, change it in a form, drop your pictures on its texture, pick PBR sets, make it (or several
+   variations at once), turn it in 3D, keep it as a recipe. Everything below is what the page writes for you.
 1. **One-off, from the command line:** `--set key.sub=value` changes anything in a recipe (JSON values: a number, a
    string, `null` to take something away), `--seed` rolls the dice again, `--as` names what comes out. For example:
    - `make mug_stoneware --set liquid=null --as mug_empty` (no tea at all),
@@ -97,9 +102,12 @@ Three ways, from a one-off to a family of your own:
 2. **A recipe of your own** in presets.json, starting `from` one that exists and writing down only what differs:
    `"mug_green_tea": {"label": "...", "family": "ware", "from": "mug_stoneware", "liquid": {"kind": "green_tea", "fill": 0.8}}`.
    Then `propgen.py make mug_green_tea` and `library mug_green_tea` puts it where a story can place it.
-3. **Your own pictures:** `art: {"image": "path.png"}` lays a picture over a print's island (a can's label, a bottle's,
-   a sheet's page, a pill bottle's sticker), `logo` puts one on an appliance. Paths are from the project folder, or
-   absolute; a transparent PNG is cut out by its alpha.
+3. **Your own pictures and textures:** `decals` puts a picture on any part of any prop, where you say (a logo on a can,
+   a sticker on a pot); `art: {"image": "path.png"}` covers a whole print island with one (a can's label, a page);
+   `logo` puts one on an appliance; `pbr` lays a PBR set off the shelf over a material. Paths are from the project
+   folder, or absolute; a transparent PNG is cut out by its alpha. Different pictures and seeds make varied props
+   from one recipe: `--seed` (or the page's Variations) rolls the dents, the wear, the folds and the small print
+   again, and each variation can carry its own decals.
 
 A cup that is sometimes empty and sometimes full doesn't need two props: make it with its liquid (even at `fill: 0`)
 and set the fill and the colours on each placed copy in Godot (its `HSLiquidFill`: `fill` 0-1, `own_colors` off, then
@@ -416,3 +424,41 @@ thing is turned, and swings when it's moved.
   - A torii is building scale (the scene builder's).
   - Hair and real cloth: the wara-ningyo is bundles and stalks, not loose straw, and the omamori's brocade is a print
     on a puffed pouch.
+
+## 13. The page: recipes as pictures
+
+`python tools/propgen/serve.py`, then http://127.0.0.1:8797 (`PROPS_PORT` for another; the launcher has it under
+Pages). A wrapper over `tools/propgen.py`: what it writes is the same recipe JSON, and what it makes the same files.
+
+- **The gallery:** every recipe a card with its picture (the preview of its last make; small JPEGs in
+  `Saved/Props/_thumbs/` when Pillow is there), in families, found by name, family or words. Badges mark a prop made
+  with settings its recipe doesn't have ("made with changes", as `--set` does) and one made under a name of its own
+  that isn't a recipe (variations). *Make the unmade* makes every recipe not made yet.
+- **The form** (Settings) is built from the recipe itself: colours as colour pickers, shares (wear, fill, burn...) as
+  sliders, words as text, and lists for what the generator knows. Those are its designs, fonts, liquids, finishes,
+  metals and poses, and each family's kinds and options, read from the family's own docstring (`"kind": "a" | "b"`),
+  so a new family's options show up by themselves. Any setting can be added (+ a setting) or taken out (×); quick adds
+  are a liquid, a print and wear. Recipe JSON is the whole recipe as text, editable.
+- **Texture & pictures:**
+  - Each material's texture, with its islands drawn on it, from the last make.
+  - Click on an island to put the picked picture there (a decal), or to move the decal picked in the list. Its width,
+    see-through and roughness are edited in the list.
+  - A PBR set off the shelf per material, with its tile, how much it covers, a tint.
+  - An appliance's logo.
+  - Drop PNGs or JPEGs onto the page (they go to `Content/Studio/Props/images/`).
+- **3D:** the made .glb, as Godot will read it, under a soft studio light and an environment for the metals; its
+  sockets as blue markers pointing their way (drag to turn, wheel to zoom, double-click to frame, *turn* to spin).
+- **Make** runs `propgen.py make` in the background, one at a time, its log under the form. It makes the recipe as
+  the form has it, under the name in *Make as* (your recipe isn't changed by a make). *Variations* makes several at
+  once with seeds a step apart, as `<name>_v1`, `_v2`.... *Texture* sets the texture size; *all formats* adds the
+  fbx, obj and blend to the glb.
+- **Save** writes the form into its recipe; **Save as new** keeps it under *Make as*'s name, written as `from` the
+  recipe it started from and only what differs, so presets.json stays readable. Every save keeps a copy of
+  presets.json in `Saved/Props/_history/` first (the last 50). **To the library** puts the made prop where a story
+  places it (`asset props/<name>`); **Delete** takes a recipe out (not one others start from).
+- **Checked:** PROPPAGE (`node tools/propgen/pagetest.mjs`): a headless browser on a scratch copy of the recipe book
+  and scratch folders (`PROPS_PRESETS`, `PROPS_OUT`, `PROPS_IMAGES`), so yours are never touched. It opens the ema and
+  changes its words, makes it (its log, its picture on its card, its islands), drops a picture and clicks it onto the
+  plaque's front, makes it again (the decal in what was made, the texture changed), turns it in 3D (its sockets),
+  picks a PBR set, makes two variations, saves a recipe `from ema` with only what differs, and deletes it. About two
+  minutes here; Blender makes four props.

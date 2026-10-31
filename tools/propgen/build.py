@@ -86,6 +86,30 @@ class Thing:
             self.density[mname] = d
 
 
+def lay_extras(spec, th, frames):
+    """What every family takes over its own paint: a PBR set off the shelf on a material's islands (`pbr`: {material
+    or "*": "pbr/<set>" or {set, tile (metres a repeat), rot, tint, alpha, normal, islands: [names]}}), then
+    pictures on any island (`decals`: [{image, island, x, y (its middle, mm across and up the island; the middle if
+    not given), w (mm; a third of the island), h (from the picture's shape), rough, metal, alpha, height}])."""
+    for mname, ps in (spec.get("pbr") or {}).items():
+        ps = ps if isinstance(ps, dict) else {"set": ps}
+        only = ps.get("islands")
+        for iname, isl in th.islands.items():
+            if (mname == "*" or isl.mat == mname) and (not only or iname in only):
+                frames[iname].pbr(ps["set"], tile=ps.get("tile"), rot=float(ps.get("rot", 0.0)), tint=ps.get("tint"),
+                                  alpha=float(ps.get("alpha", 1.0)), normal_strength=float(ps.get("normal", 1.0)))
+    for dc in spec.get("decals") or ():
+        f = frames.get(dc.get("island"))
+        if f is None:
+            raise ValueError(f"decal on island {dc.get('island')!r}: one of {', '.join(sorted(frames))}")
+        img = P.read_image(dc["image"])
+        w = float(dc.get("w", f.W / 3))
+        h = float(dc.get("h", w * img.shape[0] / img.shape[1]))
+        x, y = float(dc.get("x", f.W / 2)), float(dc.get("y", f.H / 2))
+        f.image(img, x - w / 2, y - h / 2, w, h, rough=float(dc.get("rough", 0.3)), metal=float(dc.get("metal", 0.0)),
+                alpha=float(dc.get("alpha", 1.0)), height=float(dc.get("height", 0.01)))
+
+
 def families():
     from .families import FAMILIES
     return FAMILIES
@@ -175,6 +199,7 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
     for iname, isl in th.islands.items():
         frames[iname] = P.Frame(canvases[isl.mat], isl, wrap=iname in th.wrap)
     th.paint(frames)
+    lay_extras(spec, th, frames)
     log(f"  {name}: painted ({time.time() - t0:.1f}s)")
     # per-texel attributes of the game mesh, and the bakes from the detailed one
     bs = int(samples or spec.get("bake_samples", 24))
@@ -289,7 +314,10 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
     rec = {"name": name, "family": spec["family"], "version": VERSION, "seed": seed, "size_m": [round(float(x), 4) for x in (hi - lo)],
            "tris": th.low.ntris(), "files": [os.path.basename(p) for p in outs], "preview": os.path.basename(pv) if pv else None,
            "textures": {m: [os.path.basename(p) for p in f] for m, f in files.items()}, "spec": spec,
-           "secs": round(time.time() - t0, 1), "sockets": rec_sockets}
+           "secs": round(time.time() - t0, 1), "sockets": rec_sockets,
+           "islands": {n: {"mat": i.mat, "mm": [round(i.w_mm, 2), round(i.h_mm, 2)], "rect": [round(float(x), 5) for x in i.rect],
+                           "wrap": n in th.wrap} for n, i in th.islands.items()},
+           "materials": {m: {"kind": v["kind"], "px": v["px"], "color": v["color"]} for m, v in th.mats.items()}}
     with open(os.path.join(odir, "meta.json"), "w", encoding="utf-8") as fh:
         json.dump(rec, fh, indent=1)
     if th.liquid:

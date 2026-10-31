@@ -2,6 +2,18 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-31, later (the user, on `prop-gen-tool`)
+
+- **A page over the prop generator, with thumbnails**: "how do you add varying textures and logos to generations,
+  could you make a wrapper for these python scripts with thumbnails". So `tools/propgen/serve.py` (port 8797,
+  PROPGEN.md §13): every recipe as its picture, a form built from the recipe, pictures clicked onto the texture where
+  they should go, PBR sets per material, variations by seed, 3D, saved as recipes. And two keys every family takes
+  now: `decals` (a picture on any island) and `pbr` (a PBR set over a material), so logos and textures aren't only
+  where a family had a print.
+- **Before that** (the same day): "what if I want to generate a cup that can be empty or filled with tea/green
+  tea/black tea etc, or add custom logos to electronics". The teas as liquid kinds, a `color` that reaches the
+  surface, a `logo` on the appliances; an empty or full cup is one prop, its fill set per copy in Godot.
+
 ## 2026-10-31 (the user, on `prop-gen-tool`)
 
 - **More of the prop generator, the occult and the kitchen**: "Can you add some more occult props, wax candles,

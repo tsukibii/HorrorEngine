@@ -59,6 +59,11 @@ GDPROPS ok on all 42 (four liquids upright and tipped), CHECKS ok; all 42 in the
 game's export weren't touched, so GDPLAY and GDTESTROOM weren't rerun. **For the user:** `python tools/propgen.py
 make <names>` and `sheet` on your machine (GPU), and say which need another pass.
 
+Then (2026-10-31, later): **the page**, `python tools/propgen/serve.py` (port 8797, PROPGEN.md §13): the recipes as
+pictures, a form, pictures clicked onto the texture (`decals`, any family), PBR sets per material (`pbr`), variations,
+3D, saving. PROPPAGE ok (113 s here), PROPGEN, CHECKS. **For the user:** open it from the launcher (Pages) and try a
+decal on something; say what's missing.
+
 Next if wanted (PROPGEN.md §9): a life on a generated prop (a generated kettle boiling, a candle burning down: the
 sockets are there), food tins, a flashlight, batteries, a bucket, a crate, a die, a book; a recipe page with a PBR
 picker.

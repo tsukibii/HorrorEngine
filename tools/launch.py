@@ -111,6 +111,7 @@ TOOLS = [
     ("Pages", "Salon (hair as locks: strands, sheets, bundles, against a locked reference video)", "tools/character/serve.py", {"url": "http://127.0.0.1:8793/salon.html"}),
     ("Pages", "Kit maker (room things from numbers)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/kit.html"}),
     ("Pages", "PBR shelf (your texture sets in assets/pbr, on a sphere; the Character Studio has it as its PBR button)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/pbr.html"}),
+    ("Pages", "Prop generator (every recipe as its picture: open one, change it, put your pictures and PBR sets on it, make it and its variations, see it in 3D, keep it)", "tools/propgen/serve.py", {"url": "http://127.0.0.1:8797"}),
     ("Pages", "Pigment test (projected art as pigment)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/pigment.html"}),
     ("Pages", "Kimodo demo", "tools/kimodo.py demo", {"url": "http://127.0.0.1:7860"}),
 
@@ -200,6 +201,7 @@ TOOLS = [
     ("Props", "Prop generator: the PBR shelf's sets (a recipe's pbr)", "tools/propgen.py pbr", {}),
     ("Props", "Prop generator: the made props in Godot 4.7 (GDPROPS: materials read back, pictured)", "tools/propgen.py godot", {}),
     ("Checks", "Prop generator check (PROPGEN: a recipe of every family made small and measured; Blender)", "tools/propgen.py check", {}),
+    ("Checks", "Prop generator page test (PROPPAGE: headless browser on port 8792, a scratch recipe book; Blender makes four)", "node tools/propgen/pagetest.mjs", {}),
 
     ("Library", "What the story needs from the CC0 library", "tools/cc0.py needs --game {game}", {}),
     ("Library", "Fetch what the story needs", "tools/cc0.py fetch --game {game}", {}),

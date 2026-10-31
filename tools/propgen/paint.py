@@ -598,10 +598,21 @@ def write_png(path, a):
         fh.write(data)
 
 
+def find(path):
+    """A file named in a recipe: as given (absolute, or from where the tool runs), else from the project folder."""
+    p = str(path)
+    if os.path.isabs(p) or os.path.exists(p):
+        return p
+    q = os.path.join(os.path.dirname(os.path.dirname(HERE)), p)
+    if os.path.exists(q):
+        return q
+    raise FileNotFoundError(f"{p}: not found here or in the project folder")
+
+
 def read_image(path):
     """Any picture Blender reads (PNG, JPG, TGA...) as RGBA floats 0-1, rows top first, in the file's own values."""
     import bpy
-    im = bpy.data.images.load(os.path.abspath(path), check_existing=False)
+    im = bpy.data.images.load(os.path.abspath(find(path)), check_existing=False)
     w, h = im.size
     px = np.zeros(w * h * 4, np.float32)
     im.pixels.foreach_get(px)
