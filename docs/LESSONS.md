@@ -1197,6 +1197,38 @@ guessed margin; and a check that only ever ran on a slow machine hasn't been run
   base's own id and place overwrote both, and "the cache kept a changed building" was the test's fault. Defaults
   first, the thing's own fields last.
 
+## The prop generator (2026-10-30, night)
+
+- **An inextensible sheet squeezed only from outside stays flat in the middle:** the first paper ball came out a disc
+  with a crumpled rim. A few random folds first (the sheet already a tangle in space), then a pull on every particle
+  toward the middle as the sphere shrinks, and it crumples all through, like a ball of newsprint.
+- **Paper laid down must not set new creases:** with the crumple's plasticity on and a cloth's soft bend, a note and a
+  receipt wrinkled like fabric as they landed. Lying down springs back to the creases it has (a stiffer bend, no
+  plasticity); only the fist sets creases.
+- **A label's middle faces the front, the front is -y:** the first can showed its barcode. A lathe's UV seam goes at
+  the back (+y), so the print's middle lands at -y, which the glTF export turns into the +Z front the kit uses.
+- **Cache a font's outlines, never its Blender datablock:** a reset between recipes (`read_factory_settings`) freed the
+  font and the next label failed with "StructRNA of type VectorFont has been removed". Check a cached datablock is
+  still there before using it.
+- **Overlapping V cuts are a union, not a list:** a key's cuts deeper than their pitch, written as points, folded the
+  edge back on itself in loops and the cap tessellated to holes. Sample the edge as the deepest cut at each point and
+  keep the corners.
+- **Blender's Python module can crash on its way out:** `bpy` as a module exited 245 after every job had printed ok.
+  The entry point leaves with `os._exit` once its output is flushed.
+- **A Godot camera's look_at needs the tree:** in a SceneTree script's `_init`, a camera aimed before the first frame
+  pictured only the floor. Await a frame, then `look_at_from_position`.
+- **Look at the preview before the code:** the pizza box's lid "vanished" because, open at 38 degrees, it faced the
+  camera edge-on; its geometry was right all along.
+- **Run the tool on the user's Blender too:** the cloud has Blender 4.2's module, the user's Arch machine a 5.x. Under
+  Blender 5.2's environment (Python 3.13, a newer NumPy) `np.cross` refused 2D vectors and a resting face pointing
+  exactly down divided by zero; PROPGEN on both found them. Write 2D crosses by hand, and treat a dot product of -1 with
+  a tolerance.
+- **A segment's material wins over the mesh's list:** the liquid's lathe was given `mats=["liquid"]`, but each
+  segment takes its island's material unless it names its own, so its faces went to the glass's slot (None in its
+  object) and rendered Blender's default white. A mesh built for a material of its own names it on its segments.
+- **See-through glass is mostly reflection, not white:** at 22% opacity on each of its four surfaces the glass washed
+  a dark soy sauce out to grey. Clear glass at 10% (PET 12%), the look carried by the specular.
+
 ## The street in Blender (2026-10-31)
 
 - **Cycles bakes one object at a time, each over the whole image:** 78 street meshes into one 4096 × 2112 atlas took
@@ -1213,6 +1245,60 @@ guessed margin; and a check that only ever ran on a slow machine hasn't been run
 - **A seam test that compares the wrap with the average step flags every brick:** a tile set's period ends on a
   brick's edge, so the step at the wrap is a brick's edge, far above the average step inside. Compare the wrap with
   the biggest step inside (a texture that doesn't tile still fails it by 12 times).
+
+## The prop generator's occult, kitchen and sinks (2026-10-31)
+
+- **Never seed from `hash()` of a string:** Python salts string hashes per process, so the candles' drips landed in a
+  different place every run and the same recipe stopped making the same mesh. Seeds come from `noise.rng(seed, ...)`
+  or from an index, never `hash`.
+- **Smooth normals over a big cap with only its rim's points shade in stripes:** a wax puddle's top was one fan of
+  long triangles from its edge, each corner's normal tipped by the bevel beside it, and it rendered striped. Put
+  points inside big caps (`fill`), and give hard surfaces normals weighted by face area (`th.weighted`), so a flat face
+  shades flat whatever its bevel does.
+- **A lathe's faces look to the right of its profile:** a pot's lid written from its middle out had its top facing
+  into itself. Walk a top from its rim inward, and its underside, first, from the middle out.
+- **Scale every part to metres at the same step:** the sinks' ring strips were built in millimetres and never scaled,
+  so the basin came out a kilometre wide beside metre-sized taps, and the preview, fitted to the whole, showed no taps
+  and no water at all. Build in mm and multiply by `MM` at the one place each part is made; a part 1000 times the
+  others is the first thing to look for when something vanishes.
+- **Rust is a few spots, not a coat:** the tetsubin's `rust` age at a quarter strength covered it in orange blotches
+  like a leopard. Cast iron reads black; its rust goes in as small, rare patches.
+- **A colour of your own must reach what's seen:** a liquid's `color` set only its body, so a mug of "green" tea came
+  out the same brown as black tea: in an opaque cup only the surface (the back faces drawn flat at the level) shows,
+  and its colour still came from the kind. An override sets every colour that's drawn, derived where not given.
+- **A part fixed to a curved wall ends inside it, at its own place round the wall:** the pots' loop handles ended at
+  the wall's radius straight out from the middle (x = R), but at their own angle round the pot the wall had already
+  curved away by 3 mm, and the user saw the tubes' open ends poke out. Set an end by the radius at its angle
+  (x = √((R − rod)² − y²)), and close a tube's ends.
+- **A part laid on a curved body follows its curve, or sits where it's flat:** the rice cooker's panel was a flat
+  slab tipped toward the viewer; its front edge dipped into the body's rounded front and the white showed through.
+  Laid flat on the deck, it still overhung the deck's rounded corners. On the lid, bent to the lid's own dome inside
+  its rounded edge, it sits as if it belongs there. Check a part's footprint against the flat region under it (inside
+  the bevels and corners), not against the box.
+- **GDScript can't infer a type from an untyped loop:** `for k in [...]: var key := "a/" + k` is a parse error in
+  Godot 4.7 (the plugin's script failed to load in the editor, and only the editor's part of LOOKPLUGIN said so). Type
+  the loop variable (`for k: String in`) or the variable (`var key: String`).
+- **Cycles draws both sides of a face; Godot only its front:** the rice cooker's walls looked solid in every preview
+  and were see-through in Godot (the user saw its bottom through its sides). `slab` walked its rounded edge from the
+  top down, and a loft's band faces the right of its walk: out of the material only when it climbs. Seven other
+  parts were inside out the same way unseen (caps lathed from the middle of their top outward, a lathe laid on its
+  side by swapping two axes, which is a mirror, a capsule's profile walked in the wrong order, the drips' tubes, a
+  clockwise outline extruded). Judge a mesh's faces by measure, not by a render that draws both sides: PROPGEN
+  casts rays at every case from all round and fails when more than 1.5% of what they hit is a face's back
+  (`check.orientation`). A mirror (an axis swap, a scale by −1) needs `M.flip` after it.
+- **A set's order changes from one run to the next:** a few props' textures differed between two makes of the same
+  recipe (the cigarette butts, the kettles, the sinks, the shimenawa). The paint was the same each time; the padding
+  between islands wasn't. Before the padding is filled, each band that goes round copies a few columns past its edges
+  from its far side, and in a gap narrower than two such margins the last band copied wins. The bands came from a
+  Python set of names, whose order follows the strings' hashes, and those are seeded afresh every run. Walk things in
+  a list's order (the islands' here), never a set's, when the order reaches the output. PROPGEN makes the butts (twelve
+  bands side by side) again in a second process with another `PYTHONHASHSEED` and compares every file byte for byte;
+  a make again in the same process can't see it.
+- **An outline walked backwards across itself:** the fork's tines showed 1.2% of their faces from behind. Each tip's
+  rounded end and each slot's rounded foot was walked from the far side to the near one, so the outline crossed itself
+  in a bow-tie at every tine, and the slab there came out inside out (Cycles hid it again). Every arc in a closed
+  outline turns the same way as the rest: test a new outline for edges crossing each other (none may) before it's
+  swept.
 
 ## No clipping in the street (2026-10-31)
 
@@ -1243,7 +1329,6 @@ guessed margin; and a check that only ever ran on a slow machine hasn't been run
 - **A physical sky isn't calibrated by its defaults:** Nishita at strength 0.9 made the lane five times the photo's
   brightness. Measure (the median, the road, the sky's band, each against the photo) and scale the sky, not the
   exposure, so the shop windows and lamps keep their balance with it.
-
 
 ## The road's print floating (2026-10-31)
 

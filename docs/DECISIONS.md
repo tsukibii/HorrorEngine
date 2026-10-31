@@ -38,6 +38,31 @@ The user's answers, newest first. They override the plan, the research and the d
   imperfections as it's baked (smudges, fingerprints, scratches, chips, cracks, dents, splits), every set has its
   height map beside its normal map, and seven decals put wear where it happens (STREET_PAINT §3, §4).
 
+## 2026-10-31, night (the user, on `prop-gen-tool`)
+
+- **No part of a prop see-through in Godot**: the user saw the rice cooker's bottom through its sides. Faces are
+  judged by measure now (PROPGEN fails a case when more than 1.5% of what's seen from outside is a face's back), not by
+  Cycles' previews, which draw both sides.
+- **Every prop's pictures swappable on the page, with a size for each**: "Make sure for each type of prop we can
+  generate that we can easily swap out logos, decals, flourishes, smudges, etc (recommend image size for everything) in
+  the wrapper". So each logo, picture, ornament, stamp and print a prop's paint draws is a slot of its own
+  (`pictures`), decals repeat as flourishes, smudges are built in or yours, and every one shows the size it wants
+  (PROPGEN §15, docs/PROPGEN_PICTURES.md).
+
+## 2026-10-31, evening (the user, on `prop-gen-tool`)
+
+- **Enhancers for the props, in Godot, easy to switch off**: "consider if there are some simple shaders/enhancers for
+  some of the props ... like how do we make the led panel in the rice cooker glow ... make them part of the export for
+  godot (they should be exported as godot ready objects and come with shaders/enhancers that can easily be toggled
+  off)". So emission maps for what glows (LEDs, the LCD's backlight, embers), `propgen_fx` in each glb, the look
+  plugin's `HSPropFX` (glow, a candle's flame and light, incense smoke, steam, wax; each a switch, a kind off for a
+  whole project in its settings), the game putting one on every made prop, and a `.tscn` beside every glb ready to
+  drop in (PROPGEN.md §14).
+- **The rice cooker's panel**: "looks like it's clipping through the white at the bottom", then "still doesn't
+  conform to the natural shape, seems like it's larger than the lid, maybe just change the placement to be on the
+  lid". It's a thin pane on the lid's front now, bent to the lid's dome, inside its rounded edge.
+- **The pots' handles**: "the handle pokes out a bit too much": their ends go into the wall now.
+
 ## 2026-10-31, before dawn (the user, on texturing the streets for real)
 
 - **Research first: faking photorealism like Battlefront**: "do some research on how we could fake photo-realism (think
@@ -60,6 +85,32 @@ The user's answers, newest first. They override the plan, the research and the d
   peeking through) etc, refine the system so we never see clipping". Walk-in roofs are boxed, 1 cm over the level's
   top; roofs over an L or a T are joined into one; the whole generator keeps faces out of each other's planes by rule;
   STREET fails on any two faces of a piece in one plane over each other (STREET_BUILDER §5d).
+
+## 2026-10-31, later (the user, on `prop-gen-tool`)
+
+- **A page over the prop generator, with thumbnails**: "how do you add varying textures and logos to generations,
+  could you make a wrapper for these python scripts with thumbnails". So `tools/propgen/serve.py` (port 8797,
+  PROPGEN.md §13): every recipe as its picture, a form built from the recipe, pictures clicked onto the texture where
+  they should go, PBR sets per material, variations by seed, 3D, saved as recipes. And two keys every family takes
+  now: `decals` (a picture on any island) and `pbr` (a PBR set over a material), so logos and textures aren't only
+  where a family had a print.
+- **Before that** (the same day): "what if I want to generate a cup that can be empty or filled with tea/green
+  tea/black tea etc, or add custom logos to electronics". The teas as liquid kinds, a `color` that reaches the
+  surface, a `logo` on the appliances; an empty or full cup is one prop, its fill set per copy in Godot.
+
+## 2026-10-31 (the user, on `prop-gen-tool`)
+
+- **More of the prop generator, the occult and the kitchen**: "Can you add some more occult props, wax candles,
+  altars, japanese occult stuff, add some better cooking pots and maybe do a better textured version of the rice
+  cooker and kettle, make some better sinks etc". So new families, nothing made before changed (as the night's rule
+  says): `candle`; talismans as a design (`ofuda`) and `charm` (ema, omamori), `rope` (a shimenawa), `doll` (a
+  wara-ningyo, a kokeshi), `shrine` (a hokora, a sanbō, an orin, a kōro, an offering table); `cookware`, `appliance` (a
+  rice cooker, an electric kettle), `sink`. Altars are put together from those pieces; a butsudan or a kamidana is
+  furniture (the kit's), and masks and statues want a sculpt (PROPGEN.md §12).
+- **Liquid inside, Half-Life: Alyx's way, and a pill bottle** (earlier the same night): "an effect that makes it look
+  like there is liquid inside ... a godot shader that uses the shape of the bottles interior", "a pill container
+  that's slightly tinted (or easily tintable), with a sticker that's easy to change ... and have tablets inside too".
+  The liquid node and its fill table, HSLiquid in the look plugin (PROPGEN.md §10), and the `pills` family.
 
 ## 2026-10-31, small hours (the user, after the street's textures)
 
@@ -88,6 +139,28 @@ The user's answers, newest first. They override the plan, the research and the d
   because we could add foliage easily then, but something to consider is how would we add easy collision".
   `tools/street.py bake`: the .glb and the .blend (its Foliage collection kept between bakes), the street's colliders
   by name, Godot's own suffixes for what's added (STREET_TEXTURING §4).
+
+## 2026-10-30, night (the user, on a branch of its own: `prop-gen-tool`)
+
+- **A prop generator like the Free Street Litter Sampler's**: "Figure out ... how they did it ... I want a tool for
+  making small props easily too ... I have blender locally so am ok with having a tool where we export the props
+  from". Their note: "All meshes and textures are generated by our own Python scripts in Blender. No image or 3D
+  generator was used." So `tools/propgen.py` (docs/PROPGEN.md): Python in Blender, the shapes from measurements, the
+  damage and the print by code, the detail baked; the sampler's twenty kinds of litter remade with our own brands.
+- **Into Godot**: "Make sure that we can export these models to godot once you're done". Made props go into the
+  library as `props/<name>` (a story's `asset props/<name>`), the Godot export copies them; GDPROPS reads their
+  materials back in Godot 4.7.
+- **TestRoom001's things as generators**: "create prop gen tools for those kind of designs so we can design our own
+  utensils (diff metal scratch patterns), kitchen stuff, key shapes, etc, no rough edges, we don't want props to look
+  low poly, but try keep poly count down by being smart. If these elements don't fit the gen tool though tell me".
+  The utensil, key and ware families and the metal finishes; rounded edges kept in normal maps baked from a detailed
+  copy; PROPGEN.md §7 says what fits and what doesn't.
+- **Our own furniture worn, PBR sets underneath**: "import furniture we've designed in our interiors and add
+  scratches, dents, etc (similar to how you add the crush pattern) ... baking it in", "a selectable pbr uploader so if
+  I want to attach custom pbrs before we bake and overlay textures onto we can". The `import` family (a file or a kit
+  preset), PBR shelf sets by triplanar projection, `propgen.py pbr` and `pbr-add`.
+- **"If any of this conflicts with what you already designed above just make new tools instead"**: everything after
+  went in as new families and options; nothing made before changed.
 
 ## 2026-10-30, later night (the user, after the street builder's first round)
 

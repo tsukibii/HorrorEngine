@@ -7,7 +7,8 @@ dashboard and the writers' room; 2026-10-28 the flashlight, cleaning, the peepho
 latch, examining, skin v2; then TestRoom001, the Unreal note, the skin after HumanShaders and expression loops; and
 on `game-research-001`: The Visitor's research, abstract and chart, the director's to-do; merged into `dev-002` and
 the to-do built there, with the Studio's eyes from the side, a small nose and the face's bake; 2026-10-28 and 29 on
-`godot-support`: the Godot export, its runtime, its look, the look plugin). Read this
+`godot-support`: the Godot export, its runtime, its look, the look plugin; 2026-10-30 and 31 on `buildings-streets`: the
+street builder, its paint and the PBR sets, with `prop-gen-tool` merged in). Read this
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
@@ -95,6 +96,90 @@ inspector with the brush.
 export placing an inside's level by itself (today a marker; the set's level dropped there by hand); a two-storey
 interior (stairs inside the set); foliage when the user wants it; steps and retaining walls on a slope; a grade in the
 page (the photo's teal and orange).
+
+## 0b. The prop generator (2026-10-30, night, on `prop-gen-tool`; merged into `buildings-streets` 2026-10-31)
+
+A side branch, merged into `buildings-streets` at the user's word (2026-10-31, with the street builder, its paint
+and the PBR sets): **`python tools/propgen.py`** makes small props from recipes by Python in Blender
+(docs/PROPGEN.md). 38 recipes in `Content/Studio/Props/presets.json`:
+
+- **The sampler's twenty kinds of litter:** cans pristine, dented and crushed; PET bottles; coffee and iced cups;
+  newspaper, crumpled paper, napkin, fries bag, receipt, note; burger and pizza boxes; a bin bag; cigarette butts;
+  bottle caps.
+- **TestRoom001's kinds of thing:** cutlery with metal finishes, keys, kitchenware.
+- **A worn kit chair:** the `import` family with a PBR set.
+
+Checks: PROPGEN ok (12 families measured) and GDPROPS ok (Godot 4.7 reads every material back); a scratch copy of
+Sample placing `asset props/<name>` passed STORY and GDEXPORT. **For the user:**
+
+1. On your machine (Blender on the PATH): `python tools/propgen.py all`, then `python tools/propgen.py sheet`, and look
+   at `Saved/Props/sheet.png`.
+2. `python tools/propgen.py library`, to get them into the library for stories.
+
+Then, from the user's second message (2026-10-30, late):
+
+- **Liquids that stay level and slosh in Godot** (PROPGEN.md §10): the look plugin's HSLiquidFill. The game attaches
+  it in `enter_level`. A fill table from the inside's own shape keeps a tipped bottle's volume.
+- **The pill bottle** (`pills`): tinted vial, swappable sticker, tablets settled inside.
+
+40 recipes. GDPROPS ok with the liquids upright and tipped; PROPGEN, GDEXPORT, GDPLAY, LOOKPLUGIN (nodes) and CHECKS
+ok.
+
+**GDTESTROOM fails at station 6 in this cloud with or without the change:** "Aoi's skin on 0 materials", her body
+wanting a Studio export the fresh container lacks. Worth a run on the user's machine.
+
+Then, the user's third message (2026-10-31): **the occult, the kitchen and the sinks**, eight new families with 42
+recipes, 82 recipes in all:
+
+- **Candles:** pillar, church, black, red, a taper in a brass candlestick, a votive in sooty glass, a cluster;
+  `socket_flame` at each wick.
+- **Japanese occult:** ofuda in a brush hand with vermilion seals (`sheet` with the `ofuda` design), ema, omamori, a
+  shimenawa with shide, a wara-ningyo nailed through its name, a kokeshi.
+- **Shrine and altar things:** a hokora (one sealed with an ofuda), a sanbō, an orin, a kōro, an offering table.
+- **Cookware, appliances and sinks:** saucepan, stockpot (broth), frying pan, yukihira (miso), donabe, tetsubin,
+  enamel pot; a rice cooker (modern and 1980s); electric kettles; a kitchen sink and a washbasin (with water, with
+  blood).
+
+New in the tool: weighted normals for hard surfaces, `rbox`, `tube`, `spline`, ring strips (shapes a lathe can't
+turn), and sockets as empties in the glb under the kit's names (PROPGEN.md §11-12). PROPGEN ok (22 recipes measured),
+GDPROPS ok on all 42 (four liquids upright and tipped), CHECKS ok; all 42 in the library. The look plugin and the
+game's export weren't touched, so GDPLAY and GDTESTROOM weren't rerun. **For the user:** `python tools/propgen.py
+make <names>` and `sheet` on your machine (GPU), and say which need another pass.
+
+Then (2026-10-31, later): **the page**, `python tools/propgen/serve.py` (port 8797, PROPGEN.md §13): the recipes as
+pictures, a form, pictures clicked onto the texture (`decals`, any family), PBR sets per material (`pbr`), variations,
+3D, saving. PROPPAGE ok (113 s here), PROPGEN, CHECKS. **For the user:** open it from the launcher (Pages) and try a
+decal on something; say what's missing.
+
+Then (2026-10-31, evening): **enhancers** (PROPGEN.md §14): what glows painted as emission, the look plugin's
+`HSPropFX` (glow, flame with its candle light, smoke, steam, wax; switches per prop and per project), the game putting
+one on every made prop, and a `<name>.tscn` beside every glb. The rice cooker's panel moved onto its lid; the pots'
+handles into their walls. **For the user:** open a candle's `.tscn` (Saved/Props/candle_taper/, copied into a project
+with the look plugin) in Godot and switch its enhancers; say if the flame wants another shape.
+
+Then (2026-10-31, night): **no part inside out**, and **your pictures on any prop** (PROPGEN.md §11, §15):
+
+- **The user saw the rice cooker's bottom through its sides in Godot.** `slab` walked its rounded edge from the top
+  down, so every slab and rounded box had its edge band facing in. Seven other parts were inside out the same way.
+  Cycles' previews draw both sides and hid it. PROPGEN now casts rays at each case and fails past 1.5% of backs seen
+  (`check.orientation`). GDPROPS ok; the rice cookers in Godot sent to the user.
+- **Every prop's own pictures swappable**: 116 slots on 50 recipes (logos, pictures, ornaments, stamps, patterns,
+  print), `pictures` in a recipe (wildcards `*.logo`, `false` to turn one off, stamps as relief only); smudges (nine
+  built in, or yours); flourishes (decals repeated or in the corners); the size every picture wants on the page and
+  in docs/PROPGEN_PICTURES.md. PROPGEN, PROPPAGE (an own picture swapped, a smudge moved by a click, a flourish),
+  CHECKS ok. **For the user:** open the page, pick a prop, Texture & pictures: swap its logo for yours (the template
+  link gives the drawn one at the size it wants), add a smudge; say what's missing.
+- **The loose ends, fixed after (the user: "fix whatevers left"):** textures the same run to run (the padding's bands
+  walked in the islands' order, a set's wasn't; PROPGEN makes a case again in a second process), the enamel pot's
+  unused island gone, the import's kit meshes under `--out`, a `tile` fit (patterns and strips repeat by default),
+  pictures and smudges carried across a band's seam, the fork's tines' tips and slots walked the right way (they
+  crossed themselves: 1.2% backs, now none), the sleeve's HOT inside its ring. **Still open:** the burger box's lid
+  shows 0.5% of backs at its inner chamfer by the back (cause not found; under PROPGEN's 1.5%); the knives have
+  edges whose faces disagree inside the steel, where nothing sees them.
+
+Next if wanted (PROPGEN.md §9): a life on a generated prop (a generated kettle boiling, a candle burning down: the
+sockets are there), food tins, a flashlight, batteries, a bucket, a crate, a die, a book; a recipe page with a PBR
+picker.
 
 ## 0a. The cloud session after (2026-10-30, small hours): §0's four pieces built, and a stand-in bug from the user
 

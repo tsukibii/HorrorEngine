@@ -22,6 +22,13 @@ func _enter_tree() -> void:
 	_street = preload("res://addons/horrorstudio_look/street_import.gd").new()
 	add_scene_post_import_plugin(_street)
 	add_tool_menu_item(MENU, _apply)
+	# the made props' enhancers (HSPropFX), each kind switched for the whole project here
+	for k: String in ["enabled", "glow", "flame", "smoke", "steam", "wax"]:
+		var key: String = "horrorstudio/prop_fx/" + k
+		if not ProjectSettings.has_setting(key):
+			ProjectSettings.set_setting(key, true)
+		ProjectSettings.set_initial_value(key, true)
+		ProjectSettings.add_property_info({"name": key, "type": TYPE_BOOL})
 	if not ProjectSettings.has_setting(DONE):
 		ProjectSettings.set_setting(DONE, true)
 		var n := HSLook.apply_project()
