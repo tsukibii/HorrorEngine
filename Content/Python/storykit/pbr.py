@@ -149,7 +149,8 @@ def roots():
     return [ROOT] + ([TRACKED] if default and TRACKED.is_dir() else []) + ([OLD] if old else [])
 IMG = (".jpg", ".jpeg", ".png", ".tga", ".tif", ".tiff", ".exr")
 WEB = (".jpg", ".jpeg", ".png")                 # what the desk can show (and what's preferred when both are there)
-KEEP = ("tile_m", "tile_v_m", "source", "url", "licence", "note", "by_hand", "tint", "label", "group", "family", "relief_m", "wear", "recipe")
+KEEP = ("tile_m", "tile_v_m", "source", "url", "licence", "note", "by_hand", "tint", "label", "group", "family", "relief_m", "wear", "recipe",
+        "cells")
 # the maps a set can have, as `by_hand` names them: a file name, or "" for none (`normal_dx`: a DirectX normal)
 SLOTS = ("albedo", "normal", "normal_dx", "rough", "metal", "ao", "height", "opacity", "orm")
 # the last word(s) of a map's file name, after its resolution (2k, 4K-JPG) is taken off: Poly Haven, ambientCG and plain names

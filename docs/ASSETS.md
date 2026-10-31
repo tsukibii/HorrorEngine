@@ -161,6 +161,17 @@ not in git) is a set the street paint page made from one of them, tinted and lay
   or a garment's `pbr`, like any library texture. The scene builder's Look pickers list the shelf, and take a set added or changed there when you come back to the
   builder (no reload: the pickers and the walk view). `story_check` warns about a ref that isn't on
   the shelf.
+- **A set's own layout** (`storykit/pbrcells.py`; the user, 2026-10-31: "make the floors take a material"): a set that
+  paints tiles, boards or mats (pavers, a plank floor, tatami, cracked tiles) has them found in its maps as **cells**.
+  On its height map (the seams sit low), else its occlusion, else the colour's darkness, long straight runs of low
+  pixels at least nearly as deep as its typical seam are its seams (a scratch, the grain, a crack are shallower,
+  shorter or crooked), the areas between them its cells, kept when they are rectangles that tile the repeat; a turned
+  look's are turned with it, a scaled one's scaled. A kit floor (or a wall's tiles) whose boards wear such a set is
+  laid out by its cells (KIT.md, *Floors laid out by their set*): each board where the set paints one, the gaps in
+  its seams. A set with none (wood grain, a weave, plaster, metal) leaves the kit its own layout, each board wearing
+  its own cut of it. When a set is read wrong, `"cells": false` in its meta.json says it has none (kept on a rescan).
+  The PBR check finds the project's tatami mats (8 to a 3.6 m repeat) and pavers (64 to 2.4 m), none in its plain
+  sets, and a turned look's cells turned with it.
 - **The shelf page** (the **PBR** button in the Character Studio, the scene builder and the kit maker, each in its
   own tab with the way back to the tool that opened it; http://127.0.0.1:8793/pbr.html, or the desk's
   http://127.0.0.1:8780/pbr.html, the launcher's *PBR shelf*): the sets (by category when there are any); each one on a

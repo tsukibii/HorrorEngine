@@ -170,6 +170,35 @@ _DEMO = {"worn_planks": 2.4, "grimy_brick": 1.6, "stained_plaster": 2.5, "cracke
 
 
 # ---- the check ----------------------------------------------------------------------------------------------------
+def check_cells(ok, bad):
+    """A set's own layout (storykit/pbrcells.py, ASSETS §6c) on the project's sets in git: the tatami mats and the pavers
+    found as their cells, tiling the repeat, a turned and scaled look's turned with it; the plain ones none."""
+    try:
+        from storykit import pbrcells as CELLS
+        import numpy  # noqa: F401
+    except ImportError:
+        bad.append("a set's cells need numpy and Pillow")
+        return
+    tat = "pbr/floor/Tatami004_1K-PNG"
+    for ref, want in ((tat, 8), ("pbr/concrete/Concrete010_1K-PNG", 64), ("pbr/floor/Tatami001_1K-PNG", 0),
+                      ("pbr/wall/Plaster001_1K-PNG", 0), ("pbr/building/black marble", 0), ("pbr/metal/Metal063_1K-PNG", 0)):
+        c = CELLS.cells(ref)
+        got = len(c["rects"]) if c else 0
+        ok(got == want, f"{ref}: {got} cells, not {want}" + ("" if c else f" ({CELLS.why(ref)})"))
+    c = CELLS.cells(tat)
+    if not c:
+        return
+    area = sum((r[2] - r[0]) * (r[3] - r[1]) for r in c["rects"])
+    ok(abs(area - 1) < 0.02, f"{tat}'s cells cover {area:.3f} of its repeat")
+    ok(all(abs(max(r[2] - r[0], r[3] - r[1]) / min(r[2] - r[0], r[3] - r[1]) - 2) < 0.1 for r in c["rects"]), "its mats are twice as long as they're wide")
+    ok(c["tile"] == 3.6 and 0 < c["seam"] < 0.03, f"its tile {c['tile']} m, seam {c['seam']} m")
+    t = CELLS.cells({"set": tat, "turn": 90, "scale": 0.5})                 # a quarter turn anticlockwise: (u, v) -> (1 - v, u)
+    want = sorted([round((1 - r[3]) % 1, 2), round(r[0] % 1, 2)] for r in c["rects"])
+    have = sorted([round(r[0] % 1, 2), round(r[1] % 1, 2)] for r in (t or {}).get("rects", []))
+    ok(t and t["tile"] == 1.8 and len(have) == 8 and all(abs(a[0] - b[0]) < 0.01 and abs(a[1] - b[1]) < 0.01 for a, b in zip(want, have)),
+       f"a turned look's cells turn with it: {have} for {want}")
+
+
 def cmd_check(_args):
     bad = []
 
@@ -291,6 +320,7 @@ def cmd_check(_args):
         PBR.ROOT = old_root
         PBR._ATT["key"] = None
         shutil.rmtree(tmp, ignore_errors=True)
+    check_cells(ok, bad)
     for b in bad:
         print("FAIL " + b)
     print("PBR ok" if not bad else f"PBR FAILED ({len(bad)})")
