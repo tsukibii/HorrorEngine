@@ -42,6 +42,8 @@ func _initialize() -> void:
 	var shared: Dictionary = {}          # a material file's path -> the instances the pieces wear (one: loaded once, shared)
 	var held: Array = []                 # kept alive across the levels, so a level loaded after another gets the same one
 	var unfiled := 0                     # a set's material that isn't the game's file for it (game/materials/)
+	var slots := 0                       # kit things' slots dressed (the story's `mats`) with the game's <Name>_uv.tres
+	var slots_bad := 0
 	var info: Dictionary = {}
 	var ef := FileAccess.open("res://game/export.json", FileAccess.READ)
 	if ef != null:
@@ -79,6 +81,13 @@ func _initialize() -> void:
 						shared[mat.resource_path] = ids
 						held.append(mat)
 			var art = ch.get_node_or_null("art")
+			if art != null and art.has_method("dress"):      # a kit thing's slots dressed (slot_materials.gd): out of a tree, by hand
+				slots += int(art.dress())
+				for mi in art.find_children("*", "MeshInstance3D", true, false):
+					for i in mi.mesh.get_surface_count():
+						var sm: Material = mi.mesh.surface_get_material(i)
+						if sm != null and art.slots.values().has(sm) and not (sm.resource_path.begins_with("res://game/materials/") and sm.resource_path.ends_with("_uv.tres")):
+							slots_bad += 1
 			if art != null:
 				arts += 1
 				if art.find_children("*", "MeshInstance3D", true, false).is_empty():
@@ -100,6 +109,11 @@ func _initialize() -> void:
 			print("GDEXPORT materials: %d files in game/materials/ (the export wrote %d), each loaded once and shared by its pieces%s%s" % [
 				shared.size(), files, "" if many == 0 else " (%d LOADED TWICE)" % many, "" if unfiled == 0 else " (%d pieces wear a set NOT FROM ITS FILE)" % unfiled])
 			if many or unfiled or (want > 0 and shared.size() != files):
+				ok = false
+			var want_slots := int(info.get("slots_dressed", 0))
+			print("GDEXPORT kit slots: %d surfaces dressed by the story's mats (the export dressed %d slots), each wearing its set's _uv file%s" % [
+				slots, want_slots, "" if slots_bad == 0 else " (%d NOT)" % slots_bad])
+			if slots < want_slots or slots_bad:
 				ok = false
 		if empty:
 			ok = false

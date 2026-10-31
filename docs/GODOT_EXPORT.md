@@ -82,8 +82,18 @@ so give those their own UV'd material).
   depend on which level came first.
 - **Sets from anywhere**: the shelf's own, your attached folders' (ASSETS §6: copied into the project from where they
   are), the library's, a tuned one (made before the levels are written when this machine hasn't it yet).
-- `export.json`'s `materials` maps each set's ref to its file; GDEXPORT's load check finds every surfaced piece wearing
-  its set's file from `game/materials/`, each file loaded once and shared (`GDEXPORT materials: …`).
+- **A kit thing's slots** (its `mats`: a sofa's fabric, a fridge's body) wear **`<Name>_uv.tres`**: the same maps,
+  laid by the mesh's own UVs (the kit's are metres) rather than the world, so they ride with a thing that moves. The
+  export puts `addons/horrorstudio/slot_materials.gd` on the thing's instanced kit mesh with its `slots` (slot ->
+  material file); a `@tool` script, so the editor shows them too: each `kit_<slot>` surface (and its tones,
+  `kit_wood_2`...) of this thing's own copy of the mesh wears its file, the surface keeping its name for the little
+  things' effects; put back before a save, so only `slots` is saved.
+- **A street's .glb** keeps its materials inside it (one a set and colour, shared by every chunk; after the Blender bake
+  each also carries the street's own wear atlas), so they're the street's own: Godot's Advanced Import Settings
+  (*Actions › Extract Materials*) writes them to a folder by name if you want them as files.
+- `export.json`'s `materials` maps each set's ref to its file (`slot_materials` the `_uv` ones, `slots_dressed` how many
+  slots); GDEXPORT's load check finds every surfaced piece wearing its set's file from `game/materials/`, each file
+  loaded once and shared (`GDEXPORT materials: …`), and every dressed slot wearing its `_uv` file (`GDEXPORT kit slots: …`).
 
 **Sequencing the user can see:** a scene's whole timeline is one Animation (`scene`): a position/rotation track for
 the camera (the bake's, at 30 fps, keys thinned), bone tracks per cast member (the bake's skin matrices turned into

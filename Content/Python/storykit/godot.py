@@ -262,13 +262,17 @@ class Materials:
         name = SET_RES.sub("", ref.rstrip("/").rsplit("/", 1)[-1]) or ref.rsplit("/", 1)[-1]
         return re.sub(r"[^A-Za-z0-9_\-]+", "_", name).strip("_") or "material"
 
-    def res(self, ref):
-        """The set's material file, res://game/materials/<Name>.tres, written the first time it's asked for; None when
-        the set isn't on this machine's shelf (the block keeps the exporter's colour)."""
-        if ref in self.files:
-            return self.files[ref]
-        self.files[ref] = None
-        name = self.names.get(ref) or self.base_name(ref)
+    def res(self, ref, uv=False):
+        """The set's material file, res://game/materials/<Name>.tres (world-aligned: blocks, anything static), or with
+        `uv` <Name>_uv.tres (the same maps laid by the mesh's UVs in metres: a kit thing's slots, which may move),
+        written the first time it's asked for; None when the set isn't on this machine's shelf (the block keeps the
+        exporter's colour)."""
+        key = (ref, "uv") if uv else ref
+        if key in self.files:
+            return self.files[key]
+        self.files[key] = None
+        base = self.names.get(ref) or self.base_name(ref)
+        name = base + ("_uv" if uv else "")
         folder = self.out / "game" / "materials"
         props, ext = {"resource_name": gstr(name)}, []
 
@@ -284,13 +288,16 @@ class Materials:
             src = LIB.texture_dir(ref)
             if not meta or not src.is_dir() or "albedo" not in meta.get("maps", {}):
                 return None
-            dst = folder / name
+            dst = folder / base                            # the maps once a set, whichever way they're laid
             dst.mkdir(parents=True, exist_ok=True)
-            res = f"res://game/materials/{name}"
+            res = f"res://game/materials/{base}"
             maps = meta["maps"]
             tile = float(meta.get("tile_m") or 2.0)
-            props.update({"uv1_triplanar": "true", "uv1_world_triplanar": "true", "uv1_scale": v3(1.0 / tile, 1.0 / tile, 1.0 / tile),
-                          "texture_filter": "5"})          # linear with mipmaps, anisotropic
+            if uv:                                         # the kit's UVs are metres: one repeat a tile_m
+                props["uv1_scale"] = v3(1.0 / tile, 1.0 / tile, 1.0)
+            else:
+                props.update({"uv1_triplanar": "true", "uv1_world_triplanar": "true", "uv1_scale": v3(1.0 / tile, 1.0 / tile, 1.0 / tile)})
+            props["texture_filter"] = "5"                  # linear with mipmaps, anisotropic
             for slot, prop in (("albedo", "albedo_texture"), ("rough", "roughness_texture"), ("ao", "ao_texture"), ("metal", "metallic_texture")):
                 if slot in maps and (src / maps[slot]).exists():
                     if not (dst / maps[slot]).exists():
@@ -320,8 +327,8 @@ class Materials:
                     props.update({"normal_enabled": "true", "normal_texture": tex(f"{res}/{out_name}")})
         folder.mkdir(parents=True, exist_ok=True)
         (folder / f"{name}.tres").write_text(tres("StandardMaterial3D", props, ext), encoding="utf-8")
-        self.files[ref] = f"res://game/materials/{name}.tres"
-        return self.files[ref]
+        self.files[key] = f"res://game/materials/{name}.tres"
+        return self.files[key]
 
 
 class LevelWriter:
@@ -333,6 +340,9 @@ class LevelWriter:
         self.names = set()
         self.meshes_out = Path(meshes_out) if meshes_out else None   # game/meshes/: the kit's and the library's glbs copied here
         self.surfaces = {}                                 # a library texture set's material, by ref (surface())
+        self.slot_mats = {}                                # a set's material laid by UVs (a kit thing's slot), by ref
+        self.slots_dressed = 0                             # kit slots dressed (the story's `mats`)
+        self.slot_script = None
         self.surfaced = 0                                  # the pieces wearing one
         self.occluders = 0                                 # the walls, floors and ceilings hiding what's behind them
         self.zoned = 0                                     # the rooms with a light zone
@@ -367,6 +377,27 @@ class LevelWriter:
             path = self.materials.res(ref)
             self.surfaces[ref] = self.t.extres(path, "Material") if path else None
         return self.surfaces[ref]
+
+    def slots(self, tags):
+        """A kit thing's slots dressed (its `mats`: matslot:<slot>:<ref> tags) as the slot_materials.gd script's
+        `slots`: {slot: the game's <Name>_uv.tres for the set}, as Godot's text writes a Dictionary; None when none."""
+        if self.materials is None:
+            return None
+        got = []
+        for t in tags:
+            if t.startswith("matslot:"):
+                slot, _, ref = t[8:].partition(":")
+                if ref not in self.slot_mats:
+                    path = self.materials.res(ref, uv=True)
+                    self.slot_mats[ref] = self.t.extres(path, "Material") if path else None
+                if self.slot_mats[ref]:
+                    got.append(f"{gstr(slot)}: {self.slot_mats[ref]}")
+        if not got:
+            return None
+        self.slots_dressed += len(got)
+        if self.slot_script is None:
+            self.slot_script = self.t.extres("res://addons/horrorstudio/slot_materials.gd", "Script")
+        return "{\n" + ",\n".join(got) + "\n}"
 
     def art_transform(self, p, ref):
         """Where the mesh sits in its block (the desk's kitIn and dress): a kit thing's origin is its base's centre
@@ -479,7 +510,11 @@ class LevelWriter:
             self.occluders += 1
         if ext:
             xf, k = self.art_transform(p, art)
-            self.t.node("art", None, path, {"transform": xf}, instance=ext)
+            aprops = {"transform": xf}
+            slots = self.slots(tags) if art.startswith("kit/") else None
+            if slots:                                  # its slots dressed: the script on the instanced kit mesh
+                aprops.update({"script": self.slot_script, "slots": slots})
+            self.t.node("art", None, path, aprops, instance=ext)
             self.art_count += 1
         if not hollow and use != "clean":
             sprops = {"shape": shape}
@@ -1317,6 +1352,7 @@ def export(game, out=None, make_zip=False, do_import=True):
     pieces = P.plan(story)
     arts = 0
     surfaced = 0
+    slots_dressed = 0
     occluders = 0
     surface_sets = set()
     kit_index = {}
@@ -1399,6 +1435,7 @@ def export(game, out=None, make_zip=False, do_import=True):
         levels.append(lid)
         arts += lw.art_count
         surfaced += lw.surfaced
+        slots_dressed += lw.slots_dressed
         occluders += lw.occluders
         surface_sets.update(r for r, m in lw.surfaces.items() if m)
         for ref in lw.arts:                               # the kit things' sockets and slots (lifefx.gd), by their ref
@@ -1411,7 +1448,9 @@ def export(game, out=None, make_zip=False, do_import=True):
         shutil.copytree(sfx, out / "game" / "sfx", ignore=shutil.ignore_patterns("*.import", "__pycache__"))
     import datetime  # noqa: PLC0415
     info = {"game": game, "story": str(path), "levels": levels, "pieces": len(pieces), "arts": arts, "acts": acts, "surfaced": surfaced, "occluders": occluders, "surface_sets": sorted(surface_sets),
-            "materials": {r: m for r, m in sorted(mats.files.items()) if m}, "bake": (previs / "preview.json").exists(), "bodies": baked,
+            "materials": {r: m for r, m in sorted(mats.files.items(), key=lambda kv: str(kv[0])) if m and isinstance(r, str)},
+            "slot_materials": {r[0]: m for r, m in sorted(mats.files.items(), key=lambda kv: str(kv[0])) if m and isinstance(r, tuple)},
+            "slots_dressed": slots_dressed, "bake": (previs / "preview.json").exists(), "bodies": baked,
             "bodies_list": sorted(f.name[5:-4] for f in previs.glob("Body_*.glb")) if previs.exists() else [], "engine": L.engine_version(), "godot": "4.7",
             "made": datetime.datetime.now().strftime("%Y-%m-%d %H:%M")}
     kept = []
