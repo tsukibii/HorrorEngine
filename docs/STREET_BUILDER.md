@@ -252,8 +252,11 @@ buffer picks between them (z-fighting); a face just behind another shows through
 keeps every pair apart by construction, and STREET measures it (§6):
 
 - **Layers a GAP apart** (`GAP`, 1 cm): what lies on a surface (a sign's words, a fan's grille, a lamp's glass, a
-  vending machine's lit panel, a bollard's band, a drain's grate, a car's glass, road marks over the lines and each
-  mark over the one before it) stands a GAP off it, never a few millimetres.
+  vending machine's lit panel, a bollard's band, a drain's grate, a car's glass) stands a GAP off it, never a few
+  millimetres. **Road paint** is the one exception (DECISIONS 2026-10-31, late morning: "it should look part of the
+  road"): the lines lie 5 mm over the asphalt, a mark 5 mm over them, and a mark painted over an earlier one 5 mm over
+  that (only where they overlap: `markSpan`); paint and decals cast no shadow anywhere (here, Blender, Godot), and the
+  page draws the paint over the road by a depth offset. 5 mm is over the clash test's 4 mm.
 - **A part's sides, top and bottom 6 mm in** from where they're asked to be (`SIDE_IN`), so a part ending at a
   corner, a floor's line, a fin's end or a slab's top is never in its plane; a part stood on its floor keeps its
   bottom there. A part repeated up the floors is never taller than the way to its own copy on the next floor (a hole

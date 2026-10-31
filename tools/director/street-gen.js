@@ -1277,7 +1277,9 @@ export function roadParts(r, others = [], index = 0) {
     }
   });
   // the lines along it: the edge lines (their distance in from each edge) and the centre line, stopping at crossings
-  const zl = zA + 0.012, lw = 0.15;
+  // road paint lies flat on the road (the user: "it should look part of the road"): the lines 5 mm over the asphalt, the
+  // marks 5 mm over them, as thin as STREET's clash test lets layers be (never a floating sheet with its own shadow)
+  const zl = zA + 0.005, lw = 0.15;
   const line = (q, slot, dash) => {
     for (const [s0, s1] of spans(L, cutsOf(f, q - lw / 2, q + lw / 2, og))) {
       if (!dash) { strip(slot, s0, s1, q - lw / 2, q + lw / 2, zl); continue; }
@@ -1289,9 +1291,19 @@ export function roadParts(r, others = [], index = 0) {
   if (er > 0) line(-W / 2 + er, "paint", null);
   const c = r.centre || "none";
   if (c === "dashed") line(0, "paint", [5, 5]); else if (c === "solid") line(0, "paint", null); else if (c === "yellow") line(0, "paint_y", null);
-  // the marks: at metres from `from`, x across from the middle (+ to the right walking to `to`)
+  // the marks: at metres from `from`, x across from the middle (+ to the right walking to `to`). Each lies 5 mm over the
+  // lines; one painted over an earlier mark lies 5 mm over that one (never two in one plane), and only then
+  const markSpan = m => {
+    const s = num(m.at, 0), x = -num(m.x, 0), mw = num(m.w, W - 0.5);
+    const len = m.kind === "text" ? [...String(m.text || "止まれ")].filter(ch => ch.trim()).length * (num(m.len, 2.0) + num(m.gap, 0.5))
+      : num(m.len, { stop: 0.45, line: 0.15, zebra: 4, bays: 20, diamond: 3, arrow: 3 }[m.kind] ?? 1);
+    const hw = m.kind === "arrow" ? 0.35 : m.kind === "diamond" ? Math.min(mw, 1.6) / 2 + 0.1 : m.kind === "text" ? Math.min(num(m.w, 1.1), W - 0.3) / 2 : m.kind === "bays" ? num(m.w, 5) / 2 : mw / 2;
+    return [s - 0.05, s + len + 0.05, x - hw - 0.05, x + hw + 0.05];
+  };
+  const markSpans = (r.marks || []).map(markSpan), layer = [];
+  markSpans.forEach((a, i) => { layer[i] = 0; for (let j = 0; j < i; j++) { const b = markSpans[j]; if (a[0] < b[1] && b[0] < a[1] && a[2] < b[3] && b[2] < a[3]) layer[i] = Math.max(layer[i], layer[j] + 1); } });
   (r.marks || []).forEach((m, mi) => {
-    const s = num(m.at, 0), x = -num(m.x, 0), mw = num(m.w, W - 0.5), z = zl + 0.006 + 0.005 * Math.min(mi, 8);   // over the lines, and off each other
+    const s = num(m.at, 0), x = -num(m.x, 0), mw = num(m.w, W - 0.5), z = zl + 0.005 * (1 + Math.min(layer[mi], 6));
     const quad = (slot, pts, uv) => polyUp(o, slot, pts.map(([a, b]) => P3(s + a, x + b, z)), uv);
     switch (m.kind) {
       case "stop": strip("paint", s, s + num(m.len, 0.45), x - mw / 2, x + mw / 2, z); break;

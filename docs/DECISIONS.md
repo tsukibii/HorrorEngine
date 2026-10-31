@@ -2,6 +2,18 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-31, late morning (the user, on the research and the road)
+
+- **VoxelGI for the streets, not LightmapGI**: "I don't think I want to use LightmapGI, I will want the other one that
+  starts with V". The street's light in Godot is VoxelGI: the look plugin's **HSStreetGI** covers a street with VoxelGI
+  cells and bakes them with each surface's own colour (Godot's own bake reads the street shader as white), the lights
+  staying live (a lamp that dies takes its bounce with it); no lightmap UVs, the wear atlas stays on UV2
+  (STREET_TEXTURING §3.2, research/photoreal.md §3.1).
+- **Road paint part of the road**: "the print on the road looks like it's floating above the road because of the shadow
+  effect, when it should look part of the road". Road paint and decals cast no shadow anywhere (the street builder's
+  view, Blender, Godot), the lines lie 5 mm over the asphalt and a mark 5 mm over them, stacked only where marks overlap
+  (STREET_BUILDER §5d).
+
 ## 2026-10-31, morning (the user, while the paint tool was built)
 
 - **Wear and tear in every material**: "can you also create pbrs/bump maps for the textures/materials as well as

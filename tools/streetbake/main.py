@@ -125,6 +125,9 @@ def look(a, keep=False):
     say(f"STREET {a.name}: {len(vis)} meshes, {sum(len(o.data.polygons) for o in vis)} triangles")
     wear_img = wear_atlas(vis, book, out, a.name, float(book.get("density", a.density)), a.bake_samples, a.reuse_wear)
     materials(vis, book, wear_img)
+    for o in vis:                                     # road paint and decals lie on what's under them: no shadow of their own
+        if Wr.is_decal(o):
+            o.visible_shadow = False
     S.world(a.time)
     S.lamps(a.time)
     S.render_settings(a.samples)

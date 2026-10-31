@@ -192,7 +192,7 @@ const WHITE = [1, 1, 1];
 // piece each run of its triangles is (picking); root.userData.index each piece's chunk and bounds (three's space). A
 // chunk whose pieces haven't changed since the last build is kept as it was (opts.prev: the last build's chunks).
 export const CHUNK = 48;
-const SHADOWLESS = new Set(["lamp", "lamp_cool", "lit", "lit_cool", "shop", "lobby", "paper", "vend_lit", "headlight", "taillight", "glass", "asphalt", "pavement", "ground", "paint", "paint_y", "wire"]);
+const SHADOWLESS = new Set(["lamp", "lamp_cool", "lit", "lit_cool", "shop", "lobby", "paper", "vend_lit", "headlight", "taillight", "glass", "asphalt", "pavement", "ground", "paint", "paint_y", "wire", "decal"]);   // paint and decals lie on a surface: no shadow of their own
 let SERIAL = 0;
 function boundsOf(p) {
   if (p._bb) return p._bb;
