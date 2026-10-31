@@ -2,6 +2,13 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-31, small hours, later (the user, on the bungalow's roof)
+
+- **Never any clipping**: "in the individual house one it looks like there is clipping on the roof (wall top lines
+  peeking through) etc, refine the system so we never see clipping". Walk-in roofs are boxed, 1 cm over the level's
+  top; roofs over an L or a T are joined into one; the whole generator keeps faces out of each other's planes by rule;
+  STREET fails on any two faces of a piece in one plane over each other (STREET_BUILDER §5d).
+
 ## 2026-10-31, small hours (the user, after the street's textures)
 
 - **The shop door readable**: asked what the thin dark lines in the shop windows were (a glass door's two uprights),

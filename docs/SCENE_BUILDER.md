@@ -252,6 +252,9 @@ generator and styles, and a street takes it as it is.
     eaves, noren, balconies, stairs, panels), each on the front, left, back or right, `x` along the wall from its middle,
     `up` from the ground, its size. No windows or doors here: those are the plan's own, cut through the walls where the
     plan has them.
+- **The roof never clips the level**: it is boxed, on a soffit at the walls' top and 1 cm over the level's own walls
+  and ceilings, so no wall top shows through it from any side; a gable's ends are flush with its walls. Rooms that
+  don't fill a box (an L, a T) get one roof over their outline, joined in valleys (STREET_BUILDER §5c, §5d).
 - **In the view**: *Round the building* (the view bar) orbits it from outside (drag, the wheel), lit like a street by
   day; *outside* shows or hides it in either view. The building is the street's own (`SG.outsideBuilding`, the shell,
   roof and fittings a street builds), so what you see here is what the street gets.

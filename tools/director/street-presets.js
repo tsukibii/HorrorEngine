@@ -43,7 +43,8 @@ export const STYLES = {
         look: { wall: pick(R, WALLS_CITY), wall2: "#38383c" },
         faces: { front: { win: "tall", cols: 1, ground: "shop", groundSlot: "wall2", lit: range(R, 0.3, 0.7, 0.05) }, back: { win: "small" } },
         roof: { kind: "rail", things: [{ kind: "ac", n: 2 }] },
-        parts: [{ kind: "bay", x: r2(side * (w / 2 - bw / 2 - 0.1)), w: bw, h: r2(fh - 0.6), z: 0.3, out: 0.7, floors: [2, floors], win: true, slot: "trim" }, board(R, w, r2(gh - 0.8), 0.6), vsign(R, w, r2(gh + 0.5))] };
+        parts: [{ kind: "bay", x: r2(side * (w / 2 - bw / 2 - 0.1)), w: bw, h: r2(fh - 0.6), z: 0.3, out: 0.7, floors: [2, floors], win: true, slot: "trim" }, board(R, w, r2(gh - 0.8), 0.6),
+          Object.assign(vsign(R, w, r2(gh + 0.5)), { x: r2(-side * (w / 2 - 0.35)) })] };   // the blade on the side the bays leave open
     } },
   office: { label: "Glass office", ref: "the city", note: "bands of glass, a lit lobby, cool light inside",
     make(R) {

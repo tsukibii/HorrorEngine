@@ -39,6 +39,10 @@ export function rng(seed) {
   return () => { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
 }
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+// what lies on a surface (a fan's grille, a car's glass, a sign's face, a road's paint) keeps this far off it: closer,
+// the two fight in the depth buffer at a distance (STREET's clash test holds every piece to it)
+export const GAP = 0.01;
+const SIDE_IN = 0.006;                                               // a part's sides, in from where they're asked to be
 const num = (v, d) => Number.isFinite(+v) && v !== null && v !== "" ? +v : d;
 const seedOf = s => { let h = 2166136261; for (const c of String(s)) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
 
@@ -306,11 +310,11 @@ function holeGen(o, F, h, R) {
       break;
     case "shutwin":                                                 // a window with its storm shutter down
       fquad(o, "shutter", F, u0, u1, z0, z1, back + 0.02); frameRing(back + 0.03, "shutter_box", 0.04);
-      fbox(o, "shutter_box", F, u0 - 0.05, u1 + 0.05, z1, z1 + 0.22, -0.02, 0.18);
+      fbox(o, "shutter_box", F, u0 - 0.05, u1 + 0.05, z1, z1 + 0.22, 0, 0.18, nKey(F, -1));
       break;
     case "shutter":
       fquad(o, "shutter", F, u0, u1, z0, z1, back);
-      fbox(o, "shutter_box", F, u0 - 0.04, u1 + 0.04, z1, z1 + 0.32, 0, 0.24);
+      fbox(o, "shutter_box", F, u0 - 0.04, u1 + 0.04, z1, z1 + 0.32, 0, 0.24, nKey(F, -1));
       fbox(o, "shutter_box", F, u0, u0 + 0.06, z0, z1, back, 0.02); fbox(o, "shutter_box", F, u1 - 0.06, u1, z0, z1, back, 0.02);
       break;
     case "door":
@@ -370,8 +374,9 @@ function partHoles(b, F, parts, rows, R) {
   const H = [];
   for (const p of parts) {
     const K = PART_KINDS[p.kind]; if (!K || !K.hole) continue;
-    for (const zb of partZs(p, rows)) {
-      const w = num(p.w, K.w), hh = num(p.h, K.h), c = F.W / 2 + num(p.x, 0);
+    const zs = partZs(p, rows);
+    for (const [zi, zb] of zs.entries()) {
+      const w = num(p.w, K.w), hh = Math.min(num(p.h, K.h), upTo(zs, zi) - 0.1), c = F.W / 2 + num(p.x, 0);   // a hole a floor, wall between
       H.push({ u0: c - w / 2, u1: c + w / 2, z0: zb + num(p.z, K.z), z1: zb + num(p.z, K.z) + hh, kind: K.hole, dp: num(p.dp, K.dp),
                lit: K.hole === "shop" ? (p.lit === false ? "glass" : "shop") : K.hole === "koshi" ? (p.lit === false ? "dark" : "paper") : fillOf(p, R),
                mull: K.hole === "shop" ? mulls(c - w / 2, c + w / 2, num(p.mull, 1.9)) : K.hole === "win" && w > 1.05 ? [c] : [], door: num(p.door, 0.5), glow: p.glow, part: p });
@@ -379,29 +384,35 @@ function partHoles(b, F, parts, rows, R) {
   }
   return H;
 }
-// a part repeated up the floors: `floors: [from, to]` puts one on each (its z from that floor's base)
+// a part repeated up the floors: `floors: [from, to]` puts one on each (its z from that floor's base); `upTo` how high
+// one there can be before it runs into its own copy on the next floor
+const upTo = (zs, i) => i + 1 < zs.length ? zs[i + 1] - zs[i] : Infinity;
 function partZs(p, rows) {
   if (!Array.isArray(p.floors)) return [0];
   const [a, bb] = p.floors.map(v => Math.round(num(v, 1)));
   return rows.filter(r => r.k >= a && r.k <= (bb || a)).map(r => r.z0);
 }
-function partGen(o, b, F0, p, rows, R, signs) {
+function partGen(o, b, F0, p, rows, R, signs, near = []) {
   const K = PART_KINDS[p.kind]; if (!K || K.hole) return;
   const F = p.in ? Object.assign({}, F0, { o: [F0.o[0] - F0.N[0] * num(p.in, 0), F0.o[1] - F0.N[1] * num(p.in, 0), F0.o[2]] }) : F0;   // set back into a recess
-  for (const zb of partZs(p, rows)) {
-    const W0 = num(p.w, K.w), w = p.kind === "eave" && !W0 ? F.W + 0.4 : W0, h = num(p.h, K.h), out = num(p.out, K.out), z = zb + num(p.z, K.z);
-    const c = F.W / 2 + num(p.x, 0), u0 = c - w / 2, u1 = c + w / 2, slot = p.slot;
+  const zs = partZs(p, rows);
+  for (const [zi, zb] of zs.entries()) {
+    // its top, and its bottom when it's off its floor, a few mm in too: never in the plane of a floor's line, a fin's end, a
+    // slab's top; never into its own copy on the next floor
+    const W0 = num(p.w, K.w), w = p.kind === "eave" && !W0 ? F.W + 0.4 : W0, out = num(p.out, K.out), lift = num(p.z, K.z) > 0.02 ? SIDE_IN : 0;
+    const z = zb + num(p.z, K.z) + lift, h = Math.min(num(p.h, K.h), upTo(zs, zi)) - SIDE_IN - lift;
+    const c = F.W / 2 + num(p.x, 0), u0 = c - w / 2 + SIDE_IN, u1 = c + w / 2 - SIDE_IN, slot = p.slot;
     switch (p.kind) {
       case "bay": {
         const sl = slot || "wall";
         fbox(o, sl, F, u0, u1, z, z + h, 0.0, out, nKey(F, -1) + (p.win ? nKey(F, 1) : ""));
         if (p.win) {                                                 // windows on its front, one a floor (or `cols`)
-          const front = { name: F.name, o: fp(F, u0, 0, out + 0.002), U: F.U, N: F.N, W: w };
-          const s = Object.assign({}, FACE_DEFAULT, { win: typeof p.win === "string" ? p.win : "punched", cols: num(p.cols, 1), ww: num(p.ww, Math.min(1.4, w - 0.5)), wh: num(p.wh, 1.3), sill: num(p.sill, 0.8), lit: num(p.litp, 0.5) });
-          const H = []; for (const r of rows) if (r.z0 >= z - 0.01 && r.z0 + r.h <= z + h + 0.01) H.push(...floorHoles(Object.assign({}, s, { ground: "same" }), w, r, R));
-          if (!H.length) H.push(...floorHoles(Object.assign({}, s, { ground: "same" }), w, { k: 2, z0: z, h }, R));
-          // the front again, with the windows cut in (the box's own front is covered by this one)
-          for (const [a, bb, p0, q0] of wallRects(w, z, z + h, H)) fquad(o, sl, front, a, bb, p0, q0, 0.001);
+          const bw = u1 - u0, front = { name: F.name, o: fp(F, u0, 0, out), U: F.U, N: F.N, W: bw };   // the box's own front, left out
+          const s = Object.assign({}, FACE_DEFAULT, { win: typeof p.win === "string" ? p.win : "punched", cols: num(p.cols, 1), ww: num(p.ww, Math.min(1.4, bw - 0.5)), wh: num(p.wh, 1.3), sill: num(p.sill, 0.8), lit: num(p.litp, 0.5) });
+          const H = []; for (const r of rows) if (r.z0 >= z - 0.01 && r.z0 + r.h <= z + h + 0.01) H.push(...floorHoles(Object.assign({}, s, { ground: "same" }), bw, r, R));
+          if (!H.length) H.push(...floorHoles(Object.assign({}, s, { ground: "same" }), bw, { k: 2, z0: z, h }, R));
+          // the front, with the windows cut in, in the plane the box's sides end in
+          for (const [a, bb, p0, q0] of wallRects(bw, z, z + h, H)) fquad(o, sl, front, a, bb, p0, q0, 0);
           for (const hh of H) holeGen(o, front, hh, R);
         }
         if (p.rail) railGen(o, F, u0, u1, z + h, z + h + 1.0, out - 0.05);
@@ -409,34 +420,37 @@ function partGen(o, b, F0, p, rows, R, signs) {
       }
       case "balcony": {
         const t = 0.16, kind = p.rail || "solid", sl = slot || "trim";
-        fbox(o, sl, F, u0, u1, z - t, z, 0, out);
+        fbox(o, sl, F, u0, u1, z - t, z, 0, out, nKey(F, -1));
         if (kind === "solid") {
           fbox(o, p.slot2 || sl, F, u0, u1, z, z + h, out - 0.1, out);
           fbox(o, p.slot2 || sl, F, u0, u0 + 0.1, z, z + h, 0, out - 0.1); fbox(o, p.slot2 || sl, F, u1 - 0.1, u1, z, z + h, 0, out - 0.1);
         } else {
           railGen(o, F, u0, u1, z, z + h, out - 0.04, kind === "bars" ? "bars" : null);
           const sideF = (u) => ({ name: F.name, o: fp(F, u, 0, 0), U: F.N, N: [-F.U[0], -F.U[1], 0], W: out });
-          railGen(o, sideF(u0), 0.04, out - 0.04, z, z + h, 0, kind === "bars" ? "bars" : null, true);
-          railGen(o, { ...sideF(u1), U: F.N, N: [F.U[0], F.U[1], 0] }, 0.04, out - 0.04, z, z + h, 0, kind === "bars" ? "bars" : null, true);
+          railGen(o, sideF(u0), 0.04, out - 0.04, z, z + h, 0, kind === "bars" ? "bars" : null, [false, true]);   // to the front's corner posts
+          railGen(o, { ...sideF(u1), U: F.N, N: [F.U[0], F.U[1], 0] }, 0.04, out - 0.04, z, z + h, 0, kind === "bars" ? "bars" : null, [false, true]);
         }
         break;
       }
       case "sign": {
         const key = `${b.id || "b"}.${signs.length}`;
-        fbox(o, p.back || "black", F, u0, u1, z, z + h, 0, out);
+        fbox(o, p.back || "black", F, u0, u1, z, z + h, 0, out, nKey(F, -1));
         signs.push({ key, text: p.text || "", fg: p.fg || "#ffffff", bg: p.bg || "#202024", lit: p.lit !== false, dir: p.dir || (h > w * 1.6 ? "v" : "h"), w, h });
-        fquad(o, "sign:" + key, F, u0 + 0.01, u1 - 0.01, z + 0.01, z + h - 0.01, out + 0.002, [[0, 0], [1, 0], [1, 1], [0, 1]]);
+        fquad(o, "sign:" + key, F, u0 + 0.01, u1 - 0.01, z + 0.01, z + h - 0.01, out + GAP, [[0, 0], [1, 0], [1, 1], [0, 1]]);
         break;
       }
       case "vsign": {                                                // a blade: its two faces carry the words, top to bottom
-        const key = `${b.id || "b"}.${signs.length}`, th = 0.18, n0 = 0.18, n1 = 0.18 + out;
+        // over a box on the wall (a bay), it hangs off the box's front instead of through it
+        const bay = near.filter(q => q !== p && q.kind === "bay" && Math.abs(F.W / 2 + num(q.x, 0) - c) < num(q.w, PART_KINDS.bay.w) / 2 + 0.1
+          && partZs(q, rows).some(qz => qz + num(q.z, PART_KINDS.bay.z) < z + h && qz + num(q.z, PART_KINDS.bay.z) + num(q.h, PART_KINDS.bay.h) > z)).reduce((m, q) => Math.max(m, num(q.out, PART_KINDS.bay.out)), 0);
+        const key = `${b.id || "b"}.${signs.length}`, th = 0.18, n0 = bay + 0.18, n1 = n0 + out;
         signs.push({ key, text: p.text || "", fg: p.fg || "#ffffff", bg: p.bg || "#202024", lit: p.lit !== false, dir: p.dir || "v", w: out, h });
         fbox(o, p.back || "black", F, c - th / 2, c + th / 2, z, z + h, n0, n1);
-        const side = (s) => { const u = c + s * (th / 2 + 0.002); const P = [fp(F, u, z + 0.03, n0 + 0.03), fp(F, u, z + 0.03, n1 - 0.03), fp(F, u, z + h - 0.03, n1 - 0.03), fp(F, u, z + h - 0.03, n0 + 0.03)];
+        const side = (s) => { const u = c + s * (th / 2 + GAP); const P = [fp(F, u, z + 0.03, n0 + 0.03), fp(F, u, z + 0.03, n1 - 0.03), fp(F, u, z + h - 0.03, n1 - 0.03), fp(F, u, z + h - 0.03, n0 + 0.03)];
           const uv = s > 0 ? [[1, 0], [0, 0], [0, 1], [1, 1]] : [[0, 0], [1, 0], [1, 1], [0, 1]];   // reads right from either side
           poly(o, "sign:" + key, P, [F.U[0] * s, F.U[1] * s, 0], uv); };
         side(1); side(-1);
-        fbox(o, "steel", F, c - 0.03, c + 0.03, z + h - 0.25, z + h - 0.15, 0, n0); fbox(o, "steel", F, c - 0.03, c + 0.03, z + 0.15, z + 0.25, 0, n0);
+        fbox(o, "steel", F, c - 0.03, c + 0.03, z + h - 0.25, z + h - 0.15, bay, n0, nKey(F, -1)); fbox(o, "steel", F, c - 0.03, c + 0.03, z + 0.15, z + 0.25, bay, n0, nKey(F, -1));
         break;
       }
       case "awning": {
@@ -447,7 +461,7 @@ function partGen(o, b, F0, p, rows, R, signs) {
         two(o, sl, [a0, b0, add(b0, [0, 0, -0.22])], [-F.U[0], -F.U[1], 0]); two(o, sl, [a1, b1, add(b1, [0, 0, -0.22])], [F.U[0], F.U[1], 0]);
         break;
       }
-      case "canopy": fbox(o, slot || "concrete", F, u0, u1, z, z + h, 0, out); break;
+      case "canopy": fbox(o, slot || "concrete", F, u0, u1, z, z + h, 0, out, nKey(F, -1)); break;
       case "eave": {                                                 // a pent roof: tiles sloping out and down, a fascia board
         const t = 0.07, drop = h, sl = slot || "tiles";
         const P = (u, n, dz) => fp(F, u, z - drop * (n / out) + dz, n);
@@ -456,25 +470,25 @@ function partGen(o, b, F0, p, rows, R, signs) {
         poly(o, sl, top, up[2] > 0 ? up : mul(up, -1)); poly(o, "wood_dark", bot, up[2] > 0 ? mul(up, -1) : up);
         poly(o, "wood_dark", [bot[3], bot[2], top[2], top[3]], [F.N[0], F.N[1], 0]);
         poly(o, "wood_dark", [bot[0], bot[3], top[3], top[0]], [-F.U[0], -F.U[1], 0]); poly(o, "wood_dark", [bot[1], bot[2], top[2], top[1]], [F.U[0], F.U[1], 0]);
-        fbox(o, "wood_dark", F, u0, u1, z - drop - 0.12, z - drop + 0.02, out - 0.06, out + 0.02);
+        fbox(o, "wood_dark", F, u0 - GAP, u1 + GAP, z - drop - 0.12, z - drop + 0.02, out - 0.06, out + 0.02);
         break;
       }
       case "ac": {
-        fbox(o, slot || "ac", F, u0, u1, z, z + h, 0.02, out);
+        fbox(o, slot || "ac", F, u0, u1, z, z + h, 0.02, out, nKey(F, -1));
         const r = Math.min(h, w) * 0.36, cu = u0 + w * 0.38, cz = z + h / 2;
-        poly(o, "fan", [fp(F, cu - r, cz - r, out + 0.003), fp(F, cu + r, cz - r, out + 0.003), fp(F, cu + r, cz + r, out + 0.003), fp(F, cu - r, cz + r, out + 0.003)], [F.N[0], F.N[1], 0], [[0, 0], [1, 0], [1, 1], [0, 1]]);
-        if (z > 0.5) fbox(o, "steel", F, u0 + 0.05, u1 - 0.05, z - 0.04, z, 0, out);   // its bracket
+        poly(o, "fan", [fp(F, cu - r, cz - r, out + GAP), fp(F, cu + r, cz - r, out + GAP), fp(F, cu + r, cz + r, out + GAP), fp(F, cu - r, cz + r, out + GAP)], [F.N[0], F.N[1], 0], [[0, 0], [1, 0], [1, 1], [0, 1]]);
+        if (num(p.z, K.z) > 0.5) fbox(o, "steel", F, u0 + 0.05, u1 - 0.05, z - 0.04, z, 0, out, nKey(F, -1));   // its bracket, on the wall
         break;
       }
       case "pipe": cyl(o, slot || "pipe", fp(F, c, z, out), fp(F, c, z + h, out), Math.max(0.03, w / 2), 6); break;
       case "lamp": {
-        fbox(o, slot || "black", F, c - w / 2, c + w / 2, z + h * 0.25, z + h, 0, out);
-        fquad(o, "lamp", F, c - w / 2 + 0.03, c + w / 2 - 0.03, z + h * 0.3, z + h * 0.9, out + 0.002);
+        fbox(o, slot || "black", F, c - w / 2, c + w / 2, z + h * 0.25, z + h, 0, out, nKey(F, -1));
+        fquad(o, "lamp", F, c - w / 2 + 0.03, c + w / 2 - 0.03, z + h * 0.3, z + h * 0.9, out + GAP);
         o.lights.push({ at: fp(F, c, z + h * 0.6, out + 0.3), color: p.color || "#ffd9a0", power: num(p.power, 4), dist: num(p.dist, 7), z: z + h * 0.6 });
         break;
       }
       case "lantern": {                                              // bracket out of the wall, a box lantern under it
-        fbox(o, "wood_dark", F, c - 0.03, c + 0.03, z + h + 0.12, z + h + 0.18, 0, out + 0.06);
+        fbox(o, "wood_dark", F, c - 0.03, c + 0.03, z + h + 0.12, z + h + 0.18, 0, out + 0.06, nKey(F, -1));
         const a = fp(F, c, z, out), r = w / 2;
         box(o, "paper", a[0] - r, a[1] - r, z, a[0] + r, a[1] + r, z + h, "");
         box(o, "wood_dark", a[0] - r - 0.03, a[1] - r - 0.03, z + h, a[0] + r + 0.03, a[1] + r + 0.03, z + h + 0.07);
@@ -484,18 +498,18 @@ function partGen(o, b, F0, p, rows, R, signs) {
         break;
       }
       case "stairs": {                                               // up the wall from u0 (ground) to u1 (z + h), `dir` -1 the other way
-        const dir = num(p.dir, 1) < 0 ? -1 : 1, n = Math.max(2, Math.round(h / 0.19)), run = w / n, rise = h / n, t = 0.22, sl = slot || "concrete";
-        for (let i = 0; i < n; i++) {
+        const dir = num(p.dir, 1) < 0 ? -1 : 1, n = Math.max(2, Math.round(h / 0.19)), run = (u1 - u0) / n, rise = h / n, t = 0.22, sl = slot || "concrete";
+        for (let i = 0; i < n; i++) {                                // from u0 to u1 exactly: the top step meets the landing, never under it
           const a = dir > 0 ? u0 + i * run : u1 - (i + 1) * run, bb = a + run, zt = z + (i + 1) * rise;
-          fbox(o, sl, F, a, bb, zt - t - (i === 0 ? 0 : rise), zt, 0.0, out);
+          fbox(o, sl, F, a, bb, zt - t - (i === 0 ? 0 : rise), zt, 0.0, out - 0.12, nKey(F, -1));
         }
         const ua = dir > 0 ? u0 : u1, ub = dir > 0 ? u1 : u0;          // the parapet on its open side: a sloping slab
         fslab(o, sl, F, [[ua, z - 0.25], [ub, z + h - 0.25], [ub, z + h + 1.0], [ua, z + 1.0]], out - 0.12, out);
-        if (p.landing !== false) fbox(o, sl, F, dir > 0 ? u1 : u0 - 1.2, dir > 0 ? u1 + 1.2 : u0, z + h - t, z + h, 0, out);
+        if (p.landing !== false) fbox(o, sl, F, dir > 0 ? u1 : u0 - 1.2, dir > 0 ? u1 + 1.2 : u0, z + h - t, z + h, 0, out, nKey(F, -1));
         break;
       }
-      case "block": fbox(o, slot || "metal", F, u0, u1, z, z + h, 0, out); break;
-      case "panel": fbox(o, slot || "metal", F, u0, u1, z, z + h, 0, out); break;
+      case "block": fbox(o, slot || "metal", F, u0, u1, z, z + h, 0, out, nKey(F, -1)); break;
+      case "panel": fbox(o, slot || "metal", F, u0, u1, z, z + h, 0, out, nKey(F, -1)); break;
       case "rail": railGen(o, F, u0, u1, z, z + h, out); break;
       case "noren": {
         const n = 3, gw = w / n;
@@ -520,72 +534,226 @@ function fslab(o, slot, F, Q, n0, n1) {
   }
 }
 // a railing along a face from u0 to u1 at n: posts, a top rail, a mid rail; bars (cut out) between if asked
-function railGen(o, F, u0, u1, z0, z1, n, fill = null, side = false) {
-  const steps = Math.max(1, Math.round((u1 - u0) / 1.5));
-  for (let i = 0; i <= steps; i++) { const u = u0 + (u1 - u0) * i / steps; fbox(o, "rail", F, u - 0.025, u + 0.025, z0, z1, n - 0.025, n + 0.025); }
-  fbox(o, "rail", F, u0, u1, z1 - 0.05, z1, n - 0.03, n + 0.03);
-  fbox(o, "rail", F, u0, u1, z0 + (z1 - z0) * 0.45, z0 + (z1 - z0) * 0.45 + 0.03, n - 0.015, n + 0.015);
+// skip: leave out its first or last post, another rail's at the same place (a corner's); a rail stops at a post's side
+function railGen(o, F, u0, u1, z0, z1, n, fill = null, skip = [false, false]) {
+  const steps = Math.max(1, Math.round((u1 - u0) / 1.5)), us = Array.from({ length: steps + 1 }, (_, i) => u0 + (u1 - u0) * i / steps);
+  us.forEach((u, i) => { if ((i === 0 && skip[0]) || (i === steps && skip[1])) return; fbox(o, "rail", F, u - 0.025, u + 0.025, z0, z1, n - 0.025, n + 0.025); });
+  const zm = z0 + (z1 - z0) * 0.45;
+  for (let i = 0; i < steps; i++) {                                  // the rails between the posts, never into one
+    const a = us[i] + 0.025, b = us[i + 1] - 0.025;
+    if (b - a < 0.005) continue;
+    fbox(o, "rail", F, a, b, z1 - 0.05, z1, n - 0.03, n + 0.03);
+    fbox(o, "rail", F, a, b, zm, zm + 0.03, n - 0.015, n + 0.015);
+  }
   if (fill) { const P = [fp(F, u0, z0, n), fp(F, u1, z0, n), fp(F, u1, z1 - 0.05, n), fp(F, u0, z1 - 0.05, n)]; two(o, fill, P, [F.N[0], F.N[1], 0]); }
-  void side;
+}
+// a railing all round a box's top, `inset` in from its edges: one post at each corner, the rails meeting it
+function railRound(o, x0, y0, x1, y1, z0, z1, inset = 0.06) {
+  for (const F of Object.values(faceFrames(x0, y0, x1, y1, 0))) railGen(o, F, inset, F.W - inset, z0, z1, -inset, null, [false, true]);
 }
 
 // ---- roofs -------------------------------------------------------------------------------------------------------------
 function roofGen(o, b, T, R) {
   const r = Object.assign({ kind: "flat", parapet: 0.9, pitch: 24, over: 0.45, ridge: "x" }, b.roof || {});
-  const { x0, y0, x1, y1 } = T, z = T.z1;
+  const { x0, y0, x1, y1 } = T;
+  let z = T.z1;
   const things = () => (r.things || []).forEach((t, i) => roofThing(o, t, T, R, `${b.id || "b"}.r${i}`));
   if (r.kind === "flat" || r.kind === "rail" || r.kind === "none") {
-    box(o, "roof_flat", x0, y0, z - 0.001, x1, y1, z + 0.02, "-z");
-    if (r.kind === "flat" && r.parapet > 0.05) {
-      const t = num(r.wall, 0.16), p = num(r.parapet, 0.9), sl = r.slot || "wall";
+    const parapet = r.kind === "flat" && r.parapet > 0.05;
+    box(o, "roof_flat", x0, y0, z, x1, y1, z + 0.02, parapet ? "-z-x+x-y+y" : "-z");
+    if (parapet) {
+      const t = num(r.wall, 0.16), p = num(r.parapet, 0.9), sl = r.slot || "wall", c = 0.03, zc = z + p;
       box(o, sl, x0, y0, z, x1, y0 + t, z + p, "-z"); box(o, sl, x0, y1 - t, z, x1, y1, z + p, "-z");
       box(o, sl, x0, y0 + t, z, x0 + t, y1 - t, z + p, "-z"); box(o, sl, x1 - t, y0 + t, z, x1, y1 - t, z + p, "-z");
-      for (const [a, b2, c, d] of [[x0, y0, x1, y0 + t], [x0, y1 - t, x1, y1], [x0, y0 + t, x0 + t, y1 - t], [x1 - t, y0 + t, x1, y1 - t]])
-        box(o, "trim", a - 0.03, b2 - 0.03, z + p, c + 0.03, d + 0.03, z + p + 0.06, "-z");
+      box(o, "trim", x0 - c, y0 - c, zc, x1 + c, y0 + t + c, zc + 0.06); box(o, "trim", x0 - c, y1 - t - c, zc, x1 + c, y1 + c, zc + 0.06);
+      box(o, "trim", x0 - c, y0 + t + c, zc, x0 + t + c, y1 - t - c, zc + 0.06); box(o, "trim", x1 - t - c, y0 + t + c, zc, x1 + c, y1 - t - c, zc + 0.06);
     }
-    if (r.kind === "rail") for (const F of Object.values(faceFrames(x0, y0, x1, y1, 0))) railGen(o, F, 0.05, F.W - 0.05, z, z + 1.1, -0.06);
+    if (r.kind === "rail") railRound(o, x0, y0, x1, y1, z, z + 1.1);
     things();
     return;
   }
-  // a pitched roof: its slabs (with the overhang), the gable walls under them, a ridge
+  // a pitched roof: its slabs (with the overhang), the gable walls under them, a ridge. Boxed (a walk-in building's): a
+  // closed solid on a soffit at the walls' top, a gable's or a shed's ends flush with its walls; its volume returned
+  // (half-spaces: inside where n·p <= d) so roofs that meet can be joined into one (joinRoofs)
   const ov = num(r.over, 0.45), tn = Math.tan(clamp(num(r.pitch, 24), 3, 60) * Math.PI / 180), t = 0.14, sl = r.slot || "tiles";
-  const alongX = r.ridge !== "y";
+  const alongX = r.ridge !== "y", zw = z, boxed = !!r.boxed;          // zw: the walls' top
+  if (boxed) z = z + ov * tn;                                        // the eaves at the walls' top, not under it
   // in the roof's frame: s along the ridge, q across it (half span Q), lift = q's distance from the eave
-  const S0 = (alongX ? x0 : y0) - ov, S1 = (alongX ? x1 : y1) + ov, Qc = alongX ? (y0 + y1) / 2 : (x0 + x1) / 2, Q = (alongX ? y1 - y0 : x1 - x0) / 2;
+  const ovS = boxed && r.kind !== "hip" ? 0 : ov;
+  const S0 = (alongX ? x0 : y0) - ovS, S1 = (alongX ? x1 : y1) + ovS, Qc = alongX ? (y0 + y1) / 2 : (x0 + x1) / 2, Q = (alongX ? y1 - y0 : x1 - x0) / 2;
   const P = (s, q, zz) => alongX ? [s, Qc + q, zz] : [Qc + q, s, zz];
   const ze = z - ov * tn;                                            // the eave's height (out at the overhang)
+  const vol = [hs([0, 0, -1], [0, 0, zw])], vols = [vol];             // over its soffit
   if (r.kind === "gable" || r.kind === "shed") {
     const sides = r.kind === "gable" ? [-1, 1] : [1];
-    const qTop = r.kind === "gable" ? 0 : -Q - ov, rise = r.kind === "gable" ? (Q + ov) * tn : (2 * Q + 2 * ov) * tn;
+    // a boxed shed's high side: its wall carried up to the slab, no overhang there (a lean-to's)
+    const qTop = r.kind === "gable" ? 0 : boxed ? -Q : -Q - ov, rise = r.kind === "gable" ? (Q + ov) * tn : (Q + ov - qTop) * tn, qLo = r.kind === "shed" ? qTop : -Q - ov;
     for (const sd of sides) {
       const qa = sd * (Q + ov), zt = ze + rise;
       const top = [P(S0, qa, ze + t), P(S1, qa, ze + t), P(S1, qTop, zt + t), P(S0, qTop, zt + t)];
       const bot = [P(S0, qa, ze), P(S1, qa, ze), P(S1, qTop, zt), P(S0, qTop, zt)];
       const up = norm(cross(sub(top[1], top[0]), sub(top[3], top[0]))), upn = up[2] > 0 ? up : mul(up, -1);
-      poly(o, sl, top, upn); poly(o, "wood_dark", bot, mul(upn, -1));
+      poly(o, sl, top, upn); if (!boxed) poly(o, "wood_dark", bot, mul(upn, -1));
+      vol.push(hs(upn, top[0]));                                     // under its top
       const outN = alongX ? [0, sd, 0] : [sd, 0, 0];
       poly(o, "wood_dark", [bot[0], bot[1], top[1], top[0]], outN);
       poly(o, "wood_dark", [bot[0], bot[3], top[3], top[0]], alongX ? [-1, 0, 0] : [0, -1, 0]); poly(o, "wood_dark", [bot[1], bot[2], top[2], top[1]], alongX ? [1, 0, 0] : [0, 1, 0]);
     }
-    // the gable ends: the wall's triangle between the wall's top and the slope (a shed's: a wedge, high at -q)
-    const wsl = b.roofWall || "wall";
+    vol.push(hs(alongX ? [-1, 0, 0] : [0, -1, 0], P(S0, 0, 0)), hs(alongX ? [1, 0, 0] : [0, 1, 0], P(S1, 0, 0)),
+      hs(alongX ? [0, -1, 0] : [-1, 0, 0], P(S0, qLo, 0)), hs(alongX ? [0, 1, 0] : [1, 0, 0], P(S0, Q + ov, 0)));
+    // the gable ends: the wall's triangle between the wall's top and the slope (a shed's: a wedge, high at -q); boxed,
+    // from the walls' top up, and a soffit under all of it
+    const wsl = b.roofWall || "wall", zu = ze + rise;                 // zu: the slab's underside at its top
     for (const s of [alongX ? x0 : y0, alongX ? x1 : y1]) {
       const outN = alongX ? [s === x0 ? -1 : 1, 0, 0] : [0, s === y0 ? -1 : 1, 0];
-      if (r.kind === "gable") poly(o, wsl, [P(s, -Q, z), P(s, Q, z), P(s, 0, z + Q * tn)], outN);
+      if (boxed) poly(o, wsl, r.kind === "gable" ? [P(s, -Q - ov, zw), P(s, Q + ov, zw), P(s, 0, zu)] : [P(s, Q + ov, zw), P(s, qTop, zw), P(s, qTop, zu)], outN);   // out to the eaves, up to the slab
+      else if (r.kind === "gable") poly(o, wsl, [P(s, -Q, z), P(s, Q, z), P(s, 0, z + Q * tn)], outN);
       else poly(o, wsl, [P(s, -Q, z), P(s, Q, z), P(s, -Q, z + 2 * Q * tn)], outN);
     }
-    if (r.kind === "shed") { const hiN = alongX ? [0, -1, 0] : [-1, 0, 0]; poly(o, wsl, [P(S0 + ov, -Q, z), P(S1 - ov, -Q, z), P(S1 - ov, -Q, z + 2 * Q * tn), P(S0 + ov, -Q, z + 2 * Q * tn)], hiN); }
-    if (r.kind === "gable") bar(o, sl, P(S0, 0, ze + (Q + ov) * tn + t + 0.03), P(S1, 0, ze + (Q + ov) * tn + t + 0.03), 0.16, 0.16);
+    if (r.kind === "shed") {
+      const hiN = alongX ? [0, -1, 0] : [-1, 0, 0];
+      if (boxed) {                                                   // its high wall up to the slab, the slab's edge over it
+        poly(o, wsl, [P(S0, qTop, zw), P(S1, qTop, zw), P(S1, qTop, zu), P(S0, qTop, zu)], hiN);
+        poly(o, "wood_dark", [P(S0, qTop, zu), P(S1, qTop, zu), P(S1, qTop, zu + t), P(S0, qTop, zu + t)], hiN);
+      }
+      else poly(o, wsl, [P(S0 + ov, -Q, zw), P(S1 - ov, -Q, zw), P(S1 - ov, -Q, z + 2 * Q * tn), P(S0 + ov, -Q, z + 2 * Q * tn)], hiN);
+    }
+    if (boxed) poly(o, "wood_dark", [P(S0, qLo, zw), P(S1, qLo, zw), P(S1, Q + ov, zw), P(S0, Q + ov, zw)], [0, 0, -1]);
+    if (r.kind === "gable") {
+      const zr = ze + (Q + ov) * tn + t + 0.03;
+      bar(o, sl, P(S0 - 0.03, 0, zr), P(S1 + 0.03, 0, zr), 0.16, 0.16);
+      vols.push([hs([0, 0, 1], [0, 0, zr + 0.08]), hs([0, 0, -1], [0, 0, zr - 0.08]), hs(alongX ? [-1, 0, 0] : [0, -1, 0], P(S0 - 0.03, 0, 0)), hs(alongX ? [1, 0, 0] : [0, 1, 0], P(S1 + 0.03, 0, 0)),
+        hs(alongX ? [0, -1, 0] : [-1, 0, 0], P(S0, -0.08, 0)), hs(alongX ? [0, 1, 0] : [1, 0, 0], P(S0, 0.08, 0))]);   // its ridge's, two ridges crossing
+    }
   } else if (r.kind === "hip") {                                     // four slopes to a short ridge, closed underneath
     const L = (S1 - S0) / 2, run = Q + ov, rl = Math.max(0, L - run), Sc = (S0 + S1) / 2, zt = ze + run * tn;
     const E = [P(S0, -run, ze), P(S1, -run, ze), P(S1, run, ze), P(S0, run, ze)], Ra = P(Sc - rl, 0, zt), Rb = P(Sc + rl, 0, zt);
-    poly(o, sl, [E[0], E[1], Rb, Ra], null); poly(o, sl, [E[2], E[3], Ra, Rb], null);
-    poly(o, sl, [E[1], E[2], Rb], null); poly(o, sl, [E[3], E[0], Ra], null);
+    for (const F of [[E[0], E[1], Rb, Ra], [E[2], E[3], Ra, Rb], [E[1], E[2], Rb], [E[3], E[0], Ra]]) {
+      poly(o, sl, F, null);
+      const n = norm(cross(sub(F[1], F[0]), sub(F[2], F[0]))); vol.push(hs(n[2] > 0 ? n : mul(n, -1), F[0]));   // under each slope
+    }
     poly(o, "wood_dark", E.slice(), [0, 0, -1]);
     // make sure the slopes face up and out
     fixUp(o, sl);
   }
   things();
+  return boxed ? vols : null;
+}
+// a half-space through p, n out of it: [nx, ny, nz, d], inside where n·p <= d
+const hs = (n, p) => { const u = norm(n); return [u[0], u[1], u[2], dot(u, p)]; };
+// ---- joining roofs that overlap: each cut away where it's inside another's volume. On a face of both (two slopes in
+// one plane, two soffits) the first keeps it and the other's is cut; two faces back to back are both cut
+const HS_EPS = 1e-6;
+const lerpV = (a, b, t) => ({ p: a.p.map((x, k) => x + (b.p[k] - x) * t), n: norm(a.n.map((x, k) => x + (b.n[k] - x) * t)), uv: a.uv.map((x, k) => x + (b.uv[k] - x) * t) });
+function clipPoly(P, h, keepOut) {                                   // a convex polygon's part on one side of h's plane (the plane counts on both)
+  const res = [], side = v => { const s = h[0] * v.p[0] + h[1] * v.p[1] + h[2] * v.p[2] - h[3]; return Math.abs(s) < HS_EPS ? 0 : keepOut ? s : -s; };
+  for (let i = 0; i < P.length; i++) {
+    const a = P[i], b = P[(i + 1) % P.length], sa = side(a), sb = side(b);
+    if (sa >= 0) res.push(a);
+    if ((sa > 0 && sb < 0) || (sa < 0 && sb > 0)) res.push(lerpV(a, b, sa / (sa - sb)));
+  }
+  return res;
+}
+function emitPoly(o, slot, P) {
+  let ar = [0, 0, 0]; for (let i = 1; i + 1 < P.length; i++) ar = add(ar, cross(sub(P[i].p, P[0].p), sub(P[i + 1].p, P[0].p)));
+  if (Math.hypot(...ar) < 1e-8) return;                              // a sliver along a plane: nothing
+  const g = buf(o, slot), base = g.pos.length / 3;
+  for (const v of P) { g.pos.push(...v.p); g.nrm.push(...v.n); g.uv.push(...v.uv); }
+  for (let i = 1; i + 1 < P.length; i++) g.idx.push(base, base + i, base + i + 1);
+}
+function clipOutside(src, vol, first) {
+  const o = out();
+  for (const [slot, g] of Object.entries(src.G)) for (let i = 0; i < g.idx.length; i += 3) {
+    let P = [0, 1, 2].map(k => { const j = g.idx[i + k]; return { p: [g.pos[j * 3], g.pos[j * 3 + 1], g.pos[j * 3 + 2]], n: [g.nrm[j * 3], g.nrm[j * 3 + 1], g.nrm[j * 3 + 2]], uv: [g.uv[j * 2], g.uv[j * 2 + 1]] }; });
+    const fn = norm(cross(sub(P[1].p, P[0].p), sub(P[2].p, P[0].p)));
+    for (const h of vol) {                                           // outside = outside the first half-space, or inside it and outside the next...
+      if (P.every(v => Math.abs(h[0] * v.p[0] + h[1] * v.p[1] + h[2] * v.p[2] - h[3]) < HS_EPS)) {
+        if (first && fn[0] * h[0] + fn[1] * h[1] + fn[2] * h[2] > 0) { emitPoly(o, slot, P); P = null; break; }
+        continue;
+      }
+      const outside = clipPoly(P, h, true);
+      if (outside.length >= 3) emitPoly(o, slot, outside);
+      P = clipPoly(P, h, false);
+      if (P.length < 3) { P = null; break; }
+    }                                                                // what's left is inside it: gone
+  }
+  o.signs = src.signs; o.lights = src.lights;
+  return o;
+}
+function mergeInto(o, src) {
+  for (const [slot, g] of Object.entries(src.G)) {
+    const d = buf(o, slot), base = d.pos.length / 3;
+    d.pos.push(...g.pos); d.nrm.push(...g.nrm); d.uv.push(...g.uv); for (const i of g.idx) d.idx.push(base + i);
+  }
+}
+// roofs built apart ({o, vols}), joined: each cut where it's inside another
+function joinRoofs(o, built) {
+  built.forEach((A, i) => { let g = A.o; built.forEach((B, j) => { if (j !== i) for (const v of B.vols || []) g = clipOutside(g, v, i < j); }); mergeInto(o, g); });
+}
+// ---- an outline of upright rectangles [x0, y0, x1, y1] joined: as rectangles that don't overlap (rows of cells, carried
+// up), as bars each as long as it can run one way (an L: its two), and its edges (a face frame each, walked with the
+// inside on the left, its ends' corners convex or not)
+function runsMerged(n1, n2, at) {                                    // runs along a (cells covered), carried across b while the same
+  const res = []; let open = [];
+  for (let b = 0; b <= n2; b++) {
+    const runs = [];
+    if (b < n2) for (let a = 0; a < n1; a++) if (at(a, b)) { const l = runs[runs.length - 1]; if (l && l[1] === a) l[1] = a + 1; else runs.push([a, a + 1]); }
+    const next = runs.map(([p, q]) => { const k = open.find(r => r.p === p && r.q === q); if (k) { k.b1 = b + 1; return k; } return { p, q, b0: b, b1: b + 1 }; });
+    for (const k of open) if (!next.includes(k)) res.push(k);
+    open = next;
+  }
+  return res;
+}
+export function rectUnion(R) {
+  const snap = v => Math.round(v * 1e4) / 1e4;
+  const xs = [...new Set(R.flatMap(r => [snap(r[0]), snap(r[2])]))].sort((a, b) => a - b), ys = [...new Set(R.flatMap(r => [snap(r[1]), snap(r[3])]))].sort((a, b) => a - b);
+  const nx = xs.length - 1, ny = ys.length - 1;
+  const C = Array.from({ length: nx }, (_, i) => Array.from({ length: ny }, (_, j) => { const x = (xs[i] + xs[i + 1]) / 2, y = (ys[j] + ys[j + 1]) / 2; return R.some(r => x > r[0] && x < r[2] && y > r[1] && y < r[3]); }));
+  const cov = (i, j) => i >= 0 && j >= 0 && i < nx && j < ny && C[i][j];
+  const rects = runsMerged(nx, ny, cov).map(k => [xs[k.p], ys[k.b0], xs[k.q], ys[k.b1]]);
+  const cols = runsMerged(ny, nx, (j, i) => cov(i, j)).map(k => [xs[k.b0], ys[k.p], xs[k.b1], ys[k.q]]);
+  const inside = (a, b) => a[0] >= b[0] - 1e-6 && a[1] >= b[1] - 1e-6 && a[2] <= b[2] + 1e-6 && a[3] <= b[3] + 1e-6;
+  const all = rects.concat(cols), bars = all.filter((a, i) => !all.some((b, j) => j !== i && inside(a, b) && (!inside(b, a) || j < i)));
+  const convex = (x, y) => { const i = xs.indexOf(x), j = ys.indexOf(y); return [cov(i - 1, j - 1), cov(i, j - 1), cov(i - 1, j), cov(i, j)].filter(Boolean).length !== 3; };
+  const edges = [];
+  const run = (axis, n, at, from, to) => {
+    const U = [-n[1], n[0]], A = axis === "x" ? [from, at] : [at, from], B = axis === "x" ? [to, at] : [at, to];
+    const fwd = (B[0] - A[0]) * U[0] + (B[1] - A[1]) * U[1] > 0, P0 = fwd ? A : B, P1 = fwd ? B : A;
+    edges.push({ axis, F: { name: "edge", o: [P0[0], P0[1], 0], U: [U[0], U[1], 0], N: [n[0], n[1], 0], W: Math.abs(to - from) }, cv: [convex(...P0), convex(...P1)] });
+  };
+  for (let j = 0; j <= ny; j++) for (const sd of [-1, 1]) {        // along x at ys[j]: sd -1 the cells above it inside
+    let a = null;
+    for (let i = 0; i <= nx; i++) {
+      const on = i < nx && (sd < 0 ? cov(i, j) && !cov(i, j - 1) : cov(i, j - 1) && !cov(i, j));
+      if (on && a === null) a = i;
+      if (!on && a !== null) { run("x", [0, sd], ys[j], xs[a], xs[i]); a = null; }
+    }
+  }
+  for (let i = 0; i <= nx; i++) for (const sd of [-1, 1]) {        // along y at xs[i]
+    let a = null;
+    for (let j = 0; j <= ny; j++) {
+      const on = j < ny && (sd < 0 ? cov(i, j) && !cov(i - 1, j) : cov(i - 1, j) && !cov(i, j));
+      if (on && a === null) a = j;
+      if (!on && a !== null) { run("y", [sd, 0], xs[i], ys[a], ys[j]); a = null; }
+    }
+  }
+  return { rects, bars, edges };
+}
+// a flat roof over an outline that isn't a box: its slab in rectangles that don't overlap, the parapet (or the rail) round
+// the outline only; the walls along x take the corners and those along y stop short of them, and their coping the same
+function flatRoofOver(o, U, z, roof, wallSlot) {
+  const parapet = roof.kind === "flat" && num(roof.parapet, 0.5) > 0.05, p = num(roof.parapet, 0.5), t = 0.12, c = 0.03, zc = z + p;
+  for (const [x0, y0, x1, y1] of U.rects) box(o, "roof_flat", x0, y0, z, x1, y1, z + 0.02, "-z-x+x-y+y");
+  for (const e of U.edges) {
+    const F = e.F, ax = e.axis === "x", [c0, c1] = e.cv;
+    if (parapet) {
+      fbox(o, wallSlot, F, ax ? (c0 ? 0 : -t) : (c0 ? t : 0), F.W + (ax ? (c1 ? 0 : t) : (c1 ? -t : 0)), z, zc, -t, 0, "-z");
+      fbox(o, "trim", F, ax ? (c0 ? -c : -t - c) : (c0 ? t + c : c), F.W + (ax ? (c1 ? c : t + c) : (c1 ? -t - c : -c)), zc, zc + 0.06, -t - c, c);
+      continue;
+    }
+    fquad(o, "roof_flat", F, 0, F.W, z, z + 0.02, 0);                // the slab's edge
+    if (roof.kind === "rail") railGen(o, F, c0 ? 0.06 : -0.06, F.W - (c1 ? 0.06 : -0.06), z, z + 1.1, -0.06, null, [false, true]);
+  }
 }
 function fixUp(o, slot) {                                            // flip any triangle of a slot that faces down
   const g = o.G[slot]; if (!g) return;
@@ -607,7 +775,7 @@ function roofThing(o, t, T, R, key) {
   switch (t.kind) {
     case "tank": {
       const w = num(t.w, 2), d = num(t.d, 1.4), h = num(t.h, 1.4), leg = num(t.leg, 0.9);
-      for (const sx of [-1, 1]) for (const sy of [-1, 1]) box(o, "steel", cx + sx * (w / 2 - 0.1) - 0.04, cy + sy * (d / 2 - 0.1) - 0.04, z, cx + sx * (w / 2 - 0.1) + 0.04, cy + sy * (d / 2 - 0.1) + 0.04, z + leg);
+      for (const sx of [-1, 1]) for (const sy of [-1, 1]) box(o, "steel", cx + sx * (w / 2 - 0.1) - 0.04, cy + sy * (d / 2 - 0.1) - 0.04, z, cx + sx * (w / 2 - 0.1) + 0.04, cy + sy * (d / 2 - 0.1) + 0.04, z + leg - 0.08);
       box(o, "steel", cx - w / 2, cy - d / 2, z + leg - 0.08, cx + w / 2, cy + d / 2, z + leg);
       box(o, t.slot || "tank", cx - w / 2 + 0.05, cy - d / 2 + 0.05, z + leg, cx + w / 2 - 0.05, cy + d / 2 - 0.05, z + leg + h);
       break;
@@ -624,10 +792,11 @@ function roofThing(o, t, T, R, key) {
     }
     case "billboard": {
       const w = num(t.w, 5), h = num(t.h, 2.2), lift = num(t.lift, 1.2);
-      for (const sx of [-1, 1]) { box(o, "steel", cx + sx * (w / 2 - 0.3) - 0.05, cy - 0.05, z, cx + sx * (w / 2 - 0.3) + 0.05, cy + 0.05, z + lift + h); bar(o, "steel", [cx + sx * (w / 2 - 0.3), cy + 0.7, z], [cx + sx * (w / 2 - 0.3), cy, z + lift + h * 0.6], 0.05); }
+      for (const sx of [-1, 1]) { box(o, "steel", cx + sx * (w / 2 - 0.3) - 0.05, cy - 0.05, z, cx + sx * (w / 2 - 0.3) + 0.05, cy + 0.05, z + lift + h - 0.1); bar(o, "steel", [cx + sx * (w / 2 - 0.3), cy + 0.7, z], [cx + sx * (w / 2 - 0.3), cy, z + lift + h * 0.6], 0.05); }
       box(o, "black", cx - w / 2, cy - 0.1, z + lift, cx + w / 2, cy + 0.02, z + lift + h);
       o.signs.push({ key, text: t.text || "", fg: t.fg || "#ffffff", bg: t.bg || "#2a2a2e", lit: t.lit !== false, dir: "h", w, h });
-      poly(o, "sign:" + key, [[cx - w / 2 + 0.05, cy - 0.102, z + lift + 0.05], [cx + w / 2 - 0.05, cy - 0.102, z + lift + 0.05], [cx + w / 2 - 0.05, cy - 0.102, z + lift + h - 0.05], [cx - w / 2 + 0.05, cy - 0.102, z + lift + h - 0.05]], [0, -1, 0], [[0, 0], [1, 0], [1, 1], [0, 1]]);
+      const fy = cy - 0.1 - GAP;
+      poly(o, "sign:" + key, [[cx - w / 2 + 0.05, fy, z + lift + 0.05], [cx + w / 2 - 0.05, fy, z + lift + 0.05], [cx + w / 2 - 0.05, fy, z + lift + h - 0.05], [cx - w / 2 + 0.05, fy, z + lift + h - 0.05]], [0, -1, 0], [[0, 0], [1, 0], [1, 1], [0, 1]]);
       break;
     }
     default: break;
@@ -642,7 +811,7 @@ export function buildingParts(b, foot) {
   const drop = foot ? foot.z - foot.low : 0;
   if (drop > 0.03) {                                                  // on a slope: its walls carried down to the lowest ground under it
     const T0 = tiers[0];
-    for (const F of Object.values(faceFrames(T0.x0, T0.y0, T0.x1, T0.y1, 0))) fquad(o, b.plinth || "plinth", F, 0, F.W, -drop - 0.05, 0.001, 0);
+    for (const F of Object.values(faceFrames(T0.x0, T0.y0, T0.x1, T0.y1, 0))) fquad(o, b.plinth || "plinth", F, 0, F.W, -drop - 0.05, 0, 0);
   }
   const parts = partCopies(Array.isArray(b.parts) ? b.parts : []);
   const signs = o.signs;
@@ -664,7 +833,7 @@ export function buildingParts(b, foot) {
         for (const [a, bb, p, q] of wallRects(F.W, r.z0, r.z0 + r.h, all)) fquad(o, wsl, F, a, bb, p, q, 0);
       }
       for (const h of all) holeGen(o, F, h, R);
-      if (s.bands) for (const r of T.rows.slice(1)) fbox(o, "trim", F, -0.04, F.W + 0.04, r.z0 - 0.12, r.z0 + 0.06, 0, 0.07, "");
+      if (s.bands) for (const r of T.rows.slice(1)) fbox(o, "trim", F, -0.04, F.W + 0.04, r.z0 - 0.12, r.z0 + 0.06, 0, 0.07, nKey(F, -1));
       if (s.win === "fins" || (s.floors && Object.values(s.floors).includes("fins"))) {
         const pitch = num(s.pitch, 0.9), n = Math.max(2, Math.round(F.W / pitch));
         for (const r of T.rows) {
@@ -673,19 +842,17 @@ export function buildingParts(b, foot) {
           for (let i = 0; i <= n; i++) { const u = clamp(F.W * i / n, 0.04, F.W - 0.04); fbox(o, s.finSlot || "trim", F, u - 0.04, u + 0.04, r.z0, r.z0 + r.h, 0, num(s.fin, 0.3), ""); }
         }
       }
-      for (const p of fparts) partGen(o, b, F, p, T.rows, R, signs);
+      for (const p of fparts) partGen(o, b, F, p, T.rows, R, signs, fparts);
     }
     if (ti < tiers.length - 1) {                                      // a setback: the terrace left on this tier's top
       const t = tiers[ti + 1];
-      box(o, "roof_flat", T.x0, T.y0, T.z1 - 0.001, T.x1, T.y1, T.z1 + 0.02, "-z");
       const kind = (t.t && t.t.edge) || "rail";
-      for (const F of Object.values(faceFrames(T.x0, T.y0, T.x1, T.y1, 0))) {
-        if (kind === "rail") railGen(o, F, 0.05, F.W - 0.05, T.z1, T.z1 + 1.1, -0.06);
-        else fbox(o, "wall", F, 0, F.W, T.z1, T.z1 + 0.9, -0.15, 0, "");
-      }
+      box(o, "roof_flat", T.x0, T.y0, T.z1, T.x1, T.y1, T.z1 + 0.02, kind === "rail" ? "-z" : "-z-x+x-y+y");
+      if (kind === "rail") railRound(o, T.x0, T.y0, T.x1, T.y1, T.z1, T.z1 + 1.1);
+      else for (const F of Object.values(faceFrames(T.x0, T.y0, T.x1, T.y1, 0))) fbox(o, "wall", F, 0, F.W, T.z1, T.z1 + 0.9, -0.15, 0, "");
     } else roofGen(o, b, T, R);
   });
-  box(o, "dark", tiers[0].x0 + 0.01, tiers[0].y0 + 0.01, -0.001, tiers[0].x1 - 0.01, tiers[0].y1 - 0.01, 0.002, "-x+x-y+y-z");
+  box(o, "dark", tiers[0].x0 + 0.01, tiers[0].y0 + 0.01, -0.001, tiers[0].x1 - 0.01, tiers[0].y1 - 0.01, GAP + 0.002, "-x+x-y+y-z");
   void rows;
   return o;
 }
@@ -699,6 +866,7 @@ export function buildingParts(b, foot) {
 // are drawn as a dark stand-in (piece `<id>__inside`, never exported: in Godot the level's own scene goes there, at the
 // marker `insideMarkers` gives).
 export const INSIDE_SKIN = 0.1, INSIDE_GAP = 0.05;                   // the shell's thickness, outside the level's wall's face
+const ROOF_GAP = 0.01;                                               // the roof over the level's own top, never in its plane
 const LT = 0.1;                                                      // the scene builder's wall (storylib.WALL_T)
 // the level's rooms turned so its way in faces the building's front (-y), its middle at the building's middle
 export function insideFrame(ins) {
@@ -789,7 +957,7 @@ export function insideParts(b, foot) {
   const L2 = (x, y, k) => { const [u, v] = fr.toLocal(x, y); return [u + copyAt(k), v]; };
   const inside = out();
   for (let f = 0; f < floors; f++) {
-    const z0 = raise + f * storey, zTop = z0 + H + LT;
+    const z0 = raise + f * storey, zTop = z0 + H + LT + (f === floors - 1 ? ROOF_GAP : 0);
     for (let k = 0; k < rows; k++) {
       for (const e of edges) {
         // between two copies the walls are shared: the outline's sides that face another copy aren't outside
@@ -800,7 +968,11 @@ export function insideParts(b, foot) {
         const N = [nrmL[0], nrmL[1], 0], U = [-N[1], N[0], 0];         // the face runs left to right seen from outside
         const swap = (B[0] - A[0]) * U[0] + (B[1] - A[1]) * U[1] < 0;
         if (swap) [A, B] = [B, A];
-        const ext0 = swap ? e.c1 : e.c0, ext1 = swap ? e.c0 : e.c1;
+        let ext0 = swap ? e.c1 : e.c0, ext1 = swap ? e.c0 : e.c1;
+        if (rows > 1) {                                              // an end on a joint with the next copy: it runs on, unbent
+          const atL = x => Math.abs(x - (copyAt(k) - W / 2)) < 0.01, atR = x => Math.abs(x - (copyAt(k) + W / 2)) < 0.01;
+          for (const [P0, which] of [[A, 0], [B, 1]]) if ((atL(P0[0]) && k > 0) || (atR(P0[0]) && k < rows - 1)) { if (which === 0) ext0 = 0; else ext1 = 0; }
+        }
         const len = Math.hypot(B[0] - A[0], B[1] - A[1]), s0 = -(G + T) * Math.max(0, ext0) + (ext0 < 0 ? G : 0), s1 = len + (G + T) * Math.max(0, ext1) - (ext1 < 0 ? G : 0);
         const F = { name: "inside", o: [A[0] + N[0] * G + U[0] * s0, A[1] + N[1] * G + U[1] * s0, 0], U, N, W: s1 - s0 };
         const zb = f === 0 ? -drop - 0.05 : z0 - slab;
@@ -840,25 +1012,43 @@ export function insideParts(b, foot) {
       }
     }
   }
-  // the roof: over the outline's box when the rooms fill most of it, else over each room
-  const zTop = raise + (floors - 1) * storey + H + LT, shut = fr.rooms.filter(r => r.ceiling !== false);
+  // the roof: over the outline's box when the rooms fill most of it, else over each room. Pitched roofs are boxed (on a
+  // flat soffit at the walls' top: nothing of them below it, nothing of the level above it); a flat one's slab on the walls
+  const zTop = raise + (floors - 1) * storey + H + LT + ROOF_GAP, shut = fr.rooms.filter(r => r.ceiling !== false);
   const sb = [Math.min(...shut.map(r => r.at[0])), Math.min(...shut.map(r => r.at[1])), Math.max(...shut.map(r => r.at[0] + r.size[0])), Math.max(...shut.map(r => r.at[1] + r.size[1]))];
   const area = shut.reduce((a, r) => a + r.size[0] * r.size[1], 0), boxA = (sb[2] - sb[0]) * (sb[3] - sb[1]);
   const roof = Object.assign({ kind: "hip", pitch: 24, over: 0.6 }, b.roof || {});
   const c0 = [L2(sb[0], sb[1], 0), L2(sb[2], sb[3], 0)], c1 = [L2(sb[0], sb[1], rows - 1), L2(sb[2], sb[3], rows - 1)], all = [...c0, ...c1];
   const tiers = area / boxA > 0.85 ? [{ x0: Math.min(...all.map(p => p[0])) - G - T, y0: Math.min(...all.map(p => p[1])) - G - T, x1: Math.max(...all.map(p => p[0])) + G + T, y1: Math.max(...all.map(p => p[1])) + G + T, z1: zTop }]
     : [].concat(...Array.from({ length: rows }, (_, k) => shut.map(r => { const p0 = L2(r.at[0], r.at[1], k), p1 = L2(r.at[0] + r.size[0], r.at[1] + r.size[1], k); return { x0: Math.min(p0[0], p1[0]) - G - T, y0: Math.min(p0[1], p1[1]) - G - T, x1: Math.max(p0[0], p1[0]) + G + T, y1: Math.max(p0[1], p1[1]) + G + T, z1: zTop }; })));
-  for (const t of tiers) {
-    if (roof.kind === "flat" || roof.kind === "rail" || roof.kind === "none") box(o, "roof_flat", t.x0, t.y0, t.z1, t.x1, t.y1, t.z1 + 0.08, "-z");
-    else roofGen(o, Object.assign({}, b, { id: b.id, roof: Object.assign({}, roof, { things: [] }), roofWall: skinSlot }), Object.assign({ z0: 0 }, t), rng(1));
-    if (roof.kind !== "flat" && roof.kind !== "rail" && roof.kind !== "none") box(o, skinSlot, t.x0, t.y0, t.z1 - 0.02, t.x1, t.y1, t.z1, "-z");   // the top's lid under the roof
-  }
-  if (roof.kind === "flat" || roof.kind === "rail") for (const t of tiers) for (const F of Object.values(faceFrames(t.x0, t.y0, t.x1, t.y1, 0))) {
-    if (roof.kind === "rail") railGen(o, F, 0.05, F.W - 0.05, t.z1, t.z1 + 1.1, -0.06); else fbox(o, skinSlot, F, 0, F.W, t.z1, t.z1 + num(roof.parapet, 0.5), -0.12, 0);
+  const flat = roof.kind === "flat" || roof.kind === "rail" || roof.kind === "none", parapet = roof.kind === "flat" && num(roof.parapet, 0.5) > 0.05;
+  const roofOf = (t, extra) => roofGen(out2(t), Object.assign({}, b, { id: b.id, roof: Object.assign({}, roof, { things: [], boxed: !flat, wall: 0.12, parapet: num(roof.parapet, 0.5), slot: flat ? skinSlot : roof.slot }, extra), roofWall: skinSlot }), Object.assign({ z0: 0 }, t), rng(1));
+  let into = o; const out2 = () => into;
+  if (tiers.length === 1) roofOf(tiers[0], {});
+  else {                                                             // rooms that don't fill their box: one roof over their outline
+    const U = rectUnion(tiers.map(t => [t.x0, t.y0, t.x1, t.y1]));
+    if (flat) flatRoofOver(o, U, zTop, roof, skinSlot);
+    else {                                                           // a pitched one over each bar of it (an L's two), joined
+      const bars = U.bars.map(r => ({ r: r.slice(), alongX: r[2] - r[0] >= r[3] - r[1] })).sort((a, c) => (c.r[2] - c.r[0]) * (c.r[3] - c.r[1]) - (a.r[2] - a.r[0]) * (a.r[3] - a.r[1]));
+      // a gable's or a slope's wing starts at the ridge of the bigger roof it runs into, its one end out in the open (an
+      // L's, a T's); hips join whole
+      if (roof.kind !== "hip") bars.forEach((a, i) => { for (const m of bars.slice(0, i)) {
+        if (m.alongX === a.alongX || !(a.r[0] < m.r[2] - 1e-6 && a.r[2] > m.r[0] + 1e-6 && a.r[1] < m.r[3] - 1e-6 && a.r[3] > m.r[1] + 1e-6)) continue;
+        const k = a.alongX ? 0 : 1, mc = (m.r[k] + m.r[k + 2]) / 2;
+        if (a.r[k] >= m.r[k] - 1e-6 && a.r[k + 2] > m.r[k + 2] + 1e-6) a.r[k] = Math.max(a.r[k], mc);
+        else if (a.r[k + 2] <= m.r[k + 2] + 1e-6 && a.r[k] < m.r[k] - 1e-6) a.r[k + 2] = Math.min(a.r[k + 2], mc);
+      } });
+      joinRoofs(o, bars.map(({ r, alongX }) => {
+        into = out();
+        const vols = roofOf({ x0: r[0], y0: r[1], x1: r[2], y1: r[3], z1: zTop }, { ridge: alongX ? "x" : "y" });
+        return { o: into, vols };
+      }));
+    }
   }
   // its own parts (a walkway, stairs, a canopy, signs...) on the box round it all
   const R = rng(num(b.seed, 1)), frames = faceFrames(-totalW / 2 - G - T, -D / 2 - G - T, totalW / 2 + G + T, D / 2 + G + T, 0);
-  for (const p of partCopies(b.parts)) partGen(o, b, frames[p.face || "front"], p, insideFloors(b), R, o.signs);
+  const ps = partCopies(b.parts);
+  for (const p of ps) partGen(o, b, frames[p.face || "front"], p, insideFloors(b), R, o.signs, ps.filter(q => (q.face || "front") === (p.face || "front")));
   o.inside = inside;
   return o;
 }
@@ -887,6 +1077,20 @@ export function insideRooms(level) {
   return (level && level.rooms || []).map(r => ({ id: r.id, at: r.at, size: r.size, ceiling: r.ceiling !== false ? undefined : false, skip: r.skip && r.skip.length ? r.skip : undefined,
     openings: (r.openings || []).map(o => Object.fromEntries(Object.entries({ wall: o.wall, at: o.at, w: o.w, h: o.h, sill: o.sill || undefined, window: o.window || undefined, door: o.door ? { id: o.door.id } : undefined }).filter(([, v]) => v !== undefined))) }))
     .map(r => Object.fromEntries(Object.entries(r).filter(([, v]) => v !== undefined)));
+}
+
+// the outside on the scene builder's plan, in the level's own space: its walls' outer face round the enclosed rooms, and
+// the roof's edge (round the rooms' box when they fill it, as the roof is built, else round the rooms), as segments
+export function outsidePlan(level, o) {
+  const rooms = insideRooms(level).filter(r => r.ceiling !== false && Math.abs(num((r.at || [])[2], 0)) < 0.01 && r.size);
+  if (!rooms.length) return null;
+  const e = LT / 2 + INSIDE_GAP + INSIDE_SKIN, roof = Object.assign({ kind: "hip", over: 0.6 }, (o || {}).roof || {});
+  const over = ["gable", "hip", "shed"].includes(roof.kind) ? num(roof.over, 0.6) : 0;
+  const R = rooms.map(r => [r.at[0], r.at[1], r.at[0] + r.size[0], r.at[1] + r.size[1]]), grow = k => R.map(r => [r[0] - k, r[1] - k, r[2] + k, r[3] + k]);
+  const bx = [Math.min(...R.map(r => r[0])), Math.min(...R.map(r => r[1])), Math.max(...R.map(r => r[2])), Math.max(...R.map(r => r[3]))];
+  const full = R.reduce((a, r) => a + (r[2] - r[0]) * (r[3] - r[1]), 0) / ((bx[2] - bx[0]) * (bx[3] - bx[1])) > 0.85;
+  const segs = U => U.edges.map(({ F }) => [F.o[0], F.o[1], F.o[0] + F.U[0] * F.W, F.o[1] + F.U[1] * F.W]);
+  return { walls: segs(rectUnion(grow(e))), roof: over > 0 ? segs(rectUnion(full ? [[bx[0] - e - over, bx[1] - e - over, bx[2] + e + over, bx[3] + e + over]] : grow(e + over))) : [] };
 }
 
 // ---- a set's outside: how an enterable building looks from the street, designed with its rooms in the scene builder
@@ -1052,7 +1256,7 @@ function polyUp(o, slot, P, uv) {
   poly(o, slot, P, nn, uv);
 }
 export function roadParts(r, others = [], index = 0) {
-  const o = out(), f = roadPath(r), W = f.W, L = f.L, zA = 0.004 + 0.0004 * (index % 8), og = others.map(roadPath);
+  const o = out(), f = roadPath(r), W = f.W, L = f.L, zA = 0.004 + 0.003 * (index % 8), og = others.map(roadPath);
   const P3 = (s, q, dz) => { const p = f.at(s, q); return [p[0], p[1], p[2] + dz]; };
   const strip = (slot, s0, s1, q0, q1, dz) => { const st = f.stations(s0, s1); for (let i = 0; i + 1 < st.length; i++) { const a = st[i], b = st[i + 1]; polyUp(o, slot, [P3(a, q0, dz), P3(b, q0, dz), P3(b, q1, dz), P3(a, q1, dz)], [[-q0, a], [-q0, b], [-q1, b], [-q1, a]]); } };
   const side = (slot, s0, s1, q, dz0, dz1, facing) => {                // an upright face along it at q, facing `facing` (+1 left)
@@ -1065,14 +1269,15 @@ export function roadParts(r, others = [], index = 0) {
     if (ww <= 0.01) return;
     const qa = sd * W / 2, qb = sd * (W / 2 + ww), k = f.kerb, lo = Math.min(qa, qb), hi = Math.max(qa, qb);
     for (const [s0, s1] of spans(L, cutsOf(f, lo, hi, og))) {
-      strip(r.walk || "pavement", s0, s1, lo, hi, k);
+      const stone = r.kerbStone !== false, ks = 0.15;                  // the kerb stone's 15 cm along the road edge
+      strip(r.walk || "pavement", s0, s1, stone && sd > 0 ? lo + ks : lo, stone && sd < 0 ? hi - ks : hi, k);
       side("kerb", s0, s1, qa, 0, k, -sd); side("kerb", s0, s1, qb, -0.05, k, sd);
       for (const s of [s0, s1]) { const fr = f.frame(s), dir = s === s0 ? -1 : 1; poly(o, "kerb", [P3(s, lo, -0.05), P3(s, hi, -0.05), P3(s, hi, k), P3(s, lo, k)], [fr.t[0] * dir, fr.t[1] * dir, 0]); }
-      if (r.kerbStone !== false) strip("kerb", s0, s1, sd > 0 ? qa : qa - 0.15, sd > 0 ? qa + 0.15 : qa, k + 0.001);
+      if (stone) strip("kerb", s0, s1, sd > 0 ? qa : qa - ks, sd > 0 ? qa + ks : qa, k);
     }
   });
   // the lines along it: the edge lines (their distance in from each edge) and the centre line, stopping at crossings
-  const zl = zA + 0.003, lw = 0.15;
+  const zl = zA + 0.012, lw = 0.15;
   const line = (q, slot, dash) => {
     for (const [s0, s1] of spans(L, cutsOf(f, q - lw / 2, q + lw / 2, og))) {
       if (!dash) { strip(slot, s0, s1, q - lw / 2, q + lw / 2, zl); continue; }
@@ -1085,8 +1290,8 @@ export function roadParts(r, others = [], index = 0) {
   const c = r.centre || "none";
   if (c === "dashed") line(0, "paint", [5, 5]); else if (c === "solid") line(0, "paint", null); else if (c === "yellow") line(0, "paint_y", null);
   // the marks: at metres from `from`, x across from the middle (+ to the right walking to `to`)
-  for (const m of r.marks || []) {
-    const s = num(m.at, 0), x = -num(m.x, 0), mw = num(m.w, W - 0.5), z = zl + 0.001;
+  (r.marks || []).forEach((m, mi) => {
+    const s = num(m.at, 0), x = -num(m.x, 0), mw = num(m.w, W - 0.5), z = zl + 0.006 + 0.005 * Math.min(mi, 8);   // over the lines, and off each other
     const quad = (slot, pts, uv) => polyUp(o, slot, pts.map(([a, b]) => P3(s + a, x + b, z)), uv);
     switch (m.kind) {
       case "stop": strip("paint", s, s + num(m.len, 0.45), x - mw / 2, x + mw / 2, z); break;
@@ -1094,17 +1299,18 @@ export function roadParts(r, others = [], index = 0) {
       case "zebra": { const len = num(m.len, 4); for (let q = -mw / 2; q + 0.45 <= mw / 2 + 1e-6; q += 0.9) strip("paint", s, s + len, x + q, x + q + 0.45, z); break; }
       case "bays": {                                                // a car park's bays: a line across every `gap` m, `w` deep, a line along their back
         const len = num(m.len, 20), gap = num(m.gap, 2.5), bw = num(m.w, 5);
-        for (let a = 0; a <= len + 1e-6; a += gap) strip("paint", s + a - 0.06, s + a + 0.06, x - bw / 2, x + bw / 2, z);
+        for (let a = 0; a <= len + 1e-6; a += gap) strip("paint", s + a - 0.06, s + a + 0.06, x - bw / 2, x + bw / 2 - 0.12, z);
         strip("paint", s, s + len, x + bw / 2 - 0.12, x + bw / 2, z);
         break;
       }
       case "diamond": {
-        const len = num(m.len, 3), hw = Math.min(mw, 1.6) / 2, pts = [[0, 0], [len / 2, -hw], [len, 0], [len / 2, hw]];
-        for (let i = 0; i < 4; i++) { const [a0, b0] = pts[i], [a1, b1] = pts[(i + 1) % 4], d = Math.hypot(a1 - a0, b1 - b0), na = -(b1 - b0) / d * 0.07, nb = (a1 - a0) / d * 0.07;
-          quad("paint", [[a0 - na, b0 - nb], [a1 - na, b1 - nb], [a1 + na, b1 + nb], [a0 + na, b0 + nb]]); }
+        const len = num(m.len, 3), hw = Math.min(mw, 1.6) / 2, pts = [[0, 0], [len / 2, -hw], [len, 0], [len / 2, hw]], h = 0.07;
+        const nrm = i => { const [a0, b0] = pts[i], [a1, b1] = pts[(i + 1) % 4], d = Math.hypot(a1 - a0, b1 - b0); return [(b1 - b0) / d, -(a1 - a0) / d]; };
+        const mit = (i, sd) => { const n0 = nrm((i + 3) % 4), n1 = nrm(i), k = sd * h / (1 + n0[0] * n1[0] + n0[1] * n1[1]); return [pts[i][0] + (n0[0] + n1[0]) * k, pts[i][1] + (n0[1] + n1[1]) * k]; };
+        for (let i = 0; i < 4; i++) { const j = (i + 1) % 4; quad("paint", [mit(i, 1), mit(j, 1), mit(j, -1), mit(i, -1)]); }   // a ring, its corners mitred
         break;
       }
-      case "arrow": { const len = num(m.len, 3); strip("paint", s, s + len * 0.65, x - 0.08, x + 0.08, z); quad("paint", [[len * 0.6, -0.35], [len, 0], [len * 0.6, 0.35]]); break; }
+      case "arrow": { const len = num(m.len, 3); strip("paint", s, s + len * 0.6, x - 0.08, x + 0.08, z); quad("paint", [[len * 0.6, -0.35], [len, 0], [len * 0.6, 0.35]]); break; }   // the shaft up to the head
       case "text": {                                                // read by someone driving from `from` to `to`: the first character furthest
         const chars = [...String(m.text || "止まれ")].filter(ch => ch.trim()), len = num(m.len, 2.0), gap = num(m.gap, 0.5), cw = Math.min(num(m.w, 1.1), W - 0.3);
         chars.forEach((ch, i) => {
@@ -1115,7 +1321,7 @@ export function roadParts(r, others = [], index = 0) {
       }
       default: break;
     }
-  }
+  });
   return o;
 }
 
@@ -1190,7 +1396,7 @@ export function thingParts(t) {
       cyl(o, col, [0, 0, 0.45], [0, 0, h], 0.075, 8, 0.055);
       bar(o, col, [0, 0, h - 0.25], [0, -arm, h + 0.05], 0.07, 0.07);
       box(o, col, -0.16, -arm - 0.45, h - 0.12, 0.16, -arm + 0.05, h + 0.08);
-      poly(o, t.cool ? "lamp_cool" : "lamp", [[-0.12, -arm - 0.4, h - 0.121], [0.12, -arm - 0.4, h - 0.121], [0.12, -arm, h - 0.121], [-0.12, -arm, h - 0.121]], [0, 0, -1]);
+      poly(o, t.cool ? "lamp_cool" : "lamp", [[-0.12, -arm - 0.4, h - 0.12 - GAP], [0.12, -arm - 0.4, h - 0.12 - GAP], [0.12, -arm, h - 0.12 - GAP], [-0.12, -arm, h - 0.12 - GAP]], [0, 0, -1]);
       o.lights.push({ at: [0, -arm - 0.2, h - 0.3], color: t.color || (t.cool ? "#e8f0ff" : "#ffd6a0"), power: num(t.power, 30), dist: num(t.dist, 18), down: true });
       break;
     }
@@ -1206,13 +1412,14 @@ export function thingParts(t) {
         o.lights.push({ at: [x, y, z - 0.2], color: t.color || "#ffc47e", power: num(t.power, 12), dist: num(t.dist, 11) });
       };
       const dirs = heads === 2 ? [-1, 1] : [-1];
-      for (const sd of dirs) { bar(o, col, [0, 0, h - 0.1], [0, sd * arm, h + 0.15], 0.05); head(0, sd * arm, h - 0.05); }
+      for (const sd of dirs) { bar(o, col, [0, sd * 0.035, h - 0.1], [0, sd * arm, h + 0.15], 0.05); head(0, sd * arm, h - 0.05); }   // each arm from its own side of the pole
       if (t.text !== "") {                                           // the plate on top: words, a little blue roof
         const key = `${t.id || "lantern"}.0`, pw = num(t.pw, 1.0), ph = 0.34, z0 = h + 0.55;
         o.signs.push({ key, text: t.text || "ほんちょう", fg: "#1d2a4d", bg: "#f2f2ee", lit: false, dir: "h", w: pw, h: ph });
         box(o, col, -pw / 2 - 0.02, -0.03, z0 - 0.02, pw / 2 + 0.02, 0.03, z0 + ph + 0.02);
-        for (const sd of [-1, 1]) poly(o, "sign:" + key, [[-pw / 2, sd * 0.032, z0], [pw / 2, sd * 0.032, z0], [pw / 2, sd * 0.032, z0 + ph], [-pw / 2, sd * 0.032, z0 + ph]], [0, sd, 0], sd < 0 ? [[0, 0], [1, 0], [1, 1], [0, 1]] : [[1, 0], [0, 0], [0, 1], [1, 1]]);
-        for (const sd of [-1, 1]) poly(o, "blue", [[-pw / 2 - 0.05, sd * 0.032, z0 + ph + 0.02], [pw / 2 + 0.05, sd * 0.032, z0 + ph + 0.02], [0, sd * 0.032, z0 + ph + 0.3]], [0, sd, 0]);
+        const pf = 0.03 + GAP;
+        for (const sd of [-1, 1]) poly(o, "sign:" + key, [[-pw / 2, sd * pf, z0], [pw / 2, sd * pf, z0], [pw / 2, sd * pf, z0 + ph], [-pw / 2, sd * pf, z0 + ph]], [0, sd, 0], sd < 0 ? [[0, 0], [1, 0], [1, 1], [0, 1]] : [[1, 0], [0, 0], [0, 1], [1, 1]]);
+        for (const sd of [-1, 1]) poly(o, "blue", [[-pw / 2 - 0.05, sd * pf, z0 + ph + 0.02], [pw / 2 + 0.05, sd * pf, z0 + ph + 0.02], [0, sd * pf, z0 + ph + 0.3]], [0, sd, 0]);
         box(o, "blue", -0.04, -0.03, z0 + ph + 0.02, 0.04, 0.03, z0 + ph + 0.3, "");
       }
       break;
@@ -1240,7 +1447,7 @@ export function thingParts(t) {
     }
     case "pole": {                                                   // a concrete pole: cross arms, insulators, a transformer if asked
       cyl(o, "pole", [0, 0, 0], [0, 0, h], 0.17, 10, 0.12);
-      if (t.guard !== false) cyl(o, "hazard", [0, 0, 0], [0, 0, 1.8], 0.185, 10, 0.18);
+      if (t.guard !== false) cyl(o, "hazard", [0, 0, 0.02], [0, 0, 1.8], 0.17 + GAP + 0.005, 10, 0.17 + GAP);
       for (const [z, wdt] of [[h - 0.45, 1.9], [h - 1.45, 1.5]]) {
         box(o, "steel", -wdt / 2, -0.05, z - 0.05, wdt / 2, 0.05, z + 0.05);
         for (const x of armXs(wdt)) cyl(o, "white", [x, 0, z + 0.05], [x, 0, z + 0.19], 0.035, 6);
@@ -1252,7 +1459,7 @@ export function thingParts(t) {
     case "vending": {
       const w = num(t.w, 1.0), d = num(t.d, 0.75), col = t.slot || "vend";
       box(o, col, -w / 2, -d / 2, 0, w / 2, d / 2, h);
-      poly(o, "vend_lit", [[-w / 2 + 0.06, -d / 2 - 0.002, h * 0.5], [w / 2 - 0.06, -d / 2 - 0.002, h * 0.5], [w / 2 - 0.06, -d / 2 - 0.002, h - 0.12], [-w / 2 + 0.06, -d / 2 - 0.002, h - 0.12]], [0, -1, 0]);
+      poly(o, "vend_lit", [[-w / 2 + 0.06, -d / 2 - GAP, h * 0.5], [w / 2 - 0.06, -d / 2 - GAP, h * 0.5], [w / 2 - 0.06, -d / 2 - GAP, h - 0.12], [-w / 2 + 0.06, -d / 2 - GAP, h - 0.12]], [0, -1, 0]);
       box(o, "black", -w / 2 + 0.08, -d / 2 - 0.04, 0.12, w / 2 - 0.08, -d / 2, 0.38);
       box(o, "black", w / 2 - 0.3, -d / 2 - 0.03, h * 0.38, w / 2 - 0.08, -d / 2, h * 0.47);
       o.lights.push({ at: [0, -d / 2 - 0.5, h * 0.7], color: "#e9f0ff", power: num(t.power, 3), dist: num(t.dist, 4.5) });
@@ -1263,12 +1470,13 @@ export function thingParts(t) {
       else { cyl(o, "red", [0, 0, 0], [0, 0, h - 0.2], 0.21, 12); cyl(o, "red", [0, 0, h - 0.2], [0, 0, h - 0.12], 0.25, 12); cyl(o, "red", [0, 0, h - 0.12], [0, 0, h], 0.2, 12, 0.06); box(o, "black", -0.12, -0.215, h - 0.5, 0.12, -0.2, h - 0.44); }
       break;
     }
-    case "bollard": { const r = num(t.r, 0.065); cyl(o, t.slot || "steel", [0, 0, 0], [0, 0, h], r, 8); cyl(o, "white", [0, 0, h - 0.18], [0, 0, h - 0.1], r + 0.004, 8, r + 0.004, false); break; }
+    case "bollard": { const r = num(t.r, 0.065); cyl(o, t.slot || "steel", [0, 0, 0], [0, 0, h], r, 8); cyl(o, "white", [0, 0, h - 0.18], [0, 0, h - 0.1], r + GAP, 8, r + GAP, false); break; }
     case "bike": {                                                   // along x, the front wheel at +x
       const rw = 0.33, hub = [[-0.52, 0, rw], [0.52, 0, rw]], ring = c => Array.from({ length: 14 }, (_, i) => { const a = i / 14 * Math.PI * 2; return [c[0] + Math.cos(a) * rw, 0, c[2] + Math.sin(a) * rw]; });
       for (const c of hub) { tube(o, "rubber", ring(c), 0.02, 4, true); bar(o, "chrome", [c[0] - rw, 0, c[2]], [c[0] + rw, 0, c[2]], 0.006); bar(o, "chrome", [c[0], 0, c[2] - rw], [c[0], 0, c[2] + rw], 0.006); }
       const seat = [-0.18, 0, 0.92], head = [0.35, 0, 0.95], bb = [-0.05, 0, 0.32], col = t.slot || "black";
-      for (const [a, b2] of [[hub[0], bb], [hub[0], seat], [seat, bb], [bb, head], [seat, head], [head, hub[1]]]) bar(o, col, a, b2, 0.03);
+      for (const [a, b2, w] of [[seat, bb, 0.03], [bb, head, 0.04], [seat, head, 0.02], [head, hub[1], 0.03]]) bar(o, col, a, b2, w);   // tubes 5 mm apart in thickness
+      for (const sd of [-1, 1]) for (const [q, sy] of [[bb, 0.046], [seat, 0.034]]) bar(o, col, [hub[0][0], sd * sy, hub[0][2]], [q[0], sd * sy, q[2]], 0.016);   // the stays, either side of the wheel
       box(o, "black", seat[0] - 0.12, -0.06, seat[2], seat[0] + 0.08, 0.06, seat[2] + 0.05);
       bar(o, "chrome", [head[0], -0.28, head[2] + 0.1], [head[0], 0.28, head[2] + 0.1], 0.025);
       box(o, "steel", head[0] + 0.05, -0.15, head[2] - 0.15, head[0] + 0.35, 0.15, head[2]);   // its basket
@@ -1298,19 +1506,19 @@ export function thingParts(t) {
     case "cone": cyl(o, "orange", [0, 0, 0.04], [0, 0, h], 0.16, 8, 0.025); box(o, "orange", -0.2, -0.2, 0, 0.2, 0.2, 0.04); cyl(o, "white", [0, 0, h * 0.45], [0, 0, h * 0.62], 0.115, 8, 0.085, false); break;
     case "barrier": {
       const w = num(t.w, 1.6);
-      for (const sx of [-1, 1]) { bar(o, "white", [sx * (w / 2 - 0.1), -0.25, 0], [sx * (w / 2 - 0.1), 0, h], 0.05); bar(o, "white", [sx * (w / 2 - 0.1), 0.25, 0], [sx * (w / 2 - 0.1), 0, h], 0.05); }
+      for (const sx of [-1, 1]) { bar(o, "white", [sx * (w / 2 - 0.1), -0.25, 0], [sx * (w / 2 - 0.1), 0, h], 0.05); bar(o, "white", [sx * (w / 2 - 0.1 - GAP), 0.25, 0], [sx * (w / 2 - 0.1 - GAP), 0, h], 0.05); }
       box(o, "hazard", -w / 2, -0.03, h - 0.28, w / 2, 0.03, h);
       break;
     }
     case "manhole": cyl(o, "iron", [0, 0, 0], [0, 0, 0.012], num(t.r, 0.32), 14); break;
-    case "drain": { const w = num(t.w, 0.9), d = num(t.d, 0.35); box(o, "dark", -w / 2, -d / 2, 0, w / 2, d / 2, 0.006); poly(o, "grate", [[-w / 2, -d / 2, 0.011], [w / 2, -d / 2, 0.011], [w / 2, d / 2, 0.011], [-w / 2, d / 2, 0.011]], [0, 0, 1]); break; }
+    case "drain": { const w = num(t.w, 0.9), d = num(t.d, 0.35); box(o, "dark", -w / 2, -d / 2, 0, w / 2, d / 2, 0.006); poly(o, "grate", [[-w / 2, -d / 2, 0.006 + GAP], [w / 2, -d / 2, 0.006 + GAP], [w / 2, d / 2, 0.006 + GAP], [-w / 2, d / 2, 0.006 + GAP]], [0, 0, 1]); break; }
     case "car": carGen(o, t, h); break;
     case "person": personGen(o, t, h, R); break;
     case "bench": { const w = num(t.w, 1.6); box(o, "wood", -w / 2, -0.22, 0.42, w / 2, 0.22, 0.47); box(o, "wood", -w / 2, 0.16, 0.5, w / 2, 0.21, 0.82); for (const sx of [-1, 1]) box(o, "steel", sx * (w / 2 - 0.15) - 0.03, -0.2, 0, sx * (w / 2 - 0.15) + 0.03, 0.2, 0.42); break; }
     case "bin": cyl(o, t.slot || "steel", [0, 0, 0], [0, 0, h], 0.25, 10); cyl(o, "black", [0, 0, h], [0, 0, h + 0.04], 0.26, 10); break;
     case "crates": { const n = Math.max(1, Math.round(num(t.n, 3))); for (let i = 0; i < n; i++) box(o, t.slot || (i % 2 ? "yellow" : "blue"), -0.23 + (R() - 0.5) * 0.04, -0.17, i * 0.3, 0.23, 0.17 + (R() - 0.5) * 0.03, i * 0.3 + 0.29); break; }
     case "pot": cyl(o, t.slot || "plant_pot", [0, 0, 0], [0, 0, h], 0.16, 8, 0.22); cyl(o, "dark", [0, 0, h - 0.04], [0, 0, h - 0.035], 0.2, 8); break;
-    case "ac": box(o, "ac", -0.4, -0.15, 0, 0.4, 0.15, h); poly(o, "fan", [[-0.33, -0.151, 0.08], [0.1, -0.151, 0.08], [0.1, -0.151, 0.52], [-0.33, -0.151, 0.52]], [0, -1, 0], [[0, 0], [1, 0], [1, 1], [0, 1]]); break;
+    case "ac": box(o, "ac", -0.4, -0.15, 0, 0.4, 0.15, h); poly(o, "fan", [[-0.33, -0.15 - GAP, 0.08], [0.1, -0.15 - GAP, 0.08], [0.1, -0.15 - GAP, 0.52], [-0.33, -0.15 - GAP, 0.52]], [0, -1, 0], [[0, 0], [1, 0], [1, 1], [0, 1]]); break;
     default: { const w = num(t.w, 1), d = num(t.d, 1); box(o, t.slot || "concrete", -w / 2, -d / 2, 0, w / 2, d / 2, h); }
   }
   return o;
@@ -1324,8 +1532,9 @@ function carGen(o, t, h) {
   box(o, col, -L / 2, -W / 2, 0.28, L / 2, W / 2, body + 0.28);
   const c0 = style === "sedan" ? -L / 2 + 1.2 : -L / 2 + 0.25, c1 = style === "sedan" ? L / 2 - 1.25 : L / 2 - 0.8;
   box(o, col, c0, -W / 2 + 0.06, body + 0.28, c1, W / 2 - 0.06, top);
-  for (const sd of [-1, 1]) poly(o, "car_glass", [[c0 + 0.15, sd * (W / 2 - 0.059), body + 0.38], [c1 - 0.1, sd * (W / 2 - 0.059), body + 0.38], [c1 - 0.1, sd * (W / 2 - 0.059), top - 0.08], [c0 + 0.15, sd * (W / 2 - 0.059), top - 0.08]], [0, sd, 0]);
-  poly(o, "car_glass", [[c1 + 0.001, -W / 2 + 0.15, body + 0.36], [c1 + 0.001, W / 2 - 0.15, body + 0.36], [c1 + 0.001, W / 2 - 0.15, top - 0.08], [c1 + 0.001, -W / 2 + 0.15, top - 0.08]], [1, 0, 0]);
+  const gw = W / 2 - 0.06 + GAP;                                     // the windows a GAP off the cabin's sides
+  for (const sd of [-1, 1]) poly(o, "car_glass", [[c0 + 0.15, sd * gw, body + 0.38], [c1 - 0.1, sd * gw, body + 0.38], [c1 - 0.1, sd * gw, top - 0.08], [c0 + 0.15, sd * gw, top - 0.08]], [0, sd, 0]);
+  poly(o, "car_glass", [[c1 + GAP, -W / 2 + 0.15, body + 0.36], [c1 + GAP, W / 2 - 0.15, body + 0.36], [c1 + GAP, W / 2 - 0.15, top - 0.08], [c1 + GAP, -W / 2 + 0.15, top - 0.08]], [1, 0, 0]);
   for (const sd of [-1, 1]) { box(o, "headlight", L / 2 - 0.02, sd * (W / 2 - 0.3) - 0.14, body, L / 2 + 0.01, sd * (W / 2 - 0.3) + 0.14, body + 0.14); box(o, "taillight", -L / 2 - 0.01, sd * (W / 2 - 0.15) - 0.1, body, -L / 2 + 0.02, sd * (W / 2 - 0.15) + 0.1, body + 0.25); }
 }
 function personGen(o, t, h, R) {                                    // a plain low-poly figure facing -y: legs, body, arms, head
@@ -1375,14 +1584,14 @@ export function fenceParts(f, surface) {
       box(o, f.slot || "blocks", 0, -th / 2, 0, L, th / 2, bh, "-z");
       box(o, "concrete", -0.01, -th / 2 - 0.02, bh, L + 0.01, th / 2 + 0.02, bh + 0.06);
       if (f.kind === "blockmesh") {
-        for (const x of bays) cyl(o, post, [clamp(x, 0.05, L - 0.05), 0, bh + 0.06], [clamp(x, 0.05, L - 0.05), 0, h], 0.025, 6);
+        for (const x of bays) cyl(o, post, [clamp(x, 0.05, L - 0.05), 0, bh + 0.06], [clamp(x, 0.05, L - 0.05), 0, h - 0.02], 0.025, 6);
         quadX("chainlink", 0, L, bh + 0.08, h - 0.04);
         cyl(o, post, [0, 0, h - 0.02], [L, 0, h - 0.02], 0.02, 6);
       }
       break;
     }
     case "mesh": {
-      for (const x of bays) cyl(o, post, [clamp(x, 0.03, L - 0.03), 0, 0], [clamp(x, 0.03, L - 0.03), 0, h], 0.028, 6);
+      for (const x of bays) cyl(o, post, [clamp(x, 0.03, L - 0.03), 0, 0], [clamp(x, 0.03, L - 0.03), 0, h - 0.02], 0.028, 6);
       quadX(f.slot || "chainlink", 0, L, 0.04, h - 0.03);
       cyl(o, post, [0, 0, h - 0.02], [L, 0, h - 0.02], 0.022, 6);
       break;
@@ -1405,18 +1614,18 @@ export function fenceParts(f, surface) {
       break;
     }
     case "rail": {
-      for (const x of bays) cyl(o, post, [clamp(x, 0.04, L - 0.04), 0, 0], [clamp(x, 0.04, L - 0.04), 0, h], 0.035, 8);
+      for (const x of bays) cyl(o, post, [clamp(x, 0.04, L - 0.04), 0, 0], [clamp(x, 0.04, L - 0.04), 0, h - 0.03], 0.035, 8);
       for (const z of [h - 0.03, h * 0.55]) cyl(o, f.slot || "post", [0, 0, z], [L, 0, z], 0.03, 8);
       break;
     }
     case "gate": {                                                    // two posts, two barred leaves meeting in the middle (swung by `open`)
-      const op = clamp(num(f.open, 0), 0, 1) * 85 * Math.PI / 180, pw = 0.12, lw = (L - 2 * pw) / 2;
+      const op = clamp(num(f.open, 0), 0, 1) * 85 * Math.PI / 180, pw = 0.12, lw = (L - 2 * pw) / 2 - 0.03;   // shut, a gap between the leaves
       box(o, f.post || "steel", 0, -pw / 2, 0, pw, pw / 2, h + 0.15); box(o, f.post || "steel", L - pw, -pw / 2, 0, L, pw / 2, h + 0.15);
       for (const side of [0, 1]) {
         const hx = side ? L - pw : pw, dir = side ? -1 : 1, a = side ? Math.PI - op : op;
         const along = [Math.cos(a) * dir * (side ? -1 : 1), Math.sin(a) * (side ? 1 : 1)], tip = [hx + along[0] * lw, along[1] * lw];
         for (const z of [0.1, h - 0.05]) bar(o, f.slot || "rail", [hx, 0, z], [tip[0], tip[1], z], 0.05, 0.04);
-        bar(o, f.slot || "rail", [tip[0], tip[1], 0.08], [tip[0], tip[1], h], 0.05, 0.04);
+        bar(o, f.slot || "rail", [tip[0], tip[1], 0.08], [tip[0], tip[1], h], 0.05, 0.05);   // thicker than the rails across: no side in their plane
         two(o, "bars", [[hx, 0, 0.12], [tip[0], tip[1], 0.12], [tip[0], tip[1], h - 0.07], [hx, 0, h - 0.07]], [-along[1], along[0], 0]);
       }
       break;
@@ -1426,14 +1635,14 @@ export function fenceParts(f, surface) {
       box(o, f.post || "white", 0, -0.08, 0, 0.16, 0.08, h + 0.1); box(o, f.post || "white", L - 0.12, -0.06, 0, L, 0.06, h * 0.6);
       for (let i = 0; i < n; i++) {
         const x0 = 0.16 + (len - 0.16) * i / n, x1 = 0.16 + (len - 0.16) * (i + 1) / n;
-        bar(o, i % 2 ? "red" : "white", [x0, 0, 0.12], [x1, 0, h], 0.035, 0.03); bar(o, i % 2 ? "white" : "red", [x0, 0, h], [x1, 0, 0.12], 0.035, 0.03);
+        bar(o, i % 2 ? "red" : "white", [x0, -0.011, 0.12], [x1, -0.011, h], 0.035, 0.02); bar(o, i % 2 ? "white" : "red", [x0, 0.011, h], [x1, 0.011, 0.12], 0.035, 0.02);   // two layers, pinned where they cross
         cyl(o, "rubber", [x1, -0.04, 0.05], [x1, 0.04, 0.05], 0.05, 6);
       }
       box(o, "white", 0.16, -0.03, h - 0.04, len, 0.03, h + 0.04); box(o, "white", 0.16, -0.03, 0.08, len, 0.03, 0.14);
       break;
     }
     case "chain": {
-      for (const x of [0.06, L - 0.06]) { cyl(o, f.post || "white", [x, 0, 0], [x, 0, h], 0.05, 8); cyl(o, "red", [x, 0, h - 0.18], [x, 0, h - 0.1], 0.052, 8, 0.052, false); }
+      for (const x of [0.06, L - 0.06]) { cyl(o, f.post || "white", [x, 0, 0], [x, 0, h], 0.05, 8); cyl(o, "red", [x, 0, h - 0.18], [x, 0, h - 0.1], 0.05 + GAP, 8, 0.05 + GAP, false); }
       const pts = []; for (let k = 0; k <= 12; k++) { const t = k / 12; pts.push([0.06 + (L - 0.12) * t, 0, h - 0.12 - 0.35 * 4 * t * (1 - t)]); }
       tube(o, "steel", pts, 0.012, 4);
       break;

@@ -1213,3 +1213,21 @@ guessed margin; and a check that only ever ran on a slow machine hasn't been run
 - **A seam test that compares the wrap with the average step flags every brick:** a tile set's period ends on a
   brick's edge, so the step at the wrap is a brick's edge, far above the average step inside. Compare the wrap with
   the biggest step inside (a texture that doesn't tile still fails it by 12 times).
+
+## No clipping in the street (2026-10-31)
+
+- **Fixing what a picture shows leaves the rest:** the bungalow's roof showed its wall tops (the eaves dipped below the
+  walls' top, a lid's sides were in the walls' planes), but a sweep over every style, set, street and the check's own
+  builds found some twenty more kinds of faces in one plane over each other, from a sign's words 2 mm off its board to
+  a car park gate's two leaves in one place. Measure every piece the generator can make (the clash test is in STREET
+  now), then fix by rule (a GAP between layers, parts 6 mm in), never the one case.
+- **A plane's offset says nothing about two tilted faces far from the origin:** comparing `n·p` for nearly parallel
+  faces 43 m out called a pole and its band 1.4 cm apart "one plane". Measure the other face's points from this
+  face's own plane.
+- **A minimum overlap per triangle pair hides an overlap split across triangles:** two rail posts at a roof's corner
+  overlapped by 16 cm², in four pieces each under the 15 cm² the first test needed, and 1,836 of them passed. The test
+  now counts a square centimetre.
+- **Roofs per room over an L overlap everywhere:** their soffits (7 m² each) and slabs lay over each other. Roofs over
+  an outline are joined: each cut where it's inside another's volume (a convex solid each; on a face of both, the
+  first keeps it), and every roof a closed solid, so the cut leaves no hole.
+

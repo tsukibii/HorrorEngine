@@ -291,7 +291,7 @@ const png = rgb => {                    // a 4x4 PNG of one colour (a scratch ma
     await page.evaluate(() => { const v = document.querySelector("#viewMode"); v.value = "around"; v.dispatchEvent(new Event("change")); });
     await page.waitForTimeout(1200);
     const outside = await page.evaluate(() => { let meshes = 0, lit = 0; window.__builderStage.scene.traverse(o => { if (o.isMesh && o.userData.outside) meshes++; });
-      return { o: window.B.model.levelExtra.outside, meshes, outline: document.querySelectorAll("#plan polygon").length, hud: document.querySelector("#viewHud").textContent, lit }; });
+      return { o: window.B.model.levelExtra.outside, meshes, outline: document.querySelectorAll("#plan .outside-line").length, hud: document.querySelector("#viewHud").textContent, lit }; });
     if (shots) await page.screenshot({ path: path.join(shots, "outside.png") });
     await page.evaluate(() => window.builder.save(false));
     await page.waitForTimeout(800);

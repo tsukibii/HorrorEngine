@@ -55,6 +55,13 @@ outside until changed in the street (`inside.from`, `inside.own`, *Follow the se
 following building is stale). The bungalow set has its outside (hip roof, raised 45 cm, an air conditioner and a pipe);
 hill_motel's bungalow follows it, its motel is its own. Checks: STORY, STREET, STREETPAGE, BUILDER.
 
+**Then no clipping** (2026-10-31, small hours; the user saw the bungalow's wall tops through its roof): walk-in roofs
+boxed on a soffit 1 cm over the level's top (gables flush), roofs over an L or a T joined into one (flat: one slab and
+its parapet round the outline; pitched: a roof over each arm, cut where it's inside another), and the whole generator
+swept for faces in one plane over each other: layers a `GAP` (1 cm) apart, parts `SIDE_IN` (6 mm) in, rails sharing
+their corner posts, parts up the floors never into their own copy, and the rest by rule (STREET_BUILDER §5d). STREET
+measures it over everything it builds (1 cm², 4 mm) and over sets shaped L, T, U, steps and apart under every roof.
+
 **What could come next** (ask first): the user's verdict on the match, the town and the motel; more references; the
 export placing an inside's level by itself (today a marker; the set's level dropped there by hand); a two-storey
 interior (stairs inside the set); foliage when the user wants it; steps and retaining walls on a slope; a grade in the

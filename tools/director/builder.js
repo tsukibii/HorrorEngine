@@ -803,7 +803,7 @@ async function boot() {
   window.__builderReady = true;
 }
 window.B = B; window.BM = BM; Object.defineProperty(window, "__builderStage", { get: () => stage });
-window.builder = { refreshLibrary, openPreset, changed, save, runChecks, addRoom, addItem, loadRef, placeRefs, setTool: t => { B.tool = t; renderTools(); }, addOpening: (x, y, t) => { B.tool = t; addOpening(x, y); B.tool = "select"; }, render3d, undo, openOther, nodesHere, focusIds, addKit, snapKit, addCurtains, varyKit, splitHinge, applyHingeAt,
+window.builder = { refreshLibrary, openPreset, changed, save, runChecks, addRoom, addItem, loadRef, placeRefs, setTool: t => { B.tool = t; renderTools(); }, addOpening: (x, y, t) => { B.tool = t; addOpening(x, y); B.tool = "select"; }, render3d, undo, buildOutside: () => buildOutside(), openOther, nodesHere, focusIds, addKit, snapKit, addCurtains, varyKit, splitHinge, applyHingeAt,
   swing: deg => { $("#swing").value = deg; $("#swing").oninput(); },
   resizeKitBy: (id, su, sv, x, y) => { const k = B.model.kits.find(q => q.id === id); pushUndo(); resizeKit({ k, su, sv, x0: k.x, y0: k.y, size: k.size.slice(), spec: JSON.parse(JSON.stringify(k.spec)) }, x, y); changed(); return k; }, setKitPreset: (t, v) => { if (t === "fit") B.fitPreset = v; else B.kitPreset = v; renderTools(); } };
 boot().catch(e => { console.error(e); status(e.message, "bad"); });
@@ -884,6 +884,7 @@ function renderFinish() {
 const smats = new S3.Materials();
 let outsideGroup = null, outsideLights = null;
 const orbit = { yaw: -70, pitch: 24, dist: 0 };
+window.__orbit = orbit;
 const around = () => $("#viewMode") && $("#viewMode").value === "around";
 const outsideOf = () => (B.model && B.model.levelExtra || {}).outside;
 function colour(v, on, tip) {
@@ -1006,10 +1007,10 @@ function drawOutsidePlan() {
   const o = outsideOf(); if (!o || !B.exported || floorZ() > 0.5) return;
   const b = SG.outsideBuilding(B.exported.level, o); if (!b) return;
   const over = ["gable", "hip", "shed"].includes((o.roof || {}).kind) ? +(o.roof.over ?? 0.6) : 0;
-  const corners = (e) => [[-b.w / 2 - e, -b.d / 2 - e], [b.w / 2 + e, -b.d / 2 - e], [b.w / 2 + e, b.d / 2 + e], [-b.w / 2 - e, b.d / 2 + e]].map(([u, v]) => SG.place([u, v, 0], b));
-  const pts = c => c.map(q => `${sx(q[0])},${sy(q[1])}`).join(" ");
-  el("polygon", { points: pts(corners(0)), fill: "none", stroke: "#d9a441", "stroke-width": 1.5, "stroke-dasharray": "6 4", "pointer-events": "none" });
-  if (over > 0) el("polygon", { points: pts(corners(over)), fill: "none", stroke: "#d9a441", "stroke-opacity": 0.45, "stroke-width": 1, "stroke-dasharray": "2 4", "pointer-events": "none" });
+  const plan = SG.outsidePlan(B.exported.level, o) || { walls: [], roof: [] };       // the real outline: an L's, a T's
+  const line = (q, attrs) => el("path", Object.assign({ class: "outside-line", d: `M${sx(q[0])} ${sy(q[1])}L${sx(q[2])} ${sy(q[3])}`, fill: "none", stroke: "#d9a441", "pointer-events": "none" }, attrs));
+  for (const q of plan.walls) line(q, { "stroke-width": 1.5, "stroke-dasharray": "6 4" });
+  for (const q of plan.roof) line(q, { "stroke-opacity": 0.45, "stroke-width": 1, "stroke-dasharray": "2 4" });
   const f0 = SG.place([0, -b.d / 2 - over, 0], b), f1 = SG.place([0, -b.d / 2 - over - 1.2, 0], b);
   el("path", { d: `M${sx(f0[0])} ${sy(f0[1])}L${sx(f1[0])} ${sy(f1[1])}`, stroke: "#d9a441", "stroke-width": 2, "marker-end": "", "pointer-events": "none" });
   const t = el("text", { x: sx(f1[0]), y: sy(f1[1]) + 4, "text-anchor": "middle", fill: "#d9a441", "font-size": 11 });

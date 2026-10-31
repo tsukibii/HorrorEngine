@@ -1,7 +1,9 @@
 // The street builder's check (docs/STREET_BUILDER.md §6): every building style at six seeds, every window and ground
 // floor style, every part, roof, road mark, thing and fence builds with no stray number, inside its triangle budget and
-// the same twice; a wall's rectangles and its holes tile it exactly; and every street in Content/Studio/Streets is
-// well formed (ids, kinds, its poles' wires, its shots) and builds, each shot's pins landing where its photo has them.
+// the same twice, and with no clipping: no two faces of a piece facing the same way in one plane over each other (they'd
+// flicker); a wall's rectangles and its holes tile it exactly; a set's outside joins its roofs over any outline (an L,
+// a T) and stays over the level's top; and every street in Content/Studio/Streets is well formed (ids, kinds, its poles'
+// wires, its shots) and builds, each shot's pins landing where its photo has them.
 // Ends "STREET ok".   node tools/director/streetcheck.mjs [--street NAME]
 import fs from "fs";
 import path from "path";
@@ -12,6 +14,60 @@ const SG = await load("tools/director/street-gen.js");
 const SP = await (async () => { try { return await import(pathToFileURL(path.join(ROOT, "tools/director/street-presets.js")).href); } catch (e) { return null; } })();
 const errs = [], warns = [], args = process.argv.slice(2), only = args.includes("--street") ? args[args.indexOf("--street") + 1] : null;
 const BUDGET = { building: 30000, thing: 3000, fence: 6000, road: 6000 };
+// clipping: two triangles of a piece facing the same way, one within NEAR of the other's plane where they overlap by
+// more than a square centimetre (what flickers as the depth buffer picks between them). Faces down on the ground are
+// never seen and don't count.
+const NEAR = 0.004, MIN_OVERLAP = 1e-4;
+const v3 = { sub: (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]], dot: (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2], cross: (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]] };
+function clipLeft(poly, a, b) {
+  const res = [], side = p => (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0]);
+  for (let i = 0; i < poly.length; i++) {
+    const p = poly[i], q = poly[(i + 1) % poly.length], sp = side(p), sq = side(q);
+    if (sp >= 0) res.push(p);
+    if ((sp >= 0) !== (sq >= 0)) { const t = sp / (sp - sq); res.push([p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t]); }
+  }
+  return res;
+}
+const area2 = P => { let s = 0; for (let i = 0; i < P.length; i++) { const p = P[i], q = P[(i + 1) % P.length]; s += p[0] * q[1] - q[0] * p[1]; } return s / 2; };
+function clashes(G) {
+  const tris = [];
+  for (const [slot, g] of Object.entries(G)) for (let i = 0; i < g.idx.length; i += 3) {
+    const v = [0, 1, 2].map(k => { const j = g.idx[i + k] * 3; return [g.pos[j], g.pos[j + 1], g.pos[j + 2]]; });
+    let n = v3.cross(v3.sub(v[1], v[0]), v3.sub(v[2], v[0])); const l = Math.hypot(...n); if (l < 1e-8) continue; n = n.map(x => x / l);
+    tris.push({ slot, v, n, d: v3.dot(n, v[0]) });
+  }
+  if (!tris.length) return [];
+  const zmin = Math.min(...tris.flatMap(t => t.v.map(v => v[2]))), B = new Map(), hits = [];
+  for (const t of tris) { const k = t.n.map(x => Math.round(x * 100)).join(",") + "|" + Math.round(t.d / NEAR); if (!B.has(k)) B.set(k, []); B.get(k).push(t); }
+  for (const [k, list] of B) {
+    const [nk, dk] = k.split("|"), all = list.slice();
+    for (const dd of [-1, 1]) { const o = B.get(nk + "|" + (+dk + dd)); if (o) all.push(...o); }
+    for (let i = 0; i < list.length; i++) for (let j = i + 1; j < all.length; j++) {
+      const a = list[i], b = all[j];
+      if (v3.dot(a.n, b.n) < 0.9995 || b.v.some(p => Math.abs(v3.dot(a.n, v3.sub(p, a.v[0]))) > NEAR)) continue;
+      if (a.n[2] < -0.9 && Math.max(...a.v.map(p => p[2])) < zmin + 0.03) continue;
+      const u = Math.abs(a.n[2]) < 0.9 ? v3.cross([0, 0, 1], a.n) : v3.cross([1, 0, 0], a.n), ul = Math.hypot(...u), U = u.map(x => x / ul), V = v3.cross(a.n, U);
+      const to2 = p => [v3.dot(p, U), v3.dot(p, V)];
+      let A = a.v.map(to2), Bq = b.v.map(to2);
+      if (area2(A) < 0) A.reverse(); if (area2(Bq) < 0) Bq.reverse();
+      let P = A; for (let e = 0; e < 3 && P.length; e++) P = clipLeft(P, Bq[e], Bq[(e + 1) % 3]);
+      const ar = P.length >= 3 ? Math.abs(area2(P)) : 0;
+      if (ar > MIN_OVERLAP) hits.push({ a: a.slot, b: b.slot, area: ar, at: a.v[0] });
+    }
+  }
+  return hits;
+}
+{ // the test itself: two slabs' tops in one plane over each other are found, a GAP apart they aren't
+  const quad = (z, x0) => ({ pos: [x0, 0, z, x0 + 1, 0, z, x0 + 1, 1, z, x0, 1, z], idx: [0, 1, 2, 0, 2, 3] });
+  if (clashes({ a: quad(1, 0), b: quad(1.001, 0.5) }).length < 1) errs.push("the clipping test doesn't find two faces in one plane over each other");
+  if (clashes({ a: quad(1, 0), b: quad(1 + SG.GAP, 0.5) }).length) errs.push("the clipping test finds faces a GAP apart");
+}
+function noClipping(label, p) {
+  if (p.type === "inside" || !p.G) return;                            // the stand-in rooms: never exported
+  const by = {};
+  for (const h of clashes(p.G)) { const k = [h.a, h.b].sort().join(" and "); (by[k] = by[k] || { n: 0, area: 0, at: h.at }).n++; by[k].area += h.area; }
+  for (const [k, v] of Object.entries(by)) errs.push(`${label}: ${p.id}: ${k} in one plane over each other (${v.n} places, ${(v.area * 1e4).toFixed(0)} cm², at ${v.at.map(x => x.toFixed(2)).join(", ")}): they'd flicker`);
+}
 function sane(label, pieces, budgetOf) {
   let tris = 0;
   for (const p of pieces) {
@@ -26,6 +82,7 @@ function sane(label, pieces, budgetOf) {
     }
     const b = budgetOf && budgetOf(p);
     if (b && t > b) errs.push(`${label}: ${p.id} is ${t} triangles (over ${b})`);
+    noClipping(label, p);
     for (const s of p.signs || []) if (!s.key) errs.push(`${label}: ${p.id}: a sign without its key`);
     tris += t;
   }
@@ -46,7 +103,9 @@ for (const win of Object.keys(SG.WIN_STYLES)) for (const ground of Object.keys(S
 for (const kind of Object.keys(SG.PART_KINDS)) for (const face of ["front", "right", "back", "left"])
   sane(`part ${kind} on the ${face}`, SG.build({ buildings: [Object.assign({}, base, { parts: [{ kind, face, x: 1, text: "テスト", win: true }, { kind, face, x: -2, floors: [2, 4], rail: "bars" }] })], ground: false }), () => BUDGET.building);
 for (const kind of Object.keys(SG.ROOF_KINDS)) for (const ridge of ["x", "y"])
-  sane(`roof ${kind} ${ridge}`, SG.build({ buildings: [Object.assign({}, base, { roof: { kind, ridge, things: Object.keys(SG.ROOF_THINGS).map((k, i) => ({ kind: k, x: i - 2 })) }, tiers: [{ floors: 2, inset: [1.5, 1, 1, 1] }] })], ground: false }), () => BUDGET.building);
+  sane(`roof ${kind} ${ridge}`, SG.build({ buildings: [Object.assign({}, base, { roof: { kind, ridge, things: [{ kind: "tank", x: 1 }] }, tiers: [{ floors: 2, inset: [1.5, 1, 1, 1] }] })], ground: false }), () => BUDGET.building);
+for (const thing of Object.keys(SG.ROOF_THINGS)) for (const kind of ["flat", "rail", "hip"])   // each thing on its own roof
+  sane(`a ${thing} on a ${kind} roof`, SG.build({ buildings: [Object.assign({}, base, { roof: { kind, things: [{ kind: thing, x: 0.5, y: -0.5 }] } })], ground: false }), () => BUDGET.building);
 // a roof's slopes face up; a building's walls face out
 { const p = SG.build({ buildings: [Object.assign({}, base, { roof: { kind: "hip" } })], ground: false })[0], g = p.G.tiles;
   for (let i = 0; g && i < g.nrm.length; i += 3) if (g.nrm[i + 2] < 0.2) { errs.push("a hip roof's slope faces down"); break; } }
@@ -146,6 +205,27 @@ for (const set of fs.existsSync(SETS_DIR) ? fs.readdirSync(SETS_DIR) : []) {
     for (const pt of lv.outside.parts || []) if (!SG.OUTSIDE_PARTS.includes(pt.kind)) errs.push(`${L}: ${pt.kind} isn't something for a wall`);
     const faces = SG.outsideFaces(lv, lv.outside);
     if (!faces || new Set(Object.values(faces)).size !== 4) errs.push(`${L}: its faces ${JSON.stringify(faces)}`);
+  }
+}
+// 5e. a set whose rooms don't fill a box (an L, a T, steps, two apart): one roof over its outline under every roof kind
+// (a flat one's parapet round the outline only, pitched ones joined in valleys), no clipping, and every roof over the
+// level's own top (the walls' top, where the level's walls and ceilings end)
+{
+  const room = (id, at, size) => ({ id, at, size: [...size, 2.4], openings: [] });
+  const SHAPES = { L: [room("a", [0, 0], [6, 4]), room("b", [0, 4], [3, 3])], T: [room("a", [0, 0], [9, 3]), room("b", [3, 3], [3, 4])],
+    steps: [room("a", [0, 0], [4, 4]), room("b", [4, 1], [3, 4]), room("c", [7, 2], [2, 4])], apart: [room("a", [0, 0], [4, 4]), room("b", [6, 0], [3, 3])],
+    U: [room("a", [0, 0], [8, 3]), room("b", [0, 3], [3, 4]), room("c", [5, 3], [3, 4])] };
+  const ROOFY = ["tiles", "roof_flat"];
+  for (const [shape, rooms] of Object.entries(SHAPES)) for (const kind of Object.keys(SG.ROOF_KINDS)) {
+    const b = SG.outsideBuilding({ rooms }, { roof: { kind, pitch: 24, over: 0.6, parapet: 0.6 }, raise: 0.15 }), L = `a set shaped ${shape} under a ${kind} roof`;
+    if (!b) { errs.push(`${L}: no building`); continue; }
+    const P = once(L, { buildings: [b], ground: false }), shell = P.find(p => p.type === "building"), ins = P.find(p => p.type === "inside");
+    sane(L, P, () => BUDGET.building);
+    let low = Infinity, top = -Infinity, roofTris = 0;
+    for (const s of ROOFY) { const g = shell && shell.G[s]; for (let i = 2; g && i < g.pos.length; i += 3) low = Math.min(low, g.pos[i]); roofTris += g ? g.idx.length / 3 : 0; }
+    for (const g of Object.values(ins ? ins.G : {})) for (let i = 2; i < g.pos.length; i += 3) top = Math.max(top, g.pos[i]);
+    if (!(roofTris > 0)) errs.push(`${L}: no roof`);
+    else if (!(low >= top + 0.1 - 1e-6)) errs.push(`${L}: the roof comes down to ${low.toFixed(3)}, the level's top is ${(top + 0.1).toFixed(3)}`);
   }
 }
 {

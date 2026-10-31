@@ -207,7 +207,13 @@ for a car park or a walkway. So the street builds the outside, round the level:
   own, **the level's outside doors and windows cut through it at their places and sizes** (the doors' shapes are the
   set's: there's nothing to keep in step by hand), no wall where the level has none (an open veranda), a plinth down to
   the ground, the floor `raise`d (a Japanese house's 45 cm) with steps up to each door, one roof over the rooms (hip,
-  gable, flat...; over each room when they're scattered), the building's own parts on its box (a canopy, signs, lamps).
+  gable, flat...), the building's own parts on its box (a canopy, signs, lamps). The roof is **boxed**: it stands on a
+  soffit at the walls' top, 1 cm over the level's own walls and ceilings, so nothing of the level ever shows through
+  it; a gable's or a shed's ends are flush with its walls. Rooms that don't fill a box (an L, a T, steps) get **one
+  roof over their outline**: a flat one is one slab with its parapet (or railing) round the outline only; a pitched one
+  is a roof over each arm of it (an L's two bars), each cut away where it's inside another, so they meet in valleys;
+  a gable's or a single slope's wing starts at the ridge of the bigger roof it runs into, so its one end is out in the
+  open (the classic L and T), and the plan in the scene builder draws that outline (§5d).
   Inside, a dark stand-in for each room (so a door shows a room), never exported.
 - **Its outside from the set** (DECISIONS 2026-10-31): a set's level can carry its own outside, designed in the
   scene builder (its Outside panel, SCENE_BUILDER §8: a street style, the walls, the roof, the raise, the front, the
@@ -238,13 +244,42 @@ The example street **hill_motel**: a winding road climbing 8.5 m, the motel and 
 a block wall with mesh, a chain) at the bottom, the bungalow up the hill behind a block wall with a gate, houses the
 rest of the way (Fill), and three shots.
 
+## 5d. No clipping
+
+The user (2026-10-31): "it looks like there is clipping on the roof (wall top lines peeking through) etc, refine the
+system so we never see clipping". Two faces facing the same way in one plane, over each other, flicker as the depth
+buffer picks between them (z-fighting); a face just behind another shows through it at a distance. The generator now
+keeps every pair apart by construction, and STREET measures it (§6):
+
+- **Layers a GAP apart** (`GAP`, 1 cm): what lies on a surface (a sign's words, a fan's grille, a lamp's glass, a
+  vending machine's lit panel, a bollard's band, a drain's grate, a car's glass, road marks over the lines and each
+  mark over the one before it) stands a GAP off it, never a few millimetres.
+- **A part's sides, top and bottom 6 mm in** from where they're asked to be (`SIDE_IN`), so a part ending at a
+  corner, a floor's line, a fin's end or a slab's top is never in its plane; a part stood on its floor keeps its
+  bottom there. A part repeated up the floors is never taller than the way to its own copy on the next floor (a hole
+  leaves 10 cm of wall between).
+- **Things that meet, meet once**: a balcony's slab and its side rails stop at the wall and the front's corner posts; a
+  railing round a roof has one post at each corner and its rails stop at the posts' sides; a stair's top step meets
+  its landing; a fascia board runs a GAP past its eave; fence posts end inside their top rail; a gate's two leaves
+  leave a gap where they meet; the folding gate's lattices are two layers; a bike's tubes differ in thickness where
+  they join, its stays either side of the wheel; a lamp's two arms start either side of its pole; the ◇ mark is one
+  mitred ring.
+- **Parts that meet each other**: a blade sign over a bay hangs off the bay's front instead of through it; the pencil
+  building's blade is on the side its bays leave open.
+- **Roofs**: a walk-in building's roof is boxed and 1 cm over the level's top (§5c); a flat roof's parapet runs along
+  x across the corners and along y between them, its coping the same; roofs over an outline that isn't a box are
+  joined into one, each cut away where it's inside another's volume (on a face of both, the first keeps it).
+
 ## 6. Checks
 
 - `python tools/street.py check` (STREET, in check_all): every style at six seeds, every window and ground floor
   style, every part on every face, every roof and roof thing, every road mark, thing and fence builds with no stray
-  number, inside its triangle budget, the same twice; a pavement is cut where another road crosses it; a hip roof's
-  slopes face up; a wall's rectangles and its holes tile it exactly; every street is well formed and builds; each
-  shot's pins land within 2% of the frame's height on average (4.5% at most).
+  number, inside its triangle budget, the same twice, and **with no clipping**: no two faces of a piece facing the
+  same way within 4 mm of one plane over each other by more than a square centimetre (faces down on the ground
+  aside; the test tries itself first on two slabs); a pavement is cut where another road crosses it; a hip roof's
+  slopes face up; a wall's rectangles and its holes tile it exactly; sets shaped L, T, U, steps and apart under every
+  roof kind build one roof over their outline, every roof over the level's top; every street is well formed and
+  builds; each shot's pins land within 2% of the frame's height on average (4.5% at most).
 - `node tools/director/streettest.mjs` (STREETPAGE, the desk's server running): the page driven as a person would (a
   lane drawn, filled, a building's floors changed, a sign added on its facade, a photo behind it, a fence and a vending
   machine placed, a shot kept, undo, saved and read back the same, the .glb exported, the Shibuya lane drawn through
