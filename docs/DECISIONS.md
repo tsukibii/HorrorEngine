@@ -20,6 +20,10 @@ The user's answers, newest first. They override the plan, the research and the d
   with the bundle itself (www.blender.org is blocked in the cloud sessions; the user can allow it or download the
   bundle), the graft stays on the machine: `Content/Studio/Bodies/MHR_eyes.bin` is git-ignored, made by
   `python tools/eye_patch.py make`.
+- **"Can you make sure in the final versions we don't have that weird gray makeup stripe pattern thing on the closed
+  eyelids (should just blend in with the rest of the skin color but maybe make it possible to apply makeup (eye shadow)
+  onto that closed eyelid part"**: the shut lid reads the photo softly, near the photo's own skin tone, and the skin and
+  its makeup are worked out on the open lid laid flat, so eyeshadow covers the shut lid (CHARACTER_STUDIO §2c).
 
 ## 2026-10-31, the night (the user: brows and lashes by hand, on `realism-enhancer-skin`)
 

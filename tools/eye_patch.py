@@ -38,13 +38,13 @@ BLEND = ROOT / "vendor" / "tau" / "procedural_human_hair.blend"
 OUTDIR = ROOT / "Saved" / "eye_patch"                # the lined-up head's cache, the job
 BIN = ROOT / "Content" / "Studio" / "Bodies" / "MHR_eyes.bin"   # (git-ignored: what's made from TAU's head stays on the machine for now)
 LOOK = ROOT / "Saved" / "Story" / "_look" / "eyes"
-K_OUT, K_IN, K_EASE, K_BLINK = 19, 5, 12, 13      # loops outward kept, inward kept (the lining), where the easing onto MHR starts, where the blink fades out
+K_OUT, K_IN, K_EASE, K_BLINK = 21, 5, 16, 13      # loops outward kept, inward kept (the lining), where the easing onto MHR starts (after TAU's crease, about the 12th, and the fold over it), where the blink fades out
 UPPER_SHARE = 0.85                                 # of the closing angle: the upper lid's, the rest the lower's
 
 # ---- the file -----------------------------------------------------------------------------------------------------------
 
 ARRAYS = [("pos", "f4", 3), ("tri", "u4", 1), ("bary", "f4", 3), ("ring", "i2", 1), ("blink", "f4", 1), ("membrane", "f4", 1),
-          ("uv", "f4", 2), ("mhrv", "i4", 1), ("faces", "u4", 3), ("hide", "u4", 1), ("contact", "u4", 1), ("lash", "u4", 1)]
+          ("uv", "f4", 2), ("mhrv", "i4", 1), ("faces", "u4", 3), ("hide", "u4", 1), ("contact", "u4", 1), ("lash", "u4", 1), ("fade", "f4", 1)]
 
 
 def write_bin(path, header, sides):
@@ -176,7 +176,8 @@ def inside(job_path):
             nxt = {b for a in cur for b in adj.get(a, ()) if b not in ring and ok(b)}
             for b in nxt: ring[b] = sign * k
             cur = nxt
-    grow(contact, lambda b: off[b] >= 0, K_OUT, 1)
+    K_OUT_, K_EASE_ = job.get("out_loops", K_OUT), job.get("ease_loops", K_EASE)
+    grow(contact, lambda b: off[b] >= 0, K_OUT_, 1)
     grow(contact, lambda b: off[b] < 0, K_IN, -1)
     keepF = [f for f in faces if all(i in ring for i in f)]
     used = sorted({i for f in keepF for i in f}); idx = {v: k for k, v in enumerate(used)}
@@ -231,15 +232,19 @@ def inside(job_path):
         Vs, Ts, es = mirror(side)
         c_, r_ = es["c"], es["r"]
         # 3. the outer loops eased onto MHR's skin (from the 12th to the 19th), so the edge lies on it
-        for i in np.nonzero(RING >= K_EASE)[0]:
+        moved = {}
+        for i in np.nonzero(RING >= K_EASE_)[0]:
             loc, n_, fi, dist = bvhM.find_nearest(Vector(Vs[i]))
             if loc is None: continue
-            u = (RING[i] - K_EASE) / (K_OUT - K_EASE); w = u * u * (3 - 2 * u)
+            u = (RING[i] - K_EASE_) / (K_OUT_ - K_EASE_); w = u * u * (3 - 2 * u)
+            moved.setdefault(int(RING[i]), []).append(float(np.linalg.norm(np.array(loc) - Vs[i])) * w * 1000)
             Vs[i] += w * (np.array(loc) - Vs[i])
+        if side == "L": print("EYEPATCH eased onto MHR (mm, mean/max by loop):", " ".join(f"{k}:{np.mean(v):.1f}/{np.max(v):.1f}" for k, v in sorted(moved.items())))
         bl = loops_of(Ts); outer = max(bl, key=lambda L_: (np.mean(RING[L_]), len(L_)))
         print(f"EYEPATCH {side}: boundary loops {[len(L_) for L_ in bl]}, mean loops {[round(float(np.mean(RING[L_])), 1) for L_ in bl]}")
         # 4. MHR's triangles inside that edge hidden (seen from the front, round the eyeball's centre)
         poly = Vs[outer][:, :2] - c_[:2]
+        if side == "L": print(f"EYEPATCH the edge reaches {poly[:, 1].max() * 1000:.1f} mm up, {poly[:, 1].min() * 1000:.1f} down, {np.abs(poly[:, 0]).max() * 1000:.1f} across from the eyeball's centre")
 
         def inside2(p):
             x, y = p[0] - c_[0], p[1] - c_[1]; ins = False
@@ -248,7 +253,7 @@ def inside(job_path):
                 if (y1 > y) != (y2 > y) and x < (x2 - x1) * (y - y1) / (y2 - y1) + x1: ins = not ins
             return ins
         cand = np.nonzero((np.linalg.norm(P0 - c_, axis=1) < 0.04) & (P0[:, 2] > c_[2] - 0.002))[0]
-        print(f"EYEPATCH {side}: the outer loop {len(outer)} points (of {int((RING == K_OUT).sum())} in loop {K_OUT}), 2D extent {np.ptp(poly, 0) * 1000}, {len(cand)} MHR points near")
+        print(f"EYEPATCH {side}: the outer loop {len(outer)} points (of {int((RING == K_OUT_).sum())} in loop {K_OUT_}), 2D extent {np.ptp(poly, 0) * 1000}, {len(cand)} MHR points near")
         inV = np.zeros(len(P0), bool); inV[[v for v in cand if inside2(P0[v])]] = True
         candT = np.nonzero(np.any(np.isin(T, cand), 1))[0]
         hide = [ti for ti in candT if inV[T[ti]].any() or inside2(P0[T[ti]].mean(0)) or any(inside2((P0[T[ti][a]] + P0[T[ti][(a + 1) % 3]]) / 2) for a in range(3))]
@@ -341,10 +346,19 @@ def inside(job_path):
             elif kk >= K_BLINK: w = 0.0
             else: u = (kk - 2) / (K_BLINK - 2); w = 1 - u * u * (3 - 2 * u)
             blink[k] = w if upper else -w                # (the angle is the face's own: apply() measures the opening as it is)
+        # 7b. an even falloff from the opening (1) to the edge (0), harmonic over the graft's own triangles: the shape keys
+        # fade by it, so the room each way is used evenly (TAU's loops bunch up toward the nose)
+        fade = np.zeros(len(Vall)); fixed = (RINGs <= 0) | (RINGs >= K_OUT_); fade[RINGs <= 0] = 1
+        Ed = np.unique(np.sort(np.r_[F_all[:, [0, 1]], F_all[:, [1, 2]], F_all[:, [2, 0]]], 1), axis=0); deg = np.bincount(Ed.ravel(), minlength=len(Vall))
+        for _ in range(6000):
+            acc = np.bincount(Ed[:, 0], weights=fade[Ed[:, 1]], minlength=len(Vall)) + np.bincount(Ed[:, 1], weights=fade[Ed[:, 0]], minlength=len(Vall))
+            nxt = np.where(fixed, fade, acc / np.maximum(deg, 1))
+            if np.abs(nxt - fade).max() < 1e-7: break
+            fade = nxt
         # 8. the wet membrane: the lining, the contact band, the lid's edge behind the lash line
         membrane = np.clip(1 - (RINGs - 0) / max(1, lash_ring), 0, 1) * (RINGs < 999)
         membrane[RINGs <= 0] = 1
-        sides[side] = dict(pos=Vall, tri=tri, bary=bary, ring=RINGs, blink=blink, membrane=membrane, uv=uv, mhrv=mhrv, faces=F_all,
+        sides[side] = dict(pos=Vall, tri=tri, bary=bary, ring=RINGs, blink=blink, membrane=membrane, uv=uv, mhrv=mhrv, faces=F_all, fade=fade,
                            hide=hide, contact=np.array(order_ring(Ts, RING, 0, Vall, c_)), lash=np.array(order_ring(Ts, RING, lash_ring, Vall, c_)))
         sides[side]["eye"] = dict(centre=c_.tolist(), radius=r_, forward=es["f"].tolist())
         print(f"EYEPATCH {side}: {len(Vall)} points ({len(hole)} of them MHR's own round the hole), {len(F_all)} triangles ({len(zip_)} stitching), {len(hide)} MHR triangles hidden")
@@ -354,7 +368,7 @@ def inside(job_path):
                                       "its loop (ring: <0 the lining, 0 where it meets the eyeball, >0 outward, 999 MHR's own), its blink "
                                       "(radians about the head's x axis through the eyeball's centre), the wet membrane, its UV on MHR's",
               "align": {"scale": S, "rotation": R.tolist(), "translation": t.tolist()}, "lash_ring": int(lash_ring),
-              "loops": {"out": K_OUT, "in": K_IN, "ease": K_EASE, "blink": K_BLINK}, "upper_share": UPPER_SHARE,
+              "loops": {"out": K_OUT_, "in": K_IN, "ease": K_EASE_, "blink": K_BLINK}, "upper_share": UPPER_SHARE,
               "sides": {s: {"eye": sides[s]["eye"]} for s in ("L", "R")}}
     write_bin(Path(job["out"]), header, sides)
     print(f"EYEPATCH written: {job['out']}")
@@ -416,14 +430,14 @@ def apply(E, side, P, P0, T, blink=0.0, keys=None):
     mm = 0.001 * sc                                      # (a millimetre at this face's size)
     lid, u, sx = fields(E, side)
     tap = _smooth(u / 0.25) * _smooth((1 - u) / 0.2)     # (nothing at the corners)
-    near = np.where(own, 1 - _smooth((rf - 8) / 8), 0)   # the eye's own skin, fading out by the 16th loop
-    r = r0 * sc * (1 + 0.12 * k["size"]); c = c + np.array([0, 0, 1.5 * mm * k["depth"]])
-    v = v + (v - c) * (0.12 * k["size"] * near)[:, None]
-    a = np.radians(8) * k["tilt"] * np.where(own, 1 - _smooth((rf - 10) / 8), 0)
+    fd = G["fade"] if "fade" in G else np.where(own, 1 - _smooth((rf - 8) / 8), 0)   # (1 at the opening, 0 at the edge)
+    r = r0 * sc * (1 + 0.08 * k["size"]); c = c + np.array([0, 0, 1.2 * mm * k["depth"]])
+    v = v + (v - c) * (0.08 * k["size"] * _smooth(fd / 0.6))[:, None]
+    a = np.radians(8) * k["tilt"] * _smooth(fd / 0.5)
     lx, ly = (v[:, 0] - c[0]) * sx, v[:, 1] - c[1]
     v[:, 0] = c[0] + (lx * np.cos(a) - ly * np.sin(a)) * sx; v[:, 1] = c[1] + lx * np.sin(a) + ly * np.cos(a)
     v = _turn_x(v, c, np.where(lid > 0, -np.radians(5), np.radians(2.5)) * k["opening"] * np.abs(G["blink"]) * tap)
-    v[:, 2] += 1.5 * mm * k["depth"] * np.where(own, 1 - _smooth((rf - 12) / 6), 0)
+    v[:, 2] += 1.2 * mm * k["depth"] * _smooth(fd / 0.6)
     o = np.linalg.norm(base - c0, axis=1) - r0           # each point's height over the eyeball at rest
     u_ = np.clip((rf - 4) / 6, 0, 1); ws = np.where(own, 1 - u_ * u_ * (3 - 2 * u_), 0)
     q = v - c; d = np.linalg.norm(q, axis=1, keepdims=True)
@@ -431,11 +445,11 @@ def apply(E, side, P, P0, T, blink=0.0, keys=None):
     nrm = (v - c) / np.linalg.norm(v - c, axis=1, keepdims=True)
     up = (lid > 0) & own
     if k["crease"] > 0:                                  # a deeper double lid: the fold set in
-        b = np.exp(-((rf - 9) / 2.5) ** 2) * up * tap; v = v - nrm * (1.0 * mm * k["crease"] * b)[:, None]
+        b = np.exp(-((rf - 12.5) / 2.5) ** 2) * up * tap; v = v - nrm * (1.0 * mm * k["crease"] * b)[:, None]   # (TAU's crease: about the 12th loop)
     elif k["crease"] < 0:                                # a monolid: the fold filled, the skin over the lid a little lower
-        b = np.exp(-((rf - 8.5) / 3.5) ** 2) * up * tap; v = v + nrm * (1.4 * mm * -k["crease"] * b)[:, None]; v[:, 1] -= 0.8 * mm * -k["crease"] * b
-    f = (1 - _smooth(u / 0.3)) * np.exp(-((rf - 6) / 4) ** 2) * up * (ring >= 2)
-    v = v + k["fold"] * f[:, None] * np.array([-0.8 * mm * sx, -1.6 * mm, 0.4 * mm])
+        b = np.exp(-((rf - 12) / 3.5) ** 2) * up * tap; v = v + nrm * (1.4 * mm * -k["crease"] * b)[:, None]; v[:, 1] -= 0.8 * mm * -k["crease"] * b
+    f = (1 - _smooth(u / 0.3)) * np.exp(-((rf - 7) / 4) ** 2) * _smooth((rf - 3) / 2) * up   # (the lid's edge stays: the skin above it drapes over the corner)
+    v = v + k["fold"] * f[:, None] * np.array([-0.8 * mm * sx, -1.2 * mm, 0.4 * mm])
     if blink:
         q = v - c; psi = np.arctan2(q[:, 1], q[:, 2]); x = q[:, 0]; w = G["blink"]
         cl = ring == 0; upc, loc_ = cl & (w >= 0), cl & (w <= 0)   # (the corners in both lids: each closes onto them)

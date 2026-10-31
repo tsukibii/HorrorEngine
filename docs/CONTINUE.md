@@ -16,9 +16,9 @@ not an order. Overwrite this file at the end of the next session.
 The user asked for TAU's eye and lid shape ("meaty flesh that curves in") on our editable faces, with a few shape keys
 (more Asian or Caucasian, size). Built so far (CHARACTER_STUDIO §2c): `tools/eye_patch.py` (make, preview, check:
 EYEPATCH) grafts TAU's eye region onto MHR's face; the Studio wears it (Skin, Eyes, TAU's eyes; `eyegraft.js`), open
-to shut. Also Start from TAU's brows (§2b). Next, in order: the shape keys (size, crease monolid to double lid, the
-inner fold, tilt, opening, depth; presets), the export (the graft in the glb with its blink's morph targets, EYELIDS on
-it) and Godot; then the user's look. The head's licence: compare it with Blender's Human Base Meshes bundle when
+to shut. Also Start from TAU's brows (§2b). The shape keys are in (size, crease monolid to double
+lid, inner fold, tilt, opening, depth; presets TAU, East Asian, Caucasian). Next: the export (the graft in the glb with
+its blink's morph targets, EYELIDS on it) and Godot; then the user's look. The head's licence: compare it with Blender's Human Base Meshes bundle when
 www.blender.org is reachable (DECISIONS).
 
 ## 0b. `realism-enhancer-skin` (2026-10-31, the night): brows and lashes by hand, waiting for the user's try

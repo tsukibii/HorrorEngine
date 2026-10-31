@@ -134,12 +134,34 @@ it; within 15 mm of the eye's centre TAU has 4,391 points at its second multires
   whole, fading out by the 13th loop), so the lids slide over the eyeball and meet; never into the eyeball or the
   cornea's bulge (the lid rides over it shut, as a real lid shows the cornea's bump). MHR's own eyesClosed is left out
   while it's on.
+- **The shape keys** (under TAU's eyes, with a preset menu: TAU, East Asian, Caucasian; saved with the character as
+  `st.eyes.shape`): **Eye size** (the eyeball and the opening together, 8% either way), **Crease** (−1 a monolid: the
+  fold over the lid filled and a little lower; +1 a deep double lid: the fold set in; at TAU's crease, about the 12th
+  loop, where the lid plate lying 1.85 mm over the eyeball meets the skin rising to the brow), **Inner fold** (the upper
+  lid's skin over the inner corner, its edge staying), **Tilt** (the outer corner up or down, 8°), **Opening** (the lids
+  apart or nearer), **Depth** (the eye and its lids back under the brow or forward, 1.2 mm). Our own fields in the eye's
+  frame (eyegraft.js `SHAPE_KEYS`, eye_patch.py `apply`), size, tilt and depth fading by an even falloff from the opening
+  to the graft's edge (harmonic over its triangles: TAU's loops bunch up toward the nose). East Asian is crease −0.8,
+  inner fold 0.6, tilt 0.25, opening −0.3, depth 0.35; Caucasian crease 0.6, opening 0.15, depth −0.4.
+- **The shut lid** (the user, seeing grey stripes on it: "should just blend in with the rest of the skin color but maybe
+  make it possible to apply makeup (eye shadow) onto that closed eyelid part"): shut, TAU's upper lid unfolds over skin
+  that a photo never saw open (open, it lies folded under the crease), and its UVs, laid from MHR's narrow lid, stretched
+  whatever the photo had there into stripes (on the test character, a screenshot with the Studio's circles printed over
+  the lid). So from its edge to the crease the lid reads the photo and the paint four mip levels softer and 90% of the
+  way to the photo's own skin tone (`photoBlur`, skinshader.js), and its skin and makeup are worked out where it lies
+  open, laid flat from the lash line to the crease (`skinPlaces`, the drawn objPos), with the makeup's lid lines from the
+  open lid (`lidFront`, `skinLm`): eyeshadow put on the open lid covers the shut lid from the lash line to the crease and
+  goes down with it, as on a real lid; the liner stays on the lashes' roots.
+- **The graft's extent**: TAU's own loops kept to the 21st (eased onto MHR's skin from the 16th, so TAU's crease and the
+  fold over it stay TAU's), reaching 12 mm above the eye's centre, under the brow's ends; so the brows lie on whichever
+  skin is there (`skinNear` takes the graft's triangles and leaves out MHR's hidden ones).
 - **EYEPATCH** (`python tools/eye_patch.py check`, in check_all; says so and passes when the graft isn't made here): the
   seam (MHR's own points round the hole, the edge on MHR's skin), the right eye the left mirrored, and on MHR's base and
-  every character's body found: nothing of a lid inside the eyeball open or shut, shut the lids within 0.6 mm, the
-  lid's edge on the eyeball. `preview` draws it as clay (open, shut, and on a character: `Saved/Story/_look/eyes/`).
-- **Not yet**: the shape keys (size, crease from monolid to double lid, the inner fold, tilt, opening, depth), the
-  export and Godot (an export now still carries MHR's eyes), the eyelid-line handles on the graft.
+  every character's body found, and on MHR's base with both presets and every key at its ends: nothing of a lid inside
+  the eyeball open or shut, shut the lids meeting (within their edge's own spacing), the lid's edge on the eyeball. The
+  Studio's points match it within a micron away from the cornea (over it they ride out with its bulge). `preview` draws
+  it as clay (open, shut, and on a character: `Saved/Story/_look/eyes/`).
+- **Not yet**: the export and Godot (an export now still carries MHR's eyes), the eyelid-line handles on the graft.
 
 ## 3. Each stage against the rule (as of this branch)
 

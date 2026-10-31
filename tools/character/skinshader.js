@@ -412,9 +412,9 @@ export function procedural(material) {
   for (const k of ["BL", "BR"]) u["uLow" + k] = { value: Array.from({ length: 9 }, () => new THREE.Vector4()) };
   material.onBeforeCompile = sh => {
     Object.assign(sh.uniforms, u);
-    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nattribute vec2 skinUv; attribute float selW; attribute vec4 nail; attribute vec3 objPos; attribute float membrane; varying float vSel; varying vec3 vObj; varying vec2 vSkinUv; varying vec4 vNail; varying float vMem;")
-      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvObj = objPos; vSkinUv = skinUv; vSel = selW; vNail = nail; vMem = membrane;");
-    sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying float vMem;\n" + COMMON)
+    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nattribute vec2 skinUv; attribute float selW; attribute vec4 nail; attribute vec3 objPos; attribute float membrane; attribute float photoBlur; varying float vSel; varying vec3 vObj; varying vec2 vSkinUv; varying vec4 vNail; varying float vMem; varying float vBlur;")
+      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvObj = objPos; vSkinUv = skinUv; vSel = selW; vNail = nail; vMem = membrane; vBlur = photoBlur;");
+    sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying float vMem; varying float vBlur;\n" + COMMON)
       .replace("#include <color_fragment>", `vec2 cutFw = fwidth(vObj.xy); float cutPx = max(max(cutFw.x, cutFw.y), 1e-7), cutA = 1.0;   // a pixel's size, taken before any branch
 if (uMouthOn > 0.5 && vObj.z > uMouthZ.x && vObj.z < mouthFront(vObj.x)) cutA = cutCover(uMouthP, uMouthBox, vObj.xy, cutPx);   // the mouth's opening: index.html draws the inside behind it
 if (uCutOn > 0.5) { if (vObj.z > uCutZ.x) cutA = min(cutA, cutCover(uCutL, uCutBoxL, vObj.xy, cutPx)); if (vObj.z > uCutZ.y) cutA = min(cutA, cutCover(uCutR, uCutBoxR, vObj.xy, cutPx)); }   // the eyes cut out
@@ -425,7 +425,7 @@ if (uProc > 0.5) {
   vec3 skinP = proceduralSkin(uTone, vObj);
   if (uHasPhoto > 0.5) {                                             // the picture inside its mask, the procedural skin outside
     float h0 = skinH, r0 = skinRough, c0 = skinCoat;
-    vec3 ph = texture2D(uPhotoMap, vSkinUv).rgb;
+    vec3 ph = mix(texture2D(uPhotoMap, vSkinUv).rgb, uPhotoTone, 0.9 * vBlur);   // (TAU's eyes' closing lid: the photo's own skin tone, eyegraft.js photoBlur)
     float mk = texture2D(uPhotoMask, vSkinUv).r;
     if (uHasTouch > 0.5) mk = clamp(mk + (floor(texture2D(uTouchMask, vSkinUv).r * 255.0 + 0.5) - 128.0) / 127.0, 0.0, 1.0);   // the touch-up's mask edits: grey 128 exactly none
     mk *= uf_photo;
@@ -485,7 +485,13 @@ if (uProc > 0.5 || uHasLay > 0.5 || uLipOn > 0.5 || uNailOn > 0.5) { material.cl
 if (nailM > 0.0) { material.clearcoat = mix(material.clearcoat, nailCoat, nailM); material.clearcoatRoughness = mix(material.clearcoatRoughness, nailCoatR, nailM); }   // a nail's gloss, a polish's
 #endif`);
   };
-  material.customProgramCacheKey = () => "studio-skin-16";
+  const blurred = material.onBeforeCompile;           // (TAU's eyes' closing lid, eyegraft.js photoBlur: its skin-UV reads a few mip levels softer)
+  material.onBeforeCompile = (sh, r) => {
+    blurred(sh, r);
+    sh.fragmentShader = sh.fragmentShader.replace(/texture2D\((u\w+), vSkinUv\)/g, "texture2D($1, vSkinUv, 4.0 * vBlur)")
+      .replace("#include <map_fragment>", THREE.ShaderChunk.map_fragment.replace("texture2D( map, vMapUv )", "mix(texture2D( map, vMapUv, 4.0 * vBlur ), vec4(uPhotoTone, 1.0), 0.9 * vBlur)"));
+  };
+  material.customProgramCacheKey = () => "studio-skin-19";
   return u;
 }
 

@@ -376,7 +376,7 @@ function skinLook() {
   material.roughness = st.skin.rough; material.clearcoat = proc || SKU.uHasLay.value > 0 || st.lips?.on || (NAILAT && st.nails?.on) ? 1 : 0; material.envMapIntensity = 0.55 * LIGHT.env; material.needsUpdate = true;
   SKU.uHasPhoto.value = photo && SKINMASK ? 1 : 0; SKU.uPhotoMap.value = SKIN; SKU.uPhotoMask.value = SKINMASK;
   setSkinLit(material, st.skin.lit); if (st.skin.lit?.on) SKU.uGlowK.value = 0;   // the light through the skin is the lighting's now, not the emissive glow's
-  if (st.skin.proc) SKINSH.update(SKU, st.skin.proc, st.skin.tone, LMK ? lmk : null, SCALE, BL_READY ? lidFront : null);
+  if (st.skin.proc) SKINSH.update(SKU, st.skin.proc, st.skin.tone, LMK ? skinLm : null, SCALE, BL_READY ? lidFront : null);
   nailLook();
 }
 // the upper lid's front edge, where the lashes grow, as nine points in the order of skinshader.js's ring (outer corner
@@ -390,6 +390,13 @@ function skinLook() {
 // which "lower": the lower lid's front edge, where the lower lashes grow, and the skin `ws` mm down from it (the lower
 // liner's band), its line the outline's lower half (outer corner to inner, as browLash takes it and the ring runs)
 function lidFront(side, pts, ws, which = "upper") {
+  if (graftOn() && GRAFTV0[side]) {                     // TAU's eyes: their skin is worked out where it lies open, so the makeup's lines are the open lid's (and stay on it as it shuts)
+    const { pts: o } = EG.outline32(GRAFT, side, GRAFTV0[side]), lower = which === "lower", line = lower ? o.slice(0, 17) : o.slice(16).concat([o[0]]);
+    const ring = j => lower ? 2 * j : 16 - 2 * j, wAt = i => ws[Math.min(8, Math.round(lower ? i / 2 : (16 - i) / 2))];
+    const rows = EG.rim(GRAFT, side, GRAFTV0[side], line, line.map((_, i) => wAt(i)), 0.001 * SCALE);
+    const at = (i, a) => [line[i][0] + rows[i][a], line[i][1] + rows[i][a + 1], line[i][2] + rows[i][a + 2]];
+    return { front: [...Array(9)].map((_, j) => at(ring(j), 6)), top: [...Array(9)].map((_, j) => at(ring(j), 9)) };
+  }
   const { pts: o, c } = outline(side, 1), lower = which === "lower", line = lower ? o.slice(0, 17) : o.slice(16).concat([o[0]]);   // the upper inner corner to outer, as browLash takes it
   const ring = j => lower ? 2 * j : 16 - 2 * j, wAt = i => ws[Math.min(8, Math.round(lower ? i / 2 : (16 - i) / 2))];   // the ring's point j (outer corner to inner) on the line, and the line's point i's width
   const O = OPENLID[side], L0 = O && O[which], R0 = O && O[which + "Rim"];
@@ -950,9 +957,20 @@ const mesh = new THREE.Mesh(dgeo, material);
 const rig = new THREE.Group(); rig.matrixAutoUpdate = false; scene.add(rig); rig.add(mesh);
 const GRAFTM = GRAFT ? new THREE.Mesh(EG.geometry(GRAFT), material) : null;   // TAU's eyes, drawn on the skin's own material
 if (GRAFTM) { GRAFTM.visible = false; GRAFTM.frustumCulled = false; GRAFTM.name = "eye_graft"; rig.add(GRAFTM); }
-const POSB = new Float32Array(N * 3), GRAFTEYE = {}, GRAFTV = {};   // the face with every expression but the blink (the graft rides it); each eye's eyeball; the graft's points now
+const POSB = new Float32Array(N * 3), GRAFTEYE = {}, GRAFTV = {}, GRAFTV0 = {};   // the face with every expression but the blink (the graft rides it); each eye's eyeball; the graft's points now, and open (where its skin and makeup are worked out)
 let LO = 0;                                            // RAW's lowest y (the feet): the Studio's points are (RAW - LO) * SCALE
 function graftOn() { return !!GRAFT && !!st.eyes?.graft && !!st.eyes?.on && !!LMK; }
+// the landmarks the skin's makeup reads (skinshader.js update): with TAU's eyes on, the lids' (MediaPipe's rings, outer
+// corner to inner, 9 a lid) are their open lid's, where their skin is worked out (eyegraft.js skinPlaces): the shadow, the
+// under-eye wash and the waterline follow TAU's lids, not MHR's hidden ones, and stay on the lid as it shuts
+const LIDLM = new Map(Object.entries({ UL: [263, 466, 388, 387, 386, 385, 384, 398, 362], UR: [33, 246, 161, 160, 159, 158, 157, 173, 133], LL: [263, 249, 390, 373, 374, 380, 381, 382, 362], LR: [33, 7, 163, 144, 145, 153, 154, 155, 133] })
+  .flatMap(([k, ids]) => ids.map((i, j) => [i, [k[1], k[0] === "U", j]])));
+function skinLm(i) {
+  const at = graftOn() && LIDLM.get(i);
+  if (!at || !GRAFTV0[at[0]]) return lmk(i);
+  const { pts } = EG.outline32(GRAFT, at[0], GRAFTV0[at[0]]), line = at[1] ? [pts[16], ...pts.slice(17), pts[0]].reverse() : pts.slice(0, 17);
+  return line[2 * at[2]];
+}
 const STUDIO = new StudioView({ renderer, scene, hide: [floor], floorY: 0 });   // tools/shared/studioview.js: a white studio, an HDR, a key light with shadows   // the body and all it wears: the head motion moves it
 let EYES_IN = false;
 let SCALE = 1, TOP = 1.7;
@@ -1034,7 +1052,11 @@ function compose() {                                   // POS: RAW + the face, s
   for (let e = 0; e < ENAMES.length; e++) if (!EC.includes(e)) express(e);
   const graft = graftOn(); if (graft) POSB.set(POS);   // (TAU's eyes ride the face without MHR's blink: they shut their own way, and the skin round them holds still)
   for (const e of EC) if (e >= 0 && !graft) express(e);
-  if (graft) for (const [k, side] of [[0, "L"], [1, "R"]]) GRAFTV[side] = EG.placeAll(GRAFT, side, POSB, GRAFTEYE[side], EC[k] >= 0 ? Math.min(1, Math.max(0, W[EC[k]])) : 0, GRAFTV[side] || new Float32Array(GRAFT.sides[side].n * 3), eyeSurf(side));
+  if (graft) for (const [k, side] of [[0, "L"], [1, "R"]]) {
+    const shutBy = EC[k] >= 0 ? Math.min(1, Math.max(0, W[EC[k]])) : 0, n3 = GRAFT.sides[side].n * 3;
+    GRAFTV0[side] = EG.placeAll(GRAFT, side, POSB, GRAFTEYE[side], 0, GRAFTV0[side] || new Float32Array(n3), eyeSurf(side));
+    GRAFTV[side] = shutBy > 0 ? EG.placeAll(GRAFT, side, POSB, GRAFTEYE[side], shutBy, GRAFTV[side] || new Float32Array(n3), eyeSurf(side)) : Float32Array.from(GRAFTV0[side]);
+  }
   geo.attributes.position.needsUpdate = true; geo.computeVertexNormals(); openings();   // the openings from the lids as they are now: a blink closes them
   const NP = showPose(), DP = dgeo.attributes.position.array, DN = dgeo.attributes.normal.array, DO = dgeo.attributes.objPos.array;
   for (let c = 0; c < C; c++) {
@@ -1047,7 +1069,7 @@ function compose() {                                   // POS: RAW + the face, s
   if (GRAFTM) { GRAFTM.visible = graft; if (graft) drawGraft(NP); }
   dgeo.attributes.position.needsUpdate = true; dgeo.attributes.normal.needsUpdate = true; dgeo.attributes.objPos.needsUpdate = true; dgeo.computeBoundingSphere();
   mouthCut(); moveJaw(); lipstick();
-  if (typeof skinLook === "function" && st.skin?.proc) SKINSH.update(SKU, st.skin.proc, st.skin.tone, LMK ? lmk : null, SCALE, BL_READY ? lidFront : null);
+  if (typeof skinLook === "function" && st.skin?.proc) SKINSH.update(SKU, st.skin.proc, st.skin.tone, LMK ? skinLm : null, SCALE, BL_READY ? lidFront : null);
   if (BL_READY) browLash();                            // the brows and lashes on the face as it is now
   LAY?.shapeChanged();
   WEAR?.update();                                       // the accessories on the face as it is now
@@ -1060,11 +1082,11 @@ function compose() {                                   // POS: RAW + the face, s
 function drawGraft(NP) {
   const g = GRAFTM.geometry, Pp = g.attributes.position.array, Po = g.attributes.objPos.array, nL = g.userData.nL;
   for (const side of ["L", "R"]) {
-    const o = GRAFT.sides[side], V = GRAFTV[side], off = side === "L" ? 0 : nL * 3;
+    const o = GRAFT.sides[side], V = GRAFTV[side], V0 = EG.skinPlaces(GRAFT, side, GRAFTV0[side] || V, drawGraft.tmp?.[side]?.length === V.length ? drawGraft.tmp[side] : ((drawGraft.tmp ||= {})[side] = new Float32Array(V.length))), off = side === "L" ? 0 : nL * 3;
     for (let i = 0; i < o.n; i++) {
       const t = o.tri[i] * 3; let dx = 0, dy = 0, dz = 0;
       for (let k = 0; k < 3; k++) { const b = o.bary[i * 3 + k], j = TRIS[t + k] * 3; dx += b * (SHOW[j] - POS[j]); dy += b * (SHOW[j + 1] - POS[j + 1]); dz += b * (SHOW[j + 2] - POS[j + 2]); }
-      const q = off + i * 3; Po[q] = V[i * 3]; Po[q + 1] = V[i * 3 + 1]; Po[q + 2] = V[i * 3 + 2]; Pp[q] = V[i * 3] + dx; Pp[q + 1] = V[i * 3 + 1] + dy; Pp[q + 2] = V[i * 3 + 2] + dz;
+      const q = off + i * 3; Po[q] = V0[i * 3]; Po[q + 1] = V0[i * 3 + 1]; Po[q + 2] = V0[i * 3 + 2]; Pp[q] = V[i * 3] + dx; Pp[q + 1] = V[i * 3 + 1] + dy; Pp[q + 2] = V[i * 3 + 2] + dz;   // (objPos open: the skin and its makeup go down with the lid)
     }
   }
   g.attributes.position.needsUpdate = true; g.attributes.objPos.needsUpdate = true; EG.normals(GRAFT, g, NP); g.computeBoundingSphere();
@@ -1579,7 +1601,7 @@ function placeEyes() {
     if (!LMK || !st.eyes.on) { m.visible = false; continue; }
     findLids();                                         // the model's own lid line (once)
     if (graftOn()) {                                    // TAU's eyes: the eyeball theirs, following the skin round the eye; the lids rest on it
-      const E = GRAFTEYE[side] = EG.eyeOf(GRAFT, side, POS, SCALE, LO), r = E.r * (st.eyes.size || 1);
+      const E = GRAFTEYE[side] = EG.eyeOf(GRAFT, side, POS, SCALE, LO, st.eyes.shape), r = E.r * (st.eyes.size || 1);
       GRAFTV[side] = EG.placeAll(GRAFT, side, POS, E, 0, GRAFTV[side] || new Float32Array(GRAFT.sides[side].n * 3));
       AREA0[side] = area(EG.outline32(GRAFT, side, GRAFTV[side]).pts);
       m.scale.setScalar(r); m.position.set(E.c[0], E.c[1], E.c[2]);
@@ -2279,9 +2301,16 @@ const eyeSet = {};
   const box = $("#eyeRows"), on = el("input", { type: "checkbox", checked: true });
   box.append(el("label", { className: "tog" }, on, el("span", {}, "Eyeballs", el("small", { textContent: "Cuts MHR's closed shell out inside MediaPipe's lid outline and puts a 12 mm eyeball behind each opening; the gaze shapes turn them, a blink closes the lids over them. The paint below is drawn round the front pole: iris, limbal ring, catchlights, corners, how wet." }))));
   const graft = el("input", { type: "checkbox", disabled: !GRAFT });   // TAU's eyes (eyegraft.js, tools/eye_patch.py)
-  graft.onchange = () => { st.eyes.graft = graft.checked; changed("expr"); };
+  graft.onchange = () => { st.eyes.graft = graft.checked; eyeSet.shape(); changed("expr"); };
   eyeSet.graft = graft;
+  const shapeBox = el("div", { className: "sub" }), shapeSet = {};   // the eye's shape keys (eyegraft.js SHAPE_KEYS), under TAU's eyes
+  const shapePre = el("select", {}, el("option", { value: "", textContent: "Shape preset…" }), ...Object.keys(EG.EYE_PRESETS).map(k => el("option", { value: k, textContent: k })));
+  shapePre.onchange = () => { if (!shapePre.value) return; st.eyes.shape = { ...EG.KEYS0, ...EG.EYE_PRESETS[shapePre.value] }; shapePre.value = ""; for (const [k] of EG.SHAPE_KEYS) shapeSet[k](st.eyes.shape[k]); changed("expr"); };
+  shapeBox.append(el("div", { className: "row" }, el("span", { textContent: "Eye shape" }), shapePre, el("output")));
+  for (const [k, label, lo, hi, step, help] of EG.SHAPE_KEYS) shapeSet[k] = slider(shapeBox, "eyeshape_" + k, label, lo, hi, step, 0, help, v => { st.eyes.shape = { ...EG.KEYS0, ...(st.eyes.shape || {}), [k]: v }; changed("expr"); });
+  eyeSet.shape = () => { for (const [k] of EG.SHAPE_KEYS) shapeSet[k](st.eyes.shape?.[k] ?? 0); shapeBox.style.display = st.eyes.graft && GRAFT ? "" : "none"; };
   box.append(el("label", { className: "tog" }, graft, el("span", {}, "TAU's eyes (thick lids)", el("small", { textContent: GRAFT ? "The eye region of TAU's demo head on this face: the lids as thick flesh resting on the eyeball, their edge rolling in to touch it, the crease and the lower lid's roll; it follows the sliders, the sculpt, a photo's fit and the expressions, and shuts its own way (the lids slide over the eyeball and meet)." : "Not made on this machine yet: python tools/eye_patch.py make (needs TAU's .blend, docs/TAU_HAIR.md)." }))));
+  box.append(shapeBox); eyeSet.shape();
   const real = el("input", { type: "checkbox", checked: true });   // the shared eye's refracting cornea (tools/shared/eye.js)
   real.onchange = () => { st.eyes.real = real.checked; paintEyes(); changed("expr"); };
   box.append(el("label", { className: "tog" }, real, el("span", {}, "Refracting cornea (MetaHuman's way)", el("small", { textContent: "The iris lies behind a clear dome and is seen through it, bent as a real cornea bends the view: it slides against the white as the eye turns. The cornea reflects the lights (no painted catchlights), the iris is lit as a shallow bowl (bright on the side away from the light). Off: the iris painted on the eyeball, as before." }))));
@@ -2358,7 +2387,7 @@ const eyeSet = {};
     box.append(el("div", { className: "row" }, el("span", { textContent: label }), c, el("output")));
   }
   for (const [k, label, lo, hi, step, def, help] of EYEPAINT.EYE_CONTROLS) eyeSet[k] = slider(box, "eye_" + k, label, lo, hi, step, def, help, v => { st.eyes[k] = v; repaint(); });
-  eyeSet.all = () => { on.checked = st.eyes.on; real.checked = st.eyes.real !== false; eyeSet.graft.checked = !!st.eyes.graft && !!GRAFT; eyeSet.lid(); for (const k of ["size", "depth", "opening", "lidShade", "occlusion", "tearline"]) eyeSet[k](st.eyes[k]); for (const [k] of EYEPAINT.EYE_COLOURS) cols[k].value = st.eyes[k]; for (const c of EYEPAINT.EYE_CONTROLS) eyeSet[c[0]](st.eyes[c[0]]); for (const f of Object.values(picks)) f(); };
+  eyeSet.all = () => { on.checked = st.eyes.on; real.checked = st.eyes.real !== false; eyeSet.graft.checked = !!st.eyes.graft && !!GRAFT; eyeSet.shape(); eyeSet.lid(); for (const k of ["size", "depth", "opening", "lidShade", "occlusion", "tearline"]) eyeSet[k](st.eyes[k]); for (const [k] of EYEPAINT.EYE_COLOURS) cols[k].value = st.eyes[k]; for (const c of EYEPAINT.EYE_CONTROLS) eyeSet[c[0]](st.eyes[c[0]]); for (const f of Object.values(picks)) f(); };
 }
 
 // ---- hair: the salon's (salon.html, docs/SALON.md), drawn on this character there, baked onto it and worn here. The
@@ -2582,17 +2611,20 @@ function closestOnTri(p, P, a, b, c) {                 // the nearest point to p
   const va = d3 * d6 - d5 * d4; if (va <= 0 && d4 - d3 >= 0 && d5 - d6 >= 0) { const w = (d4 - d3) / ((d4 - d3) + (d5 - d6)); return [0, 1 - w, w]; }
   const den = 1 / (va + vb + vc), v = vb * den, w = vc * den; return [1 - v - w, v, w];
 }
-function skinNear(lo, hi) {                            // the skin round a box (the body's own space): the point nearest p on it and the normal there (smooth: the points' own)
-  const tri = [], NP = geo.attributes.normal.array;
-  for (let t = 0; t < TRIS.length; t += 3) for (let k = 0; k < 3; k++) {
-    const v = TRIS[t + k] * 3; if (POS[v] > lo[0] && POS[v] < hi[0] && POS[v + 1] > lo[1] && POS[v + 1] < hi[1] && POS[v + 2] > lo[2] && POS[v + 2] < hi[2]) { tri.push(t); break; }
+function skinNear(lo, hi) {                            // the skin round a box (the body's own space): the point nearest p on it and the normal there (smooth: the points' own); TAU's eyes' skin where it lies instead of MHR's
+  const tri = [], NP = geo.attributes.normal.array, graft = graftOn(), inBox = (P, v) => P[v] > lo[0] && P[v] < hi[0] && P[v + 1] > lo[1] && P[v + 1] < hi[1] && P[v + 2] > lo[2] && P[v + 2] < hi[2];
+  for (let t = 0; t < TRIS.length; t += 3) { if (graft && GRAFT.hideT[t / 3]) continue; for (let k = 0; k < 3; k++) if (inBox(POS, TRIS[t + k] * 3)) { tri.push([POS, NP, TRIS, t]); break; } }
+  if (graft && GRAFTM) for (const side of ["L", "R"]) {
+    const V = GRAFTV[side], F = GRAFT.sides[side].faces, gn = GRAFTM.geometry.attributes.normal.array, off = side === "L" ? 0 : GRAFTM.geometry.userData.nL * 3;
+    if (!V) continue; const GN = gn.subarray(off, off + V.length);
+    for (let f = 0; f < F.length; f += 3) for (let k = 0; k < 3; k++) if (inBox(V, F[f + k] * 3)) { tri.push([V, GN, F, f]); break; }
   }
   return p => {
     let best = Infinity, bp = p, bn = [0, 0, 1];
-    for (const t of tri) {
-      const a = TRIS[t] * 3, b = TRIS[t + 1] * 3, c = TRIS[t + 2] * 3, w = closestOnTri(p, POS, a, b, c);
-      const q = [0, 1, 2].map(k => w[0] * POS[a + k] + w[1] * POS[b + k] + w[2] * POS[c + k]), d = (q[0] - p[0]) ** 2 + (q[1] - p[1]) ** 2 + (q[2] - p[2]) ** 2;
-      if (d < best) { best = d; bp = q; bn = [0, 1, 2].map(k => w[0] * NP[a + k] + w[1] * NP[b + k] + w[2] * NP[c + k]); }
+    for (const [P, Nn, I, t] of tri) {
+      const a = I[t] * 3, b = I[t + 1] * 3, c = I[t + 2] * 3, w = closestOnTri(p, P, a, b, c);
+      const q = [0, 1, 2].map(k => w[0] * P[a + k] + w[1] * P[b + k] + w[2] * P[c + k]), d = (q[0] - p[0]) ** 2 + (q[1] - p[1]) ** 2 + (q[2] - p[2]) ** 2;
+      if (d < best) { best = d; bp = q; bn = [0, 1, 2].map(k => w[0] * Nn[a + k] + w[1] * Nn[b + k] + w[2] * Nn[c + k]); }
     }
     const l = Math.hypot(...bn) || 1; return { p: bp, n: bn.map(x => x / l) };
   };
@@ -3006,7 +3038,7 @@ async function open(name) {
   st.drape = c.drape !== false; drapeTog.checked = st.drape;
   BAKES = WHO ? await loadDrape(WHO) : {}; TAILOR_W.postMessage({ bakes: BAKES });   // the clothes as they hung when saved
   if (me !== OPENING) return;
-  Object.assign(st.eyes, EYEPAINT.EYE_DEFAULTS, EYEFIT, { lidLine: lidDefault() }, c.eyes || {}); st.eyes.showLid = false;
+  Object.assign(st.eyes, EYEPAINT.EYE_DEFAULTS, EYEFIT, { lidLine: lidDefault(), graft: false, shape: {} }, c.eyes || {}); st.eyes.showLid = false;   // (TAU's eyes and their shape only if this character has them)
   if (st.eyes.lidLine?.base !== "mesh") st.eyes.lidLine = lidDefault();   // an older line was offsets from MediaPipe's ring: start again on the model's delete st.eyes.plane; delete st.eyes.lowerLid; eyeSet.all(); paintEyes();
   Object.assign(st.teeth, TEETH.TEETH_DEFAULTS, c.teeth || {}); teethSet.all();
   Object.assign(st.lips, LIPS.LIPS_DEFAULTS, c.lips || {}); st.lips.guide = false; lipSet.all();

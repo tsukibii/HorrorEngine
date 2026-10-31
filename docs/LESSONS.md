@@ -18,6 +18,11 @@ the fix.
 - **Lids rest on the outermost surface under them, not the eyeball's sphere:** our cornea bulges about 2 mm past the
   white (TAU's barely does), and TAU's shut lids, seated on the white's sphere, showed the cornea and the pupil through
   them. Second try: each lid point is kept out of whichever is further out under it, the cornea's dome or the white.
+- **A shut lid shows skin no photo saw:** TAU's upper lid unfolds from under the crease as it shuts, and its UVs, laid on
+  MHR's narrow lid, stretched what the photo had there (the test character's: a screenshot with the Studio's circles
+  over the lid) into grey stripes, which a first look took for the studio lights' reflections; a blur alone only
+  softened them (the stripes ran along the lid's angle). Second try: that part of the lid near the photo's own skin
+  tone, and its skin and makeup worked out on the open lid laid flat, so they go down with it.
 - **A photo skin lives on MHR's UVs, so a graft's UVs come from where the skin it replaces was, by position:** UVs taken
   from the nearest MHR triangle put the photo's eye (projected onto MHR's closed strip and the lid skin by it) on TAU's
   shut lid as pale, jagged patches. Second try: TAU's lid laid on MHR's lid between the opening and the edge, round the
