@@ -92,6 +92,18 @@ stops at the wall). **Next, if wanted** (ask first): the street's light by the u
 clutter (cables, AC units, signs), more sets (tiles, siding, glass), a set per material in the street builder's own
 inspector with the brush.
 
+**Then the interiors** (2026-10-31, evening; DECISIONS): **Paint in the scene builder** (SCENE_BUILDER §9): the street
+paint's brush, now `brush.js` and shared, on a level's floors, walls, ceilings, trim, blocks and outside; a room's look
+and a block's `mat` take a colour or a tuned set (STORY_FORMAT §1: the plan tags it `mat:pbr/_made/<hash>`, the desk's
+plan answer carries the made sets, the stage draws them and colours); a kit floor under the click is taken up; a room's
+walls are its own side (plan.py's **linings**: a 4 mm lining wearing a room's own look on a wall its neighbour builds,
+wherever their looks differ). **Your folders** (ASSETS §6): folders of PBR sets anywhere attached to the shelf where
+they are (`pbr/<name>/<set>`, nothing written in them; the shelf page's Attach). **The Godot export's materials**
+(GODOT_EXPORT §3b): `game/materials/<Name>.tres` once a set, named after it, its maps beside it, every piece on every
+level wearing it by reference (GDEXPORT checks one instance a file). BUILDER paints, tunes, lines and undoes; PBR
+attaches; GDEXPORT shares. **Next, if wanted** (ask first): kit things' slots taking sets (their UVs are already
+metres), the street .glb's materials as the same named files, a set per material in the street builder's inspector.
+
 **What could come next** (ask first): the user's verdict on the match, the town and the motel; more references; the
 export placing an inside's level by itself (today a marker; the set's level dropped there by hand); a two-storey
 interior (stairs inside the set); foliage when the user wants it; steps and retaining walls on a slope; a grade in the

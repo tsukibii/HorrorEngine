@@ -2,6 +2,22 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-31, evening (the user, on the interiors, local PBRs and the export's materials)
+
+- **The paint bucket in the interiors**: "am I able to use the paint bucket thing in my interiors, if we haven't hooked
+  up our PBRs can we". It wasn't (the paint page was streets only; a room took a plain set from a picker). Now the scene
+  builder has **Paint**: the same brush (`brush.js`, shared with the street paint page) on a level's floors, walls,
+  ceilings, trim, blocks and outside; a room's look and a block's `mat` take a colour or a tuned set like a street's
+  slot (STORY_FORMAT §1, SCENE_BUILDER §9). A room's walls are its own side: a shared wall's other side is lined with
+  the other room's look.
+- **A PBR local**: "add a PBR local, where I can attach a local folder and use PBRs from it and we export to Godot with
+  those". Folders of yours attached to the shelf where they are (the shelf page's *Your folders*): their sets
+  `pbr/<name>/<set>`, nothing written in them (ASSETS §6); the Godot export copies what a game uses into the game.
+- **One material a set in the export, by its name**: "if multiple parts use the same PBR it should be smart enough to
+  only export that material for Godot once and re-use it; maybe when we export we have a separate material folder using
+  the name of the material, so even later on we can just ref that one PBR mat for many parts". `game/materials/<Name>.tres`
+  a set, its maps beside it, every piece on every level wearing it by reference (GODOT_EXPORT §3b).
+
 ## 2026-10-31, afternoon (the user, with their PBR sets)
 
 - **The materials are PBR sets**: "I realise without PBRs we can't achieve the fake photorealistic look, I pushed up a
