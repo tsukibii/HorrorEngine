@@ -174,6 +174,7 @@ import * as THREE from "three";
 import * as BL from "./browlash.js";
 import { hairUniforms, applyLook, lightHair, hairMaterial, atlasTexture, albedoTexture, strandsTexture, STUDIO_HAIR } from "./hairshader.js";
 import * as HV from "./hairvolume.js";
+import * as TAUJS from "./tau.js";
 import { albedo as hairAlbedo } from "./hairtex.js";
 import * as ALB from "./albedo.js";
 import { GLTFLoader } from "./vendor/GLTFLoader.js";
@@ -1282,7 +1283,7 @@ for (const side of ["L", "R"]) {
   for (let i = 0; i < 16; i++) { const a = i * 3; idx.push(a, a + 1, a + 3, a + 1, a + 4, a + 3, a + 1, a + 2, a + 4, a + 2, a + 5, a + 4); }
   for (let i = 0; i <= 16; i++) fade[i * 3 + 1] = Math.pow(Math.sin(Math.PI * i / 16), 1.5);   // the middle row only; the edges stay 0
   g.setIndex(idx); g.setAttribute("position", new THREE.BufferAttribute(new Float32Array(17 * 3 * 3), 3)); g.setAttribute("fade", new THREE.BufferAttribute(fade, 1));
-  const m = TEAR[side] = new THREE.Mesh(g, TEARM); m.renderOrder = 4; m.frustumCulled = false; m.userData.noShadow = true; m.visible = false; rig.add(m);
+  const m = TEAR[side] = new THREE.Mesh(g, TEARM); m.renderOrder = 4; m.frustumCulled = false; m.userData.noShadow = true; m.visible = false; m.name = `tearline_${side}`; rig.add(m);
 }
 function tearLine(side, pts, c) {                      // pts: the opening's outline now (0..16 the lower lid, outer corner to inner)
   const k = st.eyes.tearline ?? 0, m = TEAR[side]; m.visible = k > 0 && !!pts; if (!m.visible) return;
@@ -2286,7 +2287,7 @@ for (const U of Object.values(BLU)) { U.alphaCut.value = 0.3; U.ambientC.value.s
 const BLM = { lash: new THREE.Mesh(new THREE.BufferGeometry(), hairMaterial(BLU.lash)), line: new THREE.Mesh(new THREE.BufferGeometry(), hairMaterial(BLU.line)), brow: new THREE.Mesh(new THREE.BufferGeometry(), hairMaterial(BLU.brow)) };
 BLM.lash.material.userData.file = () => ({ atlas: BL.LASH_ATLAS, look: BL.LOOKS[st.lash.look] });   // the strands' atlas and colours: what the export bakes them from (fileLook)
 BLM.line.material.userData.file = () => ({ atlas: BL.LINE_ATLAS, look: BL.LOOKS[st.lash.look] });
-BLM.brow.material.userData.file = () => ({ atlas: BL.ATLAS, look: BL.LOOKS[st.brow.look] });
+BLM.brow.material.userData.file = () => ({ atlas: tauOn("brows") ? BL.LASH_ATLAS : BL.ATLAS, look: BL.LOOKS[st.brow.look] });   // (TAU's brow hairs: one to a card, the lashes' atlas)
 BLM.fill = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshStandardMaterial({ vertexColors: true, transparent: true, depthWrite: false, roughness: 0.9, side: THREE.DoubleSide }));   // the brows' fill, see-through
 Object.entries({ lash: "lashes", line: "lash_line", brow: "brows", fill: "brow_fill" }).forEach(([k, nm]) => { BLM[k].name = nm; });   // named in the file (each its own material and record there: Godot's HSHair reads them by name)
 for (const m of Object.values(BLM)) { m.renderOrder = 3; m.frustumCulled = false; m.visible = false; rig.add(m); }   // after the eyeballs, which draw over what's in the openings
@@ -2308,6 +2309,12 @@ function browLash() {
   }
   const C = v(234).add(v(454)).multiplyScalar(0.5);
   const r = BL.build({ lids, brows, F: F.toArray(), U: U.toArray(), C: C.toArray(), scale: SCALE }, st.lash, st.brow); BLLIDS = lids;
+  if (tauOn("lashes") || tauOn("brows")) {               // TAU's strands in place of our own (tools/tau_hair.py): rebuilt on the face as it is now
+    const now = TAUJS.strandsNow(TAU, POS, TRIS);
+    if (tauOn("lashes")) { r.lashes.dispose(); r.lashes = BL.strandCards(now.lashes, "lashes"); }
+    if (tauOn("brows")) { r.brows.dispose(); r.brows = BL.strandCards(now.brows, "brows"); }
+  }
+  BLU.brow.atlas.value = tauOn("brows") ? TAUATLAS : BLATLAS;   // a brow hair to a card for TAU's, the clumps' atlas for ours
   for (const [k, g] of [["lash", r.lashes], ["line", r.line], ["brow", r.brows], ["fill", r.fill]]) { BLM[k].geometry.dispose(); BLM[k].geometry = g; }
   BLNOW = r.cards;
 }
@@ -2435,6 +2442,35 @@ async function loadSalon() {
   g.add(gltf.scene); rig.add(g); SALONH = g; poseHair();
   return { meshes, swinging, head: info.head };
 }
+// TAU's brows and lashes (tools/tau_hair.py, docs/TAU_HAIR.md; TAU's Procedural Human Hair, CC BY-SA 4.0): grown in
+// Blender on this character's export, each strand pinned to an MHR triangle (tau.js rebuilds them on the face as it is);
+// worn in place of our own when ticked, and the next export carries them
+var TAU = null;
+const TAUATLAS = BLU.lash.atlas.value, BLATLAS = BLU.brow.atlas.value;
+function tauOn(kind) { return !!(TAU && TAU[kind] && (kind === "lashes" ? st.lash.on && st.lash.tau : st.brow.on && st.brow.tau)); }
+async function loadTau() {
+  TAU = null; if (!WHO) return null;
+  const r = await fetch(`api/people/${encodeURIComponent(WHO)}/tau/strands.json?v=${Date.now()}`).catch(() => null);
+  if (r && r.ok) TAU = await r.json();
+  if (BL_READY) { blSet.all(); browLash(); }
+  return TAU;
+}
+async function bakeTau(brows, lashes, say) {               // export, TAU in Blender on the server, the strands worn, export again
+  if (!WHO) throw new Error("pick or make a character first (top bar)");
+  const who = encodeURIComponent(WHO);
+  say("exporting the character first (TAU grows on its export)…"); await exportPackage();
+  say("TAU growing the brows and lashes in Blender (a minute or two)…");
+  const r = await fetch(`api/people/${who}/tau/run`, { method: "POST", body: JSON.stringify({ brows, lashes }) });
+  if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || "TAU's bake didn't start");
+  for (;;) {
+    await new Promise(ok => setTimeout(ok, 2000));
+    const s = await (await fetch(`api/people/${who}/tau/status`)).json();
+    if (!s.running) { if (!s.ok) throw new Error("TAU's bake failed: " + (s.log || "").slice(-400)); break; }
+  }
+  await loadTau(); Object.assign(st.lash, { on: true, tau: true }); Object.assign(st.brow, { on: true, tau: true }); UNSAVED = true; blSet.all(); browLash();
+  say("TAU's hair on; saving and exporting again so the file carries it…"); await $("#save").onclick(); await exportPackage();
+  say(`baked and exported: ${TAU?.brows?.strands.length || 0} brow hairs (TAU's ${brows}), ${TAU?.lashes?.strands.length || 0} lashes (${lashes})`);
+}
 // the Hair tab: the salon in a frame on this character, its body saved first so the salon draws on the head as it is
 // now; a bake there (or leaving the tab) puts the hair back on here
 const SALONF = $("#salonFrame");
@@ -2475,6 +2511,23 @@ const blSet = {};
   part(st.brow, "Brows", BL.BROW_CONTROLS, "brow", "Hairs lying flat on the skin between the brow's two rows: the front up, the rest swept out; they ride the brows' expressions.");
   box.append(el("div", { className: "row" }, el("span", { textContent: "Shape" }), shape, el("output")));
   shape.onchange = () => { Object.assign(st.brow, BL.BROW_SHAPES[shape.value]); delete st.brow.label; st.brow.shape = shape.value; blSet.all(); browLash(); };
+  box.append(el("h4", { textContent: "TAU (baked in Blender)" }));   // TAU's Procedural Human Hair grown on this character (tools/tau_hair.py)
+  const tauLash = el("input", { type: "checkbox" }), tauBrow = el("input", { type: "checkbox" }), tauSay = el("small", { className: "note" });
+  const tauBP = el("select", {}, ...TAUJS.TAU_BROWS.map(k => el("option", { value: k, textContent: k }))), tauLP = el("select", {}, ...TAUJS.TAU_LASHES.map(k => el("option", { value: k, textContent: k })));
+  const tauGo = el("button", { textContent: "Bake with TAU" });
+  box.append(el("label", { className: "tog" }, tauLash, el("span", {}, "TAU's lashes", el("small", { textContent: "Wear the lashes TAU grew on this character in place of the ones above: hair by hair, a few hundredths of a millimetre thick, they ride the face and the blinks." }))),
+             el("label", { className: "tog" }, tauBrow, el("span", {}, "TAU's brows", el("small", { textContent: "Wear the brows TAU grew in place of the ones above (the brows' look and fill stay)." }))),
+             el("div", { className: "row" }, el("span", { textContent: "Brows" }), tauBP, el("output")), el("div", { className: "row" }, el("span", { textContent: "Lashes" }), tauLP, el("output")),
+             el("div", { className: "row" }, tauGo), tauSay,
+             el("small", { className: "note", textContent: "Bake with TAU exports the character, grows TAU's brows and lashes on it in Blender (python tools/retarget.py setup once; TAU's pack at vendor/tau/procedural_human_hair.blend), wears them and exports again. TAU's Procedural Human Hair is CC BY-SA 4.0, by TAU: credit it in a game that ships them." }));
+  tauLash.onchange = () => { st.lash.tau = tauLash.checked; UNSAVED = true; browLash(); };
+  tauBrow.onchange = () => { st.brow.tau = tauBrow.checked; UNSAVED = true; browLash(); };
+  tauGo.onclick = () => { tauGo.disabled = true; bakeTau(tauBP.value, tauLP.value, m => { tauSay.textContent = m; status(m, "ok"); }).catch(e => { tauSay.textContent = e.message; status(e.message, "bad"); }).finally(() => { tauGo.disabled = false; }); };
+  sets.push(() => {
+    tauLash.checked = !!st.lash.tau; tauBrow.checked = !!st.brow.tau; tauLash.disabled = !TAU?.lashes; tauBrow.disabled = !TAU?.brows;
+    if (TAU?.brows) tauBP.value = TAU.brows.preset.replace("Eyebrows - ", ""); if (TAU?.lashes) tauLP.value = TAU.lashes.preset.replace("Eyelashes - ", "");
+    if (!tauGo.disabled) tauSay.textContent = TAU ? `baked: TAU's ${tauBP.value} brows (${TAU.brows?.strands.length || 0} hairs), ${tauLP.value} lashes (${TAU.lashes?.strands.length || 0})` : "not baked yet for this character";
+  });
   blSet.all = () => { for (const f of sets) f(); fillColour(); shape.value = st.brow.shape in BL.BROW_SHAPES ? st.brow.shape : "natural"; };
   blSet.all(); BL_READY = true;
 }
@@ -2633,6 +2686,7 @@ async function open(name) {
   WEAR.set(st.accessories); drawAcc();                  // on the face as it is now
   dress();                                             // the clothes on this body (or none)
   await loadSalon().catch(() => null);
+  await loadTau().catch(() => null);
   if (me !== OPENING) return;
   if (!SALONF.hidden) await enterSalon();              // the Hair tab open: the salon on this character
   if (me === OPENING && WHO) detect();
@@ -2719,6 +2773,14 @@ function fileLook(x, g) {
     m.normalScale.copy(L.normalScale); m.aoMapIntensity = L.aoMapIntensity;
     return m;
   }
+  if (L === TEARM) {                                    // the tear line: a strip that only reflects (Godot's HSEye draws it added over what's behind: tear.gdshader), its fade in the vertices' colour;
+    const f = g.attributes.fade, c = new Float32Array(g.attributes.position.count * 3);   // glTF has no adding, so elsewhere (the desk, a plain viewer) it's wholly see-through: a black strip would darken the lid
+    for (let i = 0; i < c.length / 3; i++) c.fill(f ? f.getX(i) : 1, i * 3, i * 3 + 3);
+    g.setAttribute("color", new THREE.BufferAttribute(c, 3)); g.deleteAttribute("fade");
+    const m = new THREE.MeshStandardMaterial({ name: `${WHO}_tearline`, color: 0x000000, roughness: 0.05, transparent: true, opacity: 0, vertexColors: true, depthWrite: false });
+    m.userData.studioTear = { strength: +(0.8 * (st.eyes.tearline ?? 0.5)).toFixed(3) };
+    return m;
+  }
   if (L && L.isShaderMaterial && L.userData.file) {
     const { atlas, look } = L.userData.file();
     const m = new THREE.MeshStandardMaterial({ name: x.name || "hair", map: albedoTexture(atlas, hairAlbedo(atlas, look)), alphaTest: 0.3, side: THREE.DoubleSide, roughness: 0.6,
@@ -2754,11 +2816,12 @@ function faceRide(g, lash = false) {
   }
   g.setAttribute("mhrp", new THREE.BufferAttribute(I, 3)); g.setAttribute("mhrw", new THREE.BufferAttribute(W, 3));
 }
-function exportSkin() {
+function exportSkin(SH = null) {
   const DP = dgeo.attributes.position.array, DN = dgeo.attributes.normal.array, UV = dgeo.attributes.uv.array, pos = [], nrm = [], uv = [], srcI = [], srcW = [];
   const poly = P => P.map(v => [v.x, v.y]), L = poly(SKU.uCutL.value), R = poly(SKU.uCutR.value), z = SKU.uCutZ.value, on = SKU.uCutOn.value > 0.5;
   const overlaps = (b, t) => Math.max(DP[t], DP[t + 3], DP[t + 6]) >= b.x && Math.min(DP[t], DP[t + 3], DP[t + 6]) <= b.z && Math.max(DP[t + 1], DP[t + 4], DP[t + 7]) >= b.y && Math.min(DP[t + 1], DP[t + 4], DP[t + 7]) <= b.w;
   const LIFT = on ? lidsRest(DP, { L, R }) : null;    // the lids brought forward onto the eyeballs (below)
+  LIDREST.lift = LIFT;                                 // (what lies on the lids comes forward with them: liftWith)
   const put = (t, W) => {                               // a corner at barycentric W in triangle t (its corners' places, normals, uvs and points blended)
     const p = [0, 0, 0], n = [0, 0, 0], q = [0, 0];
     for (let k = 0; k < 3; k++) { const i = t + k * 3, u = (t / 3 + k) * 2; for (let a = 0; a < 3; a++) { p[a] += W[k] * DP[i + a]; n[a] += W[k] * DN[i + a]; } if (LIFT) p[2] += W[k] * LIFT[TRIS[t / 3 + k]]; q[0] += W[k] * UV[u]; q[1] += W[k] * UV[u + 1]; srcI.push(TRIS[t / 3 + k]); srcW.push(W[k]); }
@@ -2800,6 +2863,38 @@ function exportSkin() {
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("normal", new THREE.Float32BufferAttribute(nrm, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+  if (SH && on) {                                       // the blink's targets: MHR's points as each state has them, lifted as at rest, kept off the eyes (and shut, the lids met); the corners by their shares
+    const n = pos.length / 3, rest = Float32Array.from(pos), O = { L, R }, lift = p => (LIFT ? LIFT[p] : 0);
+    const P0 = Float32Array.from(SHOW); for (let p = 0; p < N; p++) P0[p * 3 + 2] += lift(p);
+    const E = { L: lidEdge(rest, O, "L"), R: lidEdge(rest, O, "R") };
+    const corners = P => { const out = new Float32Array(n * 3); for (let c = 0; c < n; c++) for (let k = 0; k < 3; k++) { const p = srcI[c * 3 + k], w = srcW[c * 3 + k]; if (w) for (let a = 0; a < 3; a++) out[c * 3 + a] += w * P[p * 3 + a]; } return out; };
+    const shading = show => {                           // the corners' normals on MHR's own surface in a state (as the drawn skin's: each point's from its triangles, by area)
+      const pn = new Float32Array(N * 3);
+      for (let t = 0; t < TRIS.length; t += 3) {
+        const a = TRIS[t] * 3, b = TRIS[t + 1] * 3, c = TRIS[t + 2] * 3;
+        const ux = show[b] - show[a], uy = show[b + 1] - show[a + 1], uz = show[b + 2] - show[a + 2], vx = show[c] - show[a], vy = show[c + 1] - show[a + 1], vz = show[c + 2] - show[a + 2];
+        const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+        for (const i of [a, b, c]) { pn[i] += nx; pn[i + 1] += ny; pn[i + 2] += nz; }
+      }
+      const out = new Float32Array(n * 3);
+      for (let c = 0; c < n; c++) {
+        let x = 0, y = 0, z = 0;
+        for (let k = 0; k < 3; k++) { const p = srcI[c * 3 + k] * 3, w = srcW[c * 3 + k]; if (!w) continue; const l = Math.hypot(pn[p], pn[p + 1], pn[p + 2]) || 1; x += w * pn[p] / l; y += w * pn[p + 1] / l; z += w * pn[p + 2] / l; }
+        const l = Math.hypot(x, y, z) || 1; out[c * 3] = x / l; out[c * 3 + 1] = y / l; out[c * 3 + 2] = z / l;
+      }
+      return out;
+    };
+    LIDREST.meet = 0;
+    const tg = blinkTargets(SH, rest, s => {
+      const P = Float32Array.from(s.show); for (let p = 0; p < N; p++) P[p * 3 + 2] += lift(p);
+      const f = Math.min(1, Math.max(0, (s.w - 0.75) / 0.25));   // the edges meet over the blink's last quarter
+      if (f > 0 && E[s.side]) for (let k = 0; k < 3; k++) { meetLids(P, E[s.side], srcI, srcW, f); keepPoints(P, P0, O); }
+      else keepPoints(P, P0, O);
+      if (f > 0 && E[s.side]) { const d = meetLids(P, E[s.side], srcI, srcW, f); if (s.w === 1) LIDREST.meet = Math.max(LIDREST.meet, d); }
+      return corners(P);
+    }, null, true, [Float32Array.from(nrm), st => shading(st.show)]);
+    g.morphAttributes.position = tg; if (tg.normals?.length === tg.length) g.morphAttributes.normal = tg.normals;
+  }
   const m = new THREE.Mesh(g, skinFileMaterial());
   m.name = `${WHO}_skin`; m.userData.srcI = srcI; m.userData.srcW = srcW;   // each corner's three MHR points and their shares (its weights)
   g.setAttribute("mhrp", new THREE.Float32BufferAttribute(srcI, 3)); g.setAttribute("mhrw", new THREE.Float32BufferAttribute(srcW, 3));   // the same in the file (_MHRP, _MHRW): the desk plays MHR's face shapes through them (tools/shared/face.js)
@@ -2816,6 +2911,24 @@ function exportSkin() {
 // edges stay closed; the eyeball stays a whole sphere (moving it back instead dents it in steps along the lid) and looks
 // through the opening as the Studio shows it. The export is neutral: the eyes look along +Z
 const LIDREST = { L: 0, R: 0, most: 0 }, LIDGAP = 0.0003;   // the last export's: how many of MHR's points came forward, the most (m); how far over the eyeball they rest
+// what lies on the lids (the lashes, the lash line, the tear line, the brows) comes forward with them in a file: each
+// point by the lift of the MHR point it rides (faceRide's _MHRP: a lash card's root's, so a card moves whole), or of the
+// nearest point round the eyes; the same lift in every state of the blink. Without it a lash stayed where the Studio's
+// lid is, up to 3 mm behind the file's (TAU's, grown on the file's lids, came back on the Studio's tilted across the eye)
+function liftWith(P, at) {                             // P: places (x, y, z each), moved in place; at: each place's MHR point
+  const L = LIDREST.lift; if (!L) return P;
+  for (let i = 0; i < at.length; i++) P[i * 3 + 2] += L[at[i]];
+  return P;
+}
+function nearestPoints(P) {                            // each place's nearest of the points the face's shapes move (EIDX)
+  const out = new Uint32Array(P.length / 3);
+  for (let i = 0; i < out.length; i++) {
+    let best = Infinity, at = 0;
+    for (let k = 0; k < EIDX.length; k++) { const p = EIDX[k] * 3, d = (POS[p] - P[i * 3]) ** 2 + (POS[p + 1] - P[i * 3 + 1]) ** 2 + (POS[p + 2] - P[i * 3 + 2]) ** 2; if (d < best) { best = d; at = EIDX[k]; } }
+    out[i] = at;
+  }
+  return out;
+}
 function eyeFront(side) {                              // the eyeball's surface along +Z over (x, y) (the cornea's dome over the iris), null off it
   const e = EYES[side]; if (!e.visible) return null;
   const c = e.position, r = e.scale.x, { rho, zc, rc } = eyeShapeOf(side);
@@ -2845,13 +2958,170 @@ function lidsRest(P, O, gap = LIDGAP, reach = 0.004) {   // P: the drawn skin, a
   for (let v = 0; v < N; v++) LIDREST.most = Math.max(LIDREST.most, lift[v]);
   return lift;
 }
+// the blink in the file (Godot's faces): MHR's eyesClosed_L and eyesClosed_R as morph targets, by MHR's names, on the
+// skin, the lashes, the lash line and the brows, each eye shut as the face shows it with the lids kept off the eyeball
+// as the desk keeps them (tools/shared/face.js: no skin deeper into it than it rests, a lid outside pushed out to the
+// eye's surface and a hair; a lash card moved with its root) and, shut, the cut's edges met (meetLids). A morph target
+// moves each point along a straight line and a lid's way down over the round eye and its cornea is a curve: the straight
+// line ran up to 0.7 mm inside the eye (most where the lid crosses the cornea, 60 to 90% shut) and the eye showed through
+// the lid. So the way down is kept at eight more weights, an eighth apart and a sixteenth before the end, each an
+// in-between target (eyesClosed_L_in1250 ... _in9375, its weight in ten-thousandths: what the lid lacks there of the
+// desk's, over the straight line), set by its hat (1 at its weight, nothing at its neighbours') beside the blink's own w
+// (Godot's HSBlink): the lid follows the curve within a hair (EYELIDS). The cut's edges meet over the last quarter.
+// They move only the points round the eyes: the file writes them sparse (sparseTargets)
+const BLINKS = ["L", "R"], BLINKW = [0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 0.9375, 1];
+const inName = (side, w) => w === 1 ? `eyesClosed_${side}` : `eyesClosed_${side}_in${Math.round(w * 10000)}`;   // its weight in ten-thousandths
+function eyeKeep(side) {                               // pushes points out of this eyeball so that none is deeper into it than it rests
+  const e = EYES[side]; if (!e.visible) return null;
+  const c = e.position, r = e.scale.x, { zc, rc, zl } = eyeShapeOf(side), gap = 0.0004 * SCALE, far = r * Math.max(1, zc + rc);
+  const prof = (z, L) => {                             // the eye's surface from its middle along a way z/L from its front (it looks along +Z): the white's sphere, the cornea's dome over the limbus
+    const ct = z / L, q = rc * rc - zc * zc * (1 - ct * ct); if (q < 0) return r;
+    const t = zc * ct + Math.sqrt(q); return t > 1 && t * ct >= zl ? t * r : r;
+  };
+  return (rest, now) => {                              // the same points at rest and now (x, y, z each): now pushed out where it went deeper
+    for (let i = 0; i < now.length; i += 3) {
+      const x0 = rest[i] - c.x, y0 = rest[i + 1] - c.y, z0 = rest[i + 2] - c.z, L0 = Math.hypot(x0, y0, z0);
+      if (!(z0 > -0.3 * far && L0 < 1.6 * far && L0 > 0)) continue;
+      const x = now[i] - c.x, y = now[i + 1] - c.y, z = now[i + 2] - c.z, L = Math.hypot(x, y, z); if (!L) continue;
+      const need = prof(z, L) + Math.min(gap, L0 - prof(z0, L0));
+      if (L < need) { const k = need / L; now[i] = c.x + x * k; now[i + 1] = c.y + y * k; now[i + 2] = c.z + z * k; }
+    }
+  };
+}
+function blinkShapes() {                               // at neutral: each eye at each of BLINKW as the face shows it: MHR's points and the brows' and lashes' places
+  const at = ENAMES.indexOf("eyesClosed_L"), amt = st.exprAmt || 1, parts = [...Object.values(BLM), TEAR.L, TEAR.R].filter(o => o.visible);
+  if (at < 0) return null;
+  const grab = () => ({ show: Float32Array.from(SHOW), parts: new Map(parts.map(o => [o, Float32Array.from(o.geometry.attributes.position.array)])) });
+  const out = { parts };
+  BLINKS.forEach((side, s) => { for (const w of BLINKW) { st.expr[at + s] = w / amt; compose(); out[inName(side, w)] = { ...grab(), side, w }; } st.expr[at + s] = 0; });
+  compose(); return out;
+}
+function blinkTargets(SH, rest, stateOf, cards = null, own = false, normals = null) {   // a part's targets (rest: its places; stateOf: its places in a state of SH, or null; own: kept off the eye by stateOf; normals: [its normals, a state's]: the targets' normals too, as out.normals)
+  const keeps = BLINKS.map(eyeKeep).filter(Boolean), out = [], outN = [];
+  const keep = now => {
+    if (own) return now;
+    if (!cards) { for (const k of keeps) k(rest, now); return now; }
+    for (const c of cards) {                           // a card moves with its root: the root kept off the eye, the card after it
+      const r0 = [0, 0, 0], r1 = [0, 0, 0]; for (const v of c.root) for (let a = 0; a < 3; a++) { r0[a] += rest[v * 3 + a] / c.root.length; r1[a] += now[v * 3 + a] / c.root.length; }
+      const was = Float32Array.from(r1); for (const k of keeps) k(r0, r1);
+      for (const v of c.verts) for (let a = 0; a < 3; a++) now[v * 3 + a] += r1[a] - was[a];
+    }
+    return now;
+  };
+  for (const side of BLINKS) {
+    const T = {};
+    for (const w of BLINKW) {
+      const now = stateOf(SH[inName(side, w)]); if (!now || now.length !== rest.length) break;
+      T[w] = keep(now);
+    }
+    const shut = T[1]; if (!shut) continue;
+    let most = 0; for (let k = 0; k < rest.length; k++) most = Math.max(most, Math.abs(shut[k] - rest[k]));
+    if (most < 1e-6 * SCALE) continue;                // this eye's blink doesn't move the part
+    const between = (R, X, S, w) => X.map((v, k) => R[k] + v - (R[k] + w * (S[k] - R[k])));   // an in-between: rest and what the straight line lacks there
+    for (const w of BLINKW) {
+      const a = new THREE.BufferAttribute(w === 1 ? shut : between(rest, T[w], shut, w), 3);
+      a.name = inName(side, w); out.push(a);
+    }
+    if (normals) {                                     // the shading shut: the normals of the face's own surface in each state (its shading as it was, the lift and the keeping left out)
+      const [N0, of] = normals, NS = of(SH[inName(side, 1)]);
+      for (const w of BLINKW) { const a = new THREE.BufferAttribute(w === 1 ? NS : between(N0, of(SH[inName(side, w)]), NS, w), 3); a.name = inName(side, w); outN.push(a); }
+    }
+  }
+  if (normals) out.normals = outN;
+  return out;
+}
+// MHR's shut lids still leave 15 to 20% of the opening (the Studio shrinks its cut to nothing as they meet: openings());
+// a file's opening is cut out of the skin, so there the eye showed through a slit with the lids shut. Shut, the cut's
+// edge meets itself: along the lid from the outer corner (0) to the inner (1), between the lower lid's edge (0) and the
+// upper's (1) at MEET, the upper lid doing most of the way as a blink does. Everything here moves MHR's own points and
+// the skin's corners follow them by their weights (a corner moved by itself tore the skin open at the cut's T-junctions,
+// where a split triangle's corner lies on its neighbour's edge): the corners on the edge are taken to where the lids
+// meet by moving the points of their triangles (a few rounds, each point by its corners' shares)
+const MEET = 0.35;
+function lidEdge(rest, O, side) {                      // the corners on an opening's cut edge (rest: the skin's corners; O: the openings as cut, 32 points each, 0..16 the lower lid outer to inner, then the upper back out): [corner, along, upper]
+  const ring = O[side]; if (!ring) return null;
+  const n = ring.length, half = n / 2, tol = 0.00005 * SCALE, xs = ring.map(p => p[0]), ys = ring.map(p => p[1]);
+  const x0 = Math.min(...xs) - tol, x1 = Math.max(...xs) + tol, y0 = Math.min(...ys) - tol, y1 = Math.max(...ys) + tol, edge = [];
+  for (let c = 0; c < rest.length / 3; c++) {
+    const x = rest[c * 3], y = rest[c * 3 + 1]; if (x < x0 || x > x1 || y < y0 || y > y1) continue;
+    let best = Infinity, at = 0;
+    for (let e = 0; e < n; e++) {
+      const [ax, ay] = ring[e], [bx, by] = ring[(e + 1) % n], vx = bx - ax, vy = by - ay, f = Math.max(0, Math.min(1, ((x - ax) * vx + (y - ay) * vy) / (vx * vx + vy * vy || 1)));
+      const d = Math.hypot(x - ax - f * vx, y - ay - f * vy); if (d < best) { best = d; at = e + f; }
+    }
+    if (best <= tol) edge.push([c, at < half ? at / half : (n - at) / half, at >= half]);
+  }
+  const lo = edge.filter(e => !e[2]).sort((a, b) => a[1] - b[1]), hi = edge.filter(e => e[2]).sort((a, b) => a[1] - b[1]);
+  return lo.length < 2 || hi.length < 2 ? null : { edge, lo, hi };
+}
+function meetLids(P, E, I, W, frac = 1, rounds = 80) {   // P: MHR's points (moved in place); E: lidEdge's; I, W: each corner's three points and shares; frac: how much of the way to where they meet
+  const at = c => { const o = [0, 0, 0]; for (let k = 0; k < 3; k++) { const p = I[c * 3 + k], w = W[c * 3 + k]; if (w) for (let a = 0; a < 3; a++) o[a] += w * P[p * 3 + a]; } return o; };
+  const along = (L, s) => {                            // a lid's edge now at s
+    if (s <= L[0][1]) return at(L[0][0]);
+    for (let i = 1; i < L.length; i++) if (s <= L[i][1]) { const a = at(L[i - 1][0]), b = at(L[i][0]), f = (s - L[i - 1][1]) / (L[i][1] - L[i - 1][1] || 1); return a.map((v, k) => v + f * (b[k] - v)); }
+    return at(L[L.length - 1][0]);
+  };
+  const to = E.edge.map(([c, s], i) => { const p = along(E.lo, s), q = along(E.hi, s), now = at(c); return p.map((v, k) => now[k] + frac * (v + MEET * (q[k] - v) - now[k])); });
+  const acc = new Map();
+  for (let r = 0; r < rounds; r++) {
+    acc.clear();
+    E.edge.forEach(([c], i) => {
+      const now = at(c), d = [to[i][0] - now[0], to[i][1] - now[1], to[i][2] - now[2]];
+      for (let k = 0; k < 3; k++) { const p = I[c * 3 + k], w = W[c * 3 + k]; if (!w) continue; let a = acc.get(p); if (!a) acc.set(p, a = [0, 0, 0, 0]); a[0] += w * d[0]; a[1] += w * d[1]; a[2] += w * d[2]; a[3] += w; }
+    });
+    for (const [p, a] of acc) for (let k = 0; k < 3; k++) P[p * 3 + k] += 0.8 * a[k] / a[3];
+  }
+  let most = 0; E.edge.forEach(([c], i) => { const now = at(c); most = Math.max(most, Math.hypot(now[0] - to[i][0], now[1] - to[i][1], now[2] - to[i][2])); });
+  return most;                                         // how far an edge corner still is from where the lids meet (m)
+}
+function keepPoints(P, P0, O) {                        // MHR's points (now, at rest: x, y, z each) kept off both eyeballs: each point, then each triangle's middle (as lidsRest), outside the cut
+  for (const side of BLINKS) {
+    const e = EYES[side]; if (!e.visible) continue;
+    const c = e.position, r = e.scale.x, { zc, rc, zl } = eyeShapeOf(side), gap = 0.0004 * SCALE, far = r * Math.max(1, zc + rc);
+    const prof = (z, L) => { const ct = z / L, q = rc * rc - zc * zc * (1 - ct * ct); if (q < 0) return r; const t = zc * ct + Math.sqrt(q); return t > 1 && t * ct >= zl ? t * r : r; };
+    const near = p => { const x = P0[p * 3] - c.x, y = P0[p * 3 + 1] - c.y, z = P0[p * 3 + 2] - c.z; return z > -0.3 * far && Math.hypot(x, y, z) < 1.6 * far; };
+    const room = (x0, y0, z0) => { const L0 = Math.hypot(x0, y0, z0); return Math.min(gap, L0 - prof(z0, L0)); };
+    for (let p = 0; p < N; p++) {                      // each point no deeper into the eye than it rests
+      if (!near(p)) continue;
+      const x = P[p * 3] - c.x, y = P[p * 3 + 1] - c.y, z = P[p * 3 + 2] - c.z, L = Math.hypot(x, y, z); if (!L) continue;
+      const need = prof(z, L) + room(P0[p * 3] - c.x, P0[p * 3 + 1] - c.y, P0[p * 3 + 2] - c.z);
+      if (L < need) { const k = need / L; P[p * 3] = c.x + x * k; P[p * 3 + 1] = c.y + y * k; P[p * 3 + 2] = c.z + z * k; }
+    }
+    for (let pass = 0; pass < 2; pass++) {             // then each triangle flat between its points, raised where its middle dips (what's cut away doesn't count)
+      const raise = new Map(), G = 6;
+      for (let t = 0; t < TRIS.length; t += 3) {
+        const V = [TRIS[t], TRIS[t + 1], TRIS[t + 2]]; if (!V.some(near)) continue;
+        let dip = 0;
+        for (let a = 0; a <= G; a++) for (let b = 0; a + b <= G; b++) {
+          const w = [a / G, b / G, (G - a - b) / G], q = [0, 1, 2].map(k => w[0] * P[V[0] * 3 + k] + w[1] * P[V[1] * 3 + k] + w[2] * P[V[2] * 3 + k]);
+          const q0 = [0, 1, 2].map(k => w[0] * P0[V[0] * 3 + k] + w[1] * P0[V[1] * 3 + k] + w[2] * P0[V[2] * 3 + k]);
+          if (O[side] && inside(O[side], q0[0], q0[1])) continue;
+          const x0 = q0[0] - c.x, y0 = q0[1] - c.y, z0 = q0[2] - c.z, rm = room(x0, y0, z0); if (rm < 0 || z0 < -0.3 * far) continue;   // a socket's skin that rests inside, hidden, keeps its depth
+          const x = q[0] - c.x, y = q[1] - c.y, z = q[2] - c.z, L = Math.hypot(x, y, z); if (!L) continue;
+          dip = Math.max(dip, prof(z, L) + rm - L);
+        }
+        if (dip > 0) for (const v of V) raise.set(v, Math.max(raise.get(v) || 0, dip));
+      }
+      if (!raise.size) break;
+      for (const [v, d] of raise) { const x = P[v * 3] - c.x, y = P[v * 3 + 1] - c.y, z = P[v * 3 + 2] - c.z, L = Math.hypot(x, y, z) || 1, k = (L + d) / L; P[v * 3] = c.x + x * k; P[v * 3 + 1] = c.y + y * k; P[v * 3 + 2] = c.z + z * k; }
+    }
+  }
+}
+function cardsOf(g) {                                  // a lash's cards: each piece of it apart from the rest, its root the points at its lowest v (browlash.js: 0 at the root)
+  const n = g.attributes.position.count, up = new Int32Array(n).map((_, i) => i), find = i => { while (up[i] !== i) i = up[i] = up[up[i]]; return i; };
+  const ix = g.index ? g.index.array : null; if (ix) for (let t = 0; t < ix.length; t += 3) { const a = find(ix[t]); up[find(ix[t + 1])] = a; up[find(ix[t + 2])] = a; }
+  const UV = g.attributes.uv, cards = new Map();
+  for (let v = 0; v < n; v++) { const c = find(v); let k = cards.get(c); if (!k) cards.set(c, k = { lo: Infinity, root: [], verts: [] }); k.verts.push(v);
+    const t = UV ? UV.getY(v) : 0; if (t < k.lo - 1e-6) { k.lo = t; k.root = []; } if (Math.abs(t - k.lo) <= 1e-6) k.root.push(v); }
+  return [...cards.values()];
+}
 // the export's rig: MHR's own skeleton (MHR_lod1_rig.bin's 127 bones by MHR's names, as the desk's bodies.js and the
 // T-pose drive them), each joint where it sits in this body (refitted, pose.js), the eyes' joints at the eyeballs'
 // middles (their _null a gaze ahead); the bones unturned, the bind pose MHR's own rest pose (the export's). The skin
 // takes MHR's own weights, the eyeballs their eye's bone, the upper teeth the head, the lower teeth and the tongue the
 // jaw, and the rest (hair, brows and lashes, clothes, accessories) the weights of the skin under them (tailor/weights.js,
 // as the clothes take them in the T-pose); every part a skinned mesh on the one skeleton, its points where they're drawn
-function exportRig(root, parts) {
+function exportRig(root, parts, SH = null) {
   const R = RIG, J = PO.joints(R, POS, BASEP, SCALE), at = i => new THREE.Vector3(J[i * 3], J[i * 3 + 1], J[i * 3 + 2]);
   for (const [side, nm] of [["L", "l_eye"], ["R", "r_eye"]]) {
     const i = R.byName.get(nm), k = R.byName.get(nm + "_null"), e = EYES[side];
@@ -2897,7 +3167,16 @@ function exportRig(root, parts) {
       } else g.applyMatrix4(M);
       for (const k of ["skinIndex", "skinWeight"]) g.deleteAttribute(k);
       const bone = how.bone !== undefined ? R.byName.get(how.bone) : undefined;
+      const lid = Object.values(BLM).includes(o) || o === TEAR.L || o === TEAR.R;
       if (Object.values(BLM).includes(o)) faceRide(g, o === BLM.lash || o === BLM.line);   // brows and lashes ride the face's shapes in the desk
+      const rides = !lid ? null : g.attributes.mhrp ? Uint32Array.from({ length: P.count }, (_, i) => g.attributes.mhrp.getX(i)) : nearestPoints(P.array);
+      if (lid) { liftWith(P.array, rides); P.needsUpdate = true; if (g.attributes.mhrr) liftWith(g.attributes.mhrr.array, rides); }   // forward with the file's lids (liftWith), a lash's root with it
+      if (lid && SH && SH.parts.includes(o))            // and blink in a file (blinkTargets): their places in each state, in the file's space, lifted the same
+        g.morphAttributes.position = blinkTargets(SH, P.array, s => {
+          const q = s.parts.get(o); if (!q || q.length !== P.count * 3) return null;
+          const out = Float32Array.from(q); for (let i = 0; i < out.length; i += 3) { v.set(out[i], out[i + 1], out[i + 2]).applyMatrix4(M); out[i] = v.x; out[i + 1] = v.y; out[i + 2] = v.z; }
+          return liftWith(out, rides);
+        }, o === BLM.lash || o === BLM.line ? cardsOf(g) : null);
       wear(g, fileLook(x, g), x.name || o.name, bone !== undefined ? rigid(P.count, bone) : WEIGHTS.transfer(K, P.array));
     }
   }
@@ -2913,6 +3192,49 @@ function exportEye(side) {
   m.name = o.name = `${WHO}_eye_${side}`; m.userData.studioEye = EYEPAINT.eyeRecord(st.eyes, s, side);
   o.material = m; return o;
 }
+// a binary glTF's morph targets written sparse (glTF 2.0 §3.6.2.3: an accessor with no bufferView reads as zeros, its
+// sparse part the points that move): the blink's sixteen targets move the few thousand corners round the eyes of the
+// skin's 137 000, and whole each was 1.6 MB. The buffer is written again with only what's still used
+function sparseTargets(glb) {
+  const dv = new DataView(glb), jl = dv.getUint32(12, true), J = JSON.parse(new TextDecoder().decode(new Uint8Array(glb, 20, jl)));
+  const binAt = 20 + jl + 8, views = J.bufferViews || [], acc = J.accessors || [], fresh = new Map(), used = new Set();
+  const targets = new Map(); for (const m of J.meshes || []) for (const p of m.primitives) for (const t of p.targets || []) for (const k in t) targets.set(t[k], k);
+  if (!targets.size) return glb;
+  for (const [ai, what] of targets) {
+    const eps = what === "POSITION" ? 5e-7 : 1e-4;     // what moves less is nothing: half a micron (the float rounding of a place a metre and a half up), a normal's ten-thousandth
+    const a = acc[ai]; if (a.bufferView === undefined || a.sparse || a.componentType !== 5126 || a.type !== "VEC3") continue;
+    const bv = views[a.bufferView], stride = bv.byteStride || 12, base = binAt + (bv.byteOffset || 0) + (a.byteOffset || 0), idx = [], val = [];
+    for (let i = 0; i < a.count; i++) {
+      const o = base + i * stride, x = dv.getFloat32(o, true), y = dv.getFloat32(o + 4, true), z = dv.getFloat32(o + 8, true);
+      if (Math.abs(x) + Math.abs(y) + Math.abs(z) > eps) { idx.push(i); val.push(x, y, z); }
+    }
+    if (idx.length > a.count / 3) continue;            // most of it moves: whole is smaller
+    if (!idx.length) { idx.push(0); val.push(0, 0, 0); }   // (a sparse part holds one at least)
+    const vi = views.push({ buffer: 0, byteLength: idx.length * 4 }) - 1, vv = views.push({ buffer: 0, byteLength: val.length * 4 }) - 1;
+    fresh.set(vi, new Uint8Array(Uint32Array.from(idx).buffer)); fresh.set(vv, new Uint8Array(Float32Array.from(val).buffer));
+    delete a.bufferView; delete a.byteOffset;
+    a.sparse = { count: idx.length, indices: { bufferView: vi, componentType: 5125 }, values: { bufferView: vv } };
+  }
+  for (const a of acc) { if (a.bufferView !== undefined) used.add(a.bufferView); if (a.sparse) { used.add(a.sparse.indices.bufferView); used.add(a.sparse.values.bufferView); } }
+  for (const im of J.images || []) if (im.bufferView !== undefined) used.add(im.bufferView);
+  const keep = [...used].sort((a, b) => a - b), remap = new Map(), parts = []; let at = 0;
+  for (const i of keep) {                              // the used views, each 4-byte aligned
+    const v = views[i], bytes = fresh.get(i) || new Uint8Array(glb, binAt + (v.byteOffset || 0), v.byteLength);
+    const pad = (4 - (at % 4)) % 4; if (pad) { parts.push(new Uint8Array(pad)); at += pad; }
+    remap.set(i, remap.size); parts.push(bytes); v.byteOffset = at; at += bytes.byteLength;
+  }
+  J.bufferViews = keep.map(i => views[i]);
+  for (const a of acc) { if (a.bufferView !== undefined) a.bufferView = remap.get(a.bufferView); if (a.sparse) { a.sparse.indices.bufferView = remap.get(a.sparse.indices.bufferView); a.sparse.values.bufferView = remap.get(a.sparse.values.bufferView); } }
+  for (const im of J.images || []) if (im.bufferView !== undefined) im.bufferView = remap.get(im.bufferView);
+  const binPad = (4 - (at % 4)) % 4; J.buffers[0].byteLength = at;
+  let js = new TextEncoder().encode(JSON.stringify(J)); const jsPad = (4 - (js.length % 4)) % 4;
+  const out = new Uint8Array(12 + 8 + js.length + jsPad + 8 + at + binPad), o = new DataView(out.buffer);
+  o.setUint32(0, 0x46546C67, true); o.setUint32(4, 2, true); o.setUint32(8, out.length, true);
+  o.setUint32(12, js.length + jsPad, true); o.setUint32(16, 0x4E4F534A, true); out.set(js, 20); out.fill(0x20, 20 + js.length, 20 + js.length + jsPad);
+  const b0 = 20 + js.length + jsPad; o.setUint32(b0, at + binPad, true); o.setUint32(b0 + 4, 0x004E4942, true);
+  let p = b0 + 8; for (const x of parts) { out.set(x, p); p += x.byteLength; }
+  return out.buffer;
+}
 async function exportPackage() {
   if (!WHO) return status("make a character first", "bad");
   if (EDITING) setEditing(false);                      // the clothes as cut and hung, never as lines
@@ -2923,18 +3245,19 @@ async function exportPackage() {
   const rec = await api(`api/recipe/${encodeURIComponent(WHO)}`), was = st.expr.slice(), pose = POSE;
   st.expr.fill(0); POSE = "rest"; compose();           // neutral, in MHR's own pose (the T-pose is only the view's)
   const root = new THREE.Scene(); root.name = WHO; root.userData = { studio: rec };
-  const skip = new Set([mesh, GH, BAG, HOLES, TEAR.L, TEAR.R, LIPGUIDE.line, LIPGUIDE.dots, ...Object.values(LIDVIEW.line), ...Object.values(LIDVIEW.dots)]);
-  const parts = [[exportSkin(), "skin"]];              // the skin first: the desk measures the body from the first skinned mesh
+  const skip = new Set([mesh, GH, BAG, HOLES, LIPGUIDE.line, LIPGUIDE.dots, ...Object.values(LIDVIEW.line), ...Object.values(LIDVIEW.dots)]);   // (the tear line goes: Godot's HSEye wets it, fileLook)
+  const SH = st.eyes.on ? blinkShapes() : null;        // each eye's blink, for the file's morph targets
+  const parts = [[exportSkin(SH), "skin"]];            // the skin first: the desk measures the body from the first skinned mesh
   for (const o of rig.children) if (!skip.has(o) && o.visible)
     parts.push([o === EYES.L ? exportEye("L") : o === EYES.R ? exportEye("R") : RIG ? o : o.clone(true),
                 o === EYES.L ? { bone: "l_eye" } : o === EYES.R ? { bone: "r_eye" } : o === MOUTH.upper ? { bone: "c_head" } : o === MOUTH.jaw ? { bone: "c_jaw" } : {}]);
-  if (RIG) exportRig(root, parts);
+  if (RIG) exportRig(root, parts, SH);
   else for (const [o] of parts) {                      // without MHR's rig (its file missing), as it's drawn
     delete o.userData.srcI; delete o.userData.srcW; root.add(o);
     o.traverse(x => { if (x.isMesh && x !== parts[0][0]) { x.geometry = x.geometry.clone(); x.material = fileLook(x, x.geometry); } });
   }
   let glb;
-  try { glb = await new Promise((ok, bad) => new GLTFExporter().parse(root, ok, bad, { binary: true, onlyVisible: true })); }
+  try { glb = sparseTargets(await new Promise((ok, bad) => new GLTFExporter().parse(root, ok, bad, { binary: true, onlyVisible: true }))); }
   finally { st.expr.set(was); POSE = pose; compose(); }
   const at = `api/package/${encodeURIComponent(WHO)}/`;
   await api(at + encodeURIComponent(`${WHO}.glb`), new Blob([glb]));

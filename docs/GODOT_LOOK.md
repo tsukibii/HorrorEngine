@@ -651,6 +651,67 @@ normals out of the mass, the inner layer darker); GDPEOPLE hides the hair (it me
 that pierces the outer layer after a fall still shows as a card; flyaway strands at the silhouette; the shoulder's fan
 of cards on a long cut is the hairstyle's own (it lies flat after the fall).
 
+## 5f. Eyes that close, behind their lids, wet and not white paint (DECISIONS 2026-10-31, later)
+
+The user's ask: "make sure the eyes don't clip through the eyelids ... make sure the eyes can close properly without
+clipping ... make sure the eyes don't look like white paint and follow Unreal's MetaHuman inspired coloring and wetness
+so the eyes look more natural in game". What there was: a Studio export **couldn't blink in Godot at all** (no morph
+targets: bakeplay.gd's faces waited on "a body with morph targets"); the export rested the lids on the eyeballs at rest
+(`lidsRest`), so open the file was clean (measured from five sides: nothing of the eye in front of a lid); the whites
+rendered 1.3 to 1.8 times as bright as the skin under them, flat and neutral. The sheet, before and after (open, half
+shut, shut, on `_skintest` with TAU's brows and lashes): `docs/godot_sheets/2026-10-31_eyes.jpg`.
+
+**The blink in the file** (`tools/character/index.html`: `blinkShapes`, `blinkTargets`, `meetLids`, `keepPoints`,
+`sparseTargets`): MHR's `eyesClosed_L` and `eyesClosed_R` as morph targets by MHR's names on the skin, the lashes, the
+lash line, the brows and the tear line, with their normals on the skin (the face's own surface shut, the lift left
+out), made from MHR's points so the cut skin's corners follow them by their weights (moved one by one, the skin tore at
+the cut's T-junctions):
+
+- **The lids kept off the eyeball** in every state, as the desk keeps them (`tools/shared/face.js`): no point deeper into
+  the eye than it rests (the white's sphere and the cornea's dome), a lid outside pushed out to the surface and 0.4 mm,
+  then each triangle's middle raised where it still dips (a flat triangle over the cornea's bulge dipped 0.2 mm); a lash
+  card moves with its root.
+- **The lids meet**: MHR's shut lids leave 15 to 20% of the opening (the Studio shrinks its cut to nothing as they meet;
+  the file's opening is cut out of the skin, and the eye showed through a slit), so over the blink's last quarter the
+  cut's edge is taken to where the lids meet (along the lid, 35% of the way from the lower edge to the upper), by moving
+  the points of the edge corners' triangles.
+- **In-betweens**: a morph target moves each point on a straight line, and a lid's way over the round eye and its
+  cornea is a curve (straight, it ran up to 0.7 mm into the cornea 60 to 90% shut). The way is kept at eight more
+  weights (an eighth apart and a sixteenth before the end), each its own target (`eyesClosed_L_in1250` ...
+  `_in9375`, its weight in ten-thousandths: what the lid lacks there over the straight line), set by its hat.
+- **Sparse**: the blink's 36 targets move the corners round the eyes; written whole each was 1.6 MB, sparse (glTF's
+  accessor without a buffer view, the moved points alone, `sparseTargets`) the file grows about a tenth.
+
+**Godot** (`blink.gd`, `HSBlink`; `eye.gd`): `HSEye.wear` adds a blinker to a character whose export blinks. It sets the
+blink and its in-betweens on every mesh that has them each frame: the larger of what's asked (`hold`, a scene's face:
+bakeplay.gd hands it the bake's `eyesClosed` weights) and its own idle blink (every 2 to 6 s; shut in 70 ms, held 40,
+open in 130; now and then twice). A picture turns `idle` off (`demo/portrait.gd --blink=W` holds it).
+
+**The whites**: `sclera_bright` 0.58 (it was 0.85), `sclera_warm` 0.35 (a warm, slightly yellowed white, pinker toward
+the corners: MetaHuman's sclera is never a neutral white), the lids' shadow at full (`occlusion` 1). Measured on the eyes'
+close-up under the portrait grid's light: the white over the skin under the eye 0.83 to 0.96 (it was 1.3 to 1.8; the
+MetaHuman references' 0.3 to 0.5 come with heavier lids over the eye). The socket's shade and the cornea's own coat and
+catchlight (the eye's `light()`) are §5d's.
+
+**The tear line** (`tear.gdshader`): the Studio's wet strip along each lower lid, in the file now (`tearline_L`, `_R`,
+its fade in the vertices' colour, `studioTear` its strength; the file's material wholly see-through, as glTF has no adding), drawn added over what's behind it, black itself: the
+lights' and the room's glint along the lid (MetaHuman's lacrimal fluid). At the Studio's strength it read as a white
+line in Godot's light (and at 0.45 of it): `gain` 0.2, roughness 0.2.
+
+**What lies on the lids comes forward with them** (`liftWith`): the export brings the lids forward onto the eyeballs (up
+to 3.9 mm) and the lashes, the lash line, the tear line and the brows stayed on the Studio's lids behind them; now each
+point is lifted by the MHR point it rides (a lash card by its root's). TAU's strands (docs/TAU_HAIR.md) are moved back
+off the lift before they're pinned, so the Studio wears them on its own face and the file lifts them again.
+
+**EYELIDS** (`tools/godot/eyelids_check.py`): the file's skin and eyeballs drawn as depth from the front and four sides at
+every twentieth of the blink, as Godot puts the targets together: nothing of the eye in front of a lid (at most
+0.005 mm², 0.01 mm deep, on `_skintest`), open the eyes show, shut nothing of them from the front; then in Godot with the
+eyeballs a flat green: open thousands of green pixels, held shut none; `blink.jpg` open, half and shut.
+
+**Not yet**: the eyes don't turn in Godot (a glance, look-at); the Studio export carries only the blink of MHR's 72
+shapes (bakeplay.gd sets the others on a body that has them); the lid has no thickness of its own (MetaHuman's waterline);
+in the shut picture a lash clump at an inner corner and a fold at an outer corner want a look.
+
 ## 6. The story's words, and the check
 
 - `game.look`: `realism` (the default) or `plain` (STORY_FORMAT §9.1); `game.weather`: `rain` puts HSRain over every

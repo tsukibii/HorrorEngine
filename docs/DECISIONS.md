@@ -2,6 +2,31 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-31, later (the user: the eyes, the brows and lashes, on `realism-enhancer-skin`)
+
+- **"Can we get the eyes to be more like Unreal Engine's MetaHuman ... atm it looks too stylized/dolly and pops out too
+  much, I want to keep all the patterns for the iris etc we made. Can you analyze the eyebrows and eyelashes too ... our
+  eyelashes poke out too much and are probably too long."** Measured (docs/research/eyes.md §7). Then: **"it seems
+  like currently we can't get on par with MetaHuman's capabilities for eyes and eyebrows and eyelashes. So let's do a
+  hybrid approach where I will make a batch of variations of MetaHuman faces, and we run some kind of smart algorithm to
+  stretch the faces into our existing human modifiable models ... forget about the changes you may have made to eyes,
+  eyelashes, eyebrows so far. Keep the skin stuff you did for Godot though."** Then, **before committing to that:**
+  "look through git if there is anyone who has figured out how to do MetaHuman-like eyebrows and eyelashes
+  procedurally ... check if there are alt pathways." The hybrid face plan is **on hold**, the user's call.
+- **"I'd be happy to use TAU's Procedural Human Hair and bake it onto the model before exporting to Godot if you can
+  figure out how to get it to work."** Built (docs/TAU_HAIR.md): TAU's generators run headless in Blender's module on a
+  character's export, the lashes tidied, pinned to MHR's triangles, worn by the Character Studio (Face, **Bake with
+  TAU**), carried by the export to the desk and Godot. **TAU's pack is CC BY-SA 4.0 (by TAU):** its .blend stays out of
+  git (`vendor/tau/`, the user's download; it came in on a branch of its own, `tau-transfer`, still on the remote:
+  ask before deleting it); credit TAU; hair it grows is shared under its terms.
+- **"Make sure the eyes don't clip through the eyelids ... make sure the eyes can close properly without clipping. I
+  think I might have told you to go back on the eye fixes you did, make sure that the eyes don't look like white
+  paint and follow Unreal's MetaHuman inspired coloring and wetness so the eyes look more natural in game."** The
+  eye's lighting work brought back (the socket's shade in the Studio and Godot, Godot's own `light()` for the cornea's
+  coat and catchlight; not the earlier lash styles or the "realistic" look); the blink put in the export and played in
+  Godot with the lids kept off the eyes all the way and met when shut; the whites darker and warm; the tear line's
+  glint in Godot (GODOT_LOOK §5f; EYELIDS).
+
 ## 2026-10-31 (the user: the hair, after the skin, on `realism-enhancer-skin`)
 
 - **"Can you now work on the hair part. Making better hair that looks similar to Unreal's MetaHuman (if possible),

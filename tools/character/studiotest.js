@@ -892,7 +892,7 @@ const png = rgb => {
       return img;
     };
     const flat = { pupil: 0.45, limbal: 0, limbalSoft: 0, fibres: 0, veins: 0, iris: "#8a6a4a", iris2: "#8a6a4a", sclera: "#f0f0f0", corner: "#f0f0f0", cornerPink: 0, scleraShade: 0,
-                   catch1: 0, catch2: 0, occlusion: 0, lidShade: 0, tearline: 0, irisDepth: 0.2, bulge: 1, ior: 1.336, irisBright: 1 };
+                   catch1: 0, catch2: 0, occlusion: 0, lidShade: 0, socket: 0, tearline: 0, irisDepth: 0.2, bulge: 1, ior: 1.336, irisBright: 1 };
     const on = await shot(0.6, { ...flat, real: true }, true), off = await shot(0.6, { ...flat, real: false }, true);
     const r = await page.evaluate(async ([on, off, pupil]) => {
       const b = window.__body, THREE = b.THREE, cam = b.camera, L = b.EYES.L, s = b.eyeShapeOf("L");

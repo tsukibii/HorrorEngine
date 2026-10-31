@@ -97,6 +97,15 @@ along it), and the skin's node carries **each opening's outline** as cut, on the
 is untangled in the Studio too: smoothed, MHR's own left inner corner crossed itself and the little loop showed a
 diamond of eyeball at every character's corner (`untangle`, pulled to the crossing). STUDIO draws the file's skin and
 eyes flat from the front, above, below and 20° to either side: none of an eyeball outside its opening.
+**The blink in the file** (2026-10-31, GODOT_LOOK §5f): MHR's `eyesClosed_L` and `eyesClosed_R` as morph targets on the
+skin (with their normals), the lashes, the lash line, the brows and the tear line, each eye's way down kept at eight
+in-between weights (`eyesClosed_L_in1250` ... `_in9375`) so the lid follows its curve over the cornea, the lids kept off
+the eyeball in every state and, shut, the cut's edges met (MHR's shut lids leave 15 to 20% of the opening); written
+sparse (`sparseTargets`). Godot's HSBlink plays it (an idle blink, a scene's face); EYELIDS measures it. What lies on the
+lids (the lashes, the lash line, the tear line, the brows) comes forward with them (`liftWith`); **the tear line** goes
+into the file (`tearline_L`/`_R`, its fade in the vertices' colour, `studioTear`; see-through in a plain viewer), drawn as a wet glint in Godot.
+**TAU's brows and lashes** (docs/TAU_HAIR.md): Face, TAU (baked in Blender), **Bake with TAU** exports, grows them with
+TAU's pack in Blender, wears them and exports again.
 
 **The colours are baked** (2026-10-27, DECISIONS: the user's character stood white on the desk). glTF carries a
 material's colour and its maps, never a shader, and the Studio draws its colours in shaders: the procedural skin

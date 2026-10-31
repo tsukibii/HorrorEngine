@@ -121,7 +121,7 @@ def main():
     if os.path.exists("/usr/share/vulkan/icd.d/lvp_icd.json"):
         env.setdefault("VK_ICD_FILENAMES", "/usr/share/vulkan/icd.d/lvp_icd.json")
     subprocess.run([g, "--headless", "--path", str(OUT), "--import"], capture_output=True, text=True, timeout=900)
-    keep = Path(a.keep)
+    keep = Path(a.keep).resolve()                                         # absolute: Godot runs inside its project folder
     keep.mkdir(parents=True, exist_ok=True)
     base = [f"--glb=res://people/{glb.name}", f"--out={keep}"] + ([f"--preset={a.preset}"] if a.preset else []) + ([f"--hair={a.hair}"] if a.hair else [])
     tag = a.tag or ("before" if a.plugin else "portrait")

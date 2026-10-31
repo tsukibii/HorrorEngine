@@ -11,6 +11,18 @@ the to-do built there, with the Studio's eyes from the side, a small nose and th
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
+## 0a. `realism-enhancer-skin` (2026-10-31, later): TAU's brows and lashes, eyes that close, waiting for the user's review
+
+The user's asks (DECISIONS 2026-10-31, later): MetaHuman-like eyes, brows and lashes; then TAU's Procedural Human Hair
+for the brows and lashes (its .blend at `vendor/tau/`, git-ignored, CC BY-SA 4.0); then eyes that don't clip through the
+lids, open or shut, and whites that aren't paint, wet as MetaHuman's. Built: `tools/tau_hair.py` (docs/TAU_HAIR.md) and
+the Studio's **Bake with TAU**; the export's blink (morph targets with in-betweens, the lids kept off the eyes, met when
+shut), `HSBlink` in Godot, the tear line, the whites (GODOT_LOOK §5f); EYELIDS and TAUHAIR. Pictures:
+`Saved/Story/_look/godot_eyelids/blink.jpg`. Open: a lash clump at an inner corner and a fold at an outer corner in the
+shut picture; the brows placed by TAU's own region (not our brow rows); a presets sheet; the eyes don't turn in Godot;
+the hybrid MetaHuman-face plan on hold; `tau-transfer` still on the remote (ask before deleting). The STUDIO browser
+check wants a local GPU run (the socket shade and the export's blink and tear line are in its path).
+
 ## 0b. `realism-enhancer-skin` (2026-10-30, night): the Studio's characters less like dolls, waiting for the user's review
 
 The user's ask (DECISIONS 2026-10-30, night): the Studio's characters in Godot looked like dolls beside MetaHumans;

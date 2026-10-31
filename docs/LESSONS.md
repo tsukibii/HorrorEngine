@@ -12,6 +12,27 @@ the fix.
 
 ## This project
 
+- **Move a cut mesh by the points its corners are made of, never corner by corner:** the Studio's export cuts the eyes'
+  openings out of the skin by splitting MHR's triangles, and a split triangle's corner lies on its neighbour's edge (a
+  T-junction). Any move that isn't the same blend of the same points (pushing each corner off the eyeball, closing the
+  lids by moving the edge corners) opened cracks there, and the eye showed through them. The blink's targets are made
+  from MHR's points (kept off the eye, the lids met by moving the edge corners' triangles' points) and the corners
+  follow by their weights. Second try: the first shut lid had a cracked inner corner and a patch dipping into the cornea.
+- **A morph target is a straight line; check the way, not just the ends:** the shut lid sat outside the eye and so did
+  the open one, and halfway down the straight line between them ran 0.7 mm into the cornea (most where the lid crosses
+  it, 60 to 90% shut). One corrective at the middle didn't cover it; in-betweens an eighth apart (and a sixteenth before
+  the end) do. EYELIDS draws the file at every twentieth of the blink from five sides.
+- **MHR's shut lids don't shut:** they leave 15 to 20% of the opening (the Studio hides it by shrinking its cut). A file
+  whose opening is cut out of the skin showed the eye through a slit with the lids "closed"; the export meets the
+  cut's edges over the blink's last quarter.
+- **Pin a strand to the face it will be worn on:** TAU grew the lashes on the export, whose lids are brought forward
+  onto the eyeballs (up to 4 mm); pinned there and rebuilt on the Studio's own face (not brought forward), each lash
+  turned with its triangle's tilt and a fifth of them crossed the eye. Now each strand is moved back off the lift (the
+  Studio's `body.bin`), pinned, and the export lifts it again with the lids (`liftWith`); our own lashes had stayed
+  behind the export's lids too.
+- **Copying a plugin over an imported Godot project leaves stale textures:** the skin came out striped like wood until
+  the project was made fresh. The checks always build their project from nothing; a scratch script must too.
+
 - **A headless test waits on the game's clock, not the wall's:** on slow frames (the cloud's software GPU) the
   runtime clamps each step, so a second of real time is less play; fixed `waitForTimeout`s raced every walk, sit,
   turn and meter. `gameWait`/`hold` in playtest.js wait for `rt.clock` (and stop when play ends: a walk that answers

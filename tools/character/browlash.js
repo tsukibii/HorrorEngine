@@ -394,6 +394,28 @@ function brow(G, rows, o, C, U, S, seed, P) {
   }
 }
 
+// TAU's strands as cards (tools/character/tau.js, tools/tau_hair.py): one strand of the lash atlas on each, as wide as
+// the hair's own root radius six times over (the atlas's core is a third of its cell: the hair at its true thickness,
+// a few hundredths of a millimetre), tapering to a third; a lash on two cards crossed (across the lid, and square to
+// that), a brow hair on one lying on the skin. The same geometry as build()'s, for the same hair shader and the export
+export function strandCards(strands, kind, seed = 7) {
+  const G = Cards(), r = rng(seed), lash = kind === "lashes";
+  for (const s of strands) {
+    const P = s.pts, n = s.normal; if (P.length < 2) continue;
+    const r0 = Math.max(s.radius[0] || 0, 0.00002), w0 = 6 * r0, w1 = w0 * 0.35;
+    const cell = Math.floor(r() * LASH_ATLAS.cells), u0 = cell / LASH_ATLAS.cells, u1 = (cell + 1) / LASH_ATLAS.cells;
+    const d = norm(sub(P[P.length - 1], P[0]));
+    if (lash) {
+      const t = norm(cross3(n, d)), facing = norm(cross3(t, d));
+      card(G, P, t, facing, w0, w1, u0, u1); card(G, P, facing, t, w0 * 0.8, w1, u0, u1);
+    } else {
+      const across = P.map((p, k) => norm(cross3(n, sub(P[Math.min(k + 1, P.length - 1)], P[Math.max(k - 1, 0)]))));
+      card(G, P, across, n, w0, w1, u0, u1);
+    }
+  }
+  return geometryOf(G);
+}
+
 export function build(ctx, lash, brw) {
   const G = Cards(), B = Cards(), H = Cards(), P = { pos: [], nrm: [], alpha: [], idx: [] }, { F, U, C, scale: S } = ctx;
   if (lash.on) for (const side of ["L", "R"]) if (ctx.lids[side]) eyeLashes(G, B, ctx.lids[side], lash, F, U, S, side, side === "L" ? 101 : 202);
