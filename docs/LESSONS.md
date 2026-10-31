@@ -12,6 +12,15 @@ the fix.
 
 ## This project
 
+- **Read a generator's own controls before blaming its look:** TAU's lashes "stood up" because its Straight preset says
+  so (Angle Inner 80°, Angle Outer 70°, off the lid's line: every other preset sweeps out at 40° to 10°), and a tidy that
+  turned lashes up to keep them off the eye made it worse. Second try: the brows and lashes by hand, their angles
+  measured on the user's references (the middle lashes 1.5 to 2.5 mm over the lid, not 3.7).
+- **A hair's look is its thickness as much as its texture:** the editor's first lashes and brows were drawn the same way
+  as TAU's but 30 to 50% thinner, and in Godot they faded to a faint line; at TAU's 0.055 mm they read as TAU's did.
+- **A name in a 3000-line page is shared:** the editor's handle list was called `GH`, as the garments' handles already
+  were, and the whole page stopped with "Identifier 'GH' has already been declared"; grep a name before taking it.
+
 - **Move a cut mesh by the points its corners are made of, never corner by corner:** the Studio's export cuts the eyes'
   openings out of the skin by splitting MHR's triangles, and a split triangle's corner lies on its neighbour's edge (a
   T-junction). Any move that isn't the same blend of the same points (pushing each corner off the eyeball, closing the

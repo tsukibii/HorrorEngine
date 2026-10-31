@@ -63,7 +63,16 @@ triangle when it turns, comes back 6.7% larger in a space 6.7% larger; with Blen
 (`_studiotest`, else `_skintest`), a whole make measured (brows 300 to 1500 strands, 3.5 to 8 mm; lashes 250 to 1200, 3 to
 7 mm). EYELIDS (GODOT_LOOK §5f) pictures the lashes through the blink in Godot.
 
-## 4. Not yet
+## 4. After the user's look at it
+
+"The texture of the procedural eye lashes looks really good but the design you generated is very bad, they move up too
+upwards" (2026-10-31, the night). TAU's lash generator has explicit angles (`Angle Inner`/`Angle Outer`, radians, off
+the lid's line): Straight stands its lashes at 80° easing to 70° (from the front, a fan standing up on the lid), the
+others at 40° easing to 10° (swept out); and the tidy above turned the upper lashes further up to keep them off the eye.
+So the brows and lashes went by hand (docs/CHARACTER_STUDIO.md §2b: the editor, `groom.js`) at TAU's thickness and
+look; TAU stays for whoever wants its presets.
+
+## 5. Not yet
 
 - The brows are placed by TAU's own brow region laid over ours by the eyes: on a face whose brows sit unlike TAU's body
   they follow the eyes, not our brow landmarks (MediaPipe's brow rows); the tails run a little long.

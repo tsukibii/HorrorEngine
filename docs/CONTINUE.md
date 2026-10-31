@@ -11,6 +11,16 @@ the to-do built there, with the Studio's eyes from the side, a small nose and th
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
+## 0. `realism-enhancer-skin` (2026-10-31, the night): brows and lashes by hand, waiting for the user's try
+
+The user liked TAU's lash texture but not its design ("they move up too upwards") and asked for "an easy eyebrow editor
+tool where I manually can add and adjust the eyebrows and eyelashes inside an easy wrapper". Built: Face, **Brows &
+lashes by hand** (CHARACTER_STUDIO §2b, `groom.js`, GROOM): Edit on the face, handles on the brows' edges and the lashes'
+tips, Mirror, Add hair / Thin out / Comb, a blink, styles and sliders, at TAU's thickness; the lashes forward and swept
+out. Sheet: `docs/godot_sheets/2026-10-31_brows_lashes_by_hand.jpg`. Next, the user's try: what the handles, brushes and
+defaults need. Ideas: a brow-shape library (arched, straight, soft angled) as handle presets; per-hair brushes for
+strays; the lower lashes' own handles.
+
 ## 0a. `realism-enhancer-skin` (2026-10-31, later): TAU's brows and lashes, eyes that close, waiting for the user's review
 
 The user's asks (DECISIONS 2026-10-31, later): MetaHuman-like eyes, brows and lashes; then TAU's Procedural Human Hair

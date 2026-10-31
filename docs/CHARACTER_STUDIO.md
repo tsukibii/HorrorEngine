@@ -49,6 +49,44 @@ So a character can be pulled back at any point (change the body after the clothe
 the export) and only what depends on the change is redone. Unreal never becomes the place a character is edited: an
 export is a bake like any other (§3, Export).
 
+## 2b. Brows and lashes by hand (DECISIONS 2026-10-31, the night)
+
+The user, after TAU's (docs/TAU_HAIR.md): "The texture of the procedural eye lashes looks really good but the design you
+generated is very bad, they move up too upwards" (TAU's Straight preset stands its lashes at 70 to 80° off the lid line,
+and our tidy turned them up further to keep them off the eye), with four references (a brow, an eye at three-quarter, an
+eye from the front, a MetaHuman head without its hair); then "could you make an easy eyebrow editor tool where I manually
+can add and adjust the eyebrows and eyelashes inside an easy wrapper?" Built: **Face, Brows & lashes by hand**
+(`tools/character/groom.js`, the editor in `index.html`).
+
+- **Use them** puts them in place of the brows and lashes below and TAU's; **Mirror** does each change on both sides.
+- **Edit on the face** frames the eyes and brows and shows **handles**: five on each brow's top edge and five on its
+  bottom edge (yellow circles: dragged, that edge moves on the face; the band between the edges is the brow), and three
+  at the upper lashes' tips (blue squares, inner, middle, outer: dragged, their length, lift and sweep there follow the
+  pointer, smooth between the three). A bar over the view: Front, ¾ left, ¾ right, Side, **Blink** (the lids shut, the
+  lashes with them), the **brushes** (Add hair, Thin out, Comb: the brow's density or its hairs' flow painted where you
+  drag, at the brush's Size), Done. Alt-drag turns the view as ever.
+- **Styles and sliders**: the brows Natural (MetaHuman), Soft and sparse, Full, Groomed, Straight, Bold; Hairs, Length,
+  Thickness, Soft edges, Messy, the front, middle and tail hairs' angles, Toward the middle. The lashes Natural
+  (MetaHuman), Soft, Full, Doll, Fox, Sparse; Upper lashes, Length, Lift, Curl, Outer sweep, Inner length, Thickness,
+  Clumps, Lower lashes, Lower length, Lower angle. A style sets the sliders; the shape by hand stays.
+- **The hairs** are made on the face as it is, every time it changes (so they ride every expression and the blink), at
+  TAU's thickness (0.055 mm at the root) as TAU's strands are drawn (`strandCards`: one fine hair to a card): a brow's
+  hairs lying on the skin across its band (the band laid on the skin as a grid: each hair a curve in it, following the
+  flow: up at the front, swept out along the body, out and down at the tail, the top and bottom rows leaning in; fewer at
+  its soft edges and its front); an upper lash from the lid's edge over its rim, forward, easing up into its curl and
+  swept toward the temple more the further out it grows (the inner ones a touch toward the nose), turned with the lid as
+  it shuts; the lower lashes few, fine, uneven, down and out. Measured (GROOM): the middle lashes rise 2.4 mm over the
+  lid at 23° from straight out (it was 3.7 mm at 36° before the defaults were tuned on the references; TAU's Straight
+  stood up), the outer ones swept 45° out; the brows' hairs within 0.33 mm of the skin.
+- **Saved** with the character (`st.groom`: the shape's offsets in mm, the brushing as two small grids, the lash
+  handles, the sliders); the export carries them as any brows and lashes (their blink, lifted with the lids: §3.1).
+- **GROOM** (`node tools/character/groomtest.mjs`, the Studio's server running): the edit mode and its 26 handles, the
+  brows' hair count and their lying on the skin, the lashes' rise, angle and sweep, a brow handle dragged (and its twin),
+  a lash handle dragged up, Thin out and Add hair, a style, the blink, saved and opened again the same, Done.
+
+The sheet: `docs/godot_sheets/2026-10-31_brows_lashes_by_hand.jpg` (the editor, then the result in Godot open, at
+three-quarter and shut).
+
 ## 3. Each stage against the rule (as of this branch)
 
 | Stage | Sources kept | Bakes | Gaps |

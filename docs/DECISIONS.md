@@ -2,6 +2,17 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-31, the night (the user: brows and lashes by hand, on `realism-enhancer-skin`)
+
+- **"The texture of the procedural eye lashes looks really good but the design you generated is very bad, they move up
+  too upwards, look at the reference photos of the unskinned face and then how they apply eyelashes and eyebrows, that's
+  the kind of look we are aiming for."** With four references: a brow close up, an eye at three-quarter, an eye from the
+  front (MetaHuman's), a MetaHuman head without its hair. Then: **"Could you make an easy eyebrow editor tool where I
+  manually can add and adjust the eyebrows and eyelashes inside an easy wrapper?"** Built (CHARACTER_STUDIO §2b): Face,
+  Brows & lashes by hand, Edit on the face (handles on the brows' edges and the lashes' tips, Mirror, brushes, a blink,
+  styles and sliders), the hairs at TAU's thickness and look, the lashes forward and swept out (defaults tuned on the
+  references), saved with the character, carried by the export. TAU's bake stays as an option.
+
 ## 2026-10-31, later (the user: the eyes, the brows and lashes, on `realism-enhancer-skin`)
 
 - **"Can we get the eyes to be more like Unreal Engine's MetaHuman ... atm it looks too stylized/dolly and pops out too

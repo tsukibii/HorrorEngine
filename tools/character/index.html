@@ -19,6 +19,14 @@
   #handles { position: absolute; inset: 0; pointer-events: none; z-index: 1; overflow: hidden; }
   #handles .h { position: absolute; width: 11px; height: 11px; margin: -7px 0 0 -7px; border: 1.5px solid #ffffffd0; border-radius: 50%; background: #0005; pointer-events: auto; cursor: grab; box-shadow: 0 0 2px #000c; }
   #handles .h:hover, #handles .h.on { border-color: #7fe08a; background: #7fe08a55; transform: scale(1.3); }
+  #groomHandles { position: absolute; inset: 0; pointer-events: none; z-index: 2; overflow: hidden; }
+  #groomHandles .gh { position: absolute; width: 12px; height: 12px; margin: -8px 0 0 -8px; border: 2px solid #f2c14ee0; border-radius: 50%; background: #0006; pointer-events: auto; cursor: grab; box-shadow: 0 0 3px #000d; }
+  #groomHandles .gh.lash { border-color: #5fd4ffe0; border-radius: 3px; }
+  #groomHandles .gh:hover, #groomHandles .gh.on { background: #ffffff66; transform: scale(1.35); }
+  #groomBar { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); z-index: 3; display: flex; gap: 4px; align-items: center; flex-wrap: wrap; justify-content: center;
+              background: #15171bd8; border: 1px solid #ffffff22; border-radius: 8px; padding: 5px 8px; font-size: 12px; max-width: 96%; }
+  #groomBar button { padding: 3px 8px; } #groomBar button.on { background: #f2c14e; color: #111; } #groomBar label { display: flex; gap: 4px; align-items: center; }
+  #groomBar input[type=range] { width: 80px; } #groomBrush { position: absolute; z-index: 2; pointer-events: none; border: 1.5px dashed #f2c14eb0; border-radius: 50%; display: none; }
   #viewHelp { position: absolute; right: 10px; bottom: 10px; color: var(--dim); font-size: 11px; background: #0007; padding: 3px 7px; border-radius: 4px; pointer-events: none; z-index: 2; }
   aside { overflow-y: auto; border-left: 1px solid var(--line); background: var(--panel); padding: 8px 12px 30px; }
   h3 { margin: 16px 0 6px; color: var(--gold); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
@@ -175,6 +183,7 @@ import * as BL from "./browlash.js";
 import { hairUniforms, applyLook, lightHair, hairMaterial, atlasTexture, albedoTexture, strandsTexture, STUDIO_HAIR } from "./hairshader.js";
 import * as HV from "./hairvolume.js";
 import * as TAUJS from "./tau.js";
+import * as GR from "./groom.js";
 import { albedo as hairAlbedo } from "./hairtex.js";
 import * as ALB from "./albedo.js";
 import { GLTFLoader } from "./vendor/GLTFLoader.js";
@@ -1756,6 +1765,7 @@ renderer.domElement.onpointerdown = e => {
   if (orbit.focus !== "pov" && e.shiftKey) { PAN = [e.clientX, e.clientY]; return; }   // Shift with any drag pans (Blender's Shift+middle)
   if (LAY?.active() && e.button === 0 && !e.altKey && LAY.down(e)) { LSTROKE = true; return; }   // the Layers tab selects vertices
   if (PAINTING && e.button === 0 && !e.altKey && touchAt(e, true)) { STROKE = true; return; }   // the touch-up paints; Alt-drag still turns
+  if (GROOMEDIT && GBRUSH && e.button === 0 && !e.altKey && groomPaint(e, true)) return;   // the brow brushes paint on the brows; Alt-drag still turns
   drag = [e.clientX, e.clientY];                       // the middle or right button, Alt, or the left with no tool: the view turns (as in the salon)
 };
 renderer.domElement.onpointermove = e => {
@@ -1765,8 +1775,9 @@ renderer.domElement.onpointermove = e => {
     const X = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0), Y = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1);
     orbit.pan.addScaledVector(X, -(e.clientX - PAN[0]) * k).addScaledVector(Y, (e.clientY - PAN[1]) * k); PAN = [e.clientX, e.clientY]; return;
   }
+  if (GROOMEDIT && GBRUSH) groomCursor(e); if (GSTROKE) return groomPaint(e);
   if (LSTROKE) return LAY.move(e); if (STROKE) return touchAt(e); if (!drag) return; orbit.yaw -= (e.clientX - drag[0]) * 0.008; orbit.pitch = Math.max(-1.2, Math.min(1.2, orbit.pitch + (e.clientY - drag[1]) * 0.006)); drag = [e.clientX, e.clientY]; };
-renderer.domElement.onpointerup = () => { drag = null; PAN = null; if (GDRAG) dropGarment(); if (LSTROKE) { LSTROKE = false; LAY.up(); } if (STROKE) { STROKE = false; TOUCH.end(); touchState(); } };
+renderer.domElement.onpointerup = () => { drag = null; PAN = null; GSTROKE = null; if (GDRAG) dropGarment(); if (LSTROKE) { LSTROKE = false; LAY.up(); } if (STROKE) { STROKE = false; TOUCH.end(); touchState(); } };
 for (const b of document.querySelectorAll("#views button")) b.onclick = () => {
   if (b.dataset.v) { orbit.focus = b.dataset.v; orbit.zoom = 1; orbit.pan.set(0, 0, 0); repose(); } else { orbit.yaw = +b.dataset.yaw * Math.PI / 180; orbit.pitch = 0.05; }   // Body, Head, POV: the zoom and pan reset
   document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === orbit.focus));
@@ -1910,6 +1921,7 @@ renderer.setAnimationLoop(() => {
     renderer.render(scene, camera); renderer.setScissorTest(false); renderer.setViewport(0, 0, sz.x, sz.y);
   } else renderer.render(scene, camera);
   try { placeHandles(); } catch (e) { console.error(e); }   // the sculpt's circles, over the picture (a throw here would stop the frames)
+  try { placeGroom(); } catch (e) { console.error(e); }      // the brow and lash editor's handles
 });
 resize();
 
@@ -2280,14 +2292,14 @@ const eyeSet = {};
 // Hair tab is the salon itself, in a frame on this character -----------------------------------------------------------
 // ---- brows and lashes (browlash.js): cards for the salon's hair shader; the lashes on the lids' edges, turning with the
 // lids and squashing as they shut, the brows flat on the skin between MediaPipe's brow rows; both off until asked for
-st.lash = { ...BL.LASH_DEFAULTS }; st.brow = { ...BL.BROW_DEFAULTS };
+st.lash = { ...BL.LASH_DEFAULTS }; st.brow = { ...BL.BROW_DEFAULTS }; st.groom = GR.fresh();   // (the brows and lashes by hand: groom.js)
 var BL_READY = false, BLNOW = null, BLLIDS = null, OPENLID = {};      // var: compose and the render loop run before this block (BLLIDS: the lids the lashes stand on; OPENLID: the lids as they are open, the lashes' frame)
 const BLU = { lash: hairUniforms(atlasTexture(BL.LASH_ATLAS), BL.LOOKS[st.lash.look]), line: hairUniforms(atlasTexture(BL.LINE_ATLAS), BL.LOOKS[st.lash.look]), brow: hairUniforms(atlasTexture(BL.ATLAS), BL.LOOKS[st.brow.look]) };   // the lashes' atlas: one fine strand to a cell; the lash line's: a dense fringe
 for (const U of Object.values(BLU)) { U.alphaCut.value = 0.3; U.ambientC.value.setRGB(0.35, 0.33, 0.32); }
 const BLM = { lash: new THREE.Mesh(new THREE.BufferGeometry(), hairMaterial(BLU.lash)), line: new THREE.Mesh(new THREE.BufferGeometry(), hairMaterial(BLU.line)), brow: new THREE.Mesh(new THREE.BufferGeometry(), hairMaterial(BLU.brow)) };
 BLM.lash.material.userData.file = () => ({ atlas: BL.LASH_ATLAS, look: BL.LOOKS[st.lash.look] });   // the strands' atlas and colours: what the export bakes them from (fileLook)
 BLM.line.material.userData.file = () => ({ atlas: BL.LINE_ATLAS, look: BL.LOOKS[st.lash.look] });
-BLM.brow.material.userData.file = () => ({ atlas: tauOn("brows") ? BL.LASH_ATLAS : BL.ATLAS, look: BL.LOOKS[st.brow.look] });   // (TAU's brow hairs: one to a card, the lashes' atlas)
+BLM.brow.material.userData.file = () => ({ atlas: fineBrows() ? BL.LASH_ATLAS : BL.ATLAS, look: BL.LOOKS[st.brow.look] });   // (TAU's brow hairs and the ones by hand: one to a card, the lashes' atlas)
 BLM.fill = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshStandardMaterial({ vertexColors: true, transparent: true, depthWrite: false, roughness: 0.9, side: THREE.DoubleSide }));   // the brows' fill, see-through
 Object.entries({ lash: "lashes", line: "lash_line", brow: "brows", fill: "brow_fill" }).forEach(([k, nm]) => { BLM[k].name = nm; });   // named in the file (each its own material and record there: Godot's HSHair reads them by name)
 for (const m of Object.values(BLM)) { m.renderOrder = 3; m.frustumCulled = false; m.visible = false; rig.add(m); }   // after the eyeballs, which draw over what's in the openings
@@ -2309,13 +2321,18 @@ function browLash() {
   }
   const C = v(234).add(v(454)).multiplyScalar(0.5);
   const r = BL.build({ lids, brows, F: F.toArray(), U: U.toArray(), C: C.toArray(), scale: SCALE }, st.lash, st.brow); BLLIDS = lids;
-  if (tauOn("lashes") || tauOn("brows")) {               // TAU's strands in place of our own (tools/tau_hair.py): rebuilt on the face as it is now
+  if (st.groom.on) {                                     // the brows and lashes by hand (groom.js) in place of our own and TAU's: made on the face as it is now
+    const G = groomNow(lids, brows, F, U, X);
+    r.lashes.dispose(); r.lashes = BL.strandCards(G.lashes, "lashes");
+    r.brows.dispose(); r.brows = BL.strandCards(G.brows, "brows");
+  } else if (tauOn("lashes") || tauOn("brows")) {        // TAU's strands in place of our own (tools/tau_hair.py): rebuilt on the face as it is now
     const now = TAUJS.strandsNow(TAU, POS, TRIS);
     if (tauOn("lashes")) { r.lashes.dispose(); r.lashes = BL.strandCards(now.lashes, "lashes"); }
     if (tauOn("brows")) { r.brows.dispose(); r.brows = BL.strandCards(now.brows, "brows"); }
   }
-  BLU.brow.atlas.value = tauOn("brows") ? TAUATLAS : BLATLAS;   // a brow hair to a card for TAU's, the clumps' atlas for ours
+  BLU.brow.atlas.value = fineBrows() ? TAUATLAS : BLATLAS;   // a brow hair to a card for TAU's and the ones by hand, the clumps' atlas for ours
   for (const [k, g] of [["lash", r.lashes], ["line", r.line], ["brow", r.brows], ["fill", r.fill]]) { BLM[k].geometry.dispose(); BLM[k].geometry = g; }
+  if (st.groom.on) BLM.fill.visible = false;            // (no fill under the brows by hand: the skin shows between their hairs)
   BLNOW = r.cards;
 }
 // a lid's rim: MHR's lid line runs along its back edge, where the lid meets the eye, and the lashes grow from its front
@@ -2471,6 +2488,226 @@ async function bakeTau(brows, lashes, say) {               // export, TAU in Ble
   say("TAU's hair on; saving and exporting again so the file carries it…"); await $("#save").onclick(); await exportPackage();
   say(`baked and exported: ${TAU?.brows?.strands.length || 0} brow hairs (TAU's ${brows}), ${TAU?.lashes?.strands.length || 0} lashes (${lashes})`);
 }
+// ---- the brows and lashes by hand (groom.js; Face, "Brows & lashes by hand", docs/CHARACTER_STUDIO.md §2b): the user's
+// own brows and lashes after MetaHuman's (the brow's hairs lying on the skin, flowing up at its front, out along its
+// body, down at its tail; the lashes leaving the lid forward and sweeping out, never a fan standing up), shaped on the
+// face: Edit on the face frames the eyes and shows handles on each brow's top and bottom edges (dragged on the skin)
+// and at the lashes' tips (dragged: their lift, sweep and length follow the pointer), brushes that add hair, thin it
+// out or comb its flow, a blink to see them shut. Fine hairs (strandCards: TAU's look), in place of the ones below and
+// TAU's; saved with the character (st.groom), worn by the export as any brows and lashes are (their blink too)
+let GROOMNOW = null, GROOMEDIT = false, GBRUSH = "", GBSIZE = 4, GSTROKE = null;
+function fineBrows() { return tauOn("brows") || !!(st.groom && st.groom.on); }
+function closestOnTri(p, P, a, b, c) {                 // the nearest point to p on the triangle (a, b, c: offsets into P) and its barycentric weights (Ericson 5.1.5)
+  const A = [P[a], P[a + 1], P[a + 2]], ab = [P[b] - A[0], P[b + 1] - A[1], P[b + 2] - A[2]], ac = [P[c] - A[0], P[c + 1] - A[1], P[c + 2] - A[2]];
+  const ap = [p[0] - A[0], p[1] - A[1], p[2] - A[2]], dt = (u, v) => u[0] * v[0] + u[1] * v[1] + u[2] * v[2];
+  const d1 = dt(ab, ap), d2 = dt(ac, ap); if (d1 <= 0 && d2 <= 0) return [1, 0, 0];
+  const bp = [ap[0] - ab[0], ap[1] - ab[1], ap[2] - ab[2]], d3 = dt(ab, bp), d4 = dt(ac, bp); if (d3 >= 0 && d4 <= d3) return [0, 1, 0];
+  const vc = d1 * d4 - d3 * d2; if (vc <= 0 && d1 >= 0 && d3 <= 0) { const v = d1 / (d1 - d3); return [1 - v, v, 0]; }
+  const cp = [ap[0] - ac[0], ap[1] - ac[1], ap[2] - ac[2]], d5 = dt(ab, cp), d6 = dt(ac, cp); if (d6 >= 0 && d5 <= d6) return [0, 0, 1];
+  const vb = d5 * d2 - d1 * d6; if (vb <= 0 && d2 >= 0 && d6 <= 0) { const w = d2 / (d2 - d6); return [1 - w, 0, w]; }
+  const va = d3 * d6 - d5 * d4; if (va <= 0 && d4 - d3 >= 0 && d5 - d6 >= 0) { const w = (d4 - d3) / ((d4 - d3) + (d5 - d6)); return [0, 1 - w, w]; }
+  const den = 1 / (va + vb + vc), v = vb * den, w = vc * den; return [1 - v - w, v, w];
+}
+function skinNear(lo, hi) {                            // the skin round a box (the body's own space): the point nearest p on it and the normal there (smooth: the points' own)
+  const tri = [], NP = geo.attributes.normal.array;
+  for (let t = 0; t < TRIS.length; t += 3) for (let k = 0; k < 3; k++) {
+    const v = TRIS[t + k] * 3; if (POS[v] > lo[0] && POS[v] < hi[0] && POS[v + 1] > lo[1] && POS[v + 1] < hi[1] && POS[v + 2] > lo[2] && POS[v + 2] < hi[2]) { tri.push(t); break; }
+  }
+  return p => {
+    let best = Infinity, bp = p, bn = [0, 0, 1];
+    for (const t of tri) {
+      const a = TRIS[t] * 3, b = TRIS[t + 1] * 3, c = TRIS[t + 2] * 3, w = closestOnTri(p, POS, a, b, c);
+      const q = [0, 1, 2].map(k => w[0] * POS[a + k] + w[1] * POS[b + k] + w[2] * POS[c + k]), d = (q[0] - p[0]) ** 2 + (q[1] - p[1]) ** 2 + (q[2] - p[2]) ** 2;
+      if (d < best) { best = d; bp = q; bn = [0, 1, 2].map(k => w[0] * NP[a + k] + w[1] * NP[b + k] + w[2] * NP[c + k]); }
+    }
+    const l = Math.hypot(...bn) || 1; return { p: bp, n: bn.map(x => x / l) };
+  };
+}
+function groomNow(lids, brows, F, U, X) {              // the brows' and lashes' strands on the face as it is now; their handles' places and the bands for the brushes kept
+  const mm = 0.001 * SCALE, f = F.toArray(), u = U.toArray(), x = X.toArray(), out = { brows: [], lashes: [] }, now = { edges: {}, tips: {}, bands: {}, lids, F: f, U: u, X: x, mm };
+  for (const side of ["L", "R"]) {
+    const rows = brows[side], all = [...rows.upper, ...rows.lower], pad = 0.018 * SCALE;
+    const lo = [0, 1, 2].map(k => Math.min(...all.map(p => p[k])) - pad), hi = [0, 1, 2].map(k => Math.max(...all.map(p => p[k])) + pad);
+    const b = GR.browStrands({ rows, out: side === "L" ? x : x.map(v => -v), U: u, mm, project: skinNear(lo, hi) }, side, st.groom);
+    out.brows.push(...b.strands); now.edges[side] = b.edges; now.bands[side] = b.band;
+    const l = GR.lashStrands({ lid: lids[side], F: f, U: u, mm }, side, st.groom);
+    out.lashes.push(...l.strands); now.tips[side] = l.tips;
+  }
+  GROOMNOW = now; return out;
+}
+window.__groomFresh = () => GR.fresh();             // (GROOM: tools/character/groomtest.mjs)
+window.__groomMeasure = () => {                       // the brows' hairs on each side and how far off the skin; the left eye's upper lashes by thirds; the middle handle's tip's height
+  browLash(); const N = GROOMNOW; if (!N || !BLLIDS) return null;
+  const mm = N.mm, F = N.F, U = N.U, X = N.X, d = (c, v) => c[0] * v[0] + c[1] * v[1] + c[2] * v[2], brows = {}; let onSkin = 0;
+  for (const side of ["L", "R"]) {
+    const rows = { upper: BROWROWS[side].upper.map(lmk), lower: BROWROWS[side].lower.map(lmk) }, all = [...rows.upper, ...rows.lower], pad = 0.018 * SCALE;
+    const proj = skinNear([0, 1, 2].map(k => Math.min(...all.map(p => p[k])) - pad), [0, 1, 2].map(k => Math.max(...all.map(p => p[k])) + pad));
+    const b = GR.browStrands({ rows, out: side === "L" ? X : X.map(v => -v), U, mm, project: proj }, side, st.groom); brows[side] = b.strands.length;
+    if (side === "L") for (const st_ of b.strands.filter((_, i) => i % 7 === 0)) for (const p of st_.pts) { const q = proj(p).p; onSkin = Math.max(onSkin, Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]) / mm); }
+  }
+  const L = GR.lashStrands({ lid: BLLIDS.L, F, U, mm }, "L", st.groom).strands.filter(x => x.t !== undefined), ch = x => { const p = x.pts[3], q = x.pts[x.pts.length - 1]; return [q[0] - p[0], q[1] - p[1], q[2] - p[2]]; };
+  const third = (a, b) => { const sel = L.filter(x => x.t >= a && x.t < b), avg = f => sel.reduce((q, x) => q + f(x), 0) / (sel.length || 1);
+    return { elev: avg(x => Math.atan2(d(ch(x), U), d(ch(x), F)) * 180 / Math.PI), out: avg(x => Math.atan2(d(ch(x), X), d(ch(x), F)) * 180 / Math.PI), rise: avg(x => d(ch(x), U) / mm) }; };
+  const tip = GR.lashTip({ lid: BLLIDS.L, F, U, mm }, "L", st.groom, 1);
+  return { hairs: st.groom.brow.hairs, brows, onSkin, lash: [third(0, 0.33), third(0.33, 0.66), third(0.66, 1.01)],
+           drooping: L.filter(x => x.t < 0.9 && d(ch(x), U) < 0).length, tipY: tip ? d(tip, U) / mm : 0 };
+};
+window.__groomBrowScreen = side => {                  // a stroke's points along a brow's middle, on the screen (the page's own coordinates)
+  const B = GROOMNOW.bands[side], r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
+  return [0.25, 0.4, 0.55, 0.7].map(t => { const q = ghScreen(B.at(t, 0.5).p, r, V); return [r.left + q[0], r.top + q[1]]; });
+};
+window.__groomNow = () => { if (!GROOMNOW || !BLLIDS) return null; const G = { lashes: [] };   // (the checks: the left eye's lashes with where along the lid each grows)
+  for (const side of ["L", "R"]) { const l = GR.lashStrands({ lid: BLLIDS[side], F: GROOMNOW.F, U: GROOMNOW.U, mm: GROOMNOW.mm }, side, st.groom); G.lashes.push(...l.strands); } return G; };
+function groomPanel(box, sets) {                       // the Face tab's section: on, mirror, Edit on the face, the brows' and lashes' styles and sliders
+  box.append(el("h4", { textContent: "Brows & lashes by hand" }));
+  const on = el("input", { type: "checkbox" }), mirror = el("input", { type: "checkbox" }), edit = el("button", { textContent: "Edit on the face" });
+  box.append(el("label", { className: "tog" }, on, el("span", {}, "Use them", el("small", { textContent: "The brows and lashes you shape here, in place of the ones below and TAU's: fine hairs lying on the skin, lashes swept forward and out, after MetaHuman's." }))),
+             el("label", { className: "tog" }, mirror, el("span", {}, "Mirror", el("small", { textContent: "A handle or a brush on one side does the same on the other." }))),
+             el("div", { className: "row" }, edit), el("small", { className: "note", textContent: "Edit on the face: drag the yellow circles on a brow's top and bottom edge to shape it, the blue squares at the lashes' tips to lift, sweep or lengthen them; the brushes add hair, thin it out or comb its flow. Alt-drag turns the view." }));
+  on.onchange = () => { st.groom.on = on.checked; if (on.checked) { st.lash.on = st.brow.on = true; } UNSAVED = true; blSet.all(); browLash(); };
+  mirror.onchange = () => { st.groom.mirror = mirror.checked; UNSAVED = true; };
+  edit.onclick = () => groomEdit(!GROOMEDIT);
+  const part = (key, label, styles, sliders) => {
+    const d = el("details", {}, el("summary", { textContent: label }));
+    const style = el("select", {}, el("option", { value: "", textContent: "a style…" }), ...Object.entries(styles).map(([k, x]) => el("option", { value: k, textContent: x.label })));
+    d.append(el("div", { className: "row" }, el("span", { textContent: "Style" }), style, el("output")));
+    const sl = {};
+    for (const [k, lab, lo, hi, step, help] of sliders) sl[k] = slider(d, `groom_${key}_${k}`, lab, lo, hi, step, st.groom[key][k], help, v => { st.groom[key][k] = v; UNSAVED = true; browLash(); });
+    style.onchange = () => { if (!style.value) return; const x = styles[style.value]; for (const [k] of sliders) if (k in x) st.groom[key][k] = x[k]; st.groom[key].style = style.value; style.value = ""; UNSAVED = true; blSet.all(); browLash(); };
+    const reset = el("button", { textContent: key === "brow" ? "Reset the brows' shape and brushing" : "Reset the lashes' handles" });
+    reset.onclick = () => { const f0 = GR.fresh(); for (const side of ["L", "R"]) st.groom[key][side] = f0[key][side]; UNSAVED = true; browLash(); };
+    d.append(el("div", { className: "row" }, reset)); box.append(d);
+    sets.push(() => { for (const [k] of sliders) sl[k](st.groom[key][k]); });
+  };
+  part("brow", "Brows by hand", GR.BROW_STYLES, GR.BROW_SLIDERS);
+  part("lash", "Lashes by hand", GR.LASH_STYLES, GR.LASH_SLIDERS);
+  sets.push(() => { on.checked = !!st.groom.on; mirror.checked = st.groom.mirror !== false; edit.textContent = GROOMEDIT ? "Done editing" : "Edit on the face"; });
+}
+// the edit mode: a bar over the view (views, the blink, the brushes, Done), the handles, the brush's circle
+const GT = el("div", { id: "groomBar", hidden: true }), GRH = { box: el("div", { id: "groomHandles", hidden: true }), list: [], drag: null }, GC = el("div", { id: "groomBrush" });
+view.append(GT, GRH.box, GC);
+{
+  const b = (label, f, title = "") => { const x = el("button", { textContent: label, title }); x.onclick = f; return x; };
+  const blink = el("input", { type: "range", min: 0, max: 1, step: 0.01, value: 0, title: "Close the eyes to see the lashes shut" });
+  const size = el("input", { type: "range", min: 1, max: 8, step: 0.5, value: GBSIZE, title: "The brush's size (mm)" });
+  const brushes = [["", "Handles"], ["add", "Add hair"], ["thin", "Thin out"], ["comb", "Comb"]].map(([k, l]) => { const x = b(l, () => { GBRUSH = k; brushes.forEach(y => y.classList.toggle("on", y === x)); GC.style.display = "none"; }); x.dataset.brush = k; return x; });
+  brushes[0].classList.add("on");
+  blink.oninput = () => setBlink(+blink.value); size.oninput = () => { GBSIZE = +size.value; };
+  GT.append(b("Front", () => groomView(0)), b("¾ left", () => groomView(38)), b("¾ right", () => groomView(-38)), b("Side", () => groomView(82)),
+            el("label", {}, "Blink", blink), ...brushes, el("label", {}, "Size", size), b("Done", () => groomEdit(false)));
+  GT.blink = blink;
+}
+function setBlink(v) {                                 // both eyes closed that far (the expressions' own eyesClosed): the lashes go with the lids
+  const a = ENAMES.indexOf("eyesClosed_L"), b = ENAMES.indexOf("eyesClosed_R"), amt = st.exprAmt || 1;
+  if (a >= 0) st.expr[a] = v / amt; if (b >= 0) st.expr[b] = v / amt; GT.blink.value = v; compose();
+}
+function groomView(yawDeg) {                           // the eyes and the brows framed (the Head view, close)
+  const mid = EYES.L.position.clone().add(EYES.R.position).multiplyScalar(0.5).applyMatrix4(rig.matrixWorld), face = TOP - 0.12 * TOP / 1.7;
+  orbit.focus = "head"; orbit.zoom = 0.24; orbit.yaw = yawDeg * Math.PI / 180; orbit.pitch = 0.04;
+  orbit.pan.set(mid.x, mid.y + 0.012 * SCALE - face, mid.z);
+  document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === orbit.focus));
+}
+function groomEdit(on) {
+  GROOMEDIT = on;
+  if (on) { if (!st.groom.on) { st.groom.on = true; st.lash.on = st.brow.on = true; UNSAVED = true; } if (TAB !== "face") document.querySelector('#tabs button[data-tab="face"]').click(); browLash(); groomView(0); }
+  else { GBRUSH = ""; GT.querySelectorAll("button[data-brush]").forEach(x => x.classList.toggle("on", x.dataset.brush === "")); GC.style.display = "none"; if (+GT.blink.value) setBlink(0); }
+  blSet.all();
+}
+for (const side of ["L", "R"]) {
+  for (const edge of ["upper", "lower"]) for (let k = 0; k < GR.BROW_STATIONS; k++) addGH({ kind: "brow", side, edge, k });
+  for (let k = 0; k < GR.LASH_STATIONS.length; k++) addGH({ kind: "lash", side, k });
+}
+function addGH(h) {
+  const e = el("div", { className: "gh " + h.kind, title: h.kind === "brow" ? `drag the brow's ${h.edge === "upper" ? "top" : "bottom"} edge` : "drag the lashes' tips: their lift, sweep and length follow" });
+  GRH.box.append(e); h.e = e; GRH.list.push(h);
+  e.onpointerdown = ev => ghGrab(ev, h); e.onpointermove = ev => ghPull(ev); e.onpointerup = e.onpointercancel = () => { GRH.drag = null; for (const H of GRH.list) H.e.classList.remove("on"); };
+}
+function ghPoint(h) {                                  // a handle's place now (the body's space)
+  const N = GROOMNOW; if (!N) return null;
+  return h.kind === "brow" ? N.edges[h.side]?.[h.edge]?.[h.k] : N.tips[h.side]?.[h.k];
+}
+function placeGroom() {
+  const show = GROOMEDIT && TAB === "face" && orbit.focus !== "pov";
+  GT.hidden = !show; GRH.box.hidden = !(show && !!GROOMNOW && !GBRUSH); if (GRH.box.hidden) return;
+  const r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
+  for (const h of GRH.list) {
+    const q = ghPoint(h); if (!q) { h.e.style.display = "none"; continue; }
+    const [x, y, z] = screenOf(new THREE.Vector3(...q).applyMatrix4(rig.matrixWorld), r, V);
+    const seen = z < 1 && x > V.x && x < V.x + V.w && y > r.height - V.y - V.h && y < r.height - V.y;
+    h.e.style.display = seen ? "" : "none"; if (seen) { h.e.style.left = x + "px"; h.e.style.top = y + "px"; }
+  }
+}
+function ghScreen(p, r, V) { return screenOf(new THREE.Vector3(...p).applyMatrix4(rig.matrixWorld), r, V); }
+function ghGrab(ev, h) {
+  ev.preventDefault(); ev.stopPropagation(); ev.target.setPointerCapture(ev.pointerId);
+  const q = ghPoint(h); if (!q) return;
+  const r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height), p = new THREE.Vector3(...q).applyMatrix4(rig.matrixWorld);
+  const wpp = 2 * p.distanceTo(camera.position) * Math.tan(camera.fov * Math.PI / 360) / V.h;   // metres a pixel there
+  const cx = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0), cy = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1);
+  const d = GRH.drag = { h, x: ev.clientX, y: ev.clientY, wpp, cx, cy, inv: new THREE.Matrix3().setFromMatrix4(new THREE.Matrix4().copy(rig.matrixWorld).invert()),
+                        start: JSON.parse(JSON.stringify(h.kind === "brow" ? st.groom.brow[h.side][h.edge][h.k] : st.groom.lash[h.side].stations[h.k])) };
+  if (h.kind === "lash") {                              // how far the tip moves on the screen for a little more length, lift and sweep (the drag's Jacobian)
+    const N = GROOMNOW, ctx = { lid: N.lids[h.side], F: N.F, U: N.U, mm: N.mm }, s = d.start, base = GR.lashTip(ctx, h.side, st.groom, h.k);
+    d.J = [["len", 0.1], ["lift", 4], ["sweep", 4]].map(([k, dv]) => { const t = GR.lashTip(ctx, h.side, st.groom, h.k, { [k]: s[k] + dv });
+      if (!t || !base) return [k, [0, 0]]; const a = ghScreen(base, r, V), b = ghScreen(t, r, V); return [k, [(b[0] - a[0]) / dv, (b[1] - a[1]) / dv]]; });
+  }
+  for (const H of GRH.list) H.e.classList.toggle("on", H === h);
+}
+function ghPull(ev) {
+  const d = GRH.drag; if (!d) return;
+  const dx = ev.clientX - d.x, dy = ev.clientY - d.y, h = d.h, N = GROOMNOW, twin = h.side === "L" ? "R" : "L";
+  if (h.kind === "brow") {                              // the edge's point moves with the pointer on the face's plane: toward the temple and up, in mm
+    const w = d.cx.clone().multiplyScalar(dx * d.wpp).addScaledVector(d.cy, -dy * d.wpp).applyMatrix3(d.inv), out = h.side === "L" ? N.X : N.X.map(v => -v);
+    const v = [Math.round((d.start[0] + (w.x * out[0] + w.y * out[1] + w.z * out[2]) / N.mm) * 10) / 10, Math.round((d.start[1] + (w.x * N.U[0] + w.y * N.U[1] + w.z * N.U[2]) / N.mm) * 10) / 10];
+    st.groom.brow[h.side][h.edge][h.k] = v; if (st.groom.mirror) st.groom.brow[twin][h.edge][h.k] = v.slice();
+  } else {                                              // the lash: the length, lift and sweep whose motions best follow the pointer ((JᵀJ + λ) u = Jᵀ t)
+    const J = d.J.map(x => x[1]), lam = J.map(c => 0.08 * (c[0] * c[0] + c[1] * c[1]) + 1e-3);
+    const A = [0, 1, 2].map(i => [0, 1, 2].map(j => J[i][0] * J[j][0] + J[i][1] * J[j][1] + (i === j ? lam[i] : 0))), bb = [0, 1, 2].map(i => J[i][0] * dx + J[i][1] * dy);
+    const u = solve3(A, bb), s = { ...d.start }, lim = { len: [0.3, 1.8], lift: [-40, 60], sweep: [-40, 60] };
+    d.J.forEach(([k], i) => { s[k] = Math.round(Math.min(lim[k][1], Math.max(lim[k][0], d.start[k] + u[i])) * 100) / 100; });
+    st.groom.lash[h.side].stations[h.k] = s; if (st.groom.mirror) st.groom.lash[twin].stations[h.k] = { ...s };
+  }
+  UNSAVED = true; browLash();
+}
+function solve3(A, b) {                                // a 3x3 system by Cramer's rule (nothing at all when it's singular)
+  const det = M => M[0][0] * (M[1][1] * M[2][2] - M[1][2] * M[2][1]) - M[0][1] * (M[1][0] * M[2][2] - M[1][2] * M[2][0]) + M[0][2] * (M[1][0] * M[2][1] - M[1][1] * M[2][0]);
+  const D = det(A); if (!(Math.abs(D) > 1e-12)) return [0, 0, 0];
+  return [0, 1, 2].map(c => det(A.map((row, i) => row.map((x, j) => (j === c ? b[i] : x)))) / D);
+}
+function groomHit(e) {                                 // the skin under the pointer (the body's space), or null
+  const r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height), ray = new THREE.Raycaster();
+  ray.setFromCamera(new THREE.Vector2((e.clientX - r.left - V.x) / V.w * 2 - 1, (r.bottom - e.clientY - V.y) / V.h * 2 - 1), camera);
+  dgeo.computeBoundingSphere(); const hit = ray.intersectObject(mesh, false)[0]; if (!hit) return null;
+  return { p: hit.point.clone().applyMatrix4(new THREE.Matrix4().copy(rig.matrixWorld).invert()).toArray(), world: hit.point };
+}
+function groomCursor(e) {                              // the brush's circle under the pointer, its size on the screen
+  const hit = groomHit(e); if (!hit) { GC.style.display = "none"; return; }
+  const r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
+  const px = GBSIZE * 0.001 * SCALE / (2 * hit.world.distanceTo(camera.position) * Math.tan(camera.fov * Math.PI / 360) / V.h);
+  Object.assign(GC.style, { display: "block", left: (e.clientX - r.left - px) + "px", top: (e.clientY - r.top - px) + "px", width: 2 * px + "px", height: 2 * px + "px" });
+}
+function groomPaint(e, first = false) {                // a brush on a brow: more hair, less, or its flow combed the way the pointer goes
+  const N = GROOMNOW, hit = N && groomHit(e); if (!hit) return !!GSTROKE;
+  let side = null, at = null;
+  for (const s of ["L", "R"]) { const q = GR.bandPlace(N.bands[s], hit.p); if (q.d < 0.009 * SCALE && (!at || q.d < at.d)) { side = s; at = q; } }
+  if (!side) return first ? false : true;
+  const prev = GSTROKE && GSTROKE.side === side ? GSTROKE.at : null;
+  paintBand(side, at, prev); if (st.groom.mirror) paintBand(side === "L" ? "R" : "L", at, prev);
+  GSTROKE = { side, at }; UNSAVED = true; browLash(); return true;
+}
+function paintBand(side, at, prev) {
+  const B = st.groom.brow[side], nt = GR.PAINT.nt, ns = GR.PAINT.ns, band = GROOMNOW.bands[side], [Lt, Hs] = band.metric(at.t);
+  if (!B.paint) B.paint = { dens: new Array(nt * ns).fill(1), comb: new Array(nt * ns).fill(0) };
+  let toward = null;                                   // the comb: the stroke's way across the band (degrees from the brow's line toward its top)
+  if (GBRUSH === "comb") { if (!prev) return; const a = (at.t - prev.t) * Lt, b = (at.s - prev.s) * Hs; if (Math.hypot(a, b) < 0.25) return; toward = Math.atan2(b, a) * 180 / Math.PI; }
+  for (let i = 0; i < nt; i++) for (let j = 0; j < ns; j++) {
+    const ti = i / (nt - 1), sj = j / (ns - 1), dd = Math.hypot((ti - at.t) * Lt, (sj - at.s) * Hs); if (dd > GBSIZE) continue;
+    const w = 1 - (dd / GBSIZE) ** 2, k = i * ns + j;
+    if (GBRUSH === "add") B.paint.dens[k] = Math.min(1.6, B.paint.dens[k] + 0.2 * w);
+    else if (GBRUSH === "thin") B.paint.dens[k] = Math.max(0, B.paint.dens[k] - 0.2 * w);
+    else if (toward !== null) { const want = toward - GR.browAngle(st.groom.brow, null, ti, sj); B.paint.comb[k] += (Math.max(-80, Math.min(80, want)) - B.paint.comb[k]) * 0.3 * w; }
+  }
+}
 // the Hair tab: the salon in a frame on this character, its body saved first so the salon draws on the head as it is
 // now; a bake there (or leaving the tab) puts the hair back on here
 const SALONF = $("#salonFrame");
@@ -2491,6 +2728,7 @@ addEventListener("message", e => { if (e.origin === location.origin && e.data &&
 const blSet = {};
 {
   const box = $("#browRows"), sets = [];
+  groomPanel(box, sets);                               // the brows and lashes by hand first (groom.js)
   const part = (o, label, controls, looks, help) => {
     const on = el("input", { type: "checkbox" }), look = el("select", {}, ...Object.entries(BL.LOOKS).filter(([k]) => k.startsWith(looks)).map(([k, l]) => el("option", { value: k, textContent: l.label })));
     box.append(el("label", { className: "tog" }, on, el("span", {}, label, el("small", { textContent: help }))), el("div", { className: "row" }, el("span", { textContent: "Look" }), look, el("output")));
@@ -2680,7 +2918,7 @@ async function open(name) {
   Object.assign(st.teeth, TEETH.TEETH_DEFAULTS, c.teeth || {}); teethSet.all();
   Object.assign(st.lips, LIPS.LIPS_DEFAULTS, c.lips || {}); st.lips.guide = false; lipSet.all();
   Object.assign(st.nails, NAILS.NAIL_DEFAULTS, c.nails || {}); nailSet.all();
-  Object.assign(st.lash, BL.LASH_DEFAULTS, c.lash || {}); Object.assign(st.brow, BL.BROW_DEFAULTS, c.brow || {}); blSet.all();   // (an older file's hair settings are left out)
+  Object.assign(st.lash, BL.LASH_DEFAULTS, c.lash || {}); Object.assign(st.brow, BL.BROW_DEFAULTS, c.brow || {}); st.groom = GR.fresh(c.groom); blSet.all();   // (an older file's hair settings are left out)
   st.accessories = (c.accessories || []).filter(a => ACCS.KINDS[a.kind]).map(ACCS.normalize); ACCSEL = ACCPLACE = null;
   computeBody(); compose(); hud();
   WEAR.set(st.accessories); drawAcc();                  // on the face as it is now
@@ -2691,7 +2929,7 @@ async function open(name) {
   if (!SALONF.hidden) await enterSalon();              // the Hair tab open: the salon on this character
   if (me === OPENING && WHO) detect();
 }
-const character = () => ({ base: st.base, height: st.height, shape: st.shape, sculpt: Object.fromEntries(Object.entries(st.sculpt).filter(([, v]) => v)), face: st.face, relative: $("#relative").checked, skin: st.skin, clothes: st.clothes, drape: st.drape, eyes: st.eyes, teeth: st.teeth, lips: { ...st.lips, guide: undefined }, nails: st.nails, lash: st.lash, brow: st.brow, accessories: st.accessories,
+const character = () => ({ base: st.base, height: st.height, shape: st.shape, sculpt: Object.fromEntries(Object.entries(st.sculpt).filter(([, v]) => v)), face: st.face, relative: $("#relative").checked, skin: st.skin, clothes: st.clothes, drape: st.drape, eyes: st.eyes, teeth: st.teeth, lips: { ...st.lips, guide: undefined }, nails: st.nails, lash: st.lash, brow: st.brow, groom: st.groom, accessories: st.accessories,
                            weights: weights(), about: "the Character Studio (tools/character/): MHR identity weights = the base blended in + shape" });
 $("#who").onchange = () => open($("#who").value);
 $("#make").onclick = async () => {
