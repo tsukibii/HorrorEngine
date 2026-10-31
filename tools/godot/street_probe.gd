@@ -60,12 +60,20 @@ func _initialize():
 			b.move_and_slide()
 			await physics_frame
 		var p0 := b.global_position
+		var floor0 := b.is_on_floor()
 		var d := Vector3(w.dir[0], 0, w.dir[2]).normalized()
-		for i in 120:
+		for i in 120:                               # 2 s at 2 m/s toward the wall
 			b.velocity = Vector3(d.x * 2.0, b.velocity.y - 9.8 / 60.0, d.z * 2.0)
 			b.move_and_slide()
 			await physics_frame
-		print("GDPROBE bump ", w.name, " ", Vector2(b.global_position.x - p0.x, b.global_position.z - p0.z).length())
+		var p1 := b.global_position
+		for i in 45:                                # and back the way it came: it isn't stuck
+			b.velocity = Vector3(-d.x * 2.0, b.velocity.y - 9.8 / 60.0, -d.z * 2.0)
+			b.move_and_slide()
+			await physics_frame
+		var went := (p1 - p0).dot(d)
+		var back := Vector2(b.global_position.x - p1.x, b.global_position.z - p1.z).length()
+		print("GDPROBE bump ", w.name, " ", went, " ", back, " ", floor0, " ", p0.y - 0.85)
 		b.queue_free()
 	var space = s.get_world_3d().direct_space_state
 	for r in expect.get("rays", []):

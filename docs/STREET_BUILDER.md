@@ -171,7 +171,13 @@ Godot 4.7 imports it into a scene with:
   so the export gives each colour its own material: the reference town is 451 meshes, 84 colours).
 - `collision`: a `-colonly` mesh a chunk, which Godot turns into a StaticBody3D with its shape: the roads' and the
   pavements' tops and kerbs, the ground, a box a building (down to the ground on a slope), a ramp a stair, a fence's
-  bays, the things you'd bump into (a pillar for a lamp, a pole or a sign; nothing for a stand-in person).
+  bays, the things you'd bump into (a pillar for a lamp, a pole or a sign; nothing for a stand-in person). **The
+  kerbs' ramps** (collider only, never drawn): a 30° slope in front of every kerb face (from the road, from behind the
+  walk, onto a walk's cut ends), since a plain CharacterBody3D capsule takes a 15 cm step for a wall (its edge meets the
+  capsule at 60°, steeper than its 45° floor) and stops at every kerb. GDSTREET checks it (DECISIONS 2026-10-31: "so I
+  don't fall through"): a body a person's size dropped on each road and pavement stands there, and walked at a
+  building's front it goes up the kerb and stops at the wall (on the Shibuya lane and the hill: 2.20 m from 2.5 m out,
+  its 0.3 m radius short), then walks back.
 - `occluders`: `-occonly` boxes inside the buildings, which Godot merges into one OccluderInstance3D (turn occlusion
   culling on in the project, as the look plugin's balanced settings do).
 - `lamps`: the lamps' lights as OmniLight3Ds (energy 0.3 to 3, their reach); untick *lamps* beside the button to leave

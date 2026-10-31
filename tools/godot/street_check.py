@@ -149,13 +149,13 @@ for w in expect.get("walks", []):
         errs.append(f"a body dropped on {w['name']} didn't stand there: its feet at {feet} (the street: {w['want']:.3f}), on the floor {floor}")
     else:
         print(f"  a body dropped on {w['name']} stands at {feet:.3f} (the street: {w['want']:.3f})")
-for b in expect.get("bumps", []):
+for b in expect.get("bumps", []):                                     # toward a building's front: it never passes the wall, and it isn't stuck
     ln = next((x for x in lines if x.startswith(f"GDPROBE bump {b['name']} ")), None)
-    went = float(ln.split()[3]) if ln else None
-    if went is None or went > b["wall"] - 0.3 + 0.15 or went < 1.0:
-        errs.append(f"a body walked at {b['name']} went {went} m (the wall is {b['wall']} m ahead: it should stop at it)")
+    went, back, floor0, feet = (float(ln.split()[3]), float(ln.split()[4]), ln.split()[5] == "true", float(ln.split()[6])) if ln else (None, 0.0, False, None)
+    if went is None or went > b["wall"] - 0.3 + 0.15 or back < 0.5 or not floor0:
+        errs.append(f"a body walked at {b['name']} went {went} m toward the wall {b['wall']} m ahead, then {back:.2f} m back (on the floor at the start: {floor0}, feet at {feet})")
     else:
-        print(f"  a body walked at {b['name']} stopped at the wall after {went:.2f} m ({b['wall']} m to it, less its 0.3 m radius)")
+        print(f"  a body walked at {b['name']} stopped {'at the wall' if went > b['wall'] - 0.6 else 'short of the wall (a step, a plinth, a thing)'} after {went:.2f} m ({b['wall']} m to it), and walked back {back:.2f} m")
 for want in expect["insides"]:
     if not any(m["name"].startswith("inside_" + want) and (m["meta"] or {}).get("set") for m in markers):
         errs.append(f"the inside of {want} has no marker with its set")

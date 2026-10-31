@@ -1264,6 +1264,16 @@ export function roadParts(r, others = [], index = 0) {
     for (let i = 0; i + 1 < st.length; i++) { const a = st[i], b = st[i + 1], fr = f.frame((a + b) / 2); poly(o, slot, [P3(a, q, dz0), P3(b, q, dz0), P3(b, q, dz1), P3(a, q, dz1)], [fr.n[0] * facing, fr.n[1] * facing, 0]); }
   };
   strip(r.surface || "asphalt", 0, L, -W / 2, W / 2, zA);
+  // the kerbs' ramps, for the colliders alone (never drawn): a 30° slope in front of each kerb face, so a body a person's
+  // size walks up onto the pavement (a floor is up to 45° to Godot's CharacterBody3D, a 15 cm step is a wall); each quad
+  // wound to face up (a trimesh collides from its front only)
+  const ramps = o.ramps = { pos: [], idx: [] }, RUN = 1.732;
+  const rampQuad = (A, B, C, D) => {
+    const n = (B[0] - A[0]) * (C[1] - A[1]) - (B[1] - A[1]) * (C[0] - A[0]), v = ramps.pos.length / 3;
+    ramps.pos.push(...A, ...B, ...C, ...D);
+    ramps.idx.push(...(n >= 0 ? [v, v + 1, v + 2, v, v + 2, v + 3] : [v, v + 2, v + 1, v, v + 3, v + 2]));
+  };
+  const rampAlong = (s0, s1, q, out, dzLo, dzHi) => { const st = f.stations(s0, s1); for (let i = 0; i + 1 < st.length; i++) { const a = st[i], b = st[i + 1]; rampQuad(P3(a, q + out, dzLo), P3(b, q + out, dzLo), P3(b, q, dzHi), P3(a, q, dzHi)); } };
   // the walks: raised slabs either side, a kerb's face toward the road, cut where another road crosses
   [[1, f.walks[0]], [-1, f.walks[1]]].forEach(([sd, ww]) => {
     if (ww <= 0.01) return;
@@ -1274,6 +1284,14 @@ export function roadParts(r, others = [], index = 0) {
       side("kerb", s0, s1, qa, 0, k, -sd); side("kerb", s0, s1, qb, -0.05, k, sd);
       for (const s of [s0, s1]) { const fr = f.frame(s), dir = s === s0 ? -1 : 1; poly(o, "kerb", [P3(s, lo, -0.05), P3(s, hi, -0.05), P3(s, hi, k), P3(s, lo, k)], [fr.t[0] * dir, fr.t[1] * dir, 0]); }
       if (stone) strip("kerb", s0, s1, sd > 0 ? qa : qa - ks, sd > 0 ? qa + ks : qa, k);
+      if (k > 0.03) {
+        rampAlong(s0, s1, qa, -sd * k * RUN, zA, k);                      // up from the road
+        rampAlong(s0, s1, qb, sd * k * RUN, 0, k);                        // up from what's behind the walk
+        for (const [se, dir] of [[s0, -1], [s1, 1]]) {                    // up onto its ends, where a crossing cuts it
+          const t = se + dir * k * RUN;
+          rampQuad(P3(t, lo, zA), P3(t, hi, zA), P3(se, hi, k), P3(se, lo, k));
+        }
+      }
     }
   });
   // the lines along it: the edge lines (their distance in from each edge) and the centre line, stopping at crossings
@@ -1815,7 +1833,11 @@ function localBounds(G) {
 export function blockers(S, pieces) {
   const T = terrain(S), out = {}, byId = Object.fromEntries((pieces || []).map(p => [p.id, p]));
   const surf = (p, slots) => { const tris = { pos: [], idx: [] }; for (const s of slots) { const g = p && p.G[s]; if (!g) continue; const v0 = tris.pos.length / 3; tris.pos.push(...g.pos); for (const i of g.idx) tris.idx.push(i + v0); } return tris; };
-  for (const r of S.roads || []) out[r.id] = { boxes: [], occ: [], surface: surf(byId[r.id], ["asphalt", "gravel", "pavement", "kerb"]) };
+  for (const r of S.roads || []) {
+    const sf = surf(byId[r.id], ["asphalt", "gravel", "pavement", "kerb"]), rp = byId[r.id] && byId[r.id].ramps;
+    if (rp) { const v0 = sf.pos.length / 3; sf.pos.push(...rp.pos); for (const i of rp.idx) sf.idx.push(i + v0); }   // the kerbs' ramps: walked up, never drawn
+    out[r.id] = { boxes: [], occ: [], surface: sf };
+  }
   if (byId._ground) out._ground = { boxes: [], occ: [], surface: surf(byId._ground, ["ground"]) };
   for (const b of S.buildings || []) {
     const foot = footing(b, T), piece = Object.assign({}, b, { z: foot.z }), { tiers } = floorsOf(b), boxes = [], occ = [];
