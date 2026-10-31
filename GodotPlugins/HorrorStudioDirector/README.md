@@ -11,6 +11,9 @@ Needs, beside it in the project: `addons/horrorstudio` (the runtime), `addons/ho
 
 ## Use
 
+**The guide**: `guides/director/index.html` in the studio (the whole thing, step by step, with pictures); a project
+has its copy in `guide/`, opened by the dock's Guide button or Project > Tools.
+
 - **New project**: `python tools/godot_director.py new ~/Games/MyGame --sample`, then open it in Godot; F5 plays.
 - **The dock** (under the Inspector): Story (the quest log, reordered by dragging, Play from here), Events (sentences
   and templates: a jumpscare in an area after flags, the lights dying...), Flags (set where, checked where), Things,

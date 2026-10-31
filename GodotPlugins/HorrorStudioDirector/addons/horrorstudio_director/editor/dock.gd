@@ -48,10 +48,23 @@ func _ready() -> void:
 	check_tab = _tab(CheckTab, "Check")
 	kimodo_tab = _tab(KimodoTab, "Kimodo")
 	tabs.tab_changed.connect(func(_i): refresh())
+	var foot := HBoxContainer.new()
+	add_child(foot)
 	status = Label.new()
 	status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	status.add_theme_color_override("font_color", Color(1.0, 0.8, 0.45))
-	add_child(status)
+	foot.add_child(status)
+	var guide := Button.new()
+	guide.name = "Guide"
+	guide.text = "Guide"
+	guide.tooltip_text = "How to build a game with the HorrorStudio Director: the guide, in your browser"
+	guide.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	var th := EditorInterface.get_editor_theme()
+	if th != null and th.has_icon("Help", "EditorIcons"):
+		guide.icon = th.get_icon("Help", "EditorIcons")
+	guide.pressed.connect(open_guide)
+	foot.add_child(guide)
 	refresh.call_deferred()
 
 
@@ -59,6 +72,29 @@ func _ready() -> void:
 func say(t: String) -> void:
 	if status != null:
 		status.text = t
+
+
+## the guide's page (guides/director in the studio, copied into the project's guide/ by tools/godot_director.py) in
+## the system's browser; the studio's own copy when the project has none
+func guide_path() -> String:
+	var p := ProjectSettings.globalize_path("res://guide/index.html")
+	if FileAccess.file_exists(p):
+		return p
+	var studio := HSKimodoStage.studio_root()
+	if studio != "" and FileAccess.file_exists(studio.path_join("guides/director/index.html")):
+		return studio.path_join("guides/director/index.html")
+	return ""
+
+
+func open_guide() -> void:
+	var p := guide_path()
+	if p == "":
+		say("No guide here: run tools/godot_director.py install on this project (or open guides/director/index.html in the studio)")
+		return
+	if OS.shell_open(p) == OK:
+		say("The guide opens in your browser: " + p)
+	else:
+		say("Couldn't open a browser: open %s in one" % p)
 
 
 func _tab(cls, title: String) -> Control:

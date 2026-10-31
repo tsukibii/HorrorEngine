@@ -57,7 +57,8 @@ const SOLID := ["none", "breaker", "sit", "sleep", "hide", "roll", "game", "use_
 ## clean: an item it needs (a mop, a cloth; empty: bare hands)
 @export var clean_with: String = ""
 @export_enum("dirt", "mud", "blood", "water", "ash") var stain: String = "dirt"
-@export var board_game: String = "high_dice"
+## game: the board game played at it (Content/Studio/BoardGames); the Godot runtime has chohan's rules so far
+@export var board_game: String = "chohan"
 ## stops the player (its own collider, or a box round it); off: only the cursor finds it
 @export_enum("auto", "solid", "not solid") var solidity: String = "auto"
 @export var hidden_at_start: bool = false
@@ -85,7 +86,7 @@ func _validate_property(p: Dictionary) -> void:
 		HSDirector.hint(p, "flag")
 	elif nm == "board_game":
 		p["hint"] = PROPERTY_HINT_ENUM_SUGGESTION
-		p["hint_string"] = "russian_roulette,high_dice,chohan,spin_the_cup,shell_game,high_card,blackjack,shinkei_suijaku"
+		p["hint_string"] = "chohan,russian_roulette,high_dice,spin_the_cup,shell_game,high_card,blackjack,shinkei_suijaku"
 
 
 func _ready() -> void:

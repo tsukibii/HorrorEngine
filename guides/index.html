@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HorrorStudio Guides</title>
+<!-- The studio's guides, one page each (guides/README.md): this folder holds the ones of their own; the desk's lives with
+     the desk and the export's is written into each exported project. Nothing here loads from outside. -->
+<style>
+:root{--bg:#121214;--panel:#1b1b1f;--panel2:#232329;--line:#33333b;--text:#e6e3dc;--dim:#9a978f;--accent:#e07a5f;--desk:#d9a441;--export:#8fb8ff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+main{max-width:980px;margin:0 auto;padding:44px 24px 80px}
+h1{font-size:32px;line-height:1.15;margin:0 0 8px;letter-spacing:-.01em}
+.lead{color:var(--dim);font-size:16.5px;margin:0 0 30px;max-width:700px}
+.guides{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}
+.guide{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;color:var(--text)}
+a.guide:hover{text-decoration:none;border-color:var(--accent)}
+.guide img{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;object-position:top;border-bottom:1px solid var(--line);background:var(--panel2)}
+.guide .body{padding:14px 16px 16px}
+.guide h2{font-size:18px;margin:0 0 4px}
+.guide p{margin:6px 0 0;color:var(--dim);font-size:14px}
+.tag{display:inline-block;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;margin-bottom:4px}
+code{font:13px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:1px 5px;color:var(--text);overflow-wrap:anywhere}
+.which{margin-top:36px;max-width:820px}
+.which h3{font-size:17px;margin:0 0 6px}
+.which p{margin:6px 0;color:var(--dim)}
+.which b{color:var(--text)}
+footer{margin-top:44px;padding-top:14px;border-top:1px solid var(--line);color:var(--dim);font-size:13px}
+@media (max-width:600px){main{padding:26px 16px 60px}h1{font-size:26px}}
+</style>
+</head>
+<body>
+<main>
+<h1>HorrorStudio guides</h1>
+<p class="lead">How to use the studio's tools, a page each, with pictures of the real thing. Open one in your browser;
+nothing needs a server unless it says so.</p>
+
+<div class="guides">
+  <a class="guide" href="director/index.html">
+    <img src="director/img/e_overview.jpg" width="1600" height="1000" alt="Godot's editor with the HorrorStudio dock">
+    <div class="body"><span class="tag" style="color:var(--accent)">Godot plugin</span>
+    <h2>The Director in Godot</h2>
+    <p>Build a game in Godot itself: rooms, doors, things and characters dragged in, the story as chapters, tasks,
+    dialogue and endings, events for the scares (when, if, then), flags and where the player is, Kimodo motions there
+    and back.</p></div>
+  </a>
+  <a class="guide" href="../tools/director/guide.html">
+    <img src="../tools/director/guide/board.jpg" alt="The director's desk: the flow board">
+    <div class="body"><span class="tag" style="color:var(--desk)">Browser</span>
+    <h2>The director's desk</h2>
+    <p>Plot, block and review a story in the browser: the board, the script, the stage, the Database, the playtest.
+    Also opened from the desk's Help (<code>python tools/director/serve.py</code>, then http://127.0.0.1:8780/guide.html).</p></div>
+  </a>
+  <div class="guide">
+    <div class="body"><span class="tag" style="color:var(--export)">In every export</span>
+    <h2>An exported game's guide</h2>
+    <p>Each Godot project the desk exports carries its own guide, about that game: opening and playing it, its
+    folders, lighting it, swapping props, building it for Windows and Linux, what a re-export touches. It's at
+    <code>guide/index.html</code> in the project
+    (<code>Saved/Godot/&lt;Game&gt;_v001/</code>, <code>_v002</code>...), and the desk serves it after its Godot button
+    exports one.</p></div>
+  </div>
+</div>
+
+<div class="which">
+  <h3>Which way to build</h3>
+  <p><b>In Godot, with the Director</b>: the game made right in Godot's editor, no desk in between. Start here for a
+  new game you'll build and light in Godot.</p>
+  <p><b>On the desk, then exported</b>: the story plotted, blocked and reviewed in the browser, then exported to Godot
+  as a project of its own. The desk's guide and the export's guide cover that way.</p>
+</div>
+
+<footer>The pictures in the Director's guide are made by Godot from its sample game:
+<code>python tools/godot_director.py guide</code>. The desk's are made by driving the desk:
+<code>node tools/director/guide_shots.mjs</code>.</footer>
+</main>
+</body>
+</html>

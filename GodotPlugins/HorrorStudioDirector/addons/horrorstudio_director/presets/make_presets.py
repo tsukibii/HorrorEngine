@@ -32,7 +32,7 @@ PRESETS = {
     "code_lock": ("CodeLock", "Node3D", "level/thing.gd", {"use": '"code"', "code": '"1234"', "display_name": '"Keypad"', "transform": "Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3, 0)"}),
     "use_item": ("NeedsAnItem", "Node3D", "level/thing.gd", {"use": '"use_item"', "needs_item": '"key"'}),
     "stain": ("Stain", "Node3D", "level/thing.gd", {"use": '"clean"', "stain": '"blood"'}),
-    "table_game": ("GameTable", "Node3D", "level/thing.gd", {"use": '"game"', "board_game": '"high_dice"'}),
+    "table_game": ("GameTable", "Node3D", "level/thing.gd", {"use": '"game"', "board_game": '"chohan"'}),
     "prop": ("Prop", "Node3D", "level/thing.gd", {"use": '"none"'}),
 }
 CURVE = '''[sub_resource type="Curve3D" id="curve"]

@@ -2,6 +2,14 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-31 (the user: a guide to the Director)
+
+- **"Can you make a .html guide on how to use this tool, if we dont have a dedicated guide folder we should"**: the
+  studio's guides get a folder of their own, `guides/` (its `index.html` lists them all, the desk's and the
+  export's too, which stay where they are). The first is the Director's, `guides/director/index.html`: start to
+  finish with pictures Godot makes of the sample (`python tools/godot_director.py guide`), copied into every Director
+  project's `guide/` and opened by the dock's Guide button.
+
 ## 2026-10-30, night (the user: "Director-Godot")
 
 - **The game built in Godot itself, no desk in between**: "the goal of this tool is to make a plugin for Godot, so

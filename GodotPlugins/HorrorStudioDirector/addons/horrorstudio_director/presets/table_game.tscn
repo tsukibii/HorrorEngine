@@ -5,4 +5,4 @@
 [node name="GameTable" type="Node3D"]
 script = ExtResource("1")
 use = "game"
-board_game = "high_dice"
+board_game = "chohan"

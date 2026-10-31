@@ -18,10 +18,10 @@ word the format doesn't have (as `move` to the player, `anim`, `talk`, `repeat`,
 | `story/*.gd` | the story's nodes; `story/game.gd` (HSGame) is also the bridge at play: compile, take the levels up (templates), start `addons/horrorstudio/main.tscn` with `story_data` and `level_scenes`, the characters' behaviours on each level (`_on_level`), the debugger messages, the play-from-here file (`user://hs_director_run.json`) |
 | `compile.gd` | `HSCompiler`: the nodes as the story (flow, stitches, scenes, choices, endings, levels, cast, items, notes, sounds, motions) and the problems with their nodes |
 | `run/debug.gd` | F9's panel |
-| `editor/*.gd` | the dock and its tabs (story, events with the templates, flags, things, add, check, kimodo), the debugger plugin |
+| `editor/*.gd` | the dock and its tabs (story, events with the templates, flags, things, add, check, kimodo), its Guide button (`open_guide`: the project's `guide/`, else the studio's `guides/director`), the debugger plugin |
 | `kimodo/npz.gd`, `kimodo/retarget.gd`, `kimodo/stage.gd` | Kimodo's .npz read (and written), SOMA's positions onto a skeleton as an Animation (MHR, SOMA, humanoid, Mixamo), a Godot room as Kimodo's stage file |
 | `presets/` | the Add tab's drag-in scenes (`make_presets.py` writes them) |
-| `tests/` | `make_sample.gd` (the sample game, built by Godot), `director_check.gd`, `kimodo_check.gd`, `alone_check.gd`, `editor_check.gd` (as a plugin of its own), `shot.gd` (a picture of the game) |
+| `tests/` | `make_sample.gd` (the sample game, built by Godot), `director_check.gd`, `kimodo_check.gd`, `alone_check.gd`, `editor_check.gd` (as a plugin of its own), `shot.gd` (a picture of the game), `guide_game.gd` and `guide_editor.gd` (the guide's pictures, `tools/godot_director.py guide`) |
 
 ## Checking it
 
@@ -30,6 +30,9 @@ After a change to the runtime add-on also GDPLAY, GDTESTROOM and GDEXPORT (the e
 
 ## Rules
 
+- **The guide says what the plugin does** (`guides/director/index.html`, the user's): a node, a field, a tab, a
+  template or a key changed is changed there too, and its pictures made again when they show it
+  (`tools/godot_director.py guide`, a few minutes under xvfb; DIRECTOR checks its pictures and links).
 - **A node saves only its numbers.** What it makes goes under `_gen` with no owner, rebuilt when its settings' hash
   changes (polled every few frames in the editor) and at play; nothing it makes is saved (the editor check reads the
   file). No metadata on the user's nodes in the editor either (it's saved).

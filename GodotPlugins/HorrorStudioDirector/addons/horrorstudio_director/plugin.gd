@@ -1,12 +1,14 @@
 @tool
 extends EditorPlugin
 ## The HorrorStudio Director in the editor (docs/GODOT_DIRECTOR.md): the dock (Story, Events, Flags, Things, Add,
-## Check, Kimodo), the running game's messages (where the player is, the flags as they're set), the index of the
-## project's ids kept as scenes are saved (the Inspector's suggestions across scenes). The nodes themselves are
-## classes with icons (Add Child Node finds them whether or not the plugin is on).
+## Check, Kimodo; its Guide button, and Project > Tools, open the guide: guides/director), the running game's
+## messages (where the player is, the flags as they're set), the index of the project's ids kept as scenes are saved
+## (the Inspector's suggestions across scenes). The nodes themselves are classes with icons (Add Child Node finds
+## them whether or not the plugin is on).
 
 const DockC := preload("res://addons/horrorstudio_director/editor/dock.gd")
 const DebuggerC := preload("res://addons/horrorstudio_director/editor/debugger.gd")
+const GUIDE_ITEM := "HorrorStudio Director guide"
 
 var dock: Control = null
 var debugger: EditorDebuggerPlugin = null
@@ -23,9 +25,11 @@ func _enter_tree() -> void:
 	scene_saved.connect(_on_saved)
 	scene_changed.connect(func(_r): dock.refresh())
 	get_tree().node_added.connect(_on_node_added)
+	add_tool_menu_item(GUIDE_ITEM, func(): dock.open_guide())     # Project > Tools, as the dock's Guide button
 
 
 func _exit_tree() -> void:
+	remove_tool_menu_item(GUIDE_ITEM)
 	if get_tree().node_added.is_connected(_on_node_added):
 		get_tree().node_added.disconnect(_on_node_added)
 	if debugger != null:

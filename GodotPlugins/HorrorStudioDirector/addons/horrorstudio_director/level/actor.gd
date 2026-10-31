@@ -33,7 +33,8 @@ extends Node3D
 @export var solid: bool = true
 @export var idle_motion: String = ""
 @export var walk_motion: String = ""
-## the Character Studio export she wears (People/<name>, copied in by tools/godot_director.py), instead of a model child
+## the Character Studio export she wears instead of a model child (Content/Studio/People/<name>/export/<name>.glb, which
+## `tools/godot_director.py install` copies into game/people/), on the Studio's skin and eyes
 @export var studio_character: String = ""
 @export var hidden_at_start: bool = false
 

@@ -34,12 +34,17 @@ docs/GODOT_DIRECTOR.md is the user's guide, the plugin's CLAUDE.md the map):
 - **Kimodo**: a room sent as the demo's stage (kimodo/stage.gd, the format `kimodo.py stage` writes), an .npz brought
   back (kimodo/npz.gd) and retargeted onto the character's own skeleton (kimodo/retarget.gd, the desk's bodies.js way;
   MHR, SOMA, Godot's humanoid profile, Mixamo), played as her idle or walk or by an event.
-- **tools/godot_director.py**: `new <folder> [--sample]`, `install <folder> [--link]`, `check` (DIRECTOR: the sample
-  played to its good ending, the Kimodo link measured, a level alone, the editor driven). The launcher's Godot
-  section has all three.
+- **tools/godot_director.py**: `new <folder> [--sample]`, `install <folder> [--link]`, `guide`, `check` (DIRECTOR: the
+  sample played to its good ending, the Kimodo link measured, a level alone, the editor driven, the guide's pictures
+  and links). The launcher's Godot section has all four.
+- **The guide** (2026-10-31, the user asked for one): `guides/director/index.html`, the Director start to finish with
+  24 pictures Godot makes of the sample (`godot_director.py guide`); `guides/index.html` lists the studio's guides
+  (the desk's and the export's too). Every project gets a copy in `guide/`; the dock's Guide button opens it.
+  Found while writing it and fixed: a game table defaulted to a board game the Godot runtime can't play (now
+  chohan), and a character's `studio_character` export was never copied in (`install` does now).
 
-**For the user to try** (on their machine, Godot 4.7): `python tools/godot_director.py new ~/Games/Sample --sample`,
-open it, F5 (walk to the letter, the kitchen, the key, Mari, the bedroom, the wardrobe), then the dock's tabs; F9 in
+**For the user to try** (on their machine, Godot 4.7): read the guide (`guides/director/index.html`), then
+`python tools/godot_director.py new ~/Games/Sample --sample`, open it, F5 (walk to the letter, the kitchen, the key, Mari, the bedroom, the wardrobe), then the dock's tabs; F9 in
 the game. Then a level of their own from their notes (docs/GODOT_DIRECTOR.md §1's table), and the Kimodo round trip
 with a real motion (the sample's idle is a made one). What to ask them: whether the dock under the Inspector suits
 them (Godot lets it move), which event templates they want next, and which of their models need a BoneMap for the

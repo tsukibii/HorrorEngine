@@ -29,6 +29,12 @@ python tools/godot_director.py install ~/Games/MyGame
 
 The launcher has both (`./studio`, the Godot section).
 
+**The user's guide** is `guides/director/index.html` (DECISIONS 2026-10-31): every part in the order it's used, with
+pictures of the sample made by Godot (`python tools/godot_director.py guide`: the game played and its editor pictured
+under xvfb, `tests/guide_game.gd` and `tests/guide_editor.gd`). `install` copies it into the project's `guide/` (with a
+`.gdignore`, never over a `guide/` of the user's own), and the dock's **Guide** button, or Project > Tools, opens it.
+When a node, a tab or a word changes, change the guide with it, and make its pictures again if they show it.
+
 ## 1. From the writers' room to Godot
 
 The chart (docs/WRITERS_ROOM.md) maps straight onto nodes; read it shape by shape and add the node:
@@ -221,6 +227,8 @@ itself (`tests/make_sample.gd`), then
 - **the editor** (`tests/editor_check.gd`, as a plugin of its own): the sample opened with the plugin, every tab drawn,
   a task added and undone and redone, the jumpscare template, a preset placed, a rename, the live marks, a save
   holding nothing the nodes make for themselves.
+- **the guide**: every picture `guides/director/index.html` shows is in `img/` and every one there is shown, every link
+  inside it lands, the project got its copy, and the dock's Guide button finds it.
 
 The runtime's own checks (GDPLAY, GDTESTROOM, GDEXPORT) stay as they were: the export's games keep their boxes.
 

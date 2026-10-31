@@ -111,6 +111,8 @@ func _tabs() -> void:
 	var ck = _tab("Check")
 	ck.refresh()
 	rep["check_summary"] = ck.summary.text
+	var gb = dock.find_child("Guide", true, false)        # the Guide button finds the project's own copy (install's guide/)
+	rep["guide"] = gb is Button and dock.guide_path() == ProjectSettings.globalize_path("res://guide/index.html")
 	dock.on_run_start("night1__card", [])                 # what the running game sends (HSGame through the debugger)
 	dock.on_run_step("arrive", ["@arrive", "read_letter"])
 	dock.on_run_flag("saw_figure")
