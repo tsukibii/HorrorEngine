@@ -18,6 +18,7 @@ FONT_FILES = {
     "serif": "OldStandard-Regular.ttf", "serif_bold": "OldStandard-Bold.ttf", "typewriter": "SpecialElite-Regular.ttf",
     "marker": "PermanentMarker-Regular.ttf", "mono": "CourierPrime-Regular.ttf", "bungee": "Bungee-Regular.ttf",
     "righteous": "Righteous-Regular.ttf", "rubik": "RubikMonoOne-Regular.ttf", "gothic_jp": "DelaGothicOne-Regular.ttf",
+    "brush_jp": "YujiSyuku-Subset.ttf",          # a calligrapher's hand: kana and JIS level 1 kanji (talismans, ema)
 }
 
 

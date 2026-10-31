@@ -23,6 +23,9 @@ LIQUIDS = {   # colour of the body, of the surface seen from above, of the line 
     "medicine": ("#7a1f2a", "#9a2f3a", "#c45a64", 0.3),
     "blood": ("#4a0306", "#6a0a0e", "#8a1a1e", 0.0),
     "oil":   ("#c9a23a", "#e0bf5a", "#f3dc8a", 0.5),
+    "broth": ("#b08a3c", "#c9a456", "#e0c88a", 0.55),
+    "miso":  ("#8a5a2c", "#a8743e", "#c4925a", 0.1),
+    "curry": ("#7a4a14", "#94601e", "#b07a34", 0.0),
 }
 
 

@@ -16,7 +16,7 @@ from .paint import read_image
 CASES = {"soda_can": (115, 6000), "soda_can_crushed": (125, 14000), "water_bottle": (205, 16000), "coffee_cup": (117, 9000),
          "paper_ball": (90, 14000), "burger_box": (140, 2000), "chair_worn": (900, 2000), "spoon": (200, 4000),
          "key_brass": (60, 3000), "rice_bowl": (117, 8000), "cig_butts": (150, 8000), "trash_bag": (560, 10000),
-         "soy_bottle": (120, 9000), "pill_bottle": (90, 14000)}
+         "soy_bottle": (120, 9000), "pill_bottle": (90, 14000), "candle_taper": (330, 13000)}
 
 
 def _glb(path):

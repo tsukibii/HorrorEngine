@@ -34,8 +34,10 @@ class Thing:
         self.density = {}
         self.view = None
         self.sharp_angle = None
+        self.weighted = None        # an angle (degrees): the game mesh's normals weighted by face area (hard surfaces)
         self.texel_paint = None     # fn(material name, canvas, texels): paint by each texel's place (an imported mesh)
         self.liquid = None          # (Mesh of the container's inside, liquid.info(...)): a node of its own for Godot's shader
+        self.sockets = {}           # name -> (point, direction) at rest, metres: empties in the glb (socket_flame, socket_steam...)
 
     def material(self, name, kind="paint", px=None, alpha=False, double=False, color="#808080", rough=0.5, metal=0.0, specular=None):
         self.mats[name] = dict(kind=kind, px=px or int(self.spec.get("tex", 1024)), alpha=alpha, double=double,
@@ -149,7 +151,7 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
     # Blender objects with stand-in materials (the bakes need materials to put their images in)
     temp = {m: S.flat_material(f"{name}_{m}_tmp", v["color"], v["rough"], v["metal"]) for m, v in th.mats.items()}
     sharp = spec.get("sharp_angle", th.sharp_angle)
-    low_me = M.to_blender(th.low, name, temp, sharp_angle=sharp)
+    low_me = M.to_blender(th.low, name, temp, sharp_angle=sharp, weighted=spec.get("weighted", th.weighted))
     low_ob = bpy.data.objects.new(name, low_me)
     bpy.context.scene.collection.objects.link(low_ob)
     high_ob = None
@@ -257,8 +259,23 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
         # glTF is y up: Blender's (x, y, z) goes out as (x, z, -y)
         liq_ob["propgen_liquid"] = LQ.extras(ld, (ax[0], ax[2], -ax[1]), (shift[0], shift[2], -shift[1]))
         th.liquid_preview = LQ.preview_material(f"{name}_liquid_preview", ld, h_world)
+    socks = []
+    for sname, (sp, sd) in th.sockets.items():
+        # set down with the thing, then an empty under it pointing its +Z along the socket's direction
+        from mathutils import Matrix, Vector
+        p = Mx @ np.asarray(sp, float) + shift
+        dvec = Mx @ np.asarray(sd, float)
+        em = bpy.data.objects.new(f"socket_{sname}", None)
+        em.empty_display_type = "SINGLE_ARROW"
+        em.empty_display_size = 0.02
+        rot = Vector((0, 0, 1)).rotation_difference(Vector(dvec)).to_matrix().to_4x4()
+        em.matrix_world = Matrix.Translation(Vector(p)) @ rot
+        bpy.context.scene.collection.objects.link(em)
+        em.parent = low_ob
+        em.matrix_parent_inverse = low_ob.matrix_world.inverted()
+        socks.append(em)
     base = os.path.join(odir, name)
-    outs = export([low_ob] + ([liq_ob] if liq_ob else []), base, formats)
+    outs = export([low_ob] + ([liq_ob] if liq_ob else []) + socks, base, formats)
     pv = None
     if preview:
         pv = base + "_preview.png"
@@ -268,10 +285,11 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
         render([low_ob] + ([liq_ob] if liq_ob else []), pv, samples=int(spec.get("preview_samples", 48)), gpu=gpu,
                **(spec.get("view") or th.view or {}))
     lo, hi = th.low.bounds()
+    rec_sockets = {k: [round(float(x), 5) for x in (Mx @ np.asarray(v[0], float) + shift)] for k, v in th.sockets.items()}
     rec = {"name": name, "family": spec["family"], "version": VERSION, "seed": seed, "size_m": [round(float(x), 4) for x in (hi - lo)],
            "tris": th.low.ntris(), "files": [os.path.basename(p) for p in outs], "preview": os.path.basename(pv) if pv else None,
            "textures": {m: [os.path.basename(p) for p in f] for m, f in files.items()}, "spec": spec,
-           "secs": round(time.time() - t0, 1)}
+           "secs": round(time.time() - t0, 1), "sockets": rec_sockets}
     with open(os.path.join(odir, "meta.json"), "w", encoding="utf-8") as fh:
         json.dump(rec, fh, indent=1)
     if th.liquid:
@@ -282,4 +300,6 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
     bpy.data.objects.remove(low_ob, do_unlink=True)
     if liq_ob is not None:
         bpy.data.objects.remove(liq_ob, do_unlink=True)
+    for em in socks:
+        bpy.data.objects.remove(em, do_unlink=True)
     return rec

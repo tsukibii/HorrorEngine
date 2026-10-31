@@ -338,9 +338,44 @@ def box(size, at=(0, 0, 0), island=None, islands=None, mat="main", bevel=0.0):
     return m
 
 
-def to_blender(m, name, materials=None, sharp_angle=None):
+def weighted_normals(m, angle=50.0):
+    """A normal per face corner, each the area-weighted mean of the faces round its vertex that turn less than `angle`
+    degrees from its own face (flat faces keep their own): the hard-surface trick, so a big flat face shades flat and
+    the rounded bevel round it takes the highlight, no matter how few faces the bevel has."""
+    t, _, tf = m.tris()
+    a, b, c = m.v[t[:, 0]], m.v[t[:, 1]], m.v[t[:, 2]]
+    fn = np.zeros((len(m.f), 3))
+    np.add.at(fn, tf, np.cross(b - a, c - a))               # a face's normal times twice its area
+    area = np.linalg.norm(fn, axis=1)
+    unit = fn / np.maximum(area[:, None], 1e-20)
+    ok = m.f >= 0
+    cf, ck = np.nonzero(ok)
+    cv = m.f[cf, ck]
+    order = np.argsort(cv, kind="stable")
+    cv_s, cf_s = cv[order], cf[order]
+    starts = np.searchsorted(cv_s, np.arange(len(m.v)))
+    ends = np.searchsorted(cv_s, np.arange(len(m.v)), side="right")
+    cos_lim = math.cos(math.radians(angle))
+    out = np.zeros((len(cf), 3))
+    for i in range(len(cf)):
+        v = cv[i]
+        nb = cf_s[starts[v]:ends[v]]
+        own = unit[cf[i]]
+        if not m.fs[cf[i]]:
+            out[i] = own
+            continue
+        use = (unit[nb] @ own) >= cos_lim
+        use &= m.fs[nb]
+        s_ = fn[nb[use]].sum(0)
+        n_ = np.linalg.norm(s_)
+        out[i] = s_ / n_ if n_ > 1e-20 else own
+    return out
+
+
+def to_blender(m, name, materials=None, sharp_angle=None, weighted=None):
     """The Mesh as a Blender mesh datablock: smooth faces, hard edges at `sharp` and over `sharp_angle` degrees,
-    material slots in `m.mats` order (from `materials`: name -> bpy material)."""
+    material slots in `m.mats` order (from `materials`: name -> bpy material); `weighted` (an angle in degrees) sets
+    the corners' normals by weighted_normals instead."""
     import bpy
     me = bpy.data.meshes.new(name)
     f = m.f
@@ -382,6 +417,11 @@ def to_blender(m, name, materials=None, sharp_angle=None):
         att.data.foreach_set("value", flat)
     me.validate()
     me.update()
+    if weighted:
+        cn = weighted_normals(m, float(weighted))
+        if len(cn) == len(me.loops):
+            me.normals_split_custom_set([tuple(x) for x in cn])
+            me.update()
     return me
 
 
@@ -642,7 +682,7 @@ def _cdt(rings2d, inner):
     return out
 
 
-def slab(loops, thick, bevel, islands, top="top", bottom="bottom", edge="edge", hole_edge=None, steps=3, mat=None, fill=None):
+def slab(loops, thick, bevel, islands, top="top", bottom="bottom", edge="edge", hole_edge=None, steps=3, mat=None, fill=None, step=None):
     """A flat part cut from a sheet `thick` metres thick with its edges rounded (a quarter circle of `bevel` at the top
     and at the bottom, `steps` rings each): the outline (and holes) as loft loops; top and bottom faces from above
     and below, the edge band all round."""
@@ -652,7 +692,7 @@ def slab(loops, thick, bevel, islands, top="top", bottom="bottom", edge="edge", 
     arc_b = [(-b * (1 - math.cos(a)), -h + b - b * math.sin(a)) for a in np.linspace(0, math.pi / 2, steps + 1)]
     prof = arc_t + (arc_b if h - b > 1e-9 else arc_b[1:])
     # two runs: down to the last step (the top face capped at its start), then the last step (the bottom capped at its end)
-    segs = [Seg(np.array(prof[:-1]), edge, "band", mat=mat, cap="up", cap_at="start", cap_island=top, cap_mirror=False, cap_fill=fill),
+    segs = [Seg(np.array(prof[:-1]), edge, "band", mat=mat, cap="up", cap_at="start", cap_island=top, cap_mirror=False, cap_fill=fill, step=step),
             Seg(np.array(prof[-2:]), edge, "band", mat=mat, cap="down", cap_at="end", cap_island=bottom, cap_fill=fill)]
     return loft(loops, segs, islands, hole_island=hole_edge)
 
@@ -734,3 +774,105 @@ def sweep(path, section, island, mat=None, closed_section=True):
     out = Mesh(v, np.array(faces, np.int64), np.array(uvs, float), mats=[mat or island.mat])
     out.a["rest"] = v.copy()
     return out
+
+def tube(path, radii, island, n=10, mat=None, caps=(False, False), cap_bulge=0.6):
+    """A round tube along a path (k, 3) metres, its radius per point (a bundle of straw, a rope's strand, a wire): a
+    sweep of a circle, each ring scaled to its radius; `caps` closes the start and the end with a point `cap_bulge` of
+    the radius beyond it. Maps round the tube (u) and along it (v)."""
+    P = np.asarray(path, float)
+    r = np.broadcast_to(np.asarray(radii, float), (len(P),)).copy()
+    a = np.linspace(0, 2 * math.pi, n, endpoint=False)
+    m = sweep(P, np.stack([np.cos(a), np.sin(a)], 1), island, mat=mat)
+    k = len(P)
+    ring = m.v.reshape(k, n, 3)
+    ring[:] = P[:, None, :] + (ring - P[:, None, :]) * r[:, None, None]
+    m.v = ring.reshape(-1, 3)
+    for end, on in ((0, caps[0]), (1, caps[1])):
+        if not on:
+            continue
+        i = 0 if end == 0 else k - 1
+        d = P[1] - P[0] if end == 0 else P[-1] - P[-2]
+        d = d / max(np.linalg.norm(d), 1e-12)
+        tip = P[i] + (-d if end == 0 else d) * r[i] * cap_bulge
+        ti = len(m.v)
+        m.v = np.concatenate([m.v, tip[None]])
+        base = i * n
+        f, uv = [], []
+        vv = 0.0 if end == 0 else 1.0
+        for j in range(n):
+            j1 = (j + 1) % n
+            f.append([base + j1, base + j, ti, -1] if end == 0 else [base + j, base + j1, ti, -1])
+            us = np.array([j1 if j1 else n, j, j + 0.5]) / n if end == 0 else np.array([j, j1 if j1 else n, j + 0.5]) / n
+            uv.append(np.concatenate([island.to_uv(us, np.full(3, vv)), [[0, 0]]]))
+        m.f = np.concatenate([m.f, np.array(f, np.int64)])
+        m.uv = np.concatenate([m.uv, np.array(uv)])
+        m.fm = np.concatenate([m.fm, np.zeros(len(f), np.int64)])
+        m.fs = np.concatenate([m.fs, np.ones(len(f), bool)])
+    m.a["rest"] = m.v.copy()
+    return m
+
+
+def ring_path(c, axis, radius, n=24):
+    """A closed circle of points (n + 1, the last the first) round centre c, square to axis: a binding, a torus's path."""
+    ax = np.asarray(axis, float)
+    ax = ax / np.linalg.norm(ax)
+    up = np.array([0.0, 0.0, 1.0]) if abs(ax[2]) < 0.9 else np.array([1.0, 0.0, 0.0])
+    u = np.cross(ax, up)
+    u /= np.linalg.norm(u)
+    w = np.cross(ax, u)
+    t = np.linspace(0, 2 * math.pi, n + 1)
+    return np.asarray(c, float)[None] + radius * (np.cos(t)[:, None] * u[None] + np.sin(t)[:, None] * w[None])
+
+
+def rbox(size, bevel, islands, top="top", bottom="bottom", edge="edge", at=(0.0, 0.0, 0.0), corner=None, steps=3, fill=None, step=None, mat=None):
+    """A box (w, d, h) metres standing on `at`, every edge rounded by `bevel` (its upright corners by `corner`): a slab
+    of its rounded footprint. Its top and bottom map from above and below, its sides along the band round it."""
+    from .paint import rrect_poly
+    w, d, h = size
+    c = bevel if corner is None else corner
+    loop = rrect_poly(-w / 2, -d / 2, w, d, max(c, 1e-6), n=6)
+    m = slab([loop], h, bevel, islands, top, bottom, edge, steps=steps, fill=fill, step=step, mat=mat)
+    m.v += np.array([at[0], at[1], at[2] + h / 2])
+    m.a["rest"] = m.v.copy()
+    return m
+
+
+def turn(m, R, about=(0.0, 0.0, 0.0), move=(0.0, 0.0, 0.0)):
+    """A mesh turned by the 3x3 matrix R about a point, then moved (its rest position following)."""
+    c = np.asarray(about, float)
+    m.v = (m.v - c) @ np.asarray(R, float).T + c + np.asarray(move, float)
+    m.a["rest"] = m.v.copy()
+    return m
+
+
+def rot(axis, deg):
+    """The 3x3 rotation by `deg` degrees round 'x', 'y' or 'z'."""
+    a = math.radians(deg)
+    c, s_ = math.cos(a), math.sin(a)
+    return {"x": np.array([[1, 0, 0], [0, c, -s_], [0, s_, c]]), "y": np.array([[c, 0, s_], [0, 1, 0], [-s_, 0, c]]),
+            "z": np.array([[c, -s_, 0], [s_, c, 0], [0, 0, 1]])}[axis]
+
+
+def spline(pts, step):
+    """A smooth curve through a profile's points (centripetal Catmull-Rom), its points about `step` apart (same units):
+    a belly or a dome drawn with a few points comes out round, with points only where it bends."""
+    p = np.asarray(pts, float)
+    if len(p) < 3:
+        return p
+    q = np.concatenate([p[:1] * 2 - p[1:2], p, p[-1:] * 2 - p[-2:-1]])
+    out = [p[0]]
+    for i in range(1, len(q) - 2):
+        p0, p1, p2, p3 = q[i - 1], q[i], q[i + 1], q[i + 2]
+        t0 = 0.0
+        t1 = t0 + max(np.linalg.norm(p1 - p0), 1e-9) ** 0.5
+        t2 = t1 + max(np.linalg.norm(p2 - p1), 1e-9) ** 0.5
+        t3 = t2 + max(np.linalg.norm(p3 - p2), 1e-9) ** 0.5
+        n = max(1, int(math.ceil(np.linalg.norm(p2 - p1) / step)))
+        for t in np.linspace(t1, t2, n + 1)[1:]:
+            a1 = (t1 - t) / (t1 - t0) * p0 + (t - t0) / (t1 - t0) * p1
+            a2 = (t2 - t) / (t2 - t1) * p1 + (t - t1) / (t2 - t1) * p2
+            a3 = (t3 - t) / (t3 - t2) * p2 + (t - t2) / (t3 - t2) * p3
+            b1 = (t2 - t) / (t2 - t0) * a1 + (t - t0) / (t2 - t0) * a2
+            b2 = (t3 - t) / (t3 - t1) * a2 + (t - t1) / (t3 - t1) * a3
+            out.append((t2 - t) / (t2 - t1) * b1 + (t - t1) / (t2 - t1) * b2)
+    return np.array(out)

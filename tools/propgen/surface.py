@@ -37,6 +37,15 @@ KINDS = {
     # cloth: no scratches to speak of (pilling: a little lighter), rubbed edges lighter and flat, stains soak in
     "fabric":  {"dirt": "#2c2822", "dust": "#9c968a", "scratch": ("lighter", 0.0, 1.0), "edge": ("lighter", 0.0, 1.0),
                 "stain": "#4a3a28", "stain_rough": 1.0},
+    # wax: scratches and rubbed edges a paler wax, soot where a flame was, dust settling in its pores
+    "wax":     {"dirt": "#2a2622", "dust": "#a8a194", "scratch": ("lighter", 0.0, 0.5), "edge": ("lighter", 0.0, 0.45),
+                "stain": "#2a2420", "stain_rough": 0.6},
+    # weathered wood out of doors: grey, cracked, moss in its hollows (dirt: the moss's green-brown)
+    "weathered": {"dirt": "#3e4a24", "dust": "#9a948a", "scratch": ("lighter", 0.0, 0.9), "edge": ("lighter", 0.0, 0.9),
+                  "stain": "#2e3a1e", "stain_rough": 0.95},
+    # stone: lichen and moss in its hollows, chips and worn edges paler
+    "stone":   {"dirt": "#3a4224", "dust": "#a59f92", "scratch": ("lighter", 0.0, 0.92), "edge": ("lighter", 0.0, 0.9),
+                "stain": "#2c3020", "stain_rough": 0.95},
     # bare steel and cutlery: scratches catch the light (brighter, smoother), edges polished by hands
     "steel":   {"dirt": "#2b2924", "dust": "#a09a8e", "scratch": ("#e3e6e9", 1.0, 0.18), "edge": ("#eceef0", 1.0, 0.14),
                 "stain": "#6a5034", "stain_rough": 0.55},

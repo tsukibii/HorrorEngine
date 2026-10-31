@@ -603,6 +603,201 @@ def rx_label(f, d, rng):
     _barcode(f, W * 0.04, 2.2, W * 0.14, 4.0, rng, color=ink)
 
 
+# ---- the occult: talismans, ema, omamori ------------------------------------------------------------------------------
+
+_EMS = {}
+
+
+def _em(font):
+    """A kanji's height in the font at the text size 1 (so a column of them can be sized by the character, not by H)."""
+    if font not in _EMS:
+        ps = P.text_polys("国", font, 1.0)
+        ys = np.concatenate([q[:, 1] for q in ps]) if ps else np.array([0.0, 1.0])
+        _EMS[font] = max(ys.max() - ys.min(), 1e-3)
+    return _EMS[font]
+
+
+def tate(f, s, x, y_top, size, rng, font="brush_jp", gap=1.1, jitter=0.05, **props):
+    """Words written down a column (tategaki), right to left over columns at a newline: each character `size` mm tall,
+    centred on x, a brush's unevenness (each a little off its place, turned, bigger or smaller). Returns the foot."""
+    k = 1.0 / _em(font)
+    y, cx = y_top - size / 2, x
+    for ch in s:
+        if ch == "\n":
+            cx -= size * 1.25
+            y = y_top - size / 2
+            continue
+        if ch in " 　":
+            y -= size * gap * 0.6
+            continue
+        sz = size * (1 + rng.uniform(-jitter, jitter))
+        ps = P.text_polys(ch, font, sz * k, rot=rng.uniform(-40, 40) * jitter)
+        if ps:
+            allp = np.concatenate(ps)
+            c = (allp.min(0) + allp.max(0)) / 2
+            small = ch in "ぁぃぅぇぉっゃゅょァィゥェォッャュョ"
+            off = np.array([cx + rng.uniform(-1, 1) * size * jitter, y + rng.uniform(-1, 1) * size * jitter * 0.5])
+            f.fill_polys([q - c + off + ((size * 0.15, size * 0.15) if small else (0, 0)) for q in ps], **props)
+        y -= size * gap
+    return y + size * gap - size / 2
+
+
+def stamp(f, cx, cy, size, chars, rng, color="#b8281c", shape="square", white=True, rot=0.0, ink=0.85):
+    """A seal pressed in vermilion: a square (or round) of ink, its characters cut out of it in white (hakubun) or
+    standing in red inside a red border (shubun); laid unevenly, the paper showing through where the stamp missed."""
+    from . import noise as Nn
+    h = size / 2
+    if shape == "round":
+        outer = [P.ellipse_poly(cx, cy, h, h)]
+        rim = [P.ellipse_poly(cx, cy, h * 0.86, h * 0.86)]
+        inner_rim = [P.ellipse_poly(cx, cy, h * 0.8, h * 0.8)]
+    else:
+        outer = [P.rrect_poly(cx - h, cy - h, size, size, size * 0.06)]
+        rim = [P.rrect_poly(cx - h * 0.86, cy - h * 0.86, size * 0.86, size * 0.86, size * 0.04)]
+        inner_rim = [P.rrect_poly(cx - h * 0.8, cy - h * 0.8, size * 0.8, size * 0.8, size * 0.035)]
+    n = len(chars)
+    cols = 1 if n <= 2 else 2
+    rows = int(math.ceil(n / cols))
+    cell = size * 0.76 / max(rows, cols)
+    k = 1.0 / _em("brush_jp")
+    polys = []
+    for i, ch in enumerate(chars):
+        col, row = i // rows, i % rows                      # read down the right column first
+        px = cx + (cols - 1) * cell / 2 - col * cell if cols > 1 else cx
+        py = cy + (rows - 1) * cell / 2 - row * cell
+        ps = P.text_polys(ch, "brush_jp", cell * 0.86 * k)
+        if ps:
+            allp = np.concatenate(ps)
+            c = (allp.min(0) + allp.max(0)) / 2
+            polys += [q - c + (px, py) for q in ps]
+    if rot:
+        a = math.radians(rot)
+        R2 = np.array([[math.cos(a), -math.sin(a)], [math.sin(a), math.cos(a)]])
+        turn = lambda ps: [((q - (cx, cy)) @ R2.T) + (cx, cy) for q in ps]
+        outer, rim, inner_rim, polys = turn(outer), turn(rim), turn(inner_rim), turn(polys)
+    cov = f.cov_of(outer)
+    ring = np.clip(f.cov_of(rim) - f.cov_of(inner_rim), 0, 1)
+    ch_cov = f.cov_of(polys) if polys else np.zeros_like(cov)
+    if white:                       # hakubun: a red square, its characters and an inner line cut out of it
+        ink_cov = cov * (1 - ring) * (1 - ch_cov)
+    else:                           # shubun: red characters inside a red border, the paper between them
+        ink_cov = np.clip(np.clip(cov - f.cov_of(rim), 0, 1) + ch_cov, 0, 1)
+    X, Y = f.grid()
+    seed = int(rng.integers(1000))
+    g = Nn.fbm3(np.stack([X / 1.1, Y / 1.1, np.full_like(X, seed * 0.13)], -1), seed, 3)
+    pressed = np.clip((g + 0.55) * 2.2, 0, 1) * np.clip(0.75 + 0.6 * Nn.fbm3(np.stack([X / 9, Y / 9, np.full_like(X, 2.0)], -1), seed + 1, 2), 0, 1)
+    f.lay_island((ink_cov * pressed * ink).astype(np.float32), color=color, rough=0.78, height=0.002)
+
+
+def ofuda(f, d, rng):
+    """An ofuda (a paper talisman, a seal against what's on the other side): washi, its words brushed down the middle in
+    sumi, the smaller lines beside it, a vermilion seal stamped at its head and another over the words; old ones
+    yellowed and foxed (`age_tint`). Fields: text, side (two lines: right, left), seal (its characters), seal2, border."""
+    seed = int(rng.integers(1000))
+    paper_base(f, d.get("paper", "#efe8d6"), fibres=1.8, seed=seed, tint=d.get("age_tint"))
+    if d.get("page") == 2:
+        return
+    W, H = f.W, f.H
+    ink = dict(color=d.get("ink", "#17120f"), rough=0.62, height=0.003)
+    red = d.get("seal_color", "#b8281c")
+    if d.get("border", True):
+        f.line([(3, 3), (W - 3, 3), (W - 3, H - 3), (3, H - 3)], 0.7, closed=True, alpha=0.9, **ink)
+        f.line([(4.6, 4.6), (W - 4.6, 4.6), (W - 4.6, H - 4.6), (4.6, H - 4.6)], 0.3, closed=True, alpha=0.8, **ink)
+    seal = d.get("seal", "封印")
+    s_top = W * 0.56
+    top = H - 8
+    if seal:
+        stamp(f, W / 2, H - 7 - s_top / 2, s_top, seal, rng, color=red, rot=rng.uniform(-3, 3))
+        top = H - 10 - s_top
+    main = d.get("text", "悪霊退散")
+    n = max(1, len(main.replace("\n", "")))
+    size = min(W * 0.52, (top - 12) / (n * 1.12))
+    foot = tate(f, main, W / 2, top, size, rng, gap=1.12, **ink)
+    side = d.get("side", ["急急如律令", "鎮宅霊符"])
+    if side:
+        ss = min(W * 0.14, (top - 30) / (max(len(x) for x in side) * 1.15))
+        mid = (top + foot) / 2
+        for x, line in zip((W * 0.83, W * 0.17), side):
+            tate(f, line, x, mid + len(line) * ss * 1.15 / 2, ss, rng, gap=1.15, **ink)
+    s2 = d.get("seal2", "護")
+    if s2:
+        stamp(f, W / 2 + rng.uniform(-2, 2), foot + size * 1.4, W * 0.34, s2, rng, color=red, shape="round", rot=rng.uniform(-8, 8), ink=0.8)
+
+
+def ema(f, d, rng):
+    """An ema (a wooden votive plaque): plain hinoki, the front painted (the year's animal as a red disc and a gold
+    mark, or a torii) with the shrine's words, the back a wish brushed in sumi (`wish`, `name`). `part`: front or back."""
+    wood_grain(f, dict(d, color=d.get("wood", "#d8b98a"), ring=1.6), rng)
+    W, H = f.W, f.H
+    ink = dict(color=d.get("ink", "#1a1410"), rough=0.6, height=0.002)
+    if d.get("part") == "back":
+        wish = d.get("wish", "家内安全\n無病息災")
+        cols = wish.split("\n")
+        size = min(W / (len(cols) * 1.8 + 1), (H * 0.72) / max(len(c) for c in cols) / 1.12)
+        x0 = W / 2 + (len(cols) - 1) * size * 0.65
+        tate(f, wish, x0, H * 0.78, size, rng, jitter=0.09, **ink)
+        if d.get("name"):
+            tate(f, d["name"], W * 0.18, H * 0.38, size * 0.55, rng, jitter=0.08, **ink)
+        return
+    paint = dict(rough=0.45, height=0.004)
+    motif = d.get("motif", "torii")
+    if motif == "torii":
+        red = d.get("color", "#b3261e")
+        cx, base, tw = W / 2, H * 0.2, W * 0.56
+        f.poly([(cx - tw * 0.62, H * 0.62), (cx + tw * 0.62, H * 0.62), (cx + tw * 0.56, H * 0.67), (cx - tw * 0.56, H * 0.67)], color="#1c1715", **paint)
+        f.rect(cx - tw * 0.56, H * 0.56, tw * 1.12, H * 0.06, color=red, **paint)
+        f.rect(cx - tw * 0.5, H * 0.47, tw, H * 0.035, color=red, **paint)
+        for sx in (-1, 1):
+            f.poly([(cx + sx * tw * 0.36 - 2.2, base), (cx + sx * tw * 0.36 + 2.2, base), (cx + sx * tw * 0.33 + 1.9, H * 0.56), (cx + sx * tw * 0.33 - 1.9, H * 0.56)],
+                   color=red, **paint)
+        f.rect(cx - 3, H * 0.505, 6, H * 0.055, color=red, **paint)
+    else:
+        f.ellipse(W / 2, H * 0.45, W * 0.27, color=d.get("color", "#b3261e"), **paint)
+        tate(f, d.get("mark", "絆"), W / 2, H * 0.45 + W * 0.17, W * 0.34, rng, color="#e8c14a", rough=0.35, metal=0.6, height=0.004)
+    words = d.get("text", "奉納")
+    tate(f, words, W * 0.84, H * 0.62, W * 0.1, rng, jitter=0.03, **ink)
+    tate(f, d.get("shrine", "神社"), W * 0.16, H * 0.5, W * 0.08, rng, jitter=0.03, **ink)
+
+
+def brocade(f, d, rng):
+    """Brocade silk (an omamori's): a woven ground in its colour, a pattern in gold thread (seigaiha waves, kikkō
+    hexagons, asanoha), the weave's tooth in the relief; on its front, the words embroidered down the middle
+    (`text`, `name`) in raised thread. `part`: front, back or edge."""
+    from . import noise as Nn
+    X, Y = f.grid()
+    base = P.rgb(d.get("color", "#8e1b26"))
+    gold = d.get("thread", "#d9b45a")
+    f.fill(color=base, rough=0.55)
+    weave = (np.sin(X * 2 * math.pi / 0.5) * np.sin(Y * 2 * math.pi / 0.5)).astype(np.float32)
+    f.lay_island(np.ones_like(X), height=(weave * 0.006).astype(np.float32))
+    thread = dict(color=gold, rough=0.3, metal=0.55, height=0.012)
+    pat = d.get("pattern", "seigaiha")
+    if pat == "seigaiha":
+        r = float(d.get("scale", 5.0))
+        for j in range(int(f.H / (r * 0.5)) + 3):
+            for i in range(int(f.W / (2 * r)) + 2):
+                cx, cy = i * 2 * r + (r if j % 2 else 0), j * r * 0.5 - r
+                for k in range(3):
+                    f.ring(cx, cy, r * (0.92 - 0.28 * k), r * 0.08, alpha=0.75, **thread)
+    elif pat == "kikko":
+        r = float(d.get("scale", 4.0))
+        for j in range(int(f.H / (r * 1.5)) + 2):
+            for i in range(int(f.W / (r * 1.732)) + 2):
+                cx, cy = i * r * 1.732 + (r * 0.866 if j % 2 else 0), j * r * 1.5
+                hexa = [(cx + r * math.cos(math.radians(30 + 60 * k)), cy + r * math.sin(math.radians(30 + 60 * k))) for k in range(6)]
+                f.line(hexa, r * 0.09, closed=True, alpha=0.8, **thread)
+    else:
+        f.dots(float(d.get("scale", 3.0)), 0.4, alpha=0.8, **thread)
+    if d.get("part") == "front":
+        plate = d.get("plate", "#f2ead6")
+        w = f.W * 0.36
+        f.rect(f.W / 2 - w / 2, f.H * 0.12, w, f.H * 0.72, r=1.0, color=base * 0.85, rough=0.6)
+        tate(f, d.get("text", "御守"), f.W / 2, f.H * 0.8, w * 0.72, rng, font="brush_jp", jitter=0.02, color=plate, rough=0.35,
+             metal=0.15, height=0.02)
+    elif d.get("part") == "back":
+        tate(f, d.get("name", "厄除"), f.W / 2, f.H * 0.72, f.W * 0.2, rng, jitter=0.02, color=gold, rough=0.3, metal=0.5, height=0.015)
+
+
 def mix_hex(a, b, t):
     return P.mix(a, b, t)
 
@@ -615,7 +810,7 @@ DESIGNS = {"soda": soda, "energy": energy, "beer": beer, "coffee_can": coffee_ca
            "sleeve": sleeve, "iced": iced, "newspaper": newspaper, "newsprint": newsprint, "napkin": napkin, "fries": fries,
            "receipt": receipt, "note": note, "paper": paper, "card_plain": card_plain, "burger_box": burger_box, "kraft": kraft,
            "wood_grain": wood_grain, "lacquer": lacquer, "glaze": glaze, "sometsuke": sometsuke, "speckled": speckled,
-           "jar_label": jar_label, "rx_label": rx_label, "plain": plain}
+           "jar_label": jar_label, "rx_label": rx_label, "plain": plain, "ofuda": ofuda, "ema": ema, "brocade": brocade}
 
 
 def draw(f, art, seed, default="plain"):
