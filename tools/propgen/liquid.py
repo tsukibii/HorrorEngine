@@ -23,6 +23,12 @@ LIQUIDS = {   # colour of the body, of the surface seen from above, of the line 
     "medicine": ("#7a1f2a", "#9a2f3a", "#c45a64", 0.3),
     "blood": ("#4a0306", "#6a0a0e", "#8a1a1e", 0.0),
     "oil":   ("#c9a23a", "#e0bf5a", "#f3dc8a", 0.5),
+    "black_tea": ("#5a2a0c", "#7a3c14", "#a8642e", 0.3),
+    "green_tea": ("#9a962e", "#b2aa44", "#d6cc7a", 0.45),
+    "matcha": ("#5f8a2a", "#7aa23a", "#a8c46a", 0.0),
+    "hojicha": ("#7a3e16", "#985428", "#c08048", 0.3),
+    "barley_tea": ("#6a3410", "#8a4a1c", "#b0703a", 0.35),
+    "milk_tea": ("#b08a64", "#c4a07a", "#e0c8a8", 0.0),
     "broth": ("#b08a3c", "#c9a456", "#e0c88a", 0.55),
     "miso":  ("#8a5a2c", "#a8743e", "#c4925a", 0.1),
     "curry": ("#7a4a14", "#94601e", "#b07a34", 0.0),
@@ -66,11 +72,19 @@ def level(tab, lo, hi, tilt, fill):
     return lo + v * (hi - lo)
 
 
+def _lighter(c, t):
+    from .paint import rgb
+    v = rgb(c) * (1 - t) + t
+    return "#" + "".join(f"{int(round(x * 255)):02x}" for x in np.clip(v, 0, 1))
+
+
 def info(kind, fill, points, color=None):
-    """What the liquid node carries: its look, the fill and the table (the axis and origin are added once it's set down)."""
+    """What the liquid node carries: its look, the fill and the table (the axis and origin are added once it's set down).
+    A `color` of your own sets the body, and the surface and the line at the wall from it (a little lighter), since in
+    an opaque cup the surface is all anyone sees."""
     body, top, foam, clarity = LIQUIDS.get(kind, LIQUIDS["water"])
     if color:
-        body = color
+        body, top, foam = color, _lighter(color, 0.16), _lighter(color, 0.4)
     tab, lo, hi = fill_table(points)
     return {"kind": kind, "fill": float(fill), "color": body, "surface": top, "foam": foam, "clarity": clarity,
             "tilts": tab.shape[0], "fills": tab.shape[1], "table": [round(float(x), 5) for x in tab.ravel()], "h_min": lo, "h_max": hi,

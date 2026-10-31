@@ -5,7 +5,8 @@ with its switch and light, the water window with its marks, the spout). Brands m
 cooker's lcd, led_warm, led_cook, vent, button; a kettle's spout, lid, switch, led, base.
 
     {"family": "appliance", "kind": "rice_cooker" | "kettle", "style": "modern" | "retro" (rice cooker),
-     "finish": "steel" | "white" (kettle), "color": "#f3f1ec", "accent": "#e07a1f", "brand": "HONOKA", "time": "12:30"}
+     "finish": "steel" | "white" (kettle), "color": "#f3f1ec", "accent": "#e07a1f", "time": "12:30",
+     "brand": "HONOKA", "brand_font": "bungee", "brand_color": "#2a2c2e" or "logo": {"image": "my_logo.png", "w": 50}}
 """
 import math
 
@@ -18,6 +19,28 @@ from .. import noise as N
 
 MM = 0.001
 UI = dict(rough=0.25, height=0.0)
+
+
+def brand_mark(f, spec, at, size, color, width):
+    """The maker's mark at `at` (mm on the island): your own picture (`logo`: a PNG path from the project folder, or
+    {"image": path, "w": its width in mm, "rough": 0.3}; its alpha cuts it out, its height kept to its width), or else
+    the name (`brand`) in a font (`brand_font`, any of paint.FONT_FILES or a .ttf path) and a colour (`brand_color`)."""
+    import os
+    from .. import paint as P
+    from .. import recipes
+    logo = spec.get("logo")
+    if logo:
+        lg = logo if isinstance(logo, dict) else {"image": logo}
+        path = lg["image"]
+        if not os.path.isabs(path) and not os.path.exists(path):
+            path = os.path.join(recipes.ROOT, path)
+        img = P.read_image(path)
+        w = float(lg.get("w", width))
+        h = w * img.shape[0] / img.shape[1]
+        f.image(img, at[0] - w / 2, at[1] - h / 2, w, h, rough=float(lg.get("rough", 0.3)), height=0.01)
+        return
+    f.text(spec.get("brand", "HONOKA"), at, size, font=spec.get("brand_font", "archivo"), tracking=0.16 if "brand_font" not in spec else 0.0,
+           color=spec.get("brand_color", color), rough=0.3, height=0.02)
 
 
 def _plastic(f, color, rough=0.3, seed=0, tex=0.004):
@@ -55,7 +78,6 @@ def rice_cooker(spec, th):
     retro = spec.get("style", "modern") == "retro"
     body_c = spec.get("color", "#efe6d0" if retro else "#f3f1ec")
     accent = spec.get("accent", "#c8531e" if retro else "#e07a1f")
-    brand = spec.get("brand", "HONOKA")
     W, D, Hb = 252.0, 322.0, 192.0
     th.material("main", "plastic", color=body_c, rough=0.3)
     th.material("panel", "plastic", color="#16161a", rough=0.12, px=1024)
@@ -155,7 +177,7 @@ def rice_cooker(spec, th):
                 f.ellipse(cx + R * 1.3, cy - R * 0.6, R * 0.55, R * 0.2, rot=-30, color="#5a6a2a", rough=0.3)
                 x += R * 3.2
         f = fr["l_top"]
-        f.text(brand, (f.W / 2, f.H * 0.2), 9, font="archivo", tracking=0.18, color="#8a8680" if not retro else "#7a4a24", rough=0.3, height=0.02)
+        brand_mark(f, spec, (f.W / 2, f.H * 0.2), 9, "#8a8680" if not retro else "#7a4a24", 64)
         if not retro:
             f.text("IH", (f.W / 2, f.H * 0.12), 5, font="archivo", color=accent, rough=0.3)
             f.ellipse(f.W / 2, f.H * 0.82, 30, 18, color=designs.P.mix(designs.P.rgb(body_c), "#000000", 0.05), rough=0.25)
@@ -213,7 +235,6 @@ def kettle(spec, th):
     fin = spec.get("finish", "steel")
     steel = fin == "steel"
     color = spec.get("color", "#c6c9cc" if steel else "#f2f1ee")
-    brand = spec.get("brand", "HONOKA")
     th.material("main", "steel" if steel else "plastic", color=color, rough=0.25 if steel else 0.25, metal=1.0 if steel else 0.0)
     th.material("trim", "plastic", color="#1a1a1c", rough=0.35, px=1024)
     prof = [(0, 17), (70, 17), (73.5, 19.5), (74.2, 24), (71, 110), (66.5, 196), (65, 204), (63, 208), (61, 209.5)]
@@ -283,7 +304,7 @@ def kettle(spec, th):
         for k, (yy, lab) in enumerate(((140, "MAX 1.7L"), (110, "1.2"), (80, "0.8"), (52, "MIN"))):
             f.rect(wx - 5, yy, 10, 0.8, color="#f4f4f4", rough=0.2)
             f.text(lab, (wx + 9, yy + 0.4), 3.0, font="archivo", anchor="left", color="#2a2a2a" if not steel else "#3a3c3e", rough=0.3)
-        f.text(brand, (f.W * 0.5, 120), 7, font="archivo", tracking=0.16, color="#2a2c2e" if steel else "#9a968e", rough=0.3, height=0.01)
+        brand_mark(f, spec, (f.W * 0.5, 120), 7, "#2a2c2e" if steel else "#9a968e", 40)
         for nm in ("lid", "base", "base_bot", "handle", "switch_e", "cord"):
             _plastic(fr[nm], "#1a1a1c", rough=0.35 if nm != "base_bot" else 0.6, seed=seed + len(nm))
         f = fr["base_bot"]

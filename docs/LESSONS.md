@@ -1222,3 +1222,6 @@ guessed margin; and a check that only ever ran on a slow machine hasn't been run
   others is the first thing to look for when something vanishes.
 - **Rust is a few spots, not a coat:** the tetsubin's `rust` age at a quarter strength covered it in orange blotches
   like a leopard. Cast iron reads black; its rust goes in as small, rare patches.
+- **A colour of your own must reach what's seen:** a liquid's `color` set only its body, so a mug of "green" tea came
+  out the same brown as black tea: in an opaque cup only the surface (the back faces drawn flat at the level) shows,
+  and its colour still came from the kind. An override sets every colour that's drawn, derived where not given.

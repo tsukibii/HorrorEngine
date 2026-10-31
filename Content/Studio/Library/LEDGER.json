@@ -266,6 +266,12 @@
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe koro (Content/Studio/Props/presets.json)"
  },
+ "props/mug_green_tea": {
+  "date": "2026-10-31",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe mug_green_tea (Content/Studio/Props/presets.json)"
+ },
  "props/mug_stoneware": {
   "date": "2026-10-30",
   "kind": "mesh",

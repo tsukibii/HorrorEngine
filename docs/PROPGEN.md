@@ -84,6 +84,27 @@ Every family takes these:
 | `view` | the preview camera: `azim`, `elev`, `lens` |
 | `relief`, `ao_gamma`, `sharp_angle` | fine-tuning: the print's emboss strength, the occlusion's depth, hard edges past that angle |
 
+### Making your own
+
+Three ways, from a one-off to a family of your own:
+
+1. **One-off, from the command line:** `--set key.sub=value` changes anything in a recipe (JSON values: a number, a
+   string, `null` to take something away), `--seed` rolls the dice again, `--as` names what comes out. For example:
+   - `make mug_stoneware --set liquid=null --as mug_empty` (no tea at all),
+   - `make mug_stoneware --set liquid.kind=green_tea --set liquid.fill=0.8 --as mug_green_tea`,
+   - `make mug_stoneware --set 'liquid.color="#3a6a8a"' --as mug_blue` (any colour of your own),
+   - `make rice_cooker --set 'logo={"image": "Content/Games/G/Art/logo.png", "w": 56}' --as my_cooker`.
+2. **A recipe of your own** in presets.json, starting `from` one that exists and writing down only what differs:
+   `"mug_green_tea": {"label": "...", "family": "ware", "from": "mug_stoneware", "liquid": {"kind": "green_tea", "fill": 0.8}}`.
+   Then `propgen.py make mug_green_tea` and `library mug_green_tea` puts it where a story can place it.
+3. **Your own pictures:** `art: {"image": "path.png"}` lays a picture over a print's island (a can's label, a bottle's,
+   a sheet's page, a pill bottle's sticker), `logo` puts one on an appliance. Paths are from the project folder, or
+   absolute; a transparent PNG is cut out by its alpha.
+
+A cup that is sometimes empty and sometimes full doesn't need two props: make it with its liquid (even at `fill: 0`)
+and set the fill and the colours on each placed copy in Godot (its `HSLiquidFill`: `fill` 0-1, `own_colors` off, then
+`liquid_color`, `surface_color`, `foam_color`), or from a script while playing (pouring, drinking).
+
 ### The families
 
 | Family | Kinds and keys | Its recipes |
@@ -105,7 +126,7 @@ Every family takes these:
 | `doll` | `kind` wara (a straw effigy: `name` on its chest slip, `nails` 0-3 gosun kugi, `straw`, `strays`; `socket_nail_tip`, `socket_nail_head`) or kokeshi (turned and painted: `height`, `colors` [red, green, black], `wood`, `eyes` sleepy or open) | wara_ningyo, wara_ningyo_cursed, kokeshi, kokeshi_old |
 | `shrine` | `kind` hokora (a wayside shrine: `roof` copper or wood, `wood`, `sealed` with an ofuda across its doors, `seal_text`), sanbo (`offering` salt, rice or none), orin (a brass bowl on its cushion, its striker: `cushion`, `metal`; `socket_strike`), koro (an incense burner: `sticks`, `stick`, `fallen`, `patina`; `socket_tip_1`... as the kit's incense), an (the eight-legged offering table: `length`, `depth`, `height`) | hokora, hokora_sealed, sanbo, sanbo_rice, orin, koro, offering_table |
 | `cookware` | `kind` saucepan, stockpot, frypan, yukihira, donabe, tetsubin, enamel; `lid`, `liquid` (§10), `tint` (the heat's colours on steel), `scrape` (a pan's coating), `color`, `decal`, `chips` (enamel), `rust` (iron); sockets steam, rim, lid, handle, vent, spout as the kit's pots | saucepan, stockpot, stockpot_broth, frying_pan, yukihira (miso), donabe, tetsubin, enamel_pot |
-| `appliance` | `kind` rice_cooker (`style` modern or retro, `time` on its LCD, `color`, `accent`, `brand`; sockets lcd, led_warm, led_cook, vent, button) or kettle (`finish` steel or white, `brand`; sockets spout, lid, switch, led, base) | rice_cooker, rice_cooker_retro, electric_kettle, electric_kettle_white |
+| `appliance` | `kind` rice_cooker (`style` modern or retro, `time` on its LCD, `color`, `accent`; sockets lcd, led_warm, led_cook, vent, button) or kettle (`finish` steel or white; sockets spout, lid, switch, led, base); the maker's mark on both: `brand` (a name) with `brand_font` and `brand_color`, or `logo` (your picture: a PNG path or {image, w (mm), rough}) | rice_cooker, rice_cooker_retro, electric_kettle, electric_kettle_white |
 | `sink` | `kind` kitchen (pressed stainless: a basin, a ribbed drainboard, a basket strainer, a gooseneck mixer) or basin (glazed fireclay: an oval bowl, two pillar taps, a bottle trap); `liquid` standing in it, `rust`, `limescale`, `crazing`, `glaze`; sockets spout (`spout_cold`), handle, drain | kitchen_sink, kitchen_sink_water, washbasin, washbasin_blood |
 | `import` | your own mesh, worn (§5) | chair_worn |
 
@@ -333,8 +354,10 @@ thing is turned, and swings when it's moved.
     `swing`.
   - The swing is Minions Art's damped spring: the mesh's velocity and spin push it, it dies away, and it sets the
     plane's slope as an instance uniform (`wobble`), so many bottles share one material.
-- **Kinds:** `water`, `soy`, `sake`, `tea`, `coffee`, `whisky`, `medicine`, `blood` and `oil` (`liquid.LIQUIDS`), or
-  `color` for your own.
+- **Kinds:** `water`, `soy`, `sake`, `tea`, `black_tea`, `green_tea`, `matcha`, `hojicha`, `barley_tea`, `milk_tea`,
+  `coffee`, `whisky`, `medicine`, `blood`, `oil`, `broth`, `miso` and `curry` (`liquid.LIQUIDS`), or `color` for your
+  own: it sets the liquid's body, and its surface and its line at the wall a little lighter, since in an opaque cup
+  the surface is all you see.
 - **The preview:** Cycles imitates the shader at rest (cut at the level in world height, back faces as the surface),
   so the picture shows what Godot will.
 - **Checked:** GDPROPS stands each liquid prop upright with a second copy tipped 70° beside it, and checks that

@@ -210,5 +210,7 @@
  "washbasin": {"label": "a white fireclay washbasin: a deep oval bowl, two pillar taps, a chrome trap, crazing and rust streaks",
    "family": "sink", "kind": "basin", "seed": 1, "rust": 0.45, "limescale": 0.5, "crazing": 0.4, "wear": {"grime": 0.25}},
  "washbasin_blood": {"label": "a washbasin with blood standing in it", "family": "sink", "from": "washbasin", "seed": 3,
-   "liquid": {"kind": "blood", "fill": 0.3}, "rust": 0.7, "wear": {"grime": 0.45, "stains": 0.4}}
+   "liquid": {"kind": "blood", "fill": 0.3}, "rust": 0.7, "wear": {"grime": 0.45, "stains": 0.4}},
+ "mug_green_tea": {"label": "the stoneware mug with green tea in it", "family": "ware", "from": "mug_stoneware", "seed": 5,
+   "liquid": {"kind": "green_tea", "fill": 0.8}}
 }

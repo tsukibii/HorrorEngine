@@ -368,6 +368,15 @@
   ],
   "tris": 7810
  },
+ "mug_green_tea": {
+  "kb": 642,
+  "size_m": [
+   0.1193,
+   0.098,
+   0.087
+  ],
+  "tris": 6308
+ },
  "mug_stoneware": {
   "kb": 642,
   "size_m": [
