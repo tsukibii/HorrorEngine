@@ -31,7 +31,7 @@ def set_dir(finish):
 
 def stamp(finish=None):
     """What a set is made from: the finishes' code, and the library's for its sets (a set older than it is made again)."""
-    files = ("finishes.py", "nodes.py", "tiles.py") + (("library.py",) if finish in LIB.LIB else ())
+    files = ("finishes.py", "nodes.py", "tiles.py", "library.py")    # the library's imperfections wear the finishes too
     return int(max((Path(__file__).parent / f).stat().st_mtime for f in files))
 
 
@@ -41,7 +41,7 @@ def is_fresh(finish, px):
     if not m.is_file():
         return False
     j = json.loads(m.read_text(encoding="utf-8"))
-    return j.get("made_from", 0) >= stamp(finish) and j.get("px", 0) >= px and all((d / f"{finish}_{k}.png").is_file() for k in ("albedo", "normal", "orm"))
+    return j.get("made_from", 0) >= stamp(finish) and j.get("px", 0) >= px and all((d / f"{finish}_{k}.png").is_file() for k in ("albedo", "normal", "orm", "height"))
 
 
 def _plane(P):
@@ -82,6 +82,8 @@ def _material(finish, what, img):
             c = g.outputs["Color"]
         elif what == "alpha":
             c = g.outputs["Alpha"]
+        elif what == "height":
+            c = g.outputs["Height"]
         else:                                           # ORM: a cavity from the relief, roughness, metalness
             cav = nb.ramp(g.outputs["Height"], -0.6, 0.4, (0.55, 1.0))
             c = nb.comb(cav, g.outputs["Roughness"], g.outputs["Metallic"])
@@ -111,9 +113,9 @@ def bake_set(finish, px=1024, samples=4, say=print):
     W = px
     H = max(64, int(round(px * P[1] / P[0])))
     got = {}
-    for what in ("albedo", "alpha", "orm", "normal"):
+    for what in ("albedo", "alpha", "orm", "normal", "height"):
         img = bpy.data.images.new(f"_{finish}_{what}", W, H, alpha=False, float_buffer=what != "albedo")
-        if what in ("orm", "normal", "alpha"):
+        if what in ("orm", "normal", "alpha", "height"):
             img.colorspace_settings.name = "Non-Color"
         m = _material(finish, what, img)
         o.data.materials.clear()
@@ -147,6 +149,14 @@ def bake_set(finish, px=1024, samples=4, say=print):
                 o3.colorspace_settings.name = "Non-Color"
                 o3.pixels.foreach_set(np.clip(np.concatenate([g, np.ones_like(g[..., :1])], 2), 0, 1).ravel())
                 _save(o3, d / f"{finish}_{k}.png")
+    hm = got["height"][1][..., 0]                                     # the height map: its own range onto 0..1, its relief kept
+    lo, hi = float(hm.min()), float(hm.max())
+    hn = (hm - lo) / max(hi - lo, 1e-6)
+    o4 = bpy.data.images.new(f"{finish}_height", W, H, alpha=False)
+    o4.colorspace_settings.name = "Non-Color"
+    o4.pixels.foreach_set(np.dstack([hn, hn, hn, np.ones_like(hn)]).ravel())
+    _save(o4, d / f"{finish}_height.png")
+    relief = (hi - lo) * LIB.RELIEF.get(finish, 0.004)                  # metres from its lowest to its highest
     for k in list(got):
         bpy.data.images.remove(got[k][0])
     me = o.data
@@ -160,7 +170,7 @@ def bake_set(finish, px=1024, samples=4, say=print):
     if lib:
         meta.update(LIB.meta(finish), tint=False)
     (d / "meta.json").write_text(json.dumps(meta, indent=1, ensure_ascii=False), encoding="utf-8")
-    (d / "procedural.json").write_text(json.dumps({"finish": finish, "tint": not lib, "tile_v_m": round(P[1], 4), "px": px,
+    (d / "procedural.json").write_text(json.dumps({"finish": finish, "tint": not lib, "tile_v_m": round(P[1], 4), "px": px, "height_m": round(relief, 5),
                                                    "made_from": stamp(finish)}, indent=1), encoding="utf-8")
     say(f"TILE {finish}: {W} x {H} for {P[0]:g} x {P[1]:g} m ({px / P[0]:.0f} px/m) -> {d.relative_to(ROOT) if d.is_relative_to(ROOT) else d}")
     return d

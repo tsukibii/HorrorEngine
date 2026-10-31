@@ -62,6 +62,20 @@ swept for faces in one plane over each other: layers a `GAP` (1 cm) apart, parts
 their corner posts, parts up the floors never into their own copy, and the rest by rule (STREET_BUILDER §5d). STREET
 measures it over everything it builds (1 cm², 4 mm) and over sets shaped L, T, U, steps and apart under every roof.
 
+**Then the streets made to look real** (2026-10-31, before dawn and morning; DECISIONS): research first
+(docs/research/photoreal.md: the Battlefront look is right values, right light, right flaws; through a tape, light and
+metre-scale variation matter, micro detail doesn't; LightmapGI with a Dynamic sun is Battlefront II's split), then
+**street paint** (docs/STREET_PAINT.md): **the material library** (49 Japanese exterior finishes, `street.py library`,
+`pbr/Procedural/jp_*`, each with every PBR map: colour, normal, height, roughness, occlusion, ORM), **wear and tear**
+in every material and finish (smudges, fingerprints, scratches, chips, cracks, dents), **27 decals** made from code
+(`street.py decals`), and **the paint page** (`paint.html`: paint a surface or every one like it, lay decals, Blender's
+look or bake from the page). The Shibuya lane is painted from its photo and rendered under **Blender's physical sky**
+(Nishita), calibrated against the photo by measurement. Checks: PAINT (new), STREET (decals), STREETBAKE.
+**Next, if wanted** (ask first): the street's .glb ready for LightmapGI (each mesh its own lightmap UV2, the wear atlas
+on a third UV: `CUSTOM0` in the street shader), hex-tiling and metre-scale variation in Godot's street shader, the lane
+pictured in Godot with the tape against the photo, CC0 scans from the user's machine on the slots procedural noise
+can't fake.
+
 **What could come next** (ask first): the user's verdict on the match, the town and the motel; more references; the
 export placing an inside's level by itself (today a marker; the set's level dropped there by hand); a two-storey
 interior (stairs inside the set); foliage when the user wants it; steps and retaining walls on a slope; a grade in the

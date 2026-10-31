@@ -421,6 +421,84 @@ def m_simple(nb, uv, T, P, p):
     return col, rough, h, 0.0, 1.0
 
 
+# ---- what no real surface is without (the user, 2026-10-31: "in reality there are no perfectly smooth things, things get
+# weird and tear and chip, smudges, fingerprints"): laid over every library material and every finish as it's baked,
+# by what it is. Sizes are real (a fingerprint 1.5 cm, a scratch a hair wide and centimetres long); what's too fine for
+# the set's pixels still shows as the haze or shine it leaves
+KIND = {"stucco": "mineral", "tiles": "glazed", "boards": "wood", "panels": "paint", "concrete": "mineral",
+        "asphalt": "asphalt", "pavers": "mineral", "kawara": "roof", "simple": "mineral"}
+FINISH_KIND = {"render": "mineral", "tile": "glazed", "panel": "paint", "concrete": "mineral", "blocks": "mineral",
+               "kerb": "mineral", "asphalt": "asphalt", "ground": "mineral", "paving": "mineral", "paint": "paint",
+               "metal": "metal", "corrugated": "metal", "roof_tiles": "roof", "roof_sheet": "roof", "glass": "glass",
+               "wood": "wood", "fabric": "fabric", "plastic": "plastic", "plain": "plastic"}
+
+
+def lines(nb, T, along_u, density, width=0.06):
+    """Hair-thin lines a few centimetres long, running along u (or v), in patches: a ridged noise, stretched."""
+    q = aniso(T, nb, 3.0, 90.0) if along_u else aniso(T, nb, 90.0, 3.0)
+    n = nb.noise(q, density, 2, 0.5)
+    ridge = nb.one_minus(nb.ramp(nb.absf(nb.sub(n, 0.5)), 0.0, width))
+    return nb.mul(ridge, nb.ramp(nb.noise(T, 1.6, 3, 0.6), 0.52, 0.66))   # only where it's been handled
+
+
+def imperfect(nb, T, kind, col, rough, h, metal, amt=1.0):
+    if not amt:
+        return col, rough, h, metal
+    if isinstance(col, (int, float)):                                # a finish's tint as one number: a grey
+        col = (float(col), float(col), float(col), 1.0)
+    # smudges and stains: soft blotches, a touch darker, another shine (oily on metal, paint and glass; dull elsewhere)
+    sm = nb.ramp(nb.noise(T, 2.6, 4, 0.6), 0.6, 0.8)
+    col = nb.cmul(col, nb.madd(sm, -0.05 * amt, 1.0))
+    rough = nb.add(rough, nb.mul(sm, {"glass": 0.22, "metal": -0.12, "paint": -0.08, "plastic": -0.1, "glazed": -0.06}.get(kind, 0.06) * amt))
+    if kind in ("glass", "metal", "plastic"):
+        # fingerprints and hand marks: small ovals of grease where it's touched (in patches), a haze on glass, a shine on metal
+        fp = nb.mul(nb.one_minus(nb.ramp(nb.voronoi(aniso(T, nb, 1.0, 0.75), 9.0, "F1"), 0.05, 0.13)), nb.ramp(nb.noise(T, 1.1, 3, 0.6), 0.55, 0.62))
+        rough = nb.add(rough, nb.mul(fp, (0.28 if kind == "glass" else -0.08) * amt))
+        if kind == "glass":
+            col = nb.mix(nb.mul(fp, 0.25 * amt), col, srgb("#8a8f92"))
+    if kind in ("glass", "metal", "paint", "plastic"):
+        # scratches: two ways, brighter on metal, through to the primer on paint, a little cut in
+        sc = nb.mx(lines(nb, T, True, 7.0), lines(nb, T, False, 5.5))
+        sc = nb.mul(sc, 0.5 if kind == "paint" else 1.0)                    # a painted wall is scratched less than a sash
+        sc = nb.mul(sc, 0.8 * amt)
+        col = nb.mix(sc, col, nb.cmul(col, 1.35) if kind in ("metal", "glass") else nb.mix(0.6, col, srgb("#9a9893")))
+        rough = nb.add(rough, nb.mul(sc, -0.12 if kind == "metal" else 0.15))
+        h = nb.sub(h, nb.mul(sc, 0.05))
+    if kind in ("paint", "glazed", "mineral", "plastic", "roof"):
+        # chips and nicks: small broken spots, lighter (a fresh break) or the primer under paint, lower; fewer on a roof
+        lo = 0.68 if kind in ("roof", "glazed") else 0.62
+        cf = nb.mul(nb.one_minus(nb.ramp(nb.voronoi(T, 34.0, "F1"), 0.04, 0.1)), nb.ramp(nb.noise(T, 3.0, 3, 0.6), lo, lo + 0.06))
+        cf = nb.mul(cf, amt)
+        col = nb.mix(cf, col, srgb("#7a7772") if kind == "paint" else nb.cmul(col, 0.8) if kind == "roof" else nb.cmul(col, 1.18))
+        rough = nb.add(rough, nb.mul(cf, 0.12))
+        h = nb.sub(h, nb.mul(cf, 0.35))
+    if kind == "roof":
+        # lichen and soot gathered in patches, darker and duller
+        li = nb.ramp(nb.noise(T, 1.8, 4, 0.65), 0.6, 0.75)
+        col = nb.mix(nb.mul(li, 0.35 * amt), col, srgb("#3d3f33"))
+        rough = nb.add(rough, nb.mul(li, 0.2 * amt))
+    if kind in ("mineral", "asphalt"):
+        # hairline cracks, here and there
+        e = nb.voronoi(T, 2.2, "DISTANCE_TO_EDGE")
+        cr = nb.mul(nb.one_minus(nb.ramp(e, 0.0, 0.01)), nb.ramp(nb.noise(T, 1.3, 3, 0.6), 0.6, 0.66))
+        col = nb.cmul(col, nb.madd(cr, -0.35 * amt, 1.0))
+        h = nb.sub(h, nb.mul(cr, 0.3 * amt))
+    if kind in ("metal", "paint"):
+        # dents: a sheet's soft knocks
+        h = nb.add(h, nb.mul(nb.ramp(nb.noise(T, 1.8, 2, 0.4), 0.55, 0.75), -0.15 * amt))
+    if kind == "wood":
+        # splits along the grain, raised fibres
+        sp = nb.mul(lines(nb, T, True, 3.0, 0.03), 0.9)
+        col = nb.cmul(col, nb.madd(sp, -0.4 * amt, 1.0))
+        h = nb.sub(h, nb.mul(sp, 0.3 * amt))
+        rough = nb.add(rough, nb.mul(nb.noise(T, 60, 2, 0.5), 0.05))
+    if kind == "fabric":
+        # frayed spots and stains
+        st = nb.ramp(nb.noise(T, 4.0, 4, 0.6), 0.64, 0.7)
+        col = nb.cmul(col, nb.madd(st, -0.15 * amt, 1.0))
+    return col, nb.clamp(rough), h, metal
+
+
 FAMILY = {"stucco": m_stucco, "tiles": m_tiles, "boards": m_boards, "panels": m_panels, "metal": m_metal,
           "concrete": m_concrete, "asphalt": m_asphalt, "pavers": m_pavers, "kawara": m_kawara, "simple": m_simple}
 
@@ -440,7 +518,7 @@ LIB = {
     "jp_plaster_white":  ("Plaster, white (漆喰)", "walls", "stucco", (3.0, 3.0), 0.0015, "render",
                           dict(col="#ebe8e1", grain=600, grain_h=0.15, lumps=3, lump_h=0.3, trowel=0.7, var=0.025, rough=0.7)),
     "jp_alc":            ("ALC panels, painted", "walls", "panels", (3.0, 2.4), 0.003, "panel",
-                          dict(panel=(0.6, 2.4), col="#c4c0b6", joint=0.01, seal="#9e9a92", rough=0.82)),
+                          dict(panel=(0.6, 2.4), col="#c4c0b6", joint=0.01, seal="#9e9a92", rough=0.82, tear=0.6)),
     # tiles
     "jp_tile45_white":   ("Tiles 45 x 95, white (45二丁掛)", "tiles", "tiles", (2.0, 1.0), 0.0035, "tile",
                           dict(w=0.1, h=0.05, joint=0.005, cols=["#e3dfd6", "#dcd8cf", "#e8e4dc", "#d6d2c9"], grout="#9d9890", rough=0.32)),
@@ -505,7 +583,7 @@ LIB = {
     "jp_slate":          ("Slate, Colorbest", "roofs", "kawara", (2.73, 2.184), 0.006, "roof_tiles",
                           dict(kind="slate", cols=["#3b3a39", "#433f3c", "#353433", "#4a4643"], rough=0.6)),
     "jp_galvalume":      ("Galvalume, standing seam (ガルバリウム)", "roofs", "metal", (2.7, 2.0), 0.008, "roof_sheet",
-                          dict(profile="seam", pitch=0.45, col="#45484a", finish="paint", chips=0.97, rough=0.42)),
+                          dict(profile="seam", pitch=0.45, col="#45484a", finish="paint", chips=0.97, rough=0.42, tear_kind="roof")),
     "jp_roof_coating":   ("Flat roof, urethane coating", "roofs", "simple", (4.0, 10.0), 0.003, "concrete",
                           dict(kind="coating", col="#848a82", seam="#5e625c", patch="#6d7169")),
     # roads and pavements
@@ -536,11 +614,26 @@ LIB = {
                           dict(kind="glass", col="#2b3033", rough=0.04)),
 }
 
-# the library's entries known to the finishes (so tiles.py bakes them like any finish)
+# the library's entries known to the finishes (so tiles.py bakes them like any finish), each with its imperfections:
+# by its family, or its own `kind` and `tear` (how much: 0 none, 1 as most)
+def _with_wear(build, kind, amt):
+    def b(nb, uv, T, P):
+        col, rough, h, metal, alpha = build(nb, uv, T, P)
+        col, rough, h, metal = imperfect(nb, T, kind, col, rough, h, metal, amt)
+        return col, rough, h, metal, alpha
+    return b
+
+
 for _n, (_label, _group, _fam, _P, _rel, _wear, _p) in LIB.items():
-    F.BUILD[_n] = (lambda fam, prm: (lambda nb, uv, T, P: FAMILY[fam](nb, uv, T, P, prm)))(_fam, _p)
+    _k = _p.get("kind") if _fam == "simple" and _p.get("kind") == "glass" else _p.get("tear_kind") or ("metal" if _fam == "metal" and _p.get("finish") != "paint" else "paint" if _fam == "metal" else KIND[_fam])
+    F.BUILD[_n] = _with_wear((lambda fam, prm: (lambda nb, uv, T, P: FAMILY[fam](nb, uv, T, P, prm)))(_fam, _p), _k, _p.get("tear", 1.0))
     F.PERIOD[_n] = _P
     F.WEAR.setdefault(_n, F.WEAR[_wear])
+# and the finishes (the tints the bake lays by slot) the same way
+for _n, _k in FINISH_KIND.items():
+    if _n in F.BUILD and not getattr(F.BUILD[_n], "_worn", False):
+        F.BUILD[_n] = _with_wear(F.BUILD[_n], _k, 0.8)
+        F.BUILD[_n]._worn = True
 RELIEF = {n: v[4] for n, v in LIB.items()}
 NAMES = sorted(LIB)
 

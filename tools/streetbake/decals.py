@@ -354,6 +354,100 @@ def d_grate(rng):
     return np.dstack([np.clip(img, 0, 1), np.ones((H, W), np.float32)])
 
 
+# ---- wear laid by hand (the user: "there are no perfectly smooth things... chips, smudges, fingerprints") ----------
+
+def d_fingerprints(rng):
+    """Greasy fingerprints and a palm's smear, where a door or a glass is pushed: ridged ovals, a haze."""
+    W, H = 384, 384
+    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
+    a = np.zeros((H, W), np.float32)
+    for _ in range(9):
+        cx, cy = rng.normal(W / 2, W / 6), rng.normal(H / 2, H / 6)
+        rx, ry, ang = 14 + rng.random() * 6, 19 + rng.random() * 7, rng.random() * math.pi
+        dx, dy = xx - cx, yy - cy
+        u = (dx * math.cos(ang) + dy * math.sin(ang)) / rx
+        v = (-dx * math.sin(ang) + dy * math.cos(ang)) / ry
+        r = np.sqrt(u * u + v * v)
+        ridges = 0.5 + 0.5 * np.sin(r * 26 + noise((H, W), 8, rng, 2) * 3)            # the whorl's ridges
+        a = np.maximum(a, soft(1 - r, 0, 0.35) * (0.45 + 0.55 * ridges) * (0.5 + 0.5 * rng.random()))
+    palm = blob((H, W), rng, 0.3, edge=0.2) * 0.25
+    a = np.maximum(a, palm)
+    return rgba(hexc("#b9b4a8"), a * 0.5)
+
+
+def d_smudge(rng):
+    """A greasy hand smear, darker and shinier, rubbed along."""
+    s = (256, 512)
+    a = blob(s, rng, 0.45, edge=0.25) * (0.4 + 0.6 * noise(s, 20, rng, 4))
+    a = np.asarray(Image.fromarray((a * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(6)), np.float32) / 255
+    return rgba(tint_noise("#2d2a26", s, rng, 0.05), a * 0.45)
+
+
+def d_scuffs(rng):
+    """Black rubber scuffs at the foot of a door or a wall: shoes, trolleys, bags."""
+    W, H = 768, 192
+    img = Image.new("L", (W, H), 0)
+    g = ImageDraw.Draw(img)
+    for _ in range(26):
+        x, y = rng.random() * W, H * (0.35 + 0.6 * rng.random())
+        L, ang = 20 + rng.random() * 70, rng.normal(0, 0.25)
+        g.line([(x, y), (x + math.cos(ang) * L, y + math.sin(ang) * L)], fill=int(120 + rng.random() * 135), width=int(2 + rng.random() * 5))
+    a = np.asarray(img.filter(ImageFilter.GaussianBlur(1.5)), np.float32) / 255
+    return rgba(hexc("#141312"), a * 0.8)
+
+
+def d_scratches(rng):
+    """Scratches in paint or metal: hair-thin, bright where they cut through, in a bunch."""
+    W = H = 512
+    img = Image.new("L", (W, H), 0)
+    g = ImageDraw.Draw(img)
+    base = rng.random() * math.pi
+    for _ in range(40):
+        x, y = rng.normal(W / 2, W / 4), rng.normal(H / 2, H / 4)
+        ang, L = base + rng.normal(0, 0.3), 30 + rng.random() * 150
+        pts = [(x + math.cos(ang) * t + rng.normal(0, 0.6), y + math.sin(ang) * t + rng.normal(0, 0.6)) for t in np.linspace(0, L, 12)]
+        g.line(pts, fill=int(150 + rng.random() * 105), width=1)
+    a = np.asarray(img.filter(ImageFilter.GaussianBlur(0.5)), np.float32) / 255
+    return rgba(hexc("#d9d6cf"), a * 0.85)
+
+
+def d_chipped_paint(rng):
+    """Paint flaked off a wall or a door: islands of what's under it with a lighter rim."""
+    s = (448, 448)
+    n = noise(s, 26, rng, 5)
+    hole = soft(n, 0.6, 0.63) * blob(s, rng, 0.7, edge=0.15)
+    rim = np.clip(soft(n, 0.56, 0.6) - hole, 0, 1)
+    col = np.dstack([hole * 0.42 + rim * 0.85 + (1 - hole - rim) * 0.5] * 3).astype(np.float32) * np.array([1.0, 0.97, 0.93])
+    return np.dstack([np.clip(col, 0, 1), np.clip(hole + rim * 0.7, 0, 1)])
+
+
+def d_water_stain(rng):
+    """Tide marks where water stood and dried: rings, darker at their edges."""
+    s = (448, 448)
+    h, w = s
+    yy, xx = np.mgrid[0:h, 0:w]
+    r = np.hypot((xx - w / 2) / (w / 2), (yy - h / 2) / (h / 2)) + (noise(s, 50, rng, 4) - 0.5) * 0.5
+    a = np.zeros(s, np.float32)
+    for k in (0.45, 0.62, 0.8):
+        a = np.maximum(a, np.exp(-((r - k) / 0.025) ** 2) * (0.5 + 0.5 * rng.random()))
+    a += soft(0.8 - r, 0, 0.3) * 0.12
+    return rgba(tint_noise("#4a4338", s, rng, 0.08), np.clip(a, 0, 1) * 0.6)
+
+
+def d_tape(rng):
+    """Tape and the paper left of posters torn down: yellowed strips, their glue's dirt."""
+    W, H = 512, 384
+    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    g = ImageDraw.Draw(img)
+    for x0, y0 in [(30, 30), (W - 130, 30), (30, H - 70), (W - 130, H - 70), (W / 2 - 50, 25)]:
+        if rng.random() < 0.8:
+            c = (int(200 + rng.random() * 30), int(185 + rng.random() * 25), int(140 + rng.random() * 30), 230)
+            g.polygon([(x0, y0), (x0 + 100 + rng.random() * 20, y0 + rng.normal(0, 4)), (x0 + 100, y0 + 36), (x0 - 4, y0 + 40)], fill=c)
+    a = np.asarray(img, np.float32) / 255
+    a[..., :3] *= (0.85 + 0.15 * noise((H, W), 16, rng, 3))[..., None]
+    return a
+
+
 # kind: (label, where, (width m, height m), roughness or None, metallic, made by)
 DECALS = {
     "rain_streaks": ("Rain streaks", "wall", (1.5, 2.0), None, 0.0, d_rain),
@@ -376,6 +470,13 @@ DECALS = {
     "litter": ("Litter, cigarette ends", "ground", (0.8, 0.8), 0.7, 0.0, d_litter),
     "manhole": ("Manhole cover", "ground", (0.75, 0.75), 0.55, 0.6, d_manhole),
     "drain_grate": ("Drain grate", "ground", (0.4, 0.9), 0.5, 0.7, d_grate),
+    "fingerprints": ("Fingerprints and a palm", "any", (0.25, 0.25), 0.3, 0.0, d_fingerprints),
+    "smudge": ("Greasy smudge", "any", (0.5, 0.25), 0.35, 0.0, d_smudge),
+    "scuffs": ("Rubber scuffs at the foot", "wall", (1.2, 0.3), 0.7, 0.0, d_scuffs),
+    "scratches": ("Scratches", "any", (0.5, 0.5), 0.35, 0.0, d_scratches),
+    "chipped_paint": ("Chipped paint", "wall", (0.8, 0.8), 0.8, 0.0, d_chipped_paint),
+    "water_stain": ("Water stain, tide marks", "any", (0.9, 0.9), None, 0.0, d_water_stain),
+    "tape": ("Tape and paper left of posters", "wall", (0.6, 0.45), 0.6, 0.0, d_tape),
 }
 
 

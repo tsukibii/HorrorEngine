@@ -284,7 +284,7 @@ def bake_check(argv):
     os.environ["STUDIO_PBR"] = str(scratch / "pbr")
     glb = street_glb(name)
     book = json.loads((STREETS / name / "finish.json").read_text(encoding="utf-8")) if (STREETS / name / "finish.json").is_file() else {}
-    book.setdefault("finishes", {})["wall2"] = "pbr/Test/bricks"
+    book.setdefault("finishes", {})["trim"] = "pbr/Test/bricks"     # a slot the lane's paint leaves alone (the paint wins)
     (scratch / "finish.json").write_text(json.dumps(book), encoding="utf-8")
     S = street_json(name)
     shots = shots_of(S, None)
@@ -332,7 +332,7 @@ def bake_check(argv):
     if seams:
         errs.append("baked sets with a seam: " + ", ".join(seams))
     if not any("bricks" in (im.get("name", "") + im.get("uri", "")) for im in J.get("images", [])):
-        errs.append("the set of our own (pbr/Test/bricks on wall2) isn't in the .glb")
+        errs.append("the set of our own (pbr/Test/bricks on trim) isn't in the .glb")
     blend = out / f"{name}.blend"
     if not blend.is_file() or blend.stat().st_size < 100000:
         errs.append("no .blend written")

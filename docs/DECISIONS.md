@@ -2,6 +2,14 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-31, morning (the user, while the paint tool was built)
+
+- **Wear and tear in every material**: "can you also create pbrs/bump maps for the textures/materials as well as
+  procedural wear and tear. In reality there's no perfectly smooth things, and things get weird and tear and chips or
+  smudges, fingerprints etc, that's what adds to the realism". Every library material and finish wears its
+  imperfections as it's baked (smudges, fingerprints, scratches, chips, cracks, dents, splits), every set has its
+  height map beside its normal map, and seven decals put wear where it happens (STREET_PAINT §3, §4).
+
 ## 2026-10-31, before dawn (the user, on texturing the streets for real)
 
 - **Research first: faking photorealism like Battlefront**: "do some research on how we could fake photo-realism (think

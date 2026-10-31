@@ -70,6 +70,23 @@ as a full-colour, seamless set at its real size (`assets/pbr/Procedural/jp_*`), 
 | pavements | concrete pavers, interlocking blocks, tactile paving (dots, bars), a precast kerb, gravel, packed earth |
 | other | window glass |
 
+- **Nothing is perfectly smooth** (the user, 2026-10-31: "there are no perfectly smooth things; things tear and chip,
+  smudges, fingerprints"). Every library material and every finish wears its imperfections as it's baked, by what it
+  is (`imperfect`):
+  - smudges and stains on everything (a touch darker, another shine);
+  - fingerprints and hand grease only on what's touched: glass, bare metal (sashes, doors), plastic (a haze on glass);
+  - hair-thin scratches in patches on glass, metal, plastic and paint (brighter on metal, through to the primer on
+    paint, half as many on a painted wall);
+  - chips and nicks on paint, tiles, concrete, mortar and plastic (a fresh break, or the primer), fewer on roofs;
+  - hairline cracks in mortar, concrete and asphalt; lichen and soot in patches on roofs (no prints, no scratches up
+    there);
+  - dents in sheet metal, splits along the grain in wood, worn spots in fabric.
+
+  At a set's resolution a fingerprint is a small hazy oval, as it is to the eye a step away. An entry's `tear` (0 to 1)
+  says how much it shows.
+- **The maps** each set has: colour (`_albedo`), the bump as a normal map (`_normal`, OpenGL's) and as a height map
+  (`_height`, its range in `procedural.json` `height_m`), roughness (`_roughness`), occlusion (`_ao`), and the packed
+  ORM (`_orm`: occlusion, roughness, metal). Any engine's PBR material takes them as they are.
 - **A material** is an entry in `LIB`: its label, group, family (`stucco`, `tiles`, `boards`, `panels`, `metal`,
   `concrete`, `asphalt`, `pavers`, `kawara`, `simple`), the period it repeats in, the relief its height stands for (in
   metres), the wear it takes, and its numbers (colours, sizes, roughness). A new one is a line there and a
@@ -80,13 +97,16 @@ as a full-colour, seamless set at its real size (`assets/pbr/Procedural/jp_*`), 
 
 ## 4. Decals
 
-`tools/streetbake/decals.py`, `python tools/street.py decals` (the page makes them when they're missing). There are 20,
+`tools/streetbake/decals.py`, `python tools/street.py decals` (the page makes them when they're missing). There are 27,
 drawn from code with their alpha into `assets/decals/` (not kept in git), each with its real size and its shine:
 
 - **On walls:** rain streaks, rust bleeding from a fitting, a damp patch, salt bloom, soot over a vent, cracks, moss at
   the foot, a poster, old posters torn, stickers, a sprayed tag.
 - **On the ground:** oil, a puddle (wet: roughness 0.04), tyre marks, chewing gum, worn paint, fallen leaves, litter
   and cigarette ends, a manhole cover and a drain grate (iron).
+- **Wear to put where it happens:** fingerprints and a palm (a door's push plate, a vending machine's glass), a greasy
+  smudge, rubber scuffs at the foot of a door or a wall, scratches, chipped paint, a water stain's tide marks, the tape
+  and paper left of posters torn down. That makes 27 decals.
 
 In the street they're pieces of their own (`decal:<kind>`). In Blender they keep their picture and its alpha, take a
 little dirt, and stay out of the occlusion bake as the road markings do. In Godot they arrive as see-through quads.
