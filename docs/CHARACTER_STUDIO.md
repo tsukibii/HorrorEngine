@@ -117,7 +117,11 @@ pull in black; the rest the islands' mean.
   PNGs; the light's numbers in the skin material's `extras.studioSkin`, with the procedural skin's `age`, `pores`,
   `poreSize`, `evenness` and `wrinkles` (Godot's detail layer picks its look from them: GODOT_LOOK §5d). The pores
   are left out of the file's maps (their colour and relief: a 0.35 mm texel only blurred them): Godot draws them at
-  their true size, as deep and as far apart as the record's Pores and Pore spacing say. The desk
+  their true size, as deep and as far apart as the record's Pores and Pore spacing say.
+- **The hair** (2026-10-31, GODOT_LOOK §5e): the salon's bake goes through as it is (its shell normals, strand tangents,
+  second UV and strand numbers; a swinging lock's normals and tangents turned onto the body's skeleton, no longer
+  recomputed); the **brows and lashes** are named in the file (`brows`, `lashes`, `lash_line`, `brow_fill`) and carry
+  their strands' numbers in the occlusion slot and a `studioHair` record beside their look. The desk
   lights the file's skin with the same `skinlight.js` (`bodies.js`, the thinness from the map's blue); Unreal makes
   **M_StudioSkin** (`storykit/people.py`, Subsurface Profile, written blind: UNREAL_FLOW §1d).
 

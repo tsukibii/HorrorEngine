@@ -172,7 +172,7 @@
 // (tools/face_mesh.py's body op, through serve.py) and laid on top. docs/METAHUMAN_LOOKS.md §1.3.
 import * as THREE from "three";
 import * as BL from "./browlash.js";
-import { hairUniforms, applyLook, lightHair, hairMaterial, atlasTexture, albedoTexture } from "./hairshader.js";
+import { hairUniforms, applyLook, lightHair, hairMaterial, atlasTexture, albedoTexture, strandsTexture, STUDIO_HAIR } from "./hairshader.js";
 import { albedo as hairAlbedo } from "./hairtex.js";
 import * as ALB from "./albedo.js";
 import { GLTFLoader } from "./vendor/GLTFLoader.js";
@@ -2287,6 +2287,7 @@ BLM.lash.material.userData.file = () => ({ atlas: BL.LASH_ATLAS, look: BL.LOOKS[
 BLM.line.material.userData.file = () => ({ atlas: BL.LINE_ATLAS, look: BL.LOOKS[st.lash.look] });
 BLM.brow.material.userData.file = () => ({ atlas: BL.ATLAS, look: BL.LOOKS[st.brow.look] });
 BLM.fill = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshStandardMaterial({ vertexColors: true, transparent: true, depthWrite: false, roughness: 0.9, side: THREE.DoubleSide }));   // the brows' fill, see-through
+Object.entries({ lash: "lashes", line: "lash_line", brow: "brows", fill: "brow_fill" }).forEach(([k, nm]) => { BLM[k].name = nm; });   // named in the file (each its own material and record there: Godot's HSHair reads them by name)
 for (const m of Object.values(BLM)) { m.renderOrder = 3; m.frustumCulled = false; m.visible = false; rig.add(m); }   // after the eyeballs, which draw over what's in the openings
 const fillColour = () => BLM.fill.material.color.set(BL.LOOKS[st.brow.look].tip);
 const BROWROWS = { R: { upper: [107, 66, 105, 63, 70], lower: [55, 65, 52, 53, 46] }, L: { upper: [336, 296, 334, 293, 300], lower: [285, 295, 282, 283, 276] } };
@@ -2712,7 +2713,10 @@ function fileLook(x, g) {
   }
   if (L && L.isShaderMaterial && L.userData.file) {
     const { atlas, look } = L.userData.file();
-    return new THREE.MeshStandardMaterial({ name: x.name || "hair", map: albedoTexture(atlas, hairAlbedo(atlas, look)), alphaTest: 0.3, side: THREE.DoubleSide, roughness: 0.6 });
+    const m = new THREE.MeshStandardMaterial({ name: x.name || "hair", map: albedoTexture(atlas, hairAlbedo(atlas, look)), alphaTest: 0.3, side: THREE.DoubleSide, roughness: 0.6,
+      aoMap: strandsTexture(atlas) });   // the strands' own numbers for a runtime's hair shader (Godot's HSHair); a faint shade per strand elsewhere
+    m.userData = { look, studioHair: { ...STUDIO_HAIR, tangent: "none (the shader takes the strand from the UVs)", normal: "the card's own", uv1: "none" } };
+    return m;
   }
   return L;
 }
@@ -2879,7 +2883,9 @@ function exportRig(root, parts) {
       M.copy(x.matrixWorld); if (own) M.premultiply(toRig);
       if (x.isSkinnedMesh) {                            // the salon's swinging locks: where their own bones put them, on the body's skeleton from here
         for (let i = 0; i < P.count; i++) { x.getVertexPosition(i, v); v.applyMatrix4(M); P.setXYZ(i, v.x, v.y, v.z); }
-        g.computeVertexNormals();
+        if (g.attributes.tangent && g.attributes.normal) {  // the salon's bake: its own normals (the hair volume's shell) and tangents (along the strand), turned with it (the bones rest at their bind: the same turn)
+          const nm = new THREE.Matrix3().getNormalMatrix(M); g.attributes.normal.applyNormalMatrix(nm); g.attributes.tangent.transformDirection(M);
+        } else g.computeVertexNormals();
       } else g.applyMatrix4(M);
       for (const k of ["skinIndex", "skinWeight"]) g.deleteAttribute(k);
       const bone = how.bone !== undefined ? R.byName.get(how.bone) : undefined;

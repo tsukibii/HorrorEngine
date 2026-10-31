@@ -10,7 +10,8 @@ import { padding as padOf } from "./salonpad.js";
 import { GLTFExporter } from "./vendor/GLTFExporter.js";
 import { GLTFLoader } from "./vendor/GLTFLoader.js";
 import { LOOKS, DEFAULT_LOOK, UV_SPAN, makeAtlas, albedo, linear } from "./hairtex.js";
-import { hairUniforms, applyLook, lightHair, hairMaterial, atlasTexture, albedoTexture } from "./hairshader.js";
+import { hairUniforms, applyLook, lightHair, hairMaterial, atlasTexture, albedoTexture, strandsTexture, STUDIO_HAIR } from "./hairshader.js";
+import * as HV from "./hairvolume.js";
 
 const $ = s => document.querySelector(s);
 const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e; };
@@ -883,21 +884,46 @@ function bakeCards(sets) {                                             // [[guid
   tameGuides(flat, st.bake.tame || 0).forEach((G, k) => out[owner[k]].push(bakeGuide(G, phys[k])));
   return out;
 }
-function cardsGeometry(guides, colour) {                                // plain arrays: positions, uvs, colours, triangles
-  const pos = cardPositions(guides), uv = [], col = [], idx = [], c = colour ? new THREE.Color(colour) : new THREE.Color(1, 1, 1);
+function cardsGeometry(guides, colour) {                                // plain arrays: positions, uvs, colours, tangents (along the strand), triangles
+  const pos = cardPositions(guides), tan = cardTangents(guides), uv = [], col = [], idx = [], c = colour ? new THREE.Color(colour) : new THREE.Color(1, 1, 1);
   let base = 0;                                                         // where each card's vertices start (cards can differ in points: Smooth curves)
   guides.forEach((G, j) => { const n = G.pts.length, u0 = (j * 0.37) % 1;
     for (let k = 0; k < n; k++) { const v = G.t ? G.t[k] : k / (n - 1); uv.push(u0, v, u0 + UV_SPAN, v); col.push(c.r, c.g, c.b, c.r, c.g, c.b); }
     for (let k = 0; k < n - 1; k++) { const a = base + k * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
     base += n * 2; });
-  return { pos, uv, col, idx };
+  return { pos, uv, col, idx, tan };
 }
-function geometryOf(parts) {                                            // cards merged into one BufferGeometry
-  const pos = [], uv = [], col = [], idx = [], g = new THREE.BufferGeometry();
-  for (const q of parts) { const base = pos.length / 3; pos.push(...q.pos); uv.push(...q.uv); col.push(...q.col); for (const i of q.idx) idx.push(base + i); }
+function geometryOf(parts) {                                            // cards merged into one BufferGeometry (the normals the cards' own: finishCards turns them into the volume's)
+  const pos = [], uv = [], col = [], idx = [], tan = [], g = new THREE.BufferGeometry();
+  for (const q of parts) { const base = pos.length / 3; pos.push(...q.pos); uv.push(...q.uv); col.push(...q.col); for (let i = 0; i < q.tan.length; i += 3) tan.push(q.tan[i], q.tan[i + 1], q.tan[i + 2], 1); for (const i of q.idx) idx.push(base + i); }
   g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
-  g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3)); g.setIndex(idx); g.computeVertexNormals();
+  g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3)); g.setAttribute("tangent", new THREE.Float32BufferAttribute(tan, 4)); g.setIndex(idx); g.computeVertexNormals();
   return g;
+}
+// the bake's cards as one volume (hairvolume.js): every card vertex of the hairstyle (and the padding) in a density grid
+// with the head and body solid; each vertex's normal becomes the volume's shell normal (80% over its card's own face: the
+// cards shade as one soft mass, no stripes card to card) and its second UV (uv1) where across its card it is (x: 0 one
+// edge, 1 the other, for the card's sides to fade) and how much sky it sees through the hair and past the head (y, the
+// occlusion, its most open tenth 1, the layers deep under the outside a quarter darker still)
+function finishCards(geos, sets) {
+  const all = []; for (const gs of sets) all.push(...cardPositions(gs));
+  if (!all.length || !geos.length) return null;
+  const V = HV.volume(all, COL ? p => COL.inside(p) : null, { cell: 0.008, blur: 0.012 }), raw = [];
+  for (const g of geos) {
+    const P = g.attributes.position.array, sh = HV.shell(V, P, g.attributes.normal.array, 0.8);
+    g.setAttribute("normal", new THREE.Float32BufferAttribute(sh, 3));
+    raw.push(HV.occlusion(V, P, sh, { reach: 0.06, dirs: 12 }));
+  }
+  const sorted = raw.flatMap(a => Array.from(a)).sort((a, b) => a - b), top = sorted[Math.floor(sorted.length * 0.9)] || 1;
+  geos.forEach((g, gi) => {
+    const P = g.attributes.position.array, dep = depthsOf(P), oc = raw[gi], uv1 = new Float32Array(dep.length * 2);
+    for (let i = 0; i < dep.length; i++) {                              // x across the card (its two edges 0 and 1: the vertices go left, right), y the occlusion, the layers under the outside a quarter darker
+      const t = Math.max(0, Math.min(1, (dep[i] - 0.002) / 0.026)), outside = t * t * (3 - 2 * t);
+      uv1[i * 2] = i % 2; uv1[i * 2 + 1] = Math.min(1, oc[i] / top) * (0.75 + 0.25 * outside);
+    }
+    g.setAttribute("uv1", new THREE.Float32BufferAttribute(uv1, 2));
+  });
+  return { cells: V.n, open: +(sorted.reduce((a, x) => a + Math.min(1, x / top), 0) / sorted.length).toFixed(3) };
 }
 // the cards' look in the file: the strand atlas with the look's colours baked in (glTF can't carry the hair shader; its
 // numbers ride in the material's extras for a runtime that has one), cut out at 0.4 (glTF's MASK); the vertex colours
@@ -919,8 +945,9 @@ function retroAlbedo(rgba, k) {                                       // the ret
 function bakeMat() {
   const k = look(), map = albedoTexture(ATLAS, retroAlbedo(albedo(ATLAS, k), k));
   const cards = k.flat ? new THREE.MeshBasicMaterial({ name: "hair_cards", map, alphaTest: 0.4, vertexColors: true, side: THREE.DoubleSide })   // unlit: glTF's KHR_materials_unlit
-    : new THREE.MeshStandardMaterial({ name: "hair_cards", map, alphaTest: 0.4, vertexColors: true, roughness: 0.42, side: THREE.DoubleSide });
-  cards.userData = { look: k, shader: "tools/character/hairshader.js (Kajiya-Kay, shifted per strand; the atlas's R brightness, G strand, B clump, A coverage)" };
+    : new THREE.MeshStandardMaterial({ name: "hair_cards", map, alphaTest: 0.4, vertexColors: true, roughness: 0.42, side: THREE.DoubleSide,
+                                      aoMap: strandsTexture(ATLAS) });   // the strands' own numbers for a runtime's hair shader (a faint shade per strand elsewhere)
+  cards.userData = { look: k, shader: "tools/character/hairshader.js (Kajiya-Kay, shifted per strand; the atlas's R brightness, G strand, B clump, A coverage)", studioHair: STUDIO_HAIR };
   return cards;
 }
 function liveVertices() {                                               // what the salon draws now (the "before")
@@ -945,7 +972,11 @@ function buildBake(name) {                                             // the ba
   if (statics.length) { const m = new THREE.Mesh(geometryOf(statics), mat); m.name = "hair_static"; root.add(m); summary.static = { vertices: m.geometry.attributes.position.count, triangles: m.geometry.index.count / 3 }; }
   if (st.scalp && st.scalp.on && st.locks.length) {                    // the darkened scalp: its own mesh, unlit, its alpha by vertex
     const g = scalpGeometry(st.scalp, true);
-    if (g) { const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ name: "hair_scalp", vertexColors: true, transparent: true, depthWrite: false })); m.name = "hair_scalp"; root.add(m); summary.scalp = { vertices: g.attributes.position.count, thickness: st.scalp.thickness }; }
+    if (g) {                                                          // its colour the material's, the vertices white with its see-through: a reader that drops vertex colours (Godot's importer on an unlit material) draws a dark cap, never a white one
+      const C = g.attributes.color, colour = new THREE.Color(C.getX(0), C.getY(0), C.getZ(0));
+      for (let i = 0; i < C.count; i++) C.setXYZ(i, 1, 1, 1);
+      const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ name: "hair_scalp", color: colour, vertexColors: true, transparent: true, depthWrite: false })); m.name = "hair_scalp"; root.add(m); summary.scalp = { vertices: g.attributes.position.count, thickness: st.scalp.thickness };
+    }
   }
   for (const [l, guides, colour] of skinned) {
     const q = cardsGeometry(guides, colour), geo = geometryOf([q]), sk = SP.skinOf(l, guides), J = sk.J;   // colour: the lock's own, or none
@@ -962,6 +993,8 @@ function buildBake(name) {                                             // the ba
     root.add(mesh);
     summary.physics.push({ lock: l.name || l.type, type: l.type, chains: sk.chains.length, joints: J, bones: bones.length, vertices: geo.attributes.position.count, physics: mesh.userData.physics });
   }
+  const cardGeos = []; root.traverse(o => { if (o.isMesh && o.material === mat) cardGeos.push(o.geometry); });
+  summary.volume = finishCards(cardGeos, sets);                         // the shell normals and the occlusion
   summary.before = { vertices: liveVertices() };
   summary.after = { vertices: (summary.static.vertices || 0) + summary.physics.reduce((a, x) => a + x.vertices, 0) };
   return { root, summary };
@@ -1601,6 +1634,7 @@ async function bakeBase() {
   if (padB) parts.push(cardsGeometry(sets[bl.length], null));
   const root = new THREE.Group(); root.name = "hair_base";
   const m = new THREE.Mesh(geometryOf(parts), bakeMat()); m.name = "hair_base"; root.add(m);
+  finishCards([m.geometry], sets);                                      // as a volume too, as its record says (the shell normals, the occlusion)
   const glb = await new Promise((ok, bad) => new GLTFExporter().parse(root, ok, bad, { binary: true }));
   await fetch(at.url("salon_base.glb"), { method: "POST", body: glb }).then(r => { if (!r.ok) throw new Error("the base wasn't saved"); });
   const out = { groups: baseGroups(), locks: baseLocks().length, padding: st.volume.padding && PAD ? PAD.cards.length : 0, vertices: m.geometry.attributes.position.count, glb_bytes: glb.byteLength };
