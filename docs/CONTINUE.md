@@ -71,10 +71,9 @@ in every material and finish (smudges, fingerprints, scratches, chips, cracks, d
 (`street.py decals`), and **the paint page** (`paint.html`: paint a surface or every one like it, lay decals, Blender's
 look or bake from the page). The Shibuya lane is painted from its photo and rendered under **Blender's physical sky**
 (Nishita), calibrated against the photo by measurement. Checks: PAINT (new), STREET (decals), STREETBAKE.
-**Next, if wanted** (ask first): the street's .glb ready for LightmapGI (each mesh its own lightmap UV2, the wear atlas
-on a third UV: `CUSTOM0` in the street shader), hex-tiling and metre-scale variation in Godot's street shader, the lane
-pictured in Godot with the tape against the photo, CC0 scans from the user's machine on the slots procedural noise
-can't fake.
+**Then the road and the light** (2026-10-31, late morning; DECISIONS): the road's print lies on the road (5 mm, no
+shadow anywhere: the page, Blender, Godot's import step, GDSTREET checks it); the light is the user's, baked by hand
+in Godot (STREET_TEXTURING §3 has what LightmapGI and VoxelGI each need from the street).
 
 **What could come next** (ask first): the user's verdict on the match, the town and the motel; more references; the
 export placing an inside's level by itself (today a marker; the set's level dropped there by hand); a two-storey

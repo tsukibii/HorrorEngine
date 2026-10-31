@@ -40,15 +40,10 @@ So the effort goes into values and light first, and into variation at the scale 
 ## 3. Our ingredients, ranked by realism per effort
 
 1. **Bake the sky and its bounce (the biggest gain).** An overcast lane is mostly skylight and its occlusion. In
-   Godot this is **LightmapGI**, the documented way to get Battlefront II's split:
-   - the sun a **Dynamic** light (its direct light and shadow stay live; only its bounce is baked);
-   - the street's lamps **Static**, the sky's light baked from the environment;
-   - **directional** lightmaps on (normal maps read under the baked light), **OIDN** denoising on the 3090.
-   - **What it needs from us:** a unique UV2 per mesh, which LightmapGI keeps for itself. So the street's wear atlas
-     moves off UV2 to a third UV (glTF `TEXCOORD_2`, which Godot's shader reads as `CUSTOM0`). Then Godot's importer
-     can unwrap UV2 for the lightmap. The lighting stays the user's, set by hand in Godot (DECISIONS 2026-10-30).
-   - The fallback, when there's no time to bake in Godot, is a Cycles bake of the light into the wear atlas, read by
-     the street shader as its `IRRADIANCE`. That has no probes for moving things, and the lights would be Blender's.
+   Godot that bake is the user's, by hand (DECISIONS 2026-10-31, late morning), with LightmapGI (Battlefront II's
+   split: a live sun, the sky and the bounce baked) or VoxelGI (the light live, the street baked into voxels). What
+   each needs from the street is in STREET_TEXTURING §3: LightmapGI's own UV2 unwrap would take the wear atlas's place,
+   and VoxelGI reads the street shader as white.
 2. **Calibrate every material's colour** (low effort). Albedo as measured: fresh asphalt 0.02 to 0.05 (linear), worn
    asphalt 0.08, fresh concrete 0.5, brick about (0.26, 0.10, 0.06), glazed tile 0.75, rust about (0.18, 0.06,
    0.02). Dielectrics stay between about 0.013 and 0.87 linear (sRGB 30 to 240). Paint is not a metal.
@@ -83,8 +78,7 @@ So the effort goes into values and light first, and into variation at the scale 
 - **The paint page** (`tools/director/paint.html`, after the prop generator's page): the street in 3D, the library
   and the decals as pictures. Click a surface to paint it (this building's wall, or every wall on the street), zoom
   in and lay decals. Then bake it in Blender from the page, with its log and its pictures.
-- **The Shibuya lane painted from its photo**, rendered in Blender against it, and the street's .glb made ready for
-  LightmapGI (§3.1).
+- **The Shibuya lane painted from its photo**, rendered in Blender against it.
 
 ## Sources
 

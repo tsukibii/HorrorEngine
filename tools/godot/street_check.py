@@ -9,7 +9,8 @@ in, its lamps are lights, its colours survived (not all white), and every inside
 The Blender bake's .glb instead (tools/street.py bake, docs/STREET_TEXTURING.md): `--glb PATH` (its colliders,
 occluders and lamps checked the same way; not its colours: it wears textures), `--plugin` (the HorrorStudio Look
 plugin enabled in the project: its import step must have made the street's surfaces the street shader), `--shot ID`
-(the street pictured through that shot under xvfb, `--out PNG`). Ends "GDSTREET ok".
+(the street pictured through that shot under xvfb, `--out PNG`). With the plugin its road paint and decals must cast no
+shadow. Ends "GDSTREET ok".
 """
 import json
 import os
@@ -114,11 +115,17 @@ if counts.get("OmniLight3D", 0) != expect["lamps"]:
 wear = int(next((ln for ln in lines if ln.startswith("GDPROBE wear")), "GDPROBE wear 0").split()[2])
 if glb is None and (int(cl[2]) < 5 or int(cl[4]) > 0):
     errs.append(f"the colours didn't survive: {cl[2]} colours, {cl[4]} materials asking for vertex colours")
-if plugin:
+pl = next((ln for ln in lines if ln.startswith("GDPROBE paint")), "GDPROBE paint 0 0").split()
+if plugin and glb:                                                      # the wear is the Blender bake's (the street builder's own .glb has none)
     if wear < 1:
         errs.append("the plugin's import step made no surface the street shader (its hs_wear extras)")
     else:
         print(f"  the plugin's import step: {wear} surfaces wear the street shader")
+if plugin:
+    if int(pl[2]) < 1 or int(pl[3]) != int(pl[2]):
+        errs.append(f"the road's paint and decals don't lie flat: {pl[3]} of {pl[2]} cast no shadow")
+    else:
+        print(f"  the road's paint and decals lie flat: {pl[3]} of {pl[2]} cast no shadow")
 for want in expect["insides"]:
     if not any(m["name"].startswith("inside_" + want) and (m["meta"] or {}).get("set") for m in markers):
         errs.append(f"the inside of {want} has no marker with its set")

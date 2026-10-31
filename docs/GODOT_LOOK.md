@@ -518,8 +518,12 @@ by plugin.gd) makes each such material `street.gdshader` (`street_cut` for alpha
 Blender's "Street wear" group, so the game matches the render. `HSStreet.weather(node, amount)` scales the wear: 0
 clean, 1 as baked, 2 twice as worn.
 
+The import step also makes the **road paint and decals** cast no shadow of their own (`HSStreet.lay_flat`, by their
+materials' names `street_paint*`, `street_glyph:*`, `street_decal:*`; DECISIONS 2026-10-31, late morning: "the print
+on the road looks like it's floating"), the street builder's own .glb too.
+
 GDSTREET with `--glb --plugin --shot` checks it: the street's colliders after Blender, the surfaces on the street
-shader, a picture through the street's shot.
+shader, the paint and decals shadowless, a picture through the street's shot.
 
 ## 6. The story's words, and the check
 

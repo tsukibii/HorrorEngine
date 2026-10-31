@@ -100,3 +100,38 @@ static func weather(root: Node, amount: float) -> void:
 				if m is ShaderMaterial and (m.shader == SHADER or m.shader == SHADER_CUT):
 					m.set_shader_parameter("wear_amount", amount)
 		stack.append_array(n.get_children())
+
+
+
+## Road paint, the road's letters and decals: they lie a few millimetres over what's under them (street-gen.js), so
+## they cast no shadow of their own (a lifted sheet's shadow made the road's print float: the user, 2026-10-31).
+static func lies_on(m: Material) -> bool:
+	if m == null:
+		return false
+	var n := m.resource_name
+	return n.begins_with("street_paint") or n.begins_with("street_glyph:") or n.begins_with("street_decal:")
+
+
+static func _surface_material(n: Node, i: int) -> Material:
+	if n is MeshInstance3D:
+		return n.get_active_material(i)
+	if n is ImporterMeshInstance3D:
+		return n.mesh.get_surface_material(i)
+	return null
+
+
+## The street's paint and decals under `root` made to cast no shadow (the import step runs it); how many meshes.
+static func lay_flat(root: Node) -> int:
+	var flat := 0
+	var stack: Array = [root]
+	while stack.size():
+		var n = stack.pop_back()
+		if (n is MeshInstance3D or n is ImporterMeshInstance3D) and n.mesh and n.mesh.get_surface_count() > 0:
+			var on := true
+			for i in n.mesh.get_surface_count():
+				on = on and lies_on(_surface_material(n, i))
+			if on:
+				n.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+				flat += 1
+		stack.append_array(n.get_children())
+	return flat

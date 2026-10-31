@@ -1244,3 +1244,11 @@ guessed margin; and a check that only ever ran on a slow machine hasn't been run
   brightness. Measure (the median, the road, the sky's band, each against the photo) and scale the sky, not the
   exposure, so the shop windows and lamps keep their balance with it.
 
+
+## The road's print floating (2026-10-31)
+
+- **A layer lifted for the depth buffer casts a shadow that shows the lift:** the road's lines and letters stood 1.2 to
+  6 cm over the asphalt (a GAP each, stacked), and under Blender's sun each cast a thin shadow beside it, so the print
+  looked like a sheet floating over the road (the user saw it). Paint lies 5 mm up (over the clash test's 4 mm), a
+  mark over another only where they overlap, and nothing that lies on a surface casts a shadow, in every renderer:
+  check a close-up under a low sun after any change to how things are layered.

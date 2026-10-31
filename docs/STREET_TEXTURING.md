@@ -129,6 +129,18 @@ and it imports again whenever the file is saved.
 **The atlas's channels:** R is the occlusion (what glTF's occlusion map reads), G dirt, B streaks on walls and wet
 patches on what faces up, A worn edges.
 
+The import step also makes the road paint and decals cast no shadow of their own (`HSStreet.lay_flat`; DECISIONS
+2026-10-31, late morning: "the print on the road looks like it's floating... it should look part of the road"). The
+street builder's own .glb gets the same.
+
+**The light is yours** (DECISIONS 2026-10-31, late morning: baked by hand in Godot). Two things to know when baking it:
+- **LightmapGI** wants a lightmap UV2 per mesh, and the import's *Static Lightmaps* mode unwraps a new one over the
+  wear atlas's UV2: the street shader's wear would then read the wrong places. Bake with the import's *Static* mode
+  and meshes that have their own UV2, or ask for the atlas on a third UV.
+- **VoxelGI** reads only a BaseMaterial3D's colour (Godot's `scene/3d/voxelizer.cpp`): a surface on the street shader
+  bakes as white, so the lane bounces about twice the light it should, with no colour (measured 2026-10-31). Bake it
+  with the street's plain materials on (the import without the plugin), then put the plugin's back.
+
 ## 4. Collision, made easy
 
 **The street's own colliders** are the street builder's `-colonly` meshes: the walkable surfaces, a box for each
@@ -150,16 +162,15 @@ it). For collision, name things with Godot's own suffixes:
 | `-occonly` | an occluder (hides what's behind it) | a box inside something big and solid |
 | `-noimp` | nothing | Blender-only helpers |
 
-## 5. Decals: the next step
+## 5. Decals
 
-Road markings already work as decals: quads just over the road, worn by the paint finish, their worn holes cut
-(MASK), and baked apart from the road so the road under them keeps its own occlusion.
+Road markings are decals: quads lying 5 mm over the road, worn by the paint finish, their worn holes cut (MASK), and
+baked apart from the road so the road under them keeps its own occlusion. The rest (27 of them: posters, stains, a
+manhole, fingerprints...) are laid with the paint page (docs/STREET_PAINT.md §4) as the street's `decals`, quads a
+GAP off their surface. None casts a shadow, in Blender or Godot.
 
-For the rest, the proposal is a `decal` part on facades and roads in the street builder: posters, flyers, graffiti,
-stains, a manhole, a drain, cracks, leaves, a puddle. A few decal pictures would be baked by code like the finishes.
-They would go out as markers with extras, and the plugin's import step would make each one a Godot Decal node (it
-projects onto whatever is there, and Forward+ draws many cheaply). In Blender, a decal is a quad with alpha in the
-Foliage collection.
+A later step could make each one a Godot Decal node at import (it projects onto whatever is there, and Forward+ draws
+many cheaply).
 
 ## 6. Checks
 
@@ -175,7 +186,8 @@ Foliage collection.
   With `--godot`, GDSTREET then runs on it with the plugin. About a minute. It needs Blender (on the PATH, or
   `python tools/retarget.py setup`) and the desk's server for the street's .glb.
 - `python tools/godot/street_check.py --glb PATH --plugin --shot ID`: **GDSTREET** on a baked .glb, with the
-  plugin's import step checked and the street pictured through a shot.
+  plugin's import step checked (the street shader on the surfaces, the paint and decals shadowless) and the street
+  pictured through a shot.
 
 ## 7. Limits and what's next
 

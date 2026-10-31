@@ -11,6 +11,8 @@ func _initialize():
 	var colours := {}
 	var vc := 0
 	var wear := 0
+	var paint := 0
+	var flat := 0
 	var markers := []
 	var stack := [s]
 	while stack.size():
@@ -18,6 +20,14 @@ func _initialize():
 		counts[n.get_class()] = counts.get(n.get_class(), 0) + 1
 		if String(n.name).begins_with("inside_"): markers.append({"name": String(n.name), "meta": n.get_meta("extras", {}), "at": [n.global_position.x, n.global_position.y, n.global_position.z]})
 		if n is MeshInstance3D and n.mesh:
+			var on: bool = n.mesh.get_surface_count() > 0
+			for i in n.mesh.get_surface_count():
+				var nm := String(n.mesh.surface_get_material(i).resource_name) if n.mesh.surface_get_material(i) else ""
+				on = on and (nm.begins_with("street_paint") or nm.begins_with("street_glyph:") or nm.begins_with("street_decal:"))
+			if on:                                                      # road paint and decals: the plugin lays them flat (no shadow)
+				paint += 1
+				if n.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
+					flat += 1
 			for i in n.mesh.get_surface_count():
 				var m = n.mesh.surface_get_material(i)
 				if m is StandardMaterial3D:
@@ -29,6 +39,7 @@ func _initialize():
 	print("GDPROBE counts ", JSON.stringify(counts))
 	print("GDPROBE colours ", colours.size(), " vertexcolour ", vc)
 	print("GDPROBE wear ", wear)
+	print("GDPROBE paint ", paint, " ", flat)
 	print("GDPROBE markers ", JSON.stringify(markers))
 	await physics_frame
 	await physics_frame

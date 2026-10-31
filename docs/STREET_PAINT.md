@@ -110,6 +110,9 @@ drawn from code with their alpha into `assets/decals/` (not kept in git), each w
 
 In the street they're pieces of their own (`decal:<kind>`). In Blender they keep their picture and its alpha, take a
 little dirt, and stay out of the occlusion bake as the road markings do. In Godot they arrive as see-through quads.
+Like the road's paint, they cast no shadow anywhere (DECISIONS 2026-10-31, late morning: a lifted sheet's shadow made
+the road's print float): the street builder's view, Blender (`visible_shadow` off) and Godot (the plugin's import
+step).
 
 ## 5. Checks
 
