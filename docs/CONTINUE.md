@@ -105,8 +105,12 @@ attaches; GDEXPORT shares. **Then the furniture** (2026-10-31, night: "do whatev
 looks (`mats`: STORY_FORMAT §2, KIT §4), Paint dresses the slot under a click (every one like it: the same preset),
 the desk draws them (`dressSlots`), the Godot export gives them `<Name>_uv.tres` through `slot_materials.gd`;
 TestRoom001's fridge wears the white plastic set (GDEXPORT's kit slots). The street's materials stay inside its .glb
-(DECISIONS). **Next, if wanted** (ask first): the fittings the finish makes (switches, lights, window frames) and
-doors taking sets too, a set per material in the street builder's inspector.
+(DECISIONS). **Then the fittings and doors** (late night: "the plastic PBR for light switches"): the switch, the
+built-ins, the stairs and window frames the finish makes, and doors (a plain door's `mat`, a kit door's `mats` over its
+parts) take sets; a fitting's paint is kept on a stub in its room's props (the export copies it onto the fitting it
+makes), a frame's on its window, a door's on its opening; a moving block's set in Godot is `<Name>_obj.tres`;
+TestRoom001's power switch, library door and kitchen door show them. **Next, if wanted** (ask first): kit floors dressed
+rather than taken up (a plain wood grain on the kit's planks), a set per material in the street builder's inspector.
 
 **What could come next** (ask first): the user's verdict on the match, the town and the motel; more references; the
 export placing an inside's level by itself (today a marker; the set's level dropped there by hand); a two-storey

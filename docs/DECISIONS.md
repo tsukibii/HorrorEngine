@@ -2,6 +2,14 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-31, late night (the user, on the fittings and doors)
+
+- **Fittings and doors take PBRs too**: "make it so we can add PBRs to those, given that we could use the plastic PBR
+  for light switches etc". The fittings the scene builder makes (the switch by the door, the built-ins, the stairs, a
+  window's frame) and doors (a plain door's slab, a kit door's leaf, handle and frame by slot) are painted like
+  furniture, and what's painted on a fitting is kept though the finish makes it again (SCENE_BUILDER §9). A door's set
+  rides with it as it swings, in Godot too (`<Name>_obj.tres`, GODOT_EXPORT §3b).
+
 ## 2026-10-31, night (the user: "do whatever's best")
 
 - Asked which follow-up next (furniture taking sets, or a street's materials as named files), the user left it to
