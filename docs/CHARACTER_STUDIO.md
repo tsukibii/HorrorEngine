@@ -49,6 +49,134 @@ So a character can be pulled back at any point (change the body after the clothe
 the export) and only what depends on the change is redone. Unreal never becomes the place a character is edited: an
 export is a bake like any other (§3, Export).
 
+## 2b. Brows and lashes by hand (DECISIONS 2026-10-31, the night)
+
+The user, after the add-on's bake (since removed, below): "The texture of the procedural eye lashes looks really good but the design you
+generated is very bad, they move up too upwards" (the add-on's Straight preset stands its lashes at 70 to 80° off the lid line,
+and our tidy turned them up further to keep them off the eye), with four references (a brow, an eye at three-quarter, an
+eye from the front, a MetaHuman head without its hair); then "could you make an easy eyebrow editor tool where I manually
+can add and adjust the eyebrows and eyelashes inside an easy wrapper?" Built: **Face, Brows & lashes by hand** (since its own tab, **Brows & lashes**, before Hair, its first part **Fine hairs (shaped on the face)**, the clumped ones under it: DECISIONS 2026-10-31, the last)
+(`tools/character/groom.js`, the editor in `index.html`).
+
+- **Use them** puts them in place of the clumped brows and lashes below; **Mirror** does each change on both sides.
+- **Edit on the face** frames the eyes and brows and shows **handles**: five on each brow's top edge and five on its
+  bottom edge (yellow circles: dragged, that edge moves on the face; the band between the edges is the brow), and three
+  at the upper lashes' tips (blue squares, inner, middle, outer: dragged, their length, lift and sweep there follow the
+  pointer, smooth between the three). A bar over the view: Front, ¾ left, ¾ right, Side, **Blink** (the lids shut, the
+  lashes with them), the **brushes** (Add hair, Thin out, Comb: the brow's density or its hairs' flow painted where you
+  drag, at the brush's Size), Done. Alt-drag turns the view as ever.
+- **Styles and sliders**: the brows Natural (MetaHuman), Soft and sparse, Full, Groomed, Straight, Bold; Hairs, Length,
+  Thickness, Soft edges, Messy, the front, middle and tail hairs' angles, Toward the middle. The lashes Natural
+  (MetaHuman), Soft, Full, Doll, Fox, Sparse; Upper lashes, Length, Lift, Curl, Outer sweep, Inner length, Thickness,
+  Clumps, Lower lashes, Lower length, Lower angle. A style sets the sliders; the shape by hand stays.
+- **The hairs** are made on the face as it is, every time it changes (so they ride every expression and the blink), at
+  a real hair's thickness (about 0.05 mm at the root), drawn as `strandCards` (one fine hair to a card): a brow's
+  hairs lying on the skin across its band (the band laid on the skin as a grid: each hair a curve in it, following the
+  flow: up at the front, swept out along the body, out and down at the tail, the top and bottom rows leaning in; fewer at
+  its soft edges and its front); an upper lash from the lid's edge over its rim, forward, easing up into its curl and
+  swept toward the temple more the further out it grows (the inner ones a touch toward the nose), turned with the lid as
+  it shuts; the lower lashes few, fine, uneven, down and out. Measured (GROOM): the middle lashes rise 2.4 mm over the
+  lid at 23° from straight out (it was 3.7 mm at 36° before the defaults were tuned on the references; the add-on's Straight
+  stood up), the outer ones swept 45° out; the brows' hairs within 0.33 mm of the skin.
+- **Blender's procedural hair technique** (DECISIONS 2026-10-31, the night, the last: "enhance our eyebrows and
+  eyelash system we already use and remove the add-on"; the technique in our own words: docs/research/brows_lashes.md): the
+  brows' **Trimmed edges** (hairs near the top, the bottom and the front shorter, as a groomed brow's), **Clumps** (each
+  hair's tip drawn toward a guide hair of its own 2 by 1.5 mm cell, the root staying), **Frizz** (each hair's own small
+  waves), and lengths spread wide with a few long strays; the lashes' **Curl at the tip** (the curl gathered toward the
+  tip: straight out of the lid, then up), **Uneven** (short lashes between the long), **Frizz**, and clumps of two to six
+  lashes drawn tighter at their tips. Every style sets them. The add-on itself (its bake in Blender, Start from the add-on's brows,
+  the add-on's bake tool, its loader) is gone: nothing goes through Blender for brows and lashes.
+- **The lash line** (a slider under the lashes): the dark line along the lid where the lashes grow, a thin line at 0.2
+  (the default), an eyeliner's at 1; the upper lashes grow along the whole lid, its inner corner to its outer one (they
+  stopped short of both ends before the user's note: "the upper eyelashes don't reach out the entire eyelid line").
+- **Saved** with the character (`st.groom`: the shape's offsets in mm, the brushing as two small grids, the lash
+  handles, the sliders); the export carries them as any brows
+  and lashes (their blink, lifted with the lids: §3.1).
+- **GROOM** (`node tools/character/groomtest.mjs`, the Studio's server running): the edit mode and its 26 handles, the
+  brows' hair count and their lying on the skin, the lashes' rise, angle and sweep, a brow handle dragged (and its twin),
+  a lash handle dragged up, Thin out and Add hair, a style, the blink, saved
+  and opened again the same, Done.
+
+The sheet: `docs/godot_sheets/2026-10-31_brows_lashes_by_hand.jpg` (the editor, then the result in Godot open, at
+three-quarter and shut).
+
+## 2c. The eyes: Blender's human base mesh's lids (DECISIONS 2026-10-31, the night, later)
+
+**Every character's eyes now** (DECISIONS 2026-10-31, the night, the last: "modify the base loaded mesh so it has those
+eyes from the start, I don't care about the old eyes"): the graft is `Content/Studio/Bodies/MHR_eyes.bin`, committed,
+and the Studio wears it whenever it's there (no switch, no Make button; MHR's own cut lids and the eyelid line only if
+the file is missing). Its source is the eye region of **Blender Studio's Human Base Meshes** (CC0; the user checked that
+the head in the add-on's file is that body, `GEO-body_female_realistic`); `python tools/eye_patch.py make` remakes it from the
+bundle's .blend in `vendor/human_base_meshes/` (or `--blend PATH`).
+
+The user: "in ours the eyelids look like thin skin bending over the eye whereas the base mesh's eyelids actually look like meaty
+flesh that curves in, ideally we want that look for the eyes, eyelid shape and then make it modifiable through some
+basic shape keys". Why ours read thin: MHR's eye is a closed shell of skin cut open along the lid line, so the lid ends
+in an edge with no thickness (the export lays it onto the eyeball, a sheet over a ball). The base mesh's head is one closed
+skin that wraps round the eyeball like a socket: the lids are about 2 mm thick, their edge is rounded and rolls in to
+touch the eye, the skin goes on just inside the eyeball behind them, the upper lid bulges over the eyeball up to a
+crease, the lower lid has a soft roll. Measured (`tools/eye_patch.py`): the base mesh's eyeball 13.8 mm; its lids 1 to 3 mm over
+it; within 15 mm of the eye's centre the base mesh has 4,391 points at its second multires level where MHR has 268.
+
+- **The graft** (`python tools/eye_patch.py make`, inside Blender's module): the base mesh's head lined up on MHR's base face (a
+  similarity fitted over the upper face round the eyes, 0.46 mm off it at the median); the left eye's region taken as
+  the base mesh's own loops (80 points where the skin meets the eyeball, then 19 loops out over the lids and 5 in over the lining);
+  its outer loops eased onto MHR's skin; MHR's triangles inside it hidden and the gap stitched (59 of MHR's points round
+  the hole are the graft's too: no seam); the right eye the left mirrored. Each point keeps the MHR triangle nearest it
+  (not MHR's strip over the eye) and moves as its points do, so the sliders, the sculpt, a photo's fit and the
+  expressions carry it. Its UVs: the base mesh's lid laid on MHR's lid between the opening and the edge, so a photo skin or paint
+  shows the photo's lid on it. `Content/Studio/Bodies/MHR_eyes.bin` (committed: every character's eyes).
+- **In the Studio** (`eyegraft.js`; Skin, Eyes; on every character):
+  drawn on the skin's own material, the wet membrane (the lining, where the lid meets the eye, its edge behind the lash
+  line) pinker and glossier (skinshader.js); the eyeball the base mesh's size, following the skin round the eye (loops 15 and out)
+  and growing with it; the lid's edge and the lining seated back on the eyeball as they rest on it; drawn behind real
+  lids (no stencil, no cut); the lid shadow, the tear line, the lashes and the liner take its opening and its lid edges
+  (`outline32`, `rim`).
+- **Its blink**: each lid point turned about the eyeball's centre on the head's x axis by its share of the angle between
+  the lids where it is, measured on the face as it is (the upper lid 85%, the lower 15%; the lid's edge and the lining
+  whole, fading out by the 13th loop), so the lids slide over the eyeball and meet; never into the eyeball or the
+  cornea's bulge (the lid rides over it shut, as a real lid shows the cornea's bump). MHR's own eyesClosed is left out
+  while it's on.
+- **The shape keys** (under the grafted eyes, with a preset menu: Default, East Asian, Caucasian; saved with the character as
+  `st.eyes.shape`): **Eye size** (the eyeball and the opening together, 8% either way), **Crease** (−1 a monolid: the
+  fold over the lid filled and a little lower; +1 a deep double lid: the fold set in; at the base mesh's crease, about the 12th
+  loop, where the lid plate lying 1.85 mm over the eyeball meets the skin rising to the brow), **Inner fold** (the upper
+  lid's skin over the inner corner, its edge staying), **Tilt** (the outer corner up or down, 8°), **Opening** (the lids
+  apart or nearer), **Depth** (the eye and its lids back under the brow or forward, 1.2 mm). Our own fields in the eye's
+  frame (eyegraft.js `SHAPE_KEYS`, eye_patch.py `apply`), size, tilt and depth fading by an even falloff from the opening
+  to the graft's edge (harmonic over its triangles: the base mesh's loops bunch up toward the nose). East Asian is crease −0.8,
+  inner fold 0.6, tilt 0.25, opening −0.3, depth 0.35; Caucasian crease 0.6, opening 0.15, depth −0.4.
+- **The shut lid** (the user, seeing grey stripes on it: "should just blend in with the rest of the skin color but maybe
+  make it possible to apply makeup (eye shadow) onto that closed eyelid part"): shut, the base mesh's upper lid unfolds over skin
+  that a photo never saw open (open, it lies folded under the crease), and its UVs, laid from MHR's narrow lid, stretched
+  whatever the photo had there into stripes (on the test character, a screenshot with the Studio's circles printed over
+  the lid). So from its edge to the crease the lid reads the photo and the paint four mip levels softer and 90% of the
+  way to the photo's own skin tone (`photoBlur`, skinshader.js), and its skin and makeup are worked out where it lies
+  open, laid flat from the lash line to the crease (`skinPlaces`, the drawn objPos), with the makeup's lid lines from the
+  open lid (`lidFront`, `skinLm`): eyeshadow put on the open lid covers the shut lid from the lash line to the crease and
+  goes down with it, as on a real lid; the liner stays on the lashes' roots.
+- **The graft's extent**: the base mesh's own loops kept to the 21st (eased onto MHR's skin from the 16th, so the base mesh's crease and the
+  fold over it stay the base mesh's), reaching 12 mm above the eye's centre, under the brow's ends; so the brows lie on whichever
+  skin is there (`skinNear` takes the graft's triangles and leaves out MHR's hidden ones).
+- **EYEPATCH** (`python tools/eye_patch.py check`, in check_all; says so and passes when the graft isn't made here): the
+  seam (MHR's own points round the hole, the edge on MHR's skin), the right eye the left mirrored, and on MHR's base and
+  every character's body found, and on MHR's base with both presets and every key at its ends: nothing of a lid inside
+  the eyeball open or shut, shut the lids meeting (within their edge's own spacing), the lid's edge on the eyeball. The
+  Studio's points match it within a micron away from the cornea (over it they ride out with its bulge). `preview` draws
+  it as clay (open, shut, and on a character: `Saved/Story/_look/eyes/`).
+- **The export** (Export for desk / Unreal with the grafted eyes on): the skin carries the graft in place of MHR's skin under
+  it, each of its corners on its MHR triangle's points and shares (`_MHRP`, `_MHRW`: the desk plays MHR's face shapes
+  through them as the Studio does), its blink as `eyesClosed_L`/`_R` and their in-betweens, taken from the Studio's
+  own shut states (MHR's skin holds still); the bake draws the graft over MHR's lids in the skin's texture, so its
+  colours, the shut lid's tone, the waterline and the makeup reach Godot, where `HSBlink` shuts it as any export; the
+  eyeballs are the graft's; the file's extras say `eyeGraft`. EYELIDS on such a file leaves out what faces the eyeball
+  and lies in it (the lining, the lids' backs on the eye), reaches 2.5 mm behind the eye's front (the base mesh's lids are 2 to 3
+  mm thick: farther is the far lid's rim through the opening) and takes contact within 0.1 mm as the lids' touch:
+  `_graftedeyes` (a copy of `_studiotest` with the grafted eyes) at most 0.008 mm² through the blink, shut nothing, held shut in
+  Godot nothing.
+- **Not yet**: the eyelid-line handles on the graft; a lighter waterline along the shut lash line (the bake carries a
+  little of its pink to the lid's front).
+
 ## 3. Each stage against the rule (as of this branch)
 
 | Stage | Sources kept | Bakes | Gaps |
@@ -97,6 +225,13 @@ along it), and the skin's node carries **each opening's outline** as cut, on the
 is untangled in the Studio too: smoothed, MHR's own left inner corner crossed itself and the little loop showed a
 diamond of eyeball at every character's corner (`untangle`, pulled to the crossing). STUDIO draws the file's skin and
 eyes flat from the front, above, below and 20° to either side: none of an eyeball outside its opening.
+**The blink in the file** (2026-10-31, GODOT_LOOK §5f): MHR's `eyesClosed_L` and `eyesClosed_R` as morph targets on the
+skin (with their normals), the lashes, the lash line, the brows and the tear line, each eye's way down kept at eight
+in-between weights (`eyesClosed_L_in1250` ... `_in9375`) so the lid follows its curve over the cornea, the lids kept off
+the eyeball in every state and, shut, the cut's edges met (MHR's shut lids leave 15 to 20% of the opening); written
+sparse (`sparseTargets`). Godot's HSBlink plays it (an idle blink, a scene's face); EYELIDS measures it. What lies on the
+lids (the lashes, the lash line, the tear line, the brows) comes forward with them (`liftWith`); **the tear line** goes
+into the file (`tearline_L`/`_R`, its fade in the vertices' colour, `studioTear`; see-through in a plain viewer), drawn as a wet glint in Godot.
 
 **The colours are baked** (2026-10-27, DECISIONS: the user's character stood white on the desk). glTF carries a
 material's colour and its maps, never a shader, and the Studio draws its colours in shaders: the procedural skin
@@ -110,9 +245,18 @@ whatever draws the file. The empty texels round each island take its edge, eight
 pull in black; the rest the islands' mean.
 - **The skin:** 4096 px on MHR's own UVs (the face takes about a quarter of the width), a JPEG in the file. **And how
   it's lit** (2026-10-28, back: the skin light, below): its relief (the pores, the wrinkles, a nail's edge) as a
-  tangent-space normal map in glTF's convention (+X along u, +Y up the picture), and one map of R 1 (no occlusion
-  yet), G the roughness (the oil, the lips' gloss, the nails' polish) and B how thin the skin is (the file's metalness
-  is 0, so its blue is free), 2048 px PNGs; the light's numbers in the skin material's `extras.studioSkin`. The desk
+  tangent-space normal map in glTF's convention (+X along u, +Y up the picture), and one map of R the ambient
+  occlusion (2026-10-30, night: `bakeOcclusion`, how much of the sky each point sees, from depth maps of the body
+  from 64 directions and of the head again finer; also the glb's occlusionTexture), G the roughness (the oil, the
+  lips' gloss, the nails' polish) and B how thin the skin is (the file's metalness is 0, so its blue is free), 2048 px
+  PNGs; the light's numbers in the skin material's `extras.studioSkin`, with the procedural skin's `age`, `pores`,
+  `poreSize`, `evenness` and `wrinkles` (Godot's detail layer picks its look from them: GODOT_LOOK §5d). The pores
+  are left out of the file's maps (their colour and relief: a 0.35 mm texel only blurred them): Godot draws them at
+  their true size, as deep and as far apart as the record's Pores and Pore spacing say.
+- **The hair** (2026-10-31, GODOT_LOOK §5e): the salon's bake goes through as it is (its shell normals, strand tangents,
+  second UV and strand numbers; a swinging lock's normals and tangents turned onto the body's skeleton, no longer
+  recomputed); the **brows and lashes** are named in the file (`brows`, `lashes`, `lash_line`, `brow_fill`) and carry
+  their strands' numbers in the occlusion slot and a `studioHair` record beside their look. The desk
   lights the file's skin with the same `skinlight.js` (`bodies.js`, the thinness from the map's blue); Unreal makes
   **M_StudioSkin** (`storykit/people.py`, Subsurface Profile, written blind: UNREAL_FLOW §1d).
 

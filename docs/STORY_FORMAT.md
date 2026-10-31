@@ -63,6 +63,17 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
   rain, the house dry.
 - `look` (optional): this level's look, `balanced` (the default), `realism` or `plain`, over `game.look` (§9.1): a flat-lit annex, a dream
   level with the effects off (a scene's `look` is its look-at, §3.4: no per-scene preset).
+- `outside` (optional): the building a street builds round this level (the scene builder's Outside panel,
+  docs/SCENE_BUILDER.md §8), in the street builder's own words (STREET_BUILDER §4): `look` (a slot's colour `#rrggbb`,
+  a `pbr/<set>` or a tuned set, as a room's: `wall`, `trim`, `tiles`...), `roof` (`kind` flat, rail, gable, hip, shed or none; `pitch` 3 to 60,
+  `over` and `parapet` 0 to 2 m, `slot` tiles or roof), `slot` (what the walls are: wall, wall2, plaster, concrete,
+  trim, wood, wood_dark, blocks, panel), `raise` (the floor over the ground, 0 to 2 m), `front` (n, e, s or w: the side
+  facing the street; its way in when unset), `parts` (fittings on its walls, each `kind`, `face` front/left/back/right,
+  `x`, `z`, `w`, `h`, `out` in metres: ac, sign, vsign, lamp, lantern, pipe, awning, canopy, eave, noren, balcony, bay,
+  stairs, rail, panel, block), `style` and `seed` (the street style it started from). A street's building with this
+  level inside wears it (STREET_BUILDER §5c); the desk and the level's own Godot export don't build it (the street's
+  .glb carries it). `"outside": {"look": {"wall": "#cfc5b3", "tiles": "#3d4148"}, "roof": {"kind": "hip", "pitch": 24,
+  "over": 0.8}, "raise": 0.45, "parts": [{"kind": "ac", "face": "right", "x": -1.6}]}`.
 - `routes` (optional): named walks for the cast in play (`behave` path and patrol, §4), each a list of the level's
   spots in order, with a `wait` (seconds, facing the spot's `rot`) and a `pose` (the pose library) where she stops:
   `"routes": {"r_hall": {"points": [{"at": "hall_back", "wait": 2, "pose": "look_left"}, "hall_near"], "mode": "pingpong"}}`.
@@ -92,8 +103,14 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
   look plugin's wet (the damp darkening, pools that carry the lights, no rings: GODOT_LOOK §2) by that much, and from
   0.5 every step in the room is a wet one, on the desk's Play too; the desk's stage shows the floor darker and
   glossy by it. (Rain, `game.weather`, wets a room with no ceiling by itself, on the stage too.)
-- `look`: library texture sets for its surfaces, `{"floor": "ambientcg/WoodFloor041", "walls": "...", "ceiling": "..."}`
-  (docs/ASSETS.md). Grey until fetched.
+- `look`: what its surfaces wear, `{"floor": "ambientcg/WoodFloor041", "walls": "...", "ceiling": "...", "trim": "..."}`
+  (docs/ASSETS.md): each a library or shelf set's ref (`pbr/<set>`), a flat colour (`#rrggbb`), or **a tuned set**, the
+  street paint's look object (docs/STREET_PAINT.md §2, the user, 2026-10-31: the paint bucket in the interiors): `{"set":
+  "pbr/...", "tint": "#9a8f80", "contrast": 1.2, "layers": [{"wear": "grime", "amount": 1.2}]}`, its words pbrmix.py's
+  (`scale`, `turn`, `tint`, `tint_amount`, `brightness`, `contrast`, `saturation`, `hue`, `fade`, `roughness`, `bump`,
+  `layers` of sets, decals and wear). A tuned set is made into a set of its own on the shelf, `pbr/_made/<hash>`
+  (assets/pbr, not in git: made again from the look whenever it's missing): the plan tags it so, the desk's server
+  makes it when it plans, the Godot export when it exports. Grey until fetched; the scene builder's Paint paints them.
 
 **An opening:**
 
@@ -174,10 +191,26 @@ tags it `kit:<type>` and `art:kit/<type>_<hash>`, the mesh `tools/kit/build.mjs`
 rugs and ceiling steps are also tagged `surface` (the level check doesn't count them as obstacles). `in_wall: true`
 marks a thing that sits in its wall, like a window frame.
 
+**A kit thing's slots dressed** (2026-10-31, the paint bucket on furniture): `"mats": {"white": "pbr/plastic/white_plastic",
+"fabric": {"set": "pbr/...", "tint": "#5a4a3a"}}`: a look on any of its kit's material slots (`wood`, `fabric`, `top`,
+`body`, `front`, `metal`... the ones its kit builds), each as a room's `look` takes it (§1: a set, a colour or a tuned
+set); a slot's tones follow it (`wood` dresses `wood_2`..`wood_4` too, unless they have their own). Laid by the kit's
+own UVs, which are metres, so a set keeps its real size. The plan tags it `matslot:<slot>:<ref>`; the desk dresses the
+kit's meshes; the Godot export gives the thing's mesh the game's material file for the set (GODOT_EXPORT §3b); KIT
+checks that its kit has each slot. The scene builder's Paint writes it (SCENE_BUILDER §9). **A floor's boards** (a
+`tiles`, `planks` or `tatami` kit's main slot: `tile`, `wood`, `tatami`) painted with a set that paints tiles, boards
+or mats of its own are laid out by them (the user, 2026-10-31: "make the floors take a material"): the plan adds the
+set's cells to the kit's spec (storykit/pbrcells.py), every board where the set paints one, its gaps in the set's
+seams (docs/KIT.md, *Floors laid out by their set*); nothing new is written in the story.
+
 **A kit door:** a door's `kit` (a `door` preset, or one with what differs: `{"preset": "door_shaker", "handle":
 "bar_pull", "hinge": "right"}`) builds it as a frame (`<id>__frame`), a leaf (the door, turning on its hinges) and a
 handle (`<id>__handle`), each tagged `door:<id>` and `door_part:*` (docs/KIT.md §8). The kit's hinge numbers (`hinges`, `hinge_h`, `hinge_w`, `hinge_t`, `barrel`,
 `mortise`, `hinge_model`) and `hinge_art` (your own hinge, split into `<id>__hinge<i>_door|frame`) are there too.
+**A door's paint** (2026-10-31): a plain door's `mat` is its slab's look, as a block's; a kit door's `mats` dresses its
+parts' slots by name (`{"front": ..., "metal": "pbr/metal/Metal063_1K-PNG", "body": ...}`: the leaf's front, the handle's
+and hinges' metal, the frame's body), each as a room's `look` takes it (§1). Both ride with the door as it swings (in
+Godot `<Name>_obj.tres` and `<Name>_uv.tres`: GODOT_EXPORT §3b).
 A door's `class` (a Blueprint
 class path, `…_C`) is that door's Blueprint, in place of class_map's `door`.
 
@@ -193,7 +226,8 @@ class path, `…_C`) is that door's Blueprint, in place of class_map's `door`.
 - `z`: height above the floor, for things on walls or ceilings, and lights.
 - `art`: the asset that replaces the block, scaled evenly to fit it: an Unreal path (`/Game/...`) or a library ref
   (`basemesh/food_prep_table`).
-- `mat`: a library texture set on the block (`ambientcg/Wood049`).
+- `mat`: what the block wears, as a room's `look` takes it (§1): a library or shelf set (`ambientcg/Wood049`), a
+  colour or a tuned set (boxes only).
 - `tag`: what it is, for the art shopping list.
 
 **Uses** (in play, every one is a left click on the thing; DECISIONS 2026-10-27, later):
@@ -205,7 +239,7 @@ class path, `…_C`) is that door's Blueprint, in place of class_map's `door`.
 | `inspect` | `text`, optional `line`. In Play a small thing (its longest side 0.6 m or less) is taken up in the hands (DECISIONS 2026-10-28, later): itself in front of the eye, a drag turns it (a photo turned over to read its back), `text` under it, Esc puts it back; a bigger one shows `text` on a card. `{"use": id}` is heard once it's put back |
 | `switch` | `light` |
 | `leak` | water running down a wall from here (GODOT_LOOK §2b): `wall` (`n e s w`, one the room builds), `at` by it and `z` where it comes in, `width` m at the top (0.4; it spreads as it runs), `drip` seconds between drops (2.6; 0 none), `wet` 0..1 (0.8); Godot wets a band of the wall below it (dark, glossy, in rivulets, drying toward the floor, no pools) and drops the drips; the desk draws the band |
-| `light` | `kind` (`bulb candle lamp fire`), `lit`, `flicker` 0..1 (how much), `mode` (which: `fluorescent` a tube's stutter every `interval` s or so, `dying` drops out often and never quite full, `candle` a flame's restless wobble, `pulse` a slow breath at `rate` a second, `custom` your `letters` at `rate` a second: a off, m as placed, z double; none: a plain wobble; a `mode` with no `flicker` is the whole of it; a tube switched on stutters on; after Light Kit's Flicker, the same curves on the desk and in Godot), `lumens`, `radius`, `kelvin` (place with `z` or `on`); **a pattern in its light**: `pattern` (`caustics` water's light on a ceiling or a wall, `leaves` sun or moon through swaying trees, `blinds` a venetian blind's stripes, `clouds` cloud shadows passing) with `aim` [x, y, z] where it falls (the light becomes a spot aimed there), `spread` its cone in degrees (50), `scale` metres per feature, `speed`, `open` 0..1 (the canopy's or the slats' openness, the water's own light, the cloud cover), `angle` the slats' degrees; after Light Kit's Pattern; Godot draws it (the desk shows the spot aimed) |
+| `light` | `kind` (`bulb candle lamp fire`), `lit`, `flicker` 0..1 (how much), `mode` (which: `fluorescent` a tube's stutter every `interval` s or so, `dying` drops out often and never quite full, `candle` a flame's restless wobble, `pulse` a slow breath at `rate` a second, `custom` your `letters` at `rate` a second: a off, m as placed, z double; none: a plain wobble; a `mode` with no `flicker` is the whole of it; a tube switched on stutters on; after Light Kit's Flicker, the same curves on the desk and in Godot), `lumens`, `radius`, `kelvin` (place with `z` or `on`); **a pattern in its light**: `pattern` (`caustics` water's light on a ceiling or a wall, `leaves` sun or moon through swaying trees, `blinds` a venetian blind's stripes, `clouds` cloud shadows passing) with `aim` [x, y, z] where it falls (the light becomes a spot aimed there), `spread` its cone in degrees (50), `scale` metres per feature, `speed`, `open` 0..1 (the canopy's or the slats' openness, the water's own light, the cloud cover), `angle` the slats' degrees; after Light Kit's Pattern; Godot draws it (the desk shows the spot aimed); **a fitting**: `kit` (a round LED: `downlight_100`, `downlight_150`, `led_flush_300`, `led_flush_450`, `led_dome_500`, `led_ring_600`, or any kit thing; place it with `z` so its top meets the ceiling: the user, 2026-10-31, "lights as furniture"): the fitting is drawn there (`<id>__fitting`, its `emit` glass glowing while the light's on, its other slots taking `mats`) and the light sits just under it; the desk lights the room with it as ever, but **the Godot export writes no light source for it**: a node where it is, the fitting's glass glowing as the story has the light (switched, cut, flickering), and every light of yours put under that node following it (GODOT_EXPORT §3b) |
 | `breaker` | the breaker box (DECISIONS 2026-10-28): a click throws it, the level's power goes off or comes back (the lights flickering up), and `{"use": id}` is heard. While the power's out (the `power` action) every bulb and lamp in the level is dark (each keeps its own on or off for when it's back; candles and fires burn on) and a `switch` only clicks: **No power** |
 | `locker` | (hide inside: a click gets in, a click gets out) `inside` (a spot: where the player stands in it and the way they face; default its middle, facing its `rot`), `see_through` 0..1 (from inside its walls are slats, this much of them gaps; default `game.see_through`, else 0.6). The player's look stays in a cone out of it; `{"hidden": true}` (or the locker's id) holds while they're in |
 | `roll` | a die (`shape: "box 0.3 0.3 0.3"`, six faces): a click throws it from the player's hand, physics rolls it, and when it settles the face on top is heard as `{"rolled": id}` |
@@ -530,7 +564,8 @@ with `{"tick": "<id>"}` at the end of that beat, not by its own trigger (the sto
 - `power`: `off` cuts the level's power (every bulb and lamp dark, the switches dead; candles and fires burn on), `on`
   brings it back, flickering up; `level` names another level than the player's. The check warns at a cut nothing
   brings back (no breaker, no `power: on`). In Godot the lights the user adds to a level by hand go with it when they're on the mains (the look
-  plugin's flicker lights with `on_mains`, or any light in the group `hs_mains`; GODOT_LOOK §0)
+  plugin's flicker lights with `on_mains`, or any light in the group `hs_mains`; GODOT_LOOK §0), and a light put under a
+  fitting's node (a story light with a `kit`) goes with that light: its switch, the cut, its flicker
 - `torch`: **the player's flashlight** (DECISIONS 2026-10-28): `on`, `off`, `flicker` (a stutter, then on), `dead` (it
   flickers out, and F only clicks until `works`: new batteries). An item with `"torch": true` is a flashlight: picked up
   (`use: pickup`) or given (`give`), it goes in the pocket, not the inventory's row, and **F** switches it (heard as

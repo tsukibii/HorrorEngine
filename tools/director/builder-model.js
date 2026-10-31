@@ -2,7 +2,7 @@
 // reference layout and written back as the story's rooms (with the shared walls worked out: the taller, then the
 // larger room builds a wall two rooms share, the other skips that stretch), openings, links, built-ins, stairs and
 // the start spot. docs/SCENE_BUILDER.md has the rules; check.js-style tests run it in the page (builder_test.js).
-import { KINDS, FIXTURES, OPENINGS, JO, WALL_ITEMS, LIGHT_K, FINISH, FLOOR_BY_KIND, WINDOW_FRAME } from "./builder-presets.js";
+import { KINDS, FIXTURES, OPENINGS, JO, WALL_ITEMS, LIGHT_K, FINISH, FLOOR_BY_KIND, WINDOW_FRAME, autoFitting } from "./builder-presets.js";
 import * as KIT from "./kit.js";
 
 // the kit's presets (docs/KIT.md): the page sets them once it has them (stage.js loadAssetLibrary)
@@ -151,7 +151,7 @@ export function levelToModel(story, levelName) {
   for (const sr of lvl.rooms) for (const p of sr.props || []) {
     const r = byId[sr.id];
     // window frames: <room>_fx_win<n>, of: the window
-    if (new RegExp(`^${sr.id}_fx_win\\d+$`).test(p.id) && p.of && p.kit) { const op = ops.find(o => o.id === p.of); if (op) op.frame = noSize(p.kit); continue; }
+    if (new RegExp(`^${sr.id}_fx_win\\d+$`).test(p.id) && p.of && p.kit) { const op = ops.find(o => o.id === p.of); if (op) { op.frame = noSize(p.kit); if (p.mats) op.frameDress = { mats: clone(p.mats) }; } continue; }
     if (new RegExp(`^${sr.id}_kt_`).test(p.id) && p.kit) {          // kit things placed in the room
       const sz = (p.kit.size || []).slice();
       const ex = clone(p); for (const k of ["id", "at", "rot", "z", "kit"]) delete ex[k];
@@ -172,9 +172,13 @@ export function levelToModel(story, levelName) {
     items.push(it);
   }
   const tr = lvl.trim || {};
+  // the ceiling lights' fitting: "auto" when every room's is the one its size picks (or it has none yet: an older level's
+  // bulb, a fitting from now on), else the one they were given
+  const fl = lvl.rooms.flatMap(r => (r.props || []).filter(p => p.id === `${r.id}_fx_light` && p.kit).map(p => [r, typeof p.kit === "string" ? p.kit : p.kit.preset]));
   const finish = { skirting: tr.skirting || 0, cornice: tr.cornice || 0, casing: tr.casing || 0, threshold: tr.threshold || 0,
                    lights: lvl.rooms.some(r => (r.props || []).some(p => p.id === `${r.id}_fx_light`)),
-                   switches: lvl.rooms.some(r => (r.props || []).some(p => p.id === `${r.id}_fx_switch`)) };
+                   switches: lvl.rooms.some(r => (r.props || []).some(p => p.id === `${r.id}_fx_switch`)),
+                   light_fitting: fl.every(([r, k]) => k === autoFitting(r.size[0] * r.size[1])) ? "auto" : fl[0][1] };
   return { rooms, ops, items, kits, floors: floors.length ? floors : [0], finish, player, her, levelExtra, startId: lvl.start || "start", problems: [] };
 }
 
@@ -290,8 +294,14 @@ export function modelToLevel(model, story) {
     const extra = [];
     if (r.fixtures) extra.push(...placeFixtures(model, r));
     if (fin.lights && r.ceiling && !OUTDOOR.has(r.kind) && !["closet", "oshiire", "storage"].includes(r.kind)) {
+      // its fitting (a round LED, by the room's size or the one picked in Finish): flush under the ceiling, or under a
+      // ceiling step; the light itself just under it (plan.py); the Godot export draws the fitting, no light source
+      const fit = fin.light_fitting && fin.light_fitting !== "auto" ? fin.light_fitting : autoFitting(area(r));
+      let fh = 0.03, step = 0;
+      try { fh = kitFull({ preset: fit }).size[2]; } catch (e) { }
+      try { if (r.ceilKit && r.ceiling) step = kitFull(r.ceilKit).size[2]; } catch (e) { }
       extra.push({ id: `${r.id}_fx_light`, use: "light", kind: "bulb", lit: !["off", "dark"].includes(r.light), at: [r3(r.w / 2), r3(r.d / 2)],
-                   z: r3(r.h - 0.08), kelvin: LIGHT_K[r.kind] || 3000, lumens: Math.round(Math.min(4000, 250 * area(r))) });
+                   z: r3(r.h - step - fh), kit: fit, kelvin: LIGHT_K[r.kind] || 3000, lumens: Math.round(Math.min(4000, 250 * area(r))) });
       if (fin.switches) { const sw = switchFor(model, r); if (sw) extra.push(sw); }
     }
     for (const it of (model.items || []).filter(i => i.room === r.id)) extra.push(itemProp(r, it));
@@ -305,6 +315,15 @@ export function modelToLevel(model, story) {
     }
     frames.filter(f => f.host.room === r).forEach((f, i) => { const fp = frameProp(r, f, `${r.id}_fx_win${i + 1}`, problems); if (fp) extra.push(fp); });
     if (r.kind === "stairs" && r.fixtures) { const st = stairsProp(model, r); if (st) extra.push(st); else problems.push(`${r.id}: stairs need a floor above (add one)`); }
+    // the fittings the finish makes (<room>_fx_*: built-ins, the switch, the stairs, a kit floor) are made again on every
+    // export; what's painted on one (its `mats`, `mat`) is kept on its entry in the room's props, as read back or as the
+    // scene builder's Paint left it, and goes onto the fitting made (a window's frame keeps its own on the window)
+    for (const q of extra) {
+      if (!q.id.startsWith(r.id + "_fx_") || /_fx_win\d+$/.test(q.id)) continue;
+      const src = (r.extra.props || []).find(x => x.id === q.id);
+      if (src && src.mats) q.mats = clone(src.mats);
+      if (src && src.mat) q.mat = clone(src.mat);
+    }
     if (extra.length) d.props = (d.props || []).concat(extra);
   }
   for (const d of Object.values(out)) if (!d.openings.length) delete d.openings;
@@ -515,7 +534,9 @@ function frameProp(r, { op, host }, id, problems) {
   const off = stool / 2, a = host.at, sill = op.z - r.z + (op.sill || 0);
   const at = host.wall === "n" ? [a, r.d - off] : host.wall === "s" ? [a, off] : host.wall === "e" ? [r.w - off, a] : [off, a];
   const k = clone(op.frame); k.size = [r3(op.w), r3(d), r3(op.h + st)]; k.wall = T;
-  return { id, kit: k, at: at.map(r3), rot: FACE[host.wall], z: r3(sill - st), in_wall: true, of: op.id };
+  const out = { id, kit: k, at: at.map(r3), rot: FACE[host.wall], z: r3(sill - st), in_wall: true, of: op.id };
+  if (op.frameDress && op.frameDress.mats) out.mats = clone(op.frameDress.mats);    // its slots painted (Paint), kept on the window
+  return out;
 }
 // a light switch by the first doorway into the room, on the room's side, past the door's casing
 function switchFor(model, r) {

@@ -1,0 +1,16 @@
+{
+ "maps": {
+  "ao": "Bamboo001C_1K-PNG_AmbientOcclusion.png",
+  "albedo": "Bamboo001C_1K-PNG_Color.png",
+  "height": "Bamboo001C_1K-PNG_Displacement.png",
+  "normal": "Bamboo001C_1K-PNG_NormalGL.png",
+  "opacity": "Bamboo001C_1K-PNG_Opacity.png",
+  "rough": "Bamboo001C_1K-PNG_Roughness.png"
+ },
+ "normal": "gl",
+ "tile_m": 0.5,
+ "source": "ambientCG",
+ "url": "https://ambientcg.com/view?id=Bamboo001C",
+ "licence": "CC0-1.0",
+ "label": "bamboo poles"
+}

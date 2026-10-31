@@ -119,3 +119,17 @@ export function albedoTexture(atlas, rgba) {
   const t = new THREE.CanvasTexture(c); t.wrapS = THREE.RepeatWrapping; t.flipY = false; t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
+// the atlas's own numbers for a file (G each strand's random number, B its clump's), opaque so the canvas keeps them
+// exactly (its coverage is the albedo's alpha): what a runtime's hair shader reads per strand (Godot's HSHair: the
+// highlight's shift, the glints). It rides in the material's occlusion slot, R a faint shade per strand (0.8 to 1), so a
+// plain viewer only darkens some strands' ambient a little (the emissive slot glowed: Godot's importer lights an
+// emissive texture though glTF's emissive colour is black by default); `studioHair` in the material's extras says so
+export function strandsTexture(atlas) {
+  const rgba = new Uint8ClampedArray(atlas.W * atlas.H * 4);
+  for (let i = 0; i < atlas.W * atlas.H; i++) { rgba[i * 4] = 204 + Math.round(atlas.data[i * 4] * 0.2); rgba[i * 4 + 1] = atlas.data[i * 4 + 1]; rgba[i * 4 + 2] = atlas.data[i * 4 + 2]; rgba[i * 4 + 3] = 255; }
+  const t = albedoTexture(atlas, rgba); t.colorSpace = THREE.NoColorSpace;
+  return t;
+}
+export const STUDIO_HAIR = { version: 1, strands: "occlusionTexture (R a faint shade per strand, 0.8 to 1; G each strand's random number; B its clump's)",
+  tangent: "along the strand, root to tip", normal: "the hair volume's shell normal (tools/character/hairvolume.js), both faces lit by it",
+  uv1: "x across the card (0 one edge, 1 the other), y the occlusion (1 open)", uv: "v from the root (0) to the tip (1)" };

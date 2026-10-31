@@ -54,8 +54,6 @@ SALON_FILES = {"salon.json", "salon_bake.json", "salon.glb", "salon_base.glb"}  
 HAIR_FILES = SALON_FILES
 REFS = HAIR / "References"                                       # the salon's locked references (tools/gshair.py reference)
 REF_RUNS = {}
-
-
 def ref_status(name):
     d = REFS / name; p = REF_RUNS.get(name)
     running = p is not None and p.poll() is None
@@ -218,6 +216,14 @@ class Handler(BaseHTTPRequestHandler):
         if parts[:3] == ["api", "clothes", "thumbs"] and len(parts) == 4 and clean(parts[3]) and parts[3].endswith((".jpg", ".png")):   # an outfit's or a design's picture (tailor/thumbs.mjs)
             f = CLOTHES / "thumbs" / clean(parts[3])
             return self.send(200, f.read_bytes(), "image/jpeg" if f.suffix == ".jpg" else "image/png") if f.is_file() else self.send(404, {"error": "no picture yet: node tools/character/tailor/thumbs.mjs"})
+        if parts[:2] == ["api", "pbrfolders"]:             # the folders of yours attached to the shelf (ASSETS §6)
+            return self.send(200, {"folders": [dict(f, there=Path(f["path"]).is_dir()) for f in PBR.attached()], "root": str(PBR.ROOT)})
+        if parts[:2] == ["api", "pbrbrowse"]:              # a folder's subfolders, to pick one to attach
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            try:
+                return self.send(200, PBR.browse((q.get("path") or [None])[0]))
+            except (ValueError, OSError) as e:
+                return self.send(400, {"error": str(e)})
         if parts[:2] == ["api", "pbr"]:                    # the shelf (assets/pbr), scanned: {root, sets: {ref: {maps: {albedo: file...},
             sets = PBR.scan()                                 # tile_m, normal, orm, files, by_hand...}}} for PBR fills, clothes, pbr.html
             for ref, m in sets.items():
@@ -225,7 +231,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, {"root": str(PBR.ROOT), "sets": sets})
         if parts[0] in ("pbrfile", "pbr") and len(parts) >= 3:   # /pbrfile/<set path>/<file> (or /pbr/..., as the shelf page asks)
             rel = [urllib.parse.unquote(p) for p in parts[1:]]
-            f = PBR.set_dir("pbr/" + "/".join(rel[:-1])) / rel[-1] if ".." not in rel and all(rel) else None
+            f = PBR.own_file("pbr/" + "/".join(rel[:-1]), rel[-1]) if ".." not in rel and all(rel) else None
             return self.send(200, f.read_bytes(), TYPES.get(f.suffix.lower(), "image/jpeg")) if f and f.is_file() and f.suffix.lower() in PBR.WEB else self.send(404, {"error": "no such map"})
         if parts[0] in ("pbr.html", "pbr.js") and len(parts) == 1:   # the PBR shelf page (the desk's: one viewer for both), back to here
             page = (ROOT / "tools" / "director" / parts[0]).read_text(encoding="utf-8")
@@ -294,6 +300,13 @@ class Handler(BaseHTTPRequestHandler):
             if data:                                                           # an empty body clears the slot
                 (d / (parts[3] + ext)).write_bytes(data)
             return self.send(200, {"ok": True})
+        if parts[:2] == ["api", "pbrfolders"]:                                   # {"attach": path, "name": n} or {"detach": name}
+            body = json.loads(self.body().decode("utf-8") or "{}")
+            try:
+                rows = PBR.detach(body["detach"]) if body.get("detach") else PBR.attach(body.get("attach"), body.get("name") or None)
+                return self.send(200, {"folders": rows, "sets": len(PBR.scan(write=False))})
+            except (ValueError, OSError, KeyError) as e:
+                return self.send(400, {"error": str(e)})
         if parts[:2] == ["api", "pbr"] and len(parts) >= 4 and Path(parts[-1]).suffix.lower() in PBR.IMG:   # /api/pbr/<set path>/<file>:
             rel = [clean(p) for p in parts[2:]]                                    # a map into the shelf (a set from files)
             if not all(rel) or Path(rel[-1]).suffix.lower() not in PBR.WEB:

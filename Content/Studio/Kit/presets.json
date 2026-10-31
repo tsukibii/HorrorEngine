@@ -2457,6 +2457,53 @@
     0.022
    ],
    "style": "tealight"
+  },
+  "led_flush_300": {
+   "label": "Round LED, flush 300",
+   "type": "downlight",
+   "size": [
+    0.3,
+    0.3,
+    0.035
+   ],
+   "style": "flush",
+   "trim": 0.012,
+   "lens_in": 0.002
+  },
+  "led_flush_450": {
+   "label": "Round LED, flush 450",
+   "type": "downlight",
+   "size": [
+    0.45,
+    0.45,
+    0.04
+   ],
+   "style": "flush",
+   "trim": 0.014,
+   "lens_in": 0.002
+  },
+  "led_dome_500": {
+   "label": "Round LED, dome 500 (シーリングライト)",
+   "type": "downlight",
+   "size": [
+    0.5,
+    0.5,
+    0.09
+   ],
+   "style": "dome",
+   "trim": 0.016
+  },
+  "led_ring_600": {
+   "label": "Round LED, ring 600",
+   "type": "downlight",
+   "size": [
+    0.6,
+    0.6,
+    0.04
+   ],
+   "style": "ring",
+   "trim": 0.02,
+   "lens_in": 0.003
   }
  }
 }

@@ -1,0 +1,15 @@
+{
+ "maps": {
+  "ao": "Moss002_1K-PNG_AmbientOcclusion.png",
+  "albedo": "Moss002_1K-PNG_Color.png",
+  "height": "Moss002_1K-PNG_Displacement.png",
+  "normal": "Moss002_1K-PNG_NormalGL.png",
+  "rough": "Moss002_1K-PNG_Roughness.png"
+ },
+ "normal": "gl",
+ "tile_m": 1.0,
+ "source": "ambientCG",
+ "url": "https://ambientcg.com/view?id=Moss002",
+ "licence": "CC0-1.0",
+ "label": "moss"
+}

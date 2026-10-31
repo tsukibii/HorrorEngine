@@ -131,6 +131,36 @@ A room prop carries a kit in place of a shape: a preset's name, or an object wit
 The checks treat floors, rugs and ceiling steps as surfaces: walked over or under, never bumped. They treat window
 frames as part of their wall. Everything else is checked like any prop: overlaps, walls, doorway clearance.
 
+**Round LED fittings** (2026-10-31, the user: "lights as furniture, rounded LEDs: a circular rim with a glass circle,
+and those kinds of variations"): the `downlight` type's `style` (round): `recessed` (the trim ring with its glass set in:
+`downlight_100`, `downlight_150`), `flush` (a slim drum, its frosted face nearly level with the rim: `led_flush_300`,
+`led_flush_450`), `dome` (a shallow rim with a domed diffuser under it, a シーリングライト: `led_dome_500`), `ring` (a glowing
+annulus between the rim and a hub: `led_ring_600`). The glass is the `emit` slot, the rim the trim material (`slot`,
+white). A story light with one as its `kit` is a fitting (STORY_FORMAT §2, `light`): the scene builder puts one on every
+ceiling it lights.
+
+**Its slots dressed** (2026-10-31): `"mats": {"fabric": "pbr/...", "white": {"set": "pbr/...", "tint": "#..."}}` puts a
+PBR set, a colour or a tuned set on any of its material slots (a slot's tones, `wood_2`..., follow `wood`), laid by the
+kit's UVs, which are metres (`uvFor`'s box projection), so a set keeps its real size. The scene builder's Paint writes
+it with a click on the thing; the desk draws it (stage.js `dressSlots`); the Godot export gives the instanced kit mesh
+the game's `<Name>_uv.tres` for each (GODOT_EXPORT §3b); KIT checks every painted piece of every game's plan names slots
+its kit builds (a kit door's `mats` over its leaf, handle and frame together). The fittings the scene builder makes
+(`<room>_fx_*`: switches, built-ins; window frames, `<room>_fx_win<n>`) and kit doors take it the same way (a plain
+door, `mat`): SCENE_BUILDER §9.
+
+**Floors laid out by their set** (2026-10-31, the user: "make the floors take a material"): a floor (`tiles`, `planks`,
+`tatami`; or wall tiles) whose main slot (`tile`, `wood`, `tatami`: its `slot`) wears a set that paints its own tiles,
+boards or mats takes that set's layout. The plan (plan.py `fitted`) adds the set's **cells** to the spec
+(storykit/pbrcells.py, ASSETS §6: one repeat's rectangles, as fractions of its `tile` metres), and kit.js lays them over
+the floor from its corner in place of the kit's own pattern: every board where the set paints one, the set laid
+straight across them all (no cut of its own per board), so its seams fall in the boards' real gaps, which keep their
+width, depth, bevels and unevenness. A set laid finer than 1200 boards on that floor (a mosaic) is laid `whole`, one
+board under it all. A set with no layout of its own (grain, a weave, plaster) leaves the kit's pattern, each board its
+own cut of it. `cells` is the plan's, never written in a story (kit.js `PLANNED`: what a spec carries beyond its
+numbers); its hash names its own mesh, the same in node and python. The desk, the scene builder and the Godot export
+all build from the plan's spec; KIT lays the shelf's pavers and tatami mats on tiles, a turned floor, wall tiles and
+tatami, every board inside one of the set's cells and the set's UVs straight, a mosaic laid whole.
+
 ## 5. Into Unreal
 
 `storykit.importer.build(G)` first plans the game and runs `node tools/kit/build.mjs --specs` on every kit mesh it

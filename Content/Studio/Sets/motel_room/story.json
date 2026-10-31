@@ -1,0 +1,264 @@
+{
+ "format": 3,
+ "game": {
+  "id": "motel_room",
+  "title": "Motel room (one of a row, its door on the walkway)",
+  "start": "n_start",
+  "target_min": 0,
+  "voice": "ja",
+  "text": "en",
+  "clip_max": 8,
+  "subtitles": [
+   "en",
+   "zh"
+  ],
+  "built_with": {
+   "engine": "0.6.0",
+   "format": 3
+  }
+ },
+ "cast": {
+  "someone": {
+   "name": "Someone",
+   "metahuman": null,
+   "height": 1.7
+  }
+ },
+ "items": {},
+ "notes": {},
+ "lines": {},
+ "sounds": {},
+ "levels": {
+  "motel_room": {
+   "start": "start",
+   "rooms": [
+    {
+     "id": "room",
+     "kind": "bedroom",
+     "name": "Room",
+     "at": [
+      0,
+      0,
+      0
+     ],
+     "size": [
+      3.6,
+      4.6,
+      2.5
+     ],
+     "floor": "carpet",
+     "light": "dim",
+     "openings": [
+      {
+       "wall": "s",
+       "at": 0.8,
+       "w": 0.85,
+       "h": 2.05,
+       "door": {
+        "id": "motel_door",
+        "swing": "in",
+        "latch": true,
+        "peephole": true
+       }
+      },
+      {
+       "wall": "s",
+       "at": 2.45,
+       "w": 1.4,
+       "h": 1.1,
+       "sill": 0.9,
+       "window": true
+      },
+      {
+       "wall": "n",
+       "at": 0.95,
+       "w": 0.7,
+       "h": 2.0,
+       "door": {
+        "id": "bath_door",
+        "swing": "in"
+       }
+      },
+      {
+       "wall": "n",
+       "at": 2.75,
+       "w": 0.9,
+       "h": 2.0,
+       "door": {
+        "id": "closet_door",
+        "swing": "slide"
+       }
+      }
+     ],
+     "props": [
+      {
+       "id": "start",
+       "use": "spot",
+       "at": [
+        0.8,
+        0.9
+       ],
+       "rot": 90
+      },
+      {
+       "id": "someone_spot",
+       "use": "spot",
+       "at": [
+        1.8,
+        3.2
+       ],
+       "rot": 270
+      },
+      {
+       "id": "room_lamp",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        1.8,
+        2.3
+       ],
+       "z": 2.4
+      },
+      {
+       "id": "bed",
+       "use": "sleep",
+       "at": [
+        2.5,
+        3.2
+       ],
+       "size": [
+        1.4,
+        2.0,
+        0.5
+       ]
+      }
+     ]
+    },
+    {
+     "id": "bath",
+     "kind": "washroom",
+     "name": "Bath",
+     "at": [
+      0,
+      4.6,
+      0
+     ],
+     "size": [
+      1.9,
+      1.6,
+      2.4
+     ],
+     "floor": "tile",
+     "light": "dim",
+     "skip": [
+      "s"
+     ],
+     "openings": [
+      {
+       "wall": "n",
+       "at": 0.95,
+       "w": 0.6,
+       "h": 0.5,
+       "sill": 1.5,
+       "window": true
+      }
+     ],
+     "props": []
+    },
+    {
+     "id": "closet",
+     "kind": "closet",
+     "at": [
+      1.9,
+      4.6,
+      0
+     ],
+     "size": [
+      1.7,
+      1.6,
+      2.4
+     ],
+     "floor": "wood",
+     "light": "dark",
+     "skip": [
+      "s",
+      "w"
+     ],
+     "openings": [],
+     "props": []
+    }
+   ],
+   "links": []
+  }
+ },
+ "scenes": {
+  "s_first": {
+   "title": "First words",
+   "level": "motel_room",
+   "stage": {
+    "someone": "someone_spot"
+   },
+   "view": "start",
+   "camera": {
+    "mode": "soft",
+    "look": "someone",
+    "cone": [
+     30,
+     18
+    ]
+   },
+   "clips": [
+    {
+     "id": "c1",
+     "who": "someone",
+     "ja": "……",
+     "en": "...",
+     "act": "looks up"
+    }
+   ]
+  }
+ },
+ "stitches": {
+  "t_start": {
+   "title": "Start",
+   "level": "motel_room",
+   "beats": [
+    {
+     "id": "b_start",
+     "when": {
+      "start": true
+     },
+     "do": [
+      {
+       "fade": "in",
+       "secs": 2
+      },
+      {
+       "done": true
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "flow": {
+  "n_start": {
+   "type": "stitch",
+   "ref": "t_start",
+   "next": "n_first"
+  },
+  "n_first": {
+   "type": "scene",
+   "ref": "s_first",
+   "next": "e_end",
+   "final": true
+  },
+  "e_end": {
+   "type": "ending",
+   "kind": "good",
+   "title": "The end"
+  }
+ },
+ "secrets": {}
+}

@@ -3,7 +3,11 @@
 // a reference cut-out and the kit (furniture, fittings, floors, a ceiling step, window frames, curtains) pass and
 // read back; a layout saves into a scratch game (made and removed here) and reads back the same; the desk reloads,
 // another game's level is borrowed, a set (a place designed before its game) is made from the picker, laid out, saved
-// into Content/Studio/Sets and taken by a game as its start, the desk's deep link shows its marks. Ends "BUILDER ok".
+// into Content/Studio/Sets and taken by a game as its start, its outside (a street style, a fitting) drawn round it and
+// saved in its level (and painted), the desk's deep link shows its marks; Paint (the paint bucket) on a room's floor,
+// tuned, its walls lined, picked up, a sofa's fabric, a switch (every switch), a door, a window frame, kept through a
+// read back; the ceiling lights as round LED fittings (a rim painted, the glass not, a fitting picked for all), undone.
+// Ends "BUILDER ok".
 //
 //   python tools/director/serve.py          (in another shell)
 //   node tools/director/buildertest.js [shots dir]
@@ -282,6 +286,34 @@ const png = rgb => {                    // a 4x4 PNG of one colour (a scratch ma
     const setLevel = setSaved && Object.keys(setSaved.levels).find(k => k.startsWith("home_1ldk"));
     console.log("set", SETNAME, setSaved ? Object.keys(setSaved.levels).join(",") : "not saved");
     if (!setLevel || setSaved.levels[setLevel].rooms.length < 4) fail("the set wasn't saved with its layout: " + (setSaved ? Object.keys(setSaved.levels) : "no file"));
+    // its outside (docs/SCENE_BUILDER.md §8): "build its outside", a street style, a fitting on a wall; the building
+    // drawn round the rooms in the view (round the building), its outline on the plan; saved in the level and read back
+    await page.evaluate(() => { document.querySelector("#outside input[type=checkbox]").click(); });
+    await page.evaluate(() => { const s = document.querySelector("#outside select"); s.value = "house"; s.dispatchEvent(new Event("change")); });
+    await page.evaluate(() => { const s = [...document.querySelectorAll("#outside select")].pop(); s.value = "ac"; s.dispatchEvent(new Event("change")); });
+    await page.evaluate(() => { const v = document.querySelector("#viewMode"); v.value = "around"; v.dispatchEvent(new Event("change")); });
+    await page.waitForTimeout(1200);
+    const outside = await page.evaluate(() => { let meshes = 0, lit = 0; window.__builderStage.scene.traverse(o => { if (o.isMesh && o.userData.outside) meshes++; });
+      return { o: window.B.model.levelExtra.outside, meshes, outline: document.querySelectorAll("#plan .outside-line").length, hud: document.querySelector("#viewHud").textContent, lit }; });
+    if (shots) await page.screenshot({ path: path.join(shots, "outside.png") });
+    // Paint on the outside (SCENE_BUILDER §9): a set on the slot under the click, round the building
+    const outPaint = await page.evaluate(() => {
+      const P = window.builder.paint; P.on(true); P.brush("pbr/wall/Plaster001_1K-PNG");
+      let t = null; for (const [fx, fy] of [[0.5, 0.6], [0.5, 0.5], [0.45, 0.65], [0.55, 0.65], [0.5, 0.7]]) { const h = P.targetAt(fx, fy); if (h && h.kind === "outside") { t = P.at(fx, fy); break; } }
+      P.on(false);
+      return { t, look: Object.assign({}, (window.B.model.levelExtra.outside || {}).look) };
+    });
+    await page.evaluate(() => window.builder.save(false));
+    await page.waitForTimeout(800);
+    const outSaved = (JSON.parse(fs.readFileSync(setFile, "utf8")).levels[setLevel] || {}).outside || null;
+    console.log("outside painted", JSON.stringify(outPaint), "saved", JSON.stringify((outSaved || {}).look));
+    if (!outPaint.t || outPaint.look[outPaint.t.slot] !== "pbr/wall/Plaster001_1K-PNG" || ((outSaved || {}).look || {})[outPaint.t.slot] !== "pbr/wall/Plaster001_1K-PNG")
+      fail("painting the outside: " + JSON.stringify({ outPaint, saved: (outSaved || {}).look }));
+    console.log("its outside", JSON.stringify({ style: outside.o && outside.o.style, roof: outside.o && outside.o.roof.kind, parts: outside.o && outside.o.parts.length, meshes: outside.meshes, outline: outside.outline, saved: !!outSaved }));
+    if (!outside.o || outside.o.style !== "house" || outside.o.parts.length !== 1 || outside.meshes < 1 || outside.outline < 1 || !/house/.test(outside.hud))
+      fail("the set's outside in the scene builder: " + JSON.stringify(outside).slice(0, 300));
+    if (!outSaved || outSaved.style !== "house" || !outSaved.roof || (outSaved.parts || [])[0].kind !== "ac") fail("the outside wasn't saved into the set's level: " + JSON.stringify(outSaved));
+    await page.evaluate(() => { const v = document.querySelector("#viewMode"); v.value = "eye"; v.dispatchEvent(new Event("change")); });
     await page.selectOption("#game", SCRATCH);
     await page.waitForFunction(g => window.B.game === g && window.B.story && window.B.story.game.id === g && window.B.plan, SCRATCH, { timeout: 30000 });   // the game's own story in, not the set's
     await page.waitForFunction(n => [...document.querySelectorAll("#preset option")].some(o => o.value.startsWith("oset:" + n + ":")), SETNAME, { timeout: 30000 });
@@ -380,6 +412,129 @@ const png = rgb => {                    // a 4x4 PNG of one colour (a scratch ma
     console.log("pbr buttons", JSON.stringify({ back, worn, kback }));
     if (back[0] !== "?from=builder" || back[1] !== "builder.html" || !worn.metal || !worn.rough || !worn.dx || kback[0] !== "kit.html" || kback[1] !== "kit maker")
       fail("the PBR buttons: " + JSON.stringify({ back, worn, kback }));
+
+    // Paint (SCENE_BUILDER §9; the user, 2026-10-31: the paint bucket in the interiors): a set off the shelf on the LDK's
+    // floor (its kit floor's boards take it, laid out by the set's own mats: "make the floors take a material"; its gaps
+    // their own), tuned (a tint: the server makes the set, the floor and its boards wear it), the LDK's walls (its side
+    // of its neighbours' walls lined with its look), picked up again with Alt (the brush becomes it, tuning it), undone
+    await page.evaluate(() => { window.__plan0 = window.B.plan; window.B.dirty = false; window.builder.openPreset("1ldk"); });
+    await page.waitForFunction(() => window.B.plan && window.B.plan !== window.__plan0 && window.B.model.rooms.some(r => r.kind === "ldk"), null, { timeout: 60000 });   // its own plan, not the last level's
+    await page.waitForTimeout(600);
+    const pt = await page.evaluate(async () => {
+      const B = window.B, P = window.builder.paint, wait = ms => new Promise(r => setTimeout(r, ms));
+      const replanned = async () => { const p0 = B.plan; for (let i = 0; i < 600 && B.plan === p0; i++) await wait(100); return B.plan !== p0; };
+      const r = B.model.rooms.find(x => x.kind === "ldk"), out = { room: r.id, kitBefore: !!r.floorKit, undos: B.undo.length };
+      P.on(true); await wait(300);
+      out.cards = document.querySelectorAll("#lib .card").length;
+      Object.assign(B.model.player, { x: r.x + r.w / 2, y: r.y + r.d / 2, z: r.z, yaw: 90 }); window.builder.pitch(-60);
+      P.brush("pbr/floor/Tatami004_1K-PNG");
+      let fl = null;                                              // the LDK's own floor, wherever it's under the eye
+      for (const yaw of [90, 0, 180, 270]) {
+        Object.assign(B.model.player, { yaw }); window.builder.pitch(-60);
+        for (const [fx, fy] of [[0.5, 0.75], [0.5, 0.85], [0.5, 0.65], [0.4, 0.8], [0.6, 0.8]]) { const t = P.targetAt(fx, fy); if (t && t.part === "floor" && t.room === r.id) { fl = [fx, fy]; break; } }
+        if (fl) break;
+      }
+      out.floor = fl ? P.at(fl[0], fl[1]) : null;
+      out.kitAfter = !!r.floorKit;
+      await replanned();
+      out.fitNote = document.querySelector("#status").textContent;      // how its boards took it, once planned
+      out.tuned = P.tune(b => { b.tint = "#b8a878"; b.contrast = 1.15; });
+      out.replanned = await replanned();
+      out.made = Object.keys(B.plan.made || {});
+      out.floorLook = (r.extra.look || {}).floor;
+      const fstub = (r.extra.props || []).find(q => q.id === `${r.id}_fx_floor`) || {}, fpiece = B.plan.pieces.find(q => q.id === `${r.id}_fx_floor`);
+      out.kitMats = JSON.parse(JSON.stringify(fstub.mats || null));
+      out.kitCells = fpiece && fpiece.kit && fpiece.kit.cells ? (fpiece.kit.cells.rects || []).length : 0;
+      out.gap = P.paintTarget(P.targetOfPiece(`${r.id}_fx_floor`, "gap"), "#3a3028");   // its gaps: only those
+      out.gapMats = JSON.parse(JSON.stringify(fstub.mats || null));
+      await replanned();
+      const kref = (out.made[0] || "none").replace("pbr/", "");          // its boards drawn wearing the made set
+      for (let i = 0; i < 200 && !out.ktex; i++) {
+        window.__builderStage.world.traverse(b => { const p = b.userData && b.userData.piece; if (p && p.id === `${r.id}_fx_floor`) b.traverse(m => {
+          if (m.isMesh && /^wood/.test(m.userData.slot || "") && m.material.map && ((m.material.map.image || {}).src || "").includes(kref)) out.ktex = true; }); });
+        if (!out.ktex) await wait(100);
+      }
+      window.builder.pitch(0);
+      P.brush("pbr/wall/Plaster001_1K-PNG");
+      for (const yaw of [90, 0, 180, 270]) {                       // a wall of the LDK's, wherever it's in view
+        Object.assign(B.model.player, { yaw }); window.builder.pitch(0);
+        for (const fx of [0.92, 0.85, 0.15, 0.08, 0.5]) { const t = P.targetAt(fx, 0.5); if (t && t.part === "walls" && t.room === r.id) { out.walls = P.at(fx, 0.5); out.at = [yaw, fx]; break; } }
+        if (out.walls) break;
+      }
+      await replanned();
+      const lin = B.plan.pieces.filter(q => q.tags.includes("trim:lining"));         // each side of a shared wall its own room's
+      out.linings = lin.length;
+      out.linedLook = lin.every(q => q.room === r.id ? q.tags.includes("mat:pbr/wall/Plaster001_1K-PNG") : !q.tags.includes("mat:pbr/wall/Plaster001_1K-PNG"));
+      P.brush("pbr/floor/Tatami001_1K-PNG");
+      out.picked = out.at ? (Object.assign(B.model.player, { yaw: out.at[0] }), window.builder.pitch(0), P.at(out.at[1], 0.5, true)) : null;
+      out.brushAfter = P.value(); out.tunes = P.target();
+      // a kit thing's slot: a sofa against the wall, its fabric painted (its `mats`), drawn and tagged
+      window.builder.setKitPreset("kit", "sofa_3"); window.builder.addKit(r.x + r.w / 2, r.y + r.d / 2);
+      const sofa = B.model.kits[B.model.kits.length - 1];
+      for (let i = 0; i < 300 && !(B.plan.pieces || []).some(q => q.id === sofa.id); i++) await wait(100);
+      await wait(400);
+      const rx = sofa.x, ry = sofa.y, toN = ry < r.d / 2;                     // (room space) stand 2 m into the room from it, facing it
+      Object.assign(B.model.player, { x: r.x + rx, y: r.y + ry + (toN ? 2 : -2), z: r.z, yaw: toN ? 270 : 90 }); window.builder.pitch(-25);
+      P.brush("pbr/plastic/black palstic");
+      for (const fy of [0.6, 0.65, 0.7, 0.55, 0.75]) { for (const fx of [0.5, 0.45, 0.55, 0.4, 0.6]) { const t = P.targetAt(fx, fy); if (t && t.kind === "kit" && t.id === sofa.id) { out.sofa = P.at(fx, fy); break; } } if (out.sofa) break; }
+      await replanned();
+      out.sofaMats = JSON.parse(JSON.stringify((B.model.kits.find(k => k.id === sofa.id).extra || {}).mats || null));
+      out.sofaTags = ((B.plan.pieces.find(q => q.id === sofa.id) || {}).tags || []).filter(t => t.startsWith("matslot:"));
+      // the fittings the finish makes and the doors (the user: "the plastic PBR for light switches"): the LDK's switch in
+      // white plastic, then every switch; a door's slab; a window's frame; all kept through a save and a read back
+      const sw = `${r.id}_fx_switch`, swT = P.targetOfPiece(sw, "plastic");
+      out.switch = P.paintTarget(swT, "pbr/plastic/white_plastic");
+      const door = (B.plan.pieces || []).find(q => q.level === B.target && q.kind === "door" && q.room === r.id) || (B.plan.pieces || []).find(q => q.level === B.target && q.kind === "door");
+      const dT = door && P.targetOfPiece(door.id, "front");
+      out.door = dT && P.paintTarget(dT, dT.kind === "kit" ? "pbr/plastic/white_plastic" : "pbr/building/Paint005_1K-PNG");
+      const frame = (B.plan.pieces || []).find(q => q.level === B.target && /_fx_win\d+$/.test(q.id));
+      let fslot = null; if (frame) window.__builderStage.world.traverse(m => { if (!fslot && m.userData.piece && m.userData.piece.id === frame.id) m.traverse(c => { if (!fslot && c.isMesh && c.userData.slot) fslot = String(c.userData.slot).replace(/_\d+$/, ""); }); });
+      out.frame = frame && fslot ? P.paintTarget(P.targetOfPiece(frame.id, fslot), "pbr/metal/Metal063_1K-PNG") : "no frame here";
+      P.scope("all"); out.allSwitches = P.paintTarget(swT, "pbr/plastic/white_plastic"); P.scope("one");
+      await replanned();
+      const lv = B.exported.level, props = lv.rooms.flatMap(x => x.props || []), opsOut = lv.rooms.flatMap(x => (x.openings || []).map(o => o.door).filter(Boolean));
+      out.switchProps = props.filter(q => q.id.endsWith("_fx_switch")).map(q => !!(q.mats && q.mats.plastic));
+      out.doorOut = door ? (opsOut.find(d => d.id === (dT && dT.id)) || {}) : null;
+      out.frameOut = frame && fslot ? ((props.find(q => q.id === frame.id) || {}).mats || null) : "no frame here";
+      out.switchTags = ((B.plan.pieces.find(q => q.id === sw) || {}).tags || []).filter(t => t.startsWith("matslot:"));
+      const back = BM.modelToLevel(BM.levelToModel(Object.assign({}, B.story, { levels: Object.assign({}, B.story.levels, { [B.target]: lv }) }), B.target), B.story).level;
+      const bprops = back.rooms.flatMap(x => x.props || []);
+      // the ceiling lights are fittings (the user: "lights as furniture, rounded LEDs"): a round LED each, by the room's
+      // size, its rim painted, its glass the light's (not painted); a fitting picked in Finish for every room
+      const lightProps = props.filter(q => q.id.endsWith("_fx_light"));
+      out.fittings = { lights: lightProps.length, kits: lightProps.filter(q => q.kit).length, pieces: B.plan.pieces.filter(q => q.level === B.target && q.id.endsWith("_fx_light__fitting")).length };
+      const fitId = `${r.id}_fx_light__fitting`;
+      out.rim = P.paintTarget(P.targetOfPiece(fitId, "white"), "pbr/metal/Metal063_1K-PNG");
+      out.glass = P.targetOfPiece(fitId, "emit");
+      B.model.finish.light_fitting = "led_ring_600"; window.builder.changed();
+      await replanned();
+      out.ring = B.exported.level.rooms.flatMap(x => (x.props || []).filter(q => q.id.endsWith("_fx_light"))).every(q => q.kit === "led_ring_600");
+      out.rimKept = !!(((B.exported.level.rooms.flatMap(x => x.props || []).find(q => q.id === `${r.id}_fx_light`) || {}).mats || {}).white);
+      out.roundTrip = { switch: !!((bprops.find(q => q.id === sw) || {}).mats || {}).plastic,
+        door: door ? JSON.stringify(back.rooms.flatMap(x => (x.openings || []).map(o => o.door).filter(Boolean)).find(d => d.id === (dT && dT.id)) || {}).includes("pbr/") : true,
+        frame: frame && fslot ? !!(bprops.find(q => q.id === frame.id) || {}).mats : true };
+      for (let i = B.undo.length; i > out.undos; i--) window.builder.undo();
+      const now = B.model.rooms.find(x => x.id === r.id);                // undo puts a copy of the model back
+      out.undone = { look: (now.extra || {}).look || null, kit: !!now.floorKit };
+      P.on(false);
+      return out;
+    });
+    const tex = await page.waitForFunction(([room, ref]) => { let hit = false; window.__builderStage.world.traverse(m => {
+      const p = m.userData && m.userData.piece; if (p && p.kind === "floor" && p.room === room && m.material.map && ((m.material.map.image || {}).src || "").includes(ref)) hit = true; });
+      return hit; }, [pt.room, (pt.made[0] || "none").replace("pbr/", "")], { timeout: 20000 }).then(() => true).catch(() => false);
+    console.log("paint", JSON.stringify(Object.assign({}, pt, { tex })));
+    if (pt.cards < 10 || !pt.floor || pt.floor.part !== "floor" || !pt.kitBefore || !pt.kitAfter || !pt.replanned || !pt.made.length || typeof pt.floorLook !== "object"
+        || !pt.kitMats || JSON.stringify(pt.kitMats.wood) !== JSON.stringify(pt.floorLook) || pt.kitCells !== 8 || !/laid where the set's are/.test(pt.fitNote)
+        || !pt.gap || pt.gap.kind !== "kit" || pt.gap.slot !== "gap" || (pt.gapMats || {}).gap !== "#3a3028" || !pt.ktex
+        || !pt.walls || pt.walls.part !== "walls" || !pt.linings || !pt.linedLook || !pt.picked || pt.brushAfter !== "pbr/wall/Plaster001_1K-PNG" || !pt.tunes || pt.tunes.part !== "walls"
+        || pt.undone.look || !pt.undone.kit || !pt.sofa || pt.sofa.kind !== "kit" || !pt.sofaMats || !Object.values(pt.sofaMats).includes("pbr/plastic/black palstic")
+        || !pt.sofaTags.some(t => t.endsWith(":pbr/plastic/black palstic"))
+        || !pt.switch || pt.switch.kind !== "kit" || !pt.switchProps.length || pt.switchProps.some(x => !x) || !pt.switchTags.some(t => t === "matslot:plastic:pbr/plastic/white_plastic")
+        || (pt.door && !(pt.doorOut && (pt.doorOut.mat || pt.doorOut.mats))) || (pt.frame !== "no frame here" && !pt.frameOut)
+        || !pt.roundTrip.switch || !pt.roundTrip.door || !pt.roundTrip.frame
+        || !pt.fittings.lights || pt.fittings.kits !== pt.fittings.lights || pt.fittings.pieces !== pt.fittings.lights || !pt.rim || pt.rim.kind !== "kit"
+        || !pt.glass || pt.glass.kind !== "none" || !pt.ring || !pt.rimKept)
+      fail("Paint in the scene builder: " + JSON.stringify(pt));
   } finally {
     if (setDir) fs.rmSync(setDir, { recursive: true, force: true });
     fs.rmSync(path.join(ROOT, "Content/Studio/Sets", SETNAME), { recursive: true, force: true });

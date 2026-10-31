@@ -83,6 +83,8 @@ Content/Studio/Library/index/kit.json
 
 # meshes of yours (the scene builder's split hinges, anything you add as local/): not CC0, so not shared
 Content/Studio/Library/meshes/local/
+# the prop generator's game meshes (tools/propgen.py make --library, or library: made again from their recipes); index/props.json ships
+Content/Studio/Library/meshes/props/
 Content/Studio/Library/index/local.json
 
 # the PBR shelf (docs/ASSETS.md §6): your texture sets in assets/pbr/, a folder each, too big for git: nothing in it is
@@ -114,3 +116,15 @@ playtest_fail.png
 testroom_fail.png
 exprtest_fail.png
 vendor/garmentcode/
+
+# the street builder's photos (pasted references, mostly not ours): beside each street, never in git
+Content/Studio/Streets/*/refs/
+
+# the street decals (tools/streetbake/decals.py: `street.py decals`): made from code, too many to keep in git
+assets/decals/
+
+# the project's own PBR sets are in git (pbr/), their thumbnails made by a scan are not
+pbr/**/_thumb.jpg
+vendor/**/*.blend
+vendor/human_base_meshes/
+

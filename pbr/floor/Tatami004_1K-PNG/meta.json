@@ -1,0 +1,15 @@
+{
+ "maps": {
+  "ao": "Tatami004_1K-PNG_AmbientOcclusion.png",
+  "albedo": "Tatami004_1K-PNG_Color.png",
+  "height": "Tatami004_1K-PNG_Displacement.png",
+  "normal": "Tatami004_1K-PNG_NormalGL.png",
+  "rough": "Tatami004_1K-PNG_Roughness.png"
+ },
+ "normal": "gl",
+ "tile_m": 3.6,
+ "source": "ambientCG",
+ "url": "https://ambientcg.com/view?id=Tatami004",
+ "licence": "CC0-1.0",
+ "label": "tatami mats"
+}

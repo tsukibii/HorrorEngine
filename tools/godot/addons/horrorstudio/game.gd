@@ -161,6 +161,10 @@ func enter_level(lid: String, fresh: bool = false) -> void:
 	var ps: PackedScene = load("res://game/levels/%s.tscn" % lid)
 	level = ps.instantiate()
 	world.add_child(level)
+	if ResourceLoader.exists("res://addons/horrorstudio_look/liquid.gd"):   # liquids in made props stay level (docs/PROPGEN.md §10)
+		load("res://addons/horrorstudio_look/liquid.gd").auto(level)
+	if ResourceLoader.exists("res://addons/horrorstudio_look/nodes/prop_fx.gd"):   # their glow, flames, smoke and wax (§14)
+		load("res://addons/horrorstudio_look/nodes/prop_fx.gd").auto(level)
 	level_id = lid
 	things.clear()
 	for n in pieces():

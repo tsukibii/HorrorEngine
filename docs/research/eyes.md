@@ -246,6 +246,45 @@ few angles would be the ground truth to measure steps 1 to 3 against, as BLENDER
 - Whether MetaHuman's DCC Export carries the eye's textures.
 - Whether GNM's "eye exterior" is a cornea shell (eyes_mouth_skin.md's open question) is still open.
 
+## 7. MetaHuman's eyes, brows and lashes, measured (2026-10-31)
+
+The user's ask (DECISIONS 2026-10-31): the eyes "too stylized/dolly" and popping out next to MetaHuman's, the lashes
+poking out and too long, the brows to refine; the iris patterns kept. Their three references: Quixel Bridge's
+MetaHuman presets (eight faces at about 40 px an eye), MetaHuman Creator's Hana (about 45 px) and the "I am
+MetaHuman" still (two faces at 50 to 75 px an eye). Measured from luminance profiles through each eye (linear light,
+`Saved/_scratch/eyes/prof.py`; the numbers are the picture's, after Epic's tone curve), against our test character
+(skin `#a8775a`) in the Character Studio and in Godot, framed the same way (`portrait.gd --shots=front,eyes`).
+
+| | MetaHuman (the references) | Ours before (2026-10-31) |
+| --- | --- | --- |
+| The iris across the opening | 0.46 to 0.54 of the corner-to-corner width | 0.47 (the Studio) |
+| The iris hidden by the lids | a third or more, most under the upper lid; the lower lid touches it | about 40% |
+| The white against the lit skin beside the eye | 0.3 to 0.5 on light skin (the blonde 0.075 to 0.11 against 0.22 to 0.27; the Asian woman 0.13 to 0.19 against 0.25 to 0.37; the man 0.04 against 0.13 to 0.16); 2.5 times on dark skin (0.06 to 0.125 against 0.03 to 0.05) | the Studio 5.7 (the reference light), Godot pure white |
+| The white's own brightness, the light taken out | about 0.2 of a white card's (the same on light and dark skin) | 0.8 |
+| The white's shading | darkest under the upper lid and in the corners, brightest low beside the iris (the blonde's, top to bottom: 0.03 to 0.17) | even |
+| The catchlight | one small soft dot on the upper iris, about 15% of the iris across | Godot: a flat white ellipse over a third of the iris; the Studio: the room's windows |
+| The lashes from the front | a dark line along the lid, 4 to 7% of the eye's width (1.5 to 2 mm), a little longer at the outer corner; no tips seen | a fan of black spikes 35 to 40% of the eye's width above the lid, longer at the outer corner (Godot: each hair a black pixel wide) |
+| The lower lashes | not seen | a row of black stubs a little below the lid |
+| The brows | a soft band 0.2 to 0.3 of the eye's width tall (6 to 9 mm), its edges soft over 2 to 3 mm, 0.15 to 0.45 of the forehead's brightness by the hair's colour, about 1.5 eye widths long | thin, sparse, scratchy (Godot: black pen lines) |
+
+
+**Why ours glowed** (the "pops out"): the white's paint was nearly paper (`#ece8e5`, 0.84 linear) and nothing but a
+narrow band at each lid darkened it; MetaHuman's eye occlusion and the socket keep the white at a fifth of a card's
+brightness. In Godot, too: the cornea's clear coat took the iris's bowl normal (Godot has no separate coat normal), so
+the catchlight spread into a flat ellipse, the coat was a plastic's (0.04, the cornea's is 0.025), and a pinpoint's
+reflection bloomed. The lashes: realistic in millimetres (0.1 mm hairs, 8.5 mm long) but drawn as whole pixels (a
+cut-out alpha makes a hair a third of a pixel wide a black pixel), lifted up (so their whole length showed from the
+front), flared at the outer corner and long; the lower lashes pointed down the skin.
+
+**Where it went** (the user then chose the add-on for the brows and lashes, since removed, and asked for eyes that close
+without clipping and whites that aren't paint: GODOT_LOOK §5f): the eye's **Socket shade** (`socket`, eye.js and HSEye:
+the white and its shine darker all over, more toward the brow and into the corners, the iris a little; lighting, not
+paint, so it's in the export's record and Godot puts it back); Godot's eye lit by its own `light()` (the iris's diffuse
+on its bowl, the coat and the white's shine on the surface's own normal, a catchlight's size, a cap); the cornea's
+coat at its own reflectance; in Godot the white at 0.58 and warm toward the corners (against the skin under the eye
+0.83 to 0.96, it was 1.3 to 1.8); the add-on's brows and lashes, tidied (no stubs, clear of the eye, the lower ones a soft
+fringe), drawn at their true coverage (`hair_fine.gdshader`); the blink in the file and the tear line.
+
 ## Sources
 
 Read directly:

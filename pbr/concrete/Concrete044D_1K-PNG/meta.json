@@ -1,0 +1,16 @@
+{
+ "maps": {
+  "ao": "Concrete044D_1K-PNG_AmbientOcclusion.png",
+  "albedo": "Concrete044D_1K-PNG_Color.png",
+  "height": "Concrete044D_1K-PNG_Displacement.png",
+  "metal": "Concrete044D_1K-PNG_Metalness.png",
+  "normal": "Concrete044D_1K-PNG_NormalGL.png",
+  "rough": "Concrete044D_1K-PNG_Roughness.png"
+ },
+ "normal": "gl",
+ "tile_m": 2.5,
+ "source": "ambientCG",
+ "url": "https://ambientcg.com/view?id=Concrete044D",
+ "licence": "CC0-1.0",
+ "label": "concrete, pitted"
+}

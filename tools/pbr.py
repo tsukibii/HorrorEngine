@@ -170,6 +170,35 @@ _DEMO = {"worn_planks": 2.4, "grimy_brick": 1.6, "stained_plaster": 2.5, "cracke
 
 
 # ---- the check ----------------------------------------------------------------------------------------------------
+def check_cells(ok, bad):
+    """A set's own layout (storykit/pbrcells.py, ASSETS §6c) on the project's sets in git: the tatami mats and the pavers
+    found as their cells, tiling the repeat, a turned and scaled look's turned with it; the plain ones none."""
+    try:
+        from storykit import pbrcells as CELLS
+        import numpy  # noqa: F401
+    except ImportError:
+        bad.append("a set's cells need numpy and Pillow")
+        return
+    tat = "pbr/floor/Tatami004_1K-PNG"
+    for ref, want in ((tat, 8), ("pbr/concrete/Concrete010_1K-PNG", 64), ("pbr/floor/Tatami001_1K-PNG", 0),
+                      ("pbr/wall/Plaster001_1K-PNG", 0), ("pbr/building/black marble", 0), ("pbr/metal/Metal063_1K-PNG", 0)):
+        c = CELLS.cells(ref)
+        got = len(c["rects"]) if c else 0
+        ok(got == want, f"{ref}: {got} cells, not {want}" + ("" if c else f" ({CELLS.why(ref)})"))
+    c = CELLS.cells(tat)
+    if not c:
+        return
+    area = sum((r[2] - r[0]) * (r[3] - r[1]) for r in c["rects"])
+    ok(abs(area - 1) < 0.02, f"{tat}'s cells cover {area:.3f} of its repeat")
+    ok(all(abs(max(r[2] - r[0], r[3] - r[1]) / min(r[2] - r[0], r[3] - r[1]) - 2) < 0.1 for r in c["rects"]), "its mats are twice as long as they're wide")
+    ok(c["tile"] == 3.6 and 0 < c["seam"] < 0.03, f"its tile {c['tile']} m, seam {c['seam']} m")
+    t = CELLS.cells({"set": tat, "turn": 90, "scale": 0.5})                 # a quarter turn anticlockwise: (u, v) -> (1 - v, u)
+    want = sorted([round((1 - r[3]) % 1, 2), round(r[0] % 1, 2)] for r in c["rects"])
+    have = sorted([round(r[0] % 1, 2), round(r[1] % 1, 2)] for r in (t or {}).get("rects", []))
+    ok(t and t["tile"] == 1.8 and len(have) == 8 and all(abs(a[0] - b[0]) < 0.01 and abs(a[1] - b[1]) < 0.01 for a, b in zip(want, have)),
+       f"a turned look's cells turn with it: {have} for {want}")
+
+
 def cmd_check(_args):
     bad = []
 
@@ -253,9 +282,45 @@ def cmd_check(_args):
                 bad.append(f"{b} should be a bad ref")
             except ValueError:
                 pass
+        # a folder of yours attached where it is (ASSETS §6): its sets pbr/<name>/<set>, nothing written in it (their meta
+        # and thumbnails mirrored in ROOT/_attached), its ZIPs left as they are; a name or a folder the shelf has is refused
+        mine = Path(tempfile.mkdtemp(prefix="pbrmine_"))
+        try:
+            (mine / "Bricks" / "red_brick").mkdir(parents=True)
+            for k in ("diff", "nor_gl", "rough"):
+                (mine / "Bricks" / "red_brick" / f"red_brick_{k}_1k.jpg").write_bytes(b"jpg")
+            with zipfile.ZipFile(mine / "boxed_2k.zip", "w") as z:
+                z.writestr("boxed_diff_2k.jpg", b"jpg")
+            before = sorted(str(f.relative_to(mine)) for f in mine.rglob("*"))
+            rows = PBR.attach(mine, "mylib")
+            ok([r["name"] for r in rows] == ["mylib"] and PBR.attached()[0]["path"] == str(mine.resolve()), f"attached {rows}")
+            mref = "pbr/mylib/Bricks/red_brick"
+            sets = PBR.scan()
+            ok(mref in sets and sets[mref].get("category") == "mylib/Bricks" and sets[mref].get("attached") == "mylib", f"its set on the shelf: {sorted(sets)}")
+            ok(PBR.set_dir(mref) == mine / "Bricks" / "red_brick" and LIB.fetched(mref, "texture"), "its ref resolves where it is")
+            PBR.save(mref, {"tile_m": 1.5})
+            ok(PBR.meta(PBR.set_dir(mref))["tile_m"] == 1.5 and PBR.meta_file(PBR.set_dir(mref)).is_relative_to(tmp / "_attached" / "mylib"), "what you set kept in its mirror")
+            ok(sorted(str(f.relative_to(mine)) for f in mine.rglob("*")) == before, "nothing written in your folder (no meta.json, no thumbnail, its ZIP unopened)")
+            ok(PBR.own_file(mref, "_thumb.jpg").parent == PBR.side(PBR.set_dir(mref)) and PBR.own_file(mref, "red_brick_diff_1k.jpg") == mine / "Bricks" / "red_brick" / "red_brick_diff_1k.jpg",
+               "the server's files: maps from your folder, ours from the mirror")
+            for args, why in (((mine, "other"), "the same folder twice"), ((cat, "x"), "a folder on the shelf"), ((tmp / "nowhere", "y"), "no such folder"),
+                              ((mine / "Bricks", "Stone"), "a name the shelf has"), ((mine / "Bricks", "bad name!"), "a name with spaces")):
+                try:
+                    PBR.attach(*args)
+                    bad.append(f"attach should refuse {why}")
+                except ValueError:
+                    pass
+            PBR.detach("mylib")
+            ok(not PBR.attached() and mref not in PBR.scan(write=False) and PBR.set_dir(mref) == tmp / "mylib" / "Bricks" / "red_brick", "detached: its sets off the shelf")
+            PBR.attach(mine, "mylib")
+            ok(PBR.meta(PBR.set_dir(mref))["tile_m"] == 1.5, "attached again: what you set is still there")
+        finally:
+            shutil.rmtree(mine, ignore_errors=True)
     finally:
         PBR.ROOT = old_root
+        PBR._ATT["key"] = None
         shutil.rmtree(tmp, ignore_errors=True)
+    check_cells(ok, bad)
     for b in bad:
         print("FAIL " + b)
     print("PBR ok" if not bad else f"PBR FAILED ({len(bad)})")

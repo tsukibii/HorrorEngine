@@ -1,0 +1,15 @@
+{
+ "maps": {
+  "ao": "Paint005_1K-PNG_AmbientOcclusion.png",
+  "albedo": "Paint005_1K-PNG_Color.png",
+  "height": "Paint005_1K-PNG_Displacement.png",
+  "normal": "Paint005_1K-PNG_NormalGL.png",
+  "rough": "Paint005_1K-PNG_Roughness.png"
+ },
+ "normal": "gl",
+ "tile_m": 2.0,
+ "source": "ambientCG",
+ "url": "https://ambientcg.com/view?id=Paint005",
+ "licence": "CC0-1.0",
+ "label": "paint, dark teal"
+}

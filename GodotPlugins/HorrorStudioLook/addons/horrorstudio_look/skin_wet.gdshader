@@ -56,6 +56,7 @@ uniform bool tinted_shadow_penumbra = false;
 uniform bool old_lightwarp_fallof = false;
 uniform sampler2D lightwarp : source_color, filter_linear, repeat_disable;
 uniform sampler2D texture_sss_noise : filter_linear, repeat_enable, source_color;
+uniform float sss_scale : hint_range(0.0, 1.0) = 1.0;     // HS: the screen-space scattering's strength scaled (Godot blurs the whole colour, the paint too: a little softens the light, a lot is wax)
 
 
 group_uniforms translucency;
@@ -79,7 +80,28 @@ uniform float drips : hint_range(0.0, 1.0) = 0.0;         // HS: runs down the s
 uniform float oil : hint_range(0.0, 1.0) = 0.0;           // HS: oiled up
 uniform float oil_roughness : hint_range(0.0, 1.0) = 0.14;  // HS
 
+group_uniforms skin_detail;   // HS: the skin's detail at its true size (tools/skin_detail.py; docs/GODOT_LOOK.md §5d)
+uniform float detail : hint_range(0.0, 2.0) = 0.0;                // HS: the whole layer (0 off: the demo's spheres, a plain body)
+uniform sampler2D texture_pores : filter_linear_mipmap_anisotropic, repeat_enable;        // HS: 10 mm of skin: RG its normal (OpenGL's), B how open
+uniform sampler2D texture_skin_micro : filter_linear_mipmap_anisotropic, repeat_enable;   // HS: 5 mm: the furrows' network
+uniform sampler2D texture_regions : filter_linear, repeat_disable;                        // HS: MHR's layout: R pores, G furrows, B lips, A the body's islands
+uniform sampler2D texture_tone : filter_linear_mipmap_anisotropic, repeat_enable;         // HS: 40 mm of the colour's unevenness: R melanin, G blood, B grain
+uniform bool use_regions = false;                                 // HS: the skin is MHR's (a Studio export): the region map places it; else the same everywhere
+uniform float detail_metres = 0.01;                               // HS: the pores' tile on the skin (the furrows' is half)
+uniform vec2 uv_metres = vec2(0.72, 1.9);                         // HS: the metres one UV unit spans on MHR's head and hands, and on its body
+uniform float pore_depth : hint_range(0.0, 3.0) = 1.0;            // HS: the pores' relief
+uniform float pore_size : hint_range(0.5, 2.0) = 1.0;             // HS: their size (the tile laid larger)
+uniform float furrow_depth : hint_range(0.0, 3.0) = 1.0;          // HS: the furrows' relief (the lids' crepe, age's lines)
+uniform float detail_cavity : hint_range(0.0, 1.0) = 0.5;         // HS: how much a pit or a furrow darkens and dulls
+uniform float lip_lines : hint_range(0.0, 3.0) = 1.0;             // HS: the lips' fine lines, about a millimetre apart
+uniform float detail_rough : hint_range(0.0, 0.5) = 0.08;         // HS: the roughness the relief turns into once it's too fine to see
+uniform float fuzz : hint_range(0.0, 1.0) = 0.0;                  // HS: peach fuzz: a soft bright rim where the skin turns away
+uniform float tone : hint_range(0.0, 3.0) = 1.0;                  // HS: how uneven the colour is (melanin's specks and blotches, a grain; 0 the paint as baked)
+uniform float tone_red : hint_range(0.0, 3.0) = 1.0;              // HS: the blood's redder and paler patches
+
 varying float hs_gloss;   // HS: the wet layer's gloss for light(): 0 dry skin, 1 water or oil
+varying vec3 hs_dn;       // HS: the detail's tilt of the normal (view space), for the diffuse's blurred normals
+varying float hs_fuzz;    // HS: the fuzz here (none on the lips)
 varying mat3 TBN;
 varying vec4 micro_detail;
 varying vec3 final_albedo;
@@ -160,6 +182,24 @@ float hs_drips(vec2 uv) {
 	float inlen = smoothstep(top, top + 0.05, uv.y) * (1.0 - smoothstep(top + len - 0.05, top + len, uv.y));
 	return inlane * inlen;
 }
+// HS: a detail tile laid twice, the second turned 37° and 1.37 times larger with its own offset, so no repeat shows:
+// the relief's tilt in the UV's own frame (+u, +v; both layers added) in xy, how open the skin is (both cavities) in z
+vec3 hs_tile(sampler2D t, vec2 q, vec2 qx, vec2 qy) {
+	mat2 R = mat2(vec2(0.7986, 0.6018), vec2(-0.6018, 0.7986));
+	vec2 q2 = R * q * (1.0 / 1.37) + vec2(0.37, 0.71);
+	vec3 a = textureGrad(t, q, qx, qy).xyz;
+	vec3 b = textureGrad(t, q2, R * qx * (1.0 / 1.37), R * qy * (1.0 / 1.37)).xyz;
+	vec2 sa = vec2(a.x * 2.0 - 1.0, 1.0 - a.y * 2.0);                  // the picture's +Y is up it: v runs down
+	vec2 sb = transpose(R) * vec2(b.x * 2.0 - 1.0, 1.0 - b.y * 2.0);   // the turned one's back into the UV's frame
+	return vec3(sa + sb, a.z * b.z);
+}
+// HS: the tone tile laid twice the same way, its unevenness kept (the two layers' sum scaled back to one's spread)
+vec3 hs_tone(sampler2D t, vec2 q, vec2 qx, vec2 qy) {
+	mat2 R = mat2(vec2(0.7986, 0.6018), vec2(-0.6018, 0.7986));
+	vec3 a = textureGrad(t, q, qx, qy).xyz;
+	vec3 b = textureGrad(t, R * q * (1.0 / 1.37) + vec2(0.53, 0.19), R * qx * (1.0 / 1.37), R * qy * (1.0 / 1.37)).xyz;
+	return (a + b - 1.0) * 0.7071;
+}
 
 void fragment() {
 	vec2 base_uv = UV;
@@ -221,6 +261,55 @@ void fragment() {
 	NORMAL_MAP = normal_final;
 	NORMAL_MAP_DEPTH = normal_strength;
 
+	// HS: the skin's detail at its true size (tools/skin_detail.py): the pores and the furrows between them from tiles
+	// laid at their metres (MHR's two densities, blended where they meet), placed by MHR's region map; the lips' lines;
+	// a pit or a furrow darker and duller; what's too fine to see once far turned into roughness
+	hs_dn = vec3(0.0);
+	hs_fuzz = 0.0;
+	if (detail > 0.0) {
+		vec4 reg = use_regions ? texture(texture_regions, base_uv) : vec4(0.6, 0.6, 0.0, 0.0);
+		vec2 ux = dFdx(base_uv), uy = dFdy(base_uv);
+		vec3 n0 = normalize(NORMAL);
+		vec3 r1 = cross(dFdy(VERTEX), n0), r2 = cross(n0, dFdx(VERTEX));
+		vec3 tu = r1 * ux.x + r2 * uy.x, tv = r1 * ux.y + r2 * uy.y;   // the skin along +u and +v (from the UVs' screen derivatives: no tangents needed)
+		float tn = inversesqrt(max(max(dot(tu, tu), dot(tv, tv)), 1e-24));
+		tu *= tn;
+		tv *= tn;
+		vec3 pores = vec3(0.0), micro = vec3(0.0), tc = vec3(0.0);
+		float lod = 0.0;
+		for (int k = 0; k < 2; k++) {                                  // the head's density, the body's (both where they meet)
+			float w = k == 0 ? 1.0 - reg.a : reg.a;
+			if (w < 0.01) continue;
+			float s = (k == 0 ? uv_metres.x : uv_metres.y) / (detail_metres * pore_size);
+			pores += w * hs_tile(texture_pores, base_uv * s, ux * s * 0.5, uy * s * 0.5);              // a mip sharper than the pixel: the relief's glints survive (TAA settles them)
+			micro += w * hs_tile(texture_skin_micro, base_uv * s * 2.0, ux * s, uy * s);
+			tc += w * hs_tone(texture_tone, base_uv * s * 0.25, ux * s * 0.25, uy * s * 0.25);
+			lod += w * log2(max(length(ux), length(uy)) * s * 1024.0); // the pores' texels a pixel spans, as a mip level
+		}
+		float pa = reg.r * pore_depth * detail, ma = reg.g * furrow_depth * detail;
+		vec2 tilt = pores.xy * pa + micro.xy * ma;
+		float lip = 0.0;
+		if (reg.b > 0.01 && lip_lines > 0.0) {                         // the lips: grooves up and down them a millimetre apart, wandering, 0.25 mm wide
+			float x = base_uv.x * uv_metres.x / 0.0011;
+			x += 0.3 * sin(base_uv.y * uv_metres.x / 0.0035 + 1.7 * floor(x));
+			float f = fract(x) - 0.5, g = exp(-f * f / 0.012);
+			float seen = 1.0 - smoothstep(0.0003, 0.0008, max(length(ux), length(uy)) * uv_metres.x);   // gone once a pixel spans most of a line
+			lip = g * reg.b * min(1.0, lip_lines * detail) * seen;
+			tilt.x -= f * g * 3.0 * reg.b * lip_lines * detail * seen;
+		}
+		float open = mix(1.0, pores.z, clamp(pa, 0.0, 1.0)) * mix(1.0, micro.z, clamp(ma, 0.0, 1.0)) * (1.0 - 0.35 * lip);
+		hs_dn = tilt.x * tu + tilt.y * tv;
+		NORMAL = normalize(n0 + hs_dn);
+		ALBEDO *= mix(1.0, open, detail_cavity);
+		float tm = clamp(1.0 - tone * detail * tc.r * 0.5, 0.5, 1.5);    // melanin: darker and browner (lighter where it's less)
+		ALBEDO *= pow(vec3(tm), vec3(0.75, 1.0, 1.35));
+		ALBEDO *= vec3(1.0, 1.0 - tone_red * detail * tc.g * 0.3, 1.0 - tone_red * detail * tc.g * 0.38);   // the blood: redder, or paler
+		ALBEDO *= 1.0 + tone * detail * tc.b * 0.25;
+		SPECULAR *= mix(1.0, open, min(1.0, 1.5 * detail_cavity));
+		ROUGHNESS = clamp(ROUGHNESS * mix(1.0, 1.3, 1.0 - open) + detail_rough * detail * smoothstep(2.0, 7.0, lod), 0.0, 1.0);
+		hs_fuzz = fuzz * (1.0 - reg.b);
+	}
+
 	// Ambient Occlusion
 	if (use_ambient_occlusion){
 		AO = ao * ao_strength + (1.-ao_strength);// * smoothstep(0.,1., micro_detail.z * 1.6);
@@ -243,7 +332,7 @@ void fragment() {
 				sss_strength_value *= noise;
 				//ALBEDO = vec3(noise);
 			}
-			SSS_STRENGTH = sss_strength_value * texture(ambient_occlusion_texture, base_uv).r * smooth_depth;
+			SSS_STRENGTH = sss_strength_value * texture(ambient_occlusion_texture, base_uv).r * smooth_depth * sss_scale;   // HS: sss_scale
 		}
 		//ALBEDO = vec3(smooth_depth);
 		//float sss_depth = 1. - pow(clamp(world_camera.z,0.,1.), 0.5);
@@ -323,6 +412,9 @@ void light()
 		
 		dn_g = normal_blending(dn_g, m_normal);
 		dn_b = normal_blending(dn_b, m_normal);
+		dn_r = normalize(dn_r + hs_dn * 0.15);   // HS: the detail soft in the diffuse, softest in the red (it travels furthest under the skin)
+		dn_g = normalize(dn_g + hs_dn * 0.4);
+		dn_b = normalize(dn_b + hs_dn * 0.55);
 		////
 		
 		float sf = skin_fallof_smoothness;
@@ -357,6 +449,9 @@ void light()
 	if (tinted_shadow_penumbra){att = att;} else{att = vec3(ATTENUATION);}
 
 	DIFFUSE_LIGHT += diff_light * att * lightColor;
+	if (hs_fuzz > 0.0) {   // HS: peach fuzz: the fine hairs catch the light where the skin turns away, more from behind
+		DIFFUSE_LIGHT += hs_fuzz * pow(1.0 - NdotV, 4.0) * clamp(dot(NORMAL, LIGHT) * 0.6 + 0.4, 0.0, 1.0) * att * lightColor;
+	}
 
 	if (translucency){
 		float translucency_dot = dot(VIEW,-(LIGHT + NORMAL * .4));

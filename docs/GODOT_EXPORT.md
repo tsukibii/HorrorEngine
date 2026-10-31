@@ -54,11 +54,63 @@ draws it. A re-export overwrites only what the user hasn't touched, and reports 
         scene.tscn              StoryScene: the level instanced, the cast at their spots, a Camera3D, an AnimationPlayer
         takes/c1.ogg ...        the voice of each take (ffmpeg from the mp4), subtitles in the animation
       ...                       choices/endings: small .tres beside the flow, no folder
+    materials/<Name>.tres       ONE MATERIAL FILE A TEXTURE SET (2026-10-31): every set the rooms' `look`s and the props'
+    materials/<Name>/           `mat`s wear (the shelf's, your attached folders', the library's, a tuned one, a colour),
+                                its maps beside it; every piece on every level wears it by reference (§3b)
     ui/theme.tres, hud.tscn     the HUD theme from the game's (glass, glass-rose, neumorph, plain) as Godot theme vars
     music/, sfx/                the palette's cues (rendered) and the shelf's files the game names
   guide/index.html              the guide (GODOT_PLAN §7), with its pictures
   .desk/manifest.json           every generated file's hash (the re-export's receipt, §5) and the desk's version
 ```
+
+### 3b. Materials: one file a set, shared (the user, 2026-10-31)
+
+"If multiple parts use the same PBR it should be smart enough to only export that material once and re-use it; when we
+export we have a separate material folder using the name of the material, so even later on we can just ref that one
+PBR mat for many parts." So `storykit/godot.py`'s `Materials` writes **`game/materials/<Name>.tres`** once a set: a
+StandardMaterial3D (world-aligned triplanar, tiled by the set's `tile_m`; albedo, roughness, AO, metal, a packed ORM,
+the normal with a DirectX map's green flipped: the Unreal side's M_StudioSurface), its maps copied beside it into
+`game/materials/<Name>/`. Every level's piece that wears the set has the file as an `ext_resource` (`material_override`):
+Godot loads it once and shares it, a change to it in the editor changes every wall that wears it, and it can be dragged
+onto any mesh of yours (world-aligned: it fits any shape at the set's real size; a moving thing's texture would swim,
+so give those their own UV'd material).
+
+- **Names** are the material's: the set's folder name without its resolution (`Concrete010_1K-PNG` → `Concrete010`,
+  `red_brick_2k` → `red_brick`), a tuned set (`pbr/_made/<hash>`) the set it's made from and six of its hash
+  (`Tatami004_a70d6e`), a colour `colour_<hex>`. Two sets that would share a name (the project's `Concrete010` and a
+  library one) both carry four letters of their ref's hash, decided from every set the game uses, so a name doesn't
+  depend on which level came first.
+- **Sets from anywhere**: the shelf's own, your attached folders' (ASSETS §6: copied into the project from where they
+  are), the library's, a tuned one (made before the levels are written when this machine hasn't it yet).
+- **A block that moves** (a plain door's slab with a `mat`, a thing taken up) wears **`<Name>_obj.tres`**: the same
+  maps, triplanar in the block's own space (`uv1_world_triplanar` off), so the set rides with it as it swings instead
+  of sliding across it (`moving_materials` in export.json).
+- **A kit thing's slots** (its `mats`: a sofa's fabric, a fridge's body, a switch's plastic, a kit door's parts) wear **`<Name>_uv.tres`**: the same maps,
+  laid by the mesh's own UVs (the kit's are metres) rather than the world, so they ride with a thing that moves. The
+  export puts `addons/horrorstudio/slot_materials.gd` on the thing's instanced kit mesh with its `slots` (slot ->
+  material file); a `@tool` script, so the editor shows them too: each `kit_<slot>` surface (and its tones,
+  `kit_wood_2`...) of this thing's own copy of the mesh wears its file, the surface keeping its name for the little
+  things' effects; put back before a save, so only `slots` is saved. Its `uv1_offset` takes back the metre the .glb's
+  `1 - v` shifts it by, so a set lies on a kit thing exactly where the desk lays it: **a floor laid out by its set's
+  own tiles** (KIT.md, *Floors laid out by their set*: its mesh built from the plan's spec, the set's cells in it) has
+  the set's seams in its real gaps in Godot as on the desk. TestRoom001's keys room is paved that way (Concrete010's
+  30 cm pavers), its library tiled with a plain set (each tile its own cut).
+- **A light with a fitting** (its `kit`: the round LEDs the scene builder puts on its ceilings; the user, 2026-10-31,
+  "we don't need to export actual Godot light sources, lights as furniture") is written as its fitting (a kit thing,
+  `<id>__fitting`) and a plain node in `Lights` where the light is, with no light source: the runtime keeps the light's
+  level as the story has it (switched, cut, dimmed, flickering), the fitting's glass (its `kit_emit` surface, a material
+  of its own) glows that bright, and every light the user puts under the node follows it at its own energy times that
+  level. A light without a fitting (a candle, a pattern, a lamp the story places alone) is a light source as before.
+  `export.json`'s `fittings`; GDEXPORT finds each with no light source and its fitting drawn with its glass; GDTESTROOM
+  switches the power room's bulb (a flush 300) and finds its glass and a light put under it following.
+- **A street's .glb** keeps its materials inside it (one a set and colour, shared by every chunk; after the Blender bake
+  each also carries the street's own wear atlas), so they're the street's own: Godot's Advanced Import Settings
+  (*Actions › Extract Materials*) writes them to a folder by name if you want them as files.
+- `export.json`'s `materials` maps each set's ref to its file (`slot_materials` the `_uv` ones, `slots_dressed` how many
+  slots); GDEXPORT's load check finds every surfaced piece wearing its set's file from `game/materials/`, each file
+  loaded once and shared (`GDEXPORT materials: …`, the `_obj` ones counted with them), and every thing whose slots
+  are dressed (a door with its parts one thing) wearing each slot its `mats` names, from its `_uv` file (`GDEXPORT
+  kit slots: …`).
 
 **Sequencing the user can see:** a scene's whole timeline is one Animation (`scene`): a position/rotation track for
 the camera (the bake's, at 30 fps, keys thinned), bone tracks per cast member (the bake's skin matrices turned into
@@ -315,7 +367,8 @@ objects, the same frame. **The dialogue choice** (the user: "I can't click
    **M_StudioSurface done** (2026-10-29, `LevelWriter.surface`): a room's `look` and a prop's `mat` (`mat:<ref>`
    tags) become world-aligned StandardMaterial3Ds (triplanar in world space, tiled by the set's `tile_m`, albedo,
    roughness, AO, a packed ORM, the normal with a DirectX map's green flipped) with the maps copied into
-   `game/textures/<set>/`; a set not on the shelf leaves the block its colour. TestRoom001's lobby, corridor,
+   `game/textures/<set>/` (since 2026-10-31 one shared file a set, `game/materials/<Name>.tres`, §3b); a set not on
+   the shelf leaves the block its colour. TestRoom001's lobby, corridor,
    kitchen and power room wear the demo shelf's sets (`tools/pbr.py demo`); GDEXPORT counts the pieces wearing one
    against the export's own count; pictures `godot_reference/look_*_pbr.png`. HSWet samples a world-aligned floor
    by its place, so a wet textured floor keeps its planks.

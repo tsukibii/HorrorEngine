@@ -45,6 +45,77 @@ DOOR_SET = {"lock", "unlock", "open", "close", "slam"}
 STALKER = {"spawn", "despawn", "patrol", "hunt", "chase"}
 BEHAVE = {"idle": ("at",), "sit": ("at",), "path": ("route",), "patrol": ("routes",), "go": ("to",), "off": ()}   # a cast member in play: what each needs
 ROUTE_MODES = {"loop", "pingpong", "once"}
+
+
+def street_words():
+    """The street builder's words a level's `outside` uses (STORY_FORMAT §2), read from its generator and presets (the
+    one place they're defined): its slots, roof kinds, the parts that aren't openings, the wall slots, the styles."""
+    d = Path(__file__).resolve().parents[1] / "tools" / "director"
+    gen = (d / "street-gen.js").read_text(encoding="utf-8")
+    pre = (d / "street-presets.js").read_text(encoding="utf-8")
+
+    def block(src, start):
+        i = src.index(start)
+        return src[i:src.index("\n};", i)]
+    slots = set(re.findall(r"(\w+): \[\"#[0-9a-fA-F]{6}\"", block(gen, "export const SLOTS = {")))
+    roofs = set(re.findall(r"(\w+): \"", gen[gen.index("export const ROOF_KINDS = {"):].split("\n", 1)[0]))
+    parts = {m.group(1) for m in re.finditer(r"^  (\w+): \{ label: [^\n]*$", block(gen, "export const PART_KINDS = {"), re.M) if "hole:" not in m.group(0)}
+    walls = set(re.findall(r"\"(\w+)\"", gen[gen.index("export const OUTSIDE_SLOTS = ["):].split("\n", 1)[0]))
+    styles = set(re.findall(r"^  (\w+): \{ label:", block(pre, "export const STYLES = {"), re.M))
+    return {"slots": slots, "roofs": roofs, "parts": parts, "walls": walls, "styles": styles}
+
+
+STREET = None
+
+
+def check_outside(lid, out, r):
+    """A level's outside: how a street builds the building round it (docs/SCENE_BUILDER.md §8)."""
+    global STREET
+    if STREET is None:
+        STREET = street_words()
+    W = STREET
+    if not isinstance(out, dict):
+        return r.err(f"level {lid}: outside is an object (look, roof, slot, raise, front, parts, style)")
+    for k in out:
+        if k not in ("look", "roof", "slot", "raise", "front", "parts", "style", "seed"):
+            r.err(f"level {lid}: outside: no word {k!r} (look, roof, slot, raise, front, parts, style, seed)")
+    if out.get("style") and out["style"] not in W["styles"]:
+        r.err(f"level {lid}: outside: style {out['style']!r} isn't one of the street builder's ({', '.join(sorted(W['styles']))})")
+    for sl, v in (out.get("look") or {}).items():
+        if sl not in W["slots"]:
+            r.err(f"level {lid}: outside: look: no slot {sl!r} (the street builder's slots)")
+        if isinstance(v, dict):                          # a tuned set, as the street paints with (STREET_PAINT §2)
+            errs, warns = look_problems(v)
+            for e in errs:
+                r.err(f"level {lid}: outside: look {sl}: {e}")
+            for w in warns:
+                r.warn(f"level {lid}: outside: look {sl}: {w}")
+        elif not (isinstance(v, str) and (re.fullmatch(r"#[0-9a-fA-F]{6}", v) or v.startswith("pbr/"))):
+            r.err(f"level {lid}: outside: look {sl}: {v!r} ('#rrggbb', pbr/<set> or a tuned set)")
+    rf = out.get("roof") or {}
+    if not isinstance(rf, dict) or rf.get("kind", "hip") not in W["roofs"]:
+        r.err(f"level {lid}: outside: roof kind {rf.get('kind') if isinstance(rf, dict) else rf!r} ({', '.join(sorted(W['roofs']))})")
+    for k, lo, hi in (("pitch", 3, 60), ("over", 0, 2), ("parapet", 0, 2)):
+        if isinstance(rf, dict) and k in rf and not (isinstance(rf[k], (int, float)) and lo <= rf[k] <= hi):
+            r.err(f"level {lid}: outside: roof {k} {rf[k]!r} ({lo} to {hi})")
+    if isinstance(rf, dict) and rf.get("slot") and rf["slot"] not in W["slots"]:
+        r.err(f"level {lid}: outside: roof slot {rf['slot']!r}")
+    if out.get("slot") and out["slot"] not in W["walls"]:
+        r.err(f"level {lid}: outside: slot {out['slot']!r} (the walls: {', '.join(sorted(W['walls']))})")
+    if "raise" in out and not (isinstance(out["raise"], (int, float)) and 0 <= out["raise"] <= 2):
+        r.err(f"level {lid}: outside: raise {out['raise']!r} (metres, 0 to 2)")
+    if out.get("front") and out["front"] not in ("n", "e", "s", "w"):
+        r.err(f"level {lid}: outside: front {out['front']!r} (n, e, s or w)")
+    for i, pt in enumerate(out.get("parts") or []):
+        if not isinstance(pt, dict) or pt.get("kind") not in W["parts"]:
+            r.err(f"level {lid}: outside: part {i + 1}: {pt.get('kind') if isinstance(pt, dict) else pt!r} isn't something for a wall "
+                  f"({', '.join(sorted(W['parts']))}; the doors and windows are the level's own)")
+            continue
+        if pt.get("face", "front") not in ("front", "left", "back", "right"):
+            r.err(f"level {lid}: outside: part {i + 1}: face {pt.get('face')!r} (front, left, back, right)")
+        for k in ("x", "z", "w", "h", "out"):
+            if k in pt and not isinstance(pt[k], (int, float)):
+                r.err(f"level {lid}: outside: part {i + 1}: {k} {pt[k]!r} (metres)")
 SIGHT = {"angle", "range", "crouched", "meter", "drain", "calm"}      # behave sees: the play runtime's SIGHT
 TRICKS = {  # name: (required fields, seconds it takes)
     "swap": ({"hide", "show"}, 0), "slam_behind": ({"door"}, 2), "lights_die": ({"room"}, 3),
@@ -191,8 +262,31 @@ class Report:
 
 # ---- static checks ----------------------------------------------------------------------------------------------
 
+def look_problems(look):
+    """(errors, warnings) of a look on a room's surface, a block or an outside slot: a set's ref, a colour (#rrggbb) or
+    a tuned set (STREET_PAINT §2, pbrmix.py's words). A set missing from this machine's shelf is the library's warning."""
+    if isinstance(look, dict):
+        from storykit import pbrmix as MIX  # noqa: PLC0415 - plain Python to read a look; numpy only for pixels
+        errs, warns = MIX.problems(look)
+        return errs, [w for w in warns if "isn't on this machine's shelf" not in w]
+    if isinstance(look, str) and look.startswith("#"):
+        return ([] if LIB.is_colour(look) else [f"{look!r} isn't a colour (#rrggbb)"]), []
+    if not isinstance(look, str) or not look:
+        return ["a look is a set's ref, a colour (#rrggbb) or a tuned set ({\"set\": \"pbr/...\", ...})"], []
+    return [], []
+
+
 def check_library(story, r):
-    """Library refs (docs/ASSETS.md): a bad one is an error; ones not fetched yet are one warning (the blocks stand in)."""
+    """Library refs (docs/ASSETS.md): a bad one is an error; ones not fetched yet are one warning (the blocks stand in).
+    A tuned look's words are pbrmix.py's."""
+    for look, where in LIB.looks(story):
+        if ".outside." in where:
+            continue                                      # with the outside's own words (check_outside)
+        errs, warns = look_problems(look)
+        for e in errs:
+            r.err(f"{where}: {e}")
+        for w in warns:
+            r.warn(f"{where}: {w}")
     missing = []
     for kind, ref, where in LIB.refs(story):
         try:
@@ -303,6 +397,8 @@ def check_world(story, things, r):
         lk = lvl.get("look")                           # a level's own look over the game's (§2, §9.1)
         if lk is not None and lk not in ("balanced", "realism", "plain"):
             r.err(f"level {lid}: look {lk!r}: balanced, realism or plain")
+        if lvl.get("outside") is not None:            # the building a street builds round it (§2, SCENE_BUILDER §8)
+            check_outside(lid, lvl["outside"], r)
         start = things.get(lvl.get("start"))
         if not start or start.use != "spot" or start.level != lid:
             r.err(f"level {lid}: start {lvl.get('start')!r} isn't a spot in it")
@@ -377,6 +473,10 @@ def check_world(story, things, r):
                         r.err(f"room {rm['id']}: a shaft's dust is 0..1")
                 if L.wall_skipped(rm, op["wall"], op["at"] - op["w"] / 2, op["at"] + op["w"] / 2):
                     r.err(f"room {rm['id']}: opening at {op['at']} on {op['wall']} is on a stretch it skips (put it on the room that builds that wall)")
+                dm = (op.get("door") or {}).get("mats") if isinstance(op.get("door"), dict) else None
+                if dm is not None and (op["door"].get("kit") is None or not isinstance(dm, dict)
+                                       or not all(re.fullmatch(r"[a-z][a-z0-9_]*", str(sl)) for sl in dm)):
+                    r.err(f"door {op['door'].get('id')}: mats is {{slot: look}} on a kit door (its parts' slots: front, metal, body...); a plain door takes `mat`")
                 if op.get("door") and op["door"].get("kit") is not None:
                     try:
                         if KIT.kind(op["door"]["kit"]) != "door":
@@ -438,6 +538,13 @@ def check_world(story, things, r):
             r.err(f"{t.id}: needs a shape, a kit or a use")
         if "kit" in p and "shape" in p:
             r.err(f"{t.id}: a shape or a kit, not both")
+        if "mats" in p:                                # a kit thing's slots dressed (STORY_FORMAT §2); the looks: check_library
+            if "kit" not in p or not isinstance(p["mats"], dict):
+                r.err(f"{t.id}: mats is {{slot: look}} on a thing with a kit (its slots: wood, fabric, top...)")
+            else:
+                for sl in p["mats"]:
+                    if not re.fullmatch(r"[a-z][a-z0-9_]*", str(sl)):
+                        r.err(f"{t.id}: mats: {sl!r} isn't a slot's name (the kit's: wood, fabric, top...)")
         if u is not None and u not in L.USES:
             r.err(f"{t.id}: unknown use {u!r}")
         if p.get("shape", "").startswith("person"):

@@ -87,7 +87,8 @@ export const TYPES = {
   panel: { label: "Mirror / TV / frame / board", cat: "wall", mount: "wall", size: [0.6, 0.02, 0.9], params: [["face", "face", "mirror", "slot"],
     ["frame", "frame width", 0.012, "m"], ["frame_slot", "frame material", "frame", "slot"], ["mat", "inner margin (mount)", 0, "m"],
     ["back", "slim back (a TV's)", 0, "m"], ["bevel", "edge bevel", 0.001, "mm"]], gen: panelGen },
-  downlight: { label: "Downlight / ceiling panel", cat: "ceiling", mount: "ceiling", size: [0.12, 0.12, 0.02], params: [["shape", "shape", "round", "pick", ["round", "square"]],
+  downlight: { label: "Downlight / ceiling panel / round LED", cat: "ceiling", mount: "ceiling", size: [0.12, 0.12, 0.02], params: [["shape", "shape", "round", "pick", ["round", "square"]],
+    ["style", "style (round)", "recessed", "pick", ["recessed", "flush", "dome", "ring"]],
     ["trim", "trim ring", 0.012, "mm"], ["lens_in", "lens set in", 0.012, "mm"], ["slot", "trim material", "white", "slot"]], gen: downlightGen },
   window: { label: "Window frame", cat: "opening", mount: "opening", size: [1.6, 0.22, 1.25], params: [["cols", "panes across", 2, "int"], ["rows", "panes up", 1, "int"],
     ["frame", "frame width", 0.06, "m"], ["frame_d", "frame depth", 0.07, "m"], ["mullion", "mullion", 0.05, "m"], ["sash", "sash width (0: none)", 0.045, "m"],
@@ -196,8 +197,12 @@ export function resolve(spec, presets) {
 export function withDefaults(s) {
   const T = TYPES[s.type], o = { type: s.type, size: (s.size || T.size).slice() };
   for (const [k, , def] of T.params) o[k] = s[k] === undefined ? clone(def) : s[k];
+  for (const k of PLANNED) if (s[k] !== undefined) o[k] = clone(s[k]);
   return o;
 }
+// what the plan adds to a spec beyond its numbers (no form shows it): a floor's `cells`, the layout of the set its
+// slot wears (storykit/pbrcells.py: the tiles, boards or mats the set paints, so the kit's lie where the set's are)
+export const PLANNED = ["cells"];
 const clone = v => v === undefined ? v : JSON.parse(JSON.stringify(v));
 
 // the canonical text of a resolved spec (numbers in micrometres), its hash names its mesh: kit/<type>_<hash>.
@@ -590,11 +595,28 @@ function herringbone(U, V, W, L) {
   }
   return out;
 }
+// a set's own layout (the spec's `cells`, the plan's: storykit/pbrcells.py): one repeat's cells, fractions of `tile`
+// metres, tiled over the region from its corner; `whole` (a set too finely laid to build, a mosaic) one board over all
+function cellsLayout(U, V, c) {
+  if (c.whole) return [[0, 0, U, V, "u"]];
+  const t = Math.max(0.01, +c.tile || 1), out = [];
+  for (const [u0, v0, u1, v1] of c.rects || []) {
+    for (let i = Math.floor(-u1); (i + u0) * t < U; i++) for (let j = Math.floor(-v1); (j + v0) * t < V; j++) {
+      out.push([(i + u0) * t, (j + v0) * t, (i + u1) * t, (j + v1) * t, "u"]);
+    }
+  }
+  return out;
+}
+const fitted = s => !!(s.cells && (s.cells.whole || (Array.isArray(s.cells.rects) && s.cells.rects.length)));
 function surface(s, P, R, rects, look) {
   const wall = s.orient === "wall", [w, d, h] = s.size;
   const U = w, V = wall ? h : d, T = wall ? d : h;
   const g = Math.max(0, s.gap), gv = clamp(s.gap_var, 0, 1), groove = clamp(s.groove ?? 0.002, 0, T * 0.8);
   const swap = +s.angle === 90 && !wall, RU = swap ? V : U, RV = swap ? U : V;     // the region the layout was made on
+  if (fitted(s)) rects = cellsLayout(RU, RV, s.cells);
+  // each board its own cut of its material, turned along it; laid out by a set's cells, the set laid straight across
+  // them all (the layout's u and v, from its corner, in metres: its seams fall in the boards' gaps)
+  const straight = fitted(s) ? (wall ? [U / 2, 0, 0] : [U / 2, V / 2, swap ? 1 : 0]) : null;
   const put = (a0, b0, a1, b1, t0, t1, m, o) => {
     const [u0, v0, u1, v1] = swap ? [b0, a0, b1, a1] : [a0, b0, a1, b1];
     return wall ? bx(P, u0 - U / 2, d / 2 - t1, v0, u1 - U / 2, d / 2 - t0, v1, m, Object.assign({ skip: "+y" }, o))
@@ -609,7 +631,7 @@ function surface(s, P, R, rects, look) {
     u0 += a0 >= 0 ? half() : 0; u1 -= a1 <= RU ? half() : 0; v0 += b0 >= 0 ? half() : 0; v1 -= b1 <= RV ? half() : 0;
     if (u1 - u0 < 0.004 || v1 - v0 < 0.004) continue;
     const t1 = T + (s.lip || 0) * R(), m = tone(s.slot || look, Math.max(1, s.tones || 1), R);
-    const p = put(u0, v0, u1, v1, top, t1, m, { b: s.bevel, uv: [+(R() * 4).toFixed(3), +(R() * 4).toFixed(3), (along === "v") !== swap ? 1 : 0] });
+    const p = put(u0, v0, u1, v1, top, t1, m, { b: s.bevel, uv: straight || [+(R() * 4).toFixed(3), +(R() * 4).toFixed(3), (along === "v") !== swap ? 1 : 0] });
     if (p && s._each) s._each(p, t1);
   }
 }
@@ -830,6 +852,25 @@ function downlightGen(s, P) {
     bx(P, -W / 2, -D / 2, 0, W / 2, -D / 2 + t, H, s.slot); bx(P, -W / 2, D / 2 - t, 0, W / 2, D / 2, H, s.slot);
     bx(P, -W / 2, -D / 2 + t, 0, -W / 2 + t, D / 2 - t, H, s.slot); bx(P, W / 2 - t, -D / 2 + t, 0, W / 2, D / 2 - t, H, s.slot);
     bx(P, -W / 2 + t, -D / 2 + t, lin, W / 2 - t, D / 2 - t, lin + 0.002, "emit");
+  } else if (s.style === "flush" || s.style === "dome" || s.style === "ring") {
+    // round LED fittings on the ceiling (the user, 2026-10-31: "a circular rim with a glass circle, and those kinds of
+    // variations"): flush, a slim drum with its frosted face nearly level with the rim; dome, a shallow rim with a domed
+    // diffuser hanging under it; ring, a glowing annulus between the rim and a hub. The glass is `emit` (it glows while
+    // the light it's the fitting of is on), the rim the trim material
+    const r = Math.min(W, D) / 2, rim = s.style === "dome" ? Math.min(H, Math.max(0.01, H * 0.22)) : H;
+    cy(P, 0, 0, H, r, rim, s.slot, { axis: "-z", ri: r - t, m2: s.slot });                    // the rim, from the ceiling down
+    cy(P, 0, 0, H, r - t + 0.0005, 0.003, "inner", { axis: "-z" });                           // closed above
+    if (s.style === "dome") {
+      const rd = r - t + 0.0005, dz = H - rim + 0.002;                                     // the diffuser, just inside the rim
+      lathe(P, 0, 0, 0, [[0, 0], [rd * 0.45, dz * 0.05], [rd * 0.75, dz * 0.22], [rd * 0.93, dz * 0.55], [rd, dz], [0, dz]], "emit", { n: 48 });
+    } else if (s.style === "ring") {
+      const hub = Math.max(t * 2, r * 0.55);
+      cy(P, 0, 0, H - 0.004, hub, H - 0.004 - lin, s.slot, { axis: "-z", ri: Math.max(0.001, hub - t), m2: s.slot });   // the hub's own rim (under the cap)
+      cy(P, 0, 0, lin + 0.002, hub - t + 0.0005, 0.002, s.slot, { axis: "-z" });           // its face, the light's colour off
+      cy(P, 0, 0, lin + 0.002, r - t + 0.0005, 0.002, "emit", { axis: "-z", ri: hub });   // the glowing ring between
+    } else {
+      cy(P, 0, 0, lin + 0.002, r - t + 0.0005, 0.002, "emit", { axis: "-z" });            // the frosted face
+    }
   } else {
     const r = Math.min(W, D) / 2;
     cy(P, 0, 0, H, r, H, s.slot, { axis: "-z", ri: r - t, m2: "inner" });

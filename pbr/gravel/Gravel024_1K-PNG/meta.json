@@ -1,0 +1,15 @@
+{
+ "maps": {
+  "ao": "Gravel024_1K-PNG_AmbientOcclusion.png",
+  "albedo": "Gravel024_1K-PNG_Color.png",
+  "height": "Gravel024_1K-PNG_Displacement.png",
+  "normal": "Gravel024_1K-PNG_NormalGL.png",
+  "rough": "Gravel024_1K-PNG_Roughness.png"
+ },
+ "normal": "gl",
+ "tile_m": 1.0,
+ "source": "ambientCG",
+ "url": "https://ambientcg.com/view?id=Gravel024",
+ "licence": "CC0-1.0",
+ "label": "gravel, dark"
+}

@@ -17,6 +17,60 @@ from . import life as LIFE
 STEP = 0.18   # a stair's rise
 
 
+def mat_ref(look):
+    """A look as the plan tags it (`mat:<this>`): a set's ref or a colour as it is, a tuned set (a look object, as the
+    street paints with: STREET_PAINT §2) the set made from it, pbr/_made/<hash> (pbrmix.py; the desk's server and the
+    Godot export make it when it's missing)."""
+    if isinstance(look, dict):
+        from . import pbrmix as MIX          # plain Python to name it; numpy only when its pixels are made
+        return MIX.ref_of(look)
+    return look
+
+
+def _matslots(d):
+    """A kit thing's (or a kit door's) slots dressed, its `mats`, as tags: matslot:<slot>:<ref>."""
+    m = d.get("mats")
+    return [f"matslot:{sl}:{mat_ref(v)}" for sl, v in m.items() if v] if isinstance(m, dict) else []
+
+
+FLOOR_SLOT = {"tiles": "tile", "planks": "wood", "tatami": "tatami"}   # a kit floor's main slot (kit.js: its `slot`)
+MAX_BOARDS = 1200          # a set laid finer than this many boards on a kit floor (a mosaic) is laid as one board
+
+
+def fitted(spec, mats):
+    """A kit floor's (or a wall's tiles') spec laid out by the set its main slot wears, when that set draws a layout of
+    its own (pbrcells.py; the user, 2026-10-31: "make the floors take a material"): its `cells` added, so the kit's
+    boards lie where the set's are and its gaps in the set's seams; a set laid finer than MAX_BOARDS boards here (a
+    mosaic) `whole`, one board under it all. Any other spec, or a slot wearing a colour or a plain set (grain, a weave:
+    each board its own cut of it), is returned as it is."""
+    if not isinstance(mats, dict) or not mats:
+        return spec
+    try:
+        r = KIT.resolve(spec)
+    except ValueError:
+        return spec
+    typ = r.get("type")
+    if typ not in FLOOR_SLOT:
+        return spec
+    look = mats.get(FLOOR_SLOT[typ] if typ == "tatami" else (r.get("slot") or FLOOR_SLOT[typ]))
+    if not look:
+        return spec
+    from . import pbrcells as CELLS
+    c = CELLS.cells(look)
+    if not c:
+        return spec
+    w, d, h = r.get("size") or (3, 3, 0.01)
+    area = w * (h if r.get("orient") == "wall" else d)
+    boards = len(c["rects"]) * area / (c["tile"] ** 2)
+    cells = {"tile": c["tile"], "whole": True} if boards > MAX_BOARDS else {"tile": c["tile"], "rects": c["rects"]}
+    return dict(spec if isinstance(spec, dict) else {"preset": spec}, cells=cells)
+
+
+def _look(room, part):
+    v = (room.get("look") or {}).get(part)
+    return [f"mat:{mat_ref(v)}"] if v else []
+
+
 def _tags(t, extra=()):
     tags = ["story", f"story:{t.id}", f"room:{t.room}"]
     if t.use and t.kind == "prop":
@@ -28,7 +82,8 @@ def _tags(t, extra=()):
     if t.d.get("art"):                       # a library mesh that replaces the block, scaled to fit it
         tags.append(f"art:{t.d['art']}")
     if t.d.get("mat"):                       # a library texture set on the block
-        tags.append(f"mat:{t.d['mat']}")
+        tags.append(f"mat:{mat_ref(t.d['mat'])}")
+    tags += _matslots(t.d)                   # a kit thing's slots dressed: matslot:<slot>:<ref> (its tones _2.._4 follow)
     if t.d.get("tag"):                       # what it is (a mirror, a poster): the desk colours by it
         tags.append(f"tag:{t.d['tag']}")
     lf = LIFE.life_of(t.d) if t.kind == "prop" else None
@@ -64,7 +119,7 @@ def door_pieces(p, t):
 
     def part(pid, kind, spec, pos, size, extra, d=None):
         spec = dict(spec, size=[round(v, 4) for v in size])
-        tags = ["story", f"story:{pid}", f"room:{t.room}", f"door:{t.id}", f"kit:{KIT.kind(spec)}", f"art:{KIT.ref(spec)}", "real"] + extra
+        tags = ["story", f"story:{pid}", f"room:{t.room}", f"door:{t.id}", f"kit:{KIT.kind(spec)}", f"art:{KIT.ref(spec)}", "real"] + extra + _matslots(t.d)   # the door's `mats` on each part's slots
         return dict(p, id=pid, kind=kind, shape="box", pos=pos, size=tuple(spec["size"]), yaw=yaw, d=d or {"kit": spec}, kit=spec, tags=tags)
     out = []
     leaf = {key: v for key, v in k.items() if key not in ("handle", "frame", "hinge_art")}
@@ -128,7 +183,7 @@ def room_pieces(lid, room):
     T = L.WALL_T
     base = {"level": lid, "room": room["id"], "yaw": 0.0, "shape": "box", "d": room}
     tags = ["story", f"story:{room['id']}", f"room:{room['id']}"]
-    look = lambda part: [f"mat:{room['look'][part]}"] if (room.get("look") or {}).get(part) else []   # library textures
+    look = lambda part: _look(room, part)                                                   # library textures, tuned sets, colours
     out.append(dict(base, id=f"{room['id']}__floor", kind="floor", pos=(x0 + w / 2, y0 + d / 2, z0 - 0.05),
                     size=(w, d, 0.1), tags=tags + ["floor:" + room.get("floor", "wood")] + look("floor")))
     out.append(dict(base, id=f"{room['id']}__volume", kind="trigger", shape=None,           # "enter <room>" in the game
@@ -190,7 +245,7 @@ def trim_pieces(lid, lvl, room, walls, openings):
     x0, y0, z0 = room["at"]
     w, d, h = room["size"]
     base = {"level": lid, "room": room["id"], "yaw": 0.0, "shape": "box", "d": room}
-    look = [f"mat:{room['look']['trim']}"] if (room.get("look") or {}).get("trim") else []
+    look = _look(room, "trim")
     for wall in L.WALLS:
         axis, v, lo, hi = L.wall_line(room, wall)
         inward = {"n": -1, "s": 1, "e": -1, "w": 1}[wall]
@@ -249,6 +304,44 @@ def trim_pieces(lid, lvl, room, walls, openings):
     return out
 
 
+LINING = 0.004   # a lining's depth: a room's own walls look on the face of a wall its neighbour builds
+
+
+def lining_pieces(lid, room, walls, rooms):
+    """A room's side of the walls a neighbour builds (a shared wall is one piece, its builder's, wearing the builder's
+    look on both faces): a lining 4 mm deep, 1 mm off the wall, wearing this room's own `walls` look (its default
+    grey when it has none), wherever the two rooms' looks differ, so a room painted is painted on its own side only.
+    It follows the builder's pieces, holes and all; hollow: the wall behind it is what stops you."""
+    mine = _look(room, "walls")
+    out, T = [], L.WALL_T
+    z0, h = room["at"][2], room["size"][2]
+    base = {"level": lid, "room": room["id"], "yaw": 0.0, "shape": "box", "d": room}
+    for wall in L.WALLS:
+        axis, v, lo, hi = L.wall_line(room, wall)
+        inward = {"n": -1, "s": 1, "e": -1, "w": 1}[wall]
+        lo_in, hi_in = lo + T / 2, hi - T / 2
+        i = 0
+        for p in walls:
+            c, sz = p["pos"], p["size"]
+            if p["room"] == room["id"] or abs((c[1] if axis == "y" else c[0]) - v) > 0.01 or (sz[1] if axis == "y" else sz[0]) > T + 0.001:
+                continue
+            owner = rooms.get(p["room"])
+            if owner is None or _look(owner, "walls") == mine:
+                continue
+            zlo, zhi = max(c[2] - sz[2] / 2, z0), min(c[2] + sz[2] / 2, z0 + h)
+            cc, half = (c[0], sz[0] / 2) if axis == "y" else (c[1], sz[1] / 2)
+            a0, a1 = max(cc - half, lo_in), min(cc + half, hi_in)
+            if zhi - zlo < 0.02 or a1 - a0 < 0.02:
+                continue
+            off = v + inward * (T / 2 + 0.001 + LINING / 2)
+            pos = ((a0 + a1) / 2, off, (zlo + zhi) / 2) if axis == "y" else (off, (a0 + a1) / 2, (zlo + zhi) / 2)
+            size = (a1 - a0, LINING, zhi - zlo) if axis == "y" else (LINING, a1 - a0, zhi - zlo)
+            out.append(dict(base, id=f"{room['id']}__lining_{wall}{i}", kind="mesh", pos=pos, size=size,
+                            tags=["story", f"story:{room['id']}", f"room:{room['id']}", "trim:lining", "hollow"] + mine))
+            i += 1
+    return out
+
+
 def threshold_pieces(lid, lvl):
     """A strip across every doorway where the floor changes (wood to tile at the washroom door), as tall as the
     level's (or the host room's) `trim.threshold`, as deep as the wall: the host room's own."""
@@ -276,7 +369,7 @@ def threshold_pieces(lid, lvl):
             z0 = room["at"][2]
             pos = ((a0 + a1) / 2, v, z0 + th / 2) if axis == "y" else (v, (a0 + a1) / 2, z0 + th / 2)
             size = (a1 - a0, T, th) if axis == "y" else (T, a1 - a0, th)
-            look = [f"mat:{room['look']['trim']}"] if (room.get("look") or {}).get("trim") else []
+            look = _look(room, "trim")
             out.append({"id": f"{room['id']}__threshold_{i}", "kind": "mesh", "level": lid, "room": room["id"], "yaw": 0.0, "shape": "box",
                         "d": room, "pos": pos, "size": size, "tags": ["story", f"story:{room['id']}", f"room:{room['id']}", "trim:threshold"] + look})
     return out
@@ -300,8 +393,10 @@ def plan(story, level=None):
                 axis, v, lo, _ = L.wall_line(room, op["wall"])
                 ops.append((axis, v, lo + op["at"] - op["w"] / 2, lo + op["at"] + op["w"] / 2, room["at"][2] + op.get("sill", 0.0),
                             op["h"], bool(op.get("window"))))
+        by_id = {r["id"]: r for r in lvl["rooms"]}
         for room in lvl["rooms"]:
             mine += trim_pieces(lid, lvl, room, walls, ops)
+            mine += lining_pieces(lid, room, walls, by_id)
         mine += threshold_pieces(lid, lvl)
         out += mine
         st = things[lvl["start"]]
@@ -330,6 +425,17 @@ def plan(story, level=None):
             out.append(dict(p, kind="leak", pos=t.pos, size=(float(t.d.get("width", 0.4)), 0, 0), shape=None, tags=_tags(t, [f"wall:{t.d.get('wall', 'n')}"])))
         elif u == "light":
             lift = 0.12 if isinstance(t.d.get("on"), str) else 0.0
+            if t.d.get("kit") is not None:              # a light with a fitting (the user, 2026-10-31: lights as furniture): the
+                try:                                    # fitting a kit thing of its own, <id>__fitting, its glass lit with the light;
+                    ktype, ref = KIT.kind(t.d["kit"]), KIT.ref(t.d["kit"])   # the light just under it (the Godot export
+                except ValueError:                      # writes no light source for it: GODOT_EXPORT §3b)
+                    ktype = ref = None
+                if ref:
+                    out.append(dict(p, id=f"{t.id}__fitting", kind="mesh", shape="box", pos=t.centre, size=t.size, kit=t.d["kit"],
+                                    tags=[x for x in _tags(t, [f"kit:{ktype}", f"art:{ref}", "real", f"fitting:{t.id}", "hollow"]) if not x.startswith("use:")]))
+                    out.append(dict(p, kind="light", pos=(t.pos[0], t.pos[1], t.pos[2] - 0.03), size=(0, 0, 0), shape=None,
+                                    tags=_tags(t, [f"fitting:{t.id}__fitting"])))
+                    continue
             out.append(dict(p, kind="light", pos=(t.pos[0], t.pos[1], t.pos[2] + lift), size=(0, 0, 0), shape=None,
                             tags=_tags(t)))
         elif t.d.get("shape", "").startswith("person"):
@@ -337,11 +443,12 @@ def plan(story, level=None):
             out.append(dict(p, kind="person", pos=t.pos, size=t.size, shape=None, tags=_tags(t, [f"cast:{cast}", f"pose:{pose}"])))
         elif t.d.get("kit") is not None:            # a kit thing (docs/KIT.md): its box here; its mesh is kit/<type>_<hash>
             try:
-                ktype, ref = KIT.kind(t.d["kit"]), KIT.ref(t.d["kit"])
+                spec = fitted(t.d["kit"], t.d.get("mats"))   # a floor laid out by its set's own tiles, boards or mats
+                ktype, ref = KIT.kind(spec), KIT.ref(spec)
             except ValueError:
                 continue                                # story_check says why
             extra = [f"kit:{ktype}", f"art:{ref}", "real"] + (["surface"] if ktype in KIT.SURFACE else []) + (["in_wall"] if t.d.get("in_wall") else [])
-            out.append(dict(p, kind="mesh", shape="box", pos=t.centre, size=t.size, kit=t.d["kit"], tags=_tags(t, extra)))
+            out.append(dict(p, kind="mesh", shape="box", pos=t.centre, size=t.size, kit=spec, tags=_tags(t, extra)))
         elif t.d.get("shape"):
             kind, args = L.parse_shape(t.d["shape"])
             if kind == "stairs":

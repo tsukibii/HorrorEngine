@@ -12,8 +12,10 @@ What's written (parity first, GODOT_EXPORT §3 is the shape to reach):
   HumanShaders/                        GodotPlugins/HumanShaders (copied; its own files refer to res://HumanShaders/)
   game/story.json                      the story as data (the runtime reads it: flow, stitches, scenes, items...)
   game/people/<name>.glb               the cast's Character Studio exports (previs_body "people/<name>"), for HSSkin
-  game/textures/<set>/                 the texture sets the rooms' `look` and the props' `mat` name (the PBR shelf, the
-                                       library): world-aligned triplanar StandardMaterial3Ds, M_StudioSurface's part
+  game/materials/<Name>.tres           the texture sets the rooms' `look` and the props' `mat` name (the PBR shelf, your
+  game/materials/<Name>/               attached folders, the library, a tuned set): one material file a set, its maps
+                                       beside it, every piece on every level wearing it by reference (Materials):
+                                       world-aligned triplanar StandardMaterial3Ds, M_StudioSurface's part
   game/lives.json                      the little things' lives (Content/Studio/Life/lives.json)
   game/levels/<level>.tscn             each level: plan.py's pieces as nodes (StaticBody3D blocks with a mesh and a
                                        collision shape, doors, OmniLight3D lights, Area3D triggers, Marker3D spots,
@@ -21,6 +23,7 @@ What's written (parity first, GODOT_EXPORT §3 is the shape to reach):
 Coordinates: story (x east, y north, z up, metres) -> Godot (x, y up, -z), as the desk's s2t; a piece's yaw turns
 it about Y by the same degrees the desk turns its mesh.
 """
+import hashlib
 import json
 import math
 import re
@@ -213,14 +216,139 @@ class Tscn:
         return "\n".join(out)
 
 
+def tres(rtype, props, ext):
+    """A resource file in Godot's text format (format 3): its ext_resources (path, type), referenced in props as
+    ExtResource("1"), ExtResource("2")..."""
+    out = [f'[gd_resource type="{rtype}" load_steps={len(ext) + 1} format=3]', ""]
+    for i, (path, t) in enumerate(ext, 1):
+        out.append(f'[ext_resource type="{t}" path="{path}" id="{i}"]')
+    out += ([""] if ext else []) + ["[resource]"] + [f"{k} = {v}" for k, v in props.items()] + [""]
+    return "\n".join(out)
+
+
+SET_RES = re.compile(r"[_\-](\d+k)([_\-](jpg|png|exr))?$", re.I)   # a set folder's resolution: Concrete010_1K-PNG, red_brick_2k
+
+
+class Materials:
+    """The texture sets a game's levels wear, a material file each (the user, 2026-10-31: "if multiple parts use the same
+    PBR it should be smart enough to only export ... that material once and re-use it ... a separate material folder ...
+    using the name of the material, so even later on we can just ref that one PBR mat for many parts"):
+    game/materials/<Name>.tres, a world-aligned triplanar StandardMaterial3D tiled by the set's metres (the Unreal side's
+    M_StudioSurface), its maps beside it in game/materials/<Name>/ (a DirectX normal's green flipped for Godot). Every
+    piece that wears the set, on any level, has the file as an ext_resource: Godot loads it once, and a change to it
+    changes them all; drag it onto any mesh of yours too. Named after the set (its folder's name, its resolution taken
+    off: Concrete010, red_brick), a tuned set after the set it's made from and its hash (Tatami004_a70d6e), a colour
+    colour_<hex>; when two sets would share a name, both carry a short hash of their ref."""
+
+    def __init__(self, out, refs):
+        self.out = Path(out)
+        self.files = {}                                    # ref -> res:// path, or None (not on the shelf)
+        self.names = {}
+        by = {}
+        for r in sorted(set(refs)):
+            by.setdefault(self.base_name(r), []).append(r)
+        for n, rs in by.items():
+            for r in rs:
+                self.names[r] = n if len(rs) == 1 else f"{n}_{hashlib.sha1(r.encode()).hexdigest()[:4]}"
+
+    @staticmethod
+    def base_name(ref):
+        ref = str(ref)
+        if ref.startswith("#"):
+            return "colour_" + ref[1:].lower()
+        if ref.startswith("pbr/_made/"):                   # a tuned set: the set it's made from, and which tuning
+            base = ((LIB.texture_meta(ref) or {}).get("recipe") or {}).get("set") or "tuned"
+            return f"{Materials.base_name(base)}_{ref.rsplit('/', 1)[-1][:6]}"
+        name = SET_RES.sub("", ref.rstrip("/").rsplit("/", 1)[-1]) or ref.rsplit("/", 1)[-1]
+        return re.sub(r"[^A-Za-z0-9_\-]+", "_", name).strip("_") or "material"
+
+    def res(self, ref, mode="world"):
+        """The set's material file, written the first time it's asked for; None when the set isn't on this machine's
+        shelf (the block keeps the exporter's colour). Its maps are laid three ways, a file each, all sharing them:
+        res://game/materials/<Name>.tres world-aligned (blocks, anything that stays put: seamless from block to block),
+        <Name>_uv.tres by the mesh's UVs in metres (a kit thing's slots, a kit door's parts), <Name>_obj.tres by the
+        block's own shape (a block that moves: a plain door's slab, a thing taken up: it rides with it)."""
+        key = ref if mode == "world" else (ref, mode)
+        if key in self.files:
+            return self.files[key]
+        self.files[key] = None
+        base = self.names.get(ref) or self.base_name(ref)
+        name = base + ("" if mode == "world" else "_" + mode)
+        folder = self.out / "game" / "materials"
+        props, ext = {"resource_name": gstr(name)}, []
+
+        def tex(path):
+            ext.append((path, "Texture2D"))
+            return f'ExtResource("{len(ext)}")'
+        if str(ref).startswith("#"):                       # a look that's a flat colour (STORY_FORMAT §1)
+            if not LIB.is_colour(ref):
+                return None
+            props.update({"albedo_color": col(int(ref[1:], 16)), "roughness": "0.9"})
+        else:
+            meta = LIB.texture_meta(ref)
+            src = LIB.texture_dir(ref)
+            if not meta or not src.is_dir() or "albedo" not in meta.get("maps", {}):
+                return None
+            dst = folder / base                            # the maps once a set, whichever way they're laid
+            dst.mkdir(parents=True, exist_ok=True)
+            res = f"res://game/materials/{base}"
+            maps = meta["maps"]
+            tile = float(meta.get("tile_m") or 2.0)
+            if mode == "uv":                               # the kit's UVs are metres: one repeat a tile_m; the .glb
+                # writes v as 1 - v, so the offset takes that metre back: the set lies where the desk lays it (a floor
+                # laid out by its set's own cells has the set's seams in its gaps in both)
+                props["uv1_scale"] = v3(1.0 / tile, 1.0 / tile, 1.0)
+                props["uv1_offset"] = v3(0.0, round((-1.0 / tile) % 1.0, 6), 0.0)
+            else:                                          # triplanar in the world's space, or the block's own (it moves)
+                props.update({"uv1_triplanar": "true", "uv1_world_triplanar": "true" if mode == "world" else "false",
+                              "uv1_scale": v3(1.0 / tile, 1.0 / tile, 1.0 / tile)})
+            props["texture_filter"] = "5"                  # linear with mipmaps, anisotropic
+            for slot, prop in (("albedo", "albedo_texture"), ("rough", "roughness_texture"), ("ao", "ao_texture"), ("metal", "metallic_texture")):
+                if slot in maps and (src / maps[slot]).exists():
+                    if not (dst / maps[slot]).exists():
+                        shutil.copy(src / maps[slot], dst / maps[slot])
+                    props[prop] = tex(f"{res}/{maps[slot]}")
+            if "ao_texture" in props:
+                props.update({"ao_enabled": "true", "ao_texture_channel": "0"})
+            if "roughness_texture" in props:
+                props["roughness_texture_channel"] = "0"
+            if "metallic_texture" in props:
+                props.update({"metallic": "1.0", "metallic_texture_channel": "0"})
+            if meta.get("orm") and "roughness_texture" not in props and (src / meta["orm"]).exists():   # a packed AO / rough / metal map
+                if not (dst / meta["orm"]).exists():
+                    shutil.copy(src / meta["orm"], dst / meta["orm"])
+                orm = tex(f"{res}/{meta['orm']}")
+                props.update({"ao_enabled": "true", "ao_texture": orm, "ao_texture_channel": "0", "roughness_texture": orm, "roughness_texture_channel": "1"})
+            normal = maps.get("normal") or maps.get("normal_dx")
+            if normal and (src / normal).exists():
+                out_name = normal
+                if meta.get("normal") == "dx" or "normal_dx" in maps and maps["normal_dx"] == normal:
+                    out_name = re.sub(r"\.(png|jpe?g)$", "", normal) + "_gl.png"
+                    if not (dst / out_name).exists():
+                        out_name = flip_green(src / normal, dst / out_name) and out_name
+                elif not (dst / out_name).exists():
+                    shutil.copy(src / normal, dst / out_name)
+                if out_name:
+                    props.update({"normal_enabled": "true", "normal_texture": tex(f"{res}/{out_name}")})
+        folder.mkdir(parents=True, exist_ok=True)
+        (folder / f"{name}.tres").write_text(tres("StandardMaterial3D", props, ext), encoding="utf-8")
+        self.files[key] = f"res://game/materials/{name}.tres"
+        return self.files[key]
+
+
 class LevelWriter:
-    def __init__(self, story, lid, pieces, time, meshes_out=None):
+    def __init__(self, story, lid, pieces, time, meshes_out=None, materials=None):
         self.story, self.lid, self.pieces, self.time = story, lid, pieces, time
+        self.materials = materials                         # the game's material files (Materials), shared by its levels
         self.t = Tscn(f"level_{node_name(lid)}")
         self.mats = {}
         self.names = set()
         self.meshes_out = Path(meshes_out) if meshes_out else None   # game/meshes/: the kit's and the library's glbs copied here
         self.surfaces = {}                                 # a library texture set's material, by ref (surface())
+        self.slot_mats = {}                                # a set's material laid by UVs (a kit thing's slot), by ref
+        self.dressed = set()                               # the things with slots dressed (the story's `mats`; a door with its parts one)
+        self.fittings = 0                                  # the story's lights that are fittings: no light source written
+        self.slot_script = None
         self.surfaced = 0                                  # the pieces wearing one
         self.occluders = 0                                 # the walls, floors and ceilings hiding what's behind them
         self.zoned = 0                                     # the rooms with a light zone
@@ -245,59 +373,41 @@ class LevelWriter:
         self.arts[ref] = self.t.extres(f"res://game/meshes/{src.parent.name}/{src.name}", "PackedScene")
         return self.arts[ref]
 
-    def surface(self, ref):
-        """A library texture set (a room's `look`, a prop's `mat`: `mat:<ref>`) as a world-aligned material, the Unreal
-        side's M_StudioSurface (docs/ASSETS.md §5): its maps copied into game/textures/<set>/ (a DirectX normal's
-        green flipped for Godot), tiled by the set's metres through triplanar UVs so a block's stretched UVs don't
-        matter; None when the set isn't on the shelf (the block keeps its colour)."""
-        if self.meshes_out is None:
+    def surface(self, ref, moving=False):
+        """A texture set (a room's `look`, a prop's or a door's `mat`: `mat:<ref>`) as the game's material file for it
+        (Materials: game/materials/<Name>.tres, written once, shared by every piece on every level; <Name>_obj.tres for
+        a block that moves, so the set rides with it), an ext_resource here once; None when the set isn't on the shelf
+        (the block keeps its colour)."""
+        if self.materials is None:
             return None
-        if ref in self.surfaces:
-            return self.surfaces[ref]
-        self.surfaces[ref] = None
-        meta = LIB.texture_meta(ref)
-        src = LIB.texture_dir(ref)
-        if not meta or not src.is_dir() or "albedo" not in meta.get("maps", {}):
+        key = (ref, "obj") if moving else ref
+        if key not in self.surfaces:
+            path = self.materials.res(ref, "obj" if moving else "world")
+            self.surfaces[key] = self.t.extres(path, "Material") if path else None
+        return self.surfaces[key]
+
+    def slots(self, p):
+        """A kit thing's slots dressed (its `mats`: matslot:<slot>:<ref> tags; a kit door's on each of its parts) as the
+        slot_materials.gd script's `slots`: {slot: the game's <Name>_uv.tres for the set}, as Godot's text writes a
+        Dictionary; None when none."""
+        tags = p["tags"]
+        if self.materials is None:
             return None
-        safe = re.sub(r"[^A-Za-z0-9_]+", "_", ref)
-        dst = self.meshes_out.parent / "textures" / safe
-        dst.mkdir(parents=True, exist_ok=True)
-        maps = meta["maps"]
-        props = {}
-        tile = float(meta.get("tile_m") or 2.0)
-        props["uv1_triplanar"] = "true"
-        props["uv1_world_triplanar"] = "true"
-        props["uv1_scale"] = v3(1.0 / tile, 1.0 / tile, 1.0 / tile)
-        props["texture_filter"] = "5"                      # linear with mipmaps, anisotropic
-        for slot, prop in (("albedo", "albedo_texture"), ("rough", "roughness_texture"), ("ao", "ao_texture"), ("metal", "metallic_texture")):
-            if slot in maps and (src / maps[slot]).exists():
-                if not (dst / maps[slot]).exists():
-                    shutil.copy(src / maps[slot], dst / maps[slot])
-                props[prop] = self.t.extres(f"res://game/textures/{safe}/{maps[slot]}", "Texture2D")
-        if "ao_texture" in props:
-            props["ao_enabled"] = "true"
-            props["ao_texture_channel"] = "0"
-        if "roughness_texture" in props:
-            props["roughness_texture_channel"] = "0"
-        if "orm" in maps and "roughness_texture" not in props and (src / maps["orm"]).exists():   # a packed AO / rough / metal map
-            if not (dst / maps["orm"]).exists():
-                shutil.copy(src / maps["orm"], dst / maps["orm"])
-            orm = self.t.extres(f"res://game/textures/{safe}/{maps['orm']}", "Texture2D")
-            props.update({"ao_enabled": "true", "ao_texture": orm, "ao_texture_channel": "0", "roughness_texture": orm, "roughness_texture_channel": "1"})
-        normal = maps.get("normal") or maps.get("normal_dx")
-        if normal and (src / normal).exists():
-            out_name = normal
-            if meta.get("normal") == "dx" or "normal_dx" in maps and maps["normal_dx"] == normal:
-                out_name = re.sub(r"\.(png|jpe?g)$", "", normal) + "_gl.png"
-                if not (dst / out_name).exists():
-                    out_name = flip_green(src / normal, dst / out_name) and out_name
-            elif not (dst / out_name).exists():
-                shutil.copy(src / normal, dst / out_name)
-            if out_name:
-                props["normal_enabled"] = "true"
-                props["normal_texture"] = self.t.extres(f"res://game/textures/{safe}/{out_name}", "Texture2D")
-        self.surfaces[ref] = self.t.sub("StandardMaterial3D", props)
-        return self.surfaces[ref]
+        got = []
+        for t in tags:
+            if t.startswith("matslot:"):
+                slot, _, ref = t[8:].partition(":")
+                if ref not in self.slot_mats:
+                    path = self.materials.res(ref, "uv")
+                    self.slot_mats[ref] = self.t.extres(path, "Material") if path else None
+                if self.slot_mats[ref]:
+                    got.append(f"{gstr(slot)}: {self.slot_mats[ref]}")
+        if not got:
+            return None
+        self.dressed.add(next((t[5:] for t in tags if t.startswith("door:")), p["id"]))
+        if self.slot_script is None:
+            self.slot_script = self.t.extres("res://addons/horrorstudio/slot_materials.gd", "Script")
+        return "{\n" + ",\n".join(got) + "\n}"
 
     def art_transform(self, p, ref):
         """Where the mesh sits in its block (the desk's kitIn and dress): a kit thing's origin is its base's centre
@@ -365,7 +475,7 @@ class LevelWriter:
         use = next((t[4:] for t in tags if t.startswith("use:")), None)
         tagged = BY_TAG.get(next((t[4:] for t in tags if t.startswith("tag:")), ""))
         if p["kind"] == "mesh":
-            key = "trim" if any(t.startswith("trim:") for t in tags) else tagged or ("use" if use else "prop")
+            key = "wall" if "trim:lining" in tags else "trim" if any(t.startswith("trim:") for t in tags) else tagged or ("use" if use else "prop")
         else:
             key = p["kind"]
         if use == "clean":
@@ -389,8 +499,9 @@ class LevelWriter:
             shape = self.t.sub("BoxShape3D", {"size": v3(w, h, d)})
         mprops = {"mesh": mesh, "material_override": self.mat(key, {"transparency": "1", "albedo_color": col(MATS["stain"][0], 0.85)} if key == "stain" else None)}
         mat_ref = next((t[4:] for t in tags if t.startswith("mat:")), None)    # a room's look or a prop's mat: the set off the shelf
+        moves = p["kind"] == "door" or any(t.startswith("door_part:") and t != "door_part:frame" for t in tags) or use in ("pickup", "carry", "roll")
         if mat_ref and key != "stain":
-            surf = self.surface(mat_ref)
+            surf = self.surface(mat_ref, moves)
             if surf:
                 mprops["material_override"] = surf
                 self.surfaced += 1
@@ -398,7 +509,7 @@ class LevelWriter:
         ext = self.art_of(art) if art else None
         if ext:                                       # the mesh in its block; the block stays, unseen, for the cursor and the walls
             mprops["visible"] = "false"
-        if p["kind"] == "door" or any(t.startswith("door_part:") and t != "door_part:frame" for t in tags) or use in ("pickup", "carry", "roll"):
+        if moves:
             mprops["gi_mode"] = "2"                    # it moves (a leaf, its handle, a thing taken up): a LightmapGI the user adds lights it by its probes, never bakes it in place
         self.t.node("mesh", "MeshInstance3D", path, mprops)
         if p["kind"] in ("wall", "floor", "ceiling") and p["shape"] not in ("cyl", "sphere") and not hidden and not hollow \
@@ -410,7 +521,11 @@ class LevelWriter:
             self.occluders += 1
         if ext:
             xf, k = self.art_transform(p, art)
-            self.t.node("art", None, path, {"transform": xf}, instance=ext)
+            aprops = {"transform": xf}
+            slots = self.slots(p) if art.startswith("kit/") else None
+            if slots:                                  # its slots dressed: the script on the instanced kit mesh
+                aprops.update({"script": self.slot_script, "slots": slots})
+            self.t.node("art", None, path, aprops, instance=ext)
             self.art_count += 1
         if not hollow and use != "clean":
             sprops = {"shape": shape}
@@ -446,6 +561,14 @@ class LevelWriter:
         name = self.uname(p["id"])
         light_meta = dict({"kind": kind, "room": p.get("room"), "base": inten, "on": lit},
                           **{k: d[k] for k in ("flicker", "mode", "interval", "rate", "letters") if k in d})   # the flicker and its mode (flicker.gd: a mode with no flicker is all of it)
+        fitting = next((t[8:] for t in p.get("tags") or [] if t.startswith("fitting:")), None)
+        if fitting:     # a light with a fitting (the user, 2026-10-31: "we don't need to export actual Godot light sources,
+            # lights as furniture"): no light source; a node where it is, which the runtime keeps lit, dimmed or cut as
+            # the story says: the fitting's glass glows with it, and the lights the user puts under this node follow it
+            self.t.node(name, "Node3D", "Lights", {"transform": xform(s2g(p["pos"]))},
+                        {"piece": self.piece_meta(p), "light": dict(light_meta, fitting=fitting)})
+            self.fittings += 1
+            return
         if d.get("pattern") in PATTERNS and isinstance(d.get("aim"), list) and len(d["aim"]) == 3:
             # a pattern in its light (HSPattern): a spot aimed at `aim` (room metres), its cone `spread` wide; the
             # runtime draws the pattern into its projector; the distance to the aim sizes the pattern in metres
@@ -1248,6 +1371,8 @@ def export(game, out=None, make_zip=False, do_import=True):
     pieces = P.plan(story)
     arts = 0
     surfaced = 0
+    slots_dressed = 0
+    fittings = 0
     occluders = 0
     surface_sets = set()
     kit_index = {}
@@ -1313,17 +1438,27 @@ def export(game, out=None, make_zip=False, do_import=True):
                 if lf:
                     lt[p["id"]] = {"life": lf, "d": p}
     (out / "game" / "life_things.json").write_text(json.dumps(lt, ensure_ascii=False), encoding="utf-8")
+    for look, where in LIB.looks(story):                # the rooms' and blocks' tuned sets, made where this machine hasn't them yet
+        if isinstance(look, dict) and ".outside." not in where:
+            try:
+                from . import pbrmix as MIX  # noqa: PLC0415 - numpy and Pillow, only when a look needs them
+                MIX.made(look)
+            except (ValueError, OSError, ImportError):
+                pass                                       # its set isn't on this shelf: the block keeps its colour
+    mats = Materials(out, [t[4:] for p in pieces for t in p.get("tags") or [] if t.startswith("mat:")])
     times = L.flow_times(story)
     levels = []
     for lid in story.get("levels", {}):
         t = (story.get("game") or {}).get("time") or L.TIME_DEFAULT
-        lw = LevelWriter(story, lid, pieces, t, out / "game" / "meshes")
+        lw = LevelWriter(story, lid, pieces, t, out / "game" / "meshes", mats)
         (out / "game" / "levels" / f"{lid}.tscn").write_text(lw.write(), encoding="utf-8")
         levels.append(lid)
         arts += lw.art_count
         surfaced += lw.surfaced
+        slots_dressed += len(lw.dressed)
+        fittings += lw.fittings
         occluders += lw.occluders
-        surface_sets.update(r for r, m in lw.surfaces.items() if m)
+        surface_sets.update(r if isinstance(r, str) else r[0] for r, m in lw.surfaces.items() if m)
         for ref in lw.arts:                               # the kit things' sockets and slots (lifefx.gd), by their ref
             if ref.startswith("kit/") and LIB.mesh_info(ref):
                 kit_index[ref] = LIB.mesh_info(ref)
@@ -1333,7 +1468,11 @@ def export(game, out=None, make_zip=False, do_import=True):
     if (sfx / "index.json").exists():
         shutil.copytree(sfx, out / "game" / "sfx", ignore=shutil.ignore_patterns("*.import", "__pycache__"))
     import datetime  # noqa: PLC0415
-    info = {"game": game, "story": str(path), "levels": levels, "pieces": len(pieces), "arts": arts, "acts": acts, "surfaced": surfaced, "occluders": occluders, "surface_sets": sorted(surface_sets), "bake": (previs / "preview.json").exists(), "bodies": baked,
+    info = {"game": game, "story": str(path), "levels": levels, "pieces": len(pieces), "arts": arts, "acts": acts, "surfaced": surfaced, "occluders": occluders, "surface_sets": sorted(surface_sets),
+            "materials": {r: m for r, m in sorted(mats.files.items(), key=lambda kv: str(kv[0])) if m and isinstance(r, str)},
+            "slot_materials": {r[0]: m for r, m in sorted(mats.files.items(), key=lambda kv: str(kv[0])) if m and isinstance(r, tuple) and r[1] == "uv"},
+            "moving_materials": {r[0]: m for r, m in sorted(mats.files.items(), key=lambda kv: str(kv[0])) if m and isinstance(r, tuple) and r[1] == "obj"},
+            "slots_dressed": slots_dressed, "fittings": fittings, "bake": (previs / "preview.json").exists(), "bodies": baked,
             "bodies_list": sorted(f.name[5:-4] for f in previs.glob("Body_*.glb")) if previs.exists() else [], "engine": L.engine_version(), "godot": "4.7",
             "made": datetime.datetime.now().strftime("%Y-%m-%d %H:%M")}
     kept = []

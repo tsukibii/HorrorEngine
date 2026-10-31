@@ -60,6 +60,10 @@ func _initialize() -> void:
 		if mi.mesh != null:
 			for si in mi.mesh.get_surface_count():
 				plain_mats[[mi, si]] = mi.get_active_material(si)
+	for mi in who.find_children("*", "MeshInstance3D", true, false):     # the skin's colour and the eyes are measured here: the hair (GDPORTRAIT's) out of the way
+		var hn := String(mi.name).to_lower()
+		if HSHair.is_hair(hn) or hn.contains("scalp"):
+			mi.visible = false
 	mats = HSSkin.wear(who, {}, glb)                 # with the export's maps and its studioSkin numbers
 	for mi in who.find_children("*", "MeshInstance3D", true, false):
 		if mi.mesh != null:

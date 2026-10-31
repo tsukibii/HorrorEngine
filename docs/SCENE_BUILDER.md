@@ -231,7 +231,89 @@ What the builder now hands over, and what to do with it:
 4. **Lights are placed and warm:** a point light per ceiling light at its colour temperature; swap for rect lights
    (LED panels) and bake (GPU Lightmass) or leave them to Lumen.
 
-## 8. Not done yet
+## 8. The outside: the building round the level, for the street
+
+The user (DECISIONS 2026-10-31): "the map will be a mix of enterable buildings made via our interior tool, and the
+non-enterable ones made for the street designer; enhance the interior designer too so we can make roofs etc that will
+help match the style of our street designs; ideally I can import an interior designed space into the street, then build
+the rest around it". So an enterable building is designed whole here, inside and out, with the street builder's own
+generator and styles, and a street takes it as it is.
+
+- **The Outside panel** (left, under Finish): *build its outside* gives the level an outside (`outside` in the level,
+  STORY_FORMAT §2). Then:
+  - **style**: one of the street builder's ten (house, old wooden house, kiosk, shop building, white tower...): its
+    colours and roof. ↻ rolls another of the same style. *(your own)* keeps what you set.
+  - **front**: which side faces the street. Automatically its way in: a door named `front`/`entr`/`main`, else one from
+    the genkan or a hall, else the first outside door.
+  - **walls**: their colour, what they are (`wall`, `plaster`, `concrete`, `wood`, `blocks`...), the trim's colour.
+  - **roof**: flat (a parapet), a railing, gable, hip, one slope or bare; its colour, slope, overhang, tiles or sheet.
+  - **raised**: how high the floor stands over the ground (a Japanese house's 45 cm), with steps up to each door.
+  - **on its walls**: the street builder's fittings (air conditioners, signs, lamps, lanterns, pipes, awnings, canopies,
+    eaves, noren, balconies, stairs, panels), each on the front, left, back or right, `x` along the wall from its middle,
+    `up` from the ground, its size. No windows or doors here: those are the plan's own, cut through the walls where the
+    plan has them.
+- **The roof never clips the level**: it is boxed, on a soffit at the walls' top and 1 cm over the level's own walls
+  and ceilings, so no wall top shows through it from any side; a gable's ends are flush with its walls. Rooms that
+  don't fill a box (an L, a T) get one roof over their outline, joined in valleys (STREET_BUILDER §5c, §5d).
+- **In the view**: *Round the building* (the view bar) orbits it from outside (drag, the wheel), lit like a street by
+  day; *outside* shows or hides it in either view. The building is the street's own (`SG.outsideBuilding`, the shell,
+  roof and fittings a street builds), so what you see here is what the street gets.
+- **On the plan**: its walls' outline dashed round the rooms, the roof's edge dotted, and an arrow at its front.
+- **Into a street**: the street builder's palette, *Buildings to walk into*, has every set (the motel and the bungalow
+  as presets): put it down, then build the street round it. The street's building follows the set's outside (save the
+  set, open the street: it's read again) until it's changed in the street, then keeps its own (*Follow the set's
+  outside* takes it back). STREET_BUILDER §5c.
+- **Godot**: the outside goes to Godot in the street's .glb (STREET_BUILDER §5b), round the marker where the level goes;
+  the level's own export doesn't build it.
+
+## 9. Paint: the paint bucket in the rooms
+
+The user (2026-10-31): "am I able to use the paint bucket thing in my interiors, if we haven't hooked up our PBRs can
+we". The street paint page's brush (`brush.js`, docs/STREET_PAINT.md §1) on the level, in the 3D view:
+
+- **Paint** (the view bar) opens it under the view: the PBR shelf as pictures by category (the project's `pbr/`, your
+  `assets/pbr`, your attached folders: ASSETS §6), a colour, and the brush: a tint, brightness, contrast, saturation,
+  hue, a fade, its shine, relief, size and turn, and **layers** over it (another set in patches or by its own mask:
+  moss, prints, scuffs; decals scattered over it). The bake's wear layers are the street's (a room has no bake), so
+  they're not offered here.
+- **A click paints** what's under it: a room's **floor**, its **walls**, its **ceiling** or its **trim** (skirting,
+  cornice, casings), a **block** the story owns (its `mat`), a **kit thing's material** (the slot under the click: a
+  sofa's fabric, a desk's wood, a fridge's body, its tones with it: the thing's `mats`, STORY_FORMAT §2), or, round
+  the building, the **outside's** slot under it. The **fittings the finish makes** take it too (the user: "the
+  plastic PBR for light switches"): the switch by the door, the built-ins (the kitchen run, the shoe cabinet, the
+  vanity), the stairs' steps, a window's frame; and **doors**: a plain door's slab (its `mat`), a kit door's parts by
+  slot (its `mats`: the leaf's front, the handle's metal, the frame's body). *Every one like it* paints every room of
+  that kind, or that slot on every thing of the same kit preset (every switch, every door of that kit). A drag still
+  looks round, the keys still walk.
+- **What a fitting wears is kept** though the finish makes it again on every save: on its entry in the room's props
+  (a stub with its id, `<room>_fx_switch`, made when it's first painted, read back with the level), which the export
+  copies onto the fitting it makes; a window's frame keeps it on its window, a door on its opening (its door's words).
+- **A room's walls are its own side.** A wall between two rooms is one piece, built by one of them; the plan lines the
+  other room's side with a 4 mm lining wearing that room's own look (`trim:lining`, plan.py `lining_pieces`) wherever
+  the two rooms' looks differ, following the wall's pieces, door holes and all. A click on a wall paints the room its
+  face looks into.
+- **A kit floor takes the floor's look** (the planks, tiles and tatami a room gets by its kind; the user, 2026-10-31:
+  "make the floors take a material"): painting a room's floor paints its kit floor's boards too (the `mats` on its
+  `<room>_fx_floor`), and the room's own floor under it, so the strip by the walls and a floor taken out later match.
+  When the set paints tiles, boards or mats of its own (pavers, a plank floor, tatami mats), the kit floor is laid out
+  by them (KIT.md, *Floors laid out by their set*): each board where the set paints one, its real gaps in the set's
+  seams; a set with none (grain, a weave) gives each board its own cut. The status says which once it's planned. A
+  click on the gaps (or a tatami's borders) paints only those. A ceiling step takes the ceiling's look on its body.
+- **Alt-click picks up** what's on a surface: the brush becomes it and tunes that surface live (*tune …* under the
+  brush), every change one undo.
+- **What it writes** is the story's own words (STORY_FORMAT §1, §2): `look.floor`, `look.walls`, `look.ceiling`,
+  `look.trim`, a block's `mat`, a kit thing's `mats`, the level's `outside.look`: a set's ref, a colour, or a tuned set (a look object). The
+  desk's server makes a tuned set into `pbr/_made/<hash>` when it plans, the stage draws it, the Godot export writes
+  it (GODOT_EXPORT). The Selected panel's Look pickers show the same, a tuned one as its set and "(tuned)".
+- **The ceiling lights are fittings** (the user, 2026-10-31: "we don't need to export actual Godot light sources, I'd
+  rather take lights as furniture, rounded LEDs: a circular rim with a glass circle, and those kinds of variations"):
+  *a ceiling light in every room* (Finish) puts a round LED on each ceiling, flush under it (or under a ceiling step):
+  *its fitting* picks one for every room, or *by the room's size* (a downlight in a small room, a flush 300 in a
+  middling one, a dome in a big one). Paint colours its rim; its glass is the light (it glows while it's on, so it isn't
+  painted). In Godot no light source comes with it: put your own lights under its node and they follow its switch and
+  the power cut (GODOT_EXPORT §3b). An older level's bulbs become fittings when it's opened and saved here.
+
+## 10. Not done yet
 
 - **Default looks by room kind** (texture sets for a washitsu's walls, a bath's tiles): *Same look for every
   <kind>* does it by hand until the texture sets for them are fetched. The floors' geometry already follows the

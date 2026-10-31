@@ -219,11 +219,13 @@ project's settings are the balanced look's (TAA, the shadow atlas and filter, th
 change its instanced scene), or replace the file in <code>game/meshes/</code>. Keep the box: the cursor and the walls are the boxes. This export has
 {info.get('arts', 0)} such meshes.</p>
 <p>A room's surfaces take their texture set from the story's <code>look</code> (<code>{{"floor": "pbr/Wood/worn_planks", "walls": ...}}</code>; a prop's
-<code>mat</code>; the floor's <code>floor</code> word sets the footsteps too): the set's maps are copied into <code>game/textures/&lt;set&gt;/</code> and worn as a
-world-aligned material (triplanar, tiled by the set's metres, so a block's stretched UVs don't matter; a DirectX normal's green flipped for Godot): the
-Unreal side's M_StudioSurface. This export wears {info.get('surfaced', 0)} such surfaces from {len(info.get('surface_sets', []))} sets. A room with no
-<code>look</code> keeps the exporter's plain colour per kind (wall, floor, trim, prop...). To swap a texture, change the set in the story and export
-again, or change the material on the wall's <code>MeshInstance3D</code> (it stays until the next export).</p>
+<code>mat</code>; the floor's <code>floor</code> word sets the footsteps too). <b>Each set is one material file</b>, <code>game/materials/&lt;Name&gt;.tres</code>,
+named after the set (<code>Concrete010</code>, <code>red_brick</code>; a tuned set after the set it's made from, <code>Tatami004_a70d6e</code>), its maps beside it
+in <code>game/materials/&lt;Name&gt;/</code>: a world-aligned material (triplanar, tiled by the set's metres, so a block's stretched UVs don't matter; a DirectX
+normal's green flipped for Godot), the Unreal side's M_StudioSurface. Every wall, floor and block that wears the set, on every level, wears that one
+file: change it in the Inspector and they all change, or drag it onto a mesh of your own. This export wears {info.get('surfaced', 0)} such surfaces
+from {len(info.get('materials', {}) or info.get('surface_sets', []))} material files. A room with no <code>look</code> keeps the exporter's plain colour per kind
+(wall, floor, trim, prop...). To swap a texture, change the set in the story (or paint it in the scene builder) and export again.</p>
 {fig(pictures, 'look_corridor_pbr.png', 'The corridor wearing the shelf\'s planks and plaster, tiled by their real size.')}
 {fig(pictures, 'kitchen_kit.png', 'The kitchen: the kit\'s things (a kettle, a hob, a rice cooker, a clock) in their blocks.')}
 """))
