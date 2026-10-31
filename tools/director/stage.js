@@ -531,7 +531,7 @@ export class Stage {
         } else l = new THREE.PointLight(col, (p.d && p.d.lit === false) ? 0 : inten, dist, 1.6);
         l.position.copy(s2t(...p.pos));
         if (l.isSpotLight && p.d && p.d.pattern && !Stage.plainLight) { const pl = new PatternLoop(l, p.d, l.position.distanceTo(l.target.position)); this.patterns.push(pl); this.world.add(pl.mesh); }   // the pattern itself where the light lands, as HSPattern draws it
-        l.userData = Object.assign({ id: p.id, room: p.room, base: l.intensity, kind }, flickerOf(p.d || {}, p.id));   // kind: a candle or a fire burns through a power cut; the flicker's mode (tools/shared/flicker.js)
+        l.userData = Object.assign({ id: p.id, room: p.room, base: l.intensity, kind, fitting: (p.tags.find(t => t.startsWith("fitting:")) || "").slice(8) || null }, flickerOf(p.d || {}, p.id));   // kind: a candle or a fire burns through a power cut; the flicker's mode (tools/shared/flicker.js); its fitting (linkFittings)
         this.world.add(l); this.lights.push(l);
       } else if (p.kind === "person") {
         const cid = (p.tags.find(t => t.startsWith("cast:")) || "").slice(5);
@@ -576,6 +576,26 @@ export class Stage {
     }
     this.applyTime();
     if (Stage.LIVES) { this.life = this.life || new LifeFX(this, Stage.LIVES); this.life.attach(); }   // steam, smoke, glows...
+    this.linkFittings();
+  }
+  // a light with a fitting (its `kit`, the plan's <id>__fitting: the round LEDs the scene builder puts on its ceilings):
+  // the fitting's glass (its `emit` slot, a material of its own) glows as bright as its light is, every frame (glowFittings)
+  linkFittings() {
+    const byId = {}; this.world.traverse(m => { if (m.userData && m.userData.piece) byId[m.userData.piece.id] = m; });
+    for (const l of this.lights) {
+      const f = l.userData.fitting && byId[l.userData.fitting]; l.userData.glow = [];
+      if (!f) continue;
+      f.traverse(c => {
+        if (!c.isMesh || c === f || String(c.userData.slot || "") !== "emit") return;
+        c.material = c.material.clone(); c.material.userData.glow0 = c.material.emissiveIntensity || 1; l.userData.glow.push(c.material);
+      });
+    }
+  }
+  glowFittings() {
+    for (const l of this.lights) for (const m of l.userData.glow || []) {
+      const k = l.userData.base ? Math.max(0, Math.min(1.2, l.intensity / l.userData.base)) : 1;
+      m.emissiveIntensity = m.userData.glow0 * k;                                            // off: its plain glass
+    }
   }
   setTime(t) { this.time = TIME_LOOK[t] ? t : TIME_DEFAULT; this.applyTime(); }
   // the headlight sweeps (sweep.gd's maths): a pass every so often, or fired; the lamp slides along the street outside, aimed in through the glass
@@ -1182,7 +1202,7 @@ export class Stage {
       l.intensity = l.userData.base * k;
     }
   }
-  render() { this.simplify(); this.renderer.render(this.scene, this.camera); }
+  render() { this.glowFittings(); this.simplify(); this.renderer.render(this.scene, this.camera); }
   // the simple view also leaves out what Play's eye can't see (cull): the rooms the eye is in, and the rooms seen from
   // them through an opening in view (an archway, a window, an open door or one still swinging), three deep. A room out of
   // sight keeps its walls and doors (a wall belongs to one of the two rooms it parts) and loses its props, floor, ceiling

@@ -269,7 +269,12 @@ export const LIGHT_K = { ldk: 3000, living: 2700, dining: 2700, kitchen: 4000, w
 // the finish a new plan starts with: skirting 6 cm, door casings 6 cm, no cornice (Japanese rooms often have a thin
 // mawaribuchi: try 3 cm), a 12 mm threshold where the floor changes, a ceiling light in each room with its switch by
 // the door
-export const FINISH = { skirting: 0.06, cornice: 0, casing: 0.06, threshold: 0.012, lights: true, switches: true };
+export const FINISH = { skirting: 0.06, cornice: 0, casing: 0.06, threshold: 0.012, lights: true, switches: true, light_fitting: "auto" };
+// the ceiling light every room gets is a fitting (the user, 2026-10-31: "lights as furniture, rounded LEDs: a circular rim
+// with a glass circle, and those kinds of variations"): "auto" picks by the room's floor area, else one preset for all
+export const LIGHT_FITTINGS = [["auto", "by the room's size"], ["downlight_100", "downlight 100"], ["downlight_150", "downlight 150"],
+  ["led_flush_300", "round LED, flush 300"], ["led_flush_450", "round LED, flush 450"], ["led_dome_500", "round LED, dome 500"], ["led_ring_600", "round LED, ring 600"]];
+export function autoFitting(area) { return area < 3.5 ? "downlight_100" : area < 13 ? "led_flush_300" : "led_dome_500"; }
 export const WINDOW_FRAME = "window_slide";     // the frame a new window gets
 
 // texture sets a room can be given (its `look`): the few the studio already uses, plus whatever has been fetched

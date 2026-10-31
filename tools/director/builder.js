@@ -9,7 +9,7 @@ import { Stage, vfov, EYES, s2t, SHOTS, shotFor, FOV_H, loadAssetLibrary, LIBRAR
 import { loadBody, BodyFigure } from "./bodies.js";
 import { GLTFLoader } from "./vendor/GLTFLoader.js";
 import { FBXLoader } from "./vendor/FBXLoader.js";
-import { KINDS, OPENINGS, PRESETS, JO, MODULE, STOREY, WALL_ITEMS, FINISH, KNOWN_LOOKS, FLOOR_BY_KIND } from "./builder-presets.js";
+import { KINDS, OPENINGS, PRESETS, JO, MODULE, STOREY, WALL_ITEMS, FINISH, KNOWN_LOOKS, FLOOR_BY_KIND, LIGHT_FITTINGS } from "./builder-presets.js";
 import * as BM from "./builder-model.js";
 import * as KIT from "./kit.js";
 import { form as kitForm, overrides as kitOverrides, CSS as KIT_CSS } from "./kit-form.js";
@@ -885,8 +885,11 @@ function renderFinish() {
   doorsAll.onclick = () => { pushUndo(); let n = 0; for (const op of B.model.ops) if ((op.type === "door" || op.type === "slide") && !(op.extra || {}).kit) { op.extra = Object.assign({}, op.extra, { kit: { preset: op.type === "slide" ? "door_slide" : "door_panels" } }); n++; } changed(); status(`${n} doorways got a door`); };
   const frames = document.createElement("button"); frames.textContent = "Frames in every window";
   frames.onclick = () => { pushUndo(); let n = 0; for (const op of B.model.ops) if (op.type === "window" && !op.frame) { op.frame = { preset: "window_slide" }; n++; } changed(); status(`${n} windows got a frame`); };
+  const fitting = pick(f.light_fitting || "auto", LIGHT_FITTINGS, v => { f.light_fitting = v; renderFinish(); });
+  fitting.title = "the ceiling lights are fittings (the user: lights as furniture): round LEDs, a rim with a glass circle that glows while the light's on; Paint colours their rims; in Godot no light source comes with them, yours go under them";
   box.append(grid,
     check(f.lights, "a ceiling light in every room", v => { f.lights = v; renderFinish(); }), document.createElement("br"),
+    ...(f.lights ? [Object.assign(document.createElement("label"), { textContent: "its fitting " }), fitting, document.createElement("br")] : []),
     check(f.switches, "its switch by the door (an interactable)", v => { f.switches = v; renderFinish(); }), document.createElement("br"), floors, " ", frames, " ", doorsAll);
 }
 
@@ -1357,6 +1360,7 @@ function targetOfHit(h) {
   const d = dressOf(p), has = d && (d.door || d.of || holderOf(d));
   if ((p.kind === "mesh" || p.kind === "door") && tags.some(t => t.startsWith("kit:"))) {   // a kit thing, a fitting, a kit door's part, a
     const slot = String(h.object.userData.slot || "").replace(/_\d+$/, "");                // window's frame: the slot under the click
+    if (slot === "emit") return { kind: "none", why: "the glass is the light: it glows while it's on (paint the rim)" };
     if (has && slot) return Object.assign({ kind: "kit", slot }, d);
     return { kind: "none", why: has ? "click the thing itself" : "this one keeps its kit's colours" };
   }

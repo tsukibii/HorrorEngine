@@ -300,9 +300,15 @@ we". The street paint page's brush (`brush.js`, docs/STREET_PAINT.md §1) on the
   `look.trim`, a block's `mat`, a kit thing's `mats`, the level's `outside.look`: a set's ref, a colour, or a tuned set (a look object). The
   desk's server makes a tuned set into `pbr/_made/<hash>` when it plans, the stage draws it, the Godot export writes
   it (GODOT_EXPORT). The Selected panel's Look pickers show the same, a tuned one as its set and "(tuned)".
+- **The ceiling lights are fittings** (the user, 2026-10-31: "we don't need to export actual Godot light sources, I'd
+  rather take lights as furniture, rounded LEDs: a circular rim with a glass circle, and those kinds of variations"):
+  *a ceiling light in every room* (Finish) puts a round LED on each ceiling, flush under it (or under a ceiling step):
+  *its fitting* picks one for every room, or *by the room's size* (a downlight in a small room, a flush 300 in a
+  middling one, a dome in a big one). Paint colours its rim; its glass is the light (it glows while it's on, so it isn't
+  painted). In Godot no light source comes with it: put your own lights under its node and they follow its switch and
+  the power cut (GODOT_EXPORT §3b). An older level's bulbs become fittings when it's opened and saved here.
 - **Not yet:** a kit floor or ceiling is taken up rather than dressed (a set with its own planks over the kit's planks
-  would double them); the ceiling light the finish adds is a light alone (nothing drawn to paint: a kit light fitting
-  placed as furniture takes a set).
+  would double them).
 
 ## 10. Not done yet
 

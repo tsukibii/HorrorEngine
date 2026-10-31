@@ -2,7 +2,7 @@
 // reference layout and written back as the story's rooms (with the shared walls worked out: the taller, then the
 // larger room builds a wall two rooms share, the other skips that stretch), openings, links, built-ins, stairs and
 // the start spot. docs/SCENE_BUILDER.md has the rules; check.js-style tests run it in the page (builder_test.js).
-import { KINDS, FIXTURES, OPENINGS, JO, WALL_ITEMS, LIGHT_K, FINISH, FLOOR_BY_KIND, WINDOW_FRAME } from "./builder-presets.js";
+import { KINDS, FIXTURES, OPENINGS, JO, WALL_ITEMS, LIGHT_K, FINISH, FLOOR_BY_KIND, WINDOW_FRAME, autoFitting } from "./builder-presets.js";
 import * as KIT from "./kit.js";
 
 // the kit's presets (docs/KIT.md): the page sets them once it has them (stage.js loadAssetLibrary)
@@ -172,9 +172,13 @@ export function levelToModel(story, levelName) {
     items.push(it);
   }
   const tr = lvl.trim || {};
+  // the ceiling lights' fitting: "auto" when every room's is the one its size picks (or it has none yet: an older level's
+  // bulb, a fitting from now on), else the one they were given
+  const fl = lvl.rooms.flatMap(r => (r.props || []).filter(p => p.id === `${r.id}_fx_light` && p.kit).map(p => [r, typeof p.kit === "string" ? p.kit : p.kit.preset]));
   const finish = { skirting: tr.skirting || 0, cornice: tr.cornice || 0, casing: tr.casing || 0, threshold: tr.threshold || 0,
                    lights: lvl.rooms.some(r => (r.props || []).some(p => p.id === `${r.id}_fx_light`)),
-                   switches: lvl.rooms.some(r => (r.props || []).some(p => p.id === `${r.id}_fx_switch`)) };
+                   switches: lvl.rooms.some(r => (r.props || []).some(p => p.id === `${r.id}_fx_switch`)),
+                   light_fitting: fl.every(([r, k]) => k === autoFitting(r.size[0] * r.size[1])) ? "auto" : fl[0][1] };
   return { rooms, ops, items, kits, floors: floors.length ? floors : [0], finish, player, her, levelExtra, startId: lvl.start || "start", problems: [] };
 }
 
@@ -290,8 +294,14 @@ export function modelToLevel(model, story) {
     const extra = [];
     if (r.fixtures) extra.push(...placeFixtures(model, r));
     if (fin.lights && r.ceiling && !OUTDOOR.has(r.kind) && !["closet", "oshiire", "storage"].includes(r.kind)) {
+      // its fitting (a round LED, by the room's size or the one picked in Finish): flush under the ceiling, or under a
+      // ceiling step; the light itself just under it (plan.py); the Godot export draws the fitting, no light source
+      const fit = fin.light_fitting && fin.light_fitting !== "auto" ? fin.light_fitting : autoFitting(area(r));
+      let fh = 0.03, step = 0;
+      try { fh = kitFull({ preset: fit }).size[2]; } catch (e) { }
+      try { if (r.ceilKit && r.ceiling) step = kitFull(r.ceilKit).size[2]; } catch (e) { }
       extra.push({ id: `${r.id}_fx_light`, use: "light", kind: "bulb", lit: !["off", "dark"].includes(r.light), at: [r3(r.w / 2), r3(r.d / 2)],
-                   z: r3(r.h - 0.08), kelvin: LIGHT_K[r.kind] || 3000, lumens: Math.round(Math.min(4000, 250 * area(r))) });
+                   z: r3(r.h - step - fh), kit: fit, kelvin: LIGHT_K[r.kind] || 3000, lumens: Math.round(Math.min(4000, 250 * area(r))) });
       if (fin.switches) { const sw = switchFor(model, r); if (sw) extra.push(sw); }
     }
     for (const it of (model.items || []).filter(i => i.room === r.id)) extra.push(itemProp(r, it));

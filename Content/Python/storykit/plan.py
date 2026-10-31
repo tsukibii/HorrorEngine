@@ -392,6 +392,17 @@ def plan(story, level=None):
             out.append(dict(p, kind="leak", pos=t.pos, size=(float(t.d.get("width", 0.4)), 0, 0), shape=None, tags=_tags(t, [f"wall:{t.d.get('wall', 'n')}"])))
         elif u == "light":
             lift = 0.12 if isinstance(t.d.get("on"), str) else 0.0
+            if t.d.get("kit") is not None:              # a light with a fitting (the user, 2026-10-31: lights as furniture): the
+                try:                                    # fitting a kit thing of its own, <id>__fitting, its glass lit with the light;
+                    ktype, ref = KIT.kind(t.d["kit"]), KIT.ref(t.d["kit"])   # the light just under it (the Godot export
+                except ValueError:                      # writes no light source for it: GODOT_EXPORT §3b)
+                    ktype = ref = None
+                if ref:
+                    out.append(dict(p, id=f"{t.id}__fitting", kind="mesh", shape="box", pos=t.centre, size=t.size, kit=t.d["kit"],
+                                    tags=[x for x in _tags(t, [f"kit:{ktype}", f"art:{ref}", "real", f"fitting:{t.id}", "hollow"]) if not x.startswith("use:")]))
+                    out.append(dict(p, kind="light", pos=(t.pos[0], t.pos[1], t.pos[2] - 0.03), size=(0, 0, 0), shape=None,
+                                    tags=_tags(t, [f"fitting:{t.id}__fitting"])))
+                    continue
             out.append(dict(p, kind="light", pos=(t.pos[0], t.pos[1], t.pos[2] + lift), size=(0, 0, 0), shape=None,
                             tags=_tags(t)))
         elif t.d.get("shape", "").startswith("person"):

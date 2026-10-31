@@ -6,7 +6,8 @@
 // into Content/Studio/Sets and taken by a game as its start, its outside (a street style, a fitting) drawn round it and
 // saved in its level (and painted), the desk's deep link shows its marks; Paint (the paint bucket) on a room's floor,
 // tuned, its walls lined, picked up, a sofa's fabric, a switch (every switch), a door, a window frame, kept through a
-// read back, undone. Ends "BUILDER ok".
+// read back; the ceiling lights as round LED fittings (a rim painted, the glass not, a fitting picked for all), undone.
+// Ends "BUILDER ok".
 //
 //   python tools/director/serve.py          (in another shell)
 //   node tools/director/buildertest.js [shots dir]
@@ -484,6 +485,17 @@ const png = rgb => {                    // a 4x4 PNG of one colour (a scratch ma
       out.switchTags = ((B.plan.pieces.find(q => q.id === sw) || {}).tags || []).filter(t => t.startsWith("matslot:"));
       const back = BM.modelToLevel(BM.levelToModel(Object.assign({}, B.story, { levels: Object.assign({}, B.story.levels, { [B.target]: lv }) }), B.target), B.story).level;
       const bprops = back.rooms.flatMap(x => x.props || []);
+      // the ceiling lights are fittings (the user: "lights as furniture, rounded LEDs"): a round LED each, by the room's
+      // size, its rim painted, its glass the light's (not painted); a fitting picked in Finish for every room
+      const lightProps = props.filter(q => q.id.endsWith("_fx_light"));
+      out.fittings = { lights: lightProps.length, kits: lightProps.filter(q => q.kit).length, pieces: B.plan.pieces.filter(q => q.level === B.target && q.id.endsWith("_fx_light__fitting")).length };
+      const fitId = `${r.id}_fx_light__fitting`;
+      out.rim = P.paintTarget(P.targetOfPiece(fitId, "white"), "pbr/metal/Metal063_1K-PNG");
+      out.glass = P.targetOfPiece(fitId, "emit");
+      B.model.finish.light_fitting = "led_ring_600"; window.builder.changed();
+      await replanned();
+      out.ring = B.exported.level.rooms.flatMap(x => (x.props || []).filter(q => q.id.endsWith("_fx_light"))).every(q => q.kit === "led_ring_600");
+      out.rimKept = !!(((B.exported.level.rooms.flatMap(x => x.props || []).find(q => q.id === `${r.id}_fx_light`) || {}).mats || {}).white);
       out.roundTrip = { switch: !!((bprops.find(q => q.id === sw) || {}).mats || {}).plastic,
         door: door ? JSON.stringify(back.rooms.flatMap(x => (x.openings || []).map(o => o.door).filter(Boolean)).find(d => d.id === (dT && dT.id)) || {}).includes("pbr/") : true,
         frame: frame && fslot ? !!(bprops.find(q => q.id === frame.id) || {}).mats : true };
@@ -503,7 +515,9 @@ const png = rgb => {                    // a 4x4 PNG of one colour (a scratch ma
         || !pt.sofaTags.some(t => t.endsWith(":pbr/plastic/black palstic"))
         || !pt.switch || pt.switch.kind !== "kit" || !pt.switchProps.length || pt.switchProps.some(x => !x) || !pt.switchTags.some(t => t === "matslot:plastic:pbr/plastic/white_plastic")
         || (pt.door && !(pt.doorOut && (pt.doorOut.mat || pt.doorOut.mats))) || (pt.frame !== "no frame here" && !pt.frameOut)
-        || !pt.roundTrip.switch || !pt.roundTrip.door || !pt.roundTrip.frame)
+        || !pt.roundTrip.switch || !pt.roundTrip.door || !pt.roundTrip.frame
+        || !pt.fittings.lights || pt.fittings.kits !== pt.fittings.lights || pt.fittings.pieces !== pt.fittings.lights || !pt.rim || pt.rim.kind !== "kit"
+        || !pt.glass || pt.glass.kind !== "none" || !pt.ring || !pt.rimKept)
       fail("Paint in the scene builder: " + JSON.stringify(pt));
   } finally {
     if (setDir) fs.rmSync(setDir, { recursive: true, force: true });
