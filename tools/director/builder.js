@@ -810,6 +810,9 @@ async function boot() {
 window.B = B; window.BM = BM; Object.defineProperty(window, "__builderStage", { get: () => stage });
 window.builder = { paint: { on: setPaint, hit: e => targetOfHit(paintHit(e)), at(fx, fy, alt = false) { const c = stage.renderer.domElement.getBoundingClientRect(); return paintAt(paintHit({ clientX: c.left + fx * c.width, clientY: c.top + fy * c.height }), alt); },
     targetAt(fx, fy) { const c = stage.renderer.domElement.getBoundingClientRect(); return targetOfHit(paintHit({ clientX: c.left + fx * c.width, clientY: c.top + fy * c.height })); },
+    // a piece of the plan as a click on it would take it (its slot, for a kit thing): the target, without the view's aim
+    targetOfPiece(id, slot) { const p = (B.plan.pieces || []).find(q => q.id === id && q.level === B.target); return p ? targetOfHit({ piece: p, object: { userData: { slot: slot || "" } } }) : null; },
+    paintTarget(t, v) { if (!t || t.kind === "none") return null; pushUndo(); const tt = Object.assign({}, t, { all: PB.scope === "all" }); setLookOn(tt, v); PB.target = v ? tt : null; changed(); return tt; },
     brush(set) { PB.target = null; BR.pick(set); return BR.brush; }, colour: hex => BR.useColour(hex), tune(fn) { fn(BR.brush); BR.changed(); return BR.value(); },
     scope(s) { PB.scope = s; }, target: () => PB.target, value: () => BR.value(), get BR() { return BR; } },
   pitch: deg => { look.pitch = deg; render3d(); }, refreshLibrary, openPreset, changed, save, runChecks, addRoom, addItem, loadRef, placeRefs, setTool: t => { B.tool = t; renderTools(); }, addOpening: (x, y, t) => { B.tool = t; addOpening(x, y); B.tool = "select"; }, render3d, undo, buildOutside: () => buildOutside(), openOther, nodesHere, focusIds, addKit, snapKit, addCurtains, varyKit, splitHinge, applyHingeAt,
@@ -1235,40 +1238,59 @@ const paintHl = new THREE.Group();
 const HLMAT = new THREE.MeshBasicMaterial({ color: 0xd9a441, transparent: true, opacity: 0.28, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 });
 const t2s = v => [v.x, -v.z, v.y];                                   // three's space -> the story's (z up)
 const PART_NAMES = { floor: "floor", walls: "walls", ceiling: "ceiling", trim: "trim" };
-function propOf(id) {                                                 // a block the story (or a wall item) owns, which takes a `mat`
-  for (const r of B.model.rooms) { const q = ((r.extra || {}).props || []).find(x => x.id === id); if (q) return { prop: q }; }
-  const it = (B.model.items || []).find(x => x.id === id && !x.kit);
-  return it ? { item: it } : null;
-}
 const kitKey = spec => !spec ? "" : typeof spec === "string" ? spec : spec.preset || spec.type || "";
-function kitHolder(id) {                                              // where a kit thing's `mats` live: a placed thing's extra, a
-  const k = (B.model.kits || []).find(x => x.id === id);              // wall item's, or the story's own prop
-  if (k) return { key: kitKey(k.spec), h: (k.extra = k.extra || {}) };
-  const it = (B.model.items || []).find(x => x.id === id && x.kit);
-  if (it) return { key: kitKey(it.kit), h: (it.extra = it.extra || {}) };
-  for (const r of B.model.rooms) { const q = ((r.extra || {}).props || []).find(x => x.id === id && x.kit !== undefined); if (q) return { key: kitKey(q.kit), h: q }; }
+// what a piece belongs to, for its paint: {id, room, key (its kit, or "door": for every one like it), door (a door's
+// parts and slab: its opening holds it), of (a window's frame: its window holds it)}; a stair's steps are its own
+function dressOf(p) {
+  const tags = p.tags || [], door = (tags.find(x => x.startsWith("door:")) || "").slice(5), d = p.d || {};
+  if (door || p.kind === "door") {
+    const id = door || p.id, op = B.model.ops.find(o => o.id === id);
+    return op ? { id, room: p.room, door: true, key: kitKey((op.extra || {}).kit) || "door" } : null;
+  }
+  const id = (tags.find(x => x.startsWith("story:")) || "story:" + p.id).slice(6);
+  if (/_fx_win\d+$/.test(id) && d.of) return { id, room: p.room, of: d.of, key: kitKey(d.kit) || "frame" };
+  return { id, room: p.room, key: kitKey(p.kit !== undefined ? p.kit : d.kit) };
+}
+// where its paint lives in the model (the object holding `mats` and `mat`): a placed thing's extra, a wall item's, the
+// story's own prop, a door's opening (its door's words), a window's frame on its window; a fitting the finish makes
+// (<room>_fx_*: a switch, a built-in, the stairs) on its entry in the room's props, made when it's first painted
+// (`make`), which the export copies onto the fitting it makes (builder-model.js modelToLevel)
+function holderOf(t, make = false) {
+  if (t.door) { const op = B.model.ops.find(o => o.id === t.id); return op ? (op.extra = op.extra || {}) : null; }
+  if (t.of) { const op = B.model.ops.find(o => o.id === t.of); return op ? (make ? (op.frameDress = op.frameDress || {}) : op.frameDress || {}) : null; }
+  const k = (B.model.kits || []).find(x => x.id === t.id); if (k) return (k.extra = k.extra || {});
+  const it = (B.model.items || []).find(x => x.id === t.id); if (it) return (it.extra = it.extra || {});
+  for (const r of B.model.rooms) { const q = ((r.extra || {}).props || []).find(x => x.id === t.id); if (q) return q; }
+  const r = roomOf(t.room);
+  if (r && t.id.startsWith(r.id + "_fx_")) {
+    if (!make) return {};
+    const stub = { id: t.id }; (r.extra.props = r.extra.props || []).push(stub); return stub;
+  }
   return null;
 }
-function kitHoldersLike(key) {                                        // every kit thing of that preset (or type) on the level
-  const out = [];
-  for (const k of B.model.kits || []) if (kitKey(k.spec) === key) out.push(k.extra = k.extra || {});
-  for (const it of B.model.items || []) if (it.kit && kitKey(it.kit) === key) out.push(it.extra = it.extra || {});
-  for (const r of B.model.rooms) for (const q of (r.extra || {}).props || []) if (q.kit !== undefined && kitKey(q.kit) === key) out.push(q);
+function holdersLike(t) {                                             // every thing like it on the level (its kit, or every door), once each
+  const seen = new Set(), out = [];
+  for (const p of (B.plan ? B.plan.pieces : []).filter(q => q.level === B.target)) {
+    const d = dressOf(p);
+    if (!d || d.key !== t.key || !!d.door !== !!t.door || (t.kind === "kit" && !(p.tags || []).some(x => x.startsWith("kit:")))) continue;
+    const k = d.id + "|" + (d.of || ""); if (seen.has(k)) continue; seen.add(k);
+    const h = holderOf(d, true); if (h) out.push(h);
+  }
   return out;
 }
 function paintTargetName(t) {
   if (!t) return "";
   if (t.kind === "outside") return `the outside's ${t.slot}`;
-  if (t.kind === "prop") return t.id;
-  if (t.kind === "kit") return t.all ? `every ${t.key}'s ${t.slot}` : `${t.id}'s ${t.slot}`;
+  if (t.kind === "prop") return t.all && t.key ? `every ${t.key}` : t.door ? `the door ${t.id}` : t.id;
+  if (t.kind === "kit") return t.all ? `every ${t.key}'s ${t.slot}` : `${t.of ? t.of + "'s frame" : t.door ? "the door " + t.id : t.id}'s ${t.slot}`;
   const r = roomOf(t.room), K = r && (KINDS[r.kind] || KINDS.other);
   return t.all && K ? `every ${K.en.toLowerCase()}'s ${PART_NAMES[t.part]}` : `${r ? r.name || r.id : t.room}'s ${PART_NAMES[t.part]}`;
 }
 function lookOfTarget(t) {
   if (t.kind === "room") { const r = roomOf(t.room); return (r && (r.extra.look || {})[t.part]) || ""; }
-  if (t.kind === "prop") { const o = propOf(t.id); return o ? (o.prop ? o.prop.mat : (o.item.extra || {}).mat) || "" : ""; }
+  if (t.kind === "prop") { const h = holderOf(t); return (h && h.mat) || ""; }
   if (t.kind === "outside") { const o = outsideOf(); return (o && (o.look || {})[t.slot]) || ""; }
-  if (t.kind === "kit") { const k = kitHolder(t.id); return (k && (k.h.mats || {})[t.slot]) || ""; }
+  if (t.kind === "kit") { const h = holderOf(t); return (h && (h.mats || {})[t.slot]) || ""; }
   return "";
 }
 function setLookOn(t, v) {                                            // a look on a target; what it took up, in words
@@ -1282,16 +1304,13 @@ function setLookOn(t, v) {                                            // a look 
       if (val && t.part === "floor" && o.floorKit) { o.floorKit = null; took.push(`${o.name || o.id}'s kit floor`); }      // so the set shows
       if (val && t.part === "ceiling" && o.ceilKit) { o.ceilKit = null; took.push(`${o.name || o.id}'s kit ceiling`); }
     }
-  } else if (t.kind === "prop") {
-    const o = propOf(t.id); if (!o) return took;
-    const x = o.prop || (o.item.extra = o.item.extra || {});
-    if (val) x.mat = val; else delete x.mat;
   } else if (t.kind === "outside") {
     const o = outsideOf(); if (!o) return took;
     o.look = Object.assign({}, o.look || {}); if (val) o.look[t.slot] = val; else delete o.look[t.slot];
-  } else if (t.kind === "kit") {                                      // a kit thing's slot (its `mats`): this one, or every one like it
-    const one = kitHolder(t.id); if (!one) return took;
-    for (const h of t.all ? kitHoldersLike(one.key) : [one.h]) {
+  } else if (t.kind === "prop" || t.kind === "kit") {                 // a block's `mat`, a kit thing's slot (`mats`): this one or every one like it
+    for (const h of t.all && t.key ? holdersLike(t) : [holderOf(t, true)]) {
+      if (!h) continue;
+      if (t.kind === "prop") { if (val) h.mat = JSON.parse(JSON.stringify(val)); else delete h.mat; continue; }
       h.mats = Object.assign({}, h.mats || {});
       if (val) h.mats[t.slot] = JSON.parse(JSON.stringify(val)); else delete h.mats[t.slot];
       if (!Object.keys(h.mats).length) delete h.mats;
@@ -1335,23 +1354,26 @@ function targetOfHit(h) {
     return { kind: "room", room: (r && r.id) || p.room, part: "walls" };
   }
   if (tags.some(t => t.startsWith("trim:"))) return { kind: "room", room: p.room, part: "trim" };
-  if (p.kind === "mesh" && tags.some(t => t.startsWith("kit:"))) {     // a kit thing: the slot under the click (its tones together)
-    const k = kitHolder(p.id), slot = String(h.object.userData.slot || "").replace(/_\d+$/, "");
-    if (k && slot) return { kind: "kit", id: p.id, slot, key: k.key };
-    return { kind: "none", why: k ? "click the thing itself" : "a fitting the finish makes (a switch, a light, a window frame) keeps its kit's colours" };
+  const d = dressOf(p), has = d && (d.door || d.of || holderOf(d));
+  if ((p.kind === "mesh" || p.kind === "door") && tags.some(t => t.startsWith("kit:"))) {   // a kit thing, a fitting, a kit door's part, a
+    const slot = String(h.object.userData.slot || "").replace(/_\d+$/, "");                // window's frame: the slot under the click
+    if (has && slot) return Object.assign({ kind: "kit", slot }, d);
+    return { kind: "none", why: has ? "click the thing itself" : "this one keeps its kit's colours" };
   }
-  if (p.kind === "mesh" && p.shape === "box" && propOf(p.id)) return { kind: "prop", id: p.id };
-  return { kind: "none", why: p.kind === "door" ? "a door keeps its own look" : "only a block (a box) or a kit thing takes a look" };
+  if ((p.kind === "door" || (p.kind === "mesh" && p.shape === "box")) && has) return Object.assign({ kind: "prop" }, d);   // a block: a plain door, a stair, a box
+  return { kind: "none", why: "only a block (a box), a door or a kit thing takes a look" };
 }
 function meshesOf(t) {                                                // what a click on this target paints, to light up
   const out = [];
   if (t.kind === "outside") { if (outsideGroup) outsideGroup.traverse(m => { if (m.isMesh && m.userData.slot === t.slot) out.push(m); }); return out; }
-  if (t.kind === "kit") {
-    const key = PB.scope === "all" ? (kitHolder(t.id) || {}).key : null;
+  if (t.kind === "kit" || t.kind === "prop") {                       // the thing (every one like it), its slot's meshes or its blocks
+    const all = PB.scope === "all" && t.key;
     stage.world.traverse(m => {
-      const p = m.userData && m.userData.piece;
-      if (!p || !(key ? kitKey((p.d || {}).kit) === key : p.id === t.id)) return;
-      m.traverse(c => { if (c.isMesh && c !== m && String(c.userData.slot || "").replace(/_\d+$/, "") === t.slot) out.push(c); });
+      const p = m.userData && m.userData.piece; if (!p || !shownPath(m)) return;
+      const d = dressOf(p); if (!d) return;
+      if (!(all ? d.key === t.key && !!d.door === !!t.door : d.id === t.id && (d.of || "") === (t.of || ""))) return;
+      if (t.kind === "kit") m.traverse(c => { if (c.isMesh && c !== m && String(c.userData.slot || "").replace(/_\d+$/, "") === t.slot) out.push(c); });
+      else if (m.isMesh && !(m.userData.dressed && m.material.visible === false)) out.push(m);
     });
     return out;
   }
@@ -1400,7 +1422,7 @@ function paintAt(h, alt = false) {
   const v = PB.clearing ? null : BR.value();
   if (!v && !PB.clearing) { status("pick a material (or a colour) first", "bad"); return null; }
   pushUndo();
-  const tt = Object.assign({}, t, t.kind === "room" || t.kind === "kit" ? { all: PB.scope === "all" } : {});
+  const tt = Object.assign({}, t, t.kind === "room" || t.kind === "kit" || t.kind === "prop" ? { all: PB.scope === "all" } : {});
   const took = setLookOn(tt, v);
   PB.target = v ? tt : null;
   changed();

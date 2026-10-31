@@ -151,7 +151,7 @@ export function levelToModel(story, levelName) {
   for (const sr of lvl.rooms) for (const p of sr.props || []) {
     const r = byId[sr.id];
     // window frames: <room>_fx_win<n>, of: the window
-    if (new RegExp(`^${sr.id}_fx_win\\d+$`).test(p.id) && p.of && p.kit) { const op = ops.find(o => o.id === p.of); if (op) op.frame = noSize(p.kit); continue; }
+    if (new RegExp(`^${sr.id}_fx_win\\d+$`).test(p.id) && p.of && p.kit) { const op = ops.find(o => o.id === p.of); if (op) { op.frame = noSize(p.kit); if (p.mats) op.frameDress = { mats: clone(p.mats) }; } continue; }
     if (new RegExp(`^${sr.id}_kt_`).test(p.id) && p.kit) {          // kit things placed in the room
       const sz = (p.kit.size || []).slice();
       const ex = clone(p); for (const k of ["id", "at", "rot", "z", "kit"]) delete ex[k];
@@ -305,6 +305,15 @@ export function modelToLevel(model, story) {
     }
     frames.filter(f => f.host.room === r).forEach((f, i) => { const fp = frameProp(r, f, `${r.id}_fx_win${i + 1}`, problems); if (fp) extra.push(fp); });
     if (r.kind === "stairs" && r.fixtures) { const st = stairsProp(model, r); if (st) extra.push(st); else problems.push(`${r.id}: stairs need a floor above (add one)`); }
+    // the fittings the finish makes (<room>_fx_*: built-ins, the switch, the stairs, a kit floor) are made again on every
+    // export; what's painted on one (its `mats`, `mat`) is kept on its entry in the room's props, as read back or as the
+    // scene builder's Paint left it, and goes onto the fitting made (a window's frame keeps its own on the window)
+    for (const q of extra) {
+      if (!q.id.startsWith(r.id + "_fx_") || /_fx_win\d+$/.test(q.id)) continue;
+      const src = (r.extra.props || []).find(x => x.id === q.id);
+      if (src && src.mats) q.mats = clone(src.mats);
+      if (src && src.mat) q.mat = clone(src.mat);
+    }
     if (extra.length) d.props = (d.props || []).concat(extra);
   }
   for (const d of Object.values(out)) if (!d.openings.length) delete d.openings;
@@ -515,7 +524,9 @@ function frameProp(r, { op, host }, id, problems) {
   const off = stool / 2, a = host.at, sill = op.z - r.z + (op.sill || 0);
   const at = host.wall === "n" ? [a, r.d - off] : host.wall === "s" ? [a, off] : host.wall === "e" ? [r.w - off, a] : [off, a];
   const k = clone(op.frame); k.size = [r3(op.w), r3(d), r3(op.h + st)]; k.wall = T;
-  return { id, kit: k, at: at.map(r3), rot: FACE[host.wall], z: r3(sill - st), in_wall: true, of: op.id };
+  const out = { id, kit: k, at: at.map(r3), rot: FACE[host.wall], z: r3(sill - st), in_wall: true, of: op.id };
+  if (op.frameDress && op.frameDress.mats) out.mats = clone(op.frameDress.mats);    // its slots painted (Paint), kept on the window
+  return out;
 }
 // a light switch by the first doorway into the room, on the room's side, past the door's casing
 function switchFor(model, r) {

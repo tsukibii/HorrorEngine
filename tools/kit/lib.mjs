@@ -28,7 +28,7 @@ export function refOf(KIT, spec, presets, version) {
 export function storySpecs(story) {
   const out = [];
   for (const [lid, lvl] of Object.entries(story.levels || {})) for (const r of lvl.rooms || []) for (const p of r.props || [])
-    if (p.kit !== undefined) out.push({ level: lid, room: r.id, id: p.id, kit: p.kit, mats: p.mats });
+    if (p.kit !== undefined) out.push({ level: lid, room: r.id, id: p.id, kit: p.kit });
   return out;
 }
 export function games() {

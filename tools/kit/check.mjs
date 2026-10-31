@@ -2,7 +2,7 @@
 // numbers, and is the same from the same seed; a seed changes the gaps; the glb is well formed; the mesh refs agree
 // with storykit/kit.py; every kit prop in every game builds. Ends "KIT ok".
 import { execFileSync } from "child_process";
-import { loadKit, loadPresets, refOf, games, ROOT, storySpecs, story } from "./lib.mjs";
+import { loadKit, loadPresets, refOf, games, ROOT } from "./lib.mjs";
 
 const KIT = await loadKit(), PR = loadPresets();
 const errs = [], TOL = 0.004;
@@ -64,15 +64,22 @@ try {
     if (refOf(KIT, it.kit, PR.presets, PR.version) !== it.ref) errs.push(`${g}: ${it.ref} is named otherwise by node`);
   }
 } catch (e) { errs.push("the games' kit specs: " + e.message.split("\n")[0]); }
-// a kit thing's `mats` (STORY_FORMAT §2) names slots its kit has: a slot, or the base of a slot's tones (wood for wood_2)
+// a kit thing's `mats` (STORY_FORMAT §2) names slots its kit has (a kit door's: its leaf's, handle's or frame's): a slot,
+// or the base of a slot's tones (wood for wood_2); every painted piece of every game's plan, grouped by what it's part of
 let dressed = 0;
-for (const g of games()) for (const it of storySpecs(story(g))) {
-  if (!it.mats) continue;
-  let slots;
-  try { slots = Object.keys(KIT.mesh(KIT.build(it.kit, PR.presets).parts)); } catch (e) { continue; }
-  const have = new Set([...slots, ...slots.map(sl => sl.replace(/_\d+$/, ""))]);
-  for (const sl of Object.keys(it.mats)) { dressed++; if (!have.has(sl)) errs.push(`${g} ${it.id}: mats ${sl}: its kit has no such slot (${[...have].sort().join(", ")})`); }
-}
+try {
+  const py = "import sys,json; sys.path.insert(0,'Content/Python'); from storykit import plan as P, storylib as L\n" +
+    "out={}\nfor g in json.loads(sys.argv[1]):\n  for q in P.plan(L.load(g)[0]):\n    sl=[t[8:].split(':')[0] for t in q['tags'] if t.startswith('matslot:')]\n" +
+    "    if not sl or q.get('kit') is None: continue\n    own=next((t[5:] for t in q['tags'] if t.startswith('door:')), q['id'])\n" +
+    "    e=out.setdefault(g+' '+own, {'slots': set(), 'kits': []}); e['slots'].update(sl); e['kits'].append(q['kit'])\n" +
+    "print(json.dumps({k: {'slots': sorted(v['slots']), 'kits': v['kits']} for k, v in out.items()}))";
+  const all = JSON.parse(execFileSync("python3", ["-c", py, JSON.stringify(games())], { cwd: ROOT, maxBuffer: 1 << 26 }).toString());
+  for (const [who, it] of Object.entries(all)) {
+    const have = new Set();
+    for (const k of it.kits) { try { for (const sl of Object.keys(KIT.mesh(KIT.build(k, PR.presets).parts))) { have.add(sl); have.add(sl.replace(/_\d+$/, "")); } } catch (e) { } }
+    for (const sl of it.slots) { dressed++; if (!have.has(sl)) errs.push(`${who}: mats ${sl}: its kit has no such slot (${[...have].sort().join(", ")})`); }
+  }
+} catch (e) { errs.push("the games' painted slots: " + e.message.split("\n")[0]); }
 // a door's assembly: storykit/kit.py's DOOR and kit.js's door type agree on their defaults; the leaf turns on its hinges
 try {
   const DOOR = JSON.parse(execFileSync("python3", ["-c", "import sys,json; sys.path.insert(0,'Content/Python'); from storykit import kit; print(json.dumps(kit.DOOR))"], { cwd: ROOT }).toString());

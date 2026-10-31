@@ -203,6 +203,10 @@ checks that its kit has each slot. The scene builder's Paint writes it (SCENE_BU
 "bar_pull", "hinge": "right"}`) builds it as a frame (`<id>__frame`), a leaf (the door, turning on its hinges) and a
 handle (`<id>__handle`), each tagged `door:<id>` and `door_part:*` (docs/KIT.md §8). The kit's hinge numbers (`hinges`, `hinge_h`, `hinge_w`, `hinge_t`, `barrel`,
 `mortise`, `hinge_model`) and `hinge_art` (your own hinge, split into `<id>__hinge<i>_door|frame`) are there too.
+**A door's paint** (2026-10-31): a plain door's `mat` is its slab's look, as a block's; a kit door's `mats` dresses its
+parts' slots by name (`{"front": ..., "metal": "pbr/metal/Metal063_1K-PNG", "body": ...}`: the leaf's front, the handle's
+and hinges' metal, the frame's body), each as a room's `look` takes it (§1). Both ride with the door as it swings (in
+Godot `<Name>_obj.tres` and `<Name>_uv.tres`: GODOT_EXPORT §3b).
 A door's `class` (a Blueprint
 class path, `…_C`) is that door's Blueprint, in place of class_map's `door`.
 

@@ -279,8 +279,15 @@ we". The street paint page's brush (`brush.js`, docs/STREET_PAINT.md §1) on the
 - **A click paints** what's under it: a room's **floor**, its **walls**, its **ceiling** or its **trim** (skirting,
   cornice, casings), a **block** the story owns (its `mat`), a **kit thing's material** (the slot under the click: a
   sofa's fabric, a desk's wood, a fridge's body, its tones with it: the thing's `mats`, STORY_FORMAT §2), or, round
-  the building, the **outside's** slot under it. *Every one like it* paints every room of that kind, or that slot on
-  every thing of the same kit preset. A drag still looks round, the keys still walk.
+  the building, the **outside's** slot under it. The **fittings the finish makes** take it too (the user: "the
+  plastic PBR for light switches"): the switch by the door, the built-ins (the kitchen run, the shoe cabinet, the
+  vanity), the stairs' steps, a window's frame; and **doors**: a plain door's slab (its `mat`), a kit door's parts by
+  slot (its `mats`: the leaf's front, the handle's metal, the frame's body). *Every one like it* paints every room of
+  that kind, or that slot on every thing of the same kit preset (every switch, every door of that kit). A drag still
+  looks round, the keys still walk.
+- **What a fitting wears is kept** though the finish makes it again on every save: on its entry in the room's props
+  (a stub with its id, `<room>_fx_switch`, made when it's first painted, read back with the level), which the export
+  copies onto the fitting it makes; a window's frame keeps it on its window, a door on its opening (its door's words).
 - **A room's walls are its own side.** A wall between two rooms is one piece, built by one of them; the plan lines the
   other room's side with a 4 mm lining wearing that room's own look (`trim:lining`, plan.py `lining_pieces`) wherever
   the two rooms' looks differ, following the wall's pieces, door holes and all. A click on a wall paints the room its
@@ -293,9 +300,9 @@ we". The street paint page's brush (`brush.js`, docs/STREET_PAINT.md §1) on the
   `look.trim`, a block's `mat`, a kit thing's `mats`, the level's `outside.look`: a set's ref, a colour, or a tuned set (a look object). The
   desk's server makes a tuned set into `pbr/_made/<hash>` when it plans, the stage draws it, the Godot export writes
   it (GODOT_EXPORT). The Selected panel's Look pickers show the same, a tuned one as its set and "(tuned)".
-- **Not yet:** the fittings the finish makes (switches, lights, window frames) and doors keep their kit's colours; a
-  kit floor or ceiling is taken up rather than dressed (a set with its own planks over the kit's planks would double
-  them).
+- **Not yet:** a kit floor or ceiling is taken up rather than dressed (a set with its own planks over the kit's planks
+  would double them); the ceiling light the finish adds is a light alone (nothing drawn to paint: a kit light fitting
+  placed as furniture takes a set).
 
 ## 10. Not done yet
 

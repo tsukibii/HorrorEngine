@@ -473,6 +473,10 @@ def check_world(story, things, r):
                         r.err(f"room {rm['id']}: a shaft's dust is 0..1")
                 if L.wall_skipped(rm, op["wall"], op["at"] - op["w"] / 2, op["at"] + op["w"] / 2):
                     r.err(f"room {rm['id']}: opening at {op['at']} on {op['wall']} is on a stretch it skips (put it on the room that builds that wall)")
+                dm = (op.get("door") or {}).get("mats") if isinstance(op.get("door"), dict) else None
+                if dm is not None and (op["door"].get("kit") is None or not isinstance(dm, dict)
+                                       or not all(re.fullmatch(r"[a-z][a-z0-9_]*", str(sl)) for sl in dm)):
+                    r.err(f"door {op['door'].get('id')}: mats is {{slot: look}} on a kit door (its parts' slots: front, metal, body...); a plain door takes `mat`")
                 if op.get("door") and op["door"].get("kit") is not None:
                     try:
                         if KIT.kind(op["door"]["kit"]) != "door":

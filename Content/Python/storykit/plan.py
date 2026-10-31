@@ -27,6 +27,12 @@ def mat_ref(look):
     return look
 
 
+def _matslots(d):
+    """A kit thing's (or a kit door's) slots dressed, its `mats`, as tags: matslot:<slot>:<ref>."""
+    m = d.get("mats")
+    return [f"matslot:{sl}:{mat_ref(v)}" for sl, v in m.items() if v] if isinstance(m, dict) else []
+
+
 def _look(room, part):
     v = (room.get("look") or {}).get(part)
     return [f"mat:{mat_ref(v)}"] if v else []
@@ -44,8 +50,7 @@ def _tags(t, extra=()):
         tags.append(f"art:{t.d['art']}")
     if t.d.get("mat"):                       # a library texture set on the block
         tags.append(f"mat:{mat_ref(t.d['mat'])}")
-    if isinstance(t.d.get("mats"), dict):    # a kit thing's slots dressed: matslot:<slot>:<ref> (its tones _2.._4 follow)
-        tags += [f"matslot:{sl}:{mat_ref(v)}" for sl, v in t.d["mats"].items() if v]
+    tags += _matslots(t.d)                   # a kit thing's slots dressed: matslot:<slot>:<ref> (its tones _2.._4 follow)
     if t.d.get("tag"):                       # what it is (a mirror, a poster): the desk colours by it
         tags.append(f"tag:{t.d['tag']}")
     lf = LIFE.life_of(t.d) if t.kind == "prop" else None
@@ -81,7 +86,7 @@ def door_pieces(p, t):
 
     def part(pid, kind, spec, pos, size, extra, d=None):
         spec = dict(spec, size=[round(v, 4) for v in size])
-        tags = ["story", f"story:{pid}", f"room:{t.room}", f"door:{t.id}", f"kit:{KIT.kind(spec)}", f"art:{KIT.ref(spec)}", "real"] + extra
+        tags = ["story", f"story:{pid}", f"room:{t.room}", f"door:{t.id}", f"kit:{KIT.kind(spec)}", f"art:{KIT.ref(spec)}", "real"] + extra + _matslots(t.d)   # the door's `mats` on each part's slots
         return dict(p, id=pid, kind=kind, shape="box", pos=pos, size=tuple(spec["size"]), yaw=yaw, d=d or {"kit": spec}, kit=spec, tags=tags)
     out = []
     leaf = {key: v for key, v in k.items() if key not in ("handle", "frame", "hinge_art")}

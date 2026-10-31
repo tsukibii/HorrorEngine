@@ -92,7 +92,7 @@ def is_colour(v):
 
 def looks(story):
     """Every look a story paints its levels with: [(look, where)]: a room's floor, walls, ceiling and trim, a block's
-    `mat`, a kit thing's slots (`mats`), a level's outside slots. A look is a set's ref, a colour (#rrggbb) or a tuned set (a look object, as the
+    `mat`, a kit thing's slots (`mats`), a door's (`mat` a plain one, `mats` a kit one's parts), a level's outside slots. A look is a set's ref, a colour (#rrggbb) or a tuned set (a look object, as the
     street paints with: STREET_PAINT §2; pbrmix.py makes it)."""
     out = []
     for lid, lvl in story.get("levels", {}).items():
@@ -101,6 +101,12 @@ def looks(story):
         for room in lvl.get("rooms", []):
             for part, v in (room.get("look") or {}).items():
                 out.append((v, f"{room['id']}.look.{part}"))
+            for op in room.get("openings", []):            # a door: a plain one's slab (`mat`), a kit one's parts' slots (`mats`)
+                dd = op.get("door") if isinstance(op.get("door"), dict) else None
+                if dd and dd.get("mat"):
+                    out.append((dd["mat"], f"{dd.get('id')}.mat"))
+                for slot, v in (dd.get("mats") or {}).items() if dd and isinstance(dd.get("mats"), dict) else ():
+                    out.append((v, f"{dd.get('id')}.mats.{slot}"))
             for p in room.get("props", []):
                 if p.get("mat"):
                     out.append((p["mat"], f"{p['id']}.mat"))

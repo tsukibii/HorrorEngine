@@ -519,7 +519,8 @@
        "h": 2.1,
        "door": {
         "id": "door_kitchen",
-        "swing": "out"
+        "swing": "out",
+        "mat": "pbr/building/Paint005_1K-PNG"
        }
       },
       {
@@ -572,7 +573,8 @@
         "id": "door_library",
         "swing": "out",
         "creak": true,
-        "kit": "door_panels"
+        "kit": "door_panels",
+        "mats": {"metal": "pbr/metal/Metal063_1K-PNG"}
        }
       },
       {
@@ -1431,6 +1433,7 @@
       {
        "id": "power_switch",
        "kit": "switch_jp_1",
+       "mats": {"plastic": "pbr/plastic/white_plastic"},
        "at": [
         0.07,
         3.4

@@ -135,7 +135,10 @@ frames as part of their wall. Everything else is checked like any prop: overlaps
 PBR set, a colour or a tuned set on any of its material slots (a slot's tones, `wood_2`..., follow `wood`), laid by the
 kit's UVs, which are metres (`uvFor`'s box projection), so a set keeps its real size. The scene builder's Paint writes
 it with a click on the thing; the desk draws it (stage.js `dressSlots`); the Godot export gives the instanced kit mesh
-the game's `<Name>_uv.tres` for each (GODOT_EXPORT §3b); KIT checks every game's `mats` names slots its kit builds.
+the game's `<Name>_uv.tres` for each (GODOT_EXPORT §3b); KIT checks every painted piece of every game's plan names slots
+its kit builds (a kit door's `mats` over its leaf, handle and frame together). The fittings the scene builder makes
+(`<room>_fx_*`: switches, built-ins; window frames, `<room>_fx_win<n>`) and kit doors take it the same way (a plain
+door, `mat`): SCENE_BUILDER §9.
 
 ## 5. Into Unreal
 

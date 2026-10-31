@@ -5,7 +5,8 @@
 // another game's level is borrowed, a set (a place designed before its game) is made from the picker, laid out, saved
 // into Content/Studio/Sets and taken by a game as its start, its outside (a street style, a fitting) drawn round it and
 // saved in its level (and painted), the desk's deep link shows its marks; Paint (the paint bucket) on a room's floor,
-// tuned, its walls lined, picked up, a sofa's fabric, undone. Ends "BUILDER ok".
+// tuned, its walls lined, picked up, a sofa's fabric, a switch (every switch), a door, a window frame, kept through a
+// read back, undone. Ends "BUILDER ok".
 //
 //   python tools/director/serve.py          (in another shell)
 //   node tools/director/buildertest.js [shots dir]
@@ -464,6 +465,28 @@ const png = rgb => {                    // a 4x4 PNG of one colour (a scratch ma
       await replanned();
       out.sofaMats = JSON.parse(JSON.stringify((B.model.kits.find(k => k.id === sofa.id).extra || {}).mats || null));
       out.sofaTags = ((B.plan.pieces.find(q => q.id === sofa.id) || {}).tags || []).filter(t => t.startsWith("matslot:"));
+      // the fittings the finish makes and the doors (the user: "the plastic PBR for light switches"): the LDK's switch in
+      // white plastic, then every switch; a door's slab; a window's frame; all kept through a save and a read back
+      const sw = `${r.id}_fx_switch`, swT = P.targetOfPiece(sw, "plastic");
+      out.switch = P.paintTarget(swT, "pbr/plastic/white_plastic");
+      const door = (B.plan.pieces || []).find(q => q.level === B.target && q.kind === "door" && q.room === r.id) || (B.plan.pieces || []).find(q => q.level === B.target && q.kind === "door");
+      const dT = door && P.targetOfPiece(door.id, "front");
+      out.door = dT && P.paintTarget(dT, dT.kind === "kit" ? "pbr/plastic/white_plastic" : "pbr/building/Paint005_1K-PNG");
+      const frame = (B.plan.pieces || []).find(q => q.level === B.target && /_fx_win\d+$/.test(q.id));
+      let fslot = null; if (frame) window.__builderStage.world.traverse(m => { if (!fslot && m.userData.piece && m.userData.piece.id === frame.id) m.traverse(c => { if (!fslot && c.isMesh && c.userData.slot) fslot = String(c.userData.slot).replace(/_\d+$/, ""); }); });
+      out.frame = frame && fslot ? P.paintTarget(P.targetOfPiece(frame.id, fslot), "pbr/metal/Metal063_1K-PNG") : "no frame here";
+      P.scope("all"); out.allSwitches = P.paintTarget(swT, "pbr/plastic/white_plastic"); P.scope("one");
+      await replanned();
+      const lv = B.exported.level, props = lv.rooms.flatMap(x => x.props || []), opsOut = lv.rooms.flatMap(x => (x.openings || []).map(o => o.door).filter(Boolean));
+      out.switchProps = props.filter(q => q.id.endsWith("_fx_switch")).map(q => !!(q.mats && q.mats.plastic));
+      out.doorOut = door ? (opsOut.find(d => d.id === (dT && dT.id)) || {}) : null;
+      out.frameOut = frame && fslot ? ((props.find(q => q.id === frame.id) || {}).mats || null) : "no frame here";
+      out.switchTags = ((B.plan.pieces.find(q => q.id === sw) || {}).tags || []).filter(t => t.startsWith("matslot:"));
+      const back = BM.modelToLevel(BM.levelToModel(Object.assign({}, B.story, { levels: Object.assign({}, B.story.levels, { [B.target]: lv }) }), B.target), B.story).level;
+      const bprops = back.rooms.flatMap(x => x.props || []);
+      out.roundTrip = { switch: !!((bprops.find(q => q.id === sw) || {}).mats || {}).plastic,
+        door: door ? JSON.stringify(back.rooms.flatMap(x => (x.openings || []).map(o => o.door).filter(Boolean)).find(d => d.id === (dT && dT.id)) || {}).includes("pbr/") : true,
+        frame: frame && fslot ? !!(bprops.find(q => q.id === frame.id) || {}).mats : true };
       for (let i = B.undo.length; i > out.undos; i--) window.builder.undo();
       const now = B.model.rooms.find(x => x.id === r.id);                // undo puts a copy of the model back
       out.undone = { look: (now.extra || {}).look || null, kit: !!now.floorKit };
@@ -477,7 +500,10 @@ const png = rgb => {                    // a 4x4 PNG of one colour (a scratch ma
     if (pt.cards < 10 || !pt.floor || pt.floor.part !== "floor" || !pt.kitBefore || pt.kitAfter || !pt.replanned || !pt.made.length || typeof pt.floorLook !== "object"
         || !pt.walls || pt.walls.part !== "walls" || !pt.linings || !pt.linedLook || !pt.picked || pt.brushAfter !== "pbr/wall/Plaster001_1K-PNG" || !pt.tunes || pt.tunes.part !== "walls"
         || pt.undone.look || !pt.undone.kit || !pt.sofa || pt.sofa.kind !== "kit" || !pt.sofaMats || !Object.values(pt.sofaMats).includes("pbr/plastic/black palstic")
-        || !pt.sofaTags.some(t => t.endsWith(":pbr/plastic/black palstic")))
+        || !pt.sofaTags.some(t => t.endsWith(":pbr/plastic/black palstic"))
+        || !pt.switch || pt.switch.kind !== "kit" || !pt.switchProps.length || pt.switchProps.some(x => !x) || !pt.switchTags.some(t => t === "matslot:plastic:pbr/plastic/white_plastic")
+        || (pt.door && !(pt.doorOut && (pt.doorOut.mat || pt.doorOut.mats))) || (pt.frame !== "no frame here" && !pt.frameOut)
+        || !pt.roundTrip.switch || !pt.roundTrip.door || !pt.roundTrip.frame)
       fail("Paint in the scene builder: " + JSON.stringify(pt));
   } finally {
     if (setDir) fs.rmSync(setDir, { recursive: true, force: true });
