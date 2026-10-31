@@ -90,7 +90,9 @@ def lay_extras(spec, th, frames):
     """What every family takes over its own paint: a PBR set off the shelf on a material's islands (`pbr`: {material
     or "*": "pbr/<set>" or {set, tile (metres a repeat), rot, tint, alpha, normal, islands: [names]}}), then
     pictures on any island (`decals`: [{image, island, x, y (its middle, mm across and up the island; the middle if
-    not given), w (mm; a third of the island), h (from the picture's shape), rough, metal, alpha, height}])."""
+    not given), w (mm; a third of the island), h (from the picture's shape), fit, rough, metal, alpha, height}]).
+    `fit` wraps a picture over the whole island: "stretch" to its size, "width" its width with its own shape (centred
+    up and down), "height" the same the other way."""
     for mname, ps in (spec.get("pbr") or {}).items():
         ps = ps if isinstance(ps, dict) else {"set": ps}
         only = ps.get("islands")
@@ -103,9 +105,18 @@ def lay_extras(spec, th, frames):
         if f is None:
             raise ValueError(f"decal on island {dc.get('island')!r}: one of {', '.join(sorted(frames))}")
         img = P.read_image(dc["image"])
-        w = float(dc.get("w", f.W / 3))
-        h = float(dc.get("h", w * img.shape[0] / img.shape[1]))
-        x, y = float(dc.get("x", f.W / 2)), float(dc.get("y", f.H / 2))
+        asp = img.shape[0] / img.shape[1]
+        fit = dc.get("fit")
+        if fit == "stretch":
+            w, h, x, y = f.W, f.H, f.W / 2, f.H / 2
+        elif fit == "width":
+            w, h, x, y = f.W, f.W * asp, f.W / 2, float(dc.get("y", f.H / 2))
+        elif fit == "height":
+            w, h, x, y = f.H / asp, f.H, float(dc.get("x", f.W / 2)), f.H / 2
+        else:
+            w = float(dc.get("w", f.W / 3))
+            h = float(dc.get("h", w * asp))
+            x, y = float(dc.get("x", f.W / 2)), float(dc.get("y", f.H / 2))
         f.image(img, x - w / 2, y - h / 2, w, h, rough=float(dc.get("rough", 0.3)), metal=float(dc.get("metal", 0.0)),
                 alpha=float(dc.get("alpha", 1.0)), height=float(dc.get("height", 0.01)))
 

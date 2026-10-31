@@ -1225,3 +1225,7 @@ guessed margin; and a check that only ever ran on a slow machine hasn't been run
 - **A colour of your own must reach what's seen:** a liquid's `color` set only its body, so a mug of "green" tea came
   out the same brown as black tea: in an opaque cup only the surface (the back faces drawn flat at the level) shows,
   and its colour still came from the kind. An override sets every colour that's drawn, derived where not given.
+- **A part fixed to a curved wall ends inside it, at its own place round the wall:** the pots' loop handles ended at
+  the wall's radius straight out from the middle (x = R), but at their own angle round the pot the wall had already
+  curved away by 3 mm, and the user saw the tubes' open ends poke out. Set an end by the radius at its angle
+  (x = √((R − rod)² − y²)), and close a tube's ends.

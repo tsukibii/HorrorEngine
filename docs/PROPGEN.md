@@ -84,7 +84,7 @@ Every family takes these:
 | `view` | the preview camera: `azim`, `elev`, `lens` |
 | `relief`, `ao_gamma`, `sharp_angle` | fine-tuning: the print's emboss strength, the occlusion's depth, hard edges past that angle |
 | `pbr` | a PBR set off the shelf over a material's own paint: `{"main": "pbr/Wood/oak"}`, or `{"main": {"set": "pbr/Wood/oak", "tile": 0.8, "rot": 0, "tint": "#c8b090", "alpha": 1, "normal": 1, "islands": ["top"]}}` (`tile` metres a repeat; `alpha` under 1 lets the paint show through; `islands` only those parts); `"*"` every material |
-| `decals` | your pictures on any part: `[{"image": "Content/Studio/Props/images/logo.png", "island": "front", "x": 75, "y": 50, "w": 40, "h": 20, "rough": 0.3, "metal": 0, "alpha": 1, "height": 0.01}]`, `x` and `y` its middle in mm across and up the island (its middle if not given), `w` its width (a third of the island), `h` from the picture's shape; meta.json lists a prop's islands with their sizes (the page draws them) |
+| `decals` | your pictures on any part: `[{"image": "Content/Studio/Props/images/logo.png", "island": "front", "x": 75, "y": 50, "w": 40, "h": 20, "rough": 0.3, "metal": 0, "alpha": 1, "height": 0.01}]`, `x` and `y` its middle in mm across and up the island (its middle if not given), `w` its width (a third of the island), `h` from the picture's shape; `fit` wraps it over the whole island instead: `"stretch"` to its size, `"width"` or `"height"` keeping the picture's shape; meta.json lists a prop's islands with their sizes (the page draws them) |
 
 ### Making your own
 
@@ -448,6 +448,9 @@ Pages). A wrapper over `tools/propgen.py`: what it writes is the same recipe JSO
   - Drop PNGs or JPEGs onto the page (they go to `Content/Studio/Props/images/`).
 - **3D:** the made .glb, as Godot will read it, under a soft studio light and an environment for the metals; its
   sockets as blue markers pointing their way (drag to turn, wheel to zoom, double-click to frame, *turn* to spin).
+- **Each part listed under its texture:** its size in mm and its shape, the picture it wants (twice the pixels the
+  texture holds there), whether it goes round the prop, and *Wrap a picture over it*: your picture over that whole
+  part (a decal with `fit: stretch`; a decal's list switches it between placed, over all of it, its width, its height).
 - **Make** runs `propgen.py make` in the background, one at a time, its log under the form. It makes the recipe as
   the form has it, under the name in *Make as* (your recipe isn't changed by a make). *Variations* makes several at
   once with seeds a step apart, as `<name>_v1`, `_v2`.... *Texture* sets the texture size; *all formats* adds the
@@ -456,9 +459,31 @@ Pages). A wrapper over `tools/propgen.py`: what it writes is the same recipe JSO
   recipe it started from and only what differs, so presets.json stays readable. Every save keeps a copy of
   presets.json in `Saved/Props/_history/` first (the last 50). **To the library** puts the made prop where a story
   places it (`asset props/<name>`); **Delete** takes a recipe out (not one others start from).
+### Your own picture wrapped round a prop
+
+Wrap it over a part (the page's *Wrap a picture over it*, or `decals: [{"image": ..., "island": "label", "fit":
+"stretch"}]`). The generator's own work goes on over it: a crush or a dent bends the picture with the metal, and the
+wear (scratches, dirt in the folds, dust on what faces up), the baked occlusion and the relief are laid on top.
+
+- **Its size:** a material's parts share one texture at one density, so each part holds a set number of pixels. The
+  page lists them: a 350 ml can's label is 208 × 101 mm and holds 1011 × 491 px at the default 1024 texture, so a
+  picture of about 2000 × 1000 px stays sharp even made at 2048 (`tex`). More is wasted; less goes soft.
+- **Its shape:** make it the part's shape (the page gives it: the can's label is 2.06 : 1). `stretch` squashes a
+  picture of another shape to fit; `width` keeps its shape and centres it up and down.
+- **Seamless?** Only for a part that goes round (the page says so: a can's or a bottle's label, a cup's side, a
+  candle's), where the picture's left and right edges meet at the back. A label that's a picture (a logo in the
+  middle, a plain ground to its ends) needs nothing. A pattern meant to run all the way round should tile left to
+  right, or the back shows a line. A flat part (a box's top, a plaque's face, a page) never needs it.
+- **Round flat faces** (a can's lid, a pot's bottom, any disc) show the middle of their island as a circle, so a
+  picture's corners don't show there. A flat face cut from an outline (a plaque, a box's side) shows the middle nine
+  tenths of its island.
+- **A picture's alpha** cuts it out (a sticker, a logo on the paint), and its whole area is your colour, so wear and
+  the folds' shading still darken it as they do the print.
+
 - **Checked:** PROPPAGE (`node tools/propgen/pagetest.mjs`): a headless browser on a scratch copy of the recipe book
   and scratch folders (`PROPS_PRESETS`, `PROPS_OUT`, `PROPS_IMAGES`), so yours are never touched. It opens the ema and
   changes its words, makes it (its log, its picture on its card, its islands), drops a picture and clicks it onto the
   plaque's front, makes it again (the decal in what was made, the texture changed), turns it in 3D (its sockets),
-  picks a PBR set, makes two variations, saves a recipe `from ema` with only what differs, and deletes it. About two
+  reads the size its front wants and wraps the picture over all of it, picks a PBR set, makes two variations, saves a
+  recipe `from ema` with only what differs, and deletes it. About two
   minutes here; Blender makes four props.

@@ -336,8 +336,12 @@ function atlas(mat, files) {
     const isl = M.islands[d.island];
     if (!isl || isl.mat !== mat) return;
     const [u0, v0, u1, v1] = isl.rect;
-    const w = d.w ?? isl.mm[0] / 3, h = d.h ?? w * aspectOf(d.image);
-    const cu = u0 + ((d.x ?? isl.mm[0] / 2) / isl.mm[0]) * (u1 - u0), cv = v0 + ((d.y ?? isl.mm[1] / 2) / isl.mm[1]) * (v1 - v0);
+    const a = aspectOf(d.image), [W, H] = isl.mm;
+    let w = d.w ?? W / 3, h = d.h ?? w * a, x = d.x ?? W / 2, y = d.y ?? H / 2;
+    if (d.fit === "stretch") [w, h, x, y] = [W, H, W / 2, H / 2];
+    else if (d.fit === "width") [w, h, x] = [W, W * a, W / 2];
+    else if (d.fit === "height") [w, h, y] = [H / a, H, H / 2];
+    const cu = u0 + (x / W) * (u1 - u0), cv = v0 + (y / H) * (v1 - v0);
     const du = (w / isl.mm[0]) * (u1 - u0), dv = (h / isl.mm[1]) * (v1 - v0);
     const r = document.createElementNS(NS, "rect");
     Object.entries({ x: cu - du / 2, y: 1 - cv - dv / 2, width: du, height: dv, class: "dec" + (i === S.decal ? " sel" : "") }).forEach(([a, b]) => r.setAttribute(a, b));
@@ -385,6 +389,44 @@ function pbrRow(mat) {
   return row;
 }
 
+function fitSel(d) {
+  const s = el("select", { title: "where it goes on its island", onclick: e => e.stopPropagation(),
+    onchange: e => { if (e.target.value) d.fit = e.target.value; else delete d.fit; changed(); renderTexture(); } },
+    [["", "placed"], ["stretch", "over all of it"], ["width", "its width"], ["height", "its height"]].map(([v, t]) => el("option", { value: v }, t)));
+  s.value = d.fit || "";
+  return s;
+}
+
+// what a picture over a whole island should be: the pixels the texture holds there, twice that for a close-up, its shape,
+// and whether it goes round (a band's left and right edges meet at the back)
+function islandRows(mat) {
+  const M = S.meta, px = ((M.materials || {})[mat] || {}).px || 1024;
+  const rows = el("div", { class: "islands" });
+  for (const [name, isl] of Object.entries(M.islands)) {
+    if (isl.mat !== mat) continue;
+    const [u0, v0, u1, v1] = isl.rect, pw = Math.round((u1 - u0) * px), ph = Math.round((v1 - v0) * px);
+    const shape = isl.mm[0] >= isl.mm[1] ? `${(isl.mm[0] / isl.mm[1]).toFixed(2)} : 1` : `1 : ${(isl.mm[1] / isl.mm[0]).toFixed(2)}`;
+    rows.append(el("div", { class: "isl-row", "data-island": name },
+      el("b", {}, name),
+      el("span", { class: "dim" }, `${isl.mm[0]} × ${isl.mm[1]} mm, shaped ${shape}`),
+      el("span", { title: `the texture holds ${pw} × ${ph} px there at ${px}; for a ${px * 2} texture (a close-up) twice that` },
+        `picture ${pw * 2} × ${ph * 2} px or more`),
+      isl.wrap ? el("span", { class: "wraps", title: "a band round the prop: the picture's left and right edges meet at the back" }, "goes round: seamless left to right if it's a pattern") : null,
+      el("button", { onclick: () => wrapIsland(name) }, "Wrap a picture over it")));
+  }
+  return rows;
+}
+
+function wrapIsland(island) {
+  const image = S.pic || (S.pics[0] && S.pics[0].path);
+  if (!image) { toast("Drop a picture below first: it's what goes over it", true); return; }
+  const decals = S.spec.decals || (S.spec.decals = []);
+  decals.push({ image, island, fit: "stretch" });
+  S.decal = decals.length - 1;
+  changed();
+  renderTexture();
+}
+
 function decalRows(box) {
   const decals = S.spec.decals || [];
   const islands = S.meta ? Object.keys(S.meta.islands) : [];
@@ -396,8 +438,9 @@ function decalRows(box) {
     isl.value = d.island;
     const u = picUrl(d.image);
     box.append(el("div", { class: "decal" + (i === S.decal ? " sel" : ""), onclick: () => { S.decal = i; renderTexture(); } },
-      u ? el("img", { src: u, alt: "" }) : null, picSelect(d.image, p => { d.image = p; changed(); renderTexture(); }), isl,
-      num("x", 0.5), num("y", 0.5), num("w", 0.5), num("alpha", 0.05), num("rough", 0.05),
+      u ? el("img", { src: u, alt: "" }) : null, picSelect(d.image, p => { d.image = p; changed(); renderTexture(); }), isl, fitSel(d),
+      !d.fit || d.fit === "height" ? num("x", 0.5) : null, !d.fit || d.fit === "width" ? num("y", 0.5) : null, d.fit ? null : num("w", 0.5),
+      num("alpha", 0.05), num("rough", 0.05),
       el("button", { class: "x", onclick: e => { e.stopPropagation(); decals.splice(i, 1); if (!decals.length) delete S.spec.decals; S.decal = -1; changed(); renderTexture(); } }, "×")));
   });
 }
@@ -419,7 +462,8 @@ function renderTexture() {
   const box = $("#tab-texture");
   box.innerHTML = "";
   const M = S.meta;
-  box.append(el("div", { class: "hint" }, "Click on the texture to put the picked picture there (a decal: it goes where that part of the prop is). " +
+  box.append(el("div", { class: "hint" }, "Click on the texture to put the picked picture there (a decal: it goes where that part of the prop is), " +
+    "or wrap one over a whole part from the list under it (your own label: the folds, dents, wear and baked detail still go on top). " +
     "Pick a decal in the list to move it with a click. A PBR set off the shelf covers a material's own paint. Then Make."));
   if (!M || !M.islands) {
     box.append(el("div", { class: "hint bad" }, "Make it once: its texture's layout (the islands) comes from the last make."));
@@ -427,7 +471,7 @@ function renderTexture() {
     for (const [mat, files] of Object.entries(M.textures)) {
       const info = (M.materials || {})[mat] || {};
       box.append(el("div", { class: "mat" }, el("h4", {}, `${mat}`, el("span", { class: "dim" }, ` ${info.kind || ""}, ${info.px || ""} px`)),
-        pbrRow(mat), atlas(mat, files)));
+        pbrRow(mat), atlas(mat, files), islandRows(mat)));
     }
   }
   if (S.spec.family === "appliance") {

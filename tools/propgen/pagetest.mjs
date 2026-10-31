@@ -2,7 +2,8 @@
 // a scratch folder for what's made and one for pictures (PROPS_PRESETS, PROPS_OUT, PROPS_IMAGES), so your recipes and
 // props are never touched. Every recipe a card; one opened into its form and changed there; made by Blender from the
 // page, its log followed and its picture on its card; a picture dropped in and clicked onto the texture where the
-// front of the plaque is (a decal), made again with it, the texture changed; the made prop loaded in 3D with its
+// front of the plaque is (a decal), its parts listed with the picture size each wants, a picture wrapped over the
+// whole front, made again with both, the texture changed; the made prop loaded in 3D with its
 // sockets; a PBR set off the shelf picked for its material; two variations made at once; kept as a recipe of its own
 // (`from` its base and only what differs), then deleted again. Blender is needed (propgen.py's), as for PROPGEN.
 //   node tools/propgen/pagetest.mjs           (PROPS_TEST_PORT for another port than 8792)
@@ -117,10 +118,26 @@ try {
     if (!(await page.locator(".atlas rect.dec").count())) throw new Error("not drawn on the texture");
     return `at ${d.x} × ${d.y} mm of ${isl.mm.join(" × ")}`;
   });
-  await step("made again with it: in the made recipe, the texture changed", async () => {
+  await step("its parts listed with the picture each wants; one wrapped over a whole part", async () => {
+    const row = page.locator('.isl-row[data-island="front"]');
+    const txt = await row.textContent();
+    const m = txt.match(/picture (\d+) × (\d+) px/);
+    if (!m) throw new Error(`no size in "${txt}"`);
+    const isl = (await S()).meta.islands.front, px = (await S()).meta.materials.main.px;
+    const want = Math.round((isl.rect[2] - isl.rect[0]) * px) * 2;
+    if (Math.abs(+m[1] - want) > 1) throw new Error(`${m[1]} px wide, not ${want}`);
+    if (!(await page.locator('.isl-row[data-island="cord_a"] .wraps').count())) throw new Error("the cord's band isn't marked as going round");
+    await row.locator("button").click();
+    await page.waitForFunction(() => (window.__pp.spec.decals || []).length === 2);
+    const d = (await S()).spec.decals[1];
+    if (d.fit !== "stretch" || d.island !== "front") throw new Error(JSON.stringify(d));
+    return `the front wants ${m[1]} × ${m[2]} px`;
+  });
+  await step("made again with them: in the made recipe, the texture changed", async () => {
     await makeAndWait();
     const s = await S();
     if (!s.meta.spec.decals || s.meta.spec.decals[0].image !== s.pics[0].path) throw new Error("the decal isn't in what was made");
+    if (s.meta.spec.decals[1].fit !== "stretch") throw new Error("the wrapped picture isn't in what was made");
     const a2 = sha(path.join(OUT, "ema", s.meta.textures.main[0]));
     if (a2 === albedo1) throw new Error("its texture is the same as before");
   });

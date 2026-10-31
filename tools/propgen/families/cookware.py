@@ -125,16 +125,20 @@ def make(spec, th):
                 parts.append(rv)
             handle_at = (R + 178, 0, H + 19)
         else:
+            zz = H - (26 if kind == "stockpot" else 22)
+            span = 30 if kind == "stockpot" else 24
+            reach = 21 if kind == "stockpot" else 18
+            rod = 4.2 if kind == "stockpot" else 3.6
+            # the ends go into the wall: at their own angle round the pot it curves away, so they're set by the radius
+            ex = math.sqrt(max((R - rod - 0.6) ** 2 - span ** 2, 1.0))
             for sx in (-1, 1):
-                zz = H - (26 if kind == "stockpot" else 22)
-                span = 34 if kind == "stockpot" else 26
-                path = np.array([(R - 0.5, -span, zz), (R + 10, -span, zz + 2), (R + 22, -span * 0.6, zz + 4), (R + 25, 0, zz + 5),
-                                 (R + 22, span * 0.6, zz + 4), (R + 10, span, zz + 2), (R - 0.5, span, zz)])
-                path = M.resample(path, 5)
+                path = np.array(M.spline([(ex, -span, zz), (R + 6, -span * 0.98, zz + 1), (R + reach * 0.78, -span * 0.72, zz + 3),
+                                          (R + reach, 0, zz + 4), (R + reach * 0.78, span * 0.72, zz + 3), (R + 6, span * 0.98, zz + 1),
+                                          (ex, span, zz)], 4))
                 if sx < 0:
                     path[:, 0] *= -1
-                parts.append(M.tube(path * MM, (4.2 if kind == "stockpot" else 3.6) * MM, I["handle"], n=10))
-            handle_at = (R + 25, 0, H - 21)
+                parts.append(M.tube(path * MM, rod * MM, I["handle"], n=10, caps=(True, True), cap_bulge=0.4))
+            handle_at = (R + reach, 0, zz + 4)
         if lid:
             # the underside from the middle out, then the top back in (a lathe's faces look to the right of its profile)
             under = [(0, H + 17.8), (R * 0.2, H + 17.3), (R * 0.6, H + 14.3), (R - 10, H + 7.4), (R + 1.4, H + 2.3), (R + 3.0, H + 1.0)]
