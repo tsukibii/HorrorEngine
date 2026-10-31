@@ -554,3 +554,48 @@ does them in Godot, each a switch.
   - GDPROPS: every prop with enhancers in the dark, given its HSPropFX as the game gives it, steam switched on. Each
     enhancer is measured lit (what glows, the flames and their lights, the puffs, the wax), then every switch off (all
     gone), and each prop's `.tscn` is loaded with its HSPropFX. Pictured in `Saved/Props/_godot/godot_fx.png`.
+
+## 15. Your pictures on any prop: its own, decals, flourishes, smudges
+
+Every prop takes your pictures four ways, all on the page's Texture & pictures tab and in the recipe as plain JSON.
+Each goes on the paint before the bake and the wear, so the folds, dents, baked detail, grime and scratches go over it.
+
+- **Its own pictures (slots).** Whatever a prop's paint draws that you'd want to swap is a slot: a brand name or logo,
+  a picture (the soda's fruit, the fox on an ema), an ornament or border, a stamp or seal, a print. Each is
+  `<island>.<name>` (`label.logo`, `front.stamp`...), listed in meta.json's `slots` with its box (mm on its island),
+  its kind (logo, picture, flourish, stamp, text, pattern) and what it is. A recipe swaps them in `pictures`:
+  `{"label.logo": "Content/Studio/Props/images/my_logo.png"}`, or `{"image": ..., "fit": "contain" | "cover" |
+  "stretch", "scale", "dx", "dy" (mm), "rot", "flip", "tint", "rough", "metal", "height"}`, or `false` for nothing
+  there. Your picture takes the drawn one's place, kept to its own shape inside the box (`contain`) unless you say
+  otherwise; `tint` recolours a one-colour logo. A design or a family adds a slot by drawing through
+  `f.slot(name, (cx, cy, w, h), draw, kind, about)` (paint.py): the drawing runs only when nothing is swapped in.
+  docs/PROPGEN_PICTURES.md lists every prop's.
+- **Decals and flourishes.** `decals` (§13) put a picture anywhere on any part. A flourish is a decal repeated:
+  `repeat: n` spreads n copies along the part (`along` x or y, `gap` mm between them, `mirror` every other one
+  flipped), `corners: true` puts one in each corner `inset` mm in, each mirrored to face its corner (draw it for the
+  top left); `flip` mirrors one, `tint` recolours it.
+- **Smudges.** `smudges`: [{image, island (or "*": any part, by its area), x, y (its middle, mm), w (mm), rot,
+  strength, blend, tint, rough, height, count, seed}]. `multiply` darkens toward the smudge's colour (coffee, soot,
+  grease, blood); `mix` lays its colour (dust, water marks, rust). `rough` is the roughness it leaves (grease shiny,
+  dust matt), `height` mm it stands proud, `count` that many scattered at random places, turns and sizes. Nine are
+  built in, drawn by code (smudges.py) into `tools/propgen/smudges/` the first time they're used (not kept in git):
+  `smudge/coffee_ring`, `fingerprint`, `grease`, `drip`, `soot`, `water_mark`, `blood`, `dust`, `rust`. Your own: a
+  PNG transparent round it (its colour where it's opaque), or a picture dark on white (no alpha: dark is the stain).
+- **Wrapping a whole part** (§13): your own label over all of it.
+
+**What size a picture wants.** The texture's pixels a millimetre at that place, twice over, rounded up to 16 (never
+under 64): sharp in a close-up and on a texture twice the size. Bigger is fine (it's scaled down); smaller goes soft.
+The page shows the size on every own picture, part, decal and smudge (hover for the millimetres and the density),
+and `python tools/propgen.py pictures` writes every made prop's own pictures and parts with theirs into
+docs/PROPGEN_PICTURES.md. Logos, flourishes, stamps and text want a PNG transparent round them. A picture over a part
+that goes all the way round (a can's or a bottle's label, a cup's band, a candle) is seamless left to right: its left
+and right edges meet at the back.
+
+**Templates.** Each own picture's *template* on the page downloads the generator's own drawing there, cropped from the
+made texture at the size it wants: paint over it (Krita, anything) and swap it back in.
+
+**On the page:** Its own pictures (a row each: what's there now, the size it wants, the generator's own / nothing there
+/ one of your pictures, fit, scale, tint, template; its box dashed on the texture), Pictures on it (decals and
+flourishes: repeat, every other mirrored, corners, mirrored, each with its size), Smudges (the shelf: click one to add
+it on the biggest part; pick one in the list and click the texture to move it there; or the picked picture as a
+smudge). Checked by PROPPAGE: an own picture swapped, a smudge added and moved, a flourish in the corners, made.

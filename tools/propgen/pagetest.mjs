@@ -3,7 +3,9 @@
 // props are never touched. Every recipe a card; one opened into its form and changed there; made by Blender from the
 // page, its log followed and its picture on its card; a picture dropped in and clicked onto the texture where the
 // front of the plaque is (a decal), its parts listed with the picture size each wants, a picture wrapped over the
-// whole front, made again with both, the texture changed; the made prop loaded in 3D with its
+// whole front; a smudge off the shelf moved by a click, the decal made a flourish in each corner; made again with all
+// of it, the texture
+// changed; the made prop loaded in 3D with its
 // sockets; a PBR set off the shelf picked for its material; two variations made at once; kept as a recipe of its own
 // (`from` its base and only what differs), then deleted again. Blender is needed (propgen.py's), as for PROPGEN.
 //   node tools/propgen/pagetest.mjs           (PROPS_TEST_PORT for another port than 8792)
@@ -133,11 +135,30 @@ try {
     if (d.fit !== "stretch" || d.island !== "front") throw new Error(JSON.stringify(d));
     return `the front wants ${m[1]} × ${m[2]} px`;
   });
+  await step("a smudge off the shelf, moved by a click on the texture", async () => {
+    await page.locator(".shelf .pic").first().click();
+    await page.waitForFunction(() => (window.__pp.spec.smudges || []).length === 1);
+    await page.waitForFunction(() => [...document.querySelectorAll(".atlas img")].every(i => i.complete));
+    await page.locator('.atlas rect.isl[data-island="front"]').first().scrollIntoViewIfNeeded();
+    const isl = (await S()).meta.islands.front, b = await page.locator('.atlas rect.isl[data-island="front"]').first().boundingBox();
+    await page.mouse.click(b.x + b.width * 0.3, b.y + b.height * (1 - 0.4));
+    await page.waitForFunction(x => Math.abs(window.__pp.spec.smudges[0].x - x) < 3, 0.3 * isl.mm[0], { timeout: 5000 });
+    const m = (await S()).spec.smudges[0];
+    if (Math.abs(m.x - 0.3 * isl.mm[0]) > 2 || Math.abs(m.y - 0.4 * isl.mm[1]) > 2) throw new Error(JSON.stringify(m));
+    if (!(await page.locator(".atlas ellipse.smu").count())) throw new Error("not drawn on the texture");
+    if (!/\d+ × \d+ px/.test(await page.locator(".smudge").first().textContent())) throw new Error("no size wanted on its row");
+    return `${m.image} at ${m.x}, ${m.y} mm on the front`;
+  });
+  await step("the decal made a flourish: one in each corner", async () => {
+    await page.locator(".decal:not(.smudge)").first().locator("label", { hasText: "corners" }).locator("input").check();
+    await page.waitForFunction(() => window.__pp.spec.decals[0].corners === true);
+  });
   await step("made again with them: in the made recipe, the texture changed", async () => {
     await makeAndWait();
     const s = await S();
     if (!s.meta.spec.decals || s.meta.spec.decals[0].image !== s.pics[0].path) throw new Error("the decal isn't in what was made");
     if (s.meta.spec.decals[1].fit !== "stretch") throw new Error("the wrapped picture isn't in what was made");
+    if (!s.meta.spec.smudges || !s.meta.spec.decals[0].corners) throw new Error("the smudge or the flourish isn't in what was made");
     const a2 = sha(path.join(OUT, "ema", s.meta.textures.main[0]));
     if (a2 === albedo1) throw new Error("its texture is the same as before");
   });
@@ -207,4 +228,4 @@ if (fails.length) {
   process.exit(1);
 }
 fs.rmSync(HOME, { recursive: true, force: true });
-console.log(`PROPPAGE ok (the page: cards, a form, Blender's make and its log, a picture placed by a click, 3D, variations, a recipe saved and deleted; ${secs}s)`);
+console.log(`PROPPAGE ok (the page: cards, a form, Blender's make and its log, a picture placed by a click, a smudge and a flourish, 3D, variations, a recipe saved and deleted; ${secs}s)`);

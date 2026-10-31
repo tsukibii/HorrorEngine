@@ -42,7 +42,7 @@ const LIQUID_FAMS = new Set(["ware", "cookware", "sink"]);
 const ART_FAMS = new Set(["can", "bottle", "cup", "sheet", "box", "ware", "charm", "pills"]);
 const S = {
   list: [], choices: null, shelf: [], pics: [], fam: "", q: "", name: null, rec: null, raw: null, spec: null, orig: null, base: null,
-  meta: null, tab: "settings", decal: -1, pic: null, busy: new Set(), viewer: null, aspect: {}, job: null,
+  meta: null, tab: "settings", decal: -1, smudge: -1, pic: null, busy: new Set(), viewer: null, aspect: {}, job: null, smudges: [],
 };
 window.__pp = S;
 
@@ -182,7 +182,8 @@ function optionsFor(path, v) {
   if (path.length === 1 && C.families[fam] && C.families[fam].options[k]) return C.families[fam].options[k];
   return null;
 }
-const isPicture = (path, v) => path[path.length - 1] === "image" || (path.length === 1 && path[0] === "logo" && typeof v === "string");
+const isPicture = (path, v) => path[path.length - 1] === "image" || (path.length === 1 && path[0] === "logo" && typeof v === "string") ||
+  (path.length === 2 && path[0] === "pictures" && typeof v === "string");
 const isColour = v => typeof v === "string" && /^#[0-9a-fA-F]{6}$/.test(v);
 
 function picSelect(value, onpick) {
@@ -283,8 +284,145 @@ function renderSettings() {
 // ---- the texture: its islands, pictures placed on them, PBR sets per material -------------------------------------------
 
 function picUrl(path) {
+  if (typeof path === "string" && path.startsWith("smudge/")) return `/smudges/${path.slice(7)}.png`;
   const p = S.pics.find(x => x.path === path);
   return p ? p.url : null;
+}
+
+// ---- what size a picture wants: the texture's pixels a millimetre there, twice over (a close-up, or a texture twice
+// the size, still sharp; bigger is fine, it's scaled down), rounded up to 16
+function pxPerMm(island) {
+  const M = S.meta, isl = M && M.islands[island];
+  if (!isl) return 0;
+  const px = ((M.materials || {})[isl.mat] || {}).px || 1024;
+  return (isl.rect[2] - isl.rect[0]) * px / isl.mm[0];
+}
+function wants(island, wmm, hmm) {
+  const s = island === "*" ? Math.max(...Object.keys(S.meta.islands).map(pxPerMm)) : pxPerMm(island);
+  const r = v => Math.max(64, Math.ceil(v * s * 2 / 16) * 16);
+  return [r(wmm), r(hmm)];
+}
+function sizeNote(island, wmm, hmm, what) {
+  const [w, h] = wants(island, wmm, hmm);
+  return el("span", { class: "wants", title: `${wmm.toFixed(0)} × ${hmm.toFixed(0)} mm on the prop, at ${pxPerMm(island === "*" ? Object.keys(S.meta.islands)[0] : island).toFixed(1)} texture pixels a mm; ` +
+    "twice that so it's sharp up close. Bigger is fine (it's scaled down); smaller goes soft." }, `${w} × ${h} px${what ? ", " + what : ""}`);
+}
+
+// ---- the prop's own pictures (meta.json's slots, docs/PROPGEN.md §15): each swapped for yours, turned off, or the
+// generator's own; the drawn one cropped from the texture as a template at the size it wants
+function slotCrop(sl, scale = 1) {
+  const M = S.meta, isl = M.islands[sl.island], files = M.textures[isl.mat];
+  const [W, H] = isl.mm, [u0, v0, u1, v1] = isl.rect, [x0, y0, w, h] = sl.box;
+  const [tw, th] = wants(sl.island, w, h);
+  const cv = el("canvas", { class: "crop", width: Math.round(scale === 1 ? Math.min(96, 96 * w / Math.max(w, h)) : tw),
+    height: Math.round(scale === 1 ? Math.min(96, 96 * h / Math.max(w, h)) : th) });
+  const im = new Image();
+  cv.ready = new Promise(res => {
+    im.onload = () => {
+      const iw = im.naturalWidth, ih = im.naturalHeight;
+      const sx = (u0 + x0 / W * (u1 - u0)) * iw, sy = (1 - (v0 + (y0 + h) / H * (v1 - v0))) * ih;
+      cv.getContext("2d").drawImage(im, sx, sy, w / W * (u1 - u0) * iw, h / H * (v1 - v0) * ih, 0, 0, cv.width, cv.height);
+      res(cv);
+    };
+    im.onerror = () => res(cv);
+  });
+  im.src = `/props/${encodeURIComponent(M.name)}/${files[0]}?v=${M._mtime || 0}`;
+  return cv;
+}
+function setPicture(id, val, opts) {
+  const pics = S.spec.pictures || (S.spec.pictures = {});
+  const cur = pics[id];
+  if (val === "") delete pics[id];
+  else if (val === "off") pics[id] = false;
+  else if (opts) pics[id] = Object.assign(typeof cur === "object" && cur ? cur : { image: typeof cur === "string" ? cur : val }, opts);
+  else pics[id] = typeof cur === "object" && cur ? Object.assign(cur, { image: val }) : val;
+  if (!Object.keys(pics).length) delete S.spec.pictures;
+  changed();
+  renderTexture();
+}
+function slotRows() {
+  const M = S.meta, box = el("div", { class: "slots" });
+  const pics = S.spec.pictures || {};
+  for (const sl of M.slots || []) {
+    const isl = M.islands[sl.island];
+    if (!isl) continue;
+    const cur = pics[sl.id], p = cur && typeof cur === "object" ? cur : typeof cur === "string" ? { image: cur } : null;
+    const sel = el("select", { onchange: () => setPicture(sl.id, sel.value) },
+      el("option", { value: "" }, "the generator's own"), el("option", { value: "off" }, "nothing there"),
+      ...S.pics.map(x => el("option", { value: x.path }, x.name)));
+    if (p && !S.pics.some(x => x.path === p.image)) sel.append(el("option", { value: p.image }, p.image));
+    sel.value = cur === false ? "off" : p ? p.image : "";
+    const cut = ["logo", "flourish", "stamp", "text"].includes(sl.kind);
+    const round = isl.wrap && sl.box[2] >= isl.mm[0] * 0.95;
+    const what = (cut ? "PNG, transparent round it" : "PNG or JPEG") + (round || sl.kind === "pattern" ? ", seamless left to right" : "");
+    const tmpl = el("a", { class: "tmpl", href: "#", title: "The generator's own picture there, at the size it wants: paint over it", onclick: e => {
+      e.preventDefault();
+      slotCrop(sl, 2).ready.then(c => { const a = el("a", { href: c.toDataURL("image/png"), download: `${M.name}_${sl.id.replace(".", "_")}.png` }); document.body.append(a); a.click(); a.remove(); });
+    } }, "template");
+    const num = (k, step, dflt) => el("label", { class: "dim" }, k + " ", el("input", { type: "number", step, value: p && p[k] !== undefined ? p[k] : dflt,
+      onchange: e => setPicture(sl.id, p.image, { [k]: parseFloat(e.target.value) }) }));
+    box.append(el("div", { class: "slot", "data-slot": sl.id },
+      p ? el("img", { src: picUrl(p.image) || "", alt: "" }) : slotCrop(sl),
+      el("div", { class: "who" }, el("b", {}, sl.id), el("span", { class: "dim" }, ` ${sl.kind}: ${sl.about || ""}`),
+        el("div", {}, sizeNote(sl.island, sl.box[2], sl.box[3], what), " ", tmpl)),
+      sel,
+      p ? el("select", { onchange: e => setPicture(sl.id, p.image, { fit: e.target.value }) }, ["contain", "cover", "stretch"].map(f => el("option", { value: f, selected: (p.fit || "contain") === f }, f))) : null,
+      p ? num("scale", 0.05, 1) : null,
+      p ? el("label", { class: "dim" }, "tint ", el("input", { type: "color", value: p.tint || "#ffffff", onchange: e => setPicture(sl.id, p.image, { tint: e.target.value }) })) : null));
+  }
+  return box;
+}
+
+// a decal's or a smudge's row picked (a click on the texture then moves it); a click on one of its controls doesn't
+// draw the tab again, which would take the control's focus
+function pickRow(kind, i, e) {
+  if (kind === "decal") { S.decal = i; S.smudge = -1; } else { S.smudge = i; S.decal = -1; }
+  if (e.target.closest("input,select,button,label,a")) {
+    document.querySelectorAll("#tab-texture .decal").forEach(r => r.classList.remove("sel"));
+    e.currentTarget.classList.add("sel");
+    return;
+  }
+  renderTexture();
+}
+
+// ---- smudges: stains laid over the paint (the built-in shelf, or your own: transparent round it, or dark on white)
+function largestIsland() {
+  let best = null, area = -1;
+  for (const [n, i] of Object.entries(S.meta.islands)) if (i.mm[0] * i.mm[1] > area) { best = n; area = i.mm[0] * i.mm[1]; }
+  return best;
+}
+function addSmudge(path) {
+  const list = S.spec.smudges || (S.spec.smudges = []);
+  const isl = largestIsland(), I = S.meta.islands[isl], base = S.smudges.find(m => m.path === path);
+  list.push({ image: path, island: isl, x: +(I.mm[0] / 2).toFixed(1), y: +(I.mm[1] / 2).toFixed(1), w: Math.min(base ? base.w : 40, I.mm[0] * 0.6, I.mm[1] * 0.9) });
+  S.smudge = list.length - 1;
+  S.decal = -1;
+  changed();
+  renderTexture();
+}
+function smudgeRows(box) {
+  const list = S.spec.smudges || [];
+  const islands = Object.keys(S.meta.islands);
+  list.forEach((m, i) => {
+    const base = S.smudges.find(x => x.path === m.image) || {};
+    const set = (k, v) => { if (v === "" || v === null || (typeof v === "number" && isNaN(v))) delete m[k]; else m[k] = v; changed(); renderTexture(); };
+    const num = (k, step, dflt) => el("label", { class: "dim" }, k + " ", el("input", { type: "number", step, value: m[k] ?? dflt ?? "", onchange: e => set(k, parseFloat(e.target.value)) }));
+    const isl = el("select", { onchange: e => set("island", e.target.value) }, el("option", { value: "*" }, "any part"), islands.map(n => el("option", { value: n }, n)));
+    isl.value = m.island || "*";
+    const img = el("select", { onchange: e => set("image", e.target.value) }, S.smudges.map(x => el("option", { value: x.path }, x.name.replace("_", " "))),
+      S.pics.map(x => el("option", { value: x.path }, x.name)));
+    if (![...S.smudges, ...S.pics].some(x => x.path === m.image)) img.append(el("option", { value: m.image }, m.image));
+    img.value = m.image;
+    const w = m.w ?? base.w ?? 40;
+    box.append(el("div", { class: "decal smudge" + (i === S.smudge ? " sel" : ""), onclick: e => pickRow("smudge", i, e) },
+      el("img", { src: picUrl(m.image) || "", alt: "" }), img, isl,
+      (m.count || 1) > 1 ? null : num("x", 0.5), (m.count || 1) > 1 ? null : num("y", 0.5), num("w", 0.5, w), (m.count || 1) > 1 ? null : num("rot", 5, 0),
+      num("strength", 0.05, 0.8), num("count", 1, 1),
+      el("select", { onchange: e => set("blend", e.target.value) }, ["multiply", "mix"].map(b => el("option", { value: b, selected: (m.blend || base.blend || "multiply") === b }, b))),
+      num("rough", 0.05, base.rough ?? ""),
+      sizeNote(m.island || "*", w, w, "transparent round it"),
+      el("button", { class: "x", onclick: e => { e.stopPropagation(); list.splice(i, 1); if (!list.length) delete S.spec.smudges; S.smudge = -1; changed(); renderTexture(); } }, "×")));
+  });
 }
 function aspectOf(path) {
   if (S.aspect[path] !== undefined || !path) return S.aspect[path] || 1;
@@ -348,6 +486,28 @@ function atlas(mat, files) {
     r.setAttribute("vector-effect", "non-scaling-stroke");
     svg.append(r);
   });
+  for (const sl of M.slots || []) {
+    const isl = M.islands[sl.island];
+    if (!isl || isl.mat !== mat) continue;
+    const [u0, v0, u1, v1] = isl.rect, [W, H] = isl.mm, [x0, y0, w, h] = sl.box;
+    const r = document.createElementNS(NS, "rect");
+    Object.entries({ x: u0 + x0 / W * (u1 - u0), y: 1 - (v0 + (y0 + h) / H * (v1 - v0)), width: w / W * (u1 - u0), height: h / H * (v1 - v0), class: "slotbox" }).forEach(([a, b]) => r.setAttribute(a, b));
+    r.setAttribute("vector-effect", "non-scaling-stroke");
+    const t = document.createElementNS(NS, "title");
+    t.textContent = `${sl.id}: ${sl.about || sl.kind}`;
+    r.append(t);
+    svg.append(r);
+  }
+  (S.spec.smudges || []).forEach((m, i) => {
+    const isl = M.islands[m.island];
+    if (!isl || isl.mat !== mat || (m.count || 1) > 1) return;
+    const [u0, v0, u1, v1] = isl.rect, [W, H] = isl.mm, w = m.w ?? 40;
+    const c = document.createElementNS(NS, "ellipse");
+    Object.entries({ cx: u0 + (m.x ?? W / 2) / W * (u1 - u0), cy: 1 - (v0 + (m.y ?? H / 2) / H * (v1 - v0)), rx: w / 2 / W * (u1 - u0), ry: w / 2 / H * (v1 - v0),
+      class: "smu" + (i === S.smudge ? " sel" : "") }).forEach(([a, b]) => c.setAttribute(a, b));
+    c.setAttribute("vector-effect", "non-scaling-stroke");
+    svg.append(c);
+  });
   wrap.append(svg);
   wrap.addEventListener("click", e => {
     const b = wrap.getBoundingClientRect(), sx = (e.clientX - b.left) / b.width, sy = (e.clientY - b.top) / b.height;
@@ -355,7 +515,14 @@ function atlas(mat, files) {
       if (isl.mat !== mat) continue;
       const [u0, v0, u1, v1] = isl.rect;
       if (sx >= u0 && sx <= u1 && 1 - sy >= v0 && 1 - sy <= v1) {
-        placeDecal(name, ((sx - u0) / (u1 - u0)) * isl.mm[0], ((1 - sy - v0) / (v1 - v0)) * isl.mm[1]);
+        const x = ((sx - u0) / (u1 - u0)) * isl.mm[0], y = ((1 - sy - v0) / (v1 - v0)) * isl.mm[1];
+        const sm = (S.spec.smudges || [])[S.smudge];
+        if (sm) {
+          Object.assign(sm, { island: name, x: +x.toFixed(1), y: +y.toFixed(1) });
+          delete sm.count;
+          changed();
+          renderTexture();
+        } else placeDecal(name, x, y);
         return;
       }
     }
@@ -437,10 +604,18 @@ function decalRows(box) {
     if (!islands.includes(d.island)) isl.append(el("option", { value: d.island }, d.island));
     isl.value = d.island;
     const u = picUrl(d.image);
-    box.append(el("div", { class: "decal" + (i === S.decal ? " sel" : ""), onclick: () => { S.decal = i; renderTexture(); } },
+    box.append(el("div", { class: "decal" + (i === S.decal ? " sel" : ""), onclick: e => pickRow("decal", i, e) },
       u ? el("img", { src: u, alt: "" }) : null, picSelect(d.image, p => { d.image = p; changed(); renderTexture(); }), isl, fitSel(d),
       !d.fit || d.fit === "height" ? num("x", 0.5) : null, !d.fit || d.fit === "width" ? num("y", 0.5) : null, d.fit ? null : num("w", 0.5),
       num("alpha", 0.05), num("rough", 0.05),
+      el("label", { class: "dim", title: "A flourish: copies spread along the part" }, "repeat ", el("input", { type: "number", step: 1, min: 1, value: d.repeat ?? 1,
+        onchange: e => { const n = parseInt(e.target.value, 10); if (n > 1) d.repeat = n; else delete d.repeat; changed(); renderTexture(); } })),
+      d.repeat > 1 ? el("label", { class: "dim" }, el("input", { type: "checkbox", checked: !!d.mirror, onchange: e => { if (e.target.checked) d.mirror = true; else delete d.mirror; changed(); } }), " every other mirrored") : null,
+      el("label", { class: "dim", title: "A flourish in each corner, each mirrored to face its corner" }, el("input", { type: "checkbox", checked: !!d.corners,
+        onchange: e => { if (e.target.checked) d.corners = true; else delete d.corners; changed(); renderTexture(); } }), " corners"),
+      el("label", { class: "dim" }, el("input", { type: "checkbox", checked: !!d.flip, onchange: e => { if (e.target.checked) d.flip = true; else delete d.flip; changed(); } }), " mirrored"),
+      S.meta && S.meta.islands[d.island] ? sizeNote(d.island, d.fit === "stretch" || d.fit === "width" ? S.meta.islands[d.island].mm[0] : (d.w ?? S.meta.islands[d.island].mm[0] / 3),
+        d.fit === "stretch" || d.fit === "height" ? S.meta.islands[d.island].mm[1] : (d.h ?? (d.w ?? S.meta.islands[d.island].mm[0] / 3) * aspectOf(d.image)), "") : null,
       el("button", { class: "x", onclick: e => { e.stopPropagation(); decals.splice(i, 1); if (!decals.length) delete S.spec.decals; S.decal = -1; changed(); renderTexture(); } }, "×")));
   });
 }
@@ -474,18 +649,24 @@ function renderTexture() {
         pbrRow(mat), atlas(mat, files), islandRows(mat)));
     }
   }
-  if (S.spec.family === "appliance") {
-    const lg = S.spec.logo ? (typeof S.spec.logo === "string" ? { image: S.spec.logo } : S.spec.logo) : null;
-    box.append(el("h4", {}, "Its logo"), el("div", { class: "pbrrow" }, el("span", { class: "dim" }, "picture"),
-      picSelect(lg && lg.image, p => { if (p) S.spec.logo = Object.assign({ w: 50 }, lg || {}, { image: p }); else delete S.spec.logo; changed(); renderTexture(); }),
-      lg ? el("label", { class: "dim" }, "width mm ", el("input", { type: "number", step: 1, value: lg.w ?? 50, onchange: e => { S.spec.logo = Object.assign({}, lg, { w: parseFloat(e.target.value) }); changed(); } })) : null,
-      el("span", { class: "dim" }, lg ? "" : `none: its brand "${S.spec.brand || "HONOKA"}" in a font (Settings)`)));
+  if (M && (M.slots || []).length) {
+    box.append(el("h4", {}, "Its own pictures", el("span", { class: "dim" }, " (dashed on the texture): swap each for yours, or turn it off")), slotRows());
+  } else if (M && M.islands) {
+    box.append(el("h4", {}, "Its own pictures"), el("div", { class: "hint" }, "This one draws no logo or picture of its own: wrap a part, or put pictures, flourishes and smudges on it below."));
   }
-  box.append(el("h4", {}, "Pictures on it (decals)"));
+  box.append(el("h4", {}, "Pictures on it (decals and flourishes)"));
   const list = el("div");
   decalRows(list);
-  if (!(S.spec.decals || []).length) list.append(el("div", { class: "hint" }, "None yet: click on the texture above."));
+  if (!(S.spec.decals || []).length) list.append(el("div", { class: "hint" }, "None yet: click on the texture above. A flourish is one repeated along a part or put in its corners."));
   box.append(list);
+  if (M && M.islands) {
+    box.append(el("h4", {}, "Smudges", el("span", { class: "dim" }, " over the paint, under the wear: pick one to move it with a click on the texture")));
+    const sl = el("div");
+    smudgeRows(sl);
+    box.append(sl, el("div", { class: "pics shelf" }, S.smudges.map(m => el("div", { class: "pic", title: `${m.name.replace("_", " ")}: ${m.about} (${m.blend})`, onclick: () => addSmudge(m.path) },
+      el("img", { src: m.url, alt: m.name }))), el("span", { class: "dim" }, "← click one to add it; or add one of your pictures as a smudge: ",
+      el("button", { onclick: () => { const p = S.pic || (S.pics[0] && S.pics[0].path); if (p) addSmudge(p); else toast("Drop a picture below first", true); } }, "the picked picture"))));
+  }
   box.append(el("h4", {}, "Your pictures"));
   const input = el("input", { type: "file", accept: "image/png,image/jpeg", multiple: true, hidden: true, onchange: e => uploadFiles(e.target.files) });
   const drop = el("div", { class: "drop", onclick: () => input.click() }, "Drop a PNG or a JPEG here (a logo, a label, a sticker; transparent where it should be cut out), or click to choose", input);
@@ -637,7 +818,8 @@ async function library() {
 // ---- wiring --------------------------------------------------------------------------------------------------------------
 
 async function boot() {
-  const [c, sh, pics] = await Promise.all([api("/api/choices"), api("/api/shelf"), api("/api/pictures")]);
+  const [c, sh, pics, smu] = await Promise.all([api("/api/choices"), api("/api/shelf"), api("/api/pictures"), api("/api/smudges")]);
+  S.smudges = smu.smudges || [];
   S.choices = c;
   S.shelf = sh.sets || [];
   S.pics = pics.images || [];

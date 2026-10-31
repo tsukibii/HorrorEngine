@@ -21,6 +21,9 @@ exported. No image or 3D generator anywhere.
                                                        _normal, _nor_gl, _rough...; or a folder or a .zip)
     python tools/propgen.py all [family...]            every recipe (or a family's)
     python tools/propgen.py sheet [names...]           a contact sheet of their previews: Saved/Props/sheet.png
+    python tools/propgen.py pictures [names...]        each made prop's own pictures (logos, flourishes, stamps...)
+                                                       and parts, and what size a picture wants on each:
+                                                       docs/PROPGEN_PICTURES.md
     python tools/propgen.py check                      PROPGEN: a few recipes made small and measured
     python tools/propgen.py godot [names...]           GDPROPS: the made props imported by Godot 4.7, their materials
                                                        read back, pictured (Saved/Props/_godot/godot_props.png)
@@ -126,6 +129,12 @@ def main():
                 sys.exit(f"{n}: not made yet (python tools/propgen.py make {n})")
             recipes.to_library(json.load(open(mp, encoding="utf-8")), recipes.OUT)
         print(f"PROPGEN library: {len(names)} in Content/Studio/Library as props/<name>")
+        return
+    if argv[0] == "pictures":
+        from propgen import recipes, sizes
+        out = os.path.join(ROOT, "docs", "PROPGEN_PICTURES.md")
+        n = sizes.write_doc(recipes.OUT, out, argv[1:] or None)
+        print(f"PROPGEN pictures: {n} made props' pictures and parts, and the size each wants, in {os.path.relpath(out, ROOT)}")
         return
     if argv[0] == "godot":
         from propgen import godot_check

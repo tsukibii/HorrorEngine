@@ -71,8 +71,8 @@ details.hint[open] summary{margin-bottom:4px}
 #job-log{margin:0;padding:4px 12px 8px;overflow-y:auto;font:11px/1.35 ui-monospace,Menlo,Consolas,monospace;color:#c9c6bd;white-space:pre-wrap}
 .mat{margin:6px 0 16px}
 .mat h4{margin:6px 0;font-size:13px}
-.atlas{position:relative;width:100%;border:1px solid var(--line);background:#0c0c0e;cursor:crosshair;user-select:none}
-.atlas img{width:100%;display:block}
+.atlas{position:relative;width:100%;aspect-ratio:1;border:1px solid var(--line);background:#0c0c0e;cursor:crosshair;user-select:none}
+.atlas img{width:100%;height:100%;display:block}
 .atlas svg{position:absolute;inset:0;width:100%;height:100%}
 .atlas rect.isl{fill:transparent;stroke:#d9a44188;stroke-width:1}
 .atlas rect.isl:hover{fill:#d9a44122;stroke:#d9a441}
@@ -99,3 +99,14 @@ details.hint[open] summary{margin-bottom:4px}
 .isl-row b{min-width:90px}
 .isl-row .wraps{color:#a9c8ff}
 .isl-row button{margin-left:auto;font-size:12px;padding:1px 7px}
+.slots{display:flex;flex-direction:column;gap:4px;margin:4px 0 8px}
+.slot{display:flex;gap:8px;align-items:center;padding:4px;border:1px solid var(--line);border-radius:4px;flex-wrap:wrap}
+.slot .crop,.slot img{max-width:96px;max-height:64px;background:repeating-conic-gradient(#333 0 25%,#222 0 50%) 0 0/10px 10px;border-radius:3px}
+.slot .who{flex:1 1 220px;min-width:180px}
+.slot input[type=number]{width:64px}
+.wants{font-size:11px;color:var(--accent);white-space:nowrap}
+.tmpl{font-size:11px}
+.shelf .pic{background:#c9c5bd}
+.atlas svg .slotbox{fill:none;stroke:#ffd34d;stroke-width:1;stroke-dasharray:3 2}
+.atlas svg .smu{fill:rgba(255,90,60,.12);stroke:#ff6a3d;stroke-width:1}
+.atlas svg .smu.sel{stroke-width:2.5}

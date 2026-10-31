@@ -414,6 +414,12 @@ class Handler(BaseHTTPRequestHandler):
             return self.file(IMAGES / parts[1])
         if a == "pbrthumb":
             return self.file(pbr_thumb("/".join(parts[1:])), cache=True)
+        if a == "smudges" and len(parts) == 2 and parts[1].endswith(".png"):
+            from propgen import smudges
+            try:
+                return self.file(Path(smudges.path(parts[1][:-4])), cache=True)
+            except ValueError as e:
+                return self.send(404, {"error": str(e)})
         if a == "api":
             what = parts[1] if len(parts) > 1 else ""
             try:
@@ -432,6 +438,10 @@ class Handler(BaseHTTPRequestHandler):
                     return self.send(200, shelf())
                 if what == "pictures":
                     return self.send(200, pictures())
+                if what == "smudges":
+                    from propgen import smudges
+                    return self.send(200, {"smudges": [dict(v, name=k, path=f"smudge/{k}", url=f"/smudges/{k}.png")
+                                                       for k, v in smudges.INDEX.items()]})
                 if what == "job" and len(parts) == 3 and parts[2] in JOBS:
                     j = JOBS[parts[2]]
                     since = int((re.search(r"from=(\d+)", qs) or [0, 0])[1])

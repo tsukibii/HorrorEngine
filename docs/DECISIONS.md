@@ -2,6 +2,17 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-31, night (the user, on `prop-gen-tool`)
+
+- **No part of a prop see-through in Godot**: the user saw the rice cooker's bottom through its sides. Faces are
+  judged by measure now (PROPGEN fails a case when more than 1.5% of what's seen from outside is a face's back), not by
+  Cycles' previews, which draw both sides.
+- **Every prop's pictures swappable on the page, with a size for each**: "Make sure for each type of prop we can
+  generate that we can easily swap out logos, decals, flourishes, smudges, etc (recommend image size for everything) in
+  the wrapper". So each logo, picture, ornament, stamp and print a prop's paint draws is a slot of its own
+  (`pictures`), decals repeat as flourishes, smudges are built in or yours, and every one shows the size it wants
+  (PROPGEN §15, docs/PROPGEN_PICTURES.md).
+
 ## 2026-10-31, evening (the user, on `prop-gen-tool`)
 
 - **Enhancers for the props, in Godot, easy to switch off**: "consider if there are some simple shaders/enhancers for

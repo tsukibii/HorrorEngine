@@ -375,8 +375,9 @@ class Frame:
         self.lay_island(cov, color=col.astype(np.float32), rough=smp["rough"], metal=smp["metal"], alpha=alpha,
                         normal=n.astype(np.float32))
 
-    def image(self, path_or_array, x=0.0, y=0.0, w=None, h=None, **props):
-        """A picture (an RGBA array 0-1, rows top first, or a PNG path) laid over the island's rect (x, y, w, h mm)."""
+    def image(self, path_or_array, x=0.0, y=0.0, w=None, h=None, clip=None, **props):
+        """A picture (an RGBA array 0-1, rows top first, or a PNG path) laid over the island's rect (x, y, w, h mm);
+        `clip` (x0, y0, x1, y1 mm) keeps it inside a box."""
         img = read_image(path_or_array) if isinstance(path_or_array, str) else np.asarray(path_or_array, np.float32)
         w = self.W if w is None else w
         h = self.H if h is None else h
@@ -384,6 +385,8 @@ class Frame:
         u = (X - x) / w
         v = 1 - (Y - y) / h
         inside = ((u >= 0) & (u <= 1) & (v >= 0) & (v <= 1)).astype(np.float32)
+        if clip is not None:
+            inside *= ((X >= clip[0]) & (X <= clip[2]) & (Y >= clip[1]) & (Y <= clip[3]))
         ih, iw = img.shape[:2]
         fx = np.clip(u * iw - 0.5, 0, iw - 1)
         fy = np.clip(v * ih - 0.5, 0, ih - 1)
@@ -395,6 +398,115 @@ class Frame:
         px = top * (1 - ty) + bot * ty
         a = px[..., 3] if px.shape[-1] > 3 else np.ones(px.shape[:2], np.float32)
         self.lay_island(inside * a, color=px[..., :3], **props)
+
+    # -- a prop's own pictures, swappable (docs/PROPGEN.md §15)
+    def picture(self, pic, box, rot=0, **defaults):
+        """A picture laid in a box (cx, cy, w, h mm): `pic` a path, or {image, fit (contain: its own shape inside the
+        box, the default; cover: filling it, cut to it; stretch: to the box's shape), scale, dx, dy (mm), rot (quarter
+        turns, degrees anticlockwise), flip (mirrored), tint (its colour multiplied: a one-colour logo recoloured),
+        rough, metal, alpha, height}."""
+        p = {"image": pic} if isinstance(pic, str) else dict(pic)
+        img = read_image(p["image"])
+        k = int(round(float(p.get("rot", rot)) / 90.0)) % 4
+        if k:
+            img = np.rot90(img, k).copy()
+        if p.get("flip"):
+            img = img[:, ::-1].copy()
+        if p.get("tint"):
+            img = img.copy()
+            img[..., :3] *= rgb(p["tint"])
+        cx, cy, w, h = box
+        ih, iw = img.shape[:2]
+        fit = p.get("fit", "contain")
+        if fit == "stretch":
+            pw, ph = w, h
+        else:
+            z = (min if fit == "contain" else max)(w / iw, h / ih)
+            pw, ph = iw * z, ih * z
+        z = float(p.get("scale", 1.0))
+        pw, ph = pw * z, ph * z
+        x, y = cx + float(p.get("dx", 0.0)) - pw / 2, cy + float(p.get("dy", 0.0)) - ph / 2
+        kw = dict(defaults)
+        for key in ("rough", "metal", "alpha", "height"):
+            if key in p:
+                kw[key] = float(p[key])
+        kw.setdefault("rough", 0.35)
+        self.image(img, x, y, pw, ph, clip=(cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2) if fit == "cover" else None, **kw)
+
+    def slot(self, name, box, draw=None, kind="logo", about="", rot=0, **props):
+        """One of the prop's own pictures, which a recipe can swap: `name` (one per island), `box` (cx, cy, w, h mm:
+        where it is and how big), `draw()` the generator's own drawing there. The recipe's `pictures`
+        {"<island>.<name>": a picture, or {image, fit, scale, dx, dy, rot, flip, tint, rough, metal, alpha, height}
+        (`picture`), or false: nothing there}. `kind`: logo, picture, flourish, stamp, text or pattern; `about` what it
+        is; `props` the ink the drawing uses, the picture's too. Each slot goes into meta.json's `slots` for the page."""
+        sid = f"{self.isl.name}.{name}"
+        pic = (getattr(self.cv, "pictures", None) or {}).get(sid)
+        cx, cy, w, h = (float(v) for v in box)
+        reg = getattr(self.cv, "slots", None)
+        if reg is not None and not any(r["id"] == sid for r in reg):
+            reg.append({"id": sid, "island": self.isl.name, "name": name, "kind": kind, "about": about, "rot": rot,
+                        "box": [round(cx - w / 2, 2), round(cy - h / 2, 2), round(w, 2), round(h, 2)],
+                        "now": "off" if pic is False else ("yours" if pic else "drawn")})
+        if pic is False:
+            return
+        if pic:
+            self.picture(pic, (cx, cy, w, h), rot=rot, **props)
+        elif draw is not None:
+            draw()
+
+    def smudge(self, img, cx, cy, w, h=None, rot=0.0, strength=0.8, blend="multiply", tint=None, rough=None,
+               height=0.0, flip=False):
+        """A stain from a picture (RGBA: its colour where its alpha is; a picture without alpha: dark where it's dark)
+        at (cx, cy) mm, `w` wide (its own shape), turned `rot` degrees: `multiply` darkens toward its colour (coffee,
+        soot, grease, blood), `mix` lays its colour (dust, water marks, rust); `rough` the roughness it leaves (grease
+        shiny, dust matt), `height` mm it stands proud. Over everything painted, under the wear."""
+        img = read_image(img) if isinstance(img, str) else np.asarray(img, np.float32)
+        if img.shape[-1] < 4 or float(img[..., 3].min()) > 0.98:
+            lum = img[..., :3] @ np.array([0.2126, 0.7152, 0.0722], np.float32)
+            mask, col = 1.0 - lum, np.broadcast_to(np.float32(0.3), img.shape[:2] + (3,))
+        else:
+            mask, col = img[..., 3], img[..., :3]
+        if flip:
+            mask, col = mask[:, ::-1], col[:, ::-1]
+        ih, iw = mask.shape
+        h = w * ih / iw if h is None else h
+        X, Y = self.grid()
+        a = math.radians(-rot)
+        dx, dy = X - cx, Y - cy
+        u = (dx * math.cos(a) - dy * math.sin(a)) / w + 0.5
+        v = 0.5 - (dx * math.sin(a) + dy * math.cos(a)) / h
+        inside = (u >= 0) & (u <= 1) & (v >= 0) & (v <= 1)
+        if not inside.any():
+            return
+        fx, fy = np.clip(u * iw - 0.5, 0, iw - 1), np.clip(v * ih - 0.5, 0, ih - 1)
+        x0, y0 = np.floor(fx).astype(int), np.floor(fy).astype(int)
+        x1, y1 = np.minimum(x0 + 1, iw - 1), np.minimum(y0 + 1, ih - 1)
+        tx, ty = fx - x0, fy - y0
+
+        def samp(A):
+            if A.ndim == 3:
+                return (A[y0, x0] * ((1 - tx) * (1 - ty))[..., None] + A[y0, x1] * (tx * (1 - ty))[..., None] +
+                        A[y1, x0] * ((1 - tx) * ty)[..., None] + A[y1, x1] * (tx * ty)[..., None])
+            return A[y0, x0] * (1 - tx) * (1 - ty) + A[y0, x1] * tx * (1 - ty) + A[y1, x0] * (1 - tx) * ty + A[y1, x1] * tx * ty
+        m = samp(mask) * inside * float(strength)
+        c = samp(col)
+        if tint is not None:
+            c = c * rgb(tint)
+        iy0, ix0, iy1, ix1 = self.box
+        ys, xs = slice(max(iy0, 0), min(iy1, self.cv.h)), slice(max(ix0, 0), min(ix1, self.cv.w))
+        oy, ox = ys.start - iy0, xs.start - ix0
+        m = m[oy:oy + ys.stop - ys.start, ox:ox + xs.stop - xs.start]
+        c = c[oy:oy + ys.stop - ys.start, ox:ox + xs.stop - xs.start]
+        reg = self.cv.col[ys, xs]
+        if blend == "mix":
+            reg += (c - reg) * m[..., None]
+        else:
+            reg *= 1 - m[..., None] * (1 - c)
+        if rough is not None:
+            r = self.cv.rough[ys, xs]
+            r += (float(rough) - r) * m
+        if height:
+            self.cv.height[ys, xs] += float(height) * m
 
 
 # ---- polygons ---------------------------------------------------------------------------------------------------------
@@ -609,6 +721,9 @@ def write_png(path, a):
 def find(path):
     """A file named in a recipe: as given (absolute, or from where the tool runs), else from the project folder."""
     p = str(path)
+    if p.startswith("smudge/"):
+        from . import smudges
+        return smudges.path(p[len("smudge/"):])
     if os.path.isabs(p) or os.path.exists(p):
         return p
     q = os.path.join(os.path.dirname(os.path.dirname(HERE)), p)

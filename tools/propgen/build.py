@@ -111,7 +111,8 @@ def lay_extras(spec, th, frames):
     pictures on any island (`decals`: [{image, island, x, y (its middle, mm across and up the island; the middle if
     not given), w (mm; a third of the island), h (from the picture's shape), fit, rough, metal, alpha, height}]).
     `fit` wraps a picture over the whole island: "stretch" to its size, "width" its width with its own shape (centred
-    up and down), "height" the same the other way."""
+    up and down), "height" the same the other way; `flip`, `tint`, and as a flourish `repeat`/`corners` (`_copies`).
+    Then `smudges` over it all (`_smudge`). The prop's own pictures (`pictures`) are its paint's, by Frame.slot."""
     for mname, ps in (spec.get("pbr") or {}).items():
         ps = ps if isinstance(ps, dict) else {"set": ps}
         only = ps.get("islands")
@@ -136,8 +137,71 @@ def lay_extras(spec, th, frames):
             w = float(dc.get("w", f.W / 3))
             h = float(dc.get("h", w * asp))
             x, y = float(dc.get("x", f.W / 2)), float(dc.get("y", f.H / 2))
-        f.image(img, x - w / 2, y - h / 2, w, h, rough=float(dc.get("rough", 0.3)), metal=float(dc.get("metal", 0.0)),
-                alpha=float(dc.get("alpha", 1.0)), height=float(dc.get("height", 0.01)))
+        props = dict(rough=float(dc.get("rough", 0.3)), metal=float(dc.get("metal", 0.0)), alpha=float(dc.get("alpha", 1.0)),
+                     height=float(dc.get("height", 0.01)))
+        if dc.get("tint"):
+            img = img.copy()
+            img[..., :3] *= P.rgb(dc["tint"])
+        for cx, cy, fx, fy in _copies(dc, f, x, y, w, h):
+            im = img[::-1 if fy else 1, ::-1 if fx else 1]
+            f.image(im, cx - w / 2, cy - h / 2, w, h, **props)
+    for sm in spec.get("smudges") or ():
+        _smudge(sm, th, frames)
+
+
+def _copies(dc, f, x, y, w, h):
+    """Where a decal goes (its middle, mirrored across, mirrored up): once, flipped (`flip`); or as a flourish:
+    `repeat` n copies spread along the island (`along` x or y, `gap` mm between them, else spread evenly; `mirror`
+    every other one flipped), `corners` one in each corner `inset` mm in, each mirrored to face its corner."""
+    fl = bool(dc.get("flip"))
+    if dc.get("corners"):
+        k = float(dc.get("inset", 2.0))
+        return [(k + w / 2, f.H - k - h / 2, fl, False), (f.W - k - w / 2, f.H - k - h / 2, not fl, False),
+                (k + w / 2, k + h / 2, fl, True), (f.W - k - w / 2, k + h / 2, not fl, True)]
+    n = int(dc.get("repeat", 1))
+    if n <= 1:
+        return [(x, y, fl, False)]
+    along = dc.get("along", "x")
+    span, size = (f.W, w) if along == "x" else (f.H, h)
+    gap = dc.get("gap")
+    step = size + float(gap) if gap is not None else span / n
+    start = (x if along == "x" else y) - step * (n - 1) / 2 if gap is not None else step / 2
+    out = []
+    for i in range(n):
+        c = start + i * step
+        m = fl != (bool(dc.get("mirror")) and i % 2 == 1)
+        out.append((c, y, m, False) if along == "x" else (x, c, m, False))
+    return out
+
+
+def _smudge(sm, th, frames):
+    """A smudge (`smudges`: [{image: "smudge/<name>" or your picture, island (or "*": any, by area), x, y (its middle,
+    mm; the middle if not given), w (mm), rot (degrees), strength, blend, tint, rough, height, count (that many
+    scattered at random places, turns and sizes), seed}]); a built-in smudge's blend, roughness and size are its own
+    unless given."""
+    from . import smudges as SM
+    from .noise import rng
+    img = P.read_image(sm["image"])
+    base = SM.INDEX.get(sm["image"][len("smudge/"):], {}) if sm["image"].startswith("smudge/") else {}
+    n = int(sm.get("count", 1))
+    r = rng(int(sm.get("seed", 0)), "smudge", sm["image"], str(sm.get("island")))
+    names = [sm.get("island", "*")] if sm.get("island", "*") != "*" else list(frames)
+    for nm in names:
+        if nm not in frames:
+            raise ValueError(f"smudge on island {nm!r}: one of {', '.join(sorted(frames))}")
+    areas = np.array([frames[nm].W * frames[nm].H for nm in names], float)
+    for i in range(n):
+        nm = names[int(r.choice(len(names), p=areas / areas.sum()))] if len(names) > 1 else names[0]
+        f = frames[nm]
+        w = float(sm.get("w", base.get("w", min(f.W, f.H) / 2)))
+        if n > 1:
+            w *= r.uniform(0.75, 1.25)
+            x, y, rot = r.uniform(0, f.W), r.uniform(0, f.H), r.uniform(0, 360)
+        else:
+            x, y, rot = float(sm.get("x", f.W / 2)), float(sm.get("y", f.H / 2)), float(sm.get("rot", 0.0))
+        f.smudge(img, x, y, w, rot=rot, strength=float(sm.get("strength", 0.8)), blend=sm.get("blend", base.get("blend", "multiply")),
+                 tint=sm.get("tint"), rough=sm.get("rough", base.get("rough")), height=float(sm.get("height", 0.0)),
+                 flip=bool(sm.get("flip", False)))
 
 
 def families():
@@ -223,8 +287,10 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
         bpy.context.scene.collection.objects.link(high_ob)
     # paint every material's islands
     canvases, frames = {}, {}
+    slots = []                                       # the prop's own pictures, as its paint names them (Frame.slot)
     for mname, mt in th.mats.items():
         cv = P.Canvas(mt["px"], mt["px"], mt["color"], mt["rough"], mt["metal"])
+        cv.pictures, cv.slots = spec.get("pictures") or {}, slots
         canvases[mname] = cv
     for iname, isl in th.islands.items():
         frames[iname] = P.Frame(canvases[isl.mat], isl, wrap=iname in th.wrap)
@@ -373,7 +439,8 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
            "secs": round(time.time() - t0, 1), "sockets": rec_sockets,
            "islands": {n: {"mat": i.mat, "mm": [round(i.w_mm, 2), round(i.h_mm, 2)], "rect": [round(float(x), 5) for x in i.rect],
                            "wrap": n in th.wrap} for n, i in th.islands.items()},
-           "materials": {m: {"kind": v["kind"], "px": v["px"], "color": v["color"]} for m, v in th.mats.items()}, "fx": fx}
+           "materials": {m: {"kind": v["kind"], "px": v["px"], "color": v["color"]} for m, v in th.mats.items()}, "fx": fx,
+           "slots": slots}
     with open(os.path.join(odir, "meta.json"), "w", encoding="utf-8") as fh:
         json.dump(rec, fh, indent=1)
     if th.liquid:
