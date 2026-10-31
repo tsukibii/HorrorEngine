@@ -16,6 +16,7 @@ import { form as kitForm, overrides as kitOverrides, CSS as KIT_CSS } from "./ki
 import * as SG from "./street-gen.js";
 import * as S3 from "./street3.js";
 import { STYLES as STREET_STYLES } from "./street-presets.js";
+import { Brush, lookName as brushLook } from "./brush.js";
 
 const $ = s => document.querySelector(s);
 const SVGNS = "http://www.w3.org/2000/svg";
@@ -134,7 +135,7 @@ async function replan() {
     if (j.error) throw new Error(j.error);
     addMade(j.made);                                  // the rooms' tuned sets (look objects), made by the server when missing
     B.plan = j; B.planStory = s;
-    stage.setWorld(j, s, B.target);
+    stage.setWorld(j, s, B.target); clearPaintHl();
     if (+$("#swing").value) stage.swing(+$("#swing").value);
     addLamp(); placeHer(); doors(); placeRefs(); buildOutside(); draw(); render3d();
   } catch (e) { status(e.message, "bad"); }
@@ -797,6 +798,9 @@ async function boot() {
   renderRefs();
   LIB = M.loadLibrary(await api("/api/poses"));
   stage = new Stage($("#view"), LIB);
+  stage.scene.add(paintHl); paintHl.visible = false;
+  const loaded = THREE.DefaultLoadingManager.onLoad;                  // the view draws on input: a set's maps arriving draw it again
+  THREE.DefaultLoadingManager.onLoad = () => { if (loaded) loaded(); render3d(); };
   new ResizeObserver(() => { draw(); render3d(); }).observe($("#planBox"));
   new ResizeObserver(() => render3d()).observe($("#view"));
   $("#scaleNote").innerHTML = `A square is 1 m with 20 cm lines, as Unreal's prototype grid (or the 910 mm module: two make a tatami's length). The bodies are real size: Kimodo's SOMA skeleton stands 1.76 m with its eyes at 1.65 m, the player's eye here (docs/STORY_FORMAT.md §0); on the plan a person is 45 cm across the shoulders. Rooms read in 帖 at ${JO} m² as Japanese listings give them.`;
@@ -804,7 +808,11 @@ async function boot() {
   window.__builderReady = true;
 }
 window.B = B; window.BM = BM; Object.defineProperty(window, "__builderStage", { get: () => stage });
-window.builder = { refreshLibrary, openPreset, changed, save, runChecks, addRoom, addItem, loadRef, placeRefs, setTool: t => { B.tool = t; renderTools(); }, addOpening: (x, y, t) => { B.tool = t; addOpening(x, y); B.tool = "select"; }, render3d, undo, buildOutside: () => buildOutside(), openOther, nodesHere, focusIds, addKit, snapKit, addCurtains, varyKit, splitHinge, applyHingeAt,
+window.builder = { paint: { on: setPaint, hit: e => targetOfHit(paintHit(e)), at(fx, fy, alt = false) { const c = stage.renderer.domElement.getBoundingClientRect(); return paintAt(paintHit({ clientX: c.left + fx * c.width, clientY: c.top + fy * c.height }), alt); },
+    targetAt(fx, fy) { const c = stage.renderer.domElement.getBoundingClientRect(); return targetOfHit(paintHit({ clientX: c.left + fx * c.width, clientY: c.top + fy * c.height })); },
+    brush(set) { PB.target = null; BR.pick(set); return BR.brush; }, colour: hex => BR.useColour(hex), tune(fn) { fn(BR.brush); BR.changed(); return BR.value(); },
+    scope(s) { PB.scope = s; }, target: () => PB.target, value: () => BR.value(), get BR() { return BR; } },
+  pitch: deg => { look.pitch = deg; render3d(); }, refreshLibrary, openPreset, changed, save, runChecks, addRoom, addItem, loadRef, placeRefs, setTool: t => { B.tool = t; renderTools(); }, addOpening: (x, y, t) => { B.tool = t; addOpening(x, y); B.tool = "select"; }, render3d, undo, buildOutside: () => buildOutside(), openOther, nodesHere, focusIds, addKit, snapKit, addCurtains, varyKit, splitHinge, applyHingeAt,
   swing: deg => { $("#swing").value = deg; $("#swing").oninput(); },
   resizeKitBy: (id, su, sv, x, y) => { const k = B.model.kits.find(q => q.id === id); pushUndo(); resizeKit({ k, su, sv, x0: k.x, y0: k.y, size: k.size.slice(), spec: JSON.parse(JSON.stringify(k.spec)) }, x, y); changed(); return k; }, setKitPreset: (t, v) => { if (t === "fit") B.fitPreset = v; else B.kitPreset = v; renderTools(); } };
 boot().catch(e => { console.error(e); status(e.message, "bad"); });
@@ -968,6 +976,7 @@ function buildOutside() {
   if (outsideGroup) { stage.scene.remove(outsideGroup); outsideGroup.traverse(m => { if (m.geometry) m.geometry.dispose(); }); outsideGroup = null; }
   const o = outsideOf();
   if (!o || !$("#showOutside").checked || !B.exported) return;
+  if (o.look && Object.values(o.look).some(S3.isLookObj)) S3.prepareLooks({ look: o.look }, () => buildOutside());   // its tuned sets, made once
   const b = SG.outsideBuilding(B.exported.level, o);
   if (!b) return;
   try {
@@ -1189,13 +1198,8 @@ function openOther(game, level) {
 }
 
 // ---- a room's look: texture sets for its floor, walls, ceiling and trim ----
-// a look as a few words: a set's label, "(tuned)" when it's a look object (STREET_PAINT §2), a colour as itself
-function lookName(v) {
-  if (!v) return "(grey)";
-  if (typeof v === "object") { const m = (LIBRARY.textures || {})[v.set] || {}; return `${m.label || String(v.set || "").split("/").pop()} (tuned${(v.layers || []).length ? ", " + v.layers.length + " layer" + (v.layers.length > 1 ? "s" : "") : ""})`; }
-  if (v.startsWith("#")) return "colour " + v;
-  const m = (LIBRARY.textures || {})[v]; return m && m.label ? m.label : v.replace(/^(ambientcg|pbr)\//, "");
-}
+// a look as a few words: a set's label and what's done to it (STREET_PAINT §2), a colour as itself
+const lookName = v => v && typeof v === "string" && v.startsWith("#") ? "colour " + v : brushLook(v, "(grey)");
 function lookEditor(r) {
   const wrapEl = document.createElement("div"); wrapEl.style.marginTop = "6px";
   const look = r.extra.look || {};
@@ -1218,6 +1222,190 @@ function lookEditor(r) {
   wrapEl.append(h, g, same);
   return wrapEl;
 }
+
+// ---- Paint: the paint bucket in the rooms (docs/SCENE_BUILDER.md §9; the user, 2026-10-31: "use the paint bucket in my
+// interiors") ----
+// The street paint page's brush (brush.js) on the level: pick a set off the shelf (or a colour), tune it and layer over
+// it, then click a surface in the view: a room's floor, its walls (its own side: the plan lines a neighbour's wall with
+// the room's look), its ceiling or trim, a block (its `mat`), or the outside's slot round the building. "Every room
+// like it" paints every room of that kind. A kit floor or ceiling under the click is taken up so the set shows.
+// Alt-click picks up what's on a surface, and the brush then tunes that surface live. A drag still looks round.
+const PB = { on: false, scope: "one", target: null, clearing: false, down: null, hoverKey: "" };
+const paintHl = new THREE.Group();
+const HLMAT = new THREE.MeshBasicMaterial({ color: 0xd9a441, transparent: true, opacity: 0.28, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 });
+const t2s = v => [v.x, -v.z, v.y];                                   // three's space -> the story's (z up)
+const PART_NAMES = { floor: "floor", walls: "walls", ceiling: "ceiling", trim: "trim" };
+function propOf(id) {                                                 // a block the story (or a wall item) owns, which takes a `mat`
+  for (const r of B.model.rooms) { const q = ((r.extra || {}).props || []).find(x => x.id === id); if (q) return { prop: q }; }
+  const it = (B.model.items || []).find(x => x.id === id && !x.kit);
+  return it ? { item: it } : null;
+}
+function paintTargetName(t) {
+  if (!t) return "";
+  if (t.kind === "outside") return `the outside's ${t.slot}`;
+  if (t.kind === "prop") return t.id;
+  const r = roomOf(t.room), K = r && (KINDS[r.kind] || KINDS.other);
+  return t.all && K ? `every ${K.en.toLowerCase()}'s ${PART_NAMES[t.part]}` : `${r ? r.name || r.id : t.room}'s ${PART_NAMES[t.part]}`;
+}
+function lookOfTarget(t) {
+  if (t.kind === "room") { const r = roomOf(t.room); return (r && (r.extra.look || {})[t.part]) || ""; }
+  if (t.kind === "prop") { const o = propOf(t.id); return o ? (o.prop ? o.prop.mat : (o.item.extra || {}).mat) || "" : ""; }
+  if (t.kind === "outside") { const o = outsideOf(); return (o && (o.look || {})[t.slot]) || ""; }
+  return "";
+}
+function setLookOn(t, v) {                                            // a look on a target; what it took up, in words
+  const val = v && JSON.parse(JSON.stringify(v)), took = [];
+  if (t.kind === "room") {
+    const r = roomOf(t.room); if (!r) return took;
+    for (const o of t.all ? B.model.rooms.filter(x => x.kind === r.kind) : [r]) {
+      o.extra.look = Object.assign({}, o.extra.look || {});
+      if (val) o.extra.look[t.part] = val; else delete o.extra.look[t.part];
+      if (!Object.keys(o.extra.look).length) delete o.extra.look;
+      if (val && t.part === "floor" && o.floorKit) { o.floorKit = null; took.push(`${o.name || o.id}'s kit floor`); }      // so the set shows
+      if (val && t.part === "ceiling" && o.ceilKit) { o.ceilKit = null; took.push(`${o.name || o.id}'s kit ceiling`); }
+    }
+  } else if (t.kind === "prop") {
+    const o = propOf(t.id); if (!o) return took;
+    const x = o.prop || (o.item.extra = o.item.extra || {});
+    if (val) x.mat = val; else delete x.mat;
+  } else if (t.kind === "outside") {
+    const o = outsideOf(); if (!o) return took;
+    o.look = Object.assign({}, o.look || {}); if (val) o.look[t.slot] = val; else delete o.look[t.slot];
+  }
+  return took;
+}
+const pray = new THREE.Raycaster(), pmouse = new THREE.Vector2();
+function shownPath(o) { for (let x = o; x; x = x.parent) if (!x.visible) return false; return true; }
+function paintHit(e) {
+  if (!stage) return null;
+  const c = stage.renderer.domElement.getBoundingClientRect();
+  pmouse.set(((e.clientX - c.left) / c.width) * 2 - 1, -((e.clientY - c.top) / c.height) * 2 + 1);
+  pray.setFromCamera(pmouse, stage.camera);
+  let best = null;
+  for (const h of pray.intersectObjects(stage.world.children, true)) {
+    if (!shownPath(h.object)) continue;
+    let o = h.object; while (o && !(o.userData && o.userData.piece)) o = o.parent;
+    if (!o) continue;
+    best = Object.assign(h, { piece: o.userData.piece, block: o }); break;
+  }
+  if (outsideGroup && outsideGroup.visible) {                         // the outside's meshes don't take the view's rays: asked here
+    const hits = [];
+    outsideGroup.traverse(m => { if (m.isMesh && m.visible) THREE.Mesh.prototype.raycast.call(m, pray, hits); });
+    hits.sort((a, b) => a.distance - b.distance);
+    if (hits[0] && (!best || hits[0].distance < best.distance)) best = Object.assign(hits[0], { outside: true, slot: hits[0].object.userData.slot });
+  }
+  return best;
+}
+function targetOfHit(h) {
+  if (!h) return null;
+  if (h.outside) return h.slot ? { kind: "outside", slot: h.slot } : null;
+  const p = h.piece, tags = p.tags || [];
+  if (p.kind === "floor" || p.id === `${p.room}_fx_floor`) return { kind: "room", room: p.room, part: "floor" };
+  if (p.kind === "ceiling" || p.id === `${p.room}_fx_ceiling`) return { kind: "room", room: p.room, part: "ceiling" };
+  if (p.kind === "wall" || tags.includes("trim:lining")) {             // the room this face looks into (a shared wall is its builder's)
+    const n = h.face ? h.face.normal.clone().transformDirection(h.object.matrixWorld) : null;
+    const q = n ? t2s(h.point.clone().addScaledVector(n, 0.06)) : null;
+    const r = q && BM.roomAt(B.model, q[0], q[1], q[2] - 0.3);
+    return { kind: "room", room: (r && r.id) || p.room, part: "walls" };
+  }
+  if (tags.some(t => t.startsWith("trim:"))) return { kind: "room", room: p.room, part: "trim" };
+  if (p.kind === "mesh" && p.shape === "box" && !tags.some(t => t.startsWith("kit:")) && propOf(p.id)) return { kind: "prop", id: p.id };
+  return { kind: "none", why: p.kind === "door" ? "a door keeps its own look" : tags.some(t => t.startsWith("kit:")) ? "a kit thing keeps its kit's colours (for now)" : "only a block (a box) takes a look" };
+}
+function meshesOf(t) {                                                // what a click on this target paints, to light up
+  const out = [];
+  if (t.kind === "outside") { if (outsideGroup) outsideGroup.traverse(m => { if (m.isMesh && m.userData.slot === t.slot) out.push(m); }); return out; }
+  const r = t.kind === "room" && roomOf(t.room);
+  const rooms = new Set(t.kind !== "room" ? [] : PB.scope === "all" && r ? B.model.rooms.filter(x => x.kind === r.kind).map(x => x.id) : [t.room]);
+  stage.world.traverse(m => {
+    if (!m.isMesh || !m.userData.piece || !shownPath(m)) return;
+    const p = m.userData.piece, tags = p.tags || [];
+    if (t.kind === "prop") { if (p.id === t.id) out.push(m); return; }
+    if (!rooms.has(p.room)) return;
+    const lining = tags.includes("trim:lining");
+    if (t.part === "floor" ? p.kind === "floor" || p.id === `${p.room}_fx_floor` : t.part === "ceiling" ? p.kind === "ceiling" || p.id === `${p.room}_fx_ceiling`
+      : t.part === "walls" ? p.kind === "wall" || lining : !lining && tags.some(x => x.startsWith("trim:"))) out.push(m);
+  });
+  return out;
+}
+function clearPaintHl() { for (const c of [...paintHl.children]) paintHl.remove(c); PB.hoverKey = ""; }
+function paintHudIdle() {                                             // the line under the view when the pointer's on nothing
+  const v = BR.value();
+  $("#paintHud").textContent = v ? `paint with ${lookName(v)}: click a surface` : PB.clearing ? "click a surface to take its paint off" : "pick a material on the right, then click a surface";
+}
+function hoverPaint(h) {
+  const t = h && targetOfHit(h), key = t ? JSON.stringify(t) + PB.scope : "";
+  if (key === PB.hoverKey) return;
+  clearPaintHl(); PB.hoverKey = key;
+  if (t && t.kind !== "none") for (const m of meshesOf(t)) {
+    const o = new THREE.Mesh(m.geometry, HLMAT); o.matrixAutoUpdate = false; m.updateWorldMatrix(true, false); o.matrix.copy(m.matrixWorld); paintHl.add(o);
+  }
+  const v = BR.value();
+  if (!t) paintHudIdle();
+  else $("#paintHud").textContent = t.kind === "none" ? t.why
+    : `${paintTargetName(Object.assign({}, t, { all: PB.scope === "all" }))} · now ${lookName(lookOfTarget(t))} · click: ${PB.clearing ? "clear it" : v ? lookName(v) : "pick a material first"}, Alt-click: pick it up`;
+  render3d();
+}
+function paintAt(h, alt = false) {
+  const t = targetOfHit(h);
+  if (!t) return null;
+  if (t.kind === "none") { status(t.why, "bad"); return t; }
+  if (alt) {                                                          // picked up: the brush becomes what's there and tunes it
+    const v = lookOfTarget(t);
+    PB.target = t; PB.clearing = false; BR.take(v);
+    if (typeof v === "string" && v.startsWith("#")) $("#pcolour").value = v;
+    status(`picked up ${lookName(v)}: the brush tunes ${paintTargetName(t)}`);
+    return t;
+  }
+  const v = PB.clearing ? null : BR.value();
+  if (!v && !PB.clearing) { status("pick a material (or a colour) first", "bad"); return null; }
+  pushUndo();
+  const tt = Object.assign({}, t, t.kind === "room" ? { all: PB.scope === "all" } : {});
+  const took = setLookOn(tt, v);
+  PB.target = v ? tt : null;
+  changed();
+  status(`${paintTargetName(tt)}: ${v ? lookName(v) : "cleared"}${took.length ? ` (${took.join(", ")} taken up: Undo brings ${took.length > 1 ? "them" : "it"} back)` : ""}${S3.isLookObj(v) ? " · making the set…" : ""}`, "dirty");
+  BR.panel(); PB.hoverKey = ""; paintHudIdle();
+  if (S3.isLookObj(v)) S3.prepareLooks({ look: { brush: v } }, () => BR.panel());
+  if (tt.kind === "outside") buildOutside();
+  return tt;
+}
+let tuneAt = 0;
+function brushTuned(v) {                                              // the brush changed: the surface it tunes follows, live
+  if (BR.live && PB.target && v) {
+    if (performance.now() - tuneAt > 900) pushUndo();                  // a run of changes is one undo
+    tuneAt = performance.now();
+    setLookOn(PB.target, v);
+    changed();
+    status(`${paintTargetName(PB.target)}: ${lookName(v)}`, "dirty");
+    if (PB.target.kind === "outside") buildOutside();
+  }
+  if (S3.isLookObj(v)) S3.prepareLooks({ look: { brush: v } }, () => BR.panel());
+}
+const BR = new Brush({ lib: $("#lib"), box: $("#brush"), wear: false, onChange: brushTuned, target: () => paintTargetName(PB.target),
+  onPick: () => { PB.target = null; PB.clearing = false; PB.hoverKey = ""; setTimeout(paintHudIdle); } });
+function setPaint(on) {
+  PB.on = !!on;
+  $("#paintBtn").classList.toggle("on", PB.on);
+  $("#paintBox").hidden = !PB.on; $("#infoMain").hidden = PB.on; $("#paintHud").hidden = !PB.on;
+  if (PB.on && !$("#lib").children.length) BR.library();
+  paintHl.visible = PB.on; if (!PB.on) clearPaintHl();
+  if (PB.on) { paintHudIdle(); Promise.all([S3.loadShelf(), S3.loadDecals()]).then(() => BR.library()); }
+  render3d();
+}
+$("#paintBtn").onclick = () => setPaint(!PB.on);
+for (const r of document.querySelectorAll("input[name=pscope]")) r.onchange = e => { PB.scope = e.target.value; PB.hoverKey = ""; };
+$("#useColour").onclick = () => BR.useColour($("#pcolour").value);
+$("#pclear").onclick = () => { BR.clear(); PB.clearing = true; PB.target = null; paintHudIdle(); status("click a surface to take its paint off", "dirty"); };
+view.addEventListener("mousedown", e => { if (PB.on && e.button === 0) PB.down = { x: e.clientX, y: e.clientY, alt: e.altKey }; });
+view.addEventListener("mouseup", e => {
+  if (!PB.on || !PB.down || e.button !== 0) return;
+  const d = Math.hypot(e.clientX - PB.down.x, e.clientY - PB.down.y), alt = PB.down.alt || e.altKey;
+  PB.down = null;
+  if (d < 4) paintAt(paintHit(e), alt);                              // a click paints; a drag looked round
+});
+view.addEventListener("mousemove", e => { if (PB.on && !lookDrag) hoverPaint(paintHit(e)); });
+view.addEventListener("mouseleave", () => { if (PB.on) { clearPaintHl(); render3d(); } });
 
 // back from the PBR shelf (or the kit maker) in its own tab: the sets added or changed there, and new kit presets, show
 // here without a reload (the Look pickers, the walk view)

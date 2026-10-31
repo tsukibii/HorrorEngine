@@ -369,7 +369,7 @@ class LevelWriter:
         use = next((t[4:] for t in tags if t.startswith("use:")), None)
         tagged = BY_TAG.get(next((t[4:] for t in tags if t.startswith("tag:")), ""))
         if p["kind"] == "mesh":
-            key = "trim" if any(t.startswith("trim:") for t in tags) else tagged or ("use" if use else "prop")
+            key = "wall" if "trim:lining" in tags else "trim" if any(t.startswith("trim:") for t in tags) else tagged or ("use" if use else "prop")
         else:
             key = p["kind"]
         if use == "clean":

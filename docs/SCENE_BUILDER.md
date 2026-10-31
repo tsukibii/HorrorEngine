@@ -266,7 +266,35 @@ generator and styles, and a street takes it as it is.
 - **Godot**: the outside goes to Godot in the street's .glb (STREET_BUILDER §5b), round the marker where the level goes;
   the level's own export doesn't build it.
 
-## 9. Not done yet
+## 9. Paint: the paint bucket in the rooms
+
+The user (2026-10-31): "am I able to use the paint bucket thing in my interiors, if we haven't hooked up our PBRs can
+we". The street paint page's brush (`brush.js`, docs/STREET_PAINT.md §1) on the level, in the 3D view:
+
+- **Paint** (the view bar) opens it under the view: the PBR shelf as pictures by category (the project's `pbr/`, your
+  `assets/pbr`, your attached folders: ASSETS §6), a colour, and the brush: a tint, brightness, contrast, saturation,
+  hue, a fade, its shine, relief, size and turn, and **layers** over it (another set in patches or by its own mask:
+  moss, prints, scuffs; decals scattered over it). The bake's wear layers are the street's (a room has no bake), so
+  they're not offered here.
+- **A click paints** what's under it: a room's **floor**, its **walls**, its **ceiling** or its **trim** (skirting,
+  cornice, casings), a **block** the story owns (its `mat`), or, round the building, the **outside's** slot under it.
+  *Every room like it* paints every room of that kind. A drag still looks round, the keys still walk.
+- **A room's walls are its own side.** A wall between two rooms is one piece, built by one of them; the plan lines the
+  other room's side with a 4 mm lining wearing that room's own look (`trim:lining`, plan.py `lining_pieces`) wherever
+  the two rooms' looks differ, following the wall's pieces, door holes and all. A click on a wall paints the room its
+  face looks into.
+- **A kit floor or ceiling** (the planks and tatami a room gets by its kind) under the click is taken up so the set
+  shows; Undo brings it back.
+- **Alt-click picks up** what's on a surface: the brush becomes it and tunes that surface live (*tune …* under the
+  brush), every change one undo.
+- **What it writes** is the story's own words (STORY_FORMAT §1): `look.floor`, `look.walls`, `look.ceiling`,
+  `look.trim`, a block's `mat`, the level's `outside.look`: a set's ref, a colour, or a tuned set (a look object). The
+  desk's server makes a tuned set into `pbr/_made/<hash>` when it plans, the stage draws it, the Godot export writes
+  it (GODOT_EXPORT). The Selected panel's Look pickers show the same, a tuned one as its set and "(tuned)".
+- **Not yet:** kit things (furniture, fittings, doors) keep their kit's slot colours; their UVs are already in metres,
+  so their slots could take sets the same way.
+
+## 10. Not done yet
 
 - **Default looks by room kind** (texture sets for a washitsu's walls, a bath's tiles): *Same look for every
   <kind>* does it by hand until the texture sets for them are fetched. The floors' geometry already follows the

@@ -4,7 +4,8 @@
 // read back; a layout saves into a scratch game (made and removed here) and reads back the same; the desk reloads,
 // another game's level is borrowed, a set (a place designed before its game) is made from the picker, laid out, saved
 // into Content/Studio/Sets and taken by a game as its start, its outside (a street style, a fitting) drawn round it and
-// saved in its level, the desk's deep link shows its marks. Ends "BUILDER ok".
+// saved in its level (and painted), the desk's deep link shows its marks; Paint (the paint bucket) on a room's floor,
+// tuned, its walls lined, picked up and undone. Ends "BUILDER ok".
 //
 //   python tools/director/serve.py          (in another shell)
 //   node tools/director/buildertest.js [shots dir]
@@ -293,9 +294,19 @@ const png = rgb => {                    // a 4x4 PNG of one colour (a scratch ma
     const outside = await page.evaluate(() => { let meshes = 0, lit = 0; window.__builderStage.scene.traverse(o => { if (o.isMesh && o.userData.outside) meshes++; });
       return { o: window.B.model.levelExtra.outside, meshes, outline: document.querySelectorAll("#plan .outside-line").length, hud: document.querySelector("#viewHud").textContent, lit }; });
     if (shots) await page.screenshot({ path: path.join(shots, "outside.png") });
+    // Paint on the outside (SCENE_BUILDER §9): a set on the slot under the click, round the building
+    const outPaint = await page.evaluate(() => {
+      const P = window.builder.paint; P.on(true); P.brush("pbr/wall/Plaster001_1K-PNG");
+      let t = null; for (const [fx, fy] of [[0.5, 0.6], [0.5, 0.5], [0.45, 0.65], [0.55, 0.65], [0.5, 0.7]]) { const h = P.targetAt(fx, fy); if (h && h.kind === "outside") { t = P.at(fx, fy); break; } }
+      P.on(false);
+      return { t, look: Object.assign({}, (window.B.model.levelExtra.outside || {}).look) };
+    });
     await page.evaluate(() => window.builder.save(false));
     await page.waitForTimeout(800);
     const outSaved = (JSON.parse(fs.readFileSync(setFile, "utf8")).levels[setLevel] || {}).outside || null;
+    console.log("outside painted", JSON.stringify(outPaint), "saved", JSON.stringify((outSaved || {}).look));
+    if (!outPaint.t || outPaint.look[outPaint.t.slot] !== "pbr/wall/Plaster001_1K-PNG" || ((outSaved || {}).look || {})[outPaint.t.slot] !== "pbr/wall/Plaster001_1K-PNG")
+      fail("painting the outside: " + JSON.stringify({ outPaint, saved: (outSaved || {}).look }));
     console.log("its outside", JSON.stringify({ style: outside.o && outside.o.style, roof: outside.o && outside.o.roof.kind, parts: outside.o && outside.o.parts.length, meshes: outside.meshes, outline: outside.outline, saved: !!outSaved }));
     if (!outside.o || outside.o.style !== "house" || outside.o.parts.length !== 1 || outside.meshes < 1 || outside.outline < 1 || !/house/.test(outside.hud))
       fail("the set's outside in the scene builder: " + JSON.stringify(outside).slice(0, 300));
@@ -399,6 +410,56 @@ const png = rgb => {                    // a 4x4 PNG of one colour (a scratch ma
     console.log("pbr buttons", JSON.stringify({ back, worn, kback }));
     if (back[0] !== "?from=builder" || back[1] !== "builder.html" || !worn.metal || !worn.rough || !worn.dx || kback[0] !== "kit.html" || kback[1] !== "kit maker")
       fail("the PBR buttons: " + JSON.stringify({ back, worn, kback }));
+
+    // Paint (SCENE_BUILDER §9; the user, 2026-10-31: the paint bucket in the interiors): a set off the shelf on the LDK's
+    // floor (its kit floor taken up), tuned (a tint: the server makes the set, the floor wears it), the LDK's walls (its
+    // side of its neighbours' walls lined with its look), picked up again with Alt (the brush becomes it, tuning it),
+    // and undone back to the kit floor
+    await page.evaluate(() => { window.B.dirty = false; window.builder.openPreset("1ldk"); });
+    await page.waitForFunction(() => window.B.plan && window.B.model.rooms.some(r => r.kind === "ldk"), null, { timeout: 30000 });
+    const pt = await page.evaluate(async () => {
+      const B = window.B, P = window.builder.paint, wait = ms => new Promise(r => setTimeout(r, ms));
+      const replanned = async () => { const p0 = B.plan; for (let i = 0; i < 600 && B.plan === p0; i++) await wait(100); return B.plan !== p0; };
+      const r = B.model.rooms.find(x => x.kind === "ldk"), out = { room: r.id, kitBefore: !!r.floorKit, undos: B.undo.length };
+      P.on(true); await wait(300);
+      out.cards = document.querySelectorAll("#lib .card").length;
+      Object.assign(B.model.player, { x: r.x + r.w / 2, y: r.y + r.d / 2, z: r.z, yaw: 90 }); window.builder.pitch(-60);
+      P.brush("pbr/floor/Tatami004_1K-PNG");
+      out.floor = P.at(0.5, 0.75);
+      out.kitAfter = !!r.floorKit;
+      await replanned();
+      out.tuned = P.tune(b => { b.tint = "#b8a878"; b.contrast = 1.15; });
+      out.replanned = await replanned();
+      out.made = Object.keys(B.plan.made || {});
+      out.floorLook = (r.extra.look || {}).floor;
+      window.builder.pitch(0);
+      P.brush("pbr/wall/Plaster001_1K-PNG");
+      for (const yaw of [90, 0, 180, 270]) {                       // a wall of the LDK's, wherever it's in view
+        Object.assign(B.model.player, { yaw }); window.builder.pitch(0);
+        for (const fx of [0.92, 0.85, 0.15, 0.08, 0.5]) { const t = P.targetAt(fx, 0.5); if (t && t.part === "walls" && t.room === r.id) { out.walls = P.at(fx, 0.5); out.at = [yaw, fx]; break; } }
+        if (out.walls) break;
+      }
+      await replanned();
+      const lin = B.plan.pieces.filter(q => q.tags.includes("trim:lining"));         // each side of a shared wall its own room's
+      out.linings = lin.length;
+      out.linedLook = lin.every(q => q.room === r.id ? q.tags.includes("mat:pbr/wall/Plaster001_1K-PNG") : !q.tags.includes("mat:pbr/wall/Plaster001_1K-PNG"));
+      P.brush("pbr/floor/Tatami001_1K-PNG");
+      out.picked = out.at ? (Object.assign(B.model.player, { yaw: out.at[0] }), window.builder.pitch(0), P.at(out.at[1], 0.5, true)) : null;
+      out.brushAfter = P.value(); out.tunes = P.target();
+      for (let i = B.undo.length; i > out.undos; i--) window.builder.undo();
+      const now = B.model.rooms.find(x => x.id === r.id);                // undo puts a copy of the model back
+      out.undone = { look: (now.extra || {}).look || null, kit: !!now.floorKit };
+      P.on(false);
+      return out;
+    });
+    const tex = await page.waitForFunction(([room, ref]) => { let hit = false; window.__builderStage.world.traverse(m => {
+      const p = m.userData && m.userData.piece; if (p && p.kind === "floor" && p.room === room && m.material.map && ((m.material.map.image || {}).src || "").includes(ref)) hit = true; });
+      return hit; }, [pt.room, (pt.made[0] || "none").replace("pbr/", "")], { timeout: 20000 }).then(() => true).catch(() => false);
+    console.log("paint", JSON.stringify(Object.assign({}, pt, { tex })));
+    if (pt.cards < 10 || !pt.floor || pt.floor.part !== "floor" || !pt.kitBefore || pt.kitAfter || !pt.replanned || !pt.made.length || typeof pt.floorLook !== "object"
+        || !pt.walls || pt.walls.part !== "walls" || !pt.linings || !pt.linedLook || !pt.picked || pt.brushAfter !== "pbr/wall/Plaster001_1K-PNG" || !pt.tunes || pt.tunes.part !== "walls"
+        || pt.undone.look || !pt.undone.kit)
+      fail("Paint in the scene builder: " + JSON.stringify(pt));
   } finally {
     if (setDir) fs.rmSync(setDir, { recursive: true, force: true });
     fs.rmSync(path.join(ROOT, "Content/Studio/Sets", SETNAME), { recursive: true, force: true });

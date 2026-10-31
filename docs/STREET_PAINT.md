@@ -47,7 +47,8 @@ The dashboard and the launcher have it in Pages as **Street paint**.
     once: Alt-click a surface, then tune it while you look at it.
 
   A tuned look is a set of its own the desk's server makes in a second or two (§3b): what the page shows is what
-  Blender bakes and Godot gets.
+  Blender bakes and Godot gets. The library and the brush are `brush.js`, shared with the scene builder's **Paint**
+  (SCENE_BUILDER §9): the same brush on a level's rooms, blocks and outside (no wear layers there: a room has no bake).
 - **Decals (2):** pick one, hover to see it where it would go, click to lay it. Click one to select it: drag it along
   the surfaces, the wheel sizes it, R turns it (Shift+R the other way), Delete takes it off. On a wall a decal stands
   upright; on the ground it turns with your view.

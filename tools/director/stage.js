@@ -463,7 +463,7 @@ export class Stage {
         const geo = p.shape === "cyl" ? new THREE.CylinderGeometry(w / 2, w / 2, h, 16) :
                     p.shape === "sphere" ? new THREE.SphereGeometry(w / 2, 16, 12) : new THREE.BoxGeometry(w, h, d);
         const tagged = BY_TAG[(p.tags.find(t => t.startsWith("tag:")) || "").slice(4)];
-        let mat = p.kind === "mesh" ? (p.tags.some(t => t.startsWith("trim:")) ? mats.trim : tagged ? mats[tagged] : p.tags.some(t => t.startsWith("use:")) ? mats.use : mats.prop) : mats[p.kind];
+        let mat = p.kind === "mesh" ? (p.tags.includes("trim:lining") ? mats.wall : p.tags.some(t => t.startsWith("trim:")) ? mats.trim : tagged ? mats[tagged] : p.tags.some(t => t.startsWith("use:")) ? mats.use : mats.prop) : mats[p.kind];   // a lining: a room's own side of its neighbour's wall
         const matRef = (p.tags.find(t => t.startsWith("mat:")) || "").slice(4), artRef = (p.tags.find(t => t.startsWith("art:")) || "").slice(4);
         if (/^#[0-9a-f]{6}$/i.test(matRef)) mat = colourMaterial(matRef, mat);                 // a look that's a colour
         else if (matRef && LIBRARY.textures[matRef] && p.shape === "box") { mat = libMaterial(matRef); tileUVs(geo, w, h, d, mat.userData.tile); }

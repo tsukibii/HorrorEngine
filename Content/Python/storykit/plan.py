@@ -264,6 +264,44 @@ def trim_pieces(lid, lvl, room, walls, openings):
     return out
 
 
+LINING = 0.004   # a lining's depth: a room's own walls look on the face of a wall its neighbour builds
+
+
+def lining_pieces(lid, room, walls, rooms):
+    """A room's side of the walls a neighbour builds (a shared wall is one piece, its builder's, wearing the builder's
+    look on both faces): a lining 4 mm deep, 1 mm off the wall, wearing this room's own `walls` look (its default
+    grey when it has none), wherever the two rooms' looks differ, so a room painted is painted on its own side only.
+    It follows the builder's pieces, holes and all; hollow: the wall behind it is what stops you."""
+    mine = _look(room, "walls")
+    out, T = [], L.WALL_T
+    z0, h = room["at"][2], room["size"][2]
+    base = {"level": lid, "room": room["id"], "yaw": 0.0, "shape": "box", "d": room}
+    for wall in L.WALLS:
+        axis, v, lo, hi = L.wall_line(room, wall)
+        inward = {"n": -1, "s": 1, "e": -1, "w": 1}[wall]
+        lo_in, hi_in = lo + T / 2, hi - T / 2
+        i = 0
+        for p in walls:
+            c, sz = p["pos"], p["size"]
+            if p["room"] == room["id"] or abs((c[1] if axis == "y" else c[0]) - v) > 0.01 or (sz[1] if axis == "y" else sz[0]) > T + 0.001:
+                continue
+            owner = rooms.get(p["room"])
+            if owner is None or _look(owner, "walls") == mine:
+                continue
+            zlo, zhi = max(c[2] - sz[2] / 2, z0), min(c[2] + sz[2] / 2, z0 + h)
+            cc, half = (c[0], sz[0] / 2) if axis == "y" else (c[1], sz[1] / 2)
+            a0, a1 = max(cc - half, lo_in), min(cc + half, hi_in)
+            if zhi - zlo < 0.02 or a1 - a0 < 0.02:
+                continue
+            off = v + inward * (T / 2 + 0.001 + LINING / 2)
+            pos = ((a0 + a1) / 2, off, (zlo + zhi) / 2) if axis == "y" else (off, (a0 + a1) / 2, (zlo + zhi) / 2)
+            size = (a1 - a0, LINING, zhi - zlo) if axis == "y" else (LINING, a1 - a0, zhi - zlo)
+            out.append(dict(base, id=f"{room['id']}__lining_{wall}{i}", kind="mesh", pos=pos, size=size,
+                            tags=["story", f"story:{room['id']}", f"room:{room['id']}", "trim:lining", "hollow"] + mine))
+            i += 1
+    return out
+
+
 def threshold_pieces(lid, lvl):
     """A strip across every doorway where the floor changes (wood to tile at the washroom door), as tall as the
     level's (or the host room's) `trim.threshold`, as deep as the wall: the host room's own."""
@@ -315,8 +353,10 @@ def plan(story, level=None):
                 axis, v, lo, _ = L.wall_line(room, op["wall"])
                 ops.append((axis, v, lo + op["at"] - op["w"] / 2, lo + op["at"] + op["w"] / 2, room["at"][2] + op.get("sill", 0.0),
                             op["h"], bool(op.get("window"))))
+        by_id = {r["id"]: r for r in lvl["rooms"]}
         for room in lvl["rooms"]:
             mine += trim_pieces(lid, lvl, room, walls, ops)
+            mine += lining_pieces(lid, room, walls, by_id)
         mine += threshold_pieces(lid, lvl)
         out += mine
         st = things[lvl["start"]]
