@@ -101,8 +101,12 @@ wherever their looks differ). **Your folders** (ASSETS §6): folders of PBR sets
 they are (`pbr/<name>/<set>`, nothing written in them; the shelf page's Attach). **The Godot export's materials**
 (GODOT_EXPORT §3b): `game/materials/<Name>.tres` once a set, named after it, its maps beside it, every piece on every
 level wearing it by reference (GDEXPORT checks one instance a file). BUILDER paints, tunes, lines and undoes; PBR
-attaches; GDEXPORT shares. **Next, if wanted** (ask first): kit things' slots taking sets (their UVs are already
-metres), the street .glb's materials as the same named files, a set per material in the street builder's inspector.
+attaches; GDEXPORT shares. **Then the furniture** (2026-10-31, night: "do whatever's best"): a kit thing's slots take
+looks (`mats`: STORY_FORMAT §2, KIT §4), Paint dresses the slot under a click (every one like it: the same preset),
+the desk draws them (`dressSlots`), the Godot export gives them `<Name>_uv.tres` through `slot_materials.gd`;
+TestRoom001's fridge wears the white plastic set (GDEXPORT's kit slots). The street's materials stay inside its .glb
+(DECISIONS). **Next, if wanted** (ask first): the fittings the finish makes (switches, lights, window frames) and
+doors taking sets too, a set per material in the street builder's inspector.
 
 **What could come next** (ask first): the user's verdict on the match, the town and the motel; more references; the
 export placing an inside's level by itself (today a marker; the set's level dropped there by hand); a two-storey

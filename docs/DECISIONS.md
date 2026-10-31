@@ -2,6 +2,15 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-31, night (the user: "do whatever's best")
+
+- Asked which follow-up next (furniture taking sets, or a street's materials as named files), the user left it to
+  Claude. **Furniture first**: a kit thing's slots take a set, a colour or a tuned set (`mats`, STORY_FORMAT §2), the
+  scene builder's Paint dresses them with a click, the Godot export gives them the game's `<Name>_uv.tres` (the set laid
+  by the kit's metre UVs). **A street's materials stay the street's**: each is a set times a building's colour (and the
+  street's own wear atlas after the bake), already one material per set and colour inside its .glb; Godot's Extract
+  Materials writes them out by name when wanted (GODOT_EXPORT §3b).
+
 ## 2026-10-31, evening (the user, on the interiors, local PBRs and the export's materials)
 
 - **The paint bucket in the interiors**: "am I able to use the paint bucket thing in my interiors, if we haven't hooked
