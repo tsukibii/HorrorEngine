@@ -33,6 +33,39 @@ def _matslots(d):
     return [f"matslot:{sl}:{mat_ref(v)}" for sl, v in m.items() if v] if isinstance(m, dict) else []
 
 
+FLOOR_SLOT = {"tiles": "tile", "planks": "wood", "tatami": "tatami"}   # a kit floor's main slot (kit.js: its `slot`)
+MAX_BOARDS = 1200          # a set laid finer than this many boards on a kit floor (a mosaic) is laid as one board
+
+
+def fitted(spec, mats):
+    """A kit floor's (or a wall's tiles') spec laid out by the set its main slot wears, when that set draws a layout of
+    its own (pbrcells.py; the user, 2026-10-31: "make the floors take a material"): its `cells` added, so the kit's
+    boards lie where the set's are and its gaps in the set's seams; a set laid finer than MAX_BOARDS boards here (a
+    mosaic) `whole`, one board under it all. Any other spec, or a slot wearing a colour or a plain set (grain, a weave:
+    each board its own cut of it), is returned as it is."""
+    if not isinstance(mats, dict) or not mats:
+        return spec
+    try:
+        r = KIT.resolve(spec)
+    except ValueError:
+        return spec
+    typ = r.get("type")
+    if typ not in FLOOR_SLOT:
+        return spec
+    look = mats.get(FLOOR_SLOT[typ] if typ == "tatami" else (r.get("slot") or FLOOR_SLOT[typ]))
+    if not look:
+        return spec
+    from . import pbrcells as CELLS
+    c = CELLS.cells(look)
+    if not c:
+        return spec
+    w, d, h = r.get("size") or (3, 3, 0.01)
+    area = w * (h if r.get("orient") == "wall" else d)
+    boards = len(c["rects"]) * area / (c["tile"] ** 2)
+    cells = {"tile": c["tile"], "whole": True} if boards > MAX_BOARDS else {"tile": c["tile"], "rects": c["rects"]}
+    return dict(spec if isinstance(spec, dict) else {"preset": spec}, cells=cells)
+
+
 def _look(room, part):
     v = (room.get("look") or {}).get(part)
     return [f"mat:{mat_ref(v)}"] if v else []
@@ -410,11 +443,12 @@ def plan(story, level=None):
             out.append(dict(p, kind="person", pos=t.pos, size=t.size, shape=None, tags=_tags(t, [f"cast:{cast}", f"pose:{pose}"])))
         elif t.d.get("kit") is not None:            # a kit thing (docs/KIT.md): its box here; its mesh is kit/<type>_<hash>
             try:
-                ktype, ref = KIT.kind(t.d["kit"]), KIT.ref(t.d["kit"])
+                spec = fitted(t.d["kit"], t.d.get("mats"))   # a floor laid out by its set's own tiles, boards or mats
+                ktype, ref = KIT.kind(spec), KIT.ref(spec)
             except ValueError:
                 continue                                # story_check says why
             extra = [f"kit:{ktype}", f"art:{ref}", "real"] + (["surface"] if ktype in KIT.SURFACE else []) + (["in_wall"] if t.d.get("in_wall") else [])
-            out.append(dict(p, kind="mesh", shape="box", pos=t.centre, size=t.size, kit=t.d["kit"], tags=_tags(t, extra)))
+            out.append(dict(p, kind="mesh", shape="box", pos=t.centre, size=t.size, kit=spec, tags=_tags(t, extra)))
         elif t.d.get("shape"):
             kind, args = L.parse_shape(t.d["shape"])
             if kind == "stairs":

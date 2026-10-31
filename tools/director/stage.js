@@ -505,7 +505,7 @@ export class Stage {
           } catch (e) { }
         }
         this.world.add(m); if (!p.tags.includes("hollow") && !hidden && m.userData.use !== "clean") this.solid.push(m);     // a door frame: you see and walk through it; a stain: you walk over it
-        if (p.tags.some(t => t.startsWith("kit:")) && p.d && p.d.kit !== undefined) this.kitIn(m, p.d.kit, h);
+        if (p.tags.some(t => t.startsWith("kit:")) && p.d && p.d.kit !== undefined) this.kitIn(m, p.kit !== undefined ? p.kit : p.d.kit, h);   // the plan's spec: a floor laid out by its set's cells
         else if (artRef && LIBRARY.meshes.has(artRef)) this.pending.push(this.dress(m, artRef, [w, h, d], p.tags.includes("real")));
       } else if (p.kind === "leak" && !Stage.plainLight) {       // water running down a wall (Godot: HSLeak's band and drips): here a dark glossy strip on the wall's face, wider as it runs down
         const rm = ((((story.levels || {})[p.level] || {}).rooms) || []).find(r => r.id === p.room), wall = (p.tags.find(t => t.startsWith("wall:")) || "wall:n").slice(5);

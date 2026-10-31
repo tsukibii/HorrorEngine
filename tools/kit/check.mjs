@@ -1,6 +1,6 @@
 // The kit's check: every type at its defaults, every preset and four variations of each build, stays inside its size box, has no stray
 // numbers, and is the same from the same seed; a seed changes the gaps; the glb is well formed; the mesh refs agree
-// with storykit/kit.py; every kit prop in every game builds. Ends "KIT ok".
+// with storykit/kit.py; every kit prop in every game builds; floors laid out by their sets' cells. Ends "KIT ok".
 import { execFileSync } from "child_process";
 import { loadKit, loadPresets, refOf, games, ROOT } from "./lib.mjs";
 
@@ -80,6 +80,53 @@ try {
     for (const sl of it.slots) { dressed++; if (!have.has(sl)) errs.push(`${who}: mats ${sl}: its kit has no such slot (${[...have].sort().join(", ")})`); }
   }
 } catch (e) { errs.push("the games' painted slots: " + e.message.split("\n")[0]); }
+// a floor laid out by its set's own cells (the spec's `cells`, plan.py `fitted` from storykit/pbrcells.py; the user,
+// 2026-10-31: "make the floors take a material"): the shelf's pavers and tatami mats as the layout, every board inside
+// one of the set's cells, the set laid straight across them (the mesh's UVs the layout's metres from its corner: on a
+// floor, a floor turned 90 degrees, a wall), a mosaic laid `whole` as one board; node and python name them alike
+let fits = 0;
+try {
+  const C = JSON.parse(execFileSync("python3", ["-c", "import sys,json; sys.path.insert(0,'Content/Python'); from storykit import pbrcells as C; " +
+    "print(json.dumps([C.cells('pbr/concrete/Concrete010_1K-PNG'), C.cells('pbr/floor/Tatami004_1K-PNG')]))"], { cwd: ROOT }).toString());
+  if (!C[0] || !C[1]) throw new Error("the shelf's pavers or tatami have no cells (numpy and Pillow, the sets in pbr/)");
+  const inCell = (c, x0, y0, x1, y1) => {           // a board's box (metres from the layout's corner) inside one of the cells
+    const t = c.tile, e = 1e-4;
+    return c.rects.some(([u0, v0, u1, v1]) => { const i = Math.floor(x0 / t - u0 + e / t), j = Math.floor(y0 / t - v0 + e / t);
+      return x0 >= (i + u0) * t - e && x1 <= (i + u1) * t + e && y0 >= (j + v0) * t - e && y1 <= (j + v1) * t + e; });
+  };
+  for (const [label, spec, slot, c] of [["pavers on tiles", { preset: "tile_300", size: [2.9, 2.1, 0.01] }, "tile", C[0]],
+    ["pavers on tiles turned", { preset: "tile_300", size: [2.9, 2.1, 0.01], angle: 90 }, "tile", C[0]],
+    ["pavers on wall tiles", { preset: "wall_tiles", size: [2, 0.01, 2.2] }, "tile", C[0]],
+    ["mats on tatami", { preset: "tatami", size: [3.6, 2.7, 0.055] }, "tatami", C[1]]]) {
+    const sp = Object.assign({}, spec, { cells: c }), r = tryOne(`fitted: ${label}`, sp); if (!r) continue;
+    const s = r.b.spec, wall = s.orient === "wall", swap = +s.angle === 90 && !wall, [U, D, H] = s.size, V = wall ? H : D;
+    const boards = r.b.parts.filter(p => p.m === slot || p.m.startsWith(slot + "_"));
+    if (boards.length < 4) { errs.push(`fitted ${label}: ${boards.length} boards`); continue; }
+    for (const p of boards) {                       // its box in the layout's own metres (turned back when the floor's turned)
+      const bx0 = p.at[0] - p.size[0] / 2 + U / 2, bx1 = bx0 + p.size[0], by0 = wall ? p.at[2] : p.at[1] - p.size[1] / 2 + V / 2, by1 = by0 + (wall ? p.size[2] : p.size[1]);
+      const [x0, y0, x1, y1] = swap ? [by0, bx0, by1, bx1] : [bx0, by0, bx1, by1];
+      if (!inCell(c, x0, y0, x1, y1)) { errs.push(`fitted ${label}: a board at ${p.at.map(v => v.toFixed(3))} isn't inside one of the set's cells`); break; }
+    }
+    const G = KIT.mesh(r.b.parts); let bad = 0, seen = 0;
+    for (const [sl, g] of Object.entries(G)) {
+      if (!(sl === slot || sl.startsWith(slot + "_"))) continue;
+      for (let i = 0; i < g.pos.length / 3; i++) {   // the face you see: its UVs the layout's metres from its corner
+        const n = [g.nrm[i * 3], g.nrm[i * 3 + 1], g.nrm[i * 3 + 2]], x = g.pos[i * 3], y = g.pos[i * 3 + 1], z = g.pos[i * 3 + 2];
+        if (!(wall ? Math.abs(n[1]) > 0.9 : n[2] > 0.9)) continue;
+        const want = wall ? [x + U / 2, z] : swap ? [y + V / 2, x + U / 2] : [x + U / 2, y + V / 2];
+        seen++; if (Math.abs(g.uv[i * 2] - want[0]) > 1e-4 || Math.abs(g.uv[i * 2 + 1] - want[1]) > 1e-4) bad++;
+      }
+    }
+    if (!seen || bad) errs.push(`fitted ${label}: ${bad} of ${seen} face corners off the set's straight UVs`);
+    fits += boards.length;
+  }
+  const whole = tryOne("fitted: a mosaic whole", { preset: "mosaic_50", size: [1.2, 1.2, 0.008], cells: { tile: 1, whole: true } });
+  const wb = whole ? whole.b.parts.filter(p => p.m.startsWith("tile")) : [];
+  if (wb.length !== 1 || Math.abs(wb[0].size[0] - 1.2) > 0.01) errs.push(`a mosaic laid whole: ${wb.length} boards`);
+  const sp = [{ preset: "tile_300", size: [2.9, 2.1, 0.01], cells: C[0] }, { preset: "mosaic_50", cells: { tile: 1, whole: true } }];
+  const py = JSON.parse(execFileSync("python3", ["-c", "import sys,json; sys.path.insert(0,'Content/Python'); from storykit import kit; print(json.dumps([kit.ref(s) for s in json.loads(sys.argv[1])]))", JSON.stringify(sp)], { cwd: ROOT, maxBuffer: 1 << 24 }).toString());
+  sp.forEach((x, i) => { if (refOf(KIT, x, PR.presets, PR.version) !== py[i]) errs.push(`a fitted floor's ref: node ${refOf(KIT, x, PR.presets, PR.version)}, python ${py[i]}`); });
+} catch (e) { errs.push("fitted floors: " + e.message.split("\n")[0]); }
 // a door's assembly: storykit/kit.py's DOOR and kit.js's door type agree on their defaults; the leaf turns on its hinges
 try {
   const DOOR = JSON.parse(execFileSync("python3", ["-c", "import sys,json; sys.path.insert(0,'Content/Python'); from storykit import kit; print(json.dumps(kit.DOOR))"], { cwd: ROOT }).toString());
@@ -91,4 +138,4 @@ try {
 } catch (e) { errs.push("the door defaults: " + e.message.split("\n")[0]); }
 for (const e of errs.slice(0, 40)) console.log("ERROR:", e);
 if (errs.length) { console.log(`KIT FAILED (${errs.length})`); process.exit(1); }
-console.log(`KIT ok (${Object.keys(KIT.TYPES).length} types, ${Object.keys(PR.presets).length} presets, ${nv} variations, ${tris} triangles in all, ${props} props in the games, ${dressed} slots dressed)`);
+console.log(`KIT ok (${Object.keys(KIT.TYPES).length} types, ${Object.keys(PR.presets).length} presets, ${nv} variations, ${tris} triangles in all, ${props} props in the games, ${dressed} slots dressed, ${fits} boards laid by their sets' cells)`);

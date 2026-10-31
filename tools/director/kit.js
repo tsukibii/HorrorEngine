@@ -197,8 +197,12 @@ export function resolve(spec, presets) {
 export function withDefaults(s) {
   const T = TYPES[s.type], o = { type: s.type, size: (s.size || T.size).slice() };
   for (const [k, , def] of T.params) o[k] = s[k] === undefined ? clone(def) : s[k];
+  for (const k of PLANNED) if (s[k] !== undefined) o[k] = clone(s[k]);
   return o;
 }
+// what the plan adds to a spec beyond its numbers (no form shows it): a floor's `cells`, the layout of the set its
+// slot wears (storykit/pbrcells.py: the tiles, boards or mats the set paints, so the kit's lie where the set's are)
+export const PLANNED = ["cells"];
 const clone = v => v === undefined ? v : JSON.parse(JSON.stringify(v));
 
 // the canonical text of a resolved spec (numbers in micrometres), its hash names its mesh: kit/<type>_<hash>.
@@ -591,11 +595,28 @@ function herringbone(U, V, W, L) {
   }
   return out;
 }
+// a set's own layout (the spec's `cells`, the plan's: storykit/pbrcells.py): one repeat's cells, fractions of `tile`
+// metres, tiled over the region from its corner; `whole` (a set too finely laid to build, a mosaic) one board over all
+function cellsLayout(U, V, c) {
+  if (c.whole) return [[0, 0, U, V, "u"]];
+  const t = Math.max(0.01, +c.tile || 1), out = [];
+  for (const [u0, v0, u1, v1] of c.rects || []) {
+    for (let i = Math.floor(-u1); (i + u0) * t < U; i++) for (let j = Math.floor(-v1); (j + v0) * t < V; j++) {
+      out.push([(i + u0) * t, (j + v0) * t, (i + u1) * t, (j + v1) * t, "u"]);
+    }
+  }
+  return out;
+}
+const fitted = s => !!(s.cells && (s.cells.whole || (Array.isArray(s.cells.rects) && s.cells.rects.length)));
 function surface(s, P, R, rects, look) {
   const wall = s.orient === "wall", [w, d, h] = s.size;
   const U = w, V = wall ? h : d, T = wall ? d : h;
   const g = Math.max(0, s.gap), gv = clamp(s.gap_var, 0, 1), groove = clamp(s.groove ?? 0.002, 0, T * 0.8);
   const swap = +s.angle === 90 && !wall, RU = swap ? V : U, RV = swap ? U : V;     // the region the layout was made on
+  if (fitted(s)) rects = cellsLayout(RU, RV, s.cells);
+  // each board its own cut of its material, turned along it; laid out by a set's cells, the set laid straight across
+  // them all (the layout's u and v, from its corner, in metres: its seams fall in the boards' gaps)
+  const straight = fitted(s) ? (wall ? [U / 2, 0, 0] : [U / 2, V / 2, swap ? 1 : 0]) : null;
   const put = (a0, b0, a1, b1, t0, t1, m, o) => {
     const [u0, v0, u1, v1] = swap ? [b0, a0, b1, a1] : [a0, b0, a1, b1];
     return wall ? bx(P, u0 - U / 2, d / 2 - t1, v0, u1 - U / 2, d / 2 - t0, v1, m, Object.assign({ skip: "+y" }, o))
@@ -610,7 +631,7 @@ function surface(s, P, R, rects, look) {
     u0 += a0 >= 0 ? half() : 0; u1 -= a1 <= RU ? half() : 0; v0 += b0 >= 0 ? half() : 0; v1 -= b1 <= RV ? half() : 0;
     if (u1 - u0 < 0.004 || v1 - v0 < 0.004) continue;
     const t1 = T + (s.lip || 0) * R(), m = tone(s.slot || look, Math.max(1, s.tones || 1), R);
-    const p = put(u0, v0, u1, v1, top, t1, m, { b: s.bevel, uv: [+(R() * 4).toFixed(3), +(R() * 4).toFixed(3), (along === "v") !== swap ? 1 : 0] });
+    const p = put(u0, v0, u1, v1, top, t1, m, { b: s.bevel, uv: straight || [+(R() * 4).toFixed(3), +(R() * 4).toFixed(3), (along === "v") !== swap ? 1 : 0] });
     if (p && s._each) s._each(p, t1);
   }
 }

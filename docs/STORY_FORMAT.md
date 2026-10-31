@@ -197,7 +197,11 @@ marks a thing that sits in its wall, like a window frame.
 set); a slot's tones follow it (`wood` dresses `wood_2`..`wood_4` too, unless they have their own). Laid by the kit's
 own UVs, which are metres, so a set keeps its real size. The plan tags it `matslot:<slot>:<ref>`; the desk dresses the
 kit's meshes; the Godot export gives the thing's mesh the game's material file for the set (GODOT_EXPORT §3b); KIT
-checks that its kit has each slot. The scene builder's Paint writes it (SCENE_BUILDER §9).
+checks that its kit has each slot. The scene builder's Paint writes it (SCENE_BUILDER §9). **A floor's boards** (a
+`tiles`, `planks` or `tatami` kit's main slot: `tile`, `wood`, `tatami`) painted with a set that paints tiles, boards
+or mats of its own are laid out by them (the user, 2026-10-31: "make the floors take a material"): the plan adds the
+set's cells to the kit's spec (storykit/pbrcells.py), every board where the set paints one, its gaps in the set's
+seams (docs/KIT.md, *Floors laid out by their set*); nothing new is written in the story.
 
 **A kit door:** a door's `kit` (a `door` preset, or one with what differs: `{"preset": "door_shaker", "handle":
 "bar_pull", "hinge": "right"}`) builds it as a frame (`<id>__frame`), a leaf (the door, turning on its hinges) and a

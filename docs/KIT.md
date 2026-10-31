@@ -148,6 +148,19 @@ its kit builds (a kit door's `mats` over its leaf, handle and frame together). T
 (`<room>_fx_*`: switches, built-ins; window frames, `<room>_fx_win<n>`) and kit doors take it the same way (a plain
 door, `mat`): SCENE_BUILDER §9.
 
+**Floors laid out by their set** (2026-10-31, the user: "make the floors take a material"): a floor (`tiles`, `planks`,
+`tatami`; or wall tiles) whose main slot (`tile`, `wood`, `tatami`: its `slot`) wears a set that paints its own tiles,
+boards or mats takes that set's layout. The plan (plan.py `fitted`) adds the set's **cells** to the spec
+(storykit/pbrcells.py, ASSETS §6: one repeat's rectangles, as fractions of its `tile` metres), and kit.js lays them over
+the floor from its corner in place of the kit's own pattern: every board where the set paints one, the set laid
+straight across them all (no cut of its own per board), so its seams fall in the boards' real gaps, which keep their
+width, depth, bevels and unevenness. A set laid finer than 1200 boards on that floor (a mosaic) is laid `whole`, one
+board under it all. A set with no layout of its own (grain, a weave, plaster) leaves the kit's pattern, each board its
+own cut of it. `cells` is the plan's, never written in a story (kit.js `PLANNED`: what a spec carries beyond its
+numbers); its hash names its own mesh, the same in node and python. The desk, the scene builder and the Godot export
+all build from the plan's spec; KIT lays the shelf's pavers and tatami mats on tiles, a turned floor, wall tiles and
+tatami, every board inside one of the set's cells and the set's UVs straight, a mosaic laid whole.
+
 ## 5. Into Unreal
 
 `storykit.importer.build(G)` first plans the game and runs `node tools/kit/build.mjs --specs` on every kit mesh it
