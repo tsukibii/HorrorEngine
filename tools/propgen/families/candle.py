@@ -241,6 +241,8 @@ def make(spec, th):
     th.high = None
     for i, tp in enumerate(tips):
         th.sockets["flame" if len(tips) == 1 else f"flame_{i}"] = (tp * MM, (0, 0, 1))
+    th.fx = {"flame": {"sockets": list(th.sockets), "on": burn > 0}, "wax": {"materials": ["wax"]},
+             "glow": {"energy": 3.0, "follows": "flame"}}
     th.pose = "stand"
     th.view = {"azim": -18, "elev": 32}
     soot = float(spec.get("soot", 0.6))
@@ -271,6 +273,9 @@ def make(spec, th):
             f.fill(color="#efe9da", rough=0.9)
             f.stripes(1.2, 0.5, angle=45, height=0.08)
             f.gradient("#efe9da", "#0d0b0a", angle=90, t0=0.35, t1=0.75, rough=0.95)
+            Xw, Yw = f.grid()
+            ember = N.smoothstep(0.8, 0.95, Yw / max(f.H, 1e-6)).astype(np.float32)       # the burning tip glows
+            f.lay_island(ember, emit="#ff5a14")
             for i in range(nd):
                 f = fr[f"{tag}_drip{i}"]
                 f.fill(color=designs.P.mix(c, "#fff1d6", 0.1), rough=0.28)

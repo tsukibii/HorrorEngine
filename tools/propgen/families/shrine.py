@@ -399,6 +399,7 @@ def koro(spec, th):
         th.sockets[f"tip_{i + 1}"] = (tp * MM, (0, 0, 1))
     if tips:
         th.sockets["tip"] = (tips[0] * MM, (0, 0, 1))
+    th.fx = {"smoke": {"sockets": [f"tip_{i + 1}" for i in range(len(tips))]}, "glow": {"energy": 3.0, "follows": "smoke"}}
     stick = spec.get("stick", "#3d5a2c")
 
     def paint(fr):
@@ -418,6 +419,9 @@ def koro(spec, th):
             f.stripes(0.8, 0.5, angle=90, height=0.02)
             f.gradient(stick, "#2a2622", angle=90, t0=0.93, t1=0.965, rough=0.9)
             f.gradient("#2a2622", "#c9c4ba", angle=90, t0=0.965, t1=0.99, rough=0.95)
+            Xs, Ys = f.grid()
+            ring = np.exp(-((Ys / max(f.H, 1e-6) - 0.962) / 0.007) ** 2).astype(np.float32)   # the ember under the ash
+            f.lay_island(ring, emit="#ff4a10")
         fr["crumbs"].fill(color="#a8a398", rough=0.95)
 
     th.paint = paint

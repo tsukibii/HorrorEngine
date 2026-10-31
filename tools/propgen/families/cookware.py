@@ -331,6 +331,9 @@ def make(spec, th):
         th.liquid = LQ.turned(ins, th.islands, "in" if "in" in th.islands else list(th.islands)[0], lq.get("kind", "water"), float(lq.get("fill", 0.6)),
                               lq.get("color"), seed)
     th.sockets.setdefault("steam", (np.array([0, 0, rim_z + 2]) * MM, (0, 0, 1)))
+    vent = "spout" if kind == "tetsubin" else ("vent" if kind == "donabe" and lid else (None if lid else "steam"))
+    if vent:
+        th.fx = {"steam": {"sockets": [vent], "on": False}}
     th.sockets.setdefault("rim", (np.array([0, 0, rim_z]) * MM, (0, 0, 1)))
     if handle_at is not None:
         th.sockets.setdefault("handle", (np.array(handle_at) * MM, (0, 0, 1)))

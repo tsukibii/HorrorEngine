@@ -38,6 +38,7 @@ class Thing:
         self.texel_paint = None     # fn(material name, canvas, texels): paint by each texel's place (an imported mesh)
         self.liquid = None          # (Mesh of the container's inside, liquid.info(...)): a node of its own for Godot's shader
         self.sockets = {}           # name -> (point, direction) at rest, metres: empties in the glb (socket_flame, socket_steam...)
+        self.fx = {}                # the enhancers Godot's HSPropFX gives it: glow, flame, smoke, steam, wax (PROPGEN.md §14)
 
     def material(self, name, kind="paint", px=None, alpha=False, double=False, color="#808080", rough=0.5, metal=0.0, specular=None):
         self.mats[name] = dict(kind=kind, px=px or int(self.spec.get("tex", 1024)), alpha=alpha, double=double,
@@ -84,6 +85,24 @@ class Thing:
                 x1, y1 = x0 + it.w_mm * d, y0 + it.h_mm * d
                 it.rect = (x0 / px, 1 - y1 / px, x1 / px, 1 - y0 / px)
             self.density[mname] = d
+
+
+def write_tscn(odir, name, fx, liquid):
+    """<name>.tscn beside the glb: a Godot scene of the prop ready to drop into a level, its enhancers (HSPropFX) and its
+    liquid's slosh (HSLiquidFill) on it, each a node to switch off or delete. The glb is named by a path relative to the
+    scene, so the two move together into any project with the HorrorStudio Look plugin."""
+    ext = [f'[ext_resource type="PackedScene" path="{name}.glb" id="1_glb"]']
+    nodes = [f'[node name="{name}" instance=ExtResource("1_glb")]']
+    if fx:
+        ext.append('[ext_resource type="Script" path="res://addons/horrorstudio_look/nodes/prop_fx.gd" id="2_fx"]')
+        nodes.append('[node name="HSPropFX" type="Node3D" parent="."]\nscript = ExtResource("2_fx")')
+    if liquid:
+        ext.append('[ext_resource type="Script" path="res://addons/horrorstudio_look/nodes/liquid_fill.gd" id="3_liq"]')
+        nodes.append(f'[node name="HSLiquidFill" type="Node" parent="{name}_liquid"]\nscript = ExtResource("3_liq")')
+    path = os.path.join(odir, name + ".tscn")
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(f"[gd_scene load_steps={len(ext) + 1} format=3]\n\n" + "\n".join(ext) + "\n\n" + "\n\n".join(nodes) + "\n")
+    return path
 
 
 def lay_extras(spec, th, frames):
@@ -266,16 +285,38 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
             if isl.mat == mname:
                 u0, v0, u1, v1 = isl.rect
                 wraps.append((int((1 - v1) * px), int(round(u0 * px)), int(math.ceil((1 - v0) * px)), int(round(u1 * px))))
-        maps = [cv.col, cv.rough, cv.metal, nrm, aomap] + ([alpha] if alpha is not None else [])
+        maps = [cv.col, cv.rough, cv.metal, nrm, aomap, cv.emit] + ([alpha] if alpha is not None else [])
         BK.bleed(maps, used, wraps)
         base_path = os.path.join(odir, f"{name}_{mname}")
         files[mname] = S.save_maps(base_path, cv, tex, nrm, aomap, alpha)
+    # the enhancers: what the family gives it, then the recipe's own (`fx`: a kind false takes it away, a dict changes it)
+    fx = {k: (dict(v) if isinstance(v, dict) else v) for k, v in (th.fx or {}).items()}
+    for k, v in (spec.get("fx") or {}).items():
+        if v is False or v is None:
+            fx.pop(k, None)
+        elif isinstance(v, dict) and isinstance(fx.get(k), dict):
+            fx[k].update(v)
+        else:
+            fx[k] = v if isinstance(v, dict) else {}
+    glowing = [m for m, f in files.items() if f[3]]
+    if glowing:
+        fx.setdefault("glow", {})["materials"] = [f"{name}_{m}" for m in glowing]
+    else:
+        fx.pop("glow", None)
+    for k in ("flame", "smoke", "steam"):
+        if k in fx:
+            fx[k]["sockets"] = [s_ for s_ in fx[k].get("sockets", []) if s_ in th.sockets]
+            if not fx[k]["sockets"]:
+                fx.pop(k)
+    if "wax" in fx:
+        fx["wax"]["materials"] = [f"{name}_{m}" for m in fx["wax"].get("materials", []) if m in th.mats]
     # the real materials on the game mesh
+    gl = fx.get("glow") or {}
     for i, mname in enumerate(th.low.mats):
         mt = th.mats[mname]
-        pa, po, pn = files[mname]
+        pa, po, pn, pe = files[mname]
         mat = S.material(f"{name}_{mname}", pa, po, pn, mt["kind"], alpha=mt["alpha"], double_sided=mt["double"], specular=mt["specular"],
-                         tint=mt.get("tint"))
+                         tint=mt.get("tint"), emission=pe, emission_strength=float(gl.get("energy", 1.0)))
         low_me.materials[i] = mat
     if high_ob is not None:
         bpy.data.objects.remove(high_ob, do_unlink=True)
@@ -310,8 +351,12 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
         em.parent = low_ob
         em.matrix_parent_inverse = low_ob.matrix_world.inverted()
         socks.append(em)
+    if fx:
+        low_ob["propgen_fx"] = json.dumps(dict(fx, version=1))
     base = os.path.join(odir, name)
     outs = export([low_ob] + ([liq_ob] if liq_ob else []) + socks, base, formats)
+    if "glb" in formats:
+        outs.append(write_tscn(odir, name, fx, bool(th.liquid)))
     pv = None
     if preview:
         pv = base + "_preview.png"
@@ -324,11 +369,11 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
     rec_sockets = {k: [round(float(x), 5) for x in (Mx @ np.asarray(v[0], float) + shift)] for k, v in th.sockets.items()}
     rec = {"name": name, "family": spec["family"], "version": VERSION, "seed": seed, "size_m": [round(float(x), 4) for x in (hi - lo)],
            "tris": th.low.ntris(), "files": [os.path.basename(p) for p in outs], "preview": os.path.basename(pv) if pv else None,
-           "textures": {m: [os.path.basename(p) for p in f] for m, f in files.items()}, "spec": spec,
+           "textures": {m: [os.path.basename(p) for p in f if p] for m, f in files.items()}, "spec": spec,
            "secs": round(time.time() - t0, 1), "sockets": rec_sockets,
            "islands": {n: {"mat": i.mat, "mm": [round(i.w_mm, 2), round(i.h_mm, 2)], "rect": [round(float(x), 5) for x in i.rect],
                            "wrap": n in th.wrap} for n, i in th.islands.items()},
-           "materials": {m: {"kind": v["kind"], "px": v["px"], "color": v["color"]} for m, v in th.mats.items()}}
+           "materials": {m: {"kind": v["kind"], "px": v["px"], "color": v["color"]} for m, v in th.mats.items()}, "fx": fx}
     with open(os.path.join(odir, "meta.json"), "w", encoding="utf-8") as fh:
         json.dump(rec, fh, indent=1)
     if th.liquid:

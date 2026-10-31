@@ -56,7 +56,7 @@ def _segments(f, s, x, y, h, color, off="#9aa89a"):
     for ch in s:
         if ch == ":":
             for yy in (y + h * 0.3, y + h * 0.7):
-                f.rect(cx + w * 0.1, yy - t / 2, t, t, color=color, **UI)
+                f.rect(cx + w * 0.1, yy - t / 2, t, t, color=color, emit="#000000", **UI)
             cx += w * 0.45
             continue
         on = SEG.get(ch, "")
@@ -64,7 +64,8 @@ def _segments(f, s, x, y, h, color, off="#9aa89a"):
                 "f": (cx, y + h / 2, t, h / 2 - t * 0.5), "b": (cx + w - t, y + h / 2, t, h / 2 - t * 0.5), "e": (cx, y + t * 0.5, t, h / 2 - t * 0.5),
                 "c": (cx + w - t, y + t * 0.5, t, h / 2 - t * 0.5)}
         for k, (sx, sy, sw, sh) in segs.items():
-            f.rect(sx, sy, sw, sh, r=t * 0.3, color=color if k in on else off, alpha=1.0 if k in on else 0.35, **UI)
+            f.rect(sx, sy, sw, sh, r=t * 0.3, color=color if k in on else off, alpha=1.0 if k in on else 0.35,
+                   emit="#000000" if k in on else None, **UI)            # a lit segment is dark against the backlight
         cx += w * 1.3
 
 
@@ -79,12 +80,16 @@ def rice_cooker(spec, th):
     th.island("b_top", W, D)
     th.island("b_bot", W * 0.5, D * 0.5)
     th.island("b_side", M.rperim(W, D, 76), Hb + 20, wrap=True)
-    th.island("l_top", W, D)
+    # the lid covers most of the top (the lid's release on the strip before it), its control panel on its front part
+    Wl, Dl = W - 8, D - 52
+    ly = D / 2 - 6 - Dl / 2
+    PW, PD = 150.0, 55.0
+    th.island("l_top", Wl / 0.9, Dl / 0.9)            # a cap maps over the middle nine tenths of its island: mm for mm
     th.island("l_bot", W * 0.4, D * 0.4)
-    th.island("l_side", M.rperim(W - 8, D - 70, 70), 50, wrap=True)
-    th.island("panel", 170, 60, mat="panel")
-    th.island("panel_b", 85, 30, mat="panel")
-    th.island("panel_e", 2 * (170 + 60), 8, mat="panel", wrap=True)
+    th.island("l_side", M.rperim(Wl, Dl, 70), 50, wrap=True)
+    th.island("panel", PW / 0.9, PD / 0.9, mat="panel")
+    th.island("panel_b", 60, 25, mat="panel")
+    th.island("panel_e", 2 * (PW + PD), 4, mat="panel", wrap=True)
     th.island("vent", 2 * math.pi * 26, 30)
     th.island("vent_top", 52, 52)
     th.island("release", 120, 30)
@@ -95,30 +100,35 @@ def rice_cooker(spec, th):
     I = th.islands
     z0 = 6.0
     parts = [M.rbox((W * MM, D * MM, Hb * MM), 16 * MM, I, "b_top", "b_bot", "b_side", at=(0, 0, z0 * MM), corner=76 * MM, fill=40 * MM, step=30 * MM)]
-    Dl = D - 70
-    lid = M.rbox(((W - 8) * MM, Dl * MM, 30 * MM), 14 * MM, I, "l_top", "l_bot", "l_side", at=(0, 26 * MM, (z0 + Hb - 14) * MM), corner=70 * MM,
-                 fill=24 * MM, step=10 * MM)
-    p = lid.v[:, :2] / MM - (0, 26)
+    lid_z = z0 + Hb - 14
+    lid = M.rbox((Wl * MM, Dl * MM, 30 * MM), 14 * MM, I, "l_top", "l_bot", "l_side", at=(0, ly * MM, lid_z * MM), corner=70 * MM,
+                 fill=18 * MM, step=10 * MM)
+
+    def dome(x, y):
+        """The lid's domed top (mm over its flat top), at (x, y) in the cooker's plan."""
+        return 14 * np.clip(1 - (np.asarray(x) / (Wl / 2)) ** 2, 0, 1) * np.clip(1 - ((np.asarray(y) - ly) / (Dl / 2)) ** 2, 0, 1)
+
     top = lid.v[:, 2] > (z0 + Hb + 2) * MM
-    dome = 14 * np.clip(1 - (p[:, 0] / ((W - 8) / 2)) ** 2, 0, 1) * np.clip(1 - (p[:, 1] / (Dl / 2)) ** 2, 0, 1)
-    lid.v[:, 2] += np.where(top, dome, 0) * MM
+    lid.v[:, 2] += np.where(top, dome(lid.v[:, 0] / MM, lid.v[:, 1] / MM), 0) * MM
     lid.a["rest"] = lid.v.copy()
     parts.append(lid)
-    # the panel: black glass on the deck in front of the lid, tipped toward whoever stands there
-    pz = z0 + Hb + 1.0
-    py = -D / 2 + 36
-    pn = M.rbox((170 * MM, 60 * MM, 4 * MM), 1.6 * MM, I, "panel", "panel_b", "panel_e", at=(0, 0, -2 * MM), corner=8 * MM, fill=12 * MM)
-    M.turn(pn, M.rot("x", 16), move=(0, py * MM, (pz + 2) * MM))
+    # the panel: a thin pane of black glass laid on the lid's front, inside its rounded edge, bent to its dome
+    py = ly - Dl / 2 + 20 + PD / 2
+    lid_top = lid_z + 30
+    pn = M.rbox((PW * MM, PD * MM, 1.2 * MM), 0.5 * MM, I, "panel", "panel_b", "panel_e", at=(0, py * MM, 0), corner=8 * MM, fill=6 * MM, step=None)
+    pn.v[:, 2] += (lid_top + 0.25 + dome(pn.v[:, 0] / MM, pn.v[:, 1] / MM)) * MM
+    pn.a["rest"] = pn.v.copy()
     parts.append(pn)
-    # the lid's release, the steam vent
-    rl = M.rbox((60 * MM, 16 * MM, 12 * MM), 5 * MM, I, "release", "release", "release_e", at=(0, (26 - Dl / 2 + 8) * MM, (z0 + Hb + 12) * MM),
+    # the lid's release on the strip before it, the steam vent at its back
+    rl = M.rbox((60 * MM, 16 * MM, 12 * MM), 5 * MM, I, "release", "release", "release_e", at=(0, (ly - Dl / 2 + 6) * MM, (z0 + Hb + 10) * MM),
                 corner=7 * MM, fill=10 * MM)
     parts.append(rl)
-    vz = z0 + Hb + 16 + 12
+    vy = 86.0
+    vz = lid_top + float(dome(0, vy))
     vm = M.lathe([M.Seg(np.array([(26, 0), (26.4, 4), (25, 8.6), (21, 10.4)]) * MM, "vent", "band"),
                   M.Seg(np.array([(21, 10.4), (0, 11)]) * MM, "vent_top", "top", disc=26 * MM)], 40, I, step=0.004)
-    vm.v[:, 2] += (vz - 4) * MM
-    vm.v[:, 1] += 86 * MM
+    vm.v[:, 2] += (vz - 3) * MM
+    vm.v[:, 1] += vy * MM
     vm.a["rest"] = vm.v.copy()
     parts.append(vm)
     for sx in (-1, 1):
@@ -134,18 +144,19 @@ def rice_cooker(spec, th):
     th.weighted = 50
     th.pose = "stand"
     th.view = {"azim": -24, "elev": 30}
-    # the panel's things in the item's own space: a cap maps over 90% of its island, then through the panel's tilt
-    Rp = M.rot("x", 16)
-    nrm = tuple(Rp @ np.array([0.0, 0.0, 1.0]))
+    nrm = (0.0, 0.0, 1.0)
 
     def on_panel(X, Y):
-        return (Rp @ np.array([X / 0.9, Y / 0.9, 2.2]) + np.array([0, py, pz + 2])) * MM
+        """A point on the panel's face by its paint's place (mm from the panel's middle: the paint maps mm for mm)."""
+        x, y = X, py + Y
+        return np.array([x, y, lid_top + 0.25 + 1.2 + float(dome(x, y)) + 0.2]) * MM
 
     th.sockets["lcd"] = (on_panel(0, 10), nrm)
     th.sockets["led_cook"] = (on_panel(62, 4), nrm)
     th.sockets["led_warm"] = (on_panel(-62, 4), nrm)
     th.sockets["button"] = (on_panel(62, -19), nrm)
-    th.sockets["vent"] = (np.array([0, 86, vz + 7]) * MM, (0, 0, 1))
+    th.sockets["vent"] = (np.array([0, vy, vz + 8.5]) * MM, (0, 0, 1))
+    th.fx = {"glow": {"energy": 4.0}, "steam": {"sockets": ["vent"], "on": False}}       # its lights on; steam when it cooks
     now = spec.get("time", "12:30")
 
     def paint(fr):
@@ -172,12 +183,12 @@ def rice_cooker(spec, th):
                 f.ellipse(cx + R * 1.3, cy - R * 0.6, R * 0.55, R * 0.2, rot=-30, color="#5a6a2a", rough=0.3)
                 x += R * 3.2
         f = fr["l_top"]
-        brand_mark(f, spec, (f.W / 2, f.H * 0.2), 9, "#8a8680" if not retro else "#7a4a24", 64)
+        brand_mark(f, spec, (f.W / 2, f.H * 0.56), 9, "#8a8680" if not retro else "#7a4a24", 64)
         if not retro:
-            f.text("IH", (f.W / 2, f.H * 0.12), 5, font="archivo", color=accent, rough=0.3)
+            f.text("IH", (f.W / 2, f.H * 0.505), 5, font="archivo", color=accent, rough=0.3)
             f.ellipse(f.W / 2, f.H * 0.82, 30, 18, color=designs.P.mix(designs.P.rgb(body_c), "#000000", 0.05), rough=0.25)
         else:
-            f.text("電子炊飯ジャー", (f.W / 2, f.H * 0.1), 5.5, font="gothic_jp", color="#7a4a24", rough=0.3)
+            f.text("電子炊飯ジャー", (f.W / 2, f.H * 0.5), 5.5, font="gothic_jp", color="#7a4a24", rough=0.3)
         f = fr["b_side"]
         front = f.W - (W / 2 - 76)                      # the band starts at the front's right end: its middle is near the end
         f.text("5.5合" if not retro else "1.0L", (front - 34, Hb * 0.14), 6, font="gothic_jp", color="#9a968e", rough=0.3, height=0.01)
@@ -188,13 +199,13 @@ def rice_cooker(spec, th):
             f.fill(color=body_c, rough=0.28)
             f.rect(f.W / 2 - 34, f.H / 2 - 13, 68, 26, r=6, color="#3a3632", rough=0.35, height=0.6)
             f.text("炊飯", (f.W / 2, f.H / 2), 9, font="gothic_jp", color="#f3e7c8", rough=0.3, height=0.02)
-            f.ellipse(f.W / 2 - 58, f.H / 2, 4, color="#b0221a", rough=0.15, height=0.4)
+            f.ellipse(f.W / 2 - 58, f.H / 2, 4, color="#b0221a", rough=0.15, height=0.4, emit="#ff3020")
             f.text("保温", (f.W / 2 - 58, f.H / 2 - 10), 4.2, font="gothic_jp", color="#7a4a24", rough=0.3)
-            f.ellipse(f.W / 2 + 58, f.H / 2, 4, color="#e0a020", rough=0.15, height=0.4)
+            f.ellipse(f.W / 2 + 58, f.H / 2, 4, color="#e0a020", rough=0.15, height=0.4, emit="#ffb030")
             f.text("炊飯", (f.W / 2 + 58, f.H / 2 - 10), 4.2, font="gothic_jp", color="#7a4a24", rough=0.3)
         else:
             lcd = (f.W / 2 - 30, f.H / 2 - 2, 60, 24)
-            f.rect(*lcd, r=2, color="#a9b8a4", rough=0.18)
+            f.rect(*lcd, r=2, color="#a9b8a4", rough=0.18, emit="#3c5a38")      # the LCD, its backlight glowing through it
             _segments(f, now, lcd[0] + 12, lcd[1] + 5, 13, "#1a201a")
             for i, w in enumerate(("白米", "無洗米", "玄米", "炊込")):
                 f.text(w, (lcd[0] + 6 + i * 16, lcd[1] + 20.5), 2.6, font="gothic_jp", color="#1a201a" if i == 0 else "#7a887a", rough=0.18)
@@ -209,8 +220,8 @@ def rice_cooker(spec, th):
                 f.text(w, (x, yb), 2.8, font="gothic_jp", color="#e8e8e8", rough=0.2)
             f.rect(f.W / 2 + 62 - 13, f.H / 2 - 30, 26, 22, r=6, color=accent, rough=0.25, height=0.6)
             f.text("炊飯", (f.W / 2 + 62, f.H / 2 - 19), 4.5, font="gothic_jp", color="#ffffff", rough=0.25)
-            for x, c in ((-62, "#e8a030"), (62, "#d03020")):
-                f.ellipse(f.W / 2 + x, f.H / 2 + 4, 1.6, color=c, rough=0.1, height=0.2)
+            for x, c, e in ((-62, "#e8a030", "#ff8a1a"), (62, "#d03020", "#ff2a10")):
+                f.ellipse(f.W / 2 + x, f.H / 2 + 4, 1.6, color=c, rough=0.1, height=0.2, emit=e)
             f.text("保温", (f.W / 2 - 62, f.H / 2 + 9), 2.6, font="gothic_jp", color="#c8c8c8", rough=0.2)
             f.text("炊飯", (f.W / 2 + 62, f.H / 2 + 9), 2.6, font="gothic_jp", color="#c8c8c8", rough=0.2)
         fr["panel_b"].fill(color="#121216", rough=0.3)
@@ -284,6 +295,7 @@ def kettle(spec, th):
     th.sockets["switch"] = (np.array([0, 122, 78]) * MM, (0, 0.94, 0.34))
     th.sockets["led"] = (np.array([0, 121, 71]) * MM, (0, 0.94, 0.34))
     th.sockets["base"] = (np.array([0, 0, 0]) * MM, (0, 0, 1))
+    th.fx = {"glow": {"energy": 4.0}, "steam": {"sockets": ["spout"], "on": False}}      # its light on; steam when it boils
 
     def paint(fr):
         f = fr["body"]
@@ -312,7 +324,7 @@ def kettle(spec, th):
         _plastic(f, "#1a1a1c", rough=0.35, seed=seed)
         f.text("I", (f.W * 0.3, f.H / 2), 6, font="archivo", color="#e8e8e8", rough=0.3)
         f.text("O", (f.W * 0.7, f.H / 2), 6, font="archivo", color="#e8e8e8", rough=0.3)
-        f.ellipse(f.W * 0.5, f.H * 0.18, 1.8, color="#3a7fd0", rough=0.1)
+        f.ellipse(f.W * 0.5, f.H * 0.18, 1.8, color="#3a7fd0", rough=0.1, emit="#3a8aff")
         if steel:
             FN.metal(fr["spout"], "brushed", color, seed + 3)
         else:

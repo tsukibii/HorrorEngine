@@ -64,6 +64,12 @@ pictures, a form, pictures clicked onto the texture (`decals`, any family), PBR 
 3D, saving. PROPPAGE ok (113 s here), PROPGEN, CHECKS. **For the user:** open it from the launcher (Pages) and try a
 decal on something; say what's missing.
 
+Then (2026-10-31, evening): **enhancers** (PROPGEN.md §14): what glows painted as emission, the look plugin's
+`HSPropFX` (glow, flame with its candle light, smoke, steam, wax; switches per prop and per project), the game putting
+one on every made prop, and a `<name>.tscn` beside every glb. The rice cooker's panel moved onto its lid; the pots'
+handles into their walls. **For the user:** open a candle's `.tscn` (Saved/Props/candle_taper/, copied into a project
+with the look plugin) in Godot and switch its enhancers; say if the flame wants another shape.
+
 Next if wanted (PROPGEN.md §9): a life on a generated prop (a generated kettle boiling, a candle burning down: the
 sockets are there), food tins, a flashlight, batteries, a bucket, a crate, a die, a book; a recipe page with a PBR
 picker.

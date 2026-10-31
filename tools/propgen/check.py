@@ -1,7 +1,8 @@
 """PROPGEN: a recipe of every family made small (256 px textures, a few bake samples, no preview, the .glb alone) and
 measured: its glb well formed with a material of three textures (base colour, ORM, normal), standing on the floor and
 centred, about its real size, within its triangle budget, its colour map not one flat colour, its normal map facing
-out; the same recipe made twice the same mesh; every recipe's family and design known."""
+out; its enhancers in the glb's extras and an emission map where it glows; its Godot scene (.tscn) beside it; the
+same recipe made twice the same mesh; every recipe's family and design known."""
 import json
 import os
 import struct
@@ -94,6 +95,14 @@ def run(book, out):
                 d = json.loads(liq[0]["extras"]["propgen_liquid"])
                 if len(d["table"]) != d["tilts"] * d["fills"] or not (0 <= min(d["table"]) and max(d["table"]) <= 1):
                     problems.append("its liquid's fill table is malformed")
+        fx = rec.get("fx") or {}
+        if fx:
+            if not [nd for nd in j["nodes"] if "propgen_fx" in (nd.get("extras") or {})]:
+                problems.append("its enhancers aren't in the glb")
+            if fx.get("glow") and not any("emissiveTexture" in m for m in mats):
+                problems.append("it glows but no material has an emission map")
+        if not os.path.exists(os.path.join(tmp, name, name + ".tscn")):
+            problems.append("no Godot scene (.tscn) beside its glb")
         flat = []
         for mname, files in rec["textures"].items():
             alb = read_image(os.path.join(tmp, name, files[0]))[..., :3]

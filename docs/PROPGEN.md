@@ -487,3 +487,59 @@ wear (scratches, dirt in the folds, dust on what faces up), the baked occlusion 
   reads the size its front wants and wraps the picture over all of it, picks a PBR set, makes two variations, saves a
   recipe `from ema` with only what differs, and deletes it. About two
   minutes here; Blender makes four props.
+
+## 14. Enhancers in Godot: what glows, burns, smokes and steams
+
+A made prop can bring a little more than its maps: LEDs and screens that glow, candle flames with their light,
+incense smoke, steam, wax the light shines into. The generator says which a prop has; the look plugin's `HSPropFX`
+does them in Godot, each a switch.
+
+- **In the glb:**
+  - What glows is painted as an emission map (the painter's `emit`): the rice cooker's LCD backlight (its lit
+    segments dark on it) and its cook and warm lights, the kettle's switch light, the incense's burning rings, a
+    candle's wick tip. It's the material's emissive texture with its strength (`KHR_materials_emissive_strength`), so
+    any glTF viewer shows it glowing.
+  - The list of enhancers in the extras (`propgen_fx`): `glow` (the glowing materials, their energy, what they
+    follow: a candle's ember goes out with its flame), `flame`, `smoke`, `steam` (the sockets each starts from, and
+    whether it's `on` at first), `wax` (the materials).
+- **Which props:**
+
+  | Prop | Enhancers |
+  | --- | --- |
+  | candles | flame at every wick (lit once `burn` is over 0), glow (the ember), wax |
+  | kōro | smoke from every incense tip, glow (the embers) |
+  | rice cookers | glow (LCD, lights), steam at the vent (off at first) |
+  | electric kettles | glow (the switch light), steam at the spout (off at first) |
+  | pots and pans | steam from an open pot, the donabe's vent, the tetsubin's spout (off at first) |
+
+- **A recipe's own:** `fx` changes them: `"fx": {"steam": {"on": true}}` (a pot on the boil), `"fx": {"flame": false}`
+  (no flame at all), `"fx": {"glow": {"energy": 8}}`.
+- **Godot-ready:** every make writes `<name>.tscn` beside the glb: the prop with its `HSPropFX` (and its liquid's
+  `HSLiquidFill`) on it. The glb is named relative to the scene, so copy the two together into any project with the
+  look plugin, drop the scene in a level, and switch its enhancers in the inspector.
+- **In the game:** the game puts an `HSPropFX` on every made prop as it enters a level (`HSPropFX.auto`, beside
+  `HSLiquid.auto`).
+- **The switches** (the node's inspector, or a script while playing: a pot coming to the boil):
+  - `enabled`;
+  - `glow`, `glow_energy` (−1 the prop's own), `glow_flicker` (a dying screen);
+  - `flame`, `flame_light`, `flame_shadows`, `flame_size`, `flame_color`;
+  - `smoke`, `steam`, `puff_rate`;
+  - `wax`, `wax_glow`.
+  
+  A kind off for the whole project: Project Settings, `horrorstudio/prop_fx/glow` (`flame`, `smoke`, `steam`,
+  `wax`); `horrorstudio/prop_fx/enabled` off and the game puts none on.
+- **What they are:**
+  - Glow: the prop's own emission, by a per-copy material override (turned up, down, off, flickering).
+  - Flame: a teardrop drawn by `flame.gdshader` on a quad turning round the world's up, swaying and breathing by
+    noise, added over the scene; an `HSFlickerLight` in candle mode a little above it, with shadows.
+  - Smoke and steam: soft puffs (`puff.gdshader`, as the little things' in lifefx.gd) born at the socket, rising,
+    curling, growing and fading.
+  - Wax: subsurface scattering and backlight on the wax, so a lit candle glows into its wax.
+  
+  None of them is saved into your level: what HSPropFX makes has no owner, and the prop's materials go back as they
+  were before every save.
+- **Checked:**
+  - PROPGEN: the enhancers in each case's glb, an emission map where it glows, its `.tscn` written.
+  - GDPROPS: every prop with enhancers in the dark, given its HSPropFX as the game gives it, steam switched on. Each
+    enhancer is measured lit (what glows, the flames and their lights, the puffs, the wax), then every switch off (all
+    gone), and each prop's `.tscn` is loaded with its HSPropFX. Pictured in `Saved/Props/_godot/godot_fx.png`.

@@ -204,6 +204,103 @@ func _init():
 '''
 
 
+FX_SCRIPT = r'''extends SceneTree
+
+# the enhancers: every prop that has some, in the dark, given its HSPropFX as the game gives it (HSPropFX.auto), steam
+# switched on to see it; measured lit and pictured, then every switch off and measured again; each prop's own .tscn
+# (its glb beside it, its HSPropFX and HSLiquidFill in it) loaded
+func _init():
+	var out := ""
+	var files := []
+	var scenes := []
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--out="):
+			out = a.substr(6)
+		elif a.begins_with("--glb="):
+			files.append(a.substr(6))
+		elif a.begins_with("--tscn="):
+			scenes.append(a.substr(7))
+	var root := Node3D.new()
+	get_root().add_child(root)
+	var x := 0.0
+	var tallest := 0.0
+	for f in files:
+		var inst: Node3D = load(f).instantiate()
+		inst.set_meta("prop", f.get_file().get_basename())   # Godot renames a glb's root apart from its mesh (candle_taper2)
+		root.add_child(inst)
+		var box := AABB()
+		var first := true
+		for mi in inst.find_children("*", "MeshInstance3D", true, false):
+			var b: AABB = mi.global_transform * mi.get_aabb()
+			box = b if first else box.merge(b)
+			first = false
+		inst.position = Vector3(x - box.position.x, -box.position.y, -box.position.z - box.size.z / 2)
+		x += box.size.x + 0.05
+		tallest = maxf(tallest, box.size.y)
+	var n: int = load("res://addons/horrorstudio_look/nodes/prop_fx.gd").auto(root)
+	for fx in root.find_children("HSPropFX", "", true, false):
+		fx.steam = true
+	var env := WorldEnvironment.new()
+	var e := Environment.new()
+	e.background_mode = Environment.BG_COLOR
+	e.background_color = Color(0.015, 0.015, 0.02)
+	e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	e.ambient_light_color = Color(0.3, 0.32, 0.38)
+	e.ambient_light_energy = 0.1
+	e.tonemap_mode = Environment.TONE_MAPPER_AGX
+	e.glow_enabled = true
+	env.environment = e
+	root.add_child(env)
+	var floor := MeshInstance3D.new()
+	var pm := PlaneMesh.new()
+	pm.size = Vector2(40, 40)
+	floor.mesh = pm
+	var fm := StandardMaterial3D.new()
+	fm.albedo_color = Color(0.3, 0.3, 0.3)
+	fm.roughness = 0.7
+	floor.material_override = fm
+	root.add_child(floor)
+	var cam := Camera3D.new()
+	cam.fov = 30
+	root.add_child(cam)
+	cam.current = true
+	await process_frame
+	var dist: float = maxf(x * 0.8, tallest * 4.5) + 0.25
+	cam.look_at_from_position(Vector3(x / 2.0, tallest * 0.9 + dist * 0.25, dist * 0.8), Vector3(x / 2.0, tallest * 0.4, 0), Vector3.UP)
+	for i in 60:
+		await process_frame
+	var rep := {"attached": n, "lit": {}, "off": {}, "scenes": {}}
+	for fx in root.find_children("HSPropFX", "", true, false):
+		rep["lit"][str(fx.get_parent().get_meta("prop", fx.get_parent().name))] = fx.report()
+	get_root().get_viewport().get_texture().get_image().save_png(out + "/godot_fx.png")
+	for fx in root.find_children("HSPropFX", "", true, false):
+		fx.glow = false
+		fx.flame = false
+		fx.smoke = false
+		fx.steam = false
+		fx.wax = false
+	for i in 3:
+		await process_frame
+	for fx in root.find_children("HSPropFX", "", true, false):
+		rep["off"][str(fx.get_parent().get_meta("prop", fx.get_parent().name))] = fx.report()
+	for sc in scenes:
+		var ps = load(sc)
+		if ps == null:
+			rep["scenes"][sc] = {"error": "load failed"}
+			continue
+		var inst: Node3D = ps.instantiate()
+		root.add_child(inst)
+		inst.position = Vector3(0, 0, 5)
+		await process_frame
+		await process_frame
+		var fxn = inst.get_node_or_null("HSPropFX")
+		rep["scenes"][sc] = {"fx": fxn != null, "fx_on": fxn.report() if fxn != null else {}, "meshes": inst.find_children("*", "MeshInstance3D", true, false).size(),
+			"liquid": inst.find_children("HSLiquidFill", "", true, false).size()}
+	print("FXCHECK " + JSON.stringify(rep))
+	quit()
+'''
+
+
 def godot_bin():
     for c in [os.environ.get("GODOT"), "godot", "godot-mono"]:
         if c and shutil.which(c):
@@ -226,11 +323,14 @@ def main(argv):
     (PROJ / "project.godot").write_text(PROJECT, encoding="utf-8")
     (PROJ / "check.gd").write_text(SCRIPT, encoding="utf-8")
     (PROJ / "liquids.gd").write_text(LIQUID_SCRIPT, encoding="utf-8")
+    (PROJ / "fx.gd").write_text(FX_SCRIPT, encoding="utf-8")
     shutil.copytree(ROOT / "GodotPlugins" / "HorrorStudioLook" / "addons" / "horrorstudio_look", PROJ / "addons" / "horrorstudio_look",
                     ignore=shutil.ignore_patterns("*.import", "demo"))
     metas = {}
     for n in names:
         shutil.copy(OUT / n / f"{n}.glb", PROJ / "props" / f"{n}.glb")
+        if (OUT / n / f"{n}.tscn").exists():
+            shutil.copy(OUT / n / f"{n}.tscn", PROJ / "props" / f"{n}.tscn")
         mp = OUT / n / "meta.json"
         metas[n] = json.loads(mp.read_text(encoding="utf-8")) if mp.exists() else {}
     env = dict(os.environ)
@@ -297,6 +397,51 @@ def main(argv):
             ok = ok and fine
             print(("  ok  " if fine else "  BAD ") + f"liquids: {len(wet)} prop(s) upright and tipped 70 degrees, HSLiquid on {rep['attached']} "
                   f"({', '.join(sorted({l['shader'].rsplit('/', 1)[-1] for l in good}))}): {PROJ / 'godot_liquids.png'}")
+    lit_ = [n for n in names if metas[n].get("fx")]
+    if lit_:
+        cmd = [g, "--path", str(PROJ), "--rendering-driver", "vulkan", "-s", "res://fx.gd", "--", f"--out={PROJ}"] + \
+              [f"--glb=res://props/{n}.glb" for n in lit_] + [f"--tscn=res://props/{n}.tscn" for n in lit_ if (PROJ / "props" / f"{n}.tscn").exists()]
+        if shutil.which("xvfb-run"):
+            cmd = ["xvfb-run", "-a", "-s", "-screen 0 1600x600x24"] + cmd
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=1800, env=env)
+        text = "\n".join(l for l in (r.stdout + r.stderr).splitlines() if l and "ALSA" not in l and "snd_" not in l)
+        line = next((l for l in text.splitlines() if l.startswith("FXCHECK ")), None)
+        if line is None or "SCRIPT ERROR" in text or "SHADER ERROR" in text:
+            print(text[-3000:])
+            print("  BAD the enhancers' scene didn't run clean")
+            ok = False
+        else:
+            rep = json.loads(line[8:])
+            for n in lit_:
+                fx = metas[n]["fx"]
+                on = rep["lit"].get(n) or {}
+                off = rep["off"].get(n) or {}
+                problems = []
+                want_flames = len(fx["flame"]["sockets"]) if fx.get("flame") and fx["flame"].get("on", True) else 0
+                g_ = fx.get("glow") or {}
+                follows = g_.get("follows", "")
+                glow_on = bool(g_) and (not follows or (fx.get(follows) or {}).get("on", True))
+                want_puffs = sum(len((fx.get(k) or {}).get("sockets", [])) for k in ("smoke", "steam"))
+                if glow_on and on.get("glowing", 0) < 1:
+                    problems.append("nothing glows")
+                if on.get("flames", 0) != want_flames or on.get("lights", 0) != want_flames:
+                    problems.append(f"{on.get('flames')} flames and {on.get('lights')} lights, not {want_flames}")
+                if on.get("puff_sources", 0) != want_puffs or (want_puffs and on.get("puffs", 0) < 1):
+                    problems.append(f"{on.get('puff_sources')} smoke and steam sources ({on.get('puffs')} puffs), not {want_puffs}")
+                if fx.get("wax") and on.get("waxed", 0) < 1:
+                    problems.append("its wax doesn't let the light in")
+                if any(off.get(k, 0) for k in ("glowing", "flames", "lights", "puff_sources", "waxed")):
+                    problems.append(f"switched off it still has {off}")
+                sc = rep["scenes"].get(f"res://props/{n}.tscn")
+                if sc is None or not sc.get("fx") or sc.get("meshes", 0) < 1:
+                    problems.append(f"its .tscn: {sc}")
+                elif metas[n].get("liquid") and sc.get("liquid", 0) < 1:
+                    problems.append("its .tscn has no HSLiquidFill")
+                ok = ok and not problems
+                print(("  ok  " if not problems else "  BAD ") + f"{n}'s enhancers: {on.get('glowing', 0)} glowing, {on.get('flames', 0)} flames with their lights, "
+                      f"{on.get('puff_sources', 0)} smoke and steam ({on.get('puffs', 0)} puffs), {on.get('waxed', 0)} waxed; all off when switched off; "
+                      f"its .tscn ready" + ("; " + "; ".join(problems) if problems else ""))
+            print(f"  the enhancers lit in the dark: {PROJ / 'godot_fx.png'}")
     pic = PROJ / "godot_props.png"
     print(f"  the picture: {pic}")
     print("GDPROPS ok" if ok else "GDPROPS FAIL")

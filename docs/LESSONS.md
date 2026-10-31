@@ -1229,3 +1229,11 @@ guessed margin; and a check that only ever ran on a slow machine hasn't been run
   the wall's radius straight out from the middle (x = R), but at their own angle round the pot the wall had already
   curved away by 3 mm, and the user saw the tubes' open ends poke out. Set an end by the radius at its angle
   (x = √((R − rod)² − y²)), and close a tube's ends.
+- **A part laid on a curved body follows its curve, or sits where it's flat:** the rice cooker's panel was a flat
+  slab tipped toward the viewer; its front edge dipped into the body's rounded front and the white showed through.
+  Laid flat on the deck, it still overhung the deck's rounded corners. On the lid, bent to the lid's own dome inside
+  its rounded edge, it sits as if it belongs there. Check a part's footprint against the flat region under it (inside
+  the bevels and corners), not against the box.
+- **GDScript can't infer a type from an untyped loop:** `for k in [...]: var key := "a/" + k` is a parse error in
+  Godot 4.7 (the plugin's script failed to load in the editor, and only the editor's part of LOOKPLUGIN said so). Type
+  the loop variable (`for k: String in`) or the variable (`var key: String`).

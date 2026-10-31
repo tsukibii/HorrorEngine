@@ -131,11 +131,13 @@ class Canvas:
         self.opacity = np.ones((h, w), np.float32)
         self.nrm = np.zeros((h, w, 3), np.float32)            # a tangent-space normal laid by a PBR set (0 0 1: none)
         self.nrm[..., 2] = 1.0
+        self.emit = np.zeros((h, w, 3), np.float32)           # what glows (sRGB, its brightness in it): an LED, a screen, an ember
         self.used = np.zeros((h, w), bool)
 
     def lay(self, y0, x0, cov, color=None, rough=None, metal=None, height=None, alpha=1.0, add_height=False, opacity=None,
-            normal=None):
-        """Composite a coverage patch at (y0, x0): each given property laid over what's there."""
+            normal=None, emit=None):
+        """Composite a coverage patch at (y0, x0): each given property laid over what's there (`emit`: a glow's
+        colour, black for none)."""
         hh, ww = cov.shape
         y1, x1 = min(y0 + hh, self.h), min(x0 + ww, self.w)
         if y1 <= y0 or x1 <= x0:
@@ -154,6 +156,11 @@ class Canvas:
                 reg = getattr(self, name)[y0:y1, x0:x1]
                 v = val if np.ndim(val) == 0 else np.asarray(val)[:y1 - y0, :x1 - x0]
                 reg += (v - reg) * c
+        if emit is not None:
+            ev = np.asarray(emit, np.float32)
+            ev = ev[None, None, :] if ev.ndim == 1 else ev[:y1 - y0, :x1 - x0]
+            reg = self.emit[y0:y1, x0:x1]
+            reg += (ev - reg) * c[..., None]
         if normal is not None:
             reg = self.nrm[y0:y1, x0:x1]
             nv = np.asarray(normal, np.float32)[:y1 - y0, :x1 - x0]
@@ -249,9 +256,10 @@ class Frame:
         return out
 
     def lay(self, y0, x0, cov, color=None, rough=None, metal=None, height=None, alpha=1.0, add_height=False, opacity=None,
-            normal=None):
+            normal=None, emit=None):
         self.cv.lay(y0, x0, cov, None if color is None else rgb(color) if not isinstance(color, np.ndarray) or color.ndim == 1 else color,
-                    rough, metal, height, alpha, add_height, opacity, normal)
+                    rough, metal, height, alpha, add_height, opacity, normal,
+                    None if emit is None else rgb(emit) if not isinstance(emit, np.ndarray) or emit.ndim == 1 else emit)
 
     def lay_island(self, cov, **props):
         """A coverage the island's size (cov_of, a pattern) laid with props."""

@@ -2,6 +2,20 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-31, evening (the user, on `prop-gen-tool`)
+
+- **Enhancers for the props, in Godot, easy to switch off**: "consider if there are some simple shaders/enhancers for
+  some of the props ... like how do we make the led panel in the rice cooker glow ... make them part of the export for
+  godot (they should be exported as godot ready objects and come with shaders/enhancers that can easily be toggled
+  off)". So emission maps for what glows (LEDs, the LCD's backlight, embers), `propgen_fx` in each glb, the look
+  plugin's `HSPropFX` (glow, a candle's flame and light, incense smoke, steam, wax; each a switch, a kind off for a
+  whole project in its settings), the game putting one on every made prop, and a `.tscn` beside every glb ready to
+  drop in (PROPGEN.md §14).
+- **The rice cooker's panel**: "looks like it's clipping through the white at the bottom", then "still doesn't
+  conform to the natural shape, seems like it's larger than the lid, maybe just change the placement to be on the
+  lid". It's a thin pane on the lid's front now, bent to the lid's dome, inside its rounded edge.
+- **The pots' handles**: "the handle pokes out a bit too much": their ends go into the wall now.
+
 ## 2026-10-31, later (the user, on `prop-gen-tool`)
 
 - **A page over the prop generator, with thumbnails**: "how do you add varying textures and logos to generations,

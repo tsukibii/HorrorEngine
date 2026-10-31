@@ -203,7 +203,8 @@ def _gltf_output_group():
     return g
 
 
-def material(name, albedo, orm, normal, kind="paint", alpha=False, double_sided=False, specular=None, tint=None):
+def material(name, albedo, orm, normal, kind="paint", alpha=False, double_sided=False, specular=None, tint=None, emission=None,
+             emission_strength=1.0):
     """A Principled material on the three images (bpy images or paths): base colour (sRGB, its alpha the opacity when
     `alpha`), ORM (occlusion, roughness, metalness: non-colour) and the normal map (non-colour, OpenGL). `tint`: a
     colour the base colour is multiplied by, which the glTF export writes as its baseColorFactor (Godot's Albedo
@@ -270,6 +271,18 @@ def material(name, albedo, orm, normal, kind="paint", alpha=False, double_sided=
     nm.location = (-200, -300)
     t.links.new(inn.outputs["Color"], nm.inputs["Color"])
     t.links.new(nm.outputs["Normal"], bs.inputs["Normal"])
+    if emission:
+        # what glows: the emission map at its strength (the glTF's emissive texture, and its strength past 1 by
+        # KHR_materials_emissive_strength); Godot's HSPropFX turns it up, down or off
+        ie = t.nodes.new("ShaderNodeTexImage")
+        ie.image = img(emission, False)
+        ie.location = (-500, -600)
+        for key in ("Emission Color", "Emission"):
+            if key in bs.inputs:
+                t.links.new(ie.outputs["Color"], bs.inputs[key])
+                break
+        if "Emission Strength" in bs.inputs:
+            bs.inputs["Emission Strength"].default_value = float(emission_strength)
     if specular is not None:
         for key in ("Specular IOR Level", "Specular"):
             if key in bs.inputs:
@@ -294,7 +307,8 @@ def flat_material(name, color, rough=0.5, metal=0.0):
 
 
 def save_maps(base, cv, tex, nrm, ao, alpha=None):
-    """Writes <base>_albedo.png (RGB, or RGBA with the opacity), _orm.png and _normal.png; returns their paths."""
+    """Writes <base>_albedo.png (RGB, or RGBA with the opacity), _orm.png and _normal.png, and _emission.png where
+    anything glows; returns their paths (the emission's or None)."""
     from .paint import write_png
     col = cv.col
     if alpha is not None:
@@ -303,4 +317,8 @@ def save_maps(base, cv, tex, nrm, ao, alpha=None):
     write_png(pa, col)
     write_png(po, np.stack([ao, cv.rough, cv.metal], -1))
     write_png(pn, nrm * 0.5 + 0.5)
-    return pa, po, pn
+    pe = None
+    if getattr(cv, "emit", None) is not None and float(cv.emit.max()) > 0.004:
+        pe = base + "_emission.png"
+        write_png(pe, np.clip(cv.emit, 0, 1))
+    return pa, po, pn, pe
