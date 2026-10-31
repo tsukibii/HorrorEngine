@@ -116,7 +116,7 @@ def sheet(name, shots, out, godot=False):
     for s in shots:
         pics, labels = [], []
         ref = STREETS / name / s["ref"] if s.get("ref") else None
-        for f, label in ((ref, "the photo"), (out / f"look_{s['id']}.png", "Blender: procedural finishes, worn"),
+        for f, label in ((ref, "the photo"), (out / f"look_{s['id']}.png", "Blender: the street's materials, worn"),
                          (out / f"godot_{s['id']}.png" if godot else None, "Godot: the .glb, the plugin's street shader")):
             if f and f.is_file():
                 pics.append(Image.open(f).convert("RGB"))
@@ -135,6 +135,43 @@ def sheet(name, shots, out, godot=False):
         print(f"COMPARE {f.relative_to(ROOT)}: " + " | ".join(labels))
 
 
+def made_sets(S, clean=True):
+    """Every tuned look on the street made into its set (storykit/pbrmix.py) before Blender reads it (Blender's own
+    Python has no Pillow), on the shelf $STUDIO_PBR names if it's set (the bake check's scratch one); the made sets no
+    street uses any more taken off the shelf."""
+    sys.path.insert(0, str(ROOT / "Content" / "Python"))
+    from storykit import pbr as PBR  # noqa: PLC0415
+    from storykit import pbrmix as MIX  # noqa: PLC0415
+    if os.environ.get("STUDIO_PBR"):
+        PBR.ROOT = PBR.DEFAULT = Path(os.environ["STUDIO_PBR"])
+    looks = list((S.get("look") or {}).values())
+    for k in ("roads", "buildings", "things", "fences"):
+        for x in S.get(k) or []:
+            looks += list((x.get("look") or {}).values())
+    refs = []
+    for v in looks:
+        if isinstance(v, dict):
+            refs.append(MIX.made(v)[0])
+    if refs:
+        print(f"MADE {len(set(refs))} tuned looks' sets ready")
+    if not clean:
+        return
+    used = []
+    for f in STREETS.glob("*/street.json"):                 # every street's, not only this one's
+        try:
+            T = json.loads(f.read_text(encoding="utf-8"))
+        except ValueError:
+            continue
+        for L in [T.get("look") or {}] + [x.get("look") or {} for k in ("roads", "buildings", "things", "fences") for x in T.get(k) or []]:
+            for v in L.values():
+                if isinstance(v, dict):
+                    try:
+                        used.append(MIX.made(v, write=False)[0])
+                    except ValueError:                           # a set that isn't on this machine's shelf: STREET warns
+                        pass
+    MIX.clean(used)
+
+
 def look_or_bake(cmd, argv):
     kind, exe = find_blender(argv)
     if not argv:
@@ -146,6 +183,7 @@ def look_or_bake(cmd, argv):
     fresh = flag(argv, "--fresh")
     out = ROOT / "Saved" / "Streets" / name / "blender"
     out.mkdir(parents=True, exist_ok=True)
+    made_sets(S)
     glb = street_glb(name, fresh)
     shots = shots_of(S, which)
     args = [cmd, "--glb", str(glb), "--out", str(out), "--name", name, "--time", S.get("time", "dusk")]
@@ -282,6 +320,7 @@ def bake_check(argv):
     tset.mkdir(parents=True)
     _test_set(tset)
     os.environ["STUDIO_PBR"] = str(scratch / "pbr")
+    made_sets(street_json(name), clean=False)                     # the street's tuned looks, on the scratch shelf
     glb = street_glb(name)
     book = json.loads((STREETS / name / "finish.json").read_text(encoding="utf-8")) if (STREETS / name / "finish.json").is_file() else {}
     book.setdefault("finishes", {})["trim"] = "pbr/Test/bricks"     # a slot the lane's paint leaves alone (the paint wins)

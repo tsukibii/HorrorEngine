@@ -100,6 +100,9 @@ def pbr_ref(name):
     i = s.find("_pbr_")
     if i < 0:
         return None
+    m = re.match(r"^_pbr_+made_([0-9a-f]{12})$", s[i:])   # a tuned look's made set (storykit/pbrmix.py; the export writes pbr/_made/<hash> as _pbr_made_<hash>)
+    if m:
+        return s[:i], f"pbr/_made/{m.group(1)}"
     if not _REFS:
         sys.path.insert(0, str(ROOT / "Content" / "Python"))
         from storykit import pbr as PBR  # noqa: PLC0415
@@ -109,6 +112,28 @@ def pbr_ref(name):
         if re.sub(r"[^a-z0-9]+", "_", ref, flags=re.I) == flat:
             return s[:i], ref
     return None
+
+
+def wear_kind(fin, slot):
+    """The wear recipe a surface takes: its finish's, or for a set off the shelf its slot's (asphalt wears as asphalt,
+    a wall as render)."""
+    if fin in F.WEAR:
+        return fin
+    if fin.startswith("pbr/"):
+        k = F.SLOT_FINISH.get(base_slot(slot), "render")
+        return k if k in F.WEAR else "render"
+    return "plain"
+
+
+def wear_amount(fin, book):
+    """The street's wear amounts ({dirt, streaks, edges, wet}), times a tuned look's own (its wear layers)."""
+    amount = dict(book.get("wear") or {})
+    if fin.startswith("pbr/_made/"):
+        from . import tiles as T
+        mine = (T.maps(fin)[1] or {}).get("wear") or {}
+        for k, v in mine.items():
+            amount[k] = amount.get(k, 1.0) * float(v)
+    return amount
 
 
 def finish_of(name, book):
@@ -188,8 +213,8 @@ def rebuild(mat, book, wear_img):
     nt.links.new(bs.outputs[0], out.inputs["Surface"])
     uv = nb.uv("UVMap")
     pnrm = None                                         # a shelf set's normal map, when it has one
-    W = F.WEAR.get(fin if fin in F.WEAR else ("render" if fin.startswith("pbr/") else "plain"))
-    amount = (book.get("wear") or {})
+    W = F.WEAR[wear_kind(fin, slot)]
+    amount = wear_amount(fin, book)
     if fin == "glow":
         c = col
         if vc:                                # the windows' own colours (lit or not), on the vertices

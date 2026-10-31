@@ -75,6 +75,22 @@ look or bake from the page). The Shibuya lane is painted from its photo and rend
 shadow anywhere: the page, Blender, Godot's import step, GDSTREET checks it); the light is the user's, baked by hand
 in Godot (STREET_TEXTURING §3 has what LightmapGI and VoxelGI each need from the street).
 
+**Then the PBR sets** (2026-10-31, afternoon; DECISIONS): the user's `pbrs` branch merged (37 ambientCG sets, CC0, 1K,
+in git at `pbr/<category>/<set>`, each with its real size and a label in its meta.json; the shelf reads them after
+assets/pbr). The street paint page's materials are those sets by category (the first library, made in code, folded
+away), and **the brush** tunes one (tint, brightness, contrast, saturation, hue, fade, roughness, relief, size, turn)
+and **layers** over it: another set in soft patches or by its own mask, the street's decals scattered over each
+repeat, and the bake's wear per surface (grime, streaks, edges, damp). A tuned look is an object in the street's
+`look` that `storykit/pbrmix.py` makes into a tileable set of its own (`pbr/_made/<hash>`, not in git; one function,
+so the page, Blender and Godot match), and STREET checks every look through it. The Shibuya lane is repainted with
+them, tinted to the colours the earlier calibration found: `docs/godot_sheets/2026-10-31_shibuya_pbr.jpg` (the photo,
+the procedural render, the PBR one; close-ups of the shop, the kiosk and the road). Up close the road and pavers
+read real; from the photo's distance the frame is still ruled by the light and the street's clutter. **GDSTREET** now
+drops a body a person's size on the roads and pavements (it stands there) and walks it at a building's front (it
+stops at the wall). **Next, if wanted** (ask first): the street's light by the user in Godot, more of the photo's
+clutter (cables, AC units, signs), more sets (tiles, siding, glass), a set per material in the street builder's own
+inspector with the brush.
+
 **What could come next** (ask first): the user's verdict on the match, the town and the motel; more references; the
 export placing an inside's level by itself (today a marker; the set's level dropped there by hand); a two-storey
 interior (stairs inside the set); foliage when the user wants it; steps and retaining walls on a slope; a grade in the

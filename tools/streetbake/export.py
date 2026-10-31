@@ -41,9 +41,9 @@ def _img(path, colour=True):
     return im
 
 
-def wear_params(fin, book):
-    W = F.WEAR.get(fin, F.WEAR["plain"])
-    amount = book.get("wear") or {}
+def wear_params(fin, book, slot="wall"):
+    W = F.WEAR[S.wear_kind(fin, slot)]
+    amount = S.wear_amount(fin, book)
     (dc, d), (sc, s), (ec, e) = W["dirt"], W["streak"], W["edge"]
     hexa = lambda h: list(srgb(h)[:3]) if h != "lighter" else [0.9, 0.9, 0.9]  # noqa: E731
     return {"kind": fin, "dirt_color": hexa(dc), "dirt": d * amount.get("dirt", 1.0), "streak_color": hexa(sc),
@@ -134,7 +134,7 @@ def material(mat, info, book, wear_img, kept):
     ao, _, _ = nb.sepc(tw.outputs["Color"])
     go = gltf_output(nb)
     nb.put(ao, go.inputs["Occlusion"])
-    mat["hs_wear"] = wear_params(kind if kind in F.WEAR else "plain", book)
+    mat["hs_wear"] = wear_params(fin if fin.startswith("pbr/") else kind if kind in F.WEAR else "plain", book, slot)
     return kind
 
 

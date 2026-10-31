@@ -81,7 +81,14 @@ On the 3090, Cycles uses OptiX for the bakes and the renders.
 
 ## 2. Procedural or PBR
 
-**Procedural, the default** (`tools/streetbake/finishes.py`):
+**PBR sets, the materials now** (DECISIONS 2026-10-31, afternoon: "without PBRs we can't achieve the fake
+photorealistic look"): a surface painted in the street paint page wears one of the project's sets (`pbr/`, ambientCG's,
+at its real size), tinted and layered there (STREET_PAINT §1, §3b). A tuned look is a set of its own the bake reads
+like any other (`pbr/_made/<hash>`, made by `storykit/pbrmix.py` before Blender starts, found by its material's name
+`street_<slot>_pbr_made_<hash>`); it wears its slot's wear (asphalt as asphalt, a wall as render), times its own wear
+layers. The finishes below stay for every surface nobody painted, and for glass.
+
+**Procedural, under what isn't painted** (`tools/streetbake/finishes.py`):
 - Each finish is a node group read in the street's own UVs, which are metres (STREET_BUILDER §5). You can open it
   in Blender's shader editor and change it.
 - Its noise is read on a flat torus of the finish's period, and its bricks number themselves round the period, so a
@@ -186,8 +193,9 @@ many cheaply).
   With `--godot`, GDSTREET then runs on it with the plugin. About a minute. It needs Blender (on the PATH, or
   `python tools/retarget.py setup`) and the desk's server for the street's .glb.
 - `python tools/godot/street_check.py --glb PATH --plugin --shot ID`: **GDSTREET** on a baked .glb, with the
-  plugin's import step checked (the street shader on the surfaces, the paint and decals shadowless) and the street
-  pictured through a shot.
+  plugin's import step checked (the street shader on the surfaces, the paint and decals shadowless), a body a person's
+  size dropped on the roads and pavements (it must stand there, not fall through) and walked at a building's front (it
+  must stop at the wall), and the street pictured through a shot.
 
 ## 7. Limits and what's next
 

@@ -2,6 +2,22 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-31, afternoon (the user, with their PBR sets)
+
+- **The materials are PBR sets**: "I realise without PBRs we can't achieve the fake photorealistic look, I pushed up a
+  branch for you to merge into this one called pbrs, implement these PBRs into the paint bucket style". Merged: 37
+  ambientCG sets (CC0, 1K) in git at `pbr/<category>/<set>`, the shelf reads them, the paint page's library is them
+  by category (the procedural library folded away), each with its real size in its meta.json (ASSETS §6).
+- **Layers over them**: "come up with a layering tool system where we could layer some of the stuff you made with the
+  PBRs too (mainly decals, added wear etc), the actual materials should be PBRs". A look is a set with layers: another
+  set over it (in patches or by its own mask, its colour, shine or relief) and the bake's wear per surface (grime,
+  streaks, edges, damp); decals lie over any of it (STREET_PAINT §3b).
+- **Tint controls**: "see if we can modify the tint of the colour (fade it out, make it more contrast etc)". Tint,
+  brightness, contrast, saturation, hue, fade, roughness, relief, size and turn, all made into a set of its own by one
+  function, so the page, Blender and Godot match.
+- **The 1:1 photo again, with PBRs**: "re-create the 1:1 image we've been using using the PBRs to check how much more
+  realistic it looks (pick the appropriate PBRs that match roughly the actual colour)".
+
 ## 2026-10-31, late morning (the user, on the research, the road and the light)
 
 - **The light is the user's, baked by hand in Godot**: first "I don't think I want to use LightmapGI, I will want the

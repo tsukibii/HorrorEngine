@@ -4,14 +4,47 @@
  "about": "A one-way lane in Shibuya at the blue hour, after the user's first reference (2026-10-30): its shot 'photo' frames it as the picture does.",
  "time": "dusk",
  "look": {
-  "asphalt": "pbr/Procedural/jp_asphalt_new",
-  "pavement": "pbr/Procedural/jp_pavers_grey",
-  "kerb": "pbr/Procedural/jp_kerb",
+  "asphalt": {
+   "set": "pbr/road/Road013A_1K-PNG",
+   "layers": [
+    {
+     "wear": "damp",
+     "amount": 1.3
+    }
+   ]
+  },
+  "pavement": {
+   "set": "pbr/concrete/Concrete010_1K-PNG",
+   "tint": "#908e89",
+   "layers": [
+    {
+     "wear": "grime",
+     "amount": 1.4
+    }
+   ]
+  },
+  "kerb": {
+   "set": "pbr/concrete/Concrete006_1K-PNG",
+   "tint": "#9c9993"
+  },
   "glass": "pbr/Procedural/jp_glass",
-  "frame": "pbr/Procedural/jp_aluminium",
-  "steel": "pbr/Procedural/jp_steel_grey",
-  "roof_flat": "pbr/Procedural/jp_roof_coating",
-  "rail": "pbr/Procedural/jp_steel_white"
+  "frame": {
+   "set": "pbr/metal/Metal063_1K-PNG",
+   "tint": "#bbbec0",
+   "tint_amount": 0.8
+  },
+  "steel": {
+   "set": "pbr/building/Paint005_1K-PNG",
+   "tint": "#7f8a82"
+  },
+  "rail": {
+   "set": "pbr/building/Paint005_1K-PNG",
+   "tint": "#d7d7d2"
+  },
+  "roof_flat": {
+   "set": "pbr/concrete/Concrete032_1K-PNG",
+   "tint": "#838981"
+  }
  },
  "roads": [
   {
@@ -111,11 +144,43 @@
    "fh": 3.4,
    "seed": 3,
    "look": {
-    "wall": "pbr/Procedural/jp_precast_pink",
-    "trim": "pbr/Procedural/jp_precast_pink",
+    "wall": {
+     "set": "pbr/concrete/Concrete027_1K-PNG",
+     "tint": "#c7a99b",
+     "layers": [
+      {
+       "wear": "streaks",
+       "amount": 1.4
+      },
+      {
+       "wear": "grime",
+       "amount": 1.2
+      }
+     ]
+    },
+    "trim": {
+     "set": "pbr/concrete/Concrete027_1K-PNG",
+     "tint": "#c7a99b",
+     "layers": [
+      {
+       "wear": "streaks",
+       "amount": 1.4
+      },
+      {
+       "wear": "grime",
+       "amount": 1.2
+      }
+     ]
+    },
     "shop": "#ff9f74",
-    "wall2": "pbr/Procedural/jp_granite_black",
-    "roof_flat": "pbr/Procedural/jp_roof_coating"
+    "wall2": {
+     "set": "pbr/building/black marble",
+     "tint": "#31302e"
+    },
+    "roof_flat": {
+     "set": "pbr/concrete/Concrete032_1K-PNG",
+     "tint": "#838981"
+    }
    },
    "faces": {
     "front": {
@@ -203,9 +268,31 @@
    "fh": 2.75,
    "seed": 5,
    "look": {
-    "wall": "pbr/Procedural/jp_steel_white",
-    "tiles": "pbr/Procedural/jp_galvalume",
-    "trim": "pbr/Procedural/jp_steel_grey"
+    "wall": {
+     "set": "pbr/wall/Plaster001_1K-PNG",
+     "tint": "#d7d7d2",
+     "layers": [
+      {
+       "set": "pbr/building/black marble",
+       "mask": "own",
+       "affects": "shine",
+       "amount": 0.6
+      },
+      {
+       "wear": "grime",
+       "amount": 1.6
+      }
+     ]
+    },
+    "tiles": {
+     "set": "pbr/roofing_tiles/RoofingTiles010_1K-PNG",
+     "tint": "#45484a",
+     "tint_amount": 0.85
+    },
+    "trim": {
+     "set": "pbr/building/Paint005_1K-PNG",
+     "tint": "#7f8a82"
+    }
    },
    "faces": {
     "front": {
@@ -266,9 +353,21 @@
    "fh": 3.2,
    "seed": 11,
    "look": {
-    "wall": "pbr/Procedural/jp_concrete_dark",
+    "wall": {
+     "set": "pbr/concrete/Concrete029_1K-PNG",
+     "tint": "#7e7c76",
+     "layers": [
+      {
+       "wear": "streaks",
+       "amount": 1.3
+      }
+     ]
+    },
     "shop": "#c9825f",
-    "wall2": "pbr/Procedural/jp_granite_black"
+    "wall2": {
+     "set": "pbr/building/black marble",
+     "tint": "#31302e"
+    }
    },
    "faces": {
     "front": {
@@ -348,9 +447,21 @@
    "fh": 3.05,
    "seed": 12,
    "look": {
-    "wall": "pbr/Procedural/jp_tile45_white",
+    "wall": {
+     "set": "pbr/concrete/Concrete006_1K-PNG",
+     "tint": "#d8d3cb",
+     "layers": [
+      {
+       "wear": "streaks",
+       "amount": 1.2
+      }
+     ]
+    },
     "shop": "#c9825f",
-    "wall2": "pbr/Procedural/jp_tile45_grey"
+    "wall2": {
+     "set": "pbr/concrete/Concrete010_1K-PNG",
+     "tint": "#8e8d89"
+    }
    },
    "faces": {
     "front": {
@@ -431,9 +542,21 @@
    "fh": 3,
    "seed": 13,
    "look": {
-    "wall": "pbr/Procedural/jp_mortar_grey",
+    "wall": {
+     "set": "pbr/wall/Plaster001_1K-PNG",
+     "tint": "#a6a29a",
+     "layers": [
+      {
+       "wear": "streaks",
+       "amount": 1.2
+      }
+     ]
+    },
     "shop": "#c9825f",
-    "wall2": "pbr/Procedural/jp_steel_grey"
+    "wall2": {
+     "set": "pbr/building/Paint005_1K-PNG",
+     "tint": "#7f8a82"
+    }
    },
    "faces": {
     "front": {
@@ -496,9 +619,21 @@
    "fh": 2.55,
    "seed": 14,
    "look": {
-    "wall": "pbr/Procedural/jp_tile45_beige",
+    "wall": {
+     "set": "pbr/concrete/Concrete012_1K-PNG",
+     "tint": "#bfae96",
+     "layers": [
+      {
+       "wear": "streaks",
+       "amount": 1.2
+      }
+     ]
+    },
     "shop": "#c9825f",
-    "wall2": "pbr/Procedural/jp_granite_black"
+    "wall2": {
+     "set": "pbr/building/black marble",
+     "tint": "#31302e"
+    }
    },
    "faces": {
     "front": {
@@ -599,9 +734,15 @@
    "fh": 3.1,
    "seed": 15,
    "look": {
-    "wall": "pbr/Procedural/jp_alc",
+    "wall": {
+     "set": "pbr/concrete/Concrete021_1K-PNG",
+     "tint": "#c2beb4"
+    },
     "shop": "#c9825f",
-    "wall2": "pbr/Procedural/jp_concrete_dark"
+    "wall2": {
+     "set": "pbr/concrete/Concrete029_1K-PNG",
+     "tint": "#7e7c76"
+    }
    },
    "faces": {
     "front": {
@@ -711,7 +852,7 @@
    "pose": "walk",
    "look": {
     "cloth": "#8a3c3c",
-    "cloth2": "#222"
+    "cloth2": "#222222"
    }
   },
   {
