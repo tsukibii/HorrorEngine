@@ -10,6 +10,7 @@ import math
 
 import numpy as np
 
+from .. import designs
 from .. import finish as FN
 from .. import mesh as M
 from .. import noise as N
@@ -133,10 +134,15 @@ def make(spec, th):
         if kind == "house":
             for nm in ("top", "bottom"):
                 f = fr[nm]
-                # the warding grooves along the blade (its relief) and a maker's mark on the bow
+                # the warding grooves along the blade (its relief) and a maker's mark on the bow; the bottom face is
+                # mapped mirrored (it reads right from below), so along it the blade starts at its left
+                top = nm == "top"
                 for gy, gw in ((0.5, 0.8), (-1.6, 0.7)):
-                    f.rect(f.W * 0.38, f.H / 2 + gy * (1 if nm == "top" else -1), f.W * 0.55, gw, height=-0.25, add_height=True, alpha=1.0)
-                f.text(spec.get("mark", "KEYWAY"), (f.W * 0.17, f.H * 0.18), 1.6, font="archivo", height=-0.04, add_height=True)
+                    f.rect(f.W * (0.38 if top else 0.07), f.H / 2 + gy * (1 if top else -1), f.W * 0.55, gw, height=-0.25, add_height=True, alpha=1.0)
+                mark, mx = spec.get("mark", "KEYWAY"), f.W * (0.17 if top else 0.83)
+                f.slot("mark", designs.text_box(mark, (mx, f.H * 0.18), 1.6, font="archivo"),
+                       lambda: f.text(mark, (mx, f.H * 0.18), 1.6, font="archivo", height=-0.04, add_height=True),
+                       kind="logo", about="the maker's mark stamped into the bow", height=-0.04, add_height=True, relief=True)
             if tag:
                 f = fr["top"]
                 f.ellipse(f.W * 0.17, f.H / 2, 12.5, color=tag, rough=0.5, metal=0.0)

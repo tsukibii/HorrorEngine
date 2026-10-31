@@ -353,7 +353,10 @@ def make(spec, th):
             f = fr["bottom"]
             for k, rr in enumerate(np.linspace(8, f.W / 2 - 4, 9)):
                 f.ring(f.W / 2, f.H / 2, rr, 0.5, color="#a8acb0", rough=0.3, metal=1.0, height=-0.01, add_height=True)
-            f.text("18-10  INDUCTION", (f.W / 2, f.H / 2 - 14), 3.2, font="archivo", color="#8a8e92", rough=0.3, metal=1.0, height=-0.012, alpha=0.8)
+            mark = "18-10  INDUCTION"
+            f.slot("mark", designs.text_box(mark, (f.W / 2, f.H / 2 - 14), 3.2, font="archivo"),
+                   lambda: f.text(mark, (f.W / 2, f.H / 2 - 14), 3.2, font="archivo", color="#8a8e92", rough=0.3, metal=1.0, height=-0.012, alpha=0.8),
+                   kind="stamp", about="the steel and INDUCTION stamped on its base", rough=0.3, metal=1.0, height=-0.012, alpha=0.8)
             tint = float(spec.get("tint", 0.6))
             if tint > 0:
                 heat_tint(fr["base" if "base" in fr else "out"], tint, seed + 5, top=1.0)
@@ -387,13 +390,16 @@ def make(spec, th):
                 f = fr["out"]
                 cx, cy = f.W / 2, f.H * 0.55
                 red = spec.get("decal_color", "#c0392b")
-                for k in range(5):
-                    a = 2 * math.pi * k / 5 + math.pi / 2
-                    f.ellipse(cx + math.cos(a) * 9, cy + math.sin(a) * 9, 8, 5, rot=math.degrees(a), color=red, rough=0.12)
-                f.ellipse(cx, cy, 4, color="#e8b830", rough=0.12)
-                for sxl in (-1, 1):
-                    f.ellipse(cx + sxl * 22, cy - 12, 9, 3.2, rot=sxl * 25, color="#3d7a3a", rough=0.12)
-                    f.ellipse(cx + sxl * 30, cy + 4, 4.5, color=red, rough=0.12, alpha=0.9)
+
+                def flower():
+                    for k in range(5):
+                        a = 2 * math.pi * k / 5 + math.pi / 2
+                        f.ellipse(cx + math.cos(a) * 9, cy + math.sin(a) * 9, 8, 5, rot=math.degrees(a), color=red, rough=0.12)
+                    f.ellipse(cx, cy, 4, color="#e8b830", rough=0.12)
+                    for sxl in (-1, 1):
+                        f.ellipse(cx + sxl * 22, cy - 12, 9, 3.2, rot=sxl * 25, color="#3d7a3a", rough=0.12)
+                        f.ellipse(cx + sxl * 30, cy + 4, 4.5, color=red, rough=0.12, alpha=0.9)
+                f.slot("flower", (cx, cy + 0.1, 69.6, 34.4), flower, kind="picture", about="the red flower on its side", rough=0.12)
         elif kind == "frypan":
             outside = spec.get("outside", "#3a3b3d")
             for nm in ("out", "rim"):

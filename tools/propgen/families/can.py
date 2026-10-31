@@ -159,7 +159,10 @@ def make(spec, th):
         c = f.W / 2
         for rr in np.arange(2, 25, 0.6):
             f.ring(c, c, rr * k, 0.12, height=0.0015, alpha=0.5)
-        f.text("RECYCLE  ·  ALUMINIUM  ·  RECYCLE", (c, c + 19.5 * k), 1.5 * k, font="archivo", arc=19.5 * k, height=0.03, add_height=True)
+        words = "RECYCLE  ·  ALUMINIUM  ·  RECYCLE"
+        f.slot("words", designs.text_box(words, (c, c + 19.5 * k), 1.5 * k, font="archivo", arc=19.5 * k),
+               lambda: f.text(words, (c, c + 19.5 * k), 1.5 * k, font="archivo", arc=19.5 * k, height=0.03, add_height=True),
+               kind="text", about="the words pressed round the lid", height=0.03, add_height=True, relief=True)
         if opened:
             hole = _opening(k) + c
             f.poly(hole, color="#121212", rough=0.6, metal=0.2)

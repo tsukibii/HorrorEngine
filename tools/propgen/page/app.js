@@ -340,35 +340,56 @@ function setPicture(id, val, opts) {
   changed();
   renderTexture();
 }
+// the key of `pictures` that swaps a slot: its own id, else a key with * or ? that matches it (as Frame.slot reads them)
+function slotKey(sl) {
+  const pics = S.spec.pictures || {};
+  if (sl.id in pics) return sl.id;
+  const re = k => new RegExp("^" + k.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".") + "$");
+  return Object.keys(pics).find(k => /[*?]/.test(k) && re(k).test(sl.id)) || null;
+}
+// one picture for every slot of a name ("*.logo": the twelve butts' brands at once), or back to this one alone
+function groupSlot(sl, all, like, on) {
+  const pics = S.spec.pictures || (S.spec.pictures = {}), key = slotKey(sl), val = key ? pics[key] : undefined;
+  for (const x of like) delete pics[x.id];
+  if (on) pics[all] = val; else { delete pics[all]; pics[sl.id] = val; }
+  changed();
+  renderTexture();
+}
 function slotRows() {
   const M = S.meta, box = el("div", { class: "slots" });
   const pics = S.spec.pictures || {};
   for (const sl of M.slots || []) {
     const isl = M.islands[sl.island];
     if (!isl) continue;
-    const cur = pics[sl.id], p = cur && typeof cur === "object" ? cur : typeof cur === "string" ? { image: cur } : null;
-    const sel = el("select", { onchange: () => setPicture(sl.id, sel.value) },
+    const key = slotKey(sl), at = key || sl.id;
+    const cur = key ? pics[key] : undefined, p = cur && typeof cur === "object" ? cur : typeof cur === "string" ? { image: cur } : null;
+    const like = (M.slots || []).filter(x => x.name === sl.name), all = like.length > 1 ? `*.${sl.name}` : null;
+    const sel = el("select", { onchange: () => setPicture(at, sel.value) },
       el("option", { value: "" }, "the generator's own"), el("option", { value: "off" }, "nothing there"),
       ...S.pics.map(x => el("option", { value: x.path }, x.name)));
     if (p && !S.pics.some(x => x.path === p.image)) sel.append(el("option", { value: p.image }, p.image));
     sel.value = cur === false ? "off" : p ? p.image : "";
     const cut = ["logo", "flourish", "stamp", "text"].includes(sl.kind);
     const round = isl.wrap && sl.box[2] >= isl.mm[0] * 0.95;
-    const what = (cut ? "PNG, transparent round it" : "PNG or JPEG") + (round || sl.kind === "pattern" ? ", seamless left to right" : "");
+    const what = sl.relief ? "pressed in or raised, no colour: where it's opaque, or dark on white" :
+      (cut ? "PNG, transparent round it" : "PNG or JPEG") + (round || sl.kind === "pattern" ? ", seamless left to right" : "");
     const tmpl = el("a", { class: "tmpl", href: "#", title: "The generator's own picture there, at the size it wants: paint over it", onclick: e => {
       e.preventDefault();
       slotCrop(sl, 2).ready.then(c => { const a = el("a", { href: c.toDataURL("image/png"), download: `${M.name}_${sl.id.replace(".", "_")}.png` }); document.body.append(a); a.click(); a.remove(); });
     } }, "template");
     const num = (k, step, dflt) => el("label", { class: "dim" }, k + " ", el("input", { type: "number", step, value: p && p[k] !== undefined ? p[k] : dflt,
-      onchange: e => setPicture(sl.id, p.image, { [k]: parseFloat(e.target.value) }) }));
+      onchange: e => setPicture(at, p.image, { [k]: parseFloat(e.target.value) }) }));
     box.append(el("div", { class: "slot", "data-slot": sl.id },
       p ? el("img", { src: picUrl(p.image) || "", alt: "" }) : slotCrop(sl),
       el("div", { class: "who" }, el("b", {}, sl.id), el("span", { class: "dim" }, ` ${sl.kind}: ${sl.about || ""}`),
         el("div", {}, sizeNote(sl.island, sl.box[2], sl.box[3], what), " ", tmpl)),
       sel,
-      p ? el("select", { onchange: e => setPicture(sl.id, p.image, { fit: e.target.value }) }, ["contain", "cover", "stretch"].map(f => el("option", { value: f, selected: (p.fit || "contain") === f }, f))) : null,
+      all && key !== null ? el("label", { class: "dim", title: `one picture for every ${sl.name}: ${like.map(x => x.id).join(", ")}` },
+        el("input", { type: "checkbox", checked: key === all, onchange: e => groupSlot(sl, all, like, e.target.checked) }), ` all ${like.length}`) : null,
+      p ? el("select", { onchange: e => setPicture(at, p.image, { fit: e.target.value }) }, ["contain", "cover", "stretch"].map(f =>
+        el("option", { value: f, selected: (p.fit || (sl.kind === "pattern" ? "cover" : "contain")) === f }, f))) : null,
       p ? num("scale", 0.05, 1) : null,
-      p ? el("label", { class: "dim" }, "tint ", el("input", { type: "color", value: p.tint || "#ffffff", onchange: e => setPicture(sl.id, p.image, { tint: e.target.value }) })) : null));
+      p && !sl.relief ? el("label", { class: "dim" }, "tint ", el("input", { type: "color", value: p.tint || "#ffffff", onchange: e => setPicture(at, p.image, { tint: e.target.value }) })) : null));
   }
   return box;
 }

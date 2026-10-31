@@ -167,8 +167,8 @@ def wara(spec, th):
                 f.stripes(2.0, 0.5, angle=55, height=0.08)
         f = fr["slip"]
         designs.paper_base(f, "#efe8d6", fibres=1.6, seed=seed, tint="#c9a85e")
-        designs.tate(f, name, f.W / 2, f.H - 6, min(8.5, (f.H - 12) / max(len(name), 1) / 1.1), N.rng(seed, "name"), jitter=0.07,
-                     color="#17120f", rough=0.62, height=0.003)
+        designs.tate_slot(f, "name", name, f.W / 2, f.H - 6, min(8.5, (f.H - 12) / max(len(name), 1) / 1.1), N.rng(seed, "name"),
+                          "the name brushed on the slip", jitter=0.07, color="#17120f", rough=0.62, height=0.003)
         designs.paper_base(fr["slip_back"], "#efe8d6", fibres=1.6, seed=seed + 1, tint="#c9a85e")
         if nails:
             FN.metal(fr["nail"], "cast", "iron", seed + 5, age="rust", age_amount=0.75)
@@ -214,49 +214,70 @@ def kokeshi(spec, th):
             fr[nm].fill(color=wood, rough=0.38, alpha=0.45)
         f = fr["body"]
         W, H = f.W, f.H
-        for y, c, w in ((H - 6, red, 1.6), (H - 9.5, green, 1.0), (H - 12.5, red, 1.6), (5, red, 1.8), (8.5, black, 0.8), (11, red, 1.2)):
-            f.rect(0, y - w / 2, W, w, color=c, **ink)
+
+        def rings(bands):
+            for y, c, w in bands:
+                f.rect(0, y - w / 2, W, w, color=c, **ink)
+        f.slot("rings_top", (W / 2, H - 9.25, W, 8.5), lambda: rings(((H - 6, red, 1.6), (H - 9.5, green, 1.0), (H - 12.5, red, 1.6))),
+               kind="flourish", about="the lathe's rings round its shoulder", **ink)
+        f.slot("rings_foot", (W / 2, 7.85, W, 7.9), lambda: rings(((5, red, 1.8), (8.5, black, 0.8), (11, red, 1.2))),
+               kind="flourish", about="the lathe's rings round its foot", **ink)
         # chrysanthemums down the front (the band's middle is the front), smaller ones round the back
-        for cx, cy, R in ((W / 2, H * 0.58, 13 * s), (W / 2 - 3, H * 0.3, 9 * s), (W / 2 + 26 * s, H * 0.44, 7 * s), (W / 2 - 27 * s, H * 0.45, 7 * s),
-                          (5, H * 0.5, 6 * s), (W - 5, H * 0.52, 6 * s)):
-            n = 12
-            for k in range(n):
-                ang = 2 * math.pi * k / n + rng.uniform(-0.05, 0.05)
-                f.ellipse(cx + math.cos(ang) * R * 0.55, cy + math.sin(ang) * R * 0.55, R * 0.42, R * 0.14, rot=math.degrees(ang), color=red, **ink)
-            f.ellipse(cx, cy, R * 0.22, color=black, **ink)
-            for k in range(2):
-                ang = math.radians(-60 - 60 * k + rng.uniform(-15, 15))
-                f.ellipse(cx + math.cos(ang) * R * 1.25, cy + math.sin(ang) * R * 1.25, R * 0.5, R * 0.18, rot=math.degrees(ang) + 30, color=green, **ink)
+        flowers = ((W / 2, H * 0.58, 13 * s), (W / 2 - 3, H * 0.3, 9 * s), (W / 2 + 26 * s, H * 0.44, 7 * s), (W / 2 - 27 * s, H * 0.45, 7 * s),
+                   (5, H * 0.5, 6 * s), (W - 5, H * 0.52, 6 * s))
+
+        def chrysanthemums():
+            for cx, cy, R in flowers:
+                n = 12
+                for k in range(n):
+                    ang = 2 * math.pi * k / n + rng.uniform(-0.05, 0.05)
+                    f.ellipse(cx + math.cos(ang) * R * 0.55, cy + math.sin(ang) * R * 0.55, R * 0.42, R * 0.14, rot=math.degrees(ang), color=red, **ink)
+                f.ellipse(cx, cy, R * 0.22, color=black, **ink)
+                for k in range(2):
+                    ang = math.radians(-60 - 60 * k + rng.uniform(-15, 15))
+                    f.ellipse(cx + math.cos(ang) * R * 1.25, cy + math.sin(ang) * R * 1.25, R * 0.5, R * 0.18, rot=math.degrees(ang) + 30, color=green, **ink)
+        y0, y1 = min(cy - 1.8 * R for cx, cy, R in flowers), max(cy + R for cx, cy, R in flowers)    # its leaves below, its petals round
+        f.slot("flowers", (W / 2, (y0 + y1) / 2, W, y1 - y0), chrysanthemums, kind="flourish",
+               about="the chrysanthemums painted round its body", **ink)
         f = fr["head"]
         W, H = f.W, f.H
         cx = W / 2
         ye = H * 0.42
-        # the black bob and its fringe, the side locks, red ornaments in the hair
-        fringe = [(cx + d, H * 0.62 + 0.8 * math.sin(d * 0.9)) for d in np.linspace(14 * s, -14 * s, 9)]
-        hair = [(-1, H + 2), (W + 1, H + 2), (W + 1, H * 0.2), (cx + 30 * s, H * 0.2), (cx + 19 * s, H * 0.3), (cx + 16 * s, H * 0.55),
-                (cx + 14 * s, H * 0.62)] + fringe + [(cx - 14 * s, H * 0.62), (cx - 16 * s, H * 0.55), (cx - 19 * s, H * 0.3), (cx - 30 * s, H * 0.2),
-                                                    (-1, H * 0.2)]
-        f.poly(hair, color=black, rough=0.3, height=0.004)
-        for sx in (-1, 1):
-            f.poly([(cx + sx * 16 * s, H * 0.6), (cx + sx * 19.5 * s, H * 0.58), (cx + sx * 18 * s, H * 0.26), (cx + sx * 15.5 * s, H * 0.3)], color=black,
-                   rough=0.3, height=0.004)
-            for k in range(5):
-                ang = 2 * math.pi * k / 5
-                f.ellipse(cx + sx * 24 * s + math.cos(ang) * 2.2 * s, H * 0.72 + math.sin(ang) * 2.2 * s, 1.8 * s, color=red, **ink)
-            f.ellipse(cx + sx * 24 * s, H * 0.72, 1.0 * s, color="#e8c14a", **ink)
-            ex = cx + sx * 8.5 * s
-            # brows, then the eyes: a lid's stroke and the pupil under it
-            f.line([(ex - 4.5 * s, ye + 7.5 * s), (ex, ye + 9 * s), (ex + 4.5 * s, ye + 7.5 * s)], 0.7 * s, color=black, **ink)
-            if eyes == "sleepy":
-                f.line([(ex - 4.6 * s, ye + 0.4 * s), (ex - 1.5 * s, ye + 1.6 * s), (ex + 1.5 * s, ye + 1.6 * s), (ex + 4.6 * s, ye + 0.4 * s)], 0.9 * s,
-                       color=black, **ink)
-                f.ellipse(ex, ye + 0.6 * s, 1.9 * s, 1.1 * s, color=black, **ink)
-            else:
-                f.ellipse(ex, ye + 0.8 * s, 3.2 * s, 2.1 * s, color=black, **ink)
-                f.ellipse(ex + 0.8 * s, ye + 1.3 * s, 0.7 * s, color="#f2ece0", **ink)
-        f.line([(cx, ye - 3 * s), (cx - 0.6 * s, ye - 6 * s), (cx + 0.5 * s, ye - 6.6 * s)], 0.6 * s, color=black, **ink)
-        f.ellipse(cx, ye - 10.3 * s, 2.0 * s, 0.9 * s, color=red, **ink)
-        f.ellipse(cx, ye - 11.6 * s, 1.5 * s, 0.8 * s, color=red, **ink)
+
+        def hair():
+            # the black bob and its fringe, the side locks, red ornaments in the hair
+            fringe = [(cx + d, H * 0.62 + 0.8 * math.sin(d * 0.9)) for d in np.linspace(14 * s, -14 * s, 9)]
+            bob = [(-1, H + 2), (W + 1, H + 2), (W + 1, H * 0.2), (cx + 30 * s, H * 0.2), (cx + 19 * s, H * 0.3), (cx + 16 * s, H * 0.55),
+                   (cx + 14 * s, H * 0.62)] + fringe + [(cx - 14 * s, H * 0.62), (cx - 16 * s, H * 0.55), (cx - 19 * s, H * 0.3), (cx - 30 * s, H * 0.2),
+                                                       (-1, H * 0.2)]
+            f.poly(bob, color=black, rough=0.3, height=0.004)
+            for sx in (-1, 1):
+                f.poly([(cx + sx * 16 * s, H * 0.6), (cx + sx * 19.5 * s, H * 0.58), (cx + sx * 18 * s, H * 0.26), (cx + sx * 15.5 * s, H * 0.3)], color=black,
+                       rough=0.3, height=0.004)
+                for k in range(5):
+                    ang = 2 * math.pi * k / 5
+                    f.ellipse(cx + sx * 24 * s + math.cos(ang) * 2.2 * s, H * 0.72 + math.sin(ang) * 2.2 * s, 1.8 * s, color=red, **ink)
+                f.ellipse(cx + sx * 24 * s, H * 0.72, 1.0 * s, color="#e8c14a", **ink)
+        f.slot("hair", (W / 2, H * 0.6, W, H * 0.8), hair, kind="picture",
+               about="the black bob, its fringe and side locks, the red flowers in it", rough=0.3, height=0.004)
+
+        def face():
+            for sx in (-1, 1):
+                ex = cx + sx * 8.5 * s
+                # brows, then the eyes: a lid's stroke and the pupil under it
+                f.line([(ex - 4.5 * s, ye + 7.5 * s), (ex, ye + 9 * s), (ex + 4.5 * s, ye + 7.5 * s)], 0.7 * s, color=black, **ink)
+                if eyes == "sleepy":
+                    f.line([(ex - 4.6 * s, ye + 0.4 * s), (ex - 1.5 * s, ye + 1.6 * s), (ex + 1.5 * s, ye + 1.6 * s), (ex + 4.6 * s, ye + 0.4 * s)], 0.9 * s,
+                           color=black, **ink)
+                    f.ellipse(ex, ye + 0.6 * s, 1.9 * s, 1.1 * s, color=black, **ink)
+                else:
+                    f.ellipse(ex, ye + 0.8 * s, 3.2 * s, 2.1 * s, color=black, **ink)
+                    f.ellipse(ex + 0.8 * s, ye + 1.3 * s, 0.7 * s, color="#f2ece0", **ink)
+            f.line([(cx, ye - 3 * s), (cx - 0.6 * s, ye - 6 * s), (cx + 0.5 * s, ye - 6.6 * s)], 0.6 * s, color=black, **ink)
+            f.ellipse(cx, ye - 10.3 * s, 2.0 * s, 0.9 * s, color=red, **ink)
+            f.ellipse(cx, ye - 11.6 * s, 1.5 * s, 0.8 * s, color=red, **ink)
+        f.slot("face", (cx, ye - 1.5 * s, 27.4 * s + 0.6, 21.8 * s + 0.6), face, kind="picture",
+               about="its face: the brows, the eyes, the nose and the little red mouth", **ink)
 
     th.paint = paint
     return th

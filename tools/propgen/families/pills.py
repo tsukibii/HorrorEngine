@@ -187,9 +187,14 @@ def make(spec, th):
         f.fill(color=capc, rough=0.4)
         c = f.W / 2
         f.ring(c, c, 14.5, 0.6, height=0.12)
-        f.text(spec.get("cap_text", "PUSH DOWN & TURN"), (c, c + 10.0), 2.3, font="archivo", arc=10.0, height=0.12, add_height=True)
-        f.poly([(c - 5, c - 6), (c + 3, c - 6), (c + 3, c - 7.8), (c + 6.5, c - 4.8), (c + 3, c - 1.8), (c + 3, c - 3.6), (c - 5, c - 3.6)],
-               height=0.12, add_height=True)
+        words = spec.get("cap_text", "PUSH DOWN & TURN")
+
+        def moulded():
+            f.text(words, (c, c + 10.0), 2.3, font="archivo", arc=10.0, height=0.12, add_height=True)
+            f.poly([(c - 5, c - 6), (c + 3, c - 6), (c + 3, c - 7.8), (c + 6.5, c - 4.8), (c + 3, c - 1.8), (c + 3, c - 3.6), (c - 5, c - 3.6)],
+                   height=0.12, add_height=True)
+        f.slot("print", designs.union(designs.text_box(words, (c, c + 10.0), 2.3, font="archivo", arc=10.0), (c + 0.75, c - 4.8, 12.3, 6.8)),
+               moulded, kind="text", about="PUSH DOWN & TURN and its arrow, moulded in the cap", height=0.12, add_height=True, relief=True)
         designs.draw(fr["sticker"], art, seed, "rx_label")
         designs.draw(fr["sticker_back"], {"design": "paper", "paper": "#f4f2ea"}, seed, "paper")
         c1 = spec.get("tablet_color", "#f4f2ec")

@@ -375,9 +375,10 @@ class Frame:
         self.lay_island(cov, color=col.astype(np.float32), rough=smp["rough"], metal=smp["metal"], alpha=alpha,
                         normal=n.astype(np.float32))
 
-    def image(self, path_or_array, x=0.0, y=0.0, w=None, h=None, clip=None, **props):
+    def image(self, path_or_array, x=0.0, y=0.0, w=None, h=None, clip=None, relief=False, **props):
         """A picture (an RGBA array 0-1, rows top first, or a PNG path) laid over the island's rect (x, y, w, h mm);
-        `clip` (x0, y0, x1, y1 mm) keeps it inside a box."""
+        `clip` (x0, y0, x1, y1 mm) keeps it inside a box. `relief`: only its shape pressed in or raised (the props'
+        height, no colour), where it's opaque, or where it's dark if it has no transparency."""
         img = read_image(path_or_array) if isinstance(path_or_array, str) else np.asarray(path_or_array, np.float32)
         w = self.W if w is None else w
         h = self.H if h is None else h
@@ -397,14 +398,19 @@ class Frame:
         bot = img[y1, x0] * (1 - tx) + img[y1, x1] * tx
         px = top * (1 - ty) + bot * ty
         a = px[..., 3] if px.shape[-1] > 3 else np.ones(px.shape[:2], np.float32)
+        if relief:
+            if img.shape[-1] < 4 or float(img[..., 3].min()) > 0.98:
+                a = 1.0 - px[..., :3] @ np.array([0.2126, 0.7152, 0.0722], np.float32)
+            self.lay_island(inside * a, **props)
+            return
         self.lay_island(inside * a, color=px[..., :3], **props)
 
     # -- a prop's own pictures, swappable (docs/PROPGEN.md §15)
-    def picture(self, pic, box, rot=0, **defaults):
+    def picture(self, pic, box, rot=0, fit="contain", **defaults):
         """A picture laid in a box (cx, cy, w, h mm): `pic` a path, or {image, fit (contain: its own shape inside the
         box, the default; cover: filling it, cut to it; stretch: to the box's shape), scale, dx, dy (mm), rot (quarter
         turns, degrees anticlockwise), flip (mirrored), tint (its colour multiplied: a one-colour logo recoloured),
-        rough, metal, alpha, height}."""
+        rough, metal, alpha, height, relief (only its shape pressed in or raised: a stamp, a moulding)}."""
         p = {"image": pic} if isinstance(pic, str) else dict(pic)
         img = read_image(p["image"])
         k = int(round(float(p.get("rot", rot)) / 90.0)) % 4
@@ -417,7 +423,7 @@ class Frame:
             img[..., :3] *= rgb(p["tint"])
         cx, cy, w, h = box
         ih, iw = img.shape[:2]
-        fit = p.get("fit", "contain")
+        fit = p.get("fit", fit)
         if fit == "stretch":
             pw, ph = w, h
         else:
@@ -427,10 +433,12 @@ class Frame:
         pw, ph = pw * z, ph * z
         x, y = cx + float(p.get("dx", 0.0)) - pw / 2, cy + float(p.get("dy", 0.0)) - ph / 2
         kw = dict(defaults)
+        kw["relief"] = bool(p.get("relief", kw.get("relief", False)))
         for key in ("rough", "metal", "alpha", "height"):
             if key in p:
                 kw[key] = float(p[key])
-        kw.setdefault("rough", 0.35)
+        if not kw["relief"]:
+            kw.setdefault("rough", 0.35)
         self.image(img, x, y, pw, ph, clip=(cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2) if fit == "cover" else None, **kw)
 
     def slot(self, name, box, draw=None, kind="logo", about="", rot=0, **props):
@@ -438,19 +446,25 @@ class Frame:
         where it is and how big), `draw()` the generator's own drawing there. The recipe's `pictures`
         {"<island>.<name>": a picture, or {image, fit, scale, dx, dy, rot, flip, tint, rough, metal, alpha, height}
         (`picture`), or false: nothing there}. `kind`: logo, picture, flourish, stamp, text or pattern; `about` what it
-        is; `props` the ink the drawing uses, the picture's too. Each slot goes into meta.json's `slots` for the page."""
+        is; `props` the ink the drawing uses, the picture's too (`relief=True`: a stamp or a moulding, whose picture is
+        only pressed in or raised). A key with a `*` or `?` swaps every slot it matches ("*.logo": all of them named
+        logo), the exact id first. Each slot goes into meta.json's `slots` for the page."""
         sid = f"{self.isl.name}.{name}"
-        pic = (getattr(self.cv, "pictures", None) or {}).get(sid)
+        pics = getattr(self.cv, "pictures", None) or {}
+        pic = pics.get(sid)
+        if pic is None:
+            import fnmatch
+            pic = next((v for k, v in pics.items() if ("*" in k or "?" in k) and fnmatch.fnmatchcase(sid, k)), None)
         cx, cy, w, h = (float(v) for v in box)
         reg = getattr(self.cv, "slots", None)
         if reg is not None and not any(r["id"] == sid for r in reg):
             reg.append({"id": sid, "island": self.isl.name, "name": name, "kind": kind, "about": about, "rot": rot,
                         "box": [round(cx - w / 2, 2), round(cy - h / 2, 2), round(w, 2), round(h, 2)],
-                        "now": "off" if pic is False else ("yours" if pic else "drawn")})
+                        "relief": bool(props.get("relief")), "now": "off" if pic is False else ("yours" if pic else "drawn")})
         if pic is False:
             return
         if pic:
-            self.picture(pic, (cx, cy, w, h), rot=rot, **props)
+            self.picture(pic, (cx, cy, w, h), rot=rot, fit="cover" if kind == "pattern" else "contain", **props)
         elif draw is not None:
             draw()
 

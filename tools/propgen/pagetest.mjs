@@ -3,8 +3,8 @@
 // props are never touched. Every recipe a card; one opened into its form and changed there; made by Blender from the
 // page, its log followed and its picture on its card; a picture dropped in and clicked onto the texture where the
 // front of the plaque is (a decal), its parts listed with the picture size each wants, a picture wrapped over the
-// whole front; a smudge off the shelf moved by a click, the decal made a flourish in each corner; made again with all
-// of it, the texture
+// whole front; its own pictures (meta.json's slots) listed with the size each wants and one swapped for yours, a smudge
+// off the shelf moved by a click, the decal made a flourish in each corner; made again with all of it, the texture
 // changed; the made prop loaded in 3D with its
 // sockets; a PBR set off the shelf picked for its material; two variations made at once; kept as a recipe of its own
 // (`from` its base and only what differs), then deleted again. Blender is needed (propgen.py's), as for PROPGEN.
@@ -135,6 +135,20 @@ try {
     if (d.fit !== "stretch" || d.island !== "front") throw new Error(JSON.stringify(d));
     return `the front wants ${m[1]} × ${m[2]} px`;
   });
+  let swapped = null;
+  await step("its own pictures listed with the size each wants; one swapped for yours", async () => {
+    const slots = (await S()).meta.slots || [];
+    if (!slots.length) throw new Error("the ema names no picture of its own (meta.json's slots)");
+    const rows = page.locator(".slot");
+    if ((await rows.count()) !== slots.length) throw new Error(`${await rows.count()} rows for ${slots.length} slots`);
+    const txt = await rows.first().textContent();
+    if (!/\d+ × \d+ px/.test(txt)) throw new Error(`no size in "${txt}"`);
+    if (!(await page.locator(".atlas rect.slotbox").count())) throw new Error("its pictures' boxes aren't drawn on the texture");
+    swapped = slots[0].id;
+    await rows.first().locator("select").first().selectOption((await S()).pics[0].path);
+    await page.waitForFunction(id => (window.__pp.spec.pictures || {})[id] === window.__pp.pics[0].path, swapped);
+    return `${slots.length}: ${slots.map(x => x.id).join(", ")}; ${swapped} wants ${txt.match(/(\d+ × \d+) px/)[1]}`;
+  });
   await step("a smudge off the shelf, moved by a click on the texture", async () => {
     await page.locator(".shelf .pic").first().click();
     await page.waitForFunction(() => (window.__pp.spec.smudges || []).length === 1);
@@ -159,6 +173,8 @@ try {
     if (!s.meta.spec.decals || s.meta.spec.decals[0].image !== s.pics[0].path) throw new Error("the decal isn't in what was made");
     if (s.meta.spec.decals[1].fit !== "stretch") throw new Error("the wrapped picture isn't in what was made");
     if (!s.meta.spec.smudges || !s.meta.spec.decals[0].corners) throw new Error("the smudge or the flourish isn't in what was made");
+    const sl = (s.meta.slots || []).find(x => x.id === swapped);
+    if (!sl || sl.now !== "yours") throw new Error(`${swapped} isn't yours in what was made: ${JSON.stringify(sl)}`);
     const a2 = sha(path.join(OUT, "ema", s.meta.textures.main[0]));
     if (a2 === albedo1) throw new Error("its texture is the same as before");
   });
@@ -228,4 +244,4 @@ if (fails.length) {
   process.exit(1);
 }
 fs.rmSync(HOME, { recursive: true, force: true });
-console.log(`PROPPAGE ok (the page: cards, a form, Blender's make and its log, a picture placed by a click, a smudge and a flourish, 3D, variations, a recipe saved and deleted; ${secs}s)`);
+console.log(`PROPPAGE ok (the page: cards, a form, Blender's make and its log, a picture placed by a click, its own pictures swapped, a smudge and a flourish, 3D, variations, a recipe saved and deleted; ${secs}s)`);

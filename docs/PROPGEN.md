@@ -561,15 +561,20 @@ Every prop takes your pictures four ways, all on the page's Texture & pictures t
 Each goes on the paint before the bake and the wear, so the folds, dents, baked detail, grime and scratches go over it.
 
 - **Its own pictures (slots).** Whatever a prop's paint draws that you'd want to swap is a slot: a brand name or logo,
-  a picture (the soda's fruit, the fox on an ema), an ornament or border, a stamp or seal, a print. Each is
-  `<island>.<name>` (`label.logo`, `front.stamp`...), listed in meta.json's `slots` with its box (mm on its island),
-  its kind (logo, picture, flourish, stamp, text, pattern) and what it is. A recipe swaps them in `pictures`:
-  `{"label.logo": "Content/Studio/Props/images/my_logo.png"}`, or `{"image": ..., "fit": "contain" | "cover" |
-  "stretch", "scale", "dx", "dy" (mm), "rot", "flip", "tint", "rough", "metal", "height"}`, or `false` for nothing
-  there. Your picture takes the drawn one's place, kept to its own shape inside the box (`contain`) unless you say
-  otherwise; `tint` recolours a one-colour logo. A design or a family adds a slot by drawing through
-  `f.slot(name, (cx, cy, w, h), draw, kind, about)` (paint.py): the drawing runs only when nothing is swapped in.
-  docs/PROPGEN_PICTURES.md lists every prop's.
+  a picture (the soda's orange slice, the torii on an ema), an ornament or border, a stamp or seal, a print, a
+  pattern. Each is `<island>.<name>` (`label.logo`, `label.fruit`, `front.seal` on an ofuda, `front.motif` on an
+  ema...), listed in meta.json's `slots` with its box (mm on its island), its kind (logo, picture, flourish, stamp,
+  text, pattern) and what it is: 116 on 50 of the recipes, docs/PROPGEN_PICTURES.md lists every prop's. A recipe swaps
+  them in `pictures`: `{"label.logo": "Content/Studio/Props/images/my_logo.png"}`, or `{"image": ..., "fit": "contain"
+  | "cover" | "stretch", "scale", "dx", "dy" (mm), "rot", "flip", "tint", "rough", "metal", "height", "relief"}`, or
+  `false` for nothing there. A key with `*` swaps every slot it matches: `"*.logo"` the twelve cigarette butts' brand
+  at once, `"*.pattern"` every printed part of a burger box. Your picture takes the drawn one's place, kept to its own
+  shape inside the box (`contain`; a pattern `cover`s its box) unless you say otherwise; `tint` recolours a one-colour
+  logo. A stamped or moulded slot (a key's or a knife's mark, a can lid's words, a cap's moulding) takes only your
+  picture's shape, pressed in or raised: where it's opaque, or where it's dark if it has no transparency. Swapping one
+  slot leaves the rest of the paint as it was. A design or a family adds a slot by drawing through
+  `f.slot(name, (cx, cy, w, h), draw, kind, about, **ink)` (paint.py; `relief=True` for a stamp): the drawing runs
+  only when nothing is swapped in; designs.py's `text_box`, `union` and `on` measure a box from what's drawn.
 - **Decals and flourishes.** `decals` (§13) put a picture anywhere on any part. A flourish is a decal repeated:
   `repeat: n` spreads n copies along the part (`along` x or y, `gap` mm between them, `mirror` every other one
   flipped), `corners: true` puts one in each corner `inset` mm in, each mirrored to face its corner (draw it for the

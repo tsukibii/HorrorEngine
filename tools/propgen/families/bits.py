@@ -128,14 +128,20 @@ def make(spec, th):
                 X, Y = f.grid()
                 f.gradient("#f3f1ea", "#1a1714", angle=90, t0=max(0.0, 1 - 4.5 / f.H), t1=1.0, rough=0.95,
                            mask=(Y > L_f).astype(np.float32))
-                f.text("· SEVEN ·", (f.W / 2, L_f + 2.2), 0.9, font="archivo", color="#9a8a6a", rough=0.85)
+                f.slot("logo", designs.text_box("· SEVEN ·", (f.W / 2, L_f + 2.2), 0.9, font="archivo"),
+                       lambda: f.text("· SEVEN ·", (f.W / 2, L_f + 2.2), 0.9, font="archivo", color="#9a8a6a", rough=0.85),
+                       about="the brand printed round it, over the filter", rough=0.85)
             else:
                 cA, cB = it["colors"]
                 f = fr[f"c{i}_top"]
                 f.fill(color=cA, rough=0.3, metal=0.7)
-                f.ring(f.W / 2, f.H / 2, 9.5, 0.7, color=cB, rough=0.3, metal=0.4)
-                f.text(["KIRIN", "ASAHI", "RAMUNE", "LAGER", "COLA", "SODA"][i % 6], (f.W / 2, f.H / 2), 3.0, font="bungee", color=cB,
-                       rough=0.3, metal=0.4, fit=15)
+
+                def printed():
+                    f.ring(f.W / 2, f.H / 2, 9.5, 0.7, color=cB, rough=0.3, metal=0.4)
+                    f.text(["HOSHI", "TSUKI", "RAMUNE", "LAGER", "COLA", "SODA"][i % 6], (f.W / 2, f.H / 2), 3.0, font="bungee", color=cB,
+                           rough=0.3, metal=0.4, fit=15)
+                f.slot("print", (f.W / 2, f.H / 2, f.W, f.H), printed, kind="logo", about="its printed top: a ring and the brand",
+                       rough=0.3, metal=0.4)
                 fr[f"c{i}_side"].fill(color=cA, rough=0.3, metal=0.75)
                 fr[f"c{i}_side"].rect(0, 0, fr[f"c{i}_side"].W, 3.4, color="#d8d8d4", rough=0.45, metal=0.2)
 

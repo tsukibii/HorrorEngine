@@ -283,7 +283,10 @@ def make(spec, th):
                      age=age, age_amount=float(spec.get("age_amount", 0.4)))
         if kind == "knife":
             f = fr["top"]
-            f.text(art.get("stamp", "STAINLESS"), (L * 0.56, f.H / 2 + 1.5), 1.4, font="archivo", height=-0.01, add_height=True)
+            word = art.get("stamp", "STAINLESS")
+            f.slot("stamp", designs.text_box(word, (L * 0.56, f.H / 2 + 1.5), 1.4, font="archivo"),
+                   lambda: f.text(word, (L * 0.56, f.H / 2 + 1.5), 1.4, font="archivo", height=-0.01, add_height=True),
+                   kind="stamp", about="the word stamped into the blade", height=-0.01, add_height=True, relief=True)
         if kind == "chef_knife":
             for nm in ("h_top", "h_bottom", "h_edge"):
                 designs.draw(fr[nm], {"design": "wood_grain", "color": spec.get("handle", "#5a3622"), "part": nm}, seed + 3, "wood_grain")
@@ -293,7 +296,10 @@ def make(spec, th):
                     f.ellipse(cx, cy, 2.4, color="#c9ccce", rough=0.25, metal=1.0, height=0.1)
                     f.ring(cx, cy, 2.4, 0.3, color="#55585a", rough=0.4, metal=1.0)
             f = fr["top"]
-            f.text(art.get("stamp", "KUROGANE  鋼"), (0.45 * L, f.H * 0.62), 2.2, font="gothic_jp", color="#2b2c2e", rough=0.5, metal=0.6, alpha=0.85)
+            mark = art.get("stamp", "KUROGANE  鋼")
+            f.slot("logo", designs.text_box(mark, (0.45 * L, f.H * 0.62), 2.2, font="gothic_jp"),
+                   lambda: f.text(mark, (0.45 * L, f.H * 0.62), 2.2, font="gothic_jp", color="#2b2c2e", rough=0.5, metal=0.6, alpha=0.85),
+                   about="the maker's mark etched on the blade", rough=0.5, metal=0.6, alpha=0.85)
 
     th.paint = paint
     th.view = {"azim": -25, "elev": 48}
