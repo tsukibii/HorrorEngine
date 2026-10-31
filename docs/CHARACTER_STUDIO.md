@@ -161,7 +161,18 @@ it; within 15 mm of the eye's centre TAU has 4,391 points at its second multires
   the eyeball open or shut, shut the lids meeting (within their edge's own spacing), the lid's edge on the eyeball. The
   Studio's points match it within a micron away from the cornea (over it they ride out with its bulge). `preview` draws
   it as clay (open, shut, and on a character: `Saved/Story/_look/eyes/`).
-- **Not yet**: the export and Godot (an export now still carries MHR's eyes), the eyelid-line handles on the graft.
+- **The export** (Export for desk / Unreal with TAU's eyes on): the skin carries the graft in place of MHR's skin under
+  it, each of its corners on its MHR triangle's points and shares (`_MHRP`, `_MHRW`: the desk plays MHR's face shapes
+  through them as the Studio does), its blink as `eyesClosed_L`/`_R` and their in-betweens, taken from the Studio's
+  own shut states (MHR's skin holds still); the bake draws the graft over MHR's lids in the skin's texture, so its
+  colours, the shut lid's tone, the waterline and the makeup reach Godot, where `HSBlink` shuts it as any export; the
+  eyeballs are the graft's; the file's extras say `eyeGraft`. EYELIDS on such a file leaves out what faces the eyeball
+  and lies in it (the lining, the lids' backs on the eye), reaches 2.5 mm behind the eye's front (TAU's lids are 2 to 3
+  mm thick: farther is the far lid's rim through the opening) and takes contact within 0.1 mm as the lids' touch:
+  `_taueyes` (a copy of `_studiotest` with TAU's eyes) at most 0.008 mm² through the blink, shut nothing, held shut in
+  Godot nothing.
+- **Not yet**: the eyelid-line handles on the graft; a lighter waterline along the shut lash line (the bake carries a
+  little of its pink to the lid's front).
 
 ## 3. Each stage against the rule (as of this branch)
 

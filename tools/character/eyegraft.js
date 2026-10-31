@@ -215,7 +215,7 @@ export function geometry(G) {
   const mem = new Float32Array(n); mem.set(G.sides.L.membrane, 0); mem.set(G.sides.R.membrane, nL);
   g.setAttribute("membrane", new THREE.BufferAttribute(mem, 1)); g.setAttribute("skinThin", new THREE.BufferAttribute(new Float32Array(n), 1));
   const blur = new Float32Array(n);                     // how softly it reads the photo and the paint: the upper lid from its edge to the crease (shut, it unfolds over skin the photo never saw), the lining
-  for (const [side, off] of [["L", 0], ["R", nL]]) { const o = G.sides[side]; for (let i = 0; i < o.n; i++) { const k = o.ring[i]; blur[off + i] = k >= 999 ? 0 : k <= 0 ? 1 : o.lid[i] > 0 ? smooth((k - 1) / 2) * (1 - smooth((k - 12) / 3)) : 1 - smooth((k - 1) / 2); } }
+  for (const [side, off] of [["L", 0], ["R", nL]]) { const o = G.sides[side]; for (let i = 0; i < o.n; i++) { const k = o.ring[i]; blur[off + i] = k >= 999 ? 0 : k <= 0 ? 1 : o.lid[i] > 0 ? smooth((k - 1) / 2) * (1 - smooth((k - 11) / 6)) : 1 - smooth((k - 1) / 2); } }   // (fading out gently over the crease and the fold, so the shut lid's tone meets the photo's without an edge)
   g.setAttribute("photoBlur", new THREE.BufferAttribute(blur, 1));
   const col = new Float32Array(n * 3).fill(1);           // the skin's vertex colour (white but in the mouth: index.html mouthShade), darker down the socket
   for (const [side, off] of [["L", 0], ["R", nL]]) { const o = G.sides[side]; for (let i = 0; i < o.n; i++) if (o.ring[i] < 0) col.fill(1 + 0.1 * o.ring[i], (off + i) * 3, (off + i) * 3 + 3); }

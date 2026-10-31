@@ -3104,16 +3104,32 @@ for (const [btn, head] of [["#expBody", false], ["#expHead", true]]) $(btn).oncl
 // makeup, the lips, the nails, the touch-up, the layers) baked flat on MHR's UVs (albedo.js); what the light does (the
 // coat, the relief, the glow through the skin) is left to whatever draws the file
 const SKIN_BAKE = 4096;
+// what's baked: the skin, and with TAU's eyes their graft drawn over MHR's lids under it (its UVs laid on MHR's): its
+// colours, the shut lid's tone, the wet membrane and the makeup reach the file
+function bakeGeometry() {
+  if (!graftOn() || !GRAFTM) return dgeo;
+  const A = dgeo.attributes, G2 = GRAFTM.geometry.attributes, idx = GRAFTM.geometry.index.array, keep = [];
+  for (let t = 0; t < C / 3; t++) if (!GRAFT.hideT[t]) keep.push(t);
+  const nc = keep.length * 3 + idx.length, base = keep.length * 3, g = new THREE.BufferGeometry();
+  for (const k of new Set([...Object.keys(A), "membrane", "photoBlur"])) {
+    const src = A[k] || G2[k], w = src.itemSize, out = new Float32Array(nc * w);
+    if (A[k]) for (let i = 0; i < keep.length; i++) out.set(A[k].array.subarray(keep[i] * 3 * w, (keep[i] * 3 + 3) * w), i * 3 * w);
+    if (G2[k]) for (let j = 0; j < idx.length; j++) out.set(G2[k].array.subarray(idx[j] * w, idx[j] * w + w), (base + j) * w);
+    else if (k === "color") out.fill(1, base * w);
+    g.setAttribute(k, new THREE.BufferAttribute(out, w));
+  }
+  return g;
+}
 function skinFileMaterial() {
   const rough = st.skin.rough ?? 0.62;
   if (!dgeo.attributes.uv) return new THREE.MeshStandardMaterial({ map: material.map || null, color: material.color.clone(), roughness: rough });
   const sel = SKU.uShowSel.value, pores = SKU.uf_pores.value; SKU.uShowSel.value = 0;   // the layers' selection isn't the skin
   SKU.uf_pores.value = 0;                              // nor are the pores: Godot draws them at their true size from the record's pores and spacing (GODOT_LOOK §5d); a 0.35 mm texel only blurs them
   try {
-    const uv = dgeo.attributes.uv.array, map = ALB.bake(renderer, dgeo, material, uv, { size: SKIN_BAKE }).texture;
     clearTimeout(THIN_T); computeThin();                // the thinness of the body as it is now
-    const ao = ALB.bakeOcclusion(renderer, dgeo, uv, { size: SKIN_BAKE / 2 });   // how much of the sky each point sees: round the eyes, the nostrils, the ears, under the chin
-    const { normal, orm } = ALB.bakeSkinMaps(renderer, dgeo, material, uv, { size: SKIN_BAKE / 2, ao });   // the relief, the roughness and the thinness (one map: R occlusion, G rough, B thin)
+    const bg = bakeGeometry(), uv = bg.attributes.uv.array, map = ALB.bake(renderer, bg, material, uv, { size: SKIN_BAKE }).texture;
+    const ao = ALB.bakeOcclusion(renderer, bg, uv, { size: SKIN_BAKE / 2 });   // how much of the sky each point sees: round the eyes, the nostrils, the ears, under the chin
+    const { normal, orm } = ALB.bakeSkinMaps(renderer, bg, material, uv, { size: SKIN_BAKE / 2, ao });   // the relief, the roughness and the thinness (one map: R occlusion, G rough, B thin)
     const m = new THREE.MeshStandardMaterial({ name: `${WHO}_skin`, map, normalMap: normal, roughnessMap: orm, metalnessMap: orm, aoMap: orm, roughness: 1, metalness: 0 });
     const p = st.skin.proc && st.skin.proc.on ? st.skin.proc : null;   // the procedural skin's age and pores: Godot's detail layer picks its look from them (HSSkin.detail_preset)
     m.userData.studioSkin = { ...skinLitRecord(st.skin.lit), ...(p ? { age: p.age ?? 0, pores: p.pores ?? 0.3, poreSize: p.poreSize ?? 1.3, evenness: p.evenness ?? 0.2, wrinkles: p.wrinkles ?? 0.6 } : {}) };   // the light on the skin, for whatever draws the file (the desk: skinlight.js; Godot: HSSkin)
@@ -3219,13 +3235,34 @@ function exportSkin(SH = null) {
     const mid = (X, Y) => X.map((v, k) => (v + Y[k]) / 2), ab = mid(A, B), bc = mid(B, C), ca = mid(C, A);
     split(t, O, A, ab, ca, d + 1); split(t, O, ab, B, bc, d + 1); split(t, O, ca, bc, C, d + 1); split(t, O, ab, bc, ca, d + 1);
   };
+  const graft = graftOn() && GRAFTM ? GRAFTM : null;    // TAU's eyes: MHR's skin under them left out, theirs added below
   for (let t = 0; t < DP.length; t += 9) {
+    if (graft && GRAFT.hideT[t / 9]) continue;
     const zz = (DP[t + 2] + DP[t + 5] + DP[t + 8]) / 3;
     const O = !on ? null : zz > z.x && overlaps(SKU.uCutBoxL.value, t) ? L : zz > z.y && overlaps(SKU.uCutBoxR.value, t) ? R : null;   // an eye's opening over it (only the front: not the back of the head behind)
     if (O) split(t, O, [1, 0, 0], [0, 1, 0], [0, 0, 1], 0); else { put(t, [1, 0, 0]); put(t, [0, 1, 0]); put(t, [0, 0, 1]); }
   }
+  const nM = pos.length / 3, gIdx = [];                 // TAU's eyes' corners: each its graft point, its UV, its MHR triangle's points and shares (the desk plays MHR's face shapes through them, as the graft rides them)
+  if (graft) {
+    const ga = graft.geometry.attributes, idx = graft.geometry.index.array, nL = graft.geometry.userData.nL;
+    for (let j = 0; j < idx.length; j++) {
+      const v = idx[j], side = v < nL ? "L" : "R", o = GRAFT.sides[side], i = side === "L" ? v : v - nL;
+      pos.push(ga.position.array[v * 3], ga.position.array[v * 3 + 1], ga.position.array[v * 3 + 2]);
+      const nx = ga.normal.array[v * 3], ny = ga.normal.array[v * 3 + 1], nz = ga.normal.array[v * 3 + 2], l = Math.hypot(nx, ny, nz) || 1; nrm.push(nx / l, ny / l, nz / l);
+      uv.push(ga.uv.array[v * 2], ga.uv.array[v * 2 + 1]);
+      for (let k = 0; k < 3; k++) { srcI.push(TRIS[o.tri[i] * 3 + k]); srcW.push(o.bary[i * 3 + k]); }
+      gIdx.push(v);
+    }
+  }
   const g = new THREE.BufferGeometry();
   g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("normal", new THREE.Float32BufferAttribute(nrm, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+  if (SH && graft) {                                    // TAU's eyes' blink: the graft's places in each state (it shuts its own way, MHR's skin holds still)
+    const n = pos.length / 3, rest = Float32Array.from(pos), rn = Float32Array.from(nrm);
+    const tg = blinkTargets(SH, rest, s => { const G3 = s.parts.get(graft); if (!G3) return null; const now = Float32Array.from(rest);
+      for (let c = nM; c < n; c++) { const v = gIdx[c - nM] * 3; now[c * 3] = G3[v]; now[c * 3 + 1] = G3[v + 1]; now[c * 3 + 2] = G3[v + 2]; } return now; },
+      null, true, [rn, s => { const out = Float32Array.from(rn), GN = s.gnormals; if (GN) for (let c = nM; c < n; c++) { const v = gIdx[c - nM] * 3; out[c * 3] = GN[v]; out[c * 3 + 1] = GN[v + 1]; out[c * 3 + 2] = GN[v + 2]; } return out; }]);
+    g.morphAttributes.position = tg; if (tg.normals?.length === tg.length) g.morphAttributes.normal = tg.normals;
+  }
   if (SH && on) {                                       // the blink's targets: MHR's points as each state has them, lifted as at rest, kept off the eyes (and shut, the lids met); the corners by their shares
     const n = pos.length / 3, rest = Float32Array.from(pos), O = { L, R }, lift = p => (LIFT ? LIFT[p] : 0);
     const P0 = Float32Array.from(SHOW); for (let p = 0; p < N; p++) P0[p * 3 + 2] += lift(p);
@@ -3260,9 +3297,10 @@ function exportSkin(SH = null) {
   }
   const m = new THREE.Mesh(g, skinFileMaterial());
   m.name = `${WHO}_skin`; m.userData.srcI = srcI; m.userData.srcW = srcW;   // each corner's three MHR points and their shares (its weights)
+  if (graft) m.userData.eyeGraft = true;                // (the file's extras: TAU's eyes, their lining inside the eyeballs: EYELIDS)
   g.setAttribute("mhrp", new THREE.Float32BufferAttribute(srcI, 3)); g.setAttribute("mhrw", new THREE.Float32BufferAttribute(srcW, 3));   // the same in the file (_MHRP, _MHRW): the desk plays MHR's face shapes through them (tools/shared/face.js)
-  if (on) m.userData.openings = Object.fromEntries(["L", "R"].map(side => {   // each opening's outline as cut, on the lids as they rest (the file's extras: a reader can follow the lid line)
-    const f = eyeFront(side); return [side, outline(side).pts.map(p => { const e = f && f(p[0], p[1]); return [p[0], p[1], e === null || !f ? p[2] : Math.max(p[2], e + LIDGAP)].map(v => +v.toFixed(5)); })];
+  if (on || graft) m.userData.openings = Object.fromEntries(["L", "R"].map(side => {   // each opening's outline as cut, on the lids as they rest (the file's extras: a reader can follow the lid line); TAU's eyes': where their lids meet the eyeball
+    const f = on ? eyeFront(side) : null; return [side, outline(side).pts.map(p => { const e = f && f(p[0], p[1]); return [p[0], p[1], e === null || !f ? p[2] : Math.max(p[2], e + LIDGAP)].map(v => +v.toFixed(5)); })];
   }));
   return m;
 }
@@ -3354,7 +3392,8 @@ function eyeKeep(side) {                               // pushes points out of t
 function blinkShapes() {                               // at neutral: each eye at each of BLINKW as the face shows it: MHR's points and the brows' and lashes' places
   const at = ENAMES.indexOf("eyesClosed_L"), amt = st.exprAmt || 1, parts = [...Object.values(BLM), TEAR.L, TEAR.R].filter(o => o.visible);
   if (at < 0) return null;
-  const grab = () => ({ show: Float32Array.from(SHOW), parts: new Map(parts.map(o => [o, Float32Array.from(o.geometry.attributes.position.array)])) });
+  if (graftOn() && GRAFTM) parts.push(GRAFTM);           // (TAU's eyes shut their own way: the skin's targets take the graft's places from here)
+  const grab = () => ({ show: Float32Array.from(SHOW), parts: new Map(parts.map(o => [o, Float32Array.from(o.geometry.attributes.position.array)])), gnormals: graftOn() && GRAFTM ? Float32Array.from(GRAFTM.geometry.attributes.normal.array) : null });
   const out = { parts };
   BLINKS.forEach((side, s) => { for (const w of BLINKW) { st.expr[at + s] = w / amt; compose(); out[inName(side, w)] = { ...grab(), side, w }; } st.expr[at + s] = 0; });
   compose(); return out;
@@ -3514,7 +3553,7 @@ function exportRig(root, parts, SH = null) {
         const top = [...acc.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4), sum = top.reduce((a, e) => a + e[1], 0) || 1;
         top.forEach(([b, x], k) => { idx[c * 4 + k] = b; w[c * 4 + k] = x / sum; });
       }
-      wear(o.geometry, o.material, o.name, { index: idx, weight: w }).userData = o.userData.openings ? { openings: o.userData.openings } : {}; continue;
+      wear(o.geometry, o.material, o.name, { index: idx, weight: w }).userData = { ...(o.userData.openings ? { openings: o.userData.openings } : {}), ...(o.userData.eyeGraft ? { eyeGraft: true } : {}) }; continue;
     }
     const own = o.parent === rig;                       // the Studio's own (drawn in the world: back to the rig's space), or made for the file (in it already)
     if (!own) o.updateMatrixWorld(true);
@@ -3608,7 +3647,7 @@ async function exportPackage() {
   const rec = await api(`api/recipe/${encodeURIComponent(WHO)}`), was = st.expr.slice(), pose = POSE;
   st.expr.fill(0); POSE = "rest"; compose();           // neutral, in MHR's own pose (the T-pose is only the view's)
   const root = new THREE.Scene(); root.name = WHO; root.userData = { studio: rec };
-  const skip = new Set([mesh, GH, BAG, HOLES, LIPGUIDE.line, LIPGUIDE.dots, ...Object.values(LIDVIEW.line), ...Object.values(LIDVIEW.dots)]);   // (the tear line goes: Godot's HSEye wets it, fileLook)
+  const skip = new Set([mesh, GH, BAG, HOLES, LIPGUIDE.line, LIPGUIDE.dots, ...Object.values(LIDVIEW.line), ...Object.values(LIDVIEW.dots), ...(GRAFTM ? [GRAFTM] : [])]);   // (TAU's eyes go in the skin)   // (the tear line goes: Godot's HSEye wets it, fileLook)
   const SH = st.eyes.on ? blinkShapes() : null;        // each eye's blink, for the file's morph targets
   const parts = [[exportSkin(SH), "skin"]];            // the skin first: the desk measures the body from the first skinned mesh
   for (const o of rig.children) if (!skip.has(o) && o.visible)

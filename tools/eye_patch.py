@@ -356,7 +356,7 @@ def inside(job_path):
             if np.abs(nxt - fade).max() < 1e-7: break
             fade = nxt
         # 8. the wet membrane: the lining, the contact band, the lid's edge behind the lash line
-        membrane = np.clip(1 - (RINGs - 0) / max(1, lash_ring), 0, 1) * (RINGs < 999)
+        membrane = np.clip(1 - RINGs / 2, 0, 1) * (RINGs < 999)   # (the edge's back, where it touches the eye: shut, its front shows along the lash line, skin)
         membrane[RINGs <= 0] = 1
         sides[side] = dict(pos=Vall, tri=tri, bary=bary, ring=RINGs, blink=blink, membrane=membrane, uv=uv, mhrv=mhrv, faces=F_all, fade=fade,
                            hide=hide, contact=np.array(order_ring(Ts, RING, 0, Vall, c_)), lash=np.array(order_ring(Ts, RING, lash_ring, Vall, c_)))

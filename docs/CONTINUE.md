@@ -17,8 +17,9 @@ The user asked for TAU's eye and lid shape ("meaty flesh that curves in") on our
 (more Asian or Caucasian, size). Built so far (CHARACTER_STUDIO §2c): `tools/eye_patch.py` (make, preview, check:
 EYEPATCH) grafts TAU's eye region onto MHR's face; the Studio wears it (Skin, Eyes, TAU's eyes; `eyegraft.js`), open
 to shut. Also Start from TAU's brows (§2b). The shape keys are in (size, crease monolid to double
-lid, inner fold, tilt, opening, depth; presets TAU, East Asian, Caucasian). Next: the export (the graft in the glb with
-its blink's morph targets, EYELIDS on it) and Godot; then the user's look. The head's licence: compare it with Blender's Human Base Meshes bundle when
+lid, inner fold, tilt, opening, depth; presets TAU, East Asian, Caucasian). The export carries it (the graft in the skin with
+its blink's morph targets, baked; EYELIDS on `_taueyes`) and Godot shuts it. Next: the user's look; the eyelid-line
+handles on the graft; the head's licence (compare with Blender's Human Base Meshes). The head's licence: compare it with Blender's Human Base Meshes bundle when
 www.blender.org is reachable (DECISIONS).
 
 ## 0b. `realism-enhancer-skin` (2026-10-31, the night): brows and lashes by hand, waiting for the user's try
