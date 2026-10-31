@@ -78,11 +78,27 @@ can add and adjust the eyebrows and eyelashes inside an easy wrapper?" Built: **
   it shuts; the lower lashes few, fine, uneven, down and out. Measured (GROOM): the middle lashes rise 2.4 mm over the
   lid at 23° from straight out (it was 3.7 mm at 36° before the defaults were tuned on the references; TAU's Straight
   stood up), the outer ones swept 45° out; the brows' hairs within 0.33 mm of the skin.
+- **Start from TAU's brows** (the user's next look, the same night: "the actual TAU plugin makes way better eyebrows
+  than we do", and "use the default .blend eyebrow as starter (which is placed correctly) and modify based off that"):
+  a TAU preset beside the brows' styles grows TAU's brows on the character if they aren't there yet (Blender, a few
+  minutes: docs/TAU_HAIR.md), then its hair becomes the brows to shape. The band is laid on **TAU's own brow as it grew**
+  (`tauFit`: its head and tail at the 2nd and 98th percentile of its roots along the brow rows' band, each station's top
+  and bottom at the 95th and 5th percentile of the roots near it), so the handles start on its outline (about 91% of its
+  roots inside it), not on MediaPipe's rows, which sit higher on most faces; each hair moves with the band where its root
+  lies (past the edges, with the edge), the brushes thin, double and comb it, Hairs, Length, Thickness and Messy change
+  it; its flow stays TAU's. **Back to the made ones** brings the brows grown here back as they were shaped: each source
+  keeps its own handles and brushing (`brow.kept`), switching never loses them.
+- **The lash line** (a slider under the lashes): the dark line along the lid where the lashes grow, a thin line at 0.2
+  (the default), an eyeliner's at 1; the upper lashes grow along the whole lid, its inner corner to its outer one (they
+  stopped short of both ends before the user's note: "the upper eyelashes don't reach out the entire eyelid line").
 - **Saved** with the character (`st.groom`: the shape's offsets in mm, the brushing as two small grids, the lash
-  handles, the sliders); the export carries them as any brows and lashes (their blink, lifted with the lids: §3.1).
+  handles, the sliders, the brows' source and the other source's kept hand work); the export carries them as any brows
+  and lashes (their blink, lifted with the lids: §3.1).
 - **GROOM** (`node tools/character/groomtest.mjs`, the Studio's server running): the edit mode and its 26 handles, the
   brows' hair count and their lying on the skin, the lashes' rise, angle and sweep, a brow handle dragged (and its twin),
-  a lash handle dragged up, Thin out and Add hair, a style, the blink, saved and opened again the same, Done.
+  a lash handle dragged up, Thin out and Add hair, TAU's brows started from (most of their roots inside the handles'
+  outline, a handle dragged moving the hairs under it; back to the made ones as they were), a style, the blink, saved
+  and opened again the same, Done.
 
 The sheet: `docs/godot_sheets/2026-10-31_brows_lashes_by_hand.jpg` (the editor, then the result in Godot open, at
 three-quarter and shut).

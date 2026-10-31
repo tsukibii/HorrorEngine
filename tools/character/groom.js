@@ -56,9 +56,9 @@ const lashSide = () => ({ stations: LASH_STATIONS.map(() => ({ len: 1, lift: 0, 
 
 export const GROOM_DEFAULTS = {
   on: false, mirror: true,
-  brow: { style: "natural", hairs: 380, length: 1, thickness: 1, soft: 0.6, messy: 0.4, head: 82, body: 26, tail: -10, converge: 0.35, L: browSide(), R: browSide() },
+  brow: { style: "natural", source: "made", hairs: 380, length: 1, thickness: 1, soft: 0.6, messy: 0.4, head: 82, body: 26, tail: -10, converge: 0.35, L: browSide(), R: browSide() },
   lash: { style: "natural", count: 115, length: 7, lift: 0, curl: 0.3, sweep: 40, inner: 0.55, thickness: 1, clump: 0.25,
-          lower: 34, lowerLength: 3.8, lowerAngle: 58, L: lashSide(), R: lashSide() },
+          lower: 34, lowerLength: 3.8, lowerAngle: 58, line: 0.22, L: lashSide(), R: lashSide() },
 };
 // presets: the hair's numbers (the shape by hand stays)
 export const BROW_STYLES = {
@@ -100,8 +100,15 @@ export const LASH_SLIDERS = [
   ["lower", "Lower lashes", 0, 120, 1, "How many lower lashes each eye has."],
   ["lowerLength", "Lower length", 1.5, 8, 0.1, "The lower lashes' longest, mm."],
   ["lowerAngle", "Lower angle", 15, 80, 1, "Degrees down from straight out of the lid."],
+  ["line", "Lash line", 0, 1, 0.01, "The dark line along the lid where the lashes grow: a thin line at 0.2, an eyeliner's at 1."],
 ];
 
+const browFrom = b => {                                // a brow side's saved hand work, checked, in the defaults' shape
+  const a = browSide(); if (!b) return a;
+  for (const e of ["upper", "lower"]) if (Array.isArray(b[e])) b[e].slice(0, BROW_STATIONS).forEach((v, i) => { a[e][i] = [+v[0] || 0, +v[1] || 0]; });
+  if (b.paint && Array.isArray(b.paint.dens) && b.paint.dens.length === PAINT.nt * PAINT.ns) a.paint = { dens: b.paint.dens.slice(), comb: (b.paint.comb || []).slice() };
+  return a;
+};
 export function fresh(saved) {                         // the defaults under what was saved (a deep copy: nothing shared with the defaults)
   const g = JSON.parse(JSON.stringify(GROOM_DEFAULTS)), s = saved || {};
   for (const k of ["on", "mirror"]) if (k in s) g[k] = s[k];
@@ -109,14 +116,24 @@ export function fresh(saved) {                         // the defaults under wha
     const from = s[part] || {};
     for (const k in g[part]) if (k !== "L" && k !== "R" && k in from) g[part][k] = from[k];
     for (const side of ["L", "R"]) if (from[side]) {
-      const a = g[part][side], b = from[side];
-      if (part === "brow") {
-        for (const e of ["upper", "lower"]) if (Array.isArray(b[e])) b[e].slice(0, BROW_STATIONS).forEach((v, i) => { a[e][i] = [+v[0] || 0, +v[1] || 0]; });
-        if (b.paint && Array.isArray(b.paint.dens) && b.paint.dens.length === PAINT.nt * PAINT.ns) a.paint = { dens: b.paint.dens.slice(), comb: (b.paint.comb || []).slice() };
-      } else if (Array.isArray(b.stations)) b.stations.slice(0, LASH_STATIONS.length).forEach((v, i) => { a.stations[i] = { len: +v.len || 1, lift: +v.lift || 0, sweep: +v.sweep || 0 }; });
+      const b = from[side];
+      if (part === "brow") g.brow[side] = browFrom(b);
+      else if (Array.isArray(b.stations)) b.stations.slice(0, LASH_STATIONS.length).forEach((v, i) => { g.lash[side].stations[i] = { len: +v.len || 1, lift: +v.lift || 0, sweep: +v.sweep || 0 }; });
     }
   }
+  const kept = s.brow && s.brow.kept;                   // the other source's hand work, kept for coming back to it (swapBrows)
+  if (kept && typeof kept === "object") g.brow.kept = Object.fromEntries(BROW_SOURCES.filter(k => kept[k]).map(k => [k, { L: browFrom(kept[k].L), R: browFrom(kept[k].R) }]));
   return g;
+}
+// the brows' source switched ("made": grown here from the angle sliders; "tau": TAU's, Start from TAU's brows): the hand
+// work on the one left (its handles, its brushing) kept for coming back, the other's own brought back, or none yet
+export const BROW_SOURCES = ["made", "tau"];
+export function swapBrows(g, to) {
+  const o = g.brow, from = o.source || "made"; if (from === to) return;
+  const kept = { ...(o.kept || {}), [from]: { L: o.L, R: o.R } }, back = kept[to];
+  o.L = back ? back.L : browSide(); o.R = back ? back.R : browSide(); delete kept[to];
+  o.kept = Object.fromEntries(BROW_SOURCES.filter(k => kept[k]).map(k => [k, kept[k]]));
+  o.source = to;
 }
 // one side's hand work onto the other (the Mirror switch): offsets toward the temple and up are the same numbers on both
 export function mirrorTo(g, from) {
@@ -171,8 +188,55 @@ export function browDensity(o, paint, t, s) {           // how thick the hair gr
   return Math.max(0, across * along * paintAt(paint, "dens", t, s, 1));
 }
 const KEEP = 0.65;                                      // a candidate's chance where the density is 1 (more painted on grows up to all of them)
+// a brow from TAU's strands (Start from TAU's brows: tools/tau_hair.py grew them on the face, placed from TAU's own head
+// laid over ours by the eyes): TAU's hair kept, reshaped by hand. The band is laid on TAU's brow as it grew (tauFit: the
+// handles start on its outline, not on MediaPipe's rows, which sit higher on most faces); each strand moves with the band
+// where its root lies as the handles move it (past the band's edges, with the edge), kept or doubled by Hairs and the
+// brush's density there, turned about its root by the comb, its length and thickness by the sliders
+const TAUFIT = {};                                      // (per side: the fit kept while the brow rows and TAU's roots stay put)
+const clamp01 = x => Math.max(0, Math.min(1, x));
+const pct = (a, f) => { const b = a.slice().sort((x, y) => x - y); return b[Math.min(b.length - 1, Math.max(0, Math.round(f * (b.length - 1))))]; };
+export function tauFit(ctx, side, strands) {            // TAU's brow as offsets of the band's edges from the brow rows (mm), the band on it, its roots' (t, s) there
+  const roots = strands.map(st => st.pts[0]);
+  const key = [strands.length, ...[...ctx.rows.upper, ...ctx.rows.lower].flat(), ...roots.reduce((q, p) => q.map((v, k) => v + p[k]), [0, 0, 0])].join(",");
+  if (TAUFIT[side] && TAUFIT[side].key === key) return TAUFIT[side];
+  const B0 = band(ctx, { upper: zeros(BROW_STATIONS), lower: zeros(BROW_STATIONS) }), Q0 = roots.map(p => bandCoord(B0, p));
+  const ts = Q0.map(q => q.t), t0 = pct(ts, 0.02), t1 = pct(ts, 0.98), fit = { upper: [], lower: [] }, per = Math.max(12, Math.round(Q0.length * 0.3));
+  for (let k = 0; k < BROW_STATIONS; k++) {             // the stations spread from TAU's head to its tail; at each, its roots' top and bottom across the band
+    const tk = t0 + (t1 - t0) * k / (BROW_STATIONS - 1), near = Q0.slice().sort((a, b) => Math.abs(a.t - tk) - Math.abs(b.t - tk)).slice(0, per), ss = near.map(q => q.s);
+    for (const [e, sv] of [["upper", pct(ss, 0.95)], ["lower", pct(ss, 0.05)]]) {
+      const d = sub(far(B0, tk, sv), ctx.rows[e][k]);
+      fit[e].push([dot(d, ctx.out) / ctx.mm, dot(d, ctx.U) / ctx.mm]);
+    }
+  }
+  const B = band(ctx, fit);
+  return (TAUFIT[side] = { key, fit, B, Q: roots.map(p => bandCoord(B, p)) });
+}
+function tauBrow(ctx, side, g, T, Bh, strands) {
+  const o = g.brow, hand = o[side], mm = ctx.mm, seed = side === "L" ? 505 : 606, out = [];
+  const more = o.hairs / 380;                           // Hairs against the made brows' default: TAU's count as it grew at 380
+  strands.forEach((st, k) => {
+    const root = st.pts[0], q = T.Q[k], m = more * paintAt(hand.paint, "dens", q.t, q.s, 1);
+    const copies = (hash(k, seed) < Math.min(1, m) ? 1 : 0) + (m > 1 && hash(k, seed + 1) < m - 1 ? 1 : 0);
+    if (!copies) return;
+    const tc = clamp01(q.t), sc = clamp01(q.s), disp = Bh === T.B ? [0, 0, 0] : sub(Bh.at(tc, sc).p, T.B.at(tc, sc).p), n = st.normal, r = rng(seed * 7919 + k);
+    for (let c = 0; c < copies; c++) {
+      const turn = (paintAt(hand.paint, "comb", q.t, q.s, 0) + (r() - 0.5) * 16 * o.messy + (c ? (r() - 0.5) * 20 : 0)) * D2R;
+      const shift = c ? mul(norm(cross(n, sub(st.pts[st.pts.length - 1], root))), (r() - 0.5) * 0.9 * mm) : [0, 0, 0];
+      const pts = st.pts.map(p => add(add(add(root, rot(mul(sub(p, root), o.length), n, turn)), disp), shift));
+      out.push({ pts, radius: st.radius.map(x => x * o.thickness), normal: n });
+    }
+  });
+  return out;
+}
 export function browStrands(ctx, side, g) {
-  const o = g.brow, hand = o[side], B = band(ctx, hand), mm = ctx.mm, seed = side === "L" ? 303 : 404, out = [];
+  const o = g.brow, hand = o[side];
+  if (o.source === "tau" && ctx.tau && ctx.tau.length) {
+    const T = tauFit(ctx, side, ctx.tau), plus = e => T.fit[e].map((v, i) => [v[0] + hand[e][i][0], v[1] + hand[e][i][1]]);
+    const Bh = ["upper", "lower"].some(e => hand[e].some(v => v[0] || v[1])) ? band(ctx, { upper: plus("upper"), lower: plus("lower") }) : T.B;
+    return { strands: tauBrow(ctx, side, g, T, Bh, ctx.tau), edges: { upper: Bh.up.map(p => ctx.project(p).p), lower: Bh.lo.map(p => ctx.project(p).p) }, band: Bh };
+  }
+  const B = band(ctx, hand), mm = ctx.mm, seed = side === "L" ? 303 : 404, out = [];
   const K = Math.round(o.hairs * 2.6);                  // candidates spread evenly over the band (R2's sequence), each kept by the density there (about Hairs kept)
   for (let k = 0; k < K; k++) {
     const t = (0.5 + k * 0.7548776662466927) % 1, s = (0.5 + k * 0.5698402909980532) % 1;
@@ -200,6 +264,21 @@ export function bandPlace(B, p) {
   for (let i = 0; i < B.G.length; i++) for (let j = 0; j < B.G[i].length; j++) { const d = Math.hypot(...sub(B.G[i][j], p)); if (d < best) { best = d; ti = i; sj = j; } }
   return { t: ti / (B.G.length - 1), s: sj / (B.G[0].length - 1), d: best };
 }
+
+// where on a band a point lies as (t, s) with no steps: the nearest grid point, then one least-squares step along the
+// grid's two ways there (past the band's edges and ends, carried on straight)
+export function bandCoord(B, p) {
+  const q = bandPlace(B, p), G = B.G, nt = G.length - 1, ns = G[0].length - 1, i = Math.round(q.t * nt), j = Math.round(q.s * ns);
+  const i0 = Math.max(0, i - 1), i1 = Math.min(nt, i + 1), j0 = Math.max(0, j - 1), j1 = Math.min(ns, j + 1);
+  const a = mul(sub(G[i1][j], G[i0][j]), nt / (i1 - i0)), b = mul(sub(G[i][j1], G[i][j0]), ns / (j1 - j0)), d = sub(p, G[i][j]);
+  const aa = dot(a, a), ab = dot(a, b), bb = dot(b, b), da = dot(d, a), db = dot(d, b), det = aa * bb - ab * ab || 1;
+  return { t: q.t + (bb * da - ab * db) / det, s: q.s + (aa * db - ab * da) / det };
+}
+const far = (B, t, s) => {                              // the band's place at (t, s), its ends carried on straight (at() stops at them)
+  if (t >= 0 && t <= 1) return B.at(t, s).p;
+  const e = t < 0 ? 0 : 1, a = B.at(e, s).p, b = B.at(e ? 0.95 : 0.05, s).p;
+  return add(a, mul(sub(a, b), Math.abs(t - e) / 0.05));
+};
 
 // ---- an eye's lashes ------------------------------------------------------------------------------------------------
 
@@ -260,7 +339,7 @@ export function lashStrands(ctx, side, g) {
     const upper = which === "upper", frame = lidFrame(ctx, which), n = upper ? o.count : o.lower; if (!frame || !n) continue;
     const r = rng(seed + (upper ? 0 : 7)), hairs = [];
     for (let k = 0; k < n; k++) {
-      const tt = (k + 0.15 + 0.7 * r()) / n, t = upper ? 0.06 + 0.91 * tt : 0.04 + 0.88 * tt, at = upper ? t : 1 - t;
+      const tt = (k + 0.15 + 0.7 * r()) / n, t = upper ? 0.035 + 0.96 * tt : 0.04 + 0.88 * tt, at = upper ? t : 1 - t;   // the upper lashes along the whole lid, to its outer end
       const a = upper ? { len: st.len(at), lift: st.lift(at), sweep: st.sweep(at) } : { len: 1, lift: 0, sweep: 0 };
       const rr = upper ? [0.82 + 0.3 * r(), (r() - 0.5) * 0.12, (r() - 0.5) * 8] : [0.6 + 0.6 * r(), (r() - 0.5) * 0.35, (r() - 0.5) * 18];   // the lower ones unevenly: a real lower lid's lashes are a few, each its own way
       let h = lash(ctx, frame, o, upper, upper ? t : t + (r() - 0.5) * 0.6 / n, a, rr);

@@ -72,6 +72,15 @@ others at 40° easing to 10° (swept out); and the tidy above turned the upper l
 So the brows and lashes went by hand (docs/CHARACTER_STUDIO.md §2b: the editor, `groom.js`) at TAU's thickness and
 look; TAU stays for whoever wants its presets.
 
+Then the user compared the editor's brows with TAU's own and preferred TAU's ("the actual TAU plugin makes way better
+eyebrows than we do... why does ours look so bad in comparison"; then "use the default .blend eyebrow as starter (which
+is placed correctly) and modify based off that"). Why TAU's read better: each of its hairs is grown along the brow's
+flow field with its own length, curl and noise and the strands clump into soft groups, its root density follows TAU's
+painted mask (dense in the body, thin at the head, the top and the tail), and its hairs are a few hundredths of a
+millimetre at the root; the editor's grew from a few angles and a density by formula, so they came out combed and
+even. So the editor's brows can **start from TAU's** (CHARACTER_STUDIO §2b, Start from TAU's brows): TAU's strands as
+they grew, the band and its handles laid on their outline, reshaped by hand from there. The lashes stay the editor's.
+
 ## 5. Not yet
 
 - The brows are placed by TAU's own brow region laid over ours by the eyes: on a face whose brows sit unlike TAU's body

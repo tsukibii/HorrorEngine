@@ -2320,7 +2320,7 @@ function browLash() {
     brows[side] = { upper: BROWROWS[side].upper.map(lmk), lower: BROWROWS[side].lower.map(lmk) };
   }
   const C = v(234).add(v(454)).multiplyScalar(0.5);
-  const r = BL.build({ lids, brows, F: F.toArray(), U: U.toArray(), C: C.toArray(), scale: SCALE }, st.lash, st.brow); BLLIDS = lids;
+  const r = BL.build({ lids, brows, F: F.toArray(), U: U.toArray(), C: C.toArray(), scale: SCALE }, st.groom.on ? { ...st.lash, line: st.groom.lash.line ?? 0.22 } : st.lash, st.brow); BLLIDS = lids;   // (by hand: the lash line's own darkness)
   if (st.groom.on) {                                     // the brows and lashes by hand (groom.js) in place of our own and TAU's: made on the face as it is now
     const G = groomNow(lids, brows, F, U, X);
     r.lashes.dispose(); r.lashes = BL.strandCards(G.lashes, "lashes");
@@ -2525,10 +2525,11 @@ function skinNear(lo, hi) {                            // the skin round a box (
 }
 function groomNow(lids, brows, F, U, X) {              // the brows' and lashes' strands on the face as it is now; their handles' places and the bands for the brushes kept
   const mm = 0.001 * SCALE, f = F.toArray(), u = U.toArray(), x = X.toArray(), out = { brows: [], lashes: [] }, now = { edges: {}, tips: {}, bands: {}, lids, F: f, U: u, X: x, mm };
+  const tauBrows = st.groom.brow.source === "tau" && TAU?.brows ? TAUJS.strandsNow(TAU, POS, TRIS).brows : null;   // Start from TAU's brows: TAU's strands on the face as it is, reshaped by hand
   for (const side of ["L", "R"]) {
     const rows = brows[side], all = [...rows.upper, ...rows.lower], pad = 0.018 * SCALE;
     const lo = [0, 1, 2].map(k => Math.min(...all.map(p => p[k])) - pad), hi = [0, 1, 2].map(k => Math.max(...all.map(p => p[k])) + pad);
-    const b = GR.browStrands({ rows, out: side === "L" ? x : x.map(v => -v), U: u, mm, project: skinNear(lo, hi) }, side, st.groom);
+    const b = GR.browStrands({ rows, out: side === "L" ? x : x.map(v => -v), U: u, mm, project: skinNear(lo, hi), tau: tauBrows ? tauBrows.filter(q => (q.pts[0][0] > 0) === (side === "L")) : null }, side, st.groom);
     out.brows.push(...b.strands); now.edges[side] = b.edges; now.bands[side] = b.band;
     const l = GR.lashStrands({ lid: lids[side], F: f, U: u, mm }, side, st.groom);
     out.lashes.push(...l.strands); now.tips[side] = l.tips;
@@ -2536,20 +2537,24 @@ function groomNow(lids, brows, F, U, X) {              // the brows' and lashes'
   GROOMNOW = now; return out;
 }
 window.__groomFresh = () => GR.fresh();             // (GROOM: tools/character/groomtest.mjs)
+window.__groomSwap = to => { GR.swapBrows(st.groom, to); browLash(); };
 window.__groomMeasure = () => {                       // the brows' hairs on each side and how far off the skin; the left eye's upper lashes by thirds; the middle handle's tip's height
   browLash(); const N = GROOMNOW; if (!N || !BLLIDS) return null;
   const mm = N.mm, F = N.F, U = N.U, X = N.X, d = (c, v) => c[0] * v[0] + c[1] * v[1] + c[2] * v[2], brows = {}; let onSkin = 0;
   for (const side of ["L", "R"]) {
     const rows = { upper: BROWROWS[side].upper.map(lmk), lower: BROWROWS[side].lower.map(lmk) }, all = [...rows.upper, ...rows.lower], pad = 0.018 * SCALE;
     const proj = skinNear([0, 1, 2].map(k => Math.min(...all.map(p => p[k])) - pad), [0, 1, 2].map(k => Math.max(...all.map(p => p[k])) + pad));
-    const b = GR.browStrands({ rows, out: side === "L" ? X : X.map(v => -v), U, mm, project: proj }, side, st.groom); brows[side] = b.strands.length;
+    const tb = st.groom.brow.source === "tau" && TAU?.brows ? TAUJS.strandsNow(TAU, POS, TRIS).brows.filter(q => (q.pts[0][0] > 0) === (side === "L")) : null;
+    const b = GR.browStrands({ rows, out: side === "L" ? X : X.map(v => -v), U, mm, project: proj, tau: tb }, side, st.groom); brows[side] = b.strands.length;
+    if (side === "L") { brows.ys = b.strands.map(x => d(x.pts[0], U) / mm); brows.cy = brows.ys.reduce((q, y) => q + y, 0) / (brows.ys.length || 1); }   // (the left brow's roots' heights and their mean, mm)
+    if (side === "L") brows.inBand = b.strands.filter(x => { const q = GR.bandCoord(b.band, x.pts[0]); return q.t > -0.05 && q.t < 1.05 && q.s > -0.05 && q.s < 1.05; }).length / (b.strands.length || 1);   // (the share of its roots inside the band its handles outline)
     if (side === "L") for (const st_ of b.strands.filter((_, i) => i % 7 === 0)) for (const p of st_.pts) { const q = proj(p).p; onSkin = Math.max(onSkin, Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]) / mm); }
   }
   const L = GR.lashStrands({ lid: BLLIDS.L, F, U, mm }, "L", st.groom).strands.filter(x => x.t !== undefined), ch = x => { const p = x.pts[3], q = x.pts[x.pts.length - 1]; return [q[0] - p[0], q[1] - p[1], q[2] - p[2]]; };
   const third = (a, b) => { const sel = L.filter(x => x.t >= a && x.t < b), avg = f => sel.reduce((q, x) => q + f(x), 0) / (sel.length || 1);
     return { elev: avg(x => Math.atan2(d(ch(x), U), d(ch(x), F)) * 180 / Math.PI), out: avg(x => Math.atan2(d(ch(x), X), d(ch(x), F)) * 180 / Math.PI), rise: avg(x => d(ch(x), U) / mm) }; };
   const tip = GR.lashTip({ lid: BLLIDS.L, F, U, mm }, "L", st.groom, 1);
-  return { hairs: st.groom.brow.hairs, brows, onSkin, lash: [third(0, 0.33), third(0.33, 0.66), third(0.66, 1.01)],
+  return { hairs: st.groom.brow.hairs, brows, onSkin, tau: TAU?.brows ? TAU.brows.strands.length : 0, lash: [third(0, 0.33), third(0.33, 0.66), third(0.66, 1.01)],
            drooping: L.filter(x => x.t < 0.9 && d(ch(x), U) < 0).length, tipY: tip ? d(tip, U) / mm : 0 };
 };
 window.__groomBrowScreen = side => {                  // a stroke's points along a brow's middle, on the screen (the page's own coordinates)
@@ -2574,6 +2579,20 @@ function groomPanel(box, sets) {                       // the Face tab's section
     const sl = {};
     for (const [k, lab, lo, hi, step, help] of sliders) sl[k] = slider(d, `groom_${key}_${k}`, lab, lo, hi, step, st.groom[key][k], help, v => { st.groom[key][k] = v; UNSAVED = true; browLash(); });
     style.onchange = () => { if (!style.value) return; const x = styles[style.value]; for (const [k] of sliders) if (k in x) st.groom[key][k] = x[k]; st.groom[key].style = style.value; style.value = ""; UNSAVED = true; blSet.all(); browLash(); };
+    if (key === "brow") {                              // the brows from TAU's: its hair, placed from TAU's own head, reshaped here by the handles, the brushes, Hairs, Length, Thickness, Messy
+      const pre = el("select", {}, ...TAUJS.TAU_BROWS.map(k => el("option", { value: k, textContent: k }))), go = el("button", { textContent: "Start from TAU's brows" }), made = el("button", { textContent: "Back to the made ones" });
+      const say = el("small", { className: "note" });
+      go.onclick = async () => {
+        go.disabled = true;
+        try {
+          if (!TAU?.brows || (TAU.brows.preset || "").replace("Eyebrows - ", "") !== pre.value) { say.textContent = "growing TAU's brows on this character (a few minutes)…"; await bakeTau(pre.value, TAU?.lashes ? (TAU.lashes.preset || "").replace("Eyelashes - ", "") || "Straight" : "Straight", m => { say.textContent = m; }); }
+          st.groom.on = true; GR.swapBrows(st.groom, "tau"); st.lash.on = st.brow.on = true; UNSAVED = true; blSet.all(); browLash();
+          say.textContent = `TAU's ${pre.value} brows (${TAU?.brows?.strands.length || 0} hairs), now yours to shape: the handles sit on their outline and move them, the brushes thin, add and comb, Hairs, Length, Thickness and Messy change them (their flow is TAU's)`;
+        } catch (e) { say.textContent = e.message; } finally { go.disabled = false; }
+      };
+      made.onclick = () => { GR.swapBrows(st.groom, "made"); UNSAVED = true; browLash(); say.textContent = "the brows made here again (their flow from the angle sliders), as you had shaped them; TAU's shaping kept for coming back"; };
+      d.append(el("div", { className: "row" }, el("span", { textContent: "TAU's" }), pre, el("output")), el("div", { className: "row" }, go, made), say);
+    }
     const reset = el("button", { textContent: key === "brow" ? "Reset the brows' shape and brushing" : "Reset the lashes' handles" });
     reset.onclick = () => { const f0 = GR.fresh(); for (const side of ["L", "R"]) st.groom[key][side] = f0[key][side]; UNSAVED = true; browLash(); };
     d.append(el("div", { className: "row" }, reset)); box.append(d);

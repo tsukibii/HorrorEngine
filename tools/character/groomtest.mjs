@@ -65,6 +65,18 @@ try {
   const before = m.brows.L, thin = await stroke("Thin out"), more = await stroke("Add hair");
   say(thin < before * 0.85 && more > thin, `the brushes: Thin out took the left brow from ${before} hairs to ${thin}, Add hair back to ${more}`);
   await B(() => [...document.querySelectorAll("#groomBar button")].find(x => x.textContent === "Handles").click());
+  // the brows from TAU's (when TAU grew some on this character: tools/tau_hair.py): the handles on TAU's own outline,
+  // one dragged moving the hairs under it; back to the made ones, their shaping as it was
+  const made0 = await B(() => JSON.stringify(window.__body.st.groom.brow.L));
+  const tau0 = await B(() => { window.__groomSwap("tau"); return window.__groomMeasure(); });
+  if (tau0.tau) {
+    await page.waitForTimeout(1500);                    // (a frame or two: the handles placed on TAU's brow)
+    await drag(`#gh${ix.brow}`, 0, -30);
+    const tau1 = await B(() => window.__groomMeasure()), up = tau1.brows.ys.length === tau0.brows.ys.length ? Math.max(...tau1.brows.ys.map((y, i) => y - tau0.brows.ys[i])) : 0;
+    say(tau0.brows.L + tau0.brows.R > 0.6 * tau0.tau && tau0.brows.inBand > 0.85 && up > 1, `Start from TAU's brows: ${tau0.brows.L + tau0.brows.R} of TAU's ${tau0.tau} hairs on the brows, ${(100 * tau0.brows.inBand).toFixed(0)}% of them inside the outline the handles start on, a handle dragged up moving the hairs under it up to ${up.toFixed(1)} mm`);
+  } else console.log("  --  Start from TAU's brows not tried: TAU grew none on this character (tools/tau_hair.py make)");
+  const made1 = await B(() => { window.__groomSwap("made"); return JSON.stringify(window.__body.st.groom.brow.L); });
+  say(made1 === made0, "Back to the made ones: the made brows' handles and brushing as they were");
   // a style
   await B(() => { const s = [...document.querySelectorAll("#browRows details select")].find(x => [...x.options].some(o => o.value === "doll")); s.value = "doll"; s.onchange(); });
   const doll = await B(() => window.__body.st.groom.lash.lift);
