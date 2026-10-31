@@ -2,22 +2,22 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
-## 2026-10-31, the night, the last (the user: the base mesh's eyes for everyone, TAU removed, on `realism-enhancer-skin`)
+## 2026-10-31, the night, the last (the user: the base mesh's eyes for everyone, the add-on removed, on `realism-enhancer-skin`)
 
-- **"I've confirmed the default TAU 'eye stitch' process is just using Blender's default human model ... can you just
+- **"I've confirmed the default 'eye stitch' process is just using Blender's default human model ... can you just
   modify the base loaded mesh that we edit so it has those eyes from the start (I don't care about the old eyes as the
   new ones are way better and the eyeballs sit way better)."** Yes: the graft is every character's eyes. The user
-  checked that the head in TAU's file is Blender Studio's Human Base Meshes body (CC0, `GEO-body_female_realistic`), so
+  checked that the head in the add-on's file is Blender Studio's Human Base Meshes body (CC0, `GEO-body_female_realistic`), so
   `Content/Studio/Bodies/MHR_eyes.bin` is committed; the Studio wears it with no switch and no Make button (MHR's cut
   lids only if the file is missing); `eye_patch.py make` takes the bundle's .blend (`vendor/human_base_meshes/`,
   git-ignored, or `--blend`). The shape keys' base preset is "Default".
-- **"Could we just update our model for eyebrows and eyelashes to be inspired by them ... and then scrap/remove the TAU
+- **"Could we just update our model for eyebrows and eyelashes to be inspired by them ... and then scrap/remove the add-on
   ones entirely as it's annoying to have to go to Blender to bake it ... I found many tutorials using their technique
-  for getting the curve ... enhance our eyebrows and eyelash system we already use and remove TAU."** Done: the brows
+  for getting the curve ... enhance our eyebrows and eyelash system we already use and remove the add-on."** Done: the brows
   and lashes by hand (`groom.js`) took the technique (Blender's own hair node groups: trims along the edges, clumps
   toward guide hairs, noise, the curl's profile toward the tip, wide length randomness; docs/research/brows_lashes.md,
-  in our own words and numbers); TAU's bake, its Studio panel, Start from TAU's brows, `tools/tau_hair.py`,
-  `tools/character/tau.js`, docs/TAU_HAIR.md and TAUHAIR are removed. The remote `tau-transfer` branch is left for
+  in our own words and numbers); the add-on's bake, its Studio panel, Start from the add-on's brows, its bake tool, its Studio loader, its notes and its
+  check are removed. The old transfer branch on the remote is left for
   the user to delete (asked).
 
 - **"I think I get confused cus the UI is split so apart, I'd almost rather just have a tab for eyelashes/eyebrows
@@ -25,20 +25,20 @@ The user's answers, newest first. They override the plan, the research and the d
   face: the editor's handles and brushes, the old "by hand"), then the clumped ones (sliders and styles only); the Face
   tab keeps the look, the pictures, the fit and the mouth.
 
-## 2026-10-31, the night, later (the user: TAU's eyes on our faces, on `realism-enhancer-skin`)
+## 2026-10-31, the night, later (the user: the grafted eyes on our faces, on `realism-enhancer-skin`)
 
-- **"Before you continue one thing you could maybe do is look how the eyes are modelled in the default TAU blend and make
+- **"Before you continue one thing you could maybe do is look how the eyes are modelled in the default .blend and make
   ours match the upper face shape (but still let the face shape be modified ...), if that's even possible, then you can
   just use the default .blend eyebrow as starter (which is placed correctly) and modify based off that, I don't mind
-  adding more vertices around the eyes."** The brows: Start from TAU's brows (CHARACTER_STUDIO §2b), the handles on
-  TAU's own outline. Then: **"is there any way we could use the eye shape and eyelid shape that TAU has in our
-  modifiable version ... in ours the eyelids look like thin skin bending over the eye whereas TAU the eyelids actually
-  look like meaty flesh that curves in, ideally we want TAU's look for the eyes, eyelid shape and then make it modifiable
+  adding more vertices around the eyes."** The brows: Start from the add-on's brows (CHARACTER_STUDIO §2b), the handles on
+  the add-on's own outline. Then: **"is there any way we could use the eye shape and eyelid shape that the base mesh has in our
+  modifiable version ... in ours the eyelids look like thin skin bending over the eye whereas the base mesh's eyelids actually
+  look like meaty flesh that curves in, ideally we want that look for the eyes, eyelid shape and then make it modifiable
   through some basic shape keys ... the eyes don't need to be massively adjustable (just more asian or caucasian etc and
-  size)."** Yes: **TAU's eyes** (CHARACTER_STUDIO §2c, `tools/eye_patch.py`, `eyegraft.js`): TAU's eye region grafted
+  size)."** Yes: **the grafted eyes** (CHARACTER_STUDIO §2c, `tools/eye_patch.py`, `eyegraft.js`): the base mesh's eye region grafted
   onto MHR's face (its own loops, about 2,400 points an eye where MHR has about 550), riding MHR's triangles, its own
-  blink; in the Studio first, off by default (Skin, Eyes, TAU's eyes). The shape keys and the export next.
-- **The licence of TAU's head**: TAU's pack is CC BY-SA 4.0, but its demo head looks like Blender Studio's Human Base
+  blink; in the Studio first, off by default (Skin, Eyes, the grafted eyes). The shape keys and the export next.
+- **The licence of the base mesh's head**: the add-on's pack is CC BY-SA 4.0, but its demo head looks like Blender Studio's Human Base
   Meshes body (CC0: the same object names, `GEO-body_female_realistic` and its `.eye.L`/`.eye.R`). Until it's compared
   with the bundle itself (www.blender.org is blocked in the cloud sessions; the user can allow it or download the
   bundle), the graft stays on the machine: `Content/Studio/Bodies/MHR_eyes.bin` is git-ignored, made by
@@ -56,8 +56,8 @@ The user's answers, newest first. They override the plan, the research and the d
   front (MetaHuman's), a MetaHuman head without its hair. Then: **"Could you make an easy eyebrow editor tool where I
   manually can add and adjust the eyebrows and eyelashes inside an easy wrapper?"** Built (CHARACTER_STUDIO §2b): Face,
   Brows & lashes by hand, Edit on the face (handles on the brows' edges and the lashes' tips, Mirror, brushes, a blink,
-  styles and sliders), the hairs at TAU's thickness and look, the lashes forward and swept out (defaults tuned on the
-  references), saved with the character, carried by the export. TAU's bake stays as an option.
+  styles and sliders), the hairs at the add-on's thickness and look, the lashes forward and swept out (defaults tuned on the
+  references), saved with the character, carried by the export. The add-on's bake stays as an option.
 
 ## 2026-10-31, later (the user: the eyes, the brows and lashes, on `realism-enhancer-skin`)
 
@@ -70,12 +70,12 @@ The user's answers, newest first. They override the plan, the research and the d
   eyelashes, eyebrows so far. Keep the skin stuff you did for Godot though."** Then, **before committing to that:**
   "look through git if there is anyone who has figured out how to do MetaHuman-like eyebrows and eyelashes
   procedurally ... check if there are alt pathways." The hybrid face plan is **on hold**, the user's call.
-- **"I'd be happy to use TAU's Procedural Human Hair and bake it onto the model before exporting to Godot if you can
-  figure out how to get it to work."** Built (docs/TAU_HAIR.md): TAU's generators run headless in Blender's module on a
+- **"I'd be happy to use a third-party procedural hair add-on and bake it onto the model before exporting to Godot if you can
+  figure out how to get it to work."** Built (since removed): the add-on's generators run headless in Blender's module on a
   character's export, the lashes tidied, pinned to MHR's triangles, worn by the Character Studio (Face, **Bake with
-  TAU**), carried by the export to the desk and Godot. **TAU's pack is CC BY-SA 4.0 (by TAU):** its .blend stays out of
-  git (`vendor/tau/`, the user's download; it came in on a branch of its own, `tau-transfer`, still on the remote:
-  ask before deleting it); credit TAU; hair it grows is shared under its terms.
+  the add-on**), carried by the export to the desk and Godot. **the add-on's pack is CC BY-SA 4.0:** its .blend stays out of
+  git (vendor/, the user's download; it came in on a branch of its own, the old transfer branch, still on the remote:
+  ask before deleting it); credit the add-on; hair it grows is shared under its terms.
 - **"Make sure the eyes don't clip through the eyelids ... make sure the eyes can close properly without clipping. I
   think I might have told you to go back on the eye fixes you did, make sure that the eyes don't look like white
   paint and follow Unreal's MetaHuman inspired coloring and wetness so the eyes look more natural in game."** The

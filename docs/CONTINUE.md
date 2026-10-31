@@ -11,47 +11,47 @@ the to-do built there, with the Studio's eyes from the side, a small nose and th
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## 0. `realism-enhancer-skin` (2026-10-31, the night, the last): the grafted eyes for everyone, TAU gone
+## 0. `realism-enhancer-skin` (2026-10-31, the night, the last): the grafted eyes for everyone, the add-on gone
 
 The user: make the base mesh's eyes the default ("I don't care about the old eyes"), upgrade our own brows and lashes
-with what TAU's technique does, and remove TAU. Done (DECISIONS 2026-10-31, the last; CHARACTER_STUDIO §2b, §2c):
+with what the add-on's technique does, and remove the add-on. Done (DECISIONS 2026-10-31, the last; CHARACTER_STUDIO §2b, §2c):
 `Content/Studio/Bodies/MHR_eyes.bin` is committed and worn by every character (Blender Studio's Human Base Meshes'
 lids, CC0; `eye_patch.py make` from `vendor/human_base_meshes/`); the brows and lashes by hand gained trimmed edges,
-clumps, frizz, the curl at the lash tip, uneven lashes (`groom.js`, docs/research/brows_lashes.md); `tau_hair.py`,
-`tau.js`, docs/TAU_HAIR.md, Bake with TAU, Start from TAU's brows and TAUHAIR are gone. Next: the user's look (a local
-STUDIO run on the GPU); the eyelid-line handles on the graft; the remote `tau-transfer` branch (ask before deleting).
+clumps, frizz, the curl at the lash tip, uneven lashes (`groom.js`, docs/research/brows_lashes.md); the add-on's
+bake tool, its Studio loader, its notes, its bake button, Start from the add-on's brows and its check are gone. Next: the user's look (a local
+STUDIO run on the GPU); the eyelid-line handles on the graft; the remote the old transfer branch (ask before deleting).
 
-## 0c. `realism-enhancer-skin` (2026-10-31, the night, later): TAU's eyes on our faces, in the Studio
+## 0c. `realism-enhancer-skin` (2026-10-31, the night, later): the grafted eyes on our faces, in the Studio
 
-The user asked for TAU's eye and lid shape ("meaty flesh that curves in") on our editable faces, with a few shape keys
+The user asked for the base mesh's eye and lid shape ("meaty flesh that curves in") on our editable faces, with a few shape keys
 (more Asian or Caucasian, size). Built so far (CHARACTER_STUDIO §2c): `tools/eye_patch.py` (make, preview, check:
-EYEPATCH) grafts TAU's eye region onto MHR's face; the Studio wears it (Skin, Eyes, TAU's eyes; `eyegraft.js`), open
-to shut. Also Start from TAU's brows (§2b). The shape keys are in (size, crease monolid to double
-lid, inner fold, tilt, opening, depth; presets TAU, East Asian, Caucasian). The export carries it (the graft in the skin with
-its blink's morph targets, baked; EYELIDS on `_taueyes`) and Godot shuts it. Next: the user's look; the eyelid-line
+EYEPATCH) grafts the base mesh's eye region onto MHR's face; the Studio wears it (Skin, Eyes, the grafted eyes; `eyegraft.js`), open
+to shut. Also Start from the add-on's brows (§2b). The shape keys are in (size, crease monolid to double
+lid, inner fold, tilt, opening, depth; presets Default, East Asian, Caucasian). The export carries it (the graft in the skin with
+its blink's morph targets, baked; EYELIDS on `_graftedeyes`) and Godot shuts it. Next: the user's look; the eyelid-line
 handles on the graft; the head's licence (compare with Blender's Human Base Meshes). The head's licence: compare it with Blender's Human Base Meshes bundle when
 www.blender.org is reachable (DECISIONS).
 
 ## 0b. `realism-enhancer-skin` (2026-10-31, the night): brows and lashes by hand, waiting for the user's try
 
-The user liked TAU's lash texture but not its design ("they move up too upwards") and asked for "an easy eyebrow editor
+The user liked the add-on's lash texture but not its design ("they move up too upwards") and asked for "an easy eyebrow editor
 tool where I manually can add and adjust the eyebrows and eyelashes inside an easy wrapper". Built: Face, **Brows &
 lashes by hand** (CHARACTER_STUDIO §2b, `groom.js`, GROOM): Edit on the face, handles on the brows' edges and the lashes'
-tips, Mirror, Add hair / Thin out / Comb, a blink, styles and sliders, at TAU's thickness; the lashes forward and swept
+tips, Mirror, Add hair / Thin out / Comb, a blink, styles and sliders, at the add-on's thickness; the lashes forward and swept
 out. Sheet: `docs/godot_sheets/2026-10-31_brows_lashes_by_hand.jpg`. Next, the user's try: what the handles, brushes and
 defaults need. Ideas: a brow-shape library (arched, straight, soft angled) as handle presets; per-hair brushes for
 strays; the lower lashes' own handles.
 
-## 0a. `realism-enhancer-skin` (2026-10-31, later): TAU's brows and lashes, eyes that close, waiting for the user's review
+## 0a. `realism-enhancer-skin` (2026-10-31, later): the add-on's brows and lashes, eyes that close, waiting for the user's review
 
-The user's asks (DECISIONS 2026-10-31, later): MetaHuman-like eyes, brows and lashes; then TAU's Procedural Human Hair
-for the brows and lashes (its .blend at `vendor/tau/`, git-ignored, CC BY-SA 4.0); then eyes that don't clip through the
-lids, open or shut, and whites that aren't paint, wet as MetaHuman's. Built: `tools/tau_hair.py` (docs/TAU_HAIR.md) and
-the Studio's **Bake with TAU**; the export's blink (morph targets with in-betweens, the lids kept off the eyes, met when
-shut), `HSBlink` in Godot, the tear line, the whites (GODOT_LOOK §5f); EYELIDS and TAUHAIR. Pictures:
+The user's asks (DECISIONS 2026-10-31, later): MetaHuman-like eyes, brows and lashes; then a third-party procedural hair add-on
+for the brows and lashes (its .blend at vendor/, git-ignored, CC BY-SA 4.0); then eyes that don't clip through the
+lids, open or shut, and whites that aren't paint, wet as MetaHuman's. Built: the add-on's bake tool (since removed) and
+the Studio's bake button for it; the export's blink (morph targets with in-betweens, the lids kept off the eyes, met when
+shut), `HSBlink` in Godot, the tear line, the whites (GODOT_LOOK §5f); EYELIDS and its check. Pictures:
 `Saved/Story/_look/godot_eyelids/blink.jpg`. Open: a lash clump at an inner corner and a fold at an outer corner in the
-shut picture; the brows placed by TAU's own region (not our brow rows); a presets sheet; the eyes don't turn in Godot;
-the hybrid MetaHuman-face plan on hold; `tau-transfer` still on the remote (ask before deleting). The STUDIO browser
+shut picture; the brows placed by the add-on's own region (not our brow rows); a presets sheet; the eyes don't turn in Godot;
+the hybrid MetaHuman-face plan on hold; the old transfer branch still on the remote (ask before deleting). The STUDIO browser
 check wants a local GPU run (the socket shade and the export's blink and tear line are in its path).
 
 ## 0b. `realism-enhancer-skin` (2026-10-30, night): the Studio's characters less like dolls, waiting for the user's review

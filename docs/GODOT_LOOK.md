@@ -659,7 +659,7 @@ so the eyes look more natural in game". What there was: a Studio export **couldn
 targets: bakeplay.gd's faces waited on "a body with morph targets"); the export rested the lids on the eyeballs at rest
 (`lidsRest`), so open the file was clean (measured from five sides: nothing of the eye in front of a lid); the whites
 rendered 1.3 to 1.8 times as bright as the skin under them, flat and neutral. The sheet, before and after (open, half
-shut, shut, on `_skintest` with TAU's brows and lashes): `docs/godot_sheets/2026-10-31_eyes.jpg`.
+shut, shut, on `_skintest` with the add-on's brows and lashes): `docs/godot_sheets/2026-10-31_eyes.jpg`.
 
 **The blink in the file** (`tools/character/index.html`: `blinkShapes`, `blinkTargets`, `meetLids`, `keepPoints`,
 `sparseTargets`): MHR's `eyesClosed_L` and `eyesClosed_R` as morph targets by MHR's names on the skin, the lashes, the
@@ -700,13 +700,13 @@ line in Godot's light (and at 0.45 of it): `gain` 0.2, roughness 0.2.
 
 **What lies on the lids comes forward with them** (`liftWith`): the export brings the lids forward onto the eyeballs (up
 to 3.9 mm) and the lashes, the lash line, the tear line and the brows stayed on the Studio's lids behind them; now each
-point is lifted by the MHR point it rides (a lash card by its root's). (TAU's strands, since removed, were moved back off
+point is lifted by the MHR point it rides (a lash card by its root's). (the add-on's strands, since removed, were moved back off
 the lift before they were pinned.)
 
 **EYELIDS** (`tools/godot/eyelids_check.py`): the file's skin and eyeballs drawn as depth from the front and four sides at
 every twentieth of the blink, as Godot puts the targets together: nothing of the eye in front of a lid (at most
 0.005 mm², 0.01 mm deep, on `_skintest`), open the eyes show, shut nothing of them from the front; then in Godot with the
-eyeballs a flat green: open thousands of green pixels, held shut none; `blink.jpg` open, half and shut. A file with TAU's eyes (its skin's extras `eyeGraft`, CHARACTER_STUDIO §2c) is measured with its lining and its lids' backs on the eye left out (they face the eyeball and lie in it), a 2.5 mm reach and the lids' touch within 0.1 mm.
+eyeballs a flat green: open thousands of green pixels, held shut none; `blink.jpg` open, half and shut. A file with the grafted eyes (its skin's extras `eyeGraft`, CHARACTER_STUDIO §2c) is measured with its lining and its lids' backs on the eye left out (they face the eyeball and lie in it), a 2.5 mm reach and the lids' touch within 0.1 mm.
 
 **Not yet**: the eyes don't turn in Godot (a glance, look-at); the Studio export carries only the blink of MHR's 72
 shapes (bakeplay.gd sets the others on a body that has them); the lid has no thickness of its own (MetaHuman's waterline);

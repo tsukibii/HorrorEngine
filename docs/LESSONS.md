@@ -12,28 +12,28 @@ the fix.
 
 ## This project
 
-- **A graft takes over every deformation of what it replaces:** TAU's eyes rode MHR's face without MHR's blink, but
-  MHR's blink still moved the skin round them, and shut, the seam opened into black slivers. Second try: with TAU's eyes
+- **A graft takes over every deformation of what it replaces:** the grafted eyes rode MHR's face without MHR's blink, but
+  MHR's blink still moved the skin round them, and shut, the seam opened into black slivers. Second try: with the grafted eyes
   on, MHR's own eyesClosed is left out of the face altogether; the graft shuts its own way.
 - **Lids rest on the outermost surface under them, not the eyeball's sphere:** our cornea bulges about 2 mm past the
-  white (TAU's barely does), and TAU's shut lids, seated on the white's sphere, showed the cornea and the pupil through
+  white (the base mesh's barely does), and the base mesh's shut lids, seated on the white's sphere, showed the cornea and the pupil through
   them. Second try: each lid point is kept out of whichever is further out under it, the cornea's dome or the white.
-- **A shut lid shows skin no photo saw:** TAU's upper lid unfolds from under the crease as it shuts, and its UVs, laid on
+- **A shut lid shows skin no photo saw:** the base mesh's upper lid unfolds from under the crease as it shuts, and its UVs, laid on
   MHR's narrow lid, stretched what the photo had there (the test character's: a screenshot with the Studio's circles
   over the lid) into grey stripes, which a first look took for the studio lights' reflections; a blur alone only
   softened them (the stripes ran along the lid's angle). Second try: that part of the lid near the photo's own skin
   tone, and its skin and makeup worked out on the open lid laid flat, so they go down with it.
 - **A photo skin lives on MHR's UVs, so a graft's UVs come from where the skin it replaces was, by position:** UVs taken
-  from the nearest MHR triangle put the photo's eye (projected onto MHR's closed strip and the lid skin by it) on TAU's
-  shut lid as pale, jagged patches. Second try: TAU's lid laid on MHR's lid between the opening and the edge, round the
+  from the nearest MHR triangle put the photo's eye (projected onto MHR's closed strip and the lid skin by it) on the base mesh's
+  shut lid as pale, jagged patches. Second try: the base mesh's lid laid on MHR's lid between the opening and the edge, round the
   eye, and the strip left out.
 
-- **Read a generator's own controls before blaming its look:** TAU's lashes "stood up" because its Straight preset says
+- **Read a generator's own controls before blaming its look:** the add-on's lashes "stood up" because its Straight preset says
   so (Angle Inner 80°, Angle Outer 70°, off the lid's line: every other preset sweeps out at 40° to 10°), and a tidy that
   turned lashes up to keep them off the eye made it worse. Second try: the brows and lashes by hand, their angles
   measured on the user's references (the middle lashes 1.5 to 2.5 mm over the lid, not 3.7).
 - **A hair's look is its thickness as much as its texture:** the editor's first lashes and brows were drawn the same way
-  as TAU's but 30 to 50% thinner, and in Godot they faded to a faint line; at TAU's 0.055 mm they read as TAU's did.
+  as the add-on's but 30 to 50% thinner, and in Godot they faded to a faint line; at the add-on's 0.055 mm they read as the add-on's did.
 - **A name in a 3000-line page is shared:** the editor's handle list was called `GH`, as the garments' handles already
   were, and the whole page stopped with "Identifier 'GH' has already been declared"; grep a name before taking it.
 
@@ -50,7 +50,7 @@ the fix.
 - **MHR's shut lids don't shut:** they leave 15 to 20% of the opening (the Studio hides it by shrinking its cut). A file
   whose opening is cut out of the skin showed the eye through a slit with the lids "closed"; the export meets the
   cut's edges over the blink's last quarter.
-- **Pin a strand to the face it will be worn on:** TAU grew the lashes on the export, whose lids are brought forward
+- **Pin a strand to the face it will be worn on:** the add-on grew the lashes on the export, whose lids are brought forward
   onto the eyeballs (up to 4 mm); pinned there and rebuilt on the Studio's own face (not brought forward), each lash
   turned with its triangle's tilt and a fifth of them crossed the eye. Now each strand is moved back off the lift (the
   Studio's `body.bin`), pinned, and the export lifts it again with the lids (`liftWith`); our own lashes had stayed

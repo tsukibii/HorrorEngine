@@ -33,7 +33,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 BPY = ROOT / "vendor" / "blender" / ".venv" / "bin" / "python"
-BLENDS = [ROOT / "vendor" / "human_base_meshes", ROOT / "vendor" / "tau"]   # where a .blend holding the base mesh is looked for (any file with GEO-body_female_realistic)
+BLENDS = [ROOT / "vendor" / "human_base_meshes", ROOT / "vendor"]   # where a .blend holding the base mesh is looked for (any file with GEO-body_female_realistic)
 OUTDIR = ROOT / "Saved" / "eye_patch"                # the lined-up head's cache, the job
 BIN = ROOT / "Content" / "Studio" / "Bodies" / "MHR_eyes.bin"   # (committed: every character's eyes)
 LOOK = ROOT / "Saved" / "Story" / "_look" / "eyes"
@@ -574,9 +574,12 @@ def cmd_check(a):
 
 
 def find_blend():
-    """the first .blend in vendor/human_base_meshes/ (Blender Studio's bundle unpacked there), else in the other places"""
-    for d in BLENDS:
-        for f in sorted(d.rglob("*.blend")) if d.is_dir() else []:
+    """the first .blend in vendor/human_base_meshes/ (Blender Studio's bundle unpacked there), else one lying in another
+    vendor/ folder (Blender's own module under vendor/blender left out)"""
+    for f in sorted(BLENDS[0].rglob("*.blend")) if BLENDS[0].is_dir() else []:
+        return f
+    for d in sorted(x for x in BLENDS[1].iterdir() if x.is_dir() and x.name != "blender") if BLENDS[1].is_dir() else []:
+        for f in sorted(d.glob("*.blend")):
             return f
     return None
 

@@ -51,8 +51,8 @@ export is a bake like any other (§3, Export).
 
 ## 2b. Brows and lashes by hand (DECISIONS 2026-10-31, the night)
 
-The user, after TAU's bake (since removed, below): "The texture of the procedural eye lashes looks really good but the design you
-generated is very bad, they move up too upwards" (TAU's Straight preset stands its lashes at 70 to 80° off the lid line,
+The user, after the add-on's bake (since removed, below): "The texture of the procedural eye lashes looks really good but the design you
+generated is very bad, they move up too upwards" (the add-on's Straight preset stands its lashes at 70 to 80° off the lid line,
 and our tidy turned them up further to keep them off the eye), with four references (a brow, an eye at three-quarter, an
 eye from the front, a MetaHuman head without its hair); then "could you make an easy eyebrow editor tool where I manually
 can add and adjust the eyebrows and eyelashes inside an easy wrapper?" Built: **Face, Brows & lashes by hand** (since its own tab, **Brows & lashes**, before Hair, its first part **Fine hairs (shaped on the face)**, the clumped ones under it: DECISIONS 2026-10-31, the last)
@@ -76,16 +76,16 @@ can add and adjust the eyebrows and eyelashes inside an easy wrapper?" Built: **
   its soft edges and its front); an upper lash from the lid's edge over its rim, forward, easing up into its curl and
   swept toward the temple more the further out it grows (the inner ones a touch toward the nose), turned with the lid as
   it shuts; the lower lashes few, fine, uneven, down and out. Measured (GROOM): the middle lashes rise 2.4 mm over the
-  lid at 23° from straight out (it was 3.7 mm at 36° before the defaults were tuned on the references; TAU's Straight
+  lid at 23° from straight out (it was 3.7 mm at 36° before the defaults were tuned on the references; the add-on's Straight
   stood up), the outer ones swept 45° out; the brows' hairs within 0.33 mm of the skin.
 - **Blender's procedural hair technique** (DECISIONS 2026-10-31, the night, the last: "enhance our eyebrows and
-  eyelash system we already use and remove TAU"; the technique in our own words: docs/research/brows_lashes.md): the
+  eyelash system we already use and remove the add-on"; the technique in our own words: docs/research/brows_lashes.md): the
   brows' **Trimmed edges** (hairs near the top, the bottom and the front shorter, as a groomed brow's), **Clumps** (each
   hair's tip drawn toward a guide hair of its own 2 by 1.5 mm cell, the root staying), **Frizz** (each hair's own small
   waves), and lengths spread wide with a few long strays; the lashes' **Curl at the tip** (the curl gathered toward the
   tip: straight out of the lid, then up), **Uneven** (short lashes between the long), **Frizz**, and clumps of two to six
-  lashes drawn tighter at their tips. Every style sets them. TAU itself (its bake in Blender, Start from TAU's brows,
-  `tau_hair.py`, `tau.js`) is gone: nothing goes through Blender for brows and lashes.
+  lashes drawn tighter at their tips. Every style sets them. The add-on itself (its bake in Blender, Start from the add-on's brows,
+  the add-on's bake tool, its loader) is gone: nothing goes through Blender for brows and lashes.
 - **The lash line** (a slider under the lashes): the dark line along the lid where the lashes grow, a thin line at 0.2
   (the default), an eyeliner's at 1; the upper lashes grow along the whole lid, its inner corner to its outer one (they
   stopped short of both ends before the user's note: "the upper eyelashes don't reach out the entire eyelid line").
@@ -106,30 +106,29 @@ three-quarter and shut).
 eyes from the start, I don't care about the old eyes"): the graft is `Content/Studio/Bodies/MHR_eyes.bin`, committed,
 and the Studio wears it whenever it's there (no switch, no Make button; MHR's own cut lids and the eyelid line only if
 the file is missing). Its source is the eye region of **Blender Studio's Human Base Meshes** (CC0; the user checked that
-the head in TAU's file is that body, `GEO-body_female_realistic`); `python tools/eye_patch.py make` remakes it from the
-bundle's .blend in `vendor/human_base_meshes/` (or `--blend PATH`). Where this section says "TAU's", read the base
-mesh's: it's the history of how it was found.
+the head in the add-on's file is that body, `GEO-body_female_realistic`); `python tools/eye_patch.py make` remakes it from the
+bundle's .blend in `vendor/human_base_meshes/` (or `--blend PATH`).
 
-The user: "in ours the eyelids look like thin skin bending over the eye whereas TAU the eyelids actually look like meaty
-flesh that curves in, ideally we want TAU's look for the eyes, eyelid shape and then make it modifiable through some
+The user: "in ours the eyelids look like thin skin bending over the eye whereas the base mesh's eyelids actually look like meaty
+flesh that curves in, ideally we want that look for the eyes, eyelid shape and then make it modifiable through some
 basic shape keys". Why ours read thin: MHR's eye is a closed shell of skin cut open along the lid line, so the lid ends
-in an edge with no thickness (the export lays it onto the eyeball, a sheet over a ball). TAU's demo head is one closed
+in an edge with no thickness (the export lays it onto the eyeball, a sheet over a ball). The base mesh's head is one closed
 skin that wraps round the eyeball like a socket: the lids are about 2 mm thick, their edge is rounded and rolls in to
 touch the eye, the skin goes on just inside the eyeball behind them, the upper lid bulges over the eyeball up to a
-crease, the lower lid has a soft roll. Measured (`tools/eye_patch.py`): TAU's eyeball 13.8 mm; its lids 1 to 3 mm over
-it; within 15 mm of the eye's centre TAU has 4,391 points at its second multires level where MHR has 268.
+crease, the lower lid has a soft roll. Measured (`tools/eye_patch.py`): the base mesh's eyeball 13.8 mm; its lids 1 to 3 mm over
+it; within 15 mm of the eye's centre the base mesh has 4,391 points at its second multires level where MHR has 268.
 
-- **The graft** (`python tools/eye_patch.py make`, inside Blender's module): TAU's head lined up on MHR's base face (a
+- **The graft** (`python tools/eye_patch.py make`, inside Blender's module): the base mesh's head lined up on MHR's base face (a
   similarity fitted over the upper face round the eyes, 0.46 mm off it at the median); the left eye's region taken as
-  TAU's own loops (80 points where the skin meets the eyeball, then 19 loops out over the lids and 5 in over the lining);
+  the base mesh's own loops (80 points where the skin meets the eyeball, then 19 loops out over the lids and 5 in over the lining);
   its outer loops eased onto MHR's skin; MHR's triangles inside it hidden and the gap stitched (59 of MHR's points round
   the hole are the graft's too: no seam); the right eye the left mirrored. Each point keeps the MHR triangle nearest it
   (not MHR's strip over the eye) and moves as its points do, so the sliders, the sculpt, a photo's fit and the
-  expressions carry it. Its UVs: TAU's lid laid on MHR's lid between the opening and the edge, so a photo skin or paint
+  expressions carry it. Its UVs: the base mesh's lid laid on MHR's lid between the opening and the edge, so a photo skin or paint
   shows the photo's lid on it. `Content/Studio/Bodies/MHR_eyes.bin` (committed: every character's eyes).
 - **In the Studio** (`eyegraft.js`; Skin, Eyes; on every character):
   drawn on the skin's own material, the wet membrane (the lining, where the lid meets the eye, its edge behind the lash
-  line) pinker and glossier (skinshader.js); the eyeball TAU's size, following the skin round the eye (loops 15 and out)
+  line) pinker and glossier (skinshader.js); the eyeball the base mesh's size, following the skin round the eye (loops 15 and out)
   and growing with it; the lid's edge and the lining seated back on the eyeball as they rest on it; drawn behind real
   lids (no stencil, no cut); the lid shadow, the tear line, the lashes and the liner take its opening and its lid edges
   (`outline32`, `rim`).
@@ -138,17 +137,17 @@ it; within 15 mm of the eye's centre TAU has 4,391 points at its second multires
   whole, fading out by the 13th loop), so the lids slide over the eyeball and meet; never into the eyeball or the
   cornea's bulge (the lid rides over it shut, as a real lid shows the cornea's bump). MHR's own eyesClosed is left out
   while it's on.
-- **The shape keys** (under TAU's eyes, with a preset menu: TAU, East Asian, Caucasian; saved with the character as
+- **The shape keys** (under the grafted eyes, with a preset menu: Default, East Asian, Caucasian; saved with the character as
   `st.eyes.shape`): **Eye size** (the eyeball and the opening together, 8% either way), **Crease** (−1 a monolid: the
-  fold over the lid filled and a little lower; +1 a deep double lid: the fold set in; at TAU's crease, about the 12th
+  fold over the lid filled and a little lower; +1 a deep double lid: the fold set in; at the base mesh's crease, about the 12th
   loop, where the lid plate lying 1.85 mm over the eyeball meets the skin rising to the brow), **Inner fold** (the upper
   lid's skin over the inner corner, its edge staying), **Tilt** (the outer corner up or down, 8°), **Opening** (the lids
   apart or nearer), **Depth** (the eye and its lids back under the brow or forward, 1.2 mm). Our own fields in the eye's
   frame (eyegraft.js `SHAPE_KEYS`, eye_patch.py `apply`), size, tilt and depth fading by an even falloff from the opening
-  to the graft's edge (harmonic over its triangles: TAU's loops bunch up toward the nose). East Asian is crease −0.8,
+  to the graft's edge (harmonic over its triangles: the base mesh's loops bunch up toward the nose). East Asian is crease −0.8,
   inner fold 0.6, tilt 0.25, opening −0.3, depth 0.35; Caucasian crease 0.6, opening 0.15, depth −0.4.
 - **The shut lid** (the user, seeing grey stripes on it: "should just blend in with the rest of the skin color but maybe
-  make it possible to apply makeup (eye shadow) onto that closed eyelid part"): shut, TAU's upper lid unfolds over skin
+  make it possible to apply makeup (eye shadow) onto that closed eyelid part"): shut, the base mesh's upper lid unfolds over skin
   that a photo never saw open (open, it lies folded under the crease), and its UVs, laid from MHR's narrow lid, stretched
   whatever the photo had there into stripes (on the test character, a screenshot with the Studio's circles printed over
   the lid). So from its edge to the crease the lid reads the photo and the paint four mip levels softer and 90% of the
@@ -156,8 +155,8 @@ it; within 15 mm of the eye's centre TAU has 4,391 points at its second multires
   open, laid flat from the lash line to the crease (`skinPlaces`, the drawn objPos), with the makeup's lid lines from the
   open lid (`lidFront`, `skinLm`): eyeshadow put on the open lid covers the shut lid from the lash line to the crease and
   goes down with it, as on a real lid; the liner stays on the lashes' roots.
-- **The graft's extent**: TAU's own loops kept to the 21st (eased onto MHR's skin from the 16th, so TAU's crease and the
-  fold over it stay TAU's), reaching 12 mm above the eye's centre, under the brow's ends; so the brows lie on whichever
+- **The graft's extent**: the base mesh's own loops kept to the 21st (eased onto MHR's skin from the 16th, so the base mesh's crease and the
+  fold over it stay the base mesh's), reaching 12 mm above the eye's centre, under the brow's ends; so the brows lie on whichever
   skin is there (`skinNear` takes the graft's triangles and leaves out MHR's hidden ones).
 - **EYEPATCH** (`python tools/eye_patch.py check`, in check_all; says so and passes when the graft isn't made here): the
   seam (MHR's own points round the hole, the edge on MHR's skin), the right eye the left mirrored, and on MHR's base and
@@ -165,15 +164,15 @@ it; within 15 mm of the eye's centre TAU has 4,391 points at its second multires
   the eyeball open or shut, shut the lids meeting (within their edge's own spacing), the lid's edge on the eyeball. The
   Studio's points match it within a micron away from the cornea (over it they ride out with its bulge). `preview` draws
   it as clay (open, shut, and on a character: `Saved/Story/_look/eyes/`).
-- **The export** (Export for desk / Unreal with TAU's eyes on): the skin carries the graft in place of MHR's skin under
+- **The export** (Export for desk / Unreal with the grafted eyes on): the skin carries the graft in place of MHR's skin under
   it, each of its corners on its MHR triangle's points and shares (`_MHRP`, `_MHRW`: the desk plays MHR's face shapes
   through them as the Studio does), its blink as `eyesClosed_L`/`_R` and their in-betweens, taken from the Studio's
   own shut states (MHR's skin holds still); the bake draws the graft over MHR's lids in the skin's texture, so its
   colours, the shut lid's tone, the waterline and the makeup reach Godot, where `HSBlink` shuts it as any export; the
   eyeballs are the graft's; the file's extras say `eyeGraft`. EYELIDS on such a file leaves out what faces the eyeball
-  and lies in it (the lining, the lids' backs on the eye), reaches 2.5 mm behind the eye's front (TAU's lids are 2 to 3
+  and lies in it (the lining, the lids' backs on the eye), reaches 2.5 mm behind the eye's front (the base mesh's lids are 2 to 3
   mm thick: farther is the far lid's rim through the opening) and takes contact within 0.1 mm as the lids' touch:
-  `_taueyes` (a copy of `_studiotest` with TAU's eyes) at most 0.008 mm² through the blink, shut nothing, held shut in
+  `_graftedeyes` (a copy of `_studiotest` with the grafted eyes) at most 0.008 mm² through the blink, shut nothing, held shut in
   Godot nothing.
 - **Not yet**: the eyelid-line handles on the graft; a lighter waterline along the shut lash line (the bake carries a
   little of its pink to the lid's front).
