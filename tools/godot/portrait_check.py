@@ -1,7 +1,8 @@
 """GDPORTRAIT: a Character Studio export as a portrait in Godot, the way the game wears it (HSSkin with its detail
 layer, HSEye, HSHair), under a character reel's light and the game's own lamp, at four distances: a medium close-up, a
 close-up, an extreme close-up of the cheek (the pores) and the player's medium shot; the same again with the skin's
-detail layer off, and the two side by side on one sheet. The measures: at the extreme close-up the detail layer gives
+detail layer off, and the two side by side on one sheet. With hair: the salon's bake worn MetaHuman's way when the file
+carries it (shell normals, strand numbers: GODOT_LOOK §5e) and the darkened scalp in its own colour. The measures: at the extreme close-up the detail layer gives
 the cheek a fine grain the plain skin hasn't (the pores and the furrows between them), at the medium shot it changes
 the picture little (no pattern from afar: the layer fades into roughness), and the skin is no brighter or darker for
 it. Pictures and the sheet in Saved/Story/_look/godot_portrait/. Ends "GDPORTRAIT ok". Needs a Studio export (STUDIO
@@ -63,6 +64,14 @@ def run(g, out, args, env):
     return text, ""
 
 
+def shell_hair(glb):
+    """the export carries the salon's bake as a volume (a hair material whose studioHair record has shell normals)"""
+    import struct
+    b = glb.read_bytes()
+    j = json.loads(b[20:20 + struct.unpack("<I", b[12:16])[0]])
+    return any("shell" in str((m.get("extras") or {}).get("studioHair", {}).get("normal", "")) for m in j.get("materials", []))
+
+
 def sheet(keep, rows, path):
     """rows: [(label, tag)], each a row of the four shots, scaled to 480 x 270"""
     from PIL import Image, ImageDraw
@@ -86,6 +95,7 @@ def main():
     ap.add_argument("--tag", default="")
     ap.add_argument("--keep", default=str(KEEP))
     ap.add_argument("--quick", default="")
+    ap.add_argument("--hair", default="", help="the hair shader's numbers as JSON over the bake's (tuning)")
     ap.add_argument("--sss", type=int, default=-1, help="the screen-space scattering's quality for this run (0 off to 3 high; the game's own when unset)")
     a = ap.parse_args()
     g = godot_bin()
@@ -113,7 +123,7 @@ def main():
     subprocess.run([g, "--headless", "--path", str(OUT), "--import"], capture_output=True, text=True, timeout=900)
     keep = Path(a.keep)
     keep.mkdir(parents=True, exist_ok=True)
-    base = [f"--glb=res://people/{glb.name}", f"--out={keep}"] + ([f"--preset={a.preset}"] if a.preset else [])
+    base = [f"--glb=res://people/{glb.name}", f"--out={keep}"] + ([f"--preset={a.preset}"] if a.preset else []) + ([f"--hair={a.hair}"] if a.hair else [])
     tag = a.tag or ("before" if a.plugin else "portrait")
     if a.quick:
         text, err = run(g, OUT, base + [f"--tag={tag}", f"--shots={a.quick}"], env)
@@ -148,6 +158,15 @@ def main():
     print(("  ok  " if lum else "  BAD ") + "and no brighter or darker for it: " + ", ".join(
         "%s %.2f" % (s, on["shots"][s]["lum"] / max(1e-6, off["shots"][s]["lum"])) for s in SHOTS))
     ok = ok and fine and calm and lum
+    if on.get("hair_mats"):                                               # the hair (GODOT_LOOK §5e)
+        if shell_hair(glb):
+            worn = on.get("hair_baked", 0) >= 1
+            print(("  ok  " if worn else "  BAD ") + "the salon's bake worn MetaHuman's way: %d of %d hair materials with its shell normals and strand numbers" % (on.get("hair_baked", 0), on["hair_mats"]))
+            ok = ok and worn
+        if on.get("scalps"):
+            col = on.get("scalps_coloured", 0) == on["scalps"]
+            print(("  ok  " if col else "  BAD ") + "the darkened scalp in its own colour, not the importer's white: %d of %d" % (on.get("scalps_coloured", 0), on["scalps"]))
+            ok = ok and col
     rows = [("the skin's detail off", "plain"), ("the skin's detail on" + (f" ({a.preset})" if a.preset else ""), tag)]
     if (keep / "before_mcu.png").exists():
         rows.insert(0, ("before (the plugin as it was)", "before"))

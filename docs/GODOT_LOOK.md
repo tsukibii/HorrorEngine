@@ -499,8 +499,8 @@ the lit crown band brighter than the dull one by 5% (24% measured), the stepped 
 bits a channel) under half the lit one's (265 against 1013), the dithered picture's grain there (the mean step between
 neighbouring pixels) over the stepped one's by 1.3 (0.019 against 0.009; the dither's own colours under AgX and TAA
 put the retro count at 419).
-Not yet: a hashed alpha under TAA for softer edges (the plain scissor keeps the headless pictures measurable), the
-salon's inner colour and clump shades (the atlas's G and B channels are baked into the export's albedo already).
+Not yet: the salon's inner colour and clump shades (the atlas's G and B channels are baked into the export's albedo
+already). The dithered coverage under TAA came with the salon's bake (§5e); a file without it keeps the soft scissor.
 
 ## 5d. Skin that isn't a doll's: the detail at its true size (`textures/`, `HSSkin.set_detail`), DECISIONS 2026-10-30, night
 
@@ -591,6 +591,62 @@ GDPEOPLE still measures the eye and the colours.
 file); wrinkle maps that deepen with the face's 72 shapes (MetaHuman's animated normals); the desk (it stays plain,
 DECISIONS 2026-10-30, night); the clothes' fabric detail the same way.
 
+## 5e. Hair MetaHuman's way: what the salon's bake carries and how Godot wears it (DECISIONS 2026-10-31)
+
+The user's ask, after the skin: "making better hair that looks similar to Unreal's MetaHuman (if possible), probably a
+shader/texture we need to bake when we do our current hair". What the hair looked like in Godot (the sheet
+`docs/godot_sheets/2026-10-31_hair.jpg`, top row): near-black planks with hard card edges, stripes card to card (each
+card lit by its own flat face), a white cap at the parting and the hairline, a black mass from behind, no strand detail
+close up. docs/research/hair_cards_unreal.md (2026-10-24) had the recipe, for Unreal; it's built for Godot:
+
+**The salon's bake writes** (`tools/character/salon.js` `buildBake`, `finishCards`; `hairvolume.js`):
+
+- **Shell normals** (the biggest gain): every card vertex of the hairstyle splatted into a density grid (8 mm cells) with
+  the head and body solid (the salon's collider), blurred over 12 mm; each vertex's normal becomes the volume's outward
+  direction, 80% over its card's own face, so the cards shade as one soft mass, no stripes, both faces alike.
+- **The tangent along each strand** (glTF's TANGENT, root to tip): the highlights run along the hair without guessing.
+- **The second UV** (TEXCOORD_1): x across the card (its two edges 0 and 1, for the sides to taper), y the occlusion
+  (twelve rays over the hemisphere round the shell normal marched 6 cm through the density: the inner layers, the roots
+  and the underside darker; its most open tenth 1, the layers deep under the outside a quarter darker still).
+- **Each strand's numbers** (`strandsTexture`, `hairshader.js`): the atlas's G (each strand's random number) and B (its
+  clump's) in the material's **occlusion slot**, R a faint shade per strand (0.8 to 1): a plain viewer only darkens some
+  strands' ambient a little. (The emissive slot was tried first: Godot's importer lights an emissive texture although
+  glTF's emissive colour is black by default, and the hair glowed in rainbow colours wherever HSHair wasn't on.)
+- **The record**: `studioHair` in the material's extras (what each slot and attribute holds) beside the salon's `look`.
+- **The darkened scalp's colour in its material** (its vertices white, carrying only its see-through), so a reader that
+  drops an unlit material's vertex colours draws a dark cap, never a white one.
+- The Character Studio's export keeps all of it (`exportRig`: a swinging lock's normals and tangents turned with it, no
+  longer recomputed) and gives the **brows and lashes** names (`brows`, `lashes`, `lash_line`, `brow_fill`), their own
+  strand numbers and records (their normals the cards' own: no volume for hairs lying on the skin).
+
+**HSHair wears it** (`hair.gd` `records`, `set_bake`; `hair.gdshader`): `HSHair.wear(node, look, glb_path)` reads each hair
+material's record from the file (the runtime's stand-ins, a scene's bodies, HSCharacterLook and the portrait pass the
+path) and, where the bake is a volume, turns on `BAKED`: the **coverage dithered** pixel by pixel and frame by frame
+(a per-pixel scissor threshold from interleaved gradient noise, the TAA averaging it into soft, see-through strands;
+thickened 1.15), the **roots fading in** over 6% of the strand, the **card's own face** (from the screen derivatives, not
+the shell) fading edge-on, the **card's sides tapering** over 45% of each half (a lock, not a plank), **two highlights**
+shifted by each strand's own number with **glints** on some strands, the salon look's own highlight colours, glosses and
+shifts, **light through the outer strands from behind** in the hair's colour squared, a soft **scatter** of the hair's
+colour, the diffuse partly by the strand's angle to the light (Kajiya's), the **occlusion** in full on the diffuse, the
+ambient and the highlights, the highlights 2.5 times the flat card's (`spec_gain`, tuned on the portrait: 4 washed the
+colour out). Brows and lashes take the strand numbers and the look but keep the soft scissor (a lash a pixel wide
+dithers away). The **darkened scalp and the brows' fill** get a material of their own (`scalp_material`: their colour by
+vertex over the file's own colour, faintly lit): Godot's importer had left them white. A glb without the record (an
+older export, a model from elsewhere) keeps §5c's look.
+
+**Found on the way**: the plugin matched meshes by name, and a character whose name holds "hair" (the test's
+`_hairbefore`) had the hair shader on its skin and eyes; now a Studio export's `<name>_skin` and `<name>_eye_*` are never
+hair, and HSSkin takes `<name>_skin` whatever the name.
+
+**The checks**: GDPORTRAIT's `--shots hair,hairecu` (the hair from behind and to one side; its strands close over the
+ear) and its hair measures (the bake worn when the file carries one; the scalp in its own colour; the pores' close-up
+hides the hair); HAIRVOLUME (`node tools/character/hairvolume_check.mjs`: a made-up head under two layers, the shell
+normals out of the mass, the inner layer darker); GDPEOPLE hides the hair (it measures the skin's colour and the eyes).
+
+**Not yet**: the salon's own live view still lights each card by its face (the bake's preview shows the shell); hair
+that pierces the outer layer after a fall still shows as a card; flyaway strands at the silhouette; the shoulder's fan
+of cards on a long cut is the hairstyle's own (it lies flat after the fall).
+
 ## 6. The story's words, and the check
 
 - `game.look`: `realism` (the default) or `plain` (STORY_FORMAT §9.1); `game.weather`: `rain` puts HSRain over every
@@ -619,7 +675,8 @@ DECISIONS 2026-10-30, night); the clothes' fabric detail the same way.
   own light (studioSkin's numbers) onto HSSkin's sliders~~ (2026-10-30, §5, with the export's normal and ORM maps);
   ~~skin that reads as a doll's: pores five times too big, wax from the scattering, no occlusion~~ (2026-10-30, night:
   §5d, the detail layer at its true size, the Studio's occlusion, the eyes' lid shadow); still open: the eye's colour
-  measured close in both, the eye's shadow fitted to each opening, and the clothes' maps (albedo only so far).
+  measured close in both, the eye's shadow fitted to each opening, and the clothes' maps (albedo only so far);
+  ~~hair as planks with a white cap~~ (2026-10-31, §5e: the salon's bake as a volume, worn MetaHuman's way).
 - ~~Wet walls under a leak~~ (§2b, 2026-10-30); ~~a mirror seen in a mirror~~ (§5b, 2026-10-30).
 - Seen by the user (2026-10-29): a square patch of light under a distant counter that goes when you come close.
   Most likely a VoxelGI cell at its coarse distance (the per-room probes meet at the counter), else the SSIL at a

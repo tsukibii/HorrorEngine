@@ -1184,4 +1184,16 @@ guessed margin; and a check that only ever ran on a slow machine hasn't been run
   with the scattering off once (`portrait_check.py --sss 0`) before deciding the detail is too faint.
 - **Paint a shader's coordinates before trusting a direction.** The eye's layout runs +y down the eye, so the "upper
   lid's" shadow first fell on the lower lid; a debug grid (`fract(eP.xy * 2)` as the colour) showed it in one picture.
+- **Godot's glTF importer lights an emissive texture** although glTF's emissive colour is black when it's left out:
+  the salon's strand numbers parked in the emissive slot glowed as rainbow hair wherever HSHair wasn't on (the editor,
+  GDPEOPLE's flat picture). Data rides in the occlusion slot, which only shades the ambient.
+- **Godot's importer drops an unlit glTF material's vertex colours**: the salon's darkened scalp (its colour by vertex,
+  unlit) showed as a white cap at the parting and the hairline in every game. An unlit material's colour goes in its
+  base colour; the vertex colours carry only what can be lost (the see-through).
+- **Name matching meets the character's own name**: `_hairbefore_skin` was taken for hair and `_hairbefore_eye_L` with
+  it. A Studio export's parts are matched by their suffix first (`_skin`, `_eye_`), the words after.
+- **A dithered coverage thins a strand narrower than a pixel to nothing**: the lashes vanished under the hair's hashed
+  cut. Hairs lying on the skin keep the soft scissor.
+- **Measure one part with the others out of the picture**: the pores' close-up started measuring the hair once a long
+  cut fell into it (the grain ratio 1.16 instead of 1.76); the portrait hides the hair for that shot.
 

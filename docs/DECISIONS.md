@@ -2,6 +2,19 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-31 (the user: the hair, after the skin, on `realism-enhancer-skin`)
+
+- **"Can you now work on the hair part. Making better hair that looks similar to Unreal's MetaHuman (if possible),
+  probably a shader/texture we need to bake when we do our current hair."** Built, for their review (GODOT_LOOK §5e):
+  the salon's bake carries the hair as a volume (each card vertex's shell normal and occlusion from the hairstyle in a
+  density grid with the head solid, the tangent along each strand, where across its card it is, each strand's numbers in
+  the occlusion slot, a `studioHair` record), the Character Studio's export keeps it and gives brows and lashes the same
+  numbers, and Godot's HSHair wears it from the file's records: soft dithered coverage under TAA, the roots fading in,
+  tapered card sides, two highlights with glints in the salon look's colours, light through from behind, a scatter, the
+  occlusion. Found and fixed on the way: the darkened scalp and the brows' fill showed white in Godot (the importer
+  drops an unlit material's vertex colours); a character whose name holds "hair" had the hair shader on its skin; the
+  emissive slot, tried first for the strand numbers, glowed in plain Godot. Kept on the same branch as the skin.
+
 ## 2026-10-30, night (the user: the Studio's characters less like dolls, on `realism-enhancer-skin`)
 
 - **"Take our studio creations for director/godot and make them look less like dolls and more like Unreal's

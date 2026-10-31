@@ -230,7 +230,8 @@ static func wear(node: Node, settings: Dictionary = {}, glb_path: String = "") -
 			var names: String = (mi.name + " " + (mi.mesh.surface_get_name(s) if mi.mesh is ArrayMesh else "") + " " + (old.resource_name if old != null else "")).to_lower()
 			if not (names.contains("skin") or names.contains("body") or names.contains("head") or names.contains("face")):
 				continue
-			if names.contains("eye") or names.contains("lash") or names.contains("brow") or names.contains("hair") or names.contains("teeth") or names.contains("tongue"):
+			var studio_skin: bool = String(mi.name).to_lower().ends_with("_skin")   # a Studio export's <name>_skin is the skin whatever the name (a character called Hairo)
+			if not studio_skin and (names.contains("eye") or names.contains("lash") or names.contains("brow") or names.contains("hair") or names.contains("teeth") or names.contains("tongue")):
 				continue
 			var tex: Texture2D = null
 			var tone := Color(1, 1, 1)

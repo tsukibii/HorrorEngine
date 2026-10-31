@@ -38,7 +38,16 @@ passed); the export's skin maps assertion, the part this branch changes (the por
 with the test's own code on an export with painted nails: relief 39 (8 wanted), roughness 0.32, 4112 thin pixels, the
 occlusion map on. A local run on the card (`GPU=1`, docs/RUN_LOCALLY.md) is the full answer.
 
-**Next, once they say yes:** the hair texturer for the Studio's baked hair, MetaHuman-like (their second ask). Open on
+**Then the hair** (2026-10-31, DECISIONS; GODOT_LOOK §5e): the salon's bake as a volume (shell normals and occlusion
+from `hairvolume.js`, strand tangents, the second UV across the card and its occlusion, each strand's numbers in the
+occlusion slot, `studioHair`), kept by the Studio's export (brows and lashes named, with their own numbers), worn by
+HSHair from the file's records (dithered soft coverage under TAA, tapered card sides, the roots fading in, two
+highlights with glints, light through from behind, a scatter); the white scalp cap and the brows' fill fixed; the sheet
+`docs/godot_sheets/2026-10-31_hair.jpg`. New: HAIRVOLUME, GDPORTRAIT's hair shots and measures. **For the user:**
+re-bake each character's hair in the salon (Bake), re-export it from the Studio, and look at it in Godot; tell us the
+softness (`density`, `side_fade`), the highlights (`spec_gain`), the light through from behind (`transmission`): HSHair's
+`BAKED` holds them. Open: the salon's live view still lights each card by its face; flyaways; a long cut's fan of
+cards on the shoulders is the hairstyle's own. Open on
 the skin: the eye's shadow fitted to each opening (the skin's `extras.openings` is in the file), wrinkle maps that
 deepen with the 72 shapes, the clothes' fabric detail the same way, the desk (plain by decision).
 

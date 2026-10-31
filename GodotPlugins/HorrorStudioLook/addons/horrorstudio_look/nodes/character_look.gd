@@ -46,7 +46,7 @@ func wear() -> void:
 	if eyes and path.ends_with(".glb"):
 		materials.append_array(HSEye.wear(t, path).values())
 	if hair:
-		materials.append_array(HSHair.wear(t, {}))
+		materials.append_array(HSHair.wear(t, {}, path if path.ends_with(".glb") else ""))
 
 
 ## the skin's wetness now (0..1 each)

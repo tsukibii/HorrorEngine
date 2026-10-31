@@ -1,9 +1,11 @@
 ## A Character Studio export as a portrait (docs/GODOT_LOOK.md §5d; tools/godot/portrait_check.py runs it): the glb
 ## worn as the game wears it (HSSkin, HSEye, HSHair), lit like a character reel (a big soft key from the side and
 ## above, a weak fill, a cool rim, a muted ground) and pictured at four distances: a medium close-up at three-quarter,
-## a close-up, an extreme close-up of the cheek and the nose's side (about 9 cm across: the pores), and the game's own
-## medium shot (the player's 90° lens at 1.2 m under a warm lamp). `--detail=off` pictures the same with the skin's
-## detail layer off (HSSkin's `detail` 0), for the before and after.
+## a close-up, an extreme close-up of the cheek and the nose's side (about 9 cm across: the pores; the hair hidden for
+## it), and the game's own
+## medium shot (the player's 90° lens at 1.2 m under a warm lamp); `--shots=hair,hairecu` the hair from behind and to
+## one side, and its strands close over the ear. `--detail=off` pictures the same with the skin's detail layer off
+## (HSSkin's `detail` 0), for the before and after.
 ##   godot --path PROJECT -s res://addons/horrorstudio_look/demo/portrait.gd -- --glb=res://people/NAME.glb --out=DIR [--detail=off] [--tag=NAME] [--preset=NAME] [--shots=ecu,cu]
 extends SceneTree
 
@@ -12,6 +14,7 @@ var out_dir := "res://"
 var tag := "portrait"
 var detail_on := true
 var preset := ""
+var hair_json := ""
 var n := 0
 var stage := 0
 var env: Environment
@@ -39,6 +42,8 @@ func _initialize() -> void:
 			detail_on = false
 		elif a.begins_with("--preset="):
 			preset = a.substr(9)
+		elif a.begins_with("--hair="):
+			hair_json = a.substr(7)
 		elif a.begins_with("--shots="):
 			STAGES = Array(a.substr(8).split(","))
 	root.size = Vector2i(1280, 720)
@@ -69,7 +74,27 @@ func _initialize() -> void:
 		for m in mats:
 			m.set_shader_parameter("detail", 0.0)
 	HSEye.wear(who, glb)
-	HSHair.wear(who, {})
+	var hs: Script = load("res://addons/horrorstudio_look/hair.gd")       # an older plugin's wear takes no glb (--plugin pictures one)
+	var hair_mats: Array = hs.callv("wear", [who, {}, glb] if hs.has_method("records") else [who, {}])
+	report["hair_mats"] = hair_mats.size()           # the hair: how much of it wears the salon's bake MetaHuman's way, and the scalp in its own colour
+	report["hair_baked"] = 0
+	for hm in hair_mats:
+		if hm is ShaderMaterial and hm.get_shader_parameter("shell_normals") == true and hm.get_shader_parameter("use_strands") == true:
+			report["hair_baked"] += 1
+	report["scalps"] = 0
+	report["scalps_coloured"] = 0
+	for mi in who.find_children("*", "MeshInstance3D", true, false):
+		if String(mi.name).to_lower().contains("scalp") and mi.mesh != null:
+			report["scalps"] += 1
+			var sm = mi.get_active_material(0)
+			if sm is StandardMaterial3D and sm.vertex_color_use_as_albedo:
+				report["scalps_coloured"] += 1
+	if hair_json != "":                              # the hair shader's numbers tried over the bake's (tuning)
+		var o = JSON.parse_string(hair_json)
+		if o is Dictionary:
+			for hm in hair_mats:
+				for k in o:
+					hm.set_shader_parameter(k, o[k])
 	report["skin_mats"] = mats.size()
 	report["detail"] = detail_on
 	if mats.size():
@@ -159,6 +184,10 @@ func room() -> void:
 
 
 func shoot(name: String) -> void:
+	for mi in who.find_children("*", "MeshInstance3D", true, false):     # the cheek's close-up is the skin's pores: the hair (and its scalp) out of it
+		var nm := String(mi.name).to_lower()
+		if HSHair.is_hair(nm) or nm.contains("scalp"):
+			mi.visible = name != "ecu"
 	match name:
 		"mcu":
 			cam.fov = 26.0
@@ -173,6 +202,15 @@ func shoot(name: String) -> void:
 			var cheek := face + Vector3(0.035, -0.035, -0.015)
 			cam.position = cheek + Vector3(0.22, 0.02, 0.5)
 			cam.look_at(cheek)
+		"hair":                                      # the hair from behind and to one side (its mass, the highlight's band), the reel's light
+			cam.fov = 30.0
+			cam.position = face + Vector3(-0.55, 0.12, -0.75)
+			cam.look_at(face + Vector3(0.0, -0.04, -0.09))
+		"hairecu":                                   # the strands close, over the ear (about 12 cm across)
+			cam.fov = 10.0
+			var side := face + Vector3(0.075, 0.02, -0.09)
+			cam.position = side + Vector3(0.62, 0.06, 0.25)
+			cam.look_at(side)
 		"pov":
 			room()
 			cam.fov = rad_to_deg(2.0 * atan(tan(deg_to_rad(45.0)) * 9.0 / 16.0))   # the game's 90° across a 16:9 frame: 59° up and down
