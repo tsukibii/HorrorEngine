@@ -74,7 +74,7 @@ swaps every picture it matches (`pictures.*.logo`: every one named logo).
 
 | what | kind | about | on the prop (mm) | wants (px) | notes |
 |---|---|---|---|---|---|
-| `pictures.b_side.band` | flourish | the band of flowers round its middle, a stripe above and below | 1018 × 54 | 2032 × 112 | PNG, transparent round it, seamless left to right |
+| `pictures.b_side.band` | flourish | the band of flowers round its middle, a stripe above and below | 1018 × 54 | 2032 × 112 | a strip seamless at its ends: it repeats along (`fit: tile`), PNG, transparent round it |
 | `pictures.l_top.logo` | logo | the maker's name on the lid | 71 × 18 | 144 × 64 | PNG, transparent round it |
 | `pictures.l_top.words` | text | 電子炊飯ジャー (an electric rice cooker) under the name | 53 × 8 | 112 × 64 | PNG, transparent round it |
 | part `b_top` | main |  | 252 × 322 | 512 × 640 | the whole part (a decal with `fit`), PNG or JPEG |
@@ -165,7 +165,7 @@ swaps every picture it matches (`pictures.*.logo`: every one named logo).
 
 | what | kind | about | on the prop (mm) | wants (px) | notes |
 |---|---|---|---|---|---|
-| `pictures.label.waves` | flourish | the three waves round its foot | 205 × 13 | 2032 × 144 | PNG, transparent round it, seamless left to right |
+| `pictures.label.waves` | flourish | the three waves round its foot | 205 × 13 | 2032 × 144 | a strip seamless at its ends: it repeats along (`fit: tile`), PNG, transparent round it |
 | `pictures.label.mountains` | picture | the snow-capped mountains over the brand | 38 × 21 | 384 × 208 | PNG or JPEG |
 | `pictures.label.logo` | logo | the brand in blue under the mountains | 62 × 11 | 624 × 112 | PNG, transparent round it |
 | `pictures.label.flavour` | text | what it is, under the brand | 49 × 4 | 496 × 64 | PNG, transparent round it |
@@ -185,7 +185,7 @@ swaps every picture it matches (`pictures.*.logo`: every one named logo).
 
 | what | kind | about | on the prop (mm) | wants (px) | notes |
 |---|---|---|---|---|---|
-| `pictures.label.waves` | flourish | the three waves round its foot | 205 × 13 | 2032 × 144 | PNG, transparent round it, seamless left to right |
+| `pictures.label.waves` | flourish | the three waves round its foot | 205 × 13 | 2032 × 144 | a strip seamless at its ends: it repeats along (`fit: tile`), PNG, transparent round it |
 | `pictures.label.mountains` | picture | the snow-capped mountains over the brand | 38 × 21 | 384 × 208 | PNG or JPEG |
 | `pictures.label.logo` | logo | the brand in blue under the mountains | 62 × 11 | 624 × 112 | PNG, transparent round it |
 | `pictures.label.flavour` | text | what it is, under the brand | 49 × 4 | 496 × 64 | PNG, transparent round it |
@@ -207,16 +207,16 @@ swaps every picture it matches (`pictures.*.logo`: every one named logo).
 
 | what | kind | about | on the prop (mm) | wants (px) | notes |
 |---|---|---|---|---|---|
-| `pictures.base_bottom.pattern` | pattern | the red dots and diagonal lines all over | 139 × 139 | 608 × 608 | PNG or JPEG, seamless left to right |
-| `pictures.base_wall.pattern` | pattern | the red dots and diagonal lines all over | 436 × 36 | 1872 × 160 | PNG or JPEG, seamless left to right |
-| `pictures.base_flange.pattern` | pattern | the red dots and diagonal lines all over | 473 × 9 | 2032 × 64 | PNG or JPEG, seamless left to right |
-| `pictures.lid_bottom.pattern` | pattern | the red dots and diagonal lines all over | 139 × 139 | 608 × 608 | PNG or JPEG, seamless left to right |
+| `pictures.base_bottom.pattern` | pattern | the red dots and diagonal lines all over | 139 × 139 | 608 × 608 | this size, or a smaller tile seamless all round: it repeats (`fit: tile`) |
+| `pictures.base_wall.pattern` | pattern | the red dots and diagonal lines all over | 436 × 36 | 1872 × 160 | this size, or a smaller tile seamless all round: it repeats (`fit: tile`) |
+| `pictures.base_flange.pattern` | pattern | the red dots and diagonal lines all over | 473 × 9 | 2032 × 64 | this size, or a smaller tile seamless all round: it repeats (`fit: tile`) |
+| `pictures.lid_bottom.pattern` | pattern | the red dots and diagonal lines all over | 139 × 139 | 608 × 608 | this size, or a smaller tile seamless all round: it repeats (`fit: tile`) |
 | `pictures.lid_bottom.badge` | flourish | the cream oval and its red ring on the lid | 73 × 68 | 320 × 304 | PNG, transparent round it |
 | `pictures.lid_bottom.burger` | picture | the burger drawn on the lid | 34 × 28 | 160 × 128 | PNG or JPEG |
 | `pictures.lid_bottom.logo` | logo | the brand under the burger | 47 × 8 | 208 × 64 | PNG, transparent round it |
-| `pictures.lid_wall.pattern` | pattern | the red dots and diagonal lines all over | 436 × 43 | 1872 × 192 | PNG or JPEG, seamless left to right |
-| `pictures.lid_flange.pattern` | pattern | the red dots and diagonal lines all over | 473 × 9 | 2032 × 64 | PNG or JPEG, seamless left to right |
-| `pictures.tab.pattern` | pattern | the red dots and diagonal lines all over | 24 × 14 | 112 × 64 | PNG or JPEG, seamless left to right |
+| `pictures.lid_wall.pattern` | pattern | the red dots and diagonal lines all over | 436 × 43 | 1872 × 192 | this size, or a smaller tile seamless all round: it repeats (`fit: tile`) |
+| `pictures.lid_flange.pattern` | pattern | the red dots and diagonal lines all over | 473 × 9 | 2032 × 64 | this size, or a smaller tile seamless all round: it repeats (`fit: tile`) |
+| `pictures.tab.pattern` | pattern | the red dots and diagonal lines all over | 24 × 14 | 112 × 64 | this size, or a smaller tile seamless all round: it repeats (`fit: tile`) |
 | part `base_bottom` | main |  | 139 × 139 | 608 × 608 | the whole part (a decal with `fit`), PNG or JPEG |
 | part `base_wall` | main |  | 436 × 36 | 1872 × 160 | the whole part (a decal with `fit`), PNG or JPEG |
 | part `base_flange` | main |  | 473 × 9 | 2032 × 64 | the whole part (a decal with `fit`), PNG or JPEG |
@@ -250,7 +250,7 @@ swaps every picture it matches (`pictures.*.logo`: every one named logo).
 
 | what | kind | about | on the prop (mm) | wants (px) | notes |
 |---|---|---|---|---|---|
-| `pictures.label.pinstripes` | pattern | the faint gold pinstripes all over it | 208 × 108 | 2032 × 1056 | PNG or JPEG, seamless left to right |
+| `pictures.label.pinstripes` | pattern | the faint gold pinstripes all over it | 208 × 108 | 2032 × 1056 | this size, or a smaller tile seamless all round: it repeats (`fit: tile`) |
 | `pictures.label.badge` | flourish | the cream oval with its gold ring, behind the brand | 65 × 72 | 640 × 704 | PNG, transparent round it |
 | `pictures.label.logo` | logo | the brand in a script on the oval | 51 × 14 | 512 × 144 | PNG, transparent round it |
 | `pictures.label.flavour` | text | the kind of beer under it | 53 × 6 | 528 × 64 | PNG, transparent round it |
@@ -287,7 +287,7 @@ swaps every picture it matches (`pictures.*.logo`: every one named logo).
 
 | what | kind | about | on the prop (mm) | wants (px) | notes |
 |---|---|---|---|---|---|
-| `pictures.label.scribbles` | pattern | thin white scribbles all over it | 208 × 154 | 1760 × 1312 | PNG or JPEG, seamless left to right |
+| `pictures.label.scribbles` | pattern | thin white scribbles all over it | 208 × 154 | 1760 × 1312 | this size, or a smaller tile seamless all round: it repeats (`fit: tile`) |
 | `pictures.label.zigzags` | flourish | the coloured zigzags across the front | 126 × 43 | 1072 × 368 | PNG, transparent round it |
 | `pictures.label.logo` | logo | the brand up the front, read from below | 69 × 126 | 592 × 1072 | PNG, transparent round it |
 | `pictures.label.flavour` | text | the line up beside the brand | 9 × 61 | 80 × 528 | PNG, transparent round it |
@@ -306,7 +306,7 @@ swaps every picture it matches (`pictures.*.logo`: every one named logo).
 
 | what | kind | about | on the prop (mm) | wants (px) | notes |
 |---|---|---|---|---|---|
-| `pictures.label.bubbles` | pattern | the bubbles all over it | 208 × 101 | 2032 × 992 | PNG or JPEG, seamless left to right |
+| `pictures.label.bubbles` | pattern | the bubbles all over it | 208 × 101 | 2032 × 992 | this size, or a smaller tile seamless all round: it repeats (`fit: tile`) |
 | `pictures.label.logo` | logo | the brand across the front | 57 × 31 | 560 × 304 | PNG, transparent round it |
 | `pictures.label.flavour` | text | the flavour under the brand | 48 × 8 | 480 × 80 | PNG, transparent round it |
 | `pictures.label.fruit` | picture | the orange slice beside the brand | 19 × 19 | 192 × 192 | PNG or JPEG |
@@ -326,7 +326,7 @@ swaps every picture it matches (`pictures.*.logo`: every one named logo).
 
 | what | kind | about | on the prop (mm) | wants (px) | notes |
 |---|---|---|---|---|---|
-| `pictures.label.bubbles` | pattern | the bubbles all over it | 208 × 101 | 2032 × 992 | PNG or JPEG, seamless left to right |
+| `pictures.label.bubbles` | pattern | the bubbles all over it | 208 × 101 | 2032 × 992 | this size, or a smaller tile seamless all round: it repeats (`fit: tile`) |
 | `pictures.label.logo` | logo | the brand across the front | 57 × 31 | 560 × 304 | PNG, transparent round it |
 | `pictures.label.flavour` | text | the flavour under the brand | 48 × 8 | 480 × 80 | PNG, transparent round it |
 | `pictures.label.fruit` | picture | the orange slice beside the brand | 19 × 19 | 192 × 192 | PNG or JPEG |
@@ -346,7 +346,7 @@ swaps every picture it matches (`pictures.*.logo`: every one named logo).
 
 | what | kind | about | on the prop (mm) | wants (px) | notes |
 |---|---|---|---|---|---|
-| `pictures.label.bubbles` | pattern | the bubbles all over it | 208 × 101 | 2032 × 992 | PNG or JPEG, seamless left to right |
+| `pictures.label.bubbles` | pattern | the bubbles all over it | 208 × 101 | 2032 × 992 | this size, or a smaller tile seamless all round: it repeats (`fit: tile`) |
 | `pictures.label.logo` | logo | the brand across the front | 57 × 31 | 560 × 304 | PNG, transparent round it |
 | `pictures.label.flavour` | text | the flavour under the brand | 48 × 8 | 480 × 80 | PNG, transparent round it |
 | `pictures.label.fruit` | picture | the orange slice beside the brand | 19 × 19 | 192 × 192 | PNG or JPEG |
@@ -575,11 +575,11 @@ No picture of its own: wrap a part, or add decals and smudges.
 
 | what | kind | about | on the prop (mm) | wants (px) | notes |
 |---|---|---|---|---|---|
-| `pictures.front.pattern` | pattern | the gold waves (seigaiha) woven all over | 46 × 72 | 400 × 624 | PNG or JPEG, seamless left to right |
+| `pictures.front.pattern` | pattern | the gold waves (seigaiha) woven all over | 46 × 72 | 400 × 624 | this size, or a smaller tile seamless all round: it repeats (`fit: tile`) |
 | `pictures.front.words` | text | its name embroidered down the front, on a darker panel | 17 × 52 | 160 × 448 | PNG, transparent round it |
-| `pictures.back.pattern` | pattern | the gold waves (seigaiha) woven all over | 46 × 72 | 400 × 624 | PNG or JPEG, seamless left to right |
+| `pictures.back.pattern` | pattern | the gold waves (seigaiha) woven all over | 46 × 72 | 400 × 624 | this size, or a smaller tile seamless all round: it repeats (`fit: tile`) |
 | `pictures.back.name` | text | what it's for, embroidered on the back | 12 × 20 | 112 × 176 | PNG, transparent round it |
-| `pictures.edge.pattern` | pattern | the gold waves (seigaiha) woven all over | 236 × 12 | 2032 × 112 | PNG or JPEG, seamless left to right |
+| `pictures.edge.pattern` | pattern | the gold waves (seigaiha) woven all over | 236 × 12 | 2032 × 112 | this size, or a smaller tile seamless all round: it repeats (`fit: tile`) |
 | part `front` | main |  | 46 × 72 | 400 × 624 | the whole part (a decal with `fit`), PNG or JPEG |
 | part `back` | main |  | 46 × 72 | 400 × 624 | the whole part (a decal with `fit`), PNG or JPEG |
 | part `edge` | main |  | 236 × 12 | 2032 × 112 | the whole part (a decal with `fit`), PNG or JPEG, goes round: seamless left to right |
@@ -592,11 +592,11 @@ No picture of its own: wrap a part, or add decals and smudges.
 
 | what | kind | about | on the prop (mm) | wants (px) | notes |
 |---|---|---|---|---|---|
-| `pictures.front.pattern` | pattern | the gold hexagons (kikkō) woven all over | 46 × 72 | 400 × 624 | PNG or JPEG, seamless left to right |
+| `pictures.front.pattern` | pattern | the gold hexagons (kikkō) woven all over | 46 × 72 | 400 × 624 | this size, or a smaller tile seamless all round: it repeats (`fit: tile`) |
 | `pictures.front.words` | text | its name embroidered down the front, on a darker panel | 17 × 55 | 160 × 480 | PNG, transparent round it |
-| `pictures.back.pattern` | pattern | the gold hexagons (kikkō) woven all over | 46 × 72 | 400 × 624 | PNG or JPEG, seamless left to right |
+| `pictures.back.pattern` | pattern | the gold hexagons (kikkō) woven all over | 46 × 72 | 400 × 624 | this size, or a smaller tile seamless all round: it repeats (`fit: tile`) |
 | `pictures.back.name` | text | what it's for, embroidered on the back | 11 × 11 | 96 × 96 | PNG, transparent round it |
-| `pictures.edge.pattern` | pattern | the gold hexagons (kikkō) woven all over | 236 × 12 | 2032 × 112 | PNG or JPEG, seamless left to right |
+| `pictures.edge.pattern` | pattern | the gold hexagons (kikkō) woven all over | 236 × 12 | 2032 × 112 | this size, or a smaller tile seamless all round: it repeats (`fit: tile`) |
 | part `front` | main |  | 46 × 72 | 400 × 624 | the whole part (a decal with `fit`), PNG or JPEG |
 | part `back` | main |  | 46 × 72 | 400 × 624 | the whole part (a decal with `fit`), PNG or JPEG |
 | part `edge` | main |  | 236 × 12 | 2032 × 112 | the whole part (a decal with `fit`), PNG or JPEG, goes round: seamless left to right |
@@ -634,7 +634,6 @@ No picture of its own: wrap a part, or add decals and smudges.
 | part `lid` | main |  | 597 × 99 | 1904 × 320 | the whole part (a decal with `fit`), PNG or JPEG, goes round: seamless left to right |
 | part `lid_in` | main |  | 190 × 190 | 608 × 608 | the whole part (a decal with `fit`), PNG or JPEG |
 | part `knob` | main |  | 94 × 51 | 304 × 176 | the whole part (a decal with `fit`), PNG or JPEG, goes round: seamless left to right |
-| part `decal` | main |  | 70 × 60 | 224 × 192 | the whole part (a decal with `fit`), PNG or JPEG |
 
 ### frying_pan: a non-stick frying pan, its coating scraped to the metal, a bakelite handle
 
@@ -735,12 +734,12 @@ No picture of its own: wrap a part, or add decals and smudges.
 
 | what | kind | about | on the prop (mm) | wants (px) | notes |
 |---|---|---|---|---|---|
-| `pictures.print.waves_foot` | flourish | the two wavy lines round its foot | 236 × 9 | 1312 × 64 | PNG, transparent round it, seamless left to right |
-| `pictures.print.waves_lip` | flourish | the two wavy lines round its lip | 236 × 9 | 1312 × 64 | PNG, transparent round it, seamless left to right |
+| `pictures.print.waves_foot` | flourish | the two wavy lines round its foot | 236 × 9 | 1312 × 64 | a strip seamless at its ends: it repeats along (`fit: tile`), PNG, transparent round it |
+| `pictures.print.waves_lip` | flourish | the two wavy lines round its lip | 236 × 9 | 1312 × 64 | a strip seamless at its ends: it repeats along (`fit: tile`), PNG, transparent round it |
 | `pictures.print.logo` | logo | the small brand mark at the front | 71 × 6 | 400 × 64 | PNG, transparent round it |
 | `pictures.print.tagline` | text | the warning round the side | 54 × 6 | 304 × 64 | PNG, transparent round it |
-| `pictures.sleeve.stamp` | stamp | HOT in a ring, stamped on the front | 41 × 31 | 240 × 176 | PNG, transparent round it |
-| `pictures.sleeve.stamp_back` | stamp | the same stamp round the back | 38 × 31 | 224 × 176 | PNG, transparent round it |
+| `pictures.sleeve.stamp` | stamp | HOT in a ring, stamped on the front | 31 × 31 | 176 × 176 | PNG, transparent round it |
+| `pictures.sleeve.stamp_back` | stamp | the same stamp round the back | 31 × 31 | 176 × 176 | PNG, transparent round it |
 | `pictures.sleeve.words` | text | · recyclable · on its side | 42 × 8 | 240 × 64 | PNG, transparent round it |
 | part `print` | main |  | 236 × 108 | 1312 × 608 | the whole part (a decal with `fit`), PNG or JPEG, goes round: seamless left to right |
 | part `bead` | main |  | 283 × 9 | 1568 × 64 | the whole part (a decal with `fit`), PNG or JPEG, goes round: seamless left to right |
@@ -757,12 +756,12 @@ No picture of its own: wrap a part, or add decals and smudges.
 
 | what | kind | about | on the prop (mm) | wants (px) | notes |
 |---|---|---|---|---|---|
-| `pictures.print.waves_foot` | flourish | the two wavy lines round its foot | 236 × 9 | 1312 × 64 | PNG, transparent round it, seamless left to right |
-| `pictures.print.waves_lip` | flourish | the two wavy lines round its lip | 236 × 9 | 1312 × 64 | PNG, transparent round it, seamless left to right |
+| `pictures.print.waves_foot` | flourish | the two wavy lines round its foot | 236 × 9 | 1312 × 64 | a strip seamless at its ends: it repeats along (`fit: tile`), PNG, transparent round it |
+| `pictures.print.waves_lip` | flourish | the two wavy lines round its lip | 236 × 9 | 1312 × 64 | a strip seamless at its ends: it repeats along (`fit: tile`), PNG, transparent round it |
 | `pictures.print.logo` | logo | the small brand mark at the front | 71 × 6 | 400 × 64 | PNG, transparent round it |
 | `pictures.print.tagline` | text | the warning round the side | 54 × 6 | 304 × 64 | PNG, transparent round it |
-| `pictures.sleeve.stamp` | stamp | HOT in a ring, stamped on the front | 41 × 31 | 240 × 176 | PNG, transparent round it |
-| `pictures.sleeve.stamp_back` | stamp | the same stamp round the back | 38 × 31 | 224 × 176 | PNG, transparent round it |
+| `pictures.sleeve.stamp` | stamp | HOT in a ring, stamped on the front | 31 × 31 | 176 × 176 | PNG, transparent round it |
+| `pictures.sleeve.stamp_back` | stamp | the same stamp round the back | 31 × 31 | 176 × 176 | PNG, transparent round it |
 | `pictures.sleeve.words` | text | · recyclable · on its side | 42 × 8 | 240 × 64 | PNG, transparent round it |
 | part `print` | main |  | 236 × 108 | 1312 × 608 | the whole part (a decal with `fit`), PNG or JPEG, goes round: seamless left to right |
 | part `bead` | main |  | 283 × 9 | 1568 × 64 | the whole part (a decal with `fit`), PNG or JPEG, goes round: seamless left to right |
@@ -777,12 +776,12 @@ No picture of its own: wrap a part, or add decals and smudges.
 
 | what | kind | about | on the prop (mm) | wants (px) | notes |
 |---|---|---|---|---|---|
-| `pictures.print.waves_foot` | flourish | the two wavy lines round its foot | 236 × 9 | 1312 × 64 | PNG, transparent round it, seamless left to right |
-| `pictures.print.waves_lip` | flourish | the two wavy lines round its lip | 236 × 9 | 1312 × 64 | PNG, transparent round it, seamless left to right |
+| `pictures.print.waves_foot` | flourish | the two wavy lines round its foot | 236 × 9 | 1312 × 64 | a strip seamless at its ends: it repeats along (`fit: tile`), PNG, transparent round it |
+| `pictures.print.waves_lip` | flourish | the two wavy lines round its lip | 236 × 9 | 1312 × 64 | a strip seamless at its ends: it repeats along (`fit: tile`), PNG, transparent round it |
 | `pictures.print.logo` | logo | the small brand mark at the front | 71 × 6 | 400 × 64 | PNG, transparent round it |
 | `pictures.print.tagline` | text | the warning round the side | 54 × 6 | 304 × 64 | PNG, transparent round it |
-| `pictures.sleeve.stamp` | stamp | HOT in a ring, stamped on the front | 41 × 31 | 240 × 176 | PNG, transparent round it |
-| `pictures.sleeve.stamp_back` | stamp | the same stamp round the back | 38 × 31 | 224 × 176 | PNG, transparent round it |
+| `pictures.sleeve.stamp` | stamp | HOT in a ring, stamped on the front | 31 × 31 | 176 × 176 | PNG, transparent round it |
+| `pictures.sleeve.stamp_back` | stamp | the same stamp round the back | 31 × 31 | 176 × 176 | PNG, transparent round it |
 | `pictures.sleeve.words` | text | · recyclable · on its side | 42 × 8 | 240 × 64 | PNG, transparent round it |
 | part `print` | main |  | 236 × 108 | 1312 × 608 | the whole part (a decal with `fit`), PNG or JPEG, goes round: seamless left to right |
 | part `bead` | main |  | 283 × 9 | 1568 × 64 | the whole part (a decal with `fit`), PNG or JPEG, goes round: seamless left to right |
@@ -797,7 +796,7 @@ No picture of its own: wrap a part, or add decals and smudges.
 
 | what | kind | about | on the prop (mm) | wants (px) | notes |
 |---|---|---|---|---|---|
-| `pictures.print.bubbles` | pattern | the blue bubbles all over it | 234 × 120 | 1536 × 800 | PNG or JPEG, seamless left to right |
+| `pictures.print.bubbles` | pattern | the blue bubbles all over it | 234 × 120 | 1536 × 800 | this size, or a smaller tile seamless all round: it repeats (`fit: tile`) |
 | `pictures.print.logo` | logo | the name up its side, read from below | 23 × 108 | 160 × 720 | PNG, transparent round it |
 | part `print` | main |  | 234 × 134 | 1536 × 880 | the whole part (a decal with `fit`), PNG or JPEG, goes round: seamless left to right |
 | part `bead` | main |  | 283 × 9 | 1856 × 64 | the whole part (a decal with `fit`), PNG or JPEG, goes round: seamless left to right |
@@ -815,8 +814,8 @@ No picture of its own: wrap a part, or add decals and smudges.
 
 | what | kind | about | on the prop (mm) | wants (px) | notes |
 |---|---|---|---|---|---|
-| `pictures.body.rings_top` | flourish | the lathe's rings round its shoulder | 151 × 8 | 1328 × 80 | PNG, transparent round it, seamless left to right |
-| `pictures.body.rings_foot` | flourish | the lathe's rings round its foot | 151 × 8 | 1328 × 80 | PNG, transparent round it, seamless left to right |
+| `pictures.body.rings_top` | flourish | the lathe's rings round its shoulder | 151 × 8 | 1328 × 80 | a strip seamless at its ends: it repeats along (`fit: tile`), PNG, transparent round it |
+| `pictures.body.rings_foot` | flourish | the lathe's rings round its foot | 151 × 8 | 1328 × 80 | a strip seamless at its ends: it repeats along (`fit: tile`), PNG, transparent round it |
 | `pictures.body.flowers` | flourish | the chrysanthemums painted round its body | 151 × 69 | 1328 × 608 | PNG, transparent round it, seamless left to right |
 | `pictures.head.hair` | picture | the black bob, its fringe and side locks, the red flowers in it | 157 × 56 | 1376 × 496 | PNG or JPEG, seamless left to right |
 | `pictures.head.face` | picture | its face: the brows, the eyes, the nose and the little red mouth | 28 × 22 | 256 × 208 | PNG or JPEG |
@@ -831,8 +830,8 @@ No picture of its own: wrap a part, or add decals and smudges.
 
 | what | kind | about | on the prop (mm) | wants (px) | notes |
 |---|---|---|---|---|---|
-| `pictures.body.rings_top` | flourish | the lathe's rings round its shoulder | 121 × 8 | 1328 × 96 | PNG, transparent round it, seamless left to right |
-| `pictures.body.rings_foot` | flourish | the lathe's rings round its foot | 121 × 8 | 1328 × 96 | PNG, transparent round it, seamless left to right |
+| `pictures.body.rings_top` | flourish | the lathe's rings round its shoulder | 121 × 8 | 1328 × 96 | a strip seamless at its ends: it repeats along (`fit: tile`), PNG, transparent round it |
+| `pictures.body.rings_foot` | flourish | the lathe's rings round its foot | 121 × 8 | 1328 × 96 | a strip seamless at its ends: it repeats along (`fit: tile`), PNG, transparent round it |
 | `pictures.body.flowers` | flourish | the chrysanthemums painted round its body | 121 × 55 | 1328 × 608 | PNG, transparent round it, seamless left to right |
 | `pictures.head.hair` | picture | the black bob, its fringe and side locks, the red flowers in it | 126 × 45 | 1376 × 496 | PNG or JPEG, seamless left to right |
 | `pictures.head.face` | picture | its face: the brows, the eyes, the nose and the little red mouth | 23 × 18 | 256 × 208 | PNG or JPEG |
@@ -1004,9 +1003,9 @@ No picture of its own: wrap a part, or add decals and smudges.
 
 | what | kind | about | on the prop (mm) | wants (px) | notes |
 |---|---|---|---|---|---|
-| `pictures.front.stripes` | pattern | the green and white stripes | 130 × 170 | 1008 × 1312 | PNG or JPEG, seamless left to right |
+| `pictures.front.stripes` | pattern | the green and white stripes | 130 × 170 | 1008 × 1312 | this size, or a smaller tile seamless all round: it repeats (`fit: tile`) |
 | `pictures.front.seal` | logo | the round seal with the name on it | 68 × 68 | 528 × 528 | PNG, transparent round it |
-| `pictures.back.stripes` | pattern | the green and white stripes | 130 × 170 | 1008 × 1312 | PNG or JPEG, seamless left to right |
+| `pictures.back.stripes` | pattern | the green and white stripes | 130 × 170 | 1008 × 1312 | this size, or a smaller tile seamless all round: it repeats (`fit: tile`) |
 | `pictures.back.seal` | logo | the round seal with the name on it | 68 × 68 | 528 × 528 | PNG, transparent round it |
 | part `front` | main |  | 130 × 170 | 1008 × 1312 | the whole part (a decal with `fit`), PNG or JPEG |
 | part `back` | main |  | 130 × 170 | 1008 × 1312 | the whole part (a decal with `fit`), PNG or JPEG |
@@ -1204,11 +1203,11 @@ No picture of its own: wrap a part, or add decals and smudges.
 
 | what | kind | about | on the prop (mm) | wants (px) | notes |
 |---|---|---|---|---|---|
-| `pictures.c_top.pattern` | pattern | the gold hexagons (kikkō) woven all over | 130 × 130 | 512 × 512 | PNG or JPEG, seamless left to right |
-| `pictures.c_bot.pattern` | pattern | the gold hexagons (kikkō) woven all over | 130 × 130 | 512 × 512 | PNG or JPEG, seamless left to right |
-| `pictures.c_edge.pattern` | pattern | the gold hexagons (kikkō) woven all over | 520 × 40 | 2032 × 160 | PNG or JPEG, seamless left to right |
-| `pictures.tassel.pattern` | pattern | the gold dots woven all over | 31 × 40 | 128 × 160 | PNG or JPEG, seamless left to right |
-| `pictures.wrap.pattern` | pattern | the gold hexagons (kikkō) woven all over | 44 × 40 | 176 × 160 | PNG or JPEG, seamless left to right |
+| `pictures.c_top.pattern` | pattern | the gold hexagons (kikkō) woven all over | 130 × 130 | 512 × 512 | this size, or a smaller tile seamless all round: it repeats (`fit: tile`) |
+| `pictures.c_bot.pattern` | pattern | the gold hexagons (kikkō) woven all over | 130 × 130 | 512 × 512 | this size, or a smaller tile seamless all round: it repeats (`fit: tile`) |
+| `pictures.c_edge.pattern` | pattern | the gold hexagons (kikkō) woven all over | 520 × 40 | 2032 × 160 | this size, or a smaller tile seamless all round: it repeats (`fit: tile`) |
+| `pictures.tassel.pattern` | pattern | the gold dots woven all over | 31 × 40 | 128 × 160 | this size, or a smaller tile seamless all round: it repeats (`fit: tile`) |
+| `pictures.wrap.pattern` | pattern | the gold hexagons (kikkō) woven all over | 44 × 40 | 176 × 160 | this size, or a smaller tile seamless all round: it repeats (`fit: tile`) |
 | part `b_bot` | main |  | 40 × 40 | 288 × 288 | the whole part (a decal with `fit`), PNG or JPEG |
 | part `b_out` | main |  | 295 × 72 | 2032 × 512 | the whole part (a decal with `fit`), PNG or JPEG |
 | part `b_in` | main |  | 276 × 79 | 1904 × 544 | the whole part (a decal with `fit`), PNG or JPEG |
@@ -1419,8 +1418,8 @@ No picture of its own: wrap a part, or add decals and smudges.
 
 | what | kind | about | on the prop (mm) | wants (px) | notes |
 |---|---|---|---|---|---|
-| `pictures.label.line_foot` | flourish | the red line along its foot | 254 × 1 | 1008 × 64 | PNG, transparent round it, seamless left to right |
-| `pictures.label.line_top` | flourish | the red line along its top | 254 × 1 | 1008 × 64 | PNG, transparent round it, seamless left to right |
+| `pictures.label.line_foot` | flourish | the red line along its foot | 254 × 1 | 1008 × 64 | a strip seamless at its ends: it repeats along (`fit: tile`), PNG, transparent round it |
+| `pictures.label.line_top` | flourish | the red line along its top | 254 × 1 | 1008 × 64 | a strip seamless at its ends: it repeats along (`fit: tile`), PNG, transparent round it |
 | `pictures.label.logo` | logo | what's in it, big in the middle | 66 × 18 | 272 × 80 | PNG, transparent round it |
 | `pictures.label.sub` | text | the line under it | 55 × 6 | 224 × 64 | PNG, transparent round it |
 | part `outside` | main |  | 251 × 108 | 1520 × 656 | the whole part (a decal with `fit`), PNG or JPEG, goes round: seamless left to right |
@@ -1461,7 +1460,7 @@ No picture of its own: wrap a part, or add decals and smudges.
 
 | what | kind | about | on the prop (mm) | wants (px) | notes |
 |---|---|---|---|---|---|
-| `pictures.outside.rim` | flourish | the coloured line round the rim | 817 × 3 | 2032 × 64 | PNG, transparent round it, seamless left to right |
+| `pictures.outside.rim` | flourish | the coloured line round the rim | 817 × 3 | 2032 × 64 | a strip seamless at its ends: it repeats along (`fit: tile`), PNG, transparent round it |
 | part `outside` | main |  | 817 × 64 | 2032 × 160 | the whole part (a decal with `fit`), PNG or JPEG, goes round: seamless left to right |
 | part `inside` | main |  | 817 × 132 | 2032 × 336 | the whole part (a decal with `fit`), PNG or JPEG, goes round: seamless left to right |
 | part `lip` | main |  | 817 × 6 | 2032 × 64 | the whole part (a decal with `fit`), PNG or JPEG, goes round: seamless left to right |
@@ -1473,10 +1472,10 @@ No picture of its own: wrap a part, or add decals and smudges.
 
 | what | kind | about | on the prop (mm) | wants (px) | notes |
 |---|---|---|---|---|---|
-| `pictures.outside.line_lip` | flourish | the blue line under the lip | 368 × 1 | 2032 × 64 | PNG, transparent round it, seamless left to right |
-| `pictures.outside.line_foot` | flourish | the blue line round the foot | 368 × 1 | 2032 × 64 | PNG, transparent round it, seamless left to right |
-| `pictures.outside.waves` | pattern | the band of blue waves (seigaiha) | 368 × 42 | 2032 × 240 | PNG or JPEG, seamless left to right |
-| `pictures.inside.line_lip` | flourish | the blue line inside the lip | 368 × 1 | 2032 × 64 | PNG, transparent round it, seamless left to right |
+| `pictures.outside.line_lip` | flourish | the blue line under the lip | 368 × 1 | 2032 × 64 | a strip seamless at its ends: it repeats along (`fit: tile`), PNG, transparent round it |
+| `pictures.outside.line_foot` | flourish | the blue line round the foot | 368 × 1 | 2032 × 64 | a strip seamless at its ends: it repeats along (`fit: tile`), PNG, transparent round it |
+| `pictures.outside.waves` | pattern | the band of blue waves (seigaiha) | 368 × 42 | 2032 × 240 | this size, or a smaller tile seamless all round: it repeats (`fit: tile`) |
+| `pictures.inside.line_lip` | flourish | the blue line inside the lip | 368 × 1 | 2032 × 64 | a strip seamless at its ends: it repeats along (`fit: tile`), PNG, transparent round it |
 | part `outside` | main |  | 368 × 63 | 2032 × 352 | the whole part (a decal with `fit`), PNG or JPEG, goes round: seamless left to right |
 | part `inside` | main |  | 368 × 93 | 2032 × 512 | the whole part (a decal with `fit`), PNG or JPEG, goes round: seamless left to right |
 | part `lip` | main |  | 368 × 5 | 2032 × 64 | the whole part (a decal with `fit`), PNG or JPEG, goes round: seamless left to right |

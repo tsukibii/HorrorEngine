@@ -32,9 +32,13 @@ def rows(meta):
         w, h = sl["box"][2], sl["box"][3]
         if sl.get("relief"):
             notes = ["pressed in or raised, no colour: where it's opaque, or dark on white"]
+        elif sl["kind"] == "pattern":
+            notes = ["this size, or a smaller tile seamless all round: it repeats (`fit: tile`)"]
+        elif sl["kind"] == "flourish" and w >= 4 * h:
+            notes = ["a strip seamless at its ends: it repeats along (`fit: tile`), PNG, transparent round it"]
         else:
             notes = ["PNG, transparent round it" if sl["kind"] in CUT else "PNG or JPEG"]
-            if sl["kind"] == "pattern" or (isl.get("wrap") and w >= isl["mm"][0] * 0.95):
+            if isl.get("wrap") and w >= isl["mm"][0] * 0.95:
                 notes.append("seamless left to right")
         out.append((f"`pictures.{sl['id']}`", sl["kind"], sl.get("about", ""), (w, h), wants(meta, sl["island"], w, h), ", ".join(notes)))
     for name, isl in meta["islands"].items():

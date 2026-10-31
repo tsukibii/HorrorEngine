@@ -340,6 +340,8 @@ function setPicture(id, val, opts) {
   changed();
   renderTexture();
 }
+// how a slot's picture fits unless the recipe says (paint.py's slot_fit): a pattern or a long strip of ornament repeats
+const slotFit = sl => sl.kind === "pattern" || (sl.kind === "flourish" && sl.box[2] >= 4 * sl.box[3]) ? "tile" : "contain";
 // the key of `pictures` that swaps a slot: its own id, else a key with * or ? that matches it (as Frame.slot reads them)
 function slotKey(sl) {
   const pics = S.spec.pictures || {};
@@ -371,8 +373,10 @@ function slotRows() {
     sel.value = cur === false ? "off" : p ? p.image : "";
     const cut = ["logo", "flourish", "stamp", "text"].includes(sl.kind);
     const round = isl.wrap && sl.box[2] >= isl.mm[0] * 0.95;
+    const fitOf = slotFit(sl), tiles = (p && p.fit ? p.fit : fitOf) === "tile";
     const what = sl.relief ? "pressed in or raised, no colour: where it's opaque, or dark on white" :
-      (cut ? "PNG, transparent round it" : "PNG or JPEG") + (round || sl.kind === "pattern" ? ", seamless left to right" : "");
+      fitOf === "tile" ? (sl.kind === "pattern" ? "this size, or a smaller tile seamless all round: it repeats" : "a strip seamless at its ends: it repeats along") :
+      (cut ? "PNG, transparent round it" : "PNG or JPEG") + (round ? ", seamless left to right" : "");
     const tmpl = el("a", { class: "tmpl", href: "#", title: "The generator's own picture there, at the size it wants: paint over it", onclick: e => {
       e.preventDefault();
       slotCrop(sl, 2).ready.then(c => { const a = el("a", { href: c.toDataURL("image/png"), download: `${M.name}_${sl.id.replace(".", "_")}.png` }); document.body.append(a); a.click(); a.remove(); });
@@ -386,8 +390,9 @@ function slotRows() {
       sel,
       all && key !== null ? el("label", { class: "dim", title: `one picture for every ${sl.name}: ${like.map(x => x.id).join(", ")}` },
         el("input", { type: "checkbox", checked: key === all, onchange: e => groupSlot(sl, all, like, e.target.checked) }), ` all ${like.length}`) : null,
-      p ? el("select", { onchange: e => setPicture(at, p.image, { fit: e.target.value }) }, ["contain", "cover", "stretch"].map(f =>
-        el("option", { value: f, selected: (p.fit || (sl.kind === "pattern" ? "cover" : "contain")) === f }, f))) : null,
+      p ? el("select", { onchange: e => setPicture(at, p.image, { fit: e.target.value }) }, ["contain", "cover", "stretch", "tile"].map(f =>
+        el("option", { value: f, selected: (p.fit || fitOf) === f }, f))) : null,
+      p && tiles ? num("tile", 1, "") : null,
       p ? num("scale", 0.05, 1) : null,
       p && !sl.relief ? el("label", { class: "dim" }, "tint ", el("input", { type: "color", value: p.tint || "#ffffff", onchange: e => setPicture(at, p.image, { tint: e.target.value }) })) : null));
   }

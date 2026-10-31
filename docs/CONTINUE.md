@@ -82,10 +82,13 @@ Then (2026-10-31, night): **no part inside out**, and **your pictures on any pro
   in docs/PROPGEN_PICTURES.md. PROPGEN, PROPPAGE (an own picture swapped, a smudge moved by a click, a flourish),
   CHECKS ok. **For the user:** open the page, pick a prop, Texture & pictures: swap its logo for yours (the template
   link gives the drawn one at the size it wants), add a smudge; say what's missing.
-- **Loose ends found, not done:** a few recipes' textures differ run to run after the bake and wear (PROPGEN checks
-  only that the mesh repeats); the enamel pot declares a `decal` island its mesh never uses; the import family
-  writes `Saved/Props/_kit/` even with `--out`; a seamless pattern slot is covered, not tiled (a `tile` fit would
-  repeat it); a slot's box isn't kept off a band's seam (the sleeve's back stamp crosses it by 2.4 mm).
+- **The loose ends, fixed after (the user: "fix whatevers left"):** textures the same run to run (the padding's bands
+  walked in the islands' order, a set's wasn't; PROPGEN makes a case again in a second process), the enamel pot's
+  unused island gone, the import's kit meshes under `--out`, a `tile` fit (patterns and strips repeat by default),
+  pictures and smudges carried across a band's seam, the fork's tines' tips and slots walked the right way (they
+  crossed themselves: 1.2% backs, now none), the sleeve's HOT inside its ring. **Still open:** the burger box's lid
+  shows 0.5% of backs at its inner chamfer by the back (cause not found; under PROPGEN's 1.5%); the knives have
+  edges whose faces disagree inside the steel, where nothing sees them.
 
 Next if wanted (PROPGEN.md §9): a life on a generated prop (a generated kettle boiling, a candle burning down: the
 sockets are there), food tins, a flashlight, batteries, a bucket, a crate, a die, a book; a recipe page with a PBR

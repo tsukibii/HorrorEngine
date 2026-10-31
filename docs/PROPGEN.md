@@ -566,11 +566,16 @@ Each goes on the paint before the bake and the wear, so the folds, dents, baked 
   ema...), listed in meta.json's `slots` with its box (mm on its island), its kind (logo, picture, flourish, stamp,
   text, pattern) and what it is: 116 on 50 of the recipes, docs/PROPGEN_PICTURES.md lists every prop's. A recipe swaps
   them in `pictures`: `{"label.logo": "Content/Studio/Props/images/my_logo.png"}`, or `{"image": ..., "fit": "contain"
-  | "cover" | "stretch", "scale", "dx", "dy" (mm), "rot", "flip", "tint", "rough", "metal", "height", "relief"}`, or
+  | "cover" | "stretch" | "tile", "tile" (mm), "scale", "dx", "dy" (mm), "rot", "flip", "tint", "rough", "metal",
+  "height", "relief"}`, or
   `false` for nothing there. A key with `*` swaps every slot it matches: `"*.logo"` the twelve cigarette butts' brand
   at once, `"*.pattern"` every printed part of a burger box. Your picture takes the drawn one's place, kept to its own
-  shape inside the box (`contain`; a pattern `cover`s its box) unless you say otherwise; `tint` recolours a one-colour
-  logo. A stamped or moulded slot (a key's or a knife's mark, a can lid's words, a cap's moulding) takes only your
+  shape inside the box (`contain`) unless you say otherwise; `tint` recolours a one-colour logo. A pattern, or a strip
+  of ornament four times as wide as it's high, repeats (`tile`): `tile` mm a repeat's width, else a strip's picture at
+  the strip's height and anything else at its own size (two of its pixels a texel, as the sizes are reckoned), and
+  round a part that goes round, a whole number of repeats so they meet at its seam. So a pattern can be the whole area
+  at the size it wants or a small tile seamless all round. On a part that goes round (a can's or a bottle's label, a
+  cup's band), a picture, a decal or a smudge that crosses its seam carries on from the other side. A stamped or moulded slot (a key's or a knife's mark, a can lid's words, a cap's moulding) takes only your
   picture's shape, pressed in or raised: where it's opaque, or where it's dark if it has no transparency. Swapping one
   slot leaves the rest of the paint as it was. A design or a family adds a slot by drawing through
   `f.slot(name, (cx, cy, w, h), draw, kind, about, **ink)` (paint.py; `relief=True` for a stamp): the drawing runs

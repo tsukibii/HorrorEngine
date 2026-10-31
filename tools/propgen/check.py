@@ -198,5 +198,25 @@ def run(book, out):
         print(("  ok  " if same else "  BAD ") + f"{name} made twice: the same mesh")
         if not same:
             bad.append("not the same twice")
+    # made again in a process of its own with another string hash (a set's order changes with it: the wrap bands'
+    # margins once came out different run to run), every file byte for byte; the butts have twelve bands side by side
+    if "cig_butts" in CASES:
+        import subprocess
+        import sys
+        again = os.path.join(out, "_check_again")
+        main_py = os.path.join(os.path.dirname(os.path.abspath(__file__)), "main.py")
+        cmd = ([bpy.app.binary_path, "--background", "--factory-startup", "--python-exit-code", "1", "--python", main_py, "--"]
+               if bpy.app.binary_path else [sys.executable, main_py, "--"]) + ["case", "cig_butts", "--out", again]
+        env = dict(os.environ, PYTHONHASHSEED=str(int(os.environ.get("PYTHONHASHSEED", "0") or 0) + 7))
+        r = subprocess.run(cmd, env=env, capture_output=True, text=True)
+        a_dir, b_dir = os.path.join(tmp, "cig_butts"), os.path.join(again, "cig_butts")
+        files = sorted(f for f in os.listdir(a_dir) if f != "meta.json") if os.path.isdir(a_dir) else []
+        diff = [f for f in files if not os.path.exists(os.path.join(b_dir, f)) or
+                open(os.path.join(a_dir, f), "rb").read() != open(os.path.join(b_dir, f), "rb").read()]
+        ok_ = r.returncode == 0 and files and not diff
+        print(("  ok  " if ok_ else "  BAD ") + f"cig_butts made again in another process: {len(files) - len(diff)} of {len(files)} files the same"
+              + ("" if r.returncode == 0 else f" (it failed: {r.stderr.strip().splitlines()[-1:] if r.stderr.strip() else r.returncode})"))
+        if not ok_:
+            bad.append("cig_butts not the same made in another process: " + ", ".join(diff[:4]))
     print(f"PROPGEN ok ({len(CASES)} recipes made and measured, {time.time() - t0:.0f}s)" if not bad else "PROPGEN FAIL: " + "; ".join(bad[:8]))
     return not bad

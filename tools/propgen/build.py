@@ -258,7 +258,9 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
     t0 = time.time()
     seed = int(spec.get("seed", 0))
     fam = families()[spec["family"]]
-    th = fam.make(spec, Thing(spec))
+    th = Thing(spec)
+    th.out = out_dir                                  # where it's made (the import family's kit meshes go beside it)
+    th = fam.make(spec, th)
     log(f"  {name}: made ({th.low.ntris()} triangles{'; detail ' + str(th.high.ntris()) if th.high is not None else ''})")
     # set down
     pose = spec.get("pose", th.pose)
@@ -346,7 +348,7 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
         alpha = cv.opacity if mt["alpha"] else None
         used = cv.used
         wraps = []
-        for iname in th.wrap:
+        for iname in [n for n in th.islands if n in th.wrap]:      # in the islands' order: a set's order changes run to run
             isl = th.islands[iname]
             if isl.mat == mname:
                 u0, v0, u1, v1 = isl.rect

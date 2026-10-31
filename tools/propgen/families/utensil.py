@@ -101,13 +101,16 @@ def fork_outline(L, step):
             pts += [(x, y0 + 0.1 * (x - tines0) / (tip - tines0)) for x in np.linspace(tines0, x_tip - wt * 0.6, steps)[1:]]
         else:
             pts += [(x, y0) for x in np.linspace(gap_bottom, x_tip - wt * 0.6, steps)[1:]]
-        for a in np.linspace(math.pi, 0, 7):
+        # round the tip from the tine's right side (y0) to its left (y1), and below round the slot's foot from this
+        # tine's left side to the next one's right: walked the other way, each crossed itself in a bow-tie and the slab
+        # there came out inside out
+        for a in np.linspace(0, math.pi, 7):
             pts.append((x_tip - wt * 0.6 + wt * 0.6 * math.sin(a) * 0.9, (y0 + y1) / 2 - wt / 2 * math.cos(a)))
         if i == n - 1:
             pts += [(x, y1 - 0.1 * (x - tines0) / (tip - tines0)) for x in np.linspace(x_tip - wt * 0.6, tines0, steps)[1:]]
         else:
             pts += [(x, y1) for x in np.linspace(x_tip - wt * 0.6, gap_bottom, steps)[1:]]
-            for a in np.linspace(math.pi, 0, 5)[1:-1]:
+            for a in np.linspace(0, math.pi, 5)[1:-1]:
                 pts.append((gap_bottom - g / 2 * math.sin(a), y1 + g / 2 - g / 2 * math.cos(a)))
     out = np.array(right + pts + left[1:-1])
     keep = np.ones(len(out), bool)

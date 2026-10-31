@@ -35,10 +35,11 @@ def _kind_of(name):
     return "paint"
 
 
-def _source(spec):
+def _source(spec, out_dir=None):
     if spec.get("kit"):
         import json
-        out = os.path.join(ROOT, "Saved", "Props", "_kit", f"{spec['kit']}.glb")
+        # the kit's mesh beside what's made (Saved/Props/_kit/, or the --out folder's own _kit/)
+        out = os.path.join(out_dir or os.path.join(ROOT, "Saved", "Props"), "_kit", f"{spec['kit']}.glb")
         os.makedirs(os.path.dirname(out), exist_ok=True)
         ks = dict(spec.get("kit_spec") or {}, preset=spec["kit"])
         r = subprocess.run(["node", os.path.join(ROOT, "tools", "kit", "build.mjs"), "--spec", json.dumps(ks), "--out", out],
@@ -183,7 +184,7 @@ def _subdivide(m, max_edge, cap=300000):
 def make(spec, th):
     import bpy
     from .. import pbrset
-    path = _source(spec)
+    path = _source(spec, getattr(th, "out", None))
     ob = _load(path)
     if spec.get("scale"):
         ob.scale = (float(spec["scale"]),) * 3

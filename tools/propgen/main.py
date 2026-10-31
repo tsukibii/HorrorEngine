@@ -64,6 +64,10 @@ def main():
     elif a.cmd == "check":
         from propgen import check
         check.run(book, out)
+    elif a.cmd == "case":
+        # one of the check's cases made as the check makes it, in a process of its own (check.py's run to run test)
+        spec = recipes.resolve(book, a.names[0], sets=["tex=256"])
+        build.run(a.names[0], spec, out, formats=("glb",), preview=False, samples=4, log=lambda *x: None)
     else:
         sys.exit(f"unknown command {a.cmd}")
 

@@ -208,7 +208,8 @@ def beer(f, d, rng):
 
 
 def coffee_can(f, d, rng):
-    """A Japanese vending-machine coffee can: a band of colour, the brand big, a cup drawn, 'BLACK' or 'MILK'."""
+    """A Japanese vending-machine coffee can: a band of colour, the brand big, its kind in Japanese (ブラック, black,
+    or milk) and a line under it."""
     c0, c1 = (d.get("colors") or ["#3a2416", "#c8a26a"])[:2]
     f.fill(color=c0, **INK)
     f.rect(0, f.H * 0.32, f.W, f.H * 0.36, color=c1, **INK)
@@ -301,9 +302,9 @@ def sleeve(f, d, rng):
     for name, x in (("stamp", mid), ("stamp_back", 18.0)):
         def stamped(x=x):
             f.ring(x, f.H * 0.5, f.H * 0.32, 0.8, color=dark, **ink)
-            f.text(word, (x, f.H * 0.5), f.H * 0.26, font="archivo", color=dark, **ink)
-        tw = text_box(word, (x, f.H * 0.5), f.H * 0.26, font="archivo")[2]
-        f.slot(name, on(f, (x, f.H * 0.5, max(f.H * 0.64 + 1.2, tw), f.H * 0.64 + 1.2)), stamped, kind="stamp",
+            # inside the ring: its chord at the letters' top and foot is about 0.56 of the band's height
+            f.text(word, (x, f.H * 0.5), f.H * 0.26, font="archivo", fit=f.H * 0.54, color=dark, **ink)
+        f.slot(name, on(f, (x, f.H * 0.5, f.H * 0.64 + 1.2, f.H * 0.64 + 1.2)), stamped, kind="stamp",
                about="HOT in a ring, stamped on the front" if name == "stamp" else "the same stamp round the back", **ink)
     f.slot("words", text_box("· recyclable ·", (mid + f.W * 0.25, f.H * 0.5), f.H * 0.12, font="serif"),
            lambda: f.text("· recyclable ·", (mid + f.W * 0.25, f.H * 0.5), f.H * 0.12, font="serif", color=dark, **ink),

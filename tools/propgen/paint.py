@@ -375,24 +375,34 @@ class Frame:
         self.lay_island(cov, color=col.astype(np.float32), rough=smp["rough"], metal=smp["metal"], alpha=alpha,
                         normal=n.astype(np.float32))
 
-    def image(self, path_or_array, x=0.0, y=0.0, w=None, h=None, clip=None, relief=False, **props):
+    def image(self, path_or_array, x=0.0, y=0.0, w=None, h=None, clip=None, relief=False, tile=None, seam=True, **props):
         """A picture (an RGBA array 0-1, rows top first, or a PNG path) laid over the island's rect (x, y, w, h mm);
         `clip` (x0, y0, x1, y1 mm) keeps it inside a box. `relief`: only its shape pressed in or raised (the props'
-        height, no colour), where it's opaque, or where it's dark if it has no transparency."""
+        height, no colour), where it's opaque, or where it's dark if it has no transparency. `tile` (tw, th mm):
+        repeated from (x, y), a tile that size, over the clip box (or the island). On a band that goes round, what
+        crosses its seam carries on from the other side."""
         img = read_image(path_or_array) if isinstance(path_or_array, str) else np.asarray(path_or_array, np.float32)
         w = self.W if w is None else w
         h = self.H if h is None else h
         X, Y = self.grid()
-        u = (X - x) / w
-        v = 1 - (Y - y) / h
-        inside = ((u >= 0) & (u <= 1) & (v >= 0) & (v <= 1)).astype(np.float32)
+        ih, iw = img.shape[:2]
+        if tile:
+            u, v = np.mod((X - x) / tile[0], 1.0), 1 - np.mod((Y - y) / tile[1], 1.0)
+            inside = np.ones(X.shape, np.float32)
+            fx, fy = np.mod(u * iw - 0.5, iw), np.mod(v * ih - 0.5, ih)
+        else:
+            u = (X - x) / w
+            v = 1 - (Y - y) / h
+            inside = ((u >= 0) & (u <= 1) & (v >= 0) & (v <= 1)).astype(np.float32)
+            fx = np.clip(u * iw - 0.5, 0, iw - 1)
+            fy = np.clip(v * ih - 0.5, 0, ih - 1)
         if clip is not None:
             inside *= ((X >= clip[0]) & (X <= clip[2]) & (Y >= clip[1]) & (Y <= clip[3]))
-        ih, iw = img.shape[:2]
-        fx = np.clip(u * iw - 0.5, 0, iw - 1)
-        fy = np.clip(v * ih - 0.5, 0, ih - 1)
         x0, y0 = np.floor(fx).astype(int), np.floor(fy).astype(int)
-        x1, y1 = np.minimum(x0 + 1, iw - 1), np.minimum(y0 + 1, ih - 1)
+        if tile:
+            x1, y1 = (x0 + 1) % iw, (y0 + 1) % ih
+        else:
+            x1, y1 = np.minimum(x0 + 1, iw - 1), np.minimum(y0 + 1, ih - 1)
         tx, ty = (fx - x0)[..., None], (fy - y0)[..., None]
         top = img[y0, x0] * (1 - tx) + img[y0, x1] * tx
         bot = img[y1, x0] * (1 - tx) + img[y1, x1] * tx
@@ -402,15 +412,20 @@ class Frame:
             if img.shape[-1] < 4 or float(img[..., 3].min()) > 0.98:
                 a = 1.0 - px[..., :3] @ np.array([0.2126, 0.7152, 0.0722], np.float32)
             self.lay_island(inside * a, **props)
-            return
-        self.lay_island(inside * a, color=px[..., :3], **props)
+        else:
+            self.lay_island(inside * a, color=px[..., :3], **props)
+        if seam and self.wrap and not tile:
+            for k in ((-1,) if x + w > self.W else ()) + ((1,) if x < 0 else ()):
+                c = None if clip is None else (clip[0] + k * self.W, clip[1], clip[2] + k * self.W, clip[3])
+                self.image(img, x + k * self.W, y, w, h, clip=c, relief=relief, seam=False, **props)
 
     # -- a prop's own pictures, swappable (docs/PROPGEN.md §15)
     def picture(self, pic, box, rot=0, fit="contain", **defaults):
         """A picture laid in a box (cx, cy, w, h mm): `pic` a path, or {image, fit (contain: its own shape inside the
         box, the default; cover: filling it, cut to it; stretch: to the box's shape), scale, dx, dy (mm), rot (quarter
         turns, degrees anticlockwise), flip (mirrored), tint (its colour multiplied: a one-colour logo recoloured),
-        rough, metal, alpha, height, relief (only its shape pressed in or raised: a stamp, a moulding)}."""
+        rough, metal, alpha, height, relief (only its shape pressed in or raised: a stamp, a moulding)}; `fit: tile`
+        repeats it over the box (`tile` mm a repeat's width)."""
         p = {"image": pic} if isinstance(pic, str) else dict(pic)
         img = read_image(p["image"])
         k = int(round(float(p.get("rot", rot)) / 90.0)) % 4
@@ -424,14 +439,6 @@ class Frame:
         cx, cy, w, h = box
         ih, iw = img.shape[:2]
         fit = p.get("fit", fit)
-        if fit == "stretch":
-            pw, ph = w, h
-        else:
-            z = (min if fit == "contain" else max)(w / iw, h / ih)
-            pw, ph = iw * z, ih * z
-        z = float(p.get("scale", 1.0))
-        pw, ph = pw * z, ph * z
-        x, y = cx + float(p.get("dx", 0.0)) - pw / 2, cy + float(p.get("dy", 0.0)) - ph / 2
         kw = dict(defaults)
         kw["relief"] = bool(p.get("relief", kw.get("relief", False)))
         for key in ("rough", "metal", "alpha", "height"):
@@ -439,7 +446,26 @@ class Frame:
                 kw[key] = float(p[key])
         if not kw["relief"]:
             kw.setdefault("rough", 0.35)
-        self.image(img, x, y, pw, ph, clip=(cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2) if fit == "cover" else None, **kw)
+        z, dx, dy = float(p.get("scale", 1.0)), float(p.get("dx", 0.0)), float(p.get("dy", 0.0))
+        box_clip = (cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2)
+        if fit == "tile":
+            # repeated over the box: `tile` mm a repeat's width; else a strip's picture at the strip's height, anything
+            # else at its own size (two of its pixels a texel, as the size a picture wants is reckoned); round a band,
+            # a whole number of repeats, so they meet at its seam
+            tw = float(p["tile"]) if p.get("tile") else (h * iw / ih if w >= 4 * h else iw / (2 * self.s))
+            tw *= z
+            if self.wrap and w >= self.W * 0.95:
+                tw = self.W / max(1, round(self.W / tw))
+            self.image(img, box_clip[0] + dx, box_clip[1] + dy, w, h, clip=box_clip, tile=(tw, tw * ih / iw), **kw)
+            return
+        if fit == "stretch":
+            pw, ph = w, h
+        else:
+            zz = (min if fit == "contain" else max)(w / iw, h / ih)
+            pw, ph = iw * zz, ih * zz
+        pw, ph = pw * z, ph * z
+        x, y = cx + dx - pw / 2, cy + dy - ph / 2
+        self.image(img, x, y, pw, ph, clip=box_clip if fit == "cover" else None, **kw)
 
     def slot(self, name, box, draw=None, kind="logo", about="", rot=0, **props):
         """One of the prop's own pictures, which a recipe can swap: `name` (one per island), `box` (cx, cy, w, h mm:
@@ -464,12 +490,12 @@ class Frame:
         if pic is False:
             return
         if pic:
-            self.picture(pic, (cx, cy, w, h), rot=rot, fit="cover" if kind == "pattern" else "contain", **props)
+            self.picture(pic, (cx, cy, w, h), rot=rot, fit=slot_fit(kind, w, h), **props)
         elif draw is not None:
             draw()
 
     def smudge(self, img, cx, cy, w, h=None, rot=0.0, strength=0.8, blend="multiply", tint=None, rough=None,
-               height=0.0, flip=False):
+               height=0.0, flip=False, seam=True):
         """A stain from a picture (RGBA: its colour where its alpha is; a picture without alpha: dark where it's dark)
         at (cx, cy) mm, `w` wide (its own shape), turned `rot` degrees: `multiply` darkens toward its colour (coffee,
         soot, grease, blood), `mix` lays its colour (dust, water marks, rust); `rough` the roughness it leaves (grease
@@ -484,6 +510,11 @@ class Frame:
             mask, col = mask[:, ::-1], col[:, ::-1]
         ih, iw = mask.shape
         h = w * ih / iw if h is None else h
+        if seam and self.wrap:
+            # on a band that goes round, what crosses its seam carries on from the other side
+            r = 0.5 * math.hypot(w, h)
+            for k in ((1,) if cx - r < 0 else ()) + ((-1,) if cx + r > self.W else ()):
+                self.smudge(img, cx + k * self.W, cy, w, h, rot, strength, blend, tint, rough, height, flip, seam=False)
         X, Y = self.grid()
         a = math.radians(-rot)
         dx, dy = X - cx, Y - cy
@@ -521,6 +552,12 @@ class Frame:
             r += (float(rough) - r) * m
         if height:
             self.cv.height[ys, xs] += float(height) * m
+
+
+def slot_fit(kind, w, h):
+    """How a swapped-in picture fits a slot unless the recipe says: a pattern, or a strip of ornament (four times as
+    wide as it's high), repeats (`tile`); anything else keeps its own shape inside the box (`contain`)."""
+    return "tile" if kind == "pattern" or (kind == "flourish" and w >= 4 * h) else "contain"
 
 
 # ---- polygons ---------------------------------------------------------------------------------------------------------

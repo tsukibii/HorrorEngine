@@ -1245,3 +1245,16 @@ guessed margin; and a check that only ever ran on a slow machine hasn't been run
   clockwise outline extruded). Judge a mesh's faces by measure, not by a render that draws both sides: PROPGEN
   casts rays at every case from all round and fails when more than 1.5% of what they hit is a face's back
   (`check.orientation`). A mirror (an axis swap, a scale by −1) needs `M.flip` after it.
+- **A set's order changes from one run to the next:** a few props' textures differed between two makes of the same
+  recipe (the cigarette butts, the kettles, the sinks, the shimenawa). The paint was the same each time; the padding
+  between islands wasn't. Before the padding is filled, each band that goes round copies a few columns past its edges
+  from its far side, and in a gap narrower than two such margins the last band copied wins. The bands came from a
+  Python set of names, whose order follows the strings' hashes, and those are seeded afresh every run. Walk things in
+  a list's order (the islands' here), never a set's, when the order reaches the output. PROPGEN makes the butts (twelve
+  bands side by side) again in a second process with another `PYTHONHASHSEED` and compares every file byte for byte;
+  a make again in the same process can't see it.
+- **An outline walked backwards across itself:** the fork's tines showed 1.2% of their faces from behind. Each tip's
+  rounded end and each slot's rounded foot was walked from the far side to the near one, so the outline crossed itself
+  in a bow-tie at every tine, and the slab there came out inside out (Cycles hid it again). Every arc in a closed
+  outline turns the same way as the rest: test a new outline for edges crossing each other (none may) before it's
+  swept.

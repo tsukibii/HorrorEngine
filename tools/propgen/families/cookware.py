@@ -96,8 +96,6 @@ def make(spec, th):
             th.island("lid", 2 * math.pi * (R + 3), M.arclen(lidp), wrap=True)
             th.island("lid_in", 2 * (R + 3), 2 * (R + 3))
             th.island("knob", 2 * math.pi * 15, M.arclen(lp), wrap=True)
-        if en:
-            th.island("decal", 70, 60)
         th.pack()
         I = th.islands
         ncol = 56 if R > 100 else 48
@@ -365,7 +363,7 @@ def make(spec, th):
                 FN.metal(fr["rivets"], "polished", steel, seed + 7)
         elif kind == "enamel":
             col = spec.get("color", "#f4f2ec")
-            for nm in ("out", "in", "floor", "lid", "lid_in", "knob", "handle", "bottom", "decal"):
+            for nm in ("out", "in", "floor", "lid", "lid_in", "knob", "handle", "bottom"):
                 if nm in fr:
                     fr[nm].fill(color=col, rough=0.1, metal=0.0)
             for nm in ("rim",):
