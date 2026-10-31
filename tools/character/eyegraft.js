@@ -1,4 +1,4 @@
-// TAU's eyes on the Studio's face (tools/eye_patch.py makes Content/Studio/Bodies/MHR_eyes.bin, served as
+// the grafted eyes on the Studio's face (tools/eye_patch.py makes Content/Studio/Bodies/MHR_eyes.bin, served as
 // bodies/MHR_eyes.bin): the lids as thick flesh resting on the eyeball, their edge rolling in to touch it, the crease,
 // the lower lid's roll and the corners, grafted onto MHR's base face. Each of its points rides the MHR triangle under
 // it (v = sum(b * P) + scale * (rest - sum(b * P0)), MHR's own blink left out); the eyeball follows the skin round the
@@ -10,7 +10,7 @@ import * as THREE from "three";
 
 const KINDS = { f4: Float32Array, u4: Uint32Array, i4: Int32Array, i2: Int16Array };
 const NAMES = ["pos", "tri", "bary", "ring", "blink", "membrane", "uv", "mhrv", "faces", "hide", "contact", "lash", "fade"];
-const OUTER = 15, SEAT_TO = 4, SEAT_OFF = 10, FLAT_A = 3, FLAT_B = 13;   // (FLAT: the upper lid from its lash line to TAU's crease, laid flat for its skin and makeup)   // (OUTER: read from the file's loops below when it says)          // the loops the eyeball follows (and out), the lid's edge seated to the 4th loop, eased out by the 10th
+const OUTER = 15, SEAT_TO = 4, SEAT_OFF = 10, FLAT_A = 3, FLAT_B = 13;   // (FLAT: the upper lid from its lash line to the base mesh's crease, laid flat for its skin and makeup)   // (OUTER: read from the file's loops below when it says)          // the loops the eyeball follows (and out), the lid's edge seated to the 4th loop, eased out by the 10th
 const smooth = u => { u = Math.min(1, Math.max(0, u)); return u * u * (3 - 2 * u); };
 const D2R = Math.PI / 180;
 // the eye's shape keys (DECISIONS 2026-10-31: "make it modifiable through some basic shape keys ... just more asian or
@@ -28,7 +28,7 @@ export const SHAPE_KEYS = [
 ];
 export const KEYS0 = { size: 0, crease: 0, fold: 0, tilt: 0, opening: 0, depth: 0 };
 export const EYE_PRESETS = {
-  "TAU": {}, "East Asian": { crease: -0.8, fold: 0.6, tilt: 0.25, opening: -0.3, depth: 0.35 }, "Caucasian": { crease: 0.6, opening: 0.15, depth: -0.4 },
+  "Default": {}, "East Asian": { crease: -0.8, fold: 0.6, tilt: 0.25, opening: -0.3, depth: 0.35 }, "Caucasian": { crease: 0.6, opening: 0.15, depth: -0.4 },
 };
 
 export async function load(url, BASEP, TRIS) {         // the graft, or null when it hasn't been made on this machine
@@ -123,7 +123,7 @@ export function placeAll(G, side, P, eye, blink, out, surf = null) {   // surf(x
     const u = o.u[i], tap = smooth(u / 0.25) * smooth((1 - u) / 0.2);
     const qx = out[i * 3] - c[0], qy = out[i * 3 + 1] - c[1], qz = out[i * 3 + 2] - c[2], d = Math.hypot(qx, qy, qz) || 1;
     let push = 0, down = 0;
-    if (K.crease > 0) push = -1.0 * mm * K.crease * Math.exp(-(((k - 12.5) / 2.5) ** 2)) * tap;       // a deeper double lid: the fold set in (TAU's crease: about the 12th loop)
+    if (K.crease > 0) push = -1.0 * mm * K.crease * Math.exp(-(((k - 12.5) / 2.5) ** 2)) * tap;       // a deeper double lid: the fold set in (the base mesh's crease: about the 12th loop)
     else if (K.crease < 0) { const b = Math.exp(-(((k - 12) / 3.5) ** 2)) * tap; push = 1.4 * mm * -K.crease * b; down = 0.8 * mm * -K.crease * b; }   // a monolid: filled, a little lower
     out[i * 3] += qx / d * push; out[i * 3 + 1] += qy / d * push - down; out[i * 3 + 2] += qz / d * push;
     if (K.fold) { const f = K.fold * (1 - smooth(u / 0.3)) * Math.exp(-(((k - 7) / 4) ** 2)) * smooth((k - 3) / 2); out[i * 3] += -0.8 * mm * sx * f; out[i * 3 + 1] += -1.2 * mm * f; out[i * 3 + 2] += 0.4 * mm * f; }   // (the lid's edge stays: the skin above it drapes over the corner)

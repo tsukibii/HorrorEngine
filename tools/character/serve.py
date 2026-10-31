@@ -54,29 +54,6 @@ SALON_FILES = {"salon.json", "salon_bake.json", "salon.glb", "salon_base.glb"}  
 HAIR_FILES = SALON_FILES
 REFS = HAIR / "References"                                       # the salon's locked references (tools/gshair.py reference)
 REF_RUNS = {}
-TAU_RUNS = {}                                                     # TAU's brows and lashes being grown (tools/tau_hair.py), by character
-TAU_PRESETS = {"brows": {"Natural", "Bushy", "Feather", "Fluffy", "Laminated"}, "lashes": {"Straight", "Clumped", "Fox", "Manga", "Volume"}}
-
-
-def tau_status(name):
-    d = PEOPLE / name / "tau"; p = TAU_RUNS.get(name)
-    running = p is not None and p.poll() is None
-    if p is not None and not running: TAU_RUNS.pop(name, None)
-    log = (d / "run.log").read_text(encoding="utf-8", errors="replace")[-3000:] if (d / "run.log").exists() else ""
-    return dict(running=running, ok=not running and "TAUHAIR ok" in log, baked=(d / "strands.json").exists(), log=log)
-
-
-EYE_RUN = {}                                                      # TAU's eyes being made (tools/eye_patch.py make): the one run
-EYE_LOG = ROOT / "Saved" / "eye_patch" / "make.log"
-
-
-def eye_status():
-    p = EYE_RUN.get("p"); running = p is not None and p.poll() is None
-    if p is not None and not running: EYE_RUN.pop("p", None)
-    log = EYE_LOG.read_text(encoding="utf-8", errors="replace")[-3000:] if EYE_LOG.exists() else ""
-    return dict(running=running, ok=not running and (BODIES / "MHR_eyes.bin").is_file() and "EYEPATCH written" in log, made=(BODIES / "MHR_eyes.bin").is_file(), log=log)
-
-
 def ref_status(name):
     d = REFS / name; p = REF_RUNS.get(name)
     running = p is not None and p.poll() is None
@@ -88,7 +65,7 @@ def ref_status(name):
 # what a character is made from (and its live bakes): it travels inside an export (the GLB's extras, and a .studio.json
 # beside it) so the character comes back into the Studio as it was, every setting editable (docs/CHARACTER_STUDIO.md §2)
 RECIPE_FILES = ("character.json", "layers.json", "skin.png", "skin_mask.png", "skin_paint.png", "skin_touch.png", "skin_pigment.png", "body.bin", "drape.bin", "face.bin")
-RECIPE_DIRS = {"pictures": PICTURES, "salon": {".json", ".glb"}, "tau": {".json"}}   # (tau: TAU's strands, tools/tau_hair.py)
+RECIPE_DIRS = {"pictures": PICTURES, "salon": {".json", ".glb"}}
 
 
 def recipe(name):
@@ -208,8 +185,6 @@ class Handler(BaseHTTPRequestHandler):
             f = (ROOT / "tools" / "shared" if parts[0] == "shared" else ROOT / "Content" / "Studio" / "Env") / parts[1]
             if f.is_file():
                 return self.send(200, f.read_bytes(), "text/javascript" if f.suffix == ".js" else "application/octet-stream")
-        if parts == ["api", "eyepatch", "status"]:                              # TAU's eyes being made on this machine
-            return self.send(200, eye_status())
         if parts[0] == "bodies" and len(parts) == 2 and Path(parts[1]).suffix in (".bin", ".json"):
             f = BODIES / parts[1]
             return self.send(200, f.read_bytes(), TYPES[f.suffix]) if f.is_file() else self.send(404, {"error": "no body"})
@@ -233,11 +208,6 @@ class Handler(BaseHTTPRequestHandler):
         if parts[:2] == ["api", "people"] and len(parts) == 4 and clean(parts[2]) and parts[3] in ("body.bin", "drape.bin", "face.bin"):   # the body as the studio shows it; its clothes' drape; its face baked
             f = PEOPLE / clean(parts[2]) / parts[3]
             return self.send(200, f.read_bytes(), TYPES[".bin"]) if f.exists() else self.send(404, {"error": "not saved from the Character Studio yet"})
-        if parts[:2] == ["api", "people"] and len(parts) == 5 and clean(parts[2]) and parts[3] == "tau" and parts[4] == "strands.json":
-            f = PEOPLE / clean(parts[2]) / "tau" / "strands.json"              # TAU's brows and lashes grown on the character (tools/tau_hair.py)
-            return self.send(200, f.read_bytes(), TYPES[".json"]) if f.exists() else self.send(404, {"error": "no TAU bake yet"})
-        if parts[:2] == ["api", "people"] and len(parts) == 5 and clean(parts[2]) and parts[3] == "tau" and parts[4] == "status":
-            return self.send(200, tau_status(clean(parts[2])))
         if parts[:2] == ["api", "people"] and len(parts) == 5 and clean(parts[2]) and parts[3] == "salon" and parts[4] in SALON_FILES:
             f = PEOPLE / clean(parts[2]) / "salon" / parts[4]                    # the character's hair from the salon
             return self.send(200, f.read_bytes(), TYPES[f.suffix]) if f.exists() else self.send(404, {"error": "no salon hair yet"})
@@ -297,11 +267,6 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         parts = [p for p in urllib.parse.urlparse(self.path).path.split("/") if p]
         name = clean(parts[2]) if len(parts) >= 3 else None
-        if parts == ["api", "eyepatch", "run"]:                                 # TAU's eyes made on this machine (tools/eye_patch.py make: TAU's .blend in Blender's module)
-            if eye_status()["running"]: return self.send(409, {"error": "TAU's eyes are already being made"})
-            EYE_LOG.parent.mkdir(parents=True, exist_ok=True)
-            EYE_RUN["p"] = subprocess.Popen([sys.executable, str(ROOT / "tools" / "eye_patch.py"), "make"], stdout=open(EYE_LOG, "w", encoding="utf-8"), stderr=subprocess.STDOUT, cwd=ROOT)
-            return self.send(200, {"started": True})
         if parts == ["api", "defaults"]:                                         # merged into People/defaults.json, key by key
             f = PEOPLE / "defaults.json"
             PEOPLE.mkdir(parents=True, exist_ok=True)
@@ -399,16 +364,6 @@ class Handler(BaseHTTPRequestHandler):
             return self.keep(HAIR / name, parts[3])
         if parts[:2] == ["api", "people"] and len(parts) == 4 and name and parts[3] in ("body.bin", "drape.bin", "face.bin"):   # the body, with its face, no expression; the clothes' drape; the face baked
             return self.keep(PEOPLE / name, parts[3])
-        if parts[:2] == ["api", "people"] and len(parts) == 5 and name and parts[3] == "tau" and parts[4] == "run":   # TAU's brows and lashes grown in Blender
-            q = json.loads(self.body().decode("utf-8") or "{}")
-            if tau_status(name)["running"]: return self.send(409, {"error": "TAU is already growing this character's hair"})
-            b, l = str(q.get("brows", "Natural")), str(q.get("lashes", "Straight"))
-            if b not in TAU_PRESETS["brows"] or l not in TAU_PRESETS["lashes"]: return self.send(400, {"error": "unknown TAU preset"})
-            d = PEOPLE / name / "tau"; d.mkdir(parents=True, exist_ok=True)
-            log = open(d / "run.log", "w", encoding="utf-8")
-            TAU_RUNS[name] = subprocess.Popen([sys.executable, str(ROOT / "tools" / "tau_hair.py"), "make", "--person", name, "--brows", b, "--lashes", l],
-                                              stdout=log, stderr=subprocess.STDOUT, cwd=ROOT)
-            return self.send(200, {"started": True})
         if parts[:2] == ["api", "people"] and len(parts) == 5 and name and parts[3] == "salon" and parts[4] in SALON_FILES:
             if not (PEOPLE / name).is_dir(): return self.send(404, {"error": f"no character {name}"})
             return self.keep(PEOPLE / name / "salon", parts[4])                  # the character's hair from the salon

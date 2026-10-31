@@ -425,7 +425,7 @@ if (uProc > 0.5) {
   vec3 skinP = proceduralSkin(uTone, vObj);
   if (uHasPhoto > 0.5) {                                             // the picture inside its mask, the procedural skin outside
     float h0 = skinH, r0 = skinRough, c0 = skinCoat;
-    vec3 ph = mix(texture2D(uPhotoMap, vSkinUv).rgb, uPhotoTone, 0.9 * vBlur);   // (TAU's eyes' closing lid: the photo's own skin tone, eyegraft.js photoBlur)
+    vec3 ph = mix(texture2D(uPhotoMap, vSkinUv).rgb, uPhotoTone, 0.9 * vBlur);   // (the grafted eyes' closing lid: the photo's own skin tone, eyegraft.js photoBlur)
     float mk = texture2D(uPhotoMask, vSkinUv).r;
     if (uHasTouch > 0.5) mk = clamp(mk + (floor(texture2D(uTouchMask, vSkinUv).r * 255.0 + 0.5) - 128.0) / 127.0, 0.0, 1.0);   // the touch-up's mask edits: grey 128 exactly none
     mk *= uf_photo;
@@ -456,7 +456,7 @@ if (uHasLay > 0.5) {                                                   // the la
   skinRough *= max(sf.r * 4.0, 0.04); skinCoat = clamp(skinCoat + sf.g, 0.0, 1.0); skinH += (sf.b - 0.50196) * 14.0; if (sf.g > 0.01) skinCoatR = 1.0 - sf.a;
 }
 diffuseColor.rgb = mix(diffuseColor.rgb, vec3(1.0, 0.55, 0.1), clamp(vSel, 0.0, 1.0) * 0.55 * uShowSel);   // the selection, shown
-diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(1.05, 0.62, 0.6) + vec3(0.05, 0.0, 0.0), clamp(vMem, 0.0, 1.0) * 0.8);   // TAU's eyes' wet membrane: the lid's edge behind the lashes, the lining (pinker, eyegraft.js)
+diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(1.05, 0.62, 0.6) + vec3(0.05, 0.0, 0.0), clamp(vMem, 0.0, 1.0) * 0.8);   // the grafted eyes' wet membrane: the lid's edge behind the lashes, the lining (pinker, eyegraft.js)
 #include <color_fragment>`)
       .replace("#include <roughnessmap_fragment>", `#include <roughnessmap_fragment>
 if (uProc > 0.5 || uHasLay > 0.5 || uLipOn > 0.5) roughnessFactor = clamp(roughnessFactor * skinRough, 0.06, 1.0);
@@ -485,7 +485,7 @@ if (uProc > 0.5 || uHasLay > 0.5 || uLipOn > 0.5 || uNailOn > 0.5) { material.cl
 if (nailM > 0.0) { material.clearcoat = mix(material.clearcoat, nailCoat, nailM); material.clearcoatRoughness = mix(material.clearcoatRoughness, nailCoatR, nailM); }   // a nail's gloss, a polish's
 #endif`);
   };
-  const blurred = material.onBeforeCompile;           // (TAU's eyes' closing lid, eyegraft.js photoBlur: its skin-UV reads a few mip levels softer)
+  const blurred = material.onBeforeCompile;           // (the grafted eyes' closing lid, eyegraft.js photoBlur: its skin-UV reads a few mip levels softer)
   material.onBeforeCompile = (sh, r) => {
     blurred(sh, r);
     sh.fragmentShader = sh.fragmentShader.replace(/texture2D\((u\w+), vSkinUv\)/g, "texture2D($1, vSkinUv, 4.0 * vBlur)")

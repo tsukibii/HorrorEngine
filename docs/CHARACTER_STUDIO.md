@@ -51,14 +51,14 @@ export is a bake like any other (§3, Export).
 
 ## 2b. Brows and lashes by hand (DECISIONS 2026-10-31, the night)
 
-The user, after TAU's (docs/TAU_HAIR.md): "The texture of the procedural eye lashes looks really good but the design you
+The user, after TAU's bake (since removed, below): "The texture of the procedural eye lashes looks really good but the design you
 generated is very bad, they move up too upwards" (TAU's Straight preset stands its lashes at 70 to 80° off the lid line,
 and our tidy turned them up further to keep them off the eye), with four references (a brow, an eye at three-quarter, an
 eye from the front, a MetaHuman head without its hair); then "could you make an easy eyebrow editor tool where I manually
 can add and adjust the eyebrows and eyelashes inside an easy wrapper?" Built: **Face, Brows & lashes by hand**
 (`tools/character/groom.js`, the editor in `index.html`).
 
-- **Use them** puts them in place of the brows and lashes below and TAU's; **Mirror** does each change on both sides.
+- **Use them** puts them in place of the clumped brows and lashes below; **Mirror** does each change on both sides.
 - **Edit on the face** frames the eyes and brows and shows **handles**: five on each brow's top edge and five on its
   bottom edge (yellow circles: dragged, that edge moves on the face; the band between the edges is the brow), and three
   at the upper lashes' tips (blue squares, inner, middle, outer: dragged, their length, lift and sweep there follow the
@@ -70,7 +70,7 @@ can add and adjust the eyebrows and eyelashes inside an easy wrapper?" Built: **
   (MetaHuman), Soft, Full, Doll, Fox, Sparse; Upper lashes, Length, Lift, Curl, Outer sweep, Inner length, Thickness,
   Clumps, Lower lashes, Lower length, Lower angle. A style sets the sliders; the shape by hand stays.
 - **The hairs** are made on the face as it is, every time it changes (so they ride every expression and the blink), at
-  TAU's thickness (0.055 mm at the root) as TAU's strands are drawn (`strandCards`: one fine hair to a card): a brow's
+  a real hair's thickness (about 0.05 mm at the root), drawn as `strandCards` (one fine hair to a card): a brow's
   hairs lying on the skin across its band (the band laid on the skin as a grid: each hair a curve in it, following the
   flow: up at the front, swept out along the body, out and down at the tail, the top and bottom rows leaning in; fewer at
   its soft edges and its front); an upper lash from the lid's edge over its rim, forward, easing up into its curl and
@@ -78,32 +78,37 @@ can add and adjust the eyebrows and eyelashes inside an easy wrapper?" Built: **
   it shuts; the lower lashes few, fine, uneven, down and out. Measured (GROOM): the middle lashes rise 2.4 mm over the
   lid at 23° from straight out (it was 3.7 mm at 36° before the defaults were tuned on the references; TAU's Straight
   stood up), the outer ones swept 45° out; the brows' hairs within 0.33 mm of the skin.
-- **Start from TAU's brows** (the user's next look, the same night: "the actual TAU plugin makes way better eyebrows
-  than we do", and "use the default .blend eyebrow as starter (which is placed correctly) and modify based off that"):
-  a TAU preset beside the brows' styles grows TAU's brows on the character if they aren't there yet (Blender, a few
-  minutes: docs/TAU_HAIR.md), then its hair becomes the brows to shape. The band is laid on **TAU's own brow as it grew**
-  (`tauFit`: its head and tail at the 2nd and 98th percentile of its roots along the brow rows' band, each station's top
-  and bottom at the 95th and 5th percentile of the roots near it), so the handles start on its outline (about 91% of its
-  roots inside it), not on MediaPipe's rows, which sit higher on most faces; each hair moves with the band where its root
-  lies (past the edges, with the edge), the brushes thin, double and comb it, Hairs, Length, Thickness and Messy change
-  it; its flow stays TAU's. **Back to the made ones** brings the brows grown here back as they were shaped: each source
-  keeps its own handles and brushing (`brow.kept`), switching never loses them.
+- **Blender's procedural hair technique** (DECISIONS 2026-10-31, the night, the last: "enhance our eyebrows and
+  eyelash system we already use and remove TAU"; the technique in our own words: docs/research/brows_lashes.md): the
+  brows' **Trimmed edges** (hairs near the top, the bottom and the front shorter, as a groomed brow's), **Clumps** (each
+  hair's tip drawn toward a guide hair of its own 2 by 1.5 mm cell, the root staying), **Frizz** (each hair's own small
+  waves), and lengths spread wide with a few long strays; the lashes' **Curl at the tip** (the curl gathered toward the
+  tip: straight out of the lid, then up), **Uneven** (short lashes between the long), **Frizz**, and clumps of two to six
+  lashes drawn tighter at their tips. Every style sets them. TAU itself (its bake in Blender, Start from TAU's brows,
+  `tau_hair.py`, `tau.js`) is gone: nothing goes through Blender for brows and lashes.
 - **The lash line** (a slider under the lashes): the dark line along the lid where the lashes grow, a thin line at 0.2
   (the default), an eyeliner's at 1; the upper lashes grow along the whole lid, its inner corner to its outer one (they
   stopped short of both ends before the user's note: "the upper eyelashes don't reach out the entire eyelid line").
 - **Saved** with the character (`st.groom`: the shape's offsets in mm, the brushing as two small grids, the lash
-  handles, the sliders, the brows' source and the other source's kept hand work); the export carries them as any brows
+  handles, the sliders); the export carries them as any brows
   and lashes (their blink, lifted with the lids: §3.1).
 - **GROOM** (`node tools/character/groomtest.mjs`, the Studio's server running): the edit mode and its 26 handles, the
   brows' hair count and their lying on the skin, the lashes' rise, angle and sweep, a brow handle dragged (and its twin),
-  a lash handle dragged up, Thin out and Add hair, TAU's brows started from (most of their roots inside the handles'
-  outline, a handle dragged moving the hairs under it; back to the made ones as they were), a style, the blink, saved
+  a lash handle dragged up, Thin out and Add hair, a style, the blink, saved
   and opened again the same, Done.
 
 The sheet: `docs/godot_sheets/2026-10-31_brows_lashes_by_hand.jpg` (the editor, then the result in Godot open, at
 three-quarter and shut).
 
-## 2c. TAU's eyes (DECISIONS 2026-10-31, the night, later)
+## 2c. The eyes: Blender's human base mesh's lids (DECISIONS 2026-10-31, the night, later)
+
+**Every character's eyes now** (DECISIONS 2026-10-31, the night, the last: "modify the base loaded mesh so it has those
+eyes from the start, I don't care about the old eyes"): the graft is `Content/Studio/Bodies/MHR_eyes.bin`, committed,
+and the Studio wears it whenever it's there (no switch, no Make button; MHR's own cut lids and the eyelid line only if
+the file is missing). Its source is the eye region of **Blender Studio's Human Base Meshes** (CC0; the user checked that
+the head in TAU's file is that body, `GEO-body_female_realistic`); `python tools/eye_patch.py make` remakes it from the
+bundle's .blend in `vendor/human_base_meshes/` (or `--blend PATH`). Where this section says "TAU's", read the base
+mesh's: it's the history of how it was found.
 
 The user: "in ours the eyelids look like thin skin bending over the eye whereas TAU the eyelids actually look like meaty
 flesh that curves in, ideally we want TAU's look for the eyes, eyelid shape and then make it modifiable through some
@@ -121,14 +126,8 @@ it; within 15 mm of the eye's centre TAU has 4,391 points at its second multires
   the hole are the graft's too: no seam); the right eye the left mirrored. Each point keeps the MHR triangle nearest it
   (not MHR's strip over the eye) and moves as its points do, so the sliders, the sculpt, a photo's fit and the
   expressions carry it. Its UVs: TAU's lid laid on MHR's lid between the opening and the edge, so a photo skin or paint
-  shows the photo's lid on it. `Content/Studio/Bodies/MHR_eyes.bin` (git-ignored until the head's licence is checked:
-  DECISIONS).
-- **Made on each machine**: until it is, Skin, Eyes says so and offers **Make TAU's eyes on this machine** (the Studio's
-  server runs `tools/eye_patch.py make`, a minute or two, `api/eyepatch/run` and `status`, the log in
-  `Saved/eye_patch/make.log`; the page wears the result without a reload). It needs TAU's .blend (`vendor/tau/`, or the
-  transfer branch's `tau_transfer/`, its two parts joined into `vendor/tau/` by themselves: `tau_hair.tau_blend`) and
-  Blender's Python module (`python tools/retarget.py setup`, once); what's missing is said in the panel.
-- **In the Studio** (`eyegraft.js`; Skin, Eyes, **TAU's eyes (thick lids)**, off by default, saved with the character):
+  shows the photo's lid on it. `Content/Studio/Bodies/MHR_eyes.bin` (committed: every character's eyes).
+- **In the Studio** (`eyegraft.js`; Skin, Eyes; on every character):
   drawn on the skin's own material, the wet membrane (the lining, where the lid meets the eye, its edge behind the lash
   line) pinker and glossier (skinshader.js); the eyeball TAU's size, following the skin round the eye (loops 15 and out)
   and growing with it; the lid's edge and the lining seated back on the eyeball as they rest on it; drawn behind real
@@ -234,8 +233,6 @@ the eyeball in every state and, shut, the cut's edges met (MHR's shut lids leave
 sparse (`sparseTargets`). Godot's HSBlink plays it (an idle blink, a scene's face); EYELIDS measures it. What lies on the
 lids (the lashes, the lash line, the tear line, the brows) comes forward with them (`liftWith`); **the tear line** goes
 into the file (`tearline_L`/`_R`, its fade in the vertices' colour, `studioTear`; see-through in a plain viewer), drawn as a wet glint in Godot.
-**TAU's brows and lashes** (docs/TAU_HAIR.md): Face, TAU (baked in Blender), **Bake with TAU** exports, grows them with
-TAU's pack in Blender, wears them and exports again.
 
 **The colours are baked** (2026-10-27, DECISIONS: the user's character stood white on the desk). glTF carries a
 material's colour and its maps, never a shader, and the Studio draws its colours in shaders: the procedural skin

@@ -1,29 +1,28 @@
-"""TAU's eyes on our faces: the eye region of TAU's demo head (the lids as thick flesh resting on the eyeball, their edge
-rolling in to touch it, the crease, the lower lid's roll, the corners) grafted onto MHR's base face, each of its points
-riding the MHR triangle under it, so every slider, the sculpt, a photo's fit and the expressions carry it; its own
-blink, the lids turning over the eyeball about its centre (DECISIONS 2026-10-31, the night, later: "ideally we want
-TAU's look for the eyes, eyelid shape and then make it modifiable through some basic shape keys").
+"""The Studio's eyes: the eye region of Blender's human base mesh (Blender Studio's Human Base Meshes, CC0: the realistic
+female body, `GEO-body_female_realistic`: the lids as thick flesh resting on the eyeball, their edge rolling in to
+touch it, the crease, the lower lid's roll, the corners) grafted onto MHR's base face, each of its points riding the
+MHR triangle under it, so every slider, the sculpt, a photo's fit and the expressions carry it; its own blink, the
+lids turning over the eyeball about its centre. Every character wears it: it replaced MHR's own eyes (DECISIONS
+2026-10-31, the night, later still: "I don't care about the old eyes as the new ones are way better").
 
-    python tools/eye_patch.py make [--blend PATH]   the graft, from TAU's .blend (vendor/tau/procedural_human_hair.blend)
-                                                    into Content/Studio/Bodies/MHR_eyes.bin (git-ignored)
-    python tools/eye_patch.py preview               clay pictures: TAU, MHR, MHR with the eyes, open and shut, and on
-                                                    another body (Saved/Story/_look/eyes/)
+    python tools/eye_patch.py make [--blend PATH]   the graft, from a .blend holding Blender's human base mesh (the
+                                                    Human Base Meshes bundle in vendor/human_base_meshes/, or PATH)
+                                                    into Content/Studio/Bodies/MHR_eyes.bin (committed: the default)
+    python tools/eye_patch.py preview               clay pictures: the base mesh, MHR, MHR with the eyes, open and shut,
+                                                    and on another body (Saved/Story/_look/eyes/)
     python tools/eye_patch.py check                 EYEPATCH: the graft's numbers (below)
 
-How it's made (inside Blender's module, `vendor/blender/.venv`): TAU's head at multires level 2 lined up on MHR's base
-face (a similarity fitted over the upper face round the eyes, the eyes themselves left out); the left eye's region taken
-as TAU's own loops: the band where the skin meets the eyeball (80 points), loops outward over the lids to the 19th and
-inward into the socket to the 5th (the lining, inside the eyeball, hidden by it); its outer loops (12 to 19) eased onto
-MHR's skin, so its edge lies on MHR's; MHR's triangles inside that edge hidden and the gap between the two edges
-stitched; the right eye the left mirrored. Each point keeps the MHR triangle nearest it and its barycentric weights:
-the Studio moves it by its triangle's points' moves (`v = v0 + sum(b * (P - P0))`, MHR's own blink left out), the
-export carries those as `_MHRP`/`_MHRW`. The blink: each point of a lid turned about the eyeball's centre on the head's
-x axis by its share of the angle that closes the opening where it is (the upper lid 85%, the lower 15%, the lining and
-the lid's edge whole, fading out by the 13th loop): the lids slide over the eyeball and meet, never through it.
-
-The licence: TAU's pack is CC BY-SA 4.0 (docs/TAU_HAIR.md); its demo head looks like Blender Studio's Human Base Meshes
-body (CC0: the same object names), which would make the graft free to share. Until that's checked against the bundle
-itself, what this makes stays on the machine (Content/Studio/Bodies/MHR_eyes.bin is git-ignored).
+How it's made (inside Blender's module, `vendor/blender/.venv`): the base mesh's head at multires level 2 lined up on
+MHR's base face (a similarity fitted over the upper face round the eyes, the eyes themselves left out); the left eye's
+region taken as the mesh's own loops: the band where the skin meets the eyeball (80 points), loops outward over the
+lids to the 19th and inward into the socket to the 5th (the lining, inside the eyeball, hidden by it); its outer loops
+(12 to 19) eased onto MHR's skin, so its edge lies on MHR's; MHR's triangles inside that edge hidden and the gap
+between the two edges stitched; the right eye the left mirrored. Each point keeps the MHR triangle nearest it and its
+barycentric weights: the Studio moves it by its triangle's points' moves (`v = v0 + sum(b * (P - P0))`, MHR's own
+blink left out), the export carries those as `_MHRP`/`_MHRW`. The blink: each point of a lid turned about the
+eyeball's centre on the head's x axis by its share of the angle that closes the opening where it is (the upper lid
+85%, the lower 15%, the lining and the lid's edge whole, fading out by the 13th loop): the lids slide over the eyeball
+and meet, never through it.
 """
 import argparse
 import json
@@ -34,11 +33,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 BPY = ROOT / "vendor" / "blender" / ".venv" / "bin" / "python"
-BLEND = ROOT / "vendor" / "tau" / "procedural_human_hair.blend"
+BLENDS = [ROOT / "vendor" / "human_base_meshes", ROOT / "vendor" / "tau"]   # where a .blend holding the base mesh is looked for (any file with GEO-body_female_realistic)
 OUTDIR = ROOT / "Saved" / "eye_patch"                # the lined-up head's cache, the job
-BIN = ROOT / "Content" / "Studio" / "Bodies" / "MHR_eyes.bin"   # (git-ignored: what's made from TAU's head stays on the machine for now)
+BIN = ROOT / "Content" / "Studio" / "Bodies" / "MHR_eyes.bin"   # (committed: every character's eyes)
 LOOK = ROOT / "Saved" / "Story" / "_look" / "eyes"
-K_OUT, K_IN, K_EASE, K_BLINK = 21, 5, 16, 13      # loops outward kept, inward kept (the lining), where the easing onto MHR starts (after TAU's crease, about the 12th, and the fold over it), where the blink fades out
+K_OUT, K_IN, K_EASE, K_BLINK = 21, 5, 16, 13      # loops outward kept, inward kept (the lining), where the easing onto MHR starts (after the base mesh's crease, about the 12th, and the fold over it), where the blink fades out
 UPPER_SHARE = 0.85                                 # of the closing angle: the upper lid's, the rest the lower's
 
 # ---- the file -----------------------------------------------------------------------------------------------------------
@@ -76,13 +75,13 @@ def read_bin(path=BIN):
 
 
 def line_up(job, M, P0, T, bvhM):
-    """TAU's head at multires 2 in MHR's frame, lined up on MHR's base face: (A, faces, scale, rotation, translation, eyes)"""
+    """the base mesh's head at multires 2 in MHR's frame, lined up on MHR's base face: (A, faces, scale, rotation, translation, eyes)"""
     import bpy
     import numpy as np
     from mathutils import Vector
     bpy.ops.wm.open_mainfile(filepath=job["blend"])
     toM = lambda A: np.c_[A[:, 0], A[:, 2], -A[:, 1]]        # Blender (z up, -y forward) -> MHR (y up, +z forward), metres
-    tau = bpy.data.objects["GEO-body_female_realistic"]
+    hb = bpy.data.objects["GEO-body_female_realistic"]
     eyes = {}
     for s in "LR":
         eo = bpy.data.objects[f"GEO-body_female_realistic.eye.{s}"]; mw = np.array(eo.matrix_world)
@@ -90,9 +89,9 @@ def line_up(job, M, P0, T, bvhM):
         c = toM(np.array(eo.matrix_world.translation)[None])[0]
         front = EV[np.argmax((EV - c)[:, 2])]
         eyes[s] = dict(c=c, r=float(np.median(np.linalg.norm(EV - c, axis=1))), f=(front - c) / np.linalg.norm(front - c))
-    mr = [m for m in tau.modifiers if m.type == "MULTIRES"][0]; mr.levels = 2
+    mr = [m for m in hb.modifiers if m.type == "MULTIRES"][0]; mr.levels = 2
     dg = bpy.context.evaluated_depsgraph_get(); dg.update()
-    te = tau.evaluated_get(dg); tm = te.to_mesh(); tw = np.array(te.matrix_world)
+    te = hb.evaluated_get(dg); tm = te.to_mesh(); tw = np.array(te.matrix_world)
     TV = toM((np.c_[np.array([v.co for v in tm.vertices]), np.ones(len(tm.vertices))] @ tw.T)[:, :3])
     TF = [tuple(p.vertices) for p in tm.polygons]
     te.to_mesh_clear()
@@ -159,7 +158,7 @@ def inside(job_path):
     bvhS = BVHTree.FromPolygons([tuple(v) for v in P0], [tuple(f) for f in T[skinT]])
     print(f"EYEPATCH MHR's strips over the eyes: {int(strip.sum())} triangles (left out of the binding)")
 
-    # 2. the left eye's region as TAU's own loops
+    # 2. the left eye's region as the mesh's own loops
     c, r = eye["L"]["c"], eye["L"]["r"]
     near = np.linalg.norm(A - c, axis=1) < 0.034
     faces = [f for f in TF if all(near[i] for i in f)]
@@ -297,9 +296,9 @@ def inside(job_path):
             v0, v1, v2 = b - a, d - a, p - a; d00, d01, d11, d20, d21 = v0 @ v0, v0 @ v1, v1 @ v1, v2 @ v0, v2 @ v1
             den = d00 * d11 - d01 * d01; w1 = (d11 * d20 - d01 * d21) / den; w2 = (d00 * d21 - d01 * d20) / den
             tri[k] = fi; bary[k] = [1 - w1 - w2, w1, w2]
-        # the UVs (what a photo skin or paint shows on it): TAU's lid laid on MHR's by where it is between the opening and
+        # the UVs (what a photo skin or paint shows on it): the base mesh's lid laid on MHR's by where it is between the opening and
         # the edge, round the eyeball's centre seen from the front: the graft's contact band onto MHR's lid line (the strip's
-        # edge), its outer edge onto the hole's, so TAU's lid wears MHR's lid skin (a photo's lid, not its eyeball)
+        # edge), its outer edge onto the hole's, so the base mesh's lid wears MHR's lid skin (a photo's lid, not its eyeball)
         def radius_at(pts2, th):                         # a loop's distance from the centre at each angle th (seen from the front)
             a_ = np.arctan2(pts2[:, 1], pts2[:, 0]); o_ = np.argsort(a_); a_, rr = a_[o_], np.linalg.norm(pts2, axis=1)[o_]
             return np.interp(th, np.r_[a_ - 2 * np.pi, a_, a_ + 2 * np.pi], np.r_[rr, rr, rr])
@@ -347,7 +346,7 @@ def inside(job_path):
             else: u = (kk - 2) / (K_BLINK - 2); w = 1 - u * u * (3 - 2 * u)
             blink[k] = w if upper else -w                # (the angle is the face's own: apply() measures the opening as it is)
         # 7b. an even falloff from the opening (1) to the edge (0), harmonic over the graft's own triangles: the shape keys
-        # fade by it, so the room each way is used evenly (TAU's loops bunch up toward the nose)
+        # fade by it, so the room each way is used evenly (its loops bunch up toward the nose)
         fade = np.zeros(len(Vall)); fixed = (RINGs <= 0) | (RINGs >= K_OUT_); fade[RINGs <= 0] = 1
         Ed = np.unique(np.sort(np.r_[F_all[:, [0, 1]], F_all[:, [1, 2]], F_all[:, [2, 0]]], 1), axis=0); deg = np.bincount(Ed.ravel(), minlength=len(Vall))
         for _ in range(6000):
@@ -362,8 +361,8 @@ def inside(job_path):
                            hide=hide, contact=np.array(order_ring(Ts, RING, 0, Vall, c_)), lash=np.array(order_ring(Ts, RING, lash_ring, Vall, c_)))
         sides[side]["eye"] = dict(centre=c_.tolist(), radius=r_, forward=es["f"].tolist())
         print(f"EYEPATCH {side}: {len(Vall)} points ({len(hole)} of them MHR's own round the hole), {len(F_all)} triangles ({len(zip_)} stitching), {len(hide)} MHR triangles hidden")
-    header = {"version": 1, "about": "TAU's eye region (tools/eye_patch.py) on MHR's base face: the left eye's loops from TAU's demo head "
-                                      "(TAU's Procedural Human Hair, CC BY-SA 4.0; the head looks like Blender Studio's Human Base Meshes, CC0), "
+    header = {"version": 1, "about": "The eye region of Blender's human base mesh (tools/eye_patch.py) on MHR's base face: the left eye's loops "
+                                      "from Blender Studio's Human Base Meshes (CC0), "
                                       "the right the left mirrored; each point on an MHR triangle (tri, bary), its rest place (pos, metres), "
                                       "its loop (ring: <0 the lining, 0 where it meets the eyeball, >0 outward, 999 MHR's own), its blink "
                                       "(radians about the head's x axis through the eyeball's centre), the wet membrane, its UV on MHR's",
@@ -384,7 +383,7 @@ def order_ring(Ts, RING, k, V, c):                      # a loop's points (RING 
 # ---- what the graft does to a body (the Studio's and the export's maths, in numpy) -----------------------------------------
 
 KEYS = {"size": 0.0, "crease": 0.0, "fold": 0.0, "tilt": 0.0, "opening": 0.0, "depth": 0.0}   # the eye's shape keys (eyegraft.js SHAPE_KEYS)
-PRESETS = {"TAU": {}, "East Asian": {"crease": -0.8, "fold": 0.6, "tilt": 0.25, "opening": -0.3, "depth": 0.35},
+PRESETS = {"Default": {}, "East Asian": {"crease": -0.8, "fold": 0.6, "tilt": 0.25, "opening": -0.3, "depth": 0.35},
            "Caucasian": {"crease": 0.6, "opening": 0.15, "depth": -0.4}}
 
 
@@ -445,7 +444,7 @@ def apply(E, side, P, P0, T, blink=0.0, keys=None):
     nrm = (v - c) / np.linalg.norm(v - c, axis=1, keepdims=True)
     up = (lid > 0) & own
     if k["crease"] > 0:                                  # a deeper double lid: the fold set in
-        b = np.exp(-((rf - 12.5) / 2.5) ** 2) * up * tap; v = v - nrm * (1.0 * mm * k["crease"] * b)[:, None]   # (TAU's crease: about the 12th loop)
+        b = np.exp(-((rf - 12.5) / 2.5) ** 2) * up * tap; v = v - nrm * (1.0 * mm * k["crease"] * b)[:, None]   # (the base mesh's crease: about the 12th loop)
     elif k["crease"] < 0:                                # a monolid: the fold filled, the skin over the lid a little lower
         b = np.exp(-((rf - 12) / 3.5) ** 2) * up * tap; v = v + nrm * (1.4 * mm * -k["crease"] * b)[:, None]; v[:, 1] -= 0.8 * mm * -k["crease"] * b
     f = (1 - _smooth(u / 0.3)) * np.exp(-((rf - 7) / 4) ** 2) * _smooth((rf - 3) / 2) * up   # (the lid's edge stays: the skin above it drapes over the corner)
@@ -540,7 +539,7 @@ def cmd_check(a):
     bad = []
     say = lambda ok, what: (print(("  ok  " if ok else "  BAD ") + what), None if ok else bad.append(what))
     if not BIN.exists():
-        print(f"  --  no graft on this machine ({BIN.relative_to(ROOT)}: python tools/eye_patch.py make, from TAU's .blend)")
+        print(f"  --  no graft ({BIN.relative_to(ROOT)}: python tools/eye_patch.py make, from Blender's human base mesh)")
         print("EYEPATCH ok"); return
     E = read_bin(); M = mhr.load(); P0, T = M["points"], M["tris"]
     for side in ("L", "R"):
@@ -574,10 +573,17 @@ def cmd_check(a):
     print("EYEPATCH " + ("FAIL" if bad else "ok")); sys.exit(1 if bad else 0)
 
 
+def find_blend():
+    """the first .blend in vendor/human_base_meshes/ (Blender Studio's bundle unpacked there), else in the other places"""
+    for d in BLENDS:
+        for f in sorted(d.rglob("*.blend")) if d.is_dir() else []:
+            return f
+    return None
+
+
 def cmd_make(a):
-    from tau_hair import tau_blend
-    blend = Path(a.blend) if a.blend else tau_blend()
-    if not blend or not blend.exists(): sys.exit(f"EYEPATCH FAIL: TAU's .blend isn't at {BLEND.relative_to(ROOT)}, in tau_transfer/, nor on git's tau-transfer branch (docs/TAU_HAIR.md; or --blend PATH)")
+    blend = Path(a.blend) if a.blend else find_blend()
+    if not blend or not blend.exists(): sys.exit("EYEPATCH FAIL: no .blend with Blender's human base mesh: unpack Blender Studio's Human Base Meshes bundle (CC0) into vendor/human_base_meshes/, or --blend PATH")
     if not BPY.exists(): sys.exit("EYEPATCH FAIL: no Blender module yet: run  python tools/retarget.py setup  once (Blender's Python module with uv, under vendor/blender), then make again")
     OUTDIR.mkdir(parents=True, exist_ok=True)
     job = {"blend": str(blend), "out": str(BIN)}

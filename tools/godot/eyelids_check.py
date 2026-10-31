@@ -36,7 +36,7 @@ KEEP = ROOT / "Saved" / "Story" / "_look" / "godot_eyelids"
 VIEWS = [("front", 0, 0), ("left", 25, 0), ("right", -25, 0), ("above", 0, -20), ("below", 0, 20)]
 RES = 0.00005                      # 0.05 mm a pixel
 NEAR = 0.005                       # skin within 5 mm behind the eye's surface is a lid over it (farther: the head's inside)
-NEAR_LINED = 0.0025                # TAU's eyes: their lids are 2 to 3 mm thick, so through the opening the far lid's rim lies 2.5 to 5 mm behind the eye's front; a lid sunk into it shows nearer
+NEAR_LINED = 0.0025                # the grafted eyes: their lids are 2 to 3 mm thick, so through the opening the far lid's rim lies 2.5 to 5 mm behind the eye's front; a lid sunk into it shows nearer
 
 
 def glb_parts(path):
@@ -76,7 +76,7 @@ def glb_parts(path):
         if nm.endswith("_skin"):
             names = (m.get("extras") or {}).get("targetNames", [])
             targets = {names[i]: acc(t["POSITION"]).astype(np.float64) for i, t in enumerate(pr.get("targets", [])) if i < len(names) and "POSITION" in t}
-            skin = (P, T, targets, bool((nd.get("extras") or {}).get("eyeGraft")))   # (TAU's eyes: their lining lies inside the eyeball, CHARACTER_STUDIO §2c)
+            skin = (P, T, targets, bool((nd.get("extras") or {}).get("eyeGraft")))   # (the grafted eyes: their lining lies inside the eyeball, CHARACTER_STUDIO §2c)
         elif "_eye_" in nm:
             eyes[nm[-1]] = (P, T)
     return skin, eyes
@@ -158,7 +158,7 @@ def sweep(skin, eyes):
         eyez = {name: zbuf(EP, ET, R, c, box) for name, R in turns.items()}   # the eyeball doesn't blink
         W_, H_ = int((box[2] - box[0]) / RES), int((box[3] - box[1]) / RES)
         GX, GY = np.meshgrid(box[0] + (np.arange(W_) + 0.5) * RES, box[1] + (np.arange(H_) + 0.5) * RES)
-        lined = len(skin) > 3 and skin[3]                  # TAU's eyes: skin inside the eyeball's white is their lining, hidden by it (a lid there is EYEPATCH's to find)
+        lined = len(skin) > 3 and skin[3]                  # the grafted eyes: skin inside the eyeball's white is their lining, hidden by it (a lid there is EYEPATCH's to find)
         for w in [k / 20 for k in range(21)]:
             SP = skin_at(skin, w)
             for name, R in turns.items():
@@ -167,7 +167,7 @@ def sweep(skin, eyes):
                 eye = np.isfinite(Ze)
                 with np.errstate(invalid="ignore"):
                     dz = Ze - Zs
-                    poke = eye & np.isfinite(Zs) & (dz > (0.0001 if lined else 0)) & (dz < (NEAR_LINED if lined else NEAR))   # (TAU's lids' edges rest on the eye: where they touch it, within a tenth of a millimetre, is the touch, not a poke)
+                    poke = eye & np.isfinite(Zs) & (dz > (0.0001 if lined else 0)) & (dz < (NEAR_LINED if lined else NEAR))   # (the grafted lids' edges rest on the eye: where they touch it, within a tenth of a millimetre, is the touch, not a poke)
                     if lined: poke &= ~(GX ** 2 + GY ** 2 + Zs ** 2 < (r - 0.0001) ** 2) & ~inward   # (its lining, and its lids' backs on the eye, face the eyeball: a lid in it would face out)
                     seen = eye & (~np.isfinite(Zs) | (dz > 0))
                 rows.append({"eye": side, "w": w, "view": name, "poke_mm2": float(poke.sum() * RES * RES * 1e6),

@@ -182,7 +182,6 @@ import * as THREE from "three";
 import * as BL from "./browlash.js";
 import { hairUniforms, applyLook, lightHair, hairMaterial, atlasTexture, albedoTexture, strandsTexture, STUDIO_HAIR } from "./hairshader.js";
 import * as HV from "./hairvolume.js";
-import * as TAUJS from "./tau.js";
 import * as GR from "./groom.js";
 import * as EG from "./eyegraft.js";
 import { albedo as hairAlbedo } from "./hairtex.js";
@@ -231,10 +230,10 @@ function f16(at, count) {                               // float16 -> float32, o
   return out;
 }
 const SHAPES = f16(H.shapes_at, H.shapes * N * 3);
-// TAU's eyes (tools/eye_patch.py, eyegraft.js): the lids as thick flesh on the eyeball, grafted onto MHR's face; null
-// until it's been made on this machine (Skin, Eyes, TAU's eyes)
+// the eyes (tools/eye_patch.py, eyegraft.js): the eye region of Blender's human base mesh, the lids as thick flesh on the
+// eyeball, grafted onto MHR's face; every character's (Content/Studio/Bodies/MHR_eyes.bin, committed); null only if it's missing
 EG.bindTris(TRIS);
-let GRAFT = await EG.load("bodies/MHR_eyes.bin", BASEP, TRIS);   // (let: made on this machine from the page, it's loaded then: useGraft)
+let GRAFT = await EG.load("bodies/MHR_eyes.bin", BASEP, TRIS);
 // the 72 FACS expressions (Meta's names), on the points they move; MHR adds them to any identity as they are
 const ENAMES = H.expr_names || [], EN = H.expr_points || 0;
 const EIDX = EN ? new Uint32Array(buf, H.expr_idx_at, EN) : new Uint32Array(0);
@@ -390,7 +389,7 @@ function skinLook() {
 // which "lower": the lower lid's front edge, where the lower lashes grow, and the skin `ws` mm down from it (the lower
 // liner's band), its line the outline's lower half (outer corner to inner, as browLash takes it and the ring runs)
 function lidFront(side, pts, ws, which = "upper") {
-  if (graftOn() && GRAFTV0[side]) {                     // TAU's eyes: their skin is worked out where it lies open, so the makeup's lines are the open lid's (and stay on it as it shuts)
+  if (graftOn() && GRAFTV0[side]) {                     // the grafted eyes: their skin is worked out where it lies open, so the makeup's lines are the open lid's (and stay on it as it shuts)
     const { pts: o } = EG.outline32(GRAFT, side, GRAFTV0[side]), lower = which === "lower", line = lower ? o.slice(0, 17) : o.slice(16).concat([o[0]]);
     const ring = j => lower ? 2 * j : 16 - 2 * j, wAt = i => ws[Math.min(8, Math.round(lower ? i / 2 : (16 - i) / 2))];
     const rows = EG.rim(GRAFT, side, GRAFTV0[side], line, line.map((_, i) => wAt(i)), 0.001 * SCALE);
@@ -955,8 +954,8 @@ dgeo.setAttribute("skinThin", new THREE.BufferAttribute(new Float32Array(C), 1))
 skinLit(material, { thin: "attr" });                   // lit as HumanShaders lights skin (/shared/skinlight.js), over the procedural skin
 const mesh = new THREE.Mesh(dgeo, material);
 const rig = new THREE.Group(); rig.matrixAutoUpdate = false; scene.add(rig); rig.add(mesh);
-let GRAFTM = null;                                     // TAU's eyes, drawn on the skin's own material
-function useGraft(G) {                                 // the graft worn from now (made on this machine while the page is open, or at the start)
+let GRAFTM = null;                                     // the grafted eyes, drawn on the skin's own material
+function useGraft(G) {                                 // the graft worn from now
   if (GRAFTM) { rig.remove(GRAFTM); GRAFTM.geometry.dispose(); }
   GRAFT = G; GRAFTM = G ? new THREE.Mesh(EG.geometry(G), material) : null;
   if (GRAFTM) { GRAFTM.visible = false; GRAFTM.frustumCulled = false; GRAFTM.name = "eye_graft"; rig.add(GRAFTM); }
@@ -964,10 +963,10 @@ function useGraft(G) {                                 // the graft worn from no
 useGraft(GRAFT);
 const POSB = new Float32Array(N * 3), GRAFTEYE = {}, GRAFTV = {}, GRAFTV0 = {};   // the face with every expression but the blink (the graft rides it); each eye's eyeball; the graft's points now, and open (where its skin and makeup are worked out)
 let LO = 0;                                            // RAW's lowest y (the feet): the Studio's points are (RAW - LO) * SCALE
-function graftOn() { return !!GRAFT && !!st.eyes?.graft && !!st.eyes?.on && !!LMK; }
-// the landmarks the skin's makeup reads (skinshader.js update): with TAU's eyes on, the lids' (MediaPipe's rings, outer
+function graftOn() { return !!GRAFT && !window.__mhrLids && !!st.eyes?.on && !!LMK; }   // (every character's eyes when the graft's here; __mhrLids: STUDIO measuring MHR's own cut lids, the fallback)
+// the landmarks the skin's makeup reads (skinshader.js update): with the grafted eyes on, the lids' (MediaPipe's rings, outer
 // corner to inner, 9 a lid) are their open lid's, where their skin is worked out (eyegraft.js skinPlaces): the shadow, the
-// under-eye wash and the waterline follow TAU's lids, not MHR's hidden ones, and stay on the lid as it shuts
+// under-eye wash and the waterline follow the grafted lids, not MHR's hidden ones, and stay on the lid as it shuts
 const LIDLM = new Map(Object.entries({ UL: [263, 466, 388, 387, 386, 385, 384, 398, 362], UR: [33, 246, 161, 160, 159, 158, 157, 173, 133], LL: [263, 249, 390, 373, 374, 380, 381, 382, 362], LR: [33, 7, 163, 144, 145, 153, 154, 155, 133] })
   .flatMap(([k, ids]) => ids.map((i, j) => [i, [k[1], k[0] === "U", j]])));
 function skinLm(i) {
@@ -1055,7 +1054,7 @@ function compose() {                                   // POS: RAW + the face, s
     if (fitted && SHUT[e]) shutFitted(SHUT[e], W[e] * SCALE);
   };
   for (let e = 0; e < ENAMES.length; e++) if (!EC.includes(e)) express(e);
-  const graft = graftOn(); if (graft) POSB.set(POS);   // (TAU's eyes ride the face without MHR's blink: they shut their own way, and the skin round them holds still)
+  const graft = graftOn(); if (graft) POSB.set(POS);   // (the grafted eyes ride the face without MHR's blink: they shut their own way, and the skin round them holds still)
   for (const e of EC) if (e >= 0 && !graft) express(e);
   if (graft) for (const [k, side] of [[0, "L"], [1, "R"]]) {
     const shutBy = EC[k] >= 0 ? Math.min(1, Math.max(0, W[EC[k]])) : 0, n3 = GRAFT.sides[side].n * 3;
@@ -1070,7 +1069,7 @@ function compose() {                                   // POS: RAW + the face, s
     DN[j] = NP[i]; DN[j + 1] = NP[i + 1]; DN[j + 2] = NP[i + 2];
     DO[j] = POS[i]; DO[j + 1] = POS[i + 1]; DO[j + 2] = POS[i + 2];
   }
-  if (graft) for (let t = 0; t < C / 3; t++) if (GRAFT.hideT[t]) { const j = t * 9; DP[j + 3] = DP[j + 6] = DP[j]; DP[j + 4] = DP[j + 7] = DP[j + 1]; DP[j + 5] = DP[j + 8] = DP[j + 2]; }   // MHR's own eye skin, where TAU's lies
+  if (graft) for (let t = 0; t < C / 3; t++) if (GRAFT.hideT[t]) { const j = t * 9; DP[j + 3] = DP[j + 6] = DP[j]; DP[j + 4] = DP[j + 7] = DP[j + 1]; DP[j + 5] = DP[j + 8] = DP[j + 2]; }   // MHR's own eye skin, where the base mesh's lies
   if (GRAFTM) { GRAFTM.visible = graft; if (graft) drawGraft(NP); }
   dgeo.attributes.position.needsUpdate = true; dgeo.attributes.normal.needsUpdate = true; dgeo.attributes.objPos.needsUpdate = true; dgeo.computeBoundingSphere();
   mouthCut(); moveJaw(); lipstick();
@@ -1082,7 +1081,7 @@ function compose() {                                   // POS: RAW + the face, s
   poseGarments();                                       // and shown in the body's pose meanwhile
   thinLater();
 }
-// TAU's eyes drawn: their points as placed (the Studio's space, unposed: the procedural skin's), moved with the view's
+// the grafted eyes drawn: their points as placed (the Studio's space, unposed: the procedural skin's), moved with the view's
 // pose by their triangles' moves (the head holds still in it), their normals MHR's where they meet it
 function drawGraft(NP) {
   const g = GRAFTM.geometry, Pp = g.attributes.position.array, Po = g.attributes.objPos.array, nL = g.userData.nL;
@@ -1364,7 +1363,7 @@ function tearLine(side, pts, c) {                      // pts: the opening's out
   TEARM.userData.k.value = 0.8 * k;
 }
 function outline(side, k = st.eyes.opening || 1, moved = true) {   // the lid outline now, smoothed and scaled by Opening (or k): 32 points
-  if (graftOn() && GRAFTV[side]) return EG.outline32(GRAFT, side, GRAFTV[side]);   // TAU's eyes: where their lids meet the eyeball
+  if (graftOn() && GRAFTV[side]) return EG.outline32(GRAFT, side, GRAFTV[side]);   // the grafted eyes: where their lids meet the eyeball
   const ring = lidRing(side), n = ring.length, out = [];
   const c = [0, 1, 2].map(a => ring.reduce((q, p) => q + p[a], 0) / n);
   if (moved) lidMove(ring, side);                       // the eyelid line as the user set it (Skin, Eyes, Eyelid line)
@@ -1514,9 +1513,9 @@ function openings() {
   const P = []; let PL = 0;
   ["L", "R"].forEach((side, s) => {
     const { pts, c } = outline(side), U = SKU[`uCut${side}`].value;
-    const raw = area(outline(side, 1, false).pts), f = raw / (AREA0[side] || raw), t = Math.min(1, Math.max(0, (f - 0.25) / 0.2)), shut = graft ? 1 : t * t * (3 - 2 * t);   // a blink: the opening shrinks to nothing as the lids meet (MHR's shut lids still leave 15 to 20%; TAU's meet by themselves)
+    const raw = area(outline(side, 1, false).pts), f = raw / (AREA0[side] || raw), t = Math.min(1, Math.max(0, (f - 0.25) / 0.2)), shut = graft ? 1 : t * t * (3 - 2 * t);   // a blink: the opening shrinks to nothing as the lids meet (MHR's shut lids still leave 15 to 20%; the base mesh's meet by themselves)
     if (shut < 1) for (const p of pts) { p[0] = c[0] + (p[0] - c[0]) * shut; p[1] = c[1] + (p[1] - c[1]) * shut; }
-    if (graft) {                                        // TAU's eyes: real lids, no cut and no fan; their opening shades the eyeball and carries the tear line
+    if (graft) {                                        // the grafted eyes: real lids, no cut and no fan; their opening shades the eyeball and carries the tear line
       const E = EYESH[side]; for (let i = 0; i <= 16; i++) { E.uLo.value[i].set(pts[i][0], pts[i][1]); E.uUp.value[i].set(pts[(16 + i) % 32][0], pts[(16 + i) % 32][1]); }
       EYES[side].updateMatrix(); E.uToRig.value.copy(EYES[side].matrix); E.uLidShade.value = st.eyes.lidShade ?? 0.6; E.uOcc.value = st.eyes.occlusion ?? 0.5;
       tearLine(side, pts, c);
@@ -1589,7 +1588,7 @@ function eyeSurf(side) {                              // how far the eyeball's s
     const t = b + Math.sqrt(q); return t * e.z >= sh.zl ? s * Math.max(1, t) : s;
   };
 }
-function eyeDraw(graft) {                              // the eyeballs through the stencil (the cut openings) or, with TAU's eyes, behind real lids
+function eyeDraw(graft) {                              // the eyeballs through the stencil (the cut openings) or, with the grafted eyes, behind real lids
   for (const m of Object.values(eyeMats)) {
     if (m.userData.graft === graft) continue; m.userData.graft = graft;
     Object.assign(m, graft ? { depthTest: true, stencilWrite: false, stencilFunc: THREE.AlwaysStencilFunc } : { depthTest: false, stencilWrite: true, stencilFunc: THREE.EqualStencilFunc });
@@ -1605,7 +1604,7 @@ function placeEyes() {
     const m = EYES[side];
     if (!LMK || !st.eyes.on) { m.visible = false; continue; }
     findLids();                                         // the model's own lid line (once)
-    if (graftOn()) {                                    // TAU's eyes: the eyeball theirs, following the skin round the eye; the lids rest on it
+    if (graftOn()) {                                    // the grafted eyes: the eyeball theirs, following the skin round the eye; the lids rest on it
       const E = GRAFTEYE[side] = EG.eyeOf(GRAFT, side, POS, SCALE, LO, st.eyes.shape), r = E.r * (st.eyes.size || 1);
       GRAFTV[side] = EG.placeAll(GRAFT, side, POS, E, 0, GRAFTV[side] || new Float32Array(GRAFT.sides[side].n * 3));
       AREA0[side] = area(EG.outline32(GRAFT, side, GRAFTV[side]).pts);
@@ -2304,36 +2303,16 @@ function lookAtNails() {                               // the camera over the ba
 const eyeSet = {};
 {
   const box = $("#eyeRows"), on = el("input", { type: "checkbox", checked: true });
-  box.append(el("label", { className: "tog" }, on, el("span", {}, "Eyeballs", el("small", { textContent: "Cuts MHR's closed shell out inside MediaPipe's lid outline and puts a 12 mm eyeball behind each opening; the gaze shapes turn them, a blink closes the lids over them. The paint below is drawn round the front pole: iris, limbal ring, catchlights, corners, how wet." }))));
-  const graft = el("input", { type: "checkbox", disabled: !GRAFT });   // TAU's eyes (eyegraft.js, tools/eye_patch.py)
-  graft.onchange = () => { st.eyes.graft = graft.checked; eyeSet.shape(); changed("expr"); };
-  eyeSet.graft = graft;
-  const GRAFT_ABOUT = "The eye region of TAU's demo head on this face: the lids as thick flesh resting on the eyeball, their edge rolling in to touch it, the crease and the lower lid's roll; it follows the sliders, the sculpt, a photo's fit and the expressions, and shuts its own way (the lids slide over the eyeball and meet).";
-  const graftNote = el("small", { textContent: GRAFT ? GRAFT_ABOUT : "Not made on this machine yet: the button below makes it (TAU's .blend in vendor/tau/ or tau_transfer/, and Blender's Python module: python tools/retarget.py setup), or python tools/eye_patch.py make." });
-  const graftMake = el("button", { textContent: "Make TAU's eyes on this machine", title: "tools/eye_patch.py make on the Studio's server: TAU's head in Blender's module, its eye region grafted onto MHR's face (a minute or two)" });
-  graftMake.style.display = GRAFT ? "none" : "";
-  graftMake.onclick = async () => {                    // made on the server, then worn here without a reload
-    graftMake.disabled = true; graftNote.textContent = "making TAU's eyes in Blender's module (a minute or two)…";
-    try {
-      const r = await fetch("api/eyepatch/run", { method: "POST", body: "{}" });
-      if (!r.ok && r.status !== 409) throw new Error((await r.json().catch(() => ({}))).error || "the make didn't start");
-      let s;
-      for (;;) { await new Promise(ok => setTimeout(ok, 3000)); s = await (await fetch("api/eyepatch/status")).json(); if (!s.running) break; }
-      const why = (s.log || "").split("\n").filter(l => /EYEPATCH|Error|error/.test(l)).slice(-3).join(" ");
-      if (!s.ok) throw new Error(why || "the make failed (Saved/eye_patch/make.log)");
-      useGraft(await EG.load(`bodies/MHR_eyes.bin?v=${Date.now()}`, BASEP, TRIS));
-      if (!GRAFT) throw new Error("made, but the page couldn't read Content/Studio/Bodies/MHR_eyes.bin");
-      graft.disabled = false; graftNote.textContent = GRAFT_ABOUT; graftMake.style.display = "none"; status("TAU's eyes made on this machine: tick TAU's eyes (thick lids) to wear them", "ok");
-    } catch (e) { graftNote.textContent = e.message; status(e.message, "bad"); }
-    finally { graftMake.disabled = false; }
-  };
-  const shapeBox = el("div", { className: "sub" }), shapeSet = {};   // the eye's shape keys (eyegraft.js SHAPE_KEYS), under TAU's eyes
+  box.append(el("label", { className: "tog" }, on, el("span", {}, "Eyeballs", el("small", { textContent: "An eyeball behind each eye's lids; the gaze shapes turn them, a blink closes the lids over them. The paint below is drawn round the front pole: iris, limbal ring, catchlights, corners, how wet." }))));
+  // the eyes themselves: the eye region of Blender's human base mesh grafted onto MHR's face (eyegraft.js,
+  // tools/eye_patch.py; every character wears it, DECISIONS 2026-10-31): the lids as thick flesh resting on the eyeball
+  box.append(el("p", { className: "note", textContent: GRAFT ? "The lids are thick flesh resting on the eyeball, their edge rolling in to touch it, with a crease and the lower lid's roll (Blender's human base mesh, grafted onto this face): they follow the sliders, the sculpt, a photo's fit and the expressions, and shut their own way. Shape them below." : "The grafted eyes aren't here (Content/Studio/Bodies/MHR_eyes.bin): MHR's own lids, cut along the eyelid line below." }));
+  const shapeBox = el("div", { className: "sub" }), shapeSet = {};   // the eye's shape keys (eyegraft.js SHAPE_KEYS), under the grafted eyes
   const shapePre = el("select", {}, el("option", { value: "", textContent: "Shape preset…" }), ...Object.keys(EG.EYE_PRESETS).map(k => el("option", { value: k, textContent: k })));
   shapePre.onchange = () => { if (!shapePre.value) return; st.eyes.shape = { ...EG.KEYS0, ...EG.EYE_PRESETS[shapePre.value] }; shapePre.value = ""; for (const [k] of EG.SHAPE_KEYS) shapeSet[k](st.eyes.shape[k]); changed("expr"); };
   shapeBox.append(el("div", { className: "row" }, el("span", { textContent: "Eye shape" }), shapePre, el("output")));
   for (const [k, label, lo, hi, step, help] of EG.SHAPE_KEYS) shapeSet[k] = slider(shapeBox, "eyeshape_" + k, label, lo, hi, step, 0, help, v => { st.eyes.shape = { ...EG.KEYS0, ...(st.eyes.shape || {}), [k]: v }; changed("expr"); });
-  eyeSet.shape = () => { for (const [k] of EG.SHAPE_KEYS) shapeSet[k](st.eyes.shape?.[k] ?? 0); shapeBox.style.display = st.eyes.graft && GRAFT ? "" : "none"; };
-  box.append(el("label", { className: "tog" }, graft, el("span", {}, "TAU's eyes (thick lids)", graftNote)), graftMake);
+  eyeSet.shape = () => { for (const [k] of EG.SHAPE_KEYS) shapeSet[k](st.eyes.shape?.[k] ?? 0); shapeBox.style.display = GRAFT ? "" : "none"; };
   box.append(shapeBox); eyeSet.shape();
   const real = el("input", { type: "checkbox", checked: true });   // the shared eye's refracting cornea (tools/shared/eye.js)
   real.onchange = () => { st.eyes.real = real.checked; paintEyes(); changed("expr"); };
@@ -2345,6 +2324,7 @@ const eyeSet = {};
                ["occlusion", "Eye occlusion", 0, 1, 0.01, 0.5, "How softly the lids sit on the eye: the shadow widened all round and into the corners (MetaHuman's eye occlusion), so no hard line where lid meets eye."],
                ["tearline", "Tear line", 0, 1, 0.01, 0.5, "A wet strip along the lower lid's edge that only reflects: the tear film's bright line (MetaHuman's lacrimal fluid)."]];
   for (const [k, label, lo, hi, step, def, help] of fit) eyeSet[k] = slider(box, "eye_" + k, label, lo, hi, step, def, help, v => { st.eyes[k] = v; if (k === "size") repaint(); changed("expr"); });
+  const n0 = box.children.length;                        // (MHR's own lids' cut, from here to the iris: only without the graft)
   // the eyelid line: every lid point by hand (mm), both eyes mirrored unless unlinked; saved with the character, and as
   // the default for every character that has no line of its own (People/defaults.json)
   box.append(el("h4", { textContent: "Eyelid line" }), el("p", { className: "note", textContent: "Where the eye is cut: the model's own lids (the opening MHR's blink squeezes shut, its edge as 16 points), each point movable by hand (the red line and yellow points while you set it). Upper and lower run from the inner corner (1) to the outer (7); up is +. Linked, both eyes move as mirrors." }));
@@ -2385,6 +2365,8 @@ const eyeSet = {};
     for (const f of Object.values(lidSet)) f(f.get(lidOf()));
   }
   eyeSet.lid = lidUI;
+  { const old = el("div", { hidden: !!GRAFT }); old.append(...[...box.children].slice(n0)); box.append(old);
+    const row = [...box.querySelectorAll(".row")].find(r => r.firstChild?.textContent === "Opening"); if (row && GRAFT) row.hidden = true; }   // (the cut's size: no cut on the graft)
   on.onchange = () => { st.eyes.on = on.checked; changed("expr"); };
   let later = 0; const repaint = () => { clearTimeout(later); later = setTimeout(paintEyes, 60); };
   // the iris's pattern and the pupil's shape (tools/shared/eye.js EYE_CHOICES), and styles setting them with the
@@ -2411,7 +2393,7 @@ const eyeSet = {};
     box.append(el("div", { className: "row" }, el("span", { textContent: label }), c, el("output")));
   }
   for (const [k, label, lo, hi, step, def, help] of EYEPAINT.EYE_CONTROLS) eyeSet[k] = slider(box, "eye_" + k, label, lo, hi, step, def, help, v => { st.eyes[k] = v; repaint(); });
-  eyeSet.all = () => { on.checked = st.eyes.on; real.checked = st.eyes.real !== false; eyeSet.graft.checked = !!st.eyes.graft && !!GRAFT; eyeSet.shape(); eyeSet.lid(); for (const k of ["size", "depth", "opening", "lidShade", "occlusion", "tearline"]) eyeSet[k](st.eyes[k]); for (const [k] of EYEPAINT.EYE_COLOURS) cols[k].value = st.eyes[k]; for (const c of EYEPAINT.EYE_CONTROLS) eyeSet[c[0]](st.eyes[c[0]]); for (const f of Object.values(picks)) f(); };
+  eyeSet.all = () => { on.checked = st.eyes.on; real.checked = st.eyes.real !== false; eyeSet.shape(); eyeSet.lid(); for (const k of ["size", "depth", "opening", "lidShade", "occlusion", "tearline"]) eyeSet[k](st.eyes[k]); for (const [k] of EYEPAINT.EYE_COLOURS) cols[k].value = st.eyes[k]; for (const c of EYEPAINT.EYE_CONTROLS) eyeSet[c[0]](st.eyes[c[0]]); for (const f of Object.values(picks)) f(); };
 }
 
 // ---- hair: the salon's (salon.html, docs/SALON.md), drawn on this character there, baked onto it and worn here. The
@@ -2425,7 +2407,7 @@ for (const U of Object.values(BLU)) { U.alphaCut.value = 0.3; U.ambientC.value.s
 const BLM = { lash: new THREE.Mesh(new THREE.BufferGeometry(), hairMaterial(BLU.lash)), line: new THREE.Mesh(new THREE.BufferGeometry(), hairMaterial(BLU.line)), brow: new THREE.Mesh(new THREE.BufferGeometry(), hairMaterial(BLU.brow)) };
 BLM.lash.material.userData.file = () => ({ atlas: BL.LASH_ATLAS, look: BL.LOOKS[st.lash.look] });   // the strands' atlas and colours: what the export bakes them from (fileLook)
 BLM.line.material.userData.file = () => ({ atlas: BL.LINE_ATLAS, look: BL.LOOKS[st.lash.look] });
-BLM.brow.material.userData.file = () => ({ atlas: fineBrows() ? BL.LASH_ATLAS : BL.ATLAS, look: BL.LOOKS[st.brow.look] });   // (TAU's brow hairs and the ones by hand: one to a card, the lashes' atlas)
+BLM.brow.material.userData.file = () => ({ atlas: fineBrows() ? BL.LASH_ATLAS : BL.ATLAS, look: BL.LOOKS[st.brow.look] });   // (the base mesh's brow hairs and the ones by hand: one to a card, the lashes' atlas)
 BLM.fill = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshStandardMaterial({ vertexColors: true, transparent: true, depthWrite: false, roughness: 0.9, side: THREE.DoubleSide }));   // the brows' fill, see-through
 Object.entries({ lash: "lashes", line: "lash_line", brow: "brows", fill: "brow_fill" }).forEach(([k, nm]) => { BLM[k].name = nm; });   // named in the file (each its own material and record there: Godot's HSHair reads them by name)
 for (const m of Object.values(BLM)) { m.renderOrder = 3; m.frustumCulled = false; m.visible = false; rig.add(m); }   // after the eyeballs, which draw over what's in the openings
@@ -2440,7 +2422,7 @@ function browLash() {
   for (const side of ["L", "R"]) {
     const { pts, c } = outline(side, 1), raw = area(outline(side, 1, false).pts), open = Math.min(1, raw / (AREA0[side] || raw));
     const upper = pts.slice(16).concat([pts[0]]), lower = pts.slice(0, 17);
-    const graft = graftOn() && GRAFTV[side], mm = 0.001 * SCALE;   // (TAU's eyes: the rims are their lids' own edges, loop by loop)
+    const graft = graftOn() && GRAFTV[side], mm = 0.001 * SCALE;   // (the grafted eyes: the rims are their lids' own edges, loop by loop)
     const now = { upper, lower, upperRim: graft ? EG.rim(GRAFT, side, GRAFTV[side], upper, BL.RIM_UP, mm) : rimOf(upper, c, F, 2.2, side, BL.RIM_UP), lowerRim: graft ? EG.rim(GRAFT, side, GRAFTV[side], lower, BL.RIM_UP, mm) : rimOf(lower, c, F, 1.2, side, BL.RIM_UP), centre: c, eye: EYES[side].position.toArray() };   // (the rims' fourth points: the skin RIM_UP mm up the lid (down, under the lower), for the lash line's and the liners' other edges; the eyeball's middle: what the lids swing round)
     if (open >= 0.97 || !OPENLID[side]) OPENLID[side] = now;              // the lids as they are open: the lashes' frame, turned with the lid as it shuts (browlash.js)
     lids[side] = { ...now, open, open0: OPENLID[side] };
@@ -2448,16 +2430,12 @@ function browLash() {
   }
   const C = v(234).add(v(454)).multiplyScalar(0.5);
   const r = BL.build({ lids, brows, F: F.toArray(), U: U.toArray(), C: C.toArray(), scale: SCALE }, st.groom.on ? { ...st.lash, line: st.groom.lash.line ?? 0.22 } : st.lash, st.brow); BLLIDS = lids;   // (by hand: the lash line's own darkness)
-  if (st.groom.on) {                                     // the brows and lashes by hand (groom.js) in place of our own and TAU's: made on the face as it is now
+  if (st.groom.on) {                                     // the brows and lashes by hand (groom.js) in place of the clumped ones: made on the face as it is now
     const G = groomNow(lids, brows, F, U, X);
     r.lashes.dispose(); r.lashes = BL.strandCards(G.lashes, "lashes");
     r.brows.dispose(); r.brows = BL.strandCards(G.brows, "brows");
-  } else if (tauOn("lashes") || tauOn("brows")) {        // TAU's strands in place of our own (tools/tau_hair.py): rebuilt on the face as it is now
-    const now = TAUJS.strandsNow(TAU, POS, TRIS);
-    if (tauOn("lashes")) { r.lashes.dispose(); r.lashes = BL.strandCards(now.lashes, "lashes"); }
-    if (tauOn("brows")) { r.brows.dispose(); r.brows = BL.strandCards(now.brows, "brows"); }
   }
-  BLU.brow.atlas.value = fineBrows() ? TAUATLAS : BLATLAS;   // a brow hair to a card for TAU's and the ones by hand, the clumps' atlas for ours
+  BLU.brow.atlas.value = fineBrows() ? FINEATLAS : BLATLAS;   // a brow hair to a card for the ones by hand, the clumps' atlas for ours
   for (const [k, g] of [["lash", r.lashes], ["line", r.line], ["brow", r.brows], ["fill", r.fill]]) { BLM[k].geometry.dispose(); BLM[k].geometry = g; }
   if (st.groom.on) BLM.fill.visible = false;            // (no fill under the brows by hand: the skin shows between their hairs)
   BLNOW = r.cards;
@@ -2586,44 +2564,16 @@ async function loadSalon() {
   g.add(gltf.scene); rig.add(g); SALONH = g; poseHair();
   return { meshes, swinging, head: info.head };
 }
-// TAU's brows and lashes (tools/tau_hair.py, docs/TAU_HAIR.md; TAU's Procedural Human Hair, CC BY-SA 4.0): grown in
-// Blender on this character's export, each strand pinned to an MHR triangle (tau.js rebuilds them on the face as it is);
-// worn in place of our own when ticked, and the next export carries them
-var TAU = null;
-const TAUATLAS = BLU.lash.atlas.value, BLATLAS = BLU.brow.atlas.value;
-function tauOn(kind) { return !!(TAU && TAU[kind] && (kind === "lashes" ? st.lash.on && st.lash.tau : st.brow.on && st.brow.tau)); }
-async function loadTau() {
-  TAU = null; if (!WHO) return null;
-  const r = await fetch(`api/people/${encodeURIComponent(WHO)}/tau/strands.json?v=${Date.now()}`).catch(() => null);
-  if (r && r.ok) TAU = await r.json();
-  if (BL_READY) { blSet.all(); browLash(); }
-  return TAU;
-}
-async function bakeTau(brows, lashes, say) {               // export, TAU in Blender on the server, the strands worn, export again
-  if (!WHO) throw new Error("pick or make a character first (top bar)");
-  const who = encodeURIComponent(WHO);
-  say("exporting the character first (TAU grows on its export)…"); await exportPackage();
-  say("TAU growing the brows and lashes in Blender (a minute or two)…");
-  const r = await fetch(`api/people/${who}/tau/run`, { method: "POST", body: JSON.stringify({ brows, lashes }) });
-  if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || "TAU's bake didn't start");
-  for (;;) {
-    await new Promise(ok => setTimeout(ok, 2000));
-    const s = await (await fetch(`api/people/${who}/tau/status`)).json();
-    if (!s.running) { if (!s.ok) throw new Error("TAU's bake failed: " + (s.log || "").slice(-400)); break; }
-  }
-  await loadTau(); Object.assign(st.lash, { on: true, tau: true }); Object.assign(st.brow, { on: true, tau: true }); UNSAVED = true; blSet.all(); browLash();
-  say("TAU's hair on; saving and exporting again so the file carries it…"); await $("#save").onclick(); await exportPackage();
-  say(`baked and exported: ${TAU?.brows?.strands.length || 0} brow hairs (TAU's ${brows}), ${TAU?.lashes?.strands.length || 0} lashes (${lashes})`);
-}
 // ---- the brows and lashes by hand (groom.js; Face, "Brows & lashes by hand", docs/CHARACTER_STUDIO.md §2b): the user's
 // own brows and lashes after MetaHuman's (the brow's hairs lying on the skin, flowing up at its front, out along its
 // body, down at its tail; the lashes leaving the lid forward and sweeping out, never a fan standing up), shaped on the
 // face: Edit on the face frames the eyes and shows handles on each brow's top and bottom edges (dragged on the skin)
 // and at the lashes' tips (dragged: their lift, sweep and length follow the pointer), brushes that add hair, thin it
-// out or comb its flow, a blink to see them shut. Fine hairs (strandCards: TAU's look), in place of the ones below and
-// TAU's; saved with the character (st.groom), worn by the export as any brows and lashes are (their blink too)
+// out or comb its flow, a blink to see them shut. Fine hairs (strandCards: one hair to a card), in place of the clumped
+// ones below; saved with the character (st.groom), worn by the export as any brows and lashes are (their blink too)
+const FINEATLAS = BLU.lash.atlas.value, BLATLAS = BLU.brow.atlas.value;   // (one hair to a card: the lashes' atlas)
 let GROOMNOW = null, GROOMEDIT = false, GBRUSH = "", GBSIZE = 4, GSTROKE = null;
-function fineBrows() { return tauOn("brows") || !!(st.groom && st.groom.on); }
+function fineBrows() { return !!(st.groom && st.groom.on); }
 function closestOnTri(p, P, a, b, c) {                 // the nearest point to p on the triangle (a, b, c: offsets into P) and its barycentric weights (Ericson 5.1.5)
   const A = [P[a], P[a + 1], P[a + 2]], ab = [P[b] - A[0], P[b + 1] - A[1], P[b + 2] - A[2]], ac = [P[c] - A[0], P[c + 1] - A[1], P[c + 2] - A[2]];
   const ap = [p[0] - A[0], p[1] - A[1], p[2] - A[2]], dt = (u, v) => u[0] * v[0] + u[1] * v[1] + u[2] * v[2];
@@ -2635,7 +2585,7 @@ function closestOnTri(p, P, a, b, c) {                 // the nearest point to p
   const va = d3 * d6 - d5 * d4; if (va <= 0 && d4 - d3 >= 0 && d5 - d6 >= 0) { const w = (d4 - d3) / ((d4 - d3) + (d5 - d6)); return [0, 1 - w, w]; }
   const den = 1 / (va + vb + vc), v = vb * den, w = vc * den; return [1 - v - w, v, w];
 }
-function skinNear(lo, hi) {                            // the skin round a box (the body's own space): the point nearest p on it and the normal there (smooth: the points' own); TAU's eyes' skin where it lies instead of MHR's
+function skinNear(lo, hi) {                            // the skin round a box (the body's own space): the point nearest p on it and the normal there (smooth: the points' own); the grafted eyes' skin where it lies instead of MHR's
   const tri = [], NP = geo.attributes.normal.array, graft = graftOn(), inBox = (P, v) => P[v] > lo[0] && P[v] < hi[0] && P[v + 1] > lo[1] && P[v + 1] < hi[1] && P[v + 2] > lo[2] && P[v + 2] < hi[2];
   for (let t = 0; t < TRIS.length; t += 3) { if (graft && GRAFT.hideT[t / 3]) continue; for (let k = 0; k < 3; k++) if (inBox(POS, TRIS[t + k] * 3)) { tri.push([POS, NP, TRIS, t]); break; } }
   if (graft && GRAFTM) for (const side of ["L", "R"]) {
@@ -2655,11 +2605,10 @@ function skinNear(lo, hi) {                            // the skin round a box (
 }
 function groomNow(lids, brows, F, U, X) {              // the brows' and lashes' strands on the face as it is now; their handles' places and the bands for the brushes kept
   const mm = 0.001 * SCALE, f = F.toArray(), u = U.toArray(), x = X.toArray(), out = { brows: [], lashes: [] }, now = { edges: {}, tips: {}, bands: {}, lids, F: f, U: u, X: x, mm };
-  const tauBrows = st.groom.brow.source === "tau" && TAU?.brows ? TAUJS.strandsNow(TAU, POS, TRIS).brows : null;   // Start from TAU's brows: TAU's strands on the face as it is, reshaped by hand
   for (const side of ["L", "R"]) {
     const rows = brows[side], all = [...rows.upper, ...rows.lower], pad = 0.018 * SCALE;
     const lo = [0, 1, 2].map(k => Math.min(...all.map(p => p[k])) - pad), hi = [0, 1, 2].map(k => Math.max(...all.map(p => p[k])) + pad);
-    const b = GR.browStrands({ rows, out: side === "L" ? x : x.map(v => -v), U: u, mm, project: skinNear(lo, hi), tau: tauBrows ? tauBrows.filter(q => (q.pts[0][0] > 0) === (side === "L")) : null }, side, st.groom);
+    const b = GR.browStrands({ rows, out: side === "L" ? x : x.map(v => -v), U: u, mm, project: skinNear(lo, hi) }, side, st.groom);
     out.brows.push(...b.strands); now.edges[side] = b.edges; now.bands[side] = b.band;
     const l = GR.lashStrands({ lid: lids[side], F: f, U: u, mm }, side, st.groom);
     out.lashes.push(...l.strands); now.tips[side] = l.tips;
@@ -2667,15 +2616,13 @@ function groomNow(lids, brows, F, U, X) {              // the brows' and lashes'
   GROOMNOW = now; return out;
 }
 window.__groomFresh = () => GR.fresh();             // (GROOM: tools/character/groomtest.mjs)
-window.__groomSwap = to => { GR.swapBrows(st.groom, to); browLash(); };
 window.__groomMeasure = () => {                       // the brows' hairs on each side and how far off the skin; the left eye's upper lashes by thirds; the middle handle's tip's height
   browLash(); const N = GROOMNOW; if (!N || !BLLIDS) return null;
   const mm = N.mm, F = N.F, U = N.U, X = N.X, d = (c, v) => c[0] * v[0] + c[1] * v[1] + c[2] * v[2], brows = {}; let onSkin = 0;
   for (const side of ["L", "R"]) {
     const rows = { upper: BROWROWS[side].upper.map(lmk), lower: BROWROWS[side].lower.map(lmk) }, all = [...rows.upper, ...rows.lower], pad = 0.018 * SCALE;
     const proj = skinNear([0, 1, 2].map(k => Math.min(...all.map(p => p[k])) - pad), [0, 1, 2].map(k => Math.max(...all.map(p => p[k])) + pad));
-    const tb = st.groom.brow.source === "tau" && TAU?.brows ? TAUJS.strandsNow(TAU, POS, TRIS).brows.filter(q => (q.pts[0][0] > 0) === (side === "L")) : null;
-    const b = GR.browStrands({ rows, out: side === "L" ? X : X.map(v => -v), U, mm, project: proj, tau: tb }, side, st.groom); brows[side] = b.strands.length;
+    const b = GR.browStrands({ rows, out: side === "L" ? X : X.map(v => -v), U, mm, project: proj }, side, st.groom); brows[side] = b.strands.length;
     if (side === "L") { brows.ys = b.strands.map(x => d(x.pts[0], U) / mm); brows.cy = brows.ys.reduce((q, y) => q + y, 0) / (brows.ys.length || 1); }   // (the left brow's roots' heights and their mean, mm)
     if (side === "L") brows.inBand = b.strands.filter(x => { const q = GR.bandCoord(b.band, x.pts[0]); return q.t > -0.05 && q.t < 1.05 && q.s > -0.05 && q.s < 1.05; }).length / (b.strands.length || 1);   // (the share of its roots inside the band its handles outline)
     if (side === "L") for (const st_ of b.strands.filter((_, i) => i % 7 === 0)) for (const p of st_.pts) { const q = proj(p).p; onSkin = Math.max(onSkin, Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]) / mm); }
@@ -2684,7 +2631,7 @@ window.__groomMeasure = () => {                       // the brows' hairs on eac
   const third = (a, b) => { const sel = L.filter(x => x.t >= a && x.t < b), avg = f => sel.reduce((q, x) => q + f(x), 0) / (sel.length || 1);
     return { elev: avg(x => Math.atan2(d(ch(x), U), d(ch(x), F)) * 180 / Math.PI), out: avg(x => Math.atan2(d(ch(x), X), d(ch(x), F)) * 180 / Math.PI), rise: avg(x => d(ch(x), U) / mm) }; };
   const tip = GR.lashTip({ lid: BLLIDS.L, F, U, mm }, "L", st.groom, 1);
-  return { hairs: st.groom.brow.hairs, brows, onSkin, tau: TAU?.brows ? TAU.brows.strands.length : 0, lash: [third(0, 0.33), third(0.33, 0.66), third(0.66, 1.01)],
+  return { hairs: st.groom.brow.hairs, brows, onSkin, lash: [third(0, 0.33), third(0.33, 0.66), third(0.66, 1.01)],
            drooping: L.filter(x => x.t < 0.9 && d(ch(x), U) < 0).length, tipY: tip ? d(tip, U) / mm : 0 };
 };
 window.__groomBrowScreen = side => {                  // a stroke's points along a brow's middle, on the screen (the page's own coordinates)
@@ -2696,7 +2643,7 @@ window.__groomNow = () => { if (!GROOMNOW || !BLLIDS) return null; const G = { l
 function groomPanel(box, sets) {                       // the Face tab's section: on, mirror, Edit on the face, the brows' and lashes' styles and sliders
   box.append(el("h4", { textContent: "Brows & lashes by hand" }));
   const on = el("input", { type: "checkbox" }), mirror = el("input", { type: "checkbox" }), edit = el("button", { textContent: "Edit on the face" });
-  box.append(el("label", { className: "tog" }, on, el("span", {}, "Use them", el("small", { textContent: "The brows and lashes you shape here, in place of the ones below and TAU's: fine hairs lying on the skin, lashes swept forward and out, after MetaHuman's." }))),
+  box.append(el("label", { className: "tog" }, on, el("span", {}, "Use them", el("small", { textContent: "The brows and lashes you shape here, in place of the clumped ones below: fine hairs lying on the skin, lashes swept forward and out, after MetaHuman's." }))),
              el("label", { className: "tog" }, mirror, el("span", {}, "Mirror", el("small", { textContent: "A handle or a brush on one side does the same on the other." }))),
              el("div", { className: "row" }, edit), el("small", { className: "note", textContent: "Edit on the face: drag the yellow circles on a brow's top and bottom edge to shape it, the blue squares at the lashes' tips to lift, sweep or lengthen them; the brushes add hair, thin it out or comb its flow. Alt-drag turns the view." }));
   on.onchange = () => { st.groom.on = on.checked; if (on.checked) { st.lash.on = st.brow.on = true; } UNSAVED = true; blSet.all(); browLash(); };
@@ -2709,20 +2656,6 @@ function groomPanel(box, sets) {                       // the Face tab's section
     const sl = {};
     for (const [k, lab, lo, hi, step, help] of sliders) sl[k] = slider(d, `groom_${key}_${k}`, lab, lo, hi, step, st.groom[key][k], help, v => { st.groom[key][k] = v; UNSAVED = true; browLash(); });
     style.onchange = () => { if (!style.value) return; const x = styles[style.value]; for (const [k] of sliders) if (k in x) st.groom[key][k] = x[k]; st.groom[key].style = style.value; style.value = ""; UNSAVED = true; blSet.all(); browLash(); };
-    if (key === "brow") {                              // the brows from TAU's: its hair, placed from TAU's own head, reshaped here by the handles, the brushes, Hairs, Length, Thickness, Messy
-      const pre = el("select", {}, ...TAUJS.TAU_BROWS.map(k => el("option", { value: k, textContent: k }))), go = el("button", { textContent: "Start from TAU's brows" }), made = el("button", { textContent: "Back to the made ones" });
-      const say = el("small", { className: "note" });
-      go.onclick = async () => {
-        go.disabled = true;
-        try {
-          if (!TAU?.brows || (TAU.brows.preset || "").replace("Eyebrows - ", "") !== pre.value) { say.textContent = "growing TAU's brows on this character (a few minutes)…"; await bakeTau(pre.value, TAU?.lashes ? (TAU.lashes.preset || "").replace("Eyelashes - ", "") || "Straight" : "Straight", m => { say.textContent = m; }); }
-          st.groom.on = true; GR.swapBrows(st.groom, "tau"); st.lash.on = st.brow.on = true; UNSAVED = true; blSet.all(); browLash();
-          say.textContent = `TAU's ${pre.value} brows (${TAU?.brows?.strands.length || 0} hairs), now yours to shape: the handles sit on their outline and move them, the brushes thin, add and comb, Hairs, Length, Thickness and Messy change them (their flow is TAU's)`;
-        } catch (e) { say.textContent = e.message; } finally { go.disabled = false; }
-      };
-      made.onclick = () => { GR.swapBrows(st.groom, "made"); UNSAVED = true; browLash(); say.textContent = "the brows made here again (their flow from the angle sliders), as you had shaped them; TAU's shaping kept for coming back"; };
-      d.append(el("div", { className: "row" }, el("span", { textContent: "TAU's" }), pre, el("output")), el("div", { className: "row" }, go, made), say);
-    }
     const reset = el("button", { textContent: key === "brow" ? "Reset the brows' shape and brushing" : "Reset the lashes' handles" });
     reset.onclick = () => { const f0 = GR.fresh(); for (const side of ["L", "R"]) st.groom[key][side] = f0[key][side]; UNSAVED = true; browLash(); };
     d.append(el("div", { className: "row" }, reset)); box.append(d);
@@ -2898,23 +2831,6 @@ const blSet = {};
   part(st.brow, "Brows", BL.BROW_CONTROLS, "brow", "Hairs lying flat on the skin between the brow's two rows: the front up, the rest swept out; they ride the brows' expressions.");
   box.append(el("div", { className: "row" }, el("span", { textContent: "Shape" }), shape, el("output")));
   shape.onchange = () => { Object.assign(st.brow, BL.BROW_SHAPES[shape.value]); delete st.brow.label; st.brow.shape = shape.value; blSet.all(); browLash(); };
-  box.append(el("h4", { textContent: "TAU (baked in Blender)" }));   // TAU's Procedural Human Hair grown on this character (tools/tau_hair.py)
-  const tauLash = el("input", { type: "checkbox" }), tauBrow = el("input", { type: "checkbox" }), tauSay = el("small", { className: "note" });
-  const tauBP = el("select", {}, ...TAUJS.TAU_BROWS.map(k => el("option", { value: k, textContent: k }))), tauLP = el("select", {}, ...TAUJS.TAU_LASHES.map(k => el("option", { value: k, textContent: k })));
-  const tauGo = el("button", { textContent: "Bake with TAU" });
-  box.append(el("label", { className: "tog" }, tauLash, el("span", {}, "TAU's lashes", el("small", { textContent: "Wear the lashes TAU grew on this character in place of the ones above: hair by hair, a few hundredths of a millimetre thick, they ride the face and the blinks." }))),
-             el("label", { className: "tog" }, tauBrow, el("span", {}, "TAU's brows", el("small", { textContent: "Wear the brows TAU grew in place of the ones above (the brows' look and fill stay)." }))),
-             el("div", { className: "row" }, el("span", { textContent: "Brows" }), tauBP, el("output")), el("div", { className: "row" }, el("span", { textContent: "Lashes" }), tauLP, el("output")),
-             el("div", { className: "row" }, tauGo), tauSay,
-             el("small", { className: "note", textContent: "Bake with TAU exports the character, grows TAU's brows and lashes on it in Blender (python tools/retarget.py setup once; TAU's pack at vendor/tau/procedural_human_hair.blend), wears them and exports again. TAU's Procedural Human Hair is CC BY-SA 4.0, by TAU: credit it in a game that ships them." }));
-  tauLash.onchange = () => { st.lash.tau = tauLash.checked; UNSAVED = true; browLash(); };
-  tauBrow.onchange = () => { st.brow.tau = tauBrow.checked; UNSAVED = true; browLash(); };
-  tauGo.onclick = () => { tauGo.disabled = true; bakeTau(tauBP.value, tauLP.value, m => { tauSay.textContent = m; status(m, "ok"); }).catch(e => { tauSay.textContent = e.message; status(e.message, "bad"); }).finally(() => { tauGo.disabled = false; }); };
-  sets.push(() => {
-    tauLash.checked = !!st.lash.tau; tauBrow.checked = !!st.brow.tau; tauLash.disabled = !TAU?.lashes; tauBrow.disabled = !TAU?.brows;
-    if (TAU?.brows) tauBP.value = TAU.brows.preset.replace("Eyebrows - ", ""); if (TAU?.lashes) tauLP.value = TAU.lashes.preset.replace("Eyelashes - ", "");
-    if (!tauGo.disabled) tauSay.textContent = TAU ? `baked: TAU's ${tauBP.value} brows (${TAU.brows?.strands.length || 0} hairs), ${tauLP.value} lashes (${TAU.lashes?.strands.length || 0})` : "not baked yet for this character";
-  });
   blSet.all = () => { for (const f of sets) f(); fillColour(); shape.value = st.brow.shape in BL.BROW_SHAPES ? st.brow.shape : "natural"; };
   blSet.all(); BL_READY = true;
 }
@@ -3062,7 +2978,7 @@ async function open(name) {
   st.drape = c.drape !== false; drapeTog.checked = st.drape;
   BAKES = WHO ? await loadDrape(WHO) : {}; TAILOR_W.postMessage({ bakes: BAKES });   // the clothes as they hung when saved
   if (me !== OPENING) return;
-  Object.assign(st.eyes, EYEPAINT.EYE_DEFAULTS, EYEFIT, { lidLine: lidDefault(), graft: false, shape: {} }, c.eyes || {}); st.eyes.showLid = false;   // (TAU's eyes and their shape only if this character has them)
+  Object.assign(st.eyes, EYEPAINT.EYE_DEFAULTS, EYEFIT, { lidLine: lidDefault(), shape: {} }, c.eyes || {}); st.eyes.showLid = false; delete st.eyes.graft;   // (the grafted eyes on every character: an older file's switch dropped; its shape only if it has one)
   if (st.eyes.lidLine?.base !== "mesh") st.eyes.lidLine = lidDefault();   // an older line was offsets from MediaPipe's ring: start again on the model's delete st.eyes.plane; delete st.eyes.lowerLid; eyeSet.all(); paintEyes();
   Object.assign(st.teeth, TEETH.TEETH_DEFAULTS, c.teeth || {}); teethSet.all();
   Object.assign(st.lips, LIPS.LIPS_DEFAULTS, c.lips || {}); st.lips.guide = false; lipSet.all();
@@ -3073,7 +2989,6 @@ async function open(name) {
   WEAR.set(st.accessories); drawAcc();                  // on the face as it is now
   dress();                                             // the clothes on this body (or none)
   await loadSalon().catch(() => null);
-  await loadTau().catch(() => null);
   if (me !== OPENING) return;
   if (!SALONF.hidden) await enterSalon();              // the Hair tab open: the salon on this character
   if (me === OPENING && WHO) detect();
@@ -3128,7 +3043,7 @@ for (const [btn, head] of [["#expBody", false], ["#expHead", true]]) $(btn).oncl
 // makeup, the lips, the nails, the touch-up, the layers) baked flat on MHR's UVs (albedo.js); what the light does (the
 // coat, the relief, the glow through the skin) is left to whatever draws the file
 const SKIN_BAKE = 4096;
-// what's baked: the skin, and with TAU's eyes their graft drawn over MHR's lids under it (its UVs laid on MHR's): its
+// what's baked: the skin, and with the grafted eyes their graft drawn over MHR's lids under it (its UVs laid on MHR's): its
 // colours, the shut lid's tone, the wet membrane and the makeup reach the file
 function bakeGeometry() {
   if (!graftOn() || !GRAFTM) return dgeo;
@@ -3259,14 +3174,14 @@ function exportSkin(SH = null) {
     const mid = (X, Y) => X.map((v, k) => (v + Y[k]) / 2), ab = mid(A, B), bc = mid(B, C), ca = mid(C, A);
     split(t, O, A, ab, ca, d + 1); split(t, O, ab, B, bc, d + 1); split(t, O, ca, bc, C, d + 1); split(t, O, ab, bc, ca, d + 1);
   };
-  const graft = graftOn() && GRAFTM ? GRAFTM : null;    // TAU's eyes: MHR's skin under them left out, theirs added below
+  const graft = graftOn() && GRAFTM ? GRAFTM : null;    // the grafted eyes: MHR's skin under them left out, theirs added below
   for (let t = 0; t < DP.length; t += 9) {
     if (graft && GRAFT.hideT[t / 9]) continue;
     const zz = (DP[t + 2] + DP[t + 5] + DP[t + 8]) / 3;
     const O = !on ? null : zz > z.x && overlaps(SKU.uCutBoxL.value, t) ? L : zz > z.y && overlaps(SKU.uCutBoxR.value, t) ? R : null;   // an eye's opening over it (only the front: not the back of the head behind)
     if (O) split(t, O, [1, 0, 0], [0, 1, 0], [0, 0, 1], 0); else { put(t, [1, 0, 0]); put(t, [0, 1, 0]); put(t, [0, 0, 1]); }
   }
-  const nM = pos.length / 3, gIdx = [];                 // TAU's eyes' corners: each its graft point, its UV, its MHR triangle's points and shares (the desk plays MHR's face shapes through them, as the graft rides them)
+  const nM = pos.length / 3, gIdx = [];                 // the grafted eyes' corners: each its graft point, its UV, its MHR triangle's points and shares (the desk plays MHR's face shapes through them, as the graft rides them)
   if (graft) {
     const ga = graft.geometry.attributes, idx = graft.geometry.index.array, nL = graft.geometry.userData.nL;
     for (let j = 0; j < idx.length; j++) {
@@ -3280,7 +3195,7 @@ function exportSkin(SH = null) {
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("normal", new THREE.Float32BufferAttribute(nrm, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
-  if (SH && graft) {                                    // TAU's eyes' blink: the graft's places in each state (it shuts its own way, MHR's skin holds still)
+  if (SH && graft) {                                    // the grafted eyes' blink: the graft's places in each state (it shuts its own way, MHR's skin holds still)
     const n = pos.length / 3, rest = Float32Array.from(pos), rn = Float32Array.from(nrm);
     const tg = blinkTargets(SH, rest, s => { const G3 = s.parts.get(graft); if (!G3) return null; const now = Float32Array.from(rest);
       for (let c = nM; c < n; c++) { const v = gIdx[c - nM] * 3; now[c * 3] = G3[v]; now[c * 3 + 1] = G3[v + 1]; now[c * 3 + 2] = G3[v + 2]; } return now; },
@@ -3321,9 +3236,9 @@ function exportSkin(SH = null) {
   }
   const m = new THREE.Mesh(g, skinFileMaterial());
   m.name = `${WHO}_skin`; m.userData.srcI = srcI; m.userData.srcW = srcW;   // each corner's three MHR points and their shares (its weights)
-  if (graft) m.userData.eyeGraft = true;                // (the file's extras: TAU's eyes, their lining inside the eyeballs: EYELIDS)
+  if (graft) m.userData.eyeGraft = true;                // (the file's extras: the grafted eyes, their lining inside the eyeballs: EYELIDS)
   g.setAttribute("mhrp", new THREE.Float32BufferAttribute(srcI, 3)); g.setAttribute("mhrw", new THREE.Float32BufferAttribute(srcW, 3));   // the same in the file (_MHRP, _MHRW): the desk plays MHR's face shapes through them (tools/shared/face.js)
-  if (on || graft) m.userData.openings = Object.fromEntries(["L", "R"].map(side => {   // each opening's outline as cut, on the lids as they rest (the file's extras: a reader can follow the lid line); TAU's eyes': where their lids meet the eyeball
+  if (on || graft) m.userData.openings = Object.fromEntries(["L", "R"].map(side => {   // each opening's outline as cut, on the lids as they rest (the file's extras: a reader can follow the lid line); the grafted eyes': where their lids meet the eyeball
     const f = on ? eyeFront(side) : null; return [side, outline(side).pts.map(p => { const e = f && f(p[0], p[1]); return [p[0], p[1], e === null || !f ? p[2] : Math.max(p[2], e + LIDGAP)].map(v => +v.toFixed(5)); })];
   }));
   return m;
@@ -3339,7 +3254,7 @@ const LIDREST = { L: 0, R: 0, most: 0 }, LIDGAP = 0.0003;   // the last export's
 // what lies on the lids (the lashes, the lash line, the tear line, the brows) comes forward with them in a file: each
 // point by the lift of the MHR point it rides (faceRide's _MHRP: a lash card's root's, so a card moves whole), or of the
 // nearest point round the eyes; the same lift in every state of the blink. Without it a lash stayed where the Studio's
-// lid is, up to 3 mm behind the file's (TAU's, grown on the file's lids, came back on the Studio's tilted across the eye)
+// lid is, up to 3 mm behind the file's (the base mesh's, grown on the file's lids, came back on the Studio's tilted across the eye)
 function liftWith(P, at) {                             // P: places (x, y, z each), moved in place; at: each place's MHR point
   const L = LIDREST.lift; if (!L) return P;
   for (let i = 0; i < at.length; i++) P[i * 3 + 2] += L[at[i]];
@@ -3416,7 +3331,7 @@ function eyeKeep(side) {                               // pushes points out of t
 function blinkShapes() {                               // at neutral: each eye at each of BLINKW as the face shows it: MHR's points and the brows' and lashes' places
   const at = ENAMES.indexOf("eyesClosed_L"), amt = st.exprAmt || 1, parts = [...Object.values(BLM), TEAR.L, TEAR.R].filter(o => o.visible);
   if (at < 0) return null;
-  if (graftOn() && GRAFTM) parts.push(GRAFTM);           // (TAU's eyes shut their own way: the skin's targets take the graft's places from here)
+  if (graftOn() && GRAFTM) parts.push(GRAFTM);           // (the grafted eyes shut their own way: the skin's targets take the graft's places from here)
   const grab = () => ({ show: Float32Array.from(SHOW), parts: new Map(parts.map(o => [o, Float32Array.from(o.geometry.attributes.position.array)])), gnormals: graftOn() && GRAFTM ? Float32Array.from(GRAFTM.geometry.attributes.normal.array) : null });
   const out = { parts };
   BLINKS.forEach((side, s) => { for (const w of BLINKW) { st.expr[at + s] = w / amt; compose(); out[inName(side, w)] = { ...grab(), side, w }; } st.expr[at + s] = 0; });
@@ -3671,7 +3586,7 @@ async function exportPackage() {
   const rec = await api(`api/recipe/${encodeURIComponent(WHO)}`), was = st.expr.slice(), pose = POSE;
   st.expr.fill(0); POSE = "rest"; compose();           // neutral, in MHR's own pose (the T-pose is only the view's)
   const root = new THREE.Scene(); root.name = WHO; root.userData = { studio: rec };
-  const skip = new Set([mesh, GH, BAG, HOLES, LIPGUIDE.line, LIPGUIDE.dots, ...Object.values(LIDVIEW.line), ...Object.values(LIDVIEW.dots), ...(GRAFTM ? [GRAFTM] : [])]);   // (TAU's eyes go in the skin)   // (the tear line goes: Godot's HSEye wets it, fileLook)
+  const skip = new Set([mesh, GH, BAG, HOLES, LIPGUIDE.line, LIPGUIDE.dots, ...Object.values(LIDVIEW.line), ...Object.values(LIDVIEW.dots), ...(GRAFTM ? [GRAFTM] : [])]);   // (the grafted eyes go in the skin)   // (the tear line goes: Godot's HSEye wets it, fileLook)
   const SH = st.eyes.on ? blinkShapes() : null;        // each eye's blink, for the file's morph targets
   const parts = [[exportSkin(SH), "skin"]];            // the skin first: the desk measures the body from the first skinned mesh
   for (const o of rig.children) if (!skip.has(o) && o.visible)

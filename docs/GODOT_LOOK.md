@@ -700,8 +700,8 @@ line in Godot's light (and at 0.45 of it): `gain` 0.2, roughness 0.2.
 
 **What lies on the lids comes forward with them** (`liftWith`): the export brings the lids forward onto the eyeballs (up
 to 3.9 mm) and the lashes, the lash line, the tear line and the brows stayed on the Studio's lids behind them; now each
-point is lifted by the MHR point it rides (a lash card by its root's). TAU's strands (docs/TAU_HAIR.md) are moved back
-off the lift before they're pinned, so the Studio wears them on its own face and the file lifts them again.
+point is lifted by the MHR point it rides (a lash card by its root's). (TAU's strands, since removed, were moved back off
+the lift before they were pinned.)
 
 **EYELIDS** (`tools/godot/eyelids_check.py`): the file's skin and eyeballs drawn as depth from the front and four sides at
 every twentieth of the blink, as Godot puts the targets together: nothing of the eye in front of a lid (at most

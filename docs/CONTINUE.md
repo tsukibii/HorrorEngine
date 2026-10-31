@@ -11,7 +11,17 @@ the to-do built there, with the Studio's eyes from the side, a small nose and th
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## 0. `realism-enhancer-skin` (2026-10-31, the night, later): TAU's eyes on our faces, in the Studio
+## 0. `realism-enhancer-skin` (2026-10-31, the night, the last): the grafted eyes for everyone, TAU gone
+
+The user: make the base mesh's eyes the default ("I don't care about the old eyes"), upgrade our own brows and lashes
+with what TAU's technique does, and remove TAU. Done (DECISIONS 2026-10-31, the last; CHARACTER_STUDIO §2b, §2c):
+`Content/Studio/Bodies/MHR_eyes.bin` is committed and worn by every character (Blender Studio's Human Base Meshes'
+lids, CC0; `eye_patch.py make` from `vendor/human_base_meshes/`); the brows and lashes by hand gained trimmed edges,
+clumps, frizz, the curl at the lash tip, uneven lashes (`groom.js`, docs/research/brows_lashes.md); `tau_hair.py`,
+`tau.js`, docs/TAU_HAIR.md, Bake with TAU, Start from TAU's brows and TAUHAIR are gone. Next: the user's look (a local
+STUDIO run on the GPU); the eyelid-line handles on the graft; the remote `tau-transfer` branch (ask before deleting).
+
+## 0c. `realism-enhancer-skin` (2026-10-31, the night, later): TAU's eyes on our faces, in the Studio
 
 The user asked for TAU's eye and lid shape ("meaty flesh that curves in") on our editable faces, with a few shape keys
 (more Asian or Caucasian, size). Built so far (CHARACTER_STUDIO §2c): `tools/eye_patch.py` (make, preview, check:

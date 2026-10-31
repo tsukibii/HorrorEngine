@@ -6,7 +6,7 @@
 // lower lashes few, fine and short, down and out. The user shapes them by hand: each brow's band by handles on its top
 // and bottom edges, the lashes by handles at their tips (inner, middle, outer), the hair by sliders, the brows' density
 // and flow by brushes. Out come strands (points, radius per point, the normal the card faces) for browlash.js's
-// strandCards: one fine hair to a card, TAU's look. Plain arrays in and out (x, y, z each); index.html feeds the face.
+// strandCards: one fine hair to a card. Plain arrays in and out (x, y, z each); index.html feeds the face.
 //
 //   fresh(saved)                       the editor's settings (st.groom), the defaults under what was saved
 //   browStrands(ctx, side, g)          one brow: { strands, edges: { upper: [5 points], lower: [5 points] } }
@@ -56,26 +56,27 @@ const lashSide = () => ({ stations: LASH_STATIONS.map(() => ({ len: 1, lift: 0, 
 
 export const GROOM_DEFAULTS = {
   on: false, mirror: true,
-  brow: { style: "natural", source: "made", hairs: 380, length: 1, thickness: 1, soft: 0.6, messy: 0.4, head: 82, body: 26, tail: -10, converge: 0.35, L: browSide(), R: browSide() },
-  lash: { style: "natural", count: 115, length: 7, lift: 0, curl: 0.3, sweep: 40, inner: 0.55, thickness: 1, clump: 0.25,
+  brow: { style: "natural", hairs: 420, length: 1, thickness: 1, soft: 0.6, messy: 0.4, head: 82, body: 26, tail: -10, converge: 0.35,
+          trim: 0.7, clumps: 0.5, frizz: 0.3, L: browSide(), R: browSide() },
+  lash: { style: "natural", count: 130, length: 7, lift: 0, curl: 0.35, tipCurl: 0.5, sweep: 40, inner: 0.55, thickness: 1, clump: 0.35, uneven: 0.5, frizz: 0.2,
           lower: 34, lowerLength: 3.8, lowerAngle: 58, line: 0.22, L: lashSide(), R: lashSide() },
 };
 // presets: the hair's numbers (the shape by hand stays)
 export const BROW_STYLES = {
-  natural: { label: "Natural (MetaHuman)", hairs: 380, length: 1, thickness: 1, soft: 0.6, messy: 0.4, head: 82, body: 26, tail: -10, converge: 0.35 },
-  soft:    { label: "Soft and sparse", hairs: 280, length: 0.9, thickness: 0.85, soft: 0.85, messy: 0.25, head: 80, body: 24, tail: -10, converge: 0.3 },
-  full:    { label: "Full", hairs: 620, length: 1.1, thickness: 1.05, soft: 0.5, messy: 0.35, head: 84, body: 28, tail: -8, converge: 0.35 },
-  groomed: { label: "Groomed (brushed up)", hairs: 460, length: 1.05, thickness: 1, soft: 0.55, messy: 0.15, head: 88, body: 42, tail: 0, converge: 0.15 },
-  straight:{ label: "Straight", hairs: 440, length: 1, thickness: 1, soft: 0.55, messy: 0.2, head: 75, body: 16, tail: -6, converge: 0.3 },
-  bold:    { label: "Bold (masculine)", hairs: 700, length: 1.2, thickness: 1.3, soft: 0.4, messy: 0.45, head: 80, body: 24, tail: -12, converge: 0.4 },
+  natural: { label: "Natural (MetaHuman)", hairs: 420, length: 1, thickness: 1, soft: 0.6, messy: 0.4, head: 82, body: 26, tail: -10, converge: 0.35, trim: 0.7, clumps: 0.5, frizz: 0.3 },
+  soft:    { label: "Soft and sparse", hairs: 280, length: 0.9, thickness: 0.85, soft: 0.85, messy: 0.25, head: 80, body: 24, tail: -10, converge: 0.3, trim: 0.8, clumps: 0.3, frizz: 0.2 },
+  full:    { label: "Full", hairs: 640, length: 1.1, thickness: 1.05, soft: 0.5, messy: 0.35, head: 84, body: 28, tail: -8, converge: 0.35, trim: 0.6, clumps: 0.55, frizz: 0.35 },
+  groomed: { label: "Groomed (brushed up)", hairs: 460, length: 1.05, thickness: 1, soft: 0.55, messy: 0.15, head: 88, body: 42, tail: 0, converge: 0.15, trim: 0.5, clumps: 0.7, frizz: 0.1 },
+  straight:{ label: "Straight", hairs: 440, length: 1, thickness: 1, soft: 0.55, messy: 0.2, head: 75, body: 16, tail: -6, converge: 0.3, trim: 0.7, clumps: 0.4, frizz: 0.2 },
+  bold:    { label: "Bold (masculine)", hairs: 720, length: 1.2, thickness: 1.3, soft: 0.4, messy: 0.45, head: 80, body: 24, tail: -12, converge: 0.4, trim: 0.55, clumps: 0.6, frizz: 0.5 },
 };
 export const LASH_STYLES = {
-  natural: { label: "Natural (MetaHuman)", count: 115, length: 7, lift: 0, curl: 0.3, sweep: 40, inner: 0.55, thickness: 1, clump: 0.25, lower: 34, lowerLength: 3.8, lowerAngle: 58 },
-  soft:    { label: "Soft", count: 100, length: 6.2, lift: -2, curl: 0.25, sweep: 36, inner: 0.6, thickness: 0.85, clump: 0.2, lower: 24, lowerLength: 3.4, lowerAngle: 56 },
-  full:    { label: "Full", count: 160, length: 7.8, lift: 2, curl: 0.35, sweep: 42, inner: 0.55, thickness: 1.1, clump: 0.3, lower: 40, lowerLength: 4.4, lowerAngle: 52 },
-  doll:    { label: "Doll (curled up)", count: 150, length: 8.5, lift: 18, curl: 0.65, sweep: 30, inner: 0.65, thickness: 1.1, clump: 0.4, lower: 45, lowerLength: 5, lowerAngle: 46 },
-  fox:     { label: "Fox (swept out)", count: 130, length: 7.5, lift: -4, curl: 0.25, sweep: 55, inner: 0.45, thickness: 1, clump: 0.25, lower: 28, lowerLength: 4, lowerAngle: 55 },
-  sparse:  { label: "Sparse (masculine, older)", count: 80, length: 5.5, lift: -2, curl: 0.2, sweep: 32, inner: 0.6, thickness: 0.9, clump: 0.15, lower: 18, lowerLength: 3.2, lowerAngle: 58 },
+  natural: { label: "Natural (MetaHuman)", count: 115, length: 7, lift: 0, curl: 0.3, sweep: 40, inner: 0.55, thickness: 1, clump: 0.25, lower: 34, lowerLength: 3.8, lowerAngle: 58, tipCurl: 0.5, uneven: 0.5, frizz: 0.2 },
+  soft:    { label: "Soft", count: 100, length: 6.2, lift: -2, curl: 0.25, sweep: 36, inner: 0.6, thickness: 0.85, clump: 0.2, lower: 24, lowerLength: 3.4, lowerAngle: 56, tipCurl: 0.45, uneven: 0.4, frizz: 0.15 },
+  full:    { label: "Full", count: 160, length: 7.8, lift: 2, curl: 0.35, sweep: 42, inner: 0.55, thickness: 1.1, clump: 0.3, lower: 40, lowerLength: 4.4, lowerAngle: 52, tipCurl: 0.55, uneven: 0.55, frizz: 0.2 },
+  doll:    { label: "Doll (curled up)", count: 150, length: 8.5, lift: 18, curl: 0.65, sweep: 30, inner: 0.65, thickness: 1.1, clump: 0.4, lower: 45, lowerLength: 5, lowerAngle: 46, tipCurl: 0.35, uneven: 0.3, frizz: 0.1 },
+  fox:     { label: "Fox (swept out)", count: 130, length: 7.5, lift: -4, curl: 0.25, sweep: 55, inner: 0.45, thickness: 1, clump: 0.25, lower: 28, lowerLength: 4, lowerAngle: 55, tipCurl: 0.6, uneven: 0.5, frizz: 0.2 },
+  sparse:  { label: "Sparse (masculine, older)", count: 80, length: 5.5, lift: -2, curl: 0.2, sweep: 32, inner: 0.6, thickness: 0.9, clump: 0.15, lower: 18, lowerLength: 3.2, lowerAngle: 58, tipCurl: 0.4, uneven: 0.7, frizz: 0.3 },
 };
 export const BROW_SLIDERS = [   // [key, label, lo, hi, step, help]
   ["hairs", "Hairs", 80, 1200, 10, "How many hairs each brow has."],
@@ -87,16 +88,22 @@ export const BROW_SLIDERS = [   // [key, label, lo, hi, step, help]
   ["body", "Middle hairs' angle", -10, 70, 1, "The middle's hairs: swept out and a little up (about 25)."],
   ["tail", "Tail hairs' angle", -40, 30, 1, "The tail's hairs: out and a little down (about -10)."],
   ["converge", "Toward the middle", 0, 1, 0.01, "The top and bottom rows lean toward the brow's middle line, as they grow."],
+  ["trim", "Trimmed edges", 0, 1, 0.01, "The hairs along the brow's top, bottom and front shorter than its body's, as a groomed brow's are."],
+  ["clumps", "Clumps", 0, 1, 0.01, "Hairs gathered toward their neighbours' tips in little groups (about 2 mm), as real brow hair lies."],
+  ["frizz", "Frizz", 0, 1, 0.01, "Each hair's own small waves and strays: smooth at 0."],
 ];
 export const LASH_SLIDERS = [
   ["count", "Upper lashes", 30, 260, 1, "How many upper lashes each eye has."],
   ["length", "Length", 3, 13, 0.1, "The longest lashes (the outer third), mm."],
   ["lift", "Lift", -10, 60, 1, "Degrees up from straight out of the lid: low hugs the eye, high stands up (a doll's)."],
   ["curl", "Curl", 0, 1, 0.01, "How much they curve up along their length."],
+  ["tipCurl", "Curl at the tip", 0, 1, 0.01, "Where the curl is: spread along the lash at 0, gathered toward the tip at 1 (straight out of the lid, then up)."],
   ["sweep", "Outer sweep", 0, 70, 1, "Degrees toward the temple at the outer corner (the inner ones stay straight)."],
   ["inner", "Inner length", 0.2, 1, 0.01, "The lashes at the inner corner, as a share of the longest."],
   ["thickness", "Thickness", 0.5, 1.8, 0.01, "Each lash's thickness."],
-  ["clump", "Clumps", 0, 1, 0.01, "Neighbouring lashes drawn together at their tips."],
+  ["clump", "Clumps", 0, 1, 0.01, "Neighbouring lashes drawn together at their tips, in groups of two to six."],
+  ["uneven", "Uneven", 0, 1, 0.01, "How much the lashes' lengths differ: short ones between the long, as real lashes grow."],
+  ["frizz", "Frizz", 0, 1, 0.01, "Each lash's own small wave and lean."],
   ["lower", "Lower lashes", 0, 120, 1, "How many lower lashes each eye has."],
   ["lowerLength", "Lower length", 1.5, 8, 0.1, "The lower lashes' longest, mm."],
   ["lowerAngle", "Lower angle", 15, 80, 1, "Degrees down from straight out of the lid."],
@@ -121,19 +128,7 @@ export function fresh(saved) {                         // the defaults under wha
       else if (Array.isArray(b.stations)) b.stations.slice(0, LASH_STATIONS.length).forEach((v, i) => { g.lash[side].stations[i] = { len: +v.len || 1, lift: +v.lift || 0, sweep: +v.sweep || 0 }; });
     }
   }
-  const kept = s.brow && s.brow.kept;                   // the other source's hand work, kept for coming back to it (swapBrows)
-  if (kept && typeof kept === "object") g.brow.kept = Object.fromEntries(BROW_SOURCES.filter(k => kept[k]).map(k => [k, { L: browFrom(kept[k].L), R: browFrom(kept[k].R) }]));
   return g;
-}
-// the brows' source switched ("made": grown here from the angle sliders; "tau": TAU's, Start from TAU's brows): the hand
-// work on the one left (its handles, its brushing) kept for coming back, the other's own brought back, or none yet
-export const BROW_SOURCES = ["made", "tau"];
-export function swapBrows(g, to) {
-  const o = g.brow, from = o.source || "made"; if (from === to) return;
-  const kept = { ...(o.kept || {}), [from]: { L: o.L, R: o.R } }, back = kept[to];
-  o.L = back ? back.L : browSide(); o.R = back ? back.R : browSide(); delete kept[to];
-  o.kept = Object.fromEntries(BROW_SOURCES.filter(k => kept[k]).map(k => [k, kept[k]]));
-  o.source = to;
 }
 // one side's hand work onto the other (the Mirror switch): offsets toward the temple and up are the same numbers on both
 export function mirrorTo(g, from) {
@@ -188,73 +183,47 @@ export function browDensity(o, paint, t, s) {           // how thick the hair gr
   return Math.max(0, across * along * paintAt(paint, "dens", t, s, 1));
 }
 const KEEP = 0.65;                                      // a candidate's chance where the density is 1 (more painted on grows up to all of them)
-// a brow from TAU's strands (Start from TAU's brows: tools/tau_hair.py grew them on the face, placed from TAU's own head
-// laid over ours by the eyes): TAU's hair kept, reshaped by hand. The band is laid on TAU's brow as it grew (tauFit: the
-// handles start on its outline, not on MediaPipe's rows, which sit higher on most faces); each strand moves with the band
-// where its root lies as the handles move it (past the band's edges, with the edge), kept or doubled by Hairs and the
-// brush's density there, turned about its root by the comb, its length and thickness by the sliders
-const TAUFIT = {};                                      // (per side: the fit kept while the brow rows and TAU's roots stay put)
-const clamp01 = x => Math.max(0, Math.min(1, x));
-const pct = (a, f) => { const b = a.slice().sort((x, y) => x - y); return b[Math.min(b.length - 1, Math.max(0, Math.round(f * (b.length - 1))))]; };
-export function tauFit(ctx, side, strands) {            // TAU's brow as offsets of the band's edges from the brow rows (mm), the band on it, its roots' (t, s) there
-  const roots = strands.map(st => st.pts[0]);
-  const key = [strands.length, ...[...ctx.rows.upper, ...ctx.rows.lower].flat(), ...roots.reduce((q, p) => q.map((v, k) => v + p[k]), [0, 0, 0])].join(",");
-  if (TAUFIT[side] && TAUFIT[side].key === key) return TAUFIT[side];
-  const B0 = band(ctx, { upper: zeros(BROW_STATIONS), lower: zeros(BROW_STATIONS) }), Q0 = roots.map(p => bandCoord(B0, p));
-  const ts = Q0.map(q => q.t), t0 = pct(ts, 0.02), t1 = pct(ts, 0.98), fit = { upper: [], lower: [] }, per = Math.max(12, Math.round(Q0.length * 0.3));
-  for (let k = 0; k < BROW_STATIONS; k++) {             // the stations spread from TAU's head to its tail; at each, its roots' top and bottom across the band
-    const tk = t0 + (t1 - t0) * k / (BROW_STATIONS - 1), near = Q0.slice().sort((a, b) => Math.abs(a.t - tk) - Math.abs(b.t - tk)).slice(0, per), ss = near.map(q => q.s);
-    for (const [e, sv] of [["upper", pct(ss, 0.95)], ["lower", pct(ss, 0.05)]]) {
-      const d = sub(far(B0, tk, sv), ctx.rows[e][k]);
-      fit[e].push([dot(d, ctx.out) / ctx.mm, dot(d, ctx.U) / ctx.mm]);
-    }
-  }
-  const B = band(ctx, fit);
-  return (TAUFIT[side] = { key, fit, B, Q: roots.map(p => bandCoord(B, p)) });
-}
-function tauBrow(ctx, side, g, T, Bh, strands) {
-  const o = g.brow, hand = o[side], mm = ctx.mm, seed = side === "L" ? 505 : 606, out = [];
-  const more = o.hairs / 380;                           // Hairs against the made brows' default: TAU's count as it grew at 380
-  strands.forEach((st, k) => {
-    const root = st.pts[0], q = T.Q[k], m = more * paintAt(hand.paint, "dens", q.t, q.s, 1);
-    const copies = (hash(k, seed) < Math.min(1, m) ? 1 : 0) + (m > 1 && hash(k, seed + 1) < m - 1 ? 1 : 0);
-    if (!copies) return;
-    const tc = clamp01(q.t), sc = clamp01(q.s), disp = Bh === T.B ? [0, 0, 0] : sub(Bh.at(tc, sc).p, T.B.at(tc, sc).p), n = st.normal, r = rng(seed * 7919 + k);
-    for (let c = 0; c < copies; c++) {
-      const turn = (paintAt(hand.paint, "comb", q.t, q.s, 0) + (r() - 0.5) * 16 * o.messy + (c ? (r() - 0.5) * 20 : 0)) * D2R;
-      const shift = c ? mul(norm(cross(n, sub(st.pts[st.pts.length - 1], root))), (r() - 0.5) * 0.9 * mm) : [0, 0, 0];
-      const pts = st.pts.map(p => add(add(add(root, rot(mul(sub(p, root), o.length), n, turn)), disp), shift));
-      out.push({ pts, radius: st.radius.map(x => x * o.thickness), normal: n });
-    }
-  });
-  return out;
-}
 export function browStrands(ctx, side, g) {
   const o = g.brow, hand = o[side];
-  if (o.source === "tau" && ctx.tau && ctx.tau.length) {
-    const T = tauFit(ctx, side, ctx.tau), plus = e => T.fit[e].map((v, i) => [v[0] + hand[e][i][0], v[1] + hand[e][i][1]]);
-    const Bh = ["upper", "lower"].some(e => hand[e].some(v => v[0] || v[1])) ? band(ctx, { upper: plus("upper"), lower: plus("lower") }) : T.B;
-    return { strands: tauBrow(ctx, side, g, T, Bh, ctx.tau), edges: { upper: Bh.up.map(p => ctx.project(p).p), lower: Bh.lo.map(p => ctx.project(p).p) }, band: Bh };
-  }
   const B = band(ctx, hand), mm = ctx.mm, seed = side === "L" ? 303 : 404, out = [];
   const K = Math.round(o.hairs * 2.6);                  // candidates spread evenly over the band (R2's sequence), each kept by the density there (about Hairs kept)
+  const trim = o.trim ?? 0.7, clumps = o.clumps ?? 0.5, frizz = o.frizz ?? 0.3, guides = new Map();
+  const grow = (t, s, th0, len, bend, steps) => {         // a hair's path from (t, s): it follows the flow where it goes, on the skin
+    let tt = t, ss = s; const pts = [];
+    for (let q = 0; q <= steps; q++) {
+      const u = q / steps, { p, n } = B.at(tt, ss), lift = (0.04 + 0.12 * Math.sin(Math.PI * Math.min(1, u * 1.1))) * mm;   // lying on the skin, a hair's breadth off it along the way
+      pts.push(add(p, mul(n, lift)));
+      if (q === steps) break;
+      const th = (browAngle(o, hand.paint, tt, ss) - browAngle(o, hand.paint, t, s) + th0 + bend * u) * D2R, [Lt, Hs] = B.metric(tt), step = len / steps;
+      tt += Math.cos(th) * step / Math.max(1, Lt); ss += Math.sin(th) * step / Math.max(0.5, Hs);
+      ss = Math.max(-0.12, Math.min(1.12, ss));
+    }
+    return pts;
+  };
+  const guideOf = (t, s) => {                             // a clump's guide hair: the brow's own flow from the clump's middle (cells about 2 mm by 1.5 mm)
+    const [Lt, Hs] = B.metric(t), ci = Math.round(t * Lt / 2), cj = Math.round(s * Hs / 1.5), key = ci + "," + cj;
+    if (!guides.has(key)) { const gt = Math.min(1, ci * 2 / Math.max(1, Lt)), gs = Math.max(0, Math.min(1, cj * 1.5 / Math.max(0.5, Hs)));
+      const len = (3.4 + 2.0 * smooth(0.05, 0.3, gt) - 1.0 * smooth(0.75, 1, gt)) * o.length; guides.set(key, grow(gt, gs, browAngle(o, hand.paint, gt, gs), len, 0, 4)); }
+    return guides.get(key);
+  };
   for (let k = 0; k < K; k++) {
     const t = (0.5 + k * 0.7548776662466927) % 1, s = (0.5 + k * 0.5698402909980532) % 1;
     if (hash(k, seed) > Math.min(1, KEEP * browDensity(o, hand.paint, t, s))) continue;
     const r = rng(seed * 7919 + k), th0 = browAngle(o, hand.paint, t, s) + (r() - 0.5) * 36 * o.messy;
-    const len = (3.4 + 2.0 * smooth(0.05, 0.3, t) - 1.0 * smooth(0.75, 1, t)) * o.length * (0.6 + 0.8 * r());   // mm: shorter at the front and the tail, each its own
-    const bend = (r() - 0.5) * 22 * o.messy, steps = 4;
-    let tt = t, ss = s; const pts = [], R = [];
-    const r0 = 0.05 * o.thickness * (0.75 + 0.5 * r()) * (1 - 0.25 * (1 - smooth(0, 0.2, t))) * mm;   // (TAU's brow hairs are 0.055 mm at the root)
-    for (let q = 0; q <= steps; q++) {
-      const u = q / steps, { p, n } = B.at(tt, ss), lift = (0.04 + 0.12 * Math.sin(Math.PI * Math.min(1, u * 1.1))) * mm;   // lying on the skin, a hair's breadth off it along the way
-      pts.push(add(p, mul(n, lift))); R.push(r0 * (1 - 0.75 * u));
-      if (q === steps) break;
-      const th = (browAngle(o, hand.paint, tt, ss) - browAngle(o, hand.paint, t, s) + th0 + bend * u) * D2R, [Lt, Hs] = B.metric(tt), step = len / steps;   // it follows the flow where it goes
-      tt += Math.cos(th) * step / Math.max(1, Lt); ss += Math.sin(th) * step / Math.max(0.5, Hs);
-      ss = Math.max(-0.12, Math.min(1.12, ss));
+    const edge = Math.max(0.7 * smooth(0.62, 1, s), 0.9 * (1 - smooth(0, 0.35, s)), 0.7 * (1 - smooth(0, 0.22, t)));   // near the top, the bottom, the front: trimmed shorter
+    const len = (3.4 + 2.0 * smooth(0.05, 0.3, t) - 1.0 * smooth(0.75, 1, t)) * o.length * (0.55 + 0.9 * r() * r() + 0.15 * r()) * (1 - 0.5 * trim * edge);   // mm: shorter at the front and the tail, each its own (a few long strays)
+    const bend = (r() - 0.5) * 22 * o.messy, steps = 4, n0 = B.at(t, s).n;
+    const r0 = 0.05 * o.thickness * (0.75 + 0.5 * r()) * (1 - 0.25 * (1 - smooth(0, 0.2, t))) * mm;   // brow hairs are about 0.05 mm at the root
+    let pts = grow(t, s, th0, len, bend, steps);
+    if (clumps > 0) {                                     // gathered toward its clump's guide: the root stays, the tip goes most of the way
+      const gd = guideOf(t, s), amt = clumps * (0.55 + 0.35 * r());
+      pts = pts.map((p, q) => { const u = q / steps, w = amt * Math.pow(u, 1.4); const gp = add(gd[q], sub(pts[0], gd[0])); return add(mix(p, gp, w), mul(sub(gd[q], gp), 0.35 * w)); });
     }
-    out.push({ pts, radius: R, normal: B.at(t, s).n });
+    if (frizz > 0) {                                      // its own small waves off the flow, along the skin and a little off it
+      const ph = r() * 6.283, fq = 1.5 + 2 * r(), side = norm(cross(n0, sub(pts[steps], pts[0]))), amp = frizz * 0.18 * mm;
+      pts = pts.map((p, q) => { const u = q / steps; return add(p, add(mul(side, amp * u * Math.sin(ph + fq * u * 6.283)), mul(n0, 0.3 * amp * u * Math.abs(Math.sin(ph * 1.7 + u * 4))))); });
+    }
+    out.push({ pts, radius: pts.map((_, q) => r0 * (1 - 0.75 * q / steps)), normal: n0 });
   }
   return { strands: out, edges: { upper: B.up.map(p => ctx.project(p).p), lower: B.lo.map(p => ctx.project(p).p) }, band: B };
 }
@@ -274,11 +243,6 @@ export function bandCoord(B, p) {
   const aa = dot(a, a), ab = dot(a, b), bb = dot(b, b), da = dot(d, a), db = dot(d, b), det = aa * bb - ab * ab || 1;
   return { t: q.t + (bb * da - ab * db) / det, s: q.s + (aa * db - ab * da) / det };
 }
-const far = (B, t, s) => {                              // the band's place at (t, s), its ends carried on straight (at() stops at them)
-  if (t >= 0 && t <= 1) return B.at(t, s).p;
-  const e = t < 0 ? 0 : 1, a = B.at(e, s).p, b = B.at(e ? 0.95 : 0.05, s).p;
-  return add(a, mul(sub(a, b), Math.abs(t - e) / 0.05));
-};
 
 // ---- an eye's lashes ------------------------------------------------------------------------------------------------
 
@@ -315,7 +279,7 @@ function lash(ctx, frame, o, upper, t, a, r) {
   let len, lift, curl, sweep;
   if (upper) {
     len = o.length * (o.inner + (1 - o.inner) * smooth(0, 0.6, outer)) * (1 - 0.15 * smooth(0.92, 1, outer)) * a.len * r[0];
-    lift = (o.lift + a.lift + r[2]) * D2R; curl = (0.15 + 1.1 * o.curl);
+    lift = (o.lift + a.lift + r[2]) * D2R; curl = (0.15 + 1.1 * o.curl) * (r[3] ?? 1);
     sweep = (o.sweep * smooth(0.25, 1, outer) - 6 * (1 - smooth(0, 0.2, outer)) + a.sweep) * D2R + r[1];   // the inner ones lean a touch toward the nose
   } else {
     len = o.lowerLength * (0.45 + 0.55 * smooth(0.05, 0.55, outer)) * (1 - 0.2 * smooth(0.9, 1, outer)) * r[0];
@@ -324,9 +288,10 @@ function lash(ctx, frame, o, upper, t, a, r) {
   const m = upper ? 7 : 5, a0 = pts.length; let q = pts[a0 - 1];
   const along = upper ? fr.tg : mul(fr.tg, -1);         // toward the outer corner (the lower lid's line runs outer to inner)
   for (let k = 1; k <= m; k++) {
-    const u = k / m, ease = smooth(0, 0.55, u), ang = exit + (lift - exit) * ease + curl * Math.pow(u, 1.5) * (upper ? 1 : -0.4);
+    const u = k / m, ease = smooth(0, 0.55, u), ang = exit + (lift - exit) * ease + curl * Math.pow(u, 1 + 2.5 * (o.tipCurl ?? 0.5)) * (upper ? 1 : -0.4) * (1 + 0.6 * (o.tipCurl ?? 0.5));   // the curl gathered toward the tip: out of the lid, then up
     let d = norm(add(mul(F, Math.cos(ang)), mul(radial, Math.sin(ang))));
     d = norm(rot(d, norm(cross(d, along)), sweep * ease));   // swept toward the outer corner about the axis square to it
+    if (r[4]) d = norm(rot(d, d[0] || d[1] ? norm(cross(d, radial)) : fr.tg, r[4] * Math.sin(r[5] + u * 5) * u));   // its own small wave (frizz)
     d = rot(d, fr.tg, fr.ang);                            // turned with the lid as it swings shut (its root's turn round the eye since open)
     q = add(q, mul(d, len * mm / m)); pts.push(q);
   }
@@ -341,19 +306,21 @@ export function lashStrands(ctx, side, g) {
     for (let k = 0; k < n; k++) {
       const tt = (k + 0.15 + 0.7 * r()) / n, t = upper ? 0.035 + 0.96 * tt : 0.04 + 0.88 * tt, at = upper ? t : 1 - t;   // the upper lashes along the whole lid, to its outer end
       const a = upper ? { len: st.len(at), lift: st.lift(at), sweep: st.sweep(at) } : { len: 1, lift: 0, sweep: 0 };
-      const rr = upper ? [0.82 + 0.3 * r(), (r() - 0.5) * 0.12, (r() - 0.5) * 8] : [0.6 + 0.6 * r(), (r() - 0.5) * 0.35, (r() - 0.5) * 18];   // the lower ones unevenly: a real lower lid's lashes are a few, each its own way
+      const un = o.uneven ?? 0.5, short = upper && r() < 0.3 * un, fz = (o.frizz ?? 0.2) * 0.12;   // uneven: a share of short ones between the long, every length its own
+      const rr = upper ? [(short ? 0.5 + 0.25 * r() : 0.82 + 0.3 * r()) * (1 - 0.15 * un * r()), (r() - 0.5) * 0.12, (r() - 0.5) * 8, 0.8 + 0.4 * r(), fz * (r() - 0.3), r() * 6.283] : [0.6 + 0.6 * r(), (r() - 0.5) * 0.35, (r() - 0.5) * 18, 1, fz * (r() - 0.5), r() * 6.283];   // the lower ones unevenly: a real lower lid's lashes are a few, each its own way
       let h = lash(ctx, frame, o, upper, upper ? t : t + (r() - 0.5) * 0.6 / n, a, rr);
       for (let up = 1; upper && t < 0.9 && up <= 6 && dot(sub(h.pts[h.pts.length - 1], h.pts[h.a0 - 1]), ctx.U) < 0.1 * ctx.mm; up++)   // an upper lash never hangs into the eye: where the lid turns steeply (its inner end) lifted till its tip clears the lid's edge
         h = lash(ctx, frame, o, upper, t, { ...a, lift: a.lift + 6 * up }, rr);
-      h.r0 = (upper ? 0.055 : 0.034) * o.thickness * (0.8 + 0.4 * r()) * ctx.mm; h.t = t;   // (TAU's lashes are 0.055 mm at the root)
+      h.r0 = (upper ? 0.055 : 0.034) * o.thickness * (0.8 + 0.4 * r()) * ctx.mm; h.t = t;   // (real lashes are about 0.05 to 0.06 mm at the root)
       if (!upper && r() > 0.35 + 0.65 * smooth(0.05, 0.45, 1 - t)) continue;   // few lower lashes toward the inner corner
       hairs.push(h);
     }
-    const per = upper ? 3 + Math.round(o.clump * 4) : 1;  // clumps: neighbours' tips drawn together
-    if (per > 1) for (let g0 = 0; g0 < hairs.length; g0 += per) {
+    const cr = rng(seed + 31 + (upper ? 0 : 5));         // clumps: neighbours' tips drawn together, groups of two to six (irregular, as real lashes clump)
+    if (upper && o.clump > 0) for (let g0 = 0, per; g0 < hairs.length; g0 += per) {
+      per = 2 + Math.floor(cr() * (2 + 3 * o.clump));
       const grp = hairs.slice(g0, g0 + per); if (grp.length < 2) continue;
       const m = grp[0].pts.length, avg = Array.from({ length: m }, (_, k) => mul(grp.reduce((s, h) => add(s, h.pts[k] || h.pts[h.pts.length - 1]), [0, 0, 0]), 1 / grp.length));
-      for (const h of grp) h.pts = h.pts.map((p, k) => k < h.a0 ? p : mix(p, avg[k], 0.75 * o.clump * Math.pow((k - h.a0 + 1) / (m - h.a0), 1.6)));
+      for (const h of grp) h.pts = h.pts.map((p, k) => k < h.a0 ? p : mix(p, avg[k], Math.min(0.92, 0.85 * o.clump) * Math.pow((k - h.a0 + 1) / (m - h.a0), 1.3)));
     }
     for (const h of hairs) out.push({ pts: h.pts, radius: h.pts.map((_, k) => h.r0 * (1 - 0.75 * Math.max(0, k - h.a0 + 1) / (h.pts.length - h.a0))), normal: h.radial, t: upper ? h.t : undefined });
     if (upper) for (let k = 0; k < LASH_STATIONS.length; k++) tips.push(lashTip(ctx, side, g, k));

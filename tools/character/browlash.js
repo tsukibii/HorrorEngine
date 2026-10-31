@@ -394,7 +394,7 @@ function brow(G, rows, o, C, U, S, seed, P) {
   }
 }
 
-// TAU's strands as cards (tools/character/tau.js, tools/tau_hair.py): one strand of the lash atlas on each, as wide as
+// fine strands as cards (the brows and lashes by hand, groom.js): one strand of the lash atlas on each, as wide as
 // the hair's own root radius six times over (the atlas's core is a third of its cell: the hair at its true thickness,
 // a few hundredths of a millimetre), tapering to a third; a lash on two cards crossed (across the lid, and square to
 // that), a brow hair on one lying on the skin. The same geometry as build()'s, for the same hair shader and the export

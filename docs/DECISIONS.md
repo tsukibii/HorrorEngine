@@ -2,6 +2,24 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-31, the night, the last (the user: the base mesh's eyes for everyone, TAU removed, on `realism-enhancer-skin`)
+
+- **"I've confirmed the default TAU 'eye stitch' process is just using Blender's default human model ... can you just
+  modify the base loaded mesh that we edit so it has those eyes from the start (I don't care about the old eyes as the
+  new ones are way better and the eyeballs sit way better)."** Yes: the graft is every character's eyes. The user
+  checked that the head in TAU's file is Blender Studio's Human Base Meshes body (CC0, `GEO-body_female_realistic`), so
+  `Content/Studio/Bodies/MHR_eyes.bin` is committed; the Studio wears it with no switch and no Make button (MHR's cut
+  lids only if the file is missing); `eye_patch.py make` takes the bundle's .blend (`vendor/human_base_meshes/`,
+  git-ignored, or `--blend`). The shape keys' base preset is "Default".
+- **"Could we just update our model for eyebrows and eyelashes to be inspired by them ... and then scrap/remove the TAU
+  ones entirely as it's annoying to have to go to Blender to bake it ... I found many tutorials using their technique
+  for getting the curve ... enhance our eyebrows and eyelash system we already use and remove TAU."** Done: the brows
+  and lashes by hand (`groom.js`) took the technique (Blender's own hair node groups: trims along the edges, clumps
+  toward guide hairs, noise, the curl's profile toward the tip, wide length randomness; docs/research/brows_lashes.md,
+  in our own words and numbers); TAU's bake, its Studio panel, Start from TAU's brows, `tools/tau_hair.py`,
+  `tools/character/tau.js`, docs/TAU_HAIR.md and TAUHAIR are removed. The remote `tau-transfer` branch is left for
+  the user to delete (asked).
+
 ## 2026-10-31, the night, later (the user: TAU's eyes on our faces, on `realism-enhancer-skin`)
 
 - **"Before you continue one thing you could maybe do is look how the eyes are modelled in the default TAU blend and make

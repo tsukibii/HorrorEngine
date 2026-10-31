@@ -276,7 +276,7 @@ reflection bloomed. The lashes: realistic in millimetres (0.1 mm hairs, 8.5 mm l
 cut-out alpha makes a hair a third of a pixel wide a black pixel), lifted up (so their whole length showed from the
 front), flared at the outer corner and long; the lower lashes pointed down the skin.
 
-**Where it went** (the user then chose TAU for the brows and lashes, docs/TAU_HAIR.md, and asked for eyes that close
+**Where it went** (the user then chose TAU for the brows and lashes, since removed, and asked for eyes that close
 without clipping and whites that aren't paint: GODOT_LOOK §5f): the eye's **Socket shade** (`socket`, eye.js and HSEye:
 the white and its shine darker all over, more toward the brow and into the corners, the iris a little; lighting, not
 paint, so it's in the export's record and Godot puts it back); Godot's eye lit by its own `light()` (the iris's diffuse

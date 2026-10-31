@@ -74,6 +74,10 @@ const png = rgb => {
     const clip = await page.evaluate(() => { const r = document.querySelector("#view canvas").getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; });
     return page.screenshot({ clip, timeout: 120000 });
   };
+  // every character wears the grafted eyes (Blender's human base mesh's lids, CHARACTER_STUDIO §2c); the steps below were
+  // written for MHR's own cut lids, kept as the fallback when the graft's file is missing: they're measured with the graft
+  // held off (__mhrLids), and the graft's own step turns it on
+  await page.addInitScript(() => { window.__mhrLids = true; });
   await page.goto(BASE);
 
   await step("MHR loads with its sliders and labels", async () => {
@@ -95,6 +99,14 @@ const png = rgb => {
       b.useLook("MHR plain"); return { got, plain: { lips: s.lips.on, soft: s.eyes.limbalSoft, proc: s.skin.proc.on } }; }, NAME);
     if (!look.got.lips || look.got.soft !== 0.6 || !(look.got.tear > 0) || !look.got.proc || !look.got.savedLips) throw new Error(`a new character's look: ${JSON.stringify(look.got)}`);
     if (look.plain.lips || look.plain.soft !== 0 || look.plain.proc) throw new Error(`MHR plain: ${JSON.stringify(look.plain)}`);
+  });
+  await step("the eyes: every character wears the grafted lids (Blender's human base mesh, thick lids resting on the eyeball), shutting their own way", async () => {
+    const r = await page.evaluate(() => { const b = window.__body; window.__mhrLids = false; b.compose();
+      const g = b.graft(), open = { on: g.on, shown: !!g.M && g.M.visible, points: g.G ? g.G.n || g.M.geometry.attributes.position.count : 0, eye: !!g.V.L && !!g.V.R };
+      const i = n => b.ENAMES.indexOf(n); b.st.expr[i("eyesClosed_L")] = 1; b.st.expr[i("eyesClosed_R")] = 1; b.compose(); const shut = b.graft().on && b.graft().M.visible;
+      b.st.expr.fill(0); window.__mhrLids = true; b.compose(); const off = !b.graft().on;
+      return { ...open, shut, off, noSwitch: ![...document.querySelectorAll("#eyeRows label span")].some(x => /grafted eyes \(thick/.test(x.textContent)) }; });
+    if (!r.on || !r.shown || !r.points || !r.eye || !r.shut || !r.off || !r.noSwitch) throw new Error("the grafted eyes: " + JSON.stringify(r));
   });
   let a, front, side;
   await step("the base and a slider move the body; the height scales it", async () => {
