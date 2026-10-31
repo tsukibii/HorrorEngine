@@ -292,8 +292,13 @@ we". The street paint page's brush (`brush.js`, docs/STREET_PAINT.md §1) on the
   other room's side with a 4 mm lining wearing that room's own look (`trim:lining`, plan.py `lining_pieces`) wherever
   the two rooms' looks differ, following the wall's pieces, door holes and all. A click on a wall paints the room its
   face looks into.
-- **A kit floor or ceiling** (the planks and tatami a room gets by its kind) under the click is taken up so the set
-  shows; Undo brings it back.
+- **A kit floor takes the floor's look** (the planks, tiles and tatami a room gets by its kind; the user, 2026-10-31:
+  "make the floors take a material"): painting a room's floor paints its kit floor's boards too (the `mats` on its
+  `<room>_fx_floor`), and the room's own floor under it, so the strip by the walls and a floor taken out later match.
+  When the set paints tiles, boards or mats of its own (pavers, a plank floor, tatami mats), the kit floor is laid out
+  by them (KIT.md, *Floors laid out by their set*): each board where the set paints one, its real gaps in the set's
+  seams; a set with none (grain, a weave) gives each board its own cut. The status says which once it's planned. A
+  click on the gaps (or a tatami's borders) paints only those. A ceiling step takes the ceiling's look on its body.
 - **Alt-click picks up** what's on a surface: the brush becomes it and tunes that surface live (*tune …* under the
   brush), every change one undo.
 - **What it writes** is the story's own words (STORY_FORMAT §1, §2): `look.floor`, `look.walls`, `look.ceiling`,
@@ -307,8 +312,6 @@ we". The street paint page's brush (`brush.js`, docs/STREET_PAINT.md §1) on the
   middling one, a dome in a big one). Paint colours its rim; its glass is the light (it glows while it's on, so it isn't
   painted). In Godot no light source comes with it: put your own lights under its node and they follow its switch and
   the power cut (GODOT_EXPORT §3b). An older level's bulbs become fittings when it's opened and saved here.
-- **Not yet:** a kit floor or ceiling is taken up rather than dressed (a set with its own planks over the kit's planks
-  would double them).
 
 ## 10. Not done yet
 

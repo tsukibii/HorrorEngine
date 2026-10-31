@@ -138,7 +138,16 @@ async function replan() {
     stage.setWorld(j, s, B.target); clearPaintHl();
     if (+$("#swing").value) stage.swing(+$("#swing").value);
     addLamp(); placeHer(); doors(); placeRefs(); buildOutside(); draw(); render3d();
+    if (PB.fitNote) { fitNote(PB.fitNote); PB.fitNote = null; }
   } catch (e) { status(e.message, "bad"); }
+}
+function fitNote(room) {                                              // how a painted kit floor took its set (plan.py `fitted`)
+  const p = (B.plan.pieces || []).find(q => q.id === `${room}_fx_floor`), r = roomOf(room); if (!p) return;
+  const c = p.kit && p.kit.cells;
+  const how = !c ? "each board wears its own cut of the set (it draws no tiles of its own)"
+    : c.whole ? "laid as one board (the set's tiles are too small to build one by one)"
+    : `its boards laid where the set's are, the gaps in its seams (${c.rects.length} to a ${c.tile} m repeat)`;
+  status(`${(r && (r.name || r.id)) || room}'s kit floor: ${how}`, "dirty");
 }
 
 // ---- the plan (SVG, drawn in screen pixels: x east, y north is up) ----
@@ -1234,7 +1243,9 @@ function lookEditor(r) {
 // The street paint page's brush (brush.js) on the level: pick a set off the shelf (or a colour), tune it and layer over
 // it, then click a surface in the view: a room's floor, its walls (its own side: the plan lines a neighbour's wall with
 // the room's look), its ceiling or trim, a block (its `mat`), or the outside's slot round the building. "Every room
-// like it" paints every room of that kind. A kit floor or ceiling under the click is taken up so the set shows.
+// like it" paints every room of that kind. A room's kit floor (or ceiling step) takes the floor's (the ceiling's) look on
+// its boards, laid out by the set's own tiles, boards or mats when it paints some (plan.py `fitted`); a click on its
+// gaps, or a tatami's borders, paints just those (the user, 2026-10-31: "make the floors take a material").
 // Alt-click picks up what's on a surface, and the brush then tunes that surface live. A drag still looks round.
 const PB = { on: false, scope: "one", target: null, clearing: false, down: null, hoverKey: "" };
 const paintHl = new THREE.Group();
@@ -1296,7 +1307,12 @@ function lookOfTarget(t) {
   if (t.kind === "kit") { const h = holderOf(t); return (h && (h.mats || {})[t.slot]) || ""; }
   return "";
 }
-function setLookOn(t, v) {                                            // a look on a target; what it took up, in words
+// a room's kit floor or ceiling step: the slot its boards (or its body) wear, which takes the room's floor (ceiling) look
+function mainSlot(spec) {
+  try { const k = KIT.withDefaults(KIT.resolve(spec, LIBRARY.kit)); return k.type === "tatami" ? "tatami" : k.slot || ""; } catch (e) { return ""; }
+}
+function roomKit(o, part) { return part === "floor" ? o.floorKit : part === "ceiling" && o.ceiling ? o.ceilKit : null; }
+function setLookOn(t, v) {                                            // a look on a target; the kit floors and ceilings that took it, in words
   const val = v && JSON.parse(JSON.stringify(v)), took = [];
   if (t.kind === "room") {
     const r = roomOf(t.room); if (!r) return took;
@@ -1304,8 +1320,13 @@ function setLookOn(t, v) {                                            // a look 
       o.extra.look = Object.assign({}, o.extra.look || {});
       if (val) o.extra.look[t.part] = val; else delete o.extra.look[t.part];
       if (!Object.keys(o.extra.look).length) delete o.extra.look;
-      if (val && t.part === "floor" && o.floorKit) { o.floorKit = null; took.push(`${o.name || o.id}'s kit floor`); }      // so the set shows
-      if (val && t.part === "ceiling" && o.ceilKit) { o.ceilKit = null; took.push(`${o.name || o.id}'s kit ceiling`); }
+      const kit = roomKit(o, t.part), slot = kit && mainSlot(kit);     // its kit floor's boards (a ceiling step's body) wear it too
+      const h = slot && holderOf({ id: `${o.id}_fx_${t.part}`, room: o.id }, !!val);
+      if (!h) continue;
+      h.mats = Object.assign({}, h.mats || {});
+      if (val) h.mats[slot] = val; else delete h.mats[slot];
+      if (!Object.keys(h.mats).length) delete h.mats;
+      took.push(`${o.name || o.id}'s kit ${t.part}`);
     }
   } else if (t.kind === "outside") {
     const o = outsideOf(); if (!o) return took;
@@ -1348,8 +1369,14 @@ function targetOfHit(h) {
   if (!h) return null;
   if (h.outside) return h.slot ? { kind: "outside", slot: h.slot } : null;
   const p = h.piece, tags = p.tags || [];
-  if (p.kind === "floor" || p.id === `${p.room}_fx_floor`) return { kind: "room", room: p.room, part: "floor" };
-  if (p.kind === "ceiling" || p.id === `${p.room}_fx_ceiling`) return { kind: "room", room: p.room, part: "ceiling" };
+  for (const part of ["floor", "ceiling"]) {
+    if (p.kind !== part && p.id !== `${p.room}_fx_${part}`) continue;
+    if (p.id === `${p.room}_fx_${part}`) {                            // its kit floor (ceiling step): the boards are the floor's
+      const slot = String(h.object.userData.slot || "").replace(/_\d+$/, ""), d = dressOf(p);   // look; its gaps and a
+      if (slot && d && slot !== mainSlot(p.kit)) return Object.assign({ kind: "kit", slot }, d);  // tatami's borders their own
+    }
+    return { kind: "room", room: p.room, part };
+  }
   if (p.kind === "wall" || tags.includes("trim:lining")) {             // the room this face looks into (a shared wall is its builder's)
     const n = h.face ? h.face.normal.clone().transformDirection(h.object.matrixWorld) : null;
     const q = n ? t2s(h.point.clone().addScaledVector(n, 0.06)) : null;
@@ -1430,7 +1457,8 @@ function paintAt(h, alt = false) {
   const took = setLookOn(tt, v);
   PB.target = v ? tt : null;
   changed();
-  status(`${paintTargetName(tt)}: ${v ? lookName(v) : "cleared"}${took.length ? ` (${took.join(", ")} taken up: Undo brings ${took.length > 1 ? "them" : "it"} back)` : ""}${S3.isLookObj(v) ? " · making the set…" : ""}`, "dirty");
+  status(`${paintTargetName(tt)}: ${v ? lookName(v) : "cleared"}${took.length ? ` (${took.length > 2 ? `${took.length} kit ${tt.part}s` : took.join(" and ")} too)` : ""}${S3.isLookObj(v) ? " · making the set…" : ""}`, "dirty");
+  if (v && took.length && tt.kind === "room" && tt.part === "floor") PB.fitNote = tt.room;          // how its boards took it, once planned
   BR.panel(); PB.hoverKey = ""; paintHudIdle();
   if (S3.isLookObj(v)) S3.prepareLooks({ look: { brush: v } }, () => BR.panel());
   if (tt.kind === "outside") buildOutside();

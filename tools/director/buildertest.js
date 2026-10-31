@@ -414,11 +414,12 @@ const png = rgb => {                    // a 4x4 PNG of one colour (a scratch ma
       fail("the PBR buttons: " + JSON.stringify({ back, worn, kback }));
 
     // Paint (SCENE_BUILDER §9; the user, 2026-10-31: the paint bucket in the interiors): a set off the shelf on the LDK's
-    // floor (its kit floor taken up), tuned (a tint: the server makes the set, the floor wears it), the LDK's walls (its
-    // side of its neighbours' walls lined with its look), picked up again with Alt (the brush becomes it, tuning it),
-    // and undone back to the kit floor
-    await page.evaluate(() => { window.B.dirty = false; window.builder.openPreset("1ldk"); });
-    await page.waitForFunction(() => window.B.plan && window.B.model.rooms.some(r => r.kind === "ldk"), null, { timeout: 30000 });
+    // floor (its kit floor's boards take it, laid out by the set's own mats: "make the floors take a material"; its gaps
+    // their own), tuned (a tint: the server makes the set, the floor and its boards wear it), the LDK's walls (its side
+    // of its neighbours' walls lined with its look), picked up again with Alt (the brush becomes it, tuning it), undone
+    await page.evaluate(() => { window.__plan0 = window.B.plan; window.B.dirty = false; window.builder.openPreset("1ldk"); });
+    await page.waitForFunction(() => window.B.plan && window.B.plan !== window.__plan0 && window.B.model.rooms.some(r => r.kind === "ldk"), null, { timeout: 60000 });   // its own plan, not the last level's
+    await page.waitForTimeout(600);
     const pt = await page.evaluate(async () => {
       const B = window.B, P = window.builder.paint, wait = ms => new Promise(r => setTimeout(r, ms));
       const replanned = async () => { const p0 = B.plan; for (let i = 0; i < 600 && B.plan === p0; i++) await wait(100); return B.plan !== p0; };
@@ -436,10 +437,23 @@ const png = rgb => {                    // a 4x4 PNG of one colour (a scratch ma
       out.floor = fl ? P.at(fl[0], fl[1]) : null;
       out.kitAfter = !!r.floorKit;
       await replanned();
+      out.fitNote = document.querySelector("#status").textContent;      // how its boards took it, once planned
       out.tuned = P.tune(b => { b.tint = "#b8a878"; b.contrast = 1.15; });
       out.replanned = await replanned();
       out.made = Object.keys(B.plan.made || {});
       out.floorLook = (r.extra.look || {}).floor;
+      const fstub = (r.extra.props || []).find(q => q.id === `${r.id}_fx_floor`) || {}, fpiece = B.plan.pieces.find(q => q.id === `${r.id}_fx_floor`);
+      out.kitMats = JSON.parse(JSON.stringify(fstub.mats || null));
+      out.kitCells = fpiece && fpiece.kit && fpiece.kit.cells ? (fpiece.kit.cells.rects || []).length : 0;
+      out.gap = P.paintTarget(P.targetOfPiece(`${r.id}_fx_floor`, "gap"), "#3a3028");   // its gaps: only those
+      out.gapMats = JSON.parse(JSON.stringify(fstub.mats || null));
+      await replanned();
+      const kref = (out.made[0] || "none").replace("pbr/", "");          // its boards drawn wearing the made set
+      for (let i = 0; i < 200 && !out.ktex; i++) {
+        window.__builderStage.world.traverse(b => { const p = b.userData && b.userData.piece; if (p && p.id === `${r.id}_fx_floor`) b.traverse(m => {
+          if (m.isMesh && /^wood/.test(m.userData.slot || "") && m.material.map && ((m.material.map.image || {}).src || "").includes(kref)) out.ktex = true; }); });
+        if (!out.ktex) await wait(100);
+      }
       window.builder.pitch(0);
       P.brush("pbr/wall/Plaster001_1K-PNG");
       for (const yaw of [90, 0, 180, 270]) {                       // a wall of the LDK's, wherever it's in view
@@ -509,7 +523,9 @@ const png = rgb => {                    // a 4x4 PNG of one colour (a scratch ma
       const p = m.userData && m.userData.piece; if (p && p.kind === "floor" && p.room === room && m.material.map && ((m.material.map.image || {}).src || "").includes(ref)) hit = true; });
       return hit; }, [pt.room, (pt.made[0] || "none").replace("pbr/", "")], { timeout: 20000 }).then(() => true).catch(() => false);
     console.log("paint", JSON.stringify(Object.assign({}, pt, { tex })));
-    if (pt.cards < 10 || !pt.floor || pt.floor.part !== "floor" || !pt.kitBefore || pt.kitAfter || !pt.replanned || !pt.made.length || typeof pt.floorLook !== "object"
+    if (pt.cards < 10 || !pt.floor || pt.floor.part !== "floor" || !pt.kitBefore || !pt.kitAfter || !pt.replanned || !pt.made.length || typeof pt.floorLook !== "object"
+        || !pt.kitMats || JSON.stringify(pt.kitMats.wood) !== JSON.stringify(pt.floorLook) || pt.kitCells !== 8 || !/laid where the set's are/.test(pt.fitNote)
+        || !pt.gap || pt.gap.kind !== "kit" || pt.gap.slot !== "gap" || (pt.gapMats || {}).gap !== "#3a3028" || !pt.ktex
         || !pt.walls || pt.walls.part !== "walls" || !pt.linings || !pt.linedLook || !pt.picked || pt.brushAfter !== "pbr/wall/Plaster001_1K-PNG" || !pt.tunes || pt.tunes.part !== "walls"
         || pt.undone.look || !pt.undone.kit || !pt.sofa || pt.sofa.kind !== "kit" || !pt.sofaMats || !Object.values(pt.sofaMats).includes("pbr/plastic/black palstic")
         || !pt.sofaTags.some(t => t.endsWith(":pbr/plastic/black palstic"))
