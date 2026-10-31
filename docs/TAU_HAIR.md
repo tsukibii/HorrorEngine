@@ -12,7 +12,9 @@ millimetre thick, flow, curl, clumping, noise), five presets each (brows Natural
 lashes Straight, Clumped, Fox, Manga, Volume).
 
 - **The .blend stays out of git.** The user downloads it and puts it at `vendor/tau/procedural_human_hair.blend`
-  (`vendor/tau/` is git-ignored; 105 MB, it came in through a branch of its own, `tau-transfer`, in two parts).
+  (`vendor/tau/` is git-ignored; 105 MB, it came in through a branch of its own, `tau-transfer`, in two parts). The tools
+  find it there, or any `.blend` in `vendor/tau/` or `tau_transfer/`, or join `tau_transfer/*.blend.part-*` into
+  `vendor/tau/` by themselves (`tau_hair.tau_blend`).
 - **Credit TAU** wherever the brows and lashes show (the Studio's TAU section says it; a game's credits should too).
 - **Share-alike**: hair TAU grows is a work made with its CC BY-SA generators. Keep the strands (`People/<name>/tau/`)
   and the exports that carry them in the user's own projects; a game that ships them ships them under CC BY-SA's terms

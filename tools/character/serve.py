@@ -66,6 +66,17 @@ def tau_status(name):
     return dict(running=running, ok=not running and "TAUHAIR ok" in log, baked=(d / "strands.json").exists(), log=log)
 
 
+EYE_RUN = {}                                                      # TAU's eyes being made (tools/eye_patch.py make): the one run
+EYE_LOG = ROOT / "Saved" / "eye_patch" / "make.log"
+
+
+def eye_status():
+    p = EYE_RUN.get("p"); running = p is not None and p.poll() is None
+    if p is not None and not running: EYE_RUN.pop("p", None)
+    log = EYE_LOG.read_text(encoding="utf-8", errors="replace")[-3000:] if EYE_LOG.exists() else ""
+    return dict(running=running, ok=not running and (BODIES / "MHR_eyes.bin").is_file() and "EYEPATCH written" in log, made=(BODIES / "MHR_eyes.bin").is_file(), log=log)
+
+
 def ref_status(name):
     d = REFS / name; p = REF_RUNS.get(name)
     running = p is not None and p.poll() is None
@@ -197,6 +208,8 @@ class Handler(BaseHTTPRequestHandler):
             f = (ROOT / "tools" / "shared" if parts[0] == "shared" else ROOT / "Content" / "Studio" / "Env") / parts[1]
             if f.is_file():
                 return self.send(200, f.read_bytes(), "text/javascript" if f.suffix == ".js" else "application/octet-stream")
+        if parts == ["api", "eyepatch", "status"]:                              # TAU's eyes being made on this machine
+            return self.send(200, eye_status())
         if parts[0] == "bodies" and len(parts) == 2 and Path(parts[1]).suffix in (".bin", ".json"):
             f = BODIES / parts[1]
             return self.send(200, f.read_bytes(), TYPES[f.suffix]) if f.is_file() else self.send(404, {"error": "no body"})
@@ -284,6 +297,11 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         parts = [p for p in urllib.parse.urlparse(self.path).path.split("/") if p]
         name = clean(parts[2]) if len(parts) >= 3 else None
+        if parts == ["api", "eyepatch", "run"]:                                 # TAU's eyes made on this machine (tools/eye_patch.py make: TAU's .blend in Blender's module)
+            if eye_status()["running"]: return self.send(409, {"error": "TAU's eyes are already being made"})
+            EYE_LOG.parent.mkdir(parents=True, exist_ok=True)
+            EYE_RUN["p"] = subprocess.Popen([sys.executable, str(ROOT / "tools" / "eye_patch.py"), "make"], stdout=open(EYE_LOG, "w", encoding="utf-8"), stderr=subprocess.STDOUT, cwd=ROOT)
+            return self.send(200, {"started": True})
         if parts == ["api", "defaults"]:                                         # merged into People/defaults.json, key by key
             f = PEOPLE / "defaults.json"
             PEOPLE.mkdir(parents=True, exist_ok=True)

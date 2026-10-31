@@ -39,6 +39,29 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PEOPLE = ROOT / "Content" / "Studio" / "People"
 BLEND = ROOT / "vendor" / "tau" / "procedural_human_hair.blend"
+
+
+def tau_blend():
+    """TAU's .blend: vendor/tau/procedural_human_hair.blend, else any .blend in vendor/tau/ or tau_transfer/, else the
+    transfer branch's parts (tau_transfer/*.blend.part-*, split to get past GitHub's 100 MB) joined into vendor/tau/;
+    None when there's none"""
+    if BLEND.exists():
+        return BLEND
+    for d in (BLEND.parent, ROOT / "tau_transfer"):
+        whole = sorted(d.glob("*.blend")) if d.is_dir() else []
+        if whole:
+            return whole[0]
+    parts = sorted((ROOT / "tau_transfer").glob("*.blend.part-*")) if (ROOT / "tau_transfer").is_dir() else []
+    if parts:
+        BLEND.parent.mkdir(parents=True, exist_ok=True)
+        tmp = BLEND.with_suffix(".joining")
+        with open(tmp, "wb") as out:
+            for q in parts:
+                out.write(q.read_bytes())
+        tmp.replace(BLEND)
+        print(f"TAU's .blend joined from {len(parts)} parts in tau_transfer/ into {BLEND.relative_to(ROOT)}")
+        return BLEND
+    return None
 BPY = ROOT / "vendor" / "blender" / ".venv" / "bin" / "python"
 BROW_UP = {"R": [70, 63, 105, 66, 107], "L": [300, 293, 334, 296, 336]}    # MediaPipe's brow rows, outer to inner
 BROW_LO = {"R": [46, 53, 52, 65, 55], "L": [276, 283, 282, 295, 285]}
@@ -242,12 +265,13 @@ def allowed(face, kind, strands):
 
 def cmd_make(a):
     import numpy as np
-    if not BLEND.exists(): sys.exit(f"TAUHAIR FAIL: TAU's pack isn't at {BLEND.relative_to(ROOT)} (download it: creamtau.itch.io/procedural-human-hair)")
+    blend = tau_blend()
+    if not blend: sys.exit(f"TAUHAIR FAIL: TAU's pack isn't at {BLEND.relative_to(ROOT)} nor in tau_transfer/ (download it: creamtau.itch.io/procedural-human-hair)")
     if not BPY.exists(): sys.exit("TAUHAIR FAIL: no Blender module (python tools/retarget.py setup)")
     face = face_of(a.person)
     L = json.loads((ROOT / "Content" / "Studio" / "Bodies" / "MHR_landmarks.json").read_text(encoding="utf-8"))
     out = PEOPLE / a.person / "tau"; out.mkdir(parents=True, exist_ok=True)
-    job = {"glb": str(face["glb"]), "blend": str(BLEND), "brow": a.brows, "lash": a.lashes, "preview": a.preview,
+    job = {"glb": str(face["glb"]), "blend": str(blend), "brow": a.brows, "lash": a.lashes, "preview": a.preview,
            "openings": {s: v.tolist() for s, v in face["openings"].items()}, "out": str(out),
            "raw": str(out / "raw.json")}
     jp = out / "job.json"; jp.write_text(json.dumps(job), encoding="utf-8")
@@ -279,8 +303,9 @@ def cmd_make(a):
 
 
 def cmd_presets(a):
-    if not BLEND.exists(): sys.exit(f"no {BLEND.relative_to(ROOT)}")
-    r = subprocess.run([str(BPY), str(Path(__file__).resolve()), "--inside-presets", str(BLEND)], capture_output=True, text=True, timeout=600)
+    blend = tau_blend()
+    if not blend: sys.exit(f"no {BLEND.relative_to(ROOT)}")
+    r = subprocess.run([str(BPY), str(Path(__file__).resolve()), "--inside-presets", str(blend)], capture_output=True, text=True, timeout=600)
     print("\n".join(l for l in r.stdout.splitlines() if l.startswith("TAU")))
 
 
@@ -460,7 +485,7 @@ def cmd_check(a):
     big = pos * 1.067; grow = max(float(np.abs(unpin(p, big, tris) - s * 1.067).max()) for p, s in zip(pins, strands))
     say(grow < 1e-6, f"in a space 6.7% larger (the export's against the Character Studio's), it comes back 6.7% larger within {grow * 1e9:.1f} nm")
     person = next((p for p in ("_studiotest", "_skintest") if (PEOPLE / p / "export" / f"{p}.glb").exists()), None)
-    if BLEND.exists() and BPY.exists() and person:
+    if tau_blend() and BPY.exists() and person:
         r = subprocess.run([sys.executable, str(Path(__file__).resolve()), "make", "--person", person], capture_output=True, text=True, timeout=3600)
         res = json.loads((PEOPLE / person / "tau" / "strands.json").read_text()) if r.returncode == 0 else {}
         face = face_of(person) if res else None
@@ -469,7 +494,7 @@ def cmd_check(a):
             ln = np.mean([np.linalg.norm(np.diff(unpin(s, face["pos"], face["tris"]), axis=0), axis=1).sum() for s in S]) * 1000 if S else 0
             say(lo <= len(S) <= hi and l0 <= ln <= l1, f"{person}'s {kind}: {len(S)} strands, {ln:.1f} mm mean (wanted {lo} to {hi}, {l0} to {l1} mm)")
     else:
-        print(f"  --  a make not tried: {'no TAU pack' if not BLEND.exists() else 'no Blender module' if not BPY.exists() else 'no export'} (the pinning above is the check's offline part)")
+        print(f"  --  a make not tried: {'no TAU pack' if not tau_blend() else 'no Blender module' if not BPY.exists() else 'no export'} (the pinning above is the check's offline part)")
     print("TAUHAIR " + ("FAIL" if bad else "ok"))
     return 1 if bad else 0
 

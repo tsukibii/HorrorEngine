@@ -123,6 +123,11 @@ it; within 15 mm of the eye's centre TAU has 4,391 points at its second multires
   expressions carry it. Its UVs: TAU's lid laid on MHR's lid between the opening and the edge, so a photo skin or paint
   shows the photo's lid on it. `Content/Studio/Bodies/MHR_eyes.bin` (git-ignored until the head's licence is checked:
   DECISIONS).
+- **Made on each machine**: until it is, Skin, Eyes says so and offers **Make TAU's eyes on this machine** (the Studio's
+  server runs `tools/eye_patch.py make`, a minute or two, `api/eyepatch/run` and `status`, the log in
+  `Saved/eye_patch/make.log`; the page wears the result without a reload). It needs TAU's .blend (`vendor/tau/`, or the
+  transfer branch's `tau_transfer/`, its two parts joined into `vendor/tau/` by themselves: `tau_hair.tau_blend`) and
+  Blender's Python module (`python tools/retarget.py setup`, once); what's missing is said in the panel.
 - **In the Studio** (`eyegraft.js`; Skin, Eyes, **TAU's eyes (thick lids)**, off by default, saved with the character):
   drawn on the skin's own material, the wet membrane (the lining, where the lid meets the eye, its edge behind the lash
   line) pinker and glossier (skinshader.js); the eyeball TAU's size, following the skin round the eye (loops 15 and out)

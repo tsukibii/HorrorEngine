@@ -575,9 +575,10 @@ def cmd_check(a):
 
 
 def cmd_make(a):
-    blend = Path(a.blend) if a.blend else BLEND
-    if not blend.exists(): sys.exit(f"EYEPATCH FAIL: TAU's pack isn't at {blend} (docs/TAU_HAIR.md)")
-    if not BPY.exists(): sys.exit("EYEPATCH FAIL: no Blender module (python tools/retarget.py setup)")
+    from tau_hair import tau_blend
+    blend = Path(a.blend) if a.blend else tau_blend()
+    if not blend or not blend.exists(): sys.exit(f"EYEPATCH FAIL: TAU's .blend isn't at {BLEND.relative_to(ROOT)} nor in tau_transfer/ (docs/TAU_HAIR.md; or --blend PATH)")
+    if not BPY.exists(): sys.exit("EYEPATCH FAIL: no Blender module yet: run  python tools/retarget.py setup  once (Blender's Python module with uv, under vendor/blender), then make again")
     OUTDIR.mkdir(parents=True, exist_ok=True)
     job = {"blend": str(blend), "out": str(BIN)}
     jp = OUTDIR / "job.json"; jp.write_text(json.dumps(job), encoding="utf-8")

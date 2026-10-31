@@ -234,7 +234,7 @@ const SHAPES = f16(H.shapes_at, H.shapes * N * 3);
 // TAU's eyes (tools/eye_patch.py, eyegraft.js): the lids as thick flesh on the eyeball, grafted onto MHR's face; null
 // until it's been made on this machine (Skin, Eyes, TAU's eyes)
 EG.bindTris(TRIS);
-const GRAFT = await EG.load("bodies/MHR_eyes.bin", BASEP, TRIS);
+let GRAFT = await EG.load("bodies/MHR_eyes.bin", BASEP, TRIS);   // (let: made on this machine from the page, it's loaded then: useGraft)
 // the 72 FACS expressions (Meta's names), on the points they move; MHR adds them to any identity as they are
 const ENAMES = H.expr_names || [], EN = H.expr_points || 0;
 const EIDX = EN ? new Uint32Array(buf, H.expr_idx_at, EN) : new Uint32Array(0);
@@ -955,8 +955,13 @@ dgeo.setAttribute("skinThin", new THREE.BufferAttribute(new Float32Array(C), 1))
 skinLit(material, { thin: "attr" });                   // lit as HumanShaders lights skin (/shared/skinlight.js), over the procedural skin
 const mesh = new THREE.Mesh(dgeo, material);
 const rig = new THREE.Group(); rig.matrixAutoUpdate = false; scene.add(rig); rig.add(mesh);
-const GRAFTM = GRAFT ? new THREE.Mesh(EG.geometry(GRAFT), material) : null;   // TAU's eyes, drawn on the skin's own material
-if (GRAFTM) { GRAFTM.visible = false; GRAFTM.frustumCulled = false; GRAFTM.name = "eye_graft"; rig.add(GRAFTM); }
+let GRAFTM = null;                                     // TAU's eyes, drawn on the skin's own material
+function useGraft(G) {                                 // the graft worn from now (made on this machine while the page is open, or at the start)
+  if (GRAFTM) { rig.remove(GRAFTM); GRAFTM.geometry.dispose(); }
+  GRAFT = G; GRAFTM = G ? new THREE.Mesh(EG.geometry(G), material) : null;
+  if (GRAFTM) { GRAFTM.visible = false; GRAFTM.frustumCulled = false; GRAFTM.name = "eye_graft"; rig.add(GRAFTM); }
+}
+useGraft(GRAFT);
 const POSB = new Float32Array(N * 3), GRAFTEYE = {}, GRAFTV = {}, GRAFTV0 = {};   // the face with every expression but the blink (the graft rides it); each eye's eyeball; the graft's points now, and open (where its skin and makeup are worked out)
 let LO = 0;                                            // RAW's lowest y (the feet): the Studio's points are (RAW - LO) * SCALE
 function graftOn() { return !!GRAFT && !!st.eyes?.graft && !!st.eyes?.on && !!LMK; }
@@ -2303,13 +2308,32 @@ const eyeSet = {};
   const graft = el("input", { type: "checkbox", disabled: !GRAFT });   // TAU's eyes (eyegraft.js, tools/eye_patch.py)
   graft.onchange = () => { st.eyes.graft = graft.checked; eyeSet.shape(); changed("expr"); };
   eyeSet.graft = graft;
+  const GRAFT_ABOUT = "The eye region of TAU's demo head on this face: the lids as thick flesh resting on the eyeball, their edge rolling in to touch it, the crease and the lower lid's roll; it follows the sliders, the sculpt, a photo's fit and the expressions, and shuts its own way (the lids slide over the eyeball and meet).";
+  const graftNote = el("small", { textContent: GRAFT ? GRAFT_ABOUT : "Not made on this machine yet: the button below makes it (TAU's .blend in vendor/tau/ or tau_transfer/, and Blender's Python module: python tools/retarget.py setup), or python tools/eye_patch.py make." });
+  const graftMake = el("button", { textContent: "Make TAU's eyes on this machine", title: "tools/eye_patch.py make on the Studio's server: TAU's head in Blender's module, its eye region grafted onto MHR's face (a minute or two)" });
+  graftMake.style.display = GRAFT ? "none" : "";
+  graftMake.onclick = async () => {                    // made on the server, then worn here without a reload
+    graftMake.disabled = true; graftNote.textContent = "making TAU's eyes in Blender's module (a minute or two)…";
+    try {
+      const r = await fetch("api/eyepatch/run", { method: "POST", body: "{}" });
+      if (!r.ok && r.status !== 409) throw new Error((await r.json().catch(() => ({}))).error || "the make didn't start");
+      let s;
+      for (;;) { await new Promise(ok => setTimeout(ok, 3000)); s = await (await fetch("api/eyepatch/status")).json(); if (!s.running) break; }
+      const why = (s.log || "").split("\n").filter(l => /EYEPATCH|Error|error/.test(l)).slice(-3).join(" ");
+      if (!s.ok) throw new Error(why || "the make failed (Saved/eye_patch/make.log)");
+      useGraft(await EG.load(`bodies/MHR_eyes.bin?v=${Date.now()}`, BASEP, TRIS));
+      if (!GRAFT) throw new Error("made, but the page couldn't read Content/Studio/Bodies/MHR_eyes.bin");
+      graft.disabled = false; graftNote.textContent = GRAFT_ABOUT; graftMake.style.display = "none"; status("TAU's eyes made on this machine: tick TAU's eyes (thick lids) to wear them", "ok");
+    } catch (e) { graftNote.textContent = e.message; status(e.message, "bad"); }
+    finally { graftMake.disabled = false; }
+  };
   const shapeBox = el("div", { className: "sub" }), shapeSet = {};   // the eye's shape keys (eyegraft.js SHAPE_KEYS), under TAU's eyes
   const shapePre = el("select", {}, el("option", { value: "", textContent: "Shape preset…" }), ...Object.keys(EG.EYE_PRESETS).map(k => el("option", { value: k, textContent: k })));
   shapePre.onchange = () => { if (!shapePre.value) return; st.eyes.shape = { ...EG.KEYS0, ...EG.EYE_PRESETS[shapePre.value] }; shapePre.value = ""; for (const [k] of EG.SHAPE_KEYS) shapeSet[k](st.eyes.shape[k]); changed("expr"); };
   shapeBox.append(el("div", { className: "row" }, el("span", { textContent: "Eye shape" }), shapePre, el("output")));
   for (const [k, label, lo, hi, step, help] of EG.SHAPE_KEYS) shapeSet[k] = slider(shapeBox, "eyeshape_" + k, label, lo, hi, step, 0, help, v => { st.eyes.shape = { ...EG.KEYS0, ...(st.eyes.shape || {}), [k]: v }; changed("expr"); });
   eyeSet.shape = () => { for (const [k] of EG.SHAPE_KEYS) shapeSet[k](st.eyes.shape?.[k] ?? 0); shapeBox.style.display = st.eyes.graft && GRAFT ? "" : "none"; };
-  box.append(el("label", { className: "tog" }, graft, el("span", {}, "TAU's eyes (thick lids)", el("small", { textContent: GRAFT ? "The eye region of TAU's demo head on this face: the lids as thick flesh resting on the eyeball, their edge rolling in to touch it, the crease and the lower lid's roll; it follows the sliders, the sculpt, a photo's fit and the expressions, and shuts its own way (the lids slide over the eyeball and meet)." : "Not made on this machine yet: python tools/eye_patch.py make (needs TAU's .blend, docs/TAU_HAIR.md)." }))));
+  box.append(el("label", { className: "tog" }, graft, el("span", {}, "TAU's eyes (thick lids)", graftNote)), graftMake);
   box.append(shapeBox); eyeSet.shape();
   const real = el("input", { type: "checkbox", checked: true });   // the shared eye's refracting cornea (tools/shared/eye.js)
   real.onchange = () => { st.eyes.real = real.checked; paintEyes(); changed("expr"); };
