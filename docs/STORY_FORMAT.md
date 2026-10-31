@@ -191,6 +191,14 @@ tags it `kit:<type>` and `art:kit/<type>_<hash>`, the mesh `tools/kit/build.mjs`
 rugs and ceiling steps are also tagged `surface` (the level check doesn't count them as obstacles). `in_wall: true`
 marks a thing that sits in its wall, like a window frame.
 
+**A kit thing's slots dressed** (2026-10-31, the paint bucket on furniture): `"mats": {"white": "pbr/plastic/white_plastic",
+"fabric": {"set": "pbr/...", "tint": "#5a4a3a"}}`: a look on any of its kit's material slots (`wood`, `fabric`, `top`,
+`body`, `front`, `metal`... the ones its kit builds), each as a room's `look` takes it (§1: a set, a colour or a tuned
+set); a slot's tones follow it (`wood` dresses `wood_2`..`wood_4` too, unless they have their own). Laid by the kit's
+own UVs, which are metres, so a set keeps its real size. The plan tags it `matslot:<slot>:<ref>`; the desk dresses the
+kit's meshes; the Godot export gives the thing's mesh the game's material file for the set (GODOT_EXPORT §3b); KIT
+checks that its kit has each slot. The scene builder's Paint writes it (SCENE_BUILDER §9).
+
 **A kit door:** a door's `kit` (a `door` preset, or one with what differs: `{"preset": "door_shaker", "handle":
 "bar_pull", "hinge": "right"}`) builds it as a frame (`<id>__frame`), a leaf (the door, turning on its hinges) and a
 handle (`<id>__handle`), each tagged `door:<id>` and `door_part:*` (docs/KIT.md §8). The kit's hinge numbers (`hinges`, `hinge_h`, `hinge_w`, `hinge_t`, `barrel`,

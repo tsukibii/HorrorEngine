@@ -131,6 +131,12 @@ A room prop carries a kit in place of a shape: a preset's name, or an object wit
 The checks treat floors, rugs and ceiling steps as surfaces: walked over or under, never bumped. They treat window
 frames as part of their wall. Everything else is checked like any prop: overlaps, walls, doorway clearance.
 
+**Its slots dressed** (2026-10-31): `"mats": {"fabric": "pbr/...", "white": {"set": "pbr/...", "tint": "#..."}}` puts a
+PBR set, a colour or a tuned set on any of its material slots (a slot's tones, `wood_2`..., follow `wood`), laid by the
+kit's UVs, which are metres (`uvFor`'s box projection), so a set keeps its real size. The scene builder's Paint writes
+it with a click on the thing; the desk draws it (stage.js `dressSlots`); the Godot export gives the instanced kit mesh
+the game's `<Name>_uv.tres` for each (GODOT_EXPORT §3b); KIT checks every game's `mats` names slots its kit builds.
+
 ## 5. Into Unreal
 
 `storykit.importer.build(G)` first plans the game and runs `node tools/kit/build.mjs --specs` on every kit mesh it

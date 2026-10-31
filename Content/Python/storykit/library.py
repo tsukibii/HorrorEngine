@@ -92,7 +92,7 @@ def is_colour(v):
 
 def looks(story):
     """Every look a story paints its levels with: [(look, where)]: a room's floor, walls, ceiling and trim, a block's
-    `mat`, a level's outside slots. A look is a set's ref, a colour (#rrggbb) or a tuned set (a look object, as the
+    `mat`, a kit thing's slots (`mats`), a level's outside slots. A look is a set's ref, a colour (#rrggbb) or a tuned set (a look object, as the
     street paints with: STREET_PAINT §2; pbrmix.py makes it)."""
     out = []
     for lid, lvl in story.get("levels", {}).items():
@@ -104,6 +104,8 @@ def looks(story):
             for p in room.get("props", []):
                 if p.get("mat"):
                     out.append((p["mat"], f"{p['id']}.mat"))
+                for slot, v in (p.get("mats") or {}).items() if isinstance(p.get("mats"), dict) else ():
+                    out.append((v, f"{p['id']}.mats.{slot}"))   # a kit thing's slot dressed (STORY_FORMAT §2)
     return out
 
 

@@ -44,6 +44,8 @@ def _tags(t, extra=()):
         tags.append(f"art:{t.d['art']}")
     if t.d.get("mat"):                       # a library texture set on the block
         tags.append(f"mat:{mat_ref(t.d['mat'])}")
+    if isinstance(t.d.get("mats"), dict):    # a kit thing's slots dressed: matslot:<slot>:<ref> (its tones _2.._4 follow)
+        tags += [f"matslot:{sl}:{mat_ref(v)}" for sl, v in t.d["mats"].items() if v]
     if t.d.get("tag"):                       # what it is (a mirror, a poster): the desk colours by it
         tags.append(f"tag:{t.d['tag']}")
     lf = LIFE.life_of(t.d) if t.kind == "prop" else None

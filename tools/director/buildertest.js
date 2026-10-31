@@ -5,7 +5,7 @@
 // another game's level is borrowed, a set (a place designed before its game) is made from the picker, laid out, saved
 // into Content/Studio/Sets and taken by a game as its start, its outside (a street style, a fitting) drawn round it and
 // saved in its level (and painted), the desk's deep link shows its marks; Paint (the paint bucket) on a room's floor,
-// tuned, its walls lined, picked up and undone. Ends "BUILDER ok".
+// tuned, its walls lined, picked up, a sofa's fabric, undone. Ends "BUILDER ok".
 //
 //   python tools/director/serve.py          (in another shell)
 //   node tools/director/buildertest.js [shots dir]
@@ -425,7 +425,13 @@ const png = rgb => {                    // a 4x4 PNG of one colour (a scratch ma
       out.cards = document.querySelectorAll("#lib .card").length;
       Object.assign(B.model.player, { x: r.x + r.w / 2, y: r.y + r.d / 2, z: r.z, yaw: 90 }); window.builder.pitch(-60);
       P.brush("pbr/floor/Tatami004_1K-PNG");
-      out.floor = P.at(0.5, 0.75);
+      let fl = null;                                              // the LDK's own floor, wherever it's under the eye
+      for (const yaw of [90, 0, 180, 270]) {
+        Object.assign(B.model.player, { yaw }); window.builder.pitch(-60);
+        for (const [fx, fy] of [[0.5, 0.75], [0.5, 0.85], [0.5, 0.65], [0.4, 0.8], [0.6, 0.8]]) { const t = P.targetAt(fx, fy); if (t && t.part === "floor" && t.room === r.id) { fl = [fx, fy]; break; } }
+        if (fl) break;
+      }
+      out.floor = fl ? P.at(fl[0], fl[1]) : null;
       out.kitAfter = !!r.floorKit;
       await replanned();
       out.tuned = P.tune(b => { b.tint = "#b8a878"; b.contrast = 1.15; });
@@ -446,6 +452,18 @@ const png = rgb => {                    // a 4x4 PNG of one colour (a scratch ma
       P.brush("pbr/floor/Tatami001_1K-PNG");
       out.picked = out.at ? (Object.assign(B.model.player, { yaw: out.at[0] }), window.builder.pitch(0), P.at(out.at[1], 0.5, true)) : null;
       out.brushAfter = P.value(); out.tunes = P.target();
+      // a kit thing's slot: a sofa against the wall, its fabric painted (its `mats`), drawn and tagged
+      window.builder.setKitPreset("kit", "sofa_3"); window.builder.addKit(r.x + r.w / 2, r.y + r.d / 2);
+      const sofa = B.model.kits[B.model.kits.length - 1];
+      for (let i = 0; i < 300 && !(B.plan.pieces || []).some(q => q.id === sofa.id); i++) await wait(100);
+      await wait(400);
+      const rx = sofa.x, ry = sofa.y, toN = ry < r.d / 2;                     // (room space) stand 2 m into the room from it, facing it
+      Object.assign(B.model.player, { x: r.x + rx, y: r.y + ry + (toN ? 2 : -2), z: r.z, yaw: toN ? 270 : 90 }); window.builder.pitch(-25);
+      P.brush("pbr/plastic/black palstic");
+      for (const fy of [0.6, 0.65, 0.7, 0.55, 0.75]) { for (const fx of [0.5, 0.45, 0.55, 0.4, 0.6]) { const t = P.targetAt(fx, fy); if (t && t.kind === "kit" && t.id === sofa.id) { out.sofa = P.at(fx, fy); break; } } if (out.sofa) break; }
+      await replanned();
+      out.sofaMats = JSON.parse(JSON.stringify((B.model.kits.find(k => k.id === sofa.id).extra || {}).mats || null));
+      out.sofaTags = ((B.plan.pieces.find(q => q.id === sofa.id) || {}).tags || []).filter(t => t.startsWith("matslot:"));
       for (let i = B.undo.length; i > out.undos; i--) window.builder.undo();
       const now = B.model.rooms.find(x => x.id === r.id);                // undo puts a copy of the model back
       out.undone = { look: (now.extra || {}).look || null, kit: !!now.floorKit };
@@ -458,7 +476,8 @@ const png = rgb => {                    // a 4x4 PNG of one colour (a scratch ma
     console.log("paint", JSON.stringify(Object.assign({}, pt, { tex })));
     if (pt.cards < 10 || !pt.floor || pt.floor.part !== "floor" || !pt.kitBefore || pt.kitAfter || !pt.replanned || !pt.made.length || typeof pt.floorLook !== "object"
         || !pt.walls || pt.walls.part !== "walls" || !pt.linings || !pt.linedLook || !pt.picked || pt.brushAfter !== "pbr/wall/Plaster001_1K-PNG" || !pt.tunes || pt.tunes.part !== "walls"
-        || pt.undone.look || !pt.undone.kit)
+        || pt.undone.look || !pt.undone.kit || !pt.sofa || pt.sofa.kind !== "kit" || !pt.sofaMats || !Object.values(pt.sofaMats).includes("pbr/plastic/black palstic")
+        || !pt.sofaTags.some(t => t.endsWith(":pbr/plastic/black palstic")))
       fail("Paint in the scene builder: " + JSON.stringify(pt));
   } finally {
     if (setDir) fs.rmSync(setDir, { recursive: true, force: true });

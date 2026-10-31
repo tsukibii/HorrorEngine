@@ -79,6 +79,25 @@ function colourMaterial(hex, like) {
   const key = hex + "|" + (like ? like.roughness : 0.9);
   return colourCache[key] || (colourCache[key] = new THREE.MeshStandardMaterial({ color: new THREE.Color(hex), roughness: like ? like.roughness : 0.9 }));
 }
+// a kit thing's slots dressed (its `mats`, STORY_FORMAT §2; the plan's matslot:<slot>:<ref> tags): a set laid by the
+// kit's own UVs (metres, so at its real size), a colour, a tuned set's made one; a slot's tones (wood_2..) follow it
+function dressSlots(g, piece) {
+  const by = {};
+  for (const t of (piece && piece.tags) || []) if (t.startsWith("matslot:")) { const i = t.indexOf(":", 8); if (i > 8) by[t.slice(8, i)] = t.slice(i + 1); }
+  if (!Object.keys(by).length) return;
+  g.traverse(m => {
+    if (!m.isMesh) return;
+    const s = String(m.userData.slot || ""), ref = by[s] ?? by[s.replace(/_\d+$/, "")];
+    if (!ref) return;
+    m.userData.slotLook = ref;
+    if (/^#[0-9a-f]{6}$/i.test(ref)) { m.material = colourMaterial(ref, m.material); return; }
+    if (!LIBRARY.textures[ref]) return;                              // not on this shelf (yet): the kit's colour
+    const mat = libMaterial(ref), uv = m.geometry.attributes.uv, k = 1 / (mat.userData.tile || 1);
+    for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * k, uv.getY(i) * k);
+    uv.needsUpdate = true; m.geometry.setAttribute("uv1", uv.clone());            // the ao map's channel
+    m.material = mat;
+  });
+}
 // the placeholder things painted on their templates (tools/uv_templates.py, docs/ASSETS.md §7): {prop id: its layout
 // (each face's island, which way u and v run) and its picture}; a block that has one wears it, its UVs laid from it
 export const PAINTED = { game: null, things: {} };
@@ -1261,6 +1280,7 @@ export class Stage {
   kitIn(block, spec, h) {                          // a kit thing in its block: built from its numbers, base on the block's
     try {
       const g = K3.object(spec, LIBRARY.kit, { shadows: !!this.kitShadows });
+      dressSlots(g, block.userData.piece);
       g.position.y = -h / 2; block.add(g);
       block.material = block.material.clone(); block.material.visible = false; block.userData.dressed = true;
     } catch (e) { console.warn("kit " + JSON.stringify(spec) + ": " + e.message); }

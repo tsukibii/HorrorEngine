@@ -277,8 +277,10 @@ we". The street paint page's brush (`brush.js`, docs/STREET_PAINT.md §1) on the
   moss, prints, scuffs; decals scattered over it). The bake's wear layers are the street's (a room has no bake), so
   they're not offered here.
 - **A click paints** what's under it: a room's **floor**, its **walls**, its **ceiling** or its **trim** (skirting,
-  cornice, casings), a **block** the story owns (its `mat`), or, round the building, the **outside's** slot under it.
-  *Every room like it* paints every room of that kind. A drag still looks round, the keys still walk.
+  cornice, casings), a **block** the story owns (its `mat`), a **kit thing's material** (the slot under the click: a
+  sofa's fabric, a desk's wood, a fridge's body, its tones with it: the thing's `mats`, STORY_FORMAT §2), or, round
+  the building, the **outside's** slot under it. *Every one like it* paints every room of that kind, or that slot on
+  every thing of the same kit preset. A drag still looks round, the keys still walk.
 - **A room's walls are its own side.** A wall between two rooms is one piece, built by one of them; the plan lines the
   other room's side with a 4 mm lining wearing that room's own look (`trim:lining`, plan.py `lining_pieces`) wherever
   the two rooms' looks differ, following the wall's pieces, door holes and all. A click on a wall paints the room its
@@ -287,12 +289,13 @@ we". The street paint page's brush (`brush.js`, docs/STREET_PAINT.md §1) on the
   shows; Undo brings it back.
 - **Alt-click picks up** what's on a surface: the brush becomes it and tunes that surface live (*tune …* under the
   brush), every change one undo.
-- **What it writes** is the story's own words (STORY_FORMAT §1): `look.floor`, `look.walls`, `look.ceiling`,
-  `look.trim`, a block's `mat`, the level's `outside.look`: a set's ref, a colour, or a tuned set (a look object). The
+- **What it writes** is the story's own words (STORY_FORMAT §1, §2): `look.floor`, `look.walls`, `look.ceiling`,
+  `look.trim`, a block's `mat`, a kit thing's `mats`, the level's `outside.look`: a set's ref, a colour, or a tuned set (a look object). The
   desk's server makes a tuned set into `pbr/_made/<hash>` when it plans, the stage draws it, the Godot export writes
   it (GODOT_EXPORT). The Selected panel's Look pickers show the same, a tuned one as its set and "(tuned)".
-- **Not yet:** kit things (furniture, fittings, doors) keep their kit's slot colours; their UVs are already in metres,
-  so their slots could take sets the same way.
+- **Not yet:** the fittings the finish makes (switches, lights, window frames) and doors keep their kit's colours; a
+  kit floor or ceiling is taken up rather than dressed (a set with its own planks over the kit's planks would double
+  them).
 
 ## 10. Not done yet
 

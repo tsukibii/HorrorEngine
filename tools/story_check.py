@@ -534,6 +534,13 @@ def check_world(story, things, r):
             r.err(f"{t.id}: needs a shape, a kit or a use")
         if "kit" in p and "shape" in p:
             r.err(f"{t.id}: a shape or a kit, not both")
+        if "mats" in p:                                # a kit thing's slots dressed (STORY_FORMAT §2); the looks: check_library
+            if "kit" not in p or not isinstance(p["mats"], dict):
+                r.err(f"{t.id}: mats is {{slot: look}} on a thing with a kit (its slots: wood, fabric, top...)")
+            else:
+                for sl in p["mats"]:
+                    if not re.fullmatch(r"[a-z][a-z0-9_]*", str(sl)):
+                        r.err(f"{t.id}: mats: {sl!r} isn't a slot's name (the kit's: wood, fabric, top...)")
         if u is not None and u not in L.USES:
             r.err(f"{t.id}: unknown use {u!r}")
         if p.get("shape", "").startswith("person"):

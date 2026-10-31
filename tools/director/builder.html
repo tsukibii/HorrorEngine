@@ -114,12 +114,13 @@ svg text{font-family:system-ui,Segoe UI,sans-serif;pointer-events:none}
       <div id="paintBox" hidden>
         <div class="row"><b>Paint</b>
           <label><input type="radio" name="pscope" value="one" checked> this room</label>
-          <label><input type="radio" name="pscope" value="all"> every room like it</label></div>
+          <label title="every room of the same kind (its floors, walls...), or every thing of the same kit preset (its slot)"><input type="radio" name="pscope" value="all"> every one like it</label></div>
         <div class="row"><label>a colour <input type="color" id="pcolour" value="#c8c2b6"></label><button id="useColour">paint with it</button>
           <button id="pclear" title="a click takes a surface's paint off (the room's own grey)">clear</button></div>
         <small class="dim">Pick a material, tune it below, click a surface in the view: a floor, a room's walls (its own side of
-          them), a ceiling, the trim, a block, the outside. A kit floor or ceiling under the click is taken up for it
-          (Undo brings it back). Alt-click picks up what's on a surface and tunes it live.</small>
+          them), a ceiling, the trim, a block, a kit thing's material (a sofa's fabric, a desk's wood: its slot), the
+          outside. A kit floor or ceiling under the click is taken up for it (Undo brings it back). Alt-click picks up
+          what's on a surface and tunes it live.</small>
         <div id="brush" hidden></div>
         <div id="lib"></div>
       </div>

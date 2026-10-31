@@ -1688,6 +1688,7 @@
       {
        "id": "kitchen_fridge",
        "kit": "fridge",
+       "mats": {"white": "pbr/plastic/white_plastic"},
        "at": [
         0.5,
         4.55
