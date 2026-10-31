@@ -14,7 +14,9 @@ real size and a label. A set's ref is `pbr/<its path>` (`pbr/denim1`, `pbr/Wood/
 set made from another by a street's look (pbrmix.py). Scanning writes a meta.json next to the maps (which file is which map, the normal's convention, `tile_m`: the
 metres one repeat covers) and a small `_thumb.jpg`; what you set by hand in meta.json (tile_m, source, url, licence,
 note, and `by_hand`: a map's file chosen by hand over its name) is kept. The shelf used to be Content/Studio/PBR: sets
-still there are read too (the new place wins), new ones go to assets/pbr.
+still there are read too (the new place wins), new ones go to assets/pbr. Folders of yours anywhere on the machine can
+be attached where they are (`attach`): their sets `pbr/<name>/<set>`, nothing written in them (their meta and
+thumbnails mirrored in assets/pbr/_attached/<name>/), the list in assets/pbr/_folders.json.
 Plain Python, no `unreal` import: the tools, the desk's and the Studio's servers and the importer all use it.
 """
 import hashlib
@@ -30,6 +32,113 @@ DEFAULT = Path(os.environ.get("STUDIO_PBR") or (L.ROOT / "assets" / "pbr"))
 ROOT = DEFAULT                                  # where new sets go (pbr.py's check points it at a scratch folder)
 OLD = L.STUDIO / "PBR"                          # the shelf's first place: still read, unless ROOT was moved
 TRACKED = L.ROOT / "pbr"                        # the project's own sets, in git
+FOLDERS = "_folders.json"                       # in ROOT: the folders of yours attached to the shelf (this machine's paths)
+SIDE = "_attached"                              # in ROOT: an attached folder's sets' meta.json and thumbnails, mirrored
+NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_\-]{0,39}$")
+_ATT = {"key": None, "rows": []}
+
+
+def attached():
+    """[{name, path}]: the folders of yours attached to the shelf (the shelf page's *Attach a folder*; the user,
+    2026-10-31: "a PBR local, where I can attach a local folder and use PBRs from it"). Their sets are
+    `pbr/<name>/<set>`, read where they are: nothing is written in them (no ZIP unpacked, their meta.json and
+    thumbnails kept in ROOT/_attached/<name>/). Kept in ROOT/_folders.json: this machine's, not in git."""
+    p = ROOT / FOLDERS
+    try:
+        key = (str(p), p.stat().st_mtime_ns)
+    except OSError:
+        return []
+    if _ATT["key"] != key:
+        try:
+            rows = json.loads(p.read_text(encoding="utf-8")).get("folders", [])
+        except (OSError, ValueError, AttributeError):
+            rows = []
+        _ATT.update(key=key, rows=[{"name": str(r["name"]), "path": str(r["path"])} for r in rows
+                                   if isinstance(r, dict) and NAME.match(str(r.get("name", ""))) and r.get("path")])
+    return [dict(r) for r in _ATT["rows"]]
+
+
+def _write_folders(rows):
+    ROOT.mkdir(parents=True, exist_ok=True)
+    (ROOT / FOLDERS).write_text(json.dumps({"folders": rows}, indent=1), encoding="utf-8")
+    _ATT["key"] = None
+
+
+def attach(path, name=None):
+    """Attach a folder of yours to the shelf as `name` (its sets then pbr/<name>/<set>); the attached list."""
+    d = Path(os.path.expanduser(str(path or ""))).resolve()
+    if not str(path or "").strip() or not d.is_dir():
+        raise ValueError(f"{path!r}: no such folder on this machine")
+    name = str(name or re.sub(r"[^A-Za-z0-9_\-]+", "_", d.name).strip("_-") or "local")
+    if not NAME.match(name):
+        raise ValueError(f"{name!r}: a short name (letters, digits, _ and -) for its sets' refs, pbr/{name}/<set>")
+    for r in [ROOT, TRACKED, OLD]:
+        if r.exists() and (d == r.resolve() or r.resolve() in d.parents or d in r.resolve().parents):
+            raise ValueError(f"{d} is the shelf's own folder ({r}), or holds it: its sets are already read")
+    rows = [r for r in attached() if r["name"] != name]
+    if any(Path(r["path"]).resolve() == d for r in rows):
+        raise ValueError(f"{d} is attached already, as {next(r['name'] for r in rows if Path(r['path']).resolve() == d)}")
+    taken = {c.name for r in roots() if r.is_dir() for c in r.iterdir() if c.is_dir()}
+    if name in taken:
+        raise ValueError(f"{name!r} is a folder on the shelf already: pick another name")
+    _write_folders(rows + [{"name": name, "path": str(d)}])
+    return attached()
+
+
+def detach(name):
+    """Take a folder off the shelf (its files untouched; what you set by hand on its sets is kept for next time)."""
+    rows = attached()
+    if not any(r["name"] == name for r in rows):
+        raise ValueError(f"no folder attached as {name!r}")
+    _write_folders([r for r in rows if r["name"] != name])
+    return attached()
+
+
+def browse(path=None):
+    """A folder's subfolders, for picking one to attach (the shelf page): {path, parent, dirs, images}."""
+    d = Path(os.path.expanduser(str(path))).resolve() if path else Path.home()
+    if not d.is_dir():
+        raise ValueError(f"{path!r}: no such folder")
+    dirs, images_here = [], 0
+    try:
+        for c in sorted(d.iterdir(), key=lambda c: c.name.lower()):
+            if c.name.startswith("."):
+                continue
+            if c.is_dir():
+                dirs.append(c.name)
+            elif c.suffix.lower() in IMG:
+                images_here += 1
+    except PermissionError:
+        pass
+    return {"path": str(d), "parent": str(d.parent) if d.parent != d else None, "dirs": dirs, "images": images_here}
+
+
+def side(d):
+    """Where a set keeps its meta.json and thumbnail: its own folder, or (a set in an attached folder) its mirror in
+    ROOT/_attached/<name>/: nothing is written in a folder of yours."""
+    d = Path(d)
+    for f in attached():
+        try:
+            rel = d.resolve().relative_to(Path(f["path"]).resolve())
+        except (ValueError, OSError):
+            continue
+        return ROOT / SIDE / f["name"] / rel
+    return d
+
+
+def meta_file(d):
+    return side(d) / "meta.json"
+
+
+def thumb_file(d):
+    return side(d) / "_thumb.jpg"
+
+
+def own_file(ref, name):
+    """A file the server hands out for a set (/pbr/<set>/<name>): a map in its folder, or our own (_thumb.jpg) beside
+    its meta."""
+    d = set_dir(ref)
+    return side(d) / name if name.startswith("_") else d / name
 
 
 def roots():
@@ -85,8 +194,12 @@ def split_ref(ref):
 
 
 def set_dir(ref):
-    """The set's folder: where it is on the shelf, or where it would go in ROOT."""
+    """The set's folder: where it is on the shelf (an attached folder's by its name first), or where it would go in
+    ROOT."""
     rel = split_ref(ref).split("/")
+    for f in attached():
+        if rel[0] == f["name"]:
+            return Path(f["path"]).joinpath(*rel[1:])
     for r in roots():
         if r.joinpath(*rel).is_dir():
             return r.joinpath(*rel)
@@ -132,8 +245,9 @@ def stamp(d, maps):
 
 
 def meta(d, write=False):
-    """A set's meta from its folder (meta.json kept for what you set by hand); None if it has no colour map."""
-    p = d / "meta.json"
+    """A set's meta from its folder (meta.json kept for what you set by hand: beside the maps, or for a set in an
+    attached folder, in its mirror); None if it has no colour map."""
+    p = meta_file(d)
     old = {}
     if p.exists():
         try:
@@ -153,10 +267,14 @@ def meta(d, write=False):
     keep = dict(m)                             # what's written: not the stamp, which file times make (a checkout changes them)
     m["stamp"] = stamp(d, maps)
     if write and ({k: old.get(k) for k in keep} != keep or "stamp" in old):
-        p.write_text(json.dumps(keep, indent=1), encoding="utf-8")
+        try:
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(json.dumps(keep, indent=1), encoding="utf-8")
+        except OSError:                        # a folder you can't write in: the meta as read
+            pass
     if write:
         _thumb(d, maps["albedo"])
-    m["thumb"] = "_thumb.jpg" if (d / "_thumb.jpg").exists() else maps["albedo"]
+    m["thumb"] = "_thumb.jpg" if thumb_file(d).exists() else maps["albedo"]
     m["files"] = images(d)                     # every image in the folder, for choosing a map by hand
     return m
 
@@ -187,7 +305,7 @@ def with_hand(d, hand, maps, conv, arm):
 
 
 def _thumb(d, albedo):
-    t, src = d / "_thumb.jpg", d / albedo
+    t, src = thumb_file(d), d / albedo
     if t.exists() and t.stat().st_mtime >= src.stat().st_mtime:
         return
     try:
@@ -199,6 +317,7 @@ def _thumb(d, albedo):
         im.draft("RGB", (256, 256))
         im = im.convert("RGB")
         im.thumbnail((256, 256))
+        t.parent.mkdir(parents=True, exist_ok=True)
         im.save(t, quality=85)
     except Exception:   # noqa: BLE001 - an EXR or an odd file: no thumbnail, the desk copes
         pass
@@ -228,20 +347,28 @@ def scan(write=True):
     out = {}
     if write and ROOT == DEFAULT:
         ROOT.mkdir(parents=True, exist_ok=True)     # somewhere to put the first set
-    for root in roots():
+    mounts = attached()
+    for root, name in [(r, None) for r in roots()] + [(Path(f["path"]), f["name"]) for f in mounts]:
         if not root.exists():
             continue
-        if write:
+        if write and name is None:                          # an attached folder is read as it is: its ZIPs stay ZIPs
             for z in sorted(root.rglob("*.zip")):
                 unpack(z)
         for d in sorted({f.parent for f in root.rglob("*") if f.is_file() and f.suffix.lower() in IMG}):
             rel = d.relative_to(root).as_posix()
-            if rel == "." or any(part.startswith((".", "_")) for part in rel.split("/")) or f"pbr/{rel}" in out:
+            if name is None and rel == "." or any(part.startswith((".", "_")) for part in rel.split("/") if part != "."):
+                continue
+            if name is None and rel.split("/")[0] in {f["name"] for f in mounts}:
+                continue                                    # an attached folder's name wins over a folder of the same name
+            full = f"{name}/{rel}" if name and rel != "." else name if name else rel
+            if f"pbr/{full}" in out:
                 continue
             m = meta(d, write=write)
             if m:
-                m["category"] = rel.rsplit("/", 1)[0] if "/" in rel else ""
-                out[f"pbr/{rel}"] = m
+                m["category"] = full.rsplit("/", 1)[0] if "/" in full else ""
+                if name:
+                    m["attached"] = name
+                out[f"pbr/{full}"] = m
     return out
 
 
@@ -252,7 +379,7 @@ def save(ref, fields):
     m = meta(d)
     if m is None:
         raise ValueError(f"{ref}: no such set (no colour map in {d})")
-    p = d / "meta.json"
+    p = meta_file(d)
     old = json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
     for k in KEEP:
         if k in fields and k == "by_hand":
@@ -265,6 +392,7 @@ def save(ref, fields):
             old[k] = float(fields[k]) if k == "tile_m" else str(fields[k])
     if "tile_m" in old and not (0.05 <= old["tile_m"] <= 50):
         raise ValueError("tile_m: the metres one repeat covers, 0.05 to 50")
+    p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps(old, indent=1), encoding="utf-8")
     return meta(d, write=True)
 

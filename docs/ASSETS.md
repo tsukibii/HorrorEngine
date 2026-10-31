@@ -120,6 +120,19 @@ assets/pbr/                             ($STUDIO_PBR puts it elsewhere, e.g. ano
 The shelf used to be `Content/Studio/PBR/`: sets still there are read too (a set in `assets/pbr` wins), new ones go to
 `assets/pbr`.
 
+**Your folders** (the user, 2026-10-31: "a PBR local, where I can attach a local folder and use PBRs from it and we
+export to Godot with those"): a folder of PBR sets anywhere on this machine (another drive, a bought pack, your own
+library) attached to the shelf where it is. The shelf page's **Your folders** box, *Attach a folder…*: click through
+to it (or type its path), give it a short name, *Attach this folder*. Its sets are then `pbr/<name>/<set>` (the folder's
+own layout under it: `pbr/mylib/Bricks/red_brick`), in every picker, the street paint's and the scene builder's Paint,
+the desk, Blender and the Godot export (which copies the maps a game uses into the game: GODOT_EXPORT). **Nothing is
+written in your folder**: what the shelf keeps for a set (its `meta.json`: the repeat, maps chosen by hand; its
+thumbnail) lives in a mirror, `assets/pbr/_attached/<name>/`, and its ZIPs stay ZIPs (unzip them there, or drop them on
+the shelf). The list is `assets/pbr/_folders.json` (this machine's paths: not in git). × takes a folder off (its files
+untouched; what you set on its sets is kept for when it's back); a story that uses its sets warns that they aren't on
+the shelf while it's off, and on another machine until a folder is attached there under the same name.
+`storykit/pbr.py` (`attached`, `attach`, `detach`, `browse`, `side`), the servers' `/api/pbrfolders` and `/api/pbrbrowse`.
+
 **The project's own sets are in git**, at `pbr/<category>/<set>` beside `assets/` (the user's ambientCG sets, 1K, merged
 2026-10-31 from the `pbrs` branch: asphalt, road, concrete, wall, building, roofing tiles, metal, plastic, gravel, floor,
 foliage, effects; all CC0). They're read after `assets/pbr`, their `meta.json` kept in git with each one's real size

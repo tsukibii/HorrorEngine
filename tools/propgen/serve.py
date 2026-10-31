@@ -114,8 +114,8 @@ def pbr_thumb(rel):
     if not d or not Path(d).is_dir():
         return None
     d = Path(d)
-    if (d / "_thumb.jpg").exists():
-        return d / "_thumb.jpg"
+    if PBR.thumb_file(d).exists():                     # beside its maps, or an attached folder's in its mirror
+        return PBR.thumb_file(d)
     for f in sorted(d.iterdir()):
         if f.suffix.lower() in (".png", ".jpg", ".jpeg") and re.search(r"(albedo|diff|color|colour|basecolor|col)", f.stem, re.I):
             return f

@@ -277,11 +277,19 @@ class Handler(BaseHTTPRequestHandler):
             for ref, m in PBR.scan().items():       # the PBR shelf: same shape, files from Content/Studio/PBR
                 tex[ref] = dict(m, base="/" + ref)
             return self.send(200, {"meshes": meshes, "textures": tex})
+        if parts[:2] == ["api", "pbrfolders"]:       # the folders of yours attached to the shelf (ASSETS §6)
+            return self.send(200, {"folders": [dict(f, there=Path(f["path"]).is_dir()) for f in PBR.attached()], "root": str(PBR.ROOT)})
+        if parts[:2] == ["api", "pbrbrowse"]:        # a folder's subfolders, to pick one to attach
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            try:
+                return self.send(200, PBR.browse((q.get("path") or [None])[0]))
+            except (ValueError, OSError) as e:
+                return self.send(400, {"error": str(e)})
         if parts[:2] == ["api", "pbr"]:              # the shelf page: every set, scanned (new ZIPs unpacked)
             sets = PBR.scan()
             for ref, m in sets.items():
                 m["base"], m["unreal"] = "/" + ref, "/".join(PBR.unreal_path(ref))
-            return self.send(200, {"root": str(PBR.ROOT), "sets": sets})
+            return self.send(200, {"root": str(PBR.ROOT), "sets": sets, "folders": PBR.attached()})
         if parts[:2] == ["api", "decals"]:           # the street's decals (tools/streetbake/decals.py), made when missing
             sys.path.insert(0, str(ROOT / "tools"))
             from streetbake import decals as DEC  # noqa: PLC0415 - plain Python (numpy, Pillow)
@@ -291,7 +299,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, df.read_bytes(), "image/png", cache=True) if df.is_file() else self.send(404, {"error": "no such decal"})
         if parts[0] == "pbr" and len(parts) >= 3:
             rel = [urllib.parse.unquote(p) for p in parts[1:]]
-            pf = PBR.set_dir("pbr/" + "/".join(rel[:-1])) / rel[-1] if ".." not in rel and all(rel) else None   # assets/pbr, or the old place
+            pf = PBR.own_file("pbr/" + "/".join(rel[:-1]), rel[-1]) if ".." not in rel and all(rel) else None   # assets/pbr, pbr/, an attached folder
             if pf and pf.is_file() and pf.suffix.lower() in BODY:
                 return self.send(200, pf.read_bytes(), BODY[pf.suffix.lower()], cache=True)
             return self.send(404, {"error": "not on the PBR shelf"})
@@ -637,6 +645,13 @@ class Handler(BaseHTTPRequestHandler):
             if parts[2] == "save" and "path" in res:
                 res["path"] = str(Path(res["path"]).relative_to(ROOT))
             return self.send(code, res)
+        if parts[:2] == ["api", "pbrfolders"]:         # {"attach": path, "name": n} or {"detach": name}
+            body = json.loads(self.body().decode("utf-8") or "{}")
+            try:
+                rows = PBR.detach(body["detach"]) if body.get("detach") else PBR.attach(body.get("attach"), body.get("name") or None)
+                return self.send(200, {"folders": rows, "sets": len(PBR.scan(write=False))})
+            except (ValueError, OSError, KeyError) as e:
+                return self.send(400, {"error": str(e)})
         if parts[:3] == ["api", "pbr", "made"]:        # a street's looks as the sets they paint with (pbrmix.py: tinted, layered)
             from storykit import pbrmix as MIX  # noqa: PLC0415 - numpy and Pillow, only when a look needs them
             out = []

@@ -253,8 +253,43 @@ def cmd_check(_args):
                 bad.append(f"{b} should be a bad ref")
             except ValueError:
                 pass
+        # a folder of yours attached where it is (ASSETS §6): its sets pbr/<name>/<set>, nothing written in it (their meta
+        # and thumbnails mirrored in ROOT/_attached), its ZIPs left as they are; a name or a folder the shelf has is refused
+        mine = Path(tempfile.mkdtemp(prefix="pbrmine_"))
+        try:
+            (mine / "Bricks" / "red_brick").mkdir(parents=True)
+            for k in ("diff", "nor_gl", "rough"):
+                (mine / "Bricks" / "red_brick" / f"red_brick_{k}_1k.jpg").write_bytes(b"jpg")
+            with zipfile.ZipFile(mine / "boxed_2k.zip", "w") as z:
+                z.writestr("boxed_diff_2k.jpg", b"jpg")
+            before = sorted(str(f.relative_to(mine)) for f in mine.rglob("*"))
+            rows = PBR.attach(mine, "mylib")
+            ok([r["name"] for r in rows] == ["mylib"] and PBR.attached()[0]["path"] == str(mine.resolve()), f"attached {rows}")
+            mref = "pbr/mylib/Bricks/red_brick"
+            sets = PBR.scan()
+            ok(mref in sets and sets[mref].get("category") == "mylib/Bricks" and sets[mref].get("attached") == "mylib", f"its set on the shelf: {sorted(sets)}")
+            ok(PBR.set_dir(mref) == mine / "Bricks" / "red_brick" and LIB.fetched(mref, "texture"), "its ref resolves where it is")
+            PBR.save(mref, {"tile_m": 1.5})
+            ok(PBR.meta(PBR.set_dir(mref))["tile_m"] == 1.5 and PBR.meta_file(PBR.set_dir(mref)).is_relative_to(tmp / "_attached" / "mylib"), "what you set kept in its mirror")
+            ok(sorted(str(f.relative_to(mine)) for f in mine.rglob("*")) == before, "nothing written in your folder (no meta.json, no thumbnail, its ZIP unopened)")
+            ok(PBR.own_file(mref, "_thumb.jpg").parent == PBR.side(PBR.set_dir(mref)) and PBR.own_file(mref, "red_brick_diff_1k.jpg") == mine / "Bricks" / "red_brick" / "red_brick_diff_1k.jpg",
+               "the server's files: maps from your folder, ours from the mirror")
+            for args, why in (((mine, "other"), "the same folder twice"), ((cat, "x"), "a folder on the shelf"), ((tmp / "nowhere", "y"), "no such folder"),
+                              ((mine / "Bricks", "Stone"), "a name the shelf has"), ((mine / "Bricks", "bad name!"), "a name with spaces")):
+                try:
+                    PBR.attach(*args)
+                    bad.append(f"attach should refuse {why}")
+                except ValueError:
+                    pass
+            PBR.detach("mylib")
+            ok(not PBR.attached() and mref not in PBR.scan(write=False) and PBR.set_dir(mref) == tmp / "mylib" / "Bricks" / "red_brick", "detached: its sets off the shelf")
+            PBR.attach(mine, "mylib")
+            ok(PBR.meta(PBR.set_dir(mref))["tile_m"] == 1.5, "attached again: what you set is still there")
+        finally:
+            shutil.rmtree(mine, ignore_errors=True)
     finally:
         PBR.ROOT = old_root
+        PBR._ATT["key"] = None
         shutil.rmtree(tmp, ignore_errors=True)
     for b in bad:
         print("FAIL " + b)

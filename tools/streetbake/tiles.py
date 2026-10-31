@@ -201,7 +201,7 @@ def maps(ref):
     m = PBR.meta(d) if d.is_dir() else None
     if m is None:
         return None, None
-    for j in (d / "meta.json", d / "procedural.json"):        # a set of your own can say `tint` in its meta.json
+    for j in (PBR.meta_file(d), d / "procedural.json"):       # a set of your own can say `tint` in its meta.json (an attached folder's: its mirror)
         if j.is_file():
             extra = json.loads(j.read_text(encoding="utf-8"))
             for k in ("tint", "tile_v_m"):
