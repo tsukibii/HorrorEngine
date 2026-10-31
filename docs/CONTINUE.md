@@ -70,6 +70,23 @@ one on every made prop, and a `<name>.tscn` beside every glb. The rice cooker's 
 handles into their walls. **For the user:** open a candle's `.tscn` (Saved/Props/candle_taper/, copied into a project
 with the look plugin) in Godot and switch its enhancers; say if the flame wants another shape.
 
+Then (2026-10-31, night): **no part inside out**, and **your pictures on any prop** (PROPGEN.md §11, §15):
+
+- **The user saw the rice cooker's bottom through its sides in Godot.** `slab` walked its rounded edge from the top
+  down, so every slab and rounded box had its edge band facing in. Seven other parts were inside out the same way.
+  Cycles' previews draw both sides and hid it. PROPGEN now casts rays at each case and fails past 1.5% of backs seen
+  (`check.orientation`). GDPROPS ok; the rice cookers in Godot sent to the user.
+- **Every prop's own pictures swappable**: 116 slots on 50 recipes (logos, pictures, ornaments, stamps, patterns,
+  print), `pictures` in a recipe (wildcards `*.logo`, `false` to turn one off, stamps as relief only); smudges (nine
+  built in, or yours); flourishes (decals repeated or in the corners); the size every picture wants on the page and
+  in docs/PROPGEN_PICTURES.md. PROPGEN, PROPPAGE (an own picture swapped, a smudge moved by a click, a flourish),
+  CHECKS ok. **For the user:** open the page, pick a prop, Texture & pictures: swap its logo for yours (the template
+  link gives the drawn one at the size it wants), add a smudge; say what's missing.
+- **Loose ends found, not done:** a few recipes' textures differ run to run after the bake and wear (PROPGEN checks
+  only that the mesh repeats); the enamel pot declares a `decal` island its mesh never uses; the import family
+  writes `Saved/Props/_kit/` even with `--out`; a seamless pattern slot is covered, not tiled (a `tile` fit would
+  repeat it); a slot's box isn't kept off a band's seam (the sleeve's back stamp crosses it by 2.4 mm).
+
 Next if wanted (PROPGEN.md §9): a life on a generated prop (a generated kettle boiling, a candle burning down: the
 sockets are there), food tins, a flashlight, batteries, a bucket, a crate, a die, a book; a recipe page with a PBR
 picker.
