@@ -7,8 +7,11 @@ the library's.
       Wood/old_planks/             in a category: old_planks_diff_2k.jpg, _ao_, _disp_, _nor_dx_, _rough_
       Wood/dark_wood_2k.zip        a ZIP dropped in is unpacked into dark_wood/ on the next scan
 
-A set's ref is `pbr/<its path>` (`pbr/denim1`, `pbr/Wood/old_planks`), in a room's `look`, a prop's `mat` or a garment's
-`pbr`. Scanning writes a meta.json next to the maps (which file is which map, the normal's convention, `tile_m`: the
+The project's own sets live in git at `pbr/<category>/<set>` beside assets/ (the user's ambientCG sets, merged
+2026-10-31: asphalt, concrete, roofing tiles...): read after assets/pbr, their meta.json kept in git with each set's
+real size and a label. A set's ref is `pbr/<its path>` (`pbr/denim1`, `pbr/Wood/old_planks`,
+`pbr/concrete/Concrete010_1K-PNG`), in a room's `look`, a prop's `mat` or a garment's `pbr`; `pbr/_made/<hash>` is a
+set made from another by a street's look (pbrmix.py). Scanning writes a meta.json next to the maps (which file is which map, the normal's convention, `tile_m`: the
 metres one repeat covers) and a small `_thumb.jpg`; what you set by hand in meta.json (tile_m, source, url, licence,
 note, and `by_hand`: a map's file chosen by hand over its name) is kept. The shelf used to be Content/Studio/PBR: sets
 still there are read too (the new place wins), new ones go to assets/pbr.
@@ -26,14 +29,18 @@ from . import storylib as L
 DEFAULT = Path(os.environ.get("STUDIO_PBR") or (L.ROOT / "assets" / "pbr"))
 ROOT = DEFAULT                                  # where new sets go (pbr.py's check points it at a scratch folder)
 OLD = L.STUDIO / "PBR"                          # the shelf's first place: still read, unless ROOT was moved
+TRACKED = L.ROOT / "pbr"                        # the project's own sets, in git
 
 
 def roots():
-    """The folders sets are read from, the first winning: ROOT, and the old place while ROOT is the default."""
-    return [ROOT] + ([OLD] if ROOT == DEFAULT and not os.environ.get("STUDIO_PBR") and OLD.is_dir() and OLD != ROOT else [])
+    """The folders sets are read from, the first winning: ROOT, the project's own (pbr/), and the old place while ROOT
+    is the default."""
+    default = ROOT == DEFAULT                   # not moved by a check (STUDIO_PBR only moves your own sets: the project's stay)
+    old = default and not os.environ.get("STUDIO_PBR") and OLD.is_dir() and OLD != ROOT
+    return [ROOT] + ([TRACKED] if default and TRACKED.is_dir() else []) + ([OLD] if old else [])
 IMG = (".jpg", ".jpeg", ".png", ".tga", ".tif", ".tiff", ".exr")
 WEB = (".jpg", ".jpeg", ".png")                 # what the desk can show (and what's preferred when both are there)
-KEEP = ("tile_m", "source", "url", "licence", "note", "by_hand")
+KEEP = ("tile_m", "tile_v_m", "source", "url", "licence", "note", "by_hand", "tint", "label", "group", "family", "relief_m", "wear", "recipe")
 # the maps a set can have, as `by_hand` names them: a file name, or "" for none (`normal_dx`: a DirectX normal)
 SLOTS = ("albedo", "normal", "normal_dx", "rough", "metal", "ao", "height", "opacity", "orm")
 # the last word(s) of a map's file name, after its resolution (2k, 4K-JPG) is taken off: Poly Haven, ambientCG and plain names
@@ -143,9 +150,10 @@ def meta(d, write=False):
     if arm:
         m["arm"] = "packed AO/rough/metal map: the Studio's clothes use it where the separate maps are missing; Unreal takes the separate maps"
         m["orm"] = arm
+    keep = dict(m)                             # what's written: not the stamp, which file times make (a checkout changes them)
     m["stamp"] = stamp(d, maps)
-    if write and {k: old.get(k) for k in m} != m:
-        p.write_text(json.dumps(m, indent=1), encoding="utf-8")
+    if write and ({k: old.get(k) for k in keep} != keep or "stamp" in old):
+        p.write_text(json.dumps(keep, indent=1), encoding="utf-8")
     if write:
         _thumb(d, maps["albedo"])
     m["thumb"] = "_thumb.jpg" if (d / "_thumb.jpg").exists() else maps["albedo"]

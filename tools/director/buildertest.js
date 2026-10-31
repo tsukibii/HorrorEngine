@@ -3,7 +3,8 @@
 // a reference cut-out and the kit (furniture, fittings, floors, a ceiling step, window frames, curtains) pass and
 // read back; a layout saves into a scratch game (made and removed here) and reads back the same; the desk reloads,
 // another game's level is borrowed, a set (a place designed before its game) is made from the picker, laid out, saved
-// into Content/Studio/Sets and taken by a game as its start, the desk's deep link shows its marks. Ends "BUILDER ok".
+// into Content/Studio/Sets and taken by a game as its start, its outside (a street style, a fitting) drawn round it and
+// saved in its level, the desk's deep link shows its marks. Ends "BUILDER ok".
 //
 //   python tools/director/serve.py          (in another shell)
 //   node tools/director/buildertest.js [shots dir]
@@ -282,6 +283,24 @@ const png = rgb => {                    // a 4x4 PNG of one colour (a scratch ma
     const setLevel = setSaved && Object.keys(setSaved.levels).find(k => k.startsWith("home_1ldk"));
     console.log("set", SETNAME, setSaved ? Object.keys(setSaved.levels).join(",") : "not saved");
     if (!setLevel || setSaved.levels[setLevel].rooms.length < 4) fail("the set wasn't saved with its layout: " + (setSaved ? Object.keys(setSaved.levels) : "no file"));
+    // its outside (docs/SCENE_BUILDER.md §8): "build its outside", a street style, a fitting on a wall; the building
+    // drawn round the rooms in the view (round the building), its outline on the plan; saved in the level and read back
+    await page.evaluate(() => { document.querySelector("#outside input[type=checkbox]").click(); });
+    await page.evaluate(() => { const s = document.querySelector("#outside select"); s.value = "house"; s.dispatchEvent(new Event("change")); });
+    await page.evaluate(() => { const s = [...document.querySelectorAll("#outside select")].pop(); s.value = "ac"; s.dispatchEvent(new Event("change")); });
+    await page.evaluate(() => { const v = document.querySelector("#viewMode"); v.value = "around"; v.dispatchEvent(new Event("change")); });
+    await page.waitForTimeout(1200);
+    const outside = await page.evaluate(() => { let meshes = 0, lit = 0; window.__builderStage.scene.traverse(o => { if (o.isMesh && o.userData.outside) meshes++; });
+      return { o: window.B.model.levelExtra.outside, meshes, outline: document.querySelectorAll("#plan .outside-line").length, hud: document.querySelector("#viewHud").textContent, lit }; });
+    if (shots) await page.screenshot({ path: path.join(shots, "outside.png") });
+    await page.evaluate(() => window.builder.save(false));
+    await page.waitForTimeout(800);
+    const outSaved = (JSON.parse(fs.readFileSync(setFile, "utf8")).levels[setLevel] || {}).outside || null;
+    console.log("its outside", JSON.stringify({ style: outside.o && outside.o.style, roof: outside.o && outside.o.roof.kind, parts: outside.o && outside.o.parts.length, meshes: outside.meshes, outline: outside.outline, saved: !!outSaved }));
+    if (!outside.o || outside.o.style !== "house" || outside.o.parts.length !== 1 || outside.meshes < 1 || outside.outline < 1 || !/house/.test(outside.hud))
+      fail("the set's outside in the scene builder: " + JSON.stringify(outside).slice(0, 300));
+    if (!outSaved || outSaved.style !== "house" || !outSaved.roof || (outSaved.parts || [])[0].kind !== "ac") fail("the outside wasn't saved into the set's level: " + JSON.stringify(outSaved));
+    await page.evaluate(() => { const v = document.querySelector("#viewMode"); v.value = "eye"; v.dispatchEvent(new Event("change")); });
     await page.selectOption("#game", SCRATCH);
     await page.waitForFunction(g => window.B.game === g && window.B.story && window.B.story.game.id === g && window.B.plan, SCRATCH, { timeout: 30000 });   // the game's own story in, not the set's
     await page.waitForFunction(n => [...document.querySelectorAll("#preset option")].some(o => o.value.startsWith("oset:" + n + ":")), SETNAME, { timeout: 30000 });

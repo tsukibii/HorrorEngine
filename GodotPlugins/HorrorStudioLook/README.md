@@ -75,6 +75,13 @@ as it will in the game; in a running game it frees itself (`editor_only`), leavi
 only one. In a studio export the game applies `game.look` from story.json at start (`game.gd`), so the node is for
 editing only: drop one into a level scene to see the look while you work on it.
 
+**Streets from the Blender bake** (`python tools/street.py bake <street>`, docs/STREET_TEXTURING.md): drop the street's
+`.glb` (or its `.blend`) into the project. It is plain glTF, so it already has its finishes at their real size and its
+occlusion on UV2. With the plugin enabled, its import step (`street_import.gd`) turns every surface that carries the
+wear's recipe (the material's extras, `hs_wear`) into `street.gdshader`, with the dirt, rain streaks, worn edges and
+wet patches as Blender rendered them, and makes the road paint and decals cast no shadow of their own (the street
+builder's own .glb too). `HSStreet.weather(node, amount)` turns the wear down or up at run time.
+
 The demo: `godot --path PROJECT -s res://addons/horrorstudio_look/demo/demo.gd -- --out=DIR` pictures a room with
 each piece and writes `report.json` with the measures; `demo/nodes.gd -- --out=DIR` every preset in a room, measured (`demo/window.gd` the window sun in a wall's opening),
 and a save as the editor does it (`nodes.json`, `nodes.png`); `demo/editor_test.gd` the same in the editor (the

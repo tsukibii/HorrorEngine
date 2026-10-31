@@ -2,6 +2,131 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-31, afternoon (the user, with their PBR sets)
+
+- **The materials are PBR sets**: "I realise without PBRs we can't achieve the fake photorealistic look, I pushed up a
+  branch for you to merge into this one called pbrs, implement these PBRs into the paint bucket style". Merged: 37
+  ambientCG sets (CC0, 1K) in git at `pbr/<category>/<set>`, the shelf reads them, the paint page's library is them
+  by category (the procedural library folded away), each with its real size in its meta.json (ASSETS §6).
+- **Layers over them**: "come up with a layering tool system where we could layer some of the stuff you made with the
+  PBRs too (mainly decals, added wear etc), the actual materials should be PBRs". A look is a set with layers: another
+  set over it (in patches or by its own mask, its colour, shine or relief) and the bake's wear per surface (grime,
+  streaks, edges, damp); decals lie over any of it (STREET_PAINT §3b).
+- **Tint controls**: "see if we can modify the tint of the colour (fade it out, make it more contrast etc)". Tint,
+  brightness, contrast, saturation, hue, fade, roughness, relief, size and turn, all made into a set of its own by one
+  function, so the page, Blender and Godot match.
+- **The 1:1 photo again, with PBRs**: "re-create the 1:1 image we've been using using the PBRs to check how much more
+  realistic it looks (pick the appropriate PBRs that match roughly the actual colour)".
+
+## 2026-10-31, late morning (the user, on the research, the road and the light)
+
+- **The light is the user's, baked by hand in Godot**: first "I don't think I want to use LightmapGI, I will want the
+  other one that starts with V", then "don't worry about VoxelGI or whatever, I will manually take care of light baking
+  in Godot, you just need to worry about being able to export to Godot so I can use it and roughly have the collisions
+  accurate for buildings and floor so I don't fall through". No GI tooling of ours: the street exports to Godot with
+  its colliders (STREET_TEXTURING §3, §4).
+- **Road paint part of the road**: "the print on the road looks like it's floating above the road because of the shadow
+  effect, when it should look part of the road". Road paint and decals cast no shadow anywhere (the street builder's
+  view, Blender, Godot), the lines lie 5 mm over the asphalt and a mark 5 mm over them, stacked only where marks overlap
+  (STREET_BUILDER §5d).
+
+## 2026-10-31, morning (the user, while the paint tool was built)
+
+- **Wear and tear in every material**: "can you also create pbrs/bump maps for the textures/materials as well as
+  procedural wear and tear. In reality there's no perfectly smooth things, and things get weird and tear and chips or
+  smudges, fingerprints etc, that's what adds to the realism". Every library material and finish wears its
+  imperfections as it's baked (smudges, fingerprints, scratches, chips, cracks, dents, splits), every set has its
+  height map beside its normal map, and seven decals put wear where it happens (STREET_PAINT §3, §4).
+
+## 2026-10-31, before dawn (the user, on texturing the streets for real)
+
+- **Research first: faking photorealism like Battlefront**: "do some research on how we could fake photo-realism (think
+  of the new Star Wars Battlefront games look); we will be using a vhs effect so it doesn't need to be hyper detailed,
+  but fake the textures and materials and even fake pbr bumps (can be procedural) and add a photo realism effect".
+  docs/research/photoreal.md: right values, right light (the sky's bounce baked: LightmapGI with a live sun, Battlefront
+  II's split), right flaws; little spent on micro detail.
+- **A paint tool, like the prop tool**: "a simple python script wrapper tool (similar to what that prop-tool is doing),
+  where I can paintbucket paint on the materials and then zoom in to add decals"; "pre-make a bunch of building, street,
+  roof tile etc materials to paintbucket, based off the Japanese materials in the real photos"; "only worry about the
+  exterior street designer parts, although I would like to be able to override any object imported from the interior
+  tool's exterior".
+- **As photoreal as can be, 1:1 with the Shibuya photo**: "it doesn't literally have to be 1:1 with the same decals, but
+  material wise it should almost trick you you're looking at something real, without hard shaders and lighting (it can
+  be baked in like Star Wars Battlefront, the latest one)".
+
+## 2026-10-31, small hours, later (the user, on the bungalow's roof)
+
+- **Never any clipping**: "in the individual house one it looks like there is clipping on the roof (wall top lines
+  peeking through) etc, refine the system so we never see clipping". Walk-in roofs are boxed, 1 cm over the level's
+  top; roofs over an L or a T are joined into one; the whole generator keeps faces out of each other's planes by rule;
+  STREET fails on any two faces of a piece in one plane over each other (STREET_BUILDER §5d).
+
+## 2026-10-31, small hours (the user, after the street's textures)
+
+- **The shop door readable**: asked what the thin dark lines in the shop windows were (a glass door's two uprights),
+  "yeah make it more readable". The door has its frame all round, a kick plate, a push bar and its own darker pane.
+- **Enterable buildings designed whole in the scene builder**: "the map will be a mix of enterable buildings made via
+  our previous interior tool, and the non-enterable ones made for the street designer; could you enhance the interior
+  designer too so we can make roofs etc that will help match the style of our street designs. Ideally I can import an
+  interior designed space into the street, then build the rest around it. In reality we probably will only have a few
+  buildings that we can enter". The scene builder's Outside panel (SCENE_BUILDER §8): the street's styles, walls, roof,
+  raise, front and fittings, seen round the building, kept as the level's `outside`; the street builder's palette has
+  every set, and its building wears the set's outside until it's changed in the street (STREET_BUILDER §5c).
+
+## 2026-10-31, past midnight (the user, on texturing the streets)
+
+- **The most aesthetic surfaces, wear and decals**: "when it comes to texturing the streets, what would be the most
+  aesthetic way to do it; for wear and tear and decals etc, is the best way to do it similar to how we are doing it in
+  the prop-gen-tool branch; can you make a test Blender baked texture render, try to imitate the photo reference".
+  Answered in docs/STREET_TEXTURING.md: finishes that tile at their real size, the street's own wear in one low-res
+  atlas (the prop generator's idea at a street's scale), decals next; the test is the Shibuya lane through its shot.
+- **Procedural first, PBR optional**: "investigate if you can use procedural textures (and bake them in) instead of
+  importing PBRs; if PBRs are needed find them or make it optional so it's easy to texture the model/street how we
+  want to". The finishes are Blender nodes baked onto the PBR shelf (`assets/pbr/Procedural`); a street's
+  finish.json puts a set of your own on any slot or material.
+- **Street → Blender → Godot, with easy collision**: "I think a street -> blender -> godot workflow could work well
+  because we could add foliage easily then, but something to consider is how would we add easy collision".
+  `tools/street.py bake`: the .glb and the .blend (its Foliage collection kept between bakes), the street's colliders
+  by name, Godot's own suffixes for what's added (STREET_TEXTURING §4).
+
+## 2026-10-30, later night (the user, after the street builder's first round)
+
+- **Into Godot by hand, by dropping a file**: "as long as the export is as simple as drag and drop into a godot folder
+  I don't mind handling that part manually". The .glb carries its colliders, occluders, lamps and the insides' places
+  (STREET_BUILDER §5b); GDSTREET imports it in Godot 4.7 as the user would.
+- **Slopes and curves**: "add slopes and curved". A street is a smooth curve through its points, each with its height;
+  the ground and everything on it follow.
+- **Big streets**: "for big streets handle that how you think we should". Chunks merged by material, a piece rebuilt only
+  when it changes, occluders for Godot.
+- **The interiors in the street**: "consider how we can integrate the interiors we designed into the street map... a
+  motel... sync the door shape and let a player enter, exit; we also need stairs so they could reach the second floor,
+  maybe gates... we will stick to 1 floor for our game interiors for now; the other scenario is a bungalow; I don't know
+  if the interior builder already builds the exterior". It doesn't (plain 10 cm walls in the room's own colours, a flat
+  ceiling slab, no roof): the street builds the outside round a set's level (STREET_BUILDER §5c).
+
+## 2026-10-30, night (the user, starting the street builder on `buildings-streets`)
+
+- **A street builder, apart from the scene builder**: "make a new branch called buildings-streets. The goal will be to
+  be able to create aesthetic but low-poly buildings and streets like this; this should be a new tool in the dashboard,
+  not the existing interior building one: it's for building the map we'd place the enterable buildings into
+  (enterable buildings are ones we build with the current tool); this new one is more for aesthetics". So
+  `tools/director/street.html` (docs/STREET_BUILDER.md), its streets in `Content/Studio/Streets/<name>/street.json`.
+- **Very simple to use**: "very simple to use like our existing tools for building things (easy to add protrusions,
+  windows, doors, roofs etc), should have the ability to paste in a front and side view reference, should be super
+  easy to use that even a layman can use it". The facade view: the front and a side flat on, a photo pasted behind
+  each, parts clicked onto the wall, floors by dragging the roof.
+- **The first reference matched, 1:1 framing**: "try make the tool and recreate the shot in image 1, 1:1 (without the
+  photorealism but with the same framing and composition)". `shibuya_lane`, its shot `photo`, held to the photo by
+  pins (STREET).
+- **More kinds of buildings and streets, and the things in them**: after five more references (a white tower with a
+  glass-block stairwell, a quiet stucco house front, a shopping street of lantern lamps under a mountain, abandoned
+  concrete flats with shutters, an old post town at dusk): "don't worry about foliage for now, but if you could add
+  simple assets for street lamps and other stuff like that it would be great, also fences, different types of fences,
+  metal mesh, long, wooden; should be easy to apply PBR to but also be low poly count. We want the overall maps to feel
+  tight and filled so the user doesn't feel isolated but instead cozy, even in horror creepy games". So a building
+  style per reference, lamps, poles and wires, street things, eight fences, every surface a slot that takes a PBR set
+  at its real size, and *Fill a street*: buildings shoulder to shoulder, lamps, wires and clutter in one click.
+
 ## 2026-10-30, evening (the user, after finding the sun's leak and the flicker's flashes)
 
 - **Unreal removed**: "I'm okay to merge this into main... before you do, remove all the remaining bloatware from

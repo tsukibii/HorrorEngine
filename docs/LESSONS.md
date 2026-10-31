@@ -1172,3 +1172,83 @@ guessed margin; and a check that only ever ran on a slow machine hasn't been run
   `HSRain.new()` needs `rain.gd` to be `@tool` too.
 - **`surface_get_name` is ArrayMesh's alone**: a helper that matches surfaces by name must skip it for a
   primitive mesh (a SphereMesh stood in for a body and the skin's `wear` stopped there).
+
+## The street builder's page (2026-10-30)
+
+- **A captured pointer's click lands on the capturer:** the map captures the pointer on press (so a drag keeps going
+  off its edge), so the double-click that opens a building's facade came to the SVG itself, not the building under it,
+  and did nothing (STREETPAGE's first run). Find what's under the pointer with `document.elementsFromPoint`.
+- **Encode a path, not its query:** a pasted photo's file is kept as `refs/b1_front.png?v=<time>` (so the browser
+  reloads a new one); `encodeURIComponent` on every part of it turned the `?` into `%3F` and the server looked for a
+  file of that name (404, the photo never showed). Split the query off first.
+- **`hidden` loses to a `display` rule:** `#facadeBox{display:flex}` showed the facade panel under the map when it was
+  hidden; `[hidden]{display:none!important}` at the top of the page's style.
+
+## The street's Godot export and its insides (2026-10-30, later night)
+
+- **Godot's glTF importer leaves vertex colours off the albedo:** the merged chunks carry each building's colour on
+  their vertices (the page draws them so, one material a slot), and every wall came into Godot white (the probe:
+  "vertex-colour albedo 0"). The export now gives each colour a material of its own on the same mesh. Measure the
+  import (GDSTREET), never assume an engine reads a format as three.js does.
+- **A strip that only touches another road's edge isn't crossed by it:** the curved streets' crossing test looked at a
+  walk's very edges, and a lane ending on the cross street's pavement edge cut that pavement away across the lane's
+  mouth (GDSTREET's ray onto the walk fell through to the ground). The points it tests sit just inside the strip.
+- **Object.assign's order decides who wins:** a check built two buildings as `Object.assign({id, at}, base)`, so the
+  base's own id and place overwrote both, and "the cache kept a changed building" was the test's fault. Defaults
+  first, the thing's own fields last.
+
+## The street in Blender (2026-10-31)
+
+- **Cycles bakes one object at a time, each over the whole image:** 78 street meshes into one 4096 × 2112 atlas took
+  over ten minutes for the first pass and never finished the three. A joined copy of them all bakes each pass once
+  (1.5 minutes for all three), with the originals hidden from the render so the occlusion meets each surface once.
+- **A GDScript function named after a global hides nothing, it breaks:** HSStreet's `static func convert(m)` lost to
+  GDScript's own `convert(what, type)` ("too few arguments"), and since plugin.gd preloads the import step, the whole
+  HorrorStudio Look plugin failed to load. Never name a function after a GDScript global (convert, str, load, print,
+  range...), and import the plugin in a fresh project (GDSTREET --plugin) after any change to plugin.gd.
+- **What lies flat on a surface mustn't shut its occlusion:** the road's letters are quads 4 mm over the asphalt, so
+  the occlusion bake saw the asphalt under them as shut (0), and Godot, which reads the atlas as ambient occlusion,
+  drew a black square round every letter where the paint is cut away. Road markings are now baked apart, out of the
+  rays while what's under them is baked.
+- **A seam test that compares the wrap with the average step flags every brick:** a tile set's period ends on a
+  brick's edge, so the step at the wrap is a brick's edge, far above the average step inside. Compare the wrap with
+  the biggest step inside (a texture that doesn't tile still fails it by 12 times).
+
+## No clipping in the street (2026-10-31)
+
+- **Fixing what a picture shows leaves the rest:** the bungalow's roof showed its wall tops (the eaves dipped below the
+  walls' top, a lid's sides were in the walls' planes), but a sweep over every style, set, street and the check's own
+  builds found some twenty more kinds of faces in one plane over each other, from a sign's words 2 mm off its board to
+  a car park gate's two leaves in one place. Measure every piece the generator can make (the clash test is in STREET
+  now), then fix by rule (a GAP between layers, parts 6 mm in), never the one case.
+- **A plane's offset says nothing about two tilted faces far from the origin:** comparing `n·p` for nearly parallel
+  faces 43 m out called a pole and its band 1.4 cm apart "one plane". Measure the other face's points from this
+  face's own plane.
+- **A minimum overlap per triangle pair hides an overlap split across triangles:** two rail posts at a roof's corner
+  overlapped by 16 cm², in four pieces each under the 15 cm² the first test needed, and 1,836 of them passed. The test
+  now counts a square centimetre.
+- **Roofs per room over an L overlap everywhere:** their soffits (7 m² each) and slabs lay over each other. Roofs over
+  an outline are joined: each cut where it's inside another's volume (a convex solid each; on a face of both, the
+  first keeps it), and every roof a closed solid, so the cut leaves no hole.
+
+## The paint page and the physical sky (2026-10-31)
+
+- **three.js gives a texture its image only when it arrives:** a `TextureLoader` texture's `image` is undefined until
+  then. The .glb export's wait for pictures looked for "an image not complete" and saw nothing to wait for, so every
+  decal went out without its picture. Wait while a texture has no image, or an incomplete one.
+- **A material's name carries what the bake needs to know:** surfaces coloured by vertex drop their look from the
+  material's name, so the street-wide paint (asphalt, pavers) was baked with the old finishes. A painted set now
+  stays in the name, and the bake reads it back through the colour's suffix. Read the bake's MATERIALS line after any
+  change to naming.
+- **A physical sky isn't calibrated by its defaults:** Nishita at strength 0.9 made the lane five times the photo's
+  brightness. Measure (the median, the road, the sky's band, each against the photo) and scale the sky, not the
+  exposure, so the shop windows and lamps keep their balance with it.
+
+
+## The road's print floating (2026-10-31)
+
+- **A layer lifted for the depth buffer casts a shadow that shows the lift:** the road's lines and letters stood 1.2 to
+  6 cm over the asphalt (a GAP each, stacked), and under Blender's sun each cast a thin shadow beside it, so the print
+  looked like a sheet floating over the road (the user saw it). Paint lies 5 mm up (over the clash test's 4 mm), a
+  mark over another only where they overlap, and nothing that lies on a surface casts a shadow, in every renderer:
+  check a close-up under a low sun after any change to how things are layered.

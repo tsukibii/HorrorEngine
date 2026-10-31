@@ -114,3 +114,12 @@ playtest_fail.png
 testroom_fail.png
 exprtest_fail.png
 vendor/garmentcode/
+
+# the street builder's photos (pasted references, mostly not ours): beside each street, never in git
+Content/Studio/Streets/*/refs/
+
+# the street decals (tools/streetbake/decals.py: `street.py decals`): made from code, too many to keep in git
+assets/decals/
+
+# the project's own PBR sets are in git (pbr/), their thumbnails made by a scan are not
+pbr/**/_thumb.jpg

@@ -502,6 +502,29 @@ put the retro count at 419).
 Not yet: a hashed alpha under TAA for softer edges (the plain scissor keeps the headless pictures measurable), the
 salon's inner colour and clump shades (the atlas's G and B channels are baked into the export's albedo already).
 
+## 5d. Streets from the Blender bake (`street.gdshader`, `HSStreet`)
+
+A street baked in Blender (`tools/street.py bake`, docs/STREET_TEXTURING.md) comes as plain glTF:
+- each surface's finish as a tileable set at its real size (KHR_texture_transform), times its colour, with its ORM
+  and normal maps;
+- the street's wear atlas as its occlusion on UV2 (R the occlusion, G dirt, B rain streaks on walls and wet patches
+  on what faces up, A worn edges);
+- the wear's recipe in the material's extras (`hs_wear`: the dirt's, streaks' and edges' colours and amounts, the
+  wet, the tone).
+
+Godot 4.7 reads `texCoord: 1` as `ao_on_uv2` and keeps material extras as metadata (both tested), so without the
+plugin the street already has its finishes and occlusion. The plugin's import step (`street_import.gd`, registered
+by plugin.gd) makes each such material `street.gdshader` (`street_cut` for alpha MASK), which does the same sums as
+Blender's "Street wear" group, so the game matches the render. `HSStreet.weather(node, amount)` scales the wear: 0
+clean, 1 as baked, 2 twice as worn.
+
+The import step also makes the **road paint and decals** cast no shadow of their own (`HSStreet.lay_flat`, by their
+materials' names `street_paint*`, `street_glyph:*`, `street_decal:*`; DECISIONS 2026-10-31, late morning: "the print
+on the road looks like it's floating"), the street builder's own .glb too.
+
+GDSTREET with `--glb --plugin --shot` checks it: the street's colliders after Blender, the surfaces on the street
+shader, the paint and decals shadowless, a picture through the street's shot.
+
 ## 6. The story's words, and the check
 
 - `game.look`: `realism` (the default) or `plain` (STORY_FORMAT §9.1); `game.weather`: `rain` puts HSRain over every

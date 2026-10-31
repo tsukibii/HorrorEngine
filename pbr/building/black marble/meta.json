@@ -1,0 +1,15 @@
+{
+ "maps": {
+  "albedo": "SurfaceImperfections020_1K-PNG_Color.png",
+  "height": "SurfaceImperfections020_1K-PNG_Displacement.png",
+  "normal": "SurfaceImperfections020_1K-PNG_NormalGL.png",
+  "opacity": "SurfaceImperfections020_1K-PNG_Opacity.png",
+  "rough": "SurfaceImperfections020_1K-PNG_Roughness.png"
+ },
+ "normal": "gl",
+ "tile_m": 1.0,
+ "source": "ambientCG",
+ "url": "https://ambientcg.com/view?id=SurfaceImperfections020",
+ "licence": "CC0-1.0",
+ "label": "black marble (scuffed)"
+}

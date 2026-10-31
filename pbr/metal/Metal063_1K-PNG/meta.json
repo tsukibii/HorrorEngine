@@ -1,0 +1,15 @@
+{
+ "maps": {
+  "albedo": "Metal063_1K-PNG_Color.png",
+  "height": "Metal063_1K-PNG_Displacement.png",
+  "metal": "Metal063_1K-PNG_Metalness.png",
+  "normal": "Metal063_1K-PNG_NormalGL.png",
+  "rough": "Metal063_1K-PNG_Roughness.png"
+ },
+ "normal": "gl",
+ "tile_m": 2.0,
+ "source": "ambientCG",
+ "url": "https://ambientcg.com/view?id=Metal063",
+ "licence": "CC0-1.0",
+ "label": "metal, painted and rusting"
+}

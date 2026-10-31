@@ -88,6 +88,31 @@ def mhr_face_names():
 
 PORT = int(os.environ.get("DESK_PORT", 8780))     # a second desk (a test beside the open one): DESK_PORT=8781
 KEEP = 50
+STREETS = L.STUDIO / "Streets"          # the street builder's streets (street.html): <name>/street.json, refs/ its photos (git-ignored)
+STREET_NAME = re.compile(r"^[a-z][a-z0-9_]{0,40}$")
+PHOTO = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".gif": "image/gif", ".avif": "image/avif"}
+
+
+# a street's Blender job from the paint page (paint.html): `street.py look` or `bake`, one at a time, its log on disk
+BAKES = {}
+
+
+def bake_state(name):
+    j = BAKES.get(name)
+    out = ROOT / "Saved" / "Streets" / name / "blender"
+    pics = sorted(((f.name, f.stat().st_mtime) for f in out.glob("*") if f.suffix.lower() in (".jpg", ".png") and not f.name.startswith("street_glyph")),
+                  key=lambda x: -x[1]) if out.is_dir() else []
+    log = []
+    if j and j["log"].is_file():
+        log = j["log"].read_text(encoding="utf-8", errors="replace").splitlines()[-60:]
+    running = bool(j and j["proc"].poll() is None)
+    return {"running": running, "cmd": j and j["cmd"], "code": None if not j or running else j["proc"].returncode,
+            "started": j and j["started"], "log": log, "pictures": [{"file": n, "mtime": m} for n, m in pics[:40]]}
+
+
+def street_file(name):
+    name = urllib.parse.unquote(name or "")
+    return STREETS / name / "street.json" if STREET_NAME.match(name) else None
 
 
 def history_dir(game):
@@ -239,6 +264,13 @@ class Handler(BaseHTTPRequestHandler):
             for ref, m in sets.items():
                 m["base"], m["unreal"] = "/" + ref, "/".join(PBR.unreal_path(ref))
             return self.send(200, {"root": str(PBR.ROOT), "sets": sets})
+        if parts[:2] == ["api", "decals"]:           # the street's decals (tools/streetbake/decals.py), made when missing
+            sys.path.insert(0, str(ROOT / "tools"))
+            from streetbake import decals as DEC  # noqa: PLC0415 - plain Python (numpy, Pillow)
+            return self.send(200, DEC.ensure(say=lambda *a: None))
+        if parts[0] == "decals" and len(parts) == 2 and re.match(r"^[a-z0-9_]+\.png$", parts[1]):
+            df = ROOT / "assets" / "decals" / parts[1]
+            return self.send(200, df.read_bytes(), "image/png", cache=True) if df.is_file() else self.send(404, {"error": "no such decal"})
         if parts[0] == "pbr" and len(parts) >= 3:
             rel = [urllib.parse.unquote(p) for p in parts[1:]]
             pf = PBR.set_dir("pbr/" + "/".join(rel[:-1])) / rel[-1] if ".." not in rel and all(rel) else None   # assets/pbr, or the old place
@@ -334,6 +366,24 @@ class Handler(BaseHTTPRequestHandler):
             if f and f.is_file():
                 return self.send_media(f)
             return self.send(404, {"error": "no such file"})
+        if parts[:2] == ["api", "streetbake"] and len(parts) == 3:   # the paint page: Blender's job on a street, and its pictures
+            return self.send(200, bake_state(parts[2])) if street_file(parts[2]) else self.send(404, {"error": "no such street"})
+        if parts[0] == "streetout" and len(parts) == 3 and street_file(parts[1]) and re.match(r"^[\w.\-]+\.(jpg|png)$", parts[2]):
+            f = ROOT / "Saved" / "Streets" / parts[1] / "blender" / parts[2]
+            return self.send(200, f.read_bytes(), "image/png" if f.suffix == ".png" else "image/jpeg") if f.is_file() else self.send(404, {"error": "no picture"})
+        if parts[:2] == ["api", "streets"]:            # the street builder: the streets there are
+            names = sorted(d.name for d in STREETS.iterdir() if (d / "street.json").is_file()) if STREETS.is_dir() else []
+            return self.send(200, {"streets": names})
+        if parts[:2] == ["api", "street"] and len(parts) == 3:
+            f = street_file(parts[2])
+            if not f or not f.is_file():
+                return self.send(404, {"error": "no such street"})
+            return self.send(200, {"street": json.loads(f.read_text(encoding="utf-8")), "mtime": f.stat().st_mtime})
+        if parts[0] == "streets" and len(parts) == 4 and parts[2] == "refs" and street_file(parts[1]):   # a street's photo
+            f = STREETS / urllib.parse.unquote(parts[1]) / "refs" / urllib.parse.unquote(parts[3])
+            if f.suffix.lower() in PHOTO and f.is_file() and ".." not in parts:
+                return self.send(200, f.read_bytes(), PHOTO[f.suffix.lower()])
+            return self.send(404, {"error": "no such photo"})
         if parts[:2] == ["api", "mtime"] and len(parts) == 3:
             p = self.game_path(parts[2])
             return self.send(200, {"mtime": p.stat().st_mtime if p and p.exists() else 0})
@@ -450,6 +500,20 @@ class Handler(BaseHTTPRequestHandler):
                 data["presets"][name] = spec
             KIT.PRESETS_FILE.write_text(json.dumps(data, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
             return self.send(200, KIT.presets_file())
+        if parts[:2] == ["api", "street"] and len(parts) == 3:       # the street builder saves a street (the one before kept)
+            f = street_file(parts[2])
+            if not f or not f.is_file():
+                return self.send(404, {"error": "no such street"})
+            body = json.loads(self.body().decode("utf-8"))
+            if body.get("mtime") and abs(body["mtime"] - f.stat().st_mtime) > 0.001 and not body.get("force"):
+                return self.send(409, {"error": "the street changed on disk since you opened it", "mtime": f.stat().st_mtime})
+            hist = ROOT / "Saved" / "Streets" / f.parent.name / "history"
+            hist.mkdir(parents=True, exist_ok=True)
+            (hist / f"{time.strftime('%Y%m%d-%H%M%S')}.json").write_text(f.read_text(encoding="utf-8"), encoding="utf-8")
+            for old in sorted(hist.glob("*.json"))[:-KEEP]:
+                old.unlink()
+            f.write_text(json.dumps(body["street"], ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+            return self.send(200, {"ok": True, "mtime": f.stat().st_mtime})
         if parts[:2] != ["api", "story"] or len(parts) != 3:
             return self.send(404, {"error": "not found"})
         p = self.game_path(parts[2])
@@ -474,8 +538,49 @@ class Handler(BaseHTTPRequestHandler):
         import urllib.parse
         query = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
         parts = self.path.split("?")[0].strip("/").split("/")
+        if parts[:2] == ["api", "streetbake"] and len(parts) == 3:     # the paint page: the street in Blender (look or bake)
+            name = parts[2]
+            if not street_file(name):
+                return self.send(404, {"error": "no such street"})
+            if any(j["proc"].poll() is None for j in BAKES.values()):
+                return self.send(409, {"error": "Blender is busy with a street already"})
+            body = json.loads(self.body().decode("utf-8") or "{}")
+            cmd = "bake" if body.get("cmd") == "bake" else "look"
+            args = [sys.executable, str(ROOT / "tools" / "street.py"), cmd, name]
+            if body.get("shot"):
+                args += ["--shot", str(body["shot"])]
+            if cmd == "bake" and body.get("godot"):
+                args.append("--godot")
+            if body.get("quick"):
+                args += ["--samples", "16", "--height", "560"]
+            out = ROOT / "Saved" / "Streets" / name / "blender"
+            out.mkdir(parents=True, exist_ok=True)
+            log = out / "paint_job.log"
+            fh = open(log, "w", encoding="utf-8")
+            BAKES[name] = {"proc": subprocess.Popen(args, cwd=ROOT, stdout=fh, stderr=subprocess.STDOUT), "log": log, "cmd": " ".join(args[2:]),
+                           "started": time.time()}
+            return self.send(200, bake_state(name))
         if parts[:2] == ["api", "expressions"] and len(parts) >= 3:    # the expression library: import, accept, discard, rename, remove
             return self.expressions_post(parts[2:], query)
+        if parts[:2] == ["api", "street"] and len(parts) == 4 and parts[3] == "new":     # a new street (the page sends its start)
+            f = street_file(parts[2])
+            if not f:
+                return self.send(400, {"error": "a street's name is small letters, digits and _"})
+            if f.exists():
+                return self.send(409, {"error": f"there's already a street called {f.parent.name}"})
+            street = json.loads(self.body().decode("utf-8") or "{}").get("street") or {"format": 1, "name": f.parent.name, "roads": [], "buildings": [], "things": [], "fences": [], "shots": []}
+            street["name"] = f.parent.name
+            f.parent.mkdir(parents=True, exist_ok=True)
+            f.write_text(json.dumps(street, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+            return self.send(200, {"ok": True, "mtime": f.stat().st_mtime})
+        if parts[:2] == ["api", "street"] and len(parts) == 5 and parts[3] == "ref":     # a photo pasted for a building's side or a shot
+            f, name = street_file(parts[2]), urllib.parse.unquote(parts[4])
+            if not f or not f.is_file() or not re.fullmatch(r"[A-Za-z0-9_.-]+", name) or Path(name).suffix.lower() not in PHOTO:
+                return self.send(400, {"error": "a photo is <name>.png (.jpg .webp .gif .avif) for a street that's there"})
+            out = f.parent / "refs" / name
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_bytes(self.body())
+            return self.send(200, {"ok": True, "file": "refs/" + name, "kb": round(out.stat().st_size / 1024)})
         if parts[:2] == ["api", "take"] and len(parts) == 4 and self.game_path(parts[2]):   # a take dropped on its clip in the desk
             name = parts[3]
             if not re.fullmatch(r"[A-Za-z0-9_]+\.[A-Za-z0-9]+", name) or Path(name).suffix.lower() not in MEDIA:
@@ -514,6 +619,16 @@ class Handler(BaseHTTPRequestHandler):
             if parts[2] == "save" and "path" in res:
                 res["path"] = str(Path(res["path"]).relative_to(ROOT))
             return self.send(code, res)
+        if parts[:3] == ["api", "pbr", "made"]:        # a street's looks as the sets they paint with (pbrmix.py: tinted, layered)
+            from storykit import pbrmix as MIX  # noqa: PLC0415 - numpy and Pillow, only when a look needs them
+            out = []
+            for look in (json.loads(self.body().decode("utf-8")) or {}).get("looks", []):
+                try:
+                    ref, m = MIX.made(look)
+                    out.append({"ref": ref, "meta": dict(m, base="/" + ref) if m else None})
+                except (ValueError, OSError) as e:
+                    out.append({"ref": None, "error": str(e)})
+            return self.send(200, {"made": out})
         if parts[:2] == ["api", "pbr"] and len(parts) >= 3:     # /api/pbr/<category>/<name>: its tile, source, url, note
             import urllib.parse
             ref = "pbr/" + "/".join(urllib.parse.unquote(p) for p in parts[2:])

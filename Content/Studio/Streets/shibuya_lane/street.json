@@ -1,0 +1,1308 @@
+{
+ "format": 1,
+ "name": "shibuya_lane",
+ "about": "A one-way lane in Shibuya at the blue hour, after the user's first reference (2026-10-30): its shot 'photo' frames it as the picture does.",
+ "time": "dusk",
+ "look": {
+  "asphalt": {
+   "set": "pbr/road/Road013A_1K-PNG",
+   "layers": [
+    {
+     "wear": "damp",
+     "amount": 1.3
+    }
+   ]
+  },
+  "pavement": {
+   "set": "pbr/concrete/Concrete010_1K-PNG",
+   "tint": "#908e89",
+   "layers": [
+    {
+     "wear": "grime",
+     "amount": 1.4
+    }
+   ]
+  },
+  "kerb": {
+   "set": "pbr/concrete/Concrete006_1K-PNG",
+   "tint": "#9c9993"
+  },
+  "glass": "pbr/Procedural/jp_glass",
+  "frame": {
+   "set": "pbr/metal/Metal063_1K-PNG",
+   "tint": "#bbbec0",
+   "tint_amount": 0.8
+  },
+  "steel": {
+   "set": "pbr/building/Paint005_1K-PNG",
+   "tint": "#7f8a82"
+  },
+  "rail": {
+   "set": "pbr/building/Paint005_1K-PNG",
+   "tint": "#d7d7d2"
+  },
+  "roof_flat": {
+   "set": "pbr/concrete/Concrete032_1K-PNG",
+   "tint": "#838981"
+  }
+ },
+ "roads": [
+  {
+   "id": "lane",
+   "name": "the lane",
+   "from": [
+    -0.375,
+    -9
+   ],
+   "to": [
+    -0.375,
+    11.6
+   ],
+   "width": 4.45,
+   "walks": [
+    0.4,
+    1.1
+   ],
+   "kerb": 0.15,
+   "edge": [
+    1.7,
+    0
+   ],
+   "centre": "none",
+   "marks": [
+    {
+     "kind": "text",
+     "text": "止まれ",
+     "at": 11.5,
+     "len": 2.05,
+     "gap": 0.75,
+     "w": 0.85,
+     "x": 0.875
+    },
+    {
+     "kind": "stop",
+     "at": 19.7,
+     "len": 0.45,
+     "w": 2.75,
+     "x": 0.85
+    },
+    {
+     "kind": "line",
+     "at": 16.5,
+     "len": 0.15,
+     "w": 0.5,
+     "x": 1.74
+    }
+   ]
+  },
+  {
+   "id": "cross",
+   "name": "the cross street",
+   "from": [
+    -40,
+    18.8
+   ],
+   "to": [
+    40,
+    18.8
+   ],
+   "width": 10.4,
+   "walks": [
+    3,
+    2
+   ],
+   "kerb": 0.15,
+   "edge": [
+    0,
+    0
+   ],
+   "centre": "none",
+   "marks": [
+    {
+     "kind": "zebra",
+     "at": 38.5,
+     "len": 4,
+     "w": 9.6
+    }
+   ]
+  }
+ ],
+ "buildings": [
+  {
+   "id": "right_shop",
+   "name": "francfranc",
+   "style": "office",
+   "at": [
+    8.35,
+    1.25
+   ],
+   "turn": -90,
+   "w": 20.5,
+   "d": 12,
+   "floors": 9,
+   "gh": 3.1,
+   "fh": 3.4,
+   "seed": 3,
+   "look": {
+    "wall": {
+     "set": "pbr/concrete/Concrete027_1K-PNG",
+     "tint": "#c7a99b",
+     "layers": [
+      {
+       "wear": "streaks",
+       "amount": 1.4
+      },
+      {
+       "wear": "grime",
+       "amount": 1.2
+      }
+     ]
+    },
+    "trim": {
+     "set": "pbr/concrete/Concrete027_1K-PNG",
+     "tint": "#c7a99b",
+     "layers": [
+      {
+       "wear": "streaks",
+       "amount": 1.4
+      },
+      {
+       "wear": "grime",
+       "amount": 1.2
+      }
+     ]
+    },
+    "shop": "#ff9f74",
+    "wall2": {
+     "set": "pbr/building/black marble",
+     "tint": "#31302e"
+    },
+    "roof_flat": {
+     "set": "pbr/concrete/Concrete032_1K-PNG",
+     "tint": "#838981"
+    }
+   },
+   "faces": {
+    "front": {
+     "win": "fins",
+     "pitch": 0.62,
+     "fin": 0.12,
+     "ground": "wall",
+     "lit": 0
+    },
+    "left": {
+     "win": "band",
+     "lit": 0.5
+    },
+    "back": {
+     "win": "none"
+    },
+    "right": {
+     "win": "none"
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "parapet": 1
+   },
+   "parts": [
+    {
+     "kind": "shopfront",
+     "x": 0.2,
+     "z": 0,
+     "w": 19.9,
+     "h": 2.95,
+     "dp": 0.62,
+     "mull": 2.4,
+     "glow": "#ffb48c"
+    },
+    {
+     "kind": "sign",
+     "x": -4.6,
+     "z": 3.4,
+     "w": 2.4,
+     "h": 13.5,
+     "text": "francfranc",
+     "dir": "r",
+     "fg": "#3b2622",
+     "bg": "#dcb4a6",
+     "lit": false,
+     "back": "wall"
+    },
+    {
+     "kind": "sign",
+     "x": -8.6,
+     "z": 0.2,
+     "w": 1.6,
+     "h": 2.3,
+     "text": "Francfranc",
+     "dir": "r",
+     "fg": "#2b2b2b",
+     "bg": "#f4f2ec",
+     "lit": true,
+     "in": 0.6
+    },
+    {
+     "kind": "bay",
+     "x": -9.95,
+     "w": 0.6,
+     "h": 27.2,
+     "z": 3.1,
+     "out": 0.05,
+     "slot": "frame"
+    }
+   ]
+  },
+  {
+   "id": "kiosk",
+   "style": "kiosk",
+   "at": [
+    -3.6,
+    9.45
+   ],
+   "turn": 76.6,
+   "w": 4.2,
+   "d": 2.8,
+   "floors": 1,
+   "gh": 2.75,
+   "fh": 2.75,
+   "seed": 5,
+   "look": {
+    "wall": {
+     "set": "pbr/wall/Plaster001_1K-PNG",
+     "tint": "#d7d7d2",
+     "layers": [
+      {
+       "set": "pbr/building/black marble",
+       "mask": "own",
+       "affects": "shine",
+       "amount": 0.6
+      },
+      {
+       "wear": "grime",
+       "amount": 1.6
+      }
+     ]
+    },
+    "tiles": {
+     "set": "pbr/roofing_tiles/RoofingTiles010_1K-PNG",
+     "tint": "#45484a",
+     "tint_amount": 0.85
+    },
+    "trim": {
+     "set": "pbr/building/Paint005_1K-PNG",
+     "tint": "#7f8a82"
+    }
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ground": "door",
+     "door": 0.78,
+     "lit": 1
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "none"
+    },
+    "back": {
+     "win": "none"
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 22,
+    "over": 0.55
+   },
+   "parts": [
+    {
+     "kind": "block",
+     "x": -1.15,
+     "z": 0.75,
+     "w": 0.75,
+     "h": 1,
+     "out": 0.2,
+     "slot": "white"
+    },
+    {
+     "kind": "block",
+     "x": -1.15,
+     "z": 1.05,
+     "w": 0.3,
+     "h": 0.45,
+     "out": 0.22,
+     "slot": "black"
+    }
+   ]
+  },
+  {
+   "id": "far_dark",
+   "style": "shop",
+   "at": [
+    -11.125,
+    33
+   ],
+   "turn": 0,
+   "w": 9.75,
+   "d": 12,
+   "floors": 8,
+   "gh": 4,
+   "fh": 3.2,
+   "seed": 11,
+   "look": {
+    "wall": {
+     "set": "pbr/concrete/Concrete029_1K-PNG",
+     "tint": "#7e7c76",
+     "layers": [
+      {
+       "wear": "streaks",
+       "amount": 1.3
+      }
+     ]
+    },
+    "shop": "#c9825f",
+    "wall2": {
+     "set": "pbr/building/black marble",
+     "tint": "#31302e"
+    }
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "cols": 3,
+     "lit": 0.25,
+     "ground": "shop",
+     "groundSlot": "wall2"
+    },
+    "left": {
+     "win": "none"
+    },
+    "right": {
+     "win": "none"
+    }
+   },
+   "roof": {
+    "kind": "rail"
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": 2.45,
+     "z": 8.9,
+     "w": 1.05,
+     "h": 3.4,
+     "text": "生ビール",
+     "dir": "v",
+     "fg": "#ffe36a",
+     "bg": "#a51f26"
+    },
+    {
+     "kind": "sign",
+     "x": 2.45,
+     "z": 7.6,
+     "w": 1.05,
+     "h": 1.2,
+     "text": "9",
+     "fg": "#1d1d1d",
+     "bg": "#f2c230"
+    },
+    {
+     "kind": "sign",
+     "x": -1,
+     "z": 5,
+     "w": 1.4,
+     "h": 2.6,
+     "text": "酒場",
+     "dir": "v",
+     "fg": "#ffffff",
+     "bg": "#3a2a6a"
+    },
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 3.2,
+     "w": 8.6,
+     "h": 0.8,
+     "text": "居酒屋 鳥よし",
+     "fg": "#ffffff",
+     "bg": "#2a1c18"
+    }
+   ]
+  },
+  {
+   "id": "far_shisha",
+   "style": "shop",
+   "at": [
+    -4.075,
+    33
+   ],
+   "turn": 0,
+   "w": 4.35,
+   "d": 12,
+   "floors": 7,
+   "gh": 4,
+   "fh": 3.05,
+   "seed": 12,
+   "look": {
+    "wall": {
+     "set": "pbr/concrete/Concrete006_1K-PNG",
+     "tint": "#d8d3cb",
+     "layers": [
+      {
+       "wear": "streaks",
+       "amount": 1.2
+      }
+     ]
+    },
+    "shop": "#c9825f",
+    "wall2": {
+     "set": "pbr/concrete/Concrete010_1K-PNG",
+     "tint": "#8e8d89"
+    }
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "cols": 2,
+     "ww": 1.3,
+     "wh": 1.3,
+     "lit": 0.35,
+     "ground": "shop",
+     "groundSlot": "wall2"
+    },
+    "left": {
+     "win": "none"
+    },
+    "right": {
+     "win": "none"
+    }
+   },
+   "roof": {
+    "kind": "rail"
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": 0.4,
+     "z": 14.5,
+     "w": 3.1,
+     "h": 1.35,
+     "text": "水タバコ",
+     "fg": "#ffffff",
+     "bg": "#1e2735"
+    },
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 4.15,
+     "w": 4.1,
+     "h": 0.75,
+     "text": "カレー  ラーメン",
+     "fg": "#fff7d0",
+     "bg": "#2c6a49"
+    },
+    {
+     "kind": "sign",
+     "x": -0.9,
+     "z": 7.4,
+     "w": 1.5,
+     "h": 0.55,
+     "text": "ACチーズ",
+     "fg": "#ff4a4a",
+     "bg": "#1a1a1c"
+    },
+    {
+     "kind": "balcony",
+     "floors": [
+      6,
+      7
+     ],
+     "x": 0,
+     "w": 4.1,
+     "out": 0.6,
+     "rail": "rail"
+    }
+   ]
+  },
+  {
+   "id": "far_pencil",
+   "style": "shop",
+   "at": [
+    -0.45,
+    33
+   ],
+   "turn": 0,
+   "w": 2.9,
+   "d": 12,
+   "floors": 6,
+   "gh": 4,
+   "fh": 3,
+   "seed": 13,
+   "look": {
+    "wall": {
+     "set": "pbr/wall/Plaster001_1K-PNG",
+     "tint": "#a6a29a",
+     "layers": [
+      {
+       "wear": "streaks",
+       "amount": 1.2
+      }
+     ]
+    },
+    "shop": "#c9825f",
+    "wall2": {
+     "set": "pbr/building/Paint005_1K-PNG",
+     "tint": "#7f8a82"
+    }
+   },
+   "faces": {
+    "front": {
+     "win": "tall",
+     "cols": 1,
+     "lit": 0.6,
+     "ground": "shop",
+     "groundSlot": "wall2"
+    },
+    "left": {
+     "win": "none"
+    },
+    "right": {
+     "win": "none"
+    }
+   },
+   "roof": {
+    "kind": "rail"
+   },
+   "parts": [
+    {
+     "kind": "bay",
+     "floors": [
+      2,
+      6
+     ],
+     "x": -0.45,
+     "w": 1.7,
+     "h": 2.35,
+     "z": 0.35,
+     "out": 0.95,
+     "win": true,
+     "slot": "trim",
+     "litp": 0.6
+    },
+    {
+     "kind": "vsign",
+     "x": 1.2,
+     "z": 4.4,
+     "h": 2.6,
+     "out": 0.6,
+     "text": "カフェ",
+     "fg": "#ffffff",
+     "bg": "#7b2d8f"
+    }
+   ]
+  },
+  {
+   "id": "far_5f",
+   "style": "shop",
+   "at": [
+    3.3,
+    33
+   ],
+   "turn": 0,
+   "w": 4.6,
+   "d": 12,
+   "floors": 6,
+   "gh": 3.9,
+   "fh": 2.55,
+   "seed": 14,
+   "look": {
+    "wall": {
+     "set": "pbr/concrete/Concrete012_1K-PNG",
+     "tint": "#bfae96",
+     "layers": [
+      {
+       "wear": "streaks",
+       "amount": 1.2
+      }
+     ]
+    },
+    "shop": "#c9825f",
+    "wall2": {
+     "set": "pbr/building/black marble",
+     "tint": "#31302e"
+    }
+   },
+   "faces": {
+    "front": {
+     "win": "band",
+     "lit": 0.85,
+     "cool": 0.15,
+     "bands": true,
+     "ground": "shop",
+     "groundSlot": "wall2",
+     "sill": 0.45,
+     "wh": 1.7
+    },
+    "left": {
+     "win": "none"
+    },
+    "right": {
+     "win": "none"
+    }
+   },
+   "roof": {
+    "kind": "rail",
+    "things": [
+     {
+      "kind": "hut",
+      "x": 1,
+      "y": 1.5,
+      "w": 2.2,
+      "d": 2.4,
+      "h": 2.4
+     }
+    ]
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": -1.4,
+     "z": 12,
+     "w": 0.9,
+     "h": 0.7,
+     "text": "5F",
+     "fg": "#1b1b1b",
+     "bg": "#f2c230"
+    },
+    {
+     "kind": "sign",
+     "x": 0.9,
+     "z": 12,
+     "w": 1.6,
+     "h": 0.7,
+     "text": "闘・格",
+     "fg": "#ffffff",
+     "bg": "#2a2a2e"
+    },
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 6.9,
+     "w": 4.4,
+     "h": 0.75,
+     "text": "焼肉  牛まる",
+     "fg": "#1b1b1b",
+     "bg": "#f3c437"
+    },
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 4,
+     "w": 4.4,
+     "h": 0.95,
+     "text": "祭 加 名",
+     "fg": "#1b1b1b",
+     "bg": "#f3f1ea"
+    },
+    {
+     "kind": "sign",
+     "x": -0.2,
+     "z": 3.35,
+     "w": 3.2,
+     "h": 0.6,
+     "text": "Karaoke",
+     "fg": "#ff5aa5",
+     "bg": "#1c1c22"
+    }
+   ]
+  },
+  {
+   "id": "far_right",
+   "style": "shop",
+   "at": [
+    9.3,
+    33
+   ],
+   "turn": 0,
+   "w": 7.4,
+   "d": 12,
+   "floors": 8,
+   "gh": 4.2,
+   "fh": 3.1,
+   "seed": 15,
+   "look": {
+    "wall": {
+     "set": "pbr/concrete/Concrete021_1K-PNG",
+     "tint": "#c2beb4"
+    },
+    "shop": "#c9825f",
+    "wall2": {
+     "set": "pbr/concrete/Concrete029_1K-PNG",
+     "tint": "#7e7c76"
+    }
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "cols": 3,
+     "lit": 0.45,
+     "ground": "shop",
+     "groundSlot": "wall2"
+    },
+    "left": {
+     "win": "none"
+    },
+    "right": {
+     "win": "none"
+    }
+   },
+   "roof": {
+    "kind": "rail"
+   },
+   "parts": []
+  }
+ ],
+ "things": [
+  {
+   "id": "man",
+   "kind": "person",
+   "at": [
+    -0.15,
+    6.05
+   ],
+   "turn": 180,
+   "h": 1.62,
+   "pose": "walk",
+   "bag": true,
+   "look": {
+    "cloth": "#606670",
+    "cloth2": "#23272d"
+   }
+  },
+  {
+   "id": "woman",
+   "kind": "person",
+   "at": [
+    1.65,
+    12.1
+   ],
+   "turn": 120,
+   "h": 1.55,
+   "look": {
+    "cloth": "#1f2024",
+    "cloth2": "#1a1b1e"
+   }
+  },
+  {
+   "id": "walker_1",
+   "kind": "person",
+   "at": [
+    0.35,
+    16.5
+   ],
+   "turn": 90,
+   "h": 1.68,
+   "pose": "walk",
+   "look": {
+    "cloth": "#3a3f4a",
+    "cloth2": "#24262b"
+   }
+  },
+  {
+   "id": "walker_2",
+   "kind": "person",
+   "at": [
+    1.1,
+    20.5
+   ],
+   "turn": -90,
+   "h": 1.62,
+   "pose": "walk",
+   "look": {
+    "cloth": "#7a6a62",
+    "cloth2": "#2a2b30"
+   }
+  },
+  {
+   "id": "walker_3",
+   "kind": "person",
+   "at": [
+    -1.6,
+    22.5
+   ],
+   "turn": 0,
+   "h": 1.7,
+   "look": {
+    "cloth": "#2e3440",
+    "cloth2": "#1d1f24"
+   }
+  },
+  {
+   "id": "walker_4",
+   "kind": "person",
+   "at": [
+    3,
+    24.6
+   ],
+   "turn": 90,
+   "h": 1.6,
+   "pose": "walk",
+   "look": {
+    "cloth": "#8a3c3c",
+    "cloth2": "#222222"
+   }
+  },
+  {
+   "id": "bollard_1",
+   "kind": "bollard",
+   "at": [
+    2.16,
+    6
+   ],
+   "h": 0.95,
+   "r": 0.07,
+   "slot": "black"
+  },
+  {
+   "id": "bike",
+   "kind": "bike",
+   "at": [
+    2.42,
+    7.2
+   ],
+   "turn": 98
+  },
+  {
+   "id": "signs",
+   "kind": "sign",
+   "at": [
+    1.66,
+    9.88
+   ],
+   "h": 3,
+   "scale": 0.62,
+   "signs": [
+    "stop",
+    "straight"
+   ]
+  },
+  {
+   "id": "globes",
+   "kind": "postlamp",
+   "at": [
+    -2.8,
+    10.6
+   ],
+   "h": 3.55,
+   "globes": 2,
+   "bar": 0.95,
+   "turn": 76
+  },
+  {
+   "id": "vending",
+   "kind": "vending",
+   "at": [
+    -5.5,
+    12.3
+   ],
+   "turn": 180
+  }
+ ],
+ "fences": [],
+ "shots": [
+  {
+   "id": "photo",
+   "pins": [
+    {
+     "name": "the white line at the bottom",
+     "px": [
+      0.07,
+      1
+     ],
+     "at": [
+      -0.9,
+      2.626,
+      0
+     ]
+    },
+    {
+     "name": "the white line at the crossing",
+     "px": [
+      0.394,
+      0.6293333333333333
+     ],
+     "at": [
+      -0.9,
+      11.75,
+      0
+     ]
+    },
+    {
+     "name": "the kerb near",
+     "px": [
+      0.9,
+      0.78
+     ],
+     "at": [
+      1.85,
+      4.733,
+      0
+     ]
+    },
+    {
+     "name": "the kerb far",
+     "px": [
+      0.7,
+      0.6626666666666666
+     ],
+     "at": [
+      1.85,
+      8.809,
+      0
+     ]
+    },
+    {
+     "name": "the walker's feet",
+     "px": [
+      0.44,
+      0.7266666666666667
+     ],
+     "at": [
+      -0.15,
+      6.05,
+      0
+     ]
+    },
+    {
+     "name": "止's middle",
+     "px": [
+      0.536,
+      0.66
+     ],
+     "at": [
+      0.5,
+      9.1,
+      0
+     ]
+    },
+    {
+     "name": "the stop line's right end",
+     "px": [
+      0.624,
+      0.6373333333333333
+     ],
+     "at": [
+      1.65,
+      10.82,
+      0
+     ]
+    },
+    {
+     "name": "the bollard's foot",
+     "px": [
+      0.864,
+      0.7066666666666667
+     ],
+     "at": [
+      2.16,
+      6,
+      0.15
+     ]
+    },
+    {
+     "name": "the sign pole's foot",
+     "px": [
+      0.656,
+      0.6453333333333333
+     ],
+     "at": [
+      1.66,
+      9.88,
+      0
+     ]
+    },
+    {
+     "name": "the tall shop's corner, 6.6 m up",
+     "px": [
+      0.69,
+      0.2
+     ],
+     "at": [
+      2.35,
+      11.5,
+      6.6
+     ]
+    },
+    {
+     "name": "the shisha bar's left edge",
+     "px": [
+      0.2,
+      0.26666666666666666
+     ],
+     "at": [
+      -6.25,
+      27,
+      11
+     ]
+    },
+    {
+     "name": "the 5F building's right edge",
+     "px": [
+      0.68,
+      0.26666666666666666
+     ],
+     "at": [
+      5.6,
+      27,
+      11
+     ]
+    },
+    {
+     "name": "水タバコ's middle",
+     "px": [
+      0.31,
+      0.15333333333333332
+     ],
+     "at": [
+      -3.65,
+      27,
+      15.17
+     ]
+    }
+   ],
+   "name": "the photo (Udagawacho at dusk)",
+   "eye": [
+    0,
+    0,
+    1.6
+   ],
+   "look": [
+    0.698,
+    19.976,
+    2.298
+   ],
+   "vfov": 67.33,
+   "aspect": [
+    500,
+    750
+   ],
+   "ref": "refs/shot_photo.webp",
+   "op": 0.5
+  },
+  {
+   "id": "close_shop",
+   "name": "the shopfront up close (the finishes and the wear at arm's length)",
+   "eye": [
+    0.6,
+    2.5,
+    1.6
+   ],
+   "look": [
+    2.4,
+    7,
+    2.2
+   ],
+   "vfov": 60,
+   "aspect": [
+    16,
+    9
+   ]
+  },
+  {
+   "id": "close_kiosk",
+   "name": "the kiosk up close",
+   "eye": [
+    0.8,
+    4,
+    1.6
+   ],
+   "look": [
+    -3.2,
+    9.2,
+    1.5
+   ],
+   "vfov": 60,
+   "aspect": [
+    16,
+    9
+   ]
+  },
+  {
+   "id": "close_road",
+   "name": "the road at the player's feet",
+   "eye": [
+    -0.4,
+    2,
+    1.6
+   ],
+   "look": [
+    -0.2,
+    9,
+    -0.3
+   ],
+   "vfov": 60,
+   "aspect": [
+    16,
+    9
+   ]
+  }
+ ],
+ "decals": [
+  {
+   "id": "d1",
+   "kind": "oil",
+   "at": [
+    -0.6,
+    7.0,
+    0.004
+   ],
+   "n": [
+    0,
+    0,
+    1
+   ],
+   "w": 1,
+   "h": 0.85,
+   "rot": 20
+  },
+  {
+   "id": "d2",
+   "kind": "manhole",
+   "at": [
+    1.343,
+    8.981,
+    0.004
+   ],
+   "n": [
+    0,
+    0,
+    1
+   ],
+   "w": 0.75,
+   "h": 0.75,
+   "rot": -30
+  },
+  {
+   "id": "d3",
+   "kind": "drain_grate",
+   "at": [
+    1.6,
+    4.74,
+    0.004
+   ],
+   "n": [
+    0,
+    0,
+    1
+   ],
+   "w": 0.4,
+   "h": 0.9,
+   "rot": 0
+  },
+  {
+   "id": "d4",
+   "kind": "gum",
+   "at": [
+    2.4,
+    4.0,
+    0.15
+   ],
+   "n": [
+    0,
+    0,
+    1
+   ],
+   "w": 1,
+   "h": 1,
+   "rot": 0
+  },
+  {
+   "id": "d5",
+   "kind": "litter",
+   "at": [
+    2.45,
+    7.2,
+    0.15
+   ],
+   "n": [
+    0,
+    0,
+    1
+   ],
+   "w": 0.6,
+   "h": 0.6,
+   "rot": 35
+  },
+  {
+   "id": "d6",
+   "kind": "posters_old",
+   "at": [
+    -1.981,
+    10.635,
+    1.547
+   ],
+   "n": [
+    0.973,
+    -0.232,
+    0
+   ],
+   "w": 1.5,
+   "h": 1.2,
+   "rot": 0
+  },
+  {
+   "id": "d7",
+   "kind": "damp",
+   "at": [
+    -2.174,
+    9.394,
+    0.198
+   ],
+   "n": [
+    0.973,
+    -0.232,
+    0
+   ],
+   "w": 1.4,
+   "h": 1.2,
+   "rot": 0
+  },
+  {
+   "id": "d8",
+   "kind": "rain_streaks",
+   "at": [
+    2.287,
+    11.42,
+    6.035
+   ],
+   "n": [
+    0,
+    -1,
+    0
+   ],
+   "w": 1.5,
+   "h": 2,
+   "rot": 0
+  },
+  {
+   "id": "d9",
+   "kind": "paint_worn",
+   "at": [
+    -1.621,
+    16.35,
+    0.007
+   ],
+   "n": [
+    0,
+    0,
+    1
+   ],
+   "w": 1,
+   "h": 1,
+   "rot": -30
+  }
+ ]
+}

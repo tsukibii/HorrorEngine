@@ -10,7 +10,8 @@ the VHS layer in `main.tscn`, `puff.gdshader` from lifefx.gd). A change here rea
 | File | What |
 |---|---|
 | `look.gd` | the presets as one dictionary each (`PRESETS`: `balanced` the default, `realism`, `plain`): the viewport's anti-aliasing and the environment's effects; `PROJECT` the balanced look's project settings (`apply_project`; the export's `PROJECT_LOOK` in storykit/godot.py is the same, GDEXPORT reads them back); `apply`, `set_aa`, `shadows` (the filter and atlas), `iris` (auto exposure, a stop under at night) |
-| `plugin.gd` | registers HSLookEnvironment; applies `HSLook.PROJECT` the first time it's enabled in a project (`horrorstudio/look/settings_applied`) and from Project > Tools |
+| `plugin.gd` | registers HSLookEnvironment and the street's import step (`street_import.gd`); applies `HSLook.PROJECT` the first time it's enabled in a project (`horrorstudio/look/settings_applied`) and from Project > Tools |
+| `street.gd`, `street.gdshader`, `street_cut.gdshader`, `street.gdshaderinc`, `street_import.gd` | **a street from the Blender bake** (docs/STREET_TEXTURING.md §3): the .glb is plain glTF (each finish's tileable set at its size times the colour, ORM, normal; the street's wear atlas as the occlusion on UV2; the wear's recipe in extras `hs_wear`); `street_import.gd` (an EditorScenePostImportPlugin, editor only) runs `HSStreet.apply` on every imported scene: each such material becomes the street shader, the same sums as Blender's "Street wear" group (dirt, streaks on walls, wet patches on what faces up, worn edges, a slow tone; `_cut` for MASK alpha); `HSStreet.weather(node, amount)` scales the wear at run time; `lay_flat` (the import step too) makes road paint and decals cast no shadow (by their materials' names `street_paint*`, `street_glyph:*`, `street_decal:*`; the street builder's own .glb too). Checked by GDSTREET `--glb --plugin` and STREETBAKE `--godot` |
 | `post.gd`, `post.gdshader` | the grade: `HSPost` a CanvasLayer (6) with a full-screen shader reading the screen (three-way lift/gamma/gain, warmth, saturation, contrast, fade, vignette, grain, aberration); `PRESETS` the looks, `apply` the story's `game.grade` |
 | `vhs.gd`, `vhs.gdshader`, `vhs_hold.gdshader` | UltraVHS: the presets as dictionaries of the shader's uniforms (`CAMCORDER` the base), the layer's node; the history viewport (the last frame copied by `vhs_hold`) for the ghosting |
 | `pattern.gd`, `pattern.gdshader` | a light's pattern: `HSPattern` a SubViewport under a SpotLight3D drawing caustics, leaves, blinds or clouds (Light Kit's four light functions in GLSL, `metres` the viewport's width on the aimed surface) and set as its `light_projector` |
@@ -50,6 +51,9 @@ the VHS layer in `main.tscn`, `puff.gdshader` from lifefx.gd). A change here rea
 - `python tools/godot/look_check.py` (GODOTLOOK): the tape against UltraVHS's numpy reference.
 - `python tools/godot_export.py --game TestRoom001 --testroom` (GDTESTROOM): the yard's rain and wet floor, the blood
   stain's splat, in the game.
+- `python tools/godot/street_check.py --glb PATH --plugin --shot ID` (GDSTREET on a Blender bake's .glb): the plugin
+  enabled in a fresh project, its import step must make the street's surfaces the street shader and the paint and
+  decals shadowless; pictured through a shot. Run it after any change to plugin.gd: a script that fails to compile there takes the whole plugin down.
 
 ## Rules
 

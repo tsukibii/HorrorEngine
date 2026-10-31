@@ -63,6 +63,17 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
   rain, the house dry.
 - `look` (optional): this level's look, `balanced` (the default), `realism` or `plain`, over `game.look` (§9.1): a flat-lit annex, a dream
   level with the effects off (a scene's `look` is its look-at, §3.4: no per-scene preset).
+- `outside` (optional): the building a street builds round this level (the scene builder's Outside panel,
+  docs/SCENE_BUILDER.md §8), in the street builder's own words (STREET_BUILDER §4): `look` (a slot's colour `#rrggbb` or
+  a `pbr/<set>`: `wall`, `trim`, `tiles`...), `roof` (`kind` flat, rail, gable, hip, shed or none; `pitch` 3 to 60,
+  `over` and `parapet` 0 to 2 m, `slot` tiles or roof), `slot` (what the walls are: wall, wall2, plaster, concrete,
+  trim, wood, wood_dark, blocks, panel), `raise` (the floor over the ground, 0 to 2 m), `front` (n, e, s or w: the side
+  facing the street; its way in when unset), `parts` (fittings on its walls, each `kind`, `face` front/left/back/right,
+  `x`, `z`, `w`, `h`, `out` in metres: ac, sign, vsign, lamp, lantern, pipe, awning, canopy, eave, noren, balcony, bay,
+  stairs, rail, panel, block), `style` and `seed` (the street style it started from). A street's building with this
+  level inside wears it (STREET_BUILDER §5c); the desk and the level's own Godot export don't build it (the street's
+  .glb carries it). `"outside": {"look": {"wall": "#cfc5b3", "tiles": "#3d4148"}, "roof": {"kind": "hip", "pitch": 24,
+  "over": 0.8}, "raise": 0.45, "parts": [{"kind": "ac", "face": "right", "x": -1.6}]}`.
 - `routes` (optional): named walks for the cast in play (`behave` path and patrol, §4), each a list of the level's
   spots in order, with a `wait` (seconds, facing the spot's `rot`) and a `pose` (the pose library) where she stops:
   `"routes": {"r_hall": {"points": [{"at": "hall_back", "wait": 2, "pose": "look_left"}, "hall_near"], "mode": "pingpong"}}`.

@@ -13,6 +13,9 @@ import { KINDS, OPENINGS, PRESETS, JO, MODULE, STOREY, WALL_ITEMS, FINISH, KNOWN
 import * as BM from "./builder-model.js";
 import * as KIT from "./kit.js";
 import { form as kitForm, overrides as kitOverrides, CSS as KIT_CSS } from "./kit-form.js";
+import * as SG from "./street-gen.js";
+import * as S3 from "./street3.js";
+import { STYLES as STREET_STYLES } from "./street-presets.js";
 
 const $ = s => document.querySelector(s);
 const SVGNS = "http://www.w3.org/2000/svg";
@@ -91,7 +94,7 @@ function afterLoad(msg) {
   B.sel = null; B.floor = 0; B.measure = null;
   B.model.items = B.model.items || []; B.model.finish = Object.assign({}, FINISH, B.model.finish || {});
   for (const op of B.model.ops) if (!op.ref) { const m = B.refs.find(r => r.type === op.type && Math.abs(r.w + 2 * (+r.gap || 0) - op.w) < 0.003 && Math.abs(r.h + 2 * (+r.gap || 0) - op.h) < 0.003); if (m) op.ref = m.name; }
-  renderFinish();
+  renderFinish(); renderOutside();
   frame(); renderFloors(); changed(false); status(msg);
 }
 function frame() {                         // fit the plan in view
@@ -106,7 +109,7 @@ function frame() {                         // fit the plan in view
 // ---- undo ----
 const snapshot = () => JSON.stringify({ m: B.model, f: B.floor });
 function pushUndo() { if (!B.model) return; B.undo.push(snapshot()); if (B.undo.length > 120) B.undo.shift(); B.redo = []; }
-function restore(s) { const o = JSON.parse(s); B.model = o.m; B.floor = Math.min(o.f, B.model.floors.length - 1); B.sel = null; renderFloors(); changed(); }
+function restore(s) { const o = JSON.parse(s); B.model = o.m; B.floor = Math.min(o.f, B.model.floors.length - 1); B.sel = null; renderFloors(); renderOutside(); changed(); }
 function undo() { if (!B.undo.length) return; B.redo.push(snapshot()); restore(B.undo.pop()); }
 function redo() { if (!B.redo.length) return; B.undo.push(snapshot()); restore(B.redo.pop()); }
 
@@ -132,7 +135,7 @@ async function replan() {
     B.plan = j; B.planStory = s;
     stage.setWorld(j, s, B.target);
     if (+$("#swing").value) stage.swing(+$("#swing").value);
-    addLamp(); placeHer(); doors(); placeRefs(); draw(); render3d();
+    addLamp(); placeHer(); doors(); placeRefs(); buildOutside(); draw(); render3d();
   } catch (e) { status(e.message, "bad"); }
 }
 
@@ -206,6 +209,7 @@ function draw() {
   const selKit = B.sel && B.sel.kit && (B.model.kits || []).find(q => q.id === B.sel.kit);
   if (selKit && onFloor(roomOf(selKit.room) || {})) kitHandles(selKit);
   for (const it of B.model.items || []) drawItem(it);
+  drawOutsidePlan();
   if ($("#marks").checked) drawMarks();
   drawPeople();
   if (B.measure) drawMeasure();
@@ -648,6 +652,9 @@ function placeHer() {
 const look = { pitch: -4 };
 function render3d() {
   if (!stage || !B.model) return;
+  if (around()) return renderAround();
+  if (!stage.scene.fog) stage.scene.fog = new THREE.Fog(0x050506, 6, 22);
+  if (outsideLights) outsideLights.visible = false;
   const p = B.model.player, eye = EYES[$("#eye").value], aspect = stage.camera.aspect || 16 / 9;
   stage.camera.fov = vfov(B.story.game.fov || FOV_H, aspect); stage.camera.updateProjectionMatrix();
   stage.camera.position.copy(s2t(p.x, p.y, p.z + eye));
@@ -708,14 +715,20 @@ function ground(x, y, z) {
   return g;
 }
 let lookDrag = null;
-view.addEventListener("mousedown", e => { lookDrag = { x: e.clientX, y: e.clientY, yaw: B.model.player.yaw, pitch: look.pitch }; view.focus(); });
+view.addEventListener("mousedown", e => { lookDrag = { x: e.clientX, y: e.clientY, yaw: around() ? orbit.yaw : B.model.player.yaw, pitch: around() ? orbit.pitch : look.pitch, orbit: around() }; view.focus(); });
+view.addEventListener("wheel", e => { if (!around()) return; e.preventDefault(); orbit.dist = Math.max(4, Math.min(120, (orbit.dist || orbitDist()) * Math.exp(e.deltaY * 0.001))); render3d(); }, { passive: false });
 window.addEventListener("mousemove", e => {
   if (!lookDrag) return;
+  if (lookDrag.orbit) {
+    orbit.yaw = lookDrag.yaw - (e.clientX - lookDrag.x) * 0.35;
+    orbit.pitch = Math.max(-5, Math.min(85, lookDrag.pitch + (e.clientY - lookDrag.y) * 0.3));
+    return render3d();
+  }
   B.model.player.yaw = lookDrag.yaw - (e.clientX - lookDrag.x) * 0.25;
   look.pitch = Math.max(-60, Math.min(60, lookDrag.pitch - (e.clientY - lookDrag.y) * 0.25));
   draw(); render3d();
 });
-window.addEventListener("mouseup", () => { if (lookDrag) { lookDrag = null; changedPlayer(); } });
+window.addEventListener("mouseup", () => { if (lookDrag) { const o = lookDrag.orbit; lookDrag = null; if (!o) changedPlayer(); } });
 
 // ---- keys on the page ----
 document.addEventListener("keydown", e => {
@@ -770,6 +783,9 @@ async function boot() {
   $("#undo").onclick = undo; $("#redo").onclick = redo;
   $("#check").onclick = runChecks; $("#save").onclick = () => save(false);
   for (const id of ["#eye", "#lamp", "#showHer", "#doorsOpen"]) $(id).onchange = () => { placeHer(); doors(); draw(); render3d(); };
+  $("#showOutside").onchange = () => { buildOutside(); render3d(); };
+  $("#viewMode").onchange = () => { orbit.dist = 0; buildOutside(); render3d(); };
+  S3.loadShelf().then(() => buildOutside()).catch(() => { });
   $("#swing").oninput = () => { if (+$("#swing").value && $("#doorsOpen").checked) { $("#doorsOpen").checked = false; doors(); } stage.swing(+$("#swing").value); render3d(); };
   renderTools();
   $("#planImage").onclick = savePlanImage;
@@ -787,7 +803,7 @@ async function boot() {
   window.__builderReady = true;
 }
 window.B = B; window.BM = BM; Object.defineProperty(window, "__builderStage", { get: () => stage });
-window.builder = { refreshLibrary, openPreset, changed, save, runChecks, addRoom, addItem, loadRef, placeRefs, setTool: t => { B.tool = t; renderTools(); }, addOpening: (x, y, t) => { B.tool = t; addOpening(x, y); B.tool = "select"; }, render3d, undo, openOther, nodesHere, focusIds, addKit, snapKit, addCurtains, varyKit, splitHinge, applyHingeAt,
+window.builder = { refreshLibrary, openPreset, changed, save, runChecks, addRoom, addItem, loadRef, placeRefs, setTool: t => { B.tool = t; renderTools(); }, addOpening: (x, y, t) => { B.tool = t; addOpening(x, y); B.tool = "select"; }, render3d, undo, buildOutside: () => buildOutside(), openOther, nodesHere, focusIds, addKit, snapKit, addCurtains, varyKit, splitHinge, applyHingeAt,
   swing: deg => { $("#swing").value = deg; $("#swing").oninput(); },
   resizeKitBy: (id, su, sv, x, y) => { const k = B.model.kits.find(q => q.id === id); pushUndo(); resizeKit({ k, su, sv, x0: k.x, y0: k.y, size: k.size.slice(), spec: JSON.parse(JSON.stringify(k.spec)) }, x, y); changed(); return k; }, setKitPreset: (t, v) => { if (t === "fit") B.fitPreset = v; else B.kitPreset = v; renderTools(); } };
 boot().catch(e => { console.error(e); status(e.message, "bad"); });
@@ -860,6 +876,145 @@ function renderFinish() {
   box.append(grid,
     check(f.lights, "a ceiling light in every room", v => { f.lights = v; renderFinish(); }), document.createElement("br"),
     check(f.switches, "its switch by the door (an interactable)", v => { f.switches = v; renderFinish(); }), document.createElement("br"), floors, " ", frames, " ", doorsAll);
+}
+
+// ---- the outside: the building round the level as a street builds it (the street builder's own generator: the same
+// shell, roof and fittings), so an enterable building is designed whole here, in the street's styles, and a street
+// takes it as it is (its palette: Buildings to walk into; docs/SCENE_BUILDER.md §8). Kept in the level as `outside`. ----
+const smats = new S3.Materials();
+let outsideGroup = null, outsideLights = null;
+const orbit = { yaw: -70, pitch: 24, dist: 0 };
+window.__orbit = orbit;
+const around = () => $("#viewMode") && $("#viewMode").value === "around";
+const outsideOf = () => (B.model && B.model.levelExtra || {}).outside;
+function colour(v, on, tip) {
+  const i = document.createElement("input"); i.type = "color"; i.value = /^#[0-9a-f]{6}$/i.test(v || "") ? v : "#cccccc"; if (tip) i.title = tip;
+  i.onchange = () => { pushUndo(); on(i.value); changed(); }; return i;
+}
+// a street style's colours and roof (its fittings stay the street's: they're sized for its own frontage)
+function styleOutside(o, key, seed) {
+  const S = STREET_STYLES[key];
+  if (!S) { delete o.style; delete o.seed; return; }
+  const b = S.make(SG.rng(seed));
+  o.style = key; o.seed = seed;
+  o.look = Object.assign({}, b.look || {});
+  o.roof = Object.fromEntries(Object.entries(b.roof || {}).filter(([k]) => k !== "things"));
+  if (["gable", "hip", "shed"].includes(o.roof.kind)) o.look.tiles = o.look.tiles || o.look.roof || "#3d4148";
+}
+function renderOutside() {
+  const box = $("#outside"); if (!box || !B.model) return;
+  box.innerHTML = "";
+  const lx = B.model.levelExtra = B.model.levelExtra || {}, o = lx.outside;
+  box.append(check(!!o, "build its outside", v => { if (v) lx.outside = JSON.parse(JSON.stringify(SG.OUTSIDE_DEFAULT)); else delete lx.outside; renderOutside(); }));
+  const hint = document.createElement("div"); hint.className = "hint";
+  hint.textContent = o ? "The walls, roof and fittings a street builds round these rooms; the doors and windows are the plan's. Look at it: the view's \"round the building\"."
+    : "Its walls, roof and fittings as a street builds them, in the street builder's styles: design the whole building here, then put it in a street (the street builder's palette: Buildings to walk into).";
+  box.append(hint);
+  if (!o) return;
+  o.look = o.look || {}; o.roof = o.roof || { kind: "hip" }; o.parts = o.parts || [];
+  const faces = SG.outsideFaces(BM.modelToLevel(B.model, B.story).level, o) || {};      // (the plan as it is now)
+  const dirName = { n: "north", e: "east", s: "south", w: "west" };
+  const grid = document.createElement("div"); grid.className = "prop";
+  const roll = document.createElement("button"); roll.textContent = "↻"; roll.title = "another of this style (its colours and roof)";
+  roll.onclick = () => { if (!o.style) return; pushUndo(); styleOutside(o, o.style, (+o.seed || 1) + 1); changed(); renderOutside(); };
+  const roofSlot = o.roof.slot || (["flat", "rail", "none"].includes(o.roof.kind) ? "wall" : "tiles");
+  grid.append(
+    ...field("style", wrap(pick(o.style || "", [["", "(your own)"], ...Object.entries(STREET_STYLES).map(([k, S]) => [k, S.label])], v => { styleOutside(o, v, +o.seed || 1); renderOutside(); }), roll)),
+    ...field("front", pick(o.front || "", [["", `its way in (${dirName[faces.front] || "?"})`], ["s", "south"], ["e", "east"], ["n", "north"], ["w", "west"]], v => { if (v) o.front = v; else delete o.front; renderOutside(); })),
+    ...field("walls", wrap(colour(o.look[o.slot || "wall"], v => { o.look[o.slot || "wall"] = v; }, "the walls' colour"),
+      pick(o.slot || "wall", SG.OUTSIDE_SLOTS, v => { if (v === "wall") delete o.slot; else o.slot = v; renderOutside(); }),
+      colour(o.look.trim, v => { o.look.trim = v; }, "the trim: round the doors and windows, the edges"))),
+    ...field("roof", wrap(pick(o.roof.kind || "hip", Object.entries(SG.ROOF_KINDS), v => { o.roof.kind = v; renderOutside(); }),
+      colour(o.look[roofSlot], v => { o.look[roofSlot] = v; }, "the roof's colour"))),
+    ...(["gable", "hip", "shed"].includes(o.roof.kind) ? field("slope", wrap(num(o.roof.pitch ?? 24, v => { o.roof.pitch = Math.max(3, Math.min(60, v)); }, 1), document.createTextNode("° over"),
+      num(o.roof.over ?? 0.6, v => { o.roof.over = Math.max(0, Math.min(2, v)); }), document.createTextNode("m"),
+      pick(o.roof.slot || "tiles", [["tiles", "tiles"], ["roof", "sheet"]], v => { if (v === "tiles") delete o.roof.slot; else o.roof.slot = v; renderOutside(); }))) : []),
+    ...(o.roof.kind === "flat" ? field("parapet", num(o.roof.parapet ?? 0.5, v => { o.roof.parapet = Math.max(0, Math.min(2, v)); })) : []),
+    ...field("raised", wrap(num(o.raise ?? 0.15, v => { o.raise = Math.max(0, Math.min(2, v)); }), document.createTextNode("m, steps up to its doors"))));
+  box.append(grid);
+  // what's fixed to its walls
+  const h = document.createElement("div"); h.className = "hint"; h.style.marginTop = "6px";
+  h.textContent = `On its walls (${["front", "left", "back", "right"].map(f => `${f}: ${dirName[faces[f]] || "?"}`).join(", ")}):`;
+  box.append(h);
+  o.parts.forEach((pt, i) => {
+    const K = SG.PART_KINDS[pt.kind] || {};
+    const del = document.createElement("button"); del.textContent = "×"; del.title = "take it off";
+    del.onclick = () => { pushUndo(); o.parts.splice(i, 1); changed(); renderOutside(); };
+    const sm = (v, on) => { const n = num(v, on); n.style.width = "40px"; n.style.padding = "2px 3px"; return n; };
+    const row1 = wrap(pick(pt.kind, SG.OUTSIDE_PARTS.map(k => [k, SG.PART_KINDS[k].label]), v => { pt.kind = v; renderOutside(); }),
+      pick(pt.face || "front", ["front", "left", "back", "right"], v => { pt.face = v; }), del);
+    const row2 = wrap(document.createTextNode("x"), sm(pt.x ?? 0, v => { pt.x = v; }), document.createTextNode("up"), sm(pt.z ?? K.z ?? 0, v => { pt.z = v; }),
+      document.createTextNode("w"), sm(pt.w ?? K.w ?? 1, v => { pt.w = v; }), document.createTextNode("h"), sm(pt.h ?? K.h ?? 1, v => { pt.h = v; }));
+    const card = document.createElement("div"); card.style.cssText = "border:1px solid var(--line);border-radius:4px;padding:3px;margin-top:3px;font-size:11px";
+    row2.style.flexWrap = "wrap"; row2.style.alignItems = "center";
+    card.append(row1, row2);
+    if (["sign", "vsign", "noren"].includes(pt.kind)) card.append(wrap(document.createTextNode("words"), txt(pt.text, v => { pt.text = v; })));
+    box.append(card);
+  });
+  const add = pick("", [["", "+ on the walls…"], ...SG.OUTSIDE_PARTS.map(k => [k, SG.PART_KINDS[k].label])], v => {
+    if (!v) return;
+    const K = SG.PART_KINDS[v], pt = { kind: v, face: "front", x: 0, z: K.z ?? 0, w: K.w ?? 1, h: K.h ?? 1 };
+    if (K.out !== undefined) pt.out = K.out;
+    if (v === "sign" || v === "vsign") pt.text = "OPEN"; if (v === "noren") pt.text = "ゆ";
+    o.parts.push(pt); renderOutside();
+  });
+  add.style.marginTop = "4px";
+  box.append(add);
+}
+// the building, drawn into the view round the level (its floor at z 0, so its ground is `raise` under it)
+function buildOutside() {
+  if (!stage) return;
+  if (outsideGroup) { stage.scene.remove(outsideGroup); outsideGroup.traverse(m => { if (m.geometry) m.geometry.dispose(); }); outsideGroup = null; }
+  const o = outsideOf();
+  if (!o || !$("#showOutside").checked || !B.exported) return;
+  const b = SG.outsideBuilding(B.exported.level, o);
+  if (!b) return;
+  try {
+    const pieces = SG.build({ buildings: [b], ground: false }).filter(p => p.type !== "inside");
+    const g = S3.group({ buildings: [b] }, pieces, smats, {});
+    g.position.y = -(+o.raise || 0);
+    g.traverse(m => { if (m.isMesh) { m.userData.outside = true; m.raycast = () => { }; } });
+    stage.scene.add(g); outsideGroup = g;
+  } catch (e) { console.warn("outside", e); status("the outside didn't build: " + e.message, "bad"); }
+}
+function levelBox() {
+  const rs = B.model.rooms.filter(r => Math.abs(r.z - floorZ()) < 0.6 || r.z === 0);
+  const x0 = Math.min(...rs.map(r => r.x)), x1 = Math.max(...rs.map(r => r.x + r.w)), y0 = Math.min(...rs.map(r => r.y)), y1 = Math.max(...rs.map(r => r.y + r.d));
+  return { cx: (x0 + x1) / 2, cy: (y0 + y1) / 2, r: Math.hypot(x1 - x0, y1 - y0) / 2 };
+}
+const orbitDist = () => Math.max(6, levelBox().r * 2.6 + 4);
+function renderAround() {
+  const c = levelBox(), R = orbit.dist || orbitDist(), a = orbit.yaw * Math.PI / 180, pt = orbit.pitch * Math.PI / 180, aim = 1.2;
+  stage.scene.fog = null;
+  if (!outsideLights) {
+    outsideLights = new THREE.Group();
+    const hemi = new THREE.HemisphereLight(0xcfd9e6, 0x3a362f, 1.4), sun = new THREE.DirectionalLight(0xfff0dc, 1.6);
+    sun.position.set(-12, 22, 9); outsideLights.add(hemi, sun);
+    stage.scene.add(outsideLights);
+  }
+  outsideLights.visible = true;
+  if (lampLight) lampLight.visible = false;
+  stage.camera.fov = 45; stage.camera.near = 0.1; stage.camera.far = 600; stage.camera.updateProjectionMatrix();
+  stage.camera.position.copy(s2t(c.cx + R * Math.cos(pt) * Math.cos(a), c.cy + R * Math.cos(pt) * Math.sin(a), aim + R * Math.sin(pt)));
+  stage.camera.lookAt(s2t(c.cx, c.cy, aim));
+  stage.render();
+  const o = outsideOf();
+  $("#viewHud").innerHTML = (o ? `the outside: ${o.style ? STREET_STYLES[o.style].label.toLowerCase() + ", " : ""}${SG.ROOF_KINDS[o.roof && o.roof.kind] || "a roof"}, the floor ${(+o.raise || 0).toFixed(2)} m up`
+    : `no outside yet: tick <b>build its outside</b> on the left`) + `<br><span style="color:#aaa">drag to go round the building, the wheel to come closer</span>`;
+}
+// on the plan: the building's walls round the rooms (dashed), its roof's edge, and which side is its front
+function drawOutsidePlan() {
+  const o = outsideOf(); if (!o || !B.exported || floorZ() > 0.5) return;
+  const b = SG.outsideBuilding(B.exported.level, o); if (!b) return;
+  const over = ["gable", "hip", "shed"].includes((o.roof || {}).kind) ? +(o.roof.over ?? 0.6) : 0;
+  const plan = SG.outsidePlan(B.exported.level, o) || { walls: [], roof: [] };       // the real outline: an L's, a T's
+  const line = (q, attrs) => el("path", Object.assign({ class: "outside-line", d: `M${sx(q[0])} ${sy(q[1])}L${sx(q[2])} ${sy(q[3])}`, fill: "none", stroke: "#d9a441", "pointer-events": "none" }, attrs));
+  for (const q of plan.walls) line(q, { "stroke-width": 1.5, "stroke-dasharray": "6 4" });
+  for (const q of plan.roof) line(q, { "stroke-opacity": 0.45, "stroke-width": 1, "stroke-dasharray": "2 4" });
+  const f0 = SG.place([0, -b.d / 2 - over, 0], b), f1 = SG.place([0, -b.d / 2 - over - 1.2, 0], b);
+  el("path", { d: `M${sx(f0[0])} ${sy(f0[1])}L${sx(f1[0])} ${sy(f1[1])}`, stroke: "#d9a441", "stroke-width": 2, "marker-end": "", "pointer-events": "none" });
+  const t = el("text", { x: sx(f1[0]), y: sy(f1[1]) + 4, "text-anchor": "middle", fill: "#d9a441", "font-size": 11 });
+  t.textContent = "front: the street";
 }
 
 // ---- reference models: a window or a door you'll place in Unreal, measured here so the wall is cut to fit ----

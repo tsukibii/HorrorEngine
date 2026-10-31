@@ -1,0 +1,16 @@
+{
+ "maps": {
+  "ao": "RoofingTiles014C_1K-PNG_AmbientOcclusion.png",
+  "albedo": "RoofingTiles014C_1K-PNG_Color.png",
+  "height": "RoofingTiles014C_1K-PNG_Displacement.png",
+  "normal": "RoofingTiles014C_1K-PNG_NormalGL.png",
+  "opacity": "RoofingTiles014C_1K-PNG_Opacity.png",
+  "rough": "RoofingTiles014C_1K-PNG_Roughness.png"
+ },
+ "normal": "gl",
+ "tile_m": 2.4,
+ "source": "ambientCG",
+ "url": "https://ambientcg.com/view?id=RoofingTiles014C",
+ "licence": "CC0-1.0",
+ "label": "terracotta, weathered"
+}

@@ -11,6 +11,91 @@ the to-do built there, with the Studio's eyes from the side, a small nose and th
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
+## 0. The street builder (2026-10-30, night, on `buildings-streets`; not merged)
+
+The user asked for a new tool (DECISIONS 2026-10-30, night and later night): the outside world the enterable buildings
+go into, low poly and layman-simple; then slopes and curves, big streets handled, a .glb to drop into a Godot folder,
+and the interiors (sets) walked into from the street. Built (docs/STREET_BUILDER.md): **the street builder**
+(`tools/director/street.html`, the dashboard's tile; `street-gen.js` the generator in plain JS, `street3.js` the drawing
+and the export, `street-presets.js` ten styles, five mixes and the walk-ins; `Content/Studio/Streets/<name>/street.json`):
+the map, the facade view (parts clicked onto the wall, floors by dragging the roof, a photo behind each side), the 3D
+view (orbit, walk, shots matched to a photo), **Fill a street**, streets that **bend** (a dot in a street's middle) and
+**climb** (heights a point; the ground, plinths, things and fence posts follow), **big streets** in 48 m chunks merged
+by material (colours on the vertices; 451 draws for the 89-building town), a piece rebuilt only when it changes, **the
+.glb for Godot** (colliders `-colonly`, occluders `-occonly`, lamps, insides' markers; a colour a material, since Godot
+leaves vertex colours off), **buildings to walk into** (a set inside: the shell round its rooms with its doors and
+windows cut through, roof, plinth, steps; rows and floors: the Motel with its walkway and stair; the Bungalow), gates.
+Streets: **shibuya_lane** (the first photo matched, 13 pins at 0.5%), **reference_town** (the other five references),
+**hill_motel** (a winding hill, the motel and its car park, the bungalow behind its gate). Sets: **motel_room**,
+**bungalow**. Checks: STREET (check_all), STREETPAGE, GDSTREET (Godot 4.7: rays onto the road, the pavement, roofs, the
+walkway; through each inside's doorway onto the set's own door with the set's level at its marker).
+
+**Then the surfaces** (2026-10-31, past midnight; DECISIONS): "the most aesthetic way" to texture the streets, wear and
+decals, procedural bakes instead of PBRs, a street → Blender → Godot path with easy collision. Answered and built
+(docs/STREET_TEXTURING.md): **finishes that tile at their real size** (Blender node groups in `tools/streetbake/
+finishes.py`, baked once onto the PBR shelf as seamless sets, `assets/pbr/Procedural/`), **the street's own wear** in
+one low-res atlas (`wear.py`: the prop generator's idea at a street's scale; dirt, splash band, rain streaks run down
+each ledge, worn edges, wet patches), PBR sets optional by slot or material (a street's `finish.json`). `tools/street.py
+look` renders a shot beside its photo in Cycles; `bake` writes `<name>.glb` and `<name>.blend` (plain glTF: the
+finish at its size times the colour, the atlas as occlusion on UV2, the recipe in extras; colliders, occluders, lamps
+and markers by name; the .blend's Foliage collection kept between bakes). The look plugin's import step
+(`street_import.gd`) makes those materials `street.gdshader`, so Godot matches Blender (GDSTREET `--glb --plugin
+--shot`: the rays land on the road at 0.004 m and the pavement at 0.150 m after Blender, 85 surfaces on the street
+shader). STREETBAKE (`street.py bake-check --godot`, a minute). The Shibuya lane: `Saved/Streets/shibuya_lane/blender/
+compare_photo.jpg` (the photo, Blender, Godot). **Next, if wanted:** decals as a street builder part made Godot Decal
+nodes by the same import step (STREET_TEXTURING §5); a `finish` beside each slot's colour in the street's `look`; the
+wear reacting to the plugin's rain.
+
+**Then the enterable buildings' outsides** (2026-10-31, small hours; DECISIONS): the shop door made readable (a frame
+all round, a kick plate, a push bar, its own pane), and the scene builder's **Outside panel** (SCENE_BUILDER §8): an
+enterable building designed whole, inside and out, with the street's own generator and styles (roof, walls, raise,
+front, fittings), seen *round the building*, kept as the level's `outside` (STORY_FORMAT §2, story_check reads the
+street's own words from street-gen.js); the street builder's palette has every set, its building wears the set's
+outside until changed in the street (`inside.from`, `inside.own`, *Follow the set's outside*; STREET fails when a
+following building is stale). The bungalow set has its outside (hip roof, raised 45 cm, an air conditioner and a pipe);
+hill_motel's bungalow follows it, its motel is its own. Checks: STORY, STREET, STREETPAGE, BUILDER.
+
+**Then no clipping** (2026-10-31, small hours; the user saw the bungalow's wall tops through its roof): walk-in roofs
+boxed on a soffit 1 cm over the level's top (gables flush), roofs over an L or a T joined into one (flat: one slab and
+its parapet round the outline; pitched: a roof over each arm, cut where it's inside another), and the whole generator
+swept for faces in one plane over each other: layers a `GAP` (1 cm) apart, parts `SIDE_IN` (6 mm) in, rails sharing
+their corner posts, parts up the floors never into their own copy, and the rest by rule (STREET_BUILDER §5d). STREET
+measures it over everything it builds (1 cm², 4 mm) and over sets shaped L, T, U, steps and apart under every roof.
+
+**Then the streets made to look real** (2026-10-31, before dawn and morning; DECISIONS): research first
+(docs/research/photoreal.md: the Battlefront look is right values, right light, right flaws; through a tape, light and
+metre-scale variation matter, micro detail doesn't; LightmapGI with a Dynamic sun is Battlefront II's split), then
+**street paint** (docs/STREET_PAINT.md): **the material library** (49 Japanese exterior finishes, `street.py library`,
+`pbr/Procedural/jp_*`, each with every PBR map: colour, normal, height, roughness, occlusion, ORM), **wear and tear**
+in every material and finish (smudges, fingerprints, scratches, chips, cracks, dents), **27 decals** made from code
+(`street.py decals`), and **the paint page** (`paint.html`: paint a surface or every one like it, lay decals, Blender's
+look or bake from the page). The Shibuya lane is painted from its photo and rendered under **Blender's physical sky**
+(Nishita), calibrated against the photo by measurement. Checks: PAINT (new), STREET (decals), STREETBAKE.
+**Then the road and the light** (2026-10-31, late morning; DECISIONS): the road's print lies on the road (5 mm, no
+shadow anywhere: the page, Blender, Godot's import step, GDSTREET checks it); the light is the user's, baked by hand
+in Godot (STREET_TEXTURING §3 has what LightmapGI and VoxelGI each need from the street).
+
+**Then the PBR sets** (2026-10-31, afternoon; DECISIONS): the user's `pbrs` branch merged (37 ambientCG sets, CC0, 1K,
+in git at `pbr/<category>/<set>`, each with its real size and a label in its meta.json; the shelf reads them after
+assets/pbr). The street paint page's materials are those sets by category (the first library, made in code, folded
+away), and **the brush** tunes one (tint, brightness, contrast, saturation, hue, fade, roughness, relief, size, turn)
+and **layers** over it: another set in soft patches or by its own mask, the street's decals scattered over each
+repeat, and the bake's wear per surface (grime, streaks, edges, damp). A tuned look is an object in the street's
+`look` that `storykit/pbrmix.py` makes into a tileable set of its own (`pbr/_made/<hash>`, not in git; one function,
+so the page, Blender and Godot match), and STREET checks every look through it. The Shibuya lane is repainted with
+them, tinted to the colours the earlier calibration found: `docs/godot_sheets/2026-10-31_shibuya_pbr.jpg` (the photo,
+the procedural render, the PBR one; close-ups of the shop, the kiosk and the road). Up close the road and pavers
+read real; from the photo's distance the frame is still ruled by the light and the street's clutter. **GDSTREET** now
+drops a body a person's size on the roads and pavements (it stands there) and walks it at a building's front (it
+stops at the wall). **Next, if wanted** (ask first): the street's light by the user in Godot, more of the photo's
+clutter (cables, AC units, signs), more sets (tiles, siding, glass), a set per material in the street builder's own
+inspector with the brush.
+
+**What could come next** (ask first): the user's verdict on the match, the town and the motel; more references; the
+export placing an inside's level by itself (today a marker; the set's level dropped there by hand); a two-storey
+interior (stairs inside the set); foliage when the user wants it; steps and retaining walls on a slope; a grade in the
+page (the photo's teal and orange).
+
 ## 0a. The cloud session after (2026-10-30, small hours): §0's four pieces built, and a stand-in bug from the user
 
 All four of §0 are in, each measured where the cloud could (GDTESTROOM, GDEXPORT, GDPLAY, DESK, LOOKPLUGIN):
