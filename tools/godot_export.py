@@ -179,7 +179,8 @@ def main():
                     print(f"  GDEXPORT FAIL: {part} missing from the export")
                     ok = False
             code, out = run_godot(r["dir"], "res://addons/horrorstudio/tests/load_check.gd")
-            print("\n".join("  " + ln for ln in out.splitlines()[-12:]))
+            lines = out.splitlines()                        # every verdict (the levels, surfaces, materials...), then the tail
+            print("\n".join("  " + ln for ln in [ln for ln in lines[:-12] if ln.startswith("GDEXPORT ")] + lines[-12:]))
             if code != 0 or "GDEXPORT ok" not in out:
                 ok = False
         if a.pictures:                                      # the guide's pictures, then the zip again with them in it

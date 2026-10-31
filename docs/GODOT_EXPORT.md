@@ -54,11 +54,36 @@ draws it. A re-export overwrites only what the user hasn't touched, and reports 
         scene.tscn              StoryScene: the level instanced, the cast at their spots, a Camera3D, an AnimationPlayer
         takes/c1.ogg ...        the voice of each take (ffmpeg from the mp4), subtitles in the animation
       ...                       choices/endings: small .tres beside the flow, no folder
+    materials/<Name>.tres       ONE MATERIAL FILE A TEXTURE SET (2026-10-31): every set the rooms' `look`s and the props'
+    materials/<Name>/           `mat`s wear (the shelf's, your attached folders', the library's, a tuned one, a colour),
+                                its maps beside it; every piece on every level wears it by reference (§3b)
     ui/theme.tres, hud.tscn     the HUD theme from the game's (glass, glass-rose, neumorph, plain) as Godot theme vars
     music/, sfx/                the palette's cues (rendered) and the shelf's files the game names
   guide/index.html              the guide (GODOT_PLAN §7), with its pictures
   .desk/manifest.json           every generated file's hash (the re-export's receipt, §5) and the desk's version
 ```
+
+### 3b. Materials: one file a set, shared (the user, 2026-10-31)
+
+"If multiple parts use the same PBR it should be smart enough to only export that material once and re-use it; when we
+export we have a separate material folder using the name of the material, so even later on we can just ref that one
+PBR mat for many parts." So `storykit/godot.py`'s `Materials` writes **`game/materials/<Name>.tres`** once a set: a
+StandardMaterial3D (world-aligned triplanar, tiled by the set's `tile_m`; albedo, roughness, AO, metal, a packed ORM,
+the normal with a DirectX map's green flipped: the Unreal side's M_StudioSurface), its maps copied beside it into
+`game/materials/<Name>/`. Every level's piece that wears the set has the file as an `ext_resource` (`material_override`):
+Godot loads it once and shares it, a change to it in the editor changes every wall that wears it, and it can be dragged
+onto any mesh of yours (world-aligned: it fits any shape at the set's real size; a moving thing's texture would swim,
+so give those their own UV'd material).
+
+- **Names** are the material's: the set's folder name without its resolution (`Concrete010_1K-PNG` → `Concrete010`,
+  `red_brick_2k` → `red_brick`), a tuned set (`pbr/_made/<hash>`) the set it's made from and six of its hash
+  (`Tatami004_a70d6e`), a colour `colour_<hex>`. Two sets that would share a name (the project's `Concrete010` and a
+  library one) both carry four letters of their ref's hash, decided from every set the game uses, so a name doesn't
+  depend on which level came first.
+- **Sets from anywhere**: the shelf's own, your attached folders' (ASSETS §6: copied into the project from where they
+  are), the library's, a tuned one (made before the levels are written when this machine hasn't it yet).
+- `export.json`'s `materials` maps each set's ref to its file; GDEXPORT's load check finds every surfaced piece wearing
+  its set's file from `game/materials/`, each file loaded once and shared (`GDEXPORT materials: …`).
 
 **Sequencing the user can see:** a scene's whole timeline is one Animation (`scene`): a position/rotation track for
 the camera (the bake's, at 30 fps, keys thinned), bone tracks per cast member (the bake's skin matrices turned into
@@ -315,7 +340,8 @@ objects, the same frame. **The dialogue choice** (the user: "I can't click
    **M_StudioSurface done** (2026-10-29, `LevelWriter.surface`): a room's `look` and a prop's `mat` (`mat:<ref>`
    tags) become world-aligned StandardMaterial3Ds (triplanar in world space, tiled by the set's `tile_m`, albedo,
    roughness, AO, a packed ORM, the normal with a DirectX map's green flipped) with the maps copied into
-   `game/textures/<set>/`; a set not on the shelf leaves the block its colour. TestRoom001's lobby, corridor,
+   `game/textures/<set>/` (since 2026-10-31 one shared file a set, `game/materials/<Name>.tres`, §3b); a set not on
+   the shelf leaves the block its colour. TestRoom001's lobby, corridor,
    kitchen and power room wear the demo shelf's sets (`tools/pbr.py demo`); GDEXPORT counts the pieces wearing one
    against the export's own count; pictures `godot_reference/look_*_pbr.png`. HSWet samples a world-aligned floor
    by its place, so a wet textured floor keeps its planks.

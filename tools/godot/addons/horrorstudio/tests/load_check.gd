@@ -39,6 +39,9 @@ func _initialize() -> void:
 		return
 	var ok := true
 	var surfaced := 0
+	var shared: Dictionary = {}          # a material file's path -> the instances the pieces wear (one: loaded once, shared)
+	var held: Array = []                 # kept alive across the levels, so a level loaded after another gets the same one
+	var unfiled := 0                     # a set's material that isn't the game's file for it (game/materials/)
 	var info: Dictionary = {}
 	var ef := FileAccess.open("res://game/export.json", FileAccess.READ)
 	if ef != null:
@@ -67,6 +70,14 @@ func _initialize() -> void:
 				var mi = ch.get_node_or_null("mesh")        # a surface off the shelf: a world-aligned material with its maps
 				if mi is MeshInstance3D and mi.material_override is StandardMaterial3D and mi.material_override.albedo_texture != null and mi.material_override.uv1_triplanar:
 					surfaced += 1
+					var mat: Material = mi.material_override
+					if not mat.resource_path.begins_with("res://game/materials/"):
+						unfiled += 1
+					else:
+						var ids: Dictionary = shared.get(mat.resource_path, {})
+						ids[mat.get_instance_id()] = true
+						shared[mat.resource_path] = ids
+						held.append(mat)
 			var art = ch.get_node_or_null("art")
 			if art != null:
 				arts += 1
@@ -77,6 +88,18 @@ func _initialize() -> void:
 			var want := int(info.get("surfaced", 0))
 			print("GDEXPORT surfaces: %d pieces wear a texture set off the shelf (the export made %d; sets %s)" % [surfaced, want, JSON.stringify(info.get("surface_sets", []))])
 			if surfaced != want:
+				ok = false
+			var many := 0                     # a set's file loaded more than once (a piece with its own copy)
+			for path in shared:
+				if shared[path].size() != 1:
+					many += 1
+			var files := 0                    # the sets' files (a colour's has no maps: not counted above)
+			for ref in info.get("materials", {}):
+				if not String(ref).begins_with("#"):
+					files += 1
+			print("GDEXPORT materials: %d files in game/materials/ (the export wrote %d), each loaded once and shared by its pieces%s%s" % [
+				shared.size(), files, "" if many == 0 else " (%d LOADED TWICE)" % many, "" if unfiled == 0 else " (%d pieces wear a set NOT FROM ITS FILE)" % unfiled])
+			if many or unfiled or (want > 0 and shared.size() != files):
 				ok = false
 		if empty:
 			ok = false
