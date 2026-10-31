@@ -87,7 +87,8 @@ export const TYPES = {
   panel: { label: "Mirror / TV / frame / board", cat: "wall", mount: "wall", size: [0.6, 0.02, 0.9], params: [["face", "face", "mirror", "slot"],
     ["frame", "frame width", 0.012, "m"], ["frame_slot", "frame material", "frame", "slot"], ["mat", "inner margin (mount)", 0, "m"],
     ["back", "slim back (a TV's)", 0, "m"], ["bevel", "edge bevel", 0.001, "mm"]], gen: panelGen },
-  downlight: { label: "Downlight / ceiling panel", cat: "ceiling", mount: "ceiling", size: [0.12, 0.12, 0.02], params: [["shape", "shape", "round", "pick", ["round", "square"]],
+  downlight: { label: "Downlight / ceiling panel / round LED", cat: "ceiling", mount: "ceiling", size: [0.12, 0.12, 0.02], params: [["shape", "shape", "round", "pick", ["round", "square"]],
+    ["style", "style (round)", "recessed", "pick", ["recessed", "flush", "dome", "ring"]],
     ["trim", "trim ring", 0.012, "mm"], ["lens_in", "lens set in", 0.012, "mm"], ["slot", "trim material", "white", "slot"]], gen: downlightGen },
   window: { label: "Window frame", cat: "opening", mount: "opening", size: [1.6, 0.22, 1.25], params: [["cols", "panes across", 2, "int"], ["rows", "panes up", 1, "int"],
     ["frame", "frame width", 0.06, "m"], ["frame_d", "frame depth", 0.07, "m"], ["mullion", "mullion", 0.05, "m"], ["sash", "sash width (0: none)", 0.045, "m"],
@@ -830,6 +831,25 @@ function downlightGen(s, P) {
     bx(P, -W / 2, -D / 2, 0, W / 2, -D / 2 + t, H, s.slot); bx(P, -W / 2, D / 2 - t, 0, W / 2, D / 2, H, s.slot);
     bx(P, -W / 2, -D / 2 + t, 0, -W / 2 + t, D / 2 - t, H, s.slot); bx(P, W / 2 - t, -D / 2 + t, 0, W / 2, D / 2 - t, H, s.slot);
     bx(P, -W / 2 + t, -D / 2 + t, lin, W / 2 - t, D / 2 - t, lin + 0.002, "emit");
+  } else if (s.style === "flush" || s.style === "dome" || s.style === "ring") {
+    // round LED fittings on the ceiling (the user, 2026-10-31: "a circular rim with a glass circle, and those kinds of
+    // variations"): flush, a slim drum with its frosted face nearly level with the rim; dome, a shallow rim with a domed
+    // diffuser hanging under it; ring, a glowing annulus between the rim and a hub. The glass is `emit` (it glows while
+    // the light it's the fitting of is on), the rim the trim material
+    const r = Math.min(W, D) / 2, rim = s.style === "dome" ? Math.min(H, Math.max(0.01, H * 0.22)) : H;
+    cy(P, 0, 0, H, r, rim, s.slot, { axis: "-z", ri: r - t, m2: s.slot });                    // the rim, from the ceiling down
+    cy(P, 0, 0, H, r - t + 0.0005, 0.003, "inner", { axis: "-z" });                           // closed above
+    if (s.style === "dome") {
+      const rd = r - t + 0.0005, dz = H - rim + 0.002;                                     // the diffuser, just inside the rim
+      lathe(P, 0, 0, 0, [[0, 0], [rd * 0.45, dz * 0.05], [rd * 0.75, dz * 0.22], [rd * 0.93, dz * 0.55], [rd, dz], [0, dz]], "emit", { n: 48 });
+    } else if (s.style === "ring") {
+      const hub = Math.max(t * 2, r * 0.55);
+      cy(P, 0, 0, H - 0.004, hub, H - 0.004 - lin, s.slot, { axis: "-z", ri: Math.max(0.001, hub - t), m2: s.slot });   // the hub's own rim (under the cap)
+      cy(P, 0, 0, lin + 0.002, hub - t + 0.0005, 0.002, s.slot, { axis: "-z" });           // its face, the light's colour off
+      cy(P, 0, 0, lin + 0.002, r - t + 0.0005, 0.002, "emit", { axis: "-z", ri: hub });   // the glowing ring between
+    } else {
+      cy(P, 0, 0, lin + 0.002, r - t + 0.0005, 0.002, "emit", { axis: "-z" });            // the frosted face
+    }
   } else {
     const r = Math.min(W, D) / 2;
     cy(P, 0, 0, H, r, H, s.slot, { axis: "-z", ri: r - t, m2: "inner" });

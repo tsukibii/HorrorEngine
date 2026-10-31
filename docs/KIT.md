@@ -131,6 +131,14 @@ A room prop carries a kit in place of a shape: a preset's name, or an object wit
 The checks treat floors, rugs and ceiling steps as surfaces: walked over or under, never bumped. They treat window
 frames as part of their wall. Everything else is checked like any prop: overlaps, walls, doorway clearance.
 
+**Round LED fittings** (2026-10-31, the user: "lights as furniture, rounded LEDs: a circular rim with a glass circle,
+and those kinds of variations"): the `downlight` type's `style` (round): `recessed` (the trim ring with its glass set in:
+`downlight_100`, `downlight_150`), `flush` (a slim drum, its frosted face nearly level with the rim: `led_flush_300`,
+`led_flush_450`), `dome` (a shallow rim with a domed diffuser under it, a シーリングライト: `led_dome_500`), `ring` (a glowing
+annulus between the rim and a hub: `led_ring_600`). The glass is the `emit` slot, the rim the trim material (`slot`,
+white). A story light with one as its `kit` is a fitting (STORY_FORMAT §2, `light`): the scene builder puts one on every
+ceiling it lights.
+
 **Its slots dressed** (2026-10-31): `"mats": {"fabric": "pbr/...", "white": {"set": "pbr/...", "tint": "#..."}}` puts a
 PBR set, a colour or a tuned set on any of its material slots (a slot's tones, `wood_2`..., follow `wood`), laid by the
 kit's UVs, which are metres (`uvFor`'s box projection), so a set keeps its real size. The scene builder's Paint writes
