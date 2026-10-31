@@ -109,8 +109,13 @@ TestRoom001's fridge wears the white plastic set (GDEXPORT's kit slots). The str
 built-ins, the stairs and window frames the finish makes, and doors (a plain door's `mat`, a kit door's `mats` over its
 parts) take sets; a fitting's paint is kept on a stub in its room's props (the export copies it onto the fitting it
 makes), a frame's on its window, a door's on its opening; a moving block's set in Godot is `<Name>_obj.tres`;
-TestRoom001's power switch, library door and kitchen door show them. **Next, if wanted** (ask first): kit floors dressed
-rather than taken up (a plain wood grain on the kit's planks), a set per material in the street builder's inspector.
+TestRoom001's power switch, library door and kitchen door show them. **Then the lights as furniture** (small hours:
+"no Godot light sources, rounded LEDs"): the kit's downlight grows `flush`, `dome` and `ring` styles (four presets); a
+story light with a `kit` is a fitting (plan: `<id>__fitting` and the light under it; the desk's glass glows with it);
+the scene builder's ceiling lights are round LEDs (by room size or picked in Finish); the Godot export writes a fitting
+light as its fitting and a node, no light source (its glass and the user's lights under it follow the story's light);
+TestRoom001's power bulb is a flush 300 (GDEXPORT fittings, GDTESTROOM's switch). **Next, if wanted** (ask first): kit
+floors dressed rather than taken up, a set per material in the street builder's inspector.
 
 **What could come next** (ask first): the user's verdict on the match, the town and the motel; more references; the
 export placing an inside's level by itself (today a marker; the set's level dropped there by hand); a two-storey

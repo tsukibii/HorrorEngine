@@ -2,6 +2,16 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-31, small hours (the user, on the lights)
+
+- **Lights as furniture, no light sources exported**: "we don't need to export actual Godot light sources, I'd rather
+  take lights as furniture approach, maybe stick to rounded LED types of lights for simplicity (where it's a circular rim
+  that sits above the ceiling with a glass circle and those kinds of variations)". A story light can have a fitting
+  (`kit`): the kit's round LEDs (recessed downlights, flush panels, a dome, a ring); the scene builder puts one on every
+  ceiling it lights (by the room's size, or one picked in Finish). In Godot a light with a fitting is the fitting and
+  a node, no light source: its glass glows as the story has the light, and the user's own lights put under the node
+  follow it (switch, power cut, flicker). Lights without a fitting are as they were.
+
 ## 2026-10-31, late night (the user, on the fittings and doors)
 
 - **Fittings and doors take PBRs too**: "make it so we can add PBRs to those, given that we could use the plastic PBR
