@@ -90,7 +90,11 @@ so give those their own UV'd material).
   export puts `addons/horrorstudio/slot_materials.gd` on the thing's instanced kit mesh with its `slots` (slot ->
   material file); a `@tool` script, so the editor shows them too: each `kit_<slot>` surface (and its tones,
   `kit_wood_2`...) of this thing's own copy of the mesh wears its file, the surface keeping its name for the little
-  things' effects; put back before a save, so only `slots` is saved.
+  things' effects; put back before a save, so only `slots` is saved. Its `uv1_offset` takes back the metre the .glb's
+  `1 - v` shifts it by, so a set lies on a kit thing exactly where the desk lays it: **a floor laid out by its set's
+  own tiles** (KIT.md, *Floors laid out by their set*: its mesh built from the plan's spec, the set's cells in it) has
+  the set's seams in its real gaps in Godot as on the desk. TestRoom001's keys room is paved that way (Concrete010's
+  30 cm pavers), its library tiled with a plain set (each tile its own cut).
 - **A light with a fitting** (its `kit`: the round LEDs the scene builder puts on its ceilings; the user, 2026-10-31,
   "we don't need to export actual Godot light sources, lights as furniture") is written as its fitting (a kit thing,
   `<id>__fitting`) and a plain node in `Lights` where the light is, with no light source: the runtime keeps the light's

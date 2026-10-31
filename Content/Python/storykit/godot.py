@@ -294,8 +294,11 @@ class Materials:
             res = f"res://game/materials/{base}"
             maps = meta["maps"]
             tile = float(meta.get("tile_m") or 2.0)
-            if mode == "uv":                               # the kit's UVs are metres: one repeat a tile_m
+            if mode == "uv":                               # the kit's UVs are metres: one repeat a tile_m; the .glb
+                # writes v as 1 - v, so the offset takes that metre back: the set lies where the desk lays it (a floor
+                # laid out by its set's own cells has the set's seams in its gaps in both)
                 props["uv1_scale"] = v3(1.0 / tile, 1.0 / tile, 1.0)
+                props["uv1_offset"] = v3(0.0, round((-1.0 / tile) % 1.0, 6), 0.0)
             else:                                          # triplanar in the world's space, or the block's own (it moves)
                 props.update({"uv1_triplanar": "true", "uv1_world_triplanar": "true" if mode == "world" else "false",
                               "uv1_scale": v3(1.0 / tile, 1.0 / tile, 1.0 / tile)})
