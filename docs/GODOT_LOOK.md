@@ -613,6 +613,10 @@ close up. docs/research/hair_cards_unreal.md (2026-10-24) had the recipe, for Un
   strands' ambient a little. (The emissive slot was tried first: Godot's importer lights an emissive texture although
   glTF's emissive colour is black by default, and the hair glowed in rainbow colours wherever HSHair wasn't on.)
 - **The record**: `studioHair` in the material's extras (what each slot and attribute holds) beside the salon's `look`.
+- **Each card wound to face its shell normal** (`hairvolume.js` `wind`): a double-sided material turns a back face's
+  normal round (three.js, Godot's StandardMaterial3D), and the cards wound into the hair lay dark under a plain viewer
+  while the rest caught the room as a grey sheen (the Studio's view, until the fix; HSHair lights both faces by the
+  vertex normal and never showed it). The plain material's roughness 0.55 (it was 0.42).
 - **The darkened scalp's colour in its material** (its vertices white, carrying only its see-through), so a reader that
   drops an unlit material's vertex colours draws a dark cap, never a white one.
 - The Character Studio's export keeps all of it (`exportRig`: a swinging lock's normals and tangents turned with it, no

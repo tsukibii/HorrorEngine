@@ -348,7 +348,9 @@ Character Studio shows it still on the head for now; Unreal gets it with the fin
   card vertex's normal is the hair volume's shell normal (the hairstyle in a density grid with the head and body solid:
   the cards shade as one mass), its tangent runs along its strand, its second UV holds where across its card it is and
   how much sky it sees (the occlusion), the material's occlusion slot holds each strand's numbers (`strandsTexture`), and
-  `studioHair` in its extras says so; the darkened scalp's colour is its material's (its vertices white). The base
+  `studioHair` in its extras says so; each card is wound to face its shell normal (a double-sided viewer turns a back
+  face's normal round: until it was, half the cards lay dark in the Studio and the rest shone grey; the Studio winds a
+  bake made before as it loads it); the darkened scalp's colour is its material's (its vertices white). The base
   (`salon_base.glb`) is baked the same way, as a volume of its own cards. Godot's HSHair reads all of it; three.js draws
   the shell normals too (the bake's preview is softer than the live hair).
 - **Smoothing** (2026-10-23; only in the bake, the hair you edit stays as it is). **Smooth curves**: evenly spaced, an

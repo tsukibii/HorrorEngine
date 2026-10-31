@@ -1197,3 +1197,8 @@ guessed margin; and a check that only ever ran on a slow machine hasn't been run
 - **Measure one part with the others out of the picture**: the pores' close-up started measuring the hair once a long
   cut fell into it (the grain ratio 1.16 instead of 1.76); the portrait hides the hair for that shot.
 
+- **Shell normals on double-sided cards need the winding to agree.** A viewer turns a back face's normal round (three.js,
+  Godot's own materials): with every card's normal the hair volume's, the cards wound into the hair lit their outside
+  with a normal into the head (dark) and the rest caught the room's reflection as one grey sheen; the Studio's view of
+  the new bake was worse than the old one while Godot's HSHair (both faces lit by the vertex normal) looked right. Wind
+  each triangle toward its normal (`hairvolume.js` `wind`), and look at a change in every viewer that shows the file.

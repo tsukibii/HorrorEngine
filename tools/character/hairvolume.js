@@ -107,3 +107,18 @@ export function occlusion(V, pos, nrm, o = {}) {
   }
   return out;
 }
+// each triangle wound to face its vertices' shell normal: a double-sided material turns the normal round on a face seen
+// from behind (three.js, Godot's own), so a card wound into the hair lit its outside with a normal pointing into the head
+// (dark, half the cards). In place on the index; the count turned round back
+export function wind(index, pos, nrm) {
+  let turned = 0;
+  for (let t = 0; t < index.length; t += 3) {
+    const a = index[t] * 3, b = index[t + 1] * 3, c = index[t + 2] * 3;
+    const ux = pos[b] - pos[a], uy = pos[b + 1] - pos[a + 1], uz = pos[b + 2] - pos[a + 2], vx = pos[c] - pos[a], vy = pos[c + 1] - pos[a + 1], vz = pos[c + 2] - pos[a + 2];
+    const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+    if (nx * (nrm[a] + nrm[b] + nrm[c]) + ny * (nrm[a + 1] + nrm[b + 1] + nrm[c + 1]) + nz * (nrm[a + 2] + nrm[b + 2] + nrm[c + 2]) < 0) {
+      const k = index[t + 1]; index[t + 1] = index[t + 2]; index[t + 2] = k; turned++;
+    }
+  }
+  return turned;
+}

@@ -912,6 +912,7 @@ function finishCards(geos, sets) {
   for (const g of geos) {
     const P = g.attributes.position.array, sh = HV.shell(V, P, g.attributes.normal.array, 0.8);
     g.setAttribute("normal", new THREE.Float32BufferAttribute(sh, 3));
+    if (g.index) { HV.wind(g.index.array, P, sh); g.index.needsUpdate = true; }   // each card's front toward its shell normal (a double-sided viewer turns a back face's normal round)
     raw.push(HV.occlusion(V, P, sh, { reach: 0.06, dirs: 12 }));
   }
   const sorted = raw.flatMap(a => Array.from(a)).sort((a, b) => a - b), top = sorted[Math.floor(sorted.length * 0.9)] || 1;
@@ -945,7 +946,7 @@ function retroAlbedo(rgba, k) {                                       // the ret
 function bakeMat() {
   const k = look(), map = albedoTexture(ATLAS, retroAlbedo(albedo(ATLAS, k), k));
   const cards = k.flat ? new THREE.MeshBasicMaterial({ name: "hair_cards", map, alphaTest: 0.4, vertexColors: true, side: THREE.DoubleSide })   // unlit: glTF's KHR_materials_unlit
-    : new THREE.MeshStandardMaterial({ name: "hair_cards", map, alphaTest: 0.4, vertexColors: true, roughness: 0.42, side: THREE.DoubleSide,
+    : new THREE.MeshStandardMaterial({ name: "hair_cards", map, alphaTest: 0.4, vertexColors: true, roughness: 0.55, side: THREE.DoubleSide,
                                       aoMap: strandsTexture(ATLAS) });   // the strands' own numbers for a runtime's hair shader (a faint shade per strand elsewhere)
   cards.userData = { look: k, shader: "tools/character/hairshader.js (Kajiya-Kay, shifted per strand; the atlas's R brightness, G strand, B clump, A coverage)", studioHair: STUDIO_HAIR };
   return cards;
