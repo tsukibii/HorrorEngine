@@ -22,6 +22,7 @@ exported. No image or 3D generator anywhere.
     python tools/propgen.py all [family...]            every recipe (or a family's)
     python tools/propgen.py sheet [names...]           a contact sheet of their previews: Saved/Props/sheet.png
     python tools/propgen.py pictures [names...]        each made prop's own pictures (logos, flourishes, stamps...)
+        --out DIR                                      (from the props made there, not Saved/Props)
                                                        and parts, and what size a picture wants on each:
                                                        docs/PROPGEN_PICTURES.md
     python tools/propgen.py check                      PROPGEN: a few recipes made small and measured
@@ -132,8 +133,13 @@ def main():
         return
     if argv[0] == "pictures":
         from propgen import recipes, sizes
+        args, src = argv[1:], recipes.OUT
+        if "--out" in args:
+            i = args.index("--out")
+            src = args[i + 1]
+            del args[i:i + 2]
         out = os.path.join(ROOT, "docs", "PROPGEN_PICTURES.md")
-        n = sizes.write_doc(recipes.OUT, out, argv[1:] or None)
+        n = sizes.write_doc(src, out, args or None)
         print(f"PROPGEN pictures: {n} made props' pictures and parts, and the size each wants, in {os.path.relpath(out, ROOT)}")
         return
     if argv[0] == "godot":
