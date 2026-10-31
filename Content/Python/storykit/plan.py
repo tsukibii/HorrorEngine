@@ -17,6 +17,21 @@ from . import life as LIFE
 STEP = 0.18   # a stair's rise
 
 
+def mat_ref(look):
+    """A look as the plan tags it (`mat:<this>`): a set's ref or a colour as it is, a tuned set (a look object, as the
+    street paints with: STREET_PAINT §2) the set made from it, pbr/_made/<hash> (pbrmix.py; the desk's server and the
+    Godot export make it when it's missing)."""
+    if isinstance(look, dict):
+        from . import pbrmix as MIX          # plain Python to name it; numpy only when its pixels are made
+        return MIX.ref_of(look)
+    return look
+
+
+def _look(room, part):
+    v = (room.get("look") or {}).get(part)
+    return [f"mat:{mat_ref(v)}"] if v else []
+
+
 def _tags(t, extra=()):
     tags = ["story", f"story:{t.id}", f"room:{t.room}"]
     if t.use and t.kind == "prop":
@@ -28,7 +43,7 @@ def _tags(t, extra=()):
     if t.d.get("art"):                       # a library mesh that replaces the block, scaled to fit it
         tags.append(f"art:{t.d['art']}")
     if t.d.get("mat"):                       # a library texture set on the block
-        tags.append(f"mat:{t.d['mat']}")
+        tags.append(f"mat:{mat_ref(t.d['mat'])}")
     if t.d.get("tag"):                       # what it is (a mirror, a poster): the desk colours by it
         tags.append(f"tag:{t.d['tag']}")
     lf = LIFE.life_of(t.d) if t.kind == "prop" else None
@@ -128,7 +143,7 @@ def room_pieces(lid, room):
     T = L.WALL_T
     base = {"level": lid, "room": room["id"], "yaw": 0.0, "shape": "box", "d": room}
     tags = ["story", f"story:{room['id']}", f"room:{room['id']}"]
-    look = lambda part: [f"mat:{room['look'][part]}"] if (room.get("look") or {}).get(part) else []   # library textures
+    look = lambda part: _look(room, part)                                                   # library textures, tuned sets, colours
     out.append(dict(base, id=f"{room['id']}__floor", kind="floor", pos=(x0 + w / 2, y0 + d / 2, z0 - 0.05),
                     size=(w, d, 0.1), tags=tags + ["floor:" + room.get("floor", "wood")] + look("floor")))
     out.append(dict(base, id=f"{room['id']}__volume", kind="trigger", shape=None,           # "enter <room>" in the game
@@ -190,7 +205,7 @@ def trim_pieces(lid, lvl, room, walls, openings):
     x0, y0, z0 = room["at"]
     w, d, h = room["size"]
     base = {"level": lid, "room": room["id"], "yaw": 0.0, "shape": "box", "d": room}
-    look = [f"mat:{room['look']['trim']}"] if (room.get("look") or {}).get("trim") else []
+    look = _look(room, "trim")
     for wall in L.WALLS:
         axis, v, lo, hi = L.wall_line(room, wall)
         inward = {"n": -1, "s": 1, "e": -1, "w": 1}[wall]
@@ -276,7 +291,7 @@ def threshold_pieces(lid, lvl):
             z0 = room["at"][2]
             pos = ((a0 + a1) / 2, v, z0 + th / 2) if axis == "y" else (v, (a0 + a1) / 2, z0 + th / 2)
             size = (a1 - a0, T, th) if axis == "y" else (T, a1 - a0, th)
-            look = [f"mat:{room['look']['trim']}"] if (room.get("look") or {}).get("trim") else []
+            look = _look(room, "trim")
             out.append({"id": f"{room['id']}__threshold_{i}", "kind": "mesh", "level": lid, "room": room["id"], "yaw": 0.0, "shape": "box",
                         "d": room, "pos": pos, "size": size, "tags": ["story", f"story:{room['id']}", f"room:{room['id']}", "trim:threshold"] + look})
     return out

@@ -255,6 +255,10 @@ class LevelWriter:
         if ref in self.surfaces:
             return self.surfaces[ref]
         self.surfaces[ref] = None
+        if str(ref).startswith("#"):                       # a look that's a flat colour (STORY_FORMAT §1)
+            if LIB.is_colour(ref):
+                self.surfaces[ref] = self.t.sub("StandardMaterial3D", {"albedo_color": col(int(ref[1:], 16)), "roughness": "0.9"})
+            return self.surfaces[ref]
         meta = LIB.texture_meta(ref)
         src = LIB.texture_dir(ref)
         if not meta or not src.is_dir() or "albedo" not in meta.get("maps", {}):
@@ -1313,6 +1317,13 @@ def export(game, out=None, make_zip=False, do_import=True):
                 if lf:
                     lt[p["id"]] = {"life": lf, "d": p}
     (out / "game" / "life_things.json").write_text(json.dumps(lt, ensure_ascii=False), encoding="utf-8")
+    for look, where in LIB.looks(story):                # the rooms' and blocks' tuned sets, made where this machine hasn't them yet
+        if isinstance(look, dict) and ".outside." not in where:
+            try:
+                from . import pbrmix as MIX  # noqa: PLC0415 - numpy and Pillow, only when a look needs them
+                MIX.made(look)
+            except (ValueError, OSError, ImportError):
+                pass                                       # its set isn't on this shelf: the block keeps its colour
     times = L.flow_times(story)
     levels = []
     for lid in story.get("levels", {}):

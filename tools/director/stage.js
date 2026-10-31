@@ -64,10 +64,20 @@ export const LIBRARY = { meshes: new Set(), textures: {}, kit: {} };
 export async function loadAssetLibrary() {
   try {
     const r = await (await fetch("/api/library")).json();
-    LIBRARY.meshes = new Set(r.meshes || []); LIBRARY.textures = r.textures || {};
+    const made = Object.fromEntries(Object.entries(LIBRARY.textures).filter(([k]) => k.startsWith("pbr/_made/")));
+    LIBRARY.meshes = new Set(r.meshes || []); LIBRARY.textures = Object.assign(made, r.textures || {});
   } catch (e) { /* no library: blocks */ }
   try { LIBRARY.kit = (await (await fetch("/api/kit")).json()).presets || {}; } catch (e) { /* no kit presets */ }
   return LIBRARY;
+}
+// a room's or a block's tuned look (a look object, STREET_PAINT §2): the plan tags it as its made set, pbr/_made/<hash>,
+// and the server's plan answer carries those sets ({ref: meta}, made when they were missing), kept here beside the shelf
+export function addMade(made) { for (const [ref, m] of Object.entries(made || {})) LIBRARY.textures[ref] = m; }
+// a look that's a flat colour (#rrggbb): a plain material, as rough as the surface it's on
+const colourCache = {};
+function colourMaterial(hex, like) {
+  const key = hex + "|" + (like ? like.roughness : 0.9);
+  return colourCache[key] || (colourCache[key] = new THREE.MeshStandardMaterial({ color: new THREE.Color(hex), roughness: like ? like.roughness : 0.9 }));
 }
 // the placeholder things painted on their templates (tools/uv_templates.py, docs/ASSETS.md §7): {prop id: its layout
 // (each face's island, which way u and v run) and its picture}; a block that has one wears it, its UVs laid from it
@@ -455,7 +465,8 @@ export class Stage {
         const tagged = BY_TAG[(p.tags.find(t => t.startsWith("tag:")) || "").slice(4)];
         let mat = p.kind === "mesh" ? (p.tags.some(t => t.startsWith("trim:")) ? mats.trim : tagged ? mats[tagged] : p.tags.some(t => t.startsWith("use:")) ? mats.use : mats.prop) : mats[p.kind];
         const matRef = (p.tags.find(t => t.startsWith("mat:")) || "").slice(4), artRef = (p.tags.find(t => t.startsWith("art:")) || "").slice(4);
-        if (matRef && LIBRARY.textures[matRef] && p.shape === "box") { mat = libMaterial(matRef); tileUVs(geo, w, h, d, mat.userData.tile); }
+        if (/^#[0-9a-f]{6}$/i.test(matRef)) mat = colourMaterial(matRef, mat);                 // a look that's a colour
+        else if (matRef && LIBRARY.textures[matRef] && p.shape === "box") { mat = libMaterial(matRef); tileUVs(geo, w, h, d, mat.userData.tile); }
         if (p.kind === "floor") { const wet = wetOfRoom(story, level, p.room); if (wet > 0) mat = wetFloor(mat, wet); }   // a wet room (its `wet`, or the rain): the floor dark and glossy
         const painted = p.kind === "mesh" && p.shape === "box" && PAINTED.things[p.id];   // painted on its template: its UVs from the layout, at the block's own size
         if (painted) { mat = paintedMaterial(painted); layUVs(geo.attributes.position, geo.attributes.normal, geo.attributes.uv, Object.assign({}, painted, { size: [w, d, h] })); }

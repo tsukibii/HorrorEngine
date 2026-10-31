@@ -2,7 +2,9 @@
 2026-10-31: "the actual materials should be PBRs", "layer the stuff you made with the PBRs too (mainly decals, added wear
 etc)", "modify the tint of the colour (fade it out, make it more contrast etc)").
 
-A street's look on a slot is a colour ("#rrggbb"), a set ("pbr/<set>"), or a set with what's done to it:
+A street's look on a slot is a colour ("#rrggbb"), a set ("pbr/<set>"), or a set with what's done to it; a room's
+look (its floor, walls, ceiling, trim) and a block's `mat` take the same (the user, 2026-10-31: the paint bucket in the
+interiors; STORY_FORMAT §1):
 
     {"set": "pbr/concrete/Concrete027_1K-PNG",
      "scale": 1, "turn": 0,                               the set's size times this; turned 0, 90, 180 or 270 degrees
@@ -35,9 +37,19 @@ import os
 import shutil
 import threading
 
-import numpy as np
-
 from . import pbr as PBR
+
+
+class _Numpy:
+    """numpy, imported when pixels are first made: a story's plan and its check read looks (canon, key, problems)
+    without it."""
+    def __getattr__(self, k):
+        import numpy
+        globals()["np"] = numpy
+        return getattr(numpy, k)
+
+
+np = _Numpy()
 
 VERSION = 1
 LOOK = {"scale": 1.0, "turn": 0, "tint": "", "tint_amount": 1.0, "brightness": 1.0, "contrast": 1.0, "saturation": 1.0,
@@ -53,7 +65,7 @@ RANGE.update({"count": (1, 60), "spin": (0, 1)})
 MASKS = ("patches", "own", "own+patches", "all")
 AFFECTS = ("all", "shine", "colour")
 WEAR = {"grime": "dirt", "streaks": "streaks", "edges": "edges", "damp": "wet"}      # a wear layer -> the bake's amount
-LUMA = np.array([0.2126, 0.7152, 0.0722], dtype=np.float32)
+LUMA = (0.2126, 0.7152, 0.0722)                    # Rec. 709 luminance weights (an array where it's used)
 _LOCK = threading.Lock()                        # one set made at a time (the desk's server answers on threads)
 
 
@@ -236,6 +248,15 @@ def key(look):
     return h.hexdigest()[:12]
 
 
+def ref_of(look):
+    """The ref a look paints with, nothing made: a colour or a plain set as it is, a tuned set its made set's
+    (pbr/_made/<key>: what draws it makes it with `made`). A room's look and a prop's mat go into the plan as this."""
+    c = canon(look)
+    if isinstance(c, str) or set(c) == {"set"}:
+        return c if isinstance(c, str) else c["set"]
+    return f"pbr/_made/{key(look)}"
+
+
 def made(look, write=True):
     """(ref, meta) of the set a look paints with: a colour or a plain set as it is (meta None), else its made set (made
     now when `write` and it's missing)."""
@@ -337,7 +358,7 @@ def adjust(a, p):
         a = _hue(a, p["hue"])
     s = p.get("saturation", 1.0)
     if s != 1.0:
-        y = (a @ LUMA)[..., None]
+        y = (a @ np.array(LUMA, dtype=np.float32))[..., None]
         a = np.clip(y + (a - y) * s, 0, 1)
     k = p.get("contrast", 1.0)
     if k != 1.0:
@@ -346,7 +367,7 @@ def adjust(a, p):
     lin = to_lin(a)
     if p.get("tint"):
         t = to_lin(hex_rgb(p["tint"]))
-        y = lin @ LUMA
+        y = lin @ np.array(LUMA, dtype=np.float32)
         col = t[None, None, :] * (y / max(float(y.mean()), 1e-4))[..., None]
         ta = p.get("tint_amount", 1.0)
         lin = lin * (1 - ta) + col * ta
@@ -356,7 +377,7 @@ def adjust(a, p):
     a = to_srgb(lin)
     f = p.get("fade", 0.0)
     if f:
-        y = (a @ LUMA)[..., None]
+        y = (a @ np.array(LUMA, dtype=np.float32))[..., None]
         washed = (y + (a - y) * 0.35) * 0.7 + 0.3 * 0.85
         a = a * (1 - f) + washed * f
     return np.clip(a, 0, 1).astype(np.float32)

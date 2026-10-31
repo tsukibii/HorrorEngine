@@ -42,8 +42,11 @@ stay in your own project, see `Content/Studio/Bodies/README.md`), anything marke
 - `art: "<ref>"` (or an Unreal path `/Game/...`): replaces a block, **scaled evenly to fit** it, centred, on the block's
   base. Use it when the block's size matters to the layout and the mesh is close.
 - `mat: "<ref>"`: a texture set on a block (boxes only).
-- a room's `look`: texture sets for its `floor`, `walls` and `ceiling`. `floor` (wood, stone...) still sets the
+- a room's `look`: texture sets for its `floor`, `walls`, `ceiling` and `trim`. `floor` (wood, stone...) still sets the
   footsteps.
+- either can also be a colour (`#rrggbb`) or a **tuned set**: a set with its tint, contrast, size and layers (wear,
+  decals, another set over it), the street paint's look object (docs/STREET_PAINT.md §2), which the scene builder's
+  Paint makes; it's made into `pbr/_made/<hash>` on the shelf when it's drawn or exported (STORY_FORMAT §1).
 - A ref is `<lib>/<name>`: `basemesh/...`, `ambientcg/...`, `polyhaven/...`, `local/...`; a set on your PBR shelf is
   `pbr/<category>/<name>` (§6).
 - **Facing:** a library mesh's front (glTF +Z) faces the prop's `rot` the same way a block does. If they come out

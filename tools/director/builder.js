@@ -5,7 +5,7 @@
 // builder-model.js. docs/SCENE_BUILDER.md.
 import * as THREE from "three";
 import * as M from "./motion.js";
-import { Stage, vfov, EYES, s2t, SHOTS, shotFor, FOV_H, loadAssetLibrary, LIBRARY } from "./stage.js";
+import { Stage, vfov, EYES, s2t, SHOTS, shotFor, FOV_H, loadAssetLibrary, LIBRARY, addMade } from "./stage.js";
 import { loadBody, BodyFigure } from "./bodies.js";
 import { GLTFLoader } from "./vendor/GLTFLoader.js";
 import { FBXLoader } from "./vendor/FBXLoader.js";
@@ -132,6 +132,7 @@ async function replan() {
   try {
     const j = await api("/api/plan/" + encodeURIComponent(B.game), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(s) });
     if (j.error) throw new Error(j.error);
+    addMade(j.made);                                  // the rooms' tuned sets (look objects), made by the server when missing
     B.plan = j; B.planStory = s;
     stage.setWorld(j, s, B.target);
     if (+$("#swing").value) stage.swing(+$("#swing").value);
@@ -1188,13 +1189,24 @@ function openOther(game, level) {
 }
 
 // ---- a room's look: texture sets for its floor, walls, ceiling and trim ----
+// a look as a few words: a set's label, "(tuned)" when it's a look object (STREET_PAINT §2), a colour as itself
+function lookName(v) {
+  if (!v) return "(grey)";
+  if (typeof v === "object") { const m = (LIBRARY.textures || {})[v.set] || {}; return `${m.label || String(v.set || "").split("/").pop()} (tuned${(v.layers || []).length ? ", " + v.layers.length + " layer" + (v.layers.length > 1 ? "s" : "") : ""})`; }
+  if (v.startsWith("#")) return "colour " + v;
+  const m = (LIBRARY.textures || {})[v]; return m && m.label ? m.label : v.replace(/^(ambientcg|pbr)\//, "");
+}
 function lookEditor(r) {
   const wrapEl = document.createElement("div"); wrapEl.style.marginTop = "6px";
   const look = r.extra.look || {};
-  const opts = [...new Set([...Object.keys(LIBRARY.textures || {}), ...KNOWN_LOOKS, ...Object.values(look)])].filter(Boolean).sort();
+  const named = Object.values(look).filter(v => typeof v === "string" && !v.startsWith("#"));
+  const opts = [...new Set([...Object.keys(LIBRARY.textures || {}).filter(k => !k.startsWith("pbr/_made/")), ...KNOWN_LOOKS, ...named])].filter(Boolean).sort();
   const g = document.createElement("div"); g.className = "prop";
   for (const part of ["floor", "walls", "ceiling", "trim"]) {
-    const sel = pick(look[part] || "", [["", "(grey)"], ...opts.map(o => [o, o.replace(/^(ambientcg|pbr)\//, "") + (LIBRARY.textures && LIBRARY.textures[o] ? "" : " (not fetched)")])], v => {
+    const cur = look[part], own = cur && (typeof cur === "object" || String(cur).startsWith("#"));   // tuned or a colour: the paint bucket's
+    const sel = pick(own ? "__own" : (cur || ""), [["", "(grey)"], ...(own ? [["__own", lookName(cur)]] : []),
+      ...opts.map(o => [o, o.replace(/^(ambientcg|pbr)\//, "") + (LIBRARY.textures && LIBRARY.textures[o] ? "" : " (not fetched)")])], v => {
+      if (v === "__own") return;
       r.extra.look = Object.assign({}, r.extra.look || {}); if (v) r.extra.look[part] = v; else delete r.extra.look[part];
       if (!Object.keys(r.extra.look).length) delete r.extra.look;
     });

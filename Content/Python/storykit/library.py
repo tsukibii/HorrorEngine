@@ -85,21 +85,53 @@ def fetched(ref, kind):
     return mesh_file(ref).exists() if kind == "mesh" else texture_meta(ref) is not None
 
 
-def refs(story):
-    """Every library ref a story uses: [(kind 'mesh' or 'texture', ref, where)]."""
+def is_colour(v):
+    """'#rrggbb': a look that's a flat colour, not a set."""
+    return isinstance(v, str) and len(v) == 7 and v.startswith("#") and all(c in "0123456789abcdefABCDEF" for c in v[1:])
+
+
+def looks(story):
+    """Every look a story paints its levels with: [(look, where)]: a room's floor, walls, ceiling and trim, a block's
+    `mat`, a level's outside slots. A look is a set's ref, a colour (#rrggbb) or a tuned set (a look object, as the
+    street paints with: STREET_PAINT §2; pbrmix.py makes it)."""
     out = []
     for lid, lvl in story.get("levels", {}).items():
+        for sl, v in ((lvl.get("outside") or {}).get("look") or {}).items() if isinstance(lvl.get("outside"), dict) else ():
+            out.append((v, f"{lid}.outside.look.{sl}"))
         for room in lvl.get("rooms", []):
-            for part, ref in (room.get("look") or {}).items():
-                out.append(("texture", ref, f"{room['id']}.look.{part}"))
+            for part, v in (room.get("look") or {}).items():
+                out.append((v, f"{room['id']}.look.{part}"))
+            for p in room.get("props", []):
+                if p.get("mat"):
+                    out.append((p["mat"], f"{p['id']}.mat"))
+    return out
+
+
+def look_sets(look):
+    """The sets a look paints with (a tuned one's own and its layers'); none for a colour."""
+    if isinstance(look, dict):
+        from . import pbrmix as MIX          # canon is plain Python; numpy only when pixels are made
+        return MIX.sets_of(look)
+    return [] if not isinstance(look, str) or not look or look.startswith("#") else [look]   # a colour: the check says if it's not one
+
+
+def refs(story):
+    """Every library ref a story uses: [(kind 'mesh' or 'texture', ref, where)]. A tuned look counts as the sets it's
+    made from; a colour isn't a ref."""
+    out = []
+    for look, where in looks(story):
+        if ".outside." in where:
+            continue                          # the street builder's slots: its own check (STREET's words)
+        for ref in look_sets(look):
+            out.append(("texture", ref, where))
+    for lid, lvl in story.get("levels", {}).items():
+        for room in lvl.get("rooms", []):
             for p in room.get("props", []):
                 sh = str(p.get("shape", ""))
                 if sh.startswith("asset "):
                     out.append(("mesh", sh.split()[1], p["id"]))
                 if p.get("art"):
                     out.append(("mesh", p["art"], f"{p['id']}.art"))
-                if p.get("mat"):
-                    out.append(("texture", p["mat"], f"{p['id']}.mat"))
     return out
 
 

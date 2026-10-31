@@ -64,8 +64,8 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
 - `look` (optional): this level's look, `balanced` (the default), `realism` or `plain`, over `game.look` (§9.1): a flat-lit annex, a dream
   level with the effects off (a scene's `look` is its look-at, §3.4: no per-scene preset).
 - `outside` (optional): the building a street builds round this level (the scene builder's Outside panel,
-  docs/SCENE_BUILDER.md §8), in the street builder's own words (STREET_BUILDER §4): `look` (a slot's colour `#rrggbb` or
-  a `pbr/<set>`: `wall`, `trim`, `tiles`...), `roof` (`kind` flat, rail, gable, hip, shed or none; `pitch` 3 to 60,
+  docs/SCENE_BUILDER.md §8), in the street builder's own words (STREET_BUILDER §4): `look` (a slot's colour `#rrggbb`,
+  a `pbr/<set>` or a tuned set, as a room's: `wall`, `trim`, `tiles`...), `roof` (`kind` flat, rail, gable, hip, shed or none; `pitch` 3 to 60,
   `over` and `parapet` 0 to 2 m, `slot` tiles or roof), `slot` (what the walls are: wall, wall2, plaster, concrete,
   trim, wood, wood_dark, blocks, panel), `raise` (the floor over the ground, 0 to 2 m), `front` (n, e, s or w: the side
   facing the street; its way in when unset), `parts` (fittings on its walls, each `kind`, `face` front/left/back/right,
@@ -103,8 +103,14 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
   look plugin's wet (the damp darkening, pools that carry the lights, no rings: GODOT_LOOK §2) by that much, and from
   0.5 every step in the room is a wet one, on the desk's Play too; the desk's stage shows the floor darker and
   glossy by it. (Rain, `game.weather`, wets a room with no ceiling by itself, on the stage too.)
-- `look`: library texture sets for its surfaces, `{"floor": "ambientcg/WoodFloor041", "walls": "...", "ceiling": "..."}`
-  (docs/ASSETS.md). Grey until fetched.
+- `look`: what its surfaces wear, `{"floor": "ambientcg/WoodFloor041", "walls": "...", "ceiling": "...", "trim": "..."}`
+  (docs/ASSETS.md): each a library or shelf set's ref (`pbr/<set>`), a flat colour (`#rrggbb`), or **a tuned set**, the
+  street paint's look object (docs/STREET_PAINT.md §2, the user, 2026-10-31: the paint bucket in the interiors): `{"set":
+  "pbr/...", "tint": "#9a8f80", "contrast": 1.2, "layers": [{"wear": "grime", "amount": 1.2}]}`, its words pbrmix.py's
+  (`scale`, `turn`, `tint`, `tint_amount`, `brightness`, `contrast`, `saturation`, `hue`, `fade`, `roughness`, `bump`,
+  `layers` of sets, decals and wear). A tuned set is made into a set of its own on the shelf, `pbr/_made/<hash>`
+  (assets/pbr, not in git: made again from the look whenever it's missing): the plan tags it so, the desk's server
+  makes it when it plans, the Godot export when it exports. Grey until fetched; the scene builder's Paint paints them.
 
 **An opening:**
 
@@ -204,7 +210,8 @@ class path, `…_C`) is that door's Blueprint, in place of class_map's `door`.
 - `z`: height above the floor, for things on walls or ceilings, and lights.
 - `art`: the asset that replaces the block, scaled evenly to fit it: an Unreal path (`/Game/...`) or a library ref
   (`basemesh/food_prep_table`).
-- `mat`: a library texture set on the block (`ambientcg/Wood049`).
+- `mat`: what the block wears, as a room's `look` takes it (§1): a library or shelf set (`ambientcg/Wood049`), a
+  colour or a tuned set (boxes only).
 - `tag`: what it is, for the art shopping list.
 
 **Uses** (in play, every one is a left click on the thing; DECISIONS 2026-10-27, later):

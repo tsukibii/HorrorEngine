@@ -115,6 +115,24 @@ def street_file(name):
     return STREETS / name / "street.json" if STREET_NAME.match(name) else None
 
 
+def made_looks(story):
+    """{ref: meta} of the tuned sets a story's rooms and blocks paint with (their look objects, STREET_PAINT §2),
+    each made now when it's missing (pbrmix.py: a second or two the first time), for the stage beside the plan's
+    `mat:pbr/_made/<hash>` tags; a look that can't be made (its set not on this machine's shelf) is left out: grey."""
+    out = {}
+    for look, where in LIB.looks(story):
+        if not isinstance(look, dict) or ".outside." in where:    # the outside's slots: street3.js asks for its own
+            continue
+        try:
+            from storykit import pbrmix as MIX  # noqa: PLC0415 - numpy and Pillow, only when a look needs them
+            ref, m = MIX.made(look)
+            if m:
+                out[ref] = dict(m, base="/" + ref)
+        except (ValueError, OSError, ImportError):
+            pass
+    return out
+
+
 def history_dir(game):
     d = ROOT / "Saved" / "Story" / game.replace(":", "-") / "history"
     d.mkdir(parents=True, exist_ok=True)
@@ -666,7 +684,7 @@ class Handler(BaseHTTPRequestHandler):
                 lf = LIFE.life_of(t.d) if t.kind == "prop" else None
                 if lf:
                     th[k].update(life=lf, state=LIFE.start(t.d, lf))
-            return self.send(200, {"pieces": pieces, "things": th})
+            return self.send(200, {"pieces": pieces, "things": th, "made": made_looks(story)})
         if parts[:2] == ["api", "worldcheck"]:          # the scene builder: the world rules on an unsaved story
             story = json.loads(self.body().decode("utf-8"))
             try:

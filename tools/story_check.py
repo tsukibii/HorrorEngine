@@ -84,8 +84,14 @@ def check_outside(lid, out, r):
     for sl, v in (out.get("look") or {}).items():
         if sl not in W["slots"]:
             r.err(f"level {lid}: outside: look: no slot {sl!r} (the street builder's slots)")
-        if not (isinstance(v, str) and (re.fullmatch(r"#[0-9a-fA-F]{6}", v) or v.startswith("pbr/"))):
-            r.err(f"level {lid}: outside: look {sl}: {v!r} ('#rrggbb' or pbr/<set>)")
+        if isinstance(v, dict):                          # a tuned set, as the street paints with (STREET_PAINT §2)
+            errs, warns = look_problems(v)
+            for e in errs:
+                r.err(f"level {lid}: outside: look {sl}: {e}")
+            for w in warns:
+                r.warn(f"level {lid}: outside: look {sl}: {w}")
+        elif not (isinstance(v, str) and (re.fullmatch(r"#[0-9a-fA-F]{6}", v) or v.startswith("pbr/"))):
+            r.err(f"level {lid}: outside: look {sl}: {v!r} ('#rrggbb', pbr/<set> or a tuned set)")
     rf = out.get("roof") or {}
     if not isinstance(rf, dict) or rf.get("kind", "hip") not in W["roofs"]:
         r.err(f"level {lid}: outside: roof kind {rf.get('kind') if isinstance(rf, dict) else rf!r} ({', '.join(sorted(W['roofs']))})")
@@ -256,8 +262,31 @@ class Report:
 
 # ---- static checks ----------------------------------------------------------------------------------------------
 
+def look_problems(look):
+    """(errors, warnings) of a look on a room's surface, a block or an outside slot: a set's ref, a colour (#rrggbb) or
+    a tuned set (STREET_PAINT §2, pbrmix.py's words). A set missing from this machine's shelf is the library's warning."""
+    if isinstance(look, dict):
+        from storykit import pbrmix as MIX  # noqa: PLC0415 - plain Python to read a look; numpy only for pixels
+        errs, warns = MIX.problems(look)
+        return errs, [w for w in warns if "isn't on this machine's shelf" not in w]
+    if isinstance(look, str) and look.startswith("#"):
+        return ([] if LIB.is_colour(look) else [f"{look!r} isn't a colour (#rrggbb)"]), []
+    if not isinstance(look, str) or not look:
+        return ["a look is a set's ref, a colour (#rrggbb) or a tuned set ({\"set\": \"pbr/...\", ...})"], []
+    return [], []
+
+
 def check_library(story, r):
-    """Library refs (docs/ASSETS.md): a bad one is an error; ones not fetched yet are one warning (the blocks stand in)."""
+    """Library refs (docs/ASSETS.md): a bad one is an error; ones not fetched yet are one warning (the blocks stand in).
+    A tuned look's words are pbrmix.py's."""
+    for look, where in LIB.looks(story):
+        if ".outside." in where:
+            continue                                      # with the outside's own words (check_outside)
+        errs, warns = look_problems(look)
+        for e in errs:
+            r.err(f"{where}: {e}")
+        for w in warns:
+            r.warn(f"{where}: {w}")
     missing = []
     for kind, ref, where in LIB.refs(story):
         try:
