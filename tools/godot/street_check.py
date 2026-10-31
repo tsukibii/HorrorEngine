@@ -74,6 +74,22 @@ for (const b of (S.buildings || []).filter(b => b.inside && (b.inside.rooms || [
   const walk = (b.parts || []).find(p => p.kind === "balcony" && p.walkway);
   if (walk) { const fl = SG.insideFloors(b), zf = fl[1] ? fl[1].z0 : fl[0].z0, q = SG.place([0, -b.d / 2 - (+walk.out || 1.3) / 2, 0], { at: b.at, turn: b.turn }); out.rays.push({ name: b.id + ":walkway", at: g3(q[0], q[1], foot.z + zf + 20), want: foot.z + zf, tol: 0.05 }); }
 }
+// a body a person's size (a capsule) dropped on the roads and pavements must come to rest on them, and walked at a
+// building's front it must stop at the wall (DECISIONS 2026-10-31: "roughly have the collisions accurate for buildings
+// and floor so I don't fall through")
+out.walks = []; out.bumps = [];
+for (const r of (S.roads || []).slice(0, 2)) { const f = SG.roadPath(r), s = f.L / 2, c = f.at(s, 0), w = f.at(s, -(f.W / 2 + f.walks[1] / 2));
+  out.walks.push({ name: r.id + ":road", at: g3(c[0], c[1], c[2] + 1.2), want: c[2] + 0.004 });
+  if (f.walks[1] > 0.7) out.walks.push({ name: r.id + ":walk", at: g3(w[0], w[1], w[2] + 1.2), want: w[2] + f.kerb }); }
+const pip = (x, y, P) => { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) if ((P[i][1] > y) !== (P[j][1] > y) && x < (P[j][0] - P[i][0]) * (y - P[i][1]) / (P[j][1] - P[i][1]) + P[i][0]) c = !c; return c; };
+const solid = (S.buildings || []).filter(b => !b.inside), feet = solid.map(b => SG.footprint(b));
+for (const b of solid) {
+  const foot = SG.footing(b, T), q = SG.place([0, -b.d / 2 - 2.5, 0], { at: b.at, turn: b.turn });
+  if (feet.some(P => pip(q[0], q[1], P))) continue;               // its front faces another building: not this one
+  const d = [b.at[0] - q[0], b.at[1] - q[1]], L = Math.hypot(...d);
+  out.bumps.push({ name: b.id + ":front", at: g3(q[0], q[1], foot.z + 1.5), dir: g3(d[0] / L, d[1] / L, 0), wall: 2.5 });
+  if (out.bumps.length >= 2) break;
+}
 const P = SG.build(S); for (const p of P) for (const L of p.lights || []) if (!L.shop) out.lamps++;
 out.insides = (S.buildings || []).filter(b => b.inside).map(b => b.id);
 console.log(JSON.stringify(out));
@@ -126,6 +142,20 @@ if plugin:
         errs.append(f"the road's paint and decals don't lie flat: {pl[3]} of {pl[2]} cast no shadow")
     else:
         print(f"  the road's paint and decals lie flat: {pl[3]} of {pl[2]} cast no shadow")
+for w in expect.get("walks", []):
+    ln = next((x for x in lines if x.startswith(f"GDPROBE stand {w['name']} ")), None)
+    feet, floor = (float(ln.split()[3]), ln.split()[4] == "true") if ln else (None, False)
+    if feet is None or not floor or abs(feet - w["want"]) > 0.1:
+        errs.append(f"a body dropped on {w['name']} didn't stand there: its feet at {feet} (the street: {w['want']:.3f}), on the floor {floor}")
+    else:
+        print(f"  a body dropped on {w['name']} stands at {feet:.3f} (the street: {w['want']:.3f})")
+for b in expect.get("bumps", []):
+    ln = next((x for x in lines if x.startswith(f"GDPROBE bump {b['name']} ")), None)
+    went = float(ln.split()[3]) if ln else None
+    if went is None or went > b["wall"] - 0.3 + 0.15 or went < 1.0:
+        errs.append(f"a body walked at {b['name']} went {went} m (the wall is {b['wall']} m ahead: it should stop at it)")
+    else:
+        print(f"  a body walked at {b['name']} stopped at the wall after {went:.2f} m ({b['wall']} m to it, less its 0.3 m radius)")
 for want in expect["insides"]:
     if not any(m["name"].startswith("inside_" + want) and (m["meta"] or {}).get("set") for m in markers):
         errs.append(f"the inside of {want} has no marker with its set")

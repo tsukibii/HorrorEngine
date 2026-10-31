@@ -44,6 +44,29 @@ func _initialize():
 	await physics_frame
 	await physics_frame
 	var expect = JSON.parse_string(FileAccess.get_file_as_string("res://expect.json"))
+	# a body a person's size dropped on the ground (it must stand there), then walked at a building's front (it must stop)
+	for w in expect.get("walks", []):
+		var b := _body(s, Vector3(w.at[0], w.at[1], w.at[2]))
+		for i in 90:
+			b.velocity = Vector3(0, b.velocity.y - 9.8 / 60.0, 0)
+			b.move_and_slide()
+			await physics_frame
+		print("GDPROBE stand ", w.name, " ", b.global_position.y - 0.85, " ", b.is_on_floor())
+		b.queue_free()
+	for w in expect.get("bumps", []):
+		var b := _body(s, Vector3(w.at[0], w.at[1], w.at[2]))
+		for i in 90:
+			b.velocity = Vector3(0, b.velocity.y - 9.8 / 60.0, 0)
+			b.move_and_slide()
+			await physics_frame
+		var p0 := b.global_position
+		var d := Vector3(w.dir[0], 0, w.dir[2]).normalized()
+		for i in 120:
+			b.velocity = Vector3(d.x * 2.0, b.velocity.y - 9.8 / 60.0, d.z * 2.0)
+			b.move_and_slide()
+			await physics_frame
+		print("GDPROBE bump ", w.name, " ", Vector2(b.global_position.x - p0.x, b.global_position.z - p0.z).length())
+		b.queue_free()
 	var space = s.get_world_3d().direct_space_state
 	for r in expect.get("rays", []):
 		var p = Vector3(r.at[0], r.at[1], r.at[2])
@@ -55,3 +78,17 @@ func _initialize():
 		var hit = space.intersect_ray(PhysicsRayQueryParameters3D.create(p, p + Vector3(0, -80, 0)))
 		print("GDPROBE ray ", r.name, " ", hit.get("position", Vector3(0, -999, 0)).y)
 	quit(0)
+
+
+# a capsule a person's size (1.7 m tall, 0.3 m round), its middle at `at`
+func _body(parent: Node, at: Vector3) -> CharacterBody3D:
+	var b := CharacterBody3D.new()
+	var c := CollisionShape3D.new()
+	var cap := CapsuleShape3D.new()
+	cap.radius = 0.3
+	cap.height = 1.7
+	c.shape = cap
+	b.add_child(c)
+	parent.add_child(b)
+	b.global_position = at
+	return b
