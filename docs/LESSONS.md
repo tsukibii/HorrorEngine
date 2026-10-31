@@ -1237,3 +1237,11 @@ guessed margin; and a check that only ever ran on a slow machine hasn't been run
 - **GDScript can't infer a type from an untyped loop:** `for k in [...]: var key := "a/" + k` is a parse error in
   Godot 4.7 (the plugin's script failed to load in the editor, and only the editor's part of LOOKPLUGIN said so). Type
   the loop variable (`for k: String in`) or the variable (`var key: String`).
+- **Cycles draws both sides of a face; Godot only its front:** the rice cooker's walls looked solid in every preview
+  and were see-through in Godot (the user saw its bottom through its sides). `slab` walked its rounded edge from the
+  top down, and a loft's band faces the right of its walk: out of the material only when it climbs. Seven other
+  parts were inside out the same way unseen (caps lathed from the middle of their top outward, a lathe laid on its
+  side by swapping two axes, which is a mirror, a capsule's profile walked in the wrong order, the drips' tubes, a
+  clockwise outline extruded). Judge a mesh's faces by measure, not by a render that draws both sides: PROPGEN
+  casts rays at every case from all round and fails when more than 1.5% of what they hit is a face's back
+  (`check.orientation`). A mirror (an axis swap, a scale by −1) needs `M.flip` after it.

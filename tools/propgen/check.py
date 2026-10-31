@@ -4,6 +4,7 @@ centred, about its real size, within its triangle budget, its colour map not one
 out; its enhancers in the glb's extras and an emission map where it glows; its Godot scene (.tscn) beside it; the
 same recipe made twice the same mesh; every recipe's family and design known."""
 import json
+import math
 import os
 import struct
 import time
@@ -40,6 +41,71 @@ def _positions(j, binc):
             out.append(np.frombuffer(binc[off:off + a["count"] * 12], np.float32).reshape(-1, 3))
     return np.concatenate(out)
 
+
+def _triangles(j, binc):
+    """Every primitive's triangles as one soup: positions (n, 3), index triples (m, 3) and each triangle's material's
+    doubleSided."""
+    P, T, D, off = [], [], [], 0
+    for m in j["meshes"]:
+        for p in m["primitives"]:
+            a = j["accessors"][p["attributes"]["POSITION"]]
+            bv = j["bufferViews"][a["bufferView"]]
+            o = bv.get("byteOffset", 0) + a.get("byteOffset", 0)
+            P.append(np.frombuffer(binc[o:o + a["count"] * 12], np.float32).reshape(-1, 3).astype(float))
+            ia = j["accessors"][p["indices"]]
+            ib = j["bufferViews"][ia["bufferView"]]
+            dt = {5125: np.uint32, 5123: np.uint16, 5121: np.uint8}[ia["componentType"]]
+            io = ib.get("byteOffset", 0) + ia.get("byteOffset", 0)
+            t = np.frombuffer(binc[io:io + ia["count"] * np.dtype(dt).itemsize], dt).reshape(-1, 3).astype(np.int64)
+            T.append(t + off)
+            D.append(np.full(len(t), bool(j["materials"][p.get("material", 0)].get("doubleSided")) if j.get("materials") else False))
+            off += a["count"]
+    return np.concatenate(P), np.concatenate(T), np.concatenate(D)
+
+
+def orientation(path, dirs=26, grid=40):
+    """Which way a made prop's faces look, as the game sees them: Godot draws only a face's front, so a part turned
+    inside out is see-through from outside (Cycles' previews draw both sides and hide it: LESSONS 2026-10-31). Rays from
+    `dirs` directions all round, a `grid` of them each across the prop; `back` the share of what they first hit that is
+    a face's back (double-sided materials left out: both their sides are drawn). `mixed` the edges whose two faces
+    disagree on which side is out (one walks the edge the way the other does), the mesh welded by position."""
+    from mathutils import Vector
+    from mathutils.bvhtree import BVHTree
+    j, binc = _glb(path)
+    P, T, D = _triangles(j, binc)
+    tree = BVHTree.FromPolygons([Vector(p) for p in P], T.tolist(), all_triangles=True, epsilon=0.0)
+    lo, hi = P.min(0), P.max(0)
+    c, R = (lo + hi) / 2, float(np.linalg.norm(hi - lo)) / 2 + 1e-6
+    k = np.arange(dirs) + 0.5
+    phi, th = np.arccos(1 - 2 * k / dirs), math.pi * (1 + 5 ** 0.5) * k
+    hits = backs = 0
+    where = {}
+    for d in np.stack([np.cos(th) * np.sin(phi), np.sin(th) * np.sin(phi), np.cos(phi)], 1):
+        u = np.cross(d, [0, 0, 1] if abs(d[2]) < 0.9 else [1, 0, 0])
+        u /= np.linalg.norm(u)
+        v = np.cross(d, u)
+        dv = Vector(d)
+        for x in np.linspace(-R, R, grid):
+            for y in np.linspace(-R, R, grid):
+                loc, nrm, fi, _ = tree.ray_cast(Vector(c - d * 2 * R + u * x + v * y), dv, 4 * R)
+                if loc is None or D[fi]:
+                    continue
+                hits += 1
+                if nrm.dot(dv) > 0:
+                    backs += 1
+                    where[fi] = where.get(fi, 0) + 1
+    # edges two faces share, walked the same way by both
+    _, w = np.unique(np.round(P * 1e6).astype(np.int64), axis=0, return_inverse=True)
+    F = w.ravel()[T]
+    F = F[(F[:, 0] != F[:, 1]) & (F[:, 1] != F[:, 2]) & (F[:, 0] != F[:, 2])]
+    E = np.concatenate([F[:, [0, 1]], F[:, [1, 2]], F[:, [2, 0]]])
+    _, ek, cnt = np.unique(np.sort(E, 1), axis=0, return_inverse=True, return_counts=True)
+    ek = ek.ravel()
+    two = cnt[ek] == 2
+    pf = (E[:, 0] < E[:, 1])[two][np.argsort(ek[two], kind="stable")].reshape(-1, 2)
+    worst = sorted(where, key=where.get, reverse=True)[:3]
+    return {"back": backs / max(hits, 1), "hits": hits, "mixed": int(np.sum(pf[:, 0] == pf[:, 1])),
+            "at": [np.round(P[T[f]].mean(0) * 1000, 1).tolist() for f in worst]}
 
 def run(book, out):
     t0 = time.time()
@@ -103,6 +169,11 @@ def run(book, out):
                 problems.append("it glows but no material has an emission map")
         if not os.path.exists(os.path.join(tmp, name, name + ".tscn")):
             problems.append("no Godot scene (.tscn) beside its glb")
+        # Godot draws a face's front only: what's seen from outside must be fronts (a part inside out is see-through)
+        ori = orientation(os.path.join(tmp, name, name + ".glb"))
+        if ori["back"] > 0.015:
+            problems.append(f"{ori['back'] * 100:.1f}% of what's seen from outside is the back of a face (inside out, "
+                            f"see-through in Godot), at {ori['at'][0]} mm")
         flat = []
         for mname, files in rec["textures"].items():
             alb = read_image(os.path.join(tmp, name, files[0]))[..., :3]
@@ -116,7 +187,7 @@ def run(book, out):
         if first is None:
             first = (name, spec, pos)
         print(("  ok  " if not problems else "  BAD ") + f"{name}: {rec['tris']} triangles, {' x '.join(f'{v:.0f}' for v in (hi - lo) * 1000)} mm, "
-              f"{len(mats)} material(s), {rec['secs']}s" + ("; " + "; ".join(problems) if problems else ""))
+              f"{len(mats)} material(s), backs {ori['back'] * 100:.1f}%, {rec['secs']}s" + ("; " + "; ".join(problems) if problems else ""))
         bad += [f"{name}: {p}" for p in problems]
     if first:
         name, spec, pos = first

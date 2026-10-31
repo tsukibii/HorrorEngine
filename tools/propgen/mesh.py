@@ -461,7 +461,7 @@ def extrude(polys, thick, island, mat=None, flip_bottom=True, under=None):
     island fight in a bake), the walls along the island's foot."""
     from mathutils import Vector
     from mathutils.geometry import tessellate_polygon
-    loops = [np.asarray(p, float) for p in polys]
+    loops = oriented(polys)
     allp = np.concatenate(loops)
     lo, hi = allp.min(0), allp.max(0)
     span = np.maximum(hi - lo, 1e-9)
@@ -512,7 +512,31 @@ def offset_poly(poly, o):
     b = n1 + n2
     b /= np.maximum(np.linalg.norm(b, axis=1, keepdims=True), 1e-12)
     cosh = np.maximum((b * n1).sum(1), 0.2)
-    return p + b * (o / cosh)[:, None]
+    q = p + b * (o / cosh)[:, None]
+    if o < 0:
+        # a corner moved in past its neighbours (at a notch or a tip narrower than the inset) folds the loop over itself:
+        # each edge that turned back is closed up, both its ends to their middle, until none is left
+        d0 = np.roll(p, -1, 0) - p
+        for _ in range(len(q)):
+            bad = np.where(((np.roll(q, -1, 0) - q) * d0).sum(1) < 0)[0]
+            if not len(bad):
+                break
+            for i in bad:
+                j = (i + 1) % len(q)
+                q[i] = q[j] = (q[i] + q[j]) / 2
+    return q
+
+
+def oriented(loops):
+    """Loops as the sweeps want them: the outline (the first) anticlockwise, the holes clockwise, whichever way each was
+    drawn (a clockwise outline swept as given comes out inside out)."""
+    out = []
+    for i, lp in enumerate(loops):
+        lp = np.asarray(lp, float)
+        x, y = lp[:, 0], lp[:, 1]
+        ccw = np.sum(x * np.roll(y, -1) - np.roll(x, -1) * y) > 0
+        out.append(lp if ccw == (i == 0) else lp[::-1].copy())
+    return out
 
 
 def loft(outline, segs, islands, mats=None, hole_island=None):
@@ -524,7 +548,7 @@ def loft(outline, segs, islands, mats=None, hole_island=None):
     caps map from above (mirrored when they face down, unless cap_mirror is False)."""
     from mathutils import Vector
     from mathutils.geometry import tessellate_polygon
-    loops = [np.asarray(outline, float)] if isinstance(outline, np.ndarray) else [np.asarray(x, float) for x in outline]
+    loops = oriented([outline] if isinstance(outline, np.ndarray) else list(outline))
     prof, ring_seg = [], []
     for si, s in enumerate(segs):
         pts = resample(s.pts, s.step) if s.step else s.pts
@@ -690,10 +714,12 @@ def slab(loops, thick, bevel, islands, top="top", bottom="bottom", edge="edge", 
     h = thick / 2
     arc_t = [(-b * (1 - math.cos(a)), h - b + b * math.sin(a)) for a in np.linspace(math.pi / 2, 0, steps + 1)]
     arc_b = [(-b * (1 - math.cos(a)), -h + b - b * math.sin(a)) for a in np.linspace(0, math.pi / 2, steps + 1)]
-    prof = arc_t + (arc_b if h - b > 1e-9 else arc_b[1:])
-    # two runs: down to the last step (the top face capped at its start), then the last step (the bottom capped at its end)
-    segs = [Seg(np.array(prof[:-1]), edge, "band", mat=mat, cap="up", cap_at="start", cap_island=top, cap_mirror=False, cap_fill=fill, step=step),
-            Seg(np.array(prof[-2:]), edge, "band", mat=mat, cap="down", cap_at="end", cap_island=bottom, cap_fill=fill)]
+    # walked from the bottom up: a loft's band faces the right of its walk, out of the material when it climbs (walked
+    # down, the band faced in and Godot, drawing only fronts, saw through it: LESSONS 2026-10-31); v runs up the band
+    prof = (arc_t + (arc_b if h - b > 1e-9 else arc_b[1:]))[::-1]
+    # two runs: the first step (the bottom capped at its start), then up to the top (capped at its end)
+    segs = [Seg(np.array(prof[:2]), edge, "band", mat=mat, cap="down", cap_at="start", cap_island=bottom, cap_fill=fill),
+            Seg(np.array(prof[1:]), edge, "band", mat=mat, cap="up", cap_at="end", cap_island=top, cap_mirror=False, cap_fill=fill, step=step)]
     return loft(loops, segs, islands, hole_island=hole_edge)
 
 
@@ -829,7 +855,9 @@ def rbox(size, bevel, islands, top="top", bottom="bottom", edge="edge", at=(0.0,
     of its rounded footprint. Its top and bottom map from above and below, its sides along the band round it."""
     from .paint import rrect_poly
     w, d, h = size
-    c = bevel if corner is None else corner
+    # the corner kept a little rounder than the bevel: inset by the bevel for the top and bottom faces, a corner of the
+    # bevel's own radius collapses to a point (its triangles a jumble of windings) and a smaller one folds over itself
+    c = max(bevel if corner is None else corner, bevel * 1.2)
     loop = rrect_poly(-w / 2, -d / 2, w, d, max(c, 1e-6), n=6)
     m = slab([loop], h, bevel, islands, top, bottom, edge, steps=steps, fill=fill, step=step, mat=mat)
     m.v += np.array([at[0], at[1], at[2] + h / 2])

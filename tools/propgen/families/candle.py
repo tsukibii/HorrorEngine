@@ -64,6 +64,7 @@ def _drip(path_rz, ang, width, thick, isl, ring=10):
         f.append([last + j1, last + j, len(verts) - 1, -1])
         uv.append(np.concatenate([isl.to_uv(np.array([j1 if j1 else ring, j, j + 0.5]) / ring, np.array([1.0, 1.0, 1.0])), [[0, 0]]]))
     m = M.Mesh(verts, f, np.array(uv), mats=["wax"])
+    M.flip(m)           # wound as built, the tube's faces looked into the wax (the section turns one way, the path runs down)
     m.a["rest"] = m.v.copy()
     return m
 

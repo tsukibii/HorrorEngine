@@ -35,7 +35,9 @@ def tablet_profile(kind):
     if kind == "capsule":
         r, L = 3.0, 18.0
         cap = [(r * math.sin(a), L / 2 - r + r * math.cos(a)) for a in np.linspace(0, math.pi / 2, 6)]
-        return [(0, -L / 2)] + [(x, -y) for x, y in reversed(cap)][1:] + cap[1:] + [(0, L / 2)], L / 2
+        # walked up from the lower tip (a lathe faces the right of its walk): the lower dome out to the side, up to the
+        # middle where the two halves meet (the split), on up the side and the upper dome in to the tip
+        return [(x, -y) for x, y in cap] + [(r, 0.0)] + list(reversed(cap)), L / 2
     if kind == "oval":
         r, h = 3.6, 4.2
     else:
@@ -134,6 +136,7 @@ def make(spec, th):
         vial = M.lathe(segs, seg, I, step=0.006, mats=["vial"])
         cap = M.lathe([M.Seg(np.array(CAP[:4]) * mm, "c_top", "top", disc=19.4 * mm),
                        M.Seg(np.array(CAP[3:]) * mm, "c_side", "band")], seg, I, step=0.004, mats=["cap"])
+        M.flip(cap)     # lathed from the middle of its top outwards, its faces looked into it
         cap.v[:, 2] += (H - 6.8) * mm
         cap.a["rest"] = cap.v.copy()
         return M.join([vial, cap, sticker(max(12, seg // 2), 3)], ["vial", "cap", "sticker", "tablet"])

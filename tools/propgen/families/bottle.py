@@ -63,7 +63,8 @@ def make(spec, th):
     fill = float(spec.get("fill", 0.0 if crushed else 0.85))
     capc = spec.get("cap", "#2a6fd6")
     th.material("clear", "clear", alpha=True, double=True, color="#e6eef2", rough=0.06, specular=0.6)
-    th.material("main", "plastic", color="#f2f2f0", rough=0.45, px=int(spec.get("tex", 1024)))
+    # the label a single band, seen from inside through the clear bottle: both sides drawn
+    th.material("main", "plastic", color="#f2f2f0", rough=0.45, px=int(spec.get("tex", 1024)), double=True)
     body_len = sum(M.arclen(prof[k]) for k in ("low", "band", "high"))
     th.island("pet", 2 * math.pi * R, body_len, mat="clear", wrap=True)
     th.island("pet_top", 2 * math.pi * R, M.arclen(prof["shoulder"]) + M.arclen(prof["neck"]), mat="clear", wrap=True)
@@ -87,6 +88,7 @@ def make(spec, th):
         lab = M.lathe([M.Seg(np.array([(R + 0.15 - 0.45, lab0), (R + 0.15 - 0.45, lab1)]) * mm, "label", "band")], n, I, step=step, mats=["main"])
         cap = M.lathe([M.Seg(np.array(CAP[:4]) * mm, "cap_top", "top", disc=15.5 * mm),
                        M.Seg(np.array(CAP[3:]) * mm, "cap_side", "band")], max(32, n // 2), I, step=step, mats=["main"])
+        M.flip(cap)     # lathed from the middle of its top outwards, its faces looked into it
         cap.v[:, 2] += H * mm
         cap.a["shell"][:, 1] += H * mm
         cap.a["rest"] = cap.v.copy()

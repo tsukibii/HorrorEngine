@@ -76,6 +76,7 @@ def make(spec, th):
             prof = cap_profile()
             m = M.lathe([M.Seg(np.array(prof[:4]) * mm, f"c{i}_top", "top", disc=13.6 * mm),
                          M.Seg(np.array(prof[3:]) * mm, f"c{i}_side", "band")], 42, I, step=0.002, mats=["main"])
+            M.flip(m)       # lathed from the middle of its top outwards, its faces looked into it
             th_ = m.a["shell"][:, 0]
             z = m.a["rest"][:, 2] / mm
             rr = np.hypot(m.v[:, 0], m.v[:, 1])

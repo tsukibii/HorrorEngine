@@ -404,6 +404,17 @@ thing is turned, and swings when it's moved.
   basin to the drain, and the washbasin one from its underside, over its rim and down its bowl.
 - **A lathe's faces look to the right of its profile:** up the outside, a profile walking up faces out. A lid's top
   must therefore walk from its rim in to the middle, with its underside first from the middle out (cookware's lids do).
+  A cap walked from the middle of its top outward faces into itself and takes `M.flip` (the bottles', the pills', the
+  jar's and the crown corks'). The same rule holds for a loft and a slab: their band faces out when its profile climbs
+  (`slab` walks it from the bottom up), and `loft` and `extrude` turn their loops the right way round themselves.
+- **A mirror turns faces inside out:** laying a lathe on its side by swapping two axes (chopsticks, a key's shaft) or
+  scaling by −1 mirrors it; `M.flip(m)` after it puts its faces back (it keeps the UVs).
+- **Faces seen from outside are fronts, by measure:** Godot draws only a face's front, where Cycles' previews draw
+  both sides, so an inside-out part looks right in every preview and is see-through in the game. PROPGEN casts rays
+  at each case from 26 directions (`check.orientation`) and fails when more than 1.5% of what they hit is a face's back;
+  double-sided materials are left out (both their sides are drawn). Thin things that fold over themselves (crumpled
+  paper, a crushed cup, a bottle's label seen through the bottle) are double-sided: their two faces cross in the
+  creases.
 
 ## 12. The occult, the kitchen and the sinks: what's made and what doesn't fit
 

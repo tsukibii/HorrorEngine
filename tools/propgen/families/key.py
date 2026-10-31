@@ -112,6 +112,7 @@ def make(spec, th):
             sh = M.lathe([M.Seg(np.array(prof) * mm, "shaft", "band")], 16 if steps < 3 else 40, I, step=step * mm * 3, mats=["main"])
             v = sh.v.copy()
             sh.v = np.stack([v[:, 2] + 0.0005, v[:, 1], v[:, 0]], 1)
+            M.flip(sh)      # x and z swapped: a mirror, which turns the faces inside out
             sh.a["rest"] = sh.v.copy()
             notch = [(L - 9, 2.4), (L - 9, 13), (L - 6.5, 13), (L - 6.5, 9), (L - 4.5, 9), (L - 4.5, 13), (L - 1.5, 13), (L - 1.5, 2.4)]
             bit = M.slab([np.array(notch) * mm], 3.0 * mm, 0.6 * mm, I, steps=steps)

@@ -109,6 +109,7 @@ def make(spec, th):
             if cap:
                 cp = M.lathe([M.Seg(np.array(cap[:3]) * mm, "cap_top", "top", disc=(r_top + 3.2) * mm),
                               M.Seg(np.array(cap[2:]) * mm, "cap_side", "band")], max(24, n // 2), I, step=step, mats=["parts"])
+                M.flip(cp)      # lathed from the middle of its top outwards, its faces looked into it
                 parts.append(cp)
             if kind == "jar":
                 lb = M.lathe([M.Seg(np.array([(40.3, 22), (40.3, 72)]) * mm, "label", "band")], n, I, step=step, mats=["parts"])

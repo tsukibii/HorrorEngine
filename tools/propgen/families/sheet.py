@@ -69,7 +69,8 @@ def make(spec, th):
     seed = int(spec.get("seed", 0))
     kind = spec.get("paper", "paper")
     th.material("main", kind if kind in ("paper", "card", "film") else "paper", color=spec.get("color", "#efece4"),
-                rough=float(spec.get("rough", 0.85)), double=False)
+                rough=float(spec.get("rough", 0.85)), double=bool(spec.get("crumple") or spec.get("fold") or spec.get("folds") or spec.get("squeeze") or spec.get("wrinkle")))
+    # crumpled or folded, the sheet's two faces cross at its sharpest creases (each offset by half its thickness): both sides drawn
     fr_isl = th.island("front", w, h)
     bk_isl = th.island("back", w, h)
     th.pack()

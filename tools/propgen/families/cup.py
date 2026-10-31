@@ -54,7 +54,8 @@ def make(spec, th):
     sleeve = spec.get("sleeve", lidk == "sip")
     straw = spec.get("straw", lidk == "flat")
     crushed = bool(spec.get("crush"))
-    th.material("main", "paper", color="#f4f2ec", rough=0.75)
+    # crushed, the wall's two faces cross in its folds: both sides drawn
+    th.material("main", "paper", color="#f4f2ec", rough=0.75, double=crushed)
     th.material("lid", "plastic", color=spec.get("lid_color", "#f6f6f4" if lidk == "sip" else "#2b2c30"), rough=0.4, px=512, double=True)
     rmid = (top_d + bot_d) / 4
     out_len = M.arclen(prof["outside"])

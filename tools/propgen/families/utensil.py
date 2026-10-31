@@ -180,6 +180,7 @@ def make(spec, th):
                 # lying along x, a little apart and askew
                 v = st.v.copy()
                 st.v = np.stack([v[:, 2] - L * mm / 2, v[:, 1] + dy * mm + v[:, 2] * (0.02 if i else -0.01), v[:, 0] + 3.5 * mm], 1)
+                M.flip(st)      # x and z swapped: a mirror, which turns the faces inside out
                 st.a["rest"] = st.v.copy()
                 out.append(st)
             return M.join(out)
