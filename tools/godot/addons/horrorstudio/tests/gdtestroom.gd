@@ -745,7 +745,7 @@ func _initialize() -> void:
 			if task("t4_switch") != "open":
 				return "a dead switch ticked its task"
 			return "")
-		await step("the breaker brings the power back (ticks, the lamp flickering up), the switch lights the bulb (ticks), the candle blown out (ticks)", func():
+		await step("the breaker brings the power back (ticks, the lamp flickering up), the switch lights the bulb (ticks: its fitting's glass glowing, a light of the user's own under it following), the candle blown out (ticks)", func():
 			await use("breaker_box", 0.7)
 			await game_wait(1.2)
 			if not rt.powered():
@@ -756,10 +756,22 @@ func _initialize() -> void:
 			var r := await ticked("t4_breaker")
 			if r != "":
 				return r
+			var bulb_node: Node3D = rt.by_id["power_bulb"]["node"]       # the bulb is a fitting (lights as furniture, 2026-10-31): no light
+			if bulb_node is Light3D:                                      # source of the export's; a light of the user's own under it follows it
+				return "the power bulb has a fitting: the export shouldn't make it a light source"
+			var mine := OmniLight3D.new()
+			mine.light_energy = 2.0
+			bulb_node.add_child(mine)
+			await frames(2)
+			if mine.light_energy != 0.0 or rt.fitting_glow("power_bulb") != 0.0:
+				return "the bulb's off: the light under it %.2f, its glass %.2f" % [mine.light_energy, rt.fitting_glow("power_bulb")]
 			await use("power_switch", 0.7)
 			await game_wait(0.4)
 			if not (rt.light_energy("power_bulb") > 0):
 				return "the bulb is dark"
+			if not (mine.light_energy > 1.0) or rt.fitting_glow("power_bulb") < 0.5:
+				return "the switched-on bulb: the light under it %.2f, its glass %.2f" % [mine.light_energy, rt.fitting_glow("power_bulb")]
+			mine.queue_free()
 			r = await ticked("t4_switch")
 			if r != "":
 				return r

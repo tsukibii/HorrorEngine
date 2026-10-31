@@ -91,6 +91,14 @@ so give those their own UV'd material).
   material file); a `@tool` script, so the editor shows them too: each `kit_<slot>` surface (and its tones,
   `kit_wood_2`...) of this thing's own copy of the mesh wears its file, the surface keeping its name for the little
   things' effects; put back before a save, so only `slots` is saved.
+- **A light with a fitting** (its `kit`: the round LEDs the scene builder puts on its ceilings; the user, 2026-10-31,
+  "we don't need to export actual Godot light sources, lights as furniture") is written as its fitting (a kit thing,
+  `<id>__fitting`) and a plain node in `Lights` where the light is, with no light source: the runtime keeps the light's
+  level as the story has it (switched, cut, dimmed, flickering), the fitting's glass (its `kit_emit` surface, a material
+  of its own) glows that bright, and every light the user puts under the node follows it at its own energy times that
+  level. A light without a fitting (a candle, a pattern, a lamp the story places alone) is a light source as before.
+  `export.json`'s `fittings`; GDEXPORT finds each with no light source and its fitting drawn with its glass; GDTESTROOM
+  switches the power room's bulb (a flush 300) and finds its glass and a light put under it following.
 - **A street's .glb** keeps its materials inside it (one a set and colour, shared by every chunk; after the Blender bake
   each also carries the street's own wear atlas), so they're the street's own: Godot's Advanced Import Settings
   (*Actions › Extract Materials*) writes them to a folder by name if you want them as files.

@@ -47,6 +47,8 @@ func _initialize() -> void:
 	var slot_want: Dictionary = {}       # a thing (a door with its parts one) -> the slots its mats name
 	var slot_got: Dictionary = {}        # -> the slots its surfaces were dressed for
 	var tone := RegEx.create_from_string("_\\d+$")
+	var fits := 0                        # the story's lights that are fittings (lights as furniture): no light source of the export's
+	var fits_bad: Array = []
 	var info: Dictionary = {}
 	var ef := FileAccess.open("res://game/export.json", FileAccess.READ)
 	if ef != null:
@@ -61,6 +63,29 @@ func _initialize() -> void:
 			ok = false
 			continue
 		var n: Node3D = ps.instantiate()
+		var by_piece: Dictionary = {}
+		for ch0 in n.find_children("*", "", true, false):
+			if ch0.has_meta("piece"):
+				var pc0 = JSON.parse_string(ch0.get_meta("piece"))
+				if pc0 is Dictionary:
+					by_piece[pc0["id"]] = ch0
+		for ch0 in n.find_children("*", "", true, false):        # a light with a fitting: no light source, its fitting drawn with its glass
+			if not ch0.has_meta("light"):
+				continue
+			var lm0 = JSON.parse_string(ch0.get_meta("light"))
+			if not (lm0 is Dictionary) or not lm0.has("fitting"):
+				continue
+			fits += 1
+			var fnode = by_piece.get(lm0["fitting"])
+			var glass := false
+			if fnode != null and fnode.get_node_or_null("art") != null:
+				for mi in fnode.get_node("art").find_children("*", "MeshInstance3D", true, false):
+					for i in mi.mesh.get_surface_count():
+						var sm0: Material = mi.mesh.surface_get_material(i)
+						if sm0 != null and (sm0.resource_name == "kit_emit" or mi.mesh.surface_get_name(i) == "kit_emit"):
+							glass = true
+			if ch0 is Light3D or not glass:
+				fits_bad.append("%s (%s)" % [lm0["fitting"], "a light source" if ch0 is Light3D else "no fitting with its glass"])
 		var kinds: Dictionary = {}
 		var bad := 0
 		var arts := 0                    # the kit's and the library's meshes instanced in their blocks, with geometry
@@ -138,6 +163,10 @@ func _initialize() -> void:
 			print("GDEXPORT kit slots: %d things dressed by the story's mats (the export dressed %d), %d surfaces wearing their set's _uv file%s%s" % [
 				slot_want.size(), want_things, slots, "" if slots_bad == 0 else " (%d NOT)" % slots_bad, "" if short.is_empty() else " (UNDRESSED: %s)" % ", ".join(short)])
 			if slot_want.size() != want_things or slots_bad or not short.is_empty():
+				ok = false
+			print("GDEXPORT fittings: %d of the story's lights are fittings (the export wrote %d): no light source, the fitting drawn with its glass%s" % [
+				fits, int(info.get("fittings", 0)), "" if fits_bad.is_empty() else " (BAD: %s)" % ", ".join(fits_bad)])
+			if fits != int(info.get("fittings", 0)) or not fits_bad.is_empty():
 				ok = false
 		if empty:
 			ok = false

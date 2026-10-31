@@ -344,6 +344,7 @@ class LevelWriter:
         self.surfaces = {}                                 # a library texture set's material, by ref (surface())
         self.slot_mats = {}                                # a set's material laid by UVs (a kit thing's slot), by ref
         self.dressed = set()                               # the things with slots dressed (the story's `mats`; a door with its parts one)
+        self.fittings = 0                                  # the story's lights that are fittings: no light source written
         self.slot_script = None
         self.surfaced = 0                                  # the pieces wearing one
         self.occluders = 0                                 # the walls, floors and ceilings hiding what's behind them
@@ -557,6 +558,14 @@ class LevelWriter:
         name = self.uname(p["id"])
         light_meta = dict({"kind": kind, "room": p.get("room"), "base": inten, "on": lit},
                           **{k: d[k] for k in ("flicker", "mode", "interval", "rate", "letters") if k in d})   # the flicker and its mode (flicker.gd: a mode with no flicker is all of it)
+        fitting = next((t[8:] for t in p.get("tags") or [] if t.startswith("fitting:")), None)
+        if fitting:     # a light with a fitting (the user, 2026-10-31: "we don't need to export actual Godot light sources,
+            # lights as furniture"): no light source; a node where it is, which the runtime keeps lit, dimmed or cut as
+            # the story says: the fitting's glass glows with it, and the lights the user puts under this node follow it
+            self.t.node(name, "Node3D", "Lights", {"transform": xform(s2g(p["pos"]))},
+                        {"piece": self.piece_meta(p), "light": dict(light_meta, fitting=fitting)})
+            self.fittings += 1
+            return
         if d.get("pattern") in PATTERNS and isinstance(d.get("aim"), list) and len(d["aim"]) == 3:
             # a pattern in its light (HSPattern): a spot aimed at `aim` (room metres), its cone `spread` wide; the
             # runtime draws the pattern into its projector; the distance to the aim sizes the pattern in metres
@@ -1360,6 +1369,7 @@ def export(game, out=None, make_zip=False, do_import=True):
     arts = 0
     surfaced = 0
     slots_dressed = 0
+    fittings = 0
     occluders = 0
     surface_sets = set()
     kit_index = {}
@@ -1443,6 +1453,7 @@ def export(game, out=None, make_zip=False, do_import=True):
         arts += lw.art_count
         surfaced += lw.surfaced
         slots_dressed += len(lw.dressed)
+        fittings += lw.fittings
         occluders += lw.occluders
         surface_sets.update(r if isinstance(r, str) else r[0] for r, m in lw.surfaces.items() if m)
         for ref in lw.arts:                               # the kit things' sockets and slots (lifefx.gd), by their ref
@@ -1458,7 +1469,7 @@ def export(game, out=None, make_zip=False, do_import=True):
             "materials": {r: m for r, m in sorted(mats.files.items(), key=lambda kv: str(kv[0])) if m and isinstance(r, str)},
             "slot_materials": {r[0]: m for r, m in sorted(mats.files.items(), key=lambda kv: str(kv[0])) if m and isinstance(r, tuple) and r[1] == "uv"},
             "moving_materials": {r[0]: m for r, m in sorted(mats.files.items(), key=lambda kv: str(kv[0])) if m and isinstance(r, tuple) and r[1] == "obj"},
-            "slots_dressed": slots_dressed, "bake": (previs / "preview.json").exists(), "bodies": baked,
+            "slots_dressed": slots_dressed, "fittings": fittings, "bake": (previs / "preview.json").exists(), "bodies": baked,
             "bodies_list": sorted(f.name[5:-4] for f in previs.glob("Body_*.glb")) if previs.exists() else [], "engine": L.engine_version(), "godot": "4.7",
             "made": datetime.datetime.now().strftime("%Y-%m-%d %H:%M")}
     kept = []

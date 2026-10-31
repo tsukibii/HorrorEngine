@@ -1448,11 +1448,12 @@
        "use": "light",
        "kind": "bulb",
        "lit": false,
+       "kit": "led_flush_300",
        "at": [
         2.5,
         2.5
        ],
-       "z": 2.9
+       "z": 2.965
       },
       {
        "id": "power_lamp_stand",

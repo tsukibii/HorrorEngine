@@ -1066,7 +1066,59 @@ func light(id, room, set_to: String) -> void:
 
 func light_energy(id) -> float:
 	var t = by_id.get(id)
-	return t["node"].light_energy if t != null and t["node"] is Light3D else 0.0
+	if t == null:
+		return 0.0
+	if t["node"] is Light3D:
+		return t["node"].light_energy
+	return float(light_state.get(id, {}).get("level", 0.0))   # a fitting's light: how bright the story has it
+
+
+## a light with a fitting (the story's light with a `kit`; the user, 2026-10-31: "lights as furniture", no light source
+## of the export's): its fitting's glass (the kit's emit surface, a material of its own) glows as bright as the light is,
+## and every light the user put under the light's node follows it (switched, cut, flickering), each at its own energy
+## times the light's level
+func fitting_light(t: Dictionary, k: float) -> void:
+	for c in t["node"].find_children("*", "Light3D", true, false):
+		if not c.has_meta("hs_energy"):
+			c.set_meta("hs_energy", c.light_energy)
+		c.light_energy = float(c.get_meta("hs_energy")) * k
+	if not t.has("glow"):
+		t["glow"] = _fitting_glow(t)
+	var g: Dictionary = t["glow"]
+	if g.is_empty() or absf(float(g["k"]) - k) < 0.004:
+		return
+	g["k"] = k
+	for m in g["mats"]:
+		m.emission_energy_multiplier = float(g["e0"]) * k
+
+
+func _fitting_glow(t: Dictionary) -> Dictionary:
+	var lm = JSON.parse_string(t["node"].get_meta("light")) if t["node"].has_meta("light") else {}
+	var f = by_id.get(lm.get("fitting", "") if lm is Dictionary else "")
+	if f == null:
+		return {}
+	var mats: Array = []
+	var e0 := 1.0
+	for mi in f["node"].find_children("*", "MeshInstance3D", true, false):
+		if mi.mesh == null or mi.name == "mesh":
+			continue
+		for i in mi.mesh.get_surface_count():
+			var m: Material = mi.get_surface_override_material(i) if mi.get_surface_override_material(i) != null else mi.mesh.surface_get_material(i)
+			if m is StandardMaterial3D and (m.resource_name == "kit_emit" or mi.mesh.surface_get_name(i) == "kit_emit"):
+				var own: StandardMaterial3D = m.duplicate()
+				own.emission_enabled = true
+				e0 = maxf(own.emission_energy_multiplier, 1.0)
+				mi.set_surface_override_material(i, own)
+				mats.append(own)
+	return {"mats": mats, "e0": e0, "k": -1.0} if not mats.is_empty() else {}
+
+
+## how bright a fitting's glass is now (0 out, 1 full; -1 no fitting): the checks
+func fitting_glow(id) -> float:
+	var t = by_id.get(id)
+	if t == null or not t.has("glow") or (t["glow"] as Dictionary).is_empty():
+		return -1.0
+	return float(t["glow"]["k"])
 
 
 func wait(secs: float) -> void:
@@ -2667,7 +2719,11 @@ func tick(dt: float) -> void:
 			u["surge"] = null
 		k *= HSFlicker.k(u, T)                                    # its flicker by mode (flicker.gd, as the desk's)
 		k *= float(scene_light_k.get(t["id"], 1.0))
-		t["node"].light_energy = float(u["base"]) * k
+		u["level"] = float(u["base"]) * k
+		if t["node"] is Light3D:
+			t["node"].light_energy = float(u["level"])
+		else:
+			fitting_light(t, k)
 	mains_tick()
 	life_lights()
 	if lifefx != null:
