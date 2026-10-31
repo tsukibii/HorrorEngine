@@ -143,6 +143,7 @@ TOOLS = [
     ("Checks", "Kit check (presets and kit props)", "node tools/kit/check.mjs", {}),
     ("Checks", "Street check (every building style, part, thing and fence; every street; each shot against its photo)", "tools/street.py check", {}),
     ("Checks", "Street page test (the street builder in a headless browser; the desk running)", "node tools/director/streettest.mjs", {}),
+    ("Checks", "Street bake check (a street baked in Blender, read back and dropped into Godot: STREETBAKE; the desk running)", "tools/street.py bake-check --godot", {}),
     ("Checks", "Tailor check (every clothing design on seven bodies)", "node tools/character/tailor/check.mjs", {}),
     ("Checks", "Play mode test (the Pilot walked, headless browser; the desk running)", "node tools/director/playtest.js", {}),
     ("Checks", "Test room (TestRoom001 played station by station, headless browser; the desk running; the reference for Unreal)", "node tools/director/testroom.mjs", {}),
@@ -171,6 +172,9 @@ TOOLS = [
     ("Streets", "A street as text", "tools/street.py show {ask:Street}", {}),
     ("Streets", "A street drawn through its shot, beside its photo (into Saved/Streets; the desk running)", "tools/street.py shot {ask:Street} {opt:Shot (Enter: photo)}", {}),
     ("Streets", "New street", "tools/street.py new {ask:New street's name}", {}),
+    ("Streets", "A street in Blender: procedural finishes and its wear, rendered through its shot beside the photo (the desk running)", "tools/street.py look {ask:Street} {opt:Shot (Enter: the first; all)}", {}),
+    ("Streets", "A street baked for Godot: tileable sets, its wear atlas, the .glb and .blend (colliders kept), pictured in Godot (the desk running)", "tools/street.py bake {ask:Street} --godot", {}),
+    ("Streets", "The procedural finishes baked onto the PBR shelf as tileable sets (assets/pbr/Procedural)", "tools/street.py finishes", {}),
 
     ("Script", "Writers' room: the sessions", "tools/writers/room.py list", {}),
     ("Script", "Writers' room: what the page shows now", "tools/writers/room.py now", {}),

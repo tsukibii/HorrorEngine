@@ -9,6 +9,20 @@ buildings go into, kept in Content/Studio/Streets/<name>/street.json (the page: 
                                                  well formed; its shots' pins land on their photos (runs node)
     python tools/street.py shot <name> [shot]    the street drawn through a shot (and beside its photo), into
                                                  Saved/Streets/<name>/ (the desk's server running; runs node)
+
+  In Blender (docs/STREET_TEXTURING.md; Blender on the PATH, --blender PATH, or `python tools/retarget.py setup`):
+    python tools/street.py look <name> [--shot ID|all] [--samples 64] [--height 900] [--density 24] [--reuse-wear]
+                                                 the street's .glb in Blender with procedural finishes (its
+                                                 finish.json) and its wear atlas, rendered through its shot(s)
+                                                 beside the photo: Saved/Streets/<name>/blender/
+    python tools/street.py bake <name> [...] [--tile-px 1024] [--godot]
+                                                 the look, the finishes baked onto the PBR shelf as tileable sets,
+                                                 every material made plain glTF, <name>.glb (drop it into Godot:
+                                                 colliders kept) and <name>.blend; --godot: pictured in Godot too
+    python tools/street.py finishes [names...] [--tile-px 1024]
+                                                 the procedural finishes onto the shelf (assets/pbr/Procedural)
+    python tools/street.py bake-check [--street N] [--godot]
+                                                 STREETBAKE: a street baked small on a scratch shelf, read back
 """
 import json
 import shutil
@@ -97,6 +111,11 @@ def main(argv):
         return 0
     if cmd == "check":
         return node([str(ROOT / "tools" / "director" / "streetcheck.mjs")] + argv[1:])
+    if cmd in ("look", "bake", "finishes", "bake-check"):
+        sys.path.insert(0, str(ROOT / "tools"))
+        from streetbake import cli
+        rest = argv[1:]
+        return cli.look_or_bake(cmd, rest) if cmd in ("look", "bake") else cli.finishes(rest) if cmd == "finishes" else cli.bake_check(rest)
     if cmd == "shot" and len(argv) > 1:
         return node([str(ROOT / "tools" / "director" / "streetshot.mjs"), "--street", argv[1], "--shot", argv[2] if len(argv) > 2 else "photo"])
     print(__doc__)

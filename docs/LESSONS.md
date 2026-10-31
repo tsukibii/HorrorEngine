@@ -1196,3 +1196,20 @@ guessed margin; and a check that only ever ran on a slow machine hasn't been run
 - **Object.assign's order decides who wins:** a check built two buildings as `Object.assign({id, at}, base)`, so the
   base's own id and place overwrote both, and "the cache kept a changed building" was the test's fault. Defaults
   first, the thing's own fields last.
+
+## The street in Blender (2026-10-31)
+
+- **Cycles bakes one object at a time, each over the whole image:** 78 street meshes into one 4096 × 2112 atlas took
+  over ten minutes for the first pass and never finished the three. A joined copy of them all bakes each pass once
+  (1.5 minutes for all three), with the originals hidden from the render so the occlusion meets each surface once.
+- **A GDScript function named after a global hides nothing, it breaks:** HSStreet's `static func convert(m)` lost to
+  GDScript's own `convert(what, type)` ("too few arguments"), and since plugin.gd preloads the import step, the whole
+  HorrorStudio Look plugin failed to load. Never name a function after a GDScript global (convert, str, load, print,
+  range...), and import the plugin in a fresh project (GDSTREET --plugin) after any change to plugin.gd.
+- **What lies flat on a surface mustn't shut its occlusion:** the road's letters are quads 4 mm over the asphalt, so
+  the occlusion bake saw the asphalt under them as shut (0), and Godot, which reads the atlas as ambient occlusion,
+  drew a black square round every letter where the paint is cut away. Road markings are now baked apart, out of the
+  rays while what's under them is baked.
+- **A seam test that compares the wrap with the average step flags every brick:** a tile set's period ends on a
+  brick's edge, so the step at the wrap is a brick's edge, far above the average step inside. Compare the wrap with
+  the biggest step inside (a texture that doesn't tile still fails it by 12 times).

@@ -6,7 +6,10 @@ in, its lamps are lights, its colours survived (not all white), and every inside
 
     python tools/godot/street_check.py [--street shibuya_lane]      (the desk's server running; Godot: $GODOT or godot)
 
-Ends "GDSTREET ok".
+The Blender bake's .glb instead (tools/street.py bake, docs/STREET_TEXTURING.md): `--glb PATH` (its colliders,
+occluders and lamps checked the same way; not its colours: it wears textures), `--plugin` (the HorrorStudio Look
+plugin enabled in the project: its import step must have made the street's surfaces the street shader), `--shot ID`
+(the street pictured through that shot under xvfb, `--out PNG`). Ends "GDSTREET ok".
 """
 import json
 import os
@@ -18,6 +21,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 args = sys.argv[1:]
 street = args[args.index("--street") + 1] if "--street" in args else "shibuya_lane"
+glb = Path(args[args.index("--glb") + 1]).resolve() if "--glb" in args else None
+plugin = "--plugin" in args
+shot_id = args[args.index("--shot") + 1] if "--shot" in args else None
+shot_out = Path(args[args.index("--out") + 1]).resolve() if "--out" in args else None
 G = os.environ.get("GODOT") or shutil.which("godot") or shutil.which("godot-mono")
 proj = ROOT / "Saved" / "Godot" / "_street_check" / street
 errs = []
@@ -32,10 +39,16 @@ if not G:
 node = shutil.which("node")
 shutil.rmtree(proj, ignore_errors=True)
 proj.mkdir(parents=True)
-r = run([node, str(ROOT / "tools/director/streetexport.mjs"), "--street", street, "--out", str(proj / "street.glb")], cwd=ROOT)
-if r.returncode or not (proj / "street.glb").exists():
-    sys.exit("GDSTREET FAILED: the export: " + (r.stdout + r.stderr)[-600:])
-print(r.stdout.strip().splitlines()[-1])
+if glb:
+    if not glb.is_file():
+        sys.exit(f"GDSTREET FAILED: no {glb} (python tools/street.py bake {street})")
+    shutil.copy(glb, proj / "street.glb")
+    print(f"the Blender bake's {glb.name} ({glb.stat().st_size // 1024} KB) dropped in")
+else:
+    r = run([node, str(ROOT / "tools/director/streetexport.mjs"), "--street", street, "--out", str(proj / "street.glb")], cwd=ROOT)
+    if r.returncode or not (proj / "street.glb").exists():
+        sys.exit("GDSTREET FAILED: the export: " + (r.stdout + r.stderr)[-600:])
+    print(r.stdout.strip().splitlines()[-1])
 # where the rays go, and what the street says they should hit (street-gen in node: the roads' heights, the buildings)
 probe = r'''
 import fs from "fs"; import { pathToFileURL } from "url";
@@ -69,7 +82,18 @@ if r.returncode:
     sys.exit("GDSTREET FAILED: the expectations: " + r.stderr[-400:])
 expect = json.loads(r.stdout)
 (proj / "expect.json").write_text(json.dumps(expect))
-(proj / "project.godot").write_text('config_version=5\n\n[application]\nconfig/name="street_check"\n')
+SJ = json.loads((ROOT / "Content/Studio/Streets" / street / "street.json").read_text(encoding="utf-8"))
+shot = next((x for x in SJ.get("shots", []) if x.get("id") == shot_id), None) if shot_id else None
+if shot_id and not shot:
+    sys.exit(f"GDSTREET FAILED: {street} has no shot {shot_id}")
+pg = 'config_version=5\n\n[application]\nconfig/name="street_check"\n'
+if shot:
+    asp = shot["aspect"][0] / shot["aspect"][1] if isinstance(shot.get("aspect"), list) else 16 / 9
+    pg += f'\n[display]\nwindow/size/viewport_width={int(round(900 * asp))}\nwindow/size/viewport_height=900\n'
+if plugin:
+    shutil.copytree(ROOT / "GodotPlugins/HorrorStudioLook/addons", proj / "addons")
+    pg += '\n[editor_plugins]\nenabled=PackedStringArray("res://addons/horrorstudio_look/plugin.cfg")\n'
+(proj / "project.godot").write_text(pg)
 shutil.copy(ROOT / "tools/godot/street_probe.gd", proj / "probe.gd")
 run([G, "--headless", "--path", str(proj), "--import"], timeout=600)
 r = run([G, "--headless", "--path", str(proj), "-s", "probe.gd"], timeout=300)
@@ -87,8 +111,14 @@ if any(not b.get("inside") for b in json.loads((ROOT / "Content/Studio/Streets" 
     errs.append("no occluders came in (the -occonly meshes)")
 if counts.get("OmniLight3D", 0) != expect["lamps"]:
     errs.append(f"{counts.get('OmniLight3D', 0)} lamps came in, the street has {expect['lamps']}")
-if int(cl[2]) < 5 or int(cl[4]) > 0:
+wear = int(next((ln for ln in lines if ln.startswith("GDPROBE wear")), "GDPROBE wear 0").split()[2])
+if glb is None and (int(cl[2]) < 5 or int(cl[4]) > 0):
     errs.append(f"the colours didn't survive: {cl[2]} colours, {cl[4]} materials asking for vertex colours")
+if plugin:
+    if wear < 1:
+        errs.append("the plugin's import step made no surface the street shader (its hs_wear extras)")
+    else:
+        print(f"  the plugin's import step: {wear} surfaces wear the street shader")
 for want in expect["insides"]:
     if not any(m["name"].startswith("inside_" + want) and (m["meta"] or {}).get("set") for m in markers):
         errs.append(f"the inside of {want} has no marker with its set")
@@ -105,6 +135,20 @@ for ray in expect["rays"]:
         errs.append(f"a ray onto {ray['name']} landed at {got}, the street says {ray['want']:.3f}")
     else:
         print(f"  a ray onto {ray['name']}: {got:.3f} (the street: {ray['want']:.3f})")
+if shot:
+    (proj / "shot.json").write_text(json.dumps(shot))
+    shutil.copy(ROOT / "tools/godot/street_shot.gd", proj / "street_shot.gd")
+    out = shot_out or (ROOT / "Saved" / "Streets" / street / f"godot_{shot_id}.png")
+    out.parent.mkdir(parents=True, exist_ok=True)
+    cmd = [G, "--path", str(proj), "--rendering-driver", "vulkan", "-s", "street_shot.gd", "--", str(proj / "shot.json"), "res://street.glb", str(out)]
+    if shutil.which("xvfb-run"):
+        cmd = ["xvfb-run", "-a", "-s", "-screen 0 1920x1080x24"] + cmd
+    r = run(cmd, timeout=600)
+    ln = next((x for x in r.stdout.splitlines() if x.startswith("GDSHOT")), None)
+    if not ln or not out.is_file():
+        errs.append("the shot's picture: " + (r.stdout + r.stderr)[-500:])
+    else:
+        print("  " + ln[7:])
 # the door test (with a set inside): the set exported as its own Godot project (the game's export takes a set), the
 # street's .glb dropped into it, the set's level put at the street's marker, a ray from outside through the doorway
 if "--no-sets" not in args:

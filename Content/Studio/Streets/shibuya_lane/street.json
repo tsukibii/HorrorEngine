@@ -940,6 +940,63 @@
    ],
    "ref": "refs/shot_photo.webp",
    "op": 0.5
+  },
+  {
+   "id": "close_shop",
+   "name": "the shopfront up close (the finishes and the wear at arm's length)",
+   "eye": [
+    0.6,
+    2.5,
+    1.6
+   ],
+   "look": [
+    2.4,
+    7.0,
+    2.2
+   ],
+   "vfov": 60,
+   "aspect": [
+    16,
+    9
+   ]
+  },
+  {
+   "id": "close_kiosk",
+   "name": "the kiosk up close",
+   "eye": [
+    0.8,
+    4.0,
+    1.6
+   ],
+   "look": [
+    -3.2,
+    9.2,
+    1.5
+   ],
+   "vfov": 60,
+   "aspect": [
+    16,
+    9
+   ]
+  },
+  {
+   "id": "close_road",
+   "name": "the road at the player's feet",
+   "eye": [
+    -0.4,
+    2.0,
+    1.6
+   ],
+   "look": [
+    -0.2,
+    9.0,
+    -0.3
+   ],
+   "vfov": 60,
+   "aspect": [
+    16,
+    9
+   ]
   }
  ]
 }

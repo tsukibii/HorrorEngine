@@ -182,6 +182,11 @@ Story space (x east, y north, z up) is Godot's (x, z, -y), as the game's own exp
 level built at the same place. `python tools/godot/street_check.py [--street N]` (GDSTREET) does exactly this in a
 project of its own and checks it: rays land on the road, the pavement and the roofs where the street says.
 
+**Through Blender first** (docs/STREET_TEXTURING.md): `python tools/street.py bake <street>` gives every surface a
+procedural finish that tiles at its real size and the street's own wear (dirt, rain streaks, worn edges), and writes a
+.glb and a .blend with the same colliders, occluders, lamps and markers; the HorrorStudio Look plugin lays the wear on
+in Godot as it's imported. Add foliage in the .blend's Foliage collection, colliders by Godot's name suffixes.
+
 ## 5c. Buildings to walk into: a set inside
 
 The user (DECISIONS 2026-10-30, later night): "integrate the interiors we designed into the street map... a motel...

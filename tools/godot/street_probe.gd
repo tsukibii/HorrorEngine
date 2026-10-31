@@ -10,6 +10,7 @@ func _initialize():
 	var counts := {}
 	var colours := {}
 	var vc := 0
+	var wear := 0
 	var markers := []
 	var stack := [s]
 	while stack.size():
@@ -22,9 +23,12 @@ func _initialize():
 				if m is StandardMaterial3D:
 					colours[m.albedo_color.to_html(false)] = 1
 					if m.vertex_color_use_as_albedo: vc += 1
+				elif m is ShaderMaterial and m.shader and String(m.shader.resource_path).get_file().begins_with("street"):
+					wear += 1
 		for c in n.get_children(): stack.append(c)
 	print("GDPROBE counts ", JSON.stringify(counts))
 	print("GDPROBE colours ", colours.size(), " vertexcolour ", vc)
+	print("GDPROBE wear ", wear)
 	print("GDPROBE markers ", JSON.stringify(markers))
 	await physics_frame
 	await physics_frame

@@ -2,6 +2,22 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-31, past midnight (the user, on texturing the streets)
+
+- **The most aesthetic surfaces, wear and decals**: "when it comes to texturing the streets, what would be the most
+  aesthetic way to do it; for wear and tear and decals etc, is the best way to do it similar to how we are doing it in
+  the prop-gen-tool branch; can you make a test Blender baked texture render, try to imitate the photo reference".
+  Answered in docs/STREET_TEXTURING.md: finishes that tile at their real size, the street's own wear in one low-res
+  atlas (the prop generator's idea at a street's scale), decals next; the test is the Shibuya lane through its shot.
+- **Procedural first, PBR optional**: "investigate if you can use procedural textures (and bake them in) instead of
+  importing PBRs; if PBRs are needed find them or make it optional so it's easy to texture the model/street how we
+  want to". The finishes are Blender nodes baked onto the PBR shelf (`assets/pbr/Procedural`); a street's
+  finish.json puts a set of your own on any slot or material.
+- **Street → Blender → Godot, with easy collision**: "I think a street -> blender -> godot workflow could work well
+  because we could add foliage easily then, but something to consider is how would we add easy collision".
+  `tools/street.py bake`: the .glb and the .blend (its Foliage collection kept between bakes), the street's colliders
+  by name, Godot's own suffixes for what's added (STREET_TEXTURING §4).
+
 ## 2026-10-30, later night (the user, after the street builder's first round)
 
 - **Into Godot by hand, by dropping a file**: "as long as the export is as simple as drag and drop into a godot folder

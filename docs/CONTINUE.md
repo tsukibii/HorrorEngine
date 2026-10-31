@@ -30,6 +30,22 @@ Streets: **shibuya_lane** (the first photo matched, 13 pins at 0.5%), **referenc
 **bungalow**. Checks: STREET (check_all), STREETPAGE, GDSTREET (Godot 4.7: rays onto the road, the pavement, roofs, the
 walkway; through each inside's doorway onto the set's own door with the set's level at its marker).
 
+**Then the surfaces** (2026-10-31, past midnight; DECISIONS): "the most aesthetic way" to texture the streets, wear and
+decals, procedural bakes instead of PBRs, a street → Blender → Godot path with easy collision. Answered and built
+(docs/STREET_TEXTURING.md): **finishes that tile at their real size** (Blender node groups in `tools/streetbake/
+finishes.py`, baked once onto the PBR shelf as seamless sets, `assets/pbr/Procedural/`), **the street's own wear** in
+one low-res atlas (`wear.py`: the prop generator's idea at a street's scale; dirt, splash band, rain streaks run down
+each ledge, worn edges, wet patches), PBR sets optional by slot or material (a street's `finish.json`). `tools/street.py
+look` renders a shot beside its photo in Cycles; `bake` writes `<name>.glb` and `<name>.blend` (plain glTF: the
+finish at its size times the colour, the atlas as occlusion on UV2, the recipe in extras; colliders, occluders, lamps
+and markers by name; the .blend's Foliage collection kept between bakes). The look plugin's import step
+(`street_import.gd`) makes those materials `street.gdshader`, so Godot matches Blender (GDSTREET `--glb --plugin
+--shot`: the rays land on the road at 0.004 m and the pavement at 0.150 m after Blender, 85 surfaces on the street
+shader). STREETBAKE (`street.py bake-check --godot`, a minute). The Shibuya lane: `Saved/Streets/shibuya_lane/blender/
+compare_photo.jpg` (the photo, Blender, Godot). **Next, if wanted:** decals as a street builder part made Godot Decal
+nodes by the same import step (STREET_TEXTURING §5); a `finish` beside each slot's colour in the street's `look`; the
+wear reacting to the plugin's rain.
+
 **What could come next** (ask first): the user's verdict on the match, the town and the motel; more references; the
 export placing an inside's level by itself (today a marker; the set's level dropped there by hand); a two-storey
 interior (stairs inside the set); foliage when the user wants it; steps and retaining walls on a slope; a grade in the
