@@ -209,9 +209,16 @@ for a car park or a walkway. So the street builds the outside, round the level:
   the ground, the floor `raise`d (a Japanese house's 45 cm) with steps up to each door, one roof over the rooms (hip,
   gable, flat...; over each room when they're scattered), the building's own parts on its box (a canopy, signs, lamps).
   Inside, a dark stand-in for each room (so a door shows a room), never exported.
+- **Its outside from the set** (DECISIONS 2026-10-31): a set's level can carry its own outside, designed in the
+  scene builder (its Outside panel, SCENE_BUILDER §8: a street style, the walls, the roof, the raise, the front, the
+  fittings). A building with that set inside wears it: its `look`, `roof`, `parts` and its inside's `raise`, `slot` and
+  `front` are the set's, read again with the rooms whenever the street opens (`inside.from` marks what was put on).
+  Change any of them in the street and the building keeps its own from then on (`inside.own`; its inspector: *Follow
+  the set's outside* takes it back). STREET fails if a building that follows its set no longer matches it (open the
+  street and save). The motel preset is the street's own composition (`own` from the start).
 - **Copies**: `rows` side by side and `floors` stacked: **a motel** or a block of flats, a set a room. *+ walkway and
   stairs* adds a walkway along the front of the upper floors with a railing and a stair up to it at the left end.
-- **The palette's** *Buildings to walk into*: **Motel** (the set `motel_room`: a room, a bath and a closet, its door
+- **The palette's** *Buildings to walk into*: every set (put it down, build the street round it), and **Motel** (the set `motel_room`: a room, a bath and a closet, its door
   with a peephole and a latch; six rooms on two floors, a walkway on posts, a stair, a lamp by each door, AC units, a
   neon sign) and **Bungalow** (the set `bungalow`: the scene builder's single-storey house round an engawa, raised 45
   cm, one hip roof with deep eaves).

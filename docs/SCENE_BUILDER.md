@@ -231,7 +231,39 @@ What the builder now hands over, and what to do with it:
 4. **Lights are placed and warm:** a point light per ceiling light at its colour temperature; swap for rect lights
    (LED panels) and bake (GPU Lightmass) or leave them to Lumen.
 
-## 8. Not done yet
+## 8. The outside: the building round the level, for the street
+
+The user (DECISIONS 2026-10-31): "the map will be a mix of enterable buildings made via our interior tool, and the
+non-enterable ones made for the street designer; enhance the interior designer too so we can make roofs etc that will
+help match the style of our street designs; ideally I can import an interior designed space into the street, then build
+the rest around it". So an enterable building is designed whole here, inside and out, with the street builder's own
+generator and styles, and a street takes it as it is.
+
+- **The Outside panel** (left, under Finish): *build its outside* gives the level an outside (`outside` in the level,
+  STORY_FORMAT §2). Then:
+  - **style**: one of the street builder's ten (house, old wooden house, kiosk, shop building, white tower...): its
+    colours and roof. ↻ rolls another of the same style. *(your own)* keeps what you set.
+  - **front**: which side faces the street. Automatically its way in: a door named `front`/`entr`/`main`, else one from
+    the genkan or a hall, else the first outside door.
+  - **walls**: their colour, what they are (`wall`, `plaster`, `concrete`, `wood`, `blocks`...), the trim's colour.
+  - **roof**: flat (a parapet), a railing, gable, hip, one slope or bare; its colour, slope, overhang, tiles or sheet.
+  - **raised**: how high the floor stands over the ground (a Japanese house's 45 cm), with steps up to each door.
+  - **on its walls**: the street builder's fittings (air conditioners, signs, lamps, lanterns, pipes, awnings, canopies,
+    eaves, noren, balconies, stairs, panels), each on the front, left, back or right, `x` along the wall from its middle,
+    `up` from the ground, its size. No windows or doors here: those are the plan's own, cut through the walls where the
+    plan has them.
+- **In the view**: *Round the building* (the view bar) orbits it from outside (drag, the wheel), lit like a street by
+  day; *outside* shows or hides it in either view. The building is the street's own (`SG.outsideBuilding`, the shell,
+  roof and fittings a street builds), so what you see here is what the street gets.
+- **On the plan**: its walls' outline dashed round the rooms, the roof's edge dotted, and an arrow at its front.
+- **Into a street**: the street builder's palette, *Buildings to walk into*, has every set (the motel and the bungalow
+  as presets): put it down, then build the street round it. The street's building follows the set's outside (save the
+  set, open the street: it's read again) until it's changed in the street, then keeps its own (*Follow the set's
+  outside* takes it back). STREET_BUILDER §5c.
+- **Godot**: the outside goes to Godot in the street's .glb (STREET_BUILDER §5b), round the marker where the level goes;
+  the level's own export doesn't build it.
+
+## 9. Not done yet
 
 - **Default looks by room kind** (texture sets for a washitsu's walls, a bath's tiles): *Same look for every
   <kind>* does it by hand until the texture sets for them are fetched. The floors' geometry already follows the

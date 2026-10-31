@@ -80,20 +80,25 @@ async function levelOf(set, level) {
 async function syncInside(b, quiet) {
   const ins = b.inside; if (!ins || !ins.set) return false;
   let got; try { got = await levelOf(ins.set, ins.level); } catch (e) { if (!quiet) toast(`no set called ${ins.set}: make it in the scene builder (its game picker: Sets, + new set…)`); return false; }
-  const rooms = SG.insideRooms(got.level);
-  if (JSON.stringify(rooms) === JSON.stringify(ins.rooms) && ins.level === got.id) return false;
-  ins.rooms = rooms; ins.level = got.id; Object.assign(b, SG.insideSize(b));
-  return true;
+  const rooms = SG.insideRooms(got.level), wasOwn = !!ins.own;
+  let moved = false;
+  if (JSON.stringify(rooms) !== JSON.stringify(ins.rooms) || ins.level !== got.id) { ins.rooms = rooms; ins.level = got.id; moved = true; }
+  ins.hasOutside = !!got.level.outside;                               // (the page's own note, never saved)
+  const dressed = SG.applyOutside(b, got.level.outside);              // its walls, roof and fittings: the set's (the scene builder's Outside)
+  if (dressed && ins.own && !wasOwn && !quiet) toast(`${b.id}: its outside was changed here, so it keeps its own (its inspector: Follow the set's outside)`);
+  if (moved || dressed) Object.assign(b, SG.insideSize(b));
+  return moved || dressed;
 }
 async function syncInsides() {
   const changedOnes = [];
   for (const b of ST.street.buildings) if (b.inside && b.inside.set && await syncInside(b, true)) changedOnes.push(b.id);
   if (changedOnes.length) { changed(); toast(`${changedOnes.join(", ")}: its inside followed its set's changes`); }
 }
+const forFile = S => JSON.parse(JSON.stringify(S, (k, v) => k === "hasOutside" ? undefined : v));
 const count = () => { const S = ST.street; return `${S.roads.length} streets, ${S.buildings.length} buildings, ${S.things.length} things, ${S.fences.length} fences, ${S.shots.length} shots`; };
 async function save() {
   if (!ST.name) return;
-  const body = { street: ST.street, mtime: ST.mtime };
+  const body = { street: forFile(ST.street), mtime: ST.mtime };
   let j = await api("/api/street/" + encodeURIComponent(ST.name), { method: "PUT", body: JSON.stringify(body) });
   if (j._status === 409) {
     if (!confirm("The street changed on disk since it was opened (Claude edited it?). Save over it anyway?")) return;
@@ -655,8 +660,10 @@ function palette() {
   const btn = (t, label, title, colour) => el("button", { "data-tool": toolKey(t), title, on: { click: () => setTool(ST.tool && toolKey(ST.tool) === toolKey(t) ? null : t) } }, colour ? el("i", { style: `background:${colour}` }) : null, label);
   L.append(el("h2", {}, "Streets"), el("div", { class: "pal" }, ...Object.entries(ROADS).map(([k, R]) => btn({ what: "road", kind: k, proto: R.proto, width: R.proto.width }, R.label, R.note, "#3a3d42"))));
   L.append(el("h2", {}, "Buildings"), el("div", { class: "pal" }, ...Object.entries(SP.STYLES).map(([k, S]) => btn({ what: "building", style: k, proto: SP.makeBuilding(k, 7 + k.length) }, S.label, `${S.note} (after ${S.ref})`, "#bdb8ae"))));
-  L.append(el("h2", {}, "Buildings to walk into"), el("div", { class: "pal" }, ...Object.entries(SP.WALKINS).map(([k, S]) => btn({ what: "building", style: k, proto: SP.walkIn(k), walkin: true }, S.label, S.note, "#d9a441"))),
-    el("div", { class: "hint" }, "Their insides are sets from the scene builder: the doors are the set's own. Any building can take one (its inspector: Inside)."));
+  const known = new Set(Object.values(SP.WALKINS).map(W => W.set));
+  L.append(el("h2", {}, "Buildings to walk into"), el("div", { class: "pal" }, ...Object.entries(SP.WALKINS).map(([k, S]) => btn({ what: "building", style: k, proto: SP.walkIn(k), walkin: true }, S.label, S.note, "#d9a441")),
+      ...SETS.filter(n => !known.has(n)).map(n => btn({ what: "building", style: "set_" + n, proto: SP.walkInSet(n), walkin: true }, n.replace(/_/g, " "), `the set ${n} from the scene builder, as its Outside panel dresses it: put it down, then build the street round it`, "#e6c07a"))),
+    el("div", { class: "hint" }, "Their insides are sets from the scene builder (each set here): the doors are the set's own, the walls, roof and fittings its Outside panel's. Any building can take one (its inspector: Inside)."));
   const cats = {};
   for (const [k, K] of Object.entries(SG.THING_KINDS)) (cats[K.cat] = cats[K.cat] || []).push([k, K]);
   for (const [cat, list] of Object.entries(cats)) L.append(el("h2", {}, cat), el("div", { class: "pal" }, ...list.map(([k, K]) => btn({ what: "thing", kind: k }, K.label, K.note, THING_COLOURS[cat]))));
@@ -1126,6 +1133,10 @@ function insideSection(b) {
     const resize = () => Object.assign(b, SG.insideSize(b));
     kids.push(field("copies", el("div", { class: "row" }, num(ins, "rows", { def: 1, min: 1, step: 1, int: true, after: resize }), "side by side,", num(ins, "floors", { def: 1, min: 1, max: 4, step: 1, int: true, after: resize }), "floors")),
       field("its floor", el("div", { class: "row" }, num(ins, "raise", { def: 0.15, min: 0, step: 0.05, after: resize }), el("small", {}, "m above the ground (steps up to its doors)"))),
+      field("its outside", ins.hasOutside === false ? el("span", { class: "hint" }, "the street's: the set has none (the scene builder's Outside panel designs one)")
+        : ins.own || (ins.from && ins.from !== SG.outsideMark(b))
+          ? el("div", { class: "row" }, el("small", {}, "this street's own (changed here)"), el("button", { title: "its walls, roof and fittings as the set has them again (the scene builder's Outside panel)", on: { click: async () => { pushUndo(); delete ins.own; delete ins.from; if (await syncInside(b)) { changed(); toast("its outside follows the set's again"); } } } }, "Follow the set's outside"))
+          : el("span", { class: "hint" }, ins.from ? "the set's: its walls, roof and fittings come from the scene builder's Outside panel (change them here and it keeps its own)" : "the street's")),
       el("div", { class: "row", style: "display:flex;gap:4px;flex-wrap:wrap;margin-top:4px" },
         el("button", { title: "read the set again (it's read whenever the street opens)", on: { click: async () => { pushUndo(); if (await syncInside(b)) { changed(); toast("its inside followed the set"); } else toast("the set hasn't changed"); } } }, "Read the set again"),
         el("a", { href: `builder.html?game=${encodeURIComponent("set:" + ins.set)}`, target: "builder", style: "color:var(--accent);font-size:12px;align-self:center" }, "open the set in the scene builder"),
@@ -1323,7 +1334,7 @@ new ResizeObserver(() => { drawMap(); renderAll(); renderFacades(); }).observe(d
 // ---- off it goes ----------------------------------------------------------------------------------------------------
 (async () => {
   palette(); facadeBar();
-  await S3.loadShelf(); await loadSets();
+  await S3.loadShelf(); await loadSets(); palette();                   // again, with every set to walk into
   try {
     await loadNames();
     const want = Q.get("street") || (() => { try { return localStorage.getItem("street.name"); } catch (e) { return null; } })();
@@ -1336,7 +1347,7 @@ new ResizeObserver(() => { drawMap(); renderAll(); renderFacades(); }).observe(d
   ST.ready = true; window.__streetReady = true;
 })();
 // for the checks: the street's group, a build now, the build cache emptied
-window.__terrain = () => terrain(); window.__root = () => root; window.__rebuild = () => rebuild(); window.__clearCache = () => { BUILT.clear(); if (root) { for (const v of root.userData.chunks.values()) S3.disposeChunk(v.group); root.userData.chunks = new Map(); } };
+window.__terrain = () => terrain(); window.__root = () => root; window.__rebuild = () => rebuild(); window.__changed = () => changed(); window.__clearCache = () => { BUILT.clear(); if (root) { for (const v of root.userData.chunks.values()) S3.disposeChunk(v.group); root.userData.chunks = new Map(); } };
 // for the checks: draw a shot at a size, straight away
 window.__shot = (id, w, h) => {
   const s = ST.street.shots.find(x => x.id === id); if (!s) return false;

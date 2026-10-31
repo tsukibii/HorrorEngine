@@ -202,7 +202,8 @@
       "openings": []
      }
     ],
-    "level": "motel_room"
+    "level": "motel_room",
+    "own": true
    },
    "look": {
     "wall": "#d9d2c4",
@@ -764,7 +765,8 @@
       ]
      }
     ],
-    "level": "bungalow"
+    "level": "bungalow",
+    "from": "188ozv"
    },
    "look": {
     "wall": "#cfc5b3",
@@ -776,7 +778,25 @@
     "pitch": 24,
     "over": 0.8
    },
-   "parts": [],
+   "parts": [
+    {
+     "kind": "ac",
+     "face": "right",
+     "x": -1.6,
+     "z": 0.1,
+     "w": 0.8,
+     "h": 0.6,
+     "out": 0.32
+    },
+    {
+     "kind": "pipe",
+     "face": "left",
+     "x": 2.4,
+     "z": 0,
+     "w": 0.1,
+     "h": 2.9
+    }
+   ],
    "turn": -99,
    "at": [
     6.37,
@@ -2669,7 +2689,7 @@
    "kind": "car",
    "style": "kei",
    "at": [
-    -25.0,
+    -25,
     -52.5
    ],
    "turn": 90,
@@ -3318,8 +3338,8 @@
    ],
    "look": [
     -17.2,
-    -38.0,
-    3.0
+    -38,
+    3
    ],
    "vfov": 62,
    "aspect": [

@@ -707,9 +707,9 @@ export function insideFrame(ins) {
   const box = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
   // its way in: a door on an outside wall (one called front_* first), else the south
   let side = ins.front;
-  if (!side) {
-    const out = rooms.flatMap(r => (r.openings || []).filter(o => !o.window && r.ceiling !== false && edgeOutside(rooms, r, o.wall)).map(o => ({ o, w: o.wall })));
-    const pick = out.find(x => /front|entr|main/i.test((x.o.door && x.o.door.id) || "")) || out[0];
+  if (!side) {                                                        // a door named for it, else one from the genkan or hall
+    const out = rooms.flatMap(r => (r.openings || []).filter(o => !o.window && r.ceiling !== false && edgeOutside(rooms, r, o.wall)).map(o => ({ o, w: o.wall, r })));
+    const pick = out.find(x => /front|entr|main/i.test((x.o.door && x.o.door.id) || "")) || out.find(x => /genkan|entr|foyer|hall|lobby/i.test(x.r.id || "")) || out[0];
     side = pick ? pick.w : "s";
   }
   const rot = { s: 0, e: 90, n: 180, w: 270 }[side] || 0;           // turned so that side faces -y
@@ -887,6 +887,63 @@ export function insideRooms(level) {
   return (level && level.rooms || []).map(r => ({ id: r.id, at: r.at, size: r.size, ceiling: r.ceiling !== false ? undefined : false, skip: r.skip && r.skip.length ? r.skip : undefined,
     openings: (r.openings || []).map(o => Object.fromEntries(Object.entries({ wall: o.wall, at: o.at, w: o.w, h: o.h, sill: o.sill || undefined, window: o.window || undefined, door: o.door ? { id: o.door.id } : undefined }).filter(([, v]) => v !== undefined))) }))
     .map(r => Object.fromEntries(Object.entries(r).filter(([, v]) => v !== undefined)));
+}
+
+// ---- a set's outside: how an enterable building looks from the street, designed with its rooms in the scene builder
+// (its level's `outside`, docs/SCENE_BUILDER.md §8, STORY_FORMAT §2): its colours (`look`: a slot's colour or a
+// pbr/<set>), its roof, the wall's slot, how high its floor stands (`raise`, steps up to the doors), which side faces
+// the street (`front`), what's fixed to its walls (`parts`: the street builder's own, no openings: the level's doors
+// and windows are the holes). A street's building with that set inside follows it until it's changed in the street.
+export const OUTSIDE_DEFAULT = { look: { wall: "#cfc5b3", trim: "#6b5a49", tiles: "#3d4148" }, roof: { kind: "hip", pitch: 24, over: 0.6 }, raise: 0.15, parts: [] };
+export const OUTSIDE_PARTS = Object.keys(PART_KINDS).filter(k => !PART_KINDS[k].hole);
+export const OUTSIDE_SLOTS = ["wall", "wall2", "plaster", "concrete", "trim", "wood", "wood_dark", "blocks", "panel"];
+const copy = v => JSON.parse(JSON.stringify(v));
+const canon = v => Array.isArray(v) ? "[" + v.map(canon).join(",") + "]" : v && typeof v === "object"
+  ? "{" + Object.keys(v).filter(k => v[k] !== undefined).sort().map(k => JSON.stringify(k) + ":" + canon(v[k])).join(",") + "}" : JSON.stringify(v);
+// what a building's outside is now, and its mark (the same outside, the same mark: keys in any order)
+export function outsideNow(b) {
+  const ins = b.inside || {};
+  return { look: b.look || {}, roof: b.roof || {}, parts: b.parts || [], raise: num(ins.raise, 0.15), slot: ins.slot || "", front: ins.front || "" };
+}
+export function outsideMark(b) {
+  let h = 2166136261; for (const c of canon(outsideNow(b))) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); }
+  return (h >>> 0).toString(36);
+}
+// the set's outside put on the building that holds it; whether the building changed. `inside.from` is the mark of the
+// outside last put on: a building whose outside no longer matches it was changed in the street, and keeps its own from
+// then on (`inside.own`; "Follow the set's outside" in the page takes it back).
+export function applyOutside(b, out) {
+  const ins = b.inside;
+  if (!ins || !out || ins.own) return false;
+  const had = ins.from;
+  if (had && had !== outsideMark(b)) { ins.own = true; return true; }
+  b.look = copy(out.look || {}); b.roof = copy(out.roof || OUTSIDE_DEFAULT.roof); b.parts = copy(out.parts || []);
+  ins.raise = num(out.raise, 0.15);
+  if (out.slot) ins.slot = out.slot; else delete ins.slot;
+  if (out.front) ins.front = out.front; else delete ins.front;
+  ins.from = outsideMark(b);
+  return had !== ins.from;
+}
+// the building a level's outside makes round it, placed so that the level stays where it is (its own coordinates, its
+// floor at z = raise over the ground): the scene builder draws it, the street check builds every set's
+export function outsideBuilding(level, out, id = "outside") {
+  const rooms = insideRooms(level);
+  if (!rooms.some(r => r.ceiling !== false && Math.abs(num((r.at || [])[2], 0)) < 0.01)) return null;
+  const o = Object.assign({}, OUTSIDE_DEFAULT, out || {});
+  const b = { id, style: "set", seed: num(o.seed, 1), floors: 1, look: copy(o.look || {}), roof: copy(o.roof || {}), parts: copy(o.parts || []),
+    inside: { set: "-", level: "", rows: 1, floors: 1, raise: num(o.raise, 0.15), rooms } };
+  if (o.slot) b.inside.slot = o.slot;
+  if (o.front) b.inside.front = o.front;
+  const fr = insideFrame(b.inside);
+  b.at = [fr.cx, fr.cy]; b.turn = fr.rot;
+  return Object.assign(b, insideSize(b));
+}
+// an outside's faces in the level's own compass (front, left, back, right -> n, e, s, w)
+export function outsideFaces(level, out) {
+  const b = outsideBuilding(level, out); if (!b) return null;
+  const turn = ((b.turn % 360) + 360) % 360, by = { 0: "s", 90: "e", 180: "n", 270: "w" }, order = ["s", "e", "n", "w"];
+  const f = by[turn] || "s", i = order.indexOf(f);
+  return { front: f, right: order[(i + 1) % 4], back: order[(i + 2) % 4], left: order[(i + 3) % 4] };
 }
 
 // ---- roads: a smooth line through their points (from, via..., to), each point with its height ------------------------

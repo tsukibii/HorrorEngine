@@ -131,6 +131,37 @@ for (const [set, extra] of [["motel_room", { rows: 4, floors: 2 }], ["bungalow",
   const B = SG.blockers({ buildings: [b] }, P)[set];
   if (!B || B.boxes.length < 8) errs.push(`${L}: its walls aren't hollow colliders (${B ? B.boxes.length : 0} boxes)`);
 }
+// 5d. a set's outside (its level's `outside`, the scene builder's Outside panel): every set's builds clean round its
+// rooms, the same twice, its fittings for walls only; and a street's building follows it until it's changed there
+for (const set of fs.existsSync(SETS_DIR) ? fs.readdirSync(SETS_DIR) : []) {
+  const f = path.join(SETS_DIR, set, "story.json"); if (!fs.existsSync(f)) continue;
+  for (const [lid, lv] of Object.entries(JSON.parse(fs.readFileSync(f, "utf8")).levels || {})) {
+    if (!lv.outside) continue;
+    const L = `the set ${set}'s outside (${lid})`, b = SG.outsideBuilding(lv, lv.outside);
+    if (!b) { errs.push(`${L}: no enclosed rooms on its ground floor to build round`); continue; }
+    const P = once(L, { buildings: [b], ground: false });
+    const tris = sane(L, P, () => BUDGET.building);
+    if (!(tris > 50)) errs.push(`${L}: built nothing (${tris} triangles)`);
+    if (!SG.ROOF_KINDS[(lv.outside.roof || {}).kind || "hip"]) errs.push(`${L}: no roof kind ${(lv.outside.roof || {}).kind}`);
+    for (const pt of lv.outside.parts || []) if (!SG.OUTSIDE_PARTS.includes(pt.kind)) errs.push(`${L}: ${pt.kind} isn't something for a wall`);
+    const faces = SG.outsideFaces(lv, lv.outside);
+    if (!faces || new Set(Object.values(faces)).size !== 4) errs.push(`${L}: its faces ${JSON.stringify(faces)}`);
+  }
+}
+{
+  const out = { look: { wall: "#cfc5b3", tiles: "#3d4148" }, roof: { kind: "hip", pitch: 24, over: 0.8 }, raise: 0.45, parts: [{ kind: "ac", face: "right" }] };
+  const b = { id: "t", look: { wall: "#111111" }, roof: { kind: "flat" }, parts: [], inside: { set: "x", rooms: [] } };
+  const steps = [["put on", SG.applyOutside(b, out) && b.look.wall === "#cfc5b3" && b.inside.raise === 0.45 && b.parts.length === 1 && !!b.inside.from],
+    ["the same again changes nothing", SG.applyOutside(b, JSON.parse(JSON.stringify(out))) === false],
+    ["keys in another order are the same outside", SG.applyOutside(b, { raise: 0.45, parts: [{ face: "right", kind: "ac" }], roof: { over: 0.8, pitch: 24, kind: "hip" }, look: { tiles: "#3d4148", wall: "#cfc5b3" } }) === false]];
+  b.roof.pitch = 30;
+  steps.push(["changed in the street: its own from then on", SG.applyOutside(b, out) && b.inside.own === true && b.roof.pitch === 30]);
+  steps.push(["its own: the set's never put on", SG.applyOutside(b, Object.assign({}, out, { raise: 1 })) === false && b.inside.raise === 0.45]);
+  delete b.inside.own; delete b.inside.from;
+  steps.push(["following the set again", SG.applyOutside(b, out) && b.roof.pitch === 24]);
+  steps.push(["a set with no outside leaves it be", SG.applyOutside(b, null) === false && b.roof.pitch === 24]);
+  for (const [what, ok] of steps) if (!ok) errs.push(`a set's outside on a street's building: ${what}`);
+}
 function touches(r, o, q) {                                           // the room behind an opening, if one's there
   const [x0, y0] = r.at, [w, d] = r.size, at = +o.at || 0;
   const p = { n: [x0 + at, y0 + d + 0.05], s: [x0 + at, y0 - 0.05], e: [x0 + w + 0.05, y0 + at], w: [x0 - 0.05, y0 + at] }[o.wall];
@@ -149,12 +180,16 @@ for (const name of names) {
     if (ids.has(p.id)) errs.push(`${L}: the id ${p.id} twice`); ids.add(p.id);
   }
   for (const b of S.buildings || []) {
-    if (b.style && SP && !SP.STYLES[b.style] && !(SP.WALKINS || {})[b.style]) warns.push(`${L}: ${b.id}: no style ${b.style}`);
+    if (b.style && SP && !SP.STYLES[b.style] && !(SP.WALKINS || {})[b.style] && b.style !== "set") warns.push(`${L}: ${b.id}: no style ${b.style}`);
     if (b.inside && b.inside.set) {                                   // its rooms are still its set's (the page reads them again on opening)
       const lv = setLevel(b.inside.set, b.inside.level);
       if (!lv) errs.push(`${L}: ${b.id}: its inside is the set ${b.inside.set}, which isn't in Content/Studio/Sets`);
       else if (JSON.stringify(SG.insideRooms(lv)) !== JSON.stringify(b.inside.rooms)) errs.push(`${L}: ${b.id}: the set ${b.inside.set} has changed since the street read it: open the street in the page (it reads it again) and save`);
       const sz = SG.insideSize(b); if (Math.abs(sz.w - b.w) > 0.01 || Math.abs(sz.d - b.d) > 0.01) errs.push(`${L}: ${b.id}: its size ${b.w} x ${b.d} isn't its inside's ${sz.w} x ${sz.d}`);
+      if (lv && b.inside.from && !b.inside.own) {                     // it follows its set's outside: still the set's
+        const t = JSON.parse(JSON.stringify(b));
+        if (SG.applyOutside(t, lv.outside)) errs.push(`${L}: ${b.id}: the set ${b.inside.set}'s outside has changed since the street read it (or was changed here): open the street in the page (it reads it again) and save`);
+      }
     }
     for (const pt of b.parts || []) if (!SG.PART_KINDS[pt.kind]) errs.push(`${L}: ${b.id}: no part kind ${pt.kind}`);
     for (const [f, r] of Object.entries(b.refs || {})) if (!/^refs\//.test(r.file || "")) errs.push(`${L}: ${b.id}: its ${f} photo isn't in refs/`);

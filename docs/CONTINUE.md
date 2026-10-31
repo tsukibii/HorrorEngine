@@ -46,6 +46,15 @@ compare_photo.jpg` (the photo, Blender, Godot). **Next, if wanted:** decals as a
 nodes by the same import step (STREET_TEXTURING §5); a `finish` beside each slot's colour in the street's `look`; the
 wear reacting to the plugin's rain.
 
+**Then the enterable buildings' outsides** (2026-10-31, small hours; DECISIONS): the shop door made readable (a frame
+all round, a kick plate, a push bar, its own pane), and the scene builder's **Outside panel** (SCENE_BUILDER §8): an
+enterable building designed whole, inside and out, with the street's own generator and styles (roof, walls, raise,
+front, fittings), seen *round the building*, kept as the level's `outside` (STORY_FORMAT §2, story_check reads the
+street's own words from street-gen.js); the street builder's palette has every set, its building wears the set's
+outside until changed in the street (`inside.from`, `inside.own`, *Follow the set's outside*; STREET fails when a
+following building is stale). The bungalow set has its outside (hip roof, raised 45 cm, an air conditioner and a pipe);
+hill_motel's bungalow follows it, its motel is its own. Checks: STORY, STREET, STREETPAGE, BUILDER.
+
 **What could come next** (ask first): the user's verdict on the match, the town and the motel; more references; the
 export placing an inside's level by itself (today a marker; the set's level dropped there by hand); a two-storey
 interior (stairs inside the set); foliage when the user wants it; steps and retaining walls on a slope; a grade in the

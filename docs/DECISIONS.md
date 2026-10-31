@@ -2,6 +2,18 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-31, small hours (the user, after the street's textures)
+
+- **The shop door readable**: asked what the thin dark lines in the shop windows were (a glass door's two uprights),
+  "yeah make it more readable". The door has its frame all round, a kick plate, a push bar and its own darker pane.
+- **Enterable buildings designed whole in the scene builder**: "the map will be a mix of enterable buildings made via
+  our previous interior tool, and the non-enterable ones made for the street designer; could you enhance the interior
+  designer too so we can make roofs etc that will help match the style of our street designs. Ideally I can import an
+  interior designed space into the street, then build the rest around it. In reality we probably will only have a few
+  buildings that we can enter". The scene builder's Outside panel (SCENE_BUILDER §8): the street's styles, walls, roof,
+  raise, front and fittings, seen round the building, kept as the level's `outside`; the street builder's palette has
+  every set, and its building wears the set's outside until it's changed in the street (STREET_BUILDER §5c).
+
 ## 2026-10-31, past midnight (the user, on texturing the streets)
 
 - **The most aesthetic surfaces, wear and decals**: "when it comes to texturing the streets, what would be the most

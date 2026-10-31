@@ -172,8 +172,15 @@ export const WALKINS = {
   motel: { label: "Motel", set: "motel_room", note: "a row of the same room on two floors, a walkway and a stair up to the upper doors (the set: motel_room)" },
   bungalow: { label: "Bungalow", set: "bungalow", note: "a single-storey house round an engawa, its floor raised, steps up to its doors (the set: bungalow)" },
 };
+// any set from the scene builder as a building: its outside (walls, roof, fittings) as the set's Outside panel has it,
+// read when it's put down (a plain hip roof until then, or if the set has none)
+export function walkInSet(set) {
+  return { style: "set", w: 8, d: 8, floors: 1, seed: 1, inside: { set, rows: 1, floors: 1, raise: 0.15, rooms: [] },
+    look: { wall: "#cfc5b3", trim: "#6b5a49", tiles: "#3d4148" }, roof: { kind: "hip", pitch: 24, over: 0.6 }, parts: [] };
+}
 export function walkIn(kind) {
-  if (kind === "motel") return { style: "motel", w: 22, d: 6.6, floors: 2, seed: 1, inside: { set: "motel_room", rows: 6, floors: 2, raise: 0.15, rooms: [] },
+  // the motel is the street's own composition (six rooms, two floors, its walkway): it never follows a set's outside
+  if (kind === "motel") return { style: "motel", w: 22, d: 6.6, floors: 2, seed: 1, inside: { set: "motel_room", rows: 6, floors: 2, raise: 0.15, rooms: [], own: true },
     look: { wall: "#d9d2c4", trim: "#a39d92", concrete: "#9a968e", rail: "#4d5560" }, roof: { kind: "flat", parapet: 0.6 },
     parts: [{ kind: "balcony", face: "front", x: 0, w: 22, out: 1.3, floors: [2, 2], rail: "rail", slot: "concrete", walkway: true },
             { kind: "stairs", face: "left", x: 0.7, w: 5.2, h: 3.05, out: 1.1, dir: 1, slot: "concrete", walkway: true },

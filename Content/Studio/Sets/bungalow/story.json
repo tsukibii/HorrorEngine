@@ -1202,6 +1202,38 @@
     "skirting": 0.06,
     "casing": 0.06,
     "threshold": 0.012
+   },
+   "outside": {
+    "look": {
+     "wall": "#cfc5b3",
+     "trim": "#6b5a49",
+     "tiles": "#3d4148"
+    },
+    "roof": {
+     "kind": "hip",
+     "pitch": 24,
+     "over": 0.8
+    },
+    "raise": 0.45,
+    "parts": [
+     {
+      "kind": "ac",
+      "face": "right",
+      "x": -1.6,
+      "z": 0.1,
+      "w": 0.8,
+      "h": 0.6,
+      "out": 0.32
+     },
+     {
+      "kind": "pipe",
+      "face": "left",
+      "x": 2.4,
+      "z": 0,
+      "w": 0.1,
+      "h": 2.9
+     }
+    ]
    }
   }
  },

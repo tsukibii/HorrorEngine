@@ -1,8 +1,9 @@
 // The street builder in a headless browser (docs/STREET_BUILDER.md §6), driven as a person would: a lane drawn on the map,
 // filled with buildings, lamps, poles and clutter; a building picked, its floors changed in the inspector, a sign added
 // on its front in the facade view and a photo put behind it; a fence and a vending machine placed (the machine turned to
-// the street); a shot kept; undo; saved and read back the same; the .glb exported; and the Shibuya lane drawn through
-// its shot. Ends "STREETPAGE ok".
+// the street); a shot kept; undo; saved and read back the same; the .glb exported; a motel and the Bungalow from the
+// palette, the Bungalow wearing its set's outside (its own once changed here, the set's again on Follow); and the
+// Shibuya lane drawn through its shot. Ends "STREETPAGE ok".
 //
 //   python tools/director/serve.py          (in another shell)
 //   node tools/director/streettest.mjs [shots dir]
@@ -160,6 +161,30 @@ try {
       const motel = (await ST()).buildings.find(b => b.id === synced), want = (motel.inside.rows || 1) * (motel.inside.floors || 1);
       if (marks.length !== want || !marks.every(n => n.extras && n.extras.set === "motel_room")) fail(`the motel's export has ${marks.length} markers for its ${want} rooms`);
       else console.log(`a motel from the palette: ${motel.inside.rooms.length} rooms from its set, ${marks.length} markers in the .glb`);
+    }
+  }
+
+  // a set's outside (the scene builder's Outside panel): the Bungalow from the palette wears its set's walls, roof and
+  // fittings; changed in the street it keeps its own (Read the set again); Follow the set's outside takes it back
+  const bset = path.join(ROOT, "Content/Studio/Sets/bungalow/story.json");
+  const bOut = fs.existsSync(bset) ? Object.values(JSON.parse(fs.readFileSync(bset, "utf8")).levels)[0].outside : null;
+  if (bOut) {
+    await page.click("#left >> text=Bungalow");
+    const [bx, by] = await at(30, -30); await page.mouse.click(bx, by);
+    const bid = await page.waitForFunction(() => { const b = window.ST.street.buildings.find(b => b.style === "bungalow"); return b && b.inside.from ? b.id : null; }, null, { timeout: 20000 }).then(h => h.jsonValue(), () => null);
+    const B0 = bid && (await ST()).buildings.find(b => b.id === bid);
+    if (!B0 || B0.roof.kind !== bOut.roof.kind || (B0.parts || []).length !== (bOut.parts || []).length || B0.inside.raise !== bOut.raise) fail("the Bungalow from the palette doesn't wear its set's outside: " + JSON.stringify(B0 && { roof: B0.roof, parts: B0.parts, raise: B0.inside.raise }).slice(0, 300));
+    else {
+      await page.evaluate(id => { const b = window.ST.street.buildings.find(b => b.id === id); b.roof.pitch = 35; window.ST.sel = { list: "buildings", id }; window.__changed(); }, bid);
+      await page.click("#inspector >> text=Read the set again");
+      await page.waitForTimeout(400);
+      const own = (await ST()).buildings.find(b => b.id === bid);
+      await page.click("#inspector >> text=Follow the set's outside");
+      await page.waitForTimeout(400);
+      const back = (await ST()).buildings.find(b => b.id === bid);
+      if (!own.inside.own || own.roof.pitch !== 35) fail("changed in the street, the Bungalow didn't keep its own outside: " + JSON.stringify({ own: own.inside.own, pitch: own.roof.pitch }));
+      else if (back.inside.own || back.roof.pitch !== bOut.roof.pitch) fail("Follow the set's outside didn't take it back: " + JSON.stringify({ own: back.inside.own, pitch: back.roof.pitch }));
+      else console.log(`the Bungalow wears its set's outside (${B0.roof.kind} roof, ${B0.parts.length} fittings, raised ${B0.inside.raise} m), keeps its own once changed here, follows the set again`);
     }
   }
 
