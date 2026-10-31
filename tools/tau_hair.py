@@ -61,6 +61,32 @@ def tau_blend():
         tmp.replace(BLEND)
         print(f"TAU's .blend joined from {len(parts)} parts in tau_transfer/ into {BLEND.relative_to(ROOT)}")
         return BLEND
+    return blend_from_git()
+
+
+def blend_from_git(branch="tau-transfer"):
+    """the transfer branch's parts read straight out of git (fetched first, no checkout) and joined into vendor/tau/"""
+    git = lambda *a, **k: subprocess.run(["git", "-C", str(ROOT), *a], capture_output=True, timeout=600, **k)
+    try:
+        git("fetch", "-q", "origin", branch)
+        for ref in (f"origin/{branch}", branch):
+            ls = git("ls-tree", "--name-only", ref, "tau_transfer/")
+            names = sorted(n for n in ls.stdout.decode().split() if ".blend.part-" in n) if ls.returncode == 0 else []
+            if not names:
+                continue
+            BLEND.parent.mkdir(parents=True, exist_ok=True)
+            tmp = BLEND.with_suffix(".joining")
+            with open(tmp, "wb") as out:
+                for n in names:
+                    r = git("show", f"{ref}:{n}")
+                    if r.returncode:
+                        raise RuntimeError(r.stderr.decode()[-300:])
+                    out.write(r.stdout)
+            tmp.replace(BLEND)
+            print(f"TAU's .blend joined from {len(names)} parts on git's {ref} into {BLEND.relative_to(ROOT)}")
+            return BLEND
+    except Exception as e:
+        print(f"TAU's .blend couldn't be read from git's {branch}: {e}")
     return None
 BPY = ROOT / "vendor" / "blender" / ".venv" / "bin" / "python"
 BROW_UP = {"R": [70, 63, 105, 66, 107], "L": [300, 293, 334, 296, 336]}    # MediaPipe's brow rows, outer to inner
