@@ -278,24 +278,30 @@ function holeGen(o, F, h, R) {
   poly(o, h.kind === "win" || h.kind === "shutwin" ? "trim" : rv, [fp(F, u0, z0, 0), fp(F, u1, z0, 0), fp(F, u1, z0, -dp), fp(F, u0, z0, -dp)], [0, 0, 1]);
   poly(o, rv, [fp(F, u0, z1, 0), fp(F, u1, z1, 0), fp(F, u1, z1, -dp), fp(F, u0, z1, -dp)], [0, 0, -1]);
   const back = -dp, fw = 0.05;
-  const frameRing = (n, slot = "frame", w = fw) => {
+  const frameRing = (n, slot = "frame", w = fw, mull = h.mull || []) => {
     fquad(o, slot, F, u0, u0 + w, z0, z1, n); fquad(o, slot, F, u1 - w, u1, z0, z1, n);
     fquad(o, slot, F, u0 + w, u1 - w, z0, z0 + w, n); fquad(o, slot, F, u0 + w, u1 - w, z1 - w, z1, n);
-    for (const m of h.mull || []) fquad(o, slot, F, m - w / 2, m + w / 2, z0 + w, z1 - w, n);
+    for (const m of mull) fquad(o, slot, F, m - w / 2, m + w / 2, z0 + w, z1 - w, n);
   };
+  // a shop front's door: its middle and its sides (no mullion runs through it)
+  const dc = u0 + (u1 - u0) * clamp(num(h.door, 0.5), 0.1, 0.9), da = Math.max(u0 + 0.07, dc - 0.45), db = Math.min(u1 - 0.07, dc + 0.45);
   switch (h.kind) {
     case "win": case "shop":
       fquad(o, h.lit || "glass", F, u0, u1, z0, z1, back);
-      frameRing(back + 0.01, "frame", h.kind === "shop" ? 0.07 : fw);
+      frameRing(back + 0.01, "frame", h.kind === "shop" ? 0.07 : fw, h.kind === "shop" ? (h.mull || []).filter(m => m < da - 0.12 || m > db + 0.12) : h.mull || []);
       if (h.kind === "shop" && h.lit === "shop") {                 // the light it throws out over the pavement, one a 5 m
         const n = Math.max(1, Math.round((u1 - u0) / 5));
         for (let i = 0; i < n; i++) o.lights.push({ at: fp(F, u0 + (u1 - u0) * (i + 0.5) / n, z0 + (z1 - z0) * 0.55, 0.7), color: h.glow || "#ffb47f", power: 3.5, dist: 5, shop: true });
       }
-      if (h.kind === "shop") {                                     // a door in the glass, and a kick plate under it
-        const c = u0 + (u1 - u0) * clamp(num(h.door, 0.5), 0.1, 0.9), dw = 0.9;
-        fquad(o, "frame", F, Math.max(u0, c - dw / 2) , Math.min(u1, c + dw / 2), z0, z0 + 0.12, back + 0.02);
-        fquad(o, "frame", F, Math.max(u0, c - dw / 2 - 0.04), Math.max(u0, c - dw / 2), z0, Math.min(z1, z0 + 2.2), back + 0.02);
-        fquad(o, "frame", F, Math.min(u1, c + dw / 2), Math.min(u1, c + dw / 2 + 0.04), z0, Math.min(z1, z0 + 2.2), back + 0.02);
+      if (h.kind === "shop") {                                     // a glass door: its frame all round, a kick plate, a push bar
+        const c = dc, a = da, b = db, st = 0.07, top = Math.min(z1 - 0.08, z0 + 2.2), d = back + 0.02;
+        fquad(o, "frame", F, a - st, a, z0, top + st, d);                  // the stiles, the head over them, the kick plate
+        fquad(o, "frame", F, b, b + st, z0, top + st, d);
+        fquad(o, "frame", F, a, b, top, top + st, d);
+        fquad(o, "frame", F, a, b, z0, z0 + 0.22, d);
+        fquad(o, "glass", F, a, b, z0 + 0.22, top, back + 0.008);         // the door's own pane, darker than the window round it
+        const hx = c > (u0 + u1) / 2 ? a + 0.1 : b - 0.1;                 // the bar on the side away from the hinges
+        fbox(o, "steel", F, Math.min(hx, hx + (c > (u0 + u1) / 2 ? 0.45 : -0.45)), Math.max(hx, hx + (c > (u0 + u1) / 2 ? 0.45 : -0.45)), z0 + 0.98, z0 + 1.03, d, d + 0.05);
       }
       break;
     case "shutwin":                                                 // a window with its storm shutter down
