@@ -248,7 +248,20 @@ function touches(r, o, q) {                                           // the roo
   return p && p[0] > q.at[0] && p[0] < q.at[0] + q.size[0] && p[1] > q.at[1] && p[1] < q.at[1] + q.size[1];
 }
 // 6. the streets
-const DIR = path.join(ROOT, "Content/Studio/Streets"), KNOWN = { roads: ["id", "from", "to"], buildings: ["id", "at", "w", "d", "floors"], things: ["id", "kind", "at"], fences: ["id", "kind", "from", "to"], shots: ["id", "eye", "look"] };
+const DIR = path.join(ROOT, "Content/Studio/Streets"), KNOWN = { roads: ["id", "from", "to"], buildings: ["id", "at", "w", "d", "floors"], things: ["id", "kind", "at"], fences: ["id", "kind", "from", "to"], shots: ["id", "eye", "look"], decals: ["id", "kind", "at", "n"] };
+// the decals' kinds, from their maker (tools/streetbake/decals.py: its DECALS table)
+const DECAL_KINDS = new Set([...fs.readFileSync(path.join(ROOT, "tools/streetbake/decals.py"), "utf8").matchAll(/^    "([a-z0-9_]+)": \("/gm)].map(m => m[1]));
+if (DECAL_KINDS.size < 10) errs.push(`only ${DECAL_KINDS.size} decal kinds read from decals.py`);
+{ // a decal: a quad facing out of its surface a GAP off it, the picture the right way up, on a wall and on the ground
+  for (const [n, up] of [[[0, -1, 0], [0, 0, 1]], [[0, 0, 1], [0, 1, 0]], [[0.6, 0.8, 0], [0, 0, 1]]]) {
+    const g = SG.decalParts({ id: "d", kind: "poster", at: [1, 2, 3], n, w: 0.6, h: 0.8, rot: 0 }).G["decal:poster"];
+    const P = i => [g.pos[i * 3], g.pos[i * 3 + 1], g.pos[i * 3 + 2]], off = P(0).map((v, k) => v - [1, 2, 3][k]).reduce((a, v, k) => a + v * n[k], 0);
+    const e1 = P(1).map((v, k) => v - P(0)[k]), e2 = P(2).map((v, k) => v - P(0)[k]), fn = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]];
+    const upIn = P(3).map((v, k) => v - P(0)[k]).reduce((a, v, k) => a + v * up[k], 0);   // the picture's top edge up its up
+    if (Math.abs(off - SG.GAP) > 1e-6 || fn.reduce((a, v, k) => a + v * n[k], 0) <= 0 || !(upIn > 0.79) || g.uv.join() !== "0,0,1,0,1,1,0,1")
+      errs.push(`a decal on ${n}: ${off.toFixed(4)} m off its surface, facing ${fn.map(v => v.toFixed(2))}, ${upIn.toFixed(2)} up`);
+  }
+}
 const names = fs.existsSync(DIR) ? fs.readdirSync(DIR).filter(n => fs.existsSync(path.join(DIR, n, "street.json")) && (!only || n === only)) : [];
 const report = [];
 for (const name of names) {
@@ -277,6 +290,13 @@ for (const name of names) {
   for (const t of S.things || []) { if (!SG.THING_KINDS[t.kind]) errs.push(`${L}: ${t.id}: no thing kind ${t.kind}`); if (t.to && !(S.things || []).some(q => q.id === t.to && q.kind === "pole")) errs.push(`${L}: ${t.id}: wires to ${t.to}, not a pole here`); }
   for (const f of S.fences || []) if (!SG.FENCE_KINDS[f.kind]) errs.push(`${L}: ${f.id}: no fence kind ${f.kind}`);
   for (const r of S.roads || []) for (const m of r.marks || []) if (!SG.MARK_KINDS[m.kind]) errs.push(`${L}: ${r.id}: no mark kind ${m.kind}`);
+  for (const d of S.decals || []) {
+    if (!DECAL_KINDS.has(d.kind)) errs.push(`${L}: ${d.id}: no decal kind ${d.kind}`);
+    if (!Array.isArray(d.n) || Math.abs(Math.hypot(...d.n) - 1) > 0.02) errs.push(`${L}: ${d.id}: its normal isn't one long`);
+  }
+  for (const [where, look] of [["the street", S.look || {}], ...["roads", "buildings", "things", "fences"].flatMap(l => (S[l] || []).map(x => [x.id, x.look || {}]))])
+    for (const [slot, v] of Object.entries(look)) if (typeof v === "string" && v.startsWith("pbr/") && !fs.existsSync(path.join(ROOT, "assets", v)))
+      warns.push(`${L}: ${where}'s ${slot} wears ${v}, not on this machine's shelf (python tools/street.py library, or your own set)`);
   const pieces = SG.build(S), tris = sane(L, pieces, p => BUDGET[p.type] || 20000), st = SG.stats(pieces);
   let pins = "";
   for (const s of S.shots || []) {

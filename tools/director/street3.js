@@ -88,6 +88,12 @@ function tsignCanvas(kind, back) {
 
 // ---- the PBR shelf (assets/pbr): its sets, read once from /api/pbr ------------------------------------------------------
 export const SHELF = { sets: {}, loaded: false };
+// the decals' catalogue (their sizes, where they go, how they shine), from the desk's server
+export const DECALS = { list: {}, loaded: false };
+export async function loadDecals() {
+  try { const r = await (await fetch("/api/decals")).json(); DECALS.list = r.decals || {}; } catch (e) { DECALS.list = {}; }
+  DECALS.loaded = true; return DECALS;
+}
 export async function loadShelf() {
   try { const r = await (await fetch("/api/pbr")).json(); SHELF.sets = r.sets || {}; } catch (e) { SHELF.sets = {}; }
   SHELF.loaded = true; return SHELF;
@@ -97,10 +103,10 @@ const PBRTEX = {};
 function shelfMaps(ref) {
   const m = SHELF.sets[ref]; if (!m) return null;
   const key = `${ref}|${m.stamp || ""}`; if (PBRTEX[key]) return PBRTEX[key];
-  const tl = new THREE.TextureLoader(), maps = m.maps || {}, tile = m.tile_m || 1;
-  const tex = (k, srgb) => { if (!maps[k]) return null; const t = tl.load(`${encPath(m.base)}/${encodeURIComponent(maps[k])}?s=${m.stamp || ""}`); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; t.repeat.set(1 / tile, 1 / tile); if (srgb) t.colorSpace = THREE.SRGBColorSpace; return t; };
+  const tl = new THREE.TextureLoader(), maps = m.maps || {}, tile = m.tile_m || 1, tileV = m.tile_v_m || tile;   // a set can be longer one way
+  const tex = (k, srgb) => { if (!maps[k]) return null; const t = tl.load(`${encPath(m.base)}/${encodeURIComponent(maps[k])}?s=${m.stamp || ""}`); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; t.repeat.set(1 / tile, 1 / tileV); if (srgb) t.colorSpace = THREE.SRGBColorSpace; return t; };
   const out = { map: tex("albedo", true), normalMap: tex("normal"), roughnessMap: tex("rough"), metalnessMap: tex("metal"), aoMap: tex("ao"), dx: m.normal === "dx" };
-  if (m.orm && !(out.roughnessMap && out.metalnessMap)) { const t = tl.load(`${encPath(m.base)}/${encodeURIComponent(m.orm)}?s=${m.stamp || ""}`); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1 / tile, 1 / tile); out.roughnessMap ||= t; out.metalnessMap ||= t; }
+  if (m.orm && !(out.roughnessMap && out.metalnessMap)) { const t = tl.load(`${encPath(m.base)}/${encodeURIComponent(m.orm)}?s=${m.stamp || ""}`); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1 / tile, 1 / tileV); out.roughnessMap ||= t; out.metalnessMap ||= t; }
   return (PBRTEX[key] = out);
 }
 
@@ -120,7 +126,7 @@ export class Materials {
   // the material a piece's slot draws with and the colour its vertices carry ([r, g, b], linear)
   forMerge(slot, over) {
     const base = SG.slotBase(slot), S = SG.SLOTS[base] || SG.SLOTS.wall, lit = (S[3] || "").includes("e");
-    const special = slot.startsWith("sign:") || slot.startsWith("glyph:") || slot.startsWith("tsign:");
+    const special = slot.startsWith("sign:") || slot.startsWith("glyph:") || slot.startsWith("tsign:") || slot.startsWith("decal:");
     if (special || lit) return { mat: this.get(slot, over), key: "m|" + slot + "|" + (over || "") + (slot.startsWith("sign:") ? "|" + JSON.stringify(this.signs[slot.slice(5)] || {}) : ""), rgb: WHITE };
     const isCol = !!over && /^#[0-9a-f]{6}$/i.test(over), isPbr = !!over && over.startsWith("pbr/");
     const pattern = (PATTERNS[base] && !PATTERNS[base].alpha) || base === "fan";
@@ -142,6 +148,13 @@ export class Materials {
       const c = glyphCanvas(slot.slice(6));
       if (c) { const t = new THREE.CanvasTexture(c); m.alphaMap = t; m.alphaTest = 0.5; }
       m.color.set(SG.SLOTS.paint[0]); m.roughness = 0.7; m.polygonOffset = true; m.polygonOffsetFactor = -2; m.polygonOffsetUnits = -2;
+      return m;
+    }
+    if (slot.startsWith("decal:")) {                                 // a decal: its picture over what's under it (assets/decals)
+      const kind = slot.slice(6), info = DECALS.list[kind] || {}, t = new THREE.TextureLoader().load(`/decals/${encodeURIComponent(kind)}.png`);
+      t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+      m.map = t; m.color.set("#ffffff"); m.transparent = true; m.depthWrite = false; m.alphaTest = 0.01;
+      m.roughness = info.rough ?? 0.85; m.metalness = info.metal ?? 0; m.userData.decal = kind;
       return m;
     }
     if (slot.startsWith("tsign:")) {
@@ -304,7 +317,8 @@ function exportMaterial(m, made) {
   if (made.has(m)) return made.get(m);
   const e = new THREE.MeshStandardMaterial({ name: `street_${m.userData.slot || "slot"}${m.userData.over && !m.userData.vc ? "_" + m.userData.over.replace(/[^a-z0-9]+/gi, "_") : ""}`,
     color: m.color.clone(), roughness: m.roughness, metalness: m.metalness, map: m.map || null, normalMap: m.normalMap || null, roughnessMap: m.roughnessMap || null, metalnessMap: m.metalnessMap || null,
-    emissive: m.emissive.clone(), emissiveIntensity: m.emissiveIntensity, emissiveMap: m.emissiveMap || null, side: m.side, vertexColors: !!m.vertexColors });
+    emissive: m.emissive.clone(), emissiveIntensity: m.emissiveIntensity, emissiveMap: m.emissiveMap || null, side: m.side, vertexColors: !!m.vertexColors,
+    transparent: !!m.userData.decal, depthWrite: !m.userData.decal });                    // a decal blends over what's under it
   if (m.alphaMap && typeof document !== "undefined") {                // glTF has no alpha map: the pattern goes into the colour map's alpha
     const img = m.alphaMap.image, c = document.createElement("canvas"); c.width = img.width; c.height = img.height;
     const g = c.getContext("2d"); g.drawImage(img, 0, 0); const d = g.getImageData(0, 0, c.width, c.height);
@@ -383,5 +397,17 @@ export function exportGroup(root, S, pieces, lights, blockers, opts = {}) {
   return out;
 }
 export async function exportGlb(group, GLTFExporter) {
+  await texturesReady(group);                                        // a set's or a decal's picture still loading has no size yet
   return new Promise((res, rej) => new GLTFExporter().parse(group, r => res(r), e => rej(e), { binary: true }));
+}
+// every picture the group's materials wear loaded (or given up on after `ms`): a texture whose image hasn't come yet
+// can't be written; one that never comes (a set missing from the shelf) is left off its material
+export async function texturesReady(group, ms = 30000) {
+  const maps = new Set();
+  group.traverse(o => { for (const m of [].concat(o.material || [])) for (const k of ["map", "normalMap", "roughnessMap", "metalnessMap", "aoMap", "emissiveMap", "alphaMap"]) if (m[k]) maps.add([m, k]); });
+  const ok = img => img && (img.width || img.naturalWidth) > 0;
+  const t0 = performance.now();
+  while ([...maps].some(([m, k]) => m[k] && m[k].image instanceof HTMLImageElement && !ok(m[k].image) && !m[k].image.complete) && performance.now() - t0 < ms)
+    await new Promise(r => setTimeout(r, 100));
+  for (const [m, k] of maps) { const im = m[k] && m[k].image; if (m[k] && (!im || (im instanceof HTMLImageElement && !ok(im)))) m[k] = null; }
 }

@@ -31,7 +31,7 @@ export const SLOTS = {
 };
 // a sign's or a road glyph's slot names its picture: "sign:<key>" (the street's signs list), "glyph:<character>",
 // "tsign:<kind>" (a traffic sign's face). Their base: what they fall back to with no picture.
-export const slotBase = s => SLOTS[s] ? s : s.startsWith("glyph:") ? "paint" : s.startsWith("sign:") || s.startsWith("tsign:") ? "white" : "wall";
+export const slotBase = s => SLOTS[s] ? s : s.startsWith("glyph:") ? "paint" : s.startsWith("sign:") || s.startsWith("tsign:") ? "white" : s.startsWith("decal:") ? "decal" : "wall";
 
 // mulberry32, as the kit's: the same seed, the same street on every machine
 export function rng(seed) {
@@ -1721,6 +1721,7 @@ export function build(street, cache) {
   for (const f of fences) pieces.push(memo("f|" + JSON.stringify(f) + "|" + (T.flat ? "" : roadsKey), () => safe(f.id, "fence", () => fenceParts(f, T.surface))));
   const poles = placed.filter(t => t.kind === "pole");
   if (poles.some(p => p.to)) pieces.push(memo("w|" + JSON.stringify(poles), () => Object.assign({ id: "_wires", type: "wires" }, wiresParts(poles))));
+  for (const d of S.decals || []) pieces.push(memo("d|" + JSON.stringify(d), () => safe(d.id, "decal", () => decalParts(d))));
   // the ground under it all, a margin round what's there: flat, one quad; on a slope, a grid following the roads
   const bb = bounds2(S);
   if (bb && S.ground !== false) {
@@ -1739,6 +1740,19 @@ export function build(street, cache) {
   }
   if (cache) for (const [k, v] of cache) { if (!v.used) cache.delete(k); else v.used = false; }
   return pieces;
+}
+// ---- decals: what's laid on a surface by hand (the paint page: a poster, rain streaks, a manhole, oil): a quad a GAP off
+// the surface at `at`, facing along its normal `n`, `w` x `h` metres, turned `rot` degrees; its up the world's on a wall,
+// north on the ground. Its slot `decal:<kind>` wears the decal's picture (assets/decals, tools/streetbake/decals.py)
+export function decalParts(d) {
+  const n = norm(Array.isArray(d.n) && d.n.length === 3 ? d.n.map(v => num(v, 0)) : [0, 0, 1]), at = (d.at || [0, 0, 0]).map(v => num(v, 0));
+  const w = Math.max(0.02, num(d.w, 1)), h = Math.max(0.02, num(d.h, 1)), a = num(d.rot, 0) * Math.PI / 180;
+  const R0 = norm(cross(Math.abs(n[2]) < 0.7 ? [0, 0, 1] : [0, 1, 0], n)), U0 = cross(n, R0);
+  const R = add(mul(R0, Math.cos(a)), mul(U0, Math.sin(a))), U = sub(mul(U0, Math.cos(a)), mul(R0, Math.sin(a)));
+  const C = add(at, mul(n, GAP)), P = (i, j) => add(C, add(mul(R, i * w / 2), mul(U, j * h / 2)));
+  const o = out();
+  poly(o, "decal:" + String(d.kind || "damp"), [P(-1, -1), P(1, -1), P(1, 1), P(-1, 1)], n, [[0, 0], [1, 0], [1, 1], [0, 1]]);
+  return o;
 }
 // the street's extent on the plan [x0, y0, x1, y1]
 export function bounds2(S) {

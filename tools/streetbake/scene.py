@@ -4,6 +4,7 @@ dusk and the lamps. Blender's space is the street's (x east, y north, z up): the
 import json
 import math
 import re
+import sys
 from pathlib import Path
 
 import bpy
@@ -40,6 +41,8 @@ def parse(name):
 def base_slot(slot):
     if slot.startswith("glyph:"):
         return "glyph"
+    if slot.startswith("decal:"):
+        return "decal"
     if slot.startswith(("sign:", "tsign:")):
         return "sign"
     return slot
@@ -87,6 +90,27 @@ def load(glb):
 
 # ---- materials -----------------------------------------------------------------------------------------------------
 
+_REFS = []
+
+
+def pbr_ref(name):
+    """A surface the street put a shelf set on (a piece's or the street's `look`, the paint page): its material's name
+    carries the set ('street_wall_pbr_Procedural_jp_tile45_white') -> (the slot, 'pbr/Procedural/jp_tile45_white')."""
+    s = name[len("street_"):] if name.startswith("street_") else name
+    i = s.find("_pbr_")
+    if i < 0:
+        return None
+    if not _REFS:
+        sys.path.insert(0, str(ROOT / "Content" / "Python"))
+        from storykit import pbr as PBR  # noqa: PLC0415
+        _REFS.extend(PBR.scan(write=False))
+    flat = s[i + 1:]
+    for ref in _REFS:
+        if re.sub(r"[^a-z0-9]+", "_", ref, flags=re.I) == flat:
+            return s[:i], ref
+    return None
+
+
 def finish_of(name, book):
     slot, _ = parse(name)
     b = base_slot(slot)
@@ -95,9 +119,21 @@ def finish_of(name, book):
         return over[name]
     if slot in over:
         return over[slot]
-    if b in ("sign", "glyph") or b in F.KEEP_IMAGE:
+    pr = pbr_ref(name)                                  # a set painted on it in the street
+    if pr:
+        return pr[1]
+    if b in ("sign", "glyph", "decal") or b in F.KEEP_IMAGE:
         return "image"
     return F.SLOT_FINISH.get(b, "plain")
+
+
+def decal_info(slot):
+    """A decal's shine from the decals' catalogue (assets/decals/decals.json)."""
+    try:
+        cat = json.loads((ROOT / "assets" / "decals" / "decals.json").read_text(encoding="utf-8"))["decals"]
+        return cat.get(slot.split(":", 1)[1], {})
+    except (OSError, ValueError, KeyError, IndexError):
+        return {}
 
 
 def _image_of(mat):
@@ -151,6 +187,7 @@ def rebuild(mat, book, wear_img):
     bs = nb.node("ShaderNodeBsdfPrincipled")
     nt.links.new(bs.outputs[0], out.inputs["Surface"])
     uv = nb.uv("UVMap")
+    pnrm = None                                         # a shelf set's normal map, when it has one
     W = F.WEAR.get(fin if fin in F.WEAR else ("render" if fin.startswith("pbr/") else "plain"))
     amount = (book.get("wear") or {})
     if fin == "glow":
@@ -177,6 +214,9 @@ def rebuild(mat, book, wear_img):
         base = nb.mix(1.0, t.outputs["Color"], col, "MULTIPLY") if b in F.KEEP_IMAGE else t.outputs["Color"]
         alpha = t.outputs["Alpha"]
         rough, height, metal = st[1], 0.0, st[2]
+        if b == "decal":                      # a decal: its catalogue's shine (a puddle's wet, a manhole's iron)
+            di = decal_info(slot)
+            rough, metal = di.get("rough") if di.get("rough") is not None else 0.85, di.get("metal") or 0.0
         if b == "glyph":                      # road letters: worn like paint, the road through the holes
             g = nb.group(F.finish_group("paint"), UV=uv, Color=(1, 1, 1, 1))
             base = nb.mix(1.0, base, g.outputs["Color"], "MULTIPLY")
@@ -192,6 +232,7 @@ def rebuild(mat, book, wear_img):
             INFO[mat.name]["finish"] = "plain"
         if fin.startswith("pbr/"):
             g = pbr_group(fin, nb, uv, col)
+            pnrm = pbr_normal(fin, nb, uv)        # its normal map: the relief it was made with
             fin = "render"
         else:
             g = nb.group(F.finish_group(fin), UV=uv, Color=col)
@@ -210,7 +251,9 @@ def rebuild(mat, book, wear_img):
     nb.put(w.outputs["Color"], bs.inputs["Base Color"])
     nb.put(w.outputs["Roughness"], bs.inputs["Roughness"])
     nb.put(metal, bs.inputs["Metallic"])
-    if not isinstance(height, (int, float)):
+    if pnrm is not None:
+        nb.put(pnrm, bs.inputs["Normal"])
+    elif not isinstance(height, (int, float)):
         bump = nb.node("ShaderNodeBump")
         nb.put(0.6, bump.inputs["Strength"])
         nb.put(0.004, bump.inputs["Distance"])
@@ -253,6 +296,30 @@ def pbr_group(ref, nb, uv, col):
         gb.put(tex("height", False).outputs["Color"] if "height" in meta["maps"] else 0.0, go.inputs["Height"])
         gb.put(tex("metal", False).outputs["Color"] if "metal" in meta["maps"] else 0.0, go.inputs["Metallic"])
     return nb.group(ng, UV=uv, Color=col)
+
+
+def pbr_normal(ref, nb, uv):
+    """A shelf set's normal map at its size, as a normal for the BSDF (None if it has none)."""
+    from . import tiles as T
+    d, meta = T.maps(ref)
+    if not meta or "normal" not in meta.get("maps", {}):
+        return None
+    su, sv = T.size_of(meta)
+    mp = nb.node("ShaderNodeMapping")
+    nb.put(uv, mp.inputs["Vector"])
+    mp.inputs["Scale"].default_value = (1.0 / su, 1.0 / sv, 1.0)
+    im = bpy.data.images.load(str(d / meta["maps"]["normal"]), check_existing=True)
+    im.colorspace_settings.name = "Non-Color"
+    t = nb.node("ShaderNodeTexImage", image=im)
+    nb.put(mp.outputs[0], t.inputs["Vector"])
+    nm = nb.node("ShaderNodeNormalMap", uv_map="UVMap")
+    nb.put(t.outputs["Color"], nm.inputs["Color"])
+    if meta.get("normal") == "dx":                      # a DirectX normal: its green the other way
+        sep = nb.sepc(t.outputs["Color"])
+        nb.put(nb.node("ShaderNodeCombineColor").outputs[0], nm.inputs["Color"])
+        cc = nm.inputs["Color"].links[0].from_node
+        nb.put(sep[0], cc.inputs[0]); nb.put(nb.one_minus(sep[1]), cc.inputs[1]); nb.put(sep[2], cc.inputs[2])
+    return nm.outputs["Normal"]
 
 
 # ---- the camera, the dusk, the lamps -------------------------------------------------------------------------------

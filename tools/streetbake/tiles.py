@@ -11,6 +11,7 @@ import bpy
 import numpy as np
 
 from . import finishes as F
+from . import library as LIB
 from .nodes import NB
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -28,9 +29,10 @@ def set_dir(finish):
     return PBR.ROOT / SHELF / finish
 
 
-def stamp():
-    """What the sets are made from: the finishes' code (a set older than it is made again)."""
-    return int(max((Path(__file__).parent / f).stat().st_mtime for f in ("finishes.py", "nodes.py", "tiles.py")))
+def stamp(finish=None):
+    """What a set is made from: the finishes' code, and the library's for its sets (a set older than it is made again)."""
+    files = ("finishes.py", "nodes.py", "tiles.py") + (("library.py",) if finish in LIB.LIB else ())
+    return int(max((Path(__file__).parent / f).stat().st_mtime for f in files))
 
 
 def is_fresh(finish, px):
@@ -39,7 +41,7 @@ def is_fresh(finish, px):
     if not m.is_file():
         return False
     j = json.loads(m.read_text(encoding="utf-8"))
-    return j.get("made_from", 0) >= stamp() and j.get("px", 0) >= px and all((d / f"{finish}_{k}.png").is_file() for k in ("albedo", "normal", "orm"))
+    return j.get("made_from", 0) >= stamp(finish) and j.get("px", 0) >= px and all((d / f"{finish}_{k}.png").is_file() for k in ("albedo", "normal", "orm"))
 
 
 def _plane(P):
@@ -69,8 +71,8 @@ def _material(finish, what, img):
     if what == "normal":
         bs = nb.node("ShaderNodeBsdfPrincipled")
         bump = nb.node("ShaderNodeBump")
-        nb.put(0.6, bump.inputs["Strength"])
-        nb.put(0.004, bump.inputs["Distance"])
+        nb.put(0.6 if finish not in LIB.RELIEF else 1.0, bump.inputs["Strength"])
+        nb.put(LIB.RELIEF.get(finish, 0.004), bump.inputs["Distance"])          # the relief its height stands for
         nb.put(g.outputs["Height"], bump.inputs["Height"])
         nb.put(bump.outputs[0], bs.inputs["Normal"])
         nt.links.new(bs.outputs[0], out.inputs["Surface"])
@@ -151,11 +153,15 @@ def bake_set(finish, px=1024, samples=4, say=print):
     bpy.data.objects.remove(o)
     bpy.data.meshes.remove(me)
     # the shelf's own meta.json (what a shelf scan keeps), and ours beside it (a scan rewrites meta.json)
-    meta = {"tile_m": round(P[0], 4), "source": "procedural: tools/street.py finishes (tools/streetbake/finishes.py)", "url": "",
-            "licence": "CC0-1.0", "note": f"the street finish '{finish}' baked from Blender's nodes; its colour is a tint for a surface's own colour"}
-    (d / "meta.json").write_text(json.dumps(meta, indent=1), encoding="utf-8")
-    (d / "procedural.json").write_text(json.dumps({"finish": finish, "tint": True, "tile_v_m": round(P[1], 4), "px": px,
-                                                   "made_from": stamp()}, indent=1), encoding="utf-8")
+    lib = finish in LIB.LIB                                          # the library's: its own colours, not a tint
+    meta = {"tile_m": round(P[0], 4), "source": "procedural: tools/street.py " + ("library (tools/streetbake/library.py)" if lib else "finishes (tools/streetbake/finishes.py)"),
+            "url": "", "licence": "CC0-1.0",
+            "note": f"the street material '{finish}' baked from Blender's nodes" + ("" if lib else "; its colour is a tint for a surface's own colour")}
+    if lib:
+        meta.update(LIB.meta(finish), tint=False)
+    (d / "meta.json").write_text(json.dumps(meta, indent=1, ensure_ascii=False), encoding="utf-8")
+    (d / "procedural.json").write_text(json.dumps({"finish": finish, "tint": not lib, "tile_v_m": round(P[1], 4), "px": px,
+                                                   "made_from": stamp(finish)}, indent=1), encoding="utf-8")
     say(f"TILE {finish}: {W} x {H} for {P[0]:g} x {P[1]:g} m ({px / P[0]:.0f} px/m) -> {d.relative_to(ROOT) if d.is_relative_to(ROOT) else d}")
     return d
 

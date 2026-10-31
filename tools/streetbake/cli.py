@@ -178,6 +178,49 @@ def finishes(argv):
     return 0
 
 
+def library(argv):
+    """The material library (library.py) baked onto the shelf, a lit picture of each for the paint page, and a sheet."""
+    import ast
+    kind, exe = find_blender(argv)
+    px = opt(argv, "--tile-px", "1024")
+    tree = ast.parse((ROOT / "tools" / "streetbake" / "library.py").read_text(encoding="utf-8"))
+    every = next(sorted(k.value for k in n.value.keys) for n in tree.body if isinstance(n, ast.Assign) and getattr(n.targets[0], "id", "") == "LIB")
+    names = [a for a in argv if not a.startswith("--") and a in every] or every
+    run_blender(kind, exe, ["look", "--glb", "-", "--out", str(ROOT / "Saved" / "Streets"), "--tiles-only", ",".join(names), "--tile-px", px]
+                + (["--force-tiles"] if flag(argv, "--force") else []))
+    made = [n for n in names if thumb(n)]
+    print(f"LIBRARY {len(made)} of {len(names)} materials on the shelf with their pictures")
+    return 0 if len(made) == len(names) else 1
+
+
+def thumb(name, size=256):
+    """A picture of a library set lit from the upper left (its colour, normal and occlusion), and its sheet's tile."""
+    import numpy as np
+    from PIL import Image
+    d = ROOT / "assets" / "pbr" / "Procedural" / name
+    try:
+        alb = np.asarray(Image.open(d / f"{name}_albedo.png").convert("RGB"), np.float32) / 255
+        nrm = np.asarray(Image.open(d / f"{name}_normal.png").convert("RGB"), np.float32) / 255 * 2 - 1
+        orm = np.asarray(Image.open(d / f"{name}_orm.png").convert("RGB"), np.float32) / 255
+    except OSError:
+        return False
+    m = json.loads((d / "meta.json").read_text(encoding="utf-8"))
+    px_per_m = alb.shape[1] / float(m.get("tile_m") or 2.0)
+    k = max(8, min(alb.shape[0], alb.shape[1], int(px_per_m * 1.2)))   # 1.2 m of it
+    alb, nrm, orm = alb[:k, :k], nrm[:k, :k], orm[:k, :k]
+    lin = alb ** 2.2
+    L = np.array([-0.45, 0.55, 0.70]); L /= np.linalg.norm(L)
+    n = nrm / np.maximum(np.linalg.norm(nrm, axis=2, keepdims=True), 1e-6)
+    ndl = np.clip(n @ L, 0, 1)[..., None]
+    H = L + np.array([0, 0, 1.0]); H /= np.linalg.norm(H)
+    rough = orm[..., 1:2]
+    spec = np.clip(n @ H, 0, 1)[..., None] ** (2 + 60 * (1 - rough) ** 2) * (1 - rough) * 0.35
+    shade = lin * (0.30 * orm[..., 0:1] + 0.95 * ndl) + spec
+    img = np.clip(shade ** (1 / 2.2), 0, 1)
+    Image.fromarray((img * 255).astype(np.uint8)).resize((size, size), Image.LANCZOS).save(d / "_lit.jpg", quality=88)   # not a map: "_"
+    return True
+
+
 def _test_set(d):
     """A set of our own on the check's scratch shelf (bricks: colour, normal, roughness), for a material to wear."""
     import numpy as np

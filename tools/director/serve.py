@@ -93,6 +93,23 @@ STREET_NAME = re.compile(r"^[a-z][a-z0-9_]{0,40}$")
 PHOTO = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".gif": "image/gif", ".avif": "image/avif"}
 
 
+# a street's Blender job from the paint page (paint.html): `street.py look` or `bake`, one at a time, its log on disk
+BAKES = {}
+
+
+def bake_state(name):
+    j = BAKES.get(name)
+    out = ROOT / "Saved" / "Streets" / name / "blender"
+    pics = sorted(((f.name, f.stat().st_mtime) for f in out.glob("*") if f.suffix.lower() in (".jpg", ".png") and not f.name.startswith("street_glyph")),
+                  key=lambda x: -x[1]) if out.is_dir() else []
+    log = []
+    if j and j["log"].is_file():
+        log = j["log"].read_text(encoding="utf-8", errors="replace").splitlines()[-60:]
+    running = bool(j and j["proc"].poll() is None)
+    return {"running": running, "cmd": j and j["cmd"], "code": None if not j or running else j["proc"].returncode,
+            "started": j and j["started"], "log": log, "pictures": [{"file": n, "mtime": m} for n, m in pics[:40]]}
+
+
 def street_file(name):
     name = urllib.parse.unquote(name or "")
     return STREETS / name / "street.json" if STREET_NAME.match(name) else None
@@ -247,6 +264,13 @@ class Handler(BaseHTTPRequestHandler):
             for ref, m in sets.items():
                 m["base"], m["unreal"] = "/" + ref, "/".join(PBR.unreal_path(ref))
             return self.send(200, {"root": str(PBR.ROOT), "sets": sets})
+        if parts[:2] == ["api", "decals"]:           # the street's decals (tools/streetbake/decals.py), made when missing
+            sys.path.insert(0, str(ROOT / "tools"))
+            from streetbake import decals as DEC  # noqa: PLC0415 - plain Python (numpy, Pillow)
+            return self.send(200, DEC.ensure(say=lambda *a: None))
+        if parts[0] == "decals" and len(parts) == 2 and re.match(r"^[a-z0-9_]+\.png$", parts[1]):
+            df = ROOT / "assets" / "decals" / parts[1]
+            return self.send(200, df.read_bytes(), "image/png", cache=True) if df.is_file() else self.send(404, {"error": "no such decal"})
         if parts[0] == "pbr" and len(parts) >= 3:
             rel = [urllib.parse.unquote(p) for p in parts[1:]]
             pf = PBR.set_dir("pbr/" + "/".join(rel[:-1])) / rel[-1] if ".." not in rel and all(rel) else None   # assets/pbr, or the old place
@@ -342,6 +366,11 @@ class Handler(BaseHTTPRequestHandler):
             if f and f.is_file():
                 return self.send_media(f)
             return self.send(404, {"error": "no such file"})
+        if parts[:2] == ["api", "streetbake"] and len(parts) == 3:   # the paint page: Blender's job on a street, and its pictures
+            return self.send(200, bake_state(parts[2])) if street_file(parts[2]) else self.send(404, {"error": "no such street"})
+        if parts[0] == "streetout" and len(parts) == 3 and street_file(parts[1]) and re.match(r"^[\w.\-]+\.(jpg|png)$", parts[2]):
+            f = ROOT / "Saved" / "Streets" / parts[1] / "blender" / parts[2]
+            return self.send(200, f.read_bytes(), "image/png" if f.suffix == ".png" else "image/jpeg") if f.is_file() else self.send(404, {"error": "no picture"})
         if parts[:2] == ["api", "streets"]:            # the street builder: the streets there are
             names = sorted(d.name for d in STREETS.iterdir() if (d / "street.json").is_file()) if STREETS.is_dir() else []
             return self.send(200, {"streets": names})
@@ -509,6 +538,28 @@ class Handler(BaseHTTPRequestHandler):
         import urllib.parse
         query = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
         parts = self.path.split("?")[0].strip("/").split("/")
+        if parts[:2] == ["api", "streetbake"] and len(parts) == 3:     # the paint page: the street in Blender (look or bake)
+            name = parts[2]
+            if not street_file(name):
+                return self.send(404, {"error": "no such street"})
+            if any(j["proc"].poll() is None for j in BAKES.values()):
+                return self.send(409, {"error": "Blender is busy with a street already"})
+            body = json.loads(self.body().decode("utf-8") or "{}")
+            cmd = "bake" if body.get("cmd") == "bake" else "look"
+            args = [sys.executable, str(ROOT / "tools" / "street.py"), cmd, name]
+            if body.get("shot"):
+                args += ["--shot", str(body["shot"])]
+            if cmd == "bake" and body.get("godot"):
+                args.append("--godot")
+            if body.get("quick"):
+                args += ["--samples", "16", "--height", "560"]
+            out = ROOT / "Saved" / "Streets" / name / "blender"
+            out.mkdir(parents=True, exist_ok=True)
+            log = out / "paint_job.log"
+            fh = open(log, "w", encoding="utf-8")
+            BAKES[name] = {"proc": subprocess.Popen(args, cwd=ROOT, stdout=fh, stderr=subprocess.STDOUT), "log": log, "cmd": " ".join(args[2:]),
+                           "started": time.time()}
+            return self.send(200, bake_state(name))
         if parts[:2] == ["api", "expressions"] and len(parts) >= 3:    # the expression library: import, accept, discard, rename, remove
             return self.expressions_post(parts[2:], query)
         if parts[:2] == ["api", "street"] and len(parts) == 4 and parts[3] == "new":     # a new street (the page sends its start)

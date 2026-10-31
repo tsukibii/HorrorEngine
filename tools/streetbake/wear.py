@@ -208,7 +208,7 @@ def bake_material(img, what):
     return m
 
 
-DECAL = ("paint", "paint_y", "glyph:")
+DECAL = ("paint", "paint_y", "glyph:", "decal:")
 
 
 def is_decal(o):

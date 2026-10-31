@@ -117,3 +117,6 @@ vendor/garmentcode/
 
 # the street builder's photos (pasted references, mostly not ours): beside each street, never in git
 Content/Studio/Streets/*/refs/
+
+# the street decals (tools/streetbake/decals.py: `street.py decals`): made from code, too many to keep in git
+assets/decals/

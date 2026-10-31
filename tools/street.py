@@ -21,6 +21,10 @@ buildings go into, kept in Content/Studio/Streets/<name>/street.json (the page: 
                                                  colliders kept) and <name>.blend; --godot: pictured in Godot too
     python tools/street.py finishes [names...] [--tile-px 1024]
                                                  the procedural finishes onto the shelf (assets/pbr/Procedural)
+    python tools/street.py decals [--force]        the decals made from code (assets/decals: posters, streaks, oil...)
+    python tools/street.py library [names...] [--tile-px 1024] [--force]
+                                                 the material library (Japanese exterior finishes, library.py) onto
+                                                 the shelf, each with its lit picture for the paint page
     python tools/street.py bake-check [--street N] [--godot]
                                                  STREETBAKE: a street baked small on a scratch shelf, read back
 """
@@ -111,6 +115,15 @@ def main(argv):
         return 0
     if cmd == "check":
         return node([str(ROOT / "tools" / "director" / "streetcheck.mjs")] + argv[1:])
+    if cmd == "decals":
+        sys.path.insert(0, str(ROOT / "tools"))
+        from streetbake import decals as dec  # noqa: PLC0415
+        dec.ensure("--force" in argv)
+        return 0
+    if cmd == "library":
+        sys.path.insert(0, str(ROOT / "tools"))
+        from streetbake import cli as lcli  # noqa: PLC0415
+        return lcli.library(argv[1:])
     if cmd in ("look", "bake", "finishes", "bake-check"):
         sys.path.insert(0, str(ROOT / "tools"))
         from streetbake import cli
