@@ -1,4 +1,4 @@
-// Brows and lashes (Character Studio, the Face tab): cards for the salon's hair shader (hairshader.js) and strand atlases
+// Brows and lashes (Character Studio, the Brows & lashes tab, the clumped ones): cards for the salon's hair shader (hairshader.js) and strand atlases
 // of their own (the brows hairtex.js's makeAtlas: clumps that draw together into points; the lashes lashAtlas, one fine
 // strand to a cell: every lash is one hair). Our own code. No physics: the lashes are rooted on the lid's edge (the eye's smoothed opening, index.html's outline()), lie
 // along the lid's rim to its front edge (the line runs along the rim's back, where it meets the eye; lashes grow from
@@ -392,6 +392,28 @@ function brow(G, rows, o, C, U, S, seed, P) {
     const fine = 1 - 0.45 * o.soft * (1 - smooth(0, 0.25, t)), w0 = 0.24 / 1000 * S * fine, [u0, u1] = clumpU(r, 0.35);   // one fine hair to a card
     card(G, pts, norm(cross3(n, d)), n, w0, w0 * 0.3, u0, u1, [0, 0, 0, 0], 0.03);
   }
+}
+
+// fine strands as cards (the brows and lashes by hand, groom.js): one strand of the lash atlas on each, as wide as
+// the hair's own root radius six times over (the atlas's core is a third of its cell: the hair at its true thickness,
+// a few hundredths of a millimetre), tapering to a third; a lash on two cards crossed (across the lid, and square to
+// that), a brow hair on one lying on the skin. The same geometry as build()'s, for the same hair shader and the export
+export function strandCards(strands, kind, seed = 7) {
+  const G = Cards(), r = rng(seed), lash = kind === "lashes";
+  for (const s of strands) {
+    const P = s.pts, n = s.normal; if (P.length < 2) continue;
+    const r0 = Math.max(s.radius[0] || 0, 0.00002), w0 = 6 * r0, w1 = w0 * 0.35;
+    const cell = Math.floor(r() * LASH_ATLAS.cells), u0 = cell / LASH_ATLAS.cells, u1 = (cell + 1) / LASH_ATLAS.cells;
+    const d = norm(sub(P[P.length - 1], P[0]));
+    if (lash) {
+      const t = norm(cross3(n, d)), facing = norm(cross3(t, d));
+      card(G, P, t, facing, w0, w1, u0, u1); card(G, P, facing, t, w0 * 0.8, w1, u0, u1);
+    } else {
+      const across = P.map((p, k) => norm(cross3(n, sub(P[Math.min(k + 1, P.length - 1)], P[Math.max(k - 1, 0)]))));
+      card(G, P, across, n, w0, w1, u0, u1);
+    }
+  }
+  return geometryOf(G);
 }
 
 export function build(ctx, lash, brw) {

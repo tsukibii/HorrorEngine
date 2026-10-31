@@ -1,8 +1,9 @@
 ## A scene as the desk recorded it (docs/UNREAL_FLOW.md §1b; the bake, `game/previs/`): the camera, each cast member's
 ## body (a skinned mesh posed from the bake's skinning matrices, or the desk's figure of cylinders from its joints),
 ## the black and the lights' flicker, frame by frame at the bake's fps. The scene player drives it by time: it
-## computes nothing of its own, so what plays is what the desk worked out. The faces (MHR's 72 shapes) wait on a body
-## with morph targets (the exported body has none yet).
+## computes nothing of its own, so what plays is what the desk worked out. The faces: MHR's 72 shapes by name on the
+## glb's morph targets (the bake's shaped body has them all; a Character Studio export has its blink, eyesClosed_L and _R,
+## which its HSBlink sets with their arcs, the bake's weights the least it shows).
 extends RefCounted
 
 var game
@@ -89,18 +90,20 @@ func make_bodies(world: Node3D) -> void:
 					b["node"] = n
 					b["skeleton"] = sk
 					b["skin_mats"] = HSSkin.wear(n, rt_skin(cid), file if people != "" else "")   # the body's skin on HumanShaders' skin shader (its tone kept; a Studio export its baked paint, relief, roughness and thinness), as wet as the story left her
-					b["hair_mats"] = HSHair.wear(n, rt_hair(cid))   # its hair, brows and lashes on the Studio's hair look (the story's `hair` word)
+					b["hair_mats"] = HSHair.wear(n, rt_hair(cid), file if people != "" else "")   # its hair, brows and lashes on the Studio's hair look (the story's `hair` word; a Studio export's bake as its records say)
 					if people != "":
 						HSEye.wear(n, file)
 					print("scene body %s wears %s (%s): %d skin, %d hair surfaces" % [cid, file, "a Character Studio export" if people != "" else "the bake's body", b["skin_mats"].size(), b["hair_mats"].size()])
-					var shapes: Array = index.get("face_shapes", [])      # the face: the bake's 72 weights onto the glb's morph targets
+					var shapes: Array = index.get("face_shapes", [])      # the face: the bake's 72 weights onto the glb's morph targets, on every mesh that has them (a Studio export's skin, lashes and brows: its blink)
+					b["blink"] = HSBlink.of(n)                             # a Studio export's blink takes eyesClosed_L and _R itself, with their arcs (blink.gd)
+					b["face_meshes"] = []
 					for mi in n.find_children("*", "MeshInstance3D", true, false):
 						if mi.mesh != null and mi.mesh.get_blend_shape_count() > 0:
-							b["face_mesh"] = mi
-							b["face_idx"] = []
+							var idx := []
 							for nm in shapes:
-								b["face_idx"].append(mi.find_blend_shape_by_name(str(nm)))
-							break
+								idx.append(-1 if b["blink"] != null and str(nm).begins_with("eyesClosed_") else mi.find_blend_shape_by_name(str(nm)))
+							b["face_meshes"].append([mi, idx])
+					b["blink_at"] = [shapes.find("eyesClosed_L"), shapes.find("eyesClosed_R")]
 					var names: Array = entry["bones"]
 					for i in names.size():
 						var bi := sk.find_bone(str(names[i]))
@@ -191,16 +194,25 @@ func show(fi: int, rt) -> bool:
 		b["node"].visible = there
 		if not there:
 			continue
-		if b.has("face_mesh"):
+		if not b.get("face_meshes", []).is_empty() or b.get("blink") != null:
 			var w = f.get("face", {}).get(cid, null)
-			var mi: MeshInstance3D = b["face_mesh"]
-			var idx: Array = b["face_idx"]
-			for i in idx.size():
-				if idx[i] >= 0:
-					var v: float = float(w[i]) if (w != null and i < w.size()) else 0.0
-					mi.set_blend_shape_value(idx[i], v)
-					if v > face_max:
-						face_max = v
+			for row in b.get("face_meshes", []):
+				var mi: MeshInstance3D = row[0]
+				var idx: Array = row[1]
+				for i in idx.size():
+					if idx[i] >= 0:
+						var v: float = float(w[i]) if (w != null and i < w.size()) else 0.0
+						mi.set_blend_shape_value(idx[i], v)
+						if v > face_max:
+							face_max = v
+			if b.get("blink") != null:                          # the bake's blink as the least the blinker shows
+				var hold := Vector2.ZERO
+				for k in 2:
+					var i: int = b["blink_at"][k]
+					if w != null and i >= 0 and i < w.size():
+						hold[k] = float(w[i])
+						face_max = maxf(face_max, hold[k])
+				b["blink"].hold = hold
 		if b["skeleton"] != null and f.get("skin", {}).has(cid):
 			var m: Array = f["skin"][cid]
 			var sk: Skeleton3D = b["skeleton"]

@@ -125,3 +125,6 @@ assets/decals/
 
 # the project's own PBR sets are in git (pbr/), their thumbnails made by a scan are not
 pbr/**/_thumb.jpg
+vendor/**/*.blend
+vendor/human_base_meshes/
+

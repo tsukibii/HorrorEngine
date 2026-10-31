@@ -2032,7 +2032,7 @@ func standin_body(cid: String) -> void:
 	for sk in body.find_children("*", "Skeleton3D", true, false):
 		arms_down(sk)
 	standin_mats[cid] = HSSkin.wear(body, skin_wet.get(cid, {}), file if people else "")   # a Studio export: its relief, roughness and thinness maps and its studioSkin numbers
-	standin_hair[cid] = HSHair.wear(body, hair_look(cid))
+	standin_hair[cid] = HSHair.wear(body, hair_look(cid), file if people else "")   # a Studio export: the salon's bake MetaHuman's way (its records in the file)
 	if people:
 		HSEye.wear(body, file)
 	standins[cid] = body

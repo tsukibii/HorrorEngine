@@ -11,7 +11,7 @@
 // settings; at a Fit of 0 the t-shirt clings to the body and doesn't hang; a PBR set chosen from files named as Unreal's are (albedo, normal-dx, roughness)
 // goes onto the shelf as assets/pbr/studiotest_denim (the files' leading _ taken off) and onto the pants, its DirectX
 // normal turned for three.js; the PBR shelf page shows it, a map chosen by hand there is kept, and the set goes;
-// the Hair tab is the salon on this character (its body saved for it), brows and lashes switch in the Face tab; the anime
+// the Hair tab is the salon on this character (its body saved for it), brows and lashes switch in the Brows & lashes tab; the anime
 // lash styles gather the lashes into spikes and the natural one spreads them; the anime pink makeup paints the liner from
 // the lashes' roots and pink under the eye, and its look turns the lashes on; the three drawn eye shapes are lash styles
 // (the fox's sweep, the half-lidded's lashes down over the eye, the doll's spikes) with a liner each; the second
@@ -74,6 +74,10 @@ const png = rgb => {
     const clip = await page.evaluate(() => { const r = document.querySelector("#view canvas").getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; });
     return page.screenshot({ clip, timeout: 120000 });
   };
+  // every character wears the grafted eyes (Blender's human base mesh's lids, CHARACTER_STUDIO §2c); the steps below were
+  // written for MHR's own cut lids, kept as the fallback when the graft's file is missing: they're measured with the graft
+  // held off (__mhrLids), and the graft's own step turns it on
+  await page.addInitScript(() => { window.__mhrLids = true; });
   await page.goto(BASE);
 
   await step("MHR loads with its sliders and labels", async () => {
@@ -95,6 +99,14 @@ const png = rgb => {
       b.useLook("MHR plain"); return { got, plain: { lips: s.lips.on, soft: s.eyes.limbalSoft, proc: s.skin.proc.on } }; }, NAME);
     if (!look.got.lips || look.got.soft !== 0.6 || !(look.got.tear > 0) || !look.got.proc || !look.got.savedLips) throw new Error(`a new character's look: ${JSON.stringify(look.got)}`);
     if (look.plain.lips || look.plain.soft !== 0 || look.plain.proc) throw new Error(`MHR plain: ${JSON.stringify(look.plain)}`);
+  });
+  await step("the eyes: every character wears the grafted lids (Blender's human base mesh, thick lids resting on the eyeball), shutting their own way", async () => {
+    const r = await page.evaluate(() => { const b = window.__body; window.__mhrLids = false; b.compose();
+      const g = b.graft(), open = { on: g.on, shown: !!g.M && g.M.visible, points: g.G ? g.G.n || g.M.geometry.attributes.position.count : 0, eye: !!g.V.L && !!g.V.R };
+      const i = n => b.ENAMES.indexOf(n); b.st.expr[i("eyesClosed_L")] = 1; b.st.expr[i("eyesClosed_R")] = 1; b.compose(); const shut = b.graft().on && b.graft().M.visible;
+      b.st.expr.fill(0); window.__mhrLids = true; b.compose(); const off = !b.graft().on;
+      return { ...open, shut, off, noSwitch: ![...document.querySelectorAll("#eyeRows label span")].some(x => /grafted eyes \(thick/.test(x.textContent)) }; });
+    if (!r.on || !r.shown || !r.points || !r.eye || !r.shut || !r.off || !r.noSwitch) throw new Error("the grafted eyes: " + JSON.stringify(r));
   });
   let a, front, side;
   await step("the base and a slider move the body; the height scales it", async () => {
@@ -604,7 +616,7 @@ const png = rgb => {
     await page.click('#tabs button[data-tab="body"]');
   });
   await step("anime lashes after the user's references: the anime styles gather the lashes into separate spikes with gaps between them, every other spike shorter, the lower lashes pointing down the skin; the natural style spreads them evenly and level; a style sets every slider; the styles are grouped in the picker", async () => {
-    await page.click('#tabs button[data-tab="face"]');
+    await page.click('#tabs button[data-tab="brows"]');
     const groups = await page.$$eval("#browRows select optgroup", gs => gs.map(g => g.label));
     if (!groups.some(g => /anime/i.test(g)) || !groups.some(g => /natural/i.test(g))) throw new Error("the style picker's groups: " + JSON.stringify(groups));
     const r = await page.evaluate(async () => {
@@ -622,7 +634,7 @@ const png = rgb => {
     await page.click('#tabs button[data-tab="body"]');
   });
   await step("the three eye shapes the user drew, as lashes and liner: the fox almond's lashes sweep to the outer corner, long there and short at the inner; the half-lidded eye's point down over the eye; the round doll's are short spikes all round; each look sets its style and its liner", async () => {
-    await page.click('#tabs button[data-tab="face"]');
+    await page.click('#tabs button[data-tab="brows"]');
     const r = await page.evaluate(async () => {
       const b = window.__body, BL = await import("./browlash.js");
       const at = k => { Object.assign(b.st.lash, BL.styleOf(k), { on: true }); b.browLash(); const c = b.browlash; return { sweep: c.sweep, lift: c.lift, spike: c.spike, drop: c.drop, cards: c.lashes, rim: c.rim }; };
@@ -675,7 +687,7 @@ const png = rgb => {
     console.log(`       under the eye, red over green ${plain.toFixed(1)} plain and ${pink.toFixed(1)} with the preset; the liner's band ${u.band.toFixed(2)} mm wide in the lid's middle, from the lashes' roots ${u.ahead.toFixed(1)} mm ahead of the lid line`);
   });
   await step("the five lash sets of the user's second reference (docs/research/lash_reference.md): sparse (men, older) the fewest and shortest, glam volume long and dense in soft spikes, fluffy mink the fullest with neighbours crossing, doll volume swept up highest with the longest lower lashes, natural medium separated; a look each with its makeup (the lower liner, a tinted waterline) and, for the old man, greying lashes and ash brows", async () => {
-    await page.click('#tabs button[data-tab="face"]');
+    await page.click('#tabs button[data-tab="brows"]');
     const groups = await page.$$eval("#browRows select optgroup", gs => gs.map(g => [g.label, g.children.length]));
     if (!groups.some(([g, n]) => /second reference/.test(g) && n === 5)) throw new Error("the style picker's groups: " + JSON.stringify(groups));
     const r = await page.evaluate(async () => {
@@ -892,7 +904,7 @@ const png = rgb => {
       return img;
     };
     const flat = { pupil: 0.45, limbal: 0, limbalSoft: 0, fibres: 0, veins: 0, iris: "#8a6a4a", iris2: "#8a6a4a", sclera: "#f0f0f0", corner: "#f0f0f0", cornerPink: 0, scleraShade: 0,
-                   catch1: 0, catch2: 0, occlusion: 0, lidShade: 0, tearline: 0, irisDepth: 0.2, bulge: 1, ior: 1.336, irisBright: 1 };
+                   catch1: 0, catch2: 0, occlusion: 0, lidShade: 0, socket: 0, tearline: 0, irisDepth: 0.2, bulge: 1, ior: 1.336, irisBright: 1 };
     const on = await shot(0.6, { ...flat, real: true }, true), off = await shot(0.6, { ...flat, real: false }, true);
     const r = await page.evaluate(async ([on, off, pupil]) => {
       const b = window.__body, THREE = b.THREE, cam = b.camera, L = b.EYES.L, s = b.eyeShapeOf("L");

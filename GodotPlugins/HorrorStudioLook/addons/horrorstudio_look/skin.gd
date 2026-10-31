@@ -10,9 +10,29 @@
 ## shader's translucency map), and the export's own `studioSkin` numbers (the glb's material extras, read from the
 ## file when its path is given): smoothness, falloff, specular, the double lobe, translucency, the wrap as the SSS.
 ## Without them (the bake's plain body, the demo's spheres) the flat defaults stay.
+## **The detail layer** (docs/GODOT_LOOK.md §5d): on a Studio export (MHR's UVs) the pores, the furrows between them and
+## the lips' lines are drawn at their true size from the tiles in `textures/` (tools/skin_detail.py), placed by MHR's
+## region map, a pit darker and duller, what's too fine to see from afar turned into roughness, a faint peach fuzz;
+## `DETAIL_PRESETS` young, natural, adult and old, picked from the export's own skin (its age, pores and evenness in
+## the studioSkin record, its pores' amount and spacing riding on the preset: `detail_look`) or named
+## (`set_detail(m, "old")`, the settings' `detail_preset`, HSCharacterLook's).
 class_name HSSkin
 
 const HUMAN := "res://HumanShaders/"
+const DETAIL_TEX := "res://addons/horrorstudio_look/textures/"
+const MHR_UV_METRES := Vector2(0.72, 1.9)        # the metres one UV unit spans on MHR's head and hands, and on its body (tools/skin_detail.py)
+
+## the detail layer's looks: the pores' relief and size, the furrows' (the lids' crepe, age's fine lines), how much a
+## pit darkens and dulls, the lips' lines, the roughness the relief becomes from afar, the peach fuzz, the colour's
+## unevenness (melanin, blood), and how much of Godot's screen-space scattering the skin takes (it blurs the whole
+## colour: HumanShaders' strength of 1.3 to 3 within a metre of the eye read as wax and erased the pores; younger skin
+## a little more of it)
+const DETAIL_PRESETS := {
+	"young": {"pore_depth": 1.2, "pore_size": 0.85, "furrow_depth": 1.2, "detail_cavity": 0.5, "lip_lines": 0.8, "detail_rough": 0.05, "fuzz": 0.35, "tone": 0.7, "tone_red": 0.8, "sss_scale": 0.35},
+	"natural": {"pore_depth": 1.6, "pore_size": 1.0, "furrow_depth": 1.7, "detail_cavity": 0.6, "lip_lines": 1.0, "detail_rough": 0.07, "fuzz": 0.3, "tone": 0.9, "tone_red": 1.0, "sss_scale": 0.3},
+	"adult": {"pore_depth": 2.0, "pore_size": 1.15, "furrow_depth": 2.1, "detail_cavity": 0.7, "lip_lines": 1.15, "detail_rough": 0.09, "fuzz": 0.25, "tone": 1.1, "tone_red": 1.1, "sss_scale": 0.28},
+	"old": {"pore_depth": 2.3, "pore_size": 1.35, "furrow_depth": 2.8, "detail_cavity": 0.8, "lip_lines": 1.5, "detail_rough": 0.12, "fuzz": 0.15, "tone": 1.4, "tone_red": 1.2, "sss_scale": 0.25},
+}
 
 
 static func shader() -> Shader:
@@ -55,13 +75,63 @@ static func material(albedo: Texture2D = null, settings: Dictionary = {}, tone: 
 						m.set_shader_parameter("use_micro_detail", true)
 						m.set_shader_parameter("micro_detail_scale", 30.0)
 						break
+	for pair in [["texture_pores", "skin_pores.png"], ["texture_skin_micro", "skin_micro.png"], ["texture_regions", "mhr_skin_regions.png"], ["texture_tone", "skin_tone.png"]]:
+		var t = load(DETAIL_TEX + pair[1]) if ResourceLoader.exists(DETAIL_TEX + pair[1]) else null
+		m.set_shader_parameter(pair[0], t if t is Texture2D else (grey() if pair[0] == "texture_tone" else flat_normal()))   # missing, they change nothing: no tilt, open skin, the paint's own colour
 	set_maps(m, maps)
 	set_wet(m, settings)
 	return m
 
 
-## the export's maps and numbers onto a material: `normal` (glTF's convention), `orm` (G roughness, B thinness),
-## `skin` (the studioSkin record: on, smooth, fall, spec, double, trans, wrap)
+## the detail layer on a material: a preset's name (or numbers over "natural"), `amount` the whole layer, `mhr` the skin
+## is MHR's (the region map places the pores and the lips; else the same everywhere at the head's density). HumanShaders'
+## own micro tile steps back: it was made for a head that fills its UVs, and on MHR's it read as pores five times too big
+static func set_detail(m: ShaderMaterial, look = "natural", amount := 1.0, mhr := true) -> void:
+	var p: Dictionary = DETAIL_PRESETS["natural"].duplicate()
+	if look is String and DETAIL_PRESETS.has(look):
+		p = DETAIL_PRESETS[look].duplicate()
+	elif look is Dictionary:
+		p.merge(look, true)
+	for k in p:
+		m.set_shader_parameter(k, float(p[k]))
+	m.set_shader_parameter("detail", amount)
+	m.set_shader_parameter("use_regions", mhr and ResourceLoader.exists(DETAIL_TEX + "mhr_skin_regions.png"))
+	m.set_shader_parameter("uv_metres", MHR_UV_METRES)
+	m.set_shader_parameter("detail_metres", 0.01)
+	if amount > 0.0:
+		m.set_shader_parameter("use_micro_detail", false)
+		m.set_shader_parameter("micro_normal_strength", 0.0)
+
+
+## the detail layer an export's skin asks for: its preset (detail_preset) with the Studio's own sliders on it, the
+## pores' amount deepening or softening them (0.3, the Studio's default, as the preset is) and their spacing sizing
+## them (1.3 mm, its default, as the preset is); the Studio leaves its own pores out of the file for these
+static func detail_look(rec, preset := "") -> Dictionary:
+	var look: Dictionary = DETAIL_PRESETS.get(preset if preset != "" else detail_preset(rec), DETAIL_PRESETS["natural"]).duplicate()
+	if rec is Dictionary and rec.has("pores"):
+		look["pore_depth"] = float(look["pore_depth"]) * clamp(0.6 + 1.35 * float(rec["pores"]), 0.5, 1.8)
+		look["pore_size"] = float(look["pore_size"]) * clamp(float(rec.get("poreSize", 1.3)) / 1.3, 0.75, 1.6)
+	return look
+
+
+## the detail preset an export's skin asks for, from its studioSkin record's procedural skin (the Character Studio's
+## age, pores and evenness): seventy and over old, an adult's adult, a young even skin young, the rest natural
+static func detail_preset(rec) -> String:
+	if not (rec is Dictionary):
+		return "natural"
+	var age := float(rec.get("age", 0.0))
+	if age >= 0.55:
+		return "old"
+	if age >= 0.25:
+		return "adult"
+	if float(rec.get("pores", 0.3)) < 0.15 and float(rec.get("evenness", 0.2)) >= 0.5:
+		return "young"
+	return "natural"
+
+
+## the export's maps and numbers onto a material: `normal` (glTF's convention), `orm` (G roughness, B thinness), `ao`
+## (the occlusion: the same ORM, its red), `skin` (the studioSkin record: on, smooth, fall, spec, double, trans, wrap;
+## age, pores, evenness for the detail layer's look)
 static func set_maps(m: ShaderMaterial, maps: Dictionary) -> void:
 	if maps.get("normal") is Texture2D:
 		m.set_shader_parameter("texture_normal", maps["normal"])
@@ -74,6 +144,11 @@ static func set_maps(m: ShaderMaterial, maps: Dictionary) -> void:
 		m.set_shader_parameter("roughness", 1.4)                     # the map rules (the flat default scales a white map), lifted: the Studio's numbers (0.3 to 0.4 on a young face) read glossier under Godot's GGX than under its own light (1.25 till 2026-10-30)
 		m.set_shader_parameter("texture_translucency", maps["orm"])  # its blue: how thin the skin is
 		m.set_shader_parameter("translucency", true)
+	if maps.get("ao") is Texture2D:                                  # the Studio's occlusion (the ORM's red, the glb's occlusion texture): the creases round the eyes and nostrils, the ears
+		m.set_shader_parameter("ambient_occlusion_texture", maps["ao"])
+		m.set_shader_parameter("use_ambient_occlusion", true)
+		m.set_shader_parameter("ao_strength", 1.0)                   # the sky's light shut out where the skin can't see it
+		m.set_shader_parameter("ao_block_light", 0.3)                # and a little of the lamps' (their shadows do the rest)
 	var rec = maps.get("skin")
 	if rec is Dictionary and float(rec.get("on", 1)) > 0.5:
 		if rec.has("smooth"):
@@ -106,6 +181,7 @@ static func records(glb_path: String) -> Dictionary:
 
 static var _flat: ImageTexture = null
 static var _white: ImageTexture = null
+static var _grey: ImageTexture = null
 
 
 static func flat_normal() -> ImageTexture:
@@ -114,6 +190,14 @@ static func flat_normal() -> ImageTexture:
 		im.fill(Color(0.5, 0.5, 1.0))
 		_flat = ImageTexture.create_from_image(im)
 	return _flat
+
+
+static func grey() -> ImageTexture:
+	if _grey == null:
+		var im := Image.create(4, 4, false, Image.FORMAT_RGB8)
+		im.fill(Color(0.5, 0.5, 0.5))
+		_grey = ImageTexture.create_from_image(im)
+	return _grey
 
 
 static func white() -> ImageTexture:
@@ -146,7 +230,8 @@ static func wear(node: Node, settings: Dictionary = {}, glb_path: String = "") -
 			var names: String = (mi.name + " " + (mi.mesh.surface_get_name(s) if mi.mesh is ArrayMesh else "") + " " + (old.resource_name if old != null else "")).to_lower()
 			if not (names.contains("skin") or names.contains("body") or names.contains("head") or names.contains("face")):
 				continue
-			if names.contains("eye") or names.contains("lash") or names.contains("brow") or names.contains("hair") or names.contains("teeth") or names.contains("tongue"):
+			var studio_skin: bool = String(mi.name).to_lower().ends_with("_skin")   # a Studio export's <name>_skin is the skin whatever the name (a character called Hairo)
+			if not studio_skin and (names.contains("eye") or names.contains("lash") or names.contains("brow") or names.contains("hair") or names.contains("teeth") or names.contains("tongue")):
 				continue
 			var tex: Texture2D = null
 			var tone := Color(1, 1, 1)
@@ -158,6 +243,8 @@ static func wear(node: Node, settings: Dictionary = {}, glb_path: String = "") -
 					maps["normal"] = old.normal_texture
 				if old.roughness_texture != null:
 					maps["orm"] = old.roughness_texture
+				if old.ao_enabled and old.ao_texture != null:
+					maps["ao"] = old.ao_texture
 				var rec = recs.get(old.resource_name)
 				if rec == null:
 					for k in recs:
@@ -166,6 +253,9 @@ static func wear(node: Node, settings: Dictionary = {}, glb_path: String = "") -
 				if rec is Dictionary:
 					maps["skin"] = rec
 			var m := material(tex, settings, tone, maps)
+			if maps.has("skin") or maps.has("normal") or settings.has("detail_preset"):   # a Studio export: MHR's UVs, the detail layer at its size
+				var want = settings.get("detail_preset", "")
+				set_detail(m, want if want is Dictionary else detail_look(maps.get("skin"), str(want)), float(settings.get("detail", 1.0)))
 			mi.set_surface_override_material(s, m)
 			out.append(m)
 	return out

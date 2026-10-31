@@ -251,6 +251,121 @@ The user's answers, newest first. They override the plan, the research and the d
   style per reference, lamps, poles and wires, street things, eight fences, every surface a slot that takes a PBR set
   at its real size, and *Fill a street*: buildings shoulder to shoulder, lamps, wires and clutter in one click.
 
+## 2026-10-31, the night, the last (the user: the base mesh's eyes for everyone, the add-on removed, on `realism-enhancer-skin`)
+
+- **"I've confirmed the default 'eye stitch' process is just using Blender's default human model ... can you just
+  modify the base loaded mesh that we edit so it has those eyes from the start (I don't care about the old eyes as the
+  new ones are way better and the eyeballs sit way better)."** Yes: the graft is every character's eyes. The user
+  checked that the head in the add-on's file is Blender Studio's Human Base Meshes body (CC0, `GEO-body_female_realistic`), so
+  `Content/Studio/Bodies/MHR_eyes.bin` is committed; the Studio wears it with no switch and no Make button (MHR's cut
+  lids only if the file is missing); `eye_patch.py make` takes the bundle's .blend (`vendor/human_base_meshes/`,
+  git-ignored, or `--blend`). The shape keys' base preset is "Default".
+- **"Could we just update our model for eyebrows and eyelashes to be inspired by them ... and then scrap/remove the add-on
+  ones entirely as it's annoying to have to go to Blender to bake it ... I found many tutorials using their technique
+  for getting the curve ... enhance our eyebrows and eyelash system we already use and remove the add-on."** Done: the brows
+  and lashes by hand (`groom.js`) took the technique (Blender's own hair node groups: trims along the edges, clumps
+  toward guide hairs, noise, the curl's profile toward the tip, wide length randomness; docs/research/brows_lashes.md,
+  in our own words and numbers); the add-on's bake, its Studio panel, Start from the add-on's brows, its bake tool, its Studio loader, its notes and its
+  check are removed. The old transfer branch on the remote is left for
+  the user to delete (asked).
+
+- **"I think I get confused cus the UI is split so apart, I'd almost rather just have a tab for eyelashes/eyebrows
+  before hair."** Done: the Studio's **Brows & lashes** tab, between Layers and Hair: first the fine hairs (shaped on the
+  face: the editor's handles and brushes, the old "by hand"), then the clumped ones (sliders and styles only); the Face
+  tab keeps the look, the pictures, the fit and the mouth.
+
+## 2026-10-31, the night, later (the user: the grafted eyes on our faces, on `realism-enhancer-skin`)
+
+- **"Before you continue one thing you could maybe do is look how the eyes are modelled in the default .blend and make
+  ours match the upper face shape (but still let the face shape be modified ...), if that's even possible, then you can
+  just use the default .blend eyebrow as starter (which is placed correctly) and modify based off that, I don't mind
+  adding more vertices around the eyes."** The brows: Start from the add-on's brows (CHARACTER_STUDIO §2b), the handles on
+  the add-on's own outline. Then: **"is there any way we could use the eye shape and eyelid shape that the base mesh has in our
+  modifiable version ... in ours the eyelids look like thin skin bending over the eye whereas the base mesh's eyelids actually
+  look like meaty flesh that curves in, ideally we want that look for the eyes, eyelid shape and then make it modifiable
+  through some basic shape keys ... the eyes don't need to be massively adjustable (just more asian or caucasian etc and
+  size)."** Yes: **the grafted eyes** (CHARACTER_STUDIO §2c, `tools/eye_patch.py`, `eyegraft.js`): the base mesh's eye region grafted
+  onto MHR's face (its own loops, about 2,400 points an eye where MHR has about 550), riding MHR's triangles, its own
+  blink; in the Studio first, off by default (Skin, Eyes, the grafted eyes). The shape keys and the export next.
+- **The licence of the base mesh's head**: the add-on's pack is CC BY-SA 4.0, but its demo head looks like Blender Studio's Human Base
+  Meshes body (CC0: the same object names, `GEO-body_female_realistic` and its `.eye.L`/`.eye.R`). Until it's compared
+  with the bundle itself (www.blender.org is blocked in the cloud sessions; the user can allow it or download the
+  bundle), the graft stays on the machine: `Content/Studio/Bodies/MHR_eyes.bin` is git-ignored, made by
+  `python tools/eye_patch.py make`.
+- **"Can you make sure in the final versions we don't have that weird gray makeup stripe pattern thing on the closed
+  eyelids (should just blend in with the rest of the skin color but maybe make it possible to apply makeup (eye shadow)
+  onto that closed eyelid part"**: the shut lid reads the photo softly, near the photo's own skin tone, and the skin and
+  its makeup are worked out on the open lid laid flat, so eyeshadow covers the shut lid (CHARACTER_STUDIO §2c).
+
+## 2026-10-31, the night (the user: brows and lashes by hand, on `realism-enhancer-skin`)
+
+- **"The texture of the procedural eye lashes looks really good but the design you generated is very bad, they move up
+  too upwards, look at the reference photos of the unskinned face and then how they apply eyelashes and eyebrows, that's
+  the kind of look we are aiming for."** With four references: a brow close up, an eye at three-quarter, an eye from the
+  front (MetaHuman's), a MetaHuman head without its hair. Then: **"Could you make an easy eyebrow editor tool where I
+  manually can add and adjust the eyebrows and eyelashes inside an easy wrapper?"** Built (CHARACTER_STUDIO §2b): Face,
+  Brows & lashes by hand, Edit on the face (handles on the brows' edges and the lashes' tips, Mirror, brushes, a blink,
+  styles and sliders), the hairs at the add-on's thickness and look, the lashes forward and swept out (defaults tuned on the
+  references), saved with the character, carried by the export. The add-on's bake stays as an option.
+
+## 2026-10-31, later (the user: the eyes, the brows and lashes, on `realism-enhancer-skin`)
+
+- **"Can we get the eyes to be more like Unreal Engine's MetaHuman ... atm it looks too stylized/dolly and pops out too
+  much, I want to keep all the patterns for the iris etc we made. Can you analyze the eyebrows and eyelashes too ... our
+  eyelashes poke out too much and are probably too long."** Measured (docs/research/eyes.md §7). Then: **"it seems
+  like currently we can't get on par with MetaHuman's capabilities for eyes and eyebrows and eyelashes. So let's do a
+  hybrid approach where I will make a batch of variations of MetaHuman faces, and we run some kind of smart algorithm to
+  stretch the faces into our existing human modifiable models ... forget about the changes you may have made to eyes,
+  eyelashes, eyebrows so far. Keep the skin stuff you did for Godot though."** Then, **before committing to that:**
+  "look through git if there is anyone who has figured out how to do MetaHuman-like eyebrows and eyelashes
+  procedurally ... check if there are alt pathways." The hybrid face plan is **on hold**, the user's call.
+- **"I'd be happy to use a third-party procedural hair add-on and bake it onto the model before exporting to Godot if you can
+  figure out how to get it to work."** Built (since removed): the add-on's generators run headless in Blender's module on a
+  character's export, the lashes tidied, pinned to MHR's triangles, worn by the Character Studio (Face, **Bake with
+  the add-on**), carried by the export to the desk and Godot. **the add-on's pack is CC BY-SA 4.0:** its .blend stays out of
+  git (vendor/, the user's download; it came in on a branch of its own, the old transfer branch, still on the remote:
+  ask before deleting it); credit the add-on; hair it grows is shared under its terms.
+- **"Make sure the eyes don't clip through the eyelids ... make sure the eyes can close properly without clipping. I
+  think I might have told you to go back on the eye fixes you did, make sure that the eyes don't look like white
+  paint and follow Unreal's MetaHuman inspired coloring and wetness so the eyes look more natural in game."** The
+  eye's lighting work brought back (the socket's shade in the Studio and Godot, Godot's own `light()` for the cornea's
+  coat and catchlight; not the earlier lash styles or the "realistic" look); the blink put in the export and played in
+  Godot with the lids kept off the eyes all the way and met when shut; the whites darker and warm; the tear line's
+  glint in Godot (GODOT_LOOK §5f; EYELIDS).
+
+## 2026-10-31 (the user: the hair, after the skin, on `realism-enhancer-skin`)
+
+- **"Can you now work on the hair part. Making better hair that looks similar to Unreal's MetaHuman (if possible),
+  probably a shader/texture we need to bake when we do our current hair."** Built, for their review (GODOT_LOOK §5e):
+  the salon's bake carries the hair as a volume (each card vertex's shell normal and occlusion from the hairstyle in a
+  density grid with the head solid, the tangent along each strand, where across its card it is, each strand's numbers in
+  the occlusion slot, a `studioHair` record), the Character Studio's export keeps it and gives brows and lashes the same
+  numbers, and Godot's HSHair wears it from the file's records: soft dithered coverage under TAA, the roots fading in,
+  tapered card sides, two highlights with glints in the salon look's colours, light through from behind, a scatter, the
+  occlusion. Found and fixed on the way: the darkened scalp and the brows' fill showed white in Godot (the importer
+  drops an unlit material's vertex colours); a character whose name holds "hair" had the hair shader on its skin; the
+  emissive slot, tried first for the strand numbers, glowed in plain Godot. Kept on the same branch as the skin.
+
+## 2026-10-30, night (the user: the Studio's characters less like dolls, on `realism-enhancer-skin`)
+
+- **"Take our studio creations for director/godot and make them look less like dolls and more like Unreal's
+  MetaHumans; we have a plugin that's supposed to make the skin look more realistic but I'm not noticing a huge
+  effect; if I go really close to the model it does look more real but the pores look way too large and not enough
+  micro detail."** With their screenshot of a Studio character and a sheet of MetaHuman faces. Then, once they've
+  reviewed it: "a better hair texturer too for studio so baked hair looks more realistic like MetaHuman".
+- **"I am 100% ok with adding an extra step after studio where we take the model into Blender and add realistic
+  procedural skin (presets for old, young, normal etc), lips, etc and baking them along with data for rough maps etc
+  and then bringing that into Godot if that's the best workflow, but if there is an easier one feel free."** Claude's
+  call, for their review: **no Blender step.** The finest detail can't be baked on MHR's shared UVs at a size a game
+  carries (a face's texel is 0.35 mm in the export's normal map; a pore 0.15 to 0.35 mm, a furrow 0.02), so, as
+  MetaHuman's tiling micro normal does, it's drawn live in Godot at its true size: **the skin's detail layer**
+  (GODOT_LOOK §5d: pores, furrows, the lips' lines, the colour's unevenness, from tiles `tools/skin_detail.py` makes once,
+  placed by MHR's region map), with **presets young, natural, adult and old** picked from the Studio's own age and pores
+  (or named on `HSCharacterLook`); what is the character's own, **its occlusion**, goes into the Studio's existing
+  export bake. Found on the way and fixed: HumanShaders' micro tile lay five times too big on MHR's UVs (the user's "pores
+  way too large"), Godot's screen-space scattering at HumanShaders' strength blurred the whole face to wax, and the
+  eyes glowed (now the lids' shadow and a white at 0.85). The desk stays plain (DECISIONS 2026-10-30, night).
+
 ## 2026-10-30, evening (the user, after finding the sun's leak and the flicker's flashes)
 
 - **Unreal removed**: "I'm okay to merge this into main... before you do, remove all the remaining bloatware from

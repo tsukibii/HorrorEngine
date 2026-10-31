@@ -212,6 +212,89 @@ Next if wanted (PROPGEN.md §9): a life on a generated prop (a generated kettle 
 sockets are there), food tins, a flashlight, batteries, a bucket, a crate, a die, a book; a recipe page with a PBR
 picker.
 
+## 0. `realism-enhancer-skin` (2026-10-31, the night, the last): the grafted eyes for everyone, the add-on gone
+
+The user: make the base mesh's eyes the default ("I don't care about the old eyes"), upgrade our own brows and lashes
+with what the add-on's technique does, and remove the add-on. Done (DECISIONS 2026-10-31, the last; CHARACTER_STUDIO §2b, §2c):
+`Content/Studio/Bodies/MHR_eyes.bin` is committed and worn by every character (Blender Studio's Human Base Meshes'
+lids, CC0; `eye_patch.py make` from `vendor/human_base_meshes/`); the brows and lashes by hand gained trimmed edges,
+clumps, frizz, the curl at the lash tip, uneven lashes (`groom.js`, docs/research/brows_lashes.md); the add-on's
+bake tool, its Studio loader, its notes, its bake button, Start from the add-on's brows and its check are gone. Next: the user's look (a local
+STUDIO run on the GPU); the eyelid-line handles on the graft; the remote the old transfer branch (ask before deleting).
+
+## 0c. `realism-enhancer-skin` (2026-10-31, the night, later): the grafted eyes on our faces, in the Studio
+
+The user asked for the base mesh's eye and lid shape ("meaty flesh that curves in") on our editable faces, with a few shape keys
+(more Asian or Caucasian, size). Built so far (CHARACTER_STUDIO §2c): `tools/eye_patch.py` (make, preview, check:
+EYEPATCH) grafts the base mesh's eye region onto MHR's face; the Studio wears it (Skin, Eyes, the grafted eyes; `eyegraft.js`), open
+to shut. Also Start from the add-on's brows (§2b). The shape keys are in (size, crease monolid to double
+lid, inner fold, tilt, opening, depth; presets Default, East Asian, Caucasian). The export carries it (the graft in the skin with
+its blink's morph targets, baked; EYELIDS on `_graftedeyes`) and Godot shuts it. Next: the user's look; the eyelid-line
+handles on the graft; the head's licence (compare with Blender's Human Base Meshes). The head's licence: compare it with Blender's Human Base Meshes bundle when
+www.blender.org is reachable (DECISIONS).
+
+## 0b. `realism-enhancer-skin` (2026-10-31, the night): brows and lashes by hand, waiting for the user's try
+
+The user liked the add-on's lash texture but not its design ("they move up too upwards") and asked for "an easy eyebrow editor
+tool where I manually can add and adjust the eyebrows and eyelashes inside an easy wrapper". Built: Face, **Brows &
+lashes by hand** (CHARACTER_STUDIO §2b, `groom.js`, GROOM): Edit on the face, handles on the brows' edges and the lashes'
+tips, Mirror, Add hair / Thin out / Comb, a blink, styles and sliders, at the add-on's thickness; the lashes forward and swept
+out. Sheet: `docs/godot_sheets/2026-10-31_brows_lashes_by_hand.jpg`. Next, the user's try: what the handles, brushes and
+defaults need. Ideas: a brow-shape library (arched, straight, soft angled) as handle presets; per-hair brushes for
+strays; the lower lashes' own handles.
+
+## 0a. `realism-enhancer-skin` (2026-10-31, later): the add-on's brows and lashes, eyes that close, waiting for the user's review
+
+The user's asks (DECISIONS 2026-10-31, later): MetaHuman-like eyes, brows and lashes; then a third-party procedural hair add-on
+for the brows and lashes (its .blend at vendor/, git-ignored, CC BY-SA 4.0); then eyes that don't clip through the
+lids, open or shut, and whites that aren't paint, wet as MetaHuman's. Built: the add-on's bake tool (since removed) and
+the Studio's bake button for it; the export's blink (morph targets with in-betweens, the lids kept off the eyes, met when
+shut), `HSBlink` in Godot, the tear line, the whites (GODOT_LOOK §5f); EYELIDS and its check. Pictures:
+`Saved/Story/_look/godot_eyelids/blink.jpg`. Open: a lash clump at an inner corner and a fold at an outer corner in the
+shut picture; the brows placed by the add-on's own region (not our brow rows); a presets sheet; the eyes don't turn in Godot;
+the hybrid MetaHuman-face plan on hold; the old transfer branch still on the remote (ask before deleting). The STUDIO browser
+check wants a local GPU run (the socket shade and the export's blink and tear line are in its path).
+
+## 0b. `realism-enhancer-skin` (2026-10-30, night): the Studio's characters less like dolls, waiting for the user's review
+
+The user's ask (DECISIONS 2026-10-30, night): the Studio's characters in Godot looked like dolls beside MetaHumans;
+the plugin's skin did little; close up "the pores look way too large and not enough micro detail"; a Blender step
+offered. Built without one (GODOT_LOOK §5d): **the skin's detail layer** in HSSkin (pores, furrows, the lips' lines,
+the colour's unevenness at their true size from `textures/`, made by `tools/skin_detail.py`, placed by MHR's region
+map; presets young, natural, adult, old picked from the export's own age and pores, or `HSCharacterLook`'s Skin
+Detail), **the Studio's ambient occlusion** in its export (`albedo.js` `bakeOcclusion`, the ORM's red), **the
+scattering kept gentle** (`sss_scale`: HumanShaders' strength blurred the face to wax) and **the eyes' lid shadow**
+(`eye.gdshader` `occlusion`, `sclera_bright`). The sheets: `docs/godot_sheets/2026-10-30_skin_detail.jpg` (before and
+after at three distances, the eye) and `2026-10-30_skin_presets.jpg`. New checks: GDPORTRAIT
+(`tools/godot/portrait_check.py`), SKINDETAIL (`tools/skin_detail.py check`, in check_all).
+
+**For the user:** pull `realism-enhancer-skin`, re-export a character from the Character Studio (its occlusion and
+its record's age and pores come with the new export; an old export still gets the detail layer, without occlusion),
+export the game to Godot and look close; `python tools/godot/portrait_check.py --person <name>` pictures any
+character on the card. Tell us: the pores' size and strength, the presets, the eyes' shadow (`occlusion`), the skin's
+sheen (it's more matte than before), and whether the two black streaks over the face in their screenshot were salon
+locks (they're not the skin).
+
+**STUDIO in the cloud** (SwiftShader, about 50 minutes a run): two full runs stopped at steps this branch doesn't touch
+(the skin light's shadow edge measured after the whole flow, 10500 px against 1.2 × 11023, though that step passes on
+its own on this branch and on the original; then a 30 s click timeout at "the eye refracts", which the first run had
+passed); the export's skin maps assertion, the part this branch changes (the pores left out of the normal map), checked
+with the test's own code on an export with painted nails: relief 39 (8 wanted), roughness 0.32, 4112 thin pixels, the
+occlusion map on. A local run on the card (`GPU=1`, docs/RUN_LOCALLY.md) is the full answer.
+
+**Then the hair** (2026-10-31, DECISIONS; GODOT_LOOK §5e): the salon's bake as a volume (shell normals and occlusion
+from `hairvolume.js`, strand tangents, the second UV across the card and its occlusion, each strand's numbers in the
+occlusion slot, `studioHair`), kept by the Studio's export (brows and lashes named, with their own numbers), worn by
+HSHair from the file's records (dithered soft coverage under TAA, tapered card sides, the roots fading in, two
+highlights with glints, light through from behind, a scatter); the white scalp cap and the brows' fill fixed; the sheet
+`docs/godot_sheets/2026-10-31_hair.jpg`. New: HAIRVOLUME, GDPORTRAIT's hair shots and measures. **For the user:**
+re-bake each character's hair in the salon (Bake), re-export it from the Studio, and look at it in Godot; tell us the
+softness (`density`, `side_fade`), the highlights (`spec_gain`), the light through from behind (`transmission`): HSHair's
+`BAKED` holds them. Open: the salon's live view still lights each card by its face; flyaways; a long cut's fan of
+cards on the shoulders is the hairstyle's own. Open on
+the skin: the eye's shadow fitted to each opening (the skin's `extras.openings` is in the file), wrinkle maps that
+deepen with the 72 shapes, the clothes' fabric detail the same way, the desk (plain by decision).
+
 ## 0a. The cloud session after (2026-10-30, small hours): §0's four pieces built, and a stand-in bug from the user
 
 All four of §0 are in, each measured where the cloud could (GDTESTROOM, GDEXPORT, GDPLAY, DESK, LOOKPLUGIN):

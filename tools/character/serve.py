@@ -54,8 +54,6 @@ SALON_FILES = {"salon.json", "salon_bake.json", "salon.glb", "salon_base.glb"}  
 HAIR_FILES = SALON_FILES
 REFS = HAIR / "References"                                       # the salon's locked references (tools/gshair.py reference)
 REF_RUNS = {}
-
-
 def ref_status(name):
     d = REFS / name; p = REF_RUNS.get(name)
     running = p is not None and p.poll() is None

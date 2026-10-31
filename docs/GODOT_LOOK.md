@@ -499,8 +499,218 @@ the lit crown band brighter than the dull one by 5% (24% measured), the stepped 
 bits a channel) under half the lit one's (265 against 1013), the dithered picture's grain there (the mean step between
 neighbouring pixels) over the stepped one's by 1.3 (0.019 against 0.009; the dither's own colours under AgX and TAA
 put the retro count at 419).
-Not yet: a hashed alpha under TAA for softer edges (the plain scissor keeps the headless pictures measurable), the
-salon's inner colour and clump shades (the atlas's G and B channels are baked into the export's albedo already).
+Not yet: the salon's inner colour and clump shades (the atlas's G and B channels are baked into the export's albedo
+already). The dithered coverage under TAA came with the salon's bake (§5e); a file without it keeps the soft scissor.
+
+## 5d. Skin that isn't a doll's: the detail at its true size (`textures/`, `HSSkin.set_detail`), DECISIONS 2026-10-30, night
+
+The user's ask (their screenshot of a Studio character beside a sheet of MetaHuman faces): "make them look less like
+dolls and more like Unreal's MetaHumans; the plugin's skin isn't a huge effect; really close up it looks more real but
+the pores look way too large and not enough micro detail". They offered a Blender step after the Studio (procedural
+skin with presets, baked) if that were the best way. **It isn't needed:** the finest detail can't be baked on MHR's
+shared UVs at any size a game carries (a face's texel is 0.35 mm in the export's 2048 normal map, 0.175 in its 4096
+paint; a pore's opening is 0.15 to 0.35 mm, the furrows between them 0.02 wide), so like MetaHuman's tiling micro
+normal it's drawn live at its size, and what is the character's own (its occlusion) goes in the Studio's existing bake.
+Nothing to run by hand: the Studio's Export and Godot do it.
+
+**What made the doll** (measured on a fresh export, `tools/godot/portrait_check.py`'s "before" row, the sheet
+`docs/godot_sheets/2026-10-30_skin_detail.jpg`):
+
+1. **HumanShaders' micro tile at five times its size.** `micro_detail_scale` 30 was made for a head that fills its
+   UVs; MHR's head spans 0.72 m of skin a UV unit (the body 1.9), so its 512 px tile lay 2.4 cm a repeat on the face
+   and 5.7 cm on the shoulders: the coarse orange peel the user saw as "pores way too large".
+2. **Godot's screen-space scattering blurring the whole colour.** HumanShaders sets `SSS_STRENGTH` to (strength × 2 +
+   thinness × 2) × a dither of 0 to 3, about 1.3 to 3 within a metre of the eye; Godot blurs the finished colour (the
+   paint and any detail with it), so the face read as wax and every pore went (the sheet's `sss` pictures: off, the
+   game's Low, High).
+3. **No colour unevenness, no occlusion.** The Studio's default look (soft cinematic: pores 0.04, evenness 0.7) bakes an
+   even paint, and the export's ORM had no occlusion (its red was 1).
+4. **Eyes that glow.** A painted white (sRGB 234) lit as a wet ball, with nothing of the lids' shadow on it.
+
+**The detail layer** (`skin_wet.gdshader`'s `skin_detail` group, marked HS; `HSSkin.set_detail`; on by itself on a
+Studio export, the bake's plain bodies and the demo's spheres keep it off):
+
+- **Three tiles made once by `tools/skin_detail.py`** (seeded numpy; SKINDETAIL checks them), lossless with their mips
+  (`.import` beside each: a normal map's RG compression would drop the cavity): `skin_pores.png` 10 mm of skin, about
+  130 openings a cm², 0.15 mm across at the median and up to 0.4, each a pit in a shallow funnel; `skin_micro.png`
+  5 mm, the furrows' network (cells 0.55 mm, finer ones 0.23 mm, wandering, fading in and out, a cushion in each cell:
+  the pebbled look that survives at a few pixels a cell); both RG the normal (OpenGL's) and B the cavity;
+  `skin_tone.png` 40 mm of the colour's unevenness (melanin's mottle and faint specks, the blood's patches, a grain).
+- **Laid at their metres, twice:** each tile again turned 37° and 1.37 times larger, so the cheek gets 250 to 300
+  pores a cm² (the reference's 310: docs/research/skin_v2.md §1) and nothing repeats; the scale from MHR's two
+  densities (`uv_metres` 0.72 and 1.9), blended where the head's islands meet the body's (a scale changing across the
+  skin would squeeze the pattern); a mip sharper than the pixel (the relief's glints survive; TAA settles them).
+- **Placed by MHR's region map** (`mhr_skin_regions.png`, from MediaPipe's points on MHR:
+  `Content/Studio/Bodies/MHR_landmarks.json`): R the pores (nose 1, the cheeks beside it 0.9, chin and forehead 0.75,
+  the rest of the face 0.55, the body 0.3, the lids 0.1, the lips none), G the furrows (the lids' crepe most, the nose
+  least), B the lips (their own lines: grooves a millimetre apart, wandering), A which density.
+- **The normal from the UVs' screen derivatives** (no tangents: Godot's binormal sign on an imported glb didn't matter),
+  full in the highlight, soft in the diffuse (HumanShaders' per-channel normals take 0.15, 0.4, 0.55 of it: the red
+  travels furthest under the skin); a pit or a furrow darker (`detail_cavity`) and duller (its specular and a rougher
+  floor); what's too fine to see once far turned into roughness (`detail_rough`), so a medium shot gets no pattern
+  (GDPORTRAIT: the player's shot's grain 0.0034 against 0.0033 without; the cheek close up 0.0037 against 0.0017).
+- **The colour's unevenness** (`tone`, `tone_red`): melanin darker and browner, the blood redder or paler, a grain;
+  its mean the paint's own (the lit face 0.97 to 0.99 of the plain one).
+- **A faint peach fuzz** (`fuzz`): a soft rim where the skin turns away, more from behind.
+- **Presets** (`HSSkin.DETAIL_PRESETS`, the user's "old, young, normal"): `young`, `natural`, `adult`, `old`, each
+  the pores' depth and size, the furrows', the cavity, the lips' lines, the roughness from afar, the fuzz, the tone,
+  the scattering; picked from the export's own procedural skin (its `studioSkin` record now carries the Studio's
+  `age`, `pores`, `poreSize`, `evenness`, `wrinkles`: seventy and over old, an adult's adult, a young even skin young,
+  else natural) or named: `HSCharacterLook`'s **Skin Detail** (auto, the four, off) and **Detail Amount**,
+  `set_detail(m, "old")`, the settings' `detail_preset`. **The Studio's own sliders ride on it** (`detail_look`): its
+  Pores deepen or soften them (0.3, its default, as the preset; 0.04, the soft cinematic look's, two thirds), its Pore
+  spacing sizes them (1.3 mm as the preset); and the Studio leaves its own pores out of the file's maps (a 0.35 mm
+  texel only blurred them into the bumps the user saw as too big): they're Godot's now. The sheet (the presets as a
+  character at the Studio's default pores gets them): `docs/godot_sheets/2026-10-30_skin_presets.jpg`.
+- **The scattering kept gentle:** `sss_scale` (0.35 young to 0.25 old) scales HumanShaders' strength; the light still
+  bleeds at a shadow's edge, the pores stay.
+
+**The occlusion** (the Studio, `albedo.js` `bakeOcclusion`): depth maps of the body from 64 directions over the sphere
+(an orthographic view of a sphere round it, one atlas of tiles), and again for the head in a sphere of its own at 512 px
+a tile (0.65 mm a texel: the nostrils, the eyes' corners, the ears); every skin texel drawn flat at its UV and tested
+against each map it faces (a cosine's weight; an occluder nearer than 9 cm counts fully, past 25 cm not at all, so the
+far arm doesn't black the hip out), smoothed over a millimetre inside each island. It's the export's ORM red (and the
+glb's occlusionTexture: the desk's three.js shades its ambient with it too); HSSkin wears it on the ambient light, a
+third on the lamps' (`ao_block_light` 0.3: their shadows do the rest) and on the specular. An export from before this
+has none, and nothing changes.
+
+**The eyes** (`eye.gdshader`, HSEye): the lids' shadow as a falloff on the eyeball (`occlusion` 0.85: darker toward the
+opening's edge, most under the upper lid; `opening` its half-width and height in eye units, 0.8 and 0.34; on the eye's
+own frame, so a glance moves it a little), the cornea's reflections shut out there too, and the white's paint at 0.85
+(`sclera_bright`). Found on the way: the eye layout's +y runs **down** the eye (a debug grid on an export).
+
+**The check:** `python tools/godot/portrait_check.py [--person NAME]` (GDPORTRAIT): the export as the game wears it,
+lit like a character reel (a big soft key from the side and above, a weak fill, a cool rim, a muted teal ground) at a
+medium close-up, a close-up, an extreme close-up of the cheek (about 9 cm across) and the player's own medium shot
+under a warm lamp, again with the layer off, measured (the cheek's grain over 1.25 times, the player's shot under 1.6
+times, the brightness within 0.85 to 1.12) and sheeted (`Saved/Story/_look/godot_portrait/sheet.jpg`); `--plugin DIR`
+pictures an older plugin for a before row, `--preset`, `--quick ecu,cu` for tuning, `--sss N` the scattering's quality.
+GDPEOPLE still measures the eye and the colours.
+
+**Not yet:** the eye's shadow fitted to each character's own opening (the skin's `extras.openings` outline is in the
+file); wrinkle maps that deepen with the face's 72 shapes (MetaHuman's animated normals); the desk (it stays plain,
+DECISIONS 2026-10-30, night); the clothes' fabric detail the same way.
+
+## 5e. Hair MetaHuman's way: what the salon's bake carries and how Godot wears it (DECISIONS 2026-10-31)
+
+The user's ask, after the skin: "making better hair that looks similar to Unreal's MetaHuman (if possible), probably a
+shader/texture we need to bake when we do our current hair". What the hair looked like in Godot (the sheet
+`docs/godot_sheets/2026-10-31_hair.jpg`, top row): near-black planks with hard card edges, stripes card to card (each
+card lit by its own flat face), a white cap at the parting and the hairline, a black mass from behind, no strand detail
+close up. docs/research/hair_cards_unreal.md (2026-10-24) had the recipe, for Unreal; it's built for Godot:
+
+**The salon's bake writes** (`tools/character/salon.js` `buildBake`, `finishCards`; `hairvolume.js`):
+
+- **Shell normals** (the biggest gain): every card vertex of the hairstyle splatted into a density grid (8 mm cells) with
+  the head and body solid (the salon's collider), blurred over 12 mm; each vertex's normal becomes the volume's outward
+  direction, 80% over its card's own face, so the cards shade as one soft mass, no stripes, both faces alike.
+- **The tangent along each strand** (glTF's TANGENT, root to tip): the highlights run along the hair without guessing.
+- **The second UV** (TEXCOORD_1): x across the card (its two edges 0 and 1, for the sides to taper), y the occlusion
+  (twelve rays over the hemisphere round the shell normal marched 6 cm through the density: the inner layers, the roots
+  and the underside darker; its most open tenth 1, the layers deep under the outside a quarter darker still).
+- **Each strand's numbers** (`strandsTexture`, `hairshader.js`): the atlas's G (each strand's random number) and B (its
+  clump's) in the material's **occlusion slot**, R a faint shade per strand (0.8 to 1): a plain viewer only darkens some
+  strands' ambient a little. (The emissive slot was tried first: Godot's importer lights an emissive texture although
+  glTF's emissive colour is black by default, and the hair glowed in rainbow colours wherever HSHair wasn't on.)
+- **The record**: `studioHair` in the material's extras (what each slot and attribute holds) beside the salon's `look`.
+- **Each card wound to face its shell normal** (`hairvolume.js` `wind`): a double-sided material turns a back face's
+  normal round (three.js, Godot's StandardMaterial3D), and the cards wound into the hair lay dark under a plain viewer
+  while the rest caught the room as a grey sheen (the Studio's view, until the fix; HSHair lights both faces by the
+  vertex normal and never showed it). The plain material's roughness 0.55 (it was 0.42).
+- **The darkened scalp's colour in its material** (its vertices white, carrying only its see-through), so a reader that
+  drops an unlit material's vertex colours draws a dark cap, never a white one.
+- The Character Studio's export keeps all of it (`exportRig`: a swinging lock's normals and tangents turned with it, no
+  longer recomputed) and gives the **brows and lashes** names (`brows`, `lashes`, `lash_line`, `brow_fill`), their own
+  strand numbers and records (their normals the cards' own: no volume for hairs lying on the skin).
+
+**HSHair wears it** (`hair.gd` `records`, `set_bake`; `hair.gdshader`): `HSHair.wear(node, look, glb_path)` reads each hair
+material's record from the file (the runtime's stand-ins, a scene's bodies, HSCharacterLook and the portrait pass the
+path) and, where the bake is a volume, turns on `BAKED`: the **coverage dithered** pixel by pixel and frame by frame
+(a per-pixel scissor threshold from interleaved gradient noise, the TAA averaging it into soft, see-through strands;
+thickened 1.15), the **roots fading in** over 6% of the strand, the **card's own face** (from the screen derivatives, not
+the shell) fading edge-on, the **card's sides tapering** over 45% of each half (a lock, not a plank), **two highlights**
+shifted by each strand's own number with **glints** on some strands, the salon look's own highlight colours, glosses and
+shifts, **light through the outer strands from behind** in the hair's colour squared, a soft **scatter** of the hair's
+colour, the diffuse partly by the strand's angle to the light (Kajiya's), the **occlusion** in full on the diffuse, the
+ambient and the highlights, the highlights 2.5 times the flat card's (`spec_gain`, tuned on the portrait: 4 washed the
+colour out). Brows and lashes take the strand numbers and the look but keep the soft scissor (a lash a pixel wide
+dithers away). The **darkened scalp and the brows' fill** get a material of their own (`scalp_material`: their colour by
+vertex over the file's own colour, faintly lit): Godot's importer had left them white. A glb without the record (an
+older export, a model from elsewhere) keeps §5c's look.
+
+**Found on the way**: the plugin matched meshes by name, and a character whose name holds "hair" (the test's
+`_hairbefore`) had the hair shader on its skin and eyes; now a Studio export's `<name>_skin` and `<name>_eye_*` are never
+hair, and HSSkin takes `<name>_skin` whatever the name.
+
+**The checks**: GDPORTRAIT's `--shots hair,hairecu` (the hair from behind and to one side; its strands close over the
+ear) and its hair measures (the bake worn when the file carries one; the scalp in its own colour; the pores' close-up
+hides the hair); HAIRVOLUME (`node tools/character/hairvolume_check.mjs`: a made-up head under two layers, the shell
+normals out of the mass, the inner layer darker); GDPEOPLE hides the hair (it measures the skin's colour and the eyes).
+
+**Not yet**: the salon's own live view still lights each card by its face (the bake's preview shows the shell); hair
+that pierces the outer layer after a fall still shows as a card; flyaway strands at the silhouette; the shoulder's fan
+of cards on a long cut is the hairstyle's own (it lies flat after the fall).
+
+## 5f. Eyes that close, behind their lids, wet and not white paint (DECISIONS 2026-10-31, later)
+
+The user's ask: "make sure the eyes don't clip through the eyelids ... make sure the eyes can close properly without
+clipping ... make sure the eyes don't look like white paint and follow Unreal's MetaHuman inspired coloring and wetness
+so the eyes look more natural in game". What there was: a Studio export **couldn't blink in Godot at all** (no morph
+targets: bakeplay.gd's faces waited on "a body with morph targets"); the export rested the lids on the eyeballs at rest
+(`lidsRest`), so open the file was clean (measured from five sides: nothing of the eye in front of a lid); the whites
+rendered 1.3 to 1.8 times as bright as the skin under them, flat and neutral. The sheet, before and after (open, half
+shut, shut, on `_skintest` with the add-on's brows and lashes): `docs/godot_sheets/2026-10-31_eyes.jpg`.
+
+**The blink in the file** (`tools/character/index.html`: `blinkShapes`, `blinkTargets`, `meetLids`, `keepPoints`,
+`sparseTargets`): MHR's `eyesClosed_L` and `eyesClosed_R` as morph targets by MHR's names on the skin, the lashes, the
+lash line, the brows and the tear line, with their normals on the skin (the face's own surface shut, the lift left
+out), made from MHR's points so the cut skin's corners follow them by their weights (moved one by one, the skin tore at
+the cut's T-junctions):
+
+- **The lids kept off the eyeball** in every state, as the desk keeps them (`tools/shared/face.js`): no point deeper into
+  the eye than it rests (the white's sphere and the cornea's dome), a lid outside pushed out to the surface and 0.4 mm,
+  then each triangle's middle raised where it still dips (a flat triangle over the cornea's bulge dipped 0.2 mm); a lash
+  card moves with its root.
+- **The lids meet**: MHR's shut lids leave 15 to 20% of the opening (the Studio shrinks its cut to nothing as they meet;
+  the file's opening is cut out of the skin, and the eye showed through a slit), so over the blink's last quarter the
+  cut's edge is taken to where the lids meet (along the lid, 35% of the way from the lower edge to the upper), by moving
+  the points of the edge corners' triangles.
+- **In-betweens**: a morph target moves each point on a straight line, and a lid's way over the round eye and its
+  cornea is a curve (straight, it ran up to 0.7 mm into the cornea 60 to 90% shut). The way is kept at eight more
+  weights (an eighth apart and a sixteenth before the end), each its own target (`eyesClosed_L_in1250` ...
+  `_in9375`, its weight in ten-thousandths: what the lid lacks there over the straight line), set by its hat.
+- **Sparse**: the blink's 36 targets move the corners round the eyes; written whole each was 1.6 MB, sparse (glTF's
+  accessor without a buffer view, the moved points alone, `sparseTargets`) the file grows about a tenth.
+
+**Godot** (`blink.gd`, `HSBlink`; `eye.gd`): `HSEye.wear` adds a blinker to a character whose export blinks. It sets the
+blink and its in-betweens on every mesh that has them each frame: the larger of what's asked (`hold`, a scene's face:
+bakeplay.gd hands it the bake's `eyesClosed` weights) and its own idle blink (every 2 to 6 s; shut in 70 ms, held 40,
+open in 130; now and then twice). A picture turns `idle` off (`demo/portrait.gd --blink=W` holds it).
+
+**The whites**: `sclera_bright` 0.58 (it was 0.85), `sclera_warm` 0.35 (a warm, slightly yellowed white, pinker toward
+the corners: MetaHuman's sclera is never a neutral white), the lids' shadow at full (`occlusion` 1). Measured on the eyes'
+close-up under the portrait grid's light: the white over the skin under the eye 0.83 to 0.96 (it was 1.3 to 1.8; the
+MetaHuman references' 0.3 to 0.5 come with heavier lids over the eye). The socket's shade and the cornea's own coat and
+catchlight (the eye's `light()`) are §5d's.
+
+**The tear line** (`tear.gdshader`): the Studio's wet strip along each lower lid, in the file now (`tearline_L`, `_R`,
+its fade in the vertices' colour, `studioTear` its strength; the file's material wholly see-through, as glTF has no adding), drawn added over what's behind it, black itself: the
+lights' and the room's glint along the lid (MetaHuman's lacrimal fluid). At the Studio's strength it read as a white
+line in Godot's light (and at 0.45 of it): `gain` 0.2, roughness 0.2.
+
+**What lies on the lids comes forward with them** (`liftWith`): the export brings the lids forward onto the eyeballs (up
+to 3.9 mm) and the lashes, the lash line, the tear line and the brows stayed on the Studio's lids behind them; now each
+point is lifted by the MHR point it rides (a lash card by its root's). (the add-on's strands, since removed, were moved back off
+the lift before they were pinned.)
+
+**EYELIDS** (`tools/godot/eyelids_check.py`): the file's skin and eyeballs drawn as depth from the front and four sides at
+every twentieth of the blink, as Godot puts the targets together: nothing of the eye in front of a lid (at most
+0.005 mm², 0.01 mm deep, on `_skintest`), open the eyes show, shut nothing of them from the front; then in Godot with the
+eyeballs a flat green: open thousands of green pixels, held shut none; `blink.jpg` open, half and shut. A file with the grafted eyes (its skin's extras `eyeGraft`, CHARACTER_STUDIO §2c) is measured with its lining and its lids' backs on the eye left out (they face the eyeball and lie in it), a 2.5 mm reach and the lids' touch within 0.1 mm.
+
+**Not yet**: the eyes don't turn in Godot (a glance, look-at); the Studio export carries only the blink of MHR's 72
+shapes (bakeplay.gd sets the others on a body that has them); the lid has no thickness of its own (MetaHuman's waterline);
+in the shut picture a lash clump at an inner corner and a fold at an outer corner want a look.
 
 ## 5d. Streets from the Blender bake (`street.gdshader`, `HSStreet`)
 
@@ -551,7 +761,10 @@ shader, the paint and decals shadowless, a picture through the street's shot.
   reference lights and beside Godot's lit, flat and eye pictures, and measures the face's skin colour as ratios in
   both: for `lol`, red over green 1.27 in the Studio and 1.23 in Godot, blue over green 0.85 and 0.86); ~~the skin's
   own light (studioSkin's numbers) onto HSSkin's sliders~~ (2026-10-30, §5, with the export's normal and ORM maps);
-  still open: the eye's colour measured close in both, and the clothes' maps (albedo only so far).
+  ~~skin that reads as a doll's: pores five times too big, wax from the scattering, no occlusion~~ (2026-10-30, night:
+  §5d, the detail layer at its true size, the Studio's occlusion, the eyes' lid shadow); still open: the eye's colour
+  measured close in both, the eye's shadow fitted to each opening, and the clothes' maps (albedo only so far);
+  ~~hair as planks with a white cap~~ (2026-10-31, §5e: the salon's bake as a volume, worn MetaHuman's way).
 - ~~Wet walls under a leak~~ (§2b, 2026-10-30); ~~a mirror seen in a mirror~~ (§5b, 2026-10-30).
 - Seen by the user (2026-10-29): a square patch of light under a distant counter that goes when you come close.
   Most likely a VoxelGI cell at its coarse distance (the per-room probes meet at the counter), else the SSIL at a
