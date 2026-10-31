@@ -18,6 +18,10 @@ lashes Straight, Clumped, Fox, Manga, Volume).
   and the exports that carry them in the user's own projects; a game that ships them ships them under CC BY-SA's terms
   for that part (credit, the licence named). Ask before putting them anywhere shared.
 
+- **Its demo head** (`GEO-body_female_realistic`, with `.eye.L` and `.eye.R`) looks like Blender Studio's Human Base
+  Meshes body (CC0, the same object names); TAU's eyes on our faces (CHARACTER_STUDIO §2c, `tools/eye_patch.py`) come
+  from it, and stay on the machine until that's checked against the bundle itself.
+
 ## 2. The way through
 
 `python tools/tau_hair.py make --person NAME [--brows Natural] [--lashes Straight] [--preview]` (the Studio's **Bake with

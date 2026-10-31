@@ -115,3 +115,6 @@ testroom_fail.png
 exprtest_fail.png
 vendor/garmentcode/
 vendor/tau/
+
+# what tools/eye_patch.py makes from TAU's head (CC BY-SA until its CC0 origin is checked: docs/TAU_HAIR.md)
+Content/Studio/Bodies/MHR_eyes.bin

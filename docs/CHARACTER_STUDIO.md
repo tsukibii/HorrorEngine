@@ -103,6 +103,44 @@ can add and adjust the eyebrows and eyelashes inside an easy wrapper?" Built: **
 The sheet: `docs/godot_sheets/2026-10-31_brows_lashes_by_hand.jpg` (the editor, then the result in Godot open, at
 three-quarter and shut).
 
+## 2c. TAU's eyes (DECISIONS 2026-10-31, the night, later)
+
+The user: "in ours the eyelids look like thin skin bending over the eye whereas TAU the eyelids actually look like meaty
+flesh that curves in, ideally we want TAU's look for the eyes, eyelid shape and then make it modifiable through some
+basic shape keys". Why ours read thin: MHR's eye is a closed shell of skin cut open along the lid line, so the lid ends
+in an edge with no thickness (the export lays it onto the eyeball, a sheet over a ball). TAU's demo head is one closed
+skin that wraps round the eyeball like a socket: the lids are about 2 mm thick, their edge is rounded and rolls in to
+touch the eye, the skin goes on just inside the eyeball behind them, the upper lid bulges over the eyeball up to a
+crease, the lower lid has a soft roll. Measured (`tools/eye_patch.py`): TAU's eyeball 13.8 mm; its lids 1 to 3 mm over
+it; within 15 mm of the eye's centre TAU has 4,391 points at its second multires level where MHR has 268.
+
+- **The graft** (`python tools/eye_patch.py make`, inside Blender's module): TAU's head lined up on MHR's base face (a
+  similarity fitted over the upper face round the eyes, 0.46 mm off it at the median); the left eye's region taken as
+  TAU's own loops (80 points where the skin meets the eyeball, then 19 loops out over the lids and 5 in over the lining);
+  its outer loops eased onto MHR's skin; MHR's triangles inside it hidden and the gap stitched (59 of MHR's points round
+  the hole are the graft's too: no seam); the right eye the left mirrored. Each point keeps the MHR triangle nearest it
+  (not MHR's strip over the eye) and moves as its points do, so the sliders, the sculpt, a photo's fit and the
+  expressions carry it. Its UVs: TAU's lid laid on MHR's lid between the opening and the edge, so a photo skin or paint
+  shows the photo's lid on it. `Content/Studio/Bodies/MHR_eyes.bin` (git-ignored until the head's licence is checked:
+  DECISIONS).
+- **In the Studio** (`eyegraft.js`; Skin, Eyes, **TAU's eyes (thick lids)**, off by default, saved with the character):
+  drawn on the skin's own material, the wet membrane (the lining, where the lid meets the eye, its edge behind the lash
+  line) pinker and glossier (skinshader.js); the eyeball TAU's size, following the skin round the eye (loops 15 and out)
+  and growing with it; the lid's edge and the lining seated back on the eyeball as they rest on it; drawn behind real
+  lids (no stencil, no cut); the lid shadow, the tear line, the lashes and the liner take its opening and its lid edges
+  (`outline32`, `rim`).
+- **Its blink**: each lid point turned about the eyeball's centre on the head's x axis by its share of the angle between
+  the lids where it is, measured on the face as it is (the upper lid 85%, the lower 15%; the lid's edge and the lining
+  whole, fading out by the 13th loop), so the lids slide over the eyeball and meet; never into the eyeball or the
+  cornea's bulge (the lid rides over it shut, as a real lid shows the cornea's bump). MHR's own eyesClosed is left out
+  while it's on.
+- **EYEPATCH** (`python tools/eye_patch.py check`, in check_all; says so and passes when the graft isn't made here): the
+  seam (MHR's own points round the hole, the edge on MHR's skin), the right eye the left mirrored, and on MHR's base and
+  every character's body found: nothing of a lid inside the eyeball open or shut, shut the lids within 0.6 mm, the
+  lid's edge on the eyeball. `preview` draws it as clay (open, shut, and on a character: `Saved/Story/_look/eyes/`).
+- **Not yet**: the shape keys (size, crease from monolid to double lid, the inner fold, tilt, opening, depth), the
+  export and Godot (an export now still carries MHR's eyes), the eyelid-line handles on the graft.
+
 ## 3. Each stage against the rule (as of this branch)
 
 | Stage | Sources kept | Bakes | Gaps |

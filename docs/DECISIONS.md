@@ -2,6 +2,25 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-31, the night, later (the user: TAU's eyes on our faces, on `realism-enhancer-skin`)
+
+- **"Before you continue one thing you could maybe do is look how the eyes are modelled in the default TAU blend and make
+  ours match the upper face shape (but still let the face shape be modified ...), if that's even possible, then you can
+  just use the default .blend eyebrow as starter (which is placed correctly) and modify based off that, I don't mind
+  adding more vertices around the eyes."** The brows: Start from TAU's brows (CHARACTER_STUDIO §2b), the handles on
+  TAU's own outline. Then: **"is there any way we could use the eye shape and eyelid shape that TAU has in our
+  modifiable version ... in ours the eyelids look like thin skin bending over the eye whereas TAU the eyelids actually
+  look like meaty flesh that curves in, ideally we want TAU's look for the eyes, eyelid shape and then make it modifiable
+  through some basic shape keys ... the eyes don't need to be massively adjustable (just more asian or caucasian etc and
+  size)."** Yes: **TAU's eyes** (CHARACTER_STUDIO §2c, `tools/eye_patch.py`, `eyegraft.js`): TAU's eye region grafted
+  onto MHR's face (its own loops, about 2,400 points an eye where MHR has about 550), riding MHR's triangles, its own
+  blink; in the Studio first, off by default (Skin, Eyes, TAU's eyes). The shape keys and the export next.
+- **The licence of TAU's head**: TAU's pack is CC BY-SA 4.0, but its demo head looks like Blender Studio's Human Base
+  Meshes body (CC0: the same object names, `GEO-body_female_realistic` and its `.eye.L`/`.eye.R`). Until it's compared
+  with the bundle itself (www.blender.org is blocked in the cloud sessions; the user can allow it or download the
+  bundle), the graft stays on the machine: `Content/Studio/Bodies/MHR_eyes.bin` is git-ignored, made by
+  `python tools/eye_patch.py make`.
+
 ## 2026-10-31, the night (the user: brows and lashes by hand, on `realism-enhancer-skin`)
 
 - **"The texture of the procedural eye lashes looks really good but the design you generated is very bad, they move up

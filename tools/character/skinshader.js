@@ -412,9 +412,9 @@ export function procedural(material) {
   for (const k of ["BL", "BR"]) u["uLow" + k] = { value: Array.from({ length: 9 }, () => new THREE.Vector4()) };
   material.onBeforeCompile = sh => {
     Object.assign(sh.uniforms, u);
-    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nattribute vec2 skinUv; attribute float selW; attribute vec4 nail; attribute vec3 objPos; varying float vSel; varying vec3 vObj; varying vec2 vSkinUv; varying vec4 vNail;")
-      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvObj = objPos; vSkinUv = skinUv; vSel = selW; vNail = nail;");
-    sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\n" + COMMON)
+    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nattribute vec2 skinUv; attribute float selW; attribute vec4 nail; attribute vec3 objPos; attribute float membrane; varying float vSel; varying vec3 vObj; varying vec2 vSkinUv; varying vec4 vNail; varying float vMem;")
+      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvObj = objPos; vSkinUv = skinUv; vSel = selW; vNail = nail; vMem = membrane;");
+    sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying float vMem;\n" + COMMON)
       .replace("#include <color_fragment>", `vec2 cutFw = fwidth(vObj.xy); float cutPx = max(max(cutFw.x, cutFw.y), 1e-7), cutA = 1.0;   // a pixel's size, taken before any branch
 if (uMouthOn > 0.5 && vObj.z > uMouthZ.x && vObj.z < mouthFront(vObj.x)) cutA = cutCover(uMouthP, uMouthBox, vObj.xy, cutPx);   // the mouth's opening: index.html draws the inside behind it
 if (uCutOn > 0.5) { if (vObj.z > uCutZ.x) cutA = min(cutA, cutCover(uCutL, uCutBoxL, vObj.xy, cutPx)); if (vObj.z > uCutZ.y) cutA = min(cutA, cutCover(uCutR, uCutBoxR, vObj.xy, cutPx)); }   // the eyes cut out
@@ -456,10 +456,12 @@ if (uHasLay > 0.5) {                                                   // the la
   skinRough *= max(sf.r * 4.0, 0.04); skinCoat = clamp(skinCoat + sf.g, 0.0, 1.0); skinH += (sf.b - 0.50196) * 14.0; if (sf.g > 0.01) skinCoatR = 1.0 - sf.a;
 }
 diffuseColor.rgb = mix(diffuseColor.rgb, vec3(1.0, 0.55, 0.1), clamp(vSel, 0.0, 1.0) * 0.55 * uShowSel);   // the selection, shown
+diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(1.05, 0.62, 0.6) + vec3(0.05, 0.0, 0.0), clamp(vMem, 0.0, 1.0) * 0.8);   // TAU's eyes' wet membrane: the lid's edge behind the lashes, the lining (pinker, eyegraft.js)
 #include <color_fragment>`)
       .replace("#include <roughnessmap_fragment>", `#include <roughnessmap_fragment>
 if (uProc > 0.5 || uHasLay > 0.5 || uLipOn > 0.5) roughnessFactor = clamp(roughnessFactor * skinRough, 0.06, 1.0);
-roughnessFactor = mix(roughnessFactor, nailRough, nailM);`)
+roughnessFactor = mix(roughnessFactor, nailRough, nailM);
+roughnessFactor = mix(roughnessFactor, 0.18, clamp(vMem, 0.0, 1.0));   // (the membrane is wet)`)
       .replace("#include <metalnessmap_fragment>", `#include <metalnessmap_fragment>
 metalnessFactor = mix(metalnessFactor, 1.0, nailMetal * nailM);   // a chrome polish`)
       .replace("#include <normal_fragment_maps>", `#include <normal_fragment_maps>
@@ -483,7 +485,7 @@ if (uProc > 0.5 || uHasLay > 0.5 || uLipOn > 0.5 || uNailOn > 0.5) { material.cl
 if (nailM > 0.0) { material.clearcoat = mix(material.clearcoat, nailCoat, nailM); material.clearcoatRoughness = mix(material.clearcoatRoughness, nailCoatR, nailM); }   // a nail's gloss, a polish's
 #endif`);
   };
-  material.customProgramCacheKey = () => "studio-skin-15";
+  material.customProgramCacheKey = () => "studio-skin-16";
   return u;
 }
 

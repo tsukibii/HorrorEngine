@@ -11,7 +11,17 @@ the to-do built there, with the Studio's eyes from the side, a small nose and th
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## 0. `realism-enhancer-skin` (2026-10-31, the night): brows and lashes by hand, waiting for the user's try
+## 0. `realism-enhancer-skin` (2026-10-31, the night, later): TAU's eyes on our faces, in the Studio
+
+The user asked for TAU's eye and lid shape ("meaty flesh that curves in") on our editable faces, with a few shape keys
+(more Asian or Caucasian, size). Built so far (CHARACTER_STUDIO §2c): `tools/eye_patch.py` (make, preview, check:
+EYEPATCH) grafts TAU's eye region onto MHR's face; the Studio wears it (Skin, Eyes, TAU's eyes; `eyegraft.js`), open
+to shut. Also Start from TAU's brows (§2b). Next, in order: the shape keys (size, crease monolid to double lid, the
+inner fold, tilt, opening, depth; presets), the export (the graft in the glb with its blink's morph targets, EYELIDS on
+it) and Godot; then the user's look. The head's licence: compare it with Blender's Human Base Meshes bundle when
+www.blender.org is reachable (DECISIONS).
+
+## 0b. `realism-enhancer-skin` (2026-10-31, the night): brows and lashes by hand, waiting for the user's try
 
 The user liked TAU's lash texture but not its design ("they move up too upwards") and asked for "an easy eyebrow editor
 tool where I manually can add and adjust the eyebrows and eyelashes inside an easy wrapper". Built: Face, **Brows &

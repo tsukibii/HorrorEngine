@@ -12,6 +12,17 @@ the fix.
 
 ## This project
 
+- **A graft takes over every deformation of what it replaces:** TAU's eyes rode MHR's face without MHR's blink, but
+  MHR's blink still moved the skin round them, and shut, the seam opened into black slivers. Second try: with TAU's eyes
+  on, MHR's own eyesClosed is left out of the face altogether; the graft shuts its own way.
+- **Lids rest on the outermost surface under them, not the eyeball's sphere:** our cornea bulges about 2 mm past the
+  white (TAU's barely does), and TAU's shut lids, seated on the white's sphere, showed the cornea and the pupil through
+  them. Second try: each lid point is kept out of whichever is further out under it, the cornea's dome or the white.
+- **A photo skin lives on MHR's UVs, so a graft's UVs come from where the skin it replaces was, by position:** UVs taken
+  from the nearest MHR triangle put the photo's eye (projected onto MHR's closed strip and the lid skin by it) on TAU's
+  shut lid as pale, jagged patches. Second try: TAU's lid laid on MHR's lid between the opening and the edge, round the
+  eye, and the strip left out.
+
 - **Read a generator's own controls before blaming its look:** TAU's lashes "stood up" because its Straight preset says
   so (Angle Inner 80°, Angle Outer 70°, off the lid's line: every other preset sweeps out at 40° to 10°), and a tidy that
   turned lashes up to keep them off the eye made it worse. Second try: the brows and lashes by hand, their angles
