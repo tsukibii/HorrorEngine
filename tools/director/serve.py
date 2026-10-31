@@ -619,6 +619,16 @@ class Handler(BaseHTTPRequestHandler):
             if parts[2] == "save" and "path" in res:
                 res["path"] = str(Path(res["path"]).relative_to(ROOT))
             return self.send(code, res)
+        if parts[:3] == ["api", "pbr", "made"]:        # a street's looks as the sets they paint with (pbrmix.py: tinted, layered)
+            from storykit import pbrmix as MIX  # noqa: PLC0415 - numpy and Pillow, only when a look needs them
+            out = []
+            for look in (json.loads(self.body().decode("utf-8")) or {}).get("looks", []):
+                try:
+                    ref, m = MIX.made(look)
+                    out.append({"ref": ref, "meta": dict(m, base="/" + ref) if m else None})
+                except (ValueError, OSError) as e:
+                    out.append({"ref": None, "error": str(e)})
+            return self.send(200, {"made": out})
         if parts[:2] == ["api", "pbr"] and len(parts) >= 3:     # /api/pbr/<category>/<name>: its tile, source, url, note
             import urllib.parse
             ref = "pbr/" + "/".join(urllib.parse.unquote(p) for p in parts[2:])

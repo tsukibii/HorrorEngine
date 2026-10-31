@@ -1,0 +1,14 @@
+{
+ "maps": {
+  "albedo": "RoofingTiles002_1K-PNG_Color.png",
+  "height": "RoofingTiles002_1K-PNG_Displacement.png",
+  "normal": "RoofingTiles002_1K-PNG_NormalGL.png",
+  "rough": "RoofingTiles002_1K-PNG_Roughness.png"
+ },
+ "normal": "gl",
+ "tile_m": 2.0,
+ "source": "ambientCG",
+ "url": "https://ambientcg.com/view?id=RoofingTiles002",
+ "licence": "CC0-1.0",
+ "label": "slate scales, mossy"
+}

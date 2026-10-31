@@ -1,0 +1,15 @@
+{
+ "maps": {
+  "albedo": "Fingerprints006_1K-PNG_Color.png",
+  "height": "Fingerprints006_1K-PNG_Displacement.png",
+  "normal": "Fingerprints006_1K-PNG_NormalGL.png",
+  "opacity": "Fingerprints006_1K-PNG_Opacity.png",
+  "rough": "Fingerprints006_1K-PNG_Roughness.png"
+ },
+ "normal": "gl",
+ "tile_m": 0.3,
+ "source": "ambientCG",
+ "url": "https://ambientcg.com/view?id=Fingerprints006",
+ "licence": "CC0-1.0",
+ "label": "fingerprints"
+}

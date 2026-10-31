@@ -117,6 +117,13 @@ assets/pbr/                             ($STUDIO_PBR puts it elsewhere, e.g. ano
 The shelf used to be `Content/Studio/PBR/`: sets still there are read too (a set in `assets/pbr` wins), new ones go to
 `assets/pbr`.
 
+**The project's own sets are in git**, at `pbr/<category>/<set>` beside `assets/` (the user's ambientCG sets, 1K, merged
+2026-10-31 from the `pbrs` branch: asphalt, road, concrete, wall, building, roofing tiles, metal, plastic, gravel, floor,
+foliage, effects; all CC0). They're read after `assets/pbr`, their `meta.json` kept in git with each one's real size
+(`tile_m`, judged from its picture: the pavers 8 across at 30 cm, the slates and tiles about 8 across) and a label;
+`_thumb.jpg` isn't. A set's ref is its path (`pbr/concrete/Concrete010_1K-PNG`). `pbr/_made/<hash>` (in `assets/pbr`,
+not in git) is a set the street paint page made from one of them, tinted and layered (docs/STREET_PAINT.md §3b).
+
 - **The download:** Poly Haven's ZIP with Blend and glTF off, MaterialX off, the packed AO/Rough/Metal off, and AO, Diffuse
   and Rough as JPG, Displacement and Normal (DX) as PNG. Other names work too: the last word of each file name says
   which map it is (`diff`, `col`, `Color`, `ao`, `AmbientOcclusion`, `rough`, `Roughness`, `disp`, `Displacement`,

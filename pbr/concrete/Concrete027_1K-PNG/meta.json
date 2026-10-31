@@ -1,0 +1,15 @@
+{
+ "maps": {
+  "ao": "Concrete027_1K-PNG_AmbientOcclusion.png",
+  "albedo": "Concrete027_1K-PNG_Color.png",
+  "height": "Concrete027_1K-PNG_Displacement.png",
+  "normal": "Concrete027_1K-PNG_NormalGL.png",
+  "rough": "Concrete027_1K-PNG_Roughness.png"
+ },
+ "normal": "gl",
+ "tile_m": 2.0,
+ "source": "ambientCG",
+ "url": "https://ambientcg.com/view?id=Concrete027",
+ "licence": "CC0-1.0",
+ "label": "concrete, board-formed"
+}
