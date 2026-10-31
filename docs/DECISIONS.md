@@ -2,6 +2,22 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-31, before dawn (the user, on texturing the streets for real)
+
+- **Research first: faking photorealism like Battlefront**: "do some research on how we could fake photo-realism (think
+  of the new Star Wars Battlefront games look); we will be using a vhs effect so it doesn't need to be hyper detailed,
+  but fake the textures and materials and even fake pbr bumps (can be procedural) and add a photo realism effect".
+  docs/research/photoreal.md: right values, right light (the sky's bounce baked: LightmapGI with a live sun, Battlefront
+  II's split), right flaws; little spent on micro detail.
+- **A paint tool, like the prop tool**: "a simple python script wrapper tool (similar to what that prop-tool is doing),
+  where I can paintbucket paint on the materials and then zoom in to add decals"; "pre-make a bunch of building, street,
+  roof tile etc materials to paintbucket, based off the Japanese materials in the real photos"; "only worry about the
+  exterior street designer parts, although I would like to be able to override any object imported from the interior
+  tool's exterior".
+- **As photoreal as can be, 1:1 with the Shibuya photo**: "it doesn't literally have to be 1:1 with the same decals, but
+  material wise it should almost trick you you're looking at something real, without hard shaders and lighting (it can
+  be baked in like Star Wars Battlefront, the latest one)".
+
 ## 2026-10-31, small hours, later (the user, on the bungalow's roof)
 
 - **Never any clipping**: "in the individual house one it looks like there is clipping on the roof (wall top lines
