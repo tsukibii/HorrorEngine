@@ -2,6 +2,45 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-01 (the user: the Director as a puppeteer)
+
+Asked what the Director still lacks against the desk's stories (the little things, interrupts, lines and answers by
+what's happened, secrets and achievements, and the smaller ones), the user answered with the shape they want; the plan
+is docs/GODOT_DIRECTOR_PLAN.md, waiting on their yes to it.
+
+- **Logic as droppable parts**: "some kind of folder that contains the logic for all these parts as droppables, so I
+  can just select an object in the scene (let's say it's a kettle), place a kettle script (the smoke's position should
+  be adjustable too, since the exit...), so I can basically make any prop an interactable"; inspecting (picked up for a
+  moment, turned round) a droppable too.
+- **One world, a director that watches**: "for now our games will be more linear like Chilla's, with just secret
+  endings and easter egg scenes in between. Ideally I don't want so much jumping from level to level, but a
+  director/watcher script that tracks the whole game's story and quests and checks if the player has done this: should
+  they continue, or branch and continue; we never load new levels (unless we change map, e.g. the player gets into a
+  car which takes them to a new level); the director just triggers events." Branching that skips ahead ("if this
+  happens go here") is for future games.
+- **Unlocked by what's been done**: lines and answers by the same state: "has the player done this, if so they can now
+  do this", easter eggs needing extra things ("did they do z, or enter x"). A thing used for a quest counts only while
+  that quest is the active one ("turn the light on then off: even if we did that before the quest, we wouldn't want the
+  quest to complete instantly"); quests are linear, one at a time; a finished task stays, crossed out with a single
+  line.
+- **Steam achievements later, planned for now**: "build everything around the idea that we will have Steam
+  achievements using the existing Godot plugin, unlocked like the director's system, except their criteria might be
+  more hidden: variables that are tracked but the player doesn't see as quests". Not built yet.
+- **Failing a to-do** is needed: taking too long, or giving someone the wrong thing ("they asked for lemonade and you
+  gave them beer"), and optionally not a fail at all: "they just say nah, that's not what I want".
+- **Not wanted** (for now): skipping time, answers on a timer, board games (built per game when needed), kit props in
+  one click (the user imports their own objects); the odds and ends later.
+- **Kimodo's fingers retargeted**, and **faces without the desk**: "a tool to export a facial animation and add it into
+  Godot (we'd just have a facial animation folder); the exporter should export the loopables separately."
+- **The characters' animation, paths and patrols managed by the director's state.**
+- **The director's UI**: "a UI-friendly director for Godot; I don't even mind you creating an HTML tools folder that
+  lets us manage and save over our Godot stuff via a nice UI". The director "doesn't attach itself directly to anything
+  in game (it just sits in the game's main area; a new save should reset, or have a way to manage saves), but we assign
+  what things relate to via id: if npc 2 is here and tasks 224, 422 are completed then make npc 2 be here"; "a helper
+  tool to see what ids/things haven't been assigned anything in game, so we can figure out what we're missing";
+  dialogue managed by the same id state; "the director script just puppeteers the whole game (if that's what makes
+  sense; if this is a bad system, make something better)".
+
 ## 2026-10-31 (the user: a guide to the Director)
 
 - **"Can you make a .html guide on how to use this tool, if we dont have a dedicated guide folder we should"**: the

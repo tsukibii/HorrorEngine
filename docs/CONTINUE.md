@@ -11,6 +11,16 @@ the to-do built there, with the Studio's eyes from the side, a small nose and th
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
+## 0a. Where it stopped (2026-11-01, branch `Director-Godot`)
+
+The user answered what the Director still lacks (DECISIONS 2026-11-01): the game as state, puppeteered by one
+Director over things with ids, logic as droppable parts, an HTML Director Manager, faces exported without the desk,
+Kimodo's fingers, Steam achievements planned for. **docs/GODOT_DIRECTOR_PLAN.md** is the plan, written and waiting
+on their yes (its §9: replace the story nodes with the Director file, and the order). Build nothing of it before
+that answer. Not merged into main yet: main has moved on (PR #6, the street builder); bringing main in conflicts
+only in CLAUDE.md, CONTINUE, DECISIONS and LESSONS (both sides added entries), the runtime merging by itself (run
+GDPLAY, GDTESTROOM and DIRECTOR after).
+
 ## 0. The Director-Godot session (2026-10-30, night; branch `Director-Godot`)
 
 The user asked for a Godot plugin to build the games in Godot itself, no desk in between (DECISIONS 2026-10-30,
