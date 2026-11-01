@@ -7,7 +7,8 @@
 // The designs are data: Content/Studio/Clothes/designs.json; outfits in outfits.json.
 // Plain ES module: the Studio page (tools/character/index.html) and node (tools/character/tailor/cli.mjs) run it.
 import { frame } from "./tailor/frame.js";
-import { prepare, shell, skirt, shoeShell, detail, buttons, thicken, lifted, cut, handles, soles, waistline, sleeveEnd } from "./tailor/pieces.js";
+import { prepare, shell, skirt, shoeShell, detail, buttons, thicken, lifted, cut, handles, soles, waistline, sleeveEnd, bust } from "./tailor/pieces.js";
+import { halterCords } from "./tailor/cords.js";
 import { unwrap } from "./tailor/uv.js";
 import { height } from "./tailor/frame.js";
 import { draping, run, DRAPE } from "./tailor/drape.js";
@@ -90,6 +91,10 @@ export function* making(B, name, design, opts = {}) {
     if (d.kind !== "collar" && d.kind !== "neckband") outer.push(L.at ? { P: L.at, T: L.T } : L);   // what goes over it eases over pockets and belts, not the roll of a collar
     const dt = (d.thickness ?? design.thickness ?? 0.002) * s * 0.8;
     part(`${name}_${d.kind}`, d.color || (d.trim ? trim : color), ...insert(thick(L.P, L.T, L.at, dt, d.rim ?? 0.45, d.edge ?? 0.62), !d.trim && !d.color, d.surface));
+  }
+  if (p.bra?.halter) {                                               // a halter's strings as tubes, pulled taut off the body (tailor/cords.js)
+    const C = halterCords(F, B, at || G.outer.P, { ...p.bra, under: bust(F).under + (p.bra.drop ?? 0) * s - (p.bra.band ?? 0.01) * s * 0.4 });
+    if (C.T.length) { outer.push({ P: C.P, T: C.T }); part(`${name}_cord`, color, C, false); }
   }
   const tris = parts.reduce((a, q) => a + q.T.length / 3, 0), verts = parts.reduce((a, q) => a + q.P.length / 3, 0);
   // its look (tailor/look.js): the design's fabric, pattern and trim, then the garment's own

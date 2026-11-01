@@ -2,6 +2,16 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-01, night (the user: cozy and gothic clothes, bigger busts, on `clothing-refiner`)
+
+- **"Note you've been making bras on models that have a flat chest, maybe you should review it with bigger busts"**:
+  the cups grow with the breast (TAILOR §1g), reviewed on the full feminine body too.
+- **"Make some more cozy clothing following the principles of being able to animate easily without worrying about
+  clipping"**: socks in every size, slightly creased and heavier, knee-highs; a raincoat with a reflective plasticky
+  look; black loafers; a sneaker designer like the tee's prints (rim highlights, sole colours, a logo, small stickers);
+  gothic designs, a spider web fishnet and a mesh fabric rendered in Blender; gothic clothes and props (horns, bunny
+  ears), props placed by x, y, z sliders and turns, PBR sets on props. The plan and its ticks: docs/COZY_GOTHIC_PLAN.md.
+
 ## 2026-11-01, evening (the user: the bikinis, on `clothing-refiner`)
 
 - **"Everything looks good, except the women's bikini, thongs (they sort of vertically sit below the waist like boxers
@@ -9,6 +19,9 @@ The user's answers, newest first. They override the plan, the research and the d
   string bikini's top and bottom as OBJs and a guide to fitting them. Built: the waistline's `hip` lift (TAILOR §1g),
   every thong, tanga, G-string and bikini brief re-cut on it, a string bikini and a halter triangle top after the OBJs.
   The OBJs themselves stay out of the project (only looked at).
+- **"Why do the bras look painted on, also why does the red one attach to nothing around the neck, can you use the bra
+  obj model I gave you as a reference to the right way to make bras"**: the halter's strings as tubes pulled taut off
+  the body, round the neck, a band and a bow; every bra's cups spanning the breast, with a thickness (TAILOR §1g).
 - **"The bras are way too low"**: the fold under the breast found where its underside eases onto the ribs, the cups
   higher (TAILOR §1g).
 

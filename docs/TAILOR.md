@@ -204,6 +204,15 @@ The clothes are skinned, never simulated, so the cut keeps to what skinning carr
   underside eases onto the ribs (the slope fallen to half its steepest), not the deepest point below it, which ran on
   down the slowly sinking ribs; on the feminine body 6 cm under the point, not 8.5. The cups come higher (balconette
   5.5 cm over the point, plunge 6, triangle and bikini 7.5, sports 6.5).
+- **Strings as tubes, cups that span** (the user: "why do the bras look painted on ... why does the red one attach
+  to nothing around the neck"; their bikini OBJ the reference): a halter top is its cups alone, and its strings are
+  real round cords (`tailor/cords.js`: `tube` sweeps one, `taut` pulls a path straight between its ends and pushes it
+  off the skin): a strap from each cup's point to the neck's side, round behind the neck, a band round the ribs under
+  the cups, a bow at the front with its ends hanging; the cord's thickness `cord`. Every bra's cups are bridged now
+  (they span the breast, the sports bra the cleavage) and have a thickness (moulded cups 4 mm, a bikini's 2.5). The
+  cups **grow with the breast** (the user: "review it with bigger busts"): their sizes were set on the feminine body,
+  whose breast's point sits 5.9 cm off the middle; a fuller one's cups are bigger by that ratio (0.85 to 1.5), and a
+  strap leaves its cup's corner where the body's own slice puts it.
 - **The wardrobe**: outfit groups Casual, Smart casual, Business, Uniforms, Sleepwear, Swimwear, Underwear, Designer;
   new basics joggers, sweatshirt, polo, suit trousers, pyjama top and trousers, sleep shorts, swim shorts; bikinis from
   the underwear's cuts in spandex; fabric, colour, pattern and prints doing the variety. Not made yet: a shirt dress

@@ -133,26 +133,32 @@ const sdPoly = (P, u, v) => {                                       // a polygon
     comes, `outer` how far out past it, `gore` the gap between them at the band), and straps from each cup's highest
     point up over the shoulder and down to the back band (or, `racer`, meeting between the shoulder blades). Styles:
     triangle, balconette, plunge (the cups' inner edges in a V down to the band), sports (one front panel to a scoop,
-    wide straps, a racer back), bandeau (a band over the bust, no straps); `halter` (a bikini's: the straps from the cups'
-    points to the neck and round behind it), `inner` (a triangle's cups apart, each its own breast's). value >= 0 on the cloth */
+    wide straps, a racer back), bandeau (a band over the bust, no straps); `halter` (a bikini's: the cups alone, its straps, the
+    string round the neck and the band strings as tubes, tailor/cords.js), `inner` (a triangle's cups apart, each its own breast's). value >= 0 on the cloth */
 export function bra(F, o) {
   const s = F.s, B = bust(F), style = o.style || "balconette", [cx0] = F.torsoAxis(F.bustY);
-  const band = (o.band ?? 0.02) * s, under = B.under + (o.drop ?? 0) * s, top = (o.top ?? 0.03) * s, outer = (o.outer ?? 0.07) * s, gore = (o.gore ?? 0.016) * s / 2;
+  // the cups grow with the breast (the user: "review it with bigger busts"): their sizes were set on the feminine body,
+  // whose breast's point is 5.9 cm off the middle; a fuller one's further out, its cups that much bigger
+  const kc = clamp((Math.abs(B.L.x - cx0) + Math.abs(B.R.x - cx0)) / 2 / (0.059 * s), 0.85, 1.5);
+  const band = (o.band ?? 0.02) * s, under = B.under + (o.drop ?? 0) * s, top = (o.top ?? 0.03) * s * kc, outer = (o.outer ?? 0.07) * s * kc, gore = (o.gore ?? 0.016) * s / 2;
   const sw = (o.strap ?? 0.012) * s / 2, rise = (o.rise ?? 0.01) * s, apexY = (B.L.y + B.R.y) / 2;
   const cups = [["L", 1], ["R", -1]].map(([k, sg]) => {
     const A = B[k], uA = Math.max(0.02 * s, Math.abs(F.torsoU(A.x, A.y, A.z, false))), yA = A.y;
     let poly;
-    if (style === "triangle") poly = [[o.inner !== undefined ? Math.max(gore, uA - o.inner * s) : gore, under], [uA + outer, under], [uA + 0.006 * s, yA + top]];   // `inner`: its inner corner that far in from the point (a bikini's cups apart), else at the gore
+    if (style === "triangle") poly = [[o.inner !== undefined ? Math.max(gore, uA - o.inner * s * kc) : gore, under], [uA + outer, under], [uA + 0.006 * s, yA + top]];   // `inner`: its inner corner that far in from the point (a bikini's cups apart), else at the gore
     else if (style === "plunge") poly = [[gore, under + 0.006 * s], [uA + outer, under], [uA + 0.62 * outer, yA + top + 0.008 * s], [uA - 0.3 * outer, yA + top - 0.012 * s], [gore + 0.003 * s, under + 0.028 * s]];
     else poly = [[gore, under + 0.004 * s], [uA + outer, under], [uA + 0.72 * outer, yA + top + 0.01 * s], [uA - 0.25 * outer, yA + top - 0.003 * s], [gore + 0.004 * s, yA - 0.006 * s]];   // balconette
     const hi = poly.reduce((a, p) => (p[1] > a[1] ? p : a)), kx = Math.abs(A.x - cx0) / uA;   // the strap leaves the cup's highest point
-    return { sg, poly, xs: cx0 + sg * (style === "sports" ? (o.strapX ?? 0.075) * s : hi[0] * kx), ys: style === "sports" ? apexY + top : hi[1] };
+    const xAt = (u, y) => {                                          // where across the front at height y the torso's u is u (a straight ratio drifts off a wide cup's corner)
+      const row = F.scan.at(y), l = row && F.scan.central(row), [, cz] = F.torsoAxis(y); let best = null, bd = Infinity;
+      for (const [x, z] of l ? l.pts : []) { if (z < cz || (x - cx0) * sg <= 0) continue; const d = Math.abs(sg * F.torsoU(x, y, z, false) - u); if (d < bd) { bd = d; best = x; } }
+      return best ?? cx0 + sg * u * kx;
+    };
+    return { sg, poly, xs: style === "sports" ? cx0 + sg * (o.strapX ?? 0.075) * s : xAt(hi[0], hi[1]), ys: style === "sports" ? apexY + top : hi[1] };
   });
-  const scoop = (o.scoop ?? 0.03) * s, sideW = (o.panel ?? 0.11) * s;   // sports: the front panel's scoop and the width where it's full height
+  const scoop = (o.scoop ?? 0.03) * s, sideW = (o.panel ?? 0.11) * s * kc;   // sports: the front panel's scoop and the width where it's full height
   const backTop = under + rise, midY = Math.min(F.armpitY - 0.02 * s, backTop + 0.08 * s), topY = F.neckBaseY - 0.01 * s;
-  const neckY = F.neckBaseY + 0.025 * s, nw = (o.neckW ?? 0.045) * s;   // a halter: the straps meet behind the neck there
   const strapX = (c, y, back) => {                                   // where a strap's middle is at height y
-    if (o.halter && !back) return c.xs + (cx0 + c.sg * nw - c.xs) * clamp((y - c.ys) / Math.max(0.01 * s, neckY - c.ys), 0, 1);   // up and in from the cup's point to the neck's side
     if (!back || !o.racer) return c.xs;
     const t = clamp((y - midY) / Math.max(0.01 * s, topY - midY), 0, 1);   // a racer: from the shoulder down into the middle of the back
     return cx0 + (c.xs - cx0) * Math.sqrt(t) + c.sg * sw * 0.9 * (1 - Math.sqrt(t));
@@ -161,7 +167,7 @@ export function bra(F, o) {
     if (F.arm(x, y, z)) return -1;
     const [cx, cz] = F.torsoAxis(y), fr = front(z, cz, 0.03 * s), back = z < cz, lift = rise * (1 - fr);
     if (style === "bandeau") return Math.min(y - (under - band + lift), apexY + top + lift * 0.5 - y);
-    let v = Math.min(y - (under - band + lift), under + lift - y);    // the band
+    let v = o.halter ? -1 : Math.min(y - (under - band + lift), under + lift - y);    // the band (a halter's is a string: tailor/cords.js)
     if (style === "sports") {                                         // one panel over the front, to a scoop between the straps
       if (!back) { const u = Math.abs(F.torsoU(x, y, z, false)), t = clamp(1 - u / sideW, 0, 1); v = Math.max(v, Math.min(y - (under - band), apexY + top - scoop * t * t * (3 - 2 * t) - y)); }
       else if (o.racer) { const w = (o.bottom ?? 0.1) * s / 2 * (1 - clamp((y - backTop) / Math.max(0.01 * s, midY - backTop), 0, 1)) + sw; v = Math.max(v, Math.min(y - (under - band + lift), w - Math.abs(x - cx), midY + 0.01 * s - y)); }
@@ -170,11 +176,7 @@ export function bra(F, o) {
       const u = c.sg * F.torsoU(x, y, z, false); if (u < 0) continue;
       v = Math.max(v, -sdPoly(c.poly, u, y));
     }
-    if (o.halter) {                                                   // a halter: the straps up to the neck's sides and round behind it, no straps down the back
-      if (back) v = Math.max(v, Math.min(y - neckY, neckY + 2 * sw - y, nw + sw - Math.abs(x - cx)));
-      else for (const c of cups) if ((x - cx) * c.sg > -0.01 * s) v = Math.max(v, Math.min(sw - Math.abs(x - strapX(c, y, false)), y - (c.ys - 0.006 * s), neckY + 2 * sw - y));
-      return v;
-    }
+    if (o.halter) return v;                                           // a halter: its cups alone; its strings are tubes (tailor/cords.js)
     for (const c of cups) {                                           // the straps: up from the cup, over the shoulder, down the back
       if ((x - cx) * c.sg < -0.01 * s) continue;
       const from = back ? (o.racer ? backTop - 0.004 * s : backTop + lift - 0.004 * s) : c.ys - 0.006 * s;
@@ -388,7 +390,7 @@ export function shell(B, p, under) {
  *  radius; fading out over the shoulders and round the armpits (the sleeve's root would web the side), the arms left
  *  alone; `left(j)` which leg a point is on */
 export function bridged(F, p) {                                     // whether a garment's cut is bridged (bridge, below), the armpits it leaves out, its slope
-  if (!(p.bridge ?? !(p.shoe || p.bra || (p.brief && (p.brief.back?.gusset ?? 0.03) < 0.02)))) return null;   // (a bra's gore and a thong's back do go into the hollow)
+  if (!(p.bridge ?? !(p.shoe || (p.brief && (p.brief.back?.gusset ?? 0.03) < 0.02)))) return null;   // (a thong's back does go into the hollow; a bra's cups span the breast, never hug every curve: "painted on")
   const s = F.s, pits = ["L", "R"].map(k => { const A = F.arms[k], q = A.line.at(A.seam); return [q[0] * 0.85, F.armpitY - 0.02 * s, q[2]]; });
   return { pits, slope: p.neck === false ? 0.7 : 0.7 - 0.5 * smooth(0.006, 0.013, p.ease?.body ?? 0.008) };   // a loose top falls from the bust and the shoulder blades nearly straight, a fitted one keeps the waist
 }

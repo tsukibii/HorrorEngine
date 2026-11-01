@@ -80,7 +80,8 @@ const look = (label, B, g, hung = false) => {
   if (p.neck) want.push(["neck", F.neckBaseY + (0.02 + (p.neck.rise || 0)) * F.s, hi]);   // the back of the neckline rises (its tilt); a turtleneck's by its rise
   if (p.bra) {                                                                     // a bra: its band under the bust, its straps over the shoulders
     want.push(["band", bust(F).under + (p.bra.drop ?? 0) * F.s - (p.bra.band ?? 0.02) * F.s, lo]);
-    if (p.bra.style !== "bandeau") want.push(["straps", F.neckBaseY, hi]);
+    let cordHi = -1e9; if (p.bra.halter) for (const o of g.outer.slice(1)) for (let i = 1; i < o.P.length; i += 3) cordHi = Math.max(cordHi, o.P[i]);   // a halter's straps are its cords (tailor/cords.js): round the neck
+    if (p.bra.style !== "bandeau") want.push(["straps", F.neckBaseY, p.bra.halter ? cordHi : hi]);
   }
   if (p.brief) want.push(["gusset", F.crotchY - (p.brief.deep ?? 0.035) * F.s, lo]);   // briefs: down between the legs
   for (const [what, y, got] of want) {                                             // hung, a hem or a leg may fall a hand lower
