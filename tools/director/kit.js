@@ -4,7 +4,7 @@
 // x across, y deep with the FRONT at -y, z up from the base; every part stays inside the size box, so the box the
 // plan and the checks see is the thing. The gaps (between tiles, boards, doors and drawers) and the bevels are real
 // geometry: they're what a light bake turns into the thin dark lines and bright edges of a real room.
-export const VERSION = 5;          // bump when a generator's output changes (presets.json carries the same number)
+export const VERSION = 6;          // bump when a generator's output changes (presets.json carries the same number)
 
 // ---- material slots: one material each in Unreal (kit_<slot>), a flat colour in the desk ----------------------
 // [colour, roughness, metalness, opacity, emissive]
@@ -30,6 +30,17 @@ export const SLOTS = {
   dial: [0xf3f1ea, 0.7], hand_h: [0x1b1b1d, 0.5], hand_m: [0x1b1b1d, 0.5], hand_s: [0xb02a22, 0.5],
   cig: [0xf4f2ec, 0.85], filter: [0xd29a5c, 0.75], tobacco: [0x7a4f27, 1], ash: [0x9a9792, 1], ash_2: [0x3a3735, 1],
   coil: [0x4c6838, 0.95], incense: [0x5f4630, 0.9], wax: [0xf0e9d6, 0.5], wick: [0x1e1b18, 1], kraft: [0xa88159, 0.9],
+  // a Japanese school (§10; the user, 2026-11-01: "build out a japanese school for a horror game"): aluminium sashes and
+  // boards, a desk's laminate top and its edge band, a chair's plywood, a chalkboard, cork, chalk in four colours, an
+  // eraser's felt, painted steel (lockers, a staff room's desks), a lectern's green, a hydrant's red, a corridor's vinyl
+  // tiles, frosted and wired glass, acoustic ceiling board, books' covers and pages
+  alu: [0xb9bdc1, 0.35, 0.85], laminate: [0xae5f45, 0.45], edge: [0x3c2b23, 0.4], plywood: [0xab5240, 0.42],
+  chalkboard: [0x22433e, 0.92], cork: [0xbd8957, 0.95], chalk: [0xf3f1ea, 0.95], chalk_2: [0xe9a39b, 0.95], chalk_3: [0xf1d97c, 0.95], chalk_4: [0x9fc4e6, 0.95],
+  felt: [0x2e3140, 1], steel_paint: [0xdcd8ce, 0.45, 0.2], green: [0x2f8d5d, 0.5], red: [0xc1272d, 0.4],
+  vinyl: [0xbcb6a6, 0.35], vinyl_2: [0xb3ad9c, 0.35], vinyl_3: [0xc4bfb0, 0.35], vinyl_4: [0xaea898, 0.35],
+  glass_frost: [0xe6ebe9, 0.45, 0, 0.82], glass_wire: [0xc5d5d7, 0.06, 0, 0.3], wire: [0x6c7074, 0.4, 0.7], acoustic: [0xecebe5, 0.95],
+  cover: [0x8e302a, 0.6], cover_2: [0x2f4b7c, 0.6], cover_3: [0x3e6c47, 0.6], cover_4: [0xd8c79d, 0.6], pages: [0xeee6d1, 0.9],
+  curtain: [0xcfa443, 0.9],
 };
 export const slotOf = m => SLOTS[m] ? m : (SLOTS[m.replace(/_\d+$/, "")] ? m.replace(/_\d+$/, "") : "body");
 const tone = (base, n, R) => { const i = n > 1 ? Math.floor(R() * n) : 0; return i && !/_\d+$/.test(base) ? `${base}_${i + 1}` : base; };
@@ -39,7 +50,7 @@ export function rng(seed) {           // mulberry32: the same seed, the same gap
   return () => { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
 }
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
-const SL = ["box", "cyl", "soft", "pipe", "lathe", "sweep"];
+const SL = ["box", "cyl", "soft", "pipe", "lathe", "sweep", "prism", "sheet"];
 
 // a part: {s: "box"|"cyl", at: [x, y, z] (the middle of its base), size: [w, d, h], m: slot, b: bevel, rz: degrees
 // about z, skip: faces to leave out ("-z+y"), uv: [du, dv, swap]}. A cyl's size is [2r, 2r, length] along its axis
@@ -54,17 +65,18 @@ function cy(P, x, y, z, r, len, m, o) { const p = Object.assign({ s: "cyl", at: 
 // ---- the types: their numbers (for the forms), their default size and where they go -----------------------------
 // a param: [key, label, default, kind, extra]: kind m (metres), mm (stored in metres, shown in mm), int, num, deg,
 // pick (extra: the choices), bool, slot, cols, holes, parts
-const SURF = [["pattern", "pattern", "grid", "pick", ["grid", "half", "third", "random", "herringbone"]],
+const SURF = [["pattern", "pattern", "grid", "pick", ["grid", "half", "third", "random", "herringbone", "basket"]],
   ["gap", "gap", 0.003, "mm"], ["gap_var", "gap varies (0 to 1)", 0.35, "num"], ["seed", "seed", 1, "int"],
   ["groove", "gap depth", 0.002, "mm"], ["bevel", "edge bevel", 0.001, "mm"], ["lip", "unevenness", 0.0004, "mm"],
   ["tones", "tones (material slots)", 3, "int"], ["align", "start", "centre", "pick", ["centre", "line", "corner"]],
-  ["angle", "runs", 0, "pick", [0, 90]], ["orient", "on", "floor", "pick", ["floor", "wall"]]];
+  ["angle", "runs", 0, "pick", [0, 90]], ["orient", "on", "floor", "pick", ["floor", "wall", "ceiling"]]];
 export const TYPES = {
   tiles: { label: "Tiles", cat: "floor", mount: "room-floor", size: [3, 3, 0.012], params: [["tile", "tile w × l", [0.6, 0.6], "m2"], ...SURF,
-    ["slot", "material", "tile", "slot"], ["base", "gap material", "grout", "slot"]], gen: tilesGen },
+    ["slot", "material", "tile", "slot"], ["base", "gap material", "grout", "slot"],
+    ["cap", "a cap rail on top (on a wall: a wainscot's 笠木)", 0, "m"], ["cap_d", "it stands out", 0.012, "mm"], ["cap_slot", "cap rail material", "wood", "slot"]], gen: tilesGen },
   planks: { label: "Wood planks", cat: "floor", mount: "room-floor", size: [3, 3, 0.015], params: [["board", "board width", 0.15, "m"],
     ["length", "lengths (min, max)", [0.9, 1.8], "m2"], ["stagger", "joints at least", 0.2, "m"],
-    ...SURF.map(p => p[0] === "pattern" ? ["pattern", "pattern", "random", "pick", ["random", "half", "third", "herringbone"]] : p[0] === "gap" ? ["gap", "gap", 0.0015, "mm"] : p[0] === "align" ? ["align", "start", "corner", "pick", ["centre", "line", "corner"]] : p),
+    ...SURF.map(p => p[0] === "pattern" ? ["pattern", "pattern", "random", "pick", ["random", "half", "third", "herringbone", "basket"]] : p[0] === "gap" ? ["gap", "gap", 0.0015, "mm"] : p[0] === "align" ? ["align", "start", "corner", "pick", ["centre", "line", "corner"]] : p),
     ["slot", "material", "wood", "slot"], ["base", "gap material", "gap", "slot"]], gen: planksGen },
   tatami: { label: "Tatami", cat: "floor", mount: "room-floor", size: [3.64, 2.73, 0.055], params: [["mat", "mat w × l", [0.91, 1.82], "m2"],
     ["heri", "border (heri)", 0.03, "m"], ["gap", "gap", 0.002, "mm"], ["gap_var", "gap varies", 0.3, "num"], ["seed", "seed", 1, "int"],
@@ -93,10 +105,13 @@ export const TYPES = {
   window: { label: "Window frame", cat: "opening", mount: "opening", size: [1.6, 0.22, 1.25], params: [["cols", "panes across", 2, "int"], ["rows", "panes up", 1, "int"],
     ["frame", "frame width", 0.06, "m"], ["frame_d", "frame depth", 0.07, "m"], ["mullion", "mullion", 0.05, "m"], ["sash", "sash width (0: none)", 0.045, "m"],
     ["slide", "sliding sashes", true, "bool"], ["wall", "wall thickness", 0.1, "m"], ["stool", "inside sill depth", 0.12, "m"], ["stool_t", "sill thickness", 0.025, "m"],
-    ["slot", "frame material", "frame", "slot"], ["stool_slot", "sill material", "body", "slot"]], gen: windowGen },
+    ["slot", "frame material", "frame", "slot"], ["stool_slot", "sill material", "body", "slot"],
+    ["glass", "glass", "glass", "slot"], ["wire", "wire in the glass (網入り)", false, "bool"], ["lock", "crescent locks where sashes meet", false, "bool"],
+    ["split", "two rows: the lower one's share (0: even)", 0, "num"]], gen: windowGen },
   curtain: { label: "Curtain", cat: "curtain", mount: "back", size: [1.8, 0.14, 2.3], params: [["panels", "panels", 2, "int"], ["open", "drawn open (0 to 1)", 0.3, "num"],
     ["pitch", "fold every", 0.11, "m"], ["thick", "cloth", 0.004, "mm"], ["rail", "rail", 0.03, "m"], ["hem", "above the floor", 0.015, "m"], ["seed", "seed", 1, "int"],
-    ["slot", "material", "fabric", "slot"]], gen: curtainGen },
+    ["slot", "material", "fabric", "slot"], ["tie", "tied back at (0: hanging free)", 0, "m"], ["tie_w", "gathered to (of its width)", 0.3, "num"],
+    ["tie_slot", "tie-back material", "fabric", "slot"]], gen: curtainGen },
   slats: { label: "Slats: radiator, vent, louvre", cat: "wall", mount: "back", size: [1.0, 0.1, 0.5], params: [["n", "slats", 16, "int"], ["dir", "slats run", "v", "pick", ["v", "h"]],
     ["slat_t", "slat thickness", 0.008, "mm"], ["frame", "frame", 0.02, "m"], ["back_plate", "back plate", true, "bool"], ["slot", "material", "white", "slot"]], gen: slatsGen },
   table: { label: "Table / desk / bench", cat: "furniture", mount: "floor", size: [1.4, 0.8, 0.72], params: [["top_t", "top thickness", 0.03, "m"], ["leg", "leg size", 0.05, "m"],
@@ -124,7 +139,8 @@ export const TYPES = {
     ["hinge", "hinged on (seen from the side it opens to)", "left", "pick", ["left", "right"]], ["bevel", "edge bevel", 0.002, "mm"],
     ["handle", "handle", "lever_round", "preset", "handle"], ["handle_z", "handle height", 0.95, "m"], ["handle_in", "handle from the edge", 0.065, "m"],
     ["frame", "frame", "door_frame", "preset", "door_frame"], ["lining", "frame lining", 0.02, "mm"], ["gap", "gap round the leaf", 0.003, "mm"], ["floor_gap", "gap under it", 0.008, "mm"],
-    ["slot", "material", "front", "slot"], ["hinge_slot", "hinge material", "metal", "slot"]], gen: doorGen },
+    ["slot", "material", "front", "slot"], ["hinge_slot", "hinge material", "metal", "slot"],
+    ["lite", "a sliding door's glass, from its top (0 to 0.8 of it)", 0, "num"], ["glass", "glass", "glass", "slot"]], gen: doorGen },
   handle: { label: "Door handle (both sides)", cat: "door", mount: "door", size: [0.15, 0.13, 0.07], params: [["kind", "kind", "lever", "pick", ["lever", "bar", "knob", "pull", "recess"]],
     ["through", "door thickness", 0.04, "m"], ["points", "a lever points", "left", "pick", ["left", "right"]], ["rose", "rose", "round", "pick", ["round", "square", "plate"]],
     ["lock", "keyhole below", false, "bool"], ["style", "style", "modern", "pick", ["modern", "classic"]], ["slot", "material", "metal", "slot"]], gen: handleGen },
@@ -140,6 +156,43 @@ export const TYPES = {
   block: { label: "Block: a step, a plinth, a board", cat: "furniture", mount: "floor", size: [1.2, 0.3, 0.18], params: [["bevel", "edge bevel", 0.003, "mm"],
     ["nosing", "nosing (front lip)", 0, "m"], ["slot", "material", "wood", "slot"]], gen: blockGen },
   parts: { label: "Free parts (any furniture)", cat: "furniture", mount: "floor", size: [0.6, 0.6, 0.6], params: [["parts", "parts", [{ s: "box", at: [0, 0, 0], size: [0.6, 0.6, 0.6], m: "body", b: 0.003 }], "parts"]], gen: partsGen },
+  // a Japanese school (§10): desks and chairs on bent steel tube (JIS S 1021's sizes), the teacher's lectern and a staff
+  // room's steel desk, the chalkboard and its tray, cubbies and steel lockers, fluorescent fittings, books to fill them
+  school_desk: { label: "School desk (学習机)", cat: "school", mount: "floor", size: [0.65, 0.45, 0.73], params: [["top_t", "top thickness", 0.018, "mm"],
+    ["edge", "edge band", 0.003, "mm"], ["over", "top overhangs the frame", 0.03, "m"], ["tube", "tube Ø", 0.0254, "mm"],
+    ["box", "book box depth (0: none)", 0.34, "m"], ["box_h", "book box height", 0.1, "m"], ["stretcher", "side stretchers at (0: none)", 0.12, "m"],
+    ["back_bar", "a bar across the back", true, "bool"], ["adjust", "height-adjusting sleeves", true, "bool"], ["hook", "bag hook", "right", "pick", ["none", "left", "right"]],
+    ["slot", "top", "laminate", "slot"], ["edge_slot", "edge band", "edge", "slot"], ["frame_slot", "frame", "steel", "slot"], ["box_slot", "book box", "steel", "slot"],
+    ["cap_slot", "foot caps", "rubber", "slot"]], gen: schoolDeskGen },
+  school_chair: { label: "School chair (学習椅子)", cat: "school", mount: "floor", size: [0.4, 0.46, 0.8], params: [["seat_h", "seat height", 0.44, "m"],
+    ["seat_d", "seat depth", 0.37, "m"], ["seat_t", "seat thickness", 0.012, "mm"], ["back_h", "backrest height", 0.15, "m"], ["curve", "backrest curve", 0.02, "m"],
+    ["tilt", "the back leans", 8, "deg"], ["tube", "tube Ø", 0.019, "mm"], ["stretcher", "side stretchers at (0: none)", 0.12, "m"], ["front_bar", "a bar across the front", false, "bool"],
+    ["slot", "seat and back", "plywood", "slot"], ["frame_slot", "frame", "steel", "slot"], ["cap_slot", "foot caps", "rubber", "slot"]], gen: schoolChairGen },
+  lectern: { label: "Teacher's lectern (教卓)", cat: "school", mount: "floor", size: [0.9, 0.6, 0.95], params: [["top_t", "top thickness", 0.025, "mm"],
+    ["over", "top overhang", 0.02, "m"], ["kick", "plinth", 0.06, "m"], ["shelf", "shelf at (0: none)", 0.45, "m"], ["drawer", "a drawer under the top", true, "bool"],
+    ["slot", "body", "wood", "slot"], ["top_slot", "top", "laminate", "slot"], ["panel_slot", "the students' side", "green", "slot"], ["handle_slot", "pull", "metal", "slot"]], gen: lecternGen },
+  steel_desk: { label: "Steel desk (片袖机, 両袖机)", cat: "school", mount: "floor", size: [1.0, 0.7, 0.7], params: [["pedestal", "drawers on", "right", "pick", ["left", "right", "both", "none"]],
+    ["ped_w", "pedestal width", 0.4, "m"], ["drawers", "drawers a pedestal", 3, "int"], ["middle", "a middle drawer", true, "bool"], ["top_t", "top thickness", 0.03, "mm"],
+    ["modesty", "a panel at the back", true, "bool"], ["gap", "gap between fronts", 0.003, "mm"],
+    ["slot", "body", "steel_paint", "slot"], ["top_slot", "top", "counter", "slot"], ["handle_slot", "pulls", "metal", "slot"]], gen: steelDeskGen },
+  chalkboard: { label: "Chalkboard and its tray (黒板)", cat: "school", mount: "wall", size: [3.6, 0.08, 1.2], params: [["frame", "frame width", 0.03, "m"],
+    ["frame_d", "frame depth", 0.022, "m"], ["tray", "chalk tray depth (0: none)", 0.065, "m"], ["chalk", "chalk on the tray", 6, "int"], ["erasers", "erasers", 2, "int"],
+    ["wings", "a board each side, this wide (0: none)", 0, "m"], ["wing_gap", "gap to them", 0.06, "m"], ["seed", "seed", 1, "int"],
+    ["face", "board", "chalkboard", "slot"], ["wing_face", "side boards", "cork", "slot"], ["slot", "frame and tray", "alu", "slot"]], gen: chalkboardGen },
+  cubbies: { label: "Cubbies: classroom lockers, shoe lockers (ロッカー, 下駄箱)", cat: "school", mount: "back", size: [1.8, 0.45, 0.9], params: [["grid", "cubbies across × up", [6, 3], "n2"],
+    ["t", "board thickness", 0.015, "mm"], ["kick", "plinth", 0.05, "m"], ["over", "top overhang", 0.01, "m"], ["shelf", "a shelf in each (shoes: 下駄箱)", false, "bool"],
+    ["tags", "name tags", true, "bool"], ["doors", "doors", "none", "pick", ["none", "all", "top"]], ["back", "back panel", true, "bool"],
+    ["slot", "body", "wood", "slot"], ["inside", "inside", "wood", "slot"], ["tag_slot", "name tags", "white", "slot"], ["door_slot", "doors", "front", "slot"]], gen: cubbiesGen },
+  steel_locker: { label: "Steel locker (スチールロッカー, 掃除用具入れ)", cat: "school", mount: "back", size: [0.9, 0.515, 1.79], params: [["grid", "doors across × up", [1, 1], "n2"],
+    ["pair", "double doors (wide ones)", true, "bool"], ["vents", "vent slits a door", 8, "int"], ["plinth", "plinth", 0.06, "m"],
+    ["handle", "handle", "lever", "pick", ["lever", "recess", "knob"]], ["card", "name card holder", true, "bool"],
+    ["slot", "body", "steel_paint", "slot"], ["handle_slot", "handle", "metal", "slot"]], gen: lockerGen },
+  tube_light: { label: "Fluorescent light (蛍光灯)", cat: "ceiling", mount: "ceiling", size: [1.25, 0.23, 0.07], params: [["style", "kind", "trough", "pick", ["trough", "batten", "louvre", "cover", "board"]],
+    ["tubes", "tubes", 2, "int"], ["tube_d", "tube Ø", 0.0325, "mm"], ["len", "a fitting's length", 1.25, "m"], ["wid", "a fitting's width", 0.23, "m"],
+    ["grid", "fittings across × along the box", [1, 1], "n2"], ["slot", "body", "white", "slot"]], gen: tubeGen },
+  books: { label: "Books: a row, a stack", cat: "small", mount: "on", size: [0.4, 0.26, 0.26], params: [["arrange", "laid", "row", "pick", ["row", "stack", "lean"]],
+    ["count", "books (0: as many as fit)", 0, "int"], ["thick", "thickness from, to", [0.012, 0.035], "m2"], ["tall", "heights from, to", [0.18, 0.26], "m2"],
+    ["seed", "seed", 1, "int"], ["tones", "cover colours", 4, "int"], ["slot", "covers", "cover", "slot"], ["pages_slot", "pages", "pages", "slot"]], gen: booksGen },
   // the little things (docs/IMMERSION.md): drawn at their own size and fitted into the box, so a size scales them evenly
   kettle: { label: "Kettle", cat: "small", mount: "on", size: [0.162, 0.216, 0.204], params: [["style", "kind", "jug", "pick", ["jug", "gooseneck", "whistling", "tetsubin"]],
     ["slot", "material", "plastic", "slot"], ["trim_slot", "handle, base and knob material", "plastic_2", "slot"]], gen: kettleGen },
@@ -177,7 +230,7 @@ export const TYPES = {
   candle: { label: "Candle", cat: "small", mount: "on", size: [0.07, 0.07, 0.103], params: [["style", "kind", "pillar", "pick", ["pillar", "taper", "tealight"]],
     ["left", "how much is left (0.15 to 1)", 1, "num"], ["slot", "wax", "wax", "slot"], ["holder_slot", "candlestick material", "brass", "slot"]], gen: candleGen },
 };
-export const CATS = { floor: "Floors", cabinet: "Cabinets and built-ins", furniture: "Furniture", soft: "Cushions, pillows, mattresses", door: "Doors and handles", wall: "On and in the walls", fitting: "Wall fittings",
+export const CATS = { floor: "Floors", cabinet: "Cabinets and built-ins", furniture: "Furniture", school: "School", soft: "Cushions, pillows, mattresses", door: "Doors and handles", wall: "On and in the walls", fitting: "Wall fittings",
   ceiling: "Ceilings", opening: "Windows", curtain: "Curtains", small: "Little things (they come alive)" };
 
 // ---- specs: presets merged under a spec, defaults filled ---------------------------------------------------------
@@ -217,21 +270,23 @@ export function canon(v) {
 }
 
 // ---- building: a spec -> parts -> one mesh per material slot -------------------------------------------------------
-// sockets: the named points a little thing's life comes from (its spout, its tip, a ring), in item space
+// sockets: the named points a little thing's life comes from (its spout, its tip, a ring), in item space; places: where
+// other things go on or in it (§10: a desk's top and its book box, a shelf's cells), {name, kind: "on" | "in", at (the
+// middle of its floor), size (the free box above it)} in item space
 export function build(spec, presets) {
   const s = withDefaults(resolve(spec, presets));
-  const P = [], warn = [], S = {};
+  const P = [], warn = [], S = {}, L = [];
   const R = rng(s.seed ?? 1);
   s.size = s.size.map(v => Math.max(0.001, +v || 0.001));
-  TYPES[s.type].gen(s, P, R, warn, S);
-  return { spec: s, parts: P, warn, sockets: S };
+  TYPES[s.type].gen(s, P, R, warn, S, L);
+  return { spec: s, parts: P, warn, sockets: S, places: L };
 }
 
 // the parts as triangles: {slot: {pos, nrm, uv, idx}} in metres, local space (front -y, z up)
 export function mesh(parts) {
   const G = {};
   const buf = m => G[m] || (G[m] = { pos: [], nrm: [], uv: [], idx: [] });
-  for (const p of parts) ({ cyl: cylFaces, soft: softFaces, pipe: pipeFaces, lathe: latheFaces, sweep: sweepFaces }[p.s] || boxFaces)(p, buf);
+  for (const p of parts) ({ cyl: cylFaces, soft: softFaces, pipe: pipeFaces, lathe: latheFaces, sweep: sweepFaces, prism: prismFaces, sheet: sheetFaces }[p.s] || boxFaces)(p, buf);
   return G;
 }
 function xform(p) {              // part space (centred on its at) -> item space
@@ -473,7 +528,7 @@ function smoothPath(ctrl, k = 6) {
 function sweepFaces(p, buf) {
   const B = buf(p.m), pts = p.pts || [], N = pts.length;
   if (N < 2) return;
-  const sc = p.sec || { a: 0.005, b: 0.005, r: 0.005 }, A = sc.a, Bh = sc.b, rc = Math.min(sc.r ?? Math.min(A, Bh), A, Bh), k = 4;
+  const sc = p.sec || { a: 0.005, b: 0.005, r: 0.005 }, A = sc.a, Bh = sc.b, rc = Math.min(sc.r ?? Math.min(A, Bh), A, Bh), k = Math.max(1, sc.k | 0 || 4);
   const sec = [];                                       // the rounded rectangle, anticlockwise, with its normals: [x across, y up, nx, ny]
   for (const [cx, cy0, a0] of [[Bh - rc, A - rc, 0], [-(Bh - rc), A - rc, 90], [-(Bh - rc), -(A - rc), 180], [Bh - rc, -(A - rc), 270]])
     for (let i = 0; i <= k; i++) { const an = (a0 + i / k * 90) * Math.PI / 180, c = Math.cos(an), sn = Math.sin(an); sec.push([cx + rc * c, cy0 + rc * sn, c, sn]); }
@@ -508,6 +563,80 @@ function sweepFaces(p, buf) {
     B.idx.push(a0, a1, b1, a0, b1, b0);
   }
   fixWinding(B, base);
+}
+// a prism: a polygon (pts [[u, v], ...], either way round) run `len` along an axis from `at`: "x" puts u on y and v on
+// z, "y" u on x and v on z, "z" u on x and v on y. Flat sides, each edge its own normal; flat ends (a fan: keep the
+// polygon convex). A trough light's body, a chalk tray, a sloped lectern top: sections a box can't make
+function prism(P, x, y, z, pts, len, axis, m, o = {}) {
+  const map = axisMap(axis), ps = pts.map(([u, v]) => map(u, v, 0)).concat(pts.map(([u, v]) => map(u, v, len)));
+  const lo = [0, 1, 2].map(k => Math.min(...ps.map(q => q[k]))), hi = [0, 1, 2].map(k => Math.max(...ps.map(q => q[k])));
+  const p = Object.assign({ s: "prism", at: [x, y, z], pts, len, axis, m, size: hi.map((v, k) => v - lo[k]) }, o); P.push(p); return p;
+}
+function axisMap(axis) { return axis === "x" ? (u, v, t) => [t, u, v] : axis === "y" ? (u, v, t) => [u, t, v] : (u, v, t) => [u, v, t]; }
+function prismFaces(p, buf) {
+  const B = buf(p.m), xf = xform(p), map = axisMap(p.axis || "x"), pts = p.pts || [], n = pts.length, L = p.len || 0;
+  if (n < 3 || L <= 0) return;
+  let area = 0; for (let i = 0; i < n; i++) { const [a, b] = pts[i], [c, d] = pts[(i + 1) % n]; area += a * d - b * c; }
+  const sg = area >= 0 ? 1 : -1;                                    // anticlockwise: outward is the edge turned clockwise
+  const face = (q, nn) => emit(B, q, nn, q.map(x => uvFor(p, x, nn)), xf, p.rz);
+  for (let i = 0; i < n; i++) {
+    const [u0, v0] = pts[i], [u1, v1] = pts[(i + 1) % n], el = Math.hypot(u1 - u0, v1 - v0);
+    if (el < 1e-7) continue;
+    const nn = map(sg * (v1 - v0) / el, -sg * (u1 - u0) / el, 0);
+    face([map(u0, v0, 0), map(u1, v1, 0), map(u1, v1, L), map(u0, v0, L)], nn);
+  }
+  face(pts.map(([u, v]) => map(u, v, 0)), map(0, 0, -1));
+  face(pts.map(([u, v]) => map(u, v, L)), map(0, 0, 1));
+}
+// a sheet: rows of points in item space (each row the same count), a cloth `th` thick as two faces with smooth normals:
+// a curtain gathered by its tie-back
+function sheet(P, rows, th, m, o = {}) {
+  const all = rows.flat(), lo = [0, 1, 2].map(k => Math.min(...all.map(q => q[k]))), hi = [0, 1, 2].map(k => Math.max(...all.map(q => q[k])));
+  const p = Object.assign({ s: "sheet", at: [0, 0, 0], size: hi.map((v, k) => v - lo[k]), rows, th, m }, o); P.push(p); return p;
+}
+function sheetFaces(p, buf) {
+  const B = buf(p.m), rows = p.rows || [], nr = rows.length, nc = nr ? rows[0].length : 0, th = Math.max(0.0002, p.th || 0.002);
+  if (nr < 2 || nc < 2) return;
+  const sub = (a, b) => a.map((v, k) => v - b[k]), at = (i, j) => rows[Math.max(0, Math.min(nr - 1, i))][Math.max(0, Math.min(nc - 1, j))];
+  const N = [], U = [];
+  for (let i = 0; i < nr; i++) for (let j = 0; j < nc; j++) {
+    const du = sub(at(i, j + 1), at(i, j - 1)), dv = sub(at(i + 1, j), at(i - 1, j)), c = v3.nrm(v3.cross(du, dv));
+    N.push(c);
+    const along = j ? U[i * nc + j - 1][0] + Math.hypot(...sub(at(i, j), at(i, j - 1))) : 0, up = i ? U[(i - 1) * nc + j][1] + Math.hypot(...sub(at(i, j), at(i - 1, j))) : 0;
+    U.push([along, up]);
+  }
+  for (const sd of [1, -1]) {
+    const base = B.pos.length / 3;
+    for (let i = 0; i < nr; i++) for (let j = 0; j < nc; j++) {
+      const q = rows[i][j], n = N[i * nc + j];
+      B.pos.push(...q.map((v, k) => v + n[k] * sd * th / 2)); B.nrm.push(...n.map(v => v * sd)); B.uv.push(...U[i * nc + j]);
+    }
+    for (let i = 0; i + 1 < nr; i++) for (let j = 0; j + 1 < nc; j++) {
+      const a = base + i * nc + j, b = a + 1, c = a + nc + 1, d = a + nc;
+      B.idx.push(a, b, c, a, c, d);
+    }
+    fixWinding(B, base);
+  }
+}
+// a path through corners, each corner inside it rounded as a tube bender rounds it (radius `bend`, `k` points an arc)
+function bent(pts, bend, k = 4) {
+  if (pts.length < 3 || !(bend > 0)) return pts;
+  const out = [pts[0]];
+  for (let i = 1; i < pts.length - 1; i++) {
+    const A = pts[i - 1], C = pts[i], E0 = pts[i + 1], L1 = Math.hypot(...v3.sub(C, A)), L2 = Math.hypot(...v3.sub(E0, C));
+    const d1 = v3.nrm(v3.sub(C, A)), d2 = v3.nrm(v3.sub(E0, C)), th = Math.acos(clamp(d1[0] * d2[0] + d1[1] * d2[1] + d1[2] * d2[2], -1, 1));
+    const t = Math.min(bend * Math.tan(th / 2), L1 * (i === 1 ? 0.9 : 0.45), L2 * (i === pts.length - 2 ? 0.9 : 0.45));
+    if (th < 1e-3 || t < 1e-4) { out.push(C); continue; }
+    const S0 = v3.sub(C, v3.mul(d1, t)), E = v3.add(C, v3.mul(d2, t));
+    for (let q = 0; q <= k; q++) { const u = q / k, a = (1 - u) * (1 - u), b = 2 * u * (1 - u), c = u * u; out.push([0, 1, 2].map(d => a * S0[d] + b * C[d] + c * E[d])); }
+  }
+  out.push(pts[pts.length - 1]);
+  return out;
+}
+// a round steel tube along corner points, bent round each corner (a school desk's or chair's frame); open at its ends
+// unless `caps` (its ends hide in a foot's cap or another tube)
+function tube(P, pts, r, m, o = {}) {
+  return sweep(P, bent(pts, o.bend ?? r * 2.5, o.k ?? 4), { a: r, b: r, r, k: 3 }, m, { up: o.up || [0, 0, 1], caps: !!o.caps });
 }
 // turn a run of triangles (from vertex `base` on) outward, judged by their vertices' normals
 function fixWinding(B, base) {
@@ -595,6 +724,15 @@ function herringbone(U, V, W, L) {
   }
   return out;
 }
+// basket weave (市松張り, a school's parquet): squares of n strips side by side, each square turned against its neighbours
+function basket(U, V, W, L) {
+  const n = Math.max(2, Math.round(L / W)), S = n * W, out = [];
+  for (let i = 0; i * S < U; i++) for (let j = 0; j * S < V; j++) {
+    const x = i * S, y = j * S, along = (i + j) % 2 === 0;
+    for (let k = 0; k < n; k++) out.push(along ? [x, y + k * W, x + S, y + (k + 1) * W, "u"] : [x + k * W, y, x + (k + 1) * W, y + S, "v"]);
+  }
+  return out;
+}
 // a set's own layout (the spec's `cells`, the plan's: storykit/pbrcells.py): one repeat's cells, fractions of `tile`
 // metres, tiled over the region from its corner; `whole` (a set too finely laid to build, a mosaic) one board over all
 function cellsLayout(U, V, c) {
@@ -609,8 +747,9 @@ function cellsLayout(U, V, c) {
 }
 const fitted = s => !!(s.cells && (s.cells.whole || (Array.isArray(s.cells.rects) && s.cells.rects.length)));
 function surface(s, P, R, rects, look) {
-  const wall = s.orient === "wall", [w, d, h] = s.size;
-  const U = w, V = wall ? h : d, T = wall ? d : h;
+  const wall = s.orient === "wall", ceil = s.orient === "ceiling", [w, d, h] = s.size;
+  const cap = wall ? capOf(s) : 0, capd = cap ? clamp(s.cap_d ?? 0.012, 0, d * 0.8) : 0;
+  const U = w, V = wall ? h - cap : d, T = wall ? d - capd : h;
   const g = Math.max(0, s.gap), gv = clamp(s.gap_var, 0, 1), groove = clamp(s.groove ?? 0.002, 0, T * 0.8);
   const swap = +s.angle === 90 && !wall, RU = swap ? V : U, RV = swap ? U : V;     // the region the layout was made on
   if (fitted(s)) rects = cellsLayout(RU, RV, s.cells);
@@ -620,8 +759,10 @@ function surface(s, P, R, rects, look) {
   const put = (a0, b0, a1, b1, t0, t1, m, o) => {
     const [u0, v0, u1, v1] = swap ? [b0, a0, b1, a1] : [a0, b0, a1, b1];
     return wall ? bx(P, u0 - U / 2, d / 2 - t1, v0, u1 - U / 2, d / 2 - t0, v1, m, Object.assign({ skip: "+y" }, o))
+         : ceil ? bx(P, u0 - U / 2, v0 - V / 2, T - t1, u1 - U / 2, v1 - V / 2, T - t0, m, Object.assign({ skip: "+z" }, o))   // turned over: faces down
                 : bx(P, u0 - U / 2, v0 - V / 2, t0, u1 - U / 2, v1 - V / 2, t1, m, Object.assign({ skip: "-z" }, o));
   };
+  if (cap) bx(P, -U / 2, -d / 2, h - cap, U / 2, d / 2, h, s.cap_slot || "wood", { b: Math.min(0.004, cap / 4), skip: "+y" });   // the cap rail along its top
   put(0, 0, RU, RV, 0, T - groove, s.base || "grout");
   const top = T - groove - 0.0005;
   for (const [a0, b0, a1, b1, along] of rects) {
@@ -635,21 +776,22 @@ function surface(s, P, R, rects, look) {
     if (p && s._each) s._each(p, t1);
   }
 }
+const capOf = s => s.orient === "wall" && s.cap > 0 ? clamp(s.cap, 0.005, s.size[2] / 3) : 0;   // a wainscot's cap rail
 function region(s) {                       // the laid-out region: turned 90° when the pattern runs the other way
   const wall = s.orient === "wall", [w, d, h] = s.size;
-  const U = w, V = wall ? h : d;
+  const U = w, V = wall ? h - capOf(s) : d;
   return +s.angle === 90 && !wall ? [V, U] : [U, V];
 }
 function tilesGen(s, P, R) {
   const [U, V] = region(s), [tw, tl] = s.tile.map(v => Math.max(0.02, v));
   const step = { grid: 0, half: 0.5, third: 1 / 3, random: 0, herringbone: 0 }[s.pattern] ?? 0;
-  const rects = s.pattern === "herringbone" ? herringbone(U, V, Math.min(tw, tl), Math.max(tw, tl))
+  const rects = s.pattern === "herringbone" ? herringbone(U, V, Math.min(tw, tl), Math.max(tw, tl)) : s.pattern === "basket" ? basket(U, V, Math.min(tw, tl), Math.max(tw, tl))
               : s.pattern === "random" ? randomRows(U, V, tl, tw * 0.5, tw * 1.5, tw * 0.2, R, s.align) : gridLayout(U, V, tw, tl, step, s.align);
   surface(s, P, R, rects, "tile");
 }
 function planksGen(s, P, R) {
   const [U, V] = region(s), bw = Math.max(0.03, s.board), [lmin, lmax] = [Math.max(0.1, Math.min(...s.length)), Math.max(0.1, ...s.length)];
-  const rects = s.pattern === "herringbone" ? herringbone(U, V, bw, lmax)
+  const rects = s.pattern === "herringbone" ? herringbone(U, V, bw, lmax) : s.pattern === "basket" ? basket(U, V, bw, lmax)
               : s.pattern === "half" || s.pattern === "third" ? gridLayout(U, V, lmax, bw, s.pattern === "half" ? 0.5 : 1 / 3, s.align)
               : randomRows(U, V, bw, lmin, lmax, s.stagger, R, s.align);
   surface(s, P, R, rects, "wood");
@@ -692,7 +834,7 @@ function colsOf(s, W) {
   const k = free ? 1 : W / Math.max(0.01, fixed);
   return cols.map(c => { const cw = c.w > 0 ? c.w * k : each; const o = Object.assign({}, c, { x0: x, x1: x + cw }); x += cw; return o; });
 }
-function cabinetGen(s, P, R, warn) {
+function cabinetGen(s, P, R, warn, S, L) {
   const [W, D, H] = s.size, ct = clamp(s.carcass, 0.005, 0.05), ft = clamp(s.front_t, 0.005, 0.05), rv = clamp(s.reveal, 0, 0.02);
   const topT = clamp(s.top, 0, H / 3), over = s.top ? clamp(s.top_over, 0, D / 3) : 0;
   const hp = { bar: 0.025, knob: 0.022, edge: 0.003 }[s.handle] || 0;                    // handles stand proud of the fronts
@@ -727,13 +869,19 @@ function cabinetGen(s, P, R, warn) {
         for (const [x0, x1] of [[xa, xa + 0.001], [xb - 0.001, xb]]) bx(P, x0, cy0 + 0.004, q.z0 + ct, x1, D / 2 - ct, q.z1 - ct, s.inside);
         bx(P, xa, cy0 + 0.004, q.z0 + ct, xb, D / 2 - ct, q.z0 + ct + 0.001, s.inside);
         bx(P, xa, cy0 + 0.004, q.z1 - ct - 0.001, xb, D / 2 - ct, q.z1 - ct, s.inside);
-        for (let i = 1; i <= n; i++) { const z = q.z0 + ct + (q.z1 - q.z0 - 2 * ct) * i / (n + 1); bx(P, xa + 0.001, cy0 + 0.01, z - ct / 2, xb - 0.001, D / 2 - ct, z + ct / 2, s.inside); }
+        let lo = q.z0 + ct + 0.001;
+        for (let i = 1; i <= n; i++) {
+          const z = q.z0 + ct + (q.z1 - q.z0 - 2 * ct) * i / (n + 1); bx(P, xa + 0.001, cy0 + 0.01, z - ct / 2, xb - 0.001, D / 2 - ct, z + ct / 2, s.inside);
+          place(L, `c${ci + 1}${q.low ? "" : "u"}_${i}`, xa + 0.002, cy0 + 0.01, lo, xb - 0.002, D / 2 - ct, z - ct / 2 - 0.002, "in"); lo = z + ct / 2;
+        }
+        place(L, `c${ci + 1}${q.low ? "" : "u"}_${n + 1}`, xa + 0.002, cy0 + 0.01, lo, xb - 0.002, D / 2 - ct, q.z1 - ct - 0.003, "in");
         continue;
       }
       if (q.k === "panel" || q.k === "door" || q.k === "doors" || q.k === "glass" || q.k === "drawers") fronts(s, P, c, ci, q, fx0, fx1, fz0, fz1, fy0, ft, slide, warn);
     }
   });
   if (slide) bx(P, -W / 2, fy0, Hb - 0.02, W / 2, cy0, Hb, s.handle_slot, { skip: "" });   // the track
+  place(L, "top", -W / 2 + 0.01, -D / 2 + 0.01, H, W / 2 - 0.01, D / 2 - 0.01, H + 0.4);
 }
 function fronts(s, P, c, ci, q, x0, x1, z0, z1, fy0, ft, slide, warn) {
   const rv = s.reveal, b = s.bevel;
@@ -890,20 +1038,37 @@ function windowGen(s, P) {
   const nc = Math.max(1, s.cols | 0), nr = Math.max(1, s.rows | 0), mw = clamp(s.mullion, 0.005, 0.2), sw = clamp(s.sash, 0, 0.15);
   const ix0 = -W / 2 + fw, ix1 = W / 2 - fw, iz0 = z0 + fw, iz1 = z1 - fw, slide = !!s.slide && nc > 1;
   const pw = slide ? (ix1 - ix0) / nc : (ix1 - ix0 - mw * (nc - 1)) / nc, ph = (iz1 - iz0 - mw * (nr - 1)) / nr;
+  // the rows' heights: even, or two with the lower one taking `split` of them (a classroom's tall sashes under a transom)
+  const rh = nr === 2 && s.split > 0 ? [2 * ph * clamp(s.split, 0.15, 0.85), 2 * ph * (1 - clamp(s.split, 0.15, 0.85))] : Array(nr).fill(ph);
+  const rowZ = j => iz0 + rh.slice(0, j).reduce((a, b) => a + b, 0) + j * mw;
   if (!slide) for (let i = 1; i < nc; i++) { const x = ix0 + i * pw + (i - 1) * mw; bx(P, x, fy0 + 0.005, iz0, x + mw, fy1 - 0.005, iz1, slot); }
-  for (let j = 1; j < nr; j++) { const z = iz0 + j * ph + (j - 1) * mw; bx(P, ix0, fy0 + 0.005, z, ix1, fy1 - 0.005, z + mw, slot); }
+  for (let j = 1; j < nr; j++) { const z = rowZ(j) - mw; bx(P, ix0, fy0 + 0.005, z, ix1, fy1 - 0.005, z + mw, slot); }
   const sd = Math.min(0.04, (fy1 - fy0) / 2 - 0.004);
   for (let i = 0; i < nc; i++) for (let j = 0; j < nr; j++) {
     let x0 = ix0 + i * (pw + (slide ? 0 : mw)), x1 = x0 + pw;
-    const za = iz0 + j * (ph + mw), zb = za + ph;
+    const za = rowZ(j), zb = za + rh[j];
     let ya = yc - sd / 2, yb = yc + sd / 2;
     if (slide) { const lap = sw / 2; if (i > 0) x0 -= lap; if (i < nc - 1) x1 += lap; const off = (i % 2 ? 1 : -1) * (sd / 2 + 0.002); ya += off; yb += off; }
+    const gl = s.glass || "glass", ym = (ya + yb) / 2;
     if (sw > 0) {
       bx(P, x0, ya, za, x0 + sw, yb, zb, slot); bx(P, x1 - sw, ya, za, x1, yb, zb, slot);
       bx(P, x0 + sw, ya, za, x1 - sw, yb, za + sw, slot); bx(P, x0 + sw, ya, zb - sw, x1 - sw, yb, zb, slot);
-      bx(P, x0 + sw, (ya + yb) / 2 - 0.003, za + sw, x1 - sw, (ya + yb) / 2 + 0.003, zb - sw, "glass");
-    } else bx(P, x0, (ya + yb) / 2 - 0.003, za, x1, (ya + yb) / 2 + 0.003, zb, "glass");
+      bx(P, x0 + sw, ym - 0.003, za + sw, x1 - sw, ym + 0.003, zb - sw, gl);
+      if (s.wire) wireMesh(P, x0 + sw, x1 - sw, za + sw, zb - sw, ym);
+    } else { bx(P, x0, ym - 0.003, za, x1, ym + 0.003, zb, gl); if (s.wire) wireMesh(P, x0, x1, za, zb, ym); }
+    // a crescent lock (クレセント錠) on the room's side where two sliding sashes meet, at the lower row's middle
+    if (s.lock && slide && i < nc - 1 && j === 0 && sw > 0) {
+      const xm = ix0 + (i + 1) * pw, zl = za + Math.min(0.9, (zb - za) * 0.5), yr = yc - sd / 2 - (sd / 2 + 0.002) - 0.0005;
+      bx(P, xm - 0.04, yr - 0.006, zl - 0.012, xm + 0.004, yr, zl + 0.012, "metal", { b: 0.002 });                 // the base, on the inner sash
+      bx(P, xm - 0.012, yr - 0.012, zl - 0.004, xm + 0.024, yr - 0.006, zl + 0.004, "metal", { b: 0.002 });       // its lever
+    }
   }
+}
+// wire in the glass (網入りガラス, a school's corridor and stairs): a 25 mm square mesh in the pane's middle
+function wireMesh(P, x0, x1, z0, z1, y) {
+  const g = 0.025, t = 0.0007;
+  for (let x = x0 + g / 2; x < x1; x += g) bx(P, x - t / 2, y - t / 2, z0, x + t / 2, y + t / 2, z1, "wire", { skip: "-z+z" });
+  for (let z = z0 + g / 2; z < z1; z += g) bx(P, x0, y - t / 2, z - t / 2, x1, y + t / 2, z + t / 2, "wire", { skip: "-x+x" });
 }
 
 // ---- soft things and furniture -------------------------------------------------------------------------------------
@@ -912,6 +1077,7 @@ function curtainGen(s, P, R) {
   if (rail) bx(P, -W / 2, -D / 2, z1, W / 2, D / 2, H, "metal");
   const np = Math.max(1, s.panels | 0), open = clamp(s.open, 0, 0.9), pw = W * (1 - open) / np, a = D / 2 - th;
   const starts = np === 1 ? [-W / 2] : [-W / 2, W / 2 - pw];
+  if (s.tie > 0) { tiedCurtains(s, P, R, starts.slice(0, np), pw, z0, z1, th); return; }
   for (const x0 of starts.slice(0, np)) {
     const n = Math.max(2, Math.round(pw / clamp(s.pitch, 0.03, 0.5)) * 2), step = pw / n;
     const ys = Array.from({ length: n + 1 }, (_, k) => (k % 2 ? a : -a) * (0.7 + 0.3 * R()));   // the folds' crests, each its own depth
@@ -921,6 +1087,32 @@ function curtainGen(s, P, R) {
       P.push({ s: "box", at: [(xa + xb) / 2, (ya + yb) / 2, z0], size: [len, th, z1 - z0], m: s.slot, rz: ang, uv: [k * 0.37, 0, 0] });
     }
   }
+}
+// curtains tied back (the classroom's, after the user's render): each panel hangs from its stretch of the rail, gathered
+// at the tie into a bundle by the window's side, flaring a little below it; its folds deepen where it's gathered, the
+// cloth the same width all the way down (a sheet: smooth, both faces), the tie-back a band round the bundle
+function tiedCurtains(s, P, R, starts, pw0, z0, z1, th) {
+  const [W, D] = s.size, zt = clamp(s.tie, z0 + 0.15, z1 - 0.2), tw = clamp(s.tie_w, 0.1, 1) * (pw0 - 0.022), amp0 = Math.min(D / 2 - th - 0.012, clamp(s.pitch, 0.03, 0.5) * 0.35);
+  const n = Math.max(4, Math.round(pw0 / clamp(s.pitch, 0.03, 0.5)) * 2), zs = [];
+  for (let k = 0; k <= 6; k++) zs.push(z0 + (zt - z0) * k / 6);
+  for (let k = 1; k <= 8; k++) zs.push(zt + (z1 - zt) * (1 - Math.cos(k / 8 * Math.PI / 2)));   // more rows near the tie, where it bends most
+  starts.forEach((x0, pi) => {
+    let pw = pw0;
+    const outer = Math.abs(x0 + W / 2) < 1e-6 ? -1 : 1, edge = outer < 0 ? x0 + 0.022 : x0 + pw - 0.022;   // gathered toward its outer edge, in from the rail's end so the tie-back goes round it
+    pw -= 0.022;
+    const crest = Array.from({ length: n + 1 }, (_, k) => (k % 2 ? 1 : -1) * (0.7 + 0.3 * R()));
+    const rows = zs.map(z => {
+      const f = z >= zt ? (z - zt) / (z1 - zt) : (zt - z) / (zt - z0);
+      const wid = z >= zt ? tw + (pw - tw) * Math.pow(f, 0.8) : tw * (1 + 0.6 * Math.pow(f, 1.3));   // fanning up to the rail, flaring to the hem
+      const xa = outer < 0 ? edge : edge - wid, amp = Math.min(D / 2 - th - 0.012, amp0 * Math.sqrt(pw / Math.max(wid, 0.05)));
+      return crest.map((c, k) => [xa + wid * k / n, c * amp, z]);
+    });
+    sheet(P, rows, th, s.slot);
+    const xc = outer < 0 ? edge + tw / 2 : edge - tw / 2, ring = [];                               // the tie-back round the bundle
+    for (let k = 0; k < 16; k++) { const an = k / 16 * Math.PI * 2; ring.push([xc + Math.cos(an) * (tw / 2 + 0.01), Math.sin(an) * Math.min(D / 2 - 0.009, amp0 * Math.sqrt(pw / tw) + 0.012), zt]); }
+    P.push({ s: "pipe", at: [0, 0, 0], size: [0, 0, 0], pts: ring, r: 0.008, m: s.tie_slot || s.slot });
+    void pi;
+  });
 }
 function slatsGen(s, P) {
   const [W, D, H] = s.size, f = clamp(s.frame, 0, Math.min(W, H) / 3), n = Math.max(1, s.n | 0), t = clamp(s.slat_t, 0.001, 0.05);
@@ -934,7 +1126,7 @@ function slatsGen(s, P) {
     else bx(P, -W / 2 + f, -D / 2 + 0.002, H / 2 + c - t / 2, W / 2 - f, D / 2 - 0.004, H / 2 + c + t / 2, s.slot);
   }
 }
-function tableGen(s, P) {
+function tableGen(s, P, R, warn, S, L) {
   const [W, D, H] = s.size, tt = clamp(s.top_t, 0.005, H / 3), lg = clamp(s.leg, 0.01, Math.min(W, D) / 3), li = clamp(s.leg_in, 0, Math.min(W, D) / 3);
   bx(P, -W / 2, -D / 2, H - tt, W / 2, D / 2, H, s.slot, { b: s.bevel });
   for (const sx of [-1, 1]) for (const sy of [-1, 1]) {
@@ -948,6 +1140,8 @@ function tableGen(s, P) {
     for (const sx of [-1, 1]) bx(P, sx * xl - t / 2, -ya, H - tt - ap, sx * xl + t / 2, ya, H - tt, s.leg_slot);
   }
   if (s.shelf > 0) bx(P, -W / 2 + li + lg, -D / 2 + li + lg, s.shelf, W / 2 - li - lg, D / 2 - li - lg, s.shelf + 0.02, s.slot, { b: 0.001 });
+  if (s.shelf > 0) place(L, "shelf", -W / 2 + li + lg, -D / 2 + li + lg, s.shelf + 0.02, W / 2 - li - lg, D / 2 - li - lg, H - tt - ap - 0.005, "in");
+  place(L, "top", -W / 2 + 0.01, -D / 2 + 0.01, H, W / 2 - 0.01, D / 2 - 0.01, H + 0.5);
 }
 function bedGen(s, P) {
   const [W, D, H] = s.size, top = clamp(s.top, 0.15, H), base = clamp(s.base, 0.05, top - 0.08), ki = clamp(s.kick_in, 0, 0.2);
@@ -1059,7 +1253,8 @@ function doorGen(s, P) {
   const mort = hinged && s.mortise !== false && (s.hinges | 0) > 0;
   // with mortises, the hinge edge's last few millimetres are a skin with the pockets left open (below)
   const XL = -W / 2 + (mort && side < 0 ? ht : 0), XR = W / 2 - (mort && side > 0 ? ht : 0);
-  if (st === "flush" || st === "slide") slab(XL, XR, 0, H, s.slot);
+  if (st === "slide" && s.lite > 0) slideLite(s, P, slab);
+  else if (st === "flush" || st === "slide") slab(XL, XR, 0, H, s.slot);
   else {
     const rw = clamp(s.rail, 0.02, Math.min(W, H) / 3), [gc, gr] = (s.grid || [1, 2]).map(v => Math.max(1, v | 0)), shoji = st === "shoji";
     const bot = shoji ? rw : rw * 1.6, mw = shoji ? 0.014 : rw * 0.75, tb = shoji ? T * 0.7 : T;
@@ -1085,6 +1280,19 @@ function doorGen(s, P) {
   if (mort) skinWithHoles(P, side < 0 ? -W / 2 : W / 2 - ht, side < 0 ? -W / 2 + ht : W / 2, -T / 2, T / 2, 0, H, cuts.map(c => c.cut), s.slot);
   if ((s.hinge_model || "kit") === "kit") zcs.forEach((zc, i) =>                 // the door's half of each hinge, on its edge
     hingeHalf(P, s, ax, ay, zc, 0, [side * W / 2, side, cuts[i].y0, cuts[i].y1]));
+}
+// a sliding door with glass in its top (a classroom's 引き戸): stiles, a deep bottom rail, a rail at the glass's foot,
+// the lites (`grid` across × up) in the top `lite` of it, a flat panel set in below
+function slideLite(s, P, slab) {
+  const [W, T, H] = s.size, rw = clamp(s.rail, 0.03, Math.min(W, H) / 4), [gc, gr] = (s.grid || [1, 1]).map(v => Math.max(1, v | 0));
+  const zg = H * (1 - clamp(s.lite, 0.05, 0.8)), bot = rw * 1.8, mw = Math.min(0.03, rw * 0.5), rc = clamp(s.recess, 0.001, T / 3);
+  slab(-W / 2, -W / 2 + rw, 0, H, s.slot); slab(W / 2 - rw, W / 2, 0, H, s.slot);
+  slab(-W / 2 + rw, W / 2 - rw, 0, bot, s.slot); slab(-W / 2 + rw, W / 2 - rw, H - rw, H, s.slot); slab(-W / 2 + rw, W / 2 - rw, zg - rw * 0.7, zg, s.slot);
+  if (zg - rw * 0.7 - bot > 0.02) slab(-W / 2 + rw, W / 2 - rw, bot, zg - rw * 0.7, s.slot, { b: 0.001 }, T - 2 * rc);     // the panel, set in each side
+  const ix0 = -W / 2 + rw, ix1 = W / 2 - rw, iz0 = zg, iz1 = H - rw, pw = (ix1 - ix0 - mw * (gc - 1)) / gc, ph = (iz1 - iz0 - mw * (gr - 1)) / gr;
+  for (let i = 1; i < gc; i++) { const x = ix0 + i * pw + (i - 1) * mw; slab(x, x + mw, iz0, iz1, s.slot, { b: 0.0008 }); }
+  for (let j = 1; j < gr; j++) { const z = iz0 + j * ph + (j - 1) * mw; slab(ix0, ix1, z, z + mw, s.slot, { b: 0.0008 }); }
+  for (let i = 0; i < gc; i++) for (let j = 0; j < gr; j++) { const x0 = ix0 + i * (pw + mw), z0 = iz0 + j * (ph + mw); bx(P, x0, -0.003, z0, x0 + pw, 0.003, z0 + ph, s.glass || "glass"); }
 }
 // a door's handles, both sides of a leaf `through` thick, centred on the box (the plan puts the box's middle where
 // the grip goes). lever, bar (a long pull), knob, pull (a short horizontal one), recess (a sliding door's flush cup)
@@ -1794,6 +2002,317 @@ function candleGen(s, P, R, warn, S) {
   fit(s, P, S);
 }
 
+// ---- a Japanese school (§10; the user, 2026-11-01: "build out a japanese school for a horror game", after their own
+// Blender classroom) ----------------------------------------------------------------------------------------------------
+// Desks and chairs on bent steel tube at JIS S 1021's sizes, the teacher's lectern, a staff room's steel desk, the
+// chalkboard and its tray, cubbies (a classroom's lockers, an entrance's shoe lockers) and steel lockers, fluorescent
+// fittings, books to fill them. Each says where things go on and in it (its places), so books and bags land there.
+function place(L, name, x0, y0, z0, x1, y1, z1, kind = "on") {
+  if (L && x1 - x0 > 0.01 && y1 - y0 > 0.01 && z1 - z0 > 0.005) L.push({ name, kind, at: [(x0 + x1) / 2, (y0 + y1) / 2, z0], size: [x1 - x0, y1 - y0, z1 - z0] });
+}
+// a student's desk: a laminate top on its edge band, each side one bent tube (front leg, the rail under the top, back
+// leg) on height-adjusting sleeves, stretchers low down, a sheet-steel book box under the top open to the student (its
+// front, -y), a bag hook on one side
+function schoolDeskGen(s, P, R, warn, S, L) {
+  const [W, D, H] = s.size, tt = clamp(s.top_t, 0.008, 0.05), e = clamp(s.edge, 0, 0.01), r = clamp(s.tube, 0.012, 0.05) / 2;
+  const ov = clamp(s.over, r + 0.004, Math.min(W, D) / 4), zt = H - tt;
+  bx(P, -W / 2, -D / 2, zt, W / 2, D / 2, H - (e ? 0.001 : 0), e ? s.edge_slot : s.slot, { b: Math.min(0.002, tt / 4) });
+  if (e) bx(P, -W / 2 + e, -D / 2 + e, H - 0.0012, W / 2 - e, D / 2 - e, H, s.slot, { skip: "-z" });
+  const xl = W / 2 - ov, yf = -D / 2 + ov, yb = D / 2 - ov, zr = zt - r - 0.001, cap = 0.016;
+  const za = s.adjust ? clamp(zr * 0.42, cap + 0.06, zr - 0.1) : cap;                      // where the sleeve meets the leg
+  const st = s.stretcher > 0 ? clamp(s.stretcher, cap + r + 0.01, zr - 0.15) : 0;
+  for (const sx of [-1, 1]) {
+    const x = sx * xl;
+    tube(P, [[x, yf, za], [x, yf, zr], [x, yb, zr], [x, yb, za]], r, s.frame_slot, { bend: 0.045 });
+    for (const y of [yf, yb]) {
+      if (s.adjust) { tube(P, [[x, y, cap], [x, y, za + 0.03]], r * 0.84, s.frame_slot); cy(P, x, y, za - 0.012, r * 1.22, 0.024, s.frame_slot, { n: 16 }); }
+      cy(P, x, y, 0, r * 1.18, cap, s.cap_slot, { n: 16 });
+    }
+    if (st) tube(P, [[x, yf, st], [x, yb, st]], r * 0.78, s.frame_slot);
+  }
+  if (st && s.back_bar) tube(P, [[-xl, yb, st + 0.1], [xl, yb, st + 0.1]], r * 0.78, s.frame_slot);
+  const bd = s.box > 0 ? Math.min(s.box, yb - yf + 2 * r) : 0;
+  if (bd > 0.05) {                                               // the book box: bottom with its lip folded up, back, sides
+    const t = 0.0025, bh = clamp(s.box_h, 0.04, zr - st - 0.05), x0 = -xl + r + 0.002, x1 = xl - r - 0.002, y1 = yb + r, y0 = y1 - bd, z0 = zt - bh;
+    bx(P, x0, y0, z0, x1, y1, z0 + t, s.box_slot);
+    bx(P, x0, y0, z0 + t, x1, y0 + t, z0 + 0.016, s.box_slot, { b: 0.001 });
+    bx(P, x0, y1 - t, z0 + t, x1, y1, zt, s.box_slot);
+    bx(P, x0, y0, z0 + t, x0 + t, y1 - t, zt, s.box_slot); bx(P, x1 - t, y0, z0 + t, x1, y1 - t, zt, s.box_slot);
+    place(L, "box", x0 + t, y0 + t, z0 + t, x1 - t, y1 - t, zt - 0.002, "in");
+  }
+  if (s.hook === "left" || s.hook === "right") {                  // a bag hook off the side rail, inside the top's overhang
+    const sx = s.hook === "left" ? -1 : 1, reach = ov - r - 0.004, y = (yf + yb) / 2 + 0.06;
+    if (reach > 0.008) tube(P, [[sx * xl, y, zr - 0.004], [sx * (xl + reach * 0.5), y, zr - 0.03], [sx * (xl + reach), y, zr - 0.032], [sx * (xl + reach), y, zr - 0.012]], 0.0028, s.frame_slot, { bend: 0.006, caps: true });
+  }
+  place(L, "top", -W / 2 + 0.01, -D / 2 + 0.01, H, W / 2 - 0.01, D / 2 - 0.01, H + 0.5);
+}
+// a student's chair: each side a front leg bent back into the seat rail, and a rear leg running on up as the back's
+// upright, leaning back above the seat; plywood seat and a curved plywood back between the uprights' tops
+function schoolChairGen(s, P, R, warn, S, L) {
+  const [W, D, H] = s.size, r = clamp(s.tube, 0.012, 0.04) / 2, sht = clamp(s.seat_t, 0.006, 0.04), sh = clamp(s.seat_h, 0.15, H - 0.12);
+  const sd = clamp(s.seat_d, 0.2, D - 0.06), bh = clamp(s.back_h, 0.05, H - sh - 0.04), tilt = clamp(s.tilt, 0, 20) * Math.PI / 180, cap = 0.014;
+  const x = W / 2 - r - 0.004, yS0 = -D / 2, yS1 = -D / 2 + sd, yF = yS0 + 0.03, yR = yS1 - 0.03, yRf = yR + 0.015, zr = sh - sht - r;
+  const top = H - 0.004, yT = yR + (top - zr) * Math.tan(tilt);
+  const rear = z => z <= zr ? yRf + (yR - yRf) * (z - cap) / (zr - cap) : yR + (z - zr) * Math.tan(tilt);   // the rear leg's y at a height
+  const st = s.stretcher > 0 ? clamp(s.stretcher, cap + r + 0.01, zr - 0.08) : 0;
+  for (const sx of [-1, 1]) {
+    tube(P, [[sx * x, yF, cap], [sx * x, yF, zr], [sx * x, yR, zr]], r, s.frame_slot, { bend: 0.035 });
+    tube(P, [[sx * x, yRf, cap], [sx * x, yR, zr], [sx * x, yT, top]], r, s.frame_slot, { bend: 0.08 });
+    for (const y of [yF, yRf]) cy(P, sx * x, y, 0, r * 1.2, cap, s.cap_slot, { n: 14 });
+    if (st) tube(P, [[sx * x, yF, st], [sx * x, rear(st), st]], r * 0.8, s.frame_slot);
+  }
+  tube(P, [[-x, yF, zr - 0.045], [x, yF, zr - 0.045]], r * 0.85, s.frame_slot);                 // under the seat's front
+  tube(P, [[-x, rear(zr - 0.03), zr - 0.03], [x, rear(zr - 0.03), zr - 0.03]], r * 0.85, s.frame_slot);   // and its back
+  if (st && s.front_bar) tube(P, [[-x, yF, st + 0.03], [x, yF, st + 0.03]], r * 0.8, s.frame_slot);
+  bx(P, -W / 2 + 0.006, yS0, sh - sht, W / 2 - 0.006, yS1, sh, s.slot, { b: sht * 0.45 });      // the seat
+  const bt = 0.01, zc = top - bh / 2 - 0.006, yc = rear(zc) - r - bt / 2 - 0.0015, bw = W - 0.01, cv = clamp(s.curve, 0, 0.05), pts = [];
+  for (let i = 0; i <= 8; i++) { const u = -1 + i / 4; pts.push([u * bw / 2, yc + cv * (1 - u * u), zc]); }
+  sweep(P, pts, { a: bh / 2, b: bt / 2, r: Math.min(0.004, bt / 2), k: 2 }, s.slot, { up: [0, Math.sin(tilt), Math.cos(tilt)] });
+  place(L, "seat", -W / 2 + 0.02, yS0 + 0.02, sh, W / 2 - 0.02, yS1 - 0.03, sh + 0.35);
+}
+// the teacher's lectern (教卓): a box on a plinth, the students' side a panel of its own (green, the reference's), open to
+// the teacher (its front, -y) with a shelf, a drawer under the top
+function lecternGen(s, P, R, warn, S, L) {
+  const [W, D, H] = s.size, tt = clamp(s.top_t, 0.012, 0.06), ov = clamp(s.over, 0, 0.05), t = 0.018, k = clamp(s.kick, 0, 0.15);
+  const x0 = -W / 2 + ov, x1 = W / 2 - ov, y0 = -D / 2 + ov, y1 = D / 2 - ov, zt = H - tt;
+  bx(P, -W / 2, -D / 2, zt, W / 2, D / 2, H, s.top_slot, { b: 0.003 });
+  bx(P, x0, y0, k, x0 + t, y1, zt, s.slot, { b: 0.0015 }); bx(P, x1 - t, y0, k, x1, y1, zt, s.slot, { b: 0.0015 });
+  if (k) bx(P, x0 + 0.03, y0 + 0.04, 0, x1 - 0.03, y1 - 0.03, k, "black");
+  bx(P, x0 + t, y1 - t, k, x1 - t, y1, zt, s.panel_slot, { b: 0.0015 });                   // the students' side
+  bx(P, x0 + 0.002, y1 - 0.004, k, x1 - 0.002, y1 + 0.0005 > D / 2 ? D / 2 : y1 + 0.0005, k + 0.03, s.slot);   // a rail along its foot
+  bx(P, x0 + t, y0 + 0.012, k, x1 - t, y1 - t, k + t, s.slot);                             // the bottom
+  const dz = s.drawer ? Math.min(0.11, (zt - k) / 4) : 0;
+  if (dz) {
+    bx(P, x0 + t, y0 + 0.02, zt - dz - t, x1 - t, y1 - t, zt - dz, s.slot);                 // the drawer's floor
+    bx(P, x0 + t + 0.003, y0, zt - dz + 0.003, x1 - t - 0.003, y0 + t, zt - 0.003, s.slot, { b: 0.001 });   // its front
+    bx(P, -0.06, y0 - 0.008, zt - dz / 2 - 0.006, 0.06, y0, zt - dz / 2 + 0.006, s.handle_slot, { b: 0.002 });
+  }
+  const zs = s.shelf > 0 ? clamp(s.shelf, k + 0.12, zt - dz - 0.14) : 0;
+  if (zs) { bx(P, x0 + t, y0 + 0.03, zs, x1 - t, y1 - t, zs + t, s.slot, { b: 0.001 }); place(L, "shelf", x0 + t, y0 + 0.03, zs + t, x1 - t, y1 - t, zt - dz - t - 0.005, "in"); }
+  place(L, "bottom", x0 + t, y0 + 0.03, k + t, x1 - t, y1 - t, (zs || zt - dz - t) - 0.005, "in");
+  place(L, "top", -W / 2 + 0.01, -D / 2 + 0.01, H, W / 2 - 0.01, D / 2 - 0.01, H + 0.5);
+}
+// a staff room's steel desk (片袖机, 両袖机): a laminate top in a steel edge, a pedestal of drawers on one or both sides
+// (or a steel leg panel), a shallow middle drawer, a modesty panel at the back; the drawers face the one who sits (-y)
+function steelDeskGen(s, P, R, warn, S, L) {
+  const [W, D, H] = s.size, tt = clamp(s.top_t, 0.015, 0.06), g = clamp(s.gap, 0.001, 0.008), zt = H - tt, kick = 0.04, ft = 0.018;
+  bx(P, -W / 2, -D / 2, zt, W / 2, D / 2, H - 0.002, s.slot, { b: 0.002 });
+  bx(P, -W / 2 + 0.006, -D / 2 + 0.006, H - 0.003, W / 2 - 0.006, D / 2 - 0.006, H, s.top_slot, { skip: "-z" });
+  const pw = clamp(s.ped_w, 0.25, W / 2 - 0.05), sides = s.pedestal === "both" ? [-1, 1] : s.pedestal === "left" ? [-1] : s.pedestal === "right" ? [1] : [];
+  const n = Math.max(1, Math.min(6, s.drawers | 0)), mid = s.middle ? 0.1 : 0, pull = (xa, xb, z) => bx(P, (xa + xb) / 2 - Math.min(0.1, (xb - xa) * 0.3), -D / 2, z - 0.007, (xa + xb) / 2 + Math.min(0.1, (xb - xa) * 0.3), -D / 2 + 0.008, z + 0.007, s.handle_slot, { b: 0.002 });
+  let inA = -W / 2, inB = W / 2;
+  for (const sx of [-1, 1]) {
+    if (sides.includes(sx)) {
+      const xa = sx < 0 ? -W / 2 : W / 2 - pw, xb = xa + pw;
+      bx(P, xa, -D / 2 + 0.008 + ft, kick, xb, D / 2, zt, s.slot, { b: 0.002 });
+      bx(P, xa + 0.015, -D / 2 + 0.05, 0, xb - 0.015, D / 2 - 0.03, kick, "black");
+      const zh = (zt - kick - g) / n;
+      for (let i = 0; i < n; i++) {
+        const za = kick + g + i * zh, zb = za + zh - g, deep = i === 0 && n > 2;
+        bx(P, xa + g, -D / 2 + 0.008, za, xb - g, -D / 2 + 0.008 + ft, zb, s.slot, { b: 0.0015 });
+        pull(xa + g, xb - g, zb - Math.min(0.04, zh / 3) - (deep ? 0 : 0));
+      }
+      if (sx < 0) inA = xb; else inB = xa;
+    } else {
+      const xa = sx < 0 ? -W / 2 + 0.01 : W / 2 - 0.04;
+      bx(P, xa, -D / 2 + 0.04, 0, xa + 0.03, D / 2 - 0.01, zt, s.slot, { b: 0.003 });
+      if (sx < 0) inA = xa + 0.03; else inB = xa;
+    }
+  }
+  if (mid && inB - inA > 0.2) {
+    bx(P, inA, -D / 2 + 0.008 + ft, zt - mid, inB, D / 2 - 0.02, zt, s.slot);
+    bx(P, inA + g, -D / 2 + 0.008, zt - mid + g, inB - g, -D / 2 + 0.008 + ft, zt - g, s.slot, { b: 0.0015 });
+    pull(inA, inB, zt - mid / 2);
+  }
+  if (s.modesty && inB - inA > 0.1) bx(P, inA, D / 2 - 0.02, 0.22, inB, D / 2 - 0.008, zt - mid, s.slot, { b: 0.0015 });
+  place(L, "top", -W / 2 + 0.01, -D / 2 + 0.01, H, W / 2 - 0.01, D / 2 - 0.01, H + 0.5);
+}
+// a chalkboard (黒板): its face set back in an aluminium frame, a chalk tray along its foot with chalk and erasers on it,
+// and a board each side (cork for notices, after the reference) in frames of their own
+function chalkboardGen(s, P, R, warn, S, L) {
+  const [W, D, H] = s.size, fw = clamp(s.frame, 0.01, Math.min(0.08, H / 6)), fd = clamp(s.frame_d, 0.008, D - 0.005), wg = s.wings > 0 ? clamp(s.wings, 0.15, W / 3) : 0;
+  const gap = wg ? clamp(s.wing_gap, 0, 0.4) : 0, bw = W - 2 * (wg + gap), yb = D / 2 - fd;
+  const board = (xa, xb, face) => {
+    bx(P, xa, yb, 0, xa + fw, D / 2, H, s.slot, { b: 0.002, skip: "+y" }); bx(P, xb - fw, yb, 0, xb, D / 2, H, s.slot, { b: 0.002, skip: "+y" });
+    bx(P, xa + fw, yb, H - fw, xb - fw, D / 2, H, s.slot, { b: 0.002, skip: "+y" }); bx(P, xa + fw, yb, 0, xb - fw, D / 2, fw, s.slot, { b: 0.002, skip: "+y" });
+    bx(P, xa + fw, yb + 0.006, fw, xb - fw, D / 2, H - fw, face, { skip: "+y" });
+  };
+  board(-bw / 2, bw / 2, s.face);
+  if (wg) for (const sx of [-1, 1]) { const xa = sx < 0 ? -W / 2 : W / 2 - wg; board(xa, xa + wg, s.wing_face); }
+  const td = clamp(s.tray, 0, D - fd - 0.002);
+  if (td > 0.015) {                                              // the tray: a sloped bracket under a flat floor, a lip at its front
+    const xa = -bw / 2 + fw * 0.5, xb = bw / 2 - fw * 0.5, zf = fw, y0 = yb - td;
+    prism(P, xa, 0, 0, [[yb, zf], [y0, zf], [y0, zf - 0.008], [yb, Math.max(0.002, zf - 0.035)]], xb - xa, "x", s.slot);
+    bx(P, xa, y0, zf, xb, y0 + 0.004, zf + 0.012, s.slot, { b: 0.001 });
+    const used = [];                                             // chalk and erasers, each where the others aren't
+    const spot = (len) => { for (let tries = 0; tries < 12; tries++) { const c = xa + 0.05 + len / 2 + R() * (xb - xa - 0.1 - len); if (!used.some(([a, b]) => c + len / 2 > a - 0.02 && c - len / 2 < b + 0.02)) { used.push([c - len / 2, c + len / 2]); return c; } } return null; };
+    for (let i = 0; i < Math.max(0, s.erasers | 0); i++) {
+      const c = spot(0.13); if (c === null) break;
+      const y = y0 + 0.004 + Math.min(td - 0.012, 0.05) / 2 + 0.004, ew = Math.min(0.05, td - 0.012);
+      bx(P, c - 0.065, y - ew / 2, zf, c + 0.065, y + ew / 2, zf + 0.011, "felt", { b: 0.002 });
+      bx(P, c - 0.064, y - ew / 2 + 0.002, zf + 0.011, c + 0.064, y + ew / 2 - 0.002, zf + 0.027, "plastic_2", { b: 0.004 });
+    }
+    const cr = 0.0055;
+    for (let i = 0; i < Math.max(0, s.chalk | 0); i++) {
+      const len = 0.025 + R() * 0.045, c = spot(len); if (c === null) break;
+      const tone = R(), m = tone < 0.55 ? "chalk" : tone < 0.72 ? "chalk_2" : tone < 0.88 ? "chalk_3" : "chalk_4", y = y0 + 0.012 + R() * Math.max(0.001, td - 0.03);
+      lathe(P, c - len / 2, y, zf + cr, [[0, 0], [cr * 0.9, 0], [cr, 0.002], [cr, len - 0.002], [cr * 0.9, len], [0, len]], m, { axis: "x", n: 10 });
+    }
+    place(L, "tray", xa + 0.01, y0 + 0.006, zf, xb - 0.01, yb - 0.002, zf + 0.08);
+  }
+}
+// cubbies (ロッカー, a classroom's back wall; 下駄箱, an entrance's): a grid of open boxes on a plinth under a top, a
+// name tag over each, a shelf in each for two pairs of shoes, doors on all or the top row; each cell a place
+function cubbiesGen(s, P, R, warn, S, L) {
+  const [W, D, H] = s.size, [nx, ny] = (s.grid || [6, 3]).map(v => Math.max(1, v | 0)), t = clamp(s.t, 0.004, 0.03), k = clamp(s.kick, 0, H / 4);
+  const ov = clamp(s.over, 0, 0.03), bk = s.back ? 0.006 : 0, yF = -D / 2 + ov, yB = D / 2 - bk;
+  bx(P, -W / 2, -D / 2, H - t, W / 2, D / 2, H, s.slot, { b: 0.002 });                           // the top
+  if (k) bx(P, -W / 2 + 0.01, yF + 0.025, 0, W / 2 - 0.01, yB, k, s.slot);
+  if (bk) bx(P, -W / 2, yB, k, W / 2, D / 2, H - t, s.inside);
+  const px = (W - t) / nx, pz = (H - t - k) / ny;
+  for (let i = 0; i <= nx; i++) { const x = -W / 2 + i * px; bx(P, x, yF, k, x + t, yB, H - t, s.slot, { b: 0.0008 }); }
+  for (let j = 0; j < ny; j++) { const z = k + j * pz; bx(P, -W / 2 + t, yF, z, W / 2 - t, yB, z + t, s.slot, { b: 0.0008 }); }
+  for (let i = 0; i < nx; i++) for (let j = 0; j < ny; j++) {
+    const x0 = -W / 2 + i * px + t, x1 = x0 + px - t, z0 = k + j * pz + t, z1 = k + (j + 1) * pz, door = s.doors === "all" || (s.doors === "top" && j === ny - 1);
+    if (s.shelf && z1 - z0 > 0.12) {
+      const zm = (z0 + z1) / 2 - t / 2;
+      bx(P, x0, yF + 0.02, zm, x1, yB, zm + t, s.inside, { b: 0.0008 });
+      place(L, `c${i + 1}_${j + 1}a`, x0, yF + 0.02, z0, x1, yB, zm - 0.002, "in"); place(L, `c${i + 1}_${j + 1}b`, x0, yF + 0.02, zm + t, x1, yB, z1 - 0.002, "in");
+    } else place(L, `c${i + 1}_${j + 1}`, x0, yF + 0.005, z0, x1, yB, z1 - 0.002, "in");
+    if (door) {
+      bx(P, x0 + 0.002, -D / 2, z0 + 0.002, x1 - 0.002, yF, z1 - 0.002, s.door_slot, { b: 0.0015 });
+      cy(P, (x0 + x1) / 2, -D / 2 + 0.0005, z0 + (z1 - z0) * 0.5, 0.009, 0.0005, "hole", { axis: "-y", n: 12 });
+    }
+    if (s.tags) { const zt = z1 + Math.min(t * 0.5, 0.004), tw = Math.min(0.08, (x1 - x0) * 0.6); bx(P, (x0 + x1) / 2 - tw / 2, yF - 0.0015, zt - 0.01, (x0 + x1) / 2 + tw / 2, yF, Math.min(zt + 0.006, H - t), s.tag_slot); }
+  }
+  place(L, "top", -W / 2 + 0.01, -D / 2 + 0.01, H, W / 2 - 0.01, D / 2 - 0.01, H + 0.4);
+}
+// a steel locker (a cleaning locker, 掃除用具入れ; a row of staff lockers): pressed steel doors with vents, a handle, a
+// name card holder, on a plinth
+function lockerGen(s, P, R, warn, S, L) {
+  const [W, D, H] = s.size, [nx, ny] = (s.grid || [1, 1]).map(v => Math.max(1, v | 0)), pl = clamp(s.plinth, 0, H / 5), ft = 0.012, yF = -D / 2 + 0.014;
+  bx(P, -W / 2, yF + ft, pl, W / 2, D / 2, H, s.slot, { b: 0.003 });
+  if (pl) bx(P, -W / 2 + 0.02, yF + 0.03, 0, W / 2 - 0.02, D / 2 - 0.02, pl, "black");
+  const cw = W / nx, chh = (H - pl) / ny, g = 0.003;
+  for (let i = 0; i < nx; i++) for (let j = 0; j < ny; j++) {
+    const xa = -W / 2 + i * cw + 0.004, xb = xa + cw - 0.008, za = pl + j * chh + 0.004, zb = za + chh - 0.008;
+    const leaves = s.pair && cw > 0.6 ? [[xa, (xa + xb) / 2 - g / 2, 1], [(xa + xb) / 2 + g / 2, xb, -1]] : [[xa, xb, i % 2 ? -1 : 1]];
+    for (const [la, lb, hand] of leaves) {
+      bx(P, la, yF, za, lb, yF + ft, zb, s.slot, { b: 0.0015 });
+      const vw = Math.min(0.14, (lb - la) * 0.55), vx = (la + lb) / 2, nv = Math.max(0, s.vents | 0);
+      for (const [z0, dir] of [[zb - 0.07, -1], [za + 0.07, 1]]) for (let q = 0; q < Math.ceil(nv / 2); q++) {
+        if (zb - za < 0.3) break;
+        const z = z0 + dir * q * 0.016;
+        bx(P, vx - vw / 2, yF - 0.0012, z - 0.0025, vx + vw / 2, yF + 0.001, z + 0.0025, "hole");
+        bx(P, vx - vw / 2, yF - 0.004, z + 0.0025, vx + vw / 2, yF + 0.001, z + 0.0055, s.slot, { b: 0.001 });
+      }
+      const hx = hand > 0 ? lb - 0.035 : la + 0.035, hz = za + Math.min(1.05, (zb - za) * 0.55);
+      if (s.handle === "knob") cy(P, hx, yF, hz, 0.014, 0.004, s.handle_slot, { axis: "-y", n: 16 });
+      else if (s.handle === "recess") { bx(P, hx - 0.012, yF - 0.001, hz - 0.05, hx + 0.012, yF + 0.002, hz + 0.05, "hole", { b: 0.003 }); }
+      else {                                                       // a lever: its plate, a grip pointing into the door
+        bx(P, hx - 0.012, yF - 0.003, hz - 0.045, hx + 0.012, yF, hz + 0.045, s.handle_slot, { b: 0.003 });
+        const gx = hand > 0 ? -1 : 1; bx(P, Math.min(hx, hx + gx * 0.04), yF - 0.013, hz - 0.007, Math.max(hx, hx + gx * 0.04), yF - 0.003, hz + 0.007, s.handle_slot, { b: 0.003 });
+      }
+      if (s.card && zb - za > 0.3) {
+        const cz = zb - 0.17, cwid = Math.min(0.08, (lb - la) * 0.4);
+        bx(P, vx - cwid / 2 - 0.003, yF - 0.002, cz - 0.016, vx + cwid / 2 + 0.003, yF, cz + 0.016, "metal", { b: 0.001 });
+        bx(P, vx - cwid / 2, yF - 0.0024, cz - 0.013, vx + cwid / 2, yF - 0.0019, cz + 0.013, "white");
+      }
+    }
+  }
+  place(L, "top", -W / 2 + 0.01, -D / 2 + 0.02, H, W / 2 - 0.01, D / 2 - 0.01, H + 0.4);
+}
+// fluorescent fittings (蛍光灯), one or a grid of them filling the box, each `len` along x: trough (逆富士, a body wide at
+// the ceiling and narrow at its foot, a tube under each slope), batten (a narrow channel, bare tubes under it), louvre (a
+// shallow box, its tubes behind a grid), cover (a box behind a frosted diffuser), board (a blackboard light: a hood that
+// sends it one way). The tubes are `emit`: a light with one as its fitting glows them while it's on
+function tubeGen(s, P, R, warn, S, L) {
+  const [W, D, H] = s.size, [nx, ny] = (s.grid || [1, 1]).map(v => Math.max(1, v | 0)), len = Math.min(W, clamp(s.len, 0.3, 2.6)), wid = Math.min(D, clamp(s.wid, 0.03, 0.8));
+  const nt = Math.max(1, Math.min(4, s.tubes | 0)), tr = clamp(s.tube_d, 0.012, 0.04) / 2, st = s.style, m = s.slot;
+  const tubeAt = (cx, u, z, L0) => {                             // a tube along x with its sockets at the ends
+    lathe(P, cx - L0 / 2, u, z, [[0, 0], [tr * 0.7, 0], [tr, 0.004], [tr, L0 - 0.004], [tr * 0.7, L0], [0, L0]], "emit", { axis: "x", n: 14 });
+    for (const sx of [-1, 1]) bx(P, cx + sx * L0 / 2 - (sx > 0 ? 0 : 0.022), u - tr - 0.003, Math.max(0, z - tr - 0.004), cx + sx * L0 / 2 + (sx > 0 ? 0.022 : 0), u + tr + 0.003, Math.min(H, z + tr + 0.012), m, { b: 0.002 });
+  };
+  const one = (cx, cy0) => {
+    const x0 = cx - len / 2, L0 = len - 0.05;
+    if (st === "trough") {
+      const hb = nt === 1 ? clamp(H - 2 * tr - 0.006, 0.015, H - 0.004) : Math.min(H - 0.004, Math.max(0.03, H * 0.85)), wb = wid * 0.32, a = (wid - wb) / 2, nl = Math.hypot(hb, a);
+      prism(P, x0, cy0, 0, [[-wid / 2, H], [-wb / 2, H - hb], [wb / 2, H - hb], [wid / 2, H]], len, "x", m);
+      if (nt === 1) tubeAt(cx, cy0, H - hb - tr - 0.003, L0);
+      else for (const sx of [-1, 1]) { const off = tr + 0.003, u = sx * ((wid + wb) / 4 + hb / nl * off), z = H - hb / 2 - a / nl * off; tubeAt(cx, cy0 + u, Math.max(tr + 0.001, z), L0); }
+    } else if (st === "batten") {
+      const bw = Math.min(wid, 0.06 + 0.035 * (nt - 1)), bh = Math.min(0.045, H - 2 * tr - 0.006);
+      bx(P, x0, cy0 - bw / 2, H - bh, x0 + len, cy0 + bw / 2, H, m, { b: 0.003 });
+      for (let i = 0; i < nt; i++) tubeAt(cx, cy0 + (nt > 1 ? -bw / 2 + tr + 0.004 + i * (bw - 2 * tr - 0.008) / (nt - 1) : 0), H - bh - tr - 0.003, L0);
+    } else {
+      const t = 0.004;
+      bx(P, x0, cy0 - wid / 2, H - t, x0 + len, cy0 + wid / 2, H, m);
+      for (const sy of [-1, 1]) bx(P, x0, sy > 0 ? cy0 + wid / 2 - t : cy0 - wid / 2, 0, x0 + len, sy > 0 ? cy0 + wid / 2 : cy0 - wid / 2 + t, H - t, m, { b: 0.001 });
+      for (const sx of [-1, 1]) bx(P, sx > 0 ? x0 + len - t : x0, cy0 - wid / 2 + t, 0, sx > 0 ? x0 + len : x0 + t, cy0 + wid / 2 - t, H - t, m, { b: 0.001 });
+      const zt = Math.min(H - t - tr - 0.006, Math.max(tr + 0.012, H * 0.55));
+      for (let i = 0; i < nt; i++) tubeAt(cx, cy0 + (nt > 1 ? -wid / 2 + 0.03 + i * (wid - 0.06) / (nt - 1) : 0), zt, Math.min(L0, len - 2 * t - 0.05));
+      if (st === "louvre") {                                       // a grid under the tubes: blades across every 7 cm, two along
+        const lz = 0.0015, lh = Math.min(0.025, zt - tr - 0.004);
+        for (let x = x0 + 0.07; x < x0 + len - 0.05; x += 0.07) bx(P, x - 0.0008, cy0 - wid / 2 + t, lz, x + 0.0008, cy0 + wid / 2 - t, lz + lh, m);
+        for (const f of [1 / 3, 2 / 3]) bx(P, x0 + t, cy0 - wid / 2 + wid * f - 0.0008, lz, x0 + len - t, cy0 - wid / 2 + wid * f + 0.0008, lz + lh, m);
+      } else if (st === "cover") bx(P, x0 + t, cy0 - wid / 2 + t, 0.002, x0 + len - t, cy0 + wid / 2 - t, 0.006, "emit");
+      else if (st === "board") prism(P, x0 + t, cy0, 0, [[-wid / 2 + t, H - t], [-wid / 2 + t, 0.004], [-wid / 2 + 0.012, 0], [-wid / 4, H * 0.55]], len - 2 * t, "x", m);   // the hood's skirt, on its front side
+    }
+  };
+  for (let i = 0; i < nx; i++) for (let j = 0; j < ny; j++)
+    one(nx > 1 ? -W / 2 + len / 2 + i * (W - len) / (nx - 1) : 0, ny > 1 ? -D / 2 + wid / 2 + j * (D - wid) / (ny - 1) : 0);
+}
+// books (a quick filler; a printed one is the prop generator's `book`, docs/PROPGEN.md): a row standing spine out (its
+// front, -y), a stack lying flat, or a row with the last few leaning; each book its boards, its spine and its pages, as
+// thick and tall as the seed says within the ranges, as many as fit the box (or `count`), their covers in `tones` colours
+function booksGen(s, P, R, warn, S, L) {
+  const [W, D, H] = s.size, [t0, t1] = (s.thick || [0.012, 0.035]).map(v => clamp(+v || 0.01, 0.004, 0.2)), [h0, h1] = (s.tall || [0.18, 0.26]).map(v => clamp(+v || 0.2, 0.05, 1));
+  const tones = Math.max(1, Math.min(4, s.tones | 0)), want = Math.max(0, s.count | 0), bt = 0.0022;
+  const book = (x0, x1, y0, y1, z0, z1, cover, lie) => {          // spine on the -y face; boards on the x faces (standing) or z faces (lying)
+    if (lie) {
+      bx(P, x0, y0, z0, x1, y1, z0 + bt, cover, { b: 0.0008 }); bx(P, x0, y0, z1 - bt, x1, y1, z1, cover, { b: 0.0008 });
+      bx(P, x0, y0, z0 + bt, x1, y0 + 0.003, z1 - bt, cover); bx(P, x0 + 0.002, y0 + 0.003, z0 + bt, x1 - 0.003, y1 - 0.002, z1 - bt, s.pages_slot);
+    } else {
+      bx(P, x0, y0, z0, x0 + bt, y1, z1, cover, { b: 0.0008 }); bx(P, x1 - bt, y0, z0, x1, y1, z1, cover, { b: 0.0008 });
+      bx(P, x0 + bt, y0, z0, x1 - bt, y0 + 0.003, z1, cover); bx(P, x0 + bt, y0 + 0.003, z0 + 0.003, x1 - bt, y1 - 0.002, z1 - 0.003, s.pages_slot);
+    }
+  };
+  const tone = () => tones > 1 ? (i => i ? `${s.slot}_${i + 1}` : s.slot)(Math.floor(R() * tones)) : s.slot;
+  if (s.arrange === "stack") {
+    let z = 0; const n = want || 99;
+    for (let i = 0; i < n; i++) {
+      const th = t0 + R() * (t1 - t0); if (z + th > H + 1e-6) break;
+      const bw = Math.min(W, W * (0.82 + 0.18 * R())), bd = Math.min(D, D * (0.8 + 0.2 * R())), dx = (W - bw) * (R() - 0.5) * 0.8, dy = (D - bd) * (R() - 0.5) * 0.8;
+      book(dx - bw / 2, dx + bw / 2, dy - bd / 2, dy + bd / 2, z, z + th, tone(), true); z += th;
+    }
+    place(L, "top", -W / 2, -D / 2, z, W / 2, D / 2, z + 0.3);
+    return;
+  }
+  let x = -W / 2, last = 0; const n = want || 999, lean = s.arrange === "lean";
+  for (let i = 0; i < n; i++) {
+    const th = t0 + R() * (t1 - t0), hh = Math.min(H, h0 + R() * (h1 - h0)), dd = Math.min(D, D * (0.78 + 0.22 * R())), y0 = -D / 2 + (D - dd) * 0.15;
+    if (lean && i >= 3 && W / 2 - x < 0.16) {                     // the row's end: one leans back onto the last
+      for (let deg = 26; deg >= 8; deg -= 3) {
+        const a = deg * Math.PI / 180, hl = Math.min(Math.max(hh, last / Math.cos(a)), (H - th * Math.sin(a)) / Math.cos(a)), xf = x + last * Math.tan(a);
+        if (xf + th * Math.cos(a) <= W / 2 && hl > 0.06) { leaned(P, xf, y0, dd, th, hl, a, tone(), s.pages_slot); break; }
+      }
+      break;
+    }
+    if (x + th > W / 2 + 1e-6) break;
+    book(x, x + th, y0, y0 + dd, 0, hh, tone(), false); x += th + 0.0005; last = hh;
+  }
+}
+// a book leaning back at angle a onto the one before it, resting on its foot's edge (xf) and that book's top corner: its
+// spine, boards and pages as prisms of their outlines
+function leaned(P, xf, y0, dd, th, hl, a, m, pages) {
+  const c = Math.cos(a), s = Math.sin(a), pt = (u, v) => [xf + u * c - v * s, u * s + v * c];
+  const quad = (u0, u1, v0, v1) => [pt(u0, v0), pt(u1, v0), pt(u1, v1), pt(u0, v1)];
+  prism(P, 0, y0, 0, quad(0, th, 0, hl), 0.003, "y", m);
+  prism(P, 0, y0 + 0.003, 0, quad(0, 0.0022, 0, hl), dd - 0.003, "y", m);
+  prism(P, 0, y0 + 0.003, 0, quad(th - 0.0022, th, 0, hl), dd - 0.003, "y", m);
+  prism(P, 0, y0 + 0.003, 0, quad(0.0022, th - 0.0022, 0.003, hl - 0.003), dd - 0.005, "y", pages);
+}
+
 // a built thing's parts, as a free list (the kit maker's "Explode": start from a preset, then move single boxes)
 export function explode(built) {
   return built.parts.map(p => { const o = JSON.parse(JSON.stringify(p)); o.at = p.at.map(v => +v.toFixed(5)); o.size = p.size.map(v => +v.toFixed(5));
@@ -1840,6 +2359,16 @@ export const VARY = {
   incense: [["left", "look", "r", 0.3, 1]],
   coil: [["left", "look", "r", 0.35, 1]],
   hob: [["zones", "layout", "i", 1, 4]],
+  school_desk: [["box", "layout", "p", [0, 0.3, 0.34, 0.36]], ["stretcher", "layout", "p", [0, 0.1, 0.12, 0.15]], ["back_bar", "layout", "f", 0.3],
+                ["hook", "look", "p"], ["adjust", "look", "f", 0.3], ["top_t", "look", "r", 0.015, 0.025], ["over", "look", "r", 0.02, 0.04]],
+  school_chair: [["tilt", "look", "r", 4, 12], ["curve", "look", "r", 0, 0.03], ["back_h", "look", "r", 0.12, 0.2], ["stretcher", "layout", "p", [0, 0.1, 0.12, 0.15]], ["front_bar", "layout", "f", 0.3]],
+  lectern: [["drawer", "layout", "f", 0.4], ["shelf", "layout", "p", [0, 0.35, 0.45, 0.5]], ["kick", "look", "p", [0, 0.04, 0.06, 0.08]], ["over", "look", "r", 0, 0.03]],
+  steel_desk: [["pedestal", "layout", "p"], ["drawers", "layout", "i", 2, 4], ["middle", "layout", "f", 0.3], ["modesty", "look", "f", 0.2]],
+  chalkboard: [["chalk", "look", "i", 0, 9], ["erasers", "look", "i", 0, 3], ["seed", "look", "seed"]],
+  cubbies: [["grid", "layout", "p", [[4, 3], [5, 3], [6, 3], [6, 4], [8, 3], [4, 4]]], ["tags", "look", "f", 0.3], ["doors", "layout", "p", ["none", "none", "all", "top"]], ["kick", "look", "p", [0, 0.04, 0.06]]],
+  steel_locker: [["grid", "layout", "p", [[1, 1], [2, 1], [3, 1], [1, 2], [2, 2]]], ["handle", "look", "p"], ["vents", "look", "i", 4, 10], ["card", "look", "f", 0.3]],
+  tube_light: [["style", "look", "p", ["trough", "batten", "louvre", "cover"]], ["tubes", "layout", "i", 1, 2]],
+  books: [["arrange", "layout", "p"], ["tones", "look", "i", 2, 4], ["seed", "look", "seed"]],
 };
 const COL_PICK = ["door", "doors", "doors", "drawers", "open", "glass"];
 // a variation of a full spec (withDefaults) from a seed: only the groups asked for change; the result is a full spec

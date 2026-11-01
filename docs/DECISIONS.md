@@ -2,6 +2,19 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-01 (the user, on a school)
+
+- **A Japanese school for a horror game, in the tools we have**: "In the existing prop maker/furniture maker/interior
+  etc I'd like to have the capabilities to build out a japanese school for a horror game", with a render and a wireframe
+  of a classroom they made in Blender. "Use the existing tools to create generators"; "recreate all the parts to be
+  able to create a 1:1 of the reference images"; "consider the hallway and exterior building too (a small japanese
+  school)". The furniture and fittings are kit types (KIT §10), the rooms the scene builder's (SCENE_BUILDER §10), the
+  outside the street builder's (STREET_BUILDER).
+- **Books in the prop maker, with covers of your own**: "for the prop maker similar to how we can use custom logos
+  maybe allow that for books, books should be able to fit well on desks and inside shelves". A `book` family whose
+  covers, spines and pages are the prop's own pictures to swap (PROPGEN §16), at real paper sizes, rows and stacks
+  made to fit a box; furniture says where things go on and in it (its places), and the scene builder puts books there.
+
 ## 2026-10-31, small hours (the user, on the floors)
 
 - **Kit floors take a material**: "yes make the floors take a material" (offered: a kit floor dressed rather than taken

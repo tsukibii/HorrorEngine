@@ -77,6 +77,7 @@ Anything made of boxes and cylinders is made here, from presets you change.
 | `bulkhead` | a ceiling step round the room, and the curtain pocket at the window wall | step width per wall, pocket on, pocket width |
 | `block` | a single bevelled box: a genkan step (with a nosing), a zabuton, a plinth, a shelf | bevel, nosing |
 | `parts` | free parts: anything made of boxes and cylinders | the parts |
+| **A school** | §10: a student's desk and chair, the lectern, a staff room's steel desk, the chalkboard, cubbies and shoe lockers, steel lockers, fluorescent lights, books | §10 |
 | **Little things** | §9: kettles, hobs, pots, cups, teapots, ashtrays, cigarettes and a pack, lighters, clocks, a rice cooker, mosquito coils, incense, phones, taps, candles | their kind, their materials |
 
 The presets cover what's in the two reference photos. The TV wall unit has tall doors, a dark open shelf column and
@@ -352,3 +353,68 @@ boils, the cigarette burns, the clock ticks). They're kit types in the category 
 - Two shape options came with them: a lathe can turn on any axis (`dir`), and a sweep can narrow along its length
   (`taper`).
 
+
+## 10. A Japanese school
+
+The user (2026-11-01): "build out a Japanese school for a horror game", with a render and a wireframe of a classroom
+they made in Blender: rows of steel-tube desks and chairs, a chalkboard between two cork boards, a lectern on its
+platform, cubbies along the back wall, fluorescent troughs, curtains tied back at the windows, a frosted corridor wall
+with its sliding doors, wainscot all round, beams under a tiled ceiling, a basket-weave parquet. Every part of it is a
+kit type or preset now, in the **School** category. The classroom itself is a scene builder layout (SCENE_BUILDER §10).
+
+| Type | What | The numbers that matter |
+|---|---|---|
+| `school_desk` | a student's desk (JIS S 1021): a laminate top on an edge band; each side one bent steel tube (front leg, the rail under the top, back leg) on height-adjusting sleeves with their clamps; low stretchers, a bar across the back; a sheet-steel **book box** open to the student (its front); a bag hook; rubber feet | top, edge band, overhang, tube Ø, book box depth and height, stretchers, sleeves, hook side |
+| `school_chair` | a student's chair: each side a front leg bent back into the seat rail and a rear leg running on up as the back's upright, leaning back above the seat; a plywood seat and a curved plywood back | seat height, depth, thickness, back height, curve, lean, tube Ø, stretchers, a bar across the front |
+| `lectern` | the teacher's lectern (教卓): a box on a plinth, its students' side a panel of its own (green, the reference's), open to the teacher (its front) with a shelf, a drawer under the top | top, overhang, plinth, shelf, drawer, the panel's material |
+| `steel_desk` | a staff room's steel desk (片袖机, 両袖机): a laminate top in a steel edge, a pedestal of drawers on one side, both or neither (a steel leg panel), a middle drawer, a modesty panel | which side, pedestal width, drawers, middle drawer, gaps |
+| `chalkboard` | a chalkboard (黒板): its face set back in an aluminium frame, a **chalk tray** along its foot with chalk sticks (white, pink, yellow, blue) and erasers lying on it (seeded), and a board each side (cork, after the reference) in frames of their own | frame, tray depth, chalk, erasers, wings (each side's width) and their gap, seed, the faces' materials |
+| `cubbies` | open cubbies (a classroom's lockers along the back wall, an entrance's 下駄箱): a grid of boxes on a plinth under a top, a name tag over each, a shelf in each for two pairs of shoes, doors on all of them or the top row | cubbies across × up, boards, plinth, shelf, tags, doors |
+| `steel_locker` | a steel locker (掃除用具入れ, staff lockers): doors in a grid (wide ones double), pressed vents top and bottom, a lever, a recess or a knob, a name card holder, a plinth | doors across × up, double, vents, handle, card |
+| `tube_light` | fluorescent fittings (蛍光灯), one or a grid of them filling the box: `trough` (逆富士: a body wide at the ceiling and narrow at its foot, a tube under each slope), `batten` (トラフ: bare tubes under a channel), `louvre`, `cover` (a frosted diffuser), `board` (a blackboard light's hood) | kind, tubes, tube Ø, a fitting's length and width, fittings across × along |
+| `books` | books as a quick filler (a printed book is the prop generator's, PROPGEN §16): standing in a row spine out, a stack lying flat, or a row whose last book leans back on it; each its boards, spine and pages, as thick and tall as the seed says within the ranges, as many as fit the box | laid, count, thickness and height ranges, seed, cover colours |
+
+What the older types learned for it:
+
+- **Floors:** `basket` for tiles and planks (市松張り, the classroom's parquet: squares of n strips, each turned against its
+  neighbours); `orient: "ceiling"` turns tiles over into a **ceiling** (their faces down, the grid recessed above them:
+  rock wool boards or a T-bar grid; mount `room-ceiling`, so a room's *ceiling* picker offers them).
+- **A wainscot's cap rail:** wall tiles take `cap` (its height), `cap_d` (how far it stands out of the boards) and
+  `cap_slot`: the boards stop under it (`wainscot_school`: vertical boards to 95 cm under a 4 cm rail).
+- **Windows:** `glass` (any slot: `glass_frost` the corridor's frosted glass, `glass_wire` wired glass) with `wire` for
+  the wire itself in it, `lock` (a crescent lock where two sliding sashes meet) and `split` (two rows, the lower taking
+  that share: a classroom's tall sashes under a transom).
+- **Doors:** a sliding door's `lite` puts glass in its top (that share of its height, `grid` lites across × up, its
+  `glass`), a flat panel set in below: a classroom's 引き戸. It stays `style: "slide"`, so it slides everywhere a sliding
+  door does.
+- **Curtains:** `tie` ties each panel back at that height, gathered into a bundle by the window's side (`tie_w` of its
+  width), fanning up to its stretch of the rail and flaring a little below, the folds deepening where it's gathered, a
+  tie-back round it: the classroom's curtains (`curtain_school`, the `curtain` slot's mustard).
+
+**Places.** `build(spec).places` says where other things go on and in a thing: `{name, kind: "on" | "in", at (the middle
+of its floor), size (the free box above it)}` in item space. A desk's `top` and its `box`, a chair's `seat`, the
+lectern's `top`, `shelf` and `bottom`, the chalk tray, each cubby (`c<col>_<row>`, `a` and `b` when it has a shelf), a
+table's `top` and `shelf`, every open cell of a cabinet or bookshelf (`c<col>_<n>` from the bottom, `u` for an upper
+part). The scene builder puts books and props on and in them (SCENE_BUILDER §10).
+
+**Two new part shapes** (free parts can use them too): `prism`, a polygon run along an axis (`pts` in the section's u and
+v, `len`, `axis` x, y or z: a trough light's body, the chalk tray's bracket, a leaning book), and `sheet`, rows of points
+as a cloth with two faces (the tied curtains). Steel tubes are sweeps along corner points bent round each corner
+(`tube()` in kit.js; a sweep's section takes `k`, its corner steps).
+
+**Slots** for them: `alu`, `laminate`, `edge`, `plywood`, `chalkboard`, `cork`, `chalk` (and `_2`..`_4`), `felt`,
+`steel_paint`, `green`, `red`, `vinyl` (and tones), `glass_frost`, `glass_wire`, `wire`, `acoustic`, `cover` (and tones),
+`pages`, `curtain`.
+
+**The presets** (School, and the floors, ceilings, walls and windows they need): `school_desk` (new JIS 5.5号, 65 × 45 at
+73 cm), `school_desk_old`, `school_desk_small`, `school_chair`, `school_chair_small`, `lectern`, `lectern_wood`,
+`teacher_desk`, `staff_desk`, `kyodan` (the platform), `chalkboard` (3.6 × 1.2 between cork boards: the reference's),
+`chalkboard_plain`, `chalkboard_back`, `corkboard`, `school_speaker`, `school_lockers` (6 × 3), `school_lockers_doors`,
+`shoe_lockers`, `cleaning_locker`, `staff_lockers`, `hydrant_box`, `umbrella_stand`, `tube_trough`, `tube_trough_1`,
+`tube_batten`, `tube_louvre`, `tube_cover`, `board_light`, `tube_classroom` (six in two rows), `tube_corridor`,
+`parquet_basket`, `vinyl_tiles`, `ceiling_rockwool`, `ceiling_tbar_600`, `wainscot_school`, `beam_classroom`,
+`column_classroom`, `window_classroom`, `window_corridor`, `window_wired`, `door_school`, `door_school_steel`,
+`curtain_school`, `books_row`, `books_row_cubby`, `books_stack`, `books_lean`, `textbooks_desk` (B5 textbooks lying in a
+desk's book box).
+
+A tube light is a fitting like the round LEDs (§4): a story light with one as its `kit` glows its tubes while it's on.
