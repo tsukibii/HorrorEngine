@@ -2,6 +2,13 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-01, evening (the user: the skin's depth into the eyes' pull request)
+
+- **"Can you merge subsurace-scattering-exp into this pr and make sure it works, take a screenshot with the updated
+  eyes and sus scatter."** Merged into `eye-enhancements` (tsukibii/HorrorEngine#7): the skin's depth keeps
+  GODOT_LOOK §5g, the eyes' wet layer is §5h. Checked together on a fresh export; the sheet
+  `docs/godot_sheets/2026-11-01_eyes_depth.jpg`.
+
 ## 2026-11-01 (the user: the eyes in Godot, on `eye-enhancements`)
 
 - **"Can you make a new branch called eye-enhancements, I dont want to modify too much about the exported eyes, but
@@ -9,10 +16,33 @@ The user's answers, newest first. They override the plan, the research and the d
   are applying the eye wetness etc correctly."** Measured on a fresh export with the grafted eyes: the iris read black
   (a bug: Godot turned the iris's bowl upside down, so its lower half faced away from a lamp above), the whites a flat
   grey (the guessed lid ellipse and the socket's shade over a paint at 0.58), and HumanShaders' eye wetness wasn't used
-  at all. Done on the Godot side only, the export as it was (GODOT_LOOK §5g): the bowl fixed; **the eye's wet layer**
+  at all. Done on the Godot side only, the export as it was (GODOT_LOOK §5h): the bowl fixed; **the eye's wet layer**
   (HumanShaders' eye wetness and MetaHuman's eye occlusion as each eyeball's material overlay: the real lids found in
   the depth buffer, a warm shade by them, deeper under the upper lid, the lid's edge melted into the eye) in place of
   the ellipse, the socket's shade halved; the white's light wrapped warm with a little scattering; a crisp catchlight.
+
+## 2026-11-01, later (the user, on the skin's depth elsewhere)
+
+- **The depth past the face's core, gently**: asked "you think we should add some slight SS to cheeks? or anywhere
+  else that helps add life?", offered (not a patch on the cheeks: that's blush, the Studio's Flush) a warm edge where
+  the skin turns away from the eye, the creases everywhere warm instead of grey, the fingers lit through like the ears,
+  the lips; "sounds good, do that". Each gentle by default with its own slider (GODOT_LOOK §5g; HSCharacterLook's
+  "Skin depth's parts").
+
+## 2026-11-01 (the user, on the skin's depth; branch `subsurace-scattering-exp`)
+
+- **Subsurface scattering round the face's core, for baked light**: with two pictures of Blender's subsurface
+  scattering (a cube glowing orange toward its edges, Suzanne red in her eye sockets and ears): "do we currently use any
+  subsurface scattering? I think that's maybe why the characters' skin looks a bit lifeless ... could we add this kind
+  of subsurface scattering just around the core parts, eyes, nose ... most of the lights are baked in game, I don't
+  even really care about it being realtime and changing, I just want that skin depth kind of feeling around the core
+  wrinkle/skin/map; see if you can come up with a simple enhancement for our existing skin shaders". We had HumanShaders'
+  scattering, but per lamp, which baked light never reaches. Built (GODOT_LOOK §5g): the skin's depth layer, warm light
+  from under the skin round the eyes, the nose, the mouth and the ears (MHR's depth map, most in the creases), the
+  occlusion red instead of grey there, thin skin lit through, for the ambient a baked level gives as much as for a lamp.
+- **The ears switchable**: "if you add it to the ears make it toggleable, since some NPCs' hair covers their ears". Per
+  character: the Character Studio's Skin light, **Ear glow (game)** (and **Depth (game)**), carried by the export; off,
+  the ears take none of it and the lamps' light through them goes too. `HSCharacterLook` can override it in Godot.
 
 ## 2026-10-31, small hours (the user, on the floors)
 

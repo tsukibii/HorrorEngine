@@ -10,7 +10,13 @@
 ## the idle blink is always off here) and `--eyes=mask` draws the eyeballs a flat green, each shot counting the green
 ## pixels (`eye_px`): a shut eye shows none (tools/godot/eyelids_check.py, EYELIDS).
 ## `--hide=lash,hair` leaves out the meshes whose names hold those words.
-##   godot --path PROJECT -s res://addons/horrorstudio_look/demo/portrait.gd -- --glb=res://people/NAME.glb --out=DIR [--detail=off] [--tag=NAME] [--preset=NAME] [--shots=ecu,cu] [--hair=JSON] [--eye=JSON] [--ssr=off] [--blink=W] [--eyes=mask] [--hide=WORDS]
+## The skin's depth layer (§5g): `--depth=N` its amount (0 off; HSSkin.wear's own when unset), `--ears=off` the ears'
+## glow off, `--depthlook=JSON` its numbers tried; `--light=baked` every shot under a baked level's light as a moving
+## character gets it (the ambient alone, from a sky bright on one side: LightmapGI's probes; no lamp); the `side` shot
+## the head in profile, the ear in the middle; the `hand` shot her left hand (on the probe `finger +x` when given);
+## `--probe=JSON` points on the skin by their UV (MHR's layout:
+## {"name": [u, v]}) each measured in every shot (its colour where the camera sees it, `probes` in the report).
+##   godot --path PROJECT -s res://addons/horrorstudio_look/demo/portrait.gd -- --glb=res://people/NAME.glb --out=DIR [--detail=off] [--tag=NAME] [--preset=NAME] [--shots=ecu,cu] [--hair=JSON] [--eye=JSON] [--ssr=off] [--blink=W] [--eyes=mask] [--hide=WORDS] [--depth=N] [--ears=off] [--depthlook=JSON] [--light=baked] [--probe=JSON]
 extends SceneTree
 
 var glb := "res://people/_studiotest.glb"
@@ -24,6 +30,12 @@ var ssr_off := false
 var blink := 0.0                  # how far shut both eyes are held
 var eye_mask := false             # the eyeballs a flat green (counted in each shot)
 var hide: Array = []              # meshes left out by name (what a look is made of)
+var depth := -1.0                 # the depth layer's amount (-1: as HSSkin.wear sets it)
+var ears := true                  # the ears' glow
+var depth_json := ""
+var light_over := ""              # "baked": every shot under the ambient alone
+var probe_json := ""
+var probes := {}                  # name: the skin's point there (the vertex nearest its UV), in the world
 var n := 0
 var stage := 0
 var env: Environment
@@ -66,6 +78,16 @@ func _initialize() -> void:
 			hide = Array(a.substr(7).split(","))
 		elif a.begins_with("--shots="):
 			STAGES = Array(a.substr(8).split(","))
+		elif a.begins_with("--depth="):
+			depth = float(a.substr(8))
+		elif a == "--ears=off":
+			ears = false
+		elif a.begins_with("--depthlook="):
+			depth_json = a.substr(12)
+		elif a.begins_with("--light="):
+			light_over = a.substr(8)
+		elif a.begins_with("--probe="):
+			probe_json = a.substr(8)
 	root.size = Vector2i(1280, 720)
 	world = Node3D.new()
 	root.add_child(world)
@@ -98,6 +120,20 @@ func _initialize() -> void:
 	if not detail_on:
 		for m in mats:
 			m.set_shader_parameter("detail", 0.0)
+	var dlook = JSON.parse_string(depth_json) if depth_json != "" else {}
+	for m in mats:                                   # the depth layer (§5g): as worn, or as asked (an older plugin has none: nothing to set)
+		if m.shader.get_shader_uniform_list().any(func(u): return u["name"] == "skin_depth"):
+			if depth >= 0.0:
+				m.set_shader_parameter("skin_depth", depth)
+			if not ears:
+				m.set_shader_parameter("depth_ears_on", false)
+			if dlook is Dictionary:
+				for k in dlook:
+					m.set_shader_parameter(k, Color(dlook[k][0], dlook[k][1], dlook[k][2]) if dlook[k] is Array else dlook[k])
+			report["depth"] = m.get_shader_parameter("skin_depth")
+			report["depth_ears"] = m.get_shader_parameter("depth_ears_on")
+	if probe_json != "":
+		find_probes(JSON.parse_string(probe_json))
 	var eye_over = JSON.parse_string(eye_json) if eye_json != "" else {}   # the eye shader's numbers tried over the record's (tuning)
 	report["eye_mats"] = HSEye.wear(who, glb, eye_over if eye_over is Dictionary else {}).size()
 	var bl = who.get_node_or_null("HSBlink")         # the blink held, never idle in a picture (an older plugin has none)
@@ -234,6 +270,40 @@ func front_light() -> void:
 		rig.append(l)
 
 
+## a baked level's light as a moving character gets it (§5g, `--light=baked`): LightmapGI's probes give her an ambient
+## with a direction and no lamp reaches her in real time, so the sky alone, bright and warm above and to her left (a sun
+## drawn only in the sky), dim below; the balanced look
+func baked() -> void:
+	for l in rig:
+		l.queue_free()
+	rig.clear()
+	HSLook.apply(root, env, "balanced")
+	env.background_mode = Environment.BG_COLOR
+	env.background_color = Color(0.05, 0.045, 0.04)
+	var sky := Sky.new()
+	var sm := ProceduralSkyMaterial.new()
+	sm.sky_top_color = Color(0.5, 0.45, 0.4)
+	sm.sky_horizon_color = Color(0.3, 0.27, 0.24)
+	sm.ground_horizon_color = Color(0.16, 0.14, 0.12)
+	sm.ground_bottom_color = Color(0.05, 0.045, 0.04)
+	sm.sun_angle_max = 40.0
+	sm.sun_curve = 0.15
+	sky.sky_material = sm
+	env.sky = sky
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+	env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
+	env.ambient_light_energy = 1.0
+	env.fog_enabled = false
+	env.volumetric_fog_enabled = false
+	var sun := DirectionalLight3D.new()
+	sun.sky_mode = DirectionalLight3D.SKY_MODE_SKY_ONLY  # in the sky (so in the ambient), never on her
+	sun.light_color = Color(1.0, 0.85, 0.65)
+	sun.light_energy = 2.0
+	sun.rotation_degrees = Vector3(-35.0, 40.0, 0.0)   # from above, in front and her left (+x)
+	world.add_child(sun)
+	rig.append(sun)
+
+
 ## the game's own light for the POV shot: a warm ceiling lamp and the room's dim fill, the balanced look
 func room() -> void:
 	for l in rig:
@@ -260,6 +330,8 @@ func room() -> void:
 
 func shoot(name: String) -> void:
 	var want := "front" if name in ["front", "eyes"] else ("room" if name == "pov" else "reel")   # each shot under its own light
+	if light_over == "baked":
+		want = "baked"
 	if want != lit:
 		lit = want
 		call(want if want != "front" else "front_light")
@@ -302,6 +374,15 @@ func shoot(name: String) -> void:
 			cam.fov = rad_to_deg(2.0 * atan(tan(deg_to_rad(45.0)) * 9.0 / 16.0))   # the game's 90° across a 16:9 frame: 59° up and down
 			cam.position = face + Vector3(0.15, 0.04, 1.2)
 			cam.look_at(face + Vector3(0, -0.04, 0))
+		"side":                                      # the head in profile from her left, the ear in the middle (the depth layer's ears, §5g)
+			cam.fov = 22.0
+			cam.position = face + Vector3(0.68, 0.02, -0.06)
+			cam.look_at(face + Vector3(0.05, -0.015, -0.07))
+		"hand":                                      # her left hand from in front and above (the depth layer's fingers, §5g), on the probe `finger +x`
+			var at: Vector3 = probes.get("finger +x", face + Vector3(0.6, -0.58, 0.1))
+			cam.fov = 30.0
+			cam.position = at + Vector3(0.02, 0.16, 0.42)
+			cam.look_at(at + Vector3(-0.045, 0.06, 0.0))
 
 
 func _process(_d: float) -> bool:
@@ -317,6 +398,8 @@ func _process(_d: float) -> bool:
 		quit(1)
 		return true
 	report["shots"][name] = grain(img)
+	if not probes.is_empty():
+		report["shots"][name]["probes"] = probe_colours(img)
 	if eye_mask:
 		report["shots"][name]["eye_px"] = greens(img)
 	stage += 1
@@ -329,6 +412,55 @@ func _process(_d: float) -> bool:
 		print("PORTRAIT ", JSON.stringify(report))
 		return true
 	return false
+
+
+## the skin's points by UV (`--probe`): each the skin's vertex nearest its UV, in the world (the export stands in its
+## rest pose, as drawn here)
+func find_probes(want) -> void:
+	if not (want is Dictionary):
+		return
+	for mi in who.find_children("*", "MeshInstance3D", true, false):
+		if not String(mi.name).to_lower().ends_with("skin") or mi.mesh == null:
+			continue
+		var a: Array = mi.mesh.surface_get_arrays(0)
+		var vs: PackedVector3Array = a[Mesh.ARRAY_VERTEX]
+		var uvs: PackedVector2Array = a[Mesh.ARRAY_TEX_UV]
+		for k in want:
+			var t := Vector2(float(want[k][0]), float(want[k][1]))
+			var best := -1
+			var bd := 1e9
+			for i in uvs.size():
+				var dd := uvs[i].distance_squared_to(t)
+				if dd < bd:
+					bd = dd
+					best = i
+			if best >= 0:
+				probes[k] = mi.global_transform * vs[best]
+		report["probes_at"] = {}
+		for k in probes:
+			report["probes_at"][k] = [probes[k].x, probes[k].y, probes[k].z]
+		return
+
+
+## each probe's colour in the picture (sRGB 0..1, a 5 x 5 pixel mean where the camera sees its point), or none when
+## it's behind the camera or out of the frame
+func probe_colours(img: Image) -> Dictionary:
+	var out := {}
+	for k in probes:
+		var p: Vector3 = probes[k]
+		if cam.is_position_behind(p):
+			continue
+		var s := cam.unproject_position(p)
+		var x := int(s.x)
+		var y := int(s.y)
+		if x < 3 or y < 3 or x > img.get_width() - 4 or y > img.get_height() - 4:
+			continue
+		var c := Color(0, 0, 0)
+		for dy in range(-2, 3):
+			for dx in range(-2, 3):
+				c += img.get_pixel(x + dx, y + dy)
+		out[k] = [c.r / 25.0, c.g / 25.0, c.b / 25.0, x, y]
+	return out
 
 
 ## how many pixels are the masked eyeballs' green (green well over red and blue: skin never is)

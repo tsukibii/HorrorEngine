@@ -5,13 +5,13 @@
 ## texture, the shape and the paint's numbers as its uniforms: people.py's `params`) and puts it on the eye meshes
 ## (named `<name>_eye_L` / `_R`). The eye's refraction is then the Studio's and Unreal's. Over each eyeball goes its wet
 ## layer (eye_wet.gdshader, the eye's material_overlay: HumanShaders' eye wetness and MetaHuman's eye occlusion, the
-## lids found in the depth buffer, so the shade follows the real lids in any pose; docs/GODOT_LOOK.md §5g). The tear
+## lids found in the depth buffer, so the shade follows the real lids in any pose; docs/GODOT_LOOK.md §5h). The tear
 ## line (`<name>_tearline`, its record `studioTear`) wears tear.gdshader, a wet glint along each lower lid; a character
 ## whose export blinks gets an HSBlink (blink.gd).
 class_name HSEye
 
 ## the socket's shade kept under the wet layer: the Studio's is a guess at the lids' shadow (darker all over, more toward
-## the brow and the corners); with the real lids' shade on top, its whole was the grey, dead white (GODOT_LOOK §5g)
+## the brow and the corners); with the real lids' shade on top, its whole was the grey, dead white (GODOT_LOOK §5h)
 const WET_SOCKET := 0.5
 
 

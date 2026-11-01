@@ -1,4 +1,4 @@
-// The eye's wet layer (HSEye; docs/GODOT_LOOK.md §5g): HumanShaders' eye wetness (vshader_eye_wetness.tres: the
+// The eye's wet layer (HSEye; docs/GODOT_LOOK.md §5h): HumanShaders' eye wetness (vshader_eye_wetness.tres: the
 // screen behind a shell over the eye, blurred and darkened toward the lids) and MetaHuman's eye occlusion, worn as
 // each eyeball's material_overlay, so the export needs nothing new. HumanShaders reads where the lids are from its
 // shell's vertex colours; a Studio export has no shell, so this layer finds the lids itself: around each point of the
