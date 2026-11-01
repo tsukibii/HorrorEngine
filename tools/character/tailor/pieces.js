@@ -374,6 +374,7 @@ export function shell(B, p, under) {
     if (d < want) { const nd = d + (want - d) * (1 - k); Qf[j * 3] = c[0] + dx / d * nd; Qf[j * 3 + 2] = c[2] + dz / d * nd; }
   }
   const br = bridged(F, p); if (br) bridge(F, Qf, mf, j => B.P[hf[j] * 3] >= F.torsoAxis(crotch)[0], br.pits, br.slope);
+  if (p.folds && p.legs && (p.folds.depth ?? 0.008) > 0) legFolds(F, Qf, mf, j => B.P[hf[j] * 3] >= F.torsoAxis(crotch)[0], p.folds, crotch, legTo);   // (WARDROBE_PLAN 2)
   const v = new Float32Array(mf);
   for (let j = 0; j < mf; j++) v[j] = V(Qf[j * 3], Qf[j * 3 + 1], Qf[j * 3 + 2]);
   const c = cut(Qf, Tf, v);
@@ -389,6 +390,36 @@ export function shell(B, p, under) {
  *  instead of a ledge round it; the waist's in-curve, gentler, stays); every point out to its height's and angle's
  *  radius; fading out over the shoulders and round the armpits (the sleeve's root would web the side), the arms left
  *  alone; `left(j)` which leg a point is on */
+/** a garment's folds (WARDROBE_PLAN 2, the user: "a modifier where we just go through various seeds till we get a fold
+    style we like"): round a leg or a skirt, `count` soft ridges (5) at places, widths, heights and leans its `seed`
+    picks, each a rounded crest with a gentle valley either side, so the cloth stands out in folds as loose shorts do
+    round the thighs; `profile(angle, t)` in 0..1, t (0 at the top, 1 at the hem) leaning each fold as it falls; `gap`
+    the cloth standing off the leg under them, growing to the hem (a share of `depth`) */
+export function foldProfile(o, salt = 0) {
+  let a = ((o.seed ?? 1) * 7919 + salt * 104729) >>> 0;
+  const rnd = () => { a = (a + 0x6D2B79F5) >>> 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const n = Math.max(1, Math.round(o.count ?? 5)), off = rnd() * TAU, F = [];
+  for (let i = 0; i < n; i++) F.push({ at: off + (i + 0.5 + (rnd() - 0.5) * 0.7) / n * TAU, w: (0.3 + rnd() * 0.35) * (5 / n) ** 0.5, h: 0.55 + rnd() * 0.45, lean: (rnd() - 0.5) * 0.9, start: rnd() * 0.2 });
+  return (ang, t) => {
+    let v = 0;
+    for (const f of F) {
+      if (t < f.start) continue;
+      let d = ang - (f.at + f.lean * t); d -= TAU * Math.round(d / TAU);
+      const g = Math.exp(-((d / f.w) ** 2)), grow = Math.min(1, (t - f.start) / Math.max(0.2, 0.8 - f.start));   // (growing all the way down, not bunched at the hem: a ruffle)
+      v = Math.max(v, f.h * g * grow);
+    }
+    return v;
+  };
+}
+function legFolds(F, Q, n, left, o, crotch, legTo) {
+  const s = F.s, depth = (o.depth ?? 0.008) * s, prof = { L: foldProfile(o, 1), R: foldProfile(o, 2) }, top = crotch - 0.015 * s, len = Math.max(0.02 * s, top - legTo);
+  for (let j = 0; j < n; j++) {
+    const x = Q[j * 3], y = Q[j * 3 + 1], z = Q[j * 3 + 2]; if (y >= top || F.arm(x, y, z)) continue;
+    const side = left(j) ? "L" : "R", L = F.legLines[side], [tt] = L.project(x, y, z), c = L.at(tt), dx = x - c[0], dz = z - c[2], d = Math.hypot(dx, dz) || 1e-6;
+    const t = Math.min(1, (top - y) / len), k = prof[side](Math.atan2(dx, dz) * (side === "L" ? 1 : -1), t), nd = d + depth * (k + (o.gap ?? 0.6) * t);   // (mirrored: the two legs' folds alike, not copies; `gap`: the leg standing off the thigh, growing to the hem, an A-line's)
+    Q[j * 3] = c[0] + dx / d * nd; Q[j * 3 + 2] = c[2] + dz / d * nd;
+  }
+}
 export function bridged(F, p) {                                     // whether a garment's cut is bridged (bridge, below), the armpits it leaves out, its slope
   if (!(p.bridge ?? !(p.shoe || (p.brief && (p.brief.back?.gusset ?? 0.03) < 0.02)))) return null;   // (a thong's back does go into the hollow; a bra's cups span the breast, never hug every curve: "painted on")
   const s = F.s, pits = ["L", "R"].map(k => { const A = F.arms[k], q = A.line.at(A.seam); return [q[0] * 0.85, F.armpitY - 0.02 * s, q[2]]; });
@@ -482,6 +513,10 @@ export function skirtOutline(F, p, colliders = [], dy = 0.005 * F.s, NA = p.colu
       row[k] = v;
     }
     R.push(row);
+  }
+  if (p.folds && (p.folds.depth ?? 0.008) > 0) {                     // folds by seed (WARDROBE_PLAN 2): growing from the hips to the hem
+    const prof = foldProfile(p.folds, 3), depth = (p.folds.depth ?? 0.008) * s, top = Math.min(y0, hipY + 0.02 * s);
+    for (let r = 0; r < rows; r++) { const y = y0 - r * dy, t = Math.min(1, Math.max(0, (top - y) / Math.max(0.02 * s, top - y1))); if (t <= 0) continue; for (let k = 0; k < NA; k++) R[r][k] += depth * (prof((k / NA - 0.5) * TAU, t) * smooth(0, 0.3, t) + (p.folds.gap ?? 0.3) * t); }
   }
   // soften round and down (the hull's corners)
   for (let pass = 0; pass < 2; pass++) for (const row of R) { const c = Float32Array.from(row); for (let k = 0; k < NA; k++) row[k] = Math.max(c[k], (c[(k + NA - 1) % NA] + 2 * c[k] + c[(k + 1) % NA]) / 4); }

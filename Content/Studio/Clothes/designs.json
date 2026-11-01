@@ -839,6 +839,21 @@
       "label": "Lace blouse (gothic)", "slot": "top", "color": "#0f0f11", "buttons": "#e8e0d0", "thickness": 0.0014, "surface": "laced",
       "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.01, "width": 0.06, "rise": 0.03}, "sleeve": "wrist", "hem": {"at": "crotch+0.07", "back": 0.015}, "ease": {"body": 0.009, "sleeve": 0.014}, "tension": 12, "drape": {"density": 0.12, "bend": 6e-06, "slack": 0.03}},
       "details": [{"kind": "edgeband", "width": 0.012, "lift": 0.0015}, {"kind": "buttons", "from": "bust-0.04", "to": "crotch+0.13", "count": 5, "r": 0.005}, {"kind": "cuff", "length": 0.055, "lift": 0.0015, "hold": true}]
+    },
+    "loose-shorts": {
+      "label": "Loose shorts (high waist, folds)", "slot": "bottom", "color": "#e8e6e0", "buttons": "#c8a24a", "thickness": 0.002, "surface": "wool", "pattern": {"kind": "houndstooth", "colors": ["#ece8e0", "#1c1c1e"], "size": 0.02},
+      "piece": {"kind": "shell", "neck": false, "waist": {"at": "crotch+0.23", "drop": 0.008, "rise": 0.015}, "legs": {"to": "crotch-0.12"}, "ease": {"body": 0.009, "leg": 0.014, "flare": 0.006, "crotch": 0.016}, "folds": {"depth": 0.013, "count": 4, "seed": 1, "gap": 1.4}, "tension": 22, "drape": {"density": 0.26, "bend": 2e-05, "slack": 0.02}},
+      "details": [{"kind": "band", "follow": "waist", "width": 0.035, "lift": 0.002}, {"kind": "placket", "x": 0.012, "width": 0.028, "from": "crotch+0.2", "to": "crotch+0.06", "lift": 0.0012}, {"kind": "buttons", "from": "crotch+0.215", "to": "crotch+0.215", "count": 1, "r": 0.007, "h": 0.004, "lift": 0.005}, {"kind": "placket", "x": 0.07, "width": 0.008, "from": "crotch+0.2", "to": "crotch+0.12", "lift": 0.0012}, {"kind": "placket", "x": -0.07, "width": 0.008, "from": "crotch+0.2", "to": "crotch+0.12", "lift": 0.0012}, {"kind": "cuff", "on": "legs", "length": 0.02, "lift": 0.0012, "hold": false}]
+    },
+    "micro-skirt": {
+      "label": "Micro skirt (A-line, just under the crotch)", "slot": "bottom", "color": "#2a2c34", "thickness": 0.0018, "surface": "wool",
+      "piece": {"kind": "skirt", "waist": {"at": "waist-0.02"}, "length": "crotch-0.03", "ease": 0.005, "flare": 0.3, "folds": {"depth": 0.006, "count": 6, "seed": 1}, "drape": {"density": 0.28, "bend": 2.5e-05, "memory": 0.5}},
+      "details": [{"kind": "band", "from": "waist-0.02", "to": "waist-0.05", "lift": 0.002}]
+    },
+    "micro-pleated-skirt": {
+      "label": "Micro pleated skirt (just under the crotch)", "slot": "bottom", "color": "#2a2a40", "thickness": 0.0018, "surface": "wool",
+      "piece": {"kind": "skirt", "waist": {"at": "waist-0.02"}, "length": "crotch-0.025", "ease": 0.004, "flare": 0.4, "pleats": {"n": 20, "depth": 0.016, "stitched": 0.04}, "drape": {"density": 0.3, "bend": 4e-05, "memory": 1}},
+      "details": [{"kind": "band", "from": "waist-0.02", "to": "waist-0.05", "lift": 0.002}]
     }
   }
 }
