@@ -258,6 +258,9 @@ export const TRIGGERS = [
     make: () => ({ torch: "on" }), text: w => `the player switches the flashlight ${w.torch || "…"}` },
   { verb: "state", label: "A thing is in a state", icon: "life", fields: [{ key: "state", label: "Thing", kind: "life", verb: true },
     { key: "is", label: "is", kind: "lifestate" }], make: () => ({ state: "", is: "" }), text: (w, n) => `${n("thing", w.state)} is ${w.is || "…"}` },
+  { verb: "gave", label: "Something is given to someone", icon: "item", fields: [{ key: "gave", label: "Item (* any)", kind: "item", verb: true },
+    { key: "to", label: "to", kind: "cast" }, { key: "except", label: "but not", kind: "item", opt: true }], make: () => ({ gave: "", to: "" }),
+    text: (w, n) => `${w.gave === "*" ? "anything" : n("item", w.gave)}${w.except ? " but " + n("item", w.except) : ""} is given to ${n("cast", w.to)}` },   // Godot's runtime only (STORY_FORMAT §4)
   { verb: "arrived", label: "Someone gets there", icon: "person", fields: [{ key: "arrived", label: "Who", kind: "cast", verb: true }, { key: "at", label: "at", kind: "spot", opt: true }],
     make: () => ({ arrived: "" }), text: (w, n) => `${n("cast", w.arrived)} gets to ${w.at ? n("thing", w.at) : "where she was going"}` },
   { verb: "ticked", label: "A task is ticked", icon: "check", fields: [{ key: "ticked", label: "Task", kind: "anytodo", verb: true }],
