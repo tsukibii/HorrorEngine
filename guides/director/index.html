@@ -168,8 +168,10 @@ settings, only the ones that matter for what it is.</p>
 <figure class="wide"><img src="img/e_panel_build.jpg" width="986" height="364" alt="The HorrorStudio panel: the Build tab, its categories down the left with Kitchen open, the kettle's card marked It's this now, the others saying Make it this, and This object on the right: Kettle is a kettle, Change, Make it plain again, how it starts: Off">
 <figcaption>The Build tab with the kettle selected: its card says <i>It's this now</i>; This object shows how it starts.</figcaption></figure>
 <p>What happens in the game isn't in the scene: it's the <b>Director file</b> (§6), written in the panel's
-<span class="ui">Story</span> tab (§8) or the Director Manager (§9), in the same words. <span class="ui">Test</span> plays
-the game and says what's wrong. The dock under the Inspector keeps the same views close to the Inspector (a row you pick in it opens right
+<span class="ui">Story</span> tab (§8) or the Director Manager (§9), in the same words. <span class="ui">Test</span> has
+<span class="ui">Play the game</span>, <span class="ui">Play this scene</span> (a level open on its own plays alone, as
+<kbd>F6</kbd> does) and the game checked as it will play: what won't play right and what's worth a look, each line
+clicked to go to its node. The dock under the Inspector keeps the same views close to the Inspector (a row you pick in it opens right
 above it). Its tabs:</p>
 <table class="keys">
 <tr><td class="ui">Director</td><td>The story as the Director file has it: the quests in play order with their steps and what comes next, the endings, the conversations, the moments, the states. <span class="ui">▶</span> plays, <span class="ui">▶ Here</span> plays from the picked quest, <span class="ui">Manager</span> opens the page that writes it.</td></tr>
@@ -348,8 +350,9 @@ through her; <b>speed</b> is her walking pace.</li>
 <h2><span class="n">6</span>The story: the Director file</h2>
 <p><b>The scene is the world; the Director file is the story.</b> It's one file, <code>director/director.json</code>,
 and nothing in the scene knows about it: the story names the scene's things by id ("when the player picks up
-<code>bedroom_key</code>", "Mari walks to <code>bedroom_spot</code>"). You write it in the Director Manager (§9); the
-dock's Director tab shows it as it will play, and the game reads it each time it starts.</p>
+<code>bedroom_key</code>", "Mari walks to <code>bedroom_spot</code>"). You write it in the panel's Story tab (§8) or
+in the Director Manager (§9), in the same words; the dock's Director tab shows it as it will play, and the game reads it
+each time it starts.</p>
 <div class="flow"><span>Night 1 · 23:40</span><i>→</i><span style="border-color:var(--task)">The key</span><i>→</i>
 <span style="border-color:var(--task)">A drink</span><i>→</i><span style="border-color:var(--task)">Mari</span><i>→</i>
 <span style="border-color:var(--task)">The bedroom</span><i>→</i><span style="border-color:var(--task)">Something in the hall</span><i>→</i>
@@ -458,7 +461,7 @@ On the right are <b>ready-made moments</b> (a jumpscare, a knock at a door, the 
 whisper, a thought, the flashlight flickering): click one to add it onto what's selected (an area, a room, a door, a
 thing), or drag it onto an area or a door in the 3D view. Every change is saved at once, and <kbd>Ctrl</kbd>+<kbd>Z</kbd>
 takes it back.</p>
-<figure class="wide"><img src="img/e_panel_story.jpg" width="1211" height="364" alt="The panel's Story tab: the quests in order on the left with the first, The key, being edited; in the middle its moment figure_scare open: WHEN the player enters Kitchen doorway, ONLY IF they've read letter, THEN a scare: a jump scare; the ready-made moments on the right">
+<figure class="wide"><img src="img/e_panel_story.jpg" width="1211" height="664" alt="The panel's Story tab: the quests in order on the left with the first, The key, being edited, and the endings; in the middle its moment figure_scare open: WHEN the player enters Kitchen doorway, ONLY IF they've read letter, THEN a jump scare on the figure, the thought What was that? and the flag saw_figure, how often Just once, and what it reads as; the seven ready-made moments on the right">
 <figcaption>The Story tab on the first quest, the user's own example open: when the player walks into the kitchen's
 doorway after reading the letter, the figure.</figcaption></figure>
 <h3>Moments: when, if, then</h3>
@@ -620,6 +623,8 @@ must be set up first (<code>python setup/setup.py kimodo</code>).</div>
 <tr><td>She says the wrong thing</td><td>The first conversation whose <i>offered when</i> holds plays: put the special ones above the everyday ones (People, ▲ ▼).</td></tr>
 <tr><td>The Manager's pickers are empty</td><td>Save the scene in Godot once (the ids are written on save), then <span class="ui">Reload</span>.</td></tr>
 <tr><td>My changes in the Manager don't play</td><td>Press <span class="ui">Save</span> in the page first; the game reads the file as it starts.</td></tr>
+<tr><td>The Story tab and the Manager both open</td><td>Each takes in what the other saved: the Story tab within a second, the Manager by itself unless it has changes of its own unsaved (then it says so: <span class="ui">Reload</span> takes the file in, and its unsaved changes go).</td></tr>
+<tr><td>A ready-made moment landed in a new area</td><td>It lands on an area only when it's dropped inside one, and on a door when it's dropped by one (within a metre or so); anywhere else it makes its own area. <kbd>Ctrl</kbd>+<kbd>Z</kbd>, then drop it again, or select the area first and click it.</td></tr>
 <tr><td>Walks through my model</td><td>It has no collision. Give the model collision when you import it, or give it a part and set it <b>solid</b>.</td></tr>
 <tr><td>Can't click it</td><td>Only things with a part, doors and characters with conversations take a click, from 2.2 m or nearer, with nothing in between.</td></tr>
 <tr><td>Something points at the wrong node</td><td>Ids follow renames only until you type your own; the Things tab lists every id.</td></tr>

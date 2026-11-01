@@ -656,6 +656,8 @@ def editor_check(out):
          rep.get("story_try") is True and rep.get("story_undone") is True),
         ("a ready-made moment dropped inside the doorway in the 3D view lands on it, the new area taken back (%s); undone (%s)" % (rep.get("story_dropped"), rep.get("story_drop_undone")),
          rep.get("story_dropped") is True and rep.get("story_drop_undone") is True),
+        ("the panel's Test page: %s, and the game checked as it will play (%s)" % (" and ".join(rep.get("panel_test_plays", [])), rep.get("panel_test", "")),
+         rep.get("panel_test_plays") == ["Play the game", "Play this scene"] and "5 quests" in rep.get("panel_test", "")),
         ("a node's id follows its renames while it's the name's (%s), one typed by hand stays (%s)" % (rep.get("id_follows"), rep.get("id_kept")), rep.get("id_follows") == ["hs_thing", "old_key"] and rep.get("id_kept") == "my_key"),
         ("saved: the new nodes in the file, no story nodes, nothing the nodes make for themselves", rep.get("saved") is True and rep.get("saved_task") is True and rep.get("saved_nothing_made") is True),
         ("no script errors in the editor", not errs),

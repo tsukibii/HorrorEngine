@@ -457,6 +457,10 @@ func _story_after() -> void:
 	var fl := FileAccess.open("res://director/director.json", FileAccess.WRITE)   # the story as the sample had it, whatever happened
 	fl.store_string(pan["story_was"])
 	fl.close()
+	panel.show_page("test")                           # the Test page: the game checked as it will play
+	var ct = panel.test.get_node_or_null("Checks")
+	rep["panel_test"] = str(ct.summary.text) if ct != null else ""
+	rep["panel_test_plays"] = panel.test.find_children("*", "Button", true, false).map(func(b): return str(b.text)).filter(func(t): return t.begins_with("Play"))
 	panel.show_page("build")
 
 

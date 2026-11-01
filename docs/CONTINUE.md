@@ -11,6 +11,37 @@ the to-do built there, with the Studio's eyes from the side, a small nose and th
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
+## Where it stopped last (2026-11-01, evening, branch `Director-Godot`): the HorrorStudio panel
+
+The user asked for a friendlier panel in Godot (DECISIONS 2026-11-01, evening): category sorted, synced to the
+scripts, drag and drop onto objects or click an object and assign. The design is the canvas "Director Panel Design"
+(https://claude.ai/artifact/Q21Wv6misQnt5LwkZgNfRs, five boards: Main, Assign, Player, Story, Pieces); the user said
+"looks good", then "work through everything". **Built in four steps, each checked and pushed** (GODOT_DIRECTOR §6e,
+the guide's §2, §3 and §8):
+1. **Build** (`editor/panel.gd`, `build_tab.gd`, `glyphs.gd`, `inspector.gd`, `parts/catalog.json`): the panel along
+   the bottom (an EditorDock), picture cards in categories, a click in front of the camera, a drag onto a model (the
+   mouse's ray on its triangles, collider or not), a model selected and one click; This object in words; the
+   Inspector's box; a window into a room; Scares as an area and its moment. The dock's Add tab went.
+2. **Player** (`level/player_start.gd`, `level/checkpoint.gd`): the Player start, the Test start (F6, Play from here,
+   Try it on a thing: a test begins at the first quest in the Test start's level, the player kept there), the
+   Checkpoint (an autosave each time it's walked into); `game.player` {run, crouch, eye} in the format, the story
+   check, Godot's runtime and the desk's.
+3. **Story** (`editor/story_tab.gd`, `story/commands.gd`): the quests in order, their steps and moments as WHEN /
+   ONLY IF / THEN sentences with a picker for each blue word, how often, what it reads as, Try this moment, Show it in
+   the 3D view; ready-made moments clicked or dropped onto an area or a door; every change on the editor's undo. **The
+   same words as the Manager**: `tools/director_manager/words.js` (conditions as words, "they've read letter", now
+   the Manager's chips too) and the desk's `commands.js`, written for Godot by `tools/director_manager/commands_json.mjs`
+   (run it after changing either: DIRECTOR fails on a stale `story/commands.json` or a sentence that reads differently).
+4. **The guide and the checks**: the guide's panel parts and pictures (38, each at its own size in the page), and
+   DIRECTOR driving every tab of the panel (Build, the Player category, Story, Test).
+
+Not measured here: the panel with a real GPU and a mouse (everything is driven by code in the headless editor, and
+pictured under lavapipe); a real drag from the panel into the 3D view (the check drops the preset the way the view
+does). GDTESTROOM's station 6 fails in this container as before (no bake bodies). To ask the user: does the bottom
+slot have room for them (the Story tab scrolls there; the panel's ⋮ floats it on a second screen), which ready-made
+moments they want next, and whether the Story tab should also edit conversations, states and a quest's next (the
+Manager does them now).
+
 ## 0a. Where it stopped (2026-11-01, branch `Director-Godot`)
 
 The user answered what the Director still lacks (DECISIONS 2026-11-01): the game as state, puppeteered by one

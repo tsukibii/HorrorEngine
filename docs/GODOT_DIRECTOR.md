@@ -175,8 +175,9 @@ the items, karma and counters, the events as they happen.
 Under the Inspector (a row picked in it is edited there; drag the dock elsewhere if you like). Everything it does to
 the scene is on the editor's undo.
 
-- **Director**: the Director file as the game will play it, read here (the Manager writes it): the quests in order with
-  their steps and what comes next, the endings, the conversations, the moments, the states. While the game runs from
+- **Director**: the Director file as the game will play it, read here (the panel's Story tab and the Manager write
+  it): the quests in order with their steps and what comes next, the endings, the conversations, the moments, the
+  states. While the game runs from
   the editor: ▶ the quest it's on, ✓ the quests, steps and conversations done, ● the facts. **▶** plays from the start,
   **▶ Here** from the selected quest with the facts typed under it (the quests before it count as done); **Manager**
   opens the file in the Director Manager.
@@ -385,7 +386,7 @@ selected by their cards, a start turned East and back, the mug put in its pocket
 area) and undone; the Story tab: the quests in order, the drink errand as sentences, a ready-made jumpscare clicked
 onto the kitchen's doorway, a clause, a command and its words from the pickers, every time, what it reads as, Try this
 moment's request, all of it undone, and a ready-made moment dropped inside the doorway landing on it (the new area taken
-back).
+back); the Test page's Play buttons and its check of the game.
 
 ## 7. Where you are
 

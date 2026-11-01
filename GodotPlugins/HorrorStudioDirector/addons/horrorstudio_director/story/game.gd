@@ -1,11 +1,11 @@
 ## The game (docs/GODOT_DIRECTOR.md §1): the main scene's root. Under it the levels (HSLevel, built right here or
 ## instanced from their own scenes): the world. The story is the Director file (`story_file`, director/director.json:
-## its quests, states, moments, conversations, endings; written in the Director Manager), never the scene's nodes.
-## Its own settings are the game's (the title, the player's name, the time of day, the look, the camcorder tape, the
-## grade, the HUD's theme). Played (F5), it compiles the world and the story (compile.gd), takes its levels up as
-## templates, starts the studio's runtime with them (the player, the interactions, the HUD, the menu, the saves) and
-## the Director's brain beside it (run/brain.gd: the facts, the conditions, the states). F9 in the game shows where
-## the player is and what's set; run from the editor, the dock follows along.
+## its quests, states, moments, conversations, endings; written in the panel's Story tab or the Director Manager),
+## never the scene's nodes. Its own settings are the game's (the title, the player's name, the time of day, the look,
+## the camcorder tape, the grade, the HUD's theme, the player's). Played (F5), it compiles the world and the story
+## (compile.gd), takes its levels up as templates, starts the studio's runtime with them (the player, the interactions,
+## the HUD, the menu, the saves) and the Director's brain beside it (run/brain.gd: the facts, the conditions, the
+## states). F9 in the game shows where the player is and what's set; run from the editor, the dock follows along.
 @tool
 @icon("res://addons/horrorstudio_director/icons/game.svg")
 class_name HSGame
@@ -14,7 +14,7 @@ extends Node
 const RUN_FILE := "user://hs_director_run.json"     # "play from here": the dock's step and state for the next run
 
 @export var title: String = "Untitled"
-## the story: the Director file (the Director Manager writes it)
+## the story: the Director file (the panel's Story tab and the Director Manager write it)
 @export_file("*.json") var story_file: String = "res://director/director.json"
 @export var player_name: String = "Alex"
 @export_enum("night", "dusk", "day") var time_of_day: String = "night"

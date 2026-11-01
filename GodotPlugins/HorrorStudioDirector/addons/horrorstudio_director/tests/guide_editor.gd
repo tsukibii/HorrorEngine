@@ -19,8 +19,7 @@ var out := ""
 var dock = null
 var panel = null
 var model: MeshInstance3D = null
-var split: Node = null              # the editor's bottom panel's split, moved for the Story tab's picture
-var split_was := 0
+var tall_was := 0.0                 # the panel's height before the Story tab's picture made it taller
 var made: Array = []
 
 
@@ -247,12 +246,8 @@ func _process(dt: float) -> void:
 		12:
 			if t - at < 2.0:
 				return
-			split = panel.get_parent()                     # the editor's bottom panel made taller for it: the whole moment in view
-			while split != null and not (split is SplitContainer and split.vertical):
-				split = split.get_parent()
-			if split != null:
-				split_was = split.split_offset
-				split.split_offset = split_was - int(280 * EditorInterface.get_editor_scale())
+			tall_was = panel.custom_minimum_size.y           # the panel made taller for it: the whole moment in view
+			panel.custom_minimum_size.y = 660 * EditorInterface.get_editor_scale()
 			at = t
 			phase = 13
 		13:
@@ -268,8 +263,7 @@ func _process(dt: float) -> void:
 			if t - at < 0.5:
 				return
 			_shot("e_panel_story", _panel_rect())
-			if split != null:
-				split.split_offset = split_was
+			panel.custom_minimum_size.y = tall_was
 			panel.show_page("build")
 			print("GUIDEEDITOR " + JSON.stringify({"made": made}))
 			get_tree().quit()
