@@ -737,6 +737,9 @@ export class PlayRuntime {
 
   // ---- the player's use and the cursor ---------------------------------------------------------------------------
   eyePos() { return this.player.pos.clone().add(new THREE.Vector3(0, this.player.eye, 0)); }
+  // the player's abilities (game.player, STORY_FORMAT §9.10): run and crouch unless told not; the standing eye height
+  can(what) { const p = (this.story.game || {}).player; return !(p && p[what] === false); }
+  standEye() { const p = (this.story.game || {}).player; return p && typeof p.eye === "number" ? Math.max(1.2, Math.min(2.0, p.eye)) : EYES.stand; }
   // what the reticle is on: the first visible thing along the ray, never a hollow piece (a kit door's frame: its block
   // spans the doorway, its drawn parts only the edges; you walk and click through it)
   // (nor a light effect drawn in the room: a window's shaft box, a pattern's plane (lightfx.js): the eye sees through them, so does the reticle)

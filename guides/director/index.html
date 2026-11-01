@@ -153,7 +153,7 @@ Kitchen's cards), the Inspector with its <b>HorrorStudio</b> box at the top, the
 <p>Everything in the world is a node in the scene tree: rooms, doors, things, characters, areas, spots, paths. You add
 them from the <b>HorrorStudio panel</b> along the bottom of the editor (it can float on a second screen too: its
 <span class="ui">⋮</span> menu). Its <span class="ui">Build</span> tab has everything a game is made of, as picture cards
-in categories (Building, Lights &amp; power, Pick up &amp; look, Hide &amp; rest, Kitchen, Fire &amp; smoke,
+in categories (Player, Building, Lights &amp; power, Pick up &amp; look, Hide &amp; rest, Kitchen, Fire &amp; smoke,
 Electronics, Puzzles, Carry &amp; play, Chores, People, Areas &amp; paths, Scares):</p>
 <ul>
 <li><b>Click a card</b>: it's added in front of the editor's camera, in the selected room.</li>
@@ -221,10 +221,29 @@ in, its width and the seconds between drops; the wall is wet in a band below it 
 <figure><img src="img/e_insp_room.jpg" width="450" height="448" alt="The Inspector on a room: its id, size, wall thickness and walls"><figcaption>A room in the Inspector.</figcaption></figure>
 <figure><img src="img/e_insp_door.jpg" width="450" height="448" alt="The Inspector on a door: width, height, hinge, locked by, peephole, latch"><figcaption>A door: locked by <code>bedroom_key</code>, with a latch.</figcaption></figure>
 </div>
+<h3>Where the player starts</h3>
+<p>The panel's first category, <span class="ui">Player</span>, has three cards:</p>
+<ul>
+<li><span class="node">HSPlayerStart</span>, the <b>Player start</b>: where the game begins in this level. A figure
+and an arrow in the editor (nothing in the game): the player stands there at their eye height and looks along the arrow.</li>
+<li>The <b>Test start</b> (a Player start with <b>start for</b> test): where you begin while you <b>test</b>. F6 on the
+level's scene, and <span class="ui">Play from here</span> on it, begin there; the game itself never does. Put one in
+front of the part you're working on, with what you'd have by then.</li>
+<li><span class="node">HSCheckpoint</span>, a <b>checkpoint</b>: an area that autosaves each time the player walks into
+it (the pause menu's autosave).</li>
+</ul>
+<p>A level has one start of each: once there is one, its card says <i>One in House</i> and a click selects it to move.
+With a start selected, <b>This object</b> sets <b>which way they look</b> (eight ways: north is the editor's −Z),
+<b>what they have with them</b> (the scene's items as chips: the flashlight, a key; <span class="ui">+ Add an item</span>),
+the player's own settings for the whole game (<b>can run</b> with Shift, <b>can crouch</b> with C, the <b>eye height</b>,
+their <b>name</b>: they're the HSGame's) and <span class="ui">Play from here</span>. In the sample the Test start is by
+the bedroom door with the bedroom key, so the bedroom can be tried without finding the key first.</p>
+<figure class="wide"><img src="img/e_panel_player.jpg" width="1030" height="380" alt="The HorrorStudio panel on the Player category: the Player start, Test start and Checkpoint cards, and This object on the sample's Test start: which way they look, North, what they have with them, the bedroom key, can run, can crouch, eye height, their name, Play from here">
+<figcaption>The Player category with the sample's Test start selected: it faces north, the bedroom key in hand.</figcaption></figure>
 <h3>Areas, spots and paths</h3>
 <ul>
 <li><span class="node">HSTrigger</span>, an <b>area</b>: a box the player walks into (orange in the editor, invisible in the game). A step or a moment waits for it by its id. <b>Safe</b>: a watching character can't see the player inside.</li>
-<li><span class="node">HSSpot</span>, a <b>spot</b>: where the player starts (the level's <b>start</b>, or a spot named Start), where a quest puts the player, where a character stands or is sent. It faces the way its arrow points (its +Z).</li>
+<li><span class="node">HSSpot</span>, a <b>spot</b>: where a quest puts the player, where a character stands or is sent (with no Player start, the level's <b>start</b> or a spot named Start is where the player begins). It faces the way its arrow points (its +Z).</li>
 <li><span class="node">HSPath</span>, a <b>path</b> a character walks: select it and draw points with Godot's path tools (Add Point, then click the floor), or give it HSSpot children you drag around. <b>Mode</b>: loop, there and back, or once; <b>waits</b> at its points. An HSSpot point can also have a <b>pose</b> she holds while she waits there (look_left, look_right...) and a hiding place she <b>checks</b> (a locker's id: whoever hides in it is found).</li>
 </ul>
 <h3>Your own models and lights</h3>
@@ -500,7 +519,9 @@ before it would have set), as the dock's <span class="ui">▶ Here</span> does.<
 <table class="keys">
 <tr><td><kbd>F5</kbd></td><td>Plays the game from the start (or, once, from where the Manager set the next play).</td></tr>
 <tr><td class="ui">▶ Here</td><td>(the Director tab) plays from the picked quest. Type the facts it should start with in the box under the list (what earlier quests would have set); the quests before it count as done.</td></tr>
-<tr><td><kbd>F6</kbd></td><td>On a level's own scene: that level alone, free to walk around, with the story's moments, conversations and states. Good for testing a level before the quests are there.</td></tr>
+<tr><td><kbd>F6</kbd></td><td>On a level's own scene: that level alone, free to walk around, with the story's moments, conversations and states, beginning at its Test start (with what that has) if it has one. Good for testing a level before the quests are there.</td></tr>
+<tr><td class="ui">Play from here</td><td>(the panel, on a start) the whole game as a test: from the first quest played in the Test start's level (the quests before it count as done), the player kept at the Test start with what it has, not sent to the quest's own start. On the Player start: the game as it begins.</td></tr>
+<tr><td class="ui">Try it</td><td>(the panel, on a thing) the same test with you standing in front of the thing, on the camera's side, facing it.</td></tr>
 <tr><td class="ui">Check</td><td>The game compiled as it will play. <b>✕</b> won't play right (a quest that never ends, a way that goes nowhere); <b>⚠</b> is worth a look (a quest nothing leads to, a name the scene hasn't got). Click a line to go to its node.</td></tr>
 <tr><td class="ui">lighting: off</td><td>(on the HSGame) a flat test light, for playing before you've lit the level.</td></tr>
 </table>
@@ -593,12 +614,14 @@ must be set up first (<code>python setup/setup.py kimodo</code>).</div>
 <h2><span class="n">15</span>Every node, every word</h2>
 <table class="keys">
 <tr class="h"><td>The world (nodes)</td><td></td></tr>
-<tr><td class="node">HSGame</td><td>The main scene's root: the title, the player's name, the time of day, the look, the camcorder tape, the grade, the HUD's theme, lighting, weather, counters, F9; its <b>story file</b>.</td></tr>
+<tr><td class="node">HSGame</td><td>The main scene's root: the title, the player's name, the time of day, the look, the camcorder tape, the grade, the HUD's theme, lighting, weather, counters, F9; the player (can run, can crouch, eye height); its <b>story file</b>.</td></tr>
 <tr><td class="node">HSLevel</td><td>A place: its <b>start</b>, time of day, look and weather over the game's.</td></tr>
 <tr><td class="node">HSRoom</td><td>Floor, walls, ceiling from a size; doors on its walls cut openings; <b>openings</b> for the rest (a window's glass, daylight, shaft, a car passing); <b>leaks</b>; floor kind; materials; a wet floor.</td></tr>
 <tr><td class="node">HSDoor</td><td>A leaf on its hinges or sliding, in a frame; locked by an item or a fact; peephole; latch; your model as its child.</td></tr>
 <tr><td class="node">HSThing</td><td>Something to use, a part (§4); your model as its child; a little thing's effect points as markers.</td></tr>
 <tr><td class="node">HSTrigger</td><td>An area to walk into; safe or not.</td></tr>
+<tr><td class="node">HSPlayerStart</td><td>Where the player begins, facing its arrow: <b>start for</b> the game or a test; what they <b>start with</b>.</td></tr>
+<tr><td class="node">HSCheckpoint</td><td>An area that autosaves each time it's walked into.</td></tr>
 <tr><td class="node">HSSpot</td><td>A spot facing its arrow; a wait, a pose and a hiding place she checks when it's a path's point.</td></tr>
 <tr><td class="node">HSPath</td><td>A way to walk: points drawn or HSSpots; loop, there and back, once.</td></tr>
 <tr><td class="node">HSActor</td><td>A character (§5).</td></tr>

@@ -150,6 +150,7 @@ func setup(game_, run_, opts: Dictionary = {}) -> void:
 	if run != null:
 		flags = run["flags"]
 	settings = opts.get("settings", {})
+	player.eye = stand_eye()
 	lives = run["lives"] if (run != null and run.has("lives")) else opts.get("lives", null)
 	lives_seen = lives.changes.size() if lives != null else 0
 	play_scene = opts.get("play_scene", Callable())
@@ -233,7 +234,7 @@ func _unhandled_input(ev: InputEvent) -> void:
 		var code := OS.get_keycode_string(ev.physical_keycode)
 		if ["W", "A", "S", "D", "Up", "Down", "Left", "Right", "Shift", "C"].has(code):
 			keys[code] = ev.pressed
-			if code == "C" and player.seat == null:
+			if code == "C" and player.seat == null and can("crouch"):
 				var cs := setting("crouch")
 				if cs["mode"] == "hold":
 					player.crouched = ev.pressed
@@ -312,7 +313,7 @@ func key_event(code: String, down: bool, repeat: bool = false) -> void:
 		drop()
 	if down and not repeat and code == "Q":
 		hand_lower(not hand_down)
-	if player.hiding == null and down and not repeat:
+	if player.hiding == null and down and not repeat and can("crouch"):
 		var cs := setting("crouch")
 		if code == cs["key"]:
 			if cs["mode"] == "hold":
@@ -335,12 +336,24 @@ func ability_look(dx: float, dy: float) -> void:
 	p.pitch = clamp(float(p.pitch) - dy * float(s["sens"]), -pm, pm)
 
 
+## the player's abilities (game.player, STORY_FORMAT §9.10: the Director's Player settings): run and crouch unless told not
+func can(what: String) -> bool:
+	var gp = story.game.get("player", {}) if story != null else {}
+	return not (gp is Dictionary and gp.get(what) == false)
+
+
+## the standing eye height (game.player.eye, 1.65 m)
+func stand_eye() -> float:
+	var gp = story.game.get("player", {}) if story != null else {}
+	return clampf(float(gp.get("eye", StoryC.EYES["stand"])), 1.2, 2.0) if gp is Dictionary else StoryC.EYES["stand"]
+
+
 func ability_walk(dt: float) -> void:
 	var s := setting("walk")
 	var k := keys
 	var f := (1 if (k.get("W", false) or k.get("Up", false)) else 0) - (1 if (k.get("S", false) or k.get("Down", false)) else 0)
 	var r := (1 if (k.get("D", false) or k.get("Right", false)) else 0) - (1 if (k.get("A", false) or k.get("Left", false)) else 0)
-	player.running = not player.crouched and bool(k.get("Shift", false)) and f > 0
+	player.running = can("run") and not player.crouched and bool(k.get("Shift", false)) and f > 0
 	if f == 0 and r == 0:
 		if collide != null:
 			collide.settle(float(s["step"]))
@@ -352,7 +365,8 @@ func ability_walk(dt: float) -> void:
 
 
 func ability_crouch(dt: float) -> void:
-	var want: float = StoryC.EYES["crouch"] if player.crouched else StoryC.EYES["stand"]
+	var se := stand_eye()
+	var want: float = StoryC.EYES["crouch"] * se / StoryC.EYES["stand"] if player.crouched else se
 	player.eye = float(player.eye) + (want - float(player.eye)) * min(1.0, dt * float(setting("crouch")["ease"]))
 
 

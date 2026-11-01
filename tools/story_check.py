@@ -1684,6 +1684,18 @@ def check_flow(story, things, r):
     coll = story["game"].get("collision")              # the player against the plan's boxes (the desk's own) or Godot's physics (the Director plugin's levels)
     if coll is not None and coll not in ("boxes", "physics"):
         r.err(f"game.collision {coll!r}: boxes (the plan's blocks, as the desk) or physics (whatever collides in Godot)")
+    gp = story["game"].get("player")                    # the player's abilities (the Director's Player settings): run, crouch, the eye's height
+    if gp is not None:
+        if not isinstance(gp, dict):
+            r.err("game.player is {run, crouch, eye}")
+        else:
+            for k, v in gp.items():
+                if k in ("run", "crouch") and not isinstance(v, bool):
+                    r.err(f"game.player.{k} is true or false")
+                elif k == "eye" and (not isinstance(v, (int, float)) or isinstance(v, bool) or not 1.2 <= v <= 2.0):
+                    r.err("game.player.eye is the standing eye height, 1.2 to 2.0 m")
+                elif k not in ("run", "crouch", "eye"):
+                    r.err(f"game.player.{k}: only run, crouch and eye")
     lighting = story["game"].get("lighting")           # the runtime's help with the light (DECISIONS 2026-10-30, noon: the lighting is made in Godot)
     if lighting is not None and lighting not in ("on", "off"):
         r.err(f"game.lighting {lighting!r}: on (the time of day's sky and sun unless the level has its own) or off (a flat test light)")

@@ -338,6 +338,8 @@ func _card_states() -> void:
 		elif part and sel != null and cls.begins_with("HS"):
 			foot.text = "Pick a model first"
 			normal = _box(Color("#1D2127"), Color("#3A414C"), 12, 1, 0)
+		elif id in ["player_start", "test_start"] and start_of(id == "test_start") != null:
+			foot.text = "✓ One in %s" % _level_of(start_of(id == "test_start")).name
 		elif str(it.get("kind")) == "window":
 			var room = room_of(sel)
 			foot.text = ("Into %s's wall" % room.name) if room != null else "Select a room first"
@@ -388,6 +390,12 @@ func activate(it: Dictionary) -> void:
 				if n != null:
 					panel.say("A %s stands in front of the camera: put your model inside it, or drag the card onto a model instead" % str(it["title"]).to_lower())
 		"preset":
+			if str(it["id"]) in ["player_start", "test_start"]:
+				var have = start_of(str(it["id"]) == "test_start")
+				if have != null:                       # one a level: the one there, to move
+					panel.dock.select(have)
+					panel.say("This level's %s is here: move it where the player should begin, its arrow the way they look" % str(it["title"]).to_lower())
+					return
 			var n = place(ROOT + str(it["path"]))
 			if n != null:
 				panel.say("%s added in front of the camera. Ctrl+Z takes it away" % str(it["title"]))
@@ -570,11 +578,16 @@ func refresh() -> void:
 		return
 	_card_states()
 	for c in side.get_children():
+		side.remove_child(c)                           # gone at once: what's drawn next is the only This object
 		c.queue_free()
 	var sel = _sel()
 	var cls := HSDirector.class_of(sel) if sel != null else ""
 	if sel == null:
 		_side_empty()
+	elif cls == "HSPlayerStart":
+		_side_player(sel)
+	elif cls == "HSCheckpoint":
+		_side_checkpoint(sel)
 	elif cls == "HSThing":
 		_side_thing(sel)
 	elif cls.begins_with("HS"):
@@ -650,6 +663,11 @@ func _side_thing(n: Node) -> void:
 	else:
 		_side_fields(n)
 	_side_story_name(n)
+	var tr := _button("Try it: play from here", true)
+	tr.icon = Glyphs.icon("play", "#0E1A27", 14)
+	tr.tooltip_text = "The game, with you standing in front of it (a test run: the level's Test start's things in your pocket)"
+	tr.pressed.connect(func(): panel.play_near(n))
+	side.add_child(tr)
 
 
 ## a little thing: how it starts (its life's states), what the player can do, where its effects come from
@@ -724,6 +742,127 @@ func _side_fields(n: Node) -> void:
 				if nv != n.get(k):
 					_change(n, k, nv, str(k)))
 			side.add_child(le)
+
+
+## the Player category's start in the level being built (the selected node's level, else the scene's first): the game's
+## start or the test start
+func start_of(test: bool) -> Node:
+	var lv := _level_of(_sel())
+	if lv == null:
+		var lvs := HSDirector.nodes_of(panel.dock.root(), "HSLevel")
+		lv = lvs[0] if lvs.size() else (panel.dock.root() if HSDirector.is_a(panel.dock.root(), "HSLevel") else null)
+	if lv == null:
+		return null
+	for st in HSDirector.nodes_of(lv, "HSPlayerStart"):
+		if (st.start_for == "test") == test:
+			return st
+	return null
+
+
+func _level_of(n) -> Node:
+	var x: Node = n if n != null and is_instance_valid(n) else null
+	while x != null:
+		if HSDirector.is_a(x, "HSLevel"):
+			return x
+		x = x.get_parent()
+	return null
+
+
+## a Player start: which way they look, what they have with them, the player's own settings (the game's), play from it
+const FACING := [["North", 180.0], ["North-east", 135.0], ["East", 90.0], ["South-east", 45.0], ["South", 0.0], ["South-west", -45.0],
+	["West", -90.0], ["North-west", -135.0]]
+func _side_player(n: Node) -> void:
+	var test: bool = n.start_for == "test"
+	var lv := _level_of(n)
+	_side_head(Glyphs.tile("test_start" if test else "player", "amber", true, 52), str(n.name), "is where your test play begins" if test else "is where the game begins")
+	side.add_child(_wrap(_label(("F6 on %s, and Play from here, begin here; the game itself begins at the Player start." % (lv.name if lv != null else "its level")) if test
+		else ("In %s. Move it where the game should begin; its arrow is the way they look." % (lv.name if lv != null else "this level")), 13, C_MUTED)))
+	side.add_child(_label("Which way they look", 12, C_FAINT, true))
+	var ob := OptionButton.new()
+	ob.name = "Facing"
+	ob.custom_minimum_size = Vector2(0, 40) * _s()
+	var yaw := wrapf(float(n.rotation_degrees.y), -180.0, 180.0)
+	var best := 0
+	var bd := INF
+	for i in FACING.size():
+		ob.add_item(FACING[i][0], i)
+		var dd := absf(wrapf(yaw - float(FACING[i][1]), -180.0, 180.0))
+		if dd < bd:
+			bd = dd
+			best = i
+	ob.select(best)
+	ob.item_selected.connect(func(i): _change(n, "rotation_degrees", Vector3(n.rotation_degrees.x, float(FACING[i][1]), n.rotation_degrees.z), "which way %s looks" % n.name))
+	side.add_child(ob)
+	side.add_child(_label("They have with them", 12, C_FAINT, true))
+	var fl := HFlowContainer.new()
+	fl.add_theme_constant_override("h_separation", int(6 * _s()))
+	fl.add_theme_constant_override("v_separation", int(6 * _s()))
+	for item in n.starts_with:
+		var b := _button(str(item) + "  ✕", false)
+		b.tooltip_text = "Take %s out" % item
+		b.pressed.connect(func():
+			var now := PackedStringArray(n.starts_with)
+			now.remove_at(now.find(item))
+			_change(n, "starts_with", now, "%s out of %s's pocket" % [item, n.name]))
+		fl.add_child(b)
+	var add := MenuButton.new()
+	add.name = "AddItem"
+	add.text = "+ Add an item"
+	add.flat = false
+	add.custom_minimum_size = Vector2(0, 40) * _s()
+	var items := HSDirector.ids("item", panel.dock.root())
+	for i in items.size():
+		add.get_popup().add_item(items[i], i)
+	add.get_popup().id_pressed.connect(func(i):
+		if not n.starts_with.has(items[i]):
+			var now := PackedStringArray(n.starts_with)
+			now.append(items[i])
+			_change(n, "starts_with", now, "%s into %s's pocket" % [items[i], n.name]))
+	if items.is_empty():
+		add.disabled = true
+		add.tooltip_text = "No items in the scene yet: a key, a flashlight (Pick up & look, Lights & power)"
+	fl.add_child(add)
+	side.add_child(fl)
+	var g = panel.dock.game()
+	if g != null:
+		side.add_child(_label("The player, in every level", 12, C_FAINT, true))
+		for row in [["can_run", "Can run (Shift)"], ["can_crouch", "Can crouch (C)"]]:
+			var cb := CheckBox.new()
+			cb.text = row[1]
+			cb.button_pressed = bool(g.get(row[0]))
+			cb.toggled.connect(func(on): _change(g, row[0], on, row[1].to_lower()))
+			side.add_child(cb)
+		var eh := HBoxContainer.new()
+		eh.add_child(_wrap(_label("Eye height (m)", 13, C_TEXT)))
+		var sb := SpinBox.new()
+		sb.min_value = 1.2
+		sb.max_value = 2.0
+		sb.step = 0.01
+		sb.value = float(g.get("eye_height"))
+		sb.value_changed.connect(func(x): _change(g, "eye_height", x, "the player's eye height"))
+		eh.add_child(sb)
+		side.add_child(eh)
+		var nh := HBoxContainer.new()
+		nh.add_child(_wrap(_label("Their name", 13, C_TEXT)))
+		var le := LineEdit.new()
+		le.text = str(g.get("player_name"))
+		le.custom_minimum_size = Vector2(140, 36) * _s()
+		le.text_submitted.connect(func(_t): le.release_focus())
+		le.focus_exited.connect(func(): if le.text != str(g.get("player_name")): _change(g, "player_name", le.text, "the player's name"))
+		nh.add_child(le)
+		side.add_child(nh)
+	var pb := _button("Play from here", true)
+	pb.name = "PlayFromHere"
+	pb.icon = Glyphs.icon("play", "#0E1A27", 14)
+	pb.pressed.connect(func(): panel.play_from_start(test))
+	side.add_child(pb)
+	_side_story_name(n)
+
+
+func _side_checkpoint(n: Node) -> void:
+	_side_head(Glyphs.tile("checkpoint", "amber", true, 52), str(n.name), "is a checkpoint")
+	side.add_child(_wrap(_label("Each time the player walks into it the game autosaves here (the pause menu's autosave). Its size: the Inspector.", 13, C_MUTED)))
+	_side_story_name(n)
 
 
 ## its name in the story (its id) and what in the Director file names it

@@ -1,6 +1,7 @@
 ## The sample game (docs/GODOT_DIRECTOR.md §8), made by Godot itself so every property is the class's own: a small
 ## house (a hall, a kitchen through a door, a bedroom behind a locked one), a letter, a key, a light switch, a
-## wardrobe to hide in and a bed, Mari in the hall, a figure that shows for a second when the player walks into the
+## wardrobe to hide in and a bed, Mari in the hall, a Player start, a Test start by the bedroom door (the key in hand) and
+## a checkpoint in the bedroom's doorway, a figure that shows for a second when the player walks into the
 ## kitchen after reading the letter (the user's own example of an event), and a story in one chapter: find the key,
 ## talk to Mari, get into the bedroom, then hide or sleep (two endings).
 ##   godot --headless --path <project> -s res://addons/horrorstudio_director/tests/make_sample.gd   (SAMPLE ok)
@@ -147,10 +148,15 @@ func _initialize() -> void:
 	bd.position = Vector3(-1.2, 0, -2.06)
 	bd.locked_by = "bedroom_key"
 	bd.latch = true
-	var start: HSSpot = own(HSSpot.new(), house, "Start")
+	var start: HSPlayerStart = own(HSPlayerStart.new(), house, "Start")   # the panel's Player start: where the game begins
 	start.position = Vector3(0, 0, 1.2)
 	start.rotation_degrees = Vector3(0, 180, 0)          # facing north (-z): its +Z turned round
 	house.start = house.get_path_to(start)
+	var tst: HSPlayerStart = own(HSPlayerStart.new(), house, "TestStart")   # the Test start: F6 and Play from here begin by the bedroom, the key in hand
+	tst.start_for = "test"
+	tst.position = Vector3(-1.2, 0, -1.0)
+	tst.rotation_degrees = Vector3(0, 180, 0)
+	tst.starts_with = PackedStringArray(["bedroom_key"])
 	thing(hall, "Letter", "note", Vector3(-1.6, 0, 1.0), 0.0, {"display_name": "Letter", "note_title": "A letter",
 		"note_text": "Alex,\n\nI left the key in the kitchen. Don't open the bedroom until I'm back.\n\n- M"})
 	var hall_bulb := OmniLight3D.new()
@@ -234,6 +240,8 @@ func _initialize() -> void:
 	thing(kitchen, "Bottle", "pickup", Vector3(0.6, 0, 1.4), 0.0, {"item": "bottle", "item_name": "Bottle", "display_name": "Bottle"})
 	var bspot: HSSpot = own(HSSpot.new(), house, "BedroomSpot")
 	bspot.position = Vector3(1.2, 0, -1.4)
+	var cp: HSCheckpoint = own(HSCheckpoint.new(), bedroom, "Checkpoint")   # walked into: an autosave
+	cp.position = Vector3(-1.2, 0, 1.2)
 
 	# ---- the story: the Director file (DECISIONS 2026-11-01), the scene left as the world ----
 	var r0 := HSStoryFile.write(STORY)

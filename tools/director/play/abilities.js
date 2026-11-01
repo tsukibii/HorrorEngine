@@ -21,7 +21,7 @@ register("ability", "walk", {
   settings: { speed: 1.4, run: 2.8, crouched: 0.7, radius: 0.25, step: 0.35 },   // m/s walking, running (Shift held) and crouched; body radius; step up
   update: (rt, dt, s) => {
     const k = rt.keys, f = (k.KeyW || k.ArrowUp ? 1 : 0) - (k.KeyS || k.ArrowDown ? 1 : 0), r = (k.KeyD || k.ArrowRight ? 1 : 0) - (k.KeyA || k.ArrowLeft ? 1 : 0);
-    rt.player.running = !rt.player.crouched && !!(k.ShiftLeft || k.ShiftRight) && f > 0;     // forward only, standing
+    rt.player.running = rt.can("run") && !rt.player.crouched && !!(k.ShiftLeft || k.ShiftRight) && f > 0;     // forward only, standing (game.player.run)
     if (!f && !r) return;
     const a = rt.player.yaw * Math.PI / 180, len = Math.hypot(f, r), v = (rt.player.crouched ? s.crouched : rt.player.running ? s.run : s.speed) * dt / len;
     // forward is (cos yaw, -sin yaw) in three's x, z (story y is three's -z); right is (sin yaw, cos yaw)
@@ -32,12 +32,12 @@ register("ability", "walk", {
 register("ability", "crouch", {
   settings: { mode: "toggle", key: "KeyC", ease: 8 },      // "toggle" or "hold" (the player's setting)
   key: (rt, e, down, s) => {
-    if (e.code !== s.key) return;
+    if (e.code !== s.key || !rt.can("crouch")) return;     // game.player.crouch
     if (s.mode === "hold") rt.player.crouched = down;
     else if (down && !e.repeat) rt.player.crouched = !rt.player.crouched;
   },
   update: (rt, dt, s) => {
-    const p = rt.player, want = p.crouched ? EYES.crouch : EYES.stand;
+    const se = rt.standEye(), p = rt.player, want = p.crouched ? EYES.crouch * se / EYES.stand : se;
     p.eye += (want - p.eye) * Math.min(1, dt * s.ease);
   },
 });

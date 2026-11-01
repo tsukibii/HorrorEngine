@@ -188,6 +188,41 @@ func show_page(p: String) -> void:
 	refresh()
 
 
+## the game played from the start (a Player start's Play from here; a Test start's as a test run: F6's start)
+const RUN_FILE := "user://hs_director_run.json"
+func play_from_start(test: bool) -> void:
+	_write_run({"test": test})
+	EditorInterface.play_main_scene()
+
+
+## This object's Try it: the game as a test run, the player standing in front of the thing, facing it (HSGame _try_here)
+func play_near(n: Node3D) -> void:
+	var lv = build._level_of(n)
+	if lv == null:
+		say("%s isn't in a level" % n.name)
+		return
+	var vp := EditorInterface.get_editor_viewport_3d(0)
+	var cam: Camera3D = vp.get_camera_3d() if vp != null else null
+	var away: Vector3 = (cam.global_position - n.global_position) if cam != null else Vector3(0, 0, 1)
+	away.y = 0.0
+	if away.length() < 0.01:
+		away = Vector3(0, 0, 1)
+	var pos: Vector3 = n.global_position + away.normalized() * 1.4
+	var room = build.room_of(n)
+	pos.y = room.global_position.y if room != null else 0.0
+	var d: Vector3 = n.global_position - pos
+	_write_run({"test": true, "near": {"level": HSDirector.id_of(lv), "pos": [pos.x, pos.y, pos.z], "yaw": rad_to_deg(atan2(d.x, d.z))}})
+	EditorInterface.play_main_scene()
+	say("Playing with you in front of %s (F8 stops it)" % n.name)
+
+
+func _write_run(d: Dictionary) -> void:
+	var f := FileAccess.open(RUN_FILE, FileAccess.WRITE)
+	if f != null:
+		f.store_string(JSON.stringify(d))
+		f.close()
+
+
 ## a word to the user at the panel's foot (what just happened, what's missing)
 func say(t: String) -> void:
 	if status != null:

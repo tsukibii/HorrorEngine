@@ -149,6 +149,11 @@ func _initialize() -> void:
 		var beats: Array = st["stitches"]["q_key"]["beats"].map(func(b): return b["id"])
 		if not beats.has("m_figure_scare") or not beats.has("m_letter_thought") or not beats.has("talk__mari__t_not_now"):
 			return "the first quest's beats: %s (the moments and the conversations in every quest)" % [beats]
+		var cpb: Array = st["stitches"]["q_bedroom"]["beats"].filter(func(b): return b["id"] == "m_checkpoint__checkpoint")
+		if cpb.is_empty() or cpb[0]["when"] != {"enter": "checkpoint"} or cpb[0]["do"] != [{"checkpoint": true}] or cpb[0].get("repeat") != true:
+			return "the bedroom's checkpoint: its moment %s" % [cpb]
+		if st["game"].get("player") != {"run": true, "crouch": true, "eye": 1.65} or st["levels"]["house"]["start"] != "start":
+			return "the player's settings %s, the house's start %s (the Player start, not the Test start)" % [st["game"].get("player"), st["levels"]["house"]["start"]]
 		if not st["items"].has("bedroom_key") or not st["items"].has("mug") or not st["notes"].has("letter") or not st["cast"].has("mari"):
 			return "items %s notes %s cast %s" % [st["items"].keys(), st["notes"].keys(), st["cast"].keys()]
 		var br: Dictionary = hs.compiled["brain"]

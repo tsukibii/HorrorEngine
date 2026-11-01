@@ -5,6 +5,9 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 S = "res://addons/horrorstudio_director/"
 PRESETS = {
+    "player_start": ("PlayerStart", "Marker3D", "level/player_start.gd", {}),
+    "test_start": ("TestStart", "Marker3D", "level/player_start.gd", {"start_for": '"test"'}),
+    "checkpoint": ("Checkpoint", "Node3D", "level/checkpoint.gd", {}),
     "level": ("Level", "Node3D", "level/level.gd", {}),
     "room": ("Room", "Node3D", "level/room.gd", {"size": "Vector3(4, 2.6, 4)"}),
     "room_big": ("BigRoom", "Node3D", "level/room.gd", {"size": "Vector3(7, 3, 6)"}),

@@ -131,7 +131,7 @@ func icon(name: String) -> Texture2D:
 func icon_of(n: Node) -> Texture2D:
 	var cls := HSDirector.class_of(n)
 	var m := {"HSGame": "game", "HSLevel": "level", "HSRoom": "room", "HSDoor": "door", "HSThing": "thing", "HSTrigger": "trigger",
-		"HSSpot": "spot", "HSPath": "path", "HSActor": "actor"}
+		"HSSpot": "spot", "HSPath": "path", "HSActor": "actor", "HSPlayerStart": "player", "HSCheckpoint": "checkpoint"}
 	return icon(m[cls]) if m.has(cls) else null
 
 

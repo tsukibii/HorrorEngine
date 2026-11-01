@@ -1,95 +1,962 @@
 {
  "about": "The HorrorStudio panel's cards (editor/build_tab.gd): its categories and, in each, what a card adds. kind part: an HSThing scene of parts/ (it wraps the model it's dropped on, or stands in on its own); preset: a level node of presets/; window: a window put in the selected room's wall; scare: an area and the moment it starts (the Director file). make_parts.py keeps it whole: a part it makes that isn't here comes in under its kind's category.",
  "categories": [
-  {"id": "player", "title": "Player", "glyph": "player", "tint": "amber", "about": "Where the player begins, and where they come back to."},
-  {"id": "building", "title": "Building", "glyph": "door", "about": "Rooms, doors and windows: the place itself."},
-  {"id": "lights", "title": "Lights & power", "glyph": "bulb", "about": "Lamps, switches, the breaker box and the flashlight."},
-  {"id": "look", "title": "Pick up & look", "glyph": "key", "about": "Things to take, read, or look at closely."},
-  {"id": "rest", "title": "Hide & rest", "glyph": "wardrobe", "about": "Places to hide in, sit on and sleep in."},
-  {"id": "kitchen", "title": "Kitchen", "glyph": "kettle", "about": "Things that come alive on their own: a kettle boils, a cup goes cold."},
-  {"id": "fire", "title": "Fire & smoke", "glyph": "flame", "about": "Candles, cigarettes and incense: they burn down by themselves."},
-  {"id": "electronics", "title": "Electronics", "glyph": "phone", "about": "A phone that rings, a TV of static, a clock that stops."},
-  {"id": "puzzles", "title": "Puzzles", "glyph": "keypad", "about": "Codes, locks, and things an item opens."},
-  {"id": "play", "title": "Carry & play", "glyph": "die", "about": "Things to carry, throw and play with."},
-  {"id": "chores", "title": "Chores", "glyph": "stain", "about": "Jobs done with the hands."},
-  {"id": "people", "title": "People", "glyph": "person", "about": "Characters: they stand, sit, walk, talk and watch."},
-  {"id": "areas", "title": "Areas & paths", "glyph": "area", "about": "Invisible places the story listens to, and ways to walk."},
-  {"id": "scares", "title": "Scares", "glyph": "scare", "about": "Drop one in a room: it makes the area and the moment for you. Change every word after, in the Story tab."}
+  {
+   "id": "player",
+   "title": "Player",
+   "glyph": "player",
+   "tint": "amber",
+   "about": "Where the player begins, where your tests begin, and where the game saves."
+  },
+  {
+   "id": "building",
+   "title": "Building",
+   "glyph": "door",
+   "about": "Rooms, doors and windows: the place itself."
+  },
+  {
+   "id": "lights",
+   "title": "Lights & power",
+   "glyph": "bulb",
+   "about": "Lamps, switches, the breaker box and the flashlight."
+  },
+  {
+   "id": "look",
+   "title": "Pick up & look",
+   "glyph": "key",
+   "about": "Things to take, read, or look at closely."
+  },
+  {
+   "id": "rest",
+   "title": "Hide & rest",
+   "glyph": "wardrobe",
+   "about": "Places to hide in, sit on and sleep in."
+  },
+  {
+   "id": "kitchen",
+   "title": "Kitchen",
+   "glyph": "kettle",
+   "about": "Things that come alive on their own: a kettle boils, a cup goes cold."
+  },
+  {
+   "id": "fire",
+   "title": "Fire & smoke",
+   "glyph": "flame",
+   "about": "Candles, cigarettes and incense: they burn down by themselves."
+  },
+  {
+   "id": "electronics",
+   "title": "Electronics",
+   "glyph": "phone",
+   "about": "A phone that rings, a TV of static, a clock that stops."
+  },
+  {
+   "id": "puzzles",
+   "title": "Puzzles",
+   "glyph": "keypad",
+   "about": "Codes, locks, and things an item opens."
+  },
+  {
+   "id": "play",
+   "title": "Carry & play",
+   "glyph": "die",
+   "about": "Things to carry, throw and play with."
+  },
+  {
+   "id": "chores",
+   "title": "Chores",
+   "glyph": "stain",
+   "about": "Jobs done with the hands."
+  },
+  {
+   "id": "people",
+   "title": "People",
+   "glyph": "person",
+   "about": "Characters: they stand, sit, walk, talk and watch."
+  },
+  {
+   "id": "areas",
+   "title": "Areas & paths",
+   "glyph": "area",
+   "about": "Invisible places the story listens to, and ways to walk."
+  },
+  {
+   "id": "scares",
+   "title": "Scares",
+   "glyph": "scare",
+   "about": "Drop one in a room: it makes the area and the moment for you. Change every word after, in the Story tab."
+  }
  ],
  "items": [
-  {"id": "room", "cat": "building", "kind": "preset", "path": "presets/room.tscn", "title": "Room", "desc": "Floor, walls and a ceiling, 4 × 4 m", "glyph": "room", "keywords": ["room"]},
-  {"id": "room_big", "cat": "building", "kind": "preset", "path": "presets/room_big.tscn", "title": "Big room", "desc": "A larger room, 7 × 6 m and 3 m high", "glyph": "room_big", "keywords": ["hall", "lounge"]},
-  {"id": "corridor", "cat": "building", "kind": "preset", "path": "presets/corridor.tscn", "title": "Corridor", "desc": "1.6 m wide and 6 m long", "glyph": "corridor", "keywords": ["corridor", "hallway"]},
-  {"id": "door", "cat": "building", "kind": "preset", "path": "presets/door.tscn", "title": "Door", "desc": "Put it on a wall: it cuts its own opening", "glyph": "door", "keywords": ["door"]},
-  {"id": "window", "cat": "building", "kind": "window", "title": "Window", "desc": "Glass and the sky's light, in the selected room's wall", "glyph": "window", "keywords": ["window"]},
-  {"id": "solid", "cat": "building", "kind": "part", "path": "parts/solid.tscn", "title": "Just a thing", "desc": "Solid; the story can name it", "glyph": "cube", "keywords": ["table", "desk", "shelf", "crate", "rock", "statue"]},
-  {"id": "level", "cat": "building", "kind": "preset", "path": "presets/level.tscn", "title": "Level", "desc": "A new place to play in (a new map)", "glyph": "level", "keywords": ["level", "map"]},
-
-  {"id": "light", "cat": "lights", "kind": "preset", "path": "presets/light.tscn", "title": "Lamp", "desc": "A light of the story's: switches find it", "glyph": "bulb", "keywords": ["lamp", "light", "bulb"]},
-  {"id": "switch", "cat": "lights", "kind": "part", "path": "parts/switch.tscn", "title": "Light switch", "desc": "Switches the lights of its room", "glyph": "switch", "keywords": ["switch"]},
-  {"id": "breaker", "cat": "lights", "kind": "part", "path": "parts/breaker.tscn", "title": "Breaker box", "desc": "The power off, and back on", "glyph": "breaker", "keywords": ["breaker", "fusebox", "fuse_box", "fuse"]},
-  {"id": "flashlight", "cat": "lights", "kind": "part", "path": "parts/flashlight.tscn", "title": "Flashlight", "desc": "Picked up; F switches it on", "glyph": "flashlight", "keywords": ["flashlight", "torch"]},
-
-  {"id": "pickup", "cat": "look", "kind": "part", "path": "parts/pickup.tscn", "title": "Something to pick up", "desc": "A key, a fuse, a tin: into the pocket", "glyph": "key", "keywords": ["key", "fuse", "tin", "coin", "battery", "batteries", "item", "can"]},
-  {"id": "note", "cat": "look", "kind": "part", "path": "parts/note.tscn", "title": "Note", "desc": "A card to read: its title and words", "glyph": "note", "keywords": ["note", "letter", "paper", "diary", "page", "card", "envelope"]},
-  {"id": "inspect", "cat": "look", "kind": "part", "path": "parts/inspect.tscn", "title": "Look closely", "desc": "Taken up in the hands and turned", "glyph": "inspect", "keywords": ["photo", "picture", "frame", "book", "ornament", "doll", "curio", "figurine", "toy"]},
-
-  {"id": "hiding_place", "cat": "rest", "kind": "part", "path": "parts/hiding_place.tscn", "title": "Hiding place", "desc": "Get in: hidden, the view narrow", "glyph": "wardrobe", "keywords": ["wardrobe", "locker", "closet", "cupboard", "cabinet"]},
-  {"id": "seat", "cat": "rest", "kind": "part", "path": "parts/seat.tscn", "title": "Seat", "desc": "Sit down: the eye at sitting height", "glyph": "chair", "keywords": ["chair", "seat", "sofa", "couch", "stool", "bench", "armchair"]},
-  {"id": "bed", "cat": "rest", "kind": "part", "path": "parts/bed.tscn", "title": "Bed", "desc": "Lie down; the night ends", "glyph": "bed", "keywords": ["bed", "futon", "mattress"]},
-
-  {"id": "kettle", "cat": "kitchen", "kind": "part", "path": "parts/kettle.tscn", "title": "Kettle", "desc": "Boils by itself once switched on", "glyph": "kettle", "keywords": ["kettle"]},
-  {"id": "whistling_kettle", "cat": "kitchen", "kind": "part", "path": "parts/whistling_kettle.tscn", "title": "Whistling kettle", "desc": "Whistles on the hob when it boils", "glyph": "whistle_kettle", "keywords": ["kettle", "whistling"]},
-  {"id": "tetsubin", "cat": "kitchen", "kind": "part", "path": "parts/tetsubin.tscn", "title": "Tetsubin", "desc": "An iron kettle that heats on the hob", "glyph": "tetsubin", "keywords": ["tetsubin"]},
-  {"id": "hob", "cat": "kitchen", "kind": "part", "path": "parts/hob.tscn", "title": "Hob", "desc": "Turn it on; pots on it heat up", "glyph": "hob", "keywords": ["hob", "stove", "cooktop", "induction"]},
-  {"id": "gas_hob", "cat": "kitchen", "kind": "part", "path": "parts/gas_hob.tscn", "title": "Gas hob", "desc": "A blue flame, turned on and off", "glyph": "gas_hob", "keywords": ["gas", "burner"]},
-  {"id": "pot", "cat": "kitchen", "kind": "part", "path": "parts/pot.tscn", "title": "Pot", "desc": "Simmers, then boils on a hob", "glyph": "pot", "keywords": ["pot", "pan", "saucepan"]},
-  {"id": "cup", "cat": "kitchen", "kind": "part", "path": "parts/cup.tscn", "title": "Cup", "desc": "Fill it, drink it; left, it goes cold", "glyph": "cup", "keywords": ["cup", "mug", "glass", "tea"]},
-  {"id": "teapot", "cat": "kitchen", "kind": "part", "path": "parts/teapot.tscn", "title": "Teapot", "desc": "Filled from the kettle, then poured", "glyph": "teapot", "keywords": ["teapot"]},
-  {"id": "coffee", "cat": "kitchen", "kind": "part", "path": "parts/coffee.tscn", "title": "Coffee to go", "desc": "Hot, then cold if it's left", "glyph": "coffee", "keywords": ["coffee", "takeaway"]},
-  {"id": "rice_cooker", "cat": "kitchen", "kind": "part", "path": "parts/rice_cooker.tscn", "title": "Rice cooker", "desc": "Cooks, then keeps it warm", "glyph": "rice_cooker", "keywords": ["rice", "cooker"]},
-  {"id": "fridge", "cat": "kitchen", "kind": "part", "path": "parts/fridge.tscn", "title": "Fridge", "desc": "Hums while the power's on", "glyph": "fridge", "keywords": ["fridge", "refrigerator", "freezer"]},
-  {"id": "tap", "cat": "kitchen", "kind": "part", "path": "parts/tap.tscn", "title": "Tap", "desc": "Drips, or runs when it's turned on", "glyph": "tap", "keywords": ["tap", "faucet", "sink"]},
-
-  {"id": "candle", "cat": "fire", "kind": "part", "path": "parts/candle.tscn", "title": "Candle", "desc": "Burns down; a click blows it out", "glyph": "candle", "keywords": ["candle"]},
-  {"id": "cigarette", "cat": "fire", "kind": "part", "path": "parts/cigarette.tscn", "title": "Cigarette", "desc": "Smoulders, its smoke rising", "glyph": "cigarette", "keywords": ["cigarette", "cig", "ashtray"]},
-  {"id": "lighter", "cat": "fire", "kind": "part", "path": "parts/lighter.tscn", "title": "Lighter", "desc": "Flicked: a small flame", "glyph": "lighter", "keywords": ["lighter", "zippo"]},
-  {"id": "incense", "cat": "fire", "kind": "part", "path": "parts/incense.tscn", "title": "Incense", "desc": "A thin line of smoke", "glyph": "incense", "keywords": ["incense"]},
-  {"id": "coil", "cat": "fire", "kind": "part", "path": "parts/coil.tscn", "title": "Mosquito coil", "desc": "A slow curl of smoke", "glyph": "coil", "keywords": ["coil", "mosquito"]},
-
-  {"id": "phone", "cat": "electronics", "kind": "part", "path": "parts/phone.tscn", "title": "Phone", "desc": "Lights up, rings, is answered", "glyph": "phone", "keywords": ["phone", "mobile", "cellphone", "smartphone", "telephone"]},
-  {"id": "tv", "cat": "electronics", "kind": "part", "path": "parts/tv.tscn", "title": "TV", "desc": "Static, or on, or off", "glyph": "tv", "keywords": ["tv", "television", "monitor", "screen"]},
-  {"id": "clock", "cat": "electronics", "kind": "part", "path": "parts/clock.tscn", "title": "Clock", "desc": "Ticks; stops when the story says", "glyph": "clock", "keywords": ["clock", "watch"]},
-
-  {"id": "code_lock", "cat": "puzzles", "kind": "part", "path": "parts/code_lock.tscn", "title": "Code lock", "desc": "A keypad: the right code opens it", "glyph": "keypad", "keywords": ["keypad", "padlock", "safe"]},
-  {"id": "use_item", "cat": "puzzles", "kind": "part", "path": "parts/use_item.tscn", "title": "Needs an item", "desc": "An item used on it opens it", "glyph": "slot", "keywords": ["socket", "slot", "machine", "lock"]},
-  {"id": "door_locked", "cat": "puzzles", "kind": "preset", "path": "presets/door_locked.tscn", "title": "Locked door", "desc": "Shut until the player has its key", "glyph": "locked_door", "keywords": ["locked"]},
-
-  {"id": "carry", "cat": "play", "kind": "part", "path": "parts/carry.tscn", "title": "Carry", "desc": "In both hands; G puts it down", "glyph": "box", "keywords": ["box", "crate", "bucket", "bag", "basket"]},
-  {"id": "die", "cat": "play", "kind": "part", "path": "parts/die.tscn", "title": "Die", "desc": "Thrown from the hand, its face heard", "glyph": "die", "keywords": ["die", "dice"]},
-  {"id": "game_table", "cat": "play", "kind": "part", "path": "parts/game_table.tscn", "title": "Game table", "desc": "A board game played at it", "glyph": "cards", "keywords": ["board", "cards", "game"]},
-
-  {"id": "stain", "cat": "chores", "kind": "part", "path": "parts/stain.tscn", "title": "Stain", "desc": "Scrubbed away by holding the button", "glyph": "stain", "keywords": ["stain", "blood", "mud", "mess", "spill", "dirt", "puddle"]},
-
-  {"id": "character", "cat": "people", "kind": "preset", "path": "presets/character.tscn", "title": "Character", "desc": "Stands, sits, walks a path; talks", "glyph": "person", "keywords": ["character", "person", "npc"]},
-  {"id": "watcher", "cat": "people", "kind": "preset", "path": "presets/watcher.tscn", "title": "Watcher", "desc": "Watches for the player: caught if seen", "glyph": "watcher", "keywords": ["watcher", "guard", "monster"]},
-
-  {"id": "area", "cat": "areas", "kind": "preset", "path": "presets/area.tscn", "title": "Area", "desc": "The story hears the player walk in", "glyph": "area", "keywords": ["area", "trigger", "zone"]},
-  {"id": "area_safe", "cat": "areas", "kind": "preset", "path": "presets/area_safe.tscn", "title": "Safe area", "desc": "A watcher can't see the player in it", "glyph": "area_safe", "keywords": ["safe"]},
-  {"id": "spot", "cat": "areas", "kind": "preset", "path": "presets/spot.tscn", "title": "Spot", "desc": "Where someone stands, or is sent", "glyph": "spot", "keywords": ["spot", "mark"]},
-  {"id": "path", "cat": "areas", "kind": "preset", "path": "presets/path.tscn", "title": "Path", "desc": "A way a character walks", "glyph": "path", "keywords": ["path", "route", "patrol"]},
-
-  {"id": "scare_jumpscare", "cat": "scares", "kind": "scare", "title": "Jumpscare", "desc": "A sting plays as someone appears", "glyph": "scare", "keywords": ["jumpscare", "scare"],
-   "name": "Jumpscare", "moment": {"do": [{"trick": "jumpscare", "figure": "", "secs": 0.8}]}},
-  {"id": "scare_knock", "cat": "scares", "kind": "scare", "title": "Knock at a door", "desc": "Three knocks, then quiet", "glyph": "knock", "keywords": ["knock"],
-   "name": "Knock", "moment": {"do": [{"trick": "knock", "at": "", "count": 3}]}},
-  {"id": "scare_lights", "cat": "scares", "kind": "scare", "title": "The lights die", "desc": "The room goes dark for a moment", "glyph": "lights_die", "keywords": ["dark", "lights"],
-   "name": "LightsDie", "moment": {"do": [{"trick": "lights_die", "room": "{room}", "secs": 1.5}]}},
-  {"id": "scare_slam", "cat": "scares", "kind": "scare", "title": "A door slams", "desc": "Shut behind them, hard", "glyph": "door_slam", "keywords": ["slam"],
-   "name": "DoorSlams", "moment": {"do": [{"trick": "slam_behind", "door": ""}]}},
-  {"id": "scare_whisper", "cat": "scares", "kind": "scare", "title": "A whisper", "desc": "A breath close by, a voice from nowhere", "glyph": "whisper", "keywords": ["whisper", "voice"],
-   "name": "Whisper", "moment": {"do": [{"sound": "breath_close"}, {"say": "Come closer…"}]}},
-  {"id": "scare_thought", "cat": "scares", "kind": "scare", "title": "A thought", "desc": "Words typed on the screen", "glyph": "thought", "keywords": ["thought", "think"],
-   "name": "Thought", "moment": {"do": [{"think": "What was that?"}]}}
+  {
+   "id": "player_start",
+   "cat": "player",
+   "kind": "preset",
+   "path": "presets/player_start.tscn",
+   "title": "Player start",
+   "desc": "Where the game begins in this level",
+   "glyph": "player",
+   "keywords": [
+    "player",
+    "start",
+    "spawn"
+   ]
+  },
+  {
+   "id": "test_start",
+   "cat": "player",
+   "kind": "preset",
+   "path": "presets/test_start.tscn",
+   "title": "Test start",
+   "desc": "Where your test play begins: F6, Play from here",
+   "glyph": "test_start",
+   "keywords": [
+    "test",
+    "spawn"
+   ]
+  },
+  {
+   "id": "checkpoint",
+   "cat": "player",
+   "kind": "preset",
+   "path": "presets/checkpoint.tscn",
+   "title": "Checkpoint",
+   "desc": "Walked into, the game saves here (the autosave)",
+   "glyph": "checkpoint",
+   "keywords": [
+    "checkpoint",
+    "save",
+    "autosave"
+   ]
+  },
+  {
+   "id": "room",
+   "cat": "building",
+   "kind": "preset",
+   "path": "presets/room.tscn",
+   "title": "Room",
+   "desc": "Floor, walls and a ceiling, 4 × 4 m",
+   "glyph": "room",
+   "keywords": [
+    "room"
+   ]
+  },
+  {
+   "id": "room_big",
+   "cat": "building",
+   "kind": "preset",
+   "path": "presets/room_big.tscn",
+   "title": "Big room",
+   "desc": "A larger room, 7 × 6 m and 3 m high",
+   "glyph": "room_big",
+   "keywords": [
+    "hall",
+    "lounge"
+   ]
+  },
+  {
+   "id": "corridor",
+   "cat": "building",
+   "kind": "preset",
+   "path": "presets/corridor.tscn",
+   "title": "Corridor",
+   "desc": "1.6 m wide and 6 m long",
+   "glyph": "corridor",
+   "keywords": [
+    "corridor",
+    "hallway"
+   ]
+  },
+  {
+   "id": "door",
+   "cat": "building",
+   "kind": "preset",
+   "path": "presets/door.tscn",
+   "title": "Door",
+   "desc": "Put it on a wall: it cuts its own opening",
+   "glyph": "door",
+   "keywords": [
+    "door"
+   ]
+  },
+  {
+   "id": "window",
+   "cat": "building",
+   "kind": "window",
+   "title": "Window",
+   "desc": "Glass and the sky's light, in the selected room's wall",
+   "glyph": "window",
+   "keywords": [
+    "window"
+   ]
+  },
+  {
+   "id": "solid",
+   "cat": "building",
+   "kind": "part",
+   "path": "parts/solid.tscn",
+   "title": "Just a thing",
+   "desc": "Solid; the story can name it",
+   "glyph": "cube",
+   "keywords": [
+    "table",
+    "desk",
+    "shelf",
+    "crate",
+    "rock",
+    "statue"
+   ]
+  },
+  {
+   "id": "level",
+   "cat": "building",
+   "kind": "preset",
+   "path": "presets/level.tscn",
+   "title": "Level",
+   "desc": "A new place to play in (a new map)",
+   "glyph": "level",
+   "keywords": [
+    "level",
+    "map"
+   ]
+  },
+  {
+   "id": "light",
+   "cat": "lights",
+   "kind": "preset",
+   "path": "presets/light.tscn",
+   "title": "Lamp",
+   "desc": "A light of the story's: switches find it",
+   "glyph": "bulb",
+   "keywords": [
+    "lamp",
+    "light",
+    "bulb"
+   ]
+  },
+  {
+   "id": "switch",
+   "cat": "lights",
+   "kind": "part",
+   "path": "parts/switch.tscn",
+   "title": "Light switch",
+   "desc": "Switches the lights of its room",
+   "glyph": "switch",
+   "keywords": [
+    "switch"
+   ]
+  },
+  {
+   "id": "breaker",
+   "cat": "lights",
+   "kind": "part",
+   "path": "parts/breaker.tscn",
+   "title": "Breaker box",
+   "desc": "The power off, and back on",
+   "glyph": "breaker",
+   "keywords": [
+    "breaker",
+    "fusebox",
+    "fuse_box",
+    "fuse"
+   ]
+  },
+  {
+   "id": "flashlight",
+   "cat": "lights",
+   "kind": "part",
+   "path": "parts/flashlight.tscn",
+   "title": "Flashlight",
+   "desc": "Picked up; F switches it on",
+   "glyph": "flashlight",
+   "keywords": [
+    "flashlight",
+    "torch"
+   ]
+  },
+  {
+   "id": "pickup",
+   "cat": "look",
+   "kind": "part",
+   "path": "parts/pickup.tscn",
+   "title": "Something to pick up",
+   "desc": "A key, a fuse, a tin: into the pocket",
+   "glyph": "key",
+   "keywords": [
+    "key",
+    "fuse",
+    "tin",
+    "coin",
+    "battery",
+    "batteries",
+    "item",
+    "can"
+   ]
+  },
+  {
+   "id": "note",
+   "cat": "look",
+   "kind": "part",
+   "path": "parts/note.tscn",
+   "title": "Note",
+   "desc": "A card to read: its title and words",
+   "glyph": "note",
+   "keywords": [
+    "note",
+    "letter",
+    "paper",
+    "diary",
+    "page",
+    "card",
+    "envelope"
+   ]
+  },
+  {
+   "id": "inspect",
+   "cat": "look",
+   "kind": "part",
+   "path": "parts/inspect.tscn",
+   "title": "Look closely",
+   "desc": "Taken up in the hands and turned",
+   "glyph": "inspect",
+   "keywords": [
+    "photo",
+    "picture",
+    "frame",
+    "book",
+    "ornament",
+    "doll",
+    "curio",
+    "figurine",
+    "toy"
+   ]
+  },
+  {
+   "id": "hiding_place",
+   "cat": "rest",
+   "kind": "part",
+   "path": "parts/hiding_place.tscn",
+   "title": "Hiding place",
+   "desc": "Get in: hidden, the view narrow",
+   "glyph": "wardrobe",
+   "keywords": [
+    "wardrobe",
+    "locker",
+    "closet",
+    "cupboard",
+    "cabinet"
+   ]
+  },
+  {
+   "id": "seat",
+   "cat": "rest",
+   "kind": "part",
+   "path": "parts/seat.tscn",
+   "title": "Seat",
+   "desc": "Sit down: the eye at sitting height",
+   "glyph": "chair",
+   "keywords": [
+    "chair",
+    "seat",
+    "sofa",
+    "couch",
+    "stool",
+    "bench",
+    "armchair"
+   ]
+  },
+  {
+   "id": "bed",
+   "cat": "rest",
+   "kind": "part",
+   "path": "parts/bed.tscn",
+   "title": "Bed",
+   "desc": "Lie down; the night ends",
+   "glyph": "bed",
+   "keywords": [
+    "bed",
+    "futon",
+    "mattress"
+   ]
+  },
+  {
+   "id": "kettle",
+   "cat": "kitchen",
+   "kind": "part",
+   "path": "parts/kettle.tscn",
+   "title": "Kettle",
+   "desc": "Boils by itself once switched on",
+   "glyph": "kettle",
+   "keywords": [
+    "kettle"
+   ]
+  },
+  {
+   "id": "whistling_kettle",
+   "cat": "kitchen",
+   "kind": "part",
+   "path": "parts/whistling_kettle.tscn",
+   "title": "Whistling kettle",
+   "desc": "Whistles on the hob when it boils",
+   "glyph": "whistle_kettle",
+   "keywords": [
+    "kettle",
+    "whistling"
+   ]
+  },
+  {
+   "id": "tetsubin",
+   "cat": "kitchen",
+   "kind": "part",
+   "path": "parts/tetsubin.tscn",
+   "title": "Tetsubin",
+   "desc": "An iron kettle that heats on the hob",
+   "glyph": "tetsubin",
+   "keywords": [
+    "tetsubin"
+   ]
+  },
+  {
+   "id": "hob",
+   "cat": "kitchen",
+   "kind": "part",
+   "path": "parts/hob.tscn",
+   "title": "Hob",
+   "desc": "Turn it on; pots on it heat up",
+   "glyph": "hob",
+   "keywords": [
+    "hob",
+    "stove",
+    "cooktop",
+    "induction"
+   ]
+  },
+  {
+   "id": "gas_hob",
+   "cat": "kitchen",
+   "kind": "part",
+   "path": "parts/gas_hob.tscn",
+   "title": "Gas hob",
+   "desc": "A blue flame, turned on and off",
+   "glyph": "gas_hob",
+   "keywords": [
+    "gas",
+    "burner"
+   ]
+  },
+  {
+   "id": "pot",
+   "cat": "kitchen",
+   "kind": "part",
+   "path": "parts/pot.tscn",
+   "title": "Pot",
+   "desc": "Simmers, then boils on a hob",
+   "glyph": "pot",
+   "keywords": [
+    "pot",
+    "pan",
+    "saucepan"
+   ]
+  },
+  {
+   "id": "cup",
+   "cat": "kitchen",
+   "kind": "part",
+   "path": "parts/cup.tscn",
+   "title": "Cup",
+   "desc": "Fill it, drink it; left, it goes cold",
+   "glyph": "cup",
+   "keywords": [
+    "cup",
+    "mug",
+    "glass",
+    "tea"
+   ]
+  },
+  {
+   "id": "teapot",
+   "cat": "kitchen",
+   "kind": "part",
+   "path": "parts/teapot.tscn",
+   "title": "Teapot",
+   "desc": "Filled from the kettle, then poured",
+   "glyph": "teapot",
+   "keywords": [
+    "teapot"
+   ]
+  },
+  {
+   "id": "coffee",
+   "cat": "kitchen",
+   "kind": "part",
+   "path": "parts/coffee.tscn",
+   "title": "Coffee to go",
+   "desc": "Hot, then cold if it's left",
+   "glyph": "coffee",
+   "keywords": [
+    "coffee",
+    "takeaway"
+   ]
+  },
+  {
+   "id": "rice_cooker",
+   "cat": "kitchen",
+   "kind": "part",
+   "path": "parts/rice_cooker.tscn",
+   "title": "Rice cooker",
+   "desc": "Cooks, then keeps it warm",
+   "glyph": "rice_cooker",
+   "keywords": [
+    "rice",
+    "cooker"
+   ]
+  },
+  {
+   "id": "fridge",
+   "cat": "kitchen",
+   "kind": "part",
+   "path": "parts/fridge.tscn",
+   "title": "Fridge",
+   "desc": "Hums while the power's on",
+   "glyph": "fridge",
+   "keywords": [
+    "fridge",
+    "refrigerator",
+    "freezer"
+   ]
+  },
+  {
+   "id": "tap",
+   "cat": "kitchen",
+   "kind": "part",
+   "path": "parts/tap.tscn",
+   "title": "Tap",
+   "desc": "Drips, or runs when it's turned on",
+   "glyph": "tap",
+   "keywords": [
+    "tap",
+    "faucet",
+    "sink"
+   ]
+  },
+  {
+   "id": "candle",
+   "cat": "fire",
+   "kind": "part",
+   "path": "parts/candle.tscn",
+   "title": "Candle",
+   "desc": "Burns down; a click blows it out",
+   "glyph": "candle",
+   "keywords": [
+    "candle"
+   ]
+  },
+  {
+   "id": "cigarette",
+   "cat": "fire",
+   "kind": "part",
+   "path": "parts/cigarette.tscn",
+   "title": "Cigarette",
+   "desc": "Smoulders, its smoke rising",
+   "glyph": "cigarette",
+   "keywords": [
+    "cigarette",
+    "cig",
+    "ashtray"
+   ]
+  },
+  {
+   "id": "lighter",
+   "cat": "fire",
+   "kind": "part",
+   "path": "parts/lighter.tscn",
+   "title": "Lighter",
+   "desc": "Flicked: a small flame",
+   "glyph": "lighter",
+   "keywords": [
+    "lighter",
+    "zippo"
+   ]
+  },
+  {
+   "id": "incense",
+   "cat": "fire",
+   "kind": "part",
+   "path": "parts/incense.tscn",
+   "title": "Incense",
+   "desc": "A thin line of smoke",
+   "glyph": "incense",
+   "keywords": [
+    "incense"
+   ]
+  },
+  {
+   "id": "coil",
+   "cat": "fire",
+   "kind": "part",
+   "path": "parts/coil.tscn",
+   "title": "Mosquito coil",
+   "desc": "A slow curl of smoke",
+   "glyph": "coil",
+   "keywords": [
+    "coil",
+    "mosquito"
+   ]
+  },
+  {
+   "id": "phone",
+   "cat": "electronics",
+   "kind": "part",
+   "path": "parts/phone.tscn",
+   "title": "Phone",
+   "desc": "Lights up, rings, is answered",
+   "glyph": "phone",
+   "keywords": [
+    "phone",
+    "mobile",
+    "cellphone",
+    "smartphone",
+    "telephone"
+   ]
+  },
+  {
+   "id": "tv",
+   "cat": "electronics",
+   "kind": "part",
+   "path": "parts/tv.tscn",
+   "title": "TV",
+   "desc": "Static, or on, or off",
+   "glyph": "tv",
+   "keywords": [
+    "tv",
+    "television",
+    "monitor",
+    "screen"
+   ]
+  },
+  {
+   "id": "clock",
+   "cat": "electronics",
+   "kind": "part",
+   "path": "parts/clock.tscn",
+   "title": "Clock",
+   "desc": "Ticks; stops when the story says",
+   "glyph": "clock",
+   "keywords": [
+    "clock",
+    "watch"
+   ]
+  },
+  {
+   "id": "code_lock",
+   "cat": "puzzles",
+   "kind": "part",
+   "path": "parts/code_lock.tscn",
+   "title": "Code lock",
+   "desc": "A keypad: the right code opens it",
+   "glyph": "keypad",
+   "keywords": [
+    "keypad",
+    "padlock",
+    "safe"
+   ]
+  },
+  {
+   "id": "use_item",
+   "cat": "puzzles",
+   "kind": "part",
+   "path": "parts/use_item.tscn",
+   "title": "Needs an item",
+   "desc": "An item used on it opens it",
+   "glyph": "slot",
+   "keywords": [
+    "socket",
+    "slot",
+    "machine",
+    "lock"
+   ]
+  },
+  {
+   "id": "door_locked",
+   "cat": "puzzles",
+   "kind": "preset",
+   "path": "presets/door_locked.tscn",
+   "title": "Locked door",
+   "desc": "Shut until the player has its key",
+   "glyph": "locked_door",
+   "keywords": [
+    "locked"
+   ]
+  },
+  {
+   "id": "carry",
+   "cat": "play",
+   "kind": "part",
+   "path": "parts/carry.tscn",
+   "title": "Carry",
+   "desc": "In both hands; G puts it down",
+   "glyph": "box",
+   "keywords": [
+    "box",
+    "crate",
+    "bucket",
+    "bag",
+    "basket"
+   ]
+  },
+  {
+   "id": "die",
+   "cat": "play",
+   "kind": "part",
+   "path": "parts/die.tscn",
+   "title": "Die",
+   "desc": "Thrown from the hand, its face heard",
+   "glyph": "die",
+   "keywords": [
+    "die",
+    "dice"
+   ]
+  },
+  {
+   "id": "game_table",
+   "cat": "play",
+   "kind": "part",
+   "path": "parts/game_table.tscn",
+   "title": "Game table",
+   "desc": "A board game played at it",
+   "glyph": "cards",
+   "keywords": [
+    "board",
+    "cards",
+    "game"
+   ]
+  },
+  {
+   "id": "stain",
+   "cat": "chores",
+   "kind": "part",
+   "path": "parts/stain.tscn",
+   "title": "Stain",
+   "desc": "Scrubbed away by holding the button",
+   "glyph": "stain",
+   "keywords": [
+    "stain",
+    "blood",
+    "mud",
+    "mess",
+    "spill",
+    "dirt",
+    "puddle"
+   ]
+  },
+  {
+   "id": "character",
+   "cat": "people",
+   "kind": "preset",
+   "path": "presets/character.tscn",
+   "title": "Character",
+   "desc": "Stands, sits, walks a path; talks",
+   "glyph": "person",
+   "keywords": [
+    "character",
+    "person",
+    "npc"
+   ]
+  },
+  {
+   "id": "watcher",
+   "cat": "people",
+   "kind": "preset",
+   "path": "presets/watcher.tscn",
+   "title": "Watcher",
+   "desc": "Watches for the player: caught if seen",
+   "glyph": "watcher",
+   "keywords": [
+    "watcher",
+    "guard",
+    "monster"
+   ]
+  },
+  {
+   "id": "area",
+   "cat": "areas",
+   "kind": "preset",
+   "path": "presets/area.tscn",
+   "title": "Area",
+   "desc": "The story hears the player walk in",
+   "glyph": "area",
+   "keywords": [
+    "area",
+    "trigger",
+    "zone"
+   ]
+  },
+  {
+   "id": "area_safe",
+   "cat": "areas",
+   "kind": "preset",
+   "path": "presets/area_safe.tscn",
+   "title": "Safe area",
+   "desc": "A watcher can't see the player in it",
+   "glyph": "area_safe",
+   "keywords": [
+    "safe"
+   ]
+  },
+  {
+   "id": "spot",
+   "cat": "areas",
+   "kind": "preset",
+   "path": "presets/spot.tscn",
+   "title": "Spot",
+   "desc": "Where someone stands, or is sent",
+   "glyph": "spot",
+   "keywords": [
+    "spot",
+    "mark"
+   ]
+  },
+  {
+   "id": "path",
+   "cat": "areas",
+   "kind": "preset",
+   "path": "presets/path.tscn",
+   "title": "Path",
+   "desc": "A way a character walks",
+   "glyph": "path",
+   "keywords": [
+    "path",
+    "route",
+    "patrol"
+   ]
+  },
+  {
+   "id": "scare_jumpscare",
+   "cat": "scares",
+   "kind": "scare",
+   "title": "Jumpscare",
+   "desc": "A sting plays as someone appears",
+   "glyph": "scare",
+   "keywords": [
+    "jumpscare",
+    "scare"
+   ],
+   "name": "Jumpscare",
+   "moment": {
+    "do": [
+     {
+      "trick": "jumpscare",
+      "figure": "",
+      "secs": 0.8
+     }
+    ]
+   }
+  },
+  {
+   "id": "scare_knock",
+   "cat": "scares",
+   "kind": "scare",
+   "title": "Knock at a door",
+   "desc": "Three knocks, then quiet",
+   "glyph": "knock",
+   "keywords": [
+    "knock"
+   ],
+   "name": "Knock",
+   "moment": {
+    "do": [
+     {
+      "trick": "knock",
+      "at": "",
+      "count": 3
+     }
+    ]
+   }
+  },
+  {
+   "id": "scare_lights",
+   "cat": "scares",
+   "kind": "scare",
+   "title": "The lights die",
+   "desc": "The room goes dark for a moment",
+   "glyph": "lights_die",
+   "keywords": [
+    "dark",
+    "lights"
+   ],
+   "name": "LightsDie",
+   "moment": {
+    "do": [
+     {
+      "trick": "lights_die",
+      "room": "{room}",
+      "secs": 1.5
+     }
+    ]
+   }
+  },
+  {
+   "id": "scare_slam",
+   "cat": "scares",
+   "kind": "scare",
+   "title": "A door slams",
+   "desc": "Shut behind them, hard",
+   "glyph": "door_slam",
+   "keywords": [
+    "slam"
+   ],
+   "name": "DoorSlams",
+   "moment": {
+    "do": [
+     {
+      "trick": "slam_behind",
+      "door": ""
+     }
+    ]
+   }
+  },
+  {
+   "id": "scare_whisper",
+   "cat": "scares",
+   "kind": "scare",
+   "title": "A whisper",
+   "desc": "A breath close by, a voice from nowhere",
+   "glyph": "whisper",
+   "keywords": [
+    "whisper",
+    "voice"
+   ],
+   "name": "Whisper",
+   "moment": {
+    "do": [
+     {
+      "sound": "breath_close"
+     },
+     {
+      "say": "Come closer…"
+     }
+    ]
+   }
+  },
+  {
+   "id": "scare_thought",
+   "cat": "scares",
+   "kind": "scare",
+   "title": "A thought",
+   "desc": "Words typed on the screen",
+   "glyph": "thought",
+   "keywords": [
+    "thought",
+    "think"
+   ],
+   "name": "Thought",
+   "moment": {
+    "do": [
+     {
+      "think": "What was that?"
+     }
+    ]
+   }
+  }
  ]
 }

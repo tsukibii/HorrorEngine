@@ -96,6 +96,7 @@ func _process(dt: float) -> void:
 			if t - at_t < 0.5:
 				return
 			_panel_after()
+			_player_checks()
 			phase = 4
 		4:
 			rep["saved"] = EditorInterface.save_scene() == OK
@@ -322,6 +323,60 @@ func _panel_after() -> void:
 	if is_instance_valid(th) and th.get_parent() != null:
 		th.get_parent().remove_child(th)
 		th.free()
+
+
+## the Player category: the sample's starts there already (one each a level: their cards say so, a click selects the
+## one there), a start's facing and pocket set from This object and undone, a checkpoint placed (an area) and undone
+func _player_checks() -> void:
+	var r := EditorInterface.get_edited_scene_root()
+	var b = panel.build
+	var ur := get_undo_redo()
+	var hist = ur.get_history_undo_redo(ur.get_object_history_id(r))
+	rep["player_rail_first"] = str(b.rail_buttons.keys()[0]) if b.rail_buttons.size() else ""
+	var kitchen: Node = r.find_child("Kitchen", true, false)
+	dock.select(kitchen)
+	panel.on_selection()
+	b.show_category("player")
+	var cards: Array = b.cards.keys()
+	rep["player_cards"] = cards
+	rep["player_card_foot"] = b.cards["player_start"].find_child("Foot", true, false).text if b.cards.has("player_start") else ""
+	b.activate(b.items_by_id["test_start"])
+	var ts = dock.selected()
+	rep["player_test_selected"] = ts != null and str(ts.name) == "TestStart"
+	b.activate(b.items_by_id["player_start"])
+	var st = dock.selected()
+	rep["player_start_selected"] = st != null and str(st.name) == "Start"
+	panel.on_selection()
+	b.refresh()
+	var ob: OptionButton = b.side.find_child("Facing", true, false)
+	rep["player_facing"] = ob.get_item_text(ob.selected) if ob != null else ""
+	var was: float = st.rotation_degrees.y if st != null else 0.0   # (read back from its basis: -180 is 180)
+	if ob != null:
+		ob.select(2)
+		ob.item_selected.emit(2)                       # East
+	rep["player_turned"] = st != null and absf(wrapf(st.rotation_degrees.y - 90.0, -180.0, 180.0)) < 0.01
+	hist.undo()
+	rep["player_turn_undone"] = st != null and absf(wrapf(st.rotation_degrees.y - was, -180.0, 180.0)) < 0.01 and absf(wrapf(was - 180.0, -180.0, 180.0)) < 0.01
+	b.refresh()
+	var add: MenuButton = b.side.find_child("AddItem", true, false)
+	var pop: PopupMenu = add.get_popup() if add != null else null
+	var mug := -1
+	if pop != null:
+		for i in pop.item_count:
+			if pop.get_item_text(i) == "mug":
+				mug = pop.get_item_id(i)
+	if mug >= 0:
+		pop.id_pressed.emit(mug)
+	rep["player_item"] = st != null and Array(st.starts_with) == ["mug"]
+	hist.undo()
+	rep["player_item_undone"] = st != null and st.starts_with.is_empty()
+	rep["player_play_button"] = b.side.find_child("PlayFromHere", true, false) != null
+	dock.select(kitchen)
+	b.activate(b.items_by_id["checkpoint"])
+	var cp = dock.selected()
+	rep["player_checkpoint"] = cp != null and HSDirector.class_of(cp) == "HSCheckpoint" and (HSDirector.scan(r).get("area", []) as Array).has(HSDirector.id_of(cp))
+	hist.undo()
+	rep["player_checkpoint_undone"] = not is_instance_valid(cp) or cp.get_parent() == null
 
 
 func _items(tree: Tree) -> Array:

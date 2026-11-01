@@ -501,16 +501,32 @@ def kimodo_check(out):
 
 
 def alone_check(out):
-    """A level played on its own (F6 on its scene: tests/alone_check.gd): a game made round it, a free roam with the
-    Director file's moments, conversations and states."""
-    code, text = run_godot(["--headless", "--fixed-fps", "60", "--path", str(out), "-s", "res://addons/horrorstudio_director/tests/alone_check.gd"], timeout=300)
-    text = quiet(text)
-    line = next((l for l in text.splitlines() if l.startswith("ALONECHECK ")), None)
-    r = json.loads(line[len("ALONECHECK "):]) if line else {}
-    warn = [l for l in text.splitlines() if "SCRIPT ERROR" in l or "BoneAttachment" in l]
-    good = r.get("game_made") is True and r.get("active") is True and r.get("at_start") is True and "m_figure_scare" in r.get("beats", []) and r.get("scare") is True and not warn
-    print(("  ok  " if good else "  BAD ") + "a level played on its own (F6): a game made round it, the player at its start, a free roam with the story's moments (the jumpscare fires) %s" % ("" if good else json.dumps(r) + " " + " | ".join(warn[:3])))
-    return good
+    """The test runs (tests/alone_check.gd, a run each): a level played on its own (F6 on its scene: a game made round
+    it, a free roam with the Director file's moments, the player at its Test start with what it starts with); the
+    whole game from the panel's Test start (its first quest, the player kept at the Test start); the panel's Try it
+    (the player in front of a thing, facing it)."""
+    ok = True
+    for mode in ("alone", "test", "near"):
+        code, text = run_godot(["--headless", "--fixed-fps", "60", "--path", str(out), "-s", "res://addons/horrorstudio_director/tests/alone_check.gd", "--", "--mode=" + mode], timeout=300)
+        text = quiet(text)
+        line = next((l for l in text.splitlines() if l.startswith("ALONECHECK ")), None)
+        r = json.loads(line[len("ALONECHECK "):]) if line else {}
+        warn = [l for l in text.splitlines() if "SCRIPT ERROR" in l or "BoneAttachment" in l]
+        made = r.get("game_made") is True and r.get("active") is True and r.get("file_gone") is True and not warn
+        if mode == "alone":
+            good = made and r.get("at_test_start") is True and "bedroom_key" in r.get("items", []) and r.get("level_start") == "test_start" \
+                and "m_figure_scare" in r.get("beats", []) and r.get("scare") is True and r.get("checkpoint") is True
+            what = "a level played on its own (F6): a game made round it, the player at its Test start with the bedroom key, a free roam with the story's moments (the jumpscare fires), the checkpoint autosaving"
+        elif mode == "test":
+            good = made and r.get("here") is True and "bedroom_key" in r.get("items", []) and "q_key" in r.get("trail", []) \
+                and r.get("todo") == ["read_letter", "find_key"] and r.get("start_move") is False
+            what = "Play from the Test start: the game's first quest, the player kept at the Test start (not sent to the quest's start) with the bedroom key"
+        else:
+            good = made and r.get("here") is True and r.get("level_start") == "try_here" and "q_key" in r.get("trail", [])
+            what = "Try it: the game with the player in front of the letter, facing it"
+        print(("  ok  " if good else "  BAD ") + what + ("" if good else " " + json.dumps(r) + " " + " | ".join(warn[:3])))
+        ok = ok and good
+    return ok
 
 
 def editor_check(out):
@@ -559,6 +575,16 @@ def editor_check(out):
          rep.get("panel_window") is True and rep.get("panel_window_undone") is True),
         ("a jumpscare card: its area named Jumpscare, its moment in the Director file (%s); undone (%s)" % (rep.get("panel_scare"), rep.get("panel_scare_undone")),
          rep.get("panel_scare") is True and rep.get("panel_scare_undone") is True),
+        ("the Player category first (%s): its cards %s, the sample's start there already (%s), a click on a card selecting the one there (%s, %s)"
+         % (rep.get("player_rail_first"), ", ".join(rep.get("player_cards", [])), rep.get("player_card_foot"), rep.get("player_start_selected"), rep.get("player_test_selected")),
+         rep.get("player_rail_first") == "player" and rep.get("player_cards") == ["player_start", "test_start", "checkpoint"] and rep.get("player_card_foot") == "✓ One in House"
+         and rep.get("player_start_selected") is True and rep.get("player_test_selected") is True),
+        ("a Player start in This object: facing %s, turned East (%s) and back (%s), the mug put in its pocket (%s) and out (%s), Play from here (%s)"
+         % (rep.get("player_facing"), rep.get("player_turned"), rep.get("player_turn_undone"), rep.get("player_item"), rep.get("player_item_undone"), rep.get("player_play_button")),
+         rep.get("player_facing") == "North" and rep.get("player_turned") is True and rep.get("player_turn_undone") is True and rep.get("player_item") is True
+         and rep.get("player_item_undone") is True and rep.get("player_play_button") is True),
+        ("a checkpoint placed, an area of the story's (%s); undone (%s)" % (rep.get("player_checkpoint"), rep.get("player_checkpoint_undone")),
+         rep.get("player_checkpoint") is True and rep.get("player_checkpoint_undone") is True),
         ("a node's id follows its renames while it's the name's (%s), one typed by hand stays (%s)" % (rep.get("id_follows"), rep.get("id_kept")), rep.get("id_follows") == ["hs_thing", "old_key"] and rep.get("id_kept") == "my_key"),
         ("saved: the new nodes in the file, no story nodes, nothing the nodes make for themselves", rep.get("saved") is True and rep.get("saved_task") is True and rep.get("saved_nothing_made") is True),
         ("no script errors in the editor", not errs),

@@ -47,6 +47,12 @@ func compile(g: Node, alone: Node = null, file: Dictionary = {}) -> Dictionary:
 	var f := file.duplicate(true)
 	if alone != null:
 		f["quests"] = []
+	for lv in levels.values():                        # a checkpoint (the Player category): a moment of its own, an autosave each time it's walked into
+		for cp in HSDirector.nodes_of(lv, "HSCheckpoint"):
+			var cid := HSDirector.id_of(cp)
+			if not (f.get("moments") is Array):
+				f["moments"] = []
+			(f["moments"] as Array).append({"id": cid + "__checkpoint", "when": {"enter": cid}, "do": [{"checkpoint": true}], "once": false, "every": 5.0})
 	_desk(f)
 	var sc := HSStoryCompiler.new()
 	sc.compile(f, story, levels)
@@ -117,6 +123,8 @@ func _game_settings(g: Node) -> void:
 		gs["ui_theme"] = g.ui_theme
 		gs["lighting"] = g.lighting
 		gs["weather"] = g.weather
+		gs["player"] = {"run": bool(g.get("can_run") if g.get("can_run") != null else true), "crouch": bool(g.get("can_crouch") if g.get("can_crouch") != null else true),
+			"eye": float(g.get("eye_height") if g.get("eye_height") != null else 1.65)}
 		var cs := {}
 		for k in g.counters:
 			if k != "":
@@ -130,7 +138,7 @@ func _level_things(lv: Node, lid: String) -> void:
 	var seen := {}
 	for n in lv.find_children("*", "", true, false):
 		var cls := HSDirector.class_of(n)
-		if not (cls in ["HSThing", "HSDoor", "HSTrigger", "HSSpot", "HSRoom", "HSActor", "HSPath"]):
+		if not (cls in ["HSThing", "HSDoor", "HSTrigger", "HSSpot", "HSRoom", "HSActor", "HSPath", "HSPlayerStart", "HSCheckpoint"]):
 			continue
 		var nid := HSDirector.id_of(n)
 		if cls != "HSActor" and seen.has(nid):

@@ -51,8 +51,9 @@ with rooms, a character an HSActor, a thing an HSThing or your model with a part
 ## 2. The story: the Director file
 
 The main scene's root is an **HSGame** (the title, the player's name, the time of day, the look, the camcorder tape,
-the grade, the HUD's theme, `lighting: off` for a flat test light, the counters) with the levels under it, and its
-`story_file` (`res://director/director.json`). The file (`story/story_file.gd` says its shape):
+the grade, the HUD's theme, `lighting: off` for a flat test light, the counters; **the player**: `can_run`,
+`can_crouch`, `eye_height`, the story's `game.player`, STORY_FORMAT) with the levels under it, and its `story_file`
+(`res://director/director.json`). The file (`story/story_file.gd` says its shape):
 
 - **quests**, played one at a time in order. Each: a title, an `objective` (top left), its `steps` (the to-do list:
   a step's `done` and `fail` are the story format's triggers, STORY_FORMAT §4: picks up the key, enters the cellar,
@@ -92,8 +93,12 @@ own flags. A condition is a fact (`"read:letter"`, `"!read:letter"`),
 ## 3. The level
 
 An **HSLevel** is a place: build it right under the HSGame, or as a scene of its own (its root an HSLevel) dropped into
-the main scene. `start` is where the player begins (else a spot named start). **F6** on a level's scene plays it alone:
-a free roam with its events, for testing a level before the story's there.
+the main scene. Its **Player start** is where the player begins in it (else its `start`, else a spot named start).
+Its **Test start** is where a test begins (`HSDirector.testing`, raised by the HSGame for these): **F6** on a level's
+scene plays it alone, a free roam with its events, for testing a level before the story's there; the panel's *Play
+from here* on the Test start plays the whole game from the first quest in its level (the earlier quests counted done),
+the player kept at the Test start rather than sent to that quest's `start_at`; *Try it* on a thing plays it the same
+way with the player standing in front of the thing, facing it. Each begins with what its start `starts_with`.
 
 | Node | What it is |
 |---|---|
@@ -101,6 +106,8 @@ a free roam with its events, for testing a level before the story's there.
 | **HSDoor** | a leaf on its hinges (or `sliding`) in a frame, its origin at the doorway's foot. It swings away from the player. `locked_by` an item's id (or `flag:<name>`), a `peephole`, a `latch` (a thumb turn to lock it from inside). Drop a door model in as its child to wear it instead. |
 | **HSThing** | something to do something with (a part, §3b): `use` **pickup** (into the inventory; `item` its id, `flashlight` for the torch), **note** (a card to read), **inspect** (taken up in the hands and turned), **switch** (the lights of its room, or the ones it names), **breaker** (the power), **sit**, **sleep**, **hide** (a wardrobe, a locker), **carry**, **roll** (a die), **code** (a keypad; the right code sets its flag), **use_item** (an item used on it sets its flag), **clean** (a stain scrubbed by holding the button), **game** (a board game), **life** (a little thing: §3b), **none** (just a solid thing to name in events). Only its use's fields show. Put your model in as its child; a stand-in box shows until you do. `hidden_at_start`: out of the level until an event shows it. |
 | **HSTrigger** | an area (a box on the floor, drawn in the editor only). An event inside it fires when the player walks in. `safe`: a watching character can't see the player in it. |
+| **HSPlayerStart** | where the player begins (an HSSpot: a figure and the arrow they look along, drawn in the editor only): `start_for` game (the game's start in this level, over its `start`) or test (the Test start, above), `starts_with` the items they have with them (a key, the flashlight). One of each a level: the panel's card selects the one there. |
+| **HSCheckpoint** | an area (an HSTrigger) that autosaves each time the player walks into it (the story's `checkpoint`, the pause menu's autosave slot): a moment of its own, compiled. |
 | **HSSpot** | a spot on the floor facing its +Z (the arrow): starts, marks, where a character is sent. As a path's point (an HSPath's child): its `wait` (facing the arrow), the `pose` she holds while she waits (the pose library: look_left...), a hiding place she `check`s there (a locker's id: someone in it is found). |
 | **HSPath** | a way a character walks: draw it with Godot's path tools (select it, Add Point, click the floor) or give it HSSpot children; `loop`, `pingpong` or `once`; `waits` at its points. |
 | **HSActor** | a character (`cast`: the story's name for her when it isn't her id, as a desk game's cast member placed twice is): her model inside it (a Character Studio export, any rigged glb; none: a stand-in figure), facing her +Z. `behaviour` idle, sit (on a `seat`), path, patrol, or off (until an event brings her); `face_player`; `sees_player` (the suspicion meter, "caught"); `talk` (a click is heard as "the player uses <her id>"); `solid`; `idle_motion` and `walk_motion` (her AnimationPlayer's animations: a Kimodo motion brought in, §6b). |
@@ -337,6 +344,13 @@ screen), so the 3D view stays in sight and a card drags straight into it. Three 
   starts, what the player can do, its effect points to click and move, or its use's fields; *Change*, *Make it plain
   again*), a level node (what it is; a room's *Add a window here*), and for each its **name in the story** (its id,
   edited there) and **what in the Director file names it**.
+  **The Player category** comes first: the *Player start* (where the game begins), the *Test start* (where a test
+  begins: F6, Play from here) and the *Checkpoint* (§3). A level has one start of each: its card says *One in House*
+  and a click selects that one to move. **This object** on a start: *Which way they look* (eight ways, north the
+  editor's -z), *They have with them* (the scene's items as chips, *+ Add an item*), the player's own settings for
+  every level (*Can run*, *Can crouch*, *Eye height*, *Their name*: the HSGame's) and *Play from here*. On a thing,
+  **Try it** plays the game with the player in front of it (the camera's side, facing it): `panel.gd` writes the
+  play-from-here file (`user://hs_director_run.json`: `test`, `near`), the HSGame reads it once.
 - **Story**: the Director file's quests, steps, endings, conversations and moments (the dock's Director view).
 - **Test**: *Play the game*, *Play this scene*, and the compiler's check.
 
@@ -345,7 +359,9 @@ a…* (every part by category) and the suggestions from its name; on a thing, wh
 old Add tab is gone: the panel has everything it had. Measured (DIRECTOR's editor part): the panel in the bottom slot
 with its categories and the Kitchen's 12 cards, a search, a model named OldSaucepan suggested a pot (the panel and the
 box), made a pot by one click and its card saying so, made plain again and undone, the mouse's ray finding a model with
-no collider, a window and its undo, a jumpscare card's area and moment.
+no collider, a window and its undo, a jumpscare card's area and moment; the Player category first, the sample's starts
+selected by their cards, a start turned East and back, the mug put in its pocket and out, a checkpoint placed (an
+area) and undone.
 
 ## 7. Where you are
 
@@ -368,7 +384,9 @@ itself (`tests/make_sample.gd`: the house, and its story as `director/director.j
   its first step (hiding in the wardrobe) and its next by what was done: the good ending;
 - **Kimodo** (`tests/kimodo_check.gd`): an .npz round trip (the motion curling the fingers too), the retarget onto SOMA
   and onto MHR (every limb and finger bone), in place, the house as a stage from Mari;
-- **a level alone** (`tests/alone_check.gd`): the house as its own scene played with F6's way;
+- **the test runs** (`tests/alone_check.gd`, a run each): the house as its own scene played F6's way (the player at its
+  Test start with the bedroom key, the jumpscare, the bedroom's checkpoint autosaving), the whole game from the Test
+  start (its first quest, the player kept there), and Try it (in front of the letter, facing it);
 - **the editor** (`tests/editor_check.gd`, as a plugin of its own): the sample opened with the plugin, every tab drawn
   (the Director tab the file's quests, steps, endings and moments), a cup part made from the dock and a pickup part
   dropped on a mesh (undone), a preset placed, a rename, the live marks (▶, ✓, ●), a save holding no story nodes and

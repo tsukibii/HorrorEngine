@@ -1024,6 +1024,10 @@ collides in the level, the cursor's click and the cast's sight by physics rays, 
 the Director plugin's games, whose levels are made in Godot out of anything). `game.track_steps` (the Director
 plugin's): every flow node the run reaches sets the flag `@<node>`, so an event can wait for "from this task on".
 
+**The player** (the Director plugin's Player settings, DECISIONS 2026-11-01, evening): `game.player` (optional),
+`{"run": true, "crouch": true, "eye": 1.65}`: whether Shift runs, whether C crouches, and the standing eye height in
+metres (1.2 to 2.0; crouching keeps its share of it). Left out, all three are as above. Desk and Godot alike.
+
 **The grade** (docs/GODOT_LOOK.md §1d): `game.grade` names the film-style colour grade over the finished picture
 (under the HUD, over the tape): `cinema` (the default: a gentle teal-and-orange, a soft vignette, fine grain),
 `teal-orange`, `cold`, `sodium`, `bleach`, `noir`, `warm`, or `none`; or an object `{"preset": "cold", "vignette":

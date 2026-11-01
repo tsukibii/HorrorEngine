@@ -217,5 +217,24 @@ func _process(dt: float) -> void:
 			_shot("e_panel_overview")
 			model.get_parent().remove_child(model)
 			model.free()
+			var r := EditorInterface.get_edited_scene_root()     # the Player category on the sample's Test start
+			dock.select(r.find_child("TestStart", true, false))
+			panel.build.show_category("player")
+			panel.on_selection()
+			at = t
+			phase = 10
+		10:
+			if t - at < 2.0:
+				return
+			var add: Control = panel.build.side.find_child("AddItem", true, false)   # This object down to what they have with them
+			var sc = panel.build.side.get_parent().get_parent()
+			if add != null and sc is ScrollContainer:
+				sc.ensure_control_visible(add)
+			at = t
+			phase = 11
+		11:
+			if t - at < 0.5:
+				return
+			_shot("e_panel_player", _panel_rect())
 			print("GUIDEEDITOR " + JSON.stringify({"made": made}))
 			get_tree().quit()

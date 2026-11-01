@@ -172,7 +172,8 @@ func _initialize() -> void:
 			room.ceiling_material = material(mats.get("ceiling"))
 			made[room.id] = room
 		for s in L.get("spots", []):
-			var sp: HSSpot = own(HSSpot.new(), lv, str(s["id"]).to_pascal_case())
+			var is_start: bool = str(s["id"]) == str(L.get("start", ""))   # the level's start: a Player start (the panel's)
+			var sp: HSSpot = own(HSPlayerStart.new() if is_start else HSSpot.new(), lv, str(s["id"]).to_pascal_case())
 			sp.id = str(s["id"])
 			sp.position = v3(s["pos"])
 			sp.rotation_degrees = Vector3(0, float(s.get("yaw", 0.0)), 0)

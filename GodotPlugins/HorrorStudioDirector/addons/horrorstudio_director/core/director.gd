@@ -14,6 +14,8 @@ const KINDS := ["area", "thing", "door", "item", "note", "flag", "actor", "spot"
 ## raised by HSGame (and a level played alone) while it takes its levels up as templates: their nodes skip their own
 ## setup for play until the runtime enters a copy
 static var holding := false
+## raised by HSGame for a test run (a level played alone, F6; Play from here): a level starts at its Test start
+static var testing := false
 static var _cache: Dictionary = {}
 static var _cache_at := -10000
 static var _cache_root = null
@@ -205,10 +207,20 @@ static func nodes_of(root: Node, cls: String, out: Array = []) -> Array:
 	if root == null:
 		return out
 	for c in root.get_children():
-		if class_of(c) == cls:
+		if is_a(c, cls):
 			out.append(c)
 		nodes_of(c, cls, out)
 	return out
+
+
+## whether a node is of one of our classes or one built on it (a Player start is a spot, a Checkpoint an area)
+static func is_a(n: Node, cls: String) -> bool:
+	var s = n.get_script() if n != null else null
+	while s != null:
+		if s.get_global_name() == cls:
+			return true
+		s = s.get_base_script()
+	return false
 
 
 static func class_of(n: Node) -> String:
@@ -296,7 +308,7 @@ static func _scan(n: Node, out: Dictionary, add: Callable) -> void:
 		var cls := class_of(c)
 		var id := id_of(c)
 		match cls:
-			"HSTrigger":
+			"HSTrigger", "HSCheckpoint":
 				add.call("area", id)
 			"HSRoom":
 				add.call("area", id)
@@ -324,7 +336,7 @@ static func _scan(n: Node, out: Dictionary, add: Callable) -> void:
 					add.call("actor", c.cast_id())     # the story's name for her (a desk game's cast member placed more than once)
 				for m in c.motion_names():
 					add.call("motion", m)
-			"HSSpot":
+			"HSSpot", "HSPlayerStart":
 				add.call("spot", id)
 			"HSPath":
 				add.call("path", id)

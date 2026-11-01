@@ -30,6 +30,14 @@ const RUN_FILE := "user://hs_director_run.json"     # "play from here": the dock
 @export var counters: PackedStringArray = PackedStringArray()
 ## F9 in the game: where the player is, the flags, the items, the events as they fire
 @export var debug_panel: bool = true
+@export_group("The player")
+## Shift runs
+@export var can_run: bool = true
+## C crouches
+@export var can_crouch: bool = true
+## the standing eye height, metres (crouching keeps its share of it)
+@export_range(1.2, 2.0, 0.01) var eye_height: float = 1.65
+@export_group("")
 
 var alone: Node = null              # a level played on its own (F6): the game round it
 var runtime: Node = null            # the studio's runtime (addons/horrorstudio/main.tscn) once it's started
@@ -51,6 +59,8 @@ func _ready() -> void:
 
 
 func _start() -> void:
+	var req := _run_request()
+	HSDirector.testing = alone != null or bool(req.get("test", false))   # a level played alone, or Play from here: its Test start
 	var c := HSCompiler.new()
 	compiled = c.compile(self, alone, HSStoryFile.read(story_file))
 	for p in compiled["problems"]:
@@ -68,6 +78,7 @@ func _start() -> void:
 	if alone != null and get_tree().current_scene == alone:
 		get_tree().current_scene = self
 	HSDirector.holding = false
+	_try_here(req)
 	var ps: PackedScene = load(HSDirector.RUNTIME_MAIN)
 	runtime = ps.instantiate()
 	runtime.story_data = compiled["story"]
@@ -96,36 +107,140 @@ func _start() -> void:
 		add_child(_debug)
 	var from = null
 	var snap = null
-	if FileAccess.file_exists(RUN_FILE):
-		var j = JSON.parse_string(FileAccess.get_file_as_string(RUN_FILE))
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(RUN_FILE))
-		if j is Dictionary and compiled["story"]["flow"].has(str(j.get("from", ""))):
-			from = str(j["from"])
-			snap = {"flags": j.get("flags", []), "items": j.get("items", []), "karma": {"karma": float(j.get("karma", 0))}, "counters": {}, "states": {}, "trail": []}
-			for k in _before(from):
-				snap["flags"].append("@" + k)
-				if compiled.get("brain", {}).get("quests", []).has(k):
-					snap["flags"].append("done:" + k)
+	var test_lv := _test_level(req) if HSDirector.testing and alone == null else ""
+	var want := str(req.get("from", ""))
+	if want == "" and test_lv != "":                  # a test in a level the game doesn't begin in: from its first quest there
+		want = _first_in(test_lv)
+	if compiled["story"]["flow"].has(want):
+		from = want
+		snap = {"flags": req.get("flags", []), "items": req.get("items", []), "karma": {"karma": float(req.get("karma", 0))}, "counters": {}, "states": {}, "trail": []}
+		for k in _before(from):
+			snap["flags"].append("@" + k)
+			if compiled.get("brain", {}).get("quests", []).has(k):
+				snap["flags"].append("done:" + k)
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--node=") and compiled["story"]["flow"].has(a.substr(7)):
 			from = a.substr(7)
 			snap = {"flags": [], "items": [], "karma": {"karma": 0.0}, "counters": {}, "states": {}, "trail": []}
+	if test_lv != "":
+		_stay(from, test_lv)
+	var carry := start_items(test_lv if test_lv != "" else _first_level(from))
+	if carry.size():                                  # what the player starts with (their Player start's)
+		if snap == null:
+			snap = {"flags": [], "items": [], "karma": {"karma": 0.0}, "counters": {}, "states": {}, "trail": []}
+		for i in carry:
+			if not (snap["items"] as Array).has(i):
+				snap["items"].append(i)
+	HSDirector.testing = false
 	_send("start", [compiled["story"]["game"].get("start"), _problem_lines()])
 	runtime.watch(from, snap)
 
 
-## the flow's nodes before a step on the way there from the start (their @ flags, for a start from that step)
-func _before(nid: String) -> Array:
-	var flow: Dictionary = compiled["story"]["flow"]
+## the play-from-here file (the panel's and the dock's: {from, flags, test, near}), read once and gone
+func _run_request() -> Dictionary:
+	if not FileAccess.file_exists(RUN_FILE):
+		return {}
+	var j = JSON.parse_string(FileAccess.get_file_as_string(RUN_FILE))
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(RUN_FILE))
+	return j if j is Dictionary else {}
+
+
+## the panel's Try it: the player put in front of a thing ({level, pos, yaw}: a spot made in that level's template for
+## this run, the level's start)
+func _try_here(req: Dictionary) -> void:
+	var near = req.get("near")
+	if not (near is Dictionary) or not templates.has(str(near.get("level", ""))):
+		return
+	var lid := str(near["level"])
+	var lv: Node3D = templates[lid]
+	var p: Array = near.get("pos", [0, 0, 0])
+	var sp := HSSpot.new()
+	sp.name = "_try_here"
+	sp.id = "try_here"
+	lv.add_child(sp)
+	sp.transform = lv.transform.affine_inverse() * Transform3D(Basis(Vector3.UP, deg_to_rad(float(near.get("yaw", 0.0)))), Vector3(float(p[0]), float(p[1]), float(p[2])))
+	compiled["story"]["levels"][lid]["start"] = "try_here"
+
+
+## what the player starts with: the Player start they begin at in that level (the Test start in a test run)
+func start_items(lid: String) -> Array:
+	var lv = templates.get(lid)
+	var st = lv.start_node() if lv != null and lv.has_method("start_node") else null
+	return Array(st.starts_with) if st != null and HSDirector.is_a(st, "HSPlayerStart") else []
+
+
+## the flow from a node (the start when none), each node's next (a choice's first option): the nodes a run meets in order
+func _walk(from = null) -> Array:
+	var flow: Dictionary = compiled.get("story", {}).get("flow", {})
 	var out: Array = []
-	var n = compiled["story"]["game"].get("start")
-	var guard := 0
-	while n != null and n != nid and flow.has(n) and guard < 500:
-		guard += 1
+	var n = from if from != null else compiled.get("story", {}).get("game", {}).get("start")
+	while n != null and flow.has(n) and not out.has(n) and out.size() < 500:
 		out.append(n)
 		var f: Dictionary = flow[n]
 		n = f.get("next") if f.get("next") != null else ((f.get("options", [{}]) as Array)[0].get("to") if f.get("options") else null)
 	return out
+
+
+## a run's first quest (a chapter's card is its quest's: its next): the flow node, "" if a scene or an ending comes first
+func _first_quest(from = null) -> String:
+	var st: Dictionary = compiled.get("story", {})
+	for nid in _walk(from):
+		var n: Dictionary = st["flow"][nid]
+		if n.get("type") != "stitch":
+			return ""
+		if not str(n.get("ref", "")).ends_with("__card"):
+			return str(nid)
+	return ""
+
+
+## the level a run begins in: its first quest's (from a node, the start when none), else the first level
+func _first_level(from = null) -> String:
+	var q := _first_quest(from)
+	var lv := str(compiled.get("story", {}).get("stitches", {}).get(compiled["story"]["flow"][q].get("ref"), {}).get("level", "")) if q != "" else ""
+	return lv if templates.has(lv) else (str(templates.keys()[0]) if templates.size() else "")
+
+
+## a test run's level: the Try it's, else the one with a Test start ("" with neither: the run is the game's)
+func _test_level(req: Dictionary) -> String:
+	var near = req.get("near")
+	if near is Dictionary and templates.has(str(near.get("level", ""))):
+		return str(near["level"])
+	for lid in templates:
+		for st in HSDirector.nodes_of(templates[lid], "HSPlayerStart"):
+			if st.start_for == "test":
+				return str(lid)
+	return ""
+
+
+## where a test in a level begins: the first quest played there ("" when the game's first quest is, or none is)
+func _first_in(lid: String) -> String:
+	var st: Dictionary = compiled.get("story", {})
+	var first := _first_quest()
+	for nid in _walk():
+		var n: Dictionary = st["flow"][nid]
+		if n.get("type") == "stitch" and not str(n.get("ref", "")).ends_with("__card") and str(st["stitches"].get(n["ref"], {}).get("level", "")) == lid:
+			return "" if nid == first else str(nid)
+	return ""
+
+
+## a test run: the player stays where the test put them (the Test start, in front of the thing), not sent to the
+## first quest's own start (its start_at)
+func _stay(from, lid: String) -> void:
+	var q := _first_quest(from)
+	var st: Dictionary = compiled["story"]
+	if q == "" or str(st["stitches"].get(st["flow"][q].get("ref"), {}).get("level", "")) != lid:
+		return
+	var ref := str(st["flow"][q]["ref"])
+	for b in st["stitches"][ref].get("beats", []):
+		if b.get("id") == ref + "__start":
+			b["do"] = (b["do"] as Array).filter(func(a): return not (a is Dictionary and str(a.get("move", "")) == "player"))
+
+
+## the flow's nodes before a step on the way there from the start (their @ flags, for a start from that step)
+func _before(nid: String) -> Array:
+	var w := _walk()
+	var i := w.find(nid)
+	return w.slice(0, i) if i >= 0 else w
 
 
 func _problem_lines() -> Array:

@@ -41,16 +41,34 @@ func _ready() -> void:
 	_setup()
 
 
-## the start spot's id
-func start_id() -> String:
+## where the player begins: a Player start (the Test start in a test run: F6, Play from here), else the level's
+## `start`, a spot named start, the first spot (never a test start); null if it has none
+func start_node() -> Node:
+	var starts := HSDirector.nodes_of(self, "HSPlayerStart")
+	if HSDirector.testing:
+		for st in starts:
+			if st.start_for == "test":
+				return st
+	for st in starts:
+		if st.start_for == "game":
+			return st
 	var s = get_node_or_null(start) if not start.is_empty() else null
 	if s != null:
-		return HSDirector.id_of(s)
+		return s
 	var spots := HSDirector.nodes_of(self, "HSSpot")
 	for sp in spots:
 		if HSDirector.id_of(sp) == "start" or str(sp.name).to_lower().begins_with("start"):
-			return HSDirector.id_of(sp)
-	return HSDirector.id_of(spots[0]) if spots.size() else id + "__origin"
+			return sp
+	for sp in spots:
+		if not HSDirector.is_a(sp, "HSPlayerStart"):
+			return sp
+	return null
+
+
+## the start spot's id
+func start_id() -> String:
+	var s = start_node()
+	return HSDirector.id_of(s) if s != null else id + "__origin"
 
 
 ## for play: the cast's spots where they stand now, the lights as the story's, an origin spot if it has none
