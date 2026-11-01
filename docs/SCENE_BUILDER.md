@@ -350,6 +350,16 @@ and exterior building too". The furniture and fittings are the kit's (KIT §10),
   on / in**: every place of its host to move it to, and *Fit it in* (a kit row of books takes the place's inside).
   The prop maker's props are kept as `<room>_kt_<name>_<n>` with `shape: "asset props/<name>"`.
 
+- **The classroom in PBR sets** (the user: "create a 1:1 ref using the pbrs instead to see if it helps realism"): the set
+  `school_classroom_pbr`, the same level with its walls, ceiling and wainscot (room `look`) and every piece of
+  furniture's slots (`mats`) wearing the material library's interior sets (STREET_PAINT §3: the oak parquet, the
+  varnished pine, the desks' laminate, the chairs' plywood, the frames, the chalkboard, the cork, the curtains, the
+  corridor's vinyl). What it showed (2026-11-01): the sets bring the surfaces close (the parquet's and the wainscot's
+  grain, the laminate's sheen, the chalk dust); what's left between the scene builder's view and the user's Blender
+  render is the light (low sun through the windows, its bounce, a dark polished floor reflecting them), which is the
+  Godot look's (SSR, SSAO, the lights set by hand) or Blender's. `python tools/street.py library <names>` bakes the sets
+  on a machine that hasn't them yet.
+
 ## 10b. The school building kit: every room at its real size, the building round them
 
 The user (2026-11-01), after the first school: "the school building needs to be to scale, so the actual rooms could fit
