@@ -16,6 +16,14 @@ The user's answers, newest first. They override the plan, the research and the d
   (`tools/fabric_bake.py`, `assets/pbr/Procedural/fabric_*`), first in the Studio's PBR picker, tinted by the garment's
   colour.
 
+- **"The bottom of the light blue and white trousers you made looks deformed, should just cleanly sit above the
+  shoes"** and **"The baggy trousers shouldn't bend into the knees, as that doesn't make logical sense"**: the wide
+  trousers' legs are a straight column from under the seat (`legs.straight`, TAILOR §2), held as cut by the drape, their
+  hem clean above the shoe; no knee folds on loose legs, no cloth wrinkles on shoes.
+- **No low poly clothes.** Asked to try a PS1-style low poly genre of clothing (decimated garments, chunky texels, a
+  dither), then, seeing it: **"Nah the low poly looks ugly ... let's avoid the low poly then."** It was taken out
+  before it was committed; don't offer it again.
+
 ## 2026-10-31, small hours (the user, on the floors)
 
 - **Kit floors take a material**: "yes make the floors take a material" (offered: a kit floor dressed rather than taken
