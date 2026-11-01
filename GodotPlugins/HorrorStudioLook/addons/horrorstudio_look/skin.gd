@@ -16,6 +16,13 @@
 ## `DETAIL_PRESETS` young, natural, adult and old, picked from the export's own skin (its age, pores and evenness in
 ## the studioSkin record, its pores' amount and spacing riding on the preset: `detail_look`) or named
 ## (`set_detail(m, "old")`, the settings' `detail_preset`, HSCharacterLook's).
+## **The depth layer** (docs/GODOT_LOOK.md §5g): light that has travelled under the skin, warm where it has gone furthest
+## in: round the eyes, the nose, the mouth and the ears (MHR's depth map, `textures/mhr_skin_depth.png`, each region most
+## in its creases) the colour turns toward the blood's, the export's occlusion shades red instead of grey and thin skin is
+## lit through by the room; for a baked level's light as much as a lamp's, never a glow of its own. On by itself on a
+## Studio export, at the character's own Depth and Ear glow (the Studio's Skin light: the record's `depth` and `ears`;
+## Ear glow off for a character whose hair covers the ears), the settings' `depth` scaling it and `depth_ears` overriding
+## (HSCharacterLook's Skin Depth and Ear Glow; `set_depth(m, amount, ears)` by hand).
 class_name HSSkin
 
 const HUMAN := "res://HumanShaders/"
@@ -75,9 +82,9 @@ static func material(albedo: Texture2D = null, settings: Dictionary = {}, tone: 
 						m.set_shader_parameter("use_micro_detail", true)
 						m.set_shader_parameter("micro_detail_scale", 30.0)
 						break
-	for pair in [["texture_pores", "skin_pores.png"], ["texture_skin_micro", "skin_micro.png"], ["texture_regions", "mhr_skin_regions.png"], ["texture_tone", "skin_tone.png"]]:
+	for pair in [["texture_pores", "skin_pores.png"], ["texture_skin_micro", "skin_micro.png"], ["texture_regions", "mhr_skin_regions.png"], ["texture_tone", "skin_tone.png"], ["texture_depth", "mhr_skin_depth.png"]]:
 		var t = load(DETAIL_TEX + pair[1]) if ResourceLoader.exists(DETAIL_TEX + pair[1]) else null
-		m.set_shader_parameter(pair[0], t if t is Texture2D else (grey() if pair[0] == "texture_tone" else flat_normal()))   # missing, they change nothing: no tilt, open skin, the paint's own colour
+		m.set_shader_parameter(pair[0], t if t is Texture2D else (grey() if pair[0] == "texture_tone" else black() if pair[0] == "texture_depth" else flat_normal()))   # missing, they change nothing: no tilt, open skin, the paint's own colour, no region
 	set_maps(m, maps)
 	set_wet(m, settings)
 	return m
@@ -101,6 +108,20 @@ static func set_detail(m: ShaderMaterial, look = "natural", amount := 1.0, mhr :
 	if amount > 0.0:
 		m.set_shader_parameter("use_micro_detail", false)
 		m.set_shader_parameter("micro_normal_strength", 0.0)
+
+
+## the depth layer on a material (§5g): `amount` the whole layer (0 off, 1 as made), `ears` the ears' glow (off for a
+## character whose hair covers them: the lamps' light through them goes too), `look` any of the shader's depth_*
+## numbers over its own (the regions' shares depth_eyes, depth_nose, depth_mouth, depth_ears, depth_lips, depth_hands
+## (the fingers' glow); depth_edge (warmer where the skin turns away from the eye), depth_rest (the creases everywhere
+## else); depth_warmth, depth_creases, depth_glow, depth_pores; depth_color a Color). Placed by MHR's depth and region
+## maps, so it needs MHR's UVs (`use_regions`, which set_detail sets on a Studio export)
+static func set_depth(m: ShaderMaterial, amount := 1.0, ears := true, look := {}) -> void:
+	m.set_shader_parameter("skin_depth", amount)
+	m.set_shader_parameter("depth_ears_on", ears)
+	for k in look:
+		if str(k).begins_with("depth_"):
+			m.set_shader_parameter(k, look[k] if (look[k] is Color or look[k] is bool) else float(look[k]))
 
 
 ## the detail layer an export's skin asks for: its preset (detail_preset) with the Studio's own sliders on it, the
@@ -182,6 +203,15 @@ static func records(glb_path: String) -> Dictionary:
 static var _flat: ImageTexture = null
 static var _white: ImageTexture = null
 static var _grey: ImageTexture = null
+static var _black: ImageTexture = null
+
+
+static func black() -> ImageTexture:
+	if _black == null:
+		var im := Image.create(4, 4, false, Image.FORMAT_RGBA8)
+		im.fill(Color(0, 0, 0, 0))
+		_black = ImageTexture.create_from_image(im)
+	return _black
 
 
 static func flat_normal() -> ImageTexture:
@@ -253,9 +283,13 @@ static func wear(node: Node, settings: Dictionary = {}, glb_path: String = "") -
 				if rec is Dictionary:
 					maps["skin"] = rec
 			var m := material(tex, settings, tone, maps)
-			if maps.has("skin") or maps.has("normal") or settings.has("detail_preset"):   # a Studio export: MHR's UVs, the detail layer at its size
+			if maps.has("skin") or maps.has("normal") or settings.has("detail_preset"):   # a Studio export: MHR's UVs, the detail layer at its size, the depth layer
 				var want = settings.get("detail_preset", "")
 				set_detail(m, want if want is Dictionary else detail_look(maps.get("skin"), str(want)), float(settings.get("detail", 1.0)))
+				var srec = maps.get("skin")                                # the character's own depth and ears (the Studio's Skin light), times the settings' amount
+				var own: Dictionary = srec if srec is Dictionary else {}
+				var ears = settings.get("depth_ears", float(own.get("ears", 1.0)) > 0.5)
+				set_depth(m, float(settings.get("depth", 1.0)) * float(own.get("depth", 1.0)), bool(ears), settings.get("depth_look", {}))
 			mi.set_surface_override_material(s, m)
 			out.append(m)
 	return out

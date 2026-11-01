@@ -6,7 +6,7 @@
 // under it has no shine of its own; the limbus darker seen from the side. The eye's frame comes from the mesh's own
 // tangent space (the export's tangents lie along the eye's +x), as the Unreal material reads it.
 shader_type spatial;
-render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx;
+render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx, sss_mode_skin;
 
 uniform sampler2D paint : source_color, filter_linear_mipmap, repeat_disable;   // the paint baked flat (the glb's base colour)
 uniform float rho = 0.5;              // the limbus's radius (the cornea's edge), eye units (the eyeball's radius is 1)
@@ -31,8 +31,11 @@ uniform float sclera_bright = 1.0;    // the white's paint scaled
 uniform float sclera_warm = 0.0;      // the white warmer and pinker toward the corners (MetaHuman's sclera: never a neutral white)
 uniform float socket = 0.0;           // the eye in its socket (the Studio's Socket shade, eye.js's maths): the white and its shine darker all over, more toward the brow and the corners, the iris a little
 uniform float coat = 0.625;           // the wet coat's strength: the cornea's reflectance (0.025) over Godot's clear coat's (0.04)
-uniform float catch_size = 0.08;      // the catchlight's spread (added to the coat's GGX alpha): a lamp's size on the cornea, a small soft dot (a point light's mirror image is a pinpoint the glow blows up)
+uniform float catch_size = 0.025;     // the catchlight's spread (added to the coat's GGX alpha): a lamp's size on the cornea, a small crisp dot (wet: at 0.08 it was a soft plastic blob; the cap keeps a pinpoint from blooming)
 uniform float catch_cap = 1.5;        // the shine's peak (before the light's colour): a strong lamp never blooms the eye white
+uniform float wrap = 0.3;             // the white's light wrapped past the terminator (light scattered in the sclera: it never goes flat grey)
+uniform vec3 scatter_color : source_color = vec3(1.0, 0.72, 0.62);   // the wrapped light's colour (MetaHuman's sclera transmission: warm, pinkish)
+uniform float sss = 0.3;              // Godot's screen-space scattering on the white, none on the iris (HumanShaders' eye 0.4, RoboPoets' 0.5)
 uniform int debug = 0;                // 1 q (where the iris is read), 2 the view in the tangent space, 3 the frame's tangent
 
 varying vec3 v_eyeN;                  // the surface's frame in the eye's own units, per vertex
@@ -96,7 +99,9 @@ void fragment() {
 	// the mesh's, exactly the eye's shape) for every shine: Godot's clear coat takes NORMAL, and on the bowl the
 	// catchlight spread into a flat white ellipse over half the iris
 	vec3 eBowl = normalize(mix(eN, normalize(vec3(-q / max(rho, 0.0001) * caustic * 1.4, 1.0)), irisW));
-	vec3 bowl_t = vec3(dot(eBowl, eT), dot(eBowl, eB) * handed, dot(eBowl, eN));   // in the surface's tangent space
+	// in the surface's tangent space: eB is already BINORMAL's image (handed is in it), so no second handed here (with
+	// one, the bowl tilted down where it should tilt up: under a lamp above the iris's lower half went black)
+	vec3 bowl_t = vec3(dot(eBowl, eT), dot(eBowl, eB), dot(eBowl, eN));
 	v_bowl = normalize(TANGENT * bowl_t.x + BINORMAL * bowl_t.y + NORMAL * bowl_t.z);
 	v_irisw = irisW;
 	ROUGHNESS = roughness;
@@ -106,6 +111,7 @@ void fragment() {
 	v_coat = CLEARCOAT;
 	v_spec = SPECULAR;
 	AO = 1.0 - occ;
+	SSS_STRENGTH = sss * (1.0 - irisW);
 }
 
 float eye_ggx(float ndh, float a) { float k = a / (1.0 - ndh * ndh + ndh * ndh * a * a); return k * k / PI; }   // Godot's own D and V
@@ -115,7 +121,9 @@ float eye_vis(float ndl, float ndv, float a) { return 0.5 / max(mix(2.0 * ndl * 
 // the cornea's coat and the white's shine on the surface, each a GGX lobe widened by the catchlight's size and capped
 void light() {
 	vec3 Nd = normalize(mix(NORMAL, v_bowl, v_irisw));
-	DIFFUSE_LIGHT += clamp(dot(Nd, LIGHT), 0.0, 1.0) * ATTENUATION * LIGHT_COLOR / PI;
+	float nd = dot(Nd, LIGHT), lit = clamp(nd, 0.0, 1.0);
+	float wrapped = clamp((nd + wrap) / (1.0 + wrap), 0.0, 1.0) * (1.0 - v_irisw) + lit * v_irisw;   // the white's light wrapped (the iris keeps its bowl)
+	DIFFUSE_LIGHT += (lit + (wrapped - lit) * scatter_color) * ATTENUATION * LIGHT_COLOR / PI;
 	float ndl = clamp(dot(NORMAL, LIGHT), 0.0, 1.0), ndv = clamp(dot(NORMAL, VIEW), 1e-3, 1.0);
 	vec3 H = normalize(LIGHT + VIEW);
 	float ndh = clamp(dot(NORMAL, H), 0.0, 1.0), f5 = pow(1.0 - clamp(dot(LIGHT, H), 0.0, 1.0), 5.0);
