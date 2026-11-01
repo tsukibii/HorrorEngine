@@ -93,7 +93,7 @@ export function* making(B, name, design, opts = {}) {
   }
   const tris = parts.reduce((a, q) => a + q.T.length / 3, 0), verts = parts.reduce((a, q) => a + q.P.length / 3, 0);
   // its look (tailor/look.js): the design's fabric, pattern and trim, then the garment's own
-  const look = { color, surface: design.surface, trim: design.trimSurface, pattern: design.pattern, denier: design.denier, ...(opts.look || {}) };
+  const look = { color, surface: design.surface, trim: design.trimSurface, pattern: design.pattern, denier: design.denier, crease: design.crease, ...(opts.look || {}) };
   const hs = handles(F, G, p, at);
   if (y0) {                                                          // back into the body's own frame
     for (const q of [...parts, ...outer]) q.P = raised(q.P, y0);

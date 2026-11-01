@@ -208,6 +208,7 @@ import { edited as editedDesign } from "./tailor.js";
 import { CutEditor } from "./cutedit.js";
 import * as PO from "./pose.js";
 import { SURFACES, PATTERNS } from "./tailor/fabric.js";
+import { CREASE } from "./tailor/crease.js";
 import { StudioView } from "/shared/studioview.js";
 import { skinLit, setSkinLit, SKIN_LIT, recordOf as skinLitRecord } from "/shared/skinlight.js";
 import { thinness } from "./thin.js";
@@ -530,8 +531,8 @@ const designSel = el("select", { id: "designSel" }), addBtn = el("button", { tex
 // the outfits as cards with pictures (Content/Studio/Clothes/thumbs, tailor/thumbs.mjs: the default model wearing each), in
 // groups: the designer collection after the user's references (outfits.json meta), the studio's own, underwear
 const outfitTabs = el("div", { id: "outfitTabs", className: "chips" }), outfitGrid = el("div", { id: "outfitGrid" });
-let OUTFIT_META = {}, OUTFIT_GROUP = "designer", WORN_OUTFIT = null;
-const OUTFIT_GROUPS = [["designer", "Designer"], ["studio", "Studio"], ["underwear", "Underwear"]];
+let OUTFIT_META = {}, OUTFIT_GROUP = "smart", WORN_OUTFIT = null;
+const OUTFIT_GROUPS = [["smart", "Smart casual"], ["designer", "Designer"], ["studio", "Studio"], ["underwear", "Underwear"]];
 const outfitGroup = name => OUTFIT_META[name]?.group || (/^(lingerie|underwear):/.test(name) ? "underwear" : "studio");
 const slugOf = name => name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
 function drawOutfits() {
@@ -683,13 +684,13 @@ function refit() {                                     // after the body changes
   fitTimer = setTimeout(dress, 700);
 }
 // a garment's look: its design's fabric, pattern and trim, then what was chosen for it here
-const lookOf = c => { const D = DESIGNS[c.design] || {}; return { color: c.color, surface: c.surface ?? D.surface, trim: D.trimSurface, pattern: c.pattern ?? D.pattern, denier: c.denier ?? D.denier, print: c.print, pbr: pbrOf(c) }; };
+const lookOf = c => { const D = DESIGNS[c.design] || {}; return { color: c.color, surface: c.surface ?? D.surface, trim: D.trimSurface, pattern: c.pattern ?? D.pattern, denier: c.denier ?? D.denier, print: c.print, pbr: pbrOf(c), crease: { ...(D.crease || {}), ...(c.crease || {}) } }; };
 // a garment's PBR set off the shelf, as tailor/look.js draws it: its maps, a repeat in metres (the shelf's own default of
 // 2 m is a wall's: a cloth's is 0.3 unless the set or the garment says), the garment's colour over it if asked
 function pbrOf(c) {
   const ref = c.pbr ?? DESIGNS[c.design]?.pbr, m = ref && SHELF[ref]; if (!m) return null;
   return { ref, base: "pbrfile/" + ref.replace(/^pbr\//, "").split("/").map(encodeURIComponent).join("/"), maps: m.maps, normal: m.normal, orm: m.orm,
-           tile_m: c.pbrTile ?? (m.tile_m && m.tile_m !== 2 ? m.tile_m : 0.3), tint: !!c.pbrTint };
+           tile_m: c.pbrTile ?? (m.tile_m && m.tile_m !== 2 ? m.tile_m : 0.3), tint: !!(c.pbrTint ?? m.tint) };   // (a made fabric's colour is a tint unless its threads carry their own: tools/fabric_bake.py)
 }
 function restyle(c) {                                  // a new fabric, pattern, print or colour: the materials only, no refit
   const L = lookOf(c);
@@ -719,13 +720,21 @@ function lookRows(c) {                                 // fabric, pattern, print
   const box = keepOpen(el("details", {}, el("summary", { textContent: "Fabric, pattern, print" })), c.design + ":look"), D = DESIGNS[c.design] || {};
   const pick = (label, opts, val, on) => { const sel = el("select", {}, ...opts.map(([v, t]) => el("option", { value: v, textContent: t, selected: v === val }))); sel.onchange = () => on(sel.value); box.append(el("div", { className: "row" }, el("span", { textContent: label }), sel, el("output"))); return sel; };
   pick("Fabric", Object.entries(SURFACES).map(([k, v]) => [k, v[0]]), c.surface ?? D.surface ?? "flat", v => { c.surface = v; restyle(c); drawWorn(); });
+  // its creases (tailor/crease.js): how much of them (the fabric sets their kind: linen wrinkles, wool barely), and a
+  // trouser leg's pressed crease down its front
+  const cr = { ...(D.crease || {}), ...(c.crease || {}) }, setCr = v => { c.crease = { ...(c.crease || {}), ...v }; UNSAVED = true; restyle(c); };
+  slider(box, "crease", "Creases", 0, 2, 0.05, cr.amount ?? 1, "The cloth's small relief as it's worn: folds where the body bends (elbows, knees, the waist), pulls from the crotch and the armpits, seams sunk in and puckered, hems stitched, the fabric's own wrinkles. 0 none, 1 as the fabric has them, 2 well worn.", v => setCr({ amount: v }));
+  if (pieceOf(c).legs) { const pr = el("input", { type: "checkbox", checked: (cr.press ?? CREASE[c.surface ?? D.surface]?.press ?? 0) > 0 });
+    pr.onchange = () => setCr({ press: pr.checked ? 1 : 0 });
+    box.append(el("label", { className: "tog", title: "A sharp crease ironed down the middle of each leg's front, as tailored trousers have" }, pr, el("span", { textContent: "Pressed crease" }))); }
   // or a PBR set off the shelf in its place (fabrics first), its repeat, the colour over it; or a new set from files
-  const sets = Object.keys(SHELF).sort((a, b) => (/^pbr\/Fabric\//.test(b) - /^pbr\/Fabric\//.test(a)) || a.localeCompare(b));
-  pick("PBR set", [["", "none: the fabric above"], ...sets.map(r => [r, r.replace(/^pbr\//, "")])], c.pbr ?? D.pbr ?? "", v => { if (v) c.pbr = v; else delete c.pbr; restyle(c); drawWorn(); });
+  const rank = r => SHELF[r]?.group === "fabric" ? 0 : /^pbr\/Fabric\//.test(r) ? 1 : 2;   // the fabrics made in Blender (tools/fabric_bake.py) first, then the shelf's own fabrics
+  const sets = Object.keys(SHELF).sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
+  pick("PBR set", [["", "none: the fabric above"], ...sets.map(r => [r, SHELF[r]?.group === "fabric" ? `${SHELF[r].label || r} (made)` : r.replace(/^pbr\//, "")])], c.pbr ?? D.pbr ?? "", v => { if (v) c.pbr = v; else delete c.pbr; restyle(c); drawWorn(); });
   const P = pbrOf(c);
   if (P) {
     slider(box, "pbrtile", "Its repeat (m)", 0.02, 2, 0.01, P.tile_m, "How much cloth one repeat of the set covers.", v => { c.pbrTile = v; restyle(c); });
-    const t = el("input", { type: "checkbox", checked: !!c.pbrTint }); t.onchange = () => { c.pbrTint = t.checked; restyle(c); };
+    const t = el("input", { type: "checkbox", checked: P.tint }); t.onchange = () => { c.pbrTint = t.checked; restyle(c); };
     box.append(el("label", { className: "tog", title: "The garment's colour (or its pattern) over the set's own" }, t, el("span", { textContent: "Tint it with the colour" })));
   }
   const setName = el("input", { type: "text", placeholder: "a name (or the files' own)" }), setFiles = el("input", { type: "file", accept: "image/png,image/jpeg", multiple: true });
@@ -3087,12 +3096,16 @@ function fileLook(x, g) {
   const L = x.material, U = L && L.userData.uniforms;
   if (U && U.uColor) {
     const fab = g.attributes.uvm || g.attributes.uv, part = g.attributes.part, see = !!(L.transparent || U.uPbrAlphaOn.value > 0.5);
-    const { uv, size } = ALB.pack(fab.array, part ? part.array : null), B = ALB.bake(renderer, g, L, uv, { size, alpha: see });
+    const creased = !!(U.uCrAmt && U.uCrAmt.value > 0 && g.attributes.crz);   // its creases (tailor/crease.js) baked as its normal map, a little finer
+    const { uv, size } = ALB.pack(fab.array, part ? part.array : null, creased ? { texel: 0.0015 } : {}), B = ALB.bake(renderer, g, L, uv, { size, alpha: see });
+    let creaseMap = null;
+    if (creased) creaseMap = ALB.bakeClothNormal(renderer, g, L, uv, { size });   // (what's finer than its texels fades, as in the view: sharpened, a seam's line aliased into stripes)
     g.setAttribute("uv1", new THREE.BufferAttribute(Float32Array.from(fab.array), 2)); g.setAttribute("uv", new THREE.BufferAttribute(uv, 2)); g.deleteAttribute("uvm");
     const m = new THREE.MeshStandardMaterial({ name: x.name, map: B.texture, vertexColors: L.vertexColors, side: L.side, roughness: L.roughness * (1 - 0.75 * U.uGloss.value),
       metalness: L.metalness, transparent: L.transparent, alphaTest: U.uPbrAlphaOn.value > 0.5 ? 0.5 : L.alphaTest, depthWrite: L.depthWrite });
     for (const k of ["normalMap", "roughnessMap", "metalnessMap", "aoMap"]) if (L[k]) { m[k] = L[k].clone(); m[k].channel = 1; }
     m.normalScale.copy(L.normalScale); m.aoMapIntensity = L.aoMapIntensity;
+    if (creaseMap) { m.normalMap = creaseMap; m.normalMap.channel = 0; m.normalScale.set(1, 1); }   // (a file has one normal map: the creases' on the garment's layout, in place of a PBR set's weave)
     return m;
   }
   if (L === TEARM) {                                    // the tear line: a strip that only reflects (Godot's HSEye draws it added over what's behind: tear.gdshader), its fade in the vertices' colour;

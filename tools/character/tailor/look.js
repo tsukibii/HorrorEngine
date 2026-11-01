@@ -7,8 +7,9 @@
 import * as THREE from "three";
 import { SURFACES, surfaceTile, surfaceRelief, patternTile, textPrint } from "./fabric.js";
 import { PARTS } from "./uv.js";
+import { CREASE_GLSL, creaseOf, creaseUniforms } from "./crease.js";
 
-/** a garment part ({P, T, N, UV, PART, S} from tailor.js) as a BufferGeometry: position, normal, uv (metres), part, color (the edge shade) */
+/** a garment part ({P, T, N, UV, PART, S, CRZ} from tailor.js) as a BufferGeometry: position, normal, uv (metres), part, color (the edge shade), crz (the creases' data) */
 export function geometry(q) {
   const g = new THREE.BufferGeometry();
   g.setAttribute("position", new THREE.BufferAttribute(q.P, 3));
@@ -19,6 +20,7 @@ export function geometry(q) {
   const shade = new Float32Array(q.S.length * 3);
   for (let i = 0; i < q.S.length; i++) shade[i * 3] = shade[i * 3 + 1] = shade[i * 3 + 2] = q.S[i];
   g.setAttribute("color", new THREE.BufferAttribute(shade, 3));
+  if (q.CRZ) g.setAttribute("crz", new THREE.BufferAttribute(q.CRZ, 4));   // the creases' data (tailor/crease.js)
   g.setIndex(new THREE.BufferAttribute(q.T, 1));
   g.computeBoundingSphere();
   return g;
@@ -107,20 +109,25 @@ export function material(q, look = {}) {
     uPrint: { value: pr ? printTexture(pr, () => { m.needsUpdate = true; }) : null }, uPrintOn: { value: pr ? 1 : 0 },
     uPrintRect: { value: new THREE.Vector4(pr?.u ?? 0, pr?.v ?? 1.2, pr?.w ?? 0.18, (pr?.w ?? 0.18) * (pr?.text ? 0.25 : pr?.aspect ?? 1)) },
     uPrintRot: { value: (pr?.rot ?? 0) * Math.PI / 180 }, uPrintPart: { value: Math.max(0, PARTS.indexOf(pr?.part || "front")) },
+    ...creaseUniforms(creaseOf(pbr ? look.surface || "cotton" : surface, look.crease || {}), seedOf(q.name)), uCrFwK: { value: 1 },
   };
+  if (!q.CRZ) U.uCrAmt.value = 0;                                  // (an old part without the creases' data: none)
   m.userData.uniforms = U;
   m.onBeforeCompile = sh => {
     Object.assign(sh.uniforms, U);
     sh.vertexShader = sh.vertexShader
-      .replace("#include <common>", "#include <common>\nattribute vec2 uvm;\nattribute float part;\nvarying vec2 vUvm;\nvarying float vPart;")
-      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvUvm = uvm; vPart = part;");
+      .replace("#include <common>", "#include <common>\nattribute vec2 uvm;\nattribute float part;\nattribute vec4 crz;\nvarying vec2 vUvm;\nvarying float vPart;\nvarying vec4 vCrz;")
+      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvUvm = uvm; vPart = part; vCrz = crz;");
     sh.fragmentShader = sh.fragmentShader
       .replace("#include <common>", `#include <common>
 varying vec2 vUvm; varying float vPart;
 uniform vec3 uColor; uniform sampler2D uFabric; uniform float uFabricScale, uGloss, uOver, uDenier;
 uniform sampler2D uPbr, uPbrAlpha; uniform float uPbrOn, uPbrScale, uPbrTint, uPbrAlphaOn;
 uniform sampler2D uPattern; uniform float uPatternOn, uPatternScale;
-uniform sampler2D uPrint; uniform float uPrintOn, uPrintRot, uPrintPart; uniform vec4 uPrintRect;`)
+uniform sampler2D uPrint; uniform float uPrintOn, uPrintRot, uPrintPart; uniform vec4 uPrintRect;
+varying vec4 vCrz; uniform float uCrFwK;
+${CREASE_GLSL}
+vec2 crG = vec2(0.0); float crH = 0.0;                                     // the creases' slope (dh/du, dh/dv) and height here`)
       .replace("#include <map_fragment>", `
   vec3 cloth = uColor;
   if (uPatternOn > 0.5) cloth = texture2D(uPattern, vUvm * uPatternScale).rgb;
@@ -134,16 +141,34 @@ uniform sampler2D uPrint; uniform float uPrintOn, uPrintRot, uPrintPart; uniform
     if (q.x > 0.0 && q.x < 1.0 && q.y > 0.0 && q.y < 1.0) { vec4 ink = texture2D(uPrint, q); cloth = mix(cloth, ink.rgb, ink.a); }
   }
   diffuseColor.rgb *= cloth * grain.rgb * 2.0;
+  {                                                                          // the creases (tailor/crease.js): their height, its slope in the fabric's metres, the valleys a little darker
+    vec2 ux = dFdx(vUvm), uy = dFdy(vUvm); float fw = max(length(ux), length(uy)) * uCrFwK;
+    crH = clothH(vUvm, vPart, vCrz, fw);
+    float det = ux.x * uy.y - ux.y * uy.x, hx = dFdx(crH), hy = dFdy(crH);
+    if (abs(det) > 1e-14) crG = vec2(hx * uy.y - hy * ux.y, hy * ux.x - hx * uy.x) / det;
+    crG = clamp(crG, -0.8, 0.8);
+    diffuseColor.rgb *= 1.0 + clamp(crH / 0.0015, -1.0, 0.5) * 0.1;
+  }
   if (uPbrAlphaOn > 0.5) diffuseColor.a = texture2D(uPbrAlpha, vUvm * uPbrScale).r;
   if (uOver > 1.5) diffuseColor.a = uDenier * (0.85 + 0.15 * grain.a);     // sheer: the nylon's denier
   else if (uOver > 0.5) diffuseColor.a = grain.a;                          // a net: the skin in its holes`)
       .replace("#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\n  roughnessFactor *= 1.0 - 0.75 * uGloss * (0.6 + 0.8 * grain.g);")
       .replace("#include <normal_fragment_maps>", `#include <normal_fragment_maps>
+  if (uCrAmt > 0.0) {                                                         // the creases bend the normal: the slope along the fabric's u and v, as tangents on the screen
+    vec3 px = dFdx(-vViewPosition), py = dFdy(-vViewPosition); vec2 ux = dFdx(vUvm), uy = dFdy(vUvm);
+    float det = ux.x * uy.y - ux.y * uy.x;
+    if (abs(det) > 1e-14) {
+      vec3 Tu = (px * uy.y - py * ux.y) / det, Tv = (py * ux.x - px * uy.x) / det;
+      normal = normalize(normal - crG.x * normalize(Tu - normal * dot(normal, Tu)) - crG.y * normalize(Tv - normal * dot(normal, Tv)));
+    }
+  }
   if (uOver > 1.5) { float f = 1.0 - abs(dot(normal, normalize(vViewPosition))); diffuseColor.a = mix(diffuseColor.a, 1.0, pow(f, 1.4)); }   // tights darken where they turn away`);
   };
-  m.customProgramCacheKey = () => "tailor" + (m.bumpMap ? "b" : "") + (over ? "o" : "") + (pbr ? "p" : "");
+  m.customProgramCacheKey = () => "tailor2" + (m.bumpMap ? "b" : "") + (over ? "o" : "") + (pbr ? "p" : "");
   return m;
 }
+
+const seedOf = name => { let h = 7; for (const c of String(name || "")) h = (h * 31 + c.charCodeAt(0)) % 9973; return h / 97.3; };   // each part's creases their own
 
 /** a mesh of a garment part, named and tagged with its garment */
 export function mesh(q, garment, look) {

@@ -651,6 +651,91 @@
         {"kind": "pocket", "at": "armpit-0.035", "x": 0.095, "w": 0.1, "h": 0.022, "r": 0.003, "lift": 0.003},
         {"kind": "cuff", "length": 0.06, "lift": 0.0012}
       ]
+    },
+    "wide-trousers": {
+      "label": "Wide pleated trousers (pressed)", "slot": "bottom", "color": "#e8e1d4", "trim": "#d8d0c2", "buttons": "#d8d0c2", "thickness": 0.0022, "surface": "crepe", "pbr": "pbr/Procedural/fabric_gabardine", "crease": {"press": 1},
+      "piece": {"kind": "shell", "neck": false, "waist": {"at": "crotch+0.26", "drop": 0.008, "rise": 0.015}, "legs": {"to": "ankle+0.025"}, "ease": {"body": 0.012, "leg": 0.05, "flare": 0.03, "crotch": 0.018}, "tension": 40, "drape": {"density": 0.26, "bend": 3e-05, "slack": 0.015, "memory": 0.75}},
+      "details": [
+        {"kind": "band", "follow": "waist", "width": 0.04, "lift": 0.002},
+        {"kind": "placket", "x": 0.012, "width": 0.032, "from": "crotch+0.23", "to": "crotch+0.05", "lift": 0.0012},
+        {"kind": "buttons", "from": "crotch+0.243", "to": "crotch+0.243", "count": 1, "r": 0.008, "h": 0.004, "lift": 0.005},
+        {"kind": "placket", "x": 0.075, "width": 0.012, "from": "crotch+0.22", "to": "crotch+0.12", "lift": 0.0015},
+        {"kind": "placket", "x": -0.075, "width": 0.012, "from": "crotch+0.22", "to": "crotch+0.12", "lift": 0.0015}
+      ]
+    },
+    "tie-blouse": {
+      "label": "Tie-neck blouse", "slot": "top", "color": "#d9cbb8", "buttons": "#d9cbb8", "thickness": 0.0014, "surface": "crepe", "pbr": "pbr/Procedural/fabric_crepe",
+      "piece": {"kind": "shell", "neck": {"shape": "v", "depth": 0.035, "width": 0.068}, "sleeve": "wrist+0.01", "hem": {"at": "crotch+0.07", "front": 0.0, "back": 0.015}, "ease": {"body": 0.009, "sleeve": 0.022}, "tension": 12, "drape": {"density": 0.12, "bend": 6e-06, "slack": 0.04}},
+      "details": [
+        {"kind": "neckband", "width": 0.03, "lift": 0.003},
+        {"kind": "placket", "x": 0.018, "width": 0.034, "from": "neck-0.03", "to": "bust-0.13", "lift": 0.0045},
+        {"kind": "placket", "x": -0.012, "width": 0.032, "from": "neck-0.035", "to": "bust-0.1", "lift": 0.006},
+        {"kind": "buttons", "from": "neck-0.045", "to": "neck-0.045", "count": 1, "x": 0.004, "r": 0.016, "h": 0.012, "lift": 0.006},
+        {"kind": "cuff", "length": 0.05, "lift": 0.0015, "hold": true}
+      ]
+    },
+    "full-sleeve-blouse": {
+      "label": "Blouse (full sleeves)", "slot": "top", "color": "#f1ebdf", "buttons": "#e8e0d0", "thickness": 0.0014, "surface": "crepe", "pbr": "pbr/Procedural/fabric_crepe",
+      "piece": {"kind": "shell", "neck": {"shape": "v", "depth": 0.04, "width": 0.07}, "sleeve": "wrist", "hem": {"at": "crotch+0.07", "back": 0.015}, "ease": {"body": 0.009, "sleeve": 0.03}, "tension": 12, "drape": {"density": 0.12, "bend": 6e-06, "slack": 0.05}},
+      "details": [
+        {"kind": "edgeband", "width": 0.012, "lift": 0.0015},
+        {"kind": "buttons", "from": "bust-0.04", "to": "crotch+0.13", "count": 5, "r": 0.005},
+        {"kind": "cuff", "length": 0.055, "lift": 0.0015, "hold": true}
+      ]
+    },
+    "shirt": {
+      "label": "Shirt (long sleeves)", "slot": "top", "color": "#c9d6e6", "buttons": "#f0ede6", "thickness": 0.0016, "surface": "cotton", "pbr": "pbr/Procedural/fabric_poplin",
+      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.03, "width": 0.07}, "sleeve": "elbow+0.08", "hem": {"at": "crotch+0.08", "front": 0.015, "back": 0.03, "side": -0.03}, "ease": {"body": 0.011, "sleeve": 0.016, "shoulder": 0.004}, "tension": 16, "drape": {"density": 0.12, "bend": 8e-06, "slack": 0.05}},
+      "details": [
+        {"kind": "collar", "width": 0.045, "tips": 0.045, "lift": 0.0045, "roll": 0.008, "thickness": 0.003},
+        {"kind": "placket", "width": 0.03, "to": "crotch+0.08"},
+        {"kind": "buttons", "from": "neck-0.07", "to": "crotch+0.15", "count": 6},
+        {"kind": "pocket", "at": "armpit-0.07", "x": 0.095, "w": 0.105, "h": 0.12, "lift": 0.0025},
+        {"kind": "cuff", "length": 0.05, "lift": 0.002}
+      ]
+    },
+    "cropped-jacket": {
+      "label": "Cropped jacket (collarless tweed)", "slot": "jacket", "color": "#1a1d2a", "buttons": "#c9a85a", "thickness": 0.003, "surface": "tweed", "pbr": "pbr/Procedural/fabric_boucle",
+      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.025, "width": 0.072}, "open": {"from": "neck-0.03", "gap": 0.002, "top": 0.02}, "sleeve": "wrist", "hem": {"at": "waist+0.0"}, "ease": {"body": 0.012, "sleeve": 0.011, "shoulder": 0.012}, "tension": 30, "drape": {"density": 0.4, "bend": 6e-05, "memory": 0.9}},
+      "details": [
+        {"kind": "edgeband", "width": 0.012, "lift": 0.002},
+        {"kind": "buttons", "from": "neck-0.06", "to": "waist+0.03", "count": 4, "x": -0.01, "r": 0.008},
+        {"kind": "pocket", "at": "waist+0.06", "x": 0.09, "w": 0.1, "h": 0.03, "r": 0.003, "lift": 0.003},
+        {"kind": "pocket", "at": "waist+0.06", "x": -0.09, "w": 0.1, "h": 0.03, "r": 0.003, "lift": 0.003},
+        {"kind": "band", "from": "waist+0.02", "to": "waist+0.0", "lift": 0.0015},
+        {"kind": "cuff", "length": 0.04, "lift": 0.0012}
+      ]
+    },
+    "collarless-jacket": {
+      "label": "Collarless jacket", "slot": "jacket", "color": "#ece5d8", "buttons": "#3a3430", "thickness": 0.003, "surface": "wool", "pbr": "pbr/Procedural/fabric_melton",
+      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.03, "width": 0.074}, "open": {"from": "neck-0.035", "gap": 0.002, "top": 0.024}, "sleeve": "wrist", "hem": {"at": "crotch+0.04"}, "ease": {"body": 0.016, "sleeve": 0.014, "shoulder": 0.012}, "tension": 36, "drape": {"density": 0.38, "bend": 6e-05, "memory": 0.8, "slack": 0.02}},
+      "details": [
+        {"kind": "edgeband", "width": 0.018, "lift": 0.002},
+        {"kind": "buttons", "from": "neck-0.06", "to": "waist-0.02", "count": 5, "x": -0.012, "r": 0.006},
+        {"kind": "cuff", "length": 0.045, "lift": 0.0012}
+      ]
+    },
+    "leather-jacket": {
+      "label": "Leather jacket (cropped)", "slot": "jacket", "color": "#161616", "buttons": "#b8b8b8", "thickness": 0.0032, "surface": "leather", "pbr": "pbr/Procedural/fabric_leather",
+      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.02, "width": 0.072}, "open": {"from": "waist-0.02", "gap": 0.07, "top": 0.06, "curve": 0.7, "closed": false}, "sleeve": "wrist+0.01", "hem": {"at": "waist-0.02"}, "ease": {"body": 0.022, "sleeve": 0.018, "shoulder": 0.014}, "tension": 42, "drape": {"density": 0.6, "bend": 0.0001, "memory": 0.8, "slack": 0.02}},
+      "details": [
+        {"kind": "collar", "width": 0.06, "tips": 0.03, "lift": 0.005, "roll": 0.009, "thickness": 0.0035},
+        {"kind": "edgeband", "width": 0.014, "lift": 0.002},
+        {"kind": "band", "from": "waist+0.035", "to": "waist-0.02", "lift": 0.003},
+        {"kind": "pocket", "at": "waist+0.12", "x": 0.1, "w": 0.13, "h": 0.03, "r": 0.004, "lift": 0.003},
+        {"kind": "pocket", "at": "waist+0.12", "x": -0.1, "w": 0.13, "h": 0.03, "r": 0.004, "lift": 0.003},
+        {"kind": "cuff", "length": 0.06, "lift": 0.0025}
+      ]
+    },
+    "knit-midi-skirt": {
+      "label": "Knit midi skirt", "slot": "bottom", "color": "#1a1c26", "thickness": 0.0022, "surface": "knit", "pbr": "pbr/Procedural/fabric_rib",
+      "piece": {"kind": "skirt", "waist": {"at": "waist-0.02"}, "length": "knee-0.14", "ease": 0.004, "flare": 0.05, "straight": true, "drape": {"density": 0.36, "bend": 1.5e-05, "memory": 0.2}},
+      "details": [{"kind": "band", "from": "waist-0.02", "to": "waist-0.05", "lift": 0.0015, "surface": "rib"}]
+    },
+    "pleated-midi-skirt": {
+      "label": "Pleated midi skirt", "slot": "bottom", "color": "#2b3240", "thickness": 0.0018, "surface": "wool", "pbr": "pbr/Procedural/fabric_gabardine",
+      "piece": {"kind": "skirt", "waist": {"at": "waist-0.02"}, "length": "knee-0.16", "ease": 0.004, "flare": 0.28, "pleats": {"n": 28, "depth": 0.016, "stitched": 0.1}, "drape": {"density": 0.3, "bend": 4e-05, "memory": 1}},
+      "details": [{"kind": "band", "from": "waist-0.02", "to": "waist-0.05", "lift": 0.002}]
     }
   }
 }

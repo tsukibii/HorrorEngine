@@ -47,7 +47,7 @@ if (both || has("outfits")) for (const [name, list] of Object.entries(outfits)) 
 if (both || has("designs")) for (const name of Object.keys(designs)) if (!only || only.includes(name)) jobs.push({ name, file: "design_" + slug(name), list: [[name]], drape: false, alone: true });
 if (!jobs.length) { console.error("nothing to picture"); process.exit(1); }
 
-const KEYS = [["P", Float32Array], ["T", Uint32Array], ["N", Float32Array], ["UV", Float32Array], ["PART", Float32Array], ["S", Float32Array]];
+const KEYS = [["P", Float32Array], ["T", Uint32Array], ["N", Float32Array], ["UV", Float32Array], ["PART", Float32Array], ["S", Float32Array], ["CRZ", Float32Array]];
 const three = readFileSync(join(ROOT, "tools", "director", "vendor", "three.module.min.js"));
 const SHELF = join(ROOT, "assets", "pbr");
 let current = null;                                                // the job the page is showing: its parts as one binary
@@ -71,7 +71,7 @@ window.show = async (head, NB, view) => {
   const body = new THREE.BufferGeometry(); body.setAttribute("position", new THREE.BufferAttribute(take(Float32Array, NB[0]), 3)); body.setIndex(new THREE.BufferAttribute(take(Uint32Array, NB[1]), 1)); body.computeVertexNormals();
   const skin = new THREE.Mesh(body, new THREE.MeshStandardMaterial({ color: "#c8a28c", roughness: 0.6 })); scene.add(skin); shown.push(skin);
   for (const m of head) {
-    const q = { name: m.name, color: m.color, fabric: m.fabric, surface: m.surface, P: take(Float32Array, m.n.P), T: take(Uint32Array, m.n.T), N: take(Float32Array, m.n.N), UV: take(Float32Array, m.n.UV), PART: take(Float32Array, m.n.PART), S: take(Float32Array, m.n.S) };
+    const q = { name: m.name, color: m.color, fabric: m.fabric, surface: m.surface, P: take(Float32Array, m.n.P), T: take(Uint32Array, m.n.T), N: take(Float32Array, m.n.N), UV: take(Float32Array, m.n.UV), PART: take(Float32Array, m.n.PART), S: take(Float32Array, m.n.S), CRZ: m.n.CRZ ? take(Float32Array, m.n.CRZ) : undefined };
     const mesh = LOOK.mesh(q, m.name, m.look); scene.add(mesh); shown.push(mesh);
   }
   await LOOK.mapsLoaded();

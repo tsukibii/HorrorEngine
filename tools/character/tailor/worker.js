@@ -2,7 +2,7 @@
 // cut at once ({id, stage: "cut", garments}), then, with `drape`, hung by gravity a few dozen steps at a time
 // ({id, progress: {k, of, name, frac}} between) and sent again ({id, stage: "hung", garments, bakes: {key: points}});
 // a newer job stops an older one's drape between its slices. The garments: {name, key, stats, drape, look, handles,
-// parts: [{name, color, fabric, P, T, N, UV, PART, S}]} with the arrays transferred. {bakes: {key: points}} in: drapes
+// parts: [{name, color, fabric, P, T, N, UV, PART, S, CRZ}]} with the arrays transferred. {bakes: {key: points}} in: drapes
 // kept with the character, taken as they are when they fit (tailor.js dressing). The body is read once per `key`.
 import * as TAILOR from "../tailor.js";
 
@@ -13,7 +13,7 @@ function send(id, worn, extra) {
   const move = [];
   const garments = worn.map(g => ({
     name: g.name, key: g.key, stats: g.stats, drape: g.drape, look: g.look, handles: g.handles,
-    parts: g.parts.map(q => { const { name, color, fabric, surface, P, T, N, UV, PART, S } = q; move.push(P.buffer, T.buffer, N.buffer, UV.buffer, PART.buffer, S.buffer); return { name, color, fabric, surface, P, T, N, UV, PART, S }; }),
+    parts: g.parts.map(q => { const { name, color, fabric, surface, P, T, N, UV, PART, S, CRZ } = q; move.push(P.buffer, T.buffer, N.buffer, UV.buffer, PART.buffer, S.buffer, CRZ.buffer); return { name, color, fabric, surface, P, T, N, UV, PART, S, CRZ }; }),
   }));
   self.postMessage({ id, garments, ...extra }, move);
 }

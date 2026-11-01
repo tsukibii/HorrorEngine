@@ -38,7 +38,22 @@
     "menswear: blazer and knit": [["crew-socks", "#1c1c1e"], ["loafers", "#1c1816"], ["knit-top", "#5a5a5e"], ["belted-trousers", "#1c1c1f"], ["blazer-open", "#141416", null, {"fit": 1.05}]],
     "menswear: double denim": [["cowboy-boots", "#8a5a34"], ["denim-shirt", "#3b5a8c"], ["jeans", "#26324f"]],
     "menswear: denim jacket": [["crew-socks", "#1c1c1e"], ["loafers", "#1c1816"], ["t-shirt", "#f2f2f0"], ["belted-trousers", "#1d2438", null, {"ease": {"leg": 0.022}}], ["denim-jacket", "#2b3a5e"]],
-    "menswear: hoodie and jeans": [["sneakers", "#1a1a1c"], ["jeans", "#141416"], ["hoodie", "#151517"]]
+    "menswear: hoodie and jeans": [["sneakers", "#1a1a1c"], ["jeans", "#141416"], ["hoodie", "#151517"]],
+    "smart casual: tie-neck blouse and wide trousers": [["sneakers", "#f2f0ea"], ["tie-blouse", "#d6c6b0"], ["wide-trousers", "#e6dfd2"]],
+    "smart casual: pink shirt and grey trousers": [["sneakers", "#f2f0ea"], ["shirt", "#ecd3d4", {"pattern": {"kind": "vstripes", "colors": ["#f4e6e6", "#d9a9ad"], "size": 0.012}}], ["wide-trousers", "#7f8b9a", {"surface": "flannel"}]],
+    "smart casual: full sleeves and grey trousers": [["sneakers", "#f2f0ea"], ["full-sleeve-blouse", "#f1ebdf"], ["wide-trousers", "#6f7987", {"surface": "flannel"}]],
+    "smart casual: blue striped shirt": [["sneakers", "#f2f0ea"], ["shirt", "#c9d6e6", {"pattern": {"kind": "vstripes", "colors": ["#eef2f7", "#7d97bd"], "size": 0.01}}], ["wide-trousers", "#737d8b", {"surface": "flannel"}]],
+    "smart casual: camel blazer and cream trousers": [["loafers", "#5a4234"], ["wide-trousers", "#ece6da", {"surface": "wool"}], ["knit-top", "#e4d8c6"], ["blazer", "#b08a62"]],
+    "smart casual: cardigan over a black dress": [["tights", "#1a1a20"], ["loafers", "#141414"], ["knit-top", "#141416"], ["mini-skirt", "#141416", {"surface": "knit"}], ["cardigan", "#c6b9a6"]],
+    "smart casual: tweed jacket and cream trousers": [["sneakers", "#f2f0ea"], ["wide-trousers", "#ebe4d6"], ["knit-top", "#141416"], ["cropped-jacket", "#1a1d2a"]],
+    "smart casual: camel blazer and knit midi": [["crew-socks", "#141416"], ["loafers", "#141414"], ["knit-top", "#141416"], ["knit-midi-skirt", "#1a1c26"], ["blazer", "#b08a62"]],
+    "smart casual: striped knit and cream midi": [["sneakers", "#f2f0ea"], ["knit-midi-skirt", "#ece4d4", {"surface": "wool"}], ["cardigan", "#efe8da", {"pattern": {"kind": "stripes", "colors": ["#efe8da", "#1c1c1e"], "size": 0.045}}]],
+    "smart casual: cream cardigan and black mini": [["knee-socks", "#141416"], ["loafers", "#3e2a20"], ["mini-skirt", "#141416"], ["cardigan", "#efe6d6"]],
+    "smart casual: beige blazer over a black midi": [["sneakers", "#f2f0ea"], ["knit-top", "#141416"], ["knit-midi-skirt", "#141416"], ["blazer", "#d6cbb8"]],
+    "smart casual: grey blazer and pleated midi": [["crew-socks", "#141416"], ["loafers", "#141414"], ["knit-top", "#141416"], ["pleated-midi-skirt", "#2b3240"], ["oversized-blazer", "#6e6c6a"]],
+    "smart casual: leather jacket and grey trousers": [["sneakers", "#f2f0ea"], ["wide-trousers", "#8a8a8a", {"surface": "flannel"}], ["knit-top", "#3a3a3c"], ["leather-jacket", "#161616"]],
+    "smart casual: leather jacket and wide jeans": [["loafers", "#141414"], ["wide-jeans", "#2c4a7a"], ["knit-top", "#141416"], ["leather-jacket", "#161616"]],
+    "smart casual: collarless jacket and jeans": [["flats", "#141414"], ["jeans", "#5a7393", null, {"ease": {"leg": 0.012}}], ["knit-top", "#141416"], ["collarless-jacket", "#ece5d8"]]
   },
   "meta": {
     "hanbok: lace jeogori and pleated skirt": {"group": "designer", "after": "image 1: a white lace jeogori with its ribbon over a black pleated mini skirt, over-the-knee socks, a black beret", "accessories": [{"kind": "hat", "style": "beret", "colour": "#141416", "tilt": 18}]},
@@ -52,6 +67,21 @@
     "menswear: blazer and knit": {"group": "designer", "after": "image 5 (left): a black blazer over a grey knit top, black trousers with a belt"},
     "menswear: double denim": {"group": "designer", "after": "image 5 (middle, left): a denim western shirt tucked into dark jeans with a belt, cowboy boots"},
     "menswear: denim jacket": {"group": "designer", "after": "image 5 (middle, right): a dark denim jacket open over a white tee, navy pleated trousers with a belt, loafers"},
-    "menswear: hoodie and jeans": {"group": "designer", "after": "image 5 (right): a black hoodie over black jeans"}
+    "menswear: hoodie and jeans": {"group": "designer", "after": "image 5 (right): a black hoodie over black jeans"},
+    "smart casual: tie-neck blouse and wide trousers": {"group": "smart", "after": "the Japanese smart casual sheet, row 1, first: a beige tie-neck blouse tucked into cream wide pleated trousers, white sneakers"},
+    "smart casual: pink shirt and grey trousers": {"group": "smart", "after": "the Japanese smart casual sheet, row 1, second: a pale pink striped shirt, sleeves rolled, tucked into pressed grey-blue wide trousers, white sneakers"},
+    "smart casual: full sleeves and grey trousers": {"group": "smart", "after": "the Japanese smart casual sheet, row 1, third: a cream blouse with full sleeves tucked into grey pressed trousers"},
+    "smart casual: blue striped shirt": {"group": "smart", "after": "the Japanese smart casual sheet, row 1, fourth: a blue striped shirt tucked into grey wide trousers (the navy sweater over the shoulders not made yet)"},
+    "smart casual: camel blazer and cream trousers": {"group": "smart", "after": "the Japanese smart casual sheet, row 1, fifth: a camel blazer over a cream knit, cream wide trousers, brown clogs"},
+    "smart casual: cardigan over a black dress": {"group": "smart", "after": "the Japanese smart casual sheet, row 1, sixth: an oatmeal cardigan over a little black knit dress, black tights, loafers"},
+    "smart casual: tweed jacket and cream trousers": {"group": "smart", "after": "the Japanese smart casual sheet, row 2, first: a navy cropped tweed jacket with gold buttons over a black top, cream wide trousers"},
+    "smart casual: camel blazer and knit midi": {"group": "smart", "after": "the Japanese smart casual sheet, row 2, second: a camel blazer over a navy knit midi skirt, black socks and loafers"},
+    "smart casual: striped knit and cream midi": {"group": "smart", "after": "the Japanese smart casual sheet, row 2, third: a cream knit with black stripes over a cream midi skirt, white sneakers"},
+    "smart casual: cream cardigan and black mini": {"group": "smart", "after": "the Japanese smart casual sheet, row 2, fourth: a cream cardigan with black buttons, a black mini skirt, knee socks, brown loafers"},
+    "smart casual: beige blazer over a black midi": {"group": "smart", "after": "the Japanese smart casual sheet, row 2, fifth: a beige blazer over a black midi dress, white mules"},
+    "smart casual: grey blazer and pleated midi": {"group": "smart", "after": "the Japanese smart casual sheet, row 3, first: a grey blazer over a navy pleated midi skirt, black socks and loafers"},
+    "smart casual: leather jacket and grey trousers": {"group": "smart", "after": "the Japanese smart casual sheet, row 3, fourth: a cropped black leather jacket over grey pressed wide trousers"},
+    "smart casual: leather jacket and wide jeans": {"group": "smart", "after": "the Japanese smart casual sheet, row 3, fifth: the leather jacket over dark wide-leg jeans"},
+    "smart casual: collarless jacket and jeans": {"group": "smart", "after": "the Japanese smart casual sheet, row 3, sixth: a cream collarless jacket over straight light jeans, black kitten heels"}
   }
 }
