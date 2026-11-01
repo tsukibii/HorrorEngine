@@ -2,6 +2,18 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-01 (the user: the eyes in Godot, on `eye-enhancements`)
+
+- **"Can you make a new branch called eye-enhancements, I dont want to modify too much about the exported eyes, but
+  enhance the use of the existing godot shader, atm the eyes look kind of lifeless and scary, it doesnt seem like we
+  are applying the eye wetness etc correctly."** Measured on a fresh export with the grafted eyes: the iris read black
+  (a bug: Godot turned the iris's bowl upside down, so its lower half faced away from a lamp above), the whites a flat
+  grey (the guessed lid ellipse and the socket's shade over a paint at 0.58), and HumanShaders' eye wetness wasn't used
+  at all. Done on the Godot side only, the export as it was (GODOT_LOOK §5g): the bowl fixed; **the eye's wet layer**
+  (HumanShaders' eye wetness and MetaHuman's eye occlusion as each eyeball's material overlay: the real lids found in
+  the depth buffer, a warm shade by them, deeper under the upper lid, the lid's edge melted into the eye) in place of
+  the ellipse, the socket's shade halved; the white's light wrapped warm with a little scattering; a crisp catchlight.
+
 ## 2026-10-31, small hours (the user, on the floors)
 
 - **Kit floors take a material**: "yes make the floors take a material" (offered: a kit floor dressed rather than taken

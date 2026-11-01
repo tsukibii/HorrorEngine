@@ -12,6 +12,21 @@ street builder, its paint and the PBR sets, with `prop-gen-tool` merged in). Rea
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
+## 0a. The eyes in Godot (2026-11-01, on `eye-enhancements`; not merged)
+
+The user: the eyes "look kind of lifeless and scary ... it doesnt seem like we are applying the eye wetness etc
+correctly", the exported eyes left alone (DECISIONS 2026-11-01). Measured on a fresh export (`_eyetest`: the soft cinematic
+look, natural lashes, the grafted eyes): the iris black, the whites grey, HumanShaders' eye wetness unused. Done in the
+look plugin (GODOT_LOOK §5g): the iris's bowl fixed (a doubled `handed`), **the eye's wet layer** (`eye_wet.gdshader`, each
+eyeball's material overlay: the real lids found in the depth buffer, a warm shade by them, the upper lid's deeper, the
+lid's edge melted in), the guessed ellipse off and the socket halved under it, the white's light wrapped warm (`wrap`,
+`scatter_color`, `sss`), a crisp catchlight (`catch_size` 0.025). The sheet: `docs/godot_sheets/2026-11-01_eyes.jpg`.
+In the cloud a Studio export needs MediaPipe first (`face_mesh.py setup`, libegl1: LESSONS). **Next, if wanted** (ask
+first): the eyes' own life in Godot (micro-saccades, a glance, look-at: they don't turn yet); the user's look in a real
+level on the 3090; the tear line's glint if it reads too white under their lights; EYELIDS' file measure on a new
+character with the grafted eyes (0.315 mm² of the right eye through the lower lid at 0.90 shut from below: the export's
+blink, not touched here).
+
 ## 0. The street builder (2026-10-30, night, on `buildings-streets`; not merged)
 
 The user asked for a new tool (DECISIONS 2026-10-30, night and later night): the outside world the enterable buildings

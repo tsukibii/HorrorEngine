@@ -114,6 +114,7 @@ func _initialize() -> void:
 			if String(mi.name).contains("_eye_") and mi.mesh != null:
 				for k in mi.mesh.get_surface_count():
 					mi.set_surface_override_material(k, green)
+				mi.material_overlay = null               # the wet layer off: the green counted as it's drawn
 	var hs: Script = load("res://addons/horrorstudio_look/hair.gd")       # an older plugin's wear takes no glb (--plugin pictures one)
 	var hair_mats: Array = hs.callv("wear", [who, {}, glb] if hs.has_method("records") else [who, {}])
 	report["hair_mats"] = hair_mats.size()           # the hair: how much of it wears the salon's bake MetaHuman's way, and the scalp in its own colour

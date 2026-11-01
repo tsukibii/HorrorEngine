@@ -691,7 +691,8 @@ open in 130; now and then twice). A picture turns `idle` off (`demo/portrait.gd 
 the corners: MetaHuman's sclera is never a neutral white), the lids' shadow at full (`occlusion` 1). Measured on the eyes'
 close-up under the portrait grid's light: the white over the skin under the eye 0.83 to 0.96 (it was 1.3 to 1.8; the
 MetaHuman references' 0.3 to 0.5 come with heavier lids over the eye). The socket's shade and the cornea's own coat and
-catchlight (the eye's `light()`) are §5d's.
+catchlight (the eye's `light()`) are §5d's. (Since 2026-11-01 the ellipse is off under the wet layer, which shades by
+the real lids, and the socket's shade is halved: §5g.)
 
 **The tear line** (`tear.gdshader`): the Studio's wet strip along each lower lid, in the file now (`tearline_L`, `_R`,
 its fade in the vertices' colour, `studioTear` its strength; the file's material wholly see-through, as glTF has no adding), drawn added over what's behind it, black itself: the
@@ -711,6 +712,66 @@ eyeballs a flat green: open thousands of green pixels, held shut none; `blink.jp
 **Not yet**: the eyes don't turn in Godot (a glance, look-at); the Studio export carries only the blink of MHR's 72
 shapes (bakeplay.gd sets the others on a body that has them); the lid has no thickness of its own (MetaHuman's waterline);
 in the shut picture a lash clump at an inner corner and a fold at an outer corner want a look.
+
+## 5g. The eye's wet layer, and eyes that aren't a black hole (`eye_wet.gdshader`; DECISIONS 2026-11-01)
+
+The user's ask: "the eyes look kind of lifeless and scary, it doesn't seem like we are applying the eye wetness etc
+correctly", without changing the exported eyes much. Measured on a fresh export with the grafted eyes (`_eyetest`, the
+soft cinematic look and natural lashes; `portrait.gd --shots=eyes`, the subject's right eye): the iris read black
+(its lower half 0.000, its top 0.001, though the baked paint is a clear brown), the whites a flat grey (0.14 to 0.48 of
+the skin under the eye), and HumanShaders' eye wetness (`vshader_eye_wetness.tres`) wasn't used at all. The sheet,
+before and after (the eyes, the close-up under the reel's light, the game's medium shot):
+`docs/godot_sheets/2026-11-01_eyes.jpg`. Three causes, all on the Godot side:
+
+- **The iris's bowl was upside down** (a bug): `eye.gdshader` took the bowl normal back to view space through BINORMAL
+  with `handed` a second time, so the bowl tilted down where it should tilt up, and under a lamp above the lower
+  half of the iris faced away from it. Fixed: the lower iris is now the bright side (the caustic: 1.6 to 1.7 times the
+  middle under the portrait light).
+- **The lids' shadow was a guessed ellipse** (`occlusion`, `opening` 0.8 × 0.34 eye units), smaller than the grafted
+  eyes' opening: it blacked out the iris's top and bottom and greyed the white. It's off when the wet layer is on.
+- **The white was greyed three times over**: the paint at 0.58, the socket's shade all over (0.35), the ellipse.
+
+**The wet layer** (`eye_wet.gdshader`, each eyeball's `material_overlay`, put on by `HSEye.wear`: no new nodes, nothing in
+the export): HumanShaders' eye wetness is a shell over the eye that shows the screen behind it blurred and darkened
+toward the lids, its mask in the shell's vertex colours; MetaHuman's eye occlusion is the same idea. A Studio export has
+no shell, so the layer finds the lids itself, in the depth buffer: the eyeball's shape is known exactly (the white's
+sphere and the cornea's dome, from the record's shape, the radius from the mesh's bounds, the centre and axis worked
+out per vertex from the mesh's own tangent frame, where the normals are exact: on the limbus ring the export averages
+the sphere's and the dome's, and the vertex shader takes the average there), so wherever the depth buffer stands more
+than `tolerance` (0.25 mm) in front of the eyeball's surface, or the eyeball isn't there, there's a lid. Along eight ways
+out from each point the lid's distance is found by halving (no steps), and:
+
+- **the rim**: dark against every lid (`shade` 0.6 at the lid, gone `reach` 1 mm in);
+- **the upper lid's shadow** down the eye (`top_shade` 0.45, reaching 3 mm: `reach` × (1 + `reach_up` 2)), by its height above
+  the point (the world's up as the screen sees it), softer (squared): the brow and the lid's overhang keep the light off;
+- **warm**, not grey (`shadow_color`, HumanShaders' ShadowColor: the lids' skin bouncing its light in);
+- **the lid's edge melted into the eye** (`soften` 0.3 mm: the screen read from a blurrier mip next to the lid, only when
+  that's a pixel or more, so far away nothing blurs).
+
+It follows the real lids in any pose: the grafted lids or MHR's, the blink (half shut, the shade comes down with the
+lid), a squint, an eye turned. `wet_debug` 1 draws the rim red and the upper lid's shadow green. The layer sits 0.12 mm
+off the eyeball (`lift`): over it, under the lids (0.4 mm off it), clear of a 24-bit depth's steps a few metres off.
+`HSEye.wear(node, glb, {"wet": false})` leaves it off (and puts the ellipse back); `wet_*` overrides go to it.
+
+**The white**: under the layer the socket's shade is halved (`WET_SOCKET` 0.5: its guess at the lids' shadow, darker all
+over, is the real one now) and the white's light wraps past the terminator (`wrap` 0.3) in a warm, pinkish colour
+(`scatter_color`, MetaHuman's sclera transmission), with a little of Godot's screen-space scattering on it (`sss` 0.3,
+none on the iris; HumanShaders' eye 0.4, RoboPoets' 0.5). Measured against the skin under the eye: 0.94 to 1.04 in the
+open middle beside the iris, 0.23 under the upper lid at the inner corner (it was 0.20 to 0.48 everywhere, flat).
+
+**The catchlight**: crisp, `catch_size` 0.025 (0.08 spread a lamp into a soft blob, plastic; the cap still keeps a
+pinpoint from blooming): one small dot per lamp, the same place in both eyes.
+
+The tear line is as §5f left it (`gain` 0.2: a wet glint along the lower lid under the key light).
+
+**Checks**: EYELIDS draws the eyeballs flat green with the layer off (`portrait.gd --eyes=mask` clears the overlay), so
+its counts are what's drawn (on `_eyetest`: open 1874 and 56146 pixels, held shut none); GDPEOPLE's pupil still moves
+with the cornea (7.7 px at the slant); GDPORTRAIT's skin measures are untouched. EYELIDS' file measure (numpy on the glb,
+no plugin in it) fails on `_eyetest`, a new character with the grafted eyes: 0.315 mm² of the right eye in front of the
+lower lid at 0.90 shut, seen from 20° below, 0.6 mm deep. That's the export's blink, left as it was here (the user asked
+for the Godot side only).
+**Not yet**: the eyes' own life (micro-saccades, a glance: the eyes don't turn in Godot yet, §5f) is the next lever after
+the shading.
 
 ## 5d. Streets from the Blender bake (`street.gdshader`, `HSStreet`)
 
