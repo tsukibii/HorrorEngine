@@ -38,10 +38,12 @@ export const torsoHem = (F, at, o = {}) => {
     return y - (y0 - fr * Math.max(0, c) - bk * Math.max(0, -c) + sd * si * si);
   };
 };
-/** a waistline at `at`, dropped at the front by `drop` (a low rise) and raised at the back by `rise` */
+/** a waistline at `at`, dropped at the front by `drop` (a low rise), raised at the back by `rise`, and raised at the
+    sides by `hip` (underwear and bikinis: the line runs up from the front's dip over the hip bones and down again to the
+    back, never round the hips like a trouser's; `hipPow` its shape, 1 a V, 2 a flatter front rising over the hips) */
 export const waistline = (F, at, o = {}) => {
-  const y0 = height(F, at), dr = (o.drop ?? 0.01) * F.s, ri = (o.rise ?? 0.02) * F.s;
-  return (x, y, z) => { const c = Math.cos(F.theta(x, y, z)); return y0 - dr * Math.max(0, c) + ri * Math.max(0, -c) - y; };
+  const y0 = height(F, at), dr = (o.drop ?? 0.01) * F.s, ri = (o.rise ?? 0.02) * F.s, hp = (o.hip ?? 0) * F.s, pw = o.hipPow ?? 2;
+  return (x, y, z) => { const th = F.theta(x, y, z), c = Math.cos(th); return y0 - dr * Math.max(0, c) + ri * Math.max(0, -c) + (hp ? hp * Math.abs(Math.sin(th)) ** pw : 0) - y; };
 };
 /** the length along the arm a sleeve reaches: a number (metres from the shoulder joint), or "wrist", "elbow", "short",
     "cap", each with an offset in metres down the arm ("elbow+0.05": rolled to below the elbow) */
@@ -120,7 +122,8 @@ const sdPoly = (P, u, v) => {                                       // a polygon
     comes, `outer` how far out past it, `gore` the gap between them at the band), and straps from each cup's highest
     point up over the shoulder and down to the back band (or, `racer`, meeting between the shoulder blades). Styles:
     triangle, balconette, plunge (the cups' inner edges in a V down to the band), sports (one front panel to a scoop,
-    wide straps, a racer back), bandeau (a band over the bust, no straps). value >= 0 on the cloth */
+    wide straps, a racer back), bandeau (a band over the bust, no straps); `halter` (a bikini's: the straps from the cups'
+    points to the neck and round behind it), `inner` (a triangle's cups apart, each its own breast's). value >= 0 on the cloth */
 export function bra(F, o) {
   const s = F.s, B = bust(F), style = o.style || "balconette", [cx0] = F.torsoAxis(F.bustY);
   const band = (o.band ?? 0.02) * s, under = B.under + (o.drop ?? 0) * s, top = (o.top ?? 0.03) * s, outer = (o.outer ?? 0.07) * s, gore = (o.gore ?? 0.016) * s / 2;
@@ -128,7 +131,7 @@ export function bra(F, o) {
   const cups = [["L", 1], ["R", -1]].map(([k, sg]) => {
     const A = B[k], uA = Math.max(0.02 * s, Math.abs(F.torsoU(A.x, A.y, A.z, false))), yA = A.y;
     let poly;
-    if (style === "triangle") poly = [[gore, under], [uA + outer, under], [uA + 0.006 * s, yA + top]];
+    if (style === "triangle") poly = [[o.inner !== undefined ? Math.max(gore, uA - o.inner * s) : gore, under], [uA + outer, under], [uA + 0.006 * s, yA + top]];   // `inner`: its inner corner that far in from the point (a bikini's cups apart), else at the gore
     else if (style === "plunge") poly = [[gore, under + 0.006 * s], [uA + outer, under], [uA + 0.62 * outer, yA + top + 0.008 * s], [uA - 0.3 * outer, yA + top - 0.012 * s], [gore + 0.003 * s, under + 0.028 * s]];
     else poly = [[gore, under + 0.004 * s], [uA + outer, under], [uA + 0.72 * outer, yA + top + 0.01 * s], [uA - 0.25 * outer, yA + top - 0.003 * s], [gore + 0.004 * s, yA - 0.006 * s]];   // balconette
     const hi = poly.reduce((a, p) => (p[1] > a[1] ? p : a)), kx = Math.abs(A.x - cx0) / uA;   // the strap leaves the cup's highest point
@@ -136,7 +139,9 @@ export function bra(F, o) {
   });
   const scoop = (o.scoop ?? 0.03) * s, sideW = (o.panel ?? 0.11) * s;   // sports: the front panel's scoop and the width where it's full height
   const backTop = under + rise, midY = Math.min(F.armpitY - 0.02 * s, backTop + 0.08 * s), topY = F.neckBaseY - 0.01 * s;
+  const neckY = F.neckBaseY + 0.025 * s, nw = (o.neckW ?? 0.045) * s;   // a halter: the straps meet behind the neck there
   const strapX = (c, y, back) => {                                   // where a strap's middle is at height y
+    if (o.halter && !back) return c.xs + (cx0 + c.sg * nw - c.xs) * clamp((y - c.ys) / Math.max(0.01 * s, neckY - c.ys), 0, 1);   // up and in from the cup's point to the neck's side
     if (!back || !o.racer) return c.xs;
     const t = clamp((y - midY) / Math.max(0.01 * s, topY - midY), 0, 1);   // a racer: from the shoulder down into the middle of the back
     return cx0 + (c.xs - cx0) * Math.sqrt(t) + c.sg * sw * 0.9 * (1 - Math.sqrt(t));
@@ -154,6 +159,11 @@ export function bra(F, o) {
       const u = c.sg * F.torsoU(x, y, z, false); if (u < 0) continue;
       v = Math.max(v, -sdPoly(c.poly, u, y));
     }
+    if (o.halter) {                                                   // a halter: the straps up to the neck's sides and round behind it, no straps down the back
+      if (back) v = Math.max(v, Math.min(y - neckY, neckY + 2 * sw - y, nw + sw - Math.abs(x - cx)));
+      else for (const c of cups) if ((x - cx) * c.sg > -0.01 * s) v = Math.max(v, Math.min(sw - Math.abs(x - strapX(c, y, false)), y - (c.ys - 0.006 * s), neckY + 2 * sw - y));
+      return v;
+    }
     for (const c of cups) {                                           // the straps: up from the cup, over the shoulder, down the back
       if ((x - cx) * c.sg < -0.01 * s) continue;
       const from = back ? (o.racer ? backTop - 0.004 * s : backTop + lift - 0.004 * s) : c.ys - 0.006 * s;
@@ -167,18 +177,19 @@ export function bra(F, o) {
     `deep` under the crotch; the front panel widens from it to the hips, its edge rising to `side` over the crotch at the
     hip's side (`curve` under 1: cut high at once, over 1: low and then up); the back the same from its own gusset (a
     thong's strip) with its own `curve`, and `drop`: how far under the crotch's height it reaches over the seat; a thong's
-    back (`band`) rises from its strip to just that far under the waistline. The front and back blend over a few
+    back (`band`) rises from its strip to just that far under the waistline; the leg's edge never comes nearer the
+    waistline than `string` (8 mm), so a string side never breaks. The front and back blend over a few
     centimetres between the legs and at the hips. value >= 0 on the cloth */
 export function brief(F, o, waist = null) {
   const s = F.s, cy = F.crotchY, side = cy + (o.side ?? 0.08) * s, b = o.back || {}, bandB = b.band !== undefined && waist ? b.band * s : null;
-  const gf = (o.gusset ?? 0.03) * s / 2, cf = o.curve ?? 1, gb = (b.gusset ?? o.gusset ?? 0.03) * s / 2, cb = b.curve ?? 2.2, drop = (b.drop ?? 0.03) * s, deep = (o.deep ?? 0.035) * s;
+  const str = (o.string ?? 0.008) * s, gf = (o.gusset ?? 0.03) * s / 2, cf = o.curve ?? 1, gb = (b.gusset ?? o.gusset ?? 0.03) * s / 2, cb = b.curve ?? 2.2, drop = (b.drop ?? 0.03) * s, deep = (o.deep ?? 0.035) * s;
   const l = F.scan.central(F.scan.at(side)), [hx] = F.torsoAxis(side), Wh = l ? Math.max(hx - l.x0, l.x1 - hx) : 0.17 * s;
   return (x, y, z) => {
     if (F.arm(x, y, z)) return -1;
     const [cx, cz] = F.torsoAxis(Math.max(y, cy)), u = Math.abs(x - cx), w = front(z, cz, 0.035 * s);
     const g = gb + (gf - gb) * w, c = cb + (cf - cb) * w, low = cy - drop * (1 - w);
     const top = bandB === null ? side : side + (waist(x, y, z) + y - bandB - side) * (1 - w);   // the back's edge up to its waistband
-    const t = clamp((u - g) / Math.max(0.01 * s, Wh - g), 0, 1), e = low + (top - low) * t ** c;
+    const t = clamp((u - g) / Math.max(0.01 * s, Wh - g), 0, 1), e = Math.min(low + (top - low) * t ** c, waist ? waist(x, y, z) + y - str : 1e9);   // never closer than a string's width to the waistline: the side never breaks
     return Math.max(Math.min(g - u, y - (cy - deep)), y - e);
   };
 }

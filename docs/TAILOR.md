@@ -193,6 +193,13 @@ The clothes are skinned, never simulated, so the cut keeps to what skinning carr
   front from under the bust and down the back from under the shoulder blades, the sleeve's sag along its underside,
   more blousing at the waist; carried in the creases' drag channel as a negative value, baked into the export's normal
   map with the rest.
+- **Underwear and bikinis follow the hip bone** (DECISIONS 2026-11-01, the bikinis): the waistline's `hip` raises it
+  towards the sides (`hipPow` its shape, 2 by default: a flatter front rising over the hips), so a thong's, a tanga's,
+  a bikini's top edge runs up from the front's dip over the hip bones and down again behind, not level round the hips
+  like a pair of boxers; the leg openings cut high to meet it, never nearer it than `string` (8 mm), so a string side
+  never breaks. A **string bikini** (`string-bikini`: a small front triangle, strings over the hips, a cheeky back) and a
+  **halter triangle top** (`bikini-top`: the bra's `halter`, its straps from the cups' points round behind the neck and
+  no straps down the back; `inner`, each triangle on its own breast with a gap between) after the user's own OBJs.
 - **The wardrobe**: outfit groups Casual, Smart casual, Business, Uniforms, Sleepwear, Swimwear, Underwear, Designer;
   new basics joggers, sweatshirt, polo, suit trousers, pyjama top and trousers, sleep shorts, swim shorts; bikinis from
   the underwear's cuts in spandex; fabric, colour, pattern and prints doing the variety. Not made yet: a shirt dress

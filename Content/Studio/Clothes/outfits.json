@@ -66,7 +66,7 @@
     "sleepwear: satin pyjamas": [["pyjama-trousers", "#e6c9c4", {"surface": "satin", "pbr": "pbr/Procedural/fabric_satin"}], ["pyjama-top", "#e6c9c4", {"surface": "satin", "pbr": "pbr/Procedural/fabric_satin"}]],
     "sleepwear: sleep tee and shorts": [["sleep-shorts", "#d8c0c8"], ["t-shirt", "#ece8e2", {"prints": [{"text": "good night", "ink": "#a08890", "part": "front", "u": 0, "v": 1.22, "w": 0.16, "across": 0, "at": 1.22}]}]],
     "sleepwear: cami and sleep shorts": [["sleep-shorts", "#efe6dc"], ["cami-top", "#efe6dc", {"surface": "satin", "pbr": "pbr/Procedural/fabric_satin"}]],
-    "swimwear: triangle bikini": [["bikini-briefs", "#c8304a", {"surface": "spandex"}], ["triangle-bralette", "#c8304a", {"surface": "spandex"}]],
+    "swimwear: triangle bikini": [["string-bikini", "#c8304a"], ["bikini-top", "#c8304a"]],
     "swimwear: bandeau bikini": [["bikini-briefs", "#f2efe8", {"surface": "spandex", "pattern": {"kind": "stripes", "colors": ["#f2efe8", "#1f3a5f", "#a83a3a"], "size": 0.03}}], ["bandeau", "#f2efe8", {"surface": "spandex", "pattern": {"kind": "stripes", "colors": ["#f2efe8", "#1f3a5f", "#a83a3a"], "size": 0.03}}]],
     "swimwear: sporty bikini": [["boy-shorts", "#1a1c22", {"surface": "spandex"}], ["sports-bra", "#1a1c22", {"surface": "spandex"}]],
     "swimwear: swim shorts": [["swim-shorts", "#2f6f8f", {"pattern": {"kind": "dots", "colors": ["#2f6f8f", "#e8eef0"], "size": 0.04}}]]

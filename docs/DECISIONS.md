@@ -2,6 +2,14 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-01, evening (the user: the bikinis, on `clothing-refiner`)
+
+- **"Everything looks good, except the women's bikini, thongs (they sort of vertically sit below the waist like boxers
+  sit above the waist for men which doesn't look correct as they tend to follow the curve of the hip bone)"**, with a
+  string bikini's top and bottom as OBJs and a guide to fitting them. Built: the waistline's `hip` lift (TAILOR §1g),
+  every thong, tanga, G-string and bikini brief re-cut on it, a string bikini and a halter triangle top after the OBJs.
+  The OBJs themselves stay out of the project (only looked at).
+
 ## 2026-11-01, later (the user: the clothing review, on `clothing-refiner`)
 
 - **"Some of your trousers are baggy at the waist band ... waistband on shorts, pants, anything that's lower body even

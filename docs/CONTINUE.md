@@ -12,6 +12,11 @@ street builder, its paint and the PBR sets, with `prop-gen-tool` merged in). Rea
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
+## 0. `clothing-refiner` (2026-11-01, evening): bikinis and thongs on the hip bone
+
+The user's note on the bikinis: the waistline's `hip` lift, the briefs re-cut so their top edge rises over the hip
+bones, a string bikini and a halter triangle top after their OBJs (TAILOR §1g). Next: their look in the Studio.
+
 ## 0. `clothing-refiner` (2026-11-01, later): the clothing review (docs/CLOTHING_PLAN.md, ticked)
 
 The user's eight notes, all built (TAILOR §1g): waistbands snug, hollows bridged (no cleft, cleavage or spine dent, no
