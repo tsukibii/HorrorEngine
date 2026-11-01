@@ -18,7 +18,12 @@ export const KINDS = {
   patch: { label: "Eyepatch", styles: ["eyepatch"] },
   neck: { label: "Necklace", styles: ["chain", "pearls", "beads", "cord", "choker"] },
   hat: { label: "Hat", styles: ["beret", "cap", "bucket", "beanie"] },
+  horns: { label: "Horns", styles: ["devil", "ram"] },
+  ears: { label: "Ears (headband)", styles: ["bunny", "cat", "fox"] },
 };
+// every accessory can be moved and turned from where it's made (mm, degrees): ox, oy, oz along the face's right, up and
+// forward, rx, ry, rz about them (the user, 2026-11-01: "make props more adjustable via an x,y,z slider")
+export const PLACE = [["ox", "Right (mm)"], ["oy", "Up (mm)"], ["oz", "Forward (mm)"], ["rx", "Tip forward (°)"], ["ry", "Turn (°)"], ["rz", "Lean (°)"]];
 // where a piercing or a sticker goes without clicking: a MediaPipe point on the face, or (the ears, which MediaPipe
 // hasn't got) a point on MHR's own base mesh, found once as the nearest place on it
 export const SPOTS = {
@@ -40,7 +45,9 @@ export const DEFAULTS = {
   sticker: { style: "heart", spot: "under the left eye", colour: "#ff5c8a", size: 1, turn: 0, shine: 0.3 },
   patch: { style: "eyepatch", spot: "right eye", colour: "#141414", size: 1, turn: 0, shine: 0.1, strap: true },
   neck: { style: "chain", material: "gold", colour: "#151515", shine: 0.8, length: 45, ease: 0, size: 1, pendant: "none", gem: "#d4245a" },
-  hat: { style: "beret", colour: "#141416", size: 1, tilt: 18, turn: 0, height: 0, shine: 0.1 },
+  hat: { style: "beret", colour: "#141416", size: 1, tilt: 18, turn: 0, height: 0, shine: 0.1, material: "" },
+  horns: { style: "devil", colour: "#1c1414", material: "", shine: 0.35, size: 1, spread: 1, curl: 1 },
+  ears: { style: "bunny", colour: "#f2f0ec", inner: "#f2b6c6", band: "#18181a", material: "", shine: 0.1, size: 1, tilt: 0 },
 };
 const LENS = { round: [1, 0.84, 2.2], square: [1.04, 0.74, 5], "cat-eye": [1.06, 0.72, 3], aviator: [1.08, 0.9, 2.4], rimless: [1, 0.74, 3.5], sunglasses: [1.12, 0.82, 3], heart: [1.06, 0.98, 2] };
 
@@ -145,8 +152,31 @@ export class Accessories {
     if (!this.c.LMK) return;
     for (const a of this.list) {
       const m = this.made.get(a.id); if (!m) continue;
-      try { this["draw_" + a.kind](a, m); } catch (e) { console.warn("accessory", a.kind, e); }
+      try { this["draw_" + a.kind](a, m); this.place(a, m); } catch (e) { console.warn("accessory", a.kind, e); }
     }
+  }
+  // moved and turned from where it was made: along and about the face's right, up and forward, about its own middle
+  place(a, m) {
+    const o = m.obj; o.position.set(0, 0, 0); o.quaternion.identity();
+    if (!(a.ox || a.oy || a.oz || a.rx || a.ry || a.rz) || !m.obj.children.length) return;
+    const { right, up, fwd } = this.faceFrame(), mm = 0.001 * this.c.scale();
+    const box = new THREE.Box3(); for (const ch of o.children) { ch.geometry.computeBoundingBox(); box.union(ch.geometry.boundingBox.clone().applyMatrix4(ch.matrix)); }
+    const c = box.getCenter(new THREE.Vector3()), d = Math.PI / 180;
+    const q = new THREE.Quaternion().setFromAxisAngle(right, (a.rx || 0) * d).premultiply(new THREE.Quaternion().setFromAxisAngle(up, (a.ry || 0) * d)).premultiply(new THREE.Quaternion().setFromAxisAngle(fwd, (a.rz || 0) * d));
+    o.quaternion.copy(q);
+    o.position.copy(c).sub(c.clone().applyQuaternion(q)).addScaledVector(right, (a.ox || 0) * mm).addScaledVector(up, (a.oy || 0) * mm).addScaledVector(fwd, (a.oz || 0) * mm);
+  }
+  // what a part that isn't jewellery is made of: its colour, or a PBR set off the shelf (or a metal by name)
+  surfaceOf(a, colour, shine = a.shine ?? 0.2) {
+    if (a.material && a.material !== "colour") return this.metalOf({ ...a, colour });
+    return new THREE.MeshStandardMaterial({ color: colour, roughness: 0.92 - 0.65 * shine, metalness: 0, side: THREE.DoubleSide });
+  }
+  // the head's measures from the face's own points: its middle (between the ears), width, the crown's height
+  headFrame() {
+    const f = this.faceFrame(), P = this.c.POS, eL = f.L(454), eR = f.L(234);
+    let top = -1e9; for (let i = 1; i < P.length; i += 3) top = Math.max(top, P[i]);
+    const c = eL.clone().add(eR).multiplyScalar(0.5);
+    return { ...f, c, W: eL.distanceTo(eR), crown: top };
   }
   clear(m) { for (const o of [...m.obj.children]) { m.obj.remove(o); o.geometry?.dispose(); } }
 
@@ -346,7 +376,7 @@ export class Accessories {
     const brow = L(9).y, y0 = brow + (a.style === "beanie" ? 18 : a.style === "cap" ? 30 : 24) * mm + a.height * mm;   // the band, above the brows
     const H = this.headMap(y0 - 12 * mm, top + 4 * mm, 0.13, 0.18), rise = Math.max(30 * mm, top - y0);
     const turn = (a.turn || 0) * Math.PI / 180, tilt = (a.tilt || 0) * Math.PI / 180;
-    const mat = new THREE.MeshStandardMaterial({ color: a.colour, roughness: 0.92 - 0.6 * (a.shine ?? 0), metalness: 0, side: THREE.DoubleSide });
+    const mat = this.surfaceOf(a, a.colour, a.shine ?? 0);
     const at = (phi, y, r, dx = 0, dz = 0) => H.c.clone().setY(y).addScaledVector(fwd, Math.cos(phi) * r + dz).addScaledVector(right, Math.sin(phi) * r + dx);
     const NA = 72, rings = [];
     // the rings, bottom up: each a height, a radius over the head's own at that height (or over the band's), a sideways slide
@@ -377,8 +407,55 @@ export class Accessories {
     const g = new THREE.BufferGeometry(), pos = [], idx = [];
     for (const r of rings) for (const q of r) pos.push(q.x, q.y, q.z);
     for (let r = 0; r + 1 < rings.length; r++) for (let i = 0; i < NA; i++) { const a0 = r * NA + i, b0 = r * NA + (i + 1) % NA, c0 = a0 + NA, d0 = b0 + NA; idx.push(a0, c0, b0, b0, c0, d0); }
-    g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+    const uv = []; for (let r = 0; r < rings.length; r++) for (let i = 0; i < NA; i++) uv.push(i / NA * 4, r / Math.max(1, rings.length - 1));   // round and up (a PBR set's repeat)
+    g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
     const hat = new THREE.Mesh(g, mat); hat.castShadow = true; m.obj.add(hat);
+  }
+  // ---- horns: devil's (up from the forehead's corners, curving back to a point) or a ram's (curling back round the
+  // ear); cones swept along their curve, their bases sunk into the head
+  draw_horns(a, m) {
+    this.clear(m);
+    const H = this.headFrame(), mm = 0.001 * this.c.scale(), k = a.size || 1, mat = this.surfaceOf(a, a.colour);
+    for (const sg of [1, -1]) {
+      const R = H.right.clone().multiplyScalar(sg), rise = H.crown - H.c.y, C = [], rad = [];
+      if (a.style === "ram") {                       // a spiral beside the head, from the temple's top back, down and round
+        const base = H.c.clone().addScaledVector(H.up, rise * 0.62).addScaledVector(R, H.W * 0.36 * (a.spread ?? 1)).addScaledVector(H.fwd, H.W * 0.05);
+        const R0 = 34 * mm * k, mid = base.clone().addScaledVector(H.up, -R0).addScaledVector(H.fwd, -R0 * 0.2), turns = 1.55 * (a.curl ?? 1);
+        for (let i = 0; i <= 64; i++) {
+          const t = i / 64, th = t * turns * Math.PI * 2, r = R0 * (1 - 0.42 * t);
+          C.push(mid.clone().addScaledVector(H.up, Math.cos(th) * r).addScaledVector(H.fwd, -Math.sin(th) * r).addScaledVector(R, (6 + 16 * t) * mm * k));
+          rad.push((15 * (1 - 0.68 * t) * (1 + 0.07 * Math.sin(th * 9))) * mm * k);   // tapering, ridged
+        }
+      } else {                                         // devil's: up and out from the forehead's top corners, swept back
+        const base = H.c.clone().addScaledVector(H.up, rise * 0.8).addScaledVector(R, H.W * 0.2 * (a.spread ?? 1)).addScaledVector(H.fwd, H.W * 0.2);
+        const L = 58 * mm * k, d0 = H.up.clone().multiplyScalar(1).addScaledVector(R, 0.35).addScaledVector(H.fwd, 0.15).normalize(), back = H.fwd.clone().multiplyScalar(-0.55 * (a.curl ?? 1)).addScaledVector(R, 0.12);
+        for (let i = 0; i <= 40; i++) { const t = i / 40; C.push(base.clone().addScaledVector(d0, L * t).addScaledVector(back, L * t * t).addScaledVector(d0, -4 * mm)); rad.push((10 * Math.pow(1 - t, 0.85) + 0.5) * mm * k); }
+      }
+      m.obj.add(new THREE.Mesh(sweep(C, i => [rad[i], rad[i]], H.fwd), mat));
+    }
+  }
+  // ---- ears on a headband: a band over the head from ear to ear, two ears standing on it (a bunny's long and soft, a
+  // cat's and a fox's triangles), their inside a colour of its own
+  draw_ears(a, m) {
+    this.clear(m);
+    const H = this.headFrame(), mm = 0.001 * this.c.scale(), k = a.size || 1, rise = H.crown - H.c.y;
+    const bandMat = this.surfaceOf(a, a.band, 0.5), outMat = this.surfaceOf(a, a.colour), inMat = new THREE.MeshStandardMaterial({ color: a.inner, roughness: 0.85, side: THREE.DoubleSide });
+    const ring = th => H.c.clone().addScaledVector(H.right, Math.cos(th) * (H.W / 2 + 7 * mm)).addScaledVector(H.up, Math.sin(th) * (rise + 6 * mm)).addScaledVector(H.fwd, H.W * 0.06);
+    const band = []; for (let i = 0; i <= 48; i++) band.push(ring(0.12 + (Math.PI - 0.24) * i / 48));
+    m.obj.add(new THREE.Mesh(sweep(band, () => [2.5 * mm, 4 * mm], H.fwd), bandMat));
+    const sty = { bunny: [112, 36, 0.75, 0.32], cat: [40, 42, 0, 0.42], fox: [56, 40, 0, 0.4] }[a.style] || [112, 36, 0.75, 0.32];
+    const [len, wid, soft, at] = sty;
+    for (const sg of [1, -1]) {
+      const th = Math.PI / 2 - sg * at, root = ring(th), out = root.clone().sub(H.c).normalize();   // straight out of the head there
+      const lean = (a.tilt || 0) * Math.PI / 180, dir = out.clone().applyAxisAngle(H.fwd, -sg * lean).normalize(), side = new THREE.Vector3().crossVectors(H.fwd, dir).normalize();
+      const C = [], W = [], Ci = [], Wi = [];
+      for (let i = 0; i <= 30; i++) {
+        const t = i / 30, w = (soft ? Math.pow(Math.sin(Math.PI * Math.min(1, t * 0.92 + 0.06)), 0.7) : 1 - t) * wid * mm * k / 2 + 0.6 * mm;
+        const p = root.clone().addScaledVector(dir, len * mm * k * t).addScaledVector(H.fwd, -soft * 12 * mm * k * t * t);   // a bunny's tips lean back
+        C.push(p); W.push([w, 3.5 * mm * k]); Ci.push(p.clone().addScaledVector(H.fwd, 2.4 * mm * k)); Wi.push([w * 0.62, 1.2 * mm * k]);
+      }
+      m.obj.add(new THREE.Mesh(sweep(C, i => W[i], H.fwd, side), outMat), new THREE.Mesh(sweep(Ci.slice(2, 27), i => Wi[i + 2], H.fwd, side), inMat));
+    }
   }
   // the head's (or the neck's) outline between two heights: the outermost skin by angle round its own middle, in
   // slabs. From the triangles cut by each slab's plane, not the points (MHR's back of the head has few points, far
@@ -578,5 +655,21 @@ function bandAround(ring, up, h, thick) {             // a flat band through a c
   }
   for (let i = 0; i < n; i++) { const a = i * 4, b = ((i + 1) % n) * 4; for (let k = 0; k < 4; k++) { const k2 = (k + 1) % 4; idx.push(a + k, b + k, a + k2, a + k2, b + k, b + k2); } }
   const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+  return g;
+}
+
+// a shape swept along a curve: at each point a ring of 12, its half-widths [a, b] along `side` and `face` square to the
+// curve (side: across it, face: its front), its ends closed; UVs round and along (a PBR set's repeat)
+function sweep(C, wh, face, side0 = null, n = 12) {
+  const pos = [], uv = [], idx = [], N = C.length;
+  for (let i = 0; i < N; i++) {
+    const t = C[Math.min(N - 1, i + 1)].clone().sub(C[Math.max(0, i - 1)]).normalize();
+    const f = face.clone().addScaledVector(t, -face.dot(t)).normalize(), sd = side0 ? side0.clone().addScaledVector(t, -side0.dot(t)).normalize() : new THREE.Vector3().crossVectors(t, f).normalize();
+    const [wa, wb] = wh(i);
+    for (let j = 0; j < n; j++) { const a = j / n * Math.PI * 2, q = C[i].clone().addScaledVector(sd, Math.cos(a) * wa).addScaledVector(f, Math.sin(a) * wb); pos.push(q.x, q.y, q.z); uv.push(j / n, i / (N - 1) * 3); }
+  }
+  for (let i = 0; i + 1 < N; i++) for (let j = 0; j < n; j++) { const a = i * n + j, b = i * n + (j + 1) % n, c = a + n, d = b + n; idx.push(a, c, b, b, c, d); }
+  for (const [i, flip] of [[0, true], [N - 1, false]]) { const c = pos.length / 3; pos.push(C[i].x, C[i].y, C[i].z); uv.push(0.5, 0.5); for (let j = 0; j < n; j++) { const a = i * n + j, b = i * n + (j + 1) % n; if (flip) idx.push(c, b, a); else idx.push(c, a, b); } }
+  const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
   return g;
 }

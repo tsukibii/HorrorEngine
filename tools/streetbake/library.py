@@ -685,6 +685,8 @@ for _n, _k in FINISH_KIND.items():
         F.BUILD[_n] = _with_wear(F.BUILD[_n], _k, 0.8)
         F.BUILD[_n]._worn = True
 RELIEF = {n: v[4] for n, v in LIB.items()}
+from . import fabrics as FABRICS  # noqa: E402  (the Studio's clothes: among the finishes, baked the same way)
+FABRICS.register(F, RELIEF)
 NAMES = sorted(LIB)
 
 

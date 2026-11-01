@@ -8,7 +8,7 @@
 // handle moves a line at once; the tailor cuts and hangs the cloth when the edits are baked. Plain typed arrays: the
 // page and node (tailor/check.mjs compares them with the cut).
 import { fitted } from "../tailor.js";
-import { cutter, handles, skirtOutline, shoulderPad } from "./pieces.js";
+import { cutter, handles, skirtOutline, shoulderPad, bridged, bridge } from "./pieces.js";
 import { height } from "./frame.js";
 import { smooth } from "./mesh.js";
 
@@ -69,7 +69,9 @@ export function guide(F, P, N, T, design, under = []) {
       else mid(a, b, 1 - V[a] / (V[a] - V[b]));                      // on the line itself
     }
   }
-  const G = { outer: { P: Float32Array.from(O) }, ends: C.parts.ends, open: C.parts.open };
+  const OP = Float32Array.from(O), br = T && p.kind !== "shoe" ? bridged(F, p) : null, cx0 = F.torsoAxis(crotch)[0];
+  if (br) bridge(F, OP, OP.length / 3, j => OP[j * 3] >= cx0, br.pits, br.slope);   // the hollows spanned as the cut spans them (pieces.js bridge)
+  const G = { outer: { P: OP }, ends: C.parts.ends, open: C.parts.open };
   return { kind: "film", piece: p, thickness: th, V, K, lift, rings: null, handles: p.kind === "shoe" || !T ? [] : handles(F, G, p) };
 }
 

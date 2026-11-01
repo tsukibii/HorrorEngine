@@ -1457,3 +1457,59 @@ guessed margin; and a check that only ever ran on a slow machine hasn't been run
   with a normal into the head (dark) and the rest caught the room's reflection as one grey sheen; the Studio's view of
   the new bake was worse than the old one while Godot's HSHair (both faces lit by the vertex normal) looked right. Wind
   each triangle toward its normal (`hairvolume.js` `wind`), and look at a change in every viewer that shows the file.
+
+## Wide trousers and the creases' distances (2026-11-01, `clothing-refiner`)
+
+- **A big offset along the skin's normals folds the cloth in a hollow:** wide trousers pushed 5 to 8 cm out along the
+  normals folded over themselves under the kneecap (the normals converge there), a ledge round the knee in the cut
+  itself, before any drape; giving each point its own top-up made it worse (the kneecap got little, the shin below a
+  lot, and the offsets crossed), and freer smoothing didn't reach it. Second and third tries: relax with a small ease,
+  then set the leg out radially from its line into a column (`legs.straight`, pieces.js); and the column's width from
+  the median radius, not the mean (the buttocks' lobe under the crotch made the top rings bulge like jodhpurs).
+- **A garment hung by gravity settles onto what it can touch:** the clean column fell 5 cm in the drape and wrapped the
+  knee again, whatever its stiffness; pressed straight legs are held as cut from under the seat (drape.js holds).
+- **Never store a shortest-path's distances in a Float32Array:** a zero-length edge (two points at one place) makes
+  the float64 sum smaller than the float32-rounded stored value for ever, and the heap grows until node runs out of
+  memory. Distances in Float64Array, an improvement only by more than a nanometre (crease.js spread).
+
+
+## The clothing review (2026-11-01, `clothing-refiner`)
+
+- **A per-slice fix needs carrying between slices:** a convex hull a centimetre, each slice's points snapped onto
+  their own hull, left a ledge wherever the hull jumped (the kneecap appearing in one slice). Keep the hull as a radius
+  per angle round a centre that moves smoothly, carry it up and down at a slope (the cloth can't come in faster than
+  that), and interpolate between slices by height.
+- **Tell left from right by where a point came from, not where it is:** a garment's leg columns lean in across the
+  middle near the knee, so splitting the cloth by x put one leg's points in the other's hull. The body vertex each
+  cloth point grew from knows its side.
+- **Leave out the junctions:** the sleeve's root under the arm, the gusset across the crotch and the top of the foot
+  in a trouser's crop each stretch a slice's hull over something that isn't that slice (the side webbed out like a
+  wing, the gusset pushed under the other thigh, the hem bulged over the instep). Every new shape rule: picture it on
+  the whole body, and run TAILOR's under-the-skin measure on the tight bottoms on all seven bodies.
+- **A shader branch on a sign makes an edge:** the hang folds stored as a negative drag, switched in where they beat
+  the armpits' pull, drew a hard line under the bust. Add the two (drag minus hang) and branch on zero, so the value
+  crosses smoothly.
+- **A landmark is a shape, not an extreme:** the fold under the breast found as the deepest point below it ran on
+  down the ribs, which keep sinking slowly to the waist, and every bra sat 2.5 cm low. Find the bend (the slope fallen
+  to half its steepest) and measure it on all seven bodies before trusting it.
+
+## The soles (2026-11-01, `clothing-refiner`)
+
+- **A part that joins another is cut from the other's shape, not from what's under both:** the sole was the hull of
+  the bare foot's footprint, so the shoe's upper (the foot plus its ease) broke out through its rim in a jagged line.
+  Slice the upper where the sole meets it and carry that outline down; then the join is one clean line by construction.
+- **Read what a setting does before trusting its name:** a sole's `heel` raised the bottom at the back (a thinner heel)
+  for months of designs; nothing looked at it closely until the soles were redone.
+- **Lumps have more than one source; colour the parts before smoothing anything:** the shoes' "sculpted" look was
+  three things at once: a toe cap running down through the sole's wall (seen at once with each part a colour), the
+  upper following the toes, and the end cap closing a flat heel wall to one point (a pyramid's shading). Smoothing
+  alone would have kept the knot and the star.
+
+## The wardrobe (2026-11-02, `clothing-refiner`)
+
+- **Anything pushed out round a leg must know the other leg is there:** folds and an A-line gap pushed out radially
+  from each leg's line went into the other thigh on the full masculine body (TAILOR's under-the-skin measure). Fade
+  them on the side facing the other leg, and run the tight-bottoms probe on all seven bodies before TAILOR.
+- **A kept result must also not be sent and drawn again:** the tailor kept the garments, yet "the same outfit again"
+  took seconds: every garment was still copied to the page and its meshes rebuilt. The page tells the worker what it
+  shows (`have`) and keeps those meshes; measure the worker's answer apart from the frames a CPU renderer draws.
