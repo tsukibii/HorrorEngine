@@ -292,12 +292,20 @@ stairs land). One marker for the whole level (`inside_<b>_1_1`), its storeys in 
   or, `back` below 0, on its face), `clock`; fences `ribbed` (precast concrete ribbed both sides, posts, a coping: a
   school's front) and `slidegate` (a school's blue gate of bars on wheels, `open` slides it back); the thing `tree` (a
   trunk and a lumpy crown `w` across from `base` of its height: a stand-in, Blender's Foliage for the real ones).
+- **One storey with a facade goes the same way** (a set's outside with `facade`, even `{}`): its glass seen from the
+  street, its flat roof and parapet, its parts on the box round its walls. **A porch** (a room open to the outside on a
+  whole side: a recess cut into the building) is under the roof but outside the walls: the shell runs round its back and
+  sides, the doors and windows there cut through them (a glass front), its paving and its soffit drawn for the street.
 - **The two photos, matched**: `school_white` (the set `school_white` behind a ribbed wall and a blue sliding gate,
   planters, a notice board, trees, the long low building beyond; its shot `photo`: a phone's 49° lens 1.5 m up, tilted
   4.4° up, the main front 45.3 m off and square to it, the central pilaster 1.17 m left of the axis, measured off the
   photo: a bay 150 px, a storey 74 px) and `school_showa` (the set `school_showa` across its gravel yard at dusk, a
   covered walkway on thin posts, a lamp; its shot `photo` solved from nine window corners to 1.6 px: 23.8 m off the
   front looking 37° along it, tilted 7.7° up, a 47° lens). The photos stay on the user's machine (`refs/`).
+- **`tokyo_school`**: the concrete private school (the set `school_tokyo`, SCENE_BUILDER §10c) on a Tokyo corner: a
+  6 m road and a side street (止まれ), its forecourt behind a low concrete wall and a steel sliding gate, flats and houses
+  round it (the residential styles), poles and their wires, a vending machine and a traffic mirror at the corner, the
+  courtyard's tree over the roof. Shots: across the road, the corner, from above.
 
 ## 5d. No clipping
 

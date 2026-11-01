@@ -548,3 +548,112 @@ export const KNOWN_LOOKS = ["ambientcg/WoodFloor041", "ambientcg/Planks012", "am
 
 // the school buildings as layouts (the kit's, SCENE_BUILDER §10b)
 PRESETS.push(...Object.values(SCHOOL_BUILDINGS).map(schoolBuilding));
+
+// ---- a small private school in Tokyo concrete (SCENE_BUILDER §10c; the user, 2026-11-01: "a small private school ... 1
+// level, 2 classrooms, 1 lunch area and 1 reception ... like those remote towns ones that don't have many grades and allow
+// kids to study in the same grade but separate maybe by very young and young", then "not timber for now, I like the
+// concrete style, something that would look in place in tokyo"). One storey of exposed concrete (打ち放し) turned in on a
+// courtyard, the way a small Tokyo building keeps its street at arm's length: to the street almost a blank wall, a slit
+// for the reception and one for the toilets, the entrance cut into it as a deep covered porch; inside, a glazed gallery
+// round a courtyard of gravel and a tree, the two classrooms either side of it looking at each other across it, the
+// lunch room along the back. The two classes are the village school's (複式学級): the little ones (years 1 to 3) and the
+// older ones (4 to 6), each class in two groups facing a board of its own (the front's, and one on the side wall).
+const CONCRETE = "pbr/Procedural/jp_concrete_bare";
+const TOKYO_LOOK = { walls: CONCRETE, ceiling: CONCRETE }, TOKYO_CLASS = { walls: "#ecebe6", ceiling: "#f1f0ec" };
+function tokyoSchoolKits() {
+  const k = [], T = 0.05;
+  // the little ones: the front board on the south wall, years 1 and 2 in two rows facing it, year 3 facing a side board
+  k.push(["class_a", "chalkboard_plain", 3.6, T + 0.04, 180, { z: 0.85 }], ["class_a", "chalkboard_plain", T + 0.04, 2.6, 90, { z: 0.85, size: [2.4, 0.08, 1.0] }]);
+  for (const y of [2.5, 3.5]) for (const x of [3.0, 4.0, 5.0]) k.push(["class_a", "school_desk_small", x, y, 180], ["class_a", "school_chair_small", x, rr(y + 0.42), 0]);
+  for (const y of [1.9, 2.6, 3.3]) k.push(["class_a", "school_desk_small", 1.4, y, 90], ["class_a", "school_chair_small", 1.82, y, 270]);
+  k.push(["class_a", "desk", 5.9, 1.1, 180], ["class_a", "rug_plain", 2.4, 7.6, 0], ["class_a", "school_clock", 6.0, T + 0.025, 180, { z: 2.3 }]);
+  for (const x of [1.0, 2.8]) k.push(["class_a", "school_lockers", x, rr(9.9 - T - 0.226), 0]);
+  // the older ones: the front board on the north wall, years 4 and 5 in two rows, year 6 facing a side board on the east
+  k.push(["class_b", "chalkboard_plain", 3.6, rr(9.9 - T - 0.04), 0, { z: 0.85 }], ["class_b", "chalkboard_plain", rr(7.2 - T - 0.04), 3.0, 270, { z: 0.85, size: [2.4, 0.08, 1.0] }]);
+  for (const y of [6.5, 7.6]) for (const x of [2.4, 3.4, 4.4]) k.push(["class_b", "school_desk", x, y, 0], ["class_b", "school_chair", x, rr(y - 0.48), 180]);
+  for (const y of [2.4, 3.1, 3.8]) k.push(["class_b", "school_desk", 5.6, y, 270], ["class_b", "school_chair", 5.12, y, 90]);
+  k.push(["class_b", "desk", 5.9, 8.6, 0], ["class_b", "school_clock", 1.2, rr(9.9 - T - 0.025), 0, { z: 2.3 }]);
+  for (const x of [2.0, 3.8]) k.push(["class_b", "school_lockers", x, T + 0.226, 180]);
+  // lunch: two long rows of tables, four chairs to a table; a clock over the long window
+  for (const y of [2.3, 4.3]) for (const x of [5.4, 6.8, 8.2, 9.6]) {
+    k.push(["lunch", "dining_table", x, y, 0]);
+    for (const dx of [-0.35, 0.35]) k.push(["lunch", "dining_chair", rr(x + dx), rr(y - 0.68), 180], ["lunch", "dining_chair", rr(x + dx), rr(y + 0.68), 0]);
+  }
+  k.push(["lunch", "school_clock", 7.5, rr(6.3 - T - 0.025), 0, { z: 2.62 }], ["kitchen", "fridge", 3.9, rr(6.3 - T - 0.35), 0]);
+  // the reception: two desks facing, lockers, a bookshelf, the counter under its window onto the entrance
+  k.push(["reception", "staff_desk", 3.0, 2.6, 0], ["reception", "staff_desk", 3.0, 3.32, 180], ["reception", "desk", 5.9, 3.0, 270], ["reception", "bookshelf", 1.5, rr(5.4 - T - 0.15), 0]);
+  for (const y of [2.0, 2.95]) k.push(["reception", "staff_lockers", T + 0.258, y, 90]);
+  // the entrance: shoe lockers either side of the way in to the gallery, an umbrella stand by the door
+  for (const x of [1.7, 7.9]) k.push(["entrance", "shoe_lockers", x, rr(3.6 - T - 0.19), 0]);
+  k.push(["entrance", "umbrella_stand", 0.65, T + 0.126, 180]);
+  return k;
+}
+export const TOKYO_SCHOOL = {
+  id: "school_tokyo", name: "Small private school in concrete, one storey round a courtyard (Tokyo)",
+  note: "A small private school of two mixed-year classes (years 1-3 and 4-6, the village school's 複式学級) in Tokyo's exposed concrete: 22 × 21.6 m, one storey, turned in on a gravel courtyard with a glazed gallery round it; to the street a nearly blank wall with a deep covered porch cut into it and slits for the reception and the toilets; the lunch room along the back with its long window; a serving kitchen and storage.",
+  rooms: [
+    ["reception", "staffroom", "Reception 受付", 0, 0, 6.3, 5.4, { h: 3.0, floorKit: { preset: "wide_planks" }, ceilKit: null, extra: { look: TOKYO_LOOK } }],
+    ["porch", "common", "Porch", 6.3, 0, 15.9, 1.8, { h: 3.0, open: ["s"], floorKit: { preset: "stone_450" }, ceilKit: null, extra: { look: TOKYO_LOOK } }],
+    ["entrance", "entrance", "Entrance 昇降口", 6.3, 1.8, 15.9, 5.4, { h: 3.0, floorKit: { preset: "tile_600x1200" }, ceilKit: null, extra: { look: TOKYO_LOOK } }],
+    ["toilets", "toilet", "Toilets", 15.9, 0, 22.2, 5.4, { h: 3.0, floorKit: { preset: "tile_300" }, ceilKit: null, extra: { look: { walls: "#e6e4de", ceiling: "#efeeea" } } }],
+    ["class_a", "classroom", "Years 1-3 (the little ones)", 0, 5.4, 7.2, 15.3, { h: 3.0, light: "bright", floorKit: { preset: "oak_planks" }, ceilKit: null, extra: { look: TOKYO_CLASS } }],
+    ["gallery_w", "hallway", "Gallery", 7.2, 5.4, 9.0, 15.3, { h: 3.0, floorKit: { preset: "tile_600x1200" }, ceilKit: null, extra: { look: TOKYO_LOOK } }],
+    ["gallery_s", "hallway", "Gallery", 9.0, 5.4, 13.2, 7.2, { h: 3.0, floorKit: { preset: "tile_600x1200" }, ceilKit: null, extra: { look: TOKYO_LOOK } }],
+    ["courtyard", "garden", "Courtyard 中庭", 9.0, 7.2, 13.2, 13.5, { h: 3.0, open: ["n", "s", "e", "w"] }],
+    ["gallery_n", "hallway", "Gallery", 9.0, 13.5, 13.2, 15.3, { h: 3.0, floorKit: { preset: "tile_600x1200" }, ceilKit: null, extra: { look: TOKYO_LOOK } }],
+    ["gallery_e", "hallway", "Gallery", 13.2, 5.4, 15.0, 15.3, { h: 3.0, floorKit: { preset: "tile_600x1200" }, ceilKit: null, extra: { look: TOKYO_LOOK } }],
+    ["class_b", "classroom", "Years 4-6", 15.0, 5.4, 22.2, 15.3, { h: 3.0, light: "bright", floorKit: { preset: "oak_planks" }, ceilKit: null, extra: { look: TOKYO_CLASS } }],
+    ["lunch", "dining", "Lunch room ランチルーム", 0, 15.3, 15.0, 21.6, { h: 3.0, floorKit: { preset: "tile_600x1200" }, ceilKit: null, extra: { look: TOKYO_LOOK } }],
+    ["kitchen", "kitchen", "Serving kitchen 配膳室", 15.0, 15.3, 19.5, 21.6, { h: 3.0, floorKit: { preset: "tile_600" }, ceilKit: null, extra: { look: { walls: "#e6e4de", ceiling: "#efeeea" } } }],
+    ["storage", "storage", "Storage", 19.5, 15.3, 22.2, 21.6, { h: 3.0, ceilKit: null, extra: { look: TOKYO_LOOK } }],
+  ],
+  doors: [
+    ["porch", "entrance", "slide", { id: "front_door", at: 0.5, w: 1.8, h: 2.4, extra: { kit: { preset: "door_glass" } } }],
+    ["entrance", "reception", "door", { id: "reception_door", at: 0.806, w: 0.9 }],
+    ["entrance", "toilets", "door", { id: "toilets_door", at: 0.806, w: 0.9 }],
+    ["entrance", "gallery_s", "arch", { w: 3.6 }],
+    ["gallery_s", "gallery_w", "arch", { w: 1.68 }], ["gallery_s", "gallery_e", "arch", { w: 1.68 }],
+    ["gallery_n", "gallery_w", "arch", { w: 1.68 }], ["gallery_n", "gallery_e", "arch", { w: 1.68 }],
+    ["gallery_w", "class_a", "slide", { id: "class_a_front_door", at: 0.222, w: 0.95, h: 2.0, extra: { kit: { preset: "door_school" } } }],
+    ["gallery_w", "class_a", "slide", { id: "class_a_back_door", at: 0.909, w: 0.95, h: 2.0, extra: { kit: { preset: "door_school" } } }],
+    ["gallery_e", "class_b", "slide", { id: "class_b_back_door", at: 0.222, w: 0.95, h: 2.0, extra: { kit: { preset: "door_school" } } }],
+    ["gallery_e", "class_b", "slide", { id: "class_b_front_door", at: 0.909, w: 0.95, h: 2.0, extra: { kit: { preset: "door_school" } } }],
+    ["gallery_s", "courtyard", "slide", { id: "courtyard_door", at: 0.5, w: 1.2, h: 2.4, extra: { kit: { preset: "door_glass" } } }],
+    ["gallery_n", "lunch", "slide", { id: "lunch_door", at: 0.5, w: 2.4, h: 2.4, extra: { kit: { preset: "door_glass" } } }],
+    ["class_a", "lunch", "slide", { id: "class_a_lunch_door", at: 0.85, w: 0.95, h: 2.0, extra: { kit: { preset: "door_school" } } }],
+    ["lunch", "kitchen", "arch", { w: 2.0 }],
+    ["kitchen", "storage", "door", { id: "storage_door", at: 0.75, w: 0.8 }],
+  ],
+  windows: [
+    ["reception", "s", "window", { at: 0.5, w: 4.8, h: 0.5, sill: 1.75, frame: { preset: "window_fixed" } }],
+    ["reception", "e", "window", { at: 0.556, w: 1.8, h: 1.0, sill: 0.95, frame: { preset: "window_fixed" } }],
+    ["toilets", "s", "window", { at: 0.5, w: 3.6, h: 0.4, sill: 1.95, frame: { preset: "window_fixed" } }],
+    ...[0.25, 0.75].map(at => ["entrance", "s", "window", { at, w: 2.6, h: 2.6, sill: 0.05, frame: { preset: "window_fixed" } }]),
+    ["class_a", "w", "window", { at: 0.727, w: 4.4, h: 1.6, sill: 0.9, frame: { preset: "window_fixed" } }],
+    ["class_a", "e", "window", { at: 0.566, w: 5.4, h: 1.7, sill: 0.95, frame: { preset: "window_fixed" } }],
+    ["class_b", "e", "window", { at: 0.727, w: 4.4, h: 1.6, sill: 0.9, frame: { preset: "window_fixed" } }],
+    ["class_b", "w", "window", { at: 0.566, w: 5.4, h: 1.7, sill: 0.95, frame: { preset: "window_fixed" } }],
+    ["gallery_w", "e", "window", { at: 0.5, w: 5.8, h: 2.7, sill: 0.05, frame: { preset: "window_fixed" } }],
+    ["gallery_e", "w", "window", { at: 0.5, w: 5.8, h: 2.7, sill: 0.05, frame: { preset: "window_fixed" } }],
+    ["gallery_n", "s", "window", { at: 0.5, w: 3.6, h: 2.7, sill: 0.05, frame: { preset: "window_fixed" } }],
+    ...[0.17, 0.83].map(at => ["gallery_s", "n", "window", { at, w: 1.2, h: 2.7, sill: 0.05, frame: { preset: "window_fixed" } }]),
+    ["lunch", "n", "window", { at: 0.5, w: 12.0, h: 1.8, sill: 0.6, frame: { preset: "window_fixed" } }],
+    ["lunch", "w", "window", { at: 0.5, w: 2.4, h: 1.8, sill: 0.6, frame: { preset: "window_fixed" } }],
+    ["kitchen", "n", "window", { at: 0.5, w: 1.8, h: 1.0, sill: 1.1, frame: { preset: "window_small" } }],
+  ],
+  kits: tokyoSchoolKits(),
+  finish: { wainscot: 0, skirting: 0.05, casing: 0.03 },
+  start: [11.1, 0.9, 90], her: [3.6, 6.4, 90],
+  // its outside (the street's): bare concrete all round (the set's own walls, its slab and parapet), the name by the
+  // porch, a lamp at it, the AC units out of sight at the back; the facade the storey way (its glass seen from the street)
+  outside: {
+    look: { wall: CONCRETE, trim: "#bcb8b0", roof_flat: "#8d8a84", plinth: "#8f8b84", frame: "#2e3033", glass: "#3a4550" },
+    roof: { kind: "flat", parapet: 0.35 }, raise: 0.15, front: "s", facade: {},
+    parts: [
+      { kind: "sign", x: 7.9, z: 2.0, w: 2.6, h: 0.42, out: 0.03, text: "私立 若葉学舎", fg: "#33363a", bg: "#c6c3bc", lit: false },
+      { kind: "lamp", x: 5.2, z: 2.3 },
+      { kind: "ac", face: "back", x: -3.0, z: 0, w: 0.8, h: 0.6 }, { kind: "ac", face: "back", x: -1.9, z: 0, w: 0.8, h: 0.6 },
+    ],
+  },
+};
+PRESETS.push(TOKYO_SCHOOL);

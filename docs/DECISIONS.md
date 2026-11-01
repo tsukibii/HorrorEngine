@@ -2,6 +2,17 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-01, night (the user, on a small private school)
+
+- **A small private school, one storey, in Tokyo concrete**: "using your knowledge of modern architecture can you create a
+  small private school that consists of 1 level, 2 classrooms, 1 lunch area and 1 reception, its a private school that
+  is like those remote towns ones that don't have many grades and allow kids to study in the same grade but separate
+  maybe by very young and young, give it a rural japanese look". Shown timber references first, then: "not timber for
+  now, I like the concrete style, something that would look in place in tokyo (since our street designer was based of
+  that kind of japanese tokyo street design)". Built as the set `school_tokyo` (SCENE_BUILDER §10c) and the street
+  `tokyo_school`: exposed concrete round a courtyard, the two mixed-year classes (years 1-3, 4-6), the lunch room, the
+  reception at the entrance; timber is for later.
+
 ## 2026-11-01, later (the user, on the school's building)
 
 - **The building is its rooms, to scale**: "Just note the school building needs to be to scale, so the actual rooms

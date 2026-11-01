@@ -401,6 +401,30 @@ those rooms (STREET_BUILDER §5f). Nothing of the outside is drawn apart from th
 - **A layout as a set from the command line**: `node tools/director/layoutset.mjs <layout> [<set>]` saves any layout
   through the scene builder's own model as the page would (a set already there keeps all but its level).
 
+## 10c. A small private school in concrete (Tokyo)
+
+The user (2026-11-01): "a small private school that consists of 1 level, 2 classrooms, 1 lunch area and 1 reception ...
+like those remote towns ones that don't have many grades and allow kids to study in the same grade but separate maybe
+by very young and young", then, after timber references: "not timber for now, I like the concrete style, something that
+would look in place in tokyo". The layout *Small private school in concrete* (builder-presets.js `TOKYO_SCHOOL`), the
+set `school_tokyo`:
+
+- **The building**: one storey of exposed concrete (打ち放し, the material library's `jp_concrete_bare` inside and out),
+  22.2 × 21.6 m, turned in on a gravel **courtyard** (中庭) the way a small Tokyo building keeps its street at arm's
+  length (the courtyard houses of Japanese concrete modernism). To the street almost a blank wall: a high slit for the
+  reception, one for the toilets, the entrance cut into it as a deep **covered porch** (its soffit the roof's slab) with a
+  glass front; the school's name by it.
+- **Inside**: the porch, the entrance (昇降口: shoe lockers, an umbrella stand) with the reception (受付) beside it
+  behind a counter window, the toilets; a **glazed gallery** round the courtyard (four arms, floor-to-ceiling glass onto
+  it); the **two classrooms** either side of it (7.2 × 9.9 m, oak floors, white walls, a window band on their outer
+  wall, glass onto the gallery), looking at each other across the courtyard; the **lunch room** (ランチルーム) along the
+  back with its long window, two rows of tables, the serving kitchen (配膳室) beside it through a wide opening, storage.
+- **The village school's classes** (複式学級, two or three years in one room): *Years 1-3* (the little ones: the front
+  board on the south wall with years 1 and 2 in two rows, year 3 at small desks facing a side board on the west wall)
+  and *Years 4-6* (the front board on the north wall with years 4 and 5, year 6 facing a side board on the east wall).
+  One teacher moves between the groups (わたり), each group at its own board.
+- **The street**: `tokyo_school` (STREET_BUILDER §5f), a corner of a residential street in Tokyo.
+
 ## 11. Not done yet
 
 - **Default looks by room kind** (texture sets for a washitsu's walls, a bath's tiles): *Same look for every

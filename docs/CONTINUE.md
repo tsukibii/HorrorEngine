@@ -26,9 +26,11 @@ the name on the roof; ribbed walls, a sliding gate, stand-in trees). The photos 
 `node tools/director/streetshot.mjs --street school_white --shot photo`; the photos in each street's `refs/`, on this
 machine only). Next, what the user asked earlier: **the 1:1 classroom with PBR sets** ("to see if it helps realism":
 the interior sets in tools/streetbake/library.py, `jp_oak_floor` and `jp_pine_varnish` baked, ten to go with
-`python tools/street.py library <names>`). Not yet: the school's walkable roof, its toilets' stalls, a gym set, the old
-`school` street's main building as a walk-in set; dusk renders here come out black now and then (the headless
-renderer; retry).
+`python tools/street.py library <names>`). Not yet: the school's walkable roof, its toilets' stalls, a gym set; dusk renders
+here come out black now and then (the headless renderer; retry). Then (DECISIONS 2026-11-01, night) **a small private
+school in Tokyo concrete**: the set `school_tokyo` (one storey round a courtyard, two mixed-year classes, the lunch
+room, the reception; SCENE_BUILDER §10c) on the street `tokyo_school`; the user's next word on it decides what follows
+(timber was "for later").
 
 ## 0. The street builder (2026-10-30, night, on `buildings-streets`; not merged)
 

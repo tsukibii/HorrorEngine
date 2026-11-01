@@ -914,10 +914,10 @@ export const INSIDE_SKIN = 0.1, INSIDE_GAP = 0.05;                   // the shel
 const ROOF_GAP = 0.01;                                               // the roof over the level's own top, never in its plane
 const LT = 0.1;                                                      // the scene builder's wall (storylib.WALL_T)
 // the level's rooms turned so its way in faces the building's front (-y), its middle at the building's middle
-export function insideFrame(ins) {
+export function insideFrame(ins, faced = false) {
   const all = (ins.rooms || []).filter(r => r.size && r.at), shut = all.filter(r => r.ceiling !== false);
   const zl = [...new Set(shut.map(r => Math.round(num(r.at[2], 0) * 1000) / 1000))].sort((a, b) => a - b);
-  if (zl.length > 1) return storeysFrame(ins, all, shut, zl);
+  if (zl.length > 1 || (faced && zl.length)) return storeysFrame(ins, all, shut, zl);   // (one storey with a facade: the same way)
   const rooms = (ins.rooms || []).filter(r => Math.abs(num((r.at || [])[2], 0)) < 0.01);
   const xs = rooms.flatMap(r => [r.at[0], r.at[0] + r.size[0]]), ys = rooms.flatMap(r => [r.at[1], r.at[1] + r.size[1]]);
   const box = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
@@ -952,12 +952,16 @@ function storeysFrame(ins, all, shut, zl) {
   const cx = (box[0] + box[2]) / 2, cy = (box[1] + box[3]) / 2, a = -rot * Math.PI / 180, c = Math.round(Math.cos(a)), sn = Math.round(Math.sin(a));
   const toLocal = (x, y) => [(x - cx) * c - (y - cy) * sn, (x - cx) * sn + (y - cy) * c];
   const W = rot % 180 ? box[3] - box[1] : box[2] - box[0], D = rot % 180 ? box[2] - box[0] : box[3] - box[1];
-  const storeys = zl.map((z, k) => ({ k, z, h: k + 1 < zl.length ? zl[k + 1] - z : z - zl[k - 1],
-    rooms: shut.filter(r => num(r.at[2], 0) <= z + 0.3 && num(r.at[2], 0) + num(r.size[2], 2.4) >= z + 1.0) }));
+  const one = Math.max(...shut.map(r => num(r.size[2], 2.4))) + LT + 0.3;                // a lone storey: its rooms, the slab over them
+  // a room open to the outside on a whole side (a porch cut into the building): under the roof, but outside its walls
+  const porches = shut.filter(r => (r.skip || []).some(w => typeof w === "string" && edgeOutside(shut, r, w)));
+  const walled = shut.filter(r => !porches.includes(r)), at = (r, z) => num(r.at[2], 0) <= z + 0.3 && num(r.at[2], 0) + num(r.size[2], 2.4) >= z + 1.0;
+  const storeys = zl.map((z, k) => ({ k, z, h: k + 1 < zl.length ? zl[k + 1] - z : zl.length > 1 ? z - zl[k - 1] : one,
+    rooms: walled.filter(r => at(r, z)), roofed: shut.filter(r => at(r, z)) }));
   const top = zl[zl.length - 1] + storeys[storeys.length - 1].h;
   const pent = shut.filter(r => num(r.at[2], 0) + num(r.size[2], 2.4) > top + 1.0);
   const H = Math.max(...storeys[0].rooms.filter(r => Math.abs(num(r.at[2], 0)) < 0.01 && num(r.size[2], 2.4) < storeys[0].h + 0.01).map(r => num(r.size[2], 2.6)), 2.4);
-  return { rooms: ground, all, shut, box, rot, toLocal, W, D, H, side, cx, cy, storeys, top, pent };
+  return { rooms: ground, all, shut: walled, porches, box, rot, toLocal, W, D, H, side, cx, cy, storeys, top, pent };
 }
 function edgeOutside(rooms, r, wall) {                                // a room's wall with no enclosed room behind it (anywhere along it)
   const [x0, y0] = r.at, [w, d] = r.size, line = { n: [x0, y0 + d, x0 + w, y0 + d], s: [x0, y0, x0 + w, y0], e: [x0 + w, y0, x0 + w, y0 + d], w: [x0, y0, x0, y0 + d] }[wall];
@@ -1022,7 +1026,7 @@ export function insideOutline(rooms) {
   return { edges, xs, ys };
 }
 export function insideParts(b, foot) {
-  const fr0 = insideFrame(b.inside);
+  const fr0 = insideFrame(b.inside, !!b.facade);
   if (fr0.storeys) return storeysParts(b, foot, fr0);
   const o = out(), ins = b.inside, fr = fr0, { edges } = insideOutline(fr.rooms);
   const rows = Math.max(1, Math.round(num(ins.rows, 1))), floors = Math.max(1, Math.min(4, Math.round(num(ins.floors, 1))));
@@ -1203,7 +1207,7 @@ function storeysParts(b, foot, fr) {
           fbox(o, "concrete", F, h.u0 - 0.15, h.u1 + 0.15, -drop, bd.zf - Math.min(0.2, raise / 2), T, T + 0.35);
           if (raise > 0.3) fbox(o, "concrete", F, h.u0 - 0.15, h.u1 + 0.15, -drop, bd.zf - raise + 0.18, T + 0.35, T + 0.65);
         }
-        infillGen(inside, F, h, G, R);                               // its sashes and glass, seen from the street
+        infillGen(inside, F, Object.assign({ zf: bd.zf }, h), G, R);   // its sashes and glass, seen from the street
       }
       if (bd.pent) continue;
       // the floor's edge at each storey over the first (east and west faces a GAP lower: never one plane at a corner)
@@ -1264,9 +1268,14 @@ function storeysParts(b, foot, fr) {
     poly(inside, "inside", [[x0, y0, z0], [x1, y0, z0], [x1, y0, z0 + h], [x0, y0, z0 + h]], [0, 1, 0]); poly(inside, "inside", [[x0, y1, z0], [x1, y1, z0], [x1, y1, z0 + h], [x0, y1, z0 + h]], [0, -1, 0]);
     poly(inside, "inside", [[x0, y0, z0], [x0, y1, z0], [x0, y1, z0 + h], [x0, y0, z0 + h]], [1, 0, 0]); poly(inside, "inside", [[x1, y0, z0], [x1, y1, z0], [x1, y1, z0 + h], [x1, y0, z0 + h]], [-1, 0, 0]);
   }
-  // the roof: over the top storey's rooms but not the penthouses, its parapet round it but never along one; the
-  // penthouses' own on them
-  const mainR = fr.storeys[NS - 1].rooms.map(r => grow(r, G + T)), xs = [...new Set(mainR.concat(pentR).flatMap(r => [r[0], r[2]]).map(v => Math.round(v * 1e4) / 1e4))].sort((a, c) => a - c);
+  for (const r of fr.porches || []) {                                 // a porch: its paving and its soffit, as the street sees them
+    const [x0, y0, x1, y1] = grow(r, 0), z0 = raise + num(r.at[2], 0), h = num(r.size[2], 2.6) + LT / 2;
+    poly(inside, "concrete", [[x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0]], [0, 0, 1]);
+    poly(inside, skin, [[x0, y0, z0 + h], [x1, y0, z0 + h], [x1, y1, z0 + h], [x0, y1, z0 + h]], [0, 0, -1]);
+  }
+  // the roof: over the top storey's rooms (and its porches) but not the penthouses, its parapet round it but never along
+  // one; the penthouses' own on them
+  const mainR = fr.storeys[NS - 1].roofed.map(r => grow(r, G + T)), xs = [...new Set(mainR.concat(pentR).flatMap(r => [r[0], r[2]]).map(v => Math.round(v * 1e4) / 1e4))].sort((a, c) => a - c);
   const ys = [...new Set(mainR.concat(pentR).flatMap(r => [r[1], r[3]]).map(v => Math.round(v * 1e4) / 1e4))].sort((a, c) => a - c), cells = [];
   const inR = (R2, x, y) => R2.some(r => x > r[0] && x < r[2] && y > r[1] && y < r[3]);
   for (let i = 0; i + 1 < xs.length; i++) for (let j = 0; j + 1 < ys.length; j++) { const x = (xs[i] + xs[i + 1]) / 2, y = (ys[j] + ys[j + 1]) / 2; if (inR(mainR, x, y) && !inR(pentR, x, y)) cells.push([xs[i], ys[j], xs[i + 1], ys[j + 1]]); }
@@ -1315,7 +1324,7 @@ function infillGen(o, F, h, G, R) {
   for (let i = 1; i < cols; i++) { const u = u0 + (u1 - u0) * i / cols; bar(u - 0.022, u + 0.022, z0 + fw, z1 - fw); }
   const zs = K.split ? [z0 + (z1 - z0) * K.split] : Array.from({ length: rows - 1 }, (_, j) => z0 + (z1 - z0) * (j + 1) / rows);
   for (const z of zs) bar(u0 + fw, u1 - fw, z - 0.02, z + 0.02);
-  if (!K.glass && R() < 0.75) {                                       // curtains, drawn to one side or both, behind the glass
+  if (!K.glass && z1 - z0 > 1.2 && z0 - num(h.zf, z0 - 1) > 0.3 && R() < 0.75) {   // curtains, drawn to one side or both (a room's window: not a slit, not a glass wall)
     const cw = (u1 - u0) * (0.18 + R() * 0.3), zc1 = K.split ? z0 + (z1 - z0) * K.split : z1;
     if (R() < 0.6) fquad(o, "curtain", F, u0 + 0.05, u0 + 0.05 + cw, z0 + 0.06, zc1 - 0.03, n + 0.002);
     if (R() < 0.6) fquad(o, "curtain", F, u1 - 0.05 - cw, u1 - 0.05, z0 + 0.06, zc1 - 0.03, n + 0.002);
@@ -1341,7 +1350,7 @@ function portholeGen(o, inside, F, h, G, T) {
   poly(inside, "glass_wire", Array.from({ length: n }, (_, i) => P(Rr, i / n * Math.PI * 2, -G + 0.005)), Nf);
 }
 export function insideFloors(b) {
-  const fr = insideFrame(b.inside);
+  const fr = insideFrame(b.inside, !!b.facade);
   if (fr.storeys) {
     const raise = num(b.inside.raise, 0.15), rows = fr.storeys.map(st => ({ k: st.k + 1, z0: raise + st.z, h: st.h }));
     rows.top = raise + fr.top + roofTopOf(b);
@@ -1352,7 +1361,7 @@ export function insideFloors(b) {
 }
 // the box an inside-building takes on the plan (its w and d: the shell round all its copies)
 export function insideSize(b) {
-  const fr = insideFrame(b.inside);
+  const fr = insideFrame(b.inside, !!b.facade);
   if (fr.storeys) { const e = 2 * (LT / 2 + INSIDE_GAP + INSIDE_SKIN), r3 = v => Math.round(v * 1000) / 1000;
     return { w: r3(fr.W + e), d: r3(fr.D + e), h: r3(insideFloors(b).top) }; }
   const rows = Math.max(1, Math.round(num(b.inside.rows, 1))), e = 2 * (LT / 2 + INSIDE_GAP + INSIDE_SKIN);
@@ -1361,7 +1370,7 @@ export function insideSize(b) {
 // where each copy's level goes (Godot: its scene, its origin there, turned): [{name, at, turn, meta}] in the street
 export function insideMarkers(b, foot) {
   if (!b.inside || !(b.inside.rooms || []).length) return [];
-  const ins = b.inside, fr = insideFrame(ins);
+  const ins = b.inside, fr = insideFrame(ins, !!b.facade);
   if (fr.storeys) {                                                  // one level, every storey of it: its origin at the ground's raise
     const [u, v] = fr.toLocal(0, 0), at = place([u, v, num(ins.raise, 0.15)], { at: b.at, turn: b.turn, z: foot ? foot.z : 0 });
     return [{ name: `inside_${b.id}_1_1`, at, turn: num(b.turn, 0) - fr.rot, meta: { set: ins.set || "", level: ins.level || "", floor: 1, copy: 1, storeys: fr.storeys.length } }];
@@ -1448,7 +1457,7 @@ export function outsideBuilding(level, out, id = "outside") {
     inside: { set: "-", level: "", rows: 1, floors: 1, raise: num(o.raise, 0.15), rooms } };
   if (o.slot) b.inside.slot = o.slot;
   if (o.front) b.inside.front = o.front;
-  const fr = insideFrame(b.inside);
+  const fr = insideFrame(b.inside, !!b.facade);
   b.at = [fr.cx, fr.cy]; b.turn = fr.rot;
   return Object.assign(b, insideSize(b));
 }
