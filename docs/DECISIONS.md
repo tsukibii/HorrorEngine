@@ -2,6 +2,43 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-01, night (the user, on a small private school)
+
+- **A small private school, one storey, in Tokyo concrete**: "using your knowledge of modern architecture can you create a
+  small private school that consists of 1 level, 2 classrooms, 1 lunch area and 1 reception, its a private school that
+  is like those remote towns ones that don't have many grades and allow kids to study in the same grade but separate
+  maybe by very young and young, give it a rural japanese look". Shown timber references first, then: "not timber for
+  now, I like the concrete style, something that would look in place in tokyo (since our street designer was based of
+  that kind of japanese tokyo street design)". Built as the set `school_tokyo` (SCENE_BUILDER §10c) and the street
+  `tokyo_school`: exposed concrete round a courtyard, the two mixed-year classes (years 1-3, 4-6), the lunch room, the
+  reception at the entrance; timber is for later.
+
+## 2026-11-01, later (the user, on the school's building)
+
+- **The building is its rooms, to scale**: "Just note the school building needs to be to scale, so the actual rooms
+  could fit in, stairs, door way etc." Then two photos of school buildings (a white four-storey one with a stair tower
+  of round windows and its name on the roof; a beige Showa one at dusk): "I think the issue is I didn't give you visual
+  references for the building, try build a kit that could build these 1:1." So a school's building is a set of real
+  rooms on every storey, laid out from modules (classrooms, corridor, dog-leg stairs in shafts, toilets, entrance,
+  staff room: SCENE_BUILDER §10b), and the street builds its outside storey by storey round exactly those rooms, the
+  facade (eaves, pilasters, guard rails, the name on the roof) from them (STREET_BUILDER §5f). Both photos are rebuilt
+  as sets and streets with shots matched to them.
+- **The PBR classroom waits for the build**: "Once you're done with the build can you create a 1:1 ref using the pbrs
+  instead to see if it helps realism" (asked during the first school build).
+
+## 2026-11-01 (the user, on a school)
+
+- **A Japanese school for a horror game, in the tools we have**: "In the existing prop maker/furniture maker/interior
+  etc I'd like to have the capabilities to build out a japanese school for a horror game", with a render and a wireframe
+  of a classroom they made in Blender. "Use the existing tools to create generators"; "recreate all the parts to be
+  able to create a 1:1 of the reference images"; "consider the hallway and exterior building too (a small japanese
+  school)". The furniture and fittings are kit types (KIT §10), the rooms the scene builder's (SCENE_BUILDER §10), the
+  outside the street builder's (STREET_BUILDER).
+- **Books in the prop maker, with covers of your own**: "for the prop maker similar to how we can use custom logos
+  maybe allow that for books, books should be able to fit well on desks and inside shelves". A `book` family whose
+  covers, spines and pages are the prop's own pictures to swap (PROPGEN §16), at real paper sizes, rows and stacks
+  made to fit a box; furniture says where things go on and in it (its places), and the scene builder puts books there.
+
 ## 2026-10-31, small hours (the user, on the floors)
 
 - **Kit floors take a material**: "yes make the floors take a material" (offered: a kit floor dressed rather than taken

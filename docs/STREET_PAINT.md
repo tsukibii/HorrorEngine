@@ -119,6 +119,13 @@ as a full-colour, seamless set at its real size (`assets/pbr/Procedural/jp_*`), 
   `concrete`, `asphalt`, `pavers`, `kawara`, `simple`), the period it repeats in, the relief its height stands for (in
   metres), the wear it takes, and its numbers (colours, sizes, roughness). A new one is a line there and a
   `street.py library <name>`.
+- **A school's inside** (group `interior`, the user, 2026-11-01: the 1:1 classroom "using the pbrs instead to see if it
+  helps realism"): the family `grain` (wood with no seams of its own, for the kit's boards and tops, which lay their own:
+  the grain's long streaks and its rings' bands, the varnish's shine; `weave`: a cloth's threads) and twelve sets:
+  `jp_oak_floor` (the parquet), `jp_pine_varnish` (the wainscot, lockers, the platform), `jp_desk_laminate`,
+  `jp_plywood_red` (a chair), `jp_steel_chrome` (the frames, painted silver), `jp_chalkboard`, `jp_cork`, `jp_acoustic`
+  (the ceiling's rock wool), `jp_plaster_cream` (the walls), `jp_curtain_mustard`, `jp_lectern_green`, `jp_vinyl_tile`
+  (the corridor). The set `school_classroom_pbr` is the classroom wearing them (SCENE_BUILDER §10).
 - **Your own sets** off the shelf (`assets/pbr/<name>`, a CC0 scan from ambientCG or Poly Haven) appear in the page
   under *your sets* and paint the same way. A street that wears a set this machine's shelf doesn't have is warned
   about by STREET.

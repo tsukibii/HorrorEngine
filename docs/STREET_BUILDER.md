@@ -100,9 +100,23 @@ After the user's reference pictures (2026-10-30): each makes a whole building fr
 | Concrete block | the abandoned concrete flats | long and low, shutters, a heavy canopy, pipes, a stair up the side; mostly dark |
 | Kiosk / shed | the hut on the Shibuya lane | one storey, a hip roof, a door, a meter box |
 | Shopping-street shop | the shopping street under the mountain | two or three floors, a shop or a shutter, an awning or a canopy, a big sign board |
+| School building (校舎) | a small Japanese school (2026-11-01) | two or three storeys, a big window a 3 m bay on every floor, the corridor's windows along the back, floor bands, a flat roof with its fence, a water tank and a stair hut; the middle bay stood out as a tower with a clock on it; the entrance at one end under a canopy |
+| School gym (体育館) | a small Japanese school | one tall hall under a low gable, a band of high windows along each side, doors at one end |
 
 The mixes (*Fill a street*) are in `street-presets.js` (`MIXES`, and `EDGES`: each place's lamp, how far apart, poles or
 not, its clutter).
+
+**A clock** (a part, `clock`: a white face in a dark rim, its hours marked and its hands at ten past ten, each hand in a
+plane of its own) goes on any face; on a box's front (the school's tower) give it an `out` past the box's.
+
+**The school street** (`Content/Studio/Streets/school`, the user, 2026-11-01: "consider the hallway and exterior building
+too (a small japanese school)"): the road past it with a school-zone crossing, a low block wall with a mesh fence along
+it and the gate half open between two posts, the yard, the three-storey classroom building and the gym to the west.
+Since "the school building needs to be to scale" (the same day) the classroom building is the school kit's set
+`school_showa` walked into (every room at its real size on every storey, §5f), no longer a style's box and a stacked
+wing. Shots: the school through its gate, the building from the yard, its east end. (A stacked set shaped like an L
+still puts its floor bands on east- and west-facing faces a GAP lower, so two meeting at an inner corner are never in
+one plane.)
 
 ## 4. The format (`street.json`)
 
@@ -249,6 +263,49 @@ for a car park or a walkway. So the street builds the outside, round the level:
 The example street **hill_motel**: a winding road climbing 8.5 m, the motel and its car park (bays, the folding gate,
 a block wall with mesh, a chain) at the bottom, the bungalow up the hill behind a block wall with a gate, houses the
 rest of the way (Fill), and three shots.
+
+## 5f. A building in storeys: a school round its rooms
+
+The user (2026-11-01): "the school building needs to be to scale, so the actual rooms could fit in, stairs, door way
+etc", and two photos to build 1:1. A set built in storeys (the scene builder's school kit, SCENE_BUILDER §10b: a room on
+every floor, stair shafts through all of them) is walked into like any set (§5c), and its outside is built **storey by
+storey round the rooms of each**: every storey's outline (a shaft stands in all of them), every door and window cut at
+its own height (a window across a floor's line, the top porthole, cut from both walls), the floors' heights the level's
+own (`insideFrame` finds the storeys from the rooms; the roof at the top storey's floor and one storey more, where its
+stairs land). One marker for the whole level (`inside_<b>_1_1`), its storeys in the metadata.
+
+- **The roof**: flat, its slab over the top storey's rooms, its parapet, coping and railing (`roof.rail`) round it but
+  never along a penthouse: the shafts going on up through the roof (the set's `penthouse`) get walls and roofs of their
+  own (`pent_parapet`).
+- **The facade** (`facade` on the set's outside, STORY_FORMAT §2), all from the rooms: `eaves` (庇: a slab over each
+  run of windows on every storey, `out`, `t`, `over` the heads, `ends` past them, runs closer than `join` one),
+  `pilasters` (where the rooms meet along a face and in the walls between windows at least `gap` wide, from the ground
+  to the parapet, never over a hole of any storey), `bands` (the floors' edges), `rails` (guard rails across windows
+  whose sill is lower than `below` above their floor, two bars on posts). Each a box out of the wall with no face back
+  into it.
+- **Seen from the street**: the windows' sashes and glass by their frames (`window_ribbon`'s two sashes under a transom,
+  `window_steel`'s grid, frosted and wired glass), curtains drawn some of the way, a door's leaf, and the rooms dark
+  behind them: stand-ins (`inside`, never exported: in Godot the level's own windows are there). A round window
+  (`window_porthole`) is round in the shell too: the shell over the square hole's corners, a round reveal back to the
+  level's wall, a painted ring (`ring`) proud of the face.
+- **New parts and things**: `roofsign` (a panel a letter along the roof's edge, standing behind the parapet on a frame
+  or, `back` below 0, on its face), `clock`; fences `ribbed` (precast concrete ribbed both sides, posts, a coping: a
+  school's front) and `slidegate` (a school's blue gate of bars on wheels, `open` slides it back); the thing `tree` (a
+  trunk and a lumpy crown `w` across from `base` of its height: a stand-in, Blender's Foliage for the real ones).
+- **One storey with a facade goes the same way** (a set's outside with `facade`, even `{}`): its glass seen from the
+  street, its flat roof and parapet, its parts on the box round its walls. **A porch** (a room open to the outside on a
+  whole side: a recess cut into the building) is under the roof but outside the walls: the shell runs round its back and
+  sides, the doors and windows there cut through them (a glass front), its paving and its soffit drawn for the street.
+- **The two photos, matched**: `school_white` (the set `school_white` behind a ribbed wall and a blue sliding gate,
+  planters, a notice board, trees, the long low building beyond; its shot `photo`: a phone's 49° lens 1.5 m up, tilted
+  4.4° up, the main front 45.3 m off and square to it, the central pilaster 1.17 m left of the axis, measured off the
+  photo: a bay 150 px, a storey 74 px) and `school_showa` (the set `school_showa` across its gravel yard at dusk, a
+  covered walkway on thin posts, a lamp; its shot `photo` solved from nine window corners to 1.6 px: 23.8 m off the
+  front looking 37° along it, tilted 7.7° up, a 47° lens). The photos stay on the user's machine (`refs/`).
+- **`tokyo_school`**: the concrete private school (the set `school_tokyo`, SCENE_BUILDER §10c) on a Tokyo corner: a
+  6 m road and a side street (止まれ), its forecourt behind a low concrete wall and a steel sliding gate, flats and houses
+  round it (the residential styles), poles and their wires, a vending machine and a traffic mirror at the corner, the
+  courtyard's tree over the roof. Shots: across the road, the corner, from above.
 
 ## 5d. No clipping
 

@@ -313,7 +313,119 @@ we". The street paint page's brush (`brush.js`, docs/STREET_PAINT.md §1) on the
   painted). In Godot no light source comes with it: put your own lights under its node and they follow its switch and
   the power cut (GODOT_EXPORT §3b). An older level's bulbs become fittings when it's opened and saved here.
 
-## 10. Not done yet
+## 10. A school
+
+The user (2026-11-01): "build out a japanese school for a horror game", with a render and a wireframe of a classroom
+they made in Blender, "recreate all the parts to be able to create a 1:1 of the reference images. consider the hallway
+and exterior building too". The furniture and fittings are the kit's (KIT §10), the books the prop maker's (PROPGEN
+§16), the outside the street builder's; here:
+
+- **Room kinds:** *Classroom* 教室 (7.2 × 9 m, the 4 × 5 ken standard, under a 3 m ceiling), *School corridor* 廊下
+  (2.4 m wide), *Staff room* 職員室, *School entrance* 昇降口, *Nurse's office* 保健室, *Library* 図書室, *Gym* 体育館.
+  Each starts with its floor (a classroom's basket-weave parquet, a corridor's vinyl tiles), its **ceiling** (rock wool
+  boards, a T-bar grid: *Ceilings by room kind* under Finish fills any room without one) and its **ceiling lights**:
+  fluorescent troughs by the room's kind, as a **grid filling the room** along its long side, a bay each (a
+  classroom's six in two rows, a corridor's row): one light, its fitting the grid (`kit` with `grid` and `size`), so
+  the switch, the power cut and a flicker take them all. A light of its own more (a classroom's blackboard lights)
+  makes the room's switch the room's: it switches every light in it (`switch` with no `light`).
+- **The wainscot** (Finish: *wainscot, cm*; the level's `trim.wainscot`): the kit's boards under their cap rail along
+  the foot of every wall, stopping at doors, running under the windows; a room's look takes a *wainscot* of its own,
+  and Paint paints it apart from the trim.
+- **The layout** *School: a classroom and its corridor (your Blender classroom, 1:1)*: the classroom 7.2 × 9 m, three
+  window bays on the west (sliding sashes under a transom, curtains tied back), the chalkboard between two cork boards
+  on the north wall over the platform (教壇) and the green lectern (教卓), the teacher's steel desk by the windows, the
+  clock and the speaker, 30 desks in six rows of five with their chairs pushed in a little askew, lockers and a back
+  board along the back wall, the cleaning locker in the corner, columns between the windows and on the corridor wall,
+  beams across under the ceiling and along both long walls, two blackboard lights; the corridor along its east side
+  with its frosted windows, two sliding doors with glass in their tops (教室の引き戸), the outer windows, wired glass at
+  its ends, a hydrant box, a notice board, a speaker, an umbrella stand. A layout can now carry furniture (`kits`:
+  `[room, preset, x, y, rot, {z, size, extra, ...}]`, builder-presets.js `classroomKits` makes a classroom's).
+  The set `school_classroom` (Content/Studio/Sets) is it, saved.
+- **Props on and in the furniture** (the user: "books should be able to fit well on desks and inside shelves"): the
+  kit's furniture says where things go (its *places*: a desk's top and its book box, a chair's seat, every cubby and
+  shelf cell, the chalk tray). The **Prop** tool places the prop maker's props (the library's `props/<name>`: the books,
+  a diary, a can...): clicked on a desk, a shelf or a cubby, one goes into the place under the click that it fits, else
+  onto the thing's top, at that height, turned with it, at the front of a shelf (spines out), `on` it so the checks
+  know. The kit's own `on` things (its `books`, a cushion) drop the same way. Selected, a thing on another shows **sits
+  on / in**: every place of its host to move it to, and *Fit it in* (a kit row of books takes the place's inside).
+  The prop maker's props are kept as `<room>_kt_<name>_<n>` with `shape: "asset props/<name>"`.
+
+- **The classroom in PBR sets** (the user: "create a 1:1 ref using the pbrs instead to see if it helps realism"): the set
+  `school_classroom_pbr`, the same level with its walls, ceiling and wainscot (room `look`) and every piece of
+  furniture's slots (`mats`) wearing the material library's interior sets (STREET_PAINT §3: the oak parquet, the
+  varnished pine, the desks' laminate, the chairs' plywood, the frames, the chalkboard, the cork, the curtains, the
+  corridor's vinyl). What it showed (2026-11-01): the sets bring the surfaces close (the parquet's and the wainscot's
+  grain, the laminate's sheen, the chalk dust); what's left between the scene builder's view and the user's Blender
+  render is the light (low sun through the windows, its bounce, a dark polished floor reflecting them), which is the
+  Godot look's (SSR, SSAO, the lights set by hand) or Blender's. `python tools/street.py library <names>` bakes the sets
+  on a machine that hasn't them yet.
+
+## 10b. The school building kit: every room at its real size, the building round them
+
+The user (2026-11-01), after the first school: "the school building needs to be to scale, so the actual rooms could fit
+in, stairs, door way etc", then two photos of school buildings: "build a kit that could build these 1:1". So a school's
+building is its rooms: `schoolBuilding(spec)` in builder-presets.js lays a whole building out of **modules**, columns
+side by side along x, each a room at its real size on every storey, and the street builds the outside round exactly
+those rooms (STREET_BUILDER §5f). Nothing of the outside is drawn apart from the rooms.
+
+- **Modules** (`SCHOOL_MODULES`): `class` (the 1:1 classroom turned a quarter: its windows on the front, y = 0, the
+  chalkboard at its west end, its front door by the chalkboard and its back door on the corridor, its frosted windows
+  between them, all its furniture from `classroomKits`), `stair`, `wc`, `entrance` (shoe lockers back to back, glass
+  doors onto a porch), `staff` (an island of steel desks, lockers), `nurse`, `library`, `prep`, `room`. A column is
+  `[kind, {w, out, win, "<storey>": another kind there}]`: its width (a classroom 9 m, or 8 m for the 8 × 8 module),
+  how far a stair tower stands out of the front, its own windows, and what it is on a storey (the ground floor's
+  entrance under three storeys of classrooms).
+- **Storeys** at a real floor-to-floor (`storey`: 3.6 m a Showa school, 3.9 m a Tokyo high school) under 3 m ceilings
+  (`ceiling`), the classrooms `depth` deep, the corridor (`corridor`, 2.4 m) along their back on every storey with its own
+  windows behind and wired glass at its ends, a speaker over each classroom's door, notice boards, a hydrant box.
+- **Stairs** (`stair` columns): one shaft from the ground through every floor, a dog-leg in each storey
+  (`flights: 2`, builder-model.js `doglegProps`): flight A climbs from the floor's landing (where its door onto the
+  corridor is) toward the front, a half landing at the front (its window there: a strip of wired glass, or `round`: a
+  porthole), flight B comes back to the next floor's landing over the first. The ground storey's flights stand solid;
+  every other flight floats on a 15 cm waist (`stairs w run rise waist`), so there's head room over the flight below.
+  `penthouse` (m, 0 for none) takes the shafts on up through the roof to a last landing under a penthouse (the stair
+  tower of the first photo). A batten light over every floor's door.
+- **Windows** by module (`win`: `n` of them `w` wide, `gap` between, `sill`, `h`, a `frame` preset: `window_classroom`,
+  `window_ribbon` (a ribbon's sash, 4 to a 8 m classroom), `window_steel` (a Showa school's small panes),
+  `window_porthole` and `_bar` (the kit's round window: a ring in a square hole, KIT.md)). Columns stand in the gaps
+  wider than 45 cm and the beams over the windows are as deep as the wall over them allows; curtains hang over the
+  desks' height and under the beams.
+- **Its outside** is the layout's `outside` (the set's, §8): the street's facade dressing (eaves, pilasters, rails),
+  the roof, the name on the roof, fittings; STREET_BUILDER §5f.
+- **The two photos' buildings** (`SCHOOL_BUILDINGS`): `white` (four storeys at 3.9 m, 8 m classrooms (measured: a bay
+  is 2.05 storeys wide), ribbons of four sashes behind guard rails, toilets and a dog-leg at the west end, the stair
+  tower standing 1.2 m out at the east end with round windows at the half landings, a penthouse; the entrance, the staff
+  room and the nurse's office downstairs) and `showa` (three storeys at 3.6 m, two steel windows to a 9 m classroom
+  between the columns, a narrow stair standing out between the two blocks, another at the east end, no penthouse).
+  Both are layouts in the picker and sets, `school_white` and `school_showa` (27 rooms each, every classroom furnished).
+- **A layout as a set from the command line**: `node tools/director/layoutset.mjs <layout> [<set>]` saves any layout
+  through the scene builder's own model as the page would (a set already there keeps all but its level).
+
+## 10c. A small private school in concrete (Tokyo)
+
+The user (2026-11-01): "a small private school that consists of 1 level, 2 classrooms, 1 lunch area and 1 reception ...
+like those remote towns ones that don't have many grades and allow kids to study in the same grade but separate maybe
+by very young and young", then, after timber references: "not timber for now, I like the concrete style, something that
+would look in place in tokyo". The layout *Small private school in concrete* (builder-presets.js `TOKYO_SCHOOL`), the
+set `school_tokyo`:
+
+- **The building**: one storey of exposed concrete (打ち放し, the material library's `jp_concrete_bare` inside and out),
+  22.2 × 21.6 m, turned in on a gravel **courtyard** (中庭) the way a small Tokyo building keeps its street at arm's
+  length (the courtyard houses of Japanese concrete modernism). To the street almost a blank wall: a high slit for the
+  reception, one for the toilets, the entrance cut into it as a deep **covered porch** (its soffit the roof's slab) with a
+  glass front; the school's name by it.
+- **Inside**: the porch, the entrance (昇降口: shoe lockers, an umbrella stand) with the reception (受付) beside it
+  behind a counter window, the toilets; a **glazed gallery** round the courtyard (four arms, floor-to-ceiling glass onto
+  it); the **two classrooms** either side of it (7.2 × 9.9 m, oak floors, white walls, a window band on their outer
+  wall, glass onto the gallery), looking at each other across the courtyard; the **lunch room** (ランチルーム) along the
+  back with its long window, two rows of tables, the serving kitchen (配膳室) beside it through a wide opening, storage.
+- **The village school's classes** (複式学級, two or three years in one room): *Years 1-3* (the little ones: the front
+  board on the south wall with years 1 and 2 in two rows, year 3 at small desks facing a side board on the west wall)
+  and *Years 4-6* (the front board on the north wall with years 4 and 5, year 6 facing a side board on the east wall).
+  One teacher moves between the groups (わたり), each group at its own board.
+- **The street**: `tokyo_school` (STREET_BUILDER §5f), a corner of a residential street in Tokyo.
+
+## 11. Not done yet
 
 - **Default looks by room kind** (texture sets for a washitsu's walls, a bath's tiles): *Same look for every
   <kind>* does it by hand until the texture sets for them are fetched. The floors' geometry already follows the

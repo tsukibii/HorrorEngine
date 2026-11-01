@@ -1,0 +1,3563 @@
+{
+ "format": 3,
+ "game": {
+  "id": "school_tokyo",
+  "title": "Small private school in concrete, one storey round a courtyard (Tokyo)",
+  "start": "n_start",
+  "target_min": 0,
+  "voice": "ja",
+  "text": "en",
+  "clip_max": 8,
+  "subtitles": [
+   "en",
+   "zh"
+  ],
+  "built_with": {
+   "engine": "0.6.0",
+   "format": 3
+  }
+ },
+ "cast": {
+  "someone": {
+   "name": "Someone",
+   "metahuman": null,
+   "height": 1.6
+  }
+ },
+ "items": {},
+ "notes": {},
+ "lines": {},
+ "sounds": {},
+ "levels": {
+  "school_tokyo": {
+   "outside": {
+    "look": {
+     "wall": "pbr/Procedural/jp_concrete_bare",
+     "trim": "#bcb8b0",
+     "roof_flat": "#8d8a84",
+     "plinth": "#8f8b84",
+     "frame": "#2e3033",
+     "glass": "#3a4550"
+    },
+    "roof": {
+     "kind": "flat",
+     "parapet": 0.35
+    },
+    "raise": 0.15,
+    "front": "s",
+    "facade": {},
+    "parts": [
+     {
+      "kind": "sign",
+      "x": 7.9,
+      "z": 2,
+      "w": 2.6,
+      "h": 0.42,
+      "out": 0.03,
+      "text": "私立 若葉学舎",
+      "fg": "#33363a",
+      "bg": "#c6c3bc",
+      "lit": false
+     },
+     {
+      "kind": "lamp",
+      "x": 5.2,
+      "z": 2.3
+     },
+     {
+      "kind": "ac",
+      "face": "back",
+      "x": -3,
+      "z": 0,
+      "w": 0.8,
+      "h": 0.6
+     },
+     {
+      "kind": "ac",
+      "face": "back",
+      "x": -1.9,
+      "z": 0,
+      "w": 0.8,
+      "h": 0.6
+     }
+    ]
+   },
+   "start": "start",
+   "rooms": [
+    {
+     "look": {
+      "walls": "pbr/Procedural/jp_concrete_bare",
+      "ceiling": "pbr/Procedural/jp_concrete_bare"
+     },
+     "id": "reception",
+     "at": [
+      0,
+      0,
+      0
+     ],
+     "size": [
+      6.3,
+      5.4,
+      3
+     ],
+     "floor": "tile",
+     "light": "dim",
+     "kind": "staffroom",
+     "name": "Reception 受付",
+     "skip": [
+      "n",
+      [
+       "e",
+       1.8,
+       5.4
+      ]
+     ],
+     "openings": [
+      {
+       "wall": "s",
+       "at": 3.15,
+       "w": 4.8,
+       "h": 0.5,
+       "sill": 1.75,
+       "window": true
+      }
+     ],
+     "props": [
+      {
+       "id": "reception_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        3.15,
+        2.7
+       ],
+       "z": 2.93,
+       "kit": {
+        "preset": "tube_trough",
+        "grid": [
+         2,
+         2
+        ],
+        "size": [
+         4.4,
+         2.93,
+         0.07
+        ]
+       },
+       "kelvin": 5000,
+       "lumens": 4000
+      },
+      {
+       "id": "reception_fx_floor",
+       "kit": {
+        "preset": "wide_planks",
+        "size": [
+         6.2,
+         5.3,
+         0.015
+        ]
+       },
+       "at": [
+        3.15,
+        2.7
+       ]
+      },
+      {
+       "id": "reception_kt_staff_desk_1",
+       "kit": {
+        "preset": "staff_desk",
+        "size": [
+         1.4,
+         0.7,
+         0.7
+        ]
+       },
+       "at": [
+        3,
+        2.6
+       ],
+       "rot": 0
+      },
+      {
+       "id": "reception_kt_staff_desk_2",
+       "kit": {
+        "preset": "staff_desk",
+        "size": [
+         1.4,
+         0.7,
+         0.7
+        ]
+       },
+       "at": [
+        3,
+        3.32
+       ],
+       "rot": 180
+      },
+      {
+       "id": "reception_kt_desk_1",
+       "kit": {
+        "preset": "desk",
+        "size": [
+         1.2,
+         0.6,
+         0.72
+        ]
+       },
+       "at": [
+        5.9,
+        3
+       ],
+       "rot": 270
+      },
+      {
+       "id": "reception_kt_bookshelf_1",
+       "kit": {
+        "preset": "bookshelf",
+        "size": [
+         0.9,
+         0.3,
+         1.8
+        ]
+       },
+       "at": [
+        1.5,
+        5.2
+       ],
+       "rot": 0
+      },
+      {
+       "id": "reception_kt_staff_lockers_1",
+       "kit": {
+        "preset": "staff_lockers",
+        "size": [
+         0.9,
+         0.515,
+         1.79
+        ]
+       },
+       "at": [
+        0.308,
+        2
+       ],
+       "rot": 90
+      },
+      {
+       "id": "reception_kt_staff_lockers_2",
+       "kit": {
+        "preset": "staff_lockers",
+        "size": [
+         0.9,
+         0.515,
+         1.79
+        ]
+       },
+       "at": [
+        0.308,
+        2.95
+       ],
+       "rot": 90
+      },
+      {
+       "id": "reception_fx_win1",
+       "kit": {
+        "preset": "window_fixed",
+        "size": [
+         4.8,
+         0.1,
+         0.5
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        3.15,
+        0
+       ],
+       "rot": 180,
+       "z": 1.75,
+       "in_wall": true,
+       "of": "reception_s_window"
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/Procedural/jp_concrete_bare",
+      "ceiling": "pbr/Procedural/jp_concrete_bare"
+     },
+     "id": "porch",
+     "at": [
+      6.3,
+      0,
+      0
+     ],
+     "size": [
+      9.6,
+      1.8,
+      3
+     ],
+     "floor": "stone",
+     "light": "dim",
+     "kind": "common",
+     "name": "Porch",
+     "skip": [
+      "n",
+      "e",
+      "s",
+      "w"
+     ],
+     "props": [
+      {
+       "id": "porch_fx_floor",
+       "kit": {
+        "preset": "stone_450",
+        "size": [
+         9.5,
+         1.7,
+         0.015
+        ]
+       },
+       "at": [
+        4.8,
+        0.9
+       ]
+      },
+      {
+       "id": "start",
+       "use": "spot",
+       "at": [
+        4.8,
+        0.9
+       ],
+       "rot": 90
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/Procedural/jp_concrete_bare",
+      "ceiling": "pbr/Procedural/jp_concrete_bare"
+     },
+     "id": "entrance",
+     "at": [
+      6.3,
+      1.8,
+      0
+     ],
+     "size": [
+      9.6,
+      3.6,
+      3
+     ],
+     "floor": "stone",
+     "light": "dim",
+     "kind": "entrance",
+     "name": "Entrance 昇降口",
+     "skip": [
+      [
+       "n",
+       0,
+       0.9
+      ],
+      [
+       "n",
+       8.7,
+       9.6
+      ]
+     ],
+     "openings": [
+      {
+       "wall": "s",
+       "at": 4.8,
+       "w": 1.8,
+       "h": 2.4,
+       "door": {
+        "id": "front_door",
+        "swing": "slide",
+        "kit": {
+         "preset": "door_glass"
+        }
+       }
+      },
+      {
+       "wall": "w",
+       "at": 2.902,
+       "w": 0.9,
+       "h": 2,
+       "door": {
+        "id": "reception_door",
+        "swing": "in"
+       }
+      },
+      {
+       "wall": "e",
+       "at": 2.902,
+       "w": 0.9,
+       "h": 2,
+       "door": {
+        "id": "toilets_door",
+        "swing": "in"
+       }
+      },
+      {
+       "wall": "n",
+       "at": 4.8,
+       "w": 3.6,
+       "h": 2.1
+      },
+      {
+       "wall": "w",
+       "at": 1.202,
+       "w": 1.8,
+       "h": 1,
+       "sill": 0.95,
+       "window": true
+      },
+      {
+       "wall": "s",
+       "at": 2.4,
+       "w": 2.6,
+       "h": 2.6,
+       "sill": 0.05,
+       "window": true
+      },
+      {
+       "wall": "s",
+       "at": 7.2,
+       "w": 2.6,
+       "h": 2.6,
+       "sill": 0.05,
+       "window": true
+      }
+     ],
+     "props": [
+      {
+       "id": "entrance_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        4.8,
+        1.8
+       ],
+       "z": 2.92,
+       "kit": {
+        "preset": "tube_trough_1",
+        "grid": [
+         3,
+         1
+        ],
+        "size": [
+         7.65,
+         0.15,
+         0.08
+        ]
+       },
+       "kelvin": 4500,
+       "lumens": 4000
+      },
+      {
+       "id": "entrance_fx_switch",
+       "at": [
+        9.543,
+        2.252
+       ],
+       "rot": 270,
+       "z": 1.14,
+       "tag": "light_switch",
+       "kit": {
+        "preset": "switch_jp_1",
+        "size": [
+         0.07,
+         0.012,
+         0.12
+        ]
+       },
+       "use": "switch",
+       "light": "entrance_fx_light"
+      },
+      {
+       "id": "entrance_fx_floor",
+       "kit": {
+        "preset": "tile_600x1200",
+        "size": [
+         9.5,
+         3.5,
+         0.012
+        ]
+       },
+       "at": [
+        4.8,
+        1.8
+       ]
+      },
+      {
+       "id": "entrance_kt_shoe_lockers_1",
+       "kit": {
+        "preset": "shoe_lockers",
+        "size": [
+         1.5,
+         0.38,
+         1.8
+        ]
+       },
+       "at": [
+        1.7,
+        3.36
+       ],
+       "rot": 0
+      },
+      {
+       "id": "entrance_kt_shoe_lockers_2",
+       "kit": {
+        "preset": "shoe_lockers",
+        "size": [
+         1.5,
+         0.38,
+         1.8
+        ]
+       },
+       "at": [
+        7.9,
+        3.36
+       ],
+       "rot": 0
+      },
+      {
+       "id": "entrance_kt_umbrella_stand_1",
+       "kit": {
+        "preset": "umbrella_stand",
+        "size": [
+         0.9,
+         0.25,
+         0.55
+        ]
+       },
+       "at": [
+        0.65,
+        0.176
+       ],
+       "rot": 180
+      },
+      {
+       "id": "entrance_fx_win1",
+       "kit": {
+        "preset": "window_fixed",
+        "size": [
+         1.8,
+         0.1,
+         1
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        0,
+        1.202
+       ],
+       "rot": 90,
+       "z": 0.95,
+       "in_wall": true,
+       "of": "reception_e_window"
+      },
+      {
+       "id": "entrance_fx_win2",
+       "kit": {
+        "preset": "window_fixed",
+        "size": [
+         2.6,
+         0.1,
+         2.6
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        2.4,
+        0
+       ],
+       "rot": 180,
+       "z": 0.05,
+       "in_wall": true,
+       "of": "entrance_s_window"
+      },
+      {
+       "id": "entrance_fx_win3",
+       "kit": {
+        "preset": "window_fixed",
+        "size": [
+         2.6,
+         0.1,
+         2.6
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        7.2,
+        0
+       ],
+       "rot": 180,
+       "z": 0.05,
+       "in_wall": true,
+       "of": "entrance_s_window"
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "#e6e4de",
+      "ceiling": "#efeeea"
+     },
+     "id": "toilets",
+     "at": [
+      15.9,
+      0,
+      0
+     ],
+     "size": [
+      6.3,
+      5.4,
+      3
+     ],
+     "floor": "tile",
+     "light": "dim",
+     "kind": "toilet",
+     "name": "Toilets",
+     "skip": [
+      "n",
+      [
+       "w",
+       1.8,
+       5.4
+      ]
+     ],
+     "openings": [
+      {
+       "wall": "s",
+       "at": 3.15,
+       "w": 3.6,
+       "h": 0.4,
+       "sill": 1.95,
+       "window": true
+      }
+     ],
+     "props": [
+      {
+       "id": "toilets_fx_toilet",
+       "shape": "box 0.4 0.7 0.8",
+       "at": [
+        3.15,
+        4.98
+       ],
+       "rot": 0,
+       "tag": "toilet"
+      },
+      {
+       "id": "toilets_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        3.15,
+        2.7
+       ],
+       "z": 2.91,
+       "kit": "led_dome_500",
+       "kelvin": 3000,
+       "lumens": 4000
+      },
+      {
+       "id": "toilets_fx_switch",
+       "at": [
+        0.057,
+        4.052
+       ],
+       "rot": 90,
+       "z": 1.14,
+       "tag": "light_switch",
+       "kit": {
+        "preset": "switch_jp_1",
+        "size": [
+         0.07,
+         0.012,
+         0.12
+        ]
+       },
+       "use": "switch",
+       "light": "toilets_fx_light"
+      },
+      {
+       "id": "toilets_fx_floor",
+       "kit": {
+        "preset": "tile_300",
+        "size": [
+         6.2,
+         5.3,
+         0.01
+        ]
+       },
+       "at": [
+        3.15,
+        2.7
+       ]
+      },
+      {
+       "id": "toilets_fx_win1",
+       "kit": {
+        "preset": "window_fixed",
+        "size": [
+         3.6,
+         0.1,
+         0.4
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        3.15,
+        0
+       ],
+       "rot": 180,
+       "z": 1.95,
+       "in_wall": true,
+       "of": "toilets_s_window"
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "#ecebe6",
+      "ceiling": "#f1f0ec"
+     },
+     "id": "class_a",
+     "at": [
+      0,
+      5.4,
+      0
+     ],
+     "size": [
+      7.2,
+      9.9,
+      3
+     ],
+     "floor": "wood",
+     "light": "bright",
+     "kind": "classroom",
+     "name": "Years 1-3 (the little ones)",
+     "skip": [
+      "n"
+     ],
+     "openings": [
+      {
+       "wall": "e",
+       "at": 2.198,
+       "w": 0.95,
+       "h": 2,
+       "door": {
+        "id": "class_a_front_door",
+        "swing": "slide",
+        "kit": {
+         "preset": "door_school"
+        }
+       }
+      },
+      {
+       "wall": "e",
+       "at": 8.999,
+       "w": 0.95,
+       "h": 2,
+       "door": {
+        "id": "class_a_back_door",
+        "swing": "slide",
+        "kit": {
+         "preset": "door_school"
+        }
+       }
+      },
+      {
+       "wall": "w",
+       "at": 7.197,
+       "w": 4.4,
+       "h": 1.6,
+       "sill": 0.9,
+       "window": true
+      },
+      {
+       "wall": "e",
+       "at": 5.603,
+       "w": 5.4,
+       "h": 1.7,
+       "sill": 0.95,
+       "window": true
+      }
+     ],
+     "props": [
+      {
+       "id": "class_a_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        3.6,
+        4.95
+       ],
+       "z": 2.93,
+       "kit": {
+        "preset": "tube_trough",
+        "grid": [
+         3,
+         2
+        ],
+        "size": [
+         7.85,
+         3.83,
+         0.07
+        ]
+       },
+       "kelvin": 5000,
+       "lumens": 4000,
+       "rot": 90
+      },
+      {
+       "id": "class_a_fx_switch",
+       "at": [
+        7.143,
+        1.523
+       ],
+       "rot": 270,
+       "z": 1.14,
+       "tag": "light_switch",
+       "kit": {
+        "preset": "switch_jp_1",
+        "size": [
+         0.07,
+         0.012,
+         0.12
+        ]
+       },
+       "use": "switch",
+       "light": "class_a_fx_light"
+      },
+      {
+       "id": "class_a_fx_floor",
+       "kit": {
+        "preset": "oak_planks",
+        "size": [
+         7.1,
+         9.8,
+         0.015
+        ]
+       },
+       "at": [
+        3.6,
+        4.95
+       ]
+      },
+      {
+       "id": "class_a_kt_chalkboard_plain_1",
+       "kit": {
+        "preset": "chalkboard_plain",
+        "size": [
+         3.6,
+         0.08,
+         1.2
+        ]
+       },
+       "at": [
+        3.6,
+        0.09
+       ],
+       "rot": 180,
+       "z": 0.85
+      },
+      {
+       "id": "class_a_kt_chalkboard_plain_2",
+       "kit": {
+        "preset": "chalkboard_plain",
+        "size": [
+         2.4,
+         0.08,
+         1
+        ]
+       },
+       "at": [
+        0.09,
+        2.6
+       ],
+       "rot": 90,
+       "z": 0.85
+      },
+      {
+       "id": "class_a_kt_school_desk_small_1",
+       "kit": {
+        "preset": "school_desk_small",
+        "size": [
+         0.6,
+         0.4,
+         0.58
+        ]
+       },
+       "at": [
+        3,
+        2.5
+       ],
+       "rot": 180
+      },
+      {
+       "id": "class_a_kt_school_chair_small_1",
+       "kit": {
+        "preset": "school_chair_small",
+        "size": [
+         0.36,
+         0.4,
+         0.66
+        ]
+       },
+       "at": [
+        3,
+        2.92
+       ],
+       "rot": 0
+      },
+      {
+       "id": "class_a_kt_school_desk_small_2",
+       "kit": {
+        "preset": "school_desk_small",
+        "size": [
+         0.6,
+         0.4,
+         0.58
+        ]
+       },
+       "at": [
+        4,
+        2.5
+       ],
+       "rot": 180
+      },
+      {
+       "id": "class_a_kt_school_chair_small_2",
+       "kit": {
+        "preset": "school_chair_small",
+        "size": [
+         0.36,
+         0.4,
+         0.66
+        ]
+       },
+       "at": [
+        4,
+        2.92
+       ],
+       "rot": 0
+      },
+      {
+       "id": "class_a_kt_school_desk_small_3",
+       "kit": {
+        "preset": "school_desk_small",
+        "size": [
+         0.6,
+         0.4,
+         0.58
+        ]
+       },
+       "at": [
+        5,
+        2.5
+       ],
+       "rot": 180
+      },
+      {
+       "id": "class_a_kt_school_chair_small_3",
+       "kit": {
+        "preset": "school_chair_small",
+        "size": [
+         0.36,
+         0.4,
+         0.66
+        ]
+       },
+       "at": [
+        5,
+        2.92
+       ],
+       "rot": 0
+      },
+      {
+       "id": "class_a_kt_school_desk_small_4",
+       "kit": {
+        "preset": "school_desk_small",
+        "size": [
+         0.6,
+         0.4,
+         0.58
+        ]
+       },
+       "at": [
+        3,
+        3.5
+       ],
+       "rot": 180
+      },
+      {
+       "id": "class_a_kt_school_chair_small_4",
+       "kit": {
+        "preset": "school_chair_small",
+        "size": [
+         0.36,
+         0.4,
+         0.66
+        ]
+       },
+       "at": [
+        3,
+        3.92
+       ],
+       "rot": 0
+      },
+      {
+       "id": "class_a_kt_school_desk_small_5",
+       "kit": {
+        "preset": "school_desk_small",
+        "size": [
+         0.6,
+         0.4,
+         0.58
+        ]
+       },
+       "at": [
+        4,
+        3.5
+       ],
+       "rot": 180
+      },
+      {
+       "id": "class_a_kt_school_chair_small_5",
+       "kit": {
+        "preset": "school_chair_small",
+        "size": [
+         0.36,
+         0.4,
+         0.66
+        ]
+       },
+       "at": [
+        4,
+        3.92
+       ],
+       "rot": 0
+      },
+      {
+       "id": "class_a_kt_school_desk_small_6",
+       "kit": {
+        "preset": "school_desk_small",
+        "size": [
+         0.6,
+         0.4,
+         0.58
+        ]
+       },
+       "at": [
+        5,
+        3.5
+       ],
+       "rot": 180
+      },
+      {
+       "id": "class_a_kt_school_chair_small_6",
+       "kit": {
+        "preset": "school_chair_small",
+        "size": [
+         0.36,
+         0.4,
+         0.66
+        ]
+       },
+       "at": [
+        5,
+        3.92
+       ],
+       "rot": 0
+      },
+      {
+       "id": "class_a_kt_school_desk_small_7",
+       "kit": {
+        "preset": "school_desk_small",
+        "size": [
+         0.6,
+         0.4,
+         0.58
+        ]
+       },
+       "at": [
+        1.4,
+        1.9
+       ],
+       "rot": 90
+      },
+      {
+       "id": "class_a_kt_school_chair_small_7",
+       "kit": {
+        "preset": "school_chair_small",
+        "size": [
+         0.36,
+         0.4,
+         0.66
+        ]
+       },
+       "at": [
+        1.82,
+        1.9
+       ],
+       "rot": 270
+      },
+      {
+       "id": "class_a_kt_school_desk_small_8",
+       "kit": {
+        "preset": "school_desk_small",
+        "size": [
+         0.6,
+         0.4,
+         0.58
+        ]
+       },
+       "at": [
+        1.4,
+        2.6
+       ],
+       "rot": 90
+      },
+      {
+       "id": "class_a_kt_school_chair_small_8",
+       "kit": {
+        "preset": "school_chair_small",
+        "size": [
+         0.36,
+         0.4,
+         0.66
+        ]
+       },
+       "at": [
+        1.82,
+        2.6
+       ],
+       "rot": 270
+      },
+      {
+       "id": "class_a_kt_school_desk_small_9",
+       "kit": {
+        "preset": "school_desk_small",
+        "size": [
+         0.6,
+         0.4,
+         0.58
+        ]
+       },
+       "at": [
+        1.4,
+        3.3
+       ],
+       "rot": 90
+      },
+      {
+       "id": "class_a_kt_school_chair_small_9",
+       "kit": {
+        "preset": "school_chair_small",
+        "size": [
+         0.36,
+         0.4,
+         0.66
+        ]
+       },
+       "at": [
+        1.82,
+        3.3
+       ],
+       "rot": 270
+      },
+      {
+       "id": "class_a_kt_desk_1",
+       "kit": {
+        "preset": "desk",
+        "size": [
+         1.2,
+         0.6,
+         0.72
+        ]
+       },
+       "at": [
+        5.9,
+        1.1
+       ],
+       "rot": 180
+      },
+      {
+       "id": "class_a_kt_rug_plain_1",
+       "kit": {
+        "preset": "rug_plain",
+        "size": [
+         2.3,
+         1.6,
+         0.01
+        ]
+       },
+       "at": [
+        2.4,
+        7.6
+       ],
+       "rot": 0
+      },
+      {
+       "id": "class_a_kt_school_clock_1",
+       "kit": {
+        "preset": "school_clock",
+        "size": [
+         0.3,
+         0.05,
+         0.3
+        ]
+       },
+       "at": [
+        6,
+        0.075
+       ],
+       "rot": 180,
+       "z": 2.3
+      },
+      {
+       "id": "class_a_kt_school_lockers_1",
+       "kit": {
+        "preset": "school_lockers",
+        "size": [
+         1.8,
+         0.45,
+         0.9
+        ]
+       },
+       "at": [
+        1,
+        9.624
+       ],
+       "rot": 0
+      },
+      {
+       "id": "class_a_kt_school_lockers_2",
+       "kit": {
+        "preset": "school_lockers",
+        "size": [
+         1.8,
+         0.45,
+         0.9
+        ]
+       },
+       "at": [
+        2.8,
+        9.624
+       ],
+       "rot": 0
+      },
+      {
+       "id": "class_a_fx_win1",
+       "kit": {
+        "preset": "window_fixed",
+        "size": [
+         4.4,
+         0.1,
+         1.6
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        0,
+        7.197
+       ],
+       "rot": 90,
+       "z": 0.9,
+       "in_wall": true,
+       "of": "class_a_w_window"
+      },
+      {
+       "id": "class_a_fx_win2",
+       "kit": {
+        "preset": "window_fixed",
+        "size": [
+         5.4,
+         0.1,
+         1.7
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        7.2,
+        5.603
+       ],
+       "rot": 270,
+       "z": 0.95,
+       "in_wall": true,
+       "of": "class_a_e_window"
+      },
+      {
+       "id": "someone_spot",
+       "use": "spot",
+       "at": [
+        3.6,
+        1
+       ],
+       "rot": 90
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/Procedural/jp_concrete_bare",
+      "ceiling": "pbr/Procedural/jp_concrete_bare"
+     },
+     "id": "gallery_w",
+     "at": [
+      7.2,
+      5.4,
+      0
+     ],
+     "size": [
+      1.8,
+      9.9,
+      3
+     ],
+     "floor": "tile",
+     "light": "dim",
+     "kind": "hallway",
+     "name": "Gallery",
+     "skip": [
+      "n",
+      "s",
+      "w"
+     ],
+     "openings": [
+      {
+       "wall": "e",
+       "at": 0.9,
+       "w": 1.68,
+       "h": 2.1
+      },
+      {
+       "wall": "e",
+       "at": 9,
+       "w": 1.68,
+       "h": 2.1
+      },
+      {
+       "wall": "e",
+       "at": 4.95,
+       "w": 5.8,
+       "h": 2.7,
+       "sill": 0.05,
+       "window": true
+      }
+     ],
+     "props": [
+      {
+       "id": "gallery_w_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        0.9,
+        4.95
+       ],
+       "z": 2.92,
+       "kit": {
+        "preset": "tube_trough_1",
+        "grid": [
+         3,
+         1
+        ],
+        "size": [
+         7.85,
+         0.15,
+         0.08
+        ]
+       },
+       "kelvin": 4500,
+       "lumens": 4000,
+       "rot": 90
+      },
+      {
+       "id": "gallery_w_fx_switch",
+       "at": [
+        0.057,
+        1.523
+       ],
+       "rot": 90,
+       "z": 1.14,
+       "tag": "light_switch",
+       "kit": {
+        "preset": "switch_jp_1",
+        "size": [
+         0.07,
+         0.012,
+         0.12
+        ]
+       },
+       "use": "switch",
+       "light": "gallery_w_fx_light"
+      },
+      {
+       "id": "gallery_w_fx_floor",
+       "kit": {
+        "preset": "tile_600x1200",
+        "size": [
+         1.7,
+         9.8,
+         0.012
+        ]
+       },
+       "at": [
+        0.9,
+        4.95
+       ]
+      },
+      {
+       "id": "gallery_w_fx_win1",
+       "kit": {
+        "preset": "window_fixed",
+        "size": [
+         5.8,
+         0.1,
+         2.7
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        1.8,
+        4.95
+       ],
+       "rot": 270,
+       "z": 0.05,
+       "in_wall": true,
+       "of": "gallery_w_e_window"
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/Procedural/jp_concrete_bare",
+      "ceiling": "pbr/Procedural/jp_concrete_bare"
+     },
+     "id": "gallery_s",
+     "at": [
+      9,
+      5.4,
+      0
+     ],
+     "size": [
+      4.2,
+      1.8,
+      3
+     ],
+     "floor": "tile",
+     "light": "dim",
+     "kind": "hallway",
+     "name": "Gallery",
+     "skip": [
+      "e",
+      "s",
+      "w"
+     ],
+     "openings": [
+      {
+       "wall": "n",
+       "at": 2.1,
+       "w": 1.2,
+       "h": 2.4,
+       "door": {
+        "id": "courtyard_door",
+        "swing": "slide",
+        "kit": {
+         "preset": "door_glass"
+        }
+       }
+      },
+      {
+       "wall": "n",
+       "at": 0.714,
+       "w": 1.2,
+       "h": 2.7,
+       "sill": 0.05,
+       "window": true
+      },
+      {
+       "wall": "n",
+       "at": 3.486,
+       "w": 1.2,
+       "h": 2.7,
+       "sill": 0.05,
+       "window": true
+      }
+     ],
+     "props": [
+      {
+       "id": "gallery_s_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        2.1,
+        0.9
+       ],
+       "z": 2.92,
+       "kit": {
+        "preset": "tube_trough_1",
+        "grid": [
+         1,
+         1
+        ],
+        "size": [
+         1.25,
+         0.15,
+         0.08
+        ]
+       },
+       "kelvin": 4500,
+       "lumens": 1890
+      },
+      {
+       "id": "gallery_s_fx_floor",
+       "kit": {
+        "preset": "tile_600x1200",
+        "size": [
+         4.1,
+         1.7,
+         0.012
+        ]
+       },
+       "at": [
+        2.1,
+        0.9
+       ]
+      },
+      {
+       "id": "gallery_s_fx_win1",
+       "kit": {
+        "preset": "window_fixed",
+        "size": [
+         1.2,
+         0.1,
+         2.7
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        0.714,
+        1.8
+       ],
+       "rot": 0,
+       "z": 0.05,
+       "in_wall": true,
+       "of": "gallery_s_n_window"
+      },
+      {
+       "id": "gallery_s_fx_win2",
+       "kit": {
+        "preset": "window_fixed",
+        "size": [
+         1.2,
+         0.1,
+         2.7
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        3.486,
+        1.8
+       ],
+       "rot": 0,
+       "z": 0.05,
+       "in_wall": true,
+       "of": "gallery_s_n_window"
+      }
+     ]
+    },
+    {
+     "id": "courtyard",
+     "at": [
+      9,
+      7.2,
+      0
+     ],
+     "size": [
+      4.2,
+      6.3,
+      3
+     ],
+     "floor": "dirt",
+     "light": "dim",
+     "ceiling": false,
+     "kind": "garden",
+     "name": "Courtyard 中庭",
+     "skip": [
+      "n",
+      "e",
+      "s",
+      "w"
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/Procedural/jp_concrete_bare",
+      "ceiling": "pbr/Procedural/jp_concrete_bare"
+     },
+     "id": "gallery_n",
+     "at": [
+      9,
+      13.5,
+      0
+     ],
+     "size": [
+      4.2,
+      1.8,
+      3
+     ],
+     "floor": "tile",
+     "light": "dim",
+     "kind": "hallway",
+     "name": "Gallery",
+     "skip": [
+      "n",
+      "e",
+      "w"
+     ],
+     "openings": [
+      {
+       "wall": "s",
+       "at": 2.1,
+       "w": 3.6,
+       "h": 2.7,
+       "sill": 0.05,
+       "window": true
+      }
+     ],
+     "props": [
+      {
+       "id": "gallery_n_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        2.1,
+        0.9
+       ],
+       "z": 2.92,
+       "kit": {
+        "preset": "tube_trough_1",
+        "grid": [
+         1,
+         1
+        ],
+        "size": [
+         1.25,
+         0.15,
+         0.08
+        ]
+       },
+       "kelvin": 4500,
+       "lumens": 1890
+      },
+      {
+       "id": "gallery_n_fx_switch",
+       "at": [
+        3.5,
+        1.743
+       ],
+       "rot": 0,
+       "z": 1.14,
+       "tag": "light_switch",
+       "kit": {
+        "preset": "switch_jp_1",
+        "size": [
+         0.07,
+         0.012,
+         0.12
+        ]
+       },
+       "use": "switch",
+       "light": "gallery_n_fx_light"
+      },
+      {
+       "id": "gallery_n_fx_floor",
+       "kit": {
+        "preset": "tile_600x1200",
+        "size": [
+         4.1,
+         1.7,
+         0.012
+        ]
+       },
+       "at": [
+        2.1,
+        0.9
+       ]
+      },
+      {
+       "id": "gallery_n_fx_win1",
+       "kit": {
+        "preset": "window_fixed",
+        "size": [
+         3.6,
+         0.1,
+         2.7
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        2.1,
+        0
+       ],
+       "rot": 180,
+       "z": 0.05,
+       "in_wall": true,
+       "of": "gallery_n_s_window"
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/Procedural/jp_concrete_bare",
+      "ceiling": "pbr/Procedural/jp_concrete_bare"
+     },
+     "id": "gallery_e",
+     "at": [
+      13.2,
+      5.4,
+      0
+     ],
+     "size": [
+      1.8,
+      9.9,
+      3
+     ],
+     "floor": "tile",
+     "light": "dim",
+     "kind": "hallway",
+     "name": "Gallery",
+     "skip": [
+      "n",
+      "e",
+      "s"
+     ],
+     "openings": [
+      {
+       "wall": "w",
+       "at": 0.9,
+       "w": 1.68,
+       "h": 2.1
+      },
+      {
+       "wall": "w",
+       "at": 9,
+       "w": 1.68,
+       "h": 2.1
+      },
+      {
+       "wall": "w",
+       "at": 4.95,
+       "w": 5.8,
+       "h": 2.7,
+       "sill": 0.05,
+       "window": true
+      }
+     ],
+     "props": [
+      {
+       "id": "gallery_e_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        0.9,
+        4.95
+       ],
+       "z": 2.92,
+       "kit": {
+        "preset": "tube_trough_1",
+        "grid": [
+         3,
+         1
+        ],
+        "size": [
+         7.85,
+         0.15,
+         0.08
+        ]
+       },
+       "kelvin": 4500,
+       "lumens": 4000,
+       "rot": 90
+      },
+      {
+       "id": "gallery_e_fx_switch",
+       "at": [
+        1.743,
+        1.523
+       ],
+       "rot": 270,
+       "z": 1.14,
+       "tag": "light_switch",
+       "kit": {
+        "preset": "switch_jp_1",
+        "size": [
+         0.07,
+         0.012,
+         0.12
+        ]
+       },
+       "use": "switch",
+       "light": "gallery_e_fx_light"
+      },
+      {
+       "id": "gallery_e_fx_floor",
+       "kit": {
+        "preset": "tile_600x1200",
+        "size": [
+         1.7,
+         9.8,
+         0.012
+        ]
+       },
+       "at": [
+        0.9,
+        4.95
+       ]
+      },
+      {
+       "id": "gallery_e_fx_win1",
+       "kit": {
+        "preset": "window_fixed",
+        "size": [
+         5.8,
+         0.1,
+         2.7
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        0,
+        4.95
+       ],
+       "rot": 90,
+       "z": 0.05,
+       "in_wall": true,
+       "of": "gallery_e_w_window"
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "#ecebe6",
+      "ceiling": "#f1f0ec"
+     },
+     "id": "class_b",
+     "at": [
+      15,
+      5.4,
+      0
+     ],
+     "size": [
+      7.2,
+      9.9,
+      3
+     ],
+     "floor": "wood",
+     "light": "bright",
+     "kind": "classroom",
+     "name": "Years 4-6",
+     "openings": [
+      {
+       "wall": "w",
+       "at": 2.198,
+       "w": 0.95,
+       "h": 2,
+       "door": {
+        "id": "class_b_back_door",
+        "swing": "slide",
+        "kit": {
+         "preset": "door_school"
+        }
+       }
+      },
+      {
+       "wall": "w",
+       "at": 8.999,
+       "w": 0.95,
+       "h": 2,
+       "door": {
+        "id": "class_b_front_door",
+        "swing": "slide",
+        "kit": {
+         "preset": "door_school"
+        }
+       }
+      },
+      {
+       "wall": "e",
+       "at": 7.197,
+       "w": 4.4,
+       "h": 1.6,
+       "sill": 0.9,
+       "window": true
+      },
+      {
+       "wall": "w",
+       "at": 5.603,
+       "w": 5.4,
+       "h": 1.7,
+       "sill": 0.95,
+       "window": true
+      }
+     ],
+     "props": [
+      {
+       "id": "class_b_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        3.6,
+        4.95
+       ],
+       "z": 2.93,
+       "kit": {
+        "preset": "tube_trough",
+        "grid": [
+         3,
+         2
+        ],
+        "size": [
+         7.85,
+         3.83,
+         0.07
+        ]
+       },
+       "kelvin": 5000,
+       "lumens": 4000,
+       "rot": 90
+      },
+      {
+       "id": "class_b_fx_switch",
+       "at": [
+        0.057,
+        1.523
+       ],
+       "rot": 90,
+       "z": 1.14,
+       "tag": "light_switch",
+       "kit": {
+        "preset": "switch_jp_1",
+        "size": [
+         0.07,
+         0.012,
+         0.12
+        ]
+       },
+       "use": "switch",
+       "light": "class_b_fx_light"
+      },
+      {
+       "id": "class_b_fx_floor",
+       "kit": {
+        "preset": "oak_planks",
+        "size": [
+         7.1,
+         9.8,
+         0.015
+        ]
+       },
+       "at": [
+        3.6,
+        4.95
+       ]
+      },
+      {
+       "id": "class_b_kt_chalkboard_plain_1",
+       "kit": {
+        "preset": "chalkboard_plain",
+        "size": [
+         3.6,
+         0.08,
+         1.2
+        ]
+       },
+       "at": [
+        3.6,
+        9.81
+       ],
+       "rot": 0,
+       "z": 0.85
+      },
+      {
+       "id": "class_b_kt_chalkboard_plain_2",
+       "kit": {
+        "preset": "chalkboard_plain",
+        "size": [
+         2.4,
+         0.08,
+         1
+        ]
+       },
+       "at": [
+        7.11,
+        3
+       ],
+       "rot": 270,
+       "z": 0.85
+      },
+      {
+       "id": "class_b_kt_school_desk_1",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        2.4,
+        6.5
+       ],
+       "rot": 0
+      },
+      {
+       "id": "class_b_kt_school_chair_1",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        2.4,
+        6.02
+       ],
+       "rot": 180
+      },
+      {
+       "id": "class_b_kt_school_desk_2",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        3.4,
+        6.5
+       ],
+       "rot": 0
+      },
+      {
+       "id": "class_b_kt_school_chair_2",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        3.4,
+        6.02
+       ],
+       "rot": 180
+      },
+      {
+       "id": "class_b_kt_school_desk_3",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        4.4,
+        6.5
+       ],
+       "rot": 0
+      },
+      {
+       "id": "class_b_kt_school_chair_3",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        4.4,
+        6.02
+       ],
+       "rot": 180
+      },
+      {
+       "id": "class_b_kt_school_desk_4",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        2.4,
+        7.6
+       ],
+       "rot": 0
+      },
+      {
+       "id": "class_b_kt_school_chair_4",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        2.4,
+        7.12
+       ],
+       "rot": 180
+      },
+      {
+       "id": "class_b_kt_school_desk_5",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        3.4,
+        7.6
+       ],
+       "rot": 0
+      },
+      {
+       "id": "class_b_kt_school_chair_5",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        3.4,
+        7.12
+       ],
+       "rot": 180
+      },
+      {
+       "id": "class_b_kt_school_desk_6",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        4.4,
+        7.6
+       ],
+       "rot": 0
+      },
+      {
+       "id": "class_b_kt_school_chair_6",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        4.4,
+        7.12
+       ],
+       "rot": 180
+      },
+      {
+       "id": "class_b_kt_school_desk_7",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        5.6,
+        2.4
+       ],
+       "rot": 270
+      },
+      {
+       "id": "class_b_kt_school_chair_7",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        5.12,
+        2.4
+       ],
+       "rot": 90
+      },
+      {
+       "id": "class_b_kt_school_desk_8",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        5.6,
+        3.1
+       ],
+       "rot": 270
+      },
+      {
+       "id": "class_b_kt_school_chair_8",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        5.12,
+        3.1
+       ],
+       "rot": 90
+      },
+      {
+       "id": "class_b_kt_school_desk_9",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        5.6,
+        3.8
+       ],
+       "rot": 270
+      },
+      {
+       "id": "class_b_kt_school_chair_9",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        5.12,
+        3.8
+       ],
+       "rot": 90
+      },
+      {
+       "id": "class_b_kt_desk_1",
+       "kit": {
+        "preset": "desk",
+        "size": [
+         1.2,
+         0.6,
+         0.72
+        ]
+       },
+       "at": [
+        5.9,
+        8.6
+       ],
+       "rot": 0
+      },
+      {
+       "id": "class_b_kt_school_clock_1",
+       "kit": {
+        "preset": "school_clock",
+        "size": [
+         0.3,
+         0.05,
+         0.3
+        ]
+       },
+       "at": [
+        1.2,
+        9.825
+       ],
+       "rot": 0,
+       "z": 2.3
+      },
+      {
+       "id": "class_b_kt_school_lockers_1",
+       "kit": {
+        "preset": "school_lockers",
+        "size": [
+         1.8,
+         0.45,
+         0.9
+        ]
+       },
+       "at": [
+        2,
+        0.276
+       ],
+       "rot": 180
+      },
+      {
+       "id": "class_b_kt_school_lockers_2",
+       "kit": {
+        "preset": "school_lockers",
+        "size": [
+         1.8,
+         0.45,
+         0.9
+        ]
+       },
+       "at": [
+        3.8,
+        0.276
+       ],
+       "rot": 180
+      },
+      {
+       "id": "class_b_fx_win1",
+       "kit": {
+        "preset": "window_fixed",
+        "size": [
+         4.4,
+         0.1,
+         1.6
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        7.2,
+        7.197
+       ],
+       "rot": 270,
+       "z": 0.9,
+       "in_wall": true,
+       "of": "class_b_e_window"
+      },
+      {
+       "id": "class_b_fx_win2",
+       "kit": {
+        "preset": "window_fixed",
+        "size": [
+         5.4,
+         0.1,
+         1.7
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        0,
+        5.603
+       ],
+       "rot": 90,
+       "z": 0.95,
+       "in_wall": true,
+       "of": "class_b_w_window"
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/Procedural/jp_concrete_bare",
+      "ceiling": "pbr/Procedural/jp_concrete_bare"
+     },
+     "id": "lunch",
+     "at": [
+      0,
+      15.3,
+      0
+     ],
+     "size": [
+      15,
+      6.3,
+      3
+     ],
+     "floor": "wood",
+     "light": "dim",
+     "kind": "dining",
+     "name": "Lunch room ランチルーム",
+     "openings": [
+      {
+       "wall": "s",
+       "at": 11.1,
+       "w": 2.4,
+       "h": 2.4,
+       "door": {
+        "id": "lunch_door",
+        "swing": "slide",
+        "kit": {
+         "preset": "door_glass"
+        }
+       }
+      },
+      {
+       "wall": "s",
+       "at": 6.12,
+       "w": 0.95,
+       "h": 2,
+       "door": {
+        "id": "class_a_lunch_door",
+        "swing": "slide",
+        "kit": {
+         "preset": "door_school"
+        }
+       }
+      },
+      {
+       "wall": "e",
+       "at": 3.15,
+       "w": 2,
+       "h": 2.1
+      },
+      {
+       "wall": "n",
+       "at": 7.5,
+       "w": 12,
+       "h": 1.8,
+       "sill": 0.6,
+       "window": true
+      },
+      {
+       "wall": "w",
+       "at": 3.15,
+       "w": 2.4,
+       "h": 1.8,
+       "sill": 0.6,
+       "window": true
+      }
+     ],
+     "props": [
+      {
+       "id": "lunch_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        7.5,
+        3.15
+       ],
+       "z": 2.91,
+       "kit": "led_dome_500",
+       "kelvin": 2700,
+       "lumens": 4000
+      },
+      {
+       "id": "lunch_fx_switch",
+       "at": [
+        12.5,
+        0.057
+       ],
+       "rot": 180,
+       "z": 1.14,
+       "tag": "light_switch",
+       "kit": {
+        "preset": "switch_jp_1",
+        "size": [
+         0.07,
+         0.012,
+         0.12
+        ]
+       },
+       "use": "switch",
+       "light": "lunch_fx_light"
+      },
+      {
+       "id": "lunch_fx_floor",
+       "kit": {
+        "preset": "tile_600x1200",
+        "size": [
+         14.9,
+         6.2,
+         0.012
+        ]
+       },
+       "at": [
+        7.5,
+        3.15
+       ]
+      },
+      {
+       "id": "lunch_kt_dining_table_1",
+       "kit": {
+        "preset": "dining_table",
+        "size": [
+         1.4,
+         0.8,
+         0.72
+        ]
+       },
+       "at": [
+        5.4,
+        2.3
+       ],
+       "rot": 0
+      },
+      {
+       "id": "lunch_kt_dining_chair_1",
+       "kit": {
+        "preset": "dining_chair",
+        "size": [
+         0.45,
+         0.5,
+         0.82
+        ]
+       },
+       "at": [
+        5.05,
+        1.62
+       ],
+       "rot": 180
+      },
+      {
+       "id": "lunch_kt_dining_chair_2",
+       "kit": {
+        "preset": "dining_chair",
+        "size": [
+         0.45,
+         0.5,
+         0.82
+        ]
+       },
+       "at": [
+        5.05,
+        2.98
+       ],
+       "rot": 0
+      },
+      {
+       "id": "lunch_kt_dining_chair_3",
+       "kit": {
+        "preset": "dining_chair",
+        "size": [
+         0.45,
+         0.5,
+         0.82
+        ]
+       },
+       "at": [
+        5.75,
+        1.62
+       ],
+       "rot": 180
+      },
+      {
+       "id": "lunch_kt_dining_chair_4",
+       "kit": {
+        "preset": "dining_chair",
+        "size": [
+         0.45,
+         0.5,
+         0.82
+        ]
+       },
+       "at": [
+        5.75,
+        2.98
+       ],
+       "rot": 0
+      },
+      {
+       "id": "lunch_kt_dining_table_2",
+       "kit": {
+        "preset": "dining_table",
+        "size": [
+         1.4,
+         0.8,
+         0.72
+        ]
+       },
+       "at": [
+        6.8,
+        2.3
+       ],
+       "rot": 0
+      },
+      {
+       "id": "lunch_kt_dining_chair_5",
+       "kit": {
+        "preset": "dining_chair",
+        "size": [
+         0.45,
+         0.5,
+         0.82
+        ]
+       },
+       "at": [
+        6.45,
+        1.62
+       ],
+       "rot": 180
+      },
+      {
+       "id": "lunch_kt_dining_chair_6",
+       "kit": {
+        "preset": "dining_chair",
+        "size": [
+         0.45,
+         0.5,
+         0.82
+        ]
+       },
+       "at": [
+        6.45,
+        2.98
+       ],
+       "rot": 0
+      },
+      {
+       "id": "lunch_kt_dining_chair_7",
+       "kit": {
+        "preset": "dining_chair",
+        "size": [
+         0.45,
+         0.5,
+         0.82
+        ]
+       },
+       "at": [
+        7.15,
+        1.62
+       ],
+       "rot": 180
+      },
+      {
+       "id": "lunch_kt_dining_chair_8",
+       "kit": {
+        "preset": "dining_chair",
+        "size": [
+         0.45,
+         0.5,
+         0.82
+        ]
+       },
+       "at": [
+        7.15,
+        2.98
+       ],
+       "rot": 0
+      },
+      {
+       "id": "lunch_kt_dining_table_3",
+       "kit": {
+        "preset": "dining_table",
+        "size": [
+         1.4,
+         0.8,
+         0.72
+        ]
+       },
+       "at": [
+        8.2,
+        2.3
+       ],
+       "rot": 0
+      },
+      {
+       "id": "lunch_kt_dining_chair_9",
+       "kit": {
+        "preset": "dining_chair",
+        "size": [
+         0.45,
+         0.5,
+         0.82
+        ]
+       },
+       "at": [
+        7.85,
+        1.62
+       ],
+       "rot": 180
+      },
+      {
+       "id": "lunch_kt_dining_chair_10",
+       "kit": {
+        "preset": "dining_chair",
+        "size": [
+         0.45,
+         0.5,
+         0.82
+        ]
+       },
+       "at": [
+        7.85,
+        2.98
+       ],
+       "rot": 0
+      },
+      {
+       "id": "lunch_kt_dining_chair_11",
+       "kit": {
+        "preset": "dining_chair",
+        "size": [
+         0.45,
+         0.5,
+         0.82
+        ]
+       },
+       "at": [
+        8.55,
+        1.62
+       ],
+       "rot": 180
+      },
+      {
+       "id": "lunch_kt_dining_chair_12",
+       "kit": {
+        "preset": "dining_chair",
+        "size": [
+         0.45,
+         0.5,
+         0.82
+        ]
+       },
+       "at": [
+        8.55,
+        2.98
+       ],
+       "rot": 0
+      },
+      {
+       "id": "lunch_kt_dining_table_4",
+       "kit": {
+        "preset": "dining_table",
+        "size": [
+         1.4,
+         0.8,
+         0.72
+        ]
+       },
+       "at": [
+        9.6,
+        2.3
+       ],
+       "rot": 0
+      },
+      {
+       "id": "lunch_kt_dining_chair_13",
+       "kit": {
+        "preset": "dining_chair",
+        "size": [
+         0.45,
+         0.5,
+         0.82
+        ]
+       },
+       "at": [
+        9.25,
+        1.62
+       ],
+       "rot": 180
+      },
+      {
+       "id": "lunch_kt_dining_chair_14",
+       "kit": {
+        "preset": "dining_chair",
+        "size": [
+         0.45,
+         0.5,
+         0.82
+        ]
+       },
+       "at": [
+        9.25,
+        2.98
+       ],
+       "rot": 0
+      },
+      {
+       "id": "lunch_kt_dining_chair_15",
+       "kit": {
+        "preset": "dining_chair",
+        "size": [
+         0.45,
+         0.5,
+         0.82
+        ]
+       },
+       "at": [
+        9.95,
+        1.62
+       ],
+       "rot": 180
+      },
+      {
+       "id": "lunch_kt_dining_chair_16",
+       "kit": {
+        "preset": "dining_chair",
+        "size": [
+         0.45,
+         0.5,
+         0.82
+        ]
+       },
+       "at": [
+        9.95,
+        2.98
+       ],
+       "rot": 0
+      },
+      {
+       "id": "lunch_kt_dining_table_5",
+       "kit": {
+        "preset": "dining_table",
+        "size": [
+         1.4,
+         0.8,
+         0.72
+        ]
+       },
+       "at": [
+        5.4,
+        4.3
+       ],
+       "rot": 0
+      },
+      {
+       "id": "lunch_kt_dining_chair_17",
+       "kit": {
+        "preset": "dining_chair",
+        "size": [
+         0.45,
+         0.5,
+         0.82
+        ]
+       },
+       "at": [
+        5.05,
+        3.62
+       ],
+       "rot": 180
+      },
+      {
+       "id": "lunch_kt_dining_chair_18",
+       "kit": {
+        "preset": "dining_chair",
+        "size": [
+         0.45,
+         0.5,
+         0.82
+        ]
+       },
+       "at": [
+        5.05,
+        4.98
+       ],
+       "rot": 0
+      },
+      {
+       "id": "lunch_kt_dining_chair_19",
+       "kit": {
+        "preset": "dining_chair",
+        "size": [
+         0.45,
+         0.5,
+         0.82
+        ]
+       },
+       "at": [
+        5.75,
+        3.62
+       ],
+       "rot": 180
+      },
+      {
+       "id": "lunch_kt_dining_chair_20",
+       "kit": {
+        "preset": "dining_chair",
+        "size": [
+         0.45,
+         0.5,
+         0.82
+        ]
+       },
+       "at": [
+        5.75,
+        4.98
+       ],
+       "rot": 0
+      },
+      {
+       "id": "lunch_kt_dining_table_6",
+       "kit": {
+        "preset": "dining_table",
+        "size": [
+         1.4,
+         0.8,
+         0.72
+        ]
+       },
+       "at": [
+        6.8,
+        4.3
+       ],
+       "rot": 0
+      },
+      {
+       "id": "lunch_kt_dining_chair_21",
+       "kit": {
+        "preset": "dining_chair",
+        "size": [
+         0.45,
+         0.5,
+         0.82
+        ]
+       },
+       "at": [
+        6.45,
+        3.62
+       ],
+       "rot": 180
+      },
+      {
+       "id": "lunch_kt_dining_chair_22",
+       "kit": {
+        "preset": "dining_chair",
+        "size": [
+         0.45,
+         0.5,
+         0.82
+        ]
+       },
+       "at": [
+        6.45,
+        4.98
+       ],
+       "rot": 0
+      },
+      {
+       "id": "lunch_kt_dining_chair_23",
+       "kit": {
+        "preset": "dining_chair",
+        "size": [
+         0.45,
+         0.5,
+         0.82
+        ]
+       },
+       "at": [
+        7.15,
+        3.62
+       ],
+       "rot": 180
+      },
+      {
+       "id": "lunch_kt_dining_chair_24",
+       "kit": {
+        "preset": "dining_chair",
+        "size": [
+         0.45,
+         0.5,
+         0.82
+        ]
+       },
+       "at": [
+        7.15,
+        4.98
+       ],
+       "rot": 0
+      },
+      {
+       "id": "lunch_kt_dining_table_7",
+       "kit": {
+        "preset": "dining_table",
+        "size": [
+         1.4,
+         0.8,
+         0.72
+        ]
+       },
+       "at": [
+        8.2,
+        4.3
+       ],
+       "rot": 0
+      },
+      {
+       "id": "lunch_kt_dining_chair_25",
+       "kit": {
+        "preset": "dining_chair",
+        "size": [
+         0.45,
+         0.5,
+         0.82
+        ]
+       },
+       "at": [
+        7.85,
+        3.62
+       ],
+       "rot": 180
+      },
+      {
+       "id": "lunch_kt_dining_chair_26",
+       "kit": {
+        "preset": "dining_chair",
+        "size": [
+         0.45,
+         0.5,
+         0.82
+        ]
+       },
+       "at": [
+        7.85,
+        4.98
+       ],
+       "rot": 0
+      },
+      {
+       "id": "lunch_kt_dining_chair_27",
+       "kit": {
+        "preset": "dining_chair",
+        "size": [
+         0.45,
+         0.5,
+         0.82
+        ]
+       },
+       "at": [
+        8.55,
+        3.62
+       ],
+       "rot": 180
+      },
+      {
+       "id": "lunch_kt_dining_chair_28",
+       "kit": {
+        "preset": "dining_chair",
+        "size": [
+         0.45,
+         0.5,
+         0.82
+        ]
+       },
+       "at": [
+        8.55,
+        4.98
+       ],
+       "rot": 0
+      },
+      {
+       "id": "lunch_kt_dining_table_8",
+       "kit": {
+        "preset": "dining_table",
+        "size": [
+         1.4,
+         0.8,
+         0.72
+        ]
+       },
+       "at": [
+        9.6,
+        4.3
+       ],
+       "rot": 0
+      },
+      {
+       "id": "lunch_kt_dining_chair_29",
+       "kit": {
+        "preset": "dining_chair",
+        "size": [
+         0.45,
+         0.5,
+         0.82
+        ]
+       },
+       "at": [
+        9.25,
+        3.62
+       ],
+       "rot": 180
+      },
+      {
+       "id": "lunch_kt_dining_chair_30",
+       "kit": {
+        "preset": "dining_chair",
+        "size": [
+         0.45,
+         0.5,
+         0.82
+        ]
+       },
+       "at": [
+        9.25,
+        4.98
+       ],
+       "rot": 0
+      },
+      {
+       "id": "lunch_kt_dining_chair_31",
+       "kit": {
+        "preset": "dining_chair",
+        "size": [
+         0.45,
+         0.5,
+         0.82
+        ]
+       },
+       "at": [
+        9.95,
+        3.62
+       ],
+       "rot": 180
+      },
+      {
+       "id": "lunch_kt_dining_chair_32",
+       "kit": {
+        "preset": "dining_chair",
+        "size": [
+         0.45,
+         0.5,
+         0.82
+        ]
+       },
+       "at": [
+        9.95,
+        4.98
+       ],
+       "rot": 0
+      },
+      {
+       "id": "lunch_kt_school_clock_1",
+       "kit": {
+        "preset": "school_clock",
+        "size": [
+         0.3,
+         0.05,
+         0.3
+        ]
+       },
+       "at": [
+        7.5,
+        6.225
+       ],
+       "rot": 0,
+       "z": 2.62
+      },
+      {
+       "id": "lunch_fx_win1",
+       "kit": {
+        "preset": "window_fixed",
+        "size": [
+         12,
+         0.1,
+         1.8
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        7.5,
+        6.3
+       ],
+       "rot": 0,
+       "z": 0.6,
+       "in_wall": true,
+       "of": "lunch_n_window"
+      },
+      {
+       "id": "lunch_fx_win2",
+       "kit": {
+        "preset": "window_fixed",
+        "size": [
+         2.4,
+         0.1,
+         1.8
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        0,
+        3.15
+       ],
+       "rot": 90,
+       "z": 0.6,
+       "in_wall": true,
+       "of": "lunch_w_window"
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "#e6e4de",
+      "ceiling": "#efeeea"
+     },
+     "id": "kitchen",
+     "at": [
+      15,
+      15.3,
+      0
+     ],
+     "size": [
+      4.5,
+      6.3,
+      3
+     ],
+     "floor": "tile",
+     "light": "dim",
+     "kind": "kitchen",
+     "name": "Serving kitchen 配膳室",
+     "skip": [
+      "s",
+      "w"
+     ],
+     "openings": [
+      {
+       "wall": "e",
+       "at": 4.725,
+       "w": 0.8,
+       "h": 2,
+       "door": {
+        "id": "storage_door",
+        "swing": "in"
+       }
+      },
+      {
+       "wall": "n",
+       "at": 2.25,
+       "w": 1.8,
+       "h": 1,
+       "sill": 1.1,
+       "window": true
+      }
+     ],
+     "props": [
+      {
+       "id": "kitchen_fx_kitchen",
+       "kit": {
+        "preset": "kitchen_run",
+        "size": [
+         2.55,
+         0.65,
+         0.85
+        ]
+       },
+       "at": [
+        4.105,
+        3
+       ],
+       "rot": 270,
+       "tag": "kitchen_counter"
+      },
+      {
+       "id": "kitchen_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        2.25,
+        3.15
+       ],
+       "z": 2.91,
+       "kit": "led_dome_500",
+       "kelvin": 4000,
+       "lumens": 4000
+      },
+      {
+       "id": "kitchen_fx_switch",
+       "at": [
+        0.057,
+        4.35
+       ],
+       "rot": 90,
+       "z": 1.14,
+       "tag": "light_switch",
+       "kit": {
+        "preset": "switch_jp_1",
+        "size": [
+         0.07,
+         0.012,
+         0.12
+        ]
+       },
+       "use": "switch",
+       "light": "kitchen_fx_light"
+      },
+      {
+       "id": "kitchen_fx_floor",
+       "kit": {
+        "preset": "tile_600",
+        "size": [
+         4.4,
+         6.2,
+         0.012
+        ]
+       },
+       "at": [
+        2.25,
+        3.15
+       ]
+      },
+      {
+       "id": "kitchen_kt_fridge_1",
+       "kit": {
+        "preset": "fridge",
+        "size": [
+         0.68,
+         0.7,
+         1.8
+        ]
+       },
+       "at": [
+        3.9,
+        5.9
+       ],
+       "rot": 0
+      },
+      {
+       "id": "kitchen_fx_win1",
+       "kit": {
+        "preset": "window_small",
+        "size": [
+         1.8,
+         0.15,
+         1.025
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        2.25,
+        6.275
+       ],
+       "rot": 0,
+       "z": 1.075,
+       "in_wall": true,
+       "of": "kitchen_n_window"
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/Procedural/jp_concrete_bare",
+      "ceiling": "pbr/Procedural/jp_concrete_bare"
+     },
+     "id": "storage",
+     "at": [
+      19.5,
+      15.3,
+      0
+     ],
+     "size": [
+      2.7,
+      6.3,
+      3
+     ],
+     "floor": "wood",
+     "light": "dim",
+     "kind": "storage",
+     "name": "Storage",
+     "skip": [
+      "s",
+      "w"
+     ]
+    }
+   ],
+   "links": [
+    {
+     "a": "entrance",
+     "b": "porch",
+     "via": "front_door"
+    },
+    {
+     "a": "entrance",
+     "b": "reception",
+     "via": "reception_door"
+    },
+    {
+     "a": "entrance",
+     "b": "toilets",
+     "via": "toilets_door"
+    },
+    {
+     "a": "entrance",
+     "b": "gallery_s",
+     "via": null
+    },
+    {
+     "a": "gallery_w",
+     "b": "gallery_s",
+     "via": null
+    },
+    {
+     "a": "gallery_e",
+     "b": "gallery_s",
+     "via": null
+    },
+    {
+     "a": "gallery_w",
+     "b": "gallery_n",
+     "via": null
+    },
+    {
+     "a": "gallery_e",
+     "b": "gallery_n",
+     "via": null
+    },
+    {
+     "a": "class_a",
+     "b": "gallery_w",
+     "via": "class_a_front_door"
+    },
+    {
+     "a": "class_a",
+     "b": "gallery_w",
+     "via": "class_a_back_door"
+    },
+    {
+     "a": "class_b",
+     "b": "gallery_e",
+     "via": "class_b_back_door"
+    },
+    {
+     "a": "class_b",
+     "b": "gallery_e",
+     "via": "class_b_front_door"
+    },
+    {
+     "a": "gallery_s",
+     "b": "courtyard",
+     "via": "courtyard_door"
+    },
+    {
+     "a": "lunch",
+     "b": "gallery_n",
+     "via": "lunch_door"
+    },
+    {
+     "a": "lunch",
+     "b": "class_a",
+     "via": "class_a_lunch_door"
+    },
+    {
+     "a": "lunch",
+     "b": "kitchen",
+     "via": null
+    },
+    {
+     "a": "kitchen",
+     "b": "storage",
+     "via": "storage_door"
+    }
+   ],
+   "trim": {
+    "skirting": 0.05,
+    "casing": 0.03,
+    "threshold": 0.012
+   }
+  }
+ },
+ "scenes": {
+  "s_first": {
+   "title": "First words",
+   "level": "school_tokyo",
+   "stage": {
+    "someone": "someone_spot"
+   },
+   "view": "start",
+   "camera": {
+    "mode": "soft",
+    "look": "someone",
+    "cone": [
+     30,
+     18
+    ]
+   },
+   "clips": [
+    {
+     "id": "c1",
+     "who": "someone",
+     "ja": "……",
+     "en": "...",
+     "act": "looks up"
+    }
+   ]
+  }
+ },
+ "stitches": {
+  "t_start": {
+   "title": "Start",
+   "level": "school_tokyo",
+   "beats": [
+    {
+     "id": "b_start",
+     "when": {
+      "start": true
+     },
+     "do": [
+      {
+       "fade": "in",
+       "secs": 2
+      },
+      {
+       "done": true
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "flow": {
+  "n_start": {
+   "type": "stitch",
+   "ref": "t_start",
+   "next": "n_first"
+  },
+  "n_first": {
+   "type": "scene",
+   "ref": "s_first",
+   "next": "e_end",
+   "final": true
+  },
+  "e_end": {
+   "type": "ending",
+   "kind": "good",
+   "title": "The end"
+  }
+ },
+ "secrets": {}
+}

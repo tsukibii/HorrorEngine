@@ -136,6 +136,7 @@ and set the fill and the colours on each placed copy in Godot (its `HSLiquidFill
 | `cookware` | `kind` saucepan, stockpot, frypan, yukihira, donabe, tetsubin, enamel; `lid`, `liquid` (§10), `tint` (the heat's colours on steel), `scrape` (a pan's coating), `color`, `decal`, `chips` (enamel), `rust` (iron); sockets steam, rim, lid, handle, vent, spout as the kit's pots | saucepan, stockpot, stockpot_broth, frying_pan, yukihira (miso), donabe, tetsubin, enamel_pot |
 | `appliance` | `kind` rice_cooker (`style` modern or retro, `time` on its LCD, `color`, `accent`; sockets lcd, led_warm, led_cook, vent, button) or kettle (`finish` steel or white; sockets spout, lid, switch, led, base); the maker's mark on both: `brand` (a name) with `brand_font` and `brand_color`, or `logo` (your picture: a PNG path or {image, w (mm), rough}) | rice_cooker, rice_cooker_retro, electric_kettle, electric_kettle_white |
 | `sink` | `kind` kitchen (pressed stainless: a basin, a ribbed drainboard, a basket strainer, a gooseneck mixer) or basin (glazed fireclay: an oval bowl, two pillar taps, a bottle trap); `liquid` standing in it, `rust`, `limescale`, `crazing`, `glaze`; sockets spout (`spout_cold`), handle, drain | kitchen_sink, kitchen_sink_water, washbasin, washbasin_blood |
+| `book` | §16: `kind` hardcover, paperback, bunko, manga, textbook, notebook, diary; `size` (A4, B5, A5, B6, A6, bunko, shinsho, tankobon or [w, h] mm), `thick`, `binding` left or right, `pose` lie, stand or open (`open_at`), `arrange` one, stack or row with `fit` [w, d, h] mm, `count`, `mix`, `titles`; `art`, `spine`, `back`, `page_l`, `page_r`; `age` | book_hardcover, book_paperback, bunko, manga_volume, textbook_kokugo, textbook_math, notebook_math, diary_closed, diary_open, book_open, books_desk_box, books_cubby, books_shelf, books_stack_desk |
 | `import` | your own mesh, worn (§5) | chair_worn |
 
 ### Designs
@@ -609,3 +610,50 @@ made texture at the size it wants: paint over it (Krita, anything) and swap it b
 flourishes: repeat, every other mirrored, corners, mirrored, each with its size), Smudges (the shelf: click one to add
 it on the biggest part; pick one in the list and click the texture to move it there; or the picked picture as a
 smudge). Checked by PROPPAGE: an own picture swapped, a smudge added and moved, a flourish in the corners, made.
+
+## 16. Books: covers of your own, sized for desks and shelves
+
+The user (2026-11-01): "for the prop maker similar to how we can use custom logos maybe allow that for books, books should
+be able to fit well on desks and inside shelves". The `book` family (`families/book.py`) makes a book from its real
+parts at a real size, and everything printed on it is one of its own pictures (§15), so your cover, spine or page
+goes on as a can takes your logo.
+
+- **The parts:** two boards (the covers) over a block of pages and a spine between them. A hardcover's and a diary's
+  boards are 2.4 to 2.6 mm thick and stand 2.5 to 3 mm past the pages at the head, tail and fore-edge (the squares),
+  their insides endpapers; a paperback, bunko, manga, textbook or notebook has a card cover flush with its pages. The
+  page block's edges wear `book_pages`: the pages' fine lines (in the relief too), yellowed with `age`, grubby at the
+  edges. A diary has its elastic band round the fore-edge and a ribbon out of its foot.
+- **Sizes** (mm, the cover): A4 210 × 297, B5 182 × 257 (a textbook), A5 148 × 210, B6 128 × 182, A6 105 × 148, bunko
+  106 × 152, shinsho 105 × 182, tankobon 113 × 176 (a manga's 新書判), notebook_B5 179 × 252; or `[w, h]`. `thick` is
+  its thickness (each kind has its own: a notebook 5, a textbook 9, a bunko 13, a hardcover 24).
+- **Binding:** `left` (the spine on the left seen from the front) or `right` (Japanese novels, manga and 国語
+  textbooks open from the right: the spine on the right, and standing it still faces out).
+- **Poses:** `lie` (on its back cover), `stand` (upright on its foot, spine out to the front), `open` (lying open flat
+  at `open_at` of its pages turned, its spread up: the two pages' tops curve down into the gutter, `lift` mm over the
+  block at the fore-edge).
+- **Designs** (`designs.py`): `book_cover` (a ground, a frame or bands, the title (down the right in a column when
+  it's Japanese), the author, a picture: a lit window, a moon over hills, a tree, rings or a school at dusk, and the
+  publisher's mark), `book_spine` (bands at head and foot, the title down it: Japanese upright in a column, other words
+  turned to read from the top; gold on a hardcover), `book_back` (a few lines, a barcode, a price), `textbook_cover`
+  (the subject big in its colour: 国語, 数学, 英語, 理科, 社会, 音楽...; the grade, a picture, the publisher),
+  `notebook_cover` (a made-up brand's band, a label with No. and Name lines, the subject and the name written in by
+  hand), `diary_cover` (leather-grained cloth, its title and a border pressed in, the year in gold), `manga_cover` (a
+  picture to its edges, the title outlined, the volume), `page_text` (a running head, justified lines, a page
+  number), `diary_page` (ruled, a date, lines of handwriting).
+- **Your pictures:** `pictures: {"front.art": "my_cover.png", "front.title": false, "spine.title": "spine.png",
+  "page_r.writing": "my_page.png"}`; the slots are `front.title`, `front.author`, `front.art`, `front.logo`,
+  `spine.title`, `spine.author`, `spine.logo`, `front.subject`/`front.name` on a notebook, `front.year` on a diary,
+  `page_l.text`/`page_r.text` or `page_l.writing`/`page_r.writing` on an open book. Many books: each one's islands are
+  `b<i>_front`, `b<i>_spine`... (`"b*_spine.logo"` swaps every spine's mark at once).
+- **Many at once, fitted to a box:** `arrange: "stack"` lies them flat one on another (each turned a little) inside
+  `fit` [w, d, h] mm, as many as stand in its height (or `count`); `arrange: "row"` stands them spine out along it, as
+  many as fit its width, each shrunk to its height and depth if it's taller. `mix` picks their kinds, `titles` their
+  titles, the seed their colours and thicknesses. Many books are lighter (fewer rings round each edge): a cubby's row
+  of 30 is about 12,000 triangles.
+- **Fitted to the furniture:** the recipes are sized for the school's kit (KIT §10, its places): `books_desk_box`
+  (textbooks and notebooks lying in a school desk's book box, 54 × 33 × 9 cm), `books_cubby` (textbooks standing in a
+  classroom cubby, 27 × 42 × 26 cm), `books_shelf` (novels, bunko and manga in the bookshelf's cell, 41 × 27 × 33 cm),
+  `books_stack_desk` (three on a desk). Put in the library (`propgen.py library <names>`), the scene builder places them
+  on and in the furniture (SCENE_BUILDER §10).
+
+Checked by PROPGEN (`book_hardcover`, `diary_open`, `books_cubby`).

@@ -1,0 +1,2535 @@
+{
+ "format": 3,
+ "game": {
+  "id": "school_classroom_pbr",
+  "title": "School: the 1:1 classroom in PBR sets (the realism test)",
+  "start": "n_start",
+  "target_min": 0,
+  "voice": "ja",
+  "text": "en",
+  "clip_max": 8,
+  "subtitles": [
+   "en",
+   "zh"
+  ],
+  "built_with": {
+   "engine": "0.6.0",
+   "format": 3
+  }
+ },
+ "cast": {
+  "someone": {
+   "name": "Someone",
+   "metahuman": null,
+   "height": 1.6
+  }
+ },
+ "items": {},
+ "notes": {},
+ "lines": {},
+ "sounds": {},
+ "levels": {
+  "school_classroom_pbr": {
+   "start": "start",
+   "rooms": [
+    {
+     "look": {
+      "walls": "pbr/Procedural/jp_plaster_cream",
+      "ceiling": "pbr/Procedural/jp_acoustic",
+      "wainscot": "pbr/Procedural/jp_pine_varnish"
+     },
+     "id": "classroom",
+     "at": [
+      0,
+      0,
+      0
+     ],
+     "size": [
+      7.2,
+      9,
+      3
+     ],
+     "floor": "wood",
+     "light": "bright",
+     "kind": "classroom",
+     "name": "Classroom 2-1",
+     "openings": [
+      {
+       "wall": "e",
+       "at": 8.175,
+       "w": 0.95,
+       "h": 2,
+       "door": {
+        "id": "classroom_front_door",
+        "swing": "slide",
+        "kit": {
+         "preset": "door_school"
+        }
+       }
+      },
+      {
+       "wall": "e",
+       "at": 1.2,
+       "w": 0.95,
+       "h": 2,
+       "door": {
+        "id": "classroom_back_door",
+        "swing": "slide",
+        "kit": {
+         "preset": "door_school"
+        }
+       }
+      },
+      {
+       "wall": "w",
+       "at": 1.5,
+       "w": 2.3,
+       "h": 1.6,
+       "sill": 0.95,
+       "window": true
+      },
+      {
+       "wall": "w",
+       "at": 4.5,
+       "w": 2.3,
+       "h": 1.6,
+       "sill": 0.95,
+       "window": true
+      },
+      {
+       "wall": "w",
+       "at": 7.5,
+       "w": 2.3,
+       "h": 1.6,
+       "sill": 0.95,
+       "window": true
+      },
+      {
+       "wall": "e",
+       "at": 2.24,
+       "w": 0.9,
+       "h": 1.55,
+       "sill": 1,
+       "window": true
+      },
+      {
+       "wall": "e",
+       "at": 4.5,
+       "w": 2.3,
+       "h": 1.55,
+       "sill": 1,
+       "window": true
+      },
+      {
+       "wall": "e",
+       "at": 6.95,
+       "w": 1.2,
+       "h": 1.55,
+       "sill": 1,
+       "window": true
+      }
+     ],
+     "props": [
+      {
+       "id": "classroom_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        3.6,
+        4.5
+       ],
+       "z": 2.918,
+       "kit": {
+        "preset": "tube_trough",
+        "grid": [
+         3,
+         2
+        ],
+        "size": [
+         7.25,
+         3.83,
+         0.07
+        ]
+       },
+       "kelvin": 5000,
+       "lumens": 4000,
+       "rot": 90
+      },
+      {
+       "id": "classroom_fx_switch",
+       "at": [
+        7.143,
+        0.525
+       ],
+       "rot": 270,
+       "z": 1.14,
+       "tag": "light_switch",
+       "kit": {
+        "preset": "switch_jp_1",
+        "size": [
+         0.07,
+         0.012,
+         0.12
+        ]
+       },
+       "use": "switch"
+      },
+      {
+       "id": "classroom_fx_floor",
+       "kit": {
+        "preset": "parquet_basket",
+        "size": [
+         7.1,
+         8.9,
+         0.015
+        ]
+       },
+       "at": [
+        3.6,
+        4.5
+       ],
+       "mats": {
+        "wood": "pbr/Procedural/jp_oak_floor",
+        "wood_2": "pbr/Procedural/jp_oak_floor",
+        "wood_3": "pbr/Procedural/jp_oak_floor"
+       }
+      },
+      {
+       "id": "classroom_fx_ceiling",
+       "kit": {
+        "preset": "ceiling_rockwool",
+        "size": [
+         7.1,
+         8.9,
+         0.012
+        ]
+       },
+       "at": [
+        3.6,
+        4.5
+       ],
+       "z": 2.988,
+       "mats": {
+        "acoustic": "pbr/Procedural/jp_acoustic"
+       }
+      },
+      {
+       "id": "classroom_kt_chalkboard_1",
+       "kit": {
+        "preset": "chalkboard",
+        "size": [
+         5.6,
+         0.08,
+         1.2
+        ]
+       },
+       "at": [
+        3.6,
+        8.91
+       ],
+       "rot": 0,
+       "z": 0.95,
+       "mats": {
+        "chalkboard": "pbr/Procedural/jp_chalkboard",
+        "cork": "pbr/Procedural/jp_cork"
+       }
+      },
+      {
+       "id": "classroom_kt_kyodan_1",
+       "kit": {
+        "preset": "kyodan",
+        "size": [
+         4.5,
+         0.9,
+         0.18
+        ]
+       },
+       "at": [
+        3.6,
+        8.5
+       ],
+       "rot": 0,
+       "mats": {
+        "wood": "pbr/Procedural/jp_pine_varnish"
+       }
+      },
+      {
+       "id": "classroom_kt_lectern_1",
+       "kit": {
+        "preset": "lectern",
+        "size": [
+         0.9,
+         0.6,
+         0.95
+        ]
+       },
+       "at": [
+        3.6,
+        8.4
+       ],
+       "rot": 180,
+       "z": 0.18,
+       "mats": {
+        "green": "pbr/Procedural/jp_lectern_green",
+        "laminate": "pbr/Procedural/jp_desk_laminate",
+        "wood": "pbr/Procedural/jp_pine_varnish"
+       }
+      },
+      {
+       "id": "classroom_kt_teacher_desk_1",
+       "kit": {
+        "preset": "teacher_desk",
+        "size": [
+         1,
+         0.7,
+         0.7
+        ]
+       },
+       "at": [
+        0.8,
+        8
+       ],
+       "rot": 180,
+       "mats": {
+        "counter": "pbr/Procedural/jp_desk_laminate"
+       }
+      },
+      {
+       "id": "classroom_kt_school_clock_1",
+       "kit": {
+        "preset": "school_clock",
+        "size": [
+         0.3,
+         0.05,
+         0.3
+        ]
+       },
+       "at": [
+        5.35,
+        8.925
+       ],
+       "rot": 0,
+       "z": 2.25
+      },
+      {
+       "id": "classroom_kt_school_speaker_1",
+       "kit": {
+        "preset": "school_speaker",
+        "size": [
+         0.3,
+         0.12,
+         0.22
+        ]
+       },
+       "at": [
+        3.6,
+        8.89
+       ],
+       "rot": 0,
+       "z": 2.3
+      },
+      {
+       "id": "classroom_kt_school_desk_1",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        1.119,
+        6.543
+       ],
+       "rot": 0,
+       "mats": {
+        "laminate": "pbr/Procedural/jp_desk_laminate",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_chair_1",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        1.089,
+        6.044
+       ],
+       "rot": 178,
+       "mats": {
+        "plywood": "pbr/Procedural/jp_plywood_red",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_desk_2",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        2.115,
+        6.535
+       ],
+       "rot": 0,
+       "mats": {
+        "laminate": "pbr/Procedural/jp_desk_laminate",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_chair_2",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        2.125,
+        6.027
+       ],
+       "rot": 181,
+       "mats": {
+        "plywood": "pbr/Procedural/jp_plywood_red",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_desk_3",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        3.098,
+        6.565
+       ],
+       "rot": 1,
+       "mats": {
+        "laminate": "pbr/Procedural/jp_desk_laminate",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_chair_3",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        3.104,
+        6.063
+       ],
+       "rot": 178,
+       "mats": {
+        "plywood": "pbr/Procedural/jp_plywood_red",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_desk_4",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        4.083,
+        6.549
+       ],
+       "rot": 0,
+       "mats": {
+        "laminate": "pbr/Procedural/jp_desk_laminate",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_chair_4",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        4.107,
+        6.03
+       ],
+       "rot": 183,
+       "mats": {
+        "plywood": "pbr/Procedural/jp_plywood_red",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_desk_5",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        5.082,
+        6.534
+       ],
+       "rot": 0,
+       "mats": {
+        "laminate": "pbr/Procedural/jp_desk_laminate",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_chair_5",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        5.083,
+        6.034
+       ],
+       "rot": 180,
+       "mats": {
+        "plywood": "pbr/Procedural/jp_plywood_red",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_desk_6",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        6.088,
+        6.558
+       ],
+       "rot": 1,
+       "mats": {
+        "laminate": "pbr/Procedural/jp_desk_laminate",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_chair_6",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        6.056,
+        6.047
+       ],
+       "rot": 183,
+       "mats": {
+        "plywood": "pbr/Procedural/jp_plywood_red",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_desk_7",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        1.084,
+        5.517
+       ],
+       "rot": 0,
+       "mats": {
+        "laminate": "pbr/Procedural/jp_desk_laminate",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_chair_7",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        1.088,
+        5.003
+       ],
+       "rot": 178,
+       "mats": {
+        "plywood": "pbr/Procedural/jp_plywood_red",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_desk_8",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        2.116,
+        5.512
+       ],
+       "rot": 1,
+       "mats": {
+        "laminate": "pbr/Procedural/jp_desk_laminate",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_chair_8",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        2.144,
+        5.006
+       ],
+       "rot": 182,
+       "mats": {
+        "plywood": "pbr/Procedural/jp_plywood_red",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_desk_9",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        3.107,
+        5.492
+       ],
+       "rot": 1,
+       "mats": {
+        "laminate": "pbr/Procedural/jp_desk_laminate",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_chair_9",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        3.092,
+        4.99
+       ],
+       "rot": 180,
+       "mats": {
+        "plywood": "pbr/Procedural/jp_plywood_red",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_desk_10",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        4.115,
+        5.516
+       ],
+       "rot": 1,
+       "mats": {
+        "laminate": "pbr/Procedural/jp_desk_laminate",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_chair_10",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        4.092,
+        5.024
+       ],
+       "rot": 179,
+       "mats": {
+        "plywood": "pbr/Procedural/jp_plywood_red",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_desk_11",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        5.106,
+        5.484
+       ],
+       "rot": 0,
+       "mats": {
+        "laminate": "pbr/Procedural/jp_desk_laminate",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_chair_11",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        5.089,
+        4.984
+       ],
+       "rot": 177,
+       "mats": {
+        "plywood": "pbr/Procedural/jp_plywood_red",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_desk_12",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        6.083,
+        5.518
+       ],
+       "rot": 1,
+       "mats": {
+        "laminate": "pbr/Procedural/jp_desk_laminate",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_chair_12",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        6.092,
+        5.005
+       ],
+       "rot": 183,
+       "mats": {
+        "plywood": "pbr/Procedural/jp_plywood_red",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_desk_13",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        1.106,
+        4.447
+       ],
+       "rot": -1,
+       "mats": {
+        "laminate": "pbr/Procedural/jp_desk_laminate",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_chair_13",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        1.119,
+        3.94
+       ],
+       "rot": 182,
+       "mats": {
+        "plywood": "pbr/Procedural/jp_plywood_red",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_desk_14",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        2.115,
+        4.447
+       ],
+       "rot": 1,
+       "mats": {
+        "laminate": "pbr/Procedural/jp_desk_laminate",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_chair_14",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        2.106,
+        3.946
+       ],
+       "rot": 180,
+       "mats": {
+        "plywood": "pbr/Procedural/jp_plywood_red",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_desk_15",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        3.112,
+        4.453
+       ],
+       "rot": 1,
+       "mats": {
+        "laminate": "pbr/Procedural/jp_desk_laminate",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_chair_15",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        3.128,
+        3.948
+       ],
+       "rot": 178,
+       "mats": {
+        "plywood": "pbr/Procedural/jp_plywood_red",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_desk_16",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        4.088,
+        4.441
+       ],
+       "rot": 0,
+       "mats": {
+        "laminate": "pbr/Procedural/jp_desk_laminate",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_chair_16",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        4.1,
+        3.957
+       ],
+       "rot": 180,
+       "mats": {
+        "plywood": "pbr/Procedural/jp_plywood_red",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_desk_17",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        5.09,
+        4.469
+       ],
+       "rot": -1,
+       "mats": {
+        "laminate": "pbr/Procedural/jp_desk_laminate",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_chair_17",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        5.124,
+        3.961
+       ],
+       "rot": 180,
+       "mats": {
+        "plywood": "pbr/Procedural/jp_plywood_red",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_desk_18",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        6.111,
+        4.437
+       ],
+       "rot": -1,
+       "mats": {
+        "laminate": "pbr/Procedural/jp_desk_laminate",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_chair_18",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        6.087,
+        3.929
+       ],
+       "rot": 179,
+       "mats": {
+        "plywood": "pbr/Procedural/jp_plywood_red",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_desk_19",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        1.09,
+        3.383
+       ],
+       "rot": 0,
+       "mats": {
+        "laminate": "pbr/Procedural/jp_desk_laminate",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_chair_19",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        1.078,
+        2.867
+       ],
+       "rot": 179,
+       "mats": {
+        "plywood": "pbr/Procedural/jp_plywood_red",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_desk_20",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        2.089,
+        3.418
+       ],
+       "rot": 0,
+       "mats": {
+        "laminate": "pbr/Procedural/jp_desk_laminate",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_chair_20",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        2.076,
+        2.909
+       ],
+       "rot": 179,
+       "mats": {
+        "plywood": "pbr/Procedural/jp_plywood_red",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_desk_21",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        3.089,
+        3.397
+       ],
+       "rot": -1,
+       "mats": {
+        "laminate": "pbr/Procedural/jp_desk_laminate",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_chair_21",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        3.055,
+        2.916
+       ],
+       "rot": 183,
+       "mats": {
+        "plywood": "pbr/Procedural/jp_plywood_red",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_desk_22",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        4.091,
+        3.4
+       ],
+       "rot": 1,
+       "mats": {
+        "laminate": "pbr/Procedural/jp_desk_laminate",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_chair_22",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        4.067,
+        2.899
+       ],
+       "rot": 178,
+       "mats": {
+        "plywood": "pbr/Procedural/jp_plywood_red",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_desk_23",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        5.098,
+        3.406
+       ],
+       "rot": -1,
+       "mats": {
+        "laminate": "pbr/Procedural/jp_desk_laminate",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_chair_23",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        5.084,
+        2.922
+       ],
+       "rot": 183,
+       "mats": {
+        "plywood": "pbr/Procedural/jp_plywood_red",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_desk_24",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        6.081,
+        3.398
+       ],
+       "rot": 0,
+       "mats": {
+        "laminate": "pbr/Procedural/jp_desk_laminate",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_chair_24",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        6.058,
+        2.901
+       ],
+       "rot": 177,
+       "mats": {
+        "plywood": "pbr/Procedural/jp_plywood_red",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_desk_25",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        1.094,
+        2.342
+       ],
+       "rot": 0,
+       "mats": {
+        "laminate": "pbr/Procedural/jp_desk_laminate",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_chair_25",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        1.111,
+        1.849
+       ],
+       "rot": 179,
+       "mats": {
+        "plywood": "pbr/Procedural/jp_plywood_red",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_desk_26",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        2.109,
+        2.337
+       ],
+       "rot": -1,
+       "mats": {
+        "laminate": "pbr/Procedural/jp_desk_laminate",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_chair_26",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        2.108,
+        1.839
+       ],
+       "rot": 181,
+       "mats": {
+        "plywood": "pbr/Procedural/jp_plywood_red",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_desk_27",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        3.107,
+        2.341
+       ],
+       "rot": 0,
+       "mats": {
+        "laminate": "pbr/Procedural/jp_desk_laminate",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_chair_27",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        3.103,
+        1.826
+       ],
+       "rot": 182,
+       "mats": {
+        "plywood": "pbr/Procedural/jp_plywood_red",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_desk_28",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        4.097,
+        2.346
+       ],
+       "rot": 0,
+       "mats": {
+        "laminate": "pbr/Procedural/jp_desk_laminate",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_chair_28",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        4.094,
+        1.831
+       ],
+       "rot": 182,
+       "mats": {
+        "plywood": "pbr/Procedural/jp_plywood_red",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_desk_29",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        5.089,
+        2.346
+       ],
+       "rot": -1,
+       "mats": {
+        "laminate": "pbr/Procedural/jp_desk_laminate",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_chair_29",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        5.071,
+        1.84
+       ],
+       "rot": 181,
+       "mats": {
+        "plywood": "pbr/Procedural/jp_plywood_red",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_desk_30",
+       "kit": {
+        "preset": "school_desk",
+        "size": [
+         0.65,
+         0.45,
+         0.73
+        ]
+       },
+       "at": [
+        6.106,
+        2.35
+       ],
+       "rot": 0,
+       "mats": {
+        "laminate": "pbr/Procedural/jp_desk_laminate",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_chair_30",
+       "kit": {
+        "preset": "school_chair",
+        "size": [
+         0.4,
+         0.44,
+         0.8
+        ]
+       },
+       "at": [
+        6.126,
+        1.865
+       ],
+       "rot": 179,
+       "mats": {
+        "plywood": "pbr/Procedural/jp_plywood_red",
+        "steel": "pbr/Procedural/jp_steel_chrome"
+       }
+      },
+      {
+       "id": "classroom_kt_school_lockers_1",
+       "kit": {
+        "preset": "school_lockers",
+        "size": [
+         1.8,
+         0.45,
+         0.9
+        ]
+       },
+       "at": [
+        2.4,
+        0.276
+       ],
+       "rot": 180,
+       "mats": {
+        "wood": "pbr/Procedural/jp_pine_varnish"
+       }
+      },
+      {
+       "id": "classroom_kt_school_lockers_2",
+       "kit": {
+        "preset": "school_lockers",
+        "size": [
+         1.8,
+         0.45,
+         0.9
+        ]
+       },
+       "at": [
+        4.2,
+        0.276
+       ],
+       "rot": 180,
+       "mats": {
+        "wood": "pbr/Procedural/jp_pine_varnish"
+       }
+      },
+      {
+       "id": "classroom_kt_school_lockers_3",
+       "kit": {
+        "preset": "school_lockers",
+        "size": [
+         1.8,
+         0.45,
+         0.9
+        ]
+       },
+       "at": [
+        6,
+        0.276
+       ],
+       "rot": 180,
+       "mats": {
+        "wood": "pbr/Procedural/jp_pine_varnish"
+       }
+      },
+      {
+       "id": "classroom_kt_chalkboard_back_1",
+       "kit": {
+        "preset": "chalkboard_back",
+        "size": [
+         2.7,
+         0.07,
+         0.9
+        ]
+       },
+       "at": [
+        4.2,
+        0.086
+       ],
+       "rot": 180,
+       "z": 1.05,
+       "mats": {
+        "chalkboard": "pbr/Procedural/jp_chalkboard"
+       }
+      },
+      {
+       "id": "classroom_kt_cleaning_locker_1",
+       "kit": {
+        "preset": "cleaning_locker",
+        "size": [
+         0.9,
+         0.515,
+         1.79
+        ]
+       },
+       "at": [
+        0.92,
+        0.309
+       ],
+       "rot": 180
+      },
+      {
+       "id": "classroom_kt_column_classroom_1",
+       "kit": {
+        "preset": "column_classroom",
+        "size": [
+         0.5,
+         0.2,
+         2.55
+        ]
+       },
+       "at": [
+        0.151,
+        3
+       ],
+       "rot": 90
+      },
+      {
+       "id": "classroom_kt_column_classroom_2",
+       "kit": {
+        "preset": "column_classroom",
+        "size": [
+         0.5,
+         0.2,
+         2.55
+        ]
+       },
+       "at": [
+        7.049,
+        3
+       ],
+       "rot": 270
+      },
+      {
+       "id": "classroom_kt_column_classroom_3",
+       "kit": {
+        "preset": "column_classroom",
+        "size": [
+         0.5,
+         0.2,
+         2.55
+        ]
+       },
+       "at": [
+        0.151,
+        6
+       ],
+       "rot": 90
+      },
+      {
+       "id": "classroom_kt_column_classroom_4",
+       "kit": {
+        "preset": "column_classroom",
+        "size": [
+         0.5,
+         0.2,
+         2.55
+        ]
+       },
+       "at": [
+        7.049,
+        6
+       ],
+       "rot": 270
+      },
+      {
+       "id": "classroom_kt_column_classroom_5",
+       "kit": {
+        "preset": "column_classroom",
+        "size": [
+         0.25,
+         0.2,
+         2.55
+        ]
+       },
+       "at": [
+        0.151,
+        0.176
+       ],
+       "rot": 90
+      },
+      {
+       "id": "classroom_kt_column_classroom_6",
+       "kit": {
+        "preset": "column_classroom",
+        "size": [
+         0.25,
+         0.2,
+         2.55
+        ]
+       },
+       "at": [
+        7.049,
+        0.176
+       ],
+       "rot": 270
+      },
+      {
+       "id": "classroom_kt_column_classroom_7",
+       "kit": {
+        "preset": "column_classroom",
+        "size": [
+         0.25,
+         0.2,
+         2.55
+        ]
+       },
+       "at": [
+        0.151,
+        8.824
+       ],
+       "rot": 90
+      },
+      {
+       "id": "classroom_kt_column_classroom_8",
+       "kit": {
+        "preset": "column_classroom",
+        "size": [
+         0.25,
+         0.2,
+         2.55
+        ]
+       },
+       "at": [
+        7.049,
+        8.824
+       ],
+       "rot": 270
+      },
+      {
+       "id": "classroom_kt_beam_classroom_1",
+       "kit": {
+        "preset": "beam_classroom",
+        "size": [
+         6.28,
+         0.3,
+         0.45
+        ]
+       },
+       "at": [
+        3.6,
+        3
+       ],
+       "rot": 0,
+       "z": 2.55
+      },
+      {
+       "id": "classroom_kt_beam_classroom_2",
+       "kit": {
+        "preset": "beam_classroom",
+        "size": [
+         6.28,
+         0.3,
+         0.45
+        ]
+       },
+       "at": [
+        3.6,
+        6
+       ],
+       "rot": 0,
+       "z": 2.55
+      },
+      {
+       "id": "classroom_kt_beam_classroom_3",
+       "kit": {
+        "preset": "beam_classroom",
+        "size": [
+         8.9,
+         0.4,
+         0.45
+        ]
+       },
+       "at": [
+        0.251,
+        4.5
+       ],
+       "rot": 90,
+       "z": 2.55
+      },
+      {
+       "id": "classroom_kt_beam_classroom_4",
+       "kit": {
+        "preset": "beam_classroom",
+        "size": [
+         8.9,
+         0.4,
+         0.45
+        ]
+       },
+       "at": [
+        6.949,
+        4.5
+       ],
+       "rot": 270,
+       "z": 2.55
+      },
+      {
+       "id": "classroom_kt_curtain_school_1",
+       "kit": {
+        "preset": "curtain_school",
+        "size": [
+         2.5,
+         0.16,
+         1.72
+        ]
+       },
+       "at": [
+        0.332,
+        1.5
+       ],
+       "rot": 90,
+       "z": 0.8,
+       "mats": {
+        "curtain": "pbr/Procedural/jp_curtain_mustard"
+       }
+      },
+      {
+       "id": "classroom_kt_curtain_school_2",
+       "kit": {
+        "preset": "curtain_school",
+        "size": [
+         2.5,
+         0.16,
+         1.72
+        ]
+       },
+       "at": [
+        0.332,
+        4.5
+       ],
+       "rot": 90,
+       "z": 0.8,
+       "mats": {
+        "curtain": "pbr/Procedural/jp_curtain_mustard"
+       }
+      },
+      {
+       "id": "classroom_kt_curtain_school_3",
+       "kit": {
+        "preset": "curtain_school",
+        "size": [
+         2.5,
+         0.16,
+         1.72
+        ]
+       },
+       "at": [
+        0.332,
+        7.5
+       ],
+       "rot": 90,
+       "z": 0.8,
+       "mats": {
+        "curtain": "pbr/Procedural/jp_curtain_mustard"
+       }
+      },
+      {
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "kelvin": 5000,
+       "lumens": 1500,
+       "id": "classroom_kt_board_light_1",
+       "kit": {
+        "preset": "board_light",
+        "grid": [
+         2,
+         1
+        ],
+        "size": [
+         3.2,
+         0.2,
+         0.12
+        ]
+       },
+       "at": [
+        3.6,
+        7.95
+       ],
+       "rot": 0,
+       "z": 2.88
+      },
+      {
+       "id": "classroom_fx_win1",
+       "kit": {
+        "preset": "window_classroom",
+        "size": [
+         2.3,
+         0.22,
+         1.625
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        0.06,
+        1.5
+       ],
+       "rot": 90,
+       "z": 0.925,
+       "in_wall": true,
+       "of": "classroom_w_window"
+      },
+      {
+       "id": "classroom_fx_win2",
+       "kit": {
+        "preset": "window_classroom",
+        "size": [
+         2.3,
+         0.22,
+         1.625
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        0.06,
+        4.5
+       ],
+       "rot": 90,
+       "z": 0.925,
+       "in_wall": true,
+       "of": "classroom_w_window"
+      },
+      {
+       "id": "classroom_fx_win3",
+       "kit": {
+        "preset": "window_classroom",
+        "size": [
+         2.3,
+         0.22,
+         1.625
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        0.06,
+        7.5
+       ],
+       "rot": 90,
+       "z": 0.925,
+       "in_wall": true,
+       "of": "classroom_w_window"
+      },
+      {
+       "id": "classroom_fx_win4",
+       "kit": {
+        "preset": "window_corridor",
+        "size": [
+         0.9,
+         0.14,
+         1.575
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        7.18,
+        2.24
+       ],
+       "rot": 270,
+       "z": 0.975,
+       "in_wall": true,
+       "of": "classroom_e_window"
+      },
+      {
+       "id": "classroom_fx_win5",
+       "kit": {
+        "preset": "window_corridor",
+        "size": [
+         2.3,
+         0.14,
+         1.575
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        7.18,
+        4.5
+       ],
+       "rot": 270,
+       "z": 0.975,
+       "in_wall": true,
+       "of": "classroom_e_window"
+      },
+      {
+       "id": "classroom_fx_win6",
+       "kit": {
+        "preset": "window_corridor",
+        "size": [
+         1.2,
+         0.14,
+         1.575
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        7.18,
+        6.95
+       ],
+       "rot": 270,
+       "z": 0.975,
+       "in_wall": true,
+       "of": "classroom_e_window"
+      },
+      {
+       "id": "start",
+       "use": "spot",
+       "at": [
+        5.6,
+        1.1
+       ],
+       "rot": 180
+      },
+      {
+       "id": "someone_spot",
+       "use": "spot",
+       "at": [
+        3.6,
+        7.75
+       ],
+       "rot": 270
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/Procedural/jp_plaster_cream",
+      "ceiling": "pbr/Procedural/jp_acoustic",
+      "wainscot": "pbr/Procedural/jp_pine_varnish"
+     },
+     "id": "hallway",
+     "at": [
+      7.2,
+      -3,
+      0
+     ],
+     "size": [
+      2.4,
+      15,
+      3
+     ],
+     "floor": "tile",
+     "light": "dim",
+     "kind": "hallway",
+     "name": "Corridor",
+     "skip": [
+      [
+       "w",
+       3,
+       12
+      ]
+     ],
+     "openings": [
+      {
+       "wall": "e",
+       "at": 1.5,
+       "w": 2.3,
+       "h": 1.65,
+       "sill": 0.9,
+       "window": true
+      },
+      {
+       "wall": "e",
+       "at": 4.5,
+       "w": 2.3,
+       "h": 1.65,
+       "sill": 0.9,
+       "window": true
+      },
+      {
+       "wall": "e",
+       "at": 7.5,
+       "w": 2.3,
+       "h": 1.65,
+       "sill": 0.9,
+       "window": true
+      },
+      {
+       "wall": "e",
+       "at": 10.5,
+       "w": 2.3,
+       "h": 1.65,
+       "sill": 0.9,
+       "window": true
+      },
+      {
+       "wall": "e",
+       "at": 13.5,
+       "w": 2.3,
+       "h": 1.65,
+       "sill": 0.9,
+       "window": true
+      },
+      {
+       "wall": "n",
+       "at": 1.2,
+       "w": 1.4,
+       "h": 1.5,
+       "sill": 0.9,
+       "window": true
+      },
+      {
+       "wall": "s",
+       "at": 1.2,
+       "w": 1.4,
+       "h": 1.5,
+       "sill": 0.9,
+       "window": true
+      }
+     ],
+     "props": [
+      {
+       "id": "hallway_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        1.2,
+        7.5
+       ],
+       "z": 2.908,
+       "kit": {
+        "preset": "tube_trough_1",
+        "grid": [
+         5,
+         1
+        ],
+        "size": [
+         13.25,
+         0.15,
+         0.08
+        ]
+       },
+       "kelvin": 4500,
+       "lumens": 4000,
+       "rot": 90
+      },
+      {
+       "id": "hallway_fx_switch",
+       "at": [
+        0.057,
+        11.85
+       ],
+       "rot": 90,
+       "z": 1.14,
+       "tag": "light_switch",
+       "kit": {
+        "preset": "switch_jp_1",
+        "size": [
+         0.07,
+         0.012,
+         0.12
+        ]
+       },
+       "use": "switch",
+       "light": "hallway_fx_light"
+      },
+      {
+       "id": "hallway_fx_floor",
+       "kit": {
+        "preset": "vinyl_tiles",
+        "size": [
+         2.3,
+         14.9,
+         0.003
+        ]
+       },
+       "at": [
+        1.2,
+        7.5
+       ],
+       "mats": {
+        "vinyl": "pbr/Procedural/jp_vinyl_tile",
+        "vinyl_2": "pbr/Procedural/jp_vinyl_tile",
+        "vinyl_3": "pbr/Procedural/jp_vinyl_tile",
+        "vinyl_4": "pbr/Procedural/jp_vinyl_tile"
+       }
+      },
+      {
+       "id": "hallway_fx_ceiling",
+       "kit": {
+        "preset": "ceiling_rockwool",
+        "size": [
+         2.3,
+         14.9,
+         0.012
+        ]
+       },
+       "at": [
+        1.2,
+        7.5
+       ],
+       "z": 2.988,
+       "mats": {
+        "acoustic": "pbr/Procedural/jp_acoustic"
+       }
+      },
+      {
+       "id": "hallway_kt_hydrant_box_1",
+       "kit": {
+        "preset": "hydrant_box",
+        "size": [
+         0.75,
+         0.16,
+         1.95
+        ]
+       },
+       "at": [
+        0.131,
+        1.4
+       ],
+       "rot": 90
+      },
+      {
+       "id": "hallway_kt_corkboard_1",
+       "kit": {
+        "preset": "corkboard",
+        "size": [
+         1.8,
+         0.02,
+         0.9
+        ]
+       },
+       "at": [
+        0.061,
+        13.4
+       ],
+       "rot": 90,
+       "z": 1.1,
+       "mats": {
+        "cork": "pbr/Procedural/jp_cork"
+       }
+      },
+      {
+       "id": "hallway_kt_school_speaker_1",
+       "kit": {
+        "preset": "school_speaker",
+        "size": [
+         0.3,
+         0.12,
+         0.22
+        ]
+       },
+       "at": [
+        1.2,
+        14.89
+       ],
+       "rot": 0,
+       "z": 2.4
+      },
+      {
+       "id": "hallway_kt_umbrella_stand_1",
+       "kit": {
+        "preset": "umbrella_stand",
+        "size": [
+         0.9,
+         0.25,
+         0.55
+        ]
+       },
+       "at": [
+        2.224,
+        14
+       ],
+       "rot": 270
+      },
+      {
+       "id": "hallway_fx_win1",
+       "kit": {
+        "preset": "window_classroom",
+        "size": [
+         2.3,
+         0.22,
+         1.675
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        2.34,
+        1.5
+       ],
+       "rot": 270,
+       "z": 0.875,
+       "in_wall": true,
+       "of": "hallway_e_window"
+      },
+      {
+       "id": "hallway_fx_win2",
+       "kit": {
+        "preset": "window_classroom",
+        "size": [
+         2.3,
+         0.22,
+         1.675
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        2.34,
+        4.5
+       ],
+       "rot": 270,
+       "z": 0.875,
+       "in_wall": true,
+       "of": "hallway_e_window"
+      },
+      {
+       "id": "hallway_fx_win3",
+       "kit": {
+        "preset": "window_classroom",
+        "size": [
+         2.3,
+         0.22,
+         1.675
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        2.34,
+        7.5
+       ],
+       "rot": 270,
+       "z": 0.875,
+       "in_wall": true,
+       "of": "hallway_e_window"
+      },
+      {
+       "id": "hallway_fx_win4",
+       "kit": {
+        "preset": "window_classroom",
+        "size": [
+         2.3,
+         0.22,
+         1.675
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        2.34,
+        10.5
+       ],
+       "rot": 270,
+       "z": 0.875,
+       "in_wall": true,
+       "of": "hallway_e_window"
+      },
+      {
+       "id": "hallway_fx_win5",
+       "kit": {
+        "preset": "window_classroom",
+        "size": [
+         2.3,
+         0.22,
+         1.675
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        2.34,
+        13.5
+       ],
+       "rot": 270,
+       "z": 0.875,
+       "in_wall": true,
+       "of": "hallway_e_window"
+      },
+      {
+       "id": "hallway_fx_win6",
+       "kit": {
+        "preset": "window_wired",
+        "size": [
+         1.4,
+         0.22,
+         1.525
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        1.2,
+        14.94
+       ],
+       "rot": 0,
+       "z": 0.875,
+       "in_wall": true,
+       "of": "hallway_n_window"
+      },
+      {
+       "id": "hallway_fx_win7",
+       "kit": {
+        "preset": "window_wired",
+        "size": [
+         1.4,
+         0.22,
+         1.525
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        1.2,
+        0.06
+       ],
+       "rot": 180,
+       "z": 0.875,
+       "in_wall": true,
+       "of": "hallway_s_window"
+      }
+     ]
+    }
+   ],
+   "links": [
+    {
+     "a": "classroom",
+     "b": "hallway",
+     "via": "classroom_front_door"
+    },
+    {
+     "a": "classroom",
+     "b": "hallway",
+     "via": "classroom_back_door"
+    }
+   ],
+   "trim": {
+    "skirting": 0.08,
+    "casing": 0.05,
+    "threshold": 0.012,
+    "wainscot": 0.95
+   },
+   "outside": {
+    "style": "school",
+    "seed": 4,
+    "look": {
+     "wall": "#e7e2d6",
+     "wall2": "#a9b4ae",
+     "trim": "#d9d4c8"
+    },
+    "roof": {
+     "kind": "rail"
+    },
+    "parts": [],
+    "raise": 0.3
+   }
+  }
+ },
+ "scenes": {
+  "s_first": {
+   "title": "First words",
+   "level": "school_classroom_pbr",
+   "stage": {
+    "someone": "someone_spot"
+   },
+   "view": "start",
+   "camera": {
+    "mode": "soft",
+    "look": "someone",
+    "cone": [
+     30,
+     18
+    ]
+   },
+   "clips": [
+    {
+     "id": "c1",
+     "who": "someone",
+     "ja": "……",
+     "en": "...",
+     "act": "looks up"
+    }
+   ]
+  }
+ },
+ "stitches": {
+  "t_start": {
+   "title": "Start",
+   "level": "school_classroom_pbr",
+   "beats": [
+    {
+     "id": "b_start",
+     "when": {
+      "start": true
+     },
+     "do": [
+      {
+       "fade": "in",
+       "secs": 2
+      },
+      {
+       "done": true
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "flow": {
+  "n_start": {
+   "type": "stitch",
+   "ref": "t_start",
+   "next": "n_first"
+  },
+  "n_first": {
+   "type": "scene",
+   "ref": "s_first",
+   "next": "e_end",
+   "final": true
+  },
+  "e_end": {
+   "type": "ending",
+   "kind": "good",
+   "title": "The end"
+  }
+ },
+ "secrets": {}
+}

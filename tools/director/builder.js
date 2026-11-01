@@ -9,7 +9,7 @@ import { Stage, vfov, EYES, s2t, SHOTS, shotFor, FOV_H, loadAssetLibrary, LIBRAR
 import { loadBody, BodyFigure } from "./bodies.js";
 import { GLTFLoader } from "./vendor/GLTFLoader.js";
 import { FBXLoader } from "./vendor/FBXLoader.js";
-import { KINDS, OPENINGS, PRESETS, JO, MODULE, STOREY, WALL_ITEMS, FINISH, KNOWN_LOOKS, FLOOR_BY_KIND, LIGHT_FITTINGS } from "./builder-presets.js";
+import { KINDS, OPENINGS, PRESETS, JO, MODULE, STOREY, WALL_ITEMS, FINISH, KNOWN_LOOKS, FLOOR_BY_KIND, CEILING_BY_KIND, LIGHT_FITTINGS } from "./builder-presets.js";
 import * as BM from "./builder-model.js";
 import * as KIT from "./kit.js";
 import { form as kitForm, overrides as kitOverrides, CSS as KIT_CSS } from "./kit-form.js";
@@ -338,6 +338,7 @@ svg.addEventListener("mousedown", e => {
   if (B.tool === "measure" && e.button === 0) { const p = snapPt(x, y); B.measure = { a: p, b: p }; drag = { kind: "measure" }; draw(); return; }
   if (B.tool === "item" && e.button === 0) { addItem(x, y); return; }
   if (B.tool === "kit" && e.button === 0) { addKit(x, y); return; }
+  if (B.tool === "prop" && e.button === 0) { addProp(x, y); return; }
   if (B.tool === "fit" && e.button === 0) { addItem(x, y, B.fitPreset); return; }
   if (B.tool !== "select" && e.button === 0) { addOpening(x, y); return; }
   if (t.dataset.item) { B.sel = { item: t.dataset.item }; const it = B.model.items.find(i => i.id === t.dataset.item); pushUndo(); drag = { kind: "item", it, a0: it.a, p: wallCoord(it, x, y) }; changed(false); return; }
@@ -458,6 +459,7 @@ function renderTools() {
   for (const [t, label, tip] of [["select", "Select / move"], ["door", "Door"], ["slide", "Sliding door"], ["arch", "Opening"], ["window", "Window"],
                                   ["ref", "Reference cut-out", "cut a wall to the reference model chosen under References"], ["item", "Wall item", "a mirror, a poster, a TV... on the wall you click"],
                                   ["kit", "Furniture", "cabinets, built-ins, beds, sofas, tables, rugs, curtains, downlights: click in a room (ones that stand against a wall go to the nearest)"],
+                                  ["prop", "Prop", "the prop maker's props (books, a diary, cans...): click on a desk, a shelf or a cubby to put it on or in it"],
                                   ["fit", "Wall fitting", "switch plates, sockets, panels, vents: click near a wall"],
                                   ["measure", "Measure", "drag to measure (it snaps like a room)"]]) {
     const b = document.createElement("button"); b.textContent = label; b.className = B.tool === t ? "on" : ""; if (tip) b.title = tip;
@@ -476,6 +478,16 @@ function renderTools() {
     sel.style.width = "100%"; sel.style.marginTop = "4px";
     const a = document.createElement("a"); a.href = "kit.html"; a.target = "kitmaker"; a.textContent = "Kit maker ↗"; a.className = "hint"; a.title = "make your own presets (they show here once saved; reload this page)";
     box.append(sel, a);
+  }
+  if (B.tool === "prop") {                                       // the prop generator's props in the library (books, cans, charms)
+    const sel = document.createElement("select"); sel.style.width = "100%"; sel.style.marginTop = "4px";
+    const names = Object.keys(LIBRARY.props || {}).sort();
+    for (const ref of names) { const z = LIBRARY.props[ref].size; sel.append(new Option(`${ref.slice(6)} (${z.map(v => Math.round(v * 100)).join(" × ")} cm)`, ref)); }
+    if (!B.propRef || !LIBRARY.props[B.propRef]) B.propRef = names.find(n => /book/.test(n)) || names[0] || "";
+    sel.value = B.propRef; sel.onchange = () => { B.propRef = sel.value; };
+    const h = document.createElement("div"); h.className = "hint";
+    h.textContent = names.length ? "click on a desk, a shelf or a cubby: it goes on or into the thing, at the place under the click" : "no props in the library yet: python tools/propgen.py library <names>";
+    box.append(sel, h);
   }
   if (B.tool === "ref") {
     const n = document.createElement("div"); n.className = "hint"; n.style.marginTop = "4px";
@@ -511,7 +523,8 @@ function renderProps() {
       ...field("x, y", wrap(num(r.x, v => { r.x = v; }), num(r.y, v => { r.y = v; }))), ...field("w × d", wrap(num(r.w, v => { r.w = Math.max(0.3, v); }), num(r.d, v => { r.d = Math.max(0.3, v); }))),
       ...field("height", num(r.h, v => { r.h = Math.max(0.5, v); })), ...field("floor", pick(r.floor, ["wood", "stone", "carpet", "tile", "dirt", "metal", "water"], v => { r.floor = v; })),
       ...field("light", pick(r.light, ["off", "dark", "dim", "lit"], v => { r.light = v; })));
-    if (r.kind === "stairs") grid.append(...field("climbs", pick(r.dir, [["n", "north ↑"], ["e", "east →"], ["s", "south ↓"], ["w", "west ←"]], v => { r.dir = v; })));
+    if (r.kind === "stairs") grid.append(...field("climbs", pick(r.dir, [["n", "north ↑"], ["e", "east →"], ["s", "south ↓"], ["w", "west ←"]], v => { r.dir = v; })),
+      ...field("flights", pick(String(r.flights || 1), [["1", "one straight flight"], ["2", "a dog-leg: two a storey, a half landing (a school's)"]], v => { r.flights = +v; })));
     box.append(grid);
     const walls = document.createElement("div"); walls.className = "walls";
     walls.append("open sides:", ...BM.WALLS.map(wl => check(r.open.includes(wl), wl, on => { r.open = on ? [...r.open, wl] : r.open.filter(x => x !== wl); })));
@@ -769,7 +782,7 @@ async function boot() {
   };
   $("#marks").onchange = () => draw();
   await loadAssetLibrary().catch(() => { });
-  BM.KITS.presets = LIBRARY.kit;
+  BM.KITS.presets = LIBRARY.kit; BM.KITS.props = LIBRARY.props;
   const css = document.createElement("style"); css.textContent = KIT_CSS; document.head.append(css);
   $("#game").onchange = async () => {
     if ($("#game").value !== "__newset") return loadGame($("#game").value);
@@ -885,10 +898,14 @@ function renderFinish() {
   grid.append(...cm("skirting, cm", "skirting", "the board along the foot of every wall (0: none); Japanese homes: 4 to 8 cm"),
               ...cm("cornice, cm", "cornice", "a moulding where the wall meets the ceiling (mawaribuchi; 0: none)"),
               ...cm("door casing, cm", "casing", "the frame round every door and opening, both sides (0: none)"),
-              ...cm("threshold, cm", "threshold", "a strip across a doorway where the floor changes, wood to tile (0: none)"));
+              ...cm("threshold, cm", "threshold", "a strip across a doorway where the floor changes, wood to tile (0: none)"),
+              ...cm("wainscot, cm", "wainscot", "wood boards under a cap rail along the foot of every wall, this high (a school's 腰板: 90 to 120 cm; 0: none); its look is the room's wainscot"));
   const floors = document.createElement("button"); floors.textContent = "Floors by room kind";
   floors.title = "every room without a floor gets its kind's: planks in the living rooms, tatami in a washitsu, tiles in the wet rooms, stone in the genkan";
   floors.onclick = () => { pushUndo(); let n = 0; for (const r of B.model.rooms) if (!r.floorKit && FLOOR_BY_KIND[r.kind]) { r.floorKit = { preset: FLOOR_BY_KIND[r.kind] }; n++; } changed(); status(`${n} rooms got a floor`); };
+  const ceilings = document.createElement("button"); ceilings.textContent = "Ceilings by room kind";
+  ceilings.title = "every room without a ceiling of its own gets its kind's: a school's rock wool boards, a staff room's T-bar grid";
+  ceilings.onclick = () => { pushUndo(); let n = 0; for (const r of B.model.rooms) if (r.ceiling && !r.ceilKit && CEILING_BY_KIND[r.kind]) { r.ceilKit = { preset: CEILING_BY_KIND[r.kind] }; n++; } changed(); status(`${n} rooms got a ceiling`); };
   const doorsAll = document.createElement("button"); doorsAll.textContent = "Doors in every doorway";
   doorsAll.title = "a panelled door on hinges (with its frame and handle) in every hinged doorway, a flush slider in every sliding one; each door's kind and handle are yours to change";
   doorsAll.onclick = () => { pushUndo(); let n = 0; for (const op of B.model.ops) if ((op.type === "door" || op.type === "slide") && !(op.extra || {}).kit) { op.extra = Object.assign({}, op.extra, { kit: { preset: op.type === "slide" ? "door_slide" : "door_panels" } }); n++; } changed(); status(`${n} doorways got a door`); };
@@ -899,7 +916,7 @@ function renderFinish() {
   box.append(grid,
     check(f.lights, "a ceiling light in every room", v => { f.lights = v; renderFinish(); }), document.createElement("br"),
     ...(f.lights ? [Object.assign(document.createElement("label"), { textContent: "its fitting " }), fitting, document.createElement("br")] : []),
-    check(f.switches, "its switch by the door (an interactable)", v => { f.switches = v; renderFinish(); }), document.createElement("br"), floors, " ", frames, " ", doorsAll);
+    check(f.switches, "its switch by the door (an interactable)", v => { f.switches = v; renderFinish(); }), document.createElement("br"), floors, " ", ceilings, " ", frames, " ", doorsAll);
 }
 
 // ---- the outside: the building round the level as a street builds it (the street builder's own generator: the same
@@ -1221,7 +1238,7 @@ function lookEditor(r) {
   const named = Object.values(look).filter(v => typeof v === "string" && !v.startsWith("#"));
   const opts = [...new Set([...Object.keys(LIBRARY.textures || {}).filter(k => !k.startsWith("pbr/_made/")), ...KNOWN_LOOKS, ...named])].filter(Boolean).sort();
   const g = document.createElement("div"); g.className = "prop";
-  for (const part of ["floor", "walls", "ceiling", "trim"]) {
+  for (const part of ["floor", "walls", "ceiling", "trim", ...(B.model.finish.wainscot > 0 || look.wainscot ? ["wainscot"] : [])]) {
     const cur = look[part], own = cur && (typeof cur === "object" || String(cur).startsWith("#"));   // tuned or a colour: the paint bucket's
     const sel = pick(own ? "__own" : (cur || ""), [["", "(grey)"], ...(own ? [["__own", lookName(cur)]] : []),
       ...opts.map(o => [o, o.replace(/^(ambientcg|pbr)\//, "") + (LIBRARY.textures && LIBRARY.textures[o] ? "" : " (not fetched)")])], v => {
@@ -1251,7 +1268,7 @@ const PB = { on: false, scope: "one", target: null, clearing: false, down: null,
 const paintHl = new THREE.Group();
 const HLMAT = new THREE.MeshBasicMaterial({ color: 0xd9a441, transparent: true, opacity: 0.28, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 });
 const t2s = v => [v.x, -v.z, v.y];                                   // three's space -> the story's (z up)
-const PART_NAMES = { floor: "floor", walls: "walls", ceiling: "ceiling", trim: "trim" };
+const PART_NAMES = { floor: "floor", walls: "walls", ceiling: "ceiling", trim: "trim", wainscot: "wainscot" };
 const kitKey = spec => !spec ? "" : typeof spec === "string" ? spec : spec.preset || spec.type || "";
 // what a piece belongs to, for its paint: {id, room, key (its kit, or "door": for every one like it), door (a door's
 // parts and slab: its opening holds it), of (a window's frame: its window holds it)}; a stair's steps are its own
@@ -1383,6 +1400,7 @@ function targetOfHit(h) {
     const r = q && BM.roomAt(B.model, q[0], q[1], q[2] - 0.3);
     return { kind: "room", room: (r && r.id) || p.room, part: "walls" };
   }
+  if (tags.includes("trim:wainscot")) return { kind: "room", room: p.room, part: "wainscot" };   // its boards: the room's wainscot look
   if (tags.some(t => t.startsWith("trim:"))) return { kind: "room", room: p.room, part: "trim" };
   const d = dressOf(p), has = d && (d.door || d.of || holderOf(d));
   if ((p.kind === "mesh" || p.kind === "door") && tags.some(t => t.startsWith("kit:"))) {   // a kit thing, a fitting, a kit door's part, a
@@ -1417,7 +1435,8 @@ function meshesOf(t) {                                                // what a 
     if (!rooms.has(p.room)) return;
     const lining = tags.includes("trim:lining");
     if (t.part === "floor" ? p.kind === "floor" || p.id === `${p.room}_fx_floor` : t.part === "ceiling" ? p.kind === "ceiling" || p.id === `${p.room}_fx_ceiling`
-      : t.part === "walls" ? p.kind === "wall" || lining : !lining && tags.some(x => x.startsWith("trim:"))) out.push(m);
+      : t.part === "walls" ? p.kind === "wall" || lining : t.part === "wainscot" ? tags.includes("trim:wainscot")
+      : !lining && !tags.includes("trim:wainscot") && tags.some(x => x.startsWith("trim:"))) out.push(m);
   });
   return out;
 }
@@ -1509,7 +1528,7 @@ async function refreshLibrary() {
   refreshing = true;
   try {
     const before = JSON.stringify([LIBRARY.textures, LIBRARY.kit]);
-    await loadAssetLibrary(); BM.KITS.presets = LIBRARY.kit;
+    await loadAssetLibrary(); BM.KITS.presets = LIBRARY.kit; BM.KITS.props = LIBRARY.props;
     if (JSON.stringify([LIBRARY.textures, LIBRARY.kit]) === before) return;
     renderProps(); replan();
     if (!B.dirty) status(`the PBR shelf and the kit presets as they are now (${Object.keys(LIBRARY.textures).filter(k => k.startsWith("pbr/")).length} shelf sets)`);
@@ -1544,13 +1563,44 @@ function addKit(x, y) {
   const k = BM.newKit(preset, `${r.id}_kt_${preset}_${i}`, r.id, r2(Math.round((x - r.x) / 0.05) * 0.05), r2(Math.round((y - r.y) / 0.05) * 0.05));
   const mount = BM.mountOf(k.spec);
   if (mount === "ceiling") k.z = +(r.h - k.size[2]).toFixed(4);
-  if (mount === "on") {                                  // a cushion: on whatever's under it, at its seat
+  if (mount === "on") {                                  // a cushion on its seat, books into a cubby or onto a desk
     const under = kitUnder(r, x - r.x, y - r.y, k.id);
-    if (under) { k.z = +restHeight(under).toFixed(3); k.extra = Object.assign({}, k.extra, { on: under.id }); k.rot = under.rot; }
+    if (under) {
+      const pl = BM.placesOf(under).length ? dropOn(k, under, x - r.x, y - r.y) : null;
+      if (!pl) { k.z = +restHeight(under).toFixed(3); k.extra = Object.assign({}, k.extra, { on: under.id }); k.rot = under.rot; }
+    }
   }
   if (mount === "back") snapKit(k, 99);
   (B.model.kits = B.model.kits || []).push(k); B.sel = { kit: k.id };
   changed();
+}
+// a prop from the prop generator (the library's props/<name>: books, a can, a charm), placed like a kit thing; dropped on
+// a kit thing it goes on or into it (SCENE_BUILDER §10): the place under the click it fits (a desk's book box, a cubby, a
+// shelf), else its top
+function addProp(x, y) {
+  const r = BM.roomAt(B.model, x, y, floorZ());
+  if (!r) { status("click inside a room", "bad"); return; }
+  const ref = B.propRef, info = (LIBRARY.props || {})[ref];
+  if (!info) { status("pick a prop first (python tools/propgen.py library <names> puts made ones in the library)", "bad"); return; }
+  const name = ref.split("/").pop();
+  let i = 1; while ((B.model.kits || []).some(k => k.id === `${r.id}_kt_${name}_${i}`)) i++;
+  pushUndo();
+  const k = { id: `${r.id}_kt_${name}_${i}`, room: r.id, x: r2(x - r.x), y: r2(y - r.y), z: 0, rot: 0, spec: { asset: ref }, size: info.size.slice(), extra: {} };
+  const under = kitUnder(r, x - r.x, y - r.y, k.id);
+  if (under) dropOn(k, under, x - r.x, y - r.y);
+  (B.model.kits = B.model.kits || []).push(k); B.sel = { kit: k.id };
+  changed();
+}
+// on or into a kit thing at the place under (px, py) that the thing fits, else its highest top; without places, at its rest
+function dropOn(k, q, px, py) {
+  const pls = BM.placesOf(q), fits = pl => k.size[2] <= pl.size[2] + 0.002 && Math.min(k.size[0], k.size[1]) <= Math.min(pl.size[0], pl.size[1]) + 0.002;
+  const inside = pl => { const a = -pl.rot * Math.PI / 180, dx = px - pl.x, dy = py - pl.y, u = dx * Math.cos(a) - dy * Math.sin(a), v = dx * Math.sin(a) + dy * Math.cos(a);
+    return Math.abs(u) <= pl.size[0] / 2 + 0.02 && Math.abs(v) <= pl.size[1] / 2 + 0.02; };
+  const pl = pls.filter(p => inside(p) && fits(p)).sort((a, b) => (a.kind === "in") - (b.kind === "in") || b.z - a.z)[0]
+    || pls.filter(p => p.kind === "on").sort((a, b) => b.z - a.z)[0];
+  if (pl) { BM.putOn(k, q, pl); return pl; }
+  k.z = +restHeight(q).toFixed(3); k.extra = Object.assign({}, k.extra, { on: q.id }); k.rot = q.rot;
+  return null;
 }
 // against the nearest wall within `reach` m: its back to the wall, its front to the room
 function snapKit(k, reach = 0.3) {
@@ -1586,7 +1636,7 @@ function drawKit(k) {
   }
 }
 function kitPanel(box, grid, k) {
-  const P = LIBRARY.kit[(k.spec || {}).preset], full = (() => { try { return KIT.withDefaults(KIT.resolve(Object.assign({}, k.spec, { size: k.size }), LIBRARY.kit)); } catch (e) { return null; } })();
+  const P = (k.spec || {}).asset ? { label: `${k.spec.asset} (the prop maker's)` } : LIBRARY.kit[(k.spec || {}).preset], full = (k.spec || {}).asset ? null : (() => { try { return KIT.withDefaults(KIT.resolve(Object.assign({}, k.spec, { size: k.size }), LIBRARY.kit)); } catch (e) { return null; } })();
   const head = document.createElement("div"); head.innerHTML = `<b>${P ? P.label : "Kit thing"}</b> <span class="hint">in ${k.room} · R turns it, the arrows nudge it</span>`;
   box.append(head);
   grid.append(...field("id", txt(k.id, v => { if (v && !B.model.kits.some(q => q.id === v)) { k.id = v.startsWith(k.room + "_kt_") ? v : `${k.room}_kt_${v}`; B.sel.kit = k.id; } })),
@@ -1597,12 +1647,23 @@ function kitPanel(box, grid, k) {
   if (full) {
     kitBox(`${P ? P.label : KIT.TYPES[full.type].label}: its numbers`, kitForm(full, nf => { pushUndo(); const o = kitOverrides(nf, (k.spec || {}).preset, LIBRARY.kit); delete o.size; k.spec = o; k.size = nf.size.slice(); changed(); }, { noSize: true, presets: LIBRARY.kit }));
   }
+  const host = k.extra && k.extra.on && (B.model.kits || []).find(q => q.id === k.extra.on && q.room === k.room), pls = host ? BM.placesOf(host) : [];
+  if (pls.length) {                                              // on or in a kit thing: which of its places (KIT §10)
+    const now = pls.find(p => Math.hypot(p.x - k.x, p.y - k.y) < 0.03 && Math.abs(p.z - k.z) < 0.01);
+    const g2 = document.createElement("div"); g2.className = "prop";
+    const fit = document.createElement("button"); fit.textContent = "Fit it in"; fit.title = "its size the place's inside (a row of books fills its cubby)";
+    fit.disabled = !now || !!(k.spec && k.spec.asset); fit.onclick = () => { pushUndo(); BM.putOn(k, host, now, true); changed(); };
+    g2.append(...field(`sits ${now && now.kind === "in" ? "in" : "on"}`, wrap(pick(now ? now.name : "", [...(now ? [] : [["", "(where it was dropped)"]]),
+      ...pls.map(p => [p.name, `${p.kind === "in" ? "in" : "on"} ${p.name} (${p.size.map(v => Math.round(v * 100)).join(" × ")} cm)`])],
+      v => { const p = pls.find(q => q.name === v); if (p) { pushUndo(); BM.putOn(k, host, p); changed(); } }), fit)));
+    box.append(g2);
+  }
   const row = document.createElement("div"); row.style.cssText = "display:flex;gap:4px;margin-top:6px;flex-wrap:wrap";
   const sn = document.createElement("button"); sn.textContent = "Back to the wall"; sn.onclick = () => { pushUndo(); snapKit(k, 99); changed(); };
   const vy = document.createElement("button"); vy.textContent = "🎲 Vary"; vy.title = "another layout and other details, the same size (Ctrl+Z goes back)";
-  vy.onclick = () => varyKit(k);
+  vy.onclick = () => varyKit(k); vy.disabled = !!(k.spec && k.spec.asset);
   const mk = document.createElement("button"); mk.textContent = "Open in the kit maker ↗";
-  mk.onclick = () => window.open("kit.html#" + encodeURIComponent(JSON.stringify(Object.assign({}, k.spec, { size: k.size }))), "kitmaker");
+  mk.onclick = () => window.open("kit.html#" + encodeURIComponent(JSON.stringify(Object.assign({}, k.spec, { size: k.size }))), "kitmaker"); mk.hidden = !!(k.spec && k.spec.asset);
   const del = document.createElement("button"); del.textContent = "Remove"; del.onclick = () => removeSel();
   row.append(vy, sn, mk, del); box.append(row);
 }

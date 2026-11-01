@@ -850,7 +850,8 @@ def ring_path(c, axis, radius, n=24):
     return np.asarray(c, float)[None] + radius * (np.cos(t)[:, None] * u[None] + np.sin(t)[:, None] * w[None])
 
 
-def rbox(size, bevel, islands, top="top", bottom="bottom", edge="edge", at=(0.0, 0.0, 0.0), corner=None, steps=3, fill=None, step=None, mat=None):
+def rbox(size, bevel, islands, top="top", bottom="bottom", edge="edge", at=(0.0, 0.0, 0.0), corner=None, steps=3, fill=None, step=None, mat=None,
+         corner_n=6):
     """A box (w, d, h) metres standing on `at`, every edge rounded by `bevel` (its upright corners by `corner`): a slab
     of its rounded footprint. Its top and bottom map from above and below, its sides along the band round it."""
     from .paint import rrect_poly
@@ -858,7 +859,7 @@ def rbox(size, bevel, islands, top="top", bottom="bottom", edge="edge", at=(0.0,
     # the corner kept a little rounder than the bevel: inset by the bevel for the top and bottom faces, a corner of the
     # bevel's own radius collapses to a point (its triangles a jumble of windings) and a smaller one folds over itself
     c = max(bevel if corner is None else corner, bevel * 1.2)
-    loop = rrect_poly(-w / 2, -d / 2, w, d, max(c, 1e-6), n=6)
+    loop = rrect_poly(-w / 2, -d / 2, w, d, max(c, 1e-6), n=corner_n)
     m = slab([loop], h, bevel, islands, top, bottom, edge, steps=steps, fill=fill, step=step, mat=mat)
     m.v += np.array([at[0], at[1], at[2] + h / 2])
     m.a["rest"] = m.v.copy()

@@ -1,6 +1,6 @@
 {
  "_note": "The kit's presets (docs/KIT.md): each is a kit spec plus label, cat, mount and z (the height of its base above the floor). The kit maker (tools/director/kit.html) adds yours. version must match VERSION in tools/director/kit.js.",
- "version": 5,
+ "version": 6,
  "presets": {
   "oak_planks": {
    "label": "Oak planks, 150 mm, random lengths",
@@ -2504,6 +2504,850 @@
    "style": "ring",
    "trim": 0.02,
    "lens_in": 0.003
+  },
+  "school_desk": {
+   "label": "School desk (学習机, new JIS 5.5号: 65 × 45, 73 cm)",
+   "cat": "school",
+   "type": "school_desk",
+   "size": [
+    0.65,
+    0.45,
+    0.73
+   ]
+  },
+  "school_desk_old": {
+   "label": "School desk, old JIS (60 × 40, 70 cm, no sleeves)",
+   "cat": "school",
+   "type": "school_desk",
+   "size": [
+    0.6,
+    0.4,
+    0.7
+   ],
+   "adjust": false,
+   "hook": "left",
+   "box": 0.3
+  },
+  "school_desk_small": {
+   "label": "School desk, elementary (60 × 40, 58 cm)",
+   "cat": "school",
+   "type": "school_desk",
+   "size": [
+    0.6,
+    0.4,
+    0.58
+   ],
+   "box": 0.3,
+   "box_h": 0.09,
+   "stretcher": 0.1
+  },
+  "school_chair": {
+   "label": "School chair (学習椅子, JIS 5.5号: seat at 44 cm)",
+   "cat": "school",
+   "type": "school_chair",
+   "size": [
+    0.4,
+    0.44,
+    0.8
+   ]
+  },
+  "school_chair_small": {
+   "label": "School chair, elementary (seat at 34 cm)",
+   "cat": "school",
+   "type": "school_chair",
+   "size": [
+    0.36,
+    0.4,
+    0.66
+   ],
+   "seat_h": 0.34,
+   "seat_d": 0.33,
+   "back_h": 0.13
+  },
+  "lectern": {
+   "label": "Teacher's lectern (教卓), its front green",
+   "cat": "school",
+   "type": "lectern",
+   "size": [
+    0.9,
+    0.6,
+    0.95
+   ]
+  },
+  "lectern_wood": {
+   "label": "Teacher's lectern, all wood",
+   "cat": "school",
+   "type": "lectern",
+   "size": [
+    0.9,
+    0.55,
+    0.95
+   ],
+   "panel_slot": "wood",
+   "drawer": false
+  },
+  "teacher_desk": {
+   "label": "Teacher's steel desk (片袖机, 100 × 70)",
+   "cat": "school",
+   "type": "steel_desk",
+   "size": [
+    1.0,
+    0.7,
+    0.7
+   ]
+  },
+  "staff_desk": {
+   "label": "Staff room desk, drawers both sides (両袖机, 140 × 70)",
+   "cat": "school",
+   "type": "steel_desk",
+   "size": [
+    1.4,
+    0.7,
+    0.7
+   ],
+   "pedestal": "both"
+  },
+  "kyodan": {
+   "label": "Teacher's platform (教壇, 18 cm)",
+   "cat": "school",
+   "type": "block",
+   "size": [
+    4.5,
+    0.9,
+    0.18
+   ],
+   "bevel": 0.004,
+   "nosing": 0.015,
+   "slot": "wood"
+  },
+  "chalkboard": {
+   "label": "Chalkboard 3.6 × 1.2, cork boards either side (the reference)",
+   "cat": "school",
+   "type": "chalkboard",
+   "size": [
+    5.6,
+    0.08,
+    1.2
+   ],
+   "wings": 0.9,
+   "wing_gap": 0.1,
+   "z": 0.9
+  },
+  "chalkboard_plain": {
+   "label": "Chalkboard 3.6 × 1.2",
+   "cat": "school",
+   "type": "chalkboard",
+   "size": [
+    3.6,
+    0.08,
+    1.2
+   ],
+   "z": 0.9
+  },
+  "chalkboard_back": {
+   "label": "Back board (a classroom's back wall, 2.7 × 0.9)",
+   "cat": "school",
+   "type": "chalkboard",
+   "size": [
+    2.7,
+    0.07,
+    0.9
+   ],
+   "tray": 0.05,
+   "chalk": 2,
+   "erasers": 1,
+   "z": 1.05
+  },
+  "corkboard": {
+   "label": "Cork notice board 1.8 × 0.9",
+   "cat": "school",
+   "mount": "wall",
+   "z": 1.1,
+   "type": "panel",
+   "size": [
+    1.8,
+    0.02,
+    0.9
+   ],
+   "face": "cork",
+   "frame": 0.02,
+   "frame_slot": "alu"
+  },
+  "school_speaker": {
+   "label": "Speaker box (校内放送)",
+   "cat": "school",
+   "mount": "wall",
+   "z": 2.4,
+   "type": "slats",
+   "size": [
+    0.3,
+    0.12,
+    0.22
+   ],
+   "n": 9,
+   "dir": "h",
+   "slat_t": 0.004,
+   "frame": 0.025,
+   "back_plate": true,
+   "slot": "white"
+  },
+  "school_lockers": {
+   "label": "Classroom lockers, 6 × 3 cubbies (ロッカー)",
+   "cat": "school",
+   "type": "cubbies",
+   "size": [
+    1.8,
+    0.45,
+    0.9
+   ]
+  },
+  "school_lockers_doors": {
+   "label": "Classroom lockers with steel doors, 4 × 3",
+   "cat": "school",
+   "type": "cubbies",
+   "size": [
+    1.6,
+    0.45,
+    1.05
+   ],
+   "grid": [
+    4,
+    3
+   ],
+   "doors": "all",
+   "t": 0.008,
+   "slot": "steel_paint",
+   "inside": "steel_paint",
+   "door_slot": "steel_paint",
+   "tags": true
+  },
+  "shoe_lockers": {
+   "label": "Shoe lockers (下駄箱), 6 × 5, a shelf in each",
+   "cat": "school",
+   "type": "cubbies",
+   "size": [
+    1.5,
+    0.38,
+    1.8
+   ],
+   "grid": [
+    6,
+    5
+   ],
+   "shelf": true,
+   "kick": 0.08
+  },
+  "cleaning_locker": {
+   "label": "Cleaning locker (掃除用具入れ)",
+   "cat": "school",
+   "type": "steel_locker",
+   "size": [
+    0.9,
+    0.515,
+    1.79
+   ]
+  },
+  "staff_lockers": {
+   "label": "Staff lockers, three doors",
+   "cat": "school",
+   "type": "steel_locker",
+   "size": [
+    0.9,
+    0.515,
+    1.79
+   ],
+   "grid": [
+    3,
+    1
+   ],
+   "pair": false,
+   "vents": 6
+  },
+  "tube_trough": {
+   "label": "Fluorescent light, 逆富士, two tubes (FL40 × 2)",
+   "cat": "school",
+   "type": "tube_light",
+   "size": [
+    1.25,
+    0.23,
+    0.07
+   ]
+  },
+  "tube_trough_1": {
+   "label": "Fluorescent light, 逆富士, one tube",
+   "cat": "school",
+   "type": "tube_light",
+   "size": [
+    1.25,
+    0.15,
+    0.08
+   ],
+   "tubes": 1,
+   "wid": 0.15
+  },
+  "tube_batten": {
+   "label": "Fluorescent batten, a bare tube (トラフ)",
+   "cat": "school",
+   "type": "tube_light",
+   "size": [
+    1.25,
+    0.07,
+    0.085
+   ],
+   "style": "batten",
+   "tubes": 1,
+   "wid": 0.07
+  },
+  "tube_louvre": {
+   "label": "Fluorescent light behind a louvre",
+   "cat": "school",
+   "type": "tube_light",
+   "size": [
+    1.25,
+    0.3,
+    0.08
+   ],
+   "style": "louvre",
+   "wid": 0.3
+  },
+  "tube_cover": {
+   "label": "Fluorescent light behind a cover",
+   "cat": "school",
+   "type": "tube_light",
+   "size": [
+    1.25,
+    0.3,
+    0.08
+   ],
+   "style": "cover",
+   "wid": 0.3
+  },
+  "board_light": {
+   "label": "Blackboard light (黒板灯)",
+   "cat": "school",
+   "type": "tube_light",
+   "size": [
+    1.25,
+    0.2,
+    0.12
+   ],
+   "style": "board",
+   "tubes": 1,
+   "wid": 0.2
+  },
+  "tube_classroom": {
+   "label": "Fluorescent lights, a classroom's six (2 rows of 3)",
+   "cat": "school",
+   "type": "tube_light",
+   "size": [
+    5.0,
+    3.0,
+    0.07
+   ],
+   "grid": [
+    3,
+    2
+   ]
+  },
+  "tube_corridor": {
+   "label": "Fluorescent lights, a corridor's row of four",
+   "cat": "school",
+   "type": "tube_light",
+   "size": [
+    10.25,
+    0.15,
+    0.08
+   ],
+   "grid": [
+    4,
+    1
+   ],
+   "tubes": 1,
+   "wid": 0.15
+  },
+  "parquet_basket": {
+   "label": "Parquet, basket weave (市松張り: squares of five 60 mm strips)",
+   "type": "planks",
+   "size": [
+    3,
+    3,
+    0.015
+   ],
+   "board": 0.06,
+   "length": [
+    0.3,
+    0.3
+   ],
+   "pattern": "basket",
+   "gap": 0.0008,
+   "bevel": 0.0005,
+   "tones": 3,
+   "align": "corner",
+   "gap_var": 0.25
+  },
+  "vinyl_tiles": {
+   "label": "Vinyl floor tiles 300 (Pタイル: a corridor's)",
+   "type": "tiles",
+   "size": [
+    3,
+    3,
+    0.003
+   ],
+   "tile": [
+    0.3,
+    0.3
+   ],
+   "gap": 0.0006,
+   "groove": 0.0004,
+   "bevel": 0.0003,
+   "lip": 0.0001,
+   "slot": "vinyl",
+   "base": "vinyl_4",
+   "tones": 4,
+   "align": "corner"
+  },
+  "ceiling_rockwool": {
+   "label": "Ceiling: rock wool boards 300 × 600 (岩綿吸音板)",
+   "cat": "ceiling",
+   "mount": "room-ceiling",
+   "type": "tiles",
+   "size": [
+    3,
+    3,
+    0.012
+   ],
+   "orient": "ceiling",
+   "tile": [
+    0.3,
+    0.6
+   ],
+   "pattern": "half",
+   "gap": 0.0012,
+   "groove": 0.0015,
+   "bevel": 0.0008,
+   "lip": 0.0002,
+   "tones": 1,
+   "slot": "acoustic",
+   "base": "acoustic",
+   "align": "corner"
+  },
+  "ceiling_tbar_600": {
+   "label": "Ceiling: 600 tiles in a T-bar grid",
+   "cat": "ceiling",
+   "mount": "room-ceiling",
+   "type": "tiles",
+   "size": [
+    3,
+    3,
+    0.015
+   ],
+   "orient": "ceiling",
+   "tile": [
+    0.6,
+    0.6
+   ],
+   "pattern": "grid",
+   "gap": 0.024,
+   "groove": 0.005,
+   "bevel": 0.001,
+   "lip": 0.0003,
+   "tones": 1,
+   "slot": "acoustic",
+   "base": "white",
+   "align": "corner"
+  },
+  "wainscot_school": {
+   "label": "Wainscot to 95 cm, boards and a cap rail (腰板)",
+   "cat": "wall",
+   "mount": "back",
+   "type": "tiles",
+   "orient": "wall",
+   "size": [
+    3,
+    0.03,
+    0.95
+   ],
+   "tile": [
+    0.105,
+    1.2
+   ],
+   "gap": 0.002,
+   "groove": 0.003,
+   "bevel": 0.0012,
+   "tones": 3,
+   "slot": "wood",
+   "base": "gap",
+   "align": "corner",
+   "gap_var": 0.15,
+   "cap": 0.04,
+   "cap_d": 0.014,
+   "cap_slot": "wood"
+  },
+  "beam_classroom": {
+   "label": "Beam 30 × 45 under a ceiling (梁)",
+   "cat": "school",
+   "mount": "ceiling",
+   "type": "block",
+   "size": [
+    7.2,
+    0.3,
+    0.45
+   ],
+   "bevel": 0.006,
+   "slot": "body"
+  },
+  "column_classroom": {
+   "label": "Column against a wall, 50 wide, 20 out (柱)",
+   "cat": "school",
+   "mount": "back",
+   "type": "block",
+   "size": [
+    0.5,
+    0.2,
+    3.0
+   ],
+   "bevel": 0.006,
+   "slot": "body"
+  },
+  "window_classroom": {
+   "label": "Classroom window: sliding sashes under a transom (aluminium)",
+   "type": "window",
+   "size": [
+    2.4,
+    0.22,
+    1.65
+   ],
+   "cols": 2,
+   "rows": 2,
+   "split": 0.68,
+   "frame": 0.05,
+   "frame_d": 0.07,
+   "mullion": 0.04,
+   "sash": 0.04,
+   "slot": "alu",
+   "lock": true
+  },
+  "window_corridor": {
+   "label": "Corridor-side window, frosted (すりガラス)",
+   "type": "window",
+   "size": [
+    1.8,
+    0.2,
+    1.55
+   ],
+   "cols": 2,
+   "rows": 2,
+   "split": 0.64,
+   "frame": 0.045,
+   "frame_d": 0.07,
+   "mullion": 0.04,
+   "sash": 0.038,
+   "stool": 0.04,
+   "slot": "alu",
+   "glass": "glass_frost",
+   "lock": true
+  },
+  "window_wired": {
+   "label": "Window, wired glass (網入りガラス)",
+   "type": "window",
+   "size": [
+    1.6,
+    0.22,
+    1.1
+   ],
+   "frame": 0.05,
+   "sash": 0.04,
+   "slot": "alu",
+   "glass": "glass_wire",
+   "wire": true,
+   "lock": true
+  },
+  "door_school": {
+   "label": "Classroom sliding door, glass in its top (教室の引き戸)",
+   "type": "door",
+   "size": [
+    0.95,
+    0.036,
+    2.0
+   ],
+   "style": "slide",
+   "lite": 0.42,
+   "grid": [
+    1,
+    2
+   ],
+   "rail": 0.085,
+   "handle": "recess_pull",
+   "slot": "wood"
+  },
+  "door_school_steel": {
+   "label": "Sliding door, steel, a tall narrow lite",
+   "type": "door",
+   "size": [
+    0.95,
+    0.036,
+    2.0
+   ],
+   "style": "slide",
+   "lite": 0.55,
+   "grid": [
+    1,
+    1
+   ],
+   "rail": 0.16,
+   "handle": "recess_pull",
+   "slot": "steel_paint",
+   "glass": "glass_wire"
+  },
+  "curtain_school": {
+   "label": "Curtains tied back (a classroom's, mustard)",
+   "type": "curtain",
+   "size": [
+    2.5,
+    0.16,
+    1.72
+   ],
+   "panels": 2,
+   "open": 0.52,
+   "tie": 0.78,
+   "tie_w": 0.32,
+   "pitch": 0.1,
+   "slot": "curtain",
+   "tie_slot": "curtain"
+  },
+  "hydrant_box": {
+   "label": "Fire hydrant box (消火栓) and its lamp",
+   "cat": "school",
+   "mount": "back",
+   "type": "parts",
+   "size": [
+    0.75,
+    0.16,
+    1.95
+   ],
+   "parts": [
+    {
+     "s": "box",
+     "at": [
+      0,
+      0.01,
+      0.8
+     ],
+     "size": [
+      0.75,
+      0.14,
+      1.0
+     ],
+     "m": "red",
+     "b": 0.004
+    },
+    {
+     "s": "box",
+     "at": [
+      0,
+      -0.061,
+      0.83
+     ],
+     "size": [
+      0.68,
+      0.004,
+      0.94
+     ],
+     "m": "red",
+     "b": 0.002
+    },
+    {
+     "s": "box",
+     "at": [
+      0.27,
+      -0.066,
+      1.28
+     ],
+     "size": [
+      0.03,
+      0.008,
+      0.12
+     ],
+     "m": "metal",
+     "b": 0.002
+    },
+    {
+     "s": "cyl",
+     "at": [
+      0,
+      -0.004,
+      1.86
+     ],
+     "size": [
+      0.12,
+      0.12,
+      0.07
+     ],
+     "axis": "-y",
+     "m": "red"
+    },
+    {
+     "s": "box",
+     "at": [
+      0,
+      0.06,
+      1.81
+     ],
+     "size": [
+      0.16,
+      0.02,
+      0.1
+     ],
+     "m": "metal",
+     "b": 0.002
+    }
+   ]
+  },
+  "umbrella_stand": {
+   "label": "Umbrella stand, twelve (傘立て)",
+   "cat": "school",
+   "mount": "back",
+   "type": "cubbies",
+   "size": [
+    0.9,
+    0.25,
+    0.55
+   ],
+   "grid": [
+    6,
+    2
+   ],
+   "t": 0.006,
+   "kick": 0.0,
+   "back": false,
+   "tags": false,
+   "slot": "steel_paint",
+   "inside": "steel_paint"
+  },
+  "books_row": {
+   "label": "Books standing in a row",
+   "type": "books",
+   "size": [
+    0.4,
+    0.26,
+    0.26
+   ]
+  },
+  "books_row_cubby": {
+   "label": "Books in a classroom cubby",
+   "type": "books",
+   "size": [
+    0.26,
+    0.38,
+    0.26
+   ],
+   "thick": [
+    0.008,
+    0.02
+   ],
+   "tall": [
+    0.21,
+    0.26
+   ]
+  },
+  "books_stack": {
+   "label": "Books in a stack",
+   "type": "books",
+   "size": [
+    0.26,
+    0.19,
+    0.12
+   ],
+   "arrange": "stack"
+  },
+  "books_lean": {
+   "label": "Books, the last leaning on the row",
+   "type": "books",
+   "size": [
+    0.6,
+    0.24,
+    0.3
+   ],
+   "arrange": "lean"
+  },
+  "textbooks_desk": {
+   "label": "Textbooks in a desk's book box (B5, lying)",
+   "type": "books",
+   "size": [
+    0.26,
+    0.19,
+    0.08
+   ],
+   "arrange": "stack",
+   "thick": [
+    0.006,
+    0.016
+   ]
+  },
+  "window_porthole": {
+   "label": "Round window, its ring painted blue (a stair tower's, 丸窓)",
+   "type": "porthole",
+   "size": [
+    1.6,
+    0.1,
+    1.6
+   ],
+   "frame": 0.12,
+   "slot": "paint_blue",
+   "plate": "white",
+   "glass": "glass_wire"
+  },
+  "window_porthole_bar": {
+   "label": "Round window with a bar across (a stair tower's, 丸窓)",
+   "type": "porthole",
+   "size": [
+    1.6,
+    0.1,
+    1.6
+   ],
+   "frame": 0.12,
+   "bars": 1,
+   "slot": "paint_blue",
+   "plate": "white",
+   "glass": "glass_wire"
+  },
+  "window_steel": {
+   "label": "Steel window, small panes under a transom (a Showa school's, スチールサッシ)",
+   "type": "window",
+   "size": [
+    3.6,
+    0.22,
+    2.0
+   ],
+   "cols": 4,
+   "rows": 3,
+   "slide": false,
+   "frame": 0.05,
+   "frame_d": 0.06,
+   "mullion": 0.035,
+   "sash": 0.0,
+   "stool": 0.04,
+   "slot": "steel_sash",
+   "glass": "glass",
+   "lock": false
+  },
+  "window_ribbon": {
+   "label": "Classroom window, a ribbon's sash: two sliding panes under a transom (aluminium)",
+   "type": "window",
+   "size": [
+    1.8,
+    0.22,
+    2.15
+   ],
+   "cols": 2,
+   "rows": 2,
+   "split": 0.76,
+   "frame": 0.045,
+   "frame_d": 0.07,
+   "mullion": 0.04,
+   "sash": 0.04,
+   "slot": "alu",
+   "lock": true
   }
  }
 }

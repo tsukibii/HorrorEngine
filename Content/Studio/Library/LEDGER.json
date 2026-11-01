@@ -26,11 +26,59 @@
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe beer_can (Content/Studio/Props/presets.json)"
  },
+ "props/book_hardcover": {
+  "date": "2026-11-01",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe book_hardcover (Content/Studio/Props/presets.json)"
+ },
+ "props/book_open": {
+  "date": "2026-11-01",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe book_open (Content/Studio/Props/presets.json)"
+ },
+ "props/book_paperback": {
+  "date": "2026-11-01",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe book_paperback (Content/Studio/Props/presets.json)"
+ },
+ "props/books_cubby": {
+  "date": "2026-11-01",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe books_cubby (Content/Studio/Props/presets.json)"
+ },
+ "props/books_desk_box": {
+  "date": "2026-11-01",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe books_desk_box (Content/Studio/Props/presets.json)"
+ },
+ "props/books_shelf": {
+  "date": "2026-11-01",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe books_shelf (Content/Studio/Props/presets.json)"
+ },
+ "props/books_stack_desk": {
+  "date": "2026-11-01",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe books_stack_desk (Content/Studio/Props/presets.json)"
+ },
  "props/bottle_caps": {
   "date": "2026-10-30",
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe bottle_caps (Content/Studio/Props/presets.json)"
+ },
+ "props/bunko": {
+  "date": "2026-11-01",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe bunko (Content/Studio/Props/presets.json)"
  },
  "props/burger_box": {
   "date": "2026-10-30",
@@ -127,6 +175,18 @@
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe coffee_cup_tipped (Content/Studio/Props/presets.json)"
+ },
+ "props/diary_closed": {
+  "date": "2026-11-01",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe diary_closed (Content/Studio/Props/presets.json)"
+ },
+ "props/diary_open": {
+  "date": "2026-11-01",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe diary_open (Content/Studio/Props/presets.json)"
  },
  "props/donabe": {
   "date": "2026-10-31",
@@ -266,6 +326,12 @@
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe koro (Content/Studio/Props/presets.json)"
  },
+ "props/manga_volume": {
+  "date": "2026-11-01",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe manga_volume (Content/Studio/Props/presets.json)"
+ },
  "props/mug_green_tea": {
   "date": "2026-10-31",
   "kind": "mesh",
@@ -295,6 +361,12 @@
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe note_folded (Content/Studio/Props/presets.json)"
+ },
+ "props/notebook_math": {
+  "date": "2026-11-01",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe notebook_math (Content/Studio/Props/presets.json)"
  },
  "props/offering_table": {
   "date": "2026-10-31",
@@ -463,6 +535,18 @@
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe tetsubin (Content/Studio/Props/presets.json)"
+ },
+ "props/textbook_kokugo": {
+  "date": "2026-11-01",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe textbook_kokugo (Content/Studio/Props/presets.json)"
+ },
+ "props/textbook_math": {
+  "date": "2026-11-01",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe textbook_math (Content/Studio/Props/presets.json)"
  },
  "props/tokkuri": {
   "date": "2026-10-30",
