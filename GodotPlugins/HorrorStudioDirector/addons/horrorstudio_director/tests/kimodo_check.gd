@@ -1,8 +1,8 @@
 ## DIRECTOR's Kimodo part (tools/godot_director.py check): a motion made on Kimodo's own skeleton (SOMA, from
 ## kimodo/soma77.json: the arms raised and bent, a knee lifted, the spine turned, the head nodded, the hips walking
-## forward), written as an .npz the way Kimodo saves one and read back; retargeted onto a SOMA skeleton (every joint
-## where the motion put it) and onto the Character Studio's MHR body (res://bodies/MHR.fbx: the limbs pointing the
-## way SOMA's do, the hips at its own height); in place (the travel gone, the sway kept); and the sample house sent to
+## forward, the fingers curling), written as an .npz the way Kimodo saves one and read back; retargeted onto a SOMA
+## skeleton (every joint where the motion put it, the fingertips too) and onto the Character Studio's MHR body
+## (res://bodies/MHR.fbx: the limbs and every finger bone pointing the way SOMA's do, the hips at its own height); in place (the travel gone, the sway kept); and the sample house sent to
 ## Kimodo as a stage from where Mari stands. Prints KIMODOCHECK {...}.
 extends SceneTree
 
@@ -34,7 +34,15 @@ func pose_at(sk: Skeleton3D, t: float) -> void:
 	var turns := {"LeftArm": Quaternion(Vector3(0, 0, 1), -0.9 * sin(t * PI)), "LeftForeArm": Quaternion(Vector3(0, 1, 0), 1.2 * t),
 		"RightArm": Quaternion(Vector3(1, 0, 0), 0.8 * t), "RightForeArm": Quaternion(Vector3(0, 1, 0), -0.6), "LeftLeg": Quaternion(Vector3(1, 0, 0), -0.9 * t),
 		"LeftShin": Quaternion(Vector3(1, 0, 0), 1.3 * t), "RightLeg": Quaternion(Vector3(1, 0, 0), 0.3 * sin(t * TAU)), "Spine2": Quaternion(Vector3(0, 1, 0), 0.35 * t),
-		"Neck1": Quaternion(Vector3(1, 0, 0), 0.3 * sin(t * PI)), "LeftHand": Quaternion(Vector3(1, 0, 0), 0.6 * t), "Hips": Quaternion(Vector3(0, 1, 0), 0.25 * t)}
+		"Neck1": Quaternion(Vector3(1, 0, 0), 0.3 * sin(t * PI)), "LeftHand": Quaternion(Vector3(1, 0, 0), 0.6 * t), "Hips": Quaternion(Vector3(0, 1, 0), 0.25 * t),
+		# the fingers: the left hand closing (each finger curling toward the palm, the pinky's palm cupping, the thumb across),
+		# the right's index and thumb bending the other way round
+		"LeftHandIndex2": Quaternion(Vector3(0, 0, 1), -0.9 * t), "LeftHandIndex3": Quaternion(Vector3(0, 0, 1), -1.1 * t), "LeftHandIndex4": Quaternion(Vector3(0, 0, 1), -0.6 * t),
+		"LeftHandMiddle2": Quaternion(Vector3(0, 0, 1), -1.0 * t), "LeftHandMiddle3": Quaternion(Vector3(0, 0, 1), -1.2 * t),
+		"LeftHandRing2": Quaternion(Vector3(0, 0, 1), -1.1 * t), "LeftHandRing4": Quaternion(Vector3(0, 0, 1), -0.7 * t),
+		"LeftHandPinky1": Quaternion(Vector3(1, 0, 0), 0.25 * t), "LeftHandPinky2": Quaternion(Vector3(0, 0, 1), -1.2 * t), "LeftHandPinky3": Quaternion(Vector3(0, 0, 1), -0.9 * t),
+		"LeftHandThumb1": Quaternion(Vector3(0, 1, 0), 0.5 * t), "LeftHandThumb2": Quaternion(Vector3(1, 0, 0), 0.6 * t), "LeftHandThumb3": Quaternion(Vector3(1, 0, 0), 0.7 * t),
+		"RightHandIndex2": Quaternion(Vector3(0, 0, 1), 0.8 * t), "RightHandIndex3": Quaternion(Vector3(0, 0, 1), 0.9 * t), "RightHandThumb2": Quaternion(Vector3(1, 0, 0), -0.5 * t)}
 	for nm in turns:
 		var i := sk.find_bone(nm)
 		sk.set_bone_pose_rotation(i, turns[nm])
@@ -104,7 +112,8 @@ func _initialize() -> void:
 	for f in [0, 10, 20, 30]:
 		apply(anim, tsk, f / 30.0)
 		var got := positions(tsk)
-		for nm in ["Hips", "Head", "LeftHand", "LeftForeArm", "RightHand", "LeftFoot", "RightFoot", "LeftShin", "Chest", "LeftToeBase"]:
+		for nm in ["Hips", "Head", "LeftHand", "LeftForeArm", "RightHand", "LeftFoot", "RightFoot", "LeftShin", "Chest", "LeftToeBase",
+				"LeftHandIndexEnd", "LeftHandThumbEnd", "LeftHandPinkyEnd", "RightHandIndexEnd", "RightHandThumbEnd"]:
 			var j := tsk.find_bone(nm)
 			var e: float = got[j].distance_to(frames[f][j])
 			if e > worst:
@@ -150,6 +159,41 @@ func _initialize() -> void:
 			hip_ratio = hy / frames[f][tsk.find_bone("Hips")].y
 		rep["mhr_limb_deg"] = snappedf(worst_deg, 0.01)
 		rep["mhr_hip_ratio"] = snappedf(hip_ratio, 0.001)
+		# the fingers: every finger bone of MHR's pointing along SOMA's segment for it, and moving with the motion
+		var fpairs: Array = []
+		for side in [["l_", "Left"], ["r_", "Right"]]:
+			var m: String = side[0]
+			var S2: String = side[1] + "Hand"
+			fpairs.append([m + "pinky0", m + "pinky1", S2 + "Pinky1", S2 + "Pinky2"])
+			fpairs.append([m + "thumb1", m + "thumb2", S2 + "Thumb1", S2 + "Thumb2"])
+			fpairs.append([m + "thumb2", m + "thumb3", S2 + "Thumb2", S2 + "Thumb3"])
+			fpairs.append([m + "thumb3", m + "thumb_null", S2 + "Thumb3", S2 + "ThumbEnd"])
+			for f in [["index", "Index"], ["middle", "Middle"], ["ring", "Ring"], ["pinky", "Pinky"]]:
+				fpairs.append([m + f[0] + "1", m + f[0] + "2", S2 + f[1] + "2", S2 + f[1] + "3"])
+				fpairs.append([m + f[0] + "2", m + f[0] + "3", S2 + f[1] + "3", S2 + f[1] + "4"])
+				fpairs.append([m + f[0] + "3", m + f[0] + "_null", S2 + f[1] + "4", S2 + f[1] + "End"])
+		var fworst := 0.0
+		var fworst_at := ""
+		var dirs0 := {}
+		var moved := 0.0
+		for f in [0, 15, 30]:
+			apply(ma, msk, f / 30.0)
+			msk.force_update_all_bone_transforms()
+			for pr in fpairs:
+				var a: Vector3 = msk.get_bone_global_pose(msk.find_bone(pr[1])).origin - msk.get_bone_global_pose(msk.find_bone(pr[0])).origin
+				var b: Vector3 = frames[f][tsk.find_bone(pr[3])] - frames[f][tsk.find_bone(pr[2])]
+				var dg := rad_to_deg(a.angle_to(b))
+				if dg > fworst:
+					fworst = dg
+					fworst_at = "%s@%d" % [pr[0], f]
+				if f == 0:
+					dirs0[pr[0]] = a
+				elif f == 30 and str(pr[0]) == "l_index2":
+					moved = rad_to_deg(a.angle_to(dirs0[pr[0]]))
+		rep["mhr_finger_deg"] = snappedf(fworst, 0.01)
+		rep["mhr_finger_at"] = fworst_at
+		rep["mhr_finger_bones"] = fpairs.size()
+		rep["mhr_finger_moved"] = snappedf(moved, 0.1)
 		rep["mhr_tracks"] = ma.get_track_count()
 	# the sample's house as a stage, from where Mari stands
 	var dummy := Node.new()

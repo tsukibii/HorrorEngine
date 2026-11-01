@@ -26,8 +26,11 @@ Godot project, the desk's commands and triggers, its own condition editor, Cover
 the desk's examine.js, drawn over the room by its silhouette's depth pushed back first; a thing's model named `art` at
 play, so the hand's copy and the kit's slots find it) and **the guide rewritten** (`guides/director`: parts, the
 Director file, facts, moments, conversations, states, the Manager; 34 pictures, the Manager's by
-`tools/director_manager/guide_shots.mjs`). GDTESTROOM's station 6 fails in this container as before (no stand-in
-bodies here; the stations before and after pass). **Next**: Kimodo's fingers, then faces. Not merged into main yet: main has moved on (PR #6, the street builder); bringing main in conflicts
+`tools/director_manager/guide_shots.mjs`); then **Kimodo's fingers** (`kimodo/retarget.gd`: each finger bone aimed
+along SOMA's segment, the hand turned by SOMA's own palm; 32 MHR finger bones at 0.00°). GDTESTROOM's station 6 fails
+in this container as before (no stand-in bodies here; the stations before and after pass). **Next**: faces (the
+expression library into a project's `faces/`, the loops apart, played on a character's MHR face shapes; then the
+Character Studio's export carrying them). Not merged into main yet: main has moved on (PR #6, the street builder); bringing main in conflicts
 only in CLAUDE.md, CONTINUE, DECISIONS and LESSONS (both sides added entries), the runtime merging by itself (run
 GDPLAY, GDTESTROOM and DIRECTOR after).
 

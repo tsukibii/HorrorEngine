@@ -384,6 +384,9 @@ def kimodo_check(out):
         ("onto Kimodo's own skeleton: every joint where the motion put it (%.2f cm at worst, %s)" % (r.get("soma_err_cm", 99), r.get("soma_err_at")), r.get("family_soma") == "soma" and r.get("soma_err_cm", 99) < 0.5),
         ("onto the Character Studio's MHR: the limbs pointing SOMA's way (%.2f° at worst), the hips at its height (%.3f)" % (r.get("mhr_limb_deg", 99), r.get("mhr_hip_ratio", 0)),
          r.get("family_mhr") == "mhr" and r.get("mhr_limb_deg", 99) < 1.0 and 0.88 < r.get("mhr_hip_ratio", 0) < 0.97),
+        ("the fingers onto MHR: every finger bone (%s) pointing SOMA's way (%.2f° at worst, %s), the index curling with the motion (%.1f°)"
+         % (r.get("mhr_finger_bones"), r.get("mhr_finger_deg", 99), r.get("mhr_finger_at"), r.get("mhr_finger_moved", 0)),
+         r.get("mhr_finger_bones") == 32 and r.get("mhr_finger_deg", 99) < 1.0 and r.get("mhr_finger_moved", 0) > 40.0),
         ("in place: the travel gone (%.3f m of %.2f), the sway kept (%.3f m), looping" % (r.get("in_place_travel", 9), r.get("full_travel", 0), r.get("in_place_sway", 0)),
          r.get("in_place_travel", 9) < 0.01 and abs(r.get("full_travel", 0) - 1.2) < 0.01 and r.get("in_place_sway", 0) > 0.02 and r.get("in_place_loop") is True),
         ("the house as Kimodo's stage from Mari: %d boxes %s, %d door swings, marks %s, the hall's floor where it is from her" % (r.get("stage_boxes", 0), json.dumps(kinds), r.get("stage_arcs", 0), r.get("stage_marks")),

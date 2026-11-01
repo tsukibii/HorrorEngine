@@ -488,14 +488,14 @@ and they fall off ledges. The cursor clicks things within 2.2 m.</p>
 </ol>
 </div>
 </div>
-<p>The motion lands on her own skeleton (the Character Studio's MHR, Kimodo's own, a Mixamo character, or any model
-imported with Godot's humanoid bone map), is saved in <code>motions/&lt;her id&gt;/</code>, and starts playing. In the
+<p>The motion lands on her own skeleton, the fingers too (the Character Studio's MHR, Kimodo's own, a Mixamo character,
+or any model imported with Godot's humanoid bone map), is saved in <code>motions/&lt;her id&gt;/</code>, and starts playing. In the
 game her <b>idle motion</b> loops while she stands and her <b>walk motion</b> while she walks; a state can give her a
 motion, and a moment's <b>motion</b> command plays one once.</p>
 <div class="note">The studio folder (the one with <code>tools/kimodo.py</code>) is filled in when the project is made;
 set <b>Python</b> to how you run the studio's tools (<code>python3</code>, <code>uv run python</code>...). Kimodo itself
 must be set up first (<code>python setup/setup.py kimodo</code>).</div>
-<div class="notyet"><b>Not yet.</b> Fingers keep their rest pose, and MHR's twist bones don't share the turn.</div>
+<div class="notyet"><b>Not yet.</b> MHR's twist bones don't share the turn along the arm.</div>
 </section>
 
 <section id="keys">

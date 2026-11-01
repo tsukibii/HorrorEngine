@@ -231,8 +231,14 @@ kimodo and pass it back to godot exported and ready to use."
 
 The retarget is the desk's (bodies.js): each limb bone pointed joint to joint with side axes from the positions (the
 elbow's bend, the palm, the toes), so neither rig's rotation conventions nor its rest pose matter; the trunk turned by
-SOMA's own turn from its rest (the character keeps her spine's curve); the hips' travel scaled by the legs. Measured
-(DIRECTOR): onto SOMA every joint lands where the motion put it (0.00 cm); onto MHR every limb points SOMA's way
+SOMA's own turn from its rest (the character keeps her spine's curve); the hips' travel scaled by the legs. **The
+fingers** (DECISIONS 2026-11-01, "we do want to be able to retarget Kimodo's fingers") the same way: each finger bone
+aimed along SOMA's own segment, its side the hand's across (the thumb's the palm's normal), onto MHR's, Mixamo's and
+Godot's humanoid fingers; the joints paired by their place from the wrist at rest (SOMA's Index1 to Ring1 sit in the
+palm; its Index2 is MHR's index1 and Mixamo's Index1; MHR's thumb0 is a base joint left as it is, its pinky0 SOMA's
+Pinky1, the palm's cupping). The hand turns by SOMA's own palm (where its metacarpals start: they go only with the
+hand), so a finger curling or the palm cupping never rolls it. Measured (DIRECTOR): onto SOMA every joint lands where
+the motion put it, the fingertips too (0.00 cm); onto MHR every limb and every finger bone (32) points SOMA's way
 (0.00°), the hips at MHR's own height.
 
 In the game: her `idle_motion` loops while she stands, `walk_motion` while she walks a path (with `idle_motion` at its
@@ -257,8 +263,8 @@ itself (`tests/make_sample.gd`: the house, and its story as `director/director.j
   an achievement), the conversation the story offers next (answered Yes, heard out: its step ticks), the state that
   sends Mari to the bedroom door, the locked door opened by the key, the bedroom entered, the night's quest ending on
   its first step (hiding in the wardrobe) and its next by what was done: the good ending;
-- **Kimodo** (`tests/kimodo_check.gd`): an .npz round trip, the retarget onto SOMA and onto MHR, in place, the house as
-  a stage from Mari;
+- **Kimodo** (`tests/kimodo_check.gd`): an .npz round trip (the motion curling the fingers too), the retarget onto SOMA
+  and onto MHR (every limb and finger bone), in place, the house as a stage from Mari;
 - **a level alone** (`tests/alone_check.gd`): the house as its own scene played with F6's way;
 - **the editor** (`tests/editor_check.gd`, as a plugin of its own): the sample opened with the plugin, every tab drawn
   (the Director tab the file's quests, steps, endings and moments), a cup part made from the dock and a pickup part
@@ -279,5 +285,5 @@ The runtime's own checks (GDPLAY, GDTESTROOM, GDEXPORT) stay as they were: the e
 - A moment can't end the quest on early and send the story elsewhere yet (for later games: "if this happens, go there").
 - Achievements are worked out and kept as facts; Steam (GodotSteam) when the user wants it.
 - Faces (the expression library's clips in Godot) wait on the Character Studio's export carrying its face shapes.
-- Fingers aren't retargeted (the hands keep their rest); MHR's twist bones keep theirs.
+- MHR's twist bones keep their rest (the forearm's and the upper arm's twist isn't shared along them).
 - The desk can't open a Director game, and a Director game can't go back to the desk: the scene is the game now.

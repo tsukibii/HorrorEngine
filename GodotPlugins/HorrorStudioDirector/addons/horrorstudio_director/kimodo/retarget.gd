@@ -15,17 +15,43 @@ const FAMILIES := {
 	"soma": {"hips": "Hips", "spine": "Spine1", "spine2": "Spine2", "chest": "Chest", "neck": "Neck1", "head": "Head", "head_end": "HeadEnd",
 		"eye_l": "LeftEye", "eye_r": "RightEye", "clav_l": "LeftShoulder", "arm_l": "LeftArm", "fore_l": "LeftForeArm", "hand_l": "LeftHand",
 		"mid_l": "LeftHandMiddle2", "index_l": "LeftHandIndex2", "pinky_l": "LeftHandPinky2", "thigh_l": "LeftLeg", "shin_l": "LeftShin",
-		"foot_l": "LeftFoot", "toe_l": "LeftToeBase", "toe_end_l": "LeftToeEnd"},
+		"foot_l": "LeftFoot", "toe_l": "LeftToeBase", "toe_end_l": "LeftToeEnd",
+		"thumb1_l": "LeftHandThumb1", "thumb2_l": "LeftHandThumb2", "thumb3_l": "LeftHandThumb3", "thumbe_l": "LeftHandThumbEnd",
+		"index1_l": "LeftHandIndex2", "index2_l": "LeftHandIndex3", "index3_l": "LeftHandIndex4", "indexe_l": "LeftHandIndexEnd",
+		"middle1_l": "LeftHandMiddle2", "middle2_l": "LeftHandMiddle3", "middle3_l": "LeftHandMiddle4", "middlee_l": "LeftHandMiddleEnd",
+		"ring1_l": "LeftHandRing2", "ring2_l": "LeftHandRing3", "ring3_l": "LeftHandRing4", "ringe_l": "LeftHandRingEnd",
+		"pinky0_l": "LeftHandPinky1", "pinky1_l": "LeftHandPinky2", "pinky2_l": "LeftHandPinky3", "pinky3_l": "LeftHandPinky4", "pinkye_l": "LeftHandPinkyEnd"},
 	"mhr": {"hips": "root", "spine": "c_spine0", "spine1": "c_spine1", "spine2": "c_spine2", "chest": "c_spine3", "neck": "c_neck", "head": "c_head",
 		"head_end": "c_head_null", "eye_l": "l_eye", "eye_r": "r_eye", "clav_l": "l_clavicle", "arm_l": "l_uparm", "fore_l": "l_lowarm", "hand_l": "l_wrist",
-		"mid_l": "l_middle1", "index_l": "l_index1", "pinky_l": "l_pinky1", "thigh_l": "l_upleg", "shin_l": "l_lowleg", "foot_l": "l_foot", "toe_l": "l_ball"},
+		"mid_l": "l_middle1", "index_l": "l_index1", "pinky_l": "l_pinky1", "thigh_l": "l_upleg", "shin_l": "l_lowleg", "foot_l": "l_foot", "toe_l": "l_ball",
+		"thumb1_l": "l_thumb1", "thumb2_l": "l_thumb2", "thumb3_l": "l_thumb3", "thumbe_l": "l_thumb_null",
+		"index1_l": "l_index1", "index2_l": "l_index2", "index3_l": "l_index3", "indexe_l": "l_index_null",
+		"middle1_l": "l_middle1", "middle2_l": "l_middle2", "middle3_l": "l_middle3", "middlee_l": "l_middle_null",
+		"ring1_l": "l_ring1", "ring2_l": "l_ring2", "ring3_l": "l_ring3", "ringe_l": "l_ring_null",
+		"pinky0_l": "l_pinky0", "pinky1_l": "l_pinky1", "pinky2_l": "l_pinky2", "pinky3_l": "l_pinky3", "pinkye_l": "l_pinky_null"},
 	"humanoid": {"hips": "Hips", "spine": "Spine", "spine2": "Chest", "chest": "UpperChest", "neck": "Neck", "head": "Head", "eye_l": "LeftEye",
 		"eye_r": "RightEye", "clav_l": "LeftShoulder", "arm_l": "LeftUpperArm", "fore_l": "LeftLowerArm", "hand_l": "LeftHand", "mid_l": "LeftMiddleProximal",
-		"index_l": "LeftIndexProximal", "pinky_l": "LeftLittleProximal", "thigh_l": "LeftUpperLeg", "shin_l": "LeftLowerLeg", "foot_l": "LeftFoot", "toe_l": "LeftToes"},
+		"index_l": "LeftIndexProximal", "pinky_l": "LeftLittleProximal", "thigh_l": "LeftUpperLeg", "shin_l": "LeftLowerLeg", "foot_l": "LeftFoot", "toe_l": "LeftToes",
+		"thumb1_l": "LeftThumbMetacarpal", "thumb2_l": "LeftThumbProximal", "thumb3_l": "LeftThumbDistal",
+		"index1_l": "LeftIndexProximal", "index2_l": "LeftIndexIntermediate", "index3_l": "LeftIndexDistal",
+		"middle1_l": "LeftMiddleProximal", "middle2_l": "LeftMiddleIntermediate", "middle3_l": "LeftMiddleDistal",
+		"ring1_l": "LeftRingProximal", "ring2_l": "LeftRingIntermediate", "ring3_l": "LeftRingDistal",
+		"pinky1_l": "LeftLittleProximal", "pinky2_l": "LeftLittleIntermediate", "pinky3_l": "LeftLittleDistal"},
 	"mixamo": {"hips": "Hips", "spine": "Spine", "spine2": "Spine1", "chest": "Spine2", "neck": "Neck", "head": "Head", "head_end": "HeadTop_End",
 		"clav_l": "LeftShoulder", "arm_l": "LeftArm", "fore_l": "LeftForeArm", "hand_l": "LeftHand", "mid_l": "LeftHandMiddle1", "index_l": "LeftHandIndex1",
-		"pinky_l": "LeftHandPinky1", "thigh_l": "LeftUpLeg", "shin_l": "LeftLeg", "foot_l": "LeftFoot", "toe_l": "LeftToeBase", "toe_end_l": "LeftToe_End"},
+		"pinky_l": "LeftHandPinky1", "thigh_l": "LeftUpLeg", "shin_l": "LeftLeg", "foot_l": "LeftFoot", "toe_l": "LeftToeBase", "toe_end_l": "LeftToe_End",
+		"thumb1_l": "LeftHandThumb1", "thumb2_l": "LeftHandThumb2", "thumb3_l": "LeftHandThumb3", "thumbe_l": "LeftHandThumb4",
+		"index1_l": "LeftHandIndex1", "index2_l": "LeftHandIndex2", "index3_l": "LeftHandIndex3", "indexe_l": "LeftHandIndex4",
+		"middle1_l": "LeftHandMiddle1", "middle2_l": "LeftHandMiddle2", "middle3_l": "LeftHandMiddle3", "middlee_l": "LeftHandMiddle4",
+		"ring1_l": "LeftHandRing1", "ring2_l": "LeftHandRing2", "ring3_l": "LeftHandRing3", "ringe_l": "LeftHandRing4",
+		"pinky1_l": "LeftHandPinky1", "pinky2_l": "LeftHandPinky2", "pinky3_l": "LeftHandPinky3", "pinkye_l": "LeftHandPinky4"},
 }
+## the fingers (DECISIONS 2026-11-01: "we do want to be able to retarget Kimodo's fingers"): each finger bone aimed along
+## SOMA's own segment, as the limbs are. The joints by their place, measured from the wrist at rest: SOMA's Index1,
+## Middle1, Ring1 are in the palm (no bone of MHR's there), its Index2 the knuckle as MHR's index1 and Mixamo's
+## Index1; MHR's thumb1 is SOMA's Thumb1 (its thumb0 a base joint by the wrist, left as it is), its pinky0 SOMA's
+## Pinky1 (the palm's cupping). The side axis is the hand's across (pinky to index), the thumb's the palm's normal.
+const FINGERS := ["thumb", "index", "middle", "ring", "pinky"]
 ## what's driven: [the bone's key, the key it aims at, its side axis's rule, mode]; `turn`: SOMA's turn from its own
 ## rest put on the bone's rest (the trunk), `aim`: the bone pointed where SOMA's points (the limbs)
 const DRIVE := [["hips", "spine2", "legs", "turn"], ["spine", "spine2", "legs", "turn"], ["spine1", "chest", "shoulders", "turn"],
@@ -34,6 +60,20 @@ const DRIVE := [["hips", "spine2", "legs", "turn"], ["spine", "spine2", "legs", 
 	["thigh_l", "shin_l", "toes_l", "aim"], ["shin_l", "foot_l", "toes_l", "aim"], ["foot_l", "toe_l", "legs", "aim"], ["toe_l", "toe_end_l", "legs", "turn"],
 	["clav_r", "arm_r", "torso", "aim"], ["arm_r", "fore_r", "elbow_r", "aim"], ["fore_r", "hand_r", "elbow_r", "aim"], ["hand_r", "mid_r", "across_r", "aim"],
 	["thigh_r", "shin_r", "toes_r", "aim"], ["shin_r", "foot_r", "toes_r", "aim"], ["foot_r", "toe_r", "legs", "aim"], ["toe_r", "toe_end_r", "legs", "turn"]]
+## the fingers' part of DRIVE: per hand, the pinky's metacarpal, then each finger's three segments to its tip (a rig with
+## no tip bone turns its last by SOMA's turn)
+static func finger_drive() -> Array:
+	var out: Array = []
+	for m in ["l", "r"]:
+		out.append(["pinky0_" + m, "pinky1_" + m, "across_" + m, "aim"])
+		for f in FINGERS:
+			var rule: String = ("palm_" if f == "thumb" else "across_") + m
+			out.append([f + "1_" + m, f + "2_" + m, rule, "aim"])
+			out.append([f + "2_" + m, f + "3_" + m, rule, "aim"])
+			out.append([f + "3_" + m, f + "e_" + m, rule, "aim"])
+	return out
+
+
 ## SOMA's own segment for a key it has no joint of its own for (MHR's four spine bones over SOMA's three)
 const SOMA_SEG := {"spine1": ["Spine2", "Chest"]}
 
@@ -133,6 +173,10 @@ static func sides(rule: String, pos: Callable) -> Array:
 			return [v.call("spine", "neck"), v.call("thigh_r", "thigh_l")]
 		"across":
 			return [across, v.call("arm_r", "arm_l")]
+		"palm":                                           # the thumb's: the palm's normal (across the hand by along it), then across
+			var along = v.call("hand_" + m, "mid_" + m)
+			var nrm = across.cross(along) if (across != null and along != null) else null
+			return [nrm, across, v.call("arm_r", "arm_l")]
 		"toes":
 			return [v.call("foot_" + m, "toe_" + m), v.call("thigh_r", "thigh_l")]
 		"elbow":
@@ -213,7 +257,7 @@ static func animation(frames: Array, sk: Skeleton3D, char_root: Node3D, anim_roo
 	var kscale: float = tgt_hip_y / soma_hip_y if soma_hip_y > 0.01 else 1.0
 	# each driven bone's rest frame: aim from the target's own rest positions; turn from SOMA's rest
 	var drive: Array = []
-	for d in DRIVE:
+	for d in DRIVE + finger_drive():
 		var key: String = d[0]
 		if not key_bone.has(key):
 			continue
@@ -269,9 +313,34 @@ static func animation(frames: Array, sk: Skeleton3D, char_root: Node3D, anim_roo
 		rot_tracks[d["bone"]] = tr
 	var pos_track := anim.add_track(Animation.TYPE_POSITION_3D)
 	anim.track_set_path(pos_track, base_path + ":" + sk.get_bone_name(hips_b))
+	# the hand's own turn: SOMA's palm bases (where its metacarpals start) go only with the hand, the knuckles also with
+	# their metacarpals (a palm cupping); the knuckles the side axes read are put where the hand alone takes them, so a
+	# finger moving never rolls the hand
+	var palm := {}
+	for m in ["l", "r"]:
+		var S2 := "Left" if m == "l" else "Right"
+		var pts := [S2 + "Hand", S2 + "HandMiddle1", S2 + "HandIndex1", S2 + "HandPinky1"]
+		if pts.all(func(nm): return sidx.has(nm)) and sf.has("mid_" + m) and sf.has("index_" + m) and sf.has("pinky_" + m):
+			var base := func(P: Callable) -> Basis:
+				return frame(P.call(pts[1]) - P.call(pts[0]), [P.call(pts[2]) - P.call(pts[3])])
+			var R0 := func(nm: String) -> Vector3:
+				return _sv(rest_s, sidx, Ti, nm)
+			palm[m] = {"pts": pts, "base": base, "rest": base.call(R0), "hand": R0.call(pts[0]),
+				"knuckles": {"mid_" + m: R0.call(sf["mid_" + m]), "index_" + m: R0.call(sf["index_" + m]), "pinky_" + m: R0.call(sf["pinky_" + m])}}
 	for fi in range(0, frames.size(), step):
 		var fr: PackedVector3Array = frames[fi]
+		var rigid := {}
+		for m in palm:
+			var pm: Dictionary = palm[m]
+			var C := func(nm: String) -> Vector3:
+				return Ti.basis * fr[sidx[nm]]
+			var R: Basis = (pm["base"] as Callable).call(C) * (pm["rest"] as Basis).inverse()
+			var h: Vector3 = C.call(pm["pts"][0])
+			for k in pm["knuckles"]:
+				rigid[k] = h + R * ((pm["knuckles"][k] as Vector3) - (pm["hand"] as Vector3))
 		var spos := func(k: String):
+			if rigid.has(k):
+				return rigid[k]
 			var nm = sf.get(k)
 			if nm == null or not sidx.has(nm):
 				return null
@@ -287,6 +356,9 @@ static func animation(frames: Array, sk: Skeleton3D, char_root: Node3D, anim_roo
 			if driven.has(i):
 				var d: Dictionary = driven[i]
 				var a: Vector3 = Ti.basis * (fr[sidx[d["to"]]] - fr[sidx[d["from"]]])
+				var hk: String = str(d["key"])
+				if hk.begins_with("hand_") and rigid.has("mid_" + hk.substr(5)):      # the hand aimed by its own turn (its middle knuckle where the hand takes it)
+					a = (rigid["mid_" + hk.substr(5)] as Vector3) - Ti.basis * fr[sidx[d["from"]]]
 				var cur := frame(a, sides(d["rule"], spos))
 				w.basis = (cur * (d["rf"] as Basis).inverse() * (d["rw"] as Basis)).orthonormalized()
 			world[i] = w
