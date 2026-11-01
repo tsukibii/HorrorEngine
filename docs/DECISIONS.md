@@ -2,6 +2,14 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-01, later (the user, on the skin's depth elsewhere)
+
+- **The depth past the face's core, gently**: asked "you think we should add some slight SS to cheeks? or anywhere
+  else that helps add life?", offered (not a patch on the cheeks: that's blush, the Studio's Flush) a warm edge where
+  the skin turns away from the eye, the creases everywhere warm instead of grey, the fingers lit through like the ears,
+  the lips; "sounds good, do that". Each gentle by default with its own slider (GODOT_LOOK §5g; HSCharacterLook's
+  "Skin depth's parts").
+
 ## 2026-11-01 (the user, on the skin's depth; branch `subsurace-scattering-exp`)
 
 - **Subsurface scattering round the face's core, for baked light**: with two pictures of Blender's subsurface

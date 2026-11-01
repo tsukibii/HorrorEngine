@@ -13,7 +13,8 @@
 ## The skin's depth layer (§5g): `--depth=N` its amount (0 off; HSSkin.wear's own when unset), `--ears=off` the ears'
 ## glow off, `--depthlook=JSON` its numbers tried; `--light=baked` every shot under a baked level's light as a moving
 ## character gets it (the ambient alone, from a sky bright on one side: LightmapGI's probes; no lamp); the `side` shot
-## the head in profile, the ear in the middle; `--probe=JSON` points on the skin by their UV (MHR's layout:
+## the head in profile, the ear in the middle; the `hand` shot her left hand (on the probe `finger +x` when given);
+## `--probe=JSON` points on the skin by their UV (MHR's layout:
 ## {"name": [u, v]}) each measured in every shot (its colour where the camera sees it, `probes` in the report).
 ##   godot --path PROJECT -s res://addons/horrorstudio_look/demo/portrait.gd -- --glb=res://people/NAME.glb --out=DIR [--detail=off] [--tag=NAME] [--preset=NAME] [--shots=ecu,cu] [--hair=JSON] [--eye=JSON] [--ssr=off] [--blink=W] [--eyes=mask] [--hide=WORDS] [--depth=N] [--ears=off] [--depthlook=JSON] [--light=baked] [--probe=JSON]
 extends SceneTree
@@ -376,6 +377,11 @@ func shoot(name: String) -> void:
 			cam.fov = 22.0
 			cam.position = face + Vector3(0.68, 0.02, -0.06)
 			cam.look_at(face + Vector3(0.05, -0.015, -0.07))
+		"hand":                                      # her left hand from in front and above (the depth layer's fingers, §5g), on the probe `finger +x`
+			var at: Vector3 = probes.get("finger +x", face + Vector3(0.6, -0.58, 0.1))
+			cam.fov = 30.0
+			cam.position = at + Vector3(0.02, 0.16, 0.42)
+			cam.look_at(at + Vector3(-0.045, 0.06, 0.0))
 
 
 func _process(_d: float) -> bool:

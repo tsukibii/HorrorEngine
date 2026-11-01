@@ -426,12 +426,14 @@ def cmd_depth(_a):
 
 PROBES = {"inner corner": 133, "upper crease": 27, "cheek": 205, "forehead": 151, "nose wing": 64, "nose tip": 4,
           "mouth corner": 61, "chin": 152, "alar crease": 48,                     # the face's right (-x) by MediaPipe's index
-          "inner corner +x": 362, "upper crease +x": 257, "nose wing +x": 294, "alar crease +x": 278, "cheek +x": 425}
+          "inner corner +x": 362, "upper crease +x": 257, "nose wing +x": 294, "alar crease +x": 278, "cheek +x": 425,
+          "lower lip": 16, "upper lip": 12}                                       # the lips' middles (17 and 0 their borders)
 
 
 def probe_uvs(m):
     """points on MHR's skin by their UV (its layout, every Studio export's): the PROBES landmarks, each ear's middle (the
-    point of it furthest out, near the ear frame's middle: "ear +x", "ear -x") and the chest"""
+    point of it furthest out, near the ear frame's middle: "ear +x", "ear -x"), a finger of the +x hand (2 cm back from
+    its furthest tip, the point most forward there: "finger +x") and the chest"""
     J = json.loads((BODIES / "MHR_landmarks.json").read_text(encoding="utf-8"))
     luv = (m["uv"][np.array(J["tri"])] * np.array(J["bary"])[:, :, None]).sum(1)
     P, T = m["points"], m["tris"]
@@ -445,8 +447,22 @@ def probe_uvs(m):
     for side, sx in (("ear +x", 1.0), ("ear -x", -1.0)):
         s = np.linalg.norm(P - c * [sx, 1, 1], axis=1) < 0.02
         out[side] = uv_of(P[s][np.argmax(np.abs(P[s, 0]))])
+    tip = P[np.argmax(P[:, 0])]
+    wrist = P[(P[:, 0] > 0.5) & (P[:, 0] < 0.51)].mean(0)
+    at = tip + 0.02 * (wrist - tip) / np.linalg.norm(wrist - tip)
+    s = np.linalg.norm(P - at, axis=1) < 0.008
+    out["finger +x"] = uv_of(P[s][np.argmax(P[s, 2])])
     out["chest"] = uv_of(np.array([0.0, P[:, 1].max() - 0.45, P[np.abs(P[:, 1] - (P[:, 1].max() - 0.45)) < 0.01, 2].max()]))
     return {k: [round(float(v[0]), 4), round(float(v[1]), 4)] for k, v in out.items()}
+
+
+def hands_quarter(m):
+    """skin_wet.gdshader's rule for MHR's hands (the depth layer's fingers): its UVs' quarter past u 0.5 and v 0.5. Returns
+    how far out the nearest of that quarter's triangles lies (metres from the middle: the wrist, about 0.5) and how many
+    of the hands' own (past 0.55 m) lie outside it (none)"""
+    tc, uvc = m["points"][m["tris"]].mean(1), m["uv"].mean(1)
+    q = (uvc[:, 0] > 0.5) & (uvc[:, 1] > 0.5)
+    return float(np.abs(tc[q, 0]).min()), int(((np.abs(tc[:, 0]) > 0.55) & ~q).sum())
 
 
 def depth_at(m, r):
@@ -512,7 +528,9 @@ def cmd_check(_a):
     if p.exists():                                                          # the depth layer's regions: each where it belongs, the ears apart (their switch)
         sys.path.insert(0, str(ROOT / "tools" / "character"))
         import mhr
-        d = depth_at(mhr.load(), np.asarray(Image.open(p).convert("RGBA")).astype(float) / 255.0)
+        mm = mhr.load()
+        d = depth_at(mm, np.asarray(Image.open(p).convert("RGBA")).astype(float) / 255.0)
+        near, out = hands_quarter(mm)
         checks = [(d["inner corner"][0] > 0.7, "round the eyes: the inner corner %.2f (over 0.7)" % d["inner corner"][0]),
                   (d["upper crease"][0] > 0.4, "the upper lid's crease %.2f (over 0.4)" % d["upper crease"][0]),
                   (d["nose wing"][1] > 0.5 and d["nose tip"][1] > 0.5, "the nose: its wing %.2f, its tip %.2f (over 0.5)" % (d["nose wing"][1], d["nose tip"][1])),
@@ -521,7 +539,8 @@ def cmd_check(_a):
                   (max(d["cheek"].max(), d["forehead"].max(), d["chin"].max(), d["chest"].max()) < 0.15,
                    "nothing on the cheek, the forehead, the chin or the chest (at most %.2f)" % max(d["cheek"].max(), d["forehead"].max(), d["chin"].max(), d["chest"].max())),
                   (max(d["nose tip"][2], d["inner corner"][2], d["mouth corner"][2], d["ear +x"][0], d["ear +x"][1]) < 0.05,
-                   "the ears' channel off the face and the face's off the ears (at most %.2f)" % max(d["nose tip"][2], d["inner corner"][2], d["mouth corner"][2], d["ear +x"][0], d["ear +x"][1]))]
+                   "the ears' channel off the face and the face's off the ears (at most %.2f)" % max(d["nose tip"][2], d["inner corner"][2], d["mouth corner"][2], d["ear +x"][0], d["ear +x"][1])),
+                  (near > 0.45 and out == 0, "MHR's hands are its UVs' quarter past u 0.5 and v 0.5 (the shader's fingers): nothing in it nearer the middle than %.2f m, %d of the hands' triangles outside it" % (near, out))]
         for ok, what in checks:
             print(("  ok  " if ok else "  BAD ") + "depth: " + what)
             if not ok:

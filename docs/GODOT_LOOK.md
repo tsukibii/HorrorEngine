@@ -739,9 +739,18 @@ the skin comes out warm where it has gone furthest in.
   the body. Each region its share (`depth_eyes` 1, `depth_nose` 1, `depth_mouth` 0.6, `depth_ears` 1).
 - **What:** the colour there turns toward the blood's (`depth_color`, its hue at the skin's brightness; `depth_warmth`);
   the export's occlusion shades red there instead of grey (each colour its own share of the shade: at full strength
-  red ao^0.5, green ^0.95, blue ^1.12; `depth_creases`; `depth_rest` warms the occlusion's creases everywhere else too,
-  0 by default); thin skin (the export's thinness: an ear's rim, the nostrils) is lit through by the room's light
-  (`depth_glow`); and everywhere the detail layer's pits and furrows shade warm rather than grey (`depth_pores`).
+  red ao^0.5, green ^0.95, blue ^1.12; `depth_creases`); thin skin (the export's thinness: an ear's rim, the nostrils)
+  is lit through by the room's light (`depth_glow`); and everywhere the detail layer's pits and furrows shade warm
+  rather than grey (`depth_pores`).
+- **Then the rest of the body, gently** (the user's yes, DECISIONS 2026-11-01, later: "anywhere else that helps add
+  life?"; not a patch on the cheeks, which is blush, the Studio's Flush): **a warm edge** (`depth_edge` 0.6): warmer
+  where the skin turns away from the eye, (1 - N·V)³ of the warmth (a cheek's side, the jaw, the nose's sides, the neck:
+  what comes out there has gone furthest under the skin; by the eye's angle alone, so a baked light gets it too, none on
+  an ear switched off); **the creases everywhere** (`depth_rest` 0.3): the occlusion warm, not grey, under the jaw, in
+  the neck's folds, between the fingers; **the fingers** (`depth_hands` 0.7): their thin skin lit through by the room as
+  an ear's (MHR's hands are its UVs' quarter past u 0.5 and v 0.5, SKINDETAIL holds the layout to it); **the lips**
+  (`depth_lips` 0.5: the region map's lips, the skin that lets the most light through). `HSCharacterLook`'s "Skin
+  depth's parts": Depth Edge, Depth Creases, Depth Fingers, Depth Lips.
 - **For any light:** the ambient (a baked level's probes, the sky) takes all of it through ALBEDO; each lamp in `light()`
   takes its own share (`hs_lamp`, `hs_warm`): its own occlusion's colour, and the warmth by how little the lamp reaches
   the point (all of it at the shadow's edge, under half where it shines full on: a lit cheek shows the paint's colour,
@@ -758,13 +767,15 @@ the skin comes out warm where it has gone furthest in.
 
 **The check** (GDPORTRAIT, `tools/godot/portrait_check.py`): the export under a baked level's light (portrait.gd's
 `--light=baked`: no lamp, the ambient alone from a sky bright above and to one side, its sun drawn only in the sky),
-at the close-up and in profile (`side`, the ear in the middle), the layer off, on and with its ears off; points on the
-skin found by their UV (`skin_detail.probe_uvs`, portrait.gd's `--probe`), red against green: round the eyes and the
-nose up over 8%, the ear up over 15% and back within 5% with its switch off, the cheek and the forehead within 6%, the
-picture within 8% as bright; `depth_sheet.jpg`. First run (the Studio's new character, `_studiotest`): the inner corner
+at the close-up, in profile (`side`, the ear in the middle) and on her left hand (`hand`), the layer off, on and with
+its ears off; points on the skin found by their UV (`skin_detail.probe_uvs`, portrait.gd's `--probe`), red against
+green: round the eyes and the nose up over 8%, the ear up over 15% and back within 5% with its switch off, the
+profile's edge (the chin, the forehead) and the lips' middles over 6%, a finger over 10%, the cheek and the forehead
+facing the eye within 6%, the picture within 8% as bright; `depth_sheet.jpg`. First run (the Studio's new character, `_studiotest`): the inner corner
 2.86 to 5.05, the alar crease 1.61 to 2.09, the nose's wing 1.69 to 2.50, the ear 1.39 to 2.10 and 1.43 with its switch
 off, the cheek 1.64 to 1.68, the forehead 1.42 to 1.45, the brightness 1.00. The sheet of the four (off, 1, ears off,
-2) under the baked light, the reel's lamps and the game's lamp: `docs/godot_sheets/2026-11-01_skin_depth.jpg`.
+2) under the baked light, the reel's lamps and the game's lamp: `docs/godot_sheets/2026-11-01_skin_depth.jpg`; the
+four parts after it (off, the regions alone, with the parts): `docs/godot_sheets/2026-11-01_skin_depth_parts.jpg`.
 
 **Not yet:** the Studio's view and the desk drawing it; the depth deepening with the face's shapes (a squint's creases).
 

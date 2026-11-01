@@ -15,10 +15,11 @@ makes People/_studiotest).
 addons/horrorstudio_look folder); only the detail-on pictures are made then.
 
 The skin's depth layer (GODOT_LOOK §5g) is measured too, under a baked level's light (the ambient alone, LightmapGI's
-probes: `--light=baked`) at the close-up and in profile, off, on (as the export asks) and with its ears switched off,
-points on the skin found by their UV (`skin_detail.probe_uvs`): round the eyes and the nose warmer with it (red against
-green up), the ear warmer and back as it was with its switch off, the cheek and the forehead as they were, the picture
-no brighter or darker; `depth_sheet.jpg` the three side by side. `--no-depth` leaves it out.
+probes: `--light=baked`) at the close-up, in profile and on a hand, off, on (as the export asks) and with its ears
+switched off, points on the skin found by their UV (`skin_detail.probe_uvs`): round the eyes and the nose warmer with
+it (red against green up), the ear warmer and back as it was with its switch off, the profile's edge (the chin, the
+forehead) warmer, the lips warmer, a finger lit through, the cheek and the forehead facing the eye as they were, the
+picture no brighter or darker; `depth_sheet.jpg` the three side by side. `--no-depth` leaves it out.
 """
 import argparse
 import json
@@ -107,7 +108,7 @@ def depth_check(g, keep, base, env):
     probes = skin_detail.probe_uvs(mhr.load())
     shots = {}
     for tag, extra, _ in DEPTH_RUNS:
-        text, err = run(g, OUT, base + [f"--tag={tag}", "--shots=cu,side", "--light=baked", "--probe=" + json.dumps(probes)] + extra, env)
+        text, err = run(g, OUT, base + [f"--tag={tag}", "--shots=cu,side,hand", "--light=baked", "--probe=" + json.dumps(probes)] + extra, env)
         if text is None:
             print(err)
             print(f"  BAD the depth layer's pictures ({tag}) didn't run clean")
@@ -140,19 +141,28 @@ def depth_check(g, keep, base, env):
         else:
             print(f"  ok  the export has its ears' glow off (its hair over them): {e0:.2f} to {e1:.2f}")
         say(abs(e2 / e0 - 1) < 0.05, f"and back as it was with its ears switched off: {e2:.2f} against {e0:.2f}")
+    edge = {k: (warm(off, "side", k), warm(on, "side", k)) for k in ("chin", "forehead")}      # the profile's edge: turned away from the eye
+    edge = {k: v for k, v in edge.items() if None not in v}
+    say(len(edge) == 2 and all(b > a * 1.06 for a, b in edge.values()),
+        "warmer where the skin turns away from the eye (the profile's edge): " + ", ".join(f"{k} {a:.2f} to {b:.2f}" for k, (a, b) in edge.items()))
+    lips = {k: (warm(off, "cu", k), warm(on, "cu", k)) for k in ("lower lip", "upper lip")}
+    lips = {k: v for k, v in lips.items() if None not in v}
+    say(len(lips) >= 1 and all(b > a * 1.06 for a, b in lips.values()), "the lips warmer: " + ", ".join(f"{k} {a:.2f} to {b:.2f}" for k, (a, b) in lips.items()))
+    f0, f1 = warm(off, "hand", "finger +x"), warm(on, "hand", "finger +x")
+    say(None not in (f0, f1) and f1 > f0 * 1.1, "the fingers lit through by the room: " + (f"{f0:.2f} to {f1:.2f}" if None not in (f0, f1) else "the finger isn't in the hand shot"))
     rest = {k: (warm(off, "cu", k), warm(on, "cu", k)) for k in ("cheek +x", "forehead")}
     rest = {k: v for k, v in rest.items() if None not in v}
     say(len(rest) == 2 and all(abs(b / a - 1) < 0.06 for a, b in rest.values()),
-        "the cheek and the forehead as they were: " + ", ".join(f"{k} {a:.2f} to {b:.2f}" for k, (a, b) in rest.items()))
+        "the cheek and the forehead facing the eye as they were: " + ", ".join(f"{k} {a:.2f} to {b:.2f}" for k, (a, b) in rest.items()))
     lum = {s: shots[on]["shots"][s]["lum"] / max(1e-6, shots[off]["shots"][s]["lum"]) for s in ("cu", "side")}
     say(all(0.92 < v < 1.08 for v in lum.values()), "and the picture no brighter or darker for it: " + ", ".join(f"{s} {v:.2f}" for s, v in lum.items()))
     try:
         from PIL import Image, ImageDraw
         W, H = 640, 360
-        im = Image.new("RGB", (W * 2, (H + 22) * len(DEPTH_RUNS)), (20, 20, 20))
+        im = Image.new("RGB", (W * 3, (H + 22) * len(DEPTH_RUNS)), (20, 20, 20))
         d = ImageDraw.Draw(im)
         for r, (tag, _, label) in enumerate(DEPTH_RUNS):
-            for c, s in enumerate(("cu", "side")):
+            for c, s in enumerate(("cu", "side", "hand")):
                 f = keep / f"{tag}_{s}.png"
                 if f.exists():
                     im.paste(Image.open(f).convert("RGB").resize((W, H)), (c * W, r * (H + 22) + 22))

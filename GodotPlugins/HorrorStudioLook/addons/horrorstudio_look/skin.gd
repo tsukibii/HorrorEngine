@@ -112,9 +112,10 @@ static func set_detail(m: ShaderMaterial, look = "natural", amount := 1.0, mhr :
 
 ## the depth layer on a material (§5g): `amount` the whole layer (0 off, 1 as made), `ears` the ears' glow (off for a
 ## character whose hair covers them: the lamps' light through them goes too), `look` any of the shader's depth_*
-## numbers over its own (depth_eyes, depth_nose, depth_mouth, depth_ears, depth_rest, depth_warmth, depth_creases,
-## depth_glow, depth_pores; depth_color a Color). Placed by MHR's depth map, so it needs MHR's UVs (`use_regions`,
-## which set_detail sets on a Studio export)
+## numbers over its own (the regions' shares depth_eyes, depth_nose, depth_mouth, depth_ears, depth_lips, depth_hands
+## (the fingers' glow); depth_edge (warmer where the skin turns away from the eye), depth_rest (the creases everywhere
+## else); depth_warmth, depth_creases, depth_glow, depth_pores; depth_color a Color). Placed by MHR's depth and region
+## maps, so it needs MHR's UVs (`use_regions`, which set_detail sets on a Studio export)
 static func set_depth(m: ShaderMaterial, amount := 1.0, ears := true, look := {}) -> void:
 	m.set_shader_parameter("skin_depth", amount)
 	m.set_shader_parameter("depth_ears_on", ears)

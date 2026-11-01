@@ -109,7 +109,10 @@ uniform float depth_nose : hint_range(0.0, 2.0) = 1.0;
 uniform float depth_mouth : hint_range(0.0, 2.0) = 0.6;
 uniform bool depth_ears_on = true;                                // HS: the ears' glow: off for a character whose hair covers them (the lamps' light through them goes too)
 uniform float depth_ears : hint_range(0.0, 2.0) = 1.0;
-uniform float depth_rest : hint_range(0.0, 1.0) = 0.0;            // HS: the occlusion's creases everywhere else warmed too (0: the core alone)
+uniform float depth_lips : hint_range(0.0, 2.0) = 0.5;            // HS: the lips themselves (the region map's lips: the skin that lets the most light through)
+uniform float depth_hands : hint_range(0.0, 2.0) = 0.7;           // HS: the fingers' thin skin lit through by the room, as an ear's (MHR's hands: its UVs' quarter past u 0.5 and v 0.5)
+uniform float depth_edge : hint_range(0.0, 2.0) = 0.6;            // HS: warmer where the skin turns away from the eye (a cheek's side, the jaw, the nose's sides, the neck): what comes out there has gone furthest under it
+uniform float depth_rest : hint_range(0.0, 1.0) = 0.3;            // HS: the occlusion's creases everywhere else warmed too (under the jaw, the neck's folds, between the fingers; 0: the core alone)
 uniform vec3 depth_color : source_color = vec3(0.86, 0.33, 0.24); // HS: the colour light takes on under the skin (the blood's)
 uniform float depth_warmth : hint_range(0.0, 2.0) = 1.0;          // HS: how far the regions' colour turns toward it
 uniform float depth_creases : hint_range(0.0, 2.0) = 1.0;         // HS: the export's occlusion there red, not grey (the red goes furthest under the skin)
@@ -239,6 +242,7 @@ void fragment() {
 	smooth_depth = smoothstep(0.0, 0.6, linear_depth);
 
 	sss_tex = texture(texture_translucency, base_uv).b;
+	float hs_facing = clamp(dot(normalize(NORMAL), VIEW), 0.0, 1.0);   // HS: how squarely the skin faces the eye, before any relief (§5g's edge)
 	vec4 hs_dm = use_regions ? texture(texture_depth, base_uv) : vec4(0.0);   // HS: the depth layer's regions (§5g)
 	if (!depth_ears_on) {
 		sss_tex *= 1.0 - clamp(1.6 * hs_dm.b, 0.0, 1.0);             // HS: the ears' switch takes the lamps' light through them off too
@@ -375,13 +379,16 @@ void fragment() {
 	hs_warm = vec3(1.0);
 	if (skin_depth > 0.0) {
 		float ear = depth_ears_on ? hs_dm.b : 0.0;
-		float d = skin_depth * max(max(hs_dm.r * depth_eyes, hs_dm.g * depth_nose), max(hs_dm.a * depth_mouth, ear * depth_ears));
+		float lips = use_regions ? texture(texture_regions, base_uv).b : 0.0;                    // the region map's lips
+		float hands = use_regions ? step(0.5, base_uv.x) * step(0.5, base_uv.y) : 0.0;          // MHR's hands (SKINDETAIL holds the layout to it)
+		float d = skin_depth * max(max(max(hs_dm.r * depth_eyes, hs_dm.g * depth_nose), max(hs_dm.a * depth_mouth, ear * depth_ears)), lips * depth_lips);
+		float edge = pow(1.0 - hs_facing, 3.0) * (depth_ears_on ? 1.0 : 1.0 - clamp(1.6 * hs_dm.b, 0.0, 1.0));   // turned away from the eye (none on an ear switched off)
 		vec3 col = max(depth_color, vec3(1e-3));
-		vec3 warm = pow(max(col / dot(col, vec3(0.2126, 0.7152, 0.0722)), vec3(0.05)), vec3(0.25 * depth_warmth * d));   // its hue at the skin's brightness
+		vec3 warm = pow(max(col / dot(col, vec3(0.2126, 0.7152, 0.0722)), vec3(0.05)), vec3(0.25 * depth_warmth * (d + skin_depth * depth_edge * edge)));   // its hue at the skin's brightness
 		vec3 e = hs_depth_exp(depth_creases * max(d, skin_depth * depth_rest)) - 1.0;
 		float og = use_ambient_occlusion ? ao * ao_strength + (1.0 - ao_strength) : 1.0;          // the shade Godot puts on the ambient (AO above)
 		float ol = use_ambient_occlusion ? ao * ao_block_light + (1.0 - ao_block_light) : 1.0;    // and light() on the lamps
-		float here = clamp(1.6 * max(max(hs_dm.r, hs_dm.g), max(hs_dm.a, ear)), 0.0, 1.0);
+		float here = max(clamp(1.6 * max(max(max(hs_dm.r, hs_dm.g), max(hs_dm.a, ear)), lips), 0.0, 1.0), hands * depth_hands);
 		vec3 through = vec3(1.0) + skin_depth * depth_glow * (translucency ? sss_tex : 0.0) * here * col / max(max(col.r, col.g), col.b);
 		vec3 amb = min(warm * pow(vec3(max(og, 0.02)), e) * through, vec3(4.0));
 		ALBEDO *= amb;

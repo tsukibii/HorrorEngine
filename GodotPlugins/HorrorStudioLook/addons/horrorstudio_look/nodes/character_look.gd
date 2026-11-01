@@ -20,6 +20,12 @@ extends Node
 @export_range(0.0, 2.0) var detail_amount: float = 1.0                 ## the detail layer as a whole
 @export_range(0.0, 3.0) var skin_depth: float = 1.0                    ## light from under the skin, warm round the eyes, the nose, the mouth and the ears (HSSkin.set_depth): times the character's own Depth; 0 off
 @export_enum("auto", "on", "off") var ear_glow: String = "auto"        ## the ears' share of it: off when the hair covers the ears (auto: the character's own Ear glow, the Studio's Skin light)
+@export_group("Skin depth's parts")
+@export_range(0.0, 2.0) var depth_edge: float = 0.6                    ## warmer where the skin turns away from the eye (a cheek's side, the jaw, the neck)
+@export_range(0.0, 1.0) var depth_creases: float = 0.3                 ## the creases everywhere else warm instead of grey (under the jaw, the neck's folds, between the fingers)
+@export_range(0.0, 2.0) var depth_fingers: float = 0.7                 ## the fingers' thin skin lit through by the room, as an ear's
+@export_range(0.0, 2.0) var depth_lips: float = 0.5                    ## the lips themselves
+@export_group("")
 @export var eyes := true
 @export var hair := true
 @export_file("*.glb") var glb_path: String = ""  ## the export's glb (its skin and eye records); empty: the character's own file
@@ -43,7 +49,7 @@ func wear() -> void:
 	materials.clear()
 	if skin:
 		var st := {"wetness": wetness, "sweat": sweat, "drips": drips, "oil": oil, "detail": 0.0 if skin_detail == "off" else detail_amount,
-				"depth": skin_depth}
+				"depth": skin_depth, "depth_look": {"depth_edge": depth_edge, "depth_rest": depth_creases, "depth_hands": depth_fingers, "depth_lips": depth_lips}}
 		if ear_glow != "auto":
 			st["depth_ears"] = ear_glow == "on"
 		if skin_detail != "auto" and skin_detail != "off":
