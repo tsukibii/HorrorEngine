@@ -120,6 +120,59 @@ maps are found by their names' last word, so Unreal-ready names work as they are
 take the set; trim keeps its own. A map the names get wrong is chosen by hand on the shelf page (the Studio's **PBR**
 button). `sheet.mjs --pbr pants=pbr/denim1:0.12` renders one.
 
+## 1d. Creases (DECISIONS 2026-11-01)
+
+The user: "what makes our clothes bland is we are missing creases, natural fabric kinda style that could be emulated via
+PBR techniques ... add a crease gen as well (basically how we emulate wrinkles on faces)". `tailor/crease.js`: the
+cloth's small relief drawn as a height in the garment's shader (`clothH`, in metres of cloth, at the fabric coordinates'
+real size), never as geometry; the drape (§1c) gives the big folds, this what a sewn, worn garment has on them:
+**folds** where the body bends (rings round the limb inside the elbow and behind the knee, each fold its own spacing,
+tilted one way then the other, only part of the way round; a sleeve stacking at the wrist, a trouser leg breaking on the
+shoe, the waist), **drag lines** (diagonal pulls from the crotch over the thigh, a jean's whiskers, and from the armpit
+across the chest), the **press** (a sharp ridge down the middle of a trouser leg's front), **seams** (the stitched line
+sunk in, the cloth puckered a few millimetres either side, the pucker coming and going along it), **hems** (the turned
+edge rolled, the turn-up ending 2.5 cm in, a row of stitches 1.3 cm in), the fabric's own **crinkle** (thin crease
+lines along a noise stretched down the hang, a softer shoulder either side, wrinkled in patches) and fine **drape**
+streaks down skirts and wide legs. Per vertex, `crz` is made when a part is unwrapped (`creaseData`): how much it
+bunches and is pulled there (from the body's frame: the elbow, the knee, the ankle, the crotch, the armpits, the
+waist), and how far it is along the cloth from the nearest seam and the nearest hem (Dijkstra along the mesh, relaxed so
+the lines come out smooth). The amounts come by fabric (`CREASE`: linen wrinkles most, wool and tweed a little, knit and
+rib almost none, denim's folds deep, a twill's and flannel's press holding) times the garment's **Creases** slider (the
+Studio, a garment's look: 0 none, 1 as the fabric has them, 2 well worn) and its **Pressed crease** switch (trousers);
+a design can carry its own (`crease: {press: 1}` on the wide pleated trousers). The slope bends the normal in the view;
+the valleys darken the colour a little. **In the export** the creases are baked into the garment's normal map on its own
+layout (`albedo.js` `bakeClothNormal`, at 1.5 mm a texel), so the desk and Godot show them; a file has one normal map,
+so a PBR set's weave normal gives way to it there.
+
+## 1e. Fabrics made in Blender (DECISIONS 2026-11-01)
+
+The user: "similar to what we did for props and buildings can you create some procedural materials with blender for the
+clothing in the studio, stuff like cotton, etc.". `tools/streetbake/fabrics.py`: node groups read in metres, as the
+street's library is (and baked by the same `tiles.py` into `assets/pbr/Procedural/fabric_<name>/`: colour, normal,
+roughness, ORM, height, a lit picture), built from what each cloth is made of at its real size: **weaves** (threads
+over and under: poplin, cotton, oxford's basket, linen with its slubs, canvas, chambray, denim's 3/1 indigo twill with
+its streaks, washed light denim, gabardine, chino, herringbone, five-harness satin; each thread its own shade and
+thickness along it), **knits** (jersey's Vs, a chunky sweater, 2 x 2 rib, waffle), **felts** (flannel's brushed fuzz
+over a faint twill, fleece, melton), **hides** (leather's fine pebbled grain and pores, suede's nap) and **piles**
+(corduroy's wales, velvet, crepe's pebble, boucle's loops, tweed's flecked twill). Each tile is a whole number of its
+threads or stitches, so it repeats without a seam (FABRICS checks it). Most are white-based: the Studio lays the
+garment's colour over them (their `tint`); denim, chambray and tweed carry their threads' own colours.
+`python tools/fabric_bake.py bake` makes them (Blender's module, `python tools/retarget.py setup` once), `list`, `sheet`
+(`Saved/Story/_look/fabrics/sheet.jpg`), `check` (FABRICS). In the Studio they come first in a garment's **PBR set**
+picker, "(made)", tinted by default; the smart casual designs name theirs (`pbr: "pbr/Procedural/fabric_crepe"`), and
+on a machine where it isn't baked a garment falls back to its drawn `surface`. Three drawn surfaces were added beside
+them: **linen**, **crepe** and **flannel** (`fabric.js`).
+
+## 1f. The smart casual collection (DECISIONS 2026-11-01)
+
+After the user's sheet of Japanese smart casual outfits (eighteen looks, phone held over the face): a new tab,
+**Smart casual**, first in the outfit picker, fifteen outfits (`group: "smart"`), and the cuts they needed: **wide
+pleated trousers** (high waisted, wide and straight, pressed: crepe or flannel), a **tie-neck blouse** (its bow's tails as
+two plackets and a knot), a **blouse with full sleeves** (gathered into long cuffs), a **shirt** (sleeves rolled, a breast
+pocket, worn striped), a **cropped collarless tweed jacket** (gold buttons, boucle), a **collarless jacket** (melton), a
+**cropped leather jacket** (worn open), a **knit midi skirt** and a **pleated midi skirt**. The shirts and blouses are
+worn tucked in (listed before the trousers). Not made: the sweater knotted over the shoulders, the bags.
+
 ## 2. The designs are data
 
 `Content/Studio/Clothes/designs.json`: each design has a `label`, a `slot` (`under`, `top`, `bottom`, `full`, `legs`, `feet`, `jacket`), a
@@ -328,7 +381,6 @@ the cut's own (8 at a trouser hem, where the relaxed cloth bridges the ankle's h
   the shelf already imports a set into Unreal as `MI_<name>`); the made-up tiles, patterns and prints still have to go
   across (a material instance per garment with the tile, its size, the colour or pattern and the print), and Unreal's
   import of a set doesn't use a packed ORM yet (the separate maps).
-- **Seams and creases**: folds now come from the drape; stitch lines would be a normal map.
 - **The drape** doesn't keep the cloth off itself (a deep fold can pass through its neighbour), hangs only in MHR's own
   pose (not a pose of the desk's), and isn't seen falling (the hung clothes replace the cut ones when they've settled).
 - Hair doesn't collide with the clothes yet.

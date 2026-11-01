@@ -209,6 +209,8 @@ TOOLS = [
     ("Look", "Clothes in motion: an outfit walked, sat and crouched on several bodies (Saved/tailor_motion.png)", "node tools/character/tailor/motion.mjs --outfit {ask:Outfit (e.g. work uniform)} {opt:Bodies (e.g. feminine,full_masculine)|--bodies} --out Saved/tailor_motion.png", {}),
     ("Look", "Face mesh from photos or a video (for Blender)", "tools/face_mesh.py make {ask:Photo, video or folder}", {}),
     ("Look", "An expression from a video of a face (the desk's Expressions tab does this with Import)", "tools/face_capture.py solve {ask:Video} --out {ask:Folder}", {}),
+    ("Look", "The Studio's fabrics: bake them in Blender (cotton, linen, denim, knits, wool, leather...: tools/fabric_bake.py)", "tools/fabric_bake.py bake", {}),
+    ("Look", "The Studio's fabrics: their sheet", "tools/fabric_bake.py sheet", {}),
     ("Look", "Salon reference from a turntable video (frames, key, poses, the face fit)", "tools/gshair.py run {ask:Video} --orbit --to reference --ref {ask:Reference name}", {}),
 
     ("Props", "Prop generator: the recipes (Content/Studio/Props/presets.json)", "tools/propgen.py list", {}),

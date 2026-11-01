@@ -2,6 +2,20 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-01 (the user: the clothes refined, on `clothing-refiner`)
+
+- **"Inspired by the image of Japanese smart casual outfits create some of these, I think currently what makes our
+  clothes bland is we are missing creases, natural fabric kinda style that could be emulated via PBR techniques etc so
+  add a crease gen as well (basically how we emulate wrinkles on faces)."** Done (TAILOR §1d, §1f): the creases as a
+  height in the garment's shader (folds at the bends, drag lines, the press, seams, hems, the fabric's crinkle), a
+  Creases slider and a Pressed crease switch per garment, baked into the export's normal map; the Smart casual tab with
+  fifteen outfits and nine new cuts; linen, crepe and flannel as drawn surfaces.
+- **"Similar to what we did for props and buildings can you create some procedural materials with blender for the
+  clothing in the studio, stuff like cotton, etc."** Done (TAILOR §1e): 26 fabrics as node groups of threads,
+  stitches, fibres and grain at their real size, baked in Blender into tileable PBR sets
+  (`tools/fabric_bake.py`, `assets/pbr/Procedural/fabric_*`), first in the Studio's PBR picker, tinted by the garment's
+  colour.
+
 ## 2026-10-31, small hours (the user, on the floors)
 
 - **Kit floors take a material**: "yes make the floors take a material" (offered: a kit floor dressed rather than taken

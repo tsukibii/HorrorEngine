@@ -12,6 +12,17 @@ street builder, its paint and the PBR sets, with `prop-gen-tool` merged in). Rea
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
+## 0. `clothing-refiner` (2026-11-01): creases, made fabrics, the smart casual collection
+
+The user: Japanese smart casual outfits after their reference sheet, creases ("how we emulate wrinkles on faces"),
+then fabrics made in Blender "like the props and buildings". Built (TAILOR §1d, §1e, §1f): `tailor/crease.js` (folds,
+drag lines, the press, seams, hems, crinkle as a shader height from per-vertex data; the Creases slider and Pressed
+crease switch; baked into the export's normal map), `tools/fabric_bake.py` + `tools/streetbake/fabrics.py` (26 fabrics
+baked into `assets/pbr/Procedural/fabric_*`, first in the PBR picker, tinted; FABRICS in check_all), the Smart casual tab
+(fifteen outfits, nine new cuts; linen, crepe, flannel). Next: the user's look in the Studio (`python tools/fabric_bake.py
+bake` once on their machine; a local STUDIO run on the GPU); the outfits' thumbnails (`tailor/thumbs.mjs`); the
+sweater over the shoulders; the creases in Godot measured (GDPEOPLE on a dressed export).
+
 ## 0. The street builder (2026-10-30, night, on `buildings-streets`; not merged)
 
 The user asked for a new tool (DECISIONS 2026-10-30, night and later night): the outside world the enterable buildings
@@ -212,7 +223,7 @@ Next if wanted (PROPGEN.md §9): a life on a generated prop (a generated kettle 
 sockets are there), food tins, a flashlight, batteries, a bucket, a crate, a die, a book; a recipe page with a PBR
 picker.
 
-## 0. `realism-enhancer-skin` (2026-10-31, the night, the last): the grafted eyes for everyone, the add-on gone
+## 0r. `realism-enhancer-skin` (2026-10-31, the night, the last): the grafted eyes for everyone, the add-on gone
 
 The user: make the base mesh's eyes the default ("I don't care about the old eyes"), upgrade our own brows and lashes
 with what the add-on's technique does, and remove the add-on. Done (DECISIONS 2026-10-31, the last; CHARACTER_STUDIO §2b, §2c):
