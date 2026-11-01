@@ -14,7 +14,7 @@
 //   drape      fine vertical streaks down skirts and wide legs between the drape's folds
 //
 // Per vertex, made when a garment is unwrapped (tailor/uv.js `unwrap`), `crz` = (bend: how much it bunches there,
-// drag: how much it's pulled, seam: metres to the nearest seam, edge: metres to the nearest hem or edge). The shader
+// drag: how much it's pulled, seam: metres to the nearest seam, edge: metres to the nearest hem or edge); a loose leg (`loose`, the leg's ease in metres) doesn't fold at the knee: it doesn't touch it. The shader
 // (tailor/look.js) reads them with the fabric coordinates (metres: u round, v along) and the part, so the creases lie
 // at their real size; amounts by the fabric (`CREASE`) and the garment's own `crease` (a design's, or an edit's).
 // The height is in metres of cloth; its slope bends the normal (view) and is baked into the export's normal map
@@ -63,7 +63,7 @@ export function creaseOf(surface, own = {}) {
 const CAP = 0.05;                                       // metres: distances further than this don't matter to the shader
 /** Dijkstra along the mesh's edges from `seeds` (vertex ids), stopping at CAP: metres to the nearest seed */
 function spread(P, nbr, seeds) {
-  const n = P.length / 3, heap = []; let d = new Float32Array(n).fill(CAP);
+  const n = P.length / 3, heap = []; let d = new Float64Array(n).fill(CAP);   // (64-bit: a float32 store rounds a sum up, and a zero-length edge then improves it for ever)
   const push = (v, k) => { heap.push([k, v]); let i = heap.length - 1; while (i) { const p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; } };
   const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let i = 0; for (;;) { const l = 2 * i + 1, r = l + 1; let m = i; if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (r < heap.length && heap[r][0] < heap[m][0]) m = r; if (m === i) break; [heap[m], heap[i]] = [heap[i], heap[m]]; i = m; } } return top; };
   for (const s of seeds) { d[s] = 0; push(s, 0); }
@@ -71,13 +71,13 @@ function spread(P, nbr, seeds) {
     const [k, v] = pop(); if (k > d[v]) continue;
     for (const w of nbr[v]) {
       const e = Math.hypot(P[v * 3] - P[w * 3], P[v * 3 + 1] - P[w * 3 + 1], P[v * 3 + 2] - P[w * 3 + 2]), nk = k + e;
-      if (nk < d[w]) { d[w] = nk; push(w, nk); }
+      if (nk < d[w] - 1e-9) { d[w] = nk; push(w, nk); }
     }
   }
   // the graph's distances step along its edges (a zigzag across the triangles): relaxed a few rounds toward their
   // neighbours' (the seeds held), so the lines drawn at a distance come out smooth
   for (let it = 0; it < 6; it++) {
-    const e = Float32Array.from(d);
+    const e = Float64Array.from(d);
     for (let v = 0; v < n; v++) {
       if (d[v] === 0 || d[v] >= CAP || !nbr[v].length) continue;
       let sum = 0; for (const w of nbr[v]) sum += d[w];
@@ -94,7 +94,7 @@ function spread(P, nbr, seeds) {
  * part: each point's part (tailor/uv.js PARTS); S: the shade (1, less on a hem's last row and its rim: the hems'
  * seeds); src: each point's point before the seams split it (a seam is where one point became two). F: the body's frame.
  */
-export function creaseData(F, P, R, T, part, S, src, shoe = false) {
+export function creaseData(F, P, R, T, part, S, src, shoe = false, loose = 0) {
   const n = P.length / 3, s = F.s, crz = new Float32Array(n * 4);
   const nbr = Array.from({ length: n }, () => []), count = new Map();
   for (let t = 0; t < T.length; t += 3) for (let k = 0; k < 3; k++) {
@@ -118,7 +118,7 @@ export function creaseData(F, P, R, T, part, S, src, shoe = false) {
     } else if (p === 3 || p === 4) {                                // a leg: behind the knee, the break on the shoe, the crotch's whiskers
       const L = F.legLines[p === 3 ? "L" : "R"], [t] = L.project(x, y, z), c = L.at(t), r = [x - c[0], 0, z - c[2]], rl = Math.hypot(r[0], r[2]) || 1;
       const front = r[2] / rl, inner = (p === 3 ? -1 : 1) * r[0] / rl;
-      bend = g(y, F.kneeY, 0.06 * s) * (0.25 + 0.75 * smooth(-0.2, 0.9, -front)) + 0.9 * (1 - smooth(F.ankleY + 0.005 * s, F.ankleY + 0.05 * s, y));   // (the break only on cloth that reaches the shoe: a hem above it hangs clean)
+      bend = g(y, F.kneeY, 0.06 * s) * (0.25 + 0.75 * smooth(-0.2, 0.9, -front)) * (1 - smooth(0.018, 0.04, loose)) + 0.9 * (1 - smooth(F.ankleY + 0.005 * s, F.ankleY + 0.05 * s, y));   // (the break only on cloth that reaches the shoe: a hem above it hangs clean)
       drag = smooth(F.crotchY - 0.22 * s, F.crotchY - 0.04 * s, y) * (1 - smooth(F.crotchY - 0.01 * s, F.crotchY + 0.03 * s, y)) * smooth(-0.3, 0.6, front) * (0.5 + 0.5 * smooth(-0.5, 0.6, inner));
     } else if (p === 0 || p === 6) {                                // the body: the waist, the armpits' pull across the chest
       const [cx] = F.torsoAxis(y), side = Math.abs(x - cx) / (0.16 * s);

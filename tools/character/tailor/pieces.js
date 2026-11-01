@@ -292,6 +292,28 @@ export function shell(B, p, under) {
   const ease = layers(B, C.P, C.T, under), gap = 0.0015 * s, W = new Float32Array(ease.length);
   for (let j = 0; j < ease.length; j++) if (ease[j] > 0) ease[j] += gap;
   const [ccx, ccz] = F.torsoAxis(crotch), pits = ["L", "R"].map(k => { const A = F.arms[k], q = A.line.at(A.seam); return [q[0] * 0.85, F.armpitY - 0.02 * s, q[2]]; });
+  // straight legs (`legs.straight`, 0..1: wide trousers): from the thigh down the cloth keeps the thigh's width as a
+  // column, never following the knee or the calf in (cloth hanging from the seat doesn't touch the knee); each point's
+  // ease made up to the widest the leg has been above it, the knee's front (furthest out) getting the least
+  const straight = p.legs && p.legs.straight > 0 ? p.legs.straight : 0, legAt = (x, y, z) => {
+    const side = x >= F.torsoAxis(Math.min(y, crotch))[0] ? "L" : "R", L = F.legLines[side], [t] = L.project(x, y, z), c = L.at(t);
+    return { side, d: Math.hypot(x - c[0], z - c[2]) };
+  };
+  let widest = null;
+  if (straight) {
+    const bins = { L: new Map(), R: new Map() };
+    for (let j = 0; j < C.P.length / 3; j++) {
+      const x = C.P[j * 3], y = C.P[j * 3 + 1], z = C.P[j * 3 + 2]; if (y >= crotch || F.arm(x, y, z)) continue;
+      const { side, d } = legAt(x, y, z), k = Math.round(y / (0.01 * s)), b = bins[side].get(k) || []; b.push(d); bins[side].set(k, b);
+    }
+    widest = {};
+    for (const side of ["L", "R"]) {                                // down from the crotch: how much each ring must come out to stay as wide as the leg above it
+      const ks = [...bins[side].keys()].sort((a, b) => b - a), mean = k => { const a = []; for (let q = k - 3; q <= k + 3; q++) a.push(...(bins[side].get(q) || [])); a.sort((u, v) => u - v); return a.length ? a[a.length >> 1] : 0; };   // the median radius (the buttocks' lobe under the crotch made the mean bulge)
+      const m = new Map(); let best = 0;
+      for (const k of ks) { best = Math.max(best, mean(k)); m.set(k, best); }
+      widest[side] = y => { const k = Math.round(y / (0.01 * s)); return m.get(k) ?? best; };   // the widest the leg has been from the crotch down to here
+    }
+  }
   for (let j = 0; j < ease.length; j++) {
     const x = C.P[j * 3], y = C.P[j * 3 + 1], z = C.P[j * 3 + 2], a = F.arm(x, y, z);
     // how freely it smooths: not at all into the armpit or down between the legs (it would web them), a little on the limbs
@@ -300,7 +322,8 @@ export function shell(B, p, under) {
     if (pad) ease[j] += pad(x, y, z);
     if (a) { ease[j] += ea; continue; }
     const legW = 1 - smooth(crotch - 0.02 * s, crotch + 0.06 * s, y);
-    ease[j] += eb + (el - eb) * legW + fl * smooth(knee + 0.1 * s, legTo, y) * legW;
+    const elx = straight ? el + (Math.min(el, 0.01 * s) - el) * (1 - smooth(crotch - 0.14 * s, crotch - 0.02 * s, y)) : el, flx = straight ? 0 : fl;   // (straight legs: their width comes as a column after the relax, below: pushed far along the normals the cloth folds)
+    ease[j] += eb + (elx - eb) * legW + flx * smooth(knee + 0.1 * s, legTo, y) * legW;
     if (p.legs) ease[j] += (e.crotch ?? 0.014) * s * Math.exp(-((dc / (0.08 * s)) ** 2));
   }
   const near = contested(B, C, Array.from(ease, e => 2 * e + 0.02 * s));
@@ -315,6 +338,12 @@ export function shell(B, p, under) {
     e3.set(ease2); W3.set(W2); h3.set(hint2); n3.set(near2);
     for (let k = 0; k < m2 - m; k++) { const a = f2.parents[2 * k], b = f2.parents[2 * k + 1]; e3[m + k] = (ease2[a] + ease2[b]) / 2; W3[m + k] = (W2[a] + W2[b]) / 2; h3[m + k] = hint2[a]; n3[m + k] = near2[a] | near2[b]; }
     Qf = relax(f2.P, f2.T, new Float32Array(f2.P.length), e3, { iters: 2, weight: W3, clear: e3, colliders: [{ surf: B.surf }], hints: h3, contested: n3 }); Tf = f2.T; mf = m2; hf = h3;
+  }
+  if (widest) for (let j = 0; j < mf; j++) {                        // straight legs: set out from the leg's line into a column as wide as the leg has been above
+    const x = Qf[j * 3], y = Qf[j * 3 + 1], z = Qf[j * 3 + 2]; if (y >= crotch || F.arm(x, y, z)) continue;   // (radially, not along the skin's normals: pushed that far along them the hollow under the kneecap folds the cloth over itself)
+    const side = x >= F.torsoAxis(Math.min(y, crotch))[0] ? "L" : "R", L = F.legLines[side], [t] = L.project(x, y, z), c = L.at(t), dx = x - c[0], dz = z - c[2], d = Math.hypot(dx, dz) || 1e-6;
+    const want = (widest[side](y) + el + fl * smooth(knee + 0.1 * s, legTo, y)) * straight + d * (1 - straight), k = smooth(crotch - 0.14 * s, crotch - 0.02 * s, y);
+    if (d < want) { const nd = d + (want - d) * (1 - k); Qf[j * 3] = c[0] + dx / d * nd; Qf[j * 3 + 2] = c[2] + dz / d * nd; }
   }
   const v = new Float32Array(mf);
   for (let j = 0; j < mf; j++) v[j] = V(Qf[j * 3], Qf[j * 3 + 1], Qf[j * 3 + 2]);

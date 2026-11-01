@@ -115,6 +115,6 @@ export function unwrap(F, P, T, S, o = {}) {
     }
   }
   const out = { P: new Float32Array(oP), T: tri, N: new Float32Array(oN), UV: new Float32Array(oUV), PART: new Float32Array(oPart), S: new Float32Array(oS) };
-  out.CRZ = creaseData(F, out.P, oR, tri, out.PART, out.S, oSrc, !!o.shoe);   // the creases' data (tailor/crease.js): where it bends and is pulled, how far from a seam and a hem
+  out.CRZ = creaseData(F, out.P, oR, tri, out.PART, out.S, oSrc, !!o.shoe, o.loose || 0);   // the creases' data (tailor/crease.js): where it bends and is pulled, how far from a seam and a hem
   return out;
 }

@@ -189,7 +189,7 @@ on MHR's average body is high, so hems and waistlines are measured from the crot
 | `sleeve` | `short`, `cap`, `elbow`, `wrist` (each with an offset down the arm: `elbow+0.06`, rolled to below the elbow), or metres from the shoulder joint; the wrist and the elbow are found on the body and checked against MHR's own joints |
 | `hem` | `{at, front, back, side}`: a top's hem; `front`/`back` lengthen it there, `side` raises the sides |
 | `waist` | `{at, drop, rise}`: a bottom's waistline, `drop` lower in front, `rise` higher at the back |
-| `legs` | `{to}`: where the trouser legs end |
+| `legs` | `{to, straight}`: where the trouser legs end; `straight` (0..1, wide pressed trousers) sets the legs out from under the seat into a column as wide as the thigh plus the leg's ease, never following the knee or calf in, and the drape holds them as cut |
 | `open` | `{from, gap, top, curve, shift}`: a jacket's front opening, a `gap` down the middle (a closed front's edge when it's a couple of millimetres) widening into a V from `from` to `top` each side at the neck; `shift` (metres, + to the body's left) slides the opening's middle sideways from the neck down to `from`, and straight below: a wrap front, its edge a diagonal across the chest (an `edgeband` along it is a jeogori's collar band); `closed: false` is a front worn open (a wide `gap` from `from` down, the lapels falling open), which the drape never pulls together |
 | `ease` | `{body, sleeve, leg, flare, crotch, shoulder}` in metres off the skin (`shoulder`: the pad at each shoulder joint, 0.009 to 0.016 on jackets and coats, 0.003 to 0.008 on shirts and sweatshirts) |
 | `tension` | rounds of relaxing: 18 clings, 48 hangs like a work shirt |

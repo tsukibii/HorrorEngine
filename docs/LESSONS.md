@@ -1430,3 +1430,18 @@ guessed margin; and a check that only ever ran on a slow machine hasn't been run
   with a normal into the head (dark) and the rest caught the room's reflection as one grey sheen; the Studio's view of
   the new bake was worse than the old one while Godot's HSHair (both faces lit by the vertex normal) looked right. Wind
   each triangle toward its normal (`hairvolume.js` `wind`), and look at a change in every viewer that shows the file.
+
+## Wide trousers and the creases' distances (2026-11-01, `clothing-refiner`)
+
+- **A big offset along the skin's normals folds the cloth in a hollow:** wide trousers pushed 5 to 8 cm out along the
+  normals folded over themselves under the kneecap (the normals converge there), a ledge round the knee in the cut
+  itself, before any drape; giving each point its own top-up made it worse (the kneecap got little, the shin below a
+  lot, and the offsets crossed), and freer smoothing didn't reach it. Second and third tries: relax with a small ease,
+  then set the leg out radially from its line into a column (`legs.straight`, pieces.js); and the column's width from
+  the median radius, not the mean (the buttocks' lobe under the crotch made the top rings bulge like jodhpurs).
+- **A garment hung by gravity settles onto what it can touch:** the clean column fell 5 cm in the drape and wrapped the
+  knee again, whatever its stiffness; pressed straight legs are held as cut from under the seat (drape.js holds).
+- **Never store a shortest-path's distances in a Float32Array:** a zero-length edge (two points at one place) makes
+  the float64 sum smaller than the float32-rounded stored value for ever, and the heap grows until node runs out of
+  memory. Distances in Float64Array, an improvement only by more than a nanometre (crease.js spread).
+

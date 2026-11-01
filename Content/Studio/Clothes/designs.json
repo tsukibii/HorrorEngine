@@ -654,7 +654,7 @@
     },
     "wide-trousers": {
       "label": "Wide pleated trousers (pressed)", "slot": "bottom", "color": "#e8e1d4", "trim": "#d8d0c2", "buttons": "#d8d0c2", "thickness": 0.0022, "surface": "crepe", "pbr": "pbr/Procedural/fabric_gabardine", "crease": {"press": 1},
-      "piece": {"kind": "shell", "neck": false, "waist": {"at": "crotch+0.26", "drop": 0.008, "rise": 0.015}, "legs": {"to": "ankle+0.085"}, "ease": {"body": 0.012, "leg": 0.05, "flare": 0.03, "crotch": 0.018}, "tension": 40, "drape": {"density": 0.24, "bend": 5e-05, "slack": 0.0, "memory": 0.95}},
+      "piece": {"kind": "shell", "neck": false, "waist": {"at": "crotch+0.26", "drop": 0.008, "rise": 0.015}, "legs": {"to": "ankle+0.045", "straight": 1}, "ease": {"body": 0.02, "leg": 0.02, "flare": 0.03, "crotch": 0.018}, "tension": 40, "drape": {"density": 0.24, "bend": 0.0002, "slack": 0.0, "memory": 1}},
       "details": [
         {"kind": "band", "follow": "waist", "width": 0.04, "lift": 0.002},
         {"kind": "placket", "x": 0.012, "width": 0.032, "from": "crotch+0.23", "to": "crotch+0.05", "lift": 0.0012},

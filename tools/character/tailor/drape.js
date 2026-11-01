@@ -74,7 +74,7 @@ export function underHeights(B, under) {
 
 /** how firmly each point is held where it is (over a half: it stays as cut): a bottom by its waistband, a skirt by
     its waist, a top round its neckline (the band there keeps it round, or it would sag into a V) and where it's tucked
-    into what goes over it (`tuck`: how far under that waist a point is), its sleeves inside the sleeves over it (`cover`:
+    into what goes over it (`tuck`: how far under that waist a point is), straight legs from under the seat down, its sleeves inside the sleeves over it (`cover`:
     how far down each arm they reach, {L, R}); `bands`: held under its bands (tailor.js) */
 export function holds(F, G, p, tuck = null, bands = null, cover = null) {
   const s = F.s, P = G.outer.P, n = P.length / 3, H = new Float32Array(n);
@@ -87,6 +87,7 @@ export function holds(F, G, p, tuck = null, bands = null, cover = null) {
     const a = cover && !G.rings ? F.arm(x, y, z) : null;
     if (a) H[i] = Math.max(H[i], smooth(-0.03 * s, -0.005 * s, cover[a.side] - a.t));
     if (bands) H[i] = Math.max(H[i], bands[i]);
+    if (p.legs && p.legs.straight > 0 && !G.rings && y < F.crotchY && !F.arm(x, y, z)) H[i] = Math.max(H[i], 1 - smooth(F.crotchY - 0.16 * s, F.crotchY - 0.06 * s, y));   // straight legs (wide pressed trousers) hang as cut: a stiff column from under the seat, never settling onto the knee
   }
   return H;
 }
