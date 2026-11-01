@@ -20,7 +20,8 @@ CASES = {"soda_can": (115, 6000), "soda_can_crushed": (125, 14000), "water_bottl
          "key_brass": (60, 3000), "rice_bowl": (117, 8000), "cig_butts": (150, 8000), "trash_bag": (560, 10000),
          "soy_bottle": (120, 9000), "pill_bottle": (90, 14000), "candle_taper": (330, 13000),
          "ema": (160, 6000), "shimenawa": (900, 10000), "wara_ningyo": (270, 8000), "hokora": (560, 8000), "tetsubin": (180, 12000),
-         "rice_cooker": (330, 8000), "kitchen_sink_water": (920, 14000)}
+         "rice_cooker": (330, 8000), "kitchen_sink_water": (920, 14000), "book_hardcover": (215, 4000), "diary_open": (360, 4000),
+         "books_cubby": (420, 16000)}
 
 
 def _glb(path):
