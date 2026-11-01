@@ -427,7 +427,7 @@ def cmd_depth(_a):
 PROBES = {"inner corner": 133, "upper crease": 27, "cheek": 205, "forehead": 151, "nose wing": 64, "nose tip": 4,
           "mouth corner": 61, "chin": 152, "alar crease": 48,                     # the face's right (-x) by MediaPipe's index
           "inner corner +x": 362, "upper crease +x": 257, "nose wing +x": 294, "alar crease +x": 278, "cheek +x": 425,
-          "lower lip": 16, "upper lip": 12}                                       # the lips' middles (17 and 0 their borders)
+          "lower lip": 16, "upper lip": 11}                                       # the lips' middles (17 and 0 their borders, 12 by their parting)
 
 
 def probe_uvs(m):
