@@ -567,7 +567,7 @@ clothesExp.before(el("label", { className: "tog", title: "Each garment falls by 
 let GPU_ON = false; try { GPU_ON = localStorage.getItem("studio.gpu") === "1"; } catch { /* no storage */ }
 const gpuTog = el("input", { type: "checkbox", checked: GPU_ON });
 gpuTog.onchange = () => { GPU_ON = gpuTog.checked; try { localStorage.setItem("studio.gpu", GPU_ON ? "1" : "0"); } catch { /* no storage */ } if (st.drape && !EDITING) dress(); };
-clothesExp.before(el("label", { className: "tog", title: "The cloth simulation's steps on your graphics card (WebGPU), a test: the CPU's where the browser has no WebGPU (Chromium: --enable-unsafe-webgpu). Drapes made either way are kept apart, so switching hangs the clothes again." }, gpuTog, el("span", { textContent: "Use the GPU for the drape (test)" })));
+clothesExp.before(el("label", { className: "tog", title: "The cloth simulation's steps on your graphics card (WebGPU), a test: the CPU's where the browser has no WebGPU (Vivaldi or Chromium: Unsafe WebGPU Support in vivaldi://flags or chrome://flags). Drapes made either way are kept apart, so switching hangs the clothes again." }, gpuTog, el("span", { textContent: "Use the GPU for the drape (test)" })));
 // ---- the edit mode (cutedit.js): the cut lines on the body, moved at once; Bake cuts and hangs the cloth ------------
 // (DECISIONS 2026-10-27: a change took minutes with the whole outfit cut and hung again each time)
 let EDITING = false, EDIT_DIRTY = false, CUTED = null, dragAt = 0;

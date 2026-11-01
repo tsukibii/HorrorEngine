@@ -287,8 +287,9 @@ The clothes are skinned, never simulated, so the cut keeps to what skinning carr
   at those readbacks. So it comes out alike, not the same: garments hung on the card are kept apart from the CPU's (a
   separate cache key and bake key in the worker; a character's own bakes
   count for both), so switching hangs them again. Needs WebGPU on a secure page (the Studio's server on localhost;
-  Chromium on Linux may want `--enable-unsafe-webgpu --enable-features=Vulkan`, or in chrome://flags *Unsafe WebGPU
-  Support* and *Vulkan*); without it the status line says why
+  the user's Vivaldi, like Chromium, has *Unsafe WebGPU Support* in vivaldi://flags (and *Vulkan* if vivaldi://gpu
+  still says WebGPU is off; `--enable-unsafe-webgpu --enable-features=Vulkan` on the command line); without it the
+  status line says why
   and the CPU drapes. The difference is the order alone (measured on the CPU with the card's way, `likeGPU`: the planes
   asked every 8 steps move nothing by more than 0.2 mm; the batches' order puts a skirt's points 3 mm from the CPU's on
   the whole, 14 mm for one in ten, its folds placed a little differently, as hung as well; a shirt's 0.5 and 3 mm).

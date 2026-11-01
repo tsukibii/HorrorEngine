@@ -11,8 +11,9 @@
 //   steps from the points read back, not the moment a point has moved too far from where it last asked;
 // - it stops once still at those readbacks, not at the step it's still.
 // Every constraint and point a thread; the passes in order inside one compute pass (WebGPU makes each dispatch's writes
-// seen by the next). Needs a secure page (localhost) and a browser with WebGPU (Chromium: --enable-unsafe-webgpu where
-// it isn't on by default; docs/TAILOR.md §1i). Returns null (and `gpuState().why`) when there is none: the CPU's loop then.
+// seen by the next). Needs a secure page (localhost) and a browser with WebGPU (Vivaldi or Chromium: Unsafe WebGPU
+// Support in vivaldi://flags or chrome://flags where it isn't on by default; docs/TAILOR.md §1i). Returns null (and
+// `gpuState().why`) when there is none: the CPU's loop then.
 import { ask, finish, predict, lengths, seams, bends, tether, collide, floorRings } from "./drape.js";
 import { smooth } from "./mesh.js";
 
@@ -23,7 +24,7 @@ export async function gpuDevice() {
   if (DEV) return DEV;
   try {
     const gpu = globalThis.navigator?.gpu;
-    if (!gpu) throw new Error(globalThis.isSecureContext === false ? "the page isn't a secure context (open it on localhost)" : "this browser has no WebGPU (Chromium: --enable-unsafe-webgpu)");
+    if (!gpu) throw new Error(globalThis.isSecureContext === false ? "the page isn't a secure context (open it on localhost)" : "this browser has no WebGPU (Vivaldi or Chromium: turn on Unsafe WebGPU Support in vivaldi://flags or chrome://flags, then check WebGPU in vivaldi://gpu)");
     const adapter = await gpu.requestAdapter({ powerPreference: "high-performance" });
     if (!adapter) throw new Error("WebGPU found no graphics adapter");
     const device = await adapter.requestDevice();

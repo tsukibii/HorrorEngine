@@ -18,7 +18,7 @@ not an order. Overwrite this file at the end of the next session.
 (`tailor/drape_gpu.js`, TAILOR §1i), the CPU's drape bit for bit as before when off or without WebGPU. Here only
 SwiftShader's WebGPU (on the CPU, so slower than the CPU's own drape): GPUDRAPE ok (the kernels match `likeGPU`, the
 card's way on the CPU, to under 0.05 mm; the hang alike, the folds placed a little differently). Next: the user tries it
-on the 3090 (Chromium may need `--enable-unsafe-webgpu --enable-features=Vulkan`; `GPU=1 node
+on the 3090 (in Vivaldi, the user's browser: Unsafe WebGPU Support in vivaldi://flags, Vulkan too if vivaldi://gpu says WebGPU is off; `GPU=1 node
 tools/character/tailor/gputest.mjs` gives the card's times), then a local session tunes it: fewer dispatches (the
 bends' batches are most of them; several steps' predict, tether and collide fused), the planes asked on the card.
 
