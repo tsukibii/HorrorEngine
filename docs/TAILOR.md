@@ -239,6 +239,15 @@ The clothes are skinned, never simulated, so the cut keeps to what skinning carr
   sandal's stacked bands), a rounded bottom edge and a flat bottom filled in rings; the toe spring curves only the bottom
   up at the front, and `heel` is a block that much deeper at the back (the old code raised the bottom there instead). The
   sole was the hull of the bare foot's footprint before, so the upper broke out through its rim.
+- **Polished, not sculpted** (the user: "clean up the weird bulgy bumpiness, it makes it look like it was made in a
+  sculpt tool"): the shoe's shell is smoothed by Taubin's rounds (a shrink and a swell each, so it keeps its size) and
+  kept half its ease off the skin (`polish`; a piece's `polish` scales it), so the toes and the heel bone no longer show
+  through; the heel is round from above (the sections carried back narrowed across, not a flat wall) and the ends close
+  rounding toward a circle (no pyramid's shading at the heel tab); the upper stops just inside the sole's top
+  (`soleTop`), and every piece on it (toe cap, rim stripe, tongue, heel tab) stops above the sole's top, where they
+  used to poke out through its wall as a knot; a shoe's fabric bump is 0.3 of a garment's and its UV seams draw no
+  puckers (they aren't its panels). The sole's outline takes the upper's slices from its cut to the sole's top at the
+  front, so a low toe tip (a platform's) stays inside it.
 - **Nets made in Blender**: the `net` family in `tools/streetbake/fabrics.py`, `fabric_spiderweb` (a web a cell, spokes
   meeting the next cell's, rings sagging between them) and `fabric_mesh` (round holes in staggered rows), their holes in
   the colour's alpha and an `_opacity` map the bake now writes for any finish with holes; spider web tights and a mesh

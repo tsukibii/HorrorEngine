@@ -88,7 +88,7 @@ export function material(q, look = {}) {
   const m = gl ? new THREE.MeshPhysicalMaterial({ color: "#ffffff", roughness: gl.roughness, clearcoat: gl.clearcoat, clearcoatRoughness: 0.04, vertexColors: true, transparent: gl.opacity < 1, opacity: gl.opacity, depthWrite: gl.opacity >= 1, side: THREE.FrontSide })
     : new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.88, vertexColors: true, transparent: over, side: THREE.FrontSide });
   const fab = texture(() => surfaceTile(surface), "s|" + surface, false).clone(); fab.needsUpdate = true; fab.repeat.set(1 / S[1], 1 / S[1]);
-  if (S[3] > 0) { m.bumpMap = texture(() => surfaceRelief(surface), "r|" + surface, false).clone(); m.bumpMap.needsUpdate = true; m.bumpMap.repeat.set(1 / S[1], 1 / S[1]); m.bumpScale = 2.5 * S[3]; }
+  if (S[3] > 0) { m.bumpMap = texture(() => surfaceRelief(surface), "r|" + surface, false).clone(); m.bumpMap.needsUpdate = true; m.bumpMap.repeat.set(1 / S[1], 1 / S[1]); m.bumpScale = 2.5 * S[3] * (look.shoe ? 0.3 : 1); }   // (a shoe's leather, canvas and rubber read smooth: made, not woven loose)
   const tile = pbr ? +pbr.tile_m || 0.5 : 1, at = f => `${pbr.base}/${encodeURIComponent(f)}`;
   if (pbr) {                                                       // the set's maps in three's own slots; its colour through uPbr below
     const nm = PM.normal || PM.normal_dx;

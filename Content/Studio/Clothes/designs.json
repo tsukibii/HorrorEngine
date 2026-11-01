@@ -592,7 +592,7 @@
       "details": [{"kind": "band", "follow": "waist", "width": 0.03, "lift": 0.0012, "surface": "rib"}]
     },
     "combat-boots": {
-      "label": "Combat boots", "slot": "feet", "color": "#161412", "surface": "leather", "thickness": 0.003, "sole": {"thick": 0.034, "rise": 0.018, "overhang": 0.009, "spring": 0.01, "color": "#141210", "surface": "rubber", "lines": 3},
+      "label": "Combat boots", "slot": "feet", "color": "#161412", "surface": "leather", "thickness": 0.003, "sole": {"thick": 0.034, "rise": 0.018, "overhang": 0.007, "spring": 0.01, "color": "#141210", "surface": "rubber", "lines": 3},
       "piece": {"kind": "shoe", "neck": false, "legs": {"to": "floor"}, "shoe": {"heel": 0.21, "vamp": 0.19, "from": 0.6}, "ease": {"body": 0.006, "leg": 0.006, "crotch": 0}, "tension": 60},
       "details": [
         {"kind": "foot", "from": 0.78, "to": 1.3, "lift": 0.002},
@@ -831,7 +831,7 @@
       "details": [{"kind": "band", "follow": "waist", "width": 0.025, "lift": 0.0008}]
     },
     "platform-boots": {
-      "label": "Platform boots (lace-up)", "slot": "feet", "color": "#101012", "surface": "patent", "thickness": 0.003, "sole": {"thick": 0.06, "rise": 0.03, "overhang": 0.012, "spring": 0.01, "color": "#0c0c0e", "surface": "rubber", "heel": 0.03, "lines": 4, "flare": 0.003},
+      "label": "Platform boots (lace-up)", "slot": "feet", "color": "#101012", "surface": "patent", "thickness": 0.003, "sole": {"thick": 0.06, "rise": 0.03, "overhang": 0.006, "spring": 0.01, "color": "#0c0c0e", "surface": "rubber", "heel": 0.03, "lines": 4, "flare": 0.003},
       "piece": {"kind": "shoe", "neck": false, "legs": {"to": "floor"}, "shoe": {"heel": 0.25, "vamp": 0.23, "from": 0.6}, "ease": {"body": 0.006, "leg": 0.006, "crotch": 0}, "tension": 60},
       "details": [{"kind": "foot", "from": 0.78, "to": 1.3, "lift": 0.002}, {"kind": "foot", "from": 0.42, "to": 0.85, "width": 0.05, "top": true, "lift": 0.003}, {"kind": "foot", "from": -0.3, "to": 0.16, "lift": 0.002}, {"kind": "band", "from": "ankle+0.14", "to": "ankle+0.115", "lift": 0.003}]
     },

@@ -551,14 +551,14 @@ export function shoeShell(B, p) {
     // a section's outline carried onto another (shrunk by k, round the other's blended middle): the union of the two,
     // measured round that middle (radii carried as they were, round a middle that moved, sank a tall boot's back under
     // the floor)
-    const carry = (q, r, k, u) => {
+    const carry = (q, r, k, u, kx = k) => {                           // (kx: across only, a round end in plan)
       const cx = q.cx * u + r.cx * (1 - u), cy = q.cy * u + r.cy * (1 - u), pts = q.pts.map(p => [p[0] - cx, p[1] - cy]);
-      for (let a = 0; a < NA; a++) { const ang = (a / NA - 0.5) * TAU, rr = r.R[a] * k; pts.push([r.cx + Math.sin(ang) * rr - cx, r.cy + Math.cos(ang) * rr - cy]); }
+      for (let a = 0; a < NA; a++) { const ang = (a / NA - 0.5) * TAU, rr = r.R[a]; pts.push([r.cx + Math.sin(ang) * rr * kx - cx, r.cy + Math.cos(ang) * rr * k - cy]); }
       q.cx = cx; q.cy = cy; q.R = radii(pts, NA);
     };
     // the heel cup: the outline from a few cm forward carried back to the heel, so its back is a wall, not the heel bone's knob
     const k0 = sections.findIndex(q => q.t >= 0.035 * s);
-    if (k0 > 0) for (let i = 0; i < k0; i++) { const q = sections[i], u = Math.max(0, q.t / sections[k0].t); carry(q, sections[k0], 0.86 + 0.14 * u, u); }
+    if (k0 > 0) for (let i = 0; i < k0; i++) { const q = sections[i], u = Math.max(0, q.t / sections[k0].t); carry(q, sections[k0], 0.9 + 0.1 * u, u, 0.5 + 0.5 * Math.sqrt(Math.max(0, 1 - (1 - u) ** 2))); }   // round in plan as a heel counter is (full width it was a flat wall, closed in a four-sided dome: a pyramid's shading)
     // the toe box: rounded, not the big toe's point (the outline from 3 cm back, narrowing to 70% at the tip)
     const kt = sections.findLastIndex(q => q.t <= f.len - 0.03 * s);
     if (kt > 0) for (let i = kt + 1; i < sections.length; i++) {
@@ -572,11 +572,13 @@ export function shoeShell(B, p) {
       b.R = b.R.map((r, k) => Math.max(r, (a.R[k] + 2 * r + c.R[k]) / 4));
     }
     const rings = [], cap = ease + 0.002 * s;                         // the ends round off by the ease: a quarter circle
-    const ring = (sec, t, k) => Array.from(sec.R, (r, a) => { const ang = (a / NA - 0.5) * Math.PI * 2, rr = r + ease * k; return [sec.cx + Math.sin(ang) * rr, sec.cy + Math.cos(ang) * rr, t]; });
+    // (a cap's rings round off toward a circle as they close: shrunk as they were, the outline's corners ran into its
+    // middle and shaded as a pyramid)
+    const ring = (sec, t, k, u = 0) => { const mean = sec.R.reduce((a, r) => a + r, 0) / NA; return Array.from(sec.R, (r, a) => { const ang = (a / NA - 0.5) * Math.PI * 2, rr = (r + ease) * (u ? Math.sqrt(1 - u * u) : 1) * (1 - u * u) + (mean + ease) * u * u * Math.sqrt(1 - u * u); return [sec.cx + Math.sin(ang) * (u ? rr : r + ease * k), sec.cy + Math.cos(ang) * (u ? rr : r + ease * k), t]; }); };
     const first = sections[0], last = sections[sections.length - 1];
-    for (let i = 4; i >= 1; i--) { const u = i / 5; rings.push(ring(first, first.t - cap * u, Math.sqrt(1 - u * u))); }
+    for (let i = 6; i >= 1; i--) { const u = i / 7; rings.push(ring(first, first.t - cap * u, 0, u)); }
     for (const sec of sections) rings.push(ring(sec, sec.t, 1));
-    for (let i = 1; i <= 4; i++) { const u = i / 5; rings.push(ring(last, last.t + cap * u, Math.sqrt(1 - u * u))); }
+    for (let i = 1; i <= 6; i++) { const u = i / 7; rings.push(ring(last, last.t + cap * u, 0, u)); }
     const base = out.length / 3;
     const to3 = ([x, y, t]) => [h[0] + d[0] * t + perp[0] * x, y, h[2] + d[2] * t + perp[2] * x];
     for (const r of rings) for (const q of r) out.push(...to3(q));
@@ -591,9 +593,31 @@ export function shoeShell(B, p) {
     }
   }
   const Pm = new Float32Array(out), v = new Float32Array(Pm.length / 3);
-  for (let i = 0; i < v.length; i++) v[i] = line(Pm[i * 3], Pm[i * 3 + 1], Pm[i * 3 + 2]);
+  polish(B, Pm, new Uint32Array(tri), ease * (p.polish ?? 1));      // a made thing's surface: no toes or heel bone showing through, no pole at its ends (the user: "should look well polished")
+  const low = p.soleTop ? p.soleTop * 0.6 : -1;                      // nothing under the sole's top but a lip tucked into it (its bottom poked out through the sole's wall)
+  for (let i = 0; i < v.length; i++) v[i] = Math.min(line(Pm[i * 3], Pm[i * 3 + 1], Pm[i * 3 + 2]), Pm[i * 3 + 1] - low);
   const c = cut(Pm, new Uint32Array(tri), v);
-  return { outer: { P: c.P, T: c.T }, V: (x, y, z) => line(x, y, z), neck: null, ends: null, legY: 0, waist: null, open: null };
+  return { outer: { P: c.P, T: c.T }, V: (x, y, z) => Math.min(line(x, y, z), y - low), neck: null, ends: null, legY: 0, waist: null, open: null };
+}
+
+/** a shoe's upper polished (in place): Taubin's smoothing (a shrink and a swell each round, so it keeps its size)
+    over the whole shell, rounds of it, then every point kept at least half the ease off the skin (pushed out along the
+    skin's normal): the lumps of the toes and the heel bone and the poles where its ends close smoothed away */
+function polish(B, P, T, ease, rounds = 24) {
+  const n = P.length / 3, A = adjacency(n, T), Q = new Float32Array(P.length), hit = {}, keep = ease * 0.55;
+  const step = k => {
+    for (let i = 0; i < n; i++) {
+      const a = A.start[i], b = A.start[i + 1]; if (b === a) { Q.set(P.subarray(i * 3, i * 3 + 3), i * 3); continue; }
+      let x = 0, y = 0, z = 0; for (let q = a; q < b; q++) { const j = A.list[q] * 3; x += P[j]; y += P[j + 1]; z += P[j + 2]; }
+      const m = b - a; Q[i * 3] = P[i * 3] + k * (x / m - P[i * 3]); Q[i * 3 + 1] = P[i * 3 + 1] + k * (y / m - P[i * 3 + 1]); Q[i * 3 + 2] = P[i * 3 + 2] + k * (z / m - P[i * 3 + 2]);
+    }
+    P.set(Q);
+  };
+  for (let r = 0; r < rounds; r++) { step(0.5); step(-0.53); }
+  for (let i = 0; i < n; i++) {
+    const q = B.surf.closest(P[i * 3], P[i * 3 + 1], P[i * 3 + 2], keep + 0.03, hit); if (!q || q.d >= keep) continue;
+    const k = keep - q.d; P[i * 3] += hit.nx * k; P[i * 3 + 1] += hit.ny * k; P[i * 3 + 2] += hit.nz * k;
+  }
 }
 
 /** a shoe's sole under each foot, the shoe's own shape carried down (the user, 2026-11-01: "soles should almost just be
@@ -609,15 +633,15 @@ export function soles(F, B, o, upper = null) {
   const flare = (o.flare ?? 0) * s, lines = o.lines ?? 0, out = { P: [], T: [] }, mm = 0.001 * s, cx0 = F.torsoAxis(F.crotchY)[0];
   for (const side of ["L", "R"]) {
     const f = F.feet[side], isSide = x => (x >= cx0) === (side === "L");
-    // the outline: the upper cut by the plane at the sole's top (its edges crossing it), or the foot's own footprint
+    // the outline: the upper cut by planes up to the sole's top (its edges crossing them), or the foot's own footprint
     let pts = [];
-    if (upper) {
-      const P = upper.P, T = upper.T, ys = rise;
+    if (upper) for (const ys of [rise * 0.62, rise * 0.75, rise * 0.88, rise]) {   // the upper from where it's cut (shoeShell's soleTop) to the sole's top: a low toe tip inside it too
+      const P = upper.P, T = upper.T;
       for (let t = 0; t < T.length; t += 3) for (let k = 0; k < 3; k++) {
         const i = T[t + k] * 3, j = T[t + (k + 1) % 3] * 3, ya = P[i + 1] - ys, yb = P[j + 1] - ys;
         if ((ya > 0) === (yb > 0)) continue;
         const u = ya / (ya - yb), x = P[i] + (P[j] - P[i]) * u, z = P[i + 2] + (P[j + 2] - P[i + 2]) * u;
-        if (isSide(x)) pts.push([x, z]);
+        if (isSide(x) && (ys >= rise || f.at(x, z)[0] > 0.66)) pts.push([x, z]);   // (lower down only at the front: a heel's bulge there made a ledge round a boot's shaft)
       }
     }
     if (pts.length < 20) { pts = []; const P = B.P; for (let i = 0; i < P.length; i += 3) if (P[i] * f.sg > 0.05 * s && P[i + 1] < 0.025 * s) pts.push([P[i], P[i + 2]]); }

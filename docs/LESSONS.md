@@ -1473,3 +1473,7 @@ guessed margin; and a check that only ever ran on a slow machine hasn't been run
   Slice the upper where the sole meets it and carry that outline down; then the join is one clean line by construction.
 - **Read what a setting does before trusting its name:** a sole's `heel` raised the bottom at the back (a thinner heel)
   for months of designs; nothing looked at it closely until the soles were redone.
+- **Lumps have more than one source; colour the parts before smoothing anything:** the shoes' "sculpted" look was
+  three things at once: a toe cap running down through the sole's wall (seen at once with each part a colour), the
+  upper following the toes, and the end cap closing a flat heel wall to one point (a pyramid's shading). Smoothing
+  alone would have kept the knot and the star.

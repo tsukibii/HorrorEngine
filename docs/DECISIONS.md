@@ -9,6 +9,8 @@ The user's answers, newest first. They override the plan, the research and the d
   should almost just be an extension of the normal shape but extruded down (so it can have diff texture)"**: every
   shoe's sole is now the upper's own outline carried down, with grooves and real heel blocks (TAILOR §1h). The OBJ stays
   out of the project (only looked at).
+- **"Clean up the weird bulgy/bumpiness, it makes it look like it was made in sculpt tool, should look well
+  polished"**: the shoes' shells polished, round heels, the pieces kept off the sole (TAILOR §1h).
 
 ## 2026-11-01, night (the user: cozy and gothic clothes, bigger busts, on `clothing-refiner`)
 

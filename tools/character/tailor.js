@@ -61,7 +61,7 @@ export function* making(B, name, design, opts = {}) {
   const t0 = Date.now(), F = B.F, s = F.s, y0 = B.floor || 0;
   const under = (opts.under || []).map(g => y0 ? { ...g, outer: g.outer.map(o => ({ ...o, P: raised(o.P, -y0) })) } : g);   // into the frame it's cut in
   const p = fitted(design.piece), color = opts.color || design.color || "#888888", trim = design.trim || color;
-  const G = p.kind === "skirt" ? skirt(B, p, under.map(g => ({ outer: g.outer[0] }))) : p.kind === "shoe" ? shoeShell(B, p) : shell(B, p, under);
+  const G = p.kind === "skirt" ? skirt(B, p, under.map(g => ({ outer: g.outer[0] }))) : p.kind === "shoe" ? shoeShell(B, design.sole ? { ...p, soleTop: (design.sole.rise ?? 0.008) * F.s } : p) : shell(B, p, under);
   const th = (design.thickness ?? 0.002) * s, parts = [];
   // the drape: the cut cloth hung on the body; everything on it is cut where the cloth was cut and sewn where it hangs.
   // Tucked into what closes round the waist over it later (opts.tuck), its sleeves held inside the sleeves over it
@@ -87,6 +87,7 @@ export function* making(B, name, design, opts = {}) {
   for (const d of design.details || []) {
     if (d.kind === "buttons") { const b = buttons(F, G.outer, d, at); if (b.T.length) part(`${name}_buttons`, d.color || design.buttons || "#222222", b, false); continue; }
     const D = detail(F, G, d); if (!D) continue;
+    if (p.kind === "shoe" && design.sole) { const v0 = D.value, top = ((design.sole.rise ?? 0.008) + 0.0015) * s; D.value = (x, y, z, nx, ny, nz) => Math.min(v0(x, y, z, nx, ny, nz), y - top); }   // a shoe's pieces stop at the sole's top: under it they poked out through its wall
     const L = lifted(cut, G.outer, D.value, D.lift, at); if (!L) continue;
     if (d.kind !== "collar" && d.kind !== "neckband") outer.push(L.at ? { P: L.at, T: L.T } : L);   // what goes over it eases over pockets and belts, not the roll of a collar
     const dt = (d.thickness ?? design.thickness ?? 0.002) * s * 0.8;
@@ -98,7 +99,7 @@ export function* making(B, name, design, opts = {}) {
   }
   const tris = parts.reduce((a, q) => a + q.T.length / 3, 0), verts = parts.reduce((a, q) => a + q.P.length / 3, 0);
   // its look (tailor/look.js): the design's fabric, pattern and trim, then the garment's own
-  const look = { color, surface: design.surface, trim: design.trimSurface, pattern: design.pattern, denier: design.denier, crease: p.kind === "shoe" ? { crinkle: 0, fold: 0, drape: 0, ...(design.crease || {}) } : design.crease, ...(opts.look || {}) };   // (a shoe: its seams and stitching, no cloth wrinkles)
+  const look = { color, surface: design.surface, trim: design.trimSurface, pattern: design.pattern, denier: design.denier, crease: p.kind === "shoe" ? { crinkle: 0, fold: 0, drape: 0, seam: 0, ...(design.crease || {}) } : design.crease, ...(p.kind === "shoe" ? { shoe: true } : {}), ...(opts.look || {}) };   // (a shoe: its hems' stitching, no cloth wrinkles, no puckers at its fabric's seams: they aren't its panels)
   const hs = handles(F, G, p, at);
   if (y0) {                                                          // back into the body's own frame
     for (const q of [...parts, ...outer]) q.P = raised(q.P, y0);
