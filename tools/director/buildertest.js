@@ -70,7 +70,12 @@ const png = rgb => {                    // a 4x4 PNG of one colour (a scratch ma
     }
 
     // walking: forward from the start for a while; a wall must stop the player (they never leave the rooms). In the 1:1
-    // classroom (the school buildings' 1600 things draw too slowly to walk in without a GPU)
+    // classroom (the school buildings' 1600 things draw too slowly to walk in without a GPU; a fresh page, rid of them)
+    await page.evaluate(() => { window.B.dirty = false; });
+    await page.goto(URL + "builder.html");
+    await page.waitForFunction(() => window.__builderReady, null, { timeout: 60000 });
+    await page.selectOption("#game", SCRATCH);
+    await page.waitForFunction(g => window.B && window.B.game === g && window.B.plan, SCRATCH, { timeout: 60000 });
     await page.evaluate(() => { window.B.dirty = false; window.builder.openPreset("school_classroom"); });
     await page.waitForFunction(() => window.B.plan && window.B.planStory && window.B.planStory.levels[window.B.target] && window.B.model.rooms.length === 2, null, { timeout: 120000 });
     await page.waitForTimeout(1500);
@@ -78,7 +83,7 @@ const png = rgb => {                    // a 4x4 PNG of one colour (a scratch ma
       const B = window.B, p = B.model.player, x0 = p.x, y0 = p.y;
       document.querySelector("#view").focus();
       document.querySelector("#view").dispatchEvent(new KeyboardEvent("keydown", { code: "KeyW", bubbles: true }));
-      await new Promise(r => setTimeout(r, 2500));
+      await new Promise(r => setTimeout(r, 5000));                 // (a few frames a second without a GPU)
       document.querySelector("#view").dispatchEvent(new KeyboardEvent("keyup", { code: "KeyW", bubbles: true }));
       await new Promise(r => setTimeout(r, 200));
       const inRoom = window.BM.roomAt(B.model, p.x, p.y, p.z);
