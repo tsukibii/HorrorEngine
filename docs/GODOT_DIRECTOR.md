@@ -267,8 +267,16 @@ once, faded in and out; a loop until another takes over), crossfaded. In a Direc
 
 The Manager's pickers list the project's faces (a line's *her face as she says it*, a person's *face* in a state).
 Measured (DIRECTOR): Mari rests in `pout_and_glance_loop` on her MHR face shapes, moving; "You found it." wears
-`pout_and_glance` over it. A Character Studio export carries no face shapes yet (it's exported neutral): faces play on
-the plain MHR body and on the bake's bodies (which carry them) until it does.
+`pout_and_glance` over it.
+
+**A Character Studio character's face**: the Studio exports her neutral, but every corner of her skin carries the MHR
+points it rides (`_MHRP`, `_MHRW`: how the desk's face.js moves it), so `tools/face_morphs.mjs` bakes MHR's 72 face
+shapes into **the copy a project wears** (`game/people/<name>.glb`, made by `install`, and by the desk game's Godot
+export): each shape's move on every corner it touches, scaled by her height over MHR's, as sparse morph targets named
+by Meta's names; a lash card turns whole about its eye as its root moves (as face.js turns it). Godot makes them blend
+shapes; face.gd plays on them. What the desk adds that isn't a morph (the lids kept off the eyeballs, the eyes turned
+by the gaze) isn't in Godot yet. FACEMORPHS (`--check`, in CHECKS): a made-up export of MHR's own face, its 72 morphs
+MHR's own moves (0.0001 mm at worst), a lash card turned whole on a blink; Godot reads them as 72 blend shapes.
 
 ## 7. Where you are
 
@@ -310,7 +318,7 @@ The runtime's own checks (GDPLAY, GDTESTROOM, GDEXPORT) stay as they were: the e
   clears the saves and sets where the next play starts.
 - A moment can't end the quest on early and send the story elsewhere yet (for later games: "if this happens, go there").
 - Achievements are worked out and kept as facts; Steam (GodotSteam) when the user wants it.
-- A Character Studio export carries no face shapes yet (exported neutral): faces (§6c) play on MHR bodies and the bake's
-  bodies until the Studio's export carries MHR's 72 as morph targets.
+- Faces on a Character Studio character (§6c): her copy's morphs carry the skin, brows and lashes; the lids kept off the
+  eyeballs and the eyes turned by the gaze (the desk's) aren't in Godot yet.
 - MHR's twist bones keep their rest (the forearm's and the upper arm's twist isn't shared along them).
 - The desk can't open a Director game, and a Director game can't go back to the desk: the scene is the game now.

@@ -195,6 +195,16 @@ def faces(out):
         print(f"  faces: not brought in (node: {e}); run node tools/face_export.mjs --project {out}")
 
 
+def face_morphs(glb):
+    """MHR's 72 face shapes baked into a Studio export's copy as morph targets (tools/face_morphs.mjs), so the story's
+    `expr` plays on her face: a few words for the log"""
+    try:
+        r = subprocess.run(["node", str(ROOT / "tools" / "face_morphs.mjs"), str(glb)], capture_output=True, text=True, timeout=300)
+        return ", her face's shapes baked in" if r.returncode == 0 else f" (her face's shapes not baked: {(r.stdout + r.stderr).strip()[-200:]})"
+    except (OSError, subprocess.TimeoutExpired) as e:
+        return f" (her face's shapes not baked: node {e})"
+
+
 def people(out):
     """The Character Studio exports the project's characters wear (an HSActor's `studio_character`) into game/people/,
     where the runtime reads them as the export's games have theirs."""
@@ -209,7 +219,7 @@ def people(out):
         if src.exists():
             (out / "game" / "people").mkdir(parents=True, exist_ok=True)
             shutil.copy(src, out / "game" / "people" / f"{name}.glb")
-            print(f"  {name}: her Character Studio export copied into game/people/")
+            print(f"  {name}: her Character Studio export copied into game/people/{face_morphs(out / 'game' / 'people' / f'{name}.glb')}")
         else:
             print(f"  {name}: no Character Studio export at {src.relative_to(ROOT)} (export her from the Character Studio, then install again)")
 

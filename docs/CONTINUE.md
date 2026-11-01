@@ -33,9 +33,14 @@ in this container as before (no stand-in bodies here; the stations before and af
 `faces/loops/`, FACEEXPORT in CHECKS; the story format's `expr` action, played by the runtime's `face.gd` on the mesh
 carrying MHR's face shapes and by the desk's `play/faces.js`; an HSActor's `expression` (her resting face), a state's
 and a line's `expr`, the Manager's pickers; the scene player now runs a cue's instant actions too, so a Director
-line's own commands play). **Next**: faces, part two: the Character Studio's export carrying MHR's 72 face shapes as
-morph targets (a Studio change, its STUDIO check slow here: ask the user for a local run), so a Studio character's
-face plays too. Not merged into main yet: main has moved on (PR #6, the street builder); bringing main in conflicts
+line's own commands play). Then **faces, part two** without touching the Character Studio: `tools/face_morphs.mjs` bakes MHR's 72 face shapes into a
+Studio export's copy for Godot (`game/people/`, by `install` and the desk game's export) from its corners' MHR points,
+sparse morph targets by Meta's names, lash cards turned about their eye (FACEMORPHS; Godot reads 72 blend shapes);
+the runtime's mesh scrub keeps a rebuilt mesh's blend shapes now. **The plan's five steps are built.** Not yet: the
+eyes turned by the gaze and the lids kept off the eyeballs on a Studio character in Godot (the desk's); in-game Load;
+a moment that ends a quest early; Steam. Untested here: a real Studio export through face_morphs (no character on
+this machine: STUDIO makes `_studiotest`, slow on the CPU; ask the user for a local run of GDPEOPLE after
+`install`). Not merged into main yet: main has moved on (PR #6, the street builder); bringing main in conflicts
 only in CLAUDE.md, CONTINUE, DECISIONS and LESSONS (both sides added entries), the runtime merging by itself (run
 GDPLAY, GDTESTROOM and DIRECTOR after).
 

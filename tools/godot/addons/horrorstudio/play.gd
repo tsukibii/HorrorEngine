@@ -2432,15 +2432,15 @@ static func scrub_meshes(root: Node) -> int:
 		if bad.is_empty():
 			continue
 		var am := ArrayMesh.new()
+		am.blend_shape_mode = m.blend_shape_mode
+		for b in m.get_blend_shape_count():               # its blend shapes (a face's) first: a surface's blend shape arrays need them there
+			am.add_blend_shape(m.get_blend_shape_name(b))
 		for s in m.get_surface_count():
 			if s in bad:
 				continue
 			am.add_surface_from_arrays(m.surface_get_primitive_type(s), m.surface_get_arrays(s), m.surface_get_blend_shape_arrays(s), {}, m.surface_get_format(s))
 			am.surface_set_name(am.get_surface_count() - 1, m.surface_get_name(s))
 			am.surface_set_material(am.get_surface_count() - 1, m.surface_get_material(s))
-		for b in m.get_blend_shape_count():
-			if am.get_blend_shape_count() < m.get_blend_shape_count() and am.get_surface_count() == 0:
-				am.add_blend_shape(m.get_blend_shape_name(b))
 		mi.mesh = am
 		dropped += bad.size()
 		print("%s: %d empty surface(s) left out of its mesh (nothing to draw in them)" % [mi.name, bad.size()])

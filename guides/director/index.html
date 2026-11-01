@@ -289,7 +289,8 @@ its skeleton.</p>
 <li><b>Expression</b>: the face she rests in, a loop from the studio's expression library (the desk's Expressions tab).
 <code>install</code> brings the library into the project's <code>faces/</code> (the loops in <code>faces/loops/</code>);
 the story puts other faces on her (a line's face, a state's, a moment's <span class="ui">A face on someone</span>). Her
-model needs MHR's face shapes: the plain MHR body has them; a Character Studio export doesn't yet.</li>
+model needs MHR's face shapes: the plain MHR body has them, and <code>install</code> bakes them into a Character Studio
+character's copy (<code>game/people/</code>).</li>
 <li><b>Hidden at start</b> keeps her out of the level until the story shows her; <b>solid</b> off lets the player walk
 through her; <b>speed</b> is her walking pace.</li>
 </ul>
@@ -548,7 +549,7 @@ must be set up first (<code>python setup/setup.py kimodo</code>).</div>
 <li>Loading a save in the game: the pause menu saves, but there's no Load yet (the Manager lists and clears the saves).</li>
 <li>A moment that ends the quest on early and sends the story elsewhere ("if this happens, go there"): for later games.</li>
 <li>Steam: the achievements are worked out and kept, ready for GodotSteam.</li>
-<li>Faces on a Character Studio export: its export carries no face shapes yet (they play on MHR bodies).</li>
+<li>On a Character Studio character's face, the eyes don't follow the gaze yet, and a blink may show a hair of eyeball through the lid.</li>
 <li>The desk can't open a game made here, and a game made here can't go back to the desk: the scene is the game.</li>
 </ul></div>
 </section>

@@ -1298,6 +1298,12 @@ def export(game, out=None, make_zip=False, do_import=True):
                     (out / "game" / "people").mkdir(parents=True, exist_ok=True)
                     shutil.copy(src, out / "game" / "people" / f"{name}.glb")
                     people += 1
+                    if shutil.which("node"):                  # MHR's 72 face shapes baked into the copy (tools/face_morphs.mjs): the story's `expr` plays on her face
+                        import subprocess  # noqa: PLC0415
+                        try:
+                            subprocess.run([shutil.which("node"), str(ROOT / "tools" / "face_morphs.mjs"), str(out / "game" / "people" / f"{name}.glb")], capture_output=True, text=True, timeout=300)
+                        except (OSError, subprocess.TimeoutExpired):
+                            pass
     previs = L.GAMES / game / "Previs"                 # the desk's bake (tools/godot/bake.mjs, or the desk's Generate): the scenes as recorded
     baked = 0
     if (previs / "preview.json").exists():
