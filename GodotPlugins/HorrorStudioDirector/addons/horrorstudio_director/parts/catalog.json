@@ -957,6 +957,27 @@
      }
     ]
    }
+  },
+  {
+   "id": "scare_torch",
+   "cat": "scares",
+   "kind": "scare",
+   "title": "The flashlight flickers",
+   "desc": "Then dies, or comes back",
+   "glyph": "flashlight",
+   "keywords": [
+    "flashlight",
+    "torch",
+    "flicker"
+   ],
+   "name": "FlashlightFlickers",
+   "moment": {
+    "do": [
+     {
+      "torch": "flicker"
+     }
+    ]
+   }
   }
  ]
 }

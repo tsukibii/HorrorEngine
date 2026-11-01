@@ -524,7 +524,7 @@ func add_window(room) -> void:
 
 ## a scare's area landed (clicked in front of the camera, or dragged into the view): named for the scare, and its
 ## moment written into the Director file, listening while the player walks in
-func scare_landed(area: Node, it: Dictionary) -> void:
+func scare_landed(area: Node, it: Dictionary, during: Array = []) -> void:
 	var dock = panel.dock
 	var p := area.get_parent()
 	var nm: String = dock.fresh_name(p, str(it.get("name", "Scare")))
@@ -549,7 +549,10 @@ func scare_landed(area: Node, it: Dictionary) -> void:
 	while ids.has(mid):
 		mid = "%s_%d" % [aid, k]
 		k += 1
-	(f["moments"] as Array).append({"id": mid, "when": {"enter": aid}, "do": acts, "once": true})
+	var m := {"id": mid, "when": {"enter": aid}, "do": acts, "once": true}
+	if during.size():
+		m["during"] = during                          # (the Story tab's: in the quest being edited)
+	(f["moments"] as Array).append(m)
 	HSStoryFile.write(f, path)
 	dock.select(area)
 	panel.say("%s: when the player walks into %s. Its words (who appears, what's said) are in the Story tab" % [it["title"], aid])

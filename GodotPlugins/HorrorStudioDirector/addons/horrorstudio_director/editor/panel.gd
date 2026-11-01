@@ -2,12 +2,12 @@
 extends EditorDock
 ## The HorrorStudio panel (docs/GODOT_DIRECTOR.md §6e; the design: "Director Panel Design"): along the bottom of the
 ## editor (or floating on a second screen), three tabs: Build (what the game is made of, as cards: build_tab.gd), Story
-## (the quests and moments) and Test (play, and what's wrong). Its header searches every card and says what's
+## (the quests and moments as sentences: story_tab.gd) and Test (play, and what's wrong). Its header searches every card and says what's
 ## selected. The old dock (dock.gd, under the Inspector) keeps the running game's marks, the things and Kimodo.
 
 const Glyphs := preload("res://addons/horrorstudio_director/editor/glyphs.gd")
 const BuildTab := preload("res://addons/horrorstudio_director/editor/build_tab.gd")
-const DirectorTab := preload("res://addons/horrorstudio_director/editor/director_tab.gd")
+const StoryTab := preload("res://addons/horrorstudio_director/editor/story_tab.gd")
 const CheckTab := preload("res://addons/horrorstudio_director/editor/check_tab.gd")
 
 var plugin: EditorPlugin = null
@@ -123,9 +123,9 @@ func _ready() -> void:
 	build.panel = self
 	stack.add_child(build)
 	pages["build"] = build
-	story = DirectorTab.new()
+	story = StoryTab.new()
 	story.name = "Story"
-	story.set("dock", dock)
+	story.panel = self
 	stack.add_child(story)
 	pages["story"] = story
 	test = VBoxContainer.new()
@@ -176,6 +176,14 @@ func _ready() -> void:
 	foot.add_child(status)
 	show_page("build")
 	on_selection()
+
+
+## the open page's poll (the Story tab: the file changed on disk, the running game moved on)
+func _process(_dt: float) -> void:
+	if Engine.get_process_frames() % 60 == 0 and is_visible_in_tree():
+		var p = pages.get(page)
+		if p != null and p.has_method("tick"):
+			p.tick()
 
 
 func show_page(p: String) -> void:

@@ -351,7 +351,28 @@ screen), so the 3D view stays in sight and a card drags straight into it. Three 
   every level (*Can run*, *Can crouch*, *Eye height*, *Their name*: the HSGame's) and *Play from here*. On a thing,
   **Try it** plays the game with the player in front of it (the camera's side, facing it): `panel.gd` writes the
   play-from-here file (`user://hs_director_run.json`: `test`, `near`), the HSGame reads it once.
-- **Story**: the Director file's quests, steps, endings, conversations and moments (the dock's Director view).
+- **Story** (`editor/story_tab.gd`, the design's Story board): the Director file without JSON, in **the Director
+  Manager's words** (`story/commands.gd`: the desk's `commands.js` and the Manager's `tools/director_manager/words.js`,
+  through `story/commands.json`, which `tools/director_manager/commands_json.mjs` writes from them; GDScript can't run
+  their sentences, so `commands.gd` says them again and DIRECTOR checks every example in the file reads the same).
+  On the left the **quests in play order**, each with its steps (ticked and crossed out while the game runs from the
+  editor, ▶ the one it's on), *+ Add a quest*, the **endings** (*+ Add an ending*: a title, a kind, its words), and *Open
+  the Manager* for conversations, states, facts and achievements. In the middle the quest being edited (its title and
+  what's on the screen, ↑ ↓ in the game's order) and **what happens in it, each a sentence**: its steps (*WHEN Mug is
+  given to Mari, tick “Give Mari the mug”*, and the answer to the wrong thing given) and the moments that play in it
+  (its own and the whole game's). One opens at a time: **WHEN** (every trigger by its label, its blue words picked from
+  the scene's ids, or *once a condition becomes true*), **ONLY IF** (the clauses as chips in words, *they've read
+  letter*: a click says *not*, ✕ takes it away, *and*/*or* between them, *+ and…* offers every fact the scene and the
+  file have), **THEN** (the commands in order, each its verb and its blue words, ↑ ↓ ✕, *+ Then…* by group), **HOW
+  OFTEN** (*Just once*, *Every time*), **It reads as** (the whole sentence), *Try this moment* (the game from this quest
+  as a test, the facts its ONLY IF asks for already done and its items in hand, the player standing by where it
+  happens: the play-from-here file's `from`, `flags`, `items`, `near`) and *Show it in the 3D view* (what its WHEN names,
+  selected). On the right the **ready-made moments** (the Scares cards, the flashlight's flicker too): clicked, onto the
+  selected area, room, door or thing (WHEN the player enters it or uses it; a knock on that door, that door slamming),
+  else with its WHEN to pick; dragged into the 3D view, onto the area it falls in or the door it falls by (the drop's
+  new area taken back again), else into an area of its own there. Every change is written at once and is on the
+  editor's undo (its global history: Ctrl+Z); words typed in a box are saved without drawing the tab again, so the
+  click that left the box still lands.
 - **Test**: *Play the game*, *Play this scene*, and the compiler's check.
 
 **The Inspector's box** (`editor/inspector.gd`, an EditorInspectorPlugin): on a model of yours, *What is this?*, *Make it
@@ -361,7 +382,10 @@ with its categories and the Kitchen's 12 cards, a search, a model named OldSauce
 box), made a pot by one click and its card saying so, made plain again and undone, the mouse's ray finding a model with
 no collider, a window and its undo, a jumpscare card's area and moment; the Player category first, the sample's starts
 selected by their cards, a start turned East and back, the mug put in its pocket and out, a checkpoint placed (an
-area) and undone.
+area) and undone; the Story tab: the quests in order, the drink errand as sentences, a ready-made jumpscare clicked
+onto the kitchen's doorway, a clause, a command and its words from the pickers, every time, what it reads as, Try this
+moment's request, all of it undone, and a ready-made moment dropped inside the doorway landing on it (the new area taken
+back).
 
 ## 7. Where you are
 
@@ -391,6 +415,9 @@ itself (`tests/make_sample.gd`: the house, and its story as `director/director.j
   (the Director tab the file's quests, steps, endings and moments), a cup part made from the dock and a pickup part
   dropped on a mesh (undone), a preset placed, a rename, the live marks (▶, ✓, ●), a save holding no story nodes and
   nothing the nodes make for themselves.
+- **the words** (`tests/words_check.gd`): `story/commands.json` up to date with the desk's `commands.js` and the
+  Manager's `words.js` (COMMANDSJSON, `node tools/director_manager/commands_json.mjs --check`), and every example in it
+  read the same by the panel's `story/commands.gd`;
 - **the guide**: every picture `guides/director/index.html` shows is in `img/` and every one there is shown, every link
   inside it lands, the project got its copy, and the dock's Guide button finds it. `python tools/godot_director.py
   guide` makes the pictures again: the sample played (`tests/guide_game.gd`), its editor (`tests/guide_editor.gd`)

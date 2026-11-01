@@ -42,5 +42,20 @@ static func write(data: Dictionary, path: String = DEFAULT) -> int:
 	var f := FileAccess.open(path, FileAccess.WRITE)
 	if f == null:
 		return FileAccess.get_open_error()
-	f.store_string(JSON.stringify(data, " ", false))
+	f.store_string(JSON.stringify(tidy(data), " ", false))
 	return OK
+
+
+## whole numbers written whole: Godot reads every JSON number as a float, and a file read and written back (the panel's
+## Story tab) would turn 1 into 1.0 all through
+static func tidy(v):
+	if v is float and not is_nan(v) and not is_inf(v) and v == floorf(v) and absf(v) < 1e15:
+		return int(v)
+	if v is Array:
+		return (v as Array).map(func(x): return tidy(x))
+	if v is Dictionary:
+		var o := {}
+		for k in v:
+			o[k] = tidy(v[k])
+		return o
+	return v

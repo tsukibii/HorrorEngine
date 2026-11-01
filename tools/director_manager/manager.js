@@ -9,10 +9,10 @@ import { h, modal, toast, actionList, triggerPill, form } from "/desk/ui.js";
 import { ACTIONS, TRICKS, triggerText } from "/desk/commands.js";
 import { icon } from "/desk/icons.js";
 import { coverage, AUTO, ROUNDS } from "/coverage.js";
+import { directorCommands, CLAUSES, parseCond, buildCond, clauseText } from "/words.js";
 
-// the Director's words over the desk's: a line is written in place (no lines table)
-for (const d of ACTIONS) for (const f of d.fields) if (f.kind === "line") f.kind = "longtext";
-for (const k of Object.keys(TRICKS)) for (const f of TRICKS[k]) if (f.kind === "line") f.kind = "longtext";
+// the Director's words over the desk's (words.js, Godot's Story tab's too): a line is written in place (no lines table)
+directorCommands({ ACTIONS, TRICKS });
 
 const Q = new URLSearchParams(location.search);
 const $ = id => document.getElementById(id);
@@ -141,53 +141,6 @@ function moveBtns(list, i, after) {
 const delBtn = (what, fn) => h("button", { class: "ghost small danger", title: "delete " + what, on: { click: async () => { if (await modal({ title: `Delete ${what}?`, body: h("p", {}, "It goes from the story (Ctrl+Z isn't here: Reload before saving brings it back)."), ok: "Delete" })) { fn(); changed(); render(); } } } }, icon("x", 14));
 
 // ---- conditions (core/cond.gd) ------------------------------------------------------------------------------------------
-const CLAUSES = [["fact", "a fact (something done, or a flag)"], ["quest", "a quest is the one on"], ["done", "a quest is done"], ["step", "a step is ticked"],
-  ["has", "an item is held"], ["count", "a counter"], ["karma", "karma"], ["ending", "an ending was reached"]];
-function parseClause(c) {
-  if (typeof c === "string") return c.startsWith("!") ? { kind: "fact", v: c.slice(1), not: true } : { kind: "fact", v: c, not: false };
-  if (!isObj(c)) return { kind: "raw", v: c };
-  if (c.not !== undefined && Object.keys(c).length === 1) { const x = parseClause(c.not); if (x.kind !== "raw") { x.not = !x.not; return x; } return { kind: "raw", v: c }; }
-  for (const k of ["fact", "quest", "done", "step", "has", "ending"]) if (c[k] !== undefined && Object.keys(c).length === 1) return { kind: k, v: String(c[k]), not: false };
-  if (c.count !== undefined) return { kind: "count", v: c.count, at_least: c.at_least, at_most: c.at_most, not: false };
-  if (c.karma !== undefined) return { kind: "karma", at_least: (c.karma || {}).at_least, at_most: (c.karma || {}).at_most, not: false };
-  return { kind: "raw", v: c };
-}
-function parseCond(c) {
-  if (c === undefined || c === null || c === "") return { mode: "all", items: [] };
-  if (Array.isArray(c)) return { mode: "all", items: c.map(parseClause) };
-  if (isObj(c) && Array.isArray(c.all) && Object.keys(c).length === 1) return { mode: "all", items: c.all.map(parseClause) };
-  if (isObj(c) && Array.isArray(c.any) && Object.keys(c).length === 1) return { mode: "any", items: c.any.map(parseClause) };
-  return { mode: "all", items: [parseClause(c)] };
-}
-function clauseJSON(x) {
-  if (x.kind === "raw") return x.v;
-  if (x.kind === "fact") return (x.not ? "!" : "") + x.v;
-  let j;
-  if (x.kind === "count") { j = { count: x.v }; if (x.at_least !== undefined) j.at_least = x.at_least; if (x.at_most !== undefined) j.at_most = x.at_most; }
-  else if (x.kind === "karma") { j = { karma: {} }; if (x.at_least !== undefined) j.karma.at_least = x.at_least; if (x.at_most !== undefined) j.karma.at_most = x.at_most; }
-  else j = { [x.kind]: x.v };
-  return x.not ? { not: j } : j;
-}
-function buildCond(mode, items) {
-  if (!items.length) return undefined;
-  if (items.length === 1) return clauseJSON(items[0]);
-  return { [mode]: items.map(clauseJSON) };
-}
-const range = x => [x.at_least !== undefined ? `≥ ${x.at_least}` : "", x.at_most !== undefined ? `≤ ${x.at_most}` : ""].filter(Boolean).join(" and ");
-function clauseText(x) {
-  const n = x.not ? "not " : "";
-  switch (x.kind) {
-    case "fact": return n + x.v;
-    case "quest": return `${n}quest ${x.v} is on`;
-    case "done": return `${n}quest ${x.v} done`;
-    case "step": return `${n}step ${x.v} ticked`;
-    case "has": return `${n}holding ${x.v}`;
-    case "ending": return `${n}ending ${x.v} reached`;
-    case "count": return `${n}${x.v} ${range(x)}`;
-    case "karma": return `${n}karma ${range(x)}`;
-    default: return JSON.stringify(x.v);
-  }
-}
 async function askClause() {
   const d = { kind: "fact", v: "", not: false };
   const dl = "dl_" + Math.random().toString(36).slice(2);

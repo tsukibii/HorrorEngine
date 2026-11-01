@@ -97,6 +97,13 @@ func _process(dt: float) -> void:
 				return
 			_panel_after()
 			_player_checks()
+			_story_checks()
+			at_t = t
+			phase = 33
+		33:                                               # the Story tab's ready-made moment dropped in the 3D view lands a frame later
+			if t - at_t < 0.5:
+				return
+			_story_after()
 			phase = 4
 		4:
 			rep["saved"] = EditorInterface.save_scene() == OK
@@ -377,6 +384,106 @@ func _player_checks() -> void:
 	rep["player_checkpoint"] = cp != null and HSDirector.class_of(cp) == "HSCheckpoint" and (HSDirector.scan(r).get("area", []) as Array).has(HSDirector.id_of(cp))
 	hist.undo()
 	rep["player_checkpoint_undone"] = not is_instance_valid(cp) or cp.get_parent() == null
+
+
+## the Story tab (panel step 3): the sample's quests in order; the drink errand's steps and moments as sentences; a
+## ready-made jumpscare clicked with the kitchen's doorway selected (a moment on it, in this quest); a clause, a
+## command and its words added from the pickers, every time, what it reads as; Try this moment's request; a ready-made
+## moment dropped inside the doorway in the 3D view landing on it (the new area taken back); all of it undone
+func _story_checks() -> void:
+	var r := EditorInterface.get_edited_scene_root()
+	var st = panel.story
+	var ur := get_undo_redo()
+	var glob := ur.get_history_undo_redo(EditorUndoRedoManager.GLOBAL_HISTORY)
+	pan["story_was"] = FileAccess.get_file_as_string("res://director/director.json")
+	panel.show_page("story")
+	st.refresh()
+	rep["story_quests"] = st.left.get_children().filter(func(c): return str(c.name).begins_with("Quest_")).map(func(c): return c.text)
+	rep["story_struck"] = st.left.find_children("*", "RichTextLabel", true, false).any(func(l): return str(l.text).contains("✓ [s]Read the letter[/s]"))
+	st.quest = "q_drink"
+	st.opened = ""
+	st.refresh(false)
+	rep["story_lines"] = st.mid.find_children("Line_*", "Button", true, false).map(func(c): return str(c.text))
+	var doorway := r.find_child("KitchenDoorway", true, false)
+	dock.select(doorway)
+	var jump: Dictionary = st.ready_items().filter(func(it): return it["id"] == "scare_jumpscare")[0]
+	var mid_id: String = st.add_ready(jump)
+	var m := _moment(mid_id)
+	rep["story_ready"] = m.get("when") == {"enter": "kitchen_doorway"} and m.get("during") == ["q_drink"] and str(m["do"][0].get("trick")) == "jumpscare"
+	var box: Control = st.mid.find_child("Moment_" + mid_id, true, false)
+	rep["story_when"] = str(box.find_child("WhenVerb", true, false).text) if box != null else ""
+	_menu_pick(box.find_child("AddClause", true, false), "they've read", "letter")
+	st.refresh(false)                                 # (what the tab does once the menu has let go)
+	box = st.mid.find_child("Moment_" + mid_id, true, false)
+	_menu_pick(box.find_child("AddThen", true, false), "Story", "Think")
+	st.refresh(false)
+	box = st.mid.find_child("Moment_" + mid_id, true, false)
+	var row: Control = box.find_child("Do_1", true, false)
+	var le: LineEdit = row.find_child("F_think", true, false) if row != null else null
+	if le != null:
+		le.text = "Who's there?"
+		le.focus_exited.emit()                        # (saved without drawing the tab again: its sentence says it)
+	box = st.mid.find_child("Moment_" + mid_id, true, false)
+	rep["story_typed"] = str(box.find_child("ReadsAs", true, false).text).contains("Who's there?") and le != null and le.is_inside_tree()
+	(box.find_child("Often_every", true, false) as Button).pressed.emit()
+	st.refresh(false)
+	m = _moment(mid_id)
+	rep["story_moment"] = m.get("if") == "read:letter" and (m.get("do", []) as Array).size() == 2 and m["do"][1] == {"think": "Who's there?"} and m.get("once") == false
+	box = st.mid.find_child("Moment_" + mid_id, true, false)
+	rep["story_reads"] = str(box.find_child("ReadsAs", true, false).text) if box != null else ""
+	var req: Dictionary = st.try_request(m)
+	rep["story_try"] = req.get("from") == "q_drink" and req.get("flags") == ["read:letter"] and req.get("test") == true and req.get("near", {}).get("level") == "house"
+	for i in 5:                                       # the ready-made, the clause, the command, its words, every time
+		glob.undo()
+	rep["story_undone"] = _same(FileAccess.get_file_as_string("res://director/director.json"), pan["story_was"])
+	var whisper: Dictionary = st.ready_items().filter(func(it): return it["id"] == "scare_whisper")[0]
+	panel.plugin.pending_scare = {"item": whisper, "at": Time.get_ticks_msec(), "from": "story"}
+	var dropped: Node3D = (load("res://addons/horrorstudio_director/presets/area.tscn") as PackedScene).instantiate()   # as the 3D view drops it: an instance of the preset's file
+	dock.add_node(doorway.get_parent(), dropped, "drop Area")
+	dropped.global_position = doorway.global_position   # inside the doorway's area (plugin.gd _unlink lands it a frame later)
+	pan["story_dropped"] = dropped
+
+
+## a frame after the drop: the moment on the doorway, the new area gone; undone
+func _story_after() -> void:
+	var r := EditorInterface.get_edited_scene_root()
+	var ur := get_undo_redo()
+	var f := HSStoryFile.read()
+	var on: Array = (f.get("moments", []) as Array).filter(func(m): return m.get("when") == {"enter": "kitchen_doorway"} and str(m["do"][0].get("sound", "")) == "breath_close")
+	var gone: bool = not is_instance_valid(pan["story_dropped"]) or pan["story_dropped"].get_parent() == null
+	rep["story_dropped"] = on.size() == 1 and on[0].get("during") == ["q_drink"] and gone
+	ur.get_history_undo_redo(EditorUndoRedoManager.GLOBAL_HISTORY).undo()
+	rep["story_drop_undone"] = _same(FileAccess.get_file_as_string("res://director/director.json"), pan["story_was"])
+	var fl := FileAccess.open("res://director/director.json", FileAccess.WRITE)   # the story as the sample had it, whatever happened
+	fl.store_string(pan["story_was"])
+	fl.close()
+	panel.show_page("build")
+
+
+func _moment(id: String) -> Dictionary:
+	for m in HSStoryFile.read().get("moments", []):
+		if str(m.get("id", "")) == id:
+			return m
+	return {}
+
+
+## the same JSON (the panel writes it back with its own spacing)
+func _same(a: String, b: String) -> bool:
+	return JSON.stringify(JSON.parse_string(a)) == JSON.stringify(JSON.parse_string(b))
+
+
+## a MenuButton's submenu item picked, as a click does
+func _menu_pick(mb: MenuButton, group: String, item: String) -> void:
+	if mb == null:
+		return
+	var pop := mb.get_popup()
+	for i in pop.item_count:
+		if pop.get_item_text(i) == group:
+			var sub: PopupMenu = pop.get_item_submenu_node(i)
+			for j in sub.item_count:
+				if sub.get_item_text(j) == item:
+					sub.id_pressed.emit(sub.get_item_id(j))
+					return
 
 
 func _items(tree: Tree) -> Array:

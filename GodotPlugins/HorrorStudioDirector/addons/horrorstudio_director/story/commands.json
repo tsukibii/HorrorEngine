@@ -1,0 +1,4624 @@
+{
+ "about": "Written by tools/director_manager/commands_json.mjs from tools/director/commands.js and tools/director_manager/words.js: don't edit it by hand",
+ "groups": [
+  {
+   "id": "story",
+   "label": "Story",
+   "color": "#9b7be0"
+  },
+  {
+   "id": "state",
+   "label": "Flags and items",
+   "color": "#d9a441"
+  },
+  {
+   "id": "world",
+   "label": "The house",
+   "color": "#3fb3a2"
+  },
+  {
+   "id": "people",
+   "label": "People",
+   "color": "#e07aa8"
+  },
+  {
+   "id": "time",
+   "label": "Camera and time",
+   "color": "#6fb3d9"
+  },
+  {
+   "id": "flow",
+   "label": "Flow",
+   "color": "#a8a59c"
+  }
+ ],
+ "actions": [
+  {
+   "verb": "objective",
+   "label": "Objective",
+   "icon": "target",
+   "group": "story",
+   "hint": "the line the HUD shows as the player's goal",
+   "fields": [
+    {
+     "key": "objective",
+     "label": "Objective",
+     "kind": "text",
+     "verb": true,
+     "ph": "Find the cellar key (empty clears it)"
+    }
+   ],
+   "make": {
+    "objective": ""
+   }
+  },
+  {
+   "verb": "say",
+   "label": "Say a line",
+   "icon": "say",
+   "group": "story",
+   "hint": "a line from the lines table, spoken with its take",
+   "fields": [
+    {
+     "key": "say",
+     "label": "Line",
+     "kind": "longtext",
+     "verb": true
+    }
+   ],
+   "make": {
+    "say": ""
+   }
+  },
+  {
+   "verb": "think",
+   "label": "Think",
+   "icon": "think",
+   "group": "story",
+   "hint": "the player's own thought, as a subtitle",
+   "fields": [
+    {
+     "key": "think",
+     "label": "Thought",
+     "kind": "longtext",
+     "verb": true,
+     "ph": "Her handwriting. Shakier than I remember."
+    },
+    {
+     "key": "retype",
+     "label": "then erased and retyped as",
+     "kind": "text",
+     "opt": true,
+     "ph": "Natsu."
+    },
+    {
+     "key": "breaks",
+     "label": "breaks off (a memory flicker)",
+     "kind": "bool",
+     "opt": true
+    }
+   ],
+   "make": {
+    "think": ""
+   }
+  },
+  {
+   "verb": "name",
+   "label": "Ask the player's name",
+   "icon": "person",
+   "group": "story",
+   "hint": "a box to type their name in; {name} in any line, thought or answer shows it from then on (game.player_name until then)",
+   "fields": [
+    {
+     "key": "name",
+     "label": "The question",
+     "kind": "text",
+     "verb": true,
+     "ph": "What's your name?"
+    },
+    {
+     "key": "default",
+     "label": "if nothing is typed",
+     "kind": "text",
+     "opt": true,
+     "ph": "the game's player name"
+    }
+   ],
+   "make": {
+    "name": "What's your name?"
+   }
+  },
+  {
+   "verb": "ask",
+   "label": "Ask a question",
+   "icon": "ask",
+   "group": "story",
+   "hint": "2 to 4 answers at the bottom centre under the question; each answer runs its own commands",
+   "branches": "options",
+   "fields": [
+    {
+     "key": "ask",
+     "label": "Id",
+     "kind": "text",
+     "verb": true,
+     "ph": "q_stay"
+    },
+    {
+     "key": "text",
+     "label": "Question (a thought)",
+     "kind": "text",
+     "opt": true
+    },
+    {
+     "key": "line",
+     "label": "or a spoken line",
+     "kind": "longtext",
+     "opt": true
+    },
+    {
+     "key": "who",
+     "label": "beside",
+     "kind": "cast",
+     "opt": true
+    },
+    {
+     "key": "on",
+     "label": "or at",
+     "kind": "thing",
+     "opt": true
+    }
+   ],
+   "make": {
+    "ask": "q_new",
+    "text": "",
+    "options": [
+     {
+      "id": "yes",
+      "label": "Yes",
+      "do": []
+     },
+     {
+      "id": "no",
+      "label": "No",
+      "do": []
+     }
+    ]
+   }
+  },
+  {
+   "verb": "todo",
+   "label": "Add to the to-do list",
+   "icon": "check",
+   "group": "story",
+   "hint": "a task on the HUD's list, ticked off in any order: by a trigger of its own, a Tick command, or failed (a time limit, a trigger, a Fail command)",
+   "fields": [
+    {
+     "key": "todo",
+     "label": "Id",
+     "kind": "text",
+     "verb": true,
+     "ph": "mop_floor"
+    },
+    {
+     "key": "text",
+     "label": "What the list says",
+     "kind": "text",
+     "ph": "Mop the floor"
+    },
+    {
+     "key": "who",
+     "label": "asked by",
+     "kind": "cast",
+     "opt": true
+    },
+    {
+     "key": "ticks",
+     "label": "ticked when",
+     "kind": "trigger",
+     "opt": true
+    },
+    {
+     "key": "fails",
+     "label": "failed when",
+     "kind": "trigger",
+     "opt": true
+    },
+    {
+     "key": "secs",
+     "label": "fails after (s)",
+     "kind": "number",
+     "opt": true
+    },
+    {
+     "key": "hidden",
+     "label": "hidden (kept, not on the list)",
+     "kind": "bool",
+     "opt": true
+    }
+   ],
+   "make": {
+    "todo": "task",
+    "text": ""
+   },
+   "outcomes": [
+    [
+     "done",
+     "When it's ticked"
+    ],
+    [
+     "failed",
+     "When it's failed"
+    ]
+   ]
+  },
+  {
+   "verb": "tick",
+   "label": "Tick a task",
+   "icon": "check",
+   "group": "story",
+   "hint": "a task on the to-do list done",
+   "fields": [
+    {
+     "key": "tick",
+     "label": "Task",
+     "kind": "todo",
+     "verb": true
+    }
+   ],
+   "make": {
+    "tick": ""
+   }
+  },
+  {
+   "verb": "fail",
+   "label": "Fail a task",
+   "icon": "x",
+   "group": "story",
+   "hint": "a task on the to-do list failed: struck out in red, its “when it's failed” runs",
+   "fields": [
+    {
+     "key": "fail",
+     "label": "Task",
+     "kind": "todo",
+     "verb": true
+    }
+   ],
+   "make": {
+    "fail": ""
+   }
+  },
+  {
+   "verb": "untodo",
+   "label": "Take off the to-do list",
+   "icon": "x",
+   "group": "story",
+   "hint": "a task (or every task) off the list",
+   "fields": [
+    {
+     "key": "untodo",
+     "label": "Task",
+     "kind": "anytodo",
+     "verb": true
+    }
+   ],
+   "make": {
+    "untodo": true
+   }
+  },
+  {
+   "verb": "scene",
+   "label": "Play a scene",
+   "icon": "scene",
+   "group": "story",
+   "hint": "a triggered scene: blended in from where the player is, then play goes on",
+   "fields": [
+    {
+     "key": "scene",
+     "label": "Scene",
+     "kind": "scene",
+     "verb": true
+    }
+   ],
+   "make": {
+    "scene": ""
+   }
+  },
+  {
+   "verb": "flag",
+   "label": "Set a flag",
+   "icon": "flag",
+   "group": "state",
+   "hint": "a named fact the story can branch on later",
+   "fields": [
+    {
+     "key": "flag",
+     "label": "Flag",
+     "kind": "flag",
+     "verb": true
+    }
+   ],
+   "make": {
+    "flag": ""
+   }
+  },
+  {
+   "verb": "unflag",
+   "label": "Clear a flag",
+   "icon": "unflag",
+   "group": "state",
+   "fields": [
+    {
+     "key": "unflag",
+     "label": "Flag",
+     "kind": "flag",
+     "verb": true
+    }
+   ],
+   "make": {
+    "unflag": ""
+   }
+  },
+  {
+   "verb": "give",
+   "label": "Give an item",
+   "icon": "item",
+   "group": "state",
+   "fields": [
+    {
+     "key": "give",
+     "label": "Item",
+     "kind": "item",
+     "verb": true
+    }
+   ],
+   "make": {
+    "give": ""
+   }
+  },
+  {
+   "verb": "take",
+   "label": "Take an item",
+   "icon": "item",
+   "group": "state",
+   "fields": [
+    {
+     "key": "take",
+     "label": "Item",
+     "kind": "item",
+     "verb": true
+    }
+   ],
+   "make": {
+    "take": ""
+   }
+  },
+  {
+   "verb": "count",
+   "label": "Change a counter",
+   "icon": "count",
+   "group": "state",
+   "hint": "game.counters: add to one (1 by default) or set it",
+   "fields": [
+    {
+     "key": "count",
+     "label": "Counter",
+     "kind": "counter",
+     "verb": true
+    },
+    {
+     "key": "add",
+     "label": "add",
+     "kind": "number",
+     "ph": "1",
+     "opt": true
+    },
+    {
+     "key": "set",
+     "label": "or set to",
+     "kind": "number",
+     "opt": true
+    }
+   ],
+   "make": {
+    "count": ""
+   }
+  },
+  {
+   "verb": "karma",
+   "label": "Karma",
+   "icon": "heart",
+   "group": "state",
+   "hint": "how the player treats her: plus or minus on an axis",
+   "fields": [
+    {
+     "key": "karma",
+     "label": "Change",
+     "kind": "karma",
+     "verb": true
+    }
+   ],
+   "make": {
+    "karma": 1
+   }
+  },
+  {
+   "verb": "door",
+   "label": "Door",
+   "icon": "door",
+   "group": "world",
+   "fields": [
+    {
+     "key": "door",
+     "label": "Door",
+     "kind": "door",
+     "verb": true
+    },
+    {
+     "key": "set",
+     "label": "to",
+     "kind": "choice",
+     "opts": [
+      "lock",
+      "unlock",
+      "open",
+      "close",
+      "slam"
+     ]
+    }
+   ],
+   "make": {
+    "door": "",
+    "set": "open"
+   }
+  },
+  {
+   "verb": "light",
+   "label": "Light",
+   "icon": "light",
+   "group": "world",
+   "hint": "one light, or every light in a room",
+   "fields": [
+    {
+     "key": "light",
+     "label": "Light",
+     "kind": "light",
+     "verb": true,
+     "opt": true
+    },
+    {
+     "key": "room",
+     "label": "or the room",
+     "kind": "room",
+     "opt": true
+    },
+    {
+     "key": "set",
+     "label": "to",
+     "kind": "choice",
+     "opts": [
+      "on",
+      "off",
+      "flicker",
+      "dim"
+     ]
+    }
+   ],
+   "make": {
+    "light": null,
+    "room": "",
+    "set": "off"
+   }
+  },
+  {
+   "verb": "power",
+   "label": "The power",
+   "icon": "light",
+   "group": "world",
+   "hint": "the power cut: every electric light in the level dark (candles and fire burn on) and the switches dead, till a breaker (use: breaker) brings it back; or back on",
+   "fields": [
+    {
+     "key": "power",
+     "label": "Power",
+     "kind": "choice",
+     "verb": true,
+     "opts": [
+      "off",
+      "on"
+     ]
+    }
+   ],
+   "make": {
+    "power": "off"
+   }
+  },
+  {
+   "verb": "sweep",
+   "label": "A car passes",
+   "icon": "light",
+   "group": "world",
+   "hint": "headlights sweep across the room's ceiling now: a car passes outside its windows that have a sweep (a window's `sweep`; on their own every so often too)",
+   "fields": [
+    {
+     "key": "sweep",
+     "label": "Room",
+     "kind": "room",
+     "verb": true
+    }
+   ],
+   "make": {
+    "sweep": ""
+   }
+  },
+  {
+   "verb": "skin",
+   "label": "Someone's skin",
+   "icon": "person",
+   "group": "people",
+   "hint": "a cast member's skin wet, sweating, dripping or oiled (0..1 each; left out: unchanged, 0: off): stays on her bodies till set again. The Godot export draws it; the desk's stage doesn't yet",
+   "fields": [
+    {
+     "key": "skin",
+     "label": "Who",
+     "kind": "cast",
+     "verb": true
+    },
+    {
+     "key": "wet",
+     "label": "wet",
+     "kind": "number",
+     "ph": "0.7",
+     "opt": true
+    },
+    {
+     "key": "sweat",
+     "label": "sweat",
+     "kind": "number",
+     "ph": "0.5",
+     "opt": true
+    },
+    {
+     "key": "drips",
+     "label": "drips",
+     "kind": "number",
+     "ph": "0.3",
+     "opt": true
+    },
+    {
+     "key": "oil",
+     "label": "oil",
+     "kind": "number",
+     "ph": "0",
+     "opt": true
+    }
+   ],
+   "make": {
+    "skin": "",
+    "wet": 0.7
+   }
+  },
+  {
+   "verb": "torch",
+   "label": "Flashlight",
+   "icon": "torch",
+   "group": "world",
+   "hint": "the player's flashlight (an item marked Flashlight in the Database): on, off, a flicker, dead (it flickers out and F only clicks) or working again (new batteries)",
+   "fields": [
+    {
+     "key": "torch",
+     "label": "Flashlight",
+     "kind": "choice",
+     "verb": true,
+     "opts": [
+      "on",
+      "off",
+      "flicker",
+      "dead",
+      "works"
+     ]
+    }
+   ],
+   "make": {
+    "torch": "flicker"
+   }
+  },
+  {
+   "verb": "state",
+   "label": "Set a thing's state",
+   "icon": "life",
+   "group": "world",
+   "hint": "a little thing to one of its states: the kettle on, the cigarette lit, the clock stopped, the phone ringing (docs/IMMERSION.md)",
+   "fields": [
+    {
+     "key": "state",
+     "label": "Thing",
+     "kind": "life",
+     "verb": true
+    },
+    {
+     "key": "to",
+     "label": "to",
+     "kind": "lifestate"
+    }
+   ],
+   "make": {
+    "state": "",
+    "to": ""
+   }
+  },
+  {
+   "verb": "show",
+   "label": "Show a thing",
+   "icon": "show",
+   "group": "world",
+   "fields": [
+    {
+     "key": "show",
+     "label": "Thing",
+     "kind": "thing",
+     "verb": true
+    }
+   ],
+   "make": {
+    "show": ""
+   }
+  },
+  {
+   "verb": "hide",
+   "label": "Hide a thing",
+   "icon": "hide",
+   "group": "world",
+   "fields": [
+    {
+     "key": "hide",
+     "label": "Thing",
+     "kind": "thing",
+     "verb": true
+    }
+   ],
+   "make": {
+    "hide": ""
+   }
+  },
+  {
+   "verb": "move",
+   "label": "Move a thing",
+   "icon": "move",
+   "group": "world",
+   "fields": [
+    {
+     "key": "move",
+     "label": "Thing",
+     "kind": "thing",
+     "verb": true
+    },
+    {
+     "key": "to",
+     "label": "to",
+     "kind": "spot"
+    }
+   ],
+   "make": {
+    "move": "",
+    "to": ""
+   }
+  },
+  {
+   "verb": "sound",
+   "label": "Sound",
+   "icon": "sound",
+   "group": "world",
+   "fields": [
+    {
+     "key": "sound",
+     "label": "Sound",
+     "kind": "sound",
+     "verb": true
+    },
+    {
+     "key": "at",
+     "label": "from",
+     "kind": "thing",
+     "opt": true
+    }
+   ],
+   "make": {
+    "sound": ""
+   }
+  },
+  {
+   "verb": "music",
+   "label": "Music",
+   "icon": "music",
+   "group": "world",
+   "fields": [
+    {
+     "key": "music",
+     "label": "Mood",
+     "kind": "choice",
+     "verb": true,
+     "opts": [
+      "silence",
+      "calm",
+      "uneasy",
+      "dread",
+      "chase"
+     ]
+    }
+   ],
+   "make": {
+    "music": "uneasy"
+   }
+  },
+  {
+   "verb": "trick",
+   "label": "A scare (trick)",
+   "icon": "trick",
+   "group": "world",
+   "hint": "the composites in TRICKS.md §2: a knock, a glimpse, a door slamming behind",
+   "fields": [
+    {
+     "key": "trick",
+     "label": "Trick",
+     "kind": "choice",
+     "verb": true,
+     "opts": [
+      "knock",
+      "whisper",
+      "slam_behind",
+      "lights_die",
+      "glimpse",
+      "jumpscare",
+      "swap",
+      "loop_hall",
+      "cut_away"
+     ],
+     "labels": {
+      "knock": "a knock",
+      "whisper": "a whisper",
+      "slam_behind": "a door slams behind",
+      "lights_die": "the lights die",
+      "glimpse": "a glimpse",
+      "jumpscare": "a jump scare",
+      "swap": "a swap while unseen",
+      "loop_hall": "the hall loops",
+      "cut_away": "a cut away"
+     }
+    }
+   ],
+   "make": {
+    "trick": "knock",
+    "at": "",
+    "count": 3
+   },
+   "more": "tricks"
+  },
+  {
+   "verb": "behave",
+   "label": "Someone's behaviour",
+   "icon": "person",
+   "group": "people",
+   "hint": "what a cast member does in play until told otherwise: stand, sit, walk a route, patrol, or leave",
+   "fields": [
+    {
+     "key": "behave",
+     "label": "Who",
+     "kind": "cast",
+     "verb": true
+    },
+    {
+     "key": "as",
+     "label": "does",
+     "kind": "choice",
+     "opts": [
+      "idle",
+      "sit",
+      "path",
+      "patrol",
+      "go",
+      "off"
+     ]
+    },
+    {
+     "key": "sees",
+     "label": "watches for the player",
+     "kind": "bool",
+     "opt": true
+    }
+   ],
+   "make": {
+    "behave": "",
+    "as": "idle",
+    "at": ""
+   },
+   "more": "behave"
+  },
+  {
+   "verb": "expr",
+   "label": "A face on someone",
+   "icon": "person",
+   "group": "people",
+   "hint": "an expression from the library on a cast member's face (STORY_FORMAT §4): a capture plays once and her face goes back to the one she rests in, a loop runs until another takes over; as the face she rests in, it stays (none: at rest)",
+   "fields": [
+    {
+     "key": "who",
+     "label": "Who",
+     "kind": "cast"
+    },
+    {
+     "key": "expr",
+     "label": "wears",
+     "kind": "expr",
+     "verb": true
+    },
+    {
+     "key": "rest",
+     "label": "as the face she rests in",
+     "kind": "bool",
+     "opt": true
+    },
+    {
+     "key": "loop",
+     "label": "over and over",
+     "kind": "bool",
+     "opt": true
+    },
+    {
+     "key": "w",
+     "label": "how strong (0 to 2)",
+     "kind": "number",
+     "ph": "1",
+     "opt": true
+    }
+   ],
+   "make": {
+    "expr": "",
+    "who": ""
+   }
+  },
+  {
+   "verb": "anim",
+   "label": "Animate a thing",
+   "icon": "motion",
+   "group": "people",
+   "fields": [
+    {
+     "key": "anim",
+     "label": "Thing",
+     "kind": "thing",
+     "verb": true
+    },
+    {
+     "key": "clip",
+     "label": "motion",
+     "kind": "motion"
+    }
+   ],
+   "make": {
+    "anim": "",
+    "clip": ""
+   }
+  },
+  {
+   "verb": "shot",
+   "label": "Close-up",
+   "icon": "camera",
+   "group": "people",
+   "hint": "the camera holds on someone for a line, then gives the view back",
+   "fields": [
+    {
+     "key": "shot",
+     "label": "Shot",
+     "kind": "choice",
+     "verb": true,
+     "opts": [
+      "closeup"
+     ]
+    },
+    {
+     "key": "who",
+     "label": "on",
+     "kind": "cast"
+    },
+    {
+     "key": "line",
+     "label": "for the line",
+     "kind": "longtext",
+     "opt": true
+    }
+   ],
+   "make": {
+    "shot": "closeup",
+    "who": ""
+   }
+  },
+  {
+   "verb": "wait",
+   "label": "Wait",
+   "icon": "clock",
+   "group": "time",
+   "fields": [
+    {
+     "key": "wait",
+     "label": "Seconds",
+     "kind": "number",
+     "verb": true,
+     "ph": "1"
+    }
+   ],
+   "make": {
+    "wait": 1
+   }
+  },
+  {
+   "verb": "skip",
+   "label": "Time skips",
+   "icon": "clock",
+   "group": "time",
+   "hint": "missing time: the little things live through it at once (a clock's hands jump on, the tea goes cold); nothing else moves",
+   "fields": [
+    {
+     "key": "skip",
+     "label": "Seconds skipped",
+     "kind": "number",
+     "verb": true,
+     "ph": "5400 (an hour and a half)"
+    }
+   ],
+   "make": {
+    "skip": 3600
+   }
+  },
+  {
+   "verb": "fade",
+   "label": "Fade",
+   "icon": "fade",
+   "group": "time",
+   "fields": [
+    {
+     "key": "fade",
+     "label": "Fade",
+     "kind": "choice",
+     "verb": true,
+     "opts": [
+      "out",
+      "in"
+     ]
+    },
+    {
+     "key": "secs",
+     "label": "over (s)",
+     "kind": "number",
+     "ph": "1",
+     "opt": true
+    }
+   ],
+   "make": {
+    "fade": "out",
+    "secs": 1
+   }
+  },
+  {
+   "verb": "lookat",
+   "label": "Turn the view",
+   "icon": "eye",
+   "group": "time",
+   "hint": "the player's view eases to something and holds (keep it short)",
+   "fields": [
+    {
+     "key": "lookat",
+     "label": "Look at",
+     "kind": "thing",
+     "verb": true
+    },
+    {
+     "key": "secs",
+     "label": "for (s)",
+     "kind": "number",
+     "ph": "1",
+     "opt": true
+    },
+    {
+     "key": "lock",
+     "label": "hold the view",
+     "kind": "bool",
+     "opt": true
+    }
+   ],
+   "make": {
+    "lookat": "",
+    "secs": 1
+   }
+  },
+  {
+   "verb": "chapter",
+   "label": "Chapter card",
+   "icon": "film",
+   "group": "time",
+   "hint": "a title card over the dark (“Night 2”, “23:40” under it): the time of day changes behind it, the game autosaves; a sleeper wakes in their bed",
+   "fields": [
+    {
+     "key": "chapter",
+     "label": "Title",
+     "kind": "text",
+     "verb": true,
+     "ph": "Night 2"
+    },
+    {
+     "key": "sub",
+     "label": "under it",
+     "kind": "text",
+     "ph": "23:40",
+     "opt": true
+    },
+    {
+     "key": "time",
+     "label": "the time of day after it",
+     "kind": "choice",
+     "opts": [
+      "day",
+      "dusk",
+      "night"
+     ],
+     "opt": true
+    },
+    {
+     "key": "secs",
+     "label": "held (s)",
+     "kind": "number",
+     "ph": "3",
+     "opt": true
+    }
+   ],
+   "make": {
+    "chapter": ""
+   }
+  },
+  {
+   "verb": "seq",
+   "label": "Level sequence",
+   "icon": "scene",
+   "group": "time",
+   "hint": "an Unreal level sequence by name (a title card on the desk)",
+   "fields": [
+    {
+     "key": "seq",
+     "label": "Sequence",
+     "kind": "text",
+     "verb": true
+    }
+   ],
+   "make": {
+    "seq": ""
+   }
+  },
+  {
+   "verb": "checkpoint",
+   "label": "Checkpoint",
+   "icon": "save",
+   "group": "flow",
+   "fields": [],
+   "make": {
+    "checkpoint": true
+   }
+  },
+  {
+   "verb": "done",
+   "label": "End the task",
+   "icon": "done",
+   "group": "flow",
+   "hint": "the task is over: the flow goes on to its next node",
+   "fields": [],
+   "make": {
+    "done": true
+   }
+  },
+  {
+   "verb": "stalker",
+   "label": "Stalker (Unreal)",
+   "icon": "person",
+   "group": "flow",
+   "hint": "the old Unreal-side stalker; on the desk, use Someone's behaviour",
+   "rare": true,
+   "fields": [
+    {
+     "key": "stalker",
+     "label": "Do",
+     "kind": "choice",
+     "verb": true,
+     "opts": [
+      "spawn",
+      "despawn",
+      "patrol",
+      "hunt",
+      "chase"
+     ]
+    },
+    {
+     "key": "at",
+     "label": "at",
+     "kind": "spot",
+     "opt": true
+    },
+    {
+     "key": "route",
+     "label": "route",
+     "kind": "route",
+     "opt": true
+    }
+   ],
+   "make": {
+    "stalker": "patrol"
+   }
+  }
+ ],
+ "triggers": [
+  {
+   "verb": "start",
+   "label": "The task starts",
+   "icon": "play",
+   "fields": [],
+   "make": {
+    "start": true
+   }
+  },
+  {
+   "verb": "enter",
+   "label": "The player enters",
+   "icon": "enter",
+   "fields": [
+    {
+     "key": "enter",
+     "label": "Room or trigger",
+     "kind": "zone",
+     "verb": true
+    }
+   ],
+   "make": {
+    "enter": ""
+   }
+  },
+  {
+   "verb": "exit",
+   "label": "The player leaves",
+   "icon": "exit",
+   "fields": [
+    {
+     "key": "exit",
+     "label": "Room or trigger",
+     "kind": "zone",
+     "verb": true
+    }
+   ],
+   "make": {
+    "exit": ""
+   }
+  },
+  {
+   "verb": "use",
+   "label": "The player uses",
+   "icon": "hand",
+   "fields": [
+    {
+     "key": "use",
+     "label": "Thing",
+     "kind": "thing",
+     "verb": true
+    }
+   ],
+   "make": {
+    "use": ""
+   }
+  },
+  {
+   "verb": "pickup",
+   "label": "The player picks up",
+   "icon": "item",
+   "fields": [
+    {
+     "key": "pickup",
+     "label": "Item",
+     "kind": "item",
+     "verb": true
+    }
+   ],
+   "make": {
+    "pickup": ""
+   }
+  },
+  {
+   "verb": "read",
+   "label": "The player reads",
+   "icon": "note",
+   "fields": [
+    {
+     "key": "read",
+     "label": "Note",
+     "kind": "note",
+     "verb": true
+    }
+   ],
+   "make": {
+    "read": ""
+   }
+  },
+  {
+   "verb": "look",
+   "label": "The player looks at",
+   "icon": "eye",
+   "fields": [
+    {
+     "key": "look",
+     "label": "Thing",
+     "kind": "thing",
+     "verb": true
+    },
+    {
+     "key": "secs",
+     "label": "for (s)",
+     "kind": "number",
+     "ph": "1",
+     "opt": true
+    },
+    {
+     "key": "within",
+     "label": "within (m)",
+     "kind": "number",
+     "ph": "8",
+     "opt": true
+    }
+   ],
+   "make": {
+    "look": "",
+    "secs": 1
+   }
+  },
+  {
+   "verb": "after",
+   "label": "After another beat",
+   "icon": "clock",
+   "fields": [
+    {
+     "key": "after",
+     "label": "Beat",
+     "kind": "beat",
+     "verb": true
+    },
+    {
+     "key": "secs",
+     "label": "plus (s)",
+     "kind": "number",
+     "ph": "0",
+     "opt": true
+    }
+   ],
+   "make": {
+    "after": "",
+    "secs": 2
+   }
+  },
+  {
+   "verb": "flag",
+   "label": "A flag is set",
+   "icon": "flag",
+   "fields": [
+    {
+     "key": "flag",
+     "label": "Flag",
+     "kind": "flag",
+     "verb": true
+    }
+   ],
+   "make": {
+    "flag": ""
+   }
+  },
+  {
+   "verb": "caught",
+   "label": "The player is caught",
+   "icon": "person",
+   "fields": [
+    {
+     "key": "caught",
+     "label": "By",
+     "kind": "anyone",
+     "verb": true
+    }
+   ],
+   "make": {
+    "caught": true
+   }
+  },
+  {
+   "verb": "hidden",
+   "label": "The player hides",
+   "icon": "hide",
+   "fields": [
+    {
+     "key": "hidden",
+     "label": "In",
+     "kind": "anylocker",
+     "verb": true
+    }
+   ],
+   "make": {
+    "hidden": true
+   }
+  },
+  {
+   "verb": "answered",
+   "label": "A question is answered",
+   "icon": "ask",
+   "fields": [
+    {
+     "key": "answered",
+     "label": "Question",
+     "kind": "ask",
+     "verb": true
+    },
+    {
+     "key": "option",
+     "label": "with",
+     "kind": "askanswer",
+     "opt": true
+    }
+   ],
+   "make": {
+    "answered": ""
+   }
+  },
+  {
+   "verb": "carrying",
+   "label": "The player carries",
+   "icon": "item",
+   "fields": [
+    {
+     "key": "carrying",
+     "label": "Thing",
+     "kind": "anycarry",
+     "verb": true
+    }
+   ],
+   "make": {
+    "carrying": true
+   }
+  },
+  {
+   "verb": "dropped",
+   "label": "Something is put down",
+   "icon": "move",
+   "fields": [
+    {
+     "key": "dropped",
+     "label": "Thing",
+     "kind": "carry",
+     "verb": true
+    },
+    {
+     "key": "in",
+     "label": "in",
+     "kind": "zone",
+     "opt": true
+    }
+   ],
+   "make": {
+    "dropped": ""
+   }
+  },
+  {
+   "verb": "played",
+   "label": "A board game ends",
+   "icon": "dice",
+   "fields": [
+    {
+     "key": "played",
+     "label": "Table",
+     "kind": "table",
+     "verb": true
+    },
+    {
+     "key": "result",
+     "label": "with",
+     "kind": "text",
+     "opt": true,
+     "ph": "lose"
+    }
+   ],
+   "make": {
+    "played": ""
+   }
+  },
+  {
+   "verb": "rolled",
+   "label": "A die is rolled",
+   "icon": "dice",
+   "fields": [
+    {
+     "key": "rolled",
+     "label": "Die",
+     "kind": "die",
+     "verb": true
+    },
+    {
+     "key": "face",
+     "label": "showing",
+     "kind": "number",
+     "opt": true
+    },
+    {
+     "key": "at_least",
+     "label": "or at least",
+     "kind": "number",
+     "opt": true
+    }
+   ],
+   "make": {
+    "rolled": ""
+   }
+  },
+  {
+   "verb": "power",
+   "label": "The power is on or off",
+   "icon": "light",
+   "fields": [
+    {
+     "key": "power",
+     "label": "Power",
+     "kind": "choice",
+     "verb": true,
+     "opts": [
+      "off",
+      "on"
+     ]
+    }
+   ],
+   "make": {
+    "power": "on"
+   }
+  },
+  {
+   "verb": "locked",
+   "label": "A door is locked",
+   "icon": "door",
+   "hint": "holds while it's locked: the player turned its latch (a door's latch), its key not yet used, or a door lock",
+   "fields": [
+    {
+     "key": "locked",
+     "label": "Door",
+     "kind": "door",
+     "verb": true
+    }
+   ],
+   "make": {
+    "locked": ""
+   }
+  },
+  {
+   "verb": "peeping",
+   "label": "The player looks through a peephole",
+   "icon": "eye",
+   "fields": [
+    {
+     "key": "peeping",
+     "label": "Door",
+     "kind": "door",
+     "verb": true
+    }
+   ],
+   "make": {
+    "peeping": ""
+   }
+  },
+  {
+   "verb": "torch",
+   "label": "The player switches the flashlight",
+   "icon": "torch",
+   "fields": [
+    {
+     "key": "torch",
+     "label": "Switched",
+     "kind": "choice",
+     "verb": true,
+     "opts": [
+      "on",
+      "off"
+     ]
+    }
+   ],
+   "make": {
+    "torch": "on"
+   }
+  },
+  {
+   "verb": "state",
+   "label": "A thing is in a state",
+   "icon": "life",
+   "fields": [
+    {
+     "key": "state",
+     "label": "Thing",
+     "kind": "life",
+     "verb": true
+    },
+    {
+     "key": "is",
+     "label": "is",
+     "kind": "lifestate"
+    }
+   ],
+   "make": {
+    "state": "",
+    "is": ""
+   }
+  },
+  {
+   "verb": "gave",
+   "label": "Something is given to someone",
+   "icon": "item",
+   "fields": [
+    {
+     "key": "gave",
+     "label": "Item (* any)",
+     "kind": "item",
+     "verb": true
+    },
+    {
+     "key": "to",
+     "label": "to",
+     "kind": "cast"
+    },
+    {
+     "key": "except",
+     "label": "but not",
+     "kind": "item",
+     "opt": true
+    }
+   ],
+   "make": {
+    "gave": "",
+    "to": ""
+   }
+  },
+  {
+   "verb": "arrived",
+   "label": "Someone gets there",
+   "icon": "person",
+   "fields": [
+    {
+     "key": "arrived",
+     "label": "Who",
+     "kind": "cast",
+     "verb": true
+    },
+    {
+     "key": "at",
+     "label": "at",
+     "kind": "spot",
+     "opt": true
+    }
+   ],
+   "make": {
+    "arrived": ""
+   }
+  },
+  {
+   "verb": "ticked",
+   "label": "A task is ticked",
+   "icon": "check",
+   "fields": [
+    {
+     "key": "ticked",
+     "label": "Task",
+     "kind": "anytodo",
+     "verb": true
+    }
+   ],
+   "make": {
+    "ticked": true
+   }
+  },
+  {
+   "verb": "failed",
+   "label": "A task is failed",
+   "icon": "x",
+   "fields": [
+    {
+     "key": "failed",
+     "label": "Task",
+     "kind": "anytodo",
+     "verb": true
+    }
+   ],
+   "make": {
+    "failed": true
+   }
+  },
+  {
+   "verb": "all",
+   "label": "All of these",
+   "icon": "all",
+   "nest": true,
+   "fields": [],
+   "make": {
+    "all": [
+     {
+      "start": true
+     }
+    ]
+   }
+  },
+  {
+   "verb": "any",
+   "label": "Any of these",
+   "icon": "any",
+   "nest": true,
+   "fields": [],
+   "make": {
+    "any": [
+     {
+      "start": true
+     }
+    ]
+   }
+  }
+ ],
+ "tricks": {
+  "knock": [
+   {
+    "key": "at",
+    "label": "on",
+    "kind": "thing"
+   },
+   {
+    "key": "count",
+    "label": "times",
+    "kind": "number",
+    "ph": "3"
+   }
+  ],
+  "whisper": [
+   {
+    "key": "line",
+    "label": "line",
+    "kind": "longtext"
+   },
+   {
+    "key": "at",
+    "label": "from",
+    "kind": "thing"
+   }
+  ],
+  "slam_behind": [
+   {
+    "key": "door",
+    "label": "door",
+    "kind": "door"
+   }
+  ],
+  "lights_die": [
+   {
+    "key": "room",
+    "label": "room",
+    "kind": "room"
+   },
+   {
+    "key": "secs",
+    "label": "for (s)",
+    "kind": "number",
+    "ph": "1"
+   }
+  ],
+  "glimpse": [
+   {
+    "key": "figure",
+    "label": "figure",
+    "kind": "thing"
+   },
+   {
+    "key": "secs",
+    "label": "for (s)",
+    "kind": "number",
+    "ph": "0.6"
+   }
+  ],
+  "jumpscare": [
+   {
+    "key": "figure",
+    "label": "figure",
+    "kind": "thing"
+   }
+  ],
+  "swap": [
+   {
+    "key": "hide",
+    "label": "hide",
+    "kind": "thing"
+   },
+   {
+    "key": "show",
+    "label": "show",
+    "kind": "thing"
+   }
+  ],
+  "loop_hall": [
+   {
+    "key": "trigger",
+    "label": "at the end of",
+    "kind": "zone"
+   },
+   {
+    "key": "back_to",
+    "label": "back to",
+    "kind": "spot"
+   }
+  ],
+  "cut_away": [
+   {
+    "key": "lookat",
+    "label": "look at",
+    "kind": "thing"
+   },
+   {
+    "key": "then",
+    "label": "then",
+    "kind": "text"
+   }
+  ]
+ },
+ "trick_labels": {
+  "knock": "a knock",
+  "whisper": "a whisper",
+  "slam_behind": "a door slams behind",
+  "lights_die": "the lights die",
+  "glimpse": "a glimpse",
+  "jumpscare": "a jump scare",
+  "swap": "a swap while unseen",
+  "loop_hall": "the hall loops",
+  "cut_away": "a cut away"
+ },
+ "behave_fields": {
+  "idle": [
+   {
+    "key": "at",
+    "label": "at",
+    "kind": "spot"
+   },
+   {
+    "key": "pose",
+    "label": "pose",
+    "kind": "pose",
+    "opt": true
+   },
+   {
+    "key": "face",
+    "label": "facing",
+    "kind": "facing",
+    "opt": true
+   },
+   {
+    "key": "motion",
+    "label": "playing (a motion)",
+    "kind": "motion",
+    "opt": true
+   }
+  ],
+  "sit": [
+   {
+    "key": "at",
+    "label": "on",
+    "kind": "spot"
+   },
+   {
+    "key": "pose",
+    "label": "pose",
+    "kind": "pose",
+    "opt": true
+   },
+   {
+    "key": "motion",
+    "label": "playing (a motion)",
+    "kind": "motion",
+    "opt": true
+   }
+  ],
+  "path": [
+   {
+    "key": "route",
+    "label": "route",
+    "kind": "route"
+   },
+   {
+    "key": "mode",
+    "label": "mode",
+    "kind": "choice",
+    "opts": [
+     "loop",
+     "pingpong",
+     "once"
+    ],
+    "opt": true
+   },
+   {
+    "key": "speed",
+    "label": "speed (m/s)",
+    "kind": "number",
+    "ph": "1.1",
+    "opt": true
+   },
+   {
+    "key": "from",
+    "label": "starting from",
+    "kind": "choice",
+    "opts": [
+     "nearest",
+     "first"
+    ],
+    "opt": true
+   },
+   {
+    "key": "motion",
+    "label": "walking (a motion, in place)",
+    "kind": "motion",
+    "opt": true
+   }
+  ],
+  "patrol": [
+   {
+    "key": "routes",
+    "label": "routes",
+    "kind": "routes"
+   },
+   {
+    "key": "pick",
+    "label": "pick",
+    "kind": "choice",
+    "opts": [
+     "order",
+     "random"
+    ],
+    "opt": true
+   },
+   {
+    "key": "speed",
+    "label": "speed (m/s)",
+    "kind": "number",
+    "ph": "1.1",
+    "opt": true
+   },
+   {
+    "key": "motion",
+    "label": "walking (a motion, in place)",
+    "kind": "motion",
+    "opt": true
+   }
+  ],
+  "go": [
+   {
+    "key": "to",
+    "label": "to",
+    "kind": "spot"
+   },
+   {
+    "key": "then",
+    "label": "then",
+    "kind": "choice",
+    "opts": [
+     "idle",
+     "sit"
+    ],
+    "labels": {
+     "idle": "stands there",
+     "sit": "sits there"
+    },
+    "opt": true
+   },
+   {
+    "key": "via",
+    "label": "by way of",
+    "kind": "many",
+    "of": "spot",
+    "opt": true
+   },
+   {
+    "key": "face",
+    "label": "facing (standing)",
+    "kind": "facing",
+    "opt": true
+   },
+   {
+    "key": "speed",
+    "label": "speed (m/s)",
+    "kind": "number",
+    "ph": "1.1",
+    "opt": true
+   },
+   {
+    "key": "motion",
+    "label": "walking (a motion, in place)",
+    "kind": "motion",
+    "opt": true
+   }
+  ],
+  "off": []
+ },
+ "clauses": [
+  [
+   "fact",
+   "a fact (something done, or a flag)"
+  ],
+  [
+   "quest",
+   "a quest is the one on"
+  ],
+  [
+   "done",
+   "a quest is done"
+  ],
+  [
+   "step",
+   "a step is ticked"
+  ],
+  [
+   "has",
+   "an item is held"
+  ],
+  [
+   "count",
+   "a counter"
+  ],
+  [
+   "karma",
+   "karma"
+  ],
+  [
+   "ending",
+   "an ending was reached"
+  ]
+ ],
+ "fact_words": [
+  [
+   "read:",
+   "they've read",
+   "they haven't read",
+   "note"
+  ],
+  [
+   "used:",
+   "they've used",
+   "they haven't used",
+   "thing"
+  ],
+  [
+   "picked:",
+   "they've picked up",
+   "they haven't picked up",
+   "item"
+  ],
+  [
+   "entered:",
+   "they've been in",
+   "they haven't been in",
+   "area"
+  ],
+  [
+   "left:",
+   "they've left",
+   "they haven't left",
+   "area"
+  ],
+  [
+   "gave:",
+   "they've given",
+   "they haven't given",
+   "gave"
+  ],
+  [
+   "talked:",
+   "they've begun the talk",
+   "they haven't begun the talk",
+   "talk"
+  ],
+  [
+   "heard:",
+   "they've heard",
+   "they haven't heard",
+   "talk"
+  ],
+  [
+   "answered:",
+   "they've answered",
+   "they haven't answered",
+   "answer"
+  ],
+  [
+   "caught:",
+   "they've been caught by",
+   "they haven't been caught by",
+   "actor"
+  ],
+  [
+   "dropped:",
+   "they've put down",
+   "they haven't put down",
+   "thing"
+  ],
+  [
+   "rolled:",
+   "they've rolled",
+   "they haven't rolled",
+   "thing"
+  ],
+  [
+   "played:",
+   "they've played",
+   "they haven't played",
+   "thing"
+  ],
+  [
+   "step:",
+   "they've done the step",
+   "they haven't done the step",
+   "step"
+  ],
+  [
+   "failed:",
+   "they've failed the step",
+   "they haven't failed the step",
+   "step"
+  ],
+  [
+   "done:",
+   "they've finished",
+   "they haven't finished",
+   "quest"
+  ],
+  [
+   "@",
+   "they've reached",
+   "they haven't reached",
+   "quest"
+  ],
+  [
+   "result:",
+   "the round ended",
+   "the round didn't end",
+   "round"
+  ],
+  [
+   "ending:",
+   "they've reached the ending",
+   "they haven't reached the ending",
+   "ending"
+  ],
+  [
+   "achievement:",
+   "they've unlocked",
+   "they haven't unlocked",
+   "achievement"
+  ]
+ ],
+ "examples": [
+  {
+   "what": "action",
+   "value": {
+    "objective": ""
+   },
+   "text": "Clear the objective"
+  },
+  {
+   "what": "action",
+   "value": {
+    "objective": "words 0"
+   },
+   "text": "Objective: “words 0”"
+  },
+  {
+   "what": "action",
+   "value": {
+    "say": ""
+   },
+   "text": "Say …"
+  },
+  {
+   "what": "action",
+   "value": {
+    "say": "words 0"
+   },
+   "text": "Say words 0"
+  },
+  {
+   "what": "action",
+   "value": {
+    "think": ""
+   },
+   "text": "Think “…”"
+  },
+  {
+   "what": "action",
+   "value": {
+    "think": "words 0",
+    "retype": "words 1",
+    "breaks": true
+   },
+   "text": "Think “words 0”, then retyped as “words 1”, breaking off"
+  },
+  {
+   "what": "action",
+   "value": {
+    "think": "words 0",
+    "breaks": true
+   },
+   "text": "Think “words 0”, breaking off"
+  },
+  {
+   "what": "action",
+   "value": {
+    "think": "words 0",
+    "retype": "words 1"
+   },
+   "text": "Think “words 0”, then retyped as “words 1”"
+  },
+  {
+   "what": "action",
+   "value": {
+    "name": "What's your name?"
+   },
+   "text": "Ask the player's name (“What's your name?”)"
+  },
+  {
+   "what": "action",
+   "value": {
+    "name": "words 0",
+    "default": "words 1"
+   },
+   "text": "Ask the player's name (“words 0”), else “words 1”"
+  },
+  {
+   "what": "action",
+   "value": {
+    "name": "words 0"
+   },
+   "text": "Ask the player's name (“words 0”)"
+  },
+  {
+   "what": "action",
+   "value": {
+    "ask": "q_new",
+    "text": "",
+    "options": [
+     {
+      "id": "yes",
+      "label": "Yes",
+      "do": []
+     },
+     {
+      "id": "no",
+      "label": "No",
+      "do": []
+     }
+    ]
+   },
+   "text": "Ask “q_new”"
+  },
+  {
+   "what": "action",
+   "value": {
+    "ask": "words 0",
+    "text": "words 1",
+    "options": [
+     {
+      "id": "yes",
+      "label": "Yes",
+      "do": []
+     },
+     {
+      "id": "no",
+      "label": "No",
+      "do": []
+     }
+    ],
+    "line": "words 2",
+    "who": "cast_3",
+    "on": "thing_4"
+   },
+   "text": "Ask words 2 beside cast_3"
+  },
+  {
+   "what": "action",
+   "value": {
+    "ask": "words 0",
+    "options": [
+     {
+      "id": "yes",
+      "label": "Yes",
+      "do": []
+     },
+     {
+      "id": "no",
+      "label": "No",
+      "do": []
+     }
+    ],
+    "line": "words 2",
+    "who": "cast_3",
+    "on": "thing_4"
+   },
+   "text": "Ask words 2 beside cast_3"
+  },
+  {
+   "what": "action",
+   "value": {
+    "ask": "words 0",
+    "text": "words 1",
+    "options": [
+     {
+      "id": "yes",
+      "label": "Yes",
+      "do": []
+     },
+     {
+      "id": "no",
+      "label": "No",
+      "do": []
+     }
+    ],
+    "who": "cast_3",
+    "on": "thing_4"
+   },
+   "text": "Ask “words 1” beside cast_3"
+  },
+  {
+   "what": "action",
+   "value": {
+    "ask": "words 0",
+    "text": "words 1",
+    "options": [
+     {
+      "id": "yes",
+      "label": "Yes",
+      "do": []
+     },
+     {
+      "id": "no",
+      "label": "No",
+      "do": []
+     }
+    ],
+    "line": "words 2",
+    "on": "thing_4"
+   },
+   "text": "Ask words 2"
+  },
+  {
+   "what": "action",
+   "value": {
+    "ask": "words 0",
+    "text": "words 1",
+    "options": [
+     {
+      "id": "yes",
+      "label": "Yes",
+      "do": []
+     },
+     {
+      "id": "no",
+      "label": "No",
+      "do": []
+     }
+    ],
+    "line": "words 2",
+    "who": "cast_3"
+   },
+   "text": "Ask words 2 beside cast_3"
+  },
+  {
+   "what": "action",
+   "value": {
+    "todo": "task",
+    "text": ""
+   },
+   "text": "To do: “task”"
+  },
+  {
+   "what": "action",
+   "value": {
+    "todo": "words 0",
+    "text": "words 1",
+    "who": "cast_2",
+    "ticks": {
+     "enter": "hall"
+    },
+    "fails": {
+     "enter": "hall"
+    },
+    "secs": 7,
+    "hidden": true
+   },
+   "text": "Hidden to do: “words 1” for cast_2, ticked when the player enters hall · 7 s"
+  },
+  {
+   "what": "action",
+   "value": {
+    "todo": "words 0",
+    "text": "words 1",
+    "ticks": {
+     "enter": "hall"
+    },
+    "fails": {
+     "enter": "hall"
+    },
+    "secs": 7,
+    "hidden": true
+   },
+   "text": "Hidden to do: “words 1”, ticked when the player enters hall · 7 s"
+  },
+  {
+   "what": "action",
+   "value": {
+    "todo": "words 0",
+    "text": "words 1",
+    "who": "cast_2",
+    "fails": {
+     "enter": "hall"
+    },
+    "secs": 7,
+    "hidden": true
+   },
+   "text": "Hidden to do: “words 1” for cast_2 · 7 s"
+  },
+  {
+   "what": "action",
+   "value": {
+    "todo": "words 0",
+    "text": "words 1",
+    "who": "cast_2",
+    "ticks": {
+     "enter": "hall"
+    },
+    "secs": 7,
+    "hidden": true
+   },
+   "text": "Hidden to do: “words 1” for cast_2, ticked when the player enters hall · 7 s"
+  },
+  {
+   "what": "action",
+   "value": {
+    "todo": "words 0",
+    "text": "words 1",
+    "who": "cast_2",
+    "ticks": {
+     "enter": "hall"
+    },
+    "fails": {
+     "enter": "hall"
+    },
+    "hidden": true
+   },
+   "text": "Hidden to do: “words 1” for cast_2, ticked when the player enters hall"
+  },
+  {
+   "what": "action",
+   "value": {
+    "todo": "words 0",
+    "text": "words 1",
+    "who": "cast_2",
+    "ticks": {
+     "enter": "hall"
+    },
+    "fails": {
+     "enter": "hall"
+    },
+    "secs": 7
+   },
+   "text": "To do: “words 1” for cast_2, ticked when the player enters hall · 7 s"
+  },
+  {
+   "what": "action",
+   "value": {
+    "tick": ""
+   },
+   "text": "Tick …"
+  },
+  {
+   "what": "action",
+   "value": {
+    "tick": "todo_0"
+   },
+   "text": "Tick todo_0"
+  },
+  {
+   "what": "action",
+   "value": {
+    "fail": ""
+   },
+   "text": "Fail …"
+  },
+  {
+   "what": "action",
+   "value": {
+    "fail": "todo_0"
+   },
+   "text": "Fail todo_0"
+  },
+  {
+   "what": "action",
+   "value": {
+    "untodo": true
+   },
+   "text": "Clear the to-do list"
+  },
+  {
+   "what": "action",
+   "value": {
+    "untodo": "todo_0"
+   },
+   "text": "Take todo_0 off the list"
+  },
+  {
+   "what": "action",
+   "value": {
+    "scene": ""
+   },
+   "text": "Play scene …"
+  },
+  {
+   "what": "action",
+   "value": {
+    "scene": "scene_0"
+   },
+   "text": "Play scene scene_0"
+  },
+  {
+   "what": "action",
+   "value": {
+    "flag": ""
+   },
+   "text": "Set flag …"
+  },
+  {
+   "what": "action",
+   "value": {
+    "flag": "flag_0"
+   },
+   "text": "Set flag flag_0"
+  },
+  {
+   "what": "action",
+   "value": {
+    "unflag": ""
+   },
+   "text": "Clear flag …"
+  },
+  {
+   "what": "action",
+   "value": {
+    "unflag": "flag_0"
+   },
+   "text": "Clear flag flag_0"
+  },
+  {
+   "what": "action",
+   "value": {
+    "give": ""
+   },
+   "text": "Give …"
+  },
+  {
+   "what": "action",
+   "value": {
+    "give": "item_0"
+   },
+   "text": "Give item_0"
+  },
+  {
+   "what": "action",
+   "value": {
+    "take": ""
+   },
+   "text": "Take away …"
+  },
+  {
+   "what": "action",
+   "value": {
+    "take": "item_0"
+   },
+   "text": "Take away item_0"
+  },
+  {
+   "what": "action",
+   "value": {
+    "count": ""
+   },
+   "text": "Counter … +1"
+  },
+  {
+   "what": "action",
+   "value": {
+    "count": "counter_0",
+    "add": 3,
+    "set": 4
+   },
+   "text": "Counter counter_0 = 4"
+  },
+  {
+   "what": "action",
+   "value": {
+    "count": "counter_0",
+    "set": 4
+   },
+   "text": "Counter counter_0 = 4"
+  },
+  {
+   "what": "action",
+   "value": {
+    "count": "counter_0",
+    "add": 3
+   },
+   "text": "Counter counter_0 +3"
+  },
+  {
+   "what": "action",
+   "value": {
+    "karma": 1
+   },
+   "text": "Karma +1"
+  },
+  {
+   "what": "action",
+   "value": {
+    "karma": 2
+   },
+   "text": "Karma +2"
+  },
+  {
+   "what": "action",
+   "value": {
+    "door": "",
+    "set": "open"
+   },
+   "text": "Open …"
+  },
+  {
+   "what": "action",
+   "value": {
+    "door": "door_0",
+    "set": "lock"
+   },
+   "text": "Lock door_0"
+  },
+  {
+   "what": "action",
+   "value": {
+    "door": "door_0",
+    "set": "unlock"
+   },
+   "text": "Unlock door_0"
+  },
+  {
+   "what": "action",
+   "value": {
+    "door": "door_0",
+    "set": "open"
+   },
+   "text": "Open door_0"
+  },
+  {
+   "what": "action",
+   "value": {
+    "door": "door_0",
+    "set": "close"
+   },
+   "text": "Close door_0"
+  },
+  {
+   "what": "action",
+   "value": {
+    "door": "door_0",
+    "set": "slam"
+   },
+   "text": "Slam door_0"
+  },
+  {
+   "what": "action",
+   "value": {
+    "light": null,
+    "room": "",
+    "set": "off"
+   },
+   "text": "Light …: off"
+  },
+  {
+   "what": "action",
+   "value": {
+    "light": "light_0",
+    "room": "room_1",
+    "set": "on"
+   },
+   "text": "Lights in room_1: on"
+  },
+  {
+   "what": "action",
+   "value": {
+    "light": "light_0",
+    "room": "room_1",
+    "set": "off"
+   },
+   "text": "Lights in room_1: off"
+  },
+  {
+   "what": "action",
+   "value": {
+    "light": "light_0",
+    "room": "room_1",
+    "set": "flicker"
+   },
+   "text": "Lights in room_1: flicker"
+  },
+  {
+   "what": "action",
+   "value": {
+    "light": "light_0",
+    "room": "room_1",
+    "set": "dim"
+   },
+   "text": "Lights in room_1: dim"
+  },
+  {
+   "what": "action",
+   "value": {
+    "room": "room_1",
+    "set": "on"
+   },
+   "text": "{\"room\":\"room_1\",\"set\":\"on\"}"
+  },
+  {
+   "what": "action",
+   "value": {
+    "light": "light_0",
+    "set": "on"
+   },
+   "text": "Light light_0: on"
+  },
+  {
+   "what": "action",
+   "value": {
+    "power": "off"
+   },
+   "text": "The power goes out"
+  },
+  {
+   "what": "action",
+   "value": {
+    "power": "on"
+   },
+   "text": "The power comes back"
+  },
+  {
+   "what": "action",
+   "value": {
+    "sweep": ""
+   },
+   "text": "A car passes …"
+  },
+  {
+   "what": "action",
+   "value": {
+    "sweep": "room_0"
+   },
+   "text": "A car passes room_0"
+  },
+  {
+   "what": "action",
+   "value": {
+    "skin": "",
+    "wet": 0.7
+   },
+   "text": "…'s skin: wet 0.7"
+  },
+  {
+   "what": "action",
+   "value": {
+    "skin": "cast_0",
+    "wet": 3,
+    "sweat": 4,
+    "drips": 5,
+    "oil": 6
+   },
+   "text": "Cast_0's skin: wet 3, sweat 4, drips 5, oil 6"
+  },
+  {
+   "what": "action",
+   "value": {
+    "skin": "cast_0",
+    "sweat": 4,
+    "drips": 5,
+    "oil": 6
+   },
+   "text": "Cast_0's skin: sweat 4, drips 5, oil 6"
+  },
+  {
+   "what": "action",
+   "value": {
+    "skin": "cast_0",
+    "wet": 3,
+    "drips": 5,
+    "oil": 6
+   },
+   "text": "Cast_0's skin: wet 3, drips 5, oil 6"
+  },
+  {
+   "what": "action",
+   "value": {
+    "skin": "cast_0",
+    "wet": 3,
+    "sweat": 4,
+    "oil": 6
+   },
+   "text": "Cast_0's skin: wet 3, sweat 4, oil 6"
+  },
+  {
+   "what": "action",
+   "value": {
+    "skin": "cast_0",
+    "wet": 3,
+    "sweat": 4,
+    "drips": 5
+   },
+   "text": "Cast_0's skin: wet 3, sweat 4, drips 5"
+  },
+  {
+   "what": "action",
+   "value": {
+    "torch": "flicker"
+   },
+   "text": "The flashlight flickers"
+  },
+  {
+   "what": "action",
+   "value": {
+    "torch": "on"
+   },
+   "text": "The flashlight comes on"
+  },
+  {
+   "what": "action",
+   "value": {
+    "torch": "off"
+   },
+   "text": "The flashlight goes off"
+  },
+  {
+   "what": "action",
+   "value": {
+    "torch": "dead"
+   },
+   "text": "The flashlight dies"
+  },
+  {
+   "what": "action",
+   "value": {
+    "torch": "works"
+   },
+   "text": "The flashlight works again"
+  },
+  {
+   "what": "action",
+   "value": {
+    "state": "",
+    "to": ""
+   },
+   "text": "…: …"
+  },
+  {
+   "what": "action",
+   "value": {
+    "state": "life_0",
+    "to": "lifestate_1"
+   },
+   "text": "Life_0: lifestate_1"
+  },
+  {
+   "what": "action",
+   "value": {
+    "show": ""
+   },
+   "text": "Show …"
+  },
+  {
+   "what": "action",
+   "value": {
+    "show": "thing_0"
+   },
+   "text": "Show thing_0"
+  },
+  {
+   "what": "action",
+   "value": {
+    "hide": ""
+   },
+   "text": "Hide …"
+  },
+  {
+   "what": "action",
+   "value": {
+    "hide": "thing_0"
+   },
+   "text": "Hide thing_0"
+  },
+  {
+   "what": "action",
+   "value": {
+    "move": "",
+    "to": ""
+   },
+   "text": "Move … to …"
+  },
+  {
+   "what": "action",
+   "value": {
+    "move": "thing_0",
+    "to": "spot_1"
+   },
+   "text": "Move thing_0 to spot_1"
+  },
+  {
+   "what": "action",
+   "value": {
+    "sound": ""
+   },
+   "text": "Sound …"
+  },
+  {
+   "what": "action",
+   "value": {
+    "sound": "sound_0",
+    "at": "thing_1"
+   },
+   "text": "Sound sound_0 from thing_1"
+  },
+  {
+   "what": "action",
+   "value": {
+    "sound": "sound_0"
+   },
+   "text": "Sound sound_0"
+  },
+  {
+   "what": "action",
+   "value": {
+    "music": "uneasy"
+   },
+   "text": "Music: uneasy"
+  },
+  {
+   "what": "action",
+   "value": {
+    "music": "silence"
+   },
+   "text": "Music: silence"
+  },
+  {
+   "what": "action",
+   "value": {
+    "music": "calm"
+   },
+   "text": "Music: calm"
+  },
+  {
+   "what": "action",
+   "value": {
+    "music": "dread"
+   },
+   "text": "Music: dread"
+  },
+  {
+   "what": "action",
+   "value": {
+    "music": "chase"
+   },
+   "text": "Music: chase"
+  },
+  {
+   "what": "action",
+   "value": {
+    "trick": "knock",
+    "at": "",
+    "count": 3
+   },
+   "text": "Scare: a knock on … ×3"
+  },
+  {
+   "what": "action",
+   "value": {
+    "trick": "knock"
+   },
+   "text": "Scare: a knock on …"
+  },
+  {
+   "what": "action",
+   "value": {
+    "trick": "knock",
+    "at": "thing_0",
+    "count": 3
+   },
+   "text": "Scare: a knock on thing_0 ×3"
+  },
+  {
+   "what": "action",
+   "value": {
+    "trick": "whisper"
+   },
+   "text": "Scare: a whisper, …, from …"
+  },
+  {
+   "what": "action",
+   "value": {
+    "trick": "whisper",
+    "line": "words 0",
+    "at": "thing_1"
+   },
+   "text": "Scare: a whisper, words 0, from thing_1"
+  },
+  {
+   "what": "action",
+   "value": {
+    "trick": "slam_behind"
+   },
+   "text": "Scare: … slams shut behind the player"
+  },
+  {
+   "what": "action",
+   "value": {
+    "trick": "slam_behind",
+    "door": "door_0"
+   },
+   "text": "Scare: door_0 slams shut behind the player"
+  },
+  {
+   "what": "action",
+   "value": {
+    "trick": "lights_die"
+   },
+   "text": "Scare: the lights die in …"
+  },
+  {
+   "what": "action",
+   "value": {
+    "trick": "lights_die",
+    "room": "room_0",
+    "secs": 3
+   },
+   "text": "Scare: the lights die in room_0 for 3 s"
+  },
+  {
+   "what": "action",
+   "value": {
+    "trick": "glimpse"
+   },
+   "text": "Scare: a glimpse of …"
+  },
+  {
+   "what": "action",
+   "value": {
+    "trick": "glimpse",
+    "figure": "thing_0",
+    "secs": 3
+   },
+   "text": "Scare: a glimpse of thing_0 (3 s)"
+  },
+  {
+   "what": "action",
+   "value": {
+    "trick": "jumpscare"
+   },
+   "text": "Scare: a jump scare: …"
+  },
+  {
+   "what": "action",
+   "value": {
+    "trick": "jumpscare",
+    "figure": "thing_0"
+   },
+   "text": "Scare: a jump scare: thing_0"
+  },
+  {
+   "what": "action",
+   "value": {
+    "trick": "swap"
+   },
+   "text": "Scare: while unseen, … becomes …"
+  },
+  {
+   "what": "action",
+   "value": {
+    "trick": "swap",
+    "hide": "thing_0",
+    "show": "thing_1"
+   },
+   "text": "Scare: while unseen, thing_0 becomes thing_1"
+  },
+  {
+   "what": "action",
+   "value": {
+    "trick": "loop_hall"
+   },
+   "text": "Scare: the hall loops: the end of … leads back to …"
+  },
+  {
+   "what": "action",
+   "value": {
+    "trick": "loop_hall",
+    "trigger": "zone_0",
+    "back_to": "spot_1"
+   },
+   "text": "Scare: the hall loops: the end of zone_0 leads back to spot_1"
+  },
+  {
+   "what": "action",
+   "value": {
+    "trick": "cut_away"
+   },
+   "text": "Scare: a cut away to …"
+  },
+  {
+   "what": "action",
+   "value": {
+    "trick": "cut_away",
+    "lookat": "thing_0",
+    "then": "words 1"
+   },
+   "text": "Scare: a cut away to thing_0"
+  },
+  {
+   "what": "action",
+   "value": {
+    "behave": "",
+    "as": "idle",
+    "at": ""
+   },
+   "text": "…: stands at …"
+  },
+  {
+   "what": "action",
+   "value": {
+    "behave": "mari",
+    "as": "idle"
+   },
+   "text": "mari: stands at …"
+  },
+  {
+   "what": "action",
+   "value": {
+    "behave": "mari",
+    "as": "idle",
+    "sees": true,
+    "at": "spot_0",
+    "pose": "pose_1",
+    "face": "facing_2",
+    "motion": "motion_3"
+   },
+   "text": "mari: stands at spot_0 (pose_1), facing facing_2 · playing motion_3 · watches for you"
+  },
+  {
+   "what": "action",
+   "value": {
+    "behave": "mari",
+    "as": "sit"
+   },
+   "text": "mari: sits at …"
+  },
+  {
+   "what": "action",
+   "value": {
+    "behave": "mari",
+    "as": "sit",
+    "sees": true,
+    "at": "spot_0",
+    "pose": "pose_1",
+    "motion": "motion_2"
+   },
+   "text": "mari: sits at spot_0 · playing motion_2 · watches for you"
+  },
+  {
+   "what": "action",
+   "value": {
+    "behave": "mari",
+    "as": "path"
+   },
+   "text": "mari: walks a route"
+  },
+  {
+   "what": "action",
+   "value": {
+    "behave": "mari",
+    "as": "path",
+    "sees": true,
+    "route": "route_0",
+    "mode": "loop",
+    "speed": 4,
+    "from": "nearest",
+    "motion": "motion_4"
+   },
+   "text": "mari: walks route_0 (loop) · playing motion_4 · watches for you"
+  },
+  {
+   "what": "action",
+   "value": {
+    "behave": "mari",
+    "as": "patrol"
+   },
+   "text": "mari: patrols …"
+  },
+  {
+   "what": "action",
+   "value": {
+    "behave": "mari",
+    "as": "patrol",
+    "sees": true,
+    "routes": [
+     "route_a",
+     "route_b"
+    ],
+    "pick": "order",
+    "speed": 4,
+    "motion": "motion_3"
+   },
+   "text": "mari: patrols route_a, route_b · playing motion_3 · watches for you"
+  },
+  {
+   "what": "action",
+   "value": {
+    "behave": "mari",
+    "as": "go"
+   },
+   "text": "mari: walks to …"
+  },
+  {
+   "what": "action",
+   "value": {
+    "behave": "mari",
+    "as": "go",
+    "sees": true,
+    "to": "spot_0",
+    "then": "idle",
+    "via": [
+     "spot_a",
+     "spot_b"
+    ],
+    "face": "facing_3",
+    "speed": 6,
+    "motion": "motion_5"
+   },
+   "text": "mari: walks to spot_0 by way of spot_a, spot_b · playing motion_5 · watches for you"
+  },
+  {
+   "what": "action",
+   "value": {
+    "behave": "mari",
+    "as": "off"
+   },
+   "text": "mari: leaves"
+  },
+  {
+   "what": "action",
+   "value": {
+    "behave": "mari",
+    "as": "off",
+    "sees": true
+   },
+   "text": "mari: leaves · watches for you"
+  },
+  {
+   "what": "action",
+   "value": {
+    "expr": "",
+    "who": ""
+   },
+   "text": "…'s face: none"
+  },
+  {
+   "what": "action",
+   "value": {
+    "expr": "expr_1",
+    "who": "cast_0",
+    "rest": true,
+    "loop": true,
+    "w": 6
+   },
+   "text": "Cast_0's face at rest: expr_1, over and over"
+  },
+  {
+   "what": "action",
+   "value": {
+    "expr": "expr_1",
+    "who": "cast_0",
+    "loop": true,
+    "w": 6
+   },
+   "text": "Cast_0's face: expr_1, over and over"
+  },
+  {
+   "what": "action",
+   "value": {
+    "expr": "expr_1",
+    "who": "cast_0",
+    "rest": true,
+    "w": 6
+   },
+   "text": "Cast_0's face at rest: expr_1"
+  },
+  {
+   "what": "action",
+   "value": {
+    "expr": "expr_1",
+    "who": "cast_0",
+    "rest": true,
+    "loop": true
+   },
+   "text": "Cast_0's face at rest: expr_1, over and over"
+  },
+  {
+   "what": "action",
+   "value": {
+    "anim": "",
+    "clip": ""
+   },
+   "text": "Animate …: …"
+  },
+  {
+   "what": "action",
+   "value": {
+    "anim": "thing_0",
+    "clip": "motion_1"
+   },
+   "text": "Animate thing_0: motion_1"
+  },
+  {
+   "what": "action",
+   "value": {
+    "shot": "closeup",
+    "who": ""
+   },
+   "text": "Close-up on …"
+  },
+  {
+   "what": "action",
+   "value": {
+    "shot": "closeup",
+    "who": "cast_1",
+    "line": "words 2"
+   },
+   "text": "Close-up on cast_1 for words 2"
+  },
+  {
+   "what": "action",
+   "value": {
+    "shot": "closeup",
+    "who": "cast_1"
+   },
+   "text": "Close-up on cast_1"
+  },
+  {
+   "what": "action",
+   "value": {
+    "wait": 1
+   },
+   "text": "Wait 1 s"
+  },
+  {
+   "what": "action",
+   "value": {
+    "wait": 2
+   },
+   "text": "Wait 2 s"
+  },
+  {
+   "what": "action",
+   "value": {
+    "skip": 3600
+   },
+   "text": "Time skips 1 h"
+  },
+  {
+   "what": "action",
+   "value": {
+    "skip": 2
+   },
+   "text": "Time skips 2 s"
+  },
+  {
+   "what": "action",
+   "value": {
+    "fade": "out",
+    "secs": 1
+   },
+   "text": "Fade out (1 s)"
+  },
+  {
+   "what": "action",
+   "value": {
+    "fade": "out",
+    "secs": 3
+   },
+   "text": "Fade out (3 s)"
+  },
+  {
+   "what": "action",
+   "value": {
+    "fade": "in",
+    "secs": 3
+   },
+   "text": "Fade in (3 s)"
+  },
+  {
+   "what": "action",
+   "value": {
+    "fade": "out"
+   },
+   "text": "Fade out (1 s)"
+  },
+  {
+   "what": "action",
+   "value": {
+    "lookat": "",
+    "secs": 1
+   },
+   "text": "Turn the view to … (1 s)"
+  },
+  {
+   "what": "action",
+   "value": {
+    "lookat": "thing_0",
+    "secs": 3,
+    "lock": true
+   },
+   "text": "Turn the view to thing_0 (3 s)"
+  },
+  {
+   "what": "action",
+   "value": {
+    "lookat": "thing_0",
+    "lock": true
+   },
+   "text": "Turn the view to thing_0 (1 s)"
+  },
+  {
+   "what": "action",
+   "value": {
+    "lookat": "thing_0",
+    "secs": 3
+   },
+   "text": "Turn the view to thing_0 (3 s)"
+  },
+  {
+   "what": "action",
+   "value": {
+    "chapter": ""
+   },
+   "text": "Chapter: “…”"
+  },
+  {
+   "what": "action",
+   "value": {
+    "chapter": "words 0",
+    "sub": "words 1",
+    "time": "day",
+    "secs": 5
+   },
+   "text": "Chapter: “words 0” · words 1, then day"
+  },
+  {
+   "what": "action",
+   "value": {
+    "chapter": "words 0",
+    "sub": "words 1",
+    "time": "dusk",
+    "secs": 5
+   },
+   "text": "Chapter: “words 0” · words 1, then dusk"
+  },
+  {
+   "what": "action",
+   "value": {
+    "chapter": "words 0",
+    "sub": "words 1",
+    "time": "night",
+    "secs": 5
+   },
+   "text": "Chapter: “words 0” · words 1, then night"
+  },
+  {
+   "what": "action",
+   "value": {
+    "chapter": "words 0",
+    "time": "day",
+    "secs": 5
+   },
+   "text": "Chapter: “words 0”, then day"
+  },
+  {
+   "what": "action",
+   "value": {
+    "chapter": "words 0",
+    "sub": "words 1",
+    "secs": 5
+   },
+   "text": "Chapter: “words 0” · words 1"
+  },
+  {
+   "what": "action",
+   "value": {
+    "chapter": "words 0",
+    "sub": "words 1",
+    "time": "day"
+   },
+   "text": "Chapter: “words 0” · words 1, then day"
+  },
+  {
+   "what": "action",
+   "value": {
+    "seq": ""
+   },
+   "text": "Sequence …"
+  },
+  {
+   "what": "action",
+   "value": {
+    "seq": "words 0"
+   },
+   "text": "Sequence words 0"
+  },
+  {
+   "what": "action",
+   "value": {
+    "checkpoint": true
+   },
+   "text": "Checkpoint (save here)"
+  },
+  {
+   "what": "action",
+   "value": {
+    "done": true
+   },
+   "text": "End the task"
+  },
+  {
+   "what": "action",
+   "value": {
+    "stalker": "patrol"
+   },
+   "text": "Stalker: patrol"
+  },
+  {
+   "what": "action",
+   "value": {
+    "stalker": "spawn",
+    "at": "spot_1",
+    "route": "route_2"
+   },
+   "text": "Stalker: spawn"
+  },
+  {
+   "what": "action",
+   "value": {
+    "stalker": "despawn",
+    "at": "spot_1",
+    "route": "route_2"
+   },
+   "text": "Stalker: despawn"
+  },
+  {
+   "what": "action",
+   "value": {
+    "stalker": "patrol",
+    "at": "spot_1",
+    "route": "route_2"
+   },
+   "text": "Stalker: patrol"
+  },
+  {
+   "what": "action",
+   "value": {
+    "stalker": "hunt",
+    "at": "spot_1",
+    "route": "route_2"
+   },
+   "text": "Stalker: hunt"
+  },
+  {
+   "what": "action",
+   "value": {
+    "stalker": "chase",
+    "at": "spot_1",
+    "route": "route_2"
+   },
+   "text": "Stalker: chase"
+  },
+  {
+   "what": "action",
+   "value": {
+    "stalker": "spawn",
+    "route": "route_2"
+   },
+   "text": "Stalker: spawn"
+  },
+  {
+   "what": "action",
+   "value": {
+    "stalker": "spawn",
+    "at": "spot_1"
+   },
+   "text": "Stalker: spawn"
+  },
+  {
+   "what": "action",
+   "value": {
+    "karma": -1
+   },
+   "text": "Karma -1"
+  },
+  {
+   "what": "action",
+   "value": {
+    "karma": {
+     "trust": 2,
+     "fear": -1
+    }
+   },
+   "text": "Karma trust +2, fear -1"
+  },
+  {
+   "what": "action",
+   "value": {
+    "count": "found",
+    "add": -2
+   },
+   "text": "Counter found -2"
+  },
+  {
+   "what": "action",
+   "value": {
+    "count": "found",
+    "set": 0
+   },
+   "text": "Counter found = 0"
+  },
+  {
+   "what": "action",
+   "value": {
+    "untodo": "mop_floor"
+   },
+   "text": "Take mop_floor off the list"
+  },
+  {
+   "what": "action",
+   "value": {
+    "skip": 90
+   },
+   "text": "Time skips 2 min"
+  },
+  {
+   "what": "action",
+   "value": {
+    "skip": 5400
+   },
+   "text": "Time skips 1 h 30 min"
+  },
+  {
+   "what": "action",
+   "value": {
+    "skip": 7200
+   },
+   "text": "Time skips 2 h"
+  },
+  {
+   "what": "action",
+   "value": {
+    "chapter": "Night 2",
+    "save": false
+   },
+   "text": "Chapter: “Night 2” (no autosave)"
+  },
+  {
+   "what": "action",
+   "value": {
+    "behave": "mari",
+    "as": "idle",
+    "at": "sofa",
+    "face": "player"
+   },
+   "text": "mari: stands at sofa, facing you"
+  },
+  {
+   "what": "action",
+   "value": {
+    "behave": "mari",
+    "as": "patrol",
+    "routes": [
+     "a",
+     "b"
+    ],
+    "pick": "random"
+   },
+   "text": "mari: patrols a, b (random)"
+  },
+  {
+   "what": "action",
+   "value": {
+    "behave": "mari",
+    "as": "go",
+    "to": "door",
+    "then": "sit",
+    "via": []
+   },
+   "text": "mari: walks to door and sits"
+  },
+  {
+   "what": "action",
+   "value": {
+    "torch": "nonsense"
+   },
+   "text": "Flashlight: nonsense"
+  },
+  {
+   "what": "action",
+   "value": {
+    "skin": "mari"
+   },
+   "text": "Mari's skin: …"
+  },
+  {
+   "what": "action",
+   "value": {
+    "fade": "in",
+    "secs": 0
+   },
+   "text": "Fade in (0 s)"
+  },
+  {
+   "what": "action",
+   "value": {
+    "wait": 1.5
+   },
+   "text": "Wait 1.5 s"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "start": true
+   },
+   "text": "the task starts"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "enter": ""
+   },
+   "text": "the player enters …"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "enter": "zone_0"
+   },
+   "text": "the player enters zone_0"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "exit": ""
+   },
+   "text": "the player leaves …"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "exit": "zone_0"
+   },
+   "text": "the player leaves zone_0"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "use": ""
+   },
+   "text": "the player uses …"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "use": "thing_0"
+   },
+   "text": "the player uses thing_0"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "pickup": ""
+   },
+   "text": "the player picks up …"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "pickup": "item_0"
+   },
+   "text": "the player picks up item_0"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "read": ""
+   },
+   "text": "the player reads …"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "read": "note_0"
+   },
+   "text": "the player reads note_0"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "look": "",
+    "secs": 1
+   },
+   "text": "the player looks at … for 1 s"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "look": "thing_0",
+    "secs": 3,
+    "within": 4
+   },
+   "text": "the player looks at thing_0 for 3 s"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "look": "thing_0",
+    "within": 4
+   },
+   "text": "the player looks at thing_0 for 1 s"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "look": "thing_0",
+    "secs": 3
+   },
+   "text": "the player looks at thing_0 for 3 s"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "after": "",
+    "secs": 2
+   },
+   "text": "2 s after …"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "after": "beat_0",
+    "secs": 3
+   },
+   "text": "3 s after beat_0"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "after": "beat_0"
+   },
+   "text": "after beat_0"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "flag": ""
+   },
+   "text": "flag … is set"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "flag": "flag_0"
+   },
+   "text": "flag flag_0 is set"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "caught": true
+   },
+   "text": "the player is caught"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "caught": "one_0"
+   },
+   "text": "the player is caught by one_0"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "hidden": true
+   },
+   "text": "the player is hidden"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "hidden": "locker_0"
+   },
+   "text": "the player is hidden in locker_0"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "answered": ""
+   },
+   "text": "… is answered"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "answered": "ask_0",
+    "option": "askanswer_1"
+   },
+   "text": "ask_0 is answered “askanswer_1”"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "answered": "ask_0"
+   },
+   "text": "ask_0 is answered"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "carrying": true
+   },
+   "text": "the player is carrying anything"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "carrying": "carry_0"
+   },
+   "text": "the player is carrying carry_0"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "dropped": ""
+   },
+   "text": "… is put down"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "dropped": "carry_0",
+    "in": "zone_1"
+   },
+   "text": "carry_0 is put down in zone_1"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "dropped": "carry_0"
+   },
+   "text": "carry_0 is put down"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "played": ""
+   },
+   "text": "the game at … ends"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "played": "table_0",
+    "result": "words 1"
+   },
+   "text": "the game at table_0 ends “words 1”"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "played": "table_0"
+   },
+   "text": "the game at table_0 ends"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "rolled": ""
+   },
+   "text": "… rolls"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "rolled": "die_0",
+    "face": 3,
+    "at_least": 4
+   },
+   "text": "die_0 rolls a 3"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "rolled": "die_0",
+    "at_least": 4
+   },
+   "text": "die_0 rolls 4 or more"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "rolled": "die_0",
+    "face": 3
+   },
+   "text": "die_0 rolls a 3"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "power": "on"
+   },
+   "text": "the power is on"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "power": "off"
+   },
+   "text": "the power is off"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "locked": ""
+   },
+   "text": "… is locked"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "locked": "door_0"
+   },
+   "text": "door_0 is locked"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "peeping": ""
+   },
+   "text": "the player looks through …'s peephole"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "peeping": "door_0"
+   },
+   "text": "the player looks through door_0's peephole"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "torch": "on"
+   },
+   "text": "the player switches the flashlight on"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "torch": "off"
+   },
+   "text": "the player switches the flashlight off"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "state": "",
+    "is": ""
+   },
+   "text": "… is …"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "state": "life_0",
+    "is": "lifestate_1"
+   },
+   "text": "life_0 is lifestate_1"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "gave": "",
+    "to": ""
+   },
+   "text": "… is given to …"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "gave": "item_0",
+    "to": "cast_1",
+    "except": "item_2"
+   },
+   "text": "item_0 but item_2 is given to cast_1"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "gave": "item_0",
+    "to": "cast_1"
+   },
+   "text": "item_0 is given to cast_1"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "arrived": ""
+   },
+   "text": "… gets to where she was going"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "arrived": "cast_0",
+    "at": "spot_1"
+   },
+   "text": "cast_0 gets to spot_1"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "arrived": "cast_0"
+   },
+   "text": "cast_0 gets to where she was going"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "ticked": true
+   },
+   "text": "the to-do list is through"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "ticked": "todo_0"
+   },
+   "text": "todo_0 is ticked"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "failed": true
+   },
+   "text": "a task on the list is failed"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "failed": "todo_0"
+   },
+   "text": "todo_0 is failed"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "all": [
+     {
+      "start": true
+     }
+    ]
+   },
+   "text": "all of: the task starts"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "any": [
+     {
+      "start": true
+     }
+    ]
+   },
+   "text": "any of: the task starts"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "caught": "mari"
+   },
+   "text": "the player is caught by mari"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "hidden": "wardrobe"
+   },
+   "text": "the player is hidden in wardrobe"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "carrying": "box"
+   },
+   "text": "the player is carrying box"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "gave": "*",
+    "to": "mari",
+    "except": "mug"
+   },
+   "text": "anything but mug is given to mari"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "ticked": "find_key"
+   },
+   "text": "find_key is ticked"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "failed": "find_key"
+   },
+   "text": "find_key is failed"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "all": [
+     {
+      "enter": "hall"
+     },
+     {
+      "flag": "lit"
+     }
+    ]
+   },
+   "text": "all of: the player enters hall and flag lit is set"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "any": [
+     {
+      "use": "kettle"
+     },
+     {
+      "read": "letter"
+     }
+    ]
+   },
+   "text": "any of: the player uses kettle or the player reads letter"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "rolled": "die",
+    "at_least": 4
+   },
+   "text": "die rolls 4 or more"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "look": "door",
+    "secs": 0
+   },
+   "text": "the player looks at door for 0 s"
+  },
+  {
+   "what": "cond",
+   "value": "read:letter",
+   "text": "they've read letter",
+   "mode": "all",
+   "clauses": [
+    "they've read letter"
+   ],
+   "json": "read:letter"
+  },
+  {
+   "what": "cond",
+   "value": "!read:letter",
+   "text": "they haven't read letter",
+   "mode": "all",
+   "clauses": [
+    "they haven't read letter"
+   ],
+   "json": "!read:letter"
+  },
+  {
+   "what": "cond",
+   "value": "used:kettle",
+   "text": "they've used kettle",
+   "mode": "all",
+   "clauses": [
+    "they've used kettle"
+   ],
+   "json": "used:kettle"
+  },
+  {
+   "what": "cond",
+   "value": "gave:mug:mari",
+   "text": "they've given mug to mari",
+   "mode": "all",
+   "clauses": [
+    "they've given mug to mari"
+   ],
+   "json": "gave:mug:mari"
+  },
+  {
+   "what": "cond",
+   "value": "!gave:mug",
+   "text": "they haven't given mug",
+   "mode": "all",
+   "clauses": [
+    "they haven't given mug"
+   ],
+   "json": "!gave:mug"
+  },
+  {
+   "what": "cond",
+   "value": "answered:t_open:yes",
+   "text": "they've answered t_open with yes",
+   "mode": "all",
+   "clauses": [
+    "they've answered t_open with yes"
+   ],
+   "json": "answered:t_open:yes"
+  },
+  {
+   "what": "cond",
+   "value": "result:q_hide:found",
+   "text": "q_hide's round ended found",
+   "mode": "all",
+   "clauses": [
+    "q_hide's round ended found"
+   ],
+   "json": "result:q_hide:found"
+  },
+  {
+   "what": "cond",
+   "value": "!result:q_hide:found",
+   "text": "q_hide's round didn't end found",
+   "mode": "all",
+   "clauses": [
+    "q_hide's round didn't end found"
+   ],
+   "json": "!result:q_hide:found"
+  },
+  {
+   "what": "cond",
+   "value": "@q_key",
+   "text": "they've reached q_key",
+   "mode": "all",
+   "clauses": [
+    "they've reached q_key"
+   ],
+   "json": "@q_key"
+  },
+  {
+   "what": "cond",
+   "value": "saw_figure",
+   "text": "saw_figure is set",
+   "mode": "all",
+   "clauses": [
+    "saw_figure is set"
+   ],
+   "json": "saw_figure"
+  },
+  {
+   "what": "cond",
+   "value": "!saw_figure",
+   "text": "saw_figure isn't set",
+   "mode": "all",
+   "clauses": [
+    "saw_figure isn't set"
+   ],
+   "json": "!saw_figure"
+  },
+  {
+   "what": "cond",
+   "value": "step:find_key",
+   "text": "they've done the step find_key",
+   "mode": "all",
+   "clauses": [
+    "they've done the step find_key"
+   ],
+   "json": "step:find_key"
+  },
+  {
+   "what": "cond",
+   "value": "done:q_key",
+   "text": "they've finished q_key",
+   "mode": "all",
+   "clauses": [
+    "they've finished q_key"
+   ],
+   "json": "done:q_key"
+  },
+  {
+   "what": "cond",
+   "value": {
+    "quest": "q_key"
+   },
+   "text": "quest q_key is on",
+   "mode": "all",
+   "clauses": [
+    "quest q_key is on"
+   ],
+   "json": {
+    "quest": "q_key"
+   }
+  },
+  {
+   "what": "cond",
+   "value": {
+    "not": {
+     "quest": "q_key"
+    }
+   },
+   "text": "quest q_key isn't on",
+   "mode": "all",
+   "clauses": [
+    "quest q_key isn't on"
+   ],
+   "json": {
+    "not": {
+     "quest": "q_key"
+    }
+   }
+  },
+  {
+   "what": "cond",
+   "value": {
+    "done": "q_key"
+   },
+   "text": "quest q_key is done",
+   "mode": "all",
+   "clauses": [
+    "quest q_key is done"
+   ],
+   "json": {
+    "done": "q_key"
+   }
+  },
+  {
+   "what": "cond",
+   "value": {
+    "step": "find_key"
+   },
+   "text": "step find_key is ticked",
+   "mode": "all",
+   "clauses": [
+    "step find_key is ticked"
+   ],
+   "json": {
+    "step": "find_key"
+   }
+  },
+  {
+   "what": "cond",
+   "value": {
+    "has": "mug"
+   },
+   "text": "they hold mug",
+   "mode": "all",
+   "clauses": [
+    "they hold mug"
+   ],
+   "json": {
+    "has": "mug"
+   }
+  },
+  {
+   "what": "cond",
+   "value": {
+    "not": {
+     "has": "mug"
+    }
+   },
+   "text": "they don't hold mug",
+   "mode": "all",
+   "clauses": [
+    "they don't hold mug"
+   ],
+   "json": {
+    "not": {
+     "has": "mug"
+    }
+   }
+  },
+  {
+   "what": "cond",
+   "value": {
+    "ending": "e_morning"
+   },
+   "text": "ending e_morning was reached",
+   "mode": "all",
+   "clauses": [
+    "ending e_morning was reached"
+   ],
+   "json": {
+    "ending": "e_morning"
+   }
+  },
+  {
+   "what": "cond",
+   "value": {
+    "count": "found",
+    "at_least": 3
+   },
+   "text": "found ≥ 3",
+   "mode": "all",
+   "clauses": [
+    "found ≥ 3"
+   ],
+   "json": {
+    "count": "found",
+    "at_least": 3
+   }
+  },
+  {
+   "what": "cond",
+   "value": {
+    "count": "found",
+    "at_most": 1
+   },
+   "text": "found ≤ 1",
+   "mode": "all",
+   "clauses": [
+    "found ≤ 1"
+   ],
+   "json": {
+    "count": "found",
+    "at_most": 1
+   }
+  },
+  {
+   "what": "cond",
+   "value": {
+    "not": {
+     "count": "found",
+     "at_least": 2,
+     "at_most": 4
+    }
+   },
+   "text": "not found ≥ 2 and ≤ 4",
+   "mode": "all",
+   "clauses": [
+    "not found ≥ 2 and ≤ 4"
+   ],
+   "json": {
+    "not": {
+     "count": "found",
+     "at_least": 2,
+     "at_most": 4
+    }
+   }
+  },
+  {
+   "what": "cond",
+   "value": {
+    "karma": {
+     "at_least": 2
+    }
+   },
+   "text": "karma ≥ 2",
+   "mode": "all",
+   "clauses": [
+    "karma ≥ 2"
+   ],
+   "json": {
+    "karma": {
+     "at_least": 2
+    }
+   }
+  },
+  {
+   "what": "cond",
+   "value": {
+    "karma": {
+     "at_most": -1
+    }
+   },
+   "text": "karma ≤ -1",
+   "mode": "all",
+   "clauses": [
+    "karma ≤ -1"
+   ],
+   "json": {
+    "karma": {
+     "at_most": -1
+    }
+   }
+  },
+  {
+   "what": "cond",
+   "value": {
+    "all": [
+     "read:letter",
+     {
+      "step": "find_key"
+     }
+    ]
+   },
+   "text": "they've read letter and step find_key is ticked",
+   "mode": "all",
+   "clauses": [
+    "they've read letter",
+    "step find_key is ticked"
+   ],
+   "json": {
+    "all": [
+     "read:letter",
+     {
+      "step": "find_key"
+     }
+    ]
+   }
+  },
+  {
+   "what": "cond",
+   "value": {
+    "any": [
+     "@q_key",
+     {
+      "ending": "e_morning"
+     }
+    ]
+   },
+   "text": "they've reached q_key or ending e_morning was reached",
+   "mode": "any",
+   "clauses": [
+    "they've reached q_key",
+    "ending e_morning was reached"
+   ],
+   "json": {
+    "any": [
+     "@q_key",
+     {
+      "ending": "e_morning"
+     }
+    ]
+   }
+  },
+  {
+   "what": "cond",
+   "value": [
+    "picked:mug",
+    "!entered:hall"
+   ],
+   "text": "they've picked up mug and they haven't been in hall",
+   "mode": "all",
+   "clauses": [
+    "they've picked up mug",
+    "they haven't been in hall"
+   ],
+   "json": {
+    "all": [
+     "picked:mug",
+     "!entered:hall"
+    ]
+   }
+  }
+ ]
+}

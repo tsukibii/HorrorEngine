@@ -19,6 +19,8 @@ var out := ""
 var dock = null
 var panel = null
 var model: MeshInstance3D = null
+var split: Node = null              # the editor's bottom panel's split, moved for the Story tab's picture
+var split_was := 0
 var made: Array = []
 
 
@@ -236,5 +238,38 @@ func _process(dt: float) -> void:
 			if t - at < 0.5:
 				return
 			_shot("e_panel_player", _panel_rect())
+			panel.show_page("story")                       # the Story tab: the first quest, the user's example open
+			panel.story.quest = "q_key"
+			panel.story.opened = "m:figure_scare"
+			panel.story.refresh()
+			at = t
+			phase = 12
+		12:
+			if t - at < 2.0:
+				return
+			split = panel.get_parent()                     # the editor's bottom panel made taller for it: the whole moment in view
+			while split != null and not (split is SplitContainer and split.vertical):
+				split = split.get_parent()
+			if split != null:
+				split_was = split.split_offset
+				split.split_offset = split_was - int(280 * EditorInterface.get_editor_scale())
+			at = t
+			phase = 13
+		13:
+			if t - at < 1.0:
+				return
+			var box: Control = panel.story.mid.find_child("Moment_figure_scare", true, false)
+			var sc: ScrollContainer = panel.story.mid_scroll
+			if box != null:                               # the moment's top at the top of the view
+				sc.scroll_vertical = int(box.get_global_rect().position.y - sc.get_global_rect().position.y + sc.scroll_vertical - 8 * EditorInterface.get_editor_scale())
+			at = t
+			phase = 14
+		14:
+			if t - at < 0.5:
+				return
+			_shot("e_panel_story", _panel_rect())
+			if split != null:
+				split.split_offset = split_was
+			panel.show_page("build")
 			print("GUIDEEDITOR " + JSON.stringify({"made": made}))
 			get_tree().quit()

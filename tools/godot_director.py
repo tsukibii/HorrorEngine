@@ -418,6 +418,7 @@ def guide():
             if f.stem not in made:
                 f.unlink()
                 print(f"  {f.name}: not made any more, removed")
+        guide_sizes()
     print(f"  the game: {', '.join(game.get('made', []))}")
     print(f"  the editor: {', '.join(editor.get('made', []))}")
     print(f"  the Manager: {', '.join(manager)}")
@@ -440,10 +441,46 @@ def check(keep=False):
         ok = False
     ok = kimodo_check(out) and ok
     ok = alone_check(out) and ok
+    ok = words_check(out) and ok
     ok = editor_check(out) and ok
     ok = guide_check(out) and ok
     print("DIRECTOR ok" if ok else "DIRECTOR FAIL")
     return 0 if ok else 1
+
+
+def jpeg_size(p):
+    """A JPEG's width and height, from its frame header (None if it has none)."""
+    b = Path(p).read_bytes()
+    i = 2
+    while i + 9 < len(b):
+        if b[i] != 0xFF:
+            i += 1
+            continue
+        m = b[i + 1]
+        if m == 0xFF or m == 0x01 or 0xD0 <= m <= 0xD9:
+            i += 2 if m != 0xFF else 1
+            continue
+        if m in (0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7, 0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF):
+            return int.from_bytes(b[i + 7:i + 9], "big"), int.from_bytes(b[i + 5:i + 7], "big")
+        i += 2 + int.from_bytes(b[i + 2:i + 4], "big")
+    return None
+
+
+IMG_TAG = re.compile(r'<img src="([^"]+\.jpg)" width="(\d+)" height="(\d+)"')
+
+
+def guide_sizes():
+    """The guide's pictures at their own sizes in the page (its width and height as each picture is)."""
+    page = GUIDES / "director" / "index.html"
+    html = page.read_text(encoding="utf-8")
+
+    def fix(m):
+        wh = jpeg_size(page.parent / m.group(1)) if (page.parent / m.group(1)).exists() else None
+        return f'<img src="{m.group(1)}" width="{wh[0]}" height="{wh[1]}"' if wh else m.group(0)
+    new = IMG_TAG.sub(fix, html)
+    if new != html:
+        page.write_text(new, encoding="utf-8")
+        print("  the page's picture sizes brought up to date")
 
 
 def guide_check(out):
@@ -462,6 +499,9 @@ def guide_check(out):
     bad += [l for l in links if not l.startswith(("#", "http:", "https:")) and not (page.parent / l.split("#")[0]).exists()]
     unshown = sorted(p.name for p in (page.parent / "img").glob("*.jpg") if f"img/{p.name}" not in shown)
     copied = (out / "guide" / "index.html").exists() and (out / "guide" / ".gdignore").exists()
+    sized = [m.group(1) for m in IMG_TAG.finditer(html) if (page.parent / m.group(1)).exists()
+             and jpeg_size(page.parent / m.group(1)) != (int(m.group(2)), int(m.group(3)))]
+    bad += [f"{s} (its size in the page)" for s in sized]
     ok = not bad and not unshown and len(shown) >= 20 and copied
     print(("  ok  " if ok else "  BAD ") + "the guide: %d pictures, %d links%s%s%s" % (len(shown), len(links), "; not there: %s" % bad if bad else "",
         "; pictures it doesn't show: %s" % unshown if unshown else "", "" if copied else "; the project has no guide/ with its .gdignore"))
@@ -529,6 +569,22 @@ def alone_check(out):
     return ok
 
 
+def words_check(out):
+    """The panel's words against the Manager's: story/commands.json is what tools/director_manager/commands_json.mjs
+    writes from the desk's commands.js and the Manager's words.js (COMMANDSJSON), and every example in it reads the same
+    in Godot (story/commands.gd: tests/words_check.gd)."""
+    r = subprocess.run(["node", str(ROOT / "tools" / "director_manager" / "commands_json.mjs"), "--check"], capture_output=True, text=True)
+    fresh = "COMMANDSJSON ok" in r.stdout
+    code, text = run_godot(["--headless", "--path", str(out), "-s", "res://addons/horrorstudio_director/tests/words_check.gd"], timeout=300)
+    line = next((l for l in quiet(text).splitlines() if l.startswith("WORDSCHECK ")), None)
+    w = json.loads(line[len("WORDSCHECK "):]) if line else {}
+    good = fresh and w.get("examples", 0) > 200 and w.get("differences") == 0
+    print(("  ok  " if good else "  BAD ") + "the Story tab's words: story/commands.json up to date (%s), its %d commands, %d triggers and %d examples read the same in Godot (%s differ)%s"
+          % ((r.stdout or r.stderr).strip()[:120], w.get("actions", 0), w.get("triggers", 0), w.get("examples", 0), w.get("differences", "?"),
+             "" if good else " " + json.dumps(w.get("first", []))[:1500]))
+    return good
+
+
 def editor_check(out):
     """The plugin in the editor itself: tests/editor_check.gd installed as a plugin of its own beside the Director's, the
     editor opened on the sample (headless: the dock's logic, no pictures), its report read."""
@@ -585,6 +641,21 @@ def editor_check(out):
          and rep.get("player_item_undone") is True and rep.get("player_play_button") is True),
         ("a checkpoint placed, an area of the story's (%s); undone (%s)" % (rep.get("player_checkpoint"), rep.get("player_checkpoint_undone")),
          rep.get("player_checkpoint") is True and rep.get("player_checkpoint_undone") is True),
+        ("the Story tab: the quests in play order, the running game's marks (%s), its step done crossed out (%s)" % (", ".join(rep.get("story_quests", [])), rep.get("story_struck")),
+         rep.get("story_quests") == ["✓ 1 · The key", "2 · A drink", "3 · Mari", "4 · The bedroom", "5 · Something in the hall"] and rep.get("story_struck") is True),
+        ("the drink errand as sentences: its step, the answer to the wrong thing, the moments (%d lines: %s)" % (len(rep.get("story_lines", [])), " | ".join(rep.get("story_lines", [])[:2])),
+         any(l.startswith("WHEN   Mug is given to Mari, tick “Give Mari the mug”") for l in rep.get("story_lines", []))
+         and any("anything else is given to Mari, Mari says “Nah, that's not what I want.”" in l for l in rep.get("story_lines", []))
+         and any("the player enters Kitchen doorway, if they've read letter" in l for l in rep.get("story_lines", []))),
+        ("a ready-made jumpscare clicked with the kitchen's doorway selected: a moment on it in this quest (%s), WHEN %s" % (rep.get("story_ready"), rep.get("story_when")),
+         rep.get("story_ready") is True and rep.get("story_when") == "the player enters"),
+        ("a clause, a command and its words from the pickers (the words saved without drawing the tab again: %s), every time (%s); it reads as: %s" % (rep.get("story_typed"), rep.get("story_moment"), rep.get("story_reads")),
+         rep.get("story_moment") is True and rep.get("story_typed") is True
+         and rep.get("story_reads") == "When the player enters Kitchen doorway, if they've read letter: scare: a jump scare: … and think “Who's there?”. Every time."),
+        ("Try this moment: the quest, the fact its ONLY IF asks for, the player by the doorway (%s); all of it undone, the file as it was (%s)" % (rep.get("story_try"), rep.get("story_undone")),
+         rep.get("story_try") is True and rep.get("story_undone") is True),
+        ("a ready-made moment dropped inside the doorway in the 3D view lands on it, the new area taken back (%s); undone (%s)" % (rep.get("story_dropped"), rep.get("story_drop_undone")),
+         rep.get("story_dropped") is True and rep.get("story_drop_undone") is True),
         ("a node's id follows its renames while it's the name's (%s), one typed by hand stays (%s)" % (rep.get("id_follows"), rep.get("id_kept")), rep.get("id_follows") == ["hs_thing", "old_key"] and rep.get("id_kept") == "my_key"),
         ("saved: the new nodes in the file, no story nodes, nothing the nodes make for themselves", rep.get("saved") is True and rep.get("saved_task") is True and rep.get("saved_nothing_made") is True),
         ("no script errors in the editor", not errs),

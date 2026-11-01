@@ -279,7 +279,10 @@ func _unlink(n: Node) -> void:
 	if n is Path3D and n.curve != null:
 		n.curve = n.curve.duplicate()
 	if pending_scare is Dictionary and HSDirector.class_of(n) == "HSTrigger" and Time.get_ticks_msec() - int(pending_scare["at"]) < 30000 and panel != null:
-		panel.build.scare_landed(n, pending_scare["item"])   # a scare card dropped into the view: its area, now its moment
+		if pending_scare.get("from") == "story":
+			panel.story.landed(n, pending_scare)        # the Story tab's: on the area or door it fell on, or its own area
+		else:
+			panel.build.scare_landed(n, pending_scare["item"])   # a scare card dropped into the view: its area, now its moment
 	pending_scare = null
 	if dock != null:
 		dock.refresh()

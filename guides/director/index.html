@@ -165,11 +165,11 @@ player can do, where its steam comes out; its name in the story and what in the 
 <span class="ui">Make it plain again</span> takes the thing away and leaves your model. Godot's own
 <span class="ui">Add Child Node</span> works too (search for "HS"). Select a node and the Inspector shows its
 settings, only the ones that matter for what it is.</p>
-<figure class="wide"><img src="img/e_panel_build.jpg" width="1030" height="380" alt="The HorrorStudio panel: the Build tab, its categories down the left with Kitchen open, the kettle's card marked It's this now, the others saying Make it this, and This object on the right: Kettle is a kettle, Change, Make it plain again, how it starts: Off">
+<figure class="wide"><img src="img/e_panel_build.jpg" width="986" height="364" alt="The HorrorStudio panel: the Build tab, its categories down the left with Kitchen open, the kettle's card marked It's this now, the others saying Make it this, and This object on the right: Kettle is a kettle, Change, Make it plain again, how it starts: Off">
 <figcaption>The Build tab with the kettle selected: its card says <i>It's this now</i>; This object shows how it starts.</figcaption></figure>
-<p>What happens in the game isn't in the scene: it's the <b>Director file</b> (§6), written in the Director Manager
-(§9). The panel's <span class="ui">Story</span> tab shows it, and <span class="ui">Test</span> plays the game and says
-what's wrong. The dock under the Inspector keeps the same views close to the Inspector (a row you pick in it opens right
+<p>What happens in the game isn't in the scene: it's the <b>Director file</b> (§6), written in the panel's
+<span class="ui">Story</span> tab (§8) or the Director Manager (§9), in the same words. <span class="ui">Test</span> plays
+the game and says what's wrong. The dock under the Inspector keeps the same views close to the Inspector (a row you pick in it opens right
 above it). Its tabs:</p>
 <table class="keys">
 <tr><td class="ui">Director</td><td>The story as the Director file has it: the quests in play order with their steps and what comes next, the endings, the conversations, the moments, the states. <span class="ui">▶</span> plays, <span class="ui">▶ Here</span> plays from the picked quest, <span class="ui">Manager</span> opens the page that writes it.</td></tr>
@@ -238,7 +238,7 @@ With a start selected, <b>This object</b> sets <b>which way they look</b> (eight
 the player's own settings for the whole game (<b>can run</b> with Shift, <b>can crouch</b> with C, the <b>eye height</b>,
 their <b>name</b>: they're the HSGame's) and <span class="ui">Play from here</span>. In the sample the Test start is by
 the bedroom door with the bedroom key, so the bedroom can be tried without finding the key first.</p>
-<figure class="wide"><img src="img/e_panel_player.jpg" width="1030" height="380" alt="The HorrorStudio panel on the Player category: the Player start, Test start and Checkpoint cards, and This object on the sample's Test start: which way they look, North, what they have with them, the bedroom key, can run, can crouch, eye height, their name, Play from here">
+<figure class="wide"><img src="img/e_panel_player.jpg" width="986" height="364" alt="The HorrorStudio panel on the Player category: the Player start, Test start and Checkpoint cards, and This object on the sample's Test start: which way they look, North, what they have with them, the bedroom key, can run, can crouch, eye height, their name, Play from here">
 <figcaption>The Player category with the sample's Test start selected: it faces north, the bedroom key in hand.</figcaption></figure>
 <h3>Areas, spots and paths</h3>
 <ul>
@@ -265,8 +265,8 @@ part by category). Or <b>drag the card onto your model</b>, in the 3D view or th
 model's place and your model goes inside it: it's a thing now, an <span class="node">HSThing</span>, with an id.
 <kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes it, and This object's <span class="ui">Make it plain again</span> takes it off.</p>
 <div class="pair">
-<figure><img src="img/e_panel_model.jpg" width="1030" height="380" alt="The panel with a plain model selected, OldSaucepan: This object asks what it is and suggests Pot from its name"><figcaption>A plain model selected: This object asks what it is, suggesting a pot from its name.</figcaption></figure>
-<figure><img src="img/e_inspector_box.jpg" width="450" height="448" alt="The Inspector on OldSaucepan: the HorrorStudio box, What is this?, Make it a…, and the suggestion Pot"><figcaption>The Inspector's box: <i>What is this?</i>, every part in <i>Make it a…</i>, the suggestion.</figcaption></figure>
+<figure><img src="img/e_panel_model.jpg" width="986" height="364" alt="The panel with a plain model selected, OldSaucepan: This object asks what it is and suggests Pot from its name"><figcaption>A plain model selected: This object asks what it is, suggesting a pot from its name.</figcaption></figure>
+<figure><img src="img/e_inspector_box.jpg" width="312" height="448" alt="The Inspector on OldSaucepan: the HorrorStudio box, What is this?, Make it a…, and the suggestion Pot"><figcaption>The Inspector's box: <i>What is this?</i>, every part in <i>Make it a…</i>, the suggestion.</figcaption></figure>
 </div>
 <p>A thing's <b>use</b> says what the player does with it, and the Inspector shows only that use's fields;
 give it a <b>display name</b> for the cursor ("Read · Letter").</p>
@@ -388,7 +388,7 @@ answer ("Nah, that's not what I want."), and the step can fail too if you tick i
 goes, a quest or an <b>ending</b>; the first that holds wins. That's how the story branches, and how a secret ending or
 an easter egg waits for what the player did along the way.</p>
 <div class="pair">
-<figure><img src="img/m_next.jpg" width="904" height="147" alt="What comes next for the night's quest: if the step hide is ticked go to the ending Morning, else go to the ending Asleep"><figcaption>The night's ways: hidden, the good ending; else the bad one.</figcaption></figure>
+<figure><img src="img/m_next.jpg" width="904" height="146" alt="What comes next for the night's quest: if the step hide is ticked go to the ending Morning, else go to the ending Asleep"><figcaption>The night's ways: hidden, the good ending; else the bad one.</figcaption></figure>
 <figure><img src="img/g_ending.jpg" width="1280" height="720" alt="In the game: the ending card Morning, ending good"><figcaption>An ending's card.</figcaption></figure>
 </div>
 <p>An <b>ending</b> is a title and its words, and a kind: good, bad, neutral, secret, or a <i>death</i>, which offers
@@ -435,6 +435,32 @@ Manager's Facts, ticked hidden). The games are made ready for Steam now; Steam i
 
 <section id="moments">
 <h2><span class="n">8</span>Moments, conversations, states</h2>
+<h3>In Godot: the Story tab</h3>
+<p>The panel's <span class="ui">Story</span> tab writes the quests, their steps, the moments and the endings right in
+Godot, each as a sentence, in the Director Manager's words. On the left are the quests in the order they're played,
+each with its steps (ticked and crossed out while the game runs from the editor) and the endings; click one to edit
+it. In the middle is what happens in that quest: its steps (<i>WHEN Mug is given to Mari, tick “Give Mari the
+mug”</i>) and its moments. Click one to open it and pick each blue word:</p>
+<ul>
+<li><b>WHEN</b>: what happens (the player enters, uses, reads, picks up, is given…), and what to (the scene's own areas, things, people);
+or <i>once a condition becomes true</i>.</li>
+<li><b>ONLY IF</b>: what must already be so, as words (<i>they've read letter</i>). <span class="ui">+ and…</span> adds one
+from everything the scene and the story have; click one to turn it into its opposite (<i>they haven't read letter</i>),
+✕ takes it away, and <i>and</i>/<i>or</i> between them says whether all or any must hold.</li>
+<li><b>THEN</b>: what happens, in order: a scare, a thought, a sound, a light, someone walking off… <span class="ui">+ Then…</span>
+adds one; ↑ ↓ move it, ✕ takes it away.</li>
+<li><b>How often</b>: <i>Just once</i>, or <i>Every time</i>.</li>
+</ul>
+<p>Under it, <b>It reads as</b> says the whole moment as one sentence. <span class="ui">Try this moment</span> plays the
+game from this quest as a test, with what it asks for already done and you standing by where it happens;
+<span class="ui">Show it in the 3D view</span> selects what its WHEN names (press <kbd>F</kbd> over the view to frame it).
+On the right are <b>ready-made moments</b> (a jumpscare, a knock at a door, the lights dying, a door slamming, a
+whisper, a thought, the flashlight flickering): click one to add it onto what's selected (an area, a room, a door, a
+thing), or drag it onto an area or a door in the 3D view. Every change is saved at once, and <kbd>Ctrl</kbd>+<kbd>Z</kbd>
+takes it back.</p>
+<figure class="wide"><img src="img/e_panel_story.jpg" width="1211" height="364" alt="The panel's Story tab: the quests in order on the left with the first, The key, being edited; in the middle its moment figure_scare open: WHEN the player enters Kitchen doorway, ONLY IF they've read letter, THEN a scare: a jump scare; the ready-made moments on the right">
+<figcaption>The Story tab on the first quest, the user's own example open: when the player walks into the kitchen's
+doorway after reading the letter, the figure.</figcaption></figure>
 <h3>Moments: when, if, then</h3>
 <p>A <b>moment</b> is how you make things happen: jumpscares, thoughts, sounds, lights, doors, someone arriving. It
 reads as a sentence:</p>
