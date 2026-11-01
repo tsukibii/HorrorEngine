@@ -416,7 +416,7 @@ function legFolds(F, Q, n, left, o, crotch, legTo) {
   for (let j = 0; j < n; j++) {
     const x = Q[j * 3], y = Q[j * 3 + 1], z = Q[j * 3 + 2]; if (y >= top || F.arm(x, y, z)) continue;
     const side = left(j) ? "L" : "R", L = F.legLines[side], [tt] = L.project(x, y, z), c = L.at(tt), dx = x - c[0], dz = z - c[2], d = Math.hypot(dx, dz) || 1e-6;
-    const t = Math.min(1, (top - y) / len), k = prof[side](Math.atan2(dx, dz) * (side === "L" ? 1 : -1), t), nd = d + depth * (k + (o.gap ?? 0.6) * t);   // (mirrored: the two legs' folds alike, not copies; `gap`: the leg standing off the thigh, growing to the hem, an A-line's)
+    const t = Math.min(1, (top - y) / len), k = prof[side](Math.atan2(dx, dz) * (side === "L" ? 1 : -1), t), inner = (side === "L" ? -dx : dx) / d, nd = d + depth * (k + (o.gap ?? 0.6) * t) * (1 - 0.9 * smooth(0.25, 0.85, inner));   // (faded facing the other leg: full thighs nearly touch there)   // (mirrored: the two legs' folds alike, not copies; `gap`: the leg standing off the thigh, growing to the hem, an A-line's)
     Q[j * 3] = c[0] + dx / d * nd; Q[j * 3 + 2] = c[2] + dz / d * nd;
   }
 }

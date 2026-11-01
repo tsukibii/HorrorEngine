@@ -1477,3 +1477,12 @@ guessed margin; and a check that only ever ran on a slow machine hasn't been run
   three things at once: a toe cap running down through the sole's wall (seen at once with each part a colour), the
   upper following the toes, and the end cap closing a flat heel wall to one point (a pyramid's shading). Smoothing
   alone would have kept the knot and the star.
+
+## The wardrobe (2026-11-02, `clothing-refiner`)
+
+- **Anything pushed out round a leg must know the other leg is there:** folds and an A-line gap pushed out radially
+  from each leg's line went into the other thigh on the full masculine body (TAILOR's under-the-skin measure). Fade
+  them on the side facing the other leg, and run the tight-bottoms probe on all seven bodies before TAILOR.
+- **A kept result must also not be sent and drawn again:** the tailor kept the garments, yet "the same outfit again"
+  took seconds: every garment was still copied to the page and its meshes rebuilt. The page tells the worker what it
+  shows (`have`) and keeps those meshes; measure the worker's answer apart from the frames a CPU renderer draws.
