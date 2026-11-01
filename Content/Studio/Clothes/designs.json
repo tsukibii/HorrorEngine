@@ -3,7 +3,7 @@
   "designs": {
     "t-shirt": {
       "label": "T-shirt", "slot": "top", "color": "#d8d4cc", "thickness": 0.0018, "surface": "jersey",
-      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.018, "width": 0.075}, "sleeve": "short", "hem": {"at": "crotch+0.12"}, "ease": {"body": 0.006, "sleeve": 0.009}, "tension": 14, "drape": {"density": 0.18, "bend": 5e-6, "slack": 0.04}},
+      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.018, "width": 0.075}, "sleeve": "short", "hem": {"at": "crotch+0.12"}, "ease": {"body": 0.006, "sleeve": 0.009}, "tension": 14, "drape": {"density": 0.18, "bend": 5e-6, "slack": 0.03}},
       "details": [
         {"kind": "neckband", "width": 0.017},
         {"kind": "cuff", "length": 0.022, "lift": 0.0008},
@@ -12,7 +12,7 @@
     },
     "long-sleeve": {
       "label": "Long-sleeved top", "slot": "top", "color": "#3c4048", "thickness": 0.0018, "surface": "jersey",
-      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.02, "width": 0.075}, "sleeve": "wrist", "hem": {"at": "crotch+0.1"}, "ease": {"body": 0.006, "sleeve": 0.007}, "tension": 12, "drape": {"density": 0.18, "bend": 5e-6, "slack": 0.04}},
+      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.02, "width": 0.075}, "sleeve": "wrist", "hem": {"at": "crotch+0.1"}, "ease": {"body": 0.006, "sleeve": 0.007}, "tension": 12, "drape": {"density": 0.18, "bend": 5e-6, "slack": 0.03}},
       "details": [
         {"kind": "neckband", "width": 0.016},
         {"kind": "cuff", "length": 0.05, "lift": 0.001},
@@ -21,7 +21,7 @@
     },
     "work-shirt": {
       "label": "Work shirt (short sleeves)", "slot": "top", "color": "#7f97ad", "buttons": "#e6e2d8", "thickness": 0.002, "surface": "cotton",
-      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.03, "width": 0.07}, "sleeve": "short", "hem": {"at": "crotch+0.1", "front": 0.02, "back": 0.03, "side": -0.03}, "ease": {"body": 0.011, "sleeve": 0.014}, "tension": 24, "drape": {"density": 0.13, "bend": 1e-5, "slack": 0.05}},
+      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.03, "width": 0.07}, "sleeve": "short", "hem": {"at": "crotch+0.1", "front": 0.02, "back": 0.03, "side": -0.03}, "ease": {"body": 0.011, "sleeve": 0.014}, "tension": 24, "drape": {"density": 0.13, "bend": 1e-5, "slack": 0.03}},
       "details": [
         {"kind": "collar", "width": 0.045, "tips": 0.04, "lift": 0.0045, "roll": 0.008, "thickness": 0.003},
         {"kind": "placket", "width": 0.032, "to": "crotch+0.1"},
@@ -35,7 +35,7 @@
     },
     "work-shirt-long": {
       "label": "Work shirt (long sleeves)", "slot": "top", "color": "#7f97ad", "buttons": "#e6e2d8", "thickness": 0.002, "surface": "cotton",
-      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.03, "width": 0.07}, "sleeve": "wrist", "hem": {"at": "crotch+0.1", "front": 0.02, "back": 0.03, "side": -0.03}, "ease": {"body": 0.008, "sleeve": 0.009}, "tension": 18, "drape": {"density": 0.13, "bend": 1e-5, "slack": 0.05}},
+      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.03, "width": 0.07}, "sleeve": "wrist", "hem": {"at": "crotch+0.1", "front": 0.02, "back": 0.03, "side": -0.03}, "ease": {"body": 0.008, "sleeve": 0.009}, "tension": 18, "drape": {"density": 0.13, "bend": 1e-5, "slack": 0.03}},
       "details": [
         {"kind": "collar", "width": 0.045, "tips": 0.04, "lift": 0.0045, "roll": 0.008, "thickness": 0.003},
         {"kind": "placket", "width": 0.032, "to": "crotch+0.1"},
@@ -69,7 +69,7 @@
     },
     "work-trousers": {
       "label": "Work trousers", "slot": "bottom", "color": "#2c3440", "trim": "#1b1c1f", "buttons": "#a8a8a0", "thickness": 0.0022, "surface": "twill", "trimSurface": "leather",
-      "piece": {"kind": "shell", "neck": false, "waist": {"at": "crotch+0.21", "drop": 0.012, "rise": 0.02}, "legs": {"to": "ankle+0.012"}, "ease": {"body": 0.012, "leg": 0.017, "flare": 0.006}, "tension": 28, "drape": {"density": 0.3, "bend": 2e-5, "slack": 0.05}},
+      "piece": {"kind": "shell", "neck": false, "waist": {"at": "crotch+0.21", "drop": 0.012, "rise": 0.02}, "legs": {"to": "ankle+0.012"}, "ease": {"body": 0.012, "leg": 0.017, "flare": 0.006}, "tension": 28, "drape": {"density": 0.3, "bend": 2e-5, "slack": 0.03}},
       "details": [
         {"kind": "band", "follow": "waist", "width": 0.042, "lift": 0.0022},
         {"kind": "band", "follow": "waist", "width": 0.032, "inset": 0.005, "lift": 0.0045, "trim": true},
@@ -96,7 +96,7 @@
     },
     "shorts": {
       "label": "Shorts", "slot": "bottom", "color": "#4a5a48", "thickness": 0.002, "surface": "cotton",
-      "piece": {"kind": "shell", "neck": false, "waist": {"at": "crotch+0.2", "drop": 0.015, "rise": 0.02}, "legs": {"to": "crotch-0.13"}, "ease": {"body": 0.011, "leg": 0.02}, "tension": 18, "drape": {"density": 0.22, "bend": 1e-5, "slack": 0.04}},
+      "piece": {"kind": "shell", "neck": false, "waist": {"at": "crotch+0.2", "drop": 0.015, "rise": 0.02}, "legs": {"to": "crotch-0.13"}, "ease": {"body": 0.011, "leg": 0.016}, "tension": 18, "drape": {"density": 0.22, "bend": 1e-5, "slack": 0.03}},
       "details": [
         {"kind": "band", "follow": "waist", "width": 0.038, "lift": 0.002},
         {"kind": "cuff", "on": "legs", "length": 0.025, "lift": 0.0012},
@@ -121,7 +121,7 @@
     },
     "coverall": {
       "label": "Coverall", "slot": "full", "color": "#3f5266", "trim": "#2a3644", "buttons": "#c9c6bc", "thickness": 0.0024, "surface": "canvas", "trimSurface": "leather",
-      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.03, "width": 0.07}, "sleeve": "wrist", "legs": {"to": "ankle+0.012"}, "ease": {"body": 0.018, "sleeve": 0.016, "leg": 0.019, "flare": 0.005}, "tension": 48, "drape": {"density": 0.35, "bend": 3e-5, "slack": 0.1}},
+      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.03, "width": 0.07}, "sleeve": "wrist", "legs": {"to": "ankle+0.012"}, "ease": {"body": 0.012, "sleeve": 0.013, "leg": 0.016, "flare": 0.005}, "tension": 48, "drape": {"density": 0.35, "bend": 3e-5, "slack": 0.03}},
       "details": [
         {"kind": "collar", "width": 0.045, "tips": 0.04, "lift": 0.0045, "roll": 0.008, "thickness": 0.003},
         {"kind": "placket", "width": 0.036, "to": "crotch+0.06"},
@@ -192,7 +192,7 @@
     },
     "work-jacket": {
       "label": "Work jacket", "slot": "jacket", "color": "#5a4a32", "surface": "canvas", "buttons": "#2a2622", "thickness": 0.003,
-      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.02, "width": 0.07}, "open": {"from": "neck-0.03", "gap": 0.0018, "top": 0.012}, "sleeve": "wrist", "hem": {"at": "crotch+0.07"}, "ease": {"body": 0.018, "sleeve": 0.014}, "tension": 52, "drape": {"density": 0.4, "bend": 5e-5, "memory": 0.6, "slack": 0.04}},
+      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.02, "width": 0.07}, "open": {"from": "neck-0.03", "gap": 0.0018, "top": 0.012}, "sleeve": "wrist", "hem": {"at": "crotch+0.07"}, "ease": {"body": 0.015, "sleeve": 0.014}, "tension": 52, "drape": {"density": 0.4, "bend": 5e-5, "memory": 0.6, "slack": 0.03}},
       "details": [
         {"kind": "collar", "width": 0.05, "tips": 0.035, "lift": 0.0045, "roll": 0.008, "thickness": 0.003},
         {"kind": "edgeband", "width": 0.022, "lift": 0.0022},
@@ -207,7 +207,7 @@
     },
     "cardigan": {
       "label": "Cardigan", "slot": "jacket", "color": "#8a7a68", "surface": "knit", "buttons": "#e8e0d0", "thickness": 0.0032,
-      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.01, "width": 0.07}, "open": {"from": "waist-0.05", "gap": 0.002, "top": 0.06, "curve": 1.3}, "sleeve": "wrist", "hem": {"at": "crotch+0.06"}, "ease": {"body": 0.018, "sleeve": 0.018}, "tension": 30, "drape": {"density": 0.35, "bend": 8e-6, "slack": 0.03}},
+      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.01, "width": 0.07}, "open": {"from": "waist-0.05", "gap": 0.002, "top": 0.06, "curve": 1.3}, "sleeve": "wrist", "hem": {"at": "crotch+0.06"}, "ease": {"body": 0.012, "sleeve": 0.013}, "tension": 30, "drape": {"density": 0.35, "bend": 8e-6, "slack": 0.03}},
       "details": [
         {"kind": "edgeband", "width": 0.028, "lift": 0.0025, "surface": "rib"},
         {"kind": "buttons", "from": "waist-0.07", "to": "crotch+0.1", "count": 4, "x": -0.012, "r": 0.007},
@@ -388,7 +388,7 @@
     },
     "jeogori-lace": {
       "label": "Jeogori, lace (wrap top)", "slot": "top", "color": "#f4f1ea", "thickness": 0.0016, "surface": "laced", "buttons": "#f4f1ea",
-      "piece": {"kind": "shell", "neck": {"shape": "v", "depth": 0.03, "width": 0.07}, "open": {"from": "bust-0.04", "gap": 0.002, "top": 0.06, "shift": -0.09}, "sleeve": "wrist", "hem": {"at": "waist-0.055"}, "ease": {"body": 0.008, "sleeve": 0.015}, "tension": 14, "drape": {"density": 0.12, "bend": 8e-06, "slack": 0.03}},
+      "piece": {"kind": "shell", "neck": {"shape": "v", "depth": 0.03, "width": 0.07}, "open": {"from": "bust-0.04", "gap": 0.002, "top": 0.06, "shift": -0.09}, "sleeve": "wrist", "hem": {"at": "waist-0.055"}, "ease": {"body": 0.008, "sleeve": 0.014}, "tension": 14, "drape": {"density": 0.12, "bend": 8e-06, "slack": 0.03}},
       "details": [
         {"kind": "edgeband", "width": 0.042, "lift": 0.0025},
         {"kind": "placket", "x": -0.035, "width": 0.028, "from": "bust-0.08", "to": "waist-0.06", "lift": 0.0045, "color": "#ebe5d9", "surface": "satin"},
@@ -398,7 +398,7 @@
     },
     "jeogori": {
       "label": "Jeogori (wrap top)", "slot": "top", "color": "#1c2744", "thickness": 0.002, "surface": "cotton", "trim": "#e8e2d6", "buttons": "#e8e2d6",
-      "piece": {"kind": "shell", "neck": {"shape": "v", "depth": 0.03, "width": 0.07}, "open": {"from": "bust-0.03", "gap": 0.002, "top": 0.06, "shift": -0.09}, "sleeve": "wrist", "hem": {"at": "waist-0.03"}, "ease": {"body": 0.009, "sleeve": 0.018}, "tension": 16, "drape": {"density": 0.14, "bend": 1e-05, "slack": 0.03}},
+      "piece": {"kind": "shell", "neck": {"shape": "v", "depth": 0.03, "width": 0.07}, "open": {"from": "bust-0.03", "gap": 0.002, "top": 0.06, "shift": -0.09}, "sleeve": "wrist", "hem": {"at": "waist-0.03"}, "ease": {"body": 0.009, "sleeve": 0.014}, "tension": 16, "drape": {"density": 0.14, "bend": 1e-05, "slack": 0.03}},
       "details": [
         {"kind": "edgeband", "width": 0.045, "lift": 0.0025, "trim": true},
         {"kind": "placket", "x": -0.035, "width": 0.03, "from": "bust-0.07", "to": "waist-0.04", "lift": 0.0035, "trim": true},
@@ -408,7 +408,7 @@
     },
     "jeogori-sheer": {
       "label": "Jeogori, sheer (three-quarter sleeves)", "slot": "top", "color": "#efe6d6", "thickness": 0.0014, "surface": "laced", "buttons": "#efe6d6",
-      "piece": {"kind": "shell", "neck": {"shape": "v", "depth": 0.025, "width": 0.07}, "open": {"from": "bust-0.02", "gap": 0.002, "top": 0.055, "shift": -0.08}, "sleeve": "elbow+0.1", "hem": {"at": "waist-0.02"}, "ease": {"body": 0.008, "sleeve": 0.022}, "tension": 14, "drape": {"density": 0.1, "bend": 6e-06, "slack": 0.03}},
+      "piece": {"kind": "shell", "neck": {"shape": "v", "depth": 0.025, "width": 0.07}, "open": {"from": "bust-0.02", "gap": 0.002, "top": 0.055, "shift": -0.08}, "sleeve": "elbow+0.1", "hem": {"at": "waist-0.02"}, "ease": {"body": 0.008, "sleeve": 0.014}, "tension": 14, "drape": {"density": 0.1, "bend": 6e-06, "slack": 0.03}},
       "details": [
         {"kind": "edgeband", "width": 0.04, "lift": 0.0025},
         {"kind": "cuff", "length": 0.03, "lift": 0.0015},
@@ -452,7 +452,7 @@
     },
     "hoodie": {
       "label": "Hoodie", "slot": "top", "color": "#151517", "thickness": 0.0038, "surface": "jersey", "trim": "#d8d8d8",
-      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.018, "width": 0.08}, "sleeve": "wrist", "hem": {"at": "crotch+0.07"}, "ease": {"body": 0.016, "sleeve": 0.016, "shoulder": 0.006}, "tension": 34, "drape": {"density": 0.36, "bend": 2e-05, "slack": 0.04}},
+      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.018, "width": 0.08}, "sleeve": "wrist", "hem": {"at": "crotch+0.07"}, "ease": {"body": 0.012, "sleeve": 0.013, "shoulder": 0.006}, "tension": 34, "drape": {"density": 0.36, "bend": 2e-05, "slack": 0.03}},
       "details": [
         {"kind": "collar", "width": 0.2, "tips": 0.0, "lift": 0.009, "roll": 0.0, "thickness": 0.006, "front": false},
         {"kind": "collar", "width": 0.04, "tips": 0.0, "lift": 0.012, "roll": 0.014, "thickness": 0.006, "front": false},
@@ -479,7 +479,7 @@
     },
     "oversized-blazer": {
       "label": "Oversized blazer", "slot": "jacket", "color": "#e8c4cf", "surface": "wool", "buttons": "#d8c8b8", "thickness": 0.003,
-      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.015, "width": 0.072}, "open": {"from": "crotch+0.05", "gap": 0.09, "top": 0.1, "curve": 0.55, "closed": false}, "sleeve": "wrist+0.01", "hem": {"at": "crotch+0.0"}, "ease": {"body": 0.02, "sleeve": 0.016, "shoulder": 0.016}, "tension": 40, "drape": {"density": 0.33, "bend": 5e-05, "memory": 1, "slack": 0.03}},
+      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.015, "width": 0.072}, "open": {"from": "crotch+0.05", "gap": 0.09, "top": 0.1, "curve": 0.55, "closed": false}, "sleeve": "wrist+0.01", "hem": {"at": "crotch+0.0"}, "ease": {"body": 0.016, "sleeve": 0.014, "shoulder": 0.016}, "tension": 40, "drape": {"density": 0.33, "bend": 5e-05, "memory": 1, "slack": 0.03}},
       "details": [
         {"kind": "collar", "width": 0.042, "tips": 0.0, "lift": 0.004, "roll": 0.006, "thickness": 0.003, "front": false},
         {"kind": "lapel", "width": 0.085, "lift": 0.004, "roll": 0.004, "thickness": 0.003},
@@ -492,7 +492,7 @@
     },
     "long-coat": {
       "label": "Long coat (the top)", "slot": "jacket", "color": "#c8a596", "surface": "wool", "buttons": "#8a6a58", "thickness": 0.0045,
-      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.02, "width": 0.075}, "open": {"from": "crotch+0.12", "gap": 0.1, "top": 0.1, "curve": 0.6, "closed": false}, "sleeve": "wrist+0.02", "hem": {"at": "crotch+0.1"}, "ease": {"body": 0.024, "sleeve": 0.018, "shoulder": 0.016}, "tension": 56, "drape": {"density": 0.5, "bend": 0.00012, "memory": 0.7, "slack": 0.025}},
+      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.02, "width": 0.075}, "open": {"from": "crotch+0.12", "gap": 0.1, "top": 0.1, "curve": 0.6, "closed": false}, "sleeve": "wrist+0.02", "hem": {"at": "crotch+0.1"}, "ease": {"body": 0.016, "sleeve": 0.014, "shoulder": 0.016}, "tension": 56, "drape": {"density": 0.5, "bend": 0.00012, "memory": 0.7, "slack": 0.025}},
       "details": [
         {"kind": "collar", "width": 0.055, "tips": 0.0, "lift": 0.005, "roll": 0.009, "thickness": 0.0045, "front": false},
         {"kind": "lapel", "width": 0.1, "lift": 0.005, "roll": 0.005, "thickness": 0.0045, "curve": 0.7},
@@ -504,7 +504,7 @@
     },
     "coat-skirts": {
       "label": "Long coat (its skirts)", "slot": "jacket", "color": "#c8a596", "surface": "wool", "thickness": 0.0045,
-      "piece": {"kind": "skirt", "waist": {"at": "crotch+0.13"}, "length": "knee-0.07", "ease": 0.03, "flare": 0.08, "open": {"gap": 0.1}, "drape": {"density": 0.5, "bend": 0.00012, "memory": 0.4}},
+      "piece": {"kind": "skirt", "waist": {"at": "crotch+0.13"}, "length": "knee-0.07", "ease": 0.016, "flare": 0.08, "open": {"gap": 0.1}, "drape": {"density": 0.5, "bend": 0.00012, "memory": 0.4}},
       "details": []
     },
     "denim-jacket": {
@@ -524,7 +524,7 @@
     },
     "cargo-pants": {
       "label": "Cargo pants", "slot": "bottom", "color": "#1a1b1e", "trim": "#141416", "buttons": "#a8a8a0", "thickness": 0.0022, "surface": "twill", "trimSurface": "leather",
-      "piece": {"kind": "shell", "neck": false, "waist": {"at": "crotch+0.21", "drop": 0.012, "rise": 0.02}, "legs": {"to": "ankle+0.005"}, "ease": {"body": 0.014, "leg": 0.028, "flare": 0.0, "crotch": 0.016}, "tension": 30, "drape": {"density": 0.3, "bend": 2e-05, "slack": 0.06, "drop": 0.03}},
+      "piece": {"kind": "shell", "neck": false, "waist": {"at": "crotch+0.21", "drop": 0.012, "rise": 0.02}, "legs": {"to": "ankle+0.005"}, "ease": {"body": 0.012, "leg": 0.018, "flare": 0.0, "crotch": 0.016}, "tension": 30, "drape": {"density": 0.3, "bend": 2e-05, "slack": 0.03, "drop": 0.03}},
       "details": [
         {"kind": "band", "follow": "waist", "width": 0.042, "lift": 0.0022},
         {"kind": "band", "follow": "waist", "width": 0.032, "inset": 0.005, "lift": 0.0045, "trim": true},
@@ -541,7 +541,7 @@
     },
     "wide-jeans": {
       "label": "Wide-leg jeans", "slot": "bottom", "color": "#9db3cf", "trim": "#7a4a28", "buttons": "#c9a24a", "thickness": 0.0024, "surface": "denim", "trimSurface": "leather",
-      "piece": {"kind": "shell", "neck": false, "waist": {"at": "crotch+0.24", "drop": 0.01, "rise": 0.02}, "legs": {"to": "ankle+0.015"}, "ease": {"body": 0.01, "leg": 0.02, "flare": 0.012, "crotch": 0.014}, "tension": 22, "drape": {"density": 0.42, "bend": 3e-05, "slack": 0.02}},
+      "piece": {"kind": "shell", "neck": false, "waist": {"at": "crotch+0.24", "drop": 0.01, "rise": 0.02}, "legs": {"to": "ankle+0.015"}, "ease": {"body": 0.01, "leg": 0.018, "flare": 0.012, "crotch": 0.014}, "tension": 22, "drape": {"density": 0.42, "bend": 3e-05, "slack": 0.02}},
       "details": [
         {"kind": "band", "follow": "waist", "width": 0.04, "lift": 0.0022},
         {"kind": "band", "follow": "waist", "width": 0.03, "inset": 0.005, "lift": 0.0045, "trim": true},
@@ -654,7 +654,7 @@
     },
     "wide-trousers": {
       "label": "Wide pleated trousers (pressed)", "slot": "bottom", "color": "#e8e1d4", "trim": "#d8d0c2", "buttons": "#d8d0c2", "thickness": 0.0022, "surface": "crepe", "pbr": "pbr/Procedural/fabric_gabardine", "crease": {"press": 1},
-      "piece": {"kind": "shell", "neck": false, "waist": {"at": "crotch+0.26", "drop": 0.008, "rise": 0.015}, "legs": {"to": "ankle+0.045", "straight": 1}, "ease": {"body": 0.02, "leg": 0.02, "flare": 0.03, "crotch": 0.018}, "tension": 40, "drape": {"density": 0.24, "bend": 0.0002, "slack": 0.0, "memory": 1}},
+      "piece": {"kind": "shell", "neck": false, "waist": {"at": "crotch+0.26", "drop": 0.008, "rise": 0.015}, "legs": {"to": "ankle+0.045", "straight": 1}, "ease": {"body": 0.012, "leg": 0.018, "flare": 0.03, "crotch": 0.018}, "tension": 40, "drape": {"density": 0.24, "bend": 0.0002, "slack": 0.0, "memory": 1}},
       "details": [
         {"kind": "band", "follow": "waist", "width": 0.04, "lift": 0.002},
         {"kind": "placket", "x": 0.012, "width": 0.032, "from": "crotch+0.23", "to": "crotch+0.05", "lift": 0.0012},
@@ -666,7 +666,7 @@
     },
     "tie-blouse": {
       "label": "Tie-neck blouse", "slot": "top", "color": "#d9cbb8", "buttons": "#d9cbb8", "thickness": 0.0014, "surface": "crepe", "pbr": "pbr/Procedural/fabric_crepe",
-      "piece": {"kind": "shell", "neck": {"shape": "v", "depth": 0.035, "width": 0.068}, "sleeve": "wrist+0.01", "hem": {"at": "crotch+0.07", "front": 0.0, "back": 0.015}, "ease": {"body": 0.009, "sleeve": 0.022}, "tension": 12, "drape": {"density": 0.12, "bend": 6e-06, "slack": 0.04}},
+      "piece": {"kind": "shell", "neck": {"shape": "v", "depth": 0.035, "width": 0.068}, "sleeve": "wrist+0.01", "hem": {"at": "crotch+0.07", "front": 0.0, "back": 0.015}, "ease": {"body": 0.009, "sleeve": 0.014}, "tension": 12, "drape": {"density": 0.12, "bend": 6e-06, "slack": 0.03}},
       "details": [
         {"kind": "neckband", "width": 0.03, "lift": 0.003},
         {"kind": "placket", "x": 0.018, "width": 0.034, "from": "neck-0.03", "to": "bust-0.13", "lift": 0.0045},
@@ -677,7 +677,7 @@
     },
     "full-sleeve-blouse": {
       "label": "Blouse (full sleeves)", "slot": "top", "color": "#f1ebdf", "buttons": "#e8e0d0", "thickness": 0.0014, "surface": "crepe", "pbr": "pbr/Procedural/fabric_crepe",
-      "piece": {"kind": "shell", "neck": {"shape": "v", "depth": 0.04, "width": 0.07}, "sleeve": "wrist", "hem": {"at": "crotch+0.07", "back": 0.015}, "ease": {"body": 0.009, "sleeve": 0.03}, "tension": 12, "drape": {"density": 0.12, "bend": 6e-06, "slack": 0.05}},
+      "piece": {"kind": "shell", "neck": {"shape": "v", "depth": 0.04, "width": 0.07}, "sleeve": "wrist", "hem": {"at": "crotch+0.07", "back": 0.015}, "ease": {"body": 0.009, "sleeve": 0.014}, "tension": 12, "drape": {"density": 0.12, "bend": 6e-06, "slack": 0.03}},
       "details": [
         {"kind": "edgeband", "width": 0.012, "lift": 0.0015},
         {"kind": "buttons", "from": "bust-0.04", "to": "crotch+0.13", "count": 5, "r": 0.005},
@@ -686,7 +686,7 @@
     },
     "shirt": {
       "label": "Shirt (long sleeves)", "slot": "top", "color": "#c9d6e6", "buttons": "#f0ede6", "thickness": 0.0016, "surface": "cotton", "pbr": "pbr/Procedural/fabric_poplin",
-      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.03, "width": 0.07}, "sleeve": "elbow+0.08", "hem": {"at": "crotch+0.08", "front": 0.015, "back": 0.03, "side": -0.03}, "ease": {"body": 0.011, "sleeve": 0.016, "shoulder": 0.004}, "tension": 16, "drape": {"density": 0.12, "bend": 8e-06, "slack": 0.05}},
+      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.03, "width": 0.07}, "sleeve": "elbow+0.08", "hem": {"at": "crotch+0.08", "front": 0.015, "back": 0.03, "side": -0.03}, "ease": {"body": 0.011, "sleeve": 0.013, "shoulder": 0.004}, "tension": 16, "drape": {"density": 0.12, "bend": 8e-06, "slack": 0.03}},
       "details": [
         {"kind": "collar", "width": 0.045, "tips": 0.045, "lift": 0.0045, "roll": 0.008, "thickness": 0.003},
         {"kind": "placket", "width": 0.03, "to": "crotch+0.08"},
@@ -718,7 +718,7 @@
     },
     "leather-jacket": {
       "label": "Leather jacket (cropped)", "slot": "jacket", "color": "#161616", "buttons": "#b8b8b8", "thickness": 0.0032, "surface": "leather", "pbr": "pbr/Procedural/fabric_leather",
-      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.02, "width": 0.072}, "open": {"from": "waist-0.02", "gap": 0.07, "top": 0.06, "curve": 0.7, "closed": false}, "sleeve": "wrist+0.01", "hem": {"at": "waist-0.02"}, "ease": {"body": 0.022, "sleeve": 0.018, "shoulder": 0.014}, "tension": 42, "drape": {"density": 0.6, "bend": 0.0001, "memory": 0.8, "slack": 0.02}},
+      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.02, "width": 0.072}, "open": {"from": "waist-0.02", "gap": 0.07, "top": 0.06, "curve": 0.7, "closed": false}, "sleeve": "wrist+0.01", "hem": {"at": "waist-0.02"}, "ease": {"body": 0.015, "sleeve": 0.013, "shoulder": 0.014}, "tension": 42, "drape": {"density": 0.6, "bend": 0.0001, "memory": 0.8, "slack": 0.02}},
       "details": [
         {"kind": "collar", "width": 0.06, "tips": 0.03, "lift": 0.005, "roll": 0.009, "thickness": 0.0035},
         {"kind": "edgeband", "width": 0.014, "lift": 0.002},
@@ -737,6 +737,46 @@
       "label": "Pleated midi skirt", "slot": "bottom", "color": "#2b3240", "thickness": 0.0018, "surface": "wool", "pbr": "pbr/Procedural/fabric_gabardine",
       "piece": {"kind": "skirt", "waist": {"at": "waist-0.02"}, "length": "knee-0.16", "ease": 0.004, "flare": 0.28, "pleats": {"n": 28, "depth": 0.016, "stitched": 0.1}, "drape": {"density": 0.3, "bend": 4e-05, "memory": 1}},
       "details": [{"kind": "band", "from": "waist-0.02", "to": "waist-0.05", "lift": 0.002}]
+    },
+    "joggers": {
+      "label": "Joggers", "slot": "bottom", "color": "#5a5e66", "thickness": 0.0024, "surface": "jersey", "pbr": "pbr/Procedural/fabric_fleece",
+      "piece": {"kind": "shell", "neck": false, "waist": {"at": "crotch+0.19", "drop": 0.01, "rise": 0.015}, "legs": {"to": "ankle+0.035"}, "ease": {"body": 0.008, "leg": 0.013, "crotch": 0.016}, "tension": 18, "drape": {"density": 0.32, "bend": 1.5e-05, "slack": 0.03}},
+      "details": [{"kind": "band", "follow": "waist", "width": 0.045, "lift": 0.0022, "surface": "rib"}, {"kind": "cuff", "on": "legs", "length": 0.06, "lift": 0.0018, "surface": "rib"}, {"kind": "placket", "x": 0.03, "width": 0.006, "from": "crotch+0.17", "to": "crotch+0.09", "lift": 0.003, "trim": true}, {"kind": "placket", "x": -0.03, "width": 0.006, "from": "crotch+0.17", "to": "crotch+0.09", "lift": 0.003, "trim": true}]
+    },
+    "sweatshirt": {
+      "label": "Sweatshirt", "slot": "top", "color": "#8a8f98", "thickness": 0.0026, "surface": "jersey", "pbr": "pbr/Procedural/fabric_fleece",
+      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.02, "width": 0.075}, "sleeve": "wrist", "hem": {"at": "crotch+0.09"}, "ease": {"body": 0.011, "sleeve": 0.012, "shoulder": 0.004}, "tension": 28, "drape": {"density": 0.34, "bend": 1.8e-05, "slack": 0.03}},
+      "details": [{"kind": "neckband", "width": 0.02, "lift": 0.0015, "surface": "rib"}, {"kind": "cuff", "length": 0.06, "lift": 0.002, "surface": "rib"}, {"kind": "band", "from": "crotch+0.13", "to": "crotch+0.085", "lift": 0.002, "surface": "rib"}]
+    },
+    "polo": {
+      "label": "Polo shirt", "slot": "top", "color": "#2f4f6f", "thickness": 0.002, "surface": "cotton", "buttons": "#e8e4da", "pbr": "pbr/Procedural/fabric_waffle",
+      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.025, "width": 0.07}, "sleeve": "short", "hem": {"at": "crotch+0.1", "front": 0.0, "back": 0.02, "side": -0.01}, "ease": {"body": 0.008, "sleeve": 0.01}, "tension": 14, "drape": {"density": 0.18, "bend": 5e-06, "slack": 0.03}},
+      "details": [{"kind": "collar", "width": 0.04, "tips": 0.035, "lift": 0.004, "roll": 0.006, "thickness": 0.0025, "surface": "rib"}, {"kind": "placket", "width": 0.028, "to": "bust+0.02"}, {"kind": "buttons", "from": "neck-0.05", "to": "bust+0.04", "count": 2}, {"kind": "cuff", "length": 0.025, "lift": 0.001, "surface": "rib"}]
+    },
+    "suit-trousers": {
+      "label": "Suit trousers (pressed)", "slot": "bottom", "color": "#2a2e36", "thickness": 0.002, "surface": "wool", "pbr": "pbr/Procedural/fabric_gabardine", "crease": {"press": 1},
+      "piece": {"kind": "shell", "neck": false, "waist": {"at": "crotch+0.21", "drop": 0.012, "rise": 0.02}, "legs": {"to": "ankle+0.02"}, "ease": {"body": 0.008, "leg": 0.012, "flare": 0.004}, "tension": 20, "drape": {"density": 0.3, "bend": 3e-05, "slack": 0.0, "memory": 0.6}},
+      "details": [{"kind": "band", "follow": "waist", "width": 0.038, "lift": 0.002}, {"kind": "placket", "x": 0.012, "width": 0.032, "from": "crotch+0.17", "to": "crotch+0.035", "lift": 0.0012}, {"kind": "pocket", "on": "back", "at": "crotch+0.09", "x": 0.085, "w": 0.12, "h": 0.13}, {"kind": "pocket", "on": "back", "at": "crotch+0.09", "x": -0.085, "w": 0.12, "h": 0.13}]
+    },
+    "pyjama-top": {
+      "label": "Pyjama top", "slot": "top", "color": "#9fb7d0", "buttons": "#f2efe8", "thickness": 0.002, "surface": "flannel", "pbr": "pbr/Procedural/fabric_flannel",
+      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.03, "width": 0.07}, "sleeve": "wrist", "hem": {"at": "crotch+0.06"}, "ease": {"body": 0.012, "sleeve": 0.013}, "tension": 24, "drape": {"density": 0.18, "bend": 8e-06, "slack": 0.03}},
+      "details": [{"kind": "collar", "width": 0.05, "tips": 0.05, "lift": 0.0045, "roll": 0.008, "thickness": 0.003}, {"kind": "placket", "width": 0.03, "to": "crotch+0.06"}, {"kind": "buttons", "from": "neck-0.08", "to": "crotch+0.12", "count": 5}, {"kind": "pocket", "at": "armpit-0.08", "x": 0.095, "w": 0.11, "h": 0.12, "lift": 0.0025}, {"kind": "cuff", "length": 0.03, "lift": 0.0015}]
+    },
+    "pyjama-trousers": {
+      "label": "Pyjama trousers", "slot": "bottom", "color": "#9fb7d0", "thickness": 0.0018, "surface": "flannel", "pbr": "pbr/Procedural/fabric_flannel",
+      "piece": {"kind": "shell", "neck": false, "waist": {"at": "crotch+0.18", "drop": 0.01, "rise": 0.015}, "legs": {"to": "ankle+0.02"}, "ease": {"body": 0.009, "leg": 0.016, "flare": 0.004, "crotch": 0.016}, "tension": 20, "drape": {"density": 0.18, "bend": 8e-06, "slack": 0.03}},
+      "details": [{"kind": "band", "follow": "waist", "width": 0.035, "lift": 0.0018}, {"kind": "cuff", "on": "legs", "length": 0.03, "lift": 0.0012}]
+    },
+    "sleep-shorts": {
+      "label": "Sleep shorts", "slot": "bottom", "color": "#e8c8d0", "thickness": 0.0014, "surface": "satin", "pbr": "pbr/Procedural/fabric_satin",
+      "piece": {"kind": "shell", "neck": false, "waist": {"at": "crotch+0.17", "drop": 0.01, "rise": 0.015}, "legs": {"to": "crotch-0.07"}, "ease": {"body": 0.008, "leg": 0.016, "crotch": 0.014}, "tension": 16, "drape": {"density": 0.12, "bend": 4e-06, "slack": 0.03}},
+      "details": [{"kind": "band", "follow": "waist", "width": 0.03, "lift": 0.0016}, {"kind": "cuff", "on": "legs", "length": 0.012, "lift": 0.0008}]
+    },
+    "swim-shorts": {
+      "label": "Swim shorts", "slot": "bottom", "color": "#2f6f8f", "thickness": 0.0016, "surface": "flat",
+      "piece": {"kind": "shell", "neck": false, "waist": {"at": "crotch+0.17", "drop": 0.01, "rise": 0.015}, "legs": {"to": "crotch-0.1"}, "ease": {"body": 0.008, "leg": 0.015, "crotch": 0.014}, "tension": 16, "drape": {"density": 0.14, "bend": 6e-06, "slack": 0.03}},
+      "details": [{"kind": "band", "follow": "waist", "width": 0.035, "lift": 0.0018}, {"kind": "placket", "x": 0.02, "width": 0.006, "from": "crotch+0.16", "to": "crotch+0.1", "lift": 0.003, "trim": true}, {"kind": "placket", "x": -0.02, "width": 0.006, "from": "crotch+0.16", "to": "crotch+0.1", "lift": 0.003, "trim": true}]
     }
   }
 }

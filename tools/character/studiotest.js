@@ -421,7 +421,7 @@ const png = rgb => {
     await page.click('#tabs button[data-tab="clothes"]');
     await page.waitForFunction(() => document.querySelectorAll("#designSel option").length > 2 && document.querySelectorAll("#outfitGrid .card").length > 2);
     if (await page.isChecked(HANG)) await page.click(HANG);                  // the cut alone here: the drape has its own step
-    await page.click("#outfitTabs button[data-group='studio']");             // the outfits are cards with pictures, in groups (the designer ones first)
+    await page.click("#outfitTabs button[data-group='uniform']");            // the outfits are cards with pictures, in groups (everyday ones first)
     await page.click("#outfitGrid .card[data-outfit='work uniform']");
     await page.waitForFunction(() => window.__body.GARMENTS.children.length > 3, null, { timeout: 120000 });
     // its look: denim and a print on the shirt, the materials only (nothing refits). The outfit is socks and boots
@@ -434,9 +434,9 @@ const png = rgb => {
     await page.waitForFunction(() => window.__body.GARMENTS.children.find(m => m.name === "work-shirt").material.userData.uniforms.uFabricScale.value > 28);
     await page.$eval(LOOKS, d => { d.open = true; });
     await page.fill(`${LOOKS} >> input[placeholder="text to print"]`, "STAFF"); await page.press(`${LOOKS} >> input[placeholder="text to print"]`, "Enter");
-    await page.waitForFunction(() => window.__body.GARMENTS.children.find(m => m.name === "work-shirt").material.userData.uniforms.uPrintOn.value === 1);
+    await page.waitForFunction(() => window.__body.GARMENTS.children.find(m => m.name === "work-shirt").material.userData.uniforms.uPrintOn0.value === 1);
     if (await page.evaluate(() => window.__body.GARMENTS.children.find(m => m.name === "work-shirt").geometry.uuid) !== shirt) throw new Error("a new look refitted the shirt");
-    if (!(await page.evaluate(`${worn("work-shirt")}.print?.text === "STAFF"`))) throw new Error("the print isn't kept with the character");
+    if (!(await page.evaluate(`${worn("work-shirt")}.prints?.[0]?.text === "STAFF"`))) throw new Error("the print isn't kept with the character");
     // the shirt's hem dragged up by its handle in the view: kept as the garment's own edit, the shirt cut shorter
     const low = name => page.evaluate(n => { const m = window.__body.GARMENTS.children.find(g => g.name === n); let lo = 1e9; const P = m.geometry.attributes.position.array; for (let i = 1; i < P.length; i += 3) lo = Math.min(lo, P[i]); return lo; }, name);
     const hem0 = await low("work-shirt");
@@ -463,7 +463,7 @@ const png = rgb => {
   });
   await step("clothes hang by gravity: a t-shirt and a skirt fall from the cut, are baked with the character and taken back as baked; a fit of 0 clings", async () => {
     await page.click('#tabs button[data-tab="clothes"]');
-    await page.click("#outfitTabs button[data-group='studio']");
+    await page.click("#outfitTabs button[data-group='casual']");
     await page.click("#outfitGrid .card[data-outfit='t-shirt and skirt']");
     await page.waitForFunction(() => window.__body.drapeState.stage === "done" && window.__body.GARMENTS.children.some(m => m.name === "skirt"), null, { timeout: 120000 });
     // where a garment's cloth is in MHR's own pose (the view turns it to the T-pose): its lowest point, how far out from the body's middle
@@ -502,9 +502,9 @@ const png = rgb => {
     await page.click('#tabs button[data-tab="clothes"]');
     if (await page.isChecked(HANG)) await page.click(HANG);                  // the cut alone: the drape is the step before
     const groups = {};
-    for (const g of ["designer", "studio", "underwear"]) { await page.click(`#outfitTabs button[data-group='${g}']`); groups[g] = await page.$$eval("#outfitGrid .card", cs => cs.map(c => c.dataset.outfit)); }
-    if (!groups.designer.includes("street: cargo pants and crop tee") || !groups.studio.includes("work uniform") || !groups.underwear.includes("lingerie: red")) throw new Error(`the outfits aren't on their tabs: ${JSON.stringify(groups)}`);
-    await page.click("#outfitTabs button[data-group='studio']");
+    for (const g of ["designer", "uniform", "underwear", "swim"]) { await page.click(`#outfitTabs button[data-group='${g}']`); groups[g] = await page.$$eval("#outfitGrid .card", cs => cs.map(c => c.dataset.outfit)); }
+    if (!groups.designer.includes("street: cargo pants and crop tee") || !groups.uniform.includes("work uniform") || !groups.underwear.includes("lingerie: red") || !groups.swim.includes("swimwear: triangle bikini")) throw new Error(`the outfits aren't on their tabs: ${JSON.stringify(groups)}`);
+    await page.click("#outfitTabs button[data-group='casual']");
     await page.click("#outfitGrid .card[data-outfit='t-shirt and skirt']");
     await page.waitForFunction(() => window.__body.GARMENTS.children.some(m => m.name === "skirt") && window.__body.drapeState.stage === "done", null, { timeout: 120000 });
     if (await page.$eval("#outfitGrid .card.on", c => c.dataset.outfit) !== "t-shirt and skirt") throw new Error("the worn outfit's card isn't marked");
@@ -1334,7 +1334,7 @@ const png = rgb => {
     await page.click('#tabs button[data-tab="clothes"]');
     const HANG = "label:has-text('Hang by gravity (cloth simulation)') input";
     if (await page.isChecked(HANG)) await page.click(HANG);                  // the cut alone: the drape has its own steps
-    await page.click("#outfitTabs button[data-group='studio']");
+    await page.click("#outfitTabs button[data-group='casual']");
     await page.click("#outfitGrid .card[data-outfit='t-shirt and skirt']");
     await page.waitForFunction(() => window.__body.GARMENTS.children.some(m => m.name === "skirt"), null, { timeout: 120000 });
     await page.evaluate(() => { document.querySelector("#status").textContent = ""; });
@@ -1345,7 +1345,7 @@ const png = rgb => {
       const { GLTFLoader } = await import("./vendor/GLTFLoader.js"), g = await new GLTFLoader().parseAsync(buf, "");
       const pixels = img => { const c = document.createElement("canvas"), W = Math.min(256, img.width), H = Math.min(256, img.height); c.width = W; c.height = H; const x = c.getContext("2d"); x.drawImage(img, 0, 0, W, H); return x.getImageData(0, 0, W, H).data; };
       const mean = d => { const s = [0, 0, 0]; let k = 0; for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 10) { s[0] += d[i]; s[1] += d[i + 1]; s[2] += d[i + 2]; k++; } return s.map(v => v / Math.max(1, k)); };
-      const live = new Map(); b.GARMENTS.traverse(o => { const U = o.isMesh && o.material.userData.uniforms; if (U) live.set(o.name, { c: U.uColor.value.clone().convertLinearToSRGB().toArray().map(v => v * 255), plain: !U.uPatternOn.value && !U.uPbrOn.value && !U.uPrintOn.value }); });
+      const live = new Map(); b.GARMENTS.traverse(o => { const U = o.isMesh && o.material.userData.uniforms; if (U) live.set(o.name, { c: U.uColor.value.clone().convertLinearToSRGB().toArray().map(v => v * 255), plain: !U.uPatternOn.value && !U.uPbrOn.value && !U.uPrintOn0.value }); });
       const out = { skin: null, clothes: [], hair: [] };
       g.scene.traverse(o => {
         if (!o.isMesh) return; const m = o.material, map = m.map;

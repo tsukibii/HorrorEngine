@@ -213,6 +213,12 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, f.read_bytes(), TYPES[f.suffix]) if f.exists() else self.send(404, {"error": "no salon hair yet"})
         if parts[:2] == ["api", "clothes"] and len(parts) == 3 and parts[2] in ("designs.json", "outfits.json"):   # the tailor's designs and outfits
             return self.send(200, (CLOTHES / parts[2]).read_bytes(), TYPES[".json"])
+        if parts == ["api", "clothes", "prints"]:            # the prints library: pictures for a tee's front and back (CLOTHING_PLAN 6)
+            d = CLOTHES / "prints"
+            return self.send(200, {"prints": sorted(f.name for f in d.iterdir() if f.suffix.lower() in (".png", ".jpg", ".jpeg", ".webp")) if d.is_dir() else []})
+        if parts[:3] == ["api", "clothes", "prints"] and len(parts) == 4 and clean(parts[3]) and parts[3].lower().endswith((".png", ".jpg", ".jpeg", ".webp")):
+            f = CLOTHES / "prints" / clean(parts[3])
+            return self.send(200, f.read_bytes(), {".png": "image/png", ".webp": "image/webp"}.get(f.suffix.lower(), "image/jpeg")) if f.is_file() else self.send(404, {"error": "no such print"})
         if parts[:3] == ["api", "clothes", "thumbs"] and len(parts) == 4 and clean(parts[3]) and parts[3].endswith((".jpg", ".png")):   # an outfit's or a design's picture (tailor/thumbs.mjs)
             f = CLOTHES / "thumbs" / clean(parts[3])
             return self.send(200, f.read_bytes(), "image/jpeg" if f.suffix == ".jpg" else "image/png") if f.is_file() else self.send(404, {"error": "no picture yet: node tools/character/tailor/thumbs.mjs"})

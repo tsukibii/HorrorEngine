@@ -44,7 +44,7 @@ const texture = (canvasOf, key, srgb) => {
   t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
   TEX.set(key, t); return t;
 };
-const IMAGES = new Map();
+const IMAGES = new Map(), NPRINT = 3;                          // prints a garment can wear at once
 /** a print's picture as a texture: {text, ink} set in type, or {image: a data URL} (loaded, then `onload`) */
 function printTexture(pr, onload) {
   if (pr.text) return texture(() => textPrint(pr.text, pr.ink || "#ffffff"), "text|" + pr.text + "|" + pr.ink, true);
@@ -71,7 +71,7 @@ export const mapsLoaded = () => Promise.all(LOADS);
 
 /**
  * The material for a garment part: `look` is the garment's ({color, surface, pattern: {kind, colors, size},
- * print: {text, ink | image, part, u, v, w, rot}, denier, pbr}), and a part that isn't the garment's fabric (a belt, a
+ * prints: [{text, ink | image, part, u, v, w, rot}] (or one `print`), denier, pbr}), and a part that isn't the garment's fabric (a belt, a
  * button) keeps its own colour on `trim` (a surface). look.debug === "uv" shows the fabric coordinates. `pbr` is a
  * set off the shelf: {ref, base (the URL its files are under), maps: {albedo, normal | normal_dx, rough, metal, ao, height,
  * opacity: file names}, orm (a packed AO/rough/metal map), normal: "gl" | "dx", tile_m (metres one repeat covers), tint
@@ -97,7 +97,8 @@ export function material(q, look = {}) {
     if (PM.opacity) m.alphaTest = 0.5;                             // a net or lace: cut out where it's dark
   }
   const pat = q.fabric !== false && look.pattern && look.pattern.kind && look.pattern.kind !== "none" ? look.pattern : null;
-  const pr = q.fabric !== false && look.print && (look.print.text || look.print.image) ? look.print : null;
+  // its prints (CLOTHING_PLAN 6): up to three, each on its panel (a tee's front and back, a sleeve); `print` the one of old
+  const prints = q.fabric === false ? [] : (look.prints || (look.print ? [look.print] : [])).filter(pr => pr && (pr.text || pr.image)).slice(0, NPRINT);
   const U = {
     uColor: { value: new THREE.Color(own ? q.color : look.color || q.color) },
     uFabric: { value: fab }, uFabricScale: { value: 1 / S[1] }, uGloss: { value: pbr ? 0 : S[2] },
@@ -106,9 +107,10 @@ export function material(q, look = {}) {
     uOver: { value: over ? (surface === "sheer" ? 2 : 1) : 0 }, uDenier: { value: look.denier ?? 0.55 },
     uPattern: { value: pat ? texture(() => patternTile(pat.kind, pat.colors || []), "p|" + pat.kind + "|" + (pat.colors || []).join(), true) : null },
     uPatternOn: { value: pat ? 1 : 0 }, uPatternScale: { value: 1 / ((pat?.size) || 0.04) },
-    uPrint: { value: pr ? printTexture(pr, () => { m.needsUpdate = true; }) : null }, uPrintOn: { value: pr ? 1 : 0 },
-    uPrintRect: { value: new THREE.Vector4(pr?.u ?? 0, pr?.v ?? 1.2, pr?.w ?? 0.18, (pr?.w ?? 0.18) * (pr?.text ? 0.25 : pr?.aspect ?? 1)) },
-    uPrintRot: { value: (pr?.rot ?? 0) * Math.PI / 180 }, uPrintPart: { value: Math.max(0, PARTS.indexOf(pr?.part || "front")) },
+    ...Object.fromEntries(Array.from({ length: NPRINT }, (_, k) => { const pr = prints[k]; return [
+      [`uPrint${k}`, { value: pr ? printTexture(pr, () => { m.needsUpdate = true; }) : null }], [`uPrintOn${k}`, { value: pr ? 1 : 0 }],
+      [`uPrintRect${k}`, { value: new THREE.Vector4(pr?.u ?? 0, pr?.v ?? 1.2, pr?.w ?? 0.18, (pr?.w ?? 0.18) * (pr?.text ? 0.25 : pr?.aspect ?? 1)) }],
+      [`uPrintRot${k}`, { value: (pr?.rot ?? 0) * Math.PI / 180 }], [`uPrintPart${k}`, { value: Math.max(0, PARTS.indexOf(pr?.part || "front")) }]]; }).flat()),
     ...creaseUniforms(creaseOf(pbr ? look.surface || "cotton" : surface, look.crease || {}), seedOf(q.name)), uCrFwK: { value: 1 },
   };
   if (!q.CRZ) U.uCrAmt.value = 0;                                  // (an old part without the creases' data: none)
@@ -124,7 +126,7 @@ varying vec2 vUvm; varying float vPart;
 uniform vec3 uColor; uniform sampler2D uFabric; uniform float uFabricScale, uGloss, uOver, uDenier;
 uniform sampler2D uPbr, uPbrAlpha; uniform float uPbrOn, uPbrScale, uPbrTint, uPbrAlphaOn;
 uniform sampler2D uPattern; uniform float uPatternOn, uPatternScale;
-uniform sampler2D uPrint; uniform float uPrintOn, uPrintRot, uPrintPart; uniform vec4 uPrintRect;
+${Array.from({ length: NPRINT }, (_, k) => `uniform sampler2D uPrint${k}; uniform float uPrintOn${k}, uPrintRot${k}, uPrintPart${k}; uniform vec4 uPrintRect${k};`).join("\n")}
 varying vec4 vCrz; uniform float uCrFwK;
 ${CREASE_GLSL}
 vec2 crG = vec2(0.0); float crH = 0.0;                                     // the creases' slope (dh/du, dh/dv) and height here`)
@@ -135,11 +137,11 @@ vec2 crG = vec2(0.0); float crH = 0.0;                                     // th
   if (uPbrOn > 0.5) {                                                        // a PBR set: its colour, tinted by the garment's if asked
     cloth = texture2D(uPbr, vUvm * uPbrScale).rgb * (uPbrTint > 0.5 ? cloth : vec3(1.0)); grain = vec4(0.5, 0.5, 0.5, 1.0);
   }
-  if (uPrintOn > 0.5 && abs(vPart - uPrintPart) < 0.5) {                     // the print, on its panel
-    vec2 d = vUvm - uPrintRect.xy; float c = cos(uPrintRot), s = sin(uPrintRot);
-    vec2 q = vec2(c * d.x + s * d.y, -s * d.x + c * d.y) / uPrintRect.zw + 0.5;
-    if (q.x > 0.0 && q.x < 1.0 && q.y > 0.0 && q.y < 1.0) { vec4 ink = texture2D(uPrint, q); cloth = mix(cloth, ink.rgb, ink.a); }
-  }
+${Array.from({ length: NPRINT }, (_, k) => `  if (uPrintOn${k} > 0.5 && abs(vPart - uPrintPart${k}) < 0.5) {                     // a print, on its panel
+    vec2 d = vUvm - uPrintRect${k}.xy; float c = cos(uPrintRot${k}), s = sin(uPrintRot${k});
+    vec2 q = vec2(c * d.x + s * d.y, -s * d.x + c * d.y) / uPrintRect${k}.zw + 0.5;
+    if (q.x > 0.0 && q.x < 1.0 && q.y > 0.0 && q.y < 1.0) { vec4 ink = texture2D(uPrint${k}, q); cloth = mix(cloth, ink.rgb, ink.a); }
+  }`).join("\n")}
   diffuseColor.rgb *= cloth * grain.rgb * 2.0;
   {                                                                          // the creases (tailor/crease.js): their height, its slope in the fabric's metres, the valleys a little darker
     vec2 ux = dFdx(vUvm), uy = dFdy(vUvm); float fw = max(length(ux), length(uy)) * uCrFwK;
@@ -164,7 +166,7 @@ vec2 crG = vec2(0.0); float crH = 0.0;                                     // th
   }
   if (uOver > 1.5) { float f = 1.0 - abs(dot(normal, normalize(vViewPosition))); diffuseColor.a = mix(diffuseColor.a, 1.0, pow(f, 1.4)); }   // tights darken where they turn away`);
   };
-  m.customProgramCacheKey = () => "tailor2" + (m.bumpMap ? "b" : "") + (over ? "o" : "") + (pbr ? "p" : "");
+  m.customProgramCacheKey = () => "tailor3" + (m.bumpMap ? "b" : "") + (over ? "o" : "") + (pbr ? "p" : "");
   return m;
 }
 

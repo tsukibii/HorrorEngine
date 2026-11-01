@@ -12,6 +12,16 @@ street builder, its paint and the PBR sets, with `prop-gen-tool` merged in). Rea
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
+## 0. `clothing-refiner` (2026-11-01, later): the clothing review (docs/CLOTHING_PLAN.md, ticked)
+
+The user's eight notes, all built (TAILOR §1g): waistbands snug, hollows bridged (no cleft, cleavage or spine dent, no
+dent behind or ledge round the knee, a skirt's back kept off the gap between the legs), ease limits checked by TAILOR,
+loose tops hanging from the bust and shoulder blades with soft vertical folds and a sleeve's sag in the creases, up to
+three prints a garment with a prints library, and the everyday wardrobe (Casual, Business, Uniforms, Sleepwear,
+Swimwear tabs; joggers, sweatshirt, polo, suit trousers, pyjamas, sleep and swim shorts, bikinis). Next: the user's look
+in the Studio (STUDIO wants a local GPU run); the older outfits' thumbnails still show them before the bridge (re-run
+`node tools/character/tailor/thumbs.mjs`, ~40 min); a shirt dress and a one-piece swimsuit need a cut of their own.
+
 ## 0. `clothing-refiner` (2026-11-01): creases, made fabrics, the smart casual collection
 
 The user: Japanese smart casual outfits after their reference sheet, creases ("how we emulate wrinkles on faces"),

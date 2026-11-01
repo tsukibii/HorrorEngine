@@ -529,11 +529,13 @@ let DESIGNS = {}, OUTFITS = {}, SHELF = {}, TAILOR_JOB = 0, FITTED = "", fitTime
 const TAILOR_W = new Worker("./tailor/worker.js", { type: "module" });
 const designSel = el("select", { id: "designSel" }), addBtn = el("button", { textContent: "Wear it" }), gColor = el("input", { type: "color", value: "#3b4a6b" });
 // the outfits as cards with pictures (Content/Studio/Clothes/thumbs, tailor/thumbs.mjs: the default model wearing each), in
-// groups: the designer collection after the user's references (outfits.json meta), the studio's own, underwear
+// groups (outfits.json meta): casual, smart casual, business, uniforms, sleepwear, swimwear, underwear, and the designer
+// collection after the user's references
 const outfitTabs = el("div", { id: "outfitTabs", className: "chips" }), outfitGrid = el("div", { id: "outfitGrid" });
-let OUTFIT_META = {}, OUTFIT_GROUP = "smart", WORN_OUTFIT = null;
-const OUTFIT_GROUPS = [["smart", "Smart casual"], ["designer", "Designer"], ["studio", "Studio"], ["underwear", "Underwear"]];
-const outfitGroup = name => OUTFIT_META[name]?.group || (/^(lingerie|underwear):/.test(name) ? "underwear" : "studio");
+let OUTFIT_META = {}, OUTFIT_GROUP = "casual", WORN_OUTFIT = null;
+// everyday clothes first (CLOTHING_PLAN 7), the designer collection last
+const OUTFIT_GROUPS = [["casual", "Casual"], ["smart", "Smart casual"], ["business", "Business"], ["uniform", "Uniforms"], ["sleep", "Sleepwear"], ["swim", "Swimwear"], ["underwear", "Underwear"], ["designer", "Designer"]];
+const outfitGroup = name => OUTFIT_META[name]?.group || (/^(lingerie|underwear):/.test(name) ? "underwear" : "casual");
 const slugOf = name => name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
 function drawOutfits() {
   outfitTabs.replaceChildren(...OUTFIT_GROUPS.map(([g, label]) => { const b = el("button", { textContent: label, className: g === OUTFIT_GROUP ? "on" : "" }); b.dataset.group = g; b.onclick = () => { OUTFIT_GROUP = g; drawOutfits(); }; return b; }));
@@ -684,7 +686,7 @@ function refit() {                                     // after the body changes
   fitTimer = setTimeout(dress, 700);
 }
 // a garment's look: its design's fabric, pattern and trim, then what was chosen for it here
-const lookOf = c => { const D = DESIGNS[c.design] || {}; return { color: c.color, surface: c.surface ?? D.surface, trim: D.trimSurface, pattern: c.pattern ?? D.pattern, denier: c.denier ?? D.denier, print: c.print, pbr: pbrOf(c), crease: { ...(D.crease || {}), ...(c.crease || {}) } }; };
+const lookOf = c => { const D = DESIGNS[c.design] || {}; return { color: c.color, surface: c.surface ?? D.surface, trim: D.trimSurface, pattern: c.pattern ?? D.pattern, denier: c.denier ?? D.denier, prints: c.prints || (c.print ? [c.print] : []), pbr: pbrOf(c), crease: { ...(D.crease || {}), ...(c.crease || {}) } }; };
 // a garment's PBR set off the shelf, as tailor/look.js draws it: its maps, a repeat in metres (the shelf's own default of
 // 2 m is a wall's: a cloth's is 0.3 unless the set or the garment says), the garment's colour over it if asked
 function pbrOf(c) {
@@ -752,33 +754,58 @@ function lookRows(c) {                                 // fabric, pattern, print
     box.append(cols);
     slider(box, "patsize", "Repeat (m)", 0.005, 0.3, 0.005, pat.size || 0.04, "How big one repeat of the pattern is.", v => { c.pattern = { ...(c.pattern || pat), size: v }; restyle(c); });
   }
-  const pr = c.print || {}, text = el("input", { type: "text", placeholder: "text to print", value: pr.text || "" }), ink = el("input", { type: "color", value: pr.ink || "#f0ece4" });
-  const file = el("input", { type: "file", accept: "image/*" }), clear = el("button", { textContent: "No print" });
-  const setPrint = v => { c.print = { part: "front", across: 0, at: +(st.height * 0.72).toFixed(3), w: 0.18, rot: 0, ...(c.print || {}), ...v }; placePrint(c); restyle(c); };
-  text.onchange = () => setPrint({ text: text.value, image: null });
-  ink.oninput = () => { if (c.print?.text) setPrint({ ink: ink.value }); };
-  file.onchange = () => { const f = file.files[0]; if (!f) return; const im = new Image(); im.onload = () => {   // a picture, at most 512 across
+  // prints (CLOTHING_PLAN 6): a tee's front and back, a sleeve's, each text or a picture (a file, or one from the prints
+  // library, Content/Studio/Clothes/prints/), at its place and size; up to three
+  if (c.print) { c.prints = [c.print]; delete c.print; }
+  const prints = c.prints || (c.prints = []);
+  const DEF = part => ({ part, across: 0, at: part === "back" ? +(st.height * 0.74).toFixed(3) : /^arm/.test(part) ? 0.12 : +(st.height * 0.72).toFixed(3), w: part === "back" ? 0.26 : /^arm/.test(part) ? 0.07 : 0.18, rot: 0 });
+  const add = (part, v) => { prints.push({ ...DEF(part), ...v }); placePrint(c); restyle(c); drawWorn(); };
+  const picture = (f, done) => { const im = new Image(); im.onload = () => {   // a picture, at most 512 across
     const k = Math.min(1, 512 / Math.max(im.width, im.height)), cv = el("canvas", { width: Math.round(im.width * k), height: Math.round(im.height * k) });
-    cv.getContext("2d").drawImage(im, 0, 0, cv.width, cv.height); setPrint({ image: cv.toDataURL("image/png"), text: "", aspect: cv.height / cv.width }); drawWorn(); }; im.src = URL.createObjectURL(f); };
-  clear.onclick = () => { delete c.print; restyle(c); drawWorn(); };
-  box.append(el("div", { className: "row" }, el("span", { textContent: "Print" }), text, ink), el("div", { className: "row" }, el("span", { textContent: "or a picture" }), file, el("output")));
-  if (c.print) {
-    pick("On", PRINT_PARTS, c.print.part, v => setPrint({ part: v }));
-    const arm = /^arm/.test(c.print.part);
-    slider(box, "pacross", "Across (m)", -0.35, 0.35, 0.005, c.print.across ?? 0, "Left and right of the panel's middle (round the sleeve or leg from its top or front).", v => setPrint({ across: v }));
-    slider(box, "pat", arm ? "Down the arm (m)" : "Height (m)", arm ? 0 : 0, arm ? 0.7 : 2, 0.005, c.print.at ?? 1.2, arm ? "From the shoulder." : "Its middle, from the floor.", v => setPrint({ at: v }));
-    slider(box, "pw", "Width (m)", 0.02, 0.5, 0.005, c.print.w ?? 0.18, "", v => setPrint({ w: v }));
-    slider(box, "prot", "Turn (°)", -180, 180, 1, c.print.rot ?? 0, "", v => setPrint({ rot: v }));
-    box.append(clear);
+    cv.getContext("2d").drawImage(im, 0, 0, cv.width, cv.height); done({ image: cv.toDataURL("image/png"), text: "", aspect: cv.height / cv.width }); }; im.src = typeof f === "string" ? f : URL.createObjectURL(f); };
+  const lib = el("select", { title: "A picture from the prints library (Content/Studio/Clothes/prints/)" }, el("option", { value: "", textContent: "from the library…" }));
+  printLibrary().then(L => { for (const n of L) lib.append(el("option", { value: n, textContent: n.replace(/\.[a-z]+$/, "").replace(/[_-]/g, " ") })); });
+  if (!prints.length) {                                  // none yet: text or a picture starts one on the front
+    const text = el("input", { type: "text", placeholder: "text to print" }), ink = el("input", { type: "color", value: "#f0ece4" }), file = el("input", { type: "file", accept: "image/*" });
+    text.onchange = () => text.value && add("front", { text: text.value, ink: ink.value });
+    file.onchange = () => file.files[0] && picture(file.files[0], v => add("front", v));
+    lib.onchange = () => lib.value && picture(`api/clothes/prints/${lib.value}`, v => add("front", v));
+    box.append(el("div", { className: "row" }, el("span", { textContent: "Print" }), text, ink), el("div", { className: "row" }, el("span", { textContent: "or a picture" }), file, lib));
+  }
+  prints.forEach((pr, k) => {
+    const set = v => { Object.assign(pr, v); placePrint(c); restyle(c); };
+    const text = el("input", { type: "text", placeholder: "text to print", value: pr.text || "" }), ink = el("input", { type: "color", value: pr.ink || "#f0ece4" });
+    const file = el("input", { type: "file", accept: "image/*" }), lb = lib.cloneNode(true), del = el("button", { textContent: "✕", title: "Take this print off" });
+    text.onchange = () => set({ text: text.value, image: null });
+    ink.oninput = () => { if (pr.text) set({ ink: ink.value }); };
+    file.onchange = () => file.files[0] && picture(file.files[0], v => { set(v); drawWorn(); });
+    lb.onchange = () => lb.value && picture(`api/clothes/prints/${lb.value}`, v => { set(v); drawWorn(); });
+    del.onclick = () => { prints.splice(k, 1); restyle(c); drawWorn(); };
+    box.append(el("div", { className: "row sub" }, el("b", { textContent: `Print ${k + 1}` }), del),
+               el("div", { className: "row" }, el("span", { textContent: "Text" }), text, ink), el("div", { className: "row" }, el("span", { textContent: "or a picture" }), file, lb));
+    pick("On", PRINT_PARTS, pr.part, v => { set({ part: v }); drawWorn(); });
+    const arm = /^arm/.test(pr.part);
+    slider(box, "pacross" + k, "Across (m)", -0.35, 0.35, 0.005, pr.across ?? 0, "Left and right of the panel's middle (round the sleeve or leg from its top or front).", v => set({ across: v }));
+    slider(box, "pat" + k, arm ? "Down the arm (m)" : "Height (m)", 0, arm ? 0.7 : 2, 0.005, pr.at ?? 1.2, arm ? "From the shoulder." : "Its middle, from the floor.", v => set({ at: v }));
+    slider(box, "pw" + k, "Width (m)", 0.02, 0.5, 0.005, pr.w ?? 0.18, "", v => set({ w: v }));
+    slider(box, "prot" + k, "Turn (°)", -180, 180, 1, pr.rot ?? 0, "", v => set({ rot: v }));
+  });
+  if (prints.length && prints.length < 3) {              // another: the back first (a tee's back print), then a sleeve
+    const used = new Set(prints.map(q => q.part)), more = el("div", { className: "row" }, el("span", { textContent: "Add a print" }));
+    for (const [part, label] of [["front", "Front"], ["back", "Back"], ["arm L", "Left sleeve"], ["arm R", "Right sleeve"]]) if (!used.has(part)) { const b = el("button", { textContent: label }); b.onclick = () => add(part, { text: prints[0].text || "", ink: prints[0].ink, image: prints[0].text ? null : prints[0].image, aspect: prints[0].aspect }); more.append(b); }
+    box.append(more);
   }
   return box;
 }
-function placePrint(c) {                               // the print's place on its panel in fabric coordinates (tailor/uv.js)
-  const pr = c.print; if (!pr) return;
-  const back = pr.part === "back", arm = /^arm/.test(pr.part);
-  pr.u = back ? 2 + pr.across : pr.across;               // the back panel's middle is at 2
-  pr.v = arm ? -pr.at : pr.at;                           // a sleeve's v runs down the arm from the shoulder
+function placePrint(c) {                               // each print's place on its panel in fabric coordinates (tailor/uv.js)
+  for (const pr of c.prints || (c.print ? [c.print] : [])) {
+    const back = pr.part === "back", arm = /^arm/.test(pr.part);
+    pr.u = back ? 2 + pr.across : pr.across;             // the back panel's middle is at 2
+    pr.v = arm ? -pr.at : pr.at;                         // a sleeve's v runs down the arm from the shoulder
+  }
 }
+let PRINT_LIB = null;                                  // the prints library's pictures (Content/Studio/Clothes/prints/), asked once
+const printLibrary = () => PRINT_LIB || (PRINT_LIB = fetch("api/clothes/prints").then(r => r.ok ? r.json() : { prints: [] }).then(j => j.prints || []).catch(() => []));
 // ---- shaping a garment: its lines dragged in the view (the handles the tailor gives back) or set by sliders --------
 const SHAPE = new Map();                               // design -> its handles from the last fit
 const OPEN = new Set();                                // which of the worn list's sections are open (kept through a redraw)
@@ -881,7 +908,10 @@ addBtn.onclick = () => {
 };
 function wearOutfit(name) {                           // the outfit's garments in its order, and the accessories it brings (a hat, sunglasses) in place of the kinds it brings
   st.clothes = (OUTFITS[name] || []).map(([design, color, look, edit]) => ({ design, color: color || DESIGNS[design]?.color || "#888888", ...(look || {}), ...(edit ? { edit: { ...edit } } : {}) }));   // an outfit's own edit (a fit)
-  for (const c of st.clothes) if (c.print && c.print.across === undefined) { c.print.across = c.print.part === "back" ? (c.print.u ?? 2) - 2 : c.print.u ?? 0; c.print.at = Math.abs(c.print.v ?? 1.2); }
+  for (const c of st.clothes) {                       // an outfit's prints (one `print` of old, or `prints`) with their place by height
+    if (c.print) { c.prints = [c.print]; delete c.print; }
+    for (const pr of c.prints || []) if (pr.across === undefined) { pr.across = pr.part === "back" ? (pr.u ?? 2) - 2 : pr.u ?? 0; pr.at = Math.abs(pr.v ?? 1.2); }
+  }
   const acc = (OUTFIT_META[name]?.accessories || []).filter(a => ACCS.KINDS[a.kind]);
   if (acc.length && WEAR) {
     st.accessories = st.accessories.filter(x => !acc.some(a => a.kind === x.kind));

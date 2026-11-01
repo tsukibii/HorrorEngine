@@ -36,6 +36,18 @@ for (const [name, d] of Object.entries(designs)) {
   for (const x of d.details || []) if (!DETAILS.has(x.kind)) errs.push(`${name}: a detail called ${x.kind}`);
 }
 for (const [name, list] of Object.entries(outfits)) for (const [d] of list) if (!designs[d]) errs.push(`outfit ${name}: no design ${d}`);
+// ease within what skinning carries (CLOTHING_PLAN 3: skinned, never simulated, so nothing loose enough to clip in a walk):
+// tops 12 mm (jackets and coats 16), sleeves 14, a bottom's body 12 (its waistband snug whatever), legs 18, slack 3 %
+for (const [name, d] of Object.entries(designs)) {
+  const p = d.piece || {}, e = p.ease;
+  if ((p.drape?.slack ?? 0) > 0.03) errs.push(`${name}: drape slack ${p.drape.slack} over 0.03 (looseness is the creases' to show)`);
+  if (p.kind === "skirt") { if ((e ?? 0) > 0.016) errs.push(`${name}: a skirt's ease ${e} over 0.016`); continue; }
+  if (p.kind !== "shell" || !e) continue;
+  const coat = !!e.shoulder || /jacket|coat|blazer/.test(name), body = e.body ?? 0.008, lim = p.neck === false ? 0.012 : coat ? 0.016 : 0.012;
+  if (body > lim) errs.push(`${name}: body ease ${body} over ${lim}`);
+  if (p.sleeve && (e.sleeve ?? body) > 0.014) errs.push(`${name}: sleeve ease ${e.sleeve ?? body} over 0.014`);
+  if (p.legs && (e.leg ?? body) > 0.018) errs.push(`${name}: leg ease ${e.leg ?? body} over 0.018`);
+}
 
 const sum = g => { let h = 0; for (const q of g.parts) { for (let i = 0; i < q.P.length; i += 97) h = (h * 31 + Math.round(q.P[i] * 1e5)) % 1e9; h = (h + q.T.length) % 1e9; } return h; };
 const look = (label, B, g, hung = false) => {

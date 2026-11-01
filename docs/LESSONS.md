@@ -1445,3 +1445,20 @@ guessed margin; and a check that only ever ran on a slow machine hasn't been run
   the float64 sum smaller than the float32-rounded stored value for ever, and the heap grows until node runs out of
   memory. Distances in Float64Array, an improvement only by more than a nanometre (crease.js spread).
 
+
+## The clothing review (2026-11-01, `clothing-refiner`)
+
+- **A per-slice fix needs carrying between slices:** a convex hull a centimetre, each slice's points snapped onto
+  their own hull, left a ledge wherever the hull jumped (the kneecap appearing in one slice). Keep the hull as a radius
+  per angle round a centre that moves smoothly, carry it up and down at a slope (the cloth can't come in faster than
+  that), and interpolate between slices by height.
+- **Tell left from right by where a point came from, not where it is:** a garment's leg columns lean in across the
+  middle near the knee, so splitting the cloth by x put one leg's points in the other's hull. The body vertex each
+  cloth point grew from knows its side.
+- **Leave out the junctions:** the sleeve's root under the arm, the gusset across the crotch and the top of the foot
+  in a trouser's crop each stretch a slice's hull over something that isn't that slice (the side webbed out like a
+  wing, the gusset pushed under the other thigh, the hem bulged over the instep). Every new shape rule: picture it on
+  the whole body, and run TAILOR's under-the-skin measure on the tight bottoms on all seven bodies.
+- **A shader branch on a sign makes an edge:** the hang folds stored as a negative drag, switched in where they beat
+  the armpits' pull, drew a hard line under the bust. Add the two (drag minus hang) and branch on zero, so the value
+  crosses smoothly.

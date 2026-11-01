@@ -101,8 +101,10 @@ opaque ground, for a lace top that isn't see-through), and the three that let th
 the nylon at its `denier`, darker where the leg turns away, a sheen down the leg), **fishnet** and **lace** (their
 holes are empty). Each also gives a relief (a bump map) and a gloss
 (less rough). **Patterns** in the garment's own colours (stripes, pinstripe, vertical stripes, gingham, checks, plaid,
-polka dots, houndstooth, camouflage) at a repeat in metres; a **print**: text set in type, or a picture, placed on a
-panel (front, back, a sleeve, a leg, a skirt's front) across and up it, a width, a turn. `tailor/look.js` makes the
+polka dots, houndstooth, camouflage) at a repeat in metres; **prints** (`prints`, up to three; `print`, one, as of old):
+each text set in type, or a picture (a file, or one from the prints library, `Content/Studio/Clothes/prints/`, our own
+made by `tailor/make_prints.py` and yours dropped in), placed on a panel (front, back, a sleeve, a leg, a skirt's front)
+across and up it, a width, a turn: a tee's front and back print, a sleeve's. `tailor/look.js` makes the
 material (`MeshStandardMaterial` with a small shader patch: the colour or pattern, the grain over it, the print, the
 gloss; the bump map is three's own). A garment's look is its design's (`surface`, `trimSurface` for its trim, `pattern`,
 `denier`) under its own (outfits.json's third field, or the Studio's controls); a detail can take its own `surface`
@@ -172,6 +174,29 @@ two plackets and a knot), a **blouse with full sleeves** (gathered into long cuf
 pocket, worn striped), a **cropped collarless tweed jacket** (gold buttons, boucle), a **collarless jacket** (melton), a
 **cropped leather jacket** (worn open), a **knit midi skirt** and a **pleated midi skirt**. The shirts and blouses are
 worn tucked in (listed before the trousers). Not made: the sweater knotted over the shoulders, the bags.
+
+## 1g. Everyday clothes that hold up in animation (DECISIONS 2026-11-01, the clothing review; docs/CLOTHING_PLAN.md)
+
+The clothes are skinned, never simulated, so the cut keeps to what skinning carries and looseness is shown, not built:
+
+- **Snug waistbands**: a bottom's ease falls to the cloth's 2.5 mm at its waistline and opens to the design's over
+  the hip (`shell`); a skirt's top ring the same (`skirtOutline`). It's what holds them up.
+- **Bridged hollows** (`bridge` in pieces.js, after the relax): each centimetre's slice of the cloth on its convex hull
+  round the torso's axis (above the crotch) or each leg's line (below it), carried up and down so it comes back in no
+  faster than a slope: no dent into the buttocks' cleft, between the breasts, down the spine or behind the knee; it
+  tents over the kneecap. A loose top's slope is shallower front and back (it falls from the bust and the shoulder
+  blades), never at the sides (cloth standing out from the waist is in the arms' way); bras and thongs aren't bridged.
+  A skirt never comes in past the legs' hull in the drape (`rings.floor`: its back buckled into the gap).
+- **Ease limits**, checked by TAILOR: tops 12 mm (jackets and coats 16), sleeves 14, a bottom's body 12, legs 18, a
+  skirt's 16, the drape's `slack` at most 3 %.
+- **Bagginess by creases** (crease.js): a loose top's hang (by its ease, 4 to 14 mm) as soft vertical folds down the
+  front from under the bust and down the back from under the shoulder blades, the sleeve's sag along its underside,
+  more blousing at the waist; carried in the creases' drag channel as a negative value, baked into the export's normal
+  map with the rest.
+- **The wardrobe**: outfit groups Casual, Smart casual, Business, Uniforms, Sleepwear, Swimwear, Underwear, Designer;
+  new basics joggers, sweatshirt, polo, suit trousers, pyjama top and trousers, sleep shorts, swim shorts; bikinis from
+  the underwear's cuts in spandex; fabric, colour, pattern and prints doing the variety. Not made yet: a shirt dress
+  and a one-piece swimsuit (the shell can't cut a dress's or a swimsuit's legs without a new cut).
 
 ## 2. The designs are data
 
