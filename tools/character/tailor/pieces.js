@@ -95,14 +95,25 @@ export function bust(F) {
       for (const [x, z] of l.pts) if ((x - cx) * sg > 0.03 * s && (x - cx) * sg < 0.14 * s && (!best || z > best[2])) best = [x, r.y, z];
     }
     if (!best) best = [cx + sg * 0.09 * s, F.bustY, cz + 0.1 * s];
-    let fold = null, low = Infinity;
-    for (const r of S.rows.filter(r => r.y < best[1] - 0.03 * s && r.y > best[1] - 0.14 * s).reverse()) {
+    // the fold: going down from the point, where the breast's steep underside eases onto the ribs (the slope over a
+    // centimetre fallen to half its steepest, after it was over 0.55), or where the front comes out again; the deepest point
+    // alone ran on down the slowly sinking ribs to the waist, and every bra sat on the ribs (the user: "way too low")
+    const prof = [];
+    for (const r of S.rows.filter(r => r.y < best[1] - 0.005 * s && r.y > best[1] - 0.14 * s).reverse()) {
       const l = S.central(r); if (!l) continue;
       let z = -Infinity; for (const [x, zz] of l.pts) if (Math.abs(x - best[0]) < 0.012 * s) z = Math.max(z, zz);
-      if (!Number.isFinite(z)) continue;
-      if (z <= low) { low = z; fold = r.y; } else if (z > low + 0.002 * s) break;   // the front comes out again: the belly
+      if (Number.isFinite(z)) prof.push([r.y, z]);
     }
-    out[k] = { x: best[0], y: best[1], z: best[2], fold: clamp(fold ?? best[1] - 0.07 * s, best[1] - 0.1 * s, best[1] - 0.045 * s) };
+    let fold = null, low = Infinity, lowY = null, steep = false, peak = 0;
+    for (let i = 0; i < prof.length; i++) {
+      const [y, z] = prof[i];
+      if (z <= low) { low = z; lowY = y; } else if (z > low + 0.002 * s) { fold = lowY; break; }   // the front comes out again: the belly
+      const up = prof.findLast((q, j) => j < i && q[0] >= y + 0.01 * s); if (!up) continue;
+      const slope = (up[1] - z) / (up[0] - y);
+      peak = Math.max(peak, slope); if (slope > 0.55) steep = true; else if (steep && slope < 0.5 * peak) { fold = y; break; }
+    }
+    if (fold === null) fold = steep ? lowY : best[1] - 0.06 * s;   // a flat chest: 6 cm under the point
+    out[k] = { x: best[0], y: best[1], z: best[2], fold: clamp(fold ?? best[1] - 0.06 * s, best[1] - 0.1 * s, best[1] - 0.035 * s) };
   }
   out.under = (out.L.fold + out.R.fold) / 2;
   return (F._bust = out);

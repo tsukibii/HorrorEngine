@@ -200,6 +200,10 @@ The clothes are skinned, never simulated, so the cut keeps to what skinning carr
   never breaks. A **string bikini** (`string-bikini`: a small front triangle, strings over the hips, a cheeky back) and a
   **halter triangle top** (`bikini-top`: the bra's `halter`, its straps from the cups' points round behind the neck and
   no straps down the back; `inner`, each triangle on its own breast with a gap between) after the user's own OBJs.
+- **Bras at the fold** (the user: "the bras are way too low"): the fold under the breast (`bust`) is where its steep
+  underside eases onto the ribs (the slope fallen to half its steepest), not the deepest point below it, which ran on
+  down the slowly sinking ribs; on the feminine body 6 cm under the point, not 8.5. The cups come higher (balconette
+  5.5 cm over the point, plunge 6, triangle and bikini 7.5, sports 6.5).
 - **The wardrobe**: outfit groups Casual, Smart casual, Business, Uniforms, Sleepwear, Swimwear, Underwear, Designer;
   new basics joggers, sweatshirt, polo, suit trousers, pyjama top and trousers, sleep shorts, swim shorts; bikinis from
   the underwear's cuts in spandex; fabric, colour, pattern and prints doing the variety. Not made yet: a shirt dress

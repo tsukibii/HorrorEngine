@@ -9,6 +9,8 @@ The user's answers, newest first. They override the plan, the research and the d
   string bikini's top and bottom as OBJs and a guide to fitting them. Built: the waistline's `hip` lift (TAILOR §1g),
   every thong, tanga, G-string and bikini brief re-cut on it, a string bikini and a halter triangle top after the OBJs.
   The OBJs themselves stay out of the project (only looked at).
+- **"The bras are way too low"**: the fold under the breast found where its underside eases onto the ribs, the cups
+  higher (TAILOR §1g).
 
 ## 2026-11-01, later (the user: the clothing review, on `clothing-refiner`)
 

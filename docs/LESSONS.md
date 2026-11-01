@@ -1462,3 +1462,6 @@ guessed margin; and a check that only ever ran on a slow machine hasn't been run
 - **A shader branch on a sign makes an edge:** the hang folds stored as a negative drag, switched in where they beat
   the armpits' pull, drew a hard line under the bust. Add the two (drag minus hang) and branch on zero, so the value
   crosses smoothly.
+- **A landmark is a shape, not an extreme:** the fold under the breast found as the deepest point below it ran on
+  down the ribs, which keep sinking slowly to the waist, and every bra sat 2.5 cm low. Find the bend (the slope fallen
+  to half its steepest) and measure it on all seven bodies before trusting it.
