@@ -635,7 +635,8 @@
         "w": 1.2,
         "h": 1.1,
         "sill": 0.9,
-        "window": true
+        "window": true,
+        "frame": "window_slide"
        }
       ]
      },
@@ -718,7 +719,8 @@
         "w": 1.8,
         "h": 1.1,
         "sill": 0.9,
-        "window": true
+        "window": true,
+        "frame": "window_slide"
        }
       ]
      },

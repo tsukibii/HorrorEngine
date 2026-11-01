@@ -276,7 +276,10 @@ class Handler(BaseHTTPRequestHandler):
                     pass
             for ref, m in PBR.scan().items():       # the PBR shelf: same shape, files from Content/Studio/PBR
                 tex[ref] = dict(m, base="/" + ref)
-            return self.send(200, {"meshes": meshes, "textures": tex})
+            # the prop generator's props in the library's index (docs/PROPGEN.md §6): the scene builder places them by
+            # size, on and in the furniture (SCENE_BUILDER §10); made here or not (the index ships, the meshes are made)
+            props = {f"props/{n}": {"size": LIB.mesh_size(f"props/{n}"), "tris": i.get("tris")} for n, i in LIB.mesh_index("props").items()}
+            return self.send(200, {"meshes": meshes, "textures": tex, "props": props})
         if parts[:2] == ["api", "pbrfolders"]:       # the folders of yours attached to the shelf (ASSETS §6)
             return self.send(200, {"folders": [dict(f, there=Path(f["path"]).is_dir()) for f in PBR.attached()], "root": str(PBR.ROOT)})
         if parts[:2] == ["api", "pbrbrowse"]:        # a folder's subfolders, to pick one to attach

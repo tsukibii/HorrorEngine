@@ -77,8 +77,27 @@ def check_outside(lid, out, r):
     if not isinstance(out, dict):
         return r.err(f"level {lid}: outside is an object (look, roof, slot, raise, front, parts, style)")
     for k in out:
-        if k not in ("look", "roof", "slot", "raise", "front", "parts", "style", "seed"):
-            r.err(f"level {lid}: outside: no word {k!r} (look, roof, slot, raise, front, parts, style, seed)")
+        if k not in ("look", "roof", "slot", "raise", "front", "parts", "style", "seed", "facade"):
+            r.err(f"level {lid}: outside: no word {k!r} (look, roof, slot, raise, front, parts, style, seed, facade)")
+    # the facade a building in storeys wears (a school's: STREET_BUILDER §5f): each dressing an object of numbers or off
+    FAC = {"eaves": ("out", "t", "over", "ends", "join"), "pilasters": ("w", "out", "gap"), "bands": ("h", "out"), "rails": ("h", "out", "below")}
+    fac = out.get("facade")
+    if fac is not None and not isinstance(fac, dict):
+        r.err(f"level {lid}: outside: facade is an object ({', '.join(FAC)})")
+    for k, v in (fac or {}).items() if isinstance(fac, dict) else ():
+        if k not in FAC:
+            r.err(f"level {lid}: outside: facade: no word {k!r} ({', '.join(FAC)})")
+        elif v is not False and not isinstance(v, dict):
+            r.err(f"level {lid}: outside: facade {k}: an object of numbers ({', '.join(FAC[k])}), or false")
+        elif isinstance(v, dict):
+            for kk, vv in v.items():
+                if kk == "slot":
+                    if vv not in W["slots"]:
+                        r.err(f"level {lid}: outside: facade {k} slot {vv!r}")
+                elif kk == "ends" and k == "pilasters":
+                    pass
+                elif kk not in FAC[k] or not isinstance(vv, (int, float)):
+                    r.err(f"level {lid}: outside: facade {k}: {kk} {vv!r} ({', '.join(FAC[k])}: metres)")
     if out.get("style") and out["style"] not in W["styles"]:
         r.err(f"level {lid}: outside: style {out['style']!r} isn't one of the street builder's ({', '.join(sorted(W['styles']))})")
     for sl, v in (out.get("look") or {}).items():
@@ -95,7 +114,7 @@ def check_outside(lid, out, r):
     rf = out.get("roof") or {}
     if not isinstance(rf, dict) or rf.get("kind", "hip") not in W["roofs"]:
         r.err(f"level {lid}: outside: roof kind {rf.get('kind') if isinstance(rf, dict) else rf!r} ({', '.join(sorted(W['roofs']))})")
-    for k, lo, hi in (("pitch", 3, 60), ("over", 0, 2), ("parapet", 0, 2)):
+    for k, lo, hi in (("pitch", 3, 60), ("over", 0, 2), ("parapet", 0, 2), ("pent_parapet", 0, 2)):
         if isinstance(rf, dict) and k in rf and not (isinstance(rf[k], (int, float)) and lo <= rf[k] <= hi):
             r.err(f"level {lid}: outside: roof {k} {rf[k]!r} ({lo} to {hi})")
     if isinstance(rf, dict) and rf.get("slot") and rf["slot"] not in W["slots"]:
@@ -262,6 +281,12 @@ class Report:
 
 # ---- static checks ----------------------------------------------------------------------------------------------
 
+def trim_ok(k, v):
+    """A level's or a room's trim word: skirting, cornice, casing and threshold up to 0.4 m; a wainscot up to 1.5 m."""
+    top = {"skirting": 0.4, "cornice": 0.4, "casing": 0.4, "threshold": 0.4, "wainscot": 1.5}.get(k)
+    return top is not None and isinstance(v, (int, float)) and not isinstance(v, bool) and 0 <= v <= top
+
+
 def look_problems(look):
     """(errors, warnings) of a look on a room's surface, a block or an outside slot: a set's ref, a colour (#rrggbb) or
     a tuned set (STREET_PAINT §2, pbrmix.py's words). A set missing from this machine's shelf is the library's warning."""
@@ -421,8 +446,8 @@ def check_world(story, things, r):
                 if q.get("pose") is not None and q["pose"] not in POSES:
                     r.err(f"level {lid}: route {rid} at {q.get('at')}: pose {q['pose']!r} isn't in Content/Studio/poses.json")
         for k, v in (lvl.get("trim") or {}).items():
-            if k not in ("skirting", "cornice", "casing", "threshold") or not isinstance(v, (int, float)) or not 0 <= v <= 0.4:
-                r.err(f"level {lid}: trim {k}: {v!r} (skirting, cornice, casing, threshold: heights or widths in metres, 0 for none)")
+            if not trim_ok(k, v):
+                r.err(f"level {lid}: trim {k}: {v!r} (skirting, cornice, casing, threshold: heights or widths in metres up to 0.4; wainscot: up to 1.5; 0 for none)")
         for rm in rooms.values():
             if len(rm.get("size", [])) != 3 or len(rm.get("at", [])) != 3:
                 r.err(f"room {rm['id']}: needs at [x, y, z] and size [w, d, h]")
@@ -435,8 +460,8 @@ def check_world(story, things, r):
                     r.err(f"room {rm['id']}: skip {wl!r} isn't one of n e s w")
             if rm.get("trim") not in (None, False):
                 for k, v in (rm["trim"] or {}).items():
-                    if k not in ("skirting", "cornice", "casing", "threshold") or not isinstance(v, (int, float)) or not 0 <= v <= 0.4:
-                        r.err(f"room {rm['id']}: trim {k}: {v!r} (skirting, cornice, casing, threshold: heights or widths in metres, 0 for none)")
+                    if not trim_ok(k, v):
+                        r.err(f"room {rm['id']}: trim {k}: {v!r} (skirting, cornice, casing, threshold: heights or widths in metres up to 0.4; wainscot: up to 1.5; 0 for none)")
             if rm.get("kind") is not None and rm["kind"] not in L.ROOM_KINDS:
                 r.warn(f"room {rm['id']}: kind {rm['kind']!r} isn't one of {', '.join(L.ROOM_KINDS)}")
             wet = rm.get("wet")                             # a wet floor without rain (§2: pools in Godot, wet steps from 0.5)
@@ -556,8 +581,8 @@ def check_world(story, things, r):
             f, table = need[u]
             if p.get(f) not in table:
                 r.err(f"{t.id}: {f} {p.get(f)!r} doesn't exist")
-        if u == "switch" and (p.get("light") not in things or things[p["light"]].use != "light"):
-            r.err(f"{t.id}: switch light {p.get('light')!r} isn't a light")
+        if u == "switch" and p.get("light") is not None and (p.get("light") not in things or things[p["light"]].use != "light"):
+            r.err(f"{t.id}: switch light {p.get('light')!r} isn't a light")   # none: every light in its room (a classroom's)
         if u == "use_on":
             if p.get("needs") not in items:
                 r.err(f"{t.id}: needs {p.get('needs')!r} isn't an item")

@@ -62,7 +62,7 @@ function signCanvas(sg) {
       let size = W * 0.8; g.font = `bold ${size}px ${FONT}`; const m = g.measureText(text).width; if (m > H * 0.9) size *= H * 0.9 / m;
       g.font = `bold ${size}px ${FONT}`; g.fillText(text, 0, 0); g.restore();
     } else {
-      const lines = text.split("\n"); let size = H * 0.7 / lines.length; g.font = `bold ${size}px ${FONT}`;
+      const lines = text.split("\n"); let size = H * ([...text].length === 1 ? 0.84 : 0.7) / lines.length; g.font = `bold ${size}px ${FONT}`;   // (a letter a panel: bigger)
       const m = Math.max(...lines.map(l => g.measureText(l).width)); if (m > W * 0.9) size *= W * 0.9 / m;
       g.font = `bold ${size}px ${FONT}`; lines.forEach((l, i) => g.fillText(l, W / 2, H / 2 + (i - (lines.length - 1) / 2) * size * 1.1));
     }
