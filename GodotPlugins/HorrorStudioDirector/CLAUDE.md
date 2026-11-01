@@ -21,6 +21,7 @@ word the format doesn't have (as `move` to the player, `anim`, `talk`, `repeat`,
 | `editor/*.gd` | the dock and its tabs (story, events with the templates, flags, things, add, check, kimodo), its Guide button (`open_guide`: the project's `guide/`, else the studio's `guides/director`), the debugger plugin |
 | `kimodo/npz.gd`, `kimodo/retarget.gd`, `kimodo/stage.gd` | Kimodo's .npz read (and written), SOMA's positions onto a skeleton as an Animation (MHR, SOMA, humanoid, Mixamo), a Godot room as Kimodo's stage file |
 | `presets/` | the Add tab's drag-in scenes (`make_presets.py` writes them) |
+| `parts/` | **the parts** (DECISIONS 2026-11-01): an HSThing scene per use and per little thing (`make_parts.py`, `parts.json` the dock's list), `life_points.json` each life's effect points as fractions of a kit thing (`tools/kit/life_points.mjs`); dropped on a model in the Scene tree, or picked in the Add tab with the model selected, the part wraps the model (`plugin.gd` `wrap_object`, on the scene's undo) |
 | `tests/` | `make_sample.gd` (the sample game, built by Godot), `director_check.gd`, `kimodo_check.gd`, `alone_check.gd`, `editor_check.gd` (as a plugin of its own), `shot.gd` (a picture of the game), `guide_game.gd` and `guide_editor.gd` (the guide's pictures, `tools/godot_director.py guide`) |
 
 ## Checking it
@@ -35,7 +36,8 @@ After a change to the runtime add-on also GDPLAY, GDTESTROOM and GDEXPORT (the e
   (`tools/godot_director.py guide`, a few minutes under xvfb; DIRECTOR checks its pictures and links).
 - **A node saves only its numbers.** What it makes goes under `_gen` with no owner, rebuilt when its settings' hash
   changes (polled every few frames in the editor) and at play; nothing it makes is saved (the editor check reads the
-  file). No metadata on the user's nodes in the editor either (it's saved).
+  file). No metadata on the user's nodes in the editor either (it's saved). The one exception: a life's effect points
+  (Marker3D children, made once and owned: the user's positions; `_auto` moves only the ones nobody has touched).
 - **Setup for play only in the copy the runtime enters**: a level node's `_ready` at play returns while
   `HSDirector.holding` (the HSGame raises it in `_enter_tree`, before its children's `_ready`); the runtime duplicates
   the template, and the copy's nodes set themselves up. Keep setup idempotent anyway.

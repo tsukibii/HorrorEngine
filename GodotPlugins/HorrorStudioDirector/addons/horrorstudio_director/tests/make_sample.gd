@@ -132,6 +132,28 @@ func _initialize() -> void:
 	own(lamp, kitchen, "KitchenLamp")
 	thing(kitchen, "BedroomKey", "pickup", Vector3(1.0, 0, -1.2), 0.0, {"item": "bedroom_key", "item_name": "Bedroom key", "display_name": "Bedroom key"})
 	thing(kitchen, "Table", "none", Vector3(-0.6, 0, -1.2))
+	# the parts (DECISIONS 2026-11-01): a model of the user's made a kettle, its spout moved by hand off the kit's place;
+	# another a thing to look at closely
+	var kettle := thing(kitchen, "Kettle", "life", Vector3(-0.66, 0.5, -1.25), 0.0, {"life": "kettle", "display_name": "Kettle"})
+	var kbody := MeshInstance3D.new()
+	var cyl := CylinderMesh.new()
+	cyl.top_radius = 0.065
+	cyl.bottom_radius = 0.08
+	cyl.height = 0.2
+	kbody.mesh = cyl
+	kbody.position = Vector3(0, 0.1, 0)
+	own(kbody, kettle, "KettleModel")
+	var spout := Marker3D.new()
+	spout.position = Vector3(0, 0.19, 0.075)
+	own(spout, kettle, "spout")
+	var orn := thing(kitchen, "Ornament", "inspect", Vector3(-0.44, 0.5, -1.1), 0.0, {"inspect_text": "A porcelain cat. Its eyes are scratched out.", "display_name": "Ornament"})
+	var ball := MeshInstance3D.new()
+	var sph := SphereMesh.new()
+	sph.radius = 0.05
+	sph.height = 0.1
+	ball.mesh = sph
+	ball.position = Vector3(0, 0.05, 0)
+	own(ball, orn, "CatModel")
 	thing(bedroom, "Wardrobe", "hide", Vector3(1.7, 0, -1.4), 0.0, {"display_name": "Wardrobe"})
 	thing(bedroom, "Bed", "sleep", Vector3(-1.3, 0, -0.6), 0.0, {"display_name": "Bed"})
 	var mari: HSActor = own(HSActor.new(), house, "Mari")

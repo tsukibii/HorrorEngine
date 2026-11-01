@@ -238,6 +238,41 @@ func _initialize() -> void:
 		if not seen:
 			return "the figure never showed"
 		return "")
+	await step("parts on models: the kettle switched on, its steam where its spout marker was moved; the ornament looked at closely; the finished step crossed out", func():
+		var c := await go_to("kettle", 0.8)
+		if c != "use":
+			return "the kettle's cursor " + c
+		var before = rt.state_of("kettle")
+		rt.use(true)
+		await game_wait(1.0)
+		var now = rt.state_of("kettle")
+		if now == null or now == before:
+			return "the kettle's state %s -> %s" % [before, now]
+		var it = rt.lifefx.items.get("kettle")
+		if it == null or not it["S"].has("spout"):
+			return "the kettle has no spout among its points (%s)" % (it["S"].keys() if it != null else "no kettle in lifefx")
+		var marker: Node3D = rt.by_id["kettle"]["node"].get_node_or_null("spout")
+		if marker == null:
+			return "no spout marker in the level"
+		var w: Dictionary = rt.lifefx.socket_world(it, it["S"]["spout"])
+		if w["p"].distance_to(marker.global_position) > 0.005:
+			return "the steam comes out at %s, the marker is at %s" % [w["p"], marker.global_position]
+		c = await go_to("ornament", 0.7)
+		if c == "" or c.begins_with("ERR"):
+			return "the ornament's cursor " + c
+		rt.use(true)
+		await frames(20)
+		if rt.examining == null:
+			return "the ornament wasn't taken up to look at"
+		g.hud._finish_panel(true)
+		await frames(10)
+		var struck := false
+		for l in g.hud.todo_box.get_children():
+			if l.get_meta("state", "") == "done" and l.get_node_or_null("strike") != null:
+				struck = true
+		if not struck:
+			return "the read letter's to-do isn't crossed out"
+		return "")
 	await step("Mari says not now each time she's clicked (an event on a character, every time)", func():
 		var c := await go_to("mari", 1.0)
 		if c != "talk":

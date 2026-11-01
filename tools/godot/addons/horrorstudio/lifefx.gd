@@ -150,7 +150,8 @@ func attach() -> void:
 		var seed := 7
 		for ch in str(id):
 			seed = (seed * 31 + ch.unicode_at(0)) & 0xffffffff
-		items[id] = {"id": id, "t": t, "node": t["node"], "art": art, "ref": ref, "S": info.get("sockets", {}), "d": th.get("d", {}), "life": th["life"],
+		var own_sockets = th.get("d", {}).get("sockets")      # a Director life part's own points (its markers), else the kit's
+		items[id] = {"id": id, "t": t, "node": t["node"], "art": art, "ref": ref, "S": own_sockets if own_sockets is Dictionary else info.get("sockets", {}), "d": th.get("d", {}), "life": th["life"],
 			"def": life_def, "seed": seed % 9973, "parts": {}, "home": t["node"].transform, "mesh": null, "slot_nodes": {}, "own_mats": {}, "show": {}, "floor": null, "onMe": []}
 		if art != null:
 			for mi in art.find_children("*", "MeshInstance3D", true, false):

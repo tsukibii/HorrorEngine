@@ -16,6 +16,7 @@ var steps: Array = []                  # the flow's steps in order (nodes)
 var ids: Dictionary = {}               # a step node -> its flow id
 var _events_global: Array = []         # [event, scope node or null]
 var _used_ids: Dictionary = {}
+var life_things: Dictionary = {}       # the little things (HSThing's life use): {id: {life, d}}, as game/life_things.json
 
 
 func err(n: Node, text: String) -> void:
@@ -48,7 +49,7 @@ func compile(g: Node, alone: Node = null) -> Dictionary:
 	_collect_steps(g if alone == null else null)
 	_flow()
 	_check_refs()
-	return {"story": story, "levels": levels, "problems": problems}
+	return {"story": story, "levels": levels, "problems": problems, "life_things": life_things}
 
 
 # ---- the game -------------------------------------------------------------------------------------------------
@@ -124,6 +125,11 @@ func _thing(n: Node) -> void:
 		"clean":
 			if n.clean_with != "":
 				_item(n.clean_with, "")
+		"life":
+			if not n.life_ok():
+				err(n, "%s's life %s isn't one of lives.json's" % [HSDirector.id_of(n), n.life])
+			else:
+				life_things[HSDirector.id_of(n)] = {"life": n.life, "d": n.data()}
 
 
 func _item(iid: String, nm: String) -> void:

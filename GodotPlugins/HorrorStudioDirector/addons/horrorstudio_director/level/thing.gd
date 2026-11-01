@@ -9,13 +9,13 @@
 class_name HSThing
 extends Node3D
 
-const USES := ["none", "pickup", "note", "inspect", "switch", "breaker", "sit", "sleep", "hide", "carry", "roll", "code", "use_item", "clean", "game"]
+const USES := ["none", "pickup", "note", "inspect", "switch", "breaker", "sit", "sleep", "hide", "carry", "roll", "code", "use_item", "clean", "game", "life"]
 ## each use's own fields in the Inspector
 const FIELDS := {
 	"pickup": ["item", "item_name", "flashlight"], "carry": ["item", "item_name"], "note": ["note_title", "note_text"],
 	"inspect": ["inspect_text"], "switch": ["switches"], "code": ["code", "opens_flag"],
 	"use_item": ["needs_item", "opens_flag", "consume"], "sleep": ["sleep_needs"], "hide": ["see_through"],
-	"clean": ["clean_with", "stain"], "game": ["board_game"],
+	"clean": ["clean_with", "stain"], "game": ["board_game"], "life": ["life", "life_state"],
 }
 ## the stand-in each use shows with no model: its size (x, y, z) and colour
 const STANDIN := {"none": [Vector3(0.5, 0.5, 0.5), Color(0.5, 0.5, 0.5)], "pickup": [Vector3(0.12, 0.05, 0.08), Color(0.85, 0.7, 0.2)],
@@ -25,12 +25,12 @@ const STANDIN := {"none": [Vector3(0.5, 0.5, 0.5), Color(0.5, 0.5, 0.5)], "picku
 	"hide": [Vector3(1.0, 2.0, 0.6), Color(0.35, 0.25, 0.18)], "carry": [Vector3(0.4, 0.3, 0.3), Color(0.6, 0.45, 0.3)],
 	"roll": [Vector3(0.15, 0.15, 0.15), Color(0.95, 0.95, 0.95)], "code": [Vector3(0.12, 0.16, 0.03), Color(0.2, 0.22, 0.25)],
 	"use_item": [Vector3(0.3, 0.3, 0.3), Color(0.5, 0.6, 0.5)], "clean": [Vector3(0.7, 0.006, 0.55), Color(0.3, 0.2, 0.12)],
-	"game": [Vector3(1.2, 0.75, 0.8), Color(0.3, 0.45, 0.3)]}
+	"game": [Vector3(1.2, 0.75, 0.8), Color(0.3, 0.45, 0.3)], "life": [Vector3(0.2, 0.2, 0.2), Color(0.8, 0.82, 0.86)]}
 ## the uses that stop the player by default (furniture); the rest only take the cursor's click
 const SOLID := ["none", "breaker", "sit", "sleep", "hide", "roll", "game", "use_item"]
 
 @export var id: String = ""
-@export_enum("none", "pickup", "note", "inspect", "switch", "breaker", "sit", "sleep", "hide", "carry", "roll", "code", "use_item", "clean", "game") var use: String = "pickup":
+@export_enum("none", "pickup", "note", "inspect", "switch", "breaker", "sit", "sleep", "hide", "carry", "roll", "code", "use_item", "clean", "game", "life") var use: String = "pickup":
 	set(v):
 		use = v
 		notify_property_list_changed()
@@ -59,6 +59,15 @@ const SOLID := ["none", "breaker", "sit", "sleep", "hide", "roll", "game", "use_
 @export_enum("dirt", "mud", "blood", "water", "ash") var stain: String = "dirt"
 ## game: the board game played at it (Content/Studio/BoardGames); the Godot runtime has chohan's rules so far
 @export var board_game: String = "chohan"
+## life: the little thing it is (lives.json: a kettle that boils by itself, a cup going cold, a candle...). Its effect
+## points are Marker3D children named as lives.json names them (spout, led, tip...): made for you where a kit thing of
+## its kind has them, then yours to move (the steam comes out where the spout is)
+@export var life: String = "kettle":
+	set(v):
+		life = v
+		notify_property_list_changed()
+## life: the state it starts in (empty: its first)
+@export var life_state: String = ""
 ## stops the player (its own collider, or a box round it); off: only the cursor finds it
 @export_enum("auto", "solid", "not solid") var solidity: String = "auto"
 @export var hidden_at_start: bool = false
@@ -66,6 +75,7 @@ const SOLID := ["none", "breaker", "sit", "sleep", "hide", "roll", "game", "use_
 var _gen: Node3D = null
 var _key := 0
 var _tick := 0
+var _auto := {}            # a life's point -> where _points put it (not saved): placed again when the box changes, until moved by hand
 
 
 func _enter_tree() -> void:
@@ -87,6 +97,12 @@ func _validate_property(p: Dictionary) -> void:
 	elif nm == "board_game":
 		p["hint"] = PROPERTY_HINT_ENUM_SUGGESTION
 		p["hint_string"] = "chohan,russian_roulette,high_dice,spin_the_cup,shell_game,high_card,blackjack,shinkei_suijaku"
+	elif nm == "life":
+		p["hint"] = PROPERTY_HINT_ENUM
+		p["hint_string"] = ",".join(PackedStringArray(life_points().keys()))
+	elif nm == "life_state":
+		p["hint"] = PROPERTY_HINT_ENUM_SUGGESTION
+		p["hint_string"] = ",".join(PackedStringArray(states_of(life)))
 
 
 func _ready() -> void:
@@ -106,12 +122,13 @@ func _process(_dt: float) -> void:
 
 
 func _settings() -> Array:
-	return [use, own_model() != null]
+	return [use, own_model() != null, life if use == "life" else ""]
 
 
+## the model put in it (the first Node3D child that isn't one it made or a life's effect point)
 func own_model() -> Node3D:
 	for c in get_children():
-		if c is Node3D and not str(c.name).begins_with("_"):
+		if c is Node3D and not (c is Marker3D) and not str(c.name).begins_with("_"):
 			return c
 	return null
 
@@ -124,6 +141,8 @@ func _rebuild() -> void:
 	_gen = Node3D.new()
 	_gen.name = "_gen"
 	add_child(_gen)
+	if Engine.is_editor_hint():
+		_points.call_deferred()
 	if own_model() != null:
 		return
 	var st: Array = STANDIN.get(use, STANDIN["none"])
@@ -211,6 +230,11 @@ func data() -> Dictionary:
 				d["with"] = clean_with
 		"game":
 			d["game"] = board_game
+		"life":
+			d["life"] = life
+			d["sockets"] = life_sockets()
+			if life_state != "":
+				d["state"] = life_state
 	return d
 
 
@@ -226,3 +250,110 @@ func room_id() -> String:
 		if r.holds(global_position):
 			return HSDirector.id_of(r)
 	return ""
+
+
+# ---- a little thing (use: life) ------------------------------------------------------------------------------------
+static var _life_points: Dictionary = {}
+
+
+## every life's effect points as fractions of a kit thing's size (parts/life_points.json, tools/kit/life_points.mjs)
+static func life_points() -> Dictionary:
+	if _life_points.is_empty():
+		var f := "res://addons/horrorstudio_director/parts/life_points.json"
+		var t = JSON.parse_string(FileAccess.get_file_as_string(f)) if FileAccess.file_exists(f) else null
+		_life_points = t.get("lives", {}) if t is Dictionary else {}
+	return _life_points
+
+
+## a life's states (the project's game/lives.json, as the runtime plays them)
+static func states_of(lf: String) -> Array:
+	var out: Array = []
+	var f := "res://game/lives.json"
+	var t = JSON.parse_string(FileAccess.get_file_as_string(f)) if FileAccess.file_exists(f) else null
+	if t is Dictionary:
+		for st in t.get("lives", {}).get(lf, {}).get("states", []):
+			out.append(str(st.get("id", "")))
+	return out
+
+
+func life_ok() -> bool:
+	return life_points().has(life)
+
+
+## the box the points are placed in and read against: the model's (or the stand-in's), in its own space
+func _box() -> AABB:
+	var a := HSDirector.local_aabb(self)
+	if a.size == Vector3.ZERO:
+		var sz: Vector3 = STANDIN["life"][0]
+		a = AABB(Vector3(-sz.x / 2.0, 0, -sz.z / 2.0), sz)
+	return a
+
+
+## a life's effect points as Marker3D children, made once where a kit thing of its kind has them (scaled to this one's
+## box) and from then on the user's: saved with the scene, moved by hand; when the life changes the old one's go
+func _points() -> void:
+	if not Engine.is_editor_hint() or not is_inside_tree():
+		return
+	var root := get_tree().edited_scene_root
+	if root == null or not (root == self or root.is_ancestor_of(self)):
+		return
+	var table := life_points()
+	var want: Dictionary = table.get(life, {}).get("points", {}) if use == "life" else {}
+	var named := {}
+	for lf in table:
+		for nm in table[lf].get("points", {}):
+			named[nm] = true
+	for c in get_children():
+		if c is Marker3D and named.has(str(c.name)) and not want.has(str(c.name)):
+			remove_child(c)
+			c.queue_free()
+	var box := _box()
+	for nm in want:
+		var at := _default_at(want[nm], box)
+		var had = get_node_or_null(NodePath(nm))
+		if had != null:                                # one we placed and nobody moved follows the box (a model put in after)
+			if _auto.has(nm) and had.position.distance_to(_auto[nm]) < 1e-4 and had.position.distance_to(at) > 1e-4:
+				had.position = at
+				_auto[nm] = at
+			continue
+		var m := Marker3D.new()
+		m.name = nm
+		m.gizmo_extents = 0.04
+		m.position = at
+		_auto[nm] = at
+		if want[nm].has("n"):                          # the way it points (its +Y), from the kit's item space (x, y deep, z up)
+			var n: Array = want[nm]["n"]
+			var up := Vector3(float(n[0]), float(n[2]), -float(n[1])).normalized()
+			if up.length() > 0.5 and absf(up.dot(Vector3.UP)) < 0.999:
+				var side := Vector3.UP.cross(up).normalized()
+				m.basis = Basis(side, up, side.cross(up)).orthonormalized()
+			elif up.y < 0.0:
+				m.basis = Basis(Vector3.RIGHT, PI)
+		add_child(m)
+		m.owner = root
+
+
+## where a point goes on this box: its fractions of a kit thing's size (x across, y deep, z up from the base)
+func _default_at(pt: Dictionary, box: AABB) -> Vector3:
+	var f: Array = pt["f"]
+	var mid := box.get_center()
+	return Vector3(mid.x + float(f[0]) * box.size.x, box.position.y + float(f[2]) * box.size.y, mid.z - float(f[1]) * box.size.z)
+
+
+## the effect points as lifefx.gd reads sockets: item space about the box (x across, y deep, z up from its base), and
+## the way each points (its marker's +Y); a life with no markers (made in code) takes the kit's places on its box
+func life_sockets() -> Dictionary:
+	var box := _box()
+	var c := box.get_center()
+	var out := {}
+	for m in get_children():
+		if m is Marker3D:
+			var p: Vector3 = m.position
+			var n: Vector3 = m.basis.y.normalized()
+			out[str(m.name)] = {"at": [p.x - c.x, -(p.z - c.z), p.y - box.position.y], "n": [n.x, -n.z, n.y]}
+	if out.is_empty():
+		var pts: Dictionary = life_points().get(life, {}).get("points", {})
+		for nm in pts:
+			var p := _default_at(pts[nm], box)
+			out[nm] = {"at": [p.x - c.x, -(p.z - c.z), p.y - box.position.y], "n": pts[nm].get("n", [0, 0, 1])}
+	return out

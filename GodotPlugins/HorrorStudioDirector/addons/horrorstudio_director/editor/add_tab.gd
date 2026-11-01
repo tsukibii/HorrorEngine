@@ -6,6 +6,7 @@ extends ScrollContainer
 ## lands). Hover for what each one does.
 
 const PRESETS := "res://addons/horrorstudio_director/presets/"
+const PARTS := "res://addons/horrorstudio_director/parts/"
 const LEVEL := [["Level", "level", "level", "A level: a place the game plays in (its rooms, its things)"],
 	["Room", "room", "room", "A room: floor, walls, ceiling from its size; a door on a wall opens it"],
 	["Big room", "room", "room_big", "A larger room (7 × 6 m, 3 m high)"],
@@ -55,13 +56,68 @@ func _ready() -> void:
 	box = VBoxContainer.new()
 	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	add_child(box)
+	_parts()
 	_section("The level (click: in front of the camera; drag: into the view)", LEVEL, true)
-	_section("Things to use", THINGS, true)
+	_section("Stand-ins (things with no model yet)", THINGS, true)
 	_section("The story", STORY, false)
 
 
 func refresh() -> void:
 	pass
+
+
+## the parts (parts/, DECISIONS 2026-11-01): select your object and click what it is, or drag one onto it in the
+## Scene tree; either way the object goes inside the part (plugin.gd wrap_object)
+func _parts() -> void:
+	var idx = JSON.parse_string(FileAccess.get_file_as_string(PARTS + "parts.json")) if FileAccess.file_exists(PARTS + "parts.json") else null
+	if not (idx is Dictionary):
+		return
+	for group in [["Your objects: select one, click what it is (or drag a part onto it in the Scene tree)", idx.get("uses", [])],
+			["The little things (their effect points are markers you move)", idx.get("lives", [])]]:
+		var l := Label.new()
+		l.text = group[0]
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		l.add_theme_color_override("font_color", Color(0.75, 0.82, 1.0))
+		box.add_child(l)
+		var grid := HFlowContainer.new()
+		box.add_child(grid)
+		for it in group[1]:
+			var path: String = PARTS + str(it[0]) + ".tscn"
+			var b := Button.new()
+			b.text = str(it[1])
+			b.icon = dock.icon("thing")
+			b.tooltip_text = ("Make the selected object a %s" % str(it[2])) if it.size() > 2 else "Make the selected object: %s" % str(it[1])
+			b.custom_minimum_size = Vector2(92, 0)
+			b.pressed.connect(make.bind(path))
+			b.set_drag_forwarding(func(_at): return _drag(b, path), func(_a, _d): return false, func(_a, _d): pass)
+			grid.add_child(b)
+
+
+## the selected object made the part at `path`: wrapped in it, or, already a thing, made that use or life
+func make(path: String) -> void:
+	var sel = dock.selected()
+	if sel == null or not (sel is Node3D) or sel == dock.root():
+		dock.say("Select your object first (a model in the level), then click what it is")
+		return
+	var part: Node3D = (load(path) as PackedScene).instantiate()
+	part.scene_file_path = ""
+	var cls := HSDirector.class_of(sel)
+	if cls == "HSThing":
+		var ur = dock.plugin.get_undo_redo()
+		ur.create_action("HorrorStudio: %s is a %s" % [sel.name, part.name])
+		for k in ["use", "life", "flashlight"]:
+			ur.add_do_property(sel, k, part.get(k))
+			ur.add_undo_property(sel, k, sel.get(k))
+		ur.commit_action()
+		dock.say("%s is a %s now" % [sel.name, part.name])
+		part.free()
+		return
+	if cls.begins_with("HS"):
+		dock.say("%s is one of the level's own nodes: select your model (a mesh, or a scene you imported)" % sel.name)
+		part.free()
+		return
+	dock.plugin.wrap_object(part, sel)
+	dock.say("%s is a %s now" % [sel.name, part.name])
 
 
 func _section(title: String, items: Array, level: bool) -> void:

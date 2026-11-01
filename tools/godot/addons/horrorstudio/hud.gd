@@ -319,7 +319,21 @@ func todo(items: Array, fresh: bool) -> void:
 		elif t["state"] == "done":
 			l.modulate = Color(1, 1, 1, 0.5)
 		todo_box.add_child(l)
+		if t["state"] in ["done", "failed"]:                # kept on the list, crossed out with a single line (DECISIONS 2026-11-01)
+			_strike(l, 15)
 	todo_box.visible = items.size() > 0
+
+
+## a line through a label's words (Godot's Label has no strikethrough), at the middle of its small letters
+func _strike(l: Label, size: int) -> void:
+	var f: Font = l.get_theme_font("font")
+	var line := ColorRect.new()
+	line.name = "strike"
+	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	line.color = l.get_theme_color("font_color")
+	line.size = Vector2(f.get_string_size(l.text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x, max(1.0, size / 10.0))
+	line.position = Vector2(0, f.get_ascent(size) * 0.64 - line.size.y / 2.0)
+	l.add_child(line)
 
 
 func chapter(title, sub, secs: float) -> void:

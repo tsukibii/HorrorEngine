@@ -214,6 +214,16 @@ burning in a power cut. Light the level however you like; the look plugin's ligh
 <p>An <span class="node">HSThing</span> is something the player does something with. Pick its <b>use</b>; the Inspector
 shows only that use's fields. Put your model in it as a child (until you do, a stand-in box shows), give it a
 <b>display name</b> for the cursor ("Read · A letter"), and it's done.</p>
+<h3>Your own models: parts</h3>
+<p>The quickest way: <b>select your model</b> in the scene and click what it is in the Add tab's first rows (Pickup,
+Inspect, Note, Seat, HidingPlace, CodeLock...), or <b>drag the part</b> from the plugin's <code>parts/</code> folder
+onto your model in the Scene tree. The part takes your model's place and your model goes inside it, so it's a thing
+now. <kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes it.</p>
+<p>The <b>little things</b> are parts too: Kettle, Cup, Teapot, Pot, Hob, Candle, Cigarette, Lighter, Phone, Tap, TV,
+Clock, Fridge and more. A kettle boils by itself once switched on, a cup goes cold, a candle burns down. Each comes with
+its <b>effect points</b> as markers (a kettle's <code>spout</code>, <code>led</code>, <code>lid</code>; a cigarette's
+<code>tip</code>; a candle's <code>flame</code>), placed where they'd be on a kettle of its size: drag them onto your
+model, and the steam comes out where you put the spout.</p>
 <div class="pair">
 <figure><img src="img/e_insp_thing.jpg" width="450" height="448" alt="The Inspector on a note: use note, its title and its text"><figcaption>A note: just a title and the words.</figcaption></figure>
 <figure><img src="img/g_cursor.jpg" width="1280" height="720" alt="In the game: the cursor on the letter on the floor, saying Read, A letter"><figcaption>In the game, the cursor says what a click will do.</figcaption></figure>
@@ -234,6 +244,7 @@ shows only that use's fields. Put your model in it as a child (until you do, a s
 <tr><td>use_item</td><td>Uses an item on it (<b>needs item</b>), which sets its flag; <b>consume</b> takes the item away.</td></tr>
 <tr><td>clean</td><td>A stain scrubbed away by holding the button; <b>clean with</b> an item (a mop).</td></tr>
 <tr><td>game</td><td>A board game at a table (<b>board game</b>). The game plays <i>chohan</i> (two dice, odd or even) so far; the desk's other games come later.</td></tr>
+<tr><td>life</td><td>A little thing with a life of its own (<b>life</b>: which one; <b>life state</b>: how it starts). A click does what it offers now (switch it on, pour, answer).</td></tr>
 <tr><td>none</td><td>Nothing to do: a solid thing events can name (shown, hidden, knocked on).</td></tr>
 </table>
 <p><b>Hidden at start</b> keeps a thing out of the level until an event shows it: the key that turns up later, the

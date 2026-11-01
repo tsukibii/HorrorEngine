@@ -9,6 +9,9 @@ extends EditorPlugin
 
 var t := 0.0
 var phase := 0
+var at_t := 0.0
+var mug: MeshInstance3D = null
+var book: MeshInstance3D = null
 var rep := {}
 var dock = null
 
@@ -58,6 +61,19 @@ func _process(dt: float) -> void:
 			phase = 3
 		3:
 			_edits()
+			_parts_start()
+			at_t = t
+			phase = 30
+		30:                                               # the parts' markers and the dropped part's wrap come a frame later
+			if t - at_t < 1.0:
+				return
+			_parts_check()
+			at_t = t
+			phase = 31
+		31:
+			if t - at_t < 0.5:
+				return
+			_parts_undone()
 			phase = 4
 		4:
 			rep["saved"] = EditorInterface.save_scene() == OK
@@ -181,6 +197,64 @@ func _edits() -> void:
 	th.id = "my_key"
 	th.name = "OlderKey"
 	rep["id_kept"] = th.id
+
+
+## parts (DECISIONS 2026-11-01): a mesh of the user's made a cup from the dock (selected, clicked), another dropped on by
+## a pickup part as the Scene tree drops a file
+func _parts_start() -> void:
+	var r := EditorInterface.get_edited_scene_root()
+	var kitchen: Node = r.find_child("Kitchen", true, false)
+	mug = MeshInstance3D.new()
+	mug.name = "Mug"
+	var cm := CylinderMesh.new()
+	cm.top_radius = 0.04
+	cm.bottom_radius = 0.04
+	cm.height = 0.1
+	mug.mesh = cm
+	mug.position = Vector3(1.0, 0.75, 1.0)
+	kitchen.add_child(mug)
+	mug.owner = r
+	dock.select(mug)
+	_tab("Add").make("res://addons/horrorstudio_director/parts/cup.tscn")
+	book = MeshInstance3D.new()
+	book.name = "Book"
+	book.mesh = BoxMesh.new()
+	book.position = Vector3(1.2, 0.75, 1.0)
+	kitchen.add_child(book)
+	book.owner = r
+	var drop: Node3D = (load("res://addons/horrorstudio_director/parts/pickup.tscn") as PackedScene).instantiate(PackedScene.GEN_EDIT_STATE_INSTANCE)
+	book.add_child(drop)
+	drop.owner = r
+
+
+func _parts_check() -> void:
+	var r := EditorInterface.get_edited_scene_root()
+	var cup = mug.get_parent()
+	var pts: Array = []
+	var owned := true
+	for c in cup.get_children():
+		if c is Marker3D:
+			pts.append(str(c.name))
+			owned = owned and c.owner == r
+	pts.sort()
+	rep["part_made"] = HSDirector.class_of(cup) == "HSThing" and cup.use == "life" and cup.life == "cup" and str(cup.name) == "Mug" and cup.owner == r and cup.get_parent().name == "Kitchen"
+	rep["part_points"] = pts
+	rep["part_points_owned"] = owned and pts.size() > 0
+	var bk = book.get_parent()
+	rep["part_dropped"] = HSDirector.class_of(bk) == "HSThing" and bk.use == "pickup" and str(bk.name) == "Book" and bk.scene_file_path == "" and book.get_child_count() == 0
+	var ur := get_undo_redo()
+	ur.get_history_undo_redo(ur.get_object_history_id(r)).undo()
+
+
+func _parts_undone() -> void:
+	var r := EditorInterface.get_edited_scene_root()
+	rep["part_drop_undone"] = book.get_parent() != null and book.get_parent().name == "Kitchen" and book.get_child_count() == 1 and HSDirector.class_of(book.get_child(0)) == "HSThing"
+	for n in [book, mug]:                              # the scene left as the sample had it, the parts too
+		var top: Node = n
+		while top.get_parent() != null and top.get_parent().name != "Kitchen":
+			top = top.get_parent()
+		top.get_parent().remove_child(top)
+		top.free()
 
 
 func _items(tree: Tree) -> Array:

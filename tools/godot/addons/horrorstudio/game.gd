@@ -52,9 +52,11 @@ var fading = null
 ## the Director plugin (GodotPlugins/HorrorStudioDirector: a game built in Godot's editor, no desk): set before the
 ## node enters the tree. `story_data` the story compiled from the scene's nodes (else game/story.json is read);
 ## `level_scenes` each level id's PackedScene or a template node, duplicated on each entry (else game/levels/<id>.tscn);
-## `on_step` called with each flow node as the run reaches it (the editor's dock follows where the player is)
+## `on_step` called with each flow node as the run reaches it (the editor's dock follows where the player is);
+## `life_things_data` the little things the scene's life parts make ({id: {life, d}}; else game/life_things.json)
 var story_data = null
 var level_scenes: Dictionary = {}
+var life_things_data = null
 var on_step: Callable = Callable()
 var on_play: Callable = Callable()        # called with the play node the moment it's made (before it enters a level)
 
@@ -93,7 +95,9 @@ func _ready() -> void:
 	add_child(scene_player)
 	if FileAccess.file_exists("res://game/lives.json"):
 		lives_data = JSON.parse_string(FileAccess.get_file_as_string("res://game/lives.json"))
-	if FileAccess.file_exists("res://game/life_things.json"):
+	if life_things_data is Dictionary:
+		life_things = life_things_data
+	elif FileAccess.file_exists("res://game/life_things.json"):
 		life_things = JSON.parse_string(FileAccess.get_file_as_string("res://game/life_things.json"))
 	if FileAccess.file_exists("res://game/sfx/index.json"):
 		var sj = JSON.parse_string(FileAccess.get_file_as_string("res://game/sfx/index.json"))

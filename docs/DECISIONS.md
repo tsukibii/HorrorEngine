@@ -33,6 +33,9 @@ is docs/GODOT_DIRECTOR_PLAN.md, waiting on their yes to it.
 - **Kimodo's fingers retargeted**, and **faces without the desk**: "a tool to export a facial animation and add it into
   Godot (we'd just have a facial animation folder); the exporter should export the loopables separately."
 - **The characters' animation, paths and patrols managed by the director's state.**
+- **The plan's §9, answered**: "Just work your way through this in the cleanest best way for yourself": the story
+  nodes give way to the Director file (one way to write the story, the scene left as the world), built in the
+  plan's order (parts, the Director in the game, the Manager, fingers, faces; achievements designed for, not built).
 - **The director's UI**: "a UI-friendly director for Godot; I don't even mind you creating an HTML tools folder that
   lets us manage and save over our Godot stuff via a nice UI". The director "doesn't attach itself directly to anything
   in game (it just sits in the game's main area; a new save should reset, or have a way to manage saves), but we assign

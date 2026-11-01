@@ -93,7 +93,7 @@ a free roam with its events, for testing a level before the story's there.
 |---|---|
 | **HSRoom** | a floor, four walls and a ceiling from its `size` (the space inside; north is -z), boxes as your architecture is (DECISIONS 2026-10-30, evening). **A door put on one of its walls cuts its own opening**; `openings` are doorways and windows with no door. Its `floor_kind` is the footsteps'; its id is an area ("the player enters kitchen"); the lights inside it are the room's. Give it your own materials (a texture tiles by the metre). |
 | **HSDoor** | a leaf on its hinges (or `sliding`) in a frame, its origin at the doorway's foot. It swings away from the player. `locked_by` an item's id (or `flag:<name>`), a `peephole`, a `latch` (a thumb turn to lock it from inside). Drop a door model in as its child to wear it instead. |
-| **HSThing** | something to do something with: `use` **pickup** (into the inventory; `item` its id, `flashlight` for the torch), **note** (a card to read), **inspect** (taken up in the hands and turned), **switch** (the lights of its room, or the ones it names), **breaker** (the power), **sit**, **sleep**, **hide** (a wardrobe, a locker), **carry**, **roll** (a die), **code** (a keypad; the right code sets its flag), **use_item** (an item used on it sets its flag), **clean** (a stain scrubbed by holding the button), **game** (a board game), **none** (just a solid thing to name in events). Only its use's fields show. Put your model in as its child; a stand-in box shows until you do. `hidden_at_start`: out of the level until an event shows it. |
+| **HSThing** | something to do something with (a part, §3b): `use` **pickup** (into the inventory; `item` its id, `flashlight` for the torch), **note** (a card to read), **inspect** (taken up in the hands and turned), **switch** (the lights of its room, or the ones it names), **breaker** (the power), **sit**, **sleep**, **hide** (a wardrobe, a locker), **carry**, **roll** (a die), **code** (a keypad; the right code sets its flag), **use_item** (an item used on it sets its flag), **clean** (a stain scrubbed by holding the button), **game** (a board game), **life** (a little thing: §3b), **none** (just a solid thing to name in events). Only its use's fields show. Put your model in as its child; a stand-in box shows until you do. `hidden_at_start`: out of the level until an event shows it. |
 | **HSTrigger** | an area (a box on the floor, drawn in the editor only). An event inside it fires when the player walks in. `safe`: a watching character can't see the player in it. |
 | **HSSpot** | a spot on the floor facing its +Z (the arrow): starts, marks, where a character is sent. |
 | **HSPath** | a way a character walks: draw it with Godot's path tools (select it, Add Point, click the floor) or give it HSSpot children; `loop`, `pingpong` or `once`; `waits` at its points. |
@@ -102,6 +102,24 @@ a free roam with its events, for testing a level before the story's there.
 
 Everything a node makes for itself (a room's walls, a door's frame, the stand-ins) is made again when it changes and
 never saved: the scene keeps only your numbers.
+
+### 3b. Parts: your own models made things (DECISIONS 2026-11-01)
+
+A **part** is an HSThing set to one use or one little thing, a scene each in the plugin's `parts/` folder
+(`parts/make_parts.py` writes them): Pickup, Inspect, Note, Flashlight, Switch, Breaker, Seat, Bed, HidingPlace,
+Carry, Die, CodeLock, UseItem, Stain, GameTable, Solid, and the 20 little things of `lives.json` (Kettle, Cup, Teapot,
+Candle, Cigarette, Phone, Tap, TV, Clock...). Select your model in the scene and click the part in the dock's Add tab,
+or drag the part's file onto the model in the Scene tree: either way the part takes the model's place and the model
+goes inside it (`plugin.gd` `wrap_object`, one step on the scene's undo). Selected on a thing already, a part changes
+what it is.
+
+A little thing (`use` **life**, its `life` and the state it starts in) plays its life in the game: the kettle that
+boils by itself, the cup going cold, the candle you blow out. Its **effect points** (`spout`, `led`, `tip`,
+`flame`...) are Marker3D children, made where a kit thing of its kind has them (`parts/life_points.json`, from the kit
+by `tools/kit/life_points.mjs`) and then yours: drag the spout and the steam comes out there. The markers are the one
+thing a node makes that's saved (they're your positions); a model put in after they're made moves the ones you
+haven't touched. At play they're the life's sockets (`life_sockets`, the runtime's `lifefx.gd` reading a thing's own
+`d.sockets` before the kit's), and the compiler hands the little things to the runtime (`life_things_data`).
 
 ## 4. Events: when, if, then
 

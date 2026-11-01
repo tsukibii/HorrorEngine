@@ -68,6 +68,7 @@ func _start() -> void:
 	runtime = ps.instantiate()
 	runtime.story_data = compiled["story"]
 	runtime.level_scenes = templates
+	runtime.life_things_data = compiled.get("life_things", {})
 	runtime.autostart = false
 	runtime.on_step = _on_step
 	runtime.on_play = _on_play
