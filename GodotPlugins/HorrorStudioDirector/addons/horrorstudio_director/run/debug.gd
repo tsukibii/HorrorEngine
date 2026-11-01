@@ -101,10 +101,15 @@ func _draw() -> void:
 			var mark := "✓" if t["state"] == "done" else ("✗" if t["state"] == "failed" else "·")
 			out += "   %s %s\n" % [mark, t.get("text", t["id"])]
 		var fl: Array = []
-		for f in run["flags"]:
-			if not str(f).begins_with("_fired_") and not str(f).begins_with("@"):
-				fl.append(str(f))
-		out += "[color=#9fd3ff]flags[/color] %s\n" % (", ".join(fl) if fl.size() else "none")
+		for f in run["flags"]:                    # the facts: not the brain's conditions (?), the moments fired, the steps reached
+			var fs := str(f)
+			if not fs.begins_with("_fired_") and not fs.begins_with("@") and not fs.begins_with("?"):
+				fl.append(fs)
+		fl.sort()
+		var br = game.get("brain") if game != null else null
+		if br != null and br.quest != "":
+			out += "[color=#9fd3ff]quest[/color] %s\n" % br.quest
+		out += "[color=#9fd3ff]facts[/color] %s\n" % (", ".join(fl) if fl.size() else "none")
 		var its: Array = rt.play.items.keys() if rt.play != null else (run["items"] as Dictionary).keys()
 		out += "[color=#9fd3ff]items[/color] %s\n" % (", ".join(its) if its.size() else "none")
 		out += "[color=#9fd3ff]karma[/color] %s   [color=#9fd3ff]counters[/color] %s\n" % [JSON.stringify(run["karma"]), JSON.stringify(run["counters"])]

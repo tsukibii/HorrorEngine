@@ -26,7 +26,7 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")   # Windows consoles default to cp1252; the script is Japanese
 
 TRIGGERS = {"start", "enter", "exit", "use", "pickup", "read", "look", "after", "flag", "all", "any", "caught", "rolled", "hidden",
-            "answered", "carrying", "dropped", "played", "state", "ticked", "failed", "arrived", "torch", "peeping", "power", "locked"}
+            "answered", "carrying", "dropped", "played", "state", "ticked", "failed", "arrived", "torch", "peeping", "power", "locked", "gave"}
 TRIGGER_EXTRA = {"secs", "within", "face", "at_least", "option", "in", "result", "is", "at"}
 BOARDS = {}                 # the board games this game's tables can have (storylib.board_games), set in main
 ACTIONS = {"say", "think", "sound", "music", "light", "door", "show", "hide", "move", "objective", "flag", "unflag",
@@ -1153,6 +1153,14 @@ def check_trigger(bid, w, story, things, beats, r):
             r.err(f"{bid}: answered {v!r} isn't an ask in any stitch")
         elif "option" in w and w["option"] not in asks[v]:
             r.err(f"{bid}: answered {v!r} option {w['option']!r} isn't one of its answers ({', '.join(sorted(map(str, asks[v])))})")
+    elif k == "gave":                                  # the hand's thing given to someone who wants it (Godot's runtime: play.gd wants_from)
+        items = story.get("items", {})
+        if v != "*" and v not in items:
+            r.err(f"{bid}: gave {v!r}: an item, or \"*\" (anything)")
+        if w.get("to") not in story.get("cast", {}):
+            r.err(f"{bid}: gave to {w.get('to')!r} isn't a cast member")
+        if "except" in w and w["except"] not in items:
+            r.err(f"{bid}: gave except {w['except']!r} isn't an item")
     elif k == "carrying" and v is not True and (v not in things or things[v].use != "carry"):
         r.err(f"{bid}: carrying {v!r}: true (anything) or a thing with use: carry")
     elif k == "dropped":                               # put down and settled: anywhere, or in a room or a trigger

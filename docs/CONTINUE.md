@@ -16,8 +16,13 @@ not an order. Overwrite this file at the end of the next session.
 The user answered what the Director still lacks (DECISIONS 2026-11-01): the game as state, puppeteered by one
 Director over things with ids, logic as droppable parts, an HTML Director Manager, faces exported without the desk,
 Kimodo's fingers, Steam achievements planned for. **docs/GODOT_DIRECTOR_PLAN.md** is the plan, written and waiting
-on their yes (its §9: replace the story nodes with the Director file, and the order). Build nothing of it before
-that answer. Not merged into main yet: main has moved on (PR #6, the street builder); bringing main in conflicts
+on their yes (its §9), given: "work your way through this in the cleanest best way". **Built so far**: step 1, the
+parts (droppables, the little things with their markers, the crossed-out step); step 2, the Director in the game (the
+Director file `director/director.json` with its quests, states, moments, conversations, endings, achievements; the
+brain `run/brain.gd`; the story nodes and the Story, Events and Flags tabs removed for the dock's Director tab; giving,
+`gave`, in the runtime; the sample remade). **Next**: step 3, the Director Manager page with Coverage
+(GODOT_DIRECTOR_PLAN §4), then the guide rewritten (its story sections still describe the old nodes: a note says so),
+then Kimodo's fingers, then faces. Not merged into main yet: main has moved on (PR #6, the street builder); bringing main in conflicts
 only in CLAUDE.md, CONTINUE, DECISIONS and LESSONS (both sides added entries), the runtime merging by itself (run
 GDPLAY, GDTESTROOM and DIRECTOR after).
 

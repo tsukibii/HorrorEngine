@@ -84,6 +84,7 @@ var next_node = null
 var timer_left = null
 var timer_fail = null
 var stitch_title = null
+var stitch_now: Dictionary = {}      # the stitch playing (its beats and to-dos say who wants something: wants_from)
 var moving = null
 var look_tween = null
 var holding = null
@@ -1896,6 +1897,11 @@ func use(press: bool) -> void:
 	var t = target
 	if t == null:
 		return
+	var held = carried()                          # someone who wants something now (a `gave` trigger names her): the hand offers it
+	if held != null and not hand_down and t.get("kind") == "person" and wants_from(t["id"]):
+		hud.press()
+		emit({"type": "gave", "item": held["item"] if held.get("item") != null else held["id"], "to": t["id"]})
+		return
 	var name := interactables.name_of(t, self)
 	hud.press()
 	if name != "" and interactables.holds(name):
@@ -2370,6 +2376,7 @@ func middle_of(t: Dictionary) -> Vector3:
 # ---- running the story --------------------------------------------------------------------------------------------
 ## a stitch: its beats fire from what the player does; it ends on `done`, its timer, or an interrupt
 func run_stitch(st: Dictionary, n: Dictionary, interrupts: Array = []) -> Dictionary:
+	stitch_now = st
 	var beats: Array = []
 	for b in st.get("beats", []):
 		beats.append({"b": b, "fired": false})
@@ -2899,3 +2906,29 @@ func kept_level() -> Dictionary:
 	if not kept.has(level):
 		kept[level] = {"vis": {}, "doors": {}, "bodies": {}}
 	return kept[level]
+
+
+## whether a person wants something from the player now: a `gave` trigger naming her in the playing stitch's beats or
+## to-dos (STORY_FORMAT §4: she asked for it; anything in the hand is offered, the trigger says if it's the right one)
+func wants_from(who) -> bool:
+	for b in stitch_now.get("beats", []):
+		if _gives_to(b.get("when"), who):
+			return true
+	if todo != null:
+		for td in todo.list:
+			if td.get("state", "open") == "open" and (_gives_to(td.get("ticks"), who) or _gives_to(td.get("fails"), who)):
+				return true
+	return false
+
+
+func _gives_to(w, who) -> bool:
+	if not (w is Dictionary):
+		return false
+	if w.has("gave"):
+		return w.get("to") == who
+	for k in ["all", "any"]:
+		if w.get(k) is Array:
+			for c in w[k]:
+				if _gives_to(c, who):
+					return true
+	return false

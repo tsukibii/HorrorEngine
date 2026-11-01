@@ -4,7 +4,7 @@
 extends RefCounted
 
 const VERBS := ["start", "enter", "exit", "use", "pickup", "read", "caught", "hidden", "answered", "flag", "after", "look", "rolled",
-	"power", "locked", "peeping", "torch", "carrying", "dropped", "played", "state", "ticked", "failed", "arrived", "all", "any"]
+	"power", "locked", "peeping", "torch", "carrying", "dropped", "played", "state", "ticked", "failed", "arrived", "all", "any", "gave"]
 
 var Todo := preload("res://addons/horrorstudio/todo.gd")
 
@@ -71,6 +71,8 @@ func matches(when, ev: Dictionary, rt) -> bool:
 			return Todo.ticked(rt.todo.list, val)
 		"failed":
 			return Todo.failed(rt.todo.list, val)
+		"gave":                                    # the hand's thing offered to someone who wants something (play.gd use, wants_from)
+			return t == "gave" and ev.get("to") == when.get("to") and (val == "*" or ev.get("item") == val) and (not when.has("except") or ev.get("item") != when["except"])
 		"arrived":
 			var n = rt.npcs.get(val)
 			return n != null and n["as"] == "go" and n["st"].get("arrived") != null and (not when.has("at") or n["st"]["arrived"] == when["at"])

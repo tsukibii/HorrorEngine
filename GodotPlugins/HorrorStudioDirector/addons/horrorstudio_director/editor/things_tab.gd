@@ -41,7 +41,7 @@ func refresh() -> void:
 		["Things to use", "HSThing", func(n): return not (n.use in ["pickup", "carry", "note"]), func(n): return [HSDirector.id_of(n), n.use + ("  hidden at start" if n.hidden_at_start else "")]],
 		["Characters", "HSActor", func(n): return true, func(n): return [HSDirector.id_of(n), n.behaviour + (" · watches" if n.sees_player else "") + (" · talks" if n.talk else "") + (" · hidden at start" if n.hidden_at_start else "")]],
 		["Rooms", "HSRoom", func(n): return true, func(n): return [HSDirector.id_of(n), "%s floor, %.1f × %.1f m" % [n.floor_kind, n.size.x, n.size.z]]],
-		["Areas", "HSTrigger", func(n): return true, func(n): return [HSDirector.id_of(n), "%d events%s" % [HSDirector.nodes_of(n, "HSEvent").size(), " · safe" if n.safe else ""]]],
+		["Areas", "HSTrigger", func(n): return true, func(n): return [HSDirector.id_of(n), "safe" if n.safe else ""]],
 		["Doors", "HSDoor", func(n): return true, func(n): return [HSDirector.id_of(n), ("locked by " + n.locked_by) if n.locked_by != "" else "open"]],
 		["Spots", "HSSpot", func(n): return true, func(n): return [HSDirector.id_of(n), ""]],
 		["Paths", "HSPath", func(n): return true, func(n): return [HSDirector.id_of(n), "%d points, %s" % [n.points().size(), n.mode]]],

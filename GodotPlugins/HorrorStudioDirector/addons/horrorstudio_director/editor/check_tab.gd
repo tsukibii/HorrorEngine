@@ -39,9 +39,9 @@ func refresh() -> void:
 	var c := HSCompiler.new()
 	var res: Dictionary
 	if HSDirector.class_of(r) == "HSGame":
-		res = c.compile(r)
+		res = c.compile(r, null, HSStoryFile.read(str(r.story_file)))
 	elif HSDirector.class_of(r) == "HSLevel":
-		res = c.compile(null, r)
+		res = c.compile(null, r, HSStoryFile.read())
 	else:
 		summary.text = "Open the game's main scene (an HSGame) or a level (an HSLevel)."
 		return
@@ -60,7 +60,7 @@ func refresh() -> void:
 			"choice":
 				n_choice += 1
 	var errs: Array = res["problems"].filter(func(p): return p["error"])
-	summary.text = "%d tasks, %d dialogues, %d choices, %d endings; %d items, %d notes, %d characters, %d levels. %s" % [n_task, n_scene, n_choice, n_end,
+	summary.text = "%d quests, %d conversations, %d branch points, %d endings; %d items, %d notes, %d characters, %d levels. %s" % [n_task, n_scene, n_choice, n_end,
 		st["items"].size(), st["notes"].size(), st["cast"].size(), st["levels"].size(),
 		("%d to fix, %d to look at." % [errs.size(), res["problems"].size() - errs.size()]) if res["problems"].size() else "Nothing wrong found."]
 	for p in res["problems"]:

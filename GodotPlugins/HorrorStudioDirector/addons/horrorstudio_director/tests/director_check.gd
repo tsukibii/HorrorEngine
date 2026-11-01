@@ -138,25 +138,29 @@ func _initialize() -> void:
 		if errs.size():
 			return "problems: " + str(errs.map(func(p): return p["text"]))
 		var fl: Dictionary = st["flow"]
-		for k in ["night1__card", "arrive", "mari_talk", "bedroom", "hide_or_sleep", "morning", "asleep"]:
+		for k in ["q_key__card", "q_key", "q_drink", "q_talk", "q_bedroom", "q_night", "q_night__next", "e_morning", "e_asleep"]:
 			if not fl.has(k):
 				return "no flow node %s in %s" % [k, fl.keys()]
-		if st["game"]["start"] != "night1__card" or fl["night1__card"]["next"] != "arrive" or fl["arrive"]["next"] != "mari_talk" or fl["bedroom"]["next"] != "hide_or_sleep":
+		if st["game"]["start"] != "q_key__card" or fl["q_key__card"]["next"] != "q_key" or fl["q_key"]["next"] != "q_drink" or fl["q_talk"]["next"] != "q_bedroom" or fl["q_night"]["next"] != "q_night__next":
 			return "the order: " + JSON.stringify(fl)
-		if fl["hide_or_sleep"]["by"] != "act" or fl["hide_or_sleep"]["options"][0]["to"] != "morning":
-			return "the choice: " + JSON.stringify(fl["hide_or_sleep"])
-		var beats: Array = st["stitches"]["arrive"]["beats"].map(func(b): return b["id"])
-		if not beats.has("figure_scare") or not beats.has("letter_thought") or not beats.has("not_now"):
-			return "the arrival's beats: %s (the game's events in every task)" % [beats]
-		if not st["items"].has("bedroom_key") or not st["notes"].has("letter") or not st["cast"].has("mari"):
+		var ch: Dictionary = fl["q_night__next"]
+		if ch["by"] != "flag" or ch["options"][0]["to"] != "e_morning" or ch["options"][1]["to"] != "e_asleep" or not str(ch["options"][0]["if"][0]).begins_with("?c"):
+			return "what comes after the night, by what was done: " + JSON.stringify(ch)
+		var beats: Array = st["stitches"]["q_key"]["beats"].map(func(b): return b["id"])
+		if not beats.has("m_figure_scare") or not beats.has("m_letter_thought") or not beats.has("talk__mari__t_not_now"):
+			return "the first quest's beats: %s (the moments and the conversations in every quest)" % [beats]
+		if not st["items"].has("bedroom_key") or not st["items"].has("mug") or not st["notes"].has("letter") or not st["cast"].has("mari"):
 			return "items %s notes %s cast %s" % [st["items"].keys(), st["notes"].keys(), st["cast"].keys()]
+		var br: Dictionary = hs.compiled["brain"]
+		if br["talks"].get("mari", []).size() != 4 or br["states"].size() != 1 or br["conds"].is_empty():
+			return "the brain's: %d conversations, %d states, %d conditions" % [br["talks"].get("mari", []).size(), br["states"].size(), br["conds"].size()]
 		return "")
 	await step("the chapter card, then the first task: its objective and its two to-dos", func():
 		var k := 0
-		while not (g.run != null and g.run["trail"].has("arrive") and g.play != null and g.play.active and not g.play.busy) and k < 3000:
+		while not (g.run != null and g.run["trail"].has("q_key") and g.play != null and g.play.active and not g.play.busy) and k < 3000:
 			await process_frame
 			k += 1
-		if g.play == null or not g.run["trail"].has("arrive"):
+		if g.play == null or not g.run["trail"].has("q_key"):
 			return "never got past the chapter card"
 		rt = g.play
 		k = 0
@@ -190,7 +194,7 @@ func _initialize() -> void:
 		if abs(rt.player.pos.y) > 0.05:
 			return "the feet at y=%.2f, not on the floor" % rt.player.pos.y
 		return "")
-	await step("the letter: read (the note's card), its to-do ticked, its event's thought and flag", func():
+	await step("the letter: read (the note's card), its to-do ticked, its moment's thought, the fact read:letter", func():
 		var c := await go_to("letter", 0.8)
 		if c != "read":
 			return "cursor " + c
@@ -200,13 +204,13 @@ func _initialize() -> void:
 			return "no note's card"
 		g.hud._finish_panel(true)
 		var k := 0
-		while not flag("read_letter") and k < 600:
+		while not flag("read:letter") and k < 600:
 			await process_frame
 			k += 1
 		if todo_state("read_letter") != "done":
 			return "read_letter %s" % todo_state("read_letter")
-		if not flag("read_letter"):
-			return "no read_letter flag"
+		if not flag("read:letter"):
+			return "no fact read:letter"
 		return "")
 	await step("the kitchen door: shut it stops the player; a click opens it", func():
 		rt.place(Vector3(1.6, 0.0, 0.8), 0.0, 0.0)
@@ -221,7 +225,7 @@ func _initialize() -> void:
 		if not rt.doors["kitchen_door"]["open"]:
 			return "not open"
 		return "")
-	await step("walking into the kitchen's doorway after the letter: the figure's jumpscare (an event in an area, if a flag)", func():
+	await step("walking into the kitchen's doorway after the letter: the figure's jumpscare (a moment: when, if a fact, then)", func():
 		rt.place(Vector3(1.4, 0.0, 0.8), 0.0, 0.0)
 		rt.player.yaw = 0.0
 		rt.key_event("W", true)
@@ -273,40 +277,108 @@ func _initialize() -> void:
 		if not struck:
 			return "the read letter's to-do isn't crossed out"
 		return "")
-	await step("Mari says not now each time she's clicked (an event on a character, every time)", func():
-		var c := await go_to("mari", 1.0)
-		if c != "talk":
-			return "cursor " + c
-		rt.use(true)
-		await frames(5)
-		if g.hud.line_text.find("Not now") < 0:
-			return "line %s" % g.hud.line_text
-		await game_wait(4.0)
-		g.hud.line("", "", 0.0, false)
-		c = await go_to("mari", 1.0)
-		rt.use(true)
-		await frames(5)
-		if g.hud.line_text.find("Not now") < 0:
-			return "the second time: line %s" % g.hud.line_text
+	await step("Mari says not now each time she's clicked (the conversation she offers before the key, heard out each time)", func():
+		for time in 2:
+			var c := await go_to("mari", 1.0)
+			if c != "talk":
+				return "cursor " + c
+			g.run["flags"].erase("heard:t_not_now")
+			rt.use(true)
+			var k := 0
+			var said := false
+			while not flag("heard:t_not_now") and k < 900:
+				await process_frame
+				said = said or g.hud.line_text.find("Not now") >= 0
+				k += 1
+			if not said:
+				return "time %d: her line never came (line %s)" % [time + 1, g.hud.line_text]
+			if not flag("heard:t_not_now"):
+				return "time %d: the conversation never ended" % (time + 1)
+			k = 0
+			while not (g.play.active and not g.play.busy) and k < 300:
+				await process_frame
+				k += 1
+			await game_wait(0.5)                      # a moment, as a player takes, before clicking her again
 		return "")
-	await step("the key: taken, its to-do ticked, the task done, the dialogue with Mari answered", func():
+	await step("the key: taken, its to-do ticked, the quest done: the drink errand next", func():
 		var c := await go_to("bedroom_key", 0.8)
 		if c != "take":
 			return "cursor " + c
 		rt.use(true)
 		var k := 0
-		while g.play != null and g.play.active and k < 600:
+		while not (g.run["trail"].has("q_drink") and g.play != null and g.play.active and not g.play.busy) and k < 1200:
 			await process_frame
 			k += 1
 		if not rt.items.has("bedroom_key"):
 			return "no key held"
+		if not g.run["trail"].has("q_drink") or not flag("done:q_key"):
+			return "the errand didn't start (trail %s)" % [g.run["trail"]]
+		if g.hud.obj.text != "Bring Mari something to drink":
+			return "objective %s" % g.hud.obj.text
+		return "")
+	await step("giving: the wrong thing answered (Nah, that's not what I want), the right one taken and its step ticked; an achievement", func():
+		for id in ["bottle", "mug"]:
+			var c := await go_to(id, 0.8)
+			if c != "take":
+				return "%s's cursor %s" % [id, c]
+			rt.use(true)
+			await frames(20)
+		for i in rt.inv.size():                     # the bottle in the hand
+			if rt.inv[i]["id"] == "bottle":
+				rt.inv_at = i
+		var c2 := await go_to("mari", 1.0)
+		if c2 == "" or c2.begins_with("ERR"):
+			return "Mari's cursor " + c2
+		rt.use(true)
+		await frames(10)
+		if g.hud.line_text.find("not what I want") < 0:
+			return "the bottle: her line %s" % g.hud.line_text
+		if todo_state("give_mug") != "open" or not flag("gave:bottle:mari"):
+			return "the bottle: give_mug %s" % todo_state("give_mug")
+		await game_wait(3.0)
+		for i in rt.inv.size():
+			if rt.inv[i]["id"] == "mug":
+				rt.inv_at = i
+		c2 = await go_to("mari", 1.0)
+		rt.use(true)
+		var k := 0
+		while not g.run["trail"].has("q_talk") and k < 600:
+			await process_frame
+			k += 1
+		if not flag("gave:mug:mari") or not g.run["trail"].has("q_talk"):
+			return "the mug: give_mug %s, trail %s" % [todo_state("give_mug"), g.run["trail"]]
+		if rt.items.has("mug"):
+			return "the mug wasn't taken"
+		if not flag("achievement:ACH_HOST"):
+			return "no achievement for it"
+		return "")
+	await step("the conversation the story offers now: talked to, answered Yes, heard out (its step ticks); a state sends Mari to the bedroom door", func():
+		var k := 0
+		while not (g.play != null and g.play.active and not g.play.busy) and k < 1200:
+			await process_frame
+			k += 1
+		rt = g.play
+		var c := await go_to("mari", 1.0)
+		if c == "" or c.begins_with("ERR"):
+			return "Mari's cursor " + c
+		rt.use(true)
+		await frames(5)
 		var r := await scenes_until_play()
 		if r != "":
 			return r
-		if not flag("promised"):
-			return "the first answer's flag isn't set"
-		if not g.run["trail"].has("mari_talk"):
-			return "the dialogue didn't play: " + str(g.run["trail"])
+		k = 0
+		while not g.run["trail"].has("q_bedroom") and k < 1200:
+			await process_frame
+			k += 1
+		for f in ["talked:t_open", "answered:t_open:yes", "promised", "heard:t_open"]:
+			if not flag(f):
+				return "no fact %s (trail %s)" % [f, g.run["trail"]]
+		if not g.run["trail"].has("q_bedroom"):
+			return "the bedroom quest didn't start"
+		await game_wait(1.0)
+		var npc = g.play.npcs.get("mari")
+		if npc == null or str(npc.get("as")) != "go":
+			return "Mari isn't going anywhere: %s" % [npc]
 		return "")
 	await step("the locked bedroom door opens with the key; walking in ticks the task", func():
 		rt = g.play
@@ -322,14 +394,14 @@ func _initialize() -> void:
 		rt.place(Vector3(-1.2, 0.0, -1.2), 90.0, 0.0)
 		rt.key_event("W", true)
 		var k := 0
-		while g.play != null and g.play.active and not g.run["trail"].has("hide_or_sleep") and k < 600:
+		while g.play != null and g.play.active and not g.run["trail"].has("q_night") and k < 600:
 			await process_frame
 			k += 1
 		rt.key_event("W", false)
-		if not g.run["trail"].has("hide_or_sleep"):
+		if not g.run["trail"].has("q_night"):
 			return "the bedroom never reached (at z=%.2f)" % rt.player.pos.z
 		return "")
-	await step("the choice by act: hiding in the wardrobe is the good ending", func():
+	await step("a quest that ends on its first step: hiding in the wardrobe, and what comes next by what was done: the good ending", func():
 		if not await playing(true, 2000):
 			return "no play for the choice"
 		rt = g.play

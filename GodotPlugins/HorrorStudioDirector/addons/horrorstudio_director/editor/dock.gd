@@ -8,9 +8,7 @@ extends VBoxContainer
 ## it into the viewport), Check the compiler's problems, Kimodo the link to the motion maker. Everything it does is
 ## on the editor's undo.
 
-const StoryTab := preload("res://addons/horrorstudio_director/editor/story_tab.gd")
-const EventsTab := preload("res://addons/horrorstudio_director/editor/events_tab.gd")
-const FlagsTab := preload("res://addons/horrorstudio_director/editor/flags_tab.gd")
+const DirectorTab := preload("res://addons/horrorstudio_director/editor/director_tab.gd")
 const ThingsTab := preload("res://addons/horrorstudio_director/editor/things_tab.gd")
 const AddTab := preload("res://addons/horrorstudio_director/editor/add_tab.gd")
 const CheckTab := preload("res://addons/horrorstudio_director/editor/check_tab.gd")
@@ -19,9 +17,7 @@ const ICONS := "res://addons/horrorstudio_director/icons/"
 
 var plugin: EditorPlugin = null
 var tabs: TabContainer
-var story_tab
-var events_tab
-var flags_tab
+var director_tab
 var things_tab
 var add_tab
 var check_tab
@@ -40,9 +36,7 @@ func _ready() -> void:
 	tabs = TabContainer.new()
 	tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	add_child(tabs)
-	story_tab = _tab(StoryTab, "Story")
-	events_tab = _tab(EventsTab, "Events")
-	flags_tab = _tab(FlagsTab, "Flags")
+	director_tab = _tab(DirectorTab, "Director")
 	things_tab = _tab(ThingsTab, "Things")
 	add_tab = _tab(AddTab, "Add")
 	check_tab = _tab(CheckTab, "Check")
@@ -140,8 +134,7 @@ func icon(name: String) -> Texture2D:
 func icon_of(n: Node) -> Texture2D:
 	var cls := HSDirector.class_of(n)
 	var m := {"HSGame": "game", "HSLevel": "level", "HSRoom": "room", "HSDoor": "door", "HSThing": "thing", "HSTrigger": "trigger",
-		"HSSpot": "spot", "HSPath": "path", "HSActor": "actor", "HSChapter": "chapter", "HSTask": "task", "HSTodo": "todo",
-		"HSEvent": "event", "HSDialogue": "dialogue", "HSLine": "line", "HSOption": "option", "HSChoice": "choice", "HSEnding": "ending"}
+		"HSSpot": "spot", "HSPath": "path", "HSActor": "actor"}
 	return icon(m[cls]) if m.has(cls) else null
 
 
@@ -247,7 +240,7 @@ func level_parent() -> Node:
 		var c := HSDirector.class_of(s)
 		if c in ["HSRoom", "HSLevel"]:
 			return s
-		if c in ["HSTask", "HSChapter", "HSGame", "HSDialogue", "HSChoice", "HSEnding", "HSEvent", "HSTodo"]:
+		if c == "HSGame":
 			break
 		s = s.get_parent()
 	var r := root()
@@ -289,16 +282,29 @@ func on_run_step(nid: String, flags: Array) -> void:
 
 func on_run_flag(f: String) -> void:
 	run_flags[f] = true
-	if tabs.get_current_tab_control() == flags_tab:
-		refresh()
 
 
 func on_run_event(ev: String) -> void:
 	run_events.append(ev)
 	while run_events.size() > 40:
 		run_events.pop_front()
-	if tabs.get_current_tab_control() == events_tab:
-		events_tab.refresh()
+
+
+## the Director Manager (the studio's tools/director_manager/serve.py) started on this project and opened in the
+## browser; a second start finds its port taken and leaves, the page opening on the one running
+const MANAGER_PORT := 8796
+func open_manager() -> String:
+	var studio := HSKimodoStage.studio_root()
+	var serve := studio.path_join("tools/director_manager/serve.py") if studio != "" else ""
+	if serve == "" or not FileAccess.file_exists(serve):
+		return "The Director Manager is the studio's (tools/director_manager): set the studio folder in the Kimodo tab, or run python tools/director_manager/serve.py there"
+	var project := ProjectSettings.globalize_path("res://")
+	var cmd := str(ProjectSettings.get_setting("horrorstudio/director/python", "python3")).split(" ", false)
+	var args: Array = Array(cmd.slice(1)) + [serve, "--project", project, "--port", str(MANAGER_PORT)]
+	OS.create_process(cmd[0], PackedStringArray(args))
+	var url := "http://127.0.0.1:%d/?project=%s" % [MANAGER_PORT, project.uri_encode()]
+	get_tree().create_timer(1.5).timeout.connect(func(): OS.shell_open(url))
+	return "The Director Manager opens in your browser: " + url
 
 
 func on_run_stop() -> void:

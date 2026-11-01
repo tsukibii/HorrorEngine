@@ -7,10 +7,9 @@ class_name HSDirector
 extends RefCounted
 
 const RUNTIME_MAIN := "res://addons/horrorstudio/main.tscn"
-const STEPS := ["HSTask", "HSDialogue", "HSChoice", "HSEnding"]
 const INTERACT := 1 << 19           # the clickable areas' collision layer (collide.gd's INTERACT)
-const KINDS := ["area", "thing", "door", "item", "note", "flag", "actor", "spot", "step", "task", "todo", "event", "dialogue",
-	"light", "room", "path", "sound", "motion", "ask", "counter", "level"]
+const KINDS := ["area", "thing", "door", "item", "note", "flag", "actor", "spot", "light", "room", "path", "sound", "motion",
+	"counter", "level", "life"]
 
 ## raised by HSGame (and a level played alone) while it takes its levels up as templates: their nodes skip their own
 ## setup for play until the runtime enters a copy
@@ -290,6 +289,8 @@ static func _scan(n: Node, out: Dictionary, add: Callable) -> void:
 					add.call("flag", c.opens_flag)
 				if c.use == "use_item" and c.needs_item != "":
 					add.call("item", c.needs_item)
+				if c.use == "life":
+					add.call("life", id)
 			"HSActor":
 				add.call("actor", id)
 				add.call("thing", id)
@@ -301,32 +302,6 @@ static func _scan(n: Node, out: Dictionary, add: Callable) -> void:
 				add.call("path", id)
 			"HSLevel":
 				add.call("level", id)
-			"HSTask":
-				add.call("step", id)
-				add.call("task", id)
-			"HSDialogue":
-				add.call("step", id)
-				add.call("dialogue", id)
-			"HSChoice", "HSEnding":
-				add.call("step", id)
-			"HSTodo":
-				add.call("todo", id)
-			"HSEvent":
-				add.call("event", id)
-				for f in c.require_flags:
-					add.call("flag", f)
-				for f in c.block_flags:
-					add.call("flag", f)
-				for it in c.require_items:
-					add.call("item", it)
-				for a in c.actions:
-					if a != null:
-						a.collect(add)
-			"HSOption":
-				for f in c.set_flags:
-					add.call("flag", f)
-				for f in c.if_flags:
-					add.call("flag", f)
 			"HSGame":
 				for k in c.counters:
 					add.call("counter", k)

@@ -78,7 +78,7 @@ func _process(dt: float) -> void:
 		4:
 			rep["saved"] = EditorInterface.save_scene() == OK
 			var txt := FileAccess.get_file_as_string("res://main.tscn")
-			rep["saved_task"] = txt.contains("[node name=\"Task") and txt.contains("[node name=\"ScareArea")
+			rep["saved_task"] = txt.contains("[node name=\"OlderKey") and not txt.contains("HSEvent")
 			rep["saved_nothing_made"] = not txt.contains("name=\"_gen\"") and not txt.contains("name=\"_solid\"")
 			_done()
 
@@ -107,20 +107,12 @@ func _rows(tree: Tree) -> Array:
 
 
 func _tabs() -> void:
-	var st = _tab("Story")
-	st.refresh()
-	var rows := _rows(st.tree)
-	rep["story_rows"] = rows.size()
-	rep["story_has"] = rows.any(func(r): return r.begins_with("Chapter · Night 1")) and rows.any(func(r): return r == "The key") and rows.any(func(r): return r.begins_with("Choice · "))
-	var ev = _tab("Events")
-	ev.refresh()
-	var er := _rows(ev.tree)
-	rep["events_rows"] = er
-	rep["events_has_scare"] = er.any(func(r): return r.contains("JUMPSCARE: figure") and r.contains("if read_letter"))
-	var fl = _tab("Flags")
-	fl.refresh()
-	var fr := _rows(fl.tree)
-	rep["flags_rows"] = fr.filter(func(r): return not r.begins_with("set by") and not r.begins_with("checked by"))
+	var dt = _tab("Director")
+	dt.refresh()
+	var rows := _rows(dt.tree)
+	rep["director_rows"] = rows.size()
+	rep["director_has"] = rows.any(func(r): return r.begins_with("Quests (5)")) and rows.any(func(r): return r == "The key") and rows.any(func(r): return r == "A drink") \
+		and rows.any(func(r): return r.begins_with("☐ Give Mari the mug")) and rows.any(func(r): return r.begins_with("Endings (2)")) and rows.any(func(r): return r == "figure_scare")
 	var th = _tab("Things")
 	th.refresh()
 	rep["things_rows"] = _rows(th.tree).size()
@@ -129,51 +121,19 @@ func _tabs() -> void:
 	rep["check_summary"] = ck.summary.text
 	var gb = dock.find_child("Guide", true, false)        # the Guide button finds the project's own copy (install's guide/)
 	rep["guide"] = gb is Button and dock.guide_path() == ProjectSettings.globalize_path("res://guide/index.html")
-	dock.on_run_start("night1__card", [])                 # what the running game sends (HSGame through the debugger)
-	dock.on_run_step("arrive", ["@arrive", "read_letter"])
+	dock.on_run_start("q_key__card", [])                 # what the running game sends (HSGame through the debugger)
+	dock.on_run_step("q_drink", ["@q_key", "done:q_key", "read:letter", "step:read_letter"])
 	dock.on_run_flag("saw_figure")
-	st = _tab("Story")
-	st.refresh()
-	rep["live_now"] = _rows(st.tree).any(func(r): return r == "▶ The key")
-	fl = _tab("Flags")
-	fl.refresh()
-	rep["live_flags"] = _rows(fl.tree).any(func(r): return r.begins_with("● read_letter")) and _rows(fl.tree).any(func(r): return r.begins_with("● saw_figure"))
+	dt = _tab("Director")
+	dt.refresh()
+	var live := _rows(dt.tree)
+	rep["live_now"] = live.any(func(r): return r == "▶ A drink") and live.any(func(r): return r == "✓ The key")
+	rep["live_facts"] = live.any(func(r): return r == "● read:letter") and live.any(func(r): return r == "● saw_figure") and live.any(func(r): return r.begins_with("✓ Read the letter"))
 	dock.on_run_stop()
 
 
 func _edits() -> void:
 	var r := EditorInterface.get_edited_scene_root()
-	var ur := get_undo_redo()
-	var st = _tab("Story")
-	var arrive := r.find_child("Arrive", true, false)
-	dock.select(arrive)
-	st.refresh()
-	for it in _items(st.tree):
-		if it.get_metadata(0) == arrive:
-			it.select(0)
-	var before := r.find_children("*", "HSTask", true, false).size()
-	st._add_task()
-	var tasks := r.find_children("*", "HSTask", true, false)
-	var added = null
-	for x in tasks:
-		if str(x.name).begins_with("Task"):
-			added = x
-	rep["task_added"] = tasks.size() == before + 1 and added != null and added.get_index() == arrive.get_index() + 1 and added.get_parent() == arrive.get_parent()
-	rep["task_has_todo"] = added != null and added.get_child_count() == 1 and added.get_child(0) is HSTodo
-	ur.get_history_undo_redo(ur.get_object_history_id(r)).undo()
-	rep["task_undone"] = r.find_children("*", "HSTask", true, false).size() == before
-	ur.get_history_undo_redo(ur.get_object_history_id(r)).redo()
-	rep["task_redone"] = r.find_children("*", "HSTask", true, false).size() == before + 1
-	var ev = _tab("Events")
-	ev.picker.select(0)
-	dock.select(r.find_child("House", true, false))
-	var areas := r.find_children("*", "HSTrigger", true, false).size()
-	ev._make()
-	var scare := r.find_child("ScareArea", true, false)
-	var sev: Array = scare.find_children("*", "HSEvent", false, false) if scare != null else []
-	rep["jumpscare_made"] = r.find_children("*", "HSTrigger", true, false).size() == areas + 1 and sev.size() == 1 and sev[0].actions.size() == 3
-	ev.refresh()
-	rep["jumpscare_listed"] = _rows(ev.tree).any(func(x): return x.contains("JUMPSCARE") and x.contains("scare_area_done"))
 	var add = _tab("Add")
 	dock.select(r.find_child("Hall", true, false))
 	var things := r.find_children("*", "HSThing", true, false).size()
@@ -205,7 +165,7 @@ func _parts_start() -> void:
 	var r := EditorInterface.get_edited_scene_root()
 	var kitchen: Node = r.find_child("Kitchen", true, false)
 	mug = MeshInstance3D.new()
-	mug.name = "Mug"
+	mug.name = "Teacup"
 	var cm := CylinderMesh.new()
 	cm.top_radius = 0.04
 	cm.bottom_radius = 0.04
@@ -237,7 +197,7 @@ func _parts_check() -> void:
 			pts.append(str(c.name))
 			owned = owned and c.owner == r
 	pts.sort()
-	rep["part_made"] = HSDirector.class_of(cup) == "HSThing" and cup.use == "life" and cup.life == "cup" and str(cup.name) == "Mug" and cup.owner == r and cup.get_parent().name == "Kitchen"
+	rep["part_made"] = HSDirector.class_of(cup) == "HSThing" and cup.use == "life" and cup.life == "cup" and str(cup.name) == "Teacup" and cup.owner == r and cup.get_parent().name == "Kitchen"
 	rep["part_points"] = pts
 	rep["part_points_owned"] = owned and pts.size() > 0
 	var bk = book.get_parent()

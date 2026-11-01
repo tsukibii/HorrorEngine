@@ -1,7 +1,9 @@
 # HorrorStudio Director: notes for Claude
 
-The studio's third Godot plugin (DECISIONS 2026-10-30, night; docs/GODOT_DIRECTOR.md is the user's guide): a game built
-in Godot's editor from nodes, compiled at play time into the runtime's story. It lives here, once; projects get it from
+The studio's third Godot plugin (DECISIONS 2026-10-30, night; docs/GODOT_DIRECTOR.md the notes, guides/director the
+user's guide): a game built in Godot's editor. The scene is the world (levels, rooms, doors, things and parts,
+characters); the story is the Director file, `director/director.json` (DECISIONS 2026-11-01: the Director puppeteers
+the game by id), compiled at play into the runtime's story with the brain beside it. It lives here, once; projects get it from
 `tools/godot_director.py` (`new`, `install`). It depends on the runtime add-on (`tools/godot/addons/horrorstudio`), whose
 words it compiles to (STORY_FORMAT): grow the runtime, the story check and STORY_FORMAT.md together when a node needs a
 word the format doesn't have (as `move` to the player, `anim`, `talk`, `repeat`, `item:` in an `if`,
@@ -13,16 +15,18 @@ word the format doesn't have (as `move` to the player, `anim`, `talk`, `repeat`,
 |---|---|
 | `plugin.gd` | the EditorPlugin: the dock (under the Inspector), the debugger plugin, the ids index (`res://.hsdirector/index.json`, on every save), presets dragged into the 3D view made the scene's own nodes |
 | `core/director.gd` | `HSDirector`: ids (`snake` splits CamelCase; `auto_id` follows renames while the id is the name's), the story's axes (`story_pos`, `story_yaw`: a node's +Z is its facing), `local_aabb`, `stamp` (a runtime piece: `metadata/piece` and the group `hs_piece`), `recentre`, colliders, the scene's ids by kind (`scan`, `ids`, `hint`: the Inspector's suggestions), `holding` (raised while levels are taken up as templates) |
-| `core/when.gd`, `core/action.gd`, `core/opening.gd` | `HSWhen` (a trigger), `HSAction` (an action: `VERBS` its fields, `to_story`, `describe`), `HSOpening`; `_validate_property` shows a kind's or verb's fields only |
+| `core/cond.gd`, `core/opening.gd` | `HSCond`: a condition over the run's facts (`holds`, `key`, `reads`); `HSOpening` (a room's doorway or window) |
 | `level/*.gd` | the level's nodes: `_rebuild` in the editor and at play (children under `_gen`, no owner), `_setup`/`_stamp` at play only (not while `HSDirector.holding`): the runtime's pieces |
-| `story/*.gd` | the story's nodes; `story/game.gd` (HSGame) is also the bridge at play: compile, take the levels up (templates), start `addons/horrorstudio/main.tscn` with `story_data` and `level_scenes`, the characters' behaviours on each level (`_on_level`), the debugger messages, the play-from-here file (`user://hs_director_run.json`) |
-| `compile.gd` | `HSCompiler`: the nodes as the story (flow, stitches, scenes, choices, endings, levels, cast, items, notes, sounds, motions) and the problems with their nodes |
-| `run/debug.gd` | F9's panel |
-| `editor/*.gd` | the dock and its tabs (story, events with the templates, flags, things, add, check, kimodo), its Guide button (`open_guide`: the project's `guide/`, else the studio's `guides/director`), the debugger plugin |
+| `story/game.gd` | `HSGame`, the main scene's root and the bridge at play: the Director file read (`story_file`), compile, take the levels up (templates), start `addons/horrorstudio/main.tscn` with `story_data`, `level_scenes` and `life_things_data`, the brain beside it (its `event`, `step`, `level` called from the runtime's hooks), the characters' behaviours on each level (`_on_level`), the debugger messages, the play-from-here file (`user://hs_director_run.json`) |
+| `story/story_file.gd`, `story/story_compile.gd` | `HSStoryFile`: the Director file's shape, `read`, `write`; `HSStoryCompiler`: the file into the runtime's flow, stitches (quests: the steps as to-dos, the finish, the wrong thing, the moments and conversations in each), choices (next by condition), scenes (conversations), endings, and the brain's tables (every condition a `?c<n>` flag, each conversation's turn a `?talk__<who>__<id>`, states, achievements) |
+| `compile.gd` | `HSCompiler`: the world from the nodes (levels, cast, items, notes, life things, sounds) and the story through `HSStoryCompiler`; problems with their nodes, the story's names the scene hasn't got |
+| `run/brain.gd` | the Director at play: facts from the runtime's events (`used:`, `picked:`, `entered:`, `talked:`, `heard:`, `gave:`, `step:`, `done:`...), the conditions' flags, each person's conversation, the states applied by the runtime's actions (only what changed; again on every level entered), the achievements |
+| `run/debug.gd` | F9's panel (the quest, the facts) |
+| `editor/*.gd` | the dock and its tabs (director: the file read and the running game's ▶ ✓ ●, ▶ Here, the Manager; things, add with the parts, check, kimodo), its Guide button (`open_guide`), `open_manager` (the studio's tools/director_manager started on the project), the debugger plugin |
 | `kimodo/npz.gd`, `kimodo/retarget.gd`, `kimodo/stage.gd` | Kimodo's .npz read (and written), SOMA's positions onto a skeleton as an Animation (MHR, SOMA, humanoid, Mixamo), a Godot room as Kimodo's stage file |
 | `presets/` | the Add tab's drag-in scenes (`make_presets.py` writes them) |
 | `parts/` | **the parts** (DECISIONS 2026-11-01): an HSThing scene per use and per little thing (`make_parts.py`, `parts.json` the dock's list), `life_points.json` each life's effect points as fractions of a kit thing (`tools/kit/life_points.mjs`); dropped on a model in the Scene tree, or picked in the Add tab with the model selected, the part wraps the model (`plugin.gd` `wrap_object`, on the scene's undo) |
-| `tests/` | `make_sample.gd` (the sample game, built by Godot), `director_check.gd`, `kimodo_check.gd`, `alone_check.gd`, `editor_check.gd` (as a plugin of its own), `shot.gd` (a picture of the game), `guide_game.gd` and `guide_editor.gd` (the guide's pictures, `tools/godot_director.py guide`) |
+| `tests/` | `make_sample.gd` (the sample game, built by Godot: the house and its `director/director.json`), `director_check.gd`, `kimodo_check.gd`, `alone_check.gd`, `editor_check.gd` (as a plugin of its own), `shot.gd` (a picture of the game), `guide_game.gd` and `guide_editor.gd` (the guide's pictures, `tools/godot_director.py guide`) |
 
 ## Checking it
 
@@ -43,7 +47,12 @@ After a change to the runtime add-on also GDPLAY, GDTESTROOM and GDEXPORT (the e
   the template, and the copy's nodes set themselves up. Keep setup idempotent anyway.
 - **Pieces are boxes about their node** (the runtime's math): a thing is recentred on its box at play; a door's piece is
   its leaf, a `_leaf` node at the leaf's middle carrying what moves.
-- **Typed arrays**: `Array[HSAction]` properties take `assign()` from an untyped array; `@export_enum` can't have an empty
-  option (use "keep" or "game"); `get_meta(key, null)` errors on a missing key (check `has_meta`).
+- **The story is data, the scene the world.** No story in the scene's nodes: what happens is the Director file's, named
+  by id; the brain changes the world only through the runtime's actions (behave, show, door, light, state), never by
+  touching a node. Its conditions are flags to the runtime (`?c<n>`): keep the runtime's `if` lists plain.
+- **The brain hears an event before the beats do** (play.gd `emit`: `on_event` first): facts written then are read by
+  the beats the same event fires. A fact set by an action arrives as a "flag" event and counts; only "tick" is skipped.
+- `@export_enum` can't have an empty option (use "keep" or "game"); `get_meta(key, null)` errors on a missing key
+  (check `has_meta`).
 - **The editor keeps dock positions per project** (`.godot/editor/editor_layout.cfg`): a slot change shows in a new
   project, not one that already had the dock.

@@ -36,16 +36,6 @@ const THINGS := [["Key", "thing", "key", "A pickup: into the inventory; a locked
 	["Stain", "thing", "stain", "A stain to scrub away (hold the button)"],
 	["Game table", "thing", "table_game", "A board game at a table"],
 	["Prop", "thing", "prop", "A solid thing to name in events (put a model in it)"]]
-const STORY := [["Chapter", "chapter", "_add_chapter", "A chapter: its card, its time of day; its steps under it"],
-	["Task", "task", "_add_task", "A task: the objective, its to-do list, its events"],
-	["To-do", "todo", "_add_todo", "A to-do in the selected task, ticked by what the player does"],
-	["Event", "event", "_add_event", "An event: when, if, then (in the selected task, chapter, area or thing)"],
-	["Dialogue", "dialogue", "_add_dialogue", "A conversation: lines, a question with answers"],
-	["Line", "line", "_add_line", "A line in the selected dialogue"],
-	["Option", "option", "_add_option", "An answer under the selected line, or a way of the selected choice"],
-	["Choice", "choice", "_add_choice", "Where the story branches: by flags, by what the player does, by karma"],
-	["Ending", "ending", "_add_ending", "An ending: its card's title and words"]]
-
 var dock = null
 var box: VBoxContainer
 
@@ -59,7 +49,6 @@ func _ready() -> void:
 	_parts()
 	_section("The level (click: in front of the camera; drag: into the view)", LEVEL, true)
 	_section("Stand-ins (things with no model yet)", THINGS, true)
-	_section("The story", STORY, false)
 
 
 func refresh() -> void:
@@ -134,12 +123,9 @@ func _section(title: String, items: Array, level: bool) -> void:
 		b.icon = dock.icon(it[1]) if it[1] != "" else null
 		b.tooltip_text = it[3]
 		b.custom_minimum_size = Vector2(92, 0)
-		if level:
-			var path: String = PRESETS + it[2] + ".tscn"
-			b.pressed.connect(_place.bind(path))
-			b.set_drag_forwarding(func(_at): return _drag(b, path), func(_a, _d): return false, func(_a, _d): pass)
-		else:
-			b.pressed.connect(func(): dock.story_tab.call(it[2]))
+		var path: String = PRESETS + it[2] + ".tscn"
+		b.pressed.connect(_place.bind(path))
+		b.set_drag_forwarding(func(_at): return _drag(b, path), func(_a, _d): return false, func(_a, _d): pass)
 		grid.add_child(b)
 
 

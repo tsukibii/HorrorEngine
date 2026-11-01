@@ -1,10 +1,11 @@
 ## The game (docs/GODOT_DIRECTOR.md §1): the main scene's root. Under it the levels (HSLevel, built right here or
-## instanced from their own scenes) and the story in play order (chapters, tasks, dialogue, choices, endings; plain
-## Nodes to group them as you like); its own settings are the game's (the title, the player's name, the time of
-## day, the look, the camcorder tape, the grade, the HUD's theme). Played (F5), it compiles all of it into the story
-## (compile.gd), takes its levels up as templates and starts the studio's runtime with them: the player, the
-## interactions, the HUD, the menu, the saves. F9 in the game shows where the player is and what's set; run from the
-## editor, the dock follows along.
+## instanced from their own scenes): the world. The story is the Director file (`story_file`, director/director.json:
+## its quests, states, moments, conversations, endings; written in the Director Manager), never the scene's nodes.
+## Its own settings are the game's (the title, the player's name, the time of day, the look, the camcorder tape, the
+## grade, the HUD's theme). Played (F5), it compiles the world and the story (compile.gd), takes its levels up as
+## templates, starts the studio's runtime with them (the player, the interactions, the HUD, the menu, the saves) and
+## the Director's brain beside it (run/brain.gd: the facts, the conditions, the states). F9 in the game shows where
+## the player is and what's set; run from the editor, the dock follows along.
 @tool
 @icon("res://addons/horrorstudio_director/icons/game.svg")
 class_name HSGame
@@ -13,6 +14,8 @@ extends Node
 const RUN_FILE := "user://hs_director_run.json"     # "play from here": the dock's step and state for the next run
 
 @export var title: String = "Untitled"
+## the story: the Director file (the Director Manager writes it)
+@export_file("*.json") var story_file: String = "res://director/director.json"
 @export var player_name: String = "Alex"
 @export_enum("night", "dusk", "day") var time_of_day: String = "night"
 @export_range(60.0, 110.0) var fov: float = 90.0
@@ -33,6 +36,7 @@ var runtime: Node = null            # the studio's runtime (addons/horrorstudio/
 var compiled: Dictionary = {}
 var templates: Dictionary = {}      # level id -> its HSLevel, out of the tree (the runtime enters a copy)
 var _debug: Node = null
+var brain: Node = null              # the Director at play (run/brain.gd)
 
 
 func _enter_tree() -> void:
@@ -48,7 +52,7 @@ func _ready() -> void:
 
 func _start() -> void:
 	var c := HSCompiler.new()
-	compiled = c.compile(self, alone)
+	compiled = c.compile(self, alone, HSStoryFile.read(story_file))
 	for p in compiled["problems"]:
 		var where: String = str(p["node"].name) if p["node"] != null and is_instance_valid(p["node"]) else "game"
 		if p["error"]:
@@ -72,6 +76,13 @@ func _start() -> void:
 	runtime.autostart = false
 	runtime.on_step = _on_step
 	runtime.on_play = _on_play
+	brain = load("res://addons/horrorstudio_director/run/brain.gd").new()
+	brain.name = "HSBrain"
+	brain.game = self
+	brain.runtime = runtime
+	brain.data = compiled.get("brain", {})
+	brain.unlocked.connect(func(id, t): _send("achievement", [id, t]))
+	add_child(brain)
 	for we in get_children():                    # a WorldEnvironment put beside the levels: the game's own environment
 		if we is WorldEnvironment and we.environment != null:
 			var env: Environment = we.environment
@@ -93,6 +104,8 @@ func _start() -> void:
 			snap = {"flags": j.get("flags", []), "items": j.get("items", []), "karma": {"karma": float(j.get("karma", 0))}, "counters": {}, "states": {}, "trail": []}
 			for k in _before(from):
 				snap["flags"].append("@" + k)
+				if compiled.get("brain", {}).get("quests", []).has(k):
+					snap["flags"].append("done:" + k)
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--node=") and compiled["story"]["flow"].has(a.substr(7)):
 			from = a.substr(7)
@@ -129,6 +142,8 @@ func _send(what: String, data: Array) -> void:
 
 
 func _on_step(nid) -> void:
+	if brain != null:
+		brain.step(str(nid))
 	var flags: Array = runtime.run["flags"].keys() if runtime.run != null else []
 	_send("step", [str(nid), flags])
 	if _debug != null:
@@ -142,6 +157,8 @@ func _on_play(rt) -> void:
 
 
 func _on_event(ev: Dictionary) -> void:
+	if brain != null:
+		brain.event(ev)                              # the facts first: the beats hearing this read them
 	_send("event", [JSON.stringify(ev)])
 	if _debug != null:
 		_debug.event(ev)
@@ -165,4 +182,6 @@ func _on_level(lid: String) -> void:
 			continue
 		var b: Dictionary = a.behave()
 		rt.behave(cid, b)
+	if brain != null:
+		brain.level(lid)                             # the story's states over the characters' own
 	rt.draw_npcs(0.0)                                  # on their marks now: a dialogue that starts the level shows them too

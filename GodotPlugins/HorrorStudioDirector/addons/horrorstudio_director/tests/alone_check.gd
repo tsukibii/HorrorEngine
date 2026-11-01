@@ -41,7 +41,7 @@ func _initialize() -> void:
 		rep["beats"] = st["stitches"].get("free_roam", {}).get("beats", []).map(func(b): return b["id"])
 		rep["active"] = rt.active
 		rep["at_start"] = rt.player.pos.distance_to(Vector3(0, 0, 1.2)) < 0.3
-		rt.flags["read_letter"] = true
+		rt.flags["read:letter"] = true                # the fact the jumpscare moment asks for (the Director file's, read for a level alone too)
 		rt.door("kitchen_door", "open")
 		for i in 60:
 			await process_frame

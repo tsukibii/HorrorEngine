@@ -106,9 +106,8 @@ id = "hall"
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 1)
 script = ExtResource("spot")
 id = "start"
-
-[node name="Story" type="Node" parent="."]
 '''
+EMPTY_STORY = {"format": 1, "quests": [], "states": [], "moments": [], "talk": {}, "endings": [], "achievements": [], "facts": {}}
 
 
 def place(src, dst, link):
@@ -240,6 +239,8 @@ def new(out, title="My HorrorStudio game", sample=False, link=False):
     (out / "project.godot").write_text(project_godot(title), encoding="utf-8")
     install(out, link)
     (out / "main.tscn").write_text(FIRST_SCENE.format(title=G.gstr(title)), encoding="utf-8")
+    (out / "director").mkdir(exist_ok=True)                                  # the story (the Director Manager writes it): none yet, a free roam
+    (out / "director" / "director.json").write_text(json.dumps(EMPTY_STORY, indent=1), encoding="utf-8")
     import_all(out)
     if sample:
         code, text = run_godot(["--headless", "--path", str(out), "-s", "res://addons/horrorstudio_director/tests/make_sample.gd"], timeout=300)
@@ -380,14 +381,15 @@ def kimodo_check(out):
 
 
 def alone_check(out):
-    """A level played on its own (F6 on its scene: tests/alone_check.gd): a game made round it, its events the game's."""
+    """A level played on its own (F6 on its scene: tests/alone_check.gd): a game made round it, a free roam with the
+    Director file's moments, conversations and states."""
     code, text = run_godot(["--headless", "--fixed-fps", "60", "--path", str(out), "-s", "res://addons/horrorstudio_director/tests/alone_check.gd"], timeout=300)
     text = quiet(text)
     line = next((l for l in text.splitlines() if l.startswith("ALONECHECK ")), None)
     r = json.loads(line[len("ALONECHECK "):]) if line else {}
     warn = [l for l in text.splitlines() if "SCRIPT ERROR" in l or "BoneAttachment" in l]
-    good = r.get("game_made") is True and r.get("active") is True and r.get("at_start") is True and "figure_scare" in r.get("beats", []) and r.get("scare") is True and not warn
-    print(("  ok  " if good else "  BAD ") + "a level played on its own (F6): a game made round it, the player at its start, its events the game's (the jumpscare fires) %s" % ("" if good else json.dumps(r) + " " + " | ".join(warn[:3])))
+    good = r.get("game_made") is True and r.get("active") is True and r.get("at_start") is True and "m_figure_scare" in r.get("beats", []) and r.get("scare") is True and not warn
+    print(("  ok  " if good else "  BAD ") + "a level played on its own (F6): a game made round it, the player at its start, a free roam with the story's moments (the jumpscare fires) %s" % ("" if good else json.dumps(r) + " " + " | ".join(warn[:3])))
     return good
 
 
@@ -415,21 +417,17 @@ def editor_check(out):
     flags = rep.get("flags_rows", [])
     checks = [
         ("the editor opens the sample with the plugin on: the dock found", rep.get("dock") is True),
-        ("Story: the chapter, its steps and the choice in play order (%d rows)" % rep.get("story_rows", 0), rep.get("story_has") is True),
-        ("Events: the figure's jumpscare as its sentence (when the player enters kitchen_doorway, if read_letter, then JUMPSCARE)", rep.get("events_has_scare") is True),
-        ("Flags: read_letter, promised, saw_figure and the rest (%s)" % ", ".join(flags), any(f.startswith("read_letter") for f in flags) and any(f.startswith("saw_figure") for f in flags)),
-        ("Things and Check drawn (%s)" % rep.get("check_summary", ""), rep.get("things_rows", 0) > 10 and "tasks" in rep.get("check_summary", "")),
+        ("Director: the story file's quests in play order, their steps, the endings, the moments (%d rows)" % rep.get("director_rows", 0), rep.get("director_has") is True),
+        ("Things and Check drawn (%s)" % rep.get("check_summary", ""), rep.get("things_rows", 0) > 10 and "5 quests" in rep.get("check_summary", "")),
         ("the dock's Guide button, on the project's own copy of the guide (guide/index.html)", rep.get("guide") is True),
-        ("parts: a mesh made a cup from the dock, in its place, its effect points made as markers of the scene's (%s)" % ", ".join(rep.get("part_points", [])),
+        ("parts: a mesh made a cup from the dock, in its place, its effect points made as markers of the scene's (%s; made %s, owned %s)" % (", ".join(rep.get("part_points", [])), rep.get("part_made"), rep.get("part_points_owned")),
          rep.get("part_made") is True and rep.get("part_points_owned") is True and rep.get("part_points") == ["handle", "inner", "rim"]),
         ("parts: a pickup dropped on a mesh in the Scene tree wraps it (%s); undone, the part is back on it (%s)" % (rep.get("part_dropped"), rep.get("part_drop_undone")),
          rep.get("part_dropped") is True and rep.get("part_drop_undone") is True),
-        ("the running game followed: ▶ on the step it's at, ● on the flags it has set", rep.get("live_now") is True and rep.get("live_flags") is True),
-        ("+ Task after the selected step, with its first to-do; undone and redone", rep.get("task_added") is True and rep.get("task_has_todo") is True and rep.get("task_undone") is True and rep.get("task_redone") is True),
-        ("the jumpscare template: an area with its event (jumpscare, a thought, a flag), listed", rep.get("jumpscare_made") is True and rep.get("jumpscare_listed") is True),
+        ("the running game followed: ▶ on the quest it's on, ✓ on the ones done and the steps ticked, ● the facts it has", rep.get("live_now") is True and rep.get("live_facts") is True),
         ("Add: a key placed in the selected room, a node of the scene's own", rep.get("preset_placed") is True),
         ("a node's id follows its renames while it's the name's (%s), one typed by hand stays (%s)" % (rep.get("id_follows"), rep.get("id_kept")), rep.get("id_follows") == ["hs_thing", "old_key"] and rep.get("id_kept") == "my_key"),
-        ("saved: the new nodes in the file, nothing the nodes make for themselves", rep.get("saved") is True and rep.get("saved_task") is True and rep.get("saved_nothing_made") is True),
+        ("saved: the new nodes in the file, no story nodes, nothing the nodes make for themselves", rep.get("saved") is True and rep.get("saved_task") is True and rep.get("saved_nothing_made") is True),
         ("no script errors in the editor", not errs),
     ]
     if errs:
