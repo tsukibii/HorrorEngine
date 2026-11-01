@@ -12,7 +12,63 @@ street builder, its paint and the PBR sets, with `prop-gen-tool` merged in). Rea
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## 0a. The eyes in Godot (2026-11-01, on `eye-enhancements`, tsukibii/HorrorEngine#7; not merged)
+## 0. `clothing-refiner` (2026-11-02, later): the drape on the GPU, as a switch
+
+*Use the GPU* in the wardrobe's header and the Studio's Clothes tab: each drape's steps as WebGPU compute
+(`tailor/drape_gpu.js`, TAILOR §1i), the CPU's drape bit for bit as before when off or without WebGPU. Here only
+SwiftShader's WebGPU (on the CPU, so slower than the CPU's own drape): GPUDRAPE ok (the kernels match `likeGPU`, the
+card's way on the CPU, to under 0.05 mm; the hang alike, the folds placed a little differently). Next: the user tries it
+on the 3090 (in Vivaldi, the user's browser: Unsafe WebGPU Support in vivaldi://flags, Vulkan too if vivaldi://gpu says WebGPU is off; `GPU=1 node
+tools/character/tailor/gputest.mjs` gives the card's times), then a local session tunes it: fewer dispatches (the
+bends' batches are most of them; several steps' predict, tether and collide fused), the planes asked on the card.
+
+## 0. `clothing-refiner` (2026-11-02): the wardrobe (docs/WARDROBE_PLAN.md, ticked)
+
+Kept garments (a change re-makes only what changed and what's over it), folds by seed on shorts, trousers and skirts,
+loose houndstooth shorts and micro skirts, the wardrobe page on a dummy with My outfits for the Studio's Mine tab
+(TAILOR §1i). Next: the user's try on the 3090 (the wardrobe's feel; STUDIO); the drape on the GPU (WebGPU) and a pool of
+workers are the plan's Later.
+
+## 0. `clothing-refiner` (2026-11-01, late night): soles carried down from the shoe
+
+After the user's sandal OBJ: every shoe's sole is the upper's own outline extruded down, grooved, with heel blocks
+(TAILOR §1h). Next: their look in the Studio; the sneaker's upper itself (its toe bumper) could be smoothed next.
+
+## 0. `clothing-refiner` (2026-11-01, night): cozy and gothic (docs/COZY_GOTHIC_PLAN.md, ticked)
+
+Built (TAILOR §1h): socks in every length and heavier, a PVC rain jacket, the sneaker designer, spider web and mesh
+nets baked in Blender, gothic clothes and a Gothic group, horns and headband ears, every accessory placed by sliders
+and PBR on props; bras that stand off the body and fit bigger busts, a halter's strings as cords (§1g). Next: the
+user's look in the Studio (STUDIO wants a local GPU run: the sneaker designer's panel and the props' placement are only
+driven headless by our shots, not by STUDIO's steps yet).
+
+## 0. `clothing-refiner` (2026-11-01, evening): bikinis and thongs on the hip bone
+
+The user's note on the bikinis: the waistline's `hip` lift, the briefs re-cut so their top edge rises over the hip
+bones, a string bikini and a halter triangle top after their OBJs (TAILOR §1g). Next: their look in the Studio.
+
+## 0. `clothing-refiner` (2026-11-01, later): the clothing review (docs/CLOTHING_PLAN.md, ticked)
+
+The user's eight notes, all built (TAILOR §1g): waistbands snug, hollows bridged (no cleft, cleavage or spine dent, no
+dent behind or ledge round the knee, a skirt's back kept off the gap between the legs), ease limits checked by TAILOR,
+loose tops hanging from the bust and shoulder blades with soft vertical folds and a sleeve's sag in the creases, up to
+three prints a garment with a prints library, and the everyday wardrobe (Casual, Business, Uniforms, Sleepwear,
+Swimwear tabs; joggers, sweatshirt, polo, suit trousers, pyjamas, sleep and swim shorts, bikinis). Next: the user's look
+in the Studio (STUDIO wants a local GPU run); the older outfits' thumbnails still show them before the bridge (re-run
+`node tools/character/tailor/thumbs.mjs`, ~40 min); a shirt dress and a one-piece swimsuit need a cut of their own.
+
+## 0. `clothing-refiner` (2026-11-01): creases, made fabrics, the smart casual collection
+
+The user: Japanese smart casual outfits after their reference sheet, creases ("how we emulate wrinkles on faces"),
+then fabrics made in Blender "like the props and buildings". Built (TAILOR §1d, §1e, §1f): `tailor/crease.js` (folds,
+drag lines, the press, seams, hems, crinkle as a shader height from per-vertex data; the Creases slider and Pressed
+crease switch; baked into the export's normal map), `tools/fabric_bake.py` + `tools/streetbake/fabrics.py` (26 fabrics
+baked into `assets/pbr/Procedural/fabric_*`, first in the PBR picker, tinted; FABRICS in check_all), the Smart casual tab
+(fifteen outfits, nine new cuts; linen, crepe, flannel). Next: the user's look in the Studio (`python tools/fabric_bake.py
+bake` once on their machine; a local STUDIO run on the GPU); the outfits' thumbnails (`tailor/thumbs.mjs`); the
+sweater over the shoulders; the creases in Godot measured (GDPEOPLE on a dressed export).
+
+## 0a. The eyes in Godot (2026-11-01, on `eye-enhancements`, merged into main by tsukibii/HorrorEngine#7)
 
 The user: the eyes "look kind of lifeless and scary ... it doesnt seem like we are applying the eye wetness etc
 correctly", the exported eyes left alone (DECISIONS 2026-11-01). Measured on a fresh export (`_eyetest`: the soft cinematic
@@ -267,7 +323,7 @@ Next if wanted (PROPGEN.md §9): a life on a generated prop (a generated kettle 
 sockets are there), food tins, a flashlight, batteries, a bucket, a crate, a die, a book; a recipe page with a PBR
 picker.
 
-## 0. `realism-enhancer-skin` (2026-10-31, the night, the last): the grafted eyes for everyone, the add-on gone
+## 0r. `realism-enhancer-skin` (2026-10-31, the night, the last): the grafted eyes for everyone, the add-on gone
 
 The user: make the base mesh's eyes the default ("I don't care about the old eyes"), upgrade our own brows and lashes
 with what the add-on's technique does, and remove the add-on. Done (DECISIONS 2026-10-31, the last; CHARACTER_STUDIO §2b, §2c):

@@ -11,6 +11,9 @@ const TAU = Math.PI * 2, N = 512, K = N / 128;
 export const SURFACES = {
   flat: ["Flat", 0.1, 0, 0, false],
   cotton: ["Cotton", 0.03, 0, 0.12, false],
+  linen: ["Linen", 0.04, 0, 0.2, false],
+  crepe: ["Crepe (soft suiting, blouses)", 0.025, 0.06, 0.14, false],
+  flannel: ["Flannel (wool suiting)", 0.05, 0.02, 0.1, false],
   jersey: ["Jersey (t-shirt knit)", 0.02, 0.05, 0.12, false],
   denim: ["Denim", 0.035, 0.05, 0.18, false],
   canvas: ["Canvas (work wear)", 0.05, 0, 0.3, false],
@@ -33,7 +36,12 @@ export const SURFACES = {
   lace: ["Lace", 0.07, 0.1, 0.3, true],
   laced: ["Lace, lined", 0.036, 0.15, 0.3, false],
   sequin: ["Sequins", 0.03, 0.9, 0.4, false],
+  pvc: ["PVC (a raincoat)", 0.12, 1.0, 0, false],
+  pvc_clear: ["PVC, clear", 0.12, 1.0, 0, false],
 };
+/** surfaces drawn with a clear coat over a smooth base (a raincoat's PVC: sharp reflections), and how much light the
+    clear ones let through */
+export const GLOSSY = { pvc: { clearcoat: 1, roughness: 0.22, opacity: 1 }, pvc_clear: { clearcoat: 1, roughness: 0.12, opacity: 0.5 } };
 
 function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 const canvas = (w = N, h = N) => { const c = document.createElement("canvas"); c.width = w; c.height = h; return c; };
@@ -68,6 +76,18 @@ export function surfaceTile(kind) {
   if (kind === "cotton") {
     weave(4, 1.2, "rgba(255,255,255,0.12)", "rgba(0,0,0,0.1)");
     for (let i = 0; i < 400; i++) dot(rnd() * n, rnd() * n, 0.5 + rnd() * 0.5, rnd() < 0.5 ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.07)");
+  } else if (kind === "linen") {                                      // an open, uneven plain weave: thick and thin threads (slubs) both ways
+    weave(5, 1.4, "rgba(255,255,255,0.1)", "rgba(0,0,0,0.09)");
+    for (let i = 0; i < 70; i++) { x.strokeStyle = rnd() < 0.5 ? "rgba(255,255,255,0.13)" : "rgba(0,0,0,0.1)"; x.lineWidth = 0.8 + rnd() * 1.2; const px = rnd() * n, py = rnd() * n, len = 6 + rnd() * 22;
+      x.beginPath(); if (rnd() < 0.5) { x.moveTo(px, py); x.lineTo(px + len, py); } else { x.moveTo(px, py); x.lineTo(px, py + len); } x.stroke(); }
+    for (let i = 0; i < 500; i++) dot(rnd() * n, rnd() * n, 0.5, rnd() < 0.5 ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.05)");
+  } else if (kind === "crepe") {                                      // a fine pebbled grain, no weave to see
+    for (let i = 0; i < 2600; i++) dot(rnd() * n, rnd() * n, 0.45 + rnd() * 0.5, rnd() < 0.5 ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.06)");
+  } else if (kind === "flannel") {                                    // a brushed wool: a soft mottle, the twill barely there
+    wrap(() => { for (let i = 0; i < 90; i++) dot(rnd() * n, rnd() * n, 3 + rnd() * 9, `rgba(${rnd() < 0.5 ? "0,0,0" : "255,255,255"},${0.015 + rnd() * 0.025})`); });
+    x.strokeStyle = "rgba(255,255,255,0.05)"; x.lineWidth = 0.8;
+    for (let i = -n; i < n * 2; i += 3) { x.beginPath(); x.moveTo(i, n); x.lineTo(i + n * 0.6, 0); x.stroke(); }
+    for (let i = 0; i < 1200; i++) dot(rnd() * n, rnd() * n, 0.5, rnd() < 0.5 ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.05)");
   } else if (kind === "jersey") {                                     // a fine knit: little Vs in columns
     x.strokeStyle = "rgba(0,0,0,0.13)"; x.lineWidth = 0.9;
     for (let yy = 0; yy < n; yy += 4) for (let xx = 0; xx < n; xx += 4) { x.beginPath(); x.moveTo(xx, yy); x.lineTo(xx + 2, yy + 3.5); x.lineTo(xx + 4, yy); x.stroke(); }
@@ -105,6 +125,8 @@ export function surfaceTile(kind) {
   } else if (kind === "leather") {
     wrap(() => { for (let i = 0; i < 60; i++) dot(rnd() * n, rnd() * n, 6 + rnd() * 18, `rgba(0,0,0,${0.025 + rnd() * 0.03})`); });
     for (let i = 0; i < 1400; i++) dot(rnd() * n, rnd() * n, 0.5 + rnd() * 0.4, "rgba(0,0,0,0.08)");
+  } else if (kind === "pvc" || kind === "pvc_clear") {               // PVC: nearly smooth, a faint wave in the film
+    sheen(8, 2, (u, v) => u * 0.3 + v);
   } else if (kind === "patent") {
     x.fillStyle = "rgba(0,0,0,0.12)"; x.fillRect(0, 0, n, n);
     sheen(70, 9, (u, v) => u + v * 0.5);

@@ -7,7 +7,8 @@
 // The designs are data: Content/Studio/Clothes/designs.json; outfits in outfits.json.
 // Plain ES module: the Studio page (tools/character/index.html) and node (tools/character/tailor/cli.mjs) run it.
 import { frame } from "./tailor/frame.js";
-import { prepare, shell, skirt, shoeShell, detail, buttons, thicken, lifted, cut, handles, soles, waistline, sleeveEnd } from "./tailor/pieces.js";
+import { prepare, shell, skirt, shoeShell, detail, buttons, thicken, lifted, cut, handles, soles, waistline, sleeveEnd, bust } from "./tailor/pieces.js";
+import { halterCords } from "./tailor/cords.js";
 import { unwrap } from "./tailor/uv.js";
 import { height } from "./tailor/frame.js";
 import { draping, run, DRAPE } from "./tailor/drape.js";
@@ -60,7 +61,7 @@ export function* making(B, name, design, opts = {}) {
   const t0 = Date.now(), F = B.F, s = F.s, y0 = B.floor || 0;
   const under = (opts.under || []).map(g => y0 ? { ...g, outer: g.outer.map(o => ({ ...o, P: raised(o.P, -y0) })) } : g);   // into the frame it's cut in
   const p = fitted(design.piece), color = opts.color || design.color || "#888888", trim = design.trim || color;
-  const G = p.kind === "skirt" ? skirt(B, p, under.map(g => ({ outer: g.outer[0] }))) : p.kind === "shoe" ? shoeShell(B, p) : shell(B, p, under);
+  const G = p.kind === "skirt" ? skirt(B, p, under.map(g => ({ outer: g.outer[0] }))) : p.kind === "shoe" ? shoeShell(B, design.sole ? { ...p, soleTop: (design.sole.rise ?? 0.008) * F.s } : p) : shell(B, p, under);
   const th = (design.thickness ?? 0.002) * s, parts = [];
   // the drape: the cut cloth hung on the body; everything on it is cut where the cloth was cut and sewn where it hangs.
   // Tucked into what closes round the waist over it later (opts.tuck), its sleeves held inside the sleeves over it
@@ -69,31 +70,36 @@ export function* making(B, name, design, opts = {}) {
   if (opts.drape && p.drape && p.drape.on !== false) {
     const bt = (design.details || []).find(d => d.kind === "buttons");   // a front worn open (`open.closed: false`) is never pulled together
     const closed = p.open && p.open.closed !== false ? (bt ? [height(F, bt.to) - 0.01 * s, height(F, bt.from) + 0.01 * s] : [-1, height(F, p.open.from ?? "bust-0.06")]) : null;
-    const it = draping(B, G, p, { ...p.drape, ...(typeof opts.drape === "object" ? opts.drape : {}), tuck: opts.tuck || null, cover: opts.cover || null, closed, hold: bandHolds(F, G, design), baked: opts.baked || null }, under, th);
-    let r; while (!(r = it.next()).done) yield { name, frac: r.value };
+    const it = draping(B, G, p, { ...p.drape, ...(typeof opts.drape === "object" ? opts.drape : {}), tuck: opts.tuck || null, cover: opts.cover || null, closed, hold: bandHolds(F, G, design), baked: opts.baked || null, ...(opts.gpu ? { gpu: true } : {}) }, under, th);
+    let r, back; while (!(r = it.next(back)).done) back = yield typeof r.value === "number" ? { name, frac: r.value } : { name, ...r.value };   // (a GPU drape's request passed up, its result passed down)
     hung = r.value;
   }
   const at = hung ? hung.P : null, outer = [at ? { P: at, T: G.outer.T } : G.outer];
   // a bottom's legs are panels from its waist down; a coverall's from a waist seam
   const legsTo = p.legs ? (p.waist ? height(F, p.waist.at) + 0.05 * s : F.crotchY + 0.2 * s) : -1;
-  const part = (pname, col, m, fabric, surface, mAt = null) => parts.push({ name: pname, color: col, fabric, surface, ...unwrap(F, m.P, m.T, m.S, { rings: G.rings, legsTo, at: mAt }) });
+  const part = (pname, col, m, fabric, surface, mAt = null) => parts.push({ name: pname, color: col, fabric, surface, ...unwrap(F, m.P, m.T, m.S, { rings: G.rings, legsTo, at: mAt, shoe: p.kind === "shoe", top: p.kind === "shell" && p.neck !== false, stack: p.stack, loose: (p.ease?.leg ?? p.ease?.body ?? 0.008) + (p.ease?.flare ?? 0) * 0.5 + (p.legs?.straight ? 0.05 * p.legs.straight : 0) }) });
   const thick = (P, T, Pat, ...a) => [thicken(P, T, ...a), Pat ? thicken(Pat, T, ...a).P : null];   // the cut's and the hanging cloth's (the same points)
   part(name, color, ...insert(thick(G.outer.P, G.outer.T, at, th, design.rim ?? 0.7, design.edge ?? 0.82), true));
   if (design.sole) {                                                 // a shoe's soles, under the floor
-    const so = soles(F, B, design.sole); outer.push({ P: so.P, T: so.T });
+    const so = soles(F, B, design.sole, G.outer); outer.push({ P: so.P, T: so.T });   // (the upper's own outline carried down)
     part(`${name}_sole`, design.sole.color || "#e8e4dc", so, false, design.sole.surface || "rubber");
   }
   for (const d of design.details || []) {
     if (d.kind === "buttons") { const b = buttons(F, G.outer, d, at); if (b.T.length) part(`${name}_buttons`, d.color || design.buttons || "#222222", b, false); continue; }
     const D = detail(F, G, d); if (!D) continue;
+    if (p.kind === "shoe" && design.sole) { const v0 = D.value, top = ((design.sole.rise ?? 0.008) + 0.0015) * s; D.value = (x, y, z, nx, ny, nz) => Math.min(v0(x, y, z, nx, ny, nz), y - top); }   // a shoe's pieces stop at the sole's top: under it they poked out through its wall
     const L = lifted(cut, G.outer, D.value, D.lift, at); if (!L) continue;
     if (d.kind !== "collar" && d.kind !== "neckband") outer.push(L.at ? { P: L.at, T: L.T } : L);   // what goes over it eases over pockets and belts, not the roll of a collar
     const dt = (d.thickness ?? design.thickness ?? 0.002) * s * 0.8;
-    part(`${name}_${d.kind}`, d.color || (d.trim ? trim : color), ...insert(thick(L.P, L.T, L.at, dt, d.rim ?? 0.45, d.edge ?? 0.62), !d.trim && !d.color, d.surface));
+    part(`${name}_${d.name || d.kind}`, d.color || (d.trim ? trim : color), ...insert(thick(L.P, L.T, L.at, dt, d.rim ?? 0.45, d.edge ?? 0.62), !d.trim && !d.color, d.surface));   // (`name`: a part the look can colour on its own, a sneaker's tongue)
+  }
+  if (p.bra?.halter) {                                               // a halter's strings as tubes, pulled taut off the body (tailor/cords.js)
+    const C = halterCords(F, B, at || G.outer.P, { ...p.bra, under: bust(F).under + (p.bra.drop ?? 0) * s - (p.bra.band ?? 0.01) * s * 0.4 });
+    if (C.T.length) { outer.push({ P: C.P, T: C.T }); part(`${name}_cord`, color, C, false); }
   }
   const tris = parts.reduce((a, q) => a + q.T.length / 3, 0), verts = parts.reduce((a, q) => a + q.P.length / 3, 0);
   // its look (tailor/look.js): the design's fabric, pattern and trim, then the garment's own
-  const look = { color, surface: design.surface, trim: design.trimSurface, pattern: design.pattern, denier: design.denier, ...(opts.look || {}) };
+  const look = { color, surface: design.surface, trim: design.trimSurface, pattern: design.pattern, denier: design.denier, crease: p.kind === "shoe" ? { crinkle: 0, fold: 0, drape: 0, seam: 0, ...(design.crease || {}) } : design.crease, ...(p.kind === "shoe" ? { shoe: true } : {}), ...(opts.look || {}) };   // (a shoe: its hems' stitching, no cloth wrinkles, no puckers at its fabric's seams: they aren't its panels)
   const hs = handles(F, G, p, at);
   if (y0) {                                                          // back into the body's own frame
     for (const q of [...parts, ...outer]) q.P = raised(q.P, y0);
@@ -127,7 +133,8 @@ export function edited(design, edit) {
   return { ...design, piece: merge(design.piece, edit) };
 }
 
-/** dress() a step at a time (it yields {k, of, name, frac} while a garment drapes): see dress */
+/** dress() a step at a time (it yields {k, of, name, frac} while a garment drapes; with `opts.gpu`, {k, of, name, gpu}
+    for a drape to run on the card, its result sent back in: the worker's, tailor/drape_gpu.js): see dress */
 export const dress = (...a) => run(dressing(...a));
 
 /** a whole outfit, in order (each garment over the ones before, hung over them if `opts.drape`): list = [[design
@@ -136,15 +143,27 @@ export const dress = (...a) => run(dressing(...a));
     the same garments, cut the same, takes its bake instead of falling again; each garment comes back with its `key` */
 export function* dressing(B, list, designs, opts = {}) {
   const worn = [], ds = list.map(([name, , , edit]) => { const d = designs[name]; if (!d) throw new Error(`no design called ${name}`); return edited(d, edit); });
+  const made = MADE.get(B) || (MADE.set(B, new Map()), MADE.get(B));
   for (let k = 0; k < list.length; k++) {
     const [name, color, look] = list[k], key = drapeKey(opts.body, list, ds, k);
-    const ov = opts.drape ? over(ds, k) : [], tuck = tucks(B.F, ov), cover = covers(B.F, ov);
-    const it = making(B, name, ds[k], { color, look, under: worn.slice(), drape: opts.drape, tuck, cover, baked: opts.bakes ? opts.bakes[key] : null });
-    let r; while (!(r = it.next()).done) yield { k, of: list.length, ...r.value };
-    worn.push({ ...r.value, key });
+    const ov = opts.drape ? over(ds, k) : [], tuck = tucks(B.F, ov), cover = covers(B.F, ov), baked = opts.bakes ? opts.bakes[key] : null;
+    // made before on this body, the same, over the same garments: as it was (a change to one garment makes only it and
+    // what's worn over it again: the Studio's refits, CLOTHING_PLAN's lag)
+    const gk = hash(JSON.stringify([VERSION, DRAPE_VERSION, name, ds[k], !!opts.drape, ov, worn.map(g => g.shape), baked ? [baked.length, baked[0], baked[baked.length >> 1]] : null, ...(opts.gpu && opts.drape ? ["gpu"] : [])]));   // its shape: what's worn over it depends on this alone (hung on the card: kept apart)
+    const mk = hash(JSON.stringify([gk, color ?? null, look ?? null]));
+    let g = opts.cache === false ? null : made.get(mk);
+    if (g) { made.delete(mk); made.set(mk, g); }                     // (most recent last)
+    else {
+      const it = making(B, name, ds[k], { color, look, under: worn.slice(), drape: opts.drape, tuck, cover, baked, gpu: opts.gpu });
+      let r, back; while (!(r = it.next(back)).done) back = yield { k, of: list.length, ...r.value };
+      g = r.value;
+      if (opts.cache !== false) { made.set(mk, g); while (made.size > 32) made.delete(made.keys().next().value); }
+    }
+    worn.push({ ...g, key, made: mk, shape: gk });
   }
   return worn;
 }
+const MADE = new WeakMap();                                          // body -> {key -> a garment made on it}: kept, not made twice
 /** each garment of an outfit: its drape's key, and whether it drapes at all (its design hangs and isn't fitted skin
     tight), so a caller knows what a drape would have to do */
 export function plan(body, list, designs) {

@@ -2,6 +2,37 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-02, later (the user: the GPU, on `clothing-refiner`)
+
+- **"Instead of re-writing the WebGPU compute for cpu, can you just make a toggle for (use gpu), so I can test it, I
+  can later let you use my local claude to run more optimizations"**: *Use the GPU* in the wardrobe and the Studio's
+  Clothes tab runs the drape's steps on the card (WebGPU, `tailor/drape_gpu.js`); off, or with no WebGPU, the CPU's
+  drape exactly as before. A test switch, remembered per browser, not saved with characters; tuning it is for a local
+  session on the 3090 (TAILOR §1i).
+
+## 2026-11-02 (the user: the wardrobe, on `clothing-refiner`)
+
+- **"I notice the clothing modification is very laggy, is there anything we can do to maybe isolate the processing or
+  utilize more of my GPU (RTX 3090), like create a clothing edit tab"**; **"a clothing specific tab where we can create
+  outfits on a dummy, have it run really well in real time and then load those outfits onto our actual model (be able
+  to save outfits sort of how you already have preset ones)"**; **"a bagginess/looseness modifier ... look at those
+  shorts, the lines around the thighs and the folds ... a modifier where we just go through various seeds till we get a
+  fold style we like (while keeping it tight at the waist), the looseness is just a small gap"**; **"a skirt that only
+  goes down slightly below waist/crotch, want to test if those kind of skirts clip less and look more natural"**;
+  **"make a note to not affect/mess up anything we've made so far, this should be progressive"**. The plan and its
+  ticks: docs/WARDROBE_PLAN.md. Every existing design, outfit and character dresses as before; the new parts are new
+  fields, designs and a page.
+
+## 2026-11-01, late night (the user: the sneakers' soles, on `clothing-refiner`)
+
+- **"The sneakers you made are pretty not great especially the soles, look at the [sandal OBJ] to see how the geometry
+  can be done better ... I don't mind the boxy retro look either, the main issue is the soles don't look normal, soles
+  should almost just be an extension of the normal shape but extruded down (so it can have diff texture)"**: every
+  shoe's sole is now the upper's own outline carried down, with grooves and real heel blocks (TAILOR §1h). The OBJ stays
+  out of the project (only looked at).
+- **"Clean up the weird bulgy/bumpiness, it makes it look like it was made in sculpt tool, should look well
+  polished"**: the shoes' shells polished, round heels, the pieces kept off the sole (TAILOR §1h).
+
 ## 2026-11-01, late night (the user: the skin's depth into the eyes' pull request, then main)
 
 - **"Can you merge subsurace-scattering-exp into this pr and make sure it works, take a screenshot with the updated
@@ -10,6 +41,18 @@ The user's answers, newest first. They override the plan, the research and the d
   `docs/godot_sheets/2026-11-01_eyes_depth.jpg`.
 - **"can you resolve all conflicts and merge in main too"**: main (the school, tsukibii/HorrorEngine#8) merged into
   `eye-enhancements`; the two met only in DECISIONS and CONTINUE, both kept.
+
+## 2026-11-01, night (the user: cozy and gothic clothes, bigger busts, on `clothing-refiner`)
+
+- **"Note you've been making bras on models that have a flat chest, maybe you should review it with bigger busts"**:
+  the cups grow with the breast (TAILOR §1g), reviewed on the full feminine body too.
+- **"Make some more cozy clothing following the principles of being able to animate easily without worrying about
+  clipping"**: socks in every size, slightly creased and heavier, knee-highs; a raincoat with a reflective plasticky
+  look; black loafers; a sneaker designer like the tee's prints (rim highlights, sole colours, a logo, small stickers);
+  gothic designs, a spider web fishnet and a mesh fabric rendered in Blender; gothic clothes and props (horns, bunny
+  ears), props placed by x, y, z sliders and turns, PBR sets on props. The plan and its ticks: docs/COZY_GOTHIC_PLAN.md.
+- **"By rain coat I mean the smaller wind ones, that are almost like hoodies but more of a plasticky texture"**: a
+  hooded, zipped rain jacket in PVC, not a long coat.
 
 ## 2026-11-01, night (the user, on a small private school)
 
@@ -21,6 +64,31 @@ The user's answers, newest first. They override the plan, the research and the d
   that kind of japanese tokyo street design)". Built as the set `school_tokyo` (SCENE_BUILDER §10c) and the street
   `tokyo_school`: exposed concrete round a courtyard, the two mixed-year classes (years 1-3, 4-6), the lunch room, the
   reception at the entrance; timber is for later.
+
+## 2026-11-01, evening (the user: the bikinis, on `clothing-refiner`)
+
+- **"Everything looks good, except the women's bikini, thongs (they sort of vertically sit below the waist like boxers
+  sit above the waist for men which doesn't look correct as they tend to follow the curve of the hip bone)"**, with a
+  string bikini's top and bottom as OBJs and a guide to fitting them. Built: the waistline's `hip` lift (TAILOR §1g),
+  every thong, tanga, G-string and bikini brief re-cut on it, a string bikini and a halter triangle top after the OBJs.
+  The OBJs themselves stay out of the project (only looked at).
+- **"Why do the bras look painted on, also why does the red one attach to nothing around the neck, can you use the bra
+  obj model I gave you as a reference to the right way to make bras"**: the halter's strings as tubes pulled taut off
+  the body, round the neck, a band and a bow; every bra's cups spanning the breast, with a thickness (TAILOR §1g).
+- **"The bras are way too low"**: the fold under the breast found where its underside eases onto the ribs, the cups
+  higher (TAILOR §1g).
+
+## 2026-11-01, later (the user: the clothing review, on `clothing-refiner`)
+
+- **"Some of your trousers are baggy at the waist band ... waistband on shorts, pants, anything that's lower body even
+  baggy always needs to be skin tight or the pants wouldn't stay on"; "pants shouldn't dent so harshly inwards at the
+  knees"; "consider animation ability, we aren't going to do cloth physics so don't want things overly baggy to the point
+  clothing will clip through for generic walks"; "a lot of the clothes have a weird butt crack dent"; "even baggy stuff
+  like hoodies need to feel like they're fitted, it's the creases etc that create the illusion of bagginess"; "make it
+  easy to make custom tees (front prints, back prints)"; "we don't need super unique clothing, just daily outfits normal
+  humans wear: smart casual, casual, business, uniforms, pyjamas and bikinis ... really nailing the reusable simple
+  elements and let fabric and colour take care of the rest"; "review the current clothing, list a plan to enhance
+  everything, and tick as you go".** The plan and its ticks: docs/CLOTHING_PLAN.md.
 
 ## 2026-11-01, later (the user, on the school's building)
 
@@ -34,6 +102,28 @@ The user's answers, newest first. They override the plan, the research and the d
   as sets and streets with shots matched to them.
 - **The PBR classroom waits for the build**: "Once you're done with the build can you create a 1:1 ref using the pbrs
   instead to see if it helps realism" (asked during the first school build).
+
+## 2026-11-01 (the user: the clothes refined, on `clothing-refiner`)
+
+- **"Inspired by the image of Japanese smart casual outfits create some of these, I think currently what makes our
+  clothes bland is we are missing creases, natural fabric kinda style that could be emulated via PBR techniques etc so
+  add a crease gen as well (basically how we emulate wrinkles on faces)."** Done (TAILOR §1d, §1f): the creases as a
+  height in the garment's shader (folds at the bends, drag lines, the press, seams, hems, the fabric's crinkle), a
+  Creases slider and a Pressed crease switch per garment, baked into the export's normal map; the Smart casual tab with
+  fifteen outfits and nine new cuts; linen, crepe and flannel as drawn surfaces.
+- **"Similar to what we did for props and buildings can you create some procedural materials with blender for the
+  clothing in the studio, stuff like cotton, etc."** Done (TAILOR §1e): 26 fabrics as node groups of threads,
+  stitches, fibres and grain at their real size, baked in Blender into tileable PBR sets
+  (`tools/fabric_bake.py`, `assets/pbr/Procedural/fabric_*`), first in the Studio's PBR picker, tinted by the garment's
+  colour.
+
+- **"The bottom of the light blue and white trousers you made looks deformed, should just cleanly sit above the
+  shoes"** and **"The baggy trousers shouldn't bend into the knees, as that doesn't make logical sense"**: the wide
+  trousers' legs are a straight column from under the seat (`legs.straight`, TAILOR §2), held as cut by the drape, their
+  hem clean above the shoe; no knee folds on loose legs, no cloth wrinkles on shoes.
+- **No low poly clothes.** Asked to try a PS1-style low poly genre of clothing (decimated garments, chunky texels, a
+  dither), then, seeing it: **"Nah the low poly looks ugly ... let's avoid the low poly then."** It was taken out
+  before it was committed; don't offer it again.
 
 ## 2026-11-01 (the user: the eyes in Godot, on `eye-enhancements`)
 

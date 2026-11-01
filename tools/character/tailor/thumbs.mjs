@@ -47,7 +47,7 @@ if (both || has("outfits")) for (const [name, list] of Object.entries(outfits)) 
 if (both || has("designs")) for (const name of Object.keys(designs)) if (!only || only.includes(name)) jobs.push({ name, file: "design_" + slug(name), list: [[name]], drape: false, alone: true });
 if (!jobs.length) { console.error("nothing to picture"); process.exit(1); }
 
-const KEYS = [["P", Float32Array], ["T", Uint32Array], ["N", Float32Array], ["UV", Float32Array], ["PART", Float32Array], ["S", Float32Array]];
+const KEYS = [["P", Float32Array], ["T", Uint32Array], ["N", Float32Array], ["UV", Float32Array], ["PART", Float32Array], ["S", Float32Array], ["CRZ", Float32Array]];
 const three = readFileSync(join(ROOT, "tools", "director", "vendor", "three.module.min.js"));
 const SHELF = join(ROOT, "assets", "pbr");
 let current = null;                                                // the job the page is showing: its parts as one binary
@@ -71,7 +71,7 @@ window.show = async (head, NB, view) => {
   const body = new THREE.BufferGeometry(); body.setAttribute("position", new THREE.BufferAttribute(take(Float32Array, NB[0]), 3)); body.setIndex(new THREE.BufferAttribute(take(Uint32Array, NB[1]), 1)); body.computeVertexNormals();
   const skin = new THREE.Mesh(body, new THREE.MeshStandardMaterial({ color: "#c8a28c", roughness: 0.6 })); scene.add(skin); shown.push(skin);
   for (const m of head) {
-    const q = { name: m.name, color: m.color, fabric: m.fabric, surface: m.surface, P: take(Float32Array, m.n.P), T: take(Uint32Array, m.n.T), N: take(Float32Array, m.n.N), UV: take(Float32Array, m.n.UV), PART: take(Float32Array, m.n.PART), S: take(Float32Array, m.n.S) };
+    const q = { name: m.name, color: m.color, fabric: m.fabric, surface: m.surface, P: take(Float32Array, m.n.P), T: take(Uint32Array, m.n.T), N: take(Float32Array, m.n.N), UV: take(Float32Array, m.n.UV), PART: take(Float32Array, m.n.PART), S: take(Float32Array, m.n.S), CRZ: m.n.CRZ ? take(Float32Array, m.n.CRZ) : undefined };
     const mesh = LOOK.mesh(q, m.name, m.look); scene.add(mesh); shown.push(mesh);
   }
   await LOOK.mapsLoaded();
@@ -111,7 +111,8 @@ for (const job of jobs) {
   // the view: the whole figure for an outfit; a design alone framed on where it is (its parts' heights)
   const lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
   for (const q of parts) for (let i = 0; i < q.P.length; i++) { lo[i % 3] = Math.min(lo[i % 3], q.P[i]); hi[i % 3] = Math.max(hi[i % 3], q.P[i]); }
-  const c = [0, 1, 2].map(k => (lo[k] + hi[k]) / 2), ext = Math.max(hi[1] - lo[1], (hi[0] - lo[0]) / 1.5);
+  const shoe = job.alone && designs[job.name]?.piece?.kind === "shoe";   // a pair of shoes is wider than it's tall: framed by its width (half off the card before)
+  const c = [0, 1, 2].map(k => (lo[k] + hi[k]) / 2), ext = Math.max(hi[1] - lo[1], (hi[0] - lo[0]) / (shoe ? 0.9 : 1.5));
   const view = job.alone ? [25, [c[0], c[1], c[2]], Math.max(0.7, ext * 2.5 + 0.3)] : [25, [0, H * 0.5, 0], H * 2.65];
   await pg.evaluate(([h, nb, v]) => window.show(h, nb, v), [head, [b.P.length, b.T.length], view]);
   await pg.screenshot({ path: join(OUT, job.file + ".jpg"), type: "jpeg", quality: 86 });

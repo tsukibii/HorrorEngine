@@ -16,6 +16,10 @@
 //                                               bakeOcclusion; 1 without), G its roughness, B how thin it is (thin.js's
 //                                               skinThin: the light through it; the file's metalness is 0, so its blue
 //                                               is free)
+//   bakeClothNormal(renderer, geometry, material, uv, o)   a garment's creases (tailor/crease.js, worked out in
+//                                               tailor/look.js's shader as crG: the height's slope along the fabric's
+//                                               metres) as a tangent-space normal map in glTF's convention, in the layout
+//                                               `uv` (pack() keeps the fabric's directions: +u, +v)
 //   bakeOcclusion(renderer, geometry, uv, o)    how much of the sky each point of the mesh sees (its position and
 //                                               normal as they are), in the layout `uv`: N x N bytes, 255 open
 import * as THREE from "three";
@@ -61,6 +65,17 @@ export function bakeSkinMaps(renderer, geometry, material, uv, o = {}) {
     const t = textureOf(px, N, "image/png"); t.colorSpace = THREE.NoColorSpace; out[k] = t;
   }
   return out;
+}
+
+const CLOTH_NORMAL = `{
+  vec3 n = normalize(vec3(-crG.x, -crG.y, 1.0));                 // in the fabric's own frame: +u, +v, out of the cloth
+  gl_FragColor = vec4(0.5 + 0.5 * n.x, 0.5 - 0.5 * n.y, 0.5 + 0.5 * n.z, 1.0); return;   // glTF's, as the skin's (bakeSkinMaps)
+}`;
+export function bakeClothNormal(renderer, geometry, material, uv, o = {}) {
+  const N = o.size || 2048, px = draw(renderer, geometry, material, uv, N, "cloth-normal", CLOTH_NORMAL);
+  fill(px, N, false, [128, 128, 255]);
+  const t = textureOf(px, N, "image/png"); t.colorSpace = THREE.NoColorSpace;
+  return t;
 }
 
 // the ambient occlusion: depth maps of the mesh from `dirs` directions spread over the sphere (each an orthographic view

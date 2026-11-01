@@ -31,7 +31,7 @@ def set_dir(finish):
 
 def stamp(finish=None):
     """What a set is made from: the finishes' code, and the library's for its sets (a set older than it is made again)."""
-    files = ("finishes.py", "nodes.py", "tiles.py", "library.py")    # the library's imperfections wear the finishes too
+    files = ("finishes.py", "nodes.py", "tiles.py", "library.py", "fabrics.py")    # the library's imperfections wear the finishes too
     return int(max((Path(__file__).parent / f).stat().st_mtime for f in files))
 
 
@@ -136,6 +136,12 @@ def bake_set(finish, px=1024, samples=4, say=print):
     out = bpy.data.images.new(f"{finish}_albedo", W, H, alpha=True)
     out.pixels.foreach_set(np.clip(rgba, 0, 1).ravel())
     _save(out, d / f"{finish}_albedo.png")
+    if float(alpha.min()) < 0.98:                                    # holes (a net's): an opacity map of their own, for the cut-outs
+        oa = np.clip(alpha, 0, 1)
+        o5 = bpy.data.images.new(f"{finish}_opacity", W, H, alpha=False)
+        o5.colorspace_settings.name = "Non-Color"
+        o5.pixels.foreach_set(np.dstack([oa, oa, oa, np.ones_like(oa)]).ravel())
+        _save(o5, d / f"{finish}_opacity.png")
     for what, cs in (("normal", "Non-Color"), ("orm", "Non-Color")):
         im, a = got[what]
         o2 = bpy.data.images.new(f"{finish}_{what}", W, H, alpha=False)
@@ -164,13 +170,16 @@ def bake_set(finish, px=1024, samples=4, say=print):
     bpy.data.meshes.remove(me)
     # the shelf's own meta.json (what a shelf scan keeps), and ours beside it (a scan rewrites meta.json)
     lib = finish in LIB.LIB                                          # the library's: its own colours, not a tint
-    meta = {"tile_m": round(P[0], 4), "source": "procedural: tools/street.py " + ("library (tools/streetbake/library.py)" if lib else "finishes (tools/streetbake/finishes.py)"),
+    fab = finish in LIB.FABRICS.LIB                                 # a fabric for the Studio's clothes (fabrics.py): a tint unless its colour is in its threads
+    meta = {"tile_m": round(P[0], 4), "source": "procedural: " + ("tools/fabric_bake.py (tools/streetbake/fabrics.py)" if fab else "tools/street.py " + ("library (tools/streetbake/library.py)" if lib else "finishes (tools/streetbake/finishes.py)")),
             "url": "", "licence": "CC0-1.0",
             "note": f"the street material '{finish}' baked from Blender's nodes" + ("" if lib else "; its colour is a tint for a surface's own colour")}
     if lib:
         meta.update(LIB.meta(finish), tint=False)
+    if fab:
+        meta.update(LIB.FABRICS.meta(finish), note=f"the fabric '{finish}' baked from Blender's nodes at its real size" + ("; its colour is a tint for the garment's own" if LIB.FABRICS.LIB[finish][5] else "; its colours are its threads'"))
     (d / "meta.json").write_text(json.dumps(meta, indent=1, ensure_ascii=False), encoding="utf-8")
-    (d / "procedural.json").write_text(json.dumps({"finish": finish, "tint": not lib, "tile_v_m": round(P[1], 4), "px": px, "height_m": round(relief, 5),
+    (d / "procedural.json").write_text(json.dumps({"finish": finish, "tint": LIB.FABRICS.LIB[finish][5] if fab else not lib, "tile_v_m": round(P[1], 4), "px": px, "height_m": round(relief, 5),
                                                    "made_from": stamp(finish)}, indent=1), encoding="utf-8")
     say(f"TILE {finish}: {W} x {H} for {P[0]:g} x {P[1]:g} m ({px / P[0]:.0f} px/m) -> {d.relative_to(ROOT) if d.is_relative_to(ROOT) else d}")
     return d

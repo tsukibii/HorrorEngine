@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wardrobe</title>
+<!-- The wardrobe (docs/WARDROBE_PLAN.md): outfits made on a plain dummy, quickly (only the clothes cost to draw; a
+     change re-makes only that garment and what's worn over it), saved to My outfits for the Character Studio to wear.
+     Served by the Character Studio's server: python tools/character/serve.py, then /wardrobe.html -->
+<script type="importmap">{"imports":{"three":"./vendor/three.module.min.js"}}</script>
+<style>
+  :root { --bg: #111214; --panel: #1a1b1e; --line: #2c2d31; --ink: #ddd; --dim: #8b8d93; --gold: #d9a441; --bad: #e05a4f; --ok: #5aa65a; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 12px system-ui, sans-serif; height: 100vh; display: grid; grid-template-rows: auto 1fr; }
+  header { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+  header b { color: var(--gold); letter-spacing: .05em; }
+  header a { color: var(--dim); }
+  #status { color: var(--dim); margin-left: auto; }
+  #status.ok { color: var(--ok); } #status.bad { color: var(--bad); }
+  main { display: grid; grid-template-columns: 360px 1fr; min-height: 0; }
+  aside { overflow-y: auto; border-right: 1px solid var(--line); padding: 8px 10px; background: var(--panel); }
+  #view { position: relative; min-width: 0; min-height: 0; }
+  #view canvas { display: block; width: 100%; height: 100%; }
+  h4 { margin: 12px 0 6px; color: var(--gold); font-weight: 600; }
+  select, input, button { background: #222327; color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 4px 7px; font: inherit; }
+  button:hover { border-color: var(--gold); cursor: pointer; }
+  .row { display: grid; grid-template-columns: 110px 1fr 46px; gap: 6px; align-items: center; margin: 3px 0; }
+  .row output { color: var(--dim); text-align: right; }
+  .garment { border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; margin: 6px 0; background: #18191c; }
+  .garment .top { display: flex; gap: 6px; align-items: center; }
+  .garment .top span { flex: 1; font-weight: 600; }
+  details summary { cursor: pointer; color: var(--dim); margin: 4px 0; }
+  .line { display: flex; gap: 6px; align-items: center; margin: 4px 0; flex-wrap: wrap; }
+  small { color: var(--dim); }
+  #mine button.del { padding: 0 6px; }
+</style>
+<header>
+  <b>WARDROBE</b><span>outfits on a dummy, then worn by your characters</span>
+  <a href="./" target="studio">the Character Studio</a>
+  <label><input type="checkbox" id="hang"> hang by gravity</label>
+  <label title="The cloth simulation's steps on your graphics card (WebGPU), a test: the CPU's where the browser has no WebGPU (Vivaldi or Chromium: Unsafe WebGPU Support in vivaldi://flags or chrome://flags). Remembered in this browser."><input type="checkbox" id="gpu"> use the GPU</label>
+  <span id="status">loading the dummy…</span>
+</header>
+<main>
+  <aside>
+    <h4>Start from an outfit</h4>
+    <div class="line"><select id="outfitSel" style="flex:1"></select><button id="wear">Wear</button></div>
+    <h4>Worn (under to over)</h4>
+    <div id="worn"></div>
+    <div class="line"><select id="designSel" style="flex:1"></select><input type="color" id="newColor" value="#3b4a6b"><button id="add">Add</button></div>
+    <h4>Save to My outfits</h4>
+    <div class="line"><input id="saveName" placeholder="a name for it" style="flex:1"><button id="save">Save</button></div>
+    <small>My outfits show first in the Character Studio's outfit picker (Clothes, Mine), cut on the character's own body when worn.</small>
+    <div id="mine"></div>
+  </aside>
+  <div id="view"></div>
+</main>
+<script type="module" src="./wardrobe.js"></script>
+</html>

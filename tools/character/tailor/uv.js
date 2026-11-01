@@ -5,6 +5,7 @@
 // a stocking's), a skirt as a front and a back panel spreading to the hem as flared panels do. u runs across, v up. Points are
 // split only along those seams; the normals come from the joined mesh, so the light doesn't break there.
 import { normals, split } from "./mesh.js";
+import { creaseData } from "./crease.js";
 
 export const PARTS = ["front", "arm L", "arm R", "leg L", "leg R", "skirt", "back"];
 const TAU = Math.PI * 2;
@@ -66,7 +67,7 @@ function seams(F, o) {
 }
 
 /**
- * A garment part's mesh with fabric coordinates: {P, T, N, UV, PART, S}. Split along its seams first; then each
+ * A garment part's mesh with fabric coordinates: {P, T, N, UV, PART, S, CRZ}. Split along its seams first; then each
  * triangle takes the part its middle is on, its corners are unwrapped round that part from the first one, and a point
  * is shared only by corners that agree. `o.at`: where each point hangs after the drape (tailor/drape.js): the seams
  * and the fabric's coordinates are the cut's, so a stripe follows the cloth into its folds; the points are put there.
@@ -92,7 +93,7 @@ export function unwrap(F, P, T, S, o = {}) {
     for (let j = k - 2; j <= k + 2; j++) { const b = bins.get(part * 1000 + j); if (b) { sum += b[0] / b[1]; n++; } }
     return n ? sum / n : part <= 2 ? F.armR : F.legR;
   };
-  const oP = [], oN = [], oUV = [], oPart = [], oS = [], tri = new Uint32Array(T.length);
+  const oP = [], oN = [], oUV = [], oPart = [], oS = [], oR = [], oSrc = [], tri = new Uint32Array(T.length);
   for (let t = 0; t < T.length; t += 3) {
     const a = T[t] * 3, b = T[t + 1] * 3, c = T[t + 2] * 3;
     const part = partAt(F, (P[a] + P[b] + P[c]) / 3, (P[a + 1] + P[b + 1] + P[c + 1]) / 3, (P[a + 2] + P[b + 2] + P[c + 2]) / 3, o);
@@ -108,10 +109,12 @@ export function unwrap(F, P, T, S, o = {}) {
       if (id === undefined) {
         id = oS.length; keys.set(key, id);
         oP.push(Q[v * 3], Q[v * 3 + 1], Q[v * 3 + 2]); oN.push(N0[v * 3], N0[v * 3 + 1], N0[v * 3 + 2]);
-        oUV.push(u, w); oPart.push(part); oS.push(S ? S[v] : 1);
+        oUV.push(u, w); oPart.push(part); oS.push(S ? S[v] : 1); oR.push(P[v * 3], P[v * 3 + 1], P[v * 3 + 2]); oSrc.push(v);
       }
       tri[t + k] = id;
     }
   }
-  return { P: new Float32Array(oP), T: tri, N: new Float32Array(oN), UV: new Float32Array(oUV), PART: new Float32Array(oPart), S: new Float32Array(oS) };
+  const out = { P: new Float32Array(oP), T: tri, N: new Float32Array(oN), UV: new Float32Array(oUV), PART: new Float32Array(oPart), S: new Float32Array(oS) };
+  out.CRZ = creaseData(F, out.P, oR, tri, out.PART, out.S, oSrc, !!o.shoe, o.loose || 0, !!o.top, o.stack ?? 0.05);   // the creases' data (tailor/crease.js): where it bends and is pulled, how far from a seam and a hem
+  return out;
 }
