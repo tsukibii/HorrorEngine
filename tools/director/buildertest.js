@@ -53,7 +53,8 @@ const png = rgb => {                    // a 4x4 PNG of one colour (a scratch ma
     const presets = await page.evaluate(() => [...document.querySelectorAll("#preset option")].map(o => o.value).filter(Boolean));
     for (const id of presets) {
       await page.evaluate(id => { window.B.dirty = false; window.builder.openPreset(id); }, id);
-      await page.waitForFunction(() => window.B.plan && window.B.planStory && window.B.planStory.levels[window.B.target], null, { timeout: 30000 });
+      // (a school building's layout is 27 rooms and 1600 things: its plan takes a while on a machine without a GPU)
+      await page.waitForFunction(() => window.B.plan && window.B.planStory && window.B.planStory.levels[window.B.target], null, { timeout: 300000 });
       await page.waitForTimeout(400);
       const r = await page.evaluate(async () => {
         const chk = await window.builder.runChecks();
@@ -68,7 +69,11 @@ const png = rgb => {                    // a 4x4 PNG of one colour (a scratch ma
       if (shots) await page.screenshot({ path: path.join(shots, `builder_${id}.png`) });
     }
 
-    // walking: forward from the start for a while; a wall must stop the player (they never leave the rooms)
+    // walking: forward from the start for a while; a wall must stop the player (they never leave the rooms). In the 1:1
+    // classroom (the school buildings' 1600 things draw too slowly to walk in without a GPU)
+    await page.evaluate(() => { window.B.dirty = false; window.builder.openPreset("school_classroom"); });
+    await page.waitForFunction(() => window.B.plan && window.B.planStory && window.B.planStory.levels[window.B.target] && window.B.model.rooms.length === 2, null, { timeout: 120000 });
+    await page.waitForTimeout(1500);
     const walk = await page.evaluate(async () => {
       const B = window.B, p = B.model.player, x0 = p.x, y0 = p.y;
       document.querySelector("#view").focus();

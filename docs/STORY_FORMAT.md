@@ -70,7 +70,12 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
   trim, wood, wood_dark, blocks, panel), `raise` (the floor over the ground, 0 to 2 m), `front` (n, e, s or w: the side
   facing the street; its way in when unset), `parts` (fittings on its walls, each `kind`, `face` front/left/back/right,
   `x`, `z`, `w`, `h`, `out` in metres: ac, sign, vsign, lamp, lantern, pipe, awning, canopy, eave, noren, balcony, bay,
-  stairs, rail, panel, block), `style` and `seed` (the street style it started from). A street's building with this
+  stairs, rail, panel, block, clock, roofsign: the name on the roof, a panel a letter, `text`, `fg`, `bg`, `back` (behind
+  the parapet, below 0 on its face)), `style` and `seed` (the street style it started from), `facade` (a building in
+  storeys, STREET_BUILDER §5f: `eaves` over the windows `{out, t, over, ends, join}`, `pilasters` where the rooms meet
+  and between windows `{w, out, gap}`, `bands` at the floors `{h, out}`, `rails` across low windows `{h, out, below}`;
+  each may carry a `slot`, or be `false`), the roof's `rail` (a railing behind the parapet) and `pent_parapet` (the
+  penthouses'). A street's building with this
   level inside wears it (STREET_BUILDER §5c); the desk and the level's own Godot export don't build it (the street's
   .glb carries it). `"outside": {"look": {"wall": "#cfc5b3", "tiles": "#3d4148"}, "roof": {"kind": "hip", "pitch": 24,
   "over": 0.8}, "raise": 0.45, "parts": [{"kind": "ac", "face": "right", "x": -1.6}]}`.
@@ -97,7 +102,9 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
 - `kind`: what the room is (optional): `genkan corridor ldk living dining kitchen washitsu bedroom service kids study
   bath washroom toilet closet walkin oshiire storage stairs balcony engawa common garden garage other`. The scene
   builder colours and labels by it and gives some kinds their built-ins (below); `name` is its label (optional,
-  any text, Japanese welcome); `dir` is the way a `stairs` room climbs (`n e s w`).
+  any text, Japanese welcome); `dir` is the way a `stairs` room climbs (`n e s w`); `flights: 2` makes it a dog-leg (a
+  school's: a shaft through every floor its height reaches, each storey climbed in two flights turning on a half
+  landing, a landing at every floor; the scene builder makes the steps, SCENE_BUILDER §10b).
 - `ceiling: false` for outdoors.
 - `wet` (0..1, optional): a wet floor without rain (a bathroom, a cellar): in the Godot export the floor wears the
   look plugin's wet (the damp darkening, pools that carry the lights, no rings: GODOT_LOOK §2) by that much, and from
@@ -182,7 +189,8 @@ the room's built-ins are on. The builder also writes kit props (docs/KIT.md §4)
 - `cyl r h`
 - `sphere r`
 - `plane w h`
-- `stairs w run rise`
+- `stairs w run rise [waist]`: steps climbing the run; with a `waist` each step is a block that deep under its tread
+  and the flight is open under it (a dog-leg's flights over one another), else they stand solid on the floor
 - `person <cast> [stand|sit|lie|hang|kneel]`: a T-pose stand-in placed in the world, like a body or a figure for a
   glimpse. Scene actors are staged instead (§3).
 - `asset <lib>/<name> [scale]`: a CC0 library mesh at its real size, e.g. `asset basemesh/wooden_chair_01`

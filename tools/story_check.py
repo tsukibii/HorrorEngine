@@ -77,8 +77,27 @@ def check_outside(lid, out, r):
     if not isinstance(out, dict):
         return r.err(f"level {lid}: outside is an object (look, roof, slot, raise, front, parts, style)")
     for k in out:
-        if k not in ("look", "roof", "slot", "raise", "front", "parts", "style", "seed"):
-            r.err(f"level {lid}: outside: no word {k!r} (look, roof, slot, raise, front, parts, style, seed)")
+        if k not in ("look", "roof", "slot", "raise", "front", "parts", "style", "seed", "facade"):
+            r.err(f"level {lid}: outside: no word {k!r} (look, roof, slot, raise, front, parts, style, seed, facade)")
+    # the facade a building in storeys wears (a school's: STREET_BUILDER §5f): each dressing an object of numbers or off
+    FAC = {"eaves": ("out", "t", "over", "ends", "join"), "pilasters": ("w", "out", "gap"), "bands": ("h", "out"), "rails": ("h", "out", "below")}
+    fac = out.get("facade")
+    if fac is not None and not isinstance(fac, dict):
+        r.err(f"level {lid}: outside: facade is an object ({', '.join(FAC)})")
+    for k, v in (fac or {}).items() if isinstance(fac, dict) else ():
+        if k not in FAC:
+            r.err(f"level {lid}: outside: facade: no word {k!r} ({', '.join(FAC)})")
+        elif v is not False and not isinstance(v, dict):
+            r.err(f"level {lid}: outside: facade {k}: an object of numbers ({', '.join(FAC[k])}), or false")
+        elif isinstance(v, dict):
+            for kk, vv in v.items():
+                if kk == "slot":
+                    if vv not in W["slots"]:
+                        r.err(f"level {lid}: outside: facade {k} slot {vv!r}")
+                elif kk == "ends" and k == "pilasters":
+                    pass
+                elif kk not in FAC[k] or not isinstance(vv, (int, float)):
+                    r.err(f"level {lid}: outside: facade {k}: {kk} {vv!r} ({', '.join(FAC[k])}: metres)")
     if out.get("style") and out["style"] not in W["styles"]:
         r.err(f"level {lid}: outside: style {out['style']!r} isn't one of the street builder's ({', '.join(sorted(W['styles']))})")
     for sl, v in (out.get("look") or {}).items():
@@ -95,7 +114,7 @@ def check_outside(lid, out, r):
     rf = out.get("roof") or {}
     if not isinstance(rf, dict) or rf.get("kind", "hip") not in W["roofs"]:
         r.err(f"level {lid}: outside: roof kind {rf.get('kind') if isinstance(rf, dict) else rf!r} ({', '.join(sorted(W['roofs']))})")
-    for k, lo, hi in (("pitch", 3, 60), ("over", 0, 2), ("parapet", 0, 2)):
+    for k, lo, hi in (("pitch", 3, 60), ("over", 0, 2), ("parapet", 0, 2), ("pent_parapet", 0, 2)):
         if isinstance(rf, dict) and k in rf and not (isinstance(rf[k], (int, float)) and lo <= rf[k] <= hi):
             r.err(f"level {lid}: outside: roof {k} {rf[k]!r} ({lo} to {hi})")
     if isinstance(rf, dict) and rf.get("slot") and rf["slot"] not in W["slots"]:

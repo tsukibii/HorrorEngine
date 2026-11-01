@@ -2,6 +2,19 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-01, later (the user, on the school's building)
+
+- **The building is its rooms, to scale**: "Just note the school building needs to be to scale, so the actual rooms
+  could fit in, stairs, door way etc." Then two photos of school buildings (a white four-storey one with a stair tower
+  of round windows and its name on the roof; a beige Showa one at dusk): "I think the issue is I didn't give you visual
+  references for the building, try build a kit that could build these 1:1." So a school's building is a set of real
+  rooms on every storey, laid out from modules (classrooms, corridor, dog-leg stairs in shafts, toilets, entrance,
+  staff room: SCENE_BUILDER §10b), and the street builds its outside storey by storey round exactly those rooms, the
+  facade (eaves, pilasters, guard rails, the name on the roof) from them (STREET_BUILDER §5f). Both photos are rebuilt
+  as sets and streets with shots matched to them.
+- **The PBR classroom waits for the build**: "Once you're done with the build can you create a 1:1 ref using the pbrs
+  instead to see if it helps realism" (asked during the first school build).
+
 ## 2026-11-01 (the user, on a school)
 
 - **A Japanese school for a horror game, in the tools we have**: "In the existing prop maker/furniture maker/interior

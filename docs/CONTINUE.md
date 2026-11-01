@@ -12,6 +12,24 @@ street builder, its paint and the PBR sets, with `prop-gen-tool` merged in). Rea
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
+## 00. A Japanese school (2026-11-01, on `claude/laughing-goldberg-6l5of3`)
+
+The user asked for a school in the tools we have (DECISIONS 2026-11-01): the kit's school furniture and fittings (KIT
+§10), books with covers of their own (PROPGEN §16), the 1:1 classroom of their Blender render and its corridor (the set
+`school_classroom`, SCENE_BUILDER §10), a school street (`school`). Then "the school building needs to be to scale" and
+two photos of school buildings "1:1": **the school building kit** (SCENE_BUILDER §10b: `schoolBuilding` in
+builder-presets.js, modules into rooms on every storey, dog-leg stairs (`flights: 2`) in shafts to a penthouse, round
+windows; `tools/director/layoutset.mjs` saves a layout as a set) and **buildings in storeys on the street**
+(STREET_BUILDER §5f: the shell storey by storey round the rooms, the facade from them: eaves, pilasters, rails, bands,
+the name on the roof; ribbed walls, a sliding gate, stand-in trees). The photos rebuilt: sets `school_white` and
+`school_showa`, streets `school_white` and `school_showa` with their shots `photo` (renders:
+`node tools/director/streetshot.mjs --street school_white --shot photo`; the photos in each street's `refs/`, on this
+machine only). Next, what the user asked earlier: **the 1:1 classroom with PBR sets** ("to see if it helps realism":
+the interior sets in tools/streetbake/library.py, `jp_oak_floor` and `jp_pine_varnish` baked, ten to go with
+`python tools/street.py library <names>`). Not yet: the school's walkable roof, its toilets' stalls, a gym set, the old
+`school` street's main building as a walk-in set; dusk renders here come out black now and then (the headless
+renderer; retry).
+
 ## 0. The street builder (2026-10-30, night, on `buildings-streets`; not merged)
 
 The user asked for a new tool (DECISIONS 2026-10-30, night and later night): the outside world the enterable buildings

@@ -484,15 +484,17 @@ def plan(story, level=None):
         elif t.d.get("shape"):
             kind, args = L.parse_shape(t.d["shape"])
             if kind == "stairs":
-                sw, run, rise = args
-                n = max(1, round(rise / STEP))
+                sw, run, rise = args[:3]
+                waist = args[3] if len(args) > 3 else None  # a flight over another (a dog-leg's): each step that deep
+                n = max(1, round(rise / STEP))              # under its tread, the rest open; else solid to its foot
                 for i in range(n):
                     dy = -run / 2 + run / n * (i + 0.5)     # steps climb along the stairs' own +y
                     ox, oy = _rot(0.0, dy, t.yaw - 90)        # rot 90 (north) = climbing north
-                    sh = rise / n * (i + 1)
+                    top = rise / n * (i + 1)
+                    bot = 0.0 if waist is None else max(0.0, top - rise / n - waist)
                     out.append(dict(p, id=f"{t.id}__step{i}", kind="mesh", shape="box",
-                                    pos=(t.pos[0] + ox, t.pos[1] + oy, t.pos[2] + sh / 2),
-                                    size=(sw, run / n, sh), yaw=t.yaw - 90, tags=_tags(t)))
+                                    pos=(t.pos[0] + ox, t.pos[1] + oy, t.pos[2] + (top + bot) / 2),
+                                    size=(sw, run / n, top - bot), yaw=t.yaw - 90, tags=_tags(t)))
             elif kind == "asset":                     # the mesh itself, at its indexed size (its box stands in until fetched)
                 out.append(dict(p, kind="mesh", shape="box", pos=t.centre, size=t.size, tags=_tags(t, [f"art:{args[0]}", "real"])))
             else:

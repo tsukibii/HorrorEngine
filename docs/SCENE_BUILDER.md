@@ -350,6 +350,47 @@ and exterior building too". The furniture and fittings are the kit's (KIT §10),
   on / in**: every place of its host to move it to, and *Fit it in* (a kit row of books takes the place's inside).
   The prop maker's props are kept as `<room>_kt_<name>_<n>` with `shape: "asset props/<name>"`.
 
+## 10b. The school building kit: every room at its real size, the building round them
+
+The user (2026-11-01), after the first school: "the school building needs to be to scale, so the actual rooms could fit
+in, stairs, door way etc", then two photos of school buildings: "build a kit that could build these 1:1". So a school's
+building is its rooms: `schoolBuilding(spec)` in builder-presets.js lays a whole building out of **modules**, columns
+side by side along x, each a room at its real size on every storey, and the street builds the outside round exactly
+those rooms (STREET_BUILDER §5f). Nothing of the outside is drawn apart from the rooms.
+
+- **Modules** (`SCHOOL_MODULES`): `class` (the 1:1 classroom turned a quarter: its windows on the front, y = 0, the
+  chalkboard at its west end, its front door by the chalkboard and its back door on the corridor, its frosted windows
+  between them, all its furniture from `classroomKits`), `stair`, `wc`, `entrance` (shoe lockers back to back, glass
+  doors onto a porch), `staff` (an island of steel desks, lockers), `nurse`, `library`, `prep`, `room`. A column is
+  `[kind, {w, out, win, "<storey>": another kind there}]`: its width (a classroom 9 m, or 8 m for the 8 × 8 module),
+  how far a stair tower stands out of the front, its own windows, and what it is on a storey (the ground floor's
+  entrance under three storeys of classrooms).
+- **Storeys** at a real floor-to-floor (`storey`: 3.6 m a Showa school, 3.9 m a Tokyo high school) under 3 m ceilings
+  (`ceiling`), the classrooms `depth` deep, the corridor (`corridor`, 2.4 m) along their back on every storey with its own
+  windows behind and wired glass at its ends, a speaker over each classroom's door, notice boards, a hydrant box.
+- **Stairs** (`stair` columns): one shaft from the ground through every floor, a dog-leg in each storey
+  (`flights: 2`, builder-model.js `doglegProps`): flight A climbs from the floor's landing (where its door onto the
+  corridor is) toward the front, a half landing at the front (its window there: a strip of wired glass, or `round`: a
+  porthole), flight B comes back to the next floor's landing over the first. The ground storey's flights stand solid;
+  every other flight floats on a 15 cm waist (`stairs w run rise waist`), so there's head room over the flight below.
+  `penthouse` (m, 0 for none) takes the shafts on up through the roof to a last landing under a penthouse (the stair
+  tower of the first photo). A batten light over every floor's door.
+- **Windows** by module (`win`: `n` of them `w` wide, `gap` between, `sill`, `h`, a `frame` preset: `window_classroom`,
+  `window_ribbon` (a ribbon's sash, 4 to a 8 m classroom), `window_steel` (a Showa school's small panes),
+  `window_porthole` and `_bar` (the kit's round window: a ring in a square hole, KIT.md)). Columns stand in the gaps
+  wider than 45 cm and the beams over the windows are as deep as the wall over them allows; curtains hang over the
+  desks' height and under the beams.
+- **Its outside** is the layout's `outside` (the set's, §8): the street's facade dressing (eaves, pilasters, rails),
+  the roof, the name on the roof, fittings; STREET_BUILDER §5f.
+- **The two photos' buildings** (`SCHOOL_BUILDINGS`): `white` (four storeys at 3.9 m, 8 m classrooms (measured: a bay
+  is 2.05 storeys wide), ribbons of four sashes behind guard rails, toilets and a dog-leg at the west end, the stair
+  tower standing 1.2 m out at the east end with round windows at the half landings, a penthouse; the entrance, the staff
+  room and the nurse's office downstairs) and `showa` (three storeys at 3.6 m, two steel windows to a 9 m classroom
+  between the columns, a narrow stair standing out between the two blocks, another at the east end, no penthouse).
+  Both are layouts in the picker and sets, `school_white` and `school_showa` (27 rooms each, every classroom furnished).
+- **A layout as a set from the command line**: `node tools/director/layoutset.mjs <layout> [<set>]` saves any layout
+  through the scene builder's own model as the page would (a set already there keeps all but its level).
+
 ## 11. Not done yet
 
 - **Default looks by room kind** (texture sets for a washitsu's walls, a bath's tiles): *Same look for every

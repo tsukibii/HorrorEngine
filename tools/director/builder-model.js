@@ -51,7 +51,7 @@ export function newRoom(kind, id, x, y, z = 0, o = {}) {
   const [w, d] = o.size || K.size;
   return { id, kind, name: o.name || "", x, y, z, w, d, h: o.h || K.h || 2.4, floor: o.floor || K.floor, light: o.light || "dim",
            ceiling: o.ceiling ?? K.ceiling ?? true, open: (o.open || K.open || []).slice(), fixtures: o.fixtures ?? true,
-           dir: o.dir || (d >= w ? "n" : "e"), floorKit: o.floorKit !== undefined ? o.floorKit : (FLOOR_BY_KIND[kind] ? { preset: FLOOR_BY_KIND[kind] } : null),
+           dir: o.dir || (d >= w ? "n" : "e"), flights: o.flights === 2 ? 2 : 1, floorKit: o.floorKit !== undefined ? o.floorKit : (FLOOR_BY_KIND[kind] ? { preset: FLOOR_BY_KIND[kind] } : null),
            ceilKit: o.ceilKit !== undefined ? o.ceilKit : (CEILING_BY_KIND[kind] ? { preset: CEILING_BY_KIND[kind] } : null), extra: o.extra || {} };
 }
 
@@ -102,7 +102,7 @@ export function presetToModel(P) {
     kits.push(k);
   }
   return { rooms, ops, items, kits, floors, finish: Object.assign({}, FINISH, P.finish || {}), player: { x: P.start[0], y: P.start[1], yaw: P.start[2], z: 0 },
-           her: { x: P.her[0], y: P.her[1], yaw: P.her[2], z: 0 }, levelExtra: {}, startId: "start", problems };
+           her: { x: P.her[0], y: P.her[1], yaw: P.her[2], z: P.herZ || 0 }, levelExtra: P.outside ? { outside: clone(P.outside) } : {}, startId: "start", problems };
 }
 
 // ---- a story level -> the model ----
@@ -111,7 +111,7 @@ const KIND_GUESS = [[/genkan|entrance|entry|porch_in/, "genkan"], [/porch|garden
   [/stair/, "stairs"], [/balcony|terrace/, "balcony"], [/bed|room_\d/, "bedroom"], [/living|lounge|ldk/, "ldk"], [/dining/, "dining"],
   [/study|office/, "study"], [/cellar|basement|storage|store/, "storage"], [/tatami|washitsu|japanese/, "washitsu"]];
 export function guessKind(id) { for (const [re, k] of KIND_GUESS) if (re.test(id)) return k; return "other"; }
-const ROOM_KEYS = new Set(["id", "at", "size", "floor", "light", "ceiling", "skip", "openings", "kind", "name", "dir", "fixtures"]);
+const ROOM_KEYS = new Set(["id", "at", "size", "floor", "light", "ceiling", "skip", "openings", "kind", "name", "dir", "flights", "fixtures"]);
 
 export function levelToModel(story, levelName) {
   const lvl = story.levels[levelName];
@@ -122,7 +122,7 @@ export function levelToModel(story, levelName) {
     return { id: r.id, kind, name: r.name || "", x: r.at[0], y: r.at[1], z: r.at[2], w: r.size[0], d: r.size[1], h: r.size[2],
              floor: r.floor || (KINDS[kind] || KINDS.other).floor, light: r.light || "dim", ceiling: r.ceiling !== false, open: [],
              fixtures: r.fixtures ?? (r.props || []).some(p => p.id.startsWith(`${r.id}_fx_`) && !/_fx_(light|switch|floor|ceiling|win\d+)$/.test(p.id)),
-             dir: r.dir || (r.size[1] >= r.size[0] ? "n" : "e"), extra,
+             dir: r.dir || (r.size[1] >= r.size[0] ? "n" : "e"), flights: r.flights === 2 ? 2 : 1, extra,
              floorKit: noSize(((r.props || []).find(p => p.id === `${r.id}_fx_floor`) || {}).kit),
              ceilKit: noSize(((r.props || []).find(p => p.id === `${r.id}_fx_ceiling`) || {}).kit) };
   });
@@ -272,7 +272,7 @@ export function modelToLevel(model, story) {
     if (!r.ceiling) d.ceiling = false; else delete d.ceiling;
     d.kind = r.kind;
     if (r.name) d.name = r.name;
-    if (r.kind === "stairs") d.dir = r.dir;
+    if (r.kind === "stairs") { d.dir = r.dir; if (r.flights === 2) d.flights = 2; }
     const skip = [];
     for (const wl of WALLS) {
       const len = r3(wallLine(r, wl).hi - wallLine(r, wl).lo);
@@ -343,7 +343,10 @@ export function modelToLevel(model, story) {
       if (kp) extra.push(Object.assign(clone(k.extra || {}), kp, { at: [r3(k.x), r3(k.y)], rot: Math.round(k.rot) % 360 }, k.z ? { z: r3(k.z) } : {}));
     }
     frames.filter(f => f.host.room === r).forEach((f, i) => { const fp = frameProp(r, f, `${r.id}_fx_win${i + 1}`, problems); if (fp) extra.push(fp); });
-    if (r.kind === "stairs" && r.fixtures) { const st = stairsProp(model, r); if (st) extra.push(st); else problems.push(`${r.id}: stairs need a floor above (add one)`); }
+    if (r.kind === "stairs" && r.fixtures) {
+      const st = r.flights === 2 ? doglegProps(model, r) : [stairsProp(model, r)].filter(Boolean);
+      if (st.length) extra.push(...st); else problems.push(`${r.id}: stairs need a floor above (add one)`);
+    }
     // the fittings the finish makes (<room>_fx_*: built-ins, the switch, the stairs, a kit floor) are made again on every
     // export; what's painted on one (its `mats`, `mat`) is kept on its entry in the room's props, as read back or as the
     // scene builder's Paint left it, and goes onto the fitting made (a window's frame keeps its own on the window)
@@ -467,6 +470,49 @@ function stairsProp(model, r) {
   const run = r3(long - 0.85 - 0.07), sw = r3(across - 0.14), mid = 0.85 + run / 2;
   const at = r.dir === "n" ? [r.w / 2, mid] : r.dir === "s" ? [r.w / 2, r.d - mid] : r.dir === "e" ? [mid, r.d / 2] : [r.w - mid, r.d / 2];
   return { id: `${r.id}_fx_stairs`, shape: `stairs ${sw} ${run} ${r3(above - r.z)}`, at: at.map(r3), rot: { n: 90, s: 270, e: 0, w: 180 }[r.dir], tag: "stairs" };
+}
+
+// a dog-leg (`flights: 2`, a school's): a shaft through every floor it spans, each storey climbed in two flights side by
+// side that turn on a half landing at the far end. Flight A climbs `dir` on the left from the floor's landing (the near
+// end, where the doors are), flight B comes back on the right to the next floor's landing over it. A storey's flights
+// float over the ones under them (`stairs ... waist`: a 15 cm waist under each tread, head room over the flight below);
+// the ground storey's stand solid on the floor. Every floor the shaft reaches gets its landing (a 25 cm slab, its top
+// the floor's level), the top one too (the roof's door, a penthouse): the shaft's floors are the model's own floors in
+// its height, the next storey's height past the last for the top one
+export const DOGLEG = { well: 0.2, slab: 0.25, waist: 0.15, wall: 0.06, landing: 2.2, half: 1.9 };   // (a 7.2 m shaft: 30 cm treads)
+export function doglegFloors(model, r) {
+  const fl = model.floors.filter(z => z >= r.z - 0.01 && z <= r.z + r.h - 2.0).sort((a, b) => a - b);
+  if (fl.length && fl.length < 2) return fl;
+  const top = fl[fl.length - 1], step = fl.length > 1 ? fl[fl.length - 1] - fl[fl.length - 2] : 0;
+  if (step > 1.8 && top + step <= r.z + r.h - 2.0 + 0.01) fl.push(r3(top + step));   // the roof's landing, under the shaft's top
+  return fl;
+}
+function doglegProps(model, r) {
+  const fl = doglegFloors(model, r);
+  if (fl.length < 2) return [];
+  const D = DOGLEG, ns = r.dir === "n" || r.dir === "s", L = ns ? r.d : r.w, A = ns ? r.w : r.d, T = D.wall;
+  const fw = r3((A - 2 * T - D.well) / 2), half = Math.max(1.2, Math.min(D.half, (L - 2 * T) * 0.27)), land = Math.max(1.2, Math.min(D.landing, (L - 2 * T) * 0.31));
+  const run = r3(L - 2 * T - land - half);
+  if (fw < 0.75 || run < 1.5) return [];
+  // (along, across) from the near end and the left wall -> room metres; a rot for climbing along or back
+  const at = (a, c) => r.dir === "n" ? [c, a] : r.dir === "s" ? [r.w - c, r.d - a] : r.dir === "e" ? [a, r.d - c] : [r.w - a, c];
+  const ROT = { n: 90, s: 270, e: 0, w: 180 }, BACK = { n: "s", s: "n", e: "w", w: "e" };
+  const box = (id, a0, a1, c0, c1, z0, z1) => {                   // a slab or a block: its sides along x and y
+    const p = at(a0, c0), q = at(a1, c1), w = Math.abs(q[0] - p[0]), d = Math.abs(q[1] - p[1]);
+    return { id, shape: `box ${r3(w)} ${r3(d)} ${r3(z1 - z0)}`, at: [r3((p[0] + q[0]) / 2), r3((p[1] + q[1]) / 2)], z: r3(z0), tag: "stairs" };
+  };
+  const out = [], mid = T + land + run / 2;
+  for (let k = 0; k + 1 < fl.length; k++) {
+    const z0 = r3(fl[k] - r.z), rise = r3(fl[k + 1] - fl[k]), h = r3(rise / 2), first = k === 0 && Math.abs(fl[0] - r.z) < 0.01;
+    const waist = first ? "" : ` ${D.waist}`;
+    out.push({ id: `${r.id}_fx_stairs_${k + 1}a`, shape: `stairs ${fw} ${run} ${h}${waist}`, at: at(mid, T + fw / 2).map(r3), z: z0, rot: ROT[r.dir], tag: "stairs" });
+    if (first) out.push(box(`${r.id}_fx_stairs_${k + 1}base`, T + land, T + land + run, A - T - fw, A - T, z0, z0 + h));   // under flight B, solid
+    out.push({ id: `${r.id}_fx_stairs_${k + 1}b`, shape: `stairs ${fw} ${run} ${h}${waist}`, at: at(mid, A - T - fw / 2).map(r3), z: r3(z0 + h), rot: ROT[BACK[r.dir]], tag: "stairs" });
+    out.push(first ? box(`${r.id}_fx_half_${k + 1}`, T + land + run, L - T, T, A - T, z0, z0 + h)                    // the half landing
+                   : box(`${r.id}_fx_half_${k + 1}`, T + land + run, L - T, T, A - T, r3(z0 + h - D.slab), z0 + h));
+    out.push(box(`${r.id}_fx_landing_${k + 2}`, T, T + land, T, A - T, r3(fl[k + 1] - r.z - D.slab), r3(fl[k + 1] - r.z)));   // the next floor's
+  }
+  return out;
 }
 
 // ---- what the plan holds for events ----
