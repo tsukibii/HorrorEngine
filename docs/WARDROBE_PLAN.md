@@ -20,19 +20,22 @@ socks and shoes under it too.
   worn over it. Measured on a three-garment outfit: 4.2 s, the same again 1 ms, the outermost edited 0.4 s, the
   innermost's colour 0.9 s. The worker sends copies (it keeps its own) and, asked with `have`, nothing for a garment the
   page already shows.
-- [ ] 2. **Folds by seed.** A garment's `folds` ({depth, seed, count}): soft folds round each leg (or round a skirt)
+- [x] 2. **Folds by seed.** A garment's `folds` ({depth, seed, count}): soft folds round each leg (or round a skirt)
   growing from nothing at the hip to `depth` at the hem, their places, widths and sharpness from the seed; the waist
-  untouched. In the Studio: a Folds slider and **New folds** (the next seed) on a bottom or skirt.
-- [ ] 3. **Short skirts and loose shorts.** A micro A-line skirt and a micro pleated skirt ending just under the
+  untouched; `gap` the cloth standing off the leg under them, growing to the hem (an A-line's small gap). In the Studio
+  and the wardrobe: Folds, How many, (Gap,) **New folds** (the next seed) on shorts, trousers and skirts.
+- [x] 3. **Short skirts and loose shorts.** A micro A-line skirt and a micro pleated skirt ending just under the
   crotch; loose high-waisted shorts after the user's picture (snug band, legs standing a little off the thighs, folds),
   in houndstooth; outfits for them.
-- [ ] 4. **The wardrobe page.** `tools/character/wardrobe.html` on the Studio's server: the default body as a plain
+- [x] 4. **The wardrobe page.** `tools/character/wardrobe.html` on the Studio's server: the default body as a plain
   dummy (no skin shaders, eyes or hair: only the clothes cost), the outfit as a list (design, colour, fabric, pattern,
   shape sliders, folds), every change made in a worker with the kept garments (only what changed is made), the drape
   off until asked (Hang); outfits from the presets to start from.
-- [ ] 5. **My outfits.** Save an outfit from the wardrobe into `Content/Studio/Clothes/my_outfits.json`; the Studio's
+- [x] 5. **My outfits.** Save an outfit from the wardrobe into `Content/Studio/Clothes/my_outfits.json`; the Studio's
   outfit picker shows them first (*Mine*), worn on the character as any outfit is (cut on its own body).
-- [ ] 6. **Docs and checks.** TAILOR §, CLAUDE.md, a headless check of the wardrobe page (WARDROBE), TAILOR, CHECKS.
+- [x] 6. **Docs and checks.** TAILOR §1i, CLAUDE.md, a headless check of the wardrobe page (`wardrobetest.mjs`,
+  WARDROBE: the outfit made, new folds made faster than the whole, the same outfit again answered at once with nothing
+  sent, saved with its picture and read back, deleted), TAILOR, CHECKS.
 
 ## Later (not now)
 

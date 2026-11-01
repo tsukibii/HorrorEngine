@@ -15,6 +15,7 @@ import datetime
 import hashlib
 import json
 import os
+import re
 import struct
 import subprocess
 import sys
@@ -41,6 +42,19 @@ PICTURES = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
 SLOTS = ("front", "side")
 EXPORTS = (".obj", ".json")
 WORKER = face_mesh.Worker(ROOT / "Saved" / "body_editor_worker.log")
+
+
+def my_outfits():
+    """My outfits (Content/Studio/Clothes/my_outfits.json, saved from the wardrobe): {about, outfits, meta}, as outfits.json"""
+    f = CLOTHES / "my_outfits.json"
+    d = json.loads(f.read_text(encoding="utf-8")) if f.is_file() else {}
+    return {"about": "outfits saved from the wardrobe (tools/character/wardrobe.html): as outfits.json's, [design, colour, look, edit] each; the Studio shows them first, as Mine",
+            "outfits": d.get("outfits", {}), "meta": d.get("meta", {})}
+
+
+def outfit_slug(n):
+    """an outfit's picture's name, as the Studio's slugOf and thumbs.mjs make it"""
+    return re.sub(r"^_|_$", "", re.sub(r"[^a-z0-9]+", "_", n.lower()))
 
 
 def clean(n):
@@ -213,6 +227,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, f.read_bytes(), TYPES[f.suffix]) if f.exists() else self.send(404, {"error": "no salon hair yet"})
         if parts[:2] == ["api", "clothes"] and len(parts) == 3 and parts[2] in ("designs.json", "outfits.json"):   # the tailor's designs and outfits
             return self.send(200, (CLOTHES / parts[2]).read_bytes(), TYPES[".json"])
+        if parts == ["api", "clothes", "my_outfits.json"]:   # My outfits, saved from the wardrobe (docs/WARDROBE_PLAN.md)
+            return self.send(200, my_outfits())
         if parts == ["api", "clothes", "prints"]:            # the prints library: pictures for a tee's front and back (CLOTHING_PLAN 6)
             d = CLOTHES / "prints"
             return self.send(200, {"prints": sorted(f.name for f in d.iterdir() if f.suffix.lower() in (".png", ".jpg", ".jpeg", ".webp")) if d.is_dir() else []})
@@ -281,6 +297,24 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         parts = [p for p in urllib.parse.urlparse(self.path).path.split("/") if p]
         name = clean(parts[2]) if len(parts) >= 3 else None
+        if parts == ["api", "clothes", "myoutfits"]:                             # {name, list, thumb: a JPEG data URL} saved, or {delete: name}
+            req, data = json.loads(self.body().decode("utf-8")), my_outfits()
+            presets = json.loads((CLOTHES / "outfits.json").read_text(encoding="utf-8")).get("outfits", {})
+            if req.get("delete"):
+                n = req["delete"]; data["outfits"].pop(n, None); data["meta"].pop(n, None)
+                t = CLOTHES / "thumbs" / (outfit_slug(n) + ".jpg")
+                if n not in presets and t.is_file(): t.unlink()
+            else:
+                n = str(req.get("name", "")).strip()[:80]
+                if not n or n in presets or not isinstance(req.get("list"), list):
+                    return self.send(400, {"error": "a name that isn't a preset's, and a list of garments"})
+                data["outfits"][n] = req["list"]; data["meta"][n] = {"group": "mine"}
+                th = str(req.get("thumb", ""))
+                if th.startswith("data:image/jpeg;base64,"):
+                    (CLOTHES / "thumbs").mkdir(parents=True, exist_ok=True)
+                    (CLOTHES / "thumbs" / (outfit_slug(n) + ".jpg")).write_bytes(base64.b64decode(th.split(",", 1)[1]))
+            (CLOTHES / "my_outfits.json").write_text(json.dumps(data, indent=1, ensure_ascii=False), encoding="utf-8")
+            return self.send(200, data)
         if parts == ["api", "defaults"]:                                         # merged into People/defaults.json, key by key
             f = PEOPLE / "defaults.json"
             PEOPLE.mkdir(parents=True, exist_ok=True)

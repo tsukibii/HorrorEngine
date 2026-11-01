@@ -12,6 +12,13 @@ street builder, its paint and the PBR sets, with `prop-gen-tool` merged in). Rea
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
+## 0. `clothing-refiner` (2026-11-02): the wardrobe (docs/WARDROBE_PLAN.md, ticked)
+
+Kept garments (a change re-makes only what changed and what's over it), folds by seed on shorts, trousers and skirts,
+loose houndstooth shorts and micro skirts, the wardrobe page on a dummy with My outfits for the Studio's Mine tab
+(TAILOR §1i). Next: the user's try on the 3090 (the wardrobe's feel; STUDIO); the drape on the GPU (WebGPU) and a pool of
+workers are the plan's Later.
+
 ## 0. `clothing-refiner` (2026-11-01, late night): soles carried down from the shoe
 
 After the user's sandal OBJ: every shoe's sole is the upper's own outline extruded down, grooved, with heel blocks

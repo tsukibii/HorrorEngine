@@ -111,6 +111,7 @@ TOOLS = [
     ("Pages", "Face mesh: photos to a head", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/face.html"}),
     ("Pages", "Character Studio (body, face, skin, hair in the salon, clothes)", "tools/character/serve.py", {"url": "http://127.0.0.1:8793"}),
     ("Pages", "Salon (hair as locks: strands, sheets, bundles, against a locked reference video)", "tools/character/serve.py", {"url": "http://127.0.0.1:8793/salon.html"}),
+    ("Pages", "Wardrobe (outfits made quickly on a plain dummy, saved to My outfits for the Character Studio)", "tools/character/serve.py", {"url": "http://127.0.0.1:8793/wardrobe.html"}),
     ("Pages", "Kit maker (room things from numbers)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/kit.html"}),
     ("Pages", "PBR shelf (your texture sets in assets/pbr, on a sphere; the Character Studio has it as its PBR button)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/pbr.html"}),
     ("Pages", "Prop generator (every recipe as its picture: open one, change it, put your pictures and PBR sets on it, make it and its variations, see it in 3D, keep it)", "tools/propgen/serve.py", {"url": "http://127.0.0.1:8797"}),

@@ -534,7 +534,7 @@ const designSel = el("select", { id: "designSel" }), addBtn = el("button", { tex
 const outfitTabs = el("div", { id: "outfitTabs", className: "chips" }), outfitGrid = el("div", { id: "outfitGrid" });
 let OUTFIT_META = {}, OUTFIT_GROUP = "casual", WORN_OUTFIT = null;
 // everyday clothes first (CLOTHING_PLAN 7), the designer collection last
-const OUTFIT_GROUPS = [["casual", "Casual"], ["smart", "Smart casual"], ["business", "Business"], ["uniform", "Uniforms"], ["sleep", "Sleepwear"], ["swim", "Swimwear"], ["underwear", "Underwear"], ["gothic", "Gothic"], ["designer", "Designer"]];
+const OUTFIT_GROUPS = [["mine", "Mine"], ["casual", "Casual"], ["smart", "Smart casual"], ["business", "Business"], ["uniform", "Uniforms"], ["sleep", "Sleepwear"], ["swim", "Swimwear"], ["underwear", "Underwear"], ["gothic", "Gothic"], ["designer", "Designer"]];
 const outfitGroup = name => OUTFIT_META[name]?.group || (/^(lingerie|underwear):/.test(name) ? "underwear" : "casual");
 const slugOf = name => name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
 function drawOutfits() {
@@ -546,7 +546,14 @@ function drawOutfits() {
   }));
 }
 const clothesExp = el("button", { textContent: "Export clothes OBJ", title: "every garment worn, one object per part (metres, Y up, facing +Z): People/<name>/<name>_clothes.obj" });
-$("#clothesRows").append(el("h4", { textContent: "Outfits" }), outfitTabs, outfitGrid,
+// the wardrobe (wardrobe.html, WARDROBE_PLAN 4): outfits made quickly on a dummy and saved to My outfits; they show here
+// as Mine, read again whenever this page comes back to the front
+const wardrobeBtn = el("button", { textContent: "Open the wardrobe", title: "Make outfits on a plain dummy, quickly, and save them to My outfits (the Mine tab here)" });
+wardrobeBtn.onclick = () => window.open("wardrobe.html", "wardrobe");
+document.addEventListener("visibilitychange", () => { if (document.visibilityState !== "visible") return;
+  api("api/clothes/my_outfits.json").then(m => { for (const [n, g] of Object.entries(OUTFIT_META)) if (g.group === "mine") { delete OUTFITS[n]; delete OUTFIT_META[n]; }
+    for (const [n, l] of Object.entries(m.outfits || {})) if (!OUTFITS[n]) { OUTFITS[n] = l; OUTFIT_META[n] = m.meta?.[n] || { group: "mine" }; } drawOutfits(); }).catch(() => {}); });
+$("#clothesRows").append(el("h4", { textContent: "Outfits" }), wardrobeBtn, outfitTabs, outfitGrid,
   el("h4", { textContent: "A garment" }), el("div", { className: "row" }, el("span", { textContent: "Design" }), designSel, el("output")),
   el("div", { className: "row" }, el("span", { textContent: "Colour" }), gColor, el("output")), addBtn, el("h4", { textContent: "Worn (under to over)" }));
 $("#worn").after(clothesExp);
@@ -582,8 +589,8 @@ function redrawGuides(opts = {}) {                      // the guides of everyth
   GARMENTS.userData.posedFor = null; poseGarments();
 }
 const refresh = () => (EDITING ? redrawGuides() : dress());   // what's worn changed: the guides, or the clothes cut again
-Promise.all([api("api/clothes/designs.json"), api("api/clothes/outfits.json"), api("api/pbr").catch(() => ({}))]).then(([d, o, p]) => {
-  DESIGNS = d.designs || {}; OUTFITS = o.outfits || {}; OUTFIT_META = o.meta || {}; SHELF = p.sets || {};
+Promise.all([api("api/clothes/designs.json"), api("api/clothes/outfits.json"), api("api/pbr").catch(() => ({})), api("api/clothes/my_outfits.json").catch(() => ({}))]).then(([d, o, p, mine]) => {
+  DESIGNS = d.designs || {}; OUTFITS = { ...(mine.outfits || {}), ...(o.outfits || {}) }; OUTFIT_META = { ...(mine.meta || {}), ...(o.meta || {}) }; SHELF = p.sets || {};   // (My outfits from the wardrobe first, as Mine; a preset's name wins)
   const SLOTS = [["under", "Underwear"], ["top", "Tops"], ["bottom", "Bottoms"], ["full", "One piece"], ["legs", "Legwear"], ["feet", "Footwear and socks"], ["jacket", "Jackets"]];   // the designs by what they are
   const opt = ([k, v]) => el("option", { value: k, textContent: v.label || k }), all = Object.entries(DESIGNS);
   designSel.replaceChildren(...SLOTS.map(([sl, label]) => el("optgroup", { label }, ...all.filter(([, v]) => v.slot === sl).map(opt))).filter(g => g.children.length),
@@ -903,6 +910,14 @@ function shapeRows(c) {                                // the same lines as slid
     if (p.sleeve !== undefined && p.sleeve !== false) ease("sleeve", "Ease, sleeves (m)", 0.008);
     if (p.legs) { ease("leg", "Ease, legs (m)", 0.008); ease("flare", "Flare to hem (m)", 0); }
     slider(box, "tension", "Hang", 2, 70, 1, p.tension ?? 16, "Fewer rounds cling to the body; more hang loose and bridge the hollows.", v => { c.edit = { ...(c.edit || {}), tension: v }; later(); });
+  }
+  if ((p.legs && p.kind !== "shoe" && DESIGNS[c.design]?.slot !== "feet" && !p.brief) || p.kind === "skirt") {   // folds by seed (WARDROBE_PLAN 2): how deep, and New folds for the next seed (the waist stays snug); shorts, trousers, skirts
+    const fo = p.folds || {}, put = v => { c.edit = c.edit || {}; c.edit.folds = { ...(pieceOf(c).folds || {}), ...(c.edit.folds || {}), ...v }; later(); };
+    slider(box, "folds", "Folds (mm)", 0, 25, 0.5, (fo.depth ?? 0) * 1000, "Folds standing out round the legs (or the skirt), growing to this at the hem; 0 none. The waist stays snug.", v => put({ depth: +(v / 1000).toFixed(4) }));
+    slider(box, "foldcount", "How many", 2, 9, 1, fo.count ?? 5, "Folds round each leg (or the skirt).", v => put({ count: v }));
+    const seed = el("button", { textContent: `New folds (${fo.seed ?? 1})`, title: "The next seed: the folds in other places, widths and leans" });
+    seed.onclick = () => { put({ seed: (pieceOf(c).folds?.seed ?? 1) + 1, depth: pieceOf(c).folds?.depth || 0.008 }); drawWorn(); };
+    box.append(seed);
   }
   const reset = el("button", { textContent: "As designed" }); reset.onclick = () => { delete c.edit; if (EDITING) EDIT_DIRTY = true; drawWorn(); refresh(); };
   box.append(reset);

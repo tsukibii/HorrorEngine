@@ -258,6 +258,24 @@ The clothes are skinned, never simulated, so the cut keeps to what skinning carr
   along and about the face's right, up and forward: Placement), hats, horns and ears made of their colour or a PBR set
   off the shelf (UVs on all of them); **horns** (devil, ram) and **ears on a headband** (bunny, cat, fox).
 
+## 1i. The wardrobe, kept garments, folds by seed (DECISIONS 2026-11-02; docs/WARDROBE_PLAN.md)
+
+- **Kept garments**: `dressing` keeps each garment made on a body (by its design, edits, colour, look and the shape of
+  what's under it), so a change re-makes only that garment and what's worn over it; the worker sends copies, and none
+  for garments the page says it already shows (`have`).
+- **Folds** (`folds: {depth, count, seed, gap}` on a piece): soft ridges round each leg (`legFolds`, after the bridge)
+  or round a skirt (`skirtOutline`), their places, widths, heights and leans from the seed (`foldProfile`), growing all
+  the way down to the hem, over a `gap` (a share of the depth) the cloth stands off the leg by, an A-line's; the waist
+  untouched. Only a garment with `folds` changes: no design had them before.
+- **New designs**: loose high-waisted shorts after the user's picture (`loose-shorts`, houndstooth, folds), a micro
+  A-line skirt and a micro pleated skirt ending just under the crotch (`micro-skirt`, `micro-pleated-skirt`).
+- **The wardrobe** (`wardrobe.html` + `wardrobe.js` on the Studio's server, the Clothes tab's *Open the wardrobe*):
+  the default model's body as a plain dummy, the outfit as a list with each garment's colour, fabric, pattern, shape
+  sliders and folds, made in the tailor's worker with the kept garments (the page keeps the meshes of what didn't
+  change), the drape off unless *hang by gravity*; **Save** writes `Content/Studio/Clothes/my_outfits.json` and a
+  picture of the view (`thumbs/<slug>.jpg`), the Studio's **Mine** tab (read again whenever the Studio comes back to
+  the front), worn there on the character's own body. `wardrobetest.mjs` (WARDROBE).
+
 ## 2. The designs are data
 
 `Content/Studio/Clothes/designs.json`: each design has a `label`, a `slot` (`under`, `top`, `bottom`, `full`, `legs`, `feet`, `jacket`), a
