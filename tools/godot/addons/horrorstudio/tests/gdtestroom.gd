@@ -1115,11 +1115,15 @@ func _initialize() -> void:
 				return r
 			await use("library_photo", 0.6)
 			await frames(5)
-			if rt.examining == null:
+			if rt.examining == null or rt.exam == null:
 				return "the photo isn't in the hands"
+			if rt.things["library_photo"]["node"].visible:
+				return "the photo is still on the desk while it's in the hands"
 			rt.key_event("Escape", true)
 			if not await until(func(): return rt.examining == null, 3000):
 				return "put back: never"
+			if rt.exam != null or not rt.things["library_photo"]["node"].visible:
+				return "the photo isn't back on the desk"
 			r = await ticked("t11_photo")
 			if r != "":
 				return r

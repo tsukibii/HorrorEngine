@@ -14,7 +14,8 @@
     python tools/godot_director.py guide
         the HTML guide's pictures (guides/director/img/) made again by Godot: a fresh sample project played and pictured
         (tests/guide_game.gd) and its editor with the dock (tests/guide_editor.gd), under xvfb when it's there (on a
-        machine with a display, Godot's window opens for a few minutes). Ends "GUIDE ok".
+        machine with a display, Godot's window opens for a few minutes), then the Director Manager's page on it in a
+        headless browser (tools/director_manager/guide_shots.mjs); pictures no longer made are removed. Ends "GUIDE ok".
     python tools/godot_director.py check [--keep]
         DIRECTOR: a sample project made in Saved/Godot/_director_check, imported, and its game compiled and played
         headless to its ending (tests/director_check.gd), the editor opened on it with the plugin (the dock, the
@@ -298,12 +299,28 @@ def guide():
     shutil.rmtree(t, ignore_errors=True)
     line2 = next((l for l in text2.splitlines() if l.startswith("GUIDEEDITOR ")), None)
     editor = json.loads(line2[len("GUIDEEDITOR "):]) if line2 else {}
-    made = game.get("made", []) + editor.get("made", [])
-    ok = len(game.get("made", [])) >= 9 and len(editor.get("made", [])) >= 14 and not game.get("timeout") and not editor.get("timeout")
+    try:                                                     # the Director Manager's page on the same sample, in a headless browser
+        r = subprocess.run(["node", str(ROOT / "tools" / "director_manager" / "guide_shots.mjs"), "--project", str(out), "--out", str(img)],
+                           capture_output=True, text=True, timeout=600)
+        text3 = r.stdout + r.stderr
+    except (OSError, subprocess.TimeoutExpired) as e:
+        text3 = f"MANAGERSHOTS FAIL {e}"
+    manager = [l.strip() for l in text3.splitlines() if l.startswith("  m_")]
+    manager = manager[0].split(", ") if manager else []
+    made = game.get("made", []) + editor.get("made", []) + manager
+    ok = (len(game.get("made", [])) >= 13 and len(editor.get("made", [])) >= 12 and "MANAGERSHOTS ok" in text3
+          and not game.get("timeout") and not editor.get("timeout"))
     if not ok:
         print((text + text2)[-3000:])
+        print(text3[-1500:])
+    else:                                                    # the pictures it no longer makes go (the guide shows every one there)
+        for f in img.glob("*.jpg"):
+            if f.stem not in made:
+                f.unlink()
+                print(f"  {f.name}: not made any more, removed")
     print(f"  the game: {', '.join(game.get('made', []))}")
     print(f"  the editor: {', '.join(editor.get('made', []))}")
+    print(f"  the Manager: {', '.join(manager)}")
     print(f"GUIDE {'ok' if ok else 'FAIL'} ({len(made)} pictures in {img.relative_to(ROOT)})")
     return 0 if ok else 1
 

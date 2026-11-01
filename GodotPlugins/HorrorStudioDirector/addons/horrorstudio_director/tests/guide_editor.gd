@@ -1,13 +1,14 @@
 ## The guide's pictures of the editor (guides/director/, `tools/godot_director.py guide` installs this as a plugin of its
-## own and opens the editor on the sample under xvfb): the whole editor with the dock, each of the dock's tabs, and
-## the Inspector on an event, an action, a thing, a character, a room and a task. JPEGs into $HSGUIDE_OUT; prints
+## own and opens the editor on the sample under xvfb): the whole editor with the dock, each of the dock's tabs (the
+## Director tab on the sample's Director file, a quest picked), the Scene tree on a part's effect points, and the
+## Inspector on a thing, a character, a room, a door and a little thing. JPEGs into $HSGUIDE_OUT; prints
 ## GUIDEEDITOR {...} and quits.
 @tool
 extends EditorPlugin
 
-const TABS := ["Story", "Events", "Flags", "Things", "Add", "Check", "Kimodo"]
-const INSPECT := [["e_insp_event", "FigureScare"], ["e_insp_thing", "Letter"], ["e_insp_actor", "Mari"], ["e_insp_room", "Hall"],
-	["e_insp_task", "Arrive"], ["e_insp_door", "BedroomDoor"]]
+const TABS := ["Director", "Things", "Add", "Check", "Kimodo"]
+const INSPECT := [["e_insp_thing", "Letter"], ["e_insp_actor", "Mari"], ["e_insp_room", "Hall"], ["e_insp_door", "BedroomDoor"],
+	["e_insp_life", "Kettle"]]
 
 var t := 0.0
 var phase := 0
@@ -54,11 +55,35 @@ func _inspector_rect() -> Rect2:
 	return r.grow_side(SIDE_TOP, 110)
 
 
+## the Scene dock (its tree of nodes) with its title row
+func _scene_rect() -> Rect2:
+	for c in EditorInterface.get_base_control().find_children("*", "", true, false):
+		if c.get_class() == "SceneTreeDock" and c is Control and (c as Control).is_visible_in_tree():
+			var r: Rect2 = (c as Control).get_global_rect().grow_side(SIDE_TOP, 34)
+			return Rect2(r.position, Vector2(r.size.x, min(r.size.y, 640.0)))
+	return Rect2(0, 0, 420, 700)
+
+
 func _tab(name: String) -> void:
 	for i in dock.tabs.get_tab_count():
 		if dock.tabs.get_tab_control(i).name == name:
 			dock.tabs.current_tab = i
 	dock.refresh()
+
+
+## the Director tab's row for a quest, picked (as a click would: ▶ Here plays from it)
+func _pick_quest(id: String) -> void:
+	var tree: Tree = dock.director_tab.tree
+	var top := tree.get_root()
+	if top == null:
+		return
+	for sec in top.get_children():
+		for it in sec.get_children():
+			var m = it.get_metadata(0)
+			if m is Dictionary and m.get("quest") == id:
+				it.select(0)
+				tree.scroll_to_item(it)
+				return
 
 
 func _process(dt: float) -> void:
@@ -93,13 +118,14 @@ func _process(dt: float) -> void:
 						par.split_offset -= 170
 					break
 				q = par
-			dock.select(r.find_child("Arrive", true, false))
-			_tab("Story")
+			dock.select(r.find_child("Kettle", true, false))
+			_tab("Director")
 			at = t
 			phase = 2
 		2:
 			if t - at < 6.0:
 				return
+			_pick_quest("q_drink")
 			_shot("e_overview")
 			step = 0
 			at = t
@@ -112,12 +138,8 @@ func _process(dt: float) -> void:
 			if at >= 0.0 and t - at < 0.2:
 				return
 			_tab(TABS[step])
-			if TABS[step] == "Flags":
-				var root_it: TreeItem = dock.flags_tab.tree.get_root()
-				if root_it != null:
-					for it in root_it.get_children():
-						if it.get_text(0).begins_with("read_letter"):
-							it.collapsed = false
+			if TABS[step] == "Director":
+				_pick_quest("q_drink")
 			if TABS[step] == "Check":
 				dock.check_tab.refresh()
 			at = t
@@ -129,23 +151,26 @@ func _process(dt: float) -> void:
 			step += 1
 			at = t
 			phase = 3
-		5:                                            # the Inspector on the main kinds of node
+		5:                                            # the Inspector on the main kinds of node, then the Scene tree on a part's points
 			var r := EditorInterface.get_edited_scene_root()
 			if step >= INSPECT.size() + 1:
-				_tab("Story")
+				_tab("Director")
 				print("GUIDEEDITOR " + JSON.stringify({"made": made}))
 				get_tree().quit()
 				return
 			if step < INSPECT.size():
 				dock.select(r.find_child(INSPECT[step][1], true, false))
 			else:
-				var ev = r.find_child("FigureScare", true, false)
-				EditorInterface.edit_resource(ev.actions[0])     # one of an event's actions: its verb's fields only
+				var kettle = r.find_child("Kettle", true, false)
+				dock.select(kettle.get_node_or_null("spout") if kettle != null else null)
 			at = t
 			phase = 6
 		6:
 			if t - at < 1.5:
 				return
-			_shot(INSPECT[step][0] if step < INSPECT.size() else "e_insp_action", _inspector_rect())
+			if step < INSPECT.size():
+				_shot(INSPECT[step][0], _inspector_rect())
+			else:
+				_shot("e_tree_parts", _scene_rect())
 			step += 1
 			phase = 5

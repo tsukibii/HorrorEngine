@@ -657,9 +657,20 @@ func panel(spec: Dictionary) -> Variant:
 	panel_typed = ""
 	panel_el = PanelContainer.new()
 	panel_el.name = "Panel"
-	panel_el.set_anchors_preset(Control.PRESET_CENTER)
-	panel_el.position = Vector2(-260, -160)
-	panel_el.custom_minimum_size = Vector2(520, 200)
+	if spec.get("low", false):                    # under a thing in the hands: low on the screen, growing up from its foot
+		panel_el.anchor_left = 0.5
+		panel_el.anchor_right = 0.5
+		panel_el.anchor_top = 1.0
+		panel_el.anchor_bottom = 1.0
+		panel_el.offset_top = -36
+		panel_el.offset_bottom = -36
+		panel_el.grow_horizontal = Control.GROW_DIRECTION_BOTH
+		panel_el.grow_vertical = Control.GROW_DIRECTION_BEGIN
+		panel_el.custom_minimum_size = Vector2(520, 0)
+	else:
+		panel_el.set_anchors_preset(Control.PRESET_CENTER)
+		panel_el.position = Vector2(-260, -160)
+		panel_el.custom_minimum_size = Vector2(520, 200)
 	var v := VBoxContainer.new()
 	panel_el.add_child(v)
 	var title := _label(named(spec.get("title", "")), 20)
@@ -685,7 +696,7 @@ func panel(spec: Dictionary) -> Variant:
 		text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		text.custom_minimum_size = Vector2(500, 0)
 		v.add_child(text)
-		v.add_child(_label("Esc or click  Close", 12))
+		v.add_child(_label(str(spec.get("hint", "Esc or click  Close")), 12))
 	root.add_child(panel_el)
 	modal(true)
 	var v2 = await panel_done
@@ -879,5 +890,8 @@ func choice_options() -> Array:
 	return out
 
 
+## a thing looked at: its card, under it when it's in the hands (play.gd examine)
 func examine(spec: Dictionary) -> Variant:
+	if spec.get("held", false):
+		return await panel({"title": spec.get("title", ""), "text": spec.get("text", ""), "low": true, "hint": "Drag to turn it   ·   Esc or click  Put it back"})
 	return await panel({"title": spec.get("title", ""), "text": spec.get("text", "")})

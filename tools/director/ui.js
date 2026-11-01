@@ -339,10 +339,11 @@ function nestEditor(list, ctx, redraw) {         // all / any: triggers, each wi
   return box;
 }
 // a trigger as a pill: "When the player enters the hall"; click to change it. slot: {get, set}
-export function triggerPill(slot, ctx, { prefix = "When", after = null } = {}) {
+// empty: what an unset one reads as (an optional one: "never")
+export function triggerPill(slot, ctx, { prefix = "When", after = null, empty = "(choose when)" } = {}) {
   const w = slot.get(), d = TRIGGER[verbOfTrigger(w)], pm = w && ctx.marks ? ctx.marks(w) : null;
   return h("button", { class: "pill" + (pm ? " bad" : ""), title: pm ? pm.map(p => p.text).join("\n") : "click to change when it happens", on: { click: async () => { const v = await editTrigger(slot.get(), ctx); if (v) { slot.set(v); ctx.changed(); (after || ctx.rerender)(); } } } },
-    icon(d ? d.icon : "clock", 14), h("span", {}, (prefix ? prefix + " " : "") + (w ? triggerText(w, ctx.name) : "(choose when)")));
+    icon(d ? d.icon : "clock", 14), h("span", {}, (prefix ? prefix + " " : "") + (w ? triggerText(w, ctx.name) : empty)));
 }
 
 // ---- lists you drag: rows by their grip, to another place in the list or into another list of the same kind ---------

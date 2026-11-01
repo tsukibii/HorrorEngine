@@ -197,7 +197,24 @@ func carried() -> Variant:
 # ---- input ---------------------------------------------------------------------------------------------------
 ## a left click while a card of words is up puts it away, like Esc: taken here, before the HUD's own controls get it
 ## (the card is a Control under the pointer, so it never reached _unhandled_input: the user's note, 2026-10-29)
+## A thing in the hands (examine): a drag with the left button turns it, a click with no drag puts it back.
 func _input(ev: InputEvent) -> void:
+	if exam != null and hud != null and hud.panel_el != null:
+		if ev is InputEventMouseButton and ev.button_index == MOUSE_BUTTON_LEFT:
+			if ev.pressed:
+				exam["drag"] = true
+				exam["moved"] = 0.0
+			elif exam["drag"]:
+				exam["drag"] = false
+				if float(exam["moved"]) < 6.0:
+					hud.panel_click()
+			get_viewport().set_input_as_handled()
+			return
+		if ev is InputEventMouseMotion and exam["drag"]:
+			exam_turn(ev.relative.x, ev.relative.y)
+			exam["moved"] = float(exam["moved"]) + ev.relative.length()
+			get_viewport().set_input_as_handled()
+			return
 	if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT and hud != null and hud.panel_el != null:
 		if hud.panel_click():
 			get_viewport().set_input_as_handled()
@@ -259,15 +276,15 @@ func capture_mouse(on: bool) -> void:
 
 ## a key by its name (W, A, S, D, E, G, C, F, Shift, Space, Escape, Enter, digits...)
 func key_event(code: String, down: bool, repeat: bool = false) -> void:
+	if examining != null and hud.panel_el != null and down and (code == "Escape" or code == "E"):
+		hud._finish_panel(true)
+		return
 	if hud.panel_el != null:
 		if down:
 			hud.panel_key(code)
 		return
 	if down and not hud.choice_over:
 		hud.choice_key(code)
-		return
-	if examining != null and down and (code == "Escape" or code == "E"):
-		hud._finish_panel(true)
 		return
 	if held and hud.menu != null and hud.menu.up:
 		if down:
@@ -1166,13 +1183,164 @@ func panel(spec: Dictionary) -> Variant:
 	return await modal(func(): return await hud.panel(spec))
 
 
-## looking at a thing (`use: inspect`): its name and words on a card; the thing stays where it is (the desk takes a small
-## one up in the hands; here the card alone, so a shelf doesn't vanish while you read it: the user's note, 2026-10-29);
-## Esc, E or a click puts the card away
+## looking at a thing (`use: inspect`): a small one (its longest side EXAMINE.most or less) is taken up in the hands, as
+## the desk's examine.js does (DECISIONS 2026-11-01: "pick up temporarily to inspect, turn around"): the thing itself in
+## front of the eye, lit by a lamp at the shoulder and drawn over the room (it's in the hands: never inside a wall), a
+## drag turns it, its name and words on a card under it; Esc, E or a click (no drag) puts it back where it was. A
+## bigger thing (a shelf, a wardrobe) keeps the card alone and stays where it is (the user's note, 2026-10-29). The story
+## hears the `use` once it's put back, as before.
+## most: the longest side taken up (m); dist: how far from the eye; up: above the eye's line; fill: its longest side in
+## the hands (m); turn: radians a pixel dragged; ease: how fast it follows; light: the shoulder lamp
+const EXAMINE := {"most": 0.6, "dist": 0.36, "up": 0.03, "fill": 0.14, "turn": 0.012, "ease": 12.0, "light": 1.2}
+const EXAM_LAYER := 1 << 19                   # the render layer the shoulder lamp lights: the thing in the hands alone
+var exam = null                               # the thing in the hands: {node, was, pivot, turner, want, lamp, drag, moved}
+static var _exam_hole: Shader = null
+
+
 func examine(t: Dictionary, title: String, text: String) -> void:
 	examining = t
-	await modal(func(): return await hud.examine({"title": title, "text": text}))
+	var held := exam_small(t) and exam_up(t)
+	await modal(func(): return await hud.examine({"title": title, "text": text, "held": held}))
+	exam_down()
 	examining = null
+
+
+## small enough to take up: its longest side EXAMINE.most or less, with something to show (its model or its block)
+func exam_small(t: Dictionary) -> bool:
+	var sz: Array = t.get("size", [1, 1, 1])
+	var m: float = max(float(sz[0]), float(sz[1]), float(sz[2]))
+	var n = t.get("node")
+	return m > 0.01 and m <= float(EXAMINE["most"]) and n is Node3D and (n.get_node_or_null("art") != null or n.get_node_or_null("mesh") != null)
+
+
+## the thing taken up: a copy of it (its art or its block, without what isn't its look) centred in a turner, at a size the
+## hands hold, in front of the eye on the camera; the thing itself hidden till it's put back. Drawn after the room: first
+## its silhouette writes a depth a little behind it over whatever the room had there (the hole), then its own materials,
+## their depth kept among themselves, so it's never inside a wall and its faces still hide each other
+func exam_up(t: Dictionary) -> bool:
+	var cam: Camera3D = game.camera
+	var copy: Node3D = PhysC.copy_of(t)
+	for x in copy.find_children("*", "", true, false):
+		if is_instance_valid(x) and (x is Light3D or x is CollisionObject3D or x is CollisionShape3D or x is GPUParticles3D or x is CPUParticles3D
+				or x is AudioStreamPlayer3D or x is Camera3D or x is Marker3D):
+			x.free()
+	var box: AABB = hud.bounds_of(copy)
+	var mx: float = max(box.size.x, box.size.y, box.size.z)
+	if cam == null or mx <= 0.0:
+		copy.free()
+		return false
+	if _exam_hole == null:
+		_exam_hole = Shader.new()
+		_exam_hole.code = EXAM_HOLE
+	var hole := ShaderMaterial.new()
+	hole.shader = _exam_hole
+	hole.render_priority = Material.RENDER_PRIORITY_MAX - 1
+	for mi in copy.find_children("*", "MeshInstance3D", true, false):
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		mi.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
+		mi.layers |= EXAM_LAYER
+		if mi.mesh == null:
+			continue
+		for i in mi.mesh.get_surface_count():
+			var m = mi.get_active_material(i)
+			mi.set_surface_override_material(i, exam_mat(m if m != null else StandardMaterial3D.new()))
+		mi.material_override = null
+		var h := MeshInstance3D.new()                 # the hole: the same mesh, the silhouette's depth pushed back
+		h.mesh = mi.mesh
+		h.skin = mi.skin
+		h.skeleton = NodePath("../" + str(mi.skeleton)) if not mi.skeleton.is_empty() else NodePath()
+		h.material_override = hole
+		h.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		h.layers = mi.layers
+		mi.add_child(h)
+	copy.position = -box.get_center()
+	var turner := Node3D.new()
+	turner.add_child(copy)
+	turner.scale = Vector3.ONE * clamp(float(EXAMINE["fill"]) / mx, 0.4, 3.0)
+	var flat: bool = box.size.y <= min(box.size.x, box.size.z)     # lying flat (its thinnest side up): tilted to show its top; standing (a photo): facing you
+	var want := Quaternion(Vector3.RIGHT, 0.6) if flat else Quaternion.IDENTITY
+	turner.quaternion = want
+	var pivot := Node3D.new()
+	pivot.name = "examine"
+	pivot.add_child(turner)
+	pivot.position = Vector3(0, float(EXAMINE["up"]), -float(EXAMINE["dist"]))
+	var lamp := OmniLight3D.new()
+	lamp.light_energy = float(EXAMINE["light"])
+	lamp.omni_range = 1.6
+	lamp.light_color = Color(1.0, 0.95, 0.89)
+	lamp.light_cull_mask = EXAM_LAYER
+	lamp.position = Vector3(0.18, 0.16, -0.04)
+	pivot.add_child(lamp)
+	cam.add_child(pivot)
+	var node: Node3D = t["node"]
+	exam = {"node": node, "was": node.visible, "pivot": pivot, "turner": turner, "want": want, "from": want, "lamp": lamp, "drag": false, "moved": 0.0}
+	node.visible = false                          # in the hands, not where it was
+	return true
+
+
+## its own copy of a material, drawn after the room (in the transparent pass, which comes after everything solid) with
+## its depth written; a texture with an alpha of its own keeps its look and is drawn over instead (its alpha would show)
+func exam_mat(m: Material) -> Material:
+	var c: Material = m.duplicate()
+	c.render_priority = Material.RENDER_PRIORITY_MAX
+	if c is BaseMaterial3D:
+		if c.transparency == BaseMaterial3D.TRANSPARENCY_DISABLED:
+			var img: Image = c.albedo_texture.get_image() if c.albedo_texture != null else null
+			if img != null and img.is_compressed():
+				img.decompress()
+			if img != null and img.detect_alpha() != Image.ALPHA_NONE:
+				c.no_depth_test = true
+			else:
+				c.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		c.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_ALWAYS
+	return c
+
+
+const EXAM_HOLE := """shader_type spatial;
+render_mode unshaded, cull_disabled, depth_test_disabled, depth_draw_always, skip_vertex_transform, shadows_disabled;
+// a thing in the hands (play.gd exam_up): its silhouette's depth written a little behind it over whatever the room had
+// there, pushed along each eye ray (so the same pixels), no colour; the thing drawn next is never inside a wall
+void vertex() {
+	VERTEX = (MODELVIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	VERTEX *= 1.0 + 0.3 / max(length(VERTEX), 0.01);
+	NORMAL = normalize((MODELVIEW_MATRIX * vec4(NORMAL, 0.0)).xyz);
+}
+void fragment() {
+	ALBEDO = vec3(0.0);
+	ALPHA = 0.0;
+}
+"""
+
+
+## a drag: turned about the view's up (across) and its side (up and down), whatever way it's facing now
+func exam_turn(dx: float, dy: float) -> void:
+	if exam == null:
+		return
+	var w: Quaternion = exam["want"]
+	w = Quaternion(Vector3.UP, dx * float(EXAMINE["turn"])) * w
+	w = Quaternion(Vector3.RIGHT, dy * float(EXAMINE["turn"])) * w
+	exam["want"] = w.normalized()
+
+
+## how far it's turned from how it came up (radians)
+func exam_angle() -> float:
+	return exam["turner"].quaternion.angle_to(exam["from"]) if exam != null else 0.0
+
+
+func exam_tick(dt: float) -> void:
+	var tn: Node3D = exam["turner"]
+	tn.quaternion = tn.quaternion.slerp(exam["want"], min(1.0, dt * float(EXAMINE["ease"])))
+
+
+## put back where it was
+func exam_down() -> void:
+	if exam == null:
+		return
+	if is_instance_valid(exam["pivot"]):
+		exam["pivot"].queue_free()
+	if is_instance_valid(exam["node"]):
+		exam["node"].visible = exam["was"]
+	exam = null
 
 
 func choose(spec: Dictionary) -> Variant:
@@ -2709,6 +2877,8 @@ func cast_steps(dt: float) -> void:
 
 # ---- the frame -----------------------------------------------------------------------------------------------------
 func _process(delta: float) -> void:
+	if exam != null:
+		exam_tick(delta)
 	if held:
 		return
 	if live_scene:

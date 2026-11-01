@@ -252,7 +252,7 @@ itself (`tests/make_sample.gd`: the house, and its story as `director/director.j
   card, the first quest's objective and steps, Mari's Kimodo idle on her MHR body, a wall that stops the player, the
   letter read (its fact, its step ticked and crossed out), the shut door stopping them and opening, the figure's
   jumpscare in the kitchen's doorway after the letter (the user's example, a moment), the kettle (a part) switched on
-  with its steam at its moved spout, the ornament looked at, Mari's conversation before the key (each time, heard
+  with its steam at its moved spout, the ornament taken up in the hands (turned by a drag, put back), Mari's conversation before the key (each time, heard
   out), the key, the drink errand (the bottle refused, "Nah, that's not what I want"; the mug taken, its step ticked,
   an achievement), the conversation the story offers next (answered Yes, heard out: its step ticks), the state that
   sends Mari to the bedroom door, the locked door opened by the key, the bedroom entered, the night's quest ending on
@@ -265,7 +265,9 @@ itself (`tests/make_sample.gd`: the house, and its story as `director/director.j
   dropped on a mesh (undone), a preset placed, a rename, the live marks (▶, ✓, ●), a save holding no story nodes and
   nothing the nodes make for themselves.
 - **the guide**: every picture `guides/director/index.html` shows is in `img/` and every one there is shown, every link
-  inside it lands, the project got its copy, and the dock's Guide button finds it.
+  inside it lands, the project got its copy, and the dock's Guide button finds it. `python tools/godot_director.py
+  guide` makes the pictures again: the sample played (`tests/guide_game.gd`), its editor (`tests/guide_editor.gd`)
+  and the Director Manager on it in a headless browser (`tools/director_manager/guide_shots.mjs`, MANAGERSHOTS).
 
 The runtime's own checks (GDPLAY, GDTESTROOM, GDEXPORT) stay as they were: the export's games keep their boxes.
 
@@ -278,5 +280,4 @@ The runtime's own checks (GDPLAY, GDTESTROOM, GDEXPORT) stay as they were: the e
 - Achievements are worked out and kept as facts; Steam (GodotSteam) when the user wants it.
 - Faces (the expression library's clips in Godot) wait on the Character Studio's export carrying its face shapes.
 - Fingers aren't retargeted (the hands keep their rest); MHR's twist bones keep theirs.
-- A kit thing (`tools/kit`) or a CC0 library prop isn't one click yet: drop its glb into an HSThing.
 - The desk can't open a Director game, and a Director game can't go back to the desk: the scene is the game now.

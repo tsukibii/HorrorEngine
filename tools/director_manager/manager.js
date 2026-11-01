@@ -208,11 +208,12 @@ async function askClause() {
   d.v = String(d.v).trim();
   return d;
 }
-function condEd(o, k, label = "only if") {
+// none: what an empty one reads as
+function condEd(o, k, label = "only if", none = "always") {
   const c = parseCond(o[k]);
   const put = () => { const v = buildCond(c.mode, c.items); if (v === undefined) delete o[k]; else o[k] = v; changed(); render(); };
   const box = h("div", { class: "cond" }, label ? h("span", { class: "hint" }, label) : null);
-  if (!c.items.length) box.append(h("span", { class: "hint" }, "always"));
+  if (!c.items.length && none) box.append(h("span", { class: "hint" }, none));
   c.items.forEach((x, i) => {
     if (i > 0) box.append(h("button", { class: "ghost mode", title: "all of them, or any one", on: { click: () => { c.mode = c.mode === "all" ? "any" : "all"; put(); } } }, c.mode === "all" ? "and" : "or"));
     box.append(h("span", { class: "chip" + (x.not ? " neg" : "") }, clauseText(x), h("button", { class: "x", title: "take it away", on: { click: () => { c.items.splice(i, 1); put(); } } }, "×")));
@@ -229,7 +230,7 @@ function trigEd(o, k, { prefix = "When", optional = false } = {}) {
       h("button", { class: "ghost small", title: "a thing that happens instead", on: { click: () => { delete o[k]; changed(); render(); } } }, "an event instead"));
     return box;
   }
-  box.append(triggerPill({ get: () => o[k], set: v => { o[k] = v; } }, ctx, { prefix }));
+  box.append(triggerPill({ get: () => o[k], set: v => { o[k] = v; } }, ctx, { prefix, empty: optional ? "never" : "(choose when)" }));
   box.append(h("button", { class: "ghost small", title: "when something becomes true (a fact, a quest done...), not a thing happening",
     on: { click: () => { o[k] = { holds: [] }; changed(); render(); } } }, "or once…"));
   if (optional && w) box.append(h("button", { class: "ghost small", title: "none", on: { click: () => { delete o[k]; changed(); render(); } } }, icon("x", 12)));
@@ -279,9 +280,10 @@ function questEd(q, i) {
   const acts = h("div", { class: "card" }, h("h3", {}, icon("event", 16), "As it starts"), actions(q, "on_start"), h("h3", { style: "margin-top:12px" }, icon("event", 16), "When it's done"), actions(q, "on_done"));
   const after = qs[i + 1] ? `the next quest, ${qs[i + 1].title || qs[i + 1].id}` : S.endings[0] ? `the first ending, ${S.endings[0].title || S.endings[0].id}` : "nothing yet (add an ending)";
   const next = h("div", { class: "card" }, h("h3", {}, icon("choice", 16), "What comes next"),
-    arr(q.next).map((n, j) => h("div", { class: "row" }, h("span", { class: "hint" }, j === 0 ? "If" : "else if"), condEd(n, "if", ""), h("span", { class: "hint" }, "go to"),
+    arr(q.next).map((n, j) => h("div", { class: "row" }, h("span", { class: "hint" }, parseCond(n.if).items.length ? (j === 0 ? "If" : "else if") : (j === 0 ? "Always" : "else")),
+      condEd(n, "if", "", ""), h("span", { class: "hint" }, "go to"),
       sel(n, "go", goTargets().slice(1), { blank: "—" }), ...moveBtns(q.next, j), h("button", { class: "ghost small", on: { click: () => { q.next.splice(j, 1); if (!q.next.length) delete q.next; changed(); render(); } } }, icon("x", 12)))),
-    h("div", { class: "row" }, h("span", { class: "hint" }, `Otherwise: ${after}.`)),
+    arr(q.next).some(n => !parseCond(n.if).items.length) ? null : h("div", { class: "row" }, h("span", { class: "hint" }, `Otherwise: ${after}.`)),
     h("button", { class: "small", on: { click: () => { listArr(q, "next").push({ if: [], go: "" }); changed(); render(); } } }, icon("plus", 12), " Add a way, by what's been done"));
   return h("div", {}, head, stepsBox, acts, next);
 }
@@ -341,14 +343,14 @@ function lineEd(p, t, ln, j) {
   return h("div", { class: "card sub" },
     h("div", { class: "row" }, sel(ln, "who", who.slice(1), { blank: p }), inp(ln, "text", { ph: "what's said", w: "420px" }), h("span", { class: "grow" }), ...moveBtns(t.lines, j),
       h("button", { class: "ghost small", on: { click: () => { t.lines.splice(j, 1); changed(); render(); } } }, icon("x", 12))),
-    row("Said", condEd(ln, "if", "only if")),
+    row("Said", condEd(ln, "if", "")),
     row("As it starts", actions(ln, "do", "nothing")),
     arr(ln.answers).map((a, k) => h("div", { class: "row" }, h("span", { class: "hint" }, `Answer ${k + 1}`), inp(a, "label", { ph: "Yes", w: "120px" }), h("span", { class: "hint" }, "id"), inp(a, "id", { w: "90px" }),
-      condEd(a, "if", "offered if"), h("span", { class: "hint" }, "sets"),
+      h("span", { class: "hint" }, "offered"), condEd(a, "if", ""), h("span", { class: "hint" }, "sets"),
       h("input", { value: arr(a.sets).join(", "), placeholder: "promised, …", style: "width:140px", on: { change: e => { const v = e.target.value.split(",").map(x => x.trim()).filter(Boolean); if (v.length) a.sets = v; else delete a.sets; changed(); } } }),
       h("span", { class: "hint" }, "karma"), inp(a, "karma", { num: true }), h("span", { class: "hint" }, "her reply"),
       h("input", { value: arr(a.reply).join(" / "), placeholder: "Then go. / Quickly.", style: "width:220px", on: { change: e => { const r = e.target.value.split("/").map(x => x.trim()).filter(Boolean); if (r.length) a.reply = r; else delete a.reply; changed(); } } }),
-      h("span", { class: "hint" }, "then"), sel(a, "go", goTargets().slice(1), { blank: "on" }),
+      h("span", { class: "hint" }, "then"), sel(a, "go", goTargets().slice(1), { blank: "the conversation goes on" }),
       h("button", { class: "ghost small", on: { click: () => { ln.answers.splice(k, 1); if (!ln.answers.length) delete ln.answers; changed(); render(); } } }, icon("x", 12)))),
     arr(ln.answers).length < 2 ? h("button", { class: "ghost small", on: { click: () => { listArr(ln, "answers").push({ id: freshId("a", arr(ln.answers).map(x => x.id)), label: "" }); changed(); render(); } } }, icon("plus", 12), " an answer") : null);
 }

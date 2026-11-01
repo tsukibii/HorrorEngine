@@ -5,8 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>HorrorStudio Director Guide</title>
 <!-- The guide to the HorrorStudio Director, the Godot plugin for building a game in Godot itself (docs/GODOT_DIRECTOR.md
-     is its notes). Nothing here loads from outside: the pictures are in img/, made by Godot from the sample house
-     (python tools/godot_director.py guide makes them again). Opened from the dock's Guide button, or as a file. -->
+     is its notes). Nothing here loads from outside: the pictures are in img/, made from the sample house by Godot (the
+     game, the editor) and a headless browser (the Director Manager): python tools/godot_director.py guide makes them
+     again. Opened from the dock's Guide button, or as a file. -->
 <style>
 :root{--bg:#121214;--panel:#1b1b1f;--panel2:#232329;--line:#33333b;--text:#e6e3dc;--dim:#9a978f;--accent:#e07a5f;
   --dialogue:#8a63d2;--task:#2f9e8f;--choice:#c98a2b;--ending:#c0473f;--event:#ff9e64;--level:#98c379;--good:#5aa65a;--warn:#e0a030;--bad:#e05a4f;--cue:#6fb3d9}
@@ -68,6 +69,7 @@ table.keys tr.h td{color:var(--accent);font-weight:600;font-size:12px;letter-spa
 .flow i{color:var(--dim);font-style:normal}
 .sentence{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--event);border-radius:0 10px 10px 0;padding:10px 14px;margin:12px 0;font-size:15px}
 .sentence b{color:var(--event)}
+.cols4{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:12px 0}
 footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:var(--dim);font-size:13px}
 @media (max-width:900px){
   .wrap{display:block}
@@ -86,46 +88,45 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
     <li><a href="#start">Start a project</a></li>
     <li><a href="#editor">The editor and the dock</a></li>
     <li><a href="#level">Build a level</a></li>
-    <li><a href="#things">Things to use</a></li>
+    <li><a href="#things">Things to use: parts</a></li>
     <li><a href="#characters">Characters</a></li>
-    <li><a href="#story">The story</a></li>
-    <li><a href="#events">Events</a></li>
-    <li><a href="#tracking">Flags and where you are</a></li>
+    <li><a href="#story">The story: the Director file</a></li>
+    <li><a href="#facts">Facts, conditions, achievements</a></li>
+    <li><a href="#moments">Moments, conversations, states</a></li>
+    <li><a href="#manager">The Director Manager</a></li>
     <li><a href="#play">Play and test</a></li>
     <li><a href="#kimodo">Kimodo, there and back</a></li>
     <li><a href="#keys">Keys in the game</a></li>
     <li><a href="#update">Keeping it up to date</a></li>
     <li><a href="#trouble">When something's wrong</a></li>
-    <li><a href="#reference">Every node</a></li>
+    <li><a href="#reference">Every node, every word</a></li>
   </ol>
   <a class="back" href="../index.html">← All guides</a>
 </nav>
 <main>
 <header class="hero">
   <h1>Build the game in Godot itself</h1>
-  <p>The HorrorStudio Director is a Godot plugin. Drag rooms, doors, things and characters into a scene, put the story
-  beside them as chapters, tasks, events, dialogue and endings, and press <kbd>F5</kbd>. Underneath runs the studio's own
-  runtime: the walking, the clicking, the inventory, the flashlight, hiding, the HUD, the pause menu and the saves.</p>
-  <div class="chips"><span class="chip">Godot 4.7</span><span class="chip">GDScript</span><span class="chip">drag and drop</span>
-  <span class="chip">events: when, if, then</span><span class="chip">the story in play order</span><span class="chip">Kimodo motions</span></div>
+  <p>The HorrorStudio Director is a Godot plugin. <b>The scene is the world</b>: drag in rooms, doors and characters,
+  and make your own models into things with <b>parts</b> (a kettle, a letter, a hiding place). <b>The story is one
+  file</b> beside it, written in a page, the Director Manager: quests one at a time, moments, conversations, states
+  and endings, naming the scene's things by id. Press <kbd>F5</kbd>: the Director watches what the player does and
+  sets the world to match, on the studio's own runtime (the walking, the clicking, the inventory, the flashlight,
+  hiding, the HUD, the pause menu, the saves).</p>
+  <div class="chips"><span class="chip">Godot 4.7</span><span class="chip">GDScript</span><span class="chip">parts on your own models</span>
+  <span class="chip">quests one at a time</span><span class="chip">the Director Manager</span><span class="chip">facts and conditions</span><span class="chip">Kimodo motions</span></div>
 </header>
-<div class="notyet"><b>Being rewritten.</b> The story has moved out of the scene: it's now the <b>Director file</b>
-(<code>director/director.json</code>: quests one at a time, states, moments, conversations, endings), read by the dock's
-new <span class="ui">Director</span> tab, and soon written in the Director Manager page. Sections 6 to 8 below still
-describe the old story nodes (chapters, tasks, events) and the Story, Events and Flags tabs, which are gone; the rest
-(the level, things and parts, characters, playing, Kimodo, keys) is current. The notes in
-<code>docs/GODOT_DIRECTOR.md</code> describe the new story now.</div>
 
 <section id="start">
 <h2><span class="n">1</span>Start a project</h2>
 <p>From the studio's folder, make a new Godot project with everything in it. <code>--sample</code> starts you from the
-sample house (a hall, a kitchen, a locked bedroom, a letter, a key, Mari, a jumpscare and two endings); leave it out
-for an empty game with one room.</p>
+sample house (a hall, a kitchen, a locked bedroom, a letter, a key, a kettle, Mari, a jumpscare and two endings);
+leave it out for an empty game with one room.</p>
 <pre>python tools/godot_director.py new ~/Games/MyGame --sample</pre>
 <p>Open the folder in Godot 4.7 (<span class="ui">Import</span> in the project manager, pick its
 <code>project.godot</code>). Both plugins are already switched on. Press <kbd>F5</kbd> and you're playing.</p>
 <div class="cols">
-  <div class="card"><h4><code>main.tscn</code></h4><p>The game: an <span class="node">HSGame</span> with the levels and the story under it. F5 plays it.</p></div>
+  <div class="card"><h4><code>main.tscn</code></h4><p>The world: an <span class="node">HSGame</span> with the levels under it. F5 plays it.</p></div>
+  <div class="card"><h4><code>director/</code></h4><p>The story: <code>director.json</code>, the Director file (§6), and <code>history/</code>, the versions before each save.</p></div>
   <div class="card"><h4><code>addons/</code></h4><p>The Director, the runtime (<code>horrorstudio</code>) and the look (<code>horrorstudio_look</code>). Don't edit them here: they're copies.</p></div>
   <div class="card"><h4><code>game/</code></h4><p>The sound shelf (240 sounds by name), the little things' lives, and the Character Studio exports your characters wear (<code>people/</code>).</p></div>
   <div class="card"><h4><code>kimodo/</code>, <code>motions/</code>, <code>bodies/</code></h4><p>Kimodo's stages and motions, the motions brought in, MHR's body to try them on.</p></div>
@@ -140,58 +141,57 @@ Godot section).</div>
 
 <section id="editor">
 <h2><span class="n">2</span>The editor and the dock</h2>
-<figure class="wide"><img src="img/e_overview.jpg" width="1600" height="1000" alt="Godot's editor with the sample open: the scene tree on the left, the Inspector on the right and the HorrorStudio dock under it">
-<figcaption>The sample in Godot's editor: the scene tree on the left (the house's rooms and things, then the story),
-the Inspector top right, the <b>HorrorStudio</b> dock under it.</figcaption></figure>
-<p>Everything is a node in the scene tree. You add them three ways: the dock's <span class="ui">Add</span> tab (a click
-puts one in front of the camera, a drag drops it into the 3D view), the Story tab's <span class="ui">+ Add</span> menu
-(a chapter, a step, a to-do, an event, a line or an answer, put where it belongs), or Godot's own
-<span class="ui">Add Child Node</span> (search for "HS"). Select a node and the Inspector
-shows its settings, only the ones that matter for what it is.</p>
-<p>The dock sits under the Inspector, so a row you pick in the dock opens right above it. It has seven tabs:</p>
+<figure class="wide"><img src="img/e_overview.jpg" width="1600" height="1000" alt="Godot's editor with the sample open: the scene tree on the left, the Inspector on the right on the kettle, and the HorrorStudio dock under it showing the Director tab">
+<figcaption>The sample in Godot's editor: the house's rooms, doors, things and characters in the scene tree, the
+Inspector on the kettle, the <b>HorrorStudio</b> dock under it on its Director tab.</figcaption></figure>
+<p>Everything in the world is a node in the scene tree: rooms, doors, things, characters, areas, spots, paths. You add
+them three ways: the dock's <span class="ui">Add</span> tab (a click puts one in front of the camera, a drag drops it
+into the 3D view), a <b>part</b> on your own model (§4), or Godot's own <span class="ui">Add Child Node</span> (search
+for "HS"). Select a node and the Inspector shows its settings, only the ones that matter for what it is.</p>
+<p>What happens in the game isn't in the scene: it's the <b>Director file</b> (§6), written in the Director Manager
+(§9). The dock sits under the Inspector, so a row you pick in it opens right above it. Its tabs:</p>
 <table class="keys">
-<tr><td class="ui">Story</td><td>The quest log: chapters and their steps in the order they play. Add, drag to reorder, play from any step.</td></tr>
-<tr><td class="ui">Events</td><td>Every event as a sentence, and templates (a jumpscare in an area, the lights dying...).</td></tr>
-<tr><td class="ui">Flags</td><td>Every flag: where it's set, where it's checked, and a warning for one nothing sets.</td></tr>
+<tr><td class="ui">Director</td><td>The story as the Director file has it: the quests in play order with their steps and what comes next, the endings, the conversations, the moments, the states. <span class="ui">▶</span> plays, <span class="ui">▶ Here</span> plays from the picked quest, <span class="ui">Manager</span> opens the page that writes it.</td></tr>
 <tr><td class="ui">Things</td><td>The items, notes, things to use, characters, rooms, areas, doors, spots, paths and lights, with their ids.</td></tr>
-<tr><td class="ui">Add</td><td>Every node as a button: click or drag.</td></tr>
+<tr><td class="ui">Add</td><td>The parts first (select your model, click what it is), then every node as a button: click or drag.</td></tr>
 <tr><td class="ui">Check</td><td>The game compiled as it will play, and what's wrong.</td></tr>
 <tr><td class="ui">Kimodo</td><td>Send a room to Kimodo, bring a motion back.</td></tr>
 </table>
 <p>Under the tabs: a line saying what just happened (or what's missing), and the <span class="ui">Guide</span> button,
 which opens this page (so does <span class="ui">Project → Tools → HorrorStudio Director guide</span>).</p>
-<div class="note">Rooms, doors, things, characters, areas, spots, paths and the story's steps each have an <b>id</b>
-(the Inspector's first field): it's how events, doors and to-dos name each other. It's the node's name in lowercase with underscores (<code>BedroomKey</code> is <code>bedroom_key</code>) and follows
-the name when you rename the node, until you type an id of your own. Fields that name something suggest the ids of the
-right kind as you type.</div>
+<div class="note">Rooms, doors, things, characters, areas, spots and paths each have an <b>id</b> (the Inspector's
+first field): it's how the story names them. It's the node's name in lowercase with underscores
+(<code>BedroomKey</code> is <code>bedroom_key</code>) and follows the name when you rename the node, until you type an
+id of your own. Each time you save a scene the plugin writes down its ids, for the Manager's pickers.</div>
 <div class="pair">
-<figure><img src="img/e_tab_add.jpg" width="438" height="465" alt="The Add tab: buttons for a level, rooms, a corridor, doors, areas, a spot, a path, characters, a light, then things to use"><figcaption>The Add tab: hover a button for what it makes.</figcaption></figure>
-<figure><img src="img/e_tab_things.jpg" width="438" height="465" alt="The Things tab: the items, notes, characters, areas, doors, spots and lights, each with its id"><figcaption>The Things tab: everything in the scene by kind, with the id events call it by.</figcaption></figure>
+<figure><img src="img/e_tab_add.jpg" width="438" height="465" alt="The Add tab: your objects' parts (Pickup, Inspect, Note...), the little things (Kettle, Cup, Teapot...), then a level, rooms, doors, areas, spots, paths, characters, a light"><figcaption>The Add tab: the parts on top; hover a button for what it makes.</figcaption></figure>
+<figure><img src="img/e_tab_things.jpg" width="438" height="465" alt="The Things tab: the items, notes, characters, areas, doors, spots and lights, each with its id"><figcaption>The Things tab: everything in the scene by kind, with the id the story calls it by.</figcaption></figure>
 </div>
-<div class="tip"><b>Tip.</b> Drag the dock's edge to make it wider; the rows read whole at about 450 pixels.</div>
+<div class="tip"><b>Tip.</b> Drag the dock's edge to make it wider; the rows read whole at about 600 pixels.</div>
 </section>
 
 <section id="level">
 <h2><span class="n">3</span>Build a level</h2>
 <figure class="wide"><img src="img/g_topdown.jpg" width="1280" height="720" alt="The sample house seen from above at a slant: a hall, a kitchen and a bedroom, Mari in the hall, an orange area in the kitchen's doorway">
 <figcaption>The sample house from above (ceilings off): the hall with Mari, the kitchen through its door (the orange box
-is an <b>area</b> with the jumpscare in it), the bedroom behind a locked door.</figcaption></figure>
+is an <b>area</b>: a moment waits for the player to walk into it), the bedroom behind a locked door.</figcaption></figure>
 <p>A level is an <span class="node">HSLevel</span>: a place the game plays in. Build it under the HSGame, or as its own
-scene (its root an HSLevel) dropped into <code>main.tscn</code>. Inside it:</p>
+scene (its root an HSLevel) dropped into <code>main.tscn</code>. The story plays where the player is: a new level is
+only for a new map (the player drives somewhere else). Inside it:</p>
 <h3>Rooms</h3>
 <p>An <span class="node">HSRoom</span> makes a floor, four walls and a ceiling from its <b>size</b> (the space inside:
 width, height, depth). Its origin is the middle of the floor; north is Godot's −Z. Turn walls off with <b>walls</b>,
 give it your own materials (in a StandardMaterial3D tick <span class="ui">UV1 → Triplanar</span> and
 <span class="ui">World Triplanar</span>, so a texture tiles by the metre whatever the room's size), and set its
-<b>floor kind</b> (wood, stone, tile, carpet, dirt, metal, water) for the footsteps. Its id is an <b>area</b>: an event
-can wait for "the player enters kitchen".</p>
+<b>floor kind</b> (wood, stone, tile, carpet, dirt, metal, water) for the footsteps. Its id is an <b>area</b>: a step
+or a moment can wait for "the player enters kitchen".</p>
 <p>Two rooms side by side: set them a wall's thickness apart (12 cm unless you change <b>wall</b>) and turn off one
 room's wall where they meet, so the wall isn't doubled. In the sample the hall keeps its east wall, the kitchen has
 none on its west, and the kitchen's door sits in the hall's wall.</p>
 <h3>Doors</h3>
 <p>An <span class="node">HSDoor</span> on a room's wall <b>cuts its own opening</b>: drag it along the wall and the hole
 follows. It swings away from the player. <b>Locked by</b> an item's id keeps it shut until the player has that item (or
-<code>flag:name</code>, a flag). It can have a <b>peephole</b> and a <b>latch</b> (a thumb turn to lock it from inside).
+<code>flag:name</code>, a fact). It can have a <b>peephole</b> and a <b>latch</b> (a thumb turn to lock it from inside).
 Put a door model in as its child and it wears that instead of the plain leaf.</p>
 <p>Doorways and windows with no door are the room's <b>openings</b>: a side, an offset along the wall, a width, a
 height and a sill.</p>
@@ -201,68 +201,77 @@ height and a sill.</p>
 </div>
 <h3>Areas, spots and paths</h3>
 <ul>
-<li><span class="node">HSTrigger</span>, an <b>area</b>: a box the player walks into (orange in the editor, invisible in the game). Put events in it. <b>Safe</b>: a watching character can't see the player inside.</li>
-<li><span class="node">HSSpot</span>, a <b>spot</b>: where the player starts (the level's <b>start</b>, or a spot named Start), where a task puts the player, where a character stands. It faces the way its arrow points (its +Z).</li>
+<li><span class="node">HSTrigger</span>, an <b>area</b>: a box the player walks into (orange in the editor, invisible in the game). A step or a moment waits for it by its id. <b>Safe</b>: a watching character can't see the player inside.</li>
+<li><span class="node">HSSpot</span>, a <b>spot</b>: where the player starts (the level's <b>start</b>, or a spot named Start), where a quest puts the player, where a character stands or is sent. It faces the way its arrow points (its +Z).</li>
 <li><span class="node">HSPath</span>, a <b>path</b> a character walks: select it and draw points with Godot's path tools (Add Point, then click the floor), or give it HSSpot children you drag around. <b>Mode</b>: loop, there and back, or once; <b>waits</b> at its points.</li>
 </ul>
 <h3>Your own models and lights</h3>
 <p>Drop any model into the level. If it has collision it stops the player (Godot's own physics); if you want the player
-to click it, put it inside an <span class="node">HSThing</span> (next section). Every <b>OmniLight3D</b> and
-<b>SpotLight3D</b> in a level belongs to the story by its node's name: light switches flip the lights in their room, a
-power cut turns them off, an event's <b>Light</b> action finds them. A light with "candle" or "fire" in its name keeps
-burning in a power cut. Light the level however you like; the look plugin's light nodes work as usual.</p>
-<figure class="wide"><img src="img/g_hall.jpg" width="1280" height="720" alt="In the game: the hall, Mari standing in the middle, the objective and its to-dos at the top left">
-<figcaption>The hall in the game: the objective and its to-dos at the top left, Mari waiting.</figcaption></figure>
+to do something with it, give it a part (next section). Every <b>OmniLight3D</b> and <b>SpotLight3D</b> in a level
+belongs to the story by its node's name: light switches flip the lights in their room, a power cut turns them off, a
+state or a moment's <b>Light</b> finds them. A light with "candle" or "fire" in its name keeps burning in a power cut.
+Light the level however you like; the look plugin's light nodes work as usual.</p>
+<figure class="wide"><img src="img/g_hall.jpg" width="1280" height="720" alt="In the game: the hall, Mari standing in the middle, the objective Find the bedroom key and its two steps at the top left">
+<figcaption>The hall in the game: the first quest's objective and its steps at the top left, Mari waiting.</figcaption></figure>
 </section>
 
 <section id="things">
-<h2><span class="n">4</span>Things to use</h2>
-<p>An <span class="node">HSThing</span> is something the player does something with. Pick its <b>use</b>; the Inspector
-shows only that use's fields. Put your model in it as a child (until you do, a stand-in box shows), give it a
-<b>display name</b> for the cursor ("Read · A letter"), and it's done.</p>
-<h3>Your own models: parts</h3>
-<p>The quickest way: <b>select your model</b> in the scene and click what it is in the Add tab's first rows (Pickup,
-Inspect, Note, Seat, HidingPlace, CodeLock...), or <b>drag the part</b> from the plugin's <code>parts/</code> folder
-onto your model in the Scene tree. The part takes your model's place and your model goes inside it, so it's a thing
-now. <kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes it.</p>
-<p>The <b>little things</b> are parts too: Kettle, Cup, Teapot, Pot, Hob, Candle, Cigarette, Lighter, Phone, Tap, TV,
-Clock, Fridge and more. A kettle boils by itself once switched on, a cup goes cold, a candle burns down. Each comes with
-its <b>effect points</b> as markers (a kettle's <code>spout</code>, <code>led</code>, <code>lid</code>; a cigarette's
-<code>tip</code>; a candle's <code>flame</code>), placed where they'd be on a kettle of its size: drag them onto your
-model, and the steam comes out where you put the spout.</p>
+<h2><span class="n">4</span>Things to use: parts</h2>
+<p>Any model can be something the player does something with. <b>Select your model</b> in the scene and click what it
+is in the Add tab's first rows (Pickup, Inspect, Note, Seat, HidingPlace, CodeLock...), or <b>drag the part</b> from
+the plugin's <code>parts/</code> folder onto your model in the Scene tree. The part takes your model's place and your
+model goes inside it: it's a thing now, an <span class="node">HSThing</span>, with an id. <kbd>Ctrl</kbd>+<kbd>Z</kbd>
+undoes it. A thing's <b>use</b> says what the player does with it, and the Inspector shows only that use's fields;
+give it a <b>display name</b> for the cursor ("Read · Letter").</p>
 <div class="pair">
-<figure><img src="img/e_insp_thing.jpg" width="450" height="448" alt="The Inspector on a note: use note, its title and its text"><figcaption>A note: just a title and the words.</figcaption></figure>
-<figure><img src="img/g_cursor.jpg" width="1280" height="720" alt="In the game: the cursor on the letter on the floor, saying Read, A letter"><figcaption>In the game, the cursor says what a click will do.</figcaption></figure>
+<figure><img src="img/e_insp_thing.jpg" width="450" height="448" alt="The Inspector on a note: use note, its title and its text"><figcaption>A note: a title and the words.</figcaption></figure>
+<figure><img src="img/g_cursor.jpg" width="1280" height="720" alt="In the game: the cursor on the letter on the floor, saying Read, Letter"><figcaption>In the game, the cursor says what a click will do.</figcaption></figure>
 </div>
 <table class="keys">
 <tr class="h"><td>Use</td><td>What the player does, and what to fill in</td></tr>
-<tr><td>pickup</td><td>Takes it into the inventory. <b>item</b> is its id (a locked door or an event asks for it). Tick <b>flashlight</b> and <kbd>F</kbd> switches it.</td></tr>
+<tr><td>pickup</td><td>Takes it into the inventory. <b>item</b> is its id (a locked door or a quest's step asks for it). Tick <b>flashlight</b> and <kbd>F</kbd> switches it.</td></tr>
 <tr><td>note</td><td>Reads it on a card: <b>note title</b>, <b>note text</b>.</td></tr>
-<tr><td>inspect</td><td>Takes it up and turns it in the hands: <b>inspect text</b> under it.</td></tr>
+<tr><td>inspect</td><td>Takes it up in the hands: the thing itself in front of the eye, turned by dragging the mouse, its <b>inspect text</b> under it; <kbd>Esc</kbd>, <kbd>E</kbd> or a click puts it back. Something big (a bookshelf) stays where it is and shows its words on a card.</td></tr>
 <tr><td>switch</td><td>A light switch: the lights in its room, or the ones in <b>switches</b>.</td></tr>
 <tr><td>breaker</td><td>The power: off for the whole level, and back on.</td></tr>
 <tr><td>sit</td><td>Sits down; a click stands up again.</td></tr>
-<tr><td>sleep</td><td>Lies down, the view goes dark (a chapter card next). <b>sleep needs</b>: flags that must be set first.</td></tr>
+<tr><td>sleep</td><td>Lies down, the view goes dark. <b>sleep needs</b>: facts that must be there first.</td></tr>
 <tr><td>hide</td><td>Climbs in (a wardrobe, a locker); a watching character can't see them. <b>see through</b>: how much they see out.</td></tr>
 <tr><td>carry</td><td>Carries it in both hands; <kbd>G</kbd> puts it down.</td></tr>
 <tr><td>roll</td><td>Throws it like a die; the face it lands on is heard.</td></tr>
-<tr><td>code</td><td>A keypad: the right <b>code</b> sets its flag (<b>opens flag</b>).</td></tr>
-<tr><td>use_item</td><td>Uses an item on it (<b>needs item</b>), which sets its flag; <b>consume</b> takes the item away.</td></tr>
+<tr><td>code</td><td>A keypad: the right <b>code</b> sets its fact (<b>opens flag</b>).</td></tr>
+<tr><td>use_item</td><td>Uses an item on it (<b>needs item</b>), which sets its fact; <b>consume</b> takes the item away.</td></tr>
 <tr><td>clean</td><td>A stain scrubbed away by holding the button; <b>clean with</b> an item (a mop).</td></tr>
-<tr><td>game</td><td>A board game at a table (<b>board game</b>). The game plays <i>chohan</i> (two dice, odd or even) so far; the desk's other games come later.</td></tr>
-<tr><td>life</td><td>A little thing with a life of its own (<b>life</b>: which one; <b>life state</b>: how it starts). A click does what it offers now (switch it on, pour, answer).</td></tr>
-<tr><td>none</td><td>Nothing to do: a solid thing events can name (shown, hidden, knocked on).</td></tr>
+<tr><td>game</td><td>A board game at a table (<b>board game</b>): <i>chohan</i> (two dice, odd or even) so far; a game's own are made as it needs them.</td></tr>
+<tr><td>life</td><td>A little thing with a life of its own (below).</td></tr>
+<tr><td>none</td><td>Nothing to do: a solid thing the story can name (shown, hidden).</td></tr>
 </table>
-<p><b>Hidden at start</b> keeps a thing out of the level until an event shows it: the key that turns up later, the
-figure for a jumpscare. <b>Solidity</b> says whether it stops the player (furniture does by default; a key or a note
-doesn't).</p>
-<figure class="half"><img src="img/g_note.jpg" width="1280" height="720" alt="In the game: the letter's card open, with its words"><figcaption>The letter, read.</figcaption></figure>
+<p><b>Hidden at start</b> keeps a thing out of the level until the story shows it (a state, or a moment's Show): the
+key that turns up later, the figure for a jumpscare. <b>Solidity</b> says whether it stops the player (furniture does by
+default; a key or a note doesn't). Until you put a model in, a thing shows a stand-in box.</p>
+<div class="pair">
+<figure><img src="img/g_note.jpg" width="1280" height="720" alt="In the game: the letter's card open, with its words"><figcaption>A note, read.</figcaption></figure>
+<figure><img src="img/g_inspect.jpg" width="1280" height="720" alt="In the game: the ornament held up in front of the eye, turned a little, its words on a card under it"><figcaption>Inspect: the ornament in the hands, turned by a drag, its words under it.</figcaption></figure>
+</div>
+<h3>The little things</h3>
+<p>Kettle, Cup, Teapot, Pot, Hob, Candle, Cigarette, Lighter, Phone, Tap, TV, Clock, Fridge and more: parts too, with a
+life of their own. A kettle boils by itself once switched on, a cup goes cold, a candle burns down; a click does what
+it offers now (switch it on, pour, answer). Each comes with its <b>effect points</b> as markers (a kettle's
+<code>spout</code>, <code>led</code>, <code>lid</code> and <code>switch</code>; a cigarette's <code>tip</code>; a
+candle's <code>flame</code>), placed where they'd be on a thing of its size. Drag them onto your model: the steam comes out
+where you put the spout. <b>life state</b> is how it starts; the story can change it (a state, or a moment's
+<b>State</b>).</p>
+<div class="pair">
+<figure><img src="img/e_tree_parts.jpg" width="268" height="464" alt="The Scene tree: the Kettle with its model and its effect points spout, led, lid and switch as markers"><figcaption>A Kettle part on a model: its effect points are markers in the tree.</figcaption></figure>
+<figure><img src="img/g_kettle.jpg" width="1280" height="720" alt="In the game: the kettle on the kitchen table boiling, steam rising from its spout"><figcaption>In the game: switched on and boiling, the steam from where the spout marker was put.</figcaption></figure>
+</div>
+<figure class="half"><img src="img/e_insp_life.jpg" width="450" height="448" alt="The Inspector on the kettle: use life, life kettle, its state"><figcaption>A little thing in the Inspector: which life, and the state it starts in.</figcaption></figure>
 </section>
 
 <section id="characters">
 <h2><span class="n">5</span>Characters</h2>
 <div class="pair">
-<figure><img src="img/e_insp_actor.jpg" width="450" height="448" alt="The Inspector on Mari: height, behaviour idle, face player, talk, solid, idle motion"><figcaption>Mari in the Inspector.</figcaption></figure>
+<figure><img src="img/e_insp_actor.jpg" width="450" height="448" alt="The Inspector on Mari: height, behaviour idle, face player, solid, idle motion"><figcaption>Mari in the Inspector.</figcaption></figure>
 <figure><img src="img/g_mari.jpg" width="1280" height="720" alt="In the game: Mari close up, the cursor on her saying Talk, Mari"><figcaption>In the game: <b>Talk</b> on the cursor.</figcaption></figure>
 </div>
 <p>An <span class="node">HSActor</span> is a character. Put her model in as a child: a Character Studio export
@@ -273,141 +282,199 @@ with the Character Studio's own skin and eyes. <code>install</code> copies the e
 (<code>game/people/</code>), so run it again after you set one. Kimodo motions need the model child, since they go onto
 its skeleton.</p>
 <ul>
-<li><b>Behaviour</b>: <i>idle</i> (stands where you put her), <i>sit</i> (on a <b>seat</b>), <i>path</i> (walks an HSPath), <i>patrol</i> (several paths in turn), or <i>off</i> (not there until an event brings her). <b>Face player</b> turns her to them.</li>
-<li><b>Sees player</b>: she watches; in her cone and range the suspicion meter fills, and when it's full "caught" happens (an event can wait for it).</li>
-<li><b>Talk</b>: the cursor says Talk, and a click is heard as "the player uses <i>her id</i>": put an event in her to answer it.</li>
-<li><b>Idle motion</b>, <b>walk motion</b>: animations on her AnimationPlayer (a Kimodo motion you brought in, §10).</li>
-<li><b>Hidden at start</b> keeps her out of the level until an event shows her; <b>solid</b> off lets the player walk
+<li><b>Behaviour</b>: how she starts: <i>idle</i> (stands where you put her), <i>sit</i> (on a <b>seat</b>), <i>path</i> (walks an HSPath), <i>patrol</i> (several paths in turn), or <i>off</i> (not there until the story brings her). <b>Face player</b> turns her to them. Later the story's <b>states</b> move her (§8).</li>
+<li><b>Sees player</b>: she watches; in her cone and range the suspicion meter fills, and when it's full the player is caught (a step or a moment can wait for it).</li>
+<li><b>Talk</b>: someone the Director file has conversations for takes a click whether this is ticked or not (the cursor says Talk) and plays the one the story offers now (§8); tick it for a click with no conversation behind it.</li>
+<li><b>Idle motion</b>, <b>walk motion</b>: animations on her AnimationPlayer (a Kimodo motion you brought in, §11).</li>
+<li><b>Hidden at start</b> keeps her out of the level until the story shows her; <b>solid</b> off lets the player walk
 through her; <b>speed</b> is her walking pace.</li>
 </ul>
 </section>
 
 <section id="story">
-<h2><span class="n">6</span>The story</h2>
-<p>Steps play <b>top to bottom</b> in the scene tree: a task, then the next step, and so on. For a straight game,
-that's all you do: put the steps in order. Group them in chapters if you like.</p>
-<div class="flow"><span>Chapter · Night 1</span><i>→</i><span style="border-color:var(--task)">Task · The key</span><i>→</i>
-<span style="border-color:var(--dialogue)">Dialogue · Mari</span><i>→</i><span style="border-color:var(--task)">Task · The bedroom</span><i>→</i>
-<span style="border-color:var(--choice)">Choice · Hide or sleep</span><i>→</i><span style="border-color:var(--ending)">Morning</span><i>or</i><span style="border-color:var(--ending)">Asleep</span></div>
+<h2><span class="n">6</span>The story: the Director file</h2>
+<p><b>The scene is the world; the Director file is the story.</b> It's one file, <code>director/director.json</code>,
+and nothing in the scene knows about it: the story names the scene's things by id ("when the player picks up
+<code>bedroom_key</code>", "Mari walks to <code>bedroom_spot</code>"). You write it in the Director Manager (§9); the
+dock's Director tab shows it as it will play, and the game reads it each time it starts.</p>
+<div class="flow"><span>Night 1 · 23:40</span><i>→</i><span style="border-color:var(--task)">The key</span><i>→</i>
+<span style="border-color:var(--task)">A drink</span><i>→</i><span style="border-color:var(--task)">Mari</span><i>→</i>
+<span style="border-color:var(--task)">The bedroom</span><i>→</i><span style="border-color:var(--task)">Something in the hall</span><i>→</i>
+<span style="border-color:var(--ending)">Morning</span><i>or</i><span style="border-color:var(--ending)">Asleep</span></div>
 <div class="pair">
-<figure><img src="img/e_tab_story.jpg" width="438" height="465" alt="The Story tab: the chapter Night 1, the task The key with its to-dos and an event, the dialogue with Mari and its answers"><figcaption>The Story tab: the sample's chapter, its steps and their parts.</figcaption></figure>
-<figure><img src="img/e_insp_task.jpg" width="450" height="448" alt="The Inspector on a task: title, objective, level, start at, finish, time limit, next"><figcaption>A task in the Inspector.</figcaption></figure>
+<figure><img src="img/e_tab_director.jpg" width="438" height="465" alt="The dock's Director tab: the sample's quests in order with their steps, the endings, Mari's conversations, the moments and the states"><figcaption>The Director tab on the sample: its five quests, their steps and what comes next.</figcaption></figure>
+<figure><img src="img/g_strike.jpg" width="560" height="132" alt="The top left of the game: the objective Find the bedroom key, the step Read the letter crossed out, the step Find the bedroom key still open"><figcaption>A step done stays on the list, crossed out.</figcaption></figure>
 </div>
-<table class="keys">
-<tr class="h"><td>Node</td><td>What it is</td></tr>
-<tr><td><span class="dot" style="background:#c0caf5"></span><span class="node">HSChapter</span></td><td>A group of steps with a title card when it starts (the view goes dark, the title, an autosave), the time of day from there on, and the level its tasks play in.</td></tr>
-<tr><td><span class="dot" style="background:var(--task)"></span><span class="node">HSTask</span></td><td>What the player does: an <b>objective</b> (top left), its <span class="node">HSTodo</span> children (the to-do list), its events, where the player <b>starts at</b>, and when it's <b>finished</b>: when every to-do is ticked, when an event says <i>finish task</i>, or never (free roam). A <b>time limit</b> runs out into <b>on timeout</b> (a death, a chase).</td></tr>
-<tr><td><span class="dot" style="background:var(--task)"></span><span class="node">HSTodo</span></td><td>A line on the list, ticked by what the player does (<b>done when</b>: picks up the key, enters the cellar, locks the door) or by an event. It can fail, have its own time, or be hidden.</td></tr>
-<tr><td><span class="dot" style="background:var(--dialogue)"></span><span class="node">HSDialogue</span></td><td>A conversation played live: the player can look around (and walk, if standing). Its <span class="node">HSLine</span> children in order: <b>who</b> says it (a character's id; empty is the player's thought) and the words.</td></tr>
-<tr><td><span class="dot" style="background:var(--dialogue)"></span><span class="node">HSOption</span> under a line</td><td>Makes the line a question. Each answer: its <b>label</b>, what she says back (<b>reply lines</b>), the flags and karma it sets, and <b>go to</b> a step to branch. Two answers at most.</td></tr>
-<tr><td><span class="dot" style="background:var(--choice)"></span><span class="node">HSChoice</span></td><td>Where the story branches. <b>By</b> flags (the first option whose flags are set; the last with none is "otherwise"), by <b>act</b> (the player plays on until one option's <b>when</b> happens), or by karma. Each option's <b>go to</b> is where it leads.</td></tr>
-<tr><td><span class="dot" style="background:var(--ending)"></span><span class="node">HSEnding</span></td><td>Where a way through the story stops: a title and words. A <i>death</i> offers a retry from the last checkpoint.</td></tr>
-</table>
-<p>To branch: a choice's options, a dialogue answer's <b>go to</b>, or a task's <b>next</b> (to skip ahead or rejoin).
-An ending ends its way, so put each branch's steps after the choice and point the options at them.</p>
+<h3>Quests, one at a time</h3>
+<p>The game is its <b>quests</b>, played one after another, in order. A quest has a title, an <b>objective</b> (top left)
+and <b>steps</b>: the to-do list under it, each done by something the player does (reads the letter, picks up the key,
+walks into the bedroom, hides in the wardrobe) and maybe failed by another (takes too long, gives the wrong thing).</p>
+<ul>
+<li><b>A step only counts while its quest is on.</b> "Turn the light on, then off": if they did it before that quest
+started, it doesn't tick by itself; they do it again. (For what was done before, ask a <b>fact</b> instead, §7.)</li>
+<li>A step done stays on the list, <b>crossed out</b> with a line (a failed one in red).</li>
+<li>A quest <b>finishes</b> when all its steps are done, on its <b>first</b> step done (the night: hide <i>or</i> sleep,
+whichever they do), or <b>never</b> by itself (a moment says when).</li>
+<li>As it starts: a <b>chapter card</b> before it if you like (a title, the time, the view dark, an autosave), where the
+player <b>starts at</b>, a checkpoint, a <b>time limit</b> and what happens when it runs out, and commands to run
+(<b>as it starts</b>, <b>when it's done</b>).</li>
+</ul>
+<figure class="wide"><img src="img/m_quests.jpg" width="1400" height="940" alt="The Director Manager on the quest A drink: its id, title, objective, how it finishes, its step Give Mari the mug done when the mug is given to Mari, and her answer to anything else: Nah, that's not what I want"><figcaption>The Director Manager on the quest <i>A drink</i>: one step, done when the mug is given to Mari.</figcaption></figure>
+<h3>Giving something to someone</h3>
+<p>A step can wait for the player to <b>give</b> something to someone (<span class="ui">Something is given to
+someone</span>: the mug to Mari). While that step is on, clicking her with something in the hand offers it to her
+instead of talking. The right thing ticks the step and she takes it; for anything else, <b>the wrong thing</b>: her
+answer ("Nah, that's not what I want."), and the step can fail too if you tick it.</p>
+<figure><img src="img/g_wrong.jpg" width="1280" height="720" alt="In the game: Mari, the bottle offered, her line at the foot of the screen: Nah, that's not what I want"><figcaption>The bottle offered: not what she asked for.</figcaption></figure>
+<h3>What comes next</h3>
+<p>When a quest is done, the next one in the list starts, unless it has <b>ways</b>: each a condition (§7) and where it
+goes, a quest or an <b>ending</b>; the first that holds wins. That's how the story branches, and how a secret ending or
+an easter egg waits for what the player did along the way.</p>
 <div class="pair">
-<figure><img src="img/g_dialogue.jpg" width="1280" height="720" alt="In the game: Mari facing the player, the answers Yes and Not yet at the foot of the screen"><figcaption>Mari has asked; her answers come up as her line ends. Pick with <kbd>A</kbd>/<kbd>D</kbd> and <kbd>Enter</kbd>, or the mouse.</figcaption></figure>
+<figure><img src="img/m_next.jpg" width="904" height="147" alt="What comes next for the night's quest: if the step hide is ticked go to the ending Morning, else go to the ending Asleep"><figcaption>The night's ways: hidden, the good ending; else the bad one.</figcaption></figure>
 <figure><img src="img/g_ending.jpg" width="1280" height="720" alt="In the game: the ending card Morning, ending good"><figcaption>An ending's card.</figcaption></figure>
 </div>
+<p>An <b>ending</b> is a title and its words, and a kind: good, bad, neutral, secret, or a <i>death</i>, which offers
+a retry from the last checkpoint.</p>
 </section>
 
-<section id="events">
-<h2><span class="n">7</span>Events: when, if, then</h2>
-<p>An <span class="node">HSEvent</span> is how you make things happen: jumpscares, thoughts, sounds, lights, doors,
-characters arriving. It reads as a sentence:</p>
+<section id="facts">
+<h2><span class="n">7</span>Facts, conditions, achievements</h2>
+<p>As the player plays, the Director writes down what they've done as <b>facts</b>. You never declare one: they're
+kept with the run (a save keeps them), and anything in the story can ask for them.</p>
+<table class="keys">
+<tr class="h"><td>Fact</td><td>Written when the player...</td></tr>
+<tr><td><code>used:kettle</code></td><td>uses a thing (clicks it, whatever it does)</td></tr>
+<tr><td><code>picked:bedroom_key</code></td><td>picks up an item</td></tr>
+<tr><td><code>read:letter</code></td><td>reads a note</td></tr>
+<tr><td><code>entered:kitchen</code>, <code>left:kitchen</code></td><td>walks into, or out of, a room or an area</td></tr>
+<tr><td><code>talked:t_open</code>, <code>heard:t_open</code></td><td>begins a conversation; hears it out</td></tr>
+<tr><td><code>answered:t_open:yes</code></td><td>picks an answer</td></tr>
+<tr><td><code>gave:mug:mari</code></td><td>gives something to someone</td></tr>
+<tr><td><code>step:find_key</code>, <code>failed:give_mug</code></td><td>ticks a step; fails one</td></tr>
+<tr><td><code>done:q_key</code>, <code>ending:e_morning</code></td><td>finishes a quest; reaches an ending</td></tr>
+<tr><td><code>caught:mari</code>, <code>dropped:mug</code></td><td>is caught by someone watching; puts something down</td></tr>
+<tr><td><code>promised</code></td><td>your own: an answer's <b>sets</b>, a moment's <b>Set flag</b>, a code lock's <b>opens flag</b></td></tr>
+</table>
+<p>A <b>condition</b> asks about them. It's one or more of: a fact (or <b>not</b> a fact), a quest that's <b>on</b>
+now, a quest <b>done</b>, a step <b>ticked</b>, an item <b>held</b>, a counter, karma, an ending reached; all of them,
+or any one. Conditions are everywhere the story decides something: a quest's ways, a moment's <i>if</i>, a
+conversation's <i>offered when</i>, a line's <i>said</i>, an answer's <i>offered</i>, a state's <i>while</i>, an
+achievement's <i>when</i>. "If they read the letter and haven't opened the bedroom yet" is
+<code>read:letter</code> and not <code>done:q_bedroom</code>.</p>
+<div class="pair">
+<figure><img src="img/g_debug.jpg" width="1280" height="720" alt="In the game: F9's panel at the top right: the quest on, the level, what the player looks at, the objective and steps, the facts, the items"><figcaption><kbd>F9</kbd> in the game: the quest on and the facts so far.</figcaption></figure>
+<div>
+<h3>Achievements</h3>
+<p>An <b>achievement</b> is unlocked when its condition holds, and kept as the fact <code>achievement:&lt;id&gt;</code>.
+Its id is the name Steam will know it by; its <b>hint</b> shows before it's unlocked unless it's <b>hidden</b>.
+Criteria can be anything a condition asks, including facts the player never sees as quests (name your own in the
+Manager's Facts, ticked hidden). The games are made ready for Steam now; Steam itself (GodotSteam) comes later.</p>
+<figure><img src="img/m_achievements.jpg" width="1180" height="193" alt="An achievement in the Manager: ACH_HOST, hidden until unlocked, Good host, Bring her what she asked for, when gave:mug:mari"><figcaption>The sample's achievement: the mug given to Mari.</figcaption></figure>
+</div>
+</div>
+</section>
+
+<section id="moments">
+<h2><span class="n">8</span>Moments, conversations, states</h2>
+<h3>Moments: when, if, then</h3>
+<p>A <b>moment</b> is how you make things happen: jumpscares, thoughts, sounds, lights, doors, someone arriving. It
+reads as a sentence:</p>
 <div class="sentence"><b>When</b> the player enters the kitchen's doorway, <b>if</b> they've read the letter, <b>then</b>
 the figure shows for a second, they think "What was that?", and saw_figure is set.</div>
-<h3>Making that one, step by step</h3>
-<ol class="steps">
-<li>Add an <b>area</b> (Add tab, <span class="ui">Area</span>) and put it in the kitchen's doorway. Give it a size.</li>
-<li>Add the figure: a <span class="node">HSActor</span> (or an <span class="node">HSThing</span>) with <b>hidden at start</b> ticked.</li>
-<li>Add an <span class="node">HSEvent</span> <b>inside the area</b>. An event inside an area with no <b>when</b> fires when the player walks in.</li>
-<li><b>Require flags</b>: add <code>read_letter</code>. (<b>Block flags</b> are flags that must <i>not</i> be set; <b>require items</b> the player must hold.)</li>
-<li><b>Actions</b>: add three, pick each one's <b>verb</b>: <i>jumpscare</i> (thing: the figure), <i>think</i> ("What was that?"), <i>set_flag</i> (<code>saw_figure</code>).</li>
-</ol>
+<ul>
+<li><b>When</b>: anything that happens (the player enters, picks up, uses, reads, looks at, hides, is caught; a step is
+ticked; a door is locked; the power goes...), picked from the same palette as the desk's; or <span class="ui">or
+once…</span>: the moment a condition becomes true.</li>
+<li><b>If</b>: a condition (§7). <b>Only during</b>: quests (none: the whole game). <b>Once a playthrough</b>, or every time.</li>
+<li><b>Then</b>: the commands, the desk's own: a jumpscare, a glimpse, a knock, the lights dying, a door slamming
+behind, a thought, a sound, music, show or hide something, a door, a light, the power, a little thing's state, a
+character sent somewhere, a fact set, an item given or taken, karma, a counter...</li>
+</ul>
 <div class="pair">
-<figure><img src="img/e_insp_event.jpg" width="450" height="448" alt="The Inspector on an event: when empty, require flags, actions, once, only after"><figcaption>The event: no <b>when</b> (it's in an area), one required flag, three actions.</figcaption></figure>
-<figure><img src="img/e_insp_action.jpg" width="450" height="448" alt="The Inspector on one action: verb jumpscare, thing figure, secs 0.9, its title reading JUMPSCARE: figure for 0.9 s"><figcaption>One action: its verb's fields only, its title the sentence it reads as.</figcaption></figure>
-</div>
-<p>The Events tab's templates make that whole thing in one click: pick <span class="ui">Jumpscare in an area (after
-flags)</span>, press <span class="ui">Make</span>, and an area with the event in it appears in front of the camera,
-with a hidden figure behind it (or the hidden character you already have). Set the flags it waits for, move them where
-you want.</p>
-<div class="pair">
-<figure><img src="img/e_tab_events.jpg" width="438" height="465" alt="The Events tab: the template picker, Make, Blank, and the sample's events as sentences"><figcaption>The Events tab: templates on top, every event as its sentence, grouped by when it listens.</figcaption></figure>
+<figure><img src="img/m_moments.jpg" width="1400" height="940" alt="The Manager's Moments: letter_thought when the player reads the letter, and figure_scare when the player enters the kitchen doorway, if read:letter, then a jump scare, a thought and a fact"><figcaption>The sample's two moments in the Manager.</figcaption></figure>
 <figure><img src="img/g_jumpscare.jpg" width="1280" height="720" alt="In the game: the figure standing in the kitchen for a moment"><figcaption>In the game: the figure (here a stand-in; put your model in it).</figcaption></figure>
 </div>
-<h3>Where an event sits is when it listens</h3>
-<ul>
-<li>Inside a <b>task</b>: only while that task is on.</li>
-<li>Inside a <b>chapter</b> (not in one of its tasks): through all of that chapter's tasks.</li>
-<li>Anywhere else (the game, a level, an area, a thing, a character): <b>the whole game</b>.</li>
-<li><b>Only after</b> a step: held back until the player has reached that step.</li>
-</ul>
-<p><b>Once</b> (the default) fires once a playthrough; untick it for every time (<b>every</b>: seconds between).</p>
-<h3>When</h3>
-<p>Leave it empty inside an area or a room (entering it), or inside a thing, a door or a character (using it).
-Otherwise pick its <b>kind</b> and what it's about:</p>
-<table class="keys">
-<tr><td>enter, leave</td><td>the player enters or leaves an area or room</td></tr>
-<tr><td>use, pickup, read</td><td>uses a thing, picks up an item, reads a note</td></tr>
-<tr><td>start</td><td>the task starts</td></tr>
-<tr><td>flag</td><td>a flag is set</td></tr>
-<tr><td>look</td><td>looks at something for a few seconds, from close enough</td></tr>
-<tr><td>after</td><td>some seconds after another event</td></tr>
-<tr><td>answered</td><td>a question is answered (any answer, or one)</td></tr>
-<tr><td>caught, hidden</td><td>a watching character catches them; they're hiding</td></tr>
-<tr><td>ticked, all_ticked</td><td>a to-do is ticked; every to-do is</td></tr>
-<tr><td>torch, power, locked</td><td>the flashlight or the power goes on or off; a door is locked</td></tr>
-<tr><td>dropped, arrived</td><td>something is put down (somewhere); a character gets where she was sent</td></tr>
-<tr><td>custom</td><td>anything the story format can say</td></tr>
-</table>
-<h3>Then: the actions</h3>
-<div class="cols">
-<div class="card"><h4>Words</h4><p>say (a character's line), think, whisper, objective, ask (a question with two answers, each setting a flag), chapter card</p></div>
-<div class="card"><h4>Scares</h4><p>jumpscare, glimpse, knock, lights die, slam a door behind, swap two things while unseen, sound, music (silence, calm, uneasy, dread, chase), fade, turn the player's eye</p></div>
-<div class="card"><h4>The world</h4><p>door (open, close, lock, unlock, slam), light (on, off, flicker, dim), power, flashlight, show, hide, move (a thing, a character or the player to a spot), a little thing's state (the kettle on), a car passing</p></div>
-<div class="card"><h4>Characters</h4><p>behave (stand, sit, walk a path, patrol, go to a spot, off), play a motion, play a dialogue</p></div>
-<div class="card"><h4>Progress</h4><p>set or clear a flag, give or take an item, to-do (add, tick, fail), finish the task, checkpoint, karma, a counter, wait</p></div>
-<div class="card"><h4>Anything else</h4><p>custom: an action as the story format writes it</p></div>
+<figure class="half"><img src="img/m_trigger.jpg" width="780" height="653" alt="The palette of what can happen: the player enters, picks up, uses, reads, looks at, hides, a step ticked, something given to someone, and the form for the mug given to Mari"><figcaption>Picking <i>when</i>: the palette, then its form (here: the mug, given to Mari).</figcaption></figure>
+<h3>Conversations</h3>
+<p>Each person has her <b>conversations</b>, in order. Clicking her plays the first whose <b>offered when</b> holds,
+so she says what fits where the story is: "Not now. Find the key." before the key, "Could you bring me something to
+drink?" during the errand, her question after it. A <b>once only</b> conversation goes once it's been heard out. It
+plays live: the player can look around while she talks.</p>
+<p>Its <b>lines</b> in order: who says it (her, someone else, or the player's thought) and the words; a line can be
+<b>said</b> only if a condition holds, and run commands as it starts. A line with <b>answers</b> is a question (two
+at most): each answer's label, when it's <b>offered</b>, the facts it <b>sets</b>, karma, <b>her reply</b>, and
+<b>then</b>: the conversation goes on, or the story goes to a quest or an ending (a wrong answer's death). Answers are
+never timed: the player must choose.</p>
+<div class="pair">
+<figure><img src="img/m_talk.jpg" width="904" height="662" alt="Mari's conversation t_open in the Manager: offered when the quest q_drink is done, once only; You found it; Will you open the bedroom? with the answers Yes (sets promised, her reply Then go. Quickly.) and Not yet (karma -1, her reply Don't wait too long.)"><figcaption>Mari's question, its two answers and her replies.</figcaption></figure>
+<figure><img src="img/g_dialogue.jpg" width="1280" height="720" alt="In the game: Mari facing the player, the answers Yes and Not yet at the foot of the screen"><figcaption>In the game: pick with <kbd>A</kbd>/<kbd>D</kbd> and <kbd>Enter</kbd>, or the mouse.</figcaption></figure>
 </div>
-<p>Templates in the Events tab: a jumpscare in an area after flags, the lights dying in an area, a door slamming behind
-the player, a knock at a door, a whisper when something's looked at, a thought on picking something up, a character to
-talk to (with a question), the task finished on arriving somewhere, and something shown once a flag is set.</p>
+<h3>States: what the world looks like</h3>
+<p>A <b>state</b> says what the world looks like <b>while</b> a condition holds: a person <b>at</b> a spot, what she
+does (stands, sits, walks to a spot, walks a path, patrols), whether she's watching for the player, her motion, seen
+or not; a thing shown or hidden; a little thing's state; a door locked or open; a light on, off, flickering or dim.
+The Director works the states out again after every change and every level entered (a load, a retry), so the world
+always matches the story; a later state's settings win over an earlier one's. In the sample, once Mari's been talked
+to, she walks to the bedroom door.</p>
+<figure class="wide"><img src="img/m_states.jpg" width="1400" height="940" alt="The Manager's States: while the quest q_talk is done, mari walks to the spot bedroom_spot"><figcaption>The sample's state: Mari sent to the bedroom door once her quest is done.</figcaption></figure>
 </section>
 
-<section id="tracking">
-<h2><span class="n">8</span>Flags and where you are</h2>
-<p>A <b>flag</b> is a yes that the game remembers: <code>read_letter</code>, <code>saw_figure</code>,
-<code>promised</code>. Events set them and check them; answers set them; a choice branches on them. You never declare
-one: using a name makes it.</p>
-<div class="pair">
-<figure><img src="img/e_tab_flags.jpg" width="438" height="465" alt="The Flags tab: promised, read_letter set by LetterThought and checked by FigureScare, saw_figure"><figcaption>The Flags tab: <code>read_letter</code> is set by the letter's event and checked by the jumpscare.</figcaption></figure>
-<figure><img src="img/g_debug.jpg" width="1280" height="720" alt="In the game: F9's panel at the top right listing the step, the level, the objective, the to-dos, the flags, the items and the events"><figcaption><kbd>F9</kbd> in the game: where the player is and what's set.</figcaption></figure>
-</div>
-<ul>
-<li>The <b>Flags</b> tab lists every flag with where it's set and where it's checked. <b>⚠ checked, never set</b> usually means a typo, or an event still to make.</li>
-<li>While the game runs from the editor, the <b>Story</b> tab marks the step the player is at with ▶, the <b>Flags</b> tab marks the flags they've set with ●, and the <b>Events</b> tab ticks the events that fired.</li>
-<li><kbd>F9</kbd> in the game shows the same: the step, the level, what they're looking at, the objective and to-dos, flags, items, karma, counters, and the last events as they happen.</li>
-</ul>
+<section id="manager">
+<h2><span class="n">9</span>The Director Manager</h2>
+<p>The page that writes the Director file. Open it from the dock's Director tab (<span class="ui">Manager</span>: it
+starts the page on this project and opens it in your browser, at <code>http://127.0.0.1:8796</code>), from the
+launcher's Godot section, or by hand:</p>
+<pre>python tools/director_manager/serve.py --project ~/Games/MyGame</pre>
+<table class="keys">
+<tr><td class="ui">Quests</td><td>The quests in play order (▲ ▼ to reorder), each with its steps, how it finishes, its card, what runs as it starts and when it's done, and what comes next.</td></tr>
+<tr><td class="ui">People</td><td>Each character's conversations, and her states.</td></tr>
+<tr><td class="ui">Moments</td><td>When, if, then.</td></tr>
+<tr><td class="ui">States</td><td>While, and what's set: who, what, which door, which light.</td></tr>
+<tr><td class="ui">Endings</td><td>Each ending's kind, title and words.</td></tr>
+<tr><td class="ui">Facts</td><td>Every fact the story asks for: where it's asked, what sets it (warned if nothing does), a note, hidden.</td></tr>
+<tr><td class="ui">Achievements</td><td>The Steam name, the title, the hint, hidden, when.</td></tr>
+<tr><td class="ui">Coverage</td><td>What's wrong, and what the scene has that the story never uses.</td></tr>
+<tr><td class="ui">Saves</td><td>The game's saves, and where the next play starts.</td></tr>
+</table>
+<p><span class="ui">Save</span> (<kbd>Ctrl</kbd>+<kbd>S</kbd>) writes <code>director/director.json</code> and keeps the
+version before it in <code>director/history/</code> (the last 50). The game reads the file each time it starts, so
+press <kbd>F5</kbd> in Godot and it plays what you saved. The pickers list the scene's ids as Godot last saved them: save
+the scene in Godot after adding things, then <span class="ui">Reload</span> here. Commands and triggers are picked and
+filled in exactly as on the desk.</p>
+<h3>Coverage: what's missing</h3>
+<figure class="wide"><img src="img/m_coverage.jpg" width="1400" height="940" alt="The Manager's Coverage: nothing wrong found; in the scene, not in the story: things, doors, rooms, items, lights and little things listed by id"><figcaption>Coverage on the sample: nothing wrong, and what in the scene the story doesn't use yet.</figcaption></figure>
+<p>Coverage lists what won't play right (a quest that never finishes, a way that goes nowhere, a moment with no
+<i>when</i>, a quest or an ending nothing leads to, a fact asked for that nothing sets), what the story names that the
+scene hasn't got (a typo, or something still to build), and <b>what the scene has that the story never names</b>, by
+kind: the doors no state locks, the things no step asks for. A good list of what's still to do.</p>
+<h3>Saves and where the next play starts</h3>
+<figure class="wide"><img src="img/m_saves.jpg" width="1400" height="940" alt="The Manager's Saves: two saved games, slot 1 at A drink and the autosave at The key, each with Delete; the next play starts at a quest with facts"><figcaption>The game's saves, and the next play's start.</figcaption></figure>
+<p>A new game always starts from nothing; delete a save here to clear it (one, or all of them). <b>The next play
+starts at</b> sets where the next <kbd>F5</kbd> begins, once: a quest, with the facts it should have (what the quests
+before it would have set), as the dock's <span class="ui">▶ Here</span> does.</p>
 </section>
 
 <section id="play">
-<h2><span class="n">9</span>Play and test</h2>
+<h2><span class="n">10</span>Play and test</h2>
 <table class="keys">
-<tr><td><kbd>F5</kbd></td><td>Plays the game from the start.</td></tr>
-<tr><td class="ui">▶ Here</td><td>(Story tab) plays from the selected step. Type the flags it should start with in the box under the tree (what earlier steps would have set).</td></tr>
-<tr><td><kbd>F6</kbd></td><td>On a level's own scene: that level alone, free to walk around, with its events. Good for testing a level before the story's there.</td></tr>
-<tr><td class="ui">Check</td><td>The game compiled as it will play. <b>✕</b> won't play right (a task that never finishes, an option that goes nowhere); <b>⚠</b> is worth a look (a step nothing leads to, a flag nothing sets). Click a line to go to its node.</td></tr>
+<tr><td><kbd>F5</kbd></td><td>Plays the game from the start (or, once, from where the Manager set the next play).</td></tr>
+<tr><td class="ui">▶ Here</td><td>(the Director tab) plays from the picked quest. Type the facts it should start with in the box under the list (what earlier quests would have set); the quests before it count as done.</td></tr>
+<tr><td><kbd>F6</kbd></td><td>On a level's own scene: that level alone, free to walk around, with the story's moments, conversations and states. Good for testing a level before the quests are there.</td></tr>
+<tr><td class="ui">Check</td><td>The game compiled as it will play. <b>✕</b> won't play right (a quest that never ends, a way that goes nowhere); <b>⚠</b> is worth a look (a quest nothing leads to, a name the scene hasn't got). Click a line to go to its node.</td></tr>
 <tr><td class="ui">lighting: off</td><td>(on the HSGame) a flat test light, for playing before you've lit the level.</td></tr>
 </table>
-<figure class="half"><img src="img/e_tab_check.jpg" width="438" height="465" alt="The Check tab: Check the game, and its summary: 2 tasks, 1 dialogue, 1 choice, 2 endings, nothing wrong found"><figcaption>The Check tab on the sample.</figcaption></figure>
+<figure class="half"><img src="img/e_tab_check.jpg" width="438" height="465" alt="The Check tab: Check the game, and its summary: 5 quests, 4 conversations, 1 branch point, 2 endings, nothing wrong found"><figcaption>The Check tab on the sample.</figcaption></figure>
+<p>While the game runs from the editor, the Director tab follows it: <b>▶</b> on the quest it's on, <b>✓</b> on the
+quests, steps and conversations done, <b>●</b> on each fact so far. <kbd>F9</kbd> in the game shows the same: the
+quest, the level, what the player is looking at, the objective and steps, the facts, the items, karma and counters, and
+what happens as it happens.</p>
 <p>The player moves with Godot's own physics: whatever has collision stops them, a step lower than 35 cm is walked up,
 and they fall off ledges. The cursor clicks things within 2.2 m.</p>
 </section>
 
 <section id="kimodo">
-<h2><span class="n">10</span>Kimodo, there and back</h2>
+<h2><span class="n">11</span>Kimodo, there and back</h2>
 <p>Make a character's motion in Kimodo, in the room it'll play in, and bring it back as her own animation.</p>
 <div class="pair">
 <figure><img src="img/e_tab_kimodo.jpg" width="438" height="465" alt="The Kimodo tab: Send the selected character's room, Open Kimodo, the studio folder, Look for motions, and a motion in the list"><figcaption>The Kimodo tab.</figcaption></figure>
@@ -423,8 +490,8 @@ and they fall off ledges. The cursor clicks things within 2.2 m.</p>
 </div>
 <p>The motion lands on her own skeleton (the Character Studio's MHR, Kimodo's own, a Mixamo character, or any model
 imported with Godot's humanoid bone map), is saved in <code>motions/&lt;her id&gt;/</code>, and starts playing. In the
-game her <b>idle motion</b> loops while she stands and her <b>walk motion</b> while she walks; an event's <b>motion</b>
-action plays one once.</p>
+game her <b>idle motion</b> loops while she stands and her <b>walk motion</b> while she walks; a state can give her a
+motion, and a moment's <b>motion</b> command plays one once.</p>
 <div class="note">The studio folder (the one with <code>tools/kimodo.py</code>) is filled in when the project is made;
 set <b>Python</b> to how you run the studio's tools (<code>python3</code>, <code>uv run python</code>...). Kimodo itself
 must be set up first (<code>python setup/setup.py kimodo</code>).</div>
@@ -432,10 +499,11 @@ must be set up first (<code>python setup/setup.py kimodo</code>).</div>
 </section>
 
 <section id="keys">
-<h2><span class="n">11</span>Keys in the game</h2>
+<h2><span class="n">12</span>Keys in the game</h2>
 <table class="keys">
 <tr><td><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></td><td>Walk (the mouse looks). <kbd>Shift</kbd> runs, <kbd>C</kbd> crouches.</td></tr>
-<tr><td>Left click</td><td>Use what the cursor's on (hold it to scrub a stain). The first click captures the mouse.</td></tr>
+<tr><td>Left click</td><td>Use what the cursor's on (hold it to scrub a stain). The first click captures the mouse. With something in the hand, clicking someone who asked for something offers it to her.</td></tr>
+<tr><td>Drag</td><td>Turn a thing you've taken up to look at; a click (no drag), <kbd>E</kbd> or <kbd>Esc</kbd> puts it back.</td></tr>
 <tr><td><kbd>E</kbd></td><td>Show or hide the inventory; the mouse wheel turns it.</td></tr>
 <tr><td><kbd>G</kbd> · <kbd>Q</kbd></td><td>Put the thing in your hand down · lower the hand.</td></tr>
 <tr><td><kbd>F</kbd></td><td>The flashlight, once you have one.</td></tr>
@@ -446,63 +514,68 @@ must be set up first (<code>python setup/setup.py kimodo</code>).</div>
 </section>
 
 <section id="update">
-<h2><span class="n">12</span>Keeping it up to date</h2>
+<h2><span class="n">13</span>Keeping it up to date</h2>
 <ul>
-<li>The add-ons in a project are copies: after you pull the studio, run <code>python tools/godot_director.py install &lt;project&gt;</code> again (or use <code>--link</code> once and never think about it).</li>
+<li>The add-ons in a project are copies: after you pull the studio, run <code>python tools/godot_director.py install &lt;project&gt;</code> again (or use <code>--link</code> once and never think about it). The Manager runs from the studio's folder, so it's always current.</li>
 <li><code>python tools/godot_director.py check</code> builds the sample, plays it to its ending, tests the Kimodo link and drives the dock in the editor. It ends with <code>DIRECTOR ok</code>.</li>
-<li><code>python tools/godot_director.py guide</code> makes this guide's pictures again (Godot opens a window for a few minutes).</li>
+<li><code>python tools/godot_director.py guide</code> makes this guide's pictures again (Godot opens a window for a few minutes, then the Manager is pictured in a browser).</li>
 <li>The notes behind all this: <code>docs/GODOT_DIRECTOR.md</code>.</li>
 </ul>
 </section>
 
 <section id="trouble">
-<h2><span class="n">13</span>When something's wrong</h2>
+<h2><span class="n">14</span>When something's wrong</h2>
 <table class="keys">
 <tr><td>No dock</td><td>Look for the <b>HorrorStudio</b> tab beside the Inspector (Godot remembers where docks were), or reset the layout: <span class="ui">Editor → Editor Layout → Default</span>. Check both plugins are on: <span class="ui">Project → Project Settings → Plugins</span>.</td></tr>
-<tr><td>Walks through my model</td><td>It has no collision. Give the model collision when you import it, or put it inside an HSThing set to <b>solid</b>.</td></tr>
-<tr><td>Can't click it</td><td>Only HSThings, doors and characters with <b>talk</b> take a click, from 2.2 m or nearer, with nothing in between.</td></tr>
-<tr><td>An event never fires</td><td>Open <b>Check</b>, then <b>Flags</b> (a ⚠ flag is spelled differently somewhere). Is it inside a task that isn't on? Was it <b>once</b> and already fired? Press <kbd>F9</kbd> to watch the events as they happen.</td></tr>
-<tr><td>Something points at the wrong node</td><td>Ids follow renames only until you type your own; the Things tab lists every id. Fields suggest the ids that exist.</td></tr>
+<tr><td>A step never ticks</td><td>Is its quest the one on? (<kbd>F9</kbd> shows it.) A step done before its quest started doesn't count. Does its trigger name the right id? (The Manager's Coverage lists names the scene hasn't got.)</td></tr>
+<tr><td>A moment never fires</td><td>Its <i>if</i>: <kbd>F9</kbd> shows the facts there are. Its <i>only during</i>. Once a playthrough, and it already fired?</td></tr>
+<tr><td>She says the wrong thing</td><td>The first conversation whose <i>offered when</i> holds plays: put the special ones above the everyday ones (People, ▲ ▼).</td></tr>
+<tr><td>The Manager's pickers are empty</td><td>Save the scene in Godot once (the ids are written on save), then <span class="ui">Reload</span>.</td></tr>
+<tr><td>My changes in the Manager don't play</td><td>Press <span class="ui">Save</span> in the page first; the game reads the file as it starts.</td></tr>
+<tr><td>Walks through my model</td><td>It has no collision. Give the model collision when you import it, or give it a part and set it <b>solid</b>.</td></tr>
+<tr><td>Can't click it</td><td>Only things with a part, doors and characters with conversations take a click, from 2.2 m or nearer, with nothing in between.</td></tr>
+<tr><td>Something points at the wrong node</td><td>Ids follow renames only until you type your own; the Things tab lists every id.</td></tr>
 <tr><td>A motion won't play</td><td>The name in <b>idle motion</b> or <b>walk motion</b> must be the imported one; her model must be inside her; her bones must be MHR's, SOMA's, Mixamo's or Godot's humanoid.</td></tr>
 <tr><td>It's too dark to build</td><td>Set the HSGame's <b>lighting</b> to off for a flat test light, or turn a room's ceiling off while you work.</td></tr>
 </table>
 <div class="notyet"><b>Not yet.</b>
 <ul>
-<li>A choice by act can't take its ways from a dialogue's answers (use the answer's <b>go to</b>), and an event can't sit in a dialogue (give its line actions instead).</li>
-<li>A kit thing or a CC0 library prop isn't one click yet: drop its .glb into an HSThing.</li>
-<li>Board games: only chohan plays so far.</li>
+<li>Loading a save in the game: the pause menu saves, but there's no Load yet (the Manager lists and clears the saves).</li>
+<li>A moment that ends the quest on early and sends the story elsewhere ("if this happens, go there"): for later games.</li>
+<li>Steam: the achievements are worked out and kept, ready for GodotSteam.</li>
+<li>Faces: the expression library's clips playing on a character in Godot.</li>
 <li>The desk can't open a game made here, and a game made here can't go back to the desk: the scene is the game.</li>
 </ul></div>
 </section>
 
 <section id="reference">
-<h2><span class="n">14</span>Every node</h2>
+<h2><span class="n">15</span>Every node, every word</h2>
 <table class="keys">
-<tr class="h"><td>The level</td><td></td></tr>
+<tr class="h"><td>The world (nodes)</td><td></td></tr>
+<tr><td class="node">HSGame</td><td>The main scene's root: the title, the player's name, the time of day, the look, the camcorder tape, the grade, the HUD's theme, lighting, weather, counters, F9; its <b>story file</b>.</td></tr>
 <tr><td class="node">HSLevel</td><td>A place: its <b>start</b>, time of day, look and weather over the game's.</td></tr>
 <tr><td class="node">HSRoom</td><td>Floor, walls, ceiling from a size; doors on its walls cut openings; <b>openings</b> for the rest; floor kind; materials; a wet floor.</td></tr>
-<tr><td class="node">HSDoor</td><td>A leaf on its hinges or sliding, in a frame; locked by an item or a flag; peephole; latch; your model as its child.</td></tr>
-<tr><td class="node">HSThing</td><td>Something to use (§4); your model as its child.</td></tr>
+<tr><td class="node">HSDoor</td><td>A leaf on its hinges or sliding, in a frame; locked by an item or a fact; peephole; latch; your model as its child.</td></tr>
+<tr><td class="node">HSThing</td><td>Something to use, a part (§4); your model as its child; a little thing's effect points as markers.</td></tr>
 <tr><td class="node">HSTrigger</td><td>An area to walk into; safe or not.</td></tr>
 <tr><td class="node">HSSpot</td><td>A spot facing its arrow; a wait when it's a path's point.</td></tr>
 <tr><td class="node">HSPath</td><td>A way to walk: points drawn or HSSpots; loop, there and back, once.</td></tr>
 <tr><td class="node">HSActor</td><td>A character (§5).</td></tr>
-<tr class="h"><td>The story</td><td></td></tr>
-<tr><td class="node">HSGame</td><td>The main scene's root: the title, the player's name, the time of day, the look, the camcorder tape, the grade, the HUD's theme, lighting, weather, counters, F9.</td></tr>
-<tr><td class="node">HSChapter</td><td>Its steps; a card, a time of day, a level.</td></tr>
-<tr><td class="node">HSTask</td><td>An objective, to-dos, events, a start, when it's finished, a time limit, next.</td></tr>
-<tr><td class="node">HSTodo</td><td>A line on the list: done when, fail when, a time, hidden, asked by.</td></tr>
-<tr><td class="node">HSEvent</td><td>When, if (flags, items), then (actions); once or every time; only after.</td></tr>
-<tr><td class="node">HSDialogue</td><td>Lines played live; who the view holds on; next.</td></tr>
-<tr><td class="node">HSLine</td><td>Who says it, the words, actions as it starts; answers under it.</td></tr>
-<tr><td class="node">HSOption</td><td>An answer (a label, her reply, flags, karma, go to) or a choice's way (flags, when, karma).</td></tr>
-<tr><td class="node">HSChoice</td><td>By flags, by what the player does, by karma.</td></tr>
-<tr><td class="node">HSEnding</td><td>A title, a kind (good, bad, neutral, secret, death), its words.</td></tr>
+<tr class="h"><td>The story (the Director file)</td><td></td></tr>
+<tr><td>quests</td><td>In play order: a title, an objective, steps, how it finishes (all, the first, never), a chapter card, starts at, plays on, a checkpoint, a time limit and what then, as it starts, when it's done, what comes next.</td></tr>
+<tr><td>steps</td><td>The text, done when, fails when, a time to do it in, hidden, asked by; for a giving step, the answer to the wrong thing (and whether it fails).</td></tr>
+<tr><td>moments</td><td>When, if, then; once or every time; only during some quests.</td></tr>
+<tr><td>talk</td><td>Each person's conversations: offered when, once only, lines (who, the words, said only if, commands), answers (label, offered, sets, karma, her reply, then).</td></tr>
+<tr><td>states</td><td>While a condition holds: a person's spot, what she does, watching, motion, seen; a thing shown; a little thing's state; a door; a light.</td></tr>
+<tr><td>endings</td><td>A kind (good, bad, neutral, secret, death), a title, its words.</td></tr>
+<tr><td>achievements</td><td>The Steam name, a title, a hint, hidden, when.</td></tr>
+<tr><td>facts</td><td>The ones you name: a note, hidden (a tracker the player never sees).</td></tr>
 </table>
 </section>
 
-<footer>The HorrorStudio Director, a Godot 4.7 plugin of the studio's (<code>GodotPlugins/HorrorStudioDirector</code>). The
-pictures are of the sample house, made by Godot (<code>python tools/godot_director.py guide</code>).</footer>
+<footer>The HorrorStudio Director, a Godot 4.7 plugin of the studio's (<code>GodotPlugins/HorrorStudioDirector</code>),
+and its Director Manager (<code>tools/director_manager</code>). The pictures are of the sample house, made by Godot and,
+for the Manager, a browser (<code>python tools/godot_director.py guide</code>).</footer>
 </main>
 </div>
 <script>

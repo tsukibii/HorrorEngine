@@ -21,9 +21,13 @@ parts (droppables, the little things with their markers, the crossed-out step); 
 Director file `director/director.json` with its quests, states, moments, conversations, endings, achievements; the
 brain `run/brain.gd`; the story nodes and the Story, Events and Flags tabs removed for the dock's Director tab; giving,
 `gave`, in the runtime; the sample remade); step 3, the Director Manager (`tools/director_manager`: a page over a
-Godot project, the desk's commands and triggers, its own condition editor, Coverage, the saves; MANAGERPAGE).
-**Next**: the guide rewritten (its story sections still describe the old nodes: a note says so), then Kimodo's
-fingers, then faces. Not merged into main yet: main has moved on (PR #6, the street builder); bringing main in conflicts
+Godot project, the desk's commands and triggers, its own condition editor, Coverage, the saves; MANAGERPAGE); then
+**Inspect in the hands in Godot** (the user's "pick up temporarily to inspect, turn around": `play.gd` `examine` as
+the desk's examine.js, drawn over the room by its silhouette's depth pushed back first; a thing's model named `art` at
+play, so the hand's copy and the kit's slots find it) and **the guide rewritten** (`guides/director`: parts, the
+Director file, facts, moments, conversations, states, the Manager; 34 pictures, the Manager's by
+`tools/director_manager/guide_shots.mjs`). GDTESTROOM's station 6 fails in this container as before (no stand-in
+bodies here; the stations before and after pass). **Next**: Kimodo's fingers, then faces. Not merged into main yet: main has moved on (PR #6, the street builder); bringing main in conflicts
 only in CLAUDE.md, CONTINUE, DECISIONS and LESSONS (both sides added entries), the runtime merging by itself (run
 GDPLAY, GDTESTROOM and DIRECTOR after).
 

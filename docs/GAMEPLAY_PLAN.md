@@ -182,7 +182,9 @@ playback; Generate stays the one button.
 - **Examining** (built 2026-10-28, the same ask): a small thing you look at (`use: inspect`, its longest side 0.6 m or
   less) is taken up in your hands: the thing itself in front of the eye, drawn over the room, lit from your shoulder;
   a drag turns it (the photo turned over to read its back), its words under it, Esc or E puts it back where it was; a
-  bigger thing keeps the card (`play/examine.js`).
+  bigger thing keeps the card (`play/examine.js`). Godot the same since 2026-11-01 (`play.gd` `examine`, the user's
+  "pick up temporarily to inspect, turn around"): drawn after the room, its silhouette first writing a depth a little
+  behind it over whatever the room had there, so it's never inside a wall and its own faces still hide each other.
 - **The latch** (built 2026-10-28, the same ask: a shift ends locking up): a door with `latch` has a thumb turn on the
   face of the room that holds it; a click locks it shut or unlocks it (its bar across or upright), and from that side a
   click on the locked door unlocks it; from the other side it's Locked. It undoes only its own lock: the door the story

@@ -242,7 +242,7 @@ func _initialize() -> void:
 		if not seen:
 			return "the figure never showed"
 		return "")
-	await step("parts on models: the kettle switched on, its steam where its spout marker was moved; the ornament looked at closely; the finished step crossed out", func():
+	await step("parts on models: the kettle switched on, its steam where its spout marker was moved; the ornament taken up in the hands, turned by a drag, put back; the finished step crossed out", func():
 		var c := await go_to("kettle", 0.8)
 		if c != "use":
 			return "the kettle's cursor " + c
@@ -266,10 +266,21 @@ func _initialize() -> void:
 			return "the ornament's cursor " + c
 		rt.use(true)
 		await frames(20)
-		if rt.examining == null:
-			return "the ornament wasn't taken up to look at"
-		g.hud._finish_panel(true)
+		if rt.examining == null or rt.exam == null:
+			return "the ornament wasn't taken up in the hands"
+		if rt.by_id["ornament"]["node"].visible:
+			return "the ornament is still on the table while it's in the hands"
+		var shown: int = rt.exam["pivot"].find_children("*", "MeshInstance3D", true, false).size()
+		if shown < 2:
+			return "nothing in the hands to look at (%d meshes)" % shown
+		rt.exam_turn(120.0, 0.0)                      # a drag across: turned about the view's up
+		await frames(40)
+		if abs(rt.exam_angle() - 120.0 * float(rt.EXAMINE["turn"])) > 0.05:
+			return "a drag didn't turn it as far (%.2f rad)" % rt.exam_angle()
+		rt.key_event("E", true)
 		await frames(10)
+		if rt.examining != null or rt.exam != null or not rt.by_id["ornament"]["node"].visible:
+			return "E didn't put it back on the table"
 		var struck := false
 		for l in g.hud.todo_box.get_children():
 			if l.get_meta("state", "") == "done" and l.get_node_or_null("strike") != null:

@@ -630,7 +630,12 @@ func ending(nid: String, n: Dictionary) -> void:
 	hud.set_fade(0.8 if death else 0.6)
 	var words: String = hud.named(n.get("text", ""))
 	ending_words = words
-	var text := "%s\n\n%s\n%.1f min of story time on this path\nkarma %s" % ["YOU DIED" if death else "ENDING · " + str(n.get("kind", "")), words, float(run["secs"]) / 60.0, JSON.stringify(run["karma"])]
+	var kk: Array = []                                # the karma by axis, when there's any ("karma +4"; none: no line)
+	for ax in run["karma"]:
+		if abs(float(run["karma"][ax])) > 0.001:
+			kk.append("%s %s%s" % [ax, "+" if float(run["karma"][ax]) > 0 else "", str(snappedf(float(run["karma"][ax]), 0.1))])
+	var text := "%s\n\n%s\n%.1f min of story time on this path%s" % ["YOU DIED" if death else "ENDING · " + str(n.get("kind", "")), words, float(run["secs"]) / 60.0,
+		("\n" + ", ".join(PackedStringArray(kk))) if kk.size() else ""]
 	watch_end = n.get("title", nid)
 	hud.objective(null)
 	hud.todo([], false)

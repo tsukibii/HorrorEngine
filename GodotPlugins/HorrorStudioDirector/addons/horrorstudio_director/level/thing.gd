@@ -193,6 +193,9 @@ func _setup() -> void:
 		tags.append("tag:" + HSDirector.snake(display_name))
 	HSDirector.stamp(self, {"id": HSDirector.id_of(self), "kind": "mesh", "shape": "box", "size": HSDirector.story_size(AABB(Vector3.ZERO, size)),
 		"room": room_id(), "yaw": HSDirector.story_yaw(self), "pos": HSDirector.story_pos(global_position), "tags": tags, "d": data()})
+	var model := own_model()                          # the runtime knows a thing's look as its art: the copy in the hand, the one looked at, a kit's slots on a life
+	if model != null and get_node_or_null("art") == null:
+		model.name = "art"
 
 
 ## the use's words as the runtime reads them (the piece's `d`)
