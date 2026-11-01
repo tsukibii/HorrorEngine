@@ -338,6 +338,12 @@ export function* draping(B, G, p, cfg = {}, under = [], th = 0.002) {
   for (let i = 0; i < n; i++) if (c.HAS[i]) own[i] = R[c.HINT[i]];
   for (let i = 0; i < n; i++) if (c.HAS[i] && own[i]) c.near[i] = B.surf.grid.any(X[i * 3], X[i * 3 + 1], X[i * 3 + 2], 0.04 * s, q => R[q] !== own[i] && R[q] !== 0) ? 1 : 0;
 
+  // a skirt's floor: each point's least radius, by its ring and angle as cut (pieces.js skirtOutline)
+  const RF = G.rings?.floor ? Float64Array.from({ length: n }, (_, i) => {
+    const f = G.rings.floor, r = Math.max(0, Math.min(f.rows.length - 1, Math.round((G.rings.y0 - P0[i * 3 + 1]) / f.dy)));
+    const a = Math.atan2(P0[i * 3] - G.rings.cx, P0[i * 3 + 2] - G.rings.cz), k = ((Math.round((a / (2 * Math.PI) + 0.5) * f.NA) % f.NA) + f.NA) % f.NA;
+    return f.rows[r][k];
+  }) : null;
   const steps = Math.round(o.time * o.sub), g = o.gravity * h, cs = clamp(o.compress, 0, 1), iters = o.iters, speed = [0, 0];
   let step = 0, asked = 0;
   for (; step < steps; step++) {
@@ -349,6 +355,11 @@ export function* draping(B, G, p, cfg = {}, under = [], th = 0.002) {
     for (let it = 0; it < iters; it++) { lengths(X, W, E.A, E.B, L0, ne, cs); seams(X, W, SE.A, SE.B, SE.L, SE.L.length); bends(X, W, bI, bK, bD, bC, nb); }
     tether(X, W, TT.A, TT.D, n);
     asked += collide(c, o.friction);
+    if (RF) for (let i = 0; i < n; i++) {                            // a skirt never comes in past the legs' hull (unheld between the legs, its back buckled into the gap)
+      if (W[i] === 0) continue;
+      const dx = X[i * 3] - G.rings.cx, dz = X[i * 3 + 2] - G.rings.cz, d = Math.hypot(dx, dz), m = RF[i];
+      if (d < m && d > 1e-6) { X[i * 3] = G.rings.cx + dx / d * m; X[i * 3 + 2] = G.rings.cz + dz / d * m; }
+    }
     if (step % 30 === 29) yield step / steps;
   }
   // how it came out: the stretch (edges of a millimetre and more against their lengths: the middle one, one in ten,
