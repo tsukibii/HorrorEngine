@@ -94,7 +94,7 @@ function spread(P, nbr, seeds) {
  * part: each point's part (tailor/uv.js PARTS); S: the shade (1, less on a hem's last row and its rim: the hems'
  * seeds); src: each point's point before the seams split it (a seam is where one point became two). F: the body's frame.
  */
-export function creaseData(F, P, R, T, part, S, src, shoe = false, loose = 0) {
+export function creaseData(F, P, R, T, part, S, src, shoe = false, loose = 0, top = false) {
   const n = P.length / 3, s = F.s, crz = new Float32Array(n * 4);
   const nbr = Array.from({ length: n }, () => []), count = new Map();
   for (let t = 0; t < T.length; t += 3) for (let k = 0; k < 3; k++) {
@@ -107,6 +107,11 @@ export function creaseData(F, P, R, T, part, S, src, shoe = false, loose = 0) {
   for (let i = 0; i < n; i++) if (S[i] < 0.999) hemSeeds.push(i);
   const seam = spread(P, nbr, seamSeeds), edge = spread(P, nbr, hemSeeds);
   const g = (x, c, w) => Math.exp(-(((x - c) / w) ** 2));
+  // a loose top's hang (CLOTHING_PLAN 5): the bagginess shown by folds on cloth that's fitted, never by the cut's
+  // size: soft vertical folds down the front from under the bust and down the back from under the shoulder blades,
+  // the sleeve's sag along its underside, blousing over the waist; by the ease (4 mm none, 14 mm all), carried as a
+  // negative drag (a top isn't dragged where it hangs)
+  const loosen = top ? smooth(0.004, 0.014, loose) : 0;
   for (let i = 0; i < n; i++) {
     const x = R[i * 3], y = R[i * 3 + 1], z = R[i * 3 + 2], p = part[i];
     let bend = 0, drag = 0;
@@ -115,6 +120,7 @@ export function creaseData(F, P, R, T, part, S, src, shoe = false, loose = 0) {
       const A = F.arms[p === 1 ? "L" : "R"], [t] = A.line.project(x, y, z), c = A.line.at(t), r = [x - c[0], y - c[1], z - c[2]], rl = Math.hypot(...r) || 1;
       const inside = r[2] / rl;                                     // the arm's front: the elbow's inside (MHR's arms hang palms in)
       bend = g(t, A.elbow, 0.06 * s) * (0.3 + 0.7 * smooth(-0.3, 0.9, inside)) + 0.85 * smooth(A.wrist - 0.12 * s, A.wrist - 0.02 * s, t);
+      if (loosen) drag = -loosen * smooth(0.2, 0.85, -r[1] / rl) * smooth(A.seam + 0.03 * s, A.seam + 0.1 * s, t) * (1 - smooth(A.wrist - 0.1 * s, A.wrist - 0.03 * s, t));
     } else if (p === 3 || p === 4) {                                // a leg: behind the knee, the break on the shoe, the crotch's whiskers
       const L = F.legLines[p === 3 ? "L" : "R"], [t] = L.project(x, y, z), c = L.at(t), r = [x - c[0], 0, z - c[2]], rl = Math.hypot(r[0], r[2]) || 1;
       const front = r[2] / rl, inner = (p === 3 ? -1 : 1) * r[0] / rl;
@@ -122,8 +128,10 @@ export function creaseData(F, P, R, T, part, S, src, shoe = false, loose = 0) {
       drag = smooth(F.crotchY - 0.22 * s, F.crotchY - 0.04 * s, y) * (1 - smooth(F.crotchY - 0.01 * s, F.crotchY + 0.03 * s, y)) * smooth(-0.3, 0.6, front) * (0.5 + 0.5 * smooth(-0.5, 0.6, inner));
     } else if (p === 0 || p === 6) {                                // the body: the waist, the armpits' pull across the chest
       const [cx] = F.torsoAxis(y), side = Math.abs(x - cx) / (0.16 * s);
-      bend = 0.35 * g(y, F.waistY, 0.05 * s);
+      bend = (0.35 + 0.4 * loosen) * g(y, F.waistY, 0.05 * s);
       drag = g(y, F.armpitY - 0.05 * s, 0.06 * s) * smooth(0.35, 0.95, side) * (p === 0 ? 1 : 0.6);
+      const hang = loosen * (p === 0 ? 1 - smooth(F.bustY - 0.11 * s, F.bustY, y) : 1 - smooth(F.armpitY - 0.16 * s, F.armpitY - 0.03 * s, y)) * (1 - 0.6 * smooth(0.6, 1, side));
+      drag -= hang;                                                 // (one into the other: no edge where they meet)
     }
     crz[i * 4] = Math.min(1, bend); crz[i * 4 + 1] = Math.min(1, drag); crz[i * 4 + 2] = seam[i]; crz[i * 4 + 3] = edge[i];
   }
@@ -184,6 +192,13 @@ float clothH(vec2 uv, float part, vec4 c, float fw) {
     float b1 = exp(-pow((n1 - 0.5) / 0.12, 2.0)), b2 = exp(-pow((n2 - 0.5) / 0.1, 2.0));
     float spot = smoothstep(0.3, 0.75, crNoise(q * 4.0 + 11.0));   // wrinkled here, smooth there
     h += uCrCrinkle * ((0.0005 * b1 - 0.0011 * l1) * crFade(fw, 0.012) + (0.0002 * b2 - 0.0005 * l2) * crFade(fw, 0.008)) * (0.3 + 0.7 * spot);
+  }
+  // hang: a loose top's soft vertical folds (a negative drag), 5 cm apart, wandering, longer than the fabric's own
+  // wrinkles; down a sleeve the same along its underside
+  if (c.y < 0.0 && uCrFold > 0.0) {
+    float p = uv.x / 0.05 + 0.9 * crFbm(vec2(uv.x * 4.0, uv.y * 1.6) + 13.0 + uCrSeed);
+    float along = smoothstep(0.2, 0.7, crNoise(vec2(p * 0.7, uv.y * 3.0) + 9.0 + uCrSeed));
+    h += -c.y * uCrFold * 0.022 * (crRidge(p) - 0.55) * (0.35 + 0.65 * along) * crFade(fw, 0.05);
   }
   // drape: fine vertical streaks down a skirt or a wide leg between the drape's folds
   if (uCrDrape > 0.0 && hang > 0.5) {

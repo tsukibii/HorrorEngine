@@ -76,7 +76,7 @@ export function* making(B, name, design, opts = {}) {
   const at = hung ? hung.P : null, outer = [at ? { P: at, T: G.outer.T } : G.outer];
   // a bottom's legs are panels from its waist down; a coverall's from a waist seam
   const legsTo = p.legs ? (p.waist ? height(F, p.waist.at) + 0.05 * s : F.crotchY + 0.2 * s) : -1;
-  const part = (pname, col, m, fabric, surface, mAt = null) => parts.push({ name: pname, color: col, fabric, surface, ...unwrap(F, m.P, m.T, m.S, { rings: G.rings, legsTo, at: mAt, shoe: p.kind === "shoe", loose: (p.ease?.leg ?? p.ease?.body ?? 0.008) + (p.ease?.flare ?? 0) * 0.5 + (p.legs?.straight ? 0.05 * p.legs.straight : 0) }) });
+  const part = (pname, col, m, fabric, surface, mAt = null) => parts.push({ name: pname, color: col, fabric, surface, ...unwrap(F, m.P, m.T, m.S, { rings: G.rings, legsTo, at: mAt, shoe: p.kind === "shoe", top: p.kind === "shell" && p.neck !== false, loose: (p.ease?.leg ?? p.ease?.body ?? 0.008) + (p.ease?.flare ?? 0) * 0.5 + (p.legs?.straight ? 0.05 * p.legs.straight : 0) }) });
   const thick = (P, T, Pat, ...a) => [thicken(P, T, ...a), Pat ? thicken(Pat, T, ...a).P : null];   // the cut's and the hanging cloth's (the same points)
   part(name, color, ...insert(thick(G.outer.P, G.outer.T, at, th, design.rim ?? 0.7, design.edge ?? 0.82), true));
   if (design.sole) {                                                 // a shoe's soles, under the floor
