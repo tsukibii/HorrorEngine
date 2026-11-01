@@ -14,7 +14,10 @@ const TRICK = { figure: "thing", at: "thing", door: "door", room: "room", hide: 
 // the facts the brain writes by itself (run/brain.gd): their prefix and what the id after it is
 export const AUTO = { "used:": "thing", "picked:": "item", "read:": "note", "entered:": "area", "left:": "area", "talked:": "talk",
   "heard:": "talk", "answered:": "answer", "gave:": "gave", "step:": "step", "failed:": "step", "done:": "quest", "ending:": "ending",
-  "achievement:": "achievement", "caught:": "actor", "rolled:": "thing", "played:": "thing", "dropped:": "thing", "@": "quest" };
+  "achievement:": "achievement", "caught:": "actor", "rolled:": "thing", "played:": "thing", "dropped:": "thing", "result:": "round", "@": "quest" };
+// the rounds the game plays (a quest's `round`, STORY_FORMAT §9.8) and their results, the first the player's success (the runtime's story.gd PLAYS)
+export const ROUNDS = { hide: ["hidden", "found"], run: ["escaped", "caught"], collect: ["done", "failed"], sneak: ["made_it", "spotted"],
+  hold: ["held", "broke"], search: ["found", "out_of_time"], escape: ["out", "caught"] };
 const isObj = x => x && typeof x === "object" && !Array.isArray(x);
 const arr = x => (Array.isArray(x) ? x : []);
 
@@ -77,6 +80,8 @@ export function refsOf(S) {
     ref(q.map, "level", w); ref(q.start_at, "spot", w);
     arr(q.steps).forEach(s => { trig(s.done, `${w}, step ${s.id}`); trig(s.fail, `${w}, step ${s.id}`); ref(s.who, "actor", `${w}, step ${s.id}`); if (s.wrong) ref(s.wrong.who, "actor", `${w}, step ${s.id}`); });
     acts(q.on_start, w); acts(q.on_done, w);
+    if (isObj(q.round)) { arr(q.round.spots).forEach(s => ref(s, "thing", `${w}, its round`)); ref(q.round.seeker, "actor", `${w}, its round`);
+      Object.values(isObj(q.round.on) ? q.round.on : {}).forEach(list => acts(list, `${w}, its round`)); }
   });
   arr(S.moments).forEach(m => { trig(m.when, `moment ${m.id}`); acts(m.do, `moment ${m.id}`); });
   arr(S.states).forEach((st, i) => {
@@ -100,7 +105,8 @@ const KIND_IDS = {                                   // where the scene keeps th
 };
 
 export function coverage(S, P) {
-  const ids = (P && P.ids) || {}, has = (kind, v) => (kind === "sound" ? (P.sounds || []).includes(v) : (KIND_IDS[kind] || [kind]).some(k => (ids[k] || []).includes(v)));
+  const deskSounds = (S.desk || {}).sounds || {};     // a desk game's sounds: its own names for shelf sounds
+  const ids = (P && P.ids) || {}, has = (kind, v) => (kind === "sound" ? (P.sounds || []).includes(v) || v in deskSounds : (KIND_IDS[kind] || [kind]).some(k => (ids[k] || []).includes(v)));
   const problems = [], prob = (sev, text, where = "") => problems.push({ sev, text, where });
   const refs = refsOf(S);
   // the story's own ids
@@ -109,8 +115,10 @@ export function coverage(S, P) {
     if (!q.id) prob("error", `quest ${i + 1} has no id`);
     else if (qids.has(q.id)) prob("error", `two quests are called ${q.id}`, `quest ${q.id}`);
     qids.add(q.id);
+    if (isObj(q.desk)) return;                       // a desk game's scene or choice, as the desk had it: it finishes by itself
     arr(q.steps).forEach(s => { if (!s.id) prob("error", `a step of quest ${q.id} has no id`, `quest ${q.id}`); else if (sids.has(s.id)) prob("error", `step ${s.id} is in two quests`, `quest ${q.id}`); sids.set(s.id, q.id); });
-    if ((q.finish || "steps") !== "never" && !arr(q.steps).length) prob("error", `quest ${q.id} finishes when its steps are done but has none`, `quest ${q.id}`);
+    if (isObj(q.round)) { if (!ROUNDS[q.round.type]) prob("error", `quest ${q.id}'s round is ${q.round.type || "nothing"}: one of ${Object.keys(ROUNDS).join(", ")}`, `quest ${q.id}`); }
+    else if ((q.finish || "steps") !== "never" && !arr(q.steps).length) prob("error", `quest ${q.id} finishes when its steps are done but has none`, `quest ${q.id}`);
     if (q.time_limit && !q.on_timeout) prob("warn", `quest ${q.id}'s time runs out into nothing: set what happens then`, `quest ${q.id}`);
   });
   endings.forEach(e => { if (!e.id) prob("error", "an ending with no id"); else if (eids.has(e.id) || qids.has(e.id)) prob("error", `${e.id} names two things`, `ending ${e.id}`); eids.add(e.id); });
@@ -126,12 +134,16 @@ export function coverage(S, P) {
   quests.forEach(q => arr(q.next).forEach(n => { if (!n.go) prob("error", `quest ${q.id}: a next with nowhere to go`, `quest ${q.id}`); else if (!qids.has(n.go) && !eids.has(n.go)) prob("error", `quest ${q.id} goes to ${n.go}, which is neither a quest nor an ending`, `quest ${q.id}`); else go.add(n.go); }));
   for (const list of Object.values(S.talk || {})) arr(list).forEach(t => arr(t.lines).forEach(ln => arr(ln.answers).forEach(a => { if (a.go) go.add(a.go); })));
   quests.forEach(q => { if (q.on_timeout) go.add(q.on_timeout); });
+  const deskWays = q => isObj(q.desk) ? [q.desk.next, ...arr(q.desk.options).map(o => o.to)].filter(Boolean) : [];   // where a desk item goes
+  quests.forEach(q => deskWays(q).forEach(g => { if (!qids.has(g) && !eids.has(g)) prob("error", `${q.id} (from the desk) goes to ${g}, which is neither a quest nor an ending`, `quest ${q.id}`); else go.add(g); }));
+  arr((S.desk || {}).interrupts).forEach(it => { if (it && it.to) go.add(it.to); });
   // reachable: the first quest, each one's nexts, else the one after it, else the first ending
   const seen = new Set(), todo = quests.length ? [quests[0].id] : [];
   while (todo.length) {
     const id = todo.pop(); if (seen.has(id)) continue; seen.add(id);
     const i = quests.findIndex(q => q.id === id); if (i < 0) continue;
     const q = quests[i], nx = arr(q.next);
+    if (isObj(q.desk)) { deskWays(q).forEach(g => todo.push(g)); continue; }
     nx.forEach(n => n.go && todo.push(n.go));
     if (!nx.some(n => !n.if || (typeof n.if === "object" && !Object.keys(n.if).length))) todo.push(i + 1 < quests.length ? quests[i + 1].id : (endings[0] || {}).id);
     if (q.on_timeout) todo.push(q.on_timeout);
@@ -147,6 +159,8 @@ export function coverage(S, P) {
     if (kind === "scene") continue;
     if (!has(kind, v)) missing.push({ id: v, kind, where });
   }
+  const deskNames = o => { if (typeof o === "string") named.add(o); else if (Array.isArray(o)) o.forEach(deskNames); else if (isObj(o)) Object.values(o).forEach(deskNames); };
+  deskNames(S.desk); quests.forEach(q => { if (isObj(q.desk)) deskNames(q.desk); if (isObj(q.round)) deskNames(q.round); });   // what a desk game's scenes and choices (and a round's barks and loops) name is in use
   const dedup = new Map(); for (const m of missing) if (!dedup.has(m.id + m.kind)) dedup.set(m.id + m.kind, m);
   for (const m of dedup.values()) prob("warn", `${m.where} names ${m.kind === "target" ? "" : m.kind + " "}${m.id}, which isn't in the scene`, m.where);
   const unused = {};
@@ -174,6 +188,8 @@ export function coverage(S, P) {
       if (kind === "ending") return eids.has(v) ? "the game, as the player plays" : null;
       if (kind === "achievement") return arr(S.achievements).some(a => a.id === v) ? "the game" : null;
       if (kind === "answer" || kind === "gave") return "the game, as the player plays";
+      if (kind === "round") { const i = v.lastIndexOf(":"), q = quests.find(x => x.id === v.slice(0, i));
+        return q && isObj(q.round) && arr(ROUNDS[q.round.type]).includes(v.slice(i + 1)) ? "the round's result" : null; }
       return has(kind, v.split(":")[0]) ? "the game, as the player plays" : null;
     }
     return null;

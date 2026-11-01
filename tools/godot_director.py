@@ -17,6 +17,13 @@
         (tests/guide_game.gd) and its editor with the dock (tests/guide_editor.gd), under xvfb when it's there (on a
         machine with a display, Godot's window opens for a few minutes), then the Director Manager's page on it in a
         headless browser (tools/director_manager/guide_shots.mjs); pictures no longer made are removed. Ends "GUIDE ok".
+    python tools/godot_director.py from-desk <Game> [folder] [--force] [--play]
+        a desk game as a Director project (Saved/Godot/<Game>_director unless a folder's given): a new project with the
+        desk's levels as the Director's own nodes (rooms, doors, things with their models, people, spots, areas, paths,
+        lights) and its story as the Director file (each task a quest, its beats moments, its endings; the cutscenes
+        and the desk's choices as they were), its meshes, textures, bake and characters with it (docs/GODOT_DIRECTOR.md
+        §6d). --play plays it through as its export's check does (the Pilot: GDPLAY's walk; TestRoom001: GDTESTROOM's
+        stations; another game: started and run a while) and ends "FROMDESK ok".
     python tools/godot_director.py check [--keep]
         DIRECTOR: a sample project made in Saved/Godot/_director_check, imported, and its game compiled and played
         headless to its ending (tests/director_check.gd), the editor opened on it with the plugin (the dock, the
@@ -278,6 +285,74 @@ def new(out, title="My HorrorStudio game", sample=False, link=False):
     return out
 
 
+def from_desk(game, folder=None, force=False):
+    """A desk game as a Director project (the user, 2026-11-01: the desk's export "follows this format/new system too";
+    docs/GODOT_DIRECTOR.md §6d): a new project as `new` makes one, the desk's levels built into it as the Director's own
+    nodes (storykit/director_desk.py world, desk/desk_build.gd) and its story as the Director file (director_file), its
+    meshes, textures, bake and characters with it. The project is the game from then on: the dock, the Manager, F5."""
+    from storykit import storylib as SL, kit as KIT, director_desk as DD  # noqa: PLC0415
+    story, _ = SL.load(game)
+    out = Path(folder or ROOT / "Saved" / "Godot" / f"{game}_director").resolve()
+    if out.exists() and any(out.iterdir()):
+        if not force:
+            sys.exit(f"{out} isn't empty (from-desk makes a new project; --force replaces it)")
+        shutil.rmtree(out)
+    specs = ROOT / "Saved" / "kit" / f"{game}.json"                   # the kit's meshes the game needs, as the export builds them
+    try:
+        if KIT.write_specs(story, specs) and shutil.which("node"):
+            subprocess.run(["node", str(ROOT / "tools" / "kit" / "build.mjs"), "--specs", str(specs)], capture_output=True, text=True, timeout=900)
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        pass
+    new(out, (story.get("game") or {}).get("title") or game)
+    w = DD.world(story, out)
+    (out / "director" / "desk_world.json").write_text(json.dumps(w, ensure_ascii=False, indent=0), encoding="utf-8")
+    (out / "director" / "director.json").write_text(json.dumps(DD.director_file(story), ensure_ascii=False, indent=1), encoding="utf-8")
+    baked = G.copy_previs(game, out)
+    import_all(out)                                                      # the meshes and textures it brought
+    code, text = run_godot(["--headless", "--path", str(out), "-s", "res://addons/horrorstudio_director/desk/desk_build.gd"], timeout=600)
+    line = next((l for l in quiet(text).splitlines() if l.startswith("DESKBUILD")), "")
+    if not line.startswith("DESKBUILD ok"):
+        print(quiet(text)[-3000:])
+        sys.exit(f"the desk's world wasn't built ({line or 'no word from desk_build.gd'})")
+    print(f"  {line}")
+    people(out)                                                          # its characters' Character Studio exports, their faces baked
+    if (out / "game" / "people").is_dir():
+        import_all(out)
+    lv = w["levels"]
+    print(f"  {len(lv)} level(s): " + "; ".join(f"{L['id']}: {len(L['rooms'])} rooms, {len(L['doors'])} doors, {len(L['things'])} things, {len(L['actors'])} people, "
+                                                 f"{len(L['spots'])} spots, {len(L['lights'])} lights" for L in lv) + (f"; the bake ({baked} bodies)" if baked else ""))
+    print(f"FROMDESK {game} -> {out}: open it in Godot 4.7, the story in director/director.json (the Manager), F5 plays it")
+    return out
+
+
+# the games with a playthrough of their export (their checks), played the same way on the Director project made from them
+PLAYTHROUGHS = {"Pilot": ("gdplay.gd", "GDPLAY", 1200, "to its good ending"),
+                "TestRoom001": ("gdtestroom.gd", "GDTESTROOM", 3000, "station by station, a death and its retry, the trigger cutscene")}
+
+
+def from_desk_play(game, out):
+    """The game played through the Director project made from it, as its export's check plays it (tests/gdplay.gd or
+    tests/gdtestroom.gd with --director); a game with no playthrough started headless and run a while (tests/load_check.gd)."""
+    if game not in PLAYTHROUGHS:
+        code, text = run_godot(["--headless", "--path", str(out), "--quit-after", "600"], timeout=600)
+        text = quiet(text)
+        bad = [l for l in text.splitlines() if "SCRIPT ERROR" in l or "Parse Error" in l or "DIRECTOR:" in l and "problem" in l]
+        for l in bad[:12]:
+            print("  " + l.strip()[:300])
+        print(f"FROMDESK {'ok' if not bad else 'FAIL'} ({game} started and run ten seconds as a Director project; only "
+              f"{' and '.join(PLAYTHROUGHS)} have a playthrough)")
+        return 0 if not bad else 1
+    script, name, timeout, how = PLAYTHROUGHS[game]
+    code, text = run_godot(["--headless", "--fixed-fps", "60", "--path", str(out), "-s", f"res://addons/horrorstudio/tests/{script}", "--", "--director"], timeout=timeout)
+    text = quiet(text)
+    for l in text.splitlines():
+        if l.strip().startswith(("ok ", "BAD", name)) or "SCRIPT ERROR" in l or "Parse Error" in l:
+            print("  " + l.strip()[:300])
+    ok = f"{name} ok" in text
+    print(f"FROMDESK ok ({game} played through as a Director project, {how})" if ok else "FROMDESK FAIL")
+    return 0 if ok else 1
+
+
 def pictures_env():
     """Godot drawing for pictures: through xvfb and the cloud's lavapipe when they're there, else the machine's display."""
     env = dict(os.environ)
@@ -502,6 +577,12 @@ def main(argv):
         return 0
     if cmd == "check":
         return check("--keep" in rest)
+    if cmd == "from-desk":
+        if not rest or rest[0].startswith("--"):
+            sys.exit("from-desk <Game> [folder] [--force] [--play]")
+        folder = rest[1] if len(rest) > 1 and not rest[1].startswith("--") else None
+        out = from_desk(rest[0], folder, "--force" in rest)
+        return from_desk_play(rest[0], out) if "--play" in rest else 0
     if cmd == "guide":
         return guide()
     print(__doc__)

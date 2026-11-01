@@ -15,7 +15,7 @@ const FIELDS := {
 	"pickup": ["item", "item_name", "flashlight"], "carry": ["item", "item_name"], "note": ["note_title", "note_text"],
 	"inspect": ["inspect_text"], "switch": ["switches"], "code": ["code", "opens_flag"],
 	"use_item": ["needs_item", "opens_flag", "consume"], "sleep": ["sleep_needs"], "hide": ["see_through"],
-	"clean": ["clean_with", "stain"], "game": ["board_game"], "life": ["life", "life_state"],
+	"clean": ["clean_with", "stain"], "game": ["board_game"], "life": ["life", "life_state", "life_light"],
 }
 ## the stand-in each use shows with no model: its size (x, y, z) and colour
 const STANDIN := {"none": [Vector3(0.5, 0.5, 0.5), Color(0.5, 0.5, 0.5)], "pickup": [Vector3(0.12, 0.05, 0.08), Color(0.85, 0.7, 0.2)],
@@ -41,6 +41,8 @@ const SOLID := ["none", "breaker", "sit", "sleep", "hide", "roll", "game", "use_
 @export var item_name: String = ""
 ## pickup: it's a flashlight (F switches it)
 @export var flashlight: bool = false
+## the note's id, when it isn't the thing's own (a desk game's letter on a table: the story reads "letter_mari")
+@export var note: String = ""
 @export var note_title: String = ""
 @export_multiline var note_text: String = ""
 @export_multiline var inspect_text: String = ""
@@ -68,8 +70,13 @@ const SOLID := ["none", "breaker", "sit", "sleep", "hide", "roll", "game", "use_
 		notify_property_list_changed()
 ## life: the state it starts in (empty: its first)
 @export var life_state: String = ""
+## life: the light it gives (a candle's flame: lit while it burns, out when it's blown out)
+@export var life_light: NodePath
 ## stops the player (its own collider, or a box round it); off: only the cursor finds it
 @export_enum("auto", "solid", "not solid") var solidity: String = "auto"
+## more of the runtime's words for it that the fields above haven't got (STORY_FORMAT §2: a desk game's prop brought in,
+## its `not_yet`, a code lock's `opens`, a locker's `inside`...), as the runtime reads them; `tags` adds to its tags
+@export var extra: Dictionary = {}
 @export var hidden_at_start: bool = false
 
 var _gen: Node3D = null
@@ -191,10 +198,14 @@ func _setup() -> void:
 		tags.append("hidden")
 	if display_name != "":
 		tags.append("tag:" + HSDirector.snake(display_name))
+	if extra.get("tags") is Array:
+		for tg in extra["tags"]:
+			if not tags.has(str(tg)):
+				tags.append(str(tg))
 	HSDirector.stamp(self, {"id": HSDirector.id_of(self), "kind": "mesh", "shape": "box", "size": HSDirector.story_size(AABB(Vector3.ZERO, size)),
 		"room": room_id(), "yaw": HSDirector.story_yaw(self), "pos": HSDirector.story_pos(global_position), "tags": tags, "d": data()})
 	var model := own_model()                          # the runtime knows a thing's look as its art: the copy in the hand, the one looked at, a kit's slots on a life
-	if model != null and get_node_or_null("art") == null:
+	if model != null and get_node_or_null("art") == null and str(model.name) != "mesh":   # a plain block stays its mesh (a stain's blot), as the export's
 		model.name = "art"
 
 
@@ -207,7 +218,7 @@ func data() -> Dictionary:
 		"pickup", "carry":
 			d["item"] = item if item != "" else HSDirector.id_of(self)
 		"note":
-			d["note"] = HSDirector.id_of(self)
+			d["note"] = note if note != "" else HSDirector.id_of(self)
 		"inspect":
 			d["text"] = inspect_text
 		"switch":
@@ -235,9 +246,20 @@ func data() -> Dictionary:
 			d["game"] = board_game
 		"life":
 			d["life"] = life
-			d["sockets"] = life_sockets()
+			var kit_art := false                          # a kit thing (a desk game's: its art:kit/ tag): the kit's own sockets, with their sizes and slots
+			for tg in extra.get("tags", []):
+				kit_art = kit_art or str(tg).begins_with("art:kit/")
+			if not kit_art:
+				d["sockets"] = life_sockets()
 			if life_state != "":
 				d["state"] = life_state
+			if not life_light.is_empty():
+				var ll = get_node_or_null(life_light)
+				if ll != null:
+					d["light"] = HSDirector.snake(str(ll.name))   # the light's id, as the level names its lights
+	for k in extra:                                    # the words the fields haven't got (a desk game's), as they were
+		if str(k) != "tags":
+			d[str(k)] = extra[k]
 	return d
 
 

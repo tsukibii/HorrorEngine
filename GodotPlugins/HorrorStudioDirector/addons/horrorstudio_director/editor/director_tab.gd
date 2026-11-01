@@ -79,9 +79,20 @@ func refresh() -> void:
 	var qi := _row(top, "Quests (%d)" % qs.size(), "in play order", "task")
 	for q in qs:
 		var qid := str(q.get("id", ""))
+		if q.get("desk") is Dictionary:                # a desk game's scene or choice, as the desk had it (from-desk)
+			var dk: Dictionary = q["desk"]
+			var kind := "a cutscene" if dk.get("type") == "scene" else ("an ending" if dk.get("type") == "ending" else "a choice by %s" % dk.get("by", "flag"))
+			var di := _row(qi, ("▶ " if (dock.running and dock.run_step == qid) else "") + "◆ %s: %s" % [kind, qid], "from the desk", "choice" if dk.get("type") == "choice" else "dialogue")
+			di.set_metadata(0, {"quest": qid})
+			for o in dk.get("options", []):
+				_row(di, "→ " + str(o.get("to", "")), str(o.get("label", o.get("result", ""))), "choice")
+			continue
 		var mark := "▶ " if (dock.running and dock.run_step == qid) else ("✓ " if flags.has("done:" + qid) else "")
 		var it := _row(qi, mark + str(q.get("title", qid)), str(q.get("objective", "")), "task")
 		it.set_metadata(0, {"quest": qid})
+		if q.get("round") is Dictionary:               # a round of gameplay: hide and seek, a chase (its result the quest's end)
+			var rd: Dictionary = q["round"]
+			_row(it, "a round: %s%s" % [str(rd.get("type", "?")), (", %d s" % int(rd["secs"])) if rd.has("secs") else ""], str(rd.get("rule", "")), "choice")
 		for s in q.get("steps", []):
 			var done := flags.has("step:" + str(s.get("id", "")))
 			_row(it, ("✓ " if done else "☐ ") + str(s.get("text", s.get("id", ""))), when_text(s.get("done")), "todo")

@@ -92,6 +92,9 @@ func step(nid: String) -> void:
 	if was != "" and was != quest:
 		fact("done:" + was)
 		note("done " + was)
+		var run = runtime.get("run") if runtime != null else null
+		if run is Dictionary and (run.get("results", {}) as Dictionary).has(was):   # a round's result (hide and seek: hidden or found)
+			fact("result:%s:%s" % [was, run["results"][was]])
 	if quest != "":
 		note("quest " + quest)
 	var flow: Dictionary = runtime.story.flow if runtime != null and runtime.story != null else {}

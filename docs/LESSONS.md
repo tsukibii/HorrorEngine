@@ -12,6 +12,16 @@ the fix.
 
 ## This project
 
+- **A node that rides a rigid body must lose its own colliders while it rides** (the desk's TestRoom as a Director
+  project, 2026-11-01): the die's node is moved onto its rolling body every frame, and a Director thing's collider is
+  a `_solid` StaticBody3D under it (the export's is a `shape` the roll turned off by name): it rode along inside the
+  die and shoved it through the floor, the die settling 9 m under the room. physics.gd now turns off every collision
+  shape under a thing it rolls, whatever it's called, and on again after.
+- **A check measured on one layout fails another's by the walls' thickness** (the same day): the desk's rooms run to
+  their walls' middle, a Director room is its inside; the yard's rain box was 12.9 m wide against a floor of 12.9 and
+  failed by float. Leave a check a margin for both, and ask the running game for what it names itself (a save file by
+  the game's id) rather than writing the desk's in.
+
 - **A Godot node's setup for play runs once, in the copy that plays** (the Director, 2026-10-30): a scene's children
   are `_ready` before their parent, so a level under the HSGame had set itself up (recentred, colliders, pieces) before
   the game could take it up as a template, and the runtime's copy would have done it again. The HSGame raises a flag

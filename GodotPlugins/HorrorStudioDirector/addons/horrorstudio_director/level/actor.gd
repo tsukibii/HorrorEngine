@@ -39,6 +39,9 @@ extends Node3D
 ## the Character Studio export she wears instead of a model child (Content/Studio/People/<name>/export/<name>.glb, which
 ## `tools/godot_director.py install` copies into game/people/), on the Studio's skin and eyes
 @export var studio_character: String = ""
+## who she is in the story (a cast member's id), when her id names this figure only (a desk game's `person`: the
+## figure mari_figure is Mari); empty: her id
+@export var cast: String = ""
 @export var hidden_at_start: bool = false
 
 var _gen: Node3D = null
@@ -152,11 +155,16 @@ func _setup() -> void:
 		add_child(b)
 	elif talk:
 		HSDirector.box_collider(self, Vector3(0.5, height, 0.5), Vector3(0, height / 2.0, 0), true)
-	var tags: Array = ["cast:" + HSDirector.id_of(self), "standin"]
+	var tags: Array = ["cast:" + cast_id(), "standin"]
 	if talk:
 		tags.append("use:talk")
 	HSDirector.stamp(self, {"id": HSDirector.id_of(self), "kind": "person", "shape": "box", "size": [0.5, 0.3, height], "room": "",
 		"yaw": HSDirector.story_yaw(self), "pos": HSDirector.story_pos(global_position), "tags": tags, "d": {"name": display_name}})
+
+
+## the cast member she is (her `cast`, else her id)
+func cast_id() -> String:
+	return cast if cast != "" else HSDirector.id_of(self)
 
 
 ## where she stands at the level's start: a spot of its own (the level makes it, play's behaviours need one)

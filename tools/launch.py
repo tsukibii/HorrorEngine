@@ -119,6 +119,8 @@ TOOLS = [
     ("Godot", "Director Manager: a Director game's story in a page (quests, people, moments, states, endings, facts, Coverage, saves)", "tools/director_manager/serve.py --project {ask:The Godot project's folder}", {"url": "http://127.0.0.1:8796"}),
     ("Godot", "Director check (the sample played to its ending, the dock in the editor, the Kimodo link: DIRECTOR)", "tools/godot_director.py check", {}),
     ("Godot", "Director guide's pictures, made again by Godot (the sample played, its editor and dock; guides/director/index.html is the guide)", "tools/godot_director.py guide", {}),
+    ("Godot", "Director: a desk game as a Director project (its levels the Director's own nodes, its story the Director file; Saved/Godot/<game>_director, made again over the last)", "tools/godot_director.py from-desk {game} --force", {}),
+    ("Godot", "Director from the desk, played through (the Pilot or TestRoom001 made a Director project and played as their export's checks play them: FROMDESK)", "tools/godot_director.py from-desk {game} --force --play", {}),
     ("Godot", "Export a game as its own Godot 4.7 project, a new version each time (Saved/Godot/<game>_v001, _v002... and its .zip, with a guide to editing it; record the scenes on the desk first)", "tools/godot_export.py --game {game} --zip", {}),
     ("Godot", "Record a game's scenes for the export (the desk running)", "node tools/godot/bake.mjs --game {game}", {}),
     ("Godot", "Godot check (4.7 runs headless and draws a lit box)", "tools/godot/check.sh", {}),

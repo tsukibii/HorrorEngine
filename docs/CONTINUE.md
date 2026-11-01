@@ -44,6 +44,20 @@ this machine: STUDIO makes `_studiotest`, slow on the CPU; ask the user for a lo
 only in CLAUDE.md, CONTINUE, DECISIONS and LESSONS (both sides added entries), the runtime merging by itself (run
 GDPLAY, GDTESTROOM and DIRECTOR after).
 
+Then the user asked that the desk's way into Godot follow the new system too (DECISIONS 2026-11-01, later): **a desk
+game as a Director project**, `python tools/godot_director.py from-desk <Game> [folder] [--force] [--play]`
+(GODOT_DIRECTOR §6d): `storykit/director_desk.py` writes the world (`director/desk_world.json`) and the Director file,
+the plugin's `desk/desk_build.gd` builds the world as nodes and saves `main.tscn`. To carry the desk's games whole the
+Director grew: a room's **windows** (an opening's `glass`, `daylight` by the time of day, `shaft`, a car passing) and
+**leaks** (`core/leak.gd`), a path point's `pose` and `check`, a little thing's `life_light` (a candle's flame), an
+actor's cast id in the ids index, a quest's **round** (the format's `play`: hide and seek; `result:<quest>:<result>`
+its fact; the Manager edits it), a level's `look` and `weather`, aimed pattern lights as the Look plugin's
+HSPatternLight, kit mirrors; the runtime turns off every collider of a thing it rolls (the die). **FROMDESK**: the
+Pilot plays through to its good ending; TestRoom001 passes every station but 6 (the same skin check the export fails
+here: no bake bodies in this container). Not carried yet: the trims and thresholds, a kit door's own model, the light
+zones per room; the desk's Godot button still makes the export only (a `from-desk` choice there would be next if the
+user wants it). The desk's export stays as it was beside it.
+
 ## 0. The Director-Godot session (2026-10-30, night; branch `Director-Godot`)
 
 The user asked for a Godot plugin to build the games in Godot itself, no desk in between (DECISIONS 2026-10-30,

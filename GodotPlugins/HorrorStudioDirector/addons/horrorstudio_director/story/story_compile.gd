@@ -62,7 +62,10 @@ func compile(f: Dictionary, st: Dictionary, levels: Dictionary) -> void:
 	_talks()
 	var lvl := _first_level
 	for i in quests.size():
-		lvl = _quest(quests[i], i, quests, lvl)
+		if quests[i].get("desk") is Dictionary:      # a desk game's scene or choice, as the desk had it (godot_director.py from-desk)
+			_desk_item(quests[i])
+		else:
+			lvl = _quest(quests[i], i, quests, lvl)
 	if quests.is_empty():
 		_roam()
 	else:
@@ -86,6 +89,12 @@ func _roam() -> void:
 
 
 # ---- a quest ----------------------------------------------------------------------------------------------------
+## the rounds the runtime plays and their results, the first the player's success (its story.gd PLAYS: hide -> hidden, found)
+static func round_types() -> Dictionary:
+	var path := "res://addons/horrorstudio/story.gd"
+	return (load(path).PLAYS as Dictionary) if ResourceLoader.exists(path) else {}
+
+
 func _quest(q: Dictionary, i: int, quests: Array, lvl: String) -> String:
 	var qid := str(q["id"])
 	var map := str(q.get("map", ""))
@@ -95,6 +104,12 @@ func _quest(q: Dictionary, i: int, quests: Array, lvl: String) -> String:
 		else:
 			lvl = map
 	var st := {"title": str(q.get("title", qid)), "level": lvl, "beats": []}
+	var rnd = q.get("round")
+	if rnd is Dictionary and not (rnd as Dictionary).is_empty():   # a round of gameplay (STORY_FORMAT §9.8): the runtime plays it, its result ends the quest
+		st["play"] = (rnd as Dictionary).duplicate(true)
+		var plays: Dictionary = round_types()
+		if not plays.is_empty() and not plays.has(str(rnd.get("type", ""))):
+			err("quest %s: its round's type %s isn't one the game plays (%s)" % [qid, rnd.get("type", ""), ", ".join(PackedStringArray(plays.keys()))])
 	var steps: Array = q.get("steps", [])
 	var do: Array = []
 	if str(q.get("start_at", "")) != "":
@@ -131,7 +146,9 @@ func _quest(q: Dictionary, i: int, quests: Array, lvl: String) -> String:
 	done_do.append({"done": true})
 	match str(q.get("finish", "steps")):
 		"steps":
-			if sids.is_empty():
+			if st.has("play"):
+				pass                                   # a round ends by its result
+			elif sids.is_empty():
 				err("quest %s finishes when its steps are done, but it has none (or set finish to \"never\": a moment's {\"done\": true} ends it)" % qid)
 			else:
 				st["beats"].append({"id": qid + "__done", "when": {"ticked": true}, "do": done_do})
@@ -157,6 +174,8 @@ func _quest(q: Dictionary, i: int, quests: Array, lvl: String) -> String:
 				st["beats"].append({"id": "%s__%s__wrong" % [qid, sid], "when": {"gave": "*", "to": g.get("to"), "except": g["gave"]}, "do": acts, "repeat": true, "every": 0.5})
 	if float(q.get("time_limit", 0)) > 0.0:
 		st["timer"] = {"secs": float(q["time_limit"]), "fail": _target(str(q.get("on_timeout", "")), qid, true)}
+		if str(q.get("time_label", "")) != "":
+			st["timer"]["label"] = str(q["time_label"])
 	_moments(st, qid)
 	_talk_beats(st)
 	story["stitches"][qid] = st
@@ -173,6 +192,19 @@ func _quest(q: Dictionary, i: int, quests: Array, lvl: String) -> String:
 		story["flow"][cid] = {"type": "stitch", "ref": cid, "next": qid}
 	brain["quests"].append(qid)
 	return lvl
+
+
+## a desk game's flow node brought in as it was (a cutscene, a choice by what the player does, by a scene's result, by
+## flags or karma): the runtime plays it as the desk's export does; its scene from the file's `desk.scenes`
+func _desk_item(q: Dictionary) -> void:
+	var qid := str(q["id"])
+	var node: Dictionary = (q["desk"] as Dictionary).duplicate(true)
+	if not ["scene", "choice", "ending", "stitch"].has(str(node.get("type", ""))):
+		err("%s: a desk item is a scene, a choice or an ending (its type %s)" % [qid, node.get("type")])
+		return
+	if node.get("type") == "scene" and not story["scenes"].has(str(node.get("ref", ""))) and not ((file.get("desk", {}) as Dictionary).get("scenes", {}) as Dictionary).has(str(node.get("ref", ""))):
+		err("%s plays the scene %s, which isn't in the file's desk.scenes" % [qid, node.get("ref")])
+	story["flow"][qid] = node
 
 
 ## a quest's next: the first `next` whose `if` holds (a choice by flags), else the next quest in the list, else the
@@ -244,8 +276,13 @@ func _moments(st: Dictionary, qid: String) -> void:
 			err("moment %s has no when" % mid)
 			continue
 		var b := {"id": "m_" + mid, "when": _trigger(m["when"]), "do": (m.get("do", []) as Array).duplicate(true), "optional": true}
+		for key in m:                                  # the beat's own words the moment hasn't (a desk game's: its secret, a wait...)
+			if not ["id", "when", "if", "do", "once", "every", "during"].has(str(key)):
+				b[str(key)] = m[key]
 		var ifs: Array = []
-		if not HSCond.empty(m.get("if")):
+		if _plain(m.get("if")):                        # only facts: as the runtime reads them, no flag of the brain's between
+			ifs.append_array(m["if"] if m["if"] is Array else [m["if"]])
+		elif not HSCond.empty(m.get("if")):
 			ifs.append(flag_for(m["if"]))
 		if m.get("once", true):
 			var fl := "_fired_" + mid
@@ -257,6 +294,18 @@ func _moments(st: Dictionary, qid: String) -> void:
 		if ifs.size():
 			b["if"] = ifs
 		st["beats"].append(b)
+
+
+## a condition that's only facts (a fact, a fact not there, or a list of them): the runtime's own `if`
+static func _plain(c) -> bool:
+	if c is String:
+		return c != ""
+	if c is Array and not c.is_empty():
+		for x in c:
+			if not (x is String) or str(x) == "":
+				return false
+		return true
+	return false
 
 
 # ---- conversations ----------------------------------------------------------------------------------------------
@@ -363,6 +412,9 @@ func _reached() -> void:
 			var tm = story["stitches"].get(f.get("ref"), {}).get("timer")
 			if tm is Dictionary:
 				todo.append(tm.get("fail"))
+	for it in story.get("interrupts", []):              # the trigger cutscenes' ways (a desk game's interrupts)
+		if it is Dictionary:
+			todo.append(it.get("to"))
 	for sid in story["scenes"]:
 		for c in story["scenes"][sid].get("clips", []):
 			for o in (c.get("reply", {}) as Dictionary).get("options", []):

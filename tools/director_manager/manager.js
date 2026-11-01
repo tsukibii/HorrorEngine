@@ -6,9 +6,9 @@
 // The commands and triggers are the desk's own (tools/director/commands.js, its forms and lists in ui.js), over the
 // project's ids (the plugin's index); conditions have an editor of their own here (core/cond.gd's shapes).
 import { h, modal, toast, actionList, triggerPill, form } from "/desk/ui.js";
-import { ACTIONS, TRICKS } from "/desk/commands.js";
+import { ACTIONS, TRICKS, triggerText } from "/desk/commands.js";
 import { icon } from "/desk/icons.js";
-import { coverage, AUTO } from "/coverage.js";
+import { coverage, AUTO, ROUNDS } from "/coverage.js";
 
 // the Director's words over the desk's: a line is written in place (no lines table)
 for (const d of ACTIONS) for (const f of d.fields) if (f.kind === "line") f.kind = "longtext";
@@ -72,7 +72,7 @@ function factNames() {
   for (const n of ids("note")) out.add("read:" + n);
   for (const a of ids("area")) out.add("entered:" + a);
   for (const s of steps()) out.add("step:" + s);
-  for (const q of S.quests) out.add("done:" + q.id);
+  for (const q of S.quests) { out.add("done:" + q.id); if (isObj(q.round)) for (const r of arr(ROUNDS[q.round.type])) out.add(`result:${q.id}:${r}`); }
   for (const [who, list] of Object.entries(S.talk)) for (const t of arr(list)) { out.add("talked:" + t.id); out.add("heard:" + t.id);
     for (const ln of arr(t.lines)) for (const a of arr(ln.answers)) out.add(`answered:${t.id}:${a.id}`); }
   return [...out].sort();
@@ -259,11 +259,26 @@ function viewQuests() {
   const qs = S.quests;
   if (UI.quest >= qs.length) UI.quest = Math.max(0, qs.length - 1);
   const list = h("div", { class: "list" }, qs.map((q, i) => h("div", { class: "item" + (i === UI.quest ? " on" : ""), "data-quest": q.id, on: { click: () => { UI.quest = i; keepUI(); render(); } } },
-    h("span", { class: "t" }, `${i + 1}. ${q.title || q.id}`), h("span", { class: "s" }, `${arr(q.steps).length}`))),
+    h("span", { class: "t" }, isObj(q.desk) ? `${i + 1}. ◆ ${deskKind(q.desk)}: ${q.id}` : `${i + 1}. ${q.title || q.id}`), h("span", { class: "s" }, isObj(q.desk) ? "desk" : `${arr(q.steps).length}`))),
     h("button", { class: "small", "data-act": "new-quest", on: { click: () => { const id = freshId("q", allIds()); qs.push({ id, title: "New quest", objective: "", steps: [] }); UI.quest = qs.length - 1; changed(); render(); } } }, icon("plus", 12), " New quest"));
   const q = qs[UI.quest];
   return [h("h2", {}, "Quests"), h("p", { class: "lead" }, "Played one at a time, in this order. A step only counts while its quest is the one on. What comes next can depend on what the player has done."),
-    h("div", { class: "split" }, list, q ? questEd(q, UI.quest) : h("p", { class: "empty" }, "No quests yet: a free roam with the moments, conversations and states."))];
+    h("div", { class: "split" }, list, q ? (isObj(q.desk) ? deskEd(q, UI.quest) : questEd(q, UI.quest)) : h("p", { class: "empty" }, "No quests yet: a free roam with the moments, conversations and states."))];
+}
+// a desk game's scene or choice (godot_director.py from-desk), as the desk had it: shown, moved, taken out, not edited here
+const deskKind = d => d.type === "scene" ? "a cutscene" : d.type === "ending" ? "an ending" : d.type === "choice" ? `a choice by ${d.by || "flag"}` : d.type || "?";
+function deskEd(q, i) {
+  const d = q.desk, qs = S.quests;
+  const ways = arr(d.options).map((o, j) => h("div", { class: "row" }, h("span", { class: "hint" }, o.label || o.result || (arr(o.if).length ? `if ${arr(o.if).join(", ")}` : o.when ? triggerText(o.when, ctx.name) : j ? "otherwise" : "")),
+    h("span", {}, "→ " + (o.to || "—"))));
+  const sc = d.type === "scene" ? ((S.desk || {}).scenes || {})[d.ref] : null;
+  return h("div", {}, h("div", { class: "card" }, h("h3", {}, icon(d.type === "scene" ? "film" : d.type === "ending" ? "ending" : "choice", 16), `${q.id}: ${deskKind(d)}`, h("span", { class: "grow" }), ...moveBtns(qs, i, j => { UI.quest = j; render(); }),
+      delBtn("this item", () => { qs.splice(i, 1); UI.quest = Math.max(0, i - 1); })),
+    h("p", { class: "hint" }, "Brought in from the desk as it was: the game plays it as the desk's export does. Make it again in the desk (or by hand in director.json) to change it."),
+    sc ? row("Scene", h("span", {}, `${sc.title || d.ref} · ${arr(sc.clips).length} lines`)) : null,
+    d.prompt ? row("Asks", h("span", {}, d.prompt)) : null,
+    d.title ? row("Title", h("span", {}, d.title)) : null,
+    ways.length ? h("div", {}, ways) : row("Then", h("span", {}, d.next ? "→ " + d.next : "the next in the list"))));
 }
 function questEd(q, i) {
   const qs = S.quests;
@@ -274,7 +289,7 @@ function questEd(q, i) {
     row("Finishes", sel(q, "finish", [["steps", "when all its steps are done"], ["any", "on its first step done (a choice by what they do)"], ["never", "when a moment says so (Finish the task)"]], { blank: null }),
       chk(q, "checkpoint", "a checkpoint as it starts", { dflt: true })),
     row("Time limit", inp(q, "time_limit", { num: true, ph: "s" }), h("label", { class: "l" }, "then"), sel(q, "on_timeout", goTargets().slice(1), { blank: "—" })),
-    cardEd(q));
+    cardEd(q), roundEd(q));
   const stepsBox = h("div", { class: "card steps" }, h("h3", {}, icon("todo", 16), "Steps (the to-do list)"),
     arr(q.steps).map((s, j) => stepEd(q, s, j)),
     h("button", { class: "small", "data-act": "new-step", on: { click: () => { listArr(q, "steps").push({ id: freshId("s", allIds()), text: "Something to do" }); changed(); render(); } } }, icon("plus", 12), " Add a step"));
@@ -287,6 +302,23 @@ function questEd(q, i) {
     arr(q.next).some(n => !parseCond(n.if).items.length) ? null : h("div", { class: "row" }, h("span", { class: "hint" }, `Otherwise: ${after}.`)),
     h("button", { class: "small", on: { click: () => { listArr(q, "next").push({ if: [], go: "" }); changed(); render(); } } }, icon("plus", 12), " Add a way, by what's been done"));
   return h("div", {}, head, stepsBox, acts, next);
+}
+// a round of gameplay instead of steps (STORY_FORMAT §9.8): hide and seek, a chase...; its result ends the quest, a fact What comes next can ask for
+const ROUND_KINDS = [["hide", "hide and seek: hidden or found"], ["run", "a chase to a door: escaped or caught"], ["collect", "a short list while she's around: done or failed"],
+  ["sneak", "move while she isn't looking: made it or spotted"], ["hold", "keep still: held or broke"], ["search", "find one thing in time: found or out of time"], ["escape", "get out by a route: out or caught"]];
+function roundEd(q) {
+  if (!isObj(q.round)) return row("A round", h("button", { class: "small", "data-act": "new-round", on: { click: () => { q.round = { type: "hide", secs: 30, rule: "", spots: [] }; changed(); render(); } } }, icon("plus", 12), " a round of gameplay instead of steps"));
+  const r = q.round, res = arr(ROUNDS[r.type]);
+  const list = (k, ph) => h("input", { value: arr(r[k]).join(", "), placeholder: ph, style: "width:320px", on: { change: e => { const a = e.target.value.split(",").map(x => x.trim()).filter(Boolean); if (a.length) r[k] = a; else delete r[k]; changed(); } } });
+  const onOf = x => { const box = isObj(r.on) ? r.on : (r.on = {}); return actions(box, x, "Nothing more."); };
+  return h("div", { class: "card sub", "data-round": q.id },
+    row("A round", sel(r, "type", ROUND_KINDS, { blank: null, after: render }), inp(r, "secs", { num: true, ph: "30" }), h("span", { class: "hint" }, "seconds"),
+      h("span", { class: "grow" }), h("button", { class: "ghost small danger", title: "no round", on: { click: () => { delete q.round; changed(); render(); } } }, icon("x", 12))),
+    row("Its rule", inp(r, "rule", { ph: "Hide before she counts to ten", w: "340px" })),
+    row("The warning", inp(r, "warn", { ph: "she counts out loud, eyes covered", w: "340px" })),
+    row("Who hunts", sel(r, "seeker", pairs(people()), { blank: "—" }), h("span", { class: "hint" }, "where"), list("spots", ids("thing").slice(0, 3).join(", "))),
+    ...res.map((x, j) => row(j ? `If ${x.replace(/_/g, " ")}` : `If ${x.replace(/_/g, " ")} (they made it)`, onOf(x))),
+    h("p", { class: "hint" }, `It plays instead of the steps; its result is the fact ${res.map(x => `result:${q.id}:${x}`).join(" or ")}, for What comes next.`));
 }
 function cardEd(q) {
   if (!isObj(q.card)) return row("Chapter card", h("button", { class: "small", on: { click: () => { q.card = { title: q.title || "", sub: "", time: "" }; changed(); render(); } } }, icon("plus", 12), " a card before it"));

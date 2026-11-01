@@ -226,9 +226,7 @@ func throw_die(t: Dictionary, s: Dictionary) -> void:
 		mesh.mesh = die_mesh(size)
 		mesh.material_override = null
 		mesh.set_meta("die", true)
-	var shape = node.get_node_or_null("shape")
-	if shape != null:
-		shape.disabled = true                           # not against itself while it rolls
+	var off := shapes_off(node)                         # not against itself while it rolls (its own collider rides with it)
 	var kind := kind_of(t)
 	var body := RigidBody3D.new()
 	body.name = "die_" + str(id)
@@ -253,8 +251,19 @@ func throw_die(t: Dictionary, s: Dictionary) -> void:
 	body.linear_velocity = dir * float(s.get("speed", 2.6)) + Vector3(0, float(s.get("lift", 1.2)), 0)
 	var spin: float = float(s.get("spin", 14))
 	body.angular_velocity = Vector3(randf_range(-spin, spin), randf_range(-spin, spin), randf_range(-spin, spin))
-	rolls[id] = {"t": t, "body": body, "t0": rt.clock, "s": s}
+	rolls[id] = {"t": t, "body": body, "t0": rt.clock, "s": s, "off": off}
 	node.visible = true
+
+
+## a thing's own colliders turned off, whatever they're called (the export's "shape", the Director's "_solid" or a model's
+## own): those that were on, to be turned on again when it settles
+static func shapes_off(node: Node) -> Array:
+	var off := []
+	for c in node.find_children("*", "", true, false):
+		if (c is CollisionShape3D or c is CollisionPolygon3D) and not c.disabled:
+			c.disabled = true
+			off.append(c)
+	return off
 
 
 static func top_face(b: Basis) -> int:            # the face whose outward axis points most nearly up
@@ -284,9 +293,9 @@ func tick(dt: float) -> void:
 			var face := top_face(body.global_transform.basis)
 			node.global_transform = body.global_transform
 			rt.kept[rt.level]["bodies"][id] = node.transform
-			var shape = node.get_node_or_null("shape")
-			if shape != null:
-				shape.disabled = false
+			for cs in r["off"]:
+				if is_instance_valid(cs):
+					cs.disabled = false
 			body.queue_free()
 			rolls.erase(id)
 			rt.hud.log("rolled %d" % face)

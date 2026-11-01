@@ -58,7 +58,10 @@ the grade, the HUD's theme, `lighting: off` for a flat test light, the counters)
   a step's `done` and `fail` are the story format's triggers, STORY_FORMAT §4: picks up the key, enters the cellar,
   `{"gave": "lemonade", "to": "mari"}`, `{"holds": <condition>}`; a `wrong` answer for the wrong thing given, "Nah,
   that's not what I want", or a fail), `finish` (all its steps, `any`: the first done, or `never`: a moment's `done`),
-  `on_start`, `on_done`, `start_at` (a spot), `map` (a level), a chapter `card`, `time_limit` and `on_timeout`, and
+  `on_start`, `on_done`, `start_at` (a spot), `map` (a level), a chapter `card`, `time_limit` and `on_timeout`, a
+  **round** (`{"type": "hide", "secs": 30, "rule", "warn", "seeker", "spots", "on": {<result>: [actions]}}`, the
+  story format's `play`, STORY_FORMAT §9.8: hide and seek, a chase, sneaking past her...: played instead of the steps,
+  its result ending the quest), and
   **next**: the first `{"if": <condition>, "go": <quest or ending>}` that holds, else the next quest in the list.
   **A step only listens while its quest is the one on**: the light switched on and off before the quest doesn't count.
   A finished step stays on the list, crossed out with a single line (a failed one in red).
@@ -81,7 +84,8 @@ the grade, the HUD's theme, `lighting: off` for a flat test light, the counters)
 **Conditions** (`core/cond.gd`) read **facts**, which the brain writes down as the player plays: `used:<id>`,
 `picked:<item>`, `read:<note>`, `entered:<area>`, `left:<area>`, `talked:<id>` (a conversation begun), `heard:<id>`
 (heard out), `answered:<talk>:<answer>`, `gave:<item>:<who>`, `step:<id>`, `failed:<id>`, `done:<quest>`,
-`ending:<id>`, `achievement:<id>`, and your own flags. A condition is a fact (`"read:letter"`, `"!read:letter"`),
+`result:<quest>:<result>` (how its round went: `result:q_hide:found`), `ending:<id>`, `achievement:<id>`, and your
+own flags. A condition is a fact (`"read:letter"`, `"!read:letter"`),
 `{"all": [...]}`, `{"any": [...]}`, `{"not": ...}`, `{"quest": id}` (on now), `{"done": id}`, `{"step": id}`,
 `{"count": name, "at_least": n}`, `{"karma": {"at_least": n}}`, `{"has": item}`, `{"ending": id}`.
 
@@ -93,13 +97,13 @@ a free roam with its events, for testing a level before the story's there.
 
 | Node | What it is |
 |---|---|
-| **HSRoom** | a floor, four walls and a ceiling from its `size` (the space inside; north is -z), boxes as your architecture is (DECISIONS 2026-10-30, evening). **A door put on one of its walls cuts its own opening**; `openings` are doorways and windows with no door. Its `floor_kind` is the footsteps'; its id is an area ("the player enters kitchen"); the lights inside it are the room's. Give it your own materials (a texture tiles by the metre). |
+| **HSRoom** | a floor, four walls and a ceiling from its `size` (the space inside; north is -z), boxes as your architecture is (DECISIONS 2026-10-30, evening). **A door put on one of its walls cuts its own opening**; `openings` are doorways and windows with no door, a window's own words folded under it: `glass` (a pane; the rain runs down it in the rain), `daylight` (the sky's light coming in by the time of day, a soft spot just inside: the windows' fill a desk game's export has, on only where you want it), `shaft` (that light's beam in the haze, dust in it; `shaft_reach`, `shaft_dust`) and *A car passing* (`sweep_on`: headlights along the street outside now and then, `sweep_every` seconds apart, `sweep_out` metres out; an event's `sweep` fires one). `leaks`: water running down a wall from where it comes in (its side, along the wall, how high, its width, the seconds between drops): the wall wet in a band below it, the drips; shown in the editor. Its `floor_kind` is the footsteps'; its id is an area ("the player enters kitchen"); the lights inside it are the room's. Give it your own materials (a texture tiles by the metre). |
 | **HSDoor** | a leaf on its hinges (or `sliding`) in a frame, its origin at the doorway's foot. It swings away from the player. `locked_by` an item's id (or `flag:<name>`), a `peephole`, a `latch` (a thumb turn to lock it from inside). Drop a door model in as its child to wear it instead. |
 | **HSThing** | something to do something with (a part, §3b): `use` **pickup** (into the inventory; `item` its id, `flashlight` for the torch), **note** (a card to read), **inspect** (taken up in the hands and turned), **switch** (the lights of its room, or the ones it names), **breaker** (the power), **sit**, **sleep**, **hide** (a wardrobe, a locker), **carry**, **roll** (a die), **code** (a keypad; the right code sets its flag), **use_item** (an item used on it sets its flag), **clean** (a stain scrubbed by holding the button), **game** (a board game), **life** (a little thing: §3b), **none** (just a solid thing to name in events). Only its use's fields show. Put your model in as its child; a stand-in box shows until you do. `hidden_at_start`: out of the level until an event shows it. |
 | **HSTrigger** | an area (a box on the floor, drawn in the editor only). An event inside it fires when the player walks in. `safe`: a watching character can't see the player in it. |
-| **HSSpot** | a spot on the floor facing its +Z (the arrow): starts, marks, where a character is sent. |
+| **HSSpot** | a spot on the floor facing its +Z (the arrow): starts, marks, where a character is sent. As a path's point (an HSPath's child): its `wait` (facing the arrow), the `pose` she holds while she waits (the pose library: look_left...), a hiding place she `check`s there (a locker's id: someone in it is found). |
 | **HSPath** | a way a character walks: draw it with Godot's path tools (select it, Add Point, click the floor) or give it HSSpot children; `loop`, `pingpong` or `once`; `waits` at its points. |
-| **HSActor** | a character: her model inside it (a Character Studio export, any rigged glb; none: a stand-in figure), facing her +Z. `behaviour` idle, sit (on a `seat`), path, patrol, or off (until an event brings her); `face_player`; `sees_player` (the suspicion meter, "caught"); `talk` (a click is heard as "the player uses <her id>"); `solid`; `idle_motion` and `walk_motion` (her AnimationPlayer's animations: a Kimodo motion brought in, §6b). |
+| **HSActor** | a character (`cast`: the story's name for her when it isn't her id, as a desk game's cast member placed twice is): her model inside it (a Character Studio export, any rigged glb; none: a stand-in figure), facing her +Z. `behaviour` idle, sit (on a `seat`), path, patrol, or off (until an event brings her); `face_player`; `sees_player` (the suspicion meter, "caught"); `talk` (a click is heard as "the player uses <her id>"); `solid`; `idle_motion` and `walk_motion` (her AnimationPlayer's animations: a Kimodo motion brought in, §6b). |
 | your lights | every OmniLight3D and SpotLight3D in a level is the story's by its node's name: a switch flips the ones in its room, the power cut darkens them, an event's Light or the lights dying finds them; a name with candle or fire burns on through the power cut. Light the level as you like (the look plugin's nodes and light zones work as ever). |
 
 Everything a node makes for itself (a room's walls, a door's frame, the stand-ins) is made again when it changes and
@@ -278,6 +282,40 @@ shapes; face.gd plays on them. What the desk adds that isn't a morph (the lids k
 by the gaze) isn't in Godot yet. FACEMORPHS (`--check`, in CHECKS): a made-up export of MHR's own face, its 72 morphs
 MHR's own moves (0.0001 mm at worst), a lash card turned whole on a blink; Godot reads them as 72 blend shapes.
 
+## 6d. A desk game as a Director project (the user, 2026-11-01: "when we export from director to godot it now follows this format/new system too")
+
+`python tools/godot_director.py from-desk <Game> [folder] [--force] [--play]` makes a game written on the desk into a
+Director project (`Saved/Godot/<Game>_director` unless a folder's given), the new system all through: the scene is the
+world as the Director's own nodes, the story the Director file, editable in the dock and the Manager like any Director
+game. The desk's own Godot export (§GODOT_EXPORT, the Godot button) stays as it was, for its checks and the levels
+the user has lit by hand. `Content/Python/storykit/director_desk.py` writes the world (`director/desk_world.json`, in
+Godot's axes) and the file; `desk/desk_build.gd` (in the plugin) builds the world as nodes in Godot, by their own code,
+and saves `main.tscn`. What becomes what:
+
+| The desk | The Director |
+|---|---|
+| a level (its `look`, `weather`) | an **HSLevel** with them, its start spot |
+| a room (`at`, `size`, `skip`, its `look` sets) | an **HSRoom**: its inside (the desk's walls are 10 cm on its edges), its walls, a skipped stretch an opening, its texture sets as materials |
+| an opening, a window (`window`, `sill`, `shaft`, `sweep`) | an **HSOpening**: `glass`, `daylight` (every window, as the export lights them), `shaft`, *A car passing* |
+| a door in an opening | an **HSDoor** in it (`locked_by`, `peephole`, `latch`, sliding for a sliding kit door) |
+| a prop with a use | an **HSThing** with that use (a locker `hide`, a combo `code`, `use_on` `use_item`, a kit little thing `life`), its fields, its model (a kit mesh, a library mesh, its art, else a box, a cylinder, a sphere, steps), its other words as `extra` |
+| a kit mirror | a thing that reflects the room (the runtime's mirror) |
+| a `leak` | one of its room's **leaks** |
+| a light (`kind`, `flicker`, `mode`...), one with a `pattern` and an `aim` | an OmniLight3D with its words, an aimed **HSPatternLight** (the Look plugin's) |
+| a spot, a trigger, a person | an **HSSpot**, an **HSTrigger**, an **HSActor** (`cast` the cast member she is; a cast member never placed gets one, off till the story brings her) |
+| a route (`points`: `at`, `wait`, `pose`, `check`) | an **HSPath** with an HSSpot a point, each facing its spot's way |
+| a stitch | a **quest**: its start beat's to-dos its steps, its objective, the rest `on_start`; its timer `time_limit` and `on_timeout`; its `play` its **round**; its other beats **moments** during it |
+| a plain ending | an **ending** |
+| a scene, a choice, any other flow node | an item that keeps the desk's node as it was (`desk`), played as the export plays it: shown in the dock and the Manager (◆), moved or taken out there, made again in the desk to change it |
+| the scenes, lines, sounds, motions, secrets, interrupts, items, cast, the game's words | the file's `desk` part, as they were (the cutscenes play as the desk recorded them: the bake comes too) |
+
+Its meshes, textures, kit sockets (`game/kit.json`), the bake and the cast's Studio characters come with it (the
+faces and the face morphs too, §6c). **Not carried yet:** the trims and thresholds (a level's `trim`), a kit door's own
+model (the HSDoor's leaf stands in), a level's `links`, the light zones the export makes per room. **FROMDESK**
+(`--play`): the game played headless as its export's check plays it, on the Director project: the Pilot by GDPLAY's
+walk to its good ending, TestRoom001 by GDTESTROOM's stations (every station, a death and its retry, the trigger
+cutscene; `tests/gdplay.gd` and `tests/gdtestroom.gd` with `--director`); any other game is started and run a while.
+
 ## 7. Where you are
 
 Three ways to see it: the dock's Director tab while the game runs from the editor (it sends the quest, the facts and
@@ -310,6 +348,8 @@ itself (`tests/make_sample.gd`: the house, and its story as `director/director.j
   and the Director Manager on it in a headless browser (`tools/director_manager/guide_shots.mjs`, MANAGERSHOTS).
 
 The runtime's own checks (GDPLAY, GDTESTROOM, GDEXPORT) stay as they were: the export's games keep their boxes.
+**FROMDESK** (`godot_director.py from-desk Pilot --play`, `from-desk TestRoom001 --play`, §6d): the same playthroughs
+on the Director projects made from the desk's games.
 
 ## 9. Not yet
 
@@ -321,4 +361,6 @@ The runtime's own checks (GDPLAY, GDTESTROOM, GDEXPORT) stay as they were: the e
 - Faces on a Character Studio character (§6c): her copy's morphs carry the skin, brows and lashes; the lids kept off the
   eyeballs and the eyes turned by the gaze (the desk's) aren't in Godot yet.
 - MHR's twist bones keep their rest (the forearm's and the upper arm's twist isn't shared along them).
-- The desk can't open a Director game, and a Director game can't go back to the desk: the scene is the game now.
+- The desk can't open a Director game, and a Director game can't go back to the desk: the scene is the game now
+  (`from-desk` goes one way, §6d: making it again replaces the project).
+- From the desk (§6d): the trims and thresholds, a kit door's own model, the light zones per room.

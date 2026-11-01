@@ -71,8 +71,8 @@ func _setup() -> void:
 	var rooms := HSDirector.nodes_of(self, "HSRoom")
 	var seen := {}
 	for l in find_children("*", "Light3D", true, false):
-		if l is DirectionalLight3D or l.has_meta("piece") or HSDirector.class_of(l).begins_with("HSFlicker"):
-			continue
+		if l is DirectionalLight3D or l.has_meta("piece") or l.has_meta("window") or HSDirector.class_of(l).begins_with("HSFlicker"):
+			continue                                      # (a window's daylight isn't on the mains: the time of day sets it)
 		var lid := HSDirector.snake(str(l.name))
 		if seen.has(lid):
 			lid = "%s_%d" % [lid, seen.size()]
@@ -84,9 +84,15 @@ func _setup() -> void:
 				break
 		var nm := str(l.name).to_lower()
 		var kind := "candle" if nm.contains("candle") else ("fire" if nm.contains("fire") else ("lamp" if nm.contains("lamp") else "bulb"))
+		var more: Dictionary = l.get_meta("hs_light", {}) if l.has_meta("hs_light") else {}   # its own words (a desk game's light: its kind, its flicker and mode)
+		kind = str(more.get("kind", kind))
 		HSDirector.stamp(l, {"id": lid, "kind": "light", "shape": "box", "size": [0.1, 0.1, 0.1], "room": room, "yaw": 0.0,
 			"pos": HSDirector.story_pos(l.global_position), "tags": [], "d": {"kind": kind}})
-		l.set_meta("light", JSON.stringify({"kind": kind, "room": room, "base": l.light_energy, "on": l.visible}))
+		var lm := {"kind": kind, "room": room, "base": l.light_energy, "on": l.visible}
+		for k in ["flicker", "mode", "interval", "rate", "letters"]:
+			if more.has(k):
+				lm[k] = more[k]
+		l.set_meta("light", JSON.stringify(lm))
 		l.visible = true                                  # the runtime switches it by its energy (a light off at the start is on: false)
 
 

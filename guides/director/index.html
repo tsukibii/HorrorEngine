@@ -137,6 +137,12 @@ leave it out for an empty game with one room.</p>
 <div class="tip"><b>Tip.</b> <code>install ... --link</code> makes the add-ons links into the studio's folder instead of
 copies, so a pull reaches the project straight away. Both commands are also in the launcher (<code>./studio</code>, the
 Godot section).</div>
+<p>A game you wrote on the director's desk comes in as a Director project of its own, the desk's levels as these nodes
+(rooms, doors, things with their models, characters, spots, areas, paths, lights) and its story as the Director file
+(each task a quest, its beats moments, its endings; the cutscenes and the desk's choices as the desk had them, marked ◆):</p>
+<pre>python tools/godot_director.py from-desk Pilot</pre>
+<p>It lands in <code>Saved/Godot/Pilot_director</code> (or a folder you name); <code>--force</code> makes it again over the
+old one, so do your Godot work on it after you're done on the desk. <code>--play</code> plays it through headless to check it.</p>
 </section>
 
 <section id="editor">
@@ -194,7 +200,12 @@ follows. It swings away from the player. <b>Locked by</b> an item's id keeps it 
 <code>flag:name</code>, a fact). It can have a <b>peephole</b> and a <b>latch</b> (a thumb turn to lock it from inside).
 Put a door model in as its child and it wears that instead of the plain leaf.</p>
 <p>Doorways and windows with no door are the room's <b>openings</b>: a side, an offset along the wall, a width, a
-height and a sill.</p>
+height and a sill. A window folds out more (<span class="ui">A window</span>): <b>glass</b> (a pane; the rain runs down it
+when it rains), <b>daylight</b> (the sky's light coming in by the time of day, a soft light just inside: on only where
+you want it, since you light the rest yourself), its <b>shaft</b> (that light's beam in the haze with dust drifting in
+it) and <span class="ui">A car passing</span> (headlights sliding past outside now and then; a moment's <b>Sweep</b>
+fires one). A room's <b>leaks</b> are water running down one of its walls: the side, along the wall, how high it comes
+in, its width and the seconds between drops; the wall is wet in a band below it and the drops fall to the floor.</p>
 <div class="pair">
 <figure><img src="img/e_insp_room.jpg" width="450" height="448" alt="The Inspector on a room: its id, size, wall thickness and walls"><figcaption>A room in the Inspector.</figcaption></figure>
 <figure><img src="img/e_insp_door.jpg" width="450" height="448" alt="The Inspector on a door: width, height, hinge, locked by, peephole, latch"><figcaption>A door: locked by <code>bedroom_key</code>, with a latch.</figcaption></figure>
@@ -203,7 +214,7 @@ height and a sill.</p>
 <ul>
 <li><span class="node">HSTrigger</span>, an <b>area</b>: a box the player walks into (orange in the editor, invisible in the game). A step or a moment waits for it by its id. <b>Safe</b>: a watching character can't see the player inside.</li>
 <li><span class="node">HSSpot</span>, a <b>spot</b>: where the player starts (the level's <b>start</b>, or a spot named Start), where a quest puts the player, where a character stands or is sent. It faces the way its arrow points (its +Z).</li>
-<li><span class="node">HSPath</span>, a <b>path</b> a character walks: select it and draw points with Godot's path tools (Add Point, then click the floor), or give it HSSpot children you drag around. <b>Mode</b>: loop, there and back, or once; <b>waits</b> at its points.</li>
+<li><span class="node">HSPath</span>, a <b>path</b> a character walks: select it and draw points with Godot's path tools (Add Point, then click the floor), or give it HSSpot children you drag around. <b>Mode</b>: loop, there and back, or once; <b>waits</b> at its points. An HSSpot point can also have a <b>pose</b> she holds while she waits there (look_left, look_right...) and a hiding place she <b>checks</b> (a locker's id: whoever hides in it is found).</li>
 </ul>
 <h3>Your own models and lights</h3>
 <p>Drop any model into the level. If it has collision it stops the player (Godot's own physics); if you want the player
@@ -260,7 +271,7 @@ it offers now (switch it on, pour, answer). Each comes with its <b>effect points
 <code>spout</code>, <code>led</code>, <code>lid</code> and <code>switch</code>; a cigarette's <code>tip</code>; a
 candle's <code>flame</code>), placed where they'd be on a thing of its size. Drag them onto your model: the steam comes out
 where you put the spout. <b>life state</b> is how it starts; the story can change it (a state, or a moment's
-<b>State</b>).</p>
+<b>State</b>). A candle's <b>life light</b> is the light it gives: lit while it burns, out when it's blown out.</p>
 <div class="pair">
 <figure><img src="img/e_tree_parts.jpg" width="268" height="464" alt="The Scene tree: the Kettle with its model and its effect points spout, led, lid and switch as markers"><figcaption>A Kettle part on a model: its effect points are markers in the tree.</figcaption></figure>
 <figure><img src="img/g_kettle.jpg" width="1280" height="720" alt="In the game: the kettle on the kitchen table boiling, steam rising from its spout"><figcaption>In the game: switched on and boiling, the steam from where the spout marker was put.</figcaption></figure>
@@ -286,6 +297,7 @@ its skeleton.</p>
 <li><b>Sees player</b>: she watches; in her cone and range the suspicion meter fills, and when it's full the player is caught (a step or a moment can wait for it).</li>
 <li><b>Talk</b>: someone the Director file has conversations for takes a click whether this is ticked or not (the cursor says Talk) and plays the one the story offers now (§8); tick it for a click with no conversation behind it.</li>
 <li><b>Idle motion</b>, <b>walk motion</b>: animations on her AnimationPlayer (a Kimodo motion you brought in, §11).</li>
+<li><b>Cast</b>: who she is in the story when that isn't her id (a desk game's character placed in two places is both of them).</li>
 <li><b>Expression</b>: the face she rests in, a loop from the studio's expression library (the desk's Expressions tab).
 <code>install</code> brings the library into the project's <code>faces/</code> (the loops in <code>faces/loops/</code>);
 the story puts other faces on her (a line's face, a state's, a moment's <span class="ui">A face on someone</span>). Her
@@ -323,6 +335,10 @@ whichever they do), or <b>never</b> by itself (a moment says when).</li>
 <li>As it starts: a <b>chapter card</b> before it if you like (a title, the time, the view dark, an autosave), where the
 player <b>starts at</b>, a checkpoint, a <b>time limit</b> and what happens when it runs out, and commands to run
 (<b>as it starts</b>, <b>when it's done</b>).</li>
+<li>A quest can be a <b>round</b> of gameplay instead of steps (<span class="ui">a round of gameplay instead of steps</span>
+in the Manager): hide and seek, a chase to a door, sneaking past her, holding still... with its seconds, its rule (the one
+line a child could say), its warning, who hunts and where to hide, and what each result does. Its result ends the quest
+and is a fact, <code>result:q_hide:found</code>, for what comes next.</li>
 </ul>
 <figure class="wide"><img src="img/m_quests.jpg" width="1400" height="940" alt="The Director Manager on the quest A drink: its id, title, objective, how it finishes, its step Give Mari the mug done when the mug is given to Mari, and her answer to anything else: Nah, that's not what I want"><figcaption>The Director Manager on the quest <i>A drink</i>: one step, done when the mug is given to Mari.</figcaption></figure>
 <h3>Giving something to someone</h3>
@@ -358,6 +374,7 @@ kept with the run (a save keeps them), and anything in the story can ask for the
 <tr><td><code>gave:mug:mari</code></td><td>gives something to someone</td></tr>
 <tr><td><code>step:find_key</code>, <code>failed:give_mug</code></td><td>ticks a step; fails one</td></tr>
 <tr><td><code>done:q_key</code>, <code>ending:e_morning</code></td><td>finishes a quest; reaches an ending</td></tr>
+<tr><td><code>result:q_hide:found</code></td><td>comes out of a quest's round that way (hidden or found, escaped or caught...)</td></tr>
 <tr><td><code>caught:mari</code>, <code>dropped:mug</code></td><td>is caught by someone watching; puts something down</td></tr>
 <tr><td><code>promised</code></td><td>your own: an answer's <b>sets</b>, a moment's <b>Set flag</b>, a code lock's <b>opens flag</b></td></tr>
 </table>
@@ -524,6 +541,7 @@ must be set up first (<code>python setup/setup.py kimodo</code>).</div>
 <ul>
 <li>The add-ons in a project are copies: after you pull the studio, run <code>python tools/godot_director.py install &lt;project&gt;</code> again (or use <code>--link</code> once and never think about it). It also brings the expression library into <code>faces/</code> again; <code>node tools/face_export.mjs --project &lt;project&gt;</code> does that alone. The Manager runs from the studio's folder, so it's always current.</li>
 <li><code>python tools/godot_director.py check</code> builds the sample, plays it to its ending, tests the Kimodo link and drives the dock in the editor. It ends with <code>DIRECTOR ok</code>.</li>
+<li>A game from the desk made again after its story changed there: <code>python tools/godot_director.py from-desk &lt;Game&gt; --force</code> (it replaces the project). <code>--play</code> plays the Pilot and TestRoom001 through as their checks do; it ends with <code>FROMDESK ok</code>.</li>
 <li><code>python tools/godot_director.py guide</code> makes this guide's pictures again (Godot opens a window for a few minutes, then the Manager is pictured in a browser).</li>
 <li>The notes behind all this: <code>docs/GODOT_DIRECTOR.md</code>.</li>
 </ul>
@@ -560,15 +578,15 @@ must be set up first (<code>python setup/setup.py kimodo</code>).</div>
 <tr class="h"><td>The world (nodes)</td><td></td></tr>
 <tr><td class="node">HSGame</td><td>The main scene's root: the title, the player's name, the time of day, the look, the camcorder tape, the grade, the HUD's theme, lighting, weather, counters, F9; its <b>story file</b>.</td></tr>
 <tr><td class="node">HSLevel</td><td>A place: its <b>start</b>, time of day, look and weather over the game's.</td></tr>
-<tr><td class="node">HSRoom</td><td>Floor, walls, ceiling from a size; doors on its walls cut openings; <b>openings</b> for the rest; floor kind; materials; a wet floor.</td></tr>
+<tr><td class="node">HSRoom</td><td>Floor, walls, ceiling from a size; doors on its walls cut openings; <b>openings</b> for the rest (a window's glass, daylight, shaft, a car passing); <b>leaks</b>; floor kind; materials; a wet floor.</td></tr>
 <tr><td class="node">HSDoor</td><td>A leaf on its hinges or sliding, in a frame; locked by an item or a fact; peephole; latch; your model as its child.</td></tr>
 <tr><td class="node">HSThing</td><td>Something to use, a part (§4); your model as its child; a little thing's effect points as markers.</td></tr>
 <tr><td class="node">HSTrigger</td><td>An area to walk into; safe or not.</td></tr>
-<tr><td class="node">HSSpot</td><td>A spot facing its arrow; a wait when it's a path's point.</td></tr>
+<tr><td class="node">HSSpot</td><td>A spot facing its arrow; a wait, a pose and a hiding place she checks when it's a path's point.</td></tr>
 <tr><td class="node">HSPath</td><td>A way to walk: points drawn or HSSpots; loop, there and back, once.</td></tr>
 <tr><td class="node">HSActor</td><td>A character (§5).</td></tr>
 <tr class="h"><td>The story (the Director file)</td><td></td></tr>
-<tr><td>quests</td><td>In play order: a title, an objective, steps, how it finishes (all, the first, never), a chapter card, starts at, plays on, a checkpoint, a time limit and what then, as it starts, when it's done, what comes next.</td></tr>
+<tr><td>quests</td><td>In play order: a title, an objective, steps, how it finishes (all, the first, never), a chapter card, starts at, plays on, a checkpoint, a time limit and what then, as it starts, when it's done, a round instead of steps, what comes next. From the desk: its cutscenes and choices as they were (◆).</td></tr>
 <tr><td>steps</td><td>The text, done when, fails when, a time to do it in, hidden, asked by; for a giving step, the answer to the wrong thing (and whether it fails).</td></tr>
 <tr><td>moments</td><td>When, if, then; once or every time; only during some quests.</td></tr>
 <tr><td>talk</td><td>Each person's conversations: offered when, once only, lines (who, the words, said only if, commands), answers (label, offered, sets, karma, her reply, then).</td></tr>

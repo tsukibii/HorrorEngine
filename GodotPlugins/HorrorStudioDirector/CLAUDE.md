@@ -15,7 +15,7 @@ word the format doesn't have (as `move` to the player, `anim`, `talk`, `repeat`,
 |---|---|
 | `plugin.gd` | the EditorPlugin: the dock (under the Inspector), the debugger plugin, the ids index (`res://.hsdirector/index.json`, on every save), presets dragged into the 3D view made the scene's own nodes |
 | `core/director.gd` | `HSDirector`: ids (`snake` splits CamelCase; `auto_id` follows renames while the id is the name's), the story's axes (`story_pos`, `story_yaw`: a node's +Z is its facing), `local_aabb`, `stamp` (a runtime piece: `metadata/piece` and the group `hs_piece`), `recentre`, colliders, the scene's ids by kind (`scan`, `ids`, `hint`: the Inspector's suggestions), `holding` (raised while levels are taken up as templates) |
-| `core/cond.gd`, `core/opening.gd` | `HSCond`: a condition over the run's facts (`holds`, `key`, `reads`); `HSOpening` (a room's doorway or window) |
+| `core/cond.gd`, `core/opening.gd`, `core/leak.gd` | `HSCond`: a condition over the run's facts (`holds`, `key`, `reads`); `HSOpening` (a room's doorway or window: a window's `glass`, `daylight`, `shaft` and a car passing, which HSRoom makes the runtime's `pane`, `window`, `shaft` and `sweep` pieces at play); `HSRoomLeak` (water down one of a room's walls: the runtime's `leak` at play, the band shown in the editor) |
 | `level/*.gd` | the level's nodes: `_rebuild` in the editor and at play (children under `_gen`, no owner), `_setup`/`_stamp` at play only (not while `HSDirector.holding`): the runtime's pieces |
 | `story/game.gd` | `HSGame`, the main scene's root and the bridge at play: the Director file read (`story_file`), compile, take the levels up (templates), start `addons/horrorstudio/main.tscn` with `story_data`, `level_scenes` and `life_things_data`, the brain beside it (its `event`, `step`, `level` called from the runtime's hooks), the characters' behaviours on each level (`_on_level`), the debugger messages, the play-from-here file (`user://hs_director_run.json`) |
 | `story/story_file.gd`, `story/story_compile.gd` | `HSStoryFile`: the Director file's shape, `read`, `write`; `HSStoryCompiler`: the file into the runtime's flow, stitches (quests: the steps as to-dos, the finish, the wrong thing, the moments and conversations in each), choices (next by condition), scenes (conversations), endings, and the brain's tables (every condition a `?c<n>` flag, each conversation's turn a `?talk__<who>__<id>`, states, achievements) |
@@ -23,6 +23,7 @@ word the format doesn't have (as `move` to the player, `anim`, `talk`, `repeat`,
 | `run/brain.gd` | the Director at play: facts from the runtime's events (`used:`, `picked:`, `entered:`, `talked:`, `heard:`, `gave:`, `step:`, `done:`...), the conditions' flags, each person's conversation, the states applied by the runtime's actions (only what changed; again on every level entered; a person's `expr` her resting face), the achievements; an HSActor's `expression` comes in as a state that always holds (`compile.gd`) |
 | `run/debug.gd` | F9's panel (the quest, the facts) |
 | `editor/*.gd` | the dock and its tabs (director: the file read and the running game's ▶ ✓ ●, ▶ Here, the Manager; things, add with the parts, check, kimodo), its Guide button (`open_guide`), `open_manager` (the studio's tools/director_manager started on the project), the debugger plugin |
+| `desk/desk_build.gd` | a desk game brought in (`tools/godot_director.py from-desk`, docs/GODOT_DIRECTOR.md §6d): the world `storykit/director_desk.py` wrote (`res://director/desk_world.json`, Godot's axes) built as these nodes by their own code and saved as `main.tscn` (DESKBUILD ok); the story is the Director file the converter wrote beside it |
 | `kimodo/npz.gd`, `kimodo/retarget.gd`, `kimodo/stage.gd` | Kimodo's .npz read (and written), SOMA's positions onto a skeleton as an Animation (MHR, SOMA, humanoid, Mixamo; the fingers too, the hand turned by SOMA's own palm), a Godot room as Kimodo's stage file |
 | `presets/` | the Add tab's drag-in scenes (`make_presets.py` writes them) |
 | `parts/` | **the parts** (DECISIONS 2026-11-01): an HSThing scene per use and per little thing (`make_parts.py`, `parts.json` the dock's list), `life_points.json` each life's effect points as fractions of a kit thing (`tools/kit/life_points.mjs`); dropped on a model in the Scene tree, or picked in the Add tab with the model selected, the part wraps the model (`plugin.gd` `wrap_object`, on the scene's undo) |
@@ -32,6 +33,8 @@ word the format doesn't have (as `move` to the player, `anim`, `talk`, `repeat`,
 
 `python tools/godot_director.py check` (DIRECTOR, about a minute, headless; `tests/shot.gd` under xvfb for a picture).
 After a change to the runtime add-on also GDPLAY, GDTESTROOM and GDEXPORT (the export's games must play the same).
+After a change to a node a desk game is built from, FROMDESK (`tools/godot_director.py from-desk Pilot --force --play`,
+and TestRoom001's: the desk's games played through as Director projects).
 
 ## Rules
 

@@ -301,7 +301,7 @@ static func _scan(n: Node, out: Dictionary, add: Callable) -> void:
 				if c.use in ["pickup", "carry"] and c.item != "":
 					add.call("item", c.item)
 				if c.use == "note":
-					add.call("note", id)
+					add.call("note", c.note if c.note != "" else id)   # its note's id (a desk game's letter on a table: letter_mari)
 				if c.use in ["code", "use_item"] and c.opens_flag != "":
 					add.call("flag", c.opens_flag)
 				if c.use == "use_item" and c.needs_item != "":
@@ -312,6 +312,8 @@ static func _scan(n: Node, out: Dictionary, add: Callable) -> void:
 			"HSActor":
 				add.call("actor", id)
 				add.call("thing", id)
+				if c.cast_id() != id:
+					add.call("actor", c.cast_id())     # the story's name for her (a desk game's cast member placed more than once)
 				for m in c.motion_names():
 					add.call("motion", m)
 			"HSSpot":

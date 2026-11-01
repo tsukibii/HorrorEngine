@@ -2,6 +2,17 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-01, later (the user: the desk's games in the new system)
+
+- **"Can we make sure that when we export from director to godot it now follows this format/new system too (if you
+  haven't already)"**: a game written on the desk comes into Godot as a Director project, the new system all through:
+  the desk's levels as the Director's own nodes, its story as the Director file (each task a quest, its beats moments,
+  its endings; the cutscenes and the desk's choices kept as the desk had them), editable in the dock and the Manager:
+  `python tools/godot_director.py from-desk <Game>` (GODOT_DIRECTOR §6d). Read as (Claude's call, theirs to change):
+  a second way out of the desk, beside the export (`godot_export.py`, the desk's Godot button), which stays as it was
+  for its checks and the levels already lit by hand in its versions. Checked by playing the Pilot and TestRoom001
+  through on the Director projects as their exports' checks play them (FROMDESK).
+
 ## 2026-11-01 (the user: the Director as a puppeteer)
 
 Asked what the Director still lacks against the desk's stories (the little things, interrupts, lines and answers by

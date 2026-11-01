@@ -18,6 +18,7 @@ var rt
 var fails := 0
 var t_start := 0
 var from_nid = null
+var director := false                # --director: a Director project made from the desk (its levels are rooms and things, not the export's folders)
 var from_i := 0
 var ref_dir := ""
 var states: Dictionary = {}
@@ -266,7 +267,7 @@ func steps_on() -> Array:
 ## a metre in front of a door on the side away from `into`, facing it, and on through
 func walk_through(door_id: String, into: String, secs: float = 2.2) -> void:
 	var t: Dictionary = rt.by_id[door_id]
-	var b: Transform3D = t["base"]
+	var b: Transform3D = rt._global_base(t)          # in the world (a Director door's leaf sits in its door)
 	var at: Vector3 = b.origin
 	var nrm: Vector3 = b.basis * Vector3(0, 0, 1)
 	var r = null
@@ -348,16 +349,31 @@ func _initialize() -> void:
 			from_nid = a.substr(7)
 		if a.begins_with("--ref="):
 			ref_dir = a.substr(6)
-	g = (load("res://addons/horrorstudio/main.tscn") as PackedScene).instantiate()
-	g.autostart = false
-	root.add_child(g)
-	await process_frame
-	if from_nid != null:
-		from_i = ORDER.find(from_nid)
-		g.watch(from_nid, snap_for(from_nid))
-		print("  from %s" % from_nid)
+	if OS.get_cmdline_user_args().has("--director"):     # a Director project (godot_director.py from-desk): its HSGame makes the runtime and starts it
+		director = true
+		var hs: Node = (load("res://main.tscn") as PackedScene).instantiate()
+		root.add_child(hs)
+		var k := 0
+		while hs.get("runtime") == null and k < 3000:
+			await process_frame
+			k += 1
+		g = hs.runtime
+		await process_frame
+		if from_nid != null:
+			from_i = ORDER.find(from_nid)
+			g.watch(from_nid, snap_for(from_nid))
+			print("  from %s" % from_nid)
 	else:
-		g.watch(null, null)
+		g = (load("res://addons/horrorstudio/main.tscn") as PackedScene).instantiate()
+		g.autostart = false
+		root.add_child(g)
+		await process_frame
+		if from_nid != null:
+			from_i = ORDER.find(from_nid)
+			g.watch(from_nid, snap_for(from_nid))
+			print("  from %s" % from_nid)
+		else:
+			g.watch(null, null)
 
 	await station("n_arrive", func():
 		await step("1 · Moving: the arrival in the yard, its two tasks on the list, the walk, the run, the crouch, the steps on dirt", func():
@@ -381,10 +397,10 @@ func _initialize() -> void:
 				return "the yard's floor isn't wet: " + str(yard_floor)
 			var lo: PackedVector4Array = rain.mat.get_shader_parameter("rooms_lo")
 			var hi: PackedVector4Array = rain.mat.get_shader_parameter("rooms_hi")
-			var yard_box := false                                    # the yard's box among them (13 by 4 m, south of the lobby: Godot z 5 to 9); the lobby (a ceiling) in none
+			var yard_box := false                                    # the yard's box among them (13 by 4 m, south of the lobby: Godot z 5 to 9; a Director room's inside its walls, 12.9 by 3.9); the lobby (a ceiling) in none
 			var lobby_box := false
 			for i in int(rooms_n):
-				if hi[i].x - lo[i].x >= 12.9 and hi[i].z - lo[i].z >= 3.9 and lo[i].z >= 4.99 and hi[i].z <= 9.01:
+				if hi[i].x - lo[i].x >= 12.85 and hi[i].z - lo[i].z >= 3.85 and lo[i].z >= 4.99 and hi[i].z <= 9.01:
 					yard_box = true
 				if lo[i].z < 4.99 and hi[i].z > 0.01 and lo[i].x < 1.5 and hi[i].x > 1.5:
 					lobby_box = true
@@ -392,12 +408,12 @@ func _initialize() -> void:
 				return "the rain's room boxes: %s / %s" % [lo, hi]
 			if rt.panes.size() != 2 or rt.panes.any(func(pn): return not (pn.material_override is ShaderMaterial) or pn.material_override.shader != HSGlass.shader() or float(pn.material_override.get_shader_parameter("rain")) <= 0.0):
 				return "the lobby's two panes should wear the glass with the rain on it: " + str(rt.panes.size())
-			var shafts: Array = g.level.get_node("Lights").get_children().filter(func(c): return c is FogVolume and c.has_meta("shaft"))   # the lobby's windows throw shafts (HSShaft on the export's FogVolumes)
+			var shafts: Array = g.pieces().filter(func(c): return c is FogVolume and c.has_meta("shaft"))   # the lobby's windows throw shafts (HSShaft on the export's FogVolumes, or a Director room's)
 			if shafts.size() != 2 or shafts.any(func(fv): return not (fv.material is FogMaterial) or fv.material.density > 0.0 or fv.size.z < 2.9):   # the fog emptied: the beam is a card (2026-10-30)
 				return "the lobby's two window shafts: %d, %s" % [shafts.size(), shafts.map(func(fv): return [fv.material, fv.size])]
 			if shafts.any(func(fv): var card = fv.get_node_or_null("Card"); return card == null or card.mesh == null or card.mesh.get_surface_count() != 7 or not (card.get_surface_override_material(0) is ShaderMaterial) or card.get_surface_override_material(0).shader != HSShaft.shader()):
 				return "each shaft's card: seven planes on the card shader (two along the beam, five across)"
-			var wl: Array = g.level.get_node("Lights").get_children().filter(func(c): return c is SpotLight3D and c.has_meta("window") and float(c.light_volumetric_fog_energy) >= 4.0 and c.shadow_enabled)
+			var wl: Array = g.pieces().filter(func(c): return c is SpotLight3D and c.has_meta("window") and float(c.light_volumetric_fog_energy) >= 4.0 and c.shadow_enabled)
 			if wl.size() != 2:
 				return "the lobby's window lights should light the haze with shadows: %d" % wl.size()
 			var cl = rt.by_id.get("yard_puddle_light")                    # the puddle under the yard's lamp throws its light up the wall (a pattern light: a spot aimed at the wall, caustics in its projector)
@@ -469,7 +485,8 @@ func _initialize() -> void:
 			return "")
 		await step("the pause menu: Esc holds the game and opens it in the HUD's theme, Save game saves to a slot, Esc twice resumes", func():
 			await game_wait(0.5)
-			var sf := ProjectSettings.globalize_path("user://saves_TestRoom001.json")   # a fresh slot each run
+			var saves := "user://saves_%s.json" % str(g.story.game.get("id", "game"))   # the game's own (a Director project names it by its title)
+			var sf := ProjectSettings.globalize_path(saves)   # a fresh slot each run
 			if FileAccess.file_exists(sf):
 				DirAccess.remove_absolute(sf)
 			await press("Escape")
@@ -485,7 +502,7 @@ func _initialize() -> void:
 				return "Save game page: at " + g.hud.menu.at
 			rt.key_event("Enter", true)
 			await frames(2)
-			if not g.hud.menu.saves.has("1") or not FileAccess.file_exists("user://saves_TestRoom001.json"):
+			if not g.hud.menu.saves.has("1") or not FileAccess.file_exists(saves):
 				return "slot 1 not saved: " + JSON.stringify(g.hud.menu.saves)
 			rt.key_event("Escape", true)
 			rt.key_event("Escape", true)
@@ -494,7 +511,7 @@ func _initialize() -> void:
 				return "didn't resume (held %s, up %s)" % [rt.held, g.hud.menu.up]
 			return "")
 		await step("the level in folders (Ground, Walls, Things, Lights...), and the camhybrid tape's softener on the camera (off takes it away)", func():
-			for f in ["Ground", "Walls", "Ceilings", "Doors", "Things", "Lights", "Triggers", "Spots"]:
+			for f in ([] if director else ["Ground", "Walls", "Ceilings", "Doors", "Things", "Lights", "Triggers", "Spots"]):   # (a Director level: its rooms, doors and things, the pieces at any depth)
 				var fold = g.level.get_node_or_null(f)
 				if fold == null or fold.get_child_count() == 0:
 					return "the level has no %s folder with children in it" % f

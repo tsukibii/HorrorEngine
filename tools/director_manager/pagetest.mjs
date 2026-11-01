@@ -1,7 +1,7 @@
 // MANAGERPAGE: the Director Manager's page in a headless browser (docs/GODOT_DIRECTOR_PLAN.md §4), on its own server and a
 // scratch project (Saved/manager_check: a project.godot, the sample's kind of story, the scene's ids as the plugin indexes
 // them, a save): every tab drawn with no errors; a quest added with a step whose trigger is picked from the desk's
-// palette; a condition added; a conversation, a moment, a state, an ending, an achievement added; saved, and the file on
+// palette; a condition added; a round (hide and seek); a conversation, a moment, a state, an ending, an achievement added; saved, and the file on
 // disk holds them (its last version kept in director/history/); Coverage finds what the scene has that the story never
 // names and what the story names that the scene hasn't got; a save deleted; the next play set.
 //   node tools/director_manager/pagetest.mjs        (ends MANAGERPAGE ok)
@@ -89,6 +89,13 @@ try {
   await page.waitForTimeout(100);
   S = await page.evaluate(() => window.hsdm.S);
   ok("a condition added to the quest's next (read:letter)", JSON.stringify(S.quests[1].next || []).includes("read:letter"), JSON.stringify(S.quests[1].next));
+  // a round of gameplay instead of steps (STORY_FORMAT §9.8): hide and seek, Mari hunting
+  await page.click("[data-act=new-round]");
+  await page.selectOption("[data-round] .row:has-text('Who hunts') select", "mari");
+  S = await page.evaluate(() => window.hsdm.S);
+  const rq = S.quests[1], rtext = await page.textContent("[data-round]");
+  ok("a round added to the quest (hide and seek, Mari hunting; its results' facts named for what comes next)",
+    !!rq.round && rq.round.type === "hide" && rq.round.seeker === "mari" && rtext.includes(`result:${rq.id}:hidden`) && rtext.includes(`result:${rq.id}:found`), JSON.stringify(rq.round));
   // a conversation, a moment, a state, an ending, an achievement
   await page.click("nav.tabs button[data-tab=people]");
   await page.click("[data-act=new-talk]");
@@ -105,7 +112,7 @@ try {
   await page.waitForTimeout(400);
   const disk = JSON.parse(fs.readFileSync(path.join(PROJ, "director", "director.json"), "utf8"));
   const hist = fs.readdirSync(path.join(PROJ, "director", "history"));
-  ok("saved: director/director.json holds them, the version before kept in history/", disk.quests.length === 2 && disk.quests[1].steps[0].done.pickup === "bedroom_key" && hist.length === 1);
+  ok("saved: director/director.json holds them, the version before kept in history/", disk.quests.length === 2 && disk.quests[1].steps[0].done.pickup === "bedroom_key" && disk.quests[1].round && disk.quests[1].round.seeker === "mari" && hist.length === 1);
   ok("the header says saved", (await page.textContent("#state")) === "saved");
   // coverage
   await page.click("nav.tabs button[data-tab=coverage]");
@@ -114,6 +121,7 @@ try {
     cov.unused.thing.includes("teapot_lonely") && cov.unused.spot.includes("corner") && cov.unused.path.includes("hall_path") && cov.unused.item.includes("mug") && !cov.unused.thing.includes("bedroom_key"), JSON.stringify(cov.unused));
   ok("Coverage: the letter counts as named by a fact (read:letter), Mari by her conversation", !cov.unused.note.includes("letter") && !cov.unused.actor.includes("mari"));
   ok("Coverage: what's wrong (the new moment has no when, the new quest nothing leads to... )", cov.problems.some(p => p.text.includes("has no when")), JSON.stringify(cov.problems.map(p => p.text)));
+  ok("Coverage: the round's hunter named, nothing wrong with the round", !cov.unused.actor.includes("mari") && !cov.problems.some(p => p.text.includes("round")), JSON.stringify(cov.problems.map(p => p.text)));
   // saves
   await page.click("nav.tabs button[data-tab=saves]");
   ok("the saves listed (a slot and the autosave)", (await page.$$("main.page table.cov tr")).length === 3);

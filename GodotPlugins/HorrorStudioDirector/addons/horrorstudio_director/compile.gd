@@ -47,6 +47,7 @@ func compile(g: Node, alone: Node = null, file: Dictionary = {}) -> Dictionary:
 	var f := file.duplicate(true)
 	if alone != null:
 		f["quests"] = []
+	_desk(f)
 	var sc := HSStoryCompiler.new()
 	sc.compile(f, story, levels)
 	problems.append_array(sc.problems)
@@ -68,6 +69,37 @@ func compile(g: Node, alone: Node = null, file: Dictionary = {}) -> Dictionary:
 	_sounds()
 	_check_refs(f)
 	return {"story": story, "levels": levels, "problems": problems, "life_things": life_things, "brain": brain}
+
+
+# ---- a desk game brought in (godot_director.py from-desk) ------------------------------------------------------------
+## the file's `desk`: what a desk game has that the Director file doesn't say itself, as the runtime reads it: its
+## scenes (the cutscenes its desk items play), lines, sounds, motions, secrets, trigger cutscenes (`interrupts`), and
+## more of its items', cast's and game's words; the scene's own (the nodes) come first where both have one
+func _desk(f: Dictionary) -> void:
+	var dk = f.get("desk")
+	if not (dk is Dictionary):
+		return
+	for k in ["scenes", "lines", "sounds", "motions", "secrets"]:
+		if dk.get(k) is Dictionary:
+			if not story.has(k) or not (story[k] is Dictionary):
+				story[k] = {}
+			for id in dk[k]:
+				if not story[k].has(id):
+					story[k][id] = (dk[k][id] as Variant)
+	if dk.get("interrupts") is Array:
+		story["interrupts"] = (dk["interrupts"] as Array).duplicate(true)
+	for k in ["items", "cast"]:                         # more words on what the nodes made (an item's inspect, a cast member's skin)
+		if dk.get(k) is Dictionary:
+			for id in dk[k]:
+				var mine: Dictionary = story[k].get(id, {})
+				for w in dk[k][id]:
+					if not mine.has(w):
+						mine[w] = dk[k][id][w]
+				story[k][id] = mine
+	if dk.get("game") is Dictionary:                    # the game's words the HSGame hasn't got (karma's axes, the counters' labels, the words...)
+		for w in dk["game"]:
+			if not story["game"].has(w) or w in ["karma", "counters", "words"]:
+				story["game"][w] = dk["game"][w]
 
 
 # ---- the game -------------------------------------------------------------------------------------------------
@@ -108,14 +140,15 @@ func _level_things(lv: Node, lid: String) -> void:
 			"HSThing":
 				_thing(n)
 			"HSActor":
-				var c: Dictionary = story["cast"].get(nid, {})
+				var cid: String = n.cast_id()
+				var c: Dictionary = story["cast"].get(cid, {})
 				c["name"] = n.display_name if n.display_name != "" else str(n.name)
 				c["height"] = n.height
 				if n.studio_character != "":
 					c["previs_body"] = "people/" + n.studio_character
-				story["cast"][nid] = c
+				story["cast"][cid] = c
 				for m in n.motion_names():
-					story["motions"][m] = {"who": nid, "loop": true, "in_place": true, "prompt": "", "secs": 4}
+					story["motions"][m] = {"who": cid, "loop": true, "in_place": true, "prompt": "", "secs": 4}
 				if n.behaviour in ["path", "patrol"] and n.get_node_or_null(n.path) == null and n.patrol.is_empty():
 					warn(n, "%s walks a path, but none is set: she'll stand" % nid)
 			"HSDoor":
@@ -134,7 +167,7 @@ func _thing(n: Node) -> void:
 			if n.flashlight:
 				story["items"][iid]["torch"] = true
 		"note":
-			story["notes"][HSDirector.id_of(n)] = {"title": n.note_title if n.note_title != "" else str(n.name), "text": n.note_text}
+			story["notes"][n.note if n.note != "" else HSDirector.id_of(n)] = {"title": n.note_title if n.note_title != "" else str(n.name), "text": n.note_text}
 		"use_item":
 			if n.needs_item == "":
 				err(n, "%s needs an item to be used on it (needs_item)" % HSDirector.id_of(n))
@@ -170,7 +203,7 @@ func _sounds() -> void:
 		for c in story["scenes"][sid].get("cues", []):
 			acts.append(c.get("do", {}))
 	for a in acts:
-		if a is Dictionary and a.has("sound") and str(a["sound"]) != "":
+		if a is Dictionary and a.has("sound") and str(a["sound"]) != "" and not story["sounds"].has(str(a["sound"])):   # a sound the story names (a desk game's its own file)
 			var s := str(a["sound"])
 			story["sounds"][s] = {"file": s if s.begins_with("res://") else "sfx/" + s}
 

@@ -33,7 +33,7 @@ func points() -> Array:
 	var sp := spots()
 	if sp.size():
 		for s in sp:
-			out.append({"pos": s.global_position, "wait": s.wait, "id": HSDirector.id_of(s)})
+			out.append({"pos": s.global_position, "wait": s.wait, "id": HSDirector.id_of(s), "pose": s.pose, "check": s.check})
 		return out
 	if curve == null:
 		return out
@@ -49,6 +49,9 @@ func as_story() -> Dictionary:
 		var q := {"at": p["id"]}
 		if float(p["wait"]) > 0.0:
 			q["wait"] = float(p["wait"])
+		for k in ["pose", "check"]:
+			if str(p.get(k, "")) != "":
+				q[k] = str(p[k])
 		pts.append(q)
 	return {"points": pts, "mode": mode}
 

@@ -7,7 +7,7 @@ extends RefCounted
 ##   {"format": 1,
 ##    "quests":  [{id, title, objective, map, start_at, card: {title, sub, time}, checkpoint, steps: [{id, text, done,
 ##                fail, secs, hidden, who, wrong: {say, who, fail}}], finish: steps|any|never, on_start, on_done,
-##                time_limit, on_timeout, next: [{if, go}]}],
+##                time_limit, on_timeout, round: {type, secs, rule, warn, spots, seeker, loops, barks, on}, next: [{if, go}]}],
 ##    "states":  [{while, set: {<id>: {at, do, to, path, paths, sees, shown, motion, locked, open, light, state}}}],
 ##    "moments": [{id, when, if, do, once, every, during: [quest ids]}],
 ##    "talk":    {<person>: [{id, if, once, title, lines: [{who, text, if, do, answers: [{id, label, think, if, sets,
@@ -16,7 +16,9 @@ extends RefCounted
 ##    "achievements": [{id, title, text, hidden, when}],
 ##    "facts":   {<name>: {about, hidden}}}
 ## `when`, `done`, `fail` are the story format's triggers and `do`, `on_start`, `on_done` its actions (STORY_FORMAT §4);
-## every `if`, `while` and `when` of an achievement is a condition (core/cond.gd).
+## every `if`, `while` and `when` of an achievement is a condition (core/cond.gd). A quest's `round` is a round of
+## gameplay, the story format's `play` (§9.8: hide and seek, a chase...): the game plays it instead of the steps, its
+## result ends the quest and is the fact `result:<quest>:<result>` its `next` can ask for.
 
 const DEFAULT := "res://director/director.json"
 const EMPTY := {"format": 1, "quests": [], "states": [], "moments": [], "talk": {}, "endings": [], "achievements": [], "facts": {}}

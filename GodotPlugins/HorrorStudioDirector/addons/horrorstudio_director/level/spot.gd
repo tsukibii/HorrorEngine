@@ -7,8 +7,12 @@ class_name HSSpot
 extends Marker3D
 
 @export var id: String = ""
-## a path's point: the seconds she waits here
+## a path's point: the seconds she waits here (facing the arrow)
 @export var wait: float = 0.0
+## a path's point: the pose she holds while she waits (the pose library: look_left, look_right...)
+@export var pose: String = ""
+## a path's point: a hiding place she looks in here (a locker's id): someone hiding in it is found
+@export var check: String = ""
 
 var _gen: Node3D = null
 
