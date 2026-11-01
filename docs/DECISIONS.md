@@ -2,6 +2,18 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-01, later (the user: the clothing review, on `clothing-refiner`)
+
+- **"Some of your trousers are baggy at the waist band ... waistband on shorts, pants, anything that's lower body even
+  baggy always needs to be skin tight or the pants wouldn't stay on"; "pants shouldn't dent so harshly inwards at the
+  knees"; "consider animation ability, we aren't going to do cloth physics so don't want things overly baggy to the point
+  clothing will clip through for generic walks"; "a lot of the clothes have a weird butt crack dent"; "even baggy stuff
+  like hoodies need to feel like they're fitted, it's the creases etc that create the illusion of bagginess"; "make it
+  easy to make custom tees (front prints, back prints)"; "we don't need super unique clothing, just daily outfits normal
+  humans wear: smart casual, casual, business, uniforms, pyjamas and bikinis ... really nailing the reusable simple
+  elements and let fabric and colour take care of the rest"; "review the current clothing, list a plan to enhance
+  everything, and tick as you go".** The plan and its ticks: docs/CLOTHING_PLAN.md.
+
 ## 2026-11-01 (the user: the clothes refined, on `clothing-refiner`)
 
 - **"Inspired by the image of Japanese smart casual outfits create some of these, I think currently what makes our
