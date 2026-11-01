@@ -2,6 +2,19 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-02 (the user: the wardrobe, on `clothing-refiner`)
+
+- **"I notice the clothing modification is very laggy, is there anything we can do to maybe isolate the processing or
+  utilize more of my GPU (RTX 3090), like create a clothing edit tab"**; **"a clothing specific tab where we can create
+  outfits on a dummy, have it run really well in real time and then load those outfits onto our actual model (be able
+  to save outfits sort of how you already have preset ones)"**; **"a bagginess/looseness modifier ... look at those
+  shorts, the lines around the thighs and the folds ... a modifier where we just go through various seeds till we get a
+  fold style we like (while keeping it tight at the waist), the looseness is just a small gap"**; **"a skirt that only
+  goes down slightly below waist/crotch, want to test if those kind of skirts clip less and look more natural"**;
+  **"make a note to not affect/mess up anything we've made so far, this should be progressive"**. The plan and its
+  ticks: docs/WARDROBE_PLAN.md. Every existing design, outfit and character dresses as before; the new parts are new
+  fields, designs and a page.
+
 ## 2026-11-01, late night (the user: the sneakers' soles, on `clothing-refiner`)
 
 - **"The sneakers you made are pretty not great especially the soles, look at the [sandal OBJ] to see how the geometry

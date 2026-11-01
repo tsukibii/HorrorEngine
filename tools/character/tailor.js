@@ -142,15 +142,27 @@ export const dress = (...a) => run(dressing(...a));
     the same garments, cut the same, takes its bake instead of falling again; each garment comes back with its `key` */
 export function* dressing(B, list, designs, opts = {}) {
   const worn = [], ds = list.map(([name, , , edit]) => { const d = designs[name]; if (!d) throw new Error(`no design called ${name}`); return edited(d, edit); });
+  const made = MADE.get(B) || (MADE.set(B, new Map()), MADE.get(B));
   for (let k = 0; k < list.length; k++) {
     const [name, color, look] = list[k], key = drapeKey(opts.body, list, ds, k);
-    const ov = opts.drape ? over(ds, k) : [], tuck = tucks(B.F, ov), cover = covers(B.F, ov);
-    const it = making(B, name, ds[k], { color, look, under: worn.slice(), drape: opts.drape, tuck, cover, baked: opts.bakes ? opts.bakes[key] : null });
-    let r; while (!(r = it.next()).done) yield { k, of: list.length, ...r.value };
-    worn.push({ ...r.value, key });
+    const ov = opts.drape ? over(ds, k) : [], tuck = tucks(B.F, ov), cover = covers(B.F, ov), baked = opts.bakes ? opts.bakes[key] : null;
+    // made before on this body, the same, over the same garments: as it was (a change to one garment makes only it and
+    // what's worn over it again: the Studio's refits, CLOTHING_PLAN's lag)
+    const gk = hash(JSON.stringify([VERSION, DRAPE_VERSION, name, ds[k], !!opts.drape, ov, worn.map(g => g.shape), baked ? [baked.length, baked[0], baked[baked.length >> 1]] : null]));   // its shape: what's worn over it depends on this alone
+    const mk = hash(JSON.stringify([gk, color ?? null, look ?? null]));
+    let g = opts.cache === false ? null : made.get(mk);
+    if (g) { made.delete(mk); made.set(mk, g); }                     // (most recent last)
+    else {
+      const it = making(B, name, ds[k], { color, look, under: worn.slice(), drape: opts.drape, tuck, cover, baked });
+      let r; while (!(r = it.next()).done) yield { k, of: list.length, ...r.value };
+      g = r.value;
+      if (opts.cache !== false) { made.set(mk, g); while (made.size > 32) made.delete(made.keys().next().value); }
+    }
+    worn.push({ ...g, key, made: mk, shape: gk });
   }
   return worn;
 }
+const MADE = new WeakMap();                                          // body -> {key -> a garment made on it}: kept, not made twice
 /** each garment of an outfit: its drape's key, and whether it drapes at all (its design hangs and isn't fitted skin
     tight), so a caller knows what a drape would have to do */
 export function plan(body, list, designs) {
