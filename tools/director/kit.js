@@ -39,6 +39,7 @@ export const SLOTS = {
   felt: [0x2e3140, 1], steel_paint: [0xdcd8ce, 0.45, 0.2], green: [0x2f8d5d, 0.5], red: [0xc1272d, 0.4],
   vinyl: [0xbcb6a6, 0.35], vinyl_2: [0xb3ad9c, 0.35], vinyl_3: [0xc4bfb0, 0.35], vinyl_4: [0xaea898, 0.35],
   glass_frost: [0xe6ebe9, 0.45, 0, 0.82], glass_wire: [0xc5d5d7, 0.06, 0, 0.3], wire: [0x6c7074, 0.4, 0.7], acoustic: [0xecebe5, 0.95],
+  paint_blue: [0x8cc6dc, 0.4], steel_sash: [0x6f726c, 0.45, 0.35],
   cover: [0x8e302a, 0.6], cover_2: [0x2f4b7c, 0.6], cover_3: [0x3e6c47, 0.6], cover_4: [0xd8c79d, 0.6], pages: [0xeee6d1, 0.9],
   curtain: [0xcfa443, 0.9],
 };
@@ -108,6 +109,10 @@ export const TYPES = {
     ["slot", "frame material", "frame", "slot"], ["stool_slot", "sill material", "body", "slot"],
     ["glass", "glass", "glass", "slot"], ["wire", "wire in the glass (網入り)", false, "bool"], ["lock", "crescent locks where sashes meet", false, "bool"],
     ["split", "two rows: the lower one's share (0: even)", 0, "num"]], gen: windowGen },
+  porthole: { label: "Round window (a porthole: a stair tower's)", cat: "opening", mount: "opening", size: [1.6, 0.1, 1.6], params: [["frame", "frame ring", 0.1, "m"],
+    ["wall", "wall thickness", 0.1, "m"], ["stool", "inside sill depth", 0, "m"], ["stool_t", "sill thickness", 0.02, "m"], ["n", "sides", 40, "int"],
+    ["bars", "bars across", 0, "int"], ["slot", "ring material", "paint_blue", "slot"], ["plate", "the wall round it", "white", "slot"],
+    ["glass", "glass", "glass_wire", "slot"]], gen: portholeGen },
   curtain: { label: "Curtain", cat: "curtain", mount: "back", size: [1.8, 0.14, 2.3], params: [["panels", "panels", 2, "int"], ["open", "drawn open (0 to 1)", 0.3, "num"],
     ["pitch", "fold every", 0.11, "m"], ["thick", "cloth", 0.004, "mm"], ["rail", "rail", 0.03, "m"], ["hem", "above the floor", 0.015, "m"], ["seed", "seed", 1, "int"],
     ["slot", "material", "fabric", "slot"], ["tie", "tied back at (0: hanging free)", 0, "m"], ["tie_w", "gathered to (of its width)", 0.3, "num"],
@@ -1062,6 +1067,32 @@ function windowGen(s, P) {
       bx(P, xm - 0.04, yr - 0.006, zl - 0.012, xm + 0.004, yr, zl + 0.012, "metal", { b: 0.002 });                 // the base, on the inner sash
       bx(P, xm - 0.012, yr - 0.012, zl - 0.004, xm + 0.024, yr - 0.006, zl + 0.004, "metal", { b: 0.002 });       // its lever
     }
+  }
+}
+// a round window in a square hole (a school's stair tower, the user's photo, 2026-11-01): the wall's thickness filled
+// round the circle (the four corners), a ring lining the round hole through it, the glass in the wall's middle, `bars`
+// across it. All prisms along y (u on x, v on z), so the circle is n flat sides
+function portholeGen(s, P) {
+  const [W, D, H] = s.size, st = s.stool > 0 ? clamp(s.stool_t, 0.005, H / 4) : 0;
+  const yw = clamp(s.wall, 0.02, D), ya = D / 2 - yw;                                    // the wall: y ya..D/2, outside at +y
+  const hw = W / 2, hh = (H - st) / 2, cz = st + hh, R = Math.min(hw, hh) - 0.002, fr = clamp(s.frame, 0.01, R / 3), ri = R - fr;
+  const n = Math.max(12, Math.min(96, s.n | 0)), ang = i => i / n * Math.PI * 2;
+  const on = (r, a) => [Math.cos(a) * r, Math.sin(a) * r];
+  const sq = a => { const c = Math.cos(a), sn = Math.sin(a), t = Math.min(Math.abs(c) > 1e-9 ? hw / Math.abs(c) : 1e9, Math.abs(sn) > 1e-9 ? hh / Math.abs(sn) : 1e9); return [c * t, sn * t]; };
+  const corners = [[hw, hh], [-hw, hh], [-hw, -hh], [hw, -hh]], cAng = corners.map(([x, z]) => (Math.atan2(z, x) + Math.PI * 2) % (Math.PI * 2));
+  const yLen = D / 2 - ya, pr = (pts, m, y0 = ya, len = yLen) => prism(P, 0, y0, cz, pts, len, "y", m);
+  if (st) bx(P, -hw, -D / 2, 0, hw, ya + 0.001, st, "body", { b: 0.002 });
+  for (let i = 0; i < n; i++) {
+    const a0 = ang(i), a1 = ang(i + 1), mid = cAng.filter(c => c > a0 + 1e-9 && c < a1 - 1e-9);
+    const outer = [sq(a1), ...mid.sort((p, q) => q - p).map(c => corners[cAng.indexOf(c)]), sq(a0)];
+    pr([on(R, a0), on(R, a1), ...outer], s.plate);                                       // the wall round the circle
+    pr([on(ri, a0), on(ri, a1), on(R, a1), on(R, a0)], s.slot);                          // the ring lining the hole
+  }
+  const yg = ya + yLen / 2 - 0.003;
+  pr(Array.from({ length: n }, (_, i) => on(ri + 0.004, ang(i))), s.glass, yg, 0.006);  // the glass
+  for (let k = 1; k <= Math.max(0, s.bars | 0); k++) {                                   // bars across, in the glass's plane
+    const z = -ri + 2 * ri * k / ((s.bars | 0) + 1), x = Math.sqrt(Math.max(0, ri * ri - z * z));
+    bx(P, -x, yg - 0.012, cz + z - 0.02, x, yg + 0.018, cz + z + 0.02, s.slot);
   }
 }
 // wire in the glass (網入りガラス, a school's corridor and stairs): a 25 mm square mesh in the pane's middle

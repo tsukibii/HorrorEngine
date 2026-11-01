@@ -384,6 +384,12 @@ What the older types learned for it:
 - **Windows:** `glass` (any slot: `glass_frost` the corridor's frosted glass, `glass_wire` wired glass) with `wire` for
   the wire itself in it, `lock` (a crescent lock where two sliding sashes meet) and `split` (two rows, the lower taking
   that share: a classroom's tall sashes under a transom).
+- **Round windows** (the user's photo of a school's stair tower, 2026-11-01): `porthole`, a round window in a square
+  hole: the wall's thickness filled round the circle (`plate`, its four corners), a ring (`slot`, `frame` wide) lining
+  the round hole, the glass in the wall's middle, `bars` across it; prisms of `n` sides. Presets `window_porthole` and
+  `window_porthole_bar` (its ring painted blue, `paint_blue`). The street shell's own round reveal and ring go round it
+  (STREET_BUILDER §5f). And the building kit's sashes: `window_ribbon` (a ribbon's sash, two sliding panes under a
+  transom) and `window_steel` (a Showa school's steel window of small panes, `steel_sash`).
 - **Doors:** a sliding door's `lite` puts glass in its top (that share of its height, `grid` lites across × up, its
   `glass`), a flat panel set in below: a classroom's 引き戸. It stays `style: "slide"`, so it slides everywhere a sliding
   door does.

@@ -3283,6 +3283,71 @@
     0.006,
     0.016
    ]
+  },
+  "window_porthole": {
+   "label": "Round window, its ring painted blue (a stair tower's, 丸窓)",
+   "type": "porthole",
+   "size": [
+    1.6,
+    0.1,
+    1.6
+   ],
+   "frame": 0.12,
+   "slot": "paint_blue",
+   "plate": "white",
+   "glass": "glass_wire"
+  },
+  "window_porthole_bar": {
+   "label": "Round window with a bar across (a stair tower's, 丸窓)",
+   "type": "porthole",
+   "size": [
+    1.6,
+    0.1,
+    1.6
+   ],
+   "frame": 0.12,
+   "bars": 1,
+   "slot": "paint_blue",
+   "plate": "white",
+   "glass": "glass_wire"
+  },
+  "window_steel": {
+   "label": "Steel window, small panes under a transom (a Showa school's, スチールサッシ)",
+   "type": "window",
+   "size": [
+    3.6,
+    0.22,
+    2.0
+   ],
+   "cols": 4,
+   "rows": 3,
+   "slide": false,
+   "frame": 0.05,
+   "frame_d": 0.06,
+   "mullion": 0.035,
+   "sash": 0.0,
+   "stool": 0.04,
+   "slot": "steel_sash",
+   "glass": "glass",
+   "lock": false
+  },
+  "window_ribbon": {
+   "label": "Classroom window, a ribbon's sash: two sliding panes under a transom (aluminium)",
+   "type": "window",
+   "size": [
+    1.8,
+    0.22,
+    2.15
+   ],
+   "cols": 2,
+   "rows": 2,
+   "split": 0.76,
+   "frame": 0.045,
+   "frame_d": 0.07,
+   "mullion": 0.04,
+   "sash": 0.04,
+   "slot": "alu",
+   "lock": true
   }
  }
 }
