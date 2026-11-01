@@ -2,6 +2,18 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-01, evening (the user: a friendlier panel in Godot)
+
+- **"Is it possible to create a new UI type of panel in Godot as part of the plugin that is more visually friendly,
+  category sorted and will sync to the scripts, so I have visual things to drag and drop onto objects or I could just
+  click an object and then the UI will have assign to object"**, then **"start by showing me a rough Figma style UI
+  design, focus on clarity and ease of use… a plugin that would allow a layman to make a game code free (like Unreal's
+  nodes do but even easier), ideally a category for a player prefab so we can just add a player into the starting
+  level or testing levels"**: the design is the canvas "Director Panel Design" (five boards: the editor with the
+  panel, assigning, the Player, the story as when/if/then sentences, the pieces). The user: "looks good", then "work
+  through everything": built in four steps (the Build panel; the Player category; the Story tab; the guide and the
+  checks), each checked and pushed (GODOT_DIRECTOR §6e).
+
 ## 2026-11-01, later (the user: the desk's games in the new system)
 
 - **"Can we make sure that when we export from director to godot it now follows this format/new system too (if you

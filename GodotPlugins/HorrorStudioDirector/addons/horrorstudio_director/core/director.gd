@@ -64,6 +64,14 @@ static func auto_id(n: Node) -> void:
 
 
 ## a node's id: its own `id`, else its name as an id
+## the model a thing wraps: its first own child that the thing didn't make (not _gen, not an effect point), or null
+static func thing_model(n: Node) -> Node3D:
+	for c in n.get_children():
+		if c is Node3D and not (c is Marker3D) and not str(c.name).begins_with("_"):
+			return c
+	return null
+
+
 static func id_of(n: Node) -> String:
 	if n == null:
 		return ""

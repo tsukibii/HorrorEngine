@@ -146,20 +146,34 @@ old one, so do your Godot work on it after you're done on the desk. <code>--play
 </section>
 
 <section id="editor">
-<h2><span class="n">2</span>The editor and the dock</h2>
-<figure class="wide"><img src="img/e_overview.jpg" width="1600" height="1000" alt="Godot's editor with the sample open: the scene tree on the left, the Inspector on the right on the kettle, and the HorrorStudio dock under it showing the Director tab">
-<figcaption>The sample in Godot's editor: the house's rooms, doors, things and characters in the scene tree, the
-Inspector on the kettle, the <b>HorrorStudio</b> dock under it on its Director tab.</figcaption></figure>
+<h2><span class="n">2</span>The editor, the panel and the dock</h2>
+<figure class="wide"><img src="img/e_panel_overview.jpg" width="1600" height="1000" alt="Godot's editor with the sample open: the scene tree on the left, the Inspector on the right with the HorrorStudio box at its top, the HorrorStudio dock under it, and the HorrorStudio panel along the bottom showing the Kitchen's cards">
+<figcaption>The sample in Godot's editor: the <b>HorrorStudio panel</b> along the bottom (its Build tab on the
+Kitchen's cards), the Inspector with its <b>HorrorStudio</b> box at the top, the <b>HorrorStudio</b> dock under it.</figcaption></figure>
 <p>Everything in the world is a node in the scene tree: rooms, doors, things, characters, areas, spots, paths. You add
-them three ways: the dock's <span class="ui">Add</span> tab (a click puts one in front of the camera, a drag drops it
-into the 3D view), a <b>part</b> on your own model (§4), or Godot's own <span class="ui">Add Child Node</span> (search
-for "HS"). Select a node and the Inspector shows its settings, only the ones that matter for what it is.</p>
+them from the <b>HorrorStudio panel</b> along the bottom of the editor (it can float on a second screen too: its
+<span class="ui">⋮</span> menu). Its <span class="ui">Build</span> tab has everything a game is made of, as picture cards
+in categories (Building, Lights &amp; power, Pick up &amp; look, Hide &amp; rest, Kitchen, Fire &amp; smoke,
+Electronics, Puzzles, Carry &amp; play, Chores, People, Areas &amp; paths, Scares):</p>
+<ul>
+<li><b>Click a card</b>: it's added in front of the editor's camera, in the selected room.</li>
+<li><b>Drag a card onto your model</b> (in the 3D view or the Scene tree): that model becomes it (§4).</li>
+<li><b>Select your model first, then click a card</b>: the same, one click. Search for any card at the top.</li>
+</ul>
+<p>The column on the right, <b>This object</b>, says what's selected in plain words (a kettle: how it starts, what the
+player can do, where its steam comes out; its name in the story and what in the story names it), and
+<span class="ui">Make it plain again</span> takes the thing away and leaves your model. Godot's own
+<span class="ui">Add Child Node</span> works too (search for "HS"). Select a node and the Inspector shows its
+settings, only the ones that matter for what it is.</p>
+<figure class="wide"><img src="img/e_panel_build.jpg" width="1030" height="380" alt="The HorrorStudio panel: the Build tab, its categories down the left with Kitchen open, the kettle's card marked It's this now, the others saying Make it this, and This object on the right: Kettle is a kettle, Change, Make it plain again, how it starts: Off">
+<figcaption>The Build tab with the kettle selected: its card says <i>It's this now</i>; This object shows how it starts.</figcaption></figure>
 <p>What happens in the game isn't in the scene: it's the <b>Director file</b> (§6), written in the Director Manager
-(§9). The dock sits under the Inspector, so a row you pick in it opens right above it. Its tabs:</p>
+(§9). The panel's <span class="ui">Story</span> tab shows it, and <span class="ui">Test</span> plays the game and says
+what's wrong. The dock under the Inspector keeps the same views close to the Inspector (a row you pick in it opens right
+above it). Its tabs:</p>
 <table class="keys">
 <tr><td class="ui">Director</td><td>The story as the Director file has it: the quests in play order with their steps and what comes next, the endings, the conversations, the moments, the states. <span class="ui">▶</span> plays, <span class="ui">▶ Here</span> plays from the picked quest, <span class="ui">Manager</span> opens the page that writes it.</td></tr>
 <tr><td class="ui">Things</td><td>The items, notes, things to use, characters, rooms, areas, doors, spots, paths and lights, with their ids.</td></tr>
-<tr><td class="ui">Add</td><td>The parts first (select your model, click what it is), then every node as a button: click or drag.</td></tr>
 <tr><td class="ui">Check</td><td>The game compiled as it will play, and what's wrong.</td></tr>
 <tr><td class="ui">Kimodo</td><td>Send a room to Kimodo, bring a motion back.</td></tr>
 </table>
@@ -169,10 +183,7 @@ which opens this page (so does <span class="ui">Project → Tools → HorrorStud
 first field): it's how the story names them. It's the node's name in lowercase with underscores
 (<code>BedroomKey</code> is <code>bedroom_key</code>) and follows the name when you rename the node, until you type an
 id of your own. Each time you save a scene the plugin writes down its ids, for the Manager's pickers.</div>
-<div class="pair">
-<figure><img src="img/e_tab_add.jpg" width="438" height="465" alt="The Add tab: your objects' parts (Pickup, Inspect, Note...), the little things (Kettle, Cup, Teapot...), then a level, rooms, doors, areas, spots, paths, characters, a light"><figcaption>The Add tab: the parts on top; hover a button for what it makes.</figcaption></figure>
-<figure><img src="img/e_tab_things.jpg" width="438" height="465" alt="The Things tab: the items, notes, characters, areas, doors, spots and lights, each with its id"><figcaption>The Things tab: everything in the scene by kind, with the id the story calls it by.</figcaption></figure>
-</div>
+<figure class="half"><img src="img/e_tab_things.jpg" width="438" height="465" alt="The Things tab: the items, notes, characters, areas, doors, spots and lights, each with its id"><figcaption>The dock's Things tab: everything in the scene by kind, with the id the story calls it by.</figcaption></figure>
 <div class="tip"><b>Tip.</b> Drag the dock's edge to make it wider; the rows read whole at about 600 pixels.</div>
 </section>
 
@@ -229,10 +240,16 @@ Light the level however you like; the look plugin's light nodes work as usual.</
 <section id="things">
 <h2><span class="n">4</span>Things to use: parts</h2>
 <p>Any model can be something the player does something with. <b>Select your model</b> in the scene and click what it
-is in the Add tab's first rows (Pickup, Inspect, Note, Seat, HidingPlace, CodeLock...), or <b>drag the part</b> from
-the plugin's <code>parts/</code> folder onto your model in the Scene tree. The part takes your model's place and your
-model goes inside it: it's a thing now, an <span class="node">HSThing</span>, with an id. <kbd>Ctrl</kbd>+<kbd>Z</kbd>
-undoes it. A thing's <b>use</b> says what the player does with it, and the Inspector shows only that use's fields;
+is: a card in the panel (<span class="ui">Make it this</span>), or the Inspector's <b>HorrorStudio</b> box at the top
+(<span class="ui">What is this?</span>: the parts its name suggests, and <span class="ui">Make it a…</span> with every
+part by category). Or <b>drag the card onto your model</b>, in the 3D view or the Scene tree. The part takes your
+model's place and your model goes inside it: it's a thing now, an <span class="node">HSThing</span>, with an id.
+<kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes it, and This object's <span class="ui">Make it plain again</span> takes it off.</p>
+<div class="pair">
+<figure><img src="img/e_panel_model.jpg" width="1030" height="380" alt="The panel with a plain model selected, OldSaucepan: This object asks what it is and suggests Pot from its name"><figcaption>A plain model selected: This object asks what it is, suggesting a pot from its name.</figcaption></figure>
+<figure><img src="img/e_inspector_box.jpg" width="450" height="448" alt="The Inspector on OldSaucepan: the HorrorStudio box, What is this?, Make it a…, and the suggestion Pot"><figcaption>The Inspector's box: <i>What is this?</i>, every part in <i>Make it a…</i>, the suggestion.</figcaption></figure>
+</div>
+<p>A thing's <b>use</b> says what the player does with it, and the Inspector shows only that use's fields;
 give it a <b>display name</b> for the cursor ("Read · Letter").</p>
 <div class="pair">
 <figure><img src="img/e_insp_thing.jpg" width="450" height="448" alt="The Inspector on a note: use note, its title and its text"><figcaption>A note: a title and the words.</figcaption></figure>

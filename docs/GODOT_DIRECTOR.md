@@ -114,10 +114,11 @@ never saved: the scene keeps only your numbers.
 A **part** is an HSThing set to one use or one little thing, a scene each in the plugin's `parts/` folder
 (`parts/make_parts.py` writes them): Pickup, Inspect, Note, Flashlight, Switch, Breaker, Seat, Bed, HidingPlace,
 Carry, Die, CodeLock, UseItem, Stain, GameTable, Solid, and the 20 little things of `lives.json` (Kettle, Cup, Teapot,
-Candle, Cigarette, Phone, Tap, TV, Clock...). Select your model in the scene and click the part in the dock's Add tab,
-or drag the part's file onto the model in the Scene tree: either way the part takes the model's place and the model
-goes inside it (`plugin.gd` `wrap_object`, one step on the scene's undo). Selected on a thing already, a part changes
-what it is.
+Candle, Cigarette, Phone, Tap, TV, Clock...). Select your model in the scene and click the part's card in the
+HorrorStudio panel (§6e) or in the Inspector's box, or drag the card onto the model in the 3D view or the Scene tree:
+either way the part takes the model's place and the model goes inside it (`plugin.gd` `wrap_object`, one step on the
+scene's undo). Selected on a thing already, a part changes what it is; This object's *Make it plain again* takes it
+off (`unwrap_thing`).
 
 A little thing (`use` **life**, its `life` and the state it starts in) plays its life in the game: the kettle that
 boils by itself, the cup going cold, the candle you blow out. Its **effect points** (`spout`, `led`, `tip`,
@@ -174,8 +175,6 @@ the scene is on the editor's undo.
   opens the file in the Director Manager.
 - **Things**: items, notes, things to use, characters, rooms, areas, doors and their locks, spots, paths, levels,
   lights, with their ids.
-- **Add**: the parts first (§3b: select your model, click what it is), then every level node as a button: a click puts
-  it in front of the editor's camera, in the selected room or level; a **drag drops it into the 3D view**.
 - **Check**: the game compiled as it will play: what's wrong (a quest that never ends, a next that goes nowhere), what's
   worth a look (a quest nothing leads to, a trigger naming a thing the scene hasn't got).
 - **Kimodo**: §6b.
@@ -315,6 +314,38 @@ model (the HSDoor's leaf stands in), a level's `links`, the light zones the expo
 (`--play`): the game played headless as its export's check plays it, on the Director project: the Pilot by GDPLAY's
 walk to its good ending, TestRoom001 by GDTESTROOM's stations (every station, a death and its retry, the trigger
 cutscene; `tests/gdplay.gd` and `tests/gdtestroom.gd` with `--director`); any other game is started and run a while.
+
+## 6e. The HorrorStudio panel (the user, 2026-11-01: "a UI type of panel… more visually friendly, category sorted… drag and drop onto objects or click an object and assign"; the design: the canvas "Director Panel Design")
+
+Along the bottom of the editor (`editor/panel.gd`, an EditorDock in the bottom slot; its ⋮ menu floats it on a second
+screen), so the 3D view stays in sight and a card drags straight into it. Three tabs:
+
+- **Build** (`editor/build_tab.gd`): everything a game is made of, as **picture cards** (`editor/glyphs.gd`: line
+  drawings on tinted tiles, made from SVG at the editor's scale) in **categories** down the left with their counts.
+  The cards are `parts/catalog.json`: each part, preset and ready-made scare with its words and the keywords a model's
+  name is matched against; `parts/make_parts.py` keeps it whole (a part it makes that isn't listed comes in under
+  *More*), so a new part shows up by itself. A card **clicked** goes in front of the editor's camera, in the selected
+  room; **dragged onto a model** in the 3D view or the Scene tree it makes that model the thing (the 3D view drops
+  where its physics ray lands, which misses a model with no collider, so `plugin.gd` `model_under_mouse` finds the
+  model the mouse's ray meets on its triangles); with **a model selected**, one click makes it the thing (*Make it
+  this*). Cards say their state: *It's this now* (the selected thing is it), *Make it this*, *Pick a model first* (a
+  level node is selected). **Window** puts a window (glass and the sky's light) in the selected room's wall, the one
+  the editor's camera looks at; **Scares** (a jumpscare, a knock, the lights dying, a door slamming, a whisper, a
+  thought) make an area named for the scare and its moment in the Director file. The header **searches** every card
+  (its title first, then its keywords and words) and shows **what's selected**. **This object** (the right column)
+  says the selection in plain words: a model (*What is it?*, the parts its name suggests), a thing (what it is, how it
+  starts, what the player can do, its effect points to click and move, or its use's fields; *Change*, *Make it plain
+  again*), a level node (what it is; a room's *Add a window here*), and for each its **name in the story** (its id,
+  edited there) and **what in the Director file names it**.
+- **Story**: the Director file's quests, steps, endings, conversations and moments (the dock's Director view).
+- **Test**: *Play the game*, *Play this scene*, and the compiler's check.
+
+**The Inspector's box** (`editor/inspector.gd`, an EditorInspectorPlugin): on a model of yours, *What is this?*, *Make it
+a…* (every part by category) and the suggestions from its name; on a thing, what it is and *Change it to…*. The dock's
+old Add tab is gone: the panel has everything it had. Measured (DIRECTOR's editor part): the panel in the bottom slot
+with its categories and the Kitchen's 12 cards, a search, a model named OldSaucepan suggested a pot (the panel and the
+box), made a pot by one click and its card saying so, made plain again and undone, the mouse's ray finding a model with
+no collider, a window and its undo, a jumpscare card's area and moment.
 
 ## 7. Where you are
 

@@ -1,12 +1,13 @@
 ## The guide's pictures of the editor (guides/director/, `tools/godot_director.py guide` installs this as a plugin of its
-## own and opens the editor on the sample under xvfb): the whole editor with the dock, each of the dock's tabs (the
-## Director tab on the sample's Director file, a quest picked), the Scene tree on a part's effect points, and the
-## Inspector on a thing, a character, a room, a door and a little thing. JPEGs into $HSGUIDE_OUT; prints
+## own and opens the editor on the sample under xvfb): each of the dock's tabs (the
+## Director tab on the sample's Director file, a quest picked), the Scene tree on a part's effect points, the
+## Inspector on a thing, a character, a room, a door and a little thing, and the HorrorStudio panel (its Build tab on
+## the kettle, then on a plain model with the Inspector's What is this? box). JPEGs into $HSGUIDE_OUT; prints
 ## GUIDEEDITOR {...} and quits.
 @tool
 extends EditorPlugin
 
-const TABS := ["Director", "Things", "Add", "Check", "Kimodo"]
+const TABS := ["Director", "Things", "Check", "Kimodo"]
 const INSPECT := [["e_insp_thing", "Letter"], ["e_insp_actor", "Mari"], ["e_insp_room", "Hall"], ["e_insp_door", "BedroomDoor"],
 	["e_insp_life", "Kettle"]]
 
@@ -16,6 +17,8 @@ var at := 0.0
 var step := 0
 var out := ""
 var dock = null
+var panel = null
+var model: MeshInstance3D = null
 var made: Array = []
 
 
@@ -24,14 +27,20 @@ func _enter_tree() -> void:
 	set_process(true)
 
 
-func _find(n: Node):
+func _find(n: Node, tail := "horrorstudio_director/editor/dock.gd"):
 	for c in n.get_children():
-		if c.get_script() != null and str(c.get_script().resource_path).ends_with("horrorstudio_director/editor/dock.gd"):
+		if c.get_script() != null and str(c.get_script().resource_path).ends_with(tail):
 			return c
-		var f = _find(c)
+		var f = _find(c, tail)
 		if f != null:
 			return f
 	return null
+
+
+## the HorrorStudio panel (along the bottom) with its tab row above it
+func _panel_rect() -> Rect2:
+	var r: Rect2 = panel.get_global_rect()
+	return r.grow_side(SIDE_TOP, 4)
 
 
 func _shot(name: String, rect: Rect2 = Rect2()) -> void:
@@ -126,7 +135,6 @@ func _process(dt: float) -> void:
 			if t - at < 6.0:
 				return
 			_pick_quest("q_drink")
-			_shot("e_overview")
 			step = 0
 			at = t
 			phase = 3
@@ -155,8 +163,7 @@ func _process(dt: float) -> void:
 			var r := EditorInterface.get_edited_scene_root()
 			if step >= INSPECT.size() + 1:
 				_tab("Director")
-				print("GUIDEEDITOR " + JSON.stringify({"made": made}))
-				get_tree().quit()
+				phase = 7
 				return
 			if step < INSPECT.size():
 				dock.select(r.find_child(INSPECT[step][1], true, false))
@@ -174,3 +181,41 @@ func _process(dt: float) -> void:
 				_shot("e_tree_parts", _scene_rect())
 			step += 1
 			phase = 5
+		7:                                            # the HorrorStudio panel: its Build tab on the kettle (a thing: in use)
+			var r := EditorInterface.get_edited_scene_root()
+			panel = _find(EditorInterface.get_base_control(), "horrorstudio_director/editor/panel.gd")
+			if panel == null:
+				print("GUIDEEDITOR " + JSON.stringify({"made": made, "no_panel": true}))
+				get_tree().quit()
+				return
+			panel.make_visible()
+			panel.show_page("build")
+			dock.select(r.find_child("Kettle", true, false))
+			panel.build.show_category("kitchen")
+			panel.on_selection()
+			at = t
+			phase = 8
+		8:
+			if t - at < 2.0:
+				return
+			_shot("e_panel_build", _panel_rect())
+			var r := EditorInterface.get_edited_scene_root()
+			model = MeshInstance3D.new()                   # a plain model of the user's, its name saying what it is
+			model.name = "OldSaucepan"
+			model.mesh = CylinderMesh.new()
+			r.find_child("Kitchen", true, false).add_child(model)
+			model.owner = r
+			dock.select(model)
+			panel.on_selection()
+			at = t
+			phase = 9
+		9:
+			if t - at < 2.0:
+				return
+			_shot("e_panel_model", _panel_rect())
+			_shot("e_inspector_box", _inspector_rect())
+			_shot("e_panel_overview")
+			model.get_parent().remove_child(model)
+			model.free()
+			print("GUIDEEDITOR " + JSON.stringify({"made": made}))
+			get_tree().quit()

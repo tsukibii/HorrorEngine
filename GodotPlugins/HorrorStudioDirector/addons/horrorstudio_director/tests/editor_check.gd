@@ -2,8 +2,10 @@
 ## the sample's main scene opened with the Director plugin on; its dock found and every tab drawn on it (the Story
 ## tab's chapters and steps, the events as sentences, the flags with the one checked and never set, the things, the
 ## check's summary); the dock's buttons used as the user would (a task added after the selected step, a to-do in
-## it, a jumpscare made from its template with its area and figure, a preset placed from the Add tab), each on the
-## editor's undo (undone and redone); the scene saved and read back. Prints HSDIRECTOREDITOR {...} and quits.
+## it, a jumpscare made from its template with its area and figure), each on the editor's undo (undone and redone);
+## the HorrorStudio panel (editor/panel.gd) as the user would use it: its categories and cards, a search, a model's
+## suggestions (the panel's and the Inspector's box), one click making it the thing, made plain again, the mouse's
+## ray finding a model, a window, a scare; the scene saved and read back. Prints HSDIRECTOREDITOR {...} and quits.
 @tool
 extends EditorPlugin
 
@@ -14,6 +16,7 @@ var mug: MeshInstance3D = null
 var book: MeshInstance3D = null
 var rep := {}
 var dock = null
+var panel = null
 
 
 func _enter_tree() -> void:
@@ -25,6 +28,16 @@ func _find_dock(n: Node):
 		if c.get_script() != null and str(c.get_script().resource_path).ends_with("horrorstudio_director/editor/dock.gd"):
 			return c
 		var f = _find_dock(c)
+		if f != null:
+			return f
+	return null
+
+
+func _find_script(n: Node, tail: String):
+	for c in n.get_children():
+		if c.get_script() != null and str(c.get_script().resource_path).ends_with(tail):
+			return c
+		var f = _find_script(c, tail)
 		if f != null:
 			return f
 	return null
@@ -51,8 +64,10 @@ func _process(dt: float) -> void:
 			if r == null or r.name != "Game":
 				return
 			dock = _find_dock(EditorInterface.get_base_control())
+			panel = _find_script(EditorInterface.get_base_control(), "horrorstudio_director/editor/panel.gd")
 			rep["dock"] = dock != null
-			if dock == null:
+			rep["panel_found"] = panel != null
+			if dock == null or panel == null:
 				_done()
 				return
 			phase = 2
@@ -74,6 +89,13 @@ func _process(dt: float) -> void:
 			if t - at_t < 0.5:
 				return
 			_parts_undone()
+			_panel_checks()
+			at_t = t
+			phase = 32
+		32:
+			if t - at_t < 0.5:
+				return
+			_panel_after()
 			phase = 4
 		4:
 			rep["saved"] = EditorInterface.save_scene() == OK
@@ -134,10 +156,9 @@ func _tabs() -> void:
 
 func _edits() -> void:
 	var r := EditorInterface.get_edited_scene_root()
-	var add = _tab("Add")
 	dock.select(r.find_child("Hall", true, false))
 	var things := r.find_children("*", "HSThing", true, false).size()
-	add._place("res://addons/horrorstudio_director/presets/key.tscn")
+	panel.build.place("res://addons/horrorstudio_director/presets/key.tscn")
 	var placed := r.find_children("*", "HSThing", true, false)
 	var key = null
 	for x in placed:
@@ -175,7 +196,7 @@ func _parts_start() -> void:
 	kitchen.add_child(mug)
 	mug.owner = r
 	dock.select(mug)
-	_tab("Add").make("res://addons/horrorstudio_director/parts/cup.tscn")
+	panel.build.assign(mug, panel.build.items_by_id["cup"])
 	book = MeshInstance3D.new()
 	book.name = "Book"
 	book.mesh = BoxMesh.new()
@@ -215,6 +236,92 @@ func _parts_undone() -> void:
 			top = top.get_parent()
 		top.get_parent().remove_child(top)
 		top.free()
+
+
+## the HorrorStudio panel (DECISIONS 2026-11-01, later: "work through everything"): the Build tab's categories and
+## cards, a search, a model's suggestions by its name (the panel's and the Inspector's box), one click making it the
+## thing, its card saying so, made plain again and undone, the mouse's ray finding a model with no collider, a window
+## in a room's wall (undone), a scare's area and its moment
+var pan := {}
+func _panel_checks() -> void:
+	var r := EditorInterface.get_edited_scene_root()
+	var b = panel.build
+	var kitchen: Node = r.find_child("Kitchen", true, false)
+	rep["panel_bottom"] = panel.default_slot == EditorDock.DOCK_SLOT_BOTTOM
+	rep["panel_rail"] = b.rail_buttons.keys()
+	b.show_category("kitchen")
+	rep["panel_kitchen"] = b.cards.size()
+	b.search("kettle")
+	var found: Array = b.cards.keys()
+	found.sort()
+	rep["panel_search"] = found
+	b.search("")
+	var pot := MeshInstance3D.new()
+	pot.name = "OldSaucepan"
+	pot.mesh = CylinderMesh.new()
+	pot.position = Vector3(-1.0, 0.8, 0.5)
+	kitchen.add_child(pot)
+	pot.owner = r
+	dock.select(pot)
+	panel.on_selection()
+	rep["panel_suggest"] = b.suggestions(pot).map(func(x): return x["id"])
+	b.show_category("kitchen")
+	rep["panel_card_ready"] = b.cards["pot"].find_child("Foot", true, false).text
+	var box: Control = panel.plugin.inspector.box(pot)
+	var mb = box.find_child("MakeIt", true, false)
+	rep["panel_inspector"] = mb is MenuButton and mb.get_popup().get_item_count() >= 10 and box.find_child("Suggest_pot", true, false) != null
+	box.free()
+	b.assign(pot, b.items_by_id["pot"])
+	var thing: Node = pot.get_parent()
+	rep["panel_assigned"] = HSDirector.class_of(thing) == "HSThing" and thing.use == "life" and thing.life == "pot" and str(thing.name) == "OldSaucepan" and thing.get_parent() == kitchen
+	dock.select(thing)
+	panel.on_selection()
+	b.refresh()
+	rep["panel_card_now"] = b.cards["pot"].find_child("Foot", true, false).text
+	var said := []
+	for l in b.side.find_children("*", "Label", true, false):
+		said.append(l.text)
+	rep["panel_side"] = said.has("is a pot") and said.any(func(x): return str(x).begins_with("Named by") or str(x).begins_with("Nothing in the story"))
+	b._plain(thing)
+	rep["panel_plain"] = pot.get_parent() == kitchen and thing.get_parent() == null and str(pot.name) == "OldSaucepan"
+	var ur := get_undo_redo()
+	ur.get_history_undo_redo(ur.get_object_history_id(r)).undo()
+	rep["panel_plain_undone"] = pot.get_parent() == thing and thing.get_parent() == kitchen
+	var top := pot.global_position + Vector3(0, 3, 0)
+	var hit = panel.plugin.model_on_ray(top, Vector3.DOWN)
+	rep["panel_ray"] = hit == thing                    # the mouse's ray meets the pot inside the thing: the thing
+	var before: int = kitchen.openings.size()
+	b.add_window(kitchen)
+	var ops: Array = kitchen.openings
+	rep["panel_window"] = ops.size() == before + 1 and ops[-1].glass and ops[-1].daylight and ops[-1].sill > 0.5
+	ur.get_history_undo_redo(ur.get_object_history_id(r)).undo()
+	rep["panel_window_undone"] = kitchen.openings.size() == before
+	pan["story_was"] = FileAccess.get_file_as_string("res://director/director.json")
+	dock.select(kitchen)
+	b.activate(b.items_by_id["scare_jumpscare"])
+	var area = dock.selected()
+	pan["area"] = area
+	var f := HSStoryFile.read()
+	var m = null
+	for x in f.get("moments", []):
+		if area != null and x.get("when", {}).get("enter") == HSDirector.id_of(area):
+			m = x
+	rep["panel_scare"] = area != null and HSDirector.class_of(area) == "HSTrigger" and str(area.name) == "Jumpscare" and m != null and str(m["do"][0].get("trick")) == "jumpscare"
+	pan["thing"] = thing
+
+
+func _panel_after() -> void:
+	var r := EditorInterface.get_edited_scene_root()
+	var ur := get_undo_redo()
+	ur.get_history_undo_redo(ur.get_object_history_id(r)).undo()   # the scare's area
+	rep["panel_scare_undone"] = not is_instance_valid(pan["area"]) or pan["area"].get_parent() == null
+	var f := FileAccess.open("res://director/director.json", FileAccess.WRITE)   # the story as the sample had it
+	f.store_string(pan["story_was"])
+	f.close()
+	var th = pan["thing"]
+	if is_instance_valid(th) and th.get_parent() != null:
+		th.get_parent().remove_child(th)
+		th.free()
 
 
 func _items(tree: Tree) -> Array:

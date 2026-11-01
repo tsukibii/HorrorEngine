@@ -4,13 +4,12 @@ extends VBoxContainer
 ## chapters and their steps in play order, dragged to reorder, a step's to-dos and events under it; "now" marks where
 ## the running game is; Play from here), Events every event as a sentence with templates for the common ones (a
 ## jumpscare in an area after a flag...), Flags each flag where it's set and where it's checked, Things the items,
-## notes, characters, areas and spots, Add every node (a click puts it in front of the editor's camera, a drag drops
-## it into the viewport), Check the compiler's problems, Kimodo the link to the motion maker. Everything it does is
-## on the editor's undo.
+## notes, characters, areas and spots, Check the compiler's problems, Kimodo the link to the motion maker. Adding
+## things is the HorrorStudio panel's (editor/panel.gd, its Build tab: the cards). Everything it does is on the
+## editor's undo; its helpers (root, selected, add_node, view_spot...) serve the panel too.
 
 const DirectorTab := preload("res://addons/horrorstudio_director/editor/director_tab.gd")
 const ThingsTab := preload("res://addons/horrorstudio_director/editor/things_tab.gd")
-const AddTab := preload("res://addons/horrorstudio_director/editor/add_tab.gd")
 const CheckTab := preload("res://addons/horrorstudio_director/editor/check_tab.gd")
 const KimodoTab := preload("res://addons/horrorstudio_director/editor/kimodo_tab.gd")
 const ICONS := "res://addons/horrorstudio_director/icons/"
@@ -19,7 +18,6 @@ var plugin: EditorPlugin = null
 var tabs: TabContainer
 var director_tab
 var things_tab
-var add_tab
 var check_tab
 var kimodo_tab
 var run_step := ""                  # the running game's step (sent by HSGame through the debugger)
@@ -38,7 +36,6 @@ func _ready() -> void:
 	add_child(tabs)
 	director_tab = _tab(DirectorTab, "Director")
 	things_tab = _tab(ThingsTab, "Things")
-	add_tab = _tab(AddTab, "Add")
 	check_tab = _tab(CheckTab, "Check")
 	kimodo_tab = _tab(KimodoTab, "Kimodo")
 	tabs.tab_changed.connect(func(_i): refresh())
