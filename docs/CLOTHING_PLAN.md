@@ -41,4 +41,4 @@ pieces that fabric and colour vary. Ticked as each lands (one commit each), so a
   pyjama top and trousers, a sleep tee and shorts, a bikini, a one-piece swimsuit, swim shorts); outfits for each from the
   basics, fabric and colour doing the variety. (Built but the shirt dress and the one-piece: the shell can't cut a
   dress's or a swimsuit's legs without a new cut; 16 new outfits, 8 new designs.)
-- [ ] 8. **Pictures, docs, checks.** Thumbnails for the new outfits, TAILOR §, DECISIONS, CHECKS and TAILOR.
+- [x] 8. **Pictures, docs, checks.** Thumbnails for the new outfits, TAILOR §, DECISIONS, CHECKS and TAILOR. (TAILOR ok: 86 designs on 7 bodies, 69 outfits; CHECKS ok; STUDIO wants a local GPU run.)
