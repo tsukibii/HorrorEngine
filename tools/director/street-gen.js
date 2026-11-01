@@ -23,6 +23,8 @@ export const SLOTS = {
   pole: ["#b3b0a9", 0.85], steel: ["#5f656b", 0.45, 0.7], lamp: ["#fff0cf", 0.4, 0, "e"], lamp_cool: ["#eef4ff", 0.4, 0, "e"], wire: ["#18181a", 0.8],
   hazard: ["#e0b42c", 0.6, 0, "t"], chainlink: ["#8c949b", 0.5, 0.6, "a"], boards: ["#7b5b3f", 0.8, 0, "a"], panel: ["#c6cacd", 0.5, 0.4, "t"],
   blocks: ["#a6a39c", 0.9, 0, "t"], bamboo: ["#a99a60", 0.7, 0, "a"], post: ["#6a6e73", 0.5, 0.6], grate: ["#3a3c3f", 0.6, 0.6, "a"],
+  alu: ["#b9bdc1", 0.35, 0.8], gate_blue: ["#3f8ccc", 0.45, 0.3], steel_sash: ["#5d615d", 0.5, 0.4], glass_frost: ["#cfd6d4", 0.45, 0.05], glass_wire: ["#3a4448", 0.12, 0.2],
+  curtain: ["#e6d9b4", 0.95], ring: ["#8cc6dc", 0.45], foliage: ["#6b8a42", 0.9], bark: ["#4a3f35", 0.95],
   red: ["#c3312a", 0.5], white: ["#efeeea", 0.6], black: ["#1e1e20", 0.6], yellow: ["#e3b331", 0.5], blue: ["#2c5ea8", 0.5], green: ["#3e6b46", 0.6],
   orange: ["#e0782c", 0.5], chrome: ["#c9cdd1", 0.15, 0.9], iron: ["#2f3033", 0.7, 0.5], rubber: ["#151515", 0.9],
   skin: ["#c99b7b", 0.7], cloth: ["#474c57", 0.9], cloth2: ["#2a2b30", 0.9], hair: ["#1b1714", 0.8],
@@ -142,6 +144,16 @@ function tube(o, slot, pts, r, sides = 3, closed = false) {
   }
 }
 
+// a lump of leaves: a squashed sphere, 10 by 7, each point pushed in or out a little
+function lump(o, slot, c, r, squash, R) {
+  const nu = 10, nv = 7, P = [];
+  for (let j = 0; j <= nv; j++) { const row = []; for (let i = 0; i < nu; i++) { const th = i / nu * Math.PI * 2, ph = j / nv * Math.PI, k = r * (0.86 + R() * 0.28) * (j === 0 || j === nv ? 1 : 1);
+    row.push([c[0] + Math.cos(th) * Math.sin(ph) * k, c[1] + Math.sin(th) * Math.sin(ph) * k, c[2] + Math.cos(ph) * k * squash]); } P.push(row); }
+  for (let j = 0; j < nv; j++) for (let i = 0; i < nu; i++) {
+    const a = P[j][i], b = P[j][(i + 1) % nu], cc = P[j + 1][(i + 1) % nu], d = P[j + 1][i], m = [(a[0] + cc[0]) / 2 - c[0], (a[1] + cc[1]) / 2 - c[1], (a[2] + cc[2]) / 2 - c[2]];
+    const l = Math.hypot(...m) || 1; poly(o, slot, [a, b, cc, d], [m[0] / l, m[1] / l, m[2] / l]);
+  }
+}
 // ---- a face of a building: its own 2D space, u along it (left to right seen from outside), z up, n out of it -----
 // F: {o: its bottom left corner (the piece's space), U: along it, N: out of it, W: its width, name}
 const FACES = ["front", "right", "back", "left"];
@@ -362,6 +374,8 @@ export const PART_KINDS = {
   panel: { label: "Panel", w: 2, h: 2, z: 1, out: 0.03, note: "a flat panel of any material on the wall" },
   rail: { label: "Railing", w: 3, h: 1.1, z: 3, out: 0.05, note: "a railing along the wall" },
   noren: { label: "Noren curtain", w: 1.2, h: 0.6, z: 1.6, out: 0.12, note: "a short shop curtain over a door" },
+  roofsign: { label: "Name on the roof", w: 12, h: 1.4, z: 0.3, out: 0.06, note: "the school's name standing on its roof: a panel a letter on a steel frame along the front (z: over the parapet)" },
+  clock: { label: "Clock", w: 1.3, h: 1.3, z: 8, out: 0.15, note: "a school's clock: a white face in a dark rim, its hands at ten past ten (on a box's front: out past the box's)" },
 };
 // a part repeated along its face (`repeat` of them, `gap` m apart): a lamp by each door, a post under a walkway
 export function partCopies(parts) {
@@ -481,6 +495,37 @@ function partGen(o, b, F0, p, rows, R, signs, near = []) {
         break;
       }
       case "pipe": cyl(o, slot || "pipe", fp(F, c, z, out), fp(F, c, z + h, out), Math.max(0.03, w / 2), 6); break;
+      case "roofsign": {                                             // a panel a letter, standing on the roof's edge on a frame
+        const chars = [...String(p.text || "")].filter(ch => ch.trim()), nC = Math.max(1, chars.length), zr = (rows.top || z) + num(p.z, K.z);
+        const pw = Math.min(h, (w - (nC - 1) * num(p.gap, 0.3)) / nC), gp = nC > 1 ? (w - nC * pw) / (nC - 1) : 0, n0 = -num(p.back, 0.4);   // behind the parapet (or on its face)
+        if (n0 < -0.02) {                                             // standing on the roof: a frame behind the panels
+          fbox(o, "steel", F, u0, u1, zr - num(p.z, K.z), zr + 0.06, n0 - 0.05, n0 - 0.01);
+          fbox(o, "steel", F, u0, u1, zr + h * 0.75, zr + h * 0.75 + 0.05, n0 - 0.05, n0 - 0.01);
+        }
+        chars.forEach((ch, i) => {
+          const a = u0 + i * (pw + gp), key = `${b.id || "b"}.${signs.length}`;
+          fbox(o, p.back || "white", F, a, a + pw, zr, zr + pw, n0, n0 + 0.04);
+          signs.push({ key, text: ch, fg: p.fg || "#1d4f9c", bg: p.bg || "#f4f4f0", lit: false, dir: "h", w: pw, h: pw });
+          fquad(o, "sign:" + key, F, a + 0.01, a + pw - 0.01, zr + 0.01, zr + pw - 0.01, n0 + 0.04 + GAP, [[0, 0], [1, 0], [1, 1], [0, 1]]);
+        });
+        break;
+      }
+      case "clock": {                                                // a school's clock: its rim, its face, its hands (ten past ten)
+        const r = Math.max(0.15, Math.min(w, h) / 2 - 0.05), zc = z + h / 2, f0 = Math.max(0, out - 0.12);
+        cyl(o, slot || "frame", fp(F, c, zc, f0), fp(F, c, zc, out - 0.02), r + 0.05, 28);
+        cyl(o, "white", fp(F, c, zc, out - 0.03), fp(F, c, zc, out), r, 28);
+        for (let i = 0; i < 12; i++) {                               // the hours' marks round the face
+          const a = i * Math.PI / 6, du = Math.sin(a), dz = Math.cos(a), r0 = r * 0.8, r1 = r * (i % 3 ? 0.88 : 0.93), wd = r * (i % 3 ? 0.02 : 0.04);
+          poly(o, "black", [fp(F, c + du * r0 - dz * wd, zc + dz * r0 + du * wd, out + GAP), fp(F, c + du * r1 - dz * wd, zc + dz * r1 + du * wd, out + GAP),
+            fp(F, c + du * r1 + dz * wd, zc + dz * r1 - du * wd, out + GAP), fp(F, c + du * r0 + dz * wd, zc + dz * r0 - du * wd, out + GAP)], [F.N[0], F.N[1], 0]);
+        }
+        for (const [a, len, wd, n] of [[Math.PI * 2 * (10 + 10 / 60) / 12, r * 0.5, r * 0.05, out + 2 * GAP], [Math.PI * 2 * 10 / 60, r * 0.78, r * 0.035, out + 3 * GAP]]) {
+          const du = Math.sin(a), dz = Math.cos(a);                  // each hand in a plane of its own (they cross at the hub)
+          poly(o, "black", [fp(F, c - dz * wd - du * r * 0.08, zc + du * wd - dz * r * 0.08, n), fp(F, c + dz * wd - du * r * 0.08, zc - du * wd - dz * r * 0.08, n),
+            fp(F, c + dz * wd * 0.4 + du * len, zc - du * wd * 0.4 + dz * len, n), fp(F, c - dz * wd * 0.4 + du * len, zc + du * wd * 0.4 + dz * len, n)], [F.N[0], F.N[1], 0]);
+        }
+        break;
+      }
       case "lamp": {
         fbox(o, slot || "black", F, c - w / 2, c + w / 2, z + h * 0.25, z + h, 0, out, nKey(F, -1));
         fquad(o, "lamp", F, c - w / 2 + 0.03, c + w / 2 - 0.03, z + h * 0.3, z + h * 0.9, out + GAP);
@@ -869,7 +914,10 @@ export const INSIDE_SKIN = 0.1, INSIDE_GAP = 0.05;                   // the shel
 const ROOF_GAP = 0.01;                                               // the roof over the level's own top, never in its plane
 const LT = 0.1;                                                      // the scene builder's wall (storylib.WALL_T)
 // the level's rooms turned so its way in faces the building's front (-y), its middle at the building's middle
-export function insideFrame(ins) {
+export function insideFrame(ins, faced = false) {
+  const all = (ins.rooms || []).filter(r => r.size && r.at), shut = all.filter(r => r.ceiling !== false);
+  const zl = [...new Set(shut.map(r => Math.round(num(r.at[2], 0) * 1000) / 1000))].sort((a, b) => a - b);
+  if (zl.length > 1 || (faced && zl.length)) return storeysFrame(ins, all, shut, zl);   // (one storey with a facade: the same way)
   const rooms = (ins.rooms || []).filter(r => Math.abs(num((r.at || [])[2], 0)) < 0.01);
   const xs = rooms.flatMap(r => [r.at[0], r.at[0] + r.size[0]]), ys = rooms.flatMap(r => [r.at[1], r.at[1] + r.size[1]]);
   const box = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
@@ -886,6 +934,34 @@ export function insideFrame(ins) {
   const W = rot % 180 ? box[3] - box[1] : box[2] - box[0], D = rot % 180 ? box[2] - box[0] : box[3] - box[1];
   const H = Math.max(...rooms.filter(r => r.ceiling !== false).map(r => num(r.size[2], 2.6)), 2.4);
   return { rooms, box, rot, toLocal, W, D, H, side, cx, cy };
+}
+// a set built in storeys (a school's building, SCENE_BUILDER §10b): its storeys (the floors its enclosed rooms stand on;
+// a room through several, a stair shaft, stands in each), the roof's level (the top storey's floor and one more storey's
+// height, where its stairs land) and what goes on above it (the shafts' penthouses); the box round all of it
+function storeysFrame(ins, all, shut, zl) {
+  const ground = all.filter(r => Math.abs(num(r.at[2], 0)) < 0.01);
+  const xs = all.flatMap(r => [r.at[0], r.at[0] + r.size[0]]), ys = all.flatMap(r => [r.at[1], r.at[1] + r.size[1]]);
+  const box = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+  let side = ins.front;
+  if (!side) {
+    const out = ground.flatMap(r => (r.openings || []).filter(o => !o.window && r.ceiling !== false && edgeOutside(ground, r, o.wall)).map(o => ({ o, w: o.wall, r })));
+    const pick = out.find(x => /front|entr|main/i.test((x.o.door && x.o.door.id) || "")) || out.find(x => /genkan|entr|foyer|hall|lobby/i.test(x.r.id || "")) || out[0];
+    side = pick ? pick.w : "s";
+  }
+  const rot = { s: 0, e: 90, n: 180, w: 270 }[side] || 0;
+  const cx = (box[0] + box[2]) / 2, cy = (box[1] + box[3]) / 2, a = -rot * Math.PI / 180, c = Math.round(Math.cos(a)), sn = Math.round(Math.sin(a));
+  const toLocal = (x, y) => [(x - cx) * c - (y - cy) * sn, (x - cx) * sn + (y - cy) * c];
+  const W = rot % 180 ? box[3] - box[1] : box[2] - box[0], D = rot % 180 ? box[2] - box[0] : box[3] - box[1];
+  const one = Math.max(...shut.map(r => num(r.size[2], 2.4))) + LT + 0.3;                // a lone storey: its rooms, the slab over them
+  // a room open to the outside on a whole side (a porch cut into the building): under the roof, but outside its walls
+  const porches = shut.filter(r => (r.skip || []).some(w => typeof w === "string" && edgeOutside(shut, r, w)));
+  const walled = shut.filter(r => !porches.includes(r)), at = (r, z) => num(r.at[2], 0) <= z + 0.3 && num(r.at[2], 0) + num(r.size[2], 2.4) >= z + 1.0;
+  const storeys = zl.map((z, k) => ({ k, z, h: k + 1 < zl.length ? zl[k + 1] - z : zl.length > 1 ? z - zl[k - 1] : one,
+    rooms: walled.filter(r => at(r, z)), roofed: shut.filter(r => at(r, z)) }));
+  const top = zl[zl.length - 1] + storeys[storeys.length - 1].h;
+  const pent = shut.filter(r => num(r.at[2], 0) + num(r.size[2], 2.4) > top + 1.0);
+  const H = Math.max(...storeys[0].rooms.filter(r => Math.abs(num(r.at[2], 0)) < 0.01 && num(r.size[2], 2.4) < storeys[0].h + 0.01).map(r => num(r.size[2], 2.6)), 2.4);
+  return { rooms: ground, all, shut: walled, porches, box, rot, toLocal, W, D, H, side, cx, cy, storeys, top, pent };
 }
 function edgeOutside(rooms, r, wall) {                                // a room's wall with no enclosed room behind it (anywhere along it)
   const [x0, y0] = r.at, [w, d] = r.size, line = { n: [x0, y0 + d, x0 + w, y0 + d], s: [x0, y0, x0 + w, y0], e: [x0 + w, y0, x0 + w, y0 + d], w: [x0, y0, x0, y0 + d] }[wall];
@@ -943,12 +1019,16 @@ export function insideOutline(rooms) {
     if (!axis) continue;
     const e = edges.find(e => e.axis === axis && Math.abs(e.v - v) < 0.002 && base + at > e.a0 - 0.002 && base + at < e.a1 + 0.002);
     if (!e) continue;
-    (e.holes = e.holes || []).push({ a0: base + at - hw, a1: base + at + hw, z0: num(o.sill, 0), z1: num(o.sill, 0) + num(o.h, 2.1), window: !!o.window, door: o.door || null });
+    const rz = num((r.at || [])[2], 0);
+    (e.holes = e.holes || []).push({ a0: base + at - hw, a1: base + at + hw, z0: rz + num(o.sill, 0), z1: rz + num(o.sill, 0) + num(o.h, 2.1), window: !!o.window, door: o.door || null,
+      frame: o.frame || "", round: /porthole/.test(o.frame || "") });
   }
   return { edges, xs, ys };
 }
 export function insideParts(b, foot) {
-  const o = out(), ins = b.inside, fr = insideFrame(ins), { edges } = insideOutline(fr.rooms);
+  const fr0 = insideFrame(b.inside, !!b.facade);
+  if (fr0.storeys) return storeysParts(b, foot, fr0);
+  const o = out(), ins = b.inside, fr = fr0, { edges } = insideOutline(fr.rooms);
   const rows = Math.max(1, Math.round(num(ins.rows, 1))), floors = Math.max(1, Math.min(4, Math.round(num(ins.floors, 1))));
   const raise = num(ins.raise, 0.15), slab = 0.3, H = fr.H, storey = H + LT + slab, drop = foot ? foot.z - foot.low : 0;
   const skinSlot = ins.slot || "wall", T = INSIDE_SKIN, G = LT / 2 + INSIDE_GAP;      // the shell's face: G out from the room's edge, T thick
@@ -999,7 +1079,10 @@ export function insideParts(b, foot) {
             if (raise > 0.3) fbox(o, "concrete", F, h.u0 - 0.15, h.u1 + 0.15, -drop, z0 - raise + 0.18, T + 0.35, T + 0.65);
           }
         }
-        if (f > 0) fbox(o, "trim", F, 0, F.W, z0 - slab, z0 - slab + 0.12, T, T + 0.06);   // the floor's edge between the storeys
+        // the floor's edge between the storeys; the faces looking east or west a GAP lower than the others, so where two
+        // meet at a corner turning in (an L-shaped set stacked: the school's wing) they're never in one plane
+        const zo = Math.abs(N[0]) > 0.5 ? GAP : 0;
+        if (f > 0) fbox(o, "trim", F, 0, F.W, z0 - slab - zo, z0 - slab + 0.12 - zo, T, T + 0.06);
       }
       // the stand-in rooms: dark, facing in (the level goes here in Godot)
       for (const r of fr.rooms) {
@@ -1052,19 +1135,247 @@ export function insideParts(b, foot) {
   o.inside = inside;
   return o;
 }
+// ---- a set built in storeys (SCENE_BUILDER §10b, STREET_BUILDER §5f: a school's building; the user, 2026-11-01: "the
+// school building needs to be to scale, so the actual rooms could fit in"): the shell storey by storey round each one's
+// own rooms (a stair shaft stands in all of them), every door and window cut at its own height, what the outside's
+// `facade` asks for on its faces (eaves over the windows, pilasters at the rooms' joints and between the windows, the
+// floors' edges, guard rails at low windows), a flat roof at the roof's level whose parapet, coping and railing run round
+// it but never along a penthouse (the stair shafts going on up through the roof, their own walls and roofs). Seen from
+// the street the windows show their sashes and glass and the rooms are dark, as stand-ins (`inside`, never exported: in
+// Godot the level's own windows and rooms are there)
+const INFILL = {
+  window_classroom: { cols: 2, split: 0.68, slot: "alu" }, window_ribbon: { cols: 2, split: 0.76, slot: "alu" }, window_slide: { cols: 2, slot: "alu" },
+  window_corridor: { cols: 2, split: 0.64, slot: "alu", glass: "glass_frost" }, window_wired: { cols: 1, slot: "alu", glass: "glass_wire" },
+  window_steel: { cols: 4, rows: 3, slot: "steel_sash" }, window_big: { cols: 2, slot: "frame" }, window_small: { cols: 1, slot: "frame" }, window_fixed: { cols: 1, slot: "frame" },
+};
+export const FACADE_DEFAULT = { eaves: false, pilasters: false, bands: false, rails: false };
+export function roofTopOf(b) {                                       // how far the parapet and its coping stand over the roof
+  const roof = b.roof || {};
+  return roof.kind === "flat" || !roof.kind ? num(roof.parapet, 0.6) + 0.06 : 0;
+}
+function storeysParts(b, foot, fr) {
+  const o = out(), inside = out(), ins = b.inside, R = rng(num(b.seed, 1));
+  const raise = num(ins.raise, 0.15), drop = foot ? foot.z - foot.low : 0, skin = ins.slot || "wall", T = INSIDE_SKIN, G = LT / 2 + INSIDE_GAP;
+  const fac = Object.assign({}, FACADE_DEFAULT, b.facade || {}), roof = Object.assign({ kind: "flat", parapet: 0.6 }, b.roof || {});
+  const NS = fr.storeys.length, top = raise + fr.top;
+  const pentTop = fr.pent.length ? raise + Math.max(...fr.pent.map(r => num(r.at[2], 0) + num(r.size[2], 2.4))) + LT + ROOF_GAP : 0;
+  const L2 = (x, y) => fr.toLocal(x, y);
+  const grow = (r, g) => { const p0 = L2(r.at[0], r.at[1]), p1 = L2(r.at[0] + r.size[0], r.at[1] + r.size[1]); return [Math.min(p0[0], p1[0]) - g, Math.min(p0[1], p1[1]) - g, Math.max(p0[0], p1[0]) + g, Math.max(p0[1], p1[1]) + g]; };
+  const pentR = fr.pent.map(r => grow(r, G + T));
+  // an outline's edge as a face (from outside: left to right), its corners run on or cut back as the old shell's
+  const faceOf = (e) => {
+    const [ax, ay] = e.axis === "x" ? [e.a0, e.v] : [e.v, e.a0], [bx, by] = e.axis === "x" ? [e.a1, e.v] : [e.v, e.a1];
+    let A = L2(ax, ay), B = L2(bx, by);
+    const [u0, v0] = L2(0, 0), [u1, v1] = L2(e.n[0], e.n[1]), N = [u1 - u0, v1 - v0, 0], U = [-N[1], N[0], 0];
+    const swap = (B[0] - A[0]) * U[0] + (B[1] - A[1]) * U[1] < 0; if (swap) [A, B] = [B, A];
+    const ext0 = swap ? e.c1 : e.c0, ext1 = swap ? e.c0 : e.c1, len = Math.hypot(B[0] - A[0], B[1] - A[1]);
+    const s0 = -(G + T) * Math.max(0, ext0) + (ext0 < 0 ? G : 0), s1 = len + (G + T) * Math.max(0, ext1) - (ext1 < 0 ? G : 0);
+    const F = { name: "inside", o: [A[0] + N[0] * G + U[0] * s0, A[1] + N[1] * G + U[1] * s0, 0], U, N, W: s1 - s0 };
+    const toU = (x, y) => { const p = L2(x, y); return (p[0] - F.o[0]) * U[0] + (p[1] - F.o[1]) * U[1]; };
+    return { F, A, B, N, U, swap, ext0, ext1, toU, s0, len };
+  };
+  const bands = fr.storeys.map((st, k) => ({ k, rooms: st.rooms, zf: raise + st.z, zb: k === 0 ? -drop - 0.05 : raise + st.z, zt: raise + st.z + st.h, h: st.h }));
+  if (fr.pent.length) bands.push({ k: NS, pent: true, rooms: fr.pent, zf: top, zb: top + ROOF_GAP, zt: pentTop, h: pentTop - top });
+  const colSpots = {};                                                // a face's pilasters, by its line: the same up every storey
+  for (const bd of bands) {
+    const { edges } = insideOutline(bd.rooms);
+    for (const e of edges) {
+      const fc = faceOf(e), { F, N, U } = fc, zb = bd.zb, last = bd.k === NS - 1;
+      if (!e.built) { for (const u of [0, F.W]) fbox(o, skin, F, u - 0.001, u + 0.001, zb, bd.zt, 0, T); continue; }
+      // this storey's holes (a shaft's at every height: only those in this storey's height)
+      const cut = (e.holes || []).filter(h => raise + h.z1 > bd.zb + 0.01 && raise + h.z0 < bd.zt + (last ? ROOF_GAP : 0) - 0.01).map(h => {
+        const p0 = e.axis === "x" ? [h.a0, e.v] : [e.v, h.a0], p1 = e.axis === "x" ? [h.a1, e.v] : [e.v, h.a1], u0 = fc.toU(...p0), u1 = fc.toU(...p1);
+        return { u0: Math.min(u0, u1), u1: Math.max(u0, u1), z0: raise + h.z0, z1: raise + h.z1, window: h.window, frame: h.frame, round: h.round, door: h.door,
+                 own: raise + h.z0 >= bd.zf - 0.01 && raise + h.z0 < bd.zt - 0.05 };
+      }).filter(h => h.u1 - h.u0 > 0.05);
+      const holes = cut.filter(h => h.own);
+      // the top storey's wall stops at the roof where a penthouse goes on up (its own walls carry on), else at the roof
+      const zt = bd.zt + (last ? ROOF_GAP : 0);
+      for (const [a, bb, p, q] of wallRects(F.W, zb, zt, cut.map(h => Object.assign({}, h, { z0: Math.max(h.z0, zb), z1: Math.min(h.z1, zt) })))) {
+        fquad(o, skin, F, a, bb, p, q, T);
+        const c0 = fp(F, a, p, -G + LT / 2), c1 = fp(F, bb, q, T);
+        (o.col = o.col || []).push([[Math.min(c0[0], c1[0]), Math.min(c0[1], c1[1]), p], [Math.max(c0[0], c1[0]), Math.max(c0[1], c1[1]), q]]);
+      }
+      const Fh = Object.assign({}, F, { o: [F.o[0] - N[0] * G, F.o[1] - N[1] * G, 0] });
+      for (const h of holes) {
+        if (h.round) { portholeGen(o, inside, F, h, G, T); continue; }
+        poly(o, "trim", [fp(Fh, h.u0, h.z0, G + T), fp(Fh, h.u0, h.z0, LT / 2), fp(Fh, h.u0, h.z1, LT / 2), fp(Fh, h.u0, h.z1, G + T)], [U[0], U[1], 0]);
+        poly(o, "trim", [fp(Fh, h.u1, h.z0, G + T), fp(Fh, h.u1, h.z0, LT / 2), fp(Fh, h.u1, h.z1, LT / 2), fp(Fh, h.u1, h.z1, G + T)], [-U[0], -U[1], 0]);
+        poly(o, "trim", [fp(Fh, h.u0, h.z1, G + T), fp(Fh, h.u1, h.z1, G + T), fp(Fh, h.u1, h.z1, LT / 2), fp(Fh, h.u0, h.z1, LT / 2)], [0, 0, -1]);
+        if (h.z0 > bd.zf + 0.02) poly(o, "trim", [fp(Fh, h.u0, h.z0, G + T), fp(Fh, h.u1, h.z0, G + T), fp(Fh, h.u1, h.z0, LT / 2), fp(Fh, h.u0, h.z0, LT / 2)], [0, 0, 1]);
+        else if (bd.k === 0 && raise > 0.12 && !h.window) {        // a step up to the raised floor, under a door
+          fbox(o, "concrete", F, h.u0 - 0.15, h.u1 + 0.15, -drop, bd.zf - Math.min(0.2, raise / 2), T, T + 0.35);
+          if (raise > 0.3) fbox(o, "concrete", F, h.u0 - 0.15, h.u1 + 0.15, -drop, bd.zf - raise + 0.18, T + 0.35, T + 0.65);
+        }
+        infillGen(inside, F, Object.assign({ zf: bd.zf }, h), G, R);   // its sashes and glass, seen from the street
+      }
+      if (bd.pent) continue;
+      // the floor's edge at each storey over the first (east and west faces a GAP lower: never one plane at a corner)
+      const zo = Math.abs(N[0]) > 0.5 ? GAP : 0;
+      if (fac.bands && bd.k > 0) { const bh = num(fac.bands.h, 0.22), bo = num(fac.bands.out, 0.04);
+        fbox(o, fac.bands.slot || "trim", F, 0.001, F.W - 0.001, bd.zf - bh - zo, bd.zf - zo, T, T + bo, nKey(F, -1)); }
+      // eaves (庇): a slab over each run of windows, `ends` past them, runs closer than `join` one; stopping short of the
+      // face's corners
+      if (fac.eaves) {
+        const ev = fac.eaves, out2 = num(ev.out, 0.9), t = num(ev.t, 0.15), over = num(ev.over, 0.05), ends = num(ev.ends, 0.3), join = num(ev.join, 2.0);
+        const lo = fc.ext0 > 0 ? G + T + 0.02 : 0.02, hi = F.W - (fc.ext1 > 0 ? G + T + 0.02 : 0.02);
+        const runs = [];
+        for (const h of holes.filter(h => h.window && !h.round).sort((p, q) => p.u0 - q.u0)) {
+          const r = runs[runs.length - 1];
+          if (r && h.u0 - r.u1 <= join && Math.abs(h.z1 - r.z1) < 0.06) { r.u1 = Math.max(r.u1, h.u1); r.z1 = Math.max(r.z1, h.z1); } else runs.push({ u0: h.u0, u1: h.u1, z1: h.z1 });
+        }
+        for (const r of runs) { const a = Math.max(lo, r.u0 - ends), c = Math.min(hi, r.u1 + ends); if (c - a > 0.3) fbox(o, ev.slot || "trim", F, a, c, r.z1 + over - zo, r.z1 + over + t - zo, T, T + out2, nKey(F, -1)); }
+      }
+      // guard rails (手すり) across low windows above the ground: two bars on posts, in front of the glass
+      if (fac.rails && bd.k > 0) {
+        const rl = fac.rails, n = T + num(rl.out, 0.12), lowSill = num(rl.below, 0.95);
+        for (const h of holes.filter(h => h.window && !h.round && h.z0 - bd.zf < lowSill)) {
+          for (const zr of [bd.zf + num(rl.h, 1.1), bd.zf + num(rl.h, 1.1) - 0.32]) fbox(o, "rail", F, h.u0 + 0.01, h.u1 - 0.01, zr - 0.035, zr, n - 0.02, n + 0.02);
+          for (const u of [h.u0 + 0.03, h.u1 - 0.03]) fbox(o, "rail", F, u - 0.012, u + 0.012, bd.zf + num(rl.h, 1.1) - 0.42, bd.zf + num(rl.h, 1.1) - 0.035 - 0.001, T, n - 0.021, nKey(F, -1));
+        }
+      }
+      // pilasters: where the rooms meet along this face and in the walls between windows wide enough, the corners too
+      if (fac.pilasters) {                                            // (in the level's metres along the line: one column up every storey)
+        const pl = fac.pilasters, pw = num(pl.w, 0.6), gapMin = num(pl.gap, pw + 0.2), key = `${e.axis}:${e.v}:${e.n}`;
+        const spots = colSpots[key] = colSpots[key] || { fc, axis: e.axis, v: e.v, as: new Set(), holes: [] };
+        for (const r of bd.rooms) {                                   // the rooms' ends on this line
+          const [x0, y0] = r.at, [w, d] = r.size, on = e.axis === "x" ? (Math.abs(y0 - e.v) < 0.01 || Math.abs(y0 + d - e.v) < 0.01) : (Math.abs(x0 - e.v) < 0.01 || Math.abs(x0 + w - e.v) < 0.01);
+          if (!on) continue;
+          for (const a of e.axis === "x" ? [x0, x0 + w] : [y0, y0 + d]) if (a > e.a0 + 0.3 && a < e.a1 - 0.3) spots.as.add(Math.round(a * 100) / 100);
+        }
+        const ws = (e.holes || []).filter(h => !h.round && raise + h.z0 >= bd.zf - 0.01 && raise + h.z0 < bd.zt - 0.05).sort((p, q) => p.a0 - q.a0);
+        for (let i = 1; i < ws.length; i++) if (ws[i].a0 - ws[i - 1].a1 >= gapMin && Math.abs(ws[i].z0 - ws[i - 1].z0) < 0.3) spots.as.add(Math.round((ws[i].a0 + ws[i - 1].a1) / 2 * 100) / 100);
+        if (pl.ends) for (const a of [e.a0 + pw / 2 + 0.05, e.a1 - pw / 2 - 0.05]) spots.as.add(Math.round(a * 100) / 100);
+        spots.holes.push(...(e.holes || []));
+      }
+    }
+  }
+  // the pilasters: from the ground to the roof's parapet, never over a hole
+  if (fac.pilasters) {
+    const pl = fac.pilasters, pw = num(pl.w, 0.6), po = num(pl.out, 0.12), ztop = top + roofTopOf(b) - 0.06;
+    for (const { fc, axis, v, as, holes } of Object.values(colSpots)) for (const a of as) {
+      if (holes.some(h => h.a1 > a - pw / 2 - 0.02 && h.a0 < a + pw / 2 + 0.02)) continue;   // never over a hole, any storey's
+      const u = fc.toU(...(axis === "x" ? [a, v] : [v, a]));
+      if (u - pw / 2 < 0 || u + pw / 2 > fc.F.W) continue;
+      fbox(o, pl.slot || skin, fc.F, u - pw / 2, u + pw / 2, -drop - 0.05, ztop, T, T + po, "-z" + nKey(fc.F, -1));
+    }
+  }
+  // the dark rooms seen through the holes (never exported: the level goes there)
+  for (const r of fr.shut) {
+    const [x0, y0, x1, y1] = grow(r, 0), z0 = raise + num(r.at[2], 0), h = num(r.size[2], 2.6);
+    poly(inside, "inside_floor", [[x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0]], [0, 0, 1]);
+    poly(inside, "inside", [[x0, y0, z0 + h], [x1, y0, z0 + h], [x1, y1, z0 + h], [x0, y1, z0 + h]], [0, 0, -1]);
+    poly(inside, "inside", [[x0, y0, z0], [x1, y0, z0], [x1, y0, z0 + h], [x0, y0, z0 + h]], [0, 1, 0]); poly(inside, "inside", [[x0, y1, z0], [x1, y1, z0], [x1, y1, z0 + h], [x0, y1, z0 + h]], [0, -1, 0]);
+    poly(inside, "inside", [[x0, y0, z0], [x0, y1, z0], [x0, y1, z0 + h], [x0, y0, z0 + h]], [1, 0, 0]); poly(inside, "inside", [[x1, y0, z0], [x1, y1, z0], [x1, y1, z0 + h], [x1, y0, z0 + h]], [-1, 0, 0]);
+  }
+  for (const r of fr.porches || []) {                                 // a porch: its paving and its soffit, as the street sees them
+    const [x0, y0, x1, y1] = grow(r, 0), z0 = raise + num(r.at[2], 0), h = num(r.size[2], 2.6) + LT / 2;
+    poly(inside, "concrete", [[x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0]], [0, 0, 1]);
+    poly(inside, skin, [[x0, y0, z0 + h], [x1, y0, z0 + h], [x1, y1, z0 + h], [x0, y1, z0 + h]], [0, 0, -1]);
+  }
+  // the roof: over the top storey's rooms (and its porches) but not the penthouses, its parapet round it but never along
+  // one; the penthouses' own on them
+  const mainR = fr.storeys[NS - 1].roofed.map(r => grow(r, G + T)), xs = [...new Set(mainR.concat(pentR).flatMap(r => [r[0], r[2]]).map(v => Math.round(v * 1e4) / 1e4))].sort((a, c) => a - c);
+  const ys = [...new Set(mainR.concat(pentR).flatMap(r => [r[1], r[3]]).map(v => Math.round(v * 1e4) / 1e4))].sort((a, c) => a - c), cells = [];
+  const inR = (R2, x, y) => R2.some(r => x > r[0] && x < r[2] && y > r[1] && y < r[3]);
+  for (let i = 0; i + 1 < xs.length; i++) for (let j = 0; j + 1 < ys.length; j++) { const x = (xs[i] + xs[i + 1]) / 2, y = (ys[j] + ys[j + 1]) / 2; if (inR(mainR, x, y) && !inR(pentR, x, y)) cells.push([xs[i], ys[j], xs[i + 1], ys[j + 1]]); }
+  const nextTo = e => { const F = e.F, m = fp(F, F.W / 2, 0, 0.05); return inR(pentR, m[0], m[1]) || inR(pentR, ...fp(F, 0.02, 0, 0.05).slice(0, 2)) && inR(pentR, ...fp(F, F.W - 0.02, 0, 0.05).slice(0, 2)); };
+  if (cells.length) flatRoofParts(o, rectUnion(cells), top + ROOF_GAP, roof, skin, nextTo);
+  for (const r of fr.pent) flatRoofParts(o, rectUnion([grow(r, G + T)]), pentTop, { kind: "flat", parapet: num(roof.pent_parapet, 0.3) }, skin, () => false);
+  // its own parts (signs, the clock, fans, pipes; the name on the roof) on the box round its enclosed rooms
+  const all = fr.shut.map(r => grow(r, 0)), bx0 = Math.min(...all.map(r => r[0])) - G - T, by0 = Math.min(...all.map(r => r[1])) - G - T, bx1 = Math.max(...all.map(r => r[2])) + G + T, by1 = Math.max(...all.map(r => r[3])) + G + T;
+  const frames = faceFrames(bx0, by0, bx1, by1, 0), ps = partCopies(b.parts), rows = insideFloors(b);
+  for (const p of ps) partGen(o, b, frames[p.face || "front"], p, rows, R, o.signs, ps.filter(q => (q.face || "front") === (p.face || "front")));
+  o.inside = inside;
+  return o;
+}
+// a flat roof over an outline (rectUnion's): its slab's top, a parapet with its coping round its edges (`skip` an edge: a
+// penthouse's wall goes up there instead), a railing on the coping or the slab
+function flatRoofParts(o, U, z, roof, wallSlot, skip) {
+  const parapet = roof.kind === "flat" && num(roof.parapet, 0.6) > 0.05, p = num(roof.parapet, 0.6), t = 0.12, c = 0.03, zc = z + p;
+  for (const [x0, y0, x1, y1] of U.rects) box(o, "roof_flat", x0, y0, z, x1, y1, z + 0.02, "-z-x+x-y+y");
+  for (const e of U.edges) {
+    if (skip(e)) continue;
+    const F = e.F, ax = e.axis === "x", [c0, c1] = e.cv;
+    if (parapet) {
+      fbox(o, wallSlot, F, ax ? (c0 ? 0 : -t) : (c0 ? t : 0), F.W + (ax ? (c1 ? 0 : t) : (c1 ? -t : 0)), z, zc, -t, 0, "-z");
+      fbox(o, "trim", F, ax ? (c0 ? -c : -t - c) : (c0 ? t + c : c), F.W + (ax ? (c1 ? c : t + c) : (c1 ? -t - c : -c)), zc, zc + 0.06, -t - c, c);
+      if (roof.rail) railGen(o, F, (c0 ? 0.35 : -0.35), F.W - (c1 ? 0.35 : -0.35), z + 0.02, z + 0.02 + num(roof.rail_h, 1.5), -0.35, null, [false, true]);
+      continue;
+    }
+    fquad(o, "roof_flat", F, 0, F.W, z, z + 0.02, 0);
+    if (roof.kind === "rail" || roof.rail) railGen(o, F, c0 ? 0.06 : -0.06, F.W - (c1 ? 0.06 : -0.06), z, z + 1.1, -0.06, null, [false, true]);
+  }
+}
+// a window's or a door's sashes and glass as the street sees them, where the level's own frame is (the level's wall's
+// middle, behind the shell): never exported (`inside`); curtains drawn some of the way behind a classroom's
+function infillGen(o, F, h, G, R) {
+  const n = -G + 0.005, K = INFILL[h.frame] || (h.door ? null : { cols: 2, slot: "frame" }), u0 = h.u0, u1 = h.u1, z0 = h.z0, z1 = h.z1;
+  if (!K) {                                                           // a door: its leaf, glass in it if it has any
+    const glassy = /glass|school/.test((h.door && h.door.kit) || "");
+    fquad(o, "frame", F, u0, u1, z0, z1, n - 0.004);
+    if (glassy) fquad(o, "glass", F, u0 + 0.06, u1 - 0.06, /school/.test(h.door.kit) ? z0 + (z1 - z0) * 0.5 : z0 + 0.25, z1 - 0.08, n);
+    return;
+  }
+  fquad(o, K.glass || "glass", F, u0, u1, z0, z1, n);
+  const fw = 0.05, f = n + 0.03, slot = K.slot || "frame", bar = (a, b, p, q) => fbox(o, slot, F, a, b, p, q, n + 0.004, f);
+  bar(u0, u1, z0, z0 + fw); bar(u0, u1, z1 - fw, z1); bar(u0, u0 + fw, z0 + fw, z1 - fw); bar(u1 - fw, u1, z0 + fw, z1 - fw);
+  const cols = K.cols || 1, rows = K.rows || (K.split ? 2 : 1);
+  for (let i = 1; i < cols; i++) { const u = u0 + (u1 - u0) * i / cols; bar(u - 0.022, u + 0.022, z0 + fw, z1 - fw); }
+  const zs = K.split ? [z0 + (z1 - z0) * K.split] : Array.from({ length: rows - 1 }, (_, j) => z0 + (z1 - z0) * (j + 1) / rows);
+  for (const z of zs) bar(u0 + fw, u1 - fw, z - 0.02, z + 0.02);
+  if (!K.glass && z1 - z0 > 1.2 && z0 - num(h.zf, z0 - 1) > 0.3 && R() < 0.75) {   // curtains, drawn to one side or both (a room's window: not a slit, not a glass wall)
+    const cw = (u1 - u0) * (0.18 + R() * 0.3), zc1 = K.split ? z0 + (z1 - z0) * K.split : z1;
+    if (R() < 0.6) fquad(o, "curtain", F, u0 + 0.05, u0 + 0.05 + cw, z0 + 0.06, zc1 - 0.03, n + 0.002);
+    if (R() < 0.6) fquad(o, "curtain", F, u1 - 0.05 - cw, u1 - 0.05, z0 + 0.06, zc1 - 0.03, n + 0.002);
+  }
+}
+// a round window (a stair tower's porthole, the user's photo): the shell over the square hole's corners, a round reveal
+// back to the level's wall, a painted ring proud of the face; its glass seen from the street (the level's own in Godot)
+function portholeGen(o, inside, F, h, G, T) {
+  // the ring inside the square (its outer edge 5 mm in), the glass and the reveal at its inner edge, the shell round it
+  const cu = (h.u0 + h.u1) / 2, cz = (h.z0 + h.z1) / 2, hw = (h.u1 - h.u0) / 2, hh = (h.z1 - h.z0) / 2, Ro = Math.min(hw, hh) - 0.005, n = 40, ring = Math.min(0.16, Ro * 0.2), Rr = Ro - ring;
+  const P = (r, a, nn) => fp(F, cu + Math.cos(a) * r, cz + Math.sin(a) * r, nn), Nf = [F.N[0], F.N[1], 0];
+  const sq = a => { const c = Math.cos(a), s2 = Math.sin(a), t = Math.min(Math.abs(c) > 1e-9 ? hw / Math.abs(c) : 1e9, Math.abs(s2) > 1e-9 ? hh / Math.abs(s2) : 1e9); return [c * t, s2 * t]; };
+  const corners = [[hw, hh], [-hw, hh], [-hw, -hh], [hw, -hh]], cAng = corners.map(([x, z]) => (Math.atan2(z, x) + Math.PI * 2) % (Math.PI * 2));
+  for (let i = 0; i < n; i++) {
+    const a0 = i / n * Math.PI * 2, a1 = (i + 1) / n * Math.PI * 2, mid = cAng.filter(c => c > a0 + 1e-9 && c < a1 - 1e-9).sort((p, q) => q - p);
+    const outer = [sq(a1), ...mid.map(c => corners[cAng.indexOf(c)]), sq(a0)].map(([x, z]) => fp(F, cu + x, cz + z, T));
+    poly(o, "wall", [P(Rr + ring, a0, T), P(Rr + ring, a1, T), ...outer].filter((q, k, A) => k === 0 || Math.hypot(q[0] - A[k - 1][0], q[1] - A[k - 1][1], q[2] - A[k - 1][2]) > 1e-6), Nf);
+    poly(o, "ring", [P(Rr, a0, T + 0.04), P(Rr, a1, T + 0.04), P(Rr + ring, a1, T + 0.04), P(Rr + ring, a0, T + 0.04)], Nf);   // the ring's face
+    const am = (a0 + a1) / 2, outN = [F.U[0] * Math.cos(am), F.U[1] * Math.cos(am), Math.sin(am)];
+    poly(o, "ring", [P(Rr + ring, a0, T), P(Rr + ring, a1, T), P(Rr + ring, a1, T + 0.04), P(Rr + ring, a0, T + 0.04)], outN);   // its rim
+    poly(o, "ring", [P(Rr, a0, -G + LT / 2), P(Rr, a1, -G + LT / 2), P(Rr, a1, T + 0.04), P(Rr, a0, T + 0.04)], mul(outN, -1));   // the reveal
+  }
+  poly(inside, "glass_wire", Array.from({ length: n }, (_, i) => P(Rr, i / n * Math.PI * 2, -G + 0.005)), Nf);
+}
 export function insideFloors(b) {
-  const fr = insideFrame(b.inside), raise = num(b.inside.raise, 0.15), storey = fr.H + LT + 0.3, n = Math.max(1, Math.min(4, Math.round(num(b.inside.floors, 1))));
+  const fr = insideFrame(b.inside, !!b.facade);
+  if (fr.storeys) {
+    const raise = num(b.inside.raise, 0.15), rows = fr.storeys.map(st => ({ k: st.k + 1, z0: raise + st.z, h: st.h }));
+    rows.top = raise + fr.top + roofTopOf(b);
+    return rows;
+  }
+  const raise = num(b.inside.raise, 0.15), storey = fr.H + LT + 0.3, n = Math.max(1, Math.min(4, Math.round(num(b.inside.floors, 1))));
   return Array.from({ length: n }, (_, f) => ({ k: f + 1, z0: raise + f * storey, h: storey }));
 }
 // the box an inside-building takes on the plan (its w and d: the shell round all its copies)
 export function insideSize(b) {
-  const fr = insideFrame(b.inside), rows = Math.max(1, Math.round(num(b.inside.rows, 1))), e = 2 * (LT / 2 + INSIDE_GAP + INSIDE_SKIN);
+  const fr = insideFrame(b.inside, !!b.facade);
+  if (fr.storeys) { const e = 2 * (LT / 2 + INSIDE_GAP + INSIDE_SKIN), r3 = v => Math.round(v * 1000) / 1000;
+    return { w: r3(fr.W + e), d: r3(fr.D + e), h: r3(insideFloors(b).top) }; }
+  const rows = Math.max(1, Math.round(num(b.inside.rows, 1))), e = 2 * (LT / 2 + INSIDE_GAP + INSIDE_SKIN);
   return { w: Math.round((fr.W * rows + e) * 1000) / 1000, d: Math.round((fr.D + e) * 1000) / 1000, h: insideFloors(b).slice(-1)[0].z0 + fr.H + LT };
 }
 // where each copy's level goes (Godot: its scene, its origin there, turned): [{name, at, turn, meta}] in the street
 export function insideMarkers(b, foot) {
   if (!b.inside || !(b.inside.rooms || []).length) return [];
-  const ins = b.inside, fr = insideFrame(ins), rows = Math.max(1, Math.round(num(ins.rows, 1))), floors = Math.max(1, Math.min(4, Math.round(num(ins.floors, 1))));
+  const ins = b.inside, fr = insideFrame(ins, !!b.facade);
+  if (fr.storeys) {                                                  // one level, every storey of it: its origin at the ground's raise
+    const [u, v] = fr.toLocal(0, 0), at = place([u, v, num(ins.raise, 0.15)], { at: b.at, turn: b.turn, z: foot ? foot.z : 0 });
+    return [{ name: `inside_${b.id}_1_1`, at, turn: num(b.turn, 0) - fr.rot, meta: { set: ins.set || "", level: ins.level || "", floor: 1, copy: 1, storeys: fr.storeys.length } }];
+  }
+  const rows = Math.max(1, Math.round(num(ins.rows, 1))), floors = Math.max(1, Math.min(4, Math.round(num(ins.floors, 1))));
   const raise = num(ins.raise, 0.15), storey = fr.H + LT + 0.3, out2 = [];
   for (let f = 0; f < floors; f++) for (let k = 0; k < rows; k++) {
     const [u, v] = fr.toLocal(0, 0), at = place([u - fr.W * rows / 2 + fr.W * (k + 0.5), v, raise + f * storey], { at: b.at, turn: b.turn, z: foot ? foot.z : 0 });
@@ -1072,10 +1383,17 @@ export function insideMarkers(b, foot) {
   }
   return out2;
 }
+// a window's frame in the level (its <room>_fx_win<n>, a kit: the preset's name), found by its place on its wall
+function frameOf(r, o) {
+  const along = p => o.wall === "n" || o.wall === "s" ? (p.at || [])[0] : (p.at || [])[1];
+  const f = (r.props || []).find(p => /_fx_win\d+$/.test(p.id || "") && p.kit && Math.abs(num(along(p), -99) - num(o.at, 0)) < 0.03 && Math.abs(num(p.z, 0) - num(o.sill, 0)) < 0.12);
+  return f ? (f.kit.preset || f.kit.type || undefined) : undefined;
+}
 // a level's rooms as the street keeps them (what its outside needs: their places, sizes, ceilings, skips and openings)
 export function insideRooms(level) {
   return (level && level.rooms || []).map(r => ({ id: r.id, at: r.at, size: r.size, ceiling: r.ceiling !== false ? undefined : false, skip: r.skip && r.skip.length ? r.skip : undefined,
-    openings: (r.openings || []).map(o => Object.fromEntries(Object.entries({ wall: o.wall, at: o.at, w: o.w, h: o.h, sill: o.sill || undefined, window: o.window || undefined, door: o.door ? { id: o.door.id } : undefined }).filter(([, v]) => v !== undefined))) }))
+    openings: (r.openings || []).map(o => Object.fromEntries(Object.entries({ wall: o.wall, at: o.at, w: o.w, h: o.h, sill: o.sill || undefined, window: o.window || undefined,
+      frame: o.window ? frameOf(r, o) : undefined, door: o.door ? Object.assign({ id: o.door.id }, o.door.kit && o.door.kit.preset ? { kit: o.door.kit.preset } : {}) : undefined }).filter(([, v]) => v !== undefined))) }))
     .map(r => Object.fromEntries(Object.entries(r).filter(([, v]) => v !== undefined)));
 }
 
@@ -1107,7 +1425,7 @@ const canon = v => Array.isArray(v) ? "[" + v.map(canon).join(",") + "]" : v && 
 // what a building's outside is now, and its mark (the same outside, the same mark: keys in any order)
 export function outsideNow(b) {
   const ins = b.inside || {};
-  return { look: b.look || {}, roof: b.roof || {}, parts: b.parts || [], raise: num(ins.raise, 0.15), slot: ins.slot || "", front: ins.front || "" };
+  return { look: b.look || {}, roof: b.roof || {}, parts: b.parts || [], raise: num(ins.raise, 0.15), slot: ins.slot || "", front: ins.front || "", facade: b.facade };
 }
 export function outsideMark(b) {
   let h = 2166136261; for (const c of canon(outsideNow(b))) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); }
@@ -1122,6 +1440,7 @@ export function applyOutside(b, out) {
   const had = ins.from;
   if (had && had !== outsideMark(b)) { ins.own = true; return true; }
   b.look = copy(out.look || {}); b.roof = copy(out.roof || OUTSIDE_DEFAULT.roof); b.parts = copy(out.parts || []);
+  if (out.facade) b.facade = copy(out.facade); else delete b.facade;
   ins.raise = num(out.raise, 0.15);
   if (out.slot) ins.slot = out.slot; else delete ins.slot;
   if (out.front) ins.front = out.front; else delete ins.front;
@@ -1134,11 +1453,11 @@ export function outsideBuilding(level, out, id = "outside") {
   const rooms = insideRooms(level);
   if (!rooms.some(r => r.ceiling !== false && Math.abs(num((r.at || [])[2], 0)) < 0.01)) return null;
   const o = Object.assign({}, OUTSIDE_DEFAULT, out || {});
-  const b = { id, style: "set", seed: num(o.seed, 1), floors: 1, look: copy(o.look || {}), roof: copy(o.roof || {}), parts: copy(o.parts || []),
+  const b = { id, style: "set", seed: num(o.seed, 1), floors: 1, look: copy(o.look || {}), roof: copy(o.roof || {}), parts: copy(o.parts || []), ...(o.facade ? { facade: copy(o.facade) } : {}),
     inside: { set: "-", level: "", rows: 1, floors: 1, raise: num(o.raise, 0.15), rooms } };
   if (o.slot) b.inside.slot = o.slot;
   if (o.front) b.inside.front = o.front;
-  const fr = insideFrame(b.inside);
+  const fr = insideFrame(b.inside, !!b.facade);
   b.at = [fr.cx, fr.cy]; b.turn = fr.rot;
   return Object.assign(b, insideSize(b));
 }
@@ -1415,6 +1734,7 @@ export const THING_KINDS = {
   pot: { label: "Plant pot", cat: "Shop and street", h: 0.45, note: "a pot (no plant yet)" },
   ac: { label: "AC unit", cat: "Shop and street", h: 0.6, note: "an air conditioner's outdoor unit on the ground" },
   box: { label: "Block", cat: "Shop and street", h: 1.0, note: "a plain block of any size and material: stand in for anything" },
+  tree: { label: "Tree (stand-in)", cat: "Plants", h: 8, note: "a trunk and a lumpy crown `w` across: a stand-in for a street's or a schoolyard's tree (Blender's Foliage for the real ones)" },
 };
 export const SIGN_KINDS = { stop: "止まれ (stop)", oneway: "one way", straight: "straight on only", noentry: "no entry", speed30: "30 limit", walk: "walkers", school: "school", noparking: "no parking" };
 export function thingParts(t) {
@@ -1547,6 +1867,19 @@ export function thingParts(t) {
     case "bench": { const w = num(t.w, 1.6); box(o, "wood", -w / 2, -0.22, 0.42, w / 2, 0.22, 0.47); box(o, "wood", -w / 2, 0.16, 0.5, w / 2, 0.21, 0.82); for (const sx of [-1, 1]) box(o, "steel", sx * (w / 2 - 0.15) - 0.03, -0.2, 0, sx * (w / 2 - 0.15) + 0.03, 0.2, 0.42); break; }
     case "bin": cyl(o, t.slot || "steel", [0, 0, 0], [0, 0, h], 0.25, 10); cyl(o, "black", [0, 0, h], [0, 0, h + 0.04], 0.26, 10); break;
     case "crates": { const n = Math.max(1, Math.round(num(t.n, 3))); for (let i = 0; i < n; i++) box(o, t.slot || (i % 2 ? "yellow" : "blue"), -0.23 + (R() - 0.5) * 0.04, -0.17, i * 0.3, 0.23, 0.17 + (R() - 0.5) * 0.03, i * 0.3 + 0.29); break; }
+    case "tree": {                                                  // a trunk, two limbs, a crown of overlapping lumps
+      // the crown from `base` (of its height) to its top, `w` across: lumps round a middle one, high and low
+      const w = num(t.w, h * 0.7), tr = Math.max(0.08, w * 0.04), base = num(t.base, 0.38), zb = h * base, zm = (zb + h) / 2, hh = (h - zb) / 2;
+      cyl(o, "bark", [0, 0, 0], [0, 0, zm], tr, 7, tr * 0.6);
+      for (let k = 0; k < 3; k++) { const a = R() * Math.PI * 2; cyl(o, "bark", [0, 0, zb * 0.9], [Math.cos(a) * w * 0.25, Math.sin(a) * w * 0.25, zm + hh * 0.2], tr * 0.5, 5, tr * 0.25); }
+      const n = 7 + Math.floor(R() * 3);
+      lump(o, t.slot || "foliage", [0, 0, zm], Math.min(w * 0.38, hh * 0.9), Math.min(1.1, hh / (w * 0.38)), R);
+      for (let k = 0; k < n; k++) {
+        const a = k / n * Math.PI * 2 + R() * 0.5, rr = w * (0.24 + R() * 0.1), r0 = w * (0.2 + R() * 0.07), zz = zm + (R() * 2 - 1) * hh * 0.45;
+        lump(o, t.slot || "foliage", [Math.cos(a) * rr, Math.sin(a) * rr, zz], r0, Math.min(1, hh / (r0 * 1.6)) * (0.8 + R() * 0.25), R);
+      }
+      break;
+    }
     case "pot": cyl(o, t.slot || "plant_pot", [0, 0, 0], [0, 0, h], 0.16, 8, 0.22); cyl(o, "dark", [0, 0, h - 0.04], [0, 0, h - 0.035], 0.2, 8); break;
     case "ac": box(o, "ac", -0.4, -0.15, 0, 0.4, 0.15, h); poly(o, "fan", [[-0.33, -0.15 - GAP, 0.08], [0.1, -0.15 - GAP, 0.08], [0.1, -0.15 - GAP, 0.52], [-0.33, -0.15 - GAP, 0.52]], [0, -1, 0], [[0, 0], [1, 0], [1, 1], [0, 1]]); break;
     default: { const w = num(t.w, 1), d = num(t.d, 1); box(o, t.slot || "concrete", -w / 2, -d / 2, 0, w / 2, d / 2, h); }
@@ -1599,6 +1932,8 @@ export const FENCE_KINDS = {
   gate: { label: "Gate (two leaves)", h: 1.3, step: 0, note: "a steel gate of bars between two posts, its two leaves shut (open: how far, 0 to 1)" },
   accordion: { label: "Folding gate", h: 1.1, step: 0, note: "the striped folding (accordion) gate across a car park's way in, half drawn (open: 0 to 1)" },
   chain: { label: "Chain", h: 0.75, step: 0, note: "a chain hung between two short posts (a car park's way in at night)" },
+  ribbed: { label: "Ribbed concrete wall", h: 1.8, step: 2.0, note: "precast concrete panels ribbed top to bottom on both faces, a post at each joint, a coping (a school's front)" },
+  slidegate: { label: "Sliding gate", h: 1.5, step: 0, note: "a school's steel gate on wheels: a frame of bars painted blue, slid `open` (0 to 1) back along its run" },
 };
 export function fenceParts(f, surface) {
   const o = out(), K = FENCE_KINDS[f.kind] || FENCE_KINDS.mesh, [ax, ay] = f.from, [bx, by] = f.to, L = Math.hypot(bx - ax, by - ay);
@@ -1658,6 +1993,37 @@ export function fenceParts(f, surface) {
         bar(o, f.slot || "rail", [tip[0], tip[1], 0.08], [tip[0], tip[1], h], 0.05, 0.05);   // thicker than the rails across: no side in their plane
         two(o, "bars", [[hx, 0, 0.12], [tip[0], tip[1], 0.12], [tip[0], tip[1], h - 0.07], [hx, 0, h - 0.07]], [-along[1], along[0], 0]);
       }
+      break;
+    }
+    case "ribbed": {                                                  // precast panels with vertical ribs both sides, posts, a coping
+      const th = 0.1, rw = 0.055, rd = 0.035, pitch = num(f.rib, 0.15), sl = f.slot || "concrete";
+      box(o, sl, 0, -th / 2, 0, L, th / 2, h, "-z+z-x+x");
+      for (const x of bays) box(o, sl, clamp(x, 0.11, L - 0.11) - 0.11, -th / 2 - rd - 0.03, 0, clamp(x, 0.11, L - 0.11) + 0.11, th / 2 + rd + 0.03, h, "-z+z");   // posts
+      for (let i = 0; i < n0; i++) {
+        const a = bays[i] + 0.14, b = bays[i + 1] - 0.14, nr = Math.max(1, Math.floor((b - a) / pitch));
+        for (let k = 0; k < nr; k++) {
+          const x = a + (b - a) * (k + 0.5) / nr;
+          for (const sd of [-1, 1]) {                                 // a rib: its face and its two sides (top and foot hidden)
+            const y0 = sd * th / 2, y1 = sd * (th / 2 + rd);
+            poly(o, sl, [[x - rw / 2, y1, 0], [x + rw / 2, y1, 0], [x + rw / 2, y1, h - 0.01], [x - rw / 2, y1, h - 0.01]], [0, sd, 0]);
+            poly(o, sl, [[x - rw / 2, y0, 0], [x - rw / 2, y1, 0], [x - rw / 2, y1, h - 0.01], [x - rw / 2, y0, h - 0.01]], [-1, 0, 0]);
+            poly(o, sl, [[x + rw / 2, y0, 0], [x + rw / 2, y1, 0], [x + rw / 2, y1, h - 0.01], [x + rw / 2, y0, h - 0.01]], [1, 0, 0]);
+          }
+        }
+      }
+      box(o, "concrete", -0.02, -th / 2 - rd - 0.05, h, L + 0.02, th / 2 + rd + 0.05, h + 0.08);   // the coping
+      break;
+    }
+    case "slidegate": {                                               // a frame of bars on wheels, slid back along its run behind it
+      const op = clamp(num(f.open, 0), 0, 0.95), y = -0.16, sl = f.slot || "gate_blue", x0 = -L * op + 0.06, x1 = x0 + L - 0.12, zb = 0.1;
+      box(o, f.post || "concrete", L - 0.15, -0.18, 0, L + 0.05, 0.18, h + 0.12);                 // the post it shuts against
+      const zm = zb + (h - zb) * 0.5;                                // rails right across, stiles between them (never over a rail)
+      for (const [a, b, p, q] of [[x0, x1, h - 0.06, h], [x0, x1, zb, zb + 0.06], [x0, x1, zm - 0.03, zm + 0.03],
+        [x0, x0 + 0.06, zb + 0.06, zm - 0.03], [x0, x0 + 0.06, zm + 0.03, h - 0.06], [x1 - 0.06, x1, zb + 0.06, zm - 0.03], [x1 - 0.06, x1, zm + 0.03, h - 0.06]])
+        box(o, sl, a, y - 0.03, p, b, y + 0.03, q);
+      const nb = Math.max(2, Math.round((x1 - x0) / 0.12));
+      for (let i = 1; i < nb; i++) { const x = x0 + (x1 - x0) * i / nb; cyl(o, sl, [x, y, zb + 0.06], [x, y, h - 0.06], 0.012, 5); }
+      for (const x of [x0 + 0.25, x1 - 0.25]) cyl(o, "rubber", [x, y - 0.04, 0.06], [x, y + 0.04, 0.06], 0.06, 8);
       break;
     }
     case "accordion": {                                               // the folding gate: a lattice of thin diagonals on little wheels, drawn `open` back to its post

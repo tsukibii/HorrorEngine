@@ -109,6 +109,32 @@ export const STYLES = {
         parts: [{ kind: "canopy", x: 0, z: r2(gh - 0.1), w: r2(w + 0.6), h: 0.45, out: 2.2 }, { kind: "pipe", x: r2(w / 2 - 0.4), h: r2(gh + fh * (floors - 1)) }, { kind: "pipe", x: r2(-w / 6), h: r2(gh + fh * (floors - 1)), z: 0 },
                 { kind: "stairs", face: "left", w: 6, h: r2(gh), out: 1.2, dir: 1 }] };
     } },
+  // a small Japanese school (the user, 2026-11-01: "consider the hallway and exterior building too (a small japanese
+  // school)"; STREET_BUILDER §3): its classroom wing and its gym
+  school: { label: "School building (校舎)", ref: "a small Japanese school", note: "two or three storeys of classrooms behind rows of big windows (a bay each, 3 m), the corridor's windows along the back, a flat roof with its fence and water tank, a clock on a tower over the middle, the entrance at one end under a canopy",
+    make(R) {
+      const bays = Math.round(range(R, 10, 16, 1)), w = bays * 3.0, floors = Math.round(range(R, 2, 3, 1)), gh = 3.8, fh = 3.6, top = gh + fh * (floors - 1);
+      const wall = pick(R, ["#ece6d6", "#e7e2d6", "#efe9dc", "#e3ded2"]);
+      return { style: "school", w, d: range(R, 10, 11, 0.5), floors, gh, fh, seed: Math.floor(R() * 1e6),
+        look: { wall, wall2: pick(R, ["#b8b2a5", "#a9b4ae", "#c4b8a2"]), trim: "#d9d4c8" },
+        faces: { front: { win: "punched", cols: bays, ww: 2.4, wh: 1.8, sill: 0.85, bands: true, lit: 0.06, cool: 0.95 },
+                 back: { win: "punched", cols: bays, ww: 2.2, wh: 1.5, sill: 0.95, bands: true, lit: 0.04, cool: 0.95 },
+                 left: { win: "small", cols: 2, ground: "door", lit: 0.04 }, right: { win: "small", cols: 2, lit: 0.04 } },
+        roof: { kind: "rail", things: [{ kind: "tank", x: r2(range(R, -w / 4, w / 4)), y: 1 }, { kind: "hut", x: r2(w / 2 - 3.5) }] },
+        parts: [{ kind: "bay", x: 0, z: 0, w: 3.4, h: r2(top + 1.6), out: 0.5, slot: "wall" },                 // the clock tower: the middle bay stood out
+                { kind: "clock", x: 0, z: r2(top + 0.05), w: 1.4, h: 1.4, out: 0.62 },
+                { kind: "canopy", face: "left", x: 0, z: r2(gh - 1.0), w: 4.2, h: 0.3, out: 2.4 },
+                { kind: "pipe", x: r2(-w / 2 + 0.35), h: r2(top) }, { kind: "pipe", x: r2(w / 2 - 0.35), h: r2(top) }] };
+    } },
+  gym: { label: "School gym (体育館)", ref: "a small Japanese school", note: "one tall hall under a low gable, a band of high windows along each side, doors at its end",
+    make(R) {
+      const w = range(R, 28, 34, 1), d = range(R, 18, 22, 1);
+      return { style: "gym", w, d, floors: 1, gh: range(R, 8, 9.5, 0.5), fh: 3.6, seed: Math.floor(R() * 1e6),
+        look: { wall: pick(R, ["#e6e0d2", "#ddd8cb", "#e9e4d8"]), wall2: "#9a958a", roof: pick(R, ["#4a6a7c", "#5b6670", "#6a4a3e"]) },
+        faces: { front: { win: "band", wh: 1.6, sill: r2(range(R, 5.2, 6, 0.1)), margin: 1.2, lit: 0.02 }, back: { win: "band", wh: 1.6, sill: 5.6, margin: 1.2, lit: 0.02 },
+                 left: { win: "small", cols: 3, ground: "door", lit: 0.02 }, right: { win: "none" } },
+        roof: { kind: "gable", pitch: range(R, 12, 16, 1), over: 0.6 }, parts: [] };
+    } },
   kiosk: { label: "Kiosk / shed", ref: "the little hut on the Shibuya lane", note: "one storey, a tiled roof, a door, a meter box",
     make(R) {
       const w = range(R, 3, 4.5, 0.5);

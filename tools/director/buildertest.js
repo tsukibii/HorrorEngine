@@ -53,7 +53,8 @@ const png = rgb => {                    // a 4x4 PNG of one colour (a scratch ma
     const presets = await page.evaluate(() => [...document.querySelectorAll("#preset option")].map(o => o.value).filter(Boolean));
     for (const id of presets) {
       await page.evaluate(id => { window.B.dirty = false; window.builder.openPreset(id); }, id);
-      await page.waitForFunction(() => window.B.plan && window.B.planStory && window.B.planStory.levels[window.B.target], null, { timeout: 30000 });
+      // (a school building's layout is 27 rooms and 1600 things: its plan takes a while on a machine without a GPU)
+      await page.waitForFunction(() => window.B.plan && window.B.planStory && window.B.planStory.levels[window.B.target], null, { timeout: 300000 });
       await page.waitForTimeout(400);
       const r = await page.evaluate(async () => {
         const chk = await window.builder.runChecks();
@@ -68,12 +69,21 @@ const png = rgb => {                    // a 4x4 PNG of one colour (a scratch ma
       if (shots) await page.screenshot({ path: path.join(shots, `builder_${id}.png`) });
     }
 
-    // walking: forward from the start for a while; a wall must stop the player (they never leave the rooms)
+    // walking: forward from the start for a while; a wall must stop the player (they never leave the rooms). In the 1:1
+    // classroom (the school buildings' 1600 things draw too slowly to walk in without a GPU; a fresh page, rid of them)
+    await page.evaluate(() => { window.B.dirty = false; });
+    await page.goto(URL + "builder.html");
+    await page.waitForFunction(() => window.__builderReady, null, { timeout: 60000 });
+    await page.selectOption("#game", SCRATCH);
+    await page.waitForFunction(g => window.B && window.B.game === g && window.B.plan, SCRATCH, { timeout: 60000 });
+    await page.evaluate(() => { window.B.dirty = false; window.builder.openPreset("school_classroom"); });
+    await page.waitForFunction(() => window.B.plan && window.B.planStory && window.B.planStory.levels[window.B.target] && window.B.model.rooms.length === 2, null, { timeout: 120000 });
+    await page.waitForTimeout(1500);
     const walk = await page.evaluate(async () => {
       const B = window.B, p = B.model.player, x0 = p.x, y0 = p.y;
       document.querySelector("#view").focus();
       document.querySelector("#view").dispatchEvent(new KeyboardEvent("keydown", { code: "KeyW", bubbles: true }));
-      await new Promise(r => setTimeout(r, 2500));
+      await new Promise(r => setTimeout(r, 5000));                 // (a few frames a second without a GPU)
       document.querySelector("#view").dispatchEvent(new KeyboardEvent("keyup", { code: "KeyW", bubbles: true }));
       await new Promise(r => setTimeout(r, 200));
       const inRoom = window.BM.roomAt(B.model, p.x, p.y, p.z);
@@ -274,7 +284,9 @@ const png = rgb => {                    // a 4x4 PNG of one colour (a scratch ma
     // saved into Content/Studio/Sets/<name>, read back; then a game takes its level as a start (layout: From a set)
     page.removeAllListeners("dialog"); page.on("dialog", d => d.type() === "prompt" ? d.accept(SETNAME) : d.accept());
     await page.selectOption("#game", "__newset");
-    await page.waitForFunction(n => window.B && window.B.game === "set:" + n && window.B.plan, SETNAME, { timeout: 30000 })
+    // its story in, not only its name (loadGame names the game before the story arrives: a layout opened before it is
+    // replaced by the set's own level when it does)
+    await page.waitForFunction(n => window.B && window.B.game === "set:" + n && window.B.story && window.B.story.game && window.B.story.game.id === n && window.B.target === n && window.B.plan, SETNAME, { timeout: 30000 })
       .catch(async () => { throw new Error("the new set didn't open: " + JSON.stringify(await page.evaluate(() => ({ game: window.B.game, status: document.querySelector("#status").textContent })))); });
     page.removeAllListeners("dialog"); page.on("dialog", d => d.accept());
     await page.evaluate(() => { window.B.dirty = false; window.builder.openPreset("1ldk"); });

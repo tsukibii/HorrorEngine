@@ -12,6 +12,33 @@ the fix.
 
 ## This project
 
+- **A shading frame goes into a basis once:** the Godot eye's iris bowl normal went back to view space through BINORMAL
+  with `handed` applied a second time (eB, the binormal's image, already had it), so the bowl tilted down where it
+  should tilt up: under a lamp above, the iris's lower half went black and the eye read as a black hole (the user:
+  "lifeless and scary"). Found by turning the guessed lid shadow off and seeing the lower iris stay black (GODOT_LOOK
+  §5h). When a frame's sign is a uniform, every use of the frame must be checked, not only the one that was measured.
+- **On a mesh with a crease, take the frame where the normals are exact:** the eye's wet layer first worked out the
+  eyeball's centre per pixel from the interpolated tangent frame, and across the limbus (the export puts the white's
+  sphere and the cornea's dome on one ring of vertices with their normals averaged, 14.5° off each) the frame bent and
+  the centre moved millimetres: a false ring of shadow round the iris. Second try: per vertex, with the averaged normal
+  on the limbus ring, every vertex gives the same centre (to 0.02 mm), so its interpolation is exact.
+- **A Studio export made in the cloud needs MediaPipe first:** without it the Studio's face landmarks fail
+  (`api/face/landmarks`: "MediaPipe isn't set up", then a missing libEGL), and an export said "wrote ... 12.0 MB"
+  carrying only the skin: no eyes, no blink, no lashes, no lips or make-up, its paint one flat tone (found on both
+  `eye-enhancements` and `subsurace-scattering-exp` the same day). Second try: `python tools/face_mesh.py setup` and
+  `apt-get install libegl1` before the Studio's server makes an export to check (the eyes and lashes come once
+  `graft().on`; about two minutes).
+- **GDTESTROOM on a fresh checkout needs the desk's bake first:** without `Content/Games/TestRoom001/Previs/` (git-ignored)
+  Aoi's stand-in has no body to wear HSSkin, and station 6 fails on "her skin ... on 0 materials", which reads like a
+  skin bug. Second try: the desk's server and `node tools/godot/bake.mjs --game TestRoom001` (about a minute), then
+  GDTESTROOM passes.
+- **A shade from on/off taps is a staircase:** sixteen taps each lid or not gave the lid's shadow seventeen levels,
+  steps that followed the lid's shape. Second try: the distance to the lid along eight ways, each found by halving,
+  shaded by the distance: no steps.
+- **Never copy a repo's `.import` files over an imported Godot project's:** Godot writes each one's `path=` and `uid=`
+  into it on import, the repo's has neither, and every texture then fails to load, its sampler falling back to the flat
+  default without an error in the picture (the skin's depth layer measured exactly nothing off and on). Second try:
+  the plugin's other files copied in, or the project imported again (`--import`) after.
 - **A graft takes over every deformation of what it replaces:** the grafted eyes rode MHR's face without MHR's blink, but
   MHR's blink still moved the skin round them, and shut, the seam opened into black slivers. Second try: with the grafted eyes
   on, MHR's own eyesClosed is left out of the face altogether; the graft shuts its own way.

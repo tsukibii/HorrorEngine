@@ -3,7 +3,7 @@
 
     python tools/level_check.py [--game Pilot] [level]
 
-Fails on: props overlapping (more than 2 cm, unless one is `on` the other), props or people in walls, props
+Fails on: props overlapping (more than 2 cm, unless one is `on` the other; trim, floors and hollow things aside), props or people in walls, props
 outside their room, doorways blocked (0.8 m each side of every walk-through opening), interactables with no
 standing room (no free 0.5 m square on the floor within reach, 1.2 m). Ends `LEVEL ok` or `LEVEL FAILED (n)`.
 """
@@ -60,8 +60,10 @@ def check(story, level=None):
     def stacked(a, b):
         return f"on:{b['id']}" in a["tags"] or f"on:{a['id']}" in b["tags"]
 
-    # a kit floor, rug or ceiling step is walked over or under, not bumped (surface); a window frame sits in its wall
-    flat = lambda q: "surface" in q["tags"] or any(t.startswith("door_part:") for t in q["tags"])   # a door's own parts
+    # a kit floor, rug or ceiling step is walked over or under, not bumped (surface); a window frame sits in its wall; the
+    # trim is its wall's (a cabinet stands against a skirting or a wainscot); a hollow thing is seen, never bumped (a
+    # light's fitting: a classroom's grid of fluorescent troughs between its beams)
+    flat = lambda q: "surface" in q["tags"] or "hollow" in q["tags"] or any(t.startswith(("door_part:", "trim:")) for t in q["tags"])
     for i, a in enumerate(solid):
         ba = aabb(a)
         for b in solid[i + 1:]:

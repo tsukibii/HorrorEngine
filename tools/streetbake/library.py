@@ -425,7 +425,7 @@ def m_simple(nb, uv, T, P, p):
 # weird and tear and chip, smudges, fingerprints"): laid over every library material and every finish as it's baked,
 # by what it is. Sizes are real (a fingerprint 1.5 cm, a scratch a hair wide and centimetres long); what's too fine for
 # the set's pixels still shows as the haze or shine it leaves
-KIND = {"stucco": "mineral", "tiles": "glazed", "boards": "wood", "panels": "paint", "concrete": "mineral",
+KIND = {"grain": "wood", "stucco": "mineral", "tiles": "glazed", "boards": "wood", "panels": "paint", "concrete": "mineral",
         "asphalt": "asphalt", "pavers": "mineral", "kawara": "roof", "simple": "mineral"}
 FINISH_KIND = {"render": "mineral", "tile": "glazed", "panel": "paint", "concrete": "mineral", "blocks": "mineral",
                "kerb": "mineral", "asphalt": "asphalt", "ground": "mineral", "paving": "mineral", "paint": "paint",
@@ -499,8 +499,32 @@ def imperfect(nb, T, kind, col, rough, h, metal, amt=1.0):
     return col, nb.clamp(rough), h, metal
 
 
+def m_grain(nb, uv, T, P, p):
+    """Wood with no seams of its own (its boards are the kit's: a floor's strips, a desk's top, a wainscot's boards, each
+    wearing its own cut of it: KIT §4) or a cloth: the grain's long streaks along u and its growth rings' bands in shades
+    of its colours, drifting over the set, the varnish's or the wax's shine; `weave` (a curtain): fine threads across
+    and along instead, the cloth's soft sheen."""
+    if p.get("weave"):
+        th = p.get("threads", 160)
+        a = nb.noise(aniso(T, nb, 1.0, 30.0), th, 2, 0.5)
+        b = nb.noise(aniso(T, nb, 30.0, 1.0), th, 2, 0.5)
+        h = nb.mul(nb.add(a, b), 0.5)
+        col = mottle(nb, srgb(p["col"]), T, 1.1, p.get("var", 0.05), 3)
+        col = nb.cmul(col, nb.madd(h, 0.16, 0.92))
+        rough = nb.madd(h, 0.06, p.get("rough", 0.86))
+        return col, rough, h, 0.0, 1.0
+    gr = nb.noise(aniso(T, nb, 0.6, p.get("stretch", 10.0)), p.get("grain", 2.5), 6, 0.7, distort=p.get("distort", 0.9))
+    rings = nb.ramp(nb.fract(nb.mul(gr, p.get("rings", 6.0))), 0.0, 0.6)
+    col = pal(nb, nz(nb, T, p.get("drift", 0.4), 3), p["cols"])
+    col = vary(nb, col, rings, p.get("ring_var", 0.12))
+    col = vary(nb, col, nz(nb, aniso(T, nb, 0.6, 14.0), 9.0, 3), p.get("grain_var", 0.07))
+    h = nb.add(nb.mul(rings, 0.45), nb.mul(nb.noise(aniso(T, nb, 0.6, 14.0), 40, 2, 0.5), 0.2))
+    rough = nb.madd(rings, p.get("rough_var", 0.06), p.get("rough", 0.35))
+    return col, rough, h, 0.0, 1.0
+
+
 FAMILY = {"stucco": m_stucco, "tiles": m_tiles, "boards": m_boards, "panels": m_panels, "metal": m_metal,
-          "concrete": m_concrete, "asphalt": m_asphalt, "pavers": m_pavers, "kawara": m_kawara, "simple": m_simple}
+          "concrete": m_concrete, "asphalt": m_asphalt, "pavers": m_pavers, "kawara": m_kawara, "simple": m_simple, "grain": m_grain}
 
 # ---- the library: (label, group, family, period, relief in metres, wear, its numbers) ------------------------------------
 # colours are the surfaces' albedo (sRGB), kept to what real ones measure: white paint and mortar 0.6-0.75 linear,
@@ -612,6 +636,32 @@ LIB = {
     # other
     "jp_glass":          ("Glass, window", "other", "simple", (3.0, 3.0), 0.0005, "glass",
                           dict(kind="glass", col="#2b3033", rough=0.04)),
+    # a school's inside (the user, 2026-11-01: the 1:1 classroom with PBRs, "to see if it helps realism"): wood with no
+    # seams of its own for the kit's boards and tops, the boards' surfaces, the room's plaster and ceiling, its cloth
+    "jp_oak_floor":      ("Oak strip flooring, waxed (a classroom's 市松 parquet)", "interior", "grain", (2.0, 2.0), 0.0008, "wood",
+                          dict(cols=["#6c5634", "#76603c", "#5f4b2d", "#7f6843"], grain=2.6, rings=7.0, ring_var=0.14, grain_var=0.08, rough=0.26, tear=0.7)),
+    "jp_pine_varnish":   ("Pine, varnished (a wainscot's 腰板, lockers)", "interior", "grain", (2.0, 2.0), 0.0008, "wood",
+                          dict(cols=["#c58e45", "#cf9a52", "#b98140", "#d6a560"], grain=2.2, rings=5.0, ring_var=0.18, grain_var=0.08, rough=0.3, tear=0.6)),
+    "jp_desk_laminate":  ("Desk laminate, wood print (a school desk's top)", "interior", "grain", (1.2, 1.2), 0.0004, "wood",
+                          dict(cols=["#a85c3e", "#b06444", "#9e5538"], grain=3.0, rings=8.0, ring_var=0.08, grain_var=0.05, rough=0.38, tear=0.8)),
+    "jp_plywood_red":    ("Plywood, red stained (a school chair's seat and back)", "interior", "grain", (1.2, 1.2), 0.0004, "wood",
+                          dict(cols=["#a8483a", "#ab4b3c", "#a4463a"], grain=2.2, rings=4.0, ring_var=0.05, grain_var=0.025, drift=0.2, rough=0.42, tear=0.25)),
+    "jp_chalkboard":     ("Chalkboard, green slate with chalk dust (黒板)", "interior", "stucco", (2.0, 2.0), 0.0004, "render",
+                          dict(col="#24433d", grain=520, grain_size=0.4, grain_h=0.15, lump_h=0.1, var=0.12, var2=0.08, rough=0.92, cavity=0.04, wave=0.05, tear=0.4, tear_kind="paint")),
+    "jp_cork":           ("Cork board (掲示板)", "interior", "stucco", (1.0, 1.0), 0.002, "render",
+                          dict(col="#b78652", grain=900, grain_size=0.7, grain_h=0.8, lumps=60, lump_h=0.3, var=0.12, var2=0.1, rough=0.95, cavity=0.25, tear=0.3, tear_kind="fabric")),
+    "jp_acoustic":       ("Acoustic board, rock wool (岩綿吸音板)", "interior", "stucco", (1.2, 1.2), 0.0015, "render",
+                          dict(col="#e9e7e0", grain=140, grain_size=0.35, grain_h=0.6, lumps=25, lump_h=0.5, var=0.03, var2=0.02, rough=0.97, cavity=0.18, tear=0.4)),
+    "jp_plaster_cream":  ("Plaster, cream paint (a classroom's walls)", "interior", "stucco", (3.0, 3.0), 0.0012, "render",
+                          dict(col="#e6dfcc", grain=420, grain_size=0.45, grain_h=0.25, var=0.03, var2=0.02, rough=0.82, cavity=0.05, wave=0.15)),
+    "jp_curtain_mustard": ("Curtain cloth, mustard (a classroom's)", "interior", "grain", (1.0, 1.0), 0.0006, "fabric",
+                          dict(weave=True, col="#c99d3e", threads=150, var=0.06, rough=0.85, tear=0.4, tear_kind="fabric")),
+    "jp_lectern_green":  ("Painted steel, green (a lectern's front)", "interior", "metal", (2.0, 2.0), 0.0012, "metal",
+                          dict(profile="flat", col="#2e8a5b", finish="paint", chips=0.9, rough=0.45)),
+    "jp_steel_chrome":   ("Steel tube, painted silver (a school desk's and chair's frame)", "interior", "metal", (2.0, 2.0), 0.0006, "metal",
+                          dict(profile="flat", col="#cdd1d4", finish="paint", chips=0.3, rough=0.32)),
+    "jp_vinyl_tile":     ("Vinyl tile, speckled (Pタイル, a corridor's)", "interior", "stucco", (2.0, 2.0), 0.0006, "render",
+                          dict(col="#bcb5a3", grain=700, grain_size=0.3, grain_h=0.1, lump_h=0.05, var=0.05, var2=0.04, rough=0.42, cavity=0.06, wave=0.05, tear=0.6, tear_kind="plastic")),
 }
 
 # the library's entries known to the finishes (so tiles.py bakes them like any finish), each with its imperfections:

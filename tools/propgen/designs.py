@@ -1081,11 +1081,302 @@ def plain(f, d, rng):
     f.fill(color=(d.get("colors") or ["#c7cacc"])[0], rough=0.3, metal=1.0)
 
 
+# ---- books (the book family, families/book.py) -----------------------------------------------------------------------
+# A book's front, spine and back, its page edges, an open page: each made-up title, author and publisher here; what
+# you'd swap is a slot (the title, the author, the cover's picture, the publisher's mark, a page's writing).
+BOOK_INK = dict(rough=0.55, metal=0.0)
+BOOK_GOLD = dict(rough=0.3, metal=0.75)
+
+
+def _jp(s):
+    return any(ord(ch) >= 0x2e80 for ch in str(s))
+
+
+def _book_colors(d, default):
+    c = list(d.get("colors") or default)
+    while len(c) < 3:
+        c.append(default[len(c)])
+    return c[0], c[1], c[2]
+
+
+def _mark(f, cx, cy, r, ink, letter="K"):
+    """A publisher's mark: a ring with a letter in it, or a little tree in a square."""
+    f.ring(cx, cy, r, r * 0.16, color=ink, **BOOK_INK)
+    f.text(letter, (cx, cy), r * 0.95, font="serif_bold", color=ink, **BOOK_INK)
+
+
+def _motif(f, cx, cy, w, h, kind, ink, acc, rng, bg=None):
+    """A cover's drawn picture in a box: a moon over hills, a lit window in the dark, rings, a lone tree, a school's
+    outline at dusk."""
+    if kind == "moon":
+        f.ellipse(cx + w * 0.18, cy + h * 0.2, min(w, h) * 0.16, color=acc, **BOOK_INK)
+        pts = [(cx - w / 2, cy - h / 2)] + [(cx - w / 2 + w * k / 8, cy - h * 0.15 + h * 0.12 * math.sin(k * 1.3 + rng.uniform(0, 3))) for k in range(9)] + [(cx + w / 2, cy - h / 2)]
+        f.poly(pts, color=ink, **BOOK_INK)
+    elif kind == "window":                                     # a lit window in a dark wall, its light falling out
+        dark = P.mix(bg or ink, "#000000", 0.55)
+        f.rect(cx - w / 2, cy - h / 2, w, h, color=dark, **BOOK_INK)
+        ww, wh = w * 0.3, h * 0.36
+        f.poly([(cx - ww / 2, cy - wh / 2), (cx + ww / 2, cy - wh / 2), (cx + ww * 1.1, cy - h / 2), (cx - ww * 1.1, cy - h / 2)],
+               color=P.mix(dark, acc, 0.25), **BOOK_INK)
+        f.rect(cx - ww / 2, cy - wh / 2, ww, wh, color=acc, **BOOK_INK)
+        f.rect(cx - 0.6, cy - wh / 2, 1.2, wh, color=dark, **BOOK_INK)
+        f.rect(cx - ww / 2, cy - 0.6, ww, 1.2, color=dark, **BOOK_INK)
+        f.rect(cx - ww * 0.18, cy - wh * 0.42, ww * 0.12, wh * 0.36, color=dark, **BOOK_INK)   # someone at it
+    elif kind == "tree":
+        f.rect(cx - w * 0.025, cy - h / 2, w * 0.05, h * 0.55, color=ink, **BOOK_INK)
+        for k in range(7):
+            a = math.radians(30 + k * 20 + rng.uniform(-8, 8))
+            L = h * rng.uniform(0.18, 0.32)
+            f.line([(cx, cy + h * 0.02), (cx + math.cos(a) * L, cy + h * 0.02 + math.sin(a) * L)], max(0.6, w * 0.012), color=ink, **BOOK_INK)
+    elif kind == "school":
+        f.rect(cx - w / 2, cy - h / 2, w, h * 0.32, color=P.mix(acc, "#000000", 0.35), **BOOK_INK)
+        bw, bh = w * 0.8, h * 0.38
+        f.rect(cx - bw / 2, cy - h / 2 + h * 0.18, bw, bh, color=ink, **BOOK_INK)
+        f.rect(cx - w * 0.06, cy - h / 2 + h * 0.18 + bh, w * 0.12, h * 0.16, color=ink, **BOOK_INK)
+        f.ellipse(cx, cy - h / 2 + h * 0.18 + bh + h * 0.1, w * 0.035, color=acc, **BOOK_INK)
+        for i in range(7):
+            for j in range(2):
+                f.rect(cx - bw / 2 + bw * (i + 0.25) / 7, cy - h / 2 + h * 0.18 + bh * (0.2 + 0.42 * j), bw / 7 * 0.5, bh * 0.22,
+                       color=acc if rng.random() < 0.2 else P.mix(ink, "#000000", 0.5), **BOOK_INK)
+    else:                                                      # rings
+        for k in range(5):
+            f.ring(cx, cy, min(w, h) * (0.1 + 0.08 * k), 0.8, color=acc if k % 2 else ink, **BOOK_INK)
+
+
+def book_cover(f, d, rng):
+    """A book's front: its ground, a frame or bands, the title (a slot, written down the right in Japanese), the author
+    (a slot), a picture between them (a slot: the drawn one a moon over hills, a lit window, a tree, rings, a school at
+    dusk) and the publisher's mark (a slot)."""
+    bg, ink, acc = _book_colors(d, ["#6d2b2b", "#f1e9d6", "#c9a24a"])
+    paper_base(f, bg, fibres=1.0, seed=int(rng.integers(1000)), tint=d.get("age_tint"))
+    W, H, style = f.W, f.H, d.get("style", "frame")
+    if style == "frame":
+        f.line([(5, 5), (W - 5, 5), (W - 5, H - 5), (5, H - 5)], 0.8, closed=True, color=acc, **BOOK_INK)
+    elif style == "bands":
+        f.rect(0, H * 0.82, W, H * 0.05, color=acc, **BOOK_INK)
+        f.rect(0, H * 0.12, W, H * 0.02, color=acc, **BOOK_INK)
+    title, author = str(d.get("title", "The Quiet House")), str(d.get("author", "Mariko Hase"))
+    motif = d.get("motif", ["moon", "window", "tree", "rings", "school"][int(rng.integers(5))])
+    if _jp(title):
+        size = min(W * 0.13, (H * 0.6) / max(1, len(title)) * 0.9)
+        foot = tate_slot(f, "title", title, W - 10 - size / 2, H - 12, size, rng, "the title", font=d.get("font", "gothic_jp"), jitter=0.0,
+                         color=ink, **BOOK_INK)
+        tate_slot(f, "author", author, W - 14 - size * 1.4, min(H - 14, foot - 4), size * 0.42, rng, "the author", font="gothic_jp", jitter=0.0,
+                  color=ink, **BOOK_INK)
+        box = (W * 0.36, H * 0.42, W * 0.5, H * 0.42)
+    else:
+        size = min(W * 0.09, 9.0)
+        f.slot("title", on(f, text_box(title, (W / 2, H * 0.78), size, fit=W - 18, font=d.get("font", "serif_bold"))),
+               lambda: f.text(title, (W / 2, H * 0.78), size, font=d.get("font", "serif_bold"), fit=W - 18, color=ink, **BOOK_INK),
+               kind="text", about="the title", **BOOK_INK)
+        f.slot("author", on(f, text_box(author.upper(), (W / 2, H * 0.17), size * 0.42, font="serif", tracking=0.6)),
+               lambda: f.text(author.upper(), (W / 2, H * 0.17), size * 0.42, font="serif", tracking=0.6, color=ink, **BOOK_INK),
+               kind="text", about="the author", **BOOK_INK)
+        box = (W / 2, H * 0.47, W * 0.62, H * 0.4)
+    f.slot("art", on(f, box), lambda: _motif(f, *box, motif, ink, acc, rng, bg), kind="picture", about="the cover's picture", **BOOK_INK)
+    f.slot("logo", (W / 2 if not _jp(title) else 10, 9 if not _jp(title) else 9, 8, 8), lambda: _mark(f, W / 2 if not _jp(title) else 10, 9, 3.2, ink),
+           kind="logo", about="the publisher's mark", **BOOK_INK)
+
+
+def book_spine(f, d, rng):
+    """A book's spine: its ground, bands at its head and foot, the title down it (Japanese upright in a column, other
+    words turned to read from the top), the author under it, the publisher's mark at its foot (each a slot)."""
+    bg, ink, acc = _book_colors(d, ["#6d2b2b", "#f1e9d6", "#c9a24a"])
+    paper_base(f, bg, fibres=1.0, seed=int(rng.integers(1000)), tint=d.get("age_tint"))
+    W, H = f.W, f.H
+    for y in (H - 9, 14):
+        f.rect(0, y, W, 0.9, color=acc, **(BOOK_GOLD if d.get("gold") else BOOK_INK))
+    title, author = str(d.get("title", "The Quiet House")), str(d.get("author", "Mariko Hase"))
+    if W < 3:
+        return
+    if _jp(title):
+        size = min(W * 0.62, (H * 0.55) / max(1, len(title)) * 0.9)
+        foot = tate_slot(f, "title", title, W / 2, H - 14, size, rng, "the title", font="gothic_jp", jitter=0.0, color=ink, **BOOK_INK)
+        if _jp(author):
+            tate_slot(f, "author", author, W / 2, min(foot - 4, H * 0.42), size * 0.6, rng, "the author", font="gothic_jp", jitter=0.0,
+                      color=ink, **BOOK_INK)
+    else:
+        size = min(W * 0.45, 6.5)
+        f.slot("title", on(f, text_box(title, (W / 2, H * 0.6), size, rot=-90, fit=H * 0.55, font="serif_bold")),
+               lambda: f.text(title, (W / 2, H * 0.6), size, rot=-90, fit=H * 0.55, font="serif_bold", color=ink, **BOOK_INK),
+               kind="text", about="the title", **BOOK_INK)
+        f.slot("author", on(f, text_box(author, (W / 2, H * 0.24), size * 0.7, rot=-90, fit=H * 0.2, font="serif")),
+               lambda: f.text(author, (W / 2, H * 0.24), size * 0.7, rot=-90, fit=H * 0.2, font="serif", color=ink, **BOOK_INK),
+               kind="text", about="the author", **BOOK_INK)
+    r = min(W * 0.32, 3.4)
+    f.slot("logo", (W / 2, 7.5, 2.4 * r, 2.4 * r), lambda: _mark(f, W / 2, 7.5, r, ink), kind="logo", about="the publisher's mark", **BOOK_INK)
+
+
+def book_back(f, d, rng):
+    """A book's back: its ground, a few lines about it, a barcode and a price."""
+    bg, ink, acc = _book_colors(d, ["#6d2b2b", "#f1e9d6", "#c9a24a"])
+    paper_base(f, bg, fibres=1.0, seed=int(rng.integers(1000)), tint=d.get("age_tint"))
+    W, H = f.W, f.H
+    if W > 40 and H > 60:
+        _greek(f, 12, H * 0.68, W - 24, 7, min(2.4, W * 0.018), ink, rng, gap=1.7, font="serif")
+        _barcode(f, W - 12 - min(34, W * 0.35), 16, min(34, W * 0.35), 11, rng)
+        f.text(str(d.get("price", "¥680+税")), (16, 18), 2.4, font="gothic_jp", anchor="left", color=ink, **BOOK_INK)
+
+
+def book_pages(f, d, rng):
+    """A block of pages seen at its edges: the paper, the pages' fine lines (in its relief too), a little uneven, yellowed
+    with `age`, grubby where it's been thumbed."""
+    from . import noise as Nn
+    paper = d.get("paper", "#efe9da")
+    age = float(d.get("age", 0.2))
+    paper_base(f, P.mix(paper, "#d8c59a", age * 0.6), fibres=0.3, seed=int(rng.integers(1000)))
+    X, Y = f.grid()
+    n = Nn.fbm3(np.stack([X / 9.0, Y / 0.9, np.full_like(X, 3.1)], -1), int(rng.integers(1000)), 2)
+    ph = (Y / max(0.25, float(d.get("pitch", 0.45))) + n * 1.6) % 1.0
+    lines = np.clip(1.0 - np.abs(ph - 0.5) * 6.0, 0, 1)
+    f.lay_island(lines.astype(np.float32) * 0.35, color=P.mix(paper, "#8a7a5a", 0.5 + age * 0.3))
+    f.lay_island(np.ones_like(X), height=(-lines * 0.004).astype(np.float32), add_height=True)
+    edge = np.clip(1.0 - np.minimum(Y, f.H - Y) / max(0.6, f.H * 0.12), 0, 1) * age
+    f.lay_island(edge.astype(np.float32) * 0.5, color="#a88a52")
+
+
+def book_plain(f, d, rng):
+    """An endpaper, a page's back, a board's edge: a paper or cloth of one colour."""
+    paper_base(f, d.get("color", "#ece5d3"), fibres=0.8, seed=int(rng.integers(1000)), tint=d.get("age_tint"))
+
+
+def page_text(f, d, rng):
+    """An open book's page: a running head, justified lines of made-up words, a page number; the words a slot."""
+    paper_base(f, d.get("paper", "#f1ece0"), fibres=0.5, seed=int(rng.integers(1000)), tint=d.get("age_tint"))
+    W, H, m = f.W, f.H, max(10.0, f.W * 0.1)
+    size = float(d.get("size", min(3.2, W * 0.022)))
+    rows = int((H - 2 * m - 8) / (size * 1.6))
+    ink = d.get("ink", "#2a2622")
+    f.text(str(d.get("head", "THE QUIET HOUSE")), (W / 2, H - m * 0.6), size * 0.75, font="serif", tracking=0.5, color=ink, **PAPER_INK)
+    f.slot("text", (W / 2, H / 2, W - 2 * m, H - 2 * m - 6), lambda: _lines(f, m, H - m - 4, W - 2 * m, rows, size, ink, rng, gap=1.6),
+           kind="text", about="the page's words", **PAPER_INK)
+    f.text(str(d.get("page", int(rng.integers(12, 280)))), (W / 2, m * 0.5), size * 0.8, font="serif", color=ink, **PAPER_INK)
+
+
+def diary_page(f, d, rng):
+    """A diary's page: ruled, a date at its head, lines of handwriting (a slot: your own writing or a drawing)."""
+    paper_base(f, d.get("paper", "#f2eedf"), fibres=0.5, seed=int(rng.integers(1000)), tint=d.get("age_tint", "#ece0bf"))
+    W, H, top, gap = f.W, f.H, f.H - 18, float(d.get("rule", 9.0))
+    for i in range(int((top - 8) // gap)):
+        f.rect(6, top - i * gap, W - 12, 0.25, color="#9fb3c8", alpha=0.7, **PAPER_INK)
+    ink = d.get("ink", "#1d2340")
+    font = d.get("font", "marker")
+    f.text(str(d.get("date", "6月14日 (金) 雨")), (8, H - 9), 3.2, font="gothic_jp" if _jp(d.get("date", "6月14日")) else font, anchor="left baseline",
+           color=ink, **PAPER_INK)
+    text = str(d.get("text", "the bell rang again\nafter everyone left\nsomeone was still\nin the classroom\ndon't look back"))
+    size = float(d.get("size", 5.0))
+    lines = [(ln, 8 + rng.uniform(-0.8, 0.8), top + 1.8 - i * gap * int(d.get("spacing", 1)), rng.uniform(-1.4, 1.4)) for i, ln in enumerate(text.split("\n"))]
+
+    def writing():
+        for ln, x, y, rot in lines:
+            f.text(ln, (x, y), size, font="brush_jp" if _jp(ln) else font, anchor="left baseline", rot=rot, fit=W - 16, color=ink, **PAPER_INK)
+    f.slot("writing", (W / 2, (top - len(lines) * gap + top) / 2 + 2, W - 12, len(lines) * gap + 4), writing, kind="text",
+           about="the handwriting on the page", **PAPER_INK)
+
+
+SUBJECT_COLORS = {"国語": "#b8353a", "数学": "#2f5fa8", "英語": "#3a8a5a", "理科": "#2f8f9c", "社会": "#b07a2a", "音楽": "#8a4fa0", "美術": "#c4553a",
+                  "保健体育": "#4a8f3a", "技術家庭": "#7a6a3a"}
+
+
+def textbook_cover(f, d, rng):
+    """A school textbook's front (教科書): the subject big in a panel of its colour, the grade, the publisher, a picture
+    (a slot) and the school's crest-like mark (a slot)."""
+    subj = str(d.get("subject", "国語"))
+    col = (d.get("colors") or [SUBJECT_COLORS.get(subj, "#2f5fa8")])[0]
+    paper_base(f, "#f4f1e8", fibres=0.6, seed=int(rng.integers(1000)), tint=d.get("age_tint"))
+    W, H = f.W, f.H
+    f.rect(0, H * 0.58, W, H * 0.42, color=col, **BOOK_INK)
+    f.slot("title", on(f, text_box(subj, (W / 2, H * 0.78), min(W * 0.16, 26), font="gothic_jp", fit=W * 0.8)),
+           lambda: f.text(subj, (W / 2, H * 0.78), min(W * 0.16, 26), font="gothic_jp", fit=W * 0.8, color="#ffffff", **BOOK_INK),
+           kind="text", about="the subject", **BOOK_INK)
+    f.text(str(d.get("grade", "中学校 2年")), (W / 2, H * 0.63), min(W * 0.045, 7), font="gothic_jp", color="#ffffff", **BOOK_INK)
+    box = (W / 2, H * 0.33, W * 0.7, H * 0.36)
+    f.slot("art", on(f, box), lambda: _motif(f, *box, d.get("motif", "school"), col, "#f2c14e", rng), kind="picture", about="the cover's picture", **BOOK_INK)
+    f.text(str(d.get("publisher", "東雲書籍")), (W / 2, H * 0.07), min(W * 0.035, 5), font="gothic_jp", color="#3a3a3a", **BOOK_INK)
+
+
+def notebook_cover(f, d, rng):
+    """A school notebook's front: a band of colour with its (made-up) brand, a white label with its No. and Name lines,
+    the subject and the name written in by hand (each a slot)."""
+    col = (d.get("colors") or ["#3a72b8"])[0]
+    paper_base(f, "#f6f4ee", fibres=0.5, seed=int(rng.integers(1000)), tint=d.get("age_tint"))
+    W, H = f.W, f.H
+    f.rect(0, H * 0.62, W, H * 0.38, color=col, **BOOK_INK)
+    f.text(str(d.get("brand", "FIELD NOTE")), (W / 2, H * 0.83), min(W * 0.075, 12), font="archivo", tracking=0.4, color="#ffffff", **BOOK_INK)
+    f.text("B5 · 7mm ruled · 30 sheets", (W / 2, H * 0.72), min(W * 0.022, 3.4), font="archivo", color="#ffffff", **BOOK_INK)
+    lx, lw = W * 0.12, W * 0.76
+    for y, lab in ((H * 0.42, "No."), (H * 0.26, "Name")):
+        f.text(lab, (lx, y + 1.0), 2.8, font="archivo", anchor="left baseline", color="#555555", **BOOK_INK)
+        f.rect(lx + 12, y, lw - 12, 0.35, color="#777777", **BOOK_INK)
+    ink = d.get("ink", "#18203a")
+    subj, name = str(d.get("subject", "数学")), str(d.get("name", "佐藤 ゆき"))
+    sf = "brush_jp" if _jp(subj) else "marker"
+    nf = "brush_jp" if _jp(name) else "marker"
+    f.slot("subject", on(f, text_box(subj, (lx + 14, H * 0.42 + 1.4), 6, font=sf, anchor="left baseline")),
+           lambda: f.text(subj, (lx + 14, H * 0.42 + 1.4), 6, font=sf, anchor="left baseline", rot=rng.uniform(-2, 2), color=ink, **PAPER_INK),
+           kind="text", about="the subject, written in by hand", **PAPER_INK)
+    f.slot("name", on(f, text_box(name, (lx + 18, H * 0.26 + 1.4), 5.5, font=nf, anchor="left baseline")),
+           lambda: f.text(name, (lx + 18, H * 0.26 + 1.4), 5.5, font=nf, anchor="left baseline", rot=rng.uniform(-2, 2), color=ink, **PAPER_INK),
+           kind="text", about="its owner's name, written in by hand", **PAPER_INK)
+
+
+def notebook_back(f, d, rng):
+    col = (d.get("colors") or ["#3a72b8"])[0]
+    paper_base(f, "#f6f4ee", fibres=0.5, seed=int(rng.integers(1000)), tint=d.get("age_tint"))
+    f.rect(0, f.H * 0.9, f.W, f.H * 0.1, color=col, **BOOK_INK)
+
+
+def diary_cover(f, d, rng):
+    """A diary's cover: dark leather-grained cloth, a border and its title pressed in (relief), the year (slots)."""
+    from . import noise as Nn
+    bg = (d.get("colors") or ["#2b2220"])[0]
+    W, H = f.W, f.H
+    X, Y = f.grid()
+    g = Nn.fbm3(np.stack([X / 1.6, Y / 1.6, np.full_like(X, 7.0)], -1), int(rng.integers(1000)), 3)
+    f.fill(color=bg, rough=0.62, metal=0.0)
+    f.lay_island(np.ones_like(X), color=(P.rgb(bg)[None, None] * (1 + 0.08 * g[..., None])).astype(np.float32), height=(g * 0.02).astype(np.float32))
+    f.line([(7, 7), (W - 7, 7), (W - 7, H - 7), (7, H - 7)], 0.7, closed=True, color=P.mix(bg, "#000000", 0.3), height=-0.03, rough=0.5)
+    if d.get("part") == "back":
+        return
+    title = str(d.get("title", "DIARY"))
+    font = "gothic_jp" if _jp(title) else "serif_bold"
+    f.slot("title", on(f, text_box(title, (W / 2, H * 0.62), min(W * 0.08, 9), font=font, tracking=0.8)),
+           lambda: f.text(title, (W / 2, H * 0.62), min(W * 0.08, 9), font=font, tracking=0.8, color=P.mix(bg, "#000000", 0.35), height=-0.04,
+                          rough=0.45), kind="stamp", about="its title, pressed into the cover", relief=True, rough=0.45)
+    f.slot("year", on(f, text_box(str(d.get("year", "2003")), (W / 2, H * 0.52), 3.2, font="serif")),
+           lambda: f.text(str(d.get("year", "2003")), (W / 2, H * 0.52), 3.2, font="serif", color="#b39a5a", **BOOK_GOLD), kind="text",
+           about="the year, in gold", **BOOK_GOLD)
+
+
+def manga_cover(f, d, rng):
+    """A manga volume's front: a picture to the edges (a slot: the drawn one a figure against a red moon), the title big
+    with its outline (a slot), the volume's number."""
+    bg, ink, acc = _book_colors(d, ["#1b1d2e", "#ffffff", "#d8323a"])
+    W, H = f.W, f.H
+
+    def art():
+        f.gradient(bg, P.mix(bg, acc, 0.45), angle=90)
+        f.ellipse(W * 0.62, H * 0.6, W * 0.26, color=acc, **BOOK_INK)
+        f.poly([(W * 0.3, 0), (W * 0.34, H * 0.42), (W * 0.31, H * 0.5), (W * 0.36, H * 0.56), (W * 0.41, H * 0.5), (W * 0.38, H * 0.42),
+                (W * 0.44, 0)], color="#0b0b10", **BOOK_INK)
+    f.slot("art", (W / 2, H / 2, W, H), art, kind="picture", about="the cover's picture, to its edges", **BOOK_INK)
+    title = str(d.get("title", "放課後の怪"))
+    font = "gothic_jp" if _jp(title) else "bungee"
+    f.slot("title", on(f, text_box(title, (W / 2, H * 0.86), min(W * 0.12, 13), font=font, fit=W * 0.86)),
+           lambda: f.text(title, (W / 2, H * 0.86), min(W * 0.12, 13), font=font, fit=W * 0.86, color=ink, stroke=("#111111", 0.8), **BOOK_INK),
+           kind="text", about="the title", **BOOK_INK)
+    f.rect(W - 15, 6, 11, 11, color="#ffffff", **BOOK_INK)
+    f.text(str(d.get("volume", 3)), (W - 9.5, 11.5), 6.5, font="anton", color="#111111", **BOOK_INK)
+
+
 DESIGNS = {"soda": soda, "energy": energy, "beer": beer, "coffee_can": coffee_can, "water": water, "coffee_cup": coffee_cup,
            "sleeve": sleeve, "iced": iced, "newspaper": newspaper, "newsprint": newsprint, "napkin": napkin, "fries": fries,
            "receipt": receipt, "note": note, "paper": paper, "card_plain": card_plain, "burger_box": burger_box, "kraft": kraft,
            "wood_grain": wood_grain, "lacquer": lacquer, "glaze": glaze, "sometsuke": sometsuke, "speckled": speckled,
-           "jar_label": jar_label, "rx_label": rx_label, "plain": plain, "ofuda": ofuda, "ema": ema, "brocade": brocade}
+           "jar_label": jar_label, "rx_label": rx_label, "plain": plain, "ofuda": ofuda, "ema": ema, "brocade": brocade,
+           "book_cover": book_cover, "book_spine": book_spine, "book_back": book_back, "book_pages": book_pages, "book_plain": book_plain,
+           "page_text": page_text, "diary_page": diary_page, "textbook_cover": textbook_cover, "notebook_cover": notebook_cover,
+           "notebook_back": notebook_back, "diary_cover": diary_cover, "manga_cover": manga_cover}
 
 
 def draw(f, art, seed, default="plain"):

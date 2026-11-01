@@ -33,6 +33,15 @@ The user's answers, newest first. They override the plan, the research and the d
 - **"Clean up the weird bulgy/bumpiness, it makes it look like it was made in sculpt tool, should look well
   polished"**: the shoes' shells polished, round heels, the pieces kept off the sole (TAILOR §1h).
 
+## 2026-11-01, late night (the user: the skin's depth into the eyes' pull request, then main)
+
+- **"Can you merge subsurace-scattering-exp into this pr and make sure it works, take a screenshot with the updated
+  eyes and sus scatter."** Merged into `eye-enhancements` (tsukibii/HorrorEngine#7): the skin's depth keeps
+  GODOT_LOOK §5g, the eyes' wet layer is §5h. Checked together on a fresh export; the sheet
+  `docs/godot_sheets/2026-11-01_eyes_depth.jpg`.
+- **"can you resolve all conflicts and merge in main too"**: main (the school, tsukibii/HorrorEngine#8) merged into
+  `eye-enhancements`; the two met only in DECISIONS and CONTINUE, both kept.
+
 ## 2026-11-01, night (the user: cozy and gothic clothes, bigger busts, on `clothing-refiner`)
 
 - **"Note you've been making bras on models that have a flat chest, maybe you should review it with bigger busts"**:
@@ -44,6 +53,17 @@ The user's answers, newest first. They override the plan, the research and the d
   ears), props placed by x, y, z sliders and turns, PBR sets on props. The plan and its ticks: docs/COZY_GOTHIC_PLAN.md.
 - **"By rain coat I mean the smaller wind ones, that are almost like hoodies but more of a plasticky texture"**: a
   hooded, zipped rain jacket in PVC, not a long coat.
+
+## 2026-11-01, night (the user, on a small private school)
+
+- **A small private school, one storey, in Tokyo concrete**: "using your knowledge of modern architecture can you create a
+  small private school that consists of 1 level, 2 classrooms, 1 lunch area and 1 reception, its a private school that
+  is like those remote towns ones that don't have many grades and allow kids to study in the same grade but separate
+  maybe by very young and young, give it a rural japanese look". Shown timber references first, then: "not timber for
+  now, I like the concrete style, something that would look in place in tokyo (since our street designer was based of
+  that kind of japanese tokyo street design)". Built as the set `school_tokyo` (SCENE_BUILDER §10c) and the street
+  `tokyo_school`: exposed concrete round a courtyard, the two mixed-year classes (years 1-3, 4-6), the lunch room, the
+  reception at the entrance; timber is for later.
 
 ## 2026-11-01, evening (the user: the bikinis, on `clothing-refiner`)
 
@@ -70,6 +90,19 @@ The user's answers, newest first. They override the plan, the research and the d
   elements and let fabric and colour take care of the rest"; "review the current clothing, list a plan to enhance
   everything, and tick as you go".** The plan and its ticks: docs/CLOTHING_PLAN.md.
 
+## 2026-11-01, later (the user, on the school's building)
+
+- **The building is its rooms, to scale**: "Just note the school building needs to be to scale, so the actual rooms
+  could fit in, stairs, door way etc." Then two photos of school buildings (a white four-storey one with a stair tower
+  of round windows and its name on the roof; a beige Showa one at dusk): "I think the issue is I didn't give you visual
+  references for the building, try build a kit that could build these 1:1." So a school's building is a set of real
+  rooms on every storey, laid out from modules (classrooms, corridor, dog-leg stairs in shafts, toilets, entrance,
+  staff room: SCENE_BUILDER §10b), and the street builds its outside storey by storey round exactly those rooms, the
+  facade (eaves, pilasters, guard rails, the name on the roof) from them (STREET_BUILDER §5f). Both photos are rebuilt
+  as sets and streets with shots matched to them.
+- **The PBR classroom waits for the build**: "Once you're done with the build can you create a 1:1 ref using the pbrs
+  instead to see if it helps realism" (asked during the first school build).
+
 ## 2026-11-01 (the user: the clothes refined, on `clothing-refiner`)
 
 - **"Inspired by the image of Japanese smart casual outfits create some of these, I think currently what makes our
@@ -91,6 +124,54 @@ The user's answers, newest first. They override the plan, the research and the d
 - **No low poly clothes.** Asked to try a PS1-style low poly genre of clothing (decimated garments, chunky texels, a
   dither), then, seeing it: **"Nah the low poly looks ugly ... let's avoid the low poly then."** It was taken out
   before it was committed; don't offer it again.
+
+## 2026-11-01 (the user: the eyes in Godot, on `eye-enhancements`)
+
+- **"Can you make a new branch called eye-enhancements, I dont want to modify too much about the exported eyes, but
+  enhance the use of the existing godot shader, atm the eyes look kind of lifeless and scary, it doesnt seem like we
+  are applying the eye wetness etc correctly."** Measured on a fresh export with the grafted eyes: the iris read black
+  (a bug: Godot turned the iris's bowl upside down, so its lower half faced away from a lamp above), the whites a flat
+  grey (the guessed lid ellipse and the socket's shade over a paint at 0.58), and HumanShaders' eye wetness wasn't used
+  at all. Done on the Godot side only, the export as it was (GODOT_LOOK §5h): the bowl fixed; **the eye's wet layer**
+  (HumanShaders' eye wetness and MetaHuman's eye occlusion as each eyeball's material overlay: the real lids found in
+  the depth buffer, a warm shade by them, deeper under the upper lid, the lid's edge melted into the eye) in place of
+  the ellipse, the socket's shade halved; the white's light wrapped warm with a little scattering; a crisp catchlight.
+
+## 2026-11-01, later (the user, on the skin's depth elsewhere)
+
+- **The depth past the face's core, gently**: asked "you think we should add some slight SS to cheeks? or anywhere
+  else that helps add life?", offered (not a patch on the cheeks: that's blush, the Studio's Flush) a warm edge where
+  the skin turns away from the eye, the creases everywhere warm instead of grey, the fingers lit through like the ears,
+  the lips; "sounds good, do that". Each gentle by default with its own slider (GODOT_LOOK §5g; HSCharacterLook's
+  "Skin depth's parts").
+
+## 2026-11-01 (the user, on the skin's depth; branch `subsurace-scattering-exp`)
+
+- **Subsurface scattering round the face's core, for baked light**: with two pictures of Blender's subsurface
+  scattering (a cube glowing orange toward its edges, Suzanne red in her eye sockets and ears): "do we currently use any
+  subsurface scattering? I think that's maybe why the characters' skin looks a bit lifeless ... could we add this kind
+  of subsurface scattering just around the core parts, eyes, nose ... most of the lights are baked in game, I don't
+  even really care about it being realtime and changing, I just want that skin depth kind of feeling around the core
+  wrinkle/skin/map; see if you can come up with a simple enhancement for our existing skin shaders". We had HumanShaders'
+  scattering, but per lamp, which baked light never reaches. Built (GODOT_LOOK §5g): the skin's depth layer, warm light
+  from under the skin round the eyes, the nose, the mouth and the ears (MHR's depth map, most in the creases), the
+  occlusion red instead of grey there, thin skin lit through, for the ambient a baked level gives as much as for a lamp.
+- **The ears switchable**: "if you add it to the ears make it toggleable, since some NPCs' hair covers their ears". Per
+  character: the Character Studio's Skin light, **Ear glow (game)** (and **Depth (game)**), carried by the export; off,
+  the ears take none of it and the lamps' light through them goes too. `HSCharacterLook` can override it in Godot.
+
+## 2026-11-01 (the user, on a school)
+
+- **A Japanese school for a horror game, in the tools we have**: "In the existing prop maker/furniture maker/interior
+  etc I'd like to have the capabilities to build out a japanese school for a horror game", with a render and a wireframe
+  of a classroom they made in Blender. "Use the existing tools to create generators"; "recreate all the parts to be
+  able to create a 1:1 of the reference images"; "consider the hallway and exterior building too (a small japanese
+  school)". The furniture and fittings are kit types (KIT §10), the rooms the scene builder's (SCENE_BUILDER §10), the
+  outside the street builder's (STREET_BUILDER).
+- **Books in the prop maker, with covers of your own**: "for the prop maker similar to how we can use custom logos
+  maybe allow that for books, books should be able to fit well on desks and inside shelves". A `book` family whose
+  covers, spines and pages are the prop's own pictures to swap (PROPGEN §16), at real paper sizes, rows and stacks
+  made to fit a box; furniture says where things go on and in it (its places), and the scene builder puts books there.
 
 ## 2026-10-31, small hours (the user, on the floors)
 

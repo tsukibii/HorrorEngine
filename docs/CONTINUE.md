@@ -68,6 +68,61 @@ baked into `assets/pbr/Procedural/fabric_*`, first in the PBR picker, tinted; FA
 bake` once on their machine; a local STUDIO run on the GPU); the outfits' thumbnails (`tailor/thumbs.mjs`); the
 sweater over the shoulders; the creases in Godot measured (GDPEOPLE on a dressed export).
 
+## 0a. The eyes in Godot (2026-11-01, on `eye-enhancements`, merged into main by tsukibii/HorrorEngine#7)
+
+The user: the eyes "look kind of lifeless and scary ... it doesnt seem like we are applying the eye wetness etc
+correctly", the exported eyes left alone (DECISIONS 2026-11-01). Measured on a fresh export (`_eyetest`: the soft cinematic
+look, natural lashes, the grafted eyes): the iris black, the whites grey, HumanShaders' eye wetness unused. Done in the
+look plugin (GODOT_LOOK §5h): the iris's bowl fixed (a doubled `handed`), **the eye's wet layer** (`eye_wet.gdshader`, each
+eyeball's material overlay: the real lids found in the depth buffer, a warm shade by them, the upper lid's deeper, the
+lid's edge melted in), the guessed ellipse off and the socket halved under it, the white's light wrapped warm (`wrap`,
+`scatter_color`, `sss`), a crisp catchlight (`catch_size` 0.025). The sheet: `docs/godot_sheets/2026-11-01_eyes.jpg`.
+Then, at the user's word, **the skin's depth merged in** (`subsurace-scattering-exp`, §0b; DECISIONS 2026-11-01, evening):
+GODOT_LOOK keeps it as §5g and the eyes are §5h; the two checked together on a fresh export, the eyes' numbers unchanged;
+before (main) and after: `docs/godot_sheets/2026-11-01_eyes_depth.jpg`. Main (the school, §0c) merged in too.
+In the cloud a Studio export needs MediaPipe first (`face_mesh.py setup`, libegl1: LESSONS). **Next, if wanted** (ask
+first): the eyes' own life in Godot (micro-saccades, a glance, look-at: they don't turn yet); the user's look in a real
+level on the 3090; the tear line's glint if it reads too white under their lights; EYELIDS' file measure on a new
+character with the grafted eyes (0.315 mm² of the right eye through the lower lid at 0.90 shut from below: the export's
+blink, not touched here).
+
+## 0b. `subsurace-scattering-exp` (2026-11-01): the skin's depth, merged into `eye-enhancements` (#7)
+
+The user asked whether we use subsurface scattering (the characters' skin looked lifeless) and for Blender's look round
+the eyes and nose, for baked light, the ears switchable (DECISIONS 2026-11-01). We had HumanShaders' (per lamp, so
+nothing under a baked level's light but a grey occlusion). Built (GODOT_LOOK §5g): **the skin's depth layer** in
+`skin_wet.gdshader` (`skin_depth`, `HSSkin.set_depth`), placed by **MHR's depth map** (`tools/skin_detail.py depth`,
+`textures/mhr_skin_depth.png`: eyes, nose, ears, mouth, most in the creases), on every Studio export by itself;
+per character the Studio's Skin light **Depth (game)** and **Ear glow (game)** (the export's `studioSkin` record);
+`HSCharacterLook` Skin Depth and Ear Glow (auto, on, off); then, the user's yes, the rest of the body gently: a warm
+edge where the skin turns away, the creases everywhere, the fingers lit through, the lips (each a slider: the
+node's "Skin depth's parts"). GDPORTRAIT measures it under a baked light (portrait.gd's
+`--light=baked`, `--depth`, `--ears=off`, `side`, `--probe`); the sheet `docs/godot_sheets/2026-11-01_skin_depth.jpg`.
+The branch is named as the user typed it. **Next:** the user's look in a game of theirs (its baked light, a cast member
+with hair over the ears and Ear glow off), then the strength (1 by default; 2 is Blender's picture); merged into the eyes' pull request at the user's word
+(DECISIONS 2026-11-01, evening: the two checked together, `docs/godot_sheets/2026-11-01_eyes_depth.jpg`); the
+Studio's view could draw it too (not asked).
+
+## 0c. A Japanese school (2026-11-01, on `claude/laughing-goldberg-6l5of3`, merged into main by tsukibii/HorrorEngine#8)
+
+The user asked for a school in the tools we have (DECISIONS 2026-11-01): the kit's school furniture and fittings (KIT
+§10), books with covers of their own (PROPGEN §16), the 1:1 classroom of their Blender render and its corridor (the set
+`school_classroom`, SCENE_BUILDER §10), a school street (`school`). Then "the school building needs to be to scale" and
+two photos of school buildings "1:1": **the school building kit** (SCENE_BUILDER §10b: `schoolBuilding` in
+builder-presets.js, modules into rooms on every storey, dog-leg stairs (`flights: 2`) in shafts to a penthouse, round
+windows; `tools/director/layoutset.mjs` saves a layout as a set) and **buildings in storeys on the street**
+(STREET_BUILDER §5f: the shell storey by storey round the rooms, the facade from them: eaves, pilasters, rails, bands,
+the name on the roof; ribbed walls, a sliding gate, stand-in trees). The photos rebuilt: sets `school_white` and
+`school_showa`, streets `school_white` and `school_showa` with their shots `photo` (renders:
+`node tools/director/streetshot.mjs --street school_white --shot photo`; the photos in each street's `refs/`, on this
+machine only). Next, what the user asked earlier: **the 1:1 classroom with PBR sets** ("to see if it helps realism":
+the interior sets in tools/streetbake/library.py, `jp_oak_floor` and `jp_pine_varnish` baked, ten to go with
+`python tools/street.py library <names>`). Not yet: the school's walkable roof, its toilets' stalls, a gym set; dusk renders
+here come out black now and then (the headless renderer; retry). Then (DECISIONS 2026-11-01, night) **a small private
+school in Tokyo concrete**: the set `school_tokyo` (one storey round a courtyard, two mixed-year classes, the lunch
+room, the reception; SCENE_BUILDER §10c) on the street `tokyo_school`; the user's next word on it decides what follows
+(timber was "for later").
+
 ## 0. The street builder (2026-10-30, night, on `buildings-streets`; not merged)
 
 The user asked for a new tool (DECISIONS 2026-10-30, night and later night): the outside world the enterable buildings
