@@ -94,7 +94,7 @@ function spread(P, nbr, seeds) {
  * part: each point's part (tailor/uv.js PARTS); S: the shade (1, less on a hem's last row and its rim: the hems'
  * seeds); src: each point's point before the seams split it (a seam is where one point became two). F: the body's frame.
  */
-export function creaseData(F, P, R, T, part, S, src) {
+export function creaseData(F, P, R, T, part, S, src, shoe = false) {
   const n = P.length / 3, s = F.s, crz = new Float32Array(n * 4);
   const nbr = Array.from({ length: n }, () => []), count = new Map();
   for (let t = 0; t < T.length; t += 3) for (let k = 0; k < 3; k++) {
@@ -110,14 +110,15 @@ export function creaseData(F, P, R, T, part, S, src) {
   for (let i = 0; i < n; i++) {
     const x = R[i * 3], y = R[i * 3 + 1], z = R[i * 3 + 2], p = part[i];
     let bend = 0, drag = 0;
-    if (p === 1 || p === 2) {                                        // a sleeve: inside the elbow, stacking at the wrist
+    if (shoe) { /* a shoe: its seams and edges only, no folds */ }
+    else if (p === 1 || p === 2) {                                        // a sleeve: inside the elbow, stacking at the wrist
       const A = F.arms[p === 1 ? "L" : "R"], [t] = A.line.project(x, y, z), c = A.line.at(t), r = [x - c[0], y - c[1], z - c[2]], rl = Math.hypot(...r) || 1;
       const inside = r[2] / rl;                                     // the arm's front: the elbow's inside (MHR's arms hang palms in)
       bend = g(t, A.elbow, 0.06 * s) * (0.3 + 0.7 * smooth(-0.3, 0.9, inside)) + 0.85 * smooth(A.wrist - 0.12 * s, A.wrist - 0.02 * s, t);
     } else if (p === 3 || p === 4) {                                // a leg: behind the knee, the break on the shoe, the crotch's whiskers
       const L = F.legLines[p === 3 ? "L" : "R"], [t] = L.project(x, y, z), c = L.at(t), r = [x - c[0], 0, z - c[2]], rl = Math.hypot(r[0], r[2]) || 1;
       const front = r[2] / rl, inner = (p === 3 ? -1 : 1) * r[0] / rl;
-      bend = g(y, F.kneeY, 0.06 * s) * (0.25 + 0.75 * smooth(-0.2, 0.9, -front)) + 0.9 * (1 - smooth(F.ankleY + 0.03 * s, F.ankleY + 0.16 * s, y));
+      bend = g(y, F.kneeY, 0.06 * s) * (0.25 + 0.75 * smooth(-0.2, 0.9, -front)) + 0.9 * (1 - smooth(F.ankleY + 0.005 * s, F.ankleY + 0.05 * s, y));   // (the break only on cloth that reaches the shoe: a hem above it hangs clean)
       drag = smooth(F.crotchY - 0.22 * s, F.crotchY - 0.04 * s, y) * (1 - smooth(F.crotchY - 0.01 * s, F.crotchY + 0.03 * s, y)) * smooth(-0.3, 0.6, front) * (0.5 + 0.5 * smooth(-0.5, 0.6, inner));
     } else if (p === 0 || p === 6) {                                // the body: the waist, the armpits' pull across the chest
       const [cx] = F.torsoAxis(y), side = Math.abs(x - cx) / (0.16 * s);

@@ -76,7 +76,7 @@ export function* making(B, name, design, opts = {}) {
   const at = hung ? hung.P : null, outer = [at ? { P: at, T: G.outer.T } : G.outer];
   // a bottom's legs are panels from its waist down; a coverall's from a waist seam
   const legsTo = p.legs ? (p.waist ? height(F, p.waist.at) + 0.05 * s : F.crotchY + 0.2 * s) : -1;
-  const part = (pname, col, m, fabric, surface, mAt = null) => parts.push({ name: pname, color: col, fabric, surface, ...unwrap(F, m.P, m.T, m.S, { rings: G.rings, legsTo, at: mAt }) });
+  const part = (pname, col, m, fabric, surface, mAt = null) => parts.push({ name: pname, color: col, fabric, surface, ...unwrap(F, m.P, m.T, m.S, { rings: G.rings, legsTo, at: mAt, shoe: p.kind === "shoe" }) });
   const thick = (P, T, Pat, ...a) => [thicken(P, T, ...a), Pat ? thicken(Pat, T, ...a).P : null];   // the cut's and the hanging cloth's (the same points)
   part(name, color, ...insert(thick(G.outer.P, G.outer.T, at, th, design.rim ?? 0.7, design.edge ?? 0.82), true));
   if (design.sole) {                                                 // a shoe's soles, under the floor
@@ -93,7 +93,7 @@ export function* making(B, name, design, opts = {}) {
   }
   const tris = parts.reduce((a, q) => a + q.T.length / 3, 0), verts = parts.reduce((a, q) => a + q.P.length / 3, 0);
   // its look (tailor/look.js): the design's fabric, pattern and trim, then the garment's own
-  const look = { color, surface: design.surface, trim: design.trimSurface, pattern: design.pattern, denier: design.denier, crease: design.crease, ...(opts.look || {}) };
+  const look = { color, surface: design.surface, trim: design.trimSurface, pattern: design.pattern, denier: design.denier, crease: p.kind === "shoe" ? { crinkle: 0, fold: 0, drape: 0, ...(design.crease || {}) } : design.crease, ...(opts.look || {}) };   // (a shoe: its seams and stitching, no cloth wrinkles)
   const hs = handles(F, G, p, at);
   if (y0) {                                                          // back into the body's own frame
     for (const q of [...parts, ...outer]) q.P = raised(q.P, y0);
