@@ -2,6 +2,27 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-02, later (the user: the GPU, on `clothing-refiner`)
+
+- **"Instead of re-writing the WebGPU compute for cpu, can you just make a toggle for (use gpu), so I can test it, I
+  can later let you use my local claude to run more optimizations"**: *Use the GPU* in the wardrobe and the Studio's
+  Clothes tab runs the drape's steps on the card (WebGPU, `tailor/drape_gpu.js`); off, or with no WebGPU, the CPU's
+  drape exactly as before. A test switch, remembered per browser, not saved with characters; tuning it is for a local
+  session on the 3090 (TAILOR §1i).
+
+## 2026-11-02 (the user: the wardrobe, on `clothing-refiner`)
+
+- **"I notice the clothing modification is very laggy, is there anything we can do to maybe isolate the processing or
+  utilize more of my GPU (RTX 3090), like create a clothing edit tab"**; **"a clothing specific tab where we can create
+  outfits on a dummy, have it run really well in real time and then load those outfits onto our actual model (be able
+  to save outfits sort of how you already have preset ones)"**; **"a bagginess/looseness modifier ... look at those
+  shorts, the lines around the thighs and the folds ... a modifier where we just go through various seeds till we get a
+  fold style we like (while keeping it tight at the waist), the looseness is just a small gap"**; **"a skirt that only
+  goes down slightly below waist/crotch, want to test if those kind of skirts clip less and look more natural"**;
+  **"make a note to not affect/mess up anything we've made so far, this should be progressive"**. The plan and its
+  ticks: docs/WARDROBE_PLAN.md. Every existing design, outfit and character dresses as before; the new parts are new
+  fields, designs and a page.
+
 ## 2026-11-01, late night (the user, on the prop generator's pictures)
 
 - **The prop editor's pictures, Figma's way**: "the prop editor is great but a bit hard to use when wanting custom
@@ -13,6 +34,37 @@ The user's answers, newest first. They override the plan, the research and the d
   image, a sheet: each part its own piece), handles, undo, the prop in 3D wearing the canvas, a Krita template out and
   back in. Built on the branch `enhance-prop-editor`.
 
+## 2026-11-01, late night (the user: the sneakers' soles, on `clothing-refiner`)
+
+- **"The sneakers you made are pretty not great especially the soles, look at the [sandal OBJ] to see how the geometry
+  can be done better ... I don't mind the boxy retro look either, the main issue is the soles don't look normal, soles
+  should almost just be an extension of the normal shape but extruded down (so it can have diff texture)"**: every
+  shoe's sole is now the upper's own outline carried down, with grooves and real heel blocks (TAILOR §1h). The OBJ stays
+  out of the project (only looked at).
+- **"Clean up the weird bulgy/bumpiness, it makes it look like it was made in sculpt tool, should look well
+  polished"**: the shoes' shells polished, round heels, the pieces kept off the sole (TAILOR §1h).
+
+## 2026-11-01, late night (the user: the skin's depth into the eyes' pull request, then main)
+
+- **"Can you merge subsurace-scattering-exp into this pr and make sure it works, take a screenshot with the updated
+  eyes and sus scatter."** Merged into `eye-enhancements` (tsukibii/HorrorEngine#7): the skin's depth keeps
+  GODOT_LOOK §5g, the eyes' wet layer is §5h. Checked together on a fresh export; the sheet
+  `docs/godot_sheets/2026-11-01_eyes_depth.jpg`.
+- **"can you resolve all conflicts and merge in main too"**: main (the school, tsukibii/HorrorEngine#8) merged into
+  `eye-enhancements`; the two met only in DECISIONS and CONTINUE, both kept.
+
+## 2026-11-01, night (the user: cozy and gothic clothes, bigger busts, on `clothing-refiner`)
+
+- **"Note you've been making bras on models that have a flat chest, maybe you should review it with bigger busts"**:
+  the cups grow with the breast (TAILOR §1g), reviewed on the full feminine body too.
+- **"Make some more cozy clothing following the principles of being able to animate easily without worrying about
+  clipping"**: socks in every size, slightly creased and heavier, knee-highs; a raincoat with a reflective plasticky
+  look; black loafers; a sneaker designer like the tee's prints (rim highlights, sole colours, a logo, small stickers);
+  gothic designs, a spider web fishnet and a mesh fabric rendered in Blender; gothic clothes and props (horns, bunny
+  ears), props placed by x, y, z sliders and turns, PBR sets on props. The plan and its ticks: docs/COZY_GOTHIC_PLAN.md.
+- **"By rain coat I mean the smaller wind ones, that are almost like hoodies but more of a plasticky texture"**: a
+  hooded, zipped rain jacket in PVC, not a long coat.
+
 ## 2026-11-01, night (the user, on a small private school)
 
 - **A small private school, one storey, in Tokyo concrete**: "using your knowledge of modern architecture can you create a
@@ -23,6 +75,31 @@ The user's answers, newest first. They override the plan, the research and the d
   that kind of japanese tokyo street design)". Built as the set `school_tokyo` (SCENE_BUILDER §10c) and the street
   `tokyo_school`: exposed concrete round a courtyard, the two mixed-year classes (years 1-3, 4-6), the lunch room, the
   reception at the entrance; timber is for later.
+
+## 2026-11-01, evening (the user: the bikinis, on `clothing-refiner`)
+
+- **"Everything looks good, except the women's bikini, thongs (they sort of vertically sit below the waist like boxers
+  sit above the waist for men which doesn't look correct as they tend to follow the curve of the hip bone)"**, with a
+  string bikini's top and bottom as OBJs and a guide to fitting them. Built: the waistline's `hip` lift (TAILOR §1g),
+  every thong, tanga, G-string and bikini brief re-cut on it, a string bikini and a halter triangle top after the OBJs.
+  The OBJs themselves stay out of the project (only looked at).
+- **"Why do the bras look painted on, also why does the red one attach to nothing around the neck, can you use the bra
+  obj model I gave you as a reference to the right way to make bras"**: the halter's strings as tubes pulled taut off
+  the body, round the neck, a band and a bow; every bra's cups spanning the breast, with a thickness (TAILOR §1g).
+- **"The bras are way too low"**: the fold under the breast found where its underside eases onto the ribs, the cups
+  higher (TAILOR §1g).
+
+## 2026-11-01, later (the user: the clothing review, on `clothing-refiner`)
+
+- **"Some of your trousers are baggy at the waist band ... waistband on shorts, pants, anything that's lower body even
+  baggy always needs to be skin tight or the pants wouldn't stay on"; "pants shouldn't dent so harshly inwards at the
+  knees"; "consider animation ability, we aren't going to do cloth physics so don't want things overly baggy to the point
+  clothing will clip through for generic walks"; "a lot of the clothes have a weird butt crack dent"; "even baggy stuff
+  like hoodies need to feel like they're fitted, it's the creases etc that create the illusion of bagginess"; "make it
+  easy to make custom tees (front prints, back prints)"; "we don't need super unique clothing, just daily outfits normal
+  humans wear: smart casual, casual, business, uniforms, pyjamas and bikinis ... really nailing the reusable simple
+  elements and let fabric and colour take care of the rest"; "review the current clothing, list a plan to enhance
+  everything, and tick as you go".** The plan and its ticks: docs/CLOTHING_PLAN.md.
 
 ## 2026-11-01, later (the user, on the school's building)
 
@@ -36,6 +113,63 @@ The user's answers, newest first. They override the plan, the research and the d
   as sets and streets with shots matched to them.
 - **The PBR classroom waits for the build**: "Once you're done with the build can you create a 1:1 ref using the pbrs
   instead to see if it helps realism" (asked during the first school build).
+
+## 2026-11-01 (the user: the clothes refined, on `clothing-refiner`)
+
+- **"Inspired by the image of Japanese smart casual outfits create some of these, I think currently what makes our
+  clothes bland is we are missing creases, natural fabric kinda style that could be emulated via PBR techniques etc so
+  add a crease gen as well (basically how we emulate wrinkles on faces)."** Done (TAILOR §1d, §1f): the creases as a
+  height in the garment's shader (folds at the bends, drag lines, the press, seams, hems, the fabric's crinkle), a
+  Creases slider and a Pressed crease switch per garment, baked into the export's normal map; the Smart casual tab with
+  fifteen outfits and nine new cuts; linen, crepe and flannel as drawn surfaces.
+- **"Similar to what we did for props and buildings can you create some procedural materials with blender for the
+  clothing in the studio, stuff like cotton, etc."** Done (TAILOR §1e): 26 fabrics as node groups of threads,
+  stitches, fibres and grain at their real size, baked in Blender into tileable PBR sets
+  (`tools/fabric_bake.py`, `assets/pbr/Procedural/fabric_*`), first in the Studio's PBR picker, tinted by the garment's
+  colour.
+
+- **"The bottom of the light blue and white trousers you made looks deformed, should just cleanly sit above the
+  shoes"** and **"The baggy trousers shouldn't bend into the knees, as that doesn't make logical sense"**: the wide
+  trousers' legs are a straight column from under the seat (`legs.straight`, TAILOR §2), held as cut by the drape, their
+  hem clean above the shoe; no knee folds on loose legs, no cloth wrinkles on shoes.
+- **No low poly clothes.** Asked to try a PS1-style low poly genre of clothing (decimated garments, chunky texels, a
+  dither), then, seeing it: **"Nah the low poly looks ugly ... let's avoid the low poly then."** It was taken out
+  before it was committed; don't offer it again.
+
+## 2026-11-01 (the user: the eyes in Godot, on `eye-enhancements`)
+
+- **"Can you make a new branch called eye-enhancements, I dont want to modify too much about the exported eyes, but
+  enhance the use of the existing godot shader, atm the eyes look kind of lifeless and scary, it doesnt seem like we
+  are applying the eye wetness etc correctly."** Measured on a fresh export with the grafted eyes: the iris read black
+  (a bug: Godot turned the iris's bowl upside down, so its lower half faced away from a lamp above), the whites a flat
+  grey (the guessed lid ellipse and the socket's shade over a paint at 0.58), and HumanShaders' eye wetness wasn't used
+  at all. Done on the Godot side only, the export as it was (GODOT_LOOK §5h): the bowl fixed; **the eye's wet layer**
+  (HumanShaders' eye wetness and MetaHuman's eye occlusion as each eyeball's material overlay: the real lids found in
+  the depth buffer, a warm shade by them, deeper under the upper lid, the lid's edge melted into the eye) in place of
+  the ellipse, the socket's shade halved; the white's light wrapped warm with a little scattering; a crisp catchlight.
+
+## 2026-11-01, later (the user, on the skin's depth elsewhere)
+
+- **The depth past the face's core, gently**: asked "you think we should add some slight SS to cheeks? or anywhere
+  else that helps add life?", offered (not a patch on the cheeks: that's blush, the Studio's Flush) a warm edge where
+  the skin turns away from the eye, the creases everywhere warm instead of grey, the fingers lit through like the ears,
+  the lips; "sounds good, do that". Each gentle by default with its own slider (GODOT_LOOK §5g; HSCharacterLook's
+  "Skin depth's parts").
+
+## 2026-11-01 (the user, on the skin's depth; branch `subsurace-scattering-exp`)
+
+- **Subsurface scattering round the face's core, for baked light**: with two pictures of Blender's subsurface
+  scattering (a cube glowing orange toward its edges, Suzanne red in her eye sockets and ears): "do we currently use any
+  subsurface scattering? I think that's maybe why the characters' skin looks a bit lifeless ... could we add this kind
+  of subsurface scattering just around the core parts, eyes, nose ... most of the lights are baked in game, I don't
+  even really care about it being realtime and changing, I just want that skin depth kind of feeling around the core
+  wrinkle/skin/map; see if you can come up with a simple enhancement for our existing skin shaders". We had HumanShaders'
+  scattering, but per lamp, which baked light never reaches. Built (GODOT_LOOK §5g): the skin's depth layer, warm light
+  from under the skin round the eyes, the nose, the mouth and the ears (MHR's depth map, most in the creases), the
+  occlusion red instead of grey there, thin skin lit through, for the ambient a baked level gives as much as for a lamp.
+- **The ears switchable**: "if you add it to the ears make it toggleable, since some NPCs' hair covers their ears". Per
+  character: the Character Studio's Skin light, **Ear glow (game)** (and **Depth (game)**), carried by the export; off,
+  the ears take none of it and the lamps' light through them goes too. `HSCharacterLook` can override it in Godot.
 
 ## 2026-11-01 (the user, on a school)
 

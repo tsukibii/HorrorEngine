@@ -3,14 +3,24 @@
 ## cornea's dome, the iris's plane; its paint's numbers). `HSEye.wear(node, glb_path)` reads them from the glb's own
 ## JSON (Godot's importer keeps no material extras), makes the shader material for each eye (the baked paint as its
 ## texture, the shape and the paint's numbers as its uniforms: people.py's `params`) and puts it on the eye meshes
-## (named `<name>_eye_L` / `_R`). The eye's refraction is then the Studio's and Unreal's. The tear line (`<name>_tearline`,
-## its record `studioTear`) wears tear.gdshader, a wet glint along each lower lid; a character whose export blinks gets
-## an HSBlink (blink.gd).
+## (named `<name>_eye_L` / `_R`). The eye's refraction is then the Studio's and Unreal's. Over each eyeball goes its wet
+## layer (eye_wet.gdshader, the eye's material_overlay: HumanShaders' eye wetness and MetaHuman's eye occlusion, the
+## lids found in the depth buffer, so the shade follows the real lids in any pose; docs/GODOT_LOOK.md §5h). The tear
+## line (`<name>_tearline`, its record `studioTear`) wears tear.gdshader, a wet glint along each lower lid; a character
+## whose export blinks gets an HSBlink (blink.gd).
 class_name HSEye
+
+## the socket's shade kept under the wet layer: the Studio's is a guess at the lids' shadow (darker all over, more toward
+## the brow and the corners); with the real lids' shade on top, its whole was the grey, dead white (GODOT_LOOK §5h)
+const WET_SOCKET := 0.5
 
 
 static func shader() -> Shader:
 	return load("res://addons/horrorstudio_look/eye.gdshader")
+
+
+static func wet_shader() -> Shader:
+	return load("res://addons/horrorstudio_look/eye_wet.gdshader")
 
 
 ## the glb's JSON chunk (a binary glTF)
@@ -76,12 +86,29 @@ static func material(rec: Dictionary, paint: Texture2D) -> ShaderMaterial:
 	return m
 
 
-## the eyes under a node given the Studio's eye; returns {material name: ShaderMaterial}
+## the wet layer over an eye (eye_wet.gdshader): the eye's shape from its record, the eyeball's radius from the mesh's
+## bounds (a sphere: as wide as tall, the cornea's dome only adds depth)
+static func wet_material(rec: Dictionary, mesh: Mesh) -> ShaderMaterial:
+	var m := ShaderMaterial.new()
+	m.shader = wet_shader()
+	var p := params(rec)
+	for k in ["rho", "limbus_plane", "dome_centre", "dome_radius"]:
+		m.set_shader_parameter(k, p[k])
+	if mesh != null:
+		var box := mesh.get_aabb()
+		m.set_shader_parameter("eye_radius", 0.5 * minf(box.size.x, box.size.y))
+	return m
+
+
+## the eyes under a node given the Studio's eye; returns {material name: ShaderMaterial} (the eyes' and the tear line's;
+## each eye's wet layer is its mesh's material_overlay). `overrides` go to the eye's shader, `wet_*` ones to its wet
+## layer without the prefix, and `"wet": false` leaves the layer off (the lids' shadow then the eye's own ellipse)
 static func wear(node: Node, glb_path: String, overrides: Dictionary = {}) -> Dictionary:
 	var out := {}
 	var recs := records(glb_path)
 	if recs.is_empty():
 		return out
+	var wet: bool = not overrides.has("wet") or bool(overrides["wet"])
 	for mi in node.find_children("*", "MeshInstance3D", true, false):
 		if mi.mesh == null:
 			continue
@@ -98,10 +125,20 @@ static func wear(node: Node, glb_path: String, overrides: Dictionary = {}) -> Di
 				continue
 			var tex: Texture2D = old.albedo_texture if old is BaseMaterial3D else null
 			var m := material(rec, tex)
+			if wet:                                   # the wet layer shades by the real lids: the ellipse goes and the socket's guess halves
+				m.set_shader_parameter("occlusion", 0.0)
+				m.set_shader_parameter("socket", WET_SOCKET * float(params(rec)["socket"]))
 			for k in overrides:
-				m.set_shader_parameter(k, overrides[k])
+				if k != "wet" and not String(k).begins_with("wet_"):
+					m.set_shader_parameter(k, overrides[k])
 			mi.set_surface_override_material(s, m)
 			out[name] = m
+			if wet:
+				var wm := wet_material(rec, mi.mesh)
+				for k in overrides:
+					if String(k).begins_with("wet_"):
+						wm.set_shader_parameter(String(k).substr(4), overrides[k])
+				mi.material_overlay = wm
 	var tears := records(glb_path, "studioTear")
 	for mi in node.find_children("*", "MeshInstance3D", true, false):   # the tear line, wet
 		if mi.mesh == null:

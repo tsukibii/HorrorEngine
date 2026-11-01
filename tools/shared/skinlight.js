@@ -12,14 +12,17 @@
 //
 //   SKIN_LIT                 the settings and their defaults: smooth (0..10: how far each colour's normal is smoothed),
 //                            fall (0.7..2: the falloff's softness), spec (0..1), double (the second highlight), trans
-//                            (0..2: translucency), wrap (0..1: how far light reaches past the terminator), on
+//                            (0..2: translucency), wrap (0..1: how far light reaches past the terminator), on; and two
+//                            for the game alone (Godot's HSSkin, docs/GODOT_LOOK.md §5g; drawn here as before): depth
+//                            (0..3: the skin's depth layer, warm light from under the skin round the eyes, the nose,
+//                            the mouth and the ears; 0 off) and ears (1: the ears share it; 0 for hair over them)
 //   skinLit(material, o)     patch a MeshStandardMaterial or MeshPhysicalMaterial (after its own onBeforeCompile):
 //                            o.thin "attr" (a per-vertex `skinThin`, 0 thick .. 1 thin) or "map" (the metalness map's
 //                            blue: an export's ORM, its metalness 0); returns its uniforms
 //   setSkinLit(material, s)  its settings (a studioSkin record, or SKIN_LIT's keys)
 //   recordOf(s)              the settings as an export carries them (extras.studioSkin)
 
-export const SKIN_LIT = { on: 1, smooth: 5, fall: 1, spec: 0.5, double: 1, trans: 0.75, wrap: 0.5 };
+export const SKIN_LIT = { on: 1, smooth: 5, fall: 1, spec: 0.5, double: 1, trans: 0.75, wrap: 0.5, depth: 1, ears: 1 };
 export const SKIN_LIT_VERSION = 1;
 
 const PARS = `
