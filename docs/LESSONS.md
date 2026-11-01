@@ -237,6 +237,15 @@ blew Blender's cloth apart (seams a metre apart). Laying them round the body's c
 its own angle from the middle, at its own height) keeps their order and spacing, and the pants stay on. And don't
 flatten a scooped neckline to one height: it hitches the whole top up.
 
+## A drop goes where the picture fits, not only where it lands (2026-11-01)
+
+- **Decide a dropped picture's target by its shape as well as its place:** a box under the pointer can be the whole
+  part (the can's bubbles pattern is a slot as big as its label), so "the smallest box under the pointer" swapped the
+  pattern when a label-shaped picture was dropped to cover the label. A picture the part's shape fills the part unless
+  it's the shape of a box that's only some of the part. And "square and half the texture's size" took a 256 px logo on
+  a 512 texture for a painted template: the texture's shape is square and exactly its size (or 2x, 4x), or opaque and
+  three quarters of it. The drag's label says what the drop will do, and Alt and Shift override it.
+
 ## A chart is pseudo-code, not prose (2026-10-28)
 
 - **Write the writers' room's script as literal things:** who does what with which thing, short lines, sounds as cues,

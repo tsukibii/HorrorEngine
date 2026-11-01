@@ -2,6 +2,17 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-01, late night (the user, on the prop generator's pictures)
+
+- **The prop editor's pictures, Figma's way**: "the prop editor is great but a bit hard to use when wanting custom
+  images etc, could you make the editor more like figma where maybe there is a panel that shows what the image your
+  using its and where the cuts are and then I can either just drag one large image or small ones to fit in the cut
+  areas etc. Do this in a new branch called enhance-prop-editor". The page's Texture & pictures tab is now the picture
+  editor (PROPGEN §17): the texture with the model's own cuts, its parts and pictures as layers, pictures dragged onto
+  a part (they fill it), onto one of its own pictures (they take its place) or over the whole texture (one large
+  image, a sheet: each part its own piece), handles, undo, the prop in 3D wearing the canvas, a Krita template out and
+  back in. Built on the branch `enhance-prop-editor`.
+
 ## 2026-11-01, night (the user, on a small private school)
 
 - **A small private school, one storey, in Tokyo concrete**: "using your knowledge of modern architecture can you create a

@@ -8,9 +8,24 @@ latch, examining, skin v2; then TestRoom001, the Unreal note, the skin after Hum
 on `game-research-001`: The Visitor's research, abstract and chart, the director's to-do; merged into `dev-002` and
 the to-do built there, with the Studio's eyes from the side, a small nose and the face's bake; 2026-10-28 and 29 on
 `godot-support`: the Godot export, its runtime, its look, the look plugin; 2026-10-30 and 31 on `buildings-streets`: the
-street builder, its paint and the PBR sets, with `prop-gen-tool` merged in). Read this
+street builder, its paint and the PBR sets, with `prop-gen-tool` merged in; 2026-11-01 the school on
+`claude/laughing-goldberg-6l5of3`, merged, then the prop generator's picture editor on `enhance-prop-editor`). Read this
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
+
+## 000. The prop generator's picture editor (2026-11-01, late night, on `enhance-prop-editor`; not merged)
+
+The user found pictures on props hard to place (DECISIONS 2026-11-01, late night) and asked for a Figma-like panel:
+the image in use, where the cuts are, one large image or small ones dragged to fit the cut areas. Built (PROPGEN §17):
+**the picture editor**, the page's Texture & pictures tab taking the whole page (`tools/propgen/page/picedit.js`, the
+helpers moved to `page/util.js`): the canvas (Design: the paint under your pictures, `_paint.png`, with them live over
+it; As made), the cuts from the made .glb's UVs, the parts and pictures as layers, drops onto a part, an own picture
+or the whole texture (**`sheets`**, a new recipe word: one picture in the layout it was laid in), handles to move, size
+and turn (decals' **`rot`**, and the fits **`cover`**, **`contain`**), undo, the prop in 3D wearing the canvas (a click
+picks a part), a Krita .ora template out and back in (the server takes its Paint layer). Checked by PROPGEN (its new
+case) and PROPPAGE (rewritten for the editor). Next, if the user wants: their own run on the 3090
+(`GPU=1 node tools/propgen/pagetest.mjs` is quicker there), what they find awkward in it, and perhaps the same canvas
+for the kit maker's slots.
 
 ## 00. A Japanese school (2026-11-01, on `claude/laughing-goldberg-6l5of3`)
 

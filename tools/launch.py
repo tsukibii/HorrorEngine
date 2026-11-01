@@ -113,7 +113,7 @@ TOOLS = [
     ("Pages", "Salon (hair as locks: strands, sheets, bundles, against a locked reference video)", "tools/character/serve.py", {"url": "http://127.0.0.1:8793/salon.html"}),
     ("Pages", "Kit maker (room things from numbers)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/kit.html"}),
     ("Pages", "PBR shelf (your texture sets in assets/pbr, on a sphere; the Character Studio has it as its PBR button)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/pbr.html"}),
-    ("Pages", "Prop generator (every recipe as its picture: open one, change it, put your pictures and PBR sets on it, make it and its variations, see it in 3D, keep it)", "tools/propgen/serve.py", {"url": "http://127.0.0.1:8797"}),
+    ("Pages", "Prop generator (every recipe as its picture: open one, change it, drag your pictures onto its texture in the picture editor, PBR sets, make it and its variations, see it in 3D, keep it)", "tools/propgen/serve.py", {"url": "http://127.0.0.1:8797"}),
     ("Pages", "Pigment test (projected art as pigment)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/pigment.html"}),
     ("Pages", "Kimodo demo", "tools/kimodo.py demo", {"url": "http://127.0.0.1:7860"}),
 

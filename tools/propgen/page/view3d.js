@@ -1,10 +1,12 @@
 // The made prop in 3D: its .glb as Godot will read it (base colour, ORM, normal map), under a soft studio light with
 // an environment for the metals to reflect, its sockets (where a flame, steam or a light goes) as small blue markers
-// pointing their way. Drag to turn it, the wheel to come closer, a double-click to frame it again.
+// pointing their way. Drag to turn it, the wheel to come closer, a double-click to frame it again. The picture editor
+// gives it its canvases to wear in place of the made colour maps (`setMaps`, live as they're edited) and is told which
+// part a click lands on (`onPick`: the material and the UV there).
 import * as THREE from "three";
 import { GLTFLoader } from "/vendor/GLTFLoader.js";
 
-export function makeViewer(box) {
+export function makeViewer(box, opts = {}) {
   let renderer;
   try {
     renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
@@ -49,14 +51,19 @@ export function makeViewer(box) {
     cam.lookAt(orbit.target);
   };
   const el = renderer.domElement;
-  el.addEventListener("pointerdown", e => { down = { x: e.clientX, y: e.clientY }; el.setPointerCapture(e.pointerId); });
+  let moved = 0;
+  el.addEventListener("pointerdown", e => { down = { x: e.clientX, y: e.clientY }; moved = 0; el.setPointerCapture(e.pointerId); });
   el.addEventListener("pointermove", e => {
     if (!down) return;
+    moved += Math.abs(e.clientX - down.x) + Math.abs(e.clientY - down.y);
     orbit.yaw -= (e.clientX - down.x) * 0.008;
     orbit.pitch = Math.max(-1.2, Math.min(1.45, orbit.pitch + (e.clientY - down.y) * 0.006));
     down = { x: e.clientX, y: e.clientY };
   });
-  el.addEventListener("pointerup", () => { down = null; });
+  el.addEventListener("pointerup", e => {
+    down = null;
+    if (moved < 4 && opts.onPick) { const hit = pick(e.clientX, e.clientY); if (hit) opts.onPick(hit); }
+  });
   el.addEventListener("wheel", e => { e.preventDefault(); orbit.dist *= Math.exp(e.deltaY * 0.001); }, { passive: false });
   el.addEventListener("dblclick", () => { if (orbit.home) Object.assign(orbit, { ...orbit.home, target: orbit.home.target.clone() }); });
   const fit = () => {
@@ -77,13 +84,65 @@ export function makeViewer(box) {
   };
   requestAnimationFrame(loop);
 
+  // what's under a point of the view: the material's name and the UV there (glTF's: v down from the texture's top)
+  const ray = new THREE.Raycaster();
+  function pick(cx, cy) {
+    if (!root) return null;
+    const b = el.getBoundingClientRect();
+    ray.setFromCamera(new THREE.Vector2(((cx - b.left) / b.width) * 2 - 1, -((cy - b.top) / b.height) * 2 + 1), cam);
+    const hit = ray.intersectObject(root, true).find(h => h.object.isMesh && h.uv && !/_liquid$/.test(h.object.name));
+    if (!hit) return null;
+    const m = [].concat(hit.object.material)[hit.face && hit.face.materialIndex || 0] || [].concat(hit.object.material)[0];
+    return { material: m.name, uv: [hit.uv.x, hit.uv.y], point: hit.point.toArray() };
+  }
+
+  // the picture editor's canvases worn as the colour maps of the materials they name ({material name: canvas}); a
+  // name given null (or left out) wears its made map again
+  const live = new Map();
+  function setMaps(maps) {
+    let n = 0;
+    if (!root) return n;
+    root.traverse(o => {
+      for (const m of [].concat(o.material || [])) {
+        if (!m.isMeshStandardMaterial && !m.isMeshPhysicalMaterial) continue;
+        if (!("_madeMap" in m.userData)) m.userData._madeMap = m.map || null;
+        const cv = maps[m.name];
+        if (cv) {
+          let t = live.get(cv);
+          if (!t) {
+            t = new THREE.CanvasTexture(cv);
+            t.flipY = false;
+            t.colorSpace = THREE.SRGBColorSpace;
+            t.anisotropy = 4;
+            live.set(cv, t);
+          }
+          if (m.map !== t) { m.map = t; m.needsUpdate = true; }
+          n++;
+        } else if (m.map !== m.userData._madeMap) {
+          m.map = m.userData._madeMap;
+          m.needsUpdate = true;
+        }
+      }
+    });
+    return n;
+  }
+  function touchMaps() { for (const t of live.values()) t.needsUpdate = true; }
+  function liveMaps() {
+    const out = {};
+    if (root) root.traverse(o => { for (const m of [].concat(o.material || [])) if (m.map && m.map.isCanvasTexture) out[m.name] = m.map.image; });
+    return out;
+  }
+
   function clear() {
     if (!root) return;
+    for (const t of live.values()) t.dispose();
+    live.clear();
     scene.remove(root);
     root.traverse(o => {
       if (o.geometry) o.geometry.dispose();
       for (const m of [].concat(o.material || [])) {
         for (const k of ["map", "normalMap", "roughnessMap", "metalnessMap", "aoMap"]) if (m[k]) m[k].dispose();
+        if (m.userData && m.userData._madeMap) m.userData._madeMap.dispose();
         m.dispose();
       }
     });
@@ -122,12 +181,13 @@ export function makeViewer(box) {
     floor.scale.setScalar(r * 1.4);
     floor.position.y = box3.min.y - r * 0.0005;
     orbit.target.copy(ctr);
-    orbit.dist = r * 1.45;
+    orbit.dist = r * (opts.distance || 1.45);
     orbit.yaw = -0.6;
     orbit.pitch = 0.38;
     orbit.home = { yaw: orbit.yaw, pitch: orbit.pitch, dist: orbit.dist, target: ctr.clone() };
     return { size: [size.x, size.y, size.z], tris, sockets: sockets.map(s => s.name.replace(/^socket_/, "")), meshes: root.children.length };
   }
 
-  return { load, clear, setSpin: v => { spin = !!v; }, dispose: () => { alive = false; clear(); renderer.dispose(); }, canvas: el };
+  return { load, clear, setSpin: v => { spin = !!v; }, dispose: () => { alive = false; clear(); renderer.dispose(); }, canvas: el,
+    pick, setMaps, touchMaps, liveMaps };
 }

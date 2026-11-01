@@ -106,13 +106,15 @@ def write_tscn(odir, name, fx, liquid):
 
 
 def lay_extras(spec, th, frames):
-    """What every family takes over its own paint: a PBR set off the shelf on a material's islands (`pbr`: {material
-    or "*": "pbr/<set>" or {set, tile (metres a repeat), rot, tint, alpha, normal, islands: [names]}}), then
-    pictures on any island (`decals`: [{image, island, x, y (its middle, mm across and up the island; the middle if
-    not given), w (mm; a third of the island), h (from the picture's shape), fit, rough, metal, alpha, height}]).
-    `fit` wraps a picture over the whole island: "stretch" to its size, "width" its width with its own shape (centred
-    up and down), "height" the same the other way; `flip`, `tint`, and as a flourish `repeat`/`corners` (`_copies`).
-    Then `smudges` over it all (`_smudge`). The prop's own pictures (`pictures`) are its paint's, by Frame.slot."""
+    """What every family takes over its own paint: a PBR set (`lay_pbr`), then your pictures (`lay_pictures`). The
+    prop's own pictures (`pictures`) are its paint's, by Frame.slot."""
+    lay_pbr(spec, th, frames)
+    lay_pictures(spec, th, frames)
+
+
+def lay_pbr(spec, th, frames):
+    """A PBR set off the shelf on a material's islands (`pbr`: {material or "*": "pbr/<set>" or {set, tile (metres a
+    repeat), rot, tint, alpha, normal, islands: [names]}})."""
     for mname, ps in (spec.get("pbr") or {}).items():
         ps = ps if isinstance(ps, dict) else {"set": ps}
         only = ps.get("islands")
@@ -120,6 +122,18 @@ def lay_extras(spec, th, frames):
             if (mname == "*" or isl.mat == mname) and (not only or iname in only):
                 frames[iname].pbr(ps["set"], tile=ps.get("tile"), rot=float(ps.get("rot", 0.0)), tint=ps.get("tint"),
                                   alpha=float(ps.get("alpha", 1.0)), normal_strength=float(ps.get("normal", 1.0)))
+
+
+def lay_pictures(spec, th, frames):
+    """Your pictures over the prop's own paint: `sheets` first (one picture over a material's whole texture, `_sheet`),
+    then pictures on any island (`decals`: [{image, island, x, y (its middle, mm across and up the island; the middle
+    if not given), w (mm; a third of the island), h (from the picture's shape), rot (degrees anticlockwise about its
+    middle), fit, rough, metal, alpha, height}]). `fit` wraps a picture over the whole island: "stretch" to its size,
+    "cover" filling it with its own shape (cut to it), "contain" all of it inside with its own shape, "width" its width
+    with its own shape (centred up and down), "height" the same the other way (x and y move a cover or a contain);
+    `flip`, `tint`, and as a flourish `repeat`/`corners` (`_copies`). Then `smudges` over it all (`_smudge`)."""
+    for sh in spec.get("sheets") or ():
+        _sheet(sh, th, frames)
     for dc in spec.get("decals") or ():
         f = frames.get(dc.get("island"))
         if f is None:
@@ -133,6 +147,9 @@ def lay_extras(spec, th, frames):
             w, h, x, y = f.W, f.W * asp, f.W / 2, float(dc.get("y", f.H / 2))
         elif fit == "height":
             w, h, x, y = f.H / asp, f.H, float(dc.get("x", f.W / 2)), f.H / 2
+        elif fit in ("cover", "contain"):
+            w = (max if fit == "cover" else min)(f.W, f.H / asp)
+            h, x, y = w * asp, float(dc.get("x", f.W / 2)), float(dc.get("y", f.H / 2))
         else:
             w = float(dc.get("w", f.W / 3))
             h = float(dc.get("h", w * asp))
@@ -142,11 +159,72 @@ def lay_extras(spec, th, frames):
         if dc.get("tint"):
             img = img.copy()
             img[..., :3] *= P.rgb(dc["tint"])
+        rot = 0.0 if fit else float(dc.get("rot", 0.0))
         for cx, cy, fx, fy in _copies(dc, f, x, y, w, h):
             im = img[::-1 if fy else 1, ::-1 if fx else 1]
-            f.image(im, cx - w / 2, cy - h / 2, w, h, **props)
+            f.image(im, cx - w / 2, cy - h / 2, w, h, rot=rot if fx == fy else -rot, **props)
     for sm in spec.get("smudges") or ():
         _smudge(sm, th, frames)
+
+
+def _sheet(sh, th, frames):
+    """One picture over a material's whole texture, laid in its layout (`sheets`: [{image, mat (the material; the only
+    one if not given), at: [x0, y0, x1, y1] (where the picture lies on the texture, fractions from its top left; all
+    of it if not given), layout: {island: [u0, v0, u1, v1]} (each part's place on the texture when the picture was laid
+    on it, as meta.json's rects: a part another make has moved still takes its own piece of it, and a part that isn't
+    in it takes none; without a layout every part of the material takes what's over it now), alpha, rough, metal,
+    height (the paint's own roughness, metalness and relief unless given), tint}]): your painting over the layout's
+    template, each part its own piece, under the decals and smudges."""
+    img = P.read_image(sh["image"])
+    mats = sorted({i.mat for i in th.islands.values()})
+    mat = sh.get("mat") or (mats[0] if len(mats) == 1 else None)
+    if mat not in th.mats:
+        raise ValueError(f"sheet on material {sh.get('mat')!r}: one of {', '.join(sorted(th.mats))}")
+    x0, y0, x1, y1 = (float(v) for v in (sh.get("at") or (0.0, 0.0, 1.0, 1.0)))
+    if x1 <= x0 or y1 <= y0:
+        raise ValueError(f"sheet's at {sh.get('at')}: [x0, y0, x1, y1] with x1 > x0 and y1 > y0")
+    lay = sh.get("layout")
+    if sh.get("tint"):
+        img = img.copy()
+        img[..., :3] *= P.rgb(sh["tint"])
+    props = {k: float(sh[k]) for k in ("rough", "metal", "height") if k in sh}
+    props["alpha"] = float(sh.get("alpha", 1.0))
+    for iname, isl in th.islands.items():
+        if isl.mat != mat or (lay is not None and iname not in lay):
+            continue
+        u0, v0, u1, v1 = (float(v) for v in (lay[iname] if lay is not None else isl.rect))
+        f = frames[iname]
+        sx, sy = f.W / max(u1 - u0, 1e-9), f.H / max(v1 - v0, 1e-9)       # the part's mm a unit of the texture there
+        # the picture's left at x0, its top at the texture's row y0 (v = 1 - y0), in the part's mm (x across, y up)
+        pw, ph = (x1 - x0) * sx, (y1 - y0) * sy
+        f.image(img, (x0 - u0) * sx, (1 - y0 - v0) * sy - ph, pw, ph, seam=False, **props)
+
+
+def write_design(odir, name, th, spec, canvases, slots):
+    """What the page's picture editor draws under your pictures, beside the maps: each material's paint (`_paint.png`:
+    the family's own and its PBR set, with the pictures swapped into its own slots, before your sheets, decals and
+    smudges and before the wear), and where it has pictures of its own, its paint with every one of them left out
+    (`_ground.png`: what's under them, so a swap shows at once). {material: {"paint": file, "ground": file}}."""
+    out = {}
+    for mname, cv in canvases.items():
+        f = f"{name}_{mname}_paint.png"
+        P.write_png(os.path.join(odir, f), cv.col)
+        out[mname] = {"paint": f}
+    mats = {th.islands[s["island"]].mat for s in slots if s["island"] in th.islands}
+    if mats:
+        bare = {}
+        for mname, mt in th.mats.items():
+            cv = P.Canvas(mt["px"], mt["px"], mt["color"], mt["rough"], mt["metal"])
+            cv.pictures, cv.slots = {"*": False}, None              # every slot: nothing there
+            bare[mname] = cv
+        fr = {n: P.Frame(bare[i.mat], i, wrap=n in th.wrap) for n, i in th.islands.items()}
+        th.paint(fr)
+        lay_pbr(spec, th, fr)
+        for mname in sorted(mats):
+            f = f"{name}_{mname}_ground.png"
+            P.write_png(os.path.join(odir, f), bare[mname].col)
+            out[mname]["ground"] = f
+    return out
 
 
 def _copies(dc, f, x, y, w, h):
@@ -297,7 +375,9 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
     for iname, isl in th.islands.items():
         frames[iname] = P.Frame(canvases[isl.mat], isl, wrap=iname in th.wrap)
     th.paint(frames)
-    lay_extras(spec, th, frames)
+    lay_pbr(spec, th, frames)
+    design = write_design(odir, name, th, spec, canvases, slots)
+    lay_pictures(spec, th, frames)
     log(f"  {name}: painted ({time.time() - t0:.1f}s)")
     # per-texel attributes of the game mesh, and the bakes from the detailed one
     bs = int(samples or spec.get("bake_samples", 24))
@@ -442,7 +522,7 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
            "islands": {n: {"mat": i.mat, "mm": [round(i.w_mm, 2), round(i.h_mm, 2)], "rect": [round(float(x), 5) for x in i.rect],
                            "wrap": n in th.wrap} for n, i in th.islands.items()},
            "materials": {m: {"kind": v["kind"], "px": v["px"], "color": v["color"]} for m, v in th.mats.items()}, "fx": fx,
-           "slots": slots}
+           "slots": slots, "design": design}
     with open(os.path.join(odir, "meta.json"), "w", encoding="utf-8") as fh:
         json.dump(rec, fh, indent=1)
     if th.liquid:

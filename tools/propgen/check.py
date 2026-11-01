@@ -108,6 +108,76 @@ def orientation(path, dirs=26, grid=40):
     return {"back": backs / max(hits, 1), "hits": hits, "mixed": int(np.sum(pf[:, 0] == pf[:, 1])),
             "at": [np.round(P[T[f]].mean(0) * 1000, 1).tolist() for f in worst]}
 
+def pictures_case(book, tmp):
+    """The picture editor's words (PROPGEN.md §17): a hardcover made with one picture over its whole texture (a sheet,
+    four colours in its quarters) laid in an older layout (the front's place then the bottom right quarter, the
+    spine's the top left, the back's not in it), and a bar turned 90 degrees on the back (a decal's `rot`). Its front
+    takes the yellow quarter, its spine the red, the back none of it and the bar standing upright; the paint under your
+    pictures (`_paint.png`) and with its own pictures left out (`_ground.png`) beside the maps, apart only in its
+    pictures' boxes."""
+    import bpy
+    from .paint import write_png
+    name = "book_hardcover"
+    if name not in book:
+        return [f"{name}: the check's recipe is gone from presets.json"]
+    q = np.zeros((256, 256, 4), np.float32)
+    q[..., 3] = 1
+    q[:128, :128, :3], q[:128, 128:, :3], q[128:, :128, :3], q[128:, 128:, :3] = (1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 0)
+    bar = np.ones((50, 200, 4), np.float32)
+    bar[..., :3] = (0.9, 0.1, 0.6)
+    qp, bp = os.path.join(tmp, "_sheet_quarters.png"), os.path.join(tmp, "_bar.png")
+    write_png(qp, q)
+    write_png(bp, bar)
+    spec = recipes.resolve(book, name, sets=["tex=256"])
+    spec["sheets"] = [{"image": qp, "layout": {"front": [0.6, 0.1, 0.8, 0.4], "spine": [0.0, 0.5, 0.5, 1.0]}}]
+    spec["decals"] = [{"image": bp, "island": "back", "w": 80, "h": 20, "rot": 90}]
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    rec = build.run("pictures_case", spec, tmp, formats=("glb",), preview=False, samples=4, log=lambda *a: None)
+    d = os.path.join(tmp, "pictures_case")
+    A = read_image(os.path.join(d, rec["textures"]["main"][0]))[..., :3]
+    px = A.shape[0]
+    isl = rec["islands"]
+
+    def at(img, part, a, b):
+        u0, v0, u1, v1 = isl[part]["rect"]
+        return img[int((1 - (v0 + b * (v1 - v0))) * px), int((u0 + a * (u1 - u0)) * px)]
+    problems = []
+    for part, want, colour in (("front", (1, 1, 0), "yellow"), ("spine", (1, 0, 0), "red")):
+        for a, b in ((0.5, 0.5), (0.25, 0.75), (0.75, 0.25)):
+            if np.abs(at(A, part, a, b) - want).max() > 0.2:
+                problems.append(f"the sheet's {colour} quarter isn't on the {part} at {a}, {b}: {np.round(at(A, part, a, b), 2).tolist()}")
+                break
+    if np.abs(at(A, "back", 0.5, 0.15) - (1, 0, 0)).max() < 0.2 or np.abs(at(A, "back", 0.5, 0.15) - (0, 0, 1)).max() < 0.2:
+        problems.append("the sheet is on the back, which its layout leaves out")
+    pink = lambda c: np.abs(c - (0.9, 0.1, 0.6)).max() < 0.15
+    if not (pink(at(A, "back", 0.5, 0.5)) and pink(at(A, "back", 0.5, 0.75)) and not pink(at(A, "back", 0.8, 0.5))):
+        problems.append("the bar turned 90 degrees isn't standing upright on the back")
+    des = (rec.get("design") or {}).get("main") or {}
+    if not des.get("paint") or not des.get("ground"):
+        problems.append(f"no paint and ground beside the maps: {des}")
+    else:
+        Pn = read_image(os.path.join(d, des["paint"]))[..., :3]
+        Gr = read_image(os.path.join(d, des["ground"]))[..., :3]
+        inside = np.zeros(Pn.shape[:2], bool)
+        for s in rec["slots"]:
+            i = isl[s["island"]]
+            u0, v0, u1, v1 = i["rect"]
+            W, H = i["mm"]
+            x0, y0, w, h = s["box"]
+            inside[int((1 - (v0 + (y0 + h) / H * (v1 - v0))) * px) - 1:int((1 - (v0 + y0 / H * (v1 - v0))) * px) + 2,
+                   int((u0 + x0 / W * (u1 - u0)) * px) - 1:int((u0 + (x0 + w) / W * (u1 - u0)) * px) + 2] = True
+        diff = np.abs(Pn - Gr).max(-1)
+        if float(diff[inside].mean()) < 0.02:
+            problems.append("the paint and its ground are alike in its pictures' boxes")
+        if float((diff[~inside] > 0.02).mean()) > 0.01:
+            problems.append(f"the paint and its ground differ outside its pictures' boxes ({(diff[~inside] > 0.02).mean() * 100:.1f}%)")
+        if np.abs(at(Pn, "front", 0.5, 0.5) - (1, 1, 0)).max() < 0.2:
+            problems.append("the paint under your pictures already has the sheet")
+    print(("  ok  " if not problems else "  BAD ") + "your pictures: a sheet in an older layout, a decal turned, the paint and its ground"
+          + ("; " + "; ".join(problems) if problems else ""))
+    return [f"pictures: {p}" for p in problems]
+
+
 def run(book, out):
     t0 = time.time()
     tmp = os.path.join(out, "_check")
@@ -190,6 +260,7 @@ def run(book, out):
         print(("  ok  " if not problems else "  BAD ") + f"{name}: {rec['tris']} triangles, {' x '.join(f'{v:.0f}' for v in (hi - lo) * 1000)} mm, "
               f"{len(mats)} material(s), backs {ori['back'] * 100:.1f}%, {rec['secs']}s" + ("; " + "; ".join(problems) if problems else ""))
         bad += [f"{name}: {p}" for p in problems]
+    bad += pictures_case(book, tmp)
     if first:
         name, spec, pos = first
         bpy.ops.wm.read_factory_settings(use_empty=True)
