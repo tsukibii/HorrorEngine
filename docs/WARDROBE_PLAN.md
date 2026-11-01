@@ -39,7 +39,8 @@ socks and shoes under it too.
 
 ## Later (not now)
 
-- **The drape on the GPU**: the cloth simulation (tailor/drape.js, position-based) as WebGPU compute would use the
-  3090; it's the one part a GPU would speed up a lot, but it's a rewrite of the drape and can't be measured here (no
-  GPU in the cloud session). Worth it once the wardrobe settles.
+- [x] **The drape on the GPU, as a switch** (the user: "instead of re-writing the WebGPU compute for cpu, can you just
+  make a toggle for (use gpu), so I can test it"): *Use the GPU* in the wardrobe and the Studio's Clothes tab, the
+  drape's steps as WebGPU compute (`tailor/drape_gpu.js`, TAILOR §1i), the CPU's drape untouched and used wherever
+  there's no WebGPU. GPUDRAPE compares the two. Its tuning is for the user's machine (a local session on the 3090).
 - **More than one worker**: garments that don't touch (shoes and a hat) could be made at once in a pool of workers.

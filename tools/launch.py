@@ -149,6 +149,8 @@ TOOLS = [
     ("Checks", "Street paint test (the paint page on a scratch copy of the Shibuya lane: paint, decals, undo, save; the desk running)", "node tools/director/painttest.mjs", {}),
     ("Checks", "Street bake check (a street baked in Blender, read back and dropped into Godot: STREETBAKE; the desk running)", "tools/street.py bake-check --godot", {}),
     ("Checks", "Tailor check (every clothing design on seven bodies)", "node tools/character/tailor/check.mjs", {}),
+    ("Checks", "Wardrobe test (the wardrobe page in a headless browser; the Character Studio's server running)", "node tools/character/wardrobetest.mjs", {}),
+    ("Checks", "GPU drape test (the drape on the card against the CPU's, WebGPU; the Character Studio's server running; GPU=1 for the card)", "node tools/character/tailor/gputest.mjs", {}),
     ("Checks", "Play mode test (the Pilot walked, headless browser; the desk running)", "node tools/director/playtest.js", {}),
     ("Checks", "Test room (TestRoom001 played station by station, headless browser; the desk running; the reference for Unreal)", "node tools/director/testroom.mjs", {}),
     ("Checks", "Board games check (every game's rules played hundreds of times)", "node tools/director/play/boardtest.mjs", {}),

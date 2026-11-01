@@ -562,6 +562,12 @@ $("#worn").after(clothesExp);
 const drapeTog = el("input", { type: "checkbox", checked: true });
 drapeTog.onchange = () => { st.drape = drapeTog.checked; if (EDITING) EDIT_DIRTY = true; else dress(); };
 clothesExp.before(el("label", { className: "tog", title: "Each garment falls by gravity onto the body and the clothes under it (a cloth simulation) and is baked as it hangs: kept with the character, taken as it is next time. Off: the clothes as cut, floating round the body" }, drapeTog, el("span", { textContent: "Hang by gravity (cloth simulation)" })));
+// the drape's steps on the graphics card (tailor/drape_gpu.js, WebGPU): a test of the card, remembered in this browser,
+// not saved with the character (DECISIONS 2026-11-02)
+let GPU_ON = false; try { GPU_ON = localStorage.getItem("studio.gpu") === "1"; } catch { /* no storage */ }
+const gpuTog = el("input", { type: "checkbox", checked: GPU_ON });
+gpuTog.onchange = () => { GPU_ON = gpuTog.checked; try { localStorage.setItem("studio.gpu", GPU_ON ? "1" : "0"); } catch { /* no storage */ } if (st.drape && !EDITING) dress(); };
+clothesExp.before(el("label", { className: "tog", title: "The cloth simulation's steps on your graphics card (WebGPU), a test: the CPU's where the browser has no WebGPU (Chromium: --enable-unsafe-webgpu). Drapes made either way are kept apart, so switching hangs the clothes again." }, gpuTog, el("span", { textContent: "Use the GPU for the drape (test)" })));
 // ---- the edit mode (cutedit.js): the cut lines on the body, moved at once; Bake cuts and hangs the cloth ------------
 // (DECISIONS 2026-10-27: a change took minutes with the whole outfit cut and hung again each time)
 let EDITING = false, EDIT_DIRTY = false, CUTED = null, dragAt = 0;
@@ -609,7 +615,7 @@ function dress() {                                     // the worker makes every
   status(`the tailor: ${list.map(c => c[0]).join(", ")}…`);
   const P = neutralBody(); CUT_ON.set(id, P.slice());
   DRAPING = { id, stage: "cutting" };
-  TAILOR_W.postMessage({ id, key, P, T: TRIS, list, designs: DESIGNS, drape: st.drape }, [P.buffer]);
+  TAILOR_W.postMessage({ id, key, P, T: TRIS, list, designs: DESIGNS, drape: st.drape, gpu: st.drape && GPU_ON }, [P.buffer]);
 }
 // the clothes' drape, baked: People/<name>/drape.bin (a uint32 header length, the header: each garment's key, its points
 // and where they start; then float32 xyz, the cut's points as they hang), read back into the worker when a character opens
@@ -655,12 +661,12 @@ function poseGarments() {
   }
 }
 TAILOR_W.onmessage = e => {
-  const { id, garments, error, progress, stage, bakes } = e.data;
+  const { id, garments, error, progress, stage, bakes, gpu } = e.data;
   if (id !== TAILOR_JOB) return;                       // a newer fit is on its way
   if (error) { DRAPING = { id, stage: "failed" }; return status("the tailor failed: " + error.split("\n")[0], "bad"); }
   if (progress) {                                      // a garment falling: how far through
     DRAPING = { id, stage: "hanging", ...progress };
-    return status(`hanging the clothes by gravity: ${DESIGNS[progress.name]?.label || progress.name} (${progress.k + 1} of ${progress.of}) ${Math.round(progress.frac * 100)}%`);
+    return status(`hanging the clothes by gravity${progress.gpu ? " on the GPU" : ""}: ${DESIGNS[progress.name]?.label || progress.name} (${progress.k + 1} of ${progress.of}) ${Math.round(progress.frac * 100)}%`);
   }
   for (const m of GARMENTS.children) { m.geometry.dispose(); m.material.dispose(); }
   GARMENTS.clear();
@@ -680,7 +686,8 @@ TAILOR_W.onmessage = e => {
   if (stage === "hung") {                              // as they hang: baked, saved with the character
     BAKES = bakes || {};
     const fell = garments.filter(g => g.drape), baked = fell.filter(g => g.drape.baked);
-    status(fell.length ? `hung by gravity: ${fell.map(g => g.name).join(", ")}${baked.length === fell.length ? " (as baked)" : ` (${(ms / 1000).toFixed(1)} s)`}; Save keeps the bake` : "nothing worn hangs (skin tight or not a hanging design)", "ok");
+    const how = gpu && baked.length < fell.length ? (gpu.used ? `, the drape on the GPU (${gpu.name}) in ${(fell.filter(g => !g.drape.baked).reduce((a, g) => a + g.drape.ms, 0) / 1000).toFixed(1)} s` : `, on the CPU: no GPU here (${gpu.why})`) : "";
+    status(fell.length ? `hung by gravity: ${fell.map(g => g.name).join(", ")}${baked.length === fell.length ? " (as baked)" : ` (${(ms / 1000).toFixed(1)} s${how})`}; Save keeps the bake` : "nothing worn hangs (skin tight or not a hanging design)", gpu && !gpu.used && baked.length < fell.length ? "bad" : "ok");
     if (was === "cut" || baked.length < fell.length) UNSAVED = true;
     return;
   }

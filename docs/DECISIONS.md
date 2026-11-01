@@ -2,6 +2,14 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-02, later (the user: the GPU, on `clothing-refiner`)
+
+- **"Instead of re-writing the WebGPU compute for cpu, can you just make a toggle for (use gpu), so I can test it, I
+  can later let you use my local claude to run more optimizations"**: *Use the GPU* in the wardrobe and the Studio's
+  Clothes tab runs the drape's steps on the card (WebGPU, `tailor/drape_gpu.js`); off, or with no WebGPU, the CPU's
+  drape exactly as before. A test switch, remembered per browser, not saved with characters; tuning it is for a local
+  session on the 3090 (TAILOR §1i).
+
 ## 2026-11-02 (the user: the wardrobe, on `clothing-refiner`)
 
 - **"I notice the clothing modification is very laggy, is there anything we can do to maybe isolate the processing or

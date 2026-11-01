@@ -158,7 +158,7 @@ function tethers(n, EA, EB, L0, from) {
 
 /** each point's velocity from how far it moved last step (out: the fastest and the root mean square), then its next
     place: damped, with gravity */
-function predict(X, Xp, W, n, g, damp, h, out) {
+export function predict(X, Xp, W, n, g, damp, h, out) {
   let fast = 0, sum = 0; const ih = 1 / h;
   for (let i = 0; i < n; i++) {
     const i3 = i * 3, x = X[i3], y = X[i3 + 1], z = X[i3 + 2];
@@ -172,7 +172,7 @@ function predict(X, Xp, W, n, g, damp, h, out) {
   out[0] = Math.sqrt(fast); out[1] = Math.sqrt(sum / n);
 }
 
-function lengths(X, W, EA, EB, L0, ne, cs) {
+export function lengths(X, W, EA, EB, L0, ne, cs) {
   for (let e = 0; e < ne; e++) {
     const a = EA[e], b = EB[e], a3 = a * 3, b3 = b * 3, dx = X[b3] - X[a3], dy = X[b3 + 1] - X[a3 + 1], dz = X[b3 + 2] - X[a3 + 2];
     const L = Math.sqrt(dx * dx + dy * dy + dz * dz), wa = W[a], wb = W[b], ws = wa + wb;
@@ -184,7 +184,7 @@ function lengths(X, W, EA, EB, L0, ne, cs) {
   }
 }
 
-function bends(X, W, bI, bK, bD, bC, nb) {
+export function bends(X, W, bI, bK, bD, bC, nb) {
   for (let q = 0; q < nb; q++) {
     const q4 = q * 4, q3 = q * 3, a = bI[q4], b = bI[q4 + 1], c = bI[q4 + 2], d = bI[q4 + 3], i0 = a * 3, i1 = b * 3, i2 = c * 3, i3 = d * 3;
     const k0 = bK[q4], k1 = bK[q4 + 1], k2 = bK[q4 + 2], k3 = bK[q4 + 3];
@@ -200,7 +200,7 @@ function bends(X, W, bI, bK, bD, bC, nb) {
 }
 
 /** the buttoned pairs: pulled back to no further apart than they were cut (they may come closer) */
-function seams(X, W, SA, SB, SL, ns) {
+export function seams(X, W, SA, SB, SL, ns) {
   for (let q = 0; q < ns; q++) {
     const a = SA[q], b = SB[q], a3 = a * 3, b3 = b * 3, dx = X[b3] - X[a3], dy = X[b3 + 1] - X[a3 + 1], dz = X[b3 + 2] - X[a3 + 2];
     const L = Math.sqrt(dx * dx + dy * dy + dz * dz), wa = W[a], wb = W[b], ws = wa + wb;
@@ -211,7 +211,7 @@ function seams(X, W, SA, SB, SL, ns) {
   }
 }
 
-function tether(X, W, TA, TD, n) {
+export function tether(X, W, TA, TD, n) {
   for (let i = 0; i < n; i++) {
     const a = TA[i]; if (a < 0 || a === i || W[i] === 0) continue;
     const i3 = i * 3, a3 = a * 3, dx = X[i3] - X[a3], dy = X[i3 + 1] - X[a3 + 1], dz = X[i3 + 2] - X[a3 + 2], L = Math.sqrt(dx * dx + dy * dy + dz * dz);
@@ -224,7 +224,7 @@ function tether(X, W, TA, TD, n) {
 /** the point's plane: its closest skin from where it is now (walked from the last, or searched where another limb is
     near), raised by the clothes under it; and how far it can move before it must ask again (half its way to that
     plane, at least `R`: a point a hand off the legs asks seldom) */
-function ask(c, i) {
+export function ask(c, i) {
   const X = c.X, x = X[i * 3], y = X[i * 3 + 1], z = X[i * 3 + 2], near = c.near[i];
   c.ASK[i * 3] = x; c.ASK[i * 3 + 1] = y; c.ASK[i * 3 + 2] = z;
   const r = c.surf.closest(x, y, z, c.reach, c.hit, near ? -1 : c.HINT[i]), R = near ? c.R / 4 : c.R;
@@ -236,7 +236,7 @@ function ask(c, i) {
   c.FREE[i] = Math.max(R, (r.d - floor) / 2) ** 2;
 }
 
-function collide(c, mu) {
+export function collide(c, mu) {
   const X = c.X, Xp = c.Xp, W = c.W, PL = c.PL, ASK = c.ASK, HAS = c.HAS, FREE = c.FREE, n = c.n;
   let asked = 0;
   for (let i = 0; i < n; i++) {
@@ -261,7 +261,8 @@ function collide(c, mu) {
 export function run(it) { let r = it.next(); while (!r.done) r = it.next(); return r.value; }
 
 /** drape() a step at a time: it yields how far through it is (0 to 1) every few dozen steps, so a worker can show it
-    and drop it for a newer one between them */
+    and drop it for a newer one between them; with `cfg.gpu` it first yields {gpu: its prepared state} and takes what's
+    sent back in (drape_gpu.js's result) as the drape, or runs its own steps if nothing is (run() sends nothing) */
 export const drape = (...a) => run(draping(...a));
 
 /**
@@ -270,8 +271,52 @@ export const drape = (...a) => run(draping(...a));
  * same cut (taken as they are when they fit it). Returns {P (the draped points, as G.outer.P), stats}.
  */
 export function* draping(B, G, p, cfg = {}, under = [], th = 0.002) {
+  const S = prepare(B, G, p, cfg, under, th);
+  if (S.done) return S.done;
+  if (S.o.gpu) { const r = yield { gpu: S }; if (r) return r; }   // the steps on the card (drape_gpu.js, the worker's to run, asked by the
+                                                                  // pages' "Use the GPU"): what it gives back, else the CPU's here
+  const { o, n, X, Xp, W, E, ne, L0, bI, bK, bD, bC, nb, TT, SE, c, RF, steps, g, cs, iters, h } = S, speed = [0, 0];
+  let step = 0, asked = 0;
+  for (; step < steps; step++) {
+    const late = step / steps, damp = Math.exp(-(o.damp + 30 * smooth(0.6, 1, late)) * h);   // settled harder at the end
+    predict(X, Xp, W, n, g, damp, h, speed);
+    if (late > 0.4 && speed[1] < 0.002 && speed[0] < 0.05) { X.set(Xp); break; }   // settled: on the whole under 2 mm a second
+    // the bending in each pass with the lengths: once a step after them, the two undid each other into the speed and a
+    // soft knit's sleeve never settled (LESSONS)
+    for (let it = 0; it < iters; it++) { lengths(X, W, E.A, E.B, L0, ne, cs); seams(X, W, SE.A, SE.B, SE.L, SE.L.length); bends(X, W, bI, bK, bD, bC, nb); }
+    tether(X, W, TT.A, TT.D, n);
+    asked += collide(c, o.friction);
+    if (RF) floorRings(X, W, n, RF, G.rings);
+    if (step % 30 === 29) yield step / steps;
+  }
+  return finish(S, step, asked, speed);
+}
+/** a skirt never comes in past the legs' hull (unheld between the legs, its back buckled into the gap) */
+export function floorRings(X, W, n, RF, rings) {
+  for (let i = 0; i < n; i++) {
+    if (W[i] === 0) continue;
+    const dx = X[i * 3] - rings.cx, dz = X[i * 3 + 2] - rings.cz, d = Math.hypot(dx, dz), m = RF[i];
+    if (d < m && d > 1e-6) { X[i * 3] = rings.cx + dx / d * m; X[i * 3 + 2] = rings.cz + dz / d * m; }
+  }
+}
+/** how a drape came out (its points, the stretch, how far it fell, how still it is at the end) */
+export function finish(S, step, asked, speed, extra = {}) {
+  const { X, E, ne, L0, n, P0, nb, SE, t0 } = S;
+  // how it came out: the stretch (edges of a millimetre and more against their lengths: the middle one, one in ten,
+  // one in a hundred), how far it fell
+  const r = [];
+  for (let e = 0; e < ne; e++) { if (L0[e] < 0.001) continue; const a = E.A[e] * 3, b = E.B[e] * 3; r.push(Math.hypot(X[b] - X[a], X[b + 1] - X[a + 1], X[b + 2] - X[a + 2]) / L0[e]); }
+  r.sort((a, b) => a - b);
+  const q = f => +(r[Math.floor(f * (r.length - 1))] || 1).toFixed(4);
+  let fell = 0; for (let i = 0; i < n; i++) fell = Math.max(fell, P0[i * 3 + 1] - X[i * 3 + 1]);
+  return { P: Float32Array.from(X), stats: { points: n, edges: ne, bends: nb, buttoned: SE.L.length, steps: step, asked, stretch: { p50: q(0.5), p90: q(0.9), p99: q(0.99) }, fell: +fell.toFixed(4),
+    moving: { max: +speed[0].toFixed(4), rms: +speed[1].toFixed(4) }, ms: Date.now() - t0, ...extra } };
+}
+/** everything a drape needs before its steps (the CPU's and the GPU's, drape_gpu.js): the cloth's masses, holds,
+    lengths, bends, tethers and buttoned pairs, the planes it lies on; {done} for a bake taken as it is */
+export function prepare(B, G, p, cfg = {}, under = [], th = 0.002) {
   const o = { ...DRAPE, ...cfg }, F = B.F, s = F.s, P0 = G.outer.P, T = G.outer.T, n = P0.length / 3, t0 = Date.now();
-  if (o.baked && o.baked.length === P0.length) return { P: Float32Array.from(o.baked), stats: { points: n, baked: true, ms: Date.now() - t0 } };
+  if (o.baked && o.baked.length === P0.length) return { done: { P: Float32Array.from(o.baked), stats: { points: n, baked: true, ms: Date.now() - t0 } } };
   const X = Float64Array.from(P0), Xp = Float64Array.from(P0);
   const N0 = normals(P0, T), E = topology(n, T), ne = E.A.length;
 
@@ -344,31 +389,6 @@ export function* draping(B, G, p, cfg = {}, under = [], th = 0.002) {
     const a = Math.atan2(P0[i * 3] - G.rings.cx, P0[i * 3 + 2] - G.rings.cz), k = ((Math.round((a / (2 * Math.PI) + 0.5) * f.NA) % f.NA) + f.NA) % f.NA;
     return f.rows[r][k];
   }) : null;
-  const steps = Math.round(o.time * o.sub), g = o.gravity * h, cs = clamp(o.compress, 0, 1), iters = o.iters, speed = [0, 0];
-  let step = 0, asked = 0;
-  for (; step < steps; step++) {
-    const late = step / steps, damp = Math.exp(-(o.damp + 30 * smooth(0.6, 1, late)) * h);   // settled harder at the end
-    predict(X, Xp, W, n, g, damp, h, speed);
-    if (late > 0.4 && speed[1] < 0.002 && speed[0] < 0.05) { X.set(Xp); break; }   // settled: on the whole under 2 mm a second
-    // the bending in each pass with the lengths: once a step after them, the two undid each other into the speed and a
-    // soft knit's sleeve never settled (LESSONS)
-    for (let it = 0; it < iters; it++) { lengths(X, W, E.A, E.B, L0, ne, cs); seams(X, W, SE.A, SE.B, SE.L, SE.L.length); bends(X, W, bI, bK, bD, bC, nb); }
-    tether(X, W, TT.A, TT.D, n);
-    asked += collide(c, o.friction);
-    if (RF) for (let i = 0; i < n; i++) {                            // a skirt never comes in past the legs' hull (unheld between the legs, its back buckled into the gap)
-      if (W[i] === 0) continue;
-      const dx = X[i * 3] - G.rings.cx, dz = X[i * 3 + 2] - G.rings.cz, d = Math.hypot(dx, dz), m = RF[i];
-      if (d < m && d > 1e-6) { X[i * 3] = G.rings.cx + dx / d * m; X[i * 3 + 2] = G.rings.cz + dz / d * m; }
-    }
-    if (step % 30 === 29) yield step / steps;
-  }
-  // how it came out: the stretch (edges of a millimetre and more against their lengths: the middle one, one in ten,
-  // one in a hundred), how far it fell
-  const r = [];
-  for (let e = 0; e < ne; e++) { if (L0[e] < 0.001) continue; const a = E.A[e] * 3, b = E.B[e] * 3; r.push(Math.hypot(X[b] - X[a], X[b + 1] - X[a + 1], X[b + 2] - X[a + 2]) / L0[e]); }
-  r.sort((a, b) => a - b);
-  const q = f => +(r[Math.floor(f * (r.length - 1))] || 1).toFixed(4);
-  let fell = 0; for (let i = 0; i < n; i++) fell = Math.max(fell, P0[i * 3 + 1] - X[i * 3 + 1]);
-  return { P: Float32Array.from(X), stats: { points: n, edges: ne, bends: nb, buttoned: SE.L.length, steps: step, asked, stretch: { p50: q(0.5), p90: q(0.9), p99: q(0.99) }, fell: +fell.toFixed(4),
-    moving: { max: +speed[0].toFixed(4), rms: +speed[1].toFixed(4) }, ms: Date.now() - t0 } };
+  const steps = Math.round(o.time * o.sub), g = o.gravity * h, cs = clamp(o.compress, 0, 1), iters = o.iters;
+  return { o, n, P0, X, Xp, W, E, ne, L0, bI, bK, bD, bC, nb, TT, SE, c, RF, rings: G.rings, steps, g, cs, iters, h, t0 };
 }

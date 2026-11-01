@@ -12,6 +12,16 @@ street builder, its paint and the PBR sets, with `prop-gen-tool` merged in). Rea
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
+## 0. `clothing-refiner` (2026-11-02, later): the drape on the GPU, as a switch
+
+*Use the GPU* in the wardrobe's header and the Studio's Clothes tab: each drape's steps as WebGPU compute
+(`tailor/drape_gpu.js`, TAILOR §1i), the CPU's drape bit for bit as before when off or without WebGPU. Here only
+SwiftShader's WebGPU (on the CPU, so slower than the CPU's own drape): GPUDRAPE ok (the kernels match `likeGPU`, the
+card's way on the CPU, to under 0.05 mm; the hang alike, the folds placed a little differently). Next: the user tries it
+on the 3090 (Chromium may need `--enable-unsafe-webgpu --enable-features=Vulkan`; `GPU=1 node
+tools/character/tailor/gputest.mjs` gives the card's times), then a local session tunes it: fewer dispatches (the
+bends' batches are most of them; several steps' predict, tether and collide fused), the planes asked on the card.
+
 ## 0. `clothing-refiner` (2026-11-02): the wardrobe (docs/WARDROBE_PLAN.md, ticked)
 
 Kept garments (a change re-makes only what changed and what's over it), folds by seed on shorts, trousers and skirts,

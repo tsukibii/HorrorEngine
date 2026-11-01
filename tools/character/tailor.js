@@ -70,8 +70,8 @@ export function* making(B, name, design, opts = {}) {
   if (opts.drape && p.drape && p.drape.on !== false) {
     const bt = (design.details || []).find(d => d.kind === "buttons");   // a front worn open (`open.closed: false`) is never pulled together
     const closed = p.open && p.open.closed !== false ? (bt ? [height(F, bt.to) - 0.01 * s, height(F, bt.from) + 0.01 * s] : [-1, height(F, p.open.from ?? "bust-0.06")]) : null;
-    const it = draping(B, G, p, { ...p.drape, ...(typeof opts.drape === "object" ? opts.drape : {}), tuck: opts.tuck || null, cover: opts.cover || null, closed, hold: bandHolds(F, G, design), baked: opts.baked || null }, under, th);
-    let r; while (!(r = it.next()).done) yield { name, frac: r.value };
+    const it = draping(B, G, p, { ...p.drape, ...(typeof opts.drape === "object" ? opts.drape : {}), tuck: opts.tuck || null, cover: opts.cover || null, closed, hold: bandHolds(F, G, design), baked: opts.baked || null, ...(opts.gpu ? { gpu: true } : {}) }, under, th);
+    let r, back; while (!(r = it.next(back)).done) back = yield typeof r.value === "number" ? { name, frac: r.value } : { name, ...r.value };   // (a GPU drape's request passed up, its result passed down)
     hung = r.value;
   }
   const at = hung ? hung.P : null, outer = [at ? { P: at, T: G.outer.T } : G.outer];
@@ -133,7 +133,8 @@ export function edited(design, edit) {
   return { ...design, piece: merge(design.piece, edit) };
 }
 
-/** dress() a step at a time (it yields {k, of, name, frac} while a garment drapes): see dress */
+/** dress() a step at a time (it yields {k, of, name, frac} while a garment drapes; with `opts.gpu`, {k, of, name, gpu}
+    for a drape to run on the card, its result sent back in: the worker's, tailor/drape_gpu.js): see dress */
 export const dress = (...a) => run(dressing(...a));
 
 /** a whole outfit, in order (each garment over the ones before, hung over them if `opts.drape`): list = [[design
@@ -148,13 +149,13 @@ export function* dressing(B, list, designs, opts = {}) {
     const ov = opts.drape ? over(ds, k) : [], tuck = tucks(B.F, ov), cover = covers(B.F, ov), baked = opts.bakes ? opts.bakes[key] : null;
     // made before on this body, the same, over the same garments: as it was (a change to one garment makes only it and
     // what's worn over it again: the Studio's refits, CLOTHING_PLAN's lag)
-    const gk = hash(JSON.stringify([VERSION, DRAPE_VERSION, name, ds[k], !!opts.drape, ov, worn.map(g => g.shape), baked ? [baked.length, baked[0], baked[baked.length >> 1]] : null]));   // its shape: what's worn over it depends on this alone
+    const gk = hash(JSON.stringify([VERSION, DRAPE_VERSION, name, ds[k], !!opts.drape, ov, worn.map(g => g.shape), baked ? [baked.length, baked[0], baked[baked.length >> 1]] : null, ...(opts.gpu && opts.drape ? ["gpu"] : [])]));   // its shape: what's worn over it depends on this alone (hung on the card: kept apart)
     const mk = hash(JSON.stringify([gk, color ?? null, look ?? null]));
     let g = opts.cache === false ? null : made.get(mk);
     if (g) { made.delete(mk); made.set(mk, g); }                     // (most recent last)
     else {
-      const it = making(B, name, ds[k], { color, look, under: worn.slice(), drape: opts.drape, tuck, cover, baked });
-      let r; while (!(r = it.next()).done) yield { k, of: list.length, ...r.value };
+      const it = making(B, name, ds[k], { color, look, under: worn.slice(), drape: opts.drape, tuck, cover, baked, gpu: opts.gpu });
+      let r, back; while (!(r = it.next(back)).done) back = yield { k, of: list.length, ...r.value };
       g = r.value;
       if (opts.cache !== false) { made.set(mk, g); while (made.size > 32) made.delete(made.keys().next().value); }
     }

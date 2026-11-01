@@ -275,6 +275,26 @@ The clothes are skinned, never simulated, so the cut keeps to what skinning carr
   change), the drape off unless *hang by gravity*; **Save** writes `Content/Studio/Clothes/my_outfits.json` and a
   picture of the view (`thumbs/<slug>.jpg`), the Studio's **Mine** tab (read again whenever the Studio comes back to
   the front), worn there on the character's own body. `wardrobetest.mjs` (WARDROBE).
+- **The drape on the GPU** (a test, the user's ask after the wardrobe: "make a toggle for (use gpu), so I can test it"):
+  *Use the GPU* in the wardrobe's header and the Studio's Clothes tab (remembered in the browser, never saved with a
+  character) runs each drape's steps as WebGPU compute (`tailor/drape_gpu.js`). The CPU's drape is untouched: drape.js
+  is split into `prepare` (everything before the steps), its own step loop and `finish` (the stats), and with `gpu` its
+  generator first yields `{gpu: state}`; the worker runs `drapeGPU` on it and sends the result back in (`making` and
+  `dressing` pass the request up and the answer down), or nothing, and the CPU's steps follow. On the card: the same
+  passes in the same order, the lengths, buttoned pairs and bends in batches that share no point (a greedy colouring:
+  7 to 10 batches of lengths, up to 5 of buttoned pairs, 12 to 21 of bends, about 60 dispatches a step), float32, every
+  point's plane on the skin asked again on the CPU every 8 steps from the points read back (`ask`), still-ness measured
+  at those readbacks. So it comes out alike, not the same: garments hung on the card are kept apart from the CPU's (a
+  separate cache key and bake key in the worker; a character's own bakes
+  count for both), so switching hangs them again. Needs WebGPU on a secure page (the Studio's server on localhost;
+  Chromium on Linux may want `--enable-unsafe-webgpu --enable-features=Vulkan`, or in chrome://flags *Unsafe WebGPU
+  Support* and *Vulkan*); without it the status line says why
+  and the CPU drapes. The difference is the order alone (measured on the CPU with the card's way, `likeGPU`: the planes
+  asked every 8 steps move nothing by more than 0.2 mm; the batches' order puts a skirt's points 3 mm from the CPU's on
+  the whole, 14 mm for one in ten, its folds placed a little differently, as hung as well; a shirt's 0.5 and 3 mm).
+  `likeGPU(S)` is the card's way in float64 with drape.js's own passes: what the card gives back is held to it, and it's
+  where to try a change of method without a card (`gpulike.mjs "outfit"`: both ways in node). `gputest.mjs`
+  (GPUDRAPE). Next, measured on the 3090: fewer dispatches (the bends are most of them), the skin's search on the card.
 
 ## 2. The designs are data
 

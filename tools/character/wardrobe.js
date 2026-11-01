@@ -95,16 +95,18 @@ function dress(now = false) {                           // the outfit to the tai
     const list = st.clothes.filter(c => DESIGNS[c.design]).map(c => [c.design, c.color, lookOf(c), c.edit]), id = ++JOB;
     if (!list.length) { clearGarments(); return status("nothing worn"); }
     sent = performance.now(); status("making…");
-    W.postMessage({ id, key: "wardrobe-dummy", P: BODY.slice(), T: TRIS, list, designs: DESIGNS, drape: $("#hang").checked, have: [...SHOWN.keys()] });
+    W.postMessage({ id, key: "wardrobe-dummy", P: BODY.slice(), T: TRIS, list, designs: DESIGNS, drape: $("#hang").checked, gpu: $("#gpu").checked, have: [...SHOWN.keys()] });
   }, now ? 0 : 180);
 }
+const LAST = { bakes: {} };
 const SHOWN = new Map();                               // a garment's made key -> its meshes, kept while it's worn as it is (nothing sent or built again)
 function clearGarments() { for (const m of GARMENTS.children) { m.geometry.dispose(); m.material.dispose(); } GARMENTS.clear(); SHOWN.clear(); }
 W.onmessage = e => {
-  const { id, garments, error, progress, stage } = e.data;
+  const { id, garments, error, progress, stage, gpu, bakes } = e.data;
+  if (bakes) LAST.bakes = bakes;                       // (the last drape's points by key: GPUDRAPE compares the card's with the CPU's)
   if (id !== JOB) return;
   if (error) return status("the tailor failed: " + error.split("\n")[0], "bad");
-  if (progress) return status(`hanging ${progress.name} (${progress.k + 1} of ${progress.of}) ${Math.round(progress.frac * 100)}%`);
+  if (progress) return status(`hanging ${progress.name} (${progress.k + 1} of ${progress.of})${progress.gpu ? " on the GPU" : ""} ${Math.round(progress.frac * 100)}%`);
   const recv = performance.now() - sent, keep = new Map();
   for (const g of garments) keep.set(g.made, g.parts ? g.parts.map(q => LOOK.mesh(q, g.name, g.look)) : SHOWN.get(g.made) || []);
   const reused = new Set(garments.filter(g => !g.parts).map(g => g.made));
@@ -113,11 +115,16 @@ W.onmessage = e => {
   for (const [k, ms] of keep) { SHOWN.set(k, ms); for (const m of ms) GARMENTS.add(m); }
   const fresh = !SHAPE.size || [...SHAPE.keys()].join() !== garments.map(g => g.name).join();
   SHAPE.clear(); for (const g of garments) SHAPE.set(g.name, g.handles || []);
-  made = { ms: performance.now() - sent, tailor: recv, stage, sent: garments.filter(g => g.parts).length };
-  status(`${garments.length} garment${garments.length === 1 ? "" : "s"} in ${(made.ms / 1000).toFixed(2)} s` + (stage === "cut" ? ", hanging…" : ""), "ok");
+  const fell = garments.filter(g => g.drape && !g.drape.baked), hung = fell.reduce((a, g) => a + g.drape.ms, 0);
+  made = { ms: performance.now() - sent, tailor: recv, stage, sent: garments.filter(g => g.parts).length, ...(stage === "hung" ? { hung, gpu: gpu || null, drapes: fell.map(g => ({ name: g.name, ms: g.drape.ms, steps: g.drape.steps, stretch: g.drape.stretch, fell: g.drape.fell, moving: g.drape.moving, gpu: g.drape.gpu || null })) } : {}) };
+  const how = gpu ? (gpu.used ? ` on the GPU (${gpu.name})` : ` on the CPU: no GPU here (${gpu.why})`) : "";
+  status(`${garments.length} garment${garments.length === 1 ? "" : "s"} in ${(made.ms / 1000).toFixed(2)} s` + (stage === "cut" ? ", hanging…" : stage === "hung" && fell.length ? `, the drape ${(hung / 1000).toFixed(2)} s${how}` : ""), gpu && !gpu.used ? "bad" : "ok");
   if (fresh && !document.activeElement?.matches?.("input[type=range]")) drawWorn();
 };
 $("#hang").onchange = () => dress(true);
+// the drape on the card (tailor/drape_gpu.js, a test): remembered in this browser
+try { $("#gpu").checked = localStorage.getItem("wardrobe.gpu") === "1"; } catch { /* no storage */ }
+$("#gpu").onchange = () => { try { localStorage.setItem("wardrobe.gpu", $("#gpu").checked ? "1" : "0"); } catch { /* no storage */ } if ($("#hang").checked) dress(true); };
 
 // ---- the list of what's worn --------------------------------------------------------------------------------------
 const fmt = (v, step) => (+v).toFixed(Math.max(0, -Math.floor(Math.log10(step))));
@@ -207,4 +214,4 @@ function picture() {                                   // the card's picture: th
 }
 drawOutfits();
 status("the dummy's ready: pick an outfit or add a garment", "ok");
-window.__wardrobe = { st, get made() { return made; }, GARMENTS, wear, dress, drawWorn, get MINE() { return MINE; }, DESIGNS, OUTFITS: O.outfits };
+window.__wardrobe = { st, get made() { return made; }, LAST, BODY, TRIS, GARMENTS, wear, dress, drawWorn, get MINE() { return MINE; }, DESIGNS, OUTFITS: O.outfits };
