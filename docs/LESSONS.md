@@ -12,6 +12,14 @@ the fix.
 
 ## This project
 
+- **Never copy a repo's `.import` files over an imported Godot project's:** Godot writes each one's `path=` and `uid=`
+  into it on import, the repo's has neither, and every texture then fails to load, its sampler falling back to the flat
+  default without an error in the picture (the skin's depth layer measured exactly nothing off and on). Second try:
+  the plugin's other files copied in, or the project imported again (`--import`) after.
+- **A Character Studio export made in the cloud needs MediaPipe:** without `python tools/face_mesh.py setup` (and the
+  `libegl1` it loads) the Studio has no landmarks, so its export has no eyes, no lips and no make-up, its paint one
+  flat tone. Second try: the setup, the library, the export again (about two minutes).
+
 - **A graft takes over every deformation of what it replaces:** the grafted eyes rode MHR's face without MHR's blink, but
   MHR's blink still moved the skin round them, and shut, the seam opened into black slivers. Second try: with the grafted eyes
   on, MHR's own eyesClosed is left out of the face altogether; the graft shuts its own way.

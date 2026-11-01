@@ -13,6 +13,12 @@ makes People/_studiotest).
 
 `--plugin DIR` pictures it with another copy of the look plugin (an older one, for a before and after: its
 addons/horrorstudio_look folder); only the detail-on pictures are made then.
+
+The skin's depth layer (GODOT_LOOK §5g) is measured too, under a baked level's light (the ambient alone, LightmapGI's
+probes: `--light=baked`) at the close-up and in profile, off, on (as the export asks) and with its ears switched off,
+points on the skin found by their UV (`skin_detail.probe_uvs`): round the eyes and the nose warmer with it (red against
+green up), the ear warmer and back as it was with its switch off, the cheek and the forehead as they were, the picture
+no brighter or darker; `depth_sheet.jpg` the three side by side. `--no-depth` leaves it out.
 """
 import argparse
 import json
@@ -87,6 +93,77 @@ def sheet(keep, rows, path):
     im.save(path, quality=90)
 
 
+DEPTH_RUNS = [("depth_off", ["--depth=0"], "the skin's depth off"), ("depth_on", [], "the skin's depth (as the export asks)"),
+              ("depth_noears", ["--ears=off"], "the skin's depth, its ears off")]
+
+
+def depth_check(g, keep, base, env):
+    """the depth layer (GODOT_LOOK §5g) off, on and with its ears off under a baked level's light; the measures; the
+    sheet. Returns ok"""
+    sys.path.insert(0, str(ROOT / "tools"))
+    sys.path.insert(0, str(ROOT / "tools" / "character"))
+    import mhr
+    import skin_detail
+    probes = skin_detail.probe_uvs(mhr.load())
+    shots = {}
+    for tag, extra, _ in DEPTH_RUNS:
+        text, err = run(g, OUT, base + [f"--tag={tag}", "--shots=cu,side", "--light=baked", "--probe=" + json.dumps(probes)] + extra, env)
+        if text is None:
+            print(err)
+            print(f"  BAD the depth layer's pictures ({tag}) didn't run clean")
+            return False
+        shots[tag] = json.loads((keep / f"{tag}.json").read_text(encoding="utf-8"))
+    if "depth" not in shots["depth_on"]:
+        print("  BAD the skin has no depth layer (skin_depth)")
+        return False
+
+    def warm(tag, shot, k):                                               # red against green where the camera sees the point
+        p = shots[tag]["shots"][shot].get("probes", {}).get(k)
+        return p[0] / max(p[1], 1e-4) if p else None
+    ok = True
+
+    def say(good, what):
+        nonlocal ok
+        print(("  ok  " if good else "  BAD ") + what)
+        ok = ok and good
+    on, off, noears = "depth_on", "depth_off", "depth_noears"
+    core = {k: (warm(off, "cu", k), warm(on, "cu", k)) for k in ("inner corner +x", "alar crease +x", "nose wing +x")}
+    seen = {k: v for k, v in core.items() if None not in v}
+    say(len(seen) >= 2 and all(b > a * 1.08 for a, b in seen.values()),
+        "round the eyes and the nose warmer with the skin's depth (red against green, baked light): " + ", ".join(f"{k} {a:.2f} to {b:.2f}" for k, (a, b) in seen.items()))
+    e0, e1, e2 = warm(off, "side", "ear +x"), warm(on, "side", "ear +x"), warm(noears, "side", "ear +x")
+    if None in (e0, e1, e2):
+        say(False, "the ear isn't in the profile shot")
+    else:
+        if shots[on].get("depth_ears", True):
+            say(e1 > e0 * 1.15, f"the ear warmer with it: {e0:.2f} to {e1:.2f}")
+        else:
+            print(f"  ok  the export has its ears' glow off (its hair over them): {e0:.2f} to {e1:.2f}")
+        say(abs(e2 / e0 - 1) < 0.05, f"and back as it was with its ears switched off: {e2:.2f} against {e0:.2f}")
+    rest = {k: (warm(off, "cu", k), warm(on, "cu", k)) for k in ("cheek +x", "forehead")}
+    rest = {k: v for k, v in rest.items() if None not in v}
+    say(len(rest) == 2 and all(abs(b / a - 1) < 0.06 for a, b in rest.values()),
+        "the cheek and the forehead as they were: " + ", ".join(f"{k} {a:.2f} to {b:.2f}" for k, (a, b) in rest.items()))
+    lum = {s: shots[on]["shots"][s]["lum"] / max(1e-6, shots[off]["shots"][s]["lum"]) for s in ("cu", "side")}
+    say(all(0.92 < v < 1.08 for v in lum.values()), "and the picture no brighter or darker for it: " + ", ".join(f"{s} {v:.2f}" for s, v in lum.items()))
+    try:
+        from PIL import Image, ImageDraw
+        W, H = 640, 360
+        im = Image.new("RGB", (W * 2, (H + 22) * len(DEPTH_RUNS)), (20, 20, 20))
+        d = ImageDraw.Draw(im)
+        for r, (tag, _, label) in enumerate(DEPTH_RUNS):
+            for c, s in enumerate(("cu", "side")):
+                f = keep / f"{tag}_{s}.png"
+                if f.exists():
+                    im.paste(Image.open(f).convert("RGB").resize((W, H)), (c * W, r * (H + 22) + 22))
+            d.text((6, r * (H + 22) + 5), label + " (a baked level's light)", fill=(230, 230, 230))
+        im.save(keep / "depth_sheet.jpg", quality=90)
+        print(f"  the depth sheet: {keep / 'depth_sheet.jpg'}")
+    except ImportError:
+        pass
+    return ok
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--person", default="_studiotest")
@@ -97,6 +174,7 @@ def main():
     ap.add_argument("--quick", default="")
     ap.add_argument("--hair", default="", help="the hair shader's numbers as JSON over the bake's (tuning)")
     ap.add_argument("--sss", type=int, default=-1, help="the screen-space scattering's quality for this run (0 off to 3 high; the game's own when unset)")
+    ap.add_argument("--no-depth", action="store_true", help="leave the skin's depth layer's measures out")
     a = ap.parse_args()
     g = godot_bin()
     if not g:
@@ -175,6 +253,8 @@ def main():
         print(f"  the sheet: {keep / 'sheet.jpg'}")
     except ImportError:
         print("  (PIL missing: no sheet)")
+    if not a.no_depth:
+        ok = depth_check(g, keep, base, env) and ok
     print(f"  pictures in {keep}")
     if not ok:
         print("GDPORTRAIT FAIL")

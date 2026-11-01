@@ -3,7 +3,9 @@ Wet skin (HSSkin, docs/GODOT_LOOK.md): HumanShaders' skin shader (MIT, MatMADNES
 GodotStandardLightShader; GodotPlugins/HumanShaders/UPSTREAM.md) with a wetness layer on top: `wetness` a sweat film
 (a sheen everywhere, the skin a touch darker), `sweat` beads standing on the skin (little domes, each a glint,
 roughness near zero on them), `drips` runs down the skin, `oil` oiled up (a smooth gloss over all of it, the colour
-deeper). Everything of the original stays: its uniforms, its light(). The lines marked HS are ours.
+deeper); the skin's detail at its true size (§5d) and its depth (§5g: light that has travelled under the skin, warm in
+the creases round the eyes, the nose, the mouth and the ears, whatever lights it). Everything of the original stays:
+its uniforms, its light(). The lines marked HS are ours.
 */
 
 
@@ -99,7 +101,24 @@ uniform float fuzz : hint_range(0.0, 1.0) = 0.0;                  // HS: peach f
 uniform float tone : hint_range(0.0, 3.0) = 1.0;                  // HS: how uneven the colour is (melanin's specks and blotches, a grain; 0 the paint as baked)
 uniform float tone_red : hint_range(0.0, 3.0) = 1.0;              // HS: the blood's redder and paler patches
 
+group_uniforms skin_depth;   // HS: light that has travelled under the skin (docs/GODOT_LOOK.md §5g): what lights the skin, a baked level's probes or a lamp, comes out of it warm where it has gone furthest in: the creases round the eyes, the nose, the mouth and the ears
+uniform float skin_depth : hint_range(0.0, 3.0) = 0.0;            // HS: the whole layer (0 off: the demo's spheres, a plain body)
+uniform sampler2D texture_depth : hint_default_black, filter_linear_mipmap, repeat_disable;   // HS: MHR's layout (tools/skin_detail.py depth): R round the eyes, G the nose, B the ears, A the mouth, each the region times how deep a crease
+uniform float depth_eyes : hint_range(0.0, 2.0) = 1.0;            // HS: each region's share
+uniform float depth_nose : hint_range(0.0, 2.0) = 1.0;
+uniform float depth_mouth : hint_range(0.0, 2.0) = 0.6;
+uniform bool depth_ears_on = true;                                // HS: the ears' glow: off for a character whose hair covers them (the lamps' light through them goes too)
+uniform float depth_ears : hint_range(0.0, 2.0) = 1.0;
+uniform float depth_rest : hint_range(0.0, 1.0) = 0.0;            // HS: the occlusion's creases everywhere else warmed too (0: the core alone)
+uniform vec3 depth_color : source_color = vec3(0.86, 0.33, 0.24); // HS: the colour light takes on under the skin (the blood's)
+uniform float depth_warmth : hint_range(0.0, 2.0) = 1.0;          // HS: how far the regions' colour turns toward it
+uniform float depth_creases : hint_range(0.0, 2.0) = 1.0;         // HS: the export's occlusion there red, not grey (the red goes furthest under the skin)
+uniform float depth_glow : hint_range(0.0, 2.0) = 1.0;            // HS: thin skin (the export's thinness: an ear's rim, the nostrils) lit through by the room's light
+uniform float depth_pores : hint_range(0.0, 1.0) = 1.0;           // HS: the detail layer's pits and furrows shaded warm, not grey (everywhere)
+
 varying float hs_gloss;   // HS: the wet layer's gloss for light(): 0 dry skin, 1 water or oil
+varying vec3 hs_lamp;     // HS: the depth layer's colour for the lamps' diffuse against the ambient's, its warmth aside (§5g)
+varying vec3 hs_warm;     // HS: the depth layer's warmth here (light() gives a lamp's light all of it where the lamp barely reaches)
 varying vec3 hs_dn;       // HS: the detail's tilt of the normal (view space), for the diffuse's blurred normals
 varying float hs_fuzz;    // HS: the fuzz here (none on the lips)
 varying mat3 TBN;
@@ -193,6 +212,8 @@ vec3 hs_tile(sampler2D t, vec2 q, vec2 qx, vec2 qy) {
 	vec2 sb = transpose(R) * vec2(b.x * 2.0 - 1.0, 1.0 - b.y * 2.0);   // the turned one's back into the UV's frame
 	return vec3(sa + sb, a.z * b.z);
 }
+// HS: each colour's share of a shade that light under the skin fills (§5g): red least shaded, blue most; `s` 0 grey
+vec3 hs_depth_exp(float s) { return max(vec3(1.0) + s * vec3(-0.5, -0.05, 0.12), vec3(0.15)); }
 // HS: the tone tile laid twice the same way, its unevenness kept (the two layers' sum scaled back to one's spread)
 vec3 hs_tone(sampler2D t, vec2 q, vec2 qx, vec2 qy) {
 	mat2 R = mat2(vec2(0.7986, 0.6018), vec2(-0.6018, 0.7986));
@@ -218,6 +239,10 @@ void fragment() {
 	smooth_depth = smoothstep(0.0, 0.6, linear_depth);
 
 	sss_tex = texture(texture_translucency, base_uv).b;
+	vec4 hs_dm = use_regions ? texture(texture_depth, base_uv) : vec4(0.0);   // HS: the depth layer's regions (§5g)
+	if (!depth_ears_on) {
+		sss_tex *= 1.0 - clamp(1.6 * hs_dm.b, 0.0, 1.0);             // HS: the ears' switch takes the lamps' light through them off too
+	}
 
 	//float fresnel = clamp(dot(normalize(NORMAL), normalize(VIEW)), 0.0, 1.0 );
 
@@ -300,7 +325,7 @@ void fragment() {
 		float open = mix(1.0, pores.z, clamp(pa, 0.0, 1.0)) * mix(1.0, micro.z, clamp(ma, 0.0, 1.0)) * (1.0 - 0.35 * lip);
 		hs_dn = tilt.x * tu + tilt.y * tv;
 		NORMAL = normalize(n0 + hs_dn);
-		ALBEDO *= mix(1.0, open, detail_cavity);
+		ALBEDO *= pow(vec3(mix(1.0, open, detail_cavity)), hs_depth_exp(skin_depth * depth_pores));   // §5g: a pit's shade warm, not grey
 		float tm = clamp(1.0 - tone * detail * tc.r * 0.5, 0.5, 1.5);    // melanin: darker and browner (lighter where it's less)
 		ALBEDO *= pow(vec3(tm), vec3(0.75, 1.0, 1.35));
 		ALBEDO *= vec3(1.0, 1.0 - tone_red * detail * tc.g * 0.3, 1.0 - tone_red * detail * tc.g * 0.38);   // the blood: redder, or paler
@@ -336,6 +361,32 @@ void fragment() {
 		}
 		//ALBEDO = vec3(smooth_depth);
 		//float sss_depth = 1. - pow(clamp(world_camera.z,0.,1.), 0.5);
+	}
+
+	// HS: the skin's depth (docs/GODOT_LOOK.md §5g): light that has travelled under the skin comes out warm. Round the
+	// eyes, the nose, the mouth and the ears (MHR's depth map: each region, most in its creases) the colour turns toward
+	// the blood's (`warm`), the export's occlusion shades red rather than grey (red goes furthest under the skin:
+	// `hs_depth_exp`), and thin skin (the export's thinness) is lit through by the room. The ambient light (a baked
+	// level's probes, the sky) takes all of it through ALBEDO; each lamp in light() gets its own share through hs_lamp
+	// and hs_warm: its own occlusion's colour, and the warmth by how little the lamp reaches the point (all of it at the
+	// shadow's edge, under half where it shines full on: what's lit straight on shows the skin's own colour); its light
+	// through thin skin is the translucency's. Never a light of its own: dark where the skin is dark
+	hs_lamp = vec3(1.0);
+	hs_warm = vec3(1.0);
+	if (skin_depth > 0.0) {
+		float ear = depth_ears_on ? hs_dm.b : 0.0;
+		float d = skin_depth * max(max(hs_dm.r * depth_eyes, hs_dm.g * depth_nose), max(hs_dm.a * depth_mouth, ear * depth_ears));
+		vec3 col = max(depth_color, vec3(1e-3));
+		vec3 warm = pow(max(col / dot(col, vec3(0.2126, 0.7152, 0.0722)), vec3(0.05)), vec3(0.25 * depth_warmth * d));   // its hue at the skin's brightness
+		vec3 e = hs_depth_exp(depth_creases * max(d, skin_depth * depth_rest)) - 1.0;
+		float og = use_ambient_occlusion ? ao * ao_strength + (1.0 - ao_strength) : 1.0;          // the shade Godot puts on the ambient (AO above)
+		float ol = use_ambient_occlusion ? ao * ao_block_light + (1.0 - ao_block_light) : 1.0;    // and light() on the lamps
+		float here = clamp(1.6 * max(max(hs_dm.r, hs_dm.g), max(hs_dm.a, ear)), 0.0, 1.0);
+		vec3 through = vec3(1.0) + skin_depth * depth_glow * (translucency ? sss_tex : 0.0) * here * col / max(max(col.r, col.g), col.b);
+		vec3 amb = min(warm * pow(vec3(max(og, 0.02)), e) * through, vec3(4.0));
+		ALBEDO *= amb;
+		hs_warm = warm;
+		hs_lamp = pow(vec3(max(ol, 0.02)), e) / amb;
 	}
 
 	// HS: the wetness layer, over everything above
@@ -448,9 +499,10 @@ void light()
 	vec3 att = overlay(min(vec3(ATTENUATION), 1.), vec3(1.2,.8,.6)) * max(ATTENUATION, 0.5);
 	if (tinted_shadow_penumbra){att = att;} else{att = vec3(ATTENUATION);}
 
-	DIFFUSE_LIGHT += diff_light * att * lightColor;
+	vec3 hs_l = hs_lamp * pow(hs_warm, vec3(mix(1.0, 0.45, smoothstep(0.15, 0.85, NdotL))));   // HS: the depth layer's colour for this lamp (§5g; ALBEDO carries the ambient's)
+	DIFFUSE_LIGHT += diff_light * att * lightColor * hs_l;
 	if (hs_fuzz > 0.0) {   // HS: peach fuzz: the fine hairs catch the light where the skin turns away, more from behind
-		DIFFUSE_LIGHT += hs_fuzz * pow(1.0 - NdotV, 4.0) * clamp(dot(NORMAL, LIGHT) * 0.6 + 0.4, 0.0, 1.0) * att * lightColor;
+		DIFFUSE_LIGHT += hs_fuzz * pow(1.0 - NdotV, 4.0) * clamp(dot(NORMAL, LIGHT) * 0.6 + 0.4, 0.0, 1.0) * att * lightColor * hs_l;
 	}
 
 	if (translucency){
@@ -460,7 +512,7 @@ void light()
 		vec3 translucent = max(translucency_dot * t_color, 0.0) * lightColor;
 		//translucency *= max(translucency_strength, 1.);
 
-		DIFFUSE_LIGHT += translucent;
+		DIFFUSE_LIGHT += translucent * hs_l;   // HS
 	}
 
 	vec3 f0 = SchlickBaseReflectivity();

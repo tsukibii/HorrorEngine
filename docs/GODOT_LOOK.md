@@ -712,6 +712,62 @@ eyeballs a flat green: open thousands of green pixels, held shut none; `blink.jp
 shapes (bakeplay.gd sets the others on a body that has them); the lid has no thickness of its own (MetaHuman's waterline);
 in the shut picture a lash clump at an inner corner and a fold at an outer corner want a look.
 
+## 5g. The skin's depth: warm light from under the skin round the eyes, the nose, the mouth and the ears (DECISIONS 2026-11-01)
+
+The user's ask, with two pictures of Blender's subsurface scattering (a cube glowing orange toward its edges, Suzanne red
+in her eye sockets and her ears): "do we currently use any subsurface scattering? I think that's maybe why the
+characters' skin looks a bit lifeless ... add this kind of subsurface scattering just around the core parts, eyes,
+nose ... most of the lights are baked in game, I don't really care about it being realtime, I just want that skin depth
+kind of feeling ... if you add it to the ears make it toggleable, since some NPCs' hair covers their ears".
+
+**What we had** (all HumanShaders', §5): Godot's screen-space scattering (`sss_mode_skin`, kept gentle by `sss_scale`
+since §5d: it blurs the whole colour), and in `light()` the three-channel wrapped diffuse through normals blurred per
+colour (its "better SSS") and the translucency through thin skin (the export's thinness). Those two are per lamp: a
+baked level's light reaches a moving character as an ambient (LightmapGI's probes), which never runs `light()`, so
+under baked light the skin had only the gentle blur and a grey occlusion. The lifeless look. (The shader the user linked,
+godotshaders.com's "performant SSS approximation", wasn't reachable from the cloud session; shaders of that kind are a
+wrap and a back light in `light()`, which HumanShaders has already, and which baked light never reaches.)
+
+**The layer** (`skin_wet.gdshader`'s `skin_depth` group, marked HS; `HSSkin.set_depth`): light that has travelled under
+the skin comes out warm where it has gone furthest in.
+
+- **Where:** MHR's depth map (`textures/mhr_skin_depth.png`, made by `tools/skin_detail.py depth`, checked by
+  SKINDETAIL): R round the eyes (the lids, their creases, the inner corners, under them), G the nose (its tip, its wings,
+  the creases round them, the nostrils), B the ears (each whole, their folds most; the skull round them left out), A the
+  mouth's corners; each the region times how deep a crease the point lies in (MHR's surface under its neighbourhood's,
+  about a centimetre across: 1 in a crease, 0.35 to 0.75 where it bulges out). Nothing on the cheeks, the forehead or
+  the body. Each region its share (`depth_eyes` 1, `depth_nose` 1, `depth_mouth` 0.6, `depth_ears` 1).
+- **What:** the colour there turns toward the blood's (`depth_color`, its hue at the skin's brightness; `depth_warmth`);
+  the export's occlusion shades red there instead of grey (each colour its own share of the shade: at full strength
+  red ao^0.5, green ^0.95, blue ^1.12; `depth_creases`; `depth_rest` warms the occlusion's creases everywhere else too,
+  0 by default); thin skin (the export's thinness: an ear's rim, the nostrils) is lit through by the room's light
+  (`depth_glow`); and everywhere the detail layer's pits and furrows shade warm rather than grey (`depth_pores`).
+- **For any light:** the ambient (a baked level's probes, the sky) takes all of it through ALBEDO; each lamp in `light()`
+  takes its own share (`hs_lamp`, `hs_warm`): its own occlusion's colour, and the warmth by how little the lamp reaches
+  the point (all of it at the shadow's edge, under half where it shines full on: a lit cheek shows the paint's colour,
+  as real skin does; uniform warmth under a bright key read as pink make-up round the eyes). Never a light of its own:
+  dark where the skin is dark.
+- **The ears' switch:** `depth_ears_on`. Off, the ears take none of it and the lamps' translucency through them goes too
+  (an ear under hair mustn't glow through it).
+- **Per character:** the Character Studio's Skin light has **Depth (game)** (0 to 3, 1) and **Ear glow (game)** (on),
+  saved with the character and carried in the export's `studioSkin` record (`depth`, `ears`; tools/shared/skinlight.js
+  `SKIN_LIT`); `HSSkin.wear` puts them on every Studio export it dresses, the game's cast and the bake's bodies with
+  them; `HSCharacterLook`'s **Skin Depth** scales it and **Ear Glow** (auto, on, off) overrides. The Studio's own view
+  doesn't draw it.
+- **Cost:** a texture read and a few `pow`s a pixel, and one `pow` a lamp.
+
+**The check** (GDPORTRAIT, `tools/godot/portrait_check.py`): the export under a baked level's light (portrait.gd's
+`--light=baked`: no lamp, the ambient alone from a sky bright above and to one side, its sun drawn only in the sky),
+at the close-up and in profile (`side`, the ear in the middle), the layer off, on and with its ears off; points on the
+skin found by their UV (`skin_detail.probe_uvs`, portrait.gd's `--probe`), red against green: round the eyes and the
+nose up over 8%, the ear up over 15% and back within 5% with its switch off, the cheek and the forehead within 6%, the
+picture within 8% as bright; `depth_sheet.jpg`. First run (the Studio's new character, `_studiotest`): the inner corner
+2.86 to 5.05, the alar crease 1.61 to 2.09, the nose's wing 1.69 to 2.50, the ear 1.39 to 2.10 and 1.43 with its switch
+off, the cheek 1.64 to 1.68, the forehead 1.42 to 1.45, the brightness 1.00. The sheet of the four (off, 1, ears off,
+2) under the baked light, the reel's lamps and the game's lamp: `docs/godot_sheets/2026-11-01_skin_depth.jpg`.
+
+**Not yet:** the Studio's view and the desk drawing it; the depth deepening with the face's shapes (a squint's creases).
+
 ## 5d. Streets from the Blender bake (`street.gdshader`, `HSStreet`)
 
 A street baked in Blender (`tools/street.py bake`, docs/STREET_TEXTURING.md) comes as plain glTF:

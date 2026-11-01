@@ -22,11 +22,18 @@ skin at their real size, the size read from the island's own metres:
                         the island has: 0 the head's and the hands' (about 0.72 m a UV unit), 1 the body's and the
                         legs' (about 1.9): HSSkin lays the tiles at a constant scale for each and blends where they
                         meet (a scale that changed across the skin would squeeze the pattern where it changes)
+  mhr_skin_depth.png    MHR's UV layout in 1024 px, where light shows that has travelled under the skin (the skin's
+                        depth layer, docs/GODOT_LOOK.md §5g): R round the eyes (the lids, their creases, the inner
+                        corners, under them), G the nose (its tip, its wings and the creases round them, the nostrils),
+                        B the ears (all of each, their folds most: the shader's switch for ears under hair), A the
+                        mouth's corners and the creases round it; each the region times how deep a crease it is (MHR's
+                        own surface under its neighbourhood's, a centimetre or so across: the creases most, what bulges
+                        out least, never nothing inside the region)
 
 The regions come from where MediaPipe's 468 points sit on MHR (Content/Studio/Bodies/MHR_landmarks.json, face_mesh.py's
 landmarks op kept as data). Plain numpy and Pillow; seeded, so a run makes the same files.
 
-    python tools/skin_detail.py tiles | regions | all | check
+    python tools/skin_detail.py tiles | regions | depth | all | check
 """
 import argparse
 import json
@@ -251,6 +258,83 @@ def fields(m):
     return np.stack([pores, furrows, lips], 1)
 
 
+# ---- where light has travelled under the skin (the depth layer, GODOT_LOOK §5g) ---------------------------------------
+
+EYE_UPPER = [247, 30, 29, 27, 28, 56, 190, 467, 260, 259, 257, 258, 286, 414]          # MediaPipe's rows: the upper lid's crease
+EYE_SULCUS = [113, 225, 224, 223, 222, 221, 189, 342, 445, 444, 443, 442, 441, 413]    # above it, under the brow
+EYE_LOWER = [130, 25, 110, 24, 23, 22, 26, 112, 243, 359, 255, 339, 254, 253, 252, 256, 341, 463]
+EYE_UNDER = [226, 31, 228, 229, 230, 231, 232, 233, 244, 446, 261, 448, 449, 450, 451, 452, 453, 464]
+EYE_INNER = [133, 362, 243, 463, 244, 464, 189, 413]
+NOSE_TIP = [1, 4, 2, 19, 94]
+NOSE_WINGS = [98, 327, 129, 358, 64, 294, 48, 278, 102, 331, 49, 279, 115, 344, 219, 439, 218, 438, 240, 460, 75, 305,
+              235, 455, 166, 392, 79, 309, 237, 457, 242, 462, 97, 326, 99, 328, 141, 370, 44, 274, 45, 275, 220, 440, 125, 354]
+MOUTH_CORNERS = [61, 291, 57, 287]
+DEPTH_BASE = (0.55, 0.6, 0.75, 0.35)    # the eyes', nose's, ears' and mouth's depth where the skin bulges out (1 in a crease)
+
+
+def creases(m, rings=3):
+    """each of MHR's points: how far under its neighbourhood's surface it lies along its normal, in mm (the surface's
+    points averaged `rings` times, about a centimetre on the face): + in a crease (the eyes' corners, round the nose's
+    wings, the ears' folds), - where it bulges out (the nose's tip, the lips, the ears' rims)"""
+    P, T = m["points"], m["tris"]
+    n = len(P)
+    fn = np.cross(P[T[:, 1]] - P[T[:, 0]], P[T[:, 2]] - P[T[:, 0]])
+    vn = np.zeros_like(P)
+    for k in range(3):
+        np.add.at(vn, T[:, k], fn)
+    vn /= np.maximum(np.linalg.norm(vn, axis=1, keepdims=True), 1e-12)
+    E = np.unique(np.sort(np.concatenate([T[:, [0, 1]], T[:, [1, 2]], T[:, [2, 0]]]), 1), axis=0)
+    deg = np.maximum(np.bincount(E.ravel(), minlength=n), 1).astype(float)[:, None]
+    Q = P.copy()
+    for _ in range(rings):
+        s = np.zeros_like(Q)
+        np.add.at(s, E[:, 0], Q[E[:, 1]])
+        np.add.at(s, E[:, 1], Q[E[:, 0]])
+        Q = s / deg
+    return ((Q - P) * vn).sum(1) * 1000.0
+
+
+def ear_frame(m):
+    """the ears on MHR's base: the middle of what stands out past the skull at their height (the head's widest points
+    there, mirrored) and its spread up and back"""
+    P, lm = m["points"], landmarks(m)
+    s = (np.abs(P[:, 0]) > 0.075) & (np.abs(P[:, 1] - lm[234][1]) < 0.06) & (P[:, 2] < lm[234][2]) & (P[:, 2] > lm[234][2] - 0.1)
+    return np.array([np.abs(P[s, 0]).mean(), P[s, 1].mean(), P[s, 2].mean()]), P[s].std(0)
+
+
+def depth_fields(m):
+    """each of MHR's points: the eyes, the nose, the ears, the mouth (0..1), each its region times how deep a crease
+    it lies in (DEPTH_BASE where it bulges out)"""
+    P = m["points"]
+    lm = landmarks(m)
+    top = P[:, 1].max()
+
+    def near(i, r):
+        d = (P - lm[i]) / r
+        return np.exp(-(d * d).sum(1))
+
+    def ring(ids, r, w=1.0):
+        return w * np.max([near(i, r) for i in ids], 0)
+
+    def ramp(x, a, b):
+        t = np.clip((x - a) / (b - a), 0.0, 1.0)
+        return t * t * (3 - 2 * t)
+
+    head = ramp(P[:, 1], top - 0.33, top - 0.26)
+    face = head * ramp(P[:, 2] - lm[234][2], -0.01, 0.03)
+    eyes = np.max([ring(EYES, 0.009), ring(EYE_UPPER, 0.009), ring(EYE_SULCUS, 0.009, 0.8), ring(EYE_LOWER, 0.008),
+                   ring(EYE_UNDER, 0.008, 0.6), ring(EYE_INNER, 0.011)], 0) * face
+    nose = np.max([ring(NOSE_TIP, 0.012), ring(NOSE_WINGS, 0.008), ring([5, 195], 0.010, 0.5)], 0) * face
+    mouth = np.max([ring(MOUTH_CORNERS, 0.009), ring([164, 0], 0.007, 0.5), ring([18], 0.009, 0.5),
+                    ring([92, 322, 186, 410, 165, 391], 0.008, 0.45)], 0) * face
+    c, _ = ear_frame(m)                                                     # an ellipse seen from the side, out past the skull: the
+    dy, dz = P[:, 1] - c[1], P[:, 2] - c[2]                                 # helix's top 2.7 cm over the middle, the lobe 4.6 under,
+    er = np.hypot(dz / np.where(dz > 0, 0.029, 0.025), dy / np.where(dy > 0, 0.027, 0.046))   # its back 2.5 (the skull round the ear left out)
+    ears = (1 - ramp(er, 0.8, 1.05)) * ramp(np.abs(P[:, 0]), c[0] - 0.016, c[0] - 0.008) * head
+    cav = ramp(creases(m), 0.0, 1.2)
+    return np.stack([r * (b + (1 - b) * cav) for r, b in zip((eyes, nose, ears, mouth), DEPTH_BASE)], 1)
+
+
 METRES = (0.72, 1.9)                    # the metres one UV unit spans on MHR's head and hands (its UVs' lower half), and on its body and legs (the upper)
 
 
@@ -328,6 +412,48 @@ def cmd_regions(_a):
           f"{np.sqrt(a3[fine].sum() / auv[fine].sum()):.2f} (HSSkin takes {METRES[0]}), the body's {np.sqrt(a3[~fine].sum() / auv[~fine].sum()):.2f} ({METRES[1]})")
 
 
+def cmd_depth(_a):
+    from PIL import Image
+    sys.path.insert(0, str(ROOT / "tools" / "character"))
+    import mhr
+    m = mhr.load()
+    f = depth_fields(m)
+    img, cov = raster(m["uv"], f[m["tris"]], N)
+    img = dilate(img, cov)
+    Image.fromarray(np.clip(np.round(img * 255), 0, 255).astype(np.uint8), "RGBA").save(OUT / "mhr_skin_depth.png", optimize=True)
+    print("mhr_skin_depth.png: " + ", ".join(f"{k} on {np.mean(f[:, i] > 0.1):.1%} of MHR's points" for i, k in enumerate(("eyes", "nose", "ears", "mouth"))))
+
+
+PROBES = {"inner corner": 133, "upper crease": 27, "cheek": 205, "forehead": 151, "nose wing": 64, "nose tip": 4,
+          "mouth corner": 61, "chin": 152, "alar crease": 48,                     # the face's right (-x) by MediaPipe's index
+          "inner corner +x": 362, "upper crease +x": 257, "nose wing +x": 294, "alar crease +x": 278, "cheek +x": 425}
+
+
+def probe_uvs(m):
+    """points on MHR's skin by their UV (its layout, every Studio export's): the PROBES landmarks, each ear's middle (the
+    point of it furthest out, near the ear frame's middle: "ear +x", "ear -x") and the chest"""
+    J = json.loads((BODIES / "MHR_landmarks.json").read_text(encoding="utf-8"))
+    luv = (m["uv"][np.array(J["tri"])] * np.array(J["bary"])[:, :, None]).sum(1)
+    P, T = m["points"], m["tris"]
+
+    def uv_of(p):                                                            # the UV of MHR's corner nearest a point
+        i = int(np.argmin(np.linalg.norm(P - p, axis=1)))
+        t, k = np.argwhere(T == i)[0]
+        return m["uv"][t, k]
+    out = {k: luv[i] for k, i in PROBES.items()}
+    c, _ = ear_frame(m)
+    for side, sx in (("ear +x", 1.0), ("ear -x", -1.0)):
+        s = np.linalg.norm(P - c * [sx, 1, 1], axis=1) < 0.02
+        out[side] = uv_of(P[s][np.argmax(np.abs(P[s, 0]))])
+    out["chest"] = uv_of(np.array([0.0, P[:, 1].max() - 0.45, P[np.abs(P[:, 1] - (P[:, 1].max() - 0.45)) < 0.01, 2].max()]))
+    return {k: [round(float(v[0]), 4), round(float(v[1]), 4)] for k, v in out.items()}
+
+
+def depth_at(m, r):
+    """the depth map's RGBA at the probes (probe_uvs)"""
+    return {k: r[min(N - 1, int(v * N)), min(N - 1, int(u * N))] for k, (u, v) in probe_uvs(m).items()}
+
+
 def cmd_check(_a):
     """the files there and as made: the tiles wrap (their edges meet), their normals point out and lean as skin does,
     the regions put the nose's pores over the lids' and the body's, and the lips' mask on the lips"""
@@ -382,6 +508,26 @@ def cmd_check(_a):
         del lm
     else:
         bad.append("mhr_skin_regions.png missing (python tools/skin_detail.py regions)")
+    p = OUT / "mhr_skin_depth.png"
+    if p.exists():                                                          # the depth layer's regions: each where it belongs, the ears apart (their switch)
+        sys.path.insert(0, str(ROOT / "tools" / "character"))
+        import mhr
+        d = depth_at(mhr.load(), np.asarray(Image.open(p).convert("RGBA")).astype(float) / 255.0)
+        checks = [(d["inner corner"][0] > 0.7, "round the eyes: the inner corner %.2f (over 0.7)" % d["inner corner"][0]),
+                  (d["upper crease"][0] > 0.4, "the upper lid's crease %.2f (over 0.4)" % d["upper crease"][0]),
+                  (d["nose wing"][1] > 0.5 and d["nose tip"][1] > 0.5, "the nose: its wing %.2f, its tip %.2f (over 0.5)" % (d["nose wing"][1], d["nose tip"][1])),
+                  (d["mouth corner"][3] > 0.4, "the mouth's corner %.2f (over 0.4)" % d["mouth corner"][3]),
+                  (min(d["ear +x"][2], d["ear -x"][2]) > 0.6, "the ears %.2f and %.2f (over 0.6)" % (d["ear +x"][2], d["ear -x"][2])),
+                  (max(d["cheek"].max(), d["forehead"].max(), d["chin"].max(), d["chest"].max()) < 0.15,
+                   "nothing on the cheek, the forehead, the chin or the chest (at most %.2f)" % max(d["cheek"].max(), d["forehead"].max(), d["chin"].max(), d["chest"].max())),
+                  (max(d["nose tip"][2], d["inner corner"][2], d["mouth corner"][2], d["ear +x"][0], d["ear +x"][1]) < 0.05,
+                   "the ears' channel off the face and the face's off the ears (at most %.2f)" % max(d["nose tip"][2], d["inner corner"][2], d["mouth corner"][2], d["ear +x"][0], d["ear +x"][1]))]
+        for ok, what in checks:
+            print(("  ok  " if ok else "  BAD ") + "depth: " + what)
+            if not ok:
+                bad.append("depth: " + what)
+    else:
+        bad.append("mhr_skin_depth.png missing (python tools/skin_detail.py depth)")
     for b in bad:
         print("  BAD " + b)
     print("SKINDETAIL ok" if not bad else "SKINDETAIL FAIL")
@@ -390,12 +536,14 @@ def cmd_check(_a):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("op", choices=["tiles", "regions", "all", "check"])
+    ap.add_argument("op", choices=["tiles", "regions", "depth", "all", "check"])
     a = ap.parse_args()
     if a.op in ("tiles", "all"):
         cmd_tiles(a)
     if a.op in ("regions", "all"):
         cmd_regions(a)
+    if a.op in ("depth", "all"):
+        cmd_depth(a)
     if a.op == "check":
         return cmd_check(a)
     return 0

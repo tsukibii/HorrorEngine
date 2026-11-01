@@ -2,6 +2,21 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-01 (the user, on the skin's depth; branch `subsurace-scattering-exp`)
+
+- **Subsurface scattering round the face's core, for baked light**: with two pictures of Blender's subsurface
+  scattering (a cube glowing orange toward its edges, Suzanne red in her eye sockets and ears): "do we currently use any
+  subsurface scattering? I think that's maybe why the characters' skin looks a bit lifeless ... could we add this kind
+  of subsurface scattering just around the core parts, eyes, nose ... most of the lights are baked in game, I don't
+  even really care about it being realtime and changing, I just want that skin depth kind of feeling around the core
+  wrinkle/skin/map; see if you can come up with a simple enhancement for our existing skin shaders". We had HumanShaders'
+  scattering, but per lamp, which baked light never reaches. Built (GODOT_LOOK §5g): the skin's depth layer, warm light
+  from under the skin round the eyes, the nose, the mouth and the ears (MHR's depth map, most in the creases), the
+  occlusion red instead of grey there, thin skin lit through, for the ambient a baked level gives as much as for a lamp.
+- **The ears switchable**: "if you add it to the ears make it toggleable, since some NPCs' hair covers their ears". Per
+  character: the Character Studio's Skin light, **Ear glow (game)** (and **Depth (game)**), carried by the export; off,
+  the ears take none of it and the lamps' light through them goes too. `HSCharacterLook` can override it in Godot.
+
 ## 2026-10-31, small hours (the user, on the floors)
 
 - **Kit floors take a material**: "yes make the floors take a material" (offered: a kit floor dressed rather than taken

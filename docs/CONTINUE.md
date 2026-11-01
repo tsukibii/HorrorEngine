@@ -12,6 +12,20 @@ street builder, its paint and the PBR sets, with `prop-gen-tool` merged in). Rea
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
+## 0. `subsurace-scattering-exp` (2026-11-01): the skin's depth, waiting for the user's look in the game
+
+The user asked whether we use subsurface scattering (the characters' skin looked lifeless) and for Blender's look round
+the eyes and nose, for baked light, the ears switchable (DECISIONS 2026-11-01). We had HumanShaders' (per lamp, so
+nothing under a baked level's light but a grey occlusion). Built (GODOT_LOOK §5g): **the skin's depth layer** in
+`skin_wet.gdshader` (`skin_depth`, `HSSkin.set_depth`), placed by **MHR's depth map** (`tools/skin_detail.py depth`,
+`textures/mhr_skin_depth.png`: eyes, nose, ears, mouth, most in the creases), on every Studio export by itself;
+per character the Studio's Skin light **Depth (game)** and **Ear glow (game)** (the export's `studioSkin` record);
+`HSCharacterLook` Skin Depth and Ear Glow (auto, on, off). GDPORTRAIT measures it under a baked light (portrait.gd's
+`--light=baked`, `--depth`, `--ears=off`, `side`, `--probe`); the sheet `docs/godot_sheets/2026-11-01_skin_depth.jpg`.
+The branch is named as the user typed it. **Next:** the user's look in a game of theirs (its baked light, a cast member
+with hair over the ears and Ear glow off), then the strength (1 by default; 2 is Blender's picture), merge or not; the
+Studio's view could draw it too (not asked).
+
 ## 0. The street builder (2026-10-30, night, on `buildings-streets`; not merged)
 
 The user asked for a new tool (DECISIONS 2026-10-30, night and later night): the outside world the enterable buildings

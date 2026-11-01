@@ -456,7 +456,9 @@ const litSet = {};
     ["wrap", "Wrap", 0, 1, 0.01, "How far the light reaches past the terminator."],
     ["spec", "Specular", 0, 1, 0.01, "The skin's own shine (f0 = 0.04 × this²): 0.5 is skin's."],
     ["double", "Second highlight", 0, 1, 1, "A broader highlight under the sharp one (the skin's fine roughness under the oil)."],
-    ["trans", "Translucency", 0, 2, 0.01, "Light coming through the thin parts toward you: an ear's rim red against a lamp behind it."]];
+    ["trans", "Translucency", 0, 2, 0.01, "Light coming through the thin parts toward you: an ear's rim red against a lamp behind it."],
+    ["depth", "Depth (game)", 0, 3, 0.05, "In the game (Godot): light from under the skin, warm round the eyes, the nose, the mouth and the ears, red in their creases instead of grey, whatever lights them (a baked level too). 0 off. Not drawn here."],
+    ["ears", "Ear glow (game)", 0, 1, 1, "The ears' share of the depth in the game, and the lamps' light through them: off (0) when the hair covers the ears."]];
   for (const [k, label, lo, hi, step, help] of rows) litSet[k] = slider(box, "lit_" + k, label, lo, hi, step, st.skin.lit[k], help, v => { st.skin.lit[k] = v; skinLook(); });
   litSet.all = () => { on.checked = !!st.skin.lit.on; for (const [k] of rows) litSet[k](st.skin.lit[k]); };
 }
