@@ -184,8 +184,8 @@ func _states() -> void:
 			rt.actions.run(a, rt)
 
 
-## a state as the runtime's actions: a person placed or set going (behave), a motion, shown or hidden, a door locked
-## or opened, a light, a little thing's state
+## a state as the runtime's actions: a person placed or set going (behave), a motion, her face (expr), shown or hidden,
+## a door locked or opened, a light, a little thing's state
 func _acts(target: String, w: Dictionary, had: Dictionary) -> Array:
 	var acts: Array = []
 	var moved := false
@@ -217,6 +217,8 @@ func _acts(target: String, w: Dictionary, had: Dictionary) -> Array:
 		acts.append({"light": target, "set": str(w["light"])})
 	if w.has("state") and w["state"] != had.get("state"):
 		acts.append({"state": target, "to": w["state"]})
+	if w.has("expr") and w["expr"] != had.get("expr"):        # the face she rests in (face.gd)
+		acts.append({"expr": str(w["expr"]) if w["expr"] != null else "", "who": target, "rest": true})
 	return acts
 
 

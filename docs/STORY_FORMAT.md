@@ -570,6 +570,16 @@ with `{"tick": "<id>"}` at the end of that beat, not by its own trigger (the sto
   Godot, the animation of that name on the AnimationPlayer under her (a Kimodo motion brought in by the Director
   plugin, GODOT_DIRECTOR §6)
 - `stalker` (`spawn despawn patrol hunt chase`, `at`, `route`)
+- `expr`: **an expression on someone's face** in play (DECISIONS 2026-11-01): `{"expr": "pout_and_glance", "who":
+  "mari"}`, an id from the expression library (§3.7's `expr`). A capture plays once, faded in and out, and her face goes
+  back to what it rests in; a loop runs until another takes over (`loop` true or false: as the expression is, left
+  out); `rest: true` makes it **the face she rests in** (it runs under the others, kept till another rest: `"expr":
+  ""` with `rest` takes it off); `w` how strong (1; 0 to 2), `in` and `out` its fades in seconds (0.25, 0.3); the
+  newest takes over from the one before over its `in`. `"expr": ""` alone fades out what plays over her face. A
+  scene's own face rows win while it plays her. The desk's Play wears it on her body (play/faces.js, face.js); Godot
+  plays the expression baked into the project (`tools/face_export.mjs`: `faces/<id>.tres`, the loops in
+  `faces/loops/`) on the mesh carrying MHR's face shapes (`face.gd`). The check: `who` in the cast, the id in the
+  library, the numbers in range
 - `behave`: what a cast member does in play, until another `behave` (or a scene takes them and hands them back):
   `{"behave": "mari", "as": "path", "route": "r_hall"}`. `as`: `idle` (`at` a spot, `pose`, `face` a thing, a cast
   member or `player`), `sit` (`at`), `path` (`route`: a level's route or a list of spots; `mode`, `speed` m/s,

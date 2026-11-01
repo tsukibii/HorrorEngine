@@ -51,6 +51,15 @@ func compile(g: Node, alone: Node = null, file: Dictionary = {}) -> Dictionary:
 	sc.compile(f, story, levels)
 	problems.append_array(sc.problems)
 	brain = sc.brain
+	var rests: Array = []                             # each character's own resting face (HSActor.expression): a state that always holds, under the story's
+	for lv in levels.values():
+		for a in HSDirector.nodes_of(lv, "HSActor"):
+			if str(a.expression) != "":
+				rests.append({"while": null, "set": {HSDirector.id_of(a): {"expr": str(a.expression)}}})
+				if not ResourceLoader.exists("res://faces/loops/%s.tres" % a.expression) and not ResourceLoader.exists("res://faces/%s.tres" % a.expression):
+					warn(a, "%s's expression %s isn't in the project's faces/ (tools/face_export.mjs, or install again)" % [HSDirector.id_of(a), a.expression])
+	if rests.size():
+		brain["states"] = rests + brain.get("states", [])
 	for who in brain.get("talks", {}) if not Engine.is_editor_hint() else {}:   # a person the story talks with: the cursor offers Talk on her (at play)
 		for lv in levels.values():
 			for a in HSDirector.nodes_of(lv, "HSActor"):

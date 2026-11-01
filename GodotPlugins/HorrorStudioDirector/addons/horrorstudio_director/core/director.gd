@@ -251,6 +251,21 @@ static func read_index() -> Dictionary:
 
 
 ## a scene's ids by kind: what the Inspector suggests and what the dock lists
+
+## the expressions brought into the project (tools/face_export.mjs): the loops in res://faces/loops/, the captures in
+## res://faces/ (unless loops_only), by id
+static func faces(loops_only: bool = false) -> Array:
+	var out: Array = []
+	for dir in (["res://faces/loops"] if loops_only else ["res://faces/loops", "res://faces"]):
+		var d := DirAccess.open(dir)
+		if d == null:
+			continue
+		for f in d.get_files():
+			if f.ends_with(".tres") and not out.has(f.get_basename()):
+				out.append(f.get_basename())
+	out.sort()
+	return out
+
 static func scan(root: Node) -> Dictionary:
 	var out := {}
 	for k in KINDS:

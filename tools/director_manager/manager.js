@@ -92,6 +92,7 @@ function refs(kind) {
     case "life": return pairs(ids("life"));
     case "route": case "routes": return pairs(ids("path"));
     case "motion": return pairs(ids("motion"));
+    case "expr": return pairs([...((P.faces || {}).loops || []), ...((P.faces || {}).captures || [])]);
     case "counter": return pairs(ids("counter"));
     case "sound": return pairs(P.sounds);
     case "flag": return pairs(factNames());
@@ -343,7 +344,7 @@ function lineEd(p, t, ln, j) {
   return h("div", { class: "card sub" },
     h("div", { class: "row" }, sel(ln, "who", who.slice(1), { blank: p }), inp(ln, "text", { ph: "what's said", w: "420px" }), h("span", { class: "grow" }), ...moveBtns(t.lines, j),
       h("button", { class: "ghost small", on: { click: () => { t.lines.splice(j, 1); changed(); render(); } } }, icon("x", 12))),
-    row("Said", condEd(ln, "if", "")),
+    row("Said", condEd(ln, "if", ""), h("span", { class: "hint" }, "her face as she says it"), sel(ln, "expr", refs("expr"), { blank: "as it was" })),
     row("As it starts", actions(ln, "do", "nothing")),
     arr(ln.answers).map((a, k) => h("div", { class: "row" }, h("span", { class: "hint" }, `Answer ${k + 1}`), inp(a, "label", { ph: "Yes", w: "120px" }), h("span", { class: "hint" }, "id"), inp(a, "id", { w: "90px" }),
       h("span", { class: "hint" }, "offered"), condEd(a, "if", ""), h("span", { class: "hint" }, "sets"),
@@ -390,7 +391,7 @@ function setEd(st, tg) {
   const v = st.set[tg], k = kindOf(tg), tri = (key, opts) => sel(v, key, opts, { blank: "—" });
   const bools = (key, yes, no) => { const o = { x: v[key] === undefined ? "" : v[key] ? "1" : "0" }; return sel(o, "x", [["1", yes], ["0", no]], { blank: "—", after: () => { if (o.x === undefined) delete v[key]; else v[key] = o.x === "1"; } }); };
   const kids = [];
-  if (k === "person") kids.push(tri("do", DO), h("span", { class: "hint" }, "at"), tri("at", pairs(ids("spot"))), v.do === "go" ? [h("span", { class: "hint" }, "to"), tri("to", pairs(ids("spot")))] : null,
+  if (k === "person") kids.push(h("span", { class: "hint" }, "face"), tri("expr", refs("expr")), tri("do", DO), h("span", { class: "hint" }, "at"), tri("at", pairs(ids("spot"))), v.do === "go" ? [h("span", { class: "hint" }, "to"), tri("to", pairs(ids("spot")))] : null,
     v.do === "path" ? [h("span", { class: "hint" }, "path"), tri("path", pairs(ids("path")))] : null,
     v.do === "patrol" ? [h("span", { class: "hint" }, "paths"), h("input", { value: arr(v.paths).join(", "), placeholder: ids("path").join(", "), on: { change: e => { const a = e.target.value.split(",").map(x => x.trim()).filter(Boolean); if (a.length) v.paths = a; else delete v.paths; changed(); } } })] : null,
     h("span", { class: "hint" }, "watching"), bools("sees", "watches for the player", "doesn't"), h("span", { class: "hint" }, "motion"), tri("motion", pairs(ids("motion"))),

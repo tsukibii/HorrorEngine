@@ -38,7 +38,7 @@ const STORY := {
 	"talk": {"mari": [
 		{"id": "t_not_now", "if": {"not": {"done": "q_key"}}, "lines": [{"text": "Not now. Find the key."}]},
 		{"id": "t_thirsty", "if": {"quest": "q_drink"}, "lines": [{"text": "Could you bring me something to drink?"}]},
-		{"id": "t_open", "if": {"done": "q_drink"}, "once": true, "lines": [{"text": "You found it."},
+		{"id": "t_open", "if": {"done": "q_drink"}, "once": true, "lines": [{"text": "You found it.", "expr": "pout_and_glance"},
 			{"text": "Will you open the bedroom?", "answers": [{"id": "yes", "label": "Yes", "sets": ["promised"], "reply": ["Then go. Quickly."]},
 				{"id": "not_yet", "label": "Not yet", "karma": -1, "reply": ["Don't wait too long."]}]}]},
 		{"id": "t_go", "lines": [{"text": "Go on."}]},
@@ -217,6 +217,7 @@ func _initialize() -> void:
 		ap.add_animation_library("kimodo", load("res://motions/mari/kimodo.tres"))
 		mari.idle_motion = "sample_idle"
 		mari.height = 1.75
+	mari.expression = "pout_and_glance_loop"          # the face she rests in: a loop from the expression library (install brings it into faces/loops/)
 	var fig: HSActor = own(HSActor.new(), kitchen, "Figure")
 	fig.position = Vector3(1.4, 0, 1.3)
 	fig.rotation_degrees = Vector3(0, -90, 0)

@@ -115,6 +115,8 @@ const MenuC := preload("res://addons/horrorstudio/menu.gd")      # the saved set
 const LifeSoundC := preload("res://addons/horrorstudio/lifesound.gd")
 const PhysC := preload("res://addons/horrorstudio/physics.gd")
 var physics = null                   # physics.gd: the thing in the hand, the dice
+const FaceC := preload("res://addons/horrorstudio/face.gd")
+var faces = null                     # face.gd: the cast's expressions (`expr`), what each rests in and what plays over it
 var lifefx = null                    # the little things' effects (lifefx.gd), on this level
 var lifesound = null                 # the little things' sounds (lifesound.gd), made from their recipes, placed
 var scene_light_k: Dictionary = {}
@@ -1181,6 +1183,14 @@ func looked_at(id, within: float) -> float:
 
 func panel(spec: Dictionary) -> Variant:
 	return await modal(func(): return await hud.panel(spec))
+
+
+## an expression on a cast member's face (STORY_FORMAT §4 `expr`: face.gd): opts loop, w, in, out, rest
+func face_play(who: String, id, opts: Dictionary = {}) -> void:
+	if faces == null:
+		faces = FaceC.new(self)
+	if not faces.play(who, cast_nodes.get(who), id, opts):
+		hud.log("no face %s in the project (res://faces/: tools/face_export.mjs)" % str(id))
 
 
 ## looking at a thing (`use: inspect`): a small one (its longest side EXAMINE.most or less) is taken up in the hands, as
@@ -2881,6 +2891,8 @@ func _process(delta: float) -> void:
 		exam_tick(delta)
 	if held:
 		return
+	if faces != null:
+		faces.tick(min(0.05, delta))
 	if live_scene:
 		live_tick(min(0.05, delta))
 		return

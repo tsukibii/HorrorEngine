@@ -13,6 +13,7 @@ import { flickerK, flickerOn } from "../../shared/flicker.js";
 import { castSteps } from "./steps.js";
 import { Torch } from "./torch.js";
 import "./clean.js";
+import "./faces.js";
 import { lensesFor, followLeaf, LENS } from "./peephole.js";
 import { latchFor, turnBar } from "./latch.js";
 import { Examine } from "./examine.js";
@@ -896,6 +897,7 @@ export class PlayRuntime {
   tick(dt) {
     this.clock += dt;
     if (this.lives) { this.lives.advance(this.now()); this.lifeEvents(); }
+    if (this.faces) this.faces.tick(dt);                // the cast's expressions (faces.js: `expr`)
     const p = this.player;
     if (this.physics) this.physics.step(dt);
     if (this.moving) {

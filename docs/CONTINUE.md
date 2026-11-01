@@ -28,9 +28,14 @@ play, so the hand's copy and the kit's slots find it) and **the guide rewritten*
 Director file, facts, moments, conversations, states, the Manager; 34 pictures, the Manager's by
 `tools/director_manager/guide_shots.mjs`); then **Kimodo's fingers** (`kimodo/retarget.gd`: each finger bone aimed
 along SOMA's segment, the hand turned by SOMA's own palm; 32 MHR finger bones at 0.00°). GDTESTROOM's station 6 fails
-in this container as before (no stand-in bodies here; the stations before and after pass). **Next**: faces (the
-expression library into a project's `faces/`, the loops apart, played on a character's MHR face shapes; then the
-Character Studio's export carrying them). Not merged into main yet: main has moved on (PR #6, the street builder); bringing main in conflicts
+in this container as before (no stand-in bodies here; the stations before and after pass); then **faces, part one**
+(`tools/face_export.mjs`: the expression library baked as HSFaceClips into a project's `faces/`, the loops apart in
+`faces/loops/`, FACEEXPORT in CHECKS; the story format's `expr` action, played by the runtime's `face.gd` on the mesh
+carrying MHR's face shapes and by the desk's `play/faces.js`; an HSActor's `expression` (her resting face), a state's
+and a line's `expr`, the Manager's pickers; the scene player now runs a cue's instant actions too, so a Director
+line's own commands play). **Next**: faces, part two: the Character Studio's export carrying MHR's 72 face shapes as
+morph targets (a Studio change, its STUDIO check slow here: ask the user for a local run), so a Studio character's
+face plays too. Not merged into main yet: main has moved on (PR #6, the street builder); bringing main in conflicts
 only in CLAUDE.md, CONTINUE, DECISIONS and LESSONS (both sides added entries), the runtime merging by itself (run
 GDPLAY, GDTESTROOM and DIRECTOR after).
 

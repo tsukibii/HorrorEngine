@@ -286,6 +286,10 @@ its skeleton.</p>
 <li><b>Sees player</b>: she watches; in her cone and range the suspicion meter fills, and when it's full the player is caught (a step or a moment can wait for it).</li>
 <li><b>Talk</b>: someone the Director file has conversations for takes a click whether this is ticked or not (the cursor says Talk) and plays the one the story offers now (§8); tick it for a click with no conversation behind it.</li>
 <li><b>Idle motion</b>, <b>walk motion</b>: animations on her AnimationPlayer (a Kimodo motion you brought in, §11).</li>
+<li><b>Expression</b>: the face she rests in, a loop from the studio's expression library (the desk's Expressions tab).
+<code>install</code> brings the library into the project's <code>faces/</code> (the loops in <code>faces/loops/</code>);
+the story puts other faces on her (a line's face, a state's, a moment's <span class="ui">A face on someone</span>). Her
+model needs MHR's face shapes: the plain MHR body has them; a Character Studio export doesn't yet.</li>
 <li><b>Hidden at start</b> keeps her out of the level until the story shows her; <b>solid</b> off lets the player walk
 through her; <b>speed</b> is her walking pace.</li>
 </ul>
@@ -402,17 +406,18 @@ so she says what fits where the story is: "Not now. Find the key." before the ke
 drink?" during the errand, her question after it. A <b>once only</b> conversation goes once it's been heard out. It
 plays live: the player can look around while she talks.</p>
 <p>Its <b>lines</b> in order: who says it (her, someone else, or the player's thought) and the words; a line can be
-<b>said</b> only if a condition holds, and run commands as it starts. A line with <b>answers</b> is a question (two
+<b>said</b> only if a condition holds, wear <b>her face as she says it</b> (an expression, played once over the face
+she rests in), and run commands as it starts. A line with <b>answers</b> is a question (two
 at most): each answer's label, when it's <b>offered</b>, the facts it <b>sets</b>, karma, <b>her reply</b>, and
 <b>then</b>: the conversation goes on, or the story goes to a quest or an ending (a wrong answer's death). Answers are
 never timed: the player must choose.</p>
 <div class="pair">
-<figure><img src="img/m_talk.jpg" width="904" height="662" alt="Mari's conversation t_open in the Manager: offered when the quest q_drink is done, once only; You found it; Will you open the bedroom? with the answers Yes (sets promised, her reply Then go. Quickly.) and Not yet (karma -1, her reply Don't wait too long.)"><figcaption>Mari's question, its two answers and her replies.</figcaption></figure>
+<figure><img src="img/m_talk.jpg" width="904" height="663" alt="Mari's conversation t_open in the Manager: offered when the quest q_drink is done, once only; You found it; Will you open the bedroom? with the answers Yes (sets promised, her reply Then go. Quickly.) and Not yet (karma -1, her reply Don't wait too long.)"><figcaption>Mari's question, its two answers and her replies.</figcaption></figure>
 <figure><img src="img/g_dialogue.jpg" width="1280" height="720" alt="In the game: Mari facing the player, the answers Yes and Not yet at the foot of the screen"><figcaption>In the game: pick with <kbd>A</kbd>/<kbd>D</kbd> and <kbd>Enter</kbd>, or the mouse.</figcaption></figure>
 </div>
 <h3>States: what the world looks like</h3>
-<p>A <b>state</b> says what the world looks like <b>while</b> a condition holds: a person <b>at</b> a spot, what she
-does (stands, sits, walks to a spot, walks a path, patrols), whether she's watching for the player, her motion, seen
+<p>A <b>state</b> says what the world looks like <b>while</b> a condition holds: a person's <b>face</b> (the expression she
+rests in), <b>at</b> a spot, what she does (stands, sits, walks to a spot, walks a path, patrols), whether she's watching for the player, her motion, seen
 or not; a thing shown or hidden; a little thing's state; a door locked or open; a light on, off, flickering or dim.
 The Director works the states out again after every change and every level entered (a load, a retry), so the world
 always matches the story; a later state's settings win over an earlier one's. In the sample, once Mari's been talked
@@ -516,7 +521,7 @@ must be set up first (<code>python setup/setup.py kimodo</code>).</div>
 <section id="update">
 <h2><span class="n">13</span>Keeping it up to date</h2>
 <ul>
-<li>The add-ons in a project are copies: after you pull the studio, run <code>python tools/godot_director.py install &lt;project&gt;</code> again (or use <code>--link</code> once and never think about it). The Manager runs from the studio's folder, so it's always current.</li>
+<li>The add-ons in a project are copies: after you pull the studio, run <code>python tools/godot_director.py install &lt;project&gt;</code> again (or use <code>--link</code> once and never think about it). It also brings the expression library into <code>faces/</code> again; <code>node tools/face_export.mjs --project &lt;project&gt;</code> does that alone. The Manager runs from the studio's folder, so it's always current.</li>
 <li><code>python tools/godot_director.py check</code> builds the sample, plays it to its ending, tests the Kimodo link and drives the dock in the editor. It ends with <code>DIRECTOR ok</code>.</li>
 <li><code>python tools/godot_director.py guide</code> makes this guide's pictures again (Godot opens a window for a few minutes, then the Manager is pictured in a browser).</li>
 <li>The notes behind all this: <code>docs/GODOT_DIRECTOR.md</code>.</li>
@@ -543,7 +548,7 @@ must be set up first (<code>python setup/setup.py kimodo</code>).</div>
 <li>Loading a save in the game: the pause menu saves, but there's no Load yet (the Manager lists and clears the saves).</li>
 <li>A moment that ends the quest on early and sends the story elsewhere ("if this happens, go there"): for later games.</li>
 <li>Steam: the achievements are worked out and kept, ready for GodotSteam.</li>
-<li>Faces: the expression library's clips playing on a character in Godot.</li>
+<li>Faces on a Character Studio export: its export carries no face shapes yet (they play on MHR bodies).</li>
 <li>The desk can't open a game made here, and a game made here can't go back to the desk: the scene is the game.</li>
 </ul></div>
 </section>

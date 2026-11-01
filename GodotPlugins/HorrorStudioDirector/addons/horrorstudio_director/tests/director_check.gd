@@ -152,8 +152,9 @@ func _initialize() -> void:
 		if not st["items"].has("bedroom_key") or not st["items"].has("mug") or not st["notes"].has("letter") or not st["cast"].has("mari"):
 			return "items %s notes %s cast %s" % [st["items"].keys(), st["notes"].keys(), st["cast"].keys()]
 		var br: Dictionary = hs.compiled["brain"]
-		if br["talks"].get("mari", []).size() != 4 or br["states"].size() != 1 or br["conds"].is_empty():
-			return "the brain's: %d conversations, %d states, %d conditions" % [br["talks"].get("mari", []).size(), br["states"].size(), br["conds"].size()]
+		var rest_state = br["states"][0] if br["states"].size() else {}         # her expression first: a state that always holds, under the story's own
+		if br["talks"].get("mari", []).size() != 4 or br["states"].size() != 2 or br["conds"].is_empty() or str(rest_state.get("set", {}).get("mari", {}).get("expr", "")) != "pout_and_glance_loop":
+			return "the brain's: %d conversations, %d states (the first %s), %d conditions" % [br["talks"].get("mari", []).size(), br["states"].size(), rest_state, br["conds"].size()]
 		return "")
 	await step("the chapter card, then the first task: its objective and its two to-dos", func():
 		var k := 0
@@ -184,6 +185,25 @@ func _initialize() -> void:
 		await game_wait(0.5)
 		if not ap.is_playing() or not str(ap.current_animation).ends_with("sample_idle"):
 			return "playing %s" % ap.current_animation
+		return "")
+	await step("Mari's face: she rests in a loop from the expression library (brought in by face_export, on her MHR face shapes), moving", func():
+		if rt.faces == null:
+			return "no faces playing (her expression never came)"
+		var st: Dictionary = rt.faces.state("mari")
+		if st["rest"] != "pout_and_glance_loop" or not st.get("mesh", false):
+			return "her face: %s" % [st]
+		var mi: MeshInstance3D = rt.faces.people["mari"]["mesh"]
+		var seen := {}
+		for k in 12:
+			await game_wait(0.1)
+			var s := ""
+			for nm in rt.faces.people["mari"]["live"]:
+				s += "%.2f," % float(rt.faces.people["mari"]["live"][nm])
+			seen[s] = true
+		var big: float = rt.faces.state("mari")["weight"]
+		var idx: int = mi.find_blend_shape_by_name("shape_c_45")
+		if big < 0.05 or seen.size() < 3 or idx < 0:
+			return "her face barely moves (the biggest shape %.3f, %d different frames, shape_c_45 at %d)" % [big, seen.size(), idx]
 		return "")
 	await step("a wall stops the player (Godot's physics: the hall's west wall)", func():
 		rt.place(Vector3(-1.0, 0.0, 0.0), 180.0, 0.0)
@@ -363,7 +383,7 @@ func _initialize() -> void:
 		if not flag("achievement:ACH_HOST"):
 			return "no achievement for it"
 		return "")
-	await step("the conversation the story offers now: talked to, answered Yes, heard out (its step ticks); a state sends Mari to the bedroom door", func():
+	await step("the conversation the story offers now: her first line with its face over her rest, answered Yes, heard out (its step ticks); a state sends Mari to the bedroom door", func():
 		var k := 0
 		while not (g.play != null and g.play.active and not g.play.busy) and k < 1200:
 			await process_frame
@@ -373,7 +393,14 @@ func _initialize() -> void:
 		if c == "" or c.begins_with("ERR"):
 			return "Mari's cursor " + c
 		rt.use(true)
-		await frames(5)
+		var said := false                              # "You found it." as she wears the line's face, over her rest
+		var k0 := 0
+		while k0 < 600 and g.hud.choice_over:
+			said = said or (rt.faces != null and rt.faces.state("mari")["over"] == "pout_and_glance")
+			await process_frame
+			k0 += 1
+		if not said:
+			return "her line's face never came (%s)" % [rt.faces.state("mari") if rt.faces != null else "no faces"]
 		var r := await scenes_until_play()
 		if r != "":
 			return r

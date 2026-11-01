@@ -1238,6 +1238,20 @@ def import_project(out, timeout=600):
     return True
 
 
+def faces_used(story):
+    """the expression ids the story puts on someone's face (`expr` with a `who`: an action, a scene's face row)"""
+    out, todo = set(), [story]
+    while todo:
+        o = todo.pop()
+        if isinstance(o, dict):
+            if isinstance(o.get("expr"), str) and o["expr"] and "who" in o:
+                out.add(o["expr"])
+            todo.extend(o.values())
+        elif isinstance(o, list):
+            todo.extend(o)
+    return out
+
+
 def export(game, out=None, make_zip=False, do_import=True):
     """The project for a game: a new version folder (Saved/Godot/<game>_v<NNN>, next_version) when out is None, else into
     out, overwritten with the receipt's merge (the checks' scratch projects); returns {"dir", "zip", "levels", "pieces", "arts",
@@ -1332,6 +1346,13 @@ def export(game, out=None, make_zip=False, do_import=True):
     sfx = ROOT / "Content" / "Studio" / "SFX"                      # the sound shelf (docs/SFX.md, CC0): every sound and its index
     if (sfx / "index.json").exists():
         shutil.copytree(sfx, out / "game" / "sfx", ignore=shutil.ignore_patterns("*.import", "__pycache__"))
+    faces = sorted(faces_used(story))                             # the expressions the story puts on faces in play (`expr`): baked into faces/ (tools/face_export.mjs)
+    if faces and shutil.which("node"):
+        import subprocess  # noqa: PLC0415
+        try:
+            subprocess.run([shutil.which("node"), str(ROOT / "tools" / "face_export.mjs"), "--project", str(out)] + faces, capture_output=True, text=True, timeout=300)
+        except (OSError, subprocess.TimeoutExpired):
+            pass
     import datetime  # noqa: PLC0415
     info = {"game": game, "story": str(path), "levels": levels, "pieces": len(pieces), "arts": arts, "acts": acts, "surfaced": surfaced, "occluders": occluders, "surface_sets": sorted(surface_sets), "bake": (previs / "preview.json").exists(), "bodies": baked,
             "bodies_list": sorted(f.name[5:-4] for f in previs.glob("Body_*.glb")) if previs.exists() else [], "engine": L.engine_version(), "godot": "4.7",

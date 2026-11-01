@@ -32,7 +32,7 @@ BOARDS = {}                 # the board games this game's tables can have (story
 ACTIONS = {"say", "think", "sound", "music", "light", "door", "show", "hide", "move", "objective", "flag", "unflag",
            "give", "take", "wait", "fade", "lookat", "shot", "seq", "anim", "stalker", "trick", "checkpoint", "done",
            "karma", "count", "scene", "behave", "ask", "state", "todo", "tick", "fail", "untodo", "chapter", "name", "torch",
-           "power", "skip", "skin", "sweep"}
+           "power", "skip", "skin", "sweep", "expr"}
 SKIN_KEYS = ("wet", "sweat", "drips", "oil")            # a cast member's skin (docs/GODOT_LOOK.md §5): each 0..1
 ASK_SECS = 3.0              # the walker's time to answer an ask
 MUSIC = {"silence", "calm", "uneasy", "dread", "chase"}
@@ -1391,6 +1391,17 @@ def check_action(bid, a, story, things, r, stage=None):
             placed(v)
         if a.get("clip") is not None and a["clip"] not in story.get("motions", {}):
             r.err(f"{bid}: anim clip {a['clip']!r} isn't in motions")
+    elif k == "expr":                                  # an expression on someone's face (STORY_FORMAT §4): from the library, or "" (none)
+        if a.get("who") not in cast:
+            r.err(f"{bid}: expr: who {a.get('who')!r} isn't in the cast")
+        if v not in ("", None) and (not isinstance(v, str) or "/" in v or ".." in v or not (EXPRESSIONS / v / "expression.json").is_file()):
+            r.err(f"{bid}: expr {v!r} isn't in the library (Content/Studio/Expressions)")
+        for key, lo, hi in (("w", 0, 2), ("in", 0, 10), ("out", 0, 10)):
+            if key in a and not (isinstance(a[key], (int, float)) and lo <= a[key] <= hi):
+                r.err(f"{bid}: expr {key} {a[key]!r} (0 to {hi})")
+        for key in ("loop", "rest"):
+            if key in a and not isinstance(a[key], bool):
+                r.err(f"{bid}: expr {key} {a[key]!r} (true or false)")
     elif k == "move":
         if v != "player":                              # the player to a spot (the Director plugin's tasks start there)
             placed(v)

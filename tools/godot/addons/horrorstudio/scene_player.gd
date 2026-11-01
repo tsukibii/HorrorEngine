@@ -209,6 +209,11 @@ func cue_times(tl: Dictionary, v: Dictionary) -> Array:
 
 
 ## a cue's action at its moment: what the Watch plays (a state, a skip, a sound) and what the stage shows (a light)
+## the actions a cue runs through Play's own (instant ones: no camera, no wait), besides the ones fire_cue does itself
+const CUE_ACTS := ["expr", "flag", "unflag", "give", "take", "karma", "count", "show", "hide", "door", "torch", "power", "skin", "anim", "move",
+	"objective", "todo", "tick", "fail", "untodo", "checkpoint"]
+
+
 func fire_cue(c: Dictionary, t0: float) -> void:
 	var d: Dictionary = c["do"]
 	var rt = game.play
@@ -229,6 +234,8 @@ func fire_cue(c: Dictionary, t0: float) -> void:
 		_relight(d.get("room"), float(d.get("secs", 1)))
 	elif d.has("behave") and rt != null:
 		rt.behave(d["behave"], d)
+	elif rt != null and CUE_ACTS.has(rt.actions.verb_of(d)):    # the rest a cue can say that takes no time, as Play runs it: a face, a fact, an item, a door... (a Director line's own commands)
+		rt.actions.run(d, rt)
 
 
 func _relight(room, secs: float) -> void:

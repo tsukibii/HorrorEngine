@@ -1117,7 +1117,7 @@ export class Stage {
         }
       }
       if (state.poses[cid]) f.update(state.poses[cid]);
-      const w72 = (state.faces || {})[cid] || null;
+      const w72 = (state.faces || {})[cid] || f._playFace || null;    // a scene's face row, else what Play put on her face (play/faces.js)
       if (w72 || f._faceOn) this.faceOn(f, w72);
     }
     const eye = this.eyeOf(v), view = this.things[v.view];

@@ -98,6 +98,8 @@ def project_info(d):
         "ids": {k: sorted(v) for k, v in ids.items()}, "indexed": bool(index),
         "lives": {k: [s.get("id") for s in v.get("states", [])] for k, v in lives.items()}, "sounds": [s for s in sounds if not s.startswith("_")],
         "saves": saves(d), "user": str(user_dir(d)),
+        "faces": {"loops": sorted(f.stem for f in (d / "faces" / "loops").glob("*.tres")),           # the expressions brought in (tools/face_export.mjs)
+                  "captures": sorted(f.stem for f in (d / "faces").glob("*.tres"))},
     }
 
 

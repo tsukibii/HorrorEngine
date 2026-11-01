@@ -305,6 +305,8 @@ func _scene(who: String, t: Dictionary, tid: String) -> Dictionary:
 			clip["who"] = w
 		if not HSCond.empty(ln.get("if")):
 			clip["if"] = [flag_for(ln["if"])]
+		if str(ln.get("expr", "")) != "" and clip["who"] != "player":   # her face as she says it (face.gd: once, then back to her rest)
+			sc["cues"].append({"at": {"clip": cid, "edge": "start"}, "do": {"expr": str(ln["expr"]), "who": clip["who"]}})
 		for a in ln.get("do", []):
 			sc["cues"].append({"at": {"clip": cid, "edge": "start"}, "do": a})
 		var answers: Array = ln.get("answers", [])

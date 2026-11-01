@@ -9,8 +9,9 @@
     python tools/godot_director.py install <folder> [--link]
         the add-ons, the shelf and the lives into an existing project (again after a pull: they're copies), the
         plugins switched on, the guide into guide/ (guides/director: the dock's Guide button opens it), the Character
-        Studio exports its characters name (`studio_character`) into game/people/; --link makes the add-ons and the
-        guide symlinks into this repo instead, so a pull reaches the project at once
+        Studio exports its characters name (`studio_character`) into game/people/, the expression library into faces/
+        (tools/face_export.mjs: the loops in faces/loops/); --link makes the add-ons and the guide symlinks into this
+        repo instead, so a pull reaches the project at once
     python tools/godot_director.py guide
         the HTML guide's pictures (guides/director/img/) made again by Godot: a fresh sample project played and pictured
         (tests/guide_game.gd) and its editor with the dock (tests/guide_editor.gd), under xvfb when it's there (on a
@@ -166,6 +167,7 @@ def install(out, link=False):
     else:
         print(f"  {gd} is a folder of your own: the guide stays in the studio (guides/director/index.html)")
     people(out)
+    faces(out)
     gi = out / ".gitignore"
     if not gi.exists():
         gi.write_text(".godot/\n*.import\n", encoding="utf-8")
@@ -178,6 +180,19 @@ def guide_ours(gd):
         return True
     page = gd / "index.html"
     return (gd / ".gdignore").exists() and page.exists() and "HorrorStudio Director" in page.read_text(encoding="utf-8", errors="replace")[:600]
+
+
+def faces(out):
+    """The expression library into the project's faces/ (the loops in faces/loops/) by tools/face_export.mjs, as the
+    runtime plays them (`expr`: an HSActor's expression, a line's face, a state's)."""
+    if not (ROOT / "Content" / "Studio" / "Expressions").is_dir():
+        return
+    try:
+        r = subprocess.run(["node", str(ROOT / "tools" / "face_export.mjs"), "--project", str(out)], capture_output=True, text=True, timeout=300)
+        last = (r.stdout.strip().splitlines() or [""])[-1]
+        print(f"  faces: {last}" if r.returncode == 0 else f"  faces: not brought in ({(r.stdout + r.stderr).strip()[-300:]})")
+    except (OSError, subprocess.TimeoutExpired) as e:
+        print(f"  faces: not brought in (node: {e}); run node tools/face_export.mjs --project {out}")
 
 
 def people(out):

@@ -248,6 +248,9 @@ objects, the same frame. **The dialogue choice** (the user: "I can't click
    flashlight and the scenes' sound cues all go through it; `audio_log` says what played (headless, the audio server
    is a dummy: the streams load, nothing is heard). GDTESTROOM checks the steps' and the knock's sounds loaded and
    placed.
+   **Faces in play** (2026-11-01): the expressions the story puts on someone's face (`expr`, STORY_FORMAT §4; a scene's
+   face rows count too) are baked into the export's `faces/` (the loops in `faces/loops/`) by `tools/face_export.mjs`;
+   the runtime's `face.gd` plays them on the mesh carrying MHR's face shapes (docs/GODOT_DIRECTOR.md §6c).
    **Physics** (2026-10-29, `physics.gd`, physics.js ported onto Godot's own bodies): the thing in the hand is a copy
    of it (its art or its block) sprung after the hand each frame with its kind's stiffness and give, dipping with
    each step, kept off the walls; a plushie squashes and stretches with the hand's acceleration and its top leans

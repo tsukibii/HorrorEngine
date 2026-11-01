@@ -244,6 +244,32 @@ the motion put it, the fingertips too (0.00 cm); onto MHR every limb and every f
 In the game: her `idle_motion` loops while she stands, `walk_motion` while she walks a path (with `idle_motion` at its
 waits); an event's **Play motion** plays one once.
 
+## 6c. Faces (DECISIONS 2026-11-01: "a tool to export a facial animation and add it into Godot, a facial animation folder; the exporter should export the loopables separately")
+
+The studio's **expression library** (`Content/Studio/Expressions/<id>/expression.json`: a captured face's ARKit
+curves, the desk's Expressions tab) comes into a project as clips: `node tools/face_export.mjs --project <folder>`
+(also run by `godot_director.py new` and `install`) samples each expression as the desk plays it (`tools/shared/face.js`:
+its rest taken away, its strength, a loop's end crossfaded into its start) onto MHR's 72 face shapes, 30 frames a
+second, and writes it as an **HSFaceClip** (`addons/horrorstudio/face_clip.gd`): `faces/<id>.tres`, **the loops apart
+in `faces/loops/<id>.tres`** (a loop runs round, its last frame into its first). Only the shapes it moves are kept,
+by Meta's names. FACEEXPORT (`--check`, in CHECKS) bakes the library and measures it: every weight 0..1, a loop's wrap
+no bigger a step than its others.
+
+They play through the story format's **`expr`** action (STORY_FORMAT §4: `{"expr": id, "who": person}`, `rest`, `loop`,
+`w`, `in`, `out`): the runtime's `face.gd` finds the mesh carrying MHR's face shapes on her (by Meta's names, or the
+plain MHR body's `shape_c_45` on) and plays it: what she **rests in** (a loop) and what plays **over** it (a capture
+once, faded in and out; a loop until another takes over), crossfaded. In a Director game:
+
+- an **HSActor**'s **expression**: the face she rests in (the Inspector suggests the project's loops);
+- a **state**'s `expr` for a person: her resting face while it holds (the brain turns it into a resting `expr`);
+- a **line**'s `expr` in a conversation: her face as she says it (a capture once, over her rest);
+- a **moment**'s command *A face on someone* (the desk's palette: any `expr`).
+
+The Manager's pickers list the project's faces (a line's *her face as she says it*, a person's *face* in a state).
+Measured (DIRECTOR): Mari rests in `pout_and_glance_loop` on her MHR face shapes, moving; "You found it." wears
+`pout_and_glance` over it. A Character Studio export carries no face shapes yet (it's exported neutral): faces play on
+the plain MHR body and on the bake's bodies (which carry them) until it does.
+
 ## 7. Where you are
 
 Three ways to see it: the dock's Director tab while the game runs from the editor (it sends the quest, the facts and
@@ -258,7 +284,7 @@ itself (`tests/make_sample.gd`: the house, and its story as `director/director.j
   card, the first quest's objective and steps, Mari's Kimodo idle on her MHR body, a wall that stops the player, the
   letter read (its fact, its step ticked and crossed out), the shut door stopping them and opening, the figure's
   jumpscare in the kitchen's doorway after the letter (the user's example, a moment), the kettle (a part) switched on
-  with its steam at its moved spout, the ornament taken up in the hands (turned by a drag, put back), Mari's conversation before the key (each time, heard
+  with its steam at its moved spout, Mari resting in a loop from the expression library on her MHR face shapes (§6c), the ornament taken up in the hands (turned by a drag, put back), Mari's conversation before the key (each time, heard
   out), the key, the drink errand (the bottle refused, "Nah, that's not what I want"; the mug taken, its step ticked,
   an achievement), the conversation the story offers next (answered Yes, heard out: its step ticks), the state that
   sends Mari to the bedroom door, the locked door opened by the key, the bedroom entered, the night's quest ending on
@@ -284,6 +310,7 @@ The runtime's own checks (GDPLAY, GDTESTROOM, GDEXPORT) stay as they were: the e
   clears the saves and sets where the next play starts.
 - A moment can't end the quest on early and send the story elsewhere yet (for later games: "if this happens, go there").
 - Achievements are worked out and kept as facts; Steam (GodotSteam) when the user wants it.
-- Faces (the expression library's clips in Godot) wait on the Character Studio's export carrying its face shapes.
+- A Character Studio export carries no face shapes yet (exported neutral): faces (§6c) play on MHR bodies and the bake's
+  bodies until the Studio's export carries MHR's 72 as morph targets.
 - MHR's twist bones keep their rest (the forearm's and the upper arm's twist isn't shared along them).
 - The desk can't open a Director game, and a Director game can't go back to the desk: the scene is the game now.

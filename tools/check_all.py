@@ -11,7 +11,8 @@ sys.path.insert(0, str(HERE.parent / "Content" / "Python"))
 from storykit import storylib as L  # noqa: E402
 
 CHECKS = [["story_check.py"], ["level_check.py"], ["shots_sheet.py", "--plan"]]
-STUDIO = [["pbr.py", "check"], ["sfx.py", "check"], ["face_capture.py", "check"], ["uv_templates.py", "check"]]   # once, not per game: the PBR shelf, the sound shelf, the expression library, the texture templates
+STUDIO = [["pbr.py", "check"], ["sfx.py", "check"], ["face_capture.py", "check"], ["uv_templates.py", "check"],   # once, not per game: the PBR shelf, the sound shelf, the expression library, the texture templates,
+          ["face_export.mjs", "--check"]]                                                                            # the library baked for Godot (FACEEXPORT)
 
 game, _ = L.pick_game(sys.argv[1:])
 bad = 0
@@ -28,7 +29,11 @@ for g in ([game] if game else L.games()):
                 if ln.startswith(("ERROR", "FAIL")):
                     print("      " + ln)
 for c in STUDIO:
-    r = subprocess.run([sys.executable, str(HERE / c[0])] + c[1:], capture_output=True, text=True, encoding="utf-8")
+    run = ["node"] if c[0].endswith(".mjs") else [sys.executable]
+    try:
+        r = subprocess.run(run + [str(HERE / c[0])] + c[1:], capture_output=True, text=True, encoding="utf-8")
+    except OSError as e:                                         # node not on this machine
+        r = subprocess.CompletedProcess(c, 1, "", f"{run[0]}: {e}")
     lines = [ln for ln in r.stdout.splitlines() if ln.strip()]
     print(f"{'ok  ' if r.returncode == 0 else 'FAIL'}  {'(studio)':<12} {c[0]:<16} {lines[-1] if lines else r.stderr.strip()[-300:]}")
     if r.returncode:

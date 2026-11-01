@@ -5,7 +5,7 @@ extends RefCounted
 const Typing := preload("res://addons/horrorstudio/typing.gd")
 const VERBS := ["objective", "todo", "tick", "fail", "untodo", "think", "skip", "name", "say", "ask", "flag", "unflag", "give", "take",
 	"karma", "count", "state", "show", "hide", "door", "light", "torch", "skin", "power", "sweep", "wait", "fade", "lookat", "sound", "music",
-	"checkpoint", "chapter", "done", "scene", "behave", "trick", "move", "anim"]
+	"checkpoint", "chapter", "done", "scene", "behave", "trick", "move", "anim", "expr"]
 const TAKES_TIME := ["wait", "fade", "ask", "name", "chapter", "scene", "trick", "say"]
 
 
@@ -142,6 +142,8 @@ func run(a: Dictionary, rt) -> void:
 			rt.move_thing(val, a.get("to"))
 		"anim":
 			await rt.play_motion(val, a.get("clip"), bool(a.get("wait", false)))
+		"expr":
+			rt.face_play(str(a.get("who", "")), val, a)
 		"trick":
 			await trick(val, a, rt)
 

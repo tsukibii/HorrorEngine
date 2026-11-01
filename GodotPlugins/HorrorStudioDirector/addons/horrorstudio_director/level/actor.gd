@@ -33,6 +33,9 @@ extends Node3D
 @export var solid: bool = true
 @export var idle_motion: String = ""
 @export var walk_motion: String = ""
+## the face she rests in: an expression from the studio's library brought in as a loop (res://faces/loops/<id>.tres,
+## tools/face_export.mjs); empty: at rest. The story's states and lines put others on her face (`expr`)
+@export var expression: String = ""
 ## the Character Studio export she wears instead of a model child (Content/Studio/People/<name>/export/<name>.glb, which
 ## `tools/godot_director.py install` copies into game/people/), on the Studio's skin and eyes
 @export var studio_character: String = ""
@@ -58,6 +61,9 @@ func _validate_property(p: Dictionary) -> void:
 	elif nm in ["idle_motion", "walk_motion"]:
 		p["hint"] = PROPERTY_HINT_ENUM_SUGGESTION
 		p["hint_string"] = ",".join(PackedStringArray(motion_names()))
+	elif nm == "expression":
+		p["hint"] = PROPERTY_HINT_ENUM_SUGGESTION
+		p["hint_string"] = ",".join(PackedStringArray(HSDirector.faces(true)))
 
 
 func _ready() -> void:
