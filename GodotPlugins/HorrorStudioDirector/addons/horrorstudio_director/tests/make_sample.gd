@@ -248,6 +248,7 @@ func _initialize() -> void:
 		quit(1)
 		return
 	var e := ResourceSaver.save(ps, "res://main.tscn")
+	HSDirector.write_index("res://main.tscn", root_)      # its ids for the Director Manager, as the editor's save would
 	print("SAMPLE ok" if e == OK else "SAMPLE FAIL save %d" % e)
 	root_.free()
 	quit(0 if e == OK else 1)

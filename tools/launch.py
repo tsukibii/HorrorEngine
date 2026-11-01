@@ -116,6 +116,7 @@ TOOLS = [
 
     ("Godot", "Director: a new Godot project to build a game in, in Godot itself (the plugin, the runtime, the look, the sound shelf, the sample house to start from)", "tools/godot_director.py new {ask:Folder for the new project} --sample", {}),
     ("Godot", "Director: its add-ons into a Godot project you have (again after a pull: they're copies)", "tools/godot_director.py install {ask:The Godot project's folder}", {}),
+    ("Godot", "Director Manager: a Director game's story in a page (quests, people, moments, states, endings, facts, Coverage, saves)", "tools/director_manager/serve.py --project {ask:The Godot project's folder}", {"url": "http://127.0.0.1:8796"}),
     ("Godot", "Director check (the sample played to its ending, the dock in the editor, the Kimodo link: DIRECTOR)", "tools/godot_director.py check", {}),
     ("Godot", "Director guide's pictures, made again by Godot (the sample played, its editor and dock; guides/director/index.html is the guide)", "tools/godot_director.py guide", {}),
     ("Godot", "Export a game as its own Godot 4.7 project, a new version each time (Saved/Godot/<game>_v001, _v002... and its .zip, with a guide to editing it; record the scenes on the desk first)", "tools/godot_export.py --game {game} --zip", {}),

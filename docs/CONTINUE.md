@@ -20,9 +20,10 @@ on their yes (its §9), given: "work your way through this in the cleanest best 
 parts (droppables, the little things with their markers, the crossed-out step); step 2, the Director in the game (the
 Director file `director/director.json` with its quests, states, moments, conversations, endings, achievements; the
 brain `run/brain.gd`; the story nodes and the Story, Events and Flags tabs removed for the dock's Director tab; giving,
-`gave`, in the runtime; the sample remade). **Next**: step 3, the Director Manager page with Coverage
-(GODOT_DIRECTOR_PLAN §4), then the guide rewritten (its story sections still describe the old nodes: a note says so),
-then Kimodo's fingers, then faces. Not merged into main yet: main has moved on (PR #6, the street builder); bringing main in conflicts
+`gave`, in the runtime; the sample remade); step 3, the Director Manager (`tools/director_manager`: a page over a
+Godot project, the desk's commands and triggers, its own condition editor, Coverage, the saves; MANAGERPAGE).
+**Next**: the guide rewritten (its story sections still describe the old nodes: a note says so), then Kimodo's
+fingers, then faces. Not merged into main yet: main has moved on (PR #6, the street builder); bringing main in conflicts
 only in CLAUDE.md, CONTINUE, DECISIONS and LESSONS (both sides added entries), the runtime merging by itself (run
 GDPLAY, GDTESTROOM and DIRECTOR after).
 

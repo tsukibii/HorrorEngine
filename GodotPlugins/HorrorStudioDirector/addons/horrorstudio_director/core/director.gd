@@ -259,6 +259,8 @@ static func scan(root: Node) -> Dictionary:
 		return out
 	var add := func(k: String, v) -> void:
 		var s := str(v)
+		if not out.has(k):                           # a kind of its own (life:<which>): made as it comes
+			out[k] = []
 		if s != "" and not out[k].has(s):
 			out[k].append(s)
 	_scan(root, out, add)
@@ -291,6 +293,7 @@ static func _scan(n: Node, out: Dictionary, add: Callable) -> void:
 					add.call("item", c.needs_item)
 				if c.use == "life":
 					add.call("life", id)
+					add.call("life:" + c.life, id)        # which life it lives (the Manager offers its states)
 			"HSActor":
 				add.call("actor", id)
 				add.call("thing", id)
@@ -308,6 +311,29 @@ static func _scan(n: Node, out: Dictionary, add: Callable) -> void:
 		if c is Light3D and not (c is DirectionalLight3D):
 			add.call("light", snake(str(c.name)))
 		_scan(c, out, add)
+
+
+## a scene's ids by kind into the project's index (res://.hsdirector/index.json: every saved scene's, merged), which the
+## Inspector's suggestions and the Director Manager read; the plugin writes it on every save, the sample maker once
+static func write_index(path: String, root: Node) -> void:
+	var idx := read_index()
+	var scenes: Dictionary = idx.get("_scenes", {})
+	var sc := scan(root)
+	sc.erase("sound")
+	scenes[path] = sc
+	var merged := {"_scenes": scenes}
+	for p in scenes:
+		for k in scenes[p]:
+			if not merged.has(k):
+				merged[k] = []
+			for v in scenes[p][k]:
+				if not merged[k].has(v):
+					merged[k].append(v)
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://.hsdirector"))
+	var f := FileAccess.open(INDEX, FileAccess.WRITE)
+	if f != null:
+		f.store_string(JSON.stringify(merged, " "))
+	_cache_at = -10000
 
 
 ## the sound shelf's names (game/sfx/index.json, copied in by tools/godot_director.py), for the Play sound action

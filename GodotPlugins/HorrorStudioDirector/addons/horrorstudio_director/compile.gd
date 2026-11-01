@@ -174,6 +174,8 @@ func _check_refs(f: Dictionary) -> void:
 	for lv in levels.values():
 		var sc := HSDirector.scan(lv)
 		for k in sc:
+			if not known.has(k):
+				known[k] = {}
 			for v in sc[k]:
 				known[k][v] = true
 	var seen := {}

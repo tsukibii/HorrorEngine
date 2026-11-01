@@ -45,23 +45,7 @@ func _on_saved(path: String) -> void:
 	var root := EditorInterface.get_edited_scene_root()
 	if root == null:
 		return
-	var idx := HSDirector.read_index()
-	var scenes: Dictionary = idx.get("_scenes", {})
-	var sc := HSDirector.scan(root)
-	sc.erase("sound")
-	scenes[path] = sc
-	var merged := {"_scenes": scenes}
-	for p in scenes:
-		for k in scenes[p]:
-			if not merged.has(k):
-				merged[k] = []
-			for v in scenes[p][k]:
-				if not merged[k].has(v):
-					merged[k].append(v)
-	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://.hsdirector"))
-	var f := FileAccess.open(HSDirector.INDEX, FileAccess.WRITE)
-	if f != null:
-		f.store_string(JSON.stringify(merged, " "))
+	HSDirector.write_index(path, root)
 	if dock != null:
 		dock.refresh()
 

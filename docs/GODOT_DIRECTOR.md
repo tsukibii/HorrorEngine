@@ -180,6 +180,36 @@ Ids: every level node has one (the Inspector's ID): its name as an id when it co
 you type one of your own. The plugin keeps every saved scene's ids (`res://.hsdirector/index.json`): the Manager's
 pickers read them.
 
+## 6a. The Director Manager (DECISIONS 2026-11-01: "an HTML tools folder that lets us manage our Godot stuff via a nice UI")
+
+`tools/director_manager/` (`serve.py`, port 8796; the dock's **Manager** button starts it on the project and opens it; the
+launcher's Godot section too): the page that writes the Director file, over the scene's ids (the plugin's
+`.hsdirector/index.json`, written on every save; the sample maker writes it once). Its tabs:
+
+- **Quests**: the list in play order (▲ ▼ to reorder); a quest's id, title, objective, the level it plays on and where
+  it starts, how it finishes, a checkpoint, a time limit and what then, a chapter card; its **steps** (the text, done
+  when and fails when: the desk's own trigger dialog, or *or once…* for a condition becoming true; a time; hidden; asked
+  by; for a `gave` step, the answer to anything else given and whether it fails); what happens as it starts and when
+  it's done (the desk's command lists: the palette, the forms, the rows reading as sentences); **what comes next**:
+  each way's condition and where it goes, otherwise the next quest.
+- **People**: each character's conversations (offered when; once only; lines by who, said only if, commands as they
+  start, up to two answers with their condition, the facts they set, karma, her reply, where they go) and her states.
+- **Moments**, **States** (while; per person: what she does, at, to, the path, watching, her motion, seen; a door
+  locked or open; a light; a little thing's state), **Endings**, **Facts** (each one asked for: where, what sets it,
+  its note, hidden), **Achievements** (the Steam API name, the title, the hint, hidden, when).
+- **Coverage** (`coverage.js`, shared with the page test): what's wrong (a quest that never finishes, a next going
+  nowhere, a moment with no when, a quest or an ending nothing leads to, a fact asked for that nothing sets), what the
+  story names that the scene hasn't got, and **what the scene has that the story never names**, by kind.
+- **Saves**: the game's save slots (deleted one by one or all: a new game from nothing) and where the next play
+  starts (a quest and its facts: Godot's play-from-here file).
+
+Conditions have their editor (*add*: a fact, a quest on or done, a step ticked, an item held, a counter, karma, an
+ending; NOT; *and*/*or*); triggers and commands are the desk's (`tools/director/commands.js` and `ui.js`, served from
+the repo). A save keeps the version before it in `director/history/` (the last 50); a file changed on disk is taken in
+when nothing's unsaved. **MANAGERPAGE**: `node tools/director_manager/pagetest.mjs` (a scratch project, every tab, a
+quest with a palette-picked trigger, a condition, a conversation, a moment, a state, an ending, saved, Coverage, a save
+deleted, the next play set).
+
 ## 6b. Kimodo, there and back
 
 The user: "I have this room in godot, and a character... pass that room into kimodo and I can do the animation in
@@ -241,8 +271,9 @@ The runtime's own checks (GDPLAY, GDTESTROOM, GDEXPORT) stay as they were: the e
 
 ## 9. Not yet
 
-- The Director Manager (the page that writes the Director file, with its Coverage) is the plan's next step
-  (docs/GODOT_DIRECTOR_PLAN.md §4): until then the file is written by hand (the sample's is the example).
+- Loading a save in the game: the pause menu saves where you are (the runtime's slots), but there's no Load yet, and a
+  slot doesn't hold the facts; a death's retry and the checkpoints keep the run in play. The Manager lists and
+  clears the saves and sets where the next play starts.
 - A moment can't end the quest on early and send the story elsewhere yet (for later games: "if this happens, go there").
 - Achievements are worked out and kept as facts; Steam (GodotSteam) when the user wants it.
 - Faces (the expression library's clips in Godot) wait on the Character Studio's export carrying its face shapes.

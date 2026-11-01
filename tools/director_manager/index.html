@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Director Manager</title>
+<link rel="stylesheet" href="/desk/ui.css">
+<link rel="stylesheet" href="/manager.css">
+</head>
+<body>
+<header class="top">
+  <span class="brand">Director Manager</span>
+  <span class="proj" id="proj">…</span>
+  <span class="path" id="path"></span>
+  <span class="grow"></span>
+  <span class="probs" id="probs" title="what's wrong or worth a look: Coverage"></span>
+  <span class="state" id="state"></span>
+  <button id="reload" title="read the project again (what Godot saved since, the story on disk)">Reload</button>
+  <button id="save" class="primary" title="write director/director.json (Ctrl+S)">Save</button>
+</header>
+<div class="wrap">
+  <nav class="tabs" id="tabs"></nav>
+  <main class="page" id="page"></main>
+</div>
+<script type="module" src="/manager.js"></script>
+</body>
+</html>
