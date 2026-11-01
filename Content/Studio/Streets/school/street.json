@@ -1,0 +1,739 @@
+{
+ "format": 1,
+ "name": "school",
+ "time": "day",
+ "look": {
+  "gravel": "#b5a27e"
+ },
+ "about": "A small Japanese school (the user, 2026-11-01): its three-storey classroom building facing the yard and the road, a clock on its tower and its name under it, the entrance at its west end under a canopy, the gym to the west, the classroom you walk into (the set school_classroom, the user's Blender classroom 1:1) as the east wing; a low block wall with a mesh fence along the road, the gate half open, a school-zone crossing.",
+ "roads": [
+  {
+   "id": "front_road",
+   "name": "the road past the school",
+   "from": [
+    -75,
+    0
+   ],
+   "to": [
+    75,
+    0
+   ],
+   "width": 6.5,
+   "walks": [
+    2.2,
+    2.2
+   ],
+   "kerb": 0.15,
+   "edge": [
+    0.4,
+    0.4
+   ],
+   "centre": "none",
+   "marks": [
+    {
+     "kind": "zebra",
+     "at": 72,
+     "len": 4
+    },
+    {
+     "kind": "text",
+     "text": "スクールゾーン",
+     "at": 48,
+     "x": 1.5
+    }
+   ]
+  }
+ ],
+ "buildings": [
+  {
+   "id": "school",
+   "at": [
+    -4,
+    52
+   ],
+   "turn": 0,
+   "style": "school",
+   "w": 45,
+   "d": 10,
+   "floors": 3,
+   "gh": 3.8,
+   "fh": 3.6,
+   "seed": 502767,
+   "look": {
+    "wall": "#e3ded2",
+    "wall2": "#a9b4ae",
+    "trim": "#d9d4c8"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "cols": 15,
+     "ww": 2.4,
+     "wh": 1.8,
+     "sill": 0.85,
+     "bands": true,
+     "lit": 0.06,
+     "cool": 0.95
+    },
+    "back": {
+     "win": "punched",
+     "cols": 15,
+     "ww": 2.2,
+     "wh": 1.5,
+     "sill": 0.95,
+     "bands": true,
+     "lit": 0.04,
+     "cool": 0.95
+    },
+    "left": {
+     "win": "small",
+     "cols": 2,
+     "ground": "door",
+     "lit": 0.04
+    },
+    "right": {
+     "win": "small",
+     "cols": 2,
+     "lit": 0.04
+    }
+   },
+   "roof": {
+    "kind": "rail",
+    "things": [
+     {
+      "kind": "tank",
+      "x": 7.1,
+      "y": 1
+     },
+     {
+      "kind": "hut",
+      "x": 14.5
+     }
+    ]
+   },
+   "parts": [
+    {
+     "kind": "bay",
+     "x": 0,
+     "z": 0,
+     "w": 3.4,
+     "h": 12.6,
+     "out": 0.5,
+     "slot": "wall"
+    },
+    {
+     "kind": "clock",
+     "x": 0,
+     "z": 11.05,
+     "w": 1.4,
+     "h": 1.4,
+     "out": 0.62
+    },
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 10.25,
+     "w": 3,
+     "h": 0.55,
+     "out": 0.56,
+     "text": "市立 桜ヶ丘中学校",
+     "fg": "#202024",
+     "bg": "#efece4",
+     "lit": false
+    },
+    {
+     "kind": "canopy",
+     "face": "left",
+     "x": 0,
+     "z": 2.8,
+     "w": 4.2,
+     "h": 0.3,
+     "out": 2.4
+    },
+    {
+     "kind": "pipe",
+     "x": -22.15,
+     "h": 11
+    },
+    {
+     "kind": "pipe",
+     "x": 22.15,
+     "h": 11
+    },
+    {
+     "kind": "lamp",
+     "face": "left",
+     "x": 1.6,
+     "z": 2.2,
+     "color": "#eef4ff",
+     "power": 3
+    },
+    {
+     "kind": "canopy",
+     "x": -12.1,
+     "w": 20.6,
+     "h": 0.12,
+     "out": 0.8,
+     "z": 2.72,
+     "floors": [
+      1,
+      3
+     ],
+     "slot": "concrete"
+    },
+    {
+     "kind": "canopy",
+     "x": 12.1,
+     "w": 20.6,
+     "h": 0.12,
+     "out": 0.8,
+     "z": 2.72,
+     "floors": [
+      1,
+      3
+     ],
+     "slot": "concrete"
+    }
+   ]
+  },
+  {
+   "id": "gym",
+   "at": [
+    -50,
+    50
+   ],
+   "turn": 0,
+   "style": "gym",
+   "w": 29,
+   "d": 22,
+   "floors": 1,
+   "gh": 9,
+   "fh": 3.6,
+   "seed": 743384,
+   "look": {
+    "wall": "#e6e0d2",
+    "wall2": "#9a958a",
+    "roof": "#5b6670"
+   },
+   "faces": {
+    "front": {
+     "win": "band",
+     "wh": 1.6,
+     "sill": 6,
+     "margin": 1.2,
+     "lit": 0.02
+    },
+    "back": {
+     "win": "band",
+     "wh": 1.6,
+     "sill": 5.6,
+     "margin": 1.2,
+     "lit": 0.02
+    },
+    "left": {
+     "win": "small",
+     "cols": 3,
+     "ground": "door",
+     "lit": 0.02
+    },
+    "right": {
+     "win": "none"
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 16,
+    "over": 0.6
+   },
+   "parts": []
+  },
+  {
+   "style": "set",
+   "w": 10,
+   "d": 15.4,
+   "floors": 1,
+   "seed": 1,
+   "inside": {
+    "set": "school_classroom",
+    "rows": 1,
+    "floors": 3,
+    "raise": 0.3,
+    "rooms": [
+     {
+      "id": "classroom",
+      "at": [
+       0,
+       0,
+       0
+      ],
+      "size": [
+       7.2,
+       9,
+       3
+      ],
+      "openings": [
+       {
+        "wall": "e",
+        "at": 8.175,
+        "w": 0.95,
+        "h": 2,
+        "door": {
+         "id": "classroom_front_door"
+        }
+       },
+       {
+        "wall": "e",
+        "at": 1.2,
+        "w": 0.95,
+        "h": 2,
+        "door": {
+         "id": "classroom_back_door"
+        }
+       },
+       {
+        "wall": "w",
+        "at": 1.5,
+        "w": 2.3,
+        "h": 1.6,
+        "sill": 0.95,
+        "window": true
+       },
+       {
+        "wall": "w",
+        "at": 4.5,
+        "w": 2.3,
+        "h": 1.6,
+        "sill": 0.95,
+        "window": true
+       },
+       {
+        "wall": "w",
+        "at": 7.5,
+        "w": 2.3,
+        "h": 1.6,
+        "sill": 0.95,
+        "window": true
+       },
+       {
+        "wall": "e",
+        "at": 2.24,
+        "w": 0.9,
+        "h": 1.55,
+        "sill": 1,
+        "window": true
+       },
+       {
+        "wall": "e",
+        "at": 4.5,
+        "w": 2.3,
+        "h": 1.55,
+        "sill": 1,
+        "window": true
+       },
+       {
+        "wall": "e",
+        "at": 6.95,
+        "w": 1.2,
+        "h": 1.55,
+        "sill": 1,
+        "window": true
+       }
+      ]
+     },
+     {
+      "id": "hallway",
+      "at": [
+       7.2,
+       -3,
+       0
+      ],
+      "size": [
+       2.4,
+       15,
+       3
+      ],
+      "skip": [
+       [
+        "w",
+        3,
+        12
+       ]
+      ],
+      "openings": [
+       {
+        "wall": "e",
+        "at": 1.5,
+        "w": 2.3,
+        "h": 1.65,
+        "sill": 0.9,
+        "window": true
+       },
+       {
+        "wall": "e",
+        "at": 4.5,
+        "w": 2.3,
+        "h": 1.65,
+        "sill": 0.9,
+        "window": true
+       },
+       {
+        "wall": "e",
+        "at": 7.5,
+        "w": 2.3,
+        "h": 1.65,
+        "sill": 0.9,
+        "window": true
+       },
+       {
+        "wall": "e",
+        "at": 10.5,
+        "w": 2.3,
+        "h": 1.65,
+        "sill": 0.9,
+        "window": true
+       },
+       {
+        "wall": "e",
+        "at": 13.5,
+        "w": 2.3,
+        "h": 1.65,
+        "sill": 0.9,
+        "window": true
+       },
+       {
+        "wall": "n",
+        "at": 1.2,
+        "w": 1.4,
+        "h": 1.5,
+        "sill": 0.9,
+        "window": true
+       },
+       {
+        "wall": "s",
+        "at": 1.2,
+        "w": 1.4,
+        "h": 1.5,
+        "sill": 0.9,
+        "window": true
+       }
+      ]
+     }
+    ],
+    "level": "school_classroom",
+    "from": "1gi9w1a"
+   },
+   "look": {
+    "wall": "#e7e2d6",
+    "wall2": "#a9b4ae",
+    "trim": "#d9d4c8"
+   },
+   "roof": {
+    "kind": "rail"
+   },
+   "parts": [],
+   "id": "wing",
+   "h": 10.2,
+   "at": [
+    30,
+    44
+   ],
+   "turn": 0
+  }
+ ],
+ "things": [
+  {
+   "id": "yard",
+   "kind": "box",
+   "at": [
+    -8,
+    26
+   ],
+   "w": 86,
+   "d": 34,
+   "h": 0.03,
+   "slot": "gravel"
+  },
+  {
+   "id": "gatepost_w",
+   "kind": "box",
+   "at": [
+    -6.4,
+    4.4
+   ],
+   "w": 0.7,
+   "d": 0.7,
+   "h": 1.9,
+   "slot": "concrete"
+  },
+  {
+   "id": "gatepost_e",
+   "kind": "box",
+   "at": [
+    6.4,
+    4.4
+   ],
+   "w": 0.7,
+   "d": 0.7,
+   "h": 1.9,
+   "slot": "concrete"
+  },
+  {
+   "id": "crossing_sign",
+   "kind": "sign",
+   "at": [
+    -9,
+    2.2
+   ],
+   "turn": 0,
+   "signs": [
+    "school",
+    "walk"
+   ]
+  },
+  {
+   "id": "lamp_1",
+   "kind": "lamp",
+   "at": [
+    -40,
+    -4.1
+   ],
+   "turn": 90
+  },
+  {
+   "id": "lamp_2",
+   "kind": "lamp",
+   "at": [
+    0,
+    -4.1
+   ],
+   "turn": 90
+  },
+  {
+   "id": "lamp_3",
+   "kind": "lamp",
+   "at": [
+    40,
+    -4.1
+   ],
+   "turn": 90
+  },
+  {
+   "id": "pole_1",
+   "kind": "pole",
+   "at": [
+    -26,
+    3.6
+   ]
+  },
+  {
+   "id": "pole_2",
+   "kind": "pole",
+   "at": [
+    14,
+    3.6
+   ]
+  },
+  {
+   "id": "pole_3",
+   "kind": "pole",
+   "at": [
+    52,
+    3.6
+   ]
+  },
+  {
+   "id": "bench_1",
+   "kind": "bench",
+   "at": [
+    -20,
+    38
+   ],
+   "turn": 180
+  },
+  {
+   "id": "bench_2",
+   "kind": "bench",
+   "at": [
+    12,
+    38
+   ],
+   "turn": 180
+  },
+  {
+   "id": "bikes_1",
+   "kind": "bike",
+   "at": [
+    21,
+    36
+   ],
+   "turn": 90
+  },
+  {
+   "id": "bikes_2",
+   "kind": "bike",
+   "at": [
+    21,
+    34.8
+   ],
+   "turn": 90
+  },
+  {
+   "id": "bikes_3",
+   "kind": "bike",
+   "at": [
+    21,
+    33.6
+   ],
+   "turn": 90
+  },
+  {
+   "id": "vending",
+   "kind": "vending",
+   "at": [
+    -60,
+    -4.6
+   ],
+   "turn": 0
+  }
+ ],
+ "fences": [
+  {
+   "id": "front_wall_w",
+   "kind": "blockmesh",
+   "from": [
+    -62,
+    4.4
+   ],
+   "to": [
+    -6.75,
+    4.4
+   ],
+   "h": 1.9
+  },
+  {
+   "id": "front_wall_e",
+   "kind": "blockmesh",
+   "from": [
+    6.75,
+    4.4
+   ],
+   "to": [
+    62,
+    4.4
+   ],
+   "h": 1.9
+  },
+  {
+   "id": "school_gate",
+   "kind": "gate",
+   "from": [
+    -6.05,
+    4.4
+   ],
+   "to": [
+    6.05,
+    4.4
+   ],
+   "h": 1.3,
+   "open": 0.6
+  },
+  {
+   "id": "side_w",
+   "kind": "mesh",
+   "from": [
+    -62,
+    4.4
+   ],
+   "to": [
+    -62,
+    78
+   ],
+   "h": 2.4
+  },
+  {
+   "id": "side_e",
+   "kind": "mesh",
+   "from": [
+    62,
+    4.4
+   ],
+   "to": [
+    62,
+    78
+   ],
+   "h": 2.4
+  },
+  {
+   "id": "back",
+   "kind": "mesh",
+   "from": [
+    -62,
+    78
+   ],
+   "to": [
+    62,
+    78
+   ],
+   "h": 2.4
+  }
+ ],
+ "shots": [
+  {
+   "id": "shot_gate",
+   "name": "the school from across the road, through its gate",
+   "eye": [
+    2.5,
+    -6.2,
+    1.65
+   ],
+   "look": [
+    -2,
+    40,
+    6
+   ],
+   "vfov": 58,
+   "aspect": [
+    16,
+    9
+   ]
+  },
+  {
+   "id": "shot_yard",
+   "name": "the classroom building from the yard",
+   "eye": [
+    -24,
+    16,
+    1.65
+   ],
+   "look": [
+    -2,
+    50,
+    7
+   ],
+   "vfov": 62,
+   "aspect": [
+    16,
+    9
+   ]
+  },
+  {
+   "id": "shot_wing",
+   "name": "the walk-in wing and the main building's end",
+   "eye": [
+    14,
+    26,
+    1.65
+   ],
+   "look": [
+    30,
+    44,
+    4
+   ],
+   "vfov": 62,
+   "aspect": [
+    16,
+    9
+   ]
+  }
+ ]
+}

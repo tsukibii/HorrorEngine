@@ -362,6 +362,7 @@ export const PART_KINDS = {
   panel: { label: "Panel", w: 2, h: 2, z: 1, out: 0.03, note: "a flat panel of any material on the wall" },
   rail: { label: "Railing", w: 3, h: 1.1, z: 3, out: 0.05, note: "a railing along the wall" },
   noren: { label: "Noren curtain", w: 1.2, h: 0.6, z: 1.6, out: 0.12, note: "a short shop curtain over a door" },
+  clock: { label: "Clock", w: 1.3, h: 1.3, z: 8, out: 0.15, note: "a school's clock: a white face in a dark rim, its hands at ten past ten (on a box's front: out past the box's)" },
 };
 // a part repeated along its face (`repeat` of them, `gap` m apart): a lamp by each door, a post under a walkway
 export function partCopies(parts) {
@@ -481,6 +482,22 @@ function partGen(o, b, F0, p, rows, R, signs, near = []) {
         break;
       }
       case "pipe": cyl(o, slot || "pipe", fp(F, c, z, out), fp(F, c, z + h, out), Math.max(0.03, w / 2), 6); break;
+      case "clock": {                                                // a school's clock: its rim, its face, its hands (ten past ten)
+        const r = Math.max(0.15, Math.min(w, h) / 2 - 0.05), zc = z + h / 2, f0 = Math.max(0, out - 0.12);
+        cyl(o, slot || "frame", fp(F, c, zc, f0), fp(F, c, zc, out - 0.02), r + 0.05, 28);
+        cyl(o, "white", fp(F, c, zc, out - 0.03), fp(F, c, zc, out), r, 28);
+        for (let i = 0; i < 12; i++) {                               // the hours' marks round the face
+          const a = i * Math.PI / 6, du = Math.sin(a), dz = Math.cos(a), r0 = r * 0.8, r1 = r * (i % 3 ? 0.88 : 0.93), wd = r * (i % 3 ? 0.02 : 0.04);
+          poly(o, "black", [fp(F, c + du * r0 - dz * wd, zc + dz * r0 + du * wd, out + GAP), fp(F, c + du * r1 - dz * wd, zc + dz * r1 + du * wd, out + GAP),
+            fp(F, c + du * r1 + dz * wd, zc + dz * r1 - du * wd, out + GAP), fp(F, c + du * r0 + dz * wd, zc + dz * r0 - du * wd, out + GAP)], [F.N[0], F.N[1], 0]);
+        }
+        for (const [a, len, wd, n] of [[Math.PI * 2 * (10 + 10 / 60) / 12, r * 0.5, r * 0.05, out + 2 * GAP], [Math.PI * 2 * 10 / 60, r * 0.78, r * 0.035, out + 3 * GAP]]) {
+          const du = Math.sin(a), dz = Math.cos(a);                  // each hand in a plane of its own (they cross at the hub)
+          poly(o, "black", [fp(F, c - dz * wd - du * r * 0.08, zc + du * wd - dz * r * 0.08, n), fp(F, c + dz * wd - du * r * 0.08, zc - du * wd - dz * r * 0.08, n),
+            fp(F, c + dz * wd * 0.4 + du * len, zc - du * wd * 0.4 + dz * len, n), fp(F, c - dz * wd * 0.4 + du * len, zc + du * wd * 0.4 + dz * len, n)], [F.N[0], F.N[1], 0]);
+        }
+        break;
+      }
       case "lamp": {
         fbox(o, slot || "black", F, c - w / 2, c + w / 2, z + h * 0.25, z + h, 0, out, nKey(F, -1));
         fquad(o, "lamp", F, c - w / 2 + 0.03, c + w / 2 - 0.03, z + h * 0.3, z + h * 0.9, out + GAP);
@@ -999,7 +1016,10 @@ export function insideParts(b, foot) {
             if (raise > 0.3) fbox(o, "concrete", F, h.u0 - 0.15, h.u1 + 0.15, -drop, z0 - raise + 0.18, T + 0.35, T + 0.65);
           }
         }
-        if (f > 0) fbox(o, "trim", F, 0, F.W, z0 - slab, z0 - slab + 0.12, T, T + 0.06);   // the floor's edge between the storeys
+        // the floor's edge between the storeys; the faces looking east or west a GAP lower than the others, so where two
+        // meet at a corner turning in (an L-shaped set stacked: the school's wing) they're never in one plane
+        const zo = Math.abs(N[0]) > 0.5 ? GAP : 0;
+        if (f > 0) fbox(o, "trim", F, 0, F.W, z0 - slab - zo, z0 - slab + 0.12 - zo, T, T + 0.06);
       }
       // the stand-in rooms: dark, facing in (the level goes here in Godot)
       for (const r of fr.rooms) {

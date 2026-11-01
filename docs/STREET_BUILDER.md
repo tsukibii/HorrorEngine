@@ -100,9 +100,24 @@ After the user's reference pictures (2026-10-30): each makes a whole building fr
 | Concrete block | the abandoned concrete flats | long and low, shutters, a heavy canopy, pipes, a stair up the side; mostly dark |
 | Kiosk / shed | the hut on the Shibuya lane | one storey, a hip roof, a door, a meter box |
 | Shopping-street shop | the shopping street under the mountain | two or three floors, a shop or a shutter, an awning or a canopy, a big sign board |
+| School building (校舎) | a small Japanese school (2026-11-01) | two or three storeys, a big window a 3 m bay on every floor, the corridor's windows along the back, floor bands, a flat roof with its fence, a water tank and a stair hut; the middle bay stood out as a tower with a clock on it; the entrance at one end under a canopy |
+| School gym (体育館) | a small Japanese school | one tall hall under a low gable, a band of high windows along each side, doors at one end |
 
 The mixes (*Fill a street*) are in `street-presets.js` (`MIXES`, and `EDGES`: each place's lamp, how far apart, poles or
 not, its clutter).
+
+**A clock** (a part, `clock`: a white face in a dark rim, its hours marked and its hands at ten past ten, each hand in a
+plane of its own) goes on any face; on a box's front (the school's tower) give it an `out` past the box's.
+
+**The school street** (`Content/Studio/Streets/school`, the user, 2026-11-01: "consider the hallway and exterior building
+too (a small japanese school)"): the road past it with a school-zone crossing, a low block wall with a mesh fence along
+it and the gate half open between two posts, the yard, the three-storey classroom building (its name, 市立 桜ヶ丘中学校,
+under the clock on its tower; sun shades over its windows), the gym to the west, and the classroom you walk into, the
+set `school_classroom` (the user's Blender classroom 1:1 and its corridor, SCENE_BUILDER §10), stacked three storeys as
+the east wing, dressed by the set's Outside (the school style's walls and its flat roof). Shots: the school through
+its gate, the building from the yard, the wing. A stacked set shaped like an L (the classroom beside its longer
+corridor) puts its floor bands on east- and west-facing faces a GAP lower, so the two meeting at its inner corner are
+never in one plane.
 
 ## 4. The format (`street.json`)
 

@@ -2148,6 +2148,20 @@
     "casing": 0.05,
     "threshold": 0.012,
     "wainscot": 0.95
+   },
+   "outside": {
+    "style": "school",
+    "seed": 4,
+    "look": {
+     "wall": "#e7e2d6",
+     "wall2": "#a9b4ae",
+     "trim": "#d9d4c8"
+    },
+    "roof": {
+     "kind": "rail"
+    },
+    "parts": [],
+    "raise": 0.3
    }
   }
  },
