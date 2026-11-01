@@ -60,12 +60,12 @@ function facing(p) {
 // tagged art:<ref> shows that mesh in its block (the block stays, invisible, for the visibility test); mat:<ref> puts
 // that texture set on a block, tiled by real metres. Anything not fetched stays a grey block. A prop with a kit
 // (docs/KIT.md) is drawn from its numbers by kit.js, the presets from /api/kit.
-export const LIBRARY = { meshes: new Set(), textures: {}, kit: {} };
+export const LIBRARY = { meshes: new Set(), textures: {}, kit: {}, props: {} };
 export async function loadAssetLibrary() {
   try {
     const r = await (await fetch("/api/library")).json();
     const made = Object.fromEntries(Object.entries(LIBRARY.textures).filter(([k]) => k.startsWith("pbr/_made/")));
-    LIBRARY.meshes = new Set(r.meshes || []); LIBRARY.textures = Object.assign(made, r.textures || {});
+    LIBRARY.meshes = new Set(r.meshes || []); LIBRARY.textures = Object.assign(made, r.textures || {}); LIBRARY.props = r.props || {};
   } catch (e) { /* no library: blocks */ }
   try { LIBRARY.kit = (await (await fetch("/api/kit")).json()).presets || {}; } catch (e) { /* no kit presets */ }
   return LIBRARY;

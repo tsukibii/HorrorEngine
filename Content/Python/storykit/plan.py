@@ -222,7 +222,9 @@ def room_pieces(lid, room):
     return out
 
 
-TRIM_DEPTH = {"skirting": 0.012, "cornice": 0.03, "casing": 0.015, "threshold": 0.0}   # how far each stands off the wall
+TRIM_DEPTH = {"skirting": 0.012, "cornice": 0.03, "casing": 0.015, "threshold": 0.0, "wainscot": 0.0}   # how far each stands off the wall
+WAINSCOT = "wainscot_school"     # the kit a wainscot is made of (boards under a cap rail: KIT §10), its height the trim's
+FACE = {"n": 0.0, "s": 180.0, "e": 270.0, "w": 90.0}   # the yaw that turns a kit thing's front (its -y) off a wall into the room
 
 
 def room_trim(lvl, room):
@@ -280,10 +282,14 @@ def trim_pieces(lid, lvl, room, walls, openings):
             out.append(dict(base, id=f"{room['id']}__{name}", kind="mesh", pos=pos, size=size,
                             tags=["story", f"story:{room['id']}", f"room:{room['id']}", f"trim:{name.split('_')[0]}"] + look))
 
+        wh = tr.get("wainscot") or 0.0
+        if wh:                                       # a wainscot (腰板, a school's): kit boards under a cap rail, wherever a wall stands
+            for i, (a0, a1) in enumerate(spans(z0, z0 + wh)):
+                wainscot_piece(out, base, room, wall, axis, v, inward, a0, a1, z0, wh, i)
         if tr.get("skirting"):
             sk = tr["skirting"]
             for i, (a0, a1) in enumerate(spans(z0, z0 + sk)):
-                piece(f"skirting_{wall}{i}", a0, a1, z0 + sk / 2, sk, TRIM_DEPTH["skirting"])
+                piece(f"skirting_{wall}{i}", a0, a1, z0 + sk / 2, sk, TRIM_DEPTH["skirting"] + (_wainscot_d() if wh else 0.0))
         if tr.get("cornice") and room.get("ceiling", True):
             co = tr["cornice"]
             for i, (a0, a1) in enumerate(spans(z0 + h - co, z0 + h)):
@@ -302,6 +308,32 @@ def trim_pieces(lid, lvl, room, walls, openings):
                     piece(f"casing_{wall}{i}", max(a0 - cw, lo_in), min(a1 + cw, hi_in), (oz + oh + top) / 2, top - (oz + oh), cd)
                     i += 1
     return out
+
+
+def _wainscot_d():
+    try:
+        return KIT.size({"preset": WAINSCOT})[1]
+    except ValueError:
+        return 0.03
+
+
+def wainscot_piece(out, base, room, wall, axis, v, inward, a0, a1, z0, wh, i):
+    """A stretch of wainscot on a wall's room side (STORY_FORMAT §2, trim `wainscot`): the kit's boards and cap rail
+    `wh` high, as long as the stretch, its front into the room; the room's `look.wainscot` on its boards' slot."""
+    T = L.WALL_T
+    dep = _wainscot_d()
+    spec = {"preset": WAINSCOT, "size": [round(a1 - a0, 4), round(dep, 4), round(wh, 4)]}
+    try:
+        ref = KIT.ref(spec)
+    except ValueError:
+        return
+    off = v + inward * (T / 2 + dep / 2)
+    pos = ((a0 + a1) / 2, off, z0 + wh / 2) if axis == "y" else (off, (a0 + a1) / 2, z0 + wh / 2)
+    lk = (room.get("look") or {}).get("wainscot")
+    mats = [f"matslot:wood:{mat_ref(lk)}"] if lk else []
+    out.append(dict(base, id=f"{room['id']}__wainscot_{wall}{i}", kind="mesh", pos=pos, size=tuple(spec["size"]), yaw=FACE[wall],
+                    kit=spec, d=dict(room, kit=spec),
+                    tags=["story", f"story:{room['id']}", f"room:{room['id']}", "trim:wainscot", "kit:tiles", f"art:{ref}", "real"] + mats))
 
 
 LINING = 0.004   # a lining's depth: a room's own walls look on the face of a wall its neighbour builds

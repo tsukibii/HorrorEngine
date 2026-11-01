@@ -40,7 +40,8 @@ WALLS = ("n", "e", "s", "w")
 # what a room is (the scene builder's labels, its colour and its built-ins; optional): Japanese homes first
 ROOM_KINDS = ("genkan", "corridor", "ldk", "living", "dining", "kitchen", "washitsu", "bedroom", "service", "kids",
               "study", "bath", "washroom", "toilet", "closet", "walkin", "oshiire", "storage", "stairs", "balcony",
-              "engawa", "common", "garden", "garage", "other")
+              "engawa", "common", "garden", "garage", "other",
+              "classroom", "hallway", "staffroom", "entrance", "nurse", "library", "gym")     # a school's (SCENE_BUILDER §10)
 
 
 def games():

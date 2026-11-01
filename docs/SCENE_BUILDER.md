@@ -313,7 +313,44 @@ we". The street paint page's brush (`brush.js`, docs/STREET_PAINT.md §1) on the
   painted). In Godot no light source comes with it: put your own lights under its node and they follow its switch and
   the power cut (GODOT_EXPORT §3b). An older level's bulbs become fittings when it's opened and saved here.
 
-## 10. Not done yet
+## 10. A school
+
+The user (2026-11-01): "build out a japanese school for a horror game", with a render and a wireframe of a classroom
+they made in Blender, "recreate all the parts to be able to create a 1:1 of the reference images. consider the hallway
+and exterior building too". The furniture and fittings are the kit's (KIT §10), the books the prop maker's (PROPGEN
+§16), the outside the street builder's; here:
+
+- **Room kinds:** *Classroom* 教室 (7.2 × 9 m, the 4 × 5 ken standard, under a 3 m ceiling), *School corridor* 廊下
+  (2.4 m wide), *Staff room* 職員室, *School entrance* 昇降口, *Nurse's office* 保健室, *Library* 図書室, *Gym* 体育館.
+  Each starts with its floor (a classroom's basket-weave parquet, a corridor's vinyl tiles), its **ceiling** (rock wool
+  boards, a T-bar grid: *Ceilings by room kind* under Finish fills any room without one) and its **ceiling lights**:
+  fluorescent troughs by the room's kind, as a **grid filling the room** along its long side, a bay each (a
+  classroom's six in two rows, a corridor's row): one light, its fitting the grid (`kit` with `grid` and `size`), so
+  the switch, the power cut and a flicker take them all. A light of its own more (a classroom's blackboard lights)
+  makes the room's switch the room's: it switches every light in it (`switch` with no `light`).
+- **The wainscot** (Finish: *wainscot, cm*; the level's `trim.wainscot`): the kit's boards under their cap rail along
+  the foot of every wall, stopping at doors, running under the windows; a room's look takes a *wainscot* of its own,
+  and Paint paints it apart from the trim.
+- **The layout** *School: a classroom and its corridor (your Blender classroom, 1:1)*: the classroom 7.2 × 9 m, three
+  window bays on the west (sliding sashes under a transom, curtains tied back), the chalkboard between two cork boards
+  on the north wall over the platform (教壇) and the green lectern (教卓), the teacher's steel desk by the windows, the
+  clock and the speaker, 30 desks in six rows of five with their chairs pushed in a little askew, lockers and a back
+  board along the back wall, the cleaning locker in the corner, columns between the windows and on the corridor wall,
+  beams across under the ceiling and along both long walls, two blackboard lights; the corridor along its east side
+  with its frosted windows, two sliding doors with glass in their tops (教室の引き戸), the outer windows, wired glass at
+  its ends, a hydrant box, a notice board, a speaker, an umbrella stand. A layout can now carry furniture (`kits`:
+  `[room, preset, x, y, rot, {z, size, extra, ...}]`, builder-presets.js `classroomKits` makes a classroom's).
+  The set `school_classroom` (Content/Studio/Sets) is it, saved.
+- **Props on and in the furniture** (the user: "books should be able to fit well on desks and inside shelves"): the
+  kit's furniture says where things go (its *places*: a desk's top and its book box, a chair's seat, every cubby and
+  shelf cell, the chalk tray). The **Prop** tool places the prop maker's props (the library's `props/<name>`: the books,
+  a diary, a can...): clicked on a desk, a shelf or a cubby, one goes into the place under the click that it fits, else
+  onto the thing's top, at that height, turned with it, at the front of a shelf (spines out), `on` it so the checks
+  know. The kit's own `on` things (its `books`, a cushion) drop the same way. Selected, a thing on another shows **sits
+  on / in**: every place of its host to move it to, and *Fit it in* (a kit row of books takes the place's inside).
+  The prop maker's props are kept as `<room>_kt_<name>_<n>` with `shape: "asset props/<name>"`.
+
+## 11. Not done yet
 
 - **Default looks by room kind** (texture sets for a washitsu's walls, a bath's tiles): *Same look for every
   <kind>* does it by hand until the texture sets for them are fetched. The floors' geometry already follows the

@@ -103,7 +103,7 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
   look plugin's wet (the damp darkening, pools that carry the lights, no rings: GODOT_LOOK §2) by that much, and from
   0.5 every step in the room is a wet one, on the desk's Play too; the desk's stage shows the floor darker and
   glossy by it. (Rain, `game.weather`, wets a room with no ceiling by itself, on the stage too.)
-- `look`: what its surfaces wear, `{"floor": "ambientcg/WoodFloor041", "walls": "...", "ceiling": "...", "trim": "..."}`
+- `look`: what its surfaces wear, `{"floor": "ambientcg/WoodFloor041", "walls": "...", "ceiling": "...", "trim": "...", "wainscot": "..."}`
   (docs/ASSETS.md): each a library or shelf set's ref (`pbr/<set>`), a flat colour (`#rrggbb`), or **a tuned set**, the
   street paint's look object (docs/STREET_PAINT.md §2, the user, 2026-10-31: the paint bucket in the interiors): `{"set":
   "pbr/...", "tint": "#9a8f80", "contrast": 1.2, "layers": [{"wear": "grime", "amount": 1.2}]}`, its words pbrmix.py's
@@ -151,7 +151,11 @@ deep under the ceiling, a casing that wide round every door and opening on both 
 thin boxes (`<room>__skirting_n0`...) wherever a wall stands at that height, its own or its neighbour's, so they stop
 at openings and open sides by themselves; `look.trim` textures them. `"threshold": 0.012` lays a strip that high
 in every walk-through doorway between two rooms whose `floor` differs (`<room>__threshold_n`, tagged
-`trim:threshold`: it may stand proud of the floor).
+`trim:threshold`: it may stand proud of the floor). `"wainscot": 0.95` (up to 1.5 m; the user, 2026-11-01, a school's
+腰板) lines the foot of every wall that high with the kit's `wainscot_school` (vertical boards under a cap rail, KIT
+§10) wherever a wall stands that high, so it stops at doors and runs under windows set above it
+(`<room>__wainscot_n0`..., kit pieces tagged `trim:wainscot`; the skirting stands in front of it); `look.wainscot`
+dresses its boards and rail (their `wood` slot).
 
 **Built-ins** (the scene builder, docs/SCENE_BUILDER.md): props with ids `<room>_fx_<what>` are its own, remade on
 every save from the room's `kind` (a kitchen counter, a bath tub, a toilet, a vanity and washing machine, a shoe
@@ -237,7 +241,7 @@ class path, `…_C`) is that door's Blueprint, in place of class_map's `door`.
 | `pickup` | `item`: a click takes it into the inventory (the row E shows, it in the hand), and `{"pickup": item}` is heard; **G** puts the one in the hand down in front of the player, on whatever is under that spot (no falling), and then the player hasn't got it (`{"dropped": id, "in": room}` is heard, as for `carry`) |
 | `note` | `note` |
 | `inspect` | `text`, optional `line`. In Play a small thing (its longest side 0.6 m or less) is taken up in the hands (DECISIONS 2026-10-28, later): itself in front of the eye, a drag turns it (a photo turned over to read its back), `text` under it, Esc puts it back; a bigger one shows `text` on a card. `{"use": id}` is heard once it's put back |
-| `switch` | `light` |
+| `switch` | `light` (the light it switches; none: every light in its room, a classroom's troughs and its blackboard lights) |
 | `leak` | water running down a wall from here (GODOT_LOOK §2b): `wall` (`n e s w`, one the room builds), `at` by it and `z` where it comes in, `width` m at the top (0.4; it spreads as it runs), `drip` seconds between drops (2.6; 0 none), `wet` 0..1 (0.8); Godot wets a band of the wall below it (dark, glossy, in rivulets, drying toward the floor, no pools) and drops the drips; the desk draws the band |
 | `light` | `kind` (`bulb candle lamp fire`), `lit`, `flicker` 0..1 (how much), `mode` (which: `fluorescent` a tube's stutter every `interval` s or so, `dying` drops out often and never quite full, `candle` a flame's restless wobble, `pulse` a slow breath at `rate` a second, `custom` your `letters` at `rate` a second: a off, m as placed, z double; none: a plain wobble; a `mode` with no `flicker` is the whole of it; a tube switched on stutters on; after Light Kit's Flicker, the same curves on the desk and in Godot), `lumens`, `radius`, `kelvin` (place with `z` or `on`); **a pattern in its light**: `pattern` (`caustics` water's light on a ceiling or a wall, `leaves` sun or moon through swaying trees, `blinds` a venetian blind's stripes, `clouds` cloud shadows passing) with `aim` [x, y, z] where it falls (the light becomes a spot aimed there), `spread` its cone in degrees (50), `scale` metres per feature, `speed`, `open` 0..1 (the canopy's or the slats' openness, the water's own light, the cloud cover), `angle` the slats' degrees; after Light Kit's Pattern; Godot draws it (the desk shows the spot aimed); **a fitting**: `kit` (a round LED: `downlight_100`, `downlight_150`, `led_flush_300`, `led_flush_450`, `led_dome_500`, `led_ring_600`, or any kit thing; place it with `z` so its top meets the ceiling: the user, 2026-10-31, "lights as furniture"): the fitting is drawn there (`<id>__fitting`, its `emit` glass glowing while the light's on, its other slots taking `mats`) and the light sits just under it; the desk lights the room with it as ever, but **the Godot export writes no light source for it**: a node where it is, the fitting's glass glowing as the story has the light (switched, cut, flickering), and every light of yours put under that node following it (GODOT_EXPORT §3b) |
 | `breaker` | the breaker box (DECISIONS 2026-10-28): a click throws it, the level's power goes off or comes back (the lights flickering up), and `{"use": id}` is heard. While the power's out (the `power` action) every bulb and lamp in the level is dark (each keeps its own on or off for when it's back; candles and fires burn on) and a `switch` only clicks: **No power** |

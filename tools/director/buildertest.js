@@ -274,7 +274,9 @@ const png = rgb => {                    // a 4x4 PNG of one colour (a scratch ma
     // saved into Content/Studio/Sets/<name>, read back; then a game takes its level as a start (layout: From a set)
     page.removeAllListeners("dialog"); page.on("dialog", d => d.type() === "prompt" ? d.accept(SETNAME) : d.accept());
     await page.selectOption("#game", "__newset");
-    await page.waitForFunction(n => window.B && window.B.game === "set:" + n && window.B.plan, SETNAME, { timeout: 30000 })
+    // its story in, not only its name (loadGame names the game before the story arrives: a layout opened before it is
+    // replaced by the set's own level when it does)
+    await page.waitForFunction(n => window.B && window.B.game === "set:" + n && window.B.story && window.B.story.game && window.B.story.game.id === n && window.B.target === n && window.B.plan, SETNAME, { timeout: 30000 })
       .catch(async () => { throw new Error("the new set didn't open: " + JSON.stringify(await page.evaluate(() => ({ game: window.B.game, status: document.querySelector("#status").textContent })))); });
     page.removeAllListeners("dialog"); page.on("dialog", d => d.accept());
     await page.evaluate(() => { window.B.dirty = false; window.builder.openPreset("1ldk"); });

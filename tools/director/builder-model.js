@@ -2,11 +2,13 @@
 // reference layout and written back as the story's rooms (with the shared walls worked out: the taller, then the
 // larger room builds a wall two rooms share, the other skips that stretch), openings, links, built-ins, stairs and
 // the start spot. docs/SCENE_BUILDER.md has the rules; check.js-style tests run it in the page (builder_test.js).
-import { KINDS, FIXTURES, OPENINGS, JO, WALL_ITEMS, LIGHT_K, FINISH, FLOOR_BY_KIND, WINDOW_FRAME, autoFitting } from "./builder-presets.js";
+import { KINDS, FIXTURES, OPENINGS, JO, WALL_ITEMS, LIGHT_K, FINISH, FLOOR_BY_KIND, CEILING_BY_KIND, WINDOW_FRAME, autoFitting } from "./builder-presets.js";
 import * as KIT from "./kit.js";
 
-// the kit's presets (docs/KIT.md): the page sets them once it has them (stage.js loadAssetLibrary)
-export const KITS = { presets: {} };
+// the kit's presets (docs/KIT.md): the page sets them once it has them (stage.js loadAssetLibrary); the prop generator's
+// props in the library (props/<name>: their sizes), which the builder places as it places kit things
+export const KITS = { presets: {}, props: {} };
+export const assetSize = ref => ((KITS.props[ref] || {}).size || [0.2, 0.2, 0.2]).slice();
 const kitFull = spec => KIT.withDefaults(KIT.resolve(spec, KITS.presets));
 const noSize = k => { if (!k || typeof k !== "object") return k ? { preset: k } : null; const o = clone(k); delete o.size; return o; };
 
@@ -50,7 +52,7 @@ export function newRoom(kind, id, x, y, z = 0, o = {}) {
   return { id, kind, name: o.name || "", x, y, z, w, d, h: o.h || K.h || 2.4, floor: o.floor || K.floor, light: o.light || "dim",
            ceiling: o.ceiling ?? K.ceiling ?? true, open: (o.open || K.open || []).slice(), fixtures: o.fixtures ?? true,
            dir: o.dir || (d >= w ? "n" : "e"), floorKit: o.floorKit !== undefined ? o.floorKit : (FLOOR_BY_KIND[kind] ? { preset: FLOOR_BY_KIND[kind] } : null),
-           ceilKit: o.ceilKit || null, extra: o.extra || {} };
+           ceilKit: o.ceilKit !== undefined ? o.ceilKit : (CEILING_BY_KIND[kind] ? { preset: CEILING_BY_KIND[kind] } : null), extra: o.extra || {} };
 }
 
 export function newOpening(type, id, line, c, z, o = {}) {
@@ -86,7 +88,20 @@ export function presetToModel(P) {
     const r = byId[rid], ln = wallLine(r, wall), W = WALL_ITEMS[kind];
     return newItem(kind, `${rid}_wi_${kind}_${i + 1}`, rid, wall, r3((ln.hi - ln.lo) * at));
   });
-  return { rooms, ops, items, kits: [], floors, finish: Object.assign({}, FINISH), player: { x: P.start[0], y: P.start[1], yaw: P.start[2], z: 0 },
+  // furniture: [room, preset, x, y (room metres), rot, {z, size, extra, ...what differs from the preset}] (a school's
+  // classroom: builder-presets.js classroomKits)
+  const kits = [];
+  for (const [rid, preset, x, y, rot = 0, o = {}] of P.kits || []) {
+    if (!byId[rid]) { problems.push(`layout: kit ${preset} in ${rid}, no such room`); continue; }
+    let i = 1; while (kits.some(k => k.id === `${rid}_kt_${preset}_${i}`)) i++;
+    const own = Object.assign({}, o); delete own.z; delete own.size; delete own.extra;
+    const k = newKit(preset, `${rid}_kt_${preset}_${i}`, rid, r3(x), r3(y), { z: o.z, rot });
+    k.spec = Object.assign({ preset }, own);
+    try { k.size = (o.size || kitFull(k.spec).size).slice(); } catch (e) { problems.push(`layout: ${preset}: ${e.message}`); continue; }
+    if (o.extra) k.extra = clone(o.extra);
+    kits.push(k);
+  }
+  return { rooms, ops, items, kits, floors, finish: Object.assign({}, FINISH, P.finish || {}), player: { x: P.start[0], y: P.start[1], yaw: P.start[2], z: 0 },
            her: { x: P.her[0], y: P.her[1], yaw: P.her[2], z: 0 }, levelExtra: {}, startId: "start", problems };
 }
 
@@ -158,6 +173,12 @@ export function levelToModel(story, levelName) {
       kits.push({ id: p.id, room: sr.id, x: p.at[0], y: p.at[1], z: p.z || 0, rot: p.rot || 0, spec: noSize(p.kit), size: sz.length === 3 ? sz : null, extra: ex });
       continue;
     }
+    const asset = /^asset\s+(props\/\S+)/.exec(p.shape || "");
+    if (new RegExp(`^${sr.id}_kt_`).test(p.id) && asset) {           // a prop generator's prop (props/<name>), placed as a kit thing is
+      const ex = clone(p); for (const k of ["id", "at", "rot", "z", "shape"]) delete ex[k];
+      kits.push({ id: p.id, room: sr.id, x: p.at[0], y: p.at[1], z: p.z || 0, rot: p.rot || 0, spec: { asset: asset[1] }, size: assetSize(asset[1]), extra: ex });
+      continue;
+    }
     const m = p.id.match(new RegExp(`^${sr.id}_wi_([a-z0-9]+)_`)), f = new RegExp(`^${sr.id}_wf_`).test(p.id);
     if (!(m && WALL_ITEMS[m[1]]) && !f) continue;
     let w, t, h;
@@ -175,10 +196,10 @@ export function levelToModel(story, levelName) {
   // the ceiling lights' fitting: "auto" when every room's is the one its size picks (or it has none yet: an older level's
   // bulb, a fitting from now on), else the one they were given
   const fl = lvl.rooms.flatMap(r => (r.props || []).filter(p => p.id === `${r.id}_fx_light` && p.kit).map(p => [r, typeof p.kit === "string" ? p.kit : p.kit.preset]));
-  const finish = { skirting: tr.skirting || 0, cornice: tr.cornice || 0, casing: tr.casing || 0, threshold: tr.threshold || 0,
+  const finish = { skirting: tr.skirting || 0, cornice: tr.cornice || 0, casing: tr.casing || 0, threshold: tr.threshold || 0, wainscot: tr.wainscot || 0,
                    lights: lvl.rooms.some(r => (r.props || []).some(p => p.id === `${r.id}_fx_light`)),
                    switches: lvl.rooms.some(r => (r.props || []).some(p => p.id === `${r.id}_fx_switch`)),
-                   light_fitting: fl.every(([r, k]) => k === autoFitting(r.size[0] * r.size[1])) ? "auto" : fl[0][1] };
+                   light_fitting: fl.every(([r, k]) => k === autoFitting(r.size[0] * r.size[1], r.kind || guessKind(r.id))) ? "auto" : fl[0][1] };
   return { rooms, ops, items, kits, floors: floors.length ? floors : [0], finish, player, her, levelExtra, startId: lvl.start || "start", problems: [] };
 }
 
@@ -296,13 +317,17 @@ export function modelToLevel(model, story) {
     if (fin.lights && r.ceiling && !OUTDOOR.has(r.kind) && !["closet", "oshiire", "storage"].includes(r.kind)) {
       // its fitting (a round LED, by the room's size or the one picked in Finish): flush under the ceiling, or under a
       // ceiling step; the light itself just under it (plan.py); the Godot export draws the fitting, no light source
-      const fit = fin.light_fitting && fin.light_fitting !== "auto" ? fin.light_fitting : autoFitting(area(r));
-      let fh = 0.03, step = 0;
-      try { fh = kitFull({ preset: fit }).size[2]; } catch (e) { }
+      const { spec: fit, rot, fh } = ceilingFitting(fin, r);
+      let step = 0;
       try { if (r.ceilKit && r.ceiling) step = kitFull(r.ceilKit).size[2]; } catch (e) { }
-      extra.push({ id: `${r.id}_fx_light`, use: "light", kind: "bulb", lit: !["off", "dark"].includes(r.light), at: [r3(r.w / 2), r3(r.d / 2)],
-                   z: r3(r.h - step - fh), kit: fit, kelvin: LIGHT_K[r.kind] || 3000, lumens: Math.round(Math.min(4000, 250 * area(r))) });
-      if (fin.switches) { const sw = switchFor(model, r); if (sw) extra.push(sw); }
+      extra.push(Object.assign({ id: `${r.id}_fx_light`, use: "light", kind: "bulb", lit: !["off", "dark"].includes(r.light), at: [r3(r.w / 2), r3(r.d / 2)],
+                   z: r3(r.h - step - fh), kit: fit, kelvin: LIGHT_K[r.kind] || 3000, lumens: Math.round(Math.min(4000, 250 * area(r))) }, rot ? { rot } : {}));
+      if (fin.switches) {
+        const sw = switchFor(model, r);
+        // more lights of its own in the room (a classroom's blackboard lights): the switch is the room's, every light in it
+        if (sw && (model.kits || []).some(k => k.room === r.id && (k.extra || {}).use === "light")) delete sw.light;
+        if (sw) extra.push(sw);
+      }
     }
     for (const it of (model.items || []).filter(i => i.room === r.id)) extra.push(itemProp(r, it));
     const fl = r.floorKit && kitProp(r.floorKit, `${r.id}_fx_floor`, problems);
@@ -310,6 +335,10 @@ export function modelToLevel(model, story) {
     const cl = r.ceilKit && r.ceiling && kitProp(r.ceilKit, `${r.id}_fx_ceiling`, problems);
     if (cl) { const dh = cl.kit.size[2]; extra.push(Object.assign(cl, { kit: Object.assign(cl.kit, { size: [r3(r.w - 0.1), r3(r.d - 0.1), dh] }), at: [r3(r.w / 2), r3(r.d / 2)], z: r3(r.h - dh) })); }
     for (const k of (model.kits || []).filter(k => k.room === r.id)) {
+      if (k.spec && k.spec.asset) {                                    // a prop generator's prop: the mesh at its size, on what it's on
+        extra.push(Object.assign(clone(k.extra || {}), { id: k.id, shape: `asset ${k.spec.asset}`, at: [r3(k.x), r3(k.y)], rot: Math.round(k.rot) % 360 }, k.z ? { z: r3(k.z) } : {}));
+        continue;
+      }
       const kp = kitProp(Object.assign({}, k.spec, k.size ? { size: k.size } : {}), k.id, problems);
       if (kp) extra.push(Object.assign(clone(k.extra || {}), kp, { at: [r3(k.x), r3(k.y)], rot: Math.round(k.rot) % 360 }, k.z ? { z: r3(k.z) } : {}));
     }
@@ -356,7 +385,7 @@ export function modelToLevel(model, story) {
   }
   const level = Object.assign({}, clone(model.levelExtra || {}), { start: startId, rooms: model.rooms.map(r => out[r.id]), links });
   const trim = {};
-  for (const k of ["skirting", "cornice", "casing", "threshold"]) if (fin[k] > 0) trim[k] = r3(fin[k]);
+  for (const k of ["skirting", "cornice", "casing", "threshold", "wainscot"]) if (fin[k] > 0) trim[k] = r3(fin[k]);
   if (Object.keys(trim).length) level.trim = trim;
   return { level, problems };
 }
@@ -518,6 +547,43 @@ function itemProp(r, it) {
   if (spec && (!spec.preset || KITS.presets[spec.preset] || !Object.keys(KITS.presets).length)) p.kit = Object.assign(clone(spec), { size: [r3(it.w), r3(it.t), r3(it.h)] });
   else p.shape = `box ${r3(it.w)} ${r3(it.t)} ${r3(it.h)}`;
   return p;
+}
+// where things go on and in a kit thing (KIT §10: its places: a desk's top and its book box, a cubby's cells, a
+// shelf's), in room metres: {name, kind ("on" | "in"), x, y, z (the middle of its floor), size, rot (the thing's)}
+export function placesOf(k) {
+  if (!k || !k.spec || k.spec.asset) return [];
+  let b; try { b = KIT.build(Object.assign({}, k.spec, k.size ? { size: k.size } : {}), KITS.presets); } catch (e) { return []; }
+  const a = (k.rot || 0) * Math.PI / 180, c = Math.cos(a), sn = Math.sin(a);
+  return (b.places || []).map(p => ({ name: p.name, kind: p.kind, size: p.size.slice(), rot: k.rot || 0,
+    x: r3(k.x + p.at[0] * c - p.at[1] * sn), y: r3(k.y + p.at[0] * sn + p.at[1] * c), z: r3((k.z || 0) + p.at[2]) }));
+}
+// a thing set on or in one of host's places: its middle there, on its floor, turned with the host (books spine out of a
+// cubby), `on` the host so the checks know; `fit`: a kit thing (a row of books) sized to the place's inside
+export function putOn(k, host, pl, fit = false) {
+  k.rot = host.rot || 0; k.z = pl.z;
+  k.extra = Object.assign({}, k.extra, { on: host.id });
+  if (fit && k.spec && !k.spec.asset) k.size = [r3(Math.max(0.02, pl.size[0] - 0.006)), r3(Math.max(0.02, pl.size[1] - 0.006)), r3(Math.min(k.size[2], pl.size[2] - 0.002))];
+  // in a shelf, a cubby, a box: at its front (books spine out), not lost at the back
+  const back = pl.kind === "in" ? Math.max(0, (pl.size[1] - k.size[1]) / 2 - 0.01) : 0, a = k.rot * Math.PI / 180;
+  k.x = r3(pl.x + Math.sin(a) * back); k.y = r3(pl.y - Math.cos(a) * back);
+  return k;
+}
+// a room's ceiling light's fitting: the Finish's, or by the room's kind and size (autoFitting); fluorescent troughs come as
+// a grid of them filling the room along its long side, a bay each (a classroom's six in two rows, a corridor's row)
+export function ceilingFitting(fin, r) {
+  const fit = fin.light_fitting && fin.light_fitting !== "auto" ? fin.light_fitting : autoFitting(area(r), r.kind);
+  let spec = fit, rot = 0, fh = 0.03;
+  try {
+    const f = kitFull({ preset: fit }); fh = f.size[2];
+    if (f.type === "tube_light") {
+      const along = Math.max(r.w, r.d), across = Math.min(r.w, r.d), L = Math.min(f.len, along - 0.2), W = f.wid;
+      const nl = Math.max(1, Math.round(along / 3.2)), ns = across > 3.4 ? Math.max(1, Math.round(across / 3.2)) : 1, pl = along / nl, ps = across / ns;
+      spec = { preset: fit, grid: [nl, ns], size: [r3(Math.min(along - 0.2, (nl - 1) * pl + L)), r3(Math.min(across - 0.2, ns > 1 ? (ns - 1) * ps + W : W)), fh] };
+      if (L < f.len) spec.len = r3(L);
+      rot = r.d > r.w ? 90 : 0;
+    }
+  } catch (e) { }
+  return { spec, rot, fh };
 }
 // the rot that turns a kit thing's front (its -y) away from a wall, into the room
 export const FACE = { n: 0, s: 180, e: 270, w: 90 };

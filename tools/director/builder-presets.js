@@ -34,6 +34,15 @@ export const KINDS = {
   garden:   { en: "Garden / porch", ja: "ポーチ", color: "#4f6a46", floor: "dirt", size: [3.64, 1.82], h: 2.4, ceiling: false, open: ["n", "e", "w"] },
   garage:   { en: "Garage", ja: "車庫", color: "#5b5b5b", floor: "stone", size: [2.73, 5.46] },
   other:    { en: "Room", ja: "部屋", color: "#777777", floor: "wood", size: [2.73, 2.73] },
+  // a school (the user, 2026-11-01: "build out a japanese school for a horror game"; SCENE_BUILDER §10): a classroom is
+  // 4 × 5 ken (7.2 × 9 m) under a 3 m ceiling, the corridor along its side 2.4 m wide
+  classroom: { en: "Classroom", ja: "教室", color: "#7a8f6a", floor: "wood", size: [7.2, 9.0], h: 3.0 },
+  hallway:   { en: "School corridor", ja: "廊下", color: "#8a8d84", floor: "tile", size: [2.4, 9.0], h: 3.0 },
+  staffroom: { en: "Staff room", ja: "職員室", color: "#6f7f92", floor: "tile", size: [7.2, 9.0], h: 3.0 },
+  entrance:  { en: "School entrance", ja: "昇降口", color: "#8c8270", floor: "stone", size: [7.2, 6.0], h: 3.0 },
+  nurse:     { en: "Nurse's office", ja: "保健室", color: "#7f9aa3", floor: "tile", size: [7.2, 6.0], h: 3.0 },
+  library:   { en: "Library", ja: "図書室", color: "#8a7a5c", floor: "wood", size: [7.2, 9.0], h: 3.0 },
+  gym:       { en: "Gym", ja: "体育館", color: "#9a8a62", floor: "wood", size: [18.0, 28.0], h: 7.0 },
 };
 
 // built-ins, so a room reads at its real size from the player's eye: [w, d, h] boxes against a wall with no door
@@ -243,6 +252,79 @@ export const PRESETS = [
   },
 ];
 
+// ---- a school (SCENE_BUILDER §10; the user, 2026-11-01, after their Blender classroom) ----------------------------------
+const rr = v => Math.round(v * 1000) / 1000;
+function mulberry(seed) { let a = (seed >>> 0) ^ 0x9e3779b9; return () => { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+// a classroom's things as a layout's kits ([room, preset, x, y, rot, {z, size, extra, ...}], room metres), its front (the
+// chalkboard) on its north wall, its windows on the west (the students' left), its doors on the east onto the corridor:
+// the chalkboard between its cork boards, the platform and the lectern on it, the teacher's desk by the windows, the
+// clock and the speaker; rows of desks (cols × rows), each chair pushed in behind its desk a little askew; lockers and a
+// back board on the back wall, the cleaning locker in its corner; the frame (columns between the windows, beams across
+// under the ceiling, a beam along each long wall over the windows); curtains tied back; two blackboard lights
+export function classroomKits(rid, o = {}) {
+  const w = o.w ?? 7.2, d = o.d ?? 9.0, H = o.h ?? 3.0, T = 0.05, R = mulberry(o.seed ?? 7), j = a => (R() * 2 - 1) * a, k = [];
+  const cols = o.cols ?? 6, rows = o.rows ?? 5, px = o.pitch_x ?? 1.0, py = o.pitch_y ?? 1.05, bays = o.bays ?? [3, 6];
+  k.push([rid, "chalkboard", w / 2, d - T - 0.04, 0, { z: 0.95 }]);
+  k.push([rid, "kyodan", w / 2, d - T - 0.45, 0]);
+  k.push([rid, "lectern", w / 2, d - T - 0.55, 180, { z: 0.18 }]);
+  k.push([rid, "teacher_desk", 0.8, d - T - 0.95, 180]);
+  k.push([rid, "school_clock", rr(w / 2 + 1.75), d - T - 0.025, 0, { z: 2.25 }]);
+  k.push([rid, "school_speaker", w / 2, d - T - 0.06, 0, { z: 2.3 }]);
+  const x0 = w / 2 - (cols - 1) / 2 * px, yf = d - 2.45;
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+    const x = x0 + c * px + j(0.02), y = yf - r * py + j(0.02);
+    k.push([rid, "school_desk", rr(x), rr(y), Math.round(j(1))]);
+    k.push([rid, "school_chair", rr(x + j(0.04)), rr(y - 0.48 - Math.abs(j(0.04))), 180 + Math.round(j(3))]);
+  }
+  const lw = 1.8, nl = Math.max(1, Math.floor((w - 1.6) / lw)), lx0 = w - 0.3 - nl * lw;
+  for (let i = 0; i < nl; i++) k.push([rid, "school_lockers", rr(lx0 + lw * (i + 0.5)), T + 0.226, 180]);
+  k.push([rid, "chalkboard_back", rr(lx0 + nl * lw / 2), T + 0.036, 180]);
+  k.push([rid, "cleaning_locker", 0.92, T + 0.259, 180]);
+  const ch = rr(H - 0.45);                                       // the columns stand under the beams along the walls
+  for (const y of bays) { k.push([rid, "column_classroom", T + 0.101, y, 90, { size: [0.5, 0.2, ch] }]); k.push([rid, "column_classroom", rr(w - T - 0.101), y, 270, { size: [0.5, 0.2, ch] }]); }
+  for (const y of [T + 0.126, rr(d - T - 0.126)]) for (const [x, rot] of [[T + 0.101, 90], [rr(w - T - 0.101), 270]]) k.push([rid, "column_classroom", x, y, rot, { size: [0.25, 0.2, ch] }]);
+  for (const y of bays) k.push([rid, "beam_classroom", w / 2, y, 0, { z: rr(H - 0.45), size: [rr(w - 2 * T - 0.82), 0.3, 0.45] }]);   // across, between them
+  for (const [x, rot] of [[T + 0.201, 90], [rr(w - T - 0.201), 270]]) k.push([rid, "beam_classroom", x, d / 2, rot, { z: rr(H - 0.45), size: [rr(d - 2 * T), 0.4, 0.45] }]);
+  for (const y of o.windows ?? [1.5, 4.5, 7.5]) k.push([rid, "curtain_school", T + 0.201 + 0.081, y, 90, { z: 0.8 }]);
+  k.push([rid, "board_light", w / 2, rr(d - 1.05), 0, { z: rr(H - 0.12), size: [3.2, 0.2, 0.12], grid: [2, 1],
+    extra: { use: "light", kind: "bulb", lit: true, kelvin: 5000, lumens: 1500 } }]);
+  return k;
+}
+// the corridor's things along a stretch of its walls (room metres): a hydrant box, a notice board, a speaker
+function hallwayKits(rid, w, d) {
+  const T = 0.05;
+  return [[rid, "hydrant_box", T + 0.081, 1.4, 90], [rid, "corkboard", T + 0.011, rr(d - 1.6), 90, { z: 1.1 }],
+          [rid, "school_speaker", rr(w / 2), rr(d - T - 0.06), 0, { z: 2.4 }], [rid, "umbrella_stand", rr(w - T - 0.126), rr(d - 1.0), 270]];
+}
+const CLASSROOM_LOOK = { walls: "#ece6d3", ceiling: "#f3f1ea" };
+export const SCHOOL_PRESETS = [
+  {
+    id: "school_classroom", name: "School: a classroom and its corridor (your Blender classroom, 1:1)",
+    note: "The user's Blender classroom: 7.2 × 9 m under a 3 m ceiling, three window bays on the west with curtains tied back, the chalkboard between two cork boards on the north wall over the platform and the lectern, 30 desks in six rows of five, lockers along the back, frosted windows and two sliding doors onto a 2.4 m corridor, wainscot all round, beams across the rock wool ceiling, fluorescent troughs, a basket-weave parquet.",
+    rooms: [
+      ["classroom", "classroom", "Classroom 2-1", 0, 0, 7.2, 9.0, { light: "bright", extra: { look: CLASSROOM_LOOK } }],
+      ["hallway", "hallway", "Corridor", 7.2, -3.0, 9.6, 12.0, { extra: { look: CLASSROOM_LOOK } }],
+    ],
+    doors: [
+      ["hallway", "classroom", "slide", { id: "classroom_front_door", at: 8.175 / 9, w: 0.95, h: 2.0, extra: { kit: { preset: "door_school" } } }],
+      ["hallway", "classroom", "slide", { id: "classroom_back_door", at: 1.2 / 9, w: 0.95, h: 2.0, extra: { kit: { preset: "door_school" } } }],
+    ],
+    windows: [
+      ...[1.5, 4.5, 7.5].map(y => ["classroom", "w", "window", { at: y / 9, w: 2.3, h: 1.6, sill: 0.95, frame: { preset: "window_classroom" } }]),
+      ["classroom", "e", "window", { at: 2.24 / 9, w: 0.9, h: 1.55, sill: 1.0, frame: { preset: "window_corridor" } }],
+      ["classroom", "e", "window", { at: 4.5 / 9, w: 2.3, h: 1.55, sill: 1.0, frame: { preset: "window_corridor" } }],
+      ["classroom", "e", "window", { at: 6.95 / 9, w: 1.2, h: 1.55, sill: 1.0, frame: { preset: "window_corridor" } }],
+      ...[-1.5, 1.5, 4.5, 7.5, 10.5].map(y => ["hallway", "e", "window", { at: (y + 3) / 15, w: 2.3, h: 1.65, sill: 0.9, frame: { preset: "window_classroom" } }]),
+      ["hallway", "n", "window", { at: 0.5, w: 1.4, h: 1.5, sill: 0.9, frame: { preset: "window_wired" } }],
+      ["hallway", "s", "window", { at: 0.5, w: 1.4, h: 1.5, sill: 0.9, frame: { preset: "window_wired" } }],
+    ],
+    kits: [...classroomKits("classroom"), ...hallwayKits("hallway", 2.4, 15)],
+    finish: { wainscot: 0.95, skirting: 0.08, casing: 0.05 },
+    start: [5.6, 1.1, 180], her: [3.6, 7.75, 270],          // the back aisle, behind the last row, looking along it
+  },
+];
+PRESETS.push(...SCHOOL_PRESETS);
+
 // Things stuck to a wall, real sizes: [w, h, t (out from the wall)] and the height of their middle above the floor.
 // They are ordinary props (`<room>_wi_<kind>_<n>`, a box with its `tag`): the art pass gives each its mesh or texture.
 export const WALL_ITEMS = {          // size: [width, height, off the wall]; z: its middle; kit: drawn with that preset
@@ -260,21 +342,30 @@ export const WALL_ITEMS = {          // size: [width, height, off the wall]; z: 
 // a room's floor by its kind (the layouts and new rooms start with these; "Floors by room kind" fills the rest)
 export const FLOOR_BY_KIND = { ldk: "oak_planks", living: "oak_planks", dining: "oak_planks", kitchen: "oak_planks", bedroom: "oak_planks",
   kids: "oak_planks", study: "oak_planks", service: "oak_planks", corridor: "oak_planks", closet: "oak_planks", walkin: "oak_planks", stairs: null,
-  washitsu: "tatami", bath: "tile_300", washroom: "tile_300", toilet: "tile_300", genkan: "stone_450", balcony: "deck_boards", engawa: "wide_planks" };
+  washitsu: "tatami", bath: "tile_300", washroom: "tile_300", toilet: "tile_300", genkan: "stone_450", balcony: "deck_boards", engawa: "wide_planks",
+  classroom: "parquet_basket", hallway: "vinyl_tiles", staffroom: "vinyl_tiles", entrance: "tile_300", nurse: "vinyl_tiles", library: "parquet_basket", gym: "oak_planks" };
+// a room's ceiling by its kind (the school's rock wool boards; the others keep theirs)
+export const CEILING_BY_KIND = { classroom: "ceiling_rockwool", hallway: "ceiling_rockwool", staffroom: "ceiling_tbar_600", entrance: "ceiling_rockwool",
+  nurse: "ceiling_tbar_600", library: "ceiling_rockwool" };
 
 // a ceiling light's colour temperature by room: warm where people live, cooler where they wash and cook
 export const LIGHT_K = { ldk: 3000, living: 2700, dining: 2700, kitchen: 4000, washitsu: 2700, bedroom: 2700, kids: 3000, study: 3500,
-  bath: 4000, washroom: 4000, toilet: 3000, genkan: 3000, corridor: 3000, stairs: 3000, service: 3500 };
+  bath: 4000, washroom: 4000, toilet: 3000, genkan: 3000, corridor: 3000, stairs: 3000, service: 3500,
+  classroom: 5000, hallway: 4500, staffroom: 5000, entrance: 4500, nurse: 5000, library: 4500, gym: 5000 };
 
 // the finish a new plan starts with: skirting 6 cm, door casings 6 cm, no cornice (Japanese rooms often have a thin
 // mawaribuchi: try 3 cm), a 12 mm threshold where the floor changes, a ceiling light in each room with its switch by
 // the door
-export const FINISH = { skirting: 0.06, cornice: 0, casing: 0.06, threshold: 0.012, lights: true, switches: true, light_fitting: "auto" };
+export const FINISH = { skirting: 0.06, cornice: 0, casing: 0.06, threshold: 0.012, lights: true, switches: true, light_fitting: "auto", wainscot: 0 };
 // the ceiling light every room gets is a fitting (the user, 2026-10-31: "lights as furniture, rounded LEDs: a circular rim
 // with a glass circle, and those kinds of variations"): "auto" picks by the room's floor area, else one preset for all
 export const LIGHT_FITTINGS = [["auto", "by the room's size"], ["downlight_100", "downlight 100"], ["downlight_150", "downlight 150"],
-  ["led_flush_300", "round LED, flush 300"], ["led_flush_450", "round LED, flush 450"], ["led_dome_500", "round LED, dome 500"], ["led_ring_600", "round LED, ring 600"]];
-export function autoFitting(area) { return area < 3.5 ? "downlight_100" : area < 13 ? "led_flush_300" : "led_dome_500"; }
+  ["led_flush_300", "round LED, flush 300"], ["led_flush_450", "round LED, flush 450"], ["led_dome_500", "round LED, dome 500"], ["led_ring_600", "round LED, ring 600"],
+  ["tube_trough", "fluorescent troughs, two tubes (a grid)"], ["tube_trough_1", "fluorescent troughs, one tube (a grid)"], ["tube_louvre", "fluorescent behind louvres (a grid)"]];
+// a school's rooms take fluorescent troughs by their kind, a grid of them filling the room (builder-model.js ceilingFitting)
+export const FITTING_BY_KIND = { classroom: "tube_trough", hallway: "tube_trough_1", staffroom: "tube_trough", entrance: "tube_trough_1",
+  nurse: "tube_trough", library: "tube_trough", gym: "tube_louvre" };
+export function autoFitting(area, kind) { return FITTING_BY_KIND[kind] || (area < 3.5 ? "downlight_100" : area < 13 ? "led_flush_300" : "led_dome_500"); }
 export const WINDOW_FRAME = "window_slide";     // the frame a new window gets
 
 // texture sets a room can be given (its `look`): the few the studio already uses, plus whatever has been fetched

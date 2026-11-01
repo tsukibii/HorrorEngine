@@ -262,6 +262,12 @@ class Report:
 
 # ---- static checks ----------------------------------------------------------------------------------------------
 
+def trim_ok(k, v):
+    """A level's or a room's trim word: skirting, cornice, casing and threshold up to 0.4 m; a wainscot up to 1.5 m."""
+    top = {"skirting": 0.4, "cornice": 0.4, "casing": 0.4, "threshold": 0.4, "wainscot": 1.5}.get(k)
+    return top is not None and isinstance(v, (int, float)) and not isinstance(v, bool) and 0 <= v <= top
+
+
 def look_problems(look):
     """(errors, warnings) of a look on a room's surface, a block or an outside slot: a set's ref, a colour (#rrggbb) or
     a tuned set (STREET_PAINT §2, pbrmix.py's words). A set missing from this machine's shelf is the library's warning."""
@@ -421,8 +427,8 @@ def check_world(story, things, r):
                 if q.get("pose") is not None and q["pose"] not in POSES:
                     r.err(f"level {lid}: route {rid} at {q.get('at')}: pose {q['pose']!r} isn't in Content/Studio/poses.json")
         for k, v in (lvl.get("trim") or {}).items():
-            if k not in ("skirting", "cornice", "casing", "threshold") or not isinstance(v, (int, float)) or not 0 <= v <= 0.4:
-                r.err(f"level {lid}: trim {k}: {v!r} (skirting, cornice, casing, threshold: heights or widths in metres, 0 for none)")
+            if not trim_ok(k, v):
+                r.err(f"level {lid}: trim {k}: {v!r} (skirting, cornice, casing, threshold: heights or widths in metres up to 0.4; wainscot: up to 1.5; 0 for none)")
         for rm in rooms.values():
             if len(rm.get("size", [])) != 3 or len(rm.get("at", [])) != 3:
                 r.err(f"room {rm['id']}: needs at [x, y, z] and size [w, d, h]")
@@ -435,8 +441,8 @@ def check_world(story, things, r):
                     r.err(f"room {rm['id']}: skip {wl!r} isn't one of n e s w")
             if rm.get("trim") not in (None, False):
                 for k, v in (rm["trim"] or {}).items():
-                    if k not in ("skirting", "cornice", "casing", "threshold") or not isinstance(v, (int, float)) or not 0 <= v <= 0.4:
-                        r.err(f"room {rm['id']}: trim {k}: {v!r} (skirting, cornice, casing, threshold: heights or widths in metres, 0 for none)")
+                    if not trim_ok(k, v):
+                        r.err(f"room {rm['id']}: trim {k}: {v!r} (skirting, cornice, casing, threshold: heights or widths in metres up to 0.4; wainscot: up to 1.5; 0 for none)")
             if rm.get("kind") is not None and rm["kind"] not in L.ROOM_KINDS:
                 r.warn(f"room {rm['id']}: kind {rm['kind']!r} isn't one of {', '.join(L.ROOM_KINDS)}")
             wet = rm.get("wet")                             # a wet floor without rain (§2: pools in Godot, wet steps from 0.5)
@@ -556,8 +562,8 @@ def check_world(story, things, r):
             f, table = need[u]
             if p.get(f) not in table:
                 r.err(f"{t.id}: {f} {p.get(f)!r} doesn't exist")
-        if u == "switch" and (p.get("light") not in things or things[p["light"]].use != "light"):
-            r.err(f"{t.id}: switch light {p.get('light')!r} isn't a light")
+        if u == "switch" and p.get("light") is not None and (p.get("light") not in things or things[p["light"]].use != "light"):
+            r.err(f"{t.id}: switch light {p.get('light')!r} isn't a light")   # none: every light in its room (a classroom's)
         if u == "use_on":
             if p.get("needs") not in items:
                 r.err(f"{t.id}: needs {p.get('needs')!r} isn't an item")
