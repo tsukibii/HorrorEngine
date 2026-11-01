@@ -1,13 +1,15 @@
 // PROPPAGE: the prop generator's page in a headless browser, on its own server with a scratch copy of the recipe book,
 // a scratch folder for what's made and one for pictures (PROPS_PRESETS, PROPS_OUT, PROPS_IMAGES), so your recipes and
 // props are never touched. Every recipe a card; one opened into its form and changed there; made by Blender from the
-// page, its log followed and its picture on its card; a picture dropped in and clicked onto the texture where the
-// front of the plaque is (a decal), its parts listed with the picture size each wants, a picture wrapped over the
-// whole front; its own pictures (meta.json's slots) listed with the size each wants and one swapped for yours, a smudge
-// off the shelf moved by a click, the decal made a flourish in each corner; made again with all of it, the texture
-// changed; the made prop loaded in 3D with its
-// sockets; a PBR set off the shelf picked for its material; two variations made at once; kept as a recipe of its own
-// (`from` its base and only what differs), then deleted again. Blender is needed (propgen.py's), as for PROPGEN.
+// page, its log followed and its picture on its card, the paint under your pictures beside its maps. Then the picture
+// editor (docs/PROPGEN.md §17): the texture with its cuts read from the model's UVs, its parts and own pictures as
+// layers, the prop in 3D wearing the canvas; pictures added; a file from the desktop dropped onto a part its shape,
+// filling it; a logo dropped onto a part, placed where it lands; one onto one of its own pictures, taking its place;
+// the logo sized, turned and moved by its handles, Ctrl+Z a step back; a picture the texture's shape over the whole
+// texture in its layout; a smudge dragged onto a part; the logo made a flourish in each corner; made again with all
+// of it, the made texture where the canvas said; the made prop in 3D with its sockets; a PBR set picked; the layout's
+// template for Krita (.ora) and back in; a part picked on the prop in 3D; two variations made at once; kept as a
+// recipe of its own (`from` its base and only what differs), then deleted again. Blender is needed (propgen.py's).
 //   node tools/propgen/pagetest.mjs           (PROPS_TEST_PORT for another port than 8792)
 import { createRequire } from "module";
 import { spawn } from "child_process";
@@ -96,87 +98,155 @@ try {
     albedo1 = sha(path.join(OUT, "ema", s.meta.textures.main[0]));
     return `${(await page.textContent("#job-log")).split("\n").filter(Boolean).length} lines of log, ${s.meta.tris} triangles`;
   });
-  await step("a picture dropped into the page goes into the pictures folder", async () => {
+  const at = (isl, x, y) => page.evaluate(([i, x, y]) => window.__pe.toScreen(i, x, y), [isl, x, y]);
+  const colour = (isl, x, y) => page.evaluate(([i, x, y]) => window.__pe.colourAt(i, x, y), [isl, x, y]);
+  // a picture on the left dragged onto the canvas (HTML's drag and drop, as the browser fires it)
+  async function dragPic(sel, x, y, mods = {}) {
+    await page.evaluate(({ sel, x, y, mods }) => {
+      const src = document.querySelector(sel), cv = document.querySelector(".pe-canvas"), dt = new DataTransfer();
+      src.dispatchEvent(new DragEvent("dragstart", { bubbles: true, dataTransfer: dt }));
+      cv.dispatchEvent(new DragEvent("dragover", Object.assign({ bubbles: true, cancelable: true, dataTransfer: dt, clientX: x, clientY: y }, mods)));
+      cv.dispatchEvent(new DragEvent("drop", Object.assign({ bubbles: true, cancelable: true, dataTransfer: dt, clientX: x, clientY: y }, mods)));
+      src.dispatchEvent(new DragEvent("dragend", { bubbles: true, dataTransfer: dt }));
+    }, { sel, x, y, mods });
+  }
+  const picPng = (w, h, kind) => page.evaluate(({ w, h, kind }) => {
+    const c = document.createElement("canvas"); c.width = w; c.height = h; const g = c.getContext("2d");
+    if (kind === "logo") { g.fillStyle = "#c0262a"; g.beginPath(); g.arc(w / 2, h / 2, w * 0.45, 0, 7); g.fill(); g.fillStyle = "#101010"; g.fillRect(w * 0.3, h * 0.42, w * 0.4, h * 0.16); }
+    if (kind === "label") { g.fillStyle = "#2050d0"; g.fillRect(0, 0, w, h); g.fillStyle = "#f2f2f2"; g.beginPath(); g.arc(w / 2, h / 2, h * 0.3, 0, 7); g.fill(); }
+    if (kind === "sheet") for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) { g.fillStyle = (x + y) % 2 ? "#2f8f4f" : "#e6e1cf"; g.fillRect(x * w / 8, y * h / 8, w / 8, h / 8); }
+    return c.toDataURL("image/png").split(",")[1];
+  }, { w, h, kind });
+  let logo = "", sheetPic = "";
+  await step("the picture editor: the texture with its cuts from the model's UVs, its parts and own pictures as layers, the prop wearing the canvas", async () => {
     await page.click('#tabs button[data-tab="texture"]');
-    const b64 = await page.evaluate(() => {
-      const c = document.createElement("canvas"); c.width = 256; c.height = 128;
-      const g = c.getContext("2d"); g.fillStyle = "#c0262a"; g.beginPath(); g.arc(64, 64, 56, 0, 7); g.fill();
-      g.fillStyle = "#101010"; g.font = "bold 70px sans-serif"; g.fillText("PP", 128, 90);
-      return c.toDataURL("image/png").split(",")[1];
-    });
-    await page.setInputFiles("#tab-texture input[type=file]", { name: "page logo.png", mimeType: "image/png", buffer: Buffer.from(b64, "base64") });
-    await page.waitForFunction(() => window.__pp.pics.length === 1);
+    await page.waitForFunction(() => window.__pe && window.__pe.cuts() && window.__pe.live3d().length, null, { timeout: 60000 });
+    const s = await S(), cuts = await page.evaluate(() => window.__pe.cuts());
+    if (!s.meta.design || !s.meta.design.main || !s.meta.design.main.paint) throw new Error(`no paint under your pictures in what was made: ${JSON.stringify(s.meta.design)}`);
+    if (!fs.existsSync(path.join(OUT, "ema", s.meta.design.main.paint))) throw new Error("its paint isn't beside its maps");
+    if (cuts.segs < 8) throw new Error(`${cuts.segs} cut lines`);
+    const parts = Object.values(s.meta.islands).filter(i => i.mat === "main").length;
+    if ((await page.locator('.pe-row[data-kind="part"]').count()) !== parts) throw new Error(`${await page.locator('.pe-row[data-kind="part"]').count()} parts listed, ${parts} on the texture`);
+    if ((await page.locator('.pe-row[data-kind="slot"]').count()) < 1) throw new Error("its own pictures aren't listed");
+    if (!(await page.evaluate(() => window.__pe.live3d())).includes("ema_main")) throw new Error("the prop in 3D doesn't wear the canvas");
+    if ((await page.locator(".pe-bar button[data-mat]").count()) !== 2) throw new Error("its two textures (main, cord) aren't both offered");
+    return `${cuts.segs} cut lines over ${cuts.tris} triangles, ${parts} parts`;
+  });
+  await step("pictures added in the editor go into the pictures folder", async () => {
+    await page.setInputFiles(".pe-file", [{ name: "page logo.png", mimeType: "image/png", buffer: Buffer.from(await picPng(256, 256, "logo"), "base64") },
+      { name: "page sheet.png", mimeType: "image/png", buffer: Buffer.from(await picPng(512, 512, "sheet"), "base64") }]);
+    await page.waitForFunction(() => window.__pp.pics.length === 2);
     if (!fs.existsSync(path.join(IMAGES, "page_logo.png"))) throw new Error("not in the pictures folder");
-    return (await S()).pics[0].path;
+    const s = await S();
+    logo = s.pics.find(p => p.name === "page_logo.png").path;
+    sheetPic = s.pics.find(p => p.name === "page_sheet.png").path;
+    if ((await page.locator(".pe-pics .pe-pic").count()) !== 2) throw new Error("not shown to drag");
+    return s.pics.map(p => p.name).join(", ");
   });
-  await step("a click on the texture puts it there: a decal on the island under the click", async () => {
-    const r = page.locator('.atlas rect.isl[data-island="front"]').first();
-    const b = await r.boundingBox();
-    await page.mouse.click(b.x + b.width * 0.5, b.y + b.height * 0.62);
-    await page.waitForFunction(() => (window.__pp.spec.decals || []).length === 1);
-    const d = (await S()).spec.decals[0], isl = (await S()).meta.islands.front;
-    if (d.island !== "front") throw new Error(`on ${d.island}`);
-    if (Math.abs(d.x - isl.mm[0] * 0.5) > isl.mm[0] * 0.05 || Math.abs(d.y - isl.mm[1] * 0.38) > isl.mm[1] * 0.06) throw new Error(`at ${d.x}, ${d.y} of ${isl.mm}`);
-    if (!(await page.locator(".atlas rect.dec").count())) throw new Error("not drawn on the texture");
-    return `at ${d.x} × ${d.y} mm of ${isl.mm.join(" × ")}`;
+  await step("a file from the desktop dropped onto a part its shape: it fills the part", async () => {
+    const [x, y] = await at("front", 8, 94);
+    const b64 = await picPng(600, 408, "label");
+    await page.evaluate(({ b64, x, y }) => {
+      const bin = atob(b64), u8 = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+      const dt = new DataTransfer();
+      dt.items.add(new File([u8], "front label.png", { type: "image/png" }));
+      const cv = document.querySelector(".pe-canvas");
+      cv.dispatchEvent(new DragEvent("dragover", { bubbles: true, cancelable: true, dataTransfer: dt, clientX: x, clientY: y }));
+      cv.dispatchEvent(new DragEvent("drop", { bubbles: true, cancelable: true, dataTransfer: dt, clientX: x, clientY: y }));
+    }, { b64, x, y });
+    await page.waitForFunction(() => (window.__pp.spec.decals || []).length === 1, null, { timeout: 15000 });
+    const d = (await S()).spec.decals[0];
+    if (d.island !== "front" || d.fit !== "stretch") throw new Error(JSON.stringify(d));
+    if (!fs.existsSync(path.join(IMAGES, "front_label.png"))) throw new Error("the file isn't in the pictures folder");
+    await page.waitForTimeout(300);
+    const c = await colour("front", 140, 95);
+    if (Math.abs(c[0] - 0x20) > 30 || Math.abs(c[1] - 0x50) > 30 || Math.abs(c[2] - 0xd0) > 30) throw new Error(`the canvas there is ${c}, not the picture's blue`);
+    return `${d.image.split("/").pop()} over all of the front; the canvas there ${c}`;
   });
-  await step("its parts listed with the picture each wants; one wrapped over a whole part", async () => {
-    const row = page.locator('.isl-row[data-island="front"]');
-    const txt = await row.textContent();
-    const m = txt.match(/picture (\d+) × (\d+) px/);
-    if (!m) throw new Error(`no size in "${txt}"`);
-    const isl = (await S()).meta.islands.front, px = (await S()).meta.materials.main.px;
-    const want = Math.round((isl.rect[2] - isl.rect[0]) * px) * 2;
-    if (Math.abs(+m[1] - want) > 1) throw new Error(`${m[1]} px wide, not ${want}`);
-    if (!(await page.locator('.isl-row[data-island="cord_a"] .wraps').count())) throw new Error("the cord's band isn't marked as going round");
-    await row.locator("button").click();
+  await step("a logo dragged onto a part: placed where it lands", async () => {
+    const [x, y] = await at("back", 40, 42);
+    await dragPic(`.pe-pic[data-path="${logo}"]`, x, y);
     await page.waitForFunction(() => (window.__pp.spec.decals || []).length === 2);
     const d = (await S()).spec.decals[1];
-    if (d.fit !== "stretch" || d.island !== "front") throw new Error(JSON.stringify(d));
-    return `the front wants ${m[1]} × ${m[2]} px`;
+    if (d.island !== "back" || d.fit || Math.abs(d.x - 40) > 1.5 || Math.abs(d.y - 42) > 1.5 || !(d.w > 10)) throw new Error(JSON.stringify(d));
+    const sel = await page.evaluate(() => window.__pp.ed.sel);
+    if (sel.kind !== "decal" || sel.i !== 1) throw new Error(`picked ${JSON.stringify(sel)}`);
+    return `at ${d.x} × ${d.y} mm, ${d.w} mm wide`;
   });
   let swapped = null;
-  await step("its own pictures listed with the size each wants; one swapped for yours", async () => {
-    const slots = (await S()).meta.slots || [];
-    if (!slots.length) throw new Error("the ema names no picture of its own (meta.json's slots)");
-    const rows = page.locator(".slot");
-    if ((await rows.count()) !== slots.length) throw new Error(`${await rows.count()} rows for ${slots.length} slots`);
-    const txt = await rows.first().textContent();
-    if (!/\d+ × \d+ px/.test(txt)) throw new Error(`no size in "${txt}"`);
-    if (!(await page.locator(".atlas rect.slotbox").count())) throw new Error("its pictures' boxes aren't drawn on the texture");
-    swapped = slots[0].id;
-    await rows.first().locator("select").first().selectOption((await S()).pics[0].path);
-    await page.waitForFunction(id => (window.__pp.spec.pictures || {})[id] === window.__pp.pics[0].path, swapped);
-    return `${slots.length}: ${slots.map(x => x.id).join(", ")}; ${swapped} wants ${txt.match(/(\d+ × \d+) px/)[1]}`;
+  await step("a logo dragged onto one of its own pictures takes its place", async () => {
+    const sl = (await S()).meta.slots.find(x => x.id === "front.motif");
+    if (!sl) throw new Error("the ema has no front.motif");
+    const [x, y] = await at("front", sl.box[0] + sl.box[2] / 2, sl.box[1] + sl.box[3] / 2);
+    await dragPic(`.pe-pic[data-path="${logo}"]`, x, y);
+    await page.waitForFunction(id => (window.__pp.spec.pictures || {})[id], sl.id);
+    swapped = sl.id;
+    if (!(await page.locator(`.pe-row[data-slot="${sl.id}"] .pe-k.yours`).count())) throw new Error("its layer doesn't say it's yours");
+    if (!/wants \d+ × \d+ px/.test(await page.textContent(".pe-props"))) throw new Error("no size wanted on its settings");
+    return `${sl.id}: ${(await page.textContent(".pe-props .pe-wants")).trim()}`;
   });
-  await step("a smudge off the shelf, moved by a click on the texture", async () => {
-    await page.locator(".shelf .pic").first().click();
+  await step("the logo sized, turned and moved by its handles; Ctrl+Z a step back", async () => {
+    await page.click('.pe-row[data-kind="decal"][data-i="1"]');
+    const d0 = (await S()).spec.decals[1];
+    let h = await page.evaluate(() => window.__pe.handle("se"));
+    await page.mouse.move(h[0], h[1]); await page.mouse.down(); await page.mouse.move(h[0] + 30, h[1] + 30, { steps: 4 }); await page.mouse.up();
+    const d1 = (await S()).spec.decals[1];
+    if (!(d1.w > d0.w * 1.1) || Math.abs(d1.h / d1.w - 1) > 0.05) throw new Error(`sized ${JSON.stringify(d1)}`);
+    h = await page.evaluate(() => window.__pe.handle("rot"));
+    const c = await at("back", d1.x, d1.y);
+    await page.mouse.move(h[0], h[1]); await page.mouse.down(); await page.mouse.move(c[0] + 100, c[1], { steps: 6 }); await page.mouse.up();
+    const d2 = (await S()).spec.decals[1];
+    if (Math.abs(d2.rot + 90) > 3) throw new Error(`turned ${JSON.stringify(d2)}`);
+    await page.mouse.move(c[0], c[1]); await page.mouse.down(); await page.mouse.move(c[0] + 25, c[1] - 15, { steps: 5 }); await page.mouse.up();
+    const d3 = (await S()).spec.decals[1];
+    if (!(d3.x > d2.x + 2) || !(d3.y > d2.y + 1)) throw new Error(`moved ${JSON.stringify(d3)}`);
+    await page.locator(".pe-canvas").focus();
+    await page.keyboard.press("Control+z");
+    const d4 = (await S()).spec.decals[1];
+    if (d4.x !== d2.x || d4.y !== d2.y) throw new Error(`undone ${JSON.stringify(d4)}, not back at ${d2.x}, ${d2.y}`);
+    return `${d0.w} → ${d1.w} mm, turned ${d2.rot}°, moved and back`;
+  });
+  await step("a picture the texture's shape over the whole texture, laid in its layout", async () => {
+    const [x, y] = await at("front", 75, 51);
+    await dragPic(`.pe-pic[data-path="${sheetPic}"]`, x, y);
+    await page.waitForFunction(() => (window.__pp.spec.sheets || []).length === 1);
+    const s = await S(), sh = s.spec.sheets[0];
+    const parts = Object.entries(s.meta.islands).filter(([, i]) => i.mat === "main").map(([n]) => n).sort();
+    if (sh.mat !== "main" || sh.at || JSON.stringify(Object.keys(sh.layout).sort()) !== JSON.stringify(parts)) throw new Error(JSON.stringify(sh));
+    if (!(await page.locator('.pe-row[data-kind="sheet"]').count())) throw new Error("not listed over the whole texture");
+    return `laid on ${parts.join(", ")}`;
+  });
+  await step("a smudge off the shelf dragged onto a part", async () => {
+    const [x, y] = await at("back", 115, 60);
+    await dragPic(".pe-smudges .pe-pic", x, y);
     await page.waitForFunction(() => (window.__pp.spec.smudges || []).length === 1);
-    await page.waitForFunction(() => [...document.querySelectorAll(".atlas img")].every(i => i.complete));
-    await page.locator('.atlas rect.isl[data-island="front"]').first().scrollIntoViewIfNeeded();
-    const isl = (await S()).meta.islands.front, b = await page.locator('.atlas rect.isl[data-island="front"]').first().boundingBox();
-    await page.mouse.click(b.x + b.width * 0.3, b.y + b.height * (1 - 0.4));
-    await page.waitForFunction(x => Math.abs(window.__pp.spec.smudges[0].x - x) < 3, 0.3 * isl.mm[0], { timeout: 5000 });
     const m = (await S()).spec.smudges[0];
-    if (Math.abs(m.x - 0.3 * isl.mm[0]) > 2 || Math.abs(m.y - 0.4 * isl.mm[1]) > 2) throw new Error(JSON.stringify(m));
-    if (!(await page.locator(".atlas ellipse.smu").count())) throw new Error("not drawn on the texture");
-    if (!/\d+ × \d+ px/.test(await page.locator(".smudge").first().textContent())) throw new Error("no size wanted on its row");
-    return `${m.image} at ${m.x}, ${m.y} mm on the front`;
+    if (m.island !== "back" || Math.abs(m.x - 115) > 1.5 || Math.abs(m.y - 60) > 1.5) throw new Error(JSON.stringify(m));
+    return `${m.image} at ${m.x}, ${m.y} mm on the back`;
   });
-  await step("the decal made a flourish: one in each corner", async () => {
-    await page.locator(".decal:not(.smudge)").first().locator("label", { hasText: "corners" }).locator("input").check();
-    await page.waitForFunction(() => window.__pp.spec.decals[0].corners === true);
+  await step("the logo made a flourish: one in each corner", async () => {
+    await page.click('.pe-row[data-kind="decal"][data-i="1"]');
+    await page.locator(".pe-props details.pe-more summary").click();
+    await page.locator(".pe-props label", { hasText: "One in each corner" }).locator("input").check();
+    await page.waitForFunction(() => window.__pp.spec.decals[1].corners === true);
   });
-  await step("made again with them: in the made recipe, the texture changed", async () => {
+  await step("made again with them: in the made recipe, the made texture where the canvas said", async () => {
+    const want = await colour("front", 140, 95);
     await makeAndWait();
     const s = await S();
-    if (!s.meta.spec.decals || s.meta.spec.decals[0].image !== s.pics[0].path) throw new Error("the decal isn't in what was made");
-    if (s.meta.spec.decals[1].fit !== "stretch") throw new Error("the wrapped picture isn't in what was made");
-    if (!s.meta.spec.smudges || !s.meta.spec.decals[0].corners) throw new Error("the smudge or the flourish isn't in what was made");
+    if (!s.meta.spec.decals || s.meta.spec.decals[1].image !== logo || !s.meta.spec.decals[1].corners) throw new Error("the logo isn't in what was made");
+    if (!s.meta.spec.sheets || !s.meta.spec.smudges) throw new Error("the sheet or the smudge isn't in what was made");
     const sl = (s.meta.slots || []).find(x => x.id === swapped);
     if (!sl || sl.now !== "yours") throw new Error(`${swapped} isn't yours in what was made: ${JSON.stringify(sl)}`);
     const a2 = sha(path.join(OUT, "ema", s.meta.textures.main[0]));
     if (a2 === albedo1) throw new Error("its texture is the same as before");
+    await page.click('.pe-bar button[data-mode="made"]');
+    await page.waitForTimeout(1500);
+    const got = await colour("front", 140, 95);
+    await page.click('.pe-bar button[data-mode="design"]');
+    if (want.some((v, k) => Math.abs(v - got[k]) > 45)) throw new Error(`made ${got} where the canvas showed ${want}`);
+    return `the front's corner: canvas ${want}, made ${got}`;
   });
   await step("the made prop in 3D, its sockets marked", async () => {
     await page.click('#tabs button[data-tab="view"]');
@@ -188,14 +258,45 @@ try {
   });
   await step("a PBR set off the shelf picked for its material", async () => {
     await page.click('#tabs button[data-tab="texture"]');
-    const opts = await page.locator(".pbrrow select option").count();
+    await page.waitForFunction(() => !!document.querySelector(".pe-props"));
+    await page.locator(".pe-canvas").focus();
+    await page.keyboard.press("Escape");
+    const opts = await page.locator(".pe-pbr select option").count();
     if (opts < 2) return "the shelf is empty here: nothing to pick (skipped)";
-    const first = await page.locator(".pbrrow select option").nth(1).getAttribute("value");
-    await page.locator(".pbrrow select").first().selectOption(first);
+    const first = await page.locator(".pe-pbr select option").nth(1).getAttribute("value");
+    await page.locator(".pe-pbr select").first().selectOption(first);
     const p = (await S()).spec.pbr;
     if (!p || !Object.values(p).some(x => x.set === first)) throw new Error(JSON.stringify(p));
     await page.evaluate(() => { delete window.__pp.spec.pbr; });
     return first;
+  });
+  await step("the layout's template for Krita (.ora: Guide, Paint, Base) and back in as a picture", async () => {
+    await page.evaluate(() => window.__pe.select(null));
+    const [dl] = await Promise.all([page.waitForEvent("download"), page.click('.pe-props button:text-is("Template (.ora)")')]);
+    const ora = path.join(HOME, dl.suggestedFilename());
+    await dl.saveAs(ora);
+    const z = fs.readFileSync(ora);
+    if (z.readUInt32LE(0) !== 0x04034b50 || z.toString("latin1", 30, 38) !== "mimetype" || z.toString("latin1", 38, 54) !== "image/openraster") throw new Error("not an OpenRaster file (mimetype first, stored)");
+    const txt = z.toString("latin1");
+    for (const n of ['name="Guide"', 'name="Paint"', 'name="Base"', "mergedimage.png", "Thumbnails/thumbnail.png"]) if (!txt.includes(n)) throw new Error(`no ${n} in it`);
+    const before = (await S()).pics.length;
+    await page.setInputFiles(".pe-file", ora);
+    await page.waitForFunction(n => window.__pp.pics.length === n + 1, before);
+    if (!fs.existsSync(path.join(IMAGES, "ema_main.png"))) throw new Error("its Paint layer isn't in the pictures folder");
+    return `${dl.suggestedFilename()}, ${z.length} bytes`;
+  });
+  await step("a part picked on the prop in 3D", async () => {
+    await page.evaluate(() => window.__pe.select(null));
+    const b = await page.locator(".pe-3d canvas").boundingBox();
+    let sel = null;
+    for (const [fx, fy] of [[0.5, 0.5], [0.45, 0.55], [0.55, 0.45], [0.5, 0.6]]) {
+      await page.mouse.click(b.x + b.width * fx, b.y + b.height * fy);
+      await page.waitForTimeout(200);
+      sel = await page.evaluate(() => window.__pp.ed.sel);
+      if (sel && sel.kind === "part") break;
+    }
+    if (!sel || sel.kind !== "part") throw new Error(`nothing picked (${JSON.stringify(sel)})`);
+    return sel.island;
   });
   await step("two variations made at once, each its own card", async () => {
     await page.fill("#as", "ema_page");
@@ -220,7 +321,7 @@ try {
     const r = book().ema_page_test;
     if (!r) throw new Error("not in presets.json");
     if (r.from !== "ema") throw new Error(`from ${r.from}`);
-    if (!r.decals || r.art.text !== "奉納テスト" || r.back.wish !== "ゆるさない") throw new Error(JSON.stringify(r));
+    if (!r.decals || !r.sheets || !r.smudges || r.art.text !== "奉納テスト" || r.back.wish !== "ゆるさない") throw new Error(JSON.stringify(r));
     if ("motif" in r.art || "wear" in r) throw new Error(`more than what differs: ${JSON.stringify(r)}`);
     if (!fs.readdirSync(path.join(OUT, "_history")).length) throw new Error("no copy of presets.json kept before it");
     return JSON.stringify(r).slice(0, 120);
@@ -244,4 +345,4 @@ if (fails.length) {
   process.exit(1);
 }
 fs.rmSync(HOME, { recursive: true, force: true });
-console.log(`PROPPAGE ok (the page: cards, a form, Blender's make and its log, a picture placed by a click, its own pictures swapped, a smudge and a flourish, 3D, variations, a recipe saved and deleted; ${secs}s)`);
+console.log(`PROPPAGE ok (the page: cards, a form, Blender's make and its log; the picture editor: the cuts, pictures dragged onto a part, onto its own picture and over the whole texture, handles, undo, a smudge, a flourish, made as the canvas showed, the .ora template; 3D, variations, a recipe saved and deleted; ${secs}s)`);

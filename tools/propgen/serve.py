@@ -341,17 +341,57 @@ def to_library(body):
 
 
 def upload(body):
-    """A picture from the page (a data URL) into the pictures folder: its path as a recipe names it."""
+    """A picture from the page (a data URL) into the pictures folder: its path as a recipe names it. A Krita .ora (the
+    picture editor's template painted over) gives its Paint layer, or the one layer that isn't the Guide or the Base,
+    or else its merged picture. A name that's taken by another picture gets _2, _3... (the same picture again is kept
+    once)."""
     nm = re.sub(r"[^A-Za-z0-9_\-]+", "_", Path(str(body.get("name") or "picture")).stem)[:60] or "picture"
     data = str(body.get("data") or "")
-    m = re.match(r"^data:image/(png|jpeg|jpg);base64,(.*)$", data, re.S)
-    if not m:
-        raise ValueError("a PNG or a JPEG")
-    ext = ".png" if m.group(1) == "png" else ".jpg"
+    note = None
+    if str(body.get("name") or "").lower().endswith(".ora"):
+        m = re.match(r"^data:[^;,]*;base64,(.*)$", data, re.S)
+        if not m:
+            raise ValueError("a Krita .ora")
+        raw, note = _ora_paint(base64.b64decode(m.group(1)))
+        ext = ".png"
+    else:
+        m = re.match(r"^data:image/(png|jpeg|jpg);base64,(.*)$", data, re.S)
+        if not m:
+            raise ValueError("a PNG or a JPEG")
+        ext = ".png" if m.group(1) == "png" else ".jpg"
+        raw = base64.b64decode(m.group(2))
     IMAGES.mkdir(parents=True, exist_ok=True)
     f = IMAGES / (nm + ext)
-    f.write_bytes(base64.b64decode(m.group(2)))
-    return {"path": _rel(f), "url": f"/images/{f.name}", "name": f.name}
+    k = 2
+    while f.exists() and f.read_bytes() != raw:
+        f = IMAGES / f"{nm}_{k}{ext}"
+        k += 1
+    f.write_bytes(raw)
+    out = {"path": _rel(f), "url": f"/images/{f.name}", "name": f.name}
+    if note:
+        out["note"] = note
+    return out
+
+
+def _ora_paint(raw):
+    """The painting in an OpenRaster file (a zip: stack.xml names its layers, each a PNG): the layer called Paint, else
+    the one layer that isn't Guide or Base, else the merged picture. (png bytes, what was taken)."""
+    import io
+    import zipfile
+    from xml.etree import ElementTree
+    try:
+        z = zipfile.ZipFile(io.BytesIO(raw))
+        stack = ElementTree.fromstring(z.read("stack.xml"))
+    except (zipfile.BadZipFile, KeyError, ElementTree.ParseError) as e:
+        raise ValueError(f"not an .ora Krita can save: {e}")
+    layers = [(ly.get("name") or "", ly.get("src") or "") for ly in stack.iter("layer")]
+    pick = next((s for n, s in layers if n.strip().lower() == "paint"), None)
+    rest = [s for n, s in layers if n.strip().lower() not in ("guide", "base", "paint")]
+    if pick is None and len(rest) == 1:
+        pick = rest[0]
+    if pick is not None:
+        return z.read(pick), f"the .ora's {next(n for n, s in layers if s == pick)} layer"
+    return z.read("mergedimage.png"), "the .ora's merged picture (no layer called Paint)"
 
 
 def _rel(f):

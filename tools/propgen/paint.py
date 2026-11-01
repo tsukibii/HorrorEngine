@@ -375,24 +375,33 @@ class Frame:
         self.lay_island(cov, color=col.astype(np.float32), rough=smp["rough"], metal=smp["metal"], alpha=alpha,
                         normal=n.astype(np.float32))
 
-    def image(self, path_or_array, x=0.0, y=0.0, w=None, h=None, clip=None, relief=False, tile=None, seam=True, **props):
+    def image(self, path_or_array, x=0.0, y=0.0, w=None, h=None, clip=None, relief=False, tile=None, seam=True, rot=0.0, **props):
         """A picture (an RGBA array 0-1, rows top first, or a PNG path) laid over the island's rect (x, y, w, h mm);
         `clip` (x0, y0, x1, y1 mm) keeps it inside a box. `relief`: only its shape pressed in or raised (the props'
         height, no colour), where it's opaque, or where it's dark if it has no transparency. `tile` (tw, th mm):
-        repeated from (x, y), a tile that size, over the clip box (or the island). On a band that goes round, what
-        crosses its seam carries on from the other side."""
+        repeated from (x, y), a tile that size, over the clip box (or the island). `rot`: turned that many degrees
+        anticlockwise about its middle (not a tile). On a band that goes round, what crosses its seam carries on from
+        the other side."""
         img = read_image(path_or_array) if isinstance(path_or_array, str) else np.asarray(path_or_array, np.float32)
         w = self.W if w is None else w
         h = self.H if h is None else h
         X, Y = self.grid()
         ih, iw = img.shape[:2]
+        rot = 0.0 if tile else float(rot or 0.0) % 360.0
         if tile:
             u, v = np.mod((X - x) / tile[0], 1.0), 1 - np.mod((Y - y) / tile[1], 1.0)
             inside = np.ones(X.shape, np.float32)
             fx, fy = np.mod(u * iw - 0.5, iw), np.mod(v * ih - 0.5, ih)
         else:
-            u = (X - x) / w
-            v = 1 - (Y - y) / h
+            if rot:
+                # each pixel of the island in the picture's own frame: turned back about its middle
+                a = math.radians(rot)
+                dx, dy = X - (x + w / 2), Y - (y + h / 2)
+                u = (dx * math.cos(a) + dy * math.sin(a)) / w + 0.5
+                v = 0.5 - (-dx * math.sin(a) + dy * math.cos(a)) / h
+            else:
+                u = (X - x) / w
+                v = 1 - (Y - y) / h
             inside = ((u >= 0) & (u <= 1) & (v >= 0) & (v <= 1)).astype(np.float32)
             fx = np.clip(u * iw - 0.5, 0, iw - 1)
             fy = np.clip(v * ih - 0.5, 0, ih - 1)
@@ -415,9 +424,13 @@ class Frame:
         else:
             self.lay_island(inside * a, color=px[..., :3], **props)
         if seam and self.wrap and not tile:
-            for k in ((-1,) if x + w > self.W else ()) + ((1,) if x < 0 else ()):
+            # how far it reaches across, turned: its middle +- half its turned width
+            a = math.radians(rot)
+            ex = (abs(w * math.cos(a)) + abs(h * math.sin(a))) / 2
+            lo, hi = x + w / 2 - ex, x + w / 2 + ex
+            for k in ((-1,) if hi > self.W else ()) + ((1,) if lo < 0 else ()):
                 c = None if clip is None else (clip[0] + k * self.W, clip[1], clip[2] + k * self.W, clip[3])
-                self.image(img, x + k * self.W, y, w, h, clip=c, relief=relief, seam=False, **props)
+                self.image(img, x + k * self.W, y, w, h, clip=c, relief=relief, seam=False, rot=rot, **props)
 
     # -- a prop's own pictures, swappable (docs/PROPGEN.md §15)
     def picture(self, pic, box, rot=0, fit="contain", **defaults):

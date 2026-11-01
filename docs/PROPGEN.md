@@ -451,18 +451,13 @@ Pages). A wrapper over `tools/propgen.py`: what it writes is the same recipe JSO
   metals and poses, and each family's kinds and options, read from the family's own docstring (`"kind": "a" | "b"`),
   so a new family's options show up by themselves. Any setting can be added (+ a setting) or taken out (×); quick adds
   are a liquid, a print and wear. Recipe JSON is the whole recipe as text, editable.
-- **Texture & pictures:**
-  - Each material's texture, with its islands drawn on it, from the last make.
-  - Click on an island to put the picked picture there (a decal), or to move the decal picked in the list. Its width,
-    see-through and roughness are edited in the list.
-  - A PBR set off the shelf per material, with its tile, how much it covers, a tint.
-  - An appliance's logo.
-  - Drop PNGs or JPEGs onto the page (they go to `Content/Studio/Props/images/`).
+- **Texture & pictures** is **the picture editor** (§17, after Figma): the tab takes the whole page, the texture in
+  the middle with its cuts, its parts and pictures as layers on the left, the picked one's settings and the prop in 3D
+  wearing the canvas on the right. Pictures are dragged onto it (a part, one of its own pictures, or the whole
+  texture), moved, sized and turned by their handles. A PBR set off the shelf per material is there too, and each
+  part's size, shape and the picture it wants. Pictures dropped in go to `Content/Studio/Props/images/`.
 - **3D:** the made .glb, as Godot will read it, under a soft studio light and an environment for the metals; its
   sockets as blue markers pointing their way (drag to turn, wheel to zoom, double-click to frame, *turn* to spin).
-- **Each part listed under its texture:** its size in mm and its shape, the picture it wants (twice the pixels the
-  texture holds there), whether it goes round the prop, and *Wrap a picture over it*: your picture over that whole
-  part (a decal with `fit: stretch`; a decal's list switches it between placed, over all of it, its width, its height).
 - **Make** runs `propgen.py make` in the background, one at a time, its log under the form. It makes the recipe as
   the form has it, under the name in *Make as* (your recipe isn't changed by a make). *Variations* makes several at
   once with seeds a step apart, as `<name>_v1`, `_v2`.... *Texture* sets the texture size; *all formats* adds the
@@ -473,8 +468,8 @@ Pages). A wrapper over `tools/propgen.py`: what it writes is the same recipe JSO
   places it (`asset props/<name>`); **Delete** takes a recipe out (not one others start from).
 ### Your own picture wrapped round a prop
 
-Wrap it over a part (the page's *Wrap a picture over it*, or `decals: [{"image": ..., "island": "label", "fit":
-"stretch"}]`). The generator's own work goes on over it: a crush or a dent bends the picture with the metal, and the
+Drag it onto the part in the picture editor (§17), or `decals: [{"image": ..., "island": "label", "fit":
+"stretch"}]`. The generator's own work goes on over it: a crush or a dent bends the picture with the metal, and the
 wear (scratches, dirt in the folds, dust on what faces up), the baked occlusion and the relief are laid on top.
 
 - **Its size:** a material's parts share one texture at one density, so each part holds a set number of pixels. The
@@ -494,11 +489,13 @@ wear (scratches, dirt in the folds, dust on what faces up), the baked occlusion 
 
 - **Checked:** PROPPAGE (`node tools/propgen/pagetest.mjs`): a headless browser on a scratch copy of the recipe book
   and scratch folders (`PROPS_PRESETS`, `PROPS_OUT`, `PROPS_IMAGES`), so yours are never touched. It opens the ema and
-  changes its words, makes it (its log, its picture on its card, its islands), drops a picture and clicks it onto the
-  plaque's front, makes it again (the decal in what was made, the texture changed), turns it in 3D (its sockets),
-  reads the size its front wants and wraps the picture over all of it, picks a PBR set, makes two variations, saves a
-  recipe `from ema` with only what differs, and deletes it. About two
-  minutes here; Blender makes four props.
+  changes its words, makes it (its log, its picture on its card, the paint under your pictures beside its maps), then
+  in the picture editor: its cuts and parts as layers and the prop in 3D wearing the canvas; a file dropped from the
+  desktop onto the front, its shape, filling it; a logo dropped onto the back, placed where it lands; onto the front's
+  motif, taking its place; the logo sized, turned and moved by its handles and Ctrl+Z; a picture the texture's shape
+  over all of it in its layout; a smudge; the logo in each corner; made again, the made texture where the canvas said;
+  3D with its sockets; a PBR set; the .ora template out and back in; a part picked in 3D; two variations; a recipe
+  saved `from ema` with only what differs, and deleted. A few minutes here; Blender makes four props.
 
 ## 14. Enhancers in Godot: what glows, burns, smokes and steams
 
@@ -605,11 +602,10 @@ and right edges meet at the back.
 **Templates.** Each own picture's *template* on the page downloads the generator's own drawing there, cropped from the
 made texture at the size it wants: paint over it (Krita, anything) and swap it back in.
 
-**On the page:** Its own pictures (a row each: what's there now, the size it wants, the generator's own / nothing there
-/ one of your pictures, fit, scale, tint, template; its box dashed on the texture), Pictures on it (decals and
-flourishes: repeat, every other mirrored, corners, mirrored, each with its size), Smudges (the shelf: click one to add
-it on the biggest part; pick one in the list and click the texture to move it there; or the picked picture as a
-smudge). Checked by PROPPAGE: an own picture swapped, a smudge added and moved, a flourish in the corners, made.
+**On the page:** the picture editor (§17): its own pictures are layers under each part (a crop of each, or yours) and
+dashed boxes on the canvas, a picture dropped on one takes its place; its settings swap it, turn it off, fit, scale,
+move and tint it and give its template. Pictures and flourishes, smudges and their settings likewise. Checked by
+PROPPAGE.
 
 ## 16. Books: covers of your own, sized for desks and shelves
 
@@ -657,3 +653,82 @@ goes on as a can takes your logo.
   on and in the furniture (SCENE_BUILDER §10).
 
 Checked by PROPGEN (`book_hardcover`, `diary_open`, `books_cubby`).
+
+## 17. The picture editor: pictures on a prop, Figma's way
+
+The user (2026-11-01, late night): "the prop editor is great but a bit hard to use when wanting custom images etc,
+could you make the editor more like figma where maybe there is a panel that shows what the image your using its and
+where the cuts are and then I can either just drag one large image or small ones to fit in the cut areas". The page's
+Texture & pictures tab is that editor (`tools/propgen/page/picedit.js`; the 3D view's `setMaps` and `pick` in
+`view3d.js`).
+
+- **The canvas** (the middle): the texture of the material picked in its bar (a prop with two, the ema's wood and
+  cord, has a button each) at the texture's own pixels. **Design** draws the generator's own paint as the last make
+  left it, under your pictures (`<name>_<material>_paint.png`, written by every make before your pictures and the
+  wear), and your pictures over it live, as Make will lay them; **As made** shows the made texture, the wear and the
+  baked shading on it. **The cuts** come from the made .glb's UVs: the edges only one triangle has (where the model's
+  surface is cut apart) in yellow, and what's outside every triangle dimmed, so a can's lid shows as the disc it is in
+  its square. Each part's name and size on it (Names), the prop's own pictures as dashed boxes (green once yours, red
+  turned off). The wheel zooms where the pointer is; dragging the background (or a middle or right drag, or Space)
+  pans; Fit (Shift+1) frames the parts; a double-click zooms to what's under it. The foot says which part the pointer
+  is over and where on it, in mm.
+- **Dragging pictures in**, from Your pictures on the left or straight from the desktop (uploaded on the way: PNG,
+  JPEG, or a Krita .ora):
+  - onto a **part**: a picture with a transparent ground (a logo, a sticker) is placed where it lands, half the
+    part's size; any other fills the part, stretched to it when it's the part's shape within a tenth, else covering
+    it with its own shape, the rest cut off;
+  - onto one of the prop's **own pictures** (a dashed box): it takes that one's place (`pictures`). A picture the
+    part's shape dropped on a box that's all of the part (the can's bubbles) or isn't the box's shape fills the part
+    instead; Alt always drops on the part;
+  - **over the whole texture**: a picture the texture's shape (square and the texture's size, twice or four times; or
+    opaque and three quarters of it or more: the layout's template painted over), or one dropped off the parts, or
+    with Shift: a sheet (below), each part its own piece;
+  - a smudge from the shelf: a smudge where it lands.
+
+  While a picture is dragged over the canvas its target lights up and a label says what the drop will do. Ctrl+Z
+  takes any of it back.
+- **Handles**, Figma's: the picked picture's box, its corners sizing it with its shape kept (Shift: free; Alt: about
+  its middle), its sides stretching it, the round handle over it turning it (Shift: 15° steps). Dragging it moves it,
+  snapping to the part's middle lines (a magenta guide); moved onto another part of the same texture, it goes there.
+  A swapped own picture moves (`dx`, `dy`) and sizes (`scale`) the same way; a sheet moves and sizes over the
+  texture. The arrows nudge 1 mm (Shift: 10), Delete takes it out (an own picture: back to the generator's own, or
+  nothing there), Ctrl+D duplicates, Ctrl+] and Ctrl+[ draw it over or under the next one, Escape lets go.
+- **Layers** (left): over the whole texture (sheets, smudges scattered at random), then the parts, each with its own
+  pictures (a crop of each, or yours), your pictures and smudges on it; a click picks one, a double-click zooms to it.
+- **Settings** (right) of the picked one: a picture's part, its fit (where you put it, filling the part stretched or
+  keeping its shape, inside it keeping its shape, across its width, up its height), its place and size in mm, turn,
+  opacity, roughness, metal, how raised, tint, mirrored, and as a flourish repeated or in the corners; an own
+  picture's fit, scale, move, quarter turns, tint, "every <name> at once"; a sheet's place on the texture (%),
+  opacity, roughness, tint and its layout; a smudge's; a part's size, the picture it wants, *Fill it with* and its
+  template. With nothing picked: how to use it, the material's PBR set and the templates. Every picture shows the
+  size it wants (§15).
+- **On the prop** (right, under the settings): the made .glb wearing the canvas as it's edited; a click on it picks
+  the part there.
+- **Templates**: *Template (.ora)* is the whole layout for Krita, as the UV templates are (ASSETS §7): the prop's
+  paint on Base, the cuts, its own pictures' boxes and the parts' names on Guide (locked), an empty Paint layer.
+  Saved and dropped back onto the canvas, its Paint layer becomes a picture over the whole texture (the server takes
+  the layer called Paint, or the one layer that isn't Guide or Base, or else the merged picture). *Template (.png)*
+  is the same flattened, for any other painter. A part's template is its piece with its cuts at the size it wants;
+  an own picture's, the generator's drawing there.
+- **A name taken**: a picture dropped in under a name another picture has gets `_2`, `_3`... (the same picture again
+  is kept once).
+
+### The recipe's words for it
+
+- `sheets`: [{image, mat (the material; the only one if left out), at: [x0, y0, x1, y1] (where the picture lies on the
+  texture, fractions from its top left; all of it if left out), layout: {part: [u0, v0, u1, v1]} (each part's place on
+  the texture when it was laid, as meta.json's rects), alpha, rough, metal, height (the paint's own unless given),
+  tint}]: one picture over a material's whole texture in its layout, each part its own piece. A later make that moves
+  the parts (the recipe's sizes changed) keeps each part's piece; a part that isn't in the layout takes none (the
+  editor says which; *Lay it in the layout as it is now* takes the layout again). Laid over the prop's own paint and
+  its PBR set, under the decals, the smudges and the wear.
+- Decals: `rot` (degrees anticlockwise about a placed picture's middle), and two more `fit`s: `cover` (the part filled
+  with the picture's own shape, cut to it) and `contain` (all of it inside the part, its own shape), `x` and `y`
+  moving them.
+- Beside the maps, every make writes `<name>_<material>_paint.png`, the paint under your pictures (its own, its PBR
+  set, its own pictures as the recipe swaps them), and where it has own pictures `_ground.png`, the same with them
+  left out, so a swap shows at once: meta.json's `design`. They aren't shipped (the glb carries the made maps).
+
+Checked by PROPGEN (a hardcover made with a sheet in an older layout and a bar turned 90 degrees: the front takes the
+yellow quarter, the spine the red, the back none of it, the bar upright; the paint and its ground apart only in its
+pictures' boxes) and PROPPAGE (§13).
