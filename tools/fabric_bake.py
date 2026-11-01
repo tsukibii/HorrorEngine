@@ -96,6 +96,8 @@ def cmd_check(_):
             reps = [(p["w"] * (4 if p["stitch"] == "rib" else 1), "u"), (p["h"], "v")]
         elif fam == "pile" and p["kind"] == "corduroy":
             reps = [(p["wale"], "u")]
+        elif fam == "net":                                           # whole cells (a mesh's rows staggered: two to a repeat down)
+            reps = [(p["cell"], "u"), (p["cell"] * (2 if p["kind"] == "mesh" else 1), "v")]
         elif fam == "felt" and p["kind"] == "flannel":
             reps = [(p["pitch"] * 4, "u"), (p["pitch"] * 4, "v")]
         fits = all(abs(P[0 if ax == "u" else 1] / r - round(P[0 if ax == "u" else 1] / r)) < 1e-6 for r, ax in reps)

@@ -77,7 +77,7 @@ export function* making(B, name, design, opts = {}) {
   const at = hung ? hung.P : null, outer = [at ? { P: at, T: G.outer.T } : G.outer];
   // a bottom's legs are panels from its waist down; a coverall's from a waist seam
   const legsTo = p.legs ? (p.waist ? height(F, p.waist.at) + 0.05 * s : F.crotchY + 0.2 * s) : -1;
-  const part = (pname, col, m, fabric, surface, mAt = null) => parts.push({ name: pname, color: col, fabric, surface, ...unwrap(F, m.P, m.T, m.S, { rings: G.rings, legsTo, at: mAt, shoe: p.kind === "shoe", top: p.kind === "shell" && p.neck !== false, loose: (p.ease?.leg ?? p.ease?.body ?? 0.008) + (p.ease?.flare ?? 0) * 0.5 + (p.legs?.straight ? 0.05 * p.legs.straight : 0) }) });
+  const part = (pname, col, m, fabric, surface, mAt = null) => parts.push({ name: pname, color: col, fabric, surface, ...unwrap(F, m.P, m.T, m.S, { rings: G.rings, legsTo, at: mAt, shoe: p.kind === "shoe", top: p.kind === "shell" && p.neck !== false, stack: p.stack, loose: (p.ease?.leg ?? p.ease?.body ?? 0.008) + (p.ease?.flare ?? 0) * 0.5 + (p.legs?.straight ? 0.05 * p.legs.straight : 0) }) });
   const thick = (P, T, Pat, ...a) => [thicken(P, T, ...a), Pat ? thicken(Pat, T, ...a).P : null];   // the cut's and the hanging cloth's (the same points)
   part(name, color, ...insert(thick(G.outer.P, G.outer.T, at, th, design.rim ?? 0.7, design.edge ?? 0.82), true));
   if (design.sole) {                                                 // a shoe's soles, under the floor
@@ -90,7 +90,7 @@ export function* making(B, name, design, opts = {}) {
     const L = lifted(cut, G.outer, D.value, D.lift, at); if (!L) continue;
     if (d.kind !== "collar" && d.kind !== "neckband") outer.push(L.at ? { P: L.at, T: L.T } : L);   // what goes over it eases over pockets and belts, not the roll of a collar
     const dt = (d.thickness ?? design.thickness ?? 0.002) * s * 0.8;
-    part(`${name}_${d.kind}`, d.color || (d.trim ? trim : color), ...insert(thick(L.P, L.T, L.at, dt, d.rim ?? 0.45, d.edge ?? 0.62), !d.trim && !d.color, d.surface));
+    part(`${name}_${d.name || d.kind}`, d.color || (d.trim ? trim : color), ...insert(thick(L.P, L.T, L.at, dt, d.rim ?? 0.45, d.edge ?? 0.62), !d.trim && !d.color, d.surface));   // (`name`: a part the look can colour on its own, a sneaker's tongue)
   }
   if (p.bra?.halter) {                                               // a halter's strings as tubes, pulled taut off the body (tailor/cords.js)
     const C = halterCords(F, B, at || G.outer.P, { ...p.bra, under: bust(F).under + (p.bra.drop ?? 0) * s - (p.bra.band ?? 0.01) * s * 0.4 });

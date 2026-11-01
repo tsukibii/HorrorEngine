@@ -216,14 +216,9 @@
       ]
     },
     "sneakers": {
-      "label": "Sneakers", "slot": "feet", "color": "#e8e6e0", "surface": "canvas", "thickness": 0.0025,
+      "label": "Sneakers", "slot": "feet", "color": "#e8e6e0", "surface": "canvas", "thickness": 0.0025, "sole": {"thick": 0.02, "rise": 0.016, "overhang": 0.006, "spring": 0.014, "color": "#f4f2ec", "surface": "rubber"},
       "piece": {"kind": "shoe", "neck": false, "legs": {"to": "floor"}, "shoe": {"heel": 0.075, "vamp": 0.058, "from": 0.6}, "ease": {"body": 0.0045, "leg": 0.0045, "crotch": 0}, "tension": 60},
-      "sole": {"thick": 0.02, "rise": 0.016, "overhang": 0.006, "spring": 0.014, "color": "#f4f2ec", "surface": "rubber"},
-      "details": [
-        {"kind": "foot", "from": 0.45, "to": 0.88, "width": 0.05, "top": true, "lift": 0.003, "color": "#d8d6d0"},
-        {"kind": "foot", "from": 0.84, "to": 1.3, "lift": 0.0015, "color": "#f4f2ec", "surface": "rubber"},
-        {"kind": "foot", "from": -0.3, "to": 0.13, "above": 0.025, "lift": 0.002, "color": "#b03030", "surface": "leather"}
-      ]
+      "details": [{"kind": "foot", "from": 0.45, "to": 0.88, "width": 0.05, "top": true, "lift": 0.003, "color": "#d8d6d0", "name": "tongue"}, {"kind": "foot", "from": 0.84, "to": 1.3, "lift": 0.0015, "color": "#f4f2ec", "surface": "rubber", "name": "toe"}, {"kind": "foot", "from": -0.3, "to": 0.13, "above": 0.025, "lift": 0.002, "color": "#b03030", "surface": "leather", "name": "heel"}, {"kind": "foot", "name": "rim", "from": -0.35, "to": 1.35, "above": 0.017, "below": 0.026, "lift": 0.0016, "color": "#d8d6d0", "surface": "rubber"}]
     },
     "work-boots": {
       "label": "Work boots", "slot": "feet", "color": "#5a3e26", "surface": "leather", "thickness": 0.003,
@@ -252,25 +247,19 @@
       "details": []
     },
     "ankle-socks": {
-      "label": "Ankle socks", "slot": "feet", "color": "#f0eee8", "surface": "cotton", "thickness": 0.0012, "rim": 0.85, "edge": 0.9,
+      "label": "Ankle socks", "slot": "feet", "color": "#f0eee8", "surface": "rib", "thickness": 0.0028, "rim": 0.8, "edge": 0.88, "pbr": "pbr/Procedural/fabric_rib", "crease": {"crinkle": 0.18, "fold": 0.7, "drape": 0, "seam": 0, "stitch": 0.4},
       "piece": {"kind": "shell", "neck": false, "waist": {"at": "ankle+0.035", "drop": 0, "rise": 0}, "legs": {"to": "floor"}, "ease": {"body": 0.0015, "leg": 0.0015, "crotch": 0}, "tension": 10},
-      "details": [
-        {"kind": "band", "follow": "waist", "width": 0.025, "lift": 0.0012, "surface": "rib"}
-      ]
+      "details": [{"kind": "band", "follow": "waist", "width": 0.025, "lift": 0.0012, "surface": "rib"}]
     },
     "crew-socks": {
-      "label": "Crew socks", "slot": "feet", "color": "#2a2c30", "surface": "cotton", "thickness": 0.0012, "rim": 0.85, "edge": 0.9,
+      "label": "Crew socks", "slot": "feet", "color": "#2a2c30", "surface": "rib", "thickness": 0.0028, "rim": 0.8, "edge": 0.88, "pbr": "pbr/Procedural/fabric_rib", "crease": {"crinkle": 0.18, "fold": 0.7, "drape": 0, "seam": 0, "stitch": 0.4},
       "piece": {"kind": "shell", "neck": false, "waist": {"at": "ankle+0.13", "drop": 0, "rise": 0}, "legs": {"to": "floor"}, "ease": {"body": 0.0015, "leg": 0.0015, "crotch": 0}, "tension": 10},
-      "details": [
-        {"kind": "band", "follow": "waist", "width": 0.025, "lift": 0.0012, "surface": "rib"}
-      ]
+      "details": [{"kind": "band", "follow": "waist", "width": 0.025, "lift": 0.0012, "surface": "rib"}]
     },
     "knee-socks": {
-      "label": "Knee socks", "slot": "feet", "color": "#1c1e26", "surface": "rib", "thickness": 0.0012, "rim": 0.85, "edge": 0.9,
+      "label": "Knee socks", "slot": "feet", "color": "#1c1e26", "surface": "rib", "thickness": 0.0028, "rim": 0.8, "edge": 0.88, "pbr": "pbr/Procedural/fabric_rib", "crease": {"crinkle": 0.18, "fold": 0.7, "drape": 0, "seam": 0, "stitch": 0.4},
       "piece": {"kind": "shell", "neck": false, "waist": {"at": "knee-0.03", "drop": 0, "rise": 0}, "legs": {"to": "floor"}, "ease": {"body": 0.0015, "leg": 0.0015, "crotch": 0}, "tension": 10},
-      "details": [
-        {"kind": "band", "follow": "waist", "width": 0.025, "lift": 0.0012, "surface": "rib"}
-      ]
+      "details": [{"kind": "band", "follow": "waist", "width": 0.025, "lift": 0.0012, "surface": "rib"}]
     },
     "triangle-bralette": {
       "label": "Triangle bralette", "slot": "under", "color": "#16161a", "surface": "silk", "thickness": 0.0018, "rim": 0.85, "edge": 0.9, "trimSurface": "satin",
@@ -598,11 +587,9 @@
       ]
     },
     "over-knee-socks": {
-      "label": "Over-the-knee socks", "slot": "feet", "color": "#141416", "surface": "rib", "thickness": 0.0012, "rim": 0.85, "edge": 0.9,
+      "label": "Over-the-knee socks", "slot": "feet", "color": "#141416", "surface": "rib", "thickness": 0.0028, "rim": 0.8, "edge": 0.88, "pbr": "pbr/Procedural/fabric_rib", "crease": {"crinkle": 0.18, "fold": 0.7, "drape": 0, "seam": 0, "stitch": 0.4},
       "piece": {"kind": "shell", "neck": false, "waist": {"at": "knee+0.13", "drop": 0, "rise": 0}, "legs": {"to": "floor"}, "ease": {"body": 0.0015, "leg": 0.0015, "crotch": 0}, "tension": 10},
-      "details": [
-        {"kind": "band", "follow": "waist", "width": 0.03, "lift": 0.0012, "surface": "rib"}
-      ]
+      "details": [{"kind": "band", "follow": "waist", "width": 0.03, "lift": 0.0012, "surface": "rib"}]
     },
     "combat-boots": {
       "label": "Combat boots", "slot": "feet", "color": "#161412", "surface": "leather", "thickness": 0.003, "sole": {"thick": 0.034, "rise": 0.018, "overhang": 0.009, "spring": 0.01, "color": "#141210", "surface": "rubber"},
@@ -787,6 +774,71 @@
       "label": "String bikini bottom", "slot": "under", "color": "#c8304a", "surface": "spandex", "thickness": 0.0012, "rim": 0.85, "edge": 0.9,
       "piece": {"kind": "shell", "neck": false, "waist": {"at": "crotch+0.1", "drop": 0.015, "rise": 0.02, "hip": 0.07}, "brief": {"side": 0.17, "gusset": 0.03, "curve": 0.6, "string": 0.008, "back": {"gusset": 0.03, "curve": 0.9, "drop": 0}}, "ease": {"body": 0.0015}, "tension": 8, "fine": 2},
       "details": [{"kind": "trim", "width": 0.004, "lift": 0.0005}]
+    },
+    "no-show-socks": {
+      "label": "No-show socks", "slot": "feet", "color": "#e8e4dc", "surface": "jersey", "pbr": "pbr/Procedural/fabric_jersey", "thickness": 0.0028, "rim": 0.8, "edge": 0.88, "crease": {"crinkle": 0.18, "fold": 0.7, "drape": 0, "seam": 0, "stitch": 0.4},
+      "piece": {"kind": "shell", "neck": false, "waist": {"at": "ankle-0.012", "drop": 0.025, "rise": 0.012}, "legs": {"to": "floor"}, "ease": {"body": 0.0015, "leg": 0.0015, "crotch": 0}, "tension": 10},
+      "details": [{"kind": "band", "follow": "waist", "width": 0.008, "lift": 0.0014, "surface": "rib"}]
+    },
+    "quarter-socks": {
+      "label": "Quarter socks", "slot": "feet", "color": "#f0eee8", "surface": "rib", "pbr": "pbr/Procedural/fabric_rib", "thickness": 0.0028, "rim": 0.8, "edge": 0.88, "crease": {"crinkle": 0.18, "fold": 0.7, "drape": 0, "seam": 0, "stitch": 0.4},
+      "piece": {"kind": "shell", "neck": false, "waist": {"at": "ankle+0.07", "drop": 0, "rise": 0}, "legs": {"to": "floor"}, "ease": {"body": 0.0015, "leg": 0.0015, "crotch": 0}, "tension": 10},
+      "details": [{"kind": "band", "follow": "waist", "width": 0.025, "lift": 0.0014, "surface": "rib"}]
+    },
+    "mid-calf-socks": {
+      "label": "Mid-calf socks", "slot": "feet", "color": "#3a3d44", "surface": "rib", "pbr": "pbr/Procedural/fabric_rib", "thickness": 0.0028, "rim": 0.8, "edge": 0.88, "crease": {"crinkle": 0.18, "fold": 0.7, "drape": 0, "seam": 0, "stitch": 0.4},
+      "piece": {"kind": "shell", "neck": false, "waist": {"at": "ankle+0.21", "drop": 0, "rise": 0}, "legs": {"to": "floor"}, "ease": {"body": 0.0015, "leg": 0.0015, "crotch": 0}, "tension": 10},
+      "details": [{"kind": "band", "follow": "waist", "width": 0.025, "lift": 0.0014, "surface": "rib"}]
+    },
+    "slouch-socks": {
+      "label": "Slouch socks (bunched)", "slot": "feet", "color": "#d9d2c6", "surface": "knit", "pbr": "pbr/Procedural/fabric_sweater", "thickness": 0.0028, "rim": 0.8, "edge": 0.88, "crease": {"crinkle": 0.3, "fold": 1.6, "drape": 0, "seam": 0, "stitch": 0.4},
+      "piece": {"kind": "shell", "neck": false, "waist": {"at": "ankle+0.22", "drop": 0, "rise": 0}, "legs": {"to": "floor"}, "ease": {"body": 0.003, "leg": 0.003, "crotch": 0}, "tension": 10, "stack": 0.17},
+      "details": [{"kind": "band", "follow": "waist", "width": 0.03, "lift": 0.0014, "surface": "rib"}]
+    },
+    "rain-jacket": {
+      "label": "Rain jacket (hooded, zipped)", "slot": "jacket", "color": "#e8c21a", "surface": "pvc", "trim": "#2a2a2c", "thickness": 0.0022, "crease": {"crinkle": 0.5, "fold": 1.0, "drape": 0.2, "seam": 0.8, "stitch": 0.6},
+      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.018, "width": 0.08}, "open": {"from": "crotch+0.04", "gap": 0.002, "top": 0.02}, "sleeve": "wrist", "hem": {"at": "crotch+0.08"}, "ease": {"body": 0.013, "sleeve": 0.013, "shoulder": 0.006}, "tension": 34, "drape": {"density": 0.2, "bend": 2e-05, "slack": 0.03}},
+      "details": [{"kind": "collar", "width": 0.2, "tips": 0.0, "lift": 0.009, "roll": 0.0, "thickness": 0.006, "front": false}, {"kind": "collar", "width": 0.04, "tips": 0.0, "lift": 0.012, "roll": 0.014, "thickness": 0.006, "front": false}, {"kind": "edgeband", "width": 0.014, "lift": 0.0025, "trim": true}, {"kind": "pocket", "at": "crotch+0.14", "x": 0.11, "w": 0.15, "h": 0.018, "r": 0.004, "lift": 0.003}, {"kind": "pocket", "at": "crotch+0.14", "x": -0.11, "w": 0.15, "h": 0.018, "r": 0.004, "lift": 0.003}, {"kind": "band", "from": "crotch+0.105", "to": "crotch+0.08", "lift": 0.002}, {"kind": "cuff", "length": 0.03, "lift": 0.0015}]
+    },
+    "rain-boots": {
+      "label": "Rain boots", "slot": "feet", "color": "#e8c21a", "surface": "rubber", "thickness": 0.003, "sole": {"thick": 0.03, "rise": 0.016, "overhang": 0.008, "spring": 0.01, "heel": 0.012, "color": "#3a3428", "surface": "rubber"},
+      "piece": {"kind": "shell", "neck": false, "legs": {"to": "floor"}, "shoe": {"heel": 0.33, "vamp": 0.31, "from": 0.6}, "ease": {"body": 0.012, "leg": 0.014, "crotch": 0}, "tension": 70},
+      "details": [{"kind": "foot", "from": 0.78, "to": 1.3, "lift": 0.002}, {"kind": "foot", "from": -0.3, "to": 0.16, "lift": 0.002}, {"kind": "band", "from": "floor+0.395", "to": "floor+0.37", "lift": 0.003}]
+    },
+    "corset": {
+      "label": "Corset (overbust, laced)", "slot": "jacket", "color": "#141416", "surface": "satin", "trim": "#0c0c0e", "thickness": 0.003, "crease": {"crinkle": 0.05, "fold": 0.2, "drape": 0, "seam": 1.0, "stitch": 0.8},
+      "piece": {"kind": "shell", "neck": false, "waist": {"at": "bust+0.025", "drop": 0.035, "rise": -0.01}, "hem": {"at": "crotch+0.15", "front": 0.025}, "ease": {"body": 0.003}, "tension": 20},
+      "details": [{"kind": "placket", "width": 0.014, "from": "bust+0.03", "to": "crotch+0.12", "lift": 0.0025, "trim": true}, {"kind": "placket", "x": 0.055, "width": 0.006, "from": "bust-0.02", "to": "crotch+0.15", "lift": 0.0018, "trim": true}, {"kind": "placket", "x": -0.055, "width": 0.006, "from": "bust-0.02", "to": "crotch+0.15", "lift": 0.0018, "trim": true}, {"kind": "placket", "x": 0.11, "width": 0.006, "from": "bust-0.03", "to": "crotch+0.15", "lift": 0.0018, "trim": true}, {"kind": "placket", "x": -0.11, "width": 0.006, "from": "bust-0.03", "to": "crotch+0.15", "lift": 0.0018, "trim": true}, {"kind": "trim", "width": 0.006, "lift": 0.0015}]
+    },
+    "layered-maxi-skirt": {
+      "label": "Layered maxi skirt (long)", "slot": "bottom", "color": "#121214", "surface": "crepe", "thickness": 0.0016,
+      "piece": {"kind": "skirt", "waist": {"at": "waist-0.02"}, "length": "ankle+0.07", "ease": 0.006, "flare": 0.2, "drape": {"density": 0.2, "bend": 8e-06, "memory": 0.3}},
+      "details": [{"kind": "band", "from": "waist-0.02", "to": "waist-0.06", "lift": 0.002}]
+    },
+    "tier-overskirt": {
+      "label": "Tiered overskirt (lace, knee)", "slot": "bottom", "color": "#0e0e10", "surface": "lace", "thickness": 0.0012,
+      "piece": {"kind": "skirt", "waist": {"at": "waist-0.03"}, "length": "knee+0.03", "ease": 0.012, "flare": 0.32, "drape": {"density": 0.12, "bend": 5e-06, "memory": 0.3}},
+      "details": []
+    },
+    "mesh-top": {
+      "label": "Mesh top (long sleeves)", "slot": "top", "color": "#141416", "thickness": 0.0008, "surface": "flat", "pbr": "pbr/Procedural/fabric_mesh",
+      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.02, "width": 0.075}, "sleeve": "wrist", "hem": {"at": "crotch+0.1"}, "ease": {"body": 0.004, "sleeve": 0.005}, "tension": 12, "drape": {"density": 0.08, "bend": 3e-06}},
+      "details": [{"kind": "neckband", "width": 0.016}, {"kind": "cuff", "length": 0.05, "lift": 0.001}, {"kind": "band", "from": "crotch+0.13", "to": "crotch+0.095", "lift": 0.0008}]
+    },
+    "spiderweb-tights": {
+      "label": "Spider web tights", "slot": "legs", "color": "#0e0e10", "surface": "flat", "thickness": 0.0006, "rim": 0.85, "edge": 0.9, "pbr": "pbr/Procedural/fabric_spiderweb",
+      "piece": {"kind": "shell", "neck": false, "waist": {"at": "crotch+0.17", "drop": 0.01, "rise": 0.015}, "legs": {"to": "floor"}, "ease": {"body": 0.0012, "leg": 0.001, "crotch": 0.004}, "tension": 6},
+      "details": [{"kind": "band", "follow": "waist", "width": 0.025, "lift": 0.0008}]
+    },
+    "platform-boots": {
+      "label": "Platform boots (lace-up)", "slot": "feet", "color": "#101012", "surface": "patent", "thickness": 0.003, "sole": {"thick": 0.06, "rise": 0.03, "overhang": 0.012, "spring": 0.01, "color": "#0c0c0e", "surface": "rubber", "heel": 0.03},
+      "piece": {"kind": "shoe", "neck": false, "legs": {"to": "floor"}, "shoe": {"heel": 0.25, "vamp": 0.23, "from": 0.6}, "ease": {"body": 0.006, "leg": 0.006, "crotch": 0}, "tension": 60},
+      "details": [{"kind": "foot", "from": 0.78, "to": 1.3, "lift": 0.002}, {"kind": "foot", "from": 0.42, "to": 0.85, "width": 0.05, "top": true, "lift": 0.003}, {"kind": "foot", "from": -0.3, "to": 0.16, "lift": 0.002}, {"kind": "band", "from": "ankle+0.14", "to": "ankle+0.115", "lift": 0.003}]
+    },
+    "lace-blouse": {
+      "label": "Lace blouse (gothic)", "slot": "top", "color": "#0f0f11", "buttons": "#e8e0d0", "thickness": 0.0014, "surface": "laced",
+      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.01, "width": 0.06, "rise": 0.03}, "sleeve": "wrist", "hem": {"at": "crotch+0.07", "back": 0.015}, "ease": {"body": 0.009, "sleeve": 0.014}, "tension": 12, "drape": {"density": 0.12, "bend": 6e-06, "slack": 0.03}},
+      "details": [{"kind": "edgeband", "width": 0.012, "lift": 0.0015}, {"kind": "buttons", "from": "bust-0.04", "to": "crotch+0.13", "count": 5, "r": 0.005}, {"kind": "cuff", "length": 0.055, "lift": 0.0015, "hold": true}]
     }
   }
 }

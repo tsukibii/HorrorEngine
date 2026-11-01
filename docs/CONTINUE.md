@@ -12,6 +12,14 @@ street builder, its paint and the PBR sets, with `prop-gen-tool` merged in). Rea
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
+## 0. `clothing-refiner` (2026-11-01, night): cozy and gothic (docs/COZY_GOTHIC_PLAN.md, ticked)
+
+Built (TAILOR §1h): socks in every length and heavier, a PVC rain jacket, the sneaker designer, spider web and mesh
+nets baked in Blender, gothic clothes and a Gothic group, horns and headband ears, every accessory placed by sliders
+and PBR on props; bras that stand off the body and fit bigger busts, a halter's strings as cords (§1g). Next: the
+user's look in the Studio (STUDIO wants a local GPU run: the sneaker designer's panel and the props' placement are only
+driven headless by our shots, not by STUDIO's steps yet).
+
 ## 0. `clothing-refiner` (2026-11-01, evening): bikinis and thongs on the hip bone
 
 The user's note on the bikinis: the waistline's `hip` lift, the briefs re-cut so their top edge rises over the hip

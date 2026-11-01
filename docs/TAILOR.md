@@ -218,6 +218,29 @@ The clothes are skinned, never simulated, so the cut keeps to what skinning carr
   the underwear's cuts in spandex; fabric, colour, pattern and prints doing the variety. Not made yet: a shirt dress
   and a one-piece swimsuit (the shell can't cut a dress's or a swimsuit's legs without a new cut).
 
+## 1h. Cozy and gothic (DECISIONS 2026-11-01, night; docs/COZY_GOTHIC_PLAN.md)
+
+- **Socks** in every length (no-show, ankle, quarter, crew, mid-calf, slouch, knee-high, over-knee), heavier: 2.8 mm of
+  rib or sweater knit, a knit's slight creasing, no seams (a tube); the ankle's folds stop at the ankle (never on the
+  foot, where its coordinates stretch) and keep to its front; a piece's `stack` is how far up they run (a slouch sock
+  bunched up the calf).
+- **PVC** (`pvc`, `pvc_clear` in fabric.js, `GLOSSY`): a clear coat over a smooth base, the clear one half see-through;
+  a **rain jacket** (hooded, zipped, hip-length) and rain boots.
+- **The sneaker designer**: a shoe's details may carry a `name` (the sneaker's tongue, toe, heel and its rim stripe:
+  a `foot` detail's `below` keeps it to a band round the foot), each a colour of its own from the garment's `parts`
+  look (and `sole`); the Studio's Fabric panel shows a Sneaker designer for a shoe: a colour each, colourways, Logo on
+  both (a print on each shoe's outside, `leg L`/`leg R` at across 0.07), Add a sticker; up to six prints a garment,
+  each can be Mirrored (`flip`).
+- **Nets made in Blender**: the `net` family in `tools/streetbake/fabrics.py`, `fabric_spiderweb` (a web a cell, spokes
+  meeting the next cell's, rings sagging between them) and `fabric_mesh` (round holes in staggered rows), their holes in
+  the colour's alpha and an `_opacity` map the bake now writes for any finish with holes; spider web tights and a mesh
+  top wear them.
+- **Gothic**: a corset (overbust, its lacing and boning as plackets, snug), a layered maxi skirt and a lace overskirt,
+  a lace blouse, platform boots; the Gothic outfit group.
+- **Props** (accessories.js): every accessory moved and turned by hand (`ox`, `oy`, `oz` mm, `rx`, `ry`, `rz` degrees
+  along and about the face's right, up and forward: Placement), hats, horns and ears made of their colour or a PBR set
+  off the shelf (UVs on all of them); **horns** (devil, ram) and **ears on a headband** (bunny, cat, fox).
+
 ## 2. The designs are data
 
 `Content/Studio/Clothes/designs.json`: each design has a `label`, a `slot` (`under`, `top`, `bottom`, `full`, `legs`, `feet`, `jacket`), a

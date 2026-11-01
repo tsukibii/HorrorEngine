@@ -94,7 +94,7 @@ function spread(P, nbr, seeds) {
  * part: each point's part (tailor/uv.js PARTS); S: the shade (1, less on a hem's last row and its rim: the hems'
  * seeds); src: each point's point before the seams split it (a seam is where one point became two). F: the body's frame.
  */
-export function creaseData(F, P, R, T, part, S, src, shoe = false, loose = 0, top = false) {
+export function creaseData(F, P, R, T, part, S, src, shoe = false, loose = 0, top = false, stack = 0.05) {
   const n = P.length / 3, s = F.s, crz = new Float32Array(n * 4);
   const nbr = Array.from({ length: n }, () => []), count = new Map();
   for (let t = 0; t < T.length; t += 3) for (let k = 0; k < 3; k++) {
@@ -124,7 +124,7 @@ export function creaseData(F, P, R, T, part, S, src, shoe = false, loose = 0, to
     } else if (p === 3 || p === 4) {                                // a leg: behind the knee, the break on the shoe, the crotch's whiskers
       const L = F.legLines[p === 3 ? "L" : "R"], [t] = L.project(x, y, z), c = L.at(t), r = [x - c[0], 0, z - c[2]], rl = Math.hypot(r[0], r[2]) || 1;
       const front = r[2] / rl, inner = (p === 3 ? -1 : 1) * r[0] / rl;
-      bend = g(y, F.kneeY, 0.06 * s) * (0.25 + 0.75 * smooth(-0.2, 0.9, -front)) * (1 - smooth(0.018, 0.04, loose)) + 0.9 * (1 - smooth(F.ankleY + 0.005 * s, F.ankleY + 0.05 * s, y));   // (the break only on cloth that reaches the shoe: a hem above it hangs clean)
+      bend = g(y, F.kneeY, 0.06 * s) * (0.25 + 0.75 * smooth(-0.2, 0.9, -front)) * (1 - smooth(0.018, 0.04, loose)) + 0.9 * (1 - smooth(F.ankleY + 0.005 * s, F.ankleY + stack * s, y)) * smooth(F.ankleY - 0.012 * s, F.ankleY + 0.005 * s, y) * smooth(-0.3, 0.45, front);   // (the break only on cloth that reaches the shoe: a hem above it hangs clean; `stack` how far up it runs: a slouch sock's folds up the calf; none on the foot nor round the heel's back, where the leg's coordinates pinch: folds came out as shards)
       drag = smooth(F.crotchY - 0.22 * s, F.crotchY - 0.04 * s, y) * (1 - smooth(F.crotchY - 0.01 * s, F.crotchY + 0.03 * s, y)) * smooth(-0.3, 0.6, front) * (0.5 + 0.5 * smooth(-0.5, 0.6, inner));
     } else if (p === 0 || p === 6) {                                // the body: the waist, the armpits' pull across the chest
       const [cx] = F.torsoAxis(y), side = Math.abs(x - cx) / (0.16 * s);

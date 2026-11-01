@@ -697,7 +697,7 @@ export function detail(F, G, d) {
         value: (x, y, z, nx, ny) => {
           if (y > 0.25 * s) return -1;
           const f = F.feet[x >= F.torsoAxis(F.crotchY)[0] ? "L" : "R"], [a, c] = f.at(x, z);
-          return Math.min(a - a0, a1 - a, hw ? hw - Math.abs(c + (d.offset ?? 0) * s) : 1, d.top ? ny - 0.35 : 1, d.above !== undefined ? y - d.above * s : 1);
+          return Math.min(a - a0, a1 - a, hw ? hw - Math.abs(c + (d.offset ?? 0) * s) : 1, d.top ? ny - 0.35 : 1, d.above !== undefined ? y - d.above * s : 1, d.below !== undefined ? d.below * s - y : 1);   // (`below`: a stripe round the shoe's foot, its rim)
         },
         lift: (d.lift ?? 0.0015) * s,
       };

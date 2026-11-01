@@ -36,7 +36,12 @@ export const SURFACES = {
   lace: ["Lace", 0.07, 0.1, 0.3, true],
   laced: ["Lace, lined", 0.036, 0.15, 0.3, false],
   sequin: ["Sequins", 0.03, 0.9, 0.4, false],
+  pvc: ["PVC (a raincoat)", 0.12, 1.0, 0, false],
+  pvc_clear: ["PVC, clear", 0.12, 1.0, 0, false],
 };
+/** surfaces drawn with a clear coat over a smooth base (a raincoat's PVC: sharp reflections), and how much light the
+    clear ones let through */
+export const GLOSSY = { pvc: { clearcoat: 1, roughness: 0.22, opacity: 1 }, pvc_clear: { clearcoat: 1, roughness: 0.12, opacity: 0.5 } };
 
 function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 const canvas = (w = N, h = N) => { const c = document.createElement("canvas"); c.width = w; c.height = h; return c; };
@@ -120,6 +125,8 @@ export function surfaceTile(kind) {
   } else if (kind === "leather") {
     wrap(() => { for (let i = 0; i < 60; i++) dot(rnd() * n, rnd() * n, 6 + rnd() * 18, `rgba(0,0,0,${0.025 + rnd() * 0.03})`); });
     for (let i = 0; i < 1400; i++) dot(rnd() * n, rnd() * n, 0.5 + rnd() * 0.4, "rgba(0,0,0,0.08)");
+  } else if (kind === "pvc" || kind === "pvc_clear") {               // PVC: nearly smooth, a faint wave in the film
+    sheen(8, 2, (u, v) => u * 0.3 + v);
   } else if (kind === "patent") {
     x.fillStyle = "rgba(0,0,0,0.12)"; x.fillRect(0, 0, n, n);
     sheen(70, 9, (u, v) => u + v * 0.5);

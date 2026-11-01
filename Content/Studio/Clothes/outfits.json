@@ -69,7 +69,15 @@
     "swimwear: triangle bikini": [["string-bikini", "#c8304a"], ["bikini-top", "#c8304a"]],
     "swimwear: bandeau bikini": [["bikini-briefs", "#f2efe8", {"surface": "spandex", "pattern": {"kind": "stripes", "colors": ["#f2efe8", "#1f3a5f", "#a83a3a"], "size": 0.03}}], ["bandeau", "#f2efe8", {"surface": "spandex", "pattern": {"kind": "stripes", "colors": ["#f2efe8", "#1f3a5f", "#a83a3a"], "size": 0.03}}]],
     "swimwear: sporty bikini": [["boy-shorts", "#1a1c22", {"surface": "spandex"}], ["sports-bra", "#1a1c22", {"surface": "spandex"}]],
-    "swimwear: swim shorts": [["swim-shorts", "#2f6f8f", {"pattern": {"kind": "dots", "colors": ["#2f6f8f", "#e8eef0"], "size": 0.04}}]]
+    "swimwear: swim shorts": [["swim-shorts", "#2f6f8f", {"pattern": {"kind": "dots", "colors": ["#2f6f8f", "#e8eef0"], "size": 0.04}}]],
+    "casual: yellow rain jacket": [["crew-socks", "#e8e4dc"], ["jeans", "#26324f"], ["rain-boots", "#e8c21a"], ["t-shirt", "#ece8e2"], ["rain-jacket", "#e8c21a"]],
+    "casual: clear rain jacket": [["ankle-socks", "#f0eee8"], ["sneakers", "#f2f0ea"], ["joggers", "#2a2c30"], ["hoodie", "#1e2024"], ["rain-jacket", "#e8eef2", {"surface": "pvc_clear"}]],
+    "casual: black rain jacket": [["crew-socks", "#1c1e26"], ["sneakers", "#202226"], ["pants", "#2a2c30"], ["sweatshirt", "#8a8f98"], ["rain-jacket", "#141416"]],
+    "gothic: corset and layered skirt": [["spiderweb-tights", "#0e0e10"], ["platform-boots", "#101012"], ["lace-blouse", "#0f0f11"], ["layered-maxi-skirt", "#121214"], ["tier-overskirt", "#0e0e10"], ["corset", "#141416"]],
+    "gothic: mesh top and corset": [["balconette-bra", "#101012"], ["fishnet-tights", "#151214"], ["platform-boots", "#101012"], ["mesh-top", "#141416"], ["mini-skirt", "#141416", {"surface": "leather"}], ["corset", "#3a0c14", {"surface": "patent"}]],
+    "gothic: band tee and plaid": [["spiderweb-tights", "#0e0e10"], ["platform-boots", "#101012"], ["mini-skirt", "#2a0a10", {"pattern": {"kind": "plaid", "colors": ["#2a0a10", "#0e0e10", "#7a1020"], "size": 0.06}}], ["t-shirt", "#121214", {"prints": [{"text": "NIGHT SHIFT", "ink": "#e8e2d8", "part": "front", "u": 0, "v": 1.24, "w": 0.22, "across": 0, "at": 1.24}, {"text": "bite me", "ink": "#7a1020", "part": "back", "u": 2, "v": 1.3, "w": 0.2, "across": 0, "at": 1.3}]}]],
+    "gothic: long black coat": [["tights", "#141416"], ["knee-boots", "#101012"], ["turtleneck", "#101012"], ["layered-maxi-skirt", "#121214"], ["coat-skirts", "#141416"], ["long-coat", "#141416"]],
+    "gothic: sneakers and hoodie": [["crew-socks", "#101012"], ["sneakers", "#141416", {"parts": {"tongue": "#141416", "toe": "#141416", "heel": "#7a1020", "rim": "#e8e6e0", "sole": "#141416"}}], ["joggers", "#141416"], ["hoodie", "#141416", {"prints": [{"text": "VOID", "ink": "#7a1020", "part": "back", "u": 2, "v": 1.3, "w": 0.24, "across": 0, "at": 1.3}]}]]
   },
   "meta": {
     "hanbok: lace jeogori and pleated skirt": {"group": "designer", "after": "image 1: a white lace jeogori with its ribbon over a black pleated mini skirt, over-the-knee socks, a black beret", "accessories": [{"kind": "hat", "style": "beret", "colour": "#141416", "tilt": 18}]},
@@ -140,6 +148,14 @@
     "swimwear: triangle bikini": {"group": "swim"},
     "swimwear: bandeau bikini": {"group": "swim"},
     "swimwear: sporty bikini": {"group": "swim"},
-    "swimwear: swim shorts": {"group": "swim"}
+    "swimwear: swim shorts": {"group": "swim"},
+    "casual: yellow rain jacket": {"group": "casual"},
+    "casual: clear rain jacket": {"group": "casual"},
+    "casual: black rain jacket": {"group": "casual"},
+    "gothic: corset and layered skirt": {"group": "gothic"},
+    "gothic: mesh top and corset": {"group": "gothic"},
+    "gothic: band tee and plaid": {"group": "gothic"},
+    "gothic: long black coat": {"group": "gothic"},
+    "gothic: sneakers and hoodie": {"group": "gothic"}
   }
 }

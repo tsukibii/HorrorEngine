@@ -5,7 +5,7 @@
 // (Content/Studio/PBR, docs/ASSETS.md §6) in place of the made-up grain: its colour (tinted by the garment's, if asked),
 // normal, roughness, metal, AO and opacity, a repeat its `tile_m` across, the print still over it.
 import * as THREE from "three";
-import { SURFACES, surfaceTile, surfaceRelief, patternTile, textPrint } from "./fabric.js";
+import { SURFACES, GLOSSY, surfaceTile, surfaceRelief, patternTile, textPrint } from "./fabric.js";
 import { PARTS } from "./uv.js";
 import { CREASE_GLSL, creaseOf, creaseUniforms } from "./crease.js";
 
@@ -44,7 +44,9 @@ const texture = (canvasOf, key, srgb) => {
   t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
   TEX.set(key, t); return t;
 };
-const IMAGES = new Map(), NPRINT = 3;                          // prints a garment can wear at once
+const IMAGES = new Map(), NPRINT = 6;                          // prints a garment can wear at once (a tee's front and back, a shoe's logos and stickers)
+/** a part's own colour from the look (`parts`: {tongue, toe, heel, rim, sole...}: the sneaker designer), by the part's name's last word */
+const partColor = (q, look) => { if (!look.parts || !q.name) return null; const k = q.name.slice(q.name.lastIndexOf("_") + 1); return look.parts[k] || null; };
 /** a print's picture as a texture: {text, ink} set in type, or {image: a data URL} (loaded, then `onload`) */
 function printTexture(pr, onload) {
   if (pr.text) return texture(() => textPrint(pr.text, pr.ink || "#ffffff"), "text|" + pr.text + "|" + pr.ink, true);
@@ -82,7 +84,9 @@ export function material(q, look = {}) {
   const own = q.fabric === false || !look.surface && !look.pattern && !look.pbr;
   const pbr = q.fabric !== false && look.pbr?.maps?.albedo ? look.pbr : null, PM = pbr ? pbr.maps : {};
   const surface = pbr ? "flat" : q.surface || (q.fabric === false ? look.trim : look.surface) || "flat", S = SURFACES[surface] || SURFACES.flat, over = S[4];
-  const m = new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.88, vertexColors: true, transparent: over, side: THREE.FrontSide });
+  const gl = GLOSSY[surface];                                       // PVC: a clear coat over a smooth base, the clear one see-through
+  const m = gl ? new THREE.MeshPhysicalMaterial({ color: "#ffffff", roughness: gl.roughness, clearcoat: gl.clearcoat, clearcoatRoughness: 0.04, vertexColors: true, transparent: gl.opacity < 1, opacity: gl.opacity, depthWrite: gl.opacity >= 1, side: THREE.FrontSide })
+    : new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.88, vertexColors: true, transparent: over, side: THREE.FrontSide });
   const fab = texture(() => surfaceTile(surface), "s|" + surface, false).clone(); fab.needsUpdate = true; fab.repeat.set(1 / S[1], 1 / S[1]);
   if (S[3] > 0) { m.bumpMap = texture(() => surfaceRelief(surface), "r|" + surface, false).clone(); m.bumpMap.needsUpdate = true; m.bumpMap.repeat.set(1 / S[1], 1 / S[1]); m.bumpScale = 2.5 * S[3]; }
   const tile = pbr ? +pbr.tile_m || 0.5 : 1, at = f => `${pbr.base}/${encodeURIComponent(f)}`;
@@ -100,7 +104,7 @@ export function material(q, look = {}) {
   // its prints (CLOTHING_PLAN 6): up to three, each on its panel (a tee's front and back, a sleeve); `print` the one of old
   const prints = q.fabric === false ? [] : (look.prints || (look.print ? [look.print] : [])).filter(pr => pr && (pr.text || pr.image)).slice(0, NPRINT);
   const U = {
-    uColor: { value: new THREE.Color(own ? q.color : look.color || q.color) },
+    uColor: { value: new THREE.Color(partColor(q, look) ?? (own ? q.color : look.color || q.color)) },
     uFabric: { value: fab }, uFabricScale: { value: 1 / S[1] }, uGloss: { value: pbr ? 0 : S[2] },
     uPbr: { value: pbr ? mapTexture(at(PM.albedo), tile, true) : null }, uPbrOn: { value: pbr ? 1 : 0 }, uPbrScale: { value: 1 / tile },
     uPbrTint: { value: pbr?.tint ? 1 : 0 }, uPbrAlpha: { value: pbr && PM.opacity ? mapTexture(at(PM.opacity), tile, false) : null }, uPbrAlphaOn: { value: pbr && PM.opacity ? 1 : 0 },
@@ -109,7 +113,7 @@ export function material(q, look = {}) {
     uPatternOn: { value: pat ? 1 : 0 }, uPatternScale: { value: 1 / ((pat?.size) || 0.04) },
     ...Object.fromEntries(Array.from({ length: NPRINT }, (_, k) => { const pr = prints[k]; return [
       [`uPrint${k}`, { value: pr ? printTexture(pr, () => { m.needsUpdate = true; }) : null }], [`uPrintOn${k}`, { value: pr ? 1 : 0 }],
-      [`uPrintRect${k}`, { value: new THREE.Vector4(pr?.u ?? 0, pr?.v ?? 1.2, pr?.w ?? 0.18, (pr?.w ?? 0.18) * (pr?.text ? 0.25 : pr?.aspect ?? 1)) }],
+      [`uPrintRect${k}`, { value: new THREE.Vector4(pr?.u ?? 0, pr?.v ?? 1.2, (pr?.flip ? -1 : 1) * (pr?.w ?? 0.18), (pr?.w ?? 0.18) * (pr?.text ? 0.25 : pr?.aspect ?? 1)) }],   // (`flip`: mirrored, where a panel's coordinates run the other way: a shoe's side)
       [`uPrintRot${k}`, { value: (pr?.rot ?? 0) * Math.PI / 180 }], [`uPrintPart${k}`, { value: Math.max(0, PARTS.indexOf(pr?.part || "front")) }]]; }).flat()),
     ...creaseUniforms(creaseOf(pbr ? look.surface || "cotton" : surface, look.crease || {}), seedOf(q.name)), uCrFwK: { value: 1 },
   };
@@ -166,7 +170,7 @@ ${Array.from({ length: NPRINT }, (_, k) => `  if (uPrintOn${k} > 0.5 && abs(vPar
   }
   if (uOver > 1.5) { float f = 1.0 - abs(dot(normal, normalize(vViewPosition))); diffuseColor.a = mix(diffuseColor.a, 1.0, pow(f, 1.4)); }   // tights darken where they turn away`);
   };
-  m.customProgramCacheKey = () => "tailor3" + (m.bumpMap ? "b" : "") + (over ? "o" : "") + (pbr ? "p" : "");
+  m.customProgramCacheKey = () => "tailor3" + (m.bumpMap ? "b" : "") + (over ? "o" : "") + (pbr ? "p" : "") + (gl ? "g" : "");
   return m;
 }
 

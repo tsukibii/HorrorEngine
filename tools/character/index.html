@@ -534,7 +534,7 @@ const designSel = el("select", { id: "designSel" }), addBtn = el("button", { tex
 const outfitTabs = el("div", { id: "outfitTabs", className: "chips" }), outfitGrid = el("div", { id: "outfitGrid" });
 let OUTFIT_META = {}, OUTFIT_GROUP = "casual", WORN_OUTFIT = null;
 // everyday clothes first (CLOTHING_PLAN 7), the designer collection last
-const OUTFIT_GROUPS = [["casual", "Casual"], ["smart", "Smart casual"], ["business", "Business"], ["uniform", "Uniforms"], ["sleep", "Sleepwear"], ["swim", "Swimwear"], ["underwear", "Underwear"], ["designer", "Designer"]];
+const OUTFIT_GROUPS = [["casual", "Casual"], ["smart", "Smart casual"], ["business", "Business"], ["uniform", "Uniforms"], ["sleep", "Sleepwear"], ["swim", "Swimwear"], ["underwear", "Underwear"], ["gothic", "Gothic"], ["designer", "Designer"]];
 const outfitGroup = name => OUTFIT_META[name]?.group || (/^(lingerie|underwear):/.test(name) ? "underwear" : "casual");
 const slugOf = name => name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
 function drawOutfits() {
@@ -686,7 +686,7 @@ function refit() {                                     // after the body changes
   fitTimer = setTimeout(dress, 700);
 }
 // a garment's look: its design's fabric, pattern and trim, then what was chosen for it here
-const lookOf = c => { const D = DESIGNS[c.design] || {}; return { color: c.color, surface: c.surface ?? D.surface, trim: D.trimSurface, pattern: c.pattern ?? D.pattern, denier: c.denier ?? D.denier, prints: c.prints || (c.print ? [c.print] : []), pbr: pbrOf(c), crease: { ...(D.crease || {}), ...(c.crease || {}) } }; };
+const lookOf = c => { const D = DESIGNS[c.design] || {}; return { color: c.color, surface: c.surface ?? D.surface, trim: D.trimSurface, pattern: c.pattern ?? D.pattern, denier: c.denier ?? D.denier, prints: c.prints || (c.print ? [c.print] : []), parts: c.parts, pbr: pbrOf(c), crease: { ...(D.crease || {}), ...(c.crease || {}) } }; };
 // a garment's PBR set off the shelf, as tailor/look.js draws it: its maps, a repeat in metres (the shelf's own default of
 // 2 m is a wall's: a cloth's is 0.3 unless the set or the garment says), the garment's colour over it if asked
 function pbrOf(c) {
@@ -717,7 +717,7 @@ async function addSet(c, files, name) {
   c.pbr = ref; restyle(c); drawWorn();
   status(`${ref}: ${Object.keys(m.maps).join(", ")}${m.orm ? ", orm" : ""}${m.normal === "dx" ? " (DirectX normal)" : ""}`, "ok");
 }
-const PRINT_PARTS = [["front", "the front"], ["back", "the back"], ["arm L", "left sleeve"], ["arm R", "right sleeve"], ["leg L", "left leg"], ["leg R", "right leg"], ["skirt", "a skirt's front"]];
+const PRINT_PARTS = [["front", "the front"], ["back", "the back"], ["arm L", "left sleeve"], ["arm R", "right sleeve"], ["leg L", "left leg (or shoe)"], ["leg R", "right leg (or shoe)"], ["skirt", "a skirt's front"]];
 function lookRows(c) {                                 // fabric, pattern, print for one worn garment
   const box = keepOpen(el("details", {}, el("summary", { textContent: "Fabric, pattern, print" })), c.design + ":look"), D = DESIGNS[c.design] || {};
   const pick = (label, opts, val, on) => { const sel = el("select", {}, ...opts.map(([v, t]) => el("option", { value: v, textContent: t, selected: v === val }))); sel.onchange = () => on(sel.value); box.append(el("div", { className: "row" }, el("span", { textContent: label }), sel, el("output"))); return sel; };
@@ -754,6 +754,32 @@ function lookRows(c) {                                 // fabric, pattern, print
     box.append(cols);
     slider(box, "patsize", "Repeat (m)", 0.005, 0.3, 0.005, pat.size || 0.04, "How big one repeat of the pattern is.", v => { c.pattern = { ...(c.pattern || pat), size: v }; restyle(c); });
   }
+  // the sneaker designer (COZY_GOTHIC_PLAN 4): a shoe's named parts each a colour (its tongue, toe cap, heel tab, the
+  // rim's stripe, its sole: `parts`), a logo on both shoes' outsides and small stickers (prints on the shoe's sides)
+  if (D.piece?.kind === "shoe") {
+    const names = [...new Set((D.details || []).map(d => d.name).filter(Boolean)), ...(D.sole ? ["sole"] : [])];
+    if (names.length) {
+      box.append(el("h4", { textContent: "Sneaker designer" }));
+      const LABEL = { tongue: "Tongue", toe: "Toe cap", heel: "Heel tab", rim: "Rim stripe", sole: "Sole", laces: "Laces" };
+      for (const n of names) {
+        const def = n === "sole" ? D.sole.color : (D.details.find(d => d.name === n) || {}).color || c.color;
+        const ci = el("input", { type: "color", value: (c.parts || {})[n] || def || "#ffffff" });
+        ci.oninput = () => { c.parts = { ...(c.parts || {}), [n]: ci.value }; restyle(c); };
+        box.append(el("div", { className: "row" }, el("span", { textContent: LABEL[n] || n }), ci, el("output")));
+      }
+      const PRE = { classic: { tongue: "#e8e6e0", toe: "#f4f2ec", heel: "#b03030", rim: "#d8d6d0", sole: "#f4f2ec" }, mono: { tongue: "#111113", toe: "#111113", heel: "#111113", rim: "#111113", sole: "#111113" },
+                    court: { tongue: "#ffffff", toe: "#ffffff", heel: "#1f4fa8", rim: "#1f4fa8", sole: "#f4f2ec" }, retro: { tongue: "#2a6a3a", toe: "#f2ead8", heel: "#e8a020", rim: "#e8a020", sole: "#c89a5a" },
+                    goth: { tongue: "#141416", toe: "#141416", heel: "#7a1020", rim: "#e8e6e0", sole: "#141416" } };
+      const pre = el("select", {}, el("option", { value: "", textContent: "a preset…" }), ...Object.keys(PRE).map(k => el("option", { value: k, textContent: k })));
+      pre.onchange = () => { if (!pre.value) return; c.parts = { ...PRE[pre.value] }; restyle(c); drawWorn(); };
+      const logo = el("button", { textContent: "Logo on both", title: "The first print (or HS) on each shoe's outside" });
+      logo.onclick = () => { if (c.print) { c.prints = [c.print]; delete c.print; } const src = (c.prints || [])[0] || { text: "HS", ink: "#2a6cd8" };
+        c.prints = [...(c.prints || []).filter(q => !q.logo), ...["leg L", "leg R"].map(part => ({ ...src, part, across: 0.07, at: 0.045, w: 0.07, rot: 0, logo: true }))]; placePrint(c); restyle(c); drawWorn(); };
+      const sticker = el("button", { textContent: "Add a sticker", title: "A small print on the heel, from the prints library or text: change it below" });
+      sticker.onclick = () => { if (c.print) { c.prints = [c.print]; delete c.print; } c.prints = [...(c.prints || []), { text: "★", ink: "#e83a5a", part: "leg L", across: 0.16, at: 0.06, w: 0.03, rot: 0 }]; placePrint(c); restyle(c); drawWorn(); };
+      box.append(el("div", { className: "row" }, el("span", { textContent: "Colourway" }), pre, el("output")), el("div", { className: "row" }, logo, sticker));
+    }
+  }
   // prints (CLOTHING_PLAN 6): a tee's front and back, a sleeve's, each text or a picture (a file, or one from the prints
   // library, Content/Studio/Clothes/prints/), at its place and size; up to three
   if (c.print) { c.prints = [c.print]; delete c.print; }
@@ -789,8 +815,9 @@ function lookRows(c) {                                 // fabric, pattern, print
     slider(box, "pat" + k, arm ? "Down the arm (m)" : "Height (m)", 0, arm ? 0.7 : 2, 0.005, pr.at ?? 1.2, arm ? "From the shoulder." : "Its middle, from the floor.", v => set({ at: v }));
     slider(box, "pw" + k, "Width (m)", 0.02, 0.5, 0.005, pr.w ?? 0.18, "", v => set({ w: v }));
     slider(box, "prot" + k, "Turn (°)", -180, 180, 1, pr.rot ?? 0, "", v => set({ rot: v }));
+    { const f = el("input", { type: "checkbox", checked: !!pr.flip }); f.onchange = () => set({ flip: f.checked }); box.append(el("label", { className: "tog" }, f, el("span", { textContent: "Mirrored" }))); }
   });
-  if (prints.length && prints.length < 3) {              // another: the back first (a tee's back print), then a sleeve
+  if (prints.length && prints.length < 6) {              // another: the back first (a tee's back print), then a sleeve
     const used = new Set(prints.map(q => q.part)), more = el("div", { className: "row" }, el("span", { textContent: "Add a print" }));
     for (const [part, label] of [["front", "Front"], ["back", "Back"], ["arm L", "Left sleeve"], ["arm R", "Right sleeve"]]) if (!used.has(part)) { const b = el("button", { textContent: label }); b.onclick = () => add(part, { text: prints[0].text || "", ink: prints[0].ink, image: prints[0].text ? null : prints[0].image, aspect: prints[0].aspect }); more.append(b); }
     box.append(more);
@@ -2215,13 +2242,15 @@ const ACC_FIELDS = {
   patch: [["spot", "Where", "spot"], ["colour", "Colour", "color"], ["size", "Size", 0.7, 1.4, 0.01], ["turn", "Turn (°)", -45, 45, 1], ["strap", "Strap", "check"]],
   neck: [["length", "Length (cm)", 28, 90, 0.5], ["ease", "Looser (cm)", 0, 8, 0.1], ["pendant", "Pendant", "charm"], ["material", "Metal", "material"], ["colour", "Colour", "color"], ["shine", "Shine", 0, 1, 0.05],
          ["gem", "Gem", "color"], ["size", "Thickness", 0.5, 2.5, 0.05]],
-  hat: [["colour", "Colour", "color"], ["size", "Size", 0.8, 1.3, 0.01], ["tilt", "Slouch (°)", -40, 40, 1], ["turn", "Turn (°)", -180, 180, 5], ["height", "Height (mm)", -30, 30, 1], ["shine", "Shine", 0, 1, 0.05]],
+  hat: [["material", "Made of", "material"], ["colour", "Colour", "color"], ["size", "Size", 0.8, 1.3, 0.01], ["tilt", "Slouch (°)", -40, 40, 1], ["turn", "Turn (°)", -180, 180, 5], ["height", "Height (mm)", -30, 30, 1], ["shine", "Shine", 0, 1, 0.05]],
+  horns: [["material", "Made of", "material"], ["colour", "Colour", "color"], ["shine", "Shine", 0, 1, 0.05], ["size", "Size", 0.5, 2, 0.05], ["spread", "Spread", 0.6, 1.6, 0.05], ["curl", "Curl", 0.4, 1.6, 0.05]],
+  ears: [["material", "Made of", "material"], ["colour", "Colour", "color"], ["inner", "Inside", "color"], ["band", "Headband", "color"], ["size", "Size", 0.6, 1.5, 0.05], ["tilt", "Lean out (°)", -20, 40, 1], ["shine", "Shine", 0, 1, 0.05]],
 };
 // which fields an accessory shows, by what it is now (a field for a part it hasn't got stays out of the way)
 function accShows(a, k) {
   const pbr = (a.material || "").startsWith("pbr/"), metalParts = a.kind !== "neck" || a.style === "chain" || a.style === "beads" || (a.pendant && a.pendant !== "none");
   switch (k) {
-    case "material": return metalParts && a.kind !== "hat";
+    case "material": return metalParts || ["hat", "horns", "ears"].includes(a.kind);
     case "tilt": return a.style === "beret" || a.style === "beanie";
     case "colour": return a.kind === "glasses" ? !a.material : a.kind === "neck" ? ["cord", "choker", "beads"].includes(a.style) || a.material === "colour"
                         : a.kind === "piercing" || a.kind === "earring" ? a.material === "colour" : true;
@@ -2254,7 +2283,8 @@ function drawAcc() {
     const pick = (opts, on) => { const sel = el("select", {}, ...opts.map(([v, t]) => el("option", { value: v, textContent: t, selected: v === (a[k] ?? "") }))); sel.onchange = () => { on(sel.value); drawAcc(); }; edit.append(el("div", { className: "row" }, el("span", { textContent: label }), sel, el("output"))); };
     if (lo === "material") {                        // a metal, the colour, or a PBR set off the shelf (metals first)
       const sets = Object.keys(SHELF).sort((x, y) => (/metal/i.test(y) - /metal/i.test(x)) || x.localeCompare(y));
-      pick([...(a.kind === "glasses" ? [["", "its colour (plastic to metal)"]] : []), ...ACCS.JW.METAL_NAMES.map(n => [n, n]), ["colour", "the colour below, as metal"], ...sets.map(r => [r, "PBR: " + r.replace(/^pbr\//, "")])],
+      const own = ["hat", "horns", "ears"].includes(a.kind);                // a hat, horns or ears: their colour, or a set off the shelf (or a metal)
+      pick([...(a.kind === "glasses" ? [["", "its colour (plastic to metal)"]] : own ? [["", "its colour"]] : []), ...ACCS.JW.METAL_NAMES.map(n => [n, n]), ...(own ? [] : [["colour", "the colour below, as metal"]]), ...sets.map(r => [r, "PBR: " + r.replace(/^pbr\//, "")])],
            v => { a[k] = v; accChanged(a, false); });
       continue;
     }
@@ -2271,6 +2301,10 @@ function drawAcc() {
     }
     accSet[k] = slider(edit, "acc_" + k, label, lo, hi, step, a[k] ?? 0, "", v => { a[k] = v; accChanged(a, (k === "size" || k === "turn") && a.kind !== "neck"); });
   }
+  edit.append(el("h4", { textContent: "Placement" }));                // every accessory moved and turned by hand (accessories.js place)
+  for (const [k, label] of ACCS.PLACE) slider(edit, "acc_" + k, label, k[0] === "o" ? -60 : -180, k[0] === "o" ? 60 : 180, k[0] === "o" ? 0.5 : 1, a[k] ?? 0, "", v => { a[k] = v; accChanged(a, false); });
+  const zero = el("button", { textContent: "Back where it was made" }); zero.onclick = () => { for (const [k] of ACCS.PLACE) delete a[k]; accChanged(a, false); drawAcc(); };
+  edit.append(zero);
 }
 {
   const pick = el("select", { title: "What to put on" });

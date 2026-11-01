@@ -11,6 +11,8 @@ The user's answers, newest first. They override the plan, the research and the d
   look; black loafers; a sneaker designer like the tee's prints (rim highlights, sole colours, a logo, small stickers);
   gothic designs, a spider web fishnet and a mesh fabric rendered in Blender; gothic clothes and props (horns, bunny
   ears), props placed by x, y, z sliders and turns, PBR sets on props. The plan and its ticks: docs/COZY_GOTHIC_PLAN.md.
+- **"By rain coat I mean the smaller wind ones, that are almost like hoodies but more of a plasticky texture"**: a
+  hooded, zipped rain jacket in PVC, not a long coat.
 
 ## 2026-11-01, evening (the user: the bikinis, on `clothing-refiner`)
 

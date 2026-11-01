@@ -26,17 +26,19 @@ const bodyName = arg("body", "feminine"), H = parseFloat(arg("height", /masculin
 const extra = arg("look") ? JSON.parse(arg("look")) : null;               // --look '{"print": {...}}': on every garment, for a test
 const list0 = arg("designs") ? String(arg("designs")).split(",").map(d => [d]) : outfits[arg("outfit", "work uniform")];
 // --pbr: a garment's set off the shelf (Content/Studio/PBR, docs/ASSETS.md §6), as the Studio's pbrOf gives it to tailor/look.js
-const SHELF = process.env.STUDIO_PBR || join(ROOT, "Content", "Studio", "PBR");
+const SHELF = process.env.STUDIO_PBR || (existsSync(join(ROOT, "assets", "pbr")) ? join(ROOT, "assets", "pbr") : join(ROOT, "Content", "Studio", "PBR"));   // the shelf (assets/pbr; the old place still read)
 const pbrSet = spec => {
   const [ref, opt = ""] = spec.split(":"), rel = ref.replace(/^pbr\//, ""), f = join(SHELF, ...rel.split("/"), "meta.json");
   if (!existsSync(f)) spawnSync("python3", [join(ROOT, "tools", "pbr.py")], { stdio: "ignore" });   // the shelf scanned: each set's meta.json
   if (!existsSync(f)) { console.error(`no PBR set ${ref} on the shelf (${SHELF})`); process.exit(1); }
   const m = JSON.parse(readFileSync(f));
   return { ref, base: "/pbrfile/" + rel.split("/").map(encodeURIComponent).join("/"), maps: m.maps, normal: m.normal, orm: m.orm,
-           tile_m: parseFloat(opt) || (m.tile_m && m.tile_m !== 2 ? m.tile_m : 0.3), tint: opt.endsWith("+") };
+           tile_m: parseFloat(opt) || (m.tile_m && m.tile_m !== 2 ? m.tile_m : 0.3), tint: opt.endsWith("+") || !!m.tint };   // (a set that tints: the garment's colour, as the Studio has it)
 };
 const pbrs = Object.fromEntries((arg("pbr") ? String(arg("pbr")).split(",") : []).map(s => { const [d, r] = s.split("="); return [d, pbrSet(r)]; }));
 const edits = arg("edit") ? JSON.parse(arg("edit")) : {};
+const ownPbr = (d, l) => { const r = l?.pbr || designs[d]?.pbr; if (pbrs[d] || !r || typeof r !== "string") return null; try { return pbrSet(r); } catch { return null; } };   // a design's own set (or an outfit's), as the Studio wears it
+for (const [d, , l] of list0 || []) { const p = ownPbr(d, l); if (p) pbrs[d] = p; }
 const list = list0 && list0.map(([d, c, l, e]) => [d, c, extra || pbrs[d] ? { ...(l || {}), ...(extra || {}), ...(pbrs[d] ? { pbr: pbrs[d] } : {}) } : l, edits[d] || e]);   // an outfit's own edit (a fit) unless --edit gives one
 if (!list) { console.error("no such outfit"); process.exit(1); }
 const out = arg("out", "tailor_sheet.png"), size = parseInt(arg("size", 360));

@@ -136,6 +136,12 @@ def bake_set(finish, px=1024, samples=4, say=print):
     out = bpy.data.images.new(f"{finish}_albedo", W, H, alpha=True)
     out.pixels.foreach_set(np.clip(rgba, 0, 1).ravel())
     _save(out, d / f"{finish}_albedo.png")
+    if float(alpha.min()) < 0.98:                                    # holes (a net's): an opacity map of their own, for the cut-outs
+        oa = np.clip(alpha, 0, 1)
+        o5 = bpy.data.images.new(f"{finish}_opacity", W, H, alpha=False)
+        o5.colorspace_settings.name = "Non-Color"
+        o5.pixels.foreach_set(np.dstack([oa, oa, oa, np.ones_like(oa)]).ravel())
+        _save(o5, d / f"{finish}_opacity.png")
     for what, cs in (("normal", "Non-Color"), ("orm", "Non-Color")):
         im, a = got[what]
         o2 = bpy.data.images.new(f"{finish}_{what}", W, H, alpha=False)

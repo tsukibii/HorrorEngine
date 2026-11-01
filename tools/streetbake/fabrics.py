@@ -54,6 +54,10 @@ LIB = {
     "fabric_velvet":      ("Velvet", "pile", (0.04, 0.04), 0.00015, dict(kind="velvet", col="#ebe7e0", var=0.08, rough=0.62, fuzz=0.6), True),
     "fabric_leather":     ("Leather (grained)", "grain", (0.08, 0.08), 0.0003, dict(kind="leather", cell=0.0012, col="#e6e2dc", var=0.06, rough=0.55), True),
     "fabric_suede":       ("Suede", "grain", (0.05, 0.05), 0.00012, dict(kind="suede", col="#e4dfd6", var=0.08, rough=0.95), True),
+    # nets, their holes in the colour's alpha (the user, 2026-11-01: "in blender render a new fishnet type called spider
+    # webs, and mesh fabric"): a web a cell, its spokes meeting the next cell's at the edges and corners
+    "fabric_spiderweb":   ("Spider web net (gothic)", "net", (0.12, 0.12), 0.0006, dict(kind="spiderweb", cell=0.06, col="#e8e6e2", w=0.009, ring=0.07, rough=0.55), True),
+    "fabric_mesh":        ("Sport mesh (open holes)", "net", (0.024, 0.024), 0.0005, dict(kind="mesh", cell=0.003, col="#e6e4de", hole=0.3, var=0.03, rough=0.8, fuzz=0.15), True),
 }
 
 
@@ -261,7 +265,42 @@ def f_pile(nb, uv, T, P, p):
     return col, rough, h, 0.0, 1.0
 
 
-FAMILY = {"weave": f_weave, "knit": f_knit, "felt": f_felt, "grain": f_grain, "pile": f_pile}
+def f_net(nb, uv, T, P, p):
+    """A net, its holes see-through (alpha 0): a spider web a cell (spokes from its hub to the cell's edges and corners,
+    so the next cell's meet them; rings round the hub, sagging between the spokes, faded out before the edge), or sport
+    mesh (round holes in staggered rows, a knit's yarn round them)."""
+    u, v, _ = nb.sep(uv)
+    a, b = nb.div(u, p["cell"]), nb.div(v, p["cell"])
+    if p["kind"] == "mesh":
+        j = nb.floor(b)
+        a = nb.add(a, nb.mul(nb.math("FLOORED_MODULO", j, 2.0), 0.5))  # every other row half a hole over
+        fx, fy = nb.sub(nb.fract(a), 0.5), nb.sub(nb.fract(b), 0.5)
+        d = nb.math("SQRT", nb.add(nb.mul(fx, fx), nb.mul(nb.mul(fy, fy), 1.25)))
+        hole = p.get("hole", 0.3)
+        alpha = nb.ramp(d, hole - 0.03, hole + 0.02)
+        h = nb.mul(alpha, nb.ramp(d, hole, 0.5))
+        r = _white(nb, nb.floor(a), j, 5.0)
+        col = _vary(nb, srgb(p["col"]), r, p.get("var", 0.03))
+        col = nb.cmul(col, nb.madd(h, 0.25, 0.75))
+        h = nb.add(h, _fuzz(nb, T, 0.3 * p.get("fuzz", 0.2)))
+        return col, nb.madd(nb.one_minus(h), 0.05, p.get("rough", 0.8)), h, 0.0, alpha
+    fx, fy = nb.sub(nb.fract(a), 0.5), nb.sub(nb.fract(b), 0.5)
+    rho = nb.math("SQRT", nb.add(nb.mul(fx, fx), nb.mul(fy, fy)))
+    th = nb.math("ARCTAN2", fy, fx)
+    q = nb.sub(nb.fract(nb.add(nb.div(th, math.pi / 4), 0.5)), 0.5)  # -0.5..0.5 from the nearest spoke (eight)
+    dq = nb.mul(q, math.pi / 4)
+    spoke = nb.mul(rho, nb.absf(nb.sin(dq)))                          # how far from that spoke
+    rr = nb.mul(nb.mul(rho, nb.cos(dq)), nb.madd(nb.mul(q, q), 0.35, 1.0))   # the rings' measure, sagging between spokes
+    ring = nb.mul(nb.absf(nb.sub(nb.fract(nb.add(nb.div(rr, p["ring"]), 0.5)), 0.5)), p["ring"])
+    w = p["w"]
+    lines = nb.mx(nb.one_minus(nb.ramp(spoke, w * 0.35, w * 0.6)),
+                  nb.mul(nb.mul(nb.ramp(rr, 0.04, 0.07), nb.one_minus(nb.ramp(rr, 0.39, 0.44))), nb.one_minus(nb.ramp(ring, w * 0.25, w * 0.45))))
+    lines = nb.mx(lines, nb.one_minus(nb.ramp(rho, 0.02, 0.03)))    # the hub
+    col = nb.cmul(srgb(p["col"]), nb.madd(lines, 0.15, 0.85))
+    return col, p.get("rough", 0.55), lines, 0.0, lines
+
+
+FAMILY = {"weave": f_weave, "knit": f_knit, "felt": f_felt, "grain": f_grain, "pile": f_pile, "net": f_net}
 
 
 def register(F, relief):
