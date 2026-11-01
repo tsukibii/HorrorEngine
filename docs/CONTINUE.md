@@ -13,7 +13,7 @@ street builder, its paint and the PBR sets, with `prop-gen-tool` merged in; 2026
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## 0. `enhance-prop-editor` (2026-11-01, late night): the prop generator's picture editor (not merged yet)
+## 0. `enhance-prop-editor` (2026-11-01, late night): the prop generator's picture editor (tsukibii/HorrorEngine#10, not merged yet)
 
 The user found pictures on props hard to place (DECISIONS 2026-11-01, late night) and asked for a Figma-like panel:
 the image in use, where the cuts are, one large image or small ones dragged to fit the cut areas. Built (PROPGEN §17):
