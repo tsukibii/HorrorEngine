@@ -231,6 +231,14 @@ The clothes are skinned, never simulated, so the cut keeps to what skinning carr
   look (and `sole`); the Studio's Fabric panel shows a Sneaker designer for a shoe: a colour each, colourways, Logo on
   both (a print on each shoe's outside, `leg L`/`leg R` at across 0.07), Add a sticker; up to six prints a garment,
   each can be Mirrored (`flip`).
+- **Soles carried down from the shoe** (the user, after their sandal OBJ: "soles should almost just be an extension of
+  the normal shape but extruded down"): `soles` slices the shoe's own upper where it meets the sole (`rise` over the
+  floor), smooths that outline (round and along its length, never more than half its overhang inside the upper's line),
+  pushes it out by `overhang` and sweeps it straight down to `thick`: a rounded top edge hugging the upper, its inner lip
+  tucked under it (one clean join), a near-vertical wall (`flare` out at its foot, `lines` grooves round it, as the
+  sandal's stacked bands), a rounded bottom edge and a flat bottom filled in rings; the toe spring curves only the bottom
+  up at the front, and `heel` is a block that much deeper at the back (the old code raised the bottom there instead). The
+  sole was the hull of the bare foot's footprint before, so the upper broke out through its rim.
 - **Nets made in Blender**: the `net` family in `tools/streetbake/fabrics.py`, `fabric_spiderweb` (a web a cell, spokes
   meeting the next cell's, rings sagging between them) and `fabric_mesh` (round holes in staggered rows), their holes in
   the colour's alpha and an `_opacity` map the bake now writes for any finish with holes; spider web tights and a mesh

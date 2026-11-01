@@ -1465,3 +1465,11 @@ guessed margin; and a check that only ever ran on a slow machine hasn't been run
 - **A landmark is a shape, not an extreme:** the fold under the breast found as the deepest point below it ran on
   down the ribs, which keep sinking slowly to the waist, and every bra sat 2.5 cm low. Find the bend (the slope fallen
   to half its steepest) and measure it on all seven bodies before trusting it.
+
+## The soles (2026-11-01, `clothing-refiner`)
+
+- **A part that joins another is cut from the other's shape, not from what's under both:** the sole was the hull of
+  the bare foot's footprint, so the shoe's upper (the foot plus its ease) broke out through its rim in a jagged line.
+  Slice the upper where the sole meets it and carry that outline down; then the join is one clean line by construction.
+- **Read what a setting does before trusting its name:** a sole's `heel` raised the bottom at the back (a thinner heel)
+  for months of designs; nothing looked at it closely until the soles were redone.

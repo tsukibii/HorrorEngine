@@ -81,7 +81,7 @@ export function* making(B, name, design, opts = {}) {
   const thick = (P, T, Pat, ...a) => [thicken(P, T, ...a), Pat ? thicken(Pat, T, ...a).P : null];   // the cut's and the hanging cloth's (the same points)
   part(name, color, ...insert(thick(G.outer.P, G.outer.T, at, th, design.rim ?? 0.7, design.edge ?? 0.82), true));
   if (design.sole) {                                                 // a shoe's soles, under the floor
-    const so = soles(F, B, design.sole); outer.push({ P: so.P, T: so.T });
+    const so = soles(F, B, design.sole, G.outer); outer.push({ P: so.P, T: so.T });   // (the upper's own outline carried down)
     part(`${name}_sole`, design.sole.color || "#e8e4dc", so, false, design.sole.surface || "rubber");
   }
   for (const d of design.details || []) {

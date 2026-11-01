@@ -2,6 +2,14 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-01, late night (the user: the sneakers' soles, on `clothing-refiner`)
+
+- **"The sneakers you made are pretty not great especially the soles, look at the [sandal OBJ] to see how the geometry
+  can be done better ... I don't mind the boxy retro look either, the main issue is the soles don't look normal, soles
+  should almost just be an extension of the normal shape but extruded down (so it can have diff texture)"**: every
+  shoe's sole is now the upper's own outline carried down, with grooves and real heel blocks (TAILOR §1h). The OBJ stays
+  out of the project (only looked at).
+
 ## 2026-11-01, night (the user: cozy and gothic clothes, bigger busts, on `clothing-refiner`)
 
 - **"Note you've been making bras on models that have a flat chest, maybe you should review it with bigger busts"**:

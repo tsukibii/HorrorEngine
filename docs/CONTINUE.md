@@ -12,6 +12,11 @@ street builder, its paint and the PBR sets, with `prop-gen-tool` merged in). Rea
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
+## 0. `clothing-refiner` (2026-11-01, late night): soles carried down from the shoe
+
+After the user's sandal OBJ: every shoe's sole is the upper's own outline extruded down, grooved, with heel blocks
+(TAILOR §1h). Next: their look in the Studio; the sneaker's upper itself (its toe bumper) could be smoothed next.
+
 ## 0. `clothing-refiner` (2026-11-01, night): cozy and gothic (docs/COZY_GOTHIC_PLAN.md, ticked)
 
 Built (TAILOR §1h): socks in every length and heavier, a PVC rain jacket, the sneaker designer, spider web and mesh

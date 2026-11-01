@@ -596,32 +596,97 @@ export function shoeShell(B, p) {
   return { outer: { P: c.P, T: c.T }, V: (x, y, z) => line(x, y, z), neck: null, ends: null, legY: 0, waist: null, open: null };
 }
 
-/** a shoe's sole under each foot: the footprint's outline (the foot's points near the floor, hulled) pushed out by
-    `overhang`, `thick` deep under the floor and `rise` up its side, the toe sprung up a little; {P, T, S} for both feet */
-export function soles(F, B, o) {
+/** a shoe's sole under each foot, the shoe's own shape carried down (the user, 2026-11-01: "soles should almost just be
+    an extension of the normal shape but extruded down"; their sandal the reference): the upper sliced where it meets
+    the sole (`rise` over the floor), that outline smoothed and pushed out by `overhang`, and swept straight down to
+    `thick` under the floor: a rounded top edge hugging the upper, a near-vertical wall (`flare` out at the bottom,
+    `lines` grooves round it), a rounded bottom edge and a flat bottom filled in rings; the toe spring curving only the
+    bottom up at the front (the top stays where the upper meets it), a `heel` block deeper at the back. Its inner lip
+    tucks under the upper, so the join is one clean line. `upper`: the shoe's cut ({P, T}); without one, the bare
+    foot's footprint. {P, T, S} for both feet */
+export function soles(F, B, o, upper = null) {
   const s = F.s, thick = (o.thick ?? 0.012) * s, rise = (o.rise ?? 0.008) * s, over = (o.overhang ?? 0.005) * s, spring = (o.spring ?? 0.012) * s, heelH = (o.heel ?? 0) * s;
-  const P = B.P, out = { P: [], T: [] }, NA = 128;
+  const flare = (o.flare ?? 0) * s, lines = o.lines ?? 0, out = { P: [], T: [] }, mm = 0.001 * s, cx0 = F.torsoAxis(F.crotchY)[0];
   for (const side of ["L", "R"]) {
-    const f = F.feet[side], pts = [];
-    for (let i = 0; i < P.length; i += 3) if (P[i] * f.sg > 0.05 * s && P[i + 1] < 0.025 * s) pts.push([P[i], P[i + 2]]);
-    const cx = pts.reduce((a, q) => a + q[0], 0) / pts.length, cz = pts.reduce((a, q) => a + q[1], 0) / pts.length;
-    const R = radii(pts.map(q => [q[0] - cx, q[1] - cz]), NA);
-    const ring = [];                                                  // the outline, its rows from the top of the sole's side to under it
-    const rows = [[rise, 0], [rise * 0.3, 0.6], [0, 1], [-thick * 0.5, 1], [-thick + 0.002 * s, 0.85], [-thick, 0.6]];
-    for (const [h, w] of rows) for (let k = 0; k < NA; k++) {
-      const a = (k / NA - 0.5) * Math.PI * 2, r = R[k] + over * w, x = cx + Math.sin(a) * r, z = cz + Math.cos(a) * r;
-      const [along] = f.at(x, z), lift = spring * smooth(0.75, 1.05, along) + heelH * smooth(0.3, 0.1, along) * (h < 0 ? 1 : 0);
-      ring.push([x, h + lift, z]);
+    const f = F.feet[side], isSide = x => (x >= cx0) === (side === "L");
+    // the outline: the upper cut by the plane at the sole's top (its edges crossing it), or the foot's own footprint
+    let pts = [];
+    if (upper) {
+      const P = upper.P, T = upper.T, ys = rise;
+      for (let t = 0; t < T.length; t += 3) for (let k = 0; k < 3; k++) {
+        const i = T[t + k] * 3, j = T[t + (k + 1) % 3] * 3, ya = P[i + 1] - ys, yb = P[j + 1] - ys;
+        if ((ya > 0) === (yb > 0)) continue;
+        const u = ya / (ya - yb), x = P[i] + (P[j] - P[i]) * u, z = P[i + 2] + (P[j + 2] - P[i + 2]) * u;
+        if (isSide(x)) pts.push([x, z]);
+      }
     }
+    if (pts.length < 20) { pts = []; const P = B.P; for (let i = 0; i < P.length; i += 3) if (P[i] * f.sg > 0.05 * s && P[i + 1] < 0.025 * s) pts.push([P[i], P[i + 2]]); }
+    // its middle: halfway along the foot, the outline's own middle across (a foot's outline is star-shaped from there)
+    let a0 = 1e9, a1 = -1e9, c0 = 1e9, c1 = -1e9;
+    for (const [x, z] of pts) { const [al, ac] = f.at(x, z); a0 = Math.min(a0, al); a1 = Math.max(a1, al); c0 = Math.min(c0, ac); c1 = Math.max(c1, ac); }
+    const am = (a0 + a1) / 2, acm = (c0 + c1) / 2, cx = f.heel[0] + f.d[0] * am * f.len - f.sg * f.d[1] * acm, cz = f.heel[1] + f.d[1] * am * f.len + f.sg * f.d[0] * acm;   // (f.at undone)
+    const mid = (() => { let bx = 0, bz = 0; for (const [x, z] of pts) { bx += x; bz += z; } return [bx / pts.length, bz / pts.length]; })();
+    const C = Math.hypot(cx - mid[0], cz - mid[1]) < 0.06 * s ? [cx, cz] : mid;
+    // the outline as its furthest point at each angle round the middle, gaps filled, smoothed round
+    const NA = 240, R = new Float32Array(NA).fill(-1);
+    for (const [x, z] of pts) { const k = ((Math.round((Math.atan2(x - C[0], z - C[1]) / TAU + 0.5) * NA) % NA) + NA) % NA; R[k] = Math.max(R[k], Math.hypot(x - C[0], z - C[1])); }
+    for (let k = 0; k < NA; k++) if (R[k] < 0) {                     // a gap: between its neighbours on either side
+      let a = 1, b = 1; while (R[(k - a + NA) % NA] < 0 && a < NA) a++; while (R[(k + b) % NA] < 0 && b < NA) b++;
+      const ra = R[(k - a + NA) % NA], rb = R[(k + b) % NA]; R[k] = ra >= 0 && rb >= 0 ? ra + (rb - ra) * a / (a + b) : Math.max(ra, rb, 0.03 * s);
+    }
+    for (let pass = 0; pass < 6; pass++) { const c = Float32Array.from(R); for (let k = 0; k < NA; k++) R[k] = (c[(k + NA - 1) % NA] + 2 * c[k] + c[(k + 1) % NA]) / 4; }
+    // resampled every 2.5 mm along its length, each point's outward normal
+    const raw = Array.from(R, (r, k) => { const ang = (k / NA - 0.5) * TAU; return [C[0] + Math.sin(ang) * r, C[1] + Math.cos(ang) * r]; });
+    const len = [0]; for (let k = 1; k <= NA; k++) len.push(len[k - 1] + Math.hypot(raw[k % NA][0] - raw[k - 1][0], raw[k % NA][1] - raw[k - 1][1]));
+    const N = Math.max(64, Math.round(len[NA] / (2.5 * mm))), ring = [];
+    for (let i = 0, k = 0; i < N; i++) {
+      const L = i / N * len[NA]; while (len[k + 1] < L) k++;
+      const u = (L - len[k]) / (len[k + 1] - len[k] || 1), p = raw[k], q = raw[(k + 1) % NA];
+      ring.push([p[0] + (q[0] - p[0]) * u, p[1] + (q[1] - p[1]) * u]);
+    }
+    const rawR = Float32Array.from(R);                               // smoothed along its length (corners at the ball and heel rounded), never more than its overhang's half (2 mm at most) inside the upper's line
+    for (let pass = 0; pass < 30; pass++) { const c = ring.map(q => [...q]); for (let i = 0; i < N; i++) { const a = c[(i + N - 1) % N], b = c[(i + 1) % N]; ring[i] = [c[i][0] * 0.5 + (a[0] + b[0]) * 0.25, c[i][1] * 0.5 + (a[1] + b[1]) * 0.25]; } }
+    for (const q of ring) {
+      const dx = q[0] - C[0], dz = q[1] - C[1], r = Math.hypot(dx, dz) || 1e-6, k = ((Math.round((Math.atan2(dx, dz) / TAU + 0.5) * NA) % NA) + NA) % NA, want = rawR[k] - Math.min(2 * mm, over * 0.45);
+      if (r < want) { q[0] = C[0] + dx / r * want; q[1] = C[1] + dz / r * want; }
+    }
+    const nrm = ring.map((p, i) => {
+      const a = ring[(i + N - 1) % N], b = ring[(i + 1) % N]; let nx = b[1] - a[1], nz = -(b[0] - a[0]); const l = Math.hypot(nx, nz) || 1; nx /= l; nz /= l;
+      if ((p[0] - C[0]) * nx + (p[1] - C[1]) * nz < 0) { nx = -nx; nz = -nz; } return [nx, nz];
+    });
+    // the profile: [outward offset from the outline, height], top to bottom then in across the bottom
+    const rows = [[-12 * mm, rise - 8 * mm], [-5 * mm, rise - 3 * mm], [over * 0.2, rise], [over * 0.75, rise - 0.8 * mm], [over, rise - 3 * mm]];
+    const yTop = rise - 6 * mm, yBot = -thick + 6 * mm;
+    for (let i = 0; i < lines; i++) {                                 // grooves round the wall, evenly between its top and bottom
+      const y = yTop + (yBot - yTop) * (i + 1) / (lines + 1);
+      rows.push([over, y + 1.4 * mm], [over - 1.1 * mm, y + 0.5 * mm], [over - 1.1 * mm, y - 0.5 * mm], [over, y - 1.4 * mm]);
+    }
+    rows.push([over, -thick + 3.5 * mm], [over - 1 * mm, -thick + 0.9 * mm], [over - 3 * mm, -thick]);
+    const inner = [0.8, 0.6, 0.4, 0.2];                               // the bottom in rings toward the middle (it bends with the spring)
+    const wallH = rise + thick;
+    const at3 = (i, d, y, k = 1) => {                                 // a point: the outline's i-th, out by d (or toward the middle by k), at height y
+      const p = ring[i], n = nrm[i], t = Math.min(1, Math.max(0, (rise - y) / wallH));
+      let x = C[0] + (p[0] - C[0]) * k + n[0] * d * k, z = C[1] + (p[1] - C[1]) * k + n[1] * d * k;
+      if (k === 1) { x += n[0] * flare * t; z += n[1] * flare * t; }
+      const [al] = f.at(x, z), lift = spring * smooth(0.68, 1.04, al) ** 1.5 * t - heelH * (1 - smooth(0.24, 0.32, al)) * t;   // the toe spring and the heel block: only below the top
+      return [x, y + lift, z];
+    };
     const base = out.P.length / 3;
-    for (const q of ring) out.P.push(...q);
-    for (let r = 0; r + 1 < rows.length; r++) for (let k = 0; k < NA; k++) {
-      const a = base + r * NA + k, b = base + r * NA + (k + 1) % NA, c = base + (r + 1) * NA + k, d = base + (r + 1) * NA + (k + 1) % NA;
+    for (const [d, y] of rows) for (let i = 0; i < N; i++) out.P.push(...at3(i, d, y));
+    const bd = over - 3 * mm;
+    for (const k of inner) for (let i = 0; i < N; i++) out.P.push(...at3(i, bd, -thick, k));
+    const nr = rows.length + inner.length, t0 = out.T.length;
+    for (let r = 0; r + 1 < nr; r++) for (let i = 0; i < N; i++) {
+      const a = base + r * N + i, b = base + r * N + (i + 1) % N, c = base + (r + 1) * N + i, d = base + (r + 1) * N + (i + 1) % N;
       out.T.push(a, c, b, b, c, d);
     }
-    const bot = out.P.length / 3, last = base + (rows.length - 1) * NA;   // the tread: a fan from the middle
-    const [ax] = f.at(cx, cz); out.P.push(cx, -thick + spring * smooth(0.75, 1.05, ax), cz);
-    for (let k = 0; k < NA; k++) out.T.push(bot, last + (k + 1) % NA, last + k);
+    const ctr = out.P.length / 3; { const q = at3(0, bd, -thick, 0); out.P.push(q[0], q[1], q[2]); }   // the bottom's middle
+    const last = base + (nr - 1) * N;
+    for (let i = 0; i < N; i++) out.T.push(ctr, last + (i + 1) % N, last + i);
+    // faces out: the wall's first quad against its outline's normal (the outline runs either way round)
+    const wi = 3 * N * 2 * 3, w = out.T.slice(t0 + wi, t0 + wi + 3).map(v => out.P.slice(v * 3, v * 3 + 3));   // a quad on the wall (row 3, the top edge)
+    const f1 = [0, 1, 2].map(j => w[1][j] - w[0][j]), f2 = [0, 1, 2].map(j => w[2][j] - w[0][j]), nx = f1[1] * f2[2] - f1[2] * f2[1], nz = f1[0] * f2[1] - f1[1] * f2[0];
+    if (nx * nrm[0][0] + nz * nrm[0][1] < 0) for (let t = t0; t < out.T.length; t += 3) { const q = out.T[t + 1]; out.T[t + 1] = out.T[t + 2]; out.T[t + 2] = q; }
   }
   return { P: new Float32Array(out.P), T: new Uint32Array(out.T), S: new Float32Array(out.P.length / 3).fill(1) };
 }
