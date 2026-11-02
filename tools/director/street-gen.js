@@ -1734,7 +1734,7 @@ export const THING_KINDS = {
   pot: { label: "Plant pot", cat: "Shop and street", h: 0.45, note: "a pot (no plant yet)" },
   ac: { label: "AC unit", cat: "Shop and street", h: 0.6, note: "an air conditioner's outdoor unit on the ground" },
   box: { label: "Block", cat: "Shop and street", h: 1.0, note: "a plain block of any size and material: stand in for anything" },
-  tree: { label: "Tree (stand-in)", cat: "Plants", h: 8, note: "a trunk and a lumpy crown `w` across: a stand-in for a street's or a schoolyard's tree (Blender's Foliage for the real ones)" },
+  tree: { label: "Tree (stand-in)", cat: "Plants", h: 8, note: "a trunk and a lumpy crown `w` across: a stand-in for a street's or a schoolyard's tree (the real ones: the prop generator's trees, `python tools/propgen.py make zelkova_street`, dropped into the Godot project at the stand-in's place; or Blender's Foliage)" },
 };
 export const SIGN_KINDS = { stop: "止まれ (stop)", oneway: "one way", straight: "straight on only", noentry: "no entry", speed30: "30 limit", walk: "walkers", school: "school", noparking: "no parking" };
 export function thingParts(t) {

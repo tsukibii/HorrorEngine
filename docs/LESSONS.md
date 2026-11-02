@@ -3,6 +3,30 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## The prop generator's trees (2026-11-02)
+
+- **Port the algorithm, not the add-on:** Modular Tree 4 is an MIT C++ core under a GPL Blender add-on compiled
+  against one Blender's Python at a time (the fork stopped at 3.2). Its growth (a few hundred lines once the
+  `shared_ptr` scaffolding is gone) ran in plain numpy Python in an afternoon, on Blender 4.2's and 5.x's own Python
+  with nothing to build, and the same seed grows the same tree. Fetch a library like that for what it knows (the
+  order of its steps, its words, its defaults), and write it in the project's own way.
+- **A tiling texture over every branch wants no per-texel raster and no occlusion bake:** the bark tile covers
+  thousands of tubes, so `raster` walked twenty thousand triangles whose UVs run many tiles up each twig (thirty
+  seconds at 512 px, minutes at 1024) for a wear nothing used, and a Cycles occlusion bake over UVs that overlap
+  everywhere is a jumble. Skip the raster where no wear and no paint by place reads it (`build.run` now does, for
+  every prop), and let a thing say it bakes no occlusion (`Thing.bake_ao`).
+- **A texture that must repeat both ways is drawn on the flat torus in 4D, not crossfaded:** sampling 3D noise round
+  a cylinder tiles one way; crossfading the field with itself a tile up blurred the bark's cracks into ink blots, and
+  the 3D torus squeezes its inner side to half. Four coordinates, (cos u, sin u, cos v, sin v) with each circle's
+  radius its length round, and perlin4 reads it with no direction stretched and no seam (`noise.fbm4`, `ridged4`).
+- **A leaf card is a spray, not a leaf:** the first atlas drew leaves at their true size along a twig, and the crown
+  came out a scatter of green specks on bare branches. A card stands for a whole spray, so its leaves are a quarter
+  bigger than life and half a leaf apart along every twig (a fifth to a third of the card covered), and the cards
+  sit at every branch's tip as well as along the last order of twigs, so nothing ends bare.
+- **A pipe model starves a trunk with few tips:** a pollarded plane and a dead tree came out with trunks a few
+  centimetres thick, since their radii were summed from a handful of twigs. A stem keeps at least its species' trunk,
+  tapering up it (`_trunk_floor`), and a pollard's limbs keep the radii they grew with.
+
 ## Carried over from the Godot project (Woohill)
 
 - **Measure, don't guess:** a check that prints one `<NAME> ok` line beats any amount of reading code. Every

@@ -13,6 +13,24 @@ street builder, its paint and the PBR sets, with `prop-gen-tool` merged in; 2026
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
+## 0. `procedural-trees` (2026-11-02, evening): the prop generator's trees, after Modular Tree
+
+The user pointed at steven-ray's fork of Maxime Herpin's Modular Tree and asked for a tree prop generator for urban
+streets with variations (DECISIONS 2026-11-02, evening). Built (PROPGEN §18): `tools/propgen/mtree.py`, Mtree 4's
+MIT core (trunk, branches with phyllotaxis, splits, gravity and the floor, the pipe model's radii) ported to numpy
+Python, nothing to compile; the `tree` family (`families/tree.py`): nine species by season (zelkova, ginkgo, cherry
+with blossom, camphor, plane and pollarded, maple, crape myrtle, black pine, a dead tree), tubes with a seamless bark
+tile drawn by 4D noise on the flat torus, leaf cards off a cluster atlas drawn by code (alpha-cut in Godot, normals
+rounded over the crown), torii or tripod stakes and a kerbed pit, the tree set down by its trunk (`Thing.anchor`);
+sixteen recipes. Framework: `surface.material` cuts alpha (`alpha="clip"`, the glTF's MASK), `mesh.to_blender` takes
+a mesh's own normals (`a["normal"]`), `build.run` skips the per-texel raster where nothing reads it (the wear) and the
+occlusion bake when a thing says so. The user then asked for the trees by night: `propgen.py godot --night` pictures
+any prop under the game's blue moon and in the dark under the flashlight from the player's eye (the sheets in
+`docs/godot_sheets/2026-11-02_trees.jpg` and `_trees_night.jpg`). Next, if the user wants: their own look at the trees on the 3090 (the page shows
+them as cards, `python tools/propgen/serve.py`), wind on the cards (a vertex shader in the look plugin), a bush family
+(azalea hedges, clipped balls), the street builder's `tree` stand-in swapped for a made tree by the Godot drop, lower
+LODs (the twigs' sides, fewer cards) for a street of them.
+
 ## 0. `enhance-prop-editor` (2026-11-01, late night): the prop generator's picture editor (tsukibii/HorrorEngine#10, not merged yet)
 
 The user found pictures on props hard to place (DECISIONS 2026-11-01, late night) and asked for a Figma-like panel:

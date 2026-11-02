@@ -26,6 +26,12 @@
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe beer_can (Content/Studio/Props/presets.json)"
  },
+ "props/black_pine": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe black_pine (Content/Studio/Props/presets.json)"
+ },
  "props/book_hardcover": {
   "date": "2026-11-01",
   "kind": "mesh",
@@ -86,6 +92,12 @@
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe burger_box (Content/Studio/Props/presets.json)"
  },
+ "props/camphor_tree": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe camphor_tree (Content/Studio/Props/presets.json)"
+ },
  "props/candle_black": {
   "date": "2026-10-31",
   "kind": "mesh",
@@ -140,6 +152,18 @@
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe chef_knife (Content/Studio/Props/presets.json)"
  },
+ "props/cherry_blossom": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe cherry_blossom (Content/Studio/Props/presets.json)"
+ },
+ "props/cherry_tree": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe cherry_tree (Content/Studio/Props/presets.json)"
+ },
  "props/chopsticks": {
   "date": "2026-10-30",
   "kind": "mesh",
@@ -175,6 +199,18 @@
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe coffee_cup_tipped (Content/Studio/Props/presets.json)"
+ },
+ "props/crape_myrtle": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe crape_myrtle (Content/Studio/Props/presets.json)"
+ },
+ "props/dead_tree": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe dead_tree (Content/Studio/Props/presets.json)"
  },
  "props/diary_closed": {
   "date": "2026-11-01",
@@ -247,6 +283,18 @@
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe frying_pan (Content/Studio/Props/presets.json)"
+ },
+ "props/ginkgo_autumn": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe ginkgo_autumn (Content/Studio/Props/presets.json)"
+ },
+ "props/ginkgo_street": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe ginkgo_street (Content/Studio/Props/presets.json)"
  },
  "props/glass_tumbler": {
   "date": "2026-10-30",
@@ -331,6 +379,12 @@
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe manga_volume (Content/Studio/Props/presets.json)"
+ },
+ "props/maple_garden": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe maple_garden (Content/Studio/Props/presets.json)"
  },
  "props/mug_green_tea": {
   "date": "2026-10-31",
@@ -428,6 +482,18 @@
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe pizza_slice_box (Content/Studio/Props/presets.json)"
  },
+ "props/plane_pollarded": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe plane_pollarded (Content/Studio/Props/presets.json)"
+ },
+ "props/plane_street": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe plane_street (Content/Studio/Props/presets.json)"
+ },
  "props/plate": {
   "date": "2026-10-30",
   "kind": "mesh",
@@ -469,6 +535,12 @@
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe sanbo_rice (Content/Studio/Props/presets.json)"
+ },
+ "props/sapling_staked": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe sapling_staked (Content/Studio/Props/presets.json)"
  },
  "props/saucepan": {
   "date": "2026-10-31",
@@ -601,5 +673,29 @@
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe yukihira (Content/Studio/Props/presets.json)"
+ },
+ "props/zelkova_autumn": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe zelkova_autumn (Content/Studio/Props/presets.json)"
+ },
+ "props/zelkova_street": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe zelkova_street (Content/Studio/Props/presets.json)"
+ },
+ "props/zelkova_winter": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe zelkova_winter (Content/Studio/Props/presets.json)"
+ },
+ "props/zelkova_young": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe zelkova_young (Content/Studio/Props/presets.json)"
  }
 }

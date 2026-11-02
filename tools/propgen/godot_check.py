@@ -5,6 +5,8 @@ where it should be), its size against the prop's meta.json, its triangles, and a
 light (Saved/Props/_godot/godot_props.png; under xvfb and lavapipe in the cloud).
 
     python tools/propgen.py godot [names...]      (python tools/propgen/godot_check.py [names...])
+        --night                                   and each by night: under the moon (the game's night), then in the
+                                                  dark under the flashlight from the player's eye (godot_night.png)
 """
 import json
 import os
@@ -301,6 +303,159 @@ func _init():
 '''
 
 
+NIGHT_SCRIPT = r"""extends SceneTree
+
+# the props by night, in the game's night colours (game.gd's TIME_LOOK night: a navy sky, blue ambient, a blue moon,
+# a thin blue haze, the eyes' colour down a fifth; the moon and the ambient four times the game's, a bright clear
+# night, so the thing can be judged): each alone under the moon, seen whole from a little above, and then in the dark
+# (the moon as the game has it, an overcast night) under the player's flashlight (play.gd's torch: a hot cone of 26
+# degrees and its spill of 62, 5200 K, range 18 m) from the player's eye seven metres off, the game's 90 degree lens
+func _init():
+	var out := ""
+	var files := []
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--out="):
+			out = a.substr(6)
+		elif a.begins_with("--glb="):
+			files.append(a.substr(6))
+	get_root().size = Vector2i(900, 600)
+	var root := Node3D.new()
+	get_root().add_child(root)
+	var env := WorldEnvironment.new()
+	var e := Environment.new()
+	e.background_mode = Environment.BG_COLOR
+	e.background_color = Color(0.027, 0.039, 0.086)
+	e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	e.ambient_light_color = Color(0.478, 0.525, 0.667)
+	e.ambient_light_energy = 0.22
+	e.reflected_light_source = Environment.REFLECTION_SOURCE_BG
+	e.tonemap_mode = Environment.TONE_MAPPER_AGX
+	e.fog_enabled = true
+	e.fog_light_color = Color(0.04, 0.07, 0.16)
+	e.fog_light_energy = 1.0
+	e.fog_density = 0.012
+	e.adjustment_enabled = true
+	e.adjustment_saturation = 0.8
+	env.environment = e
+	root.add_child(env)
+	var moon := DirectionalLight3D.new()
+	moon.rotation_degrees = Vector3(-35, -140, 0)
+	moon.light_energy = 0.12
+	moon.light_color = Color(0.55, 0.7, 1.0)
+	moon.shadow_enabled = true
+	root.add_child(moon)
+	var floor := MeshInstance3D.new()
+	var pm := PlaneMesh.new()
+	pm.size = Vector2(80, 80)
+	floor.mesh = pm
+	var fm := StandardMaterial3D.new()
+	fm.albedo_color = Color(0.17, 0.17, 0.18)
+	fm.roughness = 0.9
+	floor.material_override = fm
+	root.add_child(floor)
+	var hot := SpotLight3D.new()
+	var spill := SpotLight3D.new()
+	for l in [hot, spill]:
+		l.light_color = Color(1.0, 0.91, 0.83)
+		l.spot_range = 18.0
+		l.light_energy = 0.0
+		root.add_child(l)
+	hot.spot_angle = 13.0
+	hot.shadow_enabled = true
+	spill.spot_angle = 31.0
+	var cam := Camera3D.new()
+	root.add_child(cam)
+	cam.current = true
+	var rep := {}
+	for f in files:
+		var ps = load(f)
+		if ps == null:
+			rep[f] = {"error": "load failed"}
+			continue
+		var inst: Node3D = ps.instantiate()
+		root.add_child(inst)
+		var box := AABB()
+		var first := true
+		for mi in inst.find_children("*", "MeshInstance3D", true, false):
+			var b: AABB = mi.global_transform * mi.get_aabb()
+			box = b if first else box.merge(b)
+			first = false
+		var name: String = f.get_file().get_basename()
+		var h: float = box.size.y
+		var ctr := box.get_center()
+		# the moon: the whole tree from a little above, 32 degrees round from its front
+		var az := deg_to_rad(-32.0)
+		cam.fov = 30.0
+		var dist: float = maxf(h, maxf(box.size.x, box.size.z) * 0.9) / (2.0 * tan(deg_to_rad(15.0))) * 1.15 + 0.5
+		var from := ctr + Vector3(sin(az) * cos(deg_to_rad(7.0)), sin(deg_to_rad(7.0)), cos(az) * cos(deg_to_rad(7.0))) * dist
+		hot.light_energy = 0.0
+		spill.light_energy = 0.0
+		moon.light_energy = 0.5
+		e.ambient_light_energy = 0.9
+		e.fog_density = 0.02
+		await process_frame
+		cam.look_at_from_position(from, ctr, Vector3.UP)
+		for i in 10:
+			await process_frame
+		get_root().get_viewport().get_texture().get_image().save_png(out + "/night_" + name + "_moon.png")
+		# the flashlight: the player seven metres from the trunk, looking up it, an overcast night round them
+		cam.fov = 90.0
+		var eye := Vector3(sin(az) * 7.0, 1.6, cos(az) * 7.0)
+		var aim := Vector3(0.0, minf(3.2, h * 0.45), 0.0)
+		moon.light_energy = 0.03
+		e.ambient_light_energy = 0.22
+		e.fog_density = 0.012
+		hot.light_energy = 7.5
+		spill.light_energy = 1.65
+		cam.look_at_from_position(eye, aim, Vector3.UP)
+		for l in [hot, spill]:
+			l.global_position = eye
+			l.look_at(aim, Vector3.UP)
+		for i in 10:
+			await process_frame
+		get_root().get_viewport().get_texture().get_image().save_png(out + "/night_" + name + "_torch.png")
+		rep[f] = {"size": [box.size.x, box.size.y, box.size.z]}
+		root.remove_child(inst)
+		inst.queue_free()
+	print("NIGHT ", JSON.stringify(rep))
+	quit()
+"""
+
+
+def night_sheet(names, out):
+    """The night pictures as one sheet: each prop under the moon and under the flashlight, side by side, its name under."""
+    from PIL import Image, ImageDraw
+    tiles = []
+    for n in names:
+        row = []
+        for kind in ("moon", "torch"):
+            p = out / f"night_{n}_{kind}.png"
+            if p.exists():
+                im = Image.open(p).convert("RGB")
+                w, h = im.size
+                cw_ = min(w, h * 3 // 2)                      # the frame's middle, 3:2 (the window is wider than the thing)
+                im = im.crop(((w - cw_) // 2, 0, (w - cw_) // 2 + cw_, h)).resize((450, 300))
+            else:
+                im = Image.new("RGB", (450, 300), (40, 40, 44))
+            row.append(im)
+        tiles.append((n, row))
+    cols = 2
+    cw, ch = 900, 300 + 22
+    rows = (len(tiles) + cols - 1) // cols
+    sheet = Image.new("RGB", (cols * cw + (cols + 1) * 8, rows * ch + (rows + 1) * 8 + 30), (18, 19, 22))
+    d = ImageDraw.Draw(sheet)
+    d.text((10, 8), "the props by night: under the moon (left), under the flashlight (right)", fill=(230, 226, 216))
+    for i, (n, row) in enumerate(tiles):
+        r, c = divmod(i, cols)
+        x0, y0 = 8 + c * (cw + 8), 38 + r * (ch + 8)
+        sheet.paste(row[0], (x0, y0))
+        sheet.paste(row[1], (x0 + 450, y0))
+        d.text((x0 + 4, y0 + 304), n, fill=(200, 198, 190))
+    path = out / "godot_night.png"
+    sheet.save(path)
+    return path
+
+
 def godot_bin():
     for c in [os.environ.get("GODOT"), "godot", "godot-mono"]:
         if c and shutil.which(c):
@@ -313,6 +468,7 @@ def main(argv):
     if not g:
         print("GDPROPS FAIL: no godot (tools/godot_setup.sh in the cloud; GODOT=path on your machine)")
         return 1
+    night = "--night" in argv
     names = [a for a in argv if not a.startswith("-")] or sorted(p.name for p in OUT.iterdir() if (p / f"{p.name}.glb").exists())
     if not names:
         print("GDPROPS FAIL: no props made yet (python tools/propgen.py make <name>)")
@@ -324,6 +480,7 @@ def main(argv):
     (PROJ / "check.gd").write_text(SCRIPT, encoding="utf-8")
     (PROJ / "liquids.gd").write_text(LIQUID_SCRIPT, encoding="utf-8")
     (PROJ / "fx.gd").write_text(FX_SCRIPT, encoding="utf-8")
+    (PROJ / "night.gd").write_text(NIGHT_SCRIPT, encoding="utf-8")
     shutil.copytree(ROOT / "GodotPlugins" / "HorrorStudioLook" / "addons" / "horrorstudio_look", PROJ / "addons" / "horrorstudio_look",
                     ignore=shutil.ignore_patterns("*.import", "demo"))
     metas = {}
@@ -442,6 +599,24 @@ def main(argv):
                       f"{on.get('puff_sources', 0)} smoke and steam ({on.get('puffs', 0)} puffs), {on.get('waxed', 0)} waxed; all off when switched off; "
                       f"its .tscn ready" + ("; " + "; ".join(problems) if problems else ""))
             print(f"  the enhancers lit in the dark: {PROJ / 'godot_fx.png'}")
+    if night:
+        # by night: under the moon, then under the flashlight (--night)
+        cmd = [g, "--path", str(PROJ), "--rendering-driver", "vulkan", "-s", "res://night.gd", "--", f"--out={PROJ}"] + \
+              [f"--glb=res://props/{n}.glb" for n in names]
+        if shutil.which("xvfb-run"):
+            cmd = ["xvfb-run", "-a", "-s", "-screen 0 1600x600x24"] + cmd
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=3600, env=env)
+        text = "\n".join(l for l in (r.stdout + r.stderr).splitlines() if l and "ALSA" not in l and "snd_" not in l)
+        if "NIGHT {" not in text or "SCRIPT ERROR" in text:
+            print(text[-3000:])
+            print("  BAD the night scene didn't run clean")
+            ok = False
+        else:
+            missing = [n for n in names if not (PROJ / f"night_{n}_torch.png").exists()]
+            if missing:
+                print("  BAD no night picture of " + ", ".join(missing))
+                ok = False
+            print(f"  by night, under the moon and the flashlight: {night_sheet(names, PROJ)}")
     pic = PROJ / "godot_props.png"
     print(f"  the picture: {pic}")
     print("GDPROPS ok" if ok else "GDPROPS FAIL")

@@ -138,6 +138,7 @@ and set the fill and the colours on each placed copy in Godot (its `HSLiquidFill
 | `sink` | `kind` kitchen (pressed stainless: a basin, a ribbed drainboard, a basket strainer, a gooseneck mixer) or basin (glazed fireclay: an oval bowl, two pillar taps, a bottle trap); `liquid` standing in it, `rust`, `limescale`, `crazing`, `glaze`; sockets spout (`spout_cold`), handle, drain | kitchen_sink, kitchen_sink_water, washbasin, washbasin_blood |
 | `book` | §16: `kind` hardcover, paperback, bunko, manga, textbook, notebook, diary; `size` (A4, B5, A5, B6, A6, bunko, shinsho, tankobon or [w, h] mm), `thick`, `binding` left or right, `pose` lie, stand or open (`open_at`), `arrange` one, stack or row with `fit` [w, d, h] mm, `count`, `mix`, `titles`; `art`, `spine`, `back`, `page_l`, `page_r`; `age` | book_hardcover, book_paperback, bunko, manga_volume, textbook_kokugo, textbook_math, notebook_math, diary_closed, diary_open, book_open, books_desk_box, books_cubby, books_shelf, books_stack_desk |
 | `import` | your own mesh, worn (§5) | chair_worn |
+| `tree` | §18: a street's trees grown by Mtree's functions: `kind` zelkova, ginkgo, cherry, camphor, plane, maple, crape_myrtle, pine, dead; `height`, `clear` (the stem below the first branch), `season` summer, autumn, spring (blossom on a cherry), winter (bare); `spread`, `droop`, `density`, `crown`, `levels`, `lean`, `multi`, `pollard`, `twigs`; `leaves` {count, size, tint}, `bark` {color, relief}; `stakes` torii, tripod or single, `pit` kerb or soil | zelkova_street, zelkova_young, zelkova_autumn, zelkova_winter, ginkgo_street, ginkgo_autumn, cherry_tree, cherry_blossom, camphor_tree, plane_street, plane_pollarded, maple_garden, crape_myrtle, black_pine, dead_tree, sapling_staked |
 
 ### Designs
 
@@ -732,3 +733,86 @@ Texture & pictures tab is that editor (`tools/propgen/page/picedit.js`; the 3D v
 Checked by PROPGEN (a hardcover made with a sheet in an older layout and a bar turned 90 degrees: the front takes the
 yellow quarter, the spine the red, the back none of it, the bar upright; the paint and its ground apart only in its
 pictures' boxes) and PROPPAGE (§13).
+
+## 18. Trees: a street's trees grown by Mtree
+
+The user (2026-11-02): "Similar to our prop system can you see if you can incorporate this blender library ... and
+create a tree prop generator, trees don't need to be massive, just stuff that would be in urban streets, make some
+variations", pointing at steven-ray's fork of Maxime Herpin's **Modular Tree** (`modular_tree`, the Blender 3.x build
+of Mtree 4). Mtree 4 is a C++ core (MIT) with a node-based Blender add-on (GPL) over it; the add-on has to be compiled
+against each Blender's Python, and the fork stopped at 3.2. So the core's growth is ported, not the add-on:
+`tools/propgen/mtree.py` is Mtree's trunk, branch and pipe-radius functions in plain numpy Python (the same tree in
+the same order of steps, under the same words: start, end, density, length, start angle, randomness, up attraction,
+flatness, gravity, stiffness, split chance and angle, break chance, phyllotaxis, the pipe model's power), and it runs
+inside Blender 4.2's and 5.x's own Python with nothing to build. Mtree's meshers (the manifold one in C++, the add-on's
+leaves by a geometry-nodes modifier) are not ported: the tree family meshes the tree for a game its own way, below.
+Nothing of modular_tree's code is copied in; the Mtree core's licence (MIT) and the lineage are in `mtree.py`'s own
+words.
+
+**The family** (`families/tree.py`, `"family": "tree"`):
+
+- **Grown**: `kind` picks a species (its numbers are the species' at its default height, scaled to `height`): the
+  trunk (`clear` metres bare below the first branch, as a street tree is pruned), two or three orders of branches
+  each on the one before, the pipe model's radii (a trunk never thinner than its species' says, however few tips
+  feed it), the last order carrying the leaves. The knobs over the species: `spread` turns the branches out, `droop`
+  is gravity on them, `density` how many, `crown` their length, `levels` how many orders, `lean` degrees off the
+  vertical, `multi` stems from the ground (a crape myrtle's clump), `pollard` (a plane tree cut back to knuckles
+  with a broom of shoots), `twigs` (`auto`: the last order is meshed only when the tree is bare; `mesh`; `cards`),
+  `twigs_density`, `radius` (the trunk's at the ground). The same seed grows the same tree.
+- **Meshed**: every branch a tube with sides by its thickness (three on a twig, twelve on a trunk), rooted inside its
+  parent with a collar, the stems flared at the root with lobes; closed at the tip. Its UVs go round the tube and up
+  it in circumferences, so one square tile of bark stays square however thick the branch. The leaves are **cards**
+  on the last order's nodes and at every branch's tip: a card stands along its twig and out of the crown, drooping a
+  little, and carries one of four clusters off the leaf atlas; its vertex normals are rounded over the crown (out of
+  the crown's middle, lifted) so the mass lights as one, not as flat cards; `leaves.count` how many (the species'
+  own), `leaves.size` metres a card. A street tree is 9k to 26k triangles leafy (a camphor's dome the most), a bare one with its twigs 20k to
+  30k; a sapling 2k.
+- **Painted**, all of it by code: the **bark** one tile over the whole of its texture, drawn on the flat torus with
+  4D noise (`noise.fbm4`, `ridged4`: it repeats round and up with no seam and nothing squeezed) in the species'
+  style: `furrowed` (ginkgo, camphor, the dead tree: ridges up the trunk, dark cracks between), `flaky` (zelkova:
+  grey flaking to orange-brown patches with a dark rim), `lenticels` (cherry: dark bark banded with pale lenticels,
+  a few cracks), `mottled` (plane, crape myrtle: plates of three colours), `scaly` (pine: a jigsaw of plates parted by
+  deep fissures), `smooth` (maple); `bark.color`, `bark.relief`, `bark.scale`; or a PBR set off the shelf
+  (`"pbr": {"bark": "pbr/<set>"}`, tiled at its own size). The **leaf atlas** is four clusters: a twig with side
+  twigs and the species' leaf (elliptic, ovate, a ginkgo's fan, a maple's or a plane's lobes, a pine's tuft of
+  needles) hung thick along them in the season's colours (`season`: summer, spring's lighter greens, autumn's; a
+  cherry in spring and a crape myrtle in summer carry flowers instead), see-through everywhere else. The leaf
+  material is cut, not blended (the glTF's alphaMode MASK: Godot's alpha scissor, so leaves cast shadows of their
+  own shape and need no sorting) and double-sided. `leaves.tint` tints a season's colours.
+- **A street tree's props**: `stakes` (`torii`: two posts and a crossbar bound to the trunk with black bands, the
+  Japanese 二脚鳥居型; `tripod`: three poles leaning on it, bound; `single`: a post beside it), `pit` (`kerb`: a
+  square concrete kerb round dark soil, 1.2 m, `pit_size`; `soil`: the square of soil alone).
+- **Set down by its trunk**: a tree's origin is the foot of its trunk, not the middle of its bounds (`Thing.anchor`,
+  meta.json's `anchor`), so a placed tree stands where it's put and its crown leans where it leans; `socket_base`
+  there and `socket_crown` at the crown's middle. No occlusion is baked (`Thing.bake_ao` off: the bark tile covers
+  every branch, a bake over it would be a jumble) and no wear is laid on the bark or the leaves (their paint carries
+  the age); `wear` still reaches the stakes and the pit.
+
+**The recipes** (presets.json): the Tokyo avenue zelkova in its kerbed pit, young with torii stakes, in autumn and
+bare in winter; a ginkgo and its November gold; a cherry in leaf and in bloom; a camphor's evergreen dome; a plane
+tree and the same pollarded; a Japanese maple in autumn red; a crape myrtle in flower; a black pine; a dead tree; a
+sapling held by a tripod. Another seed is another tree of the kind; `--set height=6` another size.
+
+**Into a street**: the street builder's `tree` stand-in (STREET_BUILDER's things) marks where a tree goes; a made
+tree (`propgen.py make zelkova_street`, `library` for `props/zelkova_street`) is dropped into the Godot project at
+the stand-in's place, or placed in a game's level as any prop (`"shape": "asset props/zelkova_street"`). Mtree's
+GrowthFunction (a year-by-year simulation of vigour and light) isn't ported: the three functions above make every
+street tree the user asked for; wind on the leaves (a vertex shader on the cards) and a bush family (azalea hedges,
+the clipped balls of a schoolyard) are the next things, if wanted.
+
+**By night** (the user, 2026-11-02: "make sure generated trees also look good in night both dark night (flashlight
+style), or more of a blue hue atmospheric night"): `propgen.py godot --night [names]` pictures each prop in Godot in
+the game's night colours (game.gd's TIME_LOOK night: the navy sky, the blue ambient and moon, the thin blue haze,
+the eyes' colour down a fifth), whole under a clear moon from a little above, and then in the dark of an overcast
+night under the player's flashlight (play.gd's torch: its hot cone and its spill, 5200 K, 18 m) from the player's
+eye seven metres off through the game's 90 degree lens; the sheet `Saved/Props/_godot/godot_night.png`, the sixteen
+trees' in `docs/godot_sheets/2026-11-02_trees_night.jpg` (the day's Cycles previews: `2026-11-02_trees.jpg`). Under
+the moon the leaves read teal over a grey-blue trunk and cast a long cut shadow; under the flashlight the warm cone
+lights the trunk and the crown's underside and the top fades into the dark, as it should in a horror street; the
+blossom glows pale. The leaves are cut, not blended, so nothing sorts wrong against the beam and their shadows are
+their own shape.
+
+Checked by PROPGEN (`zelkova_street` leafy and `dead_tree` bare made small: well-formed, on the floor, anchored on the
+origin, about their height, within their budgets, the leaf material cut, every stem's foot closed so nothing is seen
+inside out from below) and GDPROPS (imported by Godot 4.7, the leaf surface see-through; `--night` the two nights).
+

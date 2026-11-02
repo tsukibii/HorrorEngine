@@ -2,6 +2,22 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-02, evening (the user: trees, on `procedural-trees`)
+
+- **"Similar to our prop system can you see if you can incorporate this blender library (its for older versions so may
+  need to manually update to the same one you use for props), and create a tree prop generator, trees dont need to be
+  massive, just stuff that would be in urban streets, make some variations"**, pointing at
+  https://github.com/steven-ray/modular_tree (a fork of Maxime Herpin's Modular Tree for Blender 3.x). Mtree 4's
+  core is C++ (MIT) under a GPL add-on, built against each Blender's Python and stopped at 3.2; its growth is ported
+  to plain numpy Python instead (`tools/propgen/mtree.py`, nothing to compile, Blender 4.2 and 5.x) and the prop
+  generator grew a `tree` family (PROPGEN §18): urban street trees (zelkova, ginkgo, cherry, camphor, plane, maple,
+  crape myrtle, black pine, a dead one) by season, with stakes and a tree pit, sixteen recipes to start from.
+  Built on the branch `procedural-trees`.
+- **"make sure generated trees also look good in night both dark night (flashlight style), or more of a blue hue
+  atmospheric night"**: `propgen.py godot --night` pictures any prop in Godot under the game's blue moonlit night
+  and in the dark under the player's flashlight from the player's eye (PROPGEN §18); the sixteen trees' sheet is
+  `docs/godot_sheets/2026-11-02_trees_night.jpg`.
+
 ## 2026-11-02, later (the user: the GPU, on `clothing-refiner`)
 
 - **"Instead of re-writing the WebGPU compute for cpu, can you just make a toggle for (use gpu), so I can test it, I

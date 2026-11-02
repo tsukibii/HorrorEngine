@@ -28,6 +28,8 @@ exported. No image or 3D generator anywhere.
     python tools/propgen.py check                      PROPGEN: a few recipes made small and measured
     python tools/propgen.py godot [names...]           GDPROPS: the made props imported by Godot 4.7, their materials
                                                        read back, pictured (Saved/Props/_godot/godot_props.png)
+        --night                                        and by night: under the moon, then under the flashlight
+                                                       (godot_night.png)
 
 Blender: --blender PATH, $BLENDER, `blender` on the PATH, or Blender's Python module (python tools/retarget.py
 setup, the cloud's way). Cycles uses the graphics card when it finds one (--cpu not to).

@@ -49,6 +49,59 @@ def perlin3(p, seed=0):
     return ((a * (1 - uy) + b * uy) * (1 - uz) + (c * (1 - uy) + d * uy) * uz) * 1.45
 
 
+_GRAD4 = np.array([[a, b, c, d] for a in (-1, 1) for b in (-1, 1) for c in (-1, 1) for d in (-1, 1)] +
+                  [[0, 1, 1, 1], [0, -1, 1, 1], [0, 1, -1, 1], [0, 1, 1, -1], [0, -1, -1, 1], [0, -1, 1, -1], [0, 1, -1, -1], [0, -1, -1, -1],
+                   [1, 0, 1, 1], [-1, 0, 1, 1], [1, 0, -1, 1], [1, 0, 1, -1], [-1, 0, -1, 1], [-1, 0, 1, -1], [1, 0, -1, -1], [-1, 0, -1, -1]], float)
+
+
+def perlin4(p, seed=0):
+    """Gradient noise at points p (..., 4), about -1 to 1: for a texture that tiles both ways, sampled on the flat
+    torus (cos u, sin u, cos v, sin v), where no direction is stretched (the 3D torus squeezes its inner side)."""
+    p = np.asarray(p, float)
+    perm = _perm(seed)
+    fl = np.floor(p)
+    f = p - fl
+    i = fl.astype(np.int64) & 255
+    u = f * f * f * (f * (f * 6 - 15) + 10)
+    out = np.zeros(p.shape[:-1])
+    for corner in range(16):
+        c = np.array([(corner >> k) & 1 for k in range(4)])
+        ix = (i + c) & 255
+        h = perm[perm[perm[perm[ix[..., 0]] + ix[..., 1]] + ix[..., 2]] + ix[..., 3]] % 32
+        gr = _GRAD4[h]
+        d = f - c
+        dot = (gr * d).sum(-1)
+        w = np.ones(p.shape[:-1])
+        for k in range(4):
+            w = w * (u[..., k] if c[k] else 1 - u[..., k])
+        out += w * dot
+    return out * 0.87
+
+
+def fbm4(p, seed=0, octaves=4, lacunarity=2.0, gain=0.5):
+    """Fractal sum of perlin4, normalised to about -1 to 1."""
+    p = np.asarray(p, float)
+    out = np.zeros(p.shape[:-1])
+    amp, tot = 1.0, 0.0
+    for o in range(octaves):
+        out += amp * perlin4(p * lacunarity ** o + 13.71 * o, seed + 101 * o)
+        tot += amp
+        amp *= gain
+    return out / tot
+
+
+def ridged4(p, seed=0, octaves=3, lacunarity=2.0, gain=0.5):
+    """Sharp creases in 4D: 1 on the noise's zero lines, falling away either side, 0 to 1."""
+    p = np.asarray(p, float)
+    out = np.zeros(p.shape[:-1])
+    amp, tot = 1.0, 0.0
+    for o in range(octaves):
+        out += amp * (1 - np.abs(perlin4(p * lacunarity ** o + 7.17 * o, seed + 57 * o))) ** 2
+        tot += amp
+        amp *= gain
+    return out / tot
+
+
 def fbm3(p, seed=0, octaves=4, lacunarity=2.0, gain=0.5):
     """Fractal sum: octaves of perlin3, each finer and fainter, normalised to about -1 to 1."""
     p = np.asarray(p, float)

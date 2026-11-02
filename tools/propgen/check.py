@@ -21,7 +21,7 @@ CASES = {"soda_can": (115, 6000), "soda_can_crushed": (125, 14000), "water_bottl
          "soy_bottle": (120, 9000), "pill_bottle": (90, 14000), "candle_taper": (330, 13000),
          "ema": (160, 6000), "shimenawa": (900, 10000), "wara_ningyo": (270, 8000), "hokora": (560, 8000), "tetsubin": (180, 12000),
          "rice_cooker": (330, 8000), "kitchen_sink_water": (920, 14000), "book_hardcover": (215, 4000), "diary_open": (360, 4000),
-         "books_cubby": (420, 16000)}
+         "books_cubby": (420, 16000), "zelkova_street": (9000, 26000), "dead_tree": (7000, 26000)}
 
 
 def _glb(path):
@@ -217,7 +217,10 @@ def run(book, out):
         lo, hi = pos.min(0), pos.max(0)                 # glTF: y up
         if abs(lo[1]) > 1e-4:
             problems.append(f"its lowest point at {lo[1] * 1000:.2f} mm, not on the floor")
-        if abs((lo[0] + hi[0]) / 2) > 1e-3 or abs((lo[2] + hi[2]) / 2) > 1e-3:
+        if rec.get("anchor"):
+            if abs(rec["anchor"][0]) > 1e-3 or abs(rec["anchor"][1]) > 1e-3:
+                problems.append("its anchor isn't over the origin")
+        elif abs((lo[0] + hi[0]) / 2) > 1e-3 or abs((lo[2] + hi[2]) / 2) > 1e-3:
             problems.append("not centred")
         longest = float((hi - lo).max()) * 1000
         if not (0.5 * size_mm <= longest <= 2.0 * size_mm):
