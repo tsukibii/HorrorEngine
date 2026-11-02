@@ -953,6 +953,96 @@
   ],
   "tris": 2036
  },
+ "small_cherry": {
+  "kb": 6981,
+  "size_m": [
+   2.2381,
+   4.5295,
+   2.0374
+  ],
+  "tris": 5450
+ },
+ "small_cherry_blossom": {
+  "kb": 7000,
+  "size_m": [
+   2.51,
+   4.3924,
+   2.2962
+  ],
+  "tris": 5156
+ },
+ "small_dead": {
+  "kb": 6268,
+  "size_m": [
+   0.5777,
+   3.4357,
+   0.8408
+  ],
+  "tris": 1242
+ },
+ "small_ginkgo": {
+  "kb": 7990,
+  "size_m": [
+   1.6196,
+   4.8063,
+   1.5889
+  ],
+  "tris": 3740
+ },
+ "small_ginkgo_autumn": {
+  "kb": 8107,
+  "size_m": [
+   1.7196,
+   4.7991,
+   1.5372
+  ],
+  "tris": 3880
+ },
+ "small_hornbeam_real": {
+  "kb": 9322,
+  "size_m": [
+   1.7845,
+   4.9999,
+   1.7123
+  ],
+  "tris": 4818
+ },
+ "small_maple_autumn": {
+  "kb": 7723,
+  "size_m": [
+   1.8902,
+   3.8078,
+   2.0332
+  ],
+  "tris": 4950
+ },
+ "small_zelkova": {
+  "kb": 7930,
+  "size_m": [
+   1.7337,
+   4.5724,
+   2.1317
+  ],
+  "tris": 4022
+ },
+ "small_zelkova_autumn": {
+  "kb": 8002,
+  "size_m": [
+   1.8641,
+   4.6715,
+   1.8647
+  ],
+  "tris": 4146
+ },
+ "small_zelkova_staked": {
+  "kb": 8046,
+  "size_m": [
+   1.6954,
+   4.6476,
+   1.6725
+  ],
+  "tris": 4578
+ },
  "soda_can": {
   "kb": 678,
   "size_m": [

@@ -8,8 +8,12 @@ its middle, under the street check's dusk sky with a sun, and under the game's n
 one sheet.
 
     python tools/godot/street_dress.py --street hill_motel [--trees zelkova_street,cherry_tree,ginkgo_street]
-        [--bushes azalea_ball,azalea_low,shrub_loose,grass_tuft] [--gap 11] [--shots shot_hill,walk] [--no-night]
-        [--out Saved/Streets/<street>/dressed]
+        [--small small_zelkova,small_hornbeam_real,small_cherry,small_ginkgo] [--room 4.5] [--bushes azalea_ball,...]
+        [--gap 11] [--shots shot_hill,walk] [--no-night] [--out Saved/Streets/<street>/dressed]
+
+A big tree (`--trees`) stands only where no building is within `--room` metres; beside a house a small upright one
+(`--small`, the small_* recipes, under a two-storey house, its branches steep) takes the place, so no crown reaches
+into a wall.
 
 The desk's server running (the export), Godot 4.7 (tools/godot_setup.sh in the cloud), the props made
 (python tools/propgen.py make <names>). Writes <out>/placements.json (what went where: a start for the street's own
@@ -33,7 +37,9 @@ def opt(k, d=None):
 
 street = opt("--street", "hill_motel")
 trees = [t for t in opt("--trees", "zelkova_street,cherry_tree,ginkgo_street,camphor_tree").split(",") if t]
+small = [t for t in opt("--small", "small_zelkova,small_hornbeam_real,small_cherry,small_ginkgo").split(",") if t]
 bushes = [b for b in opt("--bushes", "azalea_ball,azalea_low,shrub_loose,grass_tuft,azalea_hedge").split(",") if b]
+room = float(opt("--room", "4.5"))                        # a big tree wants no building within this; nearer a house a small tree stands
 gap = float(opt("--gap", "11"))
 shots_want = [s_ for s_ in opt("--shots", "").split(",") if s_]
 night = "--no-night" not in args
@@ -52,7 +58,7 @@ if not G:
     sys.exit("GDDRESS FAILED: no godot (tools/godot_setup.sh on a cloud session; godot-mono on the user's machine)")
 if not SJ.exists():
     sys.exit(f"GDDRESS FAILED: no street {street} (python tools/street.py list)")
-for n in trees + bushes:
+for n in trees + small + bushes:
     if not (PROPS / n / f"{n}.glb").exists():
         sys.exit(f"GDDRESS FAILED: {n} isn't made (python tools/propgen.py make {n})")
 out.mkdir(parents=True, exist_ok=True)
@@ -70,7 +76,7 @@ shutil.copy(glb, proj / "street.glb")
 PLACE = r'''
 import fs from "fs"; import { pathToFileURL } from "url";
 const SG = await import(pathToFileURL(process.argv[1] + "/tools/director/street-gen.js").href);
-const S = JSON.parse(fs.readFileSync(process.argv[2], "utf8")), gap = +process.argv[3], T = SG.terrain(S);
+const S = JSON.parse(fs.readFileSync(process.argv[2], "utf8")), gap = +process.argv[3], room = +process.argv[4], T = SG.terrain(S);
 const feet = (S.buildings || []).map(b => ({ id: b.id, P: SG.footprint(b) }));
 const pip = (x, y, P) => { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) if ((P[i][1] > y) !== (P[j][1] > y) && x < (P[j][0] - P[i][0]) * (y - P[i][1]) / (P[j][1] - P[i][1]) + P[i][0]) c = !c; return c; };
 const nearBuilding = (x, y, m) => feet.some(f => pip(x, y, f.P) || f.P.some((p, i) => { const q = f.P[(i + 1) % f.P.length], dx = q[0] - p[0], dy = q[1] - p[1], l2 = dx * dx + dy * dy || 1e-9; let u = ((x - p[0]) * dx + (y - p[1]) * dy) / l2; u = Math.max(0, Math.min(1, u)); return Math.hypot(x - p[0] - dx * u, y - p[1] - dy * u) < m; }));
@@ -87,7 +93,7 @@ for (const r of S.roads || []) {
       const side = (flip + tries) % 2 === 0 ? 1 : -1, walk = f.walks[side > 0 ? 0 : 1]; if (walk < 1.2) continue;
       const p = f.at(s, side * (f.W / 2 + Math.min(0.65, walk * 0.4)));
       if (nearThing(p[0], p[1], 2.2) || nearBuilding(p[0], p[1], 0.5)) continue;
-      out.trees.push({ at: [p[0], p[1], p[2] + f.kerb], s, side, road: r.id }); break;
+      out.trees.push({ at: [p[0], p[1], p[2] + f.kerb], s, side, road: r.id, house: nearBuilding(p[0], p[1], room) }); break;
     }
     flip++;
   }
@@ -114,7 +120,7 @@ for (const r of S.roads || []) {
 }
 console.log(JSON.stringify(out));
 '''
-r = run([node, "--input-type=module", "-e", PLACE, str(ROOT), str(SJ), str(gap)])
+r = run([node, "--input-type=module", "-e", PLACE, str(ROOT), str(SJ), str(gap), str(room)])
 if r.returncode:
     sys.exit("GDDRESS FAILED: the places: " + r.stderr[-600:])
 P = json.loads(r.stdout)
@@ -123,10 +129,17 @@ S = json.loads(SJ.read_text(encoding="utf-8"))
 placements = []
 hedges = {b for b in bushes if "hedge" in b}
 tufts = {b for b in bushes if "grass" in b}
-ti = 0
+ti = si = 0
 for t in P["trees"]:
-    placements.append({"prop": trees[ti % len(trees)], "at": t["at"], "yaw": (ti * 137.5) % 360, "kind": "tree", "road": t["road"], "s": round(t["s"], 1)})
-    ti += 1
+    # a big tree only with room round it; beside a house a small upright one, whose crown stays off the wall
+    if t.get("house") and small:
+        name, si = small[si % len(small)], si + 1
+    elif trees:
+        name, ti = trees[ti % len(trees)], ti + 1
+    else:
+        continue
+    placements.append({"prop": name, "at": t["at"], "yaw": ((ti + si) * 137.5) % 360, "kind": "tree", "size": "small" if t.get("house") else "big",
+                       "road": t["road"], "s": round(t["s"], 1)})
 bi = 0
 for b in P["bushes"]:
     pool = [x for x in bushes if (x in tufts)] if b["edge"] == "kerb" else [x for x in bushes if x not in tufts]
@@ -149,7 +162,9 @@ console.log(JSON.stringify(want.map(w => { const r = S.roads.find(x => x.id === 
     for p, a in zip(need, json.loads(r.stdout)):
         p["yaw"] = a
 (out / "placements.json").write_text(json.dumps({"street": street, "placements": placements}, indent=1), encoding="utf-8")
-print(f"{len([p for p in placements if p['kind'] == 'tree'])} trees and {len([p for p in placements if p['kind'] == 'bush'])} bushes along {street}'s pavements")
+print(f"{len([p for p in placements if p['kind'] == 'tree' and p['size'] == 'big'])} big trees (room round them), "
+      f"{len([p for p in placements if p['kind'] == 'tree' and p['size'] == 'small'])} small trees (by a house) and "
+      f"{len([p for p in placements if p['kind'] == 'bush'])} bushes along {street}'s pavements")
 for n in sorted({p["prop"] for p in placements}):
     shutil.copy(PROPS / n / f"{n}.glb", proj / "props" / f"{n}.glb")
 # the shots: the street's own, and the walk
@@ -275,7 +290,7 @@ try:
     th = max(max(im.size[1] for im in row) for _, row in tiles)
     sheet = Image.new("RGB", (cols * 808 + 8, len(tiles) * (th + 30) + 40), (18, 19, 22))
     d = ImageDraw.Draw(sheet)
-    d.text((10, 8), f"{street}, dressed with {', '.join(trees)} and {', '.join(bushes)}: by day (left) and by night (right)", fill=(230, 226, 216))
+    d.text((10, 8), f"{street}, dressed: big trees {', '.join(trees)} where there's room, small trees {', '.join(small)} by the houses, bushes {', '.join(bushes)}: day (left), night (right)", fill=(230, 226, 216))
     for i, (sid, row) in enumerate(tiles):
         for j, im in enumerate(row):
             sheet.paste(im, (8 + j * 808, 36 + i * (th + 30)))

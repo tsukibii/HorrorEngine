@@ -298,5 +298,20 @@
  "shrub_real": {"label": "realistic leaves: the loose shrub in leaves off the leaf set", "from": "shrub_loose", "seed": 113,
    "leaves": {"set": "pbr/leaf/LeafSet005_1K-PNG", "set_mm": 55, "count": 800, "size": 0.3, "sat": 1.15}},
  "grass_tuft": {"label": "a tuft of grass poking out of a path's edge", "family": "tree", "kind": "grass", "season": "summer", "seed": 121},
- "grass_dry": {"label": "a tuft of dry grass", "from": "grass_tuft", "season": "autumn", "seed": 122, "height": 0.5}
+ "grass_dry": {"label": "a tuft of dry grass", "from": "grass_tuft", "season": "autumn", "seed": 122, "height": 0.5},
+ "small_zelkova": {"label": "small tree: a young zelkova kept upright, 4.5 m, under a two-storey house, for the pavement by a wall", "family": "tree",
+   "kind": "zelkova", "habit": "upright", "height": 4.5, "clear": 2.0, "season": "summer", "seed": 201, "pit": "kerb"},
+ "small_zelkova_staked": {"label": "small tree: the young zelkova with its torii stakes", "from": "small_zelkova", "seed": 202, "stakes": "torii"},
+ "small_zelkova_autumn": {"label": "small tree: the young zelkova in autumn", "from": "small_zelkova", "season": "autumn", "seed": 203},
+ "small_hornbeam_real": {"label": "small tree: an upright hornbeam, realistic leaves off the leaf set, 4.8 m", "from": "small_zelkova", "height": 4.8,
+   "seed": 204, "leaves": {"set": "pbr/leaf/LeafSet005_1K-PNG", "set_mm": 68, "count": 1100, "size": 0.38, "sat": 1.15, "light": 1.05}},
+ "small_cherry": {"label": "small tree: a columnar cherry in leaf, 4.2 m", "family": "tree", "kind": "cherry", "habit": "upright", "height": 4.2,
+   "clear": 1.9, "season": "summer", "seed": 211, "pit": "soil"},
+ "small_cherry_blossom": {"label": "small tree: the columnar cherry in bloom", "from": "small_cherry", "season": "spring", "seed": 212},
+ "small_ginkgo": {"label": "small tree: a young ginkgo, narrow and upright, 4.8 m", "family": "tree", "kind": "ginkgo", "habit": "upright", "height": 4.8,
+   "clear": 2.1, "season": "summer", "seed": 221, "pit": "kerb"},
+ "small_ginkgo_autumn": {"label": "small tree: the young ginkgo gold", "from": "small_ginkgo", "season": "autumn", "seed": 222},
+ "small_maple_autumn": {"label": "small tree: an upright maple in autumn red, 3.6 m", "family": "tree", "kind": "maple", "habit": "upright", "height": 3.6,
+   "clear": 1.7, "season": "autumn", "seed": 231, "pit": "soil"},
+ "small_dead": {"label": "small tree: a thin dead sapling, 4 m", "family": "tree", "kind": "dead", "habit": "upright", "height": 4.0, "clear": 1.8, "seed": 241}
 }

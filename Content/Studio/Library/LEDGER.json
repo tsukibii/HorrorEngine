@@ -656,6 +656,66 @@
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe shrub_real (Content/Studio/Props/presets.json)"
  },
+ "props/small_cherry": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe small_cherry (Content/Studio/Props/presets.json)"
+ },
+ "props/small_cherry_blossom": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe small_cherry_blossom (Content/Studio/Props/presets.json)"
+ },
+ "props/small_dead": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe small_dead (Content/Studio/Props/presets.json)"
+ },
+ "props/small_ginkgo": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe small_ginkgo (Content/Studio/Props/presets.json)"
+ },
+ "props/small_ginkgo_autumn": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe small_ginkgo_autumn (Content/Studio/Props/presets.json)"
+ },
+ "props/small_hornbeam_real": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe small_hornbeam_real (Content/Studio/Props/presets.json)"
+ },
+ "props/small_maple_autumn": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe small_maple_autumn (Content/Studio/Props/presets.json)"
+ },
+ "props/small_zelkova": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe small_zelkova (Content/Studio/Props/presets.json)"
+ },
+ "props/small_zelkova_autumn": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe small_zelkova_autumn (Content/Studio/Props/presets.json)"
+ },
+ "props/small_zelkova_staked": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe small_zelkova_staked (Content/Studio/Props/presets.json)"
+ },
  "props/soda_can": {
   "date": "2026-10-30",
   "kind": "mesh",

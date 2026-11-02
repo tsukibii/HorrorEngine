@@ -138,7 +138,7 @@ and set the fill and the colours on each placed copy in Godot (its `HSLiquidFill
 | `sink` | `kind` kitchen (pressed stainless: a basin, a ribbed drainboard, a basket strainer, a gooseneck mixer) or basin (glazed fireclay: an oval bowl, two pillar taps, a bottle trap); `liquid` standing in it, `rust`, `limescale`, `crazing`, `glaze`; sockets spout (`spout_cold`), handle, drain | kitchen_sink, kitchen_sink_water, washbasin, washbasin_blood |
 | `book` | §16: `kind` hardcover, paperback, bunko, manga, textbook, notebook, diary; `size` (A4, B5, A5, B6, A6, bunko, shinsho, tankobon or [w, h] mm), `thick`, `binding` left or right, `pose` lie, stand or open (`open_at`), `arrange` one, stack or row with `fit` [w, d, h] mm, `count`, `mix`, `titles`; `art`, `spine`, `back`, `page_l`, `page_r`; `age` | book_hardcover, book_paperback, bunko, manga_volume, textbook_kokugo, textbook_math, notebook_math, diary_closed, diary_open, book_open, books_desk_box, books_cubby, books_shelf, books_stack_desk |
 | `import` | your own mesh, worn (§5) | chair_worn |
-| `tree` | §18: a street's trees grown by Mtree's functions: `kind` zelkova, ginkgo, cherry, camphor, plane, maple, crape_myrtle, pine, cedar, dead, and the bushes azalea (`clip` to a ball or a box), shrub, grass; `height`, `clear` (the stem below the first branch), `season` summer, autumn, spring (blossom on a cherry), winter (bare); `spread`, `droop`, `density`, `crown`, `levels`, `lean`, `multi`, `pollard`, `twigs`; `leaves` {count, size, tint; `set` a leaf set off the shelf for realistic leaves, `set_mm`, `spray`, `hue`, `sat`, `light`}, `bark` {pbr, tint, tile, relief; color, style for the drawn tile}; `stakes` torii, tripod or single, `pit` kerb or soil | zelkova_street, zelkova_young, zelkova_autumn, zelkova_winter, ginkgo_street, ginkgo_autumn, cherry_tree, cherry_blossom, camphor_tree, plane_street, plane_pollarded, maple_garden, crape_myrtle, black_pine, dead_tree, sapling_staked; the realistic category: zelkova_real, zelkova_autumn_real, cherry_real, camphor_real, plane_real, maple_autumn_real, crape_myrtle_real, black_pine_real, cedar_real; the bushes: azalea_ball, azalea_flowering, azalea_hedge, azalea_low, shrub_loose, shrub_autumn, shrub_real, grass_tuft, grass_dry |
+| `tree` | §18: a street's trees grown by Mtree's functions: `kind` zelkova, ginkgo, cherry, camphor, plane, maple, crape_myrtle, pine, cedar, dead, and the bushes azalea (`clip` to a ball or a box), shrub, grass; `height`, `clear` (the stem below the first branch), `season` summer, autumn, spring (blossom on a cherry), winter (bare); `spread`, `droop`, `density`, `crown`, `levels`, `lean`, `multi`, `pollard`, `twigs`; `leaves` {count, size, tint; `set` a leaf set off the shelf for realistic leaves, `set_mm`, `spray`, `hue`, `sat`, `light`}, `bark` {pbr, tint, tile, relief; color, style for the drawn tile}; `stakes` torii, tripod or single, `pit` kerb or soil | zelkova_street, zelkova_young, zelkova_autumn, zelkova_winter, ginkgo_street, ginkgo_autumn, cherry_tree, cherry_blossom, camphor_tree, plane_street, plane_pollarded, maple_garden, crape_myrtle, black_pine, dead_tree, sapling_staked; the realistic category: zelkova_real, zelkova_autumn_real, cherry_real, camphor_real, plane_real, maple_autumn_real, crape_myrtle_real, black_pine_real, cedar_real; the bushes: azalea_ball, azalea_flowering, azalea_hedge, azalea_low, shrub_loose, shrub_autumn, shrub_real, grass_tuft, grass_dry; the small trees (`habit: upright`, under a two-storey house): small_zelkova, small_zelkova_staked, small_zelkova_autumn, small_hornbeam_real, small_cherry, small_cherry_blossom, small_ginkgo, small_ginkgo_autumn, small_maple_autumn, small_dead |
 
 ### Designs
 
@@ -822,10 +822,24 @@ path's edge; `grass` a tuft of blades on a few cards and no wood at all. Recipes
 `azalea_flowering`, `azalea_hedge` (1.8 m along a path), `azalea_low`, `shrub_loose`, `shrub_autumn`, `shrub_real`
 (the leaf set's leaves), `grass_tuft`, `grass_dry`; 1.4k to 3.7k triangles, a tuft 18.
 
+**Small trees** (the user, 2026-11-02: "smaller thinner trees that don't go as tall as a double floor house, and
+their branches are up at 80-90 degree angles so less chance of clipping into the house; call these trees small trees,
+big trees won't be placed beside houses"): `habit: upright` grows any species as a narrow column: every order's
+branches leave at a quarter of the species' angle (74 to 81 degrees from the ground on the first order), split
+narrower, pulled up, barely bent by gravity, the leader near the top with branches all the way up it; a tree kept
+short (`height` 3.6 to 4.8 m) gets fewer, slightly smaller sprays. The `small_*` recipes: a young zelkova (plain,
+staked, in autumn), an upright hornbeam in the leaf set's leaves, a columnar cherry (in leaf, in bloom), a young
+ginkgo (green, gold), an upright maple in autumn red, a thin dead sapling: 4 to 4.8 m tall, 1.6 to 2.5 m across, 4k
+to 5k triangles (`docs/godot_sheets/2026-11-02_small_trees.jpg`). They stand on the pavement in front of a house; the
+big trees go where there is room. On the hill road dressed again (`2026-11-02_hill_motel_dressed.jpg`) nine small
+trees line the houses under their eaves and the one big zelkova stands at the open end by the car park: the lane
+reads as a lane, nothing reaches into a wall, and the small crowns give the houses scale without hiding them.
+
 **A street dressed** (`tools/godot/street_dress.py --street hill_motel`, GDDRESS; the launcher's Godot section): the
 street's .glb as the page exports it, trees along its pavements by the generator's own road curve (every `--gap`
-metres, each side in turn, by the kerb, clear of lamps, poles and buildings' fronts), bushes and tufts at the
-pavements' back edges and kerbs between them, every shot of the street plus a walk at the player's eye and a look up
+metres, each side in turn, by the kerb, clear of lamps, poles and buildings' fronts; **a big tree only where no
+building stands within `--room` metres, 4.5 by default, a small upright one (`--small`) beside a house, so no crown
+reaches into a wall**), bushes and tufts at the pavements' back edges and kerbs between them, every shot of the street plus a walk at the player's eye and a look up
 the road, by day (the street check's dusk sky and a sun) and by night (the game's night, the street's lamps lit), the
 pictures as a sheet, and `placements.json` (what went where: a start for the street's own `tree` stand-ins). The
 hill road dressed: `docs/godot_sheets/2026-11-02_hill_motel_dressed.jpg`. What it showed (2026-11-02): the trees sit
@@ -860,7 +874,7 @@ lights the trunk and the crown's underside and the top fades into the dark, as i
 blossom glows pale. The leaves are cut, not blended, so nothing sorts wrong against the beam and their shadows are
 their own shape.
 
-Checked by PROPGEN (`zelkova_street` leafy, `dead_tree` bare, `cedar_real` in the leaf set's sprays, `azalea_ball` and `grass_tuft` made small: well-formed, on the floor, anchored on the
+Checked by PROPGEN (`zelkova_street` leafy, `dead_tree` bare, `cedar_real` in the leaf set's sprays, `azalea_ball`, `grass_tuft` and the upright `small_zelkova` made small: well-formed, on the floor, anchored on the
 origin, about their height, within their budgets, the leaf material cut, every stem's foot closed so nothing is seen
 inside out from below) and GDPROPS (imported by Godot 4.7, the leaf surface see-through; `--night` the two nights).
 

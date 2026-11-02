@@ -15,6 +15,11 @@ to a clear stem (`clear`), and a young one is held by stakes (`stakes`) in a tre
     "stakes": "none" | "torii" | "tripod" | "single"
     "pit": "none" | "kerb" | "soil"
     "twigs": "auto" | "mesh" | "cards"
+    "habit": "spreading" | "upright"
+
+**Small trees** (the user, 2026-11-02): a tree kept under a two-storey house (`height` 4 to 5 m) with `habit: upright`,
+its branches steep (a quarter of the species' angles, little gravity, pulled up), so the crown stays narrow and clear
+of a wall beside it: the `small_*` recipes, for the pavement in front of a house; big trees go where there is room.
 
 `bark`: `pbr` a set off the shelf (each species' real bark by default: pbr/bark/Bark001, 006 or 014; null for the
 tile drawn by code), `tile` metres a repeat, `tint`, `pbr_relief` (`relief` is the drawn tile's); `height` metres over all; `clear` the trunk below the first branch; `spread` turns the branches out (1 the species'
@@ -295,6 +300,10 @@ def grow(spec, sp, seed):
     levels = sp["levels"][:int(spec.get("levels", len(sp["levels"])))]
     if spec.get("pollard"):
         levels = _pollard_levels(levels)
+    if spec.get("habit", sp.get("habit", "spreading")) == "upright":
+        levels = _upright_levels(levels)
+        tr = dict(tr, up=tr["up"] + 0.5, randomness=tr["randomness"] * 0.6)
+        tlen = max(tlen, H * 0.88)                              # the leader near the top: branches all the way up the column
     spread, droop, dens, crown = (float(spec.get(k_, 1.0)) for k_ in ("spread", "droop", "density", "crown"))
     twigs = float(spec.get("twigs_density", 1.0))
     ids = [0]
@@ -374,6 +383,18 @@ def _scaled(p, k):
     if isinstance(p, (list, tuple)):
         return [v * k for v in p]
     return float(p) * k
+
+
+def _upright_levels(levels):
+    """An upright habit: every order's branches leave at a quarter of their angle and split narrower, gravity barely
+    bends them, they're pulled up and kept off the flat, so the crown is a narrow column."""
+    out = []
+    for i, lv in enumerate(levels):
+        k = 0.42 if i == 0 else 0.55
+        out.append(dict(lv, angle=_scaled(lv["angle"], k), split_angle=lv["split_angle"] * 0.6, gravity=lv["gravity"] * 0.25,
+                        up=min(1.0, lv["up"] + 0.4), flatness=lv["flatness"] * 0.7, stiffness=lv["stiffness"] * 1.5,
+                        density=lv["density"] * (2.2 if i == 0 else 1.3), end=max(lv.get("end", 1.0), 0.97) if i == 0 else lv.get("end", 1.0)))
+    return out
 
 
 def _pollard_levels(levels):
@@ -686,6 +707,10 @@ def make(spec, th):
     sp = SPECIES[kind]
     season = "dead" if kind == "dead" else spec.get("season", "summer")
     leaf = dict(sp["leaf"])
+    k_h = float(spec.get("height", sp["height"])) / sp["height"]          # a tree kept small has fewer, smaller sprays
+    if k_h < 0.95 and kind not in ("grass",):
+        leaf["count"] = int(leaf.get("count", 1800) * max(0.3, k_h ** 1.15))
+        leaf["card"] = leaf.get("card", 0.45) * max(0.7, k_h ** 0.3)
     leaf.update(spec.get("leaves") or {})
     bark = dict(sp["bark"])
     bark.update(spec.get("bark") or {})

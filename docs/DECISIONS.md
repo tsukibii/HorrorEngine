@@ -18,6 +18,11 @@ The user's answers, newest first. They override the plan, the research and the d
   shared with you for the leaves"**: step one, every species' bark is one of the three ambientCG bark sets by
   default (`pbr/bark/`, PROPGEN §18; the drawn tile stays behind `"bark": {"pbr": null}`); step two, a realistic
   category of trees whose leaf cards are sprays laid from the leaf sets' own leaves (`pbr/leaf/`).
+- **"can you create some smaller thinner trees that don't go as tall as a double floor house (and their branches are
+  up at 80-90 degree angles so less chance of clipping into the house. call these trees small trees, big trees won't
+  be placed beside houses"**: the tree family's `habit: upright` and the ten `small_*` recipes (4 to 4.8 m, 1.6 to
+  2.5 m across, PROPGEN §18); `street_dress.py` puts a small tree beside a house and a big one only where no building
+  is within `--room` metres.
 - **"Just for testing, can you take one of the small streets we've designed in the street creator (I think the single
   road curved one), and add some trees and judge it from aestheticism. Also using the techniques you already have
   could you create some small bushes and shrubs as normal roads and paths normally have a little bit of shrubs poking

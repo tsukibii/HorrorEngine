@@ -32,7 +32,9 @@ tile behind `pbr: null`), and the leaves have a realistic category (`*_real`, ni
 own leaves cut out by `tools/propgen/leafset.py` and hung along the twigs, hued to the season). Then bushes (azalea
 balls and hedges by `clip`, a loose shrub, grass tufts) and `tools/godot/street_dress.py`, which dressed the hill
 road with trees and bushes and pictured it by day and night (`docs/godot_sheets/2026-11-02_hill_motel_dressed.jpg`;
-the judgement in PROPGEN §18: scale and shadows carry it, the cards show up close, the green is a shade bright). Next, if the user wants: their own look at the trees on the 3090 (the page shows
+the judgement in PROPGEN §18: scale and shadows carry it, the cards show up close, the green is a shade bright). Then
+**small trees** (`habit: upright`, ten `small_*` recipes under a two-storey house, branches steep) and the dress tool
+putting them beside houses, big trees only with room (`--room`). Next, if the user wants: their own look at the trees on the 3090 (the page shows
 them as cards, `python tools/propgen/serve.py`), wind on the cards (a vertex shader in the look plugin), a bush family
 (azalea hedges, clipped balls), the street builder's `tree` stand-in swapped for a made tree by the Godot drop (street_dress's `placements.json` is
 the shape of it), a nearer card set for crowns at the player's face, lower LODs (the twigs' sides, fewer cards) for a
