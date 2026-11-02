@@ -222,7 +222,7 @@ func _card(c: Dictionary, who) -> Control:
 	var s := _s()
 	var b := Button.new()
 	b.name = ("Face_" if face_side else "Clip_") + str(c["id"]).validate_node_name()
-	b.custom_minimum_size = Vector2(190, 74) * s
+	b.custom_minimum_size = Vector2(240, 86) * s
 	b.text = ""
 	b.tooltip_text = str(c["path"])
 	var mine: bool = who != null and not face_side and HSLibrary.hers(who).has(str(c["id"]))
@@ -241,26 +241,31 @@ func _card(c: Dictionary, who) -> Control:
 		tr.texture = Glyphs.tile("face" if face_side else str(ROLE_GLYPH.get(c.get("role", "other"), "motion")), "amber" if face_side else "blue", mine, 40)
 		tr.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
 		h.add_child(tr)
-	var v := VBoxContainer.new()
+	var v := VBoxContainer.new()                    # its name, its length and kind, then whose folder it's in and whether she has it
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	v.add_theme_constant_override("separation", 0)
+	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	v.alignment = BoxContainer.ALIGNMENT_CENTER
+	v.add_theme_constant_override("separation", int(2 * s))
 	var t := BuildTab._label(str(c.get("title", c["id"])), 13, C_TEXT, true)
-	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	t.clip_text = true
-	t.custom_minimum_size = Vector2(120, 0) * s
+	t.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	v.add_child(t)
 	var bits: Array = ["%.1f s" % float(c["secs"]), "loops" if bool(c["loop"]) else "once"]
 	if not face_side:
 		bits.append("Kimodo" if c["kind"] == "npz" else "Godot")
-		if str(c["for"]) != "":
-			bits.append(str(c["for"]) + "'s")
 	var l := BuildTab._label(" · ".join(PackedStringArray(bits)), 11, C_MUTED)
-	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	l.clip_text = true
 	v.add_child(l)
-	if mine:
-		var m := BuildTab._label("hers", 11, C_BLUE, true)
-		m.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		v.add_child(m)
+	if not face_side and (mine or str(c["for"]) != ""):
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", int(6 * s))
+		if mine:
+			row.add_child(BuildTab._label("hers", 11, C_BLUE, true))
+		if str(c["for"]) != "":
+			row.add_child(BuildTab._label("in %s's folder" % c["for"], 11, C_FAINT))
+		v.add_child(row)
+	for x in v.find_children("*", "Control", true, false):
+		x.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	h.add_child(v)
 	b.add_child(h)
 	b.pressed.connect(func(): pick(c))
@@ -274,7 +279,7 @@ func _figure(card: Button, c: Dictionary, mine: bool) -> Control:
 	var ctl := Control.new()
 	ctl.name = "Figure"
 	ctl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	ctl.custom_minimum_size = Vector2(40, 56) * _s()
+	ctl.custom_minimum_size = Vector2(46, 66) * _s()
 	var st := {"ctl": ctl, "fig": HSLibrary.figure(str(c["path"])), "t": 0.0, "on": false, "mine": mine}
 	ctl.draw.connect(func(): _draw_figure(st))
 	card.mouse_entered.connect(func(): st["on"] = true)
