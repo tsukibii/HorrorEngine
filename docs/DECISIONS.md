@@ -2,6 +2,25 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-02, night (the user's answers to the animation plan)
+
+- **Clips: "Kimodo & whatever tooling we are using in director to upload the face videos (if we haven't separated that
+  tool out of director tool let's make it a separate page so I can save the facial mocap), make sure I can mix facial
+  data with kimodo animations in godot."** So the library takes Kimodo's `.npz` and Godot clips first (FBX and glTF
+  later), and the face videos get **a page of their own** (the desk's Expressions import, out of the desk), saving
+  the face mocap and making it a Godot face clip; a body clip and a face clip play together on one character.
+- **"Nah, I'll just manually move over what I need every project, keep an empty folder for face expressions and
+  animations."** No shared studio folder: every new project gets `res://animations/` and `res://faces/`, empty.
+- **On stage carried until a later quest changes it**: "sure, go with your suggestion".
+- **Cutscenes: "no black bars, not skippable, I'm moving away from cutscenes that feel out of the level, everything
+  should feel like it's happening in your gameplay. Cutscenes should have a soft lock… keep the camera focused on the
+  spot or NPC that is the target… maybe even allow a camera style zoom in. Need a safety lock though so we don't get
+  some glitch where we lock the player into the cutscene forever."** So a cutscene is a moment in the level with a
+  **soft lock** on its target (the view drawn back to it, the player still in their body), its zoom the format's
+  lean-in and held focus (`push`, `zoom`: the lens never changes, DIRECTING §1), and a **safety release** that always
+  frees the player.
+- **"Sure"** to starting with the library, the moves and On stage.
+
 ## 2026-11-02, evening (the user: animation made easy, by quest)
 
 - **"Anything you can think we could do to make animation, patrol/walking, cinematic animations easy based on

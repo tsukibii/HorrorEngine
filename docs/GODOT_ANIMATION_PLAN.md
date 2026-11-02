@@ -5,7 +5,8 @@ cinematic animations easy based on 'quest', should we add an animation and facia
 animations, these can be project specific, how do I easily be like at this point npc is doing this, then if quest
 complete they get up and walk here with this animation, you can talk to them here, they have this expression etc,
 jump scare plays this… an easy drag and drop animation system, ideally I can just drag animations into the folders…
-Come up with a good plan first."* Nothing here is built. §9 is the build order, §10 the questions.
+Come up with a good plan first."* Nothing here is built yet. §9 is the build order; §10 the questions, and the
+user's answers (DECISIONS 2026-11-02, night), which this plan now follows.
 
 ## 1. What's there today
 
@@ -38,23 +39,23 @@ cutscene) is a THEN with a clip dropped on it. You see all of it in the editor b
 ## 3. The library: drop files into folders
 
 ```
-res://animations/            body clips (the plugin watches it)
-    shared/                  anyone can use these
+res://animations/            body clips (the plugin watches it); empty in a new project
     mari/                    hers only (a folder named after a character's id)
-    _in/                     (optional) drop here, it's sorted out for you
-res://faces/                 face clips (exists: the studio's expressions)
-    loops/                   (exists)
-    videos/                  drop a video of a face here: made into a clip on your machine
+res://faces/                 face clips; empty in a new project
+    loops/                   loops cut from a capture
 ```
+
+No shared studio folder (the user: "I'll just manually move over what I need every project"): a new project gets
+both folders empty, and you copy in what it needs.
 
 **What you can drop** and what happens:
 
 | File | What happens |
 |---|---|
-| `.fbx` / `.glb` / `.gltf` with animations (Mixamo, ActorCore, Rokoko, Blender…) | retargeted onto MHR as it's imported (an EditorScenePostImportPlugin sets the options itself): Godot's humanoid retarget where both skeletons map to its humanoid profile, else the Kimodo tab's own retarget (it already takes Mixamo and humanoid skeletons) on the clip's joints; each animation saved as its own clip |
-| `.npz` (Kimodo) | the Kimodo tab's retarget, without opening the tab |
+| `.npz` (Kimodo, the user's main source) | the Kimodo tab's retarget onto the character it's for, without opening the tab |
 | `.res` / `.tres` Godot Animation | used as it is |
-| a face video (`.mp4`, `.mov`) in `faces/videos/` | `tools/face_capture.py solve` run on it (your machine, its environment), then `face_export` into a `.tres` face clip |
+| a face clip `.tres` (from the Face page, §3b) | a card on the Face side |
+| *(later)* `.fbx` / `.glb` / `.gltf` with animations (Mixamo, Blender…) | retargeted onto MHR as it's imported |
 
 **Names say what a clip is** (and the card lets you change it): `mari_sit_reading.fbx` is Mari's, a *sit* move,
 style *reading*. A folder named after a role (`walk/`, `idle/`) does the same. Anything unclear goes under *Other*
@@ -63,6 +64,20 @@ until you drop it somewhere.
 The plugin keeps an index (`res://.hsdirector/library.json`: each clip's id, file, role, character, length, loop,
 whether it moves on its own) and a small picture of each (three frames of it on a grey MHR body), made once. Licence
 rule kept: **Mixamo and other non-CC0 clips stay in the project's folder**, never in the studio's shared files.
+
+## 3b. The Face page: face mocap out of the desk
+
+The desk's Expressions import becomes **a page of its own** (the user: "make it a separate page so I can save the
+facial mocap"), with its own small server like the Character Studio's and the writers' room's: drop a video of a face,
+it's solved on your machine (`tools/face_capture.py`), shown on an MHR head (or a Character Studio character) in
+sync with the clip, named, its neutral, strength and length set, a loop cut from a range; **Save** keeps it in the
+studio's expression library (`Content/Studio/Expressions/`, as now), **For Godot** writes its `.tres` face clip into a
+folder you pick (a project's `res://faces/`). The desk's Expressions tab keeps working on the same library.
+
+**Body and face together** (the user: "make sure I can mix facial data with kimodo animations in godot"): a character
+plays a Kimodo body clip on her bones and a face clip on her face shapes at the same time; the two never fight (the
+body has no face bones, the face no bones at all). An On stage line, a THEN or a cutscene can give her both, and a
+body card can carry a face to go with it (a sigh with a tired face) so one drop sets both.
 
 ## 4. The Animate tab (Body | Face)
 
@@ -144,7 +159,7 @@ in-between (a move per transition) and the new keys.
 | **a reaction** (she turns and stares when you walk in) | a ready-made **reaction** card (turns to look at you, flinches, screams, points, waves) dropped on an area or a door, her clip swapped by dropping | a moment: `anim` with *once, then back to what she was doing*, `lookat`, `expr` |
 | **a jump scare plays this** | the Jumpscare card asks for the figure and a clip (a lunge), a sound and a face | `trick: jumpscare` grows `clip`, `sound`, `face` |
 | **walk her somewhere mid-quest** | THEN *Mari walks to the door*, then WHEN *she arrives* | `behave go` and the `arrived` trigger (exist), her walk move |
-| **a cutscene** (the camera on the door, she walks in, two lines, sits down, you get control back) | a moment marked **Cutscene**: its THEN shown as a timeline (a row per character, the camera, lines), clips dragged onto rows, *Play it here* | the THEN's actions in order with `wait`s, `lookat`/`shot` for the camera, control held, a skip; nothing new but `cutscene: true` |
+| **a cutscene, in the level** (she walks in, two lines, sits down; the player stays in their body) | a moment marked **Cutscene** with a **target** (a spot or a character): its THEN shown as a timeline (a row per character, the view, lines), clips dragged onto rows, *Play it here* | no black bars, no skip (the user: "everything should feel like it's happening in your gameplay"). A **soft lock**: the view drawn back toward the target whenever it drifts (a cone you can look round in), walking slowed or held; a **zoom** as the format's lean-in and held focus (`push`, `zoom`: the lens never changes, DIRECTING §1). A **safety release** always frees the player: when the THEN is over, when the target is gone, and in any case after the moment's longest time (its `max`, 20 s unless set) |
 | **talking looks alive** | nothing: she turns to you, plays her `talk` move while she speaks, `listen` while you choose, a line's face as set | the conversation player uses her moves; a line can carry a clip too (`anim`) |
 | **an easter egg plays an animation** | its IT PLAYS: *Animate the doll: head turn* | the egg's `on_start` (step 3 of Story Flow) |
 | **caught / death** | her `caught` move and the ending's or retry's | a round's or a death's clip |
@@ -162,24 +177,32 @@ in-between (a move per transition) and the new keys.
 
 ## 9. Build order (each a step, checked and pushed)
 
-1. **The library and the Animate tab**: the folders, import on drop (MHR retarget for FBX/glTF, Kimodo `.npz`, Godot
-   clips), the index and pictures, the tab's cards (Body), ▶ on the selected character.
-2. **Moves**: a character's slots (drop onto her or her slots), the fallbacks, every behaviour playing her moves (walk,
+1. **The library and the Animate tab**: the two folders (empty in a new project), Kimodo `.npz` and Godot clips
+   imported on drop, the index, the tab's cards (Body and Face), ▶ on the selected character, a body clip and a face
+   clip played together on one character.
+2. **The Face page**: the face video import out of the desk, Save to the library, For Godot.
+3. **Moves**: a character's slots (drop onto her or her slots), the fallbacks, every behaviour playing her moves (walk,
    run, sit down/sitting/stand up, talk/listen, look around).
-3. **On stage**: the list per quest in the Story tab and Story Flow, carried until changed, *talk to her here*, the
+4. **On stage**: the list per quest in the Story tab and Story Flow, carried until changed, *talk to her here*, the
    in-between played by itself, *Show on stage* in the 3D view, the quest cards' chips.
-4. **Paths and patrols**: drawing a path in the 3D view, clips on spots.
-5. **Reactions and scares**: the ready-made reaction cards, `anim` once-then-back, the jump scare's clip, caught.
-6. **Cutscenes**: a moment as a cutscene, its timeline view, *Play it here*, skip.
-7. **Faces**: the Face side of the tab, videos made into clips, faces dropped on characters, lines and On stage.
-8. *(later)* The Cast lanes in Story Flow; PATTERNS_PLAN's styles and patterns (calm, hunting) for NPCs that react on
-   their own.
+5. **Paths and patrols**: drawing a path in the 3D view, clips on spots.
+6. **Reactions and scares**: the ready-made reaction cards, `anim` once-then-back, the jump scare's clip, caught.
+7. **Cutscenes in the level**: a moment with a target, its soft lock, lean-in and safety release, its timeline view,
+   *Play it here*.
+8. *(later)* FBX and glTF clips; the Cast lanes in Story Flow; PATTERNS_PLAN's styles and patterns (calm, hunting) for
+   NPCs that react on their own.
 
 Each step is checked the way the Director is (DIRECTOR: the sample gets a few clips of ours, Mari's moves, two On
 stage lines with an in-between measured in play, a reaction, a scare and a short cutscene played headless), and the
 guide gets each part with its pictures.
 
-## 10. Questions for you
+## 10. Questions for you (answered: DECISIONS 2026-11-02, night)
+
+Kimodo and the face videos first (the face import a page of its own, body and face mixed in Godot); no shared studio
+folder, both folders empty in a new project; On stage carried until changed; cutscenes in the level with a soft lock, a
+lean-in and a safety release, no bars, no skip; start with the library, the moves and On stage.
+
+The questions as they were asked:
 
 1. **Where will most clips come from?** Mixamo (FBX), Kimodo, your own mocap, a marketplace? It decides what the
    importer does first.
