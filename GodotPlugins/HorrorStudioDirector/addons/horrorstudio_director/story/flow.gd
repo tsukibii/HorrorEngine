@@ -16,7 +16,7 @@ const GAP := 34.0                  # between two cards in a column
 const ROW_GAP := 70.0              # between two rows of columns (a long story wrapped like lines of text)
 
 
-## the chart: {cards: [card], wires: [wire], start: id}. A card: {id, kind (intro, quest, round, scene, choice,
+## the chart: {cards: [card], wires: [wire], start: id, eggs}. A card: {id, kind (intro, quest, round, egg, scene, choice,
 ## ending, roam, trigger), num (its place in the quest list, 1 on), title, sub, info, outs: [{label, to, kind (then,
 ## else, if, timeout, option, jump), implicit, missing}], during (a trigger's quests, or "all"), editable (the
 ## file's own, not a desk game's), ending (an ending's kind), main (on the main path)}. A wire: {from, out (the
@@ -27,11 +27,18 @@ static func chart(f: Dictionary, ctx = null) -> Dictionary:
 	var quests: Array = f.get("quests", []) if f.get("quests") is Array else []
 	var endings: Array = f.get("endings", []) if f.get("endings") is Array else []
 	var cards: Array = []
+	var n := 0
 	for i in quests.size():
 		var q = quests[i]
 		if not (q is Dictionary):
 			continue
-		cards.append(_quest_card(q, i, quests, endings, ctx))
+		if q.get("egg", false) == true:            # an easter egg: found during quests, out of their order and numbers
+			cards.append(_egg_card(q, ctx))
+			continue
+		n += 1
+		var c := _quest_card(q, i, quests, endings, ctx)
+		c["num"] = n
+		cards.append(c)
 	for e in endings:
 		if not (e is Dictionary):
 			continue
@@ -66,18 +73,18 @@ static func chart(f: Dictionary, ctx = null) -> Dictionary:
 			var o: Dictionary = c["outs"][j]
 			if by_id.has(o["to"]):
 				wires.append({"from": c["id"], "out": j, "to": o["to"], "kind": o["kind"]})
-			else:
+			elif not o.get("stay", false):
 				o["missing"] = true
-		if c["kind"] == "trigger" and c["during"] is Array:
+		if c["kind"] in ["trigger", "egg"] and c["during"] is Array:
 			for qid in c["during"]:
 				if by_id.has(str(qid)):
 					wires.append({"from": str(qid), "out": -1, "to": c["id"], "kind": "during"})
 	var start := ""
 	for c in cards:
-		if c["kind"] != "ending" and c["kind"] != "trigger":
+		if not (c["kind"] in ["ending", "trigger", "egg"]):
 			start = c["id"]
 			break
-	var out := {"cards": cards, "wires": wires, "start": start}
+	var out := {"cards": cards, "wires": wires, "start": start, "eggs": cards.any(func(x): return x["kind"] == "egg")}
 	var at := start
 	var seen := {}
 	while at != "" and not seen.has(at) and by_id.has(at):   # the main path: from the start along each card's "then"
@@ -153,10 +160,32 @@ static func _quest_card(q: Dictionary, i: int, quests: Array, endings: Array, ct
 	return c
 
 
-## where a quest goes when nothing else says: the next quest in the list, else the first ending, else the free roam
+## an easter egg's card: how it's found, where (the quests that point at it; none: any), its jump ahead or the game going
+## on where it was (a way out with nowhere to go: `stay`)
+static func _egg_card(q: Dictionary, ctx) -> Dictionary:
+	var eid := str(q.get("id", ""))
+	var found = q.get("found")
+	var has_found: bool = found is Dictionary and not (found as Dictionary).is_empty()
+	var during = q.get("during", [])
+	var c := {"id": eid, "kind": "egg", "num": 0, "title": str(q.get("title", eid)), "editable": true,
+		"sub": ("found when " + HSCommands.trigger_text(found)) if has_found else "found when: pick it (FOUND WHEN, on the right)",
+		"during": during if during is Array else [], "outs": []}
+	var bits: Array = ["during any quest" if not (during is Array) or (during as Array).is_empty() else "during %d quest%s" % [during.size(), "" if during.size() == 1 else "s"]]
+	if not HSCond.empty(q.get("if")):
+		bits.append("only if " + HSCommands.cond_text(q["if"], ctx))
+	c["info"] = " · ".join(PackedStringArray(bits))
+	var to := HSStoryCompiler._egg_to(q)
+	c["outs"].append({"label": "then it jumps to" if to != "" else "then the game goes on where it was", "to": to, "kind": "skip",
+		"src": "egg", "stay": to == ""})
+	return c
+
+
+## where a quest goes when nothing else says: the next quest in the list (an easter egg isn't in it), else the first
+## ending, else the free roam
 static func _after(quests: Array, endings: Array, i: int) -> String:
-	if i + 1 < quests.size() and quests[i + 1] is Dictionary:
-		return str(quests[i + 1].get("id", ""))
+	for j in range(i + 1, quests.size()):
+		if quests[j] is Dictionary and quests[j].get("egg", false) != true:
+			return str(quests[j].get("id", ""))
 	if endings.size() and endings[0] is Dictionary:
 		return str(endings[0].get("id", ""))
 	return ROAM
@@ -334,6 +363,14 @@ static func set_way(f: Dictionary, qid: String, out: int, to: String) -> String:
 	if i < 0:
 		return "%s isn't a quest of the file's" % qid
 	var q: Dictionary = f["quests"][i]
+	var ti := quest_index(f, to)
+	if ti >= 0 and f["quests"][ti].get("egg", false) == true:
+		return "an easter egg is found during a quest, not gone to: drag the quest's “easter eggs found during it” onto it"
+	if q.get("egg", false) == true:               # an egg: where it jumps the story once it's found (a skip)
+		if ti < 0 and ending_index(f, to) < 0:
+			return "an easter egg jumps to a quest or an ending"
+		q["next"] = [{"go": to}]
+		return ""
 	if q.get("desk") is Dictionary:
 		return "a desk game's ways are changed in the Director Manager"
 	if quest_index(f, to) < 0 and ending_index(f, to) < 0:
@@ -381,6 +418,9 @@ static func cut_way(f: Dictionary, qid: String, out: int) -> String:
 	if i < 0 or f["quests"][i].get("desk") is Dictionary:
 		return "a desk game's ways are changed in the Director Manager"
 	var q: Dictionary = f["quests"][i]
+	if q.get("egg", false) == true:               # an egg's jump taken away: the game goes on where it was
+		q.erase("next")
+		return ""
 	var c := _quest_card(q, i, f["quests"], f.get("endings", []), null)
 	if out < 0 or out >= (c["outs"] as Array).size():
 		return "no such way out"
@@ -432,16 +472,19 @@ static func move_branch(f: Dictionary, qid: String, k: int, d: int) -> void:
 ## went (an ending, written down now that the list's order would send it to the new one)
 static func add_quest(f: Dictionary, id: String, title: String) -> void:
 	var qs: Array = f["quests"]
-	if qs.size():
-		var last: Dictionary = qs.back()
-		var was := _after(qs, f.get("endings", []), qs.size() - 1)
+	var li := qs.size() - 1                        # the last quest in the story's order (the eggs aren't in it)
+	while li >= 0 and qs[li] is Dictionary and qs[li].get("egg", false) == true:
+		li -= 1
+	if li >= 0:
+		var last: Dictionary = qs[li]
+		var was := _after(qs, f.get("endings", []), li)
 		if not (last.get("desk") is Dictionary) and was != ROAM and not _has_then(last):
 			var nx: Array = last.get("next", []) if last.get("next") is Array else []
 			nx.append({"go": was})
 			last["next"] = nx
-	var nq: Dictionary = HSStoryFile.INTRO.duplicate(true) if qs.is_empty() else {"id": id, "title": title, "objective": "", "steps": []}
+	var nq: Dictionary = HSStoryFile.INTRO.duplicate(true) if li < 0 else {"id": id, "title": title, "objective": "", "steps": []}
 	nq["id"] = id
-	if not qs.is_empty() or title != "":
+	if li >= 0 or title != "":
 		nq["title"] = title if title != "" else nq["title"]
 	qs.append(nq)
 
@@ -455,6 +498,32 @@ static func _has_then(q: Dictionary) -> bool:
 
 static func add_ending(f: Dictionary, id: String, title: String, kind := "neutral") -> void:
 	(f["endings"] as Array).append({"id": id, "kind": kind, "title": title, "text": ""})
+
+
+## an easter egg (the user, 2026-11-02): found during the quests that point at it (none: any), its FOUND WHEN picked next
+static func add_egg(f: Dictionary, id: String, title: String) -> void:
+	(f["quests"] as Array).append({"id": id, "title": title, "egg": true, "found": {}, "on_start": []})
+
+
+## an egg found during a quest, or not any more (when none's left it's found during any quest)
+static func set_during(f: Dictionary, eid: String, qid: String, on: bool) -> String:
+	var i := quest_index(f, eid)
+	if i < 0 or f["quests"][i].get("egg", false) != true:
+		return "that's not an easter egg"
+	var j := quest_index(f, qid)
+	if j < 0 or f["quests"][j].get("egg", false) == true or f["quests"][j].get("desk") is Dictionary:
+		return "an easter egg is found during a quest of the file's"
+	var e: Dictionary = f["quests"][i]
+	var d: Array = e.get("during", []) if e.get("during") is Array else []
+	if on and not d.has(qid):
+		d.append(qid)
+	if not on:
+		d.erase(qid)
+	if d.is_empty():
+		e.erase("during")
+	else:
+		e["during"] = d
+	return ""
 
 
 static func rename(f: Dictionary, id: String, title: String) -> void:
@@ -475,18 +544,31 @@ static func remove(f: Dictionary, id: String) -> void:
 	var endings: Array = f.get("endings", [])
 	var succ := ""
 	var i := quest_index(f, id)
+	if i >= 0 and qs[i].get("egg", false) == true:   # an egg: nothing goes to it
+		qs.remove_at(i)
+		if f.get("chart") is Dictionary:
+			(f["chart"] as Dictionary).erase(id)
+		return
 	if i >= 0:
 		var x: Dictionary = qs[i]
 		succ = _then_target(x)
 		if succ == "":
 			succ = _after(qs, endings, i)
-		var prev_by_list := i > 0 and not (qs[i - 1].get("desk") is Dictionary) and not _has_then(qs[i - 1])
+		var pi := i - 1                           # the quest before it in the story's order
+		while pi >= 0 and qs[pi].get("egg", false) == true:
+			pi -= 1
+		var prev_by_list := pi >= 0 and not (qs[pi].get("desk") is Dictionary) and not _has_then(qs[pi])
 		qs.remove_at(i)
-		if prev_by_list and succ != ROAM and succ != id and succ != _after(qs, endings, i - 1):
-			var p: Dictionary = qs[i - 1]
+		if prev_by_list and succ != ROAM and succ != id and succ != _after(qs, endings, pi):
+			var p: Dictionary = qs[pi]
 			var nx: Array = p.get("next", []) if p.get("next") is Array else []
 			nx.append({"go": succ})
 			p["next"] = nx
+		for e in qs:                              # an egg found during it alone is found during any quest now
+			if e is Dictionary and e.get("egg", false) == true and e.get("during") is Array and (e["during"] as Array).has(id):
+				(e["during"] as Array).erase(id)
+				if (e["during"] as Array).is_empty():
+					e.erase("during")
 		f["moments"] = (f.get("moments", []) as Array).filter(func(m):
 			return not (m is Dictionary and m.get("during") is Array and m["during"] == [id]))
 		for m in f["moments"]:
@@ -541,7 +623,7 @@ static func renumber(f: Dictionary) -> void:
 	var roam_last := ""
 	for i in qs.size():                           # 1. every quest's way on written down
 		var q: Dictionary = qs[i]
-		if q.get("desk") is Dictionary or _has_then(q):
+		if q.get("desk") is Dictionary or q.get("egg", false) == true or _has_then(q):
 			continue
 		var to := _after(qs, endings, i)
 		if to == ROAM:
@@ -556,7 +638,12 @@ static func renumber(f: Dictionary) -> void:
 		by_id[c["id"]] = c
 	var order: Array = []
 	var seen := {}
-	var stack: Array = [str(qs[0].get("id", ""))]
+	var first := ""
+	for q in qs:
+		if q.get("egg", false) != true:
+			first = str(q.get("id", ""))
+			break
+	var stack: Array = [first]
 	while stack.size():
 		var id: String = stack.pop_back()
 		if seen.has(id) or not by_id.has(id) or quest_index(f, id) < 0:
@@ -576,10 +663,13 @@ static func renumber(f: Dictionary) -> void:
 				stack.append(str(o["to"]))
 	for q in qs:
 		var id := str(q.get("id", ""))
-		if not seen.has(id) and id != roam_last:
+		if not seen.has(id) and id != roam_last and q.get("egg", false) != true:
 			order.append(id)
 	if roam_last != "":
 		order.append(roam_last)
+	for q in qs:                                  # the eggs last: found, not in the order
+		if q.get("egg", false) == true:
+			order.append(str(q.get("id", "")))
 	var keep := {}
 	for q in qs:
 		keep[str(q.get("id", ""))] = q
@@ -588,7 +678,7 @@ static func renumber(f: Dictionary) -> void:
 		qs.append(keep[id])
 	for i in qs.size():                           # 4. a then that's the list's next again left to the list
 		var q: Dictionary = qs[i]
-		if q.get("desk") is Dictionary or not (q.get("next") is Array) or (q["next"] as Array).is_empty():
+		if q.get("desk") is Dictionary or q.get("egg", false) == true or not (q.get("next") is Array) or (q["next"] as Array).is_empty():
 			continue
 		var last = q["next"].back()
 		if last is Dictionary and HSCond.empty(last.get("if")) and str(last.get("go", "")) == _after(qs, endings, i):

@@ -29,6 +29,7 @@ export function condsOf(S) {
   arr(S.quests).forEach(q => {
     arr(q.steps).forEach(s => { trig(s.done, `quest ${q.id}, step ${s.id}`); trig(s.fail, `quest ${q.id}, step ${s.id}`); });
     arr(q.next).forEach(n => add(n.if, `quest ${q.id}'s next`));
+    if (q.egg) { trig(q.found, `easter egg ${q.id}`); add(q.if, `easter egg ${q.id}`); }
   });
   arr(S.moments).forEach(m => { trig(m.when, `moment ${m.id}`); add(m.if, `moment ${m.id}`); });
   arr(S.states).forEach((st, i) => add(st.while, `state ${i + 1}`));
@@ -79,6 +80,7 @@ export function refsOf(S) {
     const w = `quest ${q.id}`;
     ref(q.map, "level", w); ref(q.start_at, "spot", w);
     arr(q.steps).forEach(s => { trig(s.done, `${w}, step ${s.id}`); trig(s.fail, `${w}, step ${s.id}`); ref(s.who, "actor", `${w}, step ${s.id}`); if (s.wrong) ref(s.wrong.who, "actor", `${w}, step ${s.id}`); });
+    if (q.egg) trig(q.found, `easter egg ${q.id}`);
     acts(q.on_start, w); acts(q.on_done, w);
     if (isObj(q.round)) { arr(q.round.spots).forEach(s => ref(s, "thing", `${w}, its round`)); ref(q.round.seeker, "actor", `${w}, its round`);
       Object.values(isObj(q.round.on) ? q.round.on : {}).forEach(list => acts(list, `${w}, its round`)); }
@@ -116,6 +118,10 @@ export function coverage(S, P) {
     else if (qids.has(q.id)) prob("error", `two quests are called ${q.id}`, `quest ${q.id}`);
     qids.add(q.id);
     if (isObj(q.desk)) return;                       // a desk game's scene or choice, as the desk had it: it finishes by itself
+    if (q.egg) {                                     // an easter egg: found, not gone to; no steps, no finish of its own
+      if (!isObj(q.found) || !Object.keys(q.found).length) prob("error", `easter egg ${q.id}: say how it's found (its Found when)`, `easter egg ${q.id}`);
+      return;
+    }
     arr(q.steps).forEach(s => { if (!s.id) prob("error", `a step of quest ${q.id} has no id`, `quest ${q.id}`); else if (sids.has(s.id)) prob("error", `step ${s.id} is in two quests`, `quest ${q.id}`); sids.set(s.id, q.id); });
     if (isObj(q.round)) { if (!ROUNDS[q.round.type]) prob("error", `quest ${q.id}'s round is ${q.round.type || "nothing"}: one of ${Object.keys(ROUNDS).join(", ")}`, `quest ${q.id}`); }
     else if ((q.finish || "steps") !== "never" && !arr(q.steps).length) prob("error", `quest ${q.id} finishes when its steps are done but has none`, `quest ${q.id}`);
@@ -131,25 +137,28 @@ export function coverage(S, P) {
   arr(S.states).forEach((st, i) => { if (!isObj(st.set) || !Object.keys(st.set).length) prob("error", `state ${i + 1} sets nothing`, `state ${i + 1}`); });
   // where the flow goes
   const go = new Set();
-  quests.forEach(q => arr(q.next).forEach(n => { if (!n.go) prob("error", `quest ${q.id}: a next with nowhere to go`, `quest ${q.id}`); else if (!qids.has(n.go) && !eids.has(n.go)) prob("error", `quest ${q.id} goes to ${n.go}, which is neither a quest nor an ending`, `quest ${q.id}`); else go.add(n.go); }));
+  const eggs = new Set(quests.filter(q => q.egg).map(q => q.id));
+  quests.forEach(q => arr(q.next).forEach(n => { if (!n.go) prob("error", `quest ${q.id}: a next with nowhere to go`, `quest ${q.id}`); else if (eggs.has(n.go)) prob("error", `${q.id} goes to the easter egg ${n.go}: an egg is found during a quest, not gone to`, `quest ${q.id}`); else if (!qids.has(n.go) && !eids.has(n.go)) prob("error", `quest ${q.id} goes to ${n.go}, which is neither a quest nor an ending`, `quest ${q.id}`); else go.add(n.go); }));
+  quests.forEach(q => { if (q.egg) arr(q.during).forEach(d => { if (!qids.has(d) || eggs.has(d)) prob("error", `easter egg ${q.id} is found during ${d}, which isn't a quest`, `easter egg ${q.id}`); }); });
   for (const list of Object.values(S.talk || {})) arr(list).forEach(t => arr(t.lines).forEach(ln => arr(ln.answers).forEach(a => { if (a.go) go.add(a.go); })));
   quests.forEach(q => { if (q.on_timeout) go.add(q.on_timeout); });
   const deskWays = q => isObj(q.desk) ? [q.desk.next, ...arr(q.desk.options).map(o => o.to)].filter(Boolean) : [];   // where a desk item goes
   quests.forEach(q => deskWays(q).forEach(g => { if (!qids.has(g) && !eids.has(g)) prob("error", `${q.id} (from the desk) goes to ${g}, which is neither a quest nor an ending`, `quest ${q.id}`); else go.add(g); }));
   arr((S.desk || {}).interrupts).forEach(it => { if (it && it.to) go.add(it.to); });
-  // reachable: the first quest, each one's nexts, else the one after it, else the first ending
-  const seen = new Set(), todo = quests.length ? [quests[0].id] : [];
+  // reachable: the first quest, each one's nexts, else the one after it, else the first ending (an easter egg is found, out of the order)
+  const flow = quests.filter(q => !q.egg);
+  const seen = new Set(), todo = flow.length ? [flow[0].id] : [];
   while (todo.length) {
     const id = todo.pop(); if (seen.has(id)) continue; seen.add(id);
-    const i = quests.findIndex(q => q.id === id); if (i < 0) continue;
-    const q = quests[i], nx = arr(q.next);
+    const i = flow.findIndex(q => q.id === id); if (i < 0) continue;
+    const q = flow[i], nx = arr(q.next);
     if (isObj(q.desk)) { deskWays(q).forEach(g => todo.push(g)); continue; }
     nx.forEach(n => n.go && todo.push(n.go));
-    if (!nx.some(n => !n.if || (typeof n.if === "object" && !Object.keys(n.if).length))) todo.push(i + 1 < quests.length ? quests[i + 1].id : (endings[0] || {}).id);
+    if (!nx.some(n => !n.if || (typeof n.if === "object" && !Object.keys(n.if).length))) todo.push(i + 1 < flow.length ? flow[i + 1].id : (endings[0] || {}).id);
     if (q.on_timeout) todo.push(q.on_timeout);
   }
   for (const g of go) if (qids.has(g) || eids.has(g)) seen.add(g);
-  quests.forEach(q => { if (q.id && !seen.has(q.id)) prob("warn", `quest ${q.id} can't be reached: nothing leads there`, `quest ${q.id}`); });
+  flow.forEach(q => { if (q.id && !seen.has(q.id)) prob("warn", `quest ${q.id} can't be reached: nothing leads there`, `quest ${q.id}`); });
   endings.forEach(e => { if (e.id && !seen.has(e.id)) prob("warn", `ending ${e.id} can't be reached: point a quest's next or an answer's go at it`, `ending ${e.id}`); });
   if (quests.length && !endings.length) prob("warn", "no endings yet: the last quest has nowhere to end");
   // the scene against the story

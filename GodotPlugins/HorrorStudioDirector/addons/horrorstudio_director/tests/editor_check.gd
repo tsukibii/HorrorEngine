@@ -112,6 +112,7 @@ func _process(dt: float) -> void:
 				return
 			_flow_checks()
 			_flow_edit_checks()
+			_flow_egg_checks()
 			EditorInterface.set_main_screen_editor("3D")
 			phase = 4
 		4:
@@ -151,7 +152,8 @@ func _tabs() -> void:
 	var rows := _rows(dt.tree)
 	rep["director_rows"] = rows.size()
 	rep["director_has"] = rows.any(func(r): return r.begins_with("Quests (6)")) and rows.any(func(r): return r == "Intro") and rows.any(func(r): return r == "The key") and rows.any(func(r): return r == "A drink") \
-		and rows.any(func(r): return r.begins_with("☐ Give Mari the mug")) and rows.any(func(r): return r.begins_with("Endings (2)")) and rows.any(func(r): return r == "figure_scare")
+		and rows.any(func(r): return r.begins_with("☐ Give Mari the mug")) and rows.any(func(r): return r.begins_with("Endings (2)")) and rows.any(func(r): return r == "figure_scare") \
+		and rows.any(func(r): return r.begins_with("Easter eggs (2)"))
 	var th = _tab("Things")
 	th.refresh()
 	rep["things_rows"] = _rows(th.tree).size()
@@ -598,7 +600,7 @@ func _flow_edit_checks() -> void:
 	var ways0 := _ways_of(st.f)
 	fl.renumber()
 	fl.redraw()
-	var order: Array = (st.f["quests"] as Array).map(func(q): return str(q["id"]))
+	var order: Array = (st.f["quests"] as Array).filter(func(q): return q.get("egg", false) != true).map(func(q): return str(q["id"]))
 	rep["flowedit_numbered"] = order
 	rep["flowedit_same"] = _ways_of(st.f) == ways0 and not st.quest_of("q_bedroom").has("next") and not st.quest_of(id).has("next")
 	fl.delete_cards([id])
@@ -612,6 +614,36 @@ func _flow_edit_checks() -> void:
 	var w := FileAccess.open("res://director/director.json", FileAccess.WRITE)   # as the sample had it, whatever happened
 	w.store_string(before)
 	w.close()
+
+
+## the sample's easter eggs in Story Flow: gold cards out of the numbers, straight to bed found during the drink errand
+## and jumping to the night; one made from the key's "easter eggs found during it", its jump to the bedroom, opened in
+## the Story tab on its FOUND WHEN; undone
+func _flow_egg_checks() -> void:
+	var fl = EditorInterface.get_editor_main_screen().find_child("HorrorStudioFlow", false, false)
+	if fl == null:
+		return
+	var st = panel.story
+	fl.redraw()
+	var cat = HSFlow.card_of(fl.ch, "egg_cat")
+	var early = HSFlow.card_of(fl.ch, "egg_early")
+	var lines: Array = fl.graph.get_connection_list().map(func(c): return "%s>%s" % [fl._id_of(c["from_node"]), fl._id_of(c["to_node"])])
+	rep["flowegg_cards"] = str(cat.get("kind", "")) == "egg" and str(early.get("kind", "")) == "egg" and int(early.get("num", -1)) == 0 \
+		and lines.has("q_drink>egg_early") and lines.has("egg_early>q_night") and str(cat.get("info", "")) == "during any quest"
+	var before := FileAccess.get_file_as_string("res://director/director.json")
+	var ur := get_undo_redo().get_history_undo_redo(EditorUndoRedoManager.GLOBAL_HISTORY)
+	var id: String = fl.add_card("egg", Vector2(40, 1100), "q_key", -1)
+	fl.redraw()
+	fl.connect_way(id, 0, "q_bedroom")
+	fl.redraw()
+	var e: Dictionary = st.quest_of(id)
+	rep["flowegg_made"] = e.get("egg", false) == true and e.get("during") == ["q_key"] and e.get("next") == [{"go": "q_bedroom"}]
+	fl.open_in_story(id)
+	rep["flowegg_story"] = st.quest == id and st.mid.find_child("Found", true, false) != null and st.mid.find_child("EggThen", true, false) != null
+	panel.show_page("build")
+	for i in 2:
+		ur.undo()
+	rep["flowegg_undone"] = _same(FileAccess.get_file_as_string("res://director/director.json"), before)
 
 
 ## the chart's arrows as from>to:kind (an otherwise is a then), sorted: what the game plays

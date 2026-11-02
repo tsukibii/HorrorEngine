@@ -75,7 +75,9 @@ func refresh() -> void:
 		note.text = str(f["_error"])
 		return
 	var flags: Dictionary = dock.run_flags
-	var qs: Array = f.get("quests", [])
+	var all_q: Array = f.get("quests", [])
+	var qs: Array = all_q.filter(func(q): return not (q is Dictionary and q.get("egg", false) == true))
+	var eggs: Array = all_q.filter(func(q): return q is Dictionary and q.get("egg", false) == true)
 	var qi := _row(top, "Quests (%d)" % qs.size(), "in play order", "task")
 	for q in qs:
 		var qid := str(q.get("id", ""))
@@ -98,6 +100,14 @@ func refresh() -> void:
 			_row(it, ("✓ " if done else "☐ ") + str(s.get("text", s.get("id", ""))), when_text(s.get("done")), "todo")
 		for n in q.get("next", []):
 			_row(it, "→ " + str(n.get("go", "")), ("if " + cond_text(n.get("if"))) if not HSCond.empty(n.get("if")) else "otherwise", "choice")
+	if eggs.size():                                    # easter eggs: found during the quests, not in their order
+		var gi := _row(top, "Easter eggs (%d)" % eggs.size(), "found, not given", "task")
+		for e in eggs:
+			var eid := str(e.get("id", ""))
+			var it := _row(gi, ("✓ " if flags.has("done:" + eid) else "") + str(e.get("title", eid)), ("found when " + when_text(e.get("found"))) if e.get("found") is Dictionary else "", "task")
+			it.set_metadata(0, {"quest": eid})
+			for n in e.get("next", []):
+				_row(it, "→ " + str(n.get("go", "")), "then it jumps there", "choice")
 	var es: Array = f.get("endings", [])
 	var ei := _row(top, "Endings (%d)" % es.size(), "", "ending")
 	for e in es:

@@ -898,7 +898,7 @@ func used_by(id: String) -> Array:
 	var needle := "\"%s\"" % id
 	for q in f.get("quests", []):
 		if JSON.stringify(q).contains(needle):
-			out.append("the quest " + str(q.get("title", q.get("id", ""))))
+			out.append(("the easter egg " if q.get("egg", false) == true else "the quest ") + str(q.get("title", q.get("id", ""))))
 	for m in f.get("moments", []):
 		if JSON.stringify(m).contains(needle):
 			out.append("the moment " + str(m.get("id", "")))

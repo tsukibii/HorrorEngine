@@ -21,6 +21,7 @@ var _entry := {}                      # a quest's id -> where the flow enters it
 var _ends := {}                       # ending ids
 var _actor_level := {}                # a person's id -> the level she's in
 var _first_level := ""
+var _egg_list: Array = []             # the file's easter eggs (quests with `egg`): found during the others, not in their order
 
 
 func err(text: String) -> void:
@@ -48,17 +49,20 @@ func compile(f: Dictionary, st: Dictionary, levels: Dictionary) -> void:
 		for a in HSDirector.nodes_of(levels[lid], "HSActor"):
 			if not _actor_level.has(HSDirector.id_of(a)):
 				_actor_level[HSDirector.id_of(a)] = lid
-	var quests: Array = file.get("quests", [])
+	var all_q: Array = file.get("quests", []) if file.get("quests") is Array else []
+	_egg_list = all_q.filter(func(q): return q is Dictionary and q.get("egg", false) == true)
+	var quests: Array = all_q.filter(func(q): return not (q is Dictionary and q.get("egg", false) == true))   # an egg is found, not gone to
 	for e in file.get("endings", []):
 		_ends[str(e.get("id", ""))] = true
 		story["flow"][str(e["id"])] = {"type": "ending", "kind": str(e.get("kind", "neutral")), "title": str(e.get("title", "")), "text": str(e.get("text", ""))}
 	var seen := {}
-	for q in quests:
+	for q in all_q:
 		var qid := str(q.get("id", ""))
 		if qid == "" or seen.has(qid) or _ends.has(qid):
 			err("quest %s: give every quest an id of its own (not an ending's)" % qid)
 		seen[qid] = true
-		_entry[qid] = (qid + "__card") if q.get("card") is Dictionary else qid
+		if q.get("egg", false) != true:
+			_entry[qid] = (qid + "__card") if q.get("card") is Dictionary else qid
 	_talks()
 	var lvl := _first_level
 	for i in quests.size():
@@ -72,6 +76,7 @@ func compile(f: Dictionary, st: Dictionary, levels: Dictionary) -> void:
 		story["game"]["start"] = _entry[str(quests[0]["id"])]
 		if _ends.is_empty():                           # no ending yet: after the last quest, a free roam (the game goes on)
 			_roam_stitch(lvl)
+	_egg_jumps()
 	brain["states"] = file.get("states", []).duplicate(true)
 	for s in brain["states"]:
 		if not (s is Dictionary) or not (s.get("set") is Dictionary):
@@ -90,6 +95,7 @@ func _roam() -> void:
 func _roam_stitch(lvl := "") -> void:
 	var st := {"title": "Free roam", "level": lvl if lvl != "" else _first_level, "beats": [{"id": "free_roam__start", "when": {"start": true}, "do": [{"objective": ""}, {"untodo": true}]}]}
 	_moments(st, "")
+	_eggs(st, "")
 	_talk_beats(st)
 	story["stitches"]["free_roam"] = st
 	story["flow"]["free_roam"] = {"type": "stitch", "ref": "free_roam", "next": null}
@@ -189,6 +195,7 @@ func _quest(q: Dictionary, i: int, quests: Array, lvl: String) -> String:
 		if str(q.get("time_label", "")) != "":
 			st["timer"]["label"] = str(q["time_label"])
 	_moments(st, qid)
+	_eggs(st, qid)
 	_talk_beats(st)
 	story["stitches"][qid] = st
 	story["flow"][qid] = {"type": "stitch", "ref": qid, "next": _next(q, i, quests)}
@@ -284,6 +291,10 @@ func _target(id: String, from: String, may_be_empty: bool) -> Variant:
 		return _entry[id]
 	if _ends.has(id):
 		return id
+	for e in _egg_list:
+		if str(e.get("id", "")) == id:
+			err("%s goes to the easter egg %s: an egg is found during a quest, not gone to" % [from, id])
+			return null
 	err("%s goes to %s, which is neither a quest nor an ending" % [from, id])
 	return null
 
@@ -302,6 +313,65 @@ func _trigger(w) -> Variant:
 
 
 # ---- moments ----------------------------------------------------------------------------------------------------
+## the easter eggs that can be found during a quest (`during` empty or naming it; "" the free roam: the eggs found any
+## time): once a playthrough, by its `found`, when its `if` holds. What it plays is its `on_start`; then the fact
+## done:<egg>, and a jump when it has a `next` (the flag its interrupt listens for: _egg_jumps)
+func _eggs(st: Dictionary, qid: String) -> void:
+	for e in _egg_list:
+		var eid := str(e.get("id", ""))
+		var during = e.get("during", [])
+		if during is Array and not during.is_empty() and not during.has(qid):
+			continue
+		if not _egg_found(e):
+			continue
+		var do: Array = [{"flag": "_found_" + eid}]
+		do.append_array((e.get("on_start", []) as Array).duplicate(true) if e.get("on_start") is Array else [])
+		do.append({"flag": "done:" + eid})
+		if _egg_to(e) != "":
+			do.append({"flag": "_jump_" + eid})
+		var ifs: Array = ["!_found_" + eid]
+		if _plain(e.get("if")):
+			ifs.append_array(e["if"] if e["if"] is Array else [e["if"]])
+		elif not HSCond.empty(e.get("if")):
+			ifs.append(flag_for(e["if"]))
+		st["beats"].append({"id": "egg_" + eid, "when": _trigger(e["found"]), "if": ifs, "do": do, "optional": true})
+
+
+static func _egg_found(e: Dictionary) -> bool:
+	return e.get("found") is Dictionary and not (e["found"] as Dictionary).is_empty()
+
+
+## where an egg jumps the story when it's found (its `next`'s first way), "" when the game goes on where it was
+static func _egg_to(e: Dictionary) -> String:
+	for o in (e.get("next", []) if e.get("next") is Array else []):
+		if o is Dictionary and str(o.get("go", "")) != "":
+			return str(o["go"])
+	return ""
+
+
+## an egg's jump: an interrupt of the quests it's found in (the runtime's trigger cutscenes, STORY_FORMAT §5.1), on the
+## flag its beat sets last; and what's wrong with an egg
+func _egg_jumps() -> void:
+	for e in _egg_list:
+		var eid := str(e.get("id", ""))
+		if not _egg_found(e):
+			err("easter egg %s: say how it's found (its FOUND WHEN)" % eid)
+			continue
+		var during = e.get("during", [])
+		if during is Array:
+			for d in during:
+				if not _entry.has(str(d)):
+					err("easter egg %s is found during %s, which isn't a quest" % [eid, d])
+		var to := _egg_to(e)
+		if to == "":
+			continue
+		var tgt = _target(to, eid, false)
+		if tgt == null:
+			continue
+		story["interrupts"].append({"id": "egg_" + eid, "label": str(e.get("title", eid)), "when": {"flag": "_jump_" + eid},
+			"during": (during as Array).duplicate() if during is Array and not during.is_empty() else "all", "to": tgt})
+
+
 ## the moments listening during a quest (`during` empty or naming it): when, if, do; once a playthrough or every time
 func _moments(st: Dictionary, qid: String) -> void:
 	var k := 0

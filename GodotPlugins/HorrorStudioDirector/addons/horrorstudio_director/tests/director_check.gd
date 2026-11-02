@@ -279,7 +279,7 @@ func _initialize() -> void:
 		if not seen:
 			return "the figure never showed"
 		return "")
-	await step("parts on models: the kettle switched on, its steam where its spout marker was moved; the ornament taken up in the hands, turned by a drag, put back; the finished step crossed out", func():
+	await step("parts on models: the kettle switched on, its steam where its spout marker was moved; the ornament taken up in the hands, turned by a drag, put back; the finished step crossed out; put down, the easter egg the cat's eyes found (its thought), the quest still on", func():
 		var c := await go_to("kettle", 0.8)
 		if c != "use":
 			return "the kettle's cursor " + c
@@ -324,6 +324,14 @@ func _initialize() -> void:
 				struck = true
 		if not struck:
 			return "the read letter's to-do isn't crossed out"
+		var k := 0                                     # put down: the easter egg the cat's eyes found (any quest), its thought, the quest still on
+		while not flag("done:egg_cat") and k < 600:
+			await process_frame
+			k += 1
+		if not flag("done:egg_cat") or not g.hud.lines_shown.any(func(l): return str(l).contains("looking at me")):
+			return "the cat's eyes (an easter egg) weren't found: done:egg_cat %s" % flag("done:egg_cat")
+		if (g.run["trail"] as Array).has("q_drink"):
+			return "the egg moved the story on"
 		return "")
 	await step("Mari says not now each time she's clicked (the conversation she offers before the key, heard out each time)", func():
 		for time in 2:

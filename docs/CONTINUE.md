@@ -25,8 +25,16 @@ After the panel (below), three asks, each checked and pushed (DECISIONS 2026-11-
   (`list`), so a talk quest needs only the marker; after the last quest with no ending, a free roam. The sample's
   Intro is a thought and a pause; its talk quest has no objective and no list.
 
-To ask the user: the marker's look in their own play (a size, a colour of its own rather than the theme's?), and
-whether the desk's Play should draw it too.
+Then **Story Flow** (DECISIONS 2026-11-02, later; GODOT_DIRECTOR §6f), the user's "a story flowchart tab… so I don't
+have to look through them one by one to see the prerequisites", in three steps: a main screen beside 2D, 3D and
+Script with every quest and ending as a card and the arrows as the game plays them (a card's prerequisites on the
+right); setting the quests and their branches up in it (new cards, titles, ways dragged, conditions picked, Delete,
+Number them by the flow); and **easter eggs** (a quest marked `egg`: found during the quests that point at it, its
+thing played once, then the game going on or a jump ahead).
+
+To ask the user: Story Flow in their own hands (with a mouse and a real screen: the cards' size, the wrapped rows, the
+arrows round the cards), whether the Manager should get the chart too, the marker's look in their own play, and
+whether the desk's Play should draw the marker.
 
 ## 0. Where it stopped (2026-11-01, evening, branch `Director-Godot`): the HorrorStudio panel
 

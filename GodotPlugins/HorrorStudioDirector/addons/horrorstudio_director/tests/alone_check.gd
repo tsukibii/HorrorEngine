@@ -5,7 +5,10 @@
 ##          checkpoint autosaves when it's walked into);
 ##   test:  the whole game played from the panel's Test start (the play-from-here file's `test`): its first quest, the
 ##          player at the Test start (not sent to the quest's own start) with the bedroom key;
-##   near:  the panel's Try it (`near`): the player in front of the letter, facing it.
+##   near:  the panel's Try it (`near`): the player in front of the letter, facing it;
+##   egg:   the game from the drink errand with the bedroom key: the cat's eyes found (an easter egg any time: its
+##          thought, its fact, the errand still on), then the bedroom walked into early: the egg straight to bed (its
+##          thought), the story jumping to the night, the errand, the talk and the bedroom's quest skipped.
 ## Prints ALONECHECK {...}.
 extends SceneTree
 
@@ -38,7 +41,7 @@ func _initialize() -> void:
 		game.free()
 		change_scene_to_file("res://house.tscn")
 	else:
-		var req := {"test": true}
+		var req := {"from": "q_drink", "items": ["bedroom_key"]} if mode == "egg" else {"test": true}
 		if mode == "near":
 			req["near"] = {"level": "house", "pos": [-0.4, 0.0, 1.0], "yaw": -90.0}   # in front of the letter, facing it (panel.gd play_near)
 		var f := FileAccess.open(RUN_FILE, FileAccess.WRITE)
@@ -52,7 +55,7 @@ func _initialize() -> void:
 			if c.get_script() != null and str(c.get_script().resource_path).ends_with("story/game.gd"):
 				hs = c
 		var rt0 = hs.runtime.play if hs != null and hs.runtime != null else null
-		if rt0 != null and rt0.active and (mode == "alone" or (hs.runtime.run != null and (hs.runtime.run["trail"] as Array).has("q_key"))):
+		if rt0 != null and rt0.active and (mode == "alone" or (hs.runtime.run != null and (hs.runtime.run["trail"] as Array).has("q_drink" if mode == "egg" else "q_key"))):
 			break
 	rep["game_made"] = hs != null
 	if hs == null or hs.runtime == null or hs.runtime.play == null:
@@ -97,6 +100,25 @@ func _initialize() -> void:
 				break
 		rt.key_event("W", false)
 		rep["checkpoint"] = rt.hud.logs.count("checkpoint") > before
+	elif mode == "egg":
+		var has := func(fl: String) -> bool: return rt.flags.has(fl) or (hs.runtime.run["flags"] as Dictionary).has(fl)
+		rep["egg_jump"] = (st.get("interrupts", []) as Array).any(func(it): return it.get("id") == "egg_egg_early" and it.get("during") == ["q_drink"] and it.get("to") == "q_night")
+		rt.emit({"type": "use", "id": "ornament"})     # the cat's eyes: found any time, a thought, the errand still on
+		for i in 600:
+			await process_frame
+			if has.call("done:egg_cat"):
+				break
+		rep["egg_cat"] = has.call("done:egg_cat") and hs.runtime.hud.lines_shown.any(func(l): return str(l).contains("looking at me")) \
+			and not (hs.runtime.run["trail"] as Array).has("q_talk")
+		rt.emit({"type": "enter", "id": "bedroom"})    # straight to bed: the errand skipped, the story on at the night
+		for i in 900:
+			await process_frame
+			if (hs.runtime.run["trail"] as Array).has("q_night"):
+				break
+		var tr: Array = hs.runtime.run["trail"]
+		rep["trail"] = tr
+		rep["egg_skip"] = tr.has("q_night") and not tr.has("q_talk") and not tr.has("q_bedroom") and has.call("done:egg_early")
+		rep["egg_thought"] = hs.runtime.hud.lines_shown.any(func(l): return str(l).contains("Mari can wait"))
 	else:
 		rep["trail"] = hs.runtime.run["trail"]
 		rep["todo"] = hs.runtime.hud.tasks.map(func(t): return str(t["id"]))

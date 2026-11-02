@@ -120,6 +120,25 @@ try {
   const rq = S.quests[1], rtext = await page.textContent("[data-round]");
   ok("a round added to the quest (hide and seek, Mari hunting; its results' facts named for what comes next)",
     !!rq.round && rq.round.type === "hide" && rq.round.seeker === "mari" && rtext.includes(`result:${rq.id}:hidden`) && rtext.includes(`result:${rq.id}:found`), JSON.stringify(rq.round));
+  // an easter egg: found during the quest when the player picks up the key, then a jump to the first quest (a skip)
+  await page.click("[data-act=new-egg]");
+  await page.click("[data-egg] .trig button.pill");
+  await page.waitForSelector(".mdl .tile");
+  await page.click(".mdl .tile:has-text('The player picks up')");
+  await page.waitForTimeout(150);
+  const esel = await page.$(".mdl select");
+  if (esel) { await esel.selectOption("bedroom_key"); }
+  await page.click(".mdl .mdl-f button.primary");
+  await page.waitForTimeout(150);
+  S = await page.evaluate(() => window.hsdm.S);
+  const egg = S.quests.find(x => x.egg);
+  await page.selectOption("[data-egg] .row:has(> label.l:text-is('During')) select", S.quests[1].id);
+  await page.selectOption("[data-egg] .row:has(> label.l:text-is('Then')) select", S.quests[0].id);
+  S = await page.evaluate(() => window.hsdm.S);
+  const egg2 = S.quests.find(x => x.egg), etext = await page.textContent("main.page .list");
+  ok(`an easter egg: found when the player picks up the key (${JSON.stringify(egg2 && egg2.found)}), during the new quest, then a jump; listed apart, not numbered (${etext.includes("✦")})`,
+    !!egg && !!egg2 && egg2.found && egg2.found.pickup === "bedroom_key" && JSON.stringify(egg2.during) === JSON.stringify([S.quests[1].id])
+    && JSON.stringify(egg2.next) === JSON.stringify([{ go: S.quests[0].id }]) && etext.includes("✦"), JSON.stringify(egg2));
   // a conversation, a moment, a state, an ending, an achievement
   await page.click("nav.tabs button[data-tab=people]");
   await page.click("[data-act=new-talk]");
@@ -136,7 +155,7 @@ try {
   await page.waitForTimeout(400);
   const disk = JSON.parse(fs.readFileSync(path.join(PROJ, "director", "director.json"), "utf8"));
   const hist = fs.readdirSync(path.join(PROJ, "director", "history"));
-  ok("saved: director/director.json holds them, the version before kept in history/", disk.quests.length === 2 && disk.quests[1].steps[0].done.pickup === "bedroom_key" && disk.quests[1].round && disk.quests[1].round.seeker === "mari" && hist.length === 1);
+  ok("saved: director/director.json holds them, the version before kept in history/", disk.quests.length === 3 && disk.quests[1].steps[0].done.pickup === "bedroom_key" && disk.quests[1].round && disk.quests[1].round.seeker === "mari" && disk.quests[2].egg === true && hist.length === 1);
   ok("the header says saved", (await page.textContent("#state")) === "saved");
   // coverage
   await page.click("nav.tabs button[data-tab=coverage]");
@@ -145,6 +164,7 @@ try {
     cov.unused.thing.includes("teapot_lonely") && cov.unused.spot.includes("corner") && cov.unused.path.includes("hall_path") && cov.unused.item.includes("mug") && !cov.unused.thing.includes("bedroom_key"), JSON.stringify(cov.unused));
   ok("Coverage: the letter counts as named by a fact (read:letter), Mari by her conversation", !cov.unused.note.includes("letter") && !cov.unused.actor.includes("mari"));
   ok("Coverage: what's wrong (the new moment has no when, the new quest nothing leads to... )", cov.problems.some(p => p.text.includes("has no when")), JSON.stringify(cov.problems.map(p => p.text)));
+  ok("Coverage: the easter egg isn't a quest nothing leads to, nor one with no steps", !cov.problems.some(p => p.text.includes("egg")), JSON.stringify(cov.problems.map(p => p.text)));
   ok("Coverage: the round's hunter named, nothing wrong with the round", !cov.unused.actor.includes("mari") && !cov.problems.some(p => p.text.includes("round")), JSON.stringify(cov.problems.map(p => p.text)));
   // saves
   await page.click("nav.tabs button[data-tab=saves]");

@@ -12,7 +12,9 @@ var root_: Node
 
 ## the sample's story: the user's example (walk into the kitchen's doorway after reading the letter: the figure), an
 ## errand with the wrong thing answered, a conversation offered by what's happened, a state that moves Mari, a choice
-## by what the player does, two endings, an achievement
+## by what the player does, two endings, an achievement; two easter eggs: the cat's eyes (put the ornament down, any time:
+## a thought) and straight to bed (walk into the bedroom during the drink errand: a thought, then the night, skipping
+## the errand, the talk and the bedroom's quest)
 const STORY := {
 	"format": 1,
 	"quests": [
@@ -33,6 +35,10 @@ const STORY := {
 			"steps": [{"id": "hide", "text": "Hide in the wardrobe", "done": {"hidden": "wardrobe"}},
 				{"id": "sleep", "text": "Go to sleep", "done": {"use": "bed"}}],
 			"next": [{"if": {"step": "hide"}, "go": "e_morning"}, {"go": "e_asleep"}]},
+		{"id": "egg_cat", "title": "The cat's eyes", "egg": true, "found": {"use": "ornament"},
+			"on_start": [{"think": "When I put it down, I'd swear it was looking at me."}]},
+		{"id": "egg_early", "title": "Straight to bed", "egg": true, "found": {"enter": "bedroom"}, "during": ["q_drink"],
+			"on_start": [{"think": "Mari can wait."}], "next": [{"go": "q_night"}]},
 	],
 	"moments": [
 		{"id": "letter_thought", "when": {"read": "letter"}, "do": [{"think": "She wrote this in a hurry."}]},

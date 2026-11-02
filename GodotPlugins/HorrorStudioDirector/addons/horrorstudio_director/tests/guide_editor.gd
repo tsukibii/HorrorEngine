@@ -4,7 +4,7 @@
 ## Inspector on a thing, a character, a room, a door and a little thing, and the HorrorStudio panel (its Build tab on
 ## the kettle, then on a plain model with the Inspector's What is this? box; the Player and Story tabs), and the Story
 ## Flow main screen (the quests as a flowchart, the night's card clicked; then a quest set up in it, the key's ways on the
-## right, the story put back). JPEGs into $HSGUIDE_OUT; prints
+## right, the story put back; an easter egg clicked). JPEGs into $HSGUIDE_OUT; prints
 ## GUIDEEDITOR {...} and quits.
 @tool
 extends EditorPlugin
@@ -351,6 +351,20 @@ func _process(dt: float) -> void:
 			var w := FileAccess.open("res://director/director.json", FileAccess.WRITE)   # the sample's story as it was, for the Manager's pictures
 			w.store_string(story_was)
 			w.close()
+			panel.story.refresh()                     # an easter egg clicked: where it's found, how, what it plays, its jump
+			if fl3 != null:
+				fl3.redraw()
+				if fl3.cards.has("egg_early"):
+					fl3.cards["egg_early"].selected = true
+					fl3.pick("egg_early")
+			at = t
+			phase = 22
+		22:
+			if t - at < 1.0:
+				return
+			var fl4 = EditorInterface.get_editor_main_screen().find_child("HorrorStudioFlow", false, false)
+			if fl4 != null:
+				_shot("e_flow_egg", fl4.get_global_rect())
 			EditorInterface.set_main_screen_editor("3D")
 			print("GUIDEEDITOR " + JSON.stringify({"made": made}))
 			get_tree().quit()

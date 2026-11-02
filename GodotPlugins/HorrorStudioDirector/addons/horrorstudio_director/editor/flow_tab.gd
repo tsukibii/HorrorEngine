@@ -11,7 +11,10 @@ extends PanelContainer
 ## typed on it (F2 again); a way's dot dragged onto a card sends it there, into empty space makes a new card there or
 ## takes the way away; on the right each way's condition and where it goes, picked, + A way: if… a branch; Delete takes
 ## a card away (what pointed at it goes on where it went); Number them by the flow puts the list in the order the story
-## reaches them, the game playing the same (story/flow.gd does each change). Everything on the editor's undo. It reads
+## reaches them, the game playing the same (story/flow.gd does each change). Easter eggs (the user: "label easter egg
+## quests… hidden quests that might just be jump scares or certain animations… skip a bunch of quests"): gold cards,
+## + Easter egg; a quest's "easter eggs found during it" dragged onto one, its FOUND WHEN and what it plays on the
+## right, its jump ahead dragged onto a card or picked. Everything on the editor's undo. It reads
 ## and writes the file through the Story tab (its `f` and `change`), so the two never disagree.
 
 const Glyphs := preload("res://addons/horrorstudio_director/editor/glyphs.gd")
@@ -20,7 +23,8 @@ const FlowGraph := preload("res://addons/horrorstudio_director/editor/flow_graph
 
 const KIND_COLOR := {
 	"then": Color("#6CB4F5"), "else": Color("#7F95AD"), "if": Color("#B79BE8"), "timeout": Color("#F3C27A"),
-	"option": Color("#6FD3C7"), "jump": Color("#E8746A"), "during": Color("#C77B72"),
+	"option": Color("#6FD3C7"), "jump": Color("#E8746A"), "during": Color("#C77B72"), "skip": Color("#E6C36A"),
+	"egg": Color("#E6C36A"),
 }
 const KIND_WORDS := [
 	["then", "then: what comes next"],
@@ -29,15 +33,17 @@ const KIND_WORDS := [
 	["timeout", "out of time: its time limit ran out"],
 	["option", "a desk choice's answers"],
 	["jump", "a trigger cutscene's jump"],
+	["skip", "an easter egg's jump ahead (a skip)"],
 ]
 const TITLE_BG := {
 	"intro": Color("#2A4566"), "quest": Color("#323946"), "round": Color("#3F3358"), "scene": Color("#24403F"),
 	"choice": Color("#24403F"), "ending": Color("#3A3E46"), "roam": Color("#2B3036"), "trigger": Color("#4D2A2A"),
+	"egg": Color("#4E3F1C"),
 }
 const ENDING_BG := {"good": Color("#24452F"), "bad": Color("#4D2A2A"), "death": Color("#4D2A2A"), "secret": Color("#3F3358")}
 const KIND_NAME := {"intro": "the intro (over once its opening is)", "quest": "a quest", "round": "a round of gameplay",
 	"scene": "a desk game's scene", "choice": "a desk game's choice", "ending": "an ending", "roam": "the free roam",
-	"trigger": "a trigger cutscene"}
+	"trigger": "a trigger cutscene", "egg": "an easter egg: hidden, found during the quests that point at it"}
 const C_TEXT := Color("#E8EBF0")
 const C_MUTED := Color("#A3ACB9")
 const C_FAINT := Color("#8A93A1")
@@ -66,6 +72,7 @@ var _menu_acts := {}
 var _confirm: ConfirmationDialog
 var _deleting: Array = []
 var _rename_next := ""             # the card made a moment ago: its title typed once it's drawn
+var _cut_from: Array = []          # the wire last picked up by its end: [from, to] (a quest's egg let go)
 var _renaming := ""
 
 
@@ -101,7 +108,8 @@ func _ready() -> void:
 	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	head.add_child(status)
 	for spec in [["AddQuest", "+ Quest", "A new quest card (right-click on the chart: one where you click)", "quest"],
-			["AddEnding", "+ Ending", "A new ending card", "ending"]]:
+			["AddEnding", "+ Ending", "A new ending card", "ending"],
+			["AddEgg", "+ Easter egg", "A hidden quest found during others: a jump scare, an animation, a skip ahead", "egg"]]:
 		var b := _small(spec[1])
 		b.name = spec[0]
 		b.tooltip_text = spec[2]
@@ -141,7 +149,9 @@ func _ready() -> void:
 	graph.end_node_move.connect(_moved)
 	graph.right_disconnects = true
 	graph.connection_request.connect(_on_connect)
-	graph.disconnection_request.connect(func(a, ap, b, bp): graph.disconnect_node(a, ap, b, bp))   # the file changes when it's dropped
+	graph.disconnection_request.connect(func(a, ap, b, bp):
+		_cut_from = [_id_of(a), _id_of(b)]
+		graph.disconnect_node(a, ap, b, bp))                   # the file changes when it's dropped
 	graph.connection_to_empty.connect(_on_to_empty)
 	graph.connection_drag_ended.connect(func(): _dirty = true)
 	graph.popup_request.connect(_on_popup)
@@ -235,7 +245,7 @@ func redraw() -> void:
 		if int(w["out"]) < 0:
 			during[w["from"]] = true
 	for c in ch["cards"]:
-		var g := _card(c, during.has(c["id"]))
+		var g := _card(c, during.has(c["id"]) or (ch.get("eggs", false) and c["kind"] in ["intro", "quest", "round"]))
 		graph.add_child(g)
 		cards[c["id"]] = g
 	for w in ch["wires"]:
@@ -282,6 +292,8 @@ func _counts() -> String:
 	bits.append("%d ending%s" % [int(n.get("ending", 0)), "" if int(n.get("ending", 0)) == 1 else "s"])
 	if n.has("trigger"):
 		bits.append("%d trigger cutscene%s" % [n["trigger"], "" if n["trigger"] == 1 else "s"])
+	if n.has("egg"):
+		bits.append("%d easter egg%s" % [n["egg"], "" if n["egg"] == 1 else "s"])
 	return " · ".join(PackedStringArray(bits))
 
 
@@ -306,7 +318,7 @@ func _card(c: Dictionary, has_during: bool) -> GraphNode:
 		tl.add_theme_font_size_override("font_size", int(16 * s))
 		tl.clip_text = true
 		tl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var badge := {"intro": "INTRO", "round": "ROUND", "scene": "DESK", "choice": "DESK"}.get(c["kind"], "")
+	var badge := {"intro": "INTRO", "round": "ROUND", "scene": "DESK", "choice": "DESK", "egg": "EGG"}.get(c["kind"], "")
 	if badge != "":
 		var b := BuildTab._label(badge, 11, C_TEXT.darkened(0.15), true)
 		g.get_titlebar_hbox().add_child(b)
@@ -316,8 +328,8 @@ func _card(c: Dictionary, has_during: bool) -> GraphNode:
 	sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	sub.custom_minimum_size = Vector2(256, 0) * s
 	g.add_child(sub)
-	if c["kind"] == "trigger":
-		g.set_slot(slot, true, 1, KIND_COLOR["during"], false, 0, Color.WHITE)
+	if c["kind"] in ["trigger", "egg"]:
+		g.set_slot(slot, true, 1, KIND_COLOR["egg" if c["kind"] == "egg" else "during"], false, 0, Color.WHITE)
 	else:
 		g.set_slot(slot, true, 0, C_IN, false, 0, Color.WHITE)
 	slot += 1
@@ -335,6 +347,9 @@ func _card(c: Dictionary, has_during: bool) -> GraphNode:
 		if o.get("missing", false):
 			words += "  (%s: not a quest or an ending)" % str(o["to"]) if str(o["to"]) != "" else "  (goes nowhere)"
 			col = C_WARN
+		var port_col := col
+		if o.get("stay", false):                   # an egg with no jump: its way out still a dot to drag one from
+			col = C_FAINT
 		var l := BuildTab._label(words, 14, col)
 		l.name = "Out_%d" % j
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -343,17 +358,21 @@ func _card(c: Dictionary, has_during: bool) -> GraphNode:
 		if o.get("implicit", false):
 			l.tooltip_text = "No next of its own: the next quest in the list (else the first ending, else the free roam)"
 		g.add_child(l)
-		g.set_slot(slot, false, 0, C_IN, true, 0, col)
+		g.set_slot(slot, false, 0, C_IN, true, 0, port_col)
 		pmap[j] = port
 		port += 1
 		slot += 1
 	if has_during:
-		var l := BuildTab._label("trigger cutscenes during it", 13, KIND_COLOR["during"])
+		var eggs: bool = ch.get("eggs", false)
+		var dc: Color = KIND_COLOR["egg" if eggs else "during"]
+		var l := BuildTab._label("easter eggs found during it" if eggs else "trigger cutscenes during it", 13, dc)
 		l.name = "During"
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		l.custom_minimum_size = Vector2(256, 0) * s
+		if eggs:
+			l.tooltip_text = "Drag this onto an easter egg: it can be found while this quest is on"
 		g.add_child(l)
-		g.set_slot(slot, false, 0, C_IN, true, 1, KIND_COLOR["during"])
+		g.set_slot(slot, false, 0, C_IN, true, 1, dc)
 		pmap[-1] = port
 		slot += 1
 	ports[c["id"]] = pmap
@@ -383,6 +402,8 @@ func _title(c: Dictionary) -> String:
 			return "%sEnd: %s" % [mark, c["title"]]
 		"roam", "trigger":
 			return str(c["title"])
+		"egg":
+			return "%sEgg: %s" % [mark, c["title"]]
 		"scene", "choice":
 			return "%s%d · ◆ %s" % [mark, c["num"], c["title"]]
 		_:
@@ -467,6 +488,9 @@ func _side() -> void:
 	side.add_child(BuildTab._wrap(BuildTab._label(KIND_NAME.get(c["kind"], ""), 12, C_FAINT)))
 	if str(c.get("sub", "")) != "":
 		side.add_child(BuildTab._wrap(BuildTab._label(str(c["sub"]), 13, C_MUTED)))
+	if c["kind"] == "egg":
+		_egg_side(c)
+		return
 	side.add_child(_head("How the player gets here"))
 	var ins := HSFlow.incoming(ch, picked)
 	if picked == str(ch.get("start", "")):
@@ -512,6 +536,7 @@ func _legend() -> void:
 			"Double-click a card: open it in the Story tab below, for its steps and moments.",
 			"Right-click the chart (or + Quest, + Ending): a new card there, its title typed on it (F2 types it again).",
 			"Drag a way's dot onto a card: it goes there. Into empty space: a new card there, or the way taken away.",
+			"+ Easter egg (or a quest's “easter eggs found during it” dropped in empty space): a hidden quest, found during the quests that point at it; its FOUND WHEN and what it plays on the right.",
 			"Delete takes a card away. Drag cards where you like. Ctrl+Z undoes any of it."]:
 		side.add_child(BuildTab._wrap(BuildTab._label(t, 12, C_MUTED)))
 
@@ -641,18 +666,22 @@ func add_card(kind: String, at: Vector2, from := "", out := -1) -> String:
 	var st = _story()
 	if st == null or st.f.has("_error"):
 		return ""
-	var first: bool = kind == "quest" and (st.f.get("quests", []) as Array).is_empty()
-	var id: String = st.fresh_id("q_intro" if first else ("q_quest" if kind == "quest" else "e_ending"))
-	var title := "Intro" if first else ("A new quest" if kind == "quest" else "A new ending")
+	var first: bool = kind == "quest" and (st.f.get("quests", []) as Array).all(func(q): return q is Dictionary and q.get("egg", false) == true)
+	var id: String = st.fresh_id("q_intro" if first else {"quest": "q_quest", "egg": "egg", "ending": "e_ending"}.get(kind, "e_ending"))
+	var title := "Intro" if first else {"quest": "A new quest", "egg": "An easter egg", "ending": "A new ending"}.get(kind, "A new ending")
 	var places := _places()
 	places[id] = [roundi(at.x), roundi(at.y)]
 	var why := [""]
 	st.change("A new %s on the story flow" % kind, func():
 		if kind == "quest":
 			HSFlow.add_quest(st.f, id, title)
+		elif kind == "egg":
+			HSFlow.add_egg(st.f, id, title)
+			if from != "":
+				why[0] = HSFlow.set_during(st.f, id, from, true)
 		else:
 			HSFlow.add_ending(st.f, id, title)
-		if from != "":
+		if from != "" and kind != "egg":
 			why[0] = HSFlow.set_way(st.f, from, out, id)
 		st.f["chart"] = places)
 	picked = id
@@ -717,6 +746,14 @@ func connect_way(fid: String, out: int, tid: String) -> void:
 	var c := HSFlow.card_of(ch, fid)
 	var tc := HSFlow.card_of(ch, tid)
 	_dirty = true
+	if st != null and out == -1 and not c.is_empty() and not tc.is_empty():   # a quest's "easter eggs found during it" onto an egg
+		if tc["kind"] != "egg":
+			say("Drag “easter eggs found during it” onto an easter egg's card")
+			return
+		var res := [""]
+		st.change("%s found during %s" % [tid, fid], func(): res[0] = HSFlow.set_during(st.f, tid, fid, true))
+		say(res[0] if res[0] != "" else "%s can be found during %s" % [_title(tc), _title(c)])
+		return
 	if st == null or c.is_empty() or tc.is_empty() or out < 0:
 		return
 	if not c.get("editable", false):
@@ -736,13 +773,24 @@ func _on_to_empty(from_node, from_port: int, release_position: Vector2) -> void:
 	var out := _out_of(fid, from_port)
 	var c := HSFlow.card_of(ch, fid)
 	_dirty = true
-	if c.is_empty() or out < 0 or not c.get("editable", false):
+	if c.is_empty() or not c.get("editable", false):
 		return
 	var at := _on_chart(release_position)
+	if out == -1:                                  # a quest's "easter eggs found during it": a new egg there, or one let go
+		var eitems: Array = [["A new easter egg here (found during it)", func(): add_card("egg", at, fid, -1)]]
+		if _cut_from.size() == 2 and _cut_from[0] == fid and HSFlow.card_of(ch, _cut_from[1]).get("kind", "") == "egg":
+			var egg: String = _cut_from[1]
+			eitems.append(["-"])
+			eitems.append(["Not found during it any more", func(): _not_during(egg, fid)])
+		_popup(eitems, graph.get_screen_position() + release_position)
+		return
+	if out < 0:
+		return
 	var items: Array = [["A new quest here", func(): add_card("quest", at, fid, out)], ["A new ending here", func(): add_card("ending", at, fid, out)]]
-	if str(c["outs"][out].get("src", "")) in ["next", "timeout"]:
+	var src := str(c["outs"][out].get("src", ""))
+	if src in ["next", "timeout"] or (src == "egg" and not c["outs"][out].get("stay", false)):
 		items.append(["-"])
-		items.append(["Take this way away", func(): cut(fid, out)])
+		items.append(["Take the jump away" if src == "egg" else "Take this way away", func(): cut(fid, out)])
 	_popup(items, graph.get_screen_position() + release_position)
 
 
@@ -758,8 +806,8 @@ func cut(fid: String, out: int) -> void:
 ## a right-click on the chart: a new card there
 func _on_popup(at_position: Vector2) -> void:
 	var at := _on_chart(at_position)
-	_popup([["A new quest here", func(): add_card("quest", at)], ["A new ending here", func(): add_card("ending", at)]],
-		graph.get_screen_position() + at_position)
+	_popup([["A new quest here", func(): add_card("quest", at)], ["A new ending here", func(): add_card("ending", at)],
+		["A new easter egg here", func(): add_card("egg", at)]], graph.get_screen_position() + at_position)
 
 
 func card_menu(id: String, screen_at: Vector2) -> void:
@@ -926,7 +974,7 @@ func _target_pick(c: Dictionary, j: int) -> OptionButton:
 		ob.add_item("the free roam (no ending yet)")
 		ids.append(HSFlow.ROAM)
 	for x in ch.get("cards", []):
-		if x["kind"] in ["roam", "trigger"]:
+		if x["kind"] in ["roam", "trigger", "egg"]:
 			continue
 		ob.add_item(_title(x))
 		ids.append(str(x["id"]))
@@ -936,3 +984,60 @@ func _target_pick(c: Dictionary, j: int) -> OptionButton:
 		if str(ids[ix]) != "" and str(ids[ix]) != HSFlow.ROAM:
 			connect_way(id, j, str(ids[ix])))
 	return ob
+
+
+## an egg no longer found during that quest
+func _not_during(egg: String, qid: String) -> void:
+	var st = _story()
+	if st == null:
+		return
+	st.change("%s not during %s" % [egg, qid], func(): HSFlow.set_during(st.f, egg, qid, false))
+	say("Taken away")
+
+
+## an easter egg's side: where it's found (the quests pointing at it, or any), FOUND WHEN, ONLY IF, what it plays (the
+## Story tab's own rows) and then: the game goes on where it was, or it jumps to a quest or an ending
+func _egg_side(c: Dictionary) -> void:
+	var st = _story()
+	var eid := str(c["id"])
+	var e: Dictionary = st.quest_of(eid)
+	var apply := func(fn: Callable, redraw := true): st.change("the easter egg %s" % eid, func(): fn.call(st.quest_of(eid)), redraw)
+	side.add_child(_head("Where it's found"))
+	var ins := HSFlow.incoming(ch, eid)
+	if ins.is_empty():
+		side.add_child(BuildTab._wrap(BuildTab._label("During any quest. Drag a quest's “easter eggs found during it” onto it to say which.", 13, C_MUTED)))
+	for x in ins:
+		var from := HSFlow.card_of(ch, x["from"])
+		var row := _way("during " + (_title(from) if not from.is_empty() else str(x["from"])), "", KIND_COLOR["egg"])
+		row.name = "In_" + str(x["from"]).validate_node_name()
+		side.add_child(row)
+	var w: Control = st._when_row(e, "found", "FOUND WHEN", apply)
+	w.name = "Found"
+	side.add_child(w)
+	side.add_child(st._if_row(e, "if", "ONLY IF", apply))
+	var plays: Control = st._then_rows(e, "on_start", apply, "IT PLAYS")
+	plays.name = "Plays"
+	side.add_child(plays)
+	side.add_child(_head("Then"))
+	var ob := OptionButton.new()
+	ob.name = "EggTo"
+	ob.clip_text = true
+	var ids: Array = [""]
+	ob.add_item("the game goes on where it was")
+	for x in ch.get("cards", []):
+		if x["kind"] in ["roam", "trigger", "egg"]:
+			continue
+		ids.append(str(x["id"]))
+		ob.add_item("it jumps to " + _title(x))
+	var cur := str(c["outs"][0]["to"]) if not c["outs"][0].get("stay", false) else ""
+	ob.select(maxi(0, ids.find(cur)))
+	ob.item_selected.connect(func(k):
+		if str(ids[k]) == "":
+			cut(eid, 0)
+		else:
+			connect_way(eid, 0, str(ids[k])))
+	side.add_child(ob)
+	var b := BuildTab._button("Open it in the Story tab", false)
+	b.name = "OpenInStory"
+	b.pressed.connect(open_in_story.bind(eid))
+	side.add_child(b)

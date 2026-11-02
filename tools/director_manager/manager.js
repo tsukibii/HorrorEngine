@@ -104,7 +104,7 @@ function refs(kind) {
 }
 const targets = () => uniq([...ids("actor"), ...ids("thing"), ...ids("door"), ...ids("light"), ...ids("life")]).sort();
 const kindOf = id => (ids("actor").includes(id) ? "person" : ids("door").includes(id) ? "door" : ids("light").includes(id) ? "light" : lifeOf(id) ? "life" : "thing");
-const goTargets = () => [["", "—"], ...S.quests.map(q => [q.id, "quest " + (q.title || q.id)]), ...S.endings.map(e => [e.id, "ending " + (e.title || e.id)])];
+const goTargets = () => [["", "—"], ...S.quests.filter(q => !q.egg).map(q => [q.id, "quest " + (q.title || q.id)]), ...S.endings.map(e => [e.id, "ending " + (e.title || e.id)])];   // (an easter egg is found, not gone to)
 function freshId(base, taken) { let n = 1; while (taken.includes(`${base}_${n}`)) n++; return `${base}_${n}`; }
 const allIds = () => [...S.quests.map(q => q.id), ...steps(), ...S.endings.map(e => e.id), ...S.moments.map(m => m.id), ...Object.values(S.talk).flatMap(l => arr(l).map(t => t.id)), ...S.achievements.map(a => a.id)];
 
@@ -234,15 +234,34 @@ function render() {
 function viewQuests() {
   const qs = S.quests;
   if (UI.quest >= qs.length) UI.quest = Math.max(0, qs.length - 1);
+  const num = {}; let n = 0; qs.forEach(q => { if (!q.egg) num[q.id] = ++n; });   // numbered in the story's order: an easter egg isn't in it
+  const flowq = qs.some(q => !q.egg);
   const list = h("div", { class: "list" }, qs.map((q, i) => h("div", { class: "item" + (i === UI.quest ? " on" : ""), "data-quest": q.id, on: { click: () => { UI.quest = i; keepUI(); render(); } } },
-    h("span", { class: "t" }, isObj(q.desk) ? `${i + 1}. ◆ ${deskKind(q.desk)}: ${q.id}` : `${i + 1}. ${q.title || q.id}`), h("span", { class: "s" }, isObj(q.desk) ? "desk" : `${arr(q.steps).length}`))),
+    h("span", { class: "t" }, isObj(q.desk) ? `${num[q.id]}. ◆ ${deskKind(q.desk)}: ${q.id}` : q.egg ? `✦ ${q.title || q.id}` : `${num[q.id]}. ${q.title || q.id}`), h("span", { class: "s" }, isObj(q.desk) ? "desk" : q.egg ? "egg" : `${arr(q.steps).length}`))),
     h("button", { class: "small", "data-act": "new-quest", on: { click: () => {   // (none yet: the Intro, what happens as the game opens)
-      const id = freshId(qs.length ? "q" : "q_intro", allIds());
-      qs.push(qs.length ? { id, title: "New quest", objective: "", steps: [] } : { id, title: "Intro", objective: "", list: false, finish: "opening", on_start: [] });
-      UI.quest = qs.length - 1; changed(); render(); } } }, icon("plus", 12), qs.length ? " New quest" : " The intro"));
+      const id = freshId(flowq ? "q" : "q_intro", allIds());
+      qs.push(flowq ? { id, title: "New quest", objective: "", steps: [] } : { id, title: "Intro", objective: "", list: false, finish: "opening", on_start: [] });
+      UI.quest = qs.length - 1; changed(); render(); } } }, icon("plus", 12), flowq ? " New quest" : " The intro"),
+    h("button", { class: "small", "data-act": "new-egg", title: "a hidden quest found during others: a jump scare, an animation, a skip ahead", on: { click: () => {
+      qs.push({ id: freshId("egg", allIds()), title: "An easter egg", egg: true, found: {}, on_start: [] });
+      UI.quest = qs.length - 1; changed(); render(); } } }, icon("plus", 12), " Easter egg"));
   const q = qs[UI.quest];
   return [h("h2", {}, "Quests"), h("p", { class: "lead" }, "Played one at a time, in this order. A step only counts while its quest is the one on. What comes next can depend on what the player has done."),
-    h("div", { class: "split" }, list, q ? (isObj(q.desk) ? deskEd(q, UI.quest) : questEd(q, UI.quest)) : h("p", { class: "empty" }, "No quests yet: a free roam with the moments, conversations and states."))];
+    h("div", { class: "split" }, list, q ? (isObj(q.desk) ? deskEd(q, UI.quest) : q.egg ? eggEd(q, UI.quest) : questEd(q, UI.quest)) : h("p", { class: "empty" }, "No quests yet: a free roam with the moments, conversations and states."))];
+}
+// an easter egg (the user, 2026-11-02: "special hidden quests that might just be jump scares or certain animations… skip a
+// bunch of quests"): found during its quests (none: any) by its found, only if; what it plays; then the game goes on or it jumps
+function eggEd(q, i) {
+  const qs = S.quests, to = arr(q.next).find(x => x && x.go), pick = { x: to ? to.go : "" };
+  const head = h("div", { class: "card", "data-egg": q.id }, h("h3", {}, icon("task", 16), "Easter egg: " + (q.title || q.id), h("span", { class: "grow" }),
+      delBtn("this easter egg", () => { qs.splice(i, 1); UI.quest = Math.max(0, i - 1); })),
+    h("p", { class: "hint" }, "Hidden: nothing on the screen announces it. It's found while one of its quests is on (none: any of them), plays what it plays, then the game goes on where it was, or jumps ahead (a skip)."),
+    row("Id", inp(q, "id", { after: render })), row("Title", inp(q, "title", { ph: "The cat's eyes", w: "320px" })),
+    row("Found when", trigEd(q, "found", { prefix: "Found when" })),
+    row("Only if", condEd(q, "if")),
+    row("During", duringEd(q)),
+    row("Then", sel(pick, "x", goTargets().slice(1), { blank: "the game goes on where it was", after: () => { if (pick.x) q.next = [{ go: pick.x }]; else delete q.next; changed(); render(); } })));
+  return h("div", {}, head, h("div", { class: "card" }, h("h3", {}, icon("event", 16), "It plays"), actions(q, "on_start")));
 }
 // a desk game's scene or choice (godot_director.py from-desk), as the desk had it: shown, moved, taken out, not edited here
 const deskKind = d => d.type === "scene" ? "a cutscene" : d.type === "ending" ? "an ending" : d.type === "choice" ? `a choice by ${d.by || "flag"}` : d.type || "?";
@@ -275,7 +294,8 @@ function questEd(q, i) {
     arr(q.steps).map((s, j) => stepEd(q, s, j)),
     h("button", { class: "small", "data-act": "new-step", on: { click: () => { listArr(q, "steps").push({ id: freshId("s", allIds()), text: "Something to do" }); changed(); render(); } } }, icon("plus", 12), " Add a step"));
   const acts = h("div", { class: "card" }, h("h3", {}, icon("event", 16), "As it starts"), actions(q, "on_start"), h("h3", { style: "margin-top:12px" }, icon("event", 16), "When it's done"), actions(q, "on_done"));
-  const after = qs[i + 1] ? `the next quest, ${qs[i + 1].title || qs[i + 1].id}` : S.endings[0] ? `the first ending, ${S.endings[0].title || S.endings[0].id}` : "nothing yet (add an ending)";
+  const nq = qs.slice(i + 1).find(x => !x.egg);
+  const after = nq ? `the next quest, ${nq.title || nq.id}` : S.endings[0] ? `the first ending, ${S.endings[0].title || S.endings[0].id}` : "nothing yet (add an ending)";
   const next = h("div", { class: "card" }, h("h3", {}, icon("choice", 16), "What comes next"),
     arr(q.next).map((n, j) => h("div", { class: "row" }, h("span", { class: "hint" }, parseCond(n.if).items.length ? (j === 0 ? "If" : "else if") : (j === 0 ? "Always" : "else")),
       condEd(n, "if", "", ""), h("span", { class: "hint" }, "go to"),
@@ -385,7 +405,7 @@ function viewMoments() {
 function duringEd(m) {
   const d = arr(m.during);
   return h("div", { class: "cond" }, d.length ? d.map((q, i) => h("span", { class: "chip" }, q, h("button", { class: "x", on: { click: () => { d.splice(i, 1); if (!d.length) delete m.during; changed(); render(); } } }, "×"))) : h("span", { class: "hint" }, "the whole game"),
-    (() => { const pick = {}; return sel(pick, "x", S.quests.filter(q => !d.includes(q.id)).map(q => [q.id, q.title || q.id]), { blank: "+ a quest", after: () => { if (pick.x) { listArr(m, "during").push(pick.x); changed(); render(); } } }); })());
+    (() => { const pick = {}; return sel(pick, "x", S.quests.filter(q => !q.egg && !d.includes(q.id)).map(q => [q.id, q.title || q.id]), { blank: "+ a quest", after: () => { if (pick.x) { listArr(m, "during").push(pick.x); changed(); render(); } } }); })());
 }
 
 // ---- states ------------------------------------------------------------------------------------------------------------------

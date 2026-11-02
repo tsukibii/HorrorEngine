@@ -234,6 +234,8 @@ func _check_refs(f: Dictionary) -> void:
 		for s in q.get("steps", []):
 			triggers.append([s.get("done"), "quest %s's step %s" % [q.get("id"), s.get("id")]])
 			triggers.append([s.get("fail"), "quest %s's step %s" % [q.get("id"), s.get("id")]])
+		if q.get("egg", false) == true:               # an easter egg's FOUND WHEN names the scene's things too
+			triggers.append([q.get("found"), "easter egg %s" % q.get("id")])
 	for m in f.get("moments", []):
 		triggers.append([m.get("when"), "moment %s" % m.get("id", "")])
 	while triggers.size():

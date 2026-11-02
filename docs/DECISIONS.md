@@ -12,7 +12,9 @@ The user's answers, newest first. They override the plan, the research and the d
   don't have to manually look through 1 by 1 in story and try see prerequisites."** Offered as a main screen in Godot's
   editor beside 2D, 3D and Script, in three steps (the chart; setting up quests and branches in it; easter eggs and
   skips), the user said "go for it". **Story Flow** (GODOT_DIRECTOR §6f): step 1, the chart; step 2, setting the quests
-  and their branches up in it.
+  and their branches up in it; step 3, **easter eggs**: a quest marked `egg`, found during the quests that point at it
+  by a WHEN, playing its thing once, then the game going on or a jump ahead (a skip). An egg has no steps of its own
+  (they'd hold up the quest it's found in); eggs chain by an ONLY IF on another's `done:`.
 
 ## 2026-11-02 (the user: an intro first, quests that aren't lists, and a marker over what to interact with)
 

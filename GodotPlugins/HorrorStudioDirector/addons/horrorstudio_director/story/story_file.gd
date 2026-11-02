@@ -22,6 +22,11 @@ extends RefCounted
 ## Not every quest is a to-do list (the user, 2026-11-02): `list: false` keeps its steps unseen (a marker can show the
 ## way: a step's `guide`), and `finish: "opening"` ends it once what happens as it starts (`on_start`) is over: an
 ## intro. Every game starts with one (INTRO: a new file's first quest).
+## An easter egg (the user, 2026-11-02: "special hidden quests that might just be jump scares or certain animations… if
+## you find the easter egg you can skip a bunch of quests and jump straight to another one"): a quest with `egg: true`,
+## out of the quests' order, found by its `found` (a WHEN) while one of its `during` quests is on (none: any of them),
+## when its `if` holds, once a playthrough; it plays its `on_start`, the fact done:<egg> is set, and its `next` (if it
+## has one) jumps the story there, else the game goes on where it was.
 ## `chart`: where each card sits in the Story Flow tab ({id: [x, y]}, editor/flow_tab.gd), the editor's alone: the game
 ## never reads it.
 

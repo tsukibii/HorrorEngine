@@ -2,7 +2,7 @@
 ## through its Director file's quests and pictured at its moments: the house from above with its areas and spots, the
 ## hall at the start (the first quest's objective and its steps), the cursor on the letter and its card, the read step
 ## crossed out, F9's panel (the quest, the facts), the figure's jumpscare in the kitchen's doorway, the kettle's steam
-## from its spout, the ornament taken up in the hands, Mari close, the wrong thing given ("Nah, that's not what I
+## from its spout, the ornament taken up in the hands (put down: the easter egg the cat's eyes, its thought), Mari close, the wrong thing given ("Nah, that's not what I
 ## want"), her question's two answers, the ending's card. JPEGs into --out=<folder>; prints GUIDEGAME {...}.
 extends SceneTree
 
@@ -233,6 +233,10 @@ func _initialize() -> void:
 		await snap("g_inspect")
 		rt.key_event("E", true)
 		await frames(10)
+		await until(func(): return g.hud.lines_shown.any(func(l): return str(l).ends_with("looking at me.")), 900)   # put down: the easter egg the cat's eyes, its thought typed out
+		await snap("g_egg")
+		await until(func(): return (g.run["flags"] as Dictionary).has("done:egg_cat"), 900)
+		await game_wait(1.0)                            # its thought gone before what follows
 	# the key: the first quest done, the drink errand next
 	if await face("bedroom_key", 0.8):
 		rt.use(true)

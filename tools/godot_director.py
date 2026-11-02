@@ -547,9 +547,9 @@ def alone_check(out):
     """The test runs (tests/alone_check.gd, a run each): a level played on its own (F6 on its scene: a game made round
     it, a free roam with the Director file's moments, the player at its Test start with what it starts with); the
     whole game from the panel's Test start (its first quest, the player kept at the Test start); the panel's Try it
-    (the player in front of a thing, facing it)."""
+    (the player in front of a thing, facing it); the sample's easter eggs (one found any time, one that skips ahead)."""
     ok = True
-    for mode in ("alone", "test", "near"):
+    for mode in ("alone", "test", "near", "egg"):
         code, text = run_godot(["--headless", "--fixed-fps", "60", "--path", str(out), "-s", "res://addons/horrorstudio_director/tests/alone_check.gd", "--", "--mode=" + mode], timeout=300)
         text = quiet(text)
         line = next((l for l in text.splitlines() if l.startswith("ALONECHECK ")), None)
@@ -564,9 +564,14 @@ def alone_check(out):
             good = made and r.get("here") is True and "bedroom_key" in r.get("items", []) and "q_key" in r.get("trail", []) \
                 and r.get("todo") == ["read_letter", "find_key"] and r.get("start_move") is False
             what = "Play from the Test start: the game's first quest, the player kept at the Test start (not sent to the quest's start) with the bedroom key"
-        else:
+        elif mode == "near":
             good = made and r.get("here") is True and r.get("level_start") == "try_here" and "q_key" in r.get("trail", [])
             what = "Try it: the game with the player in front of the letter, facing it"
+        else:
+            good = r.get("game_made") is True and r.get("active") is True and not warn and r.get("egg_jump") is True and r.get("egg_cat") is True \
+                and r.get("egg_skip") is True and r.get("egg_thought") is True
+            what = ("easter eggs, from the drink errand: the cat's eyes found any time (its thought, the errand still on); the bedroom walked into early, "
+                    "straight to bed: its thought, the story jumping to the night (%s), the errand, the talk and the bedroom's quest skipped" % " ".join(r.get("trail", [])))
         print(("  ok  " if good else "  BAD ") + what + ("" if good else " " + json.dumps(r) + " " + " | ".join(warn[:3])))
         ok = ok and good
     return ok
@@ -673,7 +678,7 @@ def editor_check(out):
          rep.get("panel_test_plays") == ["Play the game", "Play this scene"] and "6 quests" in rep.get("panel_test", "")),
         ("the Story Flow tab beside 2D and 3D (%s): a card for every quest and ending (%s), %s arrows, the branch's words on its card (%s), the cards in reading order (%s)"
          % (rep.get("flow_found"), rep.get("flow_cards"), rep.get("flow_wires"), rep.get("flow_branch"), rep.get("flow_order")),
-         rep.get("flow_found") is True and rep.get("flow_cards") is True and rep.get("flow_wires") == 7
+         rep.get("flow_found") is True and rep.get("flow_cards") is True and rep.get("flow_wires") == 9
          and rep.get("flow_branch") == "if step hide is ticked" and rep.get("flow_order") is True),
         ("a card clicked: what leads to it (%s), the start said (%s); double-clicked, open in the Story tab (%s); moved, every card's place kept (%s) and undone (%s)"
          % (rep.get("flow_prereq"), rep.get("flow_start"), rep.get("flow_open"), rep.get("flow_moved"), rep.get("flow_move_undone")),
@@ -688,6 +693,9 @@ def editor_check(out):
          (rep.get("flowedit_numbered") or [])[:4] == ["q_intro", "q_key", "q_drink", "q_talk"] and (rep.get("flowedit_numbered") or [""])[-1] == "q_night"
          and len(rep.get("flowedit_numbered") or []) == 7 and (rep.get("flowedit_numbered") or [""] * 7)[4] == "q_bedroom"
          and rep.get("flowedit_same") is True and rep.get("flowedit_deleted") is True and rep.get("flowedit_undone") is True),
+        ("easter eggs in Story Flow: the sample's two as gold cards out of the numbers, straight to bed found during the drink errand and jumping to the night (%s); one made from the key's dot, its jump to the bedroom (%s), opened in the Story tab on its FOUND WHEN (%s); undone (%s)"
+         % (rep.get("flowegg_cards"), rep.get("flowegg_made"), rep.get("flowegg_story"), rep.get("flowegg_undone")),
+         rep.get("flowegg_cards") is True and rep.get("flowegg_made") is True and rep.get("flowegg_story") is True and rep.get("flowegg_undone") is True),
         ("a node's id follows its renames while it's the name's (%s), one typed by hand stays (%s)" % (rep.get("id_follows"), rep.get("id_kept")), rep.get("id_follows") == ["hs_thing", "old_key"] and rep.get("id_kept") == "my_key"),
         ("saved: the new nodes in the file, no story nodes, nothing the nodes make for themselves", rep.get("saved") is True and rep.get("saved_task") is True and rep.get("saved_nothing_made") is True),
         ("no script errors in the editor", not errs),

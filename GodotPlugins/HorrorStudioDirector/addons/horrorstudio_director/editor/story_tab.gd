@@ -226,7 +226,7 @@ func _draw_left() -> void:
 	var d = panel.dock if panel != null else null
 	var flags: Dictionary = d.run_flags if d != null else {}
 	left.add_child(_label("Quests, in order", 12, C_FAINT, true))
-	var qs: Array = f.get("quests", [])
+	var qs: Array = (f.get("quests", []) as Array).filter(func(x): return x is Dictionary and x.get("egg", false) != true)
 	for i in qs.size():
 		var q: Dictionary = qs[i]
 		var qid := str(q.get("id", ""))
@@ -275,6 +275,27 @@ func _draw_left() -> void:
 	aq.name = "AddQuest"
 	aq.pressed.connect(add_quest)
 	left.add_child(aq)
+	left.add_child(_label("Easter eggs", 12, C_FAINT, true))       # found during the quests, not in their order
+	for e in f.get("quests", []):
+		if not (e is Dictionary) or e.get("egg", false) != true:
+			continue
+		var eid := str(e.get("id", ""))
+		var on: bool = eid == quest and ending == ""
+		var b := Button.new()
+		b.name = "Egg_" + eid
+		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		b.clip_text = true
+		b.text = "%s%s" % ["✓ " if flags.has("done:" + eid) else "", str(e.get("title", eid))]
+		b.tooltip_text = ("Found when " + _when_words(e.get("found"))) if e.get("found") is Dictionary and not (e["found"] as Dictionary).is_empty() else "Say how it's found"
+		b.custom_minimum_size = Vector2(0, 34) * _s()
+		b.add_theme_stylebox_override("normal", BuildTab._box(Color("#3A3020") if on else C_CARD, Color("#E6C36A") if on else Color("#5A4A2A"), 8, 1, 8))
+		b.add_theme_stylebox_override("hover", BuildTab._box(Color("#3A3020"), Color("#E6C36A"), 8, 1, 8))
+		b.pressed.connect(func(): quest = eid; ending = ""; opened = ""; refresh(false))
+		left.add_child(b)
+	var ag := BuildTab._button("+ Add an easter egg", false)
+	ag.name = "AddEgg"
+	ag.pressed.connect(add_egg)
+	left.add_child(ag)
 	left.add_child(_label("Endings", 12, C_FAINT, true))
 	for e in f.get("endings", []):
 		var eid := str(e.get("id", ""))
@@ -308,6 +329,9 @@ func _draw_mid() -> void:
 		mid.add_child(_wrap(_label("Add a quest on the left: a goal on the screen and its steps. Until there is one, the game is a free roam, and the moments below play in it.", 13, C_MUTED)))
 		_draw_moments("")
 		return
+	if q.get("egg", false) == true:
+		_draw_egg(q)
+		return
 	if q.get("desk") is Dictionary:
 		mid.add_child(_label("◆ %s" % quest, 16, C_TEXT, true))
 		mid.add_child(_wrap(_label("A desk game's %s, kept as the desk had it (tools/godot_director.py from-desk). The Director Manager shows it." % str(q["desk"].get("type", "item")), 13, C_MUTED)))
@@ -324,11 +348,13 @@ func _draw_mid() -> void:
 		mb.text = spec[0]
 		mb.tooltip_text = spec[1]
 		mb.flat = true
-		mb.disabled = i + int(spec[2]) < 0 or i + int(spec[2]) >= (f["quests"] as Array).size()
+		mb.disabled = _neighbour(i, int(spec[2])) < 0
 		mb.pressed.connect(func(): change("move %s" % quest, func():
 			var qs: Array = f["quests"]
 			var j := qs.find(quest_of(quest))
-			var k: int = j + int(spec[2])
+			var k: int = _neighbour(j, int(spec[2]))
+			if k < 0:
+				return
 			var t = qs[j]
 			qs[j] = qs[k]
 			qs[k] = t))
@@ -1227,15 +1253,118 @@ func reads_as(m: Dictionary) -> String:
 
 # ---- adding -----------------------------------------------------------------------------------------------------------
 func add_quest() -> void:
-	var first := (f.get("quests", []) as Array).is_empty()
+	var first := (f.get("quests", []) as Array).all(func(q): return q is Dictionary and q.get("egg", false) == true)
 	var qid := fresh_id("q_intro" if first else "q_quest")
-	change("a new quest", func():                     # (none yet: the Intro, what happens as the game opens)
-		var nq: Dictionary = HSStoryFile.INTRO.duplicate(true) if first else {"id": qid, "title": "A new quest", "objective": "", "steps": []}
-		nq["id"] = qid
-		(f["quests"] as Array).append(nq))
+	change("a new quest", func():                     # (none yet: the Intro, what happens as the game opens; the last keeps its ending)
+		HSFlow.add_quest(f, qid, "Intro" if first else "A new quest"))
 	quest = qid
 	ending = ""
 	refresh(false)
+
+
+## an easter egg (the user, 2026-11-02): found during the quests (none named: any of them), what it plays, then the game
+## goes on where it was or jumps ahead
+func add_egg() -> void:
+	var eid := fresh_id("egg")
+	change("a new easter egg", func(): HSFlow.add_egg(f, eid, "An easter egg"))
+	quest = eid
+	ending = ""
+	opened = ""
+	refresh(false)
+
+
+## an easter egg's editor: how it's found, only if, during which quests, what it plays, and then
+func _draw_egg(q: Dictionary) -> void:
+	var eid := str(q.get("id", ""))
+	var apply := func(fn: Callable, redraw := true): change("the easter egg %s" % eid, func(): fn.call(quest_of(eid)), redraw)
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", int(10 * _s()))
+	head.add_child(_label("Easter egg “%s”" % str(q.get("title", eid)), 16, C_TEXT, true))
+	var sp := Control.new()
+	sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(sp)
+	var del := Button.new()
+	del.text = "Delete the egg"
+	del.flat = true
+	del.add_theme_color_override("font_color", Color("#F2A79D"))
+	del.pressed.connect(func():
+		if del.text != "Click again to delete":
+			del.text = "Click again to delete"
+			return
+		change("delete %s" % eid, func(): HSFlow.remove(f, eid))
+		quest = "")
+	head.add_child(del)
+	mid.add_child(head)
+	mid.add_child(_wrap(_label("Hidden: nothing on the screen announces it. It's found while one of its quests is on, plays what it plays, and then the game goes on where it was, or jumps ahead (a skip).", 12, C_MUTED)))
+	var g := HBoxContainer.new()
+	g.add_theme_constant_override("separation", int(8 * _s()))
+	g.add_child(_label("The egg", 12, C_FAINT))
+	var le := LineEdit.new()
+	le.name = "Quest_title"
+	le.text = str(q.get("title", ""))
+	le.custom_minimum_size = Vector2(260, 34) * _s()
+	_on_commit(le, func(t): change("the egg's title", func(): quest_of(eid)["title"] = t, false))
+	g.add_child(le)
+	mid.add_child(g)
+	var w := _when_row(q, "found", "FOUND WHEN", apply)
+	w.name = "Found"
+	mid.add_child(w)
+	mid.add_child(_if_row(q, "if", "ONLY IF", apply))
+	var dr := HFlowContainer.new()                       # during which quests (none: any)
+	dr.name = "During"
+	dr.add_theme_constant_override("h_separation", int(8 * _s()))
+	dr.add_child(_tag("DURING", C_IF))
+	var during: Array = q.get("during", []) if q.get("during") is Array else []
+	if during.is_empty():
+		dr.add_child(_label("any quest", 13, C_MUTED))
+	for qd in during:
+		var chip := Button.new()
+		chip.text = str(quest_of(str(qd)).get("title", qd)) + "  ✕"
+		chip.tooltip_text = "Not during this quest any more"
+		_blue(chip)
+		chip.pressed.connect(func(): change("%s's quests" % eid, func(): HSFlow.set_during(f, eid, str(qd), false)))
+		dr.add_child(chip)
+	var add := MenuButton.new()
+	add.name = "AddDuring"
+	add.text = "+ during…"
+	add.flat = false
+	var pop := add.get_popup()
+	var others: Array = (f.get("quests", []) as Array).filter(func(x): return x is Dictionary and x.get("egg", false) != true and not (x.get("desk") is Dictionary) and not during.has(str(x.get("id", ""))))
+	for k in others.size():
+		pop.add_item(str(others[k].get("title", others[k].get("id", ""))), k)
+	pop.id_pressed.connect(func(k): change("%s's quests" % eid, func(): HSFlow.set_during(f, eid, str(others[k].get("id", "")), true)))
+	add.disabled = others.is_empty()
+	dr.add_child(add)
+	mid.add_child(dr)
+	var plays := _then_rows(q, "on_start", apply, "IT PLAYS")
+	plays.name = "Plays"
+	mid.add_child(plays)
+	var th := HBoxContainer.new()                         # then: the game goes on, or a jump (a skip)
+	th.name = "EggThen"
+	th.add_theme_constant_override("separation", int(8 * _s()))
+	th.add_child(_tag("THEN", C_THEN))
+	var ob := OptionButton.new()
+	ob.name = "EggTo"
+	var ids: Array = [""]
+	ob.add_item("the game goes on where it was")
+	for x in f.get("quests", []):
+		if x is Dictionary and x.get("egg", false) != true:
+			ids.append(str(x.get("id", "")))
+			ob.add_item("it jumps to: " + str(x.get("title", x.get("id", ""))))
+	for e in f.get("endings", []):
+		ids.append(str(e.get("id", "")))
+		ob.add_item("it jumps to the ending: " + str(e.get("title", e.get("id", ""))))
+	var cur := HSStoryCompiler._egg_to(q)
+	ob.select(maxi(0, ids.find(cur)))
+	_blue(ob)
+	ob.item_selected.connect(func(k): change("where %s goes on" % eid, func():
+		var e := quest_of(eid)
+		if str(ids[k]) == "":
+			e.erase("next")
+		else:
+			e["next"] = [{"go": str(ids[k])}]))
+	th.add_child(ob)
+	mid.add_child(th)
 
 
 func add_ending() -> void:
@@ -1330,6 +1459,15 @@ static func _inside(a: Node3D, p: Vector3) -> bool:
 
 
 # ---- an ending ----------------------------------------------------------------------------------------------------------
+## the quest next to the i-th in the story's order, earlier (d -1) or later (1), stepping over the easter eggs; -1 none
+func _neighbour(i: int, d: int) -> int:
+	var qs: Array = f.get("quests", [])
+	var k := i + d
+	while k >= 0 and k < qs.size() and qs[k] is Dictionary and qs[k].get("egg", false) == true:
+		k += d
+	return k if k >= 0 and k < qs.size() and i >= 0 else -1
+
+
 func _draw_ending() -> void:
 	var e: Dictionary = {}
 	for x in f.get("endings", []):

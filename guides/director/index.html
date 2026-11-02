@@ -451,9 +451,9 @@ below, with its steps and moments.</li>
 <li><b>Drag cards</b> where you like: their places are kept with the story (<kbd>Ctrl</kbd>+<kbd>Z</kbd> puts them
 back). <span class="ui">Lay it out again</span> forgets them; <span class="ui">Fit the view</span> shows it all.</li>
 </ul>
-<figure class="wide"><img src="img/e_flow.jpg" width="919" height="873" alt="Story Flow on the sample: the cards Intro, The key and A drink on the first row, Mari, The bedroom and Something in the hall on the second, the endings Asleep and Morning on the third; Something in the hall clicked, on the right after 5 The bedroom, then, and its two ways: if step hide is ticked to Morning, then to Asleep">
-<figcaption>The sample in Story Flow: six quests in two rows, the night's two ways to its endings. The night's card is
-clicked: what leads to it and where it goes, on the right.</figcaption></figure>
+<figure class="wide"><img src="img/e_flow.jpg" width="1119" height="873" alt="Story Flow on the sample: the cards Intro, The key and A drink on the first row, Mari, The bedroom and Something in the hall on the second, the endings and the two gold easter egg cards below; Something in the hall clicked, on the right after 5 The bedroom, then, and its two ways: if step hide is ticked to Morning, then to Asleep">
+<figcaption>The sample in Story Flow: six quests in two rows, the night's two ways to its endings, and its two easter
+eggs in gold. The night's card is clicked: what leads to it and where it goes, on the right.</figcaption></figure>
 <p>A game brought in from the desk shows its scenes and choices as cards too (marked DESK), and its trigger cutscenes
 hung off the quests they listen during; those are changed in the Director Manager.</p>
 <p><b>Setting the story up in it</b>, without the detail (the steps and moments stay in the Story tab):</p>
@@ -473,9 +473,31 @@ it.</li>
 the cards and in the Story tab), and the game plays exactly the same.</li>
 </ul>
 <p>Everything is on <kbd>Ctrl</kbd>+<kbd>Z</kbd>.</p>
-<figure class="wide"><img src="img/e_flow_edit.jpg" width="919" height="873" alt="Story Flow on the sample with a new quest The cellar after The bedroom, The key's card clicked: on the right its ways, if they've read letter going to The cellar, and its then to A drink">
+<figure class="wide"><img src="img/e_flow_edit.jpg" width="1119" height="873" alt="Story Flow on the sample with a new quest The cellar after The bedroom, The key's card clicked: on the right its ways, if they've read letter going to The cellar, and its then to A drink">
 <figcaption>A quest set up in the chart: <i>The cellar</i> after the bedroom, and a branch on the key: if they've read
 the letter, the cellar.</figcaption></figure>
+<h3>Easter eggs</h3>
+<p>An <b>easter egg</b> is a hidden quest: nothing on the screen announces it, and it isn't in the quests' order. It's
+<b>found</b> while one of its quests is on (none named: any of them), when something happens (FOUND WHEN: they put the
+cat ornament down, they walk into the bedroom), only if its ONLY IF holds. It plays what it plays (a jump scare, an
+animation, a thought), once a playthrough, and then either <b>the game goes on</b> where it was, or it <b>jumps
+ahead</b> to a later quest or an ending: a skip, the quests in between left behind. Finding one is the fact
+<code>done:&lt;egg&gt;</code>, for a moment's ONLY IF, another egg's, or an achievement (every egg found).</p>
+<ul>
+<li>In Story Flow: <span class="ui">+ Easter egg</span> (or a right-click, <span class="ui">A new easter egg
+here</span>) makes a gold card. Drag a quest's <span class="ui">easter eggs found during it</span> dot onto it for the
+quests it's found during; drag its <span class="ui">then</span> dot onto a card for its jump. Click it: on the right
+where it's found, its FOUND WHEN, ONLY IF and what it plays, and then.</li>
+<li>In the panel's Story tab: <span class="ui">Easter eggs</span> under the quests, <span class="ui">+ Add an easter
+egg</span>; the same rows, DURING picked by name.</li>
+<li>In the Director Manager: <span class="ui">+ Easter egg</span> on the Quests tab.</li>
+</ul>
+<figure class="wide"><img src="img/e_flow_egg.jpg" width="1119" height="873" alt="Story Flow with the easter egg Straight to bed clicked: found during A drink, found when the player enters the bedroom, it plays the thought Mari can wait, then it jumps to Something in the hall">
+<figcaption>The sample's egg <i>Straight to bed</i>: found during the drink errand when the player walks into the
+bedroom, it thinks “Mari can wait.” and jumps to the night, skipping the errand, the talk and the bedroom's quest. The
+other, <i>The cat's eyes</i>, is found any time the cat ornament is put down: a thought, and the game goes on.</figcaption></figure>
+<figure class="wide"><img src="img/g_egg.jpg" width="1280" height="720" alt="In the game: the kitchen, the cat ornament put back on the table, the thought When I put it down, I'd swear it was looking at me">
+<figcaption>In the game: the cat's eyes found. Nothing said it was there; the thought is the egg.</figcaption></figure>
 </section>
 
 <section id="facts">

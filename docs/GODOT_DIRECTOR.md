@@ -451,6 +451,26 @@ moved (every card's place kept) and undone; a new quest put and titled, the bedr
 to the night, a branch on the key by a fact sent to it, the quests numbered by the flow with the same arrows, the new
 quest deleted (the key's branch and the bedroom going on to the night), all eight changes undone.
 
+**Easter eggs** (step 3; the user: "label easter egg quests (special hidden quests that might just be jump scares or
+certain animations)… if you find the easter egg you can maybe skip a bunch of quests and jump straight to another
+one"): a quest with `egg: true` in the Director file, out of the quests' order and numbers. It's found by its `found`
+(a WHEN, the Story tab's own row) while one of its `during` quests is on (none: any; the free roam too), when its `if`
+holds, once a playthrough; it plays its `on_start`, sets the fact `done:<egg>`, and when it has a `next` it jumps the
+story there. Compiled (`story_compile.gd` `_eggs`, `_egg_jumps`) into a beat of each quest it can be found in (its
+`_found_<egg>` flag keeps it once; the jump is the flag `_jump_<egg>` set last, which an interrupt of those quests
+listens for: the runtime's trigger cutscenes, STORY_FORMAT §5.1, so no new word), and a `next` going to an egg is
+refused. An egg has no steps of its own: its steps would sit in the quest's to-do list and keep the quest from
+finishing; two eggs chain by one's ONLY IF asking for the other's `done:`. In Story Flow a gold card (*+ Easter
+egg*, a right-click), wired from a quest's *easter eggs found during it* (`set_during`) and on by its *then* to the
+card it jumps to (a skip); clicked, on the right where it's found, FOUND WHEN, ONLY IF, what it plays (the Story tab's
+rows) and then. In the panel's Story tab under *Easter eggs* (*+ Add an easter egg*, DURING by name); in the Manager
+*+ Easter egg* (Found when, Only if, During, Then, It plays), Coverage knowing them (found, not reached; no steps; a
+missing FOUND WHEN); the dock lists them apart. The sample has two: *the cat's eyes* (the ornament put down, any time:
+a thought) and *straight to bed* (the bedroom walked into during the drink errand: a thought, then the night). Measured:
+DIRECTOR's playthrough finds the cat's eyes (its thought, the quest still on); a run from the drink errand
+(`alone_check.gd --mode=egg`) finds both, the skip landing on the night with the errand, the talk and the bedroom's
+quest left out; MANAGERPAGE makes one.
+
 ## 7. Where you are
 
 Three ways to see it: the dock's Director tab while the game runs from the editor (it sends the quest, the facts and
