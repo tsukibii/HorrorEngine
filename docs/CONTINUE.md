@@ -28,7 +28,8 @@ occlusion bake when a thing says so. The user then asked for the trees by night:
 any prop under the game's blue moon and in the dark under the flashlight from the player's eye (the sheets in
 `docs/godot_sheets/2026-11-02_trees.jpg` and `_trees_night.jpg`). Then the user pushed three ambientCG bark sets and
 four leaf sets (`pbr/bark/`, `pbr/leaf/`): every species' bark is now a real one by default (`bark.pbr`, the drawn
-tile behind `pbr: null`), and the leaves' realistic category follows (`tools/propgen/leafset.py`). Next, if the user wants: their own look at the trees on the 3090 (the page shows
+tile behind `pbr: null`), and the leaves have a realistic category (`*_real`, nine recipes with a new cedar: the sets'
+own leaves cut out by `tools/propgen/leafset.py` and hung along the twigs, hued to the season). Next, if the user wants: their own look at the trees on the 3090 (the page shows
 them as cards, `python tools/propgen/serve.py`), wind on the cards (a vertex shader in the look plugin), a bush family
 (azalea hedges, clipped balls), the street builder's `tree` stand-in swapped for a made tree by the Godot drop, lower
 LODs (the twigs' sides, fewer cards) for a street of them.

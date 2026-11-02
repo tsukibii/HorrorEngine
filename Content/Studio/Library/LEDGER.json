@@ -32,6 +32,12 @@
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe black_pine (Content/Studio/Props/presets.json)"
  },
+ "props/black_pine_real": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe black_pine_real (Content/Studio/Props/presets.json)"
+ },
  "props/book_hardcover": {
   "date": "2026-11-01",
   "kind": "mesh",
@@ -92,6 +98,12 @@
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe burger_box (Content/Studio/Props/presets.json)"
  },
+ "props/camphor_real": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe camphor_real (Content/Studio/Props/presets.json)"
+ },
  "props/camphor_tree": {
   "date": "2026-11-02",
   "kind": "mesh",
@@ -140,6 +152,12 @@
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe candle_votive (Content/Studio/Props/presets.json)"
  },
+ "props/cedar_real": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe cedar_real (Content/Studio/Props/presets.json)"
+ },
  "props/chair_worn": {
   "date": "2026-10-30",
   "kind": "mesh",
@@ -157,6 +175,12 @@
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe cherry_blossom (Content/Studio/Props/presets.json)"
+ },
+ "props/cherry_real": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe cherry_real (Content/Studio/Props/presets.json)"
  },
  "props/cherry_tree": {
   "date": "2026-11-02",
@@ -205,6 +229,12 @@
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe crape_myrtle (Content/Studio/Props/presets.json)"
+ },
+ "props/crape_myrtle_real": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe crape_myrtle_real (Content/Studio/Props/presets.json)"
  },
  "props/dead_tree": {
   "date": "2026-11-02",
@@ -380,6 +410,12 @@
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe manga_volume (Content/Studio/Props/presets.json)"
  },
+ "props/maple_autumn_real": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe maple_autumn_real (Content/Studio/Props/presets.json)"
+ },
  "props/maple_garden": {
   "date": "2026-11-02",
   "kind": "mesh",
@@ -487,6 +523,12 @@
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe plane_pollarded (Content/Studio/Props/presets.json)"
+ },
+ "props/plane_real": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe plane_real (Content/Studio/Props/presets.json)"
  },
  "props/plane_street": {
   "date": "2026-11-02",
@@ -679,6 +721,18 @@
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe zelkova_autumn (Content/Studio/Props/presets.json)"
+ },
+ "props/zelkova_autumn_real": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe zelkova_autumn_real (Content/Studio/Props/presets.json)"
+ },
+ "props/zelkova_real": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe zelkova_real (Content/Studio/Props/presets.json)"
  },
  "props/zelkova_street": {
   "date": "2026-11-02",

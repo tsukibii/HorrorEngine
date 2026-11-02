@@ -138,7 +138,7 @@ and set the fill and the colours on each placed copy in Godot (its `HSLiquidFill
 | `sink` | `kind` kitchen (pressed stainless: a basin, a ribbed drainboard, a basket strainer, a gooseneck mixer) or basin (glazed fireclay: an oval bowl, two pillar taps, a bottle trap); `liquid` standing in it, `rust`, `limescale`, `crazing`, `glaze`; sockets spout (`spout_cold`), handle, drain | kitchen_sink, kitchen_sink_water, washbasin, washbasin_blood |
 | `book` | §16: `kind` hardcover, paperback, bunko, manga, textbook, notebook, diary; `size` (A4, B5, A5, B6, A6, bunko, shinsho, tankobon or [w, h] mm), `thick`, `binding` left or right, `pose` lie, stand or open (`open_at`), `arrange` one, stack or row with `fit` [w, d, h] mm, `count`, `mix`, `titles`; `art`, `spine`, `back`, `page_l`, `page_r`; `age` | book_hardcover, book_paperback, bunko, manga_volume, textbook_kokugo, textbook_math, notebook_math, diary_closed, diary_open, book_open, books_desk_box, books_cubby, books_shelf, books_stack_desk |
 | `import` | your own mesh, worn (§5) | chair_worn |
-| `tree` | §18: a street's trees grown by Mtree's functions: `kind` zelkova, ginkgo, cherry, camphor, plane, maple, crape_myrtle, pine, dead; `height`, `clear` (the stem below the first branch), `season` summer, autumn, spring (blossom on a cherry), winter (bare); `spread`, `droop`, `density`, `crown`, `levels`, `lean`, `multi`, `pollard`, `twigs`; `leaves` {count, size, tint}, `bark` {color, relief}; `stakes` torii, tripod or single, `pit` kerb or soil | zelkova_street, zelkova_young, zelkova_autumn, zelkova_winter, ginkgo_street, ginkgo_autumn, cherry_tree, cherry_blossom, camphor_tree, plane_street, plane_pollarded, maple_garden, crape_myrtle, black_pine, dead_tree, sapling_staked |
+| `tree` | §18: a street's trees grown by Mtree's functions: `kind` zelkova, ginkgo, cherry, camphor, plane, maple, crape_myrtle, pine, cedar, dead; `height`, `clear` (the stem below the first branch), `season` summer, autumn, spring (blossom on a cherry), winter (bare); `spread`, `droop`, `density`, `crown`, `levels`, `lean`, `multi`, `pollard`, `twigs`; `leaves` {count, size, tint; `set` a leaf set off the shelf for realistic leaves, `set_mm`, `spray`, `hue`, `sat`, `light`}, `bark` {pbr, tint, tile, relief; color, style for the drawn tile}; `stakes` torii, tripod or single, `pit` kerb or soil | zelkova_street, zelkova_young, zelkova_autumn, zelkova_winter, ginkgo_street, ginkgo_autumn, cherry_tree, cherry_blossom, camphor_tree, plane_street, plane_pollarded, maple_garden, crape_myrtle, black_pine, dead_tree, sapling_staked; the realistic category: zelkova_real, zelkova_autumn_real, cherry_real, camphor_real, plane_real, maple_autumn_real, crape_myrtle_real, black_pine_real, cedar_real |
 
 ### Designs
 
@@ -795,6 +795,24 @@ words.
   every branch, a bake over it would be a jumble) and no wear is laid on the bark or the leaves (their paint carries
   the age); `wear` still reaches the stakes and the pit.
 
+**Realistic leaves, the second category** (the user, 2026-11-02: "for leaves create a more realistic category where
+you use patterns made from the pbrs I shared with you for the leaves"): the user's leaf sets (ambientCG's LeafSet005
+hornbeam-like leaves and a twig of three, LeafSet019 fir sprays, LeafSet021 yellow maple leaves, LeafSet029 lobed
+leaves, in `pbr/leaf/`) are photographs of real leaves on a plain ground with an opacity map that cuts them out.
+`tools/propgen/leafset.py` finds each leaf as one piece of that map (stalks kept), its base as its lowest point as
+photographed (the stalk's end, a twig's cut end; the sets are shot stalk down) or, for a long spray, the end of its
+long axis where the last slices hold one thin run of pixels (its cut stem, not its fan of needles), and hangs it
+from a twig by that base at any size and angle with its colour, roughness and normal map turned with it. With `leaves.set` the cluster painter lays those instead of drawn leaves, in the same sprays (the twig and
+its side twigs, leaves half a leaf apart, the species' sizes: `set_mm` a leaf's length), or as a conifer's sprays
+(`spray`, the set's long pieces a few to a card); `hue`, `sat` and `light` turn a set to the season (the zelkova's
+autumn is the green set turned 62 degrees toward orange); the card's ground colour is the set's own mean, so the cut
+edge stays its colour. The recipes `*_real` are that category: the zelkova (and its autumn), the cherry, the camphor,
+the plane (LeafSet029's lobes), a maple in LeafSet021's autumn yellow, the crape myrtle, the black pine in fir
+sprays, and a **cedar** (`kind: cedar`, new: a straight leader, level limbs long below and short above, the sugi of
+a shrine path) in the same sprays. The ginkgo keeps its drawn fans (no set has them), the drawn category stays as it
+was, and any set you add to `pbr/leaf/` works the same way (`"leaves": {"set": "pbr/leaf/<set>"}`). The sheets:
+`docs/godot_sheets/2026-11-02_trees_real.jpg` (Cycles) and `2026-11-02_trees_real_night.jpg` (Godot, by night).
+
 **The recipes** (presets.json): the Tokyo avenue zelkova in its kerbed pit, young with torii stakes, in autumn and
 bare in winter; a ginkgo and its November gold; a cherry in leaf and in bloom; a camphor's evergreen dome; a plane
 tree and the same pollarded; a Japanese maple in autumn red; a crape myrtle in flower; a black pine; a dead tree; a
@@ -819,7 +837,7 @@ lights the trunk and the crown's underside and the top fades into the dark, as i
 blossom glows pale. The leaves are cut, not blended, so nothing sorts wrong against the beam and their shadows are
 their own shape.
 
-Checked by PROPGEN (`zelkova_street` leafy and `dead_tree` bare made small: well-formed, on the floor, anchored on the
+Checked by PROPGEN (`zelkova_street` leafy, `dead_tree` bare and `cedar_real` in the leaf set's sprays made small: well-formed, on the floor, anchored on the
 origin, about their height, within their budgets, the leaf material cut, every stem's foot closed so nothing is seen
 inside out from below) and GDPROPS (imported by Godot 4.7, the leaf surface see-through; `--night` the two nights).
 

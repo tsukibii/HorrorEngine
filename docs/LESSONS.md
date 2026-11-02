@@ -5,6 +5,13 @@ the fix.
 
 ## The prop generator's trees (2026-11-02)
 
+- **A spray hangs by its cut stem, and "the thin end" isn't it:** the first realistic trees hung most fir sprays by
+  their bushy end (the user caught it in the atlas). Measured by the outline's width, a spray's cut end looks wide
+  (its side shoots angle back past the stem) and its far end narrow (a point of needles). What marks the stem is
+  that the last slices of the long axis hold one thin run of pixels, not several; and a leaf photographed on a
+  plain ground is simply stalk down, so its base is its lowest point. Read a photo's convention before inventing a
+  measure, and check an atlas by eye before the tree.
+
 - **Port the algorithm, not the add-on:** Modular Tree 4 is an MIT C++ core under a GPL Blender add-on compiled
   against one Blender's Python at a time (the fork stopped at 3.2). Its growth (a few hundred lines once the
   `shared_ptr` scaffolding is gone) ran in plain numpy Python in an afternoon, on Blender 4.2's and 5.x's own Python

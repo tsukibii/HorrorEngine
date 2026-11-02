@@ -10,14 +10,14 @@ to a clear stem (`clear`), and a young one is held by stakes (`stakes`) in a tre
      "stakes": "torii", "pit": "kerb", "spread": 1.0, "droop": 1.0, "density": 1.0, "crown": 1.0,
      "leaves": {"size": 0.42, "count": 1800, "tint": null}, "bark": {"color": null, "relief": 1.0}}
 
-    "kind": "zelkova" | "ginkgo" | "cherry" | "camphor" | "plane" | "maple" | "crape_myrtle" | "pine" | "dead"
+    "kind": "zelkova" | "ginkgo" | "cherry" | "camphor" | "plane" | "maple" | "crape_myrtle" | "pine" | "cedar" | "dead"
     "season": "summer" | "autumn" | "spring" | "winter"
     "stakes": "none" | "torii" | "tripod" | "single"
     "pit": "none" | "kerb" | "soil"
     "twigs": "auto" | "mesh" | "cards"
 
 `bark`: `pbr` a set off the shelf (each species' real bark by default: pbr/bark/Bark001, 006 or 014; null for the
-tile drawn by code), `tile` metres a repeat, `tint`, `relief`; `height` metres over all; `clear` the trunk below the first branch; `spread` turns the branches out (1 the species'
+tile drawn by code), `tile` metres a repeat, `tint`, `pbr_relief` (`relief` is the drawn tile's); `height` metres over all; `clear` the trunk below the first branch; `spread` turns the branches out (1 the species'
 own), `droop` is gravity on them, `density` how many, `crown` their length, `levels` how many orders of branches (2 or
 3; the last order carries the leaves, meshed only when the tree is bare unless `twigs` says); `lean` degrees off the
 vertical; `pollard` cuts a plane tree back to knuckles with a broom of shoots; `multi` grows several stems from the
@@ -177,6 +177,20 @@ SPECIES = {
                  "colors": {"summer": ["#2f5a2e", "#4a7a3e"], "spring": ["#3f6f36", "#6a9a4a"], "autumn": ["#2f5a2e", "#4a7a3e"]}},
         "bark": {"style": "scaly", "color": "#6b5a4e", "crack": "#2a2320", "plate": "#8a6e5a", "relief": 1.4, "pbr": "pbr/bark/Bark014_1K-PNG"},
         "pipe": {"end": 0.004, "growth": 0.9, "power": 2.4},
+    },
+    "cedar": {  # スギ / a fir: a straight leader to the top, level limbs long below and short above, sprays of foliage
+        "height": 8.0, "clear": 1.6, "radius": 0.17, "trunk": {"frac": 0.96, "shape": 0.85, "randomness": 0.15, "up": 1.2},
+        "levels": [
+            {"end": 0.985, "density": 4.6, "length": {"from": 0.3, "to": 0.03}, "angle": {"from": 86, "to": 68}, "start_radius": 0.28,
+             "end_radius": 0.15, "randomness": 0.25, "gravity": 5.0, "stiffness": 0.25, "split": 0.22, "split_angle": 28, "split_radius": 0.8,
+             "up": 0.08, "flatness": 0.7, "break": 0.01, "resolution": 3},
+            {"start": 0.15, "density": 5.0, "length": {"from": 0.08, "to": 0.05}, "angle": [50, 75], "start_radius": 0.4, "end_radius": 0.2,
+             "randomness": 0.35, "gravity": 3.0, "stiffness": 0.15, "split": 0.2, "split_angle": 35, "split_radius": 0.8, "up": 0.0,
+             "flatness": 0.8, "break": 0.02, "resolution": 4}],
+        "leaf": {"shape": "needles", "mm": (110, 110), "card": 0.56, "cluster": 1, "gloss": 0.55, "count": 2200, "spray": True,
+                 "colors": {"summer": ["#2f5a2e", "#4a7a3e"], "spring": ["#3f6f36", "#6a9a4a"], "autumn": ["#2f5a2e", "#4a7a3e"]}},
+        "bark": {"style": "scaly", "color": "#6b5a4e", "crack": "#2a2320", "plate": "#8a6e5a", "relief": 1.4, "pbr": "pbr/bark/Bark014_1K-PNG"},
+        "pipe": {"end": 0.0035, "growth": 0.9, "power": 2.4},
     },
     "dead": {  # a dead tree: bare, bleached, its branches broken short, bending down
         "height": 7.0, "clear": 2.2, "radius": 0.16, "trunk": {"frac": 0.75, "shape": 0.7, "randomness": 0.9, "up": 0.5},
@@ -547,6 +561,16 @@ def make(spec, th):
     th.material("bark", "weathered", color=bark["color"], rough=0.88)
     th.island("bark", C, C, mat="bark", wrap=True)
     palette = (leaf.get("colors") or {}).get(LEAF_SEASON.get(season) or "summer") or ["#4d7a2c", "#6a9a3a"]
+    if leaf.get("set") and leafy:
+        # realistic leaves: the set's own leaves, their mean colour the material's (what shows at a cut edge), hued
+        from .. import leafset as LS
+        cuts = LS.load(leaf["set"])
+        if not cuts:
+            raise ValueError(f"leaf set {leaf['set']}: no leaves found in its opacity map")
+        tot = sum(float(c.rgba[..., 3].sum()) for c in cuts)
+        mean = sum((c.rgba[..., :3] * c.rgba[..., 3:4]).sum((0, 1)) for c in cuts) / max(tot, 1e-6)
+        mean = _hued(mean[None, None], leaf)[0, 0]
+        palette = [_hex(mean), _hex(np.clip(mean * 1.15, 0, 1))]
     if leaf.get("tint"):
         palette = [_hex(rgb(c) * rgb(leaf["tint"]) / max(float(rgb(leaf["tint"]).mean()), 1e-6) * 0.6 + rgb(c) * 0.4) for c in palette]
     card_mm = float(leaf.get("size", leaf["card"])) * 1000.0
@@ -738,7 +762,7 @@ def paint_bark(f, bark, seed, C):
 def paint_bark_pbr(f, bark, X, Y, W, H):
     """A bark set laid over the whole tile: `tile` metres a repeat across (the set's own tile_m), its height from its
     own shape (a 1 x 2 m set repeats half as often up), a whole number of repeats each way so the edges meet; the
-    set's colour times `tint`, its roughness, its normal at `relief` strength."""
+    set's colour times `tint`, its roughness, its normal at `pbr_relief` strength (1: as the set has it)."""
     from .. import pbrset
     st = pbrset.load(bark["pbr"])
     alb = st.maps["albedo"]
@@ -752,7 +776,7 @@ def paint_bark_pbr(f, bark, X, Y, W, H):
     if bark.get("tint"):
         col = col * rgb(bark["tint"])[None, None] / max(float(rgb(bark["tint"]).mean()), 1e-6) * 0.62
     n = smp["normal"].copy()
-    n[..., :2] *= float(bark.get("relief", 1.0))
+    n[..., :2] *= float(bark.get("pbr_relief", 1.0))                      # the set's own relief as it is, unless asked
     n /= np.maximum(np.linalg.norm(n, axis=-1, keepdims=True), 1e-6)
     f.lay_island(np.ones_like(X), color=np.clip(col, 0, 1).astype(np.float32), rough=smp["rough"], metal=0.0, normal=n.astype(np.float32))
 
@@ -831,6 +855,15 @@ def paint_cluster(f, leaf, palette, season, seed, kind):
     L, Wd = (v * sc for v in leaf.get("mm", (50, 25)))
     blossom = leaf.get("blossom") == season
     flowers = leaf.get("flowers") == season
+    cuts = None
+    if leaf.get("set"):
+        # realistic leaves: the set's own leaves (leafset.py) hung from the twigs instead of drawn ones
+        from .. import leafset as LS
+        cuts = LS.load(leaf["set"])
+        spray = bool(leaf.get("spray")) or (np.mean([c.length / max(c.width, 1e-6) for c in cuts]) > 2.2)
+        shape = "spray" if spray else "set"
+        L = float(leaf.get("set_mm", 0.55 * W if spray else L))
+        Wd = L * 0.5
     # the twigs: one up the middle, bending a little, side twigs off it alternately
     main = [(W / 2 + rng.uniform(-W * 0.03, W * 0.03), 0.0), (W / 2 + rng.uniform(-W * 0.07, W * 0.07), H * 0.45), (W / 2 + rng.uniform(-W * 0.14, W * 0.14), H * 0.9)]
     twigs = [main]
@@ -844,6 +877,24 @@ def paint_cluster(f, leaf, palette, season, seed, kind):
         twigs.append([p0, ((p0[0] + p1[0]) / 2 + rng.uniform(-W * 0.02, W * 0.02), (p0[1] + p1[1]) / 2), p1])
     for ti, tw in enumerate(twigs):
         f.line(tw, 2.4 if ti == 0 else 1.5, color=twig_col, opacity=1.0, rough=0.8, height=0.2)
+    if shape == "spray":
+        # sprays of a conifer: a few of the set's sprays along the main twig and off it, leaning out and down
+        from .. import leafset as LS
+        hue = leaf
+        n = int(rng.integers(4, 7))
+        for i in range(n):
+            t = 0.25 + 0.7 * i / max(n - 1, 1)
+            at = _along(main, min(t, 0.96))
+            side = 1 if i % 2 else -1
+            ang = side * rng.uniform(25, 60) + rng.uniform(-8, 8)
+            ln = min(L * rng.uniform(0.8, 1.1), 0.5 * min(W, H))
+            c = cuts[int(rng.integers(len(cuts)))]
+            LS.lay(f, c, at, ang, ln, tint=_hue_tint(c, leaf), flip=rng.random() < 0.5, shade=float(rng.uniform(0.85, 1.08)))
+        tip = main[-1]
+        c = cuts[int(rng.integers(len(cuts)))]
+        LS.lay(f, c, (tip[0], tip[1] - 0.02 * H), rng.uniform(-14, 14), min(L * 0.9, H - tip[1] + 0.02 * H), tint=_hue_tint(c, leaf),
+               flip=rng.random() < 0.5, shade=float(rng.uniform(0.85, 1.08)))
+        return
     if shape == "needles":
         # tufts: needles radiating from each twig's end, each a thin line, the tufts kept inside the card
         L = min(L, 0.4 * min(W, H))
@@ -868,7 +919,7 @@ def paint_cluster(f, leaf, palette, season, seed, kind):
     for ti, tw in enumerate(twigs):
         p = np.asarray(tw, float)
         total = float(np.linalg.norm(np.diff(p, axis=0), axis=1).sum())
-        step = L * (0.42 if shape in ("elliptic", "ovate") else 0.5 if shape == "fan" else 0.75)
+        step = L * (0.42 if shape in ("elliptic", "ovate", "set") else 0.5 if shape == "fan" else 0.75)
         n = max(2, int(total / step))
         for i in range(n):
             t = (i + 0.7) / (n + 0.2)
@@ -907,6 +958,18 @@ def paint_cluster(f, leaf, palette, season, seed, kind):
         # a few small leaves among them
         spots = spots[::4]
         cols = [rgb("#8a7a48"), rgb("#6f8a3a")] if blossom else cols
+    if cuts is not None:
+        from .. import leafset as LS
+        for p, ang, sz in spots:
+            c = cuts[int(rng.integers(len(cuts)))]
+            ln = L * sz * float(rng.uniform(0.85, 1.12))
+            if c.length / max(c.width, 1e-6) > 2.2:
+                ln *= 1.6                                               # a twig of leaves is longer than one leaf
+            LS.lay(f, c, p, ang, ln, tint=_hue_tint(c, leaf), flip=rng.random() < 0.5, shade=float(rng.uniform(0.86, 1.08)))
+        X, Y = f.grid()
+        sh = N.fbm3(np.stack([X / 60.0, Y / 60.0, np.full_like(X, seed * 0.37)], -1), seed + 41, 2)
+        f.lay_island(np.ones_like(X), color=np.clip(cols[0][None, None] * (1 + 0.5 * sh[..., None]), 0, 1).astype(np.float32), alpha=0.15)
+        return
     for p, ang, sz in spots:
         poly = leaf_poly(shape, L * sz * rng.uniform(0.85, 1.12), Wd * sz * rng.uniform(0.85, 1.12), rng, serrate=leaf.get("serrate", False), lobes=leaf.get("lobes", 5))
         if rng.random() < 0.3:
@@ -921,6 +984,32 @@ def paint_cluster(f, leaf, palette, season, seed, kind):
     sh = N.fbm3(np.stack([X / 60.0, Y / 60.0, np.full_like(X, seed * 0.37)], -1), seed + 41, 2)
     tone = rgb(leaf.get("flower", "#f5d5e0")) if flowers else rgb(palette[0]) if blossom else cols[0]
     f.lay_island(np.ones_like(X), color=np.clip(tone[None, None] * (1 + 0.5 * sh[..., None]), 0, 1).astype(np.float32), alpha=0.22)
+
+
+def _hued(col, leaf):
+    """Colours (..., 3, sRGB 0-1) turned by `hue` degrees round the colour wheel, their saturation times `sat` and
+    their brightness times `light` (a green leaf set turned to autumn: hue -70, sat 1.1)."""
+    hue, sat, light = float(leaf.get("hue", 0.0)), float(leaf.get("sat", 1.0)), float(leaf.get("light", 1.0))
+    c = np.asarray(col, np.float32)
+    if hue:
+        a = math.radians(-hue)                     # the colour wheel's way: red 0, yellow 60, green 120; a green goes orange by a negative turn
+        cs, sn = math.cos(a), math.sin(a)
+        # a rotation about the grey axis (the YIQ hue turn)
+        M = np.array([[0.299, 0.587, 0.114], [0.596, -0.274, -0.322], [0.211, -0.523, 0.312]])
+        Mi = np.linalg.inv(M)
+        R = np.array([[1, 0, 0], [0, cs, -sn], [0, sn, cs]])
+        c = c @ (Mi @ R @ M).T
+    if sat != 1.0:
+        lum = (c * np.array([0.299, 0.587, 0.114], np.float32)).sum(-1, keepdims=True)
+        c = lum + (c - lum) * sat
+    return np.clip(c * light, 0, 1)
+
+
+def _hue_tint(cut, leaf):
+    """The tint leafset.lay takes for a cutout under the leaf's hue, sat and light: None when none is asked."""
+    if not (leaf.get("hue") or leaf.get("sat", 1.0) != 1.0 or leaf.get("light", 1.0) != 1.0):
+        return None
+    return ("hue", leaf)
 
 
 def _along(pts, t):
