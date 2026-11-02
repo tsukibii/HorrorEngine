@@ -2,6 +2,19 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-02, evening (the user: animation made easy, by quest)
+
+- **"Anything you can think we could do to make animation, patrol/walking, cinematic animations easy based on
+  'quest', should we add an animation and facial animation tab to store animations, these can be project specific,
+  how do I easily be like at this point npc is doing this, then if quest complete they get up and walk here with this
+  animation, you can talk to them here, they have this expression etc, jump scare plays this… an easy drag and drop
+  animation system, ideally I can just drag animations into the folders… come up with a good plan first."** The plan
+  is **docs/GODOT_ANIMATION_PLAN.md**: a library of body and face clips filled by dropping files into
+  `res://animations/` and `res://faces/` (retargeted onto MHR on import), an **Animate** tab of cards, a character's
+  **moves** (PATTERNS_PLAN's motion set), **On stage** per quest (who's where doing what, her face, whether you can
+  talk to her, carried until changed, the in-between played by itself), paths, reactions, scares, cutscenes and faces
+  by drag and drop. Not built: waiting on the user's answers (its §10) and yes.
+
 ## 2026-11-02, later (the user: the story as a flowchart)
 
 - **"Would it be hard for you to make a story flowchart tab where we can basically see the story in a flowchart… we
