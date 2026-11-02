@@ -131,6 +131,7 @@ TOOLS = [
     ("Godot", "TestRoom001 played in Godot station by station (GDTESTROOM)", "tools/godot_export.py --game TestRoom001 --testroom", {}),
     ("Godot", "A street as the .glb to drop into a Godot folder (into Saved/Streets/<street>; the desk running)", "node tools/director/streetexport.mjs --street {ask:Street}", {}),
     ("Godot", "A street imported in Godot and checked: colliders, occluders, lamps, colours (GDSTREET; the desk running)", "tools/godot/street_check.py --street {ask:Street}", {}),
+    ("Godot", "A street dressed with the prop generator's trees and bushes along its pavements, pictured in Godot by day and by night (GDDRESS; the desk running, the props made)", "tools/godot/street_dress.py --street {ask:Street}", {}),
 
     ("Checks", "Every offline check, every game", "tools/check_all.py", {}),
     ("Checks", "Every offline check, one game", "tools/check_all.py --game {game}", {}),
@@ -222,6 +223,7 @@ TOOLS = [
     ("Props", "Prop generator: a contact sheet of the made props (Saved/Props/sheet.png)", "tools/propgen.py sheet", {}),
     ("Props", "Prop generator: made props into the library as props/<name> (a story places them with asset props/<name>)", "tools/propgen.py library", {}),
     ("Props", "Prop generator: the PBR shelf's sets (a recipe's pbr)", "tools/propgen.py pbr", {}),
+    ("Props", "Prop generator: seamless vine sets onto the shelf (pbr/foliage/vine_<kind>: ivy, ivy_real, creeper, creeper_autumn, bare; a layer by its own mask over a wall's set in the street paint; no Blender)", "tools/propgen.py vines {opt:Kind(s) (Enter: every one)}", {}),
     ("Props", "Prop generator: the made props in Godot 4.7 (GDPROPS: materials read back, pictured)", "tools/propgen.py godot", {}),
     ("Checks", "Prop generator check (PROPGEN: a recipe of every family made small and measured; Blender)", "tools/propgen.py check", {}),
     ("Checks", "Prop generator page test (PROPPAGE: headless browser on port 8792, a scratch recipe book; Blender makes four)", "node tools/propgen/pagetest.mjs", {}),

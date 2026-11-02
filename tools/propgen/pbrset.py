@@ -88,6 +88,7 @@ def load(ref, size=1024):
         maps["rough"] = orm[..., 1:2].repeat(3, -1)
         maps["metal"] = orm[..., 2:3].repeat(3, -1)
     st = Set(str(ref), maps, m.get("tile_m", 2.0))
+    st.tile_v_m = float(m["tile_v_m"]) if m.get("tile_v_m") else None        # a set taller than wide (a 1 x 2 m bark)
     _sets[key] = st
     return st
 

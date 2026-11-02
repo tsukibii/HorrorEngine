@@ -422,6 +422,11 @@ def to_blender(m, name, materials=None, sharp_angle=None, weighted=None):
         if len(cn) == len(me.loops):
             me.normals_split_custom_set([tuple(x) for x in cn])
             me.update()
+    elif "normal" in m.a and m.a["normal"].shape == (len(m.v), 3):
+        # a normal of the thing's own per vertex (a tree's leaves lit as a rounded mass, not as flat cards)
+        n = m.a["normal"] / np.maximum(np.linalg.norm(m.a["normal"], axis=1, keepdims=True), 1e-9)
+        me.normals_split_custom_set_from_vertices([tuple(x) for x in n])
+        me.update()
     return me
 
 

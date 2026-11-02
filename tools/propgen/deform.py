@@ -299,4 +299,6 @@ def place(meshes, R, yaw=0.0):
     for x in meshes:
         if x is not None:
             x.v = x.v @ M.T + shift
+            if "normal" in x.a:
+                x.a["normal"] = x.a["normal"] @ M.T
     return M, shift

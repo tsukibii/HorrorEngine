@@ -1,0 +1,15 @@
+{
+ "maps": {
+  "albedo": "Bark001_1K-PNG_Color.png",
+  "height": "Bark001_1K-PNG_Displacement.png",
+  "normal": "Bark001_1K-PNG_NormalGL.png",
+  "rough": "Bark001_1K-PNG_Roughness.png"
+ },
+ "normal": "gl",
+ "tile_m": 1.0,
+ "source": "ambientCG",
+ "url": "https://ambientcg.com/view?id=Bark001",
+ "licence": "CC0-1.0",
+ "tile_v_m": 2.0,
+ "label": "bark, grey and deeply furrowed (oak-like), moss in the furrows: ginkgo, camphor, a dead tree"
+}

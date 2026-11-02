@@ -21,7 +21,9 @@ CASES = {"soda_can": (115, 6000), "soda_can_crushed": (125, 14000), "water_bottl
          "soy_bottle": (120, 9000), "pill_bottle": (90, 14000), "candle_taper": (330, 13000),
          "ema": (160, 6000), "shimenawa": (900, 10000), "wara_ningyo": (270, 8000), "hokora": (560, 8000), "tetsubin": (180, 12000),
          "rice_cooker": (330, 8000), "kitchen_sink_water": (920, 14000), "book_hardcover": (215, 4000), "diary_open": (360, 4000),
-         "books_cubby": (420, 16000)}
+         "books_cubby": (420, 16000), "zelkova_street": (9000, 26000), "dead_tree": (7000, 26000), "cedar_real": (8000, 14000),
+         "azalea_ball": (800, 6000), "grass_tuft": (420, 100), "small_zelkova": (4400, 9000), "pot_ficus": (1700, 12000),
+         "pot_cactus": (320, 5000)}
 
 
 def _glb(path):
@@ -217,7 +219,10 @@ def run(book, out):
         lo, hi = pos.min(0), pos.max(0)                 # glTF: y up
         if abs(lo[1]) > 1e-4:
             problems.append(f"its lowest point at {lo[1] * 1000:.2f} mm, not on the floor")
-        if abs((lo[0] + hi[0]) / 2) > 1e-3 or abs((lo[2] + hi[2]) / 2) > 1e-3:
+        if rec.get("anchor"):
+            if abs(rec["anchor"][0]) > 1e-3 or abs(rec["anchor"][1]) > 1e-3:
+                problems.append("its anchor isn't over the origin")
+        elif abs((lo[0] + hi[0]) / 2) > 1e-3 or abs((lo[2] + hi[2]) / 2) > 1e-3:
             problems.append("not centred")
         longest = float((hi - lo).max()) * 1000
         if not (0.5 * size_mm <= longest <= 2.0 * size_mm):
@@ -251,7 +256,7 @@ def run(book, out):
             if alb.std() < 0.01:
                 flat.append(mname)
             nrm = read_image(os.path.join(tmp, name, files[2]))[..., :3] * 2 - 1
-            if nrm[..., 2].mean() < 0.6:
+            if nrm[..., 2].mean() < 0.5:                  # a map facing away or with its channels swapped; a deeply furrowed bark's mean z is about 0.55
                 problems.append(f"{mname}'s normal map faces away ({nrm[..., 2].mean():.2f})")
         if len(flat) == len(rec["textures"]):
             problems.append("every colour map is one flat colour (" + ", ".join(flat) + ")")

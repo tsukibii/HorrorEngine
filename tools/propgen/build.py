@@ -39,6 +39,9 @@ class Thing:
         self.liquid = None          # (Mesh of the container's inside, liquid.info(...)): a node of its own for Godot's shader
         self.sockets = {}           # name -> (point, direction) at rest, metres: empties in the glb (socket_flame, socket_steam...)
         self.fx = {}                # the enhancers Godot's HSPropFX gives it: glow, flame, smoke, steam, wax (PROPGEN.md §14)
+        self.anchor = None          # a point of the made thing (metres) that stays at x = y = 0 when it's set down: a tree's trunk
+        self.bake_ao = True         # off for a thing whose texture tiles over itself (a tree's bark): a bake over it would be a jumble
+        self.tree = None            # what a tree family records about its growth (meta.json's "tree")
 
     def material(self, name, kind="paint", px=None, alpha=False, double=False, color="#808080", rough=0.5, metal=0.0, specular=None):
         self.mats[name] = dict(kind=kind, px=px or int(self.spec.get("tex", 1024)), alpha=alpha, double=double,
@@ -344,6 +347,14 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
     pose = spec.get("pose", th.pose)
     R = D.rest_pose(th.high if th.high is not None else th.low, pose, th.axis, seed, prefer=spec.get("down", (0, 1, 0)))
     Mx, shift = D.place([th.high, th.low] + ([th.liquid[0]] if th.liquid else []), R, float(spec.get("yaw", 0)))
+    if th.anchor is not None:
+        # the anchor, not the middle of the bounds, over the origin (a tree stands on its trunk, its crown wherever it leans)
+        a = Mx @ np.asarray(th.anchor, float) + shift
+        off = np.array([a[0], a[1], 0.0])
+        for x in [th.high, th.low] + ([th.liquid[0]] if th.liquid else []):
+            if x is not None:
+                x.v = x.v - off
+        shift = shift - off
     odir = os.path.join(out_dir, name)
     os.makedirs(odir, exist_ok=True)
     # Blender objects with stand-in materials (the bakes need materials to put their images in)
@@ -382,7 +393,7 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
     # per-texel attributes of the game mesh, and the bakes from the detailed one
     bs = int(samples or spec.get("bake_samples", 24))
     ao = BK.bake("AO", low_ob, high_ob, px=max(v["px"] for v in th.mats.values()), samples=bs, gpu=gpu,
-                 ao_dist=float(spec.get("ao_dist", 0.012)), extrude=float(spec.get("cage", 0.003)), reach=float(spec.get("reach", 0.012)))
+                 ao_dist=float(spec.get("ao_dist", 0.012)), extrude=float(spec.get("cage", 0.003)), reach=float(spec.get("reach", 0.012))) if th.bake_ao else {}
     nb = BK.bake("NORMAL", low_ob, high_ob, px=max(v["px"] for v in th.mats.values()), samples=4, gpu=gpu,
                  extrude=float(spec.get("cage", 0.003)), reach=float(spec.get("reach", 0.012))) if high_ob else {}
     cb = BK.bake("EMIT", low_ob, high_ob, px=max(v["px"] for v in th.mats.values()), samples=1, gpu=gpu, attr="curv",
@@ -395,14 +406,20 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
     for mi, (mname, mt) in enumerate(th.mats.items()):
         cv = canvases[mname]
         px = mt["px"]
-        fa = None
-        if th.texel_paint:
-            T, B = BK.tangent_frames(th.low)
-            fa = {"tan": T, "bit": B}
-        tex = BK.raster(th.low, px, {"rest": th.low.a.get("rest", th.low.v), "nrm": vn, "curv": kl[:, None]}, mat=th.low.mats.index(mname),
-                        face_attrs=fa)
-        tex["curv"] = tex["curv"][..., 0]
+        wl = {**wspec, **(th.mats[mname].get("wear") or {})}
         key = f"{name}_{mname}_tmp"
+        if th.texel_paint or any(wl.values()):
+            # each texel's place on the thing, for the wear and a paint by place: the slow part of a big mesh, so only
+            # where something reads it
+            fa = None
+            if th.texel_paint:
+                T, B = BK.tangent_frames(th.low)
+                fa = {"tan": T, "bit": B}
+            tex = BK.raster(th.low, px, {"rest": th.low.a.get("rest", th.low.v), "nrm": vn, "curv": kl[:, None]}, mat=th.low.mats.index(mname),
+                            face_attrs=fa)
+            tex["curv"] = tex["curv"][..., 0]
+        else:
+            tex = {"hit": cv.used}
 
         def fit(a):
             if a.shape[0] == px:
@@ -416,7 +433,7 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
             tex["curv"] = (fit(cb[key])[..., 0] - 0.5) * 2
         if th.texel_paint:
             th.texel_paint(mname, cv, tex)
-        S.wear(cv, tex, {**wspec, **(th.mats[mname].get("wear") or {})}, mt["kind"], seed + 7 * mi, th.density.get(mname, 4.0))
+        S.wear(cv, tex, wl, mt["kind"], seed + 7 * mi, th.density.get(mname, 4.0))
         det = S.combine_normals(cv.nrm, S.height_normal(cv.height, th.density.get(mname, 4.0), float(spec.get("relief", 1.0))))
         if key in nb:
             base = fit(nb[key])[..., :3] * 2 - 1
@@ -523,6 +540,10 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
                            "wrap": n in th.wrap} for n, i in th.islands.items()},
            "materials": {m: {"kind": v["kind"], "px": v["px"], "color": v["color"]} for m, v in th.mats.items()}, "fx": fx,
            "slots": slots, "design": design}
+    if th.anchor is not None:
+        rec["anchor"] = [round(float(x), 5) for x in (Mx @ np.asarray(th.anchor, float) + shift)]
+    if th.tree:
+        rec["tree"] = th.tree
     with open(os.path.join(odir, "meta.json"), "w", encoding="utf-8") as fh:
         json.dump(rec, fh, indent=1)
     if th.liquid:

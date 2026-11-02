@@ -13,6 +13,42 @@ street builder, its paint and the PBR sets, with `prop-gen-tool` merged in; 2026
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
+## 0. `procedural-trees` (2026-11-02, evening): the prop generator's trees, after Modular Tree
+
+The user pointed at steven-ray's fork of Maxime Herpin's Modular Tree and asked for a tree prop generator for urban
+streets with variations (DECISIONS 2026-11-02, evening). Built (PROPGEN §18): `tools/propgen/mtree.py`, Mtree 4's
+MIT core (trunk, branches with phyllotaxis, splits, gravity and the floor, the pipe model's radii) ported to numpy
+Python, nothing to compile; the `tree` family (`families/tree.py`): nine species by season (zelkova, ginkgo, cherry
+with blossom, camphor, plane and pollarded, maple, crape myrtle, black pine, a dead tree), tubes with a seamless bark
+tile drawn by 4D noise on the flat torus, leaf cards off a cluster atlas drawn by code (alpha-cut in Godot, normals
+rounded over the crown), torii or tripod stakes and a kerbed pit, the tree set down by its trunk (`Thing.anchor`);
+sixteen recipes. Framework: `surface.material` cuts alpha (`alpha="clip"`, the glTF's MASK), `mesh.to_blender` takes
+a mesh's own normals (`a["normal"]`), `build.run` skips the per-texel raster where nothing reads it (the wear) and the
+occlusion bake when a thing says so. The user then asked for the trees by night: `propgen.py godot --night` pictures
+any prop under the game's blue moon and in the dark under the flashlight from the player's eye (the sheets in
+`docs/godot_sheets/2026-11-02_trees.jpg` and `_trees_night.jpg`). Then the user pushed three ambientCG bark sets and
+four leaf sets (`pbr/bark/`, `pbr/leaf/`): every species' bark is now a real one by default (`bark.pbr`, the drawn
+tile behind `pbr: null`), and the leaves have a realistic category (`*_real`, nine recipes with a new cedar: the sets'
+own leaves cut out by `tools/propgen/leafset.py` and hung along the twigs, hued to the season). Then bushes (azalea
+balls and hedges by `clip`, a loose shrub, grass tufts) and `tools/godot/street_dress.py`, which dressed the hill
+road with trees and bushes and pictured it by day and night (`docs/godot_sheets/2026-11-02_hill_motel_dressed.jpg`;
+the judgement in PROPGEN §18: scale and shadows carry it, the cards show up close, the green is a shade bright). Then
+**small trees** (`habit: upright`, ten `small_*` recipes under a two-storey house, branches steep) and the dress tool
+putting them beside houses, big trees only with room (`--room`). Then **potted plants** (the `plant` family,
+PROPGEN §19: a pot turned with a real wall or a cube planter, the soil and its topping, the tree family's growth and
+cards on it as an aloe, an echeveria, a snake plant, a fern, a palm, a monstera, a rubber plant, a fiddle leaf fig, a
+ficus, a bonsai, basil, a pothos, ivy, lucky bamboo, a yucca, a cactus and a dead one: eighteen `pot_*` recipes,
+`docs/godot_sheets/2026-11-02_plants.jpg`) and **vines** (`propgen.py vines`, §20: five seamless sets a metre a repeat
+on the shelf, `pbr/foliage/vine_*`, a layer by its own mask over a wall's set in the street paint,
+`2026-11-02_vines.jpg`). Next, if the user wants: the plants in the kit's places (a windowsill, a shelf, a desk's
+corner: the scene builder putting a `pot_*` prop there), vines as a mesh standing off a wall (cards on the stems, the
+set's own leaves) and climbing the street builder's facades by a slot of their own, more plants (an orchid, a
+succulent tray, a hanging basket), their own look at the trees on the 3090 (the page shows
+them as cards, `python tools/propgen/serve.py`), wind on the cards (a vertex shader in the look plugin), a bush family
+(azalea hedges, clipped balls), the street builder's `tree` stand-in swapped for a made tree by the Godot drop (street_dress's `placements.json` is
+the shape of it), a nearer card set for crowns at the player's face, lower LODs (the twigs' sides, fewer cards) for a
+street of them, bushes that know a door from a wall.
+
 ## 0. `enhance-prop-editor` (2026-11-01, late night): the prop generator's picture editor (tsukibii/HorrorEngine#10, not merged yet)
 
 The user found pictures on props hard to place (DECISIONS 2026-11-01, late night) and asked for a Figma-like panel:

@@ -206,7 +206,7 @@ def _gltf_output_group():
 def material(name, albedo, orm, normal, kind="paint", alpha=False, double_sided=False, specular=None, tint=None, emission=None,
              emission_strength=1.0):
     """A Principled material on the three images (bpy images or paths): base colour (sRGB, its alpha the opacity when
-    `alpha`), ORM (occlusion, roughness, metalness: non-colour) and the normal map (non-colour, OpenGL). `tint`: a
+    `alpha`: blended, or cut at a half when it's "clip"), ORM (occlusion, roughness, metalness: non-colour) and the normal map (non-colour, OpenGL). `tint`: a
     colour the base colour is multiplied by, which the glTF export writes as its baseColorFactor (Godot's Albedo
     Color: change it there to tint the thing again)."""
     import bpy
@@ -242,7 +242,21 @@ def material(name, albedo, orm, normal, kind="paint", alpha=False, double_sided=
         t.links.new(mul.outputs[2], bs.inputs["Base Color"])
     else:
         t.links.new(ia.outputs["Color"], bs.inputs["Base Color"])
-    if alpha:
+    if alpha == "clip":
+        # cut, not blended (leaves): the glTF exporter reads a Round on the alpha as alphaMode MASK at 0.5, which Godot
+        # imports as alpha scissor (no sorting, shadows cast by the cut shape)
+        rnd = t.nodes.new("ShaderNodeMath")
+        rnd.operation = "ROUND"
+        rnd.location = (-150, 450)
+        t.links.new(ia.outputs["Alpha"], rnd.inputs[0])
+        t.links.new(rnd.outputs[0], bs.inputs["Alpha"])
+        for attr, val in (("blend_method", "CLIP"), ("surface_render_method", "DITHERED"), ("alpha_threshold", 0.5)):
+            if hasattr(mt, attr):
+                try:
+                    setattr(mt, attr, val)
+                except TypeError:
+                    pass
+    elif alpha:
         t.links.new(ia.outputs["Alpha"], bs.inputs["Alpha"])
         for attr, val in (("blend_method", "BLEND"), ("surface_render_method", "BLENDED")):
             if hasattr(mt, attr):

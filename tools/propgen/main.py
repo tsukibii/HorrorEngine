@@ -64,6 +64,9 @@ def main():
     elif a.cmd == "check":
         from propgen import check
         check.run(book, out)
+    elif a.cmd == "vines":
+        from propgen import vines
+        vines.run(a.names, px=a.tex or 1024, out_dir=a.out, seed=a.seed if a.seed is not None else 7)
     elif a.cmd == "case":
         # one of the check's cases made as the check makes it, in a process of its own (check.py's run to run test)
         spec = recipes.resolve(book, a.names[0], sets=["tex=256"])

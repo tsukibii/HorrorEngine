@@ -1,0 +1,15 @@
+{
+ "maps": {
+  "albedo": "LeafSet029_1K-PNG_Color.png",
+  "height": "LeafSet029_1K-PNG_Displacement.png",
+  "normal": "LeafSet029_1K-PNG_NormalGL.png",
+  "opacity": "LeafSet029_1K-PNG_Opacity.png",
+  "rough": "LeafSet029_1K-PNG_Roughness.png"
+ },
+ "normal": "gl",
+ "tile_m": 1.0,
+ "source": "ambientCG",
+ "url": "https://ambientcg.com/view?id=LeafSet029",
+ "licence": "CC0-1.0",
+ "label": "lobed leaves (ivy-like), green, two turning: a plane's"
+}

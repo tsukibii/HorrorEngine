@@ -3,6 +3,41 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## The prop generator's trees (2026-11-02)
+
+- **A bush is leafy to the ground, so its leaves go on every node, stems too:** the first azalea balls floated, a
+  cloud of leaves over bare sticks, because the cards hung only on the last order of twigs, as a tree's do. A clipped
+  bush carries leaves along every branch and stem (`leaves.on: all`), and the clip cuts branches, not the leaves off
+  them.
+- **A spray hangs by its cut stem, and "the thin end" isn't it:** the first realistic trees hung most fir sprays by
+  their bushy end (the user caught it in the atlas). Measured by the outline's width, a spray's cut end looks wide
+  (its side shoots angle back past the stem) and its far end narrow (a point of needles). What marks the stem is
+  that the last slices of the long axis hold one thin run of pixels, not several; and a leaf photographed on a
+  plain ground is simply stalk down, so its base is its lowest point. Read a photo's convention before inventing a
+  measure, and check an atlas by eye before the tree.
+
+- **Port the algorithm, not the add-on:** Modular Tree 4 is an MIT C++ core under a GPL Blender add-on compiled
+  against one Blender's Python at a time (the fork stopped at 3.2). Its growth (a few hundred lines once the
+  `shared_ptr` scaffolding is gone) ran in plain numpy Python in an afternoon, on Blender 4.2's and 5.x's own Python
+  with nothing to build, and the same seed grows the same tree. Fetch a library like that for what it knows (the
+  order of its steps, its words, its defaults), and write it in the project's own way.
+- **A tiling texture over every branch wants no per-texel raster and no occlusion bake:** the bark tile covers
+  thousands of tubes, so `raster` walked twenty thousand triangles whose UVs run many tiles up each twig (thirty
+  seconds at 512 px, minutes at 1024) for a wear nothing used, and a Cycles occlusion bake over UVs that overlap
+  everywhere is a jumble. Skip the raster where no wear and no paint by place reads it (`build.run` now does, for
+  every prop), and let a thing say it bakes no occlusion (`Thing.bake_ao`).
+- **A texture that must repeat both ways is drawn on the flat torus in 4D, not crossfaded:** sampling 3D noise round
+  a cylinder tiles one way; crossfading the field with itself a tile up blurred the bark's cracks into ink blots, and
+  the 3D torus squeezes its inner side to half. Four coordinates, (cos u, sin u, cos v, sin v) with each circle's
+  radius its length round, and perlin4 reads it with no direction stretched and no seam (`noise.fbm4`, `ridged4`).
+- **A leaf card is a spray, not a leaf:** the first atlas drew leaves at their true size along a twig, and the crown
+  came out a scatter of green specks on bare branches. A card stands for a whole spray, so its leaves are a quarter
+  bigger than life and half a leaf apart along every twig (a fifth to a third of the card covered), and the cards
+  sit at every branch's tip as well as along the last order of twigs, so nothing ends bare.
+- **A pipe model starves a trunk with few tips:** a pollarded plane and a dead tree came out with trunks a few
+  centimetres thick, since their radii were summed from a handful of twigs. A stem keeps at least its species' trunk,
+  tapering up it (`_trunk_floor`), and a pollard's limbs keep the radii they grew with.
+
 ## Carried over from the Godot project (Woohill)
 
 - **Measure, don't guess:** a check that prints one `<NAME> ok` line beats any amount of reading code. Every
@@ -1522,3 +1557,16 @@ guessed margin; and a check that only ever ran on a slow machine hasn't been run
 - **A kept result must also not be sent and drawn again:** the tailor kept the garments, yet "the same outfit again"
   took seconds: every garment was still copied to the page and its meshes rebuilt. The page tells the worker what it
   shows (`have`) and keeps those meshes; measure the worker's answer apart from the frames a CPU renderer draws.
+
+## Potted plants and vines (2026-11-02, `procedural-trees`)
+
+- **A lathe's step follows the profile's length, not a number that suited a cup:** the pots were turned at the
+  ware family's 4 mm step, which made a 40 cm floor pot of thirty thousand triangles (a monstera's whole plant was
+  six thousand). Rows by `arclen / 44` and columns by the diameter: the same pot in a tenth of the triangles,
+  nothing seen. Measure a family's triangles across its sizes before its recipes, not after.
+- **A tiny tree's crown is its branch count:** a 1.2 m ficus with a street tree's branch density grew three
+  branches off its trunk, so three balls of leaves whatever the leaf count. Density is per metre of trunk: a
+  potted tree needs a few times a street tree's, and leaves along its twigs (`on: all`), not at their tips only.
+- **Few wide splits, not many narrow:** a monstera drawn with nine notches a side read as a palm frond, and narrow
+  slits a sample wide vanished at the card's resolution. Five rounded lobes a side cut by V-shaped gaps that
+  widen to the edge read as the plant.

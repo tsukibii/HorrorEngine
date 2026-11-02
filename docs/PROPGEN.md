@@ -44,6 +44,7 @@ python tools/propgen.py library [names...]                # made props into the 
 python tools/propgen.py godot [names...]                  # GDPROPS: imported by Godot 4.7, materials read back, pictured
 python tools/propgen.py pbr                               # the PBR shelf's sets
 python tools/propgen.py pbr-add Metal/brushed ~/Downloads/brushed_*.png   # a set onto the shelf
+python tools/propgen.py vines [ivy ivy_real creeper creeper_autumn bare]   # seamless vine sets onto the shelf (§20)
 python tools/propgen.py check                             # PROPGEN
 ```
 
@@ -138,6 +139,8 @@ and set the fill and the colours on each placed copy in Godot (its `HSLiquidFill
 | `sink` | `kind` kitchen (pressed stainless: a basin, a ribbed drainboard, a basket strainer, a gooseneck mixer) or basin (glazed fireclay: an oval bowl, two pillar taps, a bottle trap); `liquid` standing in it, `rust`, `limescale`, `crazing`, `glaze`; sockets spout (`spout_cold`), handle, drain | kitchen_sink, kitchen_sink_water, washbasin, washbasin_blood |
 | `book` | §16: `kind` hardcover, paperback, bunko, manga, textbook, notebook, diary; `size` (A4, B5, A5, B6, A6, bunko, shinsho, tankobon or [w, h] mm), `thick`, `binding` left or right, `pose` lie, stand or open (`open_at`), `arrange` one, stack or row with `fit` [w, d, h] mm, `count`, `mix`, `titles`; `art`, `spine`, `back`, `page_l`, `page_r`; `age` | book_hardcover, book_paperback, bunko, manga_volume, textbook_kokugo, textbook_math, notebook_math, diary_closed, diary_open, book_open, books_desk_box, books_cubby, books_shelf, books_stack_desk |
 | `import` | your own mesh, worn (§5) | chair_worn |
+| `tree` | §18: a street's trees grown by Mtree's functions: `kind` zelkova, ginkgo, cherry, camphor, plane, maple, crape_myrtle, pine, cedar, dead, and the bushes azalea (`clip` to a ball or a box), shrub, grass; `height`, `clear` (the stem below the first branch), `season` summer, autumn, spring (blossom on a cherry), winter (bare); `spread`, `droop`, `density`, `crown`, `levels`, `lean`, `multi`, `pollard`, `twigs`; `leaves` {count, size, tint; `set` a leaf set off the shelf for realistic leaves, `set_mm`, `spray`, `hue`, `sat`, `light`}, `bark` {pbr, tint, tile, relief; color, style for the drawn tile}; `stakes` torii, tripod or single, `pit` kerb or soil | zelkova_street, zelkova_young, zelkova_autumn, zelkova_winter, ginkgo_street, ginkgo_autumn, cherry_tree, cherry_blossom, camphor_tree, plane_street, plane_pollarded, maple_garden, crape_myrtle, black_pine, dead_tree, sapling_staked; the realistic category: zelkova_real, zelkova_autumn_real, cherry_real, camphor_real, plane_real, maple_autumn_real, crape_myrtle_real, black_pine_real, cedar_real; the bushes: azalea_ball, azalea_flowering, azalea_hedge, azalea_low, shrub_loose, shrub_autumn, shrub_real, grass_tuft, grass_dry; the small trees (`habit: upright`, under a two-storey house): small_zelkova, small_zelkova_staked, small_zelkova_autumn, small_hornbeam_real, small_cherry, small_cherry_blossom, small_ginkgo, small_ginkgo_autumn, small_maple_autumn, small_dead |
+| `plant` | §19: a potted plant, a table's to a floor's: `form` rosette (an aloe, an echeveria), blades (a snake plant), fern, palm (an areca's canes), big_leaf (a monstera, a rubber plant, a fiddle leaf fig: `leaf`, `stem`), tree (`species` ficus, bonsai, herb, dead), trailing (a pothos, ivy: `length`), canes (lucky bamboo), yucca, cactus (`ribs`, `radius`); `plant` {size, count, color, leaf, species, lean, spread}; `pot` {kind terracotta, glazed, plastic, cylinder, bowl, concrete or cube; d (w, dd), h, color, soil, topping pebbles, pumice, moss or bark, cracked, glaze} | pot_aloe, pot_echeveria, pot_basil, pot_cactus, pot_cactus_tall, pot_pothos, pot_ivy, pot_fern, pot_snake_plant, pot_bonsai, pot_monstera, pot_rubber_plant, pot_fiddle_leaf, pot_ficus, pot_palm, pot_yucca, pot_bamboo, pot_dead |
 
 ### Designs
 
@@ -732,3 +735,210 @@ Texture & pictures tab is that editor (`tools/propgen/page/picedit.js`; the 3D v
 Checked by PROPGEN (a hardcover made with a sheet in an older layout and a bar turned 90 degrees: the front takes the
 yellow quarter, the spine the red, the back none of it, the bar upright; the paint and its ground apart only in its
 pictures' boxes) and PROPPAGE (§13).
+
+## 18. Trees: a street's trees grown by Mtree
+
+The user (2026-11-02): "Similar to our prop system can you see if you can incorporate this blender library ... and
+create a tree prop generator, trees don't need to be massive, just stuff that would be in urban streets, make some
+variations", pointing at steven-ray's fork of Maxime Herpin's **Modular Tree** (`modular_tree`, the Blender 3.x build
+of Mtree 4). Mtree 4 is a C++ core (MIT) with a node-based Blender add-on (GPL) over it; the add-on has to be compiled
+against each Blender's Python, and the fork stopped at 3.2. So the core's growth is ported, not the add-on:
+`tools/propgen/mtree.py` is Mtree's trunk, branch and pipe-radius functions in plain numpy Python (the same tree in
+the same order of steps, under the same words: start, end, density, length, start angle, randomness, up attraction,
+flatness, gravity, stiffness, split chance and angle, break chance, phyllotaxis, the pipe model's power), and it runs
+inside Blender 4.2's and 5.x's own Python with nothing to build. Mtree's meshers (the manifold one in C++, the add-on's
+leaves by a geometry-nodes modifier) are not ported: the tree family meshes the tree for a game its own way, below.
+Nothing of modular_tree's code is copied in; the Mtree core's licence (MIT) and the lineage are in `mtree.py`'s own
+words.
+
+**The family** (`families/tree.py`, `"family": "tree"`):
+
+- **Grown**: `kind` picks a species (its numbers are the species' at its default height, scaled to `height`): the
+  trunk (`clear` metres bare below the first branch, as a street tree is pruned), two or three orders of branches
+  each on the one before, the pipe model's radii (a trunk never thinner than its species' says, however few tips
+  feed it), the last order carrying the leaves. The knobs over the species: `spread` turns the branches out, `droop`
+  is gravity on them, `density` how many, `crown` their length, `levels` how many orders, `lean` degrees off the
+  vertical, `multi` stems from the ground (a crape myrtle's clump), `pollard` (a plane tree cut back to knuckles
+  with a broom of shoots), `twigs` (`auto`: the last order is meshed only when the tree is bare; `mesh`; `cards`),
+  `twigs_density`, `radius` (the trunk's at the ground). The same seed grows the same tree.
+- **Meshed**: every branch a tube with sides by its thickness (three on a twig, twelve on a trunk), rooted inside its
+  parent with a collar, the stems flared at the root with lobes; closed at the tip. Its UVs go round the tube and up
+  it in circumferences, so one square tile of bark stays square however thick the branch. The leaves are **cards**
+  on the last order's nodes and at every branch's tip: a card stands along its twig and out of the crown, drooping a
+  little, and carries one of four clusters off the leaf atlas; its vertex normals are rounded over the crown (out of
+  the crown's middle, lifted) so the mass lights as one, not as flat cards; `leaves.count` how many (the species'
+  own), `leaves.size` metres a card. A street tree is 9k to 26k triangles leafy (a camphor's dome the most), a bare one with its twigs 20k to
+  30k; a sapling 2k.
+- **The bark is a real one by default** (the user, 2026-11-02: "every tree should use the more real bark pbr"): each
+  species names a bark set off the shelf (`bark.pbr`: the user's ambientCG sets in `pbr/bark/`, Bark001 grey and
+  deeply furrowed for the ginkgo, the camphor and the dead tree, Bark006 grey-blue mottled with orange flakes for the
+  zelkova, the plane, the maple and the crape myrtle, Bark014 red-brown fissured plates for the pine and the cherry;
+  `bark.tint` over it, `bark.tile` metres a repeat, `bark.relief` the normal's strength). The set is laid over the
+  whole bark tile with a whole number of repeats each way (its own size: a 1 x 2 m set repeats half as often up), so
+  it still goes round and up every branch without a seam. `"bark": {"pbr": null}` draws the tile by code instead:
+- **Painted by code**, the rest of it, and the drawn **bark** when asked: one tile over the whole of its texture, drawn
+  on the flat torus with 4D noise (`noise.fbm4`, `ridged4`: it repeats round and up with no seam and nothing
+  squeezed) in the species' style: `furrowed` (ginkgo, camphor, the dead tree: ridges up the trunk, dark cracks between), `flaky` (zelkova:
+  grey flaking to orange-brown patches with a dark rim), `lenticels` (cherry: dark bark banded with pale lenticels,
+  a few cracks), `mottled` (plane, crape myrtle: plates of three colours), `scaly` (pine: a jigsaw of plates parted by
+  deep fissures), `smooth` (maple); `bark.color`, `bark.relief`, `bark.scale`; or a PBR set off the shelf
+  (`"pbr": {"bark": "pbr/<set>"}`, tiled at its own size). The **leaf atlas** is four clusters: a twig with side
+  twigs and the species' leaf (elliptic, ovate, a ginkgo's fan, a maple's or a plane's lobes, a pine's tuft of
+  needles) hung thick along them in the season's colours (`season`: summer, spring's lighter greens, autumn's; a
+  cherry in spring and a crape myrtle in summer carry flowers instead), see-through everywhere else. The leaf
+  material is cut, not blended (the glTF's alphaMode MASK: Godot's alpha scissor, so leaves cast shadows of their
+  own shape and need no sorting) and double-sided. `leaves.tint` tints a season's colours.
+- **A street tree's props**: `stakes` (`torii`: two posts and a crossbar bound to the trunk with black bands, the
+  Japanese 二脚鳥居型; `tripod`: three poles leaning on it, bound; `single`: a post beside it), `pit` (`kerb`: a
+  square concrete kerb round dark soil, 1.2 m, `pit_size`; `soil`: the square of soil alone).
+- **Set down by its trunk**: a tree's origin is the foot of its trunk, not the middle of its bounds (`Thing.anchor`,
+  meta.json's `anchor`), so a placed tree stands where it's put and its crown leans where it leans; `socket_base`
+  there and `socket_crown` at the crown's middle. No occlusion is baked (`Thing.bake_ao` off: the bark tile covers
+  every branch, a bake over it would be a jumble) and no wear is laid on the bark or the leaves (their paint carries
+  the age); `wear` still reaches the stakes and the pit.
+
+**Realistic leaves, the second category** (the user, 2026-11-02: "for leaves create a more realistic category where
+you use patterns made from the pbrs I shared with you for the leaves"): the user's leaf sets (ambientCG's LeafSet005
+hornbeam-like leaves and a twig of three, LeafSet019 fir sprays, LeafSet021 yellow maple leaves, LeafSet029 lobed
+leaves, in `pbr/leaf/`) are photographs of real leaves on a plain ground with an opacity map that cuts them out.
+`tools/propgen/leafset.py` finds each leaf as one piece of that map (stalks kept), its base as its lowest point as
+photographed (the stalk's end, a twig's cut end; the sets are shot stalk down) or, for a long spray, the end of its
+long axis where the last slices hold one thin run of pixels (its cut stem, not its fan of needles), and hangs it
+from a twig by that base at any size and angle with its colour, roughness and normal map turned with it. With `leaves.set` the cluster painter lays those instead of drawn leaves, in the same sprays (the twig and
+its side twigs, leaves half a leaf apart, the species' sizes: `set_mm` a leaf's length), or as a conifer's sprays
+(`spray`, the set's long pieces a few to a card); `hue`, `sat` and `light` turn a set to the season (the zelkova's
+autumn is the green set turned 62 degrees toward orange); the card's ground colour is the set's own mean, so the cut
+edge stays its colour. The recipes `*_real` are that category: the zelkova (and its autumn), the cherry, the camphor,
+the plane (LeafSet029's lobes), a maple in LeafSet021's autumn yellow, the crape myrtle, the black pine in fir
+sprays, and a **cedar** (`kind: cedar`, new: a straight leader, level limbs long below and short above, the sugi of
+a shrine path) in the same sprays. The ginkgo keeps its drawn fans (no set has them), the drawn category stays as it
+was, and any set you add to `pbr/leaf/` works the same way (`"leaves": {"set": "pbr/leaf/<set>"}`). The sheets:
+`docs/godot_sheets/2026-11-02_trees_real.jpg` (Cycles) and `2026-11-02_trees_real_night.jpg` (Godot, by night).
+
+**Bushes** (the user, 2026-11-02: "small bushes and shrubs as normal roads and paths normally have a little bit of
+shrubs poking out from paths"): the same growth kept small. `kind: azalea` is the street's clipped bush, a clump of
+short stems (`multi`, `spread_m` apart, or `clump` [w, d] the patch they stand in) with leaves along every branch
+and stem to the ground, cut to a shape (`clip`: {"kind": "ball", "r"} or {"kind": "box", "w", "d", "h"} metres, every
+branch whose end lies outside is cut off with all it carries), pink all over in spring; `shrub` a loose one at a
+path's edge; `grass` a tuft of blades on a few cards and no wood at all. Recipes: `azalea_ball` (75 cm),
+`azalea_flowering`, `azalea_hedge` (1.8 m along a path), `azalea_low`, `shrub_loose`, `shrub_autumn`, `shrub_real`
+(the leaf set's leaves), `grass_tuft`, `grass_dry`; 1.4k to 3.7k triangles, a tuft 18.
+
+**Small trees** (the user, 2026-11-02: "smaller thinner trees that don't go as tall as a double floor house, and
+their branches are up at 80-90 degree angles so less chance of clipping into the house; call these trees small trees,
+big trees won't be placed beside houses"): `habit: upright` grows any species as a narrow column: every order's
+branches leave at a quarter of the species' angle (74 to 81 degrees from the ground on the first order), split
+narrower, pulled up, barely bent by gravity, the leader near the top with branches all the way up it; a tree kept
+short (`height` 3.6 to 4.8 m) gets fewer, slightly smaller sprays. The `small_*` recipes: a young zelkova (plain,
+staked, in autumn), an upright hornbeam in the leaf set's leaves, a columnar cherry (in leaf, in bloom), a young
+ginkgo (green, gold), an upright maple in autumn red, a thin dead sapling: 4 to 4.8 m tall, 1.6 to 2.5 m across, 4k
+to 5k triangles (`docs/godot_sheets/2026-11-02_small_trees.jpg`). They stand on the pavement in front of a house; the
+big trees go where there is room. On the hill road dressed again (`2026-11-02_hill_motel_dressed.jpg`) nine small
+trees line the houses under their eaves and the one big zelkova stands at the open end by the car park: the lane
+reads as a lane, nothing reaches into a wall, and the small crowns give the houses scale without hiding them.
+
+**A street dressed** (`tools/godot/street_dress.py --street hill_motel`, GDDRESS; the launcher's Godot section): the
+street's .glb as the page exports it, trees along its pavements by the generator's own road curve (every `--gap`
+metres, each side in turn, by the kerb, clear of lamps, poles and buildings' fronts; **a big tree only where no
+building stands within `--room` metres, 4.5 by default, a small upright one (`--small`) beside a house, so no crown
+reaches into a wall**), bushes and tufts at the pavements' back edges and kerbs between them, every shot of the street plus a walk at the player's eye and a look up
+the road, by day (the street check's dusk sky and a sun) and by night (the game's night, the street's lamps lit), the
+pictures as a sheet, and `placements.json` (what went where: a start for the street's own `tree` stand-ins). The
+hill road dressed: `docs/godot_sheets/2026-11-02_hill_motel_dressed.jpg`. What it showed (2026-11-02): the trees sit
+in scale with the two-storey houses and their cast shadows across the road do most of the work; at night a tree by a
+lamp glows and the rest go to silhouettes against the navy sky, which is the mood the games want; the real bark reads
+from the pavement. What still tells: a card crown seen from a metre away shows its planes (a nearer card set, or
+smaller cards near the player, is the next step), the leaves' green is a shade too bright against the street's pastel
+walls (`leaves.light` 0.9, or the look plugin's grade), and a bush dropped by a door looks dropped (the placer knows
+walls and lamps, not doors yet).
+
+**The recipes** (presets.json): the Tokyo avenue zelkova in its kerbed pit, young with torii stakes, in autumn and
+bare in winter; a ginkgo and its November gold; a cherry in leaf and in bloom; a camphor's evergreen dome; a plane
+tree and the same pollarded; a Japanese maple in autumn red; a crape myrtle in flower; a black pine; a dead tree; a
+sapling held by a tripod. Another seed is another tree of the kind; `--set height=6` another size.
+
+**Into a street**: the street builder's `tree` stand-in (STREET_BUILDER's things) marks where a tree goes; a made
+tree (`propgen.py make zelkova_street`, `library` for `props/zelkova_street`) is dropped into the Godot project at
+the stand-in's place, or placed in a game's level as any prop (`"shape": "asset props/zelkova_street"`). Mtree's
+GrowthFunction (a year-by-year simulation of vigour and light) isn't ported: the three functions above make every
+street tree the user asked for; wind on the leaves (a vertex shader on the cards) and a bush family (azalea hedges,
+the clipped balls of a schoolyard) are the next things, if wanted.
+
+**By night** (the user, 2026-11-02: "make sure generated trees also look good in night both dark night (flashlight
+style), or more of a blue hue atmospheric night"): `propgen.py godot --night [names]` pictures each prop in Godot in
+the game's night colours (game.gd's TIME_LOOK night: the navy sky, the blue ambient and moon, the thin blue haze,
+the eyes' colour down a fifth), whole under a clear moon from a little above, and then in the dark of an overcast
+night under the player's flashlight (play.gd's torch: its hot cone and its spill, 5200 K, 18 m) from the player's
+eye seven metres off through the game's 90 degree lens; the sheet `Saved/Props/_godot/godot_night.png`, the sixteen
+trees' in `docs/godot_sheets/2026-11-02_trees_night.jpg` (the day's Cycles previews: `2026-11-02_trees.jpg`). Under
+the moon the leaves read teal over a grey-blue trunk and cast a long cut shadow; under the flashlight the warm cone
+lights the trunk and the crown's underside and the top fades into the dark, as it should in a horror street; the
+blossom glows pale. The leaves are cut, not blended, so nothing sorts wrong against the beam and their shadows are
+their own shape.
+
+Checked by PROPGEN (`zelkova_street` leafy, `dead_tree` bare, `cedar_real` in the leaf set's sprays, `azalea_ball`, `grass_tuft` and the upright `small_zelkova` made small: well-formed, on the floor, anchored on the
+origin, about their height, within their budgets, the leaf material cut, every stem's foot closed so nothing is seen
+inside out from below) and GDPROPS (imported by Godot 4.7, the leaf surface see-through; `--night` the two nights).
+
+## 19. Potted plants: a table's to a floor's
+
+The user (2026-11-02): "Could you make some indoor small potted plants with these techniques + the techniques we
+already use for bowl shaped props (maybe do some cubed ones), I'd say make 15 variations, from small to medium (stuff
+that could sit on a table to on the floor)". The `plant` family (`families/plant.py`, `"family": "plant"`) puts the
+tree family's growth and leaf cards (§18) into a pot made the ware family's way (§11, §12):
+
+- **The pot.** A round pot is one lathe with a real wall, its profile walked under the foot, up the outside, over the
+  lip and down the inside to the soil (`pot_profile`, `pot_wall`): `kind` terracotta (its clay; a crack when
+  `cracked`), glazed (a belly under a glaze: `glaze` {rim, crackle}), plastic (a nursery pot's taper), cylinder, bowl
+  (a bonsai's, shallow), concrete; `d` and `h` in mm, `color`. A cube planter (`kind: cube`; `w`, `dd`, `h`) is a slab
+  ring with its hole, a bottom and the soil in it. The lathe's rows follow the profile's length (a floor pot at a cup's
+  4 mm step was thirty thousand triangles). The soil is a lumpy disc `soil` mm below the rim, dark and damp, under a
+  `topping`: pebbles, pumice, moss, bark; a socket `soil` at its middle.
+- **The plant** (`plant`): `form` says how it grows, `size` its metres (a leaf's length, a tree's height, a cane's),
+  `count`, `color` the leaves' colours (one or a few), `leaf` the leaf drawn (each form has its own): `rosette` (an
+  aloe's thick serrated leaves in rings from the soil, an echeveria's plump ones), `blades` (a snake plant's upright
+  banded blades), `fern` (fronds of pinnae arching out and over), `palm` (an areca's canes, a crown of fronds each),
+  `big_leaf` (one stem with leaves on petioles up it: a monstera's split heart with holes along its midrib, a rubber
+  plant's glossy ovals on a red midrib, a fiddle leaf fig's lyres; `stem` its height in leaf lengths), `tree` (the
+  tree family grown small: `species` ficus, bonsai (needle pads over a leaning trunk), herb (basil), dead), `trailing`
+  (vines over the rim, down the pot and curling round its foot: a pothos's hearts, an ivy's lobed leaves; `length`
+  metres), `canes` (lucky bamboo, straps at each top), `yucca` (canes with crowns of long straps), `cactus` (a ribbed
+  column turned and bent: `ribs`, `radius`, the areoles and their spines drawn).
+- **Drawn by code**, as the trees are: every leaf a shape on a card (the aloe's teeth, the fern's pinnae, the
+  monstera's five rounded lobes a side, the ivy's points, a midrib and veins lighter), cut in Godot (the leaf
+  material's alpha clip); the stems tubes; the pot's clay or glaze. Set down by the pot's foot (the anchor on the
+  origin); no wear on the leaves, the pot's by the recipe.
+- **Eighteen recipes** (presets.json, `pot_*`), small to medium. A table's: an aloe in a 95 mm terracotta pot with
+  pebbles, an echeveria in a white cube, basil in a kitchen's black pot, a ribbed cactus in a concrete cube, a tall
+  column cactus, a pothos trailing from a blue glazed pot, a Boston fern, lucky bamboo in a white cylinder, a pine
+  bonsai in its shallow bowl with moss, a dead one in a cracked pot. A shelf's or the floor's: ivy from a concrete
+  cube planter, a snake plant in a tall cylinder. The floor's: a monstera, a rubber plant a metre tall, a fiddle leaf
+  fig, a ficus at 1.4 m, an areca palm in a white cube at 1.1 m, a yucca at 1.2 m. Another seed is another plant of
+  the kind. The sheet: `docs/godot_sheets/2026-11-02_plants.jpg`.
+
+Checked by PROPGEN (`pot_ficus` on the floor and `pot_cactus` on a table, made small: well-formed, on the floor,
+anchored on the origin, about their size, within their budgets, the leaf material cut) and GDPROPS (imported by Godot
+4.7, the leaves see-through where they should be).
+
+## 20. Vines: seamless sets for walls
+
+The user (2026-11-02): "after that can you make some vine patterns (should be seamless so I can just place vines on
+exterior buildings etc, maybe 2/3 variations)". `python tools/propgen.py vines [kinds]` draws them without Blender
+(`tools/propgen/vines.py`) onto the project's shelf as PBR sets of their own, `pbr/foliage/vine_<kind>/`, a metre a
+repeat (`--tex` the pixels, 1024 by default; `--seed` another growth; `--out` another folder):
+
+- `ivy`: English ivy, dense, drawn leaves in three greens; `ivy_real`: the same growth in the leaf set's real leaves
+  (`pbr/leaf/LeafSet029`'s, cut out by `leafset.py` as the realistic trees' are); `creeper`: a Virginia creeper, thin
+  stems climbing, five-lobed leaves, the wall showing through; `creeper_autumn`: the creeper turned crimson and
+  orange; `bare`: dry stems in winter with a few dead leaves, a horror wall's.
+- **How**: stems climb across the tile as curves with branches off them, the leaves hung by their stalks along each
+  stem; every stem and leaf that crosses an edge is drawn again shifted by the tile, so the right edge meets the left
+  and the top the bottom (`vines.seam` measures the edges' step against the steps inside). The maps: `_albedo.png`
+  (RGBA, the colour with the coverage), `_opacity.png`, `_normal.png` (the leaves' edges and the stems' rounds as a
+  height), `_roughness.png`; `meta.json` (`tile_m` 1, ours).
+- **Onto a wall**: in the street paint (STREET_PAINT) and the scene builder's Paint, a wall's look takes a vine set
+  as a layer **by its own mask** (`{"set": "pbr/foliage/vine_ivy", "mask": "own"}` in the look): the paint's mixer
+  lays it over the wall's set at its size, and Blender's bake and Godot wear the same made set. The sheet
+  `docs/godot_sheets/2026-11-02_vines.jpg` shows each kind tiled two by two and the ivy over the plaster set. For
+  vines standing off a wall, the set goes on a plane a few centimetres in front of it in Godot, its material cut by
+  the opacity (alpha scissor).
