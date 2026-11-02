@@ -424,5 +424,38 @@ func _process(dt: float) -> void:
 			if t - at < 0.6:
 				return
 			_shot("e_path_stops", _panel_rect())
+			var r3 := EditorInterface.get_edited_scene_root()     # the Reactions cards, the kitchen's doorway selected
+			dock.select(r3.find_child("KitchenDoorway", true, false))
+			panel.on_selection()
+			panel.build.show_category("reactions")
+			at = t
+			phase = 29
+		29:
+			if t - at < 1.5:
+				return
+			_shot("e_reactions", _panel_rect())
+			var r4 := EditorInterface.get_edited_scene_root()     # Flinches clicked on it: the moment in the Story tab, its words
+			panel.show_page("story")
+			panel.story.quest = "q_key"                    # (in the key's quest, beside the figure's moment on the same doorway)
+			panel.story.ending = ""
+			var fl: Array = panel.story.ready_items().filter(func(it): return it["id"] == "react_flinch")
+			if fl.size():
+				panel.story.add_ready(fl[0], r4.find_child("KitchenDoorway", true, false))
+			at = t
+			phase = 30
+		30:
+			if t - at < 1.5:
+				return
+			var mb: Control = panel.story.mid.find_child("Moment_" + panel.story.opened.trim_prefix("m:"), true, false)
+			if mb != null:
+				panel.story.mid_scroll.ensure_control_visible(mb)
+			at = t
+			phase = 31
+		31:
+			if t - at < 0.6:
+				return
+			_shot("e_reaction_moment", _panel_rect())
+			get_undo_redo().get_history_undo_redo(EditorUndoRedoManager.GLOBAL_HISTORY).undo()   # (the guide's project as it was)
+			panel.show_page("build")
 			print("GUIDEEDITOR " + JSON.stringify({"made": made}))
 			get_tree().quit()

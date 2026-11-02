@@ -1889,9 +1889,52 @@ func npc_want(cid: String, n: Dictionary) -> Array:
 	return [s["motion"] if s.get("motion") != null else move_of(cid, "idle"), true]
 
 
-## a once-only move's seconds on her (sitting down, getting up: its animation's length), 0 when she hasn't got it
+## a cast member's reaction (the story's `anim`, STORY_FORMAT §4; her `caught` move): a clip played once, her behaviour
+## held where she is while it plays (she stops walking; it goes on after), turned to `face` (`player`, a thing or a cast
+## member) if it's given and back the way she was after; with no clip she only turns, for `secs` (REACT_SECS). `secs`
+## also cuts the clip short or holds its last frame. Its seconds, 0 when there's nothing to play
+const REACT_SECS := 2.5
+func react(cid: String, clip, face = null, secs: float = 0.0) -> float:
+	var n = npcs.get(cid)
+	if n == null:
+		return 0.0
+	var c = clip if clip != null and str(clip) != "" else null
+	var len_ := move_secs(cid, c) if c != null else 0.0
+	var t := secs if secs > 0.0 else (len_ if len_ > 0.0 else (REACT_SECS if face != null and str(face) != "" else 0.0))
+	if t <= 0.0:
+		return 0.0
+	if len_ > 0.0:
+		n["once"] = {"clip": str(c), "until": clock + t}
+	var was = n.get("react")
+	n["react"] = {"until": clock + t, "face": face if face != null and str(face) != "" else null, "clip": c,
+		"yaw0": float(was["yaw0"]) if was is Dictionary else float(n["yaw"])}
+	n.erase("turn_back")
+	return t
+
+
+## while a reaction plays: her behaviour held (not walking), turned to what it faces; true while it holds. Once it's
+## over she turns back the way she was (draw_npcs' turn_back)
+func react_hold(n: Dictionary, dt: float) -> bool:
+	var rc = n.get("react")
+	if not (rc is Dictionary):
+		return false
+	if clock >= float(rc["until"]):
+		n.erase("react")
+		if rc.get("face") != null:
+			n["turn_back"] = float(rc["yaw0"])
+		return false
+	n["walking"] = false
+	if rc.get("face") != null:
+		BehavioursC.face_thing(n, self, {"face": rc["face"]}, dt)
+	return true
+
+
+## a once-only move's seconds on her (sitting down, getting up: its animation's length), 0 when she hasn't got it; a
+## thing's too (a jumpscare's figure that isn't in play: its own AnimationPlayer)
 func move_secs(cid: String, clip) -> float:
 	var node = cast_nodes.get(cid)
+	if node == null and by_id.has(cid):
+		node = by_id[cid]["node"]
 	if clip == null or node == null:
 		return 0.0
 	var ap := player_with(node, str(clip))
@@ -1961,8 +2004,16 @@ static func anim_name(ap: AnimationPlayer, name: String) -> String:
 
 
 ## the story's `anim` (STORY_FORMAT §4): a cast member or a thing plays a motion once (`clip`), back to her behaviour's
-## after; `wait: true` holds the beat till it ends
-func play_motion(who, clip, hold_beat: bool = false) -> void:
+## after; `wait: true` holds the beat till it ends. A cast member in play reacts (`react`: held, turned to `face`, for
+## `secs`); one who isn't (a jumpscare's figure) and a thing play it on their AnimationPlayer
+func play_motion(who, clip, hold_beat: bool = false, opts: Dictionary = {}) -> void:
+	if npcs.has(who):
+		var t := react(str(who), clip, opts.get("face"), float(opts.get("secs", 0.0)))
+		if t <= 0.0:
+			hud.log("anim: %s has no motion %s" % [who, clip])
+		elif hold_beat:
+			await wait(t)
+		return
 	var node = cast_nodes.get(who)
 	if node == null and by_id.has(who):
 		node = by_id[who]["node"]
@@ -2021,7 +2072,11 @@ func draw_npcs(dt: float) -> void:
 			n["pose"] = "idle"
 			n["prev_pose"] = "idle"
 			BehavioursC.start(n["as"], n, self, n["s"])
-		BehavioursC.update(n["as"], n, self, dt, n["s"])
+		if not react_hold(n, dt):                     # a reaction (the story's `anim`, her caught): her behaviour waits for it
+			BehavioursC.update(n["as"], n, self, dt, n["s"])
+			if n.has("turn_back"):                     # turned back the way she was once it's over (a behaviour that faces or walks sees to it)
+				if bool(n.get("walking", false)) or n["s"].get("face") != null or BehavioursC.turn_to(n, float(n["turn_back"]), dt):
+					n.erase("turn_back")
 		npc_seated(str(cid), n)
 		var node = cast_nodes.get(cid)
 		if node == null:
@@ -2105,6 +2160,8 @@ func caught(by, at) -> void:
 	calm = float(c["calm"])
 	hud.seen(0.0)
 	last_caught = {"by": by, "at": at, "clock": clock}
+	if n != null and move_of(str(by), "caught", false) != null:   # her caught move (STORY_FORMAT §2 `moves`), once, turned to the player
+		react(str(by), move_of(str(by), "caught", false), "player")
 	hud.log("caught by %s%s" % [by, (" in " + str(at)) if at != null else ""])
 	emit({"type": "caught", "by": by, "at": at})
 

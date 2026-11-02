@@ -141,7 +141,7 @@ func run(a: Dictionary, rt) -> void:
 		"move":
 			rt.move_thing(val, a.get("to"))
 		"anim":
-			await rt.play_motion(val, a.get("clip"), bool(a.get("wait", false)))
+			await rt.play_motion(val, a.get("clip"), bool(a.get("wait", false)), {"face": a.get("face"), "secs": float(a.get("secs", 0.0))})
 		"expr":
 			rt.face_play(str(a.get("who", "")), val, a)
 		"trick":
@@ -176,11 +176,24 @@ func trick(v: String, a: Dictionary, rt) -> void:
 				await rt.wait(0.1)
 			rt.set_visible(a.get("hide"), false)
 			rt.set_visible(a.get("show"), true)
-		"jumpscare":
-			rt.set_visible(a.get("figure"), true)
-			rt.shelf_sound("sting_big", a.get("figure"))
-			rt.hud.log("jumpscare: %s" % a.get("figure"))
-			await rt.wait(float(a.get("secs", 0.8)))
-			rt.set_visible(a.get("figure"), false)
+		"jumpscare":                                       # the figure there all at once: its clip (a lunge), its face, a sting
+			var fig = a.get("figure")
+			rt.set_visible(fig, true)
+			var secs := float(a.get("secs", 0.8))
+			var c = a.get("clip")
+			if c != null and str(c) != "":
+				var cs: float = rt.move_secs(str(fig), c)
+				rt.play_motion(fig, c)
+				if not a.has("secs") and cs > 0.0:
+					secs = cs                              # as long as its clip, unless it says
+			if a.get("expr") != null and str(a["expr"]) != "":
+				rt.face_play(str(fig), a["expr"], {})
+			if a.get("sound") != null and str(a["sound"]) != "":
+				rt.sound(a["sound"], fig)
+			else:
+				rt.shelf_sound("sting_big", fig)
+			rt.hud.log("jumpscare: %s" % fig)
+			await rt.wait(secs)
+			rt.set_visible(fig, false)
 		_:
 			rt.hud.log("trick not in Play yet: %s" % v)

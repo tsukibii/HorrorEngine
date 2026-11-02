@@ -147,6 +147,13 @@ func _process(dt: float) -> void:
 			if t - at_t < 3.0:
 				return
 			_animate_polled()
+			_react_checks()
+			at_t = t
+			phase = 38
+		38:                                               # the card dropped on the reaction's area lands a frame later
+			if t - at_t < 0.5:
+				return
+			_react_dropped()
 			phase = 4
 		4:
 			rep["saved"] = EditorInterface.save_scene() == OK
@@ -761,6 +768,56 @@ func _path_checks() -> void:
 	pan["path_stop"] = stop2
 
 
+## the Reactions cards (parts/catalog.json; build_tab.gd fill_ready): the category's five on the Build tab; Flinches
+## clicked with the kitchen's doorway selected: a moment there in which Mari (the nearest of the cast there from the
+## start: the hidden figure is nearer) plays her flinch turned to the player, no face (the sample has no shocked one);
+## Waves: her wave (made hers by now); a face by its name's words; then the Animate tab's look round dropped on the
+## doorway (a frame later: its clip swapped in)
+func _react_checks() -> void:
+	var r := EditorInterface.get_edited_scene_root()
+	var st = panel.story
+	pan["react_was"] = FileAccess.get_file_as_string("res://director/director.json")
+	panel.show_page("build")
+	panel.build.show_category("reactions")
+	rep["react_cards"] = panel.build.find_children("Card_react_*", "Button", true, false).map(func(b): return str(b.name).substr(5))
+	panel.show_page("story")
+	st.quest = ""
+	st.refresh(false)
+	var door := r.find_child("KitchenDoorway", true, false)
+	var items: Array = st.ready_items()
+	var ids: Array = []
+	for card in ["react_flinch", "react_wave"]:
+		ids.append(st.add_ready(items.filter(func(it): return it["id"] == card)[0], door))
+	var words := []
+	var dos := []
+	for id in ids:
+		var m := _moment(id)
+		dos.append([m.get("when"), m.get("do")])
+		for a in m.get("do", []):
+			words.append(HSCommands.action_text(a, Callable(st, "_name")))
+	rep["react_made"] = dos
+	rep["react_words"] = words
+	var bt = load("res://addons/horrorstudio_director/editor/build_tab.gd")
+	rep["react_faces"] = [bt.face_by_words(["pout"]), bt.face_by_words(["grin"])]
+	pan["react_ids"] = ids
+	panel.plugin.pending_anim = {"clip": HSLibrary.clip("look_around"), "face": false, "at": Time.get_ticks_msec()}   # a card dropped on the doorway
+	var tok: Node3D = (load("res://addons/horrorstudio_director/presets/spot.tscn") as PackedScene).instantiate()
+	dock.add_node(door, tok, "drop Spot")
+
+
+## a frame later: the flinch's clip swapped for the look round (the first moment there someone reacts in), the drop
+## taken back; then all of it undone (the file as it was)
+func _react_dropped() -> void:
+	var ids: Array = pan["react_ids"]
+	var r := EditorInterface.get_edited_scene_root()
+	rep["react_dropped"] = [str(_moment(ids[0]).get("do", [{}])[0].get("clip", "")), str(_moment(ids[1]).get("do", [{}])[0].get("clip", "")),
+		r.find_child("KitchenDoorway", true, false).get_children().filter(func(c): return HSDirector.is_a(c, "HSSpot")).size()]
+	var glob := get_undo_redo().get_history_undo_redo(EditorUndoRedoManager.GLOBAL_HISTORY)
+	for i in 3:
+		glob.undo()
+	rep["react_undone"] = _same(FileAccess.get_file_as_string("res://director/director.json"), pan["react_was"])
+
+
 ## a frame later: the dropped card's clip on the stop, the drop taken back
 func _path_dropped() -> void:
 	var stop2: Node = pan["path_stop"]
@@ -786,7 +843,7 @@ func _animate_checks() -> void:
 	rep["anim_tab"] = panel.tab_buttons.has("animate") and an.visible
 	rep["anim_cards"] = an.mid.find_children("Clip_*", "Button", true, false).map(func(b): return str(b.name))
 	rep["anim_groups"] = _texts(an.mid).filter(func(x): return x == x.to_upper() and x.length() > 2)
-	rep["anim_figures"] = an.figs.size() == 8 and an.figs.all(func(st): return (st["fig"]["frames"] as Array).size() >= 30 and float(st["fig"]["secs"]) > 1.1)
+	rep["anim_figures"] = an.figs.size() == 10 and an.figs.all(func(st): return (st["fig"]["frames"] as Array).size() >= 30 and float(st["fig"]["secs"]) > 1.1)
 	rep["anim_loops"] = [HSLibrary.loops("mari_sitting"), HSLibrary.loops("mari_sit_down"), HSLibrary.loops("mari_stand_up"), HSLibrary.loops("mari_walk")]
 	rep["anim_roles"] = [HSLibrary.role_of("mari_sit_reading"), HSLibrary.role_of("MariStandUp"), HSLibrary.role_of("standing_idle"),
 		HSLibrary.role_of("walking_slow"), HSLibrary.role_of("jumpscare_lunge"), HSLibrary.role_of("return_home")]

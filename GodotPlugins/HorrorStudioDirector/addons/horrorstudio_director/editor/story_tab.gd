@@ -1118,7 +1118,10 @@ func _pick(kind: String, cur, on_pick: Callable) -> OptionButton:
 ## the ids a field of this kind picks from (the Manager's refs)
 func refs(kind: String) -> Array:
 	match kind:
-		"thing", "table", "die", "carry", "anylocker", "anycarry":
+		"thing":                                     # a thing or a character (the format's: whom an `anim`, a jumpscare, a look names)
+			var th := _ids("thing")
+			return th + _ids("actor").filter(func(x): return not th.has(x))
+		"table", "die", "carry", "anylocker", "anycarry":
 			return _ids("thing")
 		"door":
 			return _ids("door")
@@ -1412,7 +1415,8 @@ func add_moment(when: Dictionary, acts: Array, base := "moment") -> String:
 	return id
 
 
-## a ready-made moment (a Scares card) clicked: on the selected area, room, door or thing, else for you to say when
+## a ready-made moment (a Scares or Reactions card) clicked: on the selected area, room, door or thing, else for you to
+## say when; its words filled in for where it is (build_tab.gd fill_ready: the room, the door, who reacts)
 func add_ready(it: Dictionary, target: Node = null) -> String:
 	var sel = target if target != null else (panel.dock.selected() if panel != null else null)
 	var cls := HSDirector.class_of(sel) if sel != null and is_instance_valid(sel) else ""
@@ -1422,14 +1426,8 @@ func add_ready(it: Dictionary, target: Node = null) -> String:
 		when = {"enter": tid}
 	elif cls in ["HSDoor", "HSThing", "HSActor"]:
 		when = {"use": tid}
-	var room = panel.build.room_of(sel) if panel != null and sel != null and cls != "" else null
-	var acts: Array = (it.get("moment", {}).get("do", []) as Array).duplicate(true)
-	for a in acts:
-		for k in a.keys():
-			if str(a[k]) == "{room}":
-				a[k] = HSDirector.id_of(room) if room != null else ""
-			elif str(a[k]) == "" and cls == "HSDoor" and k in ["at", "door"]:
-				a[k] = tid                                 # a knock on it, it slamming
+	var acts: Array = panel.build.fill_ready(it.get("moment", {}).get("do", []), sel if cls != "" else null) if panel != null else \
+		(it.get("moment", {}).get("do", []) as Array).duplicate(true)
 	var id := add_moment(when, acts, str(it.get("name", "moment")))
 	if panel != null:
 		panel.say("%s: %s. Change any word in the moment." % [it.get("title", "A moment"), ("when " + _when_words(when)) if not when.is_empty() else "say when it happens (WHEN)"])

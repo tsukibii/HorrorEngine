@@ -1,7 +1,7 @@
 ## The sample game (docs/GODOT_DIRECTOR.md §8), made by Godot itself so every property is the class's own: a small
 ## house (a hall, a kitchen through a door, a bedroom behind a locked one), a letter, a key, a light switch, a
 ## wardrobe to hide in and a bed, Mari in the hall, a Player start, a Test start by the bedroom door (the key in hand) and
-## a checkpoint in the bedroom's doorway, a figure that shows for a second when the player walks into the
+## a checkpoint in the bedroom's doorway, a figure that lunges for a second when the player walks into the
 ## kitchen after reading the letter (the user's own example of an event), and a story in one chapter: an intro (the
 ## chapter card, a thought), find the key, bring her a drink, talk to her (no list: the marker over her), get into the
 ## bedroom, then hide or sleep (two endings).
@@ -46,7 +46,8 @@ const STORY := {
 	"moments": [
 		{"id": "letter_thought", "when": {"read": "letter"}, "do": [{"think": "She wrote this in a hurry."}]},
 		{"id": "figure_scare", "when": {"enter": "kitchen_doorway"}, "if": "read:letter",
-			"do": [{"trick": "jumpscare", "figure": "figure", "secs": 0.9}, {"think": "What was that?"}, {"flag": "saw_figure"}]},
+			"do": [{"trick": "jumpscare", "figure": "figure", "secs": 0.9, "clip": "figure_lunge", "expr": "pout_and_glance", "sound": "sting_short"},
+				{"think": "What was that?"}, {"flag": "saw_figure"}]},
 	],
 	"talk": {"mari": [
 		{"id": "t_not_now", "if": {"not": {"done": "q_key"}}, "lines": [{"text": "Not now. Find the key."}]},
@@ -158,6 +159,24 @@ func soma_frames(n: int, kind: String) -> PackedFloat32Array:
 					rot[side + "Arm"] = Quaternion(Vector3(1, 0, 0), -0.5 * k) * down[side + "Arm"]
 				rot["Chest"] = Quaternion(Vector3(1, 0, 0), 0.08 * k - 0.03 * breathe)
 				hips = Vector3(0, -drop * k + 0.004 * breathe, 0.05 * k)
+			"flinch":                                 # startled: the shoulders up, the hands to the chest, leaning back; eased back
+				var p := smoothstep(0.0, 1.0, t / 0.2) if t < 0.2 else 1.0 - smoothstep(0.0, 1.0, (t - 0.2) / 0.8)
+				rot["Chest"] = Quaternion(Vector3(1, 0, 0), -0.22 * p - 0.03 * breathe)
+				rot["Head"] = Quaternion(Vector3(1, 0, 0), -0.3 * p)
+				for side in [["Left", 1.0], ["Right", -1.0]]:
+					rot[side[0] + "Arm"] = Quaternion(Vector3(1, 0, 0), -1.0 * p) * down[side[0] + "Arm"]
+					rot[side[0] + "ForeArm"] = Quaternion(Vector3(0, 1, 0), side[1] * (0.15 + 1.5 * p))
+				hips = Vector3(0, 0.004 * breathe, -0.06 * p)
+			"lunge":                                  # leaning in fast, both arms reaching out, the front leg forward; held
+				var k := smoothstep(0.0, 1.0, minf(1.0, t / 0.35))
+				rot["Chest"] = Quaternion(Vector3(1, 0, 0), 0.35 * k)
+				rot["Head"] = Quaternion(Vector3(1, 0, 0), -0.25 * k)
+				for side in ["Left", "Right"]:
+					rot[side + "Arm"] = Quaternion(Vector3(1, 0, 0), -1.35 * k) * down[side + "Arm"]
+				rot["LeftLeg"] = Quaternion(Vector3(1, 0, 0), -0.5 * k)
+				rot["LeftShin"] = Quaternion(Vector3(1, 0, 0), 0.4 * k)
+				rot["RightLeg"] = Quaternion(Vector3(1, 0, 0), 0.35 * k)
+				hips = Vector3(0, -0.05 * k, 0.3 * k)
 			"talk":                                   # the right hand up and down as she speaks
 				rot["RightArm"] = Quaternion(Vector3(1, 0, 0), -0.45 - 0.2 * sin(t * TAU * 2.0)) * down["RightArm"]
 				rot["RightForeArm"] = Quaternion(Vector3(0, 1, 0), -0.9 - 0.3 * sin(t * TAU * 2.0))
@@ -259,7 +278,8 @@ func _initialize() -> void:
 	# the animation library (docs/GODOT_ANIMATION_PLAN.md §3): Kimodo clips made on SOMA's skeleton, Mari's own in her
 	# folder (her idle, a walk, sitting down, sitting, getting up, talking) and a look round anyone can have
 	for spec in [["mari/sample_idle", "idle", 120], ["look_around", "look", 120], ["mari/mari_walk", "walk", 36], ["mari/mari_sit_down", "sit_down", 45],
-			["mari/mari_sitting", "sitting", 90], ["mari/mari_stand_up", "stand_up", 45], ["mari/mari_talk", "talk", 60]]:
+			["mari/mari_sitting", "sitting", 90], ["mari/mari_stand_up", "stand_up", 45], ["mari/mari_talk", "talk", 60], ["mari/mari_flinch", "flinch", 36],
+			["figure/figure_lunge", "lunge", 36]]:
 		var npz := ProjectSettings.globalize_path("res://animations/%s.npz" % spec[0])
 		DirAccess.make_dir_recursive_absolute(npz.get_base_dir())
 		HSNpz.write(npz, {"posed_joints": [[spec[2], 77, 3], soma_frames(spec[2], spec[1])]})
@@ -268,7 +288,7 @@ func _initialize() -> void:
 		own(body, mari, "Body")
 		_own_all(body)
 		var why := [""]
-		for clip in ["sample_idle", "mari_walk", "mari_sit_down", "mari_sitting", "mari_stand_up", "mari_talk", "look_around"]:   # her moves, made hers
+		for clip in ["sample_idle", "mari_walk", "mari_sit_down", "mari_sitting", "mari_stand_up", "mari_talk", "look_around", "mari_flinch"]:   # her moves (and a flinch), made hers
 			if HSLibrary.make_for(mari, HSLibrary.clip(clip), why) != clip:
 				printerr("SAMPLE FAIL Mari's %s: %s" % [clip, why[0]])
 				quit(1)
@@ -285,6 +305,14 @@ func _initialize() -> void:
 	fig.solid = false
 	fig.behaviour = "off"
 	fig.height = 1.9
+	if ResourceLoader.exists("res://bodies/MHR.fbx"):           # the figure's body: MHR too, its lunge made on it (the jumpscare's clip)
+		var fbody: Node3D = (load("res://bodies/MHR.fbx") as PackedScene).instantiate()
+		own(fbody, fig, "Body")
+		var why2 := [""]
+		if HSLibrary.make_for(fig, HSLibrary.clip("figure_lunge"), why2) != "figure_lunge":
+			printerr("SAMPLE FAIL the figure's lunge: %s" % why2[0])
+			quit(1)
+			return
 	var tr: HSTrigger = own(HSTrigger.new(), kitchen, "KitchenDoorway")
 	tr.position = Vector3(-1.2, 0, 0.8)
 	tr.size = Vector3(1.4, 2.4, 1.6)

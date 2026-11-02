@@ -883,20 +883,41 @@
   },
   {
    "verb": "anim",
-   "label": "Animate a thing",
+   "label": "Animate someone",
    "icon": "motion",
    "group": "people",
+   "hint": "someone (or a thing) plays a motion once, held where she is, then goes back to what she was doing; turned to face the player or something while it plays, if you like (no motion: she only turns)",
    "fields": [
     {
      "key": "anim",
-     "label": "Thing",
+     "label": "Who (or a thing)",
      "kind": "thing",
      "verb": true
     },
     {
      "key": "clip",
      "label": "motion",
-     "kind": "motion"
+     "kind": "motion",
+     "opt": true
+    },
+    {
+     "key": "face",
+     "label": "turned to",
+     "kind": "facing",
+     "opt": true
+    },
+    {
+     "key": "secs",
+     "label": "for (s)",
+     "kind": "number",
+     "ph": "its motion's, or 2.5 turned",
+     "opt": true
+    },
+    {
+     "key": "wait",
+     "label": "the beat waits for it",
+     "kind": "bool",
+     "opt": true
     }
    ],
    "make": {
@@ -1731,6 +1752,31 @@
     "key": "figure",
     "label": "figure",
     "kind": "thing"
+   },
+   {
+    "key": "clip",
+    "label": "playing (a motion)",
+    "kind": "motion",
+    "opt": true
+   },
+   {
+    "key": "expr",
+    "label": "its face",
+    "kind": "expr",
+    "opt": true
+   },
+   {
+    "key": "sound",
+    "label": "sound (the big sting if none)",
+    "kind": "sound",
+    "opt": true
+   },
+   {
+    "key": "secs",
+    "label": "for (s)",
+    "kind": "number",
+    "ph": "0.8, or its motion's",
+    "opt": true
    }
   ],
   "swap": [
@@ -3045,9 +3091,13 @@
    "what": "action",
    "value": {
     "trick": "jumpscare",
-    "figure": "thing_0"
+    "figure": "thing_0",
+    "clip": "motion_1",
+    "expr": "expr_2",
+    "sound": "sound_3",
+    "secs": 6
    },
-   "text": "Scare: a jump scare: thing_0"
+   "text": "Scare: a jump scare: thing_0, playing motion_1, its face expr_2, with sound_3"
   },
   {
    "what": "action",
@@ -3297,9 +3347,52 @@
    "what": "action",
    "value": {
     "anim": "thing_0",
-    "clip": "motion_1"
+    "clip": "motion_1",
+    "face": "facing_2",
+    "secs": 5,
+    "wait": true
    },
-   "text": "Animate thing_0: motion_1"
+   "text": "Animate thing_0: motion_1 to facing_2 for 5 s"
+  },
+  {
+   "what": "action",
+   "value": {
+    "anim": "thing_0",
+    "face": "facing_2",
+    "secs": 5,
+    "wait": true
+   },
+   "text": "Animate thing_0: turns to facing_2 for 5 s"
+  },
+  {
+   "what": "action",
+   "value": {
+    "anim": "thing_0",
+    "clip": "motion_1",
+    "secs": 5,
+    "wait": true
+   },
+   "text": "Animate thing_0: motion_1 for 5 s"
+  },
+  {
+   "what": "action",
+   "value": {
+    "anim": "thing_0",
+    "clip": "motion_1",
+    "face": "facing_2",
+    "wait": true
+   },
+   "text": "Animate thing_0: motion_1 to facing_2"
+  },
+  {
+   "what": "action",
+   "value": {
+    "anim": "thing_0",
+    "clip": "motion_1",
+    "face": "facing_2",
+    "secs": 5
+   },
+   "text": "Animate thing_0: motion_1 to facing_2 for 5 s"
   },
   {
    "what": "action",

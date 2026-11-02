@@ -155,7 +155,7 @@ Kitchen's cards), the Inspector with its <b>HorrorStudio</b> box at the top, the
 them from the <b>HorrorStudio panel</b> along the bottom of the editor (it can float on a second screen too: its
 <span class="ui">⋮</span> menu). Its <span class="ui">Build</span> tab has everything a game is made of, as picture cards
 in categories (Player, Building, Lights &amp; power, Pick up &amp; look, Hide &amp; rest, Kitchen, Fire &amp; smoke,
-Electronics, Puzzles, Carry &amp; play, Chores, People, Areas &amp; paths, Scares):</p>
+Electronics, Puzzles, Carry &amp; play, Chores, People, Areas &amp; paths, Scares, Reactions):</p>
 <ul>
 <li><b>Click a card</b>: it's added in front of the editor's camera, in the selected room.</li>
 <li><b>Drag a card onto your model</b> (in the 3D view or the Scene tree): that model becomes it (§4).</li>
@@ -389,13 +389,14 @@ move the clip whose name suits it, hers first.</li>
 <tr><td class="ui">Sit down, Sitting, Stand up</td><td>a seat: the way in once, the loop while she sits, the way out once (she gets up before she walks off)</td></tr>
 <tr><td class="ui">Talk, Listen</td><td>in a conversation: while her line is up, while you answer her</td></tr>
 <tr><td class="ui">Look round</td><td>at a path's stop whose pose is look, search or check</td></tr>
+<tr><td class="ui">Caught</td><td>when she catches the player (her sight's meter fills, a hiding place she checks has them): once, turned to them</td></tr>
 </table>
 <p>An empty move plays another of hers, so the game always plays: Run plays her Walk; Sitting, Talk, Listen and Look
-round play her Idle; Sit down and Stand up are skipped. A clip whose name says it happens once
+round play her Idle; Sit down, Stand up and Caught are skipped. A clip whose name says it happens once
 (<code>sit_down</code>, <code>stand_up</code>, <code>get_into_bed</code>) isn't looped.</p>
 <figure class="wide"><img src="img/e_animate_faces.jpg" width="954" height="364" alt="The Animate tab's Face side: the face clips as cards, Faces and Loops"><figcaption>The Face side: the project's face clips, the loops apart.</figcaption></figure>
 <h3>Who's where in each quest: On stage</h3>
-<figure class="wide"><img src="img/e_onstage.jpg" width="1329" height="364" alt="The Story tab on the drink errand: ON STAGE above its steps, Mari's line in blue words: stands at Mari's place, doing her moves, face as she is, talks “Could you bring me something to drink?”, and Show on stage">
+<figure class="wide"><img src="img/e_onstage.jpg" width="1417" height="364" alt="The Story tab on the drink errand: ON STAGE above its steps, Mari's line in blue words: stands at Mari's place, doing her moves, face as she is, talks “Could you bring me something to drink?”, and Show on stage">
 <figcaption>The drink errand's ON STAGE: Mari's line in blue words, and Show on stage.</figcaption></figure>
 <p>Every quest in the Story tab has <b>ON STAGE</b> above its steps: a row per character saying what she's doing
 while it's on. Pick each blue word:</p>
@@ -437,6 +438,35 @@ made for whoever walks the path.</li>
 <li>A stop whose pose is look, search or check plays her <i>Look round</i> when it has no clip of its own.</li>
 </ul>
 
+<h3>Reactions and scares</h3>
+<figure class="wide"><img src="img/e_reactions.jpg" width="1034" height="364" alt="The Build tab's Reactions category with the kitchen's doorway selected: Turns to look at you, Flinches, Screams, Points at you and Waves">
+<figcaption>The Reactions cards, the kitchen's doorway selected.</figcaption></figure>
+<p>The <b>Reactions</b> category (on the Build tab, and with the Story tab's ready-made moments) makes someone react to
+the player: <i>Turns to look at you</i>, <i>Flinches</i>, <i>Screams</i>, <i>Points at you</i>, <i>Waves</i>. Drop one
+into a room from the Build tab (an area there), or select an area or a door and click it in the Story tab (or drag it
+from there onto one): a moment, <b>when</b> the player walks in (or uses the door), in which <b>whoever's nearest</b>
+(of the characters in the game from the start) plays her clip for it, turned to the player, then goes back to what
+she was doing:</p>
+<ul>
+<li><b>Her clip</b> is found by its name: one of hers with <i>flinch</i>, <i>startle</i>, <i>scream</i>,
+<i>point</i>, <i>wave</i>... in it, else the library's, made hers. With none she only turns to look at you. A face
+with a fitting name (<i>shock</i>, <i>fear</i>, <i>smile</i>) goes on her face too, and Screams brings a scream from
+the sound shelf.</li>
+<li><b>Swap her clip by dropping</b>: drag a card from the Animate tab onto the same area or door, and the moment's
+clip becomes that one, made for her.</li>
+<li>Change any word after in the Story tab: who, the clip, whom she turns to (<i>turned to</i>: the player, someone or
+something), for how long. A command <span class="ui">Animate someone</span> does the same anywhere: she's held where she
+is while it plays (she stops walking), then carries on.</li>
+</ul>
+<figure class="wide"><img src="img/e_reaction_moment.jpg" width="1417" height="364" alt="The Story tab with the new moment: WHEN the player enters Kitchen doorway, THEN Animate Mari: mari_flinch to the player">
+<figcaption>Flinches on the kitchen's doorway: Mari, the nearest, plays her flinch turned to the player.</figcaption></figure>
+<p><b>The jumpscare</b> (Scares) has more words than its figure: a <b>clip</b> the figure plays while it's there (a
+lunge: give the figure a body and the clip on the Animate tab, as you would a character), its <b>face</b>, and its own
+<b>sound</b> instead of the big sting. With a clip, the scare lasts as long as it unless you say <i>for</i>. In the
+sample the figure lunges with a face of its own and the short sting.</p>
+<p><b>Caught</b>: give a character a <i>Caught</i> move (above) and she plays it, turned to the player, whenever she
+catches them; what happens next is the story's (a moment <b>when</b> the player is caught).</p>
+
 <h3>Face clips from a video: the Face page</h3>
 <figure class="wide"><img src="img/f_facepage.jpg" width="1400" height="820" alt="The Face page in a browser: the library's expressions as cards, each the MHR head wearing it, Import at the top; on the right For Godot, the project's folder, a Godot project with two face clips, the faces ticked with their marks in faces/ and faces/loops/, Send 2 to the project and what was written">
 <figcaption>The Face page: the studio's expression library on the left, <b>For Godot</b> on the right. Two faces
@@ -465,8 +495,8 @@ blended into its start, for a face she rests in.</li>
 <pre>python tools/godot_director.py faces ~/Games/MyGame pout_and_glance pout_and_glance_loop</pre>
 <p>If the story animates someone with a clip she hasn't been given, the panel's <span class="ui">Test</span> page says
 so, and names the Animate tab when the clip is in <code>animations/</code>.</p>
-<div class="notyet"><b>Not yet.</b> Reactions and scares with their own clips; cutscenes in the level; FBX and glTF
-clips. They're next (<code>docs/GODOT_ANIMATION_PLAN.md</code>).</div>
+<div class="notyet"><b>Not yet.</b> Cutscenes in the level; FBX and glTF clips. They're next
+(<code>docs/GODOT_ANIMATION_PLAN.md</code>).</div>
 </section>
 
 <section id="story">
@@ -492,7 +522,7 @@ walks into the bedroom, hides in the wardrobe) and maybe failed by another (take
 (a chapter card, a thought, a look round), set out in its <b>As it starts</b> commands; it has no list and ends once
 they're over, and the next quest begins. The sample's intro shows <i>Night 1 · 23:40</i>, then the thought "Mari's out.
 She said she'd leave the bedroom key somewhere."</p>
-<figure class="wide"><img src="img/e_panel_intro.jpg" width="1329" height="664" alt="The panel's Story tab on the sample's Intro: it ends when what happens as it starts is over, its steps not a to-do list, and as it starts the thought Mari's out, then a wait">
+<figure class="wide"><img src="img/e_panel_intro.jpg" width="1417" height="664" alt="The panel's Story tab on the sample's Intro: it ends when what happens as it starts is over, its steps not a to-do list, and as it starts the thought Mari's out, then a wait">
 <figcaption>The sample's Intro in the Story tab: no list, over once its opening (a thought, a pause) is.</figcaption></figure>
 <p><b>Not every quest is a to-do list.</b> Untick <span class="ui">Its steps as a to-do list on the screen</span> and its
 steps still count, unseen: nothing written at the top left, the player finds the way by the story (and by a step's
@@ -527,7 +557,7 @@ answered her.</li>
 (<i>they've talked to Mari</i>, <i>they've heard out Mari's “You found it.”</i>). Which conversation she offers is up to
 her conversations' own <i>offered when</i> (§8): a step that waits for a particular one ticks only once it's the one
 she offers.</p>
-<figure class="wide"><img src="img/e_panel_talk.jpg" width="1329" height="364" alt="The panel's Story tab on the quest Mari: its step Talk to Mari open, TICKED WHEN the player talks to Mari, when “You found it.” is heard out">
+<figure class="wide"><img src="img/e_panel_talk.jpg" width="1417" height="364" alt="The panel's Story tab on the quest Mari: its step Talk to Mari open, TICKED WHEN the player talks to Mari, when “You found it.” is heard out">
 <figcaption>The sample's talk step in the Story tab: <i>the player talks to Mari</i>, and when it counts.</figcaption></figure>
 <h3>A marker over what it needs</h3>
 <p>Any step can show a <b>marker</b> in the game over what it needs: a small flat diamond on a short stem, pointing down
@@ -682,10 +712,10 @@ adds one; ↑ ↓ move it, ✕ takes it away.</li>
 game from this quest as a test, with what it asks for already done and you standing by where it happens;
 <span class="ui">Show it in the 3D view</span> selects what its WHEN names (press <kbd>F</kbd> over the view to frame it).
 On the right are <b>ready-made moments</b> (a jumpscare, a knock at a door, the lights dying, a door slamming, a
-whisper, a thought, the flashlight flickering): click one to add it onto what's selected (an area, a room, a door, a
+whisper, a thought, the flashlight flickering, and the reactions, §5): click one to add it onto what's selected (an area, a room, a door, a
 thing), or drag it onto an area or a door in the 3D view. Every change is saved at once, and <kbd>Ctrl</kbd>+<kbd>Z</kbd>
 takes it back.</p>
-<figure class="wide"><img src="img/e_panel_story.jpg" width="1329" height="664" alt="The panel's Story tab: the quests in order on the left with the first, The key, being edited, and the endings; in the middle its moment figure_scare open: WHEN the player enters Kitchen doorway, ONLY IF they've read letter, THEN a jump scare on the figure, the thought What was that? and the flag saw_figure, how often Just once, and what it reads as; the seven ready-made moments on the right">
+<figure class="wide"><img src="img/e_panel_story.jpg" width="1417" height="664" alt="The panel's Story tab: the quests in order on the left with the first, The key, being edited, and the endings; in the middle its moment figure_scare open: WHEN the player enters Kitchen doorway, ONLY IF they've read letter, THEN a jump scare on the figure, the thought What was that? and the flag saw_figure, how often Just once, and what it reads as; the seven ready-made moments on the right">
 <figcaption>The Story tab on the key's quest, the user's own example open: when the player walks into the kitchen's
 doorway after reading the letter, the figure.</figcaption></figure>
 <h3>Moments: when, if, then</h3>
@@ -700,11 +730,11 @@ once…</span>: the moment a condition becomes true.</li>
 <li><b>If</b>: a condition (§7). <b>Only during</b>: quests (none: the whole game). <b>Once a playthrough</b>, or every time.</li>
 <li><b>Then</b>: the commands, the desk's own: a jumpscare, a glimpse, a knock, the lights dying, a door slamming
 behind, a thought, a sound, music, show or hide something, a door, a light, the power, a little thing's state, a
-character sent somewhere, a fact set, an item given or taken, karma, a counter...</li>
+character sent somewhere or animated (a reaction), a fact set, an item given or taken, karma, a counter...</li>
 </ul>
 <div class="pair">
 <figure><img src="img/m_moments.jpg" width="1400" height="940" alt="The Manager's Moments: letter_thought when the player reads the letter, and figure_scare when the player enters the kitchen doorway, if read:letter, then a jump scare, a thought and a fact"><figcaption>The sample's two moments in the Manager.</figcaption></figure>
-<figure><img src="img/g_jumpscare.jpg" width="1280" height="720" alt="In the game: the figure standing in the kitchen for a moment"><figcaption>In the game: the figure (here a stand-in; put your model in it).</figcaption></figure>
+<figure><img src="img/g_jumpscare.jpg" width="1280" height="720" alt="In the game: the figure in the kitchen for a moment, lunging"><figcaption>In the game: the figure (the sample's MHR body, lunging; put your model in it).</figcaption></figure>
 </div>
 <figure class="half"><img src="img/m_trigger.jpg" width="780" height="653" alt="The palette of what can happen: the player enters, picks up, uses, reads, looks at, hides, a step ticked, something given to someone, and the form for the mug given to Mari"><figcaption>Picking <i>when</i>: the palette, then its form (here: the mug, given to Mari).</figcaption></figure>
 <h3>Conversations</h3>

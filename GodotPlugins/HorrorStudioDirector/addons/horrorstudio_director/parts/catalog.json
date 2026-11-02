@@ -1,5 +1,5 @@
 {
- "about": "The HorrorStudio panel's cards (editor/build_tab.gd): its categories and, in each, what a card adds. kind part: an HSThing scene of parts/ (it wraps the model it's dropped on, or stands in on its own); preset: a level node of presets/; window: a window put in the selected room's wall; scare: an area and the moment it starts (the Director file). make_parts.py keeps it whole: a part it makes that isn't here comes in under its kind's category.",
+ "about": "The HorrorStudio panel's cards (editor/build_tab.gd): its categories and, in each, what a card adds. kind part: an HSThing scene of parts/ (it wraps the model it's dropped on, or stands in on its own); preset: a level node of presets/; window: a window put in the selected room's wall; scare: an area and the moment it starts (the Director file; a reaction's {who}, {clip:words} and {face:words} filled in from who's nearest and what she has). make_parts.py keeps it whole: a part it makes that isn't here comes in under its kind's category.",
  "categories": [
   {
    "id": "player",
@@ -85,6 +85,12 @@
    "title": "Scares",
    "glyph": "scare",
    "about": "Drop one in a room: it makes the area and the moment for you. Change every word after, in the Story tab."
+  },
+  {
+   "id": "reactions",
+   "title": "Reactions",
+   "glyph": "react",
+   "about": "Drop one in a room: an area, and a moment in which whoever's nearest reacts to the player (turns to look, flinches, screams, points, waves), then goes back to what she was doing. Her clip: a card from the Animate tab dropped on the area."
   }
  ],
  "items": [
@@ -835,7 +841,7 @@
    "cat": "scares",
    "kind": "scare",
    "title": "Jumpscare",
-   "desc": "A sting plays as someone appears",
+   "desc": "Someone appears with a sting: a clip, a face, a sound of its own if you like",
    "glyph": "scare",
    "keywords": [
     "jumpscare",
@@ -975,6 +981,135 @@
     "do": [
      {
       "torch": "flicker"
+     }
+    ]
+   }
+  },
+  {
+   "id": "react_look",
+   "cat": "reactions",
+   "kind": "scare",
+   "title": "Turns to look at you",
+   "desc": "She stops and stares as you come in",
+   "glyph": "look_at",
+   "keywords": [
+    "look",
+    "stare",
+    "turn",
+    "notice"
+   ],
+   "name": "TurnsToLook",
+   "moment": {
+    "do": [
+     {
+      "anim": "{who}",
+      "clip": "{clip:look_at,turn,stare,notice,glance}",
+      "face": "player"
+     }
+    ]
+   }
+  },
+  {
+   "id": "react_flinch",
+   "cat": "reactions",
+   "kind": "scare",
+   "title": "Flinches",
+   "desc": "Startled at the sight of you",
+   "glyph": "flinch",
+   "keywords": [
+    "flinch",
+    "startle",
+    "jump"
+   ],
+   "name": "Flinches",
+   "moment": {
+    "do": [
+     {
+      "anim": "{who}",
+      "clip": "{clip:flinch,startle,scared,shock,jump}",
+      "face": "player"
+     },
+     {
+      "expr": "{face:shock,fear,scared,surprise,startle}",
+      "who": "{who}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "react_scream",
+   "cat": "reactions",
+   "kind": "scare",
+   "title": "Screams",
+   "desc": "A scream, at you",
+   "glyph": "scream",
+   "keywords": [
+    "scream",
+    "shriek"
+   ],
+   "name": "Screams",
+   "moment": {
+    "do": [
+     {
+      "anim": "{who}",
+      "clip": "{clip:scream,shriek}",
+      "face": "player"
+     },
+     {
+      "sound": "scream_01",
+      "at": "{who}"
+     },
+     {
+      "expr": "{face:scream,fear,shock,terror}",
+      "who": "{who}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "react_point",
+   "cat": "reactions",
+   "kind": "scare",
+   "title": "Points at you",
+   "desc": "She sees you and points",
+   "glyph": "point",
+   "keywords": [
+    "point"
+   ],
+   "name": "PointsAtYou",
+   "moment": {
+    "do": [
+     {
+      "anim": "{who}",
+      "clip": "{clip:point}",
+      "face": "player"
+     }
+    ]
+   }
+  },
+  {
+   "id": "react_wave",
+   "cat": "reactions",
+   "kind": "scare",
+   "title": "Waves",
+   "desc": "A wave hello",
+   "glyph": "wave",
+   "keywords": [
+    "wave",
+    "hello",
+    "greet"
+   ],
+   "name": "Waves",
+   "moment": {
+    "do": [
+     {
+      "anim": "{who}",
+      "clip": "{clip:wave,greet,hello}",
+      "face": "player"
+     },
+     {
+      "expr": "{face:smile,happy}",
+      "who": "{who}"
      }
     ]
    }

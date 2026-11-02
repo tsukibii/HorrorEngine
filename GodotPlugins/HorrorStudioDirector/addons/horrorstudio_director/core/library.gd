@@ -204,9 +204,14 @@ static func for_move(move: String, who: String) -> Array:
 	var mine: Array = []
 	var others: Array = []
 	for c in body():
-		if c["role"] != role or (str(c["for"]) != "" and str(c["for"]) != who):
-			continue
 		var words := HSDirector.snake(str(c["id"])).split("_", false)
+		if str(c["for"]) != "" and str(c["for"]) != who:
+			continue
+		if move == "caught":                         # a clip named for it (caught, catch, grab, found): a reaction's or a scare's
+			if not Array(words).any(func(w): return w.begins_with("caught") or w.begins_with("catch") or w.begins_with("grab") or w == "found"):
+				continue
+		elif c["role"] != role:
+			continue
 		if move == "sit_down" and not words.has("down"):
 			continue
 		if move == "sitting" and words.has("down"):

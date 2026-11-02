@@ -51,7 +51,7 @@ extends Node3D
 ## role a clip for each has by its name (core/library.gd role_of)
 const MOVES := [["idle", "Idle", "idle"], ["walk", "Walk", "walk"], ["run", "Run", "run"], ["sit_down", "Sit down", "sit"],
 	["sitting", "Sitting", "sit"], ["stand_up", "Stand up", "stand"], ["talk", "Talk", "talk"], ["listen", "Listen", "listen"],
-	["look_around", "Look round", "look"]]
+	["look_around", "Look round", "look"], ["caught", "Caught", "react"]]
 
 var _gen: Node3D = null
 var _key := 0

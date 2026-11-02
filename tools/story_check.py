@@ -93,7 +93,7 @@ MAX_HOLD = 2.5
 MAX_PATHS = 4096            # format 3 sweeps three answer styles and both secret modes
 
 
-MOVES = ("idle", "walk", "run", "sit_down", "sitting", "stand_up", "talk", "listen", "look_around")   # a cast member's moves (STORY_FORMAT §2)
+MOVES = ("idle", "walk", "run", "sit_down", "sitting", "stand_up", "talk", "listen", "look_around", "caught")   # a cast member's moves (STORY_FORMAT §2)
 
 def asks_of(story):
     """Every ask in the stitches (nested in answers too): its id -> its answers' ids, for `answered` triggers."""
@@ -1420,6 +1420,13 @@ def check_action(bid, a, story, things, r, stage=None):
             placed(v)
         if a.get("clip") is not None and a["clip"] not in story.get("motions", {}):
             r.err(f"{bid}: anim clip {a['clip']!r} isn't in motions")
+        face = a.get("face")                           # turned to the player, a thing or a cast member while it plays (a reaction)
+        if a.get("clip") is None and not face:
+            r.err(f"{bid}: anim {v!r}: a clip to play, or someone to turn to (face)")
+        if face and face != "player" and face not in cast:
+            placed(face)
+        if "secs" in a and not (isinstance(a["secs"], (int, float)) and not isinstance(a["secs"], bool) and 0 < a["secs"] <= 30):
+            r.err(f"{bid}: anim secs {a['secs']!r} (0 to 30)")
     elif k == "expr":                                  # an expression on someone's face (STORY_FORMAT §4): from the library, or "" (none)
         if a.get("who") not in cast:
             r.err(f"{bid}: expr: who {a.get('who')!r} isn't in the cast")
@@ -1514,6 +1521,16 @@ def check_action(bid, a, story, things, r, stage=None):
         if v in ("glimpse", "jumpscare") and a.get("figure") in things and \
                 not things[a["figure"]].d.get("shape", "").startswith("person"):
             r.err(f"{bid}: {v} figure {a['figure']!r} isn't a person")
+        if v == "jumpscare":                           # its clip (a lunge), its own sound, its face (STORY_FORMAT §4)
+            if a.get("clip") is not None and a["clip"] not in story.get("motions", {}):
+                r.err(f"{bid}: jumpscare clip {a['clip']!r} isn't in motions")
+            if a.get("sound") is not None and a["sound"] not in story.get("sounds", {}):
+                r.err(f"{bid}: jumpscare sound {a['sound']!r} isn't in sounds")
+            ex = a.get("expr")
+            if ex not in (None, "") and (not isinstance(ex, str) or "/" in ex or ".." in ex or not (EXPRESSIONS / ex / "expression.json").is_file()):
+                r.err(f"{bid}: jumpscare expr {ex!r} isn't in the library (Content/Studio/Expressions)")
+            elif ex and a.get("figure") not in cast:
+                r.warn(f"{bid}: jumpscare expr on {a.get('figure')!r}, who isn't in the cast (a face plays on a cast member's body)")
         for sub in a.get("then", []):
             check_action(bid, sub, story, things, r, stage)
 

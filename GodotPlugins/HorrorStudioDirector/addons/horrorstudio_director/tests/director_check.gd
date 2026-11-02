@@ -304,22 +304,32 @@ func _initialize() -> void:
 		if not rt.doors["kitchen_door"]["open"]:
 			return "not open"
 		return "")
-	await step("walking into the kitchen's doorway after the letter: the figure's jumpscare (a moment: when, if a fact, then)", func():
+	await step("walking into the kitchen's doorway after the letter: the figure's jumpscare (a moment: when, if a fact, then), its lunge on its MHR body, its face and its own sting", func():
 		rt.place(Vector3(1.4, 0.0, 0.8), 0.0, 0.0)
 		rt.player.yaw = 0.0
+		var fig_node = rt.cast_nodes.get("figure", rt.by_id["figure"]["node"] if rt.by_id.has("figure") else null)
+		var fap = load("res://addons/horrorstudio/play.gd").player_with(fig_node, "figure_lunge") if fig_node != null else null
+		var heard0: int = rt.sounds_heard.size()
 		rt.key_event("W", true)
 		var seen := false
+		var lunged := false
+		var faced := false
 		var k := 0
 		while k < 400 and not flag("saw_figure"):
 			await process_frame
 			if rt.by_id.has("figure") and rt.by_id["figure"]["node"].visible:
 				seen = true
+				lunged = lunged or (fap != null and str(fap.current_animation) == "anims/figure_lunge")
+				faced = faced or (rt.faces != null and rt.faces.people.has("figure") and (rt.faces.people["figure"]["over"] as Array).size() > 0)
 			k += 1
 		rt.key_event("W", false)
 		if not flag("saw_figure"):
 			return "no saw_figure (at x=%.2f)" % rt.player.pos.x
 		if not seen:
 			return "the figure never showed"
+		var stings: Array = rt.sounds_heard.slice(heard0).map(func(x): return str(x["n"])).filter(func(x): return x.begins_with("sting"))
+		if not lunged or not faced or stings != ["sting_short"]:
+			return "the figure's lunge %s (its player %s), its face %s, the sting %s (its own: sting_short)" % [lunged, fap, faced, stings]
 		return "")
 	await step("parts on models: the kettle switched on, its steam where its spout marker was moved; the ornament taken up in the hands, turned by a drag, put back; the finished step crossed out; put down, the easter egg the cat's eyes found (its thought), the quest still on", func():
 		var c := await go_to("kettle", 0.8)
@@ -587,6 +597,44 @@ func _initialize() -> void:
 		if near.size() != 2 or rt.npcs["mari"]["st"].get("arrived") == null or at.x < 2.7:
 			return "through the doorway %s, arrived %s at x=%.2f (the kitchen starts at 2.62)" % [near, rt.npcs["mari"]["st"].get("arrived"), at.x]
 		rt.behave("mari", {"as": "idle", "at": "bedroom_spot"})
+		return "")
+	await step("Reactions: Mari flinches (the story's anim, turned to the player): once, held where she is, turned to the player, then back to her idle and turned back; caught by her, her caught move turned to the player", func():
+		rt = g.play
+		var map = load("res://addons/horrorstudio/play.gd").player_with(rt.cast_nodes["mari"], "sample_idle")
+		rt.behave("mari", {"as": "idle", "at": "kitchen_spot"})
+		await frames(3)
+		var yaw0 := float(rt.npcs["mari"]["yaw"])
+		var her: Vector3 = rt.npcs["mari"]["pos"]
+		var a0 := deg_to_rad(yaw0)
+		var side := Vector3(-sin(a0), 0, -cos(a0)) * 1.5          # the player at her side (the one inside the kitchen, round 4.62, 0, 0): she turns a quarter to face them
+		rt.place(her + side if (her + side).distance_to(Vector3(4.62, 0, 0)) < (her - side).distance_to(Vector3(4.62, 0, 0)) else her - side, 0.0, 0.0)
+		await frames(2)
+		rt.actions.run({"anim": "mari", "clip": "mari_flinch", "face": "player"}, rt)
+		await frames(3)
+		if str(map.current_animation) != "anims/mari_flinch" or not rt.npcs["mari"].has("react"):
+			return "the flinch: she plays %s (react %s)" % [map.current_animation, rt.npcs["mari"].get("react")]
+		var secs: float = rt.move_secs("mari", "mari_flinch")
+		await game_wait(secs * 0.7)
+		var to_player := rad_to_deg(atan2(-(rt.player.pos.z - her.z), rt.player.pos.x - her.x))
+		var off := absf(fposmod(to_player - float(rt.npcs["mari"]["yaw"]) + 180.0, 360.0) - 180.0)
+		var moved: float = (rt.npcs["mari"]["pos"] as Vector3).distance_to(her)
+		if off > 15.0 or moved > 0.01 or str(map.current_animation) != "anims/mari_flinch":
+			return "while it plays (%s): %.0f° off the player, moved %.2f m" % [map.current_animation, off, moved]
+		await game_wait(secs * 0.3 + 1.2)
+		var back := absf(fposmod(yaw0 - float(rt.npcs["mari"]["yaw"]) + 180.0, 360.0) - 180.0)
+		if str(map.current_animation) != "anims/sample_idle" or rt.npcs["mari"].has("react") or back > 3.0:
+			return "after it: she plays %s, %.0f° off the way she was" % [map.current_animation, back]
+		rt.story.cast["mari"]["moves"]["caught"] = "mari_flinch"      # her caught move (the cast's moves, as the Animate tab sets them)
+		rt.caught("mari", null)
+		await frames(3)
+		var rc = rt.npcs["mari"].get("react")
+		var caught_ok: bool = str(map.current_animation) == "anims/mari_flinch" and rc is Dictionary and rc.get("face") == "player"
+		var playing := str(map.current_animation)
+		rt.story.cast["mari"]["moves"].erase("caught")
+		await game_wait(secs + 1.2)
+		rt.behave("mari", {"as": "idle", "at": "bedroom_spot"})
+		if not caught_ok:
+			return "caught: she plays %s (react %s)" % [playing, rc]
 		return "")
 	await step("the locked bedroom door opens with the key; walking in ticks the task", func():
 		rt = g.play

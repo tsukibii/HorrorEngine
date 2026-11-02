@@ -522,6 +522,111 @@ func add_window(room) -> void:
 	refresh()
 
 
+## a ready-made moment's commands for where it's put (a Scares or Reactions card; the Story tab's add_ready too): {room}
+## the room it's in, an empty knock or slam on a door that door, and a reaction's {who} (whoever's nearest of the cast
+## in the game from the start), {clip:words} (her clip whose name has one of the words, else the library's made hers;
+## none: the clip left out, she only turns) and {face:words} (the project's face clip by its name; none: that command
+## left out)
+func fill_ready(acts: Array, target: Node) -> Array:
+	var root = panel.dock.root() if panel != null and panel.dock != null else null
+	var cls := HSDirector.class_of(target) if target != null and is_instance_valid(target) else ""
+	var tid := HSDirector.id_of(target) if cls.begins_with("HS") else ""
+	var room = room_of(target) if cls != "" else null
+	var who = nearest_actor(target, root)
+	var out: Array = []
+	for a0 in acts:
+		if not (a0 is Dictionary):
+			continue
+		var a: Dictionary = a0.duplicate(true)
+		var keep := true
+		for k in a.keys():
+			var v := str(a[k])
+			if v == "{room}":
+				a[k] = HSDirector.id_of(room) if room != null else ""
+			elif v == "{who}":
+				a[k] = who.cast_id() if who != null else ""
+			elif v.begins_with("{clip:") and v.ends_with("}"):
+				var c := clip_by_words(who, v.substr(6, v.length() - 7).split(",", false))
+				if c == "":
+					a.erase(k)
+				else:
+					a[k] = c
+			elif v.begins_with("{face:") and v.ends_with("}"):
+				var fc := face_by_words(v.substr(6, v.length() - 7).split(",", false))
+				if fc == "":
+					keep = false
+				else:
+					a[k] = fc
+			elif v == "" and cls == "HSDoor" and k in ["at", "door"]:
+				a[k] = tid                                 # a knock on it, it slamming
+		if keep:
+			out.append(a)
+	return out
+
+
+## the character nearest a node (a reaction's who): of the cast in the game from the start (not hidden, not off), else
+## anyone; no node: the first
+static func nearest_actor(near: Node, root: Node) -> Node:
+	if root == null:
+		return null
+	var all: Array = HSDirector.nodes_of(root, "HSActor")
+	var there: Array = all.filter(func(x): return not bool(x.hidden_at_start) and str(x.behaviour) != "off")
+	var pool: Array = there if there.size() else all
+	if pool.is_empty():
+		return null
+	if not (near is Node3D):
+		return pool[0]
+	var best = null
+	var bd := INF
+	for x in pool:
+		var d: float = (x.global_position - (near as Node3D).global_position).length()
+		if d < bd:
+			bd = d
+			best = x
+	return best
+
+
+## whether an id's words (snake case) have one of these: a word its start, a phrase with _ whole
+static func named_for(id: String, words: Array) -> bool:
+	var n := HSDirector.snake(id)
+	var ws := n.split("_", false)
+	for w in words:
+		var w2 := str(w).strip_edges()
+		if w2 == "":
+			continue
+		if w2.contains("_"):
+			if ("_" + n + "_").contains("_" + w2 + "_"):
+				return true
+		elif Array(ws).any(func(x): return x.begins_with(w2)):
+			return true
+	return false
+
+
+## a reaction's clip for her by its name's words: one of hers, else the library's made hers (core/library.gd); ""
+static func clip_by_words(who: Node, words: Array) -> String:
+	if who != null:
+		for nm in HSLibrary.hers(who):
+			if named_for(str(nm), words):
+				return str(nm)
+	for c in HSLibrary.body():
+		if not named_for(str(c["id"]), words) or (str(c["for"]) != "" and who != null and str(c["for"]) != HSDirector.id_of(who)):
+			continue
+		if who == null:
+			return str(c["id"])
+		var why := [""]
+		var made := HSLibrary.make_for(who, c, why)
+		if made != "":
+			return made
+	return ""
+
+
+## a face clip by its name's words (a capture before a loop: a reaction's face plays once); ""
+static func face_by_words(words: Array) -> String:
+	var fs: Array = HSLibrary.faces().filter(func(x): return named_for(str(x["id"]), words))
+	fs.sort_custom(func(a, b): return int(bool(a.get("loop", false))) < int(bool(b.get("loop", false))))
+	return str(fs[0]["id"]) if fs.size() else ""
+
+
 ## a scare's area landed (clicked in front of the camera, or dragged into the view): named for the scare, and its
 ## moment written into the Director file, listening while the player walks in
 func scare_landed(area: Node, it: Dictionary, during: Array = []) -> void:
@@ -530,12 +635,7 @@ func scare_landed(area: Node, it: Dictionary, during: Array = []) -> void:
 	var nm: String = dock.fresh_name(p, str(it.get("name", "Scare")))
 	area.name = nm                                     # (its id follows the new name: HSDirector.auto_id)
 	var aid := HSDirector.id_of(area)
-	var room = room_of(area)
-	var acts: Array = (it.get("moment", {}).get("do", []) as Array).duplicate(true)
-	for a in acts:
-		for k in a:
-			if str(a[k]) == "{room}":
-				a[k] = HSDirector.id_of(room) if room != null else ""
+	var acts: Array = fill_ready(it.get("moment", {}).get("do", []), area)
 	var path: String = dock.game().story_file if dock.game() != null else HSStoryFile.DEFAULT
 	var f := HSStoryFile.read(path)
 	if f.has("_error"):
@@ -555,7 +655,8 @@ func scare_landed(area: Node, it: Dictionary, during: Array = []) -> void:
 	(f["moments"] as Array).append(m)
 	HSStoryFile.write(f, path)
 	dock.select(area)
-	panel.say("%s: when the player walks into %s. Its words (who appears, what's said) are in the Story tab" % [it["title"], aid])
+	panel.say("%s: when the player walks into %s. Its words (%s) are in the Story tab" % [it["title"], aid,
+		"who reacts, her clip, her face" if str(it.get("cat")) == "reactions" else "who appears, what's said"])
 	refresh()
 
 

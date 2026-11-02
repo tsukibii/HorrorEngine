@@ -307,8 +307,8 @@ func _room_map() -> Dictionary:
 	return {"places": places, "links": links}
 
 
-## a clip the story plays on someone (`anim`) that she hasn't got on her: the library's (core/library.gd) given to her
-## on the Animate tab, or not in the project at all
+## a clip the story plays on someone (`anim`, a jumpscare's figure's `clip`) that she hasn't got on her: the library's
+## (core/library.gd) given to her on the Animate tab, or not in the project at all
 func _check_clips(f: Dictionary) -> void:
 	var hers := {}
 	for lv in levels.values():
@@ -322,8 +322,9 @@ func _check_clips(f: Dictionary) -> void:
 		if o is Array:
 			todo.append_array(o)
 		elif o is Dictionary:
-			if o.get("anim") is String and o.get("clip") is String and hers.has(o["anim"]) and str(o["clip"]) != "":
-				var who := str(o["anim"])
+			var who0 = o.get("anim") if o.get("anim") is String else (o.get("figure") if o.get("trick") == "jumpscare" else null)   # a jumpscare's figure plays its clip
+			if who0 is String and o.get("clip") is String and hers.has(who0) and str(o["clip"]) != "":
+				var who := str(who0)
 				var clip := str(o["clip"])
 				if not (hers[who] as Array).has(clip) and not seen.has(who + "/" + clip):
 					seen[who + "/" + clip] = true

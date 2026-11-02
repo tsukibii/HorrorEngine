@@ -574,6 +574,24 @@ clip picked there and undone, a card dropped on a stop; in play Mari looking rou
 place to the kitchen (the kitchen door's hall side, then its kitchen side), On stage's in-between to the kitchen as a
 `go` by them, and her walk through the doorway into the kitchen.
 
+**Reactions and scares** (docs/GODOT_ANIMATION_PLAN.md step 6): the Build tab's **Reactions** category (also among
+the Story tab's ready-made moments): *Turns to look at you*, *Flinches*, *Screams*, *Points at you*, *Waves*, each a
+moment on an area (a new one in a room, or an area or door picked in the Story tab) whose `do` is filled in for where
+it lands (build_tab.gd `fill_ready`, shared with the Scares: `{room}`, a door's id, and a reaction's `{who}` the
+nearest character in the game from the start, `{clip:words}` her clip by its name's words else the library's made hers
+(none: she only turns), `{face:words}` a face clip by name (none: that command left out)). The runtime plays the
+story's `anim` on someone in play as a **reaction** (play.gd `react`): the clip once through her `once`, her behaviour
+held where she is meanwhile (no walking), turned to `face` (the player, a thing, someone) and back after; with no clip
+she only turns, 2.5 s (`secs` sets it). A card from the Animate tab dropped on an area or a door someone reacts in
+swaps that moment's clip, made for her (animate_tab.gd `set_reaction_clip`). The **jumpscare** grows `clip` (the
+figure plays it, a figure with a body: the sample's MHR, its lunge), `expr` (a face on it) and `sound` (its own sting);
+a character's **Caught** move (HSActor.MOVES) plays once, turned to the player, whenever she catches them. Measured
+(DIRECTOR): the five cards, Flinches and Waves on the kitchen's doorway filled in for Mari (her flinch, her wave, turned
+to the player, no face: the sample has no fitting one), a face found by its words, the look round dropped on the
+doorway swapping the first reaction's clip, all undone; in play Mari's flinch held and turned to the player then back
+to her idle and turned back, her caught move turned to the player, and the figure's jumpscare lunging with a face and
+the short sting.
+
 **The Face page** (docs/GODOT_ANIMATION_PLAN.md step 2; the user: "the tooling we are using in director to upload the
 face videos... let's make it a separate page so I can save the facial mocap"): `tools/facecap/serve.py` (port 8797) is
 the desk's own server loaded as a module with the page and two routes on top, so the library's endpoints (import,

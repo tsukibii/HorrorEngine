@@ -10,6 +10,7 @@ extends HBoxContainer
 
 const Glyphs := preload("res://addons/horrorstudio_director/editor/glyphs.gd")
 const BuildTab := preload("res://addons/horrorstudio_director/editor/build_tab.gd")
+const StoryTabC := preload("res://addons/horrorstudio_director/editor/story_tab.gd")
 const FaceC := preload("res://addons/horrorstudio/face.gd")
 const ROOT := "res://addons/horrorstudio_director/"
 const ROLE_GLYPH := {"idle": "person", "walk": "motion", "run": "motion", "sit": "chair", "stand": "person", "talk": "whisper",
@@ -546,14 +547,20 @@ func landed(token: Node, pa: Dictionary) -> void:
 					if d < best:
 						best = d
 						stop = sp
+	var react_on = null                              # nor a stop: an area or a door whose moment someone reacts in (its clip)
+	if a == null and stop == null and not bool(pa.get("face", false)):
+		react_on = reaction_target(token)
 	var r = panel.dock.root()
 	var ur = panel.plugin.get_undo_redo()
 	ur.get_history_undo_redo(ur.get_object_history_id(r)).undo()   # the drop's spot, taken back
 	if stop != null:
 		set_stop_clip(stop, pa["clip"])
 		return
+	if react_on != null:
+		set_reaction_clip(react_on, pa["clip"])
+		return
 	if a == null:
-		panel.say("Drop it on a character (or a path's stop)")
+		panel.say("Drop it on a character, a path's stop, or an area someone reacts in")
 		return
 	face_side = bool(pa.get("face", false))
 	panel.show_page("animate")
@@ -642,6 +649,69 @@ func set_stop_clip(stop: Node, c: Dictionary) -> void:
 	panel.say("%s plays %s at %s%s" % ["Whoever walks %s" % path.name if walkers.is_empty() else ", ".join(PackedStringArray(walkers.map(func(x): return str(x.name)))), nm, stop.name,
 		"" if walkers.size() else " (no one walks it yet: give it to her on the Animate tab when someone does)"])
 	panel.dock.select(stop)
+
+
+## the area or door a card fell on (its parent in the Scene tree, the area round where it landed, a door within 1.2 m)
+## when a moment there animates someone (a Reactions card's); else null
+func reaction_target(token: Node) -> Node:
+	var cands: Array = []
+	var n0 = token.get_parent()
+	if n0 != null and (HSDirector.is_a(n0, "HSTrigger") or HSDirector.is_a(n0, "HSDoor")):
+		cands.append(n0)
+	var p: Vector3 = token.global_position
+	for t in HSDirector.nodes_of(panel.dock.root(), "HSTrigger"):
+		if t != n0 and StoryTabC._inside(t, p):
+			cands.append(t)
+	for d in HSDirector.nodes_of(panel.dock.root(), "HSDoor"):
+		if Vector2(d.global_position.x - p.x, d.global_position.z - p.z).length() < 1.2:
+			cands.append(d)
+	for c in cands:
+		if not reactions_on(c).is_empty():
+			return c
+	return null
+
+
+## the moments whose WHEN is this area walked into or this door used, with the `anim` in them: [[moment id, index]]
+func reactions_on(n: Node) -> Array:
+	var id := HSDirector.id_of(n)
+	var out: Array = []
+	for m in panel.story.f.get("moments", []):
+		var w = m.get("when") if m is Dictionary else null
+		if not (w is Dictionary) or not (str(w.get("enter", "")) == id or str(w.get("use", "")) == id):
+			continue
+		var acts: Array = m.get("do", []) if m.get("do") is Array else []
+		for i in acts.size():
+			if acts[i] is Dictionary and acts[i].has("anim"):
+				out.append([str(m.get("id", "")), i])
+	return out
+
+
+## a card dropped on an area or a door someone reacts in: the clip that moment's `anim` plays, made for whoever it
+## animates (the first such moment's; the Story tab's undo)
+func set_reaction_clip(n: Node, c: Dictionary) -> void:
+	var hit: Array = reactions_on(n)[0]
+	var m: Dictionary = {}
+	for x in panel.story.f.get("moments", []):
+		if x is Dictionary and str(x.get("id", "")) == hit[0]:
+			m = x
+	var act: Dictionary = m["do"][hit[1]]
+	var who := str(act.get("anim", ""))
+	var actor = panel.story.node_of(who)
+	var nm := str(c["id"])
+	if actor != null and HSDirector.is_a(actor, "HSActor"):
+		var why := [""]
+		nm = HSLibrary.make_for(actor, c, why)
+		if nm == "":
+			panel.say(why[0])
+			return
+	var mid: String = hit[0]
+	var at: int = hit[1]
+	panel.story.change("%s's clip in %s: %s" % [who, mid, nm], func():
+		for x in panel.story.f.get("moments", []):
+			if x is Dictionary and str(x.get("id", "")) == mid:
+				x["do"][at]["clip"] = nm)
+	panel.say("%s plays %s in %s (when the player %s)" % [actor.name if actor != null else who, nm, mid, "walks into %s" % n.name if HSDirector.is_a(n, "HSTrigger") else "opens %s" % n.name])
+	panel.dock.select(n)
 
 
 func set_face(a: Node3D, c: Dictionary) -> void:

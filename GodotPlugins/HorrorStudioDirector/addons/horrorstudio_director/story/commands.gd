@@ -260,7 +260,10 @@ static func action_text(a, n: Callable = Callable()) -> String:
 		"expr":
 			return cap(n.call("cast", g.call("who"))) + "'s face" + (" at rest" if _t(g.call("rest")) else "") + ": " + (n.call("expr", a["expr"]) if _t(g.call("expr")) else "none") + (", over and over" if _t(g.call("loop")) else "")
 		"anim":
-			return "Animate " + n.call("thing", g.call("anim")) + ": " + js(_or(g.call("clip"), "…"))
+			var face = g.call("face")
+			return "Animate " + n.call("thing", g.call("anim")) + ": " + js(_or(g.call("clip"), "turns" if _t(face) else "…")) \
+				+ ((" to " + ("the player" if face is String and face == "player" else n.call("thing", face))) if _t(face) else "") \
+				+ ((" for " + js(a["secs"]) + " s") if _t(g.call("secs")) else "")
 		"shot":
 			return "Close-up on " + n.call("cast", g.call("who")) + ((" for " + n.call("line", a["line"])) if _t(g.call("line")) else "")
 		"wait":
@@ -299,7 +302,8 @@ static func _trick_text(a: Dictionary, n: Callable) -> String:
 		"glimpse":
 			return "a glimpse of " + n.call("thing", g.call("figure")) + ((" (" + js(a["secs"]) + " s)") if _t(g.call("secs")) else "")
 		"jumpscare":
-			return "a jump scare: " + n.call("thing", g.call("figure"))
+			return "a jump scare: " + n.call("thing", g.call("figure")) + ((", playing " + js(a["clip"])) if _t(g.call("clip")) else "") \
+				+ ((", its face " + n.call("expr", a["expr"])) if _t(g.call("expr")) else "") + ((", with " + js(a["sound"])) if _t(g.call("sound")) else "")
 		"swap":
 			return "while unseen, " + n.call("thing", g.call("hide")) + " becomes " + n.call("thing", g.call("show"))
 		"loop_hall":

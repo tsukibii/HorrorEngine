@@ -11,7 +11,7 @@ the to-do built there, with the Studio's eyes from the side, a small nose and th
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-03, branch `Director-Godot`): animation steps 1 to 5, the Animate tab, the Face page, moves, On stage, paths
+## Where it stopped last (2026-11-03, branch `Director-Godot`): animation steps 1 to 6, the Animate tab, the Face page, moves, On stage, paths, reactions
 
 The user tried the Animate tab ("tested and works") and asked to go through the plan's steps in order (DECISIONS
 2026-11-03). **Step 2, the Face page, is built** (`tools/facecap`, GODOT_DIRECTOR §6g): the desk's Expressions import
@@ -25,9 +25,11 @@ has. **Step 4, On stage, is built** (GODOT_DIRECTOR §6g): a quest's line per ch
 is, what she does, her face, the conversation she offers), carried on until a later quest changes it, the in-between
 walked by itself from her moves, Show on stage in the 3D view, chips on Story Flow's cards. **Step 5, paths, is
 built**: a path's stops each with a clip (This object lists them; a card dropped on a stop), and walks between places
-going through doorways (a spot each side of every door, the brain's `way`). Next in order: **6, reactions and scares**
-(a ready-made reaction card, `anim` once then back, the jumpscare's clip, sound and face), then 7 cutscenes in the
-level (the soft lock, the safety release).
+going through doorways (a spot each side of every door, the brain's `way`). **Step 6, reactions and scares, is
+built**: the Reactions cards (turns to look, flinches, screams, points, waves) filled in for the nearest character,
+her clip swapped by an Animate card dropped on the area, `anim` played as a reaction (held, turned to the player and
+back), the jumpscare's clip, face and sound, a Caught move. Next in order: **7, cutscenes in the level** (a moment
+marked Cutscene with a target: the soft lock, a lean-in, the safety release; no black bars, no skip).
 
 ### Step 1 (2026-11-02, night): the library and the Animate tab
 
