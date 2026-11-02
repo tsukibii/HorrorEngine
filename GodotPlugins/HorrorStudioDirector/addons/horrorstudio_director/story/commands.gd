@@ -399,10 +399,109 @@ static func trigger_text(w, n: Callable = Callable()) -> String:
 	return JSON.stringify(w)
 
 
-# ---- conditions (words.js) -------------------------------------------------------------------------------------------
-## a fact as words: "read:letter" -> "they've read letter", a flag of the story's own -> "saw_figure is set"
-static func fact_text(f, is_not := false) -> String:
+# ---- talking (words.js) -------------------------------------------------------------------------------------------
+## the facts the game writes as the player talks (talked:<person or conversation>, heard:<person or conversation>) in
+## words, when `ctx` says who's who: {"talks": the Director file's talk, "name": Callable(kind, id) -> her name}
+static func _short_line(s: String) -> String:
+	s = s.strip_edges()
+	if s.length() <= 40:
+		return s
+	var i := s.rfind(" ", 40)
+	return s.substr(0, i if i > 20 else 40) + "…"
+
+
+## a conversation's person and how it's called (its title, else its first line, shortened); {} if it isn't one
+static func talk_of(talks, id: String) -> Dictionary:
+	if not (talks is Dictionary):
+		return {}
+	for who in talks:
+		var list = talks[who]
+		if not (list is Array):
+			continue
+		for t in list:
+			if t is Dictionary and str(t.get("id", "")) == id:
+				var first := ""
+				for l in (t.get("lines") if t.get("lines") is Array else []):
+					if l is Dictionary and str(l.get("text", "")).strip_edges() != "":
+						first = str(l["text"])
+						break
+				var label := str(t.get("title", "")).strip_edges() if t.get("title") != null else ""
+				if label == "":
+					label = _short_line(first)
+				return {"who": str(who), "label": label if label != "" else id}
+	return {}
+
+
+static func _name_of(ctx, id: String) -> String:
+	if ctx is Dictionary and ctx.get("name") is Callable and (ctx["name"] as Callable).is_valid():
+		return str((ctx["name"] as Callable).call("cast", id))
+	return id
+
+
+## a talk fact as {who, how: talked | heard, talk: the conversation's id or "", label}; {} when it isn't one ctx knows
+static func talk_fact(f, ctx) -> Dictionary:
+	if not (ctx is Dictionary) or not (ctx.get("talks") is Dictionary):
+		return {}
 	var s := str(f)
+	var how := ""
+	for h in ["talked", "heard"]:
+		if s.begins_with(h + ":") and s.length() > h.length() + 1:
+			how = h
+	if how == "":
+		return {}
+	var v := s.substr(how.length() + 1)
+	if (ctx["talks"] as Dictionary).has(v):
+		return {"who": v, "how": how, "talk": "", "label": ""}
+	var t := talk_of(ctx["talks"], v)
+	return {"who": t["who"], "how": how, "talk": v, "label": t["label"]} if not t.is_empty() else {}
+
+
+## a WHEN that's a talk ({"holds": "talked:mari"}, "heard:mari", "heard:t_open"): its talk fact, else {}
+static func talk_when(w, ctx) -> Dictionary:
+	if not (w is Dictionary) or not w.has("holds") or w.size() != 1:
+		return {}
+	var p := parse_cond(w["holds"])
+	var items: Array = p["items"]
+	if items.size() != 1 or items[0]["kind"] != "fact" or items[0].get("not", false):
+		return {}
+	return talk_fact(items[0]["v"], ctx)
+
+
+## what a talk WHEN reads as ("the player talks to Mari", "the player hears out Mari's “You found it.”"; "" if it isn't one)
+static func talk_when_text(w, ctx) -> String:
+	var t := talk_when(w, ctx)
+	if t.is_empty():
+		return ""
+	var n := _name_of(ctx, t["who"])
+	if t["talk"] == "":
+		return ("the player talks to %s" if t["how"] == "talked" else "the player hears %s out") % n
+	return ("the player begins %s's “%s”" if t["how"] == "talked" else "the player hears out %s's “%s”") % [n, t["label"]]
+
+
+## what a talk with someone can wait for: [fact, how it reads in a picker]: she's clicked, she's heard out, each of her
+## conversations heard out
+static func talk_hows(talks, who: String) -> Array:
+	var out: Array = [["talked:" + who, "when she's clicked"], ["heard:" + who, "when she's heard out"]]
+	var list = talks.get(who) if talks is Dictionary else null
+	if list is Array:
+		for t in list:
+			if t is Dictionary and str(t.get("id", "")) != "":
+				out.append(["heard:" + str(t["id"]), "when “%s” is heard out" % talk_of(talks, str(t["id"]))["label"]])
+	return out
+
+
+# ---- conditions (words.js) -------------------------------------------------------------------------------------------
+## a fact as words: "read:letter" -> "they've read letter", a flag of the story's own -> "saw_figure is set"; a talk in
+## its own words when ctx knows it ("they've heard Mari out")
+static func fact_text(f, is_not := false, ctx = null) -> String:
+	var s := str(f)
+	var tk := talk_fact(s, ctx)
+	if not tk.is_empty():
+		var n := _name_of(ctx, tk["who"])
+		var has := "they haven't" if is_not else "they've"
+		if tk["talk"] == "":
+			return ("%s talked to %s" if tk["how"] == "talked" else "%s heard %s out") % [has, n]
+		return ("%s begun %s's “%s”" if tk["how"] == "talked" else "%s heard out %s's “%s”") % [has, n, tk["label"]]
 	for fw in data()["fact_words"]:
 		var p: String = fw[0]
 		if not s.begins_with(p):
@@ -504,11 +603,11 @@ static func _range(x: Dictionary) -> String:
 	return " and ".join(PackedStringArray(bits))
 
 
-static func clause_text(x: Dictionary) -> String:
+static func clause_text(x: Dictionary, ctx = null) -> String:
 	var no: bool = x.get("not", false)
 	match str(x["kind"]):
 		"fact":
-			return fact_text(x["v"], no)
+			return fact_text(x["v"], no, ctx)
 		"quest":
 			return "quest %s %s on" % [x["v"], "isn't" if no else "is"]
 		"done":
@@ -527,9 +626,9 @@ static func clause_text(x: Dictionary) -> String:
 
 
 ## a whole condition as words, its clauses joined by and / or ("" when there are none)
-static func cond_text(c) -> String:
+static func cond_text(c, ctx = null) -> String:
 	var p := parse_cond(c)
-	return (" and " if p["mode"] == "all" else " or ").join(PackedStringArray((p["items"] as Array).map(func(x): return clause_text(x))))
+	return (" and " if p["mode"] == "all" else " or ").join(PackedStringArray((p["items"] as Array).map(func(x): return clause_text(x, ctx))))
 
 
 ## every example in the file read here as commands.js and words.js read it: the ones that differ ([] when none do)
@@ -543,11 +642,17 @@ static func differences() -> Array:
 			"trigger":
 				got = trigger_text(e["value"])
 			"cond":
-				got = cond_text(e["value"])
+				got = cond_text(e["value"], e.get("ctx"))
 				var p := parse_cond(e["value"])
 				var back = build_cond(p["mode"], p["items"])
 				if JSON.stringify(back) != JSON.stringify(e["json"]) or p["mode"] != e["mode"]:
 					out.append({"value": e["value"], "want": e["json"], "got": back})
+			"talkwhen":
+				got = talk_when_text(e["value"], e.get("ctx"))
+			"talkhows":
+				var want = JSON.parse_string(str(e["text"]))
+				var hows := talk_hows((e.get("ctx", {}) as Dictionary).get("talks"), str(e["value"]))
+				got = str(e["text"]) if want == hows else JSON.stringify(hows)
 		if got != str(e["text"]):
 			out.append({"value": e["value"], "want": e["text"], "got": got})
 	return out

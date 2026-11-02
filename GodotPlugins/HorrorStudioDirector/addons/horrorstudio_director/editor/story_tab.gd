@@ -380,7 +380,7 @@ func _draw_moments(qid: String) -> void:
 			var w = m.get("when")
 			var t := _when_words(w)
 			if not HSCond.empty(m.get("if")):
-				t += ", if " + HSCommands.cond_text(m["if"])
+				t += ", if " + HSCommands.cond_text(m["if"], talk_ctx())
 			var acts := _acts_words(m.get("do", []))
 			if acts != "":
 				t += ": " + acts
@@ -562,25 +562,35 @@ func _when_row(o: Dictionary, key: String, tag: String, apply: Callable) -> Cont
 	row.add_theme_constant_override("v_separation", int(6 * _s()))
 	row.add_child(_tag(tag, C_WHEN))
 	var w = o.get(key)
-	var holds: bool = w is Dictionary and w.has("holds")
-	var verb := "" if holds else HSCommands.verb_of_trigger(w)
+	var talk := HSCommands.talk_when(w, talk_ctx())        # a talk: someone talked to, heard out (the facts it waits for)
+	var holds: bool = w is Dictionary and w.has("holds") and talk.is_empty()
+	var verb := "" if (holds or not talk.is_empty()) else HSCommands.verb_of_trigger(w)
 	var d := HSCommands.trigger_def(verb)
 	var mb := MenuButton.new()
 	mb.name = "WhenVerb"
-	mb.text = "once this becomes true" if holds else (str(d.get("label", "")).to_lower() if not d.is_empty() else "(choose when)")
+	mb.text = "the player talks to" if not talk.is_empty() else ("once this becomes true" if holds else (str(d.get("label", "")).to_lower() if not d.is_empty() else "(choose when)"))
 	mb.flat = false
 	_blue(mb)
 	var pop := mb.get_popup()
 	var defs := HSCommands.triggers()
+	pop.add_item("Talk to someone…", 9998)
+	pop.set_item_tooltip(0, "When the player talks to someone: when she's clicked, when she's heard out, or when one of her conversations is heard to the end")
+	pop.add_separator()
 	for i in defs.size():
 		pop.add_item(str(defs[i]["label"]), i)
 	pop.add_separator()
 	pop.add_item("Once a condition becomes true…", 9999)
 	pop.id_pressed.connect(func(id):
 		apply.call(func(x: Dictionary):
-			x[key] = {"holds": []} if id == 9999 else (defs[id]["make"] as Dictionary).duplicate(true)))
+			if id == 9998:
+				var ps := talk_people()
+				x[key] = {"holds": "talked:" + (str(ps[0]) if ps.size() else "")}
+			else:
+				x[key] = {"holds": []} if id == 9999 else (defs[id]["make"] as Dictionary).duplicate(true)))
 	row.add_child(mb)
-	if holds:
+	if not talk.is_empty():
+		row.add_child(_talk_pickers(talk, func(fact: String): apply.call(func(x: Dictionary): x[key] = {"holds": fact})))
+	elif holds:
 		row.add_child(_cond_chips(w, "holds", func(fn: Callable, redraw := true): apply.call(func(x: Dictionary): fn.call(x[key]), redraw)))
 	elif not d.is_empty():
 		for fd in HSCommands.fields_of(d, w):
@@ -588,6 +598,60 @@ func _when_row(o: Dictionary, key: String, tag: String, apply: Callable) -> Cont
 				row.add_child(_label(str(fd.get("label", "")), 12, C_FAINT))
 			row.add_child(_field(w, fd, func(fn: Callable, redraw := true): apply.call(func(x: Dictionary): fn.call(x[key]), redraw)))
 	return row
+
+
+## a talk's blue words: who (the people with conversations), and when (she's clicked, she's heard out, one of her
+## conversations heard out, by its title or first line); `put` takes the fact the WHEN waits for
+func _talk_pickers(talk: Dictionary, put: Callable) -> Control:
+	var box := HBoxContainer.new()
+	box.name = "Talk"
+	box.add_theme_constant_override("separation", int(8 * _s()))
+	var who := str(talk["who"])
+	var people := talk_people()
+	if not people.has(who):
+		people.append(who)
+	var wo := OptionButton.new()
+	wo.name = "TalkWho"
+	for i in people.size():
+		wo.add_item(_name("cast", people[i]), i)
+	wo.select(people.find(who))
+	_blue(wo)
+	var how := str(talk["how"])
+	wo.item_selected.connect(func(i): put.call(("%s:%s" % [how, people[i]]) if str(talk["talk"]) == "" else "heard:" + str(people[i])))
+	box.add_child(wo)
+	var ho := OptionButton.new()
+	ho.name = "TalkHow"
+	var hows := HSCommands.talk_hows(f.get("talk", {}), who)
+	var now := ("%s:%s" % [how, talk["talk"] if str(talk["talk"]) != "" else who])
+	var at := -1
+	for i in hows.size():
+		ho.add_item(str(hows[i][1]), i)
+		if hows[i][0] == now:
+			at = i
+	if at < 0:                                      # (begun one particular conversation: a fact the pickers don't offer, kept)
+		ho.add_item("when “%s” begins" % talk["label"], hows.size())
+		hows.append([now, ""])
+		at = hows.size() - 1
+	ho.select(at)
+	_blue(ho)
+	ho.item_selected.connect(func(i): put.call(str(hows[i][0])))
+	box.add_child(ho)
+	return box
+
+
+## who can be talked to: the people the Director file has conversations for (else the scene's characters)
+func talk_people() -> Array:
+	var talk = f.get("talk", {})
+	var out: Array = (talk as Dictionary).keys().map(func(k): return str(k)) if talk is Dictionary else []
+	if out.is_empty():
+		out = _ids("actor")
+	out.sort()
+	return out
+
+
+## the talk words' context: the file's conversations, and a person's name as the panel says it
+func talk_ctx() -> Dictionary:
+	return {"talks": f.get("talk", {}) if f.get("talk") is Dictionary else {}, "name": _name}
 
 
 func _if_row(o: Dictionary, key: String, tag: String, apply: Callable) -> Control:
@@ -627,7 +691,7 @@ func _cond_chips(o: Dictionary, key: String, apply: Callable) -> Control:
 		var x: Dictionary = items[i]
 		var chip := Button.new()
 		chip.name = "Clause_%d" % i
-		chip.text = HSCommands.clause_text(x)
+		chip.text = HSCommands.clause_text(x, talk_ctx())
 		chip.tooltip_text = "Click: the opposite (not). ✕ next to it takes it away"
 		_blue(chip, Color("#2B2540"), Color("#5A4A86"), Color("#DCCFFA"))
 		chip.pressed.connect(func():
@@ -676,12 +740,24 @@ func clause_choices() -> Array:
 		"step": _steps(), "quest": _quests(), "ending": _endings(), "talk": _talks(), "achievement": (f.get("achievements", []) as Array).map(func(a): return str(a.get("id", "")))}
 	for fw in HSCommands.data()["fact_words"]:
 		var kind: String = fw[3]
-		if not by_kind.has(kind):
+		if kind == "talk" or not by_kind.has(kind):
 			continue
 		var vals: Array = by_kind[kind]
 		if vals.is_empty():
 			continue
 		out.append([str(fw[1]), vals.map(func(v): return [{"kind": "fact", "v": str(fw[0]) + str(v), "not": false}, str(v)])])
+	var talks: Dictionary = f.get("talk", {}) if f.get("talk") is Dictionary else {}
+	var tw: Array = []                              # talking: someone talked to, heard out, one of her conversations heard out
+	var th: Array = []
+	for who in talk_people():
+		tw.append([{"kind": "fact", "v": "talked:" + who, "not": false}, _name("cast", who)])
+		th.append([{"kind": "fact", "v": "heard:" + who, "not": false}, "%s (anything she says)" % _name("cast", who)])
+		for t in talks.get(who, []):
+			if t is Dictionary and str(t.get("id", "")) != "":
+				th.append([{"kind": "fact", "v": "heard:" + str(t["id"]), "not": false}, "%s's “%s”" % [_name("cast", who), HSCommands.talk_of(talks, str(t["id"]))["label"]]])
+	if tw.size():
+		out.append(["they've talked to", tw])
+		out.append(["they've heard out", th])
 	var gv: Array = []
 	for it in by_kind["item"]:
 		for who in by_kind["actor"]:
@@ -1004,8 +1080,11 @@ static func _words(s: String) -> String:
 
 
 func _when_words(w) -> String:
+	var talk := HSCommands.talk_when_text(w, talk_ctx())
+	if talk != "":
+		return talk
 	if w is Dictionary and w.has("holds"):
-		var c := HSCommands.cond_text(w["holds"])
+		var c := HSCommands.cond_text(w["holds"], talk_ctx())
 		return "this becomes true: " + (c if c != "" else "…")
 	if not (w is Dictionary) or w.is_empty():
 		return "(choose when)"
@@ -1027,7 +1106,7 @@ static func _lower(s: String) -> String:
 func reads_as(m: Dictionary) -> String:
 	var s := "When " + _when_words(m.get("when"))
 	if not HSCond.empty(m.get("if")):
-		s += ", if " + HSCommands.cond_text(m["if"])
+		s += ", if " + HSCommands.cond_text(m["if"], talk_ctx())
 	var acts := _acts_words(m.get("do", []))
 	s += ": " + (acts if acts != "" else "nothing yet")
 	s += ". " + ("Just once." if m.get("once", true) else "Every time.")
@@ -1234,6 +1313,9 @@ func when_node(m: Dictionary) -> Node:
 	var w = m.get("when")
 	if not (w is Dictionary):
 		return null
+	var talk := HSCommands.talk_when(w, talk_ctx())
+	if not talk.is_empty():
+		return node_of(str(talk["who"]))
 	for k in ["enter", "exit", "use", "look", "read", "pickup", "hidden", "peeping", "locked", "state", "played", "rolled", "dropped", "carrying"]:
 		if w.get(k) is String and w[k] != "":
 			var n = node_of(w[k])

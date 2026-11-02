@@ -436,6 +436,34 @@ func _story_checks() -> void:
 	for i in 5:                                       # the ready-made, the clause, the command, its words, every time
 		glob.undo()
 	rep["story_undone"] = _same(FileAccess.get_file_as_string("res://director/director.json"), pan["story_was"])
+	st.quest = "q_talk"                               # Talk to…: the sample's talk step, in words, then till she's heard out at all
+	st.opened = ""
+	st.refresh(false)
+	rep["story_talk_line"] = st.mid.find_children("Line_*", "Button", true, false).map(func(c): return str(c.text)).filter(func(t): return t.contains("Talk to Mari"))
+	st.opened = "s:talk_mari"
+	st.refresh(false)
+	var tbox: Control = st.mid.find_child("Step_talk_mari", true, false)
+	var tw: OptionButton = tbox.find_child("TalkWho", true, false) if tbox != null else null
+	var th: OptionButton = tbox.find_child("TalkHow", true, false) if tbox != null else null
+	rep["story_talk_pickers"] = [tw.get_item_text(tw.selected) if tw != null else "", th.get_item_text(th.selected) if th != null else "",
+		str(tbox.find_child("WhenVerb", true, false).text) if tbox != null else ""]
+	if th != null:
+		th.select(1)
+		th.item_selected.emit(1)                       # when she's heard out
+	var tq: Dictionary = {}
+	for q in HSStoryFile.read().get("quests", []):
+		if q.get("id") == "q_talk":
+			tq = q
+	rep["story_talk_heard"] = tq.get("steps", [{}])[0].get("done") == {"holds": "heard:mari"}
+	glob.undo()
+	tq = {}
+	for q in HSStoryFile.read().get("quests", []):
+		if q.get("id") == "q_talk":
+			tq = q
+	rep["story_talk_undone"] = tq.get("steps", [{}])[0].get("done") == {"holds": "heard:t_open"}
+	st.quest = "q_drink"
+	st.opened = ""
+	st.refresh(false)
 	var whisper: Dictionary = st.ready_items().filter(func(it): return it["id"] == "scare_whisper")[0]
 	panel.plugin.pending_scare = {"item": whisper, "at": Time.get_ticks_msec(), "from": "story"}
 	var dropped: Node3D = (load("res://addons/horrorstudio_director/presets/area.tscn") as PackedScene).instantiate()   # as the 3D view drops it: an instance of the preset's file

@@ -388,7 +388,7 @@ func _initialize() -> void:
 		if not flag("achievement:ACH_HOST"):
 			return "no achievement for it"
 		return "")
-	await step("the conversation the story offers now: her first line with its face over her rest, answered Yes, heard out (its step ticks); a state sends Mari to the bedroom door", func():
+	await step("the conversation the story offers now: her first line with its face over her rest, answered Yes, heard out (its step ticks; she's talked to and heard out as facts of her own too); a state sends Mari to the bedroom door", func():
 		var k := 0
 		while not (g.play != null and g.play.active and not g.play.busy) and k < 1200:
 			await process_frame
@@ -413,7 +413,7 @@ func _initialize() -> void:
 		while not g.run["trail"].has("q_bedroom") and k < 1200:
 			await process_frame
 			k += 1
-		for f in ["talked:t_open", "answered:t_open:yes", "promised", "heard:t_open"]:
+		for f in ["talked:t_open", "talked:mari", "answered:t_open:yes", "promised", "heard:t_open", "heard:mari"]:   # (her heard out too: Talk to…)
 			if not flag(f):
 				return "no fact %s (trail %s)" % [f, g.run["trail"]]
 		if not g.run["trail"].has("q_bedroom"):

@@ -9,7 +9,7 @@ import { h, modal, toast, actionList, triggerPill, form } from "/desk/ui.js";
 import { ACTIONS, TRICKS, triggerText } from "/desk/commands.js";
 import { icon } from "/desk/icons.js";
 import { coverage, AUTO, ROUNDS } from "/coverage.js";
-import { directorCommands, CLAUSES, parseCond, buildCond, clauseText } from "/words.js";
+import { directorCommands, CLAUSES, parseCond, buildCond, clauseText, talkWhen, talkHows } from "/words.js";
 
 // the Director's words over the desk's (words.js, Godot's Story tab's too): a line is written in place (no lines table)
 directorCommands({ ACTIONS, TRICKS });
@@ -170,21 +170,44 @@ function condEd(o, k, label = "only if", none = "always") {
   if (!c.items.length && none) box.append(h("span", { class: "hint" }, none));
   c.items.forEach((x, i) => {
     if (i > 0) box.append(h("button", { class: "ghost mode", title: "all of them, or any one", on: { click: () => { c.mode = c.mode === "all" ? "any" : "all"; put(); } } }, c.mode === "all" ? "and" : "or"));
-    box.append(h("span", { class: "chip" + (x.not ? " neg" : "") }, clauseText(x), h("button", { class: "x", title: "take it away", on: { click: () => { c.items.splice(i, 1); put(); } } }, "×")));
+    box.append(h("span", { class: "chip" + (x.not ? " neg" : "") }, clauseText(x, talkCtx()), h("button", { class: "x", title: "take it away", on: { click: () => { c.items.splice(i, 1); put(); } } }, "×")));
   });
   box.append(h("button", { class: "ghost small", on: { click: async () => { const x = await askClause(); if (x) { c.items.push(x); put(); } } } }, icon("plus", 12), " add"));
   return box;
 }
 
-// ---- triggers: the desk's, or a condition becoming true --------------------------------------------------------------------
+// ---- talking (words.js, the panel's Story tab's too): someone talked to, heard out, one of her conversations heard out ----
+const talkCtx = () => ({ talks: S.talk });
+const talkPeople = () => { const p = Object.keys(S.talk || {}); return (p.length ? p : ids("actor")).slice().sort(); };
+const pickEl = (attr, options, value, onChange) => {
+  const s = h("select", { [attr]: "", on: { change: e => onChange(e.target.value) } });
+  for (const [v, l] of options) s.append(h("option", { value: v, selected: v === value ? true : null }, l));
+  return s;
+};
+function talkWhenEd(o, k, t, prefix) {
+  const ppl = talkPeople(); if (!ppl.includes(t.who)) ppl.push(t.who);
+  const now = `${t.how}:${t.talk || t.who}`, hows = talkHows(S.talk, t.who);
+  if (!hows.some(([f]) => f === now)) hows.push([now, `when “${t.label}” begins`]);   // (one conversation begun: kept as it is)
+  const put = f => { o[k] = { holds: f }; changed(); render(); };
+  return h("div", { class: "trig talk" }, h("span", { class: "hint" }, (prefix ? prefix + " " : "") + "the player talks to"),
+    pickEl("data-talk-who", ppl.map(p => [p, p]), t.who, p => put(t.talk ? `heard:${p}` : `${t.how}:${p}`)),
+    pickEl("data-talk-how", hows, now, put),
+    h("button", { class: "ghost small", title: "a thing that happens instead", on: { click: () => { delete o[k]; changed(); render(); } } }, "an event instead"));
+}
+
+// ---- triggers: the desk's, talking to someone, or a condition becoming true ----------------------------------------------
 function trigEd(o, k, { prefix = "When", optional = false } = {}) {
   const w = o[k], box = h("div", { class: "trig" });
+  const t = talkWhen(w, talkCtx());
+  if (t) return talkWhenEd(o, k, t, prefix);
   if (isObj(w) && "holds" in w) {
     box.append(h("span", { class: "hint" }, prefix + " this becomes true:"), condEd(w, "holds", ""),
       h("button", { class: "ghost small", title: "a thing that happens instead", on: { click: () => { delete o[k]; changed(); render(); } } }, "an event instead"));
     return box;
   }
   box.append(triggerPill({ get: () => o[k], set: v => { o[k] = v; } }, ctx, { prefix, empty: optional ? "never" : "(choose when)" }));
+  box.append(h("button", { class: "ghost small", "data-act": "talk-to", title: "when the player talks to someone: she's clicked, she's heard out, or one of her conversations is heard to the end",
+    on: { click: () => { o[k] = { holds: `talked:${talkPeople()[0] || ""}` }; changed(); render(); } } }, "talk to…"));
   box.append(h("button", { class: "ghost small", title: "when something becomes true (a fact, a quest done...), not a thing happening",
     on: { click: () => { o[k] = { holds: [] }; changed(); render(); } } }, "or once…"));
   if (optional && w) box.append(h("button", { class: "ghost small", title: "none", on: { click: () => { delete o[k]; changed(); render(); } } }, icon("x", 12)));

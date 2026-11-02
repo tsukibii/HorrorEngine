@@ -81,6 +81,19 @@ try {
   let S = await page.evaluate(() => window.hsdm.S);
   const q2 = S.quests[1];
   ok("a quest added, its step's trigger picked from the desk's palette (picks up the key)", !!q2 && q2.steps.length === 1 && q2.steps[0].done && q2.steps[0].done.pickup === "bedroom_key", JSON.stringify(q2 && q2.steps));
+  // talking as a step (the user: "for quests do we have talk to as a quest"): talk to… Mari, then till “Hello.” is heard out
+  await page.click("[data-step] .trig button[data-act=talk-to]");
+  S = await page.evaluate(() => window.hsdm.S);
+  const talked = JSON.stringify(S.quests[1].steps[0].done);
+  await page.selectOption("[data-step] select[data-talk-how]", "heard:t_hello");
+  S = await page.evaluate(() => window.hsdm.S);
+  const heard = JSON.stringify(S.quests[1].steps[0].done), ttext = await page.textContent("[data-step] .trig.talk");
+  const hows = await page.$$eval("[data-step] select[data-talk-how] option", os => os.map(o => o.textContent));
+  ok(`a step done by talking: talk to… (${talked}), then till her conversation is heard out (${heard}); the choices ${hows.join(" / ")}`,
+    talked === '{"holds":"talked:mari"}' && heard === '{"holds":"heard:t_hello"}' && ttext.includes("the player talks to")
+    && hows.join("|") === "when she's clicked|when she's heard out|when “Hello.” is heard out", ttext);
+  await page.click("[data-step] .trig.talk button:has-text('an event instead')");
+  await page.evaluate(() => { window.hsdm.S.quests[1].steps[0].done = { pickup: "bedroom_key" }; window.hsdm.render(); });   // (as it was for what follows)
   await page.click("text=Add a way, by what's been done");
   await page.click(".card:has-text('What comes next') .cond button:has-text('add')");
   await page.waitForSelector(".mdl input[list]");

@@ -81,8 +81,21 @@ const conds = ["read:letter", "!read:letter", "used:kettle", "gave:mug:mari", "!
   { karma: { at_least: 2 } }, { karma: { at_most: -1 } }, { all: ["read:letter", { step: "find_key" }] }, { any: ["@q_key", { ending: "e_morning" }] }, ["picked:mug", "!entered:hall"]];
 for (const c of conds) {
   const p = W.parseCond(c);
-  examples.push({ what: "cond", value: c, text: W.condText(c), mode: p.mode, clauses: p.items.map(W.clauseText), json: W.buildCond(p.mode, p.items) ?? null });
+  examples.push({ what: "cond", value: c, text: W.condText(c), mode: p.mode, clauses: p.items.map(x => W.clauseText(x)), json: W.buildCond(p.mode, p.items) ?? null });
 }
+// talking: the facts in words when the file's conversations say who's who, a WHEN that's a talk, what a talk can wait for
+const talks = { mari: [{ id: "t_open", lines: [{ text: "You found it." }] }, { id: "t_long", lines: [{ who: "player", text: " " },
+  { text: "I have been waiting here for such a long time that I forgot why." }] }], aoi: [{ id: "t_aoi", title: "At the door", lines: [] }], kai: [] };
+const ctx = { talks };
+for (const c of ["talked:mari", "!talked:mari", "heard:mari", "!heard:mari", "talked:t_open", "!talked:t_open", "heard:t_open", "!heard:t_open",
+  "heard:t_long", "heard:t_aoi", "heard:kai", "heard:nobody", "read:letter", { all: ["heard:t_open", "read:letter"] }, { any: ["talked:aoi", { done: "q_key" }] }]) {
+  const p = W.parseCond(c);
+  examples.push({ what: "cond", value: c, ctx, text: W.condText(c, ctx), mode: p.mode, clauses: p.items.map(x => W.clauseText(x, ctx)), json: W.buildCond(p.mode, p.items) ?? null });
+}
+for (const w of [{ holds: "talked:mari" }, { holds: "heard:mari" }, { holds: "heard:t_open" }, { holds: "talked:t_open" }, { holds: ["heard:t_long"] },
+  { holds: "heard:t_aoi" }, { holds: "!heard:mari" }, { holds: "read:letter" }, { holds: "heard:nobody" }, { holds: ["heard:mari", "read:letter"] }, { use: "mari" }])
+  examples.push({ what: "talkwhen", value: w, ctx, text: W.talkWhenText(w, ctx) });
+for (const who of ["mari", "aoi", "kai"]) examples.push({ what: "talkhows", value: who, ctx, text: JSON.stringify(W.talkHows(talks, who)) });
 
 const out = {
   about: "Written by tools/director_manager/commands_json.mjs from tools/director/commands.js and tools/director_manager/words.js: don't edit it by hand",

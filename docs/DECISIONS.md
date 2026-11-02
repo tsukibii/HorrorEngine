@@ -13,6 +13,11 @@ The user's answers, newest first. They override the plan, the research and the d
   panel, assigning, the Player, the story as when/if/then sentences, the pieces). The user: "looks good", then "work
   through everything": built in four steps (the Build panel; the Player category; the Story tab; the guide and the
   checks), each checked and pushed (GODOT_DIRECTOR §6e).
+- **"For quests do we have talk to as a quest"**: it was there (a step done when she's clicked, or when a conversation
+  is heard out: the sample's quest Mari), but two pickers deep and read by a conversation's id. Offered a first-class
+  *Talk to…* in the Story tab and the Manager, the user said "ye": who, then when it counts (she's clicked, she's
+  heard out, one of her conversations heard out, by its title or first line), kept as the facts the game already writes
+  (`talked:`, `heard:`; `heard:<person>` added), read in the same words in both (`words.js`).
 
 ## 2026-11-01, later (the user: the desk's games in the new system)
 

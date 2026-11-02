@@ -4619,6 +4619,1265 @@
      "!entered:hall"
     ]
    }
+  },
+  {
+   "what": "cond",
+   "value": "talked:mari",
+   "ctx": {
+    "talks": {
+     "mari": [
+      {
+       "id": "t_open",
+       "lines": [
+        {
+         "text": "You found it."
+        }
+       ]
+      },
+      {
+       "id": "t_long",
+       "lines": [
+        {
+         "who": "player",
+         "text": " "
+        },
+        {
+         "text": "I have been waiting here for such a long time that I forgot why."
+        }
+       ]
+      }
+     ],
+     "aoi": [
+      {
+       "id": "t_aoi",
+       "title": "At the door",
+       "lines": []
+      }
+     ],
+     "kai": []
+    }
+   },
+   "text": "they've talked to mari",
+   "mode": "all",
+   "clauses": [
+    "they've talked to mari"
+   ],
+   "json": "talked:mari"
+  },
+  {
+   "what": "cond",
+   "value": "!talked:mari",
+   "ctx": {
+    "talks": {
+     "mari": [
+      {
+       "id": "t_open",
+       "lines": [
+        {
+         "text": "You found it."
+        }
+       ]
+      },
+      {
+       "id": "t_long",
+       "lines": [
+        {
+         "who": "player",
+         "text": " "
+        },
+        {
+         "text": "I have been waiting here for such a long time that I forgot why."
+        }
+       ]
+      }
+     ],
+     "aoi": [
+      {
+       "id": "t_aoi",
+       "title": "At the door",
+       "lines": []
+      }
+     ],
+     "kai": []
+    }
+   },
+   "text": "they haven't talked to mari",
+   "mode": "all",
+   "clauses": [
+    "they haven't talked to mari"
+   ],
+   "json": "!talked:mari"
+  },
+  {
+   "what": "cond",
+   "value": "heard:mari",
+   "ctx": {
+    "talks": {
+     "mari": [
+      {
+       "id": "t_open",
+       "lines": [
+        {
+         "text": "You found it."
+        }
+       ]
+      },
+      {
+       "id": "t_long",
+       "lines": [
+        {
+         "who": "player",
+         "text": " "
+        },
+        {
+         "text": "I have been waiting here for such a long time that I forgot why."
+        }
+       ]
+      }
+     ],
+     "aoi": [
+      {
+       "id": "t_aoi",
+       "title": "At the door",
+       "lines": []
+      }
+     ],
+     "kai": []
+    }
+   },
+   "text": "they've heard mari out",
+   "mode": "all",
+   "clauses": [
+    "they've heard mari out"
+   ],
+   "json": "heard:mari"
+  },
+  {
+   "what": "cond",
+   "value": "!heard:mari",
+   "ctx": {
+    "talks": {
+     "mari": [
+      {
+       "id": "t_open",
+       "lines": [
+        {
+         "text": "You found it."
+        }
+       ]
+      },
+      {
+       "id": "t_long",
+       "lines": [
+        {
+         "who": "player",
+         "text": " "
+        },
+        {
+         "text": "I have been waiting here for such a long time that I forgot why."
+        }
+       ]
+      }
+     ],
+     "aoi": [
+      {
+       "id": "t_aoi",
+       "title": "At the door",
+       "lines": []
+      }
+     ],
+     "kai": []
+    }
+   },
+   "text": "they haven't heard mari out",
+   "mode": "all",
+   "clauses": [
+    "they haven't heard mari out"
+   ],
+   "json": "!heard:mari"
+  },
+  {
+   "what": "cond",
+   "value": "talked:t_open",
+   "ctx": {
+    "talks": {
+     "mari": [
+      {
+       "id": "t_open",
+       "lines": [
+        {
+         "text": "You found it."
+        }
+       ]
+      },
+      {
+       "id": "t_long",
+       "lines": [
+        {
+         "who": "player",
+         "text": " "
+        },
+        {
+         "text": "I have been waiting here for such a long time that I forgot why."
+        }
+       ]
+      }
+     ],
+     "aoi": [
+      {
+       "id": "t_aoi",
+       "title": "At the door",
+       "lines": []
+      }
+     ],
+     "kai": []
+    }
+   },
+   "text": "they've begun mari's “You found it.”",
+   "mode": "all",
+   "clauses": [
+    "they've begun mari's “You found it.”"
+   ],
+   "json": "talked:t_open"
+  },
+  {
+   "what": "cond",
+   "value": "!talked:t_open",
+   "ctx": {
+    "talks": {
+     "mari": [
+      {
+       "id": "t_open",
+       "lines": [
+        {
+         "text": "You found it."
+        }
+       ]
+      },
+      {
+       "id": "t_long",
+       "lines": [
+        {
+         "who": "player",
+         "text": " "
+        },
+        {
+         "text": "I have been waiting here for such a long time that I forgot why."
+        }
+       ]
+      }
+     ],
+     "aoi": [
+      {
+       "id": "t_aoi",
+       "title": "At the door",
+       "lines": []
+      }
+     ],
+     "kai": []
+    }
+   },
+   "text": "they haven't begun mari's “You found it.”",
+   "mode": "all",
+   "clauses": [
+    "they haven't begun mari's “You found it.”"
+   ],
+   "json": "!talked:t_open"
+  },
+  {
+   "what": "cond",
+   "value": "heard:t_open",
+   "ctx": {
+    "talks": {
+     "mari": [
+      {
+       "id": "t_open",
+       "lines": [
+        {
+         "text": "You found it."
+        }
+       ]
+      },
+      {
+       "id": "t_long",
+       "lines": [
+        {
+         "who": "player",
+         "text": " "
+        },
+        {
+         "text": "I have been waiting here for such a long time that I forgot why."
+        }
+       ]
+      }
+     ],
+     "aoi": [
+      {
+       "id": "t_aoi",
+       "title": "At the door",
+       "lines": []
+      }
+     ],
+     "kai": []
+    }
+   },
+   "text": "they've heard out mari's “You found it.”",
+   "mode": "all",
+   "clauses": [
+    "they've heard out mari's “You found it.”"
+   ],
+   "json": "heard:t_open"
+  },
+  {
+   "what": "cond",
+   "value": "!heard:t_open",
+   "ctx": {
+    "talks": {
+     "mari": [
+      {
+       "id": "t_open",
+       "lines": [
+        {
+         "text": "You found it."
+        }
+       ]
+      },
+      {
+       "id": "t_long",
+       "lines": [
+        {
+         "who": "player",
+         "text": " "
+        },
+        {
+         "text": "I have been waiting here for such a long time that I forgot why."
+        }
+       ]
+      }
+     ],
+     "aoi": [
+      {
+       "id": "t_aoi",
+       "title": "At the door",
+       "lines": []
+      }
+     ],
+     "kai": []
+    }
+   },
+   "text": "they haven't heard out mari's “You found it.”",
+   "mode": "all",
+   "clauses": [
+    "they haven't heard out mari's “You found it.”"
+   ],
+   "json": "!heard:t_open"
+  },
+  {
+   "what": "cond",
+   "value": "heard:t_long",
+   "ctx": {
+    "talks": {
+     "mari": [
+      {
+       "id": "t_open",
+       "lines": [
+        {
+         "text": "You found it."
+        }
+       ]
+      },
+      {
+       "id": "t_long",
+       "lines": [
+        {
+         "who": "player",
+         "text": " "
+        },
+        {
+         "text": "I have been waiting here for such a long time that I forgot why."
+        }
+       ]
+      }
+     ],
+     "aoi": [
+      {
+       "id": "t_aoi",
+       "title": "At the door",
+       "lines": []
+      }
+     ],
+     "kai": []
+    }
+   },
+   "text": "they've heard out mari's “I have been waiting here for such a long…”",
+   "mode": "all",
+   "clauses": [
+    "they've heard out mari's “I have been waiting here for such a long…”"
+   ],
+   "json": "heard:t_long"
+  },
+  {
+   "what": "cond",
+   "value": "heard:t_aoi",
+   "ctx": {
+    "talks": {
+     "mari": [
+      {
+       "id": "t_open",
+       "lines": [
+        {
+         "text": "You found it."
+        }
+       ]
+      },
+      {
+       "id": "t_long",
+       "lines": [
+        {
+         "who": "player",
+         "text": " "
+        },
+        {
+         "text": "I have been waiting here for such a long time that I forgot why."
+        }
+       ]
+      }
+     ],
+     "aoi": [
+      {
+       "id": "t_aoi",
+       "title": "At the door",
+       "lines": []
+      }
+     ],
+     "kai": []
+    }
+   },
+   "text": "they've heard out aoi's “At the door”",
+   "mode": "all",
+   "clauses": [
+    "they've heard out aoi's “At the door”"
+   ],
+   "json": "heard:t_aoi"
+  },
+  {
+   "what": "cond",
+   "value": "heard:kai",
+   "ctx": {
+    "talks": {
+     "mari": [
+      {
+       "id": "t_open",
+       "lines": [
+        {
+         "text": "You found it."
+        }
+       ]
+      },
+      {
+       "id": "t_long",
+       "lines": [
+        {
+         "who": "player",
+         "text": " "
+        },
+        {
+         "text": "I have been waiting here for such a long time that I forgot why."
+        }
+       ]
+      }
+     ],
+     "aoi": [
+      {
+       "id": "t_aoi",
+       "title": "At the door",
+       "lines": []
+      }
+     ],
+     "kai": []
+    }
+   },
+   "text": "they've heard kai out",
+   "mode": "all",
+   "clauses": [
+    "they've heard kai out"
+   ],
+   "json": "heard:kai"
+  },
+  {
+   "what": "cond",
+   "value": "heard:nobody",
+   "ctx": {
+    "talks": {
+     "mari": [
+      {
+       "id": "t_open",
+       "lines": [
+        {
+         "text": "You found it."
+        }
+       ]
+      },
+      {
+       "id": "t_long",
+       "lines": [
+        {
+         "who": "player",
+         "text": " "
+        },
+        {
+         "text": "I have been waiting here for such a long time that I forgot why."
+        }
+       ]
+      }
+     ],
+     "aoi": [
+      {
+       "id": "t_aoi",
+       "title": "At the door",
+       "lines": []
+      }
+     ],
+     "kai": []
+    }
+   },
+   "text": "they've heard nobody",
+   "mode": "all",
+   "clauses": [
+    "they've heard nobody"
+   ],
+   "json": "heard:nobody"
+  },
+  {
+   "what": "cond",
+   "value": "read:letter",
+   "ctx": {
+    "talks": {
+     "mari": [
+      {
+       "id": "t_open",
+       "lines": [
+        {
+         "text": "You found it."
+        }
+       ]
+      },
+      {
+       "id": "t_long",
+       "lines": [
+        {
+         "who": "player",
+         "text": " "
+        },
+        {
+         "text": "I have been waiting here for such a long time that I forgot why."
+        }
+       ]
+      }
+     ],
+     "aoi": [
+      {
+       "id": "t_aoi",
+       "title": "At the door",
+       "lines": []
+      }
+     ],
+     "kai": []
+    }
+   },
+   "text": "they've read letter",
+   "mode": "all",
+   "clauses": [
+    "they've read letter"
+   ],
+   "json": "read:letter"
+  },
+  {
+   "what": "cond",
+   "value": {
+    "all": [
+     "heard:t_open",
+     "read:letter"
+    ]
+   },
+   "ctx": {
+    "talks": {
+     "mari": [
+      {
+       "id": "t_open",
+       "lines": [
+        {
+         "text": "You found it."
+        }
+       ]
+      },
+      {
+       "id": "t_long",
+       "lines": [
+        {
+         "who": "player",
+         "text": " "
+        },
+        {
+         "text": "I have been waiting here for such a long time that I forgot why."
+        }
+       ]
+      }
+     ],
+     "aoi": [
+      {
+       "id": "t_aoi",
+       "title": "At the door",
+       "lines": []
+      }
+     ],
+     "kai": []
+    }
+   },
+   "text": "they've heard out mari's “You found it.” and they've read letter",
+   "mode": "all",
+   "clauses": [
+    "they've heard out mari's “You found it.”",
+    "they've read letter"
+   ],
+   "json": {
+    "all": [
+     "heard:t_open",
+     "read:letter"
+    ]
+   }
+  },
+  {
+   "what": "cond",
+   "value": {
+    "any": [
+     "talked:aoi",
+     {
+      "done": "q_key"
+     }
+    ]
+   },
+   "ctx": {
+    "talks": {
+     "mari": [
+      {
+       "id": "t_open",
+       "lines": [
+        {
+         "text": "You found it."
+        }
+       ]
+      },
+      {
+       "id": "t_long",
+       "lines": [
+        {
+         "who": "player",
+         "text": " "
+        },
+        {
+         "text": "I have been waiting here for such a long time that I forgot why."
+        }
+       ]
+      }
+     ],
+     "aoi": [
+      {
+       "id": "t_aoi",
+       "title": "At the door",
+       "lines": []
+      }
+     ],
+     "kai": []
+    }
+   },
+   "text": "they've talked to aoi or quest q_key is done",
+   "mode": "any",
+   "clauses": [
+    "they've talked to aoi",
+    "quest q_key is done"
+   ],
+   "json": {
+    "any": [
+     "talked:aoi",
+     {
+      "done": "q_key"
+     }
+    ]
+   }
+  },
+  {
+   "what": "talkwhen",
+   "value": {
+    "holds": "talked:mari"
+   },
+   "ctx": {
+    "talks": {
+     "mari": [
+      {
+       "id": "t_open",
+       "lines": [
+        {
+         "text": "You found it."
+        }
+       ]
+      },
+      {
+       "id": "t_long",
+       "lines": [
+        {
+         "who": "player",
+         "text": " "
+        },
+        {
+         "text": "I have been waiting here for such a long time that I forgot why."
+        }
+       ]
+      }
+     ],
+     "aoi": [
+      {
+       "id": "t_aoi",
+       "title": "At the door",
+       "lines": []
+      }
+     ],
+     "kai": []
+    }
+   },
+   "text": "the player talks to mari"
+  },
+  {
+   "what": "talkwhen",
+   "value": {
+    "holds": "heard:mari"
+   },
+   "ctx": {
+    "talks": {
+     "mari": [
+      {
+       "id": "t_open",
+       "lines": [
+        {
+         "text": "You found it."
+        }
+       ]
+      },
+      {
+       "id": "t_long",
+       "lines": [
+        {
+         "who": "player",
+         "text": " "
+        },
+        {
+         "text": "I have been waiting here for such a long time that I forgot why."
+        }
+       ]
+      }
+     ],
+     "aoi": [
+      {
+       "id": "t_aoi",
+       "title": "At the door",
+       "lines": []
+      }
+     ],
+     "kai": []
+    }
+   },
+   "text": "the player hears mari out"
+  },
+  {
+   "what": "talkwhen",
+   "value": {
+    "holds": "heard:t_open"
+   },
+   "ctx": {
+    "talks": {
+     "mari": [
+      {
+       "id": "t_open",
+       "lines": [
+        {
+         "text": "You found it."
+        }
+       ]
+      },
+      {
+       "id": "t_long",
+       "lines": [
+        {
+         "who": "player",
+         "text": " "
+        },
+        {
+         "text": "I have been waiting here for such a long time that I forgot why."
+        }
+       ]
+      }
+     ],
+     "aoi": [
+      {
+       "id": "t_aoi",
+       "title": "At the door",
+       "lines": []
+      }
+     ],
+     "kai": []
+    }
+   },
+   "text": "the player hears out mari's “You found it.”"
+  },
+  {
+   "what": "talkwhen",
+   "value": {
+    "holds": "talked:t_open"
+   },
+   "ctx": {
+    "talks": {
+     "mari": [
+      {
+       "id": "t_open",
+       "lines": [
+        {
+         "text": "You found it."
+        }
+       ]
+      },
+      {
+       "id": "t_long",
+       "lines": [
+        {
+         "who": "player",
+         "text": " "
+        },
+        {
+         "text": "I have been waiting here for such a long time that I forgot why."
+        }
+       ]
+      }
+     ],
+     "aoi": [
+      {
+       "id": "t_aoi",
+       "title": "At the door",
+       "lines": []
+      }
+     ],
+     "kai": []
+    }
+   },
+   "text": "the player begins mari's “You found it.”"
+  },
+  {
+   "what": "talkwhen",
+   "value": {
+    "holds": [
+     "heard:t_long"
+    ]
+   },
+   "ctx": {
+    "talks": {
+     "mari": [
+      {
+       "id": "t_open",
+       "lines": [
+        {
+         "text": "You found it."
+        }
+       ]
+      },
+      {
+       "id": "t_long",
+       "lines": [
+        {
+         "who": "player",
+         "text": " "
+        },
+        {
+         "text": "I have been waiting here for such a long time that I forgot why."
+        }
+       ]
+      }
+     ],
+     "aoi": [
+      {
+       "id": "t_aoi",
+       "title": "At the door",
+       "lines": []
+      }
+     ],
+     "kai": []
+    }
+   },
+   "text": "the player hears out mari's “I have been waiting here for such a long…”"
+  },
+  {
+   "what": "talkwhen",
+   "value": {
+    "holds": "heard:t_aoi"
+   },
+   "ctx": {
+    "talks": {
+     "mari": [
+      {
+       "id": "t_open",
+       "lines": [
+        {
+         "text": "You found it."
+        }
+       ]
+      },
+      {
+       "id": "t_long",
+       "lines": [
+        {
+         "who": "player",
+         "text": " "
+        },
+        {
+         "text": "I have been waiting here for such a long time that I forgot why."
+        }
+       ]
+      }
+     ],
+     "aoi": [
+      {
+       "id": "t_aoi",
+       "title": "At the door",
+       "lines": []
+      }
+     ],
+     "kai": []
+    }
+   },
+   "text": "the player hears out aoi's “At the door”"
+  },
+  {
+   "what": "talkwhen",
+   "value": {
+    "holds": "!heard:mari"
+   },
+   "ctx": {
+    "talks": {
+     "mari": [
+      {
+       "id": "t_open",
+       "lines": [
+        {
+         "text": "You found it."
+        }
+       ]
+      },
+      {
+       "id": "t_long",
+       "lines": [
+        {
+         "who": "player",
+         "text": " "
+        },
+        {
+         "text": "I have been waiting here for such a long time that I forgot why."
+        }
+       ]
+      }
+     ],
+     "aoi": [
+      {
+       "id": "t_aoi",
+       "title": "At the door",
+       "lines": []
+      }
+     ],
+     "kai": []
+    }
+   },
+   "text": ""
+  },
+  {
+   "what": "talkwhen",
+   "value": {
+    "holds": "read:letter"
+   },
+   "ctx": {
+    "talks": {
+     "mari": [
+      {
+       "id": "t_open",
+       "lines": [
+        {
+         "text": "You found it."
+        }
+       ]
+      },
+      {
+       "id": "t_long",
+       "lines": [
+        {
+         "who": "player",
+         "text": " "
+        },
+        {
+         "text": "I have been waiting here for such a long time that I forgot why."
+        }
+       ]
+      }
+     ],
+     "aoi": [
+      {
+       "id": "t_aoi",
+       "title": "At the door",
+       "lines": []
+      }
+     ],
+     "kai": []
+    }
+   },
+   "text": ""
+  },
+  {
+   "what": "talkwhen",
+   "value": {
+    "holds": "heard:nobody"
+   },
+   "ctx": {
+    "talks": {
+     "mari": [
+      {
+       "id": "t_open",
+       "lines": [
+        {
+         "text": "You found it."
+        }
+       ]
+      },
+      {
+       "id": "t_long",
+       "lines": [
+        {
+         "who": "player",
+         "text": " "
+        },
+        {
+         "text": "I have been waiting here for such a long time that I forgot why."
+        }
+       ]
+      }
+     ],
+     "aoi": [
+      {
+       "id": "t_aoi",
+       "title": "At the door",
+       "lines": []
+      }
+     ],
+     "kai": []
+    }
+   },
+   "text": ""
+  },
+  {
+   "what": "talkwhen",
+   "value": {
+    "holds": [
+     "heard:mari",
+     "read:letter"
+    ]
+   },
+   "ctx": {
+    "talks": {
+     "mari": [
+      {
+       "id": "t_open",
+       "lines": [
+        {
+         "text": "You found it."
+        }
+       ]
+      },
+      {
+       "id": "t_long",
+       "lines": [
+        {
+         "who": "player",
+         "text": " "
+        },
+        {
+         "text": "I have been waiting here for such a long time that I forgot why."
+        }
+       ]
+      }
+     ],
+     "aoi": [
+      {
+       "id": "t_aoi",
+       "title": "At the door",
+       "lines": []
+      }
+     ],
+     "kai": []
+    }
+   },
+   "text": ""
+  },
+  {
+   "what": "talkwhen",
+   "value": {
+    "use": "mari"
+   },
+   "ctx": {
+    "talks": {
+     "mari": [
+      {
+       "id": "t_open",
+       "lines": [
+        {
+         "text": "You found it."
+        }
+       ]
+      },
+      {
+       "id": "t_long",
+       "lines": [
+        {
+         "who": "player",
+         "text": " "
+        },
+        {
+         "text": "I have been waiting here for such a long time that I forgot why."
+        }
+       ]
+      }
+     ],
+     "aoi": [
+      {
+       "id": "t_aoi",
+       "title": "At the door",
+       "lines": []
+      }
+     ],
+     "kai": []
+    }
+   },
+   "text": ""
+  },
+  {
+   "what": "talkhows",
+   "value": "mari",
+   "ctx": {
+    "talks": {
+     "mari": [
+      {
+       "id": "t_open",
+       "lines": [
+        {
+         "text": "You found it."
+        }
+       ]
+      },
+      {
+       "id": "t_long",
+       "lines": [
+        {
+         "who": "player",
+         "text": " "
+        },
+        {
+         "text": "I have been waiting here for such a long time that I forgot why."
+        }
+       ]
+      }
+     ],
+     "aoi": [
+      {
+       "id": "t_aoi",
+       "title": "At the door",
+       "lines": []
+      }
+     ],
+     "kai": []
+    }
+   },
+   "text": "[[\"talked:mari\",\"when she's clicked\"],[\"heard:mari\",\"when she's heard out\"],[\"heard:t_open\",\"when “You found it.” is heard out\"],[\"heard:t_long\",\"when “I have been waiting here for such a long…” is heard out\"]]"
+  },
+  {
+   "what": "talkhows",
+   "value": "aoi",
+   "ctx": {
+    "talks": {
+     "mari": [
+      {
+       "id": "t_open",
+       "lines": [
+        {
+         "text": "You found it."
+        }
+       ]
+      },
+      {
+       "id": "t_long",
+       "lines": [
+        {
+         "who": "player",
+         "text": " "
+        },
+        {
+         "text": "I have been waiting here for such a long time that I forgot why."
+        }
+       ]
+      }
+     ],
+     "aoi": [
+      {
+       "id": "t_aoi",
+       "title": "At the door",
+       "lines": []
+      }
+     ],
+     "kai": []
+    }
+   },
+   "text": "[[\"talked:aoi\",\"when she's clicked\"],[\"heard:aoi\",\"when she's heard out\"],[\"heard:t_aoi\",\"when “At the door” is heard out\"]]"
+  },
+  {
+   "what": "talkhows",
+   "value": "kai",
+   "ctx": {
+    "talks": {
+     "mari": [
+      {
+       "id": "t_open",
+       "lines": [
+        {
+         "text": "You found it."
+        }
+       ]
+      },
+      {
+       "id": "t_long",
+       "lines": [
+        {
+         "who": "player",
+         "text": " "
+        },
+        {
+         "text": "I have been waiting here for such a long time that I forgot why."
+        }
+       ]
+      }
+     ],
+     "aoi": [
+      {
+       "id": "t_aoi",
+       "title": "At the door",
+       "lines": []
+      }
+     ],
+     "kai": []
+    }
+   },
+   "text": "[[\"talked:kai\",\"when she's clicked\"],[\"heard:kai\",\"when she's heard out\"]]"
   }
  ]
 }

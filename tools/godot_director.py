@@ -654,6 +654,11 @@ def editor_check(out):
          and rep.get("story_reads") == "When the player enters Kitchen doorway, if they've read letter: scare: a jump scare: … and think “Who's there?”. Every time."),
         ("Try this moment: the quest, the fact its ONLY IF asks for, the player by the doorway (%s); all of it undone, the file as it was (%s)" % (rep.get("story_try"), rep.get("story_undone")),
          rep.get("story_try") is True and rep.get("story_undone") is True),
+        ("Talk to…: the sample's talk step in words (%s), its pickers (%s), changed to till she's heard out at all (%s) and undone (%s)"
+         % (" | ".join(rep.get("story_talk_line", [])), " / ".join(rep.get("story_talk_pickers", [])), rep.get("story_talk_heard"), rep.get("story_talk_undone")),
+         rep.get("story_talk_line") == ["WHEN   the player hears out Mari's “You found it.”, tick “Talk to Mari”"]
+         and rep.get("story_talk_pickers") == ["Mari", "when “You found it.” is heard out", "the player talks to"]
+         and rep.get("story_talk_heard") is True and rep.get("story_talk_undone") is True),
         ("a ready-made moment dropped inside the doorway in the 3D view lands on it, the new area taken back (%s); undone (%s)" % (rep.get("story_dropped"), rep.get("story_drop_undone")),
          rep.get("story_dropped") is True and rep.get("story_drop_undone") is True),
         ("the panel's Test page: %s, and the game checked as it will play (%s)" % (" and ".join(rep.get("panel_test_plays", [])), rep.get("panel_test", "")),

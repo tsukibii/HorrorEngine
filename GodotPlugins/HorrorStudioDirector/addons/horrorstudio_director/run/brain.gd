@@ -2,7 +2,8 @@ extends Node
 ## The Director at play (docs/GODOT_DIRECTOR.md §2, DECISIONS 2026-11-01: "the director script just puppeteers the whole
 ## game"): beside the runtime, it never touches the scene's nodes itself. It writes down what the player does as facts
 ## (the run's flags, so a save keeps them: used:<id>, picked:<item>, read:<note>, entered:<area>, left:<area>,
-## talked:<id> (a conversation begun), heard:<id> (one finished), answered:<talk>:<answer>, gave:<item>:<who>,
+## talked:<person> and talked:<id> (she's clicked: the conversation she offers begun), heard:<id> and heard:<person> (one
+## played to its end), answered:<talk>:<answer>, gave:<item>:<who>,
 ## step:<id>, failed:<id>, done:<quest>, ending:<id>), keeps
 ## every condition the story asks true or false as a flag of its own (?c<n>: the runtime's beats, choices, lines and
 ## answers read them as plain flags), keeps on the one conversation each person offers now (?talk__<who>__<id>), and

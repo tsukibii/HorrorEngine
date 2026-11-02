@@ -380,6 +380,22 @@ line a child could say), its warning, who hunts and where to hide, and what each
 and is a fact, <code>result:q_hide:found</code>, for what comes next.</li>
 </ul>
 <figure class="wide"><img src="img/m_quests.jpg" width="1400" height="940" alt="The Director Manager on the quest A drink: its id, title, objective, how it finishes, its step Give Mari the mug done when the mug is given to Mari, and her answer to anything else: Nah, that's not what I want"><figcaption>The Director Manager on the quest <i>A drink</i>: one step, done when the mug is given to Mari.</figcaption></figure>
+<h3>Talking to someone</h3>
+<p>A step can be <b>talking to someone</b> ("Talk to Mari"): <span class="ui">Talk to someone…</span> at the top of
+<b>WHEN</b> in the Story tab (<span class="ui">talk to…</span> in the Manager), then who, and when it counts:</p>
+<ul>
+<li><b>when she's clicked</b>: as soon as she starts a conversation, whatever she says;</li>
+<li><b>when she's heard out</b>: once a conversation with her has been heard to its end, whichever it was;</li>
+<li><b>when “You found it.” is heard out</b>: one conversation of hers in particular, named by its title or its first
+line. The sample's third quest is this one: <i>Talk to Mari</i> ticks once she's said “You found it.” and you've
+answered her.</li>
+</ul>
+<p>The same works for a moment's <b>WHEN</b> (when the player talks to her, something happens), and as an <b>ONLY IF</b>
+(<i>they've talked to Mari</i>, <i>they've heard out Mari's “You found it.”</i>). Which conversation she offers is up to
+her conversations' own <i>offered when</i> (§8): a step that waits for a particular one ticks only once it's the one
+she offers.</p>
+<figure class="wide"><img src="img/e_panel_talk.jpg" width="1211" height="364" alt="The panel's Story tab on the quest Mari: its step Talk to Mari open, TICKED WHEN the player talks to Mari, when “You found it.” is heard out">
+<figcaption>The sample's talk step in the Story tab: <i>the player talks to Mari</i>, and when it counts.</figcaption></figure>
 <h3>Giving something to someone</h3>
 <p>A step can wait for the player to <b>give</b> something to someone (<span class="ui">Something is given to
 someone</span>: the mug to Mari). While that step is on, clicking her with something in the hand offers it to her
@@ -408,7 +424,8 @@ kept with the run (a save keeps them), and anything in the story can ask for the
 <tr><td><code>picked:bedroom_key</code></td><td>picks up an item</td></tr>
 <tr><td><code>read:letter</code></td><td>reads a note</td></tr>
 <tr><td><code>entered:kitchen</code>, <code>left:kitchen</code></td><td>walks into, or out of, a room or an area</td></tr>
-<tr><td><code>talked:t_open</code>, <code>heard:t_open</code></td><td>begins a conversation; hears it out</td></tr>
+<tr><td><code>talked:mari</code>, <code>talked:t_open</code></td><td>clicks someone and she starts a conversation (her, and which one)</td></tr>
+<tr><td><code>heard:mari</code>, <code>heard:t_open</code></td><td>hears a conversation to its end (her, and which one)</td></tr>
 <tr><td><code>answered:t_open:yes</code></td><td>picks an answer</td></tr>
 <tr><td><code>gave:mug:mari</code></td><td>gives something to someone</td></tr>
 <tr><td><code>step:find_key</code>, <code>failed:give_mug</code></td><td>ticks a step; fails one</td></tr>
@@ -446,7 +463,7 @@ it. In the middle is what happens in that quest: its steps (<i>WHEN Mug is given
 mug”</i>) and its moments. Click one to open it and pick each blue word:</p>
 <ul>
 <li><b>WHEN</b>: what happens (the player enters, uses, reads, picks up, is given…), and what to (the scene's own areas, things, people);
-or <i>once a condition becomes true</i>.</li>
+<i>Talk to someone…</i> (§6); or <i>once a condition becomes true</i>.</li>
 <li><b>ONLY IF</b>: what must already be so, as words (<i>they've read letter</i>). <span class="ui">+ and…</span> adds one
 from everything the scene and the story have; click one to turn it into its opposite (<i>they haven't read letter</i>),
 ✕ takes it away, and <i>and</i>/<i>or</i> between them says whether all or any must hold.</li>

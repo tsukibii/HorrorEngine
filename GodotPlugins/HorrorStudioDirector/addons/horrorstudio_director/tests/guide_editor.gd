@@ -264,6 +264,24 @@ func _process(dt: float) -> void:
 				return
 			_shot("e_panel_story", _panel_rect())
 			panel.custom_minimum_size.y = tall_was
+			panel.story.quest = "q_talk"                     # the talk step: the player talks to Mari, when it counts
+			panel.story.opened = "s:talk_mari"
+			panel.story.refresh()
+			at = t
+			phase = 15
+		15:
+			if t - at < 1.5:
+				return
+			var tb: Control = panel.story.mid.find_child("Step_talk_mari", true, false)
+			var tsc: ScrollContainer = panel.story.mid_scroll
+			if tb != null:
+				tsc.scroll_vertical = int(tb.get_global_rect().position.y - tsc.get_global_rect().position.y + tsc.scroll_vertical - 8 * EditorInterface.get_editor_scale())
+			at = t
+			phase = 16
+		16:
+			if t - at < 0.5:
+				return
+			_shot("e_panel_talk", _panel_rect())
 			panel.show_page("build")
 			print("GUIDEEDITOR " + JSON.stringify({"made": made}))
 			get_tree().quit()

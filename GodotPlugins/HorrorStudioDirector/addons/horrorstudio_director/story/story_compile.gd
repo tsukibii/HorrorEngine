@@ -329,11 +329,13 @@ func _talks() -> void:
 		brain["talks"][who] = list
 
 
+## clicking someone plays the conversation she offers now; heard to its end, the facts heard:<it> and heard:<her> (a
+## step or a moment can wait for one conversation, or for her to be heard out at all: the panel's Talk to…)
 func _talk_beats(st: Dictionary) -> void:
 	for who in brain["talks"]:
 		for t in brain["talks"][who]:
 			st["beats"].append({"id": "talk__%s__%s" % [who, t["id"]], "when": {"use": who}, "if": [t["flag"]],
-				"do": [{"scene": t["scene"]}, {"flag": "heard:" + str(t["id"])}], "repeat": true, "every": 0.1, "optional": true})
+				"do": [{"scene": t["scene"]}, {"flag": "heard:" + str(t["id"])}, {"flag": "heard:" + str(who)}], "repeat": true, "every": 0.1, "optional": true})
 
 
 func _scene(who: String, t: Dictionary, tid: String) -> Dictionary:

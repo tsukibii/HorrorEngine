@@ -83,8 +83,10 @@ the grade, the HUD's theme, `lighting: off` for a flat test light, the counters;
   ones you name and describe: hidden trackers, the Manager's list).
 
 **Conditions** (`core/cond.gd`) read **facts**, which the brain writes down as the player plays: `used:<id>`,
-`picked:<item>`, `read:<note>`, `entered:<area>`, `left:<area>`, `talked:<id>` (a conversation begun), `heard:<id>`
-(heard out), `answered:<talk>:<answer>`, `gave:<item>:<who>`, `step:<id>`, `failed:<id>`, `done:<quest>`,
+`picked:<item>`, `read:<note>`, `entered:<area>`, `left:<area>`, `talked:<person>` and `talked:<id>` (she's clicked
+and the conversation she offers begins), `heard:<id>` and `heard:<person>` (a conversation heard to its end; the
+person's since the user's "for quests do we have talk to as a quest", DECISIONS 2026-11-01, evening: a step or a moment
+waits for one through *Talk to…*), `answered:<talk>:<answer>`, `gave:<item>:<who>`, `step:<id>`, `failed:<id>`, `done:<quest>`,
 `result:<quest>:<result>` (how its round went: `result:q_hide:found`), `ending:<id>`, `achievement:<id>`, and your
 own flags. A condition is a fact (`"read:letter"`, `"!read:letter"`),
 `{"all": [...]}`, `{"any": [...]}`, `{"not": ...}`, `{"quest": id}` (on now), `{"done": id}`, `{"step": id}`,
@@ -199,7 +201,8 @@ launcher's Godot section too): the page that writes the Director file, over the 
 
 - **Quests**: the list in play order (▲ ▼ to reorder); a quest's id, title, objective, the level it plays on and where
   it starts, how it finishes, a checkpoint, a time limit and what then, a chapter card; its **steps** (the text, done
-  when and fails when: the desk's own trigger dialog, or *or once…* for a condition becoming true; a time; hidden; asked
+  when and fails when: the desk's own trigger dialog, *talk to…* (who, and when it counts, as the Story tab's *Talk to
+  someone…*), or *or once…* for a condition becoming true; a time; hidden; asked
   by; for a `gave` step, the answer to anything else given and whether it fails); what happens as it starts and when
   it's done (the desk's command lists: the palette, the forms, the rows reading as sentences); **what comes next**:
   each way's condition and where it goes, otherwise the next quest.
@@ -361,8 +364,10 @@ screen), so the 3D view stays in sight and a card drags straight into it. Three 
   the Manager* for conversations, states, facts and achievements. In the middle the quest being edited (its title and
   what's on the screen, ↑ ↓ in the game's order) and **what happens in it, each a sentence**: its steps (*WHEN Mug is
   given to Mari, tick “Give Mari the mug”*, and the answer to the wrong thing given) and the moments that play in it
-  (its own and the whole game's). One opens at a time: **WHEN** (every trigger by its label, its blue words picked from
-  the scene's ids, or *once a condition becomes true*), **ONLY IF** (the clauses as chips in words, *they've read
+  (its own and the whole game's). One opens at a time: **WHEN** (*Talk to someone…*: who, and when it counts: she's
+  clicked, she's heard out, or one of her conversations heard out, by its title or first line, kept as the talk facts
+  `{"holds": "heard:t_open"}`; every trigger by its label, its blue words picked from the scene's ids; or *once a
+  condition becomes true*), **ONLY IF** (the clauses as chips in words, *they've read
   letter*: a click says *not*, ✕ takes it away, *and*/*or* between them, *+ and…* offers every fact the scene and the
   file have), **THEN** (the commands in order, each its verb and its blue words, ↑ ↓ ✕, *+ Then…* by group), **HOW
   OFTEN** (*Just once*, *Every time*), **It reads as** (the whole sentence), *Try this moment* (the game from this quest
