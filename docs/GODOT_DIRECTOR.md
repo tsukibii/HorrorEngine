@@ -431,10 +431,25 @@ Story tab on it. **Cards dragged**: every card's place kept in the file's `chart
 scale 1; the Manager keeps it as it is), on the editor's undo; *Lay it out again* forgets them, *Fit the view* shows it
 all. It reads and writes the file through the Story tab (its `f` and `change`; the tab's `changed` signal draws the
 chart again), so the two never disagree, and it reads the file again when it changes on disk (the Manager saved it) or
-the running game moves on (▶ on the quest it's in, ✓ on those done). Measured (DIRECTOR's editor part): the main screen
+the running game moves on (▶ on the quest it's in, ✓ on those done).
+
+**Setting it up in the chart** (step 2; the user: "we should be allowed to set up the quests too in this flow (without
+the detail)… set the branching up in the flowchart"; `HSFlow`'s edits, each inside the Story tab's `change`, on the
+editor's undo): a right-click (or *+ Quest*, *+ Ending*) makes a card there (`add_quest`: at the end of the list, the
+quest that was last keeping its way to an ending written down; the first of a file its Intro) and its title is typed on
+it (F2 again); a way's dot dragged onto a card sends it there (`set_way`: a branch's `go`, a then written only when it
+isn't the list's next anyway, a time limit's `on_timeout`), into empty space offers a new card there or *Take this way
+away* (`cut_way`); on the right, the clicked quest's ways: each if's condition as the Story tab's chips, where it goes
+picked from the cards, ↑ ↓ (the first that holds wins), ✕, and *+ A way: if…* (`add_branch`, before its then); Delete
+(asked first) takes a card away (`remove`: a way into a quest goes on where that quest went, into an ending is taken
+away; the quest's own moments with it); *Number them by the flow* (`renumber`) puts the list in the order the story
+reaches them, every way written down first and made plain after, so the game plays the same (measured on the desk
+games too). Measured (DIRECTOR's editor part): the main screen
 found and shown, a card for each of the sample's six quests and two endings, its seven arrows, the night's branch in
 words, the cards in reading order, a card's prerequisites and the start said, a card opened in the Story tab, a card
-moved (every card's place kept) and undone.
+moved (every card's place kept) and undone; a new quest put and titled, the bedroom's then dropped on it and its own on
+to the night, a branch on the key by a fact sent to it, the quests numbered by the flow with the same arrows, the new
+quest deleted (the key's branch and the bedroom going on to the night), all eight changes undone.
 
 ## 7. Where you are
 

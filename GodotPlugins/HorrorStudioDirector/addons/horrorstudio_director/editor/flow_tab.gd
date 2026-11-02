@@ -6,8 +6,13 @@ extends PanelContainer
 ## them as the game plays them, each coloured by its kind (then, if, otherwise, out of time, a desk choice's answer, a
 ## trigger cutscene's jump). Click a card: what leads to it (its prerequisites, lit on the chart) and where it goes, on
 ## the right; double-click it: open in the panel's Story tab. Cards dragged where you want them, their places kept in
-## the file's `chart` on the editor's undo. It reads and writes the file through the Story tab (its `f` and `change`),
-## so the two never disagree.
+## the file's `chart`. Setting it up (the user: "we should be allowed to set up the quests too in this flow (without the
+## detail)… set the branching up in the flowchart"): a right-click (or + Quest, + Ending) makes a card there, its title
+## typed on it (F2 again); a way's dot dragged onto a card sends it there, into empty space makes a new card there or
+## takes the way away; on the right each way's condition and where it goes, picked, + A way: if… a branch; Delete takes
+## a card away (what pointed at it goes on where it went); Number them by the flow puts the list in the order the story
+## reaches them, the game playing the same (story/flow.gd does each change). Everything on the editor's undo. It reads
+## and writes the file through the Story tab (its `f` and `change`), so the two never disagree.
 
 const Glyphs := preload("res://addons/horrorstudio_director/editor/glyphs.gd")
 const BuildTab := preload("res://addons/horrorstudio_director/editor/build_tab.gd")
@@ -55,6 +60,13 @@ var _dirty := true
 var _poll := 0.0
 var _fitted := false
 var _hooked = null                 # the Story tab whose `changed` this listens to
+var status: Label                  # what just happened, or why not
+var _menu: PopupMenu
+var _menu_acts := {}
+var _confirm: ConfirmationDialog
+var _deleting: Array = []
+var _rename_next := ""             # the card made a moment ago: its title typed once it's drawn
+var _renaming := ""
 
 
 func _ready() -> void:
@@ -82,10 +94,24 @@ func _ready() -> void:
 	counts = BuildTab._label("", 12, C_MUTED)
 	counts.name = "Counts"
 	head.add_child(counts)
-	var gap := Control.new()
-	gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	head.add_child(gap)
-	head.add_child(BuildTab._label("Drag a card to move it · click one: what leads to it · double-click: open it in the Story tab", 12, C_FAINT))
+	status = BuildTab._label("Right-click: a new quest · drag a way's dot onto a card · click a card: what leads to it", 12, C_FAINT)
+	status.name = "Status"
+	status.clip_text = true
+	status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	head.add_child(status)
+	for spec in [["AddQuest", "+ Quest", "A new quest card (right-click on the chart: one where you click)", "quest"],
+			["AddEnding", "+ Ending", "A new ending card", "ending"]]:
+		var b := _small(spec[1])
+		b.name = spec[0]
+		b.tooltip_text = spec[2]
+		b.pressed.connect(func(): add_card(spec[3], _view_middle()))
+		head.add_child(b)
+	var num := _small("Number them by the flow")
+	num.name = "Renumber"
+	num.tooltip_text = "Put the quests' list in the order the story reaches them (the game plays the same)"
+	num.pressed.connect(renumber)
+	head.add_child(num)
 	var fit_b := _small("Fit the view")
 	fit_b.name = "Fit"
 	fit_b.pressed.connect(fit)
@@ -113,6 +139,17 @@ func _ready() -> void:
 	graph.node_selected.connect(func(n: Node): pick(str(n.get_meta("hs_id", ""))))
 	graph.node_deselected.connect(func(_n: Node): _deselected.call_deferred())
 	graph.end_node_move.connect(_moved)
+	graph.right_disconnects = true
+	graph.connection_request.connect(_on_connect)
+	graph.disconnection_request.connect(func(a, ap, b, bp): graph.disconnect_node(a, ap, b, bp))   # the file changes when it's dropped
+	graph.connection_to_empty.connect(_on_to_empty)
+	graph.connection_drag_ended.connect(func(): _dirty = true)
+	graph.popup_request.connect(_on_popup)
+	graph.delete_nodes_request.connect(_on_delete)
+	graph.gui_input.connect(func(ev: InputEvent):
+		if ev is InputEventKey and ev.pressed and ev.keycode == KEY_F2 and picked != "":
+			rename(picked)
+			graph.accept_event())
 	body.add_child(graph)
 	var ss := ScrollContainer.new()
 	ss.name = "Side"
@@ -124,6 +161,17 @@ func _ready() -> void:
 	for k in ["left", "right", "top", "bottom"]:
 		sm.add_theme_constant_override("margin_" + k, int(14 * s))
 	ss.add_child(sm)
+	_menu = PopupMenu.new()
+	_menu.name = "Menu"
+	_menu.id_pressed.connect(func(i):
+		if _menu_acts.has(i):
+			_menu_acts[i].call())
+	add_child(_menu)
+	_confirm = ConfirmationDialog.new()
+	_confirm.name = "ConfirmDelete"
+	_confirm.title = "Delete"
+	_confirm.confirmed.connect(func(): delete_cards(_deleting))
+	add_child(_confirm)
 	side = VBoxContainer.new()
 	side.name = "SideBox"
 	side.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -211,6 +259,9 @@ func redraw() -> void:
 	_light()
 	if not _fitted:
 		fit.call_deferred()
+	if _rename_next != "" and cards.has(_rename_next):
+		rename.call_deferred(_rename_next)
+	_rename_next = ""
 
 
 ## how many columns a row of the chart has before it wraps: as many as the view shows at a readable size
@@ -309,7 +360,12 @@ func _card(c: Dictionary, has_during: bool) -> GraphNode:
 	var id := str(c["id"])
 	g.gui_input.connect(func(ev: InputEvent):
 		if ev is InputEventMouseButton and ev.double_click and ev.button_index == MOUSE_BUTTON_LEFT:
-			open_in_story(id))
+			open_in_story(id)
+		elif ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_RIGHT:
+			g.selected = true
+			pick(id)
+			card_menu(id, g.get_screen_position() + ev.position * graph.zoom)
+			g.accept_event())
 	g.tooltip_text = KIND_NAME.get(c["kind"], "")
 	return g
 
@@ -423,10 +479,13 @@ func _side() -> void:
 	if ins.is_empty() and picked != str(ch.get("start", "")):
 		side.add_child(BuildTab._wrap(BuildTab._label("Nothing leads here: the player never gets here.", 13, C_WARN)))
 	side.add_child(_head("Where it goes"))
-	for o in c["outs"]:
-		var to := HSFlow.card_of(ch, str(o["to"]))
-		var target := _title(to) if not to.is_empty() else ("%s (not a quest or an ending)" % str(o["to"]) if str(o["to"]) != "" else "nowhere yet")
-		side.add_child(_way(str(o["label"]), "→ " + target, KIND_COLOR.get(o["kind"], C_BLUE)))
+	if c.get("editable", false) and c["kind"] in ["intro", "quest", "round"]:
+		_ways(c)
+	else:
+		for o in c["outs"]:
+			var to := HSFlow.card_of(ch, str(o["to"]))
+			var target := _title(to) if not to.is_empty() else ("%s (not a quest or an ending)" % str(o["to"]) if str(o["to"]) != "" else "nowhere yet")
+			side.add_child(_way(str(o["label"]), "→ " + target, KIND_COLOR.get(o["kind"], C_BLUE)))
 	if (c["outs"] as Array).is_empty():
 		side.add_child(BuildTab._wrap(BuildTab._label("The game ends here." if c["kind"] == "ending" else "Nowhere: the story stops here.", 13, C_TEXT)))
 	if c.get("editable", false) and c["kind"] != "roam":
@@ -449,9 +508,11 @@ func _legend() -> void:
 		if k[0] == "then" or used.has(k[0]):
 			side.add_child(_way(k[1], "", KIND_COLOR[k[0]]))
 	side.add_child(_head("Using it"))
-	for t in ["Click a card: what leads to it (its prerequisites, lit on the chart) and where it goes.",
+	for t in ["Click a card: what leads to it (its prerequisites, lit on the chart) and where it goes, each way's condition and card picked here.",
 			"Double-click a card: open it in the Story tab below, for its steps and moments.",
-			"Drag cards where you like: their places are kept with the story (Ctrl+Z puts one back)."]:
+			"Right-click the chart (or + Quest, + Ending): a new card there, its title typed on it (F2 types it again).",
+			"Drag a way's dot onto a card: it goes there. Into empty space: a new card there, or the way taken away.",
+			"Delete takes a card away. Drag cards where you like. Ctrl+Z undoes any of it."]:
 		side.add_child(BuildTab._wrap(BuildTab._label(t, 12, C_MUTED)))
 
 
@@ -506,12 +567,18 @@ func _moved() -> void:
 	var st = _story()
 	if st == null or cards.is_empty():
 		return
+	var at := _places()
+	st.change("Move a card on the story flow", func(): st.f["chart"] = at)
+
+
+## every card's place now, in the editor's units at scale 1
+func _places() -> Dictionary:
 	var s := Glyphs.scale()
 	var at := {}
 	for id in cards:
 		var p: Vector2 = cards[id].position_offset / s
 		at[id] = [roundi(p.x), roundi(p.y)]
-	st.change("Move a card on the story flow", func(): st.f["chart"] = at)
+	return at
 
 
 func relayout() -> void:
@@ -538,3 +605,334 @@ func fit() -> void:
 	graph.zoom = clampf(minf(room.x / maxf(r.size.x, 1.0), room.y / maxf(r.size.y, 1.0)), 0.55, 1.0)   # never smaller than readable: the start in view then
 	graph.scroll_offset = r.position * graph.zoom - Vector2(m, m)
 	_fitted = true
+
+
+# ---- setting it up ----------------------------------------------------------------------------------------------------
+func say(t: String) -> void:
+	if status != null:
+		status.text = t
+
+
+## a point of the view on the chart, in the editor's units at scale 1
+func _on_chart(local: Vector2) -> Vector2:
+	return (local + graph.scroll_offset) / graph.zoom / Glyphs.scale()
+
+
+func _view_middle() -> Vector2:
+	return _on_chart(graph.size * 0.5) if graph != null else Vector2.ZERO
+
+
+func _id_of(node_name) -> String:
+	var n = graph.get_node_or_null(NodePath(str(node_name)))
+	return str(n.get_meta("hs_id", "")) if n != null else ""
+
+
+## the card's way out at that port (-1 its "during" port; -2 none)
+func _out_of(id: String, port: int) -> int:
+	var pm: Dictionary = ports.get(id, {})
+	for k in pm:
+		if int(pm[k]) == port:
+			return int(k)
+	return -2
+
+
+## a new quest or ending where it's put (a way sent to it when it came from one); its title typed on it next
+func add_card(kind: String, at: Vector2, from := "", out := -1) -> String:
+	var st = _story()
+	if st == null or st.f.has("_error"):
+		return ""
+	var first: bool = kind == "quest" and (st.f.get("quests", []) as Array).is_empty()
+	var id: String = st.fresh_id("q_intro" if first else ("q_quest" if kind == "quest" else "e_ending"))
+	var title := "Intro" if first else ("A new quest" if kind == "quest" else "A new ending")
+	var places := _places()
+	places[id] = [roundi(at.x), roundi(at.y)]
+	var why := [""]
+	st.change("A new %s on the story flow" % kind, func():
+		if kind == "quest":
+			HSFlow.add_quest(st.f, id, title)
+		else:
+			HSFlow.add_ending(st.f, id, title)
+		if from != "":
+			why[0] = HSFlow.set_way(st.f, from, out, id)
+		st.f["chart"] = places)
+	picked = id
+	_rename_next = id
+	say(why[0] if why[0] != "" else "%s made: type its title" % title)
+	return id
+
+
+## the card's title typed on it (Enter keeps it, Esc leaves it)
+func rename(id: String) -> void:
+	var c := HSFlow.card_of(ch, id)
+	var g = cards.get(id)
+	var st = _story()
+	if g == null or st == null or c.is_empty() or not c.get("editable", false) or c["kind"] == "roam":
+		return
+	var hb: HBoxContainer = g.get_titlebar_hbox()
+	if hb.get_node_or_null("Rename") != null:
+		return
+	var tl = hb.get_child(0, true) if hb.get_child_count(true) else null
+	if tl is Control:
+		tl.visible = false
+	var le := LineEdit.new()
+	le.name = "Rename"
+	le.text = str(c["title"])
+	le.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	le.add_theme_font_size_override("font_size", int(15 * Glyphs.scale()))
+	hb.add_child(le)
+	_renaming = id
+	var done := func(keep: bool) -> void:
+		if _renaming != id:
+			return
+		_renaming = ""
+		var t := le.text.strip_edges()
+		if keep and t != "" and t != str(c["title"]):
+			st.change("Rename %s" % id, func(): HSFlow.rename(st.f, id, t))
+		else:
+			_dirty = true
+	le.text_submitted.connect(func(_t): done.call(true))
+	le.focus_exited.connect(func(): done.call(true))
+	le.gui_input.connect(func(ev: InputEvent):
+		if ev is InputEventKey and ev.pressed and ev.keycode == KEY_ESCAPE:
+			done.call(false)
+			le.accept_event())
+	le.grab_focus()
+	le.select_all()
+
+
+## the file's own titles typed in the rename box (the checks)
+func rename_to(id: String, title: String) -> void:
+	var st = _story()
+	if st != null:
+		st.change("Rename %s" % id, func(): HSFlow.rename(st.f, id, title))
+
+
+## a way's dot dropped on a card: the way goes there
+func _on_connect(from_node, from_port: int, to_node, _to_port: int) -> void:
+	connect_way(_id_of(from_node), _out_of(_id_of(from_node), from_port), _id_of(to_node))
+
+
+func connect_way(fid: String, out: int, tid: String) -> void:
+	var st = _story()
+	var c := HSFlow.card_of(ch, fid)
+	var tc := HSFlow.card_of(ch, tid)
+	_dirty = true
+	if st == null or c.is_empty() or tc.is_empty() or out < 0:
+		return
+	if not c.get("editable", false):
+		say("A desk game's ways are changed in the Director Manager")
+		return
+	if tc["kind"] in ["roam", "trigger"]:
+		say("A way goes to a quest or an ending")
+		return
+	var why := [""]
+	st.change("A way from %s to %s" % [fid, tid], func(): why[0] = HSFlow.set_way(st.f, fid, out, tid))
+	say(why[0] if why[0] != "" else "%s now goes to %s" % [_title(c), _title(tc)])
+
+
+## a way's dot dropped in empty space: a new card there with the way going to it, or the way taken away
+func _on_to_empty(from_node, from_port: int, release_position: Vector2) -> void:
+	var fid := _id_of(from_node)
+	var out := _out_of(fid, from_port)
+	var c := HSFlow.card_of(ch, fid)
+	_dirty = true
+	if c.is_empty() or out < 0 or not c.get("editable", false):
+		return
+	var at := _on_chart(release_position)
+	var items: Array = [["A new quest here", func(): add_card("quest", at, fid, out)], ["A new ending here", func(): add_card("ending", at, fid, out)]]
+	if str(c["outs"][out].get("src", "")) in ["next", "timeout"]:
+		items.append(["-"])
+		items.append(["Take this way away", func(): cut(fid, out)])
+	_popup(items, graph.get_screen_position() + release_position)
+
+
+func cut(fid: String, out: int) -> void:
+	var st = _story()
+	if st == null:
+		return
+	var why := [""]
+	st.change("Take a way away from %s" % fid, func(): why[0] = HSFlow.cut_way(st.f, fid, out))
+	say(why[0] if why[0] != "" else "Taken away")
+
+
+## a right-click on the chart: a new card there
+func _on_popup(at_position: Vector2) -> void:
+	var at := _on_chart(at_position)
+	_popup([["A new quest here", func(): add_card("quest", at)], ["A new ending here", func(): add_card("ending", at)]],
+		graph.get_screen_position() + at_position)
+
+
+func card_menu(id: String, screen_at: Vector2) -> void:
+	var c := HSFlow.card_of(ch, id)
+	if c.is_empty():
+		return
+	if not c.get("editable", false) or c["kind"] == "roam":
+		_popup([["Brought in from the desk: it's in the Director Manager", Callable()]], screen_at)
+		return
+	_popup([["Type its title (F2)", func(): rename(id)], ["Open it in the Story tab", func(): open_in_story(id)], ["-"],
+		["Delete it…", func(): _on_delete([cards[id].name])]], screen_at)
+
+
+func _popup(items: Array, screen_at: Vector2) -> void:
+	_menu.clear()
+	_menu_acts.clear()
+	var i := 0
+	for it in items:
+		if it[0] == "-":
+			_menu.add_separator()
+			continue
+		_menu.add_item(it[0], i)
+		if (it[1] as Callable).is_valid():
+			_menu_acts[i] = it[1]
+		else:
+			_menu.set_item_disabled(_menu.get_item_index(i), true)
+		i += 1
+	_menu.reset_size()
+	_menu.position = Vector2i(screen_at)
+	_menu.popup()
+
+
+## Delete on cards: asked first
+func _on_delete(nodes) -> void:
+	var ids: Array = []
+	for n in nodes:
+		var id := _id_of(n)
+		var c := HSFlow.card_of(ch, id)
+		if not c.is_empty() and c.get("editable", false) and c["kind"] != "roam":
+			ids.append(id)
+	if ids.is_empty():
+		say("Only the file's own quests and endings can be deleted here")
+		return
+	_deleting = ids
+	var names: Array = ids.map(func(x): return _title(HSFlow.card_of(ch, x)))
+	_confirm.dialog_text = "Delete %s?\nThe ways into it go on where it went; a quest's own moments go with it. Ctrl+Z brings it back." % ", ".join(PackedStringArray(names))
+	_confirm.popup_centered()
+
+
+func delete_cards(ids: Array) -> void:
+	var st = _story()
+	if st == null or ids.is_empty():
+		return
+	st.change("Delete %s from the story flow" % ", ".join(PackedStringArray(ids)), func():
+		for id in ids:
+			HSFlow.remove(st.f, str(id)))
+	if ids.has(picked):
+		picked = ""
+	say("Deleted")
+
+
+func renumber() -> void:
+	var st = _story()
+	if st == null:
+		return
+	st.change("Number the quests by the story flow", func(): HSFlow.renumber(st.f))
+	say("The quests numbered in the order the story reaches them")
+
+
+## the clicked quest's ways out, set here: each if's condition (the Story tab's chips) and the card it goes to, moved
+## up or down, taken away; its then's card; its time limit's; + A way: if…
+func _ways(c: Dictionary) -> void:
+	var st = _story()
+	var s := Glyphs.scale()
+	var id := str(c["id"])
+	for j in (c["outs"] as Array).size():
+		var o: Dictionary = c["outs"][j]
+		var col: Color = KIND_COLOR.get(o["kind"], C_BLUE)
+		var h := HBoxContainer.new()
+		h.name = "Way_%d" % j
+		h.add_theme_constant_override("separation", int(8 * s))
+		var bar := ColorRect.new()
+		bar.color = col
+		bar.custom_minimum_size = Vector2(4, 0) * s
+		h.add_child(bar)
+		var v := VBoxContainer.new()
+		v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		h.add_child(v)
+		if o["kind"] == "if":
+			var k := int(o["k"])
+			var entry: Dictionary = st.quest_of(id)["next"][k]
+			var r := HFlowContainer.new()
+			r.add_child(BuildTab._label("if", 13, col, true))
+			r.add_child(st._cond_chips(entry, "if", func(fn): st.change("A way's condition", func(): fn.call(st.quest_of(id)["next"][k]))))
+			v.add_child(r)
+		else:
+			v.add_child(BuildTab._label(str(o["label"]), 13, col, true))
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", int(4 * s))
+		row.add_child(BuildTab._label("→", 13, col))
+		row.add_child(_target_pick(c, j))
+		if o["kind"] == "if":
+			for spec in [["↑", "Asked earlier (the first that holds wins)", -1], ["↓", "Asked later", 1]]:
+				var mb := Button.new()
+				mb.text = spec[0]
+				mb.flat = true
+				mb.tooltip_text = spec[1]
+				mb.pressed.connect(func(): st.change("Move a way of %s" % id, func(): HSFlow.move_branch(st.f, id, int(o["k"]), int(spec[2]))))
+				row.add_child(mb)
+		if str(o.get("src", "")) in ["next", "timeout"]:
+			var rm := Button.new()
+			rm.name = "Cut"
+			rm.text = "✕"
+			rm.flat = true
+			rm.tooltip_text = "Back to the list's order" if o["kind"] == "then" else "Take this way away"
+			rm.pressed.connect(cut.bind(id, j))
+			row.add_child(rm)
+		v.add_child(row)
+		side.add_child(h)
+	var add := MenuButton.new()
+	add.name = "AddWay"
+	add.text = "+ A way: if…"
+	add.flat = false
+	add.tooltip_text = "A way taken only when something holds (asked before its then)"
+	var pop := add.get_popup()
+	var choices: Array = st.clause_choices()
+	var n := 0
+	for grp in choices:
+		var sub := PopupMenu.new()
+		sub.name = "Sub%d" % n
+		for j in (grp[1] as Array).size():
+			sub.add_item(str(grp[1][j][1]), j)
+		var g_items: Array = grp[1]
+		sub.id_pressed.connect(func(j): add_way(id, g_items[j][0]))
+		pop.add_submenu_node_item(str(grp[0]), sub)
+		n += 1
+	add.disabled = choices.is_empty()
+	side.add_child(add)
+
+
+## a branch on the quest when the clause holds (its card picked next, or its dot dragged onto one)
+func add_way(id: String, clause: Dictionary, to := "") -> void:
+	var st = _story()
+	if st == null:
+		return
+	var cond = HSCommands.build_cond("all", [clause])
+	st.change("A new way out of %s" % id, func(): HSFlow.add_branch(st.f, id, cond, to))
+	say("A new way: pick where it goes (or drag its dot onto a card)")
+
+
+## where a way goes, picked from the cards (quests and endings)
+func _target_pick(c: Dictionary, j: int) -> OptionButton:
+	var st = _story()
+	var o: Dictionary = c["outs"][j]
+	var ob := OptionButton.new()
+	ob.name = "To"
+	ob.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	ob.clip_text = true
+	var ids: Array = []
+	if str(o["to"]) == "" or o.get("missing", false):
+		ob.add_item("pick where it goes…")
+		ids.append("")
+	elif str(o["to"]) == HSFlow.ROAM:
+		ob.add_item("the free roam (no ending yet)")
+		ids.append(HSFlow.ROAM)
+	for x in ch.get("cards", []):
+		if x["kind"] in ["roam", "trigger"]:
+			continue
+		ob.add_item(_title(x))
+		ids.append(str(x["id"]))
+	ob.select(maxi(0, ids.find(str(o["to"]))))
+	var id := str(c["id"])
+	ob.item_selected.connect(func(ix):
+		if str(ids[ix]) != "" and str(ids[ix]) != HSFlow.ROAM:
+			connect_way(id, j, str(ids[ix])))
+	return ob

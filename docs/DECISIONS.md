@@ -11,7 +11,8 @@ The user's answers, newest first. They override the plan, the research and the d
   path but if you find the easter egg you can maybe skip a bunch of quests and jump straight to another one… then I
   don't have to manually look through 1 by 1 in story and try see prerequisites."** Offered as a main screen in Godot's
   editor beside 2D, 3D and Script, in three steps (the chart; setting up quests and branches in it; easter eggs and
-  skips), the user said "go for it". **Story Flow** (GODOT_DIRECTOR §6f): step 1, the chart.
+  skips), the user said "go for it". **Story Flow** (GODOT_DIRECTOR §6f): step 1, the chart; step 2, setting the quests
+  and their branches up in it.
 
 ## 2026-11-02 (the user: an intro first, quests that aren't lists, and a marker over what to interact with)
 

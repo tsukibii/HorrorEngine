@@ -679,6 +679,15 @@ def editor_check(out):
          % (rep.get("flow_prereq"), rep.get("flow_start"), rep.get("flow_open"), rep.get("flow_moved"), rep.get("flow_move_undone")),
          rep.get("flow_prereq") is True and rep.get("flow_start") is True and rep.get("flow_open") is True
          and rep.get("flow_moved") is True and rep.get("flow_move_undone") is True),
+        ("set up in Story Flow: a new quest where it's put, its title typed (%s); the bedroom's then dropped on it, its own on to the night (%s); a branch on the key, %s, sent to it (%s)"
+         % (rep.get("flowedit_new"), rep.get("flowedit_wired"), rep.get("flowedit_branch"), rep.get("flowedit_branch_to")),
+         rep.get("flowedit_new") is True and rep.get("flowedit_wired") is True and rep.get("flowedit_branch") == "if they've read letter"
+         and rep.get("flowedit_branch_to") is True),
+        ("numbered by the flow: %s, the game the same (%s); the new quest deleted, what pointed at it going on where it went (%s); all undone (%s)"
+         % (" ".join(str(x) for x in rep.get("flowedit_numbered", [])), rep.get("flowedit_same"), rep.get("flowedit_deleted"), rep.get("flowedit_undone")),
+         (rep.get("flowedit_numbered") or [])[:4] == ["q_intro", "q_key", "q_drink", "q_talk"] and (rep.get("flowedit_numbered") or [""])[-1] == "q_night"
+         and len(rep.get("flowedit_numbered") or []) == 7 and (rep.get("flowedit_numbered") or [""] * 7)[4] == "q_bedroom"
+         and rep.get("flowedit_same") is True and rep.get("flowedit_deleted") is True and rep.get("flowedit_undone") is True),
         ("a node's id follows its renames while it's the name's (%s), one typed by hand stays (%s)" % (rep.get("id_follows"), rep.get("id_kept")), rep.get("id_follows") == ["hs_thing", "old_key"] and rep.get("id_kept") == "my_key"),
         ("saved: the new nodes in the file, no story nodes, nothing the nodes make for themselves", rep.get("saved") is True and rep.get("saved_task") is True and rep.get("saved_nothing_made") is True),
         ("no script errors in the editor", not errs),

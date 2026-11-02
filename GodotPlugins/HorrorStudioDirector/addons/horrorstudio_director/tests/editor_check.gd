@@ -111,6 +111,7 @@ func _process(dt: float) -> void:
 			if t - at_t < 1.5:
 				return
 			_flow_checks()
+			_flow_edit_checks()
 			EditorInterface.set_main_screen_editor("3D")
 			phase = 4
 		4:
@@ -563,6 +564,63 @@ func _flow_checks() -> void:
 	rep["flow_moved"] = chm is Dictionary and (chm as Dictionary).size() == want.size() and chm.has("q_key")
 	get_undo_redo().get_history_undo_redo(EditorUndoRedoManager.GLOBAL_HISTORY).undo()
 	rep["flow_move_undone"] = _same(FileAccess.get_file_as_string("res://director/director.json"), before)
+
+
+## setting the story up in Story Flow: a new quest where it's put, its title typed; the bedroom's then dropped on it
+## and its own then on to the night; a branch on the key (if they've read the letter) sent to it; the quests numbered by
+## the flow (the game playing the same); the new quest deleted (what pointed at it going on where it went); all undone
+func _flow_edit_checks() -> void:
+	var fl = EditorInterface.get_editor_main_screen().find_child("HorrorStudioFlow", false, false)
+	if fl == null:
+		return
+	var st = panel.story
+	var before := FileAccess.get_file_as_string("res://director/director.json")
+	var ur := get_undo_redo().get_history_undo_redo(EditorUndoRedoManager.GLOBAL_HISTORY)
+	var id: String = fl.add_card("quest", Vector2(380, 880))
+	fl.redraw()
+	var made: bool = id != "" and fl.cards.has(id) and st.quest_of(id).get("title") == "A new quest"
+	fl.rename_to(id, "The cellar")
+	fl.redraw()
+	rep["flowedit_new"] = made and st.quest_of(id).get("title") == "The cellar" and (st.f.get("chart", {}) as Dictionary).has(id)
+	fl._on_connect(fl.cards["q_bedroom"].name, int(fl.ports["q_bedroom"][0]), fl.cards[id].name, 0)
+	fl.redraw()
+	fl.connect_way(id, 0, "q_night")
+	fl.redraw()
+	rep["flowedit_wired"] = st.quest_of("q_bedroom").get("next") == [{"go": id}] and st.quest_of(id).get("next") == [{"go": "q_night"}]
+	fl.add_way("q_key", {"kind": "fact", "v": "read:letter", "not": false})
+	fl.redraw()
+	fl.connect_way("q_key", 0, id)
+	fl.redraw()
+	var w0 = fl.cards["q_key"].get_node_or_null("Out_0")
+	var kn = st.quest_of("q_key").get("next")
+	rep["flowedit_branch"] = str(w0.text) if w0 is Label else ""
+	rep["flowedit_branch_to"] = kn is Array and kn.size() == 1 and str(kn[0].get("go", "")) == id
+	var ways0 := _ways_of(st.f)
+	fl.renumber()
+	fl.redraw()
+	var order: Array = (st.f["quests"] as Array).map(func(q): return str(q["id"]))
+	rep["flowedit_numbered"] = order
+	rep["flowedit_same"] = _ways_of(st.f) == ways0 and not st.quest_of("q_bedroom").has("next") and not st.quest_of(id).has("next")
+	fl.delete_cards([id])
+	fl.redraw()
+	var bed = HSFlow.card_of(fl.ch, "q_bedroom")
+	rep["flowedit_deleted"] = st.quest_of(id).is_empty() and not fl.cards.has(id) and str(bed["outs"][0]["to"]) == "q_night" \
+		and str(st.quest_of("q_key")["next"][0]["go"]) == "q_night"
+	for i in 8:
+		ur.undo()
+	rep["flowedit_undone"] = _same(FileAccess.get_file_as_string("res://director/director.json"), before)
+	var w := FileAccess.open("res://director/director.json", FileAccess.WRITE)   # as the sample had it, whatever happened
+	w.store_string(before)
+	w.close()
+
+
+## the chart's arrows as from>to:kind (an otherwise is a then), sorted: what the game plays
+func _ways_of(f: Dictionary) -> Array:
+	var out: Array = []
+	for w in HSFlow.chart(f)["wires"]:
+		out.append("%s>%s:%s" % [w["from"], w["to"], "then" if w["kind"] == "else" else w["kind"]])
+	out.sort()
+	return out
 
 
 ## every Label's words under a node

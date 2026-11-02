@@ -135,25 +135,31 @@ static func _quest_card(q: Dictionary, i: int, quests: Array, endings: Array, ct
 	c["info"] = " · ".join(PackedStringArray(bits))
 	var nx: Array = q.get("next", []) if q.get("next") is Array else []
 	var then := false
-	for o in nx:
+	for k in nx.size():
+		var o = nx[k]
 		if not (o is Dictionary):
 			continue
 		if HSCond.empty(o.get("if")):
-			c["outs"].append({"label": "then", "to": str(o.get("go", "")), "kind": "then"})
+			c["outs"].append({"label": "then", "to": str(o.get("go", "")), "kind": "then", "src": "next", "k": k})
 			then = true
 			break
-		c["outs"].append({"label": "if " + HSCommands.cond_text(o["if"], ctx), "to": str(o.get("go", "")), "kind": "if"})
+		c["outs"].append({"label": "if " + HSCommands.cond_text(o["if"], ctx), "to": str(o.get("go", "")), "kind": "if", "src": "next", "k": k})
 	if not then:
-		var after := ROAM
-		if i + 1 < quests.size() and quests[i + 1] is Dictionary:
-			after = str(quests[i + 1].get("id", ""))
-		elif endings.size() and endings[0] is Dictionary:
-			after = str(endings[0].get("id", ""))
 		var ifs: bool = not (c["outs"] as Array).is_empty()
-		c["outs"].append({"label": "otherwise" if ifs else "then", "to": after, "kind": "else" if ifs else "then", "implicit": true})
+		c["outs"].append({"label": "otherwise" if ifs else "then", "to": _after(quests, endings, i), "kind": "else" if ifs else "then",
+			"implicit": true, "src": "list"})
 	if float(q.get("time_limit", 0)) > 0.0 and str(q.get("on_timeout", "")) != "":
-		c["outs"].append({"label": "out of time", "to": str(q["on_timeout"]), "kind": "timeout"})
+		c["outs"].append({"label": "out of time", "to": str(q["on_timeout"]), "kind": "timeout", "src": "timeout"})
 	return c
+
+
+## where a quest goes when nothing else says: the next quest in the list, else the first ending, else the free roam
+static func _after(quests: Array, endings: Array, i: int) -> String:
+	if i + 1 < quests.size() and quests[i + 1] is Dictionary:
+		return str(quests[i + 1].get("id", ""))
+	if endings.size() and endings[0] is Dictionary:
+		return str(endings[0].get("id", ""))
+	return ROAM
 
 
 ## a desk choice's way, in words
@@ -302,3 +308,290 @@ static func layout(ch: Dictionary, saved: Dictionary, size := {}, per_row := 0) 
 static func _tall(c: Dictionary) -> float:
 	var rows := 1 + (1 if str(c.get("info", "")) != "" else 0) + (c["outs"] as Array).size()
 	return 46.0 + rows * 30.0
+
+
+# ---- setting it up from the chart (each changes the file in place; the tab does it inside the Story tab's change) ----
+static func quest_index(f: Dictionary, id: String) -> int:
+	var qs: Array = f.get("quests", []) if f.get("quests") is Array else []
+	for i in qs.size():
+		if qs[i] is Dictionary and str(qs[i].get("id", "")) == id:
+			return i
+	return -1
+
+
+static func ending_index(f: Dictionary, id: String) -> int:
+	var es: Array = f.get("endings", []) if f.get("endings") is Array else []
+	for i in es.size():
+		if es[i] is Dictionary and str(es[i].get("id", "")) == id:
+			return i
+	return -1
+
+
+## a quest's way out (the chart's out index) sent to another card: a branch's go, its then (written only when it isn't
+## the list's next anyway), its time limit's way out. "" when done, else why not
+static func set_way(f: Dictionary, qid: String, out: int, to: String) -> String:
+	var i := quest_index(f, qid)
+	if i < 0:
+		return "%s isn't a quest of the file's" % qid
+	var q: Dictionary = f["quests"][i]
+	if q.get("desk") is Dictionary:
+		return "a desk game's ways are changed in the Director Manager"
+	if quest_index(f, to) < 0 and ending_index(f, to) < 0:
+		return "a way goes to a quest or an ending"
+	var c := _quest_card(q, i, f["quests"], f.get("endings", []), null)
+	if out < 0 or out >= (c["outs"] as Array).size():
+		return "no such way out"
+	var o: Dictionary = c["outs"][out]
+	match str(o.get("src", "")):
+		"next":
+			if o["kind"] == "then":
+				set_then(f, qid, to)
+			else:
+				q["next"][int(o["k"])]["go"] = to
+		"list":
+			set_then(f, qid, to)
+		"timeout":
+			q["on_timeout"] = to
+	return ""
+
+
+## a quest's then (where it goes when none of its ifs hold): written as its last way, or left to the list's order when
+## that's where it goes anyway
+static func set_then(f: Dictionary, qid: String, to: String) -> void:
+	var i := quest_index(f, qid)
+	if i < 0:
+		return
+	var q: Dictionary = f["quests"][i]
+	var ifs: Array = []
+	for o in (q.get("next", []) if q.get("next") is Array else []):
+		if not (o is Dictionary) or HSCond.empty(o.get("if")):
+			break
+		ifs.append(o)
+	if to != _after(f["quests"], f.get("endings", []), i):
+		ifs.append({"go": to})
+	if ifs.is_empty():
+		q.erase("next")
+	else:
+		q["next"] = ifs
+
+
+## a way taken away: a branch (or a then written down: the list's order again), a time limit's way out. "" when done
+static func cut_way(f: Dictionary, qid: String, out: int) -> String:
+	var i := quest_index(f, qid)
+	if i < 0 or f["quests"][i].get("desk") is Dictionary:
+		return "a desk game's ways are changed in the Director Manager"
+	var q: Dictionary = f["quests"][i]
+	var c := _quest_card(q, i, f["quests"], f.get("endings", []), null)
+	if out < 0 or out >= (c["outs"] as Array).size():
+		return "no such way out"
+	var o: Dictionary = c["outs"][out]
+	match str(o.get("src", "")):
+		"next":
+			(q["next"] as Array).remove_at(int(o["k"]))
+			if (q["next"] as Array).is_empty():
+				q.erase("next")
+		"timeout":
+			q.erase("on_timeout")
+		_:
+			return "a quest always goes on: drag its then onto another card instead"
+	return ""
+
+
+## a branch: a way that's taken only when the condition holds, before the quest's then (the first that holds wins)
+static func add_branch(f: Dictionary, qid: String, cond, to := "") -> int:
+	var i := quest_index(f, qid)
+	if i < 0:
+		return -1
+	var q: Dictionary = f["quests"][i]
+	var nx: Array = q.get("next", []) if q.get("next") is Array else []
+	var at := nx.size()
+	for k in nx.size():
+		if not (nx[k] is Dictionary) or HSCond.empty(nx[k].get("if")):
+			at = k
+			break
+	nx.insert(at, {"if": cond, "go": to})
+	q["next"] = nx
+	return at
+
+
+## a branch moved up or down among the quest's ifs (the first that holds wins)
+static func move_branch(f: Dictionary, qid: String, k: int, d: int) -> void:
+	var i := quest_index(f, qid)
+	if i < 0:
+		return
+	var nx: Array = f["quests"][i].get("next", []) if f["quests"][i].get("next") is Array else []
+	var j := k + d
+	if k < 0 or j < 0 or k >= nx.size() or j >= nx.size() or HSCond.empty(nx[k].get("if")) or HSCond.empty(nx[j].get("if")):
+		return
+	var t = nx[k]
+	nx[k] = nx[j]
+	nx[j] = t
+
+
+## a new quest at the end of the list (the first a file has is its Intro); the quest that was last keeps going where it
+## went (an ending, written down now that the list's order would send it to the new one)
+static func add_quest(f: Dictionary, id: String, title: String) -> void:
+	var qs: Array = f["quests"]
+	if qs.size():
+		var last: Dictionary = qs.back()
+		var was := _after(qs, f.get("endings", []), qs.size() - 1)
+		if not (last.get("desk") is Dictionary) and was != ROAM and not _has_then(last):
+			var nx: Array = last.get("next", []) if last.get("next") is Array else []
+			nx.append({"go": was})
+			last["next"] = nx
+	var nq: Dictionary = HSStoryFile.INTRO.duplicate(true) if qs.is_empty() else {"id": id, "title": title, "objective": "", "steps": []}
+	nq["id"] = id
+	if not qs.is_empty() or title != "":
+		nq["title"] = title if title != "" else nq["title"]
+	qs.append(nq)
+
+
+static func _has_then(q: Dictionary) -> bool:
+	for o in (q.get("next", []) if q.get("next") is Array else []):
+		if o is Dictionary and HSCond.empty(o.get("if")):
+			return true
+	return false
+
+
+static func add_ending(f: Dictionary, id: String, title: String, kind := "neutral") -> void:
+	(f["endings"] as Array).append({"id": id, "kind": kind, "title": title, "text": ""})
+
+
+static func rename(f: Dictionary, id: String, title: String) -> void:
+	var i := quest_index(f, id)
+	if i >= 0:
+		f["quests"][i]["title"] = title
+		return
+	var e := ending_index(f, id)
+	if e >= 0:
+		f["endings"][e]["title"] = title
+
+
+## a quest or an ending taken away with what pointed at it: a way into a quest goes on where that quest went (its then,
+## or the list's next), a way into an ending is taken away; the moments that were the quest's alone go with it, the
+## others forget it; its place on the chart too
+static func remove(f: Dictionary, id: String) -> void:
+	var qs: Array = f["quests"]
+	var endings: Array = f.get("endings", [])
+	var succ := ""
+	var i := quest_index(f, id)
+	if i >= 0:
+		var x: Dictionary = qs[i]
+		succ = _then_target(x)
+		if succ == "":
+			succ = _after(qs, endings, i)
+		var prev_by_list := i > 0 and not (qs[i - 1].get("desk") is Dictionary) and not _has_then(qs[i - 1])
+		qs.remove_at(i)
+		if prev_by_list and succ != ROAM and succ != id and succ != _after(qs, endings, i - 1):
+			var p: Dictionary = qs[i - 1]
+			var nx: Array = p.get("next", []) if p.get("next") is Array else []
+			nx.append({"go": succ})
+			p["next"] = nx
+		f["moments"] = (f.get("moments", []) as Array).filter(func(m):
+			return not (m is Dictionary and m.get("during") is Array and m["during"] == [id]))
+		for m in f["moments"]:
+			if m is Dictionary and m.get("during") is Array and (m["during"] as Array).has(id):
+				(m["during"] as Array).erase(id)
+	else:
+		var e := ending_index(f, id)
+		if e < 0:
+			return
+		endings.remove_at(e)
+	var to_ok := succ != "" and succ != ROAM and succ != id
+	for q in qs:
+		if not (q is Dictionary) or q.get("desk") is Dictionary:
+			continue
+		if q.get("next") is Array:
+			var keep: Array = []
+			for o in q["next"]:
+				if o is Dictionary and str(o.get("go", "")) == id:
+					if not to_ok:
+						continue
+					o["go"] = succ
+				keep.append(o)
+			if keep.is_empty():
+				q.erase("next")
+			else:
+				q["next"] = keep
+		if str(q.get("on_timeout", "")) == id:
+			if to_ok:
+				q["on_timeout"] = succ
+			else:
+				q.erase("on_timeout")
+	if f.get("chart") is Dictionary:
+		(f["chart"] as Dictionary).erase(id)
+
+
+## a quest's own then, written in its next ("" when it goes by the list)
+static func _then_target(q: Dictionary) -> String:
+	for o in (q.get("next", []) if q.get("next") is Array else []):
+		if o is Dictionary and HSCond.empty(o.get("if")):
+			return str(o.get("go", ""))
+	return ""
+
+
+## the quests numbered by the flow: the list put in the order the story reaches them (from the first, along each
+## card's then first, then its other ways), the ways written down first and made plain again after, so the game plays
+## the same. The quest that goes on to the free roam stays last
+static func renumber(f: Dictionary) -> void:
+	var qs: Array = f.get("quests", []) if f.get("quests") is Array else []
+	if qs.size() < 3:
+		return
+	var endings: Array = f.get("endings", [])
+	var roam_last := ""
+	for i in qs.size():                           # 1. every quest's way on written down
+		var q: Dictionary = qs[i]
+		if q.get("desk") is Dictionary or _has_then(q):
+			continue
+		var to := _after(qs, endings, i)
+		if to == ROAM:
+			roam_last = str(q.get("id", ""))
+			continue
+		var nx: Array = q.get("next", []) if q.get("next") is Array else []
+		nx.append({"go": to})
+		q["next"] = nx
+	var ch := chart(f)                            # 2. the order the story reaches them
+	var by_id := {}
+	for c in ch["cards"]:
+		by_id[c["id"]] = c
+	var order: Array = []
+	var seen := {}
+	var stack: Array = [str(qs[0].get("id", ""))]
+	while stack.size():
+		var id: String = stack.pop_back()
+		if seen.has(id) or not by_id.has(id) or quest_index(f, id) < 0:
+			continue
+		seen[id] = true
+		if id != roam_last:
+			order.append(id)
+		var outs: Array = by_id[id]["outs"]
+		var others: Array = []
+		for o in outs:
+			if o["kind"] != "then" and o["kind"] != "else":
+				others.append(str(o["to"]))
+		others.reverse()
+		stack.append_array(others)
+		for o in outs:                            # its then on top: the next one taken
+			if o["kind"] == "then" or o["kind"] == "else":
+				stack.append(str(o["to"]))
+	for q in qs:
+		var id := str(q.get("id", ""))
+		if not seen.has(id) and id != roam_last:
+			order.append(id)
+	if roam_last != "":
+		order.append(roam_last)
+	var keep := {}
+	for q in qs:
+		keep[str(q.get("id", ""))] = q
+	qs.clear()                                    # 3. the list in that order
+	for id in order:
+		qs.append(keep[id])
+	for i in qs.size():                           # 4. a then that's the list's next again left to the list
+		var q: Dictionary = qs[i]
+		if q.get("desk") is Dictionary or not (q.get("next") is Array) or (q["next"] as Array).is_empty():
+			continue
+		var last = q["next"].back()
+		if last is Dictionary and HSCond.empty(last.get("if")) and str(last.get("go", "")) == _after(qs, endings, i):
+			(q["next"] as Array).pop_back()
+			if (q["next"] as Array).is_empty():
+				q.erase("next")

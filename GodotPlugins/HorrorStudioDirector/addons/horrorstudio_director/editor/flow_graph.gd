@@ -9,7 +9,7 @@ var tab = null                     # the flow tab: its cards, to find the one an
 
 func _get_connection_line(from_position: Vector2, to_position: Vector2) -> PackedVector2Array:
 	var s := _scale()
-	if to_position.x >= from_position.x + 30.0 * s:
+	if to_position.x >= from_position.x - 40.0 * s:   # onward, or nearly straight up or down: the usual curve
 		var c := Curve2D.new()
 		var off := absf(to_position.x - from_position.x) * connection_lines_curvature
 		c.add_point(from_position, Vector2.ZERO, Vector2(off, 0))

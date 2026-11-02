@@ -3,7 +3,8 @@
 ## Director tab on the sample's Director file, a quest picked), the Scene tree on a part's effect points, the
 ## Inspector on a thing, a character, a room, a door and a little thing, and the HorrorStudio panel (its Build tab on
 ## the kettle, then on a plain model with the Inspector's What is this? box; the Player and Story tabs), and the Story
-## Flow main screen (the quests as a flowchart, the night's card clicked). JPEGs into $HSGUIDE_OUT; prints
+## Flow main screen (the quests as a flowchart, the night's card clicked; then a quest set up in it, the key's ways on the
+## right, the story put back). JPEGs into $HSGUIDE_OUT; prints
 ## GUIDEEDITOR {...} and quits.
 @tool
 extends EditorPlugin
@@ -21,6 +22,7 @@ var dock = null
 var panel = null
 var model: MeshInstance3D = null
 var tall_was := 0.0                 # the panel's height before the Story tab's picture made it taller
+var story_was := ""                 # the sample's story before Story Flow's picture set a quest up in it
 var made: Array = []
 
 
@@ -323,6 +325,32 @@ func _process(dt: float) -> void:
 			var fl2 = EditorInterface.get_editor_main_screen().find_child("HorrorStudioFlow", false, false)
 			if fl2 != null:
 				_shot("e_flow", fl2.get_global_rect())
+				story_was = FileAccess.get_file_as_string("res://director/director.json")   # set up in the chart: a quest after the bedroom, a branch on the key
+				var id: String = fl2.add_card("quest", Vector2(380, 880))
+				fl2.redraw()
+				fl2.rename_to(id, "The cellar")
+				fl2.redraw()
+				fl2._on_connect(fl2.cards["q_bedroom"].name, int(fl2.ports["q_bedroom"][0]), fl2.cards[id].name, 0)
+				fl2.redraw()
+				fl2.connect_way(id, 0, "q_night")
+				fl2.redraw()
+				fl2.add_way("q_key", {"kind": "fact", "v": "read:letter", "not": false})
+				fl2.redraw()
+				fl2.connect_way("q_key", 0, id)
+				fl2.redraw()
+				fl2.cards["q_key"].selected = true
+				fl2.pick("q_key")
+			at = t
+			phase = 21
+		21:
+			if t - at < 1.0:
+				return
+			var fl3 = EditorInterface.get_editor_main_screen().find_child("HorrorStudioFlow", false, false)
+			if fl3 != null:
+				_shot("e_flow_edit", fl3.get_global_rect())
+			var w := FileAccess.open("res://director/director.json", FileAccess.WRITE)   # the sample's story as it was, for the Manager's pictures
+			w.store_string(story_was)
+			w.close()
 			EditorInterface.set_main_screen_editor("3D")
 			print("GUIDEEDITOR " + JSON.stringify({"made": made}))
 			get_tree().quit()
