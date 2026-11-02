@@ -129,7 +129,8 @@ leave it out for an empty game with one room.</p>
   <div class="card"><h4><code>director/</code></h4><p>The story: <code>director.json</code>, the Director file (§6), and <code>history/</code>, the versions before each save.</p></div>
   <div class="card"><h4><code>addons/</code></h4><p>The Director, the runtime (<code>horrorstudio</code>) and the look (<code>horrorstudio_look</code>). Don't edit them here: they're copies.</p></div>
   <div class="card"><h4><code>game/</code></h4><p>The sound shelf (240 sounds by name), the little things' lives, and the Character Studio exports your characters wear (<code>people/</code>).</p></div>
-  <div class="card"><h4><code>kimodo/</code>, <code>motions/</code>, <code>bodies/</code></h4><p>Kimodo's stages and motions, the motions brought in, MHR's body to try them on.</p></div>
+  <div class="card"><h4><code>animations/</code>, <code>faces/</code></h4><p>The animation library, empty in a new game: drop in the body clips (Kimodo's <code>.npz</code>, Godot animations) and the face clips it needs. They're cards on the panel's Animate tab (§5).</p></div>
+  <div class="card"><h4><code>kimodo/</code>, <code>bodies/</code></h4><p>Kimodo's stages and the motions it saved, MHR's body to try them on.</p></div>
   <div class="card"><h4><code>guide/</code></h4><p>This guide, also opened by the dock's <span class="ui">Guide</span> button.</p></div>
 </div>
 <p>Already have a Godot project? Put the add-ons into it (again after every pull of the studio: they're copies):</p>
@@ -168,7 +169,8 @@ settings, only the ones that matter for what it is.</p>
 <figure class="wide"><img src="img/e_panel_build.jpg" width="986" height="364" alt="The HorrorStudio panel: the Build tab, its categories down the left with Kitchen open, the kettle's card marked It's this now, the others saying Make it this, and This object on the right: Kettle is a kettle, Change, Make it plain again, how it starts: Off">
 <figcaption>The Build tab with the kettle selected: its card says <i>It's this now</i>; This object shows how it starts.</figcaption></figure>
 <p>What happens in the game isn't in the scene: it's the <b>Director file</b> (§6), written in the panel's
-<span class="ui">Story</span> tab (§8) or the Director Manager (§9), in the same words. <span class="ui">Test</span> has
+<span class="ui">Story</span> tab (§8) or the Director Manager (§9), in the same words. <span class="ui">Animate</span>
+has the project's animations and faces as cards, given to a character with a click or a drag (§5). <span class="ui">Test</span> has
 <span class="ui">Play the game</span>, <span class="ui">Play this scene</span> (a level open on its own plays alone, as
 <kbd>F6</kbd> does) and the game checked as it will play: what won't play right and what's worth a look, each line
 clicked to go to its node. At the top of the editor, beside <span class="ui">2D</span>, <span class="ui">3D</span> and
@@ -242,7 +244,7 @@ With a start selected, <b>This object</b> sets <b>which way they look</b> (eight
 the player's own settings for the whole game (<b>can run</b> with Shift, <b>can crouch</b> with C, the <b>eye height</b>,
 their <b>name</b>: they're the HSGame's) and <span class="ui">Play from here</span>. In the sample the Test start is by
 the bedroom door with the bedroom key, so the bedroom can be tried without finding the key first.</p>
-<figure class="wide"><img src="img/e_panel_player.jpg" width="986" height="364" alt="The HorrorStudio panel on the Player category: the Player start, Test start and Checkpoint cards, and This object on the sample's Test start: which way they look, North, what they have with them, the bedroom key, can run, can crouch, eye height, their name, Play from here">
+<figure class="wide"><img src="img/e_panel_player.jpg" width="994" height="364" alt="The HorrorStudio panel on the Player category: the Player start, Test start and Checkpoint cards, and This object on the sample's Test start: which way they look, North, what they have with them, the bedroom key, can run, can crouch, eye height, their name, Play from here">
 <figcaption>The Player category with the sample's Test start selected: it faces north, the bedroom key in hand.</figcaption></figure>
 <h3>Areas, spots and paths</h3>
 <ul>
@@ -269,8 +271,8 @@ part by category). Or <b>drag the card onto your model</b>, in the 3D view or th
 model's place and your model goes inside it: it's a thing now, an <span class="node">HSThing</span>, with an id.
 <kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes it, and This object's <span class="ui">Make it plain again</span> takes it off.</p>
 <div class="pair">
-<figure><img src="img/e_panel_model.jpg" width="986" height="364" alt="The panel with a plain model selected, OldSaucepan: This object asks what it is and suggests Pot from its name"><figcaption>A plain model selected: This object asks what it is, suggesting a pot from its name.</figcaption></figure>
-<figure><img src="img/e_inspector_box.jpg" width="312" height="448" alt="The Inspector on OldSaucepan: the HorrorStudio box, What is this?, Make it a…, and the suggestion Pot"><figcaption>The Inspector's box: <i>What is this?</i>, every part in <i>Make it a…</i>, the suggestion.</figcaption></figure>
+<figure><img src="img/e_panel_model.jpg" width="1010" height="364" alt="The panel with a plain model selected, OldSaucepan: This object asks what it is and suggests Pot from its name"><figcaption>A plain model selected: This object asks what it is, suggesting a pot from its name.</figcaption></figure>
+<figure><img src="img/e_inspector_box.jpg" width="288" height="448" alt="The Inspector on OldSaucepan: the HorrorStudio box, What is this?, Make it a…, and the suggestion Pot"><figcaption>The Inspector's box: <i>What is this?</i>, every part in <i>Make it a…</i>, the suggestion.</figcaption></figure>
 </div>
 <p>A thing's <b>use</b> says what the player does with it, and the Inspector shows only that use's fields;
 give it a <b>display name</b> for the cursor ("Read · Letter").</p>
@@ -336,16 +338,52 @@ its skeleton.</p>
 <li><b>Behaviour</b>: how she starts: <i>idle</i> (stands where you put her), <i>sit</i> (on a <b>seat</b>), <i>path</i> (walks an HSPath), <i>patrol</i> (several paths in turn), or <i>off</i> (not there until the story brings her). <b>Face player</b> turns her to them. Later the story's <b>states</b> move her (§8).</li>
 <li><b>Sees player</b>: she watches; in her cone and range the suspicion meter fills, and when it's full the player is caught (a step or a moment can wait for it).</li>
 <li><b>Talk</b>: someone the Director file has conversations for takes a click whether this is ticked or not (the cursor says Talk) and plays the one the story offers now (§8); tick it for a click with no conversation behind it.</li>
-<li><b>Idle motion</b>, <b>walk motion</b>: animations on her AnimationPlayer (a Kimodo motion you brought in, §11).</li>
+<li><b>Idle motion</b>, <b>walk motion</b>: animations on her AnimationPlayer, given to her on the Animate tab (below) or brought in from Kimodo (§11).</li>
 <li><b>Cast</b>: who she is in the story when that isn't her id (a desk game's character placed in two places is both of them).</li>
-<li><b>Expression</b>: the face she rests in, a loop from the studio's expression library (the desk's Expressions tab).
-<code>install</code> brings the library into the project's <code>faces/</code> (the loops in <code>faces/loops/</code>);
-the story puts other faces on her (a line's face, a state's, a moment's <span class="ui">A face on someone</span>). Her
-model needs MHR's face shapes: the plain MHR body has them, and <code>install</code> bakes them into a Character Studio
-character's copy (<code>game/people/</code>).</li>
+<li><b>Expression</b>: the face she rests in, a face clip from the project's <code>faces/</code> (a loop, from
+<code>faces/loops/</code>); the Animate tab sets it too. The story puts other faces on her (a line's face, a state's, a
+moment's <span class="ui">A face on someone</span>). Her model needs MHR's face shapes: the plain MHR body has them,
+and <code>install</code> bakes them into a Character Studio character's copy (<code>game/people/</code>).</li>
 <li><b>Hidden at start</b> keeps her out of the level until the story shows her; <b>solid</b> off lets the player walk
 through her; <b>speed</b> is her walking pace.</li>
 </ul>
+<h3>Animations and faces: the Animate tab</h3>
+<figure class="wide"><img src="img/e_animate.jpg" width="954" height="42" alt="The panel's Animate tab with Mari selected: Body and Face on the left with the folders' buttons, the clips as cards grouped Idle and Look and search, each drawn as a moving figure, sample idle marked hers, and This character on the right with her idle, walk and resting face">
+<figcaption>The Animate tab with Mari selected: the project's clips as cards by what they're for, each drawn as its
+motion (it plays while the mouse is over it); her own marked <i>hers</i>.</figcaption></figure>
+<p>A game's animations live in two folders of the project, both empty in a new game: <code>animations/</code> for the
+body (Kimodo's <code>.npz</code> files as Kimodo saves them, or Godot animations, <code>.res</code>/<code>.tres</code>)
+and <code>faces/</code> for the face (face clips, the loops in <code>faces/loops/</code>). Copy in what the game needs
+(the tab's <span class="ui">Open animations/</span> and <span class="ui">Open faces/</span> open them in your file
+manager): a file dropped in shows up as a card on the panel's <span class="ui">Animate</span> tab within a couple of
+seconds. A folder named after a character's id (<code>animations/mari/</code>) holds clips made for her.</p>
+<ul>
+<li><b>The cards</b> are grouped by what the clip's name says it is: <i>idle</i>, <i>walk</i>, <i>run</i>,
+<i>sit</i>, <i>stand up</i>, <i>talk</i>, <i>listen</i>, <i>look &amp; search</i>, <i>reactions</i>, <i>scares</i>
+(<code>mari_sit_reading.npz</code> is a sit, <code>jumpscare_lunge.npz</code> a scare); anything else is under
+<i>Other</i>. Each says its length and whether it loops.</li>
+<li><b>Select a character and click a card</b>, or <b>drag the card onto her</b> in the 3D view or the Scene tree: a
+small menu asks what it's for: <span class="ui">Her idle</span>, <span class="ui">Her walk</span>,
+<span class="ui">Hers, for the story to play</span> (a moment's <span class="ui">Animate</span> can then play it), or
+<span class="ui">Look at it on her</span>.</li>
+<li>A Kimodo clip given to her is made on <b>her own skeleton</b> (the Character Studio's MHR, Kimodo's own, a Mixamo
+character or any model with Godot's humanoid bone map) and kept in <code>animations/_made/&lt;her id&gt;/</code>; a
+Godot animation is used as it is. Walks and runs are made in place (her path moves her).</li>
+<li><b>Look at it on her</b> plays it on her in the 3D view, and a face card's <span class="ui">Look at it on her
+face</span> plays a face on her face shapes, both at once if you like: the body and the face never fight (the body
+moves her bones, the face her face shapes). Nothing is saved; <span class="ui">■ Stop the preview</span> puts her back
+(saving does too).</li>
+<li>On the <span class="ui">Face</span> side a click makes a face <span class="ui">Her resting face</span>.</li>
+</ul>
+<figure class="wide"><img src="img/e_animate_faces.jpg" width="954" height="42" alt="The Animate tab's Face side: the face clips as cards, Faces and Loops"><figcaption>The Face side: the project's face clips, the loops apart.</figcaption></figure>
+<p>Face clips come from the studio's expression library (<code>Content/Studio/Expressions</code>, the desk's
+Expressions tab); put the ones a game needs into its <code>faces/</code>:</p>
+<pre>python tools/godot_director.py faces ~/Games/MyGame pout_and_glance pout_and_glance_loop</pre>
+<p>(no names: the whole library). If the story animates someone with a clip she hasn't been given, the panel's
+<span class="ui">Test</span> page says so, and names the Animate tab when the clip is in <code>animations/</code>.</p>
+<div class="notyet"><b>Not yet.</b> A character's moves by role (sit down, sitting, stand up, talk, listen, look
+round) played by every behaviour; what she does in each quest (<i>On stage</i>); FBX and glTF clips; a separate Face
+page for making face clips from a video. They're next (<code>docs/GODOT_ANIMATION_PLAN.md</code>).</div>
 </section>
 
 <section id="story">
@@ -681,10 +719,12 @@ and they fall off ledges. The cursor clicks things within 2.2 m.</p>
 </ol>
 </div>
 </div>
-<p>The motion lands on her own skeleton, the fingers too (the Character Studio's MHR, Kimodo's own, a Mixamo character,
-or any model imported with Godot's humanoid bone map), is saved in <code>motions/&lt;her id&gt;/</code>, and starts playing. In the
-game her <b>idle motion</b> loops while she stands and her <b>walk motion</b> while she walks; a state can give her a
-motion, and a moment's <b>motion</b> command plays one once.</p>
+<p>The motion goes into the project's animation library (<code>animations/&lt;her id&gt;/</code>, a card on the
+Animate tab, §5) and onto her own skeleton, the fingers too (the Character Studio's MHR, Kimodo's own, a Mixamo
+character, or any model imported with Godot's humanoid bone map), kept in <code>animations/_made/&lt;her id&gt;/</code>,
+and starts playing. In the game her <b>idle motion</b> loops while she stands and her <b>walk motion</b> while she
+walks; a state can give her a motion, and a moment's <b>motion</b> command plays one once. A Kimodo
+<code>.npz</code> dropped straight into <code>animations/</code> works the same way, from the Animate tab.</p>
 <div class="note">The studio folder (the one with <code>tools/kimodo.py</code>) is filled in when the project is made;
 set <b>Python</b> to how you run the studio's tools (<code>python3</code>, <code>uv run python</code>...). Kimodo itself
 must be set up first (<code>python setup/setup.py kimodo</code>).</div>
@@ -709,7 +749,7 @@ must be set up first (<code>python setup/setup.py kimodo</code>).</div>
 <section id="update">
 <h2><span class="n">13</span>Keeping it up to date</h2>
 <ul>
-<li>The add-ons in a project are copies: after you pull the studio, run <code>python tools/godot_director.py install &lt;project&gt;</code> again (or use <code>--link</code> once and never think about it). It also brings the expression library into <code>faces/</code> again; <code>node tools/face_export.mjs --project &lt;project&gt;</code> does that alone. The Manager runs from the studio's folder, so it's always current.</li>
+<li>The add-ons in a project are copies: after you pull the studio, run <code>python tools/godot_director.py install &lt;project&gt;</code> again (or use <code>--link</code> once and never think about it). It leaves <code>animations/</code> and <code>faces/</code> as you have them; <code>python tools/godot_director.py faces &lt;project&gt; &lt;id&gt; ...</code> brings face clips from the studio's expression library. The Manager runs from the studio's folder, so it's always current.</li>
 <li><code>python tools/godot_director.py check</code> builds the sample, plays it to its ending, tests the Kimodo link and drives the dock in the editor. It ends with <code>DIRECTOR ok</code>.</li>
 <li>A game from the desk made again after its story changed there: <code>python tools/godot_director.py from-desk &lt;Game&gt; --force</code> (it replaces the project). <code>--play</code> plays the Pilot and TestRoom001 through as their checks do; it ends with <code>FROMDESK ok</code>.</li>
 <li><code>python tools/godot_director.py guide</code> makes this guide's pictures again (Godot opens a window for a few minutes, then the Manager is pictured in a browser).</li>

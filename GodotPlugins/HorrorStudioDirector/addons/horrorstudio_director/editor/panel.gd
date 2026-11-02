@@ -1,19 +1,22 @@
 @tool
 extends EditorDock
 ## The HorrorStudio panel (docs/GODOT_DIRECTOR.md §6e; the design: "Director Panel Design"): along the bottom of the
-## editor (or floating on a second screen), three tabs: Build (what the game is made of, as cards: build_tab.gd), Story
-## (the quests and moments as sentences: story_tab.gd) and Test (play, and what's wrong). Its header searches every card and says what's
+## editor (or floating on a second screen), four tabs: Build (what the game is made of, as cards: build_tab.gd), Story
+## (the quests and moments as sentences: story_tab.gd), Animate (the project's body and face clips as cards, given to a
+## character: animate_tab.gd) and Test (play, and what's wrong). Its header searches every card and says what's
 ## selected. The old dock (dock.gd, under the Inspector) keeps the running game's marks, the things and Kimodo.
 
 const Glyphs := preload("res://addons/horrorstudio_director/editor/glyphs.gd")
 const BuildTab := preload("res://addons/horrorstudio_director/editor/build_tab.gd")
 const StoryTab := preload("res://addons/horrorstudio_director/editor/story_tab.gd")
 const CheckTab := preload("res://addons/horrorstudio_director/editor/check_tab.gd")
+const AnimateTab := preload("res://addons/horrorstudio_director/editor/animate_tab.gd")
 
 var plugin: EditorPlugin = null
 var dock = null                    # the dock's helpers (root, selected, select, add_node, view_spot...)
 var build
 var story
+var animate
 var test
 var tab_buttons := {}
 var pages := {}
@@ -72,7 +75,8 @@ func _ready() -> void:
 	tabs.add_theme_constant_override("separation", int(4 * s))
 	head.add_child(tabs)
 	for t in [["build", "Build", "What the game is made of: click a card, or drag it onto a model"],
-			["story", "Story", "The quests, in order, and what happens in them"], ["test", "Test", "Play it, and what's wrong"]]:
+			["story", "Story", "The quests, in order, and what happens in them"],
+			["animate", "Animate", "The project's animations and faces: give them to a character"], ["test", "Test", "Play it, and what's wrong"]]:
 		var b := Button.new()
 		b.name = "Tab_" + t[0]
 		b.text = t[1]
@@ -128,6 +132,11 @@ func _ready() -> void:
 	story.panel = self
 	stack.add_child(story)
 	pages["story"] = story
+	animate = AnimateTab.new()
+	animate.name = "Animate"
+	animate.panel = self
+	stack.add_child(animate)
+	pages["animate"] = animate
 	test = VBoxContainer.new()
 	test.name = "Test"
 	var plays := HBoxContainer.new()

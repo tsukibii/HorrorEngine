@@ -4,9 +4,10 @@ extends ScrollContainer
 ## Send her room: the room she stands in and the ones by it, as Kimodo's stage from where she stands (stage.gd),
 ## written where Kimodo's demo opens it; Open Kimodo starts the demo (tools/kimodo.py demo in the studio) and the
 ## browser on it. Make the motion there and save it (Download as NPZ, or Send to Studio); it's listed here (the
-## project's kimodo/motions, the studio's Saved/Kimodo, Downloads); Import puts it on the selected character as an
-## animation of her own skeleton (retarget.gd), saved in motions/<her id>/, on her AnimationPlayer, ready for her
-## idle or walk, or an event's Play motion.
+## project's kimodo/motions, the studio's Saved/Kimodo, Downloads); Import puts it in the project's animation library
+## (res://animations/<her id>/, a card on the panel's Animate tab: core/library.gd) and on the selected character as
+## an animation of her own skeleton (retarget.gd, kept in res://animations/_made/<her id>/), on her AnimationPlayer
+## (its library `anims`), ready for her idle or walk, or an event's Play motion.
 
 var dock = null
 var box: VBoxContainer
@@ -209,36 +210,25 @@ func _import() -> void:
 		info.text = "No posed_joints in that file."
 		return
 	var nm := HSDirector.snake(name_edit.text if name_edit.text.strip_edges() != "" else str(files[sel[0]]).get_file().get_basename())
-	var ap := HSRetarget.player_of(a)
-	if ap.owner == null:
-		ap.owner = dock.root()
-	var anim := HSRetarget.animation(frames, sk, a, ap.get_node(ap.root_node), {"fps": fps.value, "in_place": in_place.button_pressed, "loop": loop.button_pressed})
-	if anim == null:
-		info.text = "The retarget failed (see the Output)."
+	var dest := "%s/%s/%s.npz" % [HSLibrary.BODY, HSDirector.id_of(a), nm]            # into the library, a card on the Animate tab
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(dest.get_base_dir()))
+	if ProjectSettings.globalize_path(dest) != str(files[sel[0]]):
+		DirAccess.copy_absolute(files[sel[0]], ProjectSettings.globalize_path(dest))
+	var why := [""]
+	var made := HSLibrary.make_for(a, {"id": nm, "path": dest, "kind": "npz", "role": HSLibrary.role_of(nm), "loop": loop.button_pressed}, why,
+		{"fps": fps.value, "in_place": in_place.button_pressed, "loop": loop.button_pressed})
+	if made == "":
+		info.text = why[0]
 		return
-	var dir := "res://motions/%s" % HSDirector.id_of(a)
-	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(dir))
-	var path := "%s/%s.res" % [dir, nm]
-	ResourceSaver.save(anim, path)
-	anim = load(path)
-	var lib: AnimationLibrary
-	if ap.has_animation_library("kimodo"):
-		lib = ap.get_animation_library("kimodo")
-	else:
-		lib = AnimationLibrary.new()
-		ResourceSaver.save(lib, dir + "/kimodo.tres")
-		lib = load(dir + "/kimodo.tres")
-		ap.add_animation_library("kimodo", lib)
-	if lib.has_animation(nm):
-		lib.remove_animation(nm)
-	lib.add_animation(nm, anim)
-	ResourceSaver.save(lib, lib.resource_path)
+	var ap := HSRetarget.player_of(a)
+	var path := "%s/%s/%s/%s.res" % [HSLibrary.BODY, HSLibrary.MADE, HSDirector.id_of(a), nm]
 	match use_as.selected:
 		1:
 			a.idle_motion = nm
 		2:
 			a.walk_motion = nm
 	EditorInterface.mark_scene_as_unsaved()
-	ap.play("kimodo/" + nm)
-	info.text = "%s: %d frames onto %s's %s skeleton, saved as %s, playing on her AnimationPlayer (kimodo/%s).%s" % [nm, frames.size(), a.name, fam, path, nm,
+	EditorInterface.get_resource_filesystem().scan()
+	ap.play(HSLibrary.LIB + "/" + nm)
+	info.text = "%s: %d frames onto %s's %s skeleton, saved as %s, playing on her AnimationPlayer (%s/%s).%s" % [nm, frames.size(), a.name, fam, path, HSLibrary.LIB, nm,
 		" Her %s." % ["idle", "walk"][use_as.selected - 1] if use_as.selected > 0 else ""]

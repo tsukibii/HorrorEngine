@@ -250,7 +250,10 @@ kimodo and pass it back to godot exported and ready to use."
    Downloads. Pick one, name it, tick **in place** for a walk the path moves her along and **loops** for an idle or a
    walk, choose whether it's her idle or walk, and **Import onto the selected character**: it's retargeted onto her own
    skeleton (the Character Studio's MHR, Kimodo's SOMA, Godot's humanoid profile after a BoneMap import, or Mixamo's
-   names), saved as `motions/<her id>/<name>.res` in a `kimodo` library on her AnimationPlayer, and plays.
+   names) and plays. The .npz goes into the project's animation library (`animations/<her id>/<name>.npz`, a card on
+   the panel's Animate tab, §6g), the made animation into `animations/_made/<her id>/<name>.res`, in the `anims`
+   library on her AnimationPlayer (`HSLibrary.make_for`; projects from before the library keep their `kimodo`
+   library and `motions/` folder, still read).
 
 The retarget is the desk's (bodies.js): each limb bone pointed joint to joint with side axes from the positions (the
 elbow's bend, the palm, the toes), so neither rig's rotation conventions nor its rest pose matter; the trunk turned by
@@ -270,8 +273,10 @@ waits); an event's **Play motion** plays one once.
 ## 6c. Faces (DECISIONS 2026-11-01: "a tool to export a facial animation and add it into Godot, a facial animation folder; the exporter should export the loopables separately")
 
 The studio's **expression library** (`Content/Studio/Expressions/<id>/expression.json`: a captured face's ARKit
-curves, the desk's Expressions tab) comes into a project as clips: `node tools/face_export.mjs --project <folder>`
-(also run by `godot_director.py new` and `install`) samples each expression as the desk plays it (`tools/shared/face.js`:
+curves, the desk's Expressions tab) comes into a project as clips: `python tools/godot_director.py faces <folder>
+[id ...]` (`node tools/face_export.mjs --project <folder> [id ...]`; a new project's `faces/` starts empty, DECISIONS
+2026-11-02 night: "I'll just manually move over what I need every project"; `new --sample` brings the sample's two,
+`from-desk` the ones its story puts on faces) samples each expression as the desk plays it (`tools/shared/face.js`:
 its rest taken away, its strength, a loop's end crossfaded into its start) onto MHR's 72 face shapes, 30 frames a
 second, and writes it as an **HSFaceClip** (`addons/horrorstudio/face_clip.gd`): `faces/<id>.tres`, **the loops apart
 in `faces/loops/<id>.tres`** (a loop runs round, its last frame into its first). Only the shapes it moves are kept,
@@ -471,6 +476,51 @@ DIRECTOR's playthrough finds the cat's eyes (its thought, the quest still on); a
 (`alone_check.gd --mode=egg`) finds both, the skip landing on the night with the errand, the talk and the bedroom's
 quest left out; MANAGERPAGE makes one.
 
+## 6g. The animation library and the Animate tab (the user, 2026-11-02: "an animation and facial animation tab to store animations… ideally I can just drag animations into the folders"; docs/GODOT_ANIMATION_PLAN.md, its step 1)
+
+Two folders in every project, empty in a new one (the user copies in what a game needs): **`animations/`** for body
+clips (Kimodo's `.npz` as Kimodo saves it, Godot animations `.res`/`.tres`/`.anim`; a folder named after a
+character's id holds hers) and **`faces/`** for face clips (HSFaceClip `.tres`, the loops in `faces/loops/`).
+`core/library.gd` (**HSLibrary**) reads them: `body()` (each clip's id, file, kind, who it's for, role, seconds, loop),
+`faces()`, `ids()` (by file name alone, for compile.gd at play), a clip's **role** by its name's words (`role_of`:
+stand up before idle's *stand*, *scared* a reaction before a scare's words; `MariStandUp` is a stand, `return_home`
+other), a Kimodo clip's **figure** (`figure`: its body's 24 joints at up to 48 moments, the hips held over one spot,
+seen turned 0.5 rad from the front; read once a file), and `res://.hsdirector/library.json` beside the ids' index
+(written on every save, for the Manager's pickers to come). `animation_for` makes a clip an Animation for a character
+in memory (an .npz retargeted onto her own skeleton by kimodo/retarget.gd, walks and runs in place, its loop by its
+role; a Godot animation as it is); `make_for` gives it to her: saved as `animations/_made/<her id>/<clip>.res` and put
+in the `anims` library on her AnimationPlayer (`anims/<clip>`, played by the runtime by its name: play.gd
+`player_with`), the scene marked changed.
+
+**The Animate tab** (`editor/animate_tab.gd`, the panel's third tab): Body and Face down the left with the folders'
+buttons (each opens its folder in the file manager); the folders polled every 2 s while the tab is open (their files
+and times: Godot's own scan skips an .npz, so a dropped one would never say so); the clips as cards in groups by role (Idle, Walk, Run, Sit, Stand up, Talk, Listen, Look & search,
+Reactions, Scares, Other; the faces as Faces and Loops), each with its length and *loops* or *once*, a Kimodo clip
+drawn as its figure (its start, middle and end faint to full; played while the mouse is over it), hers marked
+(*hers*, a blue edge); This character on the right (her idle, walk and resting face, her clips). A card clicked with
+a character selected, or **dragged onto her** in the 3D view or the Scene tree (it drags the spot preset; plugin.gd
+`_unlink` with `pending_anim` takes the drop back and finds her: in the 3D view the character whose meshes' boxes the
+mouse's ray meets, `actor_on_ray` (the panel's model picking leaves characters out), else the nearest within 1.5 m;
+in the Scene tree the one it fell on): a menu, *Her idle*, *Her walk* (on the scene's undo), *Hers, for the story to
+play*, *Look at it on her (▶)*; a face card *Her resting face*, *Look at it on her face*. **The preview** plays in
+the 3D view on a player of its own (`_Preview`: no owner, a name with "_", never saved), the clip made in memory, a
+face clip's weights on her face shapes from the tab's `_process`; both at once (the user: "make sure I can mix facial
+data with kimodo animations": the body moves her bones, the face her blend shapes; they never fight); ■ puts her pose
+and face back exactly, and so does a save (`_apply_changes`). The Kimodo tab's import lands in the same library.
+compile.gd warns of a story `anim` naming a clip the character hasn't got (the Animate tab named when the clip is in
+the library).
+
+Measured (DIRECTOR): the sample's two clips (`animations/mari/sample_idle.npz`, Mari's idle, made hers by make_sample
+through `make_for`; `animations/look_around.npz`, anyone's) as cards in Idle and Look & search, each a figure of 40
+moments; the roles of six names; its two faces on the Face side; Mari's idle *hers*, her idle and resting face read; a
+story clip she hasn't got warned of (the library's named, the other not in the project), none after the look round is
+made hers (its file there, `anims/look_around` on her player); the look round and a face on her at once in the 3D
+view, her bones and face shapes moving between two moments, put back after (and the throwaway player gone); a card
+dropped on her: her menu, the drop taken back; a Kimodo file copied in while the tab is open a card in a group of
+its own, in the tab's order; a preview left playing stopped by a save, nothing of it saved. In play: her Kimodo idle on her bones and her face loop on her face
+shapes, both moving in the same moment. (The sample's idle had been one frozen pose: a Skeleton3D out of the tree kept
+its first pose, so make_sample now works out SOMA's joints itself; LESSONS.)
+
 ## 7. Where you are
 
 Three ways to see it: the dock's Director tab while the game runs from the editor (it sends the quest, the facts and
@@ -524,3 +574,7 @@ on the Director projects made from the desk's games.
 - The desk can't open a Director game, and a Director game can't go back to the desk: the scene is the game now
   (`from-desk` goes one way, §6d: making it again replaces the project).
 - From the desk (§6d): the trims and thresholds, a kit door's own model, the light zones per room.
+- Animation (§6g, docs/GODOT_ANIMATION_PLAN.md's order): a character's moves by role played by every behaviour (step
+  3), On stage per quest (4), paths and patrols drawn in the 3D view (5), reactions and scares (6), cutscenes in the
+  level with a soft lock and its safety release (7); the Face page out of the desk (2); FBX and glTF clips and a
+  picture on a grey MHR body for each card (later); the story's pickers offering the library's clips not yet hers.

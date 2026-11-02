@@ -96,40 +96,44 @@ func _own_all(_n: Node) -> void:
 
 
 ## a standing idle on Kimodo's SOMA skeleton (soma77.json): the arms down at the sides, breathing, a slow weight
-## shift, the head turning a little; [frames, 77, 3] as Kimodo saves it, looping
-func idle_frames(n: int) -> PackedFloat32Array:
+## shift, the head turning a little; [frames, 77, 3] as Kimodo saves it, looping. `look`: a look round instead (the
+## head and the chest turned to one side, then the other, once)
+func idle_frames(n: int, look := false) -> PackedFloat32Array:
 	var S := HSRetarget.soma()
 	var names: Array = S["names"]
-	var sk := Skeleton3D.new()
+	var par: Array = []                             # each joint's parent and its rest offset from it (SOMA's rest has no turns)
+	var off: Array = []
 	for i in names.size():
-		sk.add_bone(names[i])
-	for i in names.size():
-		var par = S["parents"][i]
-		var pi: int = names.find(par) if par != null else -1
-		if pi >= 0:
-			sk.set_bone_parent(i, pi)
+		var pn = S["parents"][i]
+		var pi: int = names.find(pn) if pn != null else -1
 		var r: Array = S["rest"][i]
 		var pr: Array = S["rest"][pi] if pi >= 0 else [0, 0, 0]
-		sk.set_bone_rest(i, Transform3D(Basis(), Vector3(float(r[0]) - float(pr[0]), float(r[1]) - float(pr[1]), float(r[2]) - float(pr[2]))))
+		par.append(pi)
+		off.append(Vector3(float(r[0]) - float(pr[0]), float(r[1]) - float(pr[1]), float(r[2]) - float(pr[2])))
 	var out := PackedFloat32Array()
-	for f in n:
-		var t := f / float(n)
-		sk.reset_bone_poses()
+	for f in n:                                     # the joints' places worked out here, parent before child (a Skeleton3D out of
+		var t := f / float(n)                       # the tree keeps its first pose: every frame came out the same)
 		var breathe := sin(t * TAU * 2.0)
 		var shift := sin(t * TAU)
-		sk.set_bone_pose_rotation(sk.find_bone("LeftArm"), Quaternion(Vector3(0, 0, 1), -1.25 + 0.03 * breathe))
-		sk.set_bone_pose_rotation(sk.find_bone("RightArm"), Quaternion(Vector3(0, 0, 1), 1.25 - 0.03 * breathe))
-		sk.set_bone_pose_rotation(sk.find_bone("LeftForeArm"), Quaternion(Vector3(0, 1, 0), 0.15))
-		sk.set_bone_pose_rotation(sk.find_bone("RightForeArm"), Quaternion(Vector3(0, 1, 0), -0.15))
-		sk.set_bone_pose_rotation(sk.find_bone("Chest"), Quaternion(Vector3(1, 0, 0), -0.03 * breathe))
-		sk.set_bone_pose_rotation(sk.find_bone("Head"), Quaternion(Vector3(0, 1, 0), 0.25 * sin(t * TAU + 1.0)))
-		var h := sk.find_bone("Hips")
-		sk.set_bone_pose_position(h, sk.get_bone_rest(h).origin + Vector3(0.03 * shift, 0.004 * breathe, 0))
-		sk.force_update_all_bone_transforms()
+		var rot := {"LeftArm": Quaternion(Vector3(0, 0, 1), -1.25 + 0.03 * breathe), "RightArm": Quaternion(Vector3(0, 0, 1), 1.25 - 0.03 * breathe),
+			"LeftForeArm": Quaternion(Vector3(0, 1, 0), 0.15), "RightForeArm": Quaternion(Vector3(0, 1, 0), -0.15)}
+		if look:
+			rot["Chest"] = Quaternion(Vector3(0, 1, 0), 0.35 * sin(t * TAU))
+			rot["Head"] = Quaternion(Vector3(0, 1, 0), 0.7 * sin(t * TAU))
+		else:
+			rot["Chest"] = Quaternion(Vector3(1, 0, 0), -0.03 * breathe)
+			rot["Head"] = Quaternion(Vector3(0, 1, 0), 0.25 * sin(t * TAU + 1.0))
+		var glob: Array = []
+		glob.resize(names.size())
+		var at := func(i: int, me: Callable) -> Transform3D:
+			if glob[i] == null:
+				var o: Vector3 = off[i] + (Vector3(0.03 * shift, 0.004 * breathe, 0) if names[i] == "Hips" else Vector3.ZERO)
+				var local := Transform3D(Basis(rot.get(names[i], Quaternion())), o)
+				glob[i] = (me.call(par[i], me) * local) if par[i] >= 0 else local
+			return glob[i]
 		for i in names.size():
-			var p: Vector3 = sk.get_bone_global_pose(i).origin
+			var p: Vector3 = at.call(i, at).origin
 			out.append_array([p.x, p.y, p.z])
-	sk.free()
 	return out
 
 
@@ -213,26 +217,25 @@ func _initialize() -> void:
 	mari.face_player = true
 	mari.talk = true
 	mari.display_name = "Mari"
-	if ResourceLoader.exists("res://bodies/MHR.fbx"):           # her body: the studio's MHR, with an idle made on Kimodo's skeleton and brought in
+	# the animation library (docs/GODOT_ANIMATION_PLAN.md §3): two Kimodo clips made on SOMA's skeleton, Mari's idle in
+	# her own folder and a look round anyone can have
+	for spec in [["res://animations/mari/sample_idle.npz", false], ["res://animations/look_around.npz", true]]:
+		var npz := ProjectSettings.globalize_path(spec[0])
+		DirAccess.make_dir_recursive_absolute(npz.get_base_dir())
+		HSNpz.write(npz, {"posed_joints": [[120, 77, 3], idle_frames(120, spec[1])]})
+	if ResourceLoader.exists("res://bodies/MHR.fbx"):           # her body: the studio's MHR, her idle the library's clip made hers
 		var body: Node3D = (load("res://bodies/MHR.fbx") as PackedScene).instantiate()
 		own(body, mari, "Body")
 		_own_all(body)
-		var npz := ProjectSettings.globalize_path("res://kimodo/motions/sample_idle.npz")
-		DirAccess.make_dir_recursive_absolute(npz.get_base_dir())
-		HSNpz.write(npz, {"posed_joints": [[120, 77, 3], idle_frames(120)]})
-		var sk := HSRetarget.skeleton_of(body)
-		var ap := HSRetarget.player_of(mari)
-		ap.owner = root_
-		var anim := HSRetarget.animation(HSNpz.joints(HSNpz.read(npz)), sk, mari, mari, {"fps": 30.0, "loop": true})
-		DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://motions/mari"))
-		ResourceSaver.save(anim, "res://motions/mari/sample_idle.res")
-		var lib := AnimationLibrary.new()
-		lib.add_animation("sample_idle", load("res://motions/mari/sample_idle.res"))
-		ResourceSaver.save(lib, "res://motions/mari/kimodo.tres")
-		ap.add_animation_library("kimodo", load("res://motions/mari/kimodo.tres"))
-		mari.idle_motion = "sample_idle"
+		var why := [""]
+		var nm := HSLibrary.make_for(mari, HSLibrary.clip("sample_idle"), why)
+		if nm != "sample_idle":
+			printerr("SAMPLE FAIL Mari's idle: %s" % why[0])
+			quit(1)
+			return
+		mari.idle_motion = nm
 		mari.height = 1.75
-	mari.expression = "pout_and_glance_loop"          # the face she rests in: a loop from the expression library (install brings it into faces/loops/)
+	mari.expression = "pout_and_glance_loop"          # the face she rests in: a loop from the expression library (new --sample bakes it into faces/loops/)
 	var fig: HSActor = own(HSActor.new(), kitchen, "Figure")
 	fig.position = Vector3(1.4, 0, 1.3)
 	fig.rotation_degrees = Vector3(0, -90, 0)

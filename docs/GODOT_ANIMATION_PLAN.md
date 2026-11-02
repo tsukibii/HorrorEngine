@@ -5,8 +5,9 @@ cinematic animations easy based on 'quest', should we add an animation and facia
 animations, these can be project specific, how do I easily be like at this point npc is doing this, then if quest
 complete they get up and walk here with this animation, you can talk to them here, they have this expression etc,
 jump scare plays this… an easy drag and drop animation system, ideally I can just drag animations into the folders…
-Come up with a good plan first."* Nothing here is built yet. §9 is the build order; §10 the questions, and the
-user's answers (DECISIONS 2026-11-02, night), which this plan now follows.
+Come up with a good plan first."* §9 is the build order (step 1 built: the library and the Animate tab,
+docs/GODOT_DIRECTOR.md §6g); §10 the questions, and the user's answers (DECISIONS 2026-11-02, night), which this plan
+now follows.
 
 ## 1. What's there today
 
@@ -177,9 +178,11 @@ in-between (a move per transition) and the new keys.
 
 ## 9. Build order (each a step, checked and pushed)
 
-1. **The library and the Animate tab**: the two folders (empty in a new project), Kimodo `.npz` and Godot clips
-   imported on drop, the index, the tab's cards (Body and Face), ▶ on the selected character, a body clip and a face
-   clip played together on one character.
+1. **The library and the Animate tab** *(built, 2026-11-02: GODOT_DIRECTOR §6g)*: the two folders (empty in a new
+   project), Kimodo `.npz` and Godot clips imported on drop, the index, the tab's cards (Body and Face), ▶ on the
+   selected character, a body clip and a face clip played together on one character. Not in it yet: the cards'
+   pictures on a grey MHR body (a Kimodo card is drawn as its figure from its own joints instead), the character
+   filter, a body card carrying a face.
 2. **The Face page**: the face video import out of the desk, Save to the library, For Godot.
 3. **Moves**: a character's slots (drop onto her or her slots), the fallbacks, every behaviour playing her moves (walk,
    run, sit down/sitting/stand up, talk/listen, look around).

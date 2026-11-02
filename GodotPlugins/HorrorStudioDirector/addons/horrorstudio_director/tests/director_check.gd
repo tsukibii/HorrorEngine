@@ -222,6 +222,39 @@ func _initialize() -> void:
 		if big < 0.05 or seen.size() < 3 or idx < 0:
 			return "her face barely moves (the biggest shape %.3f, %d different frames, shape_c_45 at %d)" % [big, seen.size(), idx]
 		return "")
+	await step("Mari's body and face together: her Kimodo idle (the library's clip, made hers) on her bones and her face loop on her face shapes, both moving in the same moment", func():
+		var node = rt.cast_nodes.get("mari")
+		var ap = load("res://addons/horrorstudio/play.gd").player_with(node, "sample_idle")
+		if ap == null or not str(ap.current_animation).begins_with("anims/"):
+			return "her idle isn't the library's (playing %s)" % (ap.current_animation if ap != null else "nothing")
+		var sk: Skeleton3D = node.find_children("*", "Skeleton3D", true, false)[0]
+		var mi: MeshInstance3D = rt.faces.people["mari"]["mesh"]
+		var pose := func():
+			var o: Array = []
+			for i in sk.get_bone_count():
+				o.append(sk.get_bone_pose_rotation(i))
+			return o
+		var blends := func():
+			var o: Array = []
+			for i in mi.get_blend_shape_count():
+				o.append(mi.get_blend_shape_value(i))
+			return o
+		var p0: Array = pose.call()
+		var b0: Array = blends.call()
+		await game_wait(0.4)
+		var p1: Array = pose.call()
+		var b1: Array = blends.call()
+		var bones := 0
+		var shapes := 0
+		for i in p0.size():
+			if (p0[i] as Quaternion).angle_to(p1[i]) > 0.002:
+				bones += 1
+		for i in b0.size():
+			if absf(float(b0[i]) - float(b1[i])) > 0.002:
+				shapes += 1
+		if bones < 3 or shapes < 2:
+			return "%d of her bones and %d of her face shapes moved" % [bones, shapes]
+		return "")
 	await step("a wall stops the player (Godot's physics: the hall's west wall)", func():
 		rt.place(Vector3(-1.0, 0.0, 0.0), 180.0, 0.0)
 		await hold("W", 2.0)

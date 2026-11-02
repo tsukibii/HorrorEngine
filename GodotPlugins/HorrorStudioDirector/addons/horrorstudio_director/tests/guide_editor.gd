@@ -366,5 +366,27 @@ func _process(dt: float) -> void:
 			if fl4 != null:
 				_shot("e_flow_egg", fl4.get_global_rect())
 			EditorInterface.set_main_screen_editor("3D")
+			var r := EditorInterface.get_edited_scene_root()     # the Animate tab on Mari: the library's clips as cards, hers marked
+			panel.make_visible()                                 # (Story Flow folded the bottom panel away)
+			panel.show_page("animate")
+			panel.animate.face_side = false
+			dock.select(r.find_child("Mari", true, false))
+			panel.on_selection()
+			at = t
+			phase = 23
+		23:
+			if t - at < 2.0:
+				return
+			_shot("e_animate", _panel_rect())
+			panel.animate.face_side = true                 # its Face side
+			panel.animate.refresh()
+			at = t
+			phase = 24
+		24:
+			if t - at < 1.0:
+				return
+			_shot("e_animate_faces", _panel_rect())
+			panel.animate.face_side = false
+			panel.show_page("build")
 			print("GUIDEEDITOR " + JSON.stringify({"made": made}))
 			get_tree().quit()

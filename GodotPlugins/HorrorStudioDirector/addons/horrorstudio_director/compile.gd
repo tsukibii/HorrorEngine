@@ -64,7 +64,7 @@ func compile(g: Node, alone: Node = null, file: Dictionary = {}) -> Dictionary:
 			if str(a.expression) != "":
 				rests.append({"while": null, "set": {HSDirector.id_of(a): {"expr": str(a.expression)}}})
 				if not ResourceLoader.exists("res://faces/loops/%s.tres" % a.expression) and not ResourceLoader.exists("res://faces/%s.tres" % a.expression):
-					warn(a, "%s's expression %s isn't in the project's faces/ (tools/face_export.mjs, or install again)" % [HSDirector.id_of(a), a.expression])
+					warn(a, "%s's expression %s isn't in the project's faces/ (the Animate tab's Face side: python tools/godot_director.py faces <project> %s)" % [HSDirector.id_of(a), a.expression, a.expression])
 	if rests.size():
 		brain["states"] = rests + brain.get("states", [])
 	for who in brain.get("talks", {}) if not Engine.is_editor_hint() else {}:   # a person the story talks with: the cursor offers Talk on her (at play)
@@ -263,3 +263,29 @@ func _check_refs(f: Dictionary) -> void:
 				if not there and not seen.has(target):
 					seen[target] = true
 					warn(game, "a state sets %s, which isn't in the scene (a character, a thing, a door or a light)" % target)
+	_check_clips(f)
+
+
+## a clip the story plays on someone (`anim`) that she hasn't got on her: the library's (core/library.gd) given to her
+## on the Animate tab, or not in the project at all
+func _check_clips(f: Dictionary) -> void:
+	var hers := {}
+	for lv in levels.values():
+		for a in HSDirector.nodes_of(lv, "HSActor"):
+			hers[a.cast_id()] = a.motion_names()
+	var lib := HSLibrary.ids()
+	var seen := {}
+	var todo: Array = [f]
+	while todo.size():
+		var o = todo.pop_back()
+		if o is Array:
+			todo.append_array(o)
+		elif o is Dictionary:
+			if o.get("anim") is String and o.get("clip") is String and hers.has(o["anim"]) and str(o["clip"]) != "":
+				var who := str(o["anim"])
+				var clip := str(o["clip"])
+				if not (hers[who] as Array).has(clip) and not seen.has(who + "/" + clip):
+					seen[who + "/" + clip] = true
+					warn(game, "the story animates %s with %s, which she hasn't got: %s" % [who, clip,
+						"give it to her on the panel's Animate tab (Hers, for the story to play)" if lib.has(clip) else "no clip of that name in res://animations/ either"])
+			todo.append_array(o.values())

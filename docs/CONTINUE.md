@@ -11,7 +11,26 @@ the to-do built there, with the Studio's eyes from the side, a small nose and th
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-02, branch `Director-Godot`): talk to, the marker, an intro first
+## Where it stopped last (2026-11-02, night, branch `Director-Godot`): animation step 1, the library and the Animate tab
+
+The user asked for an easy drag-and-drop animation system by quest; the plan is docs/GODOT_ANIMATION_PLAN.md, with
+their answers (DECISIONS 2026-11-02, night: Kimodo and the desk's face-video tool, face and body mixed in Godot, a new
+project's folders empty, cutscenes in the level with a soft lock and a safety release, start with the library, moves
+and On stage). **Step 1 is built** (GODOT_DIRECTOR §6g): `animations/` and `faces/` in every project (empty; `new
+--sample` brings the sample's two faces, `from-desk` its story's; `godot_director.py faces <project> [id ...]` brings
+more), `core/library.gd` reading them, and the panel's **Animate** tab: the clips as cards by role (a Kimodo card
+drawn as its own figure, played on hover), a click or a drag onto a character for her idle, her walk, hers for the
+story, or a preview in the 3D view (in memory, never saved), a face on her face shapes at the same time. The Kimodo
+tab imports into the library. On the way the check found the sample's Kimodo idle had always been one frozen pose
+(LESSONS): Mari breathes and looks round now.
+
+Next, in the plan's order (ask first): **2, the Face page** (the desk's face-video import as a page of its own with
+Save and For Godot), **3, moves** (a character's slots by role, every behaviour playing them), **4, On stage** (what
+each person does during each quest, the in-between played by itself). To ask the user: the Animate tab in their own
+hands (the cards, the drag onto a character, the preview), whether a card's figure is enough of a picture or they
+want each on a grey MHR body.
+
+## Before that (2026-11-02, branch `Director-Godot`): talk to, the marker, an intro first
 
 After the panel (below), three asks, each checked and pushed (DECISIONS 2026-11-01, evening, and 2026-11-02):
 - **Talk to…** as a quest step and a moment's WHEN (the Story tab and the Manager): who, then when it counts (she's

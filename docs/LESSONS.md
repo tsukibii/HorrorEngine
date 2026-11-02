@@ -1195,3 +1195,17 @@ guessed margin; and a check that only ever ran on a slow machine hasn't been run
   `HSRain.new()` needs `rain.gd` to be `@tool` too.
 - **`surface_get_name` is ArrayMesh's alone**: a helper that matches surfaces by name must skip it for a
   primitive mesh (a SphereMesh stood in for a body and the skin's `wear` stopped there).
+
+## A check that a motion "plays" passed on a motion that never moved (2026-11-02)
+
+The sample's Kimodo idle for Mari was made by posing a Skeleton3D built in code, outside the scene tree, frame by
+frame and reading `get_bone_global_pose`: every frame came out the first frame's pose (the arms down, nothing else),
+so the retargeted animation had 120 identical keys a track. DIRECTOR had checked only that her AnimationPlayer was
+playing `sample_idle`, which it was. The new check (her bones and her face shapes moving in the same moment) found it:
+0 bones moved, 31 face shapes did.
+
+- **Check that a motion moves, between two moments while it plays**, never only that its player says it's playing,
+  and never against the pose before it started (the first editor check compared her rest with the preview and
+  counted 48 bones "moving" on a frozen clip).
+- **Work out joint positions yourself when making test motions** (parent's transform times the bone's local, parents
+  first): a Skeleton3D out of the tree isn't a reliable calculator for its own global poses.

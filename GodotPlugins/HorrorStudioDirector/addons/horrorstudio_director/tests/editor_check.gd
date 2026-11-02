@@ -114,12 +114,40 @@ func _process(dt: float) -> void:
 			_flow_edit_checks()
 			_flow_egg_checks()
 			EditorInterface.set_main_screen_editor("3D")
+			_animate_checks()
+			at_t = t
+			phase = 35
+		35:                                               # the previews play a while: her pose and face then
+			if t - at_t < 0.5:
+				return
+			_animate_mid()
+			at_t = t
+			phase = 351
+		351:                                              # and a moment later: moving
+			if t - at_t < 0.5:
+				return
+			_animate_playing()
+			at_t = t
+			phase = 36
+		36:                                               # the card dropped on Mari lands a frame later
+			if t - at_t < 0.5:
+				return
+			_animate_dropped()
+			at_t = t
+			phase = 37
+		37:                                               # a file dropped into animations/: a card, the tab polling its folders
+			if t - at_t < 3.0:
+				return
+			_animate_polled()
 			phase = 4
 		4:
 			rep["saved"] = EditorInterface.save_scene() == OK
 			var txt := FileAccess.get_file_as_string("res://main.tscn")
 			rep["saved_task"] = txt.contains("[node name=\"OlderKey") and not txt.contains("HSEvent")
 			rep["saved_nothing_made"] = not txt.contains("name=\"_gen\"") and not txt.contains("name=\"_solid\"")
+			var pv = EditorInterface.get_edited_scene_root().find_child("Mari", true, false).get_node_or_null("_Preview")
+			rep["anim_save_stopped"] = pan.get("anim_left_playing", false) == true and (pv == null or pv.is_queued_for_deletion()) \
+				and panel.animate.playing.is_empty() and not txt.contains("_Preview")
 			_done()
 
 
@@ -647,6 +675,140 @@ func _flow_egg_checks() -> void:
 
 
 ## the chart's arrows as from>to:kind (an otherwise is a then), sorted: what the game plays
+## the Animate tab (editor/animate_tab.gd over core/library.gd): the sample's two Kimodo clips as cards in their groups,
+## each drawn as its figure, Mari's idle hers already; its two faces on the Face side; Mari selected, her idle and her
+## resting face read; the story's clip she hasn't got warned of; the look round made hers (its file in
+## res://animations/_made/mari/), then played on her body and a face on her face shapes at once (a throwaway player:
+## nothing saved)
+func _animate_checks() -> void:
+	var r := EditorInterface.get_edited_scene_root()
+	var an = panel.animate
+	panel.show_page("animate")
+	an.face_side = false
+	dock.select(null)
+	EditorInterface.get_selection().clear()
+	an.refresh()
+	rep["anim_tab"] = panel.tab_buttons.has("animate") and an.visible
+	rep["anim_cards"] = an.mid.find_children("Clip_*", "Button", true, false).map(func(b): return str(b.name))
+	rep["anim_groups"] = _texts(an.mid).filter(func(x): return x == x.to_upper() and x.length() > 2)
+	rep["anim_figures"] = an.figs.size() == 2 and an.figs.all(func(st): return (st["fig"]["frames"] as Array).size() >= 40 and float(st["fig"]["secs"]) > 3.9)
+	rep["anim_roles"] = [HSLibrary.role_of("mari_sit_reading"), HSLibrary.role_of("MariStandUp"), HSLibrary.role_of("standing_idle"),
+		HSLibrary.role_of("walking_slow"), HSLibrary.role_of("jumpscare_lunge"), HSLibrary.role_of("return_home")]
+	an.face_side = true
+	an.refresh()
+	rep["anim_faces"] = an.mid.find_children("Face_*", "Button", true, false).map(func(b): return str(b.name))
+	an.face_side = false
+	var mari: Node3D = r.find_child("Mari", true, false)
+	dock.select(mari)
+	an.refresh()
+	var idle_card: Control = an.mid.find_child("Clip_sample_idle", true, false)
+	rep["anim_hers"] = idle_card != null and _texts(idle_card).has("hers") and _texts(an.right).has("Idle: sample_idle") \
+		and _texts(an.right).has("Resting face: pout_and_glance_loop")
+	var f := HSStoryFile.read()                       # the story animating her with a clip she hasn't got: warned, the library's named
+	(f["moments"] as Array).append({"id": "anim_try", "when": {"enter": "kitchen_doorway"}, "do": [{"anim": "mari", "clip": "look_around"}, {"anim": "mari", "clip": "no_such_clip"}]})
+	var c1 := HSCompiler.new()
+	c1.compile(r, null, f)
+	var warns: Array = c1.problems.map(func(p): return str(p["text"])).filter(func(x): return x.contains("animates mari"))
+	var look: Dictionary = HSLibrary.clip("look_around")
+	an.set_move(mari, look, "")
+	var c2 := HSCompiler.new()
+	c2.compile(r, null, f)
+	var warns2: Array = c2.problems.map(func(p): return str(p["text"])).filter(func(x): return x.contains("animates mari"))
+	rep["anim_warned"] = warns.size() == 2 and warns.any(func(x): return x.contains("look_around") and x.contains("Animate tab")) \
+		and warns.any(func(x): return x.contains("no_such_clip") and x.contains("no clip of that name")) and warns2.size() == 1
+	rep["anim_made"] = HSLibrary.hers(mari).has("look_around") and FileAccess.file_exists("res://animations/_made/mari/look_around.res") \
+		and load("res://addons/horrorstudio/play.gd").anim_name(HSRetarget.player_of(mari), "look_around") == "anims/look_around" \
+		and _texts(an.mid.find_child("Clip_look_around", true, false)).has("hers")
+	var sk := HSRetarget.skeleton_of(mari)
+	var fo: Dictionary = load("res://addons/horrorstudio/face.gd").face_of(mari)
+	pan["anim_pose0"] = _pose(sk)
+	pan["anim_face0"] = _blends(fo.get("mesh"))
+	an.preview(mari, look)
+	an.preview_face(mari, {"id": "pout_and_glance", "path": "res://faces/pout_and_glance.tres", "loop": false, "secs": 1.0, "title": "pout_and_glance"})
+	pan["anim_pose1"] = []
+	pan["anim_face1"] = []
+	rep["anim_preview"] = mari.get_node_or_null("_Preview") is AnimationPlayer and (mari.get_node("_Preview") as AnimationPlayer).is_playing() \
+		and not an.face_play.is_empty()
+
+
+static func _pose(sk: Skeleton3D) -> Array:
+	var out: Array = []
+	if sk != null:
+		for i in sk.get_bone_count():
+			out.append(sk.get_bone_pose_rotation(i))
+	return out
+
+
+static func _blends(mi) -> Array:
+	var out: Array = []
+	if mi is MeshInstance3D:
+		for i in mi.get_blend_shape_count():
+			out.append(mi.get_blend_shape_value(i))
+	return out
+
+
+static func _moved(a: Array, b: Array, eps := 0.002) -> int:
+	var n := 0
+	for i in mini(a.size(), b.size()):
+		var d: float = (a[i] as Quaternion).angle_to(b[i]) if a[i] is Quaternion else absf(float(a[i]) - float(b[i]))
+		if d > eps:
+			n += 1
+	return n
+
+
+func _animate_mid() -> void:
+	var mari: Node3D = EditorInterface.get_edited_scene_root().find_child("Mari", true, false)
+	pan["anim_pose1"] = _pose(HSRetarget.skeleton_of(mari))
+	pan["anim_face1"] = _blends(load("res://addons/horrorstudio/face.gd").face_of(mari).get("mesh"))
+
+
+## a moment later: her bones and her face shapes moving at once (against the moment before, not her rest); stopped,
+## both put back and the player gone; then a card dragged onto her (as the 3D view drops it: the spot preset under her)
+func _animate_playing() -> void:
+	var r := EditorInterface.get_edited_scene_root()
+	var an = panel.animate
+	var mari: Node3D = r.find_child("Mari", true, false)
+	var sk := HSRetarget.skeleton_of(mari)
+	var fo: Dictionary = load("res://addons/horrorstudio/face.gd").face_of(mari)
+	var bones := _moved(pan["anim_pose1"], _pose(sk))
+	var shapes := _moved(pan["anim_face1"], _blends(fo.get("mesh")))
+	rep["anim_together"] = [bones, shapes]
+	an.stop()
+	rep["anim_put_back"] = _moved(pan["anim_pose0"], _pose(sk)) == 0 and _moved(pan["anim_face0"], _blends(fo.get("mesh"))) == 0 \
+		and (mari.get_node_or_null("_Preview") == null or not is_instance_valid(mari.get_node_or_null("_Preview")) or mari.get_node("_Preview").is_queued_for_deletion()) \
+		and an.playing.is_empty() and an.face_play.is_empty()
+	panel.plugin.pending_anim = {"clip": HSLibrary.clip("look_around"), "face": false, "at": Time.get_ticks_msec()}
+	var spot: Node3D = (load("res://addons/horrorstudio_director/presets/spot.tscn") as PackedScene).instantiate()
+	dock.add_node(mari, spot, "drop Spot")
+	spot.global_position = mari.global_position
+	pan["anim_spot"] = spot
+
+
+## the drop: Mari's menu (her idle, her walk, hers, a look), the spot taken back
+func _animate_dropped() -> void:
+	var an = panel.animate
+	var spot = pan["anim_spot"]
+	var items: Array = []
+	for i in an._menu.item_count:
+		items.append(an._menu.get_item_text(i))
+	rep["anim_dropped"] = items
+	rep["anim_drop_gone"] = not is_instance_valid(spot) or spot.get_parent() == null
+	an._menu.hide()
+	var mari: Node3D = EditorInterface.get_edited_scene_root().find_child("Mari", true, false)
+	an.preview(mari, HSLibrary.clip("look_around"))   # left playing: the save (phase 4) stops it first
+	pan["anim_left_playing"] = mari.get_node_or_null("_Preview") != null
+	DirAccess.copy_absolute(ProjectSettings.globalize_path("res://animations/look_around.npz"), ProjectSettings.globalize_path("res://animations/sit_down_tired.npz"))
+
+
+## the copied file a card on its own (Godot's scan skips an .npz), in a group of its own in the tab's order; taken out
+func _animate_polled() -> void:
+	var an = panel.animate
+	rep["anim_polled"] = an.mid.find_child("Clip_sit_down_tired", true, false) != null
+	rep["anim_polled_groups"] = _texts(an.mid).filter(func(x): return x == x.to_upper() and x.length() > 2)
+	DirAccess.remove_absolute(ProjectSettings.globalize_path("res://animations/sit_down_tired.npz"))
+	panel.show_page("build")
+
+
 func _ways_of(f: Dictionary) -> Array:
 	var out: Array = []
 	for w in HSFlow.chart(f)["wires"]:

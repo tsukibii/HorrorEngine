@@ -23,6 +23,7 @@ var flow = null                      # the Story Flow main screen (editor/flow_t
 var inspector: EditorInspectorPlugin = null
 var debugger: EditorDebuggerPlugin = null
 var pending_scare = null             # a scare card being dragged: {item, at}; its area's moment made when it lands
+var pending_anim = null              # an Animate card being dragged: {clip, face, at}; the character it lands on given it
 var _tri := {}                       # a mesh's triangles, for the mouse's ray (model_on_ray)
 
 
@@ -101,12 +102,21 @@ func _on_selection() -> void:
 		panel.on_selection.call_deferred()
 
 
-## every saved scene's ids into res://.hsdirector/index.json (a level edited alone still suggests the story's ids)
+## before a scene is saved (or played, or another scene's tab opened): a preview on the Animate tab stopped (a
+## character's pose and face put back, its player gone)
+func _apply_changes() -> void:
+	if panel != null and panel.animate != null:
+		panel.animate.stop()
+
+
+## every saved scene's ids into res://.hsdirector/index.json (a level edited alone still suggests the story's ids), the
+## animation library beside it (library.json: core/library.gd)
 func _on_saved(path: String) -> void:
 	var root := EditorInterface.get_edited_scene_root()
 	if root == null:
 		return
 	HSDirector.write_index(path, root)
+	HSLibrary.write_index()
 	if dock != null:
 		dock.refresh()
 
@@ -317,5 +327,8 @@ func _unlink(n: Node) -> void:
 		else:
 			panel.build.scare_landed(n, pending_scare["item"])   # a scare card dropped into the view: its area, now its moment
 	pending_scare = null
+	if pending_anim is Dictionary and HSDirector.class_of(n) == "HSSpot" and Time.get_ticks_msec() - int(pending_anim["at"]) < 30000 and panel != null:
+		panel.animate.landed(n, pending_anim)          # an Animate card dropped on a character: her menu, the spot taken back
+	pending_anim = null
 	if dock != null:
 		dock.refresh()

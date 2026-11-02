@@ -61,6 +61,8 @@ const G := {
 	"cards": '<rect x="3.5" y="6" width="9" height="13" rx="1.5" transform="rotate(-10 8 12.5)"/><rect x="11.5" y="5" width="9" height="13" rx="1.5" transform="rotate(8 16 11.5)"/>',
 	"stain": '<path d="M7 14c-2-1-2-4 0-5 1-3 5-4 7-2 3-1 6 1 5 4 2 2 0 5-3 5-2 2-6 2-7 0-1 0-2-1-2-2z"/>',
 	"person": '<circle cx="12" cy="7" r="3.5"/><path d="M5 21a7 7 0 0 1 14 0"/>',
+	"face": '<path d="M12 3c-4.2 0-7 3.4-7 8 0 5 3.2 10 7 10s7-5 7-10c0-4.6-2.8-8-7-8z"/><path d="M9 10.5h.01M15 10.5h.01" stroke-width="2.6"/><path d="M9.5 15.5c1.5 1.2 3.5 1.2 5 0"/>',
+	"motion": '<circle cx="13" cy="4.5" r="2"/><path d="M11 21l2-6-3-3 1-4 3 3h3M10 8l-3 3M13 15l3 2v4"/>',
 	"watcher": '<path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.5"/>',
 	"area": '<rect x="4" y="4" width="16" height="16" rx="2" stroke-dasharray="3 3"/>',
 	"area_safe": '<rect x="4" y="4" width="16" height="16" rx="2" stroke-dasharray="3 3"/><path d="M12 8l3 1.2v2.6c0 2-1.4 3.2-3 4-1.6-.8-3-2-3-4V9.2z"/>',

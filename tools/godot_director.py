@@ -9,9 +9,12 @@
     python tools/godot_director.py install <folder> [--link]
         the add-ons, the shelf and the lives into an existing project (again after a pull: they're copies), the
         plugins switched on, the guide into guide/ (guides/director: the dock's Guide button opens it), the Character
-        Studio exports its characters name (`studio_character`) into game/people/, the expression library into faces/
-        (tools/face_export.mjs: the loops in faces/loops/); --link makes the add-ons and the guide symlinks into this
-        repo instead, so a pull reaches the project at once
+        Studio exports its characters name (`studio_character`) into game/people/, the animation library's two folders
+        (animations/ and faces/, empty: you copy in what the game needs; docs/GODOT_ANIMATION_PLAN.md §3); --link makes
+        the add-ons and the guide symlinks into this repo instead, so a pull reaches the project at once
+    python tools/godot_director.py faces <folder> [id ...]
+        face clips from the studio's expression library (Content/Studio/Expressions: the named ones, or all of them)
+        into a project's faces/ (the loops in faces/loops/), by tools/face_export.mjs: the Animate tab's Face cards
     python tools/godot_director.py guide
         the HTML guide's pictures (guides/director/img/) made again by Godot: a fresh sample project played and pictured
         (tests/guide_game.gd) and its editor with the dock (tests/guide_editor.gd), under xvfb when it's there (on a
@@ -49,6 +52,7 @@ HUMAN = ROOT / "GodotPlugins" / "HumanShaders"
 SFX = ROOT / "Content" / "Studio" / "SFX"
 LIVES = ROOT / "Content" / "Studio" / "Life" / "lives.json"
 SOMA = ROOT / "Content" / "Studio" / "soma77.json"
+SAMPLE_FACES = ["pout_and_glance", "pout_and_glance_loop"]                # the faces the sample game plays (Mari rests in the loop)
 CHECK = ROOT / "Saved" / "Godot" / "_director_check"
 GUIDE_PROJECT = ROOT / "Saved" / "Godot" / "_director_guide"
 GUIDES = ROOT / "guides"
@@ -177,7 +181,8 @@ def install(out, link=False):
     else:
         print(f"  {gd} is a folder of your own: the guide stays in the studio (guides/director/index.html)")
     people(out)
-    faces(out)
+    for d in ("animations", "faces"):                                         # the library's folders, empty: the user copies in what a game needs
+        (out / d).mkdir(exist_ok=True)
     gi = out / ".gitignore"
     if not gi.exists():
         gi.write_text(".godot/\n*.import\n", encoding="utf-8")
@@ -192,13 +197,14 @@ def guide_ours(gd):
     return (gd / ".gdignore").exists() and page.exists() and "HorrorStudio Director" in page.read_text(encoding="utf-8", errors="replace")[:600]
 
 
-def faces(out):
-    """The expression library into the project's faces/ (the loops in faces/loops/) by tools/face_export.mjs, as the
-    runtime plays them (`expr`: an HSActor's expression, a line's face, a state's)."""
-    if not (ROOT / "Content" / "Studio" / "Expressions").is_dir():
+def faces(out, ids=None):
+    """Face clips from the expression library into the project's faces/ (the loops in faces/loops/) by
+    tools/face_export.mjs, as the runtime plays them (`expr`: an HSActor's expression, a line's face, a state's): the
+    ids named (None: the whole library; an empty list: none)."""
+    if not (ROOT / "Content" / "Studio" / "Expressions").is_dir() or ids == []:
         return
     try:
-        r = subprocess.run(["node", str(ROOT / "tools" / "face_export.mjs"), "--project", str(out)], capture_output=True, text=True, timeout=300)
+        r = subprocess.run(["node", str(ROOT / "tools" / "face_export.mjs"), "--project", str(out), *(ids or [])], capture_output=True, text=True, timeout=300)
         last = (r.stdout.strip().splitlines() or [""])[-1]
         print(f"  faces: {last}" if r.returncode == 0 else f"  faces: not brought in ({(r.stdout + r.stderr).strip()[-300:]})")
     except (OSError, subprocess.TimeoutExpired) as e:
@@ -277,6 +283,8 @@ def new(out, title="My HorrorStudio game", sample=False, link=False):
     (out / "main.tscn").write_text(FIRST_SCENE.format(title=G.gstr(title)), encoding="utf-8")
     (out / "director").mkdir(exist_ok=True)                                  # the story (the Director Manager writes it): none yet, a free roam
     (out / "director" / "director.json").write_text(json.dumps(EMPTY_STORY, indent=1), encoding="utf-8")
+    if sample:
+        faces(out, SAMPLE_FACES)                                              # the sample's faces (Mari's rest, the key's line): a new game's faces/ stays empty
     import_all(out)
     if sample:
         code, text = run_godot(["--headless", "--path", str(out), "-s", "res://addons/horrorstudio_director/tests/make_sample.gd"], timeout=300)
@@ -319,6 +327,7 @@ def from_desk(game, folder=None, force=False):
         sys.exit(f"the desk's world wasn't built ({line or 'no word from desk_build.gd'})")
     print(f"  {line}")
     people(out)                                                          # its characters' Character Studio exports, their faces baked
+    faces(out, sorted(G.faces_used(story)))                              # the expressions its story puts on faces
     if (out / "game" / "people").is_dir():
         import_all(out)
     lv = w["levels"]
@@ -696,6 +705,25 @@ def editor_check(out):
         ("easter eggs in Story Flow: the sample's two as gold cards out of the numbers, straight to bed found during the drink errand and jumping to the night (%s); one made from the key's dot, its jump to the bedroom (%s), opened in the Story tab on its FOUND WHEN (%s); undone (%s)"
          % (rep.get("flowegg_cards"), rep.get("flowegg_made"), rep.get("flowegg_story"), rep.get("flowegg_undone")),
          rep.get("flowegg_cards") is True and rep.get("flowegg_made") is True and rep.get("flowegg_story") is True and rep.get("flowegg_undone") is True),
+        ("the Animate tab (%s): the sample's Kimodo clips as cards %s in their groups %s, each drawn as its figure (%s); a clip's role by its name's words %s; its faces on the Face side %s"
+         % (rep.get("anim_tab"), rep.get("anim_cards"), rep.get("anim_groups"), rep.get("anim_figures"), rep.get("anim_roles"), rep.get("anim_faces")),
+         rep.get("anim_tab") is True and sorted(rep.get("anim_cards") or []) == ["Clip_look_around", "Clip_sample_idle"]
+         and rep.get("anim_groups") == ["IDLE", "LOOK & SEARCH"] and rep.get("anim_figures") is True
+         and rep.get("anim_roles") == ["sit", "stand", "idle", "walk", "scare", "other"]
+         and sorted(rep.get("anim_faces") or []) == ["Face_pout_and_glance", "Face_pout_and_glance_loop"]),
+        ("Mari on the Animate tab: her idle hers already, her idle and resting face read (%s); a story clip she hasn't got warned of, the library's named (%s); the look round made hers (%s)"
+         % (rep.get("anim_hers"), rep.get("anim_warned"), rep.get("anim_made")),
+         rep.get("anim_hers") is True and rep.get("anim_warned") is True and rep.get("anim_made") is True),
+        ("a body clip and a face clip on Mari at once in the 3D view (%s): her bones and her face shapes moving together %s, put back after (%s)"
+         % (rep.get("anim_preview"), rep.get("anim_together"), rep.get("anim_put_back")),
+         rep.get("anim_preview") is True and isinstance(rep.get("anim_together"), list) and rep["anim_together"][0] >= 3 and rep["anim_together"][1] >= 2
+         and rep.get("anim_put_back") is True),
+        ("a Kimodo file dropped into animations/ while the tab is open: its card (%s), in its group in the tab's order %s" % (rep.get("anim_polled"), rep.get("anim_polled_groups")),
+         rep.get("anim_polled") is True and rep.get("anim_polled_groups") == ["IDLE", "SIT", "LOOK & SEARCH"]),
+        ("a card dropped on Mari: her menu %s, the drop taken back (%s); a preview left playing stopped by the save, nothing of it saved (%s)"
+         % (rep.get("anim_dropped"), rep.get("anim_drop_gone"), rep.get("anim_save_stopped")),
+         rep.get("anim_dropped") == ["Her idle", "Her walk", "Hers, for the story to play", "Look at it on her (▶)"] and rep.get("anim_drop_gone") is True
+         and rep.get("anim_save_stopped") is True),
         ("a node's id follows its renames while it's the name's (%s), one typed by hand stays (%s)" % (rep.get("id_follows"), rep.get("id_kept")), rep.get("id_follows") == ["hs_thing", "old_key"] and rep.get("id_kept") == "my_key"),
         ("saved: the new nodes in the file, no story nodes, nothing the nodes make for themselves", rep.get("saved") is True and rep.get("saved_task") is True and rep.get("saved_nothing_made") is True),
         ("no script errors in the editor", not errs),
@@ -724,6 +752,12 @@ def main(argv):
         if not rest:
             sys.exit("install <folder>")
         print(f"DIRECTOR installed into {install(rest[0], '--link' in rest)}")
+        return 0
+    if cmd == "faces":
+        if not rest:
+            sys.exit("faces <folder> [id ...]")
+        ids = [x for a in rest[1:] for x in re.split(r"[\s,]+", a) if x]     # the launcher's answer is one word with spaces in it
+        faces(Path(rest[0]).resolve(), ids or None)
         return 0
     if cmd == "check":
         return check("--keep" in rest)
