@@ -2963,6 +2963,70 @@ func rain_follow() -> void:
 		p.global_position = eye_pos() if inside.has(rs["room"]) else rs["at"]
 
 
+# ---- the guide markers (STORY_FORMAT §4: a todo's `guide`) ------------------------------------------------------------
+## the open tasks' markers: each over the top of what it needs, by its id (two tasks on one thing: one marker)
+func guide_points() -> Dictionary:
+	var out := {}
+	if todo == null or not active:
+		return out
+	for t in todo.list:
+		if t["state"] != "open" or not t.has("guide"):
+			continue
+		var id := guide_target(t)
+		var p = top_of(id) if id != "" else null
+		if p != null:
+			out[id] = p
+	return out
+
+
+## what a task's marker hangs over: the id it gives, else (true) what its own trigger names (a thing used, read,
+## looked at, picked up; an area walked into; who something is given to; where she gets to...)
+func guide_target(t: Dictionary) -> String:
+	var g = t.get("guide")
+	if g is String:
+		return g
+	if not (g is bool and g) or not (t.get("ticks") is Dictionary):
+		return ""
+	var w: Dictionary = t["ticks"]
+	for k in ["use", "read", "pickup", "look", "enter", "hidden", "peeping", "locked", "state", "played", "rolled", "dropped", "carrying", "arrived"]:
+		if w.get(k) is String and w[k] != "":
+			return str(w[k])
+	if w.get("to") is String:                               # (gave: to whom)
+		return str(w["to"])
+	return ""
+
+
+## the world point at the top of a person, a thing (an item or a note: the thing that holds it) or an area; null when
+## it isn't in this level, isn't shown, or isn't there
+func top_of(id: String) -> Variant:
+	var n = npcs.get(id)
+	if n != null:
+		if n.get("pos") == null or n.get("level") != level:
+			return null
+		var node = cast_nodes.get(id)
+		if node != null and not node.visible:
+			return null
+		return (n["pos"] as Vector3) + Vector3(0, float(story.cast.get(id, {}).get("height", 1.7)), 0)
+	for tr in triggers:                                     # an area or a room: over its middle, about chest high
+		if tr["id"] == id:
+			var mn: Array = tr["min"]
+			var mx: Array = tr["max"]
+			return Vector3((float(mn[0]) + float(mx[0])) / 2.0, float(mn[2]) + 1.3, -(float(mn[1]) + float(mx[1])) / 2.0)
+	var t = things.get(id)
+	if t == null:
+		for x in things.values():                             # an item's or a note's id: the thing holding it
+			var d = x["piece"].get("d", {})
+			if d is Dictionary and (str(d.get("item", "")) == id or str(d.get("note", "")) == id):
+				t = x
+				break
+	if t == null:
+		return null
+	var nd: Node3D = t["node"]
+	if not is_instance_valid(nd) or not nd.is_visible_in_tree():
+		return null
+	return nd.global_position + Vector3(0, float((t["size"] as Array)[2]) / 2.0, 0)
+
+
 func tick(dt: float) -> void:
 	clock += dt
 	if lives != null:
@@ -3041,6 +3105,8 @@ func tick(dt: float) -> void:
 	cam.rotation_degrees = Vector3(float(p.pitch), float(p.yaw) - 90.0, 0.0)
 	var vp := get_viewport().get_visible_rect().size
 	cam.fov = float(LENS["fov"]) if p.peeping != null else StoryC.vfov(float(story.game.get("fov", StoryC.FOV_H)), (vp.x / vp.y) if vp.y > 0 else 16.0 / 9.0)
+	if hud.guide != null:
+		hud.guide.update(guide_points(), cam, dt)
 	var T := clock
 	for t in lights:
 		var u: Dictionary = light_state[t["id"]]

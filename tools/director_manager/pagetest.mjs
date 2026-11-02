@@ -92,6 +92,10 @@ try {
   ok(`a step done by talking: talk to… (${talked}), then till her conversation is heard out (${heard}); the choices ${hows.join(" / ")}`,
     talked === '{"holds":"talked:mari"}' && heard === '{"holds":"heard:t_hello"}' && ttext.includes("the player talks to")
     && hows.join("|") === "when she's clicked|when she's heard out|when “Hello.” is heard out", ttext);
+  await page.check("[data-step] [data-guide] input[type=checkbox]");          // a marker over her in the game
+  S = await page.evaluate(() => window.hsdm.S);
+  ok("a step's marker over what it needs (the gem in the game): its checkbox", S.quests[1].steps[0].guide === true, JSON.stringify(S.quests[1].steps[0]));
+  await page.uncheck("[data-step] [data-guide] input[type=checkbox]");
   await page.click("[data-step] .trig.talk button:has-text('an event instead')");
   await page.evaluate(() => { window.hsdm.S.quests[1].steps[0].done = { pickup: "bedroom_key" }; window.hsdm.render(); });   // (as it was for what follows)
   await page.click("text=Add a way, by what's been done");

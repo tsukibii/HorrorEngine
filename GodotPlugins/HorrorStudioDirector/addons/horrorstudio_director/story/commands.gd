@@ -194,7 +194,8 @@ static func action_text(a, n: Callable = Callable()) -> String:
 			return "Ask " + (n.call("line", a["line"]) if _t(g.call("line")) else q(_or(g.call("text"), g.call("ask")))) + ((" beside " + n.call("cast", a["who"])) if _t(g.call("who")) else "")
 		"todo":
 			return ("Hidden to do" if _t(g.call("hidden")) else "To do") + ": " + q(_or(g.call("text"), g.call("todo"))) + ((" for " + n.call("cast", a["who"])) if _t(g.call("who")) else "") \
-				+ ((", ticked when " + trigger_text(a["ticks"], n)) if _t(g.call("ticks")) else "") + ((" · " + js(a["secs"]) + " s") if _t(g.call("secs")) else "")
+				+ ((", ticked when " + trigger_text(a["ticks"], n)) if _t(g.call("ticks")) else "") + ((" · " + js(a["secs"]) + " s") if _t(g.call("secs")) else "") \
+				+ (" · with a marker" if _t(g.call("guide")) else "")
 		"tick":
 			return "Tick " + n.call("todo", g.call("tick"))
 		"fail":

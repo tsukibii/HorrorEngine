@@ -1284,6 +1284,7 @@ def check_action(bid, a, story, things, r, stage=None):
                    "`secs` and `default` are never used")
         return
     if k == "todo":                                    # a task on the to-do list (STORY_FORMAT §4)
+        GUIDE_BY = ("use", "read", "pickup", "look", "enter", "hidden", "peeping", "locked", "state", "played", "rolled", "dropped", "carrying", "arrived", "to")
         if not isinstance(v, str) or not re.match(r"^[a-z0-9_]+$", v):
             r.err(f"{bid}: todo needs an id (a word: lower case, digits, _), for tick, fail and the ticked trigger")
         if not isinstance(a.get("text"), str) or not a["text"].strip():
@@ -1298,6 +1299,16 @@ def check_action(bid, a, story, things, r, stage=None):
             r.err(f"{bid}: todo {v!r}: secs is a number of seconds (it fails when they're up)")
         if "hidden" in a and not isinstance(a["hidden"], bool):
             r.err(f"{bid}: todo {v!r}: hidden is true (kept, but not on the list) or false")
+        if "guide" in a:                               # a marker over what it needs (Godot's runtime draws it, marker.gd)
+            g, tk = a["guide"], a.get("ticks") if isinstance(a.get("ticks"), dict) else {}
+            if isinstance(g, bool):
+                if g and not any(isinstance(tk.get(k), str) for k in GUIDE_BY):
+                    r.warn(f"{bid}: todo {v!r}: guide is true, but its ticks name nothing to hang the marker over: give guide the id of what it needs")
+            elif isinstance(g, str):
+                if g not in things and g not in cast and g not in (story.get("items") or {}) and g not in (story.get("notes") or {}):
+                    r.err(f"{bid}: todo {v!r}: guide {g!r} isn't a thing, a person, an area, an item or a note of the story's")
+            else:
+                r.err(f"{bid}: todo {v!r}: guide is true (over what its ticks name) or the id of what to hang the marker over")
         on = a.get("on") or {}
         if not isinstance(on, dict) or set(on) - TODO_ON:
             r.err(f"{bid}: todo {v!r}: `on` is {{done: [actions], failed: [actions]}}")

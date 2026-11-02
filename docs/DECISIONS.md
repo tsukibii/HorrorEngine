@@ -2,6 +2,18 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-02 (the user: an intro first, quests that aren't lists, and a marker over what to interact with)
+
+- **"Can we update the story so it always starts with a quest1 which is intro, quests shouldn't all be task based"**
+  and **"without ripping off the exact same UI element, can you make one that suits our style that helps the player
+  know what to interact with… toggle in the UI that we want a helper (identifier)… lightly bounce up and down (in a
+  fluid hypnotic motion)… optional… useful for non-list based quests e.g. talk"** (with a picture of a game's yellow
+  triangle over a thing). Built in two steps: **the marker** (a todo's `guide`, STORY_FORMAT §4: a small gem on a
+  thread in the HUD theme's accent, bobbing on a slow sine while its core and glow breathe a beat behind; a step's
+  *Show a marker over it* in the Story tab and the Manager; Godot's runtime draws it, the desk's Play not yet), then
+  **the intro and quests that aren't lists** (a quest's opening, its to-do list shown or not; every Director file
+  starting with an Intro quest).
+
 ## 2026-11-01, evening (the user: a friendlier panel in Godot)
 
 - **"Is it possible to create a new UI type of panel in Godot as part of the plugin that is more visually friendly,

@@ -6,7 +6,7 @@ extends RefCounted
 ##
 ##   {"format": 1,
 ##    "quests":  [{id, title, objective, map, start_at, card: {title, sub, time}, checkpoint, steps: [{id, text, done,
-##                fail, secs, hidden, who, wrong: {say, who, fail}}], finish: steps|any|never, on_start, on_done,
+##                fail, secs, hidden, who, guide, wrong: {say, who, fail}}], finish: steps|any|never, on_start, on_done,
 ##                time_limit, on_timeout, round: {type, secs, rule, warn, spots, seeker, loops, barks, on}, next: [{if, go}]}],
 ##    "states":  [{while, set: {<id>: {at, do, to, path, paths, sees, shown, motion, locked, open, light, state}}}],
 ##    "moments": [{id, when, if, do, once, every, during: [quest ids]}],

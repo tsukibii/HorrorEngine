@@ -23,7 +23,7 @@ const STORY := {
 			"steps": [{"id": "give_mug", "text": "Give Mari the mug", "who": "mari", "done": {"gave": "mug", "to": "mari"},
 				"wrong": {"say": "Nah, that's not what I want.", "who": "mari"}}]},
 		{"id": "q_talk", "title": "Mari", "objective": "Talk to Mari",
-			"steps": [{"id": "talk_mari", "text": "Talk to Mari", "done": {"holds": "heard:t_open"}}]},
+			"steps": [{"id": "talk_mari", "text": "Talk to Mari", "done": {"holds": "heard:t_open"}, "guide": true}]},
 		{"id": "q_bedroom", "title": "The bedroom", "objective": "Get into the bedroom",
 			"steps": [{"id": "enter_bedroom", "text": "Open the bedroom", "done": {"enter": "bedroom"}}]},
 		{"id": "q_night", "title": "Something in the hall", "objective": "Something is in the hall.", "finish": "any",

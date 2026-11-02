@@ -461,6 +461,23 @@ func _story_checks() -> void:
 		if q.get("id") == "q_talk":
 			tq = q
 	rep["story_talk_undone"] = tq.get("steps", [{}])[0].get("done") == {"holds": "heard:t_open"}
+	st.refresh(false)                                 # its marker (the gem over Mari in the game): on, over her; off, and back
+	tbox = st.mid.find_child("Step_talk_mari", true, false)
+	var gcb: CheckBox = tbox.find_child("Guide", true, false) if tbox != null else null
+	var gov: OptionButton = tbox.find_child("GuideOver", true, false) if tbox != null else null
+	rep["story_marker"] = [gcb != null and gcb.button_pressed, gov.get_item_text(gov.selected) if gov != null else ""]
+	if gcb != null:
+		gcb.toggled.emit(false)
+	var mq: Dictionary = {}
+	for q in HSStoryFile.read().get("quests", []):
+		if q.get("id") == "q_talk":
+			mq = q
+	rep["story_marker_off"] = not (mq.get("steps", [{}])[0] as Dictionary).has("guide")
+	glob.undo()
+	for q in HSStoryFile.read().get("quests", []):
+		if q.get("id") == "q_talk":
+			mq = q
+	rep["story_marker_back"] = mq.get("steps", [{}])[0].get("guide") == true
 	st.quest = "q_drink"
 	st.opened = ""
 	st.refresh(false)

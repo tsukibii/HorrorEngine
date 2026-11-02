@@ -351,7 +351,8 @@ func _draw_mid() -> void:
 		if opened == "s:" + sid:
 			_step_editor(q, s)
 		else:
-			_line(C_WHEN, "WHEN", _when_words(s.get("done")) + ", tick “%s”" % str(s.get("text", sid)), "once", "s:" + sid)
+			var marked: bool = s.get("guide") is String or (s.get("guide") is bool and s["guide"])
+			_line(C_WHEN, "WHEN", _when_words(s.get("done")) + ", tick “%s”" % str(s.get("text", sid)) + (" · with a marker" if marked else ""), "once", "s:" + sid)
 			var wr = s.get("wrong")
 			if wr is Dictionary and str(wr.get("say", "")) != "":
 				var g2 = s.get("done", {})
@@ -509,6 +510,11 @@ func _step_editor(q: Dictionary, s: Dictionary) -> void:
 	tr.add_child(le)
 	v.add_child(tr)
 	v.add_child(_when_row(s, "done", "TICKED WHEN", func(fn: Callable, redraw := true): edit.call("when it's done", fn, redraw)))
+	v.add_child(_marker_row(s, func(gv): edit.call("its marker", func(st):
+		if gv == null:
+			st.erase("guide")
+		else:
+			st["guide"] = gv)))
 	var g = s.get("done")
 	if g is Dictionary and g.has("gave"):
 		var wr: Dictionary = s.get("wrong", {}) if s.get("wrong") is Dictionary else {}
@@ -540,6 +546,66 @@ func _step_editor(q: Dictionary, s: Dictionary) -> void:
 				if str(st.get("id", "")) == sid:
 					steps.erase(st)))
 	v.add_child(del)
+
+
+## a step's marker (STORY_FORMAT §4 a todo's `guide`: the gem bobbing over what it needs, in the game): on or off, and
+## over what (what its WHEN names, or a thing, a person or an area picked); `put` takes true, an id, or null (none)
+func _marker_row(s: Dictionary, put: Callable) -> Control:
+	var row := HFlowContainer.new()
+	row.name = "Marker"
+	row.add_theme_constant_override("h_separation", int(8 * _s()))
+	row.add_child(_tag("MARKER", Color("#F3C27A")))
+	var g = s.get("guide")
+	var on: bool = g is String or (g is bool and g)
+	var cb := CheckBox.new()
+	cb.name = "Guide"
+	cb.text = "Show a marker over it in the game"
+	cb.tooltip_text = "A small gem bobbing over what this step needs, so the player knows what to go to (no words needed)"
+	cb.button_pressed = on
+	cb.toggled.connect(func(t): put.call(true if t else null))
+	row.add_child(cb)
+	if on:
+		var ob := OptionButton.new()
+		ob.name = "GuideOver"
+		var auto := marker_auto(s)
+		var vals: Array = [true]
+		ob.add_item(("over %s" % _name("", auto)) if auto != "" else "over what its WHEN names (pick it if it can't tell)")
+		var ids: Array = []
+		for k in ["actor", "thing", "area", "door"]:
+			for id in _ids(k):
+				if not ids.has(id):
+					ids.append(id)
+		for id in ids:
+			ob.add_item("over %s (%s)" % [_name("", id), id])
+			vals.append(id)
+		ob.select(max(0, vals.find(g)))
+		_blue(ob)
+		ob.item_selected.connect(func(i): put.call(vals[i]))
+		row.add_child(ob)
+	return row
+
+
+## what a step's marker hangs over by itself (its WHEN's thing, person or area; a talk's person), "" if it can't tell
+func marker_auto(s: Dictionary) -> String:
+	var d = s.get("done")
+	if not (d is Dictionary):
+		return ""
+	var tk := HSCommands.talk_when(d, talk_ctx())
+	if not tk.is_empty():
+		return str(tk["who"])
+	for k in ["use", "read", "pickup", "look", "enter", "hidden", "peeping", "locked", "state", "played", "rolled", "dropped", "carrying", "arrived"]:
+		if d.get(k) is String and d[k] != "":
+			return str(d[k])
+	if d.get("to") is String:
+		return str(d["to"])
+	if d.has("holds"):
+		var p := HSCommands.parse_cond(d["holds"])
+		if (p["items"] as Array).size() == 1 and p["items"][0]["kind"] == "fact" and not p["items"][0].get("not", false):
+			var f := str(p["items"][0]["v"])
+			for pre in ["used:", "picked:", "read:", "entered:", "dropped:", "rolled:", "played:"]:
+				if f.begins_with(pre):
+					return f.substr(pre.length())
+	return ""
 
 
 func _open_box(nm: String) -> PanelContainer:

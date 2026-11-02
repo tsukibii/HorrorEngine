@@ -388,7 +388,7 @@ func _initialize() -> void:
 		if not flag("achievement:ACH_HOST"):
 			return "no achievement for it"
 		return "")
-	await step("the conversation the story offers now: her first line with its face over her rest, answered Yes, heard out (its step ticks; she's talked to and heard out as facts of her own too); a state sends Mari to the bedroom door", func():
+	await step("the conversation the story offers now: a marker over her (her step's guide, bobbing), her first line with its face over her rest, answered Yes, heard out (its step ticks, the marker gone; she's talked to and heard out as facts of her own too); a state sends Mari to the bedroom door", func():
 		var k := 0
 		while not (g.play != null and g.play.active and not g.play.busy) and k < 1200:
 			await process_frame
@@ -397,6 +397,17 @@ func _initialize() -> void:
 		var c := await go_to("mari", 1.0)
 		if c == "" or c.begins_with("ERR"):
 			return "Mari's cursor " + c
+		var gy: Array = []                             # her step's marker over her (its guide): shown, softer this close, bobbing
+		for i in 170:
+			await process_frame
+			if g.hud.guide.marks.has("mari"):
+				gy.append(float((g.hud.guide.marks["mari"]["gem"] as Vector2).y))
+		var mk: float = g.hud.guide.shown("mari")
+		var bob: float = (gy.max() - gy.min()) if gy.size() > 20 else 0.0
+		var amp: float = g.hud.guide.BOB * g.hud.guide.get_viewport_rect().size.y / 1080.0   # its swing on this screen (headless: a small one)
+		var hung: bool = g.hud.guide.marks.has("mari") and (g.hud.guide.marks["mari"]["above"] as Vector2).y < (g.hud.guide.marks["mari"]["top"] as Vector2).y
+		if mk < 0.3 or amp <= 0.0 or bob < 1.6 * amp or not hung:
+			return "the marker over Mari: shown %.2f, bobbing %.2f px of a %.2f px swing, over her head %s" % [mk, bob, amp, hung]
 		rt.use(true)
 		var said := false                              # "You found it." as she wears the line's face, over her rest
 		var k0 := 0
@@ -419,6 +430,8 @@ func _initialize() -> void:
 		if not g.run["trail"].has("q_bedroom"):
 			return "the bedroom quest didn't start"
 		await game_wait(1.0)
+		if g.hud.guide.marks.has("mari"):
+			return "the marker over Mari stayed after her step was done"
 		var npc = g.play.npcs.get("mari")
 		if npc == null or str(npc.get("as")) != "go":
 			return "Mari isn't going anywhere: %s" % [npc]

@@ -234,6 +234,12 @@
      "label": "hidden (kept, not on the list)",
      "kind": "bool",
      "opt": true
+    },
+    {
+     "key": "guide",
+     "label": "a marker over what it needs (Godot draws it)",
+     "kind": "bool",
+     "opt": true
     }
    ],
    "make": {
@@ -2331,85 +2337,108 @@
      "enter": "hall"
     },
     "secs": 7,
+    "hidden": true,
+    "guide": true
+   },
+   "text": "Hidden to do: “words 1” for cast_2, ticked when the player enters hall · 7 s · with a marker"
+  },
+  {
+   "what": "action",
+   "value": {
+    "todo": "words 0",
+    "text": "words 1",
+    "ticks": {
+     "enter": "hall"
+    },
+    "fails": {
+     "enter": "hall"
+    },
+    "secs": 7,
+    "hidden": true,
+    "guide": true
+   },
+   "text": "Hidden to do: “words 1”, ticked when the player enters hall · 7 s · with a marker"
+  },
+  {
+   "what": "action",
+   "value": {
+    "todo": "words 0",
+    "text": "words 1",
+    "who": "cast_2",
+    "fails": {
+     "enter": "hall"
+    },
+    "secs": 7,
+    "hidden": true,
+    "guide": true
+   },
+   "text": "Hidden to do: “words 1” for cast_2 · 7 s · with a marker"
+  },
+  {
+   "what": "action",
+   "value": {
+    "todo": "words 0",
+    "text": "words 1",
+    "who": "cast_2",
+    "ticks": {
+     "enter": "hall"
+    },
+    "secs": 7,
+    "hidden": true,
+    "guide": true
+   },
+   "text": "Hidden to do: “words 1” for cast_2, ticked when the player enters hall · 7 s · with a marker"
+  },
+  {
+   "what": "action",
+   "value": {
+    "todo": "words 0",
+    "text": "words 1",
+    "who": "cast_2",
+    "ticks": {
+     "enter": "hall"
+    },
+    "fails": {
+     "enter": "hall"
+    },
+    "hidden": true,
+    "guide": true
+   },
+   "text": "Hidden to do: “words 1” for cast_2, ticked when the player enters hall · with a marker"
+  },
+  {
+   "what": "action",
+   "value": {
+    "todo": "words 0",
+    "text": "words 1",
+    "who": "cast_2",
+    "ticks": {
+     "enter": "hall"
+    },
+    "fails": {
+     "enter": "hall"
+    },
+    "secs": 7,
+    "guide": true
+   },
+   "text": "To do: “words 1” for cast_2, ticked when the player enters hall · 7 s · with a marker"
+  },
+  {
+   "what": "action",
+   "value": {
+    "todo": "words 0",
+    "text": "words 1",
+    "who": "cast_2",
+    "ticks": {
+     "enter": "hall"
+    },
+    "fails": {
+     "enter": "hall"
+    },
+    "secs": 7,
     "hidden": true
    },
    "text": "Hidden to do: “words 1” for cast_2, ticked when the player enters hall · 7 s"
-  },
-  {
-   "what": "action",
-   "value": {
-    "todo": "words 0",
-    "text": "words 1",
-    "ticks": {
-     "enter": "hall"
-    },
-    "fails": {
-     "enter": "hall"
-    },
-    "secs": 7,
-    "hidden": true
-   },
-   "text": "Hidden to do: “words 1”, ticked when the player enters hall · 7 s"
-  },
-  {
-   "what": "action",
-   "value": {
-    "todo": "words 0",
-    "text": "words 1",
-    "who": "cast_2",
-    "fails": {
-     "enter": "hall"
-    },
-    "secs": 7,
-    "hidden": true
-   },
-   "text": "Hidden to do: “words 1” for cast_2 · 7 s"
-  },
-  {
-   "what": "action",
-   "value": {
-    "todo": "words 0",
-    "text": "words 1",
-    "who": "cast_2",
-    "ticks": {
-     "enter": "hall"
-    },
-    "secs": 7,
-    "hidden": true
-   },
-   "text": "Hidden to do: “words 1” for cast_2, ticked when the player enters hall · 7 s"
-  },
-  {
-   "what": "action",
-   "value": {
-    "todo": "words 0",
-    "text": "words 1",
-    "who": "cast_2",
-    "ticks": {
-     "enter": "hall"
-    },
-    "fails": {
-     "enter": "hall"
-    },
-    "hidden": true
-   },
-   "text": "Hidden to do: “words 1” for cast_2, ticked when the player enters hall"
-  },
-  {
-   "what": "action",
-   "value": {
-    "todo": "words 0",
-    "text": "words 1",
-    "who": "cast_2",
-    "ticks": {
-     "enter": "hall"
-    },
-    "fails": {
-     "enter": "hall"
-    },
-    "secs": 7
-   },
-   "text": "To do: “words 1” for cast_2, ticked when the player enters hall · 7 s"
   },
   {
    "what": "action",

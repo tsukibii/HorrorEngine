@@ -89,6 +89,28 @@ func face(id: String, d: float, at_y: float = -1.0) -> bool:
 	return false
 
 
+## the eye d metres from a thing or a person, looking at it with nothing between (farther than the cursor reaches)
+func look_from(id: String, d: float, at_y: float = -1.0) -> bool:
+	var o = rt.by_id.get(id)
+	if o == null:
+		return false
+	var at: Vector3 = o["node"].global_position
+	if o["kind"] == "person":
+		at.y += float(o["size"][2]) * (0.6 if at_y < 0 else at_y)
+	for k in 16:
+		var a := k * PI / 8.0
+		var feet := Vector3(at.x + cos(a) * d, rt.player.pos.y, at.z - sin(a) * d)
+		rt.place(feet, rad_to_deg(atan2(-(at.z - feet.z), at.x - feet.x)), 0.0)
+		var eye: Vector3 = rt.eye_pos()
+		rt.player.pitch = rad_to_deg(atan2(at.y - eye.y, Vector2(at.x - feet.x, at.z - feet.z).length()))
+		eye_sync()
+		await physics_frame
+		var dir: Vector3 = (eye - at).normalized()
+		if rt.ray_hit(at + dir * 0.15, dir, max(0.0, (eye - at).length() - 0.15), rt.blocks()) == null:
+			return true
+	return false
+
+
 ## the one in the hand: the inventory's slot holding this item
 func in_hand(item: String) -> void:
 	for i in rt.inv.size():
@@ -236,6 +258,9 @@ func _initialize() -> void:
 		rt.use(true)
 	await until(func(): return trail("q_talk") and playing(), 1200)
 	rt = g.play
+	if await look_from("mari", 2.8, 0.75):              # her talk step's marker over her (its guide), from a few steps away
+		await game_wait(1.6)
+		await snap("g_marker")
 	if await face("mari", 1.3, 0.85):
 		rt.use(true)
 	await until(func(): return not g.hud.choice_over, 3000)

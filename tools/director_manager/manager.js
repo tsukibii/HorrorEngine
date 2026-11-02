@@ -310,6 +310,7 @@ function stepEd(q, s, j) {
     row("Done when", trigEd(s, "done", { prefix: "" })),
     row("Fails when", trigEd(s, "fail", { prefix: "", optional: true })),
     row("", inp(s, "secs", { num: true, ph: "secs" }), h("span", { class: "hint" }, "to do it in"), chk(s, "hidden", "hidden (it counts, unseen)"),
+      h("span", { title: "a small gem bobbing over what this step needs in the game, so the player knows what to go to", "data-guide": "" }, chk(s, "guide", "a marker over it")),
       h("span", { class: "hint" }, "asked by"), sel(s, "who", pairs(ids("actor")), { blank: "—" })),
     g ? row("The wrong thing", isObj(s.wrong) ? h("span", { class: "row" }, h("span", { class: "hint" }, "she says"), inp(s.wrong, "say", { ph: "Nah, that's not what I want.", w: "280px" }),
       chk(s.wrong, "fail", "and the step fails"), h("button", { class: "ghost small", on: { click: () => { delete s.wrong; changed(); render(); } } }, icon("x", 12)))

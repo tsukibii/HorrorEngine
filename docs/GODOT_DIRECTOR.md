@@ -58,7 +58,8 @@ the grade, the HUD's theme, `lighting: off` for a flat test light, the counters;
 - **quests**, played one at a time in order. Each: a title, an `objective` (top left), its `steps` (the to-do list:
   a step's `done` and `fail` are the story format's triggers, STORY_FORMAT §4: picks up the key, enters the cellar,
   `{"gave": "lemonade", "to": "mari"}`, `{"holds": <condition>}`; a `wrong` answer for the wrong thing given, "Nah,
-  that's not what I want", or a fail), `finish` (all its steps, `any`: the first done, or `never`: a moment's `done`),
+  that's not what I want", or a fail; `guide`: a marker over what it needs in the game, `true` for what its `done`
+  names, a talk's person included, or an id: the runtime's todo `guide`, STORY_FORMAT §4), `finish` (all its steps, `any`: the first done, or `never`: a moment's `done`),
   `on_start`, `on_done`, `start_at` (a spot), `map` (a level), a chapter `card`, `time_limit` and `on_timeout`, a
   **round** (`{"type": "hide", "secs": 30, "rule", "warn", "seeker", "spots", "on": {<result>: [actions]}}`, the
   story format's `play`, STORY_FORMAT §9.8: hide and seek, a chase, sneaking past her...: played instead of the steps,
@@ -203,7 +204,8 @@ launcher's Godot section too): the page that writes the Director file, over the 
   it starts, how it finishes, a checkpoint, a time limit and what then, a chapter card; its **steps** (the text, done
   when and fails when: the desk's own trigger dialog, *talk to…* (who, and when it counts, as the Story tab's *Talk to
   someone…*), or *or once…* for a condition becoming true; a time; hidden; asked
-  by; for a `gave` step, the answer to anything else given and whether it fails); what happens as it starts and when
+  by; *a marker over it*, the gem in the game; for a `gave` step, the answer to anything else given and whether it
+  fails); what happens as it starts and when
   it's done (the desk's command lists: the palette, the forms, the rows reading as sentences); **what comes next**:
   each way's condition and where it goes, otherwise the next quest.
 - **People**: each character's conversations (offered when; once only; lines by who, said only if, commands as they
@@ -373,7 +375,9 @@ screen), so the 3D view stays in sight and a card drags straight into it. Three 
   OFTEN** (*Just once*, *Every time*), **It reads as** (the whole sentence), *Try this moment* (the game from this quest
   as a test, the facts its ONLY IF asks for already done and its items in hand, the player standing by where it
   happens: the play-from-here file's `from`, `flags`, `items`, `near`) and *Show it in the 3D view* (what its WHEN names,
-  selected). On the right the **ready-made moments** (the Scares cards, the flashlight's flicker too): clicked, onto the
+  selected). An open step also has its **MARKER** row: *Show a marker over it in the game* (the gem bobbing over what it
+  needs: the user, 2026-11-02, "a helper… so players can see the object", optional), over what its WHEN names or a thing,
+  a person or an area picked (the step's `guide`). On the right the **ready-made moments** (the Scares cards, the flashlight's flicker too): clicked, onto the
   selected area, room, door or thing (WHEN the player enters it or uses it; a knock on that door, that door slamming),
   else with its WHEN to pick; dragged into the 3D view, onto the area it falls in or the door it falls by (the drop's
   new area taken back again), else into an area of its own there. Every change is written at once and is on the

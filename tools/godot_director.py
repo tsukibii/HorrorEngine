@@ -656,9 +656,12 @@ def editor_check(out):
          rep.get("story_try") is True and rep.get("story_undone") is True),
         ("Talk to…: the sample's talk step in words (%s), its pickers (%s), changed to till she's heard out at all (%s) and undone (%s)"
          % (" | ".join(rep.get("story_talk_line", [])), " / ".join(rep.get("story_talk_pickers", [])), rep.get("story_talk_heard"), rep.get("story_talk_undone")),
-         rep.get("story_talk_line") == ["WHEN   the player hears out Mari's “You found it.”, tick “Talk to Mari”"]
+         rep.get("story_talk_line") == ["WHEN   the player hears out Mari's “You found it.”, tick “Talk to Mari” · with a marker"]
          and rep.get("story_talk_pickers") == ["Mari", "when “You found it.” is heard out", "the player talks to"]
          and rep.get("story_talk_heard") is True and rep.get("story_talk_undone") is True),
+        ("a step's marker (the gem over what it needs in the game): on and %s; turned off (%s) and back on by undo (%s)"
+         % ((rep.get("story_marker") or [False, ""])[1], rep.get("story_marker_off"), rep.get("story_marker_back")),
+         rep.get("story_marker") == [True, "over Mari"] and rep.get("story_marker_off") is True and rep.get("story_marker_back") is True),
         ("a ready-made moment dropped inside the doorway in the 3D view lands on it, the new area taken back (%s); undone (%s)" % (rep.get("story_dropped"), rep.get("story_drop_undone")),
          rep.get("story_dropped") is True and rep.get("story_drop_undone") is True),
         ("the panel's Test page: %s, and the game checked as it will play (%s)" % (" and ".join(rep.get("panel_test_plays", [])), rep.get("panel_test", "")),

@@ -137,6 +137,9 @@ func _quest(q: Dictionary, i: int, quests: Array, lvl: String) -> String:
 			td["hidden"] = true
 		if str(s.get("who", "")) != "":
 			td["who"] = str(s["who"])
+		if s.get("guide") is String or (s.get("guide") is bool and s["guide"]):   # a marker over what it needs (STORY_FORMAT §4)
+			var gid := _guide_of(s)
+			td["guide"] = gid if gid != "" else true
 		do.append(td)
 	if q.get("checkpoint", true):
 		do.append({"checkpoint": true})
@@ -192,6 +195,33 @@ func _quest(q: Dictionary, i: int, quests: Array, lvl: String) -> String:
 		story["flow"][cid] = {"type": "stitch", "ref": cid, "next": qid}
 	brain["quests"].append(qid)
 	return lvl
+
+
+## what a step's marker hangs over: the id it gives, else what its `done` names that the runtime can't read from the
+## compiled trigger (a talk's person: talked:/heard:; a fact's thing: used:kettle, picked:mug...); "" when the runtime
+## can read it from the trigger itself ({"use": "kettle"})
+func _guide_of(s: Dictionary) -> String:
+	var g = s.get("guide")
+	if g is String:
+		return g
+	var d = s.get("done")
+	if not (d is Dictionary):
+		return ""
+	var tk := HSCommands.talk_when(d, {"talks": file.get("talk", {})})
+	if not tk.is_empty():
+		return str(tk["who"])
+	if not d.has("holds"):
+		return ""
+	var p := HSCommands.parse_cond(d["holds"])
+	if (p["items"] as Array).size() != 1 or p["items"][0]["kind"] != "fact" or p["items"][0].get("not", false):
+		return ""
+	var f := str(p["items"][0]["v"])
+	for pre in ["used:", "picked:", "read:", "entered:", "dropped:", "rolled:", "played:"]:
+		if f.begins_with(pre):
+			return f.substr(pre.length())
+	if f.begins_with("gave:") and f.count(":") >= 2:
+		return f.get_slice(":", 2)
+	return ""
 
 
 ## a desk game's flow node brought in as it was (a cutscene, a choice by what the player does, by a scene's result, by
