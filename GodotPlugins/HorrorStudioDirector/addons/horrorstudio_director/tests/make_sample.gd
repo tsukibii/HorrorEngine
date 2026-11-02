@@ -294,6 +294,15 @@ func _initialize() -> void:
 	thing(kitchen, "Bottle", "pickup", Vector3(0.6, 0, 1.4), 0.0, {"item": "bottle", "item_name": "Bottle", "display_name": "Bottle"})
 	var bspot: HSSpot = own(HSSpot.new(), house, "BedroomSpot")
 	bspot.position = Vector3(1.2, 0, -1.4)
+	var kspot: HSSpot = own(HSSpot.new(), kitchen, "KitchenSpot")   # a place in the kitchen: a walk there goes through its doorway
+	kspot.position = Vector3(0.0, 0, -1.0)
+	var hp: HSPath = own(HSPath.new(), house, "HallPath")         # a path in the hall: a look round at its first stop, a pause at its second
+	var hs1: HSSpot = own(HSSpot.new(), hp, "HallStop1")
+	hs1.position = Vector3(-1.6, 0, 1.0)
+	hs1.clip = "look_around"
+	var hs2: HSSpot = own(HSSpot.new(), hp, "HallStop2")
+	hs2.position = Vector3(0.8, 0, 1.0)
+	hs2.wait = 0.5
 	var cp: HSCheckpoint = own(HSCheckpoint.new(), bedroom, "Checkpoint")   # walked into: an autosave
 	cp.position = Vector3(-1.2, 0, 1.2)
 

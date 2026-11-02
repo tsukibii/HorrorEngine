@@ -153,7 +153,8 @@ static func next_route(npc: Dictionary, rt, s: Dictionary) -> void:
 		npc["level"] = st["r"]["level"]
 
 
-## walk a route: to each point in turn at `speed`, turning as she goes; a point's `wait` holds her there
+## walk a route: to each point in turn at `speed`, turning as she goes; a point's `wait` holds her there (its `clip`
+## played there: as long as the clip when it has no wait)
 static func walk_route(npc: Dictionary, rt, dt: float, s: Dictionary, r: Dictionary, on_end: Callable) -> void:
 	var st: Dictionary = npc["st"]
 	var pts: Array = r["points"]
@@ -165,6 +166,7 @@ static func walk_route(npc: Dictionary, rt, dt: float, s: Dictionary, r: Diction
 			turn_to(npc, float(st.get("faceYaw", npc["yaw"])), dt)
 		if float(st["wait"]) <= 0:
 			st["pose"] = null
+			st["clip"] = null
 		npc["pose"] = st["pose"] if st.get("pose") != null else s["pose"]
 		return
 	var pt: Dictionary = pts[int(st["i"])]
@@ -172,8 +174,12 @@ static func walk_route(npc: Dictionary, rt, dt: float, s: Dictionary, r: Diction
 	d.y = 0
 	var dist := d.length()
 	if dist <= ARRIVE:
-		if float(pt.get("wait", 0)) > 0:
-			st["wait"] = float(pt["wait"])
+		var w := float(pt.get("wait", 0))
+		if w <= 0.0 and pt.get("clip") != null:             # a stop with a clip and no wait: as long as the clip
+			w = rt.move_secs(npc["cid"], pt["clip"])
+		st["clip"] = pt.get("clip") if w > 0.0 else null
+		if w > 0:
+			st["wait"] = w
 			st["pose"] = pt.get("pose")
 			st["faceYaw"] = pt["yaw"]
 			npc["walking"] = false

@@ -533,11 +533,27 @@ func landed(token: Node, pa: Dictionary) -> void:
 			if HSDirector.is_a(n, "HSActor"):
 				a = n
 			n = n.get_parent()
+	var stop = null                                  # no character there: a path's stop it fell on or by (its clip)
+	if a == null and not bool(pa.get("face", false)):
+		var n2 = token.get_parent()
+		if n2 != null and HSDirector.is_a(n2, "HSSpot") and n2.get_parent() != null and HSDirector.is_a(n2.get_parent(), "HSPath"):
+			stop = n2
+		else:
+			var best := 0.8
+			for pth in HSDirector.nodes_of(panel.dock.root(), "HSPath"):
+				for sp in pth.spots():
+					var d: float = (sp.global_position - token.global_position).length()
+					if d < best:
+						best = d
+						stop = sp
 	var r = panel.dock.root()
 	var ur = panel.plugin.get_undo_redo()
 	ur.get_history_undo_redo(ur.get_object_history_id(r)).undo()   # the drop's spot, taken back
+	if stop != null:
+		set_stop_clip(stop, pa["clip"])
+		return
 	if a == null:
-		panel.say("Drop it on a character")
+		panel.say("Drop it on a character (or a path's stop)")
 		return
 	face_side = bool(pa.get("face", false))
 	panel.show_page("animate")
@@ -595,6 +611,37 @@ func set_move(a: Node3D, c: Dictionary, slot: String) -> void:
 	EditorInterface.mark_scene_as_unsaved()
 	panel.say("%s is %s's %s now" % [nm, a.name, slot.replace("_", " ")] if slot != "" else "%s is %s's: the story can play it (Animate %s)" % [nm, a.name, a.name])
 	refresh()
+
+
+## a path's stop given a clip (dropped on it): made for each character who walks the path (her behaviour's path or
+## patrol, an On stage line's), then the stop's `clip` (on the scene's undo)
+func set_stop_clip(stop: Node, c: Dictionary) -> void:
+	var path: Node = stop.get_parent()
+	var pid := HSDirector.id_of(path)
+	var walkers: Array = []
+	for a in HSDirector.nodes_of(panel.dock.root(), "HSActor"):
+		var hers: bool = a.get_node_or_null(a.path) == path or (a.patrol as Array).any(func(np): return a.get_node_or_null(np) == path)
+		for q in panel.story.f.get("quests", []):
+			var ln = q.get("stage", {}).get(a.cast_id()) if q.get("stage") is Dictionary else null
+			if ln is Dictionary and (str(ln.get("path", "")) == pid or (ln.get("paths") is Array and (ln["paths"] as Array).has(pid))):
+				hers = true
+		if hers:
+			walkers.append(a)
+	var nm := str(c["id"])
+	for a in walkers:
+		var why := [""]
+		if HSLibrary.make_for(a, c, why) == "":
+			panel.say(why[0])
+			return
+	var ur = panel.plugin.get_undo_redo()
+	ur.create_action("%s's clip: %s" % [stop.name, nm])
+	ur.add_do_property(stop, "clip", nm)
+	ur.add_undo_property(stop, "clip", stop.get("clip"))
+	ur.commit_action()
+	EditorInterface.mark_scene_as_unsaved()
+	panel.say("%s plays %s at %s%s" % ["Whoever walks %s" % path.name if walkers.is_empty() else ", ".join(PackedStringArray(walkers.map(func(x): return str(x.name)))), nm, stop.name,
+		"" if walkers.size() else " (no one walks it yet: give it to her on the Animate tab when someone does)"])
+	panel.dock.select(stop)
 
 
 func set_face(a: Node3D, c: Dictionary) -> void:

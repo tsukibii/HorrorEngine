@@ -206,13 +206,18 @@ func _acts(target: String, w: Dictionary, had: Dictionary) -> Array:
 				b[k[1]] = w[k[0]]
 		if str(w.get("do", "")) == "go" and str(w.get("then", "")) != "":
 			b["then"] = w["then"]
-		var here = had.get("to") if str(had.get("do", "idle")) == "go" else had.get("at")   # On stage's in-between: a line standing or sitting her somewhere
-		var there = w.get("at")                          # else walks her there (her walk, then her sitting down); the
-		if w.get("_in_between", false) and here != null and there != null and str(here) != str(there) and str(w.get("do", "idle")) in ["idle", "sit"]:
-			b["as"] = "go"                               # first time in a level she's just put there
-			b.erase("at")
-			b["to"] = there
-			b["then"] = "sit" if str(w.get("do")) == "sit" else "idle"
+		var here = had.get("to") if str(had.get("do", "idle")) == "go" else had.get("at")   # On stage's in-between: a line standing or sitting her
+		var there = w.get("to") if str(w.get("do", "idle")) == "go" else w.get("at")     # somewhere else walks her there (her walk, then her
+		if w.get("_in_between", false) and here != null and there != null and str(here) != str(there):   # sitting down), through the doorways
+			if str(w.get("do", "idle")) in ["idle", "sit"]:   # between (`way`); the first time in a level she's just put there
+				b["as"] = "go"
+				b.erase("at")
+				b["to"] = there
+				b["then"] = "sit" if str(w.get("do")) == "sit" else "idle"
+			if b["as"] == "go":
+				var via := way(str(here), str(there))
+				if via.size():
+					b["via"] = via
 		acts.append(b)
 	if w.has("shown") and w["shown"] != had.get("shown"):
 		acts.append({"show": target} if w["shown"] else {"hide": target})
@@ -229,6 +234,35 @@ func _acts(target: String, w: Dictionary, had: Dictionary) -> Array:
 	if w.has("expr") and w["expr"] != had.get("expr"):        # the face she rests in (face.gd)
 		acts.append({"expr": str(w["expr"]) if w["expr"] != null else "", "who": target, "rest": true})
 	return acts
+
+
+## the doorways a walk from one place to another goes through (compile.gd's room map): each door's side in the room
+## she's in, then its side in the next room, room by room on the fewest doors; [] in the same room or no way known
+func way(from: String, to: String) -> Array:
+	var map: Dictionary = data.get("rooms", {})
+	var places: Dictionary = map.get("places", {})
+	var a := str(places.get(from, ""))
+	var b := str(places.get(to, ""))
+	if a == "" or b == "" or a == b:
+		return []
+	var prev := {a: null}
+	var todo: Array = [a]
+	while todo.size() and not prev.has(b):
+		var r: String = todo.pop_front()
+		for l in map.get("links", []):
+			for dir in [[l[0], l[1], l[2], l[3]], [l[1], l[0], l[3], l[2]]]:
+				if dir[0] == r and not prev.has(dir[1]):
+					prev[dir[1]] = [r, dir[2], dir[3]]
+					todo.append(dir[1])
+	if not prev.has(b):
+		return []
+	var out: Array = []
+	var r2 := b
+	while prev[r2] != null:
+		out.push_front(prev[r2][2])
+		out.push_front(prev[r2][1])
+		r2 = prev[r2][0]
+	return out
 
 
 func _achievements() -> void:

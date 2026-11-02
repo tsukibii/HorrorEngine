@@ -115,6 +115,13 @@ func _process(dt: float) -> void:
 			_flow_egg_checks()
 			_stage_checks()
 			EditorInterface.set_main_screen_editor("3D")
+			_path_checks()
+			at_t = t
+			phase = 340
+		340:                                              # the card dropped on the path's stop lands a frame later
+			if t - at_t < 0.5:
+				return
+			_path_dropped()
 			_animate_checks()
 			at_t = t
 			phase = 35
@@ -718,6 +725,48 @@ func _stage_checks() -> void:
 	rep["stage_put_back"] = mari.global_position.distance_to(at0) < 0.001 and st.staged.is_empty() \
 		and (mari.get_node_or_null("_Staged") == null or mari.get_node("_Staged").is_queued_for_deletion())
 	panel.show_page("build")
+
+
+## a path's stops (docs/GODOT_ANIMATION_PLAN.md step 5): This object lists the hall path's two with their waits and
+## clips; the second's clip picked there (and undone); an Animate card dropped on it gives it that clip
+func _path_checks() -> void:
+	var r := EditorInterface.get_edited_scene_root()
+	var hp: Node = r.find_child("HallPath", true, false)
+	panel.show_page("build")
+	dock.select(hp)
+	panel.on_selection()
+	var side: Control = panel.build.side
+	var rows: Array = []
+	for i in 2:
+		var row: Control = side.find_child("Stop_%d" % i, true, false)
+		var ob: OptionButton = row.find_child("Clip", true, false) if row != null else null
+		var w: SpinBox = row.find_child("Wait", true, false) if row != null else null
+		rows.append([_texts(row)[0] if row != null else "", w.value if w != null else -1.0, ob.get_item_text(ob.selected) if ob != null else ""])
+	rep["path_stops"] = rows
+	var ob2: OptionButton = side.find_child("Stop_1", true, false).find_child("Clip", true, false)
+	var k := -1
+	for i in ob2.item_count:
+		if ob2.get_item_text(i) == "sample_idle":
+			k = i
+	ob2.select(k)
+	ob2.item_selected.emit(k)
+	var stop2: Node = hp.spots()[1]
+	var set_ok: bool = stop2.clip == "sample_idle"
+	var hist := get_undo_redo().get_history_undo_redo(get_undo_redo().get_object_history_id(r))
+	hist.undo()
+	rep["path_clip"] = [set_ok, stop2.clip == ""]
+	panel.plugin.pending_anim = {"clip": HSLibrary.clip("mari_talk"), "face": false, "at": Time.get_ticks_msec()}   # a card dropped on the stop
+	var tok: Node3D = (load("res://addons/horrorstudio_director/presets/spot.tscn") as PackedScene).instantiate()
+	dock.add_node(stop2, tok, "drop Spot")
+	pan["path_stop"] = stop2
+
+
+## a frame later: the dropped card's clip on the stop, the drop taken back
+func _path_dropped() -> void:
+	var stop2: Node = pan["path_stop"]
+	rep["path_dropped"] = [str(stop2.clip), stop2.get_children().filter(func(c): return HSDirector.is_a(c, "HSSpot")).size()]
+	get_undo_redo().get_history_undo_redo(get_undo_redo().get_object_history_id(EditorInterface.get_edited_scene_root())).undo()
+	rep["path_dropped_undone"] = str(stop2.clip) == ""
 
 
 ## the Animate tab (editor/animate_tab.gd over core/library.gd): the sample's two Kimodo clips as cards in their groups,

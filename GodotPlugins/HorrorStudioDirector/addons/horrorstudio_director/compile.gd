@@ -58,6 +58,7 @@ func compile(g: Node, alone: Node = null, file: Dictionary = {}) -> Dictionary:
 	sc.compile(f, story, levels)
 	problems.append_array(sc.problems)
 	brain = sc.brain
+	brain["rooms"] = _room_map()
 	var rests: Array = []                             # each character's own resting face (HSActor.expression): a state that always holds, under the story's
 	for lv in levels.values():
 		for a in HSDirector.nodes_of(lv, "HSActor"):
@@ -271,6 +272,39 @@ func _check_refs(f: Dictionary) -> void:
 					seen[target] = true
 					warn(game, "a state sets %s, which isn't in the scene (a character, a thing, a door or a light)" % target)
 	_check_clips(f)
+
+
+## the rooms' map for the brain's walks (On stage's in-between going through doorways, run/brain.gd `way`): each
+## place's room (the level's spots, the characters' homes, the seats, the doorways' sides) and each door's two sides
+## as a way between the rooms it joins ({places: {spot: room}, links: [[room, room, its side there, its side here]]})
+func _room_map() -> Dictionary:
+	var places := {}
+	var links: Array = []
+	var up := Vector3(0, 0.5, 0)
+	for lv in levels.values():
+		var rooms: Array = HSDirector.nodes_of(lv, "HSRoom")
+		var room_at := func(p: Vector3) -> String:
+			for r in rooms:
+				if r.holds(p + up):
+					return HSDirector.id_of(r)
+			return ""
+		for n in HSDirector.nodes_of(lv, "HSSpot"):
+			places[HSDirector.id_of(n)] = room_at.call(n.global_position)
+		for a in HSDirector.nodes_of(lv, "HSActor"):
+			places[a.home_id()] = room_at.call(a.global_position)
+		for t in HSDirector.nodes_of(lv, "HSThing"):
+			if str(t.get("use")) == "sit":
+				places[HSDirector.id_of(t)] = room_at.call(t.global_position)
+		for d in HSDirector.nodes_of(lv, "HSDoor"):
+			var z: Vector3 = d.global_transform.basis.z.normalized() * HSLevel.DOORWAY
+			var did := HSDirector.id_of(d)
+			var a_room: String = room_at.call(d.global_position + z)
+			var b_room: String = room_at.call(d.global_position - z)
+			places[did + "__in"] = a_room
+			places[did + "__out"] = b_room
+			if a_room != "" and b_room != "" and a_room != b_room:
+				links.append([a_room, b_room, did + "__in", did + "__out"])
+	return {"places": places, "links": links}
 
 
 ## a clip the story plays on someone (`anim`) that she hasn't got on her: the library's (core/library.gd) given to her

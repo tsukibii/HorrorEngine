@@ -24,7 +24,7 @@ const KIND_WORDS := {"HSRoom": ["a room", "Floor, walls and a ceiling from its s
 	"HSDoor": ["a door", "It swings away from the player. Locked by an item, a peephole, a latch: in the Inspector."],
 	"HSTrigger": ["an area", "The story hears the player walk into it: a moment can start here (Scares)."],
 	"HSSpot": ["a spot", "Where someone stands or is sent, or a point of a path."],
-	"HSPath": ["a path", "A way a character walks: its points, round or there and back."],
+	"HSPath": ["a path", "A way a character walks: its stops in order, round or there and back. Add stops with Godot's path tools (select it, Add Point, click on the floor) or as Spots inside it; at each, a wait and a clip she plays there."],
 	"HSActor": ["a character", "She stands, sits, walks, talks and watches: her settings are in the Inspector, her moves (what she plays standing, walking, sitting, talking...) on the Animate tab."],
 	"HSLevel": ["a level", "A place the game plays in."], "HSGame": ["the game", "Its title, the time of day, the look: in the Inspector."]}
 
@@ -643,6 +643,8 @@ func _side_node(n: Node, cls: String) -> void:
 		b.icon = Glyphs.icon("window", "#9CCBFA", 16)
 		b.pressed.connect(func(): add_window(n))
 		side.add_child(b)
+	if cls == "HSPath":
+		_side_path(n)
 	if cls == "HSActor":                               # her moves: on the Animate tab, beside the clips
 		var mv: Dictionary = n.all_moves()
 		side.add_child(_wrap(_label("Her moves: %d of %d set (%s)" % [mv.size(), HSActor.MOVES.size(), ", ".join(PackedStringArray(mv.keys())).replace("_", " ") if mv.size() else "none yet"], 13, C_TEXT)))
@@ -956,6 +958,67 @@ func _life(name: String) -> Dictionary:
 		var j = JSON.parse_string(FileAccess.get_file_as_string(LIVES))
 		lives = j.get("lives", j) if j is Dictionary else {}
 	return lives.get(name, {})
+
+
+## a path's stops (docs/GODOT_ANIMATION_PLAN.md step 5): each one's wait and the clip she plays there (an Animate card
+## dropped on a stop in the 3D view sets it too); a Spot inside the path carries its own, a curve point the path's
+## `waits` and `clips`
+func _side_path(n: Node) -> void:
+	var pts: Array = n.points()
+	side.add_child(_label("ITS STOPS", 11, C_FAINT, true))
+	if pts.is_empty():
+		side.add_child(_wrap(_label("No stops yet: select it and click on the floor with Godot's path tools (Add Point), or put Spots inside it.", 12, C_MUTED)))
+		return
+	var spots: Array = n.spots()
+	var clips: Array = Array(HSDirector.ids("motion"))
+	for i in pts.size():
+		var row := HBoxContainer.new()
+		row.name = "Stop_%d" % i
+		row.add_theme_constant_override("separation", int(6 * _s()))
+		var sp = spots[i] if i < spots.size() else null
+		var nm := _label(str(sp.name) if sp != null else "Point %d" % (i + 1), 12, C_TEXT, true)
+		nm.custom_minimum_size = Vector2(70, 0) * _s()
+		nm.clip_text = true
+		row.add_child(nm)
+		var w := SpinBox.new()
+		w.name = "Wait"
+		w.min_value = 0.0
+		w.max_value = 120.0
+		w.step = 0.5
+		w.suffix = "s"
+		w.value = float(pts[i]["wait"])
+		w.tooltip_text = "the seconds she waits here (0 and a clip: as long as the clip)"
+		w.value_changed.connect(func(v): _stop_set(n, i, "wait", v))
+		row.add_child(w)
+		var ob := OptionButton.new()
+		ob.name = "Clip"
+		ob.add_item("no clip")
+		var cur := str(pts[i].get("clip", ""))
+		var vals: Array = [""] + clips
+		for c in clips:
+			ob.add_item(str(c))
+		if cur != "" and not vals.has(cur):
+			ob.add_item(cur + " (she hasn't got it)")
+			vals.append(cur)
+		ob.select(max(0, vals.find(cur)))
+		ob.tooltip_text = "what she plays while she stops here (looks round, checks a drawer)"
+		ob.item_selected.connect(func(k): _stop_set(n, i, "clip", vals[k]))
+		row.add_child(ob)
+		side.add_child(row)
+
+
+## a stop's wait or clip set (on the scene's undo): a Spot's own, else the path's arrays for its curve point
+func _stop_set(path: Node, i: int, key: String, v) -> void:
+	var spots: Array = path.spots()
+	if i < spots.size():
+		_change(spots[i], key, v, "%s's %s" % [spots[i].name, key])
+		return
+	var arr_name := "waits" if key == "wait" else "clips"
+	var arr = path.get(arr_name).duplicate()
+	while arr.size() <= i:
+		arr.append(0.0 if key == "wait" else "")
+	arr[i] = v
+	_change(path, arr_name, arr, "%s's point %d %s" % [path.name, i + 1, key])
 
 
 func _change(n: Object, prop: String, v, what: String) -> void:

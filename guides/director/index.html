@@ -250,7 +250,7 @@ the bedroom door with the bedroom key, so the bedroom can be tried without findi
 <ul>
 <li><span class="node">HSTrigger</span>, an <b>area</b>: a box the player walks into (orange in the editor, invisible in the game). A step or a moment waits for it by its id. <b>Safe</b>: a watching character can't see the player inside.</li>
 <li><span class="node">HSSpot</span>, a <b>spot</b>: where a quest puts the player, where a character stands or is sent (with no Player start, the level's <b>start</b> or a spot named Start is where the player begins). It faces the way its arrow points (its +Z).</li>
-<li><span class="node">HSPath</span>, a <b>path</b> a character walks: select it and draw points with Godot's path tools (Add Point, then click the floor), or give it HSSpot children you drag around. <b>Mode</b>: loop, there and back, or once; <b>waits</b> at its points. An HSSpot point can also have a <b>pose</b> she holds while she waits there (look_left, look_right...) and a hiding place she <b>checks</b> (a locker's id: whoever hides in it is found).</li>
+<li><span class="node">HSPath</span>, a <b>path</b> a character walks: select it and draw points with Godot's path tools (Add Point, then click the floor), or give it HSSpot children you drag around. <b>Mode</b>: loop, there and back, or once; <b>waits</b> at its points. An HSSpot point can also have a <b>pose</b> she holds while she waits there (look_left, look_right...), a <b>clip</b> she plays there (§5, Paths) and a hiding place she <b>checks</b> (a locker's id: whoever hides in it is found).</li>
 </ul>
 <h3>Your own models and lights</h3>
 <p>Drop any model into the level. If it has collision it stops the player (Godot's own physics); if you want the player
@@ -416,9 +416,26 @@ quest. <b>When the quest moves on, the in-between plays by itself</b>: if she wa
 the new line says. <span class="ui">Show on stage</span> moves everyone in the 3D view to where the quest has them,
 doing it, until you press <span class="ui">■ Back to the scene</span> (nothing is saved; saving puts them back too).
 Story Flow's quest cards show each line as a chip (<i>Mari · stands at Mari's place</i>).</p>
-<div class="note">She walks to her new place in a straight line, so a walk from one room to another can cut through a
-wall. Until the next step (paths drawn in the 3D view, the walk between places going by them), keep a quest's new
-place within reach in a straight line, or a line of a quest in between that takes her through the door.</div>
+<p><b>A walk to another room goes through the doors.</b> The game knows which room every place is in and which door
+joins which rooms, so a walk from the bedroom to the kitchen goes to the bedroom's door, through it, along the hall,
+through the kitchen's door and on to her place, by the fewest doors. Inside a room she walks straight, so keep big
+furniture off the line between a door and the places she's sent to, or send her by a path.</p>
+
+<h3>Paths and their stops</h3>
+<figure class="wide"><img src="img/e_path_stops.jpg" width="986" height="364" alt="The Build tab with the sample's hall path selected: This object lists its stops, HallStop1 waiting 0 seconds with the clip look around, HallStop2 waiting half a second with no clip">
+<figcaption>The hall path selected: This object lists its stops, each with its wait and its clip.</figcaption></figure>
+<p>A path (<span class="node">HSPath</span>, §4) is drawn in the 3D view with Godot's own path tools (select it,
+<span class="ui">Add Point</span>, click the floor), or as <span class="node">HSSpot</span> children dragged where she
+should stop. She walks it with her <i>Walk</i> (her <i>Run</i> when she's fast) and, at each stop, waits as long as the
+stop says doing what it says:</p>
+<ul>
+<li><b>Select the path</b>: This object (the Build tab) lists <b>its stops</b>, each with a <b>wait</b> (seconds) and a
+<b>clip</b> to play there (searching the cupboards, looking out of the window); a stop with a clip and no wait plays the
+clip once through, then walks on.</li>
+<li><b>Or drag a card from the Animate tab onto a stop</b> in the 3D view or the Scene tree: it becomes that stop's clip,
+made for whoever walks the path.</li>
+<li>A stop whose pose is look, search or check plays her <i>Look round</i> when it has no clip of its own.</li>
+</ul>
 
 <h3>Face clips from a video: the Face page</h3>
 <figure class="wide"><img src="img/f_facepage.jpg" width="1400" height="820" alt="The Face page in a browser: the library's expressions as cards, each the MHR head wearing it, Import at the top; on the right For Godot, the project's folder, a Godot project with two face clips, the faces ticked with their marks in faces/ and faces/loops/, Send 2 to the project and what was written">
@@ -448,8 +465,8 @@ blended into its start, for a face she rests in.</li>
 <pre>python tools/godot_director.py faces ~/Games/MyGame pout_and_glance pout_and_glance_loop</pre>
 <p>If the story animates someone with a clip she hasn't been given, the panel's <span class="ui">Test</span> page says
 so, and names the Animate tab when the clip is in <code>animations/</code>.</p>
-<div class="notyet"><b>Not yet.</b> Paths drawn in the 3D view with clips at their stops; reactions and scares with
-their own clips; cutscenes in the level; FBX and glTF clips. They're next (<code>docs/GODOT_ANIMATION_PLAN.md</code>).</div>
+<div class="notyet"><b>Not yet.</b> Reactions and scares with their own clips; cutscenes in the level; FBX and glTF
+clips. They're next (<code>docs/GODOT_ANIMATION_PLAN.md</code>).</div>
 </section>
 
 <section id="story">
@@ -862,7 +879,7 @@ must be set up first (<code>python setup/setup.py kimodo</code>).</div>
 <tr><td class="node">HSTrigger</td><td>An area to walk into; safe or not.</td></tr>
 <tr><td class="node">HSPlayerStart</td><td>Where the player begins, facing its arrow: <b>start for</b> the game or a test; what they <b>start with</b>.</td></tr>
 <tr><td class="node">HSCheckpoint</td><td>An area that autosaves each time it's walked into.</td></tr>
-<tr><td class="node">HSSpot</td><td>A spot facing its arrow; a wait, a pose and a hiding place she checks when it's a path's point.</td></tr>
+<tr><td class="node">HSSpot</td><td>A spot facing its arrow; a wait, a pose, a clip and a hiding place she checks when it's a path's point.</td></tr>
 <tr><td class="node">HSPath</td><td>A way to walk: points drawn or HSSpots; loop, there and back, once.</td></tr>
 <tr><td class="node">HSActor</td><td>A character (§5).</td></tr>
 <tr class="h"><td>The story (the Director file)</td><td></td></tr>

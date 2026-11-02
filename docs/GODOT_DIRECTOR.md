@@ -559,6 +559,21 @@ her conversations narrowed (the thirsty one in the errand, none at night); at ni
 offers nothing; in the editor the card's chip, her line in blue words, the carried one, changed here and undone, Show
 on stage there and back.
 
+**Paths and the walk between places** (docs/GODOT_ANIMATION_PLAN.md step 5): a path's stops (HSSpot children, or the
+curve's points drawn with Godot's own path tools: select the path, Add Point, click on the floor) each have a `wait`
+and now a `clip` (HSSpot `clip`, HSPath `clips` for curve points): what she plays while she stops there, as long as the
+wait, or the clip's own length when there's none (the format's route point `clip`, STORY_FORMAT §2; the runtime's
+`walk_route` and `npc_want`). This object (Build) lists a path's stops with a wait and a clip each (`_side_path`), and an
+Animate card dropped on a stop in the 3D view or the Scene tree gives it that clip, made for whoever walks the path
+(her behaviour's path or patrol, an On stage line's: `set_stop_clip`). **Walks go through doorways**: each level makes a
+spot on both sides of every door at play (`<door>__in`, `<door>__out`, 0.6 m out: `HSLevel.DOORWAY`); compile.gd's
+`_room_map` gives the brain each place's room and each door as a way between the two rooms it joins, and the brain's
+`way(from, to)` finds the doorways a walk from one place to another goes through (fewest doors), which On stage's
+in-between walks put in their `go` as `via`. Measured (DIRECTOR): This object's two stops of the sample's hall path, a
+clip picked there and undone, a card dropped on a stop; in play Mari looking round at the path's stop, the way from her
+place to the kitchen (the kitchen door's hall side, then its kitchen side), On stage's in-between to the kitchen as a
+`go` by them, and her walk through the doorway into the kitchen.
+
 **The Face page** (docs/GODOT_ANIMATION_PLAN.md step 2; the user: "the tooling we are using in director to upload the
 face videos... let's make it a separate page so I can save the facial mocap"): `tools/facecap/serve.py` (port 8797) is
 the desk's own server loaded as a module with the page and two routes on top, so the library's endpoints (import,
@@ -640,7 +655,7 @@ on the Director projects made from the desk's games.
 - The desk can't open a Director game, and a Director game can't go back to the desk: the scene is the game now
   (`from-desk` goes one way, §6d: making it again replaces the project).
 - From the desk (§6d): the trims and thresholds, a kit door's own model, the light zones per room.
-- Animation (§6g, docs/GODOT_ANIMATION_PLAN.md's order): paths and patrols drawn in the 3D view (5), reactions and scares (6), cutscenes in the
+- Animation (§6g, docs/GODOT_ANIMATION_PLAN.md's order): reactions and scares (6), cutscenes in the
   level with a soft lock and its safety release (7); FBX and glTF clips and a
   picture on a grey MHR body for each card (later); the story's pickers offering the library's clips not yet hers; On stage in the Manager, a line held on a fact, Story
-  Flow's Cast lanes; walking between rooms needs a path (a straight `go` can cut through a wall).
+  Flow's Cast lanes; a walk goes through doorways (§6g) but not round furniture, and a shut door doesn't stop her.

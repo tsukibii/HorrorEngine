@@ -553,6 +553,41 @@ func _initialize() -> void:
 			return "up and off at 2.6 m/s: never walking on her walk (no run: her walk); she played %s" % [seen]
 		rt.behave("mari", {"as": "idle", "at": "bedroom_spot"})   # back where the story had sent her
 		return "")
+	await step("Paths and the in-between: a path's stop plays its clip (her look round at the hall path's first stop); a walk to the kitchen goes through its doorway (the brain's way, and On stage's in-between)", func():
+		rt = g.play
+		var map = load("res://addons/horrorstudio/play.gd").player_with(rt.cast_nodes["mari"], "sample_idle")
+		rt.behave("mari", {"as": "path", "route": "hall_path"})
+		var looked := false
+		var c0: float = rt.clock
+		while rt.clock - c0 < 10.0 and not looked:
+			looked = float(rt.npcs["mari"]["st"].get("wait", 0.0)) > 0.0 and str(map.current_animation) == "anims/look_around"
+			await process_frame
+		if not looked:
+			return "no look round at the stop (st %s, playing %s)" % [rt.npcs["mari"]["st"].keys(), map.current_animation]
+		var br = hs.brain
+		var via: Array = br.way("mari__home", "kitchen_spot")
+		var places: Dictionary = br.data["rooms"]["places"]
+		if via.size() != 2 or places.get(via[0]) != "hall" or places.get(via[1]) != "kitchen" or not str(via[0]).begins_with("kitchen_door__"):
+			return "the way to the kitchen: %s (its rooms %s)" % [via, via.map(func(x): return places.get(x))]
+		var acts: Array = br._acts("mari", {"do": "idle", "at": "kitchen_spot", "_in_between": true}, {"do": "idle", "at": "mari__home"})
+		var b: Dictionary = acts[0] if acts.size() else {}
+		if b.get("as") != "go" or b.get("to") != "kitchen_spot" or b.get("via") != via:
+			return "On stage's in-between to the kitchen: %s" % [b]
+		rt.behave("mari", b)
+		var near := []
+		c0 = rt.clock
+		while rt.clock - c0 < 15.0 and rt.npcs["mari"]["st"].get("arrived") == null:
+			var pos: Vector3 = rt.npcs["mari"]["pos"]
+			for v in via:
+				var sp: Vector3 = rt.spot_pos(rt.things[v])
+				if Vector2(pos.x - sp.x, pos.z - sp.z).length() < 0.15 and not near.has(v):
+					near.append(v)
+			await process_frame
+		var at: Vector3 = rt.npcs["mari"]["pos"]
+		if near.size() != 2 or rt.npcs["mari"]["st"].get("arrived") == null or at.x < 2.7:
+			return "through the doorway %s, arrived %s at x=%.2f (the kitchen starts at 2.62)" % [near, rt.npcs["mari"]["st"].get("arrived"), at.x]
+		rt.behave("mari", {"as": "idle", "at": "bedroom_spot"})
+		return "")
 	await step("the locked bedroom door opens with the key; walking in ticks the task", func():
 		rt = g.play
 		if g.hud.obj.text != "Get into the bedroom":

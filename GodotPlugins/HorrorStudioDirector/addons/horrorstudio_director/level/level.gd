@@ -65,6 +65,9 @@ func start_node() -> Node:
 	return null
 
 
+const DOORWAY := 0.6                     # metres out from a doorway, each side: where a character walking through it steps
+
+
 ## the start spot's id
 func start_id() -> String:
 	var s = start_node()
@@ -80,6 +83,14 @@ func _setup() -> void:
 		m.global_transform = a.global_transform
 		HSDirector.stamp(m, {"id": a.home_id(), "kind": "spot", "shape": "box", "size": [0.3, 0.3, 0.0], "room": "",
 			"yaw": HSDirector.story_yaw(a), "pos": HSDirector.story_pos(a.global_position), "tags": ["use:spot"], "d": {}})
+	for d in HSDirector.nodes_of(self, "HSDoor"):      # each doorway's two sides: the way a character walks through it
+		for side in [["__in", 1.0], ["__out", -1.0]]:  # (On stage's in-between, compile.gd's room map)
+			var m := Marker3D.new()
+			m.name = "_" + HSDirector.id_of(d) + side[0]
+			add_child(m)
+			m.global_position = d.global_position + d.global_transform.basis.z.normalized() * DOORWAY * float(side[1])
+			HSDirector.stamp(m, {"id": HSDirector.id_of(d) + side[0], "kind": "spot", "shape": "box", "size": [0.3, 0.3, 0.0], "room": "",
+				"yaw": HSDirector.story_yaw(d) + (0.0 if side[1] > 0 else 180.0), "pos": HSDirector.story_pos(m.global_position), "tags": ["use:spot"], "d": {}})
 	if HSDirector.nodes_of(self, "HSSpot").is_empty():
 		var o := Marker3D.new()
 		o.name = "_origin"

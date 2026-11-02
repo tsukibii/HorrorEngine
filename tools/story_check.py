@@ -340,6 +340,8 @@ def check_world(story, things, r):
                     r.err(f"level {lid}: route {rid} at {q.get('at')}: check {ck!r} isn't a locker in it")
                 if q.get("pose") is not None and q["pose"] not in POSES:
                     r.err(f"level {lid}: route {rid} at {q.get('at')}: pose {q['pose']!r} isn't in Content/Studio/poses.json")
+                if q.get("clip") is not None and q["clip"] not in (story.get("motions") or {}):   # what she plays at the stop (Godot)
+                    r.err(f"level {lid}: route {rid} at {q.get('at')}: clip {q['clip']!r} isn't in motions")
         for k, v in (lvl.get("trim") or {}).items():
             if k not in ("skirting", "cornice", "casing", "threshold") or not isinstance(v, (int, float)) or not 0 <= v <= 0.4:
                 r.err(f"level {lid}: trim {k}: {v!r} (skirting, cornice, casing, threshold: heights or widths in metres, 0 for none)")

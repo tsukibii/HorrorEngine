@@ -13,6 +13,9 @@ extends Marker3D
 @export var pose: String = ""
 ## a path's point: a hiding place she looks in here (a locker's id): someone hiding in it is found
 @export var check: String = ""
+## a path's point: a clip of hers she plays while she stops here (looks round, checks a drawer): as long as `wait`, or
+## the clip's own length when there's none (drop an Animate card on the spot)
+@export var clip: String = ""
 
 var _gen: Node3D = null
 

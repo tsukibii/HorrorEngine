@@ -724,6 +724,10 @@ def editor_check(out):
          and rep.get("anim_roles") == ["sit", "stand", "idle", "walk", "scare", "other"]
          and sorted(rep.get("anim_faces") or []) == ["Face_pout_and_glance", "Face_pout_and_glance_loop"]),
         ("the Face side's button starts the studio's Face page for this project (%s)" % rep.get("anim_face_page"), rep.get("anim_face_page") is True),
+        ("a path's stops in This object %s; the second's clip picked there and undone %s; a card dropped on it gives it that clip, the drop taken back %s, undone (%s)"
+         % (rep.get("path_stops"), rep.get("path_clip"), rep.get("path_dropped"), rep.get("path_dropped_undone")),
+         rep.get("path_stops") == [["HallStop1", 0.0, "look_around"], ["HallStop2", 0.5, "no clip"]] and rep.get("path_clip") == [True, True]
+         and rep.get("path_dropped") == ["mari_talk", 0] and rep.get("path_dropped_undone") is True),
         ("On stage: the drink errand's card says Mari's line (%r); in the Story tab her line there in blue words %s, in the key's quest the Intro's carried (%s), changed here (%s) and undone (%s); Show on stage puts her where the night has her, sitting (%s), and back (%s)"
          % (rep.get("stage_chip"), rep.get("stage_own"), rep.get("stage_carried"), rep.get("stage_changed_here"), rep.get("stage_undone"), rep.get("stage_shown"), rep.get("stage_put_back")),
          str(rep.get("stage_chip", "")).startswith("Mari · stands at") and rep.get("stage_own") == ["stands at", "“Could you bring me something to drink?”"]

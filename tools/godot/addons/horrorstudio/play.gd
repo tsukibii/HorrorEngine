@@ -1808,7 +1808,8 @@ func route(ref) -> Variant:
 			continue
 		if lvl == null:
 			lvl = level
-		points.append({"pos": spot_pos(t), "yaw": float(t["piece"].get("yaw", 0)), "wait": float(q.get("wait", 0)), "pose": q.get("pose"), "check": q.get("check")})
+		points.append({"pos": spot_pos(t), "yaw": float(t["piece"].get("yaw", 0)), "wait": float(q.get("wait", 0)), "pose": q.get("pose"), "check": q.get("check"),
+			"clip": q.get("clip")})
 	return {"level": lvl, "mode": r.get("mode", "loop"), "points": points} if points.size() else null
 
 
@@ -1874,6 +1875,8 @@ func npc_want(cid: String, n: Dictionary) -> Array:
 			return [s["walk"], true]
 		return [s["motion"] if s.get("motion") != null else move_of(cid, "run" if float(s.get("speed", 1.1)) >= RUN_SPEED else "walk"), true]
 	var st: Dictionary = n["st"]
+	if float(st.get("wait", 0.0)) > 0.0 and st.get("clip") != null:   # a route's stop with a clip of its own (she looks round there)
+		return [st["clip"], true]
 	if float(st.get("wait", 0.0)) > 0.0 and str(st.get("pose", "")) in LOOK_POSES and move_of(cid, "look_around", false) != null:
 		return [move_of(cid, "look_around"), true]
 	if s.get("rest") != null:

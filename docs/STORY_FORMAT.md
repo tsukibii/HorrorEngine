@@ -68,6 +68,8 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
   `"routes": {"r_hall": {"points": [{"at": "hall_back", "wait": 2, "pose": "look_left"}, "hall_near"], "mode": "pingpong"}}`.
   `mode`: `loop` (the default), `pingpong`, `once`. She walks straight from point to point, so place the spots where
   the line between them is clear. A point's `check` (a locker) is a hiding place she looks in there (`behave` sees).
+  A point's `clip` (a `motions` id; Godot) is what she plays while she stops there (looks round, checks a drawer),
+  as long as its `wait`, or as long as the clip when it has none.
 
 **A room:**
 

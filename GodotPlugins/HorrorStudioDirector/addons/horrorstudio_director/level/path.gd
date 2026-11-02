@@ -11,6 +11,8 @@ extends Path3D
 @export_enum("loop", "pingpong", "once") var mode: String = "loop"
 ## the seconds she waits at each of the curve's points, in order (HSSpot children carry their own)
 @export var waits: PackedFloat32Array = PackedFloat32Array()
+## the clip she plays at each of the curve's points while she waits there, in order (HSSpot children carry their own)
+@export var clips: PackedStringArray = PackedStringArray()
 
 
 func _enter_tree() -> void:
@@ -33,12 +35,13 @@ func points() -> Array:
 	var sp := spots()
 	if sp.size():
 		for s in sp:
-			out.append({"pos": s.global_position, "wait": s.wait, "id": HSDirector.id_of(s), "pose": s.pose, "check": s.check})
+			out.append({"pos": s.global_position, "wait": s.wait, "id": HSDirector.id_of(s), "pose": s.pose, "check": s.check, "clip": s.clip})
 		return out
 	if curve == null:
 		return out
 	for i in curve.point_count:
-		out.append({"pos": global_transform * curve.get_point_position(i), "wait": waits[i] if i < waits.size() else 0.0, "id": "%s__%d" % [HSDirector.id_of(self), i]})
+		out.append({"pos": global_transform * curve.get_point_position(i), "wait": waits[i] if i < waits.size() else 0.0, "id": "%s__%d" % [HSDirector.id_of(self), i],
+			"clip": clips[i] if i < clips.size() else ""})
 	return out
 
 
@@ -49,7 +52,7 @@ func as_story() -> Dictionary:
 		var q := {"at": p["id"]}
 		if float(p["wait"]) > 0.0:
 			q["wait"] = float(p["wait"])
-		for k in ["pose", "check"]:
+		for k in ["pose", "check", "clip"]:
 			if str(p.get(k, "")) != "":
 				q[k] = str(p[k])
 		pts.append(q)

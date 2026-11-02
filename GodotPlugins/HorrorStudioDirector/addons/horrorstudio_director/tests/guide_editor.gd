@@ -405,6 +405,24 @@ func _process(dt: float) -> void:
 			if t - at < 0.6:
 				return
 			_shot("e_onstage", _panel_rect())
-			panel.show_page("build")
+			panel.show_page("build")                       # a path's stops in This object: a wait and a clip each
+			var r2 := EditorInterface.get_edited_scene_root()
+			dock.select(r2.find_child("HallPath", true, false))
+			panel.on_selection()
+			at = t
+			phase = 27
+		27:
+			if t - at < 1.5:
+				return
+			var row: Control = panel.build.side.find_child("Stop_0", true, false)
+			var sc = panel.build.side.get_parent().get_parent()
+			if row != null and sc is ScrollContainer:
+				sc.ensure_control_visible(row)
+			at = t
+			phase = 28
+		28:
+			if t - at < 0.6:
+				return
+			_shot("e_path_stops", _panel_rect())
 			print("GUIDEEDITOR " + JSON.stringify({"made": made}))
 			get_tree().quit()
