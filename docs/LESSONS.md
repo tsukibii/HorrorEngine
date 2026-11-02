@@ -1557,3 +1557,16 @@ guessed margin; and a check that only ever ran on a slow machine hasn't been run
 - **A kept result must also not be sent and drawn again:** the tailor kept the garments, yet "the same outfit again"
   took seconds: every garment was still copied to the page and its meshes rebuilt. The page tells the worker what it
   shows (`have`) and keeps those meshes; measure the worker's answer apart from the frames a CPU renderer draws.
+
+## Potted plants and vines (2026-11-02, `procedural-trees`)
+
+- **A lathe's step follows the profile's length, not a number that suited a cup:** the pots were turned at the
+  ware family's 4 mm step, which made a 40 cm floor pot of thirty thousand triangles (a monstera's whole plant was
+  six thousand). Rows by `arclen / 44` and columns by the diameter: the same pot in a tenth of the triangles,
+  nothing seen. Measure a family's triangles across its sizes before its recipes, not after.
+- **A tiny tree's crown is its branch count:** a 1.2 m ficus with a street tree's branch density grew three
+  branches off its trunk, so three balls of leaves whatever the leaf count. Density is per metre of trunk: a
+  potted tree needs a few times a street tree's, and leaves along its twigs (`on: all`), not at their tips only.
+- **Few wide splits, not many narrow:** a monstera drawn with nine notches a side read as a palm frond, and narrow
+  slits a sample wide vanished at the card's resolution. Five rounded lobes a side cut by V-shaped gaps that
+  widen to the edge read as the plant.

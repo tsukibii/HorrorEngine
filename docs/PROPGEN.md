@@ -139,6 +139,7 @@ and set the fill and the colours on each placed copy in Godot (its `HSLiquidFill
 | `book` | §16: `kind` hardcover, paperback, bunko, manga, textbook, notebook, diary; `size` (A4, B5, A5, B6, A6, bunko, shinsho, tankobon or [w, h] mm), `thick`, `binding` left or right, `pose` lie, stand or open (`open_at`), `arrange` one, stack or row with `fit` [w, d, h] mm, `count`, `mix`, `titles`; `art`, `spine`, `back`, `page_l`, `page_r`; `age` | book_hardcover, book_paperback, bunko, manga_volume, textbook_kokugo, textbook_math, notebook_math, diary_closed, diary_open, book_open, books_desk_box, books_cubby, books_shelf, books_stack_desk |
 | `import` | your own mesh, worn (§5) | chair_worn |
 | `tree` | §18: a street's trees grown by Mtree's functions: `kind` zelkova, ginkgo, cherry, camphor, plane, maple, crape_myrtle, pine, cedar, dead, and the bushes azalea (`clip` to a ball or a box), shrub, grass; `height`, `clear` (the stem below the first branch), `season` summer, autumn, spring (blossom on a cherry), winter (bare); `spread`, `droop`, `density`, `crown`, `levels`, `lean`, `multi`, `pollard`, `twigs`; `leaves` {count, size, tint; `set` a leaf set off the shelf for realistic leaves, `set_mm`, `spray`, `hue`, `sat`, `light`}, `bark` {pbr, tint, tile, relief; color, style for the drawn tile}; `stakes` torii, tripod or single, `pit` kerb or soil | zelkova_street, zelkova_young, zelkova_autumn, zelkova_winter, ginkgo_street, ginkgo_autumn, cherry_tree, cherry_blossom, camphor_tree, plane_street, plane_pollarded, maple_garden, crape_myrtle, black_pine, dead_tree, sapling_staked; the realistic category: zelkova_real, zelkova_autumn_real, cherry_real, camphor_real, plane_real, maple_autumn_real, crape_myrtle_real, black_pine_real, cedar_real; the bushes: azalea_ball, azalea_flowering, azalea_hedge, azalea_low, shrub_loose, shrub_autumn, shrub_real, grass_tuft, grass_dry; the small trees (`habit: upright`, under a two-storey house): small_zelkova, small_zelkova_staked, small_zelkova_autumn, small_hornbeam_real, small_cherry, small_cherry_blossom, small_ginkgo, small_ginkgo_autumn, small_maple_autumn, small_dead |
+| `plant` | §19: a potted plant, a table's to a floor's: `form` rosette (an aloe, an echeveria), blades (a snake plant), fern, palm (an areca's canes), big_leaf (a monstera, a rubber plant, a fiddle leaf fig: `leaf`, `stem`), tree (`species` ficus, bonsai, herb, dead), trailing (a pothos, ivy: `length`), canes (lucky bamboo), yucca, cactus (`ribs`, `radius`); `plant` {size, count, color, leaf, species, lean, spread}; `pot` {kind terracotta, glazed, plastic, cylinder, bowl, concrete or cube; d (w, dd), h, color, soil, topping pebbles, pumice, moss or bark, cracked, glaze} | pot_aloe, pot_echeveria, pot_basil, pot_cactus, pot_cactus_tall, pot_pothos, pot_ivy, pot_fern, pot_snake_plant, pot_bonsai, pot_monstera, pot_rubber_plant, pot_fiddle_leaf, pot_ficus, pot_palm, pot_yucca, pot_bamboo, pot_dead |
 
 ### Designs
 
@@ -878,3 +879,42 @@ Checked by PROPGEN (`zelkova_street` leafy, `dead_tree` bare, `cedar_real` in th
 origin, about their height, within their budgets, the leaf material cut, every stem's foot closed so nothing is seen
 inside out from below) and GDPROPS (imported by Godot 4.7, the leaf surface see-through; `--night` the two nights).
 
+## 19. Potted plants: a table's to a floor's
+
+The user (2026-11-02): "Could you make some indoor small potted plants with these techniques + the techniques we
+already use for bowl shaped props (maybe do some cubed ones), I'd say make 15 variations, from small to medium (stuff
+that could sit on a table to on the floor)". The `plant` family (`families/plant.py`, `"family": "plant"`) puts the
+tree family's growth and leaf cards (§18) into a pot made the ware family's way (§11, §12):
+
+- **The pot.** A round pot is one lathe with a real wall, its profile walked under the foot, up the outside, over the
+  lip and down the inside to the soil (`pot_profile`, `pot_wall`): `kind` terracotta (its clay; a crack when
+  `cracked`), glazed (a belly under a glaze: `glaze` {rim, crackle}), plastic (a nursery pot's taper), cylinder, bowl
+  (a bonsai's, shallow), concrete; `d` and `h` in mm, `color`. A cube planter (`kind: cube`; `w`, `dd`, `h`) is a slab
+  ring with its hole, a bottom and the soil in it. The lathe's rows follow the profile's length (a floor pot at a cup's
+  4 mm step was thirty thousand triangles). The soil is a lumpy disc `soil` mm below the rim, dark and damp, under a
+  `topping`: pebbles, pumice, moss, bark; a socket `soil` at its middle.
+- **The plant** (`plant`): `form` says how it grows, `size` its metres (a leaf's length, a tree's height, a cane's),
+  `count`, `color` the leaves' colours (one or a few), `leaf` the leaf drawn (each form has its own): `rosette` (an
+  aloe's thick serrated leaves in rings from the soil, an echeveria's plump ones), `blades` (a snake plant's upright
+  banded blades), `fern` (fronds of pinnae arching out and over), `palm` (an areca's canes, a crown of fronds each),
+  `big_leaf` (one stem with leaves on petioles up it: a monstera's split heart with holes along its midrib, a rubber
+  plant's glossy ovals on a red midrib, a fiddle leaf fig's lyres; `stem` its height in leaf lengths), `tree` (the
+  tree family grown small: `species` ficus, bonsai (needle pads over a leaning trunk), herb (basil), dead), `trailing`
+  (vines over the rim, down the pot and curling round its foot: a pothos's hearts, an ivy's lobed leaves; `length`
+  metres), `canes` (lucky bamboo, straps at each top), `yucca` (canes with crowns of long straps), `cactus` (a ribbed
+  column turned and bent: `ribs`, `radius`, the areoles and their spines drawn).
+- **Drawn by code**, as the trees are: every leaf a shape on a card (the aloe's teeth, the fern's pinnae, the
+  monstera's five rounded lobes a side, the ivy's points, a midrib and veins lighter), cut in Godot (the leaf
+  material's alpha clip); the stems tubes; the pot's clay or glaze. Set down by the pot's foot (the anchor on the
+  origin); no wear on the leaves, the pot's by the recipe.
+- **Eighteen recipes** (presets.json, `pot_*`), small to medium. A table's: an aloe in a 95 mm terracotta pot with
+  pebbles, an echeveria in a white cube, basil in a kitchen's black pot, a ribbed cactus in a concrete cube, a tall
+  column cactus, a pothos trailing from a blue glazed pot, a Boston fern, lucky bamboo in a white cylinder, a pine
+  bonsai in its shallow bowl with moss, a dead one in a cracked pot. A shelf's or the floor's: ivy from a concrete
+  cube planter, a snake plant in a tall cylinder. The floor's: a monstera, a rubber plant a metre tall, a fiddle leaf
+  fig, a ficus at 1.4 m, an areca palm in a white cube at 1.1 m, a yucca at 1.2 m. Another seed is another plant of
+  the kind. The sheet: `docs/godot_sheets/2026-11-02_plants.jpg`.
+
+Checked by PROPGEN (`pot_ficus` on the floor and `pot_cactus` on a table, made small: well-formed, on the floor,
+anchored on the origin, about their size, within their budgets, the leaf material cut) and GDPROPS (imported by Godot
+4.7, the leaves see-through where they should be).

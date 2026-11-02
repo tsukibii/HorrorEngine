@@ -578,6 +578,114 @@
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe plate (Content/Studio/Props/presets.json)"
  },
+ "props/pot_aloe": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe pot_aloe (Content/Studio/Props/presets.json)"
+ },
+ "props/pot_bamboo": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe pot_bamboo (Content/Studio/Props/presets.json)"
+ },
+ "props/pot_basil": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe pot_basil (Content/Studio/Props/presets.json)"
+ },
+ "props/pot_bonsai": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe pot_bonsai (Content/Studio/Props/presets.json)"
+ },
+ "props/pot_cactus": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe pot_cactus (Content/Studio/Props/presets.json)"
+ },
+ "props/pot_cactus_tall": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe pot_cactus_tall (Content/Studio/Props/presets.json)"
+ },
+ "props/pot_dead": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe pot_dead (Content/Studio/Props/presets.json)"
+ },
+ "props/pot_echeveria": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe pot_echeveria (Content/Studio/Props/presets.json)"
+ },
+ "props/pot_fern": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe pot_fern (Content/Studio/Props/presets.json)"
+ },
+ "props/pot_ficus": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe pot_ficus (Content/Studio/Props/presets.json)"
+ },
+ "props/pot_fiddle_leaf": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe pot_fiddle_leaf (Content/Studio/Props/presets.json)"
+ },
+ "props/pot_ivy": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe pot_ivy (Content/Studio/Props/presets.json)"
+ },
+ "props/pot_monstera": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe pot_monstera (Content/Studio/Props/presets.json)"
+ },
+ "props/pot_palm": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe pot_palm (Content/Studio/Props/presets.json)"
+ },
+ "props/pot_pothos": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe pot_pothos (Content/Studio/Props/presets.json)"
+ },
+ "props/pot_rubber_plant": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe pot_rubber_plant (Content/Studio/Props/presets.json)"
+ },
+ "props/pot_snake_plant": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe pot_snake_plant (Content/Studio/Props/presets.json)"
+ },
+ "props/pot_yucca": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe pot_yucca (Content/Studio/Props/presets.json)"
+ },
  "props/receipt": {
   "date": "2026-10-30",
   "kind": "mesh",
