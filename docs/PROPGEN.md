@@ -767,9 +767,16 @@ words.
   the crown's middle, lifted) so the mass lights as one, not as flat cards; `leaves.count` how many (the species'
   own), `leaves.size` metres a card. A street tree is 9k to 26k triangles leafy (a camphor's dome the most), a bare one with its twigs 20k to
   30k; a sapling 2k.
-- **Painted**, all of it by code: the **bark** one tile over the whole of its texture, drawn on the flat torus with
-  4D noise (`noise.fbm4`, `ridged4`: it repeats round and up with no seam and nothing squeezed) in the species'
-  style: `furrowed` (ginkgo, camphor, the dead tree: ridges up the trunk, dark cracks between), `flaky` (zelkova:
+- **The bark is a real one by default** (the user, 2026-11-02: "every tree should use the more real bark pbr"): each
+  species names a bark set off the shelf (`bark.pbr`: the user's ambientCG sets in `pbr/bark/`, Bark001 grey and
+  deeply furrowed for the ginkgo, the camphor and the dead tree, Bark006 grey-blue mottled with orange flakes for the
+  zelkova, the plane, the maple and the crape myrtle, Bark014 red-brown fissured plates for the pine and the cherry;
+  `bark.tint` over it, `bark.tile` metres a repeat, `bark.relief` the normal's strength). The set is laid over the
+  whole bark tile with a whole number of repeats each way (its own size: a 1 x 2 m set repeats half as often up), so
+  it still goes round and up every branch without a seam. `"bark": {"pbr": null}` draws the tile by code instead:
+- **Painted by code**, the rest of it, and the drawn **bark** when asked: one tile over the whole of its texture, drawn
+  on the flat torus with 4D noise (`noise.fbm4`, `ridged4`: it repeats round and up with no seam and nothing
+  squeezed) in the species' style: `furrowed` (ginkgo, camphor, the dead tree: ridges up the trunk, dark cracks between), `flaky` (zelkova:
   grey flaking to orange-brown patches with a dark rim), `lenticels` (cherry: dark bark banded with pale lenticels,
   a few cracks), `mottled` (plane, crape myrtle: plates of three colours), `scaly` (pine: a jigsaw of plates parted by
   deep fissures), `smooth` (maple); `bark.color`, `bark.relief`, `bark.scale`; or a PBR set off the shelf

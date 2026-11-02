@@ -13,6 +13,11 @@ The user's answers, newest first. They override the plan, the research and the d
   generator grew a `tree` family (PROPGEN §18): urban street trees (zelkova, ginkgo, cherry, camphor, plane, maple,
   crape myrtle, black pine, a dead one) by season, with stakes and a tree pit, sixteen recipes to start from.
   Built on the branch `procedural-trees`.
+- **"In main I just pushed up some new pbrs for bark, and leaves ... Do these steps separately, every tree should use
+  the more real bark pbr. But for leaves create a more realistic category where you use patterns made from the pbrs I
+  shared with you for the leaves"**: step one, every species' bark is one of the three ambientCG bark sets by
+  default (`pbr/bark/`, PROPGEN §18; the drawn tile stays behind `"bark": {"pbr": null}`); step two, a realistic
+  category of trees whose leaf cards are sprays laid from the leaf sets' own leaves (`pbr/leaf/`).
 - **"make sure generated trees also look good in night both dark night (flashlight style), or more of a blue hue
   atmospheric night"**: `propgen.py godot --night` pictures any prop in Godot under the game's blue moonlit night
   and in the dark under the player's flashlight from the player's eye (PROPGEN §18); the sixteen trees' sheet is

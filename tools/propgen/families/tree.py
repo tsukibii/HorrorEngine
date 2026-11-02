@@ -16,7 +16,8 @@ to a clear stem (`clear`), and a young one is held by stakes (`stakes`) in a tre
     "pit": "none" | "kerb" | "soil"
     "twigs": "auto" | "mesh" | "cards"
 
-`height` metres over all; `clear` the trunk below the first branch; `spread` turns the branches out (1 the species'
+`bark`: `pbr` a set off the shelf (each species' real bark by default: pbr/bark/Bark001, 006 or 014; null for the
+tile drawn by code), `tile` metres a repeat, `tint`, `relief`; `height` metres over all; `clear` the trunk below the first branch; `spread` turns the branches out (1 the species'
 own), `droop` is gravity on them, `density` how many, `crown` their length, `levels` how many orders of branches (2 or
 3; the last order carries the leaves, meshed only when the tree is bare unless `twigs` says); `lean` degrees off the
 vertical; `pollard` cuts a plane tree back to knuckles with a broom of shoots; `multi` grows several stems from the
@@ -53,7 +54,7 @@ SPECIES = {
              "flatness": 0.4, "break": 0.03, "resolution": 6}],
         "leaf": {"shape": "elliptic", "mm": (52, 26), "serrate": True, "card": 0.5, "cluster": 9, "gloss": 0.5, "count": 2600,
                  "colors": {"summer": ["#4d7a2c", "#6a9a3a"], "spring": ["#7fb04a", "#a6cc62"], "autumn": ["#c9702a", "#d9a63a", "#b8482a"]}},
-        "bark": {"style": "flaky", "color": "#7c7268", "flake": "#8e6c4c", "relief": 1.0},
+        "bark": {"style": "flaky", "color": "#7c7268", "flake": "#8e6c4c", "relief": 1.0, "pbr": "pbr/bark/Bark006_1K-PNG"},
         "pipe": {"end": 0.0035, "growth": 0.6, "power": 2.4},
     },
     "ginkgo": {  # イチョウ: upright, a narrow crown of short limbs, fan leaves gold in autumn, furrowed grey bark
@@ -70,7 +71,7 @@ SPECIES = {
              "flatness": 0.4, "break": 0.03, "resolution": 6}],
         "leaf": {"shape": "fan", "mm": (58, 70), "card": 0.46, "cluster": 8, "gloss": 0.5, "count": 2300,
                  "colors": {"summer": ["#5c8a37", "#7aa84a"], "spring": ["#86b652", "#a9cf6a"], "autumn": ["#e8c23a", "#f0d050", "#d9a82c"]}},
-        "bark": {"style": "furrowed", "color": "#857a6d", "crack": "#4a423a", "relief": 1.0},
+        "bark": {"style": "furrowed", "color": "#857a6d", "crack": "#4a423a", "relief": 1.0, "pbr": "pbr/bark/Bark001_1K-PNG"},
         "pipe": {"end": 0.0035, "growth": 0.7, "power": 2.5},
     },
     "cherry": {  # ソメイヨシノ: a low fork, spreading limbs, lenticelled dark bark; blossom in spring
@@ -88,7 +89,7 @@ SPECIES = {
         "leaf": {"shape": "ovate", "mm": (78, 42), "serrate": True, "card": 0.52, "cluster": 8, "gloss": 0.5, "count": 2400,
                  "colors": {"summer": ["#4a7a30", "#699c42"], "spring": ["#f7dde7", "#f2c9d8"], "autumn": ["#c9562a", "#d98a2e", "#a63a22"]},
                  "blossom": "spring"},
-        "bark": {"style": "lenticels", "color": "#4f4642", "lenticel": "#a39383", "relief": 1.0},
+        "bark": {"style": "lenticels", "color": "#4f4642", "lenticel": "#a39383", "relief": 1.0, "pbr": "pbr/bark/Bark014_1K-PNG", "tint": "#9a9a9c"},
         "pipe": {"end": 0.0035, "growth": 0.7, "power": 2.4},
     },
     "camphor": {  # クスノキ: a broad dome of glossy evergreen leaves over a thick, deeply furrowed trunk
@@ -105,7 +106,7 @@ SPECIES = {
              "flatness": 0.4, "break": 0.03, "resolution": 6}],
         "leaf": {"shape": "elliptic", "mm": (88, 38), "card": 0.56, "cluster": 8, "gloss": 0.32, "count": 2600,
                  "colors": {"summer": ["#3e6b2a", "#5f8f3c"], "spring": ["#6b9a3c", "#9fc45a"], "autumn": ["#3e6b2a", "#5f8f3c"]}},
-        "bark": {"style": "furrowed", "color": "#6f655a", "crack": "#3a332c", "relief": 1.3, "scale": 1.3},
+        "bark": {"style": "furrowed", "color": "#6f655a", "crack": "#3a332c", "relief": 1.3, "scale": 1.3, "pbr": "pbr/bark/Bark001_1K-PNG", "tint": "#b0a898"},
         "pipe": {"end": 0.004, "growth": 0.9, "power": 2.4},
     },
     "plane": {  # プラタナス: big lobed leaves, bark in camouflage plates; along a street, often pollarded (`pollard`)
@@ -122,7 +123,7 @@ SPECIES = {
              "flatness": 0.4, "break": 0.03, "resolution": 6}],
         "leaf": {"shape": "palmate", "mm": (150, 150), "lobes": 5, "card": 0.6, "cluster": 5, "gloss": 0.55, "count": 2000,
                  "colors": {"summer": ["#558a36", "#74a84a"], "spring": ["#7fb04a", "#a0c862"], "autumn": ["#b8863a", "#c9a24a", "#8f5a2a"]}},
-        "bark": {"style": "mottled", "color": "#9a9484", "patches": ["#6f7a5a", "#d9d2bc", "#8d8470"], "relief": 0.6},
+        "bark": {"style": "mottled", "color": "#9a9484", "patches": ["#6f7a5a", "#d9d2bc", "#8d8470"], "relief": 0.6, "pbr": "pbr/bark/Bark006_1K-PNG"},
         "pipe": {"end": 0.004, "growth": 0.7, "power": 2.4},
     },
     "maple": {  # イロハモミジ: a small, layered tree with palmate leaves that turn deep red; smooth grey bark
@@ -139,7 +140,7 @@ SPECIES = {
              "flatness": 0.6, "break": 0.03, "resolution": 6}],
         "leaf": {"shape": "palmate", "mm": (68, 72), "lobes": 7, "card": 0.42, "cluster": 7, "gloss": 0.5, "count": 2200,
                  "colors": {"summer": ["#4f8a36", "#73ad4a"], "spring": ["#8fbf52", "#b9d86a"], "autumn": ["#c8321f", "#e0522a", "#8f1e14"]}},
-        "bark": {"style": "smooth", "color": "#7f7a72", "relief": 0.5},
+        "bark": {"style": "smooth", "color": "#7f7a72", "relief": 0.5, "pbr": "pbr/bark/Bark006_1K-PNG", "tint": "#a8a6a4"},
         "pipe": {"end": 0.003, "growth": 0.5, "power": 2.4},
     },
     "crape_myrtle": {  # サルスベリ: several smooth, mottled stems from the ground, a round head, pink flowers in summer
@@ -157,7 +158,7 @@ SPECIES = {
         "leaf": {"shape": "elliptic", "mm": (48, 26), "card": 0.42, "cluster": 9, "gloss": 0.45, "count": 1300,
                  "colors": {"summer": ["#4a7d36", "#6a9e48"], "spring": ["#7fae4c", "#a6cc62"], "autumn": ["#c4542b", "#d9862e", "#8f2e1c"]},
                  "flowers": "summer", "flower": "#d8569a"},
-        "bark": {"style": "mottled", "color": "#b59d82", "patches": ["#8e7256", "#d4c2a8", "#a08a70"], "relief": 0.4},
+        "bark": {"style": "mottled", "color": "#b59d82", "patches": ["#8e7256", "#d4c2a8", "#a08a70"], "relief": 0.4, "pbr": "pbr/bark/Bark006_1K-PNG", "tint": "#c8b49c"},
         "pipe": {"end": 0.003, "growth": 0.4, "power": 2.4},
     },
     "pine": {  # クロマツ: a leaning trunk, a few bold level limbs, tufts of needles at their ends, scaly bark
@@ -174,7 +175,7 @@ SPECIES = {
              "flatness": 0.3, "break": 0.02, "resolution": 6}],
         "leaf": {"shape": "needles", "mm": (110, 110), "card": 0.36, "cluster": 1, "gloss": 0.55, "count": 2400,
                  "colors": {"summer": ["#2f5a2e", "#4a7a3e"], "spring": ["#3f6f36", "#6a9a4a"], "autumn": ["#2f5a2e", "#4a7a3e"]}},
-        "bark": {"style": "scaly", "color": "#6b5a4e", "crack": "#2a2320", "plate": "#8a6e5a", "relief": 1.4},
+        "bark": {"style": "scaly", "color": "#6b5a4e", "crack": "#2a2320", "plate": "#8a6e5a", "relief": 1.4, "pbr": "pbr/bark/Bark014_1K-PNG"},
         "pipe": {"end": 0.004, "growth": 0.9, "power": 2.4},
     },
     "dead": {  # a dead tree: bare, bleached, its branches broken short, bending down
@@ -190,7 +191,7 @@ SPECIES = {
              "randomness": 0.6, "gravity": 4.0, "stiffness": 0.1, "split": 0.3, "split_angle": 40, "split_radius": 0.8, "up": 0.1,
              "flatness": 0.4, "break": 0.15, "resolution": 6}],
         "leaf": {"shape": "elliptic", "mm": (50, 25), "card": 0.4, "cluster": 8, "gloss": 0.6, "count": 0, "colors": {"summer": ["#6a6050", "#7a7060"]}},
-        "bark": {"style": "furrowed", "color": "#8d8880", "crack": "#44403a", "relief": 1.2, "scale": 1.2},
+        "bark": {"style": "furrowed", "color": "#8d8880", "crack": "#44403a", "relief": 1.2, "scale": 1.2, "pbr": "pbr/bark/Bark001_1K-PNG", "tint": "#c4c0b8"},
         "pipe": {"end": 0.003, "growth": 0.5, "power": 2.6},
     },
 }
@@ -649,9 +650,13 @@ def _tiled(fn, X, Y, W, H, scale, stretch=1.0):
 
 
 def paint_bark(f, bark, seed, C):
-    """The bark tile: its style's relief and colours, every field tiling round and up (4D noise on the flat torus)."""
+    """The bark tile: a PBR set off the shelf (`pbr`, the species' real bark by default: its repeats snapped to the tile
+    so it still goes round and up without a seam, `tile` metres a repeat across, `tint` over it), or, with `pbr` null,
+    its style's relief and colours drawn by code, every field tiling round and up (4D noise on the flat torus)."""
     X, Y = f.grid()
     W, H = f.W, f.H
+    if bark.get("pbr"):
+        return paint_bark_pbr(f, bark, X, Y, W, H)
     style = bark.get("style", "furrowed")
     base = rgb(bark["color"])
     relief = float(bark.get("relief", 1.0))
@@ -728,6 +733,28 @@ def paint_bark(f, bark, seed, C):
         rough = rough - 0.08
     f.lay_island(np.ones_like(X), color=np.clip(col, 0, 1).astype(np.float32), rough=np.clip(rough, 0.3, 1).astype(np.float32),
                  metal=0.0, height=height.astype(np.float32))
+
+
+def paint_bark_pbr(f, bark, X, Y, W, H):
+    """A bark set laid over the whole tile: `tile` metres a repeat across (the set's own tile_m), its height from its
+    own shape (a 1 x 2 m set repeats half as often up), a whole number of repeats each way so the edges meet; the
+    set's colour times `tint`, its roughness, its normal at `relief` strength."""
+    from .. import pbrset
+    st = pbrset.load(bark["pbr"])
+    alb = st.maps["albedo"]
+    aspect = alb.shape[0] / alb.shape[1]
+    tile = float(bark.get("tile") or st.tile_m) * 1000.0                  # mm across one repeat
+    tile_v = float(getattr(st, "tile_v_m", 0.0) or 0.0) * 1000.0 or tile * aspect
+    n_u = max(1, int(round(W / tile)))
+    n_v = max(1, int(round(H / tile_v)))
+    smp = st.sample(X / W * n_u, Y / H * n_v)
+    col = smp["albedo"]
+    if bark.get("tint"):
+        col = col * rgb(bark["tint"])[None, None] / max(float(rgb(bark["tint"]).mean()), 1e-6) * 0.62
+    n = smp["normal"].copy()
+    n[..., :2] *= float(bark.get("relief", 1.0))
+    n /= np.maximum(np.linalg.norm(n, axis=-1, keepdims=True), 1e-6)
+    f.lay_island(np.ones_like(X), color=np.clip(col, 0, 1).astype(np.float32), rough=smp["rough"], metal=0.0, normal=n.astype(np.float32))
 
 
 # ---- paint: the leaves ----------------------------------------------------------------------------------------------------------
