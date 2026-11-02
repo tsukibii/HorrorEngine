@@ -233,8 +233,10 @@ func _initialize() -> void:
 		await snap("g_inspect")
 		rt.key_event("E", true)
 		await frames(10)
-		await until(func(): return g.hud.lines_shown.any(func(l): return str(l).ends_with("looking at me.")), 900)   # put down: the easter egg the cat's eyes, its thought typed out
+		await until(func(): return g.hud.line_text.find("looking at me") >= 0, 900)   # put down: the easter egg the cat's eyes, its thought
+		g.hud.line_until += 30.0                        # held for the picture (the HUD times a line by the wall clock's seconds: it renders slowly here)
 		await snap("g_egg")
+		g.hud.line_until = Time.get_ticks_msec() / 1000.0
 		await until(func(): return (g.run["flags"] as Dictionary).has("done:egg_cat"), 900)
 		await game_wait(1.0)                            # its thought gone before what follows
 	# the key: the first quest done, the drink errand next
