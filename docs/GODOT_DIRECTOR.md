@@ -273,7 +273,8 @@ waits); an event's **Play motion** plays one once.
 ## 6c. Faces (DECISIONS 2026-11-01: "a tool to export a facial animation and add it into Godot, a facial animation folder; the exporter should export the loopables separately")
 
 The studio's **expression library** (`Content/Studio/Expressions/<id>/expression.json`: a captured face's ARKit
-curves, the desk's Expressions tab) comes into a project as clips: `python tools/godot_director.py faces <folder>
+curves, made on **the Face page**, `tools/facecap`, or the desk's Expressions tab; the page's **For Godot** sends the
+picked ones into a project: §6g) comes into a project as clips: `python tools/godot_director.py faces <folder>
 [id ...]` (`node tools/face_export.mjs --project <folder> [id ...]`; a new project's `faces/` starts empty, DECISIONS
 2026-11-02 night: "I'll just manually move over what I need every project"; `new --sample` brings the sample's two,
 `from-desk` the ones its story puts on faces) samples each expression as the desk plays it (`tools/shared/face.js`:
@@ -510,6 +511,23 @@ and face back exactly, and so does a save (`_apply_changes`). The Kimodo tab's i
 compile.gd warns of a story `anim` naming a clip the character hasn't got (the Animate tab named when the clip is in
 the library).
 
+**The Face page** (docs/GODOT_ANIMATION_PLAN.md step 2; the user: "the tooling we are using in director to upload the
+face videos... let's make it a separate page so I can save the facial mocap"): `tools/facecap/serve.py` (port 8797) is
+the desk's own server loaded as a module with the page and two routes on top, so the library's endpoints (import,
+accept, discard, set, loop, remove) are the desk's own and the two never disagree; the page is the desk's Expressions
+panel (`tools/director/expressions.js`) with its characters made from `bodies.js` without the desk's stage (the default
+MHR, a Character Studio export): Import a video of a face (solved by `tools/face_capture.py` on the machine), the
+preview beside a character in sync, neutral, strength, length, a loop cut from a range, Accept into
+`Content/Studio/Expressions`. **For Godot**: a project's folder (`?project=`, `--project`, or the last one; the ones
+used kept in `Saved/facecap/projects.json`), the library ticked, Send: `tools/face_export.mjs` bakes them into its
+`faces/` and `faces/loops/` (`HS_EXPRESSIONS` names another library), what the project has already marked. The
+Animate tab's Face side has **Make face clips (the Face page)**: `dock.gd` `open_face_page` starts the page for the
+project (the studio's Python, as the Manager's button does) and opens it. Measured (FACEMOCAP, `tools/facecap/
+pagetest.mjs`, a scratch library and project): the cards the MHR head wearing each; a capture and a loop sent into
+`faces/` and `faces/loops/` as HSFaceClips, marked, the project remembered; a card's preview moving the face's shapes,
+renamed and saved; a folder that isn't a project refused; with `EXPR_VIDEO` an import (faces stay out of git). DIRECTOR:
+the button there, its command the studio's page for the project.
+
 Measured (DIRECTOR): the sample's two clips (`animations/mari/sample_idle.npz`, Mari's idle, made hers by make_sample
 through `make_for`; `animations/look_around.npz`, anyone's) as cards in Idle and Look & search, each a figure of 40
 moments; the roles of six names; its two faces on the Face side; Mari's idle *hers*, her idle and resting face read; a
@@ -576,5 +594,5 @@ on the Director projects made from the desk's games.
 - From the desk (§6d): the trims and thresholds, a kit door's own model, the light zones per room.
 - Animation (§6g, docs/GODOT_ANIMATION_PLAN.md's order): a character's moves by role played by every behaviour (step
   3), On stage per quest (4), paths and patrols drawn in the 3D view (5), reactions and scares (6), cutscenes in the
-  level with a soft lock and its safety release (7); the Face page out of the desk (2); FBX and glTF clips and a
+  level with a soft lock and its safety release (7); FBX and glTF clips and a
   picture on a grey MHR body for each card (later); the story's pickers offering the library's clips not yet hers.

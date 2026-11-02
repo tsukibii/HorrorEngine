@@ -373,17 +373,41 @@ Godot animation is used as it is. Walks and runs are made in place (her path mov
 face</span> plays a face on her face shapes, both at once if you like: the body and the face never fight (the body
 moves her bones, the face her face shapes). Nothing is saved; <span class="ui">■ Stop the preview</span> puts her back
 (saving does too).</li>
-<li>On the <span class="ui">Face</span> side a click makes a face <span class="ui">Her resting face</span>.</li>
+<li>On the <span class="ui">Face</span> side a click makes a face <span class="ui">Her resting face</span>, and
+<span class="ui">Make face clips (the Face page)</span> opens the page that makes them (below).</li>
 </ul>
 <figure class="wide"><img src="img/e_animate_faces.jpg" width="954" height="364" alt="The Animate tab's Face side: the face clips as cards, Faces and Loops"><figcaption>The Face side: the project's face clips, the loops apart.</figcaption></figure>
-<p>Face clips come from the studio's expression library (<code>Content/Studio/Expressions</code>, the desk's
-Expressions tab); put the ones a game needs into its <code>faces/</code>:</p>
+<h3>Face clips from a video: the Face page</h3>
+<figure class="wide"><img src="img/f_facepage.jpg" width="1400" height="820" alt="The Face page in a browser: the library's expressions as cards, each the MHR head wearing it, Import at the top; on the right For Godot, the project's folder, a Godot project with two face clips, the faces ticked with their marks in faces/ and faces/loops/, Send 2 to the project and what was written">
+<figcaption>The Face page: the studio's expression library on the left, <b>For Godot</b> on the right. Two faces
+ticked and sent into the project's <code>faces/</code>, each marked where it went.</figcaption></figure>
+<p>Face clips are made from a short video of a face (a close-up, like your takes). On
+the Animate tab's Face side, <span class="ui">Make face clips (the Face page)</span> opens the studio's Face page in
+your browser, already pointed at this project. (Without Godot: <code>python tools/facecap/serve.py</code>, then
+<code>http://127.0.0.1:8797</code>; it's in the launcher's Pages too.)</p>
+<ol class="steps">
+<li><span class="ui">Import</span> a video. It's read on your machine, every frame's expression (the head's own movement
+left out); it takes a few seconds a clip.</li>
+<li>The preview plays the video beside a character wearing the face, in sync: the default MHR, or one of your
+Character Studio characters (<span class="ui">Character</span>). Set what the face at rest is
+(<span class="ui">Neutral</span>), how strong (<span class="ui">Strength</span>), how long it takes
+(<span class="ui">Length</span>) and its name, then <span class="ui">Accept</span>: it's in the studio's expression
+library (<code>Content/Studio/Expressions</code>, the same one the desk's Expressions tab shows).</li>
+<li>Click a card to open it again: rename it, retune it, or <b>cut a loop</b> from it (drag across the strip under the
+preview for the part to hold, <span class="ui">Save the range as a loop</span>): a loop plays over and over, its end
+blended into its start, for a face she rests in.</li>
+<li><b>For Godot</b>: the project's folder (filled in when you came from the Animate tab), tick the faces the game needs,
+<span class="ui">Send</span>. Each becomes a face clip in the project's <code>faces/</code> (a loop in
+<code>faces/loops/</code>) and a card on the Animate tab's Face side within a couple of seconds.</li>
+</ol>
+<figure class="half"><img src="img/f_facepreview.jpg" width="780" height="657" alt="A face opened on the Face page: the video's pane, the MHR head wearing the face, Character, Neutral, Strength and Length, Close and Save"><figcaption>A face opened: the video (none for this made-up one) beside the character wearing it.</figcaption></figure>
+<p>The same from a terminal, by name (no names: the whole library):</p>
 <pre>python tools/godot_director.py faces ~/Games/MyGame pout_and_glance pout_and_glance_loop</pre>
-<p>(no names: the whole library). If the story animates someone with a clip she hasn't been given, the panel's
-<span class="ui">Test</span> page says so, and names the Animate tab when the clip is in <code>animations/</code>.</p>
+<p>If the story animates someone with a clip she hasn't been given, the panel's <span class="ui">Test</span> page says
+so, and names the Animate tab when the clip is in <code>animations/</code>.</p>
 <div class="notyet"><b>Not yet.</b> A character's moves by role (sit down, sitting, stand up, talk, listen, look
-round) played by every behaviour; what she does in each quest (<i>On stage</i>); FBX and glTF clips; a separate Face
-page for making face clips from a video. They're next (<code>docs/GODOT_ANIMATION_PLAN.md</code>).</div>
+round) played by every behaviour; what she does in each quest (<i>On stage</i>); FBX and glTF clips. They're next
+(<code>docs/GODOT_ANIMATION_PLAN.md</code>).</div>
 </section>
 
 <section id="story">

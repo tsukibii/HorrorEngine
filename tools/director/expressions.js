@@ -27,7 +27,8 @@ const api = async (url, o) => { const r = await fetch(url, o), j = await r.json(
 export const DRAG_TYPE = "application/x-expression";
 
 // ctx: {stage() (the flow stage: its pose library, makeFigure, its bodies), story() (S), ensureBody(file) (a body loaded
-// into the stage's templates), bodies() (every previs_body the server has)}
+// into the stage's templates), bodies() (every previs_body the server has), changed(), hint (the words under the cards:
+// the Face page's own, tools/facecap)}
 export class ExpressionsPanel {
   constructor(root, ctx) {
     this.root = root; this.ctx = ctx; this.list = []; this.query = "";
@@ -52,7 +53,7 @@ export class ExpressionsPanel {
     this.whoOptions().then(opts => { for (const [v, l] of opts) on.append(h("option", { value: v, selected: v === this.who || null }, l)); if (!opts.some(o => o[0] === this.who)) { this.who = "mhr"; on.value = "mhr"; } });
     r.append(h("div", { class: "xp-bar" }, h("button", { class: "primary", id: "xpImport", title: "a video of a face: its expression captured (the head's movement left out), previewed, named, kept", on: { click: () => this.file.click() } }, icon("plus", 13), " Import"), find, names),
       h("div", { class: "xp-bar" }, h("span", { class: "muted" }, "shown on"), on),
-      grid, h("p", { class: "kv" }, "Each card is the character at the expression's strongest moment; hover plays it through. Click one to preview, rename or retune it; drag it onto a scene's face row (the timeline). Stored in Content/Studio/Expressions."));
+      grid, h("p", { class: "kv" }, this.ctx.hint || "Each card is the character at the expression's strongest moment; hover plays it through. Click one to preview, rename or retune it; drag it onto a scene's face row (the timeline). Stored in Content/Studio/Expressions."));
     this.drawCards(grid);
   }
   drawCards(grid) {
@@ -212,7 +213,7 @@ export class ExpressionsPanel {
       h("div", { class: "xp-loopbox" }, h("div", { class: "kv" }, "A loop from a range: drag across the strip (the face's distance from rest, frame by frame) for the part to hold"), strip,
         h("div", { class: "row" }, rangeOut, h("label", { class: "kv", title: "the character plays the range over and over, as the loop will" }, asLoop, " play the range as a loop"), h("span", { class: "muted" }, "blend"), cut, h("span", { class: "muted" }, "s"), save)),
       h("p", { class: "kv" }, `${(+e.secs || 0).toFixed(1)} s · ${e.frames} frames at ${e.fps} fps · ${Object.keys(e.curves || {}).length} channels that move · from ${(e.source || {}).file || "a video"}`));
-    const P = new FacePreview(view, this.ctx);
+    const P = this.previewing = new FacePreview(view, this.ctx);   // (the checks read its face: FACEMOCAP)
     const setWho = async () => { note.textContent = await P.wear(who.value) || ""; };
     who.addEventListener("change", setWho); setWho();
     const t0 = performance.now(); relen();
@@ -231,7 +232,7 @@ export class ExpressionsPanel {
       return M ? FACE.toMHR(FACE.sample(e, t, Object.assign(o2, { loop: true, length: lenOf() })), M) : null;
     });
     const ans = await modal({ title: fresh ? "A new expression" : `“${e.name || o.name}”`, wide: true, body, ok: fresh ? "Accept" : "Save", cancel: fresh ? "Discard" : "Close", focus: false });
-    P.dispose(); if (video.tagName === "VIDEO") video.pause();
+    P.dispose(); this.previewing = null; if (video.tagName === "VIDEO") video.pause();
     const nm = name.value.trim() || o.guess || "expression";
     try {
       if (fresh && ans === true) { const r = await api("/api/expressions/accept", { method: "POST", body: JSON.stringify({ token: o.token, name: nm, neutral: neutral.value, strength: +strength.value, length: lenOf() }) }); toast(`“${r.name}” is in the library`); }

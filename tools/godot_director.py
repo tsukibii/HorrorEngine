@@ -19,7 +19,8 @@
         the HTML guide's pictures (guides/director/img/) made again by Godot: a fresh sample project played and pictured
         (tests/guide_game.gd) and its editor with the dock (tests/guide_editor.gd), under xvfb when it's there (on a
         machine with a display, Godot's window opens for a few minutes), then the Director Manager's page on it in a
-        headless browser (tools/director_manager/guide_shots.mjs); pictures no longer made are removed. Ends "GUIDE ok".
+        headless browser (tools/director_manager/guide_shots.mjs) and the Face page's by its check (tools/facecap/pagetest.mjs
+        --out); pictures no longer made are removed. Ends "GUIDE ok".
     python tools/godot_director.py from-desk <Game> [folder] [--force] [--play]
         a desk game as a Director project (Saved/Godot/<Game>_director unless a folder's given): a new project with the
         desk's levels as the Director's own nodes (rooms, doors, things with their models, people, spots, areas, paths,
@@ -419,12 +420,20 @@ def guide():
         text3 = f"MANAGERSHOTS FAIL {e}"
     manager = [l.strip() for l in text3.splitlines() if l.startswith("  m_")]
     manager = manager[0].split(", ") if manager else []
-    made = game.get("made", []) + editor.get("made", []) + manager
+    try:                                                     # the Face page (tools/facecap), pictured by its own check
+        r = subprocess.run(["node", str(ROOT / "tools" / "facecap" / "pagetest.mjs"), "--out", str(img)], capture_output=True, text=True, timeout=1200)
+        text4 = r.stdout + r.stderr
+    except (OSError, subprocess.TimeoutExpired) as e:
+        text4 = f"FACEMOCAP FAIL {e}"
+    facepage = [l.strip() for l in text4.splitlines() if l.startswith("  f_")]
+    facepage = facepage[0].split(", ") if facepage else []
+    made = game.get("made", []) + editor.get("made", []) + manager + facepage
     ok = (len(game.get("made", [])) >= 13 and len(editor.get("made", [])) >= 12 and "MANAGERSHOTS ok" in text3
-          and not game.get("timeout") and not editor.get("timeout"))
+          and "FACEMOCAP ok" in text4 and not game.get("timeout") and not editor.get("timeout"))
     if not ok:
         print((text + text2)[-3000:])
         print(text3[-1500:])
+        print(text4[-1500:])
     else:                                                    # the pictures it no longer makes go (the guide shows every one there)
         for f in img.glob("*.jpg"):
             if f.stem not in made:
@@ -434,6 +443,7 @@ def guide():
     print(f"  the game: {', '.join(game.get('made', []))}")
     print(f"  the editor: {', '.join(editor.get('made', []))}")
     print(f"  the Manager: {', '.join(manager)}")
+    print(f"  the Face page: {', '.join(facepage)}")
     print(f"GUIDE {'ok' if ok else 'FAIL'} ({len(made)} pictures in {img.relative_to(ROOT)})")
     return 0 if ok else 1
 
@@ -711,6 +721,7 @@ def editor_check(out):
          and rep.get("anim_groups") == ["IDLE", "LOOK & SEARCH"] and rep.get("anim_figures") is True
          and rep.get("anim_roles") == ["sit", "stand", "idle", "walk", "scare", "other"]
          and sorted(rep.get("anim_faces") or []) == ["Face_pout_and_glance", "Face_pout_and_glance_loop"]),
+        ("the Face side's button starts the studio's Face page for this project (%s)" % rep.get("anim_face_page"), rep.get("anim_face_page") is True),
         ("Mari on the Animate tab: her idle hers already, her idle and resting face read (%s); a story clip she hasn't got warned of, the library's named (%s); the look round made hers (%s)"
          % (rep.get("anim_hers"), rep.get("anim_warned"), rep.get("anim_made")),
          rep.get("anim_hers") is True and rep.get("anim_warned") is True and rep.get("anim_made") is True),

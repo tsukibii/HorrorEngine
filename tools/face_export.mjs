@@ -15,7 +15,7 @@ import { fileURLToPath } from "url";
 import { sample, toMHR, lengthOf } from "./shared/face.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url)), ROOT = path.resolve(HERE, "..");
-const LIB = path.join(ROOT, "Content", "Studio", "Expressions");
+const LIB = process.env.HS_EXPRESSIONS || path.join(ROOT, "Content", "Studio", "Expressions");   // (the Face page's check: a scratch library)
 export const FPS = 30;
 
 /** MHR's 72 face shapes in its order (Meta's names, as the bodies carry them: shape_c_45.. on the plain MHR body) */

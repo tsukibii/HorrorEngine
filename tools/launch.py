@@ -113,6 +113,7 @@ TOOLS = [
     ("Pages", "PBR shelf (your texture sets in assets/pbr, on a sphere; the Character Studio has it as its PBR button)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/pbr.html"}),
     ("Pages", "Pigment test (projected art as pigment)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/pigment.html"}),
     ("Pages", "Kimodo demo", "tools/kimodo.py demo", {"url": "http://127.0.0.1:7860"}),
+    ("Pages", "Face mocap (a video of a face made an expression: previewed on a character, kept in the library, sent to a Godot project's faces/)", "tools/facecap/serve.py", {"url": "http://127.0.0.1:8797"}),
 
     ("Godot", "Director: a new Godot project to build a game in, in Godot itself (the plugin, the runtime, the look, the sound shelf, the sample house to start from)", "tools/godot_director.py new {ask:Folder for the new project} --sample", {}),
     ("Godot", "Director: its add-ons into a Godot project you have (again after a pull: they're copies)", "tools/godot_director.py install {ask:The Godot project's folder}", {}),

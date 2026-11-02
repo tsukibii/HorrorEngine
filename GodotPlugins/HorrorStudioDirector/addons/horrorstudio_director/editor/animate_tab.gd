@@ -194,10 +194,19 @@ func _draw_left() -> void:
 func _draw_mid() -> void:
 	var list: Array = face_clips if face_side else body_clips
 	var who = _actor()
+	if face_side:                                   # the studio's Face page: a video of a face made a clip and sent here
+		var fp := BuildTab._button("Make face clips (the Face page)", list.is_empty())
+		fp.name = "FacePage"
+		fp.tooltip_text = "The studio's Face page in your browser: a video of a face made an expression, kept in the studio's library, sent to this project's faces/"
+		fp.custom_minimum_size = Vector2(0, 34) * _s()
+		fp.pressed.connect(func(): panel.say(panel.dock.open_face_page()))
+		var row := HBoxContainer.new()
+		row.add_child(fp)
+		mid.add_child(row)
 	if list.is_empty():
 		mid.add_child(BuildTab._label("No face clips yet" if face_side else "No animations yet", 16, C_TEXT, true))
 		mid.add_child(BuildTab._wrap(BuildTab._label(
-			"Make face clips on the Face page and save them for Godot into res://faces/." if face_side else
+			"Make face clips on the Face page (the button above): Import a video of a face, name it, then For Godot sends it into this project's res://faces/." if face_side else
 			"Drop Kimodo's .npz files (or Godot animations) into res://animations/. A folder named after a character's id (res://animations/mari/) holds hers.", 13, C_MUTED)))
 		return
 	var groups := {}

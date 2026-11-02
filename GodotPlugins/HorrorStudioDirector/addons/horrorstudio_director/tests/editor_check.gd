@@ -697,6 +697,9 @@ func _animate_checks() -> void:
 	an.face_side = true
 	an.refresh()
 	rep["anim_faces"] = an.mid.find_children("Face_*", "Button", true, false).map(func(b): return str(b.name))
+	var fcmd: Array = dock.face_page_cmd()             # the Face page's button: the studio's page started for this project
+	rep["anim_face_page"] = an.mid.find_child("FacePage", true, false) != null and fcmd.size() >= 5 \
+		and str(fcmd[fcmd.find("--project") + 1]) == ProjectSettings.globalize_path("res://") and fcmd.any(func(x): return str(x).ends_with("tools/facecap/serve.py"))
 	an.face_side = false
 	var mari: Node3D = r.find_child("Mari", true, false)
 	dock.select(mari)

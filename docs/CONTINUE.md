@@ -11,7 +11,16 @@ the to-do built there, with the Studio's eyes from the side, a small nose and th
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-02, night, branch `Director-Godot`): animation step 1, the library and the Animate tab
+## Where it stopped last (2026-11-03, branch `Director-Godot`): animation steps 1 and 2, the Animate tab and the Face page
+
+The user tried the Animate tab ("tested and works") and asked to go through the plan's steps in order (DECISIONS
+2026-11-03). **Step 2, the Face page, is built** (`tools/facecap`, GODOT_DIRECTOR §6g): the desk's Expressions import
+as a page of its own (port 8797, the desk's server loaded as a module so the library's endpoints are shared), Import a
+video of a face, the preview on the default MHR or a Studio export, Accept into the library, a loop from a range; **For
+Godot** sends the picked faces into a project's `faces/`; the Animate tab's Face side opens it for its project.
+FACEMOCAP checks it. Next in order: **3, moves**, then 4, On stage, 5 paths, 6 reactions and scares, 7 cutscenes.
+
+### Step 1 (2026-11-02, night): the library and the Animate tab
 
 The user asked for an easy drag-and-drop animation system by quest; the plan is docs/GODOT_ANIMATION_PLAN.md, with
 their answers (DECISIONS 2026-11-02, night: Kimodo and the desk's face-video tool, face and body mixed in Godot, a new

@@ -2,6 +2,12 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-03 (the user, after trying the Animate tab)
+
+- **"1 tested and works, 2, just go chronologically."** The Animate tab (step 1) works in their own hands. The plan's
+  steps go in order from here: the Face page (2), a character's moves (3), On stage (4), paths and patrols (5),
+  reactions and scares (6), cutscenes in the level (7), each checked and pushed.
+
 ## 2026-11-02, night (the user's answers to the animation plan)
 
 - **Clips: "Kimodo & whatever tooling we are using in director to upload the face videos (if we haven't separated that

@@ -304,6 +304,31 @@ func open_manager() -> String:
 	return "The Director Manager opens in your browser: " + url
 
 
+## the studio's Face page (tools/facecap/serve.py, docs/GODOT_ANIMATION_PLAN.md §3b) started for this project and opened
+## in the browser: a video of a face made an expression, kept in the studio's library, sent to this project's faces/
+const FACE_PORT := 8797
+func open_face_page() -> String:
+	var c := face_page_cmd()
+	if c.is_empty():
+		return "The Face page is the studio's (tools/facecap): set the studio folder in the Kimodo tab, or run python tools/facecap/serve.py there"
+	OS.create_process(c[0], PackedStringArray(c.slice(1)))
+	var project := ProjectSettings.globalize_path("res://")
+	var url := "http://127.0.0.1:%d/?project=%s" % [FACE_PORT, project.uri_encode()]
+	get_tree().create_timer(1.5).timeout.connect(func(): OS.shell_open(url))
+	return "The Face page opens in your browser: " + url
+
+
+## the Face page's command line ([] when the studio folder isn't known): the studio's Python on tools/facecap/serve.py
+## for this project
+func face_page_cmd() -> Array:
+	var studio := HSKimodoStage.studio_root()
+	var serve := studio.path_join("tools/facecap/serve.py") if studio != "" else ""
+	if serve == "" or not FileAccess.file_exists(serve):
+		return []
+	var cmd := str(ProjectSettings.get_setting("horrorstudio/director/python", "python3")).split(" ", false)
+	return Array(cmd) + [serve, "--project", ProjectSettings.globalize_path("res://"), "--port", str(FACE_PORT)]
+
+
 func on_run_stop() -> void:
 	running = false
 	refresh()
