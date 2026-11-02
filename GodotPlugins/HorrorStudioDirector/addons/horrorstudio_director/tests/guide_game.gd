@@ -294,6 +294,9 @@ func _initialize() -> void:
 	rt.key_event("W", false)
 	await until(playing, 600)
 	rt = g.play
+	await until(func(): return rt.focus != null and not bool(rt.focus["turning"]) and g.hud.line_text == "Something's in the hall.", 600)   # the night's cutscene: the view on Mari, her second line up
+	await snap("g_cutscene")
+	await until(func(): return rt.focus == null, 900)            # let go at its end
 	if await face("wardrobe", 0.9):
 		rt.use(true)
 	await until(func(): return g.watch_end != null, 1500)

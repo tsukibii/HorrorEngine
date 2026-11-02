@@ -11,7 +11,7 @@ the to-do built there, with the Studio's eyes from the side, a small nose and th
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-03, branch `Director-Godot`): animation steps 1 to 6, the Animate tab, the Face page, moves, On stage, paths, reactions
+## Where it stopped last (2026-11-03, branch `Director-Godot`): animation steps 1 to 7, the Animate tab, the Face page, moves, On stage, paths, reactions, cutscenes
 
 The user tried the Animate tab ("tested and works") and asked to go through the plan's steps in order (DECISIONS
 2026-11-03). **Step 2, the Face page, is built** (`tools/facecap`, GODOT_DIRECTOR §6g): the desk's Expressions import
@@ -28,8 +28,11 @@ built**: a path's stops each with a clip (This object lists them; a card dropped
 going through doorways (a spot each side of every door, the brain's `way`). **Step 6, reactions and scares, is
 built**: the Reactions cards (turns to look, flinches, screams, points, waves) filled in for the nearest character,
 her clip swapped by an Animate card dropped on the area, `anim` played as a reaction (held, turned to the player and
-back), the jumpscare's clip, face and sound, a Caught move. Next in order: **7, cutscenes in the level** (a moment
-marked Cutscene with a target: the soft lock, a lean-in, the safety release; no black bars, no skip).
+back), the jumpscare's clip, face and sound, a Caught move. **Step 7, cutscenes in the level, is built**: a moment
+played as a cutscene (the Story tab's CUTSCENE row and timeline), the runtime's `focus` (a soft lock in a cone, a lean
+in and a held focus, the walk slowed, the safety release at its max, its target gone, an ending). The plan's seven steps
+are done; next is the user's to say (step 8 is later: FBX and glTF clips, the cast's lanes in Story Flow, PATTERNS_PLAN's
+styles), after a playtest of these on their machine.
 
 ### Step 1 (2026-11-02, night): the library and the Animate tab
 

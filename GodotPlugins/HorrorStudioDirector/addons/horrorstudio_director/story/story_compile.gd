@@ -392,8 +392,12 @@ func _moments(st: Dictionary, qid: String) -> void:
 			continue
 		var b := {"id": "m_" + mid, "when": _trigger(m["when"]), "do": (m.get("do", []) as Array).duplicate(true), "optional": true}
 		for key in m:                                  # the beat's own words the moment hasn't (a desk game's: its secret, a wait...)
-			if not ["id", "when", "if", "do", "once", "every", "during"].has(str(key)):
+			if not ["id", "when", "if", "do", "once", "every", "during", "cutscene"].has(str(key)):
 				b[str(key)] = m[key]
+		if m.get("cutscene") is Dictionary:            # played as a cutscene in the level: the view held on its target
+			if str(m["cutscene"].get("target", "")) == "":
+				err("moment %s is a cutscene with nothing to hold the view on (its target)" % mid)
+			b["do"] = cutscene_do(m["cutscene"], b["do"])
 		var ifs: Array = []
 		if _plain(m.get("if")):                        # only facts: as the runtime reads them, no flag of the brain's between
 			ifs.append_array(m["if"] if m["if"] is Array else [m["if"]])
@@ -409,6 +413,25 @@ func _moments(st: Dictionary, qid: String) -> void:
 		if ifs.size():
 			b["if"] = ifs
 		st["beats"].append(b)
+
+
+## a cutscene moment's THEN (docs/GODOT_ANIMATION_PLAN.md step 7, the user: no black bars, no skip, everything as if
+## it happens in your gameplay): the view held on its target first (the runtime's `focus`: a soft lock with its lean
+## in, its held focus, the walk slowed or held, its safety release at `max`), each line given its time to be read (a
+## `wait` after a say or a think, the runtime's line_secs) so they follow one another, and let go at its end
+static func cutscene_do(cs: Dictionary, acts: Array) -> Array:
+	var f := {"focus": str(cs.get("target", ""))}
+	for k in ["push", "zoom", "walk", "max", "cone"]:
+		if cs.has(k):
+			f[k] = cs[k]
+	var out: Array = [f]
+	for a in acts:
+		out.append(a)
+		if a is Dictionary and (a.has("say") or a.has("think")):
+			var t = a.get("line", a.get("say", a.get("think", "")))
+			out.append({"wait": snappedf(minf(6.0, 1.2 + str(t).length() / 14.0), 0.1)})
+	out.append({"focus": ""})
+	return out
 
 
 ## a condition that's only facts (a fact, a fact not there, or a list of them): the runtime's own `if`

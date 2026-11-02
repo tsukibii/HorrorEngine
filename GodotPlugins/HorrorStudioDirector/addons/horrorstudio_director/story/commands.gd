@@ -272,6 +272,13 @@ static func action_text(a, n: Callable = Callable()) -> String:
 			return "Time skips " + span(g.call("skip"))
 		"fade":
 			return "Fade " + (js(a["fade"]) if a.has("fade") else "undefined") + " (" + js(_qq(g.call("secs"), 1)) + " s)"
+		"focus":
+			if not _t(g.call("focus")):
+				return "Let the view go"
+			var w = g.call("walk")
+			return "Hold the view on " + n.call("thing", a["focus"]) + (", closer" if _t(g.call("push")) or _t(g.call("zoom")) else "") \
+				+ (", the player still" if w is String and w == "held" else ("" if w is String and w == "free" else ", walking slowed")) \
+				+ ((", " + js(a["max"]) + " s at most") if _t(g.call("max")) else "")
 		"lookat":
 			return "Turn the view to " + n.call("thing", g.call("lookat")) + " (" + js(_qq(g.call("secs"), 1)) + " s)"
 		"chapter":

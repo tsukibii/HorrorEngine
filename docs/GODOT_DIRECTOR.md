@@ -592,6 +592,23 @@ doorway swapping the first reaction's clip, all undone; in play Mari's flinch he
 to her idle and turned back, her caught move turned to the player, and the figure's jumpscare lunging with a face and
 the short sting.
 
+**Cutscenes in the level** (docs/GODOT_ANIMATION_PLAN.md step 7; the user, DECISIONS 2026-11-02, night: no black
+bars, not skippable, everything as if it happens in your gameplay, a soft lock on the target, maybe a zoom, a safety
+lock): a moment's `cutscene` (`{target, push, zoom, walk, max}`, story_file.gd), set in the Story tab's CUTSCENE row
+(`_cutscene_row`: the view held on someone, a spot or a thing; *a little closer* or *closer*, a lean in and a held
+focus; walking slowed, held or free; let go after at most so many seconds) with its **timeline** (`_timeline`: the
+view, a row per character the THEN names with what she does, a clip or a face added from her row or an Animate card
+dropped on it, the lines; Play it here). story_compile.gd `cutscene_do` puts the runtime's **`focus`** first in its
+THEN, a `wait` after each line (its time to be read) and `{"focus": ""}` at its end. The runtime's soft lock (play.gd
+`focus_on`, `focus_tick`): the view turned onto the target first (eased, as a look does), then a cone it's drawn back
+into, the lean (`push`, up to 0.35 m) and the held focus
+(`zoom`, up to 15 %) eased in and out, the walk slowed (0.35) or held; let go by the story, its `max` (20 s, 60 at
+most), its target gone, an ending, a new level or the run stopped. Measured (DIRECTOR): the sample's night opens with
+Mari's three lines as a cutscene: the view turned onto her and held, back within its cone a second after the player looks away, a
+little closer (the lean, a 5 % narrower view), the walk slowed, let go at its end; a held view let go by its safety
+release at its max and when its target's gone; in the editor the night's row and timeline, a clip added from Mari's
+row, the compile's THEN, made not a cutscene, undone.
+
 **The Face page** (docs/GODOT_ANIMATION_PLAN.md step 2; the user: "the tooling we are using in director to upload the
 face videos... let's make it a separate page so I can save the facial mocap"): `tools/facecap/serve.py` (port 8797) is
 the desk's own server loaded as a module with the page and two routes on top, so the library's endpoints (import,

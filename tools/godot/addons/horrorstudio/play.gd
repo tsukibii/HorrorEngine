@@ -171,6 +171,7 @@ func stop() -> void:
 	active = false
 	listener = Callable()
 	stopped = true
+	focus = null
 	if collide != null:
 		collide.free_body()
 	for w in waits:
@@ -362,7 +363,9 @@ func ability_walk(dt: float) -> void:
 		return
 	var a := deg_to_rad(float(player.yaw))
 	var ln := sqrt(float(f * f + r * r))
-	var v := float(s["crouched"] if player.crouched else (s["run"] if player.running else s["speed"])) * dt / ln
+	var v := float(s["crouched"] if player.crouched else (s["run"] if player.running else s["speed"])) * dt / ln * focus_walk()
+	if v <= 0.0:
+		return
 	move((cos(a) * f + sin(a) * r) * v, (-sin(a) * f + cos(a) * r) * v, s)
 
 
@@ -379,6 +382,7 @@ func enter_level(lid: String) -> void:
 		return
 	stop_sfx()                                 # the old level's loops end with it
 	sfx_players = []
+	focus_off("a new level")
 	var first := not kept.has(lid)
 	if first or game.level_id != lid:
 		game.enter_level(lid, first)
@@ -1407,6 +1411,7 @@ func end(r: Dictionary) -> void:
 	if not has_end:
 		return
 	has_end = false
+	focus_off("ended")
 	listener = Callable()
 	timer_left = null
 	hud.timer(null)
@@ -1887,6 +1892,118 @@ func npc_want(cid: String, n: Dictionary) -> Array:
 		if k[1] == cid and move_of(cid, k[0], false) != null:
 			return [move_of(cid, k[0]), true]
 	return [s["motion"] if s.get("motion") != null else move_of(cid, "idle"), true]
+
+
+# ---- a cutscene in the level: the soft lock (STORY_FORMAT §4 `focus`; docs/GODOT_ANIMATION_PLAN.md step 7) ---------
+## the user (DECISIONS 2026-11-02, night): no black bars, no skipping, everything as if it happens in your gameplay; the
+## view turned onto what the scene is about, then helped to stay on it (a cone to look round in, drawn back when it
+## drifts out of it), a lean in or a held focus if it asks for one; and a safety release, so no glitch can keep the
+## player in it: its `max` (20 s, 60 at most), the target gone (hidden, out of the level), an ending, a new level, the
+## run stopped, or `{"focus": ""}` (the Director's cutscene moment ends with it). cone: its width (degrees, the pitch
+## 0.6 of it); pull: how fast the view is drawn back (1/s); ease: seconds the lean and the zoom take in and out; slow:
+## the walk's pace while it holds; turn: at most this long it first turns the view onto it (the same pull, to its
+## middle), before the cone holds it
+const FOCUS := {"cone": 50.0, "pull": 5.0, "ease": 1.0, "max": 20.0, "most": 60.0, "slow": 0.35, "turn": 1.5}
+var focus = null                              # {id, cone, push, zoom, walk, until, k (its lean and zoom, eased), going, turning}
+var last_focus = null                         # the last one let go: {id, why, clock} (the checks read it)
+
+
+## the view held on `id` (a cast member, a thing, a spot): a = the action's cone, push, zoom, walk (free, slow, held), max
+func focus_on(id, a: Dictionary = {}) -> void:
+	if id == null or str(id) == "":
+		focus_off("released")
+		return
+	focus = {"id": str(id), "cone": clampf(float(a.get("cone", FOCUS["cone"])), 10.0, 170.0), "push": clampf(float(a.get("push", 0.0)), 0.0, 0.35),
+		"zoom": clampf(float(a.get("zoom", 0.0)), 0.0, 0.15), "walk": str(a.get("walk", "slow")),
+		"until": clock + clampf(float(a.get("max", FOCUS["max"])), 0.5, float(FOCUS["most"])), "k": float(focus["k"]) if focus is Dictionary else 0.0,
+		"going": "", "since": clock, "turning": true}
+	hud.log("the view held on %s" % id)
+
+
+## let go (its lean and zoom ease back out): released by the story, `safety` (its max), `gone` (its target), an ending
+func focus_off(why: String) -> void:
+	if focus is Dictionary and str(focus["going"]) == "":
+		focus["going"] = why
+		last_focus = {"id": focus["id"], "why": why, "clock": clock}
+		hud.log("the view let go (%s)" % why)
+
+
+## where it looks: a cast member's eyes, a thing's middle, a spot at eye height; null when it's gone
+func focus_at(id: String) -> Variant:
+	var n = npcs.get(id)
+	if n != null:
+		if n["pos"] == null or n["level"] != level or (cast_nodes.has(id) and not cast_nodes[id].visible):
+			return null
+		var c = story.cast.get(id)
+		var up := 0.62 if str(n.get("pose", "")) == "sit" else 0.93     # her eyes, standing or seated
+		return (n["pos"] as Vector3) + Vector3(0, (float(c.get("height", 1.7)) if c is Dictionary else 1.7) * up, 0)
+	var t = by_id.get(id)
+	if t != null:
+		return middle_of(t) if t["node"].is_visible_in_tree() else null
+	var sp = things.get(id)
+	if sp != null:
+		return spot_pos(sp) + Vector3(0, float(player.eye), 0)
+	return null
+
+
+## each frame: let go when it's over (max, gone, the run not on); else the view drawn back into its cone
+func focus_tick(dt: float) -> void:
+	var F: Dictionary = focus
+	if str(F["going"]) == "":
+		if clock >= float(F["until"]):
+			focus_off("safety")
+		elif not active:
+			focus_off("ended")
+		elif focus_at(str(F["id"])) == null:
+			focus_off("gone")
+	var going := str(F["going"]) != ""
+	F["k"] = move_toward(float(F["k"]), 0.0 if going else 1.0, dt / float(FOCUS["ease"]))
+	if going:
+		if float(F["k"]) <= 0.0:
+			focus = null
+		return
+	var d: Vector3 = (focus_at(str(F["id"])) as Vector3) - eye_pos()
+	var want_yaw := rad_to_deg(atan2(-d.z, d.x))
+	var want_pitch := rad_to_deg(atan2(d.y, Vector2(d.x, d.z).length()))
+	var half := float(F["cone"]) / 2.0
+	var pull := 1.0 - exp(-float(FOCUS["pull"]) * dt)
+	var dy := fposmod(want_yaw - float(player.yaw) + 180.0, 360.0) - 180.0
+	if bool(F["turning"]):                          # first the view turned onto it, as a look does; then held in its cone
+		half = 0.0
+		if (absf(dy) < 2.0 and absf(want_pitch - float(player.pitch)) < 2.0) or clock - float(F["since"]) > FOCUS["turn"]:
+			F["turning"] = false
+	if absf(dy) > half:
+		player.yaw = float(player.yaw) + signf(dy) * (absf(dy) - half) * pull
+	var dp := want_pitch - float(player.pitch)
+	if absf(dp) > half * 0.6:
+		player.pitch = float(player.pitch) + signf(dp) * (absf(dp) - half * 0.6) * pull
+
+
+## the walk's pace while it holds: slow (FOCUS.slow), held (0) or free (1)
+func focus_walk() -> float:
+	if not (focus is Dictionary) or str(focus["going"]) != "":
+		return 1.0
+	match str(focus["walk"]):
+		"held":
+			return 0.0
+		"free":
+			return 1.0
+	return float(FOCUS["slow"])
+
+
+## the lean in toward it (`push` metres, eased) and the held focus (`zoom`, the view narrowed by up to 15 %)
+func focus_lean() -> Vector3:
+	if not (focus is Dictionary) or float(focus["push"]) <= 0.0:
+		return Vector3.ZERO
+	var at = focus_at(str(focus["id"]))
+	if at == null:
+		return Vector3.ZERO
+	var d: Vector3 = (at as Vector3) - eye_pos()
+	return d.normalized() * minf(float(focus["push"]), d.length() * 0.5) * float(focus["k"])
+
+
+func focus_zoom() -> float:
+	return float(focus["zoom"]) * float(focus["k"]) if focus is Dictionary else 0.0
 
 
 ## a cast member's reaction (the story's `anim`, STORY_FORMAT §4; her `caught` move): a clip played once, her behaviour
@@ -3221,6 +3338,8 @@ func tick(dt: float) -> void:
 		p.pitch = float(L["p0"]) + (float(L["p1"]) - float(L["p0"])) * k
 		if u >= 1.0:
 			look_tween = null
+	if focus != null:
+		focus_tick(dt)
 	var feet: Vector3 = p.pos
 	if not busy and playing == null and p.seat == null and p.hiding == null and p.sleeping == null and p.peeping == null and moving == null:
 		ability_walk(dt)
@@ -3264,10 +3383,10 @@ func tick(dt: float) -> void:
 			w["done"] = true
 	var cam: Camera3D = game.camera
 	var eye: Vector3 = p.peeping["at"] if p.peeping != null else eye_pos()
-	cam.global_position = eye
+	cam.global_position = eye + (focus_lean() if p.peeping == null else Vector3.ZERO)
 	cam.rotation_degrees = Vector3(float(p.pitch), float(p.yaw) - 90.0, 0.0)
 	var vp := get_viewport().get_visible_rect().size
-	cam.fov = float(LENS["fov"]) if p.peeping != null else StoryC.vfov(float(story.game.get("fov", StoryC.FOV_H)), (vp.x / vp.y) if vp.y > 0 else 16.0 / 9.0)
+	cam.fov = float(LENS["fov"]) if p.peeping != null else StoryC.vfov(float(story.game.get("fov", StoryC.FOV_H)), (vp.x / vp.y) if vp.y > 0 else 16.0 / 9.0) * (1.0 - focus_zoom())
 	if hud.guide != null:
 		hud.guide.update(guide_points(), cam, dt)
 	var T := clock

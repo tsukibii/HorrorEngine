@@ -1025,6 +1025,61 @@
    }
   },
   {
+   "verb": "focus",
+   "label": "Hold the view (a cutscene)",
+   "icon": "eye",
+   "group": "time",
+   "hint": "a cutscene in the level, no black bars, no skipping: the view kept on someone or something (the player looks round within a cone, drawn back when they look away), closer if you like, the walk slowed; let go by an empty one, or after its most seconds whatever happens (Godot)",
+   "fields": [
+    {
+     "key": "focus",
+     "label": "Hold the view on (empty: let go)",
+     "kind": "thing",
+     "verb": true
+    },
+    {
+     "key": "push",
+     "label": "lean in (m, up to 0.35)",
+     "kind": "number",
+     "ph": "0",
+     "opt": true
+    },
+    {
+     "key": "zoom",
+     "label": "held focus (up to 0.15)",
+     "kind": "number",
+     "ph": "0",
+     "opt": true
+    },
+    {
+     "key": "walk",
+     "label": "walking",
+     "kind": "choice",
+     "opts": [
+      "slow",
+      "held",
+      "free"
+     ],
+     "labels": {
+      "slow": "slowed",
+      "held": "held",
+      "free": "free"
+     },
+     "opt": true
+    },
+    {
+     "key": "max",
+     "label": "let go after at most (s)",
+     "kind": "number",
+     "ph": "20",
+     "opt": true
+    }
+   ],
+   "make": {
+    "focus": ""
+   }
+  },
+  {
    "verb": "lookat",
    "label": "Turn the view",
    "icon": "eye",
@@ -3477,6 +3532,86 @@
     "fade": "out"
    },
    "text": "Fade out (1 s)"
+  },
+  {
+   "what": "action",
+   "value": {
+    "focus": ""
+   },
+   "text": "Let the view go"
+  },
+  {
+   "what": "action",
+   "value": {
+    "focus": "thing_0",
+    "push": 3,
+    "zoom": 4,
+    "walk": "slow",
+    "max": 6
+   },
+   "text": "Hold the view on thing_0, closer, walking slowed, 6 s at most"
+  },
+  {
+   "what": "action",
+   "value": {
+    "focus": "thing_0",
+    "push": 3,
+    "zoom": 4,
+    "walk": "held",
+    "max": 6
+   },
+   "text": "Hold the view on thing_0, closer, the player still, 6 s at most"
+  },
+  {
+   "what": "action",
+   "value": {
+    "focus": "thing_0",
+    "push": 3,
+    "zoom": 4,
+    "walk": "free",
+    "max": 6
+   },
+   "text": "Hold the view on thing_0, closer, 6 s at most"
+  },
+  {
+   "what": "action",
+   "value": {
+    "focus": "thing_0",
+    "zoom": 4,
+    "walk": "slow",
+    "max": 6
+   },
+   "text": "Hold the view on thing_0, closer, walking slowed, 6 s at most"
+  },
+  {
+   "what": "action",
+   "value": {
+    "focus": "thing_0",
+    "push": 3,
+    "walk": "slow",
+    "max": 6
+   },
+   "text": "Hold the view on thing_0, closer, walking slowed, 6 s at most"
+  },
+  {
+   "what": "action",
+   "value": {
+    "focus": "thing_0",
+    "push": 3,
+    "zoom": 4,
+    "max": 6
+   },
+   "text": "Hold the view on thing_0, closer, walking slowed, 6 s at most"
+  },
+  {
+   "what": "action",
+   "value": {
+    "focus": "thing_0",
+    "push": 3,
+    "zoom": 4,
+    "walk": "slow"
+   },
+   "text": "Hold the view on thing_0, closer, walking slowed"
   },
   {
    "what": "action",

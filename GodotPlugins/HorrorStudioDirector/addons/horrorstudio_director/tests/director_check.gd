@@ -672,6 +672,49 @@ func _initialize() -> void:
 		if offered.size():
 			return "she's busy, but offers %s" % [offered]
 		return "")
+	await step("a cutscene in the level (the night's start: Mari's three lines, a moment played as a cutscene): the view held on her, drawn back when the player looks away; a little closer (the lean in, the held focus); the walk slowed; let go at its end; a held view let go by its safety release at its max, and when its target's gone", func():
+		rt = g.play
+		var k := 0
+		while rt.focus == null and k < 600:
+			await process_frame
+			k += 1
+		if rt.focus == null or str(rt.focus["id"]) != "mari":
+			return "no cutscene at the night's start (the view held on %s; the last let go %s)" % [rt.focus, rt.last_focus]
+		k = 0
+		while rt.focus != null and float(rt.focus["k"]) < 0.99 and k < 300:     # eased in
+			await process_frame
+			k += 1
+		var held: Dictionary = rt.focus
+		var fov_in: float = g.camera.fov
+		var lean: float = rt.focus_lean().length()
+		var walk: float = rt.focus_walk()
+		rt.player.yaw = float(rt.player.yaw) + 120.0               # the player looks away
+		await game_wait(1.0)
+		var d: Vector3 = (rt.focus_at("mari") as Vector3) - rt.eye_pos()
+		var off := absf(fposmod(rad_to_deg(atan2(-d.z, d.x)) - float(rt.player.yaw) + 180.0, 360.0) - 180.0)
+		if rt.focus == null or str(rt.focus["going"]) != "" or off > float(held["cone"]) / 2.0 + 4.0 or not is_equal_approx(walk, 0.35) or lean < 0.1:
+			return "held: %.0f° off her a second after looking away (the cone's half %.0f), walking at %.2f, leaning %.2f m (now %s)" % [off, float(held["cone"]) / 2.0, walk, lean, rt.focus]
+		k = 0
+		while not (rt.last_focus != null and str(rt.last_focus["why"]) == "released") and k < 900:
+			await process_frame
+			k += 1
+		await game_wait(1.3)                                     # eased out
+		var fov_out: float = g.camera.fov
+		if rt.last_focus == null or str(rt.last_focus["why"]) != "released" or rt.focus != null or not is_equal_approx(rt.focus_walk(), 1.0):
+			return "not let go at its end (the last %s, now %s)" % [rt.last_focus, rt.focus]
+		if absf(fov_in / fov_out - 0.95) > 0.01:
+			return "the held focus: %.2f° held, %.2f° let go (a 5 %% zoom)" % [fov_in, fov_out]
+		rt.actions.run({"focus": "mari", "max": 1.0}, rt)           # the safety release, whatever happens
+		await game_wait(1.5)
+		var safety: bool = rt.last_focus != null and str(rt.last_focus["why"]) == "safety"
+		await game_wait(1.2)
+		rt.actions.run({"focus": "figure"}, rt)                    # a target that isn't there (the hidden figure)
+		await frames(3)
+		var gone: bool = rt.last_focus != null and str(rt.last_focus["why"]) == "gone"
+		await game_wait(1.2)
+		if not safety or not gone or rt.focus != null:
+			return "the safety release %s, a target gone %s (now %s)" % [safety, gone, rt.focus]
+		return "")
 	await step("a quest that ends on its first step: hiding in the wardrobe, and what comes next by what was done: the good ending", func():
 		if not await playing(true, 2000):
 			return "no play for the choice"

@@ -32,7 +32,7 @@ BOARDS = {}                 # the board games this game's tables can have (story
 ACTIONS = {"say", "think", "sound", "music", "light", "door", "show", "hide", "move", "objective", "flag", "unflag",
            "give", "take", "wait", "fade", "lookat", "shot", "seq", "anim", "stalker", "trick", "checkpoint", "done",
            "karma", "count", "scene", "behave", "ask", "state", "todo", "tick", "fail", "untodo", "chapter", "name", "torch",
-           "power", "skip", "skin", "sweep", "expr"}
+           "power", "skip", "skin", "sweep", "expr", "focus"}
 SKIN_KEYS = ("wet", "sweat", "drips", "oil")            # a cast member's skin (docs/GODOT_LOOK.md §5): each 0..1
 ASK_SECS = 3.0              # the walker's time to answer an ask
 MUSIC = {"silence", "calm", "uneasy", "dread", "chase"}
@@ -1427,6 +1427,14 @@ def check_action(bid, a, story, things, r, stage=None):
             placed(face)
         if "secs" in a and not (isinstance(a["secs"], (int, float)) and not isinstance(a["secs"], bool) and 0 < a["secs"] <= 30):
             r.err(f"{bid}: anim secs {a['secs']!r} (0 to 30)")
+    elif k == "focus":                                 # a cutscene's soft lock (Godot): the view held on someone, a thing or a spot; "" lets go
+        if v not in ("", None) and v not in cast:
+            placed(v)
+        for key, lo, hi in (("push", 0, 0.35), ("zoom", 0, 0.15), ("max", 0.5, 60), ("cone", 10, 170)):
+            if key in a and not (isinstance(a[key], (int, float)) and not isinstance(a[key], bool) and lo <= a[key] <= hi):
+                r.err(f"{bid}: focus {key} {a[key]!r} ({lo} to {hi})")
+        if a.get("walk") not in (None, "slow", "held", "free"):
+            r.err(f"{bid}: focus walk {a.get('walk')!r} (slow, held or free)")
     elif k == "expr":                                  # an expression on someone's face (STORY_FORMAT §4): from the library, or "" (none)
         if a.get("who") not in cast:
             r.err(f"{bid}: expr: who {a.get('who')!r} isn't in the cast")

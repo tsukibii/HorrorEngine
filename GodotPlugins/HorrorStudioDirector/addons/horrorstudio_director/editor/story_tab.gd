@@ -525,6 +525,9 @@ func _moment_editor(m: Dictionary) -> void:
 				mm["once"] = false))
 		how.add_child(b)
 	v.add_child(how)
+	v.add_child(_cutscene_row(m))
+	if m.get("cutscene") is Dictionary:
+		v.add_child(_timeline(m))
 	v.add_child(_label("It reads as", 12, C_FAINT, true))
 	var ra := _wrap(_label(reads_as(m), 14, C_TEXT))
 	ra.name = "ReadsAs"
@@ -550,6 +553,232 @@ func _moment_editor(m: Dictionary) -> void:
 		change("delete %s" % mid_, func(): (f["moments"] as Array).erase(moment_of(mid_))))
 	row.add_child(del)
 	v.add_child(row)
+
+
+# ---- a cutscene in the level (docs/GODOT_ANIMATION_PLAN.md step 7) -------------------------------------------------
+## the user (DECISIONS 2026-11-02, night): "Cutscenes no black bars, not skippable... everything should feel like its
+## happening in your gameplay... a soft lock... keep the camera focused on the spot or npc that is the target of that
+## cutscene, maybe even allow a camera style zoom in. Need a safety lock". A moment played as a cutscene: the view held
+## on its target (a cone to look round in), closer (a lean in, a held focus), the walk slowed or held, let go when its
+## THEN is over or after at most `max` seconds whatever happens (compile: story_compile.gd cutscene_do)
+const CLOSER := [["not closer", 0.0, 0.0], ["a little closer", 0.15, 0.05], ["closer", 0.3, 0.12]]
+const WALKS := [["slow", "walking slowed"], ["held", "standing still"], ["free", "walking freely"]]
+
+
+func _cutscene_row(m: Dictionary) -> Control:
+	var mid_ := str(m.get("id", ""))
+	var cs = m.get("cutscene")
+	var on := cs is Dictionary
+	var row := HFlowContainer.new()
+	row.name = "Cutscene"
+	row.add_theme_constant_override("h_separation", int(8 * _s()))
+	row.add_child(_tag("CUTSCENE", C_FAINT))
+	var tg := Button.new()
+	tg.name = "AsCutscene"
+	tg.text = "Played as a cutscene" if on else "Not a cutscene"
+	tg.toggle_mode = true
+	tg.button_pressed = on
+	tg.tooltip_text = "In the level, no black bars, no skipping: the view held on what it's about while it plays, let go at its end (or after at most its seconds)"
+	tg.add_theme_stylebox_override("normal", BuildTab._box(C_CARD, C_LINE, 8, 1, 8))
+	tg.add_theme_stylebox_override("pressed", BuildTab._box(C_BLUE_BG, C_BLUE, 8, 1, 8))
+	tg.pressed.connect(func(): change("cutscene %s" % mid_, func():
+		var mm := moment_of(mid_)
+		if mm.get("cutscene") is Dictionary:
+			mm.erase("cutscene")
+		else:
+			mm["cutscene"] = {"target": cutscene_target(mm), "walk": "slow"}))
+	row.add_child(tg)
+	if not on:
+		return row
+	var set_cs := func(k: String, val) -> void:
+		change("cutscene %s" % mid_, func():
+			var c: Dictionary = moment_of(mid_)["cutscene"]
+			if val == null:
+				c.erase(k)
+			else:
+				c[k] = val)
+	row.add_child(_label("the view held on", 13, C_MUTED))
+	var tp := OptionButton.new()
+	tp.name = "CutTarget"
+	var vals: Array = []
+	for k in ["cast", "spot", "thing"]:
+		for v in refs(k):
+			if not vals.has(v):
+				vals.append(v)
+				tp.add_item(_name(k, v))
+	var cur := str(cs.get("target", ""))
+	if cur != "" and not vals.has(cur):
+		vals.append(cur)
+		tp.add_item("%s (not in the scene)" % cur)
+	tp.select(max(0, vals.find(cur)))
+	tp.item_selected.connect(func(i): set_cs.call("target", vals[i]))
+	row.add_child(tp)
+	var cl := OptionButton.new()
+	cl.name = "CutCloser"
+	var ci := 0
+	for i in CLOSER.size():
+		cl.add_item(CLOSER[i][0])
+		if is_equal_approx(float(cs.get("push", 0.0)), CLOSER[i][1]) and is_equal_approx(float(cs.get("zoom", 0.0)), CLOSER[i][2]):
+			ci = i
+	cl.select(ci)
+	cl.item_selected.connect(func(i): change("cutscene %s" % mid_, func():
+		var c: Dictionary = moment_of(mid_)["cutscene"]
+		for kv in [["push", CLOSER[i][1]], ["zoom", CLOSER[i][2]]]:
+			if float(kv[1]) > 0.0:
+				c[kv[0]] = kv[1]
+			else:
+				c.erase(kv[0])))
+	row.add_child(cl)
+	var wk := OptionButton.new()
+	wk.name = "CutWalk"
+	for w in WALKS:
+		wk.add_item(w[1])
+	wk.select(max(0, WALKS.map(func(w): return w[0]).find(str(cs.get("walk", "slow")))))
+	wk.item_selected.connect(func(i): set_cs.call("walk", WALKS[i][0]))
+	row.add_child(wk)
+	row.add_child(_label("let go after at most", 13, C_MUTED))
+	var mx := SpinBox.new()
+	mx.name = "CutMax"
+	mx.min_value = 1
+	mx.max_value = 60
+	mx.step = 1
+	mx.suffix = "s"
+	mx.value = float(cs.get("max", 20))
+	mx.tooltip_text = "The safety release: whatever happens, the player is let go after this long"
+	mx.value_changed.connect(func(x): set_cs.call("max", null if is_equal_approx(x, 20.0) else int(x)))
+	row.add_child(mx)
+	return row
+
+
+## who a new cutscene holds the view on: the first character its THEN names, else the nearest to where it happens
+func cutscene_target(m: Dictionary) -> String:
+	for w in timeline_people(m):
+		return w
+	var near = when_node(m)
+	var a = BuildTab.nearest_actor(near, panel.dock.root()) if panel != null and panel.dock != null else null
+	return a.cast_id() if a != null else ""
+
+
+## the characters a moment's THEN names, in order (whom it animates, sends, puts a face on, gives a line, moves)
+func timeline_people(m: Dictionary) -> Array:
+	var cast := refs("cast")
+	var out: Array = []
+	for a in (m.get("do", []) if m.get("do") is Array else []):
+		if not (a is Dictionary):
+			continue
+		for k in ["anim", "behave", "who", "move"]:
+			var w = a.get(k)
+			if w is String and cast.has(w) and not out.has(w):
+				out.append(w)
+	return out
+
+
+## a cutscene's THEN as a timeline: the view, a row per character (her commands in order; a clip or a face added from
+## her row, or a card from the Animate tab dropped on it), the lines; Play it here (Try this moment)
+func _timeline(m: Dictionary) -> Control:
+	var mid_ := str(m.get("id", ""))
+	var cs: Dictionary = m["cutscene"]
+	var box := VBoxContainer.new()
+	box.name = "Timeline"
+	box.add_theme_constant_override("separation", int(4 * _s()))
+	var head := HBoxContainer.new()
+	head.add_child(_tag("TIMELINE", C_FAINT))
+	var sp := Control.new()
+	sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(sp)
+	var play := BuildTab._button("Play it here", true)
+	play.name = "PlayItHere"
+	play.icon = Glyphs.icon("play", "#0E1A27", 14)
+	play.tooltip_text = "The game from this quest as a test, standing by where it happens (Try this moment)"
+	play.pressed.connect(func(): try_moment(moment_of(mid_)))
+	head.add_child(play)
+	box.add_child(head)
+	var closer := "not closer"
+	for c in CLOSER:
+		if is_equal_approx(float(cs.get("push", 0.0)), c[1]) and is_equal_approx(float(cs.get("zoom", 0.0)), c[2]):
+			closer = c[0]
+	var walk := str(WALKS.filter(func(w): return w[0] == str(cs.get("walk", "slow")))[0][1]) if WALKS.any(func(w): return w[0] == str(cs.get("walk", "slow"))) else "walking slowed"
+	box.add_child(_timeline_row("The view", "held on %s, %s, %s; let go at the end, or after %d s at most" % [_name("cast", cs.get("target", "")), closer, walk, int(cs.get("max", 20))], "View", ""))
+	for who in timeline_people(m):
+		var words: Array = []
+		for a in m.get("do", []):
+			if a is Dictionary and (a.get("anim") == who or a.get("behave") == who or a.get("who") == who or a.get("move") == who):
+				words.append(HSCommands.action_text(a, Callable(self, "_name")))
+		box.add_child(_timeline_row(_name("cast", who), " → ".join(PackedStringArray(words)), "Who_" + str(who), str(who)))
+	var lines: Array = []
+	for a in m.get("do", []):
+		if a is Dictionary and (a.has("say") or a.has("think")):
+			lines.append(HSCommands.action_text(a, Callable(self, "_name")))
+	box.add_child(_timeline_row("Lines", " → ".join(PackedStringArray(lines)) if lines.size() else "none yet (THEN: Say a line)", "Lines", ""))
+	return box
+
+
+## a row of the timeline: its name, what happens in it, and for a character a clip or a face to add (and a drop target)
+func _timeline_row(title: String, text: String, nm: String, who: String) -> Control:
+	var row := HBoxContainer.new()
+	row.name = "Row_" + nm
+	row.add_theme_constant_override("separation", int(8 * _s()))
+	var t := _label(title, 13, C_STAGE if who != "" else C_TEXT, true)
+	t.custom_minimum_size = Vector2(110, 0) * _s()
+	row.add_child(t)
+	var w := _wrap(_label(text, 13, C_MUTED))
+	w.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(w)
+	if who == "":
+		return row
+	var add := MenuButton.new()
+	add.name = "AddClip"
+	add.text = "+ a clip or a face…"
+	add.flat = false
+	var pop := add.get_popup()
+	var actor = node_of(who)
+	var clips: Array = HSLibrary.hers(actor) if actor != null else []
+	var faces: Array = HSDirector.faces()
+	for i in clips.size():
+		pop.add_item("%s (a clip)" % clips[i], i)
+	for j in faces.size():
+		pop.add_item("%s (a face)" % faces[j], 1000 + j)
+	pop.id_pressed.connect(func(id):
+		if id >= 1000:
+			add_to_cutscene(who, {"expr": faces[id - 1000], "who": who})
+		else:
+			add_to_cutscene(who, {"anim": who, "clip": clips[id], "wait": true}))
+	row.add_child(add)
+	row.set_drag_forwarding(func(_p): return null, func(_p, d): return _anim_drop_ok(d), func(_p, _d): _anim_dropped(who))
+	return row
+
+
+## the open moment's THEN gets this command at its end (the timeline's order is the order it plays in)
+func add_to_cutscene(_who: String, act: Dictionary) -> void:
+	var mid_ := opened.trim_prefix("m:")
+	change("add to %s" % mid_, func():
+		var mm := moment_of(mid_)
+		if not (mm.get("do") is Array):
+			mm["do"] = []
+		(mm["do"] as Array).append(act))
+
+
+## a card from the Animate tab dragged over a character's row (plugin.gd's pending_anim) and dropped: hers in the THEN
+func _anim_drop_ok(d) -> bool:
+	return d is Dictionary and str(d.get("type", "")) == "files" and panel != null and panel.plugin.pending_anim is Dictionary
+
+
+func _anim_dropped(who: String) -> void:
+	var pa: Dictionary = panel.plugin.pending_anim
+	panel.plugin.pending_anim = null
+	var c: Dictionary = pa["clip"]
+	if bool(pa.get("face", false)):
+		add_to_cutscene(who, {"expr": str(c["id"]), "who": who})
+		return
+	var actor = node_of(who)
+	var nm := str(c["id"])
+	if actor != null:
+		var why := [""]
+		nm = HSLibrary.make_for(actor, c, why)
+		if nm == "":
+			panel.say(why[0])
+			return
+	add_to_cutscene(who, {"anim": who, "clip": nm, "wait": true})
 
 
 ## a step, opened: what the list says, when it's done, who asked, the answer to the wrong thing given

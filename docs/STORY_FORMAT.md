@@ -562,6 +562,15 @@ with `{"tick": "<id>"}` at the end of that beat, not by its own trigger (the sto
   cue (on its clip edge: what lasts counts from there) or an answer's `do`. States carry on through the run
 - `flag`, `unflag`, `give`, `take`
 - `wait`, `fade` (`in`/`out`, `secs`), `lookat` (`secs`, `lock`)
+- `focus`: **a cutscene in the level** (Godot; DECISIONS 2026-11-02, night: no black bars, no skip, as if it happens in
+  your gameplay): `{"focus": "mari", "push": 0.15, "zoom": 0.05, "walk": "slow", "max": 20}` turns the view onto a
+  cast member, a thing or a spot (eased, as a look does, 1.5 s at most) and holds it there: the player looks round
+  within a cone (`cone`, 50°; its pitch 0.6 of it) and is drawn back into it when they look away; `push` leans the eye in toward it (metres, up to 0.35) and `zoom` is a held focus (up to
+  0.15, DIRECTING §1), both eased in and out; `walk` `slow` (the default, 0.35 of the pace), `held` or `free`.
+  `"focus": ""` lets go. A **safety release** always frees the player: after `max` seconds (20; 0.5 to 60) whatever
+  happens, when its target's gone (hidden, out of the level), at an ending, a new level or the run stopped. The
+  Director's cutscene moments put one round their THEN (GODOT_DIRECTOR §6g). The check: the target placed or in the
+  cast, the numbers in range, `walk` one of the three
 - `skip`: **time skipped** (missing time; HANDOFF_DIRECTOR_TODO §7): `{"skip": 5400}` (seconds: an hour and a half, a
   week at most): every little thing lives through it at once, as if each had been that much longer in its state (a
   clock's hands jump on, 02:10 to 03:40; the tea goes cold; a cigarette burns down), and nothing else moves. In a beat,

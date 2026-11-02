@@ -467,6 +467,31 @@ sample the figure lunges with a face of its own and the short sting.</p>
 <p><b>Caught</b>: give a character a <i>Caught</i> move (above) and she plays it, turned to the player, whenever she
 catches them; what happens next is the story's (a moment <b>when</b> the player is caught).</p>
 
+<h3>Cutscenes in the level</h3>
+<figure class="wide"><img src="img/e_cutscene.jpg" width="1417" height="364" alt="The Story tab on the night's moment: CUTSCENE played as a cutscene, the view held on Mari, a little closer, walking slowed, let go after at most 20 s; the TIMELINE with The view, Mari's row with her three lines and a clip or a face to add, the Lines, and Play it here">
+<figcaption>The sample's night: a moment played as a cutscene, its row and its timeline.</figcaption></figure>
+<p>A cutscene here never takes the game away: no black bars, nothing to skip, the player stays in their body and
+the scene happens round them. Open a moment in the Story tab and press <span class="ui">Not a cutscene</span> to make
+it <span class="ui">Played as a cutscene</span>:</p>
+<ul>
+<li><b>The view held on</b> someone, a spot or a thing: as it starts the view turns onto it; while it plays the player
+can look round within a cone, and when they look away the view is drawn gently back to it.</li>
+<li><b>Closer</b>: <i>a little closer</i> or <i>closer</i> leans the eye in toward it and narrows the view a little (a
+held focus); both ease in and out. The lens never changes otherwise.</li>
+<li><b>Walking</b>: slowed (the default), standing still, or free.</li>
+<li><b>Let go after at most</b>: the <b>safety release</b>. The view is let go when the moment's THEN is over, or when
+what it's held on is gone (hidden, out of the level), at an ending or a new level, and in any case after these many
+seconds (20), whatever happens: a glitch can never keep the player in it.</li>
+</ul>
+<p>Its <b>timeline</b> shows the THEN as rows: <i>The view</i>, a row for each character it names with what she does in
+order (walks, clips, faces, lines), and the <i>Lines</i>. Add a clip or a face from her row's
+<span class="ui">+ a clip or a face…</span> (it goes at the end; the THEN plays in that order, a clip waited for), or
+drop a card from the Animate tab on her row. Lines follow one another, each given the time to be read.
+<span class="ui">Play it here</span> plays the game from that quest, standing by where it happens.</p>
+<figure class="wide"><img src="img/g_cutscene.jpg" width="1280" height="720" alt="In the game: the bedroom at night, the view held on Mari sitting, a little closer, her line on the screen"><figcaption>In the game: the night's cutscene, the view held on Mari, a little closer, her line at the bottom.</figcaption></figure>
+<p>The same as a command anywhere: <span class="ui">Hold the view (a cutscene)</span> on someone, and an empty one to
+let go.</p>
+
 <h3>Face clips from a video: the Face page</h3>
 <figure class="wide"><img src="img/f_facepage.jpg" width="1400" height="820" alt="The Face page in a browser: the library's expressions as cards, each the MHR head wearing it, Import at the top; on the right For Godot, the project's folder, a Godot project with two face clips, the faces ticked with their marks in faces/ and faces/loops/, Send 2 to the project and what was written">
 <figcaption>The Face page: the studio's expression library on the left, <b>For Godot</b> on the right. Two faces
@@ -495,8 +520,8 @@ blended into its start, for a face she rests in.</li>
 <pre>python tools/godot_director.py faces ~/Games/MyGame pout_and_glance pout_and_glance_loop</pre>
 <p>If the story animates someone with a clip she hasn't been given, the panel's <span class="ui">Test</span> page says
 so, and names the Animate tab when the clip is in <code>animations/</code>.</p>
-<div class="notyet"><b>Not yet.</b> Cutscenes in the level; FBX and glTF clips. They're next
-(<code>docs/GODOT_ANIMATION_PLAN.md</code>).</div>
+<div class="notyet"><b>Not yet.</b> FBX and glTF clips; the cast's lanes in Story Flow
+(<code>docs/GODOT_ANIMATION_PLAN.md</code>, step 8).</div>
 </section>
 
 <section id="story">

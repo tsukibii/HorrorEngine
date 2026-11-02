@@ -45,6 +45,9 @@ const STORY := {
 	],
 	"moments": [
 		{"id": "letter_thought", "when": {"read": "letter"}, "do": [{"think": "She wrote this in a hurry."}]},
+		{"id": "night_cutscene", "when": {"start": true}, "during": ["q_night"],
+			"cutscene": {"target": "mari", "push": 0.15, "zoom": 0.05, "walk": "slow"},
+			"do": [{"say": "Did you hear that?", "who": "mari"}, {"say": "Something's in the hall.", "who": "mari"}, {"say": "Don't open the door.", "who": "mari"}]},
 		{"id": "figure_scare", "when": {"enter": "kitchen_doorway"}, "if": "read:letter",
 			"do": [{"trick": "jumpscare", "figure": "figure", "secs": 0.9, "clip": "figure_lunge", "expr": "pout_and_glance", "sound": "sting_short"},
 				{"think": "What was that?"}, {"flag": "saw_figure"}]},

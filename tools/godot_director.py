@@ -763,6 +763,15 @@ def editor_check(out):
                                        [{"enter": "kitchen_doorway"}, [{"anim": "mari", "clip": "mari_wave", "face": "player"}]]]
          and rep.get("react_words") == ["Animate Mari: mari_flinch to the player", "Animate Mari: mari_wave to the player"]
          and rep.get("react_faces") == ["pout_and_glance", ""] and rep.get("react_dropped") == ["look_around", "mari_wave", 0] and rep.get("react_undone") is True),
+        ("a moment played as a cutscene: the night's row %s, its timeline %s (Mari's: %s); a clip added from her row %s; the compile's THEN for one %s; made not a cutscene (%s); undone (%s)"
+         % (rep.get("cut_row"), rep.get("cut_rows"), (rep.get("cut_mari") or "")[:120], rep.get("cut_added"), rep.get("cut_compiled"), rep.get("cut_off"), rep.get("cut_undone")),
+         rep.get("cut_row") == [True, "Mari", "a little closer", "walking slowed", 20.0]
+         and rep.get("cut_rows") == ["Row_View", "Row_Who_mari", "Row_Lines"] and "Did you hear that?" in (rep.get("cut_mari") or "")
+         and isinstance(rep.get("cut_added"), dict) and rep["cut_added"].get("anim") == "mari" and rep["cut_added"].get("wait") is True and rep["cut_added"].get("clip")
+         and isinstance(rep.get("cut_compiled"), list) and len(rep["cut_compiled"]) == 4
+         and rep["cut_compiled"][0] == {"focus": "mari", "zoom": 0.05, "walk": "held"} and rep["cut_compiled"][1] == {"say": "Hi", "who": "mari"}
+         and abs(float(rep["cut_compiled"][2].get("wait", 0)) - 1.3) < 0.01 and rep["cut_compiled"][3] == {"focus": ""}
+         and rep.get("cut_off") is True and rep.get("cut_undone") is True),
         ("a node's id follows its renames while it's the name's (%s), one typed by hand stays (%s)" % (rep.get("id_follows"), rep.get("id_kept")), rep.get("id_follows") == ["hs_thing", "old_key"] and rep.get("id_kept") == "my_key"),
         ("saved: the new nodes in the file, no story nodes, nothing the nodes make for themselves", rep.get("saved") is True and rep.get("saved_task") is True and rep.get("saved_nothing_made") is True),
         ("no script errors in the editor", not errs),

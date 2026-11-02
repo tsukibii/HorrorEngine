@@ -456,6 +456,24 @@ func _process(dt: float) -> void:
 				return
 			_shot("e_reaction_moment", _panel_rect())
 			get_undo_redo().get_history_undo_redo(EditorUndoRedoManager.GLOBAL_HISTORY).undo()   # (the guide's project as it was)
+			panel.story.quest = "q_night"                  # the night's cutscene: its row and its timeline
+			panel.story.opened = "m:night_cutscene"
+			panel.story.refresh(false)
+			at = t
+			phase = 32
+		32:
+			if t - at < 1.5:
+				return
+			var cb: Control = panel.story.mid.find_child("Timeline", true, false)
+			if cb != null:
+				panel.story.mid_scroll.ensure_control_visible(cb)
+			at = t
+			phase = 33
+		33:
+			if t - at < 0.6:
+				return
+			_shot("e_cutscene", _panel_rect())
+			panel.story.opened = ""
 			panel.show_page("build")
 			print("GUIDEEDITOR " + JSON.stringify({"made": made}))
 			get_tree().quit()

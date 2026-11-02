@@ -1221,3 +1221,19 @@ was back on her idle.
   frame), and only then judge; never one look after a fixed wait, which passes or fails by how far the thing had to go.
 - **Know the distances the sample uses**: its spots are close together, so anything that walks there is over in well
   under a second.
+
+## A soft lock that never looked at what it held the view on (2026-11-03)
+
+The first cutscene's `focus` only pulled the view back to the edge of its cone when it drifted out, which is the right
+feel once the player is looking at the scene, but at the start it left the subject wherever the cone's edge fell: the
+guide's picture of the night's cutscene had Mari at the side of the frame, a wall filling the rest. The numbers
+DIRECTOR measured (within the cone a second after looking away) were all true, and said nothing about whether the
+cutscene ever turned the player toward her.
+
+- **A hold starts by turning the view onto its subject** (as a look does: eased, to its middle), and only then keeps
+  it inside the cone; a cone alone is a fence, not a camera.
+- **Look at the picture of a camera feature, not only its measures**: the angle checks passed on a frame no director
+  would keep.
+- **HUD lines time out on the wall clock** (`hud.line`: `Time.get_ticks_msec`), so a picture taken in a slow,
+  fixed-fps test run misses a line that a real game shows: picture a line by waiting for it to be the current one
+  (`hud.line_text`), never by game time after it started.

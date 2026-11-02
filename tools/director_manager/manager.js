@@ -399,7 +399,8 @@ function viewMoments() {
       row("When", trigEd(m, "when", { prefix: "" })),
       row("If", condEd(m, "if", "")),
       row("Only during", duringEd(m)),
-      row("Then", actions(m, "do", "nothing yet")))),
+      row("Then", actions(m, "do", "nothing yet")),
+      isObj(m.cutscene) ? row("Cutscene", h("span", { class: "hint" }, `played as a cutscene: the view held on ${m.cutscene.target || "…"}${m.cutscene.push || m.cutscene.zoom ? ", closer" : ""}, ${m.cutscene.walk === "held" ? "standing still" : m.cutscene.walk === "free" ? "walking freely" : "walking slowed"}, let go after ${m.cutscene.max || 20} s at most (set in Godot's Story tab)`)) : null)),
     h("button", { class: "small", "data-act": "new-moment", on: { click: () => { S.moments.push({ id: freshId("moment", allIds()), when: null, do: [] }); changed(); render(); } } }, icon("plus", 12), " Add a moment")];
 }
 function duringEd(m) {

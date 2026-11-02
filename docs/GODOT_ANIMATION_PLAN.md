@@ -6,7 +6,7 @@ animations, these can be project specific, how do I easily be like at this point
 complete they get up and walk here with this animation, you can talk to them here, they have this expression etc,
 jump scare plays this… an easy drag and drop animation system, ideally I can just drag animations into the folders…
 Come up with a good plan first."* §9 is the build order (step 1 built: the library and the Animate tab,
-docs/GODOT_DIRECTOR.md §6g; step 2 too, the Face page, `tools/facecap`; step 3, a character's moves; step 4, On stage; step 5, paths and the walk through doorways; step 6, reactions and scares); §10 the questions, and the user's answers (DECISIONS 2026-11-02, night), which this plan
+docs/GODOT_DIRECTOR.md §6g; step 2 too, the Face page, `tools/facecap`; step 3, a character's moves; step 4, On stage; step 5, paths and the walk through doorways; step 6, reactions and scares; step 7, cutscenes in the level); §10 the questions, and the user's answers (DECISIONS 2026-11-02, night), which this plan
 now follows.
 
 ## 1. What's there today
@@ -198,8 +198,8 @@ in-between (a move per transition) and the new keys.
 6. **Reactions and scares** *(built, 2026-11-03: GODOT_DIRECTOR §6g)*: the ready-made reaction cards (filled in
    for the nearest character, her clip swapped by a card dropped on the area), `anim` once-then-back (held, turned to
    the player and back: play.gd `react`), the jump scare's clip, face and sound, her Caught move.
-7. **Cutscenes in the level**: a moment with a target, its soft lock, lean-in and safety release, its timeline view,
-   *Play it here*.
+7. **Cutscenes in the level** *(built, 2026-11-03: GODOT_DIRECTOR §6g)*: a moment with a target, its soft lock,
+   lean-in and safety release, its timeline view, *Play it here*.
 8. *(later)* FBX and glTF clips; the Cast lanes in Story Flow; PATTERNS_PLAN's styles and patterns (calm, hunting) for
    NPCs that react on their own.
 

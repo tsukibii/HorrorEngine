@@ -154,6 +154,7 @@ func _process(dt: float) -> void:
 			if t - at_t < 0.5:
 				return
 			_react_dropped()
+			_cutscene_checks()
 			phase = 4
 		4:
 			rep["saved"] = EditorInterface.save_scene() == OK
@@ -816,6 +817,49 @@ func _react_dropped() -> void:
 	for i in 3:
 		glob.undo()
 	rep["react_undone"] = _same(FileAccess.get_file_as_string("res://director/director.json"), pan["react_was"])
+
+
+## a moment played as a cutscene (story_tab.gd _cutscene_row, _timeline; story_compile.gd cutscene_do): the sample's
+## night_cutscene opened: its row (played as a cutscene, the view held on Mari, a little closer, walking slowed, 20 s
+## at most) and its timeline (the view, Mari's row with her lines, the lines); a clip added from her row; the compile's
+## THEN for one; made not a cutscene; all undone
+func _cutscene_checks() -> void:
+	var st = panel.story
+	pan["cut_was"] = FileAccess.get_file_as_string("res://director/director.json")
+	panel.show_page("story")
+	st.quest = "q_night"
+	st.ending = ""
+	st.opened = "m:night_cutscene"
+	st.refresh(false)
+	var box: Control = st.mid.find_child("Moment_night_cutscene", true, false)
+	var row: Control = box.find_child("Cutscene", true, false) if box != null else null
+	var tl: Control = box.find_child("Timeline", true, false) if box != null else null
+	var pick := func(nm: String) -> String:
+		var ob: OptionButton = row.find_child(nm, true, false) if row != null else null
+		return ob.get_item_text(ob.selected) if ob != null and ob.selected >= 0 else ""
+	var tg: Button = row.find_child("AsCutscene", true, false) if row != null else null
+	var mx: SpinBox = row.find_child("CutMax", true, false) if row != null else null
+	rep["cut_row"] = [tg != null and tg.button_pressed, pick.call("CutTarget"), pick.call("CutCloser"), pick.call("CutWalk"), mx.value if mx != null else -1.0]
+	rep["cut_rows"] = tl.get_children().filter(func(c): return str(c.name).begins_with("Row_")).map(func(c): return str(c.name)) if tl != null else []
+	var mrow: Control = tl.find_child("Row_Who_mari", true, false) if tl != null else null
+	rep["cut_mari"] = " ".join(PackedStringArray(_texts(mrow))) if mrow != null else ""
+	var add: MenuButton = mrow.find_child("AddClip", true, false) if mrow != null else null
+	if add != null:
+		add.get_popup().id_pressed.emit(0)
+	var dos: Array = _moment("night_cutscene").get("do", [])
+	rep["cut_added"] = dos.back() if dos.size() else null
+	rep["cut_compiled"] = HSStoryCompiler.cutscene_do({"target": "mari", "zoom": 0.05, "walk": "held"}, [{"say": "Hi", "who": "mari"}])
+	st.refresh(false)
+	box = st.mid.find_child("Moment_night_cutscene", true, false)
+	tg = box.find_child("AsCutscene", true, false) if box != null else null
+	if tg != null:
+		tg.pressed.emit()
+	rep["cut_off"] = not _moment("night_cutscene").has("cutscene")
+	var glob := get_undo_redo().get_history_undo_redo(EditorUndoRedoManager.GLOBAL_HISTORY)
+	glob.undo()
+	glob.undo()
+	rep["cut_undone"] = _same(FileAccess.get_file_as_string("res://director/director.json"), pan["cut_was"])
+	st.opened = ""
 
 
 ## a frame later: the dropped card's clip on the stop, the drop taken back

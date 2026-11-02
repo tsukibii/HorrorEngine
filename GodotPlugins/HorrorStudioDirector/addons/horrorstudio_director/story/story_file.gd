@@ -10,7 +10,7 @@ extends RefCounted
 ##                time_limit, on_timeout, round: {type, secs, rule, warn, spots, seeker, loops, barks, on}, next: [{if, go}],
 ##                stage: {<person>: {do, at, to, then, path, paths, motion, expr, talk, walk, leave, arrive, face}}}],
 ##    "states":  [{while, set: {<id>: {at, do, to, path, paths, sees, shown, motion, locked, open, light, state}}}],
-##    "moments": [{id, when, if, do, once, every, during: [quest ids]}],
+##    "moments": [{id, when, if, do, once, every, during: [quest ids], cutscene: {target, push, zoom, walk, max}}],
 ##    "talk":    {<person>: [{id, if, once, title, lines: [{who, text, if, do, answers: [{id, label, think, if, sets,
 ##                karma, reply: [..], go}]}]}]},
 ##    "endings": [{id, kind, title, text}],
@@ -33,6 +33,10 @@ extends RefCounted
 ## (`then` idle or sit), path, patrol or off, its place (`at`, `to`, `path`, `paths`), what she plays there (`motion`),
 ## her face (`expr`), the conversation she offers in that quest alone (`talk`; "" none), the in-between's own clips
 ## (`walk`, `leave`, `arrive`) and `face: "player"`.
+## A moment's `cutscene` plays it as a cutscene in the level (docs/GODOT_ANIMATION_PLAN.md step 7; no black bars, no
+## skip): the view held on its `target` (a person, a spot, a thing) in a cone the player looks round in, `push` and
+## `zoom` closer (a lean in, a held focus), `walk` slow, held or free; let go when its `do` is over, or after `max`
+## seconds (20) whatever happens: story_compile.gd cutscene_do, the runtime's `focus`.
 ## `chart`: where each card sits in the Story Flow tab ({id: [x, y]}, editor/flow_tab.gd), the editor's alone: the game
 ## never reads it.
 
