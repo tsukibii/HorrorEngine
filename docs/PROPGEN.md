@@ -44,6 +44,7 @@ python tools/propgen.py library [names...]                # made props into the 
 python tools/propgen.py godot [names...]                  # GDPROPS: imported by Godot 4.7, materials read back, pictured
 python tools/propgen.py pbr                               # the PBR shelf's sets
 python tools/propgen.py pbr-add Metal/brushed ~/Downloads/brushed_*.png   # a set onto the shelf
+python tools/propgen.py vines [ivy ivy_real creeper creeper_autumn bare]   # seamless vine sets onto the shelf (§20)
 python tools/propgen.py check                             # PROPGEN
 ```
 
@@ -918,3 +919,26 @@ tree family's growth and leaf cards (§18) into a pot made the ware family's way
 Checked by PROPGEN (`pot_ficus` on the floor and `pot_cactus` on a table, made small: well-formed, on the floor,
 anchored on the origin, about their size, within their budgets, the leaf material cut) and GDPROPS (imported by Godot
 4.7, the leaves see-through where they should be).
+
+## 20. Vines: seamless sets for walls
+
+The user (2026-11-02): "after that can you make some vine patterns (should be seamless so I can just place vines on
+exterior buildings etc, maybe 2/3 variations)". `python tools/propgen.py vines [kinds]` draws them without Blender
+(`tools/propgen/vines.py`) onto the project's shelf as PBR sets of their own, `pbr/foliage/vine_<kind>/`, a metre a
+repeat (`--tex` the pixels, 1024 by default; `--seed` another growth; `--out` another folder):
+
+- `ivy`: English ivy, dense, drawn leaves in three greens; `ivy_real`: the same growth in the leaf set's real leaves
+  (`pbr/leaf/LeafSet029`'s, cut out by `leafset.py` as the realistic trees' are); `creeper`: a Virginia creeper, thin
+  stems climbing, five-lobed leaves, the wall showing through; `creeper_autumn`: the creeper turned crimson and
+  orange; `bare`: dry stems in winter with a few dead leaves, a horror wall's.
+- **How**: stems climb across the tile as curves with branches off them, the leaves hung by their stalks along each
+  stem; every stem and leaf that crosses an edge is drawn again shifted by the tile, so the right edge meets the left
+  and the top the bottom (`vines.seam` measures the edges' step against the steps inside). The maps: `_albedo.png`
+  (RGBA, the colour with the coverage), `_opacity.png`, `_normal.png` (the leaves' edges and the stems' rounds as a
+  height), `_roughness.png`; `meta.json` (`tile_m` 1, ours).
+- **Onto a wall**: in the street paint (STREET_PAINT) and the scene builder's Paint, a wall's look takes a vine set
+  as a layer **by its own mask** (`{"set": "pbr/foliage/vine_ivy", "mask": "own"}` in the look): the paint's mixer
+  lays it over the wall's set at its size, and Blender's bake and Godot wear the same made set. The sheet
+  `docs/godot_sheets/2026-11-02_vines.jpg` shows each kind tiled two by two and the ivy over the plaster set. For
+  vines standing off a wall, the set goes on a plane a few centimetres in front of it in Godot, its material cut by
+  the opacity (alpha scissor).

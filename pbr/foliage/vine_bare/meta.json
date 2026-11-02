@@ -1,0 +1,15 @@
+{
+ "maps": {
+  "albedo": "vine_bare_albedo.png",
+  "normal": "vine_bare_normal.png",
+  "opacity": "vine_bare_opacity.png",
+  "rough": "vine_bare_roughness.png"
+ },
+ "normal": "gl",
+ "tile_m": 1.0,
+ "source": "ours: tools/propgen.py vines (tools/propgen/vines.py)",
+ "url": "",
+ "licence": "ours",
+ "note": "seamless both ways; its opacity cuts the wall out between the leaves: a layer with mask 'own' in the street paint, or a slot of its own",
+ "label": "vine: bare dry stems in winter, a few dead leaves (a horror wall)"
+}

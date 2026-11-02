@@ -34,7 +34,16 @@ balls and hedges by `clip`, a loose shrub, grass tufts) and `tools/godot/street_
 road with trees and bushes and pictured it by day and night (`docs/godot_sheets/2026-11-02_hill_motel_dressed.jpg`;
 the judgement in PROPGEN §18: scale and shadows carry it, the cards show up close, the green is a shade bright). Then
 **small trees** (`habit: upright`, ten `small_*` recipes under a two-storey house, branches steep) and the dress tool
-putting them beside houses, big trees only with room (`--room`). Next, if the user wants: their own look at the trees on the 3090 (the page shows
+putting them beside houses, big trees only with room (`--room`). Then **potted plants** (the `plant` family,
+PROPGEN §19: a pot turned with a real wall or a cube planter, the soil and its topping, the tree family's growth and
+cards on it as an aloe, an echeveria, a snake plant, a fern, a palm, a monstera, a rubber plant, a fiddle leaf fig, a
+ficus, a bonsai, basil, a pothos, ivy, lucky bamboo, a yucca, a cactus and a dead one: eighteen `pot_*` recipes,
+`docs/godot_sheets/2026-11-02_plants.jpg`) and **vines** (`propgen.py vines`, §20: five seamless sets a metre a repeat
+on the shelf, `pbr/foliage/vine_*`, a layer by its own mask over a wall's set in the street paint,
+`2026-11-02_vines.jpg`). Next, if the user wants: the plants in the kit's places (a windowsill, a shelf, a desk's
+corner: the scene builder putting a `pot_*` prop there), vines as a mesh standing off a wall (cards on the stems, the
+set's own leaves) and climbing the street builder's facades by a slot of their own, more plants (an orchid, a
+succulent tray, a hanging basket), their own look at the trees on the 3090 (the page shows
 them as cards, `python tools/propgen/serve.py`), wind on the cards (a vertex shader in the look plugin), a bush family
 (azalea hedges, clipped balls), the street builder's `tree` stand-in swapped for a made tree by the Godot drop (street_dress's `placements.json` is
 the shape of it), a nearer card set for crowns at the player's face, lower LODs (the twigs' sides, fewer cards) for a

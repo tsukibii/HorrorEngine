@@ -25,6 +25,10 @@ exported. No image or 3D generator anywhere.
         --out DIR                                      (from the props made there, not Saved/Props)
                                                        and parts, and what size a picture wants on each:
                                                        docs/PROPGEN_PICTURES.md
+    python tools/propgen.py vines [ivy ivy_real creeper creeper_autumn bare]
+                                                       seamless vine sets for walls onto the project's shelf
+                                                       (pbr/foliage/vine_<kind>/: colour with the opacity, normal,
+                                                       roughness; --tex the pixels, --out another folder)
     python tools/propgen.py check                      PROPGEN: a few recipes made small and measured
     python tools/propgen.py godot [names...]           GDPROPS: the made props imported by Godot 4.7, their materials
                                                        read back, pictured (Saved/Props/_godot/godot_props.png)

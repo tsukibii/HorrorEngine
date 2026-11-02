@@ -1,0 +1,15 @@
+{
+ "maps": {
+  "albedo": "vine_ivy_albedo.png",
+  "normal": "vine_ivy_normal.png",
+  "opacity": "vine_ivy_opacity.png",
+  "rough": "vine_ivy_roughness.png"
+ },
+ "normal": "gl",
+ "tile_m": 1.0,
+ "source": "ours: tools/propgen.py vines (tools/propgen/vines.py)",
+ "url": "",
+ "licence": "ours",
+ "note": "seamless both ways; its opacity cuts the wall out between the leaves: a layer with mask 'own' in the street paint, or a slot of its own",
+ "label": "vine: English ivy, dense, drawn leaves (a metre a repeat)"
+}

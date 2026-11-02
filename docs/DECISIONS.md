@@ -2,6 +2,17 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-02, night (the user: potted plants and vines, on `procedural-trees`)
+
+- **"Could you make some indoor small potted plants with these techniques + the techniques we already use for bowl
+  shaped props (maybe do some cubed ones), I'd say make 15 variations, from small to medium (stuff that could sit on a
+  table to on the floor), after that can you make some vine patterns (should be seamless so I can just place vines on
+  exterior buildings etc, maybe 2/3 variations)"**: the prop generator's `plant` family (PROPGEN §19: a pot turned
+  with a real wall or cut as a cube planter, the tree family's growth and leaf cards on its soil; eighteen `pot_*`
+  recipes, an aloe on a table to a ficus on the floor) and `propgen.py vines` (§20: five seamless vine sets, a metre
+  a repeat, on the project's shelf as `pbr/foliage/vine_*`, laid over any wall's set as a layer by its own mask in
+  the street paint).
+
 ## 2026-11-02, evening (the user: trees, on `procedural-trees`)
 
 - **"Similar to our prop system can you see if you can incorporate this blender library (its for older versions so may

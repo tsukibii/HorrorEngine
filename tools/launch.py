@@ -223,6 +223,7 @@ TOOLS = [
     ("Props", "Prop generator: a contact sheet of the made props (Saved/Props/sheet.png)", "tools/propgen.py sheet", {}),
     ("Props", "Prop generator: made props into the library as props/<name> (a story places them with asset props/<name>)", "tools/propgen.py library", {}),
     ("Props", "Prop generator: the PBR shelf's sets (a recipe's pbr)", "tools/propgen.py pbr", {}),
+    ("Props", "Prop generator: seamless vine sets onto the shelf (pbr/foliage/vine_<kind>: ivy, ivy_real, creeper, creeper_autumn, bare; a layer by its own mask over a wall's set in the street paint; no Blender)", "tools/propgen.py vines {opt:Kind(s) (Enter: every one)}", {}),
     ("Props", "Prop generator: the made props in Godot 4.7 (GDPROPS: materials read back, pictured)", "tools/propgen.py godot", {}),
     ("Checks", "Prop generator check (PROPGEN: a recipe of every family made small and measured; Blender)", "tools/propgen.py check", {}),
     ("Checks", "Prop generator page test (PROPPAGE: headless browser on port 8792, a scratch recipe book; Blender makes four)", "node tools/propgen/pagetest.mjs", {}),
