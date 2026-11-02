@@ -548,7 +548,7 @@ func _step_editor(q: Dictionary, s: Dictionary) -> void:
 	v.add_child(del)
 
 
-## a step's marker (STORY_FORMAT §4 a todo's `guide`: the gem bobbing over what it needs, in the game): on or off, and
+## a step's marker (STORY_FORMAT §4 a todo's `guide`: the diamond bobbing over what it needs, in the game): on or off, and
 ## over what (what its WHEN names, or a thing, a person or an area picked); `put` takes true, an id, or null (none)
 func _marker_row(s: Dictionary, put: Callable) -> Control:
 	var row := HFlowContainer.new()
@@ -560,7 +560,7 @@ func _marker_row(s: Dictionary, put: Callable) -> Control:
 	var cb := CheckBox.new()
 	cb.name = "Guide"
 	cb.text = "Show a marker over it in the game"
-	cb.tooltip_text = "A small gem bobbing over what this step needs, so the player knows what to go to (no words needed)"
+	cb.tooltip_text = "A small diamond bobbing over what this step needs, so the player knows what to go to (no words needed)"
 	cb.button_pressed = on
 	cb.toggled.connect(func(t): put.call(true if t else null))
 	row.add_child(cb)

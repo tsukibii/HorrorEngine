@@ -631,9 +631,9 @@ with `{"tick": "<id>"}` at the end of that beat, not by its own trigger (the sto
   only knows of from their thoughts: "I should clean up before she gets here"). `guide`: **a marker** over what it
   needs while it's open (the user, 2026-11-02: "a helper… so players can see the object", optional per task): `true`
   hangs it over what its `ticks` names (a thing used, read, looked at or picked up, an area walked into, who something
-  is given to, where she gets to), or the id of a thing, a person, an area, an item or a note. A small gem on a thread in
-  the HUD theme's accent, bobbing slowly, its core and glow breathing a beat behind; hidden behind the eye and past
-  30 m, softer up close; gone once the task is done or failed. A hidden task can have one: the marker is then how the
+  is given to, where she gets to), or the id of a thing, a person, an area, an item or a note. A flat glyph in the HUD
+  theme's accent (a diamond's outline on a short stem pointing down at it: no fill, no glow), bobbing slowly; hidden
+  behind the eye and past 30 m, softer up close; gone once the task is done or failed. A hidden task can have one: the marker is then how the
   player knows. Godot's runtime draws it (`marker.gd`); the desk's Play doesn't yet. Ticked
   and failed are heard (`ticked`, `failed`). The list is kept with the run, through the stitches, until `untodo`
   takes a task off (`{"untodo": "mop_floor"}`) or clears it (`{"untodo": true}`).

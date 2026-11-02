@@ -8,11 +8,16 @@ The user's answers, newest first. They override the plan, the research and the d
   and **"without ripping off the exact same UI element, can you make one that suits our style that helps the player
   know what to interact with… toggle in the UI that we want a helper (identifier)… lightly bounce up and down (in a
   fluid hypnotic motion)… optional… useful for non-list based quests e.g. talk"** (with a picture of a game's yellow
-  triangle over a thing). Built in two steps: **the marker** (a todo's `guide`, STORY_FORMAT §4: a small gem on a
-  thread in the HUD theme's accent, bobbing on a slow sine while its core and glow breathe a beat behind; a step's
-  *Show a marker over it* in the Story tab and the Manager; Godot's runtime draws it, the desk's Play not yet), then
+  triangle over a thing). Built in two steps: **the marker** (a todo's `guide`, STORY_FORMAT §4: at first a small gem
+  on a thread in the HUD theme's accent, bobbing on a slow sine while its core and glow breathe a beat behind, made
+  plainer below; a step's *Show a marker over it* in the Story tab and the Manager; Godot's runtime draws it, the
+  desk's Play not yet), then
   **the intro and quests that aren't lists** (a quest's opening, its to-do list shown or not; every Director file
   starting with an Intro quest).
+- **"Could you simplify the UI, I actually preferred the duller version you had, and maybe instead of an intricate
+  design have it more like a vectorish style"** (with a picture of the marker's first try, pale and thin): the marker
+  is a flat glyph now, in the theme's accent as it is (no longer deepened): a diamond's outline on a short stem
+  pointing down at the thing, one stroke, no fill, no glow, no pulsing core. It still bobs on its slow sine.
 
 ## 2026-11-01, evening (the user: a friendlier panel in Godot)
 

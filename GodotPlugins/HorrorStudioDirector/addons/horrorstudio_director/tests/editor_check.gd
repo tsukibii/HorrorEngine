@@ -461,7 +461,7 @@ func _story_checks() -> void:
 		if q.get("id") == "q_talk":
 			tq = q
 	rep["story_talk_undone"] = tq.get("steps", [{}])[0].get("done") == {"holds": "heard:t_open"}
-	st.refresh(false)                                 # its marker (the gem over Mari in the game): on, over her; off, and back
+	st.refresh(false)                                 # its marker (the diamond over Mari in the game): on, over her; off, and back
 	tbox = st.mid.find_child("Step_talk_mari", true, false)
 	var gcb: CheckBox = tbox.find_child("Guide", true, false) if tbox != null else null
 	var gov: OptionButton = tbox.find_child("GuideOver", true, false) if tbox != null else null
