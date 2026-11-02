@@ -5,6 +5,10 @@ the fix.
 
 ## The prop generator's trees (2026-11-02)
 
+- **A bush is leafy to the ground, so its leaves go on every node, stems too:** the first azalea balls floated, a
+  cloud of leaves over bare sticks, because the cards hung only on the last order of twigs, as a tree's do. A clipped
+  bush carries leaves along every branch and stem (`leaves.on: all`), and the clip cuts branches, not the leaves off
+  them.
 - **A spray hangs by its cut stem, and "the thin end" isn't it:** the first realistic trees hung most fir sprays by
   their bushy end (the user caught it in the atlas). Measured by the outline's width, a spray's cut end looks wide
   (its side shoots angle back past the stem) and its far end narrow (a point of needles). What marks the stem is

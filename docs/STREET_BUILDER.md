@@ -175,6 +175,14 @@ a chunk merged again only when one of its pieces did (moving a building on that 
 CPU drawing). The look is flat-shaded at dusk by default: the sky, a hemisphere, the lit windows and signs glowing, the nearest
 sixteen lamps and shop fronts lighting the street (AgX, as the Godot look).
 
+## 5a2. A street dressed with trees and bushes (a test, 2026-11-02)
+
+`python tools/godot/street_dress.py --street hill_motel` (the desk's server running, the props made) puts the prop
+generator's trees along a street's pavements by the generator's own road curve, bushes and tufts at the pavements'
+back edges and kerbs, and pictures every shot by day and by night in Godot (PROPGEN §18; the sheet
+`docs/godot_sheets/2026-11-02_hill_motel_dressed.jpg`). It writes `placements.json`, each tree and bush with its
+place on the street, the start for the street's own `tree` stand-ins becoming real trees in the Godot drop.
+
 ## 5b. Into Godot: drop the .glb in
 
 **Export .glb** (or `node tools/director/streetexport.mjs --street <name>`) writes one file to drop into a Godot

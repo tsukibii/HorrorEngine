@@ -10,7 +10,7 @@ to a clear stem (`clear`), and a young one is held by stakes (`stakes`) in a tre
      "stakes": "torii", "pit": "kerb", "spread": 1.0, "droop": 1.0, "density": 1.0, "crown": 1.0,
      "leaves": {"size": 0.42, "count": 1800, "tint": null}, "bark": {"color": null, "relief": 1.0}}
 
-    "kind": "zelkova" | "ginkgo" | "cherry" | "camphor" | "plane" | "maple" | "crape_myrtle" | "pine" | "cedar" | "dead"
+    "kind": "zelkova" | "ginkgo" | "cherry" | "camphor" | "plane" | "maple" | "crape_myrtle" | "pine" | "cedar" | "dead" | "azalea" | "shrub" | "grass"
     "season": "summer" | "autumn" | "spring" | "winter"
     "stakes": "none" | "torii" | "tripod" | "single"
     "pit": "none" | "kerb" | "soil"
@@ -21,7 +21,10 @@ tile drawn by code), `tile` metres a repeat, `tint`, `pbr_relief` (`relief` is t
 own), `droop` is gravity on them, `density` how many, `crown` their length, `levels` how many orders of branches (2 or
 3; the last order carries the leaves, meshed only when the tree is bare unless `twigs` says); `lean` degrees off the
 vertical; `pollard` cuts a plane tree back to knuckles with a broom of shoots; `multi` grows several stems from the
-ground (a crape myrtle). Winter and the dead tree are bare. The same seed grows the same tree; another seed another one.
+ground (a crape myrtle; `spread_m` how far apart, or `clump` [w, d] metres the patch they stand in: a hedge). **Bushes**
+are the same growth kept small: `azalea` (a clump of short stems, `clip` {"kind": "ball", "r"} or {"kind": "box", "w",
+"d", "h"} metres cuts every branch and card to the shape: the street's clipped balls and hedges; pink flowers in
+spring), `shrub` (loose, at a path's edge), `grass` (a tuft of blades on a few cards, no wood). Winter and the dead tree are bare. The same seed grows the same tree; another seed another one.
 """
 import math
 
@@ -192,6 +195,43 @@ SPECIES = {
         "bark": {"style": "scaly", "color": "#6b5a4e", "crack": "#2a2320", "plate": "#8a6e5a", "relief": 1.4, "pbr": "pbr/bark/Bark014_1K-PNG"},
         "pipe": {"end": 0.0035, "growth": 0.9, "power": 2.4},
     },
+    "azalea": {  # ツツジ: the street's clipped bush, a clump of short stems in a ball or a hedge, small dark leaves, pink in May
+        "height": 0.75, "clear": 0.0, "radius": 0.014, "trunk": {"frac": 0.3, "shape": 0.8, "randomness": 0.8, "up": 0.5}, "multi": 7, "spread_m": 0.16,
+        "levels": [
+            {"start": 0.0, "end": 1.0, "density": 7.0, "length": {"from": 0.55, "to": 0.32}, "angle": [35, 75], "start_radius": 0.55, "end_radius": 0.3,
+             "randomness": 0.55, "gravity": 1.0, "stiffness": 0.2, "split": 0.7, "split_angle": 40, "split_radius": 0.85, "up": 0.35,
+             "flatness": 0.2, "break": 0.01, "resolution": 9},
+            {"start": 0.15, "density": 12.0, "length": [0.22, 0.4], "angle": [40, 75], "start_radius": 0.5, "end_radius": 0.3,
+             "randomness": 0.55, "gravity": 1.0, "stiffness": 0.2, "split": 0.5, "split_angle": 45, "split_radius": 0.85, "up": 0.3,
+             "flatness": 0.2, "break": 0.02, "resolution": 12}],
+        "leaf": {"shape": "elliptic", "mm": (30, 14), "card": 0.2, "cluster": 11, "gloss": 0.5, "count": 1100, "on": "all",
+                 "colors": {"summer": ["#3f6a2a", "#5a8a3a"], "spring": ["#4a7a30", "#6a9c42"], "autumn": ["#4a6a2c", "#8a6a2a"]},
+                 "flowers": "spring", "flower": "#e8508a"},
+        "clip": {"kind": "ball", "r": 0.42},
+        "bark": {"style": "smooth", "color": "#6a5a4a", "relief": 0.4, "pbr": "pbr/bark/Bark014_1K-PNG", "tint": "#8a7a6a"},
+        "pipe": {"end": 0.0018, "growth": 0.3, "power": 2.3},
+    },
+    "shrub": {  # a loose shrub at a path's edge: a few stems from the ground, open, leafy at the ends
+        "height": 1.3, "clear": 0.0, "radius": 0.016, "trunk": {"frac": 0.45, "shape": 0.8, "randomness": 0.9, "up": 0.45}, "multi": 5, "spread_m": 0.2,
+        "levels": [
+            {"start": 0.05, "end": 1.0, "density": 5.0, "length": {"from": 0.5, "to": 0.3}, "angle": [35, 70], "start_radius": 0.55, "end_radius": 0.3,
+             "randomness": 0.6, "gravity": 3.0, "stiffness": 0.15, "split": 0.6, "split_angle": 40, "split_radius": 0.85, "up": 0.3,
+             "flatness": 0.25, "break": 0.02, "resolution": 7},
+            {"start": 0.2, "density": 8.0, "length": [0.2, 0.36], "angle": [40, 75], "start_radius": 0.5, "end_radius": 0.3,
+             "randomness": 0.6, "gravity": 2.0, "stiffness": 0.15, "split": 0.4, "split_angle": 45, "split_radius": 0.85, "up": 0.25,
+             "flatness": 0.3, "break": 0.03, "resolution": 9}],
+        "leaf": {"shape": "ovate", "mm": (44, 24), "serrate": True, "card": 0.28, "cluster": 9, "gloss": 0.5, "count": 800, "on": "all",
+                 "colors": {"summer": ["#4a7c2f", "#6a9e42"], "spring": ["#7fb04a", "#a6cc62"], "autumn": ["#b8702a", "#d0a040", "#8a4a22"]}},
+        "bark": {"style": "smooth", "color": "#6f6256", "relief": 0.4, "pbr": "pbr/bark/Bark006_1K-PNG", "tint": "#9a8a78"},
+        "pipe": {"end": 0.002, "growth": 0.3, "power": 2.3},
+    },
+    "grass": {  # a tuft of grass or weeds poking out of a path's edge: no wood, blades drawn on a few cards
+        "height": 0.4, "clear": 0.0, "radius": 0.01, "trunk": {"frac": 0.3, "shape": 0.8, "randomness": 0.5, "up": 0.5}, "levels": [],
+        "leaf": {"shape": "grass", "mm": (300, 300), "card": 0.42, "cluster": 1, "gloss": 0.6, "count": 9,
+                 "colors": {"summer": ["#6f9a3c", "#9ab852"], "spring": ["#7fb048", "#a8cc62"], "autumn": ["#b09a44", "#ccb060"]}},
+        "bark": {"style": "smooth", "color": "#6f6256", "relief": 0.4},
+        "pipe": {"end": 0.002, "growth": 0.3, "power": 2.3},
+    },
     "dead": {  # a dead tree: bare, bleached, its branches broken short, bending down
         "height": 7.0, "clear": 2.2, "radius": 0.16, "trunk": {"frac": 0.75, "shape": 0.7, "randomness": 0.9, "up": 0.5},
         "levels": [
@@ -225,21 +265,33 @@ def grow(spec, sp, seed):
     k = H / sp["height"]                                     # the species' numbers scaled to this height
     clear = float(spec.get("clear", sp["clear"] * k))
     tr = sp["trunk"]
-    tlen = max(H * tr["frac"], clear + 0.8)
+    tlen = max(H * tr["frac"], clear + (0.8 if H > 2.5 else 0.1))
     r0 = float(spec.get("radius", sp["radius"] * k ** 1.3))
     lean = float(spec.get("lean", 0.0))
     stems = []
     multi = int(spec.get("multi", sp.get("multi", 1)))
+    spread = float(spec.get("spread_m", sp.get("spread_m", r0 * 0.9)))
+    clump = spec.get("clump", sp.get("clump"))
+    rs = N.rng(seed, "stems")
+    res_t = 3 if H > 2.5 else 8                                  # a bush's stems are short: finer nodes
     for i in range(max(1, multi)):
         a = 2 * math.pi * i / max(1, multi) + 0.4
         d = UP.copy()
+        origin = (0.0, 0.0, 0.0)
         if multi > 1:                                          # a clump: each stem leans out from the middle
-            d = T._unit(UP + np.array([math.cos(a), math.sin(a), 0.0]) * 0.28)
+            if clump:
+                ox, oy = float(rs.uniform(-0.5, 0.5)) * float(clump[0]), float(rs.uniform(-0.5, 0.5)) * float(clump[1])
+                origin = (ox, oy, 0.0)
+                out = np.array([ox / max(float(clump[0]), 1e-6), oy / max(float(clump[1]), 1e-6), 0.0])
+                d = T._unit(UP + out * 0.3 + np.array([math.cos(a), math.sin(a), 0.0]) * 0.1)
+            else:
+                origin = (math.cos(a) * spread, math.sin(a) * spread, 0.0)
+                d = T._unit(UP + np.array([math.cos(a), math.sin(a), 0.0]) * 0.28)
         elif lean:
             d = T._unit(UP + np.array([math.cos(a), math.sin(a), 0.0]) * math.tan(math.radians(lean)))
         T.trunk(stems, seed * 31 + i, length=tlen * (1.0 if multi == 1 else 0.8 + 0.4 * (i % 2)), start_radius=r0 / (1 if multi == 1 else 1.4),
-                end_radius=r0 * 0.12, shape=tr["shape"], resolution=3, randomness=tr["randomness"], up_attraction=tr["up"], creator=0,
-                origin=(0.0, 0.0, 0.0) if multi == 1 else (math.cos(a) * r0 * 0.9, math.sin(a) * r0 * 0.9, 0.0), direction=d)
+                end_radius=r0 * 0.12, shape=tr["shape"], resolution=res_t, randomness=tr["randomness"], up_attraction=tr["up"], creator=0,
+                origin=origin, direction=d)
     levels = sp["levels"][:int(spec.get("levels", len(sp["levels"])))]
     if spec.get("pollard"):
         levels = _pollard_levels(levels)
@@ -265,7 +317,39 @@ def grow(spec, sp, seed):
     _trunk_floor(stems, r0 / (1 if multi == 1 else 1.4))
     if spec.get("pollard"):
         _knuckles(stems, 1)
+    clip = spec.get("clip", sp.get("clip"))
+    if clip:
+        _clip(stems, clip)
     return stems, ids
+
+
+def _clip(stems, clip):
+    """A clipped bush: every branch whose end lies outside the shape is cut off with all it carries (`clip`: {"kind":
+    "ball", "r", "z" (its middle's height, 0.85 r if not given)} or {"kind": "box", "w", "d", "h"} metres)."""
+    kind = clip.get("kind", "ball")
+    if kind == "box":
+        w, d, h = float(clip.get("w", 1.5)), float(clip.get("d", 0.6)), float(clip.get("h", 0.6))
+
+        def inside(p):
+            return abs(p[0]) <= w / 2 and abs(p[1]) <= d / 2 and p[2] <= h
+    else:
+        r = float(clip.get("r", 0.4))
+        cz = float(clip.get("z", r * 0.85))
+
+        def inside(p):
+            return p[0] * p[0] + p[1] * p[1] + (p[2] - cz) ** 2 <= r * r
+
+    def prune(node, pos):
+        keep = []
+        for child, pip in node.children:
+            cpos = pos + node.direction * node.length * pip
+            if inside(child.end(cpos)):
+                prune(child, cpos)
+                keep.append((child, pip))
+        node.children = keep
+
+    for st in stems:
+        prune(st.node, st.position)
 
 
 def _trunk_floor(stems, r0):
@@ -408,9 +492,10 @@ def leaf_cards(stems, ids, leaf, spec, seed, isls, mat, bare_tips=False):
     the crown, a cluster of the texture drawn on it, its normal rounded over the crown so the mass lights as one."""
     r = N.rng(seed, "leaves")
     last = ids[-1]
+    every = leaf.get("on") == "all"                          # a bush: leaves along every branch and stem, to the ground
     cand = []
     for node, pos, parent in T.walk(stems):
-        if node.creator == last or (node.creator != 0 and node.is_leaf()):
+        if every or node.creator == last or (node.creator != 0 and node.is_leaf()):
             cand.append((node.end(pos), node.direction, node.radius, node.is_leaf()))
     if not cand:
         return None, None
@@ -539,6 +624,60 @@ def pit_mesh(kind, size, I):
 
 # ---- the family ----------------------------------------------------------------------------------------------------------------
 
+def palette_of(leaf, season):
+    return (leaf.get("colors") or {}).get(LEAF_SEASON.get(season) or "summer") or ["#4d7a2c", "#6a9a3a"]
+
+
+def make_grass(spec, sp, th, seed, season, leaf, palette):
+    """A tuft: `count` cards of blades standing round the foot, leaning out, each a cluster of grass drawn by code (or a
+    set's leaves, `leaves.set`), no wood at all."""
+    r = N.rng(seed, "grass")
+    size = float(leaf.get("size", leaf["card"])) * float(spec.get("height", sp["height"])) / sp["height"]
+    card_mm = size * 1000.0
+    th.material("leaf", "paint", alpha="clip", double=True, color=palette[0], rough=float(leaf.get("gloss", 0.6)))
+    isls = [th.island(f"leaf{i}", card_mm, card_mm, mat="leaf") for i in range(4)]
+    th.pack()
+    n = int(leaf.get("count", 9))
+    corners, uvs, normals = [], [], []
+    for i in range(n):
+        a = 2 * math.pi * i / n + float(r.uniform(-0.3, 0.3))
+        out = np.array([math.cos(a), math.sin(a), 0.0])
+        tilt = float(r.uniform(0.15, 0.45))
+        up = T._unit(UP * (1 - tilt) + out * tilt)
+        nrm = T._unit(out * 0.6 + np.array([-math.sin(a), math.cos(a), 0.0]) * float(r.uniform(-0.5, 0.5)) + UP * 0.1)
+        side = np.cross(up, nrm)
+        side = T._unit(side)
+        w = size * float(r.uniform(0.8, 1.15))
+        foot = out * float(r.uniform(0.0, 0.08)) - UP * 0.01
+        c = np.stack([foot - side * w / 2, foot + side * w / 2, foot + side * w / 2 + up * w, foot - side * w / 2 + up * w])
+        corners.append(c)
+        cell = isls[int(r.integers(4))]
+        flip = r.random() < 0.5
+        uu = np.array([1, 0, 0, 1], float) if flip else np.array([0, 1, 1, 0], float)
+        uvs.append(cell.to_uv(uu, np.array([0, 0, 1, 1], float)))
+        normals.append(np.repeat(T._unit(out * 0.5 + UP * 0.85)[None], 4, 0))
+    V = np.concatenate(corners)
+    m = M.Mesh(V, np.arange(len(V)).reshape(-1, 4), np.stack(uvs), mats=["leaf"])
+    m.a["rest"] = V.copy()
+    m.a["normal"] = np.concatenate(normals)
+    th.low = M.join([m], ["leaf"])
+    th.high = None
+    th.pose = "stand"
+    th.anchor = np.zeros(3)
+    th.bake_ao = False
+    th.mats["leaf"]["wear"] = {k: 0.0 for k in ("grime", "dirt", "dust", "scratches", "edges", "stains", "fade")}
+    th.sockets["base"] = ((0.0, 0.0, 0.0), (0, 0, 1))
+    th.view = {"azim": -32, "elev": 12, "lens": 60, "fill": 0.9}
+    th.tree = {"kind": "grass", "season": season, "height_m": round(size, 2), "nodes": 0, "cards": n}
+
+    def paint(fr):
+        for i, isl in enumerate(isls):
+            paint_cluster(fr[isl.name], leaf, palette, season, seed * 4 + i, "grass")
+
+    th.paint = paint
+    return th
+
+
 def make(spec, th):
     seed = int(spec.get("seed", 0))
     kind = spec.get("kind", "zelkova")
@@ -551,6 +690,8 @@ def make(spec, th):
     bark = dict(sp["bark"])
     bark.update(spec.get("bark") or {})
     leafy = LEAF_SEASON.get(season) is not None and int(leaf.get("count", 1)) > 0
+    if kind == "grass":
+        return make_grass(spec, sp, th, seed, season, leaf, palette_of(leaf, season))
     stems, ids = grow(spec, sp, seed)
     twigs = spec.get("twigs", "auto")
     meshed = set(ids) if (not leafy or twigs == "mesh" or len(ids) <= 2) and twigs != "cards" else set(ids[:-1])
@@ -894,6 +1035,25 @@ def paint_cluster(f, leaf, palette, season, seed, kind):
         c = cuts[int(rng.integers(len(cuts)))]
         LS.lay(f, c, (tip[0], tip[1] - 0.02 * H), rng.uniform(-14, 14), min(L * 0.9, H - tip[1] + 0.02 * H), tint=_hue_tint(c, leaf),
                flip=rng.random() < 0.5, shade=float(rng.uniform(0.85, 1.08)))
+        return
+    if shape == "grass":
+        # a tuft of blades from the card's foot: each a bent thin wedge, green at the root, paler and browner at the tip
+        n = int(rng.integers(26, 40))
+        for i in range(n):
+            a0 = rng.uniform(-40, 40) + rng.normal(0, 6)
+            ln = H * rng.uniform(0.45, 0.95)
+            bend = rng.uniform(-0.3, 0.3) + (0.25 if a0 > 0 else -0.25) * rng.uniform(0.4, 1.0)
+            x0 = W / 2 + rng.uniform(-W * 0.08, W * 0.08)
+            pts, wds = [(x0, 0.0)], []
+            for t in (0.3, 0.6, 0.85, 1.0):
+                aa = math.radians(a0 + bend * 90 * t * t)
+                pts.append((x0 + math.sin(aa) * ln * t, math.cos(aa) * ln * t))
+            c0 = cols[int(rng.integers(len(cols)))] * rng.uniform(0.85, 1.1)
+            tip = np.clip(c0 * np.array([1.25, 1.05, 0.6]), 0, 1)
+            for k in range(len(pts) - 1):
+                t = k / (len(pts) - 1)
+                col = c0 * (1 - t) + tip * t
+                f.line([pts[k], pts[k + 1]], 3.2 * (1 - 0.7 * t) + 0.6, color=_hex(col), opacity=1.0, rough=gloss, height=0.1)
         return
     if shape == "needles":
         # tufts: needles radiating from each twig's end, each a thin line, the tufts kept inside the card

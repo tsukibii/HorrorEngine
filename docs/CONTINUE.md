@@ -29,10 +29,14 @@ any prop under the game's blue moon and in the dark under the flashlight from th
 `docs/godot_sheets/2026-11-02_trees.jpg` and `_trees_night.jpg`). Then the user pushed three ambientCG bark sets and
 four leaf sets (`pbr/bark/`, `pbr/leaf/`): every species' bark is now a real one by default (`bark.pbr`, the drawn
 tile behind `pbr: null`), and the leaves have a realistic category (`*_real`, nine recipes with a new cedar: the sets'
-own leaves cut out by `tools/propgen/leafset.py` and hung along the twigs, hued to the season). Next, if the user wants: their own look at the trees on the 3090 (the page shows
+own leaves cut out by `tools/propgen/leafset.py` and hung along the twigs, hued to the season). Then bushes (azalea
+balls and hedges by `clip`, a loose shrub, grass tufts) and `tools/godot/street_dress.py`, which dressed the hill
+road with trees and bushes and pictured it by day and night (`docs/godot_sheets/2026-11-02_hill_motel_dressed.jpg`;
+the judgement in PROPGEN §18: scale and shadows carry it, the cards show up close, the green is a shade bright). Next, if the user wants: their own look at the trees on the 3090 (the page shows
 them as cards, `python tools/propgen/serve.py`), wind on the cards (a vertex shader in the look plugin), a bush family
-(azalea hedges, clipped balls), the street builder's `tree` stand-in swapped for a made tree by the Godot drop, lower
-LODs (the twigs' sides, fewer cards) for a street of them.
+(azalea hedges, clipped balls), the street builder's `tree` stand-in swapped for a made tree by the Godot drop (street_dress's `placements.json` is
+the shape of it), a nearer card set for crowns at the player's face, lower LODs (the twigs' sides, fewer cards) for a
+street of them, bushes that know a door from a wall.
 
 ## 0. `enhance-prop-editor` (2026-11-01, late night): the prop generator's picture editor (tsukibii/HorrorEngine#10, not merged yet)
 

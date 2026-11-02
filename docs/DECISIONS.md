@@ -18,6 +18,13 @@ The user's answers, newest first. They override the plan, the research and the d
   shared with you for the leaves"**: step one, every species' bark is one of the three ambientCG bark sets by
   default (`pbr/bark/`, PROPGEN §18; the drawn tile stays behind `"bark": {"pbr": null}`); step two, a realistic
   category of trees whose leaf cards are sprays laid from the leaf sets' own leaves (`pbr/leaf/`).
+- **"Just for testing, can you take one of the small streets we've designed in the street creator (I think the single
+  road curved one), and add some trees and judge it from aestheticism. Also using the techniques you already have
+  could you create some small bushes and shrubs as normal roads and paths normally have a little bit of shrubs poking
+  out from paths etc"**: the hill road (`hill_motel`, the one road that bends and climbs) dressed by
+  `tools/godot/street_dress.py` and pictured by day and night (`docs/godot_sheets/2026-11-02_hill_motel_dressed.jpg`,
+  the judgement in PROPGEN §18); bushes as the tree family's `azalea` (clipped to a ball or a hedge's box), `shrub`
+  and `grass` kinds, nine recipes.
 - **"make sure generated trees also look good in night both dark night (flashlight style), or more of a blue hue
   atmospheric night"**: `propgen.py godot --night` pictures any prop in Godot under the game's blue moonlit night
   and in the dark under the player's flashlight from the player's eye (PROPGEN §18); the sixteen trees' sheet is

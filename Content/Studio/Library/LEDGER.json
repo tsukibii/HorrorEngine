@@ -20,6 +20,30 @@
   "source": "The Base Mesh (M3-org/base-meshes)",
   "url": "https://raw.githubusercontent.com/M3-org/base-meshes/main/models/wooden_chair_01/wooden_chair_01.glb"
  },
+ "props/azalea_ball": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe azalea_ball (Content/Studio/Props/presets.json)"
+ },
+ "props/azalea_flowering": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe azalea_flowering (Content/Studio/Props/presets.json)"
+ },
+ "props/azalea_hedge": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe azalea_hedge (Content/Studio/Props/presets.json)"
+ },
+ "props/azalea_low": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe azalea_low (Content/Studio/Props/presets.json)"
+ },
  "props/beer_can": {
   "date": "2026-10-30",
   "kind": "mesh",
@@ -332,6 +356,18 @@
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe glass_tumbler (Content/Studio/Props/presets.json)"
  },
+ "props/grass_dry": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe grass_dry (Content/Studio/Props/presets.json)"
+ },
+ "props/grass_tuft": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe grass_tuft (Content/Studio/Props/presets.json)"
+ },
  "props/hokora": {
   "date": "2026-10-31",
   "kind": "mesh",
@@ -601,6 +637,24 @@
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe shimenawa_old (Content/Studio/Props/presets.json)"
+ },
+ "props/shrub_autumn": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe shrub_autumn (Content/Studio/Props/presets.json)"
+ },
+ "props/shrub_loose": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe shrub_loose (Content/Studio/Props/presets.json)"
+ },
+ "props/shrub_real": {
+  "date": "2026-11-02",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe shrub_real (Content/Studio/Props/presets.json)"
  },
  "props/soda_can": {
   "date": "2026-10-30",
