@@ -53,6 +53,7 @@ HUMAN = ROOT / "GodotPlugins" / "HumanShaders"
 SFX = ROOT / "Content" / "Studio" / "SFX"
 LIVES = ROOT / "Content" / "Studio" / "Life" / "lives.json"
 SOMA = ROOT / "Content" / "Studio" / "soma77.json"
+ANIM_GROUPS = ["IDLE", "WALK", "SIT", "STAND UP", "TALK", "LOOK & SEARCH", "OTHER"]   # the sample's clips on the Animate tab, in its order
 SAMPLE_FACES = ["pout_and_glance", "pout_and_glance_loop"]                # the faces the sample game plays (Mari rests in the loop)
 CHECK = ROOT / "Saved" / "Godot" / "_director_check"
 GUIDE_PROJECT = ROOT / "Saved" / "Godot" / "_director_guide"
@@ -717,23 +718,33 @@ def editor_check(out):
          rep.get("flowegg_cards") is True and rep.get("flowegg_made") is True and rep.get("flowegg_story") is True and rep.get("flowegg_undone") is True),
         ("the Animate tab (%s): the sample's Kimodo clips as cards %s in their groups %s, each drawn as its figure (%s); a clip's role by its name's words %s; its faces on the Face side %s"
          % (rep.get("anim_tab"), rep.get("anim_cards"), rep.get("anim_groups"), rep.get("anim_figures"), rep.get("anim_roles"), rep.get("anim_faces")),
-         rep.get("anim_tab") is True and sorted(rep.get("anim_cards") or []) == ["Clip_look_around", "Clip_sample_idle"]
-         and rep.get("anim_groups") == ["IDLE", "LOOK & SEARCH"] and rep.get("anim_figures") is True
+         rep.get("anim_tab") is True and sorted(rep.get("anim_cards") or []) == ["Clip_look_around", "Clip_mari_sit_down", "Clip_mari_sitting", "Clip_mari_stand_up",
+                                                                                 "Clip_mari_talk", "Clip_mari_walk", "Clip_mari_wave", "Clip_sample_idle"]
+         and rep.get("anim_groups") == ANIM_GROUPS and rep.get("anim_figures") is True
          and rep.get("anim_roles") == ["sit", "stand", "idle", "walk", "scare", "other"]
          and sorted(rep.get("anim_faces") or []) == ["Face_pout_and_glance", "Face_pout_and_glance_loop"]),
         ("the Face side's button starts the studio's Face page for this project (%s)" % rep.get("anim_face_page"), rep.get("anim_face_page") is True),
-        ("Mari on the Animate tab: her idle hers already, her idle and resting face read (%s); a story clip she hasn't got warned of, the library's named (%s); the look round made hers (%s)"
+        ("Mari on the Animate tab: her idle hers already, her resting face read (%s); a story clip she hasn't got warned of, the library's named (%s); a wave made hers (%s)"
          % (rep.get("anim_hers"), rep.get("anim_warned"), rep.get("anim_made")),
          rep.get("anim_hers") is True and rep.get("anim_warned") is True and rep.get("anim_made") is True),
+        ("her moves %s; a way in or out played once by its name %s; her talk cleared and filled again from the library %s, undone (%s); sitting clicked: the clips that suit it first %s; the moves in the story the game plays %s"
+         % (rep.get("anim_moves"), rep.get("anim_loops"), rep.get("anim_fill"), rep.get("anim_fill_undone"), (rep.get("anim_move_menu") or [])[:3], rep.get("anim_cast_moves")),
+         rep.get("anim_moves") == ["Idle: sample_idle", "Walk: mari_walk", "Run: —", "Sit down: mari_sit_down", "Sitting: mari_sitting", "Stand up: mari_stand_up",
+                                   "Talk: mari_talk", "Listen: —", "Look round: look_around"]
+         and rep.get("anim_loops") == [True, False, False, True] and rep.get("anim_fill") == [True, ["talk: mari_talk"], "mari_talk"] and rep.get("anim_fill_undone") is True
+         and (rep.get("anim_move_menu") or [""])[0] == "mari_sitting" and "sample_idle" in (rep.get("anim_move_menu") or []) and (rep.get("anim_move_menu") or [""])[-1].startswith("None")
+         and rep.get("anim_cast_moves") == {"idle": "sample_idle", "walk": "mari_walk", "sit_down": "mari_sit_down", "sitting": "mari_sitting", "stand_up": "mari_stand_up",
+                                            "talk": "mari_talk", "look_around": "look_around"}),
         ("a body clip and a face clip on Mari at once in the 3D view (%s): her bones and her face shapes moving together %s, put back after (%s)"
          % (rep.get("anim_preview"), rep.get("anim_together"), rep.get("anim_put_back")),
          rep.get("anim_preview") is True and isinstance(rep.get("anim_together"), list) and rep["anim_together"][0] >= 3 and rep["anim_together"][1] >= 2
          and rep.get("anim_put_back") is True),
         ("a Kimodo file dropped into animations/ while the tab is open: its card (%s), in its group in the tab's order %s" % (rep.get("anim_polled"), rep.get("anim_polled_groups")),
-         rep.get("anim_polled") is True and rep.get("anim_polled_groups") == ["IDLE", "SIT", "LOOK & SEARCH"]),
+         rep.get("anim_polled") is True and rep.get("anim_polled_groups") == ANIM_GROUPS),
         ("a card dropped on Mari: her menu %s, the drop taken back (%s); a preview left playing stopped by the save, nothing of it saved (%s)"
          % (rep.get("anim_dropped"), rep.get("anim_drop_gone"), rep.get("anim_save_stopped")),
-         rep.get("anim_dropped") == ["Her idle", "Her walk", "Hers, for the story to play", "Look at it on her (▶)"] and rep.get("anim_drop_gone") is True
+         rep.get("anim_dropped") == ["Her idle", "Her walk", "Her run", "Her sit down", "Her sitting", "Her stand up", "Her talk", "Her listen",
+                                     "Her look round   ✓ by its name", "Hers, for the story to play", "Look at it on her (▶)"] and rep.get("anim_drop_gone") is True
          and rep.get("anim_save_stopped") is True),
         ("a node's id follows its renames while it's the name's (%s), one typed by hand stays (%s)" % (rep.get("id_follows"), rep.get("id_kept")), rep.get("id_follows") == ["hs_thing", "old_key"] and rep.get("id_kept") == "my_key"),
         ("saved: the new nodes in the file, no story nodes, nothing the nodes make for themselves", rep.get("saved") is True and rep.get("saved_task") is True and rep.get("saved_nothing_made") is True),

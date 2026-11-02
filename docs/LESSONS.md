@@ -1209,3 +1209,15 @@ playing `sample_idle`, which it was. The new check (her bones and her face shape
   counted 48 bones "moving" on a frozen clip).
 - **Work out joint positions yourself when making test motions** (parent's transform times the bone's local, parents
   first): a Skeleton3D out of the tree isn't a reliable calculator for its own global poses.
+
+## A check that looked for a walk after it was over (2026-11-03)
+
+Mari's moves in DIRECTOR: "she didn't walk on her walk", twice. She did. The story's state sends her half a metre
+(0.45 s at 1.1 m/s), and the check looked after waiting a second; then, getting up off a seat, she went half a metre at
+2.6 m/s (0.2 s) and the check looked once, after her getting up and a margin. Both times she had already arrived and
+was back on her idle.
+
+- **Watch a move frame by frame from before it can start**, keeping what was seen (here: walking on her walk, at any
+  frame), and only then judge; never one look after a fixed wait, which passes or fails by how far the thing had to go.
+- **Know the distances the sample uses**: its spots are close together, so anything that walks there is over in well
+  under a second.

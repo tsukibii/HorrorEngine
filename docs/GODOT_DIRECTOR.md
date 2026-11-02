@@ -511,6 +511,29 @@ and face back exactly, and so does a save (`_apply_changes`). The Kimodo tab's i
 compile.gd warns of a story `anim` naming a clip the character hasn't got (the Animate tab named when the clip is in
 the library).
 
+**A character's moves** (docs/GODOT_ANIMATION_PLAN.md step 3, §5): what she plays by what she's doing, so no one says
+when. HSActor's `idle_motion` and `walk_motion` are two of them; the rest in `moves` (role → one of her motions, hidden
+from the Inspector): `run`, `sit_down`, `sitting`, `stand_up`, `talk`, `listen`, `look_around` (`HSActor.MOVES`, with the
+library role each takes). compile.gd writes them as the cast's `moves` (STORY_FORMAT §2; a move naming a clip she
+hasn't got warned and left out) and her behaviour no longer carries a `motion`. The runtime (play.gd `npc_want`) picks:
+a move begun once till it ends (her `sit_down` the moment her pose becomes a seat's from standing, `npc_seated`; her
+`stand_up` when a behaviour takes her off a seat, the behaviour waiting till she's up: `start_at`); walking, the
+behave's own `motion` or her walk (her run at 2.2 m/s or faster, `RUN_SPEED`); at a route's wait whose pose is look,
+search or check, her look_around; a behave's `rest`; seated, her sitting; her talk while her line is up in a scene and
+her listen while the player answers her (`speaking`, `listening`, set by scene_player.gd; a live scene's tick keeps
+choosing while it holds play); else the behave's `motion` or her idle. An empty move falls back (`MOVE_FALLBACK`: run to
+walk; sitting, talk, listen, look_around to idle; sit_down and stand_up to nothing), so a game always plays; a desk
+game's export, with no moves, plays exactly as before. The library makes a clip once-only by its name (`loops`: down,
+up, into, out...). **On the Animate tab**: a body card's menu offers every move (the one its name suits marked ✓); her
+moves are rows on the right while she's selected, a card dropped on one or a click picking from her clips and the
+library's that suit it (`HSLibrary.for_move`: the role, her folder first), **Fill the empty ones from the library**
+(`fill_moves`), each on the scene's undo; This object (Build) says how many she has, with a button to them. Measured
+(DIRECTOR): the sample's Mari has seven (a walk, sitting down, sitting, getting up, talking made on SOMA by
+make_sample.gd, and the look round); on the tab her rows, the once-only ones by name, her talk cleared and filled again
+and undone, sitting's clips first, her moves in the compiled story; in play her talk while "You found it." is up, her
+idle while the player answers (no listen), her walk as she leaves, then on a seat sitting down once and sitting, and
+getting up once before a 2.6 m/s walk (no run: her walk), held on the seat till she's up.
+
 **The Face page** (docs/GODOT_ANIMATION_PLAN.md step 2; the user: "the tooling we are using in director to upload the
 face videos... let's make it a separate page so I can save the facial mocap"): `tools/facecap/serve.py` (port 8797) is
 the desk's own server loaded as a module with the page and two routes on top, so the library's endpoints (import,
@@ -592,7 +615,6 @@ on the Director projects made from the desk's games.
 - The desk can't open a Director game, and a Director game can't go back to the desk: the scene is the game now
   (`from-desk` goes one way, §6d: making it again replaces the project).
 - From the desk (§6d): the trims and thresholds, a kit door's own model, the light zones per room.
-- Animation (§6g, docs/GODOT_ANIMATION_PLAN.md's order): a character's moves by role played by every behaviour (step
-  3), On stage per quest (4), paths and patrols drawn in the 3D view (5), reactions and scares (6), cutscenes in the
+- Animation (§6g, docs/GODOT_ANIMATION_PLAN.md's order): On stage per quest (4), paths and patrols drawn in the 3D view (5), reactions and scares (6), cutscenes in the
   level with a soft lock and its safety release (7); FBX and glTF clips and a
   picture on a grey MHR body for each card (later); the story's pickers offering the library's clips not yet hers.

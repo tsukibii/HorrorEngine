@@ -66,7 +66,7 @@ static func _walk(dir: String, who: String, out: Array, seen: Dictionary) -> voi
 		if seen.has(who + "/" + id):
 			continue
 		if ext == "npz":
-			out.append({"id": id, "path": path, "kind": "npz", "for": who, "role": role_of(id), "secs": npz_secs(path), "loop": role_of(id) in LOOPS})
+			out.append({"id": id, "path": path, "kind": "npz", "for": who, "role": role_of(id), "secs": npz_secs(path), "loop": loops(id)})
 			seen[who + "/" + id] = true
 		elif ext in ["res", "tres", "anim"]:
 			var a = load(path)
@@ -181,6 +181,38 @@ static func role_of(id: String) -> String:
 				if x.begins_with(w):
 					return r[0]
 	return "other"
+
+
+## whether a clip loops, by its name: its role's (an idle, a walk, sitting...), but not a way in or out of one (sit_down,
+## stand_up, get_into_bed: played once)
+static func loops(id: String) -> bool:
+	if not (role_of(id) in LOOPS):
+		return false
+	for w in HSDirector.snake(id).split("_", false):
+		if w in ["down", "up", "into", "out", "onto", "off"]:
+			return false
+	return true
+
+
+## the clips that suit one of a character's moves (level/actor.gd MOVES: its role, and for sitting down or sitting
+## what the name says), the ones in her own folder first
+static func for_move(move: String, who: String) -> Array:
+	var role := ""
+	for m in HSActor.MOVES:
+		if m[0] == move:
+			role = m[2]
+	var mine: Array = []
+	var others: Array = []
+	for c in body():
+		if c["role"] != role or (str(c["for"]) != "" and str(c["for"]) != who):
+			continue
+		var words := HSDirector.snake(str(c["id"])).split("_", false)
+		if move == "sit_down" and not words.has("down"):
+			continue
+		if move == "sitting" and words.has("down"):
+			continue
+		(mine if str(c["for"]) == who else others).append(c)
+	return mine + others
 
 
 ## every face clip: [{id, path, loop, secs, title}] (the loops in res://faces/loops/)

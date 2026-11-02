@@ -465,18 +465,32 @@ func _initialize() -> void:
 			return "the talk quest shows words: objective %s, to-dos %s" % [g.hud.obj.text, g.hud.tasks]
 		rt.use(true)
 		var said := false                              # "You found it." as she wears the line's face, over her rest
+		var talked := false                            # and plays her move `talk` while it's up
+		var map = load("res://addons/horrorstudio/play.gd").player_with(rt.cast_nodes["mari"], "sample_idle")
 		var k0 := 0
 		while k0 < 600 and g.hud.choice_over:
 			said = said or (rt.faces != null and rt.faces.state("mari")["over"] == "pout_and_glance")
+			talked = talked or (rt.speaking == "mari" and map != null and str(map.current_animation) == "anims/mari_talk")
 			await process_frame
 			k0 += 1
 		if not said:
 			return "her line's face never came (%s)" % [rt.faces.state("mari") if rt.faces != null else "no faces"]
+		if not talked:
+			return "she never played her talk while her line was up (speaking %s, playing %s)" % [rt.speaking, map.current_animation if map != null else "?"]
+		for i in 5:
+			await process_frame
+		if rt.listening != "mari" or str(map.current_animation) != "anims/sample_idle":   # the player answering: her listen, none: her idle
+			return "while the player answers: listening %s, she plays %s (no listen move: her idle)" % [rt.listening, map.current_animation]
 		var r := await scenes_until_play()
 		if r != "":
 			return r
+		var walked := false                            # off she goes on her walk (half a metre: watched from the answer on)
+		var walk_seen := func() -> bool:
+			var nn = g.play.npcs.get("mari")
+			return nn != null and bool(nn.get("walking", false)) and str(map.current_animation) == "anims/mari_walk"
 		k = 0
 		while not g.run["trail"].has("q_bedroom") and k < 1200:
+			walked = walked or walk_seen.call()
 			await process_frame
 			k += 1
 		for f in ["talked:t_open", "talked:mari", "answered:t_open:yes", "promised", "heard:t_open", "heard:mari"]:   # (her heard out too: Talk to…)
@@ -484,12 +498,51 @@ func _initialize() -> void:
 				return "no fact %s (trail %s)" % [f, g.run["trail"]]
 		if not g.run["trail"].has("q_bedroom"):
 			return "the bedroom quest didn't start"
-		await game_wait(1.0)
+		var c1: float = rt.clock
+		while rt.clock - c1 < 1.0:
+			walked = walked or walk_seen.call()
+			await process_frame
 		if g.hud.guide.marks.has("mari"):
 			return "the marker over Mari stayed after her step was done"
 		var npc = g.play.npcs.get("mari")
 		if npc == null or str(npc.get("as")) != "go":
 			return "Mari isn't going anywhere: %s" % [npc]
+		if not walked:
+			return "she didn't walk on her walk (playing %s)" % map.current_animation
+		return "")
+	await step("Mari's moves: a seat, sitting down (once) then sitting; getting up (once, held there) before she goes; a fast walk on her walk (no run)", func():
+		rt = g.play
+		var map = load("res://addons/horrorstudio/play.gd").player_with(rt.cast_nodes["mari"], "sample_idle")
+		var k := 0
+		while not (rt.npcs["mari"]["st"].get("arrived") != null) and k < 2000:
+			await process_frame
+			k += 1
+		rt.behave("mari", {"as": "sit", "at": "bedroom_spot"})
+		await frames(3)
+		if str(map.current_animation) != "anims/mari_sit_down":
+			return "sitting down: she plays %s" % map.current_animation
+		await game_wait(rt.move_secs("mari", "mari_sit_down") + 0.3)
+		if str(map.current_animation) != "anims/mari_sitting":
+			return "seated: she plays %s" % map.current_animation
+		var at: Vector3 = rt.npcs["mari"]["pos"]
+		rt.behave("mari", {"as": "go", "to": "mari__home", "speed": 2.6})
+		await frames(3)
+		if str(map.current_animation) != "anims/mari_stand_up" or not rt.npcs["mari"].has("start_at"):
+			return "getting up: she plays %s" % map.current_animation
+		await game_wait(rt.move_secs("mari", "mari_stand_up") * 0.6)
+		if (rt.npcs["mari"]["pos"] as Vector3).distance_to(at) > 0.01:
+			return "she left her seat before she was up"
+		var off := false                               # up, then off at 2.6 m/s (a short way: watched frame by frame)
+		var c0: float = rt.clock
+		var seen: Array = []
+		while rt.clock - c0 < rt.move_secs("mari", "mari_stand_up") * 0.4 + 1.5 and not off:
+			off = bool(rt.npcs["mari"].get("walking", false)) and str(map.current_animation) == "anims/mari_walk"
+			if seen.is_empty() or seen[-1] != str(map.current_animation):
+				seen.append(str(map.current_animation))
+			await process_frame
+		if not off:
+			return "up and off at 2.6 m/s: never walking on her walk (no run: her walk); she played %s" % [seen]
+		rt.behave("mari", {"as": "idle", "at": "bedroom_spot"})   # back where the story had sent her
 		return "")
 	await step("the locked bedroom door opens with the key; walking in ticks the task", func():
 		rt = g.play

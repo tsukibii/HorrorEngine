@@ -338,7 +338,9 @@ its skeleton.</p>
 <li><b>Behaviour</b>: how she starts: <i>idle</i> (stands where you put her), <i>sit</i> (on a <b>seat</b>), <i>path</i> (walks an HSPath), <i>patrol</i> (several paths in turn), or <i>off</i> (not there until the story brings her). <b>Face player</b> turns her to them. Later the story's <b>states</b> move her (§8).</li>
 <li><b>Sees player</b>: she watches; in her cone and range the suspicion meter fills, and when it's full the player is caught (a step or a moment can wait for it).</li>
 <li><b>Talk</b>: someone the Director file has conversations for takes a click whether this is ticked or not (the cursor says Talk) and plays the one the story offers now (§8); tick it for a click with no conversation behind it.</li>
-<li><b>Idle motion</b>, <b>walk motion</b>: animations on her AnimationPlayer, given to her on the Animate tab (below) or brought in from Kimodo (§11).</li>
+<li><b>Idle motion</b>, <b>walk motion</b>: two of her <b>moves</b> (below): what she plays standing and walking.
+Her other moves (running, sitting down, sitting, getting up, talking, listening, looking round) are set on the
+Animate tab; This object (the Build tab) says how many she has.</li>
 <li><b>Cast</b>: who she is in the story when that isn't her id (a desk game's character placed in two places is both of them).</li>
 <li><b>Expression</b>: the face she rests in, a face clip from the project's <code>faces/</code> (a loop, from
 <code>faces/loops/</code>); the Animate tab sets it too. The story puts other faces on her (a line's face, a state's, a
@@ -363,9 +365,10 @@ seconds. A folder named after a character's id (<code>animations/mari/</code>) h
 (<code>mari_sit_reading.npz</code> is a sit, <code>jumpscare_lunge.npz</code> a scare); anything else is under
 <i>Other</i>. Each says its length and whether it loops.</li>
 <li><b>Select a character and click a card</b>, or <b>drag the card onto her</b> in the 3D view or the Scene tree: a
-small menu asks what it's for: <span class="ui">Her idle</span>, <span class="ui">Her walk</span>,
-<span class="ui">Hers, for the story to play</span> (a moment's <span class="ui">Animate</span> can then play it), or
-<span class="ui">Look at it on her</span>.</li>
+small menu asks what it's for: one of her <b>moves</b> (<span class="ui">Her idle</span>, <span class="ui">Her
+walk</span>, <span class="ui">Her sitting</span>…, the one its name suits marked ✓), <span class="ui">Hers, for the
+story to play</span> (a moment's <span class="ui">Animate</span> can then play it), or <span class="ui">Look at it on
+her</span>.</li>
 <li>A Kimodo clip given to her is made on <b>her own skeleton</b> (the Character Studio's MHR, Kimodo's own, a Mixamo
 character or any model with Godot's humanoid bone map) and kept in <code>animations/_made/&lt;her id&gt;/</code>; a
 Godot animation is used as it is. Walks and runs are made in place (her path moves her).</li>
@@ -373,9 +376,23 @@ Godot animation is used as it is. Walks and runs are made in place (her path mov
 face</span> plays a face on her face shapes, both at once if you like: the body and the face never fight (the body
 moves her bones, the face her face shapes). Nothing is saved; <span class="ui">■ Stop the preview</span> puts her back
 (saving does too).</li>
+<li><b>Her moves</b> are listed on the right while she's selected: drop a card on one, or click it to pick from her
+clips and the library's that suit it; <span class="ui">Fill the empty ones from the library</span> gives each empty
+move the clip whose name suits it, hers first.</li>
 <li>On the <span class="ui">Face</span> side a click makes a face <span class="ui">Her resting face</span>, and
 <span class="ui">Make face clips (the Face page)</span> opens the page that makes them (below).</li>
 </ul>
+<p><b>Her moves in the game.</b> She plays them by what she's doing, so you never have to say when:</p>
+<table class="keys">
+<tr><td class="ui">Idle</td><td>standing (and at her spot)</td></tr>
+<tr><td class="ui">Walk, Run</td><td>going somewhere: a path, a patrol, the story sending her (Run when she's set to move fast, 2.2 m/s or more)</td></tr>
+<tr><td class="ui">Sit down, Sitting, Stand up</td><td>a seat: the way in once, the loop while she sits, the way out once (she gets up before she walks off)</td></tr>
+<tr><td class="ui">Talk, Listen</td><td>in a conversation: while her line is up, while you answer her</td></tr>
+<tr><td class="ui">Look round</td><td>at a path's stop whose pose is look, search or check</td></tr>
+</table>
+<p>An empty move plays another of hers, so the game always plays: Run plays her Walk; Sitting, Talk, Listen and Look
+round play her Idle; Sit down and Stand up are skipped. A clip whose name says it happens once
+(<code>sit_down</code>, <code>stand_up</code>, <code>get_into_bed</code>) isn't looped.</p>
 <figure class="wide"><img src="img/e_animate_faces.jpg" width="954" height="364" alt="The Animate tab's Face side: the face clips as cards, Faces and Loops"><figcaption>The Face side: the project's face clips, the loops apart.</figcaption></figure>
 <h3>Face clips from a video: the Face page</h3>
 <figure class="wide"><img src="img/f_facepage.jpg" width="1400" height="820" alt="The Face page in a browser: the library's expressions as cards, each the MHR head wearing it, Import at the top; on the right For Godot, the project's folder, a Godot project with two face clips, the faces ticked with their marks in faces/ and faces/loops/, Send 2 to the project and what was written">
@@ -405,9 +422,8 @@ blended into its start, for a face she rests in.</li>
 <pre>python tools/godot_director.py faces ~/Games/MyGame pout_and_glance pout_and_glance_loop</pre>
 <p>If the story animates someone with a clip she hasn't been given, the panel's <span class="ui">Test</span> page says
 so, and names the Animate tab when the clip is in <code>animations/</code>.</p>
-<div class="notyet"><b>Not yet.</b> A character's moves by role (sit down, sitting, stand up, talk, listen, look
-round) played by every behaviour; what she does in each quest (<i>On stage</i>); FBX and glTF clips. They're next
-(<code>docs/GODOT_ANIMATION_PLAN.md</code>).</div>
+<div class="notyet"><b>Not yet.</b> What she does in each quest (<i>On stage</i>), the in-between walked by itself;
+FBX and glTF clips. They're next (<code>docs/GODOT_ANIMATION_PLAN.md</code>).</div>
 </section>
 
 <section id="story">

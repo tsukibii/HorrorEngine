@@ -333,22 +333,129 @@ func _draw_right() -> void:
 	var a = _actor()
 	right.add_child(BuildTab._label("This character", 12, C_FAINT, true))
 	if a == null:
-		for t in ["Select a character (in the Scene tree or the 3D view), then click a card: her idle, her walk, hers, or a look at it on her.",
-				"Or drag a card onto her in the 3D view or the Scene tree.",
+		for t in ["Select a character (in the Scene tree or the 3D view), then click a card: one of her moves (her idle, her walk, sitting down...), hers for the story, or a look at it on her.",
+				"Or drag a card onto her in the 3D view or the Scene tree, or onto one of her moves here.",
 				"A body clip and a face clip play on her at once."]:
 			right.add_child(BuildTab._wrap(BuildTab._label(t, 13, C_MUTED)))
 	else:
 		right.add_child(BuildTab._label(str(a.name), 16, C_TEXT, true))
-		for spec in [["Idle", "idle_motion"], ["Walk", "walk_motion"], ["Resting face", "expression"]]:
-			var v := str(a.get(spec[1]))
-			right.add_child(BuildTab._wrap(BuildTab._label("%s: %s" % [spec[0], v if v != "" else "none yet"], 13, C_TEXT if v != "" else C_FAINT)))
-		var hers := HSLibrary.hers(a)
-		right.add_child(BuildTab._wrap(BuildTab._label("Hers: " + (", ".join(PackedStringArray(hers)) if hers.size() else "none yet"), 12, C_MUTED)))
+		right.add_child(BuildTab._label("HER MOVES", 11, C_FAINT, true))
+		var box := VBoxContainer.new()
+		box.name = "Moves"
+		box.add_theme_constant_override("separation", int(3 * _s()))
+		for m in HSActor.MOVES:
+			box.add_child(_move_row(a, m))
+		right.add_child(box)
+		var fill := BuildTab._button("Fill the empty ones from the library", false)
+		fill.name = "FillMoves"
+		fill.tooltip_text = "Each empty move takes the library's clip that suits it (by its name), hers first"
+		fill.pressed.connect(func(): fill_moves(a))
+		right.add_child(fill)
+		right.add_child(BuildTab._wrap(BuildTab._label("Drop a card on a move, or click it. An empty move plays another she has: run her walk; sitting, talking, listening and looking round her idle.", 11, C_MUTED)))
+		var ex := str(a.get("expression"))
+		right.add_child(BuildTab._wrap(BuildTab._label("Resting face: %s" % (ex if ex != "" else "none yet"), 13, C_TEXT if ex != "" else C_FAINT)))
 	if not playing.is_empty() or not face_play.is_empty():
 		var st := BuildTab._button("■ Stop the preview", true)
 		st.name = "StopPreview"
 		st.pressed.connect(stop)
 		right.add_child(st)
+
+
+## a move's row: its name and her clip for it (a card dropped on it sets it; a click: her clips and the library's that
+## suit it, or clear it)
+func _move_row(a: Node3D, m: Array) -> Control:
+	var s := _s()
+	var v: String = a.move(m[0])
+	var b := Button.new()
+	b.name = "Move_" + str(m[0])
+	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	b.text = "%s   %s" % [m[1], v if v != "" else "—"]
+	b.tooltip_text = "Her %s: %s. Drop a card here, or click to pick" % [str(m[1]).to_lower(), v if v != "" else "none yet"]
+	b.custom_minimum_size = Vector2(0, 28) * s
+	b.add_theme_font_size_override("font_size", int(12 * s))
+	b.add_theme_color_override("font_color", C_TEXT if v != "" else C_FAINT)
+	b.add_theme_stylebox_override("normal", BuildTab._box(C_CARD, C_BLUE if v != "" else C_LINE, 6, 1, 6))
+	b.add_theme_stylebox_override("hover", BuildTab._box(Color("#2B313B"), C_BLUE, 6, 1, 6))
+	b.pressed.connect(func(): move_menu(a, str(m[0]), DisplayServer.mouse_get_position()))
+	b.set_drag_forwarding(Callable(),
+		func(_at, data): return data is Dictionary and data.get("from") is Button and panel.plugin.pending_anim is Dictionary and not bool(panel.plugin.pending_anim.get("face", false)),
+		func(_at, _data):
+			var pa = panel.plugin.pending_anim
+			panel.plugin.pending_anim = null
+			if pa is Dictionary:
+				set_move(a, pa["clip"], str(m[0])))
+	return b
+
+
+## a move clicked: her clips and the library's that suit it (made hers when picked), or none
+func move_menu(a: Node3D, move: String, at: Vector2) -> void:
+	_menu.clear()
+	_acts.clear()
+	var i := 0
+	var seen := {}
+	for c in HSLibrary.for_move(move, HSDirector.id_of(a)):
+		_menu.add_item(str(c["id"]) + ("" if HSLibrary.hers(a).has(str(c["id"])) else "   (from the library)"), i)
+		_acts[i] = (func(cc): set_move(a, cc, move)).bind(c)
+		seen[str(c["id"])] = true
+		i += 1
+	for nm in HSLibrary.hers(a):
+		if not seen.has(nm):
+			_menu.add_item(str(nm), i)
+			_acts[i] = (func(n2): _set_move_name(a, move, n2)).bind(nm)
+			i += 1
+	if i == 0:
+		_menu.add_item("No clips that suit it yet: drop some into res://animations/", i)
+		_menu.set_item_disabled(0, true)
+		i += 1
+	if a.move(move) != "":
+		_menu.add_separator()
+		_menu.add_item("None (it plays another of hers)", i)
+		_acts[i] = func(): _set_move_name(a, move, "")
+	_menu.reset_size()
+	_menu.position = Vector2i(at)
+	_menu.popup()
+
+
+## the empty moves filled from the library: each the clip that suits it best (core/library.gd for_move), made hers
+func fill_moves(a: Node3D) -> Array:
+	var done: Array = []
+	for m in HSActor.MOVES:
+		if a.move(m[0]) != "":
+			continue
+		var cs := HSLibrary.for_move(m[0], HSDirector.id_of(a))
+		if cs.is_empty():
+			continue
+		var why := [""]
+		var nm := HSLibrary.make_for(a, cs[0], why)
+		if nm != "":
+			_set_move_name(a, m[0], nm, false)
+			done.append("%s: %s" % [m[0], nm])
+	panel.say("%s's moves filled: %s" % [a.name, ", ".join(PackedStringArray(done))] if done.size() else "Nothing in the library suits her empty moves yet")
+	refresh()
+	return done
+
+
+## a move set to a motion she has (or "" for none), on the scene's undo: idle and walk her idle_motion and walk_motion,
+## the rest in `moves`
+func _set_move_name(a: Node3D, move: String, nm: String, draw := true) -> void:
+	var ur = panel.plugin.get_undo_redo()
+	ur.create_action("%s's %s: %s" % [a.name, move, nm if nm != "" else "none"])
+	if move in ["idle", "walk"]:
+		ur.add_do_property(a, move + "_motion", nm)
+		ur.add_undo_property(a, move + "_motion", a.get(move + "_motion"))
+	else:
+		var mv: Dictionary = (a.moves as Dictionary).duplicate()
+		if nm == "":
+			mv.erase(move)
+		else:
+			mv[move] = nm
+		ur.add_do_property(a, "moves", mv)
+		ur.add_undo_property(a, "moves", (a.moves as Dictionary).duplicate())
+	ur.commit_action()
+	EditorInterface.mark_scene_as_unsaved()
+	if draw:
+		panel.say("%s's %s: %s" % [a.name, move.replace("_", " "), nm if nm != "" else "none (it plays another of hers)"])
+		refresh()
 
 
 ## the character selected (an HSActor, or a model inside one)
@@ -378,9 +485,18 @@ func menu_for(a: Node3D, c: Dictionary, at: Vector2) -> void:
 	if face_side or c.has("title"):
 		items = [["Her resting face", func(): set_face(a, c)], ["Look at it on her face (▶)", func(): preview_face(a, c)]]
 	else:
-		items = [["Her idle", func(): set_move(a, c, "idle")], ["Her walk", func(): set_move(a, c, "walk")],
-			["Hers, for the story to play", func(): set_move(a, c, "")], ["Look at it on her (▶)", func(): preview(a, c)]]
+		items = []
+		for m in HSActor.MOVES:                         # her moves (the one its name suits marked)
+			var mv: String = m[0]
+			items.append(["Her %s%s" % [str(m[1]).to_lower(), "   ✓ by its name" if HSLibrary.for_move(mv, HSDirector.id_of(a)).any(func(x): return x["id"] == c["id"]) else ""],
+				func(): set_move(a, c, mv)])
+		items.append(["-", null])
+		items.append(["Hers, for the story to play", func(): set_move(a, c, "")])
+		items.append(["Look at it on her (▶)", func(): preview(a, c)])
 	for i in items.size():
+		if items[i][0] == "-":
+			_menu.add_separator()
+			continue
 		_menu.add_item(items[i][0], i)
 		_acts[i] = items[i][1]
 	_menu.reset_size()
@@ -467,7 +583,7 @@ static func actor_on_ray(root: Node, from: Vector3, dir: Vector3):
 	return best
 
 
-## the clip made hers (core/library.gd make_for) and, for a slot, her idle or her walk (on the scene's undo)
+## the clip made hers (core/library.gd make_for) and, for a slot, that move of hers (on the scene's undo)
 func set_move(a: Node3D, c: Dictionary, slot: String) -> void:
 	var why := [""]
 	var nm := HSLibrary.make_for(a, c, why)
@@ -475,14 +591,9 @@ func set_move(a: Node3D, c: Dictionary, slot: String) -> void:
 		panel.say(why[0])
 		return
 	if slot != "":
-		var key := slot + "_motion"
-		var ur = panel.plugin.get_undo_redo()
-		ur.create_action("%s's %s: %s" % [a.name, slot, nm])
-		ur.add_do_property(a, key, nm)
-		ur.add_undo_property(a, key, a.get(key))
-		ur.commit_action()
+		_set_move_name(a, slot, nm, false)
 	EditorInterface.mark_scene_as_unsaved()
-	panel.say("%s is %s's %s now" % [nm, a.name, slot] if slot != "" else "%s is %s's: the story can play it (Animate %s)" % [nm, a.name, a.name])
+	panel.say("%s is %s's %s now" % [nm, a.name, slot.replace("_", " ")] if slot != "" else "%s is %s's: the story can play it (Animate %s)" % [nm, a.name, a.name])
 	refresh()
 
 

@@ -138,6 +138,8 @@ const CollideC := preload("res://addons/horrorstudio/collide.gd")
 var collide = null                        # Godot's physics for the player, the cursor and sight (game.collision: physics), else null: the boxes
 var by_node: Dictionary = {}              # a thing's node -> the thing (the physics rays' hits)
 var anim_players: Dictionary = {}         # a cast member's AnimationPlayer under the stand-in (their motions), null when there's none
+var speaking := ""                         # the cast member whose line is up in a scene (her move `talk`)
+var listening := ""                        # the one the player is answering (her move `listen`)
 
 
 func setup(game_, run_, opts: Dictionary = {}) -> void:
@@ -1822,18 +1824,92 @@ func behave(cid, spec: Dictionary) -> void:
 		hud.log("behaviour not in Play yet: %s" % as_)
 		return
 	var n := {"cid": cid, "as": as_, "s": BehavioursC.settings_of(as_, spec), "st": {}, "pos": npc["pos"] if npc != null else null, "yaw": float(npc["yaw"]) if npc != null else 0.0,
-		"level": npc["level"] if npc != null else level, "pose": "idle", "walking": false, "t0": clock}
+		"level": npc["level"] if npc != null else level, "pose": "idle", "walking": false, "t0": clock,
+		"prev_pose": str(npc.get("pose", "")) if npc != null else "sit"}   # (one who's just come in doesn't sit down: she's there)
+	if npc != null and str(npc.get("pose", "")) == "sit" and as_ != "sit":   # getting up first (her stand_up, once), then off
+		var c = move_of(str(cid), "stand_up")
+		var secs := move_secs(str(cid), c)
+		if secs > 0.0:
+			n["once"] = {"clip": c, "until": clock + secs}
+			n["hold"] = clock + secs
+			n["pose"] = "sit"
 	npcs[cid] = n
+	if n.has("hold"):
+		n["start_at"] = n["hold"]                         # the behaviour starts once she's up
+		return
 	BehavioursC.start(as_, n, self, n["s"])
 
 
-## a cast member's motion (STORY_FORMAT §4 behave's `motion`, `rest`): the animation of that name on the AnimationPlayer
-## under her stand-in, looped (a Director character's Kimodo motions, GODOT_DIRECTOR §6; an export's stand-ins have
-## none yet, so nothing plays there): `motion` while she walks or stands, `rest` at a route's waits when given
+## a cast member's moves (STORY_FORMAT §2 cast `moves`: role -> motion), each role falling back to another she has, so a
+## game always plays: run to walk; sitting, talk, listen and look_around to idle; sit_down and stand_up to nothing
+const MOVE_FALLBACK := {"run": "walk", "sitting": "idle", "talk": "idle", "listen": "idle", "look_around": "idle"}
+const RUN_SPEED := 2.2                     # m/s: a behaviour this fast plays her run (STORY_FORMAT §2 `moves`)
+const LOOK_POSES := ["look", "search", "check"]   # a route point's pose where she looks round (her look_around)
+
+
+## the motion a role plays on her: her own move, else what it falls back to (`fall` false: hers only), else null
+func move_of(cid: String, role: String, fall: bool = true) -> Variant:
+	var mv = story.cast.get(cid, {}).get("moves") if story.cast.get(cid) is Dictionary else null
+	var r := role
+	while r != "":
+		if mv is Dictionary and str(mv.get(r, "")) != "":
+			return str(mv[r])
+		r = str(MOVE_FALLBACK.get(r, "")) if fall else ""
+	return null
+
+
+## what a cast member plays now, [motion, loops] (STORY_FORMAT §4 behave's `motion` and `rest`, §2 her `moves`): a move
+## begun once (sitting down, getting up) till it ends; walking, the behaviour's motion or her walk (her run when it's
+## fast); at a route's wait that looks round, her look_around; the behaviour's `rest` while she isn't walking; sitting,
+## the behaviour's motion or her sitting; her talk while her line is up, her listen while the player answers her; the
+## behaviour's motion; her idle
+func npc_want(cid: String, n: Dictionary) -> Array:
+	var once = n.get("once")
+	if once is Dictionary and clock < float(once["until"]):
+		return [once["clip"], false]
+	var s: Dictionary = n["s"]
+	if bool(n.get("walking", false)):
+		return [s["motion"] if s.get("motion") != null else move_of(cid, "run" if float(s.get("speed", 1.1)) >= RUN_SPEED else "walk"), true]
+	var st: Dictionary = n["st"]
+	if float(st.get("wait", 0.0)) > 0.0 and str(st.get("pose", "")) in LOOK_POSES and move_of(cid, "look_around", false) != null:
+		return [move_of(cid, "look_around"), true]
+	if s.get("rest") != null:
+		return [s["rest"], true]
+	if str(n.get("pose", "")) == "sit":
+		return [s["motion"] if s.get("motion") != null else move_of(cid, "sitting"), true]
+	for k in [["talk", speaking], ["listen", listening]]:
+		if k[1] == cid and move_of(cid, k[0], false) != null:
+			return [move_of(cid, k[0]), true]
+	return [s["motion"] if s.get("motion") != null else move_of(cid, "idle"), true]
+
+
+## a once-only move's seconds on her (sitting down, getting up: its animation's length), 0 when she hasn't got it
+func move_secs(cid: String, clip) -> float:
+	var node = cast_nodes.get(cid)
+	if clip == null or node == null:
+		return 0.0
+	var ap := player_with(node, str(clip))
+	var a: Animation = ap.get_animation(anim_name(ap, str(clip))) if ap != null else null
+	return a.length if a != null else 0.0
+
+
+## her sitting down begun (her sit_down, once): the moment her pose becomes a seat's from standing
+func npc_seated(cid: String, n: Dictionary) -> void:
+	var pose := str(n.get("pose", ""))
+	if pose == "sit" and str(n.get("prev_pose", "sit")) != "sit":
+		var c = move_of(cid, "sit_down")
+		var secs := move_secs(cid, c)
+		if secs > 0.0:
+			n["once"] = {"clip": c, "until": clock + secs}
+	n["prev_pose"] = pose
+
+
+## a cast member's motion: npc_want's, the animation of that name on the AnimationPlayer under her stand-in (a Director
+## character's Kimodo motions, GODOT_DIRECTOR §6; an export's stand-ins have none yet, so nothing plays there), looped
+## unless it's a move played once
 func npc_motion(cid: String, n: Dictionary, node: Node3D) -> void:
-	var want = n["s"].get("motion")
-	if not bool(n.get("walking", false)) and n["s"].get("rest") != null:
-		want = n["s"]["rest"]
+	var w := npc_want(cid, n)
+	var want = w[0]
 	if want == null:
 		return
 	var key := cid + "|" + str(want)
@@ -1846,8 +1922,11 @@ func npc_motion(cid: String, n: Dictionary, node: Node3D) -> void:
 	var nm := anim_name(ap, str(want))
 	if nm != "" and ap.current_animation != nm:
 		var a: Animation = ap.get_animation(nm)
-		if a != null and a.loop_mode == Animation.LOOP_NONE:
-			a.loop_mode = Animation.LOOP_LINEAR              # a behaviour's motion loops (a copy in memory: the file stays as it is)
+		if a != null:
+			if bool(w[1]) and a.loop_mode == Animation.LOOP_NONE:
+				a.loop_mode = Animation.LOOP_LINEAR          # a behaviour's motion loops (a copy in memory: the file stays as it is)
+			elif not bool(w[1]):
+				a.loop_mode = Animation.LOOP_NONE            # a move played once (sitting down, getting up)
 		ap.play(nm, 0.3)
 
 
@@ -1920,7 +1999,18 @@ func move_thing(id, to) -> void:
 func draw_npcs(dt: float) -> void:
 	for cid in npcs:
 		var n: Dictionary = npcs[cid]
+		if n.has("start_at"):                         # getting up: the behaviour waits for her
+			if clock < float(n["start_at"]):
+				var node0 = cast_nodes.get(cid)
+				if node0 != null and node0.visible:
+					npc_motion(str(cid), n, node0)
+				continue
+			n.erase("start_at")
+			n["pose"] = "idle"
+			n["prev_pose"] = "idle"
+			BehavioursC.start(n["as"], n, self, n["s"])
 		BehavioursC.update(n["as"], n, self, dt, n["s"])
+		npc_seated(str(cid), n)
 		var node = cast_nodes.get(cid)
 		if node == null:
 			continue
@@ -2941,6 +3031,10 @@ func live_tick(dt: float) -> void:
 		ability_crouch(dt)
 		ability_steps(dt)
 	p.speed = p.pos.distance_to(feet) / dt if dt > 0 else 0.0
+	for cid in npcs:                                   # the cast hold still in a live scene, their moves following it (talk, listen)
+		var node = cast_nodes.get(cid)
+		if node != null and node.visible and not baked_cast.has(cid):
+			npc_motion(str(cid), npcs[cid], node)
 	var cam: Camera3D = game.camera
 	cam.global_position = eye_pos()
 	cam.rotation_degrees = Vector3(float(p.pitch), float(p.yaw) - 90.0, 0.0)

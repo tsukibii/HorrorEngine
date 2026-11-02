@@ -406,7 +406,10 @@ func play(sc: Dictionary, nid: String, sid: String) -> Variant:
 		if seg != null and seg["type"] == "reply" and not replied.has(seg["clip"]["id"]):
 			var c: Dictionary = seg["clip"]
 			replied[c["id"]] = true
+			rt.speaking = ""
+			rt.listening = str(c.get("who", "")) if c.get("who") != null else ""   # her move `listen` while the player answers
 			var id = await run_reply(c["reply"], c.get("who"))
+			rt.listening = ""
 			picks[c["id"]] = id
 			var want = c["reply"].get("timeout") if id == null else id
 			var o = null
@@ -432,6 +435,7 @@ func play(sc: Dictionary, nid: String, sid: String) -> Variant:
 			var c: Dictionary = seg["clip"]
 			var who: String = game.hud.named(story().cast_name(c["who"])) if (c.get("who") != null and not c.get("think", false)) else ""
 			game.hud.line(c.get("en", ""), who, float(seg["dur"]) + 0.3, bool(c.get("think", false)), {"retype": c.get("retype"), "breaks": c.get("breaks", false)} if c.get("think", false) else null)
+			rt.speaking = str(c["who"]) if (c.get("who") != null and not c.get("think", false)) else ""   # her move `talk` while it's up
 		elif seg != null and seg["type"] == "seam" and spoken != seg:
 			spoken = seg
 			if bk == null and not live and ["blink", "dip", "flicker"].has(seg["seam"].get("kind")):
@@ -443,6 +447,8 @@ func play(sc: Dictionary, nid: String, sid: String) -> Variant:
 				rt.cast_nodes[cid].visible = true
 		bk.close(rt)
 		bk = null
+	rt.speaking = ""
+	rt.listening = ""
 	if live:
 		rt.live_end()
 	if game.run == null:

@@ -95,10 +95,17 @@ func _own_all(_n: Node) -> void:
 	pass
 
 
-## a standing idle on Kimodo's SOMA skeleton (soma77.json): the arms down at the sides, breathing, a slow weight
-## shift, the head turning a little; [frames, 77, 3] as Kimodo saves it, looping. `look`: a look round instead (the
-## head and the chest turned to one side, then the other, once)
+## a motion on Kimodo's SOMA skeleton (soma77.json), [frames, 77, 3] as Kimodo saves it: n frames of `kind`
+## (idle: the arms down at the sides, breathing, a slow weight shift, the head turning a little; look: the head and
+## the chest turned to one side, then the other; walk: a stride in place, the arms swinging against the legs; sitting:
+## seated, breathing; sit_down and stand_up: from standing to seated and back; talk: standing, a hand rising as she
+## speaks). The joints' places worked out here, parent before child (a Skeleton3D out of the tree keeps its first pose:
+## every frame came out the same; LESSONS)
 func idle_frames(n: int, look := false) -> PackedFloat32Array:
+	return soma_frames(n, "look" if look else "idle")
+
+
+func soma_frames(n: int, kind: String) -> PackedFloat32Array:
 	var S := HSRetarget.soma()
 	var names: Array = S["names"]
 	var par: Array = []                             # each joint's parent and its rest offset from it (SOMA's rest has no turns)
@@ -110,24 +117,53 @@ func idle_frames(n: int, look := false) -> PackedFloat32Array:
 		var pr: Array = S["rest"][pi] if pi >= 0 else [0, 0, 0]
 		par.append(pi)
 		off.append(Vector3(float(r[0]) - float(pr[0]), float(r[1]) - float(pr[1]), float(r[2]) - float(pr[2])))
+	var R: Array = S["rest"]
+	var foot := Vector3(R[names.find("LeftFoot")][0], R[names.find("LeftFoot")][1], R[names.find("LeftFoot")][2])
+	var shin := Vector3(R[names.find("LeftShin")][0], R[names.find("LeftShin")][1], R[names.find("LeftShin")][2])
+	var hip0 := float(R[0][1])
+	var drop := hip0 - (shin.distance_to(foot) + foot.y)   # seated: the thighs level, the shins down, the feet on the floor
 	var out := PackedFloat32Array()
-	for f in n:                                     # the joints' places worked out here, parent before child (a Skeleton3D out of
-		var t := f / float(n)                       # the tree keeps its first pose: every frame came out the same)
+	for f in n:
+		var t := f / float(n)
 		var breathe := sin(t * TAU * 2.0)
 		var shift := sin(t * TAU)
-		var rot := {"LeftArm": Quaternion(Vector3(0, 0, 1), -1.25 + 0.03 * breathe), "RightArm": Quaternion(Vector3(0, 0, 1), 1.25 - 0.03 * breathe),
-			"LeftForeArm": Quaternion(Vector3(0, 1, 0), 0.15), "RightForeArm": Quaternion(Vector3(0, 1, 0), -0.15)}
-		if look:
-			rot["Chest"] = Quaternion(Vector3(0, 1, 0), 0.35 * sin(t * TAU))
-			rot["Head"] = Quaternion(Vector3(0, 1, 0), 0.7 * sin(t * TAU))
-		else:
-			rot["Chest"] = Quaternion(Vector3(1, 0, 0), -0.03 * breathe)
-			rot["Head"] = Quaternion(Vector3(0, 1, 0), 0.25 * sin(t * TAU + 1.0))
+		var down := {"LeftArm": Quaternion(Vector3(0, 0, 1), -1.25 + 0.03 * breathe), "RightArm": Quaternion(Vector3(0, 0, 1), 1.25 - 0.03 * breathe),
+			"LeftForeArm": Quaternion(Vector3(0, 1, 0), 0.15), "RightForeArm": Quaternion(Vector3(0, 1, 0), -0.15),
+			"Chest": Quaternion(Vector3(1, 0, 0), -0.03 * breathe), "Head": Quaternion(Vector3(0, 1, 0), 0.25 * sin(t * TAU + 1.0))}
+		var rot := down.duplicate()
+		var hips := Vector3(0.03 * shift, 0.004 * breathe, 0)
+		match kind:
+			"look":
+				rot["Chest"] = Quaternion(Vector3(0, 1, 0), 0.35 * sin(t * TAU))
+				rot["Head"] = Quaternion(Vector3(0, 1, 0), 0.7 * sin(t * TAU))
+			"walk":                                   # a stride in place: one leg forward as the other goes back, the knee bent on the way through
+				var ph := t * TAU
+				for side in [["Left", 1.0], ["Right", -1.0]]:
+					var sw: float = side[1] * sin(ph)
+					rot[side[0] + "Leg"] = Quaternion(Vector3(1, 0, 0), -0.42 * sw)
+					rot[side[0] + "Shin"] = Quaternion(Vector3(1, 0, 0), 0.55 * maxf(0.0, -side[1] * cos(ph)))
+					rot[side[0] + "Arm"] = Quaternion(Vector3(1, 0, 0), 0.3 * sw) * down[side[0] + "Arm"]
+				hips = Vector3(0, 0.02 * cos(2.0 * ph), 0)
+			"sitting", "sit_down", "stand_up":
+				var k := 1.0
+				if kind != "sitting":
+					var u := t if kind == "sit_down" else 1.0 - t
+					k = u * u * (3.0 - 2.0 * u)
+				for side in ["Left", "Right"]:
+					rot[side + "Leg"] = Quaternion(Vector3(1, 0, 0), -PI / 2.0 * k)
+					rot[side + "Shin"] = Quaternion(Vector3(1, 0, 0), PI / 2.0 * k)
+					rot[side + "Arm"] = Quaternion(Vector3(1, 0, 0), -0.5 * k) * down[side + "Arm"]
+				rot["Chest"] = Quaternion(Vector3(1, 0, 0), 0.08 * k - 0.03 * breathe)
+				hips = Vector3(0, -drop * k + 0.004 * breathe, 0.05 * k)
+			"talk":                                   # the right hand up and down as she speaks
+				rot["RightArm"] = Quaternion(Vector3(1, 0, 0), -0.45 - 0.2 * sin(t * TAU * 2.0)) * down["RightArm"]
+				rot["RightForeArm"] = Quaternion(Vector3(0, 1, 0), -0.9 - 0.3 * sin(t * TAU * 2.0))
+				rot["Head"] = Quaternion(Vector3(1, 0, 0), 0.06 * sin(t * TAU * 3.0))
 		var glob: Array = []
 		glob.resize(names.size())
 		var at := func(i: int, me: Callable) -> Transform3D:
 			if glob[i] == null:
-				var o: Vector3 = off[i] + (Vector3(0.03 * shift, 0.004 * breathe, 0) if names[i] == "Hips" else Vector3.ZERO)
+				var o: Vector3 = off[i] + (hips if names[i] == "Hips" else Vector3.ZERO)
 				var local := Transform3D(Basis(rot.get(names[i], Quaternion())), o)
 				glob[i] = (me.call(par[i], me) * local) if par[i] >= 0 else local
 			return glob[i]
@@ -217,23 +253,26 @@ func _initialize() -> void:
 	mari.face_player = true
 	mari.talk = true
 	mari.display_name = "Mari"
-	# the animation library (docs/GODOT_ANIMATION_PLAN.md §3): two Kimodo clips made on SOMA's skeleton, Mari's idle in
-	# her own folder and a look round anyone can have
-	for spec in [["res://animations/mari/sample_idle.npz", false], ["res://animations/look_around.npz", true]]:
-		var npz := ProjectSettings.globalize_path(spec[0])
+	# the animation library (docs/GODOT_ANIMATION_PLAN.md §3): Kimodo clips made on SOMA's skeleton, Mari's own in her
+	# folder (her idle, a walk, sitting down, sitting, getting up, talking) and a look round anyone can have
+	for spec in [["mari/sample_idle", "idle", 120], ["look_around", "look", 120], ["mari/mari_walk", "walk", 36], ["mari/mari_sit_down", "sit_down", 45],
+			["mari/mari_sitting", "sitting", 90], ["mari/mari_stand_up", "stand_up", 45], ["mari/mari_talk", "talk", 60]]:
+		var npz := ProjectSettings.globalize_path("res://animations/%s.npz" % spec[0])
 		DirAccess.make_dir_recursive_absolute(npz.get_base_dir())
-		HSNpz.write(npz, {"posed_joints": [[120, 77, 3], idle_frames(120, spec[1])]})
+		HSNpz.write(npz, {"posed_joints": [[spec[2], 77, 3], soma_frames(spec[2], spec[1])]})
 	if ResourceLoader.exists("res://bodies/MHR.fbx"):           # her body: the studio's MHR, her idle the library's clip made hers
 		var body: Node3D = (load("res://bodies/MHR.fbx") as PackedScene).instantiate()
 		own(body, mari, "Body")
 		_own_all(body)
 		var why := [""]
-		var nm := HSLibrary.make_for(mari, HSLibrary.clip("sample_idle"), why)
-		if nm != "sample_idle":
-			printerr("SAMPLE FAIL Mari's idle: %s" % why[0])
-			quit(1)
-			return
-		mari.idle_motion = nm
+		for clip in ["sample_idle", "mari_walk", "mari_sit_down", "mari_sitting", "mari_stand_up", "mari_talk", "look_around"]:   # her moves, made hers
+			if HSLibrary.make_for(mari, HSLibrary.clip(clip), why) != clip:
+				printerr("SAMPLE FAIL Mari's %s: %s" % [clip, why[0]])
+				quit(1)
+				return
+		mari.idle_motion = "sample_idle"
+		mari.walk_motion = "mari_walk"
+		mari.moves = {"sit_down": "mari_sit_down", "sitting": "mari_sitting", "stand_up": "mari_stand_up", "talk": "mari_talk", "look_around": "look_around"}
 		mari.height = 1.75
 	mari.expression = "pout_and_glance_loop"          # the face she rests in: a loop from the expression library (new --sample bakes it into faces/loops/)
 	var fig: HSActor = own(HSActor.new(), kitchen, "Figure")

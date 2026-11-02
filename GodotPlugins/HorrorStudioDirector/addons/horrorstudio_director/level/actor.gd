@@ -3,8 +3,9 @@
 ## brings her), whether she watches for the player (`sees_player`: the suspicion meter, "caught"), whether a click
 ## talks to her (`talk`: heard as "the player uses <her id>", an event plays the conversation). Put her model in as a
 ## child (a Character Studio export, any rigged glb; none: a stand-in figure); its AnimationPlayer's animations are
-## her motions (a Kimodo motion brought in by the dock's Kimodo tab lands there): `idle_motion` while she stands,
-## `walk_motion` while she walks.
+## her motions (a Kimodo motion brought in by the dock's Kimodo tab lands there): her **moves** (the panel's Animate
+## tab: `idle_motion` while she stands, `walk_motion` while she walks, the rest in `moves`: run, sitting down, sitting,
+## getting up, talking, listening, looking round), played by what she's doing (STORY_FORMAT §2 cast `moves`).
 @tool
 @icon("res://addons/horrorstudio_director/icons/actor.svg")
 class_name HSActor
@@ -33,6 +34,8 @@ extends Node3D
 @export var solid: bool = true
 @export var idle_motion: String = ""
 @export var walk_motion: String = ""
+## her other moves, role -> one of her motions (`MOVES`; idle and walk are the two above): set on the Animate tab
+@export var moves: Dictionary = {}
 ## the face she rests in: an expression from the studio's library brought in as a loop (res://faces/loops/<id>.tres,
 ## tools/face_export.mjs); empty: at rest. The story's states and lines put others on her face (`expr`)
 @export var expression: String = ""
@@ -43,6 +46,12 @@ extends Node3D
 ## figure mari_figure is Mari); empty: her id
 @export var cast: String = ""
 @export var hidden_at_start: bool = false
+
+## a character's moves (docs/GODOT_ANIMATION_PLAN.md §5), in the order the Animate tab shows them, with the library's
+## role a clip for each has by its name (core/library.gd role_of)
+const MOVES := [["idle", "Idle", "idle"], ["walk", "Walk", "walk"], ["run", "Run", "run"], ["sit_down", "Sit down", "sit"],
+	["sitting", "Sitting", "sit"], ["stand_up", "Stand up", "stand"], ["talk", "Talk", "talk"], ["listen", "Listen", "listen"],
+	["look_around", "Look round", "look"]]
 
 var _gen: Node3D = null
 var _key := 0
@@ -64,6 +73,8 @@ func _validate_property(p: Dictionary) -> void:
 	elif nm in ["idle_motion", "walk_motion"]:
 		p["hint"] = PROPERTY_HINT_ENUM_SUGGESTION
 		p["hint_string"] = ",".join(PackedStringArray(motion_names()))
+	elif nm == "moves":                                 # set on the Animate tab (a raw dictionary in the Inspector helps no one)
+		p["usage"] = PROPERTY_USAGE_STORAGE
 	elif nm == "expression":
 		p["hint"] = PROPERTY_HINT_ENUM_SUGGESTION
 		p["hint_string"] = ",".join(PackedStringArray(HSDirector.faces(true)))
@@ -162,6 +173,24 @@ func _setup() -> void:
 		"yaw": HSDirector.story_yaw(self), "pos": HSDirector.story_pos(global_position), "tags": tags, "d": {"name": display_name}})
 
 
+## her move for a role ("" when it's not set): idle and walk are `idle_motion` and `walk_motion`
+func move(role: String) -> String:
+	if role == "idle":
+		return idle_motion
+	if role == "walk":
+		return walk_motion
+	return str(moves.get(role, ""))
+
+
+## every move she has set, role -> motion (the story's cast `moves`)
+func all_moves() -> Dictionary:
+	var out := {}
+	for m in MOVES:
+		if move(m[0]) != "":
+			out[m[0]] = move(m[0])
+	return out
+
+
 ## the cast member she is (her `cast`, else her id)
 func cast_id() -> String:
 	return cast if cast != "" else HSDirector.id_of(self)
@@ -203,9 +232,4 @@ func behave() -> Dictionary:
 				b["routes"] = rs
 	if sees_player:
 		b["sees"] = {"angle": sight_angle, "range": sight_range}
-	var mo := walk_motion if b["as"] in ["path", "patrol"] else idle_motion
-	if mo != "":
-		b["motion"] = mo
-	if b["as"] in ["path", "patrol"] and idle_motion != "":
-		b["rest"] = idle_motion
-	return b
+	return b                                          # (her motions: her moves, the cast's `moves`: compile.gd)

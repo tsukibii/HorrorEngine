@@ -157,6 +157,13 @@ func _level_things(lv: Node, lid: String) -> void:
 				story["cast"][cid] = c
 				for m in n.motion_names():
 					story["motions"][m] = {"who": cid, "loop": true, "in_place": true, "prompt": "", "secs": 4}
+				var mv: Dictionary = n.all_moves()           # her moves (STORY_FORMAT §2 `moves`), the ones she has
+				for role in mv.keys():
+					if not n.motion_names().has(mv[role]):
+						warn(n, "%s's move %s is %s, which she hasn't got: give it to her on the panel's Animate tab" % [nid, role, mv[role]])
+						mv.erase(role)
+				if mv.size():
+					c["moves"] = mv
 				if n.behaviour in ["path", "patrol"] and n.get_node_or_null(n.path) == null and n.patrol.is_empty():
 					warn(n, "%s walks a path, but none is set: she'll stand" % nid)
 			"HSDoor":

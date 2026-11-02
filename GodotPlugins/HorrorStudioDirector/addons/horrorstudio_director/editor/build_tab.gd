@@ -25,7 +25,7 @@ const KIND_WORDS := {"HSRoom": ["a room", "Floor, walls and a ceiling from its s
 	"HSTrigger": ["an area", "The story hears the player walk into it: a moment can start here (Scares)."],
 	"HSSpot": ["a spot", "Where someone stands or is sent, or a point of a path."],
 	"HSPath": ["a path", "A way a character walks: its points, round or there and back."],
-	"HSActor": ["a character", "She stands, sits, walks, talks and watches: her settings are in the Inspector."],
+	"HSActor": ["a character", "She stands, sits, walks, talks and watches: her settings are in the Inspector, her moves (what she plays standing, walking, sitting, talking...) on the Animate tab."],
 	"HSLevel": ["a level", "A place the game plays in."], "HSGame": ["the game", "Its title, the time of day, the look: in the Inspector."]}
 
 const C_CARD := Color("#262B33")
@@ -642,6 +642,14 @@ func _side_node(n: Node, cls: String) -> void:
 		var b := _button("Add a window here", false)
 		b.icon = Glyphs.icon("window", "#9CCBFA", 16)
 		b.pressed.connect(func(): add_window(n))
+		side.add_child(b)
+	if cls == "HSActor":                               # her moves: on the Animate tab, beside the clips
+		var mv: Dictionary = n.all_moves()
+		side.add_child(_wrap(_label("Her moves: %d of %d set (%s)" % [mv.size(), HSActor.MOVES.size(), ", ".join(PackedStringArray(mv.keys())).replace("_", " ") if mv.size() else "none yet"], 13, C_TEXT)))
+		var b := _button("Her moves (the Animate tab)", false)
+		b.name = "HerMoves"
+		b.icon = Glyphs.icon("motion", "#9CCBFA", 16)
+		b.pressed.connect(func(): panel.show_page("animate"))
 		side.add_child(b)
 	_side_story_name(n)
 

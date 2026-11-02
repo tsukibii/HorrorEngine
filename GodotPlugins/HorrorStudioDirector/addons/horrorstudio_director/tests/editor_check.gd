@@ -683,6 +683,7 @@ func _flow_egg_checks() -> void:
 func _animate_checks() -> void:
 	var r := EditorInterface.get_edited_scene_root()
 	var an = panel.animate
+	DirAccess.copy_absolute(ProjectSettings.globalize_path("res://animations/look_around.npz"), ProjectSettings.globalize_path("res://animations/mari/mari_wave.npz"))   # a clip she hasn't been given yet
 	panel.show_page("animate")
 	an.face_side = false
 	dock.select(null)
@@ -691,7 +692,8 @@ func _animate_checks() -> void:
 	rep["anim_tab"] = panel.tab_buttons.has("animate") and an.visible
 	rep["anim_cards"] = an.mid.find_children("Clip_*", "Button", true, false).map(func(b): return str(b.name))
 	rep["anim_groups"] = _texts(an.mid).filter(func(x): return x == x.to_upper() and x.length() > 2)
-	rep["anim_figures"] = an.figs.size() == 2 and an.figs.all(func(st): return (st["fig"]["frames"] as Array).size() >= 40 and float(st["fig"]["secs"]) > 3.9)
+	rep["anim_figures"] = an.figs.size() == 8 and an.figs.all(func(st): return (st["fig"]["frames"] as Array).size() >= 30 and float(st["fig"]["secs"]) > 1.1)
+	rep["anim_loops"] = [HSLibrary.loops("mari_sitting"), HSLibrary.loops("mari_sit_down"), HSLibrary.loops("mari_stand_up"), HSLibrary.loops("mari_walk")]
 	rep["anim_roles"] = [HSLibrary.role_of("mari_sit_reading"), HSLibrary.role_of("MariStandUp"), HSLibrary.role_of("standing_idle"),
 		HSLibrary.role_of("walking_slow"), HSLibrary.role_of("jumpscare_lunge"), HSLibrary.role_of("return_home")]
 	an.face_side = true
@@ -705,23 +707,40 @@ func _animate_checks() -> void:
 	dock.select(mari)
 	an.refresh()
 	var idle_card: Control = an.mid.find_child("Clip_sample_idle", true, false)
-	rep["anim_hers"] = idle_card != null and _texts(idle_card).has("hers") and _texts(an.right).has("Idle: sample_idle") \
-		and _texts(an.right).has("Resting face: pout_and_glance_loop")
+	rep["anim_hers"] = idle_card != null and _texts(idle_card).has("hers") and _texts(an.right).has("Resting face: pout_and_glance_loop")
+	rep["anim_moves"] = an.right.find_children("Move_*", "Button", true, false).map(func(b): return str(b.text).replace("   ", ": "))
+	var ur := get_undo_redo()                          # a move cleared, then filled again from the library (her talk: mari_talk, by its name)
+	var glob := ur.get_history_undo_redo(ur.get_object_history_id(r))
+	an._set_move_name(mari, "talk", "")
+	var cleared: bool = mari.move("talk") == "" and str((an.right.find_child("Move_talk", true, false) as Button).text).ends_with("—")
+	var filled: Array = an.fill_moves(mari)
+	rep["anim_fill"] = [cleared, filled, mari.move("talk")]
+	glob.undo()                                        # (the fill undone, then the clearing: as the sample had her)
+	glob.undo()
+	rep["anim_fill_undone"] = mari.move("talk") == "mari_talk"
+	an.move_menu(mari, "sitting", Vector2.ZERO)        # a move clicked: the library's clips that suit it
+	var mm: Array = []
+	for i in an._menu.item_count:
+		mm.append(an._menu.get_item_text(i))
+	an._menu.hide()
+	rep["anim_move_menu"] = mm
 	var f := HSStoryFile.read()                       # the story animating her with a clip she hasn't got: warned, the library's named
-	(f["moments"] as Array).append({"id": "anim_try", "when": {"enter": "kitchen_doorway"}, "do": [{"anim": "mari", "clip": "look_around"}, {"anim": "mari", "clip": "no_such_clip"}]})
+	(f["moments"] as Array).append({"id": "anim_try", "when": {"enter": "kitchen_doorway"}, "do": [{"anim": "mari", "clip": "mari_wave"}, {"anim": "mari", "clip": "no_such_clip"}]})
 	var c1 := HSCompiler.new()
 	c1.compile(r, null, f)
 	var warns: Array = c1.problems.map(func(p): return str(p["text"])).filter(func(x): return x.contains("animates mari"))
-	var look: Dictionary = HSLibrary.clip("look_around")
-	an.set_move(mari, look, "")
+	var wave: Dictionary = HSLibrary.clip("mari_wave")
+	an.set_move(mari, wave, "")
 	var c2 := HSCompiler.new()
 	c2.compile(r, null, f)
 	var warns2: Array = c2.problems.map(func(p): return str(p["text"])).filter(func(x): return x.contains("animates mari"))
-	rep["anim_warned"] = warns.size() == 2 and warns.any(func(x): return x.contains("look_around") and x.contains("Animate tab")) \
+	rep["anim_warned"] = warns.size() == 2 and warns.any(func(x): return x.contains("mari_wave") and x.contains("Animate tab")) \
 		and warns.any(func(x): return x.contains("no_such_clip") and x.contains("no clip of that name")) and warns2.size() == 1
-	rep["anim_made"] = HSLibrary.hers(mari).has("look_around") and FileAccess.file_exists("res://animations/_made/mari/look_around.res") \
-		and load("res://addons/horrorstudio/play.gd").anim_name(HSRetarget.player_of(mari), "look_around") == "anims/look_around" \
-		and _texts(an.mid.find_child("Clip_look_around", true, false)).has("hers")
+	rep["anim_made"] = HSLibrary.hers(mari).has("mari_wave") and FileAccess.file_exists("res://animations/_made/mari/mari_wave.res") \
+		and load("res://addons/horrorstudio/play.gd").anim_name(HSRetarget.player_of(mari), "mari_wave") == "anims/mari_wave" \
+		and _texts(an.mid.find_child("Clip_mari_wave", true, false)).has("hers")
+	rep["anim_cast_moves"] = c2.story["cast"].get("mari", {}).get("moves", {})   # her moves in the story the game plays
+	var look: Dictionary = HSLibrary.clip("look_around")
 	var sk := HSRetarget.skeleton_of(mari)
 	var fo: Dictionary = load("res://addons/horrorstudio/face.gd").face_of(mari)
 	pan["anim_pose0"] = _pose(sk)
@@ -793,7 +812,8 @@ func _animate_dropped() -> void:
 	var spot = pan["anim_spot"]
 	var items: Array = []
 	for i in an._menu.item_count:
-		items.append(an._menu.get_item_text(i))
+		if an._menu.get_item_text(i) != "":
+			items.append(an._menu.get_item_text(i))
 	rep["anim_dropped"] = items
 	rep["anim_drop_gone"] = not is_instance_valid(spot) or spot.get_parent() == null
 	an._menu.hide()
@@ -806,7 +826,7 @@ func _animate_dropped() -> void:
 ## the copied file a card on its own (Godot's scan skips an .npz), in a group of its own in the tab's order; taken out
 func _animate_polled() -> void:
 	var an = panel.animate
-	rep["anim_polled"] = an.mid.find_child("Clip_sit_down_tired", true, false) != null
+	rep["anim_polled"] = an.mid.find_child("Clip_sit_down_tired", true, false) != null and not HSLibrary.loops("sit_down_tired")
 	rep["anim_polled_groups"] = _texts(an.mid).filter(func(x): return x == x.to_upper() and x.length() > 2)
 	DirAccess.remove_absolute(ProjectSettings.globalize_path("res://animations/sit_down_tired.npz"))
 	panel.show_page("build")

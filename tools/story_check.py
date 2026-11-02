@@ -93,6 +93,8 @@ MAX_HOLD = 2.5
 MAX_PATHS = 4096            # format 3 sweeps three answer styles and both secret modes
 
 
+MOVES = ("idle", "walk", "run", "sit_down", "sitting", "stand_up", "talk", "listen", "look_around")   # a cast member's moves (STORY_FORMAT §2)
+
 def asks_of(story):
     """Every ask in the stitches (nested in answers too): its id -> its answers' ids, for `answered` triggers."""
     out = {}
@@ -210,6 +212,20 @@ def check_library(story, r):
     for c, v in story.get("cast", {}).items():
         if "hair" in v:
             check_hair(r, f"cast {c}", v["hair"])
+    for c, v in story.get("cast", {}).items():          # a cast member's moves (STORY_FORMAT §2): role -> a motion, played by what she does
+        mv = v.get("moves")
+        if mv is None:
+            continue
+        if not isinstance(mv, dict):
+            r.err(f"cast {c}: moves {{role: motion}} ({', '.join(MOVES)})")
+            continue
+        for role, m in mv.items():
+            if role not in MOVES:
+                r.err(f"cast {c}: move {role!r} isn't one of {', '.join(MOVES)}")
+            elif not isinstance(m, str) or not m:
+                r.err(f"cast {c}: move {role}: a motion's name")
+            elif m not in (story.get("motions") or {}):
+                r.warn(f"cast {c}: move {role} {m!r} isn't in motions")
     bodies = [("game", story.get("game", {}).get("previs_body"))] + [(c, v.get("previs_body")) for c, v in story.get("cast", {}).items()]
     for c, v in story.get("cast", {}).items():          # a cast member's models (STORY_FORMAT §2): named variants, each a body
         ms = v.get("models")
