@@ -407,6 +407,35 @@ onto the kitchen's doorway, a clause, a command and its words from the pickers, 
 moment's request, all of it undone, and a ready-made moment dropped inside the doorway landing on it (the new area taken
 back); the Test page's Play buttons and its check of the game.
 
+## 6f. Story Flow: the quests as a flowchart (the user, 2026-11-02: "a story flowchart tab… only a flowchart of the quests' flow… so I don't have to look through them one by one to see the prerequisites")
+
+A main screen beside 2D, 3D and Script (`plugin.gd`: `_has_main_screen`, its button *Story Flow*), `editor/flow_tab.gd`
+over Godot's graph editor (`editor/flow_graph.gd`). Every quest and ending of the Director file is a card, numbered as
+the Story tab lists them, its title bar coloured by kind (the intro, a quest, a round; an ending by its kind; a desk
+game's scenes and choices marked DESK; the free roam when the last quest has no ending), its objective (or *no to-do
+list*, *its opening, then on*), its steps' count, its round, its time limit. The arrows are **the story as the
+compiler plays it** (`story/flow.gd`, `HSFlow.chart`, plain data the checks read too): a quest's `next` in order, each
+`if` a way out of its own in violet with its condition in the Manager's words, the first without one its *then* in
+blue; with none, the next quest in the list, else the first ending, else the free roam (*then*, or *otherwise* in
+grey-blue after its ifs); its time limit's *out of time* in amber; a desk choice's answers in teal; a desk game's trigger
+cutscenes (`desk.interrupts`) as cards of their own hung off the quests they listen during, their jump in red.
+
+**Laid out** (`HSFlow.layout`) left to right by how far into the story each card comes (the longest way there from the
+start, loops left out), the main path (each card's *then* from the start) on top of each column, a long story wrapped
+onto rows like lines of text (as many columns as the view shows at a readable size); an arrow going back to the left
+(the next row, a loop) is drawn round the cards as a flowchart's line (out to the right, along the gap above the card it
+goes into, in from the left, its corners rounded: `flow_graph.gd`, `_get_connection_line`). **Click a card**: on the
+right, how the player gets there (every arrow into it: its prerequisites, lit on the chart; *The game starts here*;
+*Nothing leads here* when nothing does) and where it goes. **Double-click** (or *Open it in the Story tab*): the panel's
+Story tab on it. **Cards dragged**: every card's place kept in the file's `chart` (`{id: [x, y]}`, the editor's units at
+scale 1; the Manager keeps it as it is), on the editor's undo; *Lay it out again* forgets them, *Fit the view* shows it
+all. It reads and writes the file through the Story tab (its `f` and `change`; the tab's `changed` signal draws the
+chart again), so the two never disagree, and it reads the file again when it changes on disk (the Manager saved it) or
+the running game moves on (▶ on the quest it's in, ✓ on those done). Measured (DIRECTOR's editor part): the main screen
+found and shown, a card for each of the sample's six quests and two endings, its seven arrows, the night's branch in
+words, the cards in reading order, a card's prerequisites and the start said, a card opened in the Story tab, a card
+moved (every card's place kept) and undone.
+
 ## 7. Where you are
 
 Three ways to see it: the dock's Director tab while the game runs from the editor (it sends the quest, the facts and

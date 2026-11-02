@@ -671,6 +671,14 @@ def editor_check(out):
          rep.get("story_dropped") is True and rep.get("story_drop_undone") is True),
         ("the panel's Test page: %s, and the game checked as it will play (%s)" % (" and ".join(rep.get("panel_test_plays", [])), rep.get("panel_test", "")),
          rep.get("panel_test_plays") == ["Play the game", "Play this scene"] and "6 quests" in rep.get("panel_test", "")),
+        ("the Story Flow tab beside 2D and 3D (%s): a card for every quest and ending (%s), %s arrows, the branch's words on its card (%s), the cards in reading order (%s)"
+         % (rep.get("flow_found"), rep.get("flow_cards"), rep.get("flow_wires"), rep.get("flow_branch"), rep.get("flow_order")),
+         rep.get("flow_found") is True and rep.get("flow_cards") is True and rep.get("flow_wires") == 7
+         and rep.get("flow_branch") == "if step hide is ticked" and rep.get("flow_order") is True),
+        ("a card clicked: what leads to it (%s), the start said (%s); double-clicked, open in the Story tab (%s); moved, every card's place kept (%s) and undone (%s)"
+         % (rep.get("flow_prereq"), rep.get("flow_start"), rep.get("flow_open"), rep.get("flow_moved"), rep.get("flow_move_undone")),
+         rep.get("flow_prereq") is True and rep.get("flow_start") is True and rep.get("flow_open") is True
+         and rep.get("flow_moved") is True and rep.get("flow_move_undone") is True),
         ("a node's id follows its renames while it's the name's (%s), one typed by hand stays (%s)" % (rep.get("id_follows"), rep.get("id_kept")), rep.get("id_follows") == ["hs_thing", "old_key"] and rep.get("id_kept") == "my_key"),
         ("saved: the new nodes in the file, no story nodes, nothing the nodes make for themselves", rep.get("saved") is True and rep.get("saved_task") is True and rep.get("saved_nothing_made") is True),
         ("no script errors in the editor", not errs),

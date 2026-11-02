@@ -46,6 +46,9 @@ var _sig := ""
 var _quiet := false               # a change typed in a box: saved and its words shown, the tab not drawn again
 
 
+signal changed                    # the file read again or changed here (the Story Flow tab draws it again)
+
+
 func _ready() -> void:
 	size_flags_vertical = Control.SIZE_EXPAND_FILL
 	add_theme_constant_override("separation", 0)
@@ -146,6 +149,7 @@ func _words_again() -> void:
 		var ra = box.find_child("ReadsAs", true, false) if box != null else null
 		if ra is Label:
 			ra.text = reads_as(moment_of(opened.substr(2)))
+	changed.emit()
 
 
 func quest_of(qid: String) -> Dictionary:
@@ -205,6 +209,7 @@ func refresh(read := true) -> void:
 			c.queue_free()
 	if f.has("_error"):
 		mid.add_child(_wrap(_label(str(f["_error"]), 14, C_WHEN)))
+		changed.emit()
 		return
 	var qs: Array = f.get("quests", [])
 	if ending == "" and (quest == "" or quest_of(quest).is_empty()):
@@ -214,6 +219,7 @@ func refresh(read := true) -> void:
 	_draw_right()
 	if mid_scroll != null:
 		mid_scroll.set_deferred("scroll_vertical", keep)
+	changed.emit()
 
 
 func _draw_left() -> void:

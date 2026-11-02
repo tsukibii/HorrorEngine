@@ -22,6 +22,8 @@ extends RefCounted
 ## Not every quest is a to-do list (the user, 2026-11-02): `list: false` keeps its steps unseen (a marker can show the
 ## way: a step's `guide`), and `finish: "opening"` ends it once what happens as it starts (`on_start`) is over: an
 ## intro. Every game starts with one (INTRO: a new file's first quest).
+## `chart`: where each card sits in the Story Flow tab ({id: [x, y]}, editor/flow_tab.gd), the editor's alone: the game
+## never reads it.
 
 const DEFAULT := "res://director/director.json"
 ## the first quest of every game (the user: "it always starts with a quest1 which is intro"): what happens as the game

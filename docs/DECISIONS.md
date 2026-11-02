@@ -2,6 +2,17 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-02, later (the user: the story as a flowchart)
+
+- **"Would it be hard for you to make a story flowchart tab where we can basically see the story in a flowchart… we
+  don't need the little stuff, only a flowchart of the quests' flow, we also want to make sure we can label easter egg
+  quests (special hidden quests that might just be jump scares or certain animations). We should be allowed to set up
+  the quests too in this flow (without the detail)… set the branching up in the flowchart… a quest where it's the normal
+  path but if you find the easter egg you can maybe skip a bunch of quests and jump straight to another one… then I
+  don't have to manually look through 1 by 1 in story and try see prerequisites."** Offered as a main screen in Godot's
+  editor beside 2D, 3D and Script, in three steps (the chart; setting up quests and branches in it; easter eggs and
+  skips), the user said "go for it". **Story Flow** (GODOT_DIRECTOR §6f): step 1, the chart.
+
 ## 2026-11-02 (the user: an intro first, quests that aren't lists, and a marker over what to interact with)
 
 - **"Can we update the story so it always starts with a quest1 which is intro, quests shouldn't all be task based"**

@@ -2,7 +2,8 @@
 ## own and opens the editor on the sample under xvfb): each of the dock's tabs (the
 ## Director tab on the sample's Director file, a quest picked), the Scene tree on a part's effect points, the
 ## Inspector on a thing, a character, a room, a door and a little thing, and the HorrorStudio panel (its Build tab on
-## the kettle, then on a plain model with the Inspector's What is this? box). JPEGs into $HSGUIDE_OUT; prints
+## the kettle, then on a plain model with the Inspector's What is this? box; the Player and Story tabs), and the Story
+## Flow main screen (the quests as a flowchart, the night's card clicked). JPEGs into $HSGUIDE_OUT; prints
 ## GUIDEEDITOR {...} and quits.
 @tool
 extends EditorPlugin
@@ -301,5 +302,27 @@ func _process(dt: float) -> void:
 			_shot("e_panel_intro", _panel_rect())
 			panel.custom_minimum_size.y = tall_was
 			panel.show_page("build")
+			hide_bottom_panel()                       # Story Flow: the quests as a flowchart, the whole main screen
+			EditorInterface.set_main_screen_editor("Story Flow")
+			at = t
+			phase = 19
+		19:
+			if t - at < 2.0:
+				return
+			var fl = EditorInterface.get_editor_main_screen().find_child("HorrorStudioFlow", false, false)
+			if fl != null:
+				fl.fit()
+				if fl.cards.has("q_night"):
+					fl.cards["q_night"].selected = true
+					fl.pick("q_night")
+			at = t
+			phase = 20
+		20:
+			if t - at < 1.0:
+				return
+			var fl2 = EditorInterface.get_editor_main_screen().find_child("HorrorStudioFlow", false, false)
+			if fl2 != null:
+				_shot("e_flow", fl2.get_global_rect())
+			EditorInterface.set_main_screen_editor("3D")
 			print("GUIDEEDITOR " + JSON.stringify({"made": made}))
 			get_tree().quit()

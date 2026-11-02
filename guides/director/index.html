@@ -171,8 +171,10 @@ settings, only the ones that matter for what it is.</p>
 <span class="ui">Story</span> tab (§8) or the Director Manager (§9), in the same words. <span class="ui">Test</span> has
 <span class="ui">Play the game</span>, <span class="ui">Play this scene</span> (a level open on its own plays alone, as
 <kbd>F6</kbd> does) and the game checked as it will play: what won't play right and what's worth a look, each line
-clicked to go to its node. The dock under the Inspector keeps the same views close to the Inspector (a row you pick in it opens right
-above it). Its tabs:</p>
+clicked to go to its node. At the top of the editor, beside <span class="ui">2D</span>, <span class="ui">3D</span> and
+<span class="ui">Script</span>, <span class="ui">Story Flow</span> shows the whole story as a flowchart (§6). The dock
+under the Inspector keeps the same views close to the Inspector (a row you pick in it opens right above it). Its
+tabs:</p>
 <table class="keys">
 <tr><td class="ui">Director</td><td>The story as the Director file has it: the quests in play order with their steps and what comes next, the endings, the conversations, the moments, the states. <span class="ui">▶</span> plays, <span class="ui">▶ Here</span> plays from the picked quest, <span class="ui">Manager</span> opens the page that writes it.</td></tr>
 <tr><td class="ui">Things</td><td>The items, notes, things to use, characters, rooms, areas, doors, spots, paths and lights, with their ids.</td></tr>
@@ -432,6 +434,28 @@ an easter egg waits for what the player did along the way.</p>
 </div>
 <p>An <b>ending</b> is a title and its words, and a kind: good, bad, neutral, secret, or a <i>death</i>, which offers
 a retry from the last checkpoint.</p>
+<h3>The whole story as a flowchart: Story Flow</h3>
+<p>Click <span class="ui">Story Flow</span> at the top of the editor, beside <span class="ui">2D</span>,
+<span class="ui">3D</span> and <span class="ui">Script</span>. Every quest and ending is a card, numbered as the Story
+tab lists them, and the arrows are what comes next, the way the game plays it. Each way out is a line on its card in
+its own colour: <b style="color:#4F9BE0">then</b> (blue), <b style="color:#9B7FD4">if…</b> (violet: only when that
+holds, the first that does), <b style="color:#6F86A0">otherwise</b> (grey-blue: when none of its ifs hold) and
+<b style="color:#C9962F">out of time</b> (amber: its time limit ran out). A long story wraps onto rows like lines of
+text; an arrow going on to the next row runs round the cards.</p>
+<ul>
+<li><b>Click a card</b>: on the right, how the player gets there (every arrow into it: its prerequisites, lit on the
+chart) and where it goes. The first card says the game starts there; a card nothing leads to says the player never
+gets there.</li>
+<li><b>Double-click a card</b> (or <span class="ui">Open it in the Story tab</span>): it opens in the panel's Story tab
+below, with its steps and moments.</li>
+<li><b>Drag cards</b> where you like: their places are kept with the story (<kbd>Ctrl</kbd>+<kbd>Z</kbd> puts them
+back). <span class="ui">Lay it out again</span> forgets them; <span class="ui">Fit the view</span> shows it all.</li>
+</ul>
+<figure class="wide"><img src="img/e_flow.jpg" width="1063" height="873" alt="Story Flow on the sample: the cards Intro, The key and A drink on the first row, Mari, The bedroom and Something in the hall on the second, the endings Asleep and Morning on the third; Something in the hall clicked, on the right after 5 The bedroom, then, and its two ways: if step hide is ticked to Morning, then to Asleep">
+<figcaption>The sample in Story Flow: six quests in two rows, the night's two ways to its endings. The night's card is
+clicked: what leads to it and where it goes, on the right.</figcaption></figure>
+<p>A game brought in from the desk shows its scenes and choices as cards too (marked DESK), and its trigger cutscenes
+hung off the quests they listen during; those are changed in the Director Manager.</p>
 </section>
 
 <section id="facts">

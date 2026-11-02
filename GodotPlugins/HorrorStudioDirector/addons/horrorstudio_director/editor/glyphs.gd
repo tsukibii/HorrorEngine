@@ -15,6 +15,7 @@ const G := {
 	"test_start": '<circle cx="9" cy="5" r="2.5"/><path d="M9 8v6M6 21l3-7 3 7M5 11h8"/><path d="M15.5 14.5v6l5-3z"/>',
 	"checkpoint": '<path d="M6 21V4"/><path d="M6 4h11l-2.5 4L17 12H6"/>',
 	"door": '<path d="M6 21V4h12v17M3 21h18"/><path d="M14.5 12v1"/>',
+	"flow": '<rect x="2.5" y="3.5" width="7" height="5" rx="1.2"/><rect x="14.5" y="3.5" width="7" height="5" rx="1.2"/><rect x="8.5" y="15.5" width="7" height="5" rx="1.2"/><path d="M9.5 6h5M6 8.5V12h6v3.5M18 8.5V12h-6"/>',
 	"locked_door": '<path d="M5 21V4h10v17M3 21h14"/><rect x="15" y="12" width="6" height="5" rx="1"/><path d="M16.5 12v-1.5a1.5 1.5 0 0 1 3 0V12"/>',
 	"room": '<rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 12h7M14 12h7"/>',
 	"room_big": '<rect x="2" y="4" width="20" height="16" rx="1"/><path d="M2 12h6M12 12h10"/>',

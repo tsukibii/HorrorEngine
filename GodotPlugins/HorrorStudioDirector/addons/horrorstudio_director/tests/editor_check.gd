@@ -104,6 +104,14 @@ func _process(dt: float) -> void:
 			if t - at_t < 0.5:
 				return
 			_story_after()
+			EditorInterface.set_main_screen_editor("Story Flow")   # the quests as a flowchart, a main screen beside 2D and 3D
+			at_t = t
+			phase = 34
+		34:
+			if t - at_t < 1.5:
+				return
+			_flow_checks()
+			EditorInterface.set_main_screen_editor("3D")
 			phase = 4
 		4:
 			rep["saved"] = EditorInterface.save_scene() == OK
@@ -515,6 +523,54 @@ func _story_after() -> void:
 	rep["panel_test"] = str(ct.summary.text) if ct != null else ""
 	rep["panel_test_plays"] = panel.test.find_children("*", "Button", true, false).map(func(b): return str(b.text)).filter(func(t): return t.begins_with("Play"))
 	panel.show_page("build")
+
+
+## the Story Flow tab (editor/flow_tab.gd): a card for every quest and ending, the arrows as the game plays them, the
+## branch's words on its card, the cards in reading order, a card's prerequisites, a card opened in the Story tab, a
+## card moved (every card's place kept) and undone
+func _flow_checks() -> void:
+	var fl = EditorInterface.get_editor_main_screen().find_child("HorrorStudioFlow", false, false)
+	rep["flow_found"] = fl != null and fl.visible
+	if fl == null:
+		return
+	var f := HSStoryFile.read()
+	var want: Array = []
+	for q in f.get("quests", []):
+		want.append(str(q["id"]))
+	for e in f.get("endings", []):
+		want.append(str(e["id"]))
+	rep["flow_cards"] = fl.cards.size() == want.size() and want.all(func(id): return fl.cards.has(id))
+	rep["flow_wires"] = fl.graph.get_connection_list().size()
+	var night = fl.cards.get("q_night")
+	var w0 = night.get_node_or_null("Out_0") if night != null else null
+	rep["flow_branch"] = str(w0.text) if w0 is Label else ""
+	var a: Vector2 = fl.cards["q_intro"].position_offset
+	var b: Vector2 = fl.cards["q_key"].position_offset
+	var z: Vector2 = fl.cards["q_night"].position_offset
+	rep["flow_order"] = (a.y < b.y or (is_equal_approx(a.y, b.y) and a.x < b.x)) and (b.y < z.y or (is_equal_approx(b.y, z.y) and b.x < z.x))
+	fl.pick("q_key")
+	rep["flow_prereq"] = _texts(fl.side).has("after 1 · Intro")
+	fl.pick("q_intro")
+	rep["flow_start"] = _texts(fl.side).has("The game starts here.")
+	fl.open_in_story("q_drink")
+	rep["flow_open"] = panel.story.quest == "q_drink" and panel.page == "story"
+	panel.show_page("build")
+	var before := FileAccess.get_file_as_string("res://director/director.json")
+	fl.cards["q_key"].position_offset += Vector2(0, 200)
+	fl._moved()
+	var f2 := HSStoryFile.read()
+	var chm = f2.get("chart")
+	rep["flow_moved"] = chm is Dictionary and (chm as Dictionary).size() == want.size() and chm.has("q_key")
+	get_undo_redo().get_history_undo_redo(EditorUndoRedoManager.GLOBAL_HISTORY).undo()
+	rep["flow_move_undone"] = _same(FileAccess.get_file_as_string("res://director/director.json"), before)
+
+
+## every Label's words under a node
+func _texts(n: Node) -> Array:
+	var out: Array = []
+	for c in n.find_children("*", "Label", true, false):
+		out.append(str(c.text))
+	return out
 
 
 func _moment(id: String) -> Dictionary:

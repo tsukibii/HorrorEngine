@@ -1,7 +1,8 @@
 @tool
 extends EditorPlugin
 ## The HorrorStudio Director in the editor (docs/GODOT_DIRECTOR.md): the HorrorStudio panel along the bottom (Build,
-## Story, Test: editor/panel.gd) and the Inspector's box on a model (What is this?: editor/inspector.gd), the dock
+## Story, Test: editor/panel.gd), the Story Flow main screen beside 2D, 3D and Script (the quests as a flowchart:
+## editor/flow_tab.gd), the Inspector's box on a model (What is this?: editor/inspector.gd), the dock
 ## (Director, Things, Check, Kimodo; its Guide button, and Project > Tools, open the guide: guides/director), the running game's
 ## messages (where the player is, the flags as they're set), the index of the project's ids kept as scenes are saved
 ## (the Inspector's suggestions across scenes). The nodes themselves are classes with icons (Add Child Node finds
@@ -11,11 +12,14 @@ const DockC := preload("res://addons/horrorstudio_director/editor/dock.gd")
 const PanelC := preload("res://addons/horrorstudio_director/editor/panel.gd")
 const InspectorC := preload("res://addons/horrorstudio_director/editor/inspector.gd")
 const DebuggerC := preload("res://addons/horrorstudio_director/editor/debugger.gd")
+const FlowC := preload("res://addons/horrorstudio_director/editor/flow_tab.gd")
+const Glyphs := preload("res://addons/horrorstudio_director/editor/glyphs.gd")
 const GUIDE_ITEM := "HorrorStudio Director guide"
 const PARTS := "res://addons/horrorstudio_director/parts/"
 
 var dock: Control = null
 var panel = null                     # the HorrorStudio panel (an EditorDock, the bottom slot)
+var flow = null                      # the Story Flow main screen (editor/flow_tab.gd): the quests as a flowchart
 var inspector: EditorInspectorPlugin = null
 var debugger: EditorDebuggerPlugin = null
 var pending_scare = null             # a scare card being dragged: {item, at}; its area's moment made when it lands
@@ -32,6 +36,12 @@ func _enter_tree() -> void:
 	panel.plugin = self
 	panel.dock = dock
 	add_dock(panel)                                          # the bottom, wide (it can float on a second screen)
+	flow = FlowC.new()
+	flow.name = "HorrorStudioFlow"
+	flow.plugin = self
+	flow.panel = panel
+	EditorInterface.get_editor_main_screen().add_child(flow)
+	flow.hide()                                              # shown by its button beside 2D, 3D and Script (_make_visible)
 	inspector = InspectorC.new()
 	inspector.panel = panel
 	add_inspector_plugin(inspector)
@@ -51,6 +61,9 @@ func _exit_tree() -> void:
 		EditorInterface.get_selection().selection_changed.disconnect(_on_selection)
 	if inspector != null:
 		remove_inspector_plugin(inspector)
+	if flow != null:
+		flow.queue_free()
+		flow = null
 	if panel != null:
 		remove_dock(panel)
 		panel.queue_free()
@@ -61,6 +74,26 @@ func _exit_tree() -> void:
 	if dock != null:
 		remove_control_from_docks(dock)
 		dock.queue_free()
+
+
+## the Story Flow main screen: a button beside 2D, 3D and Script (the user, 2026-11-02: "a story flowchart tab")
+func _has_main_screen() -> bool:
+	return true
+
+
+func _get_plugin_name() -> String:
+	return "Story Flow"
+
+
+func _get_plugin_icon() -> Texture2D:
+	return Glyphs.icon("flow", "#E0E0E0", 16)
+
+
+func _make_visible(visible: bool) -> void:
+	if flow != null:
+		flow.visible = visible
+		if visible:
+			flow.shown()
 
 
 func _on_selection() -> void:
