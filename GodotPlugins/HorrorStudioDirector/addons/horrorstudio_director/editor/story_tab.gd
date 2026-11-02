@@ -14,6 +14,9 @@ const BuildTab := preload("res://addons/horrorstudio_director/editor/build_tab.g
 const RUN_FILE := "user://hs_director_run.json"
 const ROOT := "res://addons/horrorstudio_director/"
 const KINDS_ENDING := ["good", "bad", "neutral", "secret", "death"]
+## how a quest ends: [its finish, the words]
+const FINISH := [["steps", "when its steps are done"], ["any", "when any one step is done"], ["opening", "when what happens as it starts is over (an intro)"],
+	["never", "when a moment ends it"]]
 const C_TEXT := Color("#E8EBF0")
 const C_MUTED := Color("#A3ACB9")
 const C_FAINT := Color("#8A93A1")
@@ -252,6 +255,10 @@ func _draw_left() -> void:
 			l.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
 			l.text = ("[color=#%s]✓ [s]%s[/s][/color]" % [C_DONE.to_html(false), words]) if done else ("[color=#%s]· %s[/color]" % [C_MUTED.to_html(false), words])
 			steps.add_child(l)
+		if str(q.get("finish", "")) == "opening":
+			steps.add_child(_label("   its opening, then on", 11, C_FAINT))
+		elif q.get("list", true) == false and not (q.get("desk") is Dictionary):
+			steps.add_child(_label("   no to-do list", 11, C_FAINT))
 		if on:
 			steps.add_child(_label("   Being edited", 11, C_BLUE))
 		var sm := MarginContainer.new()
@@ -346,6 +353,39 @@ func _draw_mid() -> void:
 		_on_commit(le, func(t): change("the quest's %s" % k[0], func(): quest_of(quest)[k[0]] = t, false))
 		g.add_child(le)
 	mid.add_child(g)
+	var qid := quest
+	var ends := HBoxContainer.new()                     # how it ends, and whether its steps are a to-do list on the screen
+	ends.add_theme_constant_override("separation", int(10 * _s()))
+	ends.add_child(_label("It ends", 12, C_FAINT))
+	var fo := OptionButton.new()
+	fo.name = "QuestFinish"
+	for spec in FINISH:
+		fo.add_item(str(spec[1]))
+	fo.select(max(0, FINISH.map(func(x): return x[0]).find(str(q.get("finish", "steps")))))
+	_blue(fo)
+	fo.item_selected.connect(func(i): change("how %s ends" % qid, func():
+		var qq := quest_of(qid)
+		if FINISH[i][0] == "steps":
+			qq.erase("finish")
+		else:
+			qq["finish"] = FINISH[i][0]))
+	ends.add_child(fo)
+	var lc := CheckBox.new()
+	lc.name = "QuestList"
+	lc.text = "Its steps as a to-do list on the screen"
+	lc.tooltip_text = "Off: the steps still count, unseen (a marker over what a step needs can show the way)"
+	lc.button_pressed = q.get("list", true) != false
+	lc.toggled.connect(func(on): change("%s's to-do list" % qid, func():
+		var qq := quest_of(qid)
+		if on:
+			qq.erase("list")
+		else:
+			qq["list"] = false))
+	ends.add_child(lc)
+	mid.add_child(ends)
+	var opening := _then_rows(q, "on_start", func(fn: Callable, redraw := true): change("what happens as %s starts" % qid, func(): fn.call(quest_of(qid)), redraw), "AS IT STARTS")
+	opening.name = "Opening"
+	mid.add_child(opening)
 	for s in q.get("steps", []):
 		var sid := str(s.get("id", ""))
 		if opened == "s:" + sid:
@@ -869,13 +909,13 @@ func flag_names() -> Array:
 	return names
 
 
-func _then_rows(o: Dictionary, key: String, apply: Callable) -> Control:
+func _then_rows(o: Dictionary, key: String, apply: Callable, tag := "THEN") -> Control:
 	var v := VBoxContainer.new()
 	v.name = "Then"
 	v.add_theme_constant_override("separation", int(6 * _s()))
 	var acts: Array = o.get(key, []) if o.get(key) is Array else []
 	var first := HBoxContainer.new()
-	first.add_child(_tag("THEN", C_THEN))
+	first.add_child(_tag(tag, C_THEN))
 	if acts.is_empty():
 		first.add_child(_label("nothing yet", 13, C_FAINT))
 	v.add_child(first)
@@ -1181,9 +1221,12 @@ func reads_as(m: Dictionary) -> String:
 
 # ---- adding -----------------------------------------------------------------------------------------------------------
 func add_quest() -> void:
-	var qid := fresh_id("q_quest")
-	change("a new quest", func():
-		(f["quests"] as Array).append({"id": qid, "title": "A new quest", "objective": "", "steps": []}))
+	var first := (f.get("quests", []) as Array).is_empty()
+	var qid := fresh_id("q_intro" if first else "q_quest")
+	change("a new quest", func():                     # (none yet: the Intro, what happens as the game opens)
+		var nq: Dictionary = HSStoryFile.INTRO.duplicate(true) if first else {"id": qid, "title": "A new quest", "objective": "", "steps": []}
+		nq["id"] = qid
+		(f["quests"] as Array).append(nq))
 	quest = qid
 	ending = ""
 	refresh(false)

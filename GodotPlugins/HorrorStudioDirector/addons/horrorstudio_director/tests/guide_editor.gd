@@ -282,6 +282,24 @@ func _process(dt: float) -> void:
 			if t - at < 0.5:
 				return
 			_shot("e_panel_talk", _panel_rect())
+			tall_was = panel.custom_minimum_size.y           # the Intro: how it ends, no list, what happens as it starts
+			panel.custom_minimum_size.y = 660 * EditorInterface.get_editor_scale()
+			panel.story.quest = "q_intro"
+			panel.story.opened = ""
+			panel.story.refresh()
+			at = t
+			phase = 17
+		17:
+			if t - at < 1.5:
+				return
+			panel.story.mid_scroll.scroll_vertical = 0
+			at = t
+			phase = 18
+		18:
+			if t - at < 0.5:
+				return
+			_shot("e_panel_intro", _panel_rect())
+			panel.custom_minimum_size.y = tall_was
 			panel.show_page("build")
 			print("GUIDEEDITOR " + JSON.stringify({"made": made}))
 			get_tree().quit()

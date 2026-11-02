@@ -11,7 +11,24 @@ the to-do built there, with the Studio's eyes from the side, a small nose and th
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-01, evening, branch `Director-Godot`): the HorrorStudio panel
+## Where it stopped last (2026-11-02, branch `Director-Godot`): talk to, the marker, an intro first
+
+After the panel (below), three asks, each checked and pushed (DECISIONS 2026-11-01, evening, and 2026-11-02):
+- **Talk to…** as a quest step and a moment's WHEN (the Story tab and the Manager): who, then when it counts (she's
+  clicked, heard out, or one conversation heard out); the facts `talked:` and `heard:` by person or conversation.
+- **The marker** (a todo's `guide`, STORY_FORMAT §4; Godot's `marker.gd`): a step's *Show a marker over it*, over what
+  its WHEN names or a thing, person or area picked. The user then asked for it plainer ("the duller version… more like
+  a vectorish style"): a flat diamond's outline on a short stem in the theme's accent as it is, bobbing on a slow
+  sine. The desk's Play doesn't draw it yet.
+- **An intro first, quests that aren't lists**: every new Director file starts with an Intro quest (`finish:
+  "opening"`: over once what happens as it starts is; `list: false`); a quest's steps shown as a to-do list or not
+  (`list`), so a talk quest needs only the marker; after the last quest with no ending, a free roam. The sample's
+  Intro is a thought and a pause; its talk quest has no objective and no list.
+
+To ask the user: the marker's look in their own play (a size, a colour of its own rather than the theme's?), and
+whether the desk's Play should draw it too.
+
+## 0. Where it stopped (2026-11-01, evening, branch `Director-Godot`): the HorrorStudio panel
 
 The user asked for a friendlier panel in Godot (DECISIONS 2026-11-01, evening): category sorted, synced to the
 scripts, drag and drop onto objects or click an object and assign. The design is the canvas "Director Panel Design"

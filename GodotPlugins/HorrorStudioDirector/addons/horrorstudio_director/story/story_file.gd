@@ -5,8 +5,8 @@ extends RefCounted
 ## by the Director Manager (tools/director_manager, a page) or by hand; the scene is the world, this is the story.
 ##
 ##   {"format": 1,
-##    "quests":  [{id, title, objective, map, start_at, card: {title, sub, time}, checkpoint, steps: [{id, text, done,
-##                fail, secs, hidden, who, guide, wrong: {say, who, fail}}], finish: steps|any|never, on_start, on_done,
+##    "quests":  [{id, title, objective, map, start_at, card: {title, sub, time}, checkpoint, list, steps: [{id, text,
+##                done, fail, secs, hidden, who, guide, wrong: {say, who, fail}}], finish: steps|any|opening|never, on_start, on_done,
 ##                time_limit, on_timeout, round: {type, secs, rule, warn, spots, seeker, loops, barks, on}, next: [{if, go}]}],
 ##    "states":  [{while, set: {<id>: {at, do, to, path, paths, sees, shown, motion, locked, open, light, state}}}],
 ##    "moments": [{id, when, if, do, once, every, during: [quest ids]}],
@@ -19,9 +19,15 @@ extends RefCounted
 ## every `if`, `while` and `when` of an achievement is a condition (core/cond.gd). A quest's `round` is a round of
 ## gameplay, the story format's `play` (§9.8: hide and seek, a chase...): the game plays it instead of the steps, its
 ## result ends the quest and is the fact `result:<quest>:<result>` its `next` can ask for.
+## Not every quest is a to-do list (the user, 2026-11-02): `list: false` keeps its steps unseen (a marker can show the
+## way: a step's `guide`), and `finish: "opening"` ends it once what happens as it starts (`on_start`) is over: an
+## intro. Every game starts with one (INTRO: a new file's first quest).
 
 const DEFAULT := "res://director/director.json"
-const EMPTY := {"format": 1, "quests": [], "states": [], "moments": [], "talk": {}, "endings": [], "achievements": [], "facts": {}}
+## the first quest of every game (the user: "it always starts with a quest1 which is intro"): what happens as the game
+## opens (a chapter card, a thought, a look round), then the next quest; no list
+const INTRO := {"id": "q_intro", "title": "Intro", "objective": "", "list": false, "finish": "opening", "on_start": []}
+const EMPTY := {"format": 1, "quests": [INTRO], "states": [], "moments": [], "talk": {}, "endings": [], "achievements": [], "facts": {}}
 
 
 ## the file as data: an empty story when there's none; {"_error": why} when it can't be read

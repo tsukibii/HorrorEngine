@@ -255,7 +255,7 @@ belongs to the story by its node's name: light switches flip the lights in their
 state or a moment's <b>Light</b> finds them. A light with "candle" or "fire" in its name keeps burning in a power cut.
 Light the level however you like; the look plugin's light nodes work as usual.</p>
 <figure class="wide"><img src="img/g_hall.jpg" width="1280" height="720" alt="In the game: the hall, Mari standing in the middle, the objective Find the bedroom key and its two steps at the top left">
-<figcaption>The hall in the game: the first quest's objective and its steps at the top left, Mari waiting.</figcaption></figure>
+<figcaption>The hall in the game: the key's quest, its objective and its steps at the top left, Mari waiting.</figcaption></figure>
 </section>
 
 <section id="things">
@@ -365,12 +365,22 @@ each time it starts.</p>
 <p>The game is its <b>quests</b>, played one after another, in order. A quest has a title, an <b>objective</b> (top left)
 and <b>steps</b>: the to-do list under it, each done by something the player does (reads the letter, picks up the key,
 walks into the bedroom, hides in the wardrobe) and maybe failed by another (takes too long, gives the wrong thing).</p>
+<p><b>Every game starts with its Intro.</b> A new story's first quest is the <i>Intro</i>: what happens as the game opens
+(a chapter card, a thought, a look round), set out in its <b>As it starts</b> commands; it has no list and ends once
+they're over, and the next quest begins. The sample's intro shows <i>Night 1 · 23:40</i>, then the thought "Mari's out.
+She said she'd leave the bedroom key somewhere."</p>
+<figure class="wide"><img src="img/e_panel_intro.jpg" width="1315" height="664" alt="The panel's Story tab on the sample's Intro: it ends when what happens as it starts is over, its steps not a to-do list, and as it starts the thought Mari's out, then a wait">
+<figcaption>The sample's Intro in the Story tab: no list, over once its opening (a thought, a pause) is.</figcaption></figure>
+<p><b>Not every quest is a to-do list.</b> Untick <span class="ui">Its steps as a to-do list on the screen</span> and its
+steps still count, unseen: nothing written at the top left, the player finds the way by the story (and by a step's
+marker, below). The sample's quest <i>Mari</i> is one: no objective, no list, just the marker over her.</p>
 <ul>
 <li><b>A step only counts while its quest is on.</b> "Turn the light on, then off": if they did it before that quest
 started, it doesn't tick by itself; they do it again. (For what was done before, ask a <b>fact</b> instead, §7.)</li>
 <li>A step done stays on the list, <b>crossed out</b> with a line (a failed one in red).</li>
-<li>A quest <b>finishes</b> when all its steps are done, on its <b>first</b> step done (the night: hide <i>or</i> sleep,
-whichever they do), or <b>never</b> by itself (a moment says when).</li>
+<li>A quest <b>ends</b> when all its steps are done, on its <b>first</b> step done (the night: hide <i>or</i> sleep,
+whichever they do), when what happens <b>as it starts</b> is over (an intro, a little scene), or <b>never</b> by itself (a
+moment says when).</li>
 <li>As it starts: a <b>chapter card</b> before it if you like (a title, the time, the view dark, an autosave), where the
 player <b>starts at</b>, a checkpoint, a <b>time limit</b> and what happens when it runs out, and commands to run
 (<b>as it starts</b>, <b>when it's done</b>).</li>
@@ -394,7 +404,7 @@ answered her.</li>
 (<i>they've talked to Mari</i>, <i>they've heard out Mari's “You found it.”</i>). Which conversation she offers is up to
 her conversations' own <i>offered when</i> (§8): a step that waits for a particular one ticks only once it's the one
 she offers.</p>
-<figure class="wide"><img src="img/e_panel_talk.jpg" width="1211" height="364" alt="The panel's Story tab on the quest Mari: its step Talk to Mari open, TICKED WHEN the player talks to Mari, when “You found it.” is heard out">
+<figure class="wide"><img src="img/e_panel_talk.jpg" width="1329" height="364" alt="The panel's Story tab on the quest Mari: its step Talk to Mari open, TICKED WHEN the player talks to Mari, when “You found it.” is heard out">
 <figcaption>The sample's talk step in the Story tab: <i>the player talks to Mari</i>, and when it counts.</figcaption></figure>
 <h3>A marker over what it needs</h3>
 <p>Any step can show a <b>marker</b> in the game over what it needs: a small flat diamond on a short stem, pointing down
@@ -488,8 +498,8 @@ On the right are <b>ready-made moments</b> (a jumpscare, a knock at a door, the 
 whisper, a thought, the flashlight flickering): click one to add it onto what's selected (an area, a room, a door, a
 thing), or drag it onto an area or a door in the 3D view. Every change is saved at once, and <kbd>Ctrl</kbd>+<kbd>Z</kbd>
 takes it back.</p>
-<figure class="wide"><img src="img/e_panel_story.jpg" width="1211" height="664" alt="The panel's Story tab: the quests in order on the left with the first, The key, being edited, and the endings; in the middle its moment figure_scare open: WHEN the player enters Kitchen doorway, ONLY IF they've read letter, THEN a jump scare on the figure, the thought What was that? and the flag saw_figure, how often Just once, and what it reads as; the seven ready-made moments on the right">
-<figcaption>The Story tab on the first quest, the user's own example open: when the player walks into the kitchen's
+<figure class="wide"><img src="img/e_panel_story.jpg" width="1329" height="664" alt="The panel's Story tab: the quests in order on the left with the first, The key, being edited, and the endings; in the middle its moment figure_scare open: WHEN the player enters Kitchen doorway, ONLY IF they've read letter, THEN a jump scare on the figure, the thought What was that? and the flag saw_figure, how often Just once, and what it reads as; the seven ready-made moments on the right">
+<figcaption>The Story tab on the key's quest, the user's own example open: when the player walks into the kitchen's
 doorway after reading the letter, the figure.</figcaption></figure>
 <h3>Moments: when, if, then</h3>
 <p>A <b>moment</b> is how you make things happen: jumpscares, thoughts, sounds, lights, doors, someone arriving. It

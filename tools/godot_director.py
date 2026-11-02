@@ -116,7 +116,10 @@ transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 1)
 script = ExtResource("spot")
 id = "start"
 '''
-EMPTY_STORY = {"format": 1, "quests": [], "states": [], "moments": [], "talk": {}, "endings": [], "achievements": [], "facts": {}}
+# a new game's Director file (story/story_file.gd EMPTY): it starts with its Intro (the user, 2026-11-02: "it always
+# starts with a quest1 which is intro"), what happens as the game opens, then the next quest
+INTRO_QUEST = {"id": "q_intro", "title": "Intro", "objective": "", "list": False, "finish": "opening", "on_start": []}
+EMPTY_STORY = {"format": 1, "quests": [INTRO_QUEST], "states": [], "moments": [], "talk": {}, "endings": [], "achievements": [], "facts": {}}
 
 
 def place(src, dst, link):
@@ -610,7 +613,7 @@ def editor_check(out):
     checks = [
         ("the editor opens the sample with the plugin on: the dock found", rep.get("dock") is True),
         ("Director: the story file's quests in play order, their steps, the endings, the moments (%d rows)" % rep.get("director_rows", 0), rep.get("director_has") is True),
-        ("Things and Check drawn (%s)" % rep.get("check_summary", ""), rep.get("things_rows", 0) > 10 and "5 quests" in rep.get("check_summary", "")),
+        ("Things and Check drawn (%s)" % rep.get("check_summary", ""), rep.get("things_rows", 0) > 10 and "6 quests" in rep.get("check_summary", "")),
         ("the dock's Guide button, on the project's own copy of the guide (guide/index.html)", rep.get("guide") is True),
         ("parts: a mesh made a cup from the panel, in its place, its effect points made as markers of the scene's (%s; made %s, owned %s)" % (", ".join(rep.get("part_points", [])), rep.get("part_made"), rep.get("part_points_owned")),
          rep.get("part_made") is True and rep.get("part_points_owned") is True and rep.get("part_points") == ["handle", "inner", "rim"]),
@@ -642,7 +645,9 @@ def editor_check(out):
         ("a checkpoint placed, an area of the story's (%s); undone (%s)" % (rep.get("player_checkpoint"), rep.get("player_checkpoint_undone")),
          rep.get("player_checkpoint") is True and rep.get("player_checkpoint_undone") is True),
         ("the Story tab: the quests in play order, the running game's marks (%s), its step done crossed out (%s)" % (", ".join(rep.get("story_quests", [])), rep.get("story_struck")),
-         rep.get("story_quests") == ["✓ 1 · The key", "2 · A drink", "3 · Mari", "4 · The bedroom", "5 · Something in the hall"] and rep.get("story_struck") is True),
+         rep.get("story_quests") == ["1 · Intro", "✓ 2 · The key", "3 · A drink", "4 · Mari", "5 · The bedroom", "6 · Something in the hall"] and rep.get("story_struck") is True),
+        ("the Intro first: it ends %s, its steps a to-do list %s, %s commands as it starts" % tuple(rep.get("story_intro") or ["", "", ""]),
+         rep.get("story_intro") == ["when what happens as it starts is over (an intro)", False, 2]),
         ("the drink errand as sentences: its step, the answer to the wrong thing, the moments (%d lines: %s)" % (len(rep.get("story_lines", [])), " | ".join(rep.get("story_lines", [])[:2])),
          any(l.startswith("WHEN   Mug is given to Mari, tick “Give Mari the mug”") for l in rep.get("story_lines", []))
          and any("anything else is given to Mari, Mari says “Nah, that's not what I want.”" in l for l in rep.get("story_lines", []))
@@ -665,7 +670,7 @@ def editor_check(out):
         ("a ready-made moment dropped inside the doorway in the 3D view lands on it, the new area taken back (%s); undone (%s)" % (rep.get("story_dropped"), rep.get("story_drop_undone")),
          rep.get("story_dropped") is True and rep.get("story_drop_undone") is True),
         ("the panel's Test page: %s, and the game checked as it will play (%s)" % (" and ".join(rep.get("panel_test_plays", [])), rep.get("panel_test", "")),
-         rep.get("panel_test_plays") == ["Play the game", "Play this scene"] and "5 quests" in rep.get("panel_test", "")),
+         rep.get("panel_test_plays") == ["Play the game", "Play this scene"] and "6 quests" in rep.get("panel_test", "")),
         ("a node's id follows its renames while it's the name's (%s), one typed by hand stays (%s)" % (rep.get("id_follows"), rep.get("id_kept")), rep.get("id_follows") == ["hs_thing", "old_key"] and rep.get("id_kept") == "my_key"),
         ("saved: the new nodes in the file, no story nodes, nothing the nodes make for themselves", rep.get("saved") is True and rep.get("saved_task") is True and rep.get("saved_nothing_made") is True),
         ("no script errors in the editor", not errs),

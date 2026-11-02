@@ -2,8 +2,9 @@
 ## house (a hall, a kitchen through a door, a bedroom behind a locked one), a letter, a key, a light switch, a
 ## wardrobe to hide in and a bed, Mari in the hall, a Player start, a Test start by the bedroom door (the key in hand) and
 ## a checkpoint in the bedroom's doorway, a figure that shows for a second when the player walks into the
-## kitchen after reading the letter (the user's own example of an event), and a story in one chapter: find the key,
-## talk to Mari, get into the bedroom, then hide or sleep (two endings).
+## kitchen after reading the letter (the user's own example of an event), and a story in one chapter: an intro (the
+## chapter card, a thought), find the key, bring her a drink, talk to her (no list: the marker over her), get into the
+## bedroom, then hide or sleep (two endings).
 ##   godot --headless --path <project> -s res://addons/horrorstudio_director/tests/make_sample.gd   (SAMPLE ok)
 extends SceneTree
 
@@ -15,14 +16,16 @@ var root_: Node
 const STORY := {
 	"format": 1,
 	"quests": [
-		{"id": "q_key", "title": "The key", "objective": "Find the bedroom key", "start_at": "start", "map": "house",
+		{"id": "q_intro", "title": "Intro", "objective": "", "list": false, "finish": "opening", "start_at": "start", "map": "house",
 			"card": {"title": "Night 1", "sub": "23:40", "time": "night"},
+			"on_start": [{"think": "Mari's out. She said she'd leave the bedroom key somewhere."}, {"wait": 1.5}]},
+		{"id": "q_key", "title": "The key", "objective": "Find the bedroom key",
 			"steps": [{"id": "read_letter", "text": "Read the letter", "done": {"read": "letter"}},
 				{"id": "find_key", "text": "Find the bedroom key", "done": {"pickup": "bedroom_key"}}]},
 		{"id": "q_drink", "title": "A drink", "objective": "Bring Mari something to drink",
 			"steps": [{"id": "give_mug", "text": "Give Mari the mug", "who": "mari", "done": {"gave": "mug", "to": "mari"},
 				"wrong": {"say": "Nah, that's not what I want.", "who": "mari"}}]},
-		{"id": "q_talk", "title": "Mari", "objective": "Talk to Mari",
+		{"id": "q_talk", "title": "Mari", "objective": "", "list": false,
 			"steps": [{"id": "talk_mari", "text": "Talk to Mari", "done": {"holds": "heard:t_open"}, "guide": true}]},
 		{"id": "q_bedroom", "title": "The bedroom", "objective": "Get into the bedroom",
 			"steps": [{"id": "enter_bedroom", "text": "Open the bedroom", "done": {"enter": "bedroom"}}]},

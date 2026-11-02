@@ -106,6 +106,13 @@ try {
   await page.waitForTimeout(100);
   S = await page.evaluate(() => window.hsdm.S);
   ok("a condition added to the quest's next (read:letter)", JSON.stringify(S.quests[1].next || []).includes("read:letter"), JSON.stringify(S.quests[1].next));
+  // not every quest a to-do list: ended by its opening (an intro), its steps unseen
+  await page.selectOption("main.page .row:has(> label.l:text-is('Finishes')) select", "opening");
+  await page.uncheck("[data-list] input[type=checkbox]");
+  S = await page.evaluate(() => window.hsdm.S);
+  ok("a quest that isn't a to-do list: it ends when its opening is over (an intro), its steps unseen", S.quests[1].finish === "opening" && S.quests[1].list === false, JSON.stringify({ finish: S.quests[1].finish, list: S.quests[1].list }));
+  await page.selectOption("main.page .row:has(> label.l:text-is('Finishes')) select", "steps");
+  await page.check("[data-list] input[type=checkbox]");
   // a round of gameplay instead of steps (STORY_FORMAT §9.8): hide and seek, Mari hunting
   await page.click("[data-act=new-round]");
   await page.selectOption("[data-round] .row:has-text('Who hunts') select", "mari");

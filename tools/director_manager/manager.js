@@ -236,7 +236,10 @@ function viewQuests() {
   if (UI.quest >= qs.length) UI.quest = Math.max(0, qs.length - 1);
   const list = h("div", { class: "list" }, qs.map((q, i) => h("div", { class: "item" + (i === UI.quest ? " on" : ""), "data-quest": q.id, on: { click: () => { UI.quest = i; keepUI(); render(); } } },
     h("span", { class: "t" }, isObj(q.desk) ? `${i + 1}. ◆ ${deskKind(q.desk)}: ${q.id}` : `${i + 1}. ${q.title || q.id}`), h("span", { class: "s" }, isObj(q.desk) ? "desk" : `${arr(q.steps).length}`))),
-    h("button", { class: "small", "data-act": "new-quest", on: { click: () => { const id = freshId("q", allIds()); qs.push({ id, title: "New quest", objective: "", steps: [] }); UI.quest = qs.length - 1; changed(); render(); } } }, icon("plus", 12), " New quest"));
+    h("button", { class: "small", "data-act": "new-quest", on: { click: () => {   // (none yet: the Intro, what happens as the game opens)
+      const id = freshId(qs.length ? "q" : "q_intro", allIds());
+      qs.push(qs.length ? { id, title: "New quest", objective: "", steps: [] } : { id, title: "Intro", objective: "", list: false, finish: "opening", on_start: [] });
+      UI.quest = qs.length - 1; changed(); render(); } } }, icon("plus", 12), qs.length ? " New quest" : " The intro"));
   const q = qs[UI.quest];
   return [h("h2", {}, "Quests"), h("p", { class: "lead" }, "Played one at a time, in this order. A step only counts while its quest is the one on. What comes next can depend on what the player has done."),
     h("div", { class: "split" }, list, q ? (isObj(q.desk) ? deskEd(q, UI.quest) : questEd(q, UI.quest)) : h("p", { class: "empty" }, "No quests yet: a free roam with the moments, conversations and states."))];
@@ -262,8 +265,10 @@ function questEd(q, i) {
     delBtn("this quest", () => { qs.splice(i, 1); UI.quest = Math.max(0, i - 1); })),
     row("Id", inp(q, "id", { after: render })), row("Title", inp(q, "title", { ph: "The key", w: "320px" })), row("Objective", inp(q, "objective", { ph: "shown at the top left", w: "420px" })),
     row("Plays on", sel(q, "map", pairs(ids("level")), { blank: "the level before it" }), h("label", { class: "l" }, "starting at"), sel(q, "start_at", pairs(ids("spot")), { blank: "where the player is" })),
-    row("Finishes", sel(q, "finish", [["steps", "when all its steps are done"], ["any", "on its first step done (a choice by what they do)"], ["never", "when a moment says so (Finish the task)"]], { blank: null }),
-      chk(q, "checkpoint", "a checkpoint as it starts", { dflt: true })),
+    row("Finishes", sel(q, "finish", [["steps", "when all its steps are done"], ["any", "on its first step done (a choice by what they do)"],
+      ["opening", "when what happens as it starts is over (an intro)"], ["never", "when a moment says so (Finish the task)"]], { blank: null }),
+      chk(q, "checkpoint", "a checkpoint as it starts", { dflt: true }),
+      h("span", { "data-list": "", title: "off: the steps still count, unseen (a marker over what a step needs can show the way)" }, chk(q, "list", "its steps as a to-do list", { dflt: true }))),
     row("Time limit", inp(q, "time_limit", { num: true, ph: "s" }), h("label", { class: "l" }, "then"), sel(q, "on_timeout", goTargets().slice(1), { blank: "—" })),
     cardEd(q), roundEd(q));
   const stepsBox = h("div", { class: "card steps" }, h("h3", {}, icon("todo", 16), "Steps (the to-do list)"),

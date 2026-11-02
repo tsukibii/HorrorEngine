@@ -59,13 +59,19 @@ the grade, the HUD's theme, `lighting: off` for a flat test light, the counters;
   a step's `done` and `fail` are the story format's triggers, STORY_FORMAT §4: picks up the key, enters the cellar,
   `{"gave": "lemonade", "to": "mari"}`, `{"holds": <condition>}`; a `wrong` answer for the wrong thing given, "Nah,
   that's not what I want", or a fail; `guide`: a marker over what it needs in the game, `true` for what its `done`
-  names, a talk's person included, or an id: the runtime's todo `guide`, STORY_FORMAT §4), `finish` (all its steps, `any`: the first done, or `never`: a moment's `done`),
+  names, a talk's person included, or an id: the runtime's todo `guide`, STORY_FORMAT §4), `finish` (all its steps, `any`: the first done, `opening`: once what happens as it starts is over, or `never`: a
+  moment's `done`), `list` (false: no to-do list on the screen, its steps counting unseen, a marker showing the way:
+  the user, 2026-11-02, "quests shouldn't all be task based"),
   `on_start`, `on_done`, `start_at` (a spot), `map` (a level), a chapter `card`, `time_limit` and `on_timeout`, a
   **round** (`{"type": "hide", "secs": 30, "rule", "warn", "seeker", "spots", "on": {<result>: [actions]}}`, the
   story format's `play`, STORY_FORMAT §9.8: hide and seek, a chase, sneaking past her...: played instead of the steps,
   its result ending the quest), and
   **next**: the first `{"if": <condition>, "go": <quest or ending>}` that holds, else the next quest in the list.
   **A step only listens while its quest is the one on**: the light switched on and off before the quest doesn't count.
+  **Every game starts with its Intro** (the user: "it always starts with a quest1 which is intro"): a new Director file's
+  first quest (`HSStoryFile.INTRO`, `tools/godot_director.py` `INTRO_QUEST`), `finish: "opening"` and no list: what
+  happens as the game opens (a chapter card, a thought, a look round), then the next quest. With no ending yet, the last
+  quest goes on into a free roam (a game in the making keeps playing). A desk game brought in keeps its own opening.
   A finished step stays on the list, crossed out with a single line (a failed one in red).
 - **states**: `{"while": <condition>, "set": {<id>: {...}}}`: what the world looks like while something holds: a
   person `at` a spot, what she `do`es (idle, sit, go `to` a spot, walk a `path`, patrol `paths`), `sees` the player or
@@ -200,8 +206,9 @@ pickers read them.
 launcher's Godot section too): the page that writes the Director file, over the scene's ids (the plugin's
 `.hsdirector/index.json`, written on every save; the sample maker writes it once). Its tabs:
 
-- **Quests**: the list in play order (▲ ▼ to reorder); a quest's id, title, objective, the level it plays on and where
-  it starts, how it finishes, a checkpoint, a time limit and what then, a chapter card; its **steps** (the text, done
+- **Quests**: the list in play order (▲ ▼ to reorder; on an empty story, *The intro* first); a quest's id, title,
+  objective, the level it plays on and where it starts, how it finishes (its opening over too: an intro), its steps as
+  a to-do list or not, a checkpoint, a time limit and what then, a chapter card; its **steps** (the text, done
   when and fails when: the desk's own trigger dialog, *talk to…* (who, and when it counts, as the Story tab's *Talk to
   someone…*), or *or once…* for a condition becoming true; a time; hidden; asked
   by; *a marker over it*, the diamond in the game; for a `gave` step, the answer to anything else given and whether it
@@ -362,9 +369,12 @@ screen), so the 3D view stays in sight and a card drags straight into it. Three 
   through `story/commands.json`, which `tools/director_manager/commands_json.mjs` writes from them; GDScript can't run
   their sentences, so `commands.gd` says them again and DIRECTOR checks every example in the file reads the same).
   On the left the **quests in play order**, each with its steps (ticked and crossed out while the game runs from the
-  editor, ▶ the one it's on), *+ Add a quest*, the **endings** (*+ Add an ending*: a title, a kind, its words), and *Open
+  editor, ▶ the one it's on; an intro says *its opening, then on*, a quest with no list *no to-do list*), *+ Add a quest*
+  (on an empty story: the Intro), the **endings** (*+ Add an ending*: a title, a kind, its words), and *Open
   the Manager* for conversations, states, facts and achievements. In the middle the quest being edited (its title and
-  what's on the screen, ↑ ↓ in the game's order) and **what happens in it, each a sentence**: its steps (*WHEN Mug is
+  what's on the screen, ↑ ↓ in the game's order), **how it ends** (when its steps are done, when any one is, when what
+  happens as it starts is over: an intro, or when a moment ends it), **its steps as a to-do list on the screen** or not,
+  **AS IT STARTS** (its opening's commands, as a THEN list) and **what happens in it, each a sentence**: its steps (*WHEN Mug is
   given to Mari, tick “Give Mari the mug”*, and the answer to the wrong thing given) and the moments that play in it
   (its own and the whole game's). One opens at a time: **WHEN** (*Talk to someone…*: who, and when it counts: she's
   clicked, she's heard out, or one of her conversations heard out, by its title or first line, kept as the talk facts

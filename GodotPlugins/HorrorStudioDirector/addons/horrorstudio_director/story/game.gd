@@ -223,17 +223,27 @@ func _first_in(lid: String) -> String:
 	return ""
 
 
-## a test run: the player stays where the test put them (the Test start, in front of the thing), not sent to the
-## first quest's own start (its start_at)
+## a test run: the player stays where the test put them (the Test start, in front of the thing), not sent to the first
+## quest's own start (its start_at), nor to the next one's when the first is an intro (a quest over once its opening is)
 func _stay(from, lid: String) -> void:
-	var q := _first_quest(from)
 	var st: Dictionary = compiled["story"]
-	if q == "" or str(st["stitches"].get(st["flow"][q].get("ref"), {}).get("level", "")) != lid:
-		return
-	var ref := str(st["flow"][q]["ref"])
-	for b in st["stitches"][ref].get("beats", []):
-		if b.get("id") == ref + "__start":
-			b["do"] = (b["do"] as Array).filter(func(a): return not (a is Dictionary and str(a.get("move", "")) == "player"))
+	for nid in _walk(from):
+		var n: Dictionary = st["flow"][nid]
+		if n.get("type") != "stitch":
+			return
+		var ref := str(n.get("ref", ""))
+		if ref.ends_with("__card"):
+			continue
+		if str(st["stitches"].get(ref, {}).get("level", "")) != lid:
+			return
+		var opening := false
+		for b in st["stitches"][ref].get("beats", []):
+			if b.get("id") == ref + "__start":
+				b["do"] = (b["do"] as Array).filter(func(a): return not (a is Dictionary and str(a.get("move", "")) == "player"))
+				var last = (b["do"] as Array).back() if (b["do"] as Array).size() else null
+				opening = last is Dictionary and last.get("done") == true
+		if not opening:
+			return
 
 
 ## the flow's nodes before a step on the way there from the start (their @ flags, for a start from that step)

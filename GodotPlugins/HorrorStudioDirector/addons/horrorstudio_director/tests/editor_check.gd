@@ -141,7 +141,7 @@ func _tabs() -> void:
 	dt.refresh()
 	var rows := _rows(dt.tree)
 	rep["director_rows"] = rows.size()
-	rep["director_has"] = rows.any(func(r): return r.begins_with("Quests (5)")) and rows.any(func(r): return r == "The key") and rows.any(func(r): return r == "A drink") \
+	rep["director_has"] = rows.any(func(r): return r.begins_with("Quests (6)")) and rows.any(func(r): return r == "Intro") and rows.any(func(r): return r == "The key") and rows.any(func(r): return r == "A drink") \
 		and rows.any(func(r): return r.begins_with("☐ Give Mari the mug")) and rows.any(func(r): return r.begins_with("Endings (2)")) and rows.any(func(r): return r == "figure_scare")
 	var th = _tab("Things")
 	th.refresh()
@@ -436,6 +436,14 @@ func _story_checks() -> void:
 	for i in 5:                                       # the ready-made, the clause, the command, its words, every time
 		glob.undo()
 	rep["story_undone"] = _same(FileAccess.get_file_as_string("res://director/director.json"), pan["story_was"])
+	st.quest = "q_intro"                              # the Intro: over once what happens as it starts is, no list, its opening's commands
+	st.opened = ""
+	st.refresh(false)
+	var qf: OptionButton = st.mid.find_child("QuestFinish", true, false)
+	var ql: CheckBox = st.mid.find_child("QuestList", true, false)
+	var op: Control = st.mid.find_child("Opening", true, false)
+	rep["story_intro"] = [qf.get_item_text(qf.selected) if qf != null else "", ql.button_pressed if ql != null else null,
+		op.find_children("Do_*", "", true, false).size() if op != null else -1]
 	st.quest = "q_talk"                               # Talk to…: the sample's talk step, in words, then till she's heard out at all
 	st.opened = ""
 	st.refresh(false)

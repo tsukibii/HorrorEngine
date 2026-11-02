@@ -138,11 +138,18 @@ func _initialize() -> void:
 		if errs.size():
 			return "problems: " + str(errs.map(func(p): return p["text"]))
 		var fl: Dictionary = st["flow"]
-		for k in ["q_key__card", "q_key", "q_drink", "q_talk", "q_bedroom", "q_night", "q_night__next", "e_morning", "e_asleep"]:
+		for k in ["q_intro__card", "q_intro", "q_key", "q_drink", "q_talk", "q_bedroom", "q_night", "q_night__next", "e_morning", "e_asleep"]:
 			if not fl.has(k):
 				return "no flow node %s in %s" % [k, fl.keys()]
-		if st["game"]["start"] != "q_key__card" or fl["q_key__card"]["next"] != "q_key" or fl["q_key"]["next"] != "q_drink" or fl["q_talk"]["next"] != "q_bedroom" or fl["q_night"]["next"] != "q_night__next":
+		if st["game"]["start"] != "q_intro__card" or fl["q_intro__card"]["next"] != "q_intro" or fl["q_intro"]["next"] != "q_key" or fl["q_key"]["next"] != "q_drink" or fl["q_talk"]["next"] != "q_bedroom" or fl["q_night"]["next"] != "q_night__next":
 			return "the order: " + JSON.stringify(fl)
+		var ib: Array = st["stitches"]["q_intro"]["beats"].filter(func(b): return b["id"] == "q_intro__start")
+		if ib.is_empty() or (ib[0]["do"] as Array).back() != {"done": true}:
+			return "the intro doesn't end once its opening is over: %s" % [ib]
+		var tb: Array = st["stitches"]["q_talk"]["beats"].filter(func(b): return b["id"] == "q_talk__start")
+		var tt: Array = (tb[0]["do"] as Array).filter(func(a): return a is Dictionary and a.get("todo") == "talk_mari") if tb.size() else []
+		if tt.is_empty() or tt[0].get("hidden") != true or tt[0].get("guide") != "mari":
+			return "the talk quest's step: no list, its marker over Mari: %s" % [tt]
 		var ch: Dictionary = fl["q_night__next"]
 		if ch["by"] != "flag" or ch["options"][0]["to"] != "e_morning" or ch["options"][1]["to"] != "e_asleep" or not str(ch["options"][0]["if"][0]).begins_with("?c"):
 			return "what comes after the night, by what was done: " + JSON.stringify(ch)
@@ -161,13 +168,18 @@ func _initialize() -> void:
 		if br["talks"].get("mari", []).size() != 4 or br["states"].size() != 2 or br["conds"].is_empty() or str(rest_state.get("set", {}).get("mari", {}).get("expr", "")) != "pout_and_glance_loop":
 			return "the brain's: %d conversations, %d states (the first %s), %d conditions" % [br["talks"].get("mari", []).size(), br["states"].size(), rest_state, br["conds"].size()]
 		return "")
-	await step("the chapter card, then the first task: its objective and its two to-dos", func():
+	await step("the chapter card and the intro (its thought, no list, over once its opening is), then the first task: its objective and its two to-dos", func():
 		var k := 0
 		while not (g.run != null and g.run["trail"].has("q_key") and g.play != null and g.play.active and not g.play.busy) and k < 3000:
 			await process_frame
 			k += 1
 		if g.play == null or not g.run["trail"].has("q_key"):
-			return "never got past the chapter card"
+			return "never got past the chapter card and the intro"
+		var tr: Array = g.run["trail"]
+		if not tr.has("q_intro") or tr.find("q_intro") > tr.find("q_key"):
+			return "the intro first: %s" % [tr]
+		if not g.hud.lines_shown.any(func(l): return str(l).contains("leave the bedroom key")):
+			return "the intro's thought never showed"
 		rt = g.play
 		k = 0
 		while g.hud.tasks.size() < 2 and k < 200:
@@ -388,7 +400,7 @@ func _initialize() -> void:
 		if not flag("achievement:ACH_HOST"):
 			return "no achievement for it"
 		return "")
-	await step("the conversation the story offers now: a marker over her (her step's guide, bobbing), her first line with its face over her rest, answered Yes, heard out (its step ticks, the marker gone; she's talked to and heard out as facts of her own too); a state sends Mari to the bedroom door", func():
+	await step("the conversation the story offers now (a quest with no list): a marker over her (her step's guide, bobbing), no objective, no to-dos, her first line with its face over her rest, answered Yes, heard out (its step ticks, the marker gone; she's talked to and heard out as facts of her own too); a state sends Mari to the bedroom door", func():
 		var k := 0
 		while not (g.play != null and g.play.active and not g.play.busy) and k < 1200:
 			await process_frame
@@ -408,6 +420,8 @@ func _initialize() -> void:
 		var hung: bool = g.hud.guide.marks.has("mari") and (g.hud.guide.marks["mari"]["above"] as Vector2).y < (g.hud.guide.marks["mari"]["top"] as Vector2).y
 		if mk < 0.3 or amp <= 0.0 or bob < 1.6 * amp or not hung:
 			return "the marker over Mari: shown %.2f, bobbing %.2f px of a %.2f px swing, over her head %s" % [mk, bob, amp, hung]
+		if not g.hud.tasks.is_empty() or g.hud.obj.text != "":           # her quest has no list: the marker is all
+			return "the talk quest shows words: objective %s, to-dos %s" % [g.hud.obj.text, g.hud.tasks]
 		rt.use(true)
 		var said := false                              # "You found it." as she wears the line's face, over her rest
 		var k0 := 0

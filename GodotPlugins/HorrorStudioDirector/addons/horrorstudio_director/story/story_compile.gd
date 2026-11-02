@@ -70,6 +70,8 @@ func compile(f: Dictionary, st: Dictionary, levels: Dictionary) -> void:
 		_roam()
 	else:
 		story["game"]["start"] = _entry[str(quests[0]["id"])]
+		if _ends.is_empty():                           # no ending yet: after the last quest, a free roam (the game goes on)
+			_roam_stitch(lvl)
 	brain["states"] = file.get("states", []).duplicate(true)
 	for s in brain["states"]:
 		if not (s is Dictionary) or not (s.get("set") is Dictionary):
@@ -80,12 +82,17 @@ func compile(f: Dictionary, st: Dictionary, levels: Dictionary) -> void:
 
 ## no quests yet: a free roam of the first level with the moments, the conversations and the states
 func _roam() -> void:
-	var st := {"title": "Free roam", "level": _first_level, "beats": [{"id": "free_roam__start", "when": {"start": true}, "do": [{"objective": ""}]}]}
+	_roam_stitch()
+	story["game"]["start"] = "free_roam"
+
+
+## the free roam: the first level, its moments, conversations and states, no objective, no end
+func _roam_stitch(lvl := "") -> void:
+	var st := {"title": "Free roam", "level": lvl if lvl != "" else _first_level, "beats": [{"id": "free_roam__start", "when": {"start": true}, "do": [{"objective": ""}, {"untodo": true}]}]}
 	_moments(st, "")
 	_talk_beats(st)
 	story["stitches"]["free_roam"] = st
 	story["flow"]["free_roam"] = {"type": "stitch", "ref": "free_roam", "next": null}
-	story["game"]["start"] = "free_roam"
 
 
 # ---- a quest ----------------------------------------------------------------------------------------------------
@@ -133,7 +140,7 @@ func _quest(q: Dictionary, i: int, quests: Array, lvl: String) -> String:
 			td["fails"] = _trigger(s["fail"])
 		if float(s.get("secs", 0)) > 0.0:
 			td["secs"] = float(s["secs"])
-		if s.get("hidden", false):
+		if s.get("hidden", false) or q.get("list", true) == false:   # (a quest with no to-do list: its steps kept unseen)
 			td["hidden"] = true
 		if str(s.get("who", "")) != "":
 			td["who"] = str(s["who"])
@@ -144,6 +151,8 @@ func _quest(q: Dictionary, i: int, quests: Array, lvl: String) -> String:
 	if q.get("checkpoint", true):
 		do.append({"checkpoint": true})
 	do.append_array((q.get("on_start", []) as Array).duplicate(true))
+	if str(q.get("finish", "steps")) == "opening":        # an intro: over once what happens as it starts is
+		do.append({"done": true})
 	st["beats"].append({"id": qid + "__start", "when": {"start": true}, "do": do})
 	var done_do: Array = (q.get("on_done", []) as Array).duplicate(true)
 	done_do.append({"done": true})
@@ -158,10 +167,10 @@ func _quest(q: Dictionary, i: int, quests: Array, lvl: String) -> String:
 		"any":                                     # the first step done ends it (a choice by what the player does)
 			for sid in sids:
 				st["beats"].append({"id": "%s__done__%s" % [qid, sid], "when": {"ticked": sid}, "do": done_do.duplicate(true)})
-		"never":
+		"never", "opening":
 			pass
 		_:
-			err("quest %s: finish is steps, any or never" % qid)
+			err("quest %s: finish is steps, any, opening or never" % qid)
 	for s in steps:                                # the right thing given is taken; any other answered (or the step failed)
 		var g = s.get("done")
 		if g is Dictionary and g.has("gave") and str(g["gave"]) != "*":
@@ -241,11 +250,11 @@ func _desk_item(q: Dictionary) -> void:
 ## first ending
 func _next(q: Dictionary, i: int, quests: Array) -> Variant:
 	var qid := str(q["id"])
-	var fallback = _entry[str(quests[i + 1]["id"])] if i + 1 < quests.size() else (file.get("endings", [{}])[0].get("id") if file.get("endings", []).size() else null)
+	var fallback = _entry[str(quests[i + 1]["id"])] if i + 1 < quests.size() else (file.get("endings", [{}])[0].get("id") if file.get("endings", []).size() else "free_roam")
 	var nx: Array = q.get("next", []) if q.get("next") is Array else []
 	if nx.is_empty():
-		if fallback == null:
-			warn("quest %s is the last and there's no ending after it: add one (endings)" % qid)
+		if fallback == "free_roam":
+			warn("quest %s is the last and there's no ending yet: the game goes on as a free roam after it (add an ending)" % qid)
 		return fallback
 	var opts: Array = []
 	var otherwise := false
