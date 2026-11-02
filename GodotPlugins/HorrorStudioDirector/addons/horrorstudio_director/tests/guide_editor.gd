@@ -387,6 +387,24 @@ func _process(dt: float) -> void:
 				return
 			_shot("e_animate_faces", _panel_rect())
 			panel.animate.face_side = false
+			panel.show_page("story")                       # On stage: the drink errand's lines (Mari's own, the others carried)
+			panel.story.quest = "q_drink"
+			panel.story.opened = ""
+			panel.story.refresh()
+			at = t
+			phase = 25
+		25:
+			if t - at < 1.5:
+				return
+			var box: Control = panel.story.mid.find_child("OnStage", true, false)
+			if box != null:
+				panel.story.mid_scroll.ensure_control_visible(box)
+			at = t
+			phase = 26
+		26:
+			if t - at < 0.6:
+				return
+			_shot("e_onstage", _panel_rect())
 			panel.show_page("build")
 			print("GUIDEEDITOR " + JSON.stringify({"made": made}))
 			get_tree().quit()

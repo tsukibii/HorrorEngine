@@ -165,8 +165,17 @@ func _initialize() -> void:
 			return "items %s notes %s cast %s" % [st["items"].keys(), st["notes"].keys(), st["cast"].keys()]
 		var br: Dictionary = hs.compiled["brain"]
 		var rest_state = br["states"][0] if br["states"].size() else {}         # her expression first: a state that always holds, under the story's own
-		if br["talks"].get("mari", []).size() != 4 or br["states"].size() != 2 or br["conds"].is_empty() or str(rest_state.get("set", {}).get("mari", {}).get("expr", "")) != "pout_and_glance_loop":
+		if br["talks"].get("mari", []).size() != 4 or br["states"].size() != 5 or br["conds"].is_empty() or str(rest_state.get("set", {}).get("mari", {}).get("expr", "")) != "pout_and_glance_loop":
 			return "the brain's: %d conversations, %d states (the first %s), %d conditions" % [br["talks"].get("mari", []).size(), br["states"].size(), rest_state, br["conds"].size()]
+		var ons: Array = (br["states"] as Array).filter(func(x): return x.has("stage"))   # On stage: each line held in its quests, carried on
+		var covers: Array = ons.map(func(x): return [x["stage"], (x["while"]["any"] as Array).map(func(c): return c["quest"])])
+		if covers != [["q_intro", ["q_intro", "q_key"]], ["q_drink", ["q_drink", "q_talk", "q_bedroom"]], ["q_night", ["q_night"]]] or br["states"][4].has("stage"):
+			return "On stage's states: %s (the file's own state last: %s)" % [covers, br["states"][4]]
+		var tif := {}                                  # a line's `talk`: in its own quest only, the line's conversation or none
+		for t in br["talks"]["mari"]:
+			tif[t["id"]] = t["if"]
+		if not JSON.stringify(tif["t_thirsty"]).contains("q_drink") or not JSON.stringify(tif["t_not_now"]).contains("\"not\"") or not JSON.stringify(tif["t_open"]).contains("q_night") or JSON.stringify(tif["t_open"]).contains("q_talk"):
+			return "her conversations narrowed by On stage: %s" % [tif]
 		return "")
 	await step("the chapter card and the intro (its thought, no list, over once its opening is), then the first task: its objective and its two to-dos", func():
 		var k := 0
@@ -564,6 +573,21 @@ func _initialize() -> void:
 		rt.key_event("W", false)
 		if not g.run["trail"].has("q_night"):
 			return "the bedroom never reached (at z=%.2f)" % rt.player.pos.z
+		return "")
+	await step("On stage at night: Mari's line takes over (she sits at the bedroom spot: sitting down once, then sitting) and she's busy (no conversation offered)", func():
+		rt = g.play
+		var map = load("res://addons/horrorstudio/play.gd").player_with(rt.cast_nodes["mari"], "sample_idle")
+		var seen: Array = []
+		var c0: float = rt.clock
+		while rt.clock - c0 < 4.0 and not (seen.has("anims/mari_sit_down") and seen.has("anims/mari_sitting")):
+			if seen.is_empty() or seen[-1] != str(map.current_animation):
+				seen.append(str(map.current_animation))
+			await process_frame
+		if not (seen.has("anims/mari_sit_down") and seen.has("anims/mari_sitting")) or seen.find("anims/mari_sit_down") > seen.find("anims/mari_sitting"):
+			return "she played %s (as %s at %s)" % [seen, rt.npcs["mari"]["as"], rt.npcs["mari"]["s"].get("at")]
+		var offered: Array = g.run["flags"].keys().filter(func(x): return str(x).begins_with("?talk__mari__"))
+		if offered.size():
+			return "she's busy, but offers %s" % [offered]
 		return "")
 	await step("a quest that ends on its first step: hiding in the wardrobe, and what comes next by what was done: the good ending", func():
 		if not await playing(true, 2000):

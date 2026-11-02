@@ -6,7 +6,7 @@ animations, these can be project specific, how do I easily be like at this point
 complete they get up and walk here with this animation, you can talk to them here, they have this expression etc,
 jump scare plays this… an easy drag and drop animation system, ideally I can just drag animations into the folders…
 Come up with a good plan first."* §9 is the build order (step 1 built: the library and the Animate tab,
-docs/GODOT_DIRECTOR.md §6g; step 2 too, the Face page, `tools/facecap`; and step 3, a character's moves); §10 the questions, and the user's answers (DECISIONS 2026-11-02, night), which this plan
+docs/GODOT_DIRECTOR.md §6g; step 2 too, the Face page, `tools/facecap`; step 3, a character's moves; and step 4, On stage); §10 the questions, and the user's answers (DECISIONS 2026-11-02, night), which this plan
 now follows.
 
 ## 1. What's there today
@@ -188,8 +188,10 @@ in-between (a move per transition) and the new keys.
 3. **Moves** *(built, 2026-11-03: GODOT_DIRECTOR §6g)*: a character's slots (drop onto her or her slots), the
    fallbacks, every behaviour playing her moves (walk, run, sit down/sitting/stand up, talk/listen, look around).
    Not in it: `fidget`s over the idle, and `scared`, `caught`, `dead` (step 6's reactions).
-4. **On stage**: the list per quest in the Story tab and Story Flow, carried until changed, *talk to her here*, the
-   in-between played by itself, *Show on stage* in the 3D view, the quest cards' chips.
+4. **On stage** *(built, 2026-11-03: GODOT_DIRECTOR §6g)*: the list per quest in the Story tab and Story Flow, carried
+   until changed, *talk to her here*, the in-between played by itself, *Show on stage* in the 3D view, the quest
+   cards' chips. Not in it: a line held on a fact, the Cast lanes, On stage in the Manager; *talk* isn't carried (a
+   conversation belongs to its quest).
 5. **Paths and patrols**: drawing a path in the 3D view, clips on spots.
 6. **Reactions and scares**: the ready-made reaction cards, `anim` once-then-back, the jump scare's clip, caught.
 7. **Cutscenes in the level**: a moment with a target, its soft lock, lean-in and safety release, its timeline view,

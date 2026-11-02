@@ -724,6 +724,11 @@ def editor_check(out):
          and rep.get("anim_roles") == ["sit", "stand", "idle", "walk", "scare", "other"]
          and sorted(rep.get("anim_faces") or []) == ["Face_pout_and_glance", "Face_pout_and_glance_loop"]),
         ("the Face side's button starts the studio's Face page for this project (%s)" % rep.get("anim_face_page"), rep.get("anim_face_page") is True),
+        ("On stage: the drink errand's card says Mari's line (%r); in the Story tab her line there in blue words %s, in the key's quest the Intro's carried (%s), changed here (%s) and undone (%s); Show on stage puts her where the night has her, sitting (%s), and back (%s)"
+         % (rep.get("stage_chip"), rep.get("stage_own"), rep.get("stage_carried"), rep.get("stage_changed_here"), rep.get("stage_undone"), rep.get("stage_shown"), rep.get("stage_put_back")),
+         str(rep.get("stage_chip", "")).startswith("Mari · stands at") and rep.get("stage_own") == ["stands at", "“Could you bring me something to drink?”"]
+         and len(rep.get("stage_carried") or []) == 1 and "Intro" in rep["stage_carried"][0] and rep.get("stage_changed_here") is True
+         and rep.get("stage_undone") is True and rep.get("stage_shown") is True and rep.get("stage_put_back") is True),
         ("Mari on the Animate tab: her idle hers already, her resting face read (%s); a story clip she hasn't got warned of, the library's named (%s); a wave made hers (%s)"
          % (rep.get("anim_hers"), rep.get("anim_warned"), rep.get("anim_made")),
          rep.get("anim_hers") is True and rep.get("anim_warned") is True and rep.get("anim_made") is True),

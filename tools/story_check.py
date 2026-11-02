@@ -1475,6 +1475,9 @@ def check_action(bid, a, story, things, r, stage=None):
             r.err(f"{bid}: behave pose {a['pose']!r} isn't in Content/Studio/poses.json")
         if a.get("rest") is not None and a["rest"] not in story.get("motions", {}):   # what she plays at a route's waits
             r.err(f"{bid}: behave rest {a['rest']!r} isn't in motions")
+        for k in ("walk", "leave", "arrive"):          # the in-between's own clips (§4 behave: Godot, the Director's On stage)
+            if a.get(k) is not None and a[k] not in story.get("motions", {}):
+                r.err(f"{bid}: behave {k} {a[k]!r} isn't in motions")
         if a.get("motion") is not None:                 # what she plays: standing, sitting, or walking (in place) a route
             ms = story.get("motions", {})
             if a["motion"] not in ms:

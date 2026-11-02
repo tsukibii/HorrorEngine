@@ -534,6 +534,31 @@ and undone, sitting's clips first, her moves in the compiled story; in play her 
 idle while the player answers (no listen), her walk as she leaves, then on a seat sitting down once and sitting, and
 getting up once before a 2.6 m/s walk (no run: her walk), held on the seat till she's up.
 
+**On stage** (docs/GODOT_ANIMATION_PLAN.md step 4, §6; the user: "at this point npc is doing this, then if quest
+complete they get up and walk here with this animation, you can talk to them here, they have this expression"): a
+quest's `stage`, `{person: line}` (story_file.gd), the line `{do, at, to, then, path, paths, motion, expr, talk, walk,
+leave, arrive, face}`: `do` stands at, sits on, walks to (then stands or sits: `then`), walks a path, patrols paths, or
+isn't there (`off`); `motion` what she plays there (none: her moves); `expr` her resting face; `talk` the conversation
+she offers in that quest ("": she's busy; none: as she does); `walk`, `leave`, `arrive` the in-between's own clips (walks
+with, gets up with, arrives with); `face: "player"` faces you. **A line holds from its quest on, down the flow's ways
+(each `next`, else the quest after it), until a quest with a line of its own for her** (`HSStoryCompiler.stage_cover`);
+compiled into a state each (`while` any of those quests, marked `stage`), before the file's own states, which win;
+`talk` narrows her conversations in its own quest only (`_talk_if`: a conversation belongs to its quest, so it isn't
+carried). **The in-between plays by itself**: the brain (`_acts`) puts a line's motion and clips into her `behave`
+(STORY_FORMAT §4 `walk`, `leave`, `arrive`), and a line that stands or sits her somewhere other than where the last one
+had her walks her there (`go`, then idle or sit: her stand_up if seated, her walk, her sit_down; the first placing in a
+level just puts her there); a state's `motion` with no place is still played once. **In the editor**: the Story tab's
+quest view has ON STAGE above its steps, a row per character: her own line in blue words (what she does, where, doing,
+face, talks, `…` for walks with, gets up with, arrives with and faces you, × to take it off) or the carried one in grey
+(as in “The key”: …) with Change it here (a copy without its conversation); **Show on stage** moves everyone in the 3D
+view to where the quest has them, playing what they do there (her line's motion, else her sitting or idle) on a
+throwaway `_Staged` player, nothing saved, put back by ■ or before a save (`_apply_changes`); Story Flow's quest cards
+show each line as a chip (Mari · stands at …). Measured (DIRECTOR): the sample's three lines (the Intro's carried to the
+key's quest, the drink errand's to the talk and the bedroom, the night's) as states in order with the file's own last;
+her conversations narrowed (the thirsty one in the errand, none at night); at night she sits down, then sits, and
+offers nothing; in the editor the card's chip, her line in blue words, the carried one, changed here and undone, Show
+on stage there and back.
+
 **The Face page** (docs/GODOT_ANIMATION_PLAN.md step 2; the user: "the tooling we are using in director to upload the
 face videos... let's make it a separate page so I can save the facial mocap"): `tools/facecap/serve.py` (port 8797) is
 the desk's own server loaded as a module with the page and two routes on top, so the library's endpoints (import,
@@ -615,6 +640,7 @@ on the Director projects made from the desk's games.
 - The desk can't open a Director game, and a Director game can't go back to the desk: the scene is the game now
   (`from-desk` goes one way, §6d: making it again replaces the project).
 - From the desk (§6d): the trims and thresholds, a kit door's own model, the light zones per room.
-- Animation (§6g, docs/GODOT_ANIMATION_PLAN.md's order): On stage per quest (4), paths and patrols drawn in the 3D view (5), reactions and scares (6), cutscenes in the
+- Animation (§6g, docs/GODOT_ANIMATION_PLAN.md's order): paths and patrols drawn in the 3D view (5), reactions and scares (6), cutscenes in the
   level with a soft lock and its safety release (7); FBX and glTF clips and a
-  picture on a grey MHR body for each card (later); the story's pickers offering the library's clips not yet hers.
+  picture on a grey MHR body for each card (later); the story's pickers offering the library's clips not yet hers; On stage in the Manager, a line held on a fact, Story
+  Flow's Cast lanes; walking between rooms needs a path (a straight `go` can cut through a wall).

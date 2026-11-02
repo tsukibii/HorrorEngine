@@ -332,6 +332,7 @@ static func _scan(n: Node, out: Dictionary, add: Callable) -> void:
 			"HSActor":
 				add.call("actor", id)
 				add.call("thing", id)
+				add.call("spot", id + "__home")         # where she stands at the level's start (the level makes it at play)
 				if c.cast_id() != id:
 					add.call("actor", c.cast_id())     # the story's name for her (a desk game's cast member placed more than once)
 				for m in c.motion_names():

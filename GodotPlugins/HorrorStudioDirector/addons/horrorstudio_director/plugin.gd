@@ -103,10 +103,12 @@ func _on_selection() -> void:
 
 
 ## before a scene is saved (or played, or another scene's tab opened): a preview on the Animate tab stopped (a
-## character's pose and face put back, its player gone)
+## character's pose and face put back, its player gone), and the Story tab's Show on stage put back
 func _apply_changes() -> void:
 	if panel != null and panel.animate != null:
 		panel.animate.stop()
+	if panel != null and panel.story != null and not panel.story.staged.is_empty():   # Show on stage: everyone put back
+		panel.story.unshow_stage()
 
 
 ## every saved scene's ids into res://.hsdirector/index.json (a level edited alone still suggests the story's ids), the

@@ -7,7 +7,8 @@ extends RefCounted
 ##   {"format": 1,
 ##    "quests":  [{id, title, objective, map, start_at, card: {title, sub, time}, checkpoint, list, steps: [{id, text,
 ##                done, fail, secs, hidden, who, guide, wrong: {say, who, fail}}], finish: steps|any|opening|never, on_start, on_done,
-##                time_limit, on_timeout, round: {type, secs, rule, warn, spots, seeker, loops, barks, on}, next: [{if, go}]}],
+##                time_limit, on_timeout, round: {type, secs, rule, warn, spots, seeker, loops, barks, on}, next: [{if, go}],
+##                stage: {<person>: {do, at, to, then, path, paths, motion, expr, talk, walk, leave, arrive, face}}}],
 ##    "states":  [{while, set: {<id>: {at, do, to, path, paths, sees, shown, motion, locked, open, light, state}}}],
 ##    "moments": [{id, when, if, do, once, every, during: [quest ids]}],
 ##    "talk":    {<person>: [{id, if, once, title, lines: [{who, text, if, do, answers: [{id, label, think, if, sets,
@@ -27,6 +28,11 @@ extends RefCounted
 ## out of the quests' order, found by its `found` (a WHEN) while one of its `during` quests is on (none: any of them),
 ## when its `if` holds, once a playthrough; it plays its `on_start`, the fact done:<egg> is set, and its `next` (if it
 ## has one) jumps the story there, else the game goes on where it was.
+## A quest's `stage` is **On stage** (docs/GODOT_ANIMATION_PLAN.md §6): each person's line while it's on, carried on
+## down the flow until a later quest has a line of its own for her (story_compile.gd stage_cover): `do` idle, sit, go
+## (`then` idle or sit), path, patrol or off, its place (`at`, `to`, `path`, `paths`), what she plays there (`motion`),
+## her face (`expr`), the conversation she offers in that quest alone (`talk`; "" none), the in-between's own clips
+## (`walk`, `leave`, `arrive`) and `face: "player"`.
 ## `chart`: where each card sits in the Story Flow tab ({id: [x, y]}, editor/flow_tab.gd), the editor's alone: the game
 ## never reads it.
 

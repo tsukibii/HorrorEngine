@@ -113,6 +113,7 @@ func _process(dt: float) -> void:
 			_flow_checks()
 			_flow_edit_checks()
 			_flow_egg_checks()
+			_stage_checks()
 			EditorInterface.set_main_screen_editor("3D")
 			_animate_checks()
 			at_t = t
@@ -675,6 +676,50 @@ func _flow_egg_checks() -> void:
 
 
 ## the chart's arrows as from>to:kind (an otherwise is a then), sorted: what the game plays
+## On stage (docs/GODOT_ANIMATION_PLAN.md §6): the sample's lines as chips on Story Flow's cards; in the Story tab a
+## quest's own line in blue words and a carried one in grey (as in the Intro), changed here (a copy, without its
+## conversation) and undone; Show on stage: Mari where the night has her, sitting, put back after
+func _stage_checks() -> void:
+	var fl = EditorInterface.get_editor_main_screen().find_child("HorrorStudioFlow", false, false)
+	fl.redraw()
+	var card: Control = fl.cards.get("q_drink")
+	var chip: Label = card.find_child("Stage", true, false).get_child(0) if card != null and card.find_child("Stage", true, false) != null else null
+	rep["stage_chip"] = str(chip.text) if chip != null else ""
+	var st = panel.story
+	panel.show_page("story")
+	st.quest = "q_drink"
+	st.opened = ""
+	st.refresh(false)
+	var row: Control = st.mid.find_child("Stage_mari", true, false)
+	var dob: OptionButton = row.find_child("StageDo", true, false) if row != null else null
+	var tb: OptionButton = row.find_child("StageTalk", true, false) if row != null else null
+	rep["stage_own"] = [dob.get_item_text(dob.selected) if dob != null else "", tb.get_item_text(tb.selected) if tb != null else ""]
+	st.quest = "q_key"
+	st.refresh(false)
+	row = st.mid.find_child("Stage_mari", true, false)
+	rep["stage_carried"] = _texts(row).filter(func(x): return x.begins_with("as in")) if row != null else []
+	var was: String = FileAccess.get_file_as_string("res://director/director.json")
+	var here: Button = row.find_child("StageHere", true, false) if row != null else null
+	if here != null:
+		here.pressed.emit()
+	st.refresh(false)                                 # (what the tab does a frame later, once the button has let go)
+	var mine = st.quest_of("q_key").get("stage", {}).get("mari")
+	rep["stage_changed_here"] = mine is Dictionary and mine.get("at") == "mari__home" and not (mine as Dictionary).has("talk") \
+		and st.mid.find_child("Stage_mari", true, false).find_child("StageDo", true, false) != null
+	get_undo_redo().get_history_undo_redo(EditorUndoRedoManager.GLOBAL_HISTORY).undo()
+	rep["stage_undone"] = _same(FileAccess.get_file_as_string("res://director/director.json"), was)
+	var mari: Node3D = EditorInterface.get_edited_scene_root().find_child("Mari", true, false)   # Show on stage: the night
+	var at0: Vector3 = mari.global_position
+	var spot: Node3D = EditorInterface.get_edited_scene_root().find_child("BedroomSpot", true, false)
+	st.show_stage("q_night")
+	var ap = mari.get_node_or_null("_Staged")
+	rep["stage_shown"] = mari.global_position.distance_to(spot.global_position) < 0.01 and ap is AnimationPlayer and (ap as AnimationPlayer).is_playing()
+	st.unshow_stage()
+	rep["stage_put_back"] = mari.global_position.distance_to(at0) < 0.001 and st.staged.is_empty() \
+		and (mari.get_node_or_null("_Staged") == null or mari.get_node("_Staged").is_queued_for_deletion())
+	panel.show_page("build")
+
+
 ## the Animate tab (editor/animate_tab.gd over core/library.gd): the sample's two Kimodo clips as cards in their groups,
 ## each drawn as its figure, Mari's idle hers already; its two faces on the Face side; Mari selected, her idle and her
 ## resting face read; the story's clip she hasn't got warned of; the look round made hers (its file in

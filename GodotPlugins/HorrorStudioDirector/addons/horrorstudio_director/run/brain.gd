@@ -188,30 +188,35 @@ func _states() -> void:
 			rt.actions.run(a, rt)
 
 
-## a state as the runtime's actions: a person placed or set going (behave), a motion, her face (expr), shown or hidden,
-## a door locked or opened, a light, a little thing's state
+## a state as the runtime's actions: a person placed or set going (behave: with what she plays there, `motion`, and
+## the in-between's clips, `walk`, `leave`, `arrive`; whom she faces), a motion alone played once, her face (expr),
+## shown or hidden, a door locked or opened, a light, a little thing's state
 func _acts(target: String, w: Dictionary, had: Dictionary) -> Array:
 	var acts: Array = []
 	var moved := false
-	for k in ["do", "at", "to", "path", "paths", "sees"]:
+	for k in ["do", "at", "to", "path", "paths", "sees", "motion", "walk", "leave", "arrive", "face"]:
 		if w.get(k) != had.get(k):
 			moved = true
-	if moved and (w.has("do") or w.has("at") or w.has("to") or w.has("path") or w.has("paths")):
+	var placed: bool = w.has("do") or w.has("at") or w.has("to") or w.has("path") or w.has("paths")
+	if moved and placed:                              # where she is and what she does there (On stage's line: STORY_FORMAT §4 behave)
 		var b := {"behave": target, "as": str(w.get("do", "idle"))}
-		if w.has("at"):
-			b["at"] = w["at"]
-		if w.has("to"):
-			b["to"] = w["to"]
-		if w.has("path"):
-			b["route"] = w["path"]
-		if w.has("paths"):
-			b["routes"] = w["paths"]
-		if w.has("sees"):
-			b["sees"] = w["sees"]
+		for k in [["at", "at"], ["to", "to"], ["path", "route"], ["paths", "routes"], ["sees", "sees"], ["motion", "motion"], ["walk", "walk"],
+				["leave", "leave"], ["arrive", "arrive"], ["face", "face"]]:
+			if w.has(k[0]):
+				b[k[1]] = w[k[0]]
+		if str(w.get("do", "")) == "go" and str(w.get("then", "")) != "":
+			b["then"] = w["then"]
+		var here = had.get("to") if str(had.get("do", "idle")) == "go" else had.get("at")   # On stage's in-between: a line standing or sitting her somewhere
+		var there = w.get("at")                          # else walks her there (her walk, then her sitting down); the
+		if w.get("_in_between", false) and here != null and there != null and str(here) != str(there) and str(w.get("do", "idle")) in ["idle", "sit"]:
+			b["as"] = "go"                               # first time in a level she's just put there
+			b.erase("at")
+			b["to"] = there
+			b["then"] = "sit" if str(w.get("do")) == "sit" else "idle"
 		acts.append(b)
 	if w.has("shown") and w["shown"] != had.get("shown"):
 		acts.append({"show": target} if w["shown"] else {"hide": target})
-	if w.has("motion") and w["motion"] != had.get("motion"):
+	if not placed and w.has("motion") and w["motion"] != had.get("motion"):   # a motion alone (no place): played once, as it was
 		acts.append({"anim": target, "clip": w["motion"]})
 	if w.has("locked") and w["locked"] != had.get("locked"):
 		acts.append({"door": target, "set": "lock" if w["locked"] else "unlock"})

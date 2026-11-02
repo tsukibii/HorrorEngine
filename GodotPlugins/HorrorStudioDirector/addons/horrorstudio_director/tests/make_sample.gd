@@ -20,11 +20,13 @@ const STORY := {
 	"quests": [
 		{"id": "q_intro", "title": "Intro", "objective": "", "list": false, "finish": "opening", "start_at": "start", "map": "house",
 			"card": {"title": "Night 1", "sub": "23:40", "time": "night"},
+			"stage": {"mari": {"do": "idle", "at": "mari__home", "face": "player"}},
 			"on_start": [{"think": "Mari's out. She said she'd leave the bedroom key somewhere."}, {"wait": 1.5}]},
 		{"id": "q_key", "title": "The key", "objective": "Find the bedroom key",
 			"steps": [{"id": "read_letter", "text": "Read the letter", "done": {"read": "letter"}},
 				{"id": "find_key", "text": "Find the bedroom key", "done": {"pickup": "bedroom_key"}}]},
 		{"id": "q_drink", "title": "A drink", "objective": "Bring Mari something to drink",
+			"stage": {"mari": {"do": "idle", "at": "mari__home", "face": "player", "talk": "t_thirsty"}},
 			"steps": [{"id": "give_mug", "text": "Give Mari the mug", "who": "mari", "done": {"gave": "mug", "to": "mari"},
 				"wrong": {"say": "Nah, that's not what I want.", "who": "mari"}}]},
 		{"id": "q_talk", "title": "Mari", "objective": "", "list": false,
@@ -32,6 +34,7 @@ const STORY := {
 		{"id": "q_bedroom", "title": "The bedroom", "objective": "Get into the bedroom",
 			"steps": [{"id": "enter_bedroom", "text": "Open the bedroom", "done": {"enter": "bedroom"}}]},
 		{"id": "q_night", "title": "Something in the hall", "objective": "Something is in the hall.", "finish": "any",
+			"stage": {"mari": {"do": "sit", "at": "bedroom_spot", "talk": ""}},
 			"steps": [{"id": "hide", "text": "Hide in the wardrobe", "done": {"hidden": "wardrobe"}},
 				{"id": "sleep", "text": "Go to sleep", "done": {"use": "bed"}}],
 			"next": [{"if": {"step": "hide"}, "go": "e_morning"}, {"go": "e_asleep"}]},
@@ -54,7 +57,7 @@ const STORY := {
 		{"id": "t_go", "lines": [{"text": "Go on."}]},
 	]},
 	"states": [
-		{"while": {"done": "q_talk"}, "set": {"mari": {"do": "go", "to": "bedroom_spot"}}},
+		{"while": {"quest": "q_bedroom"}, "set": {"mari": {"do": "go", "to": "bedroom_spot"}}},
 	],
 	"endings": [
 		{"id": "e_morning", "kind": "good", "title": "Morning", "text": "You waited in the dark until the sun came up."},

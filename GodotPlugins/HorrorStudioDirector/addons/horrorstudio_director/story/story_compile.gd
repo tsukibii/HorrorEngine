@@ -11,6 +11,10 @@ extends RefCounted
 ##
 ## Triggers (`when`, a step's `done` and `fail`) and actions (`do`, `on_start`, `on_done`, a line's `do`) are the story
 ## format's own (STORY_FORMAT §4), passed through; `{"holds": <condition>}` as a trigger fires when it becomes true.
+## **On stage** (a quest's `stage`, docs/GODOT_ANIMATION_PLAN.md §6): each person's line there (where she is, what she
+## does, her face) holds from that quest on, down the flow's ways, until a quest with a line of its own for her
+## (`stage_cover`): a state each, before the file's own states (theirs win); the conversation she offers (`talk`: that
+## one, or none: she's busy) narrows hers in that quest alone.
 
 var story: Dictionary = {}
 var file: Dictionary = {}
@@ -22,6 +26,7 @@ var _ends := {}                       # ending ids
 var _actor_level := {}                # a person's id -> the level she's in
 var _first_level := ""
 var _egg_list: Array = []             # the file's easter eggs (quests with `egg`): found during the others, not in their order
+var _stage: Array = []                # On stage: [{who, from, line, quests: [the quests it holds in]}] (_stage_cover)
 
 
 func err(text: String) -> void:
@@ -63,6 +68,7 @@ func compile(f: Dictionary, st: Dictionary, levels: Dictionary) -> void:
 		seen[qid] = true
 		if q.get("egg", false) != true:
 			_entry[qid] = (qid + "__card") if q.get("card") is Dictionary else qid
+	_stage = stage_cover(quests)
 	_talks()
 	var lvl := _first_level
 	for i in quests.size():
@@ -77,7 +83,7 @@ func compile(f: Dictionary, st: Dictionary, levels: Dictionary) -> void:
 		if _ends.is_empty():                           # no ending yet: after the last quest, a free roam (the game goes on)
 			_roam_stitch(lvl)
 	_egg_jumps()
-	brain["states"] = file.get("states", []).duplicate(true)
+	brain["states"] = _stage_states() + file.get("states", []).duplicate(true)   # On stage first: the file's own states over it
 	for s in brain["states"]:
 		if not (s is Dictionary) or not (s.get("set") is Dictionary):
 			err("a state needs `set`: who or what, and how ({\"while\": ..., \"set\": {\"mari\": {\"at\": \"kitchen\"}}})")
@@ -434,8 +440,88 @@ func _talks() -> void:
 			var tid := str(t.get("id", "%s_%d" % [who, k]))
 			var sid := "talk__%s__%s" % [who, tid]
 			story["scenes"][sid] = _scene(who, t, tid)
-			list.append({"id": tid, "scene": sid, "flag": "?talk__%s__%s" % [who, tid], "if": t.get("if"), "once": bool(t.get("once", false))})
+			list.append({"id": tid, "scene": sid, "flag": "?talk__%s__%s" % [who, tid], "if": _talk_if(who, tid, t.get("if")), "once": bool(t.get("once", false))})
 		brain["talks"][who] = list
+	for ln in _stage:                                  # a line offering a conversation she hasn't got
+		var tk = ln["line"].get("talk")
+		if tk is String and tk != "" and not (talk.get(ln["who"], []) as Array).any(func(t): return str(t.get("id", "")) == tk):
+			warn("quest %s: On stage, %s talks %s, which isn't one of her conversations" % [ln["from"], ln["who"], tk])
+
+
+## a conversation's offer while On stage narrows it: in the quest a line of hers with a `talk` is written in (not
+## carried on: a conversation belongs to its quest), this one only when it's the line's, never when the line says
+## another or none ("": she's busy)
+func _talk_if(who: String, tid: String, own):
+	var mine: Array = []
+	var others: Array = []
+	for ln in _stage:
+		if ln["who"] != who or not ln["line"].has("talk"):
+			continue
+		(mine if str(ln["line"]["talk"]) == tid else others).append({"quest": ln["from"]})
+	if mine.is_empty() and others.is_empty():
+		return own
+	var c: Array = []
+	if not HSCond.empty(own):
+		c.append(own)
+	if others.size():
+		c.append({"not": {"any": others}})
+	if mine.size():                                    # the line's own: offered while it holds, whatever its `if`
+		return {"any": [{"any": mine}, {"all": c}]} if c.size() else {"any": mine}
+	return {"all": c}
+
+
+## On stage: each person's line in a quest and the quests it holds in: that one, then on down every way out of it
+## (its `next`, else the quest after it) until a quest with a line of its own for her
+func stage_cover(quests: Array) -> Array:
+	var ids: Array = quests.map(func(q): return str(q.get("id", "")))
+	var outs := {}
+	for i in quests.size():
+		var q: Dictionary = quests[i]
+		var o: Array = []
+		var nx: Array = q.get("next", []) if q.get("next") is Array else []
+		var always := false
+		for x in nx:
+			if ids.has(str(x.get("go", ""))):
+				o.append(str(x["go"]))
+			if HSCond.empty(x.get("if")):
+				always = true
+		if not always and i + 1 < quests.size():       # no next, or none that always goes: the quest after it (as _next)
+			o.append(ids[i + 1])
+		outs[ids[i]] = o
+	var out: Array = []
+	for q in quests:
+		var st = q.get("stage")
+		if not (st is Dictionary):
+			continue
+		for who in st:
+			if not (st[who] is Dictionary):
+				continue
+			var seen := {str(q["id"]): true}
+			var todo: Array = (outs.get(str(q["id"]), []) as Array).duplicate()
+			while todo.size():
+				var n: String = todo.pop_front()
+				if seen.has(n):
+					continue
+				var nq: Dictionary = quests[ids.find(n)]
+				if nq.get("stage") is Dictionary and (nq["stage"] as Dictionary).has(who):
+					continue
+				seen[n] = true
+				todo.append_array(outs.get(n, []))
+			out.append({"who": str(who), "from": str(q["id"]), "line": st[who], "quests": ids.filter(func(x): return seen.has(x))})
+	return out
+
+
+## On stage's lines as the brain's states: each while one of its quests is on, setting her as the line says (its
+## `talk` read by _talk_if, not here)
+func _stage_states() -> Array:
+	var out: Array = []
+	for ln in _stage:
+		var set_: Dictionary = (ln["line"] as Dictionary).duplicate(true)
+		set_.erase("talk")
+		set_["shown"] = str(set_.get("do", "")) != "off"   # on stage, or not there (brought back by a later line)
+		set_["_in_between"] = true                     # (the brain walks her to a new spot instead of putting her there)
+		out.append({"while": {"any": (ln["quests"] as Array).map(func(q): return {"quest": q})}, "set": {ln["who"]: set_}, "stage": ln["from"]})
+	return out
 
 
 ## clicking someone plays the conversation she offers now; heard to its end, the facts heard:<it> and heard:<her> (a

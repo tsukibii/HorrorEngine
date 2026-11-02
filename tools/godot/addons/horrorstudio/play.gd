@@ -1826,13 +1826,14 @@ func behave(cid, spec: Dictionary) -> void:
 	var n := {"cid": cid, "as": as_, "s": BehavioursC.settings_of(as_, spec), "st": {}, "pos": npc["pos"] if npc != null else null, "yaw": float(npc["yaw"]) if npc != null else 0.0,
 		"level": npc["level"] if npc != null else level, "pose": "idle", "walking": false, "t0": clock,
 		"prev_pose": str(npc.get("pose", "")) if npc != null else "sit"}   # (one who's just come in doesn't sit down: she's there)
-	if npc != null and str(npc.get("pose", "")) == "sit" and as_ != "sit":   # getting up first (her stand_up, once), then off
-		var c = move_of(str(cid), "stand_up")
+	var seated: bool = npc != null and str(npc.get("pose", "")) == "sit" and as_ != "sit"
+	if npc != null and (seated or spec.get("leave") != null):   # getting up first (her stand_up, or the behaviour's `leave`), once, then off
+		var c = spec["leave"] if spec.get("leave") != null else move_of(str(cid), "stand_up")
 		var secs := move_secs(str(cid), c)
 		if secs > 0.0:
 			n["once"] = {"clip": c, "until": clock + secs}
 			n["hold"] = clock + secs
-			n["pose"] = "sit"
+			n["pose"] = "sit" if seated else str(npc.get("pose", "idle"))
 	npcs[cid] = n
 	if n.has("hold"):
 		n["start_at"] = n["hold"]                         # the behaviour starts once she's up
@@ -1869,6 +1870,8 @@ func npc_want(cid: String, n: Dictionary) -> Array:
 		return [once["clip"], false]
 	var s: Dictionary = n["s"]
 	if bool(n.get("walking", false)):
+		if s.get("walk") != null:                      # this behaviour's own walk (On stage's "walks with…")
+			return [s["walk"], true]
 		return [s["motion"] if s.get("motion") != null else move_of(cid, "run" if float(s.get("speed", 1.1)) >= RUN_SPEED else "walk"), true]
 	var st: Dictionary = n["st"]
 	if float(st.get("wait", 0.0)) > 0.0 and str(st.get("pose", "")) in LOOK_POSES and move_of(cid, "look_around", false) != null:
@@ -1893,7 +1896,8 @@ func move_secs(cid: String, clip) -> float:
 	return a.length if a != null else 0.0
 
 
-## her sitting down begun (her sit_down, once): the moment her pose becomes a seat's from standing
+## her sitting down begun (her sit_down, once): the moment her pose becomes a seat's from standing; a `go`'s arrival
+## plays the behaviour's `arrive` once (On stage's "arrives with…") instead
 func npc_seated(cid: String, n: Dictionary) -> void:
 	var pose := str(n.get("pose", ""))
 	if pose == "sit" and str(n.get("prev_pose", "sit")) != "sit":
@@ -1902,6 +1906,11 @@ func npc_seated(cid: String, n: Dictionary) -> void:
 		if secs > 0.0:
 			n["once"] = {"clip": c, "until": clock + secs}
 	n["prev_pose"] = pose
+	if n["s"].get("arrive") != null and n["st"].get("arrived") != null and not n.has("arrive_done"):
+		n["arrive_done"] = true
+		var secs2 := move_secs(cid, n["s"]["arrive"])
+		if secs2 > 0.0:
+			n["once"] = {"clip": n["s"]["arrive"], "until": clock + secs2}
 
 
 ## a cast member's motion: npc_want's, the animation of that name on the AnimationPlayer under her stand-in (a Director

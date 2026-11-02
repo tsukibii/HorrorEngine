@@ -415,6 +415,7 @@ func _draw_mid() -> void:
 			qq["list"] = false))
 	ends.add_child(lc)
 	mid.add_child(ends)
+	_draw_stage(q)
 	var opening := _then_rows(q, "on_start", func(fn: Callable, redraw := true): change("what happens as %s starts" % qid, func(): fn.call(quest_of(qid)), redraw), "AS IT STARTS")
 	opening.name = "Opening"
 	mid.add_child(opening)
@@ -1123,6 +1124,15 @@ func refs(kind: String) -> Array:
 			return _ids("door")
 		"spot":
 			return _ids("spot")
+		"seat":                                      # a spot, or a thing that's sat on
+			var r = panel.dock.root() if panel != null and panel.dock != null else null
+			var seats: Array = _ids("spot")
+			for t in (HSDirector.nodes_of(r, "HSThing") if r != null else []):
+				if str(t.get("use")) == "sit" and not seats.has(HSDirector.id_of(t)):
+					seats.append(HSDirector.id_of(t))
+			return seats
+		"face":
+			return HSDirector.faces()
 		"cast", "anyone":
 			return _ids("actor")
 		"zone":
@@ -1202,6 +1212,8 @@ func _name(_kind, v) -> String:
 		return "…"
 	if v is String and v == "*":
 		return "anything"
+	if v is String and v.ends_with("__home"):        # a character's own place (where the level has her at its start)
+		return "%s's place" % _name("cast", v.trim_suffix("__home"))
 	var n = node_of(str(v))
 	if n != null:
 		var dn = n.get("display_name")
@@ -1422,6 +1434,297 @@ func add_ready(it: Dictionary, target: Node = null) -> String:
 	if panel != null:
 		panel.say("%s: %s. Change any word in the moment." % [it.get("title", "A moment"), ("when " + _when_words(when)) if not when.is_empty() else "say when it happens (WHEN)"])
 	return id
+
+
+# ---- On stage ------------------------------------------------------------------------------------------------------
+const C_STAGE := Color("#9AD0B4")
+## what a person does on stage, as the line's `do` (and `then` for walking to a seat)
+const STAGE_DO := [["idle", "stands at"], ["sit", "sits on"], ["go", "walks to, then stands"], ["go_sit", "walks to, then sits"],
+	["path", "walks a path"], ["patrol", "patrols paths"], ["off", "isn't there"]]
+var staged := {}                  # Show on stage: actor -> {xf, visible, ap} (put back by ■ or before a save)
+
+
+## the quests On stage counts down (no eggs, no desk items), in the file's order
+func stage_quests() -> Array:
+	return (f.get("quests", []) as Array).filter(func(q): return q is Dictionary and q.get("egg", false) != true)
+
+
+## each person's line in a quest: her own there, or the one carried to it from an earlier quest ({who: [from, line]})
+func stage_lines(qid: String) -> Dictionary:
+	var out := {}
+	for ln in HSStoryCompiler.new().stage_cover(stage_quests()):
+		if (ln["quests"] as Array).has(qid):
+			out[ln["who"]] = [ln["from"], ln["line"]]
+	return out
+
+
+## On stage (docs/GODOT_ANIMATION_PLAN.md §6, the user: "at this point npc is doing this, then if quest complete they
+## get up and walk here with this animation, you can talk to them here, they have this expression"): a line per
+## character, hers in this quest or carried from an earlier one; the in-between plays by itself from her moves
+func _draw_stage(q: Dictionary) -> void:
+	var qid := str(q["id"])
+	var box := VBoxContainer.new()
+	box.name = "OnStage"
+	box.add_theme_constant_override("separation", int(4 * _s()))
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", int(8 * _s()))
+	head.add_child(_tag("ON STAGE", C_STAGE))
+	head.add_child(_label("who's where, doing what, while it's on (carried on until a later quest changes it)", 12, C_MUTED))
+	var sp := Control.new()
+	sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(sp)
+	var show := BuildTab._button("■ Back to the scene" if staged.size() else "Show on stage", staged.size() > 0)
+	show.name = "ShowOnStage"
+	show.tooltip_text = "Everyone where they'll be in this quest, doing it, in the 3D view (nothing saved; ■ puts them back)"
+	show.pressed.connect(func():
+		if staged.size():
+			unshow_stage()
+		else:
+			show_stage(qid)
+		refresh(false))
+	head.add_child(show)
+	box.add_child(head)
+	var lines := stage_lines(qid)
+	var own: Dictionary = q.get("stage", {}) if q.get("stage") is Dictionary else {}
+	for who in refs("cast"):
+		if own.has(who):
+			box.add_child(_stage_row(qid, str(who), own[who]))
+		else:
+			box.add_child(_stage_carried(qid, str(who), lines.get(who)))
+	if refs("cast").is_empty():
+		box.add_child(_wrap(_label("No characters in the scene yet (the Build tab's People).", 12, C_FAINT)))
+	mid.add_child(box)
+
+
+func _stage_carried(qid: String, who: String, carried) -> Control:
+	var row := HBoxContainer.new()
+	row.name = "Stage_" + who
+	row.add_theme_constant_override("separation", int(8 * _s()))
+	row.add_child(_label(_name("cast", who), 13, C_FAINT, true))
+	var words := "as the level has her" if carried == null else "as in “%s”: %s" % [str(quest_of(carried[0]).get("title", carried[0])), stage_words(carried[1], true)]
+	var l := _label(words, 12, C_FAINT)
+	l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	l.clip_text = true
+	row.add_child(l)
+	var b := Button.new()
+	b.name = "StageHere"
+	b.text = "Change it here"
+	b.flat = true
+	b.add_theme_color_override("font_color", C_BLUE)
+	b.pressed.connect(func(): change("%s on stage in %s" % [who, qid], func():
+		var qq := quest_of(qid)
+		if not (qq.get("stage") is Dictionary):
+			qq["stage"] = {}
+		var ln: Dictionary = (carried[1] as Dictionary).duplicate(true) if carried != null else {"do": "idle"}
+		ln.erase("talk")                               # (a conversation belongs to its own quest)
+		qq["stage"][who] = ln))
+	row.add_child(b)
+	return row
+
+
+## a line's key set, or taken off (null)
+static func _keep(x: Dictionary, k: String, v) -> void:
+	if v == null:
+		x.erase(k)
+	else:
+		x[k] = v
+
+
+## her line as words (Story Flow's chips and a carried line say it): "sits on Sofa · reading · face tired · talks …"
+## (carried: without the conversation, which belongs to its quest)
+func stage_words(ln: Dictionary, carried := false) -> String:
+	var d := str(ln.get("do", "idle"))
+	if d == "go" and str(ln.get("then", "")) == "sit":
+		d = "go_sit"
+	var w := ""
+	for x in STAGE_DO:
+		if x[0] == d:
+			w = x[1]
+	var place = ln.get("at", ln.get("to", ln.get("path", null)))
+	if ln.get("paths") is Array:
+		place = ", ".join(PackedStringArray((ln["paths"] as Array).map(func(p): return _name("route", p))))
+	if d != "off":
+		w += " " + (_name("spot", place) if place != null else "…")
+	for k in [["motion", ""], ["expr", "face "]]:
+		if str(ln.get(k[0], "")) != "":
+			w += " · %s%s" % [k[1], ln[k[0]]]
+	if ln.has("talk") and not carried:
+		w += " · busy" if str(ln["talk"]) == "" else " · talks %s" % ln["talk"]
+	return w
+
+
+func _stage_row(qid: String, who: String, ln: Dictionary) -> Control:
+	var put := func(fn: Callable, redraw := true):
+		change("%s on stage in %s" % [who, qid], func(): fn.call(quest_of(qid)["stage"][who]), redraw)
+	var row := HFlowContainer.new()
+	row.name = "Stage_" + who
+	row.add_theme_constant_override("h_separation", int(6 * _s()))
+	row.add_theme_constant_override("v_separation", int(4 * _s()))
+	var nm := _label(_name("cast", who), 13, C_TEXT, true)
+	nm.custom_minimum_size = Vector2(90, 30) * _s()
+	nm.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	row.add_child(nm)
+	var d := str(ln.get("do", "idle"))
+	if d == "go" and str(ln.get("then", "")) == "sit":
+		d = "go_sit"
+	var dob := OptionButton.new()                    # what she does
+	dob.name = "StageDo"
+	for x in STAGE_DO:
+		dob.add_item(str(x[1]))
+	dob.select(max(0, STAGE_DO.map(func(x): return x[0]).find(d)))
+	_blue(dob)
+	dob.item_selected.connect(func(i): put.call(func(x: Dictionary):
+		var nd: String = STAGE_DO[i][0]
+		var place = x.get("at", x.get("to"))
+		for k in ["do", "then", "at", "to", "path", "paths"]:
+			x.erase(k)
+		x["do"] = "go" if nd == "go_sit" else nd
+		if nd == "go_sit":
+			x["then"] = "sit"
+		if nd in ["idle", "sit"] and place != null:
+			x["at"] = place
+		elif nd in ["go", "go_sit"] and place != null:
+			x["to"] = place))
+	row.add_child(dob)
+	match d:                                         # where
+		"idle", "sit":
+			row.add_child(_pick("seat" if d == "sit" else "spot", ln.get("at"), func(v): put.call(func(x: Dictionary): _keep(x, "at", v))))
+		"go", "go_sit":
+			row.add_child(_pick("seat" if d == "go_sit" else "spot", ln.get("to"), func(v): put.call(func(x: Dictionary): _keep(x, "to", v))))
+		"path":
+			row.add_child(_pick("route", ln.get("path"), func(v): put.call(func(x: Dictionary): _keep(x, "path", v))))
+		"patrol":
+			row.add_child(_field(ln, {"key": "paths", "kind": "routes"}, put))
+	if d != "off":
+		row.add_child(_label("doing", 12, C_FAINT))       # what she plays there (none: her moves)
+		var mb := _pick("motion", ln.get("motion"), func(v): put.call(func(x: Dictionary): _keep(x, "motion", v)))
+		mb.name = "StageMotion"
+		mb.set_item_text(0, "her moves")
+		row.add_child(mb)
+		row.add_child(_label("face", 12, C_FAINT))
+		var fb := _pick("face", ln.get("expr"), func(v): put.call(func(x: Dictionary): _keep(x, "expr", v)))
+		fb.name = "StageFace"
+		fb.set_item_text(0, "as she is")
+		row.add_child(fb)
+		row.add_child(_label("talks", 12, C_FAINT))       # the conversation she offers here
+		var tb := OptionButton.new()
+		tb.name = "StageTalk"
+		var tv: Array = [null, ""]
+		tb.add_item("as she does")                   # (in this quest only: a conversation isn't carried on)
+		tb.add_item("not now: she's busy")
+		for t in (f.get("talk", {}).get(who, []) as Array):   # each by its title, else its first line
+			var first := str(((t.get("lines", [{}]) as Array) + [{}])[0].get("text", "")) if t.get("lines") is Array else ""
+			var said := str(t.get("title", "")) if str(t.get("title", "")) != "" else (first if first != "" else str(t.get("id", "")))
+			tb.add_item("“%s”" % (said.left(44) + ("…" if said.length() > 44 else "")))
+			tv.append(str(t.get("id", "")))
+		tb.select(max(0, tv.find(ln.get("talk")) if ln.has("talk") else 0))
+		_blue(tb)
+		tb.item_selected.connect(func(i): put.call(func(x: Dictionary): _keep(x, "talk", tv[i])))
+		row.add_child(tb)
+		var more := MenuButton.new()                 # the in-between's own clips, and whom she faces
+		more.name = "StageMore"
+		more.text = "…"
+		more.tooltip_text = "walks with, gets up with, arrives with; faces you"
+		var pop := more.get_popup()
+		var acts := {}
+		var i := 0
+		for spec in [["walk", "walks with"], ["leave", "gets up with"], ["arrive", "arrives with"]]:
+			var sub := PopupMenu.new()
+			sub.name = "More_" + spec[0]
+			sub.add_item("her own (her moves)", 0)
+			var clips: Array = refs("motion")
+			for j in clips.size():
+				sub.add_item(str(clips[j]), j + 1)
+			var key: String = spec[0]
+			sub.id_pressed.connect(func(id): put.call(func(x: Dictionary): _keep(x, key, null if id == 0 else clips[id - 1])))
+			pop.add_child(sub)
+			pop.add_submenu_node_item("%s: %s" % [spec[1], str(ln.get(key, "her own"))], sub)
+			i += 1
+		pop.add_check_item("faces you", 100)
+		pop.set_item_checked(pop.get_item_index(100), str(ln.get("face", "")) == "player")
+		pop.id_pressed.connect(func(id):
+			if id == 100:
+				put.call(func(x: Dictionary): _keep(x, "face", null if str(x.get("face", "")) == "player" else "player")))
+		_blue(more)
+		row.add_child(more)
+	var del := Button.new()                          # back to what's carried
+	del.name = "StageClear"
+	del.flat = true
+	del.text = "×"
+	del.tooltip_text = "Take her line off this quest (she carries on as in the quest before)"
+	del.pressed.connect(func(): change("%s off stage in %s" % [who, qid], func():
+		var qq := quest_of(qid)
+		(qq["stage"] as Dictionary).erase(who)
+		if (qq["stage"] as Dictionary).is_empty():
+			qq.erase("stage")))
+	row.add_child(del)
+	return row
+
+
+## Show on stage: everyone moved to where this quest has them (her own line or the one carried there), playing what
+## she does there (her line's motion, else her sitting or her idle), hidden when she isn't there; nothing saved,
+## put back by ■ or before a save (plugin.gd _apply_changes)
+func show_stage(qid: String) -> void:
+	unshow_stage()
+	var lines := stage_lines(qid)
+	var r = panel.dock.root()
+	for a in HSDirector.nodes_of(r, "HSActor"):
+		var who: String = a.cast_id()
+		if not lines.has(who):
+			continue
+		var ln: Dictionary = lines[who][1]
+		staged[a] = {"xf": a.global_transform, "visible": a.visible, "ap": null}
+		var d := str(ln.get("do", "idle"))
+		if d == "off":
+			a.visible = false
+			continue
+		var place = ln.get("at", ln.get("to"))
+		if d == "path" and ln.get("path") != null:     # a path: its first stop
+			var pn = node_of(str(ln["path"]))
+			for c in (pn.get_children() if pn != null else []):
+				if HSDirector.is_a(c, "HSSpot"):
+					place = HSDirector.id_of(c)
+					break
+		var target = node_of(str(place)) if place != null else null
+		if target is Node3D:
+			a.global_transform = Transform3D(target.global_transform.basis.orthonormalized(), target.global_position)
+		var sitting: bool = d == "sit" or (d == "go" and str(ln.get("then", "")) == "sit")
+		var clip := str(ln.get("motion", ""))
+		if clip == "":
+			clip = a.move("sitting") if sitting and a.move("sitting") != "" else a.move("idle")
+		var src: AnimationPlayer = load("res://addons/horrorstudio/play.gd").player_with(a, clip) if clip != "" else null
+		if src == null:
+			continue
+		var ap := AnimationPlayer.new()              # a throwaway player of its own (as the Animate tab's preview): never saved
+		ap.name = "_Staged"
+		a.add_child(ap)
+		ap.root_node = NodePath("..")
+		var lib := AnimationLibrary.new()
+		var anim: Animation = (src.get_animation(load("res://addons/horrorstudio/play.gd").anim_name(src, clip)) as Animation).duplicate()
+		anim.loop_mode = Animation.LOOP_LINEAR
+		lib.add_animation("clip", anim)
+		ap.add_animation_library("p", lib)
+		ap.play("p/clip")
+		staged[a]["ap"] = ap
+	panel.say("On stage in “%s”: ■ Back to the scene puts everyone back" % str(quest_of(qid).get("title", qid)))
+
+
+func unshow_stage() -> void:
+	for a in staged:
+		if not is_instance_valid(a):
+			continue
+		var st: Dictionary = staged[a]
+		var ap = st.get("ap")
+		if ap != null and is_instance_valid(ap):
+			ap.stop()
+			ap.get_parent().remove_child(ap)
+			ap.queue_free()
+		var sk := HSRetarget.skeleton_of(a)
+		if sk != null:
+			sk.reset_bone_poses()
+		a.global_transform = st["xf"]
+		a.visible = st["visible"]
+	staged.clear()
 
 
 ## a ready-made moment dropped in the 3D view (plugin.gd _unlink): on the area it fell in or the door it fell by, the

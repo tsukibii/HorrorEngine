@@ -590,6 +590,10 @@ with `{"tick": "<id>"}` at the end of that beat, not by its own trigger (the sto
   walks a `path` or a `patrol` (then `in_place`: the route moves her; a point's `pose` at its waits). `rest`: the
   `motions` id she plays at a route's waits instead (her idle between the walks; Godot). Until its
   Kimodo take is made, the desk plays its `block` stand-in, else the pose; Unreal plays the take (its `name`).
+  The in-between (Godot; the Director's On stage, docs/GODOT_ANIMATION_PLAN.md §6): `walk` a `motions` id she walks
+  on this time instead of her walk (§2 `moves`), `leave` one she plays once before the behaviour starts, in place of
+  her `stand_up` when she was seated (the behaviour waits for it), `arrive` one she plays once on reaching a `go`'s
+  `to` (instead of her `sit_down` there).
   `sees`: she watches for the player (`true`, or some of `angle` 90 (the cone's full width), `range` 9 m,
   `crouched` 0.55 (the reach for a crouched player), `meter` 1.2 s (to fill), `drain` 1.5 s, `calm` 3 s (after a
   catch)). In her cone, in reach and in her line of sight, the suspicion meter fills; out of it, it drains; full,

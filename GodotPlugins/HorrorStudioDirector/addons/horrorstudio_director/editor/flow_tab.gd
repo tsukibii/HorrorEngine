@@ -338,6 +338,19 @@ func _card(c: Dictionary, has_during: bool) -> GraphNode:
 		info.name = "Info"
 		g.add_child(info)
 		slot += 1
+	var st = _story()                                  # On stage: each person's own line in this quest, as chips
+	var stage = st.quest_of(str(c["id"])).get("stage") if st != null and c["kind"] in ["quest", "intro", "round"] else null
+	if stage is Dictionary and not (stage as Dictionary).is_empty():
+		var chips := VBoxContainer.new()
+		chips.name = "Stage"
+		chips.add_theme_constant_override("separation", int(2 * s))
+		for who in stage:
+			var l := BuildTab._label("%s · %s" % [st._name("cast", who), st.stage_words(stage[who])], 12, Color("#9AD0B4"))
+			l.clip_text = true
+			l.custom_minimum_size = Vector2(256, 0) * s
+			chips.add_child(l)
+		g.add_child(chips)
+		slot += 1
 	var pmap := {}
 	var port := 0
 	for j in (c["outs"] as Array).size():

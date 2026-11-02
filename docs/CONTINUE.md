@@ -11,7 +11,7 @@ the to-do built there, with the Studio's eyes from the side, a small nose and th
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-03, branch `Director-Godot`): animation steps 1 to 3, the Animate tab, the Face page, moves
+## Where it stopped last (2026-11-03, branch `Director-Godot`): animation steps 1 to 4, the Animate tab, the Face page, moves, On stage
 
 The user tried the Animate tab ("tested and works") and asked to go through the plan's steps in order (DECISIONS
 2026-11-03). **Step 2, the Face page, is built** (`tools/facecap`, GODOT_DIRECTOR §6g): the desk's Expressions import
@@ -21,7 +21,11 @@ Godot** sends the picked faces into a project's `faces/`; the Animate tab's Face
 FACEMOCAP checks it. **Step 3, a character's moves, is built** (GODOT_DIRECTOR §6g): idle, walk, run, sitting down,
 sitting, getting up, talk, listen and look round, set on the Animate tab (a card's menu, her moves' rows, Fill the
 empty ones from the library) and played by the runtime by what she's doing, an empty one falling back to another she
-has. Next in order: **4, On stage**, then 5 paths, 6 reactions and scares, 7 cutscenes.
+has. **Step 4, On stage, is built** (GODOT_DIRECTOR §6g): a quest's line per character in the Story tab (where she
+is, what she does, her face, the conversation she offers), carried on until a later quest changes it, the in-between
+walked by itself from her moves, Show on stage in the 3D view, chips on Story Flow's cards. Next in order: **5, paths
+and patrols** (drawing a path in the 3D view, clips at its stops; also the straight `go` that can cut through a wall),
+then 6 reactions and scares, 7 cutscenes in the level.
 
 ### Step 1 (2026-11-02, night): the library and the Animate tab
 

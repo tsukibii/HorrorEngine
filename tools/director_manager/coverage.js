@@ -82,6 +82,12 @@ export function refsOf(S) {
     arr(q.steps).forEach(s => { trig(s.done, `${w}, step ${s.id}`); trig(s.fail, `${w}, step ${s.id}`); ref(s.who, "actor", `${w}, step ${s.id}`); if (s.wrong) ref(s.wrong.who, "actor", `${w}, step ${s.id}`); });
     if (q.egg) trig(q.found, `easter egg ${q.id}`);
     acts(q.on_start, w); acts(q.on_done, w);
+    for (const [who, ln] of Object.entries(isObj(q.stage) ? q.stage : {})) {   // On stage: each person's line in the quest
+      ref(who, "actor", `${w}, on stage`);
+      if (!isObj(ln)) continue;
+      ref(ln.at, "spot", `${w}, on stage`); ref(ln.to, "spot", `${w}, on stage`); ref(ln.path, "path", `${w}, on stage`); arr(ln.paths).forEach(p => ref(p, "path", `${w}, on stage`));
+      for (const k of ["motion", "walk", "leave", "arrive"]) ref(ln[k], "motion", `${w}, on stage`);
+    }
     if (isObj(q.round)) { arr(q.round.spots).forEach(s => ref(s, "thing", `${w}, its round`)); ref(q.round.seeker, "actor", `${w}, its round`);
       Object.values(isObj(q.round.on) ? q.round.on : {}).forEach(list => acts(list, `${w}, its round`)); }
   });
