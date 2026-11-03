@@ -3,6 +3,22 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## Walls meeting (2026-11-03, later evening)
+
+- **Close a corner only where nothing else does:** a wall run on "to close the corner" was right for a room alone and
+  wrong where it met another room's wall: its end lay on that wall's face, two faces in one plane that z-fight, as a
+  thin line down the wall flickering with the eye. Ask what fills the corner first (every other wall, measured), and
+  check it the same way: LEVEL now counts faces of two rooms in one plane and corners left open, WALLS the same on a
+  Director project's built rooms. The first fix, "filled over the whole height or not at all", missed a stair shaft
+  the building's height beside each storey's corridor: decide by height, and cap only what's left open.
+- **Look for the same fault one dimension over:** the walls' z-fighting had a twin in the Director's floors, each run
+  a whole wall past its room so neighbours' floors overlapped under the wall between them and showed in its doorway.
+  Measured the same way (WALLS counts floors and ceilings too), fixed the same way (stop on the middle line where a
+  neighbour carries on, one builder for what's left).
+- **A level put straight under the root plays alone:** HSLevel's `_enter_tree` takes a parent that's the root (and no
+  current scene) for F6 and holds its rooms back. A test that builds a level's rooms puts it under a holder node, and
+  waits a frame (nodes added in a SceneTree script's `_initialize` enter the tree once the loop runs).
+
 ## The skin's depth and the clothes in motion (2026-11-03)
 
 - **A check of a subtle effect needs a ceiling as well as a floor:** the skin's depth layer (GODOT_LOOK §5g) was

@@ -339,22 +339,35 @@ def from_desk(game, folder=None, force=False):
     return out
 
 
+def walls_check(out):
+    """The project's rooms built and their walls measured (tests/walls_check.gd): never two rooms' wall faces in one
+    plane (they z-fight: a line down the wall flickering as you move), every corner closed. True when WALLS ok."""
+    code, text = run_godot(["--headless", "--path", str(out), "-s", "res://addons/horrorstudio_director/tests/walls_check.gd"], timeout=600)
+    text = quiet(text)
+    for l in text.splitlines():
+        if l.strip().startswith(("BAD", "WALLS")) or "SCRIPT ERROR" in l or "Parse Error" in l:
+            print("  " + l.strip()[:300])
+    return "WALLS ok" in text
+
+
 # the games with a playthrough of their export (their checks), played the same way on the Director project made from them
 PLAYTHROUGHS = {"Pilot": ("gdplay.gd", "GDPLAY", 1200, "to its good ending"),
                 "TestRoom001": ("gdtestroom.gd", "GDTESTROOM", 3000, "station by station, a death and its retry, the trigger cutscene")}
 
 
-def from_desk_play(game, out):
+def from_desk_play(game, out, walls=True):
     """The game played through the Director project made from it, as its export's check plays it (tests/gdplay.gd or
-    tests/gdtestroom.gd with --director); a game with no playthrough started headless and run a while (tests/load_check.gd)."""
+    tests/gdtestroom.gd with --director); a game with no playthrough started headless and run a while (tests/load_check.gd).
+    `walls`: its rooms' walls passed walls_check (FROMDESK fails without)."""
     if game not in PLAYTHROUGHS:
         code, text = run_godot(["--headless", "--path", str(out), "--quit-after", "600"], timeout=600)
         text = quiet(text)
         bad = [l for l in text.splitlines() if "SCRIPT ERROR" in l or "Parse Error" in l or "DIRECTOR:" in l and "problem" in l]
         for l in bad[:12]:
             print("  " + l.strip()[:300])
+        bad = bad or ([] if walls else ["walls"])
         print(f"FROMDESK {'ok' if not bad else 'FAIL'} ({game} started and run ten seconds as a Director project; only "
-              f"{' and '.join(PLAYTHROUGHS)} have a playthrough)")
+              f"{' and '.join(PLAYTHROUGHS)} have a playthrough{'' if walls else '; its walls failed WALLS'})")
         return 0 if not bad else 1
     script, name, timeout, how = PLAYTHROUGHS[game]
     code, text = run_godot(["--headless", "--fixed-fps", "60", "--path", str(out), "-s", f"res://addons/horrorstudio/tests/{script}", "--", "--director"], timeout=timeout)
@@ -362,8 +375,9 @@ def from_desk_play(game, out):
     for l in text.splitlines():
         if l.strip().startswith(("ok ", "BAD", name)) or "SCRIPT ERROR" in l or "Parse Error" in l:
             print("  " + l.strip()[:300])
-    ok = f"{name} ok" in text
-    print(f"FROMDESK ok ({game} played through as a Director project, {how})" if ok else "FROMDESK FAIL")
+    ok = f"{name} ok" in text and walls
+    print(f"FROMDESK ok ({game} played through as a Director project, {how}; its walls WALLS ok)" if ok else
+          "FROMDESK FAIL" + ("" if walls else " (its walls failed WALLS)"))
     return 0 if ok else 1
 
 
@@ -814,7 +828,8 @@ def main(argv):
             sys.exit("from-desk <Game> [folder] [--force] [--play]")
         folder = rest[1] if len(rest) > 1 and not rest[1].startswith("--") else None
         out = from_desk(rest[0], folder, "--force" in rest)
-        return from_desk_play(rest[0], out) if "--play" in rest else 0
+        walls = walls_check(out)                                        # its rooms' walls meeting cleanly (WALLS)
+        return from_desk_play(rest[0], out, walls) if "--play" in rest else 0
     if cmd == "guide":
         return guide()
     print(__doc__)

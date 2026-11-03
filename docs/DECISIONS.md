@@ -2,6 +2,16 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-03, later evening (the user: lines down the walls)
+
+- **"Looks good"** (the skin and the clothes). **"Could you investigate why we get weird lighting seams (vertical lines
+  in the wall)… they kind of flicker as I move."** TestRoom001's corridor: half way between its doors, where each side
+  room's dividing wall met the corridor's. A room's north and south walls ran half a wall past their corners and ended
+  on the corridor wall's face: two rooms' faces in one plane, z-fighting. They now stop inside the wall that fills the
+  corner, capped where it fills it only part of the way up, in the export's plan and in the Director's HSRoom alike
+  (GODOT_EXPORT §3c). The Director's rooms had the same in their floors: two rooms' floors overlapping under the wall
+  between them, flickering in its doorway; they meet on the wall's middle now. LEVEL and FROMDESK check it.
+
 ## 2026-11-03, evening (the user, playing main: the skin and the clothes)
 
 - **"The subsurface scattering seems too strong in game (looks uncanny)."** Their picture: orange rings round the

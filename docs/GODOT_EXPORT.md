@@ -126,6 +126,28 @@ its `verb` (`_get_property_list` from the parts registry: the same verbs the des
 conditions, 20 interactables, 5 abilities, 5 behaviours, 2 physics kinds), so each reads as the desk's sentence.
 Props' `use` is the same: a `StoryUse` resource on the prop's node.
 
+### 3c. Walls meeting: no two rooms' faces in one plane (DECISIONS 2026-11-03, later evening)
+
+The user's pictures of TestRoom001's corridor: thin vertical lines down its walls, half way between the doors,
+coming and going as the eye moved. Each side room's dividing wall met the corridor's wall there, and `plan.py` ran a
+room's north and south walls half a wall past their corners to close them, so that wall's end lay exactly on the
+corridor wall's face: two faces in one plane, facing the same way, from two rooms. They z-fought, and each room's
+light zone lights only its own walls, so the end was darker and the line flickered. TestRoom001 had 42 such pairs, the
+school building's stair shafts 32 more.
+
+Now a north or south wall runs past its corner only where nothing else fills the corner (`corner_gaps`: the corner's
+square sampled against every wall of the level built without its corners). Where another room's wall fills it, the
+wall stops on the corner's line, its end inside that wall. Where one fills it only part of the way up (a 4 m atrium
+beside 3 m rooms, a stair shaft the building's height past each storey's corridor), a cap half a wall long closes the
+rest. The Director's `HSRoom` does the same with the rooms of its level (GODOT_DIRECTOR §3), and its floors and
+ceilings too: each ran a whole wall past the room on every side, so two rooms' floors lay in one plane under the wall
+they share and z-fought in its doorway (a strip on the floor flickering between the two); now each reaches the walls'
+middle lines and goes past them only where no other room's floor carries on. LEVEL fails on two rooms'
+faces in one plane (`plan.fighting_faces`) and on a corner left open (`open_corners`); FROMDESK runs `WALLS` on the
+rooms a desk game becomes (walls, floors and ceilings: none of two rooms in one plane, no corner open, no hole). The
+export's own floors were never doubled: each is the room's size, meeting the next on the shared wall's middle line. Before and after, the corridor from the player's eye:
+`docs/godot_sheets/2026-11-03_wall_seams.jpg`.
+
 ## 4. Open choices (the user's call; my pick first)
 
 1. **Numbered folders in play order** (`01_arrival`, as asked) **or stable ids** (`arrival/`)? Numbers shift when the

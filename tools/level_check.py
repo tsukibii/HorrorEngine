@@ -5,7 +5,9 @@
 
 Fails on: props overlapping (more than 2 cm, unless one is `on` the other; trim, floors and hollow things aside), props or people in walls, props
 outside their room, doorways blocked (0.8 m each side of every walk-through opening), interactables with no
-standing room (no free 0.5 m square on the floor within reach, 1.2 m). Ends `LEVEL ok` or `LEVEL FAILED (n)`.
+standing room (no free 0.5 m square on the floor within reach, 1.2 m), two rooms' walls with faces in one plane (they
+z-fight: plan.py stops a wall's end inside the wall that fills its corner) and a corner left open. Ends `LEVEL ok` or
+`LEVEL FAILED (n)`.
 """
 import math
 import sys
@@ -133,6 +135,14 @@ def check(story, level=None):
         if not ok:
             errs.append(f"{t['id']}: nowhere to stand within {REACH} m")
 
+    for name, lv in story["levels"].items():           # walls meeting: never two rooms' faces in one plane, every corner closed
+        if level and name != level:
+            continue
+        mine = [w for w in walls if w["level"] == name]
+        for a, b, ax, at, _ in P.fighting_faces(mine):
+            errs.append(f"{a} and {b} have faces in one plane ({ax} = {at:.3f}): they z-fight, a line down the wall flickering as you move")
+        for rid, wall, end in P.open_corners(lv, mine):
+            errs.append(f"{rid}'s {'north' if wall == 'n' else 'south'} wall leaves its {'east' if end else 'west'} corner open")
     return errs, pieces
 
 

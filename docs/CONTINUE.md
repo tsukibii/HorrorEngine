@@ -16,7 +16,17 @@ clothes hidden on `claude/festive-euler-o7axpl`). Read this
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-03, evening, branch `claude/festive-euler-o7axpl` from main): the skin in the game and the clothes in poses
+## Where it stopped last (2026-11-03, later evening, branch `claude/festive-euler-o7axpl` from main): walls meeting
+
+The user's lines down TestRoom001's corridor walls (DECISIONS 2026-11-03, later evening): two rooms' wall faces in
+one plane, z-fighting, where each room's dividing wall met the corridor. Fixed in `plan.py` (the export, the desk)
+and in the Director's `HSRoom` (GODOT_EXPORT §3c), whose floors overlapped in doorways the same way (fixed too); LEVEL
+and FROMDESK's WALLS check it. Open: TestRoom001 played as a Director project stops at station 4, its bulb's fitting
+(the conversion, `director_desk.py`, doesn't know main's lights with fittings of 2026-10-31: a merge gap, not walls). A desk game's export picks it
+up on its next export; a Director project when the plugin is installed into it again (`godot_director.py install`,
+or `from-desk --force` for a converted one). Before that, the skin and the clothes (below).
+
+## Before that (2026-11-03, evening): the skin in the game and the clothes in poses
 
 The user, playing main, asked for two fixes (DECISIONS 2026-11-03, evening). **The skin looked uncanny in the game**
 (orange rings round the eyes, the nose and the lips, a red ear): the skin's depth layer is now about a third of its
