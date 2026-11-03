@@ -3,6 +3,41 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## The prop generator's trees (2026-11-02)
+
+- **A bush is leafy to the ground, so its leaves go on every node, stems too:** the first azalea balls floated, a
+  cloud of leaves over bare sticks, because the cards hung only on the last order of twigs, as a tree's do. A clipped
+  bush carries leaves along every branch and stem (`leaves.on: all`), and the clip cuts branches, not the leaves off
+  them.
+- **A spray hangs by its cut stem, and "the thin end" isn't it:** the first realistic trees hung most fir sprays by
+  their bushy end (the user caught it in the atlas). Measured by the outline's width, a spray's cut end looks wide
+  (its side shoots angle back past the stem) and its far end narrow (a point of needles). What marks the stem is
+  that the last slices of the long axis hold one thin run of pixels, not several; and a leaf photographed on a
+  plain ground is simply stalk down, so its base is its lowest point. Read a photo's convention before inventing a
+  measure, and check an atlas by eye before the tree.
+
+- **Port the algorithm, not the add-on:** Modular Tree 4 is an MIT C++ core under a GPL Blender add-on compiled
+  against one Blender's Python at a time (the fork stopped at 3.2). Its growth (a few hundred lines once the
+  `shared_ptr` scaffolding is gone) ran in plain numpy Python in an afternoon, on Blender 4.2's and 5.x's own Python
+  with nothing to build, and the same seed grows the same tree. Fetch a library like that for what it knows (the
+  order of its steps, its words, its defaults), and write it in the project's own way.
+- **A tiling texture over every branch wants no per-texel raster and no occlusion bake:** the bark tile covers
+  thousands of tubes, so `raster` walked twenty thousand triangles whose UVs run many tiles up each twig (thirty
+  seconds at 512 px, minutes at 1024) for a wear nothing used, and a Cycles occlusion bake over UVs that overlap
+  everywhere is a jumble. Skip the raster where no wear and no paint by place reads it (`build.run` now does, for
+  every prop), and let a thing say it bakes no occlusion (`Thing.bake_ao`).
+- **A texture that must repeat both ways is drawn on the flat torus in 4D, not crossfaded:** sampling 3D noise round
+  a cylinder tiles one way; crossfading the field with itself a tile up blurred the bark's cracks into ink blots, and
+  the 3D torus squeezes its inner side to half. Four coordinates, (cos u, sin u, cos v, sin v) with each circle's
+  radius its length round, and perlin4 reads it with no direction stretched and no seam (`noise.fbm4`, `ridged4`).
+- **A leaf card is a spray, not a leaf:** the first atlas drew leaves at their true size along a twig, and the crown
+  came out a scatter of green specks on bare branches. A card stands for a whole spray, so its leaves are a quarter
+  bigger than life and half a leaf apart along every twig (a fifth to a third of the card covered), and the cards
+  sit at every branch's tip as well as along the last order of twigs, so nothing ends bare.
+- **A pipe model starves a trunk with few tips:** a pollarded plane and a dead tree came out with trunks a few
+  centimetres thick, since their radii were summed from a handful of twigs. A stem keeps at least its species' trunk,
+  tapering up it (`_trunk_floor`), and a pollard's limbs keep the radii they grew with.
+
 ## Carried over from the Godot project (Woohill)
 
 - **Measure, don't guess:** a check that prints one `<NAME> ok` line beats any amount of reading code. Every
@@ -12,6 +47,78 @@ the fix.
 
 ## This project
 
+- **A shading frame goes into a basis once:** the Godot eye's iris bowl normal went back to view space through BINORMAL
+  with `handed` applied a second time (eB, the binormal's image, already had it), so the bowl tilted down where it
+  should tilt up: under a lamp above, the iris's lower half went black and the eye read as a black hole (the user:
+  "lifeless and scary"). Found by turning the guessed lid shadow off and seeing the lower iris stay black (GODOT_LOOK
+  §5h). When a frame's sign is a uniform, every use of the frame must be checked, not only the one that was measured.
+- **On a mesh with a crease, take the frame where the normals are exact:** the eye's wet layer first worked out the
+  eyeball's centre per pixel from the interpolated tangent frame, and across the limbus (the export puts the white's
+  sphere and the cornea's dome on one ring of vertices with their normals averaged, 14.5° off each) the frame bent and
+  the centre moved millimetres: a false ring of shadow round the iris. Second try: per vertex, with the averaged normal
+  on the limbus ring, every vertex gives the same centre (to 0.02 mm), so its interpolation is exact.
+- **A Studio export made in the cloud needs MediaPipe first:** without it the Studio's face landmarks fail
+  (`api/face/landmarks`: "MediaPipe isn't set up", then a missing libEGL), and an export said "wrote ... 12.0 MB"
+  carrying only the skin: no eyes, no blink, no lashes, no lips or make-up, its paint one flat tone (found on both
+  `eye-enhancements` and `subsurace-scattering-exp` the same day). Second try: `python tools/face_mesh.py setup` and
+  `apt-get install libegl1` before the Studio's server makes an export to check (the eyes and lashes come once
+  `graft().on`; about two minutes).
+- **GDTESTROOM on a fresh checkout needs the desk's bake first:** without `Content/Games/TestRoom001/Previs/` (git-ignored)
+  Aoi's stand-in has no body to wear HSSkin, and station 6 fails on "her skin ... on 0 materials", which reads like a
+  skin bug. Second try: the desk's server and `node tools/godot/bake.mjs --game TestRoom001` (about a minute), then
+  GDTESTROOM passes.
+- **A shade from on/off taps is a staircase:** sixteen taps each lid or not gave the lid's shadow seventeen levels,
+  steps that followed the lid's shape. Second try: the distance to the lid along eight ways, each found by halving,
+  shaded by the distance: no steps.
+- **Never copy a repo's `.import` files over an imported Godot project's:** Godot writes each one's `path=` and `uid=`
+  into it on import, the repo's has neither, and every texture then fails to load, its sampler falling back to the flat
+  default without an error in the picture (the skin's depth layer measured exactly nothing off and on). Second try:
+  the plugin's other files copied in, or the project imported again (`--import`) after.
+- **A graft takes over every deformation of what it replaces:** the grafted eyes rode MHR's face without MHR's blink, but
+  MHR's blink still moved the skin round them, and shut, the seam opened into black slivers. Second try: with the grafted eyes
+  on, MHR's own eyesClosed is left out of the face altogether; the graft shuts its own way.
+- **Lids rest on the outermost surface under them, not the eyeball's sphere:** our cornea bulges about 2 mm past the
+  white (the base mesh's barely does), and the base mesh's shut lids, seated on the white's sphere, showed the cornea and the pupil through
+  them. Second try: each lid point is kept out of whichever is further out under it, the cornea's dome or the white.
+- **A shut lid shows skin no photo saw:** the base mesh's upper lid unfolds from under the crease as it shuts, and its UVs, laid on
+  MHR's narrow lid, stretched what the photo had there (the test character's: a screenshot with the Studio's circles
+  over the lid) into grey stripes, which a first look took for the studio lights' reflections; a blur alone only
+  softened them (the stripes ran along the lid's angle). Second try: that part of the lid near the photo's own skin
+  tone, and its skin and makeup worked out on the open lid laid flat, so they go down with it.
+- **A photo skin lives on MHR's UVs, so a graft's UVs come from where the skin it replaces was, by position:** UVs taken
+  from the nearest MHR triangle put the photo's eye (projected onto MHR's closed strip and the lid skin by it) on the base mesh's
+  shut lid as pale, jagged patches. Second try: the base mesh's lid laid on MHR's lid between the opening and the edge, round the
+  eye, and the strip left out.
+
+- **Read a generator's own controls before blaming its look:** the add-on's lashes "stood up" because its Straight preset says
+  so (Angle Inner 80°, Angle Outer 70°, off the lid's line: every other preset sweeps out at 40° to 10°), and a tidy that
+  turned lashes up to keep them off the eye made it worse. Second try: the brows and lashes by hand, their angles
+  measured on the user's references (the middle lashes 1.5 to 2.5 mm over the lid, not 3.7).
+- **A hair's look is its thickness as much as its texture:** the editor's first lashes and brows were drawn the same way
+  as the add-on's but 30 to 50% thinner, and in Godot they faded to a faint line; at the add-on's 0.055 mm they read as the add-on's did.
+- **A name in a 3000-line page is shared:** the editor's handle list was called `GH`, as the garments' handles already
+  were, and the whole page stopped with "Identifier 'GH' has already been declared"; grep a name before taking it.
+
+- **Move a cut mesh by the points its corners are made of, never corner by corner:** the Studio's export cuts the eyes'
+  openings out of the skin by splitting MHR's triangles, and a split triangle's corner lies on its neighbour's edge (a
+  T-junction). Any move that isn't the same blend of the same points (pushing each corner off the eyeball, closing the
+  lids by moving the edge corners) opened cracks there, and the eye showed through them. The blink's targets are made
+  from MHR's points (kept off the eye, the lids met by moving the edge corners' triangles' points) and the corners
+  follow by their weights. Second try: the first shut lid had a cracked inner corner and a patch dipping into the cornea.
+- **A morph target is a straight line; check the way, not just the ends:** the shut lid sat outside the eye and so did
+  the open one, and halfway down the straight line between them ran 0.7 mm into the cornea (most where the lid crosses
+  it, 60 to 90% shut). One corrective at the middle didn't cover it; in-betweens an eighth apart (and a sixteenth before
+  the end) do. EYELIDS draws the file at every twentieth of the blink from five sides.
+- **MHR's shut lids don't shut:** they leave 15 to 20% of the opening (the Studio hides it by shrinking its cut). A file
+  whose opening is cut out of the skin showed the eye through a slit with the lids "closed"; the export meets the
+  cut's edges over the blink's last quarter.
+- **Pin a strand to the face it will be worn on:** the add-on grew the lashes on the export, whose lids are brought forward
+  onto the eyeballs (up to 4 mm); pinned there and rebuilt on the Studio's own face (not brought forward), each lash
+  turned with its triangle's tilt and a fifth of them crossed the eye. Now each strand is moved back off the lift (the
+  Studio's `body.bin`), pinned, and the export lifts it again with the lids (`liftWith`); our own lashes had stayed
+  behind the export's lids too.
+- **Copying a plugin over an imported Godot project leaves stale textures:** the skin came out striped like wood until
+  the project was made fresh. The checks always build their project from nothing; a scratch script must too.
 - **A node that rides a rigid body must lose its own colliders while it rides** (the desk's TestRoom as a Director
   project, 2026-11-01): the die's node is moved onto its rolling body every frame, and a Director thing's collider is
   a `_solid` StaticBody3D under it (the export's is a `shape` the roll turned off by name): it rode along inside the
@@ -213,6 +320,15 @@ points to the nearest skin point piled several onto the same spot on a heavy bod
 blew Blender's cloth apart (seams a metre apart). Laying them round the body's cross-section at that height (each at
 its own angle from the middle, at its own height) keeps their order and spacing, and the pants stay on. And don't
 flatten a scooped neckline to one height: it hitches the whole top up.
+
+## A drop goes where the picture fits, not only where it lands (2026-11-01)
+
+- **Decide a dropped picture's target by its shape as well as its place:** a box under the pointer can be the whole
+  part (the can's bubbles pattern is a slot as big as its label), so "the smallest box under the pointer" swapped the
+  pattern when a label-shaped picture was dropped to cover the label. A picture the part's shape fills the part unless
+  it's the shape of a box that's only some of the part. And "square and half the texture's size" took a 256 px logo on
+  a 512 texture for a painted template: the texture's shape is square and exactly its size (or 2x, 4x), or opaque and
+  three quarters of it. The drag's label says what the drop will do, and Alt and Shift override it.
 
 ## A chart is pseudo-code, not prose (2026-10-28)
 
@@ -1195,6 +1311,287 @@ guessed margin; and a check that only ever ran on a slow machine hasn't been run
   `HSRain.new()` needs `rain.gd` to be `@tool` too.
 - **`surface_get_name` is ArrayMesh's alone**: a helper that matches surfaces by name must skip it for a
   primitive mesh (a SphereMesh stood in for a body and the skin's `wear` stopped there).
+
+## The street builder's page (2026-10-30)
+
+- **A captured pointer's click lands on the capturer:** the map captures the pointer on press (so a drag keeps going
+  off its edge), so the double-click that opens a building's facade came to the SVG itself, not the building under it,
+  and did nothing (STREETPAGE's first run). Find what's under the pointer with `document.elementsFromPoint`.
+- **Encode a path, not its query:** a pasted photo's file is kept as `refs/b1_front.png?v=<time>` (so the browser
+  reloads a new one); `encodeURIComponent` on every part of it turned the `?` into `%3F` and the server looked for a
+  file of that name (404, the photo never showed). Split the query off first.
+- **`hidden` loses to a `display` rule:** `#facadeBox{display:flex}` showed the facade panel under the map when it was
+  hidden; `[hidden]{display:none!important}` at the top of the page's style.
+
+## The street's Godot export and its insides (2026-10-30, later night)
+
+- **Godot's glTF importer leaves vertex colours off the albedo:** the merged chunks carry each building's colour on
+  their vertices (the page draws them so, one material a slot), and every wall came into Godot white (the probe:
+  "vertex-colour albedo 0"). The export now gives each colour a material of its own on the same mesh. Measure the
+  import (GDSTREET), never assume an engine reads a format as three.js does.
+- **A strip that only touches another road's edge isn't crossed by it:** the curved streets' crossing test looked at a
+  walk's very edges, and a lane ending on the cross street's pavement edge cut that pavement away across the lane's
+  mouth (GDSTREET's ray onto the walk fell through to the ground). The points it tests sit just inside the strip.
+- **Object.assign's order decides who wins:** a check built two buildings as `Object.assign({id, at}, base)`, so the
+  base's own id and place overwrote both, and "the cache kept a changed building" was the test's fault. Defaults
+  first, the thing's own fields last.
+
+## The prop generator (2026-10-30, night)
+
+- **An inextensible sheet squeezed only from outside stays flat in the middle:** the first paper ball came out a disc
+  with a crumpled rim. A few random folds first (the sheet already a tangle in space), then a pull on every particle
+  toward the middle as the sphere shrinks, and it crumples all through, like a ball of newsprint.
+- **Paper laid down must not set new creases:** with the crumple's plasticity on and a cloth's soft bend, a note and a
+  receipt wrinkled like fabric as they landed. Lying down springs back to the creases it has (a stiffer bend, no
+  plasticity); only the fist sets creases.
+- **A label's middle faces the front, the front is -y:** the first can showed its barcode. A lathe's UV seam goes at
+  the back (+y), so the print's middle lands at -y, which the glTF export turns into the +Z front the kit uses.
+- **Cache a font's outlines, never its Blender datablock:** a reset between recipes (`read_factory_settings`) freed the
+  font and the next label failed with "StructRNA of type VectorFont has been removed". Check a cached datablock is
+  still there before using it.
+- **Overlapping V cuts are a union, not a list:** a key's cuts deeper than their pitch, written as points, folded the
+  edge back on itself in loops and the cap tessellated to holes. Sample the edge as the deepest cut at each point and
+  keep the corners.
+- **Blender's Python module can crash on its way out:** `bpy` as a module exited 245 after every job had printed ok.
+  The entry point leaves with `os._exit` once its output is flushed.
+- **A Godot camera's look_at needs the tree:** in a SceneTree script's `_init`, a camera aimed before the first frame
+  pictured only the floor. Await a frame, then `look_at_from_position`.
+- **Look at the preview before the code:** the pizza box's lid "vanished" because, open at 38 degrees, it faced the
+  camera edge-on; its geometry was right all along.
+- **Run the tool on the user's Blender too:** the cloud has Blender 4.2's module, the user's Arch machine a 5.x. Under
+  Blender 5.2's environment (Python 3.13, a newer NumPy) `np.cross` refused 2D vectors and a resting face pointing
+  exactly down divided by zero; PROPGEN on both found them. Write 2D crosses by hand, and treat a dot product of -1 with
+  a tolerance.
+- **A segment's material wins over the mesh's list:** the liquid's lathe was given `mats=["liquid"]`, but each
+  segment takes its island's material unless it names its own, so its faces went to the glass's slot (None in its
+  object) and rendered Blender's default white. A mesh built for a material of its own names it on its segments.
+- **See-through glass is mostly reflection, not white:** at 22% opacity on each of its four surfaces the glass washed
+  a dark soy sauce out to grey. Clear glass at 10% (PET 12%), the look carried by the specular.
+
+## The street in Blender (2026-10-31)
+
+- **Cycles bakes one object at a time, each over the whole image:** 78 street meshes into one 4096 × 2112 atlas took
+  over ten minutes for the first pass and never finished the three. A joined copy of them all bakes each pass once
+  (1.5 minutes for all three), with the originals hidden from the render so the occlusion meets each surface once.
+- **A GDScript function named after a global hides nothing, it breaks:** HSStreet's `static func convert(m)` lost to
+  GDScript's own `convert(what, type)` ("too few arguments"), and since plugin.gd preloads the import step, the whole
+  HorrorStudio Look plugin failed to load. Never name a function after a GDScript global (convert, str, load, print,
+  range...), and import the plugin in a fresh project (GDSTREET --plugin) after any change to plugin.gd.
+- **What lies flat on a surface mustn't shut its occlusion:** the road's letters are quads 4 mm over the asphalt, so
+  the occlusion bake saw the asphalt under them as shut (0), and Godot, which reads the atlas as ambient occlusion,
+  drew a black square round every letter where the paint is cut away. Road markings are now baked apart, out of the
+  rays while what's under them is baked.
+- **A seam test that compares the wrap with the average step flags every brick:** a tile set's period ends on a
+  brick's edge, so the step at the wrap is a brick's edge, far above the average step inside. Compare the wrap with
+  the biggest step inside (a texture that doesn't tile still fails it by 12 times).
+
+## The prop generator's occult, kitchen and sinks (2026-10-31)
+
+- **Never seed from `hash()` of a string:** Python salts string hashes per process, so the candles' drips landed in a
+  different place every run and the same recipe stopped making the same mesh. Seeds come from `noise.rng(seed, ...)`
+  or from an index, never `hash`.
+- **Smooth normals over a big cap with only its rim's points shade in stripes:** a wax puddle's top was one fan of
+  long triangles from its edge, each corner's normal tipped by the bevel beside it, and it rendered striped. Put
+  points inside big caps (`fill`), and give hard surfaces normals weighted by face area (`th.weighted`), so a flat face
+  shades flat whatever its bevel does.
+- **A lathe's faces look to the right of its profile:** a pot's lid written from its middle out had its top facing
+  into itself. Walk a top from its rim inward, and its underside, first, from the middle out.
+- **Scale every part to metres at the same step:** the sinks' ring strips were built in millimetres and never scaled,
+  so the basin came out a kilometre wide beside metre-sized taps, and the preview, fitted to the whole, showed no taps
+  and no water at all. Build in mm and multiply by `MM` at the one place each part is made; a part 1000 times the
+  others is the first thing to look for when something vanishes.
+- **Rust is a few spots, not a coat:** the tetsubin's `rust` age at a quarter strength covered it in orange blotches
+  like a leopard. Cast iron reads black; its rust goes in as small, rare patches.
+- **A colour of your own must reach what's seen:** a liquid's `color` set only its body, so a mug of "green" tea came
+  out the same brown as black tea: in an opaque cup only the surface (the back faces drawn flat at the level) shows,
+  and its colour still came from the kind. An override sets every colour that's drawn, derived where not given.
+- **A part fixed to a curved wall ends inside it, at its own place round the wall:** the pots' loop handles ended at
+  the wall's radius straight out from the middle (x = R), but at their own angle round the pot the wall had already
+  curved away by 3 mm, and the user saw the tubes' open ends poke out. Set an end by the radius at its angle
+  (x = √((R − rod)² − y²)), and close a tube's ends.
+- **A part laid on a curved body follows its curve, or sits where it's flat:** the rice cooker's panel was a flat
+  slab tipped toward the viewer; its front edge dipped into the body's rounded front and the white showed through.
+  Laid flat on the deck, it still overhung the deck's rounded corners. On the lid, bent to the lid's own dome inside
+  its rounded edge, it sits as if it belongs there. Check a part's footprint against the flat region under it (inside
+  the bevels and corners), not against the box.
+- **GDScript can't infer a type from an untyped loop:** `for k in [...]: var key := "a/" + k` is a parse error in
+  Godot 4.7 (the plugin's script failed to load in the editor, and only the editor's part of LOOKPLUGIN said so). Type
+  the loop variable (`for k: String in`) or the variable (`var key: String`).
+- **Cycles draws both sides of a face; Godot only its front:** the rice cooker's walls looked solid in every preview
+  and were see-through in Godot (the user saw its bottom through its sides). `slab` walked its rounded edge from the
+  top down, and a loft's band faces the right of its walk: out of the material only when it climbs. Seven other
+  parts were inside out the same way unseen (caps lathed from the middle of their top outward, a lathe laid on its
+  side by swapping two axes, which is a mirror, a capsule's profile walked in the wrong order, the drips' tubes, a
+  clockwise outline extruded). Judge a mesh's faces by measure, not by a render that draws both sides: PROPGEN
+  casts rays at every case from all round and fails when more than 1.5% of what they hit is a face's back
+  (`check.orientation`). A mirror (an axis swap, a scale by −1) needs `M.flip` after it.
+- **A set's order changes from one run to the next:** a few props' textures differed between two makes of the same
+  recipe (the cigarette butts, the kettles, the sinks, the shimenawa). The paint was the same each time; the padding
+  between islands wasn't. Before the padding is filled, each band that goes round copies a few columns past its edges
+  from its far side, and in a gap narrower than two such margins the last band copied wins. The bands came from a
+  Python set of names, whose order follows the strings' hashes, and those are seeded afresh every run. Walk things in
+  a list's order (the islands' here), never a set's, when the order reaches the output. PROPGEN makes the butts (twelve
+  bands side by side) again in a second process with another `PYTHONHASHSEED` and compares every file byte for byte;
+  a make again in the same process can't see it.
+- **An outline walked backwards across itself:** the fork's tines showed 1.2% of their faces from behind. Each tip's
+  rounded end and each slot's rounded foot was walked from the far side to the near one, so the outline crossed itself
+  in a bow-tie at every tine, and the slab there came out inside out (Cycles hid it again). Every arc in a closed
+  outline turns the same way as the rest: test a new outline for edges crossing each other (none may) before it's
+  swept.
+
+## No clipping in the street (2026-10-31)
+
+- **Fixing what a picture shows leaves the rest:** the bungalow's roof showed its wall tops (the eaves dipped below the
+  walls' top, a lid's sides were in the walls' planes), but a sweep over every style, set, street and the check's own
+  builds found some twenty more kinds of faces in one plane over each other, from a sign's words 2 mm off its board to
+  a car park gate's two leaves in one place. Measure every piece the generator can make (the clash test is in STREET
+  now), then fix by rule (a GAP between layers, parts 6 mm in), never the one case.
+- **A plane's offset says nothing about two tilted faces far from the origin:** comparing `n·p` for nearly parallel
+  faces 43 m out called a pole and its band 1.4 cm apart "one plane". Measure the other face's points from this
+  face's own plane.
+- **A minimum overlap per triangle pair hides an overlap split across triangles:** two rail posts at a roof's corner
+  overlapped by 16 cm², in four pieces each under the 15 cm² the first test needed, and 1,836 of them passed. The test
+  now counts a square centimetre.
+- **Roofs per room over an L overlap everywhere:** their soffits (7 m² each) and slabs lay over each other. Roofs over
+  an outline are joined: each cut where it's inside another's volume (a convex solid each; on a face of both, the
+  first keeps it), and every roof a closed solid, so the cut leaves no hole.
+
+## The paint page and the physical sky (2026-10-31)
+
+- **three.js gives a texture its image only when it arrives:** a `TextureLoader` texture's `image` is undefined until
+  then. The .glb export's wait for pictures looked for "an image not complete" and saw nothing to wait for, so every
+  decal went out without its picture. Wait while a texture has no image, or an incomplete one.
+- **A material's name carries what the bake needs to know:** surfaces coloured by vertex drop their look from the
+  material's name, so the street-wide paint (asphalt, pavers) was baked with the old finishes. A painted set now
+  stays in the name, and the bake reads it back through the colour's suffix. Read the bake's MATERIALS line after any
+  change to naming.
+- **A physical sky isn't calibrated by its defaults:** Nishita at strength 0.9 made the lane five times the photo's
+  brightness. Measure (the median, the road, the sky's band, each against the photo) and scale the sky, not the
+  exposure, so the shop windows and lamps keep their balance with it.
+
+## The road's print floating (2026-10-31)
+
+- **A layer lifted for the depth buffer casts a shadow that shows the lift:** the road's lines and letters stood 1.2 to
+  6 cm over the asphalt (a GAP each, stacked), and under Blender's sun each cast a thin shadow beside it, so the print
+  looked like a sheet floating over the road (the user saw it). Paint lies 5 mm up (over the clash test's 4 mm), a
+  mark over another only where they overlap, and nothing that lies on a surface casts a shadow, in every renderer:
+  check a close-up under a low sun after any change to how things are layered.
+
+## Kit floors taking a material (2026-10-31)
+
+- **What's drawn is the plan's piece, not the story's thing:** the stage built a kit thing from `p.d.kit` (the story's
+  own spec), so a floor the plan had laid out by its set's cells (`p.kit`, with `cells`) was drawn with the kit's own
+  pattern and each board a random cut: two grids, the painted seams across the real gaps. When the plan derives
+  anything for a piece (a spec, a size, a tag), every drawer reads the piece (`p.kit`); the story's `d` is for what
+  the plan doesn't touch. Check a derived spec by looking at it drawn, not only at the plan's JSON.
+- **The .glb's `1 - v` is a metre in a set's UVs:** kit UVs are metres and the export writes v as `1 - v`, so Godot
+  laid every set a metre off the desk's (invisible on random cuts, wrong on a floor laid out by its set). A material
+  scaling metre UVs takes it back with `uv1_offset` (`-1 / tile`, mod 1).
+- **A set's label isn't its contents:** "black marble" on the shelf is ambientCG's SurfaceImperfections020, an overlay
+  with an opacity map, so on a floor the stage cut most of each tile away. Look at a set's maps (an `opacity` map is
+  a cut-out) before putting it on a surface that must be solid.
+- **After `openPreset`, wait for that preset's own plan:** the replan is debounced and async, and the last level's
+  plan is still `B.plan`, so a test that only waits for "a plan" can aim its rays at the previous world.
+
+- **A detail tile's size is metres of skin, not UV units.** HumanShaders' micro tile at 30 a UV unit was made for a
+  head that fills its UVs; on MHR's shared layout (0.72 m a UV unit on the head, 1.9 on the body) it lay 2.4 cm a
+  repeat on the face and 5.7 on the shoulders: the user's "pores way too large". Measure the layout's metres (area in
+  3D over area in UV, per triangle) before choosing a scale, and keep one scale an island (a scale that changes
+  across the skin squeezes the pattern where it changes: `uv * s(uv)` has `uv * ds` in its derivative).
+- **A visible pore is 0.15 to 0.35 mm across**, not the 0.6 mm between follicles: the first tile's 0.09 mm pits were
+  under a pixel at a close-up's 0.12 mm and nothing showed. Size a feature by what a camera sees at the shot's pixel.
+- **Godot's screen-space scattering blurs the finished colour, paint and detail with it.** HumanShaders' strength (1.3 to
+  3 within a metre of the eye) turned a face to wax and hid every pore the detail layer drew; picture a skin change
+  with the scattering off once (`portrait_check.py --sss 0`) before deciding the detail is too faint.
+- **Paint a shader's coordinates before trusting a direction.** The eye's layout runs +y down the eye, so the "upper
+  lid's" shadow first fell on the lower lid; a debug grid (`fract(eP.xy * 2)` as the colour) showed it in one picture.
+- **Godot's glTF importer lights an emissive texture** although glTF's emissive colour is black when it's left out:
+  the salon's strand numbers parked in the emissive slot glowed as rainbow hair wherever HSHair wasn't on (the editor,
+  GDPEOPLE's flat picture). Data rides in the occlusion slot, which only shades the ambient.
+- **Godot's importer drops an unlit glTF material's vertex colours**: the salon's darkened scalp (its colour by vertex,
+  unlit) showed as a white cap at the parting and the hairline in every game. An unlit material's colour goes in its
+  base colour; the vertex colours carry only what can be lost (the see-through).
+- **Name matching meets the character's own name**: `_hairbefore_skin` was taken for hair and `_hairbefore_eye_L` with
+  it. A Studio export's parts are matched by their suffix first (`_skin`, `_eye_`), the words after.
+- **A dithered coverage thins a strand narrower than a pixel to nothing**: the lashes vanished under the hair's hashed
+  cut. Hairs lying on the skin keep the soft scissor.
+- **Measure one part with the others out of the picture**: the pores' close-up started measuring the hair once a long
+  cut fell into it (the grain ratio 1.16 instead of 1.76); the portrait hides the hair for that shot.
+
+- **Shell normals on double-sided cards need the winding to agree.** A viewer turns a back face's normal round (three.js,
+  Godot's own materials): with every card's normal the hair volume's, the cards wound into the hair lit their outside
+  with a normal into the head (dark) and the rest caught the room's reflection as one grey sheen; the Studio's view of
+  the new bake was worse than the old one while Godot's HSHair (both faces lit by the vertex normal) looked right. Wind
+  each triangle toward its normal (`hairvolume.js` `wind`), and look at a change in every viewer that shows the file.
+
+## Wide trousers and the creases' distances (2026-11-01, `clothing-refiner`)
+
+- **A big offset along the skin's normals folds the cloth in a hollow:** wide trousers pushed 5 to 8 cm out along the
+  normals folded over themselves under the kneecap (the normals converge there), a ledge round the knee in the cut
+  itself, before any drape; giving each point its own top-up made it worse (the kneecap got little, the shin below a
+  lot, and the offsets crossed), and freer smoothing didn't reach it. Second and third tries: relax with a small ease,
+  then set the leg out radially from its line into a column (`legs.straight`, pieces.js); and the column's width from
+  the median radius, not the mean (the buttocks' lobe under the crotch made the top rings bulge like jodhpurs).
+- **A garment hung by gravity settles onto what it can touch:** the clean column fell 5 cm in the drape and wrapped the
+  knee again, whatever its stiffness; pressed straight legs are held as cut from under the seat (drape.js holds).
+- **Never store a shortest-path's distances in a Float32Array:** a zero-length edge (two points at one place) makes
+  the float64 sum smaller than the float32-rounded stored value for ever, and the heap grows until node runs out of
+  memory. Distances in Float64Array, an improvement only by more than a nanometre (crease.js spread).
+
+
+## The clothing review (2026-11-01, `clothing-refiner`)
+
+- **A per-slice fix needs carrying between slices:** a convex hull a centimetre, each slice's points snapped onto
+  their own hull, left a ledge wherever the hull jumped (the kneecap appearing in one slice). Keep the hull as a radius
+  per angle round a centre that moves smoothly, carry it up and down at a slope (the cloth can't come in faster than
+  that), and interpolate between slices by height.
+- **Tell left from right by where a point came from, not where it is:** a garment's leg columns lean in across the
+  middle near the knee, so splitting the cloth by x put one leg's points in the other's hull. The body vertex each
+  cloth point grew from knows its side.
+- **Leave out the junctions:** the sleeve's root under the arm, the gusset across the crotch and the top of the foot
+  in a trouser's crop each stretch a slice's hull over something that isn't that slice (the side webbed out like a
+  wing, the gusset pushed under the other thigh, the hem bulged over the instep). Every new shape rule: picture it on
+  the whole body, and run TAILOR's under-the-skin measure on the tight bottoms on all seven bodies.
+- **A shader branch on a sign makes an edge:** the hang folds stored as a negative drag, switched in where they beat
+  the armpits' pull, drew a hard line under the bust. Add the two (drag minus hang) and branch on zero, so the value
+  crosses smoothly.
+- **A landmark is a shape, not an extreme:** the fold under the breast found as the deepest point below it ran on
+  down the ribs, which keep sinking slowly to the waist, and every bra sat 2.5 cm low. Find the bend (the slope fallen
+  to half its steepest) and measure it on all seven bodies before trusting it.
+
+## The soles (2026-11-01, `clothing-refiner`)
+
+- **A part that joins another is cut from the other's shape, not from what's under both:** the sole was the hull of
+  the bare foot's footprint, so the shoe's upper (the foot plus its ease) broke out through its rim in a jagged line.
+  Slice the upper where the sole meets it and carry that outline down; then the join is one clean line by construction.
+- **Read what a setting does before trusting its name:** a sole's `heel` raised the bottom at the back (a thinner heel)
+  for months of designs; nothing looked at it closely until the soles were redone.
+- **Lumps have more than one source; colour the parts before smoothing anything:** the shoes' "sculpted" look was
+  three things at once: a toe cap running down through the sole's wall (seen at once with each part a colour), the
+  upper following the toes, and the end cap closing a flat heel wall to one point (a pyramid's shading). Smoothing
+  alone would have kept the knot and the star.
+
+## The wardrobe (2026-11-02, `clothing-refiner`)
+
+- **Anything pushed out round a leg must know the other leg is there:** folds and an A-line gap pushed out radially
+  from each leg's line went into the other thigh on the full masculine body (TAILOR's under-the-skin measure). Fade
+  them on the side facing the other leg, and run the tight-bottoms probe on all seven bodies before TAILOR.
+- **A kept result must also not be sent and drawn again:** the tailor kept the garments, yet "the same outfit again"
+  took seconds: every garment was still copied to the page and its meshes rebuilt. The page tells the worker what it
+  shows (`have`) and keeps those meshes; measure the worker's answer apart from the frames a CPU renderer draws.
+
+## Potted plants and vines (2026-11-02, `procedural-trees`)
+
+- **A lathe's step follows the profile's length, not a number that suited a cup:** the pots were turned at the
+  ware family's 4 mm step, which made a 40 cm floor pot of thirty thousand triangles (a monstera's whole plant was
+  six thousand). Rows by `arclen / 44` and columns by the diameter: the same pot in a tenth of the triangles,
+  nothing seen. Measure a family's triangles across its sizes before its recipes, not after.
+- **A tiny tree's crown is its branch count:** a 1.2 m ficus with a street tree's branch density grew three
+  branches off its trunk, so three balls of leaves whatever the leaf count. Density is per metre of trunk: a
+  potted tree needs a few times a street tree's, and leaves along its twigs (`on: all`), not at their tips only.
+- **Few wide splits, not many narrow:** a monstera drawn with nine notches a side read as a palm frond, and narrow
+  slits a sample wide vanished at the card's resolution. Five rounded lobes a side cut by V-shaped gaps that
+  widen to the edge read as the plant.
 
 ## A check that a motion "plays" passed on a motion that never moved (2026-11-02)
 

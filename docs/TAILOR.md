@@ -101,8 +101,10 @@ opaque ground, for a lace top that isn't see-through), and the three that let th
 the nylon at its `denier`, darker where the leg turns away, a sheen down the leg), **fishnet** and **lace** (their
 holes are empty). Each also gives a relief (a bump map) and a gloss
 (less rough). **Patterns** in the garment's own colours (stripes, pinstripe, vertical stripes, gingham, checks, plaid,
-polka dots, houndstooth, camouflage) at a repeat in metres; a **print**: text set in type, or a picture, placed on a
-panel (front, back, a sleeve, a leg, a skirt's front) across and up it, a width, a turn. `tailor/look.js` makes the
+polka dots, houndstooth, camouflage) at a repeat in metres; **prints** (`prints`, up to three; `print`, one, as of old):
+each text set in type, or a picture (a file, or one from the prints library, `Content/Studio/Clothes/prints/`, our own
+made by `tailor/make_prints.py` and yours dropped in), placed on a panel (front, back, a sleeve, a leg, a skirt's front)
+across and up it, a width, a turn: a tee's front and back print, a sleeve's. `tailor/look.js` makes the
 material (`MeshStandardMaterial` with a small shader patch: the colour or pattern, the grain over it, the print, the
 gloss; the bump map is three's own). A garment's look is its design's (`surface`, `trimSurface` for its trim, `pattern`,
 `denier`) under its own (outfits.json's third field, or the Studio's controls); a detail can take its own `surface`
@@ -120,6 +122,181 @@ maps are found by their names' last word, so Unreal-ready names work as they are
 take the set; trim keeps its own. A map the names get wrong is chosen by hand on the shelf page (the Studio's **PBR**
 button). `sheet.mjs --pbr pants=pbr/denim1:0.12` renders one.
 
+## 1d. Creases (DECISIONS 2026-11-01)
+
+The user: "what makes our clothes bland is we are missing creases, natural fabric kinda style that could be emulated via
+PBR techniques ... add a crease gen as well (basically how we emulate wrinkles on faces)". `tailor/crease.js`: the
+cloth's small relief drawn as a height in the garment's shader (`clothH`, in metres of cloth, at the fabric coordinates'
+real size), never as geometry; the drape (§1c) gives the big folds, this what a sewn, worn garment has on them:
+**folds** where the body bends (rings round the limb inside the elbow and behind the knee, each fold its own spacing,
+tilted one way then the other, only part of the way round; a sleeve stacking at the wrist, a trouser leg breaking on the
+shoe, the waist), **drag lines** (diagonal pulls from the crotch over the thigh, a jean's whiskers, and from the armpit
+across the chest), the **press** (a sharp ridge down the middle of a trouser leg's front), **seams** (the stitched line
+sunk in, the cloth puckered a few millimetres either side, the pucker coming and going along it), **hems** (the turned
+edge rolled, the turn-up ending 2.5 cm in, a row of stitches 1.3 cm in), the fabric's own **crinkle** (thin crease
+lines along a noise stretched down the hang, a softer shoulder either side, wrinkled in patches) and fine **drape**
+streaks down skirts and wide legs. Per vertex, `crz` is made when a part is unwrapped (`creaseData`): how much it
+bunches and is pulled there (from the body's frame: the elbow, the knee, the ankle, the crotch, the armpits, the
+waist), and how far it is along the cloth from the nearest seam and the nearest hem (Dijkstra along the mesh, relaxed so
+the lines come out smooth). The amounts come by fabric (`CREASE`: linen wrinkles most, wool and tweed a little, knit and
+rib almost none, denim's folds deep, a twill's and flannel's press holding) times the garment's **Creases** slider (the
+Studio, a garment's look: 0 none, 1 as the fabric has them, 2 well worn) and its **Pressed crease** switch (trousers);
+a design can carry its own (`crease: {press: 1}` on the wide pleated trousers). The slope bends the normal in the view;
+the valleys darken the colour a little. **In the export** the creases are baked into the garment's normal map on its own
+layout (`albedo.js` `bakeClothNormal`, at 1.5 mm a texel), so the desk and Godot show them; a file has one normal map,
+so a PBR set's weave normal gives way to it there.
+
+## 1e. Fabrics made in Blender (DECISIONS 2026-11-01)
+
+The user: "similar to what we did for props and buildings can you create some procedural materials with blender for the
+clothing in the studio, stuff like cotton, etc.". `tools/streetbake/fabrics.py`: node groups read in metres, as the
+street's library is (and baked by the same `tiles.py` into `assets/pbr/Procedural/fabric_<name>/`: colour, normal,
+roughness, ORM, height, a lit picture), built from what each cloth is made of at its real size: **weaves** (threads
+over and under: poplin, cotton, oxford's basket, linen with its slubs, canvas, chambray, denim's 3/1 indigo twill with
+its streaks, washed light denim, gabardine, chino, herringbone, five-harness satin; each thread its own shade and
+thickness along it), **knits** (jersey's Vs, a chunky sweater, 2 x 2 rib, waffle), **felts** (flannel's brushed fuzz
+over a faint twill, fleece, melton), **hides** (leather's fine pebbled grain and pores, suede's nap) and **piles**
+(corduroy's wales, velvet, crepe's pebble, boucle's loops, tweed's flecked twill). Each tile is a whole number of its
+threads or stitches, so it repeats without a seam (FABRICS checks it). Most are white-based: the Studio lays the
+garment's colour over them (their `tint`); denim, chambray and tweed carry their threads' own colours.
+`python tools/fabric_bake.py bake` makes them (Blender's module, `python tools/retarget.py setup` once), `list`, `sheet`
+(`Saved/Story/_look/fabrics/sheet.jpg`), `check` (FABRICS). In the Studio they come first in a garment's **PBR set**
+picker, "(made)", tinted by default; the smart casual designs name theirs (`pbr: "pbr/Procedural/fabric_crepe"`), and
+on a machine where it isn't baked a garment falls back to its drawn `surface`. Three drawn surfaces were added beside
+them: **linen**, **crepe** and **flannel** (`fabric.js`).
+
+## 1f. The smart casual collection (DECISIONS 2026-11-01)
+
+After the user's sheet of Japanese smart casual outfits (eighteen looks, phone held over the face): a new tab,
+**Smart casual**, first in the outfit picker, fifteen outfits (`group: "smart"`), and the cuts they needed: **wide
+pleated trousers** (high waisted, wide and straight, pressed: crepe or flannel), a **tie-neck blouse** (its bow's tails as
+two plackets and a knot), a **blouse with full sleeves** (gathered into long cuffs), a **shirt** (sleeves rolled, a breast
+pocket, worn striped), a **cropped collarless tweed jacket** (gold buttons, boucle), a **collarless jacket** (melton), a
+**cropped leather jacket** (worn open), a **knit midi skirt** and a **pleated midi skirt**. The shirts and blouses are
+worn tucked in (listed before the trousers). Not made: the sweater knotted over the shoulders, the bags.
+
+## 1g. Everyday clothes that hold up in animation (DECISIONS 2026-11-01, the clothing review; docs/CLOTHING_PLAN.md)
+
+The clothes are skinned, never simulated, so the cut keeps to what skinning carries and looseness is shown, not built:
+
+- **Snug waistbands**: a bottom's ease falls to the cloth's 2.5 mm at its waistline and opens to the design's over
+  the hip (`shell`); a skirt's top ring the same (`skirtOutline`). It's what holds them up.
+- **Bridged hollows** (`bridge` in pieces.js, after the relax): each centimetre's slice of the cloth on its convex hull
+  round the torso's axis (above the crotch) or each leg's line (below it), carried up and down so it comes back in no
+  faster than a slope: no dent into the buttocks' cleft, between the breasts, down the spine or behind the knee; it
+  tents over the kneecap. A loose top's slope is shallower front and back (it falls from the bust and the shoulder
+  blades), never at the sides (cloth standing out from the waist is in the arms' way); bras and thongs aren't bridged.
+  A skirt never comes in past the legs' hull in the drape (`rings.floor`: its back buckled into the gap).
+- **Ease limits**, checked by TAILOR: tops 12 mm (jackets and coats 16), sleeves 14, a bottom's body 12, legs 18, a
+  skirt's 16, the drape's `slack` at most 3 %.
+- **Bagginess by creases** (crease.js): a loose top's hang (by its ease, 4 to 14 mm) as soft vertical folds down the
+  front from under the bust and down the back from under the shoulder blades, the sleeve's sag along its underside,
+  more blousing at the waist; carried in the creases' drag channel as a negative value, baked into the export's normal
+  map with the rest.
+- **Underwear and bikinis follow the hip bone** (DECISIONS 2026-11-01, the bikinis): the waistline's `hip` raises it
+  towards the sides (`hipPow` its shape, 2 by default: a flatter front rising over the hips), so a thong's, a tanga's,
+  a bikini's top edge runs up from the front's dip over the hip bones and down again behind, not level round the hips
+  like a pair of boxers; the leg openings cut high to meet it, never nearer it than `string` (8 mm), so a string side
+  never breaks. A **string bikini** (`string-bikini`: a small front triangle, strings over the hips, a cheeky back) and a
+  **halter triangle top** (`bikini-top`: the bra's `halter`, its straps from the cups' points round behind the neck and
+  no straps down the back; `inner`, each triangle on its own breast with a gap between) after the user's own OBJs.
+- **Bras at the fold** (the user: "the bras are way too low"): the fold under the breast (`bust`) is where its steep
+  underside eases onto the ribs (the slope fallen to half its steepest), not the deepest point below it, which ran on
+  down the slowly sinking ribs; on the feminine body 6 cm under the point, not 8.5. The cups come higher (balconette
+  5.5 cm over the point, plunge 6, triangle and bikini 7.5, sports 6.5).
+- **Strings as tubes, cups that span** (the user: "why do the bras look painted on ... why does the red one attach
+  to nothing around the neck"; their bikini OBJ the reference): a halter top is its cups alone, and its strings are
+  real round cords (`tailor/cords.js`: `tube` sweeps one, `taut` pulls a path straight between its ends and pushes it
+  off the skin): a strap from each cup's point to the neck's side, round behind the neck, a band round the ribs under
+  the cups, a bow at the front with its ends hanging; the cord's thickness `cord`. Every bra's cups are bridged now
+  (they span the breast, the sports bra the cleavage) and have a thickness (moulded cups 4 mm, a bikini's 2.5). The
+  cups **grow with the breast** (the user: "review it with bigger busts"): their sizes were set on the feminine body,
+  whose breast's point sits 5.9 cm off the middle; a fuller one's cups are bigger by that ratio (0.85 to 1.5), and a
+  strap leaves its cup's corner where the body's own slice puts it.
+- **The wardrobe**: outfit groups Casual, Smart casual, Business, Uniforms, Sleepwear, Swimwear, Underwear, Designer;
+  new basics joggers, sweatshirt, polo, suit trousers, pyjama top and trousers, sleep shorts, swim shorts; bikinis from
+  the underwear's cuts in spandex; fabric, colour, pattern and prints doing the variety. Not made yet: a shirt dress
+  and a one-piece swimsuit (the shell can't cut a dress's or a swimsuit's legs without a new cut).
+
+## 1h. Cozy and gothic (DECISIONS 2026-11-01, night; docs/COZY_GOTHIC_PLAN.md)
+
+- **Socks** in every length (no-show, ankle, quarter, crew, mid-calf, slouch, knee-high, over-knee), heavier: 2.8 mm of
+  rib or sweater knit, a knit's slight creasing, no seams (a tube); the ankle's folds stop at the ankle (never on the
+  foot, where its coordinates stretch) and keep to its front; a piece's `stack` is how far up they run (a slouch sock
+  bunched up the calf).
+- **PVC** (`pvc`, `pvc_clear` in fabric.js, `GLOSSY`): a clear coat over a smooth base, the clear one half see-through;
+  a **rain jacket** (hooded, zipped, hip-length) and rain boots.
+- **The sneaker designer**: a shoe's details may carry a `name` (the sneaker's tongue, toe, heel and its rim stripe:
+  a `foot` detail's `below` keeps it to a band round the foot), each a colour of its own from the garment's `parts`
+  look (and `sole`); the Studio's Fabric panel shows a Sneaker designer for a shoe: a colour each, colourways, Logo on
+  both (a print on each shoe's outside, `leg L`/`leg R` at across 0.07), Add a sticker; up to six prints a garment,
+  each can be Mirrored (`flip`).
+- **Soles carried down from the shoe** (the user, after their sandal OBJ: "soles should almost just be an extension of
+  the normal shape but extruded down"): `soles` slices the shoe's own upper where it meets the sole (`rise` over the
+  floor), smooths that outline (round and along its length, never more than half its overhang inside the upper's line),
+  pushes it out by `overhang` and sweeps it straight down to `thick`: a rounded top edge hugging the upper, its inner lip
+  tucked under it (one clean join), a near-vertical wall (`flare` out at its foot, `lines` grooves round it, as the
+  sandal's stacked bands), a rounded bottom edge and a flat bottom filled in rings; the toe spring curves only the bottom
+  up at the front, and `heel` is a block that much deeper at the back (the old code raised the bottom there instead). The
+  sole was the hull of the bare foot's footprint before, so the upper broke out through its rim.
+- **Polished, not sculpted** (the user: "clean up the weird bulgy bumpiness, it makes it look like it was made in a
+  sculpt tool"): the shoe's shell is smoothed by Taubin's rounds (a shrink and a swell each, so it keeps its size) and
+  kept half its ease off the skin (`polish`; a piece's `polish` scales it), so the toes and the heel bone no longer show
+  through; the heel is round from above (the sections carried back narrowed across, not a flat wall) and the ends close
+  rounding toward a circle (no pyramid's shading at the heel tab); the upper stops just inside the sole's top
+  (`soleTop`), and every piece on it (toe cap, rim stripe, tongue, heel tab) stops above the sole's top, where they
+  used to poke out through its wall as a knot; a shoe's fabric bump is 0.3 of a garment's and its UV seams draw no
+  puckers (they aren't its panels). The sole's outline takes the upper's slices from its cut to the sole's top at the
+  front, so a low toe tip (a platform's) stays inside it.
+- **Nets made in Blender**: the `net` family in `tools/streetbake/fabrics.py`, `fabric_spiderweb` (a web a cell, spokes
+  meeting the next cell's, rings sagging between them) and `fabric_mesh` (round holes in staggered rows), their holes in
+  the colour's alpha and an `_opacity` map the bake now writes for any finish with holes; spider web tights and a mesh
+  top wear them.
+- **Gothic**: a corset (overbust, its lacing and boning as plackets, snug), a layered maxi skirt and a lace overskirt,
+  a lace blouse, platform boots; the Gothic outfit group.
+- **Props** (accessories.js): every accessory moved and turned by hand (`ox`, `oy`, `oz` mm, `rx`, `ry`, `rz` degrees
+  along and about the face's right, up and forward: Placement), hats, horns and ears made of their colour or a PBR set
+  off the shelf (UVs on all of them); **horns** (devil, ram) and **ears on a headband** (bunny, cat, fox).
+
+## 1i. The wardrobe, kept garments, folds by seed (DECISIONS 2026-11-02; docs/WARDROBE_PLAN.md)
+
+- **Kept garments**: `dressing` keeps each garment made on a body (by its design, edits, colour, look and the shape of
+  what's under it), so a change re-makes only that garment and what's worn over it; the worker sends copies, and none
+  for garments the page says it already shows (`have`).
+- **Folds** (`folds: {depth, count, seed, gap}` on a piece): soft ridges round each leg (`legFolds`, after the bridge)
+  or round a skirt (`skirtOutline`), their places, widths, heights and leans from the seed (`foldProfile`), growing all
+  the way down to the hem, over a `gap` (a share of the depth) the cloth stands off the leg by, an A-line's; the waist
+  untouched. Only a garment with `folds` changes: no design had them before.
+- **New designs**: loose high-waisted shorts after the user's picture (`loose-shorts`, houndstooth, folds), a micro
+  A-line skirt and a micro pleated skirt ending just under the crotch (`micro-skirt`, `micro-pleated-skirt`).
+- **The wardrobe** (`wardrobe.html` + `wardrobe.js` on the Studio's server, the Clothes tab's *Open the wardrobe*):
+  the default model's body as a plain dummy, the outfit as a list with each garment's colour, fabric, pattern, shape
+  sliders and folds, made in the tailor's worker with the kept garments (the page keeps the meshes of what didn't
+  change), the drape off unless *hang by gravity*; **Save** writes `Content/Studio/Clothes/my_outfits.json` and a
+  picture of the view (`thumbs/<slug>.jpg`), the Studio's **Mine** tab (read again whenever the Studio comes back to
+  the front), worn there on the character's own body. `wardrobetest.mjs` (WARDROBE).
+- **The drape on the GPU** (a test, the user's ask after the wardrobe: "make a toggle for (use gpu), so I can test it"):
+  *Use the GPU* in the wardrobe's header and the Studio's Clothes tab (remembered in the browser, never saved with a
+  character) runs each drape's steps as WebGPU compute (`tailor/drape_gpu.js`). The CPU's drape is untouched: drape.js
+  is split into `prepare` (everything before the steps), its own step loop and `finish` (the stats), and with `gpu` its
+  generator first yields `{gpu: state}`; the worker runs `drapeGPU` on it and sends the result back in (`making` and
+  `dressing` pass the request up and the answer down), or nothing, and the CPU's steps follow. On the card: the same
+  passes in the same order, the lengths, buttoned pairs and bends in batches that share no point (a greedy colouring:
+  7 to 10 batches of lengths, up to 5 of buttoned pairs, 12 to 21 of bends, about 60 dispatches a step), float32, every
+  point's plane on the skin asked again on the CPU every 8 steps from the points read back (`ask`), still-ness measured
+  at those readbacks. So it comes out alike, not the same: garments hung on the card are kept apart from the CPU's (a
+  separate cache key and bake key in the worker; a character's own bakes
+  count for both), so switching hangs them again. Needs WebGPU on a secure page (the Studio's server on localhost;
+  the user's Vivaldi, like Chromium, has *Unsafe WebGPU Support* in vivaldi://flags (and *Vulkan* if vivaldi://gpu
+  still says WebGPU is off; `--enable-unsafe-webgpu --enable-features=Vulkan` on the command line); without it the
+  status line says why
+  and the CPU drapes. The difference is the order alone (measured on the CPU with the card's way, `likeGPU`: the planes
+  asked every 8 steps move nothing by more than 0.2 mm; the batches' order puts a skirt's points 3 mm from the CPU's on
+  the whole, 14 mm for one in ten, its folds placed a little differently, as hung as well; a shirt's 0.5 and 3 mm).
+  `likeGPU(S)` is the card's way in float64 with drape.js's own passes: what the card gives back is held to it, and it's
+  where to try a change of method without a card (`gpulike.mjs "outfit"`: both ways in node). `gputest.mjs`
+  (GPUDRAPE). Next, measured on the 3090: fewer dispatches (the bends are most of them), the skin's search on the card.
+
 ## 2. The designs are data
 
 `Content/Studio/Clothes/designs.json`: each design has a `label`, a `slot` (`under`, `top`, `bottom`, `full`, `legs`, `feet`, `jacket`), a
@@ -136,7 +313,7 @@ on MHR's average body is high, so hems and waistlines are measured from the crot
 | `sleeve` | `short`, `cap`, `elbow`, `wrist` (each with an offset down the arm: `elbow+0.06`, rolled to below the elbow), or metres from the shoulder joint; the wrist and the elbow are found on the body and checked against MHR's own joints |
 | `hem` | `{at, front, back, side}`: a top's hem; `front`/`back` lengthen it there, `side` raises the sides |
 | `waist` | `{at, drop, rise}`: a bottom's waistline, `drop` lower in front, `rise` higher at the back |
-| `legs` | `{to}`: where the trouser legs end |
+| `legs` | `{to, straight}`: where the trouser legs end; `straight` (0..1, wide pressed trousers) sets the legs out from under the seat into a column as wide as the thigh plus the leg's ease, never following the knee or calf in, and the drape holds them as cut |
 | `open` | `{from, gap, top, curve, shift}`: a jacket's front opening, a `gap` down the middle (a closed front's edge when it's a couple of millimetres) widening into a V from `from` to `top` each side at the neck; `shift` (metres, + to the body's left) slides the opening's middle sideways from the neck down to `from`, and straight below: a wrap front, its edge a diagonal across the chest (an `edgeband` along it is a jeogori's collar band); `closed: false` is a front worn open (a wide `gap` from `from` down, the lapels falling open), which the drape never pulls together |
 | `ease` | `{body, sleeve, leg, flare, crotch, shoulder}` in metres off the skin (`shoulder`: the pad at each shoulder joint, 0.009 to 0.016 on jackets and coats, 0.003 to 0.008 on shirts and sweatshirts) |
 | `tension` | rounds of relaxing: 18 clings, 48 hangs like a work shirt |
@@ -328,7 +505,6 @@ the cut's own (8 at a trouser hem, where the relaxed cloth bridges the ankle's h
   the shelf already imports a set into Unreal as `MI_<name>`); the made-up tiles, patterns and prints still have to go
   across (a material instance per garment with the tile, its size, the colour or pattern and the print), and Unreal's
   import of a set doesn't use a packed ORM yet (the separate maps).
-- **Seams and creases**: folds now come from the drape; stitch lines would be a normal map.
 - **The drape** doesn't keep the cloth off itself (a deep fold can pass through its neighbour), hangs only in MHR's own
   pose (not a pose of the desk's), and isn't seen falling (the hung clothes replace the cut ones when they've settled).
 - Hair doesn't collide with the clothes yet.

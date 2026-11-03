@@ -7,14 +7,28 @@ extends EditorPlugin
 ## effects' buffers; a GTX 1060 the target) are applied the first time the plugin is enabled in a project (recorded
 ## in `horrorstudio/look/settings_applied`), and again from Project > Tools > HorrorStudio: apply the balanced project
 ## settings.
+## It also registers HSStreet.Import: a street baked in Blender (tools/street.py bake) wears its dirt, rain streaks and
+## worn edges as it's imported (street_import.gd, street.gd, street.gdshader).
 
 const DONE := "horrorstudio/look/settings_applied"
 const MENU := "HorrorStudio: apply the balanced project settings"
 
+## a street from the Blender bake wears its wear on import (street.gd)
+var _street: EditorScenePostImportPlugin
+
 
 func _enter_tree() -> void:
 	add_custom_type("HSLookEnvironment", "WorldEnvironment", preload("res://addons/horrorstudio_look/look_env.gd"), null)
+	_street = preload("res://addons/horrorstudio_look/street_import.gd").new()
+	add_scene_post_import_plugin(_street)
 	add_tool_menu_item(MENU, _apply)
+	# the made props' enhancers (HSPropFX), each kind switched for the whole project here
+	for k: String in ["enabled", "glow", "flame", "smoke", "steam", "wax"]:
+		var key: String = "horrorstudio/prop_fx/" + k
+		if not ProjectSettings.has_setting(key):
+			ProjectSettings.set_setting(key, true)
+		ProjectSettings.set_initial_value(key, true)
+		ProjectSettings.add_property_info({"name": key, "type": TYPE_BOOL})
 	if not ProjectSettings.has_setting(DONE):
 		ProjectSettings.set_setting(DONE, true)
 		var n := HSLook.apply_project()
@@ -22,6 +36,7 @@ func _enter_tree() -> void:
 
 
 func _exit_tree() -> void:
+	remove_scene_post_import_plugin(_street)
 	remove_tool_menu_item(MENU)
 	remove_custom_type("HSLookEnvironment")
 

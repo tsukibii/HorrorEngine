@@ -1,0 +1,15 @@
+{
+ "maps": {
+  "ao": "Asphalt025C_1K-PNG_AmbientOcclusion.png",
+  "albedo": "Asphalt025C_1K-PNG_Color.png",
+  "height": "Asphalt025C_1K-PNG_Displacement.png",
+  "normal": "Asphalt025C_1K-PNG_NormalGL.png",
+  "rough": "Asphalt025C_1K-PNG_Roughness.png"
+ },
+ "normal": "gl",
+ "tile_m": 2.0,
+ "source": "ambientCG",
+ "url": "https://ambientcg.com/view?id=Asphalt025C",
+ "licence": "CC0-1.0",
+ "label": "asphalt, fine"
+}

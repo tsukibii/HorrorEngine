@@ -32,7 +32,7 @@ const TABS = [
 const TAB = Object.fromEntries(TABS.map(t => [t.id, t]));
 const THEMES = ["glass", "glass-rose", "neumorph", "plain"];
 const SHAPE_START = { box: "0.1 0.1 0.1", cyl: "0.05 0.1", sphere: "0.05", plane: "0.2 0.3", stairs: "1 3 2.6", asset: "", person: "" };
-const SHAPES = { box: ["width", "depth", "height"], cyl: ["radius", "height"], sphere: ["radius"], plane: ["width", "height"], stairs: ["width", "depth", "height"],
+const SHAPES = { box: ["width", "depth", "height"], cyl: ["radius", "height"], sphere: ["radius"], plane: ["width", "height"], stairs: ["width", "depth", "height", "waist (a flight over another)"],
   asset: ["library ref", "scale"], person: ["cast member", "pose"] };
 const LANGS = ["en", "zh", "ko", "es", "pt", "fr", "de", "ru", "id", "th", "vi"];
 const slug = s => String(s).toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").replace(/^(\d)/, "n$1").slice(0, 32);

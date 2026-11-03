@@ -1,0 +1,14 @@
+{
+ "maps": {
+  "albedo": "Plaster001_1K-PNG_Color.png",
+  "height": "Plaster001_1K-PNG_Displacement.png",
+  "normal": "Plaster001_1K-PNG_NormalGL.png",
+  "rough": "Plaster001_1K-PNG_Roughness.png"
+ },
+ "normal": "gl",
+ "tile_m": 2.5,
+ "source": "ambientCG",
+ "url": "https://ambientcg.com/view?id=Plaster001",
+ "licence": "CC0-1.0",
+ "label": "plaster, white"
+}

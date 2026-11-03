@@ -7,7 +7,11 @@ dashboard and the writers' room; 2026-10-28 the flashlight, cleaning, the peepho
 latch, examining, skin v2; then TestRoom001, the Unreal note, the skin after HumanShaders and expression loops; and
 on `game-research-001`: The Visitor's research, abstract and chart, the director's to-do; merged into `dev-002` and
 the to-do built there, with the Studio's eyes from the side, a small nose and the face's bake; 2026-10-28 and 29 on
-`godot-support`: the Godot export, its runtime, its look, the look plugin). Read this
+`godot-support`: the Godot export, its runtime, its look, the look plugin; 2026-10-30 and 31 on `buildings-streets`: the
+street builder, its paint and the PBR sets, with `prop-gen-tool` merged in; 2026-11-01 the school on
+`claude/laughing-goldberg-6l5of3`, merged, then the prop generator's picture editor on `enhance-prop-editor`; 2026-10-30
+to 2026-11-03 on `Director-Godot`: the Director in Godot, its panel, Story Flow and the animation steps, merged into
+main on 2026-11-03 with main's own work since 2026-10-31 brought in). Read this
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
@@ -197,6 +201,450 @@ retarget (MHR from the Character Studio works as it is).
 
 **Open** (GODOT_DIRECTOR §9): fingers and MHR's twist bones in the retarget; a kit thing or a CC0 prop in one click; an
 event inside a dialogue; no way back from a Director game to the desk (the scene is the game).
+
+## 0. `procedural-trees` (2026-11-02, evening): the prop generator's trees, after Modular Tree
+
+The user pointed at steven-ray's fork of Maxime Herpin's Modular Tree and asked for a tree prop generator for urban
+streets with variations (DECISIONS 2026-11-02, evening). Built (PROPGEN §18): `tools/propgen/mtree.py`, Mtree 4's
+MIT core (trunk, branches with phyllotaxis, splits, gravity and the floor, the pipe model's radii) ported to numpy
+Python, nothing to compile; the `tree` family (`families/tree.py`): nine species by season (zelkova, ginkgo, cherry
+with blossom, camphor, plane and pollarded, maple, crape myrtle, black pine, a dead tree), tubes with a seamless bark
+tile drawn by 4D noise on the flat torus, leaf cards off a cluster atlas drawn by code (alpha-cut in Godot, normals
+rounded over the crown), torii or tripod stakes and a kerbed pit, the tree set down by its trunk (`Thing.anchor`);
+sixteen recipes. Framework: `surface.material` cuts alpha (`alpha="clip"`, the glTF's MASK), `mesh.to_blender` takes
+a mesh's own normals (`a["normal"]`), `build.run` skips the per-texel raster where nothing reads it (the wear) and the
+occlusion bake when a thing says so. The user then asked for the trees by night: `propgen.py godot --night` pictures
+any prop under the game's blue moon and in the dark under the flashlight from the player's eye (the sheets in
+`docs/godot_sheets/2026-11-02_trees.jpg` and `_trees_night.jpg`). Then the user pushed three ambientCG bark sets and
+four leaf sets (`pbr/bark/`, `pbr/leaf/`): every species' bark is now a real one by default (`bark.pbr`, the drawn
+tile behind `pbr: null`), and the leaves have a realistic category (`*_real`, nine recipes with a new cedar: the sets'
+own leaves cut out by `tools/propgen/leafset.py` and hung along the twigs, hued to the season). Then bushes (azalea
+balls and hedges by `clip`, a loose shrub, grass tufts) and `tools/godot/street_dress.py`, which dressed the hill
+road with trees and bushes and pictured it by day and night (`docs/godot_sheets/2026-11-02_hill_motel_dressed.jpg`;
+the judgement in PROPGEN §18: scale and shadows carry it, the cards show up close, the green is a shade bright). Then
+**small trees** (`habit: upright`, ten `small_*` recipes under a two-storey house, branches steep) and the dress tool
+putting them beside houses, big trees only with room (`--room`). Then **potted plants** (the `plant` family,
+PROPGEN §19: a pot turned with a real wall or a cube planter, the soil and its topping, the tree family's growth and
+cards on it as an aloe, an echeveria, a snake plant, a fern, a palm, a monstera, a rubber plant, a fiddle leaf fig, a
+ficus, a bonsai, basil, a pothos, ivy, lucky bamboo, a yucca, a cactus and a dead one: eighteen `pot_*` recipes,
+`docs/godot_sheets/2026-11-02_plants.jpg`) and **vines** (`propgen.py vines`, §20: five seamless sets a metre a repeat
+on the shelf, `pbr/foliage/vine_*`, a layer by its own mask over a wall's set in the street paint,
+`2026-11-02_vines.jpg`). Next, if the user wants: the plants in the kit's places (a windowsill, a shelf, a desk's
+corner: the scene builder putting a `pot_*` prop there), vines as a mesh standing off a wall (cards on the stems, the
+set's own leaves) and climbing the street builder's facades by a slot of their own, more plants (an orchid, a
+succulent tray, a hanging basket), their own look at the trees on the 3090 (the page shows
+them as cards, `python tools/propgen/serve.py`), wind on the cards (a vertex shader in the look plugin), a bush family
+(azalea hedges, clipped balls), the street builder's `tree` stand-in swapped for a made tree by the Godot drop (street_dress's `placements.json` is
+the shape of it), a nearer card set for crowns at the player's face, lower LODs (the twigs' sides, fewer cards) for a
+street of them, bushes that know a door from a wall.
+
+## 0. `enhance-prop-editor` (2026-11-01, late night): the prop generator's picture editor (tsukibii/HorrorEngine#10, not merged yet)
+
+The user found pictures on props hard to place (DECISIONS 2026-11-01, late night) and asked for a Figma-like panel:
+the image in use, where the cuts are, one large image or small ones dragged to fit the cut areas. Built (PROPGEN §17):
+**the picture editor**, the page's Texture & pictures tab taking the whole page (`tools/propgen/page/picedit.js`, the
+helpers moved to `page/util.js`): the canvas (Design: the paint under your pictures, `_paint.png`, with them live over
+it; As made), the cuts from the made .glb's UVs, the parts and pictures as layers, drops onto a part, an own picture
+or the whole texture (**`sheets`**, a new recipe word: one picture in the layout it was laid in), handles to move, size
+and turn (decals' **`rot`**, and the fits **`cover`**, **`contain`**), undo, the prop in 3D wearing the canvas (a click
+picks a part), a Krita .ora template out and back in (the server takes its Paint layer). Checked by PROPGEN (its new
+case) and PROPPAGE (rewritten for the editor). Next, if the user wants: their own run on the 3090
+(`GPU=1 node tools/propgen/pagetest.mjs` is quicker there), what they find awkward in it, and perhaps the same canvas
+for the kit maker's slots.
+
+## 0. `clothing-refiner` (2026-11-02, later): the drape on the GPU, as a switch
+
+*Use the GPU* in the wardrobe's header and the Studio's Clothes tab: each drape's steps as WebGPU compute
+(`tailor/drape_gpu.js`, TAILOR §1i), the CPU's drape bit for bit as before when off or without WebGPU. Here only
+SwiftShader's WebGPU (on the CPU, so slower than the CPU's own drape): GPUDRAPE ok (the kernels match `likeGPU`, the
+card's way on the CPU, to under 0.05 mm; the hang alike, the folds placed a little differently). Next: the user tries it
+on the 3090 (in Vivaldi, the user's browser: Unsafe WebGPU Support in vivaldi://flags, Vulkan too if vivaldi://gpu says WebGPU is off; `GPU=1 node
+tools/character/tailor/gputest.mjs` gives the card's times), then a local session tunes it: fewer dispatches (the
+bends' batches are most of them; several steps' predict, tether and collide fused), the planes asked on the card.
+
+## 0. `clothing-refiner` (2026-11-02): the wardrobe (docs/WARDROBE_PLAN.md, ticked)
+
+Kept garments (a change re-makes only what changed and what's over it), folds by seed on shorts, trousers and skirts,
+loose houndstooth shorts and micro skirts, the wardrobe page on a dummy with My outfits for the Studio's Mine tab
+(TAILOR §1i). Next: the user's try on the 3090 (the wardrobe's feel; STUDIO); the drape on the GPU (WebGPU) and a pool of
+workers are the plan's Later.
+
+## 0. `clothing-refiner` (2026-11-01, late night): soles carried down from the shoe
+
+After the user's sandal OBJ: every shoe's sole is the upper's own outline extruded down, grooved, with heel blocks
+(TAILOR §1h). Next: their look in the Studio; the sneaker's upper itself (its toe bumper) could be smoothed next.
+
+## 0. `clothing-refiner` (2026-11-01, night): cozy and gothic (docs/COZY_GOTHIC_PLAN.md, ticked)
+
+Built (TAILOR §1h): socks in every length and heavier, a PVC rain jacket, the sneaker designer, spider web and mesh
+nets baked in Blender, gothic clothes and a Gothic group, horns and headband ears, every accessory placed by sliders
+and PBR on props; bras that stand off the body and fit bigger busts, a halter's strings as cords (§1g). Next: the
+user's look in the Studio (STUDIO wants a local GPU run: the sneaker designer's panel and the props' placement are only
+driven headless by our shots, not by STUDIO's steps yet).
+
+## 0. `clothing-refiner` (2026-11-01, evening): bikinis and thongs on the hip bone
+
+The user's note on the bikinis: the waistline's `hip` lift, the briefs re-cut so their top edge rises over the hip
+bones, a string bikini and a halter triangle top after their OBJs (TAILOR §1g). Next: their look in the Studio.
+
+## 0. `clothing-refiner` (2026-11-01, later): the clothing review (docs/CLOTHING_PLAN.md, ticked)
+
+The user's eight notes, all built (TAILOR §1g): waistbands snug, hollows bridged (no cleft, cleavage or spine dent, no
+dent behind or ledge round the knee, a skirt's back kept off the gap between the legs), ease limits checked by TAILOR,
+loose tops hanging from the bust and shoulder blades with soft vertical folds and a sleeve's sag in the creases, up to
+three prints a garment with a prints library, and the everyday wardrobe (Casual, Business, Uniforms, Sleepwear,
+Swimwear tabs; joggers, sweatshirt, polo, suit trousers, pyjamas, sleep and swim shorts, bikinis). Next: the user's look
+in the Studio (STUDIO wants a local GPU run); the older outfits' thumbnails still show them before the bridge (re-run
+`node tools/character/tailor/thumbs.mjs`, ~40 min); a shirt dress and a one-piece swimsuit need a cut of their own.
+
+## 0. `clothing-refiner` (2026-11-01): creases, made fabrics, the smart casual collection
+
+The user: Japanese smart casual outfits after their reference sheet, creases ("how we emulate wrinkles on faces"),
+then fabrics made in Blender "like the props and buildings". Built (TAILOR §1d, §1e, §1f): `tailor/crease.js` (folds,
+drag lines, the press, seams, hems, crinkle as a shader height from per-vertex data; the Creases slider and Pressed
+crease switch; baked into the export's normal map), `tools/fabric_bake.py` + `tools/streetbake/fabrics.py` (26 fabrics
+baked into `assets/pbr/Procedural/fabric_*`, first in the PBR picker, tinted; FABRICS in check_all), the Smart casual tab
+(fifteen outfits, nine new cuts; linen, crepe, flannel). Next: the user's look in the Studio (`python tools/fabric_bake.py
+bake` once on their machine; a local STUDIO run on the GPU); the outfits' thumbnails (`tailor/thumbs.mjs`); the
+sweater over the shoulders; the creases in Godot measured (GDPEOPLE on a dressed export).
+
+## 0a. The eyes in Godot (2026-11-01, on `eye-enhancements`, merged into main by tsukibii/HorrorEngine#7)
+
+The user: the eyes "look kind of lifeless and scary ... it doesnt seem like we are applying the eye wetness etc
+correctly", the exported eyes left alone (DECISIONS 2026-11-01). Measured on a fresh export (`_eyetest`: the soft cinematic
+look, natural lashes, the grafted eyes): the iris black, the whites grey, HumanShaders' eye wetness unused. Done in the
+look plugin (GODOT_LOOK §5h): the iris's bowl fixed (a doubled `handed`), **the eye's wet layer** (`eye_wet.gdshader`, each
+eyeball's material overlay: the real lids found in the depth buffer, a warm shade by them, the upper lid's deeper, the
+lid's edge melted in), the guessed ellipse off and the socket halved under it, the white's light wrapped warm (`wrap`,
+`scatter_color`, `sss`), a crisp catchlight (`catch_size` 0.025). The sheet: `docs/godot_sheets/2026-11-01_eyes.jpg`.
+Then, at the user's word, **the skin's depth merged in** (`subsurace-scattering-exp`, §0b; DECISIONS 2026-11-01, evening):
+GODOT_LOOK keeps it as §5g and the eyes are §5h; the two checked together on a fresh export, the eyes' numbers unchanged;
+before (main) and after: `docs/godot_sheets/2026-11-01_eyes_depth.jpg`. Main (the school, §0c) merged in too.
+In the cloud a Studio export needs MediaPipe first (`face_mesh.py setup`, libegl1: LESSONS). **Next, if wanted** (ask
+first): the eyes' own life in Godot (micro-saccades, a glance, look-at: they don't turn yet); the user's look in a real
+level on the 3090; the tear line's glint if it reads too white under their lights; EYELIDS' file measure on a new
+character with the grafted eyes (0.315 mm² of the right eye through the lower lid at 0.90 shut from below: the export's
+blink, not touched here).
+
+## 0b. `subsurace-scattering-exp` (2026-11-01): the skin's depth, merged into `eye-enhancements` (#7)
+
+The user asked whether we use subsurface scattering (the characters' skin looked lifeless) and for Blender's look round
+the eyes and nose, for baked light, the ears switchable (DECISIONS 2026-11-01). We had HumanShaders' (per lamp, so
+nothing under a baked level's light but a grey occlusion). Built (GODOT_LOOK §5g): **the skin's depth layer** in
+`skin_wet.gdshader` (`skin_depth`, `HSSkin.set_depth`), placed by **MHR's depth map** (`tools/skin_detail.py depth`,
+`textures/mhr_skin_depth.png`: eyes, nose, ears, mouth, most in the creases), on every Studio export by itself;
+per character the Studio's Skin light **Depth (game)** and **Ear glow (game)** (the export's `studioSkin` record);
+`HSCharacterLook` Skin Depth and Ear Glow (auto, on, off); then, the user's yes, the rest of the body gently: a warm
+edge where the skin turns away, the creases everywhere, the fingers lit through, the lips (each a slider: the
+node's "Skin depth's parts"). GDPORTRAIT measures it under a baked light (portrait.gd's
+`--light=baked`, `--depth`, `--ears=off`, `side`, `--probe`); the sheet `docs/godot_sheets/2026-11-01_skin_depth.jpg`.
+The branch is named as the user typed it. **Next:** the user's look in a game of theirs (its baked light, a cast member
+with hair over the ears and Ear glow off), then the strength (1 by default; 2 is Blender's picture); merged into the eyes' pull request at the user's word
+(DECISIONS 2026-11-01, evening: the two checked together, `docs/godot_sheets/2026-11-01_eyes_depth.jpg`); the
+Studio's view could draw it too (not asked).
+
+## 0c. A Japanese school (2026-11-01, on `claude/laughing-goldberg-6l5of3`, merged into main by tsukibii/HorrorEngine#8)
+
+The user asked for a school in the tools we have (DECISIONS 2026-11-01): the kit's school furniture and fittings (KIT
+§10), books with covers of their own (PROPGEN §16), the 1:1 classroom of their Blender render and its corridor (the set
+`school_classroom`, SCENE_BUILDER §10), a school street (`school`). Then "the school building needs to be to scale" and
+two photos of school buildings "1:1": **the school building kit** (SCENE_BUILDER §10b: `schoolBuilding` in
+builder-presets.js, modules into rooms on every storey, dog-leg stairs (`flights: 2`) in shafts to a penthouse, round
+windows; `tools/director/layoutset.mjs` saves a layout as a set) and **buildings in storeys on the street**
+(STREET_BUILDER §5f: the shell storey by storey round the rooms, the facade from them: eaves, pilasters, rails, bands,
+the name on the roof; ribbed walls, a sliding gate, stand-in trees). The photos rebuilt: sets `school_white` and
+`school_showa`, streets `school_white` and `school_showa` with their shots `photo` (renders:
+`node tools/director/streetshot.mjs --street school_white --shot photo`; the photos in each street's `refs/`, on this
+machine only). Next, what the user asked earlier: **the 1:1 classroom with PBR sets** ("to see if it helps realism":
+the interior sets in tools/streetbake/library.py, `jp_oak_floor` and `jp_pine_varnish` baked, ten to go with
+`python tools/street.py library <names>`). Not yet: the school's walkable roof, its toilets' stalls, a gym set; dusk renders
+here come out black now and then (the headless renderer; retry). Then (DECISIONS 2026-11-01, night) **a small private
+school in Tokyo concrete**: the set `school_tokyo` (one storey round a courtyard, two mixed-year classes, the lunch
+room, the reception; SCENE_BUILDER §10c) on the street `tokyo_school`; the user's next word on it decides what follows
+(timber was "for later").
+
+## 0. The street builder (2026-10-30, night, on `buildings-streets`; not merged)
+
+The user asked for a new tool (DECISIONS 2026-10-30, night and later night): the outside world the enterable buildings
+go into, low poly and layman-simple; then slopes and curves, big streets handled, a .glb to drop into a Godot folder,
+and the interiors (sets) walked into from the street. Built (docs/STREET_BUILDER.md): **the street builder**
+(`tools/director/street.html`, the dashboard's tile; `street-gen.js` the generator in plain JS, `street3.js` the drawing
+and the export, `street-presets.js` ten styles, five mixes and the walk-ins; `Content/Studio/Streets/<name>/street.json`):
+the map, the facade view (parts clicked onto the wall, floors by dragging the roof, a photo behind each side), the 3D
+view (orbit, walk, shots matched to a photo), **Fill a street**, streets that **bend** (a dot in a street's middle) and
+**climb** (heights a point; the ground, plinths, things and fence posts follow), **big streets** in 48 m chunks merged
+by material (colours on the vertices; 451 draws for the 89-building town), a piece rebuilt only when it changes, **the
+.glb for Godot** (colliders `-colonly`, occluders `-occonly`, lamps, insides' markers; a colour a material, since Godot
+leaves vertex colours off), **buildings to walk into** (a set inside: the shell round its rooms with its doors and
+windows cut through, roof, plinth, steps; rows and floors: the Motel with its walkway and stair; the Bungalow), gates.
+Streets: **shibuya_lane** (the first photo matched, 13 pins at 0.5%), **reference_town** (the other five references),
+**hill_motel** (a winding hill, the motel and its car park, the bungalow behind its gate). Sets: **motel_room**,
+**bungalow**. Checks: STREET (check_all), STREETPAGE, GDSTREET (Godot 4.7: rays onto the road, the pavement, roofs, the
+walkway; through each inside's doorway onto the set's own door with the set's level at its marker).
+
+**Then the surfaces** (2026-10-31, past midnight; DECISIONS): "the most aesthetic way" to texture the streets, wear and
+decals, procedural bakes instead of PBRs, a street → Blender → Godot path with easy collision. Answered and built
+(docs/STREET_TEXTURING.md): **finishes that tile at their real size** (Blender node groups in `tools/streetbake/
+finishes.py`, baked once onto the PBR shelf as seamless sets, `assets/pbr/Procedural/`), **the street's own wear** in
+one low-res atlas (`wear.py`: the prop generator's idea at a street's scale; dirt, splash band, rain streaks run down
+each ledge, worn edges, wet patches), PBR sets optional by slot or material (a street's `finish.json`). `tools/street.py
+look` renders a shot beside its photo in Cycles; `bake` writes `<name>.glb` and `<name>.blend` (plain glTF: the
+finish at its size times the colour, the atlas as occlusion on UV2, the recipe in extras; colliders, occluders, lamps
+and markers by name; the .blend's Foliage collection kept between bakes). The look plugin's import step
+(`street_import.gd`) makes those materials `street.gdshader`, so Godot matches Blender (GDSTREET `--glb --plugin
+--shot`: the rays land on the road at 0.004 m and the pavement at 0.150 m after Blender, 85 surfaces on the street
+shader). STREETBAKE (`street.py bake-check --godot`, a minute). The Shibuya lane: `Saved/Streets/shibuya_lane/blender/
+compare_photo.jpg` (the photo, Blender, Godot). **Next, if wanted:** decals as a street builder part made Godot Decal
+nodes by the same import step (STREET_TEXTURING §5); a `finish` beside each slot's colour in the street's `look`; the
+wear reacting to the plugin's rain.
+
+**Then the enterable buildings' outsides** (2026-10-31, small hours; DECISIONS): the shop door made readable (a frame
+all round, a kick plate, a push bar, its own pane), and the scene builder's **Outside panel** (SCENE_BUILDER §8): an
+enterable building designed whole, inside and out, with the street's own generator and styles (roof, walls, raise,
+front, fittings), seen *round the building*, kept as the level's `outside` (STORY_FORMAT §2, story_check reads the
+street's own words from street-gen.js); the street builder's palette has every set, its building wears the set's
+outside until changed in the street (`inside.from`, `inside.own`, *Follow the set's outside*; STREET fails when a
+following building is stale). The bungalow set has its outside (hip roof, raised 45 cm, an air conditioner and a pipe);
+hill_motel's bungalow follows it, its motel is its own. Checks: STORY, STREET, STREETPAGE, BUILDER.
+
+**Then no clipping** (2026-10-31, small hours; the user saw the bungalow's wall tops through its roof): walk-in roofs
+boxed on a soffit 1 cm over the level's top (gables flush), roofs over an L or a T joined into one (flat: one slab and
+its parapet round the outline; pitched: a roof over each arm, cut where it's inside another), and the whole generator
+swept for faces in one plane over each other: layers a `GAP` (1 cm) apart, parts `SIDE_IN` (6 mm) in, rails sharing
+their corner posts, parts up the floors never into their own copy, and the rest by rule (STREET_BUILDER §5d). STREET
+measures it over everything it builds (1 cm², 4 mm) and over sets shaped L, T, U, steps and apart under every roof.
+
+**Then the streets made to look real** (2026-10-31, before dawn and morning; DECISIONS): research first
+(docs/research/photoreal.md: the Battlefront look is right values, right light, right flaws; through a tape, light and
+metre-scale variation matter, micro detail doesn't; LightmapGI with a Dynamic sun is Battlefront II's split), then
+**street paint** (docs/STREET_PAINT.md): **the material library** (49 Japanese exterior finishes, `street.py library`,
+`pbr/Procedural/jp_*`, each with every PBR map: colour, normal, height, roughness, occlusion, ORM), **wear and tear**
+in every material and finish (smudges, fingerprints, scratches, chips, cracks, dents), **27 decals** made from code
+(`street.py decals`), and **the paint page** (`paint.html`: paint a surface or every one like it, lay decals, Blender's
+look or bake from the page). The Shibuya lane is painted from its photo and rendered under **Blender's physical sky**
+(Nishita), calibrated against the photo by measurement. Checks: PAINT (new), STREET (decals), STREETBAKE.
+**Then the road and the light** (2026-10-31, late morning; DECISIONS): the road's print lies on the road (5 mm, no
+shadow anywhere: the page, Blender, Godot's import step, GDSTREET checks it); the light is the user's, baked by hand
+in Godot (STREET_TEXTURING §3 has what LightmapGI and VoxelGI each need from the street).
+
+**Then the PBR sets** (2026-10-31, afternoon; DECISIONS): the user's `pbrs` branch merged (37 ambientCG sets, CC0, 1K,
+in git at `pbr/<category>/<set>`, each with its real size and a label in its meta.json; the shelf reads them after
+assets/pbr). The street paint page's materials are those sets by category (the first library, made in code, folded
+away), and **the brush** tunes one (tint, brightness, contrast, saturation, hue, fade, roughness, relief, size, turn)
+and **layers** over it: another set in soft patches or by its own mask, the street's decals scattered over each
+repeat, and the bake's wear per surface (grime, streaks, edges, damp). A tuned look is an object in the street's
+`look` that `storykit/pbrmix.py` makes into a tileable set of its own (`pbr/_made/<hash>`, not in git; one function,
+so the page, Blender and Godot match), and STREET checks every look through it. The Shibuya lane is repainted with
+them, tinted to the colours the earlier calibration found: `docs/godot_sheets/2026-10-31_shibuya_pbr.jpg` (the photo,
+the procedural render, the PBR one; close-ups of the shop, the kiosk and the road). Up close the road and pavers
+read real; from the photo's distance the frame is still ruled by the light and the street's clutter. **GDSTREET** now
+drops a body a person's size on the roads and pavements (it stands there) and walks it at a building's front (it
+stops at the wall). **Next, if wanted** (ask first): the street's light by the user in Godot, more of the photo's
+clutter (cables, AC units, signs), more sets (tiles, siding, glass), a set per material in the street builder's own
+inspector with the brush.
+
+**Then the interiors** (2026-10-31, evening; DECISIONS): **Paint in the scene builder** (SCENE_BUILDER §9): the street
+paint's brush, now `brush.js` and shared, on a level's floors, walls, ceilings, trim, blocks and outside; a room's look
+and a block's `mat` take a colour or a tuned set (STORY_FORMAT §1: the plan tags it `mat:pbr/_made/<hash>`, the desk's
+plan answer carries the made sets, the stage draws them and colours); a kit floor under the click is taken up; a room's
+walls are its own side (plan.py's **linings**: a 4 mm lining wearing a room's own look on a wall its neighbour builds,
+wherever their looks differ). **Your folders** (ASSETS §6): folders of PBR sets anywhere attached to the shelf where
+they are (`pbr/<name>/<set>`, nothing written in them; the shelf page's Attach). **The Godot export's materials**
+(GODOT_EXPORT §3b): `game/materials/<Name>.tres` once a set, named after it, its maps beside it, every piece on every
+level wearing it by reference (GDEXPORT checks one instance a file). BUILDER paints, tunes, lines and undoes; PBR
+attaches; GDEXPORT shares. **Then the furniture** (2026-10-31, night: "do whatever's best"): a kit thing's slots take
+looks (`mats`: STORY_FORMAT §2, KIT §4), Paint dresses the slot under a click (every one like it: the same preset),
+the desk draws them (`dressSlots`), the Godot export gives them `<Name>_uv.tres` through `slot_materials.gd`;
+TestRoom001's fridge wears the white plastic set (GDEXPORT's kit slots). The street's materials stay inside its .glb
+(DECISIONS). **Then the fittings and doors** (late night: "the plastic PBR for light switches"): the switch, the
+built-ins, the stairs and window frames the finish makes, and doors (a plain door's `mat`, a kit door's `mats` over its
+parts) take sets; a fitting's paint is kept on a stub in its room's props (the export copies it onto the fitting it
+makes), a frame's on its window, a door's on its opening; a moving block's set in Godot is `<Name>_obj.tres`;
+TestRoom001's power switch, library door and kitchen door show them. **Then the lights as furniture** (small hours:
+"no Godot light sources, rounded LEDs"): the kit's downlight grows `flush`, `dome` and `ring` styles (four presets); a
+story light with a `kit` is a fitting (plan: `<id>__fitting` and the light under it; the desk's glass glows with it);
+the scene builder's ceiling lights are round LEDs (by room size or picked in Finish); the Godot export writes a fitting
+light as its fitting and a node, no light source (its glass and the user's lights under it follow the story's light);
+TestRoom001's power bulb is a flush 300 (GDEXPORT fittings, GDTESTROOM's switch). **Then the floors take a material**
+("yes make the floors take a material"): painting a room's floor dresses its kit floor's boards instead of taking it
+up; a set that paints its own tiles, boards or mats (found in its maps as cells: `storykit/pbrcells.py`, the PBR check)
+lays the kit floor out by them (plan.py `fitted` puts the cells in the kit's spec, kit.js lays them, the set straight
+across: KIT checks every board inside a cell), its gaps in the set's seams on the desk and in Godot (the stage builds
+from the plan's spec now; `<Name>_uv.tres` has a `uv1_offset` for the .glb's `1 - v`); TestRoom001's keys room is paved
+with Concrete010, its library tiled in Concrete012. **Next, if wanted** (ask first): a set per material in the street
+builder's inspector; a kit floor sunk into the floor (now it sits on it: a tatami raises the walking height 5.5 cm).
+
+**What could come next** (ask first): the user's verdict on the match, the town and the motel; more references; the
+export placing an inside's level by itself (today a marker; the set's level dropped there by hand); a two-storey
+interior (stairs inside the set); foliage when the user wants it; steps and retaining walls on a slope; a grade in the
+page (the photo's teal and orange).
+
+## 0b. The prop generator (2026-10-30, night, on `prop-gen-tool`; merged into `buildings-streets` 2026-10-31)
+
+A side branch, merged into `buildings-streets` at the user's word (2026-10-31, with the street builder, its paint
+and the PBR sets): **`python tools/propgen.py`** makes small props from recipes by Python in Blender
+(docs/PROPGEN.md). 38 recipes in `Content/Studio/Props/presets.json`:
+
+- **The sampler's twenty kinds of litter:** cans pristine, dented and crushed; PET bottles; coffee and iced cups;
+  newspaper, crumpled paper, napkin, fries bag, receipt, note; burger and pizza boxes; a bin bag; cigarette butts;
+  bottle caps.
+- **TestRoom001's kinds of thing:** cutlery with metal finishes, keys, kitchenware.
+- **A worn kit chair:** the `import` family with a PBR set.
+
+Checks: PROPGEN ok (12 families measured) and GDPROPS ok (Godot 4.7 reads every material back); a scratch copy of
+Sample placing `asset props/<name>` passed STORY and GDEXPORT. **For the user:**
+
+1. On your machine (Blender on the PATH): `python tools/propgen.py all`, then `python tools/propgen.py sheet`, and look
+   at `Saved/Props/sheet.png`.
+2. `python tools/propgen.py library`, to get them into the library for stories.
+
+Then, from the user's second message (2026-10-30, late):
+
+- **Liquids that stay level and slosh in Godot** (PROPGEN.md §10): the look plugin's HSLiquidFill. The game attaches
+  it in `enter_level`. A fill table from the inside's own shape keeps a tipped bottle's volume.
+- **The pill bottle** (`pills`): tinted vial, swappable sticker, tablets settled inside.
+
+40 recipes. GDPROPS ok with the liquids upright and tipped; PROPGEN, GDEXPORT, GDPLAY, LOOKPLUGIN (nodes) and CHECKS
+ok.
+
+**GDTESTROOM fails at station 6 in this cloud with or without the change:** "Aoi's skin on 0 materials", her body
+wanting a Studio export the fresh container lacks. Worth a run on the user's machine.
+
+Then, the user's third message (2026-10-31): **the occult, the kitchen and the sinks**, eight new families with 42
+recipes, 82 recipes in all:
+
+- **Candles:** pillar, church, black, red, a taper in a brass candlestick, a votive in sooty glass, a cluster;
+  `socket_flame` at each wick.
+- **Japanese occult:** ofuda in a brush hand with vermilion seals (`sheet` with the `ofuda` design), ema, omamori, a
+  shimenawa with shide, a wara-ningyo nailed through its name, a kokeshi.
+- **Shrine and altar things:** a hokora (one sealed with an ofuda), a sanbō, an orin, a kōro, an offering table.
+- **Cookware, appliances and sinks:** saucepan, stockpot (broth), frying pan, yukihira (miso), donabe, tetsubin,
+  enamel pot; a rice cooker (modern and 1980s); electric kettles; a kitchen sink and a washbasin (with water, with
+  blood).
+
+New in the tool: weighted normals for hard surfaces, `rbox`, `tube`, `spline`, ring strips (shapes a lathe can't
+turn), and sockets as empties in the glb under the kit's names (PROPGEN.md §11-12). PROPGEN ok (22 recipes measured),
+GDPROPS ok on all 42 (four liquids upright and tipped), CHECKS ok; all 42 in the library. The look plugin and the
+game's export weren't touched, so GDPLAY and GDTESTROOM weren't rerun. **For the user:** `python tools/propgen.py
+make <names>` and `sheet` on your machine (GPU), and say which need another pass.
+
+Then (2026-10-31, later): **the page**, `python tools/propgen/serve.py` (port 8797, PROPGEN.md §13): the recipes as
+pictures, a form, pictures clicked onto the texture (`decals`, any family), PBR sets per material (`pbr`), variations,
+3D, saving. PROPPAGE ok (113 s here), PROPGEN, CHECKS. **For the user:** open it from the launcher (Pages) and try a
+decal on something; say what's missing.
+
+Then (2026-10-31, evening): **enhancers** (PROPGEN.md §14): what glows painted as emission, the look plugin's
+`HSPropFX` (glow, flame with its candle light, smoke, steam, wax; switches per prop and per project), the game putting
+one on every made prop, and a `<name>.tscn` beside every glb. The rice cooker's panel moved onto its lid; the pots'
+handles into their walls. **For the user:** open a candle's `.tscn` (Saved/Props/candle_taper/, copied into a project
+with the look plugin) in Godot and switch its enhancers; say if the flame wants another shape.
+
+Then (2026-10-31, night): **no part inside out**, and **your pictures on any prop** (PROPGEN.md §11, §15):
+
+- **The user saw the rice cooker's bottom through its sides in Godot.** `slab` walked its rounded edge from the top
+  down, so every slab and rounded box had its edge band facing in. Seven other parts were inside out the same way.
+  Cycles' previews draw both sides and hid it. PROPGEN now casts rays at each case and fails past 1.5% of backs seen
+  (`check.orientation`). GDPROPS ok; the rice cookers in Godot sent to the user.
+- **Every prop's own pictures swappable**: 116 slots on 50 recipes (logos, pictures, ornaments, stamps, patterns,
+  print), `pictures` in a recipe (wildcards `*.logo`, `false` to turn one off, stamps as relief only); smudges (nine
+  built in, or yours); flourishes (decals repeated or in the corners); the size every picture wants on the page and
+  in docs/PROPGEN_PICTURES.md. PROPGEN, PROPPAGE (an own picture swapped, a smudge moved by a click, a flourish),
+  CHECKS ok. **For the user:** open the page, pick a prop, Texture & pictures: swap its logo for yours (the template
+  link gives the drawn one at the size it wants), add a smudge; say what's missing.
+- **The loose ends, fixed after (the user: "fix whatevers left"):** textures the same run to run (the padding's bands
+  walked in the islands' order, a set's wasn't; PROPGEN makes a case again in a second process), the enamel pot's
+  unused island gone, the import's kit meshes under `--out`, a `tile` fit (patterns and strips repeat by default),
+  pictures and smudges carried across a band's seam, the fork's tines' tips and slots walked the right way (they
+  crossed themselves: 1.2% backs, now none), the sleeve's HOT inside its ring. **Still open:** the burger box's lid
+  shows 0.5% of backs at its inner chamfer by the back (cause not found; under PROPGEN's 1.5%); the knives have
+  edges whose faces disagree inside the steel, where nothing sees them.
+
+Next if wanted (PROPGEN.md §9): a life on a generated prop (a generated kettle boiling, a candle burning down: the
+sockets are there), food tins, a flashlight, batteries, a bucket, a crate, a die, a book; a recipe page with a PBR
+picker.
+
+## 0r. `realism-enhancer-skin` (2026-10-31, the night, the last): the grafted eyes for everyone, the add-on gone
+
+The user: make the base mesh's eyes the default ("I don't care about the old eyes"), upgrade our own brows and lashes
+with what the add-on's technique does, and remove the add-on. Done (DECISIONS 2026-10-31, the last; CHARACTER_STUDIO §2b, §2c):
+`Content/Studio/Bodies/MHR_eyes.bin` is committed and worn by every character (Blender Studio's Human Base Meshes'
+lids, CC0; `eye_patch.py make` from `vendor/human_base_meshes/`); the brows and lashes by hand gained trimmed edges,
+clumps, frizz, the curl at the lash tip, uneven lashes (`groom.js`, docs/research/brows_lashes.md); the add-on's
+bake tool, its Studio loader, its notes, its bake button, Start from the add-on's brows and its check are gone. Next: the user's look (a local
+STUDIO run on the GPU); the eyelid-line handles on the graft; the remote the old transfer branch (ask before deleting).
+
+## 0c. `realism-enhancer-skin` (2026-10-31, the night, later): the grafted eyes on our faces, in the Studio
+
+The user asked for the base mesh's eye and lid shape ("meaty flesh that curves in") on our editable faces, with a few shape keys
+(more Asian or Caucasian, size). Built so far (CHARACTER_STUDIO §2c): `tools/eye_patch.py` (make, preview, check:
+EYEPATCH) grafts the base mesh's eye region onto MHR's face; the Studio wears it (Skin, Eyes, the grafted eyes; `eyegraft.js`), open
+to shut. Also Start from the add-on's brows (§2b). The shape keys are in (size, crease monolid to double
+lid, inner fold, tilt, opening, depth; presets Default, East Asian, Caucasian). The export carries it (the graft in the skin with
+its blink's morph targets, baked; EYELIDS on `_graftedeyes`) and Godot shuts it. Next: the user's look; the eyelid-line
+handles on the graft; the head's licence (compare with Blender's Human Base Meshes). The head's licence: compare it with Blender's Human Base Meshes bundle when
+www.blender.org is reachable (DECISIONS).
+
+## 0b. `realism-enhancer-skin` (2026-10-31, the night): brows and lashes by hand, waiting for the user's try
+
+The user liked the add-on's lash texture but not its design ("they move up too upwards") and asked for "an easy eyebrow editor
+tool where I manually can add and adjust the eyebrows and eyelashes inside an easy wrapper". Built: Face, **Brows &
+lashes by hand** (CHARACTER_STUDIO §2b, `groom.js`, GROOM): Edit on the face, handles on the brows' edges and the lashes'
+tips, Mirror, Add hair / Thin out / Comb, a blink, styles and sliders, at the add-on's thickness; the lashes forward and swept
+out. Sheet: `docs/godot_sheets/2026-10-31_brows_lashes_by_hand.jpg`. Next, the user's try: what the handles, brushes and
+defaults need. Ideas: a brow-shape library (arched, straight, soft angled) as handle presets; per-hair brushes for
+strays; the lower lashes' own handles.
+
+## 0a. `realism-enhancer-skin` (2026-10-31, later): the add-on's brows and lashes, eyes that close, waiting for the user's review
+
+The user's asks (DECISIONS 2026-10-31, later): MetaHuman-like eyes, brows and lashes; then a third-party procedural hair add-on
+for the brows and lashes (its .blend at vendor/, git-ignored, CC BY-SA 4.0); then eyes that don't clip through the
+lids, open or shut, and whites that aren't paint, wet as MetaHuman's. Built: the add-on's bake tool (since removed) and
+the Studio's bake button for it; the export's blink (morph targets with in-betweens, the lids kept off the eyes, met when
+shut), `HSBlink` in Godot, the tear line, the whites (GODOT_LOOK §5f); EYELIDS and its check. Pictures:
+`Saved/Story/_look/godot_eyelids/blink.jpg`. Open: a lash clump at an inner corner and a fold at an outer corner in the
+shut picture; the brows placed by the add-on's own region (not our brow rows); a presets sheet; the eyes don't turn in Godot;
+the hybrid MetaHuman-face plan on hold; the old transfer branch still on the remote (ask before deleting). The STUDIO browser
+check wants a local GPU run (the socket shade and the export's blink and tear line are in its path).
+
+## 0b. `realism-enhancer-skin` (2026-10-30, night): the Studio's characters less like dolls, waiting for the user's review
+
+The user's ask (DECISIONS 2026-10-30, night): the Studio's characters in Godot looked like dolls beside MetaHumans;
+the plugin's skin did little; close up "the pores look way too large and not enough micro detail"; a Blender step
+offered. Built without one (GODOT_LOOK §5d): **the skin's detail layer** in HSSkin (pores, furrows, the lips' lines,
+the colour's unevenness at their true size from `textures/`, made by `tools/skin_detail.py`, placed by MHR's region
+map; presets young, natural, adult, old picked from the export's own age and pores, or `HSCharacterLook`'s Skin
+Detail), **the Studio's ambient occlusion** in its export (`albedo.js` `bakeOcclusion`, the ORM's red), **the
+scattering kept gentle** (`sss_scale`: HumanShaders' strength blurred the face to wax) and **the eyes' lid shadow**
+(`eye.gdshader` `occlusion`, `sclera_bright`). The sheets: `docs/godot_sheets/2026-10-30_skin_detail.jpg` (before and
+after at three distances, the eye) and `2026-10-30_skin_presets.jpg`. New checks: GDPORTRAIT
+(`tools/godot/portrait_check.py`), SKINDETAIL (`tools/skin_detail.py check`, in check_all).
+
+**For the user:** pull `realism-enhancer-skin`, re-export a character from the Character Studio (its occlusion and
+its record's age and pores come with the new export; an old export still gets the detail layer, without occlusion),
+export the game to Godot and look close; `python tools/godot/portrait_check.py --person <name>` pictures any
+character on the card. Tell us: the pores' size and strength, the presets, the eyes' shadow (`occlusion`), the skin's
+sheen (it's more matte than before), and whether the two black streaks over the face in their screenshot were salon
+locks (they're not the skin).
+
+**STUDIO in the cloud** (SwiftShader, about 50 minutes a run): two full runs stopped at steps this branch doesn't touch
+(the skin light's shadow edge measured after the whole flow, 10500 px against 1.2 × 11023, though that step passes on
+its own on this branch and on the original; then a 30 s click timeout at "the eye refracts", which the first run had
+passed); the export's skin maps assertion, the part this branch changes (the pores left out of the normal map), checked
+with the test's own code on an export with painted nails: relief 39 (8 wanted), roughness 0.32, 4112 thin pixels, the
+occlusion map on. A local run on the card (`GPU=1`, docs/RUN_LOCALLY.md) is the full answer.
+
+**Then the hair** (2026-10-31, DECISIONS; GODOT_LOOK §5e): the salon's bake as a volume (shell normals and occlusion
+from `hairvolume.js`, strand tangents, the second UV across the card and its occlusion, each strand's numbers in the
+occlusion slot, `studioHair`), kept by the Studio's export (brows and lashes named, with their own numbers), worn by
+HSHair from the file's records (dithered soft coverage under TAA, tapered card sides, the roots fading in, two
+highlights with glints, light through from behind, a scatter); the white scalp cap and the brows' fill fixed; the sheet
+`docs/godot_sheets/2026-10-31_hair.jpg`. New: HAIRVOLUME, GDPORTRAIT's hair shots and measures. **For the user:**
+re-bake each character's hair in the salon (Bake), re-export it from the Studio, and look at it in Godot; tell us the
+softness (`density`, `side_fade`), the highlights (`spec_gain`), the light through from behind (`transmission`): HSHair's
+`BAKED` holds them. Open: the salon's live view still lights each card by its face; flyaways; a long cut's fan of
+cards on the shoulders is the hairstyle's own. Open on
+the skin: the eye's shadow fitted to each opening (the skin's `extras.openings` is in the file), wrinkle maps that
+deepen with the 72 shapes, the clothes' fabric detail the same way, the desk (plain by decision).
 
 ## 0a. The cloud session after (2026-10-30, small hours): §0's four pieces built, and a stand-in bug from the user
 

@@ -15,6 +15,7 @@ import datetime
 import hashlib
 import json
 import os
+import re
 import struct
 import subprocess
 import sys
@@ -43,6 +44,19 @@ EXPORTS = (".obj", ".json")
 WORKER = face_mesh.Worker(ROOT / "Saved" / "body_editor_worker.log")
 
 
+def my_outfits():
+    """My outfits (Content/Studio/Clothes/my_outfits.json, saved from the wardrobe): {about, outfits, meta}, as outfits.json"""
+    f = CLOTHES / "my_outfits.json"
+    d = json.loads(f.read_text(encoding="utf-8")) if f.is_file() else {}
+    return {"about": "outfits saved from the wardrobe (tools/character/wardrobe.html): as outfits.json's, [design, colour, look, edit] each; the Studio shows them first, as Mine",
+            "outfits": d.get("outfits", {}), "meta": d.get("meta", {})}
+
+
+def outfit_slug(n):
+    """an outfit's picture's name, as the Studio's slugOf and thumbs.mjs make it"""
+    return re.sub(r"^_|_$", "", re.sub(r"[^a-z0-9]+", "_", n.lower()))
+
+
 def clean(n):
     """a character's or a file's name: letters, digits, _ - . and no leading dot"""
     n = urllib.parse.unquote(n or "")
@@ -54,8 +68,6 @@ SALON_FILES = {"salon.json", "salon_bake.json", "salon.glb", "salon_base.glb"}  
 HAIR_FILES = SALON_FILES
 REFS = HAIR / "References"                                       # the salon's locked references (tools/gshair.py reference)
 REF_RUNS = {}
-
-
 def ref_status(name):
     d = REFS / name; p = REF_RUNS.get(name)
     running = p is not None and p.poll() is None
@@ -215,9 +227,25 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, f.read_bytes(), TYPES[f.suffix]) if f.exists() else self.send(404, {"error": "no salon hair yet"})
         if parts[:2] == ["api", "clothes"] and len(parts) == 3 and parts[2] in ("designs.json", "outfits.json"):   # the tailor's designs and outfits
             return self.send(200, (CLOTHES / parts[2]).read_bytes(), TYPES[".json"])
+        if parts == ["api", "clothes", "my_outfits.json"]:   # My outfits, saved from the wardrobe (docs/WARDROBE_PLAN.md)
+            return self.send(200, my_outfits())
+        if parts == ["api", "clothes", "prints"]:            # the prints library: pictures for a tee's front and back (CLOTHING_PLAN 6)
+            d = CLOTHES / "prints"
+            return self.send(200, {"prints": sorted(f.name for f in d.iterdir() if f.suffix.lower() in (".png", ".jpg", ".jpeg", ".webp")) if d.is_dir() else []})
+        if parts[:3] == ["api", "clothes", "prints"] and len(parts) == 4 and clean(parts[3]) and parts[3].lower().endswith((".png", ".jpg", ".jpeg", ".webp")):
+            f = CLOTHES / "prints" / clean(parts[3])
+            return self.send(200, f.read_bytes(), {".png": "image/png", ".webp": "image/webp"}.get(f.suffix.lower(), "image/jpeg")) if f.is_file() else self.send(404, {"error": "no such print"})
         if parts[:3] == ["api", "clothes", "thumbs"] and len(parts) == 4 and clean(parts[3]) and parts[3].endswith((".jpg", ".png")):   # an outfit's or a design's picture (tailor/thumbs.mjs)
             f = CLOTHES / "thumbs" / clean(parts[3])
             return self.send(200, f.read_bytes(), "image/jpeg" if f.suffix == ".jpg" else "image/png") if f.is_file() else self.send(404, {"error": "no picture yet: node tools/character/tailor/thumbs.mjs"})
+        if parts[:2] == ["api", "pbrfolders"]:             # the folders of yours attached to the shelf (ASSETS §6)
+            return self.send(200, {"folders": [dict(f, there=Path(f["path"]).is_dir()) for f in PBR.attached()], "root": str(PBR.ROOT)})
+        if parts[:2] == ["api", "pbrbrowse"]:              # a folder's subfolders, to pick one to attach
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            try:
+                return self.send(200, PBR.browse((q.get("path") or [None])[0]))
+            except (ValueError, OSError) as e:
+                return self.send(400, {"error": str(e)})
         if parts[:2] == ["api", "pbr"]:                    # the shelf (assets/pbr), scanned: {root, sets: {ref: {maps: {albedo: file...},
             sets = PBR.scan()                                 # tile_m, normal, orm, files, by_hand...}}} for PBR fills, clothes, pbr.html
             for ref, m in sets.items():
@@ -225,7 +253,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, {"root": str(PBR.ROOT), "sets": sets})
         if parts[0] in ("pbrfile", "pbr") and len(parts) >= 3:   # /pbrfile/<set path>/<file> (or /pbr/..., as the shelf page asks)
             rel = [urllib.parse.unquote(p) for p in parts[1:]]
-            f = PBR.set_dir("pbr/" + "/".join(rel[:-1])) / rel[-1] if ".." not in rel and all(rel) else None
+            f = PBR.own_file("pbr/" + "/".join(rel[:-1]), rel[-1]) if ".." not in rel and all(rel) else None
             return self.send(200, f.read_bytes(), TYPES.get(f.suffix.lower(), "image/jpeg")) if f and f.is_file() and f.suffix.lower() in PBR.WEB else self.send(404, {"error": "no such map"})
         if parts[0] in ("pbr.html", "pbr.js") and len(parts) == 1:   # the PBR shelf page (the desk's: one viewer for both), back to here
             page = (ROOT / "tools" / "director" / parts[0]).read_text(encoding="utf-8")
@@ -269,6 +297,24 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         parts = [p for p in urllib.parse.urlparse(self.path).path.split("/") if p]
         name = clean(parts[2]) if len(parts) >= 3 else None
+        if parts == ["api", "clothes", "myoutfits"]:                             # {name, list, thumb: a JPEG data URL} saved, or {delete: name}
+            req, data = json.loads(self.body().decode("utf-8")), my_outfits()
+            presets = json.loads((CLOTHES / "outfits.json").read_text(encoding="utf-8")).get("outfits", {})
+            if req.get("delete"):
+                n = req["delete"]; data["outfits"].pop(n, None); data["meta"].pop(n, None)
+                t = CLOTHES / "thumbs" / (outfit_slug(n) + ".jpg")
+                if n not in presets and t.is_file(): t.unlink()
+            else:
+                n = str(req.get("name", "")).strip()[:80]
+                if not n or n in presets or not isinstance(req.get("list"), list):
+                    return self.send(400, {"error": "a name that isn't a preset's, and a list of garments"})
+                data["outfits"][n] = req["list"]; data["meta"][n] = {"group": "mine"}
+                th = str(req.get("thumb", ""))
+                if th.startswith("data:image/jpeg;base64,"):
+                    (CLOTHES / "thumbs").mkdir(parents=True, exist_ok=True)
+                    (CLOTHES / "thumbs" / (outfit_slug(n) + ".jpg")).write_bytes(base64.b64decode(th.split(",", 1)[1]))
+            (CLOTHES / "my_outfits.json").write_text(json.dumps(data, indent=1, ensure_ascii=False), encoding="utf-8")
+            return self.send(200, data)
         if parts == ["api", "defaults"]:                                         # merged into People/defaults.json, key by key
             f = PEOPLE / "defaults.json"
             PEOPLE.mkdir(parents=True, exist_ok=True)
@@ -294,6 +340,13 @@ class Handler(BaseHTTPRequestHandler):
             if data:                                                           # an empty body clears the slot
                 (d / (parts[3] + ext)).write_bytes(data)
             return self.send(200, {"ok": True})
+        if parts[:2] == ["api", "pbrfolders"]:                                   # {"attach": path, "name": n} or {"detach": name}
+            body = json.loads(self.body().decode("utf-8") or "{}")
+            try:
+                rows = PBR.detach(body["detach"]) if body.get("detach") else PBR.attach(body.get("attach"), body.get("name") or None)
+                return self.send(200, {"folders": rows, "sets": len(PBR.scan(write=False))})
+            except (ValueError, OSError, KeyError) as e:
+                return self.send(400, {"error": str(e)})
         if parts[:2] == ["api", "pbr"] and len(parts) >= 4 and Path(parts[-1]).suffix.lower() in PBR.IMG:   # /api/pbr/<set path>/<file>:
             rel = [clean(p) for p in parts[2:]]                                    # a map into the shelf (a set from files)
             if not all(rel) or Path(rel[-1]).suffix.lower() not in PBR.WEB:

@@ -1,0 +1,14 @@
+{
+ "maps": {
+  "albedo": "Concrete021_1K-PNG_Color.png",
+  "height": "Concrete021_1K-PNG_Displacement.png",
+  "normal": "Concrete021_1K-PNG_NormalGL.png",
+  "rough": "Concrete021_1K-PNG_Roughness.png"
+ },
+ "normal": "gl",
+ "tile_m": 2.5,
+ "source": "ambientCG",
+ "url": "https://ambientcg.com/view?id=Concrete021",
+ "licence": "CC0-1.0",
+ "label": "concrete, blue-grey patchy"
+}

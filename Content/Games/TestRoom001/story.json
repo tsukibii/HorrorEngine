@@ -519,7 +519,8 @@
        "h": 2.1,
        "door": {
         "id": "door_kitchen",
-        "swing": "out"
+        "swing": "out",
+        "mat": "pbr/building/Paint005_1K-PNG"
        }
       },
       {
@@ -572,7 +573,8 @@
         "id": "door_library",
         "swing": "out",
         "creak": true,
-        "kit": "door_panels"
+        "kit": "door_panels",
+        "mats": {"metal": "pbr/metal/Metal063_1K-PNG"}
        }
       },
       {
@@ -695,6 +697,24 @@
       }
      ],
      "props": [
+      {
+       "id": "keys_floor",
+       "kit": {
+        "preset": "tile_300",
+        "size": [
+         4.9,
+         4.9,
+         0.01
+        ]
+       },
+       "mats": {
+        "tile": "pbr/concrete/Concrete010_1K-PNG"
+       },
+       "at": [
+        2.5,
+        2.5
+       ]
+      },
       {
        "id": "keys_table",
        "shape": "box 1.0 0.6 0.75",
@@ -1198,6 +1218,24 @@
      "openings": [],
      "props": [
       {
+       "id": "library_floor",
+       "kit": {
+        "preset": "tile_600",
+        "size": [
+         4.9,
+         4.9,
+         0.012
+        ]
+       },
+       "mats": {
+        "tile": "pbr/concrete/Concrete012_1K-PNG"
+       },
+       "at": [
+        2.5,
+        2.5
+       ]
+      },
+      {
        "id": "library_shelf",
        "kit": "bookshelf",
        "at": [
@@ -1431,6 +1469,7 @@
       {
        "id": "power_switch",
        "kit": "switch_jp_1",
+       "mats": {"plastic": "pbr/plastic/white_plastic"},
        "at": [
         0.07,
         3.4
@@ -1445,11 +1484,12 @@
        "use": "light",
        "kind": "bulb",
        "lit": false,
+       "kit": "led_flush_300",
        "at": [
         2.5,
         2.5
        ],
-       "z": 2.9
+       "z": 2.965
       },
       {
        "id": "power_lamp_stand",
@@ -1688,6 +1728,7 @@
       {
        "id": "kitchen_fridge",
        "kit": "fridge",
+       "mats": {"white": "pbr/plastic/white_plastic"},
        "at": [
         0.5,
         4.55

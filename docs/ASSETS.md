@@ -42,8 +42,11 @@ stay in your own project, see `Content/Studio/Bodies/README.md`), anything marke
 - `art: "<ref>"` (or an Unreal path `/Game/...`): replaces a block, **scaled evenly to fit** it, centred, on the block's
   base. Use it when the block's size matters to the layout and the mesh is close.
 - `mat: "<ref>"`: a texture set on a block (boxes only).
-- a room's `look`: texture sets for its `floor`, `walls` and `ceiling`. `floor` (wood, stone...) still sets the
+- a room's `look`: texture sets for its `floor`, `walls`, `ceiling` and `trim`. `floor` (wood, stone...) still sets the
   footsteps.
+- either can also be a colour (`#rrggbb`) or a **tuned set**: a set with its tint, contrast, size and layers (wear,
+  decals, another set over it), the street paint's look object (docs/STREET_PAINT.md §2), which the scene builder's
+  Paint makes; it's made into `pbr/_made/<hash>` on the shelf when it's drawn or exported (STORY_FORMAT §1).
 - A ref is `<lib>/<name>`: `basemesh/...`, `ambientcg/...`, `polyhaven/...`, `local/...`; a set on your PBR shelf is
   `pbr/<category>/<name>` (§6).
 - **Facing:** a library mesh's front (glTF +Z) faces the prop's `rot` the same way a block does. If they come out
@@ -117,6 +120,26 @@ assets/pbr/                             ($STUDIO_PBR puts it elsewhere, e.g. ano
 The shelf used to be `Content/Studio/PBR/`: sets still there are read too (a set in `assets/pbr` wins), new ones go to
 `assets/pbr`.
 
+**Your folders** (the user, 2026-10-31: "a PBR local, where I can attach a local folder and use PBRs from it and we
+export to Godot with those"): a folder of PBR sets anywhere on this machine (another drive, a bought pack, your own
+library) attached to the shelf where it is. The shelf page's **Your folders** box, *Attach a folder…*: click through
+to it (or type its path), give it a short name, *Attach this folder*. Its sets are then `pbr/<name>/<set>` (the folder's
+own layout under it: `pbr/mylib/Bricks/red_brick`), in every picker, the street paint's and the scene builder's Paint,
+the desk, Blender and the Godot export (which copies the maps a game uses into the game: GODOT_EXPORT). **Nothing is
+written in your folder**: what the shelf keeps for a set (its `meta.json`: the repeat, maps chosen by hand; its
+thumbnail) lives in a mirror, `assets/pbr/_attached/<name>/`, and its ZIPs stay ZIPs (unzip them there, or drop them on
+the shelf). The list is `assets/pbr/_folders.json` (this machine's paths: not in git). × takes a folder off (its files
+untouched; what you set on its sets is kept for when it's back); a story that uses its sets warns that they aren't on
+the shelf while it's off, and on another machine until a folder is attached there under the same name.
+`storykit/pbr.py` (`attached`, `attach`, `detach`, `browse`, `side`), the servers' `/api/pbrfolders` and `/api/pbrbrowse`.
+
+**The project's own sets are in git**, at `pbr/<category>/<set>` beside `assets/` (the user's ambientCG sets, 1K, merged
+2026-10-31 from the `pbrs` branch: asphalt, road, concrete, wall, building, roofing tiles, metal, plastic, gravel, floor,
+foliage, effects; all CC0). They're read after `assets/pbr`, their `meta.json` kept in git with each one's real size
+(`tile_m`, judged from its picture: the pavers 8 across at 30 cm, the slates and tiles about 8 across) and a label;
+`_thumb.jpg` isn't. A set's ref is its path (`pbr/concrete/Concrete010_1K-PNG`). `pbr/_made/<hash>` (in `assets/pbr`,
+not in git) is a set the street paint page made from one of them, tinted and layered (docs/STREET_PAINT.md §3b).
+
 - **The download:** Poly Haven's ZIP with Blend and glTF off, MaterialX off, the packed AO/Rough/Metal off, and AO, Diffuse
   and Rough as JPG, Displacement and Normal (DX) as PNG. Other names work too: the last word of each file name says
   which map it is (`diff`, `col`, `Color`, `ao`, `AmbientOcclusion`, `rough`, `Roughness`, `disp`, `Displacement`,
@@ -138,6 +161,17 @@ The shelf used to be `Content/Studio/PBR/`: sets still there are read too (a set
   or a garment's `pbr`, like any library texture. The scene builder's Look pickers list the shelf, and take a set added or changed there when you come back to the
   builder (no reload: the pickers and the walk view). `story_check` warns about a ref that isn't on
   the shelf.
+- **A set's own layout** (`storykit/pbrcells.py`; the user, 2026-10-31: "make the floors take a material"): a set that
+  paints tiles, boards or mats (pavers, a plank floor, tatami, cracked tiles) has them found in its maps as **cells**.
+  On its height map (the seams sit low), else its occlusion, else the colour's darkness, long straight runs of low
+  pixels at least nearly as deep as its typical seam are its seams (a scratch, the grain, a crack are shallower,
+  shorter or crooked), the areas between them its cells, kept when they are rectangles that tile the repeat; a turned
+  look's are turned with it, a scaled one's scaled. A kit floor (or a wall's tiles) whose boards wear such a set is
+  laid out by its cells (KIT.md, *Floors laid out by their set*): each board where the set paints one, the gaps in
+  its seams. A set with none (wood grain, a weave, plaster, metal) leaves the kit its own layout, each board wearing
+  its own cut of it. When a set is read wrong, `"cells": false` in its meta.json says it has none (kept on a rescan).
+  The PBR check finds the project's tatami mats (8 to a 3.6 m repeat) and pavers (64 to 2.4 m), none in its plain
+  sets, and a turned look's cells turned with it.
 - **The shelf page** (the **PBR** button in the Character Studio, the scene builder and the kit maker, each in its
   own tab with the way back to the tool that opened it; http://127.0.0.1:8793/pbr.html, or the desk's
   http://127.0.0.1:8780/pbr.html, the launcher's *PBR shelf*): the sets (by category when there are any); each one on a

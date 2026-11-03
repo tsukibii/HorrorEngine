@@ -2,7 +2,7 @@
 // leave notes for each other. Reads and writes Content/Games/<Game>/story.json through serve.py.
 import { typedAt, glitched } from "./play/typing.js";
 import * as M from "./motion.js";
-import { Stage, LIBRARY, SHOTS, SEAM_SECS, clipSecs, version, loadAssetLibrary, LEAN, PITCH, minimaxPrompt, VOICES, eventSecs, karmaOf, addKarma, karmaPick, PLAYS, REPLY_SECS, thenClip, TIMES, TIME_DEFAULT, flowTimes, chapterTime, FACES, loadFaces, forgetFace, edgeTime, facePlanOf, thenClips, thenList, thenId, replyGo, loadPainted, flowModels, modelFile, wearModels, sceneModels, wordOf, holds } from "./stage.js";
+import { Stage, LIBRARY, SHOTS, SEAM_SECS, clipSecs, version, loadAssetLibrary, addMade, LEAN, PITCH, minimaxPrompt, VOICES, eventSecs, karmaOf, addKarma, karmaPick, PLAYS, REPLY_SECS, thenClip, TIMES, TIME_DEFAULT, flowTimes, chapterTime, FACES, loadFaces, forgetFace, edgeTime, facePlanOf, thenClips, thenList, thenId, replyGo, loadPainted, flowModels, modelFile, wearModels, sceneModels, wordOf, holds } from "./stage.js";
 import { GLTFExporter } from "./vendor/GLTFExporter.js";
 import { bakePreview } from "./bake.js";
 import { loadBody, BodyFigure } from "./bodies.js";
@@ -211,7 +211,7 @@ function playLine(lid) {                         // a line outside the scenes (a
 }
 const pickOne = a => a && a.length ? a[Math.floor(Math.random() * a.length)] : null;
 function stopTakes() { for (const v of Object.values(PIPS)) { v.pause(); v.style.display = "none"; } }
-async function replan() { try { PLAN = await api("/api/plan/" + encodeURIComponent(GAME), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(S) }); } catch (e) { status(e.message); } }
+async function replan() { try { PLAN = await api("/api/plan/" + encodeURIComponent(GAME), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(S) }); addMade(PLAN.made); } catch (e) { status(e.message); } }   // made: the rooms' tuned sets
 let replanTimer = null;
 function scheduleReplan() { clearTimeout(replanTimer); replanTimer = setTimeout(async () => { await replan(); showStage(); }, 700); }
 async function loadMade() {                         // the motions made, and which loaded ones were made again since (dropped: loadFiles fetches them anew)

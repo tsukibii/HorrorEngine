@@ -26,17 +26,19 @@ const bodyName = arg("body", "feminine"), H = parseFloat(arg("height", /masculin
 const extra = arg("look") ? JSON.parse(arg("look")) : null;               // --look '{"print": {...}}': on every garment, for a test
 const list0 = arg("designs") ? String(arg("designs")).split(",").map(d => [d]) : outfits[arg("outfit", "work uniform")];
 // --pbr: a garment's set off the shelf (Content/Studio/PBR, docs/ASSETS.md §6), as the Studio's pbrOf gives it to tailor/look.js
-const SHELF = process.env.STUDIO_PBR || join(ROOT, "Content", "Studio", "PBR");
+const SHELF = process.env.STUDIO_PBR || (existsSync(join(ROOT, "assets", "pbr")) ? join(ROOT, "assets", "pbr") : join(ROOT, "Content", "Studio", "PBR"));   // the shelf (assets/pbr; the old place still read)
 const pbrSet = spec => {
   const [ref, opt = ""] = spec.split(":"), rel = ref.replace(/^pbr\//, ""), f = join(SHELF, ...rel.split("/"), "meta.json");
   if (!existsSync(f)) spawnSync("python3", [join(ROOT, "tools", "pbr.py")], { stdio: "ignore" });   // the shelf scanned: each set's meta.json
   if (!existsSync(f)) { console.error(`no PBR set ${ref} on the shelf (${SHELF})`); process.exit(1); }
   const m = JSON.parse(readFileSync(f));
   return { ref, base: "/pbrfile/" + rel.split("/").map(encodeURIComponent).join("/"), maps: m.maps, normal: m.normal, orm: m.orm,
-           tile_m: parseFloat(opt) || (m.tile_m && m.tile_m !== 2 ? m.tile_m : 0.3), tint: opt.endsWith("+") };
+           tile_m: parseFloat(opt) || (m.tile_m && m.tile_m !== 2 ? m.tile_m : 0.3), tint: opt.endsWith("+") || !!m.tint };   // (a set that tints: the garment's colour, as the Studio has it)
 };
 const pbrs = Object.fromEntries((arg("pbr") ? String(arg("pbr")).split(",") : []).map(s => { const [d, r] = s.split("="); return [d, pbrSet(r)]; }));
 const edits = arg("edit") ? JSON.parse(arg("edit")) : {};
+const ownPbr = (d, l) => { const r = l?.pbr || designs[d]?.pbr; if (pbrs[d] || !r || typeof r !== "string") return null; try { return pbrSet(r); } catch { return null; } };   // a design's own set (or an outfit's), as the Studio wears it
+for (const [d, , l] of list0 || []) { const p = ownPbr(d, l); if (p) pbrs[d] = p; }
 const list = list0 && list0.map(([d, c, l, e]) => [d, c, extra || pbrs[d] ? { ...(l || {}), ...(extra || {}), ...(pbrs[d] ? { pbr: pbrs[d] } : {}) } : l, edits[d] || e]);   // an outfit's own edit (a fit) unless --edit gives one
 if (!list) { console.error("no such outfit"); process.exit(1); }
 const out = arg("out", "tailor_sheet.png"), size = parseInt(arg("size", 360));
@@ -51,7 +53,7 @@ console.log(`made in ${Date.now() - t0} ms: ${stats.join(", ")}`);
 // everything as one binary: [body, part, part...], each {color, P (f32), T (u32)}
 const HUES = ["#e6194b", "#3cb44b", "#ffe119", "#4363d8", "#f58231", "#911eb4", "#46f0f0", "#f032e6", "#bcf60c", "#fabebe"];
 const parts = worn.flatMap(g => g.parts).map((q, i) => has("debug") && /_/.test(q.name) ? { ...q, color: HUES[i % HUES.length] } : q);   // --debug: each detail its own colour
-const KEYS = [["P", Float32Array], ["T", Uint32Array], ["N", Float32Array], ["UV", Float32Array], ["PART", Float32Array], ["S", Float32Array]];
+const KEYS = [["P", Float32Array], ["T", Uint32Array], ["N", Float32Array], ["UV", Float32Array], ["PART", Float32Array], ["S", Float32Array], ["CRZ", Float32Array]];
 const lookOf = new Map(worn.flatMap(g => g.parts.map(q => [q.name, g.look])));
 const head = parts.map(q => ({ name: q.name, color: q.color, fabric: q.fabric, surface: q.surface, look: lookOf.get(q.name), n: Object.fromEntries(KEYS.map(([k]) => [k, q[k].length])) }));
 const bin = Buffer.concat([Buffer.from(new Float32Array(b.P).buffer), Buffer.from(new Uint32Array(b.T).buffer), ...parts.flatMap(q => KEYS.map(([k, A]) => Buffer.from(new A(q[k]).buffer)))]);
@@ -82,7 +84,7 @@ const take = (A, n) => { const a = new A(buf, o, n); o += n * 4; return a; };
 const body = new THREE.BufferGeometry(); body.setAttribute("position", new THREE.BufferAttribute(take(Float32Array, NB[0]), 3)); body.setIndex(new THREE.BufferAttribute(take(Uint32Array, NB[1]), 1)); body.computeVertexNormals();
 scene.add(new THREE.Mesh(body, new THREE.MeshStandardMaterial({ color: "#c8a28c", roughness: 0.6 })));
 for (const m of head) {
-  const q = { name: m.name, color: m.color, fabric: m.fabric, surface: m.surface, P: take(Float32Array, m.n.P), T: take(Uint32Array, m.n.T), N: take(Float32Array, m.n.N), UV: take(Float32Array, m.n.UV), PART: take(Float32Array, m.n.PART), S: take(Float32Array, m.n.S) };
+  const q = { name: m.name, color: m.color, fabric: m.fabric, surface: m.surface, P: take(Float32Array, m.n.P), T: take(Uint32Array, m.n.T), N: take(Float32Array, m.n.N), UV: take(Float32Array, m.n.UV), PART: take(Float32Array, m.n.PART), S: take(Float32Array, m.n.S), CRZ: m.n.CRZ ? take(Float32Array, m.n.CRZ) : undefined };
   scene.add(LOOK.mesh(q, m.name, LOOKS.debug ? LOOKS : m.look));
 }
 await LOOK.mapsLoaded();                                          // a PBR set's maps

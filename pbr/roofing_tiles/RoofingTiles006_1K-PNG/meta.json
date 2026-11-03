@@ -1,0 +1,15 @@
+{
+ "maps": {
+  "ao": "RoofingTiles006_1K-PNG_AmbientOcclusion.png",
+  "albedo": "RoofingTiles006_1K-PNG_Color.png",
+  "height": "RoofingTiles006_1K-PNG_Displacement.png",
+  "normal": "RoofingTiles006_1K-PNG_NormalGL.png",
+  "rough": "RoofingTiles006_1K-PNG_Roughness.png"
+ },
+ "normal": "gl",
+ "tile_m": 2.0,
+ "source": "ambientCG",
+ "url": "https://ambientcg.com/view?id=RoofingTiles006",
+ "licence": "CC0-1.0",
+ "label": "terracotta squares"
+}

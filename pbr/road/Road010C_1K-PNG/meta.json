@@ -1,0 +1,15 @@
+{
+ "maps": {
+  "ao": "Road010C_1K-PNG_AmbientOcclusion.png",
+  "albedo": "Road010C_1K-PNG_Color.png",
+  "height": "Road010C_1K-PNG_Displacement.png",
+  "normal": "Road010C_1K-PNG_NormalGL.png",
+  "rough": "Road010C_1K-PNG_Roughness.png"
+ },
+ "normal": "gl",
+ "tile_m": 4.0,
+ "source": "ambientCG",
+ "url": "https://ambientcg.com/view?id=Road010C",
+ "licence": "CC0-1.0",
+ "label": "road, patched (yellow edge lines)"
+}

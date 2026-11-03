@@ -1,0 +1,15 @@
+{
+ "maps": {
+  "ao": "Concrete029_1K-PNG_AmbientOcclusion.png",
+  "albedo": "Concrete029_1K-PNG_Color.png",
+  "height": "Concrete029_1K-PNG_Displacement.png",
+  "normal": "Concrete029_1K-PNG_NormalGL.png",
+  "rough": "Concrete029_1K-PNG_Roughness.png"
+ },
+ "normal": "gl",
+ "tile_m": 2.5,
+ "source": "ambientCG",
+ "url": "https://ambientcg.com/view?id=Concrete029",
+ "licence": "CC0-1.0",
+ "label": "concrete, streaked grey"
+}

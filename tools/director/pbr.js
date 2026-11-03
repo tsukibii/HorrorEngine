@@ -16,12 +16,65 @@ async function load() {
   status("scanning the shelf...");
   try {
     const r = await (await fetch("/api/pbr")).json();
-    S.sets = r.sets || {}; S.root = r.root || "";
-    status(`${Object.keys(S.sets).length} sets in ${S.root}`);
+    S.sets = r.sets || {}; S.root = r.root || ""; S.folders = r.folders || [];
+    status(`${Object.keys(S.sets).length} sets in ${S.root}${S.folders.length ? ` and ${S.folders.length} folder${S.folders.length > 1 ? "s" : ""} of yours` : ""}`);
   } catch (e) { status("the server didn't answer: python3 tools/director/serve.py (or the Character Studio's)", true); }
   if (S.sel && !S.sets[S.sel]) S.sel = null;
   if (!S.sel) S.sel = Object.keys(S.sets).sort()[0] || null;
-  drawLeft(); select(S.sel);
+  drawFolders(); drawLeft(); select(S.sel);
+}
+
+// ---- your folders: a folder of PBR sets on this machine attached to the shelf where it is (ASSETS §6; the user,
+// 2026-10-31: "a PBR local, where I can attach a local folder and use PBRs from it"): its sets are pbr/<name>/<set>,
+// read as they are, nothing written into it; the Godot export copies the maps it uses into the game ---------------------
+const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+function drawFolders() {
+  const box = $("#folders"); box.innerHTML = "";
+  const head = document.createElement("div"); head.className = "f";
+  head.innerHTML = `<b>Your folders</b><span style="flex:1"></span>`;
+  const add = document.createElement("button"); add.textContent = "Attach a folder…"; add.title = "A folder of PBR sets on this machine (a set a folder, its maps named by their last word), used where it is";
+  add.onclick = () => browseTo(S.browse ? S.browse.path : null);
+  head.append(add); box.append(head);
+  for (const f of S.folders || []) {
+    const n = Object.values(S.sets).filter(m => m.attached === f.name).length;
+    const row = document.createElement("div"); row.className = "f";
+    row.innerHTML = `<b>${esc(f.name)}</b><code title="${esc(f.path)}">${esc(f.path)}</code><small style="color:var(--dim)">${n} set${n === 1 ? "" : "s"}</small>`;
+    const x = document.createElement("button"); x.textContent = "×"; x.title = `take ${f.name} off the shelf (its files stay as they are)`;
+    x.onclick = async () => { if (!confirm(`Take ${f.name} (${f.path}) off the shelf? Its files stay as they are; looks that use its sets go grey until it's back.`)) return; await folders({ detach: f.name }); };
+    row.append(x); box.append(row);
+  }
+  if (!(S.folders || []).length && !S.browse) box.insertAdjacentHTML("beforeend", `<div class="hint">A folder of your own PBR sets (a set a folder), used where it is: refs <code>pbr/&lt;its name&gt;/&lt;set&gt;</code>.</div>`);
+  if (S.browse) box.append(browser());
+}
+async function folders(body) {
+  const r = await fetch("/api/pbrfolders", { method: "POST", body: JSON.stringify(body) });
+  const j = await r.json();
+  if (!r.ok) { status(j.error || "the server said no", true); return false; }
+  S.browse = null; await load(); return true;
+}
+async function browseTo(path) {
+  const r = await fetch("/api/pbrbrowse" + (path ? "?path=" + encodeURIComponent(path) : ""));
+  const j = await r.json();
+  if (!r.ok) { status(j.error, true); return; }
+  S.browse = j; drawFolders();
+}
+function browser() {
+  const b = S.browse, box = document.createElement("div"); box.id = "browse";
+  const path = document.createElement("input"); path.value = b.path; path.title = "a folder on this machine: type it, or click through the ones below";
+  path.onchange = () => browseTo(path.value);
+  const up = document.createElement("button"); up.textContent = "↑"; up.title = "the folder above"; up.disabled = !b.parent; up.onclick = () => browseTo(b.parent);
+  const r1 = document.createElement("div"); r1.className = "row"; r1.append(up, path);
+  const dirs = document.createElement("div"); dirs.className = "dirs";
+  for (const d of b.dirs) { const e = document.createElement("div"); e.textContent = "📁 " + d; e.onclick = () => browseTo(b.path.replace(/\/$/, "") + "/" + d); dirs.append(e); }
+  if (!b.dirs.length) dirs.innerHTML = `<div class="hint" style="cursor:default">no folders in here${b.images ? `: ${b.images} image${b.images > 1 ? "s" : ""} (a set itself)` : ""}</div>`;
+  const name = document.createElement("input"); name.placeholder = "its name on the shelf"; name.value = b.path.split("/").filter(Boolean).pop() || "";
+  name.title = "a short name: its sets' refs are pbr/<name>/<set>";
+  const go = document.createElement("button"); go.className = "primary"; go.textContent = "Attach this folder";
+  go.onclick = () => folders({ attach: b.path, name: name.value.trim() });
+  const cancel = document.createElement("button"); cancel.textContent = "cancel"; cancel.onclick = () => { S.browse = null; drawFolders(); };
+  const r2 = document.createElement("div"); r2.className = "row"; r2.append(name, go, cancel);
+  box.append(r1, dirs, r2);
+  return box;
 }
 
 // ---- the left: categories and the sets as swatches ----------------------------------------------------------------
@@ -244,6 +297,6 @@ $("#rescan").onclick = load;
 }
 
 window.__pbrScene = scene;
-window.__pbr = { get S() { return S; }, select, shape: s => document.querySelector(`[data-shape="${s}"]`).click(), draw, load,
+window.__pbr = { get S() { return S; }, select, shape: s => document.querySelector(`[data-shape="${s}"]`).click(), draw, load, folders, browseTo,
   stop: () => { $("#orbit").checked = false; draw(); } };
 load(); loop();

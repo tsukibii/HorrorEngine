@@ -49,7 +49,7 @@ LOCK = threading.RLock()
 # the tools to start the day from: shown first, as tiles (labels as in launch.py's TOOLS)
 START_HERE = ["Writers' room (write a game's story as a flowchart: its points, choices, secrets, endings)", "Director's desk",
               "Character Studio (body, face, skin, hair in the salon, clothes)", "Score room (music)", "Kimodo demo",
-              "Scene builder (floor plans)"]
+              "Scene builder (floor plans)", "Street builder (the streets and the outsides of buildings: the map the enterable buildings go into)"]
 
 
 # ---- a tool's command: the words it asks for, then its argument list -------------------------------------------

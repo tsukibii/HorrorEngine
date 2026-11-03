@@ -1,0 +1,14 @@
+{
+  "about": "What the Shibuya lane's surfaces are made of in Blender (tools/street.py look and bake, docs/STREET_TEXTURING.md): a material's name or a slot, and its finish; the wear's amounts; the lit things' strength.",
+  "finishes": {
+    "street_wall_dcb4a6": "panel",
+    "street_wall_d5d2cb": "tile",
+    "street_wall_c8c5be": "tile",
+    "street_wall_a9a7a2": "concrete",
+    "street_wall_33353a": "panel",
+    "street_wall_cfcbc3": "render",
+    "street_wall_aeb3b3": "render"
+  },
+  "wear": {"dirt": 1.0, "streaks": 1.2, "edges": 1.0, "wet": 0.8},
+  "glow": 1.0
+}

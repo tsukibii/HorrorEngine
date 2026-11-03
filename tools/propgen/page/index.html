@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prop generator</title>
+<link rel="icon" href="data:,">
+<script type="importmap">{"imports":{"three":"/vendor/three.module.min.js"}}</script>
+<link rel="stylesheet" href="/page/style.css">
+</head>
+<body>
+<header>
+  <b class="title">Prop generator</b>
+  <input id="search" type="search" placeholder="Find a recipe: its name, family or words">
+  <div id="fams"></div>
+  <span class="grow"></span>
+  <button id="make-unmade" title="Make every recipe that hasn't been made yet">Make the unmade</button>
+  <button id="refresh" title="Read the recipes and what's made again">Refresh</button>
+</header>
+<main>
+  <section id="gallery"></section>
+  <aside id="editor" class="empty">
+    <div id="ed-empty">Pick a prop on the left to open its recipe.<br><br>Every card is a recipe in
+      <code>Content/Studio/Props/presets.json</code>; its picture is the last time it was made.</div>
+    <div id="ed-body">
+      <div id="ed-head">
+        <img id="ed-thumb" alt="">
+        <div>
+          <div id="ed-name"></div>
+          <input id="ed-label" placeholder="what it is, in a few words">
+          <div id="ed-info"></div>
+        </div>
+      </div>
+      <nav id="tabs">
+        <button data-tab="settings" class="on">Settings</button>
+        <button data-tab="texture">Texture &amp; pictures</button>
+        <button data-tab="view">3D</button>
+        <button data-tab="json">Recipe JSON</button>
+      </nav>
+      <div id="tab-settings" class="tab"></div>
+      <div id="tab-texture" class="tab" hidden></div>
+      <div id="tab-view" class="tab" hidden><div id="view3d"></div><div id="view-info"></div></div>
+      <div id="tab-json" class="tab" hidden>
+        <textarea id="json" spellcheck="false"></textarea>
+        <div class="bar"><button id="json-apply">Use this JSON</button><span id="json-err" class="bad"></span></div>
+      </div>
+      <div id="actions">
+        <label>Make as <input id="as" spellcheck="false"></label>
+        <label>Seed <input id="seed" type="number" step="1"><button id="roll" title="Another roll of the dice">🎲</button></label>
+        <label>Variations <select id="vars"><option>1</option><option>2</option><option>3</option><option>4</option><option>6</option><option>8</option></select></label>
+        <label>Texture <select id="tex"><option value="">recipe's</option><option>512</option><option>1024</option><option>2048</option></select></label>
+        <label title="glb, fbx, obj and blend; otherwise the glb alone, quicker"><input id="allfmt" type="checkbox"> all formats</label>
+        <div class="buttons">
+          <button id="make" class="primary">Make</button>
+          <button id="save" title="Write these settings into its recipe (Ctrl+S)">Save</button>
+          <button id="saveas" title="Keep these settings as a new recipe, under the name in Make as">Save as new</button>
+          <button id="library" title="Put the made prop into the library: a story places it as asset props/&lt;name&gt;">To the library</button>
+          <button id="delete" class="danger" title="Take this recipe out of presets.json">Delete</button>
+        </div>
+        <div id="dirty"></div>
+      </div>
+      <div id="job" hidden><div id="job-head"></div><pre id="job-log"></pre></div>
+    </div>
+  </aside>
+</main>
+<div id="toast"></div>
+<script type="module" src="/page/app.js"></script>
+</body>
+</html>

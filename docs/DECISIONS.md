@@ -2,6 +2,14 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-03, later (the user: `Director-Godot` into main)
+
+- **"Make a PR for this, it looks good and merge in main and resolve conflicts if any exist."** Main (150 commits since
+  the branch left it on 2026-10-31: the streets, the prop generator, the clothes, the eyes, the school, the trees) was
+  merged into `Director-Godot` first, both sides kept in every conflict (CLAUDE.md's table row by row, the docs' new
+  entries side by side, check_all's studio checks together), checked, and the branch merged into main by its pull
+  request.
+
 ## 2026-11-03 (the user, after trying the Animate tab)
 
 - **"1 tested and works, 2, just go chronologically."** The Animate tab (step 1) works in their own hands. The plan's
@@ -179,6 +187,596 @@ is docs/GODOT_DIRECTOR_PLAN.md, waiting on their yes to it.
   Kimodo's demo as its stage (the same stage file `kimodo.py stage` writes from a story), and the motion saved there
   (NPZ) brought back as a Godot animation on the character's own skeleton, ready to play by an event or as the
   character's idle and walk.
+
+## 2026-11-02, night (the user: potted plants and vines, on `procedural-trees`)
+
+- **"Could you make some indoor small potted plants with these techniques + the techniques we already use for bowl
+  shaped props (maybe do some cubed ones), I'd say make 15 variations, from small to medium (stuff that could sit on a
+  table to on the floor), after that can you make some vine patterns (should be seamless so I can just place vines on
+  exterior buildings etc, maybe 2/3 variations)"**: the prop generator's `plant` family (PROPGEN §19: a pot turned
+  with a real wall or cut as a cube planter, the tree family's growth and leaf cards on its soil; eighteen `pot_*`
+  recipes, an aloe on a table to a ficus on the floor) and `propgen.py vines` (§20: five seamless vine sets, a metre
+  a repeat, on the project's shelf as `pbr/foliage/vine_*`, laid over any wall's set as a layer by its own mask in
+  the street paint).
+
+## 2026-11-02, evening (the user: trees, on `procedural-trees`)
+
+- **"Similar to our prop system can you see if you can incorporate this blender library (its for older versions so may
+  need to manually update to the same one you use for props), and create a tree prop generator, trees dont need to be
+  massive, just stuff that would be in urban streets, make some variations"**, pointing at
+  https://github.com/steven-ray/modular_tree (a fork of Maxime Herpin's Modular Tree for Blender 3.x). Mtree 4's
+  core is C++ (MIT) under a GPL add-on, built against each Blender's Python and stopped at 3.2; its growth is ported
+  to plain numpy Python instead (`tools/propgen/mtree.py`, nothing to compile, Blender 4.2 and 5.x) and the prop
+  generator grew a `tree` family (PROPGEN §18): urban street trees (zelkova, ginkgo, cherry, camphor, plane, maple,
+  crape myrtle, black pine, a dead one) by season, with stakes and a tree pit, sixteen recipes to start from.
+  Built on the branch `procedural-trees`.
+- **"In main I just pushed up some new pbrs for bark, and leaves ... Do these steps separately, every tree should use
+  the more real bark pbr. But for leaves create a more realistic category where you use patterns made from the pbrs I
+  shared with you for the leaves"**: step one, every species' bark is one of the three ambientCG bark sets by
+  default (`pbr/bark/`, PROPGEN §18; the drawn tile stays behind `"bark": {"pbr": null}`); step two, a realistic
+  category of trees whose leaf cards are sprays laid from the leaf sets' own leaves (`pbr/leaf/`).
+- **"can you create some smaller thinner trees that don't go as tall as a double floor house (and their branches are
+  up at 80-90 degree angles so less chance of clipping into the house. call these trees small trees, big trees won't
+  be placed beside houses"**: the tree family's `habit: upright` and the ten `small_*` recipes (4 to 4.8 m, 1.6 to
+  2.5 m across, PROPGEN §18); `street_dress.py` puts a small tree beside a house and a big one only where no building
+  is within `--room` metres.
+- **"Just for testing, can you take one of the small streets we've designed in the street creator (I think the single
+  road curved one), and add some trees and judge it from aestheticism. Also using the techniques you already have
+  could you create some small bushes and shrubs as normal roads and paths normally have a little bit of shrubs poking
+  out from paths etc"**: the hill road (`hill_motel`, the one road that bends and climbs) dressed by
+  `tools/godot/street_dress.py` and pictured by day and night (`docs/godot_sheets/2026-11-02_hill_motel_dressed.jpg`,
+  the judgement in PROPGEN §18); bushes as the tree family's `azalea` (clipped to a ball or a hedge's box), `shrub`
+  and `grass` kinds, nine recipes.
+- **"make sure generated trees also look good in night both dark night (flashlight style), or more of a blue hue
+  atmospheric night"**: `propgen.py godot --night` pictures any prop in Godot under the game's blue moonlit night
+  and in the dark under the player's flashlight from the player's eye (PROPGEN §18); the sixteen trees' sheet is
+  `docs/godot_sheets/2026-11-02_trees_night.jpg`.
+
+## 2026-11-02, later (the user: the GPU, on `clothing-refiner`)
+
+- **"Instead of re-writing the WebGPU compute for cpu, can you just make a toggle for (use gpu), so I can test it, I
+  can later let you use my local claude to run more optimizations"**: *Use the GPU* in the wardrobe and the Studio's
+  Clothes tab runs the drape's steps on the card (WebGPU, `tailor/drape_gpu.js`); off, or with no WebGPU, the CPU's
+  drape exactly as before. A test switch, remembered per browser, not saved with characters; tuning it is for a local
+  session on the 3090 (TAILOR §1i).
+
+## 2026-11-02 (the user: the wardrobe, on `clothing-refiner`)
+
+- **"I notice the clothing modification is very laggy, is there anything we can do to maybe isolate the processing or
+  utilize more of my GPU (RTX 3090), like create a clothing edit tab"**; **"a clothing specific tab where we can create
+  outfits on a dummy, have it run really well in real time and then load those outfits onto our actual model (be able
+  to save outfits sort of how you already have preset ones)"**; **"a bagginess/looseness modifier ... look at those
+  shorts, the lines around the thighs and the folds ... a modifier where we just go through various seeds till we get a
+  fold style we like (while keeping it tight at the waist), the looseness is just a small gap"**; **"a skirt that only
+  goes down slightly below waist/crotch, want to test if those kind of skirts clip less and look more natural"**;
+  **"make a note to not affect/mess up anything we've made so far, this should be progressive"**. The plan and its
+  ticks: docs/WARDROBE_PLAN.md. Every existing design, outfit and character dresses as before; the new parts are new
+  fields, designs and a page.
+
+## 2026-11-01, late night (the user, on the prop generator's pictures)
+
+- **The prop editor's pictures, Figma's way**: "the prop editor is great but a bit hard to use when wanting custom
+  images etc, could you make the editor more like figma where maybe there is a panel that shows what the image your
+  using its and where the cuts are and then I can either just drag one large image or small ones to fit in the cut
+  areas etc. Do this in a new branch called enhance-prop-editor". The page's Texture & pictures tab is now the picture
+  editor (PROPGEN §17): the texture with the model's own cuts, its parts and pictures as layers, pictures dragged onto
+  a part (they fill it), onto one of its own pictures (they take its place) or over the whole texture (one large
+  image, a sheet: each part its own piece), handles, undo, the prop in 3D wearing the canvas, a Krita template out and
+  back in. Built on the branch `enhance-prop-editor`.
+
+## 2026-11-01, late night (the user: the sneakers' soles, on `clothing-refiner`)
+
+- **"The sneakers you made are pretty not great especially the soles, look at the [sandal OBJ] to see how the geometry
+  can be done better ... I don't mind the boxy retro look either, the main issue is the soles don't look normal, soles
+  should almost just be an extension of the normal shape but extruded down (so it can have diff texture)"**: every
+  shoe's sole is now the upper's own outline carried down, with grooves and real heel blocks (TAILOR §1h). The OBJ stays
+  out of the project (only looked at).
+- **"Clean up the weird bulgy/bumpiness, it makes it look like it was made in sculpt tool, should look well
+  polished"**: the shoes' shells polished, round heels, the pieces kept off the sole (TAILOR §1h).
+
+## 2026-11-01, late night (the user: the skin's depth into the eyes' pull request, then main)
+
+- **"Can you merge subsurace-scattering-exp into this pr and make sure it works, take a screenshot with the updated
+  eyes and sus scatter."** Merged into `eye-enhancements` (tsukibii/HorrorEngine#7): the skin's depth keeps
+  GODOT_LOOK §5g, the eyes' wet layer is §5h. Checked together on a fresh export; the sheet
+  `docs/godot_sheets/2026-11-01_eyes_depth.jpg`.
+- **"can you resolve all conflicts and merge in main too"**: main (the school, tsukibii/HorrorEngine#8) merged into
+  `eye-enhancements`; the two met only in DECISIONS and CONTINUE, both kept.
+
+## 2026-11-01, night (the user: cozy and gothic clothes, bigger busts, on `clothing-refiner`)
+
+- **"Note you've been making bras on models that have a flat chest, maybe you should review it with bigger busts"**:
+  the cups grow with the breast (TAILOR §1g), reviewed on the full feminine body too.
+- **"Make some more cozy clothing following the principles of being able to animate easily without worrying about
+  clipping"**: socks in every size, slightly creased and heavier, knee-highs; a raincoat with a reflective plasticky
+  look; black loafers; a sneaker designer like the tee's prints (rim highlights, sole colours, a logo, small stickers);
+  gothic designs, a spider web fishnet and a mesh fabric rendered in Blender; gothic clothes and props (horns, bunny
+  ears), props placed by x, y, z sliders and turns, PBR sets on props. The plan and its ticks: docs/COZY_GOTHIC_PLAN.md.
+- **"By rain coat I mean the smaller wind ones, that are almost like hoodies but more of a plasticky texture"**: a
+  hooded, zipped rain jacket in PVC, not a long coat.
+
+## 2026-11-01, night (the user, on a small private school)
+
+- **A small private school, one storey, in Tokyo concrete**: "using your knowledge of modern architecture can you create a
+  small private school that consists of 1 level, 2 classrooms, 1 lunch area and 1 reception, its a private school that
+  is like those remote towns ones that don't have many grades and allow kids to study in the same grade but separate
+  maybe by very young and young, give it a rural japanese look". Shown timber references first, then: "not timber for
+  now, I like the concrete style, something that would look in place in tokyo (since our street designer was based of
+  that kind of japanese tokyo street design)". Built as the set `school_tokyo` (SCENE_BUILDER §10c) and the street
+  `tokyo_school`: exposed concrete round a courtyard, the two mixed-year classes (years 1-3, 4-6), the lunch room, the
+  reception at the entrance; timber is for later.
+
+## 2026-11-01, evening (the user: the bikinis, on `clothing-refiner`)
+
+- **"Everything looks good, except the women's bikini, thongs (they sort of vertically sit below the waist like boxers
+  sit above the waist for men which doesn't look correct as they tend to follow the curve of the hip bone)"**, with a
+  string bikini's top and bottom as OBJs and a guide to fitting them. Built: the waistline's `hip` lift (TAILOR §1g),
+  every thong, tanga, G-string and bikini brief re-cut on it, a string bikini and a halter triangle top after the OBJs.
+  The OBJs themselves stay out of the project (only looked at).
+- **"Why do the bras look painted on, also why does the red one attach to nothing around the neck, can you use the bra
+  obj model I gave you as a reference to the right way to make bras"**: the halter's strings as tubes pulled taut off
+  the body, round the neck, a band and a bow; every bra's cups spanning the breast, with a thickness (TAILOR §1g).
+- **"The bras are way too low"**: the fold under the breast found where its underside eases onto the ribs, the cups
+  higher (TAILOR §1g).
+
+## 2026-11-01, later (the user: the clothing review, on `clothing-refiner`)
+
+- **"Some of your trousers are baggy at the waist band ... waistband on shorts, pants, anything that's lower body even
+  baggy always needs to be skin tight or the pants wouldn't stay on"; "pants shouldn't dent so harshly inwards at the
+  knees"; "consider animation ability, we aren't going to do cloth physics so don't want things overly baggy to the point
+  clothing will clip through for generic walks"; "a lot of the clothes have a weird butt crack dent"; "even baggy stuff
+  like hoodies need to feel like they're fitted, it's the creases etc that create the illusion of bagginess"; "make it
+  easy to make custom tees (front prints, back prints)"; "we don't need super unique clothing, just daily outfits normal
+  humans wear: smart casual, casual, business, uniforms, pyjamas and bikinis ... really nailing the reusable simple
+  elements and let fabric and colour take care of the rest"; "review the current clothing, list a plan to enhance
+  everything, and tick as you go".** The plan and its ticks: docs/CLOTHING_PLAN.md.
+
+## 2026-11-01, later (the user, on the school's building)
+
+- **The building is its rooms, to scale**: "Just note the school building needs to be to scale, so the actual rooms
+  could fit in, stairs, door way etc." Then two photos of school buildings (a white four-storey one with a stair tower
+  of round windows and its name on the roof; a beige Showa one at dusk): "I think the issue is I didn't give you visual
+  references for the building, try build a kit that could build these 1:1." So a school's building is a set of real
+  rooms on every storey, laid out from modules (classrooms, corridor, dog-leg stairs in shafts, toilets, entrance,
+  staff room: SCENE_BUILDER §10b), and the street builds its outside storey by storey round exactly those rooms, the
+  facade (eaves, pilasters, guard rails, the name on the roof) from them (STREET_BUILDER §5f). Both photos are rebuilt
+  as sets and streets with shots matched to them.
+- **The PBR classroom waits for the build**: "Once you're done with the build can you create a 1:1 ref using the pbrs
+  instead to see if it helps realism" (asked during the first school build).
+
+## 2026-11-01 (the user: the clothes refined, on `clothing-refiner`)
+
+- **"Inspired by the image of Japanese smart casual outfits create some of these, I think currently what makes our
+  clothes bland is we are missing creases, natural fabric kinda style that could be emulated via PBR techniques etc so
+  add a crease gen as well (basically how we emulate wrinkles on faces)."** Done (TAILOR §1d, §1f): the creases as a
+  height in the garment's shader (folds at the bends, drag lines, the press, seams, hems, the fabric's crinkle), a
+  Creases slider and a Pressed crease switch per garment, baked into the export's normal map; the Smart casual tab with
+  fifteen outfits and nine new cuts; linen, crepe and flannel as drawn surfaces.
+- **"Similar to what we did for props and buildings can you create some procedural materials with blender for the
+  clothing in the studio, stuff like cotton, etc."** Done (TAILOR §1e): 26 fabrics as node groups of threads,
+  stitches, fibres and grain at their real size, baked in Blender into tileable PBR sets
+  (`tools/fabric_bake.py`, `assets/pbr/Procedural/fabric_*`), first in the Studio's PBR picker, tinted by the garment's
+  colour.
+
+- **"The bottom of the light blue and white trousers you made looks deformed, should just cleanly sit above the
+  shoes"** and **"The baggy trousers shouldn't bend into the knees, as that doesn't make logical sense"**: the wide
+  trousers' legs are a straight column from under the seat (`legs.straight`, TAILOR §2), held as cut by the drape, their
+  hem clean above the shoe; no knee folds on loose legs, no cloth wrinkles on shoes.
+- **No low poly clothes.** Asked to try a PS1-style low poly genre of clothing (decimated garments, chunky texels, a
+  dither), then, seeing it: **"Nah the low poly looks ugly ... let's avoid the low poly then."** It was taken out
+  before it was committed; don't offer it again.
+
+## 2026-11-01 (the user: the eyes in Godot, on `eye-enhancements`)
+
+- **"Can you make a new branch called eye-enhancements, I dont want to modify too much about the exported eyes, but
+  enhance the use of the existing godot shader, atm the eyes look kind of lifeless and scary, it doesnt seem like we
+  are applying the eye wetness etc correctly."** Measured on a fresh export with the grafted eyes: the iris read black
+  (a bug: Godot turned the iris's bowl upside down, so its lower half faced away from a lamp above), the whites a flat
+  grey (the guessed lid ellipse and the socket's shade over a paint at 0.58), and HumanShaders' eye wetness wasn't used
+  at all. Done on the Godot side only, the export as it was (GODOT_LOOK §5h): the bowl fixed; **the eye's wet layer**
+  (HumanShaders' eye wetness and MetaHuman's eye occlusion as each eyeball's material overlay: the real lids found in
+  the depth buffer, a warm shade by them, deeper under the upper lid, the lid's edge melted into the eye) in place of
+  the ellipse, the socket's shade halved; the white's light wrapped warm with a little scattering; a crisp catchlight.
+
+## 2026-11-01, later (the user, on the skin's depth elsewhere)
+
+- **The depth past the face's core, gently**: asked "you think we should add some slight SS to cheeks? or anywhere
+  else that helps add life?", offered (not a patch on the cheeks: that's blush, the Studio's Flush) a warm edge where
+  the skin turns away from the eye, the creases everywhere warm instead of grey, the fingers lit through like the ears,
+  the lips; "sounds good, do that". Each gentle by default with its own slider (GODOT_LOOK §5g; HSCharacterLook's
+  "Skin depth's parts").
+
+## 2026-11-01 (the user, on the skin's depth; branch `subsurace-scattering-exp`)
+
+- **Subsurface scattering round the face's core, for baked light**: with two pictures of Blender's subsurface
+  scattering (a cube glowing orange toward its edges, Suzanne red in her eye sockets and ears): "do we currently use any
+  subsurface scattering? I think that's maybe why the characters' skin looks a bit lifeless ... could we add this kind
+  of subsurface scattering just around the core parts, eyes, nose ... most of the lights are baked in game, I don't
+  even really care about it being realtime and changing, I just want that skin depth kind of feeling around the core
+  wrinkle/skin/map; see if you can come up with a simple enhancement for our existing skin shaders". We had HumanShaders'
+  scattering, but per lamp, which baked light never reaches. Built (GODOT_LOOK §5g): the skin's depth layer, warm light
+  from under the skin round the eyes, the nose, the mouth and the ears (MHR's depth map, most in the creases), the
+  occlusion red instead of grey there, thin skin lit through, for the ambient a baked level gives as much as for a lamp.
+- **The ears switchable**: "if you add it to the ears make it toggleable, since some NPCs' hair covers their ears". Per
+  character: the Character Studio's Skin light, **Ear glow (game)** (and **Depth (game)**), carried by the export; off,
+  the ears take none of it and the lamps' light through them goes too. `HSCharacterLook` can override it in Godot.
+
+## 2026-11-01 (the user, on a school)
+
+- **A Japanese school for a horror game, in the tools we have**: "In the existing prop maker/furniture maker/interior
+  etc I'd like to have the capabilities to build out a japanese school for a horror game", with a render and a wireframe
+  of a classroom they made in Blender. "Use the existing tools to create generators"; "recreate all the parts to be
+  able to create a 1:1 of the reference images"; "consider the hallway and exterior building too (a small japanese
+  school)". The furniture and fittings are kit types (KIT §10), the rooms the scene builder's (SCENE_BUILDER §10), the
+  outside the street builder's (STREET_BUILDER).
+- **Books in the prop maker, with covers of your own**: "for the prop maker similar to how we can use custom logos
+  maybe allow that for books, books should be able to fit well on desks and inside shelves". A `book` family whose
+  covers, spines and pages are the prop's own pictures to swap (PROPGEN §16), at real paper sizes, rows and stacks
+  made to fit a box; furniture says where things go on and in it (its places), and the scene builder puts books there.
+
+## 2026-10-31, small hours (the user, on the floors)
+
+- **Kit floors take a material**: "yes make the floors take a material" (offered: a kit floor dressed rather than taken
+  up when its room's floor is painted). Painting a floor paints its kit floor's boards (and the room's own floor under
+  them); a set that paints its own tiles, boards or mats lays the kit floor out by them, its real gaps in the set's
+  seams (found in the set's maps: storykit/pbrcells.py); a plain set gives each board its own cut; a mosaic too fine to
+  build lies as one board. The gaps (and a tatami's borders) can be painted on their own.
+
+## 2026-10-31, small hours (the user, on the lights)
+
+- **Lights as furniture, no light sources exported**: "we don't need to export actual Godot light sources, I'd rather
+  take lights as furniture approach, maybe stick to rounded LED types of lights for simplicity (where it's a circular rim
+  that sits above the ceiling with a glass circle and those kinds of variations)". A story light can have a fitting
+  (`kit`): the kit's round LEDs (recessed downlights, flush panels, a dome, a ring); the scene builder puts one on every
+  ceiling it lights (by the room's size, or one picked in Finish). In Godot a light with a fitting is the fitting and
+  a node, no light source: its glass glows as the story has the light, and the user's own lights put under the node
+  follow it (switch, power cut, flicker). Lights without a fitting are as they were.
+
+## 2026-10-31, late night (the user, on the fittings and doors)
+
+- **Fittings and doors take PBRs too**: "make it so we can add PBRs to those, given that we could use the plastic PBR
+  for light switches etc". The fittings the scene builder makes (the switch by the door, the built-ins, the stairs, a
+  window's frame) and doors (a plain door's slab, a kit door's leaf, handle and frame by slot) are painted like
+  furniture, and what's painted on a fitting is kept though the finish makes it again (SCENE_BUILDER §9). A door's set
+  rides with it as it swings, in Godot too (`<Name>_obj.tres`, GODOT_EXPORT §3b).
+
+## 2026-10-31, night (the user: "do whatever's best")
+
+- Asked which follow-up next (furniture taking sets, or a street's materials as named files), the user left it to
+  Claude. **Furniture first**: a kit thing's slots take a set, a colour or a tuned set (`mats`, STORY_FORMAT §2), the
+  scene builder's Paint dresses them with a click, the Godot export gives them the game's `<Name>_uv.tres` (the set laid
+  by the kit's metre UVs). **A street's materials stay the street's**: each is a set times a building's colour (and the
+  street's own wear atlas after the bake), already one material per set and colour inside its .glb; Godot's Extract
+  Materials writes them out by name when wanted (GODOT_EXPORT §3b).
+
+## 2026-10-31, evening (the user, on the interiors, local PBRs and the export's materials)
+
+- **The paint bucket in the interiors**: "am I able to use the paint bucket thing in my interiors, if we haven't hooked
+  up our PBRs can we". It wasn't (the paint page was streets only; a room took a plain set from a picker). Now the scene
+  builder has **Paint**: the same brush (`brush.js`, shared with the street paint page) on a level's floors, walls,
+  ceilings, trim, blocks and outside; a room's look and a block's `mat` take a colour or a tuned set like a street's
+  slot (STORY_FORMAT §1, SCENE_BUILDER §9). A room's walls are its own side: a shared wall's other side is lined with
+  the other room's look.
+- **A PBR local**: "add a PBR local, where I can attach a local folder and use PBRs from it and we export to Godot with
+  those". Folders of yours attached to the shelf where they are (the shelf page's *Your folders*): their sets
+  `pbr/<name>/<set>`, nothing written in them (ASSETS §6); the Godot export copies what a game uses into the game.
+- **One material a set in the export, by its name**: "if multiple parts use the same PBR it should be smart enough to
+  only export that material for Godot once and re-use it; maybe when we export we have a separate material folder using
+  the name of the material, so even later on we can just ref that one PBR mat for many parts". `game/materials/<Name>.tres`
+  a set, its maps beside it, every piece on every level wearing it by reference (GODOT_EXPORT §3b).
+
+## 2026-10-31, afternoon (the user, with their PBR sets)
+
+- **The materials are PBR sets**: "I realise without PBRs we can't achieve the fake photorealistic look, I pushed up a
+  branch for you to merge into this one called pbrs, implement these PBRs into the paint bucket style". Merged: 37
+  ambientCG sets (CC0, 1K) in git at `pbr/<category>/<set>`, the shelf reads them, the paint page's library is them
+  by category (the procedural library folded away), each with its real size in its meta.json (ASSETS §6).
+- **Layers over them**: "come up with a layering tool system where we could layer some of the stuff you made with the
+  PBRs too (mainly decals, added wear etc), the actual materials should be PBRs". A look is a set with layers: another
+  set over it (in patches or by its own mask, its colour, shine or relief) and the bake's wear per surface (grime,
+  streaks, edges, damp); decals lie over any of it (STREET_PAINT §3b).
+- **Tint controls**: "see if we can modify the tint of the colour (fade it out, make it more contrast etc)". Tint,
+  brightness, contrast, saturation, hue, fade, roughness, relief, size and turn, all made into a set of its own by one
+  function, so the page, Blender and Godot match.
+- **The 1:1 photo again, with PBRs**: "re-create the 1:1 image we've been using using the PBRs to check how much more
+  realistic it looks (pick the appropriate PBRs that match roughly the actual colour)".
+
+## 2026-10-31, late morning (the user, on the research, the road and the light)
+
+- **The light is the user's, baked by hand in Godot**: first "I don't think I want to use LightmapGI, I will want the
+  other one that starts with V", then "don't worry about VoxelGI or whatever, I will manually take care of light baking
+  in Godot, you just need to worry about being able to export to Godot so I can use it and roughly have the collisions
+  accurate for buildings and floor so I don't fall through". No GI tooling of ours: the street exports to Godot with
+  its colliders (STREET_TEXTURING §3, §4).
+- **Road paint part of the road**: "the print on the road looks like it's floating above the road because of the shadow
+  effect, when it should look part of the road". Road paint and decals cast no shadow anywhere (the street builder's
+  view, Blender, Godot), the lines lie 5 mm over the asphalt and a mark 5 mm over them, stacked only where marks overlap
+  (STREET_BUILDER §5d).
+
+## 2026-10-31, morning (the user, while the paint tool was built)
+
+- **Wear and tear in every material**: "can you also create pbrs/bump maps for the textures/materials as well as
+  procedural wear and tear. In reality there's no perfectly smooth things, and things get weird and tear and chips or
+  smudges, fingerprints etc, that's what adds to the realism". Every library material and finish wears its
+  imperfections as it's baked (smudges, fingerprints, scratches, chips, cracks, dents, splits), every set has its
+  height map beside its normal map, and seven decals put wear where it happens (STREET_PAINT §3, §4).
+
+## 2026-10-31, night (the user, on `prop-gen-tool`)
+
+- **No part of a prop see-through in Godot**: the user saw the rice cooker's bottom through its sides. Faces are
+  judged by measure now (PROPGEN fails a case when more than 1.5% of what's seen from outside is a face's back), not by
+  Cycles' previews, which draw both sides.
+- **Every prop's pictures swappable on the page, with a size for each**: "Make sure for each type of prop we can
+  generate that we can easily swap out logos, decals, flourishes, smudges, etc (recommend image size for everything) in
+  the wrapper". So each logo, picture, ornament, stamp and print a prop's paint draws is a slot of its own
+  (`pictures`), decals repeat as flourishes, smudges are built in or yours, and every one shows the size it wants
+  (PROPGEN §15, docs/PROPGEN_PICTURES.md).
+
+## 2026-10-31, evening (the user, on `prop-gen-tool`)
+
+- **Enhancers for the props, in Godot, easy to switch off**: "consider if there are some simple shaders/enhancers for
+  some of the props ... like how do we make the led panel in the rice cooker glow ... make them part of the export for
+  godot (they should be exported as godot ready objects and come with shaders/enhancers that can easily be toggled
+  off)". So emission maps for what glows (LEDs, the LCD's backlight, embers), `propgen_fx` in each glb, the look
+  plugin's `HSPropFX` (glow, a candle's flame and light, incense smoke, steam, wax; each a switch, a kind off for a
+  whole project in its settings), the game putting one on every made prop, and a `.tscn` beside every glb ready to
+  drop in (PROPGEN.md §14).
+- **The rice cooker's panel**: "looks like it's clipping through the white at the bottom", then "still doesn't
+  conform to the natural shape, seems like it's larger than the lid, maybe just change the placement to be on the
+  lid". It's a thin pane on the lid's front now, bent to the lid's dome, inside its rounded edge.
+- **The pots' handles**: "the handle pokes out a bit too much": their ends go into the wall now.
+
+## 2026-10-31, before dawn (the user, on texturing the streets for real)
+
+- **Research first: faking photorealism like Battlefront**: "do some research on how we could fake photo-realism (think
+  of the new Star Wars Battlefront games look); we will be using a vhs effect so it doesn't need to be hyper detailed,
+  but fake the textures and materials and even fake pbr bumps (can be procedural) and add a photo realism effect".
+  docs/research/photoreal.md: right values, right light (the sky's bounce baked: LightmapGI with a live sun, Battlefront
+  II's split), right flaws; little spent on micro detail.
+- **A paint tool, like the prop tool**: "a simple python script wrapper tool (similar to what that prop-tool is doing),
+  where I can paintbucket paint on the materials and then zoom in to add decals"; "pre-make a bunch of building, street,
+  roof tile etc materials to paintbucket, based off the Japanese materials in the real photos"; "only worry about the
+  exterior street designer parts, although I would like to be able to override any object imported from the interior
+  tool's exterior".
+- **As photoreal as can be, 1:1 with the Shibuya photo**: "it doesn't literally have to be 1:1 with the same decals, but
+  material wise it should almost trick you you're looking at something real, without hard shaders and lighting (it can
+  be baked in like Star Wars Battlefront, the latest one)".
+
+## 2026-10-31, small hours, later (the user, on the bungalow's roof)
+
+- **Never any clipping**: "in the individual house one it looks like there is clipping on the roof (wall top lines
+  peeking through) etc, refine the system so we never see clipping". Walk-in roofs are boxed, 1 cm over the level's
+  top; roofs over an L or a T are joined into one; the whole generator keeps faces out of each other's planes by rule;
+  STREET fails on any two faces of a piece in one plane over each other (STREET_BUILDER §5d).
+
+## 2026-10-31, later (the user, on `prop-gen-tool`)
+
+- **A page over the prop generator, with thumbnails**: "how do you add varying textures and logos to generations,
+  could you make a wrapper for these python scripts with thumbnails". So `tools/propgen/serve.py` (port 8797,
+  PROPGEN.md §13): every recipe as its picture, a form built from the recipe, pictures clicked onto the texture where
+  they should go, PBR sets per material, variations by seed, 3D, saved as recipes. And two keys every family takes
+  now: `decals` (a picture on any island) and `pbr` (a PBR set over a material), so logos and textures aren't only
+  where a family had a print.
+- **Before that** (the same day): "what if I want to generate a cup that can be empty or filled with tea/green
+  tea/black tea etc, or add custom logos to electronics". The teas as liquid kinds, a `color` that reaches the
+  surface, a `logo` on the appliances; an empty or full cup is one prop, its fill set per copy in Godot.
+
+## 2026-10-31 (the user, on `prop-gen-tool`)
+
+- **More of the prop generator, the occult and the kitchen**: "Can you add some more occult props, wax candles,
+  altars, japanese occult stuff, add some better cooking pots and maybe do a better textured version of the rice
+  cooker and kettle, make some better sinks etc". So new families, nothing made before changed (as the night's rule
+  says): `candle`; talismans as a design (`ofuda`) and `charm` (ema, omamori), `rope` (a shimenawa), `doll` (a
+  wara-ningyo, a kokeshi), `shrine` (a hokora, a sanbō, an orin, a kōro, an offering table); `cookware`, `appliance` (a
+  rice cooker, an electric kettle), `sink`. Altars are put together from those pieces; a butsudan or a kamidana is
+  furniture (the kit's), and masks and statues want a sculpt (PROPGEN.md §12).
+- **Liquid inside, Half-Life: Alyx's way, and a pill bottle** (earlier the same night): "an effect that makes it look
+  like there is liquid inside ... a godot shader that uses the shape of the bottles interior", "a pill container
+  that's slightly tinted (or easily tintable), with a sticker that's easy to change ... and have tablets inside too".
+  The liquid node and its fill table, HSLiquid in the look plugin (PROPGEN.md §10), and the `pills` family.
+
+## 2026-10-31, small hours (the user, after the street's textures)
+
+- **The shop door readable**: asked what the thin dark lines in the shop windows were (a glass door's two uprights),
+  "yeah make it more readable". The door has its frame all round, a kick plate, a push bar and its own darker pane.
+- **Enterable buildings designed whole in the scene builder**: "the map will be a mix of enterable buildings made via
+  our previous interior tool, and the non-enterable ones made for the street designer; could you enhance the interior
+  designer too so we can make roofs etc that will help match the style of our street designs. Ideally I can import an
+  interior designed space into the street, then build the rest around it. In reality we probably will only have a few
+  buildings that we can enter". The scene builder's Outside panel (SCENE_BUILDER §8): the street's styles, walls, roof,
+  raise, front and fittings, seen round the building, kept as the level's `outside`; the street builder's palette has
+  every set, and its building wears the set's outside until it's changed in the street (STREET_BUILDER §5c).
+
+## 2026-10-31, past midnight (the user, on texturing the streets)
+
+- **The most aesthetic surfaces, wear and decals**: "when it comes to texturing the streets, what would be the most
+  aesthetic way to do it; for wear and tear and decals etc, is the best way to do it similar to how we are doing it in
+  the prop-gen-tool branch; can you make a test Blender baked texture render, try to imitate the photo reference".
+  Answered in docs/STREET_TEXTURING.md: finishes that tile at their real size, the street's own wear in one low-res
+  atlas (the prop generator's idea at a street's scale), decals next; the test is the Shibuya lane through its shot.
+- **Procedural first, PBR optional**: "investigate if you can use procedural textures (and bake them in) instead of
+  importing PBRs; if PBRs are needed find them or make it optional so it's easy to texture the model/street how we
+  want to". The finishes are Blender nodes baked onto the PBR shelf (`assets/pbr/Procedural`); a street's
+  finish.json puts a set of your own on any slot or material.
+- **Street → Blender → Godot, with easy collision**: "I think a street -> blender -> godot workflow could work well
+  because we could add foliage easily then, but something to consider is how would we add easy collision".
+  `tools/street.py bake`: the .glb and the .blend (its Foliage collection kept between bakes), the street's colliders
+  by name, Godot's own suffixes for what's added (STREET_TEXTURING §4).
+
+## 2026-10-30, night (the user, on a branch of its own: `prop-gen-tool`)
+
+- **A prop generator like the Free Street Litter Sampler's**: "Figure out ... how they did it ... I want a tool for
+  making small props easily too ... I have blender locally so am ok with having a tool where we export the props
+  from". Their note: "All meshes and textures are generated by our own Python scripts in Blender. No image or 3D
+  generator was used." So `tools/propgen.py` (docs/PROPGEN.md): Python in Blender, the shapes from measurements, the
+  damage and the print by code, the detail baked; the sampler's twenty kinds of litter remade with our own brands.
+- **Into Godot**: "Make sure that we can export these models to godot once you're done". Made props go into the
+  library as `props/<name>` (a story's `asset props/<name>`), the Godot export copies them; GDPROPS reads their
+  materials back in Godot 4.7.
+- **TestRoom001's things as generators**: "create prop gen tools for those kind of designs so we can design our own
+  utensils (diff metal scratch patterns), kitchen stuff, key shapes, etc, no rough edges, we don't want props to look
+  low poly, but try keep poly count down by being smart. If these elements don't fit the gen tool though tell me".
+  The utensil, key and ware families and the metal finishes; rounded edges kept in normal maps baked from a detailed
+  copy; PROPGEN.md §7 says what fits and what doesn't.
+- **Our own furniture worn, PBR sets underneath**: "import furniture we've designed in our interiors and add
+  scratches, dents, etc (similar to how you add the crush pattern) ... baking it in", "a selectable pbr uploader so if
+  I want to attach custom pbrs before we bake and overlay textures onto we can". The `import` family (a file or a kit
+  preset), PBR shelf sets by triplanar projection, `propgen.py pbr` and `pbr-add`.
+- **"If any of this conflicts with what you already designed above just make new tools instead"**: everything after
+  went in as new families and options; nothing made before changed.
+
+## 2026-10-30, later night (the user, after the street builder's first round)
+
+- **Into Godot by hand, by dropping a file**: "as long as the export is as simple as drag and drop into a godot folder
+  I don't mind handling that part manually". The .glb carries its colliders, occluders, lamps and the insides' places
+  (STREET_BUILDER §5b); GDSTREET imports it in Godot 4.7 as the user would.
+- **Slopes and curves**: "add slopes and curved". A street is a smooth curve through its points, each with its height;
+  the ground and everything on it follow.
+- **Big streets**: "for big streets handle that how you think we should". Chunks merged by material, a piece rebuilt only
+  when it changes, occluders for Godot.
+- **The interiors in the street**: "consider how we can integrate the interiors we designed into the street map... a
+  motel... sync the door shape and let a player enter, exit; we also need stairs so they could reach the second floor,
+  maybe gates... we will stick to 1 floor for our game interiors for now; the other scenario is a bungalow; I don't know
+  if the interior builder already builds the exterior". It doesn't (plain 10 cm walls in the room's own colours, a flat
+  ceiling slab, no roof): the street builds the outside round a set's level (STREET_BUILDER §5c).
+
+## 2026-10-30, night (the user, starting the street builder on `buildings-streets`)
+
+- **A street builder, apart from the scene builder**: "make a new branch called buildings-streets. The goal will be to
+  be able to create aesthetic but low-poly buildings and streets like this; this should be a new tool in the dashboard,
+  not the existing interior building one: it's for building the map we'd place the enterable buildings into
+  (enterable buildings are ones we build with the current tool); this new one is more for aesthetics". So
+  `tools/director/street.html` (docs/STREET_BUILDER.md), its streets in `Content/Studio/Streets/<name>/street.json`.
+- **Very simple to use**: "very simple to use like our existing tools for building things (easy to add protrusions,
+  windows, doors, roofs etc), should have the ability to paste in a front and side view reference, should be super
+  easy to use that even a layman can use it". The facade view: the front and a side flat on, a photo pasted behind
+  each, parts clicked onto the wall, floors by dragging the roof.
+- **The first reference matched, 1:1 framing**: "try make the tool and recreate the shot in image 1, 1:1 (without the
+  photorealism but with the same framing and composition)". `shibuya_lane`, its shot `photo`, held to the photo by
+  pins (STREET).
+- **More kinds of buildings and streets, and the things in them**: after five more references (a white tower with a
+  glass-block stairwell, a quiet stucco house front, a shopping street of lantern lamps under a mountain, abandoned
+  concrete flats with shutters, an old post town at dusk): "don't worry about foliage for now, but if you could add
+  simple assets for street lamps and other stuff like that it would be great, also fences, different types of fences,
+  metal mesh, long, wooden; should be easy to apply PBR to but also be low poly count. We want the overall maps to feel
+  tight and filled so the user doesn't feel isolated but instead cozy, even in horror creepy games". So a building
+  style per reference, lamps, poles and wires, street things, eight fences, every surface a slot that takes a PBR set
+  at its real size, and *Fill a street*: buildings shoulder to shoulder, lamps, wires and clutter in one click.
+
+## 2026-10-31, the night, the last (the user: the base mesh's eyes for everyone, the add-on removed, on `realism-enhancer-skin`)
+
+- **"I've confirmed the default 'eye stitch' process is just using Blender's default human model ... can you just
+  modify the base loaded mesh that we edit so it has those eyes from the start (I don't care about the old eyes as the
+  new ones are way better and the eyeballs sit way better)."** Yes: the graft is every character's eyes. The user
+  checked that the head in the add-on's file is Blender Studio's Human Base Meshes body (CC0, `GEO-body_female_realistic`), so
+  `Content/Studio/Bodies/MHR_eyes.bin` is committed; the Studio wears it with no switch and no Make button (MHR's cut
+  lids only if the file is missing); `eye_patch.py make` takes the bundle's .blend (`vendor/human_base_meshes/`,
+  git-ignored, or `--blend`). The shape keys' base preset is "Default".
+- **"Could we just update our model for eyebrows and eyelashes to be inspired by them ... and then scrap/remove the add-on
+  ones entirely as it's annoying to have to go to Blender to bake it ... I found many tutorials using their technique
+  for getting the curve ... enhance our eyebrows and eyelash system we already use and remove the add-on."** Done: the brows
+  and lashes by hand (`groom.js`) took the technique (Blender's own hair node groups: trims along the edges, clumps
+  toward guide hairs, noise, the curl's profile toward the tip, wide length randomness; docs/research/brows_lashes.md,
+  in our own words and numbers); the add-on's bake, its Studio panel, Start from the add-on's brows, its bake tool, its Studio loader, its notes and its
+  check are removed. The old transfer branch on the remote is left for
+  the user to delete (asked).
+
+- **"I think I get confused cus the UI is split so apart, I'd almost rather just have a tab for eyelashes/eyebrows
+  before hair."** Done: the Studio's **Brows & lashes** tab, between Layers and Hair: first the fine hairs (shaped on the
+  face: the editor's handles and brushes, the old "by hand"), then the clumped ones (sliders and styles only); the Face
+  tab keeps the look, the pictures, the fit and the mouth.
+
+## 2026-10-31, the night, later (the user: the grafted eyes on our faces, on `realism-enhancer-skin`)
+
+- **"Before you continue one thing you could maybe do is look how the eyes are modelled in the default .blend and make
+  ours match the upper face shape (but still let the face shape be modified ...), if that's even possible, then you can
+  just use the default .blend eyebrow as starter (which is placed correctly) and modify based off that, I don't mind
+  adding more vertices around the eyes."** The brows: Start from the add-on's brows (CHARACTER_STUDIO §2b), the handles on
+  the add-on's own outline. Then: **"is there any way we could use the eye shape and eyelid shape that the base mesh has in our
+  modifiable version ... in ours the eyelids look like thin skin bending over the eye whereas the base mesh's eyelids actually
+  look like meaty flesh that curves in, ideally we want that look for the eyes, eyelid shape and then make it modifiable
+  through some basic shape keys ... the eyes don't need to be massively adjustable (just more asian or caucasian etc and
+  size)."** Yes: **the grafted eyes** (CHARACTER_STUDIO §2c, `tools/eye_patch.py`, `eyegraft.js`): the base mesh's eye region grafted
+  onto MHR's face (its own loops, about 2,400 points an eye where MHR has about 550), riding MHR's triangles, its own
+  blink; in the Studio first, off by default (Skin, Eyes, the grafted eyes). The shape keys and the export next.
+- **The licence of the base mesh's head**: the add-on's pack is CC BY-SA 4.0, but its demo head looks like Blender Studio's Human Base
+  Meshes body (CC0: the same object names, `GEO-body_female_realistic` and its `.eye.L`/`.eye.R`). Until it's compared
+  with the bundle itself (www.blender.org is blocked in the cloud sessions; the user can allow it or download the
+  bundle), the graft stays on the machine: `Content/Studio/Bodies/MHR_eyes.bin` is git-ignored, made by
+  `python tools/eye_patch.py make`.
+- **"Can you make sure in the final versions we don't have that weird gray makeup stripe pattern thing on the closed
+  eyelids (should just blend in with the rest of the skin color but maybe make it possible to apply makeup (eye shadow)
+  onto that closed eyelid part"**: the shut lid reads the photo softly, near the photo's own skin tone, and the skin and
+  its makeup are worked out on the open lid laid flat, so eyeshadow covers the shut lid (CHARACTER_STUDIO §2c).
+
+## 2026-10-31, the night (the user: brows and lashes by hand, on `realism-enhancer-skin`)
+
+- **"The texture of the procedural eye lashes looks really good but the design you generated is very bad, they move up
+  too upwards, look at the reference photos of the unskinned face and then how they apply eyelashes and eyebrows, that's
+  the kind of look we are aiming for."** With four references: a brow close up, an eye at three-quarter, an eye from the
+  front (MetaHuman's), a MetaHuman head without its hair. Then: **"Could you make an easy eyebrow editor tool where I
+  manually can add and adjust the eyebrows and eyelashes inside an easy wrapper?"** Built (CHARACTER_STUDIO §2b): Face,
+  Brows & lashes by hand, Edit on the face (handles on the brows' edges and the lashes' tips, Mirror, brushes, a blink,
+  styles and sliders), the hairs at the add-on's thickness and look, the lashes forward and swept out (defaults tuned on the
+  references), saved with the character, carried by the export. The add-on's bake stays as an option.
+
+## 2026-10-31, later (the user: the eyes, the brows and lashes, on `realism-enhancer-skin`)
+
+- **"Can we get the eyes to be more like Unreal Engine's MetaHuman ... atm it looks too stylized/dolly and pops out too
+  much, I want to keep all the patterns for the iris etc we made. Can you analyze the eyebrows and eyelashes too ... our
+  eyelashes poke out too much and are probably too long."** Measured (docs/research/eyes.md §7). Then: **"it seems
+  like currently we can't get on par with MetaHuman's capabilities for eyes and eyebrows and eyelashes. So let's do a
+  hybrid approach where I will make a batch of variations of MetaHuman faces, and we run some kind of smart algorithm to
+  stretch the faces into our existing human modifiable models ... forget about the changes you may have made to eyes,
+  eyelashes, eyebrows so far. Keep the skin stuff you did for Godot though."** Then, **before committing to that:**
+  "look through git if there is anyone who has figured out how to do MetaHuman-like eyebrows and eyelashes
+  procedurally ... check if there are alt pathways." The hybrid face plan is **on hold**, the user's call.
+- **"I'd be happy to use a third-party procedural hair add-on and bake it onto the model before exporting to Godot if you can
+  figure out how to get it to work."** Built (since removed): the add-on's generators run headless in Blender's module on a
+  character's export, the lashes tidied, pinned to MHR's triangles, worn by the Character Studio (Face, **Bake with
+  the add-on**), carried by the export to the desk and Godot. **the add-on's pack is CC BY-SA 4.0:** its .blend stays out of
+  git (vendor/, the user's download; it came in on a branch of its own, the old transfer branch, still on the remote:
+  ask before deleting it); credit the add-on; hair it grows is shared under its terms.
+- **"Make sure the eyes don't clip through the eyelids ... make sure the eyes can close properly without clipping. I
+  think I might have told you to go back on the eye fixes you did, make sure that the eyes don't look like white
+  paint and follow Unreal's MetaHuman inspired coloring and wetness so the eyes look more natural in game."** The
+  eye's lighting work brought back (the socket's shade in the Studio and Godot, Godot's own `light()` for the cornea's
+  coat and catchlight; not the earlier lash styles or the "realistic" look); the blink put in the export and played in
+  Godot with the lids kept off the eyes all the way and met when shut; the whites darker and warm; the tear line's
+  glint in Godot (GODOT_LOOK §5f; EYELIDS).
+
+## 2026-10-31 (the user: the hair, after the skin, on `realism-enhancer-skin`)
+
+- **"Can you now work on the hair part. Making better hair that looks similar to Unreal's MetaHuman (if possible),
+  probably a shader/texture we need to bake when we do our current hair."** Built, for their review (GODOT_LOOK §5e):
+  the salon's bake carries the hair as a volume (each card vertex's shell normal and occlusion from the hairstyle in a
+  density grid with the head solid, the tangent along each strand, where across its card it is, each strand's numbers in
+  the occlusion slot, a `studioHair` record), the Character Studio's export keeps it and gives brows and lashes the same
+  numbers, and Godot's HSHair wears it from the file's records: soft dithered coverage under TAA, the roots fading in,
+  tapered card sides, two highlights with glints in the salon look's colours, light through from behind, a scatter, the
+  occlusion. Found and fixed on the way: the darkened scalp and the brows' fill showed white in Godot (the importer
+  drops an unlit material's vertex colours); a character whose name holds "hair" had the hair shader on its skin; the
+  emissive slot, tried first for the strand numbers, glowed in plain Godot. Kept on the same branch as the skin.
+
+## 2026-10-30, night (the user: the Studio's characters less like dolls, on `realism-enhancer-skin`)
+
+- **"Take our studio creations for director/godot and make them look less like dolls and more like Unreal's
+  MetaHumans; we have a plugin that's supposed to make the skin look more realistic but I'm not noticing a huge
+  effect; if I go really close to the model it does look more real but the pores look way too large and not enough
+  micro detail."** With their screenshot of a Studio character and a sheet of MetaHuman faces. Then, once they've
+  reviewed it: "a better hair texturer too for studio so baked hair looks more realistic like MetaHuman".
+- **"I am 100% ok with adding an extra step after studio where we take the model into Blender and add realistic
+  procedural skin (presets for old, young, normal etc), lips, etc and baking them along with data for rough maps etc
+  and then bringing that into Godot if that's the best workflow, but if there is an easier one feel free."** Claude's
+  call, for their review: **no Blender step.** The finest detail can't be baked on MHR's shared UVs at a size a game
+  carries (a face's texel is 0.35 mm in the export's normal map; a pore 0.15 to 0.35 mm, a furrow 0.02), so, as
+  MetaHuman's tiling micro normal does, it's drawn live in Godot at its true size: **the skin's detail layer**
+  (GODOT_LOOK §5d: pores, furrows, the lips' lines, the colour's unevenness, from tiles `tools/skin_detail.py` makes once,
+  placed by MHR's region map), with **presets young, natural, adult and old** picked from the Studio's own age and pores
+  (or named on `HSCharacterLook`); what is the character's own, **its occlusion**, goes into the Studio's existing
+  export bake. Found on the way and fixed: HumanShaders' micro tile lay five times too big on MHR's UVs (the user's "pores
+  way too large"), Godot's screen-space scattering at HumanShaders' strength blurred the whole face to wax, and the
+  eyes glowed (now the lids' shadow and a white at 0.85). The desk stays plain (DECISIONS 2026-10-30, night).
 
 ## 2026-10-30, evening (the user, after finding the sun's leak and the flicker's flashes)
 

@@ -1,0 +1,15 @@
+{
+ "maps": {
+  "ao": "Bark014_1K-PNG_AmbientOcclusion.png",
+  "albedo": "Bark014_1K-PNG_Color.png",
+  "height": "Bark014_1K-PNG_Displacement.png",
+  "normal": "Bark014_1K-PNG_NormalGL.png",
+  "rough": "Bark014_1K-PNG_Roughness.png"
+ },
+ "normal": "gl",
+ "tile_m": 1.0,
+ "source": "ambientCG",
+ "url": "https://ambientcg.com/view?id=Bark014",
+ "licence": "CC0-1.0",
+ "label": "bark, red-brown finely fissured plates, moss: pine, cherry"
+}

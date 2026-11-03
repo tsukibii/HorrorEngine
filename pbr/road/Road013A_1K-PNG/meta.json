@@ -1,0 +1,15 @@
+{
+ "maps": {
+  "ao": "Road013A_1K-PNG_AmbientOcclusion.png",
+  "albedo": "Road013A_1K-PNG_Color.png",
+  "height": "Road013A_1K-PNG_Displacement.png",
+  "normal": "Road013A_1K-PNG_NormalGL.png",
+  "rough": "Road013A_1K-PNG_Roughness.png"
+ },
+ "normal": "gl",
+ "tile_m": 2.5,
+ "source": "ambientCG",
+ "url": "https://ambientcg.com/view?id=Road013A",
+ "licence": "CC0-1.0",
+ "label": "road, asphalt dark"
+}

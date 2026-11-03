@@ -344,6 +344,15 @@ Character Studio shows it still on the head for now; Unreal gets it with the fin
   characters, heavier where few are on screen (saved with the hair, the preview follows it), cut out at 0.4
   and tinted by vertex colours; the darkened scalp is its own mesh, `hair_scalp`. `hime_demo`: 5 410 vertices live,
   1 440 baked, 503 KB.
+- **As a volume, for MetaHuman-like hair** (2026-10-31, docs/GODOT_LOOK.md §5e; `hairvolume.js`, `finishCards`): every
+  card vertex's normal is the hair volume's shell normal (the hairstyle in a density grid with the head and body solid:
+  the cards shade as one mass), its tangent runs along its strand, its second UV holds where across its card it is and
+  how much sky it sees (the occlusion), the material's occlusion slot holds each strand's numbers (`strandsTexture`), and
+  `studioHair` in its extras says so; each card is wound to face its shell normal (a double-sided viewer turns a back
+  face's normal round: until it was, half the cards lay dark in the Studio and the rest shone grey; the Studio winds a
+  bake made before as it loads it); the darkened scalp's colour is its material's (its vertices white). The base
+  (`salon_base.glb`) is baked the same way, as a volume of its own cards. Godot's HSHair reads all of it; three.js draws
+  the shell normals too (the bake's preview is softer than the live hair).
 - **Smoothing** (2026-10-23; only in the bake, the hair you edit stays as it is). **Smooth curves**: evenly spaced, an
   arch over the roots or a bend could be cut to a sharp tent; while a kept corner turns more than 60 degrees (down to 15
   at 1), the point beside it the kept line misses most (its distance, plus how far the card's edge moves where it

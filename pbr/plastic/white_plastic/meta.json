@@ -1,0 +1,14 @@
+{
+ "maps": {
+  "albedo": "Plastic010_1K-PNG_Color.png",
+  "height": "Plastic010_1K-PNG_Displacement.png",
+  "normal": "Plastic010_1K-PNG_NormalGL.png",
+  "rough": "Plastic010_1K-PNG_Roughness.png"
+ },
+ "normal": "gl",
+ "tile_m": 1.0,
+ "source": "ambientCG",
+ "url": "https://ambientcg.com/view?id=Plastic010",
+ "licence": "CC0-1.0",
+ "label": "plastic, white"
+}

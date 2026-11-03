@@ -1,0 +1,15 @@
+{
+ "maps": {
+  "albedo": "LeafSet005_1K-PNG_Color.png",
+  "height": "LeafSet005_1K-PNG_Displacement.png",
+  "normal": "LeafSet005_1K-PNG_NormalGL.png",
+  "opacity": "LeafSet005_1K-PNG_Opacity.png",
+  "rough": "LeafSet005_1K-PNG_Roughness.png"
+ },
+ "normal": "gl",
+ "tile_m": 1.0,
+ "source": "ambientCG",
+ "url": "https://ambientcg.com/view?id=LeafSet005",
+ "licence": "CC0-1.0",
+ "label": "leaves, serrated ovate (hornbeam-like), a twig of three: zelkova, cherry, camphor"
+}

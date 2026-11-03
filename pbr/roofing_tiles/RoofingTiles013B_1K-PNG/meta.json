@@ -1,0 +1,16 @@
+{
+ "maps": {
+  "ao": "RoofingTiles013B_1K-PNG_AmbientOcclusion.png",
+  "albedo": "RoofingTiles013B_1K-PNG_Color.png",
+  "height": "RoofingTiles013B_1K-PNG_Displacement.png",
+  "normal": "RoofingTiles013B_1K-PNG_NormalGL.png",
+  "opacity": "RoofingTiles013B_1K-PNG_Opacity.png",
+  "rough": "RoofingTiles013B_1K-PNG_Roughness.png"
+ },
+ "normal": "gl",
+ "tile_m": 2.4,
+ "source": "ambientCG",
+ "url": "https://ambientcg.com/view?id=RoofingTiles013B",
+ "licence": "CC0-1.0",
+ "label": "tiles, dark rusty"
+}

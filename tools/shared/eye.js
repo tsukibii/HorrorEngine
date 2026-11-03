@@ -52,6 +52,7 @@ export const EYE_CONTROLS = [   // [key, label, lo, hi, step, default, help]
   ["catchY", "Catchlight up", -0.8, 0.8, 0.01, 0.4, "Down to up on the iris."],
   ["catch2", "Second catchlight", 0, 1, 0.01, 0.5, "A smaller one on the other side."],
   ["scleraShade", "Sclera shading", 0, 1, 0.01, 0.4, "Darker toward the rim of the eyeball, so it sits in the socket."],
+  ["socket", "Socket shade", 0, 1, 0.01, 0.35, "The eye in its socket: the white and its shine darker all over, most toward the brow and into the corners, the iris a little (the brow, the lids and the cheek keep the light off it). MetaHuman's whites, measured in a face, are about a fifth as bright as a white card under the same light: the skin's brightness or darker, never paper (docs/research/eyes.md §7)."],
   ["cornerPink", "Corner pink", 0, 1, 0.01, 0.35, "The inner corner (and a little of the outer) and the waterline."],
   ["gloss", "Wet gloss", 0, 1, 0.01, 0.9, "How wet and glassy the eye looks."],
   ["irisDepth", "Iris depth (mm)", 0, 2, 0.05, 0.2, "How far behind the limbus the iris lies, under the cornea: deeper, it slides further against the white as the eye or the view turns."],
@@ -154,6 +155,7 @@ uniform vec4 uShape;     // the limbus's radius and plane, the dome's centre and
 uniform vec4 uShape2;    // the iris's plane, 1 / IOR, caustic, the iris's brightness
 uniform vec4 uPat;       // the iris's pattern (EYE_CHOICES' order: 0 natural), its strength, the burst's reach, detail
 uniform vec4 uPup;       // the pupil's shape (EYE_CHOICES' order: 0 round), its turn (rad)
+uniform vec4 uSock;      // the socket's shade
 uniform vec3 uAccent, uPupilCol;                               // sRGB
 float eyeSm(float a, float b, float x) { float t = clamp((x - a) / (b - a), 0.0, 1.0); return t * t * (3.0 - 2.0 * t); }
 float eyeH2(float x, float y) { return fract(sin(x * 127.1 + y * 311.7) * 43758.5453); }
@@ -310,7 +312,8 @@ function eyeUniforms() {
   return { uIris: { value: new THREE.Color() }, uIris2: { value: new THREE.Color() }, uSclera: { value: new THREE.Color() }, uCorner: { value: new THREE.Color() },
            uPaint: { value: new THREE.Vector4() }, uPaint2: { value: new THREE.Vector4() }, uPaint3: { value: new THREE.Vector4() },
            uShape: { value: new THREE.Vector4(0.5, 0.86, 0.4, 0.65) }, uShape2: { value: new THREE.Vector4(0.86, 1 / 1.336, 0.6, 1) },
-           uPat: { value: new THREE.Vector4(0, 1, 0.55, 0.5) }, uPup: { value: new THREE.Vector4() }, uAccent: { value: new THREE.Color() }, uPupilCol: { value: new THREE.Color() } };
+           uPat: { value: new THREE.Vector4(0, 1, 0.55, 0.5) }, uPup: { value: new THREE.Vector4() }, uAccent: { value: new THREE.Color() }, uPupilCol: { value: new THREE.Color() },
+           uSock: { value: new THREE.Vector4() } };
 }
 const srgb = (c, hex) => { c.set(hex); c.convertLinearToSRGB(); };   // THREE.Color keeps linear; the paint works in sRGB, as eyes.js did
 function setUniforms(u, p, s, side) {
@@ -323,6 +326,7 @@ function setUniforms(u, p, s, side) {
   srgb(u.uAccent.value, p.accent ?? EYE_DEFAULTS.accent); srgb(u.uPupilCol.value, p.pupilColor ?? EYE_DEFAULTS.pupilColor);
   u.uPat.value.set(Math.max(0, PATTERNS.indexOf(p.pattern)), p.patternAmt ?? 1, p.burst ?? 0.55, p.detail ?? 0.5);
   u.uPup.value.set(Math.max(0, PUPILS.indexOf(p.pupilShape)), (p.pupilTurn ?? 0) * Math.PI / 180, 0, 0);
+  u.uSock.value.set(p.socket ?? 0, 0, 0, 0);
 }
 
 // a physical material wearing the eye; `extend(shader)` adds what a page needs on top (the Studio: the lids' shadow)
@@ -353,17 +357,23 @@ export function eyeMaterial(side, extend = null, key = "") {
   }
   float eyeIrisW = uPaint3.w * eyeOnC * (1.0 - eyeSm(0.95, 1.08, length(eyeQ) / uShape.x));
   diffuseColor.rgb *= eyeLin(eyePaint(eyeQ, eyeP, eyeGraze)) * mix(1.0, uShape2.w, eyeIrisW);
+  // the socket (Socket shade): the white darker all over, more toward the brow (+y) and into the corners, the iris a
+  // little; its shine too (below). Lighting, not paint: the bake leaves it out and a reader puts it back (Godot's HSEye)
+  float eyeSock = min(0.92, uSock.x * (0.6 + 0.4 * eyeSm(-0.45, 0.55, eyeP.y) + 0.3 * eyeSm(0.45, 0.95, abs(eyeP.x))) * (1.0 - 0.6 * eyeIrisW));
+  diffuseColor.rgb *= 1.0 - eyeSock;
   vec3 eyeB = normalize(mix(eyeN, normalize(vec3(-eyeQ / uShape.x * uShape2.z * 1.4, 1.0)), eyeIrisW));   // the iris: a shallow bowl
   vec3 eyeBaseV = normalize(eyeX * eyeB.x + eyeY * eyeB.y + eyeF * eyeB.z), eyeCoatV = normalize(eyeX * eyeN.x + eyeY * eyeN.y + eyeF * eyeN.z);`)
       .replace("#include <clearcoat_normal_fragment_begin>", "#include <clearcoat_normal_fragment_begin>\n  normal = eyeBaseV;\n#ifdef USE_CLEARCOAT\n  clearcoatNormal = eyeCoatV;\n#endif")
       .replace("#include <lights_physical_fragment>", `#include <lights_physical_fragment>
   material.specularColor *= 1.0 - eyeIrisW; material.specularF90 *= 1.0 - eyeIrisW;   // under the cornea: no shine of its own
+  material.specularColor *= 1.0 - eyeSock; material.specularF90 *= 1.0 - eyeSock;     // the socket keeps the room off the white
 #ifdef USE_CLEARCOAT
   material.clearcoatF0 = vec3(0.025);                          // the cornea's (IOR 1.376)
+  material.clearcoat *= 1.0 - eyeSock * (1.0 - 0.5 * eyeOnC);   // the white's wet coat in the socket's shade, the cornea's half (its catchlight stays)
 #endif`);
     extend?.(sh);
   };
-  m.customProgramCacheKey = () => "studio-eye-4" + key;
+  m.customProgramCacheKey = () => "studio-eye-5" + key;
   return m;
 }
 

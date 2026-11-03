@@ -40,7 +40,8 @@ WALLS = ("n", "e", "s", "w")
 # what a room is (the scene builder's labels, its colour and its built-ins; optional): Japanese homes first
 ROOM_KINDS = ("genkan", "corridor", "ldk", "living", "dining", "kitchen", "washitsu", "bedroom", "service", "kids",
               "study", "bath", "washroom", "toilet", "closet", "walkin", "oshiire", "storage", "stairs", "balcony",
-              "engawa", "common", "garden", "garage", "other")
+              "engawa", "common", "garden", "garage", "other",
+              "classroom", "hallway", "staffroom", "entrance", "nurse", "library", "gym")     # a school's (SCENE_BUILDER §10)
 
 
 def games():
@@ -115,8 +116,8 @@ def parse_shape(s):
         return kind, [parts[1], float(parts[2]) if len(parts) > 2 else 1.0]
     if kind not in SHAPE_ARGS:
         raise ValueError(f"unknown shape {kind!r} (box, cyl, sphere, plane, stairs, person, asset)")
-    if len(parts) - 1 != SHAPE_ARGS[kind]:
-        raise ValueError(f"{kind} takes {SHAPE_ARGS[kind]} numbers")
+    if len(parts) - 1 != SHAPE_ARGS[kind] and not (kind == "stairs" and len(parts) == 5):   # stairs' 4th: its waist
+        raise ValueError(f"{kind} takes {SHAPE_ARGS[kind]} numbers" + (" (and a waist)" if kind == "stairs" else ""))
     return kind, [float(x) for x in parts[1:]]
 
 
@@ -131,7 +132,7 @@ def shape_size(story, kind, args):
     if kind == "plane":
         return (args[0], 0.02, args[1])
     if kind == "stairs":
-        return (args[0], args[1], args[2])
+        return (args[0], args[1], args[2])                  # (a waist doesn't change the box it fills)
     if kind == "person":
         h = (story.get("cast", {}).get(args[0]) or {}).get("height", 1.7)
         return (0.5, 0.3, h) if args[1] != "lie" else (0.5, h, 0.3)

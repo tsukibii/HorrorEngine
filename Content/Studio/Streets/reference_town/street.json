@@ -1,0 +1,8512 @@
+{
+ "format": 1,
+ "name": "reference_town",
+ "about": "A small town with a corner for each of the user's references (2026-10-30): the shopping street with its lantern lamps and wires, the quiet lane of houses, the old post town, the abandoned concrete blocks, the white tower on the corner. Filled with the street builder's Fill, then touched by hand.",
+ "time": "dusk",
+ "look": {},
+ "roads": [
+  {
+   "id": "shotengai",
+   "name": "the shopping street",
+   "from": [
+    0,
+    -70
+   ],
+   "to": [
+    0,
+    55
+   ],
+   "width": 8,
+   "walks": [
+    2.6,
+    2.6
+   ],
+   "kerb": 0.15,
+   "edge": [
+    0.5,
+    0.5
+   ],
+   "centre": "yellow",
+   "marks": [
+    {
+     "kind": "diamond",
+     "at": 20,
+     "x": -2
+    },
+    {
+     "kind": "diamond",
+     "at": 50,
+     "x": -2
+    },
+    {
+     "kind": "zebra",
+     "at": 112,
+     "len": 4,
+     "w": 7.6
+    }
+   ]
+  },
+  {
+   "id": "houses",
+   "name": "the quiet lane",
+   "from": [
+    -6.6,
+    -30
+   ],
+   "to": [
+    -80,
+    -30
+   ],
+   "width": 4.2,
+   "walks": [
+    0,
+    0
+   ],
+   "kerb": 0.12,
+   "edge": [
+    0.6,
+    0.6
+   ],
+   "centre": "none",
+   "marks": [
+    {
+     "kind": "text",
+     "text": "止まれ",
+     "at": 1.5,
+     "len": 2.2,
+     "gap": 0.6,
+     "w": 1
+    },
+    {
+     "kind": "stop",
+     "at": 1,
+     "w": 3.6
+    }
+   ]
+  },
+  {
+   "id": "posttown",
+   "name": "the old post town",
+   "from": [
+    6.6,
+    15
+   ],
+   "to": [
+    90,
+    15
+   ],
+   "width": 6.5,
+   "walks": [
+    0.6,
+    0.6
+   ],
+   "kerb": 0.05,
+   "edge": [
+    0,
+    0
+   ],
+   "centre": "none",
+   "surface": "asphalt",
+   "walk": "gravel",
+   "marks": []
+  },
+  {
+   "id": "blocks",
+   "name": "the abandoned blocks",
+   "from": [
+    -80,
+    62
+   ],
+   "to": [
+    60,
+    62
+   ],
+   "width": 6,
+   "walks": [
+    1.6,
+    1.6
+   ],
+   "kerb": 0.15,
+   "edge": [
+    0.6,
+    0.6
+   ],
+   "centre": "none",
+   "marks": []
+  }
+ ],
+ "buildings": [
+  {
+   "id": "b1",
+   "style": "shotengai",
+   "w": 7,
+   "d": 13,
+   "floors": 3,
+   "gh": 3.4,
+   "fh": 2.8,
+   "seed": 205414,
+   "look": {
+    "wall": "#8f8c86",
+    "wall2": "#4b4844"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ground": "shutter",
+     "groundSlot": "wall2",
+     "lit": 0.5,
+     "closed": true
+    },
+    "back": {
+     "win": "punched"
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 15,
+    "over": 0.3,
+    "ridge": "x"
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 3.65,
+     "w": 6.4,
+     "h": 0.9,
+     "text": "米",
+     "fg": "#ffffff",
+     "bg": "#c8322b"
+    },
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 3.15,
+     "w": 7,
+     "h": 0.18,
+     "out": 1.6,
+     "slot": "metal"
+    }
+   ],
+   "at": [
+    -13.1,
+    -66.2
+   ],
+   "turn": 90
+  },
+  {
+   "id": "b2",
+   "style": "shotengai",
+   "w": 6,
+   "d": 10.5,
+   "floors": 3,
+   "gh": 3.4,
+   "fh": 2.8,
+   "seed": 81849,
+   "look": {
+    "wall": "#c9c6bf",
+    "wall2": "#4b4844"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ground": "shop",
+     "groundSlot": "wall2",
+     "lit": 0.5,
+     "closed": false
+    },
+    "back": {
+     "win": "punched"
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 15,
+    "over": 0.3,
+    "ridge": "x"
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 3.65,
+     "w": 5.4,
+     "h": 0.9,
+     "text": "美容室 花",
+     "fg": "#ff5aa5",
+     "bg": "#1c1c22"
+    },
+    {
+     "kind": "awning",
+     "x": 0,
+     "z": 3.25,
+     "w": 5.8,
+     "h": 0.45,
+     "out": 1.3,
+     "slot": "metal"
+    },
+    {
+     "kind": "vsign",
+     "x": 2.65,
+     "z": 3.7,
+     "h": 5.4,
+     "out": 0.8,
+     "text": "manga",
+     "fg": "#ffffff",
+     "bg": "#c8322b"
+    }
+   ],
+   "at": [
+    -11.85,
+    -59.68
+   ],
+   "turn": 90
+  },
+  {
+   "id": "b3",
+   "style": "house",
+   "w": 6.5,
+   "d": 9,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 675999,
+   "look": {
+    "wall": "#e8e0cf",
+    "roof": "#2f3a46"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.6000000000000001
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 28,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ],
+   "at": [
+    -11.46,
+    -53.13
+   ],
+   "turn": 90
+  },
+  {
+   "id": "b4",
+   "style": "shotengai",
+   "w": 5.5,
+   "d": 10,
+   "floors": 2,
+   "gh": 3.4,
+   "fh": 2.8,
+   "seed": 309284,
+   "look": {
+    "wall": "#e8e0cf",
+    "wall2": "#4b4844"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ground": "shop",
+     "groundSlot": "wall2",
+     "lit": 0.35000000000000003,
+     "closed": false
+    },
+    "back": {
+     "win": "punched"
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 15,
+    "over": 0.3,
+    "ridge": "x"
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 3.65,
+     "w": 4.9,
+     "h": 0.9,
+     "text": "喫茶 ひかり",
+     "fg": "#ffffff",
+     "bg": "#203a78"
+    },
+    {
+     "kind": "awning",
+     "x": 0,
+     "z": 3.25,
+     "w": 5.3,
+     "h": 0.45,
+     "out": 1.3,
+     "slot": "metal"
+    },
+    {
+     "kind": "vsign",
+     "x": 2.4,
+     "z": 3.7,
+     "h": 4.3,
+     "out": 0.6,
+     "text": "BAR",
+     "fg": "#ffffff",
+     "bg": "#7b2d8f"
+    }
+   ],
+   "at": [
+    -11.6,
+    -47.06
+   ],
+   "turn": 90
+  },
+  {
+   "id": "b5",
+   "style": "house",
+   "w": 6.5,
+   "d": 7.5,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 603276,
+   "look": {
+    "wall": "#efe8da",
+    "roof": "#2f3a46"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.6000000000000001
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 21,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ],
+   "at": [
+    -10.35,
+    -40.93
+   ],
+   "turn": 90
+  },
+  {
+   "id": "b6",
+   "style": "shotengai",
+   "w": 5.5,
+   "d": 13,
+   "floors": 2,
+   "gh": 3.4,
+   "fh": 2.8,
+   "seed": 442955,
+   "look": {
+    "wall": "#efe8da",
+    "wall2": "#4b4844"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ground": "shop",
+     "groundSlot": "wall2",
+     "lit": 0.35000000000000003,
+     "closed": false
+    },
+    "back": {
+     "win": "punched"
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 15,
+    "over": 0.3,
+    "ridge": "x"
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 3.65,
+     "w": 4.9,
+     "h": 0.9,
+     "text": "Karaoke",
+     "fg": "#ffffff",
+     "bg": "#2d7a46"
+    },
+    {
+     "kind": "awning",
+     "x": 0,
+     "z": 3.25,
+     "w": 5.3,
+     "h": 0.45,
+     "out": 1.3,
+     "slot": "awning"
+    }
+   ],
+   "at": [
+    -13.1,
+    -34.91
+   ],
+   "turn": 90
+  },
+  {
+   "id": "b7",
+   "style": "shop",
+   "w": 9,
+   "d": 12,
+   "floors": 7,
+   "gh": 4.2,
+   "fh": 3.2,
+   "seed": 969552,
+   "look": {
+    "wall": "#c4c7c9",
+    "wall2": "#3a3a3e"
+   },
+   "faces": {
+    "front": {
+     "win": "band",
+     "ground": "shop",
+     "bands": false,
+     "lit": 0.55,
+     "groundSlot": "wall2",
+     "sill": 1
+    },
+    "back": {
+     "win": "small"
+    }
+   },
+   "roof": {
+    "kind": "rail",
+    "things": [
+     {
+      "kind": "tank",
+      "x": 0.2,
+      "y": 1
+     }
+    ]
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 3.35,
+     "w": 8.4,
+     "h": 0.7,
+     "text": "BAR 9",
+     "fg": "#ffffff",
+     "bg": "#203a78"
+    },
+    {
+     "kind": "vsign",
+     "x": -4.15,
+     "z": 5.8,
+     "h": 4.9,
+     "out": 0.8,
+     "text": "不動産",
+     "fg": "#ffffff",
+     "bg": "#203a78"
+    },
+    {
+     "kind": "ac",
+     "face": "front",
+     "x": -1,
+     "z": 0.4,
+     "floors": [
+      2,
+      4
+     ]
+    }
+   ],
+   "at": [
+    -12.76,
+    -22.64
+   ],
+   "turn": 90
+  },
+  {
+   "id": "b8",
+   "style": "shop",
+   "w": 9,
+   "d": 12.5,
+   "floors": 8,
+   "gh": 3.8000000000000003,
+   "fh": 3.3000000000000003,
+   "seed": 626565,
+   "look": {
+    "wall": "#d2cbbf",
+    "wall2": "#3a3a3e"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ground": "shop",
+     "bands": true,
+     "lit": 0.4,
+     "groundSlot": "wall2",
+     "sill": 0.9
+    },
+    "back": {
+     "win": "small"
+    }
+   },
+   "roof": {
+    "kind": "rail",
+    "things": [
+     {
+      "kind": "tank",
+      "x": 0.9,
+      "y": 1
+     }
+    ]
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 2.95,
+     "w": 8.4,
+     "h": 0.7,
+     "text": "薬局",
+     "fg": "#1d1d20",
+     "bg": "#f3f1ea"
+    },
+    {
+     "kind": "vsign",
+     "x": -4.15,
+     "z": 5.7,
+     "h": 3.8,
+     "out": 0.8,
+     "text": "喫茶",
+     "fg": "#ffffff",
+     "bg": "#2d7a46"
+    }
+   ],
+   "at": [
+    -12.85,
+    -13.62
+   ],
+   "turn": 90
+  },
+  {
+   "id": "b9",
+   "style": "shotengai",
+   "w": 8,
+   "d": 10.5,
+   "floors": 2,
+   "gh": 3.4,
+   "fh": 2.8,
+   "seed": 226655,
+   "look": {
+    "wall": "#d9d6cf",
+    "wall2": "#4b4844"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ground": "shutter",
+     "groundSlot": "wall2",
+     "lit": 0.4,
+     "closed": true
+    },
+    "back": {
+     "win": "punched"
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 15,
+    "over": 0.3,
+    "ridge": "x"
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 3.65,
+     "w": 7.4,
+     "h": 0.9,
+     "text": "Karaoke",
+     "fg": "#ffffff",
+     "bg": "#c8322b"
+    },
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 3.15,
+     "w": 8,
+     "h": 0.18,
+     "out": 1.6,
+     "slot": "metal"
+    },
+    {
+     "kind": "vsign",
+     "x": -3.65,
+     "z": 3.7,
+     "h": 4,
+     "out": 0.6,
+     "text": "ラーメン",
+     "fg": "#ff5aa5",
+     "bg": "#1c1c22"
+    }
+   ],
+   "at": [
+    -11.85,
+    -5.1
+   ],
+   "turn": 90
+  },
+  {
+   "id": "b10",
+   "style": "shop",
+   "w": 6,
+   "d": 13.5,
+   "floors": 4,
+   "gh": 4.2,
+   "fh": 3.2,
+   "seed": 615080,
+   "look": {
+    "wall": "#bfb9ae",
+    "wall2": "#55524d"
+   },
+   "faces": {
+    "front": {
+     "win": "band",
+     "ground": "shop",
+     "bands": false,
+     "lit": 0.65,
+     "groundSlot": "wall2",
+     "sill": 0.8
+    },
+    "back": {
+     "win": "small"
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "things": []
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 3.35,
+     "w": 5.4,
+     "h": 0.7,
+     "text": "ふとん店",
+     "fg": "#ffffff",
+     "bg": "#2d7a46"
+    },
+    {
+     "kind": "vsign",
+     "x": -2.65,
+     "z": 5.1,
+     "h": 3,
+     "out": 0.6,
+     "text": "寿司",
+     "fg": "#ffffff",
+     "bg": "#203a78"
+    },
+    {
+     "kind": "ac",
+     "face": "front",
+     "x": 1.9,
+     "z": 0.4,
+     "floors": [
+      2,
+      4
+     ]
+    }
+   ],
+   "at": [
+    -13.35,
+    1.92
+   ],
+   "turn": 90
+  },
+  {
+   "id": "b11",
+   "style": "shotengai",
+   "w": 6.5,
+   "d": 12,
+   "floors": 2,
+   "gh": 3.4,
+   "fh": 2.8,
+   "seed": 842217,
+   "look": {
+    "wall": "#b8b2a6",
+    "wall2": "#4b4844"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ground": "shop",
+     "groundSlot": "wall2",
+     "lit": 0.4,
+     "closed": false
+    },
+    "back": {
+     "win": "punched"
+    }
+   },
+   "roof": {
+    "kind": "shed",
+    "pitch": 15,
+    "over": 0.3,
+    "ridge": "x"
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 3.65,
+     "w": 5.9,
+     "h": 0.9,
+     "text": "ふとん店",
+     "fg": "#ffffff",
+     "bg": "#7b2d8f"
+    },
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 3.15,
+     "w": 6.5,
+     "h": 0.18,
+     "out": 1.6,
+     "slot": "metal"
+    },
+    {
+     "kind": "vsign",
+     "x": 2.9,
+     "z": 3.7,
+     "h": 3.2,
+     "out": 0.7,
+     "text": "不動産",
+     "fg": "#ff5aa5",
+     "bg": "#1c1c22"
+    }
+   ],
+   "at": [
+    -12.6,
+    8.25
+   ],
+   "turn": 90
+  },
+  {
+   "id": "b12",
+   "style": "shotengai",
+   "w": 5.5,
+   "d": 9,
+   "floors": 3,
+   "gh": 3.4,
+   "fh": 2.8,
+   "seed": 95501,
+   "look": {
+    "wall": "#e3dccb",
+    "wall2": "#4b4844"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ground": "shop",
+     "groundSlot": "wall2",
+     "lit": 0.35000000000000003,
+     "closed": false
+    },
+    "back": {
+     "win": "punched"
+    }
+   },
+   "roof": {
+    "kind": "shed",
+    "pitch": 15,
+    "over": 0.3,
+    "ridge": "x"
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 3.65,
+     "w": 4.9,
+     "h": 0.9,
+     "text": "米",
+     "fg": "#ffe9a8",
+     "bg": "#1d1d20"
+    },
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 3.15,
+     "w": 5.5,
+     "h": 0.18,
+     "out": 1.6,
+     "slot": "metal"
+    }
+   ],
+   "at": [
+    -11.1,
+    14.27
+   ],
+   "turn": 90
+  },
+  {
+   "id": "b13",
+   "style": "shotengai",
+   "w": 7,
+   "d": 10.5,
+   "floors": 2,
+   "gh": 3.4,
+   "fh": 2.8,
+   "seed": 878263,
+   "look": {
+    "wall": "#c9c6bf",
+    "wall2": "#4b4844"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ground": "shop",
+     "groundSlot": "wall2",
+     "lit": 0.35000000000000003,
+     "closed": false
+    },
+    "back": {
+     "win": "punched"
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 15,
+    "over": 0.3,
+    "ridge": "x"
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 3.65,
+     "w": 6.4,
+     "h": 0.9,
+     "text": "薬局",
+     "fg": "#ff5aa5",
+     "bg": "#1c1c22"
+    },
+    {
+     "kind": "awning",
+     "x": 0,
+     "z": 3.25,
+     "w": 6.8,
+     "h": 0.45,
+     "out": 1.3,
+     "slot": "metal"
+    }
+   ],
+   "at": [
+    -11.85,
+    20.54
+   ],
+   "turn": 90
+  },
+  {
+   "id": "b14",
+   "style": "shotengai",
+   "w": 5,
+   "d": 12,
+   "floors": 3,
+   "gh": 3.4,
+   "fh": 2.8,
+   "seed": 310735,
+   "look": {
+    "wall": "#efe8da",
+    "wall2": "#4b4844"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ground": "shop",
+     "groundSlot": "wall2",
+     "lit": 0.4,
+     "closed": false
+    },
+    "back": {
+     "win": "punched"
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 15,
+    "over": 0.3,
+    "ridge": "x"
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 3.65,
+     "w": 4.4,
+     "h": 0.9,
+     "text": "古本",
+     "fg": "#1d1d20",
+     "bg": "#f3f1ea"
+    },
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 3.15,
+     "w": 5,
+     "h": 0.18,
+     "out": 1.6,
+     "slot": "metal"
+    },
+    {
+     "kind": "vsign",
+     "x": -2.15,
+     "z": 3.7,
+     "h": 3.1,
+     "out": 0.6,
+     "text": "カフェ",
+     "fg": "#ff5aa5",
+     "bg": "#1c1c22"
+    }
+   ],
+   "at": [
+    -12.6,
+    26.56
+   ],
+   "turn": 90
+  },
+  {
+   "id": "b15",
+   "style": "shotengai",
+   "w": 6,
+   "d": 9,
+   "floors": 2,
+   "gh": 3.4,
+   "fh": 2.8,
+   "seed": 283037,
+   "look": {
+    "wall": "#c9c0ae",
+    "wall2": "#4b4844"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ground": "shutter",
+     "groundSlot": "wall2",
+     "lit": 0.5,
+     "closed": true
+    },
+    "back": {
+     "win": "punched"
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 15,
+    "over": 0.3,
+    "ridge": "x"
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 3.65,
+     "w": 5.4,
+     "h": 0.9,
+     "text": "たばこ",
+     "fg": "#ffffff",
+     "bg": "#203a78"
+    },
+    {
+     "kind": "awning",
+     "x": 0,
+     "z": 3.25,
+     "w": 5.8,
+     "h": 0.45,
+     "out": 1.3,
+     "slot": "awning"
+    }
+   ],
+   "at": [
+    -11.1,
+    32.08
+   ],
+   "turn": 90
+  },
+  {
+   "id": "b16",
+   "style": "shotengai",
+   "w": 5,
+   "d": 11.5,
+   "floors": 3,
+   "gh": 3.4,
+   "fh": 2.8,
+   "seed": 668355,
+   "look": {
+    "wall": "#b8b2a6",
+    "wall2": "#4b4844"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ground": "shutter",
+     "groundSlot": "wall2",
+     "lit": 0.5,
+     "closed": true
+    },
+    "back": {
+     "win": "punched"
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 15,
+    "over": 0.3,
+    "ridge": "x"
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 3.65,
+     "w": 4.4,
+     "h": 0.9,
+     "text": "Karaoke",
+     "fg": "#ff5aa5",
+     "bg": "#1c1c22"
+    },
+    {
+     "kind": "awning",
+     "x": 0,
+     "z": 3.25,
+     "w": 4.8,
+     "h": 0.45,
+     "out": 1.3,
+     "slot": "awning"
+    }
+   ],
+   "at": [
+    -12.74,
+    37.6
+   ],
+   "turn": 90
+  },
+  {
+   "id": "b17",
+   "style": "shotengai",
+   "w": 6.5,
+   "d": 12,
+   "floors": 2,
+   "gh": 3.4,
+   "fh": 2.8,
+   "seed": 122487,
+   "look": {
+    "wall": "#8f8c86",
+    "wall2": "#4b4844"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ground": "shutter",
+     "groundSlot": "wall2",
+     "lit": 0.35000000000000003,
+     "closed": true
+    },
+    "back": {
+     "win": "punched"
+    }
+   },
+   "roof": {
+    "kind": "shed",
+    "pitch": 15,
+    "over": 0.3,
+    "ridge": "x"
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 3.65,
+     "w": 5.9,
+     "h": 0.9,
+     "text": "美容室 花",
+     "fg": "#ffffff",
+     "bg": "#c8322b"
+    },
+    {
+     "kind": "awning",
+     "x": 0,
+     "z": 3.25,
+     "w": 6.3,
+     "h": 0.45,
+     "out": 1.3,
+     "slot": "awning"
+    },
+    {
+     "kind": "vsign",
+     "x": 2.9,
+     "z": 3.7,
+     "h": 3.7,
+     "out": 0.6,
+     "text": "manga",
+     "fg": "#ffffff",
+     "bg": "#203a78"
+    }
+   ],
+   "at": [
+    -12.6,
+    43.6
+   ],
+   "turn": 90
+  },
+  {
+   "id": "b18",
+   "style": "house",
+   "w": 7.5,
+   "d": 7.5,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 215371,
+   "look": {
+    "wall": "#d6cbb5",
+    "roof": "#2f3a46"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.25
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 27,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.05,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.15,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ],
+   "at": [
+    -10.35,
+    51.01
+   ],
+   "turn": 90
+  },
+  {
+   "id": "b19",
+   "style": "shotengai",
+   "w": 7.5,
+   "d": 9,
+   "floors": 3,
+   "gh": 3.4,
+   "fh": 2.8,
+   "seed": 219646,
+   "look": {
+    "wall": "#e8e0cf",
+    "wall2": "#4b4844"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ground": "shutter",
+     "groundSlot": "wall2",
+     "lit": 0.6000000000000001,
+     "closed": true
+    },
+    "back": {
+     "win": "punched"
+    }
+   },
+   "roof": {
+    "kind": "shed",
+    "pitch": 15,
+    "over": 0.3,
+    "ridge": "x"
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 3.65,
+     "w": 6.9,
+     "h": 0.9,
+     "text": "カラオケ館",
+     "fg": "#ffffff",
+     "bg": "#7b2d8f"
+    },
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 3.15,
+     "w": 7.5,
+     "h": 0.18,
+     "out": 1.6,
+     "slot": "metal"
+    },
+    {
+     "kind": "vsign",
+     "x": -3.4,
+     "z": 3.7,
+     "h": 4.2,
+     "out": 0.8,
+     "text": "薬",
+     "fg": "#ffffff",
+     "bg": "#c8322b"
+    }
+   ],
+   "at": [
+    11.1,
+    -65.95
+   ],
+   "turn": -90
+  },
+  {
+   "id": "b20",
+   "style": "shotengai",
+   "w": 7.5,
+   "d": 9,
+   "floors": 2,
+   "gh": 3.4,
+   "fh": 2.8,
+   "seed": 472422,
+   "look": {
+    "wall": "#a8a49c",
+    "wall2": "#4b4844"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ground": "shop",
+     "groundSlot": "wall2",
+     "lit": 0.30000000000000004,
+     "closed": false
+    },
+    "back": {
+     "win": "punched"
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 15,
+    "over": 0.3,
+    "ridge": "x"
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 3.65,
+     "w": 6.9,
+     "h": 0.9,
+     "text": "古本",
+     "fg": "#ffe9a8",
+     "bg": "#1d1d20"
+    },
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 3.15,
+     "w": 7.5,
+     "h": 0.18,
+     "out": 1.6,
+     "slot": "metal"
+    }
+   ],
+   "at": [
+    11.1,
+    -58.28
+   ],
+   "turn": -90
+  },
+  {
+   "id": "b21",
+   "style": "shotengai",
+   "w": 7.5,
+   "d": 11.5,
+   "floors": 3,
+   "gh": 3.4,
+   "fh": 2.8,
+   "seed": 473559,
+   "look": {
+    "wall": "#d9d6cf",
+    "wall2": "#4b4844"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ground": "shutter",
+     "groundSlot": "wall2",
+     "lit": 0.35000000000000003,
+     "closed": true
+    },
+    "back": {
+     "win": "punched"
+    }
+   },
+   "roof": {
+    "kind": "shed",
+    "pitch": 15,
+    "over": 0.3,
+    "ridge": "x"
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 3.65,
+     "w": 6.9,
+     "h": 0.9,
+     "text": "米",
+     "fg": "#1d1d20",
+     "bg": "#f3f1ea"
+    },
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 3.15,
+     "w": 7.5,
+     "h": 0.18,
+     "out": 1.6,
+     "slot": "metal"
+    },
+    {
+     "kind": "vsign",
+     "x": -3.4,
+     "z": 3.7,
+     "h": 2.7,
+     "out": 0.6,
+     "text": "中華",
+     "fg": "#1d1d20",
+     "bg": "#f3f1ea"
+    }
+   ],
+   "at": [
+    12.35,
+    -50.58
+   ],
+   "turn": -90
+  },
+  {
+   "id": "b22",
+   "style": "shotengai",
+   "w": 5.5,
+   "d": 11,
+   "floors": 3,
+   "gh": 3.4,
+   "fh": 2.8,
+   "seed": 635787,
+   "look": {
+    "wall": "#c4c7c9",
+    "wall2": "#4b4844"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ground": "shop",
+     "groundSlot": "wall2",
+     "lit": 0.5,
+     "closed": false
+    },
+    "back": {
+     "win": "punched"
+    }
+   },
+   "roof": {
+    "kind": "shed",
+    "pitch": 15,
+    "over": 0.3,
+    "ridge": "x"
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 3.65,
+     "w": 4.9,
+     "h": 0.9,
+     "text": "電器",
+     "fg": "#ff5aa5",
+     "bg": "#1c1c22"
+    },
+    {
+     "kind": "awning",
+     "x": 0,
+     "z": 3.25,
+     "w": 5.3,
+     "h": 0.45,
+     "out": 1.3,
+     "slot": "metal"
+    }
+   ],
+   "at": [
+    12.1,
+    -43.6
+   ],
+   "turn": -90
+  },
+  {
+   "id": "b23",
+   "style": "shotengai",
+   "w": 5,
+   "d": 11.5,
+   "floors": 3,
+   "gh": 3.4,
+   "fh": 2.8,
+   "seed": 370868,
+   "look": {
+    "wall": "#d9d6cf",
+    "wall2": "#4b4844"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ground": "shutter",
+     "groundSlot": "wall2",
+     "lit": 0.4,
+     "closed": true
+    },
+    "back": {
+     "win": "punched"
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 15,
+    "over": 0.3,
+    "ridge": "x"
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 3.65,
+     "w": 4.4,
+     "h": 0.9,
+     "text": "ラーメン 一番",
+     "fg": "#ffe9a8",
+     "bg": "#1d1d20"
+    },
+    {
+     "kind": "awning",
+     "x": 0,
+     "z": 3.25,
+     "w": 4.8,
+     "h": 0.45,
+     "out": 1.3,
+     "slot": "awning"
+    }
+   ],
+   "at": [
+    12.35,
+    -38.33
+   ],
+   "turn": -90
+  },
+  {
+   "id": "b24",
+   "style": "shotengai",
+   "w": 6.5,
+   "d": 12,
+   "floors": 3,
+   "gh": 3.4,
+   "fh": 2.8,
+   "seed": 468261,
+   "look": {
+    "wall": "#d9d6cf",
+    "wall2": "#4b4844"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ground": "shop",
+     "groundSlot": "wall2",
+     "lit": 0.4,
+     "closed": false
+    },
+    "back": {
+     "win": "punched"
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 15,
+    "over": 0.3,
+    "ridge": "x"
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 3.65,
+     "w": 5.9,
+     "h": 0.9,
+     "text": "BAR 9",
+     "fg": "#ffffff",
+     "bg": "#7b2d8f"
+    },
+    {
+     "kind": "awning",
+     "x": 0,
+     "z": 3.25,
+     "w": 6.3,
+     "h": 0.45,
+     "out": 1.3,
+     "slot": "metal"
+    }
+   ],
+   "at": [
+    12.6,
+    -32.56
+   ],
+   "turn": -90
+  },
+  {
+   "id": "b25",
+   "style": "shotengai",
+   "w": 6,
+   "d": 11.5,
+   "floors": 2,
+   "gh": 3.4,
+   "fh": 2.8,
+   "seed": 164547,
+   "look": {
+    "wall": "#a8a49c",
+    "wall2": "#4b4844"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ground": "shop",
+     "groundSlot": "wall2",
+     "lit": 0.35000000000000003,
+     "closed": false
+    },
+    "back": {
+     "win": "punched"
+    }
+   },
+   "roof": {
+    "kind": "shed",
+    "pitch": 15,
+    "over": 0.3,
+    "ridge": "x"
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 3.65,
+     "w": 5.4,
+     "h": 0.9,
+     "text": "クリーニング",
+     "fg": "#ffe9a8",
+     "bg": "#1d1d20"
+    },
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 3.15,
+     "w": 6,
+     "h": 0.18,
+     "out": 1.6,
+     "slot": "metal"
+    },
+    {
+     "kind": "vsign",
+     "x": 2.65,
+     "z": 3.7,
+     "h": 4.4,
+     "out": 0.6,
+     "text": "カラオケ",
+     "fg": "#ff5aa5",
+     "bg": "#1c1c22"
+    }
+   ],
+   "at": [
+    12.35,
+    -25.84
+   ],
+   "turn": -90
+  },
+  {
+   "id": "b26",
+   "style": "house",
+   "w": 7.5,
+   "d": 8.5,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 5917,
+   "look": {
+    "wall": "#e8e0cf",
+    "roof": "#4a3f3a"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.5
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 21,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.05,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.15,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ],
+   "at": [
+    10.85,
+    -19.07
+   ],
+   "turn": -90
+  },
+  {
+   "id": "b27",
+   "style": "shop",
+   "w": 7.5,
+   "d": 13.5,
+   "floors": 7,
+   "gh": 4.2,
+   "fh": 3.2,
+   "seed": 554659,
+   "look": {
+    "wall": "#8f8c86",
+    "wall2": "#55524d"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ground": "shop",
+     "bands": true,
+     "lit": 0.45,
+     "groundSlot": "wall2",
+     "sill": 1
+    },
+    "back": {
+     "win": "small"
+    }
+   },
+   "roof": {
+    "kind": "rail",
+    "things": []
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 3.35,
+     "w": 6.9,
+     "h": 0.7,
+     "text": "薬局",
+     "fg": "#ffffff",
+     "bg": "#c8322b"
+    },
+    {
+     "kind": "vsign",
+     "x": 3.4,
+     "z": 5.2,
+     "h": 5.1,
+     "out": 0.7,
+     "text": "質屋",
+     "fg": "#ffe9a8",
+     "bg": "#1d1d20"
+    }
+   ],
+   "at": [
+    13.41,
+    -11.25
+   ],
+   "turn": -90
+  },
+  {
+   "id": "b28",
+   "style": "shotengai",
+   "w": 5.5,
+   "d": 13,
+   "floors": 3,
+   "gh": 3.4,
+   "fh": 2.8,
+   "seed": 916002,
+   "look": {
+    "wall": "#b8b2a6",
+    "wall2": "#4b4844"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ground": "shop",
+     "groundSlot": "wall2",
+     "lit": 0.45,
+     "closed": false
+    },
+    "back": {
+     "win": "punched"
+    }
+   },
+   "roof": {
+    "kind": "shed",
+    "pitch": 15,
+    "over": 0.3,
+    "ridge": "x"
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 3.65,
+     "w": 4.9,
+     "h": 0.9,
+     "text": "ふとん店",
+     "fg": "#ffe9a8",
+     "bg": "#1d1d20"
+    },
+    {
+     "kind": "awning",
+     "x": 0,
+     "z": 3.25,
+     "w": 5.3,
+     "h": 0.45,
+     "out": 1.3,
+     "slot": "metal"
+    },
+    {
+     "kind": "vsign",
+     "x": 2.4,
+     "z": 3.7,
+     "h": 4.7,
+     "out": 0.8,
+     "text": "寿司",
+     "fg": "#ffffff",
+     "bg": "#c8322b"
+    }
+   ],
+   "at": [
+    13.25,
+    -4.73
+   ],
+   "turn": -90
+  },
+  {
+   "id": "b29",
+   "style": "shotengai",
+   "w": 7,
+   "d": 12,
+   "floors": 3,
+   "gh": 3.4,
+   "fh": 2.8,
+   "seed": 458171,
+   "look": {
+    "wall": "#d9d6cf",
+    "wall2": "#4b4844"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ground": "shop",
+     "groundSlot": "wall2",
+     "lit": 0.55,
+     "closed": false
+    },
+    "back": {
+     "win": "punched"
+    }
+   },
+   "roof": {
+    "kind": "shed",
+    "pitch": 15,
+    "over": 0.3,
+    "ridge": "x"
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 3.65,
+     "w": 6.4,
+     "h": 0.9,
+     "text": "ラーメン 一番",
+     "fg": "#1d1d20",
+     "bg": "#f3f1ea"
+    },
+    {
+     "kind": "awning",
+     "x": 0,
+     "z": 3.25,
+     "w": 6.8,
+     "h": 0.45,
+     "out": 1.3,
+     "slot": "metal"
+    },
+    {
+     "kind": "vsign",
+     "x": 3.15,
+     "z": 3.7,
+     "h": 2.6,
+     "out": 0.6,
+     "text": "ラーメン",
+     "fg": "#ff5aa5",
+     "bg": "#1c1c22"
+    }
+   ],
+   "at": [
+    12.6,
+    1.54
+   ],
+   "turn": -90
+  },
+  {
+   "id": "b30",
+   "style": "shotengai",
+   "w": 5.5,
+   "d": 11.5,
+   "floors": 2,
+   "gh": 3.4,
+   "fh": 2.8,
+   "seed": 898513,
+   "look": {
+    "wall": "#efe8da",
+    "wall2": "#4b4844"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ground": "shop",
+     "groundSlot": "wall2",
+     "lit": 0.55,
+     "closed": false
+    },
+    "back": {
+     "win": "punched"
+    }
+   },
+   "roof": {
+    "kind": "shed",
+    "pitch": 15,
+    "over": 0.3,
+    "ridge": "x"
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 3.65,
+     "w": 4.9,
+     "h": 0.9,
+     "text": "やきとり",
+     "fg": "#ffffff",
+     "bg": "#c8322b"
+    },
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 3.15,
+     "w": 5.5,
+     "h": 0.18,
+     "out": 1.6,
+     "slot": "metal"
+    }
+   ],
+   "at": [
+    12.35,
+    7.81
+   ],
+   "turn": -90
+  },
+  {
+   "id": "b31",
+   "style": "shotengai",
+   "w": 8,
+   "d": 9.5,
+   "floors": 2,
+   "gh": 3.4,
+   "fh": 2.8,
+   "seed": 25189,
+   "look": {
+    "wall": "#ddd3bf",
+    "wall2": "#4b4844"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ground": "shop",
+     "groundSlot": "wall2",
+     "lit": 0.55,
+     "closed": false
+    },
+    "back": {
+     "win": "punched"
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 15,
+    "over": 0.3,
+    "ridge": "x"
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 3.65,
+     "w": 7.4,
+     "h": 0.9,
+     "text": "やきとり",
+     "fg": "#ffffff",
+     "bg": "#2d7a46"
+    },
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 3.15,
+     "w": 8,
+     "h": 0.18,
+     "out": 1.6,
+     "slot": "metal"
+    }
+   ],
+   "at": [
+    11.35,
+    23.02
+   ],
+   "turn": -90
+  },
+  {
+   "id": "b32",
+   "style": "shotengai",
+   "w": 6,
+   "d": 11.5,
+   "floors": 2,
+   "gh": 3.4,
+   "fh": 2.8,
+   "seed": 475763,
+   "look": {
+    "wall": "#efe8da",
+    "wall2": "#4b4844"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ground": "shutter",
+     "groundSlot": "wall2",
+     "lit": 0.35000000000000003,
+     "closed": true
+    },
+    "back": {
+     "win": "punched"
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 15,
+    "over": 0.3,
+    "ridge": "x"
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 3.65,
+     "w": 5.4,
+     "h": 0.9,
+     "text": "BAR 9",
+     "fg": "#ff5aa5",
+     "bg": "#1c1c22"
+    },
+    {
+     "kind": "awning",
+     "x": 0,
+     "z": 3.25,
+     "w": 5.8,
+     "h": 0.45,
+     "out": 1.3,
+     "slot": "awning"
+    },
+    {
+     "kind": "vsign",
+     "x": 2.65,
+     "z": 3.7,
+     "h": 3.2,
+     "out": 0.8,
+     "text": "焼肉",
+     "fg": "#ffffff",
+     "bg": "#c8322b"
+    }
+   ],
+   "at": [
+    12.35,
+    30.04
+   ],
+   "turn": -90
+  },
+  {
+   "id": "b33",
+   "style": "shop",
+   "w": 7.5,
+   "d": 10,
+   "floors": 5,
+   "gh": 4.3,
+   "fh": 3.1,
+   "seed": 977423,
+   "look": {
+    "wall": "#b8b2a6",
+    "wall2": "#3a3a3e"
+   },
+   "faces": {
+    "front": {
+     "win": "band",
+     "ground": "shop",
+     "bands": true,
+     "lit": 0.6000000000000001,
+     "groundSlot": "wall2",
+     "sill": 0.8
+    },
+    "back": {
+     "win": "small"
+    }
+   },
+   "roof": {
+    "kind": "rail",
+    "things": []
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 3.45,
+     "w": 6.9,
+     "h": 0.7,
+     "text": "酒",
+     "fg": "#1b1b1d",
+     "bg": "#f2c230"
+    },
+    {
+     "kind": "vsign",
+     "x": -3.4,
+     "z": 5.1,
+     "h": 4.2,
+     "out": 0.8,
+     "text": "カラオケ",
+     "fg": "#ffffff",
+     "bg": "#203a78"
+    }
+   ],
+   "at": [
+    11.6,
+    36.81
+   ],
+   "turn": -90
+  },
+  {
+   "id": "b36",
+   "style": "apartment",
+   "w": 9.5,
+   "d": 10.5,
+   "floors": 5,
+   "gh": 3.1,
+   "fh": 2.9,
+   "seed": 717599,
+   "look": {
+    "wall": "#c9c0ae",
+    "trim": "#ece9e2"
+   },
+   "faces": {
+    "front": {
+     "win": "tall",
+     "cols": 2,
+     "ww": 1.6,
+     "wh": 2,
+     "sill": 0.15,
+     "ground": "door",
+     "door": 0.5,
+     "lit": 0.45
+    },
+    "left": {
+     "win": "small",
+     "cols": 2
+    },
+    "right": {
+     "win": "small",
+     "cols": 2
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "parapet": 0.9,
+    "things": []
+   },
+   "parts": [
+    {
+     "kind": "balcony",
+     "x": -2.37,
+     "w": 4.5,
+     "out": 1.1,
+     "floors": [
+      2,
+      5
+     ],
+     "rail": "solid"
+    },
+    {
+     "kind": "ac",
+     "x": -0.65,
+     "z": 0.05,
+     "out": 0.3,
+     "floors": [
+      2,
+      5
+     ]
+    },
+    {
+     "kind": "balcony",
+     "x": 2.38,
+     "w": 4.5,
+     "out": 1.1,
+     "floors": [
+      2,
+      5
+     ],
+     "rail": "bars"
+    },
+    {
+     "kind": "ac",
+     "x": 4.1,
+     "z": 0.05,
+     "out": 0.3,
+     "floors": [
+      2,
+      5
+     ]
+    }
+   ],
+   "at": [
+    -24.65,
+    -37.35
+   ],
+   "turn": 180
+  },
+  {
+   "id": "b37",
+   "style": "tower",
+   "w": 9.5,
+   "d": 9,
+   "floors": 7,
+   "gh": 3.2,
+   "fh": 2.9,
+   "seed": 51900,
+   "look": {
+    "wall": "#e9e7e1",
+    "wall2": "#b9b4aa"
+   },
+   "faces": {
+    "front": {
+     "win": "small",
+     "cols": 3,
+     "ground": "door",
+     "groundSlot": "wall2",
+     "lit": 0.35
+    },
+    "left": {
+     "win": "small",
+     "cols": 2,
+     "lit": 0.3
+    },
+    "right": {
+     "win": "small",
+     "cols": 2,
+     "lit": 0.3
+    },
+    "back": {
+     "win": "small"
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "parapet": 0.8,
+    "things": [
+     {
+      "kind": "hut",
+      "x": 2.95,
+      "w": 2.4,
+      "d": 2.6,
+      "h": 2.4
+     },
+     {
+      "kind": "antenna",
+      "x": 2.95,
+      "y": 0.6,
+      "h": 2.5
+     },
+     {
+      "kind": "tank",
+      "x": -3.15
+     }
+    ]
+   },
+   "parts": [
+    {
+     "kind": "glassblock",
+     "x": -3.45,
+     "w": 1.2,
+     "h": 16.8,
+     "z": 3.5
+    },
+    {
+     "kind": "window",
+     "x": 2.75,
+     "w": 2.6,
+     "h": 2.2,
+     "z": 0.4,
+     "floors": [
+      4,
+      7
+     ],
+     "lit": false
+    },
+    {
+     "kind": "pipe",
+     "face": "left",
+     "x": -0.9,
+     "h": 20.6
+    }
+   ],
+   "at": [
+    -34.17,
+    -36.6
+   ],
+   "turn": 180
+  },
+  {
+   "id": "b38",
+   "style": "house",
+   "w": 8.5,
+   "d": 8.5,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 944304,
+   "look": {
+    "wall": "#bfb7a4",
+    "roof": "#4a3f3a"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.35000000000000003
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 25,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ],
+   "at": [
+    -43.17,
+    -36.51
+   ],
+   "turn": 180
+  },
+  {
+   "id": "b39",
+   "style": "kiosk",
+   "w": 3,
+   "d": 3.5,
+   "floors": 1,
+   "gh": 2.7,
+   "fh": 2.7,
+   "seed": 103183,
+   "look": {
+    "wall": "#e8e6e0",
+    "roof": "#4a4f57"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.6
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "none"
+    },
+    "back": {
+     "win": "none"
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 22,
+    "over": 0.45
+   },
+   "parts": [
+    {
+     "kind": "block",
+     "x": -0.75,
+     "z": 0.9,
+     "w": 0.6,
+     "h": 0.8,
+     "out": 0.18,
+     "slot": "white"
+    }
+   ],
+   "at": [
+    -48.94,
+    -33.85
+   ],
+   "turn": 180
+  },
+  {
+   "id": "b40",
+   "style": "apartment",
+   "w": 12,
+   "d": 9,
+   "floors": 4,
+   "gh": 3.1,
+   "fh": 2.9,
+   "seed": 456224,
+   "look": {
+    "wall": "#ddd3bf",
+    "trim": "#ece9e2"
+   },
+   "faces": {
+    "front": {
+     "win": "tall",
+     "cols": 3,
+     "ww": 1.6,
+     "wh": 2,
+     "sill": 0.15,
+     "ground": "door",
+     "door": 0.5,
+     "lit": 0.45
+    },
+    "left": {
+     "win": "small",
+     "cols": 2
+    },
+    "right": {
+     "win": "small",
+     "cols": 2
+    },
+    "back": {
+     "win": "punched",
+     "cols": 3
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "parapet": 0.9,
+    "things": []
+   },
+   "parts": [
+    {
+     "kind": "balcony",
+     "x": -4,
+     "w": 3.75,
+     "out": 1.1,
+     "floors": [
+      2,
+      4
+     ],
+     "rail": "bars"
+    },
+    {
+     "kind": "balcony",
+     "x": 0,
+     "w": 3.75,
+     "out": 1.1,
+     "floors": [
+      2,
+      4
+     ],
+     "rail": "bars"
+    },
+    {
+     "kind": "ac",
+     "x": 1.35,
+     "z": 0.05,
+     "out": 0.3,
+     "floors": [
+      2,
+      4
+     ]
+    },
+    {
+     "kind": "balcony",
+     "x": 4,
+     "w": 3.75,
+     "out": 1.1,
+     "floors": [
+      2,
+      4
+     ],
+     "rail": "solid"
+    },
+    {
+     "kind": "ac",
+     "x": 5.35,
+     "z": 0.05,
+     "out": 0.3,
+     "floors": [
+      2,
+      4
+     ]
+    }
+   ],
+   "at": [
+    -56.46,
+    -36.78
+   ],
+   "turn": 180
+  },
+  {
+   "id": "b41",
+   "style": "tower",
+   "w": 8,
+   "d": 10.5,
+   "floors": 9,
+   "gh": 3.2,
+   "fh": 2.9,
+   "seed": 749008,
+   "look": {
+    "wall": "#ecebe6",
+    "wall2": "#b9b4aa"
+   },
+   "faces": {
+    "front": {
+     "win": "small",
+     "cols": 3,
+     "ground": "door",
+     "groundSlot": "wall2",
+     "lit": 0.35
+    },
+    "left": {
+     "win": "small",
+     "cols": 2,
+     "lit": 0.3
+    },
+    "right": {
+     "win": "small",
+     "cols": 2,
+     "lit": 0.3
+    },
+    "back": {
+     "win": "small"
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "parapet": 0.8,
+    "things": [
+     {
+      "kind": "hut",
+      "x": 2.2,
+      "w": 2.4,
+      "d": 2.6,
+      "h": 2.4
+     },
+     {
+      "kind": "antenna",
+      "x": 2.2,
+      "y": 0.6,
+      "h": 2.5
+     },
+     {
+      "kind": "tank",
+      "x": -2.4
+     }
+    ]
+   },
+   "parts": [
+    {
+     "kind": "glassblock",
+     "x": -2.7,
+     "w": 1.2,
+     "h": 22.6,
+     "z": 3.5
+    },
+    {
+     "kind": "window",
+     "x": 2,
+     "w": 2.6,
+     "h": 2.2,
+     "z": 0.4,
+     "floors": [
+      6,
+      9
+     ],
+     "lit": false
+    },
+    {
+     "kind": "pipe",
+     "face": "left",
+     "x": 1.9,
+     "h": 26.4
+    }
+   ],
+   "at": [
+    -66.72,
+    -37.35
+   ],
+   "turn": 180
+  },
+  {
+   "id": "b42",
+   "style": "apartment",
+   "w": 9.08,
+   "d": 9.5,
+   "floors": 5,
+   "gh": 3.1,
+   "fh": 2.9,
+   "seed": 799126,
+   "look": {
+    "wall": "#bfb7a4",
+    "trim": "#ece9e2"
+   },
+   "faces": {
+    "front": {
+     "win": "tall",
+     "cols": 3,
+     "ww": 1.6,
+     "wh": 2,
+     "sill": 0.15,
+     "ground": "door",
+     "door": 0.5,
+     "lit": 0.4
+    },
+    "left": {
+     "win": "small",
+     "cols": 2
+    },
+    "right": {
+     "win": "small",
+     "cols": 2
+    },
+    "back": {
+     "win": "punched",
+     "cols": 3
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "parapet": 0.9,
+    "things": [
+     {
+      "kind": "tank"
+     }
+    ]
+   },
+   "parts": [
+    {
+     "kind": "balcony",
+     "x": -5,
+     "w": 4.75,
+     "out": 1.1,
+     "floors": [
+      2,
+      5
+     ],
+     "rail": "solid"
+    },
+    {
+     "kind": "ac",
+     "x": -3.15,
+     "z": 0.05,
+     "out": 0.3,
+     "floors": [
+      2,
+      5
+     ]
+    },
+    {
+     "kind": "balcony",
+     "x": 0,
+     "w": 4.75,
+     "out": 1.1,
+     "floors": [
+      2,
+      5
+     ],
+     "rail": "bars"
+    },
+    {
+     "kind": "balcony",
+     "x": 5,
+     "w": 4.75,
+     "out": 1.1,
+     "floors": [
+      2,
+      5
+     ],
+     "rail": "solid"
+    },
+    {
+     "kind": "ac",
+     "x": 6.85,
+     "z": 0.05,
+     "out": 0.3,
+     "floors": [
+      2,
+      5
+     ]
+    }
+   ],
+   "at": [
+    -75.26,
+    -36.85
+   ],
+   "turn": 180
+  },
+  {
+   "id": "b43",
+   "style": "house",
+   "w": 7,
+   "d": 7.5,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 105176,
+   "look": {
+    "wall": "#ddd3bf",
+    "roof": "#2f3a46"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.30000000000000004
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 28,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.8,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.9,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ],
+   "at": [
+    -22.4,
+    -24.15
+   ],
+   "turn": 0
+  },
+  {
+   "id": "b44",
+   "style": "house",
+   "w": 7,
+   "d": 9.5,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 73988,
+   "look": {
+    "wall": "#e3dccb",
+    "roof": "#3c3f45"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.30000000000000004
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 24,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.8,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.9,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ],
+   "at": [
+    -29.42,
+    -23.15
+   ],
+   "turn": 0
+  },
+  {
+   "id": "b45",
+   "style": "house",
+   "w": 8,
+   "d": 9.5,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 829914,
+   "look": {
+    "wall": "#e3dccb",
+    "roof": "#3c3f45"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.55
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 28,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ],
+   "at": [
+    -36.94,
+    -23.15
+   ],
+   "turn": 0
+  },
+  {
+   "id": "b46",
+   "style": "apartment",
+   "w": 11,
+   "d": 11,
+   "floors": 6,
+   "gh": 3.1,
+   "fh": 2.9,
+   "seed": 215396,
+   "look": {
+    "wall": "#bfb7a4",
+    "trim": "#ece9e2"
+   },
+   "faces": {
+    "front": {
+     "win": "tall",
+     "cols": 2,
+     "ww": 1.6,
+     "wh": 2,
+     "sill": 0.15,
+     "ground": "door",
+     "door": 0.5,
+     "lit": 0.5
+    },
+    "left": {
+     "win": "small",
+     "cols": 2
+    },
+    "right": {
+     "win": "small",
+     "cols": 2
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "parapet": 0.9,
+    "things": [
+     {
+      "kind": "tank"
+     }
+    ]
+   },
+   "parts": [
+    {
+     "kind": "balcony",
+     "x": -2.75,
+     "w": 5.25,
+     "out": 1.1,
+     "floors": [
+      2,
+      6
+     ],
+     "rail": "solid"
+    },
+    {
+     "kind": "ac",
+     "x": -0.65,
+     "z": 0.05,
+     "out": 0.3,
+     "floors": [
+      2,
+      6
+     ]
+    },
+    {
+     "kind": "balcony",
+     "x": 2.75,
+     "w": 5.25,
+     "out": 1.1,
+     "floors": [
+      2,
+      6
+     ],
+     "rail": "solid"
+    },
+    {
+     "kind": "ac",
+     "x": 4.85,
+     "z": 0.05,
+     "out": 0.3,
+     "floors": [
+      2,
+      6
+     ]
+    }
+   ],
+   "at": [
+    -46.57,
+    -22.18
+   ],
+   "turn": 0
+  },
+  {
+   "id": "b47",
+   "style": "house",
+   "w": 6.5,
+   "d": 7,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 8006,
+   "look": {
+    "wall": "#bfb7a4",
+    "roof": "#4a3f3a"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.30000000000000004
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 26,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ],
+   "at": [
+    -55.79,
+    -24.4
+   ],
+   "turn": 0
+  },
+  {
+   "id": "b48",
+   "style": "house",
+   "w": 8,
+   "d": 9.5,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 587093,
+   "look": {
+    "wall": "#ddd3bf",
+    "roof": "#4a3f3a"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.35000000000000003
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 26,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ],
+   "at": [
+    -63.49,
+    -23.15
+   ],
+   "turn": 0
+  },
+  {
+   "id": "b49",
+   "style": "house",
+   "w": 7.5,
+   "d": 9,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 489533,
+   "look": {
+    "wall": "#c9c0ae",
+    "roof": "#2f3a46"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.5
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 24,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.05,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.15,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ],
+   "at": [
+    -71.26,
+    -23.13
+   ],
+   "turn": 0
+  },
+  {
+   "id": "b50",
+   "style": "kiosk",
+   "w": 4,
+   "d": 4,
+   "floors": 1,
+   "gh": 2.7,
+   "fh": 2.7,
+   "seed": 284152,
+   "look": {
+    "wall": "#e8e6e0",
+    "roof": "#4a4f57"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.6
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "none"
+    },
+    "back": {
+     "win": "none"
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 22,
+    "over": 0.45
+   },
+   "parts": [
+    {
+     "kind": "block",
+     "x": -1.25,
+     "z": 0.9,
+     "w": 0.6,
+     "h": 0.8,
+     "out": 0.18,
+     "slot": "white"
+    }
+   ],
+   "at": [
+    -77.25,
+    -25.9
+   ],
+   "turn": 0
+  },
+  {
+   "id": "b51",
+   "style": "machiya",
+   "w": 9,
+   "d": 12,
+   "floors": 2,
+   "gh": 2.8,
+   "fh": 2.4,
+   "seed": 631227,
+   "look": {
+    "wall": "#33271e",
+    "trim": "#2a2019",
+    "roof": "#3a3d42",
+    "wall2": "#d8d0bf"
+   },
+   "faces": {
+    "front": {
+     "win": "lattice",
+     "ground": "lattice",
+     "door": 0.4,
+     "lit": 0.35000000000000003,
+     "sill": 0.5,
+     "wh": 1.2
+    },
+    "left": {
+     "win": "none"
+    },
+    "right": {
+     "win": "none"
+    },
+    "back": {
+     "win": "lattice"
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 27,
+    "over": 1
+   },
+   "parts": [
+    {
+     "kind": "eave",
+     "z": 2.95,
+     "out": 1,
+     "h": 0.5
+    },
+    {
+     "kind": "noren",
+     "x": -1.8,
+     "z": 1.55,
+     "w": 1.3
+    }
+   ],
+   "at": [
+    23.4,
+    24.85
+   ],
+   "turn": 0
+  },
+  {
+   "id": "b52",
+   "style": "machiya",
+   "w": 9,
+   "d": 11,
+   "floors": 2,
+   "gh": 2.8,
+   "fh": 2.4,
+   "seed": 792343,
+   "look": {
+    "wall": "#43332a",
+    "trim": "#2a2019",
+    "roof": "#3a3d42",
+    "wall2": "#d8d0bf"
+   },
+   "faces": {
+    "front": {
+     "win": "lattice",
+     "ground": "lattice",
+     "door": 0.35000000000000003,
+     "lit": 0.5,
+     "sill": 0.5,
+     "wh": 1.2
+    },
+    "left": {
+     "win": "none"
+    },
+    "right": {
+     "win": "none"
+    },
+    "back": {
+     "win": "lattice"
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 25,
+    "over": 1
+   },
+   "parts": [
+    {
+     "kind": "eave",
+     "z": 2.95,
+     "out": 1,
+     "h": 0.5
+    },
+    {
+     "kind": "noren",
+     "x": -0.9,
+     "z": 1.55,
+     "w": 1.3
+    }
+   ],
+   "at": [
+    32.42,
+    24.35
+   ],
+   "turn": 0
+  },
+  {
+   "id": "b53",
+   "style": "machiya",
+   "w": 7.5,
+   "d": 13.5,
+   "floors": 2,
+   "gh": 2.8,
+   "fh": 2.4,
+   "seed": 913452,
+   "look": {
+    "wall": "#2c2219",
+    "trim": "#2a2019",
+    "roof": "#3a3d42",
+    "wall2": "#d8d0bf"
+   },
+   "faces": {
+    "front": {
+     "win": "lattice",
+     "ground": "lattice",
+     "door": 0.30000000000000004,
+     "lit": 0.55,
+     "sill": 0.5,
+     "wh": 1.2
+    },
+    "left": {
+     "win": "none"
+    },
+    "right": {
+     "win": "none"
+    },
+    "back": {
+     "win": "lattice"
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 24,
+    "over": 1
+   },
+   "parts": [
+    {
+     "kind": "eave",
+     "z": 2.95,
+     "out": 1,
+     "h": 0.5
+    },
+    {
+     "kind": "lantern",
+     "x": -1.9,
+     "z": 2.2,
+     "out": 0.75
+    },
+    {
+     "kind": "noren",
+     "x": -0.75,
+     "z": 1.55,
+     "w": 1.3
+    }
+   ],
+   "at": [
+    40.69,
+    25.6
+   ],
+   "turn": 0
+  },
+  {
+   "id": "b54",
+   "style": "machiya",
+   "w": 6.5,
+   "d": 11,
+   "floors": 2,
+   "gh": 2.8,
+   "fh": 2.4,
+   "seed": 177271,
+   "look": {
+    "wall": "#3a2c22",
+    "trim": "#2a2019",
+    "roof": "#3a3d42",
+    "wall2": "#d8d0bf"
+   },
+   "faces": {
+    "front": {
+     "win": "lattice",
+     "ground": "lattice",
+     "door": 0.35000000000000003,
+     "lit": 0.6000000000000001,
+     "sill": 0.5,
+     "wh": 1.2
+    },
+    "left": {
+     "win": "none"
+    },
+    "right": {
+     "win": "none"
+    },
+    "back": {
+     "win": "lattice"
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 24,
+    "over": 1
+   },
+   "parts": [
+    {
+     "kind": "eave",
+     "z": 2.95,
+     "out": 1,
+     "h": 0.5
+    }
+   ],
+   "at": [
+    47.71,
+    24.55
+   ],
+   "turn": 0
+  },
+  {
+   "id": "b55",
+   "style": "machiya",
+   "w": 9,
+   "d": 10.5,
+   "floors": 2,
+   "gh": 2.8,
+   "fh": 2.4,
+   "seed": 62554,
+   "look": {
+    "wall": "#43332a",
+    "trim": "#2a2019",
+    "roof": "#3a3d42",
+    "wall2": "#d8d0bf"
+   },
+   "faces": {
+    "front": {
+     "win": "lattice",
+     "ground": "lattice",
+     "door": 0.30000000000000004,
+     "lit": 0.30000000000000004,
+     "sill": 0.5,
+     "wh": 1.2
+    },
+    "left": {
+     "win": "none"
+    },
+    "right": {
+     "win": "none"
+    },
+    "back": {
+     "win": "lattice"
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 28,
+    "over": 1
+   },
+   "parts": [
+    {
+     "kind": "eave",
+     "z": 2.95,
+     "out": 1,
+     "h": 0.5
+    },
+    {
+     "kind": "lantern",
+     "x": 2.1,
+     "z": 2.2,
+     "out": 0.75
+    },
+    {
+     "kind": "noren",
+     "x": -1.8,
+     "z": 1.55,
+     "w": 1.3
+    }
+   ],
+   "at": [
+    55.48,
+    24.1
+   ],
+   "turn": 0
+  },
+  {
+   "id": "b56",
+   "style": "machiya",
+   "w": 9,
+   "d": 13,
+   "floors": 2,
+   "gh": 2.8,
+   "fh": 2.4,
+   "seed": 443778,
+   "look": {
+    "wall": "#33271e",
+    "trim": "#2a2019",
+    "roof": "#3a3d42",
+    "wall2": "#d8d0bf"
+   },
+   "faces": {
+    "front": {
+     "win": "lattice",
+     "ground": "lattice",
+     "door": 0.4,
+     "lit": 0.55,
+     "sill": 0.5,
+     "wh": 1.2
+    },
+    "left": {
+     "win": "none"
+    },
+    "right": {
+     "win": "none"
+    },
+    "back": {
+     "win": "lattice"
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 23,
+    "over": 1
+   },
+   "parts": [
+    {
+     "kind": "eave",
+     "z": 2.95,
+     "out": 1,
+     "h": 0.5
+    },
+    {
+     "kind": "lantern",
+     "x": 1.6,
+     "z": 2.2,
+     "out": 0.75
+    },
+    {
+     "kind": "noren",
+     "x": -0.9,
+     "z": 1.55,
+     "w": 1.3
+    }
+   ],
+   "at": [
+    64.5,
+    25.35
+   ],
+   "turn": 0
+  },
+  {
+   "id": "b57",
+   "style": "machiya",
+   "w": 6.5,
+   "d": 10.5,
+   "floors": 2,
+   "gh": 2.8,
+   "fh": 2.4,
+   "seed": 568099,
+   "look": {
+    "wall": "#3a2c22",
+    "trim": "#2a2019",
+    "roof": "#3a3d42",
+    "wall2": "#d8d0bf"
+   },
+   "faces": {
+    "front": {
+     "win": "lattice",
+     "ground": "lattice",
+     "door": 0.35000000000000003,
+     "lit": 0.65,
+     "sill": 0.5,
+     "wh": 1.2
+    },
+    "left": {
+     "win": "none"
+    },
+    "right": {
+     "win": "none"
+    },
+    "back": {
+     "win": "lattice"
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 24,
+    "over": 1
+   },
+   "parts": [
+    {
+     "kind": "eave",
+     "z": 2.95,
+     "out": 1,
+     "h": 0.5
+    },
+    {
+     "kind": "lantern",
+     "x": -1.5,
+     "z": 2.2,
+     "out": 0.75
+    }
+   ],
+   "at": [
+    72.27,
+    24.39
+   ],
+   "turn": 0
+  },
+  {
+   "id": "b58",
+   "style": "machiya",
+   "w": 7.5,
+   "d": 12,
+   "floors": 2,
+   "gh": 2.8,
+   "fh": 2.4,
+   "seed": 962235,
+   "look": {
+    "wall": "#2c2219",
+    "trim": "#2a2019",
+    "roof": "#3a3d42",
+    "wall2": "#d8d0bf"
+   },
+   "faces": {
+    "front": {
+     "win": "lattice",
+     "ground": "lattice",
+     "door": 0.35000000000000003,
+     "lit": 0.35000000000000003,
+     "sill": 0.5,
+     "wh": 1.2
+    },
+    "left": {
+     "win": "none"
+    },
+    "right": {
+     "win": "none"
+    },
+    "back": {
+     "win": "lattice"
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 24,
+    "over": 1
+   },
+   "parts": [
+    {
+     "kind": "eave",
+     "z": 2.95,
+     "out": 1,
+     "h": 0.5
+    }
+   ],
+   "at": [
+    79.29,
+    25
+   ],
+   "turn": 0
+  },
+  {
+   "id": "b59",
+   "style": "machiya",
+   "w": 6.74,
+   "d": 11.5,
+   "floors": 2,
+   "gh": 2.8,
+   "fh": 2.4,
+   "seed": 483505,
+   "look": {
+    "wall": "#2c2219",
+    "trim": "#2a2019",
+    "roof": "#3a3d42",
+    "wall2": "#d8d0bf"
+   },
+   "faces": {
+    "front": {
+     "win": "lattice",
+     "ground": "lattice",
+     "door": 0.4,
+     "lit": 0.6000000000000001,
+     "sill": 0.5,
+     "wh": 1.2
+    },
+    "left": {
+     "win": "none"
+    },
+    "right": {
+     "win": "none"
+    },
+    "back": {
+     "win": "lattice"
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 25,
+    "over": 1
+   },
+   "parts": [
+    {
+     "kind": "eave",
+     "z": 2.95,
+     "out": 1,
+     "h": 0.5
+    },
+    {
+     "kind": "lantern",
+     "x": -0.4,
+     "z": 2.2,
+     "out": 0.75
+    },
+    {
+     "kind": "noren",
+     "x": -1.5,
+     "z": 1.55,
+     "w": 1.3
+    }
+   ],
+   "at": [
+    86.43,
+    24.6
+   ],
+   "turn": 0
+  },
+  {
+   "id": "b60",
+   "style": "machiya",
+   "w": 7,
+   "d": 11,
+   "floors": 2,
+   "gh": 2.8,
+   "fh": 2.4,
+   "seed": 731783,
+   "look": {
+    "wall": "#2c2219",
+    "trim": "#2a2019",
+    "roof": "#3a3d42",
+    "wall2": "#d8d0bf"
+   },
+   "faces": {
+    "front": {
+     "win": "lattice",
+     "ground": "lattice",
+     "door": 0.30000000000000004,
+     "lit": 0.45,
+     "sill": 0.5,
+     "wh": 1.2
+    },
+    "left": {
+     "win": "none"
+    },
+    "right": {
+     "win": "none"
+    },
+    "back": {
+     "win": "lattice"
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 27,
+    "over": 1
+   },
+   "parts": [
+    {
+     "kind": "eave",
+     "z": 2.95,
+     "out": 1,
+     "h": 0.5
+    }
+   ],
+   "at": [
+    22.4,
+    5.65
+   ],
+   "turn": -180
+  },
+  {
+   "id": "b61",
+   "style": "machiya",
+   "w": 6.5,
+   "d": 13.5,
+   "floors": 2,
+   "gh": 2.8,
+   "fh": 2.4,
+   "seed": 994220,
+   "look": {
+    "wall": "#2c2219",
+    "trim": "#2a2019",
+    "roof": "#3a3d42",
+    "wall2": "#d8d0bf"
+   },
+   "faces": {
+    "front": {
+     "win": "lattice",
+     "ground": "lattice",
+     "door": 0.35000000000000003,
+     "lit": 0.6000000000000001,
+     "sill": 0.5,
+     "wh": 1.2
+    },
+    "left": {
+     "win": "none"
+    },
+    "right": {
+     "win": "none"
+    },
+    "back": {
+     "win": "lattice"
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 23,
+    "over": 1
+   },
+   "parts": [
+    {
+     "kind": "eave",
+     "z": 2.95,
+     "out": 1,
+     "h": 0.5
+    }
+   ],
+   "at": [
+    29.17,
+    4.4
+   ],
+   "turn": -180
+  },
+  {
+   "id": "b62",
+   "style": "machiya",
+   "w": 8.5,
+   "d": 10.5,
+   "floors": 2,
+   "gh": 2.8,
+   "fh": 2.4,
+   "seed": 607741,
+   "look": {
+    "wall": "#3a2c22",
+    "trim": "#2a2019",
+    "roof": "#3a3d42",
+    "wall2": "#d8d0bf"
+   },
+   "faces": {
+    "front": {
+     "win": "lattice",
+     "ground": "lattice",
+     "door": 0.30000000000000004,
+     "lit": 0.55,
+     "sill": 0.5,
+     "wh": 1.2
+    },
+    "left": {
+     "win": "none"
+    },
+    "right": {
+     "win": "none"
+    },
+    "back": {
+     "win": "lattice"
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 26,
+    "over": 1
+   },
+   "parts": [
+    {
+     "kind": "eave",
+     "z": 2.95,
+     "out": 1,
+     "h": 0.5
+    },
+    {
+     "kind": "lantern",
+     "x": -0.8,
+     "z": 2.2,
+     "out": 0.75
+    },
+    {
+     "kind": "noren",
+     "x": -1.7,
+     "z": 1.55,
+     "w": 1.3
+    }
+   ],
+   "at": [
+    36.69,
+    5.9
+   ],
+   "turn": -180
+  },
+  {
+   "id": "b63",
+   "style": "machiya",
+   "w": 6.5,
+   "d": 10.5,
+   "floors": 2,
+   "gh": 2.8,
+   "fh": 2.4,
+   "seed": 267633,
+   "look": {
+    "wall": "#33271e",
+    "trim": "#2a2019",
+    "roof": "#3a3d42",
+    "wall2": "#d8d0bf"
+   },
+   "faces": {
+    "front": {
+     "win": "lattice",
+     "ground": "lattice",
+     "door": 0.35000000000000003,
+     "lit": 0.55,
+     "sill": 0.5,
+     "wh": 1.2
+    },
+    "left": {
+     "win": "none"
+    },
+    "right": {
+     "win": "none"
+    },
+    "back": {
+     "win": "lattice"
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 25,
+    "over": 1
+   },
+   "parts": [
+    {
+     "kind": "eave",
+     "z": 2.95,
+     "out": 1,
+     "h": 0.5
+    }
+   ],
+   "at": [
+    44.21,
+    5.9
+   ],
+   "turn": -180
+  },
+  {
+   "id": "b64",
+   "style": "machiya",
+   "w": 9,
+   "d": 11.5,
+   "floors": 2,
+   "gh": 2.8,
+   "fh": 2.4,
+   "seed": 416130,
+   "look": {
+    "wall": "#3a2c22",
+    "trim": "#2a2019",
+    "roof": "#3a3d42",
+    "wall2": "#d8d0bf"
+   },
+   "faces": {
+    "front": {
+     "win": "lattice",
+     "ground": "lattice",
+     "door": 0.35000000000000003,
+     "lit": 0.30000000000000004,
+     "sill": 0.5,
+     "wh": 1.2
+    },
+    "left": {
+     "win": "none"
+    },
+    "right": {
+     "win": "none"
+    },
+    "back": {
+     "win": "lattice"
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 24,
+    "over": 1
+   },
+   "parts": [
+    {
+     "kind": "eave",
+     "z": 2.95,
+     "out": 1,
+     "h": 0.5
+    },
+    {
+     "kind": "lantern",
+     "x": -1.1,
+     "z": 2.2,
+     "out": 0.75
+    }
+   ],
+   "at": [
+    51.98,
+    5.4
+   ],
+   "turn": -180
+  },
+  {
+   "id": "b65",
+   "style": "machiya",
+   "w": 7.5,
+   "d": 13.5,
+   "floors": 2,
+   "gh": 2.8,
+   "fh": 2.4,
+   "seed": 325150,
+   "look": {
+    "wall": "#43332a",
+    "trim": "#2a2019",
+    "roof": "#3a3d42",
+    "wall2": "#d8d0bf"
+   },
+   "faces": {
+    "front": {
+     "win": "lattice",
+     "ground": "lattice",
+     "door": 0.35000000000000003,
+     "lit": 0.55,
+     "sill": 0.5,
+     "wh": 1.2
+    },
+    "left": {
+     "win": "none"
+    },
+    "right": {
+     "win": "none"
+    },
+    "back": {
+     "win": "lattice"
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 22,
+    "over": 1
+   },
+   "parts": [
+    {
+     "kind": "eave",
+     "z": 2.95,
+     "out": 1,
+     "h": 0.5
+    }
+   ],
+   "at": [
+    60.25,
+    4.4
+   ],
+   "turn": -180
+  },
+  {
+   "id": "b66",
+   "style": "machiya",
+   "w": 8,
+   "d": 11.5,
+   "floors": 2,
+   "gh": 2.8,
+   "fh": 2.4,
+   "seed": 775404,
+   "look": {
+    "wall": "#2c2219",
+    "trim": "#2a2019",
+    "roof": "#3a3d42",
+    "wall2": "#d8d0bf"
+   },
+   "faces": {
+    "front": {
+     "win": "lattice",
+     "ground": "lattice",
+     "door": 0.35000000000000003,
+     "lit": 0.4,
+     "sill": 0.5,
+     "wh": 1.2
+    },
+    "left": {
+     "win": "none"
+    },
+    "right": {
+     "win": "none"
+    },
+    "back": {
+     "win": "lattice"
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 23,
+    "over": 1
+   },
+   "parts": [
+    {
+     "kind": "eave",
+     "z": 2.95,
+     "out": 1,
+     "h": 0.5
+    }
+   ],
+   "at": [
+    68.06,
+    5.22
+   ],
+   "turn": -180
+  },
+  {
+   "id": "b67",
+   "style": "machiya",
+   "w": 8.5,
+   "d": 10.5,
+   "floors": 2,
+   "gh": 2.8,
+   "fh": 2.4,
+   "seed": 175881,
+   "look": {
+    "wall": "#3a2c22",
+    "trim": "#2a2019",
+    "roof": "#3a3d42",
+    "wall2": "#d8d0bf"
+   },
+   "faces": {
+    "front": {
+     "win": "lattice",
+     "ground": "lattice",
+     "door": 0.25,
+     "lit": 0.5,
+     "sill": 0.5,
+     "wh": 1.2
+    },
+    "left": {
+     "win": "none"
+    },
+    "right": {
+     "win": "none"
+    },
+    "back": {
+     "win": "lattice"
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 25,
+    "over": 1
+   },
+   "parts": [
+    {
+     "kind": "eave",
+     "z": 2.95,
+     "out": 1,
+     "h": 0.5
+    },
+    {
+     "kind": "noren",
+     "x": -1.7,
+     "z": 1.55,
+     "w": 1.3
+    }
+   ],
+   "at": [
+    76.33,
+    5.9
+   ],
+   "turn": -180
+  },
+  {
+   "id": "b68",
+   "style": "machiya",
+   "w": 9.2,
+   "d": 13,
+   "floors": 2,
+   "gh": 2.8,
+   "fh": 2.4,
+   "seed": 396028,
+   "look": {
+    "wall": "#43332a",
+    "trim": "#2a2019",
+    "roof": "#3a3d42",
+    "wall2": "#d8d0bf"
+   },
+   "faces": {
+    "front": {
+     "win": "lattice",
+     "ground": "lattice",
+     "door": 0.35000000000000003,
+     "lit": 0.55,
+     "sill": 0.5,
+     "wh": 1.2
+    },
+    "left": {
+     "win": "none"
+    },
+    "right": {
+     "win": "none"
+    },
+    "back": {
+     "win": "lattice"
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 28,
+    "over": 1
+   },
+   "parts": [
+    {
+     "kind": "eave",
+     "z": 2.95,
+     "out": 1,
+     "h": 0.5
+    }
+   ],
+   "at": [
+    85.2,
+    4.33
+   ],
+   "turn": -180
+  },
+  {
+   "id": "b69",
+   "style": "danchi",
+   "w": 18,
+   "d": 10,
+   "floors": 5,
+   "gh": 3.3,
+   "fh": 2.8,
+   "seed": 892080,
+   "look": {
+    "wall": "#bdb6a8",
+    "concrete": "#7b776f"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "cols": 6,
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "shutter",
+     "lit": 0.4,
+     "bands": true
+    },
+    "left": {
+     "win": "small",
+     "cols": 1,
+     "lit": 0.1
+    },
+    "right": {
+     "win": "none"
+    },
+    "back": {
+     "win": "punched",
+     "cols": 6
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "parapet": 0.7,
+    "things": [
+     {
+      "kind": "tank",
+      "x": 7
+     }
+    ]
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 3.2,
+     "w": 18.6,
+     "h": 0.45,
+     "out": 2.2
+    },
+    {
+     "kind": "pipe",
+     "x": 8.6,
+     "h": 14.5
+    },
+    {
+     "kind": "pipe",
+     "x": -3,
+     "h": 14.5,
+     "z": 0
+    },
+    {
+     "kind": "stairs",
+     "face": "left",
+     "w": 6,
+     "h": 3.3,
+     "out": 1.2,
+     "dir": 1
+    }
+   ],
+   "at": [
+    -70.7,
+    71.61
+   ],
+   "turn": 0
+  },
+  {
+   "id": "b70",
+   "style": "danchi",
+   "w": 18,
+   "d": 11,
+   "floors": 4,
+   "gh": 3.3,
+   "fh": 2.8,
+   "seed": 693602,
+   "look": {
+    "wall": "#c4bdb0",
+    "concrete": "#7b776f"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "cols": 6,
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "shutter",
+     "lit": 0.03,
+     "bands": true
+    },
+    "left": {
+     "win": "small",
+     "cols": 1,
+     "lit": 0.1
+    },
+    "right": {
+     "win": "none"
+    },
+    "back": {
+     "win": "punched",
+     "cols": 6
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "parapet": 0.7,
+    "things": [
+     {
+      "kind": "tank",
+      "x": 7
+     }
+    ]
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 3.2,
+     "w": 18.6,
+     "h": 0.45,
+     "out": 2.2
+    },
+    {
+     "kind": "pipe",
+     "x": 8.6,
+     "h": 11.7
+    },
+    {
+     "kind": "pipe",
+     "x": -3,
+     "h": 11.7,
+     "z": 0
+    },
+    {
+     "kind": "stairs",
+     "face": "left",
+     "w": 6,
+     "h": 3.3,
+     "out": 1.2,
+     "dir": 1
+    }
+   ],
+   "at": [
+    -52.38,
+    72.1
+   ],
+   "turn": 0
+  },
+  {
+   "id": "b71",
+   "style": "danchi",
+   "w": 15,
+   "d": 9.5,
+   "floors": 5,
+   "gh": 3.3,
+   "fh": 2.8,
+   "seed": 859294,
+   "look": {
+    "wall": "#a9a397",
+    "concrete": "#7b776f"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "cols": 5,
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "shutter",
+     "lit": 0.03,
+     "bands": true
+    },
+    "left": {
+     "win": "small",
+     "cols": 1,
+     "lit": 0.1
+    },
+    "right": {
+     "win": "none"
+    },
+    "back": {
+     "win": "punched",
+     "cols": 5
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "parapet": 0.7,
+    "things": [
+     {
+      "kind": "tank",
+      "x": 5.5
+     }
+    ]
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 3.2,
+     "w": 15.6,
+     "h": 0.45,
+     "out": 2.2
+    },
+    {
+     "kind": "pipe",
+     "x": 7.1,
+     "h": 14.5
+    },
+    {
+     "kind": "pipe",
+     "x": -2.5,
+     "h": 14.5,
+     "z": 0
+    },
+    {
+     "kind": "stairs",
+     "face": "left",
+     "w": 6,
+     "h": 3.3,
+     "out": 1.2,
+     "dir": 1
+    }
+   ],
+   "at": [
+    -35.86,
+    71.67
+   ],
+   "turn": 0
+  },
+  {
+   "id": "b72",
+   "style": "danchi",
+   "w": 18,
+   "d": 9,
+   "floors": 4,
+   "gh": 3.3,
+   "fh": 2.8,
+   "seed": 664120,
+   "look": {
+    "wall": "#c4bdb0",
+    "concrete": "#7b776f"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "cols": 6,
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "shutter",
+     "lit": 0.4,
+     "bands": true
+    },
+    "left": {
+     "win": "small",
+     "cols": 1,
+     "lit": 0.1
+    },
+    "right": {
+     "win": "none"
+    },
+    "back": {
+     "win": "punched",
+     "cols": 6
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "parapet": 0.7,
+    "things": [
+     {
+      "kind": "tank",
+      "x": 7
+     }
+    ]
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 3.2,
+     "w": 18.6,
+     "h": 0.45,
+     "out": 2.2
+    },
+    {
+     "kind": "pipe",
+     "x": 8.6,
+     "h": 11.7
+    },
+    {
+     "kind": "pipe",
+     "x": -3,
+     "h": 11.7,
+     "z": 0
+    },
+    {
+     "kind": "stairs",
+     "face": "left",
+     "w": 6,
+     "h": 3.3,
+     "out": 1.2,
+     "dir": 1
+    }
+   ],
+   "at": [
+    -19.34,
+    71.12
+   ],
+   "turn": 0
+  },
+  {
+   "id": "b73",
+   "style": "house",
+   "w": 8.5,
+   "d": 8.5,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 962405,
+   "look": {
+    "wall": "#c9c0ae",
+    "roof": "#2f3a46"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 26,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ],
+   "at": [
+    -5.92,
+    71.08
+   ],
+   "turn": 0
+  },
+  {
+   "id": "b74",
+   "style": "danchi",
+   "w": 15,
+   "d": 10.5,
+   "floors": 5,
+   "gh": 3.3,
+   "fh": 2.8,
+   "seed": 172216,
+   "look": {
+    "wall": "#a9a397",
+    "concrete": "#7b776f"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "cols": 5,
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "shutter",
+     "lit": 0.4,
+     "bands": true
+    },
+    "left": {
+     "win": "small",
+     "cols": 1,
+     "lit": 0.1
+    },
+    "right": {
+     "win": "none"
+    },
+    "back": {
+     "win": "punched",
+     "cols": 5
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "parapet": 0.7,
+    "things": [
+     {
+      "kind": "tank",
+      "x": 5.5
+     }
+    ]
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 3.2,
+     "w": 15.6,
+     "h": 0.45,
+     "out": 2.2
+    },
+    {
+     "kind": "pipe",
+     "x": 7.1,
+     "h": 14.5
+    },
+    {
+     "kind": "pipe",
+     "x": -2.5,
+     "h": 14.5,
+     "z": 0
+    },
+    {
+     "kind": "stairs",
+     "face": "left",
+     "w": 6,
+     "h": 3.3,
+     "out": 1.2,
+     "dir": 1
+    }
+   ],
+   "at": [
+    5.85,
+    71.89
+   ],
+   "turn": 0
+  },
+  {
+   "id": "b75",
+   "style": "danchi",
+   "w": 20,
+   "d": 11,
+   "floors": 4,
+   "gh": 3.3,
+   "fh": 2.8,
+   "seed": 979329,
+   "look": {
+    "wall": "#a9a397",
+    "concrete": "#7b776f"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "cols": 6,
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "shutter",
+     "lit": 0.03,
+     "bands": true
+    },
+    "left": {
+     "win": "small",
+     "cols": 1,
+     "lit": 0.1
+    },
+    "right": {
+     "win": "none"
+    },
+    "back": {
+     "win": "punched",
+     "cols": 6
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "parapet": 0.7,
+    "things": [
+     {
+      "kind": "tank",
+      "x": 8
+     }
+    ]
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 3.2,
+     "w": 20.6,
+     "h": 0.45,
+     "out": 2.2
+    },
+    {
+     "kind": "pipe",
+     "x": 9.6,
+     "h": 11.7
+    },
+    {
+     "kind": "pipe",
+     "x": -3.33,
+     "h": 11.7,
+     "z": 0
+    },
+    {
+     "kind": "stairs",
+     "face": "left",
+     "w": 6,
+     "h": 3.3,
+     "out": 1.2,
+     "dir": 1
+    }
+   ],
+   "at": [
+    23.37,
+    72.1
+   ],
+   "turn": 0
+  },
+  {
+   "id": "b76",
+   "style": "house",
+   "w": 8,
+   "d": 8,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 148809,
+   "look": {
+    "wall": "#ddd3bf",
+    "roof": "#3c3f45"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 23,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ],
+   "at": [
+    37.39,
+    70.6
+   ],
+   "turn": 0
+  },
+  {
+   "id": "b77",
+   "style": "house",
+   "w": 7.5,
+   "d": 8.5,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 80245,
+   "look": {
+    "wall": "#e3dccb",
+    "roof": "#4a3f3a"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 23,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.05,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.15,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ],
+   "at": [
+    45.16,
+    70.86
+   ],
+   "turn": 0
+  },
+  {
+   "id": "b78",
+   "style": "shotengai",
+   "w": 6,
+   "d": 10.5,
+   "floors": 3,
+   "gh": 3.4,
+   "fh": 2.8,
+   "seed": 883832,
+   "look": {
+    "wall": "#d6cbb5",
+    "wall2": "#4b4844"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ground": "shop",
+     "groundSlot": "wall2",
+     "lit": 0.4,
+     "closed": false
+    },
+    "back": {
+     "win": "punched"
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 15,
+    "over": 0.3,
+    "ridge": "x"
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 3.65,
+     "w": 5.4,
+     "h": 0.9,
+     "text": "酒",
+     "fg": "#ffffff",
+     "bg": "#7b2d8f"
+    },
+    {
+     "kind": "awning",
+     "x": 0,
+     "z": 3.25,
+     "w": 5.8,
+     "h": 0.45,
+     "out": 1.3,
+     "slot": "metal"
+    }
+   ],
+   "at": [
+    52.17,
+    71.85
+   ],
+   "turn": 0
+  },
+  {
+   "id": "b79",
+   "style": "shotengai",
+   "w": 4.14,
+   "d": 10.5,
+   "floors": 3,
+   "gh": 3.4,
+   "fh": 2.8,
+   "seed": 731917,
+   "look": {
+    "wall": "#bfb9ae",
+    "wall2": "#4b4844"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ground": "shutter",
+     "groundSlot": "wall2",
+     "lit": 0.55,
+     "closed": true
+    },
+    "back": {
+     "win": "punched"
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 15,
+    "over": 0.3,
+    "ridge": "x"
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 3.65,
+     "w": 5.4,
+     "h": 0.9,
+     "text": "カラオケ館",
+     "fg": "#ffffff",
+     "bg": "#7b2d8f"
+    },
+    {
+     "kind": "awning",
+     "x": 0,
+     "z": 3.25,
+     "w": 5.8,
+     "h": 0.45,
+     "out": 1.3,
+     "slot": "metal"
+    },
+    {
+     "kind": "vsign",
+     "x": 2.65,
+     "z": 3.7,
+     "h": 4.4,
+     "out": 0.8,
+     "text": "中華",
+     "fg": "#1b1b1d",
+     "bg": "#f2c230"
+    }
+   ],
+   "at": [
+    57.73,
+    71.85
+   ],
+   "turn": 0
+  },
+  {
+   "id": "b80",
+   "style": "house",
+   "w": 8,
+   "d": 8.5,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 538138,
+   "look": {
+    "wall": "#ddd3bf",
+    "roof": "#3c3f45"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 21,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ],
+   "at": [
+    -75.7,
+    52.92
+   ],
+   "turn": -180
+  },
+  {
+   "id": "b81",
+   "style": "shotengai",
+   "w": 7,
+   "d": 12,
+   "floors": 3,
+   "gh": 3.4,
+   "fh": 2.8,
+   "seed": 98794,
+   "look": {
+    "wall": "#8f8c86",
+    "wall2": "#4b4844"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ground": "shop",
+     "groundSlot": "wall2",
+     "lit": 0.30000000000000004,
+     "closed": false
+    },
+    "back": {
+     "win": "punched"
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 15,
+    "over": 0.3,
+    "ridge": "x"
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 3.65,
+     "w": 6.4,
+     "h": 0.9,
+     "text": "喫茶 ひかり",
+     "fg": "#ffffff",
+     "bg": "#c8322b"
+    },
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 3.15,
+     "w": 7,
+     "h": 0.18,
+     "out": 1.6,
+     "slot": "metal"
+    }
+   ],
+   "at": [
+    -68.18,
+    51.08
+   ],
+   "turn": -180
+  },
+  {
+   "id": "b82",
+   "style": "shotengai",
+   "w": 7.5,
+   "d": 12.5,
+   "floors": 2,
+   "gh": 3.4,
+   "fh": 2.8,
+   "seed": 893331,
+   "look": {
+    "wall": "#ddd3bf",
+    "wall2": "#4b4844"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ground": "shop",
+     "groundSlot": "wall2",
+     "lit": 0.4,
+     "closed": false
+    },
+    "back": {
+     "win": "punched"
+    }
+   },
+   "roof": {
+    "kind": "shed",
+    "pitch": 15,
+    "over": 0.3,
+    "ridge": "x"
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 3.65,
+     "w": 6.9,
+     "h": 0.9,
+     "text": "電器",
+     "fg": "#ff5aa5",
+     "bg": "#1c1c22"
+    },
+    {
+     "kind": "awning",
+     "x": 0,
+     "z": 3.25,
+     "w": 7.3,
+     "h": 0.45,
+     "out": 1.3,
+     "slot": "awning"
+    },
+    {
+     "kind": "vsign",
+     "x": -3.4,
+     "z": 3.7,
+     "h": 3.7,
+     "out": 0.6,
+     "text": "不動産",
+     "fg": "#1b1b1d",
+     "bg": "#f2c230"
+    }
+   ],
+   "at": [
+    -60.91,
+    51.15
+   ],
+   "turn": -180
+  },
+  {
+   "id": "b83",
+   "style": "house",
+   "w": 7.5,
+   "d": 8,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 573958,
+   "look": {
+    "wall": "#d6cbb5",
+    "roof": "#2f3a46"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 25,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.05,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.15,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ],
+   "at": [
+    -53.39,
+    53.25
+   ],
+   "turn": -180
+  },
+  {
+   "id": "b84",
+   "style": "shotengai",
+   "w": 6.5,
+   "d": 12,
+   "floors": 3,
+   "gh": 3.4,
+   "fh": 2.8,
+   "seed": 418927,
+   "look": {
+    "wall": "#e8e0cf",
+    "wall2": "#4b4844"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ground": "shop",
+     "groundSlot": "wall2",
+     "lit": 0.45,
+     "closed": false
+    },
+    "back": {
+     "win": "punched"
+    }
+   },
+   "roof": {
+    "kind": "shed",
+    "pitch": 15,
+    "over": 0.3,
+    "ridge": "x"
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 3.65,
+     "w": 5.9,
+     "h": 0.9,
+     "text": "やきとり",
+     "fg": "#ffffff",
+     "bg": "#7b2d8f"
+    },
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 3.15,
+     "w": 6.5,
+     "h": 0.18,
+     "out": 1.6,
+     "slot": "metal"
+    }
+   ],
+   "at": [
+    -46.37,
+    51.38
+   ],
+   "turn": -180
+  },
+  {
+   "id": "b85",
+   "style": "danchi",
+   "w": 14,
+   "d": 9.5,
+   "floors": 5,
+   "gh": 3.3,
+   "fh": 2.8,
+   "seed": 856449,
+   "look": {
+    "wall": "#a9a397",
+    "concrete": "#7b776f"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "cols": 4,
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "shutter",
+     "lit": 0.4,
+     "bands": true
+    },
+    "left": {
+     "win": "small",
+     "cols": 1,
+     "lit": 0.1
+    },
+    "right": {
+     "win": "none"
+    },
+    "back": {
+     "win": "punched",
+     "cols": 4
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "parapet": 0.7,
+    "things": [
+     {
+      "kind": "tank",
+      "x": 5
+     }
+    ]
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 3.2,
+     "w": 14.6,
+     "h": 0.45,
+     "out": 2.2
+    },
+    {
+     "kind": "pipe",
+     "x": 6.6,
+     "h": 14.5
+    },
+    {
+     "kind": "pipe",
+     "x": -2.33,
+     "h": 14.5,
+     "z": 0
+    },
+    {
+     "kind": "stairs",
+     "face": "left",
+     "w": 6,
+     "h": 3.3,
+     "out": 1.2,
+     "dir": 1
+    }
+   ],
+   "at": [
+    -36.1,
+    52.65
+   ],
+   "turn": -180
+  },
+  {
+   "id": "b86",
+   "style": "shotengai",
+   "w": 7,
+   "d": 12.5,
+   "floors": 3,
+   "gh": 3.4,
+   "fh": 2.8,
+   "seed": 785508,
+   "look": {
+    "wall": "#c4c7c9",
+    "wall2": "#4b4844"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ground": "shop",
+     "groundSlot": "wall2",
+     "lit": 0.6000000000000001,
+     "closed": false
+    },
+    "back": {
+     "win": "punched"
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 15,
+    "over": 0.3,
+    "ridge": "x"
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 3.65,
+     "w": 6.4,
+     "h": 0.9,
+     "text": "カラオケ館",
+     "fg": "#ff5aa5",
+     "bg": "#1c1c22"
+    },
+    {
+     "kind": "awning",
+     "x": 0,
+     "z": 3.25,
+     "w": 6.8,
+     "h": 0.45,
+     "out": 1.3,
+     "slot": "metal"
+    },
+    {
+     "kind": "vsign",
+     "x": -3.15,
+     "z": 3.7,
+     "h": 5.2,
+     "out": 0.6,
+     "text": "古着",
+     "fg": "#ff5aa5",
+     "bg": "#1c1c22"
+    }
+   ],
+   "at": [
+    -25.58,
+    51.1
+   ],
+   "turn": -180
+  },
+  {
+   "id": "b87",
+   "style": "house",
+   "w": 7,
+   "d": 9.5,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 798021,
+   "look": {
+    "wall": "#e8e0cf",
+    "roof": "#4a3f3a"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 27,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.8,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.9,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ],
+   "at": [
+    -18.51,
+    52.65
+   ],
+   "turn": -180
+  },
+  {
+   "id": "b88",
+   "style": "shotengai",
+   "w": 6,
+   "d": 10.5,
+   "floors": 2,
+   "gh": 3.4,
+   "fh": 2.8,
+   "seed": 602128,
+   "look": {
+    "wall": "#d2cbbf",
+    "wall2": "#4b4844"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ground": "shop",
+     "groundSlot": "wall2",
+     "lit": 0.6000000000000001,
+     "closed": false
+    },
+    "back": {
+     "win": "punched"
+    }
+   },
+   "roof": {
+    "kind": "shed",
+    "pitch": 15,
+    "over": 0.3,
+    "ridge": "x"
+   },
+   "parts": [
+    {
+     "kind": "sign",
+     "x": 0,
+     "z": 3.65,
+     "w": 5.4,
+     "h": 0.9,
+     "text": "Karaoke",
+     "fg": "#ffe9a8",
+     "bg": "#1d1d20"
+    },
+    {
+     "kind": "awning",
+     "x": 0,
+     "z": 3.25,
+     "w": 5.8,
+     "h": 0.45,
+     "out": 1.3,
+     "slot": "awning"
+    }
+   ],
+   "at": [
+    22.01,
+    51.78
+   ],
+   "turn": -180
+  },
+  {
+   "id": "b89",
+   "style": "danchi",
+   "w": 19,
+   "d": 9.5,
+   "floors": 5,
+   "gh": 3.3,
+   "fh": 2.8,
+   "seed": 504425,
+   "look": {
+    "wall": "#c4bdb0",
+    "concrete": "#7b776f"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "cols": 6,
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "shutter",
+     "lit": 0.03,
+     "bands": true
+    },
+    "left": {
+     "win": "small",
+     "cols": 1,
+     "lit": 0.1
+    },
+    "right": {
+     "win": "none"
+    },
+    "back": {
+     "win": "punched",
+     "cols": 6
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "parapet": 0.7,
+    "things": [
+     {
+      "kind": "tank",
+      "x": 7.5
+     }
+    ]
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 3.2,
+     "w": 19.6,
+     "h": 0.45,
+     "out": 2.2
+    },
+    {
+     "kind": "pipe",
+     "x": 9.1,
+     "h": 14.5
+    },
+    {
+     "kind": "pipe",
+     "x": -3.17,
+     "h": 14.5,
+     "z": 0
+    },
+    {
+     "kind": "stairs",
+     "face": "left",
+     "w": 6,
+     "h": 3.3,
+     "out": 1.2,
+     "dir": 1
+    }
+   ],
+   "at": [
+    34.97,
+    52.65
+   ],
+   "turn": -180
+  },
+  {
+   "id": "b90",
+   "style": "danchi",
+   "w": 15.31,
+   "d": 9,
+   "floors": 4,
+   "gh": 3.3,
+   "fh": 2.8,
+   "seed": 679660,
+   "look": {
+    "wall": "#bdb6a8",
+    "concrete": "#7b776f"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "cols": 5,
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "shutter",
+     "lit": 0.03,
+     "bands": true
+    },
+    "left": {
+     "win": "small",
+     "cols": 1,
+     "lit": 0.1
+    },
+    "right": {
+     "win": "none"
+    },
+    "back": {
+     "win": "punched",
+     "cols": 5
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "parapet": 0.7,
+    "things": [
+     {
+      "kind": "tank",
+      "x": 6.5
+     }
+    ]
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 3.2,
+     "w": 17.6,
+     "h": 0.45,
+     "out": 2.2
+    },
+    {
+     "kind": "pipe",
+     "x": 8.1,
+     "h": 11.7
+    },
+    {
+     "kind": "pipe",
+     "x": -2.83,
+     "h": 11.7,
+     "z": 0
+    },
+    {
+     "kind": "stairs",
+     "face": "left",
+     "w": 6,
+     "h": 3.3,
+     "out": 1.2,
+     "dir": 1
+    }
+   ],
+   "at": [
+    52.14,
+    52.9
+   ],
+   "turn": -180
+  },
+  {
+   "id": "white_tower",
+   "style": "tower",
+   "at": [
+    9.9,
+    49.6
+   ],
+   "turn": 90,
+   "w": 10,
+   "d": 9.5,
+   "floors": 8,
+   "gh": 3.2,
+   "fh": 2.9,
+   "seed": 4242,
+   "look": {
+    "wall": "#e9e7e1",
+    "wall2": "#b9b4aa"
+   },
+   "faces": {
+    "front": {
+     "win": "small",
+     "cols": 3,
+     "ground": "door",
+     "groundSlot": "wall2",
+     "lit": 0.35
+    },
+    "left": {
+     "win": "small",
+     "cols": 3,
+     "lit": 0.3
+    },
+    "right": {
+     "win": "small",
+     "cols": 2,
+     "lit": 0.3
+    },
+    "back": {
+     "win": "small"
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "parapet": 0.8,
+    "things": [
+     {
+      "kind": "hut",
+      "x": 3.2,
+      "w": 2.4,
+      "d": 2.6,
+      "h": 2.4
+     },
+     {
+      "kind": "antenna",
+      "x": 3.2,
+      "y": 0.6,
+      "h": 2.5
+     },
+     {
+      "kind": "tank",
+      "x": -3.4
+     }
+    ]
+   },
+   "parts": [
+    {
+     "kind": "glassblock",
+     "x": -3.7,
+     "w": 1.2,
+     "h": 20,
+     "z": 3.5
+    },
+    {
+     "kind": "window",
+     "x": 3,
+     "w": 2.6,
+     "h": 2.2,
+     "z": 0.4,
+     "floors": [
+      5,
+      8
+     ],
+     "lit": false
+    },
+    {
+     "kind": "pipe",
+     "face": "left",
+     "x": 1.5,
+     "h": 23.5
+    }
+   ]
+  }
+ ],
+ "things": [
+  {
+   "id": "lantern1",
+   "kind": "lantern",
+   "at": [
+    -4.4,
+    -65.5
+   ],
+   "turn": 90,
+   "text": "ほんちょう"
+  },
+  {
+   "id": "lantern2",
+   "kind": "lantern",
+   "at": [
+    -4.4,
+    -56.5
+   ],
+   "turn": 90,
+   "text": ""
+  },
+  {
+   "id": "lantern3",
+   "kind": "lantern",
+   "at": [
+    -4.4,
+    -47.5
+   ],
+   "turn": 90,
+   "text": "ほんちょう"
+  },
+  {
+   "id": "lantern4",
+   "kind": "lantern",
+   "at": [
+    -4.4,
+    -38.5
+   ],
+   "turn": 90,
+   "text": ""
+  },
+  {
+   "id": "lantern5",
+   "kind": "lantern",
+   "at": [
+    -4.4,
+    -29.5
+   ],
+   "turn": 90,
+   "text": "ほんちょう"
+  },
+  {
+   "id": "lantern6",
+   "kind": "lantern",
+   "at": [
+    -4.4,
+    -20.5
+   ],
+   "turn": 90,
+   "text": ""
+  },
+  {
+   "id": "lantern7",
+   "kind": "lantern",
+   "at": [
+    -4.4,
+    -11.5
+   ],
+   "turn": 90,
+   "text": "ほんちょう"
+  },
+  {
+   "id": "lantern8",
+   "kind": "lantern",
+   "at": [
+    -4.4,
+    -2.5
+   ],
+   "turn": 90,
+   "text": ""
+  },
+  {
+   "id": "lantern9",
+   "kind": "lantern",
+   "at": [
+    -4.4,
+    6.5
+   ],
+   "turn": 90,
+   "text": "ほんちょう"
+  },
+  {
+   "id": "lantern10",
+   "kind": "lantern",
+   "at": [
+    -4.4,
+    15.5
+   ],
+   "turn": 90,
+   "text": ""
+  },
+  {
+   "id": "lantern11",
+   "kind": "lantern",
+   "at": [
+    -4.4,
+    24.5
+   ],
+   "turn": 90,
+   "text": "ほんちょう"
+  },
+  {
+   "id": "lantern12",
+   "kind": "lantern",
+   "at": [
+    -4.4,
+    33.5
+   ],
+   "turn": 90,
+   "text": ""
+  },
+  {
+   "id": "lantern13",
+   "kind": "lantern",
+   "at": [
+    -4.4,
+    42.5
+   ],
+   "turn": 90,
+   "text": "ほんちょう"
+  },
+  {
+   "id": "lantern14",
+   "kind": "lantern",
+   "at": [
+    -4.4,
+    51.5
+   ],
+   "turn": 90,
+   "text": ""
+  },
+  {
+   "id": "lantern15",
+   "kind": "lantern",
+   "at": [
+    4.4,
+    -61
+   ],
+   "turn": -90,
+   "text": "ほんちょう"
+  },
+  {
+   "id": "lantern16",
+   "kind": "lantern",
+   "at": [
+    4.4,
+    -52
+   ],
+   "turn": -90,
+   "text": ""
+  },
+  {
+   "id": "lantern17",
+   "kind": "lantern",
+   "at": [
+    4.4,
+    -43
+   ],
+   "turn": -90,
+   "text": "ほんちょう"
+  },
+  {
+   "id": "lantern18",
+   "kind": "lantern",
+   "at": [
+    4.4,
+    -34
+   ],
+   "turn": -90,
+   "text": ""
+  },
+  {
+   "id": "lantern19",
+   "kind": "lantern",
+   "at": [
+    4.4,
+    -25
+   ],
+   "turn": -90,
+   "text": "ほんちょう"
+  },
+  {
+   "id": "lantern20",
+   "kind": "lantern",
+   "at": [
+    4.4,
+    -16
+   ],
+   "turn": -90,
+   "text": ""
+  },
+  {
+   "id": "lantern21",
+   "kind": "lantern",
+   "at": [
+    4.4,
+    -7
+   ],
+   "turn": -90,
+   "text": "ほんちょう"
+  },
+  {
+   "id": "lantern22",
+   "kind": "lantern",
+   "at": [
+    4.4,
+    2
+   ],
+   "turn": -90,
+   "text": ""
+  },
+  {
+   "id": "lantern23",
+   "kind": "lantern",
+   "at": [
+    4.4,
+    11
+   ],
+   "turn": -90,
+   "text": "ほんちょう"
+  },
+  {
+   "id": "lantern24",
+   "kind": "lantern",
+   "at": [
+    4.4,
+    20
+   ],
+   "turn": -90,
+   "text": ""
+  },
+  {
+   "id": "lantern25",
+   "kind": "lantern",
+   "at": [
+    4.4,
+    29
+   ],
+   "turn": -90,
+   "text": "ほんちょう"
+  },
+  {
+   "id": "lantern26",
+   "kind": "lantern",
+   "at": [
+    4.4,
+    38
+   ],
+   "turn": -90,
+   "text": ""
+  },
+  {
+   "id": "lantern27",
+   "kind": "lantern",
+   "at": [
+    4.4,
+    47
+   ],
+   "turn": -90,
+   "text": "ほんちょう"
+  },
+  {
+   "id": "pole1",
+   "kind": "pole",
+   "at": [
+    -4.45,
+    -66
+   ],
+   "turn": 180,
+   "trans": false,
+   "to": "pole2"
+  },
+  {
+   "id": "pole2",
+   "kind": "pole",
+   "at": [
+    -4.45,
+    -40
+   ],
+   "turn": 180,
+   "trans": false,
+   "to": "pole3"
+  },
+  {
+   "id": "pole3",
+   "kind": "pole",
+   "at": [
+    -4.45,
+    -14
+   ],
+   "turn": 180,
+   "trans": false,
+   "to": "pole4"
+  },
+  {
+   "id": "pole4",
+   "kind": "pole",
+   "at": [
+    -4.45,
+    12
+   ],
+   "turn": 180,
+   "trans": true,
+   "to": "pole5"
+  },
+  {
+   "id": "pole5",
+   "kind": "pole",
+   "at": [
+    -4.45,
+    38
+   ],
+   "turn": 180,
+   "trans": false
+  },
+  {
+   "id": "vending1",
+   "kind": "vending",
+   "at": [
+    -6.18,
+    -64.15
+   ],
+   "turn": 90
+  },
+  {
+   "id": "bike1",
+   "kind": "bike",
+   "at": [
+    -6.25,
+    -59.02
+   ],
+   "turn": 90
+  },
+  {
+   "id": "vending2",
+   "kind": "vending",
+   "at": [
+    -6.18,
+    -56.39
+   ],
+   "turn": 90
+  },
+  {
+   "id": "vending3",
+   "kind": "vending",
+   "at": [
+    -6.18,
+    -51.65
+   ],
+   "turn": 90
+  },
+  {
+   "id": "bench1",
+   "kind": "bench",
+   "at": [
+    -6.25,
+    -44.9
+   ],
+   "turn": 90
+  },
+  {
+   "id": "pot1",
+   "kind": "pot",
+   "at": [
+    -6.25,
+    -41.8
+   ],
+   "turn": 90
+  },
+  {
+   "id": "pot2",
+   "kind": "pot",
+   "at": [
+    -6.25,
+    -38.89
+   ],
+   "turn": 90
+  },
+  {
+   "id": "pot3",
+   "kind": "pot",
+   "at": [
+    -6.25,
+    -32.79
+   ],
+   "turn": 90
+  },
+  {
+   "id": "vending4",
+   "kind": "vending",
+   "at": [
+    -6.18,
+    -25.09
+   ],
+   "turn": 90
+  },
+  {
+   "id": "vending5",
+   "kind": "vending",
+   "at": [
+    -6.18,
+    -19.22
+   ],
+   "turn": 90
+  },
+  {
+   "id": "bench2",
+   "kind": "bench",
+   "at": [
+    -6.25,
+    -15.51
+   ],
+   "turn": 90
+  },
+  {
+   "id": "pot4",
+   "kind": "pot",
+   "at": [
+    -6.25,
+    -9.95
+   ],
+   "turn": 90
+  },
+  {
+   "id": "vending6",
+   "kind": "vending",
+   "at": [
+    -6.18,
+    -4.39
+   ],
+   "turn": 90
+  },
+  {
+   "id": "pot5",
+   "kind": "pot",
+   "at": [
+    -6.25,
+    -0.21
+   ],
+   "turn": 90
+  },
+  {
+   "id": "bench3",
+   "kind": "bench",
+   "at": [
+    -6.25,
+    7.4
+   ],
+   "turn": 90
+  },
+  {
+   "id": "bike2",
+   "kind": "bike",
+   "at": [
+    -6.25,
+    10.6
+   ],
+   "turn": 90
+  },
+  {
+   "id": "bench4",
+   "kind": "bench",
+   "at": [
+    -6.25,
+    16.28
+   ],
+   "turn": 90
+  },
+  {
+   "id": "vending7",
+   "kind": "vending",
+   "at": [
+    -6.18,
+    20.18
+   ],
+   "turn": 90
+  },
+  {
+   "id": "pot6",
+   "kind": "pot",
+   "at": [
+    -6.25,
+    27.21
+   ],
+   "turn": 90
+  },
+  {
+   "id": "vending8",
+   "kind": "vending",
+   "at": [
+    -6.18,
+    31.42
+   ],
+   "turn": 90
+  },
+  {
+   "id": "vending9",
+   "kind": "vending",
+   "at": [
+    -6.18,
+    34.88
+   ],
+   "turn": 90
+  },
+  {
+   "id": "bench5",
+   "kind": "bench",
+   "at": [
+    -6.25,
+    40.07
+   ],
+   "turn": 90
+  },
+  {
+   "id": "pot7",
+   "kind": "pot",
+   "at": [
+    -6.25,
+    45.85
+   ],
+   "turn": 90
+  },
+  {
+   "id": "pot8",
+   "kind": "pot",
+   "at": [
+    -6.25,
+    51.75
+   ],
+   "turn": 90
+  },
+  {
+   "id": "pot9",
+   "kind": "pot",
+   "at": [
+    6.25,
+    -67.71
+   ],
+   "turn": -90
+  },
+  {
+   "id": "pot10",
+   "kind": "pot",
+   "at": [
+    6.25,
+    -59.71
+   ],
+   "turn": -90
+  },
+  {
+   "id": "crates1",
+   "kind": "crates",
+   "at": [
+    6.25,
+    -55.45
+   ],
+   "turn": -90,
+   "n": 2
+  },
+  {
+   "id": "crates2",
+   "kind": "crates",
+   "at": [
+    6.25,
+    -50.99
+   ],
+   "turn": -90,
+   "n": 3
+  },
+  {
+   "id": "crates3",
+   "kind": "crates",
+   "at": [
+    6.25,
+    -46.66
+   ],
+   "turn": -90,
+   "n": 3
+  },
+  {
+   "id": "pot11",
+   "kind": "pot",
+   "at": [
+    6.25,
+    -43.24
+   ],
+   "turn": -90
+  },
+  {
+   "id": "pot12",
+   "kind": "pot",
+   "at": [
+    6.25,
+    -39.93
+   ],
+   "turn": -90
+  },
+  {
+   "id": "pot13",
+   "kind": "pot",
+   "at": [
+    6.25,
+    -36.56
+   ],
+   "turn": -90
+  },
+  {
+   "id": "pot14",
+   "kind": "pot",
+   "at": [
+    6.25,
+    -29.1
+   ],
+   "turn": -90
+  },
+  {
+   "id": "crates4",
+   "kind": "crates",
+   "at": [
+    6.25,
+    -22.84
+   ],
+   "turn": -90,
+   "n": 3
+  },
+  {
+   "id": "vending10",
+   "kind": "vending",
+   "at": [
+    6.18,
+    -18.83
+   ],
+   "turn": -90
+  },
+  {
+   "id": "pot15",
+   "kind": "pot",
+   "at": [
+    6.25,
+    -11.33
+   ],
+   "turn": -90
+  },
+  {
+   "id": "bike3",
+   "kind": "bike",
+   "at": [
+    6.25,
+    -2.96
+   ],
+   "turn": 90
+  },
+  {
+   "id": "bike4",
+   "kind": "bike",
+   "at": [
+    6.25,
+    5.4
+   ],
+   "turn": 90
+  },
+  {
+   "id": "bike5",
+   "kind": "bike",
+   "at": [
+    6.25,
+    9.73
+   ],
+   "turn": 90
+  },
+  {
+   "id": "crates5",
+   "kind": "crates",
+   "at": [
+    6.25,
+    16.84
+   ],
+   "turn": -90,
+   "n": 2
+  },
+  {
+   "id": "pot16",
+   "kind": "pot",
+   "at": [
+    6.25,
+    20.24
+   ],
+   "turn": -90
+  },
+  {
+   "id": "pot17",
+   "kind": "pot",
+   "at": [
+    6.25,
+    27.02
+   ],
+   "turn": -90
+  },
+  {
+   "id": "crates6",
+   "kind": "crates",
+   "at": [
+    6.25,
+    31.04
+   ],
+   "turn": -90,
+   "n": 2
+  },
+  {
+   "id": "bench6",
+   "kind": "bench",
+   "at": [
+    6.25,
+    39.43
+   ],
+   "turn": -90
+  },
+  {
+   "id": "bike6",
+   "kind": "bike",
+   "at": [
+    6.25,
+    44.83
+   ],
+   "turn": 90
+  },
+  {
+   "id": "bench7",
+   "kind": "bench",
+   "at": [
+    6.25,
+    48.24
+   ],
+   "turn": -90
+  },
+  {
+   "id": "lamp1",
+   "kind": "lamp",
+   "at": [
+    -17.6,
+    -31.8
+   ],
+   "turn": 180
+  },
+  {
+   "id": "lamp2",
+   "kind": "lamp",
+   "at": [
+    -39.6,
+    -31.8
+   ],
+   "turn": 180
+  },
+  {
+   "id": "lamp3",
+   "kind": "lamp",
+   "at": [
+    -61.6,
+    -31.8
+   ],
+   "turn": 180
+  },
+  {
+   "id": "lamp4",
+   "kind": "lamp",
+   "at": [
+    -28.6,
+    -28.2
+   ],
+   "turn": 0
+  },
+  {
+   "id": "lamp5",
+   "kind": "lamp",
+   "at": [
+    -50.6,
+    -28.2
+   ],
+   "turn": 0
+  },
+  {
+   "id": "lamp6",
+   "kind": "lamp",
+   "at": [
+    -72.6,
+    -28.2
+   ],
+   "turn": 0
+  },
+  {
+   "id": "pole6",
+   "kind": "pole",
+   "at": [
+    -10.6,
+    -31.75
+   ],
+   "turn": -90,
+   "trans": false,
+   "to": "pole7"
+  },
+  {
+   "id": "pole7",
+   "kind": "pole",
+   "at": [
+    -36.6,
+    -31.75
+   ],
+   "turn": -90,
+   "trans": false,
+   "to": "pole8"
+  },
+  {
+   "id": "pole8",
+   "kind": "pole",
+   "at": [
+    -62.6,
+    -31.75
+   ],
+   "turn": -90,
+   "trans": false
+  },
+  {
+   "id": "postbox1",
+   "kind": "pot",
+   "at": [
+    -10.73,
+    -31.7
+   ],
+   "turn": 180
+  },
+  {
+   "id": "ac1",
+   "kind": "ac",
+   "at": [
+    -18.69,
+    -31.7
+   ],
+   "turn": 180
+  },
+  {
+   "id": "ac2",
+   "kind": "ac",
+   "at": [
+    -25.31,
+    -31.7
+   ],
+   "turn": 180
+  },
+  {
+   "id": "vending11",
+   "kind": "vending",
+   "at": [
+    -31.34,
+    -31.7
+   ],
+   "turn": 180
+  },
+  {
+   "id": "vending12",
+   "kind": "vending",
+   "at": [
+    -33.89,
+    -31.7
+   ],
+   "turn": 180
+  },
+  {
+   "id": "pot18",
+   "kind": "pot",
+   "at": [
+    -40.72,
+    -31.7
+   ],
+   "turn": 180
+  },
+  {
+   "id": "ac3",
+   "kind": "ac",
+   "at": [
+    -48.04,
+    -31.7
+   ],
+   "turn": 180
+  },
+  {
+   "id": "pot19",
+   "kind": "pot",
+   "at": [
+    -50.87,
+    -31.7
+   ],
+   "turn": 180
+  },
+  {
+   "id": "ac4",
+   "kind": "ac",
+   "at": [
+    -56.82,
+    -31.7
+   ],
+   "turn": 180
+  },
+  {
+   "id": "bike7",
+   "kind": "bike",
+   "at": [
+    -63.62,
+    -31.7
+   ],
+   "turn": 180
+  },
+  {
+   "id": "pot20",
+   "kind": "pot",
+   "at": [
+    -71.04,
+    -31.7
+   ],
+   "turn": 180
+  },
+  {
+   "id": "bike8",
+   "kind": "bike",
+   "at": [
+    -10.26,
+    -28.3
+   ],
+   "turn": 180
+  },
+  {
+   "id": "pot21",
+   "kind": "pot",
+   "at": [
+    -14.93,
+    -28.3
+   ],
+   "turn": 0
+  },
+  {
+   "id": "bike9",
+   "kind": "bike",
+   "at": [
+    -19.52,
+    -28.3
+   ],
+   "turn": 180
+  },
+  {
+   "id": "vending13",
+   "kind": "vending",
+   "at": [
+    -27.5,
+    -28.3
+   ],
+   "turn": 0
+  },
+  {
+   "id": "vending14",
+   "kind": "vending",
+   "at": [
+    -33.2,
+    -28.3
+   ],
+   "turn": 0
+  },
+  {
+   "id": "pot22",
+   "kind": "pot",
+   "at": [
+    -37.73,
+    -28.3
+   ],
+   "turn": 0
+  },
+  {
+   "id": "pot23",
+   "kind": "pot",
+   "at": [
+    -43.43,
+    -28.3
+   ],
+   "turn": 0
+  },
+  {
+   "id": "pot24",
+   "kind": "pot",
+   "at": [
+    -46.65,
+    -28.3
+   ],
+   "turn": 0
+  },
+  {
+   "id": "vending15",
+   "kind": "vending",
+   "at": [
+    -49.32,
+    -28.3
+   ],
+   "turn": 0
+  },
+  {
+   "id": "vending16",
+   "kind": "vending",
+   "at": [
+    -57.07,
+    -28.3
+   ],
+   "turn": 0
+  },
+  {
+   "id": "pot25",
+   "kind": "pot",
+   "at": [
+    -64.36,
+    -28.3
+   ],
+   "turn": 0
+  },
+  {
+   "id": "bike10",
+   "kind": "bike",
+   "at": [
+    -71.61,
+    -28.3
+   ],
+   "turn": 180
+  },
+  {
+   "id": "postbox2",
+   "kind": "crates",
+   "at": [
+    -75.36,
+    -28.3
+   ],
+   "turn": 0,
+   "n": 2
+  },
+  {
+   "id": "postlamp1",
+   "kind": "postlamp",
+   "at": [
+    13.6,
+    18.55
+   ],
+   "turn": 0
+  },
+  {
+   "id": "postlamp2",
+   "kind": "postlamp",
+   "at": [
+    27.6,
+    18.55
+   ],
+   "turn": 0
+  },
+  {
+   "id": "postlamp3",
+   "kind": "postlamp",
+   "at": [
+    41.6,
+    18.55
+   ],
+   "turn": 0
+  },
+  {
+   "id": "postlamp4",
+   "kind": "postlamp",
+   "at": [
+    55.6,
+    18.55
+   ],
+   "turn": 0
+  },
+  {
+   "id": "postlamp5",
+   "kind": "postlamp",
+   "at": [
+    69.6,
+    18.55
+   ],
+   "turn": 0
+  },
+  {
+   "id": "postlamp6",
+   "kind": "postlamp",
+   "at": [
+    83.6,
+    18.55
+   ],
+   "turn": 0
+  },
+  {
+   "id": "postlamp7",
+   "kind": "postlamp",
+   "at": [
+    20.6,
+    11.45
+   ],
+   "turn": -180
+  },
+  {
+   "id": "postlamp8",
+   "kind": "postlamp",
+   "at": [
+    34.6,
+    11.45
+   ],
+   "turn": -180
+  },
+  {
+   "id": "postlamp9",
+   "kind": "postlamp",
+   "at": [
+    48.6,
+    11.45
+   ],
+   "turn": -180
+  },
+  {
+   "id": "postlamp10",
+   "kind": "postlamp",
+   "at": [
+    62.6,
+    11.45
+   ],
+   "turn": -180
+  },
+  {
+   "id": "postlamp11",
+   "kind": "postlamp",
+   "at": [
+    76.6,
+    11.45
+   ],
+   "turn": -180
+  },
+  {
+   "id": "crates7",
+   "kind": "crates",
+   "at": [
+    10,
+    18.5
+   ],
+   "turn": 0,
+   "n": 3
+  },
+  {
+   "id": "postbox3",
+   "kind": "pot",
+   "at": [
+    17.13,
+    18.5
+   ],
+   "turn": 0
+  },
+  {
+   "id": "postbox4",
+   "kind": "crates",
+   "at": [
+    23.39,
+    18.5
+   ],
+   "turn": 0,
+   "n": 2
+  },
+  {
+   "id": "postbox5",
+   "kind": "pot",
+   "at": [
+    27.3,
+    18.5
+   ],
+   "turn": 0
+  },
+  {
+   "id": "postbox6",
+   "kind": "crates",
+   "at": [
+    33.05,
+    18.5
+   ],
+   "turn": 0,
+   "n": 2
+  },
+  {
+   "id": "bench8",
+   "kind": "bench",
+   "at": [
+    38.77,
+    18.5
+   ],
+   "turn": 0
+  },
+  {
+   "id": "postbox7",
+   "kind": "pot",
+   "at": [
+    42.91,
+    18.5
+   ],
+   "turn": 0
+  },
+  {
+   "id": "crates8",
+   "kind": "crates",
+   "at": [
+    47.8,
+    18.5
+   ],
+   "turn": 0,
+   "n": 2
+  },
+  {
+   "id": "crates9",
+   "kind": "crates",
+   "at": [
+    50.94,
+    18.5
+   ],
+   "turn": 0,
+   "n": 3
+  },
+  {
+   "id": "crates10",
+   "kind": "crates",
+   "at": [
+    59.33,
+    18.5
+   ],
+   "turn": 0,
+   "n": 2
+  },
+  {
+   "id": "postbox8",
+   "kind": "crates",
+   "at": [
+    67.37,
+    18.5
+   ],
+   "turn": 0,
+   "n": 2
+  },
+  {
+   "id": "pot26",
+   "kind": "pot",
+   "at": [
+    70.35,
+    18.5
+   ],
+   "turn": 0
+  },
+  {
+   "id": "postbox9",
+   "kind": "pot",
+   "at": [
+    78.47,
+    18.5
+   ],
+   "turn": 0
+  },
+  {
+   "id": "bench9",
+   "kind": "bench",
+   "at": [
+    86.85,
+    18.5
+   ],
+   "turn": 0
+  },
+  {
+   "id": "crates11",
+   "kind": "crates",
+   "at": [
+    9.48,
+    11.5
+   ],
+   "turn": -180,
+   "n": 2
+  },
+  {
+   "id": "pot27",
+   "kind": "pot",
+   "at": [
+    16.78,
+    11.5
+   ],
+   "turn": -180
+  },
+  {
+   "id": "postbox10",
+   "kind": "crates",
+   "at": [
+    21.42,
+    11.5
+   ],
+   "turn": -180,
+   "n": 2
+  },
+  {
+   "id": "crates12",
+   "kind": "crates",
+   "at": [
+    29.85,
+    11.5
+   ],
+   "turn": -180,
+   "n": 1
+  },
+  {
+   "id": "crates13",
+   "kind": "crates",
+   "at": [
+    36.25,
+    11.5
+   ],
+   "turn": -180,
+   "n": 1
+  },
+  {
+   "id": "postbox11",
+   "kind": "pot",
+   "at": [
+    40.91,
+    11.5
+   ],
+   "turn": -180
+  },
+  {
+   "id": "pot28",
+   "kind": "pot",
+   "at": [
+    44.76,
+    11.5
+   ],
+   "turn": -180
+  },
+  {
+   "id": "crates14",
+   "kind": "crates",
+   "at": [
+    52.04,
+    11.5
+   ],
+   "turn": -180,
+   "n": 2
+  },
+  {
+   "id": "crates15",
+   "kind": "crates",
+   "at": [
+    57.1,
+    11.5
+   ],
+   "turn": -180,
+   "n": 2
+  },
+  {
+   "id": "bench10",
+   "kind": "bench",
+   "at": [
+    60.41,
+    11.5
+   ],
+   "turn": -180
+  },
+  {
+   "id": "bench11",
+   "kind": "bench",
+   "at": [
+    65.11,
+    11.5
+   ],
+   "turn": -180
+  },
+  {
+   "id": "postbox12",
+   "kind": "crates",
+   "at": [
+    68.91,
+    11.5
+   ],
+   "turn": -180,
+   "n": 2
+  },
+  {
+   "id": "crates16",
+   "kind": "crates",
+   "at": [
+    71.58,
+    11.5
+   ],
+   "turn": -180,
+   "n": 3
+  },
+  {
+   "id": "pot29",
+   "kind": "pot",
+   "at": [
+    75.59,
+    11.5
+   ],
+   "turn": -180
+  },
+  {
+   "id": "crates17",
+   "kind": "crates",
+   "at": [
+    80.43,
+    11.5
+   ],
+   "turn": -180,
+   "n": 2
+  },
+  {
+   "id": "crates18",
+   "kind": "crates",
+   "at": [
+    87.58,
+    11.5
+   ],
+   "turn": -180,
+   "n": 1
+  },
+  {
+   "id": "lamp7",
+   "kind": "lamp",
+   "at": [
+    -67.5,
+    65.4
+   ],
+   "turn": 0
+  },
+  {
+   "id": "lamp8",
+   "kind": "lamp",
+   "at": [
+    -42.5,
+    65.4
+   ],
+   "turn": 0
+  },
+  {
+   "id": "lamp9",
+   "kind": "lamp",
+   "at": [
+    -17.5,
+    65.4
+   ],
+   "turn": 0
+  },
+  {
+   "id": "lamp10",
+   "kind": "lamp",
+   "at": [
+    7.5,
+    65.4
+   ],
+   "turn": 0
+  },
+  {
+   "id": "lamp11",
+   "kind": "lamp",
+   "at": [
+    32.5,
+    65.4
+   ],
+   "turn": 0
+  },
+  {
+   "id": "lamp12",
+   "kind": "lamp",
+   "at": [
+    57.5,
+    65.4
+   ],
+   "turn": 0
+  },
+  {
+   "id": "lamp13",
+   "kind": "lamp",
+   "at": [
+    -55,
+    58.6
+   ],
+   "turn": -180
+  },
+  {
+   "id": "lamp14",
+   "kind": "lamp",
+   "at": [
+    -30,
+    58.6
+   ],
+   "turn": -180
+  },
+  {
+   "id": "lamp15",
+   "kind": "lamp",
+   "at": [
+    -5,
+    58.6
+   ],
+   "turn": -180
+  },
+  {
+   "id": "lamp16",
+   "kind": "lamp",
+   "at": [
+    20,
+    58.6
+   ],
+   "turn": -180
+  },
+  {
+   "id": "lamp17",
+   "kind": "lamp",
+   "at": [
+    45,
+    58.6
+   ],
+   "turn": -180
+  },
+  {
+   "id": "pole9",
+   "kind": "pole",
+   "at": [
+    -76,
+    65.45
+   ],
+   "turn": 90,
+   "trans": true,
+   "to": "pole10"
+  },
+  {
+   "id": "pole10",
+   "kind": "pole",
+   "at": [
+    -50,
+    65.45
+   ],
+   "turn": 90,
+   "trans": true,
+   "to": "pole11"
+  },
+  {
+   "id": "pole11",
+   "kind": "pole",
+   "at": [
+    -24,
+    65.45
+   ],
+   "turn": 90,
+   "trans": false,
+   "to": "pole12"
+  },
+  {
+   "id": "pole12",
+   "kind": "pole",
+   "at": [
+    2,
+    65.45
+   ],
+   "turn": 90,
+   "trans": true,
+   "to": "pole13"
+  },
+  {
+   "id": "pole13",
+   "kind": "pole",
+   "at": [
+    28,
+    65.45
+   ],
+   "turn": 90,
+   "trans": true,
+   "to": "pole14"
+  },
+  {
+   "id": "pole14",
+   "kind": "pole",
+   "at": [
+    54,
+    65.45
+   ],
+   "turn": 90,
+   "trans": false
+  },
+  {
+   "id": "cone1",
+   "kind": "cone",
+   "at": [
+    -76.83,
+    66.25
+   ],
+   "turn": 0
+  },
+  {
+   "id": "barrier1",
+   "kind": "barrier",
+   "at": [
+    -74.06,
+    66.25
+   ],
+   "turn": 0
+  },
+  {
+   "id": "ac5",
+   "kind": "ac",
+   "at": [
+    -68.69,
+    66.25
+   ],
+   "turn": 0
+  },
+  {
+   "id": "bin1",
+   "kind": "bin",
+   "at": [
+    -65.53,
+    66.25
+   ],
+   "turn": 0
+  },
+  {
+   "id": "cone2",
+   "kind": "cone",
+   "at": [
+    -57.23,
+    66.25
+   ],
+   "turn": 0
+  },
+  {
+   "id": "ac6",
+   "kind": "ac",
+   "at": [
+    -52.72,
+    66.25
+   ],
+   "turn": 0
+  },
+  {
+   "id": "bin2",
+   "kind": "bin",
+   "at": [
+    -47.06,
+    66.25
+   ],
+   "turn": 0
+  },
+  {
+   "id": "bin3",
+   "kind": "bin",
+   "at": [
+    -39.41,
+    66.25
+   ],
+   "turn": 0
+  },
+  {
+   "id": "ac7",
+   "kind": "ac",
+   "at": [
+    -32.23,
+    66.25
+   ],
+   "turn": 0
+  },
+  {
+   "id": "cone3",
+   "kind": "cone",
+   "at": [
+    -24.07,
+    66.25
+   ],
+   "turn": 0
+  },
+  {
+   "id": "ac8",
+   "kind": "ac",
+   "at": [
+    -20.12,
+    66.25
+   ],
+   "turn": 0
+  },
+  {
+   "id": "ac9",
+   "kind": "ac",
+   "at": [
+    -12.6,
+    66.25
+   ],
+   "turn": 0
+  },
+  {
+   "id": "crates19",
+   "kind": "crates",
+   "at": [
+    -7.38,
+    66.25
+   ],
+   "turn": 0,
+   "n": 2
+  },
+  {
+   "id": "crates20",
+   "kind": "crates",
+   "at": [
+    -1.86,
+    66.25
+   ],
+   "turn": 0,
+   "n": 3
+  },
+  {
+   "id": "crates21",
+   "kind": "crates",
+   "at": [
+    0.75,
+    66.25
+   ],
+   "turn": 0,
+   "n": 1
+  },
+  {
+   "id": "crates22",
+   "kind": "crates",
+   "at": [
+    6.87,
+    66.25
+   ],
+   "turn": 0,
+   "n": 2
+  },
+  {
+   "id": "cone4",
+   "kind": "cone",
+   "at": [
+    14.04,
+    66.25
+   ],
+   "turn": 0
+  },
+  {
+   "id": "ac10",
+   "kind": "ac",
+   "at": [
+    21.08,
+    66.25
+   ],
+   "turn": 0
+  },
+  {
+   "id": "barrier2",
+   "kind": "barrier",
+   "at": [
+    24.01,
+    66.25
+   ],
+   "turn": 0
+  },
+  {
+   "id": "cone5",
+   "kind": "cone",
+   "at": [
+    29.19,
+    66.25
+   ],
+   "turn": 0
+  },
+  {
+   "id": "crates23",
+   "kind": "crates",
+   "at": [
+    34.55,
+    66.25
+   ],
+   "turn": 0,
+   "n": 1
+  },
+  {
+   "id": "cone6",
+   "kind": "cone",
+   "at": [
+    41.03,
+    66.25
+   ],
+   "turn": 0
+  },
+  {
+   "id": "bin4",
+   "kind": "bin",
+   "at": [
+    47.22,
+    66.25
+   ],
+   "turn": 0
+  },
+  {
+   "id": "barrier3",
+   "kind": "barrier",
+   "at": [
+    53.72,
+    66.25
+   ],
+   "turn": 0
+  },
+  {
+   "id": "bin5",
+   "kind": "bin",
+   "at": [
+    -75.55,
+    57.75
+   ],
+   "turn": -180
+  },
+  {
+   "id": "ac11",
+   "kind": "ac",
+   "at": [
+    -71.46,
+    57.75
+   ],
+   "turn": -180
+  },
+  {
+   "id": "bin6",
+   "kind": "bin",
+   "at": [
+    -65.33,
+    57.75
+   ],
+   "turn": -180
+  },
+  {
+   "id": "barrier4",
+   "kind": "barrier",
+   "at": [
+    -61.69,
+    57.75
+   ],
+   "turn": -180
+  },
+  {
+   "id": "bin7",
+   "kind": "bin",
+   "at": [
+    -57.65,
+    57.75
+   ],
+   "turn": -180
+  },
+  {
+   "id": "cone7",
+   "kind": "cone",
+   "at": [
+    -49.62,
+    57.75
+   ],
+   "turn": -180
+  },
+  {
+   "id": "ac12",
+   "kind": "ac",
+   "at": [
+    -42.7,
+    57.75
+   ],
+   "turn": -180
+  },
+  {
+   "id": "bin8",
+   "kind": "bin",
+   "at": [
+    -38.42,
+    57.75
+   ],
+   "turn": -180
+  },
+  {
+   "id": "crates24",
+   "kind": "crates",
+   "at": [
+    -30.03,
+    57.75
+   ],
+   "turn": -180,
+   "n": 3
+  },
+  {
+   "id": "crates25",
+   "kind": "crates",
+   "at": [
+    -25.48,
+    57.75
+   ],
+   "turn": -180,
+   "n": 3
+  },
+  {
+   "id": "cone8",
+   "kind": "cone",
+   "at": [
+    -18.8,
+    57.75
+   ],
+   "turn": -180
+  },
+  {
+   "id": "cone9",
+   "kind": "cone",
+   "at": [
+    -15.55,
+    57.75
+   ],
+   "turn": -180
+  },
+  {
+   "id": "ac13",
+   "kind": "ac",
+   "at": [
+    -8.25,
+    57.75
+   ],
+   "turn": -180
+  },
+  {
+   "id": "crates26",
+   "kind": "crates",
+   "at": [
+    0.1,
+    57.75
+   ],
+   "turn": -180,
+   "n": 3
+  },
+  {
+   "id": "cone10",
+   "kind": "cone",
+   "at": [
+    4.17,
+    57.75
+   ],
+   "turn": -180
+  },
+  {
+   "id": "cone11",
+   "kind": "cone",
+   "at": [
+    9.33,
+    57.75
+   ],
+   "turn": -180
+  },
+  {
+   "id": "bin9",
+   "kind": "bin",
+   "at": [
+    13.05,
+    57.75
+   ],
+   "turn": -180
+  },
+  {
+   "id": "cone12",
+   "kind": "cone",
+   "at": [
+    18.89,
+    57.75
+   ],
+   "turn": -180
+  },
+  {
+   "id": "crates27",
+   "kind": "crates",
+   "at": [
+    23.98,
+    57.75
+   ],
+   "turn": -180,
+   "n": 2
+  },
+  {
+   "id": "barrier5",
+   "kind": "barrier",
+   "at": [
+    27.78,
+    57.75
+   ],
+   "turn": -180
+  },
+  {
+   "id": "bin10",
+   "kind": "bin",
+   "at": [
+    33.68,
+    57.75
+   ],
+   "turn": -180
+  },
+  {
+   "id": "barrier6",
+   "kind": "barrier",
+   "at": [
+    40.03,
+    57.75
+   ],
+   "turn": -180
+  },
+  {
+   "id": "cone13",
+   "kind": "cone",
+   "at": [
+    43,
+    57.75
+   ],
+   "turn": -180
+  },
+  {
+   "id": "crates28",
+   "kind": "crates",
+   "at": [
+    47.02,
+    57.75
+   ],
+   "turn": -180,
+   "n": 2
+  },
+  {
+   "id": "bin11",
+   "kind": "bin",
+   "at": [
+    55.48,
+    57.75
+   ],
+   "turn": -180
+  },
+  {
+   "id": "postbox_a",
+   "kind": "postbox",
+   "at": [
+    4.3,
+    4
+   ],
+   "turn": -90
+  },
+  {
+   "id": "van_a",
+   "kind": "car",
+   "style": "van",
+   "at": [
+    2,
+    30
+   ],
+   "turn": 90,
+   "look": {
+    "car": "#e8e6e2"
+   }
+  },
+  {
+   "id": "kei_a",
+   "kind": "car",
+   "style": "kei",
+   "at": [
+    -2,
+    -15
+   ],
+   "turn": -90,
+   "look": {
+    "car": "#7f9bb0"
+   }
+  },
+  {
+   "id": "postbox_b",
+   "kind": "postbox",
+   "at": [
+    40,
+    17.6
+   ],
+   "turn": 180
+  },
+  {
+   "id": "barrier_a",
+   "kind": "barrier",
+   "at": [
+    -30,
+    63.5
+   ],
+   "turn": 0
+  },
+  {
+   "id": "barrier_b",
+   "kind": "barrier",
+   "at": [
+    -26,
+    63.5
+   ],
+   "turn": 0
+  }
+ ],
+ "fences": [
+  {
+   "id": "site",
+   "kind": "panel",
+   "from": [
+    -20,
+    64.9
+   ],
+   "to": [
+    -2,
+    64.9
+   ],
+   "h": 2.4
+  },
+  {
+   "id": "yard_a",
+   "kind": "blockmesh",
+   "from": [
+    -60,
+    -27.8
+   ],
+   "to": [
+    -50,
+    -27.8
+   ]
+  },
+  {
+   "id": "yard_b",
+   "kind": "wood",
+   "from": [
+    -75,
+    -32.2
+   ],
+   "to": [
+    -68,
+    -32.2
+   ]
+  },
+  {
+   "id": "garden",
+   "kind": "bamboo",
+   "from": [
+    70,
+    12.3
+   ],
+   "to": [
+    80,
+    12.3
+   ]
+  }
+ ],
+ "shots": [
+  {
+   "id": "shopping_street",
+   "name": "the shopping street (after the lantern-lamp photo)",
+   "eye": [
+    0.6,
+    -62,
+    1.6
+   ],
+   "look": [
+    0.2,
+    0,
+    3.2
+   ],
+   "vfov": 62,
+   "aspect": [
+    9,
+    16
+   ]
+  },
+  {
+   "id": "quiet_lane",
+   "name": "the quiet lane (after the house-front photo)",
+   "eye": [
+    -20,
+    -31.4,
+    1.6
+   ],
+   "look": [
+    -40,
+    -27.5,
+    1.9
+   ],
+   "vfov": 66,
+   "aspect": [
+    2,
+    3
+   ]
+  },
+  {
+   "id": "post_town",
+   "name": "the old post town at dusk (after the post-town photo)",
+   "eye": [
+    12,
+    14.4,
+    1.6
+   ],
+   "look": [
+    60,
+    15.6,
+    2.4
+   ],
+   "vfov": 62,
+   "aspect": [
+    2,
+    3
+   ]
+  },
+  {
+   "id": "shot_blocks",
+   "name": "the abandoned blocks (after the abandoned-flats photo)",
+   "eye": [
+    -55,
+    61,
+    1.6
+   ],
+   "look": [
+    -30,
+    64.5,
+    3.2
+   ],
+   "vfov": 58,
+   "aspect": [
+    16,
+    9
+   ]
+  },
+  {
+   "id": "shot_white_tower",
+   "name": "the white tower (after the tower photo)",
+   "eye": [
+    -1.5,
+    36,
+    1.5
+   ],
+   "look": [
+    9,
+    49,
+    14
+   ],
+   "vfov": 70,
+   "aspect": [
+    16,
+    9
+   ]
+  }
+ ]
+}
