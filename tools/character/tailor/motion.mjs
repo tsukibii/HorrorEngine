@@ -7,9 +7,11 @@
 //
 //   node tools/character/tailor/motion.mjs --outfit "work uniform" | --designs flats,skirt [--bodies feminine,full_masculine]
 //        [--height 1.62] [--poses rest,idle,walk0,walk0.5,walk1,sit,crouch,kneel,lunge] [--size 260] [--views 0,90,180]
-//        [--zoom 1] [--at -0.05] [--marks] [--out x.png]
+//        [--zoom 1] [--at -0.05] [--marks] [--hide] [--out x.png]
 // walk0 and walk1 are the desk's two strides (walk_a, walk_b), walk0.5 between; rest is the pose the clothes were cut
 // on. --zoom closes in, --at aims that many heights above the hips, --marks shows the cloth under the skin in red.
+// --hide leaves out the skin the opaque clothes hide (TAILOR.md §3d: tailor.js covered), drawn and measured, as the
+// Studio's export does: what's left to come through the cloth.
 //
 // Needs Playwright (npm i playwright, or PLAYWRIGHT=<path to its package>). Prints a line per body and pose (the share
 // of each garment under the skin, %) and ends "MOTION-SHEET <file>".
@@ -29,7 +31,7 @@ const designs = JSON.parse(readFileSync(join(CLOTHES, "designs.json"))).designs,
 const only = arg("designs", null), list = only ? String(only).split(",").map(d => [d]) : outfits[outfit];
 if (!list || list.some(([d]) => !designs[d])) { console.error(`no outfit or design called ${only || outfit}`); process.exit(1); }
 const views = String(arg("views", "0,90,180")).split(",").map(Number), zoom = parseFloat(arg("zoom", 1)), at = parseFloat(arg("at", -0.05));
-const setup = { bodies, list, designs, poses, size, views, zoom, at, marks: process.argv.includes("--marks") };
+const setup = { bodies, list, designs, poses, size, views, zoom, at, marks: process.argv.includes("--marks"), hide: process.argv.includes("--hide") };
 
 const page = `<!doctype html><html><head><style>body{margin:0;background:#20232a}canvas{display:block}</style>
 <script type="importmap">{"imports":{"three":"/three.js"}}</script></head><body>
@@ -103,6 +105,18 @@ try {
       sm.bind(body.skeleton, body.bindMatrix);
       return sm;
     };
+    // --hide: the skin the opaque clothes hide left out of the body (drawn) and of what's measured, as the export does
+    let TT = T, hidden = 0;
+    if (S.hide) {
+      const through = new Set();
+      for (const g of worn) for (const q of g.parts) { const mm = LOOK.mesh(q, g.name, g.look), M = mm.material; if (M.transparent || M.alphaTest > 0 || M.opacity < 1) through.add(g.name); mm.geometry.dispose(); M.dispose(); }
+      const hid = new Uint8Array(NU); for (const g of worn) if (g.cover && !through.has(g.name)) for (let i = 0; i < NU; i++) if (g.cover[i]) hid[i] = 1;
+      const out = (a, b, c) => hid[a] && hid[b] && hid[c], kept = [];
+      for (let t = 0; t < T.length; t += 3) if (!out(T[t], T[t + 1], T[t + 2])) kept.push(T[t], T[t + 1], T[t + 2]); else hidden++;
+      TT = new Uint32Array(kept);
+      const keep = []; for (let t = 0; t < idx.length; t += 3) if (!out(of[idx[t]], of[idx[t + 1]], of[idx[t + 2]])) keep.push(idx[t], idx[t + 1], idx[t + 2]);
+      geo.setIndex(keep);
+    }
     const measured = [];
     for (const g of worn) {
       for (const q of g.parts) { const m = LOOK.mesh(q, g.name, g.look); skinned(m.geometry, m.material, q.P, q.N); }
@@ -113,7 +127,8 @@ try {
     }
     const F = B.F, y0 = B.floor || 0, cm = y => Math.round((y + y0) * 100);   // the frame's heights back in the figure's own space
     say(who.name + ": dressed in " + Math.round(t1 - t0) + " ms, skinned in " + Math.round(performance.now() - t1) + " ms: " + worn.map(g => g.name).join(", ") +
-      " (" + Math.round(F.H * 100) + " cm tall, its soles at " + cm(0) + ", the neck at " + cm(F.neckBaseY) + ", armpits " + cm(F.armpitY) + ", waist " + cm(F.waistY) + ", crotch " + cm(F.crotchY) + ")");
+      " (" + Math.round(F.H * 100) + " cm tall, its soles at " + cm(0) + ", the neck at " + cm(F.neckBaseY) + ", armpits " + cm(F.armpitY) + ", waist " + cm(F.waistY) + ", crotch " + cm(F.crotchY) + ")" +
+      (S.hide ? "; the skin the clothes hide left out: " + hidden + " of " + T.length / 3 + " triangles" : ""));
     const restBones = body.skeleton.bones.map(b => [b.position.clone(), b.quaternion.clone()]);
     for (const [pi, name] of S.poses.entries()) {
       if (name === "rest") body.skeleton.bones.forEach((b, i) => { b.position.copy(restBones[i][0]); b.quaternion.copy(restBones[i][1]); });
@@ -123,7 +138,7 @@ try {
       // from the skin it's under is free, as in tailor/check.mjs)
       const PP = new Float32Array(NU * 3), done = new Uint8Array(NU);
       for (let i = 0; i < n; i++) { const u = of[i]; if (done[u]) continue; done[u] = 1; world(body, i, v); PP[u * 3] = v.x; PP[u * 3 + 1] = v.y; PP[u * 3 + 2] = v.z; }
-      const surf = new Surface(PP, T), hit = {}, h2 = {}, under = {}, marks = [], kk = 0.01 * who.H / 1.726;
+      const surf = new Surface(PP, TT), hit = {}, h2 = {}, under = {}, marks = [], kk = 0.01 * who.H / 1.726;
       for (const g of measured) {
         const np = g.sm.geometry.attributes.position.count; let bad = 0, cnt = 0;
         for (let i = 0; i < np; i += 3) {
@@ -163,7 +178,7 @@ const server = createServer((q, r) => {
   if (url === "/three.js") return send(join(ROOT, "tools", "director", "vendor", "three.module.min.js"), "text/javascript");
   if (url === "/poses.json") return send(join(ROOT, "Content", "Studio", "poses.json"));
   if (url === "/MHR_lod1.fbx") return send(join(ROOT, "Content", "Studio", "Bodies", "MHR_lod1.fbx"));
-  if (/^\/(director|character)\/[\w/.-]+\.js$/.test(url) && !url.includes("..")) return send(join(ROOT, "tools", url));
+  if (/^\/(director|character|shared)\/[\w/.-]+\.js$/.test(url) && !url.includes("..")) return send(join(ROOT, "tools", url));   // (the desk's bodies.js takes ../shared/: without it the page never ran)
   r.writeHead(404); r.end();
 }).listen(0, "127.0.0.1");
 await new Promise(r => server.once("listening", r));
@@ -173,7 +188,7 @@ const browser = await require("../../browser.cjs").launch(chromium);
 const pg = await (await browser.newContext({ viewport: { width: size * poses.length, height: size * 1.5 * views.length * bodies.length } })).newPage();
 const errs = []; let fail; const failed = new Promise(r => { fail = r; });
 pg.on("pageerror", e => { errs.push(e.message); fail(); });
-pg.on("console", m => { if (m.type() === "error") errs.push(m.text()); else if (process.env.VERBOSE) console.log("  page: " + m.text()); });
+pg.on("console", m => { if (m.type() === "error") { errs.push(m.text()); if (/Failed to load|404/.test(m.text())) fail(); } else if (process.env.VERBOSE) console.log("  page: " + m.text()); });
 await pg.goto(`http://127.0.0.1:${server.address().port}/`);
 await Promise.race([pg.waitForFunction(() => window.done, null, { timeout: 1800000 }).catch(e => errs.push(e.message)), failed]);
 const log = await pg.evaluate(() => window.LOG || []);

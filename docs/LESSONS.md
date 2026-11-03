@@ -3,6 +3,21 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## The skin's depth and the clothes in motion (2026-11-03)
+
+- **A check of a subtle effect needs a ceiling as well as a floor:** the skin's depth layer (GODOT_LOOK §5g) was
+  checked only for being there (round the eyes up over 8%, the ear over 15%), so the first numbers passed at 44% and
+  53% and the user saw orange rings round the eyes and a red ear in the game. GDPORTRAIT now fails a glow too (no point
+  warmed more than 25%, the ear 30%). Look at the effect against the layer off in the game's own light, not only at
+  the numbers going the right way.
+- **A shader ramp's first stop is the hue a little of it shows:** HumanShaders' translucency looks up a ramp from
+  black through pure red to orange by the skin's thinness, so thin skin under a lamp from behind (a nostril's rim, the
+  lips' seam) drew pure red lines. Lower its gain, not the lookup: the lookup only slides along the same red.
+- **A test page with its own little server dies silently on a module it can't serve:** `motion.mjs` served only
+  `tools/director` and `tools/character`; once the desk's `bodies.js` imported `../shared/`, the page's module graph
+  never loaded, nothing threw on the page, and the sheet waited its full half hour. It serves `tools/shared/` now and
+  fails at once on a module that won't load.
+
 ## The prop generator's trees (2026-11-02)
 
 - **A bush is leafy to the ground, so its leaves go on every node, stems too:** the first azalea balls floated, a

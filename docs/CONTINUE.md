@@ -11,11 +11,24 @@ the to-do built there, with the Studio's eyes from the side, a small nose and th
 street builder, its paint and the PBR sets, with `prop-gen-tool` merged in; 2026-11-01 the school on
 `claude/laughing-goldberg-6l5of3`, merged, then the prop generator's picture editor on `enhance-prop-editor`; 2026-10-30
 to 2026-11-03 on `Director-Godot`: the Director in Godot, its panel, Story Flow and the animation steps, merged into
-main on 2026-11-03 with main's own work since 2026-10-31 brought in). Read this
+main on 2026-11-03 with main's own work since 2026-10-31 brought in; then the skin's depth softened and the skin under
+clothes hidden on `claude/festive-euler-o7axpl`). Read this
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-03, branch `Director-Godot`): animation steps 1 to 7, the Animate tab, the Face page, moves, On stage, paths, reactions, cutscenes
+## Where it stopped last (2026-11-03, evening, branch `claude/festive-euler-o7axpl` from main): the skin in the game and the clothes in poses
+
+The user, playing main, asked for two fixes (DECISIONS 2026-11-03, evening). **The skin looked uncanny in the game**
+(orange rings round the eyes, the nose and the lips, a red ear): the skin's depth layer is now about a third of its
+first strength and the lamps' light through thin skin at half (GODOT_LOOK §5g, *Toned down*; the sheet
+`docs/godot_sheets/2026-11-03_skin_softer.jpg`); GDPORTRAIT fails a glow now. Nothing to re-export: the look plugin
+carries it, so a game's next export (or the plugin copied into a Director project) has it. **Clothes clipped at the
+elbows in poses:** the Studio's export now leaves out the skin an opaque garment hides (TAILOR §3d), so a character
+needs **exporting again** from the Character Studio for it; the desk's capsules measure the clothes where the skin's
+gone. Worth trying in the user's own game: the same character, re-exported, in the poses that showed it. If cloth
+still crosses cloth (a shirt under a jacket) or the skin near a cuff, that's next (§3d's last line).
+
+## Before that (2026-11-03, branch `Director-Godot`): animation steps 1 to 7, the Animate tab, the Face page, moves, On stage, paths, reactions, cutscenes
 
 The user tried the Animate tab ("tested and works") and asked to go through the plan's steps in order (DECISIONS
 2026-11-03). **Step 2, the Face page, is built** (`tools/facecap`, GODOT_DIRECTOR §6g): the desk's Expressions import

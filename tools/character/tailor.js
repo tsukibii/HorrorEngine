@@ -105,7 +105,28 @@ export function* making(B, name, design, opts = {}) {
     for (const q of [...parts, ...outer]) q.P = raised(q.P, y0);
     for (const h of hs) h.at = [h.at[0], h.at[1] + y0, h.at[2]];
   }
-  return { name, design, look, parts, outer, thickness: th, handles: hs, hung: at, drape: hung && hung.stats, stats: { triangles: tris, vertices: verts, ms: Date.now() - t0 } };
+  const cover = typeof G.V === "function" ? covered(B, G.V) : null;   // (a skirt hangs away from the legs, a shoe's opening shows the foot: neither hides skin)
+  return { name, design, look, parts, outer, thickness: th, handles: hs, hung: at, drape: hung && hung.stats, cover, stats: { triangles: tris, vertices: verts, ms: Date.now() - t0 } };
+}
+
+/** the skin a garment hides (docs/TAILOR.md §3d): the body's points at least COVER.inset inside every one of its edges by
+    its cut's value (metres from a hem, a cuff, a waist, a leg's end), and COVER.open inside a neckline or an opening (seen
+    into from above), one byte a body point; never the feet (`feet` over the ankle: the skin's lowest point stays its
+    soles, which the desk and the checks stand it on). The Studio's export leaves out the skin an opaque garment hides, so
+    a joint bent in play (an elbow, a knee, the hips sitting) can't push it through the cloth: skin whose bend the cloth's
+    smoother weights round a little more (tailor/weights.js) */
+export const COVER = { inset: 0.035, open: 0.06, feet: 0.05 };
+export function covered(B, V) {
+  const P = B.P, n = P.length / 3, s = B.F.s, low = B.F.ankleY + COVER.feet * s, out = new Uint8Array(n);
+  for (let i = 0; i < n; i++) {
+    const x = P[i * 3], y = P[i * 3 + 1], z = P[i * 3 + 2];
+    if (y < low) continue;
+    const v = V(x, y, z);
+    if (!(v >= COVER.inset * s)) continue;
+    if (v < COVER.open * s) { const k = V.which ? V.which(x, y, z)[1] : "open"; if (k === "neck" || k === "open") continue; }   // (a boot's line says no edge: the wider margin)
+    out[i] = 1;
+  }
+  return out;
 }
 /** the cloth under the bands that hold their shape as cut: a neckband, a sleeve's cuff (buttoned or ribbed round the
     wrist: the sleeve blouses above it, never over the hand), a ribbed hem (rib pulls in round the hips), any detail with

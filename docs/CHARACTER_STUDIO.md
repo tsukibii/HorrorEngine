@@ -207,6 +207,11 @@ fingerprint in it, the clothes' lock and order saved, exports in their own folde
 **Export for desk / Unreal** (the header) saves, writes `body.bin`, and writes `People/<name>/export/<name>.glb`: the
 character as it looks, neutral, in metres, Y up, feet on the floor, facing +Z. MHR's skin with the eyes' openings cut
 out as the shader cuts them, the eyeballs, the teeth and the tongue, brows and lashes, the salon's baked hair, the clothes and the accessories.
+**The skin the clothes hide is left out** (DECISIONS 2026-11-03, evening: an elbow came through a knit sleeve in a
+pose): a triangle whose corners are all well inside an opaque garment's edges isn't written (`hiddenUnder`, the
+skin node's extras `underClothes` its count), so a bent elbow or knee has no skin there to come through the cloth;
+the skin near the edges, under see-through clothes and the feet stay (docs/TAILOR.md §3d). The Studio's own view
+keeps the whole body.
 **Rigged** (2026-10-26, so the desk can drive it and Unreal imports a skeletal mesh): MHR's own skeleton
 (`MHR_lod1_rig.bin`'s 127 bones by MHR's names, root `body_world`), each joint where it sits in this body (refitted, as
 the T-pose refits them), the eyes' joints at the eyeballs' middles; the bones unturned, the bind pose MHR's rest pose.
