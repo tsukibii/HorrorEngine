@@ -141,6 +141,10 @@ TOOLS = [
     ("Godot", "A street for a Godot project built by hand (Exports/streets/<street>/: the .glb and its README; the desk running)", "node tools/director/streetexport.mjs --street {ask:Street}", {}),
     ("Godot", "A level (a game's or a set's: set:<name>) for a Godot project built by hand (Exports/interiors/<name>/: the .glb and its README; the desk running)", "node tools/director/levelexport.mjs --game {ask:Game or set:name}", {}),
     ("Godot", "The exports in a fresh Godot project (EXPORTS: an interior, a street and a character dragged in, their colliders, doors, lamps and markers; the desk running)", "tools/godot/exports_check.py", {}),
+    ("Godot", "By hand: a new Godot project for the exports (the Look plugin, HumanShaders, the first game's starter scripts, exports/ folders; guides/godot_by_hand)", "tools/godot_byhand.py new {ask:Folder for the new project}", {}),
+    ("Godot", "By hand: the Look plugin and HumanShaders into a Godot project you have (again after a pull: they're copies)", "tools/godot_byhand.py install {ask:The Godot project's folder}", {}),
+    ("Godot", "By hand: the studio's Exports/ linked into a project's exports/ (a new export is in the project at once)", "tools/godot_byhand.py exports {ask:The Godot project's folder} --link", {}),
+    ("Godot", "The first game, built as guides/first_game says and played through (FIRSTGAME; --pictures draws the by-hand guides' pictures again; the desk running)", "tools/godot/first_game.py", {}),
     ("Godot", "A street imported in Godot and checked: colliders, occluders, lamps, colours (GDSTREET; the desk running)", "tools/godot/street_check.py --street {ask:Street}", {}),
     ("Godot", "A street dressed with the prop generator's trees and bushes along its pavements, pictured in Godot by day and by night (GDDRESS; the desk running, the props made)", "tools/godot/street_dress.py --street {ask:Street}", {}),
 

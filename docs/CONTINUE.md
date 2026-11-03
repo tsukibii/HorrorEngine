@@ -12,11 +12,37 @@ street builder, its paint and the PBR sets, with `prop-gen-tool` merged in; 2026
 `claude/laughing-goldberg-6l5of3`, merged, then the prop generator's picture editor on `enhance-prop-editor`; 2026-10-30
 to 2026-11-03 on `Director-Godot`: the Director in Godot, its panel, Story Flow and the animation steps, merged into
 main on 2026-11-03 with main's own work since 2026-10-31 brought in; then the skin's depth softened and the skin under
-clothes hidden on `claude/festive-euler-o7axpl`). Read this
+clothes hidden on `claude/festive-euler-o7axpl`, the walls meeting, the editors' rules, Export for Godot and the
+by-hand guides). Read this
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-03, later evening, branch `claude/festive-euler-o7axpl` from main): walls meeting
+## Where it stopped last (2026-11-03, night, branch `claude/festive-euler-o7axpl`): rules, exports, guides
+
+The user's three asks (DECISIONS 2026-11-03, night), each a commit:
+
+- **The editors carry the rules** (no existing map edited): the street generator keeps two pieces apart by
+  construction (STREET_BUILDER §5e: the ground under it all, neighbours' parts and roofs half way to each other,
+  pavements meeting once, fences joined at corners, things inset, decals over what's under them); the street page's
+  **Check** lists what's placed in one plane anyway; STREET builds a street of every old clash (35 with the old
+  generator, none now) and warns about the saved streets' placed pairs (the reference town's fences along b41, b42
+  and through b47's door; the school's bike racks: the user's to move, or not). The interiors had their rules already
+  (plan.py's corners, LEVEL), and check_all runs LEVEL on every set now.
+- **Export for Godot** everywhere, into `Exports/` (`interiors/`, `streets/`, `characters/`, a README each): the scene
+  builder's new button (`levelexport.js`), the street page's (was Export .glb), the Character Studio's (was Export for
+  desk / Unreal: its copy gets MHR's face shapes baked). EXPORTS imports them into a fresh Godot project.
+- **The guides**: `guides/godot_by_hand/` (setting up), `guides/look_plugin/` (the Look plugin), `guides/first_game/`
+  (a first game: the Bungalow in the hill motel street, a character, the starter scripts in `guides/first_game/starter/`,
+  a player that steps up). `tools/godot_byhand.py new|install|exports` sets a project up. FIRSTGAME builds the first game
+  as the guide says from the real exports and plays it through; `--pictures` draws the guides' pictures by Godot.
+
+Worth doing with the user: open `guides/first_game/index.html` and follow it on their machine (GPU, the real PBR shelf:
+here the sets' textures aren't baked, so the pictures show the studio's colours); the browser checks STREETPAGE and
+STUDIO touch the changed pages (STREETPAGE passed here but for a 404 that was there before: a PBR set missing from
+this machine's shelf). The Bungalow's garden path stands 45 cm over the street (the set's raise): the starter's player
+steps up it; a ramp in the set would suit a player without a step-up.
+
+## Before that (2026-11-03, later evening): walls meeting
 
 The user's lines down TestRoom001's corridor walls (DECISIONS 2026-11-03, later evening): two rooms' wall faces in
 one plane, z-fighting, where each room's dividing wall met the corridor. Fixed in `plan.py` (the export, the desk)
