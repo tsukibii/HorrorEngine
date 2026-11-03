@@ -1,0 +1,7 @@
+# What the studio's editors export for a Godot project built by hand (storykit/exports.py): made again from the studio's
+# own files, never tracked. Only the READMEs are.
+*
+!.gitignore
+!README.md
+!*/
+!*/README.md

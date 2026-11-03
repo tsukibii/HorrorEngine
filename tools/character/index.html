@@ -76,7 +76,7 @@
   <button id="save" title="The settings into Content/Studio/People/&lt;name&gt;/character.json">Save</button>
   <button id="expBody" title="The whole body, A-pose, metres, Y up, facing +Z: People/&lt;name&gt;/&lt;name&gt;_body.obj">Export body OBJ</button>
   <button id="expHead" title="The head alone, cut at the neck (People/&lt;name&gt;/&lt;name&gt;_head.obj)">Export head OBJ</button>
-  <button id="expPack" title="The character for the desk and Unreal: People/&lt;name&gt;/export/&lt;name&gt;.glb (the body with its openings, eyes, teeth, hair, clothes, accessories, neutral), carrying everything it's made from, so Import brings it back here as it was">Export for desk / Unreal</button>
+  <button id="expPack" title="The character for Godot and the desk: Exports/characters/&lt;name&gt;/&lt;name&gt;.glb to drag into a Godot project you build by hand (MHR's face shapes baked in as blend shapes; its README says how to give it the studio's look), and People/&lt;name&gt;/export/&lt;name&gt;.glb for the desk and the Director (the body with its openings, eyes, teeth, hair, clothes, accessories, neutral), carrying everything it's made from, so Import brings it back here as it was">Export for Godot</button>
   <button id="impPack" title="A character exported from here (its .glb, or its .studio.json) back into the Studio, every setting editable">Import…</button><input id="impFile" type="file" accept=".glb,.json" hidden>
   <button id="pbrShelf" onclick="window.open('pbr.html', '_blank')" title="The PBR sets in assets/pbr (a folder each) on a sphere, a cube, a room corner and a close-up, each map found by its name or chosen by hand: in a new tab">PBR</button>
   <span id="status"></span>
@@ -3709,7 +3709,7 @@ async function exportPackage() {
   if (!WHO) return status("make a character first", "bad");
   if (EDITING) setEditing(false);                      // the clothes as cut and hung, never as lines
   if (/^(cutting|cut|hanging)$/.test(DRAPING.stage)) { status("waiting for the clothes to hang…"); await hung(); }   // exported as they hang
-  status("exporting for the desk and Unreal…");
+  status("exporting for Godot and the desk…");
   await api(`api/people/${encodeURIComponent(WHO)}`, character()); await LAY.save();
   await api(`api/people/${encodeURIComponent(WHO)}/body.bin`, new Blob([neutralBody()])); await saveDrape();
   const rec = await api(`api/recipe/${encodeURIComponent(WHO)}`), was = st.expr.slice(), pose = POSE;
@@ -3734,7 +3734,10 @@ async function exportPackage() {
   await api(at + encodeURIComponent(`${WHO}.studio.json`), rec);
   await api(at + "export.made.json", { made: rec.made, glb: `${WHO}.glb`, bytes: glb.byteLength, sources: rec.sha1,
                                        about: "Character Studio export: the GLB is the character neutral, in metres, Y up, facing +Z; its scene's extras.studio (and the .studio.json) bring it back with Import" });
-  status(`wrote People/${WHO}/export/${WHO}.glb (${(glb.byteLength / 1048576).toFixed(1)} MB), carrying what it's made from: Import brings it back`, "ok");
+  status(`wrote People/${WHO}/export/${WHO}.glb (${(glb.byteLength / 1048576).toFixed(1)} MB); for Godot…`);
+  const g = await api(`api/godot/${encodeURIComponent(WHO)}`, {});            // its copy for a Godot project by hand, the face shapes baked
+  if (g.error) throw new Error(g.error);
+  status(`wrote People/${WHO}/export/${WHO}.glb for the desk and ${g.path} for Godot (drag ${g.folder} into your project; ${g.faces}), carrying what it's made from: Import brings it back`, "ok");
 }
 async function recipeOf(file) {                       // a .glb from Export (its scene's extras), or its .studio.json
   if (/\.json$/i.test(file.name)) return JSON.parse(await file.text());
@@ -3745,7 +3748,7 @@ async function recipeOf(file) {                       // a .glb from Export (its
 }
 async function importPackage(file, as) {
   const rec = await recipeOf(file).catch(e => { status(e.message, "bad"); return null; });
-  if (!rec || !rec.files || !rec.files["character.json"]) return status("that file doesn't carry a Studio character (export one with Export for desk / Unreal)", "bad");
+  if (!rec || !rec.files || !rec.files["character.json"]) return status("that file doesn't carry a Studio character (export one with Export for Godot)", "bad");
   let name = as || prompt("Bring it back as", rec.name);
   while (name) {
     if (!/^[A-Za-z0-9_-][A-Za-z0-9_.-]*$/.test(name)) { name = prompt("A name is letters, digits, _ - .", rec.name); continue; }

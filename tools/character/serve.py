@@ -29,6 +29,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 import face_mesh  # noqa: E402 - the worker's client (no numpy at import)
 sys.path.insert(0, str(ROOT / "Content" / "Python"))
 from storykit import pbr as PBR  # noqa: E402 - the PBR shelf (Content/Studio/PBR), for the Layers tab's PBR fills
+from storykit import exports as XP  # noqa: E402 - the Exports folder: the character for a Godot project by hand
 
 PORT = int(os.environ.get("BODY_PORT", 8793))
 PEOPLE = ROOT / "Content" / "Studio" / "People"
@@ -371,6 +372,12 @@ class Handler(BaseHTTPRequestHandler):
             (PEOPLE / name).mkdir(parents=True, exist_ok=True)
             (PEOPLE / name / "layers.json").write_bytes(self.body())
             return self.send(200, {"ok": True})
+        if parts[:2] == ["api", "godot"] and len(parts) == 3 and name:      # Export for Godot: the export into Exports/characters/<name>/
+            try:
+                out, said = XP.character(name, PEOPLE)
+            except ValueError as e:
+                return self.send(400, {"error": str(e)})
+            return self.send(200, {"ok": True, "path": XP.rel(out), "folder": XP.rel(out.parent), "faces": said})
         if parts[:2] == ["api", "package"] and len(parts) == 4 and name and clean(parts[3]) and Path(parts[3]).suffix in (".glb", ".json"):
             return self.keep(PEOPLE / name / "export", clean(parts[3]))        # the export for the desk and Unreal: People/<name>/export/
         if parts[:2] == ["api", "import"] and len(parts) == 3 and name:          # a recipe (from an export) back into People/<name>/

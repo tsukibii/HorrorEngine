@@ -185,8 +185,11 @@ place on the street, the start for the street's own `tree` stand-ins becoming re
 
 ## 5b. Into Godot: drop the .glb in
 
-**Export .glb** (or `node tools/director/streetexport.mjs --street <name>`) writes one file to drop into a Godot
-project's folder (DECISIONS 2026-10-30, later: "as long as the export is as simple as drag and drop into a Godot folder").
+**Export for Godot** (or `node tools/director/streetexport.mjs --street <name>`) writes one file to drop into a Godot
+project's folder (DECISIONS 2026-10-30, later: "as long as the export is as simple as drag and drop into a Godot folder"):
+`Exports/streets/<name>/<name>.glb` with a `README.txt` beside it saying what's in it and which sets its walk-in
+buildings want (DECISIONS 2026-11-03, night: an exports folder, a sub-folder each; Shift-click downloads the file
+instead; `--out FILE` just the file, for the checks).
 Godot 4.7 imports it into a scene with:
 
 - `visual`: a node a chunk (48 m), a surface a material and colour (Godot leaves a glTF's vertex colours off the albedo,

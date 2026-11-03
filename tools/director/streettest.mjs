@@ -1,7 +1,7 @@
 // The street builder in a headless browser (docs/STREET_BUILDER.md §6), driven as a person would: a lane drawn on the map,
 // filled with buildings, lamps, poles and clutter; a building picked, its floors changed in the inspector, a sign added
 // on its front in the facade view and a photo put behind it; a fence and a vending machine placed (the machine turned to
-// the street); a shot kept; undo; saved and read back the same; the .glb exported; Check (nothing in one plane, a twin
+// the street); a shot kept; undo; saved and read back the same; exported for Godot (Exports/streets/, a Shift-click download); Check (nothing in one plane, a twin
 // vending machine found and picked); a motel and the Bungalow from the
 // palette, the Bungalow wearing its set's outside (its own once changed here, the set's again on Follow); and the
 // Shibuya lane drawn through its shot. Ends "STREETPAGE ok".
@@ -126,11 +126,18 @@ try {
   if (JSON.stringify(disk) !== JSON.stringify(await ST())) fail("what was saved isn't what the page holds");
   await page.reload(); await page.waitForFunction(() => window.__streetReady && window.ST.name, null, { timeout: 120000 });
   if (JSON.stringify(await ST()) !== JSON.stringify(disk)) fail("the street read back isn't the one saved");
-  // the .glb
-  const [dl] = await Promise.all([page.waitForEvent("download", { timeout: 60000 }), page.click("#glb")]);
-  const glb = fs.readFileSync(await dl.path());
-  if (glb.readUInt32LE(0) !== 0x46546C67 || glb.length < 20000) fail(`the .glb isn't one (${glb.length} bytes)`);
-  console.log(`saved and read back; .glb ${Math.round(glb.length / 1024)} KB`);
+  // Export for Godot: the .glb and its README in Exports/streets/<name>/ (taken away again after), Shift-click a download
+  const exDir = path.join(ROOT, "Exports/streets", NAME);
+  fs.rmSync(exDir, { recursive: true, force: true });
+  await page.click("#glb");
+  await page.waitForFunction(() => /wrote Exports\/streets\//.test(document.querySelector("#status").textContent), null, { timeout: 120000 });
+  const glb = fs.existsSync(path.join(exDir, NAME + ".glb")) ? fs.readFileSync(path.join(exDir, NAME + ".glb")) : Buffer.alloc(0);
+  if (glb.length < 20 || glb.readUInt32LE(0) !== 0x46546C67 || glb.length < 20000) fail(`Export for Godot didn't write a .glb into Exports/streets/${NAME}/ (${glb.length} bytes)`);
+  if (!fs.existsSync(path.join(exDir, "README.txt"))) fail("Export for Godot wrote no README beside the .glb");
+  fs.rmSync(exDir, { recursive: true, force: true });
+  const [dl] = await Promise.all([page.waitForEvent("download", { timeout: 60000 }), page.click("#glb", { modifiers: ["Shift"] })]);
+  if (fs.statSync(await dl.path()).size !== glb.length) fail("Shift-click's download isn't the exported .glb");
+  console.log(`saved and read back; exported for Godot: Exports/streets/${NAME}/${NAME}.glb ${Math.round(glb.length / 1024)} KB and its README; Shift-click downloads it`);
   // Check: the street as filled has nothing in one plane; a second vending machine put into the first is found, and its
   // line picks one of the two (STREET_BUILDER §5e)
   await page.click("#check");

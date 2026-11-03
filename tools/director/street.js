@@ -1322,13 +1322,27 @@ async function exportStreet() {
   return S3.exportGlb(g, GLTFExporter);
 }
 const insideMarkers = () => ST.street.buildings.flatMap(b => SG.insideMarkers(b, SG.footing(b, terrain())));
-$("#glb").onclick = async () => {
-  try {
-    const bin = await exportStreet(), a = document.createElement("a");
+// Export for Godot (DECISIONS 2026-11-03, night): into Exports/streets/<name>/ with its README (the desk's server,
+// storykit/exports.py); Shift-click downloads the .glb instead
+async function exportForGodot(download) {
+  const bin = await exportStreet();
+  if (download) {
+    const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([bin], { type: "model/gltf-binary" })); a.download = `${ST.name}.glb`; a.click();
     toast(`${ST.name}.glb: ${SG.stats(ST.pieces).tris} triangles: drop it into your Godot project's folder`);
-  } catch (e) { status("export failed: " + e.message, "bad"); }
-};
+    return null;
+  }
+  const insides = [...new Set(ST.street.buildings.filter(b => b.inside && b.inside.set).map(b => `inside_${b.id}: the set ${b.inside.set}`))];
+  const q = new URLSearchParams({ what: `(${ST.street.name || ST.name})`, from: "street:" + ST.name, insides: insides.join(",") });
+  const r = await fetch(`/api/exports/streets/${encodeURIComponent(ST.name)}/${encodeURIComponent(ST.name)}.glb?${q}`, { method: "POST", body: bin });
+  const j = await r.json().catch(() => ({ error: r.statusText }));
+  if (!r.ok || j.error) throw new Error(j.error || r.statusText);
+  status(`wrote ${j.path} (${(bin.byteLength / 1048576).toFixed(1)} MB, ${SG.stats(ST.pieces).tris} triangles): drag ${j.folder} into your Godot project`);
+  toast(`exported for Godot: ${j.path}`);
+  return j;
+}
+$("#glb").onclick = e => exportForGodot(e.shiftKey).catch(err => status("export failed: " + err.message, "bad"));
+window.__exportForGodot = () => exportForGodot(false);
 window.__exportGodot = async () => { const bin = new Uint8Array(await exportStreet()); let s = ""; for (let i = 0; i < bin.length; i += 0x8000) s += String.fromCharCode.apply(null, bin.subarray(i, i + 0x8000)); return btoa(s); };
 $("#mode").onchange = e => setMode(e.target.value);
 $("#addShot").onclick = () => {

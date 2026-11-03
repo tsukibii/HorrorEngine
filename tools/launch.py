@@ -138,7 +138,9 @@ TOOLS = [
     ("Godot", "A character as the Studio draws it beside Godot's render of its export (GDSTUDIO: the skin's colour alike; the Studio's server running)", "tools/godot/studio_compare.py", {}),
     ("Godot", "The Pilot played in Godot (GDPLAY)", "tools/godot_export.py --game Pilot --play", {}),
     ("Godot", "TestRoom001 played in Godot station by station (GDTESTROOM)", "tools/godot_export.py --game TestRoom001 --testroom", {}),
-    ("Godot", "A street as the .glb to drop into a Godot folder (into Saved/Streets/<street>; the desk running)", "node tools/director/streetexport.mjs --street {ask:Street}", {}),
+    ("Godot", "A street for a Godot project built by hand (Exports/streets/<street>/: the .glb and its README; the desk running)", "node tools/director/streetexport.mjs --street {ask:Street}", {}),
+    ("Godot", "A level (a game's or a set's: set:<name>) for a Godot project built by hand (Exports/interiors/<name>/: the .glb and its README; the desk running)", "node tools/director/levelexport.mjs --game {ask:Game or set:name}", {}),
+    ("Godot", "The exports in a fresh Godot project (EXPORTS: an interior, a street and a character dragged in, their colliders, doors, lamps and markers; the desk running)", "tools/godot/exports_check.py", {}),
     ("Godot", "A street imported in Godot and checked: colliders, occluders, lamps, colours (GDSTREET; the desk running)", "tools/godot/street_check.py --street {ask:Street}", {}),
     ("Godot", "A street dressed with the prop generator's trees and bushes along its pavements, pictured in Godot by day and by night (GDDRESS; the desk running, the props made)", "tools/godot/street_dress.py --street {ask:Street}", {}),
 

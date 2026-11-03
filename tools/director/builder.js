@@ -12,6 +12,8 @@ import { FBXLoader } from "./vendor/FBXLoader.js";
 import { KINDS, OPENINGS, PRESETS, JO, MODULE, STOREY, WALL_ITEMS, FINISH, KNOWN_LOOKS, FLOOR_BY_KIND, CEILING_BY_KIND, LIGHT_FITTINGS } from "./builder-presets.js";
 import * as BM from "./builder-model.js";
 import * as KIT from "./kit.js";
+import * as LX from "./levelexport.js";
+import { GLTFExporter } from "./vendor/GLTFExporter.js";
 import { form as kitForm, overrides as kitOverrides, CSS as KIT_CSS } from "./kit-form.js";
 import * as SG from "./street-gen.js";
 import * as S3 from "./street3.js";
@@ -620,6 +622,34 @@ function renderStats() {
   if (p.length) box.innerHTML += `<b style="color:var(--warn)">To fix</b><span style="color:var(--warn)">${p.join("; ")}</span>`;
 }
 
+// ---- Export for Godot (DECISIONS 2026-11-03, night): the level as the 3D view shows it, a .glb into Exports/interiors/
+// <name>/ for a Godot project built by hand (levelexport.js; docs/SCENE_BUILDER.md §11) ----
+function exportName() {
+  const set = B.game.startsWith("set:") ? B.game.slice(4) : null;
+  return (set ? (B.target === set ? set : `${set}_${B.target}`) : `${B.game}_${B.target}`).replace(/[^A-Za-z0-9_-]+/g, "_");
+}
+async function godotGlb() {
+  if (!stage || !B.plan) throw new Error("no plan yet: wait for the 3D view");
+  await stage.assetsReady();
+  const g = LX.levelGroup(stage, B.plan, B.planStory, B.target, { name: exportName(), from: B.game, outside: outsideGroup || null });
+  return LX.levelGlb(g, GLTFExporter);
+}
+async function exportForGodot() {
+  status("exporting for Godot…");
+  const name = exportName(), glb = await godotGlb();
+  const what = B.game.startsWith("set:") ? `(the set ${B.game.slice(4)}${B.target !== B.game.slice(4) ? ", its level " + B.target : ""})` : `(${B.target}, a level of the game ${B.game})`;
+  const q = new URLSearchParams({ what, from: B.game, outside: outsideGroup ? "  outside/       the building round it as the street builds it. When the level goes inside a street's building\n                 (which has that shell already) leave it out: untick outside in the scene builder's 3D view and\n                 export again, or hide the node (the scene's Editable Children)\n" : "" });
+  const r = await fetch(`/api/exports/interiors/${encodeURIComponent(name)}/${encodeURIComponent(name)}.glb?${q}`, { method: "POST", body: glb });
+  const j = await r.json().catch(() => ({ error: r.statusText }));
+  if (!r.ok || j.error) throw new Error(j.error || r.statusText);
+  status(`wrote ${j.path} (${(glb.byteLength / 1048576).toFixed(1)} MB): drag ${j.folder} into your Godot project`, "ok");
+  return j;
+}
+window.__exportGodotLevel = async () => { const bin = new Uint8Array(await godotGlb()); let s = ""; for (let i = 0; i < bin.length; i += 0x8000) s += String.fromCharCode.apply(null, bin.subarray(i, i + 0x8000)); return btoa(s); };
+window.__exportForGodot = () => exportForGodot();
+// ready to export: the plan in the 3D view, the outside built when the level has one and the view shows it
+window.__exportReady = () => !!(stage && B.plan && B.planStory && (!outsideOf() || !$("#showOutside").checked || outsideGroup));
+
 // ---- checks and saving ----
 async function runChecks() {
   const s = storyWithLevel();
@@ -813,6 +843,7 @@ async function boot() {
   $("#swing").oninput = () => { if (+$("#swing").value && $("#doorsOpen").checked) { $("#doorsOpen").checked = false; doors(); } stage.swing(+$("#swing").value); render3d(); };
   renderTools();
   $("#planImage").onclick = savePlanImage;
+  $("#godotExport").onclick = () => exportForGodot().catch(e => status("Export for Godot: " + e.message, "bad"));
   window.addEventListener("focus", refreshLibrary);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshLibrary(); });
   $("#refFile").onchange = e => { for (const f of e.target.files) loadRef(f); e.target.value = ""; };
