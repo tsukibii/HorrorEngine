@@ -1,7 +1,8 @@
 // The street builder in a headless browser (docs/STREET_BUILDER.md §6), driven as a person would: a lane drawn on the map,
 // filled with buildings, lamps, poles and clutter; a building picked, its floors changed in the inspector, a sign added
 // on its front in the facade view and a photo put behind it; a fence and a vending machine placed (the machine turned to
-// the street); a shot kept; undo; saved and read back the same; the .glb exported; a motel and the Bungalow from the
+// the street); a shot kept; undo; saved and read back the same; the .glb exported; Check (nothing in one plane, a twin
+// vending machine found and picked); a motel and the Bungalow from the
 // palette, the Bungalow wearing its set's outside (its own once changed here, the set's again on Follow); and the
 // Shibuya lane drawn through its shot. Ends "STREETPAGE ok".
 //
@@ -130,6 +131,23 @@ try {
   const glb = fs.readFileSync(await dl.path());
   if (glb.readUInt32LE(0) !== 0x46546C67 || glb.length < 20000) fail(`the .glb isn't one (${glb.length} bytes)`);
   console.log(`saved and read back; .glb ${Math.round(glb.length / 1024)} KB`);
+  // Check: the street as filled has nothing in one plane; a second vending machine put into the first is found, and its
+  // line picks one of the two (STREET_BUILDER §5e)
+  await page.click("#check");
+  await page.waitForSelector("#checkList:not([hidden])");
+  const ck0 = await page.evaluate(() => [...document.querySelectorAll("#checkList button.hit")].map(b => b.textContent));
+  if (ck0.length) fail(`a filled street has surfaces in one plane: ${ck0.slice(0, 3).join("; ")}`);
+  await page.evaluate(() => { const v = window.ST.street.things.find(t => t.kind === "vending"); window.ST.street.things.push(Object.assign({}, v, { id: "twin", at: [v.at[0] + 0.3, v.at[1]] })); window.__rebuild(); });
+  await page.click("#check");
+  const ck1 = await page.evaluate(() => [...document.querySelectorAll("#checkList button.hit")].map(b => b.textContent));
+  if (!ck1.some(t => t.includes("twin"))) fail(`Check didn't find a vending machine in another: ${ck1.slice(0, 3).join("; ") || "nothing"}`);
+  else {
+    await page.click("#checkList button.hit >> text=twin");
+    const sel = await page.evaluate(() => window.ST.sel);
+    if (!sel || sel.list !== "things") fail("a line of Check didn't pick the thing to move: " + JSON.stringify(sel));
+  }
+  await page.evaluate(() => { window.ST.street.things = window.ST.street.things.filter(t => t.id !== "twin"); window.ST.sel = null; window.__rebuild(); document.querySelector("#checkList").hidden = true; });
+  console.log(`Check: nothing in one plane on the filled street; a twin vending machine found (${ck1.length} place${ck1.length > 1 ? "s" : ""})`);
 
   // a street bent by its middle dot, then sloped in the inspector; a motel from the palette, its rooms its set's
   await page.click("#tabMap");

@@ -121,6 +121,63 @@ const things = Object.keys(SG.THING_KINDS).map((k, i) => ({ id: "t" + i, kind: k
 things.push({ id: "p1", kind: "pole", at: [0, 10], to: "p2" }, { id: "p2", kind: "pole", at: [25, 12] });
 sane("things", SG.build({ things, ground: false }), p => p.type === "wires" ? 2000 : BUDGET.thing);
 sane("fences", SG.build({ fences: Object.keys(SG.FENCE_KINDS).map((k, i) => ({ id: "f" + i, kind: k, from: [0, i * 3], to: [7 + i, i * 3 + 2] })), ground: false }), () => BUDGET.fence);
+// 3b. the rules between pieces (the user, 2026-11-03: "make it that the interior/street editors carry rules to keep
+// everything proper"): a street of everything that once met another piece in one plane, built, and never two pieces'
+// faces in one plane over each other (SG.between: they flicker in Godot as the depth buffer picks between them).
+// Neighbours' canopies, bands, copings, eaves and hips (one set back), balconies cut at a neighbour, a side street's
+// pavement over the main road's, a lane run up to a building's side, fences at corners and T's, slabs flush with walls,
+// decals on a road's paint and on each other, the ground under it all
+{
+  const B = (id, at, turn, o) => Object.assign({ id, at, turn }, o);
+  const danchi = (id, w, d, floors, at) => B(id, at, 0, { style: "danchi", w, d, floors, gh: 3.3, fh: 2.8, seed: 7, faces: { front: { win: "punched", cols: 5, ground: "shutter", bands: true }, back: { win: "punched" } },
+    roof: { kind: "flat", parapet: 0.7 }, parts: [{ kind: "canopy", x: 0, z: 3.2, w: w + 0.6, h: 0.45, out: 2.2 }, { kind: "stairs", face: "left", w: 6, h: 3.3, out: 1.2, dir: 1 }] });
+  const shop = (id, w, at) => B(id, at, -90, { style: "shotengai", w, d: 11.5, floors: 3, gh: 3.4, fh: 2.8, seed: 3, faces: { front: { win: "punched", ground: "shop" }, back: { win: "punched" } },
+    roof: { kind: "flat" }, parts: [{ kind: "sign", x: 0, z: 3.65, w: w - 0.6, h: 0.9, text: "テスト" }, { kind: "awning", x: 0, z: 3.25, w: w - 0.2, h: 0.45, out: 1.3 }] });
+  const house = (id, w, d, turn, roof, at) => B(id, at, turn, { style: "house", w, d, floors: 2, gh: 2.9, fh: 2.7, seed: 5, roof, faces: { front: { win: "punched", ground: "door", bands: true } },
+    parts: [{ kind: "canopy", x: 0, z: 2.35, w: 1.6, h: 0.12, out: 0.8 }] });
+  const machiya = (id, w, at) => B(id, at, -180, { style: "machiya", w, d: 10.5, floors: 2, gh: 2.8, fh: 2.4, seed: 9, roof: { kind: "gable", pitch: 26, over: 1 }, faces: { front: { win: "lattice", ground: "lattice" }, left: { win: "none" }, right: { win: "none" } },
+    parts: [{ kind: "eave", z: 2.95, out: 1, h: 0.5 }, { kind: "noren", x: -1.7, z: 1.55, w: 1.3 }] });
+  const R = {
+    roads: [{ id: "main", from: [-40, 0], to: [40, 0], width: 6, walks: [1.6, 1.6], kerb: 0.15, edge: [0.3, 0.3], marks: [{ kind: "text", text: "止まれ", at: 10, x: 1 }, { kind: "stop", at: 20 }] },
+      { id: "side", from: [-17.5, 0], to: [-17.5, 30], width: 5, walks: [0, 1.2], kerb: 0.12 },
+      { id: "lane", from: [119.625, -9], to: [119.625, 11.6], width: 4.45, walks: [0.4, 1.1], kerb: 0.15 }],
+    buildings: [
+      danchi("d1", 18, 11, 4, [-60, 40]), danchi("d2", 15, 9.5, 5, [-43.48, 39.57]), danchi("d3", 15, 9.5, 5, [-28.46, 39.57]),   // d2 set back 32 cm
+      shop("s1", 5, [0, 60]), shop("s2", 6.5, [0.25, 65.77]),
+      house("h1", 7, 9.5, 0, { kind: "flat", parapet: 0.5 }, [30, 60]), house("h2", 8, 9.5, 0, { kind: "flat", parapet: 0.5 }, [22.48, 60]),
+      house("h3", 7.5, 7.5, 90, { kind: "hip", pitch: 27, over: 0.5 }, [60, 60]), house("h4", 7, 9.5, -180, { kind: "hip", pitch: 27, over: 0.5 }, [51.84, 61.64]),
+      house("h5", 7, 9, 0, { kind: "gable", pitch: 25, over: 0.6, ridge: "y" }, [60, 80]), house("h6", 7, 9, 0, { kind: "shed", pitch: 12, over: 0.5 }, [67.03, 80]),
+      machiya("m1", 8.5, [80, 60]), machiya("m2", 6.5, [87.52, 60]),
+      B("f1", [0, 100], 0, { style: "apartment", w: 9, d: 11, floors: 3, gh: 3.1, fh: 2.9, seed: 4, roof: { kind: "flat", parapet: 0.9 },
+        parts: [{ kind: "balcony", x: 4.17, w: 3.92, out: 1.1, floors: [2, 4], rail: "solid" }, { kind: "ac", x: 5.6, z: 0.05, out: 0.3, floors: [2, 4] }] }),
+      B("f2", [8.52, 100], 0, { style: "apartment", w: 8, d: 11, floors: 3, gh: 3.1, fh: 2.9, seed: 6 }),
+      B("end", [128.35, 1.25], -90, { style: "office", w: 20.5, d: 12, floors: 2, gh: 3.1, fh: 3.4, seed: 3 }),   // the lane runs up to its side
+    ],
+    fences: [
+      { id: "fw", kind: "blockmesh", from: [-62, -40], to: [-40, -40], h: 1.9 }, { id: "fs", kind: "mesh", from: [-62, -40], to: [-62, -20], h: 2.4 },
+      { id: "c1", kind: "block", from: [-30, -40], to: [-20, -40] }, { id: "c2", kind: "block", from: [-20, -40], to: [-20, -30] },
+      { id: "t1", kind: "mesh", from: [-10, -40], to: [10, -40] }, { id: "t2", kind: "block", from: [0, -40], to: [0, -30] },
+      { id: "r1", kind: "ribbed", from: [20, -40], to: [30, -40], h: 1.5 }, { id: "r2", kind: "mesh", from: [30, -40], to: [30, -30] },
+      { id: "rw", kind: "ribbed", from: [55, -40], to: [65, -40], h: 1.5 }, { id: "lot", kind: "block", from: [70, -40], to: [76.9, -40], h: 0.9 },
+    ],
+    things: [
+      { id: "apron", kind: "box", at: [60, -44.95], w: 10, d: 10, h: 0.02, slot: "asphalt" },        // to the ribbed wall's far face
+      { id: "forecourt", kind: "box", at: [81.1, -39.2], w: 22.2, d: 2.4, h: 0.02, slot: "concrete" },   // its end on the block wall's
+      { id: "planter", kind: "box", at: [-35, -45], w: 1, d: 0.6, h: 0.5 }, { id: "bed", kind: "box", at: [-35, -45], w: 3, d: 2, h: 0.1 },
+    ],
+    decals: [{ id: "dg", kind: "manhole", at: [-29, -1, 0.004], n: [0, 0, 1], w: 0.75, h: 0.75, rot: -30 },   // on the glyph
+      { id: "dd", kind: "oil", at: [-28.7, -1.1, 0.004], n: [0, 0, 1], w: 0.8, h: 0.6 },                     // over the one before
+      { id: "ds", kind: "oil", at: [-20, 0, 0.004], n: [0, 0, 1], w: 1.2, h: 0.8 }],                      // over the stop line
+  };
+  const P = SG.build(R), hits = SG.between(P);
+  sane("the rules street", P, p => BUDGET[p.type] || 20000);
+  for (const h of hits.slice(0, 8)) errs.push(`the rules street: ${h.a.join("'s ")} and ${h.b.join("'s ")} in one plane over each other (${(h.area * 1e4).toFixed(0)} cm², at ${h.at.map(v => v.toFixed(2)).join(", ")}): a rule's missing`);
+  if (JSON.stringify(R).includes("capFrom")) errs.push("building a street wrote into its fences");
+  // and the test finds what's been placed so: two bikes in each other, a slab's top on another's
+  const H = SG.between(SG.build({ things: [{ id: "k1", kind: "bike", at: [0, 0], turn: 90 }, { id: "k2", kind: "bike", at: [0, 1.2], turn: 90 },
+    { id: "k3", kind: "box", at: [10, 0], w: 2, d: 2, h: 0.02 }, { id: "k4", kind: "box", at: [11, 0], w: 2, d: 2, h: 0.02 }], ground: false }));
+  for (const pair of [["k1", "k2"], ["k3", "k4"]]) if (!H.some(h => [h.a[0], h.b[0]].sort().join() === pair.join())) errs.push(`the test between pieces doesn't find ${pair.join(" in ")}`);
+}
 // 4. a wall's rectangles and its holes tile it, nothing twice and nothing missed
 { let seed = 7; const R = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
   for (let n = 0; n < 200; n++) {
@@ -307,6 +364,11 @@ for (const name of names) {
     });
   }
   const pieces = SG.build(S), tris = sane(L, pieces, p => BUDGET[p.type] || 20000), st = SG.stats(pieces);
+  // what's been placed in one plane with something else (a fence along a wall, two things in each other): the street's
+  // own rules keep its pieces apart, this is the street as drawn (the page's Check lists the same)
+  const placed = SG.between(pieces);
+  if (placed.length) warns.push(`${L}: ${placed.length} place${placed.length > 1 ? "s" : ""} where two things lie in one plane (they'd flicker in Godot; the page's Check finds them): ` +
+    placed.slice(0, 4).map(h => `${h.a[0]} and ${h.b[0]}`).join(", ") + (placed.length > 4 ? "..." : ""));
   let pins = "";
   for (const s of S.shots || []) {
     if (!(s.vfov > 1 && s.vfov < 170)) errs.push(`${L}: shot ${s.id}: its lens (vfov ${s.vfov})`);

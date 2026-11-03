@@ -2,6 +2,25 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-03, night (the user: rules in the editors, exports for Godot, guides)
+
+- **"Is this something that's easy to have as an implemented fix on any interior design or street design? How do I
+  prevent future rooms from having this issue."** Then: **"Don't need to update any of the existing maps etc, just make
+  it that the interior/street editors carry rules to keep everything proper."** No street.json or set is edited. The
+  interiors already build their walls without two rooms' faces in one plane (plan.py's corners, HSRoom's) and the scene
+  builder's Check runs LEVEL with those rules; check_all now runs LEVEL on every set too. The street builder's generator
+  keeps two pieces apart by construction (STREET_BUILDER §5e: the ground under it all, neighbours' parts and roofs half
+  way, pavements meeting once, fences joined at corners, things inset, decals over what's under them); what's placed in
+  one plane anyway (a fence along a wall, two things in each other) the street page's **Check** lists, and STREET warns
+  about in the saved streets (left as drawn).
+- **"Make sure when I export interiors/streets/character models that instead of an export to Unreal/Director there is an
+  export to Godot. So if I decide to build the game completely in Godot instead of through Director I can, just have an
+  exports folder with sub folders for each to get exported to by default so I can drag and drop them into my Godot
+  project."** An `Exports/` folder at the project's root, `interiors/`, `streets/` and `characters/` in it.
+- **"Make a guide on setting up Godot for manual creation as well as an HTML guide on using a plugin and maybe a basic
+  tutorial for your first game that tells you how to set up each part (interior, street and character) to make your
+  first basic game."** In `guides/`.
+
 ## 2026-11-03, later evening (the user: lines down the walls)
 
 - **"Looks good"** (the skin and the clothes). **"Could you investigate why we get weird lighting seams (vertical lines

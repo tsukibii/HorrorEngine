@@ -3,6 +3,18 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## A street's pieces in one plane (2026-11-03, night)
+
+- **Measure faces against planes, not planes against buckets:** the first street measure keyed each face's plane by its
+  normal and its distance rounded to half a millimetre and called a shared key a clash; on a sloping road every strip
+  of paint 5 mm over the asphalt landed in a neighbour's bucket and the hills were "full" of clashes that weren't
+  there. The test that holds is STREET's own: every corner of one face within the distance of the other's plane, then
+  the overlap's area clipped in that plane (`SG.between`); buckets only to find who to compare.
+- **A rule that clamps makes its own coincidences:** cutting every part at "half way to the neighbour" put a balcony's
+  end and the air conditioner on it at the same cut, in one plane; parts cut there now each end their own step in.
+  Likewise a ridge cap ending "no further than the slabs" ended exactly in their ends' plane. After a clamp, look at
+  what else it clamped to the same number.
+
 ## Walls meeting (2026-11-03, later evening)
 
 - **Close a corner only where nothing else does:** a wall run on "to close the corner" was right for a room alone and
