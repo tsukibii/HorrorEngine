@@ -66,6 +66,7 @@ uniform bool translucency = false;
 uniform float translucency_strength : hint_range(0.0, 2.0, 0.01) = 0.75;
 uniform sampler2D texture_translucency : hint_default_white, filter_linear_mipmap, repeat_enable;
 uniform sampler2D texture_translucency_color : source_color, filter_linear, repeat_disable;
+uniform float translucency_gain : hint_range(0.0, 2.0, 0.01) = 0.5;   // HS: the lamps' light through thin skin scaled (its ramp starts pure red: at 1 the nostrils' rim, the lips' seam and the ears' rims drew red lines; GODOT_LOOK §5g)
 
 group_uniforms u_v;
 uniform vec3 uv1_scale = vec3(1.);
@@ -111,13 +112,13 @@ uniform bool depth_ears_on = true;                                // HS: the ear
 uniform float depth_ears : hint_range(0.0, 2.0) = 1.0;
 uniform float depth_lips : hint_range(0.0, 2.0) = 0.5;            // HS: the lips themselves (the region map's lips: the skin that lets the most light through)
 uniform float depth_hands : hint_range(0.0, 2.0) = 0.7;           // HS: the fingers' thin skin lit through by the room, as an ear's (MHR's hands: its UVs' quarter past u 0.5 and v 0.5)
-uniform float depth_edge : hint_range(0.0, 2.0) = 0.6;            // HS: warmer where the skin turns away from the eye (a cheek's side, the jaw, the nose's sides, the neck): what comes out there has gone furthest under it
-uniform float depth_rest : hint_range(0.0, 1.0) = 0.3;            // HS: the occlusion's creases everywhere else warmed too (under the jaw, the neck's folds, between the fingers; 0: the core alone)
+uniform float depth_edge : hint_range(0.0, 2.0) = 0.25;           // HS: warmer where the skin turns away from the eye (a cheek's side, the jaw, the nose's sides, the neck): what comes out there has gone furthest under it
+uniform float depth_rest : hint_range(0.0, 1.0) = 0.15;           // HS: the occlusion's creases everywhere else warmed too (under the jaw, the neck's folds, between the fingers; 0: the core alone)
 uniform vec3 depth_color : source_color = vec3(0.86, 0.33, 0.24); // HS: the colour light takes on under the skin (the blood's)
-uniform float depth_warmth : hint_range(0.0, 2.0) = 1.0;          // HS: how far the regions' colour turns toward it
-uniform float depth_creases : hint_range(0.0, 2.0) = 1.0;         // HS: the export's occlusion there red, not grey (the red goes furthest under the skin)
-uniform float depth_glow : hint_range(0.0, 2.0) = 1.0;            // HS: thin skin (the export's thinness: an ear's rim, the nostrils) lit through by the room's light
-uniform float depth_pores : hint_range(0.0, 1.0) = 1.0;           // HS: the detail layer's pits and furrows shaded warm, not grey (everywhere)
+uniform float depth_warmth : hint_range(0.0, 2.0) = 0.35;         // HS: how far the regions' colour turns toward it
+uniform float depth_creases : hint_range(0.0, 2.0) = 0.35;        // HS: the export's occlusion there red, not grey (the red goes furthest under the skin)
+uniform float depth_glow : hint_range(0.0, 2.0) = 0.3;            // HS: thin skin (the export's thinness: an ear's rim, the nostrils) lit through by the room's light
+uniform float depth_pores : hint_range(0.0, 1.0) = 0.5;           // HS: the detail layer's pits and furrows shaded warm, not grey (everywhere)
 
 varying float hs_gloss;   // HS: the wet layer's gloss for light(): 0 dry skin, 1 water or oil
 varying vec3 hs_lamp;     // HS: the depth layer's colour for the lamps' diffuse against the ambient's, its warmth aside (§5g)
@@ -519,7 +520,7 @@ void light()
 		vec3 translucent = max(translucency_dot * t_color, 0.0) * lightColor;
 		//translucency *= max(translucency_strength, 1.);
 
-		DIFFUSE_LIGHT += translucent * hs_l;   // HS
+		DIFFUSE_LIGHT += translucent * hs_l * translucency_gain;   // HS
 	}
 
 	vec3 f0 = SchlickBaseReflectivity();

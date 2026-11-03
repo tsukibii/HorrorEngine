@@ -2,6 +2,18 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-03, evening (the user, playing main: the skin and the clothes)
+
+- **"The subsurface scattering seems too strong in game (looks uncanny)."** Their picture: orange rings round the
+  eyes, the nose's wings and the lips, the ear lit up red. The skin's depth layer (GODOT_LOOK §5g) is now about a third
+  of its first strength, and the lamps' light through thin skin (HumanShaders' translucency, whose ramp starts at pure
+  red) at half; GDPORTRAIT fails a glow (no point warmed more than 25%, the ear 30%). The Studio's Depth (game) still
+  goes to 3 for a character that wants more.
+- **"Clothing clips in different poses (see elbow area), any simple fixes to stop clothing from clipping?"** The simple
+  fix games use: the skin an opaque garment hides is left out of the Studio's export (a bent elbow can't come through
+  a sleeve when there's no elbow under it); the skin near a garment's edges, under see-through clothes and the feet
+  stay (TAILOR.md §3d).
+
 ## 2026-11-03, later (the user: `Director-Godot` into main)
 
 - **"Make a PR for this, it looks good and merge in main and resolve conflicts if any exist."** Main (150 commits since
