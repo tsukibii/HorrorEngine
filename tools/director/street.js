@@ -138,6 +138,36 @@ function select(sel) { ST.sel = sel; drawMap(); inspect(); highlight(); renderFa
 function allIds() { const s = new Set(); for (const k of LISTS) for (const p of ST.street[k]) s.add(p.id); return s; }
 function newId(prefix) { const ids = allIds(); let n = 1; while (ids.has(prefix + n)) n++; return prefix + n; }
 
+// ---- the check: two surfaces in one plane over each other (they flicker in Godot as the depth buffer picks between
+// them). The street's own rules keep its pieces apart (street-gen.js: neighbours' parts half way, the ground under the
+// roads, fences joined at corners, things inset, decals over what's under them); this finds what's been placed so: a
+// fence along a wall, two things in each other. SG.between, the STREET check's test between pieces
+const listOf = id => LISTS.find(k => (ST.street[k] || []).some(p => p.id === id)) || null;
+function checkStreet() {
+  const el = $("#checkList");
+  if (!ST.pieces) return;
+  const hits = SG.between(ST.pieces), head = document.createElement("div"), msg = document.createElement("span"), x = document.createElement("button");
+  head.className = "chead"; x.textContent = "✕"; x.onclick = () => { el.hidden = true; };
+  msg.textContent = hits.length ? `${hits.length} place${hits.length > 1 ? "s" : ""} where two surfaces lie in one plane: they'd flicker in Godot. Move one of each a few centimetres (click one to pick it).`
+    : "Nothing in one plane: no surface will flicker.";
+  if (!hits.length) msg.className = "ok";
+  head.append(msg, x); el.replaceChildren(head);
+  const order = ["things", "fences", "buildings", "roads"];             // the one to move: a thing or a fence before a building
+  for (const h of hits.slice(0, 60)) {
+    const b = document.createElement("button");
+    b.className = "hit"; b.textContent = `${h.a[0]} (${h.a[1]}) and ${h.b[0]} (${h.b[1]}): ${(h.area * 1e4).toFixed(0)} cm²`;
+    b.onclick = () => {
+      const pick = [h.a[0], h.b[0]].map(id => ({ id, list: listOf(id) })).filter(p => p.list).sort((p, q) => order.indexOf(p.list) - order.indexOf(q.list))[0];
+      ST.view.cx = h.at[0]; ST.view.cy = h.at[1]; ST.view.s = Math.max(ST.view.s, 30);
+      ST.orbit.t = [h.at[0], h.at[1], h.at[2]]; ST.orbit.dist = Math.min(ST.orbit.dist, 10);
+      if (pick) select({ list: pick.list, id: pick.id }); else { drawMap(); render(); }
+    };
+    el.append(b);
+  }
+  el.hidden = false;
+  status(hits.length ? `${hits.length} surfaces in one plane (Check)` : "checked: nothing in one plane", hits.length ? "dirty" : "");
+}
+
 // ---- the 3D view ----------------------------------------------------------------------------------------------------
 const viewEl = $("#view");
 const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
@@ -1284,6 +1314,7 @@ $("#street").onchange = e => { if (e.target.value === "__new") newStreet(); else
 $("#time").onchange = e => { pushUndo(); ST.street.time = e.target.value; ST.dirty = true; look.set(ST.street.time, renderer, SG.bounds2(ST.street)); mats.setTime(look.time); lampsAt = null; renderAll(); status("unsaved: the time of day", "dirty"); };
 $("#snap").onchange = e => { ST.snap = +e.target.value; };
 $("#undo").onclick = undo; $("#redo").onclick = redo; $("#save").onclick = () => save().catch(e => status(e.message, "bad"));
+$("#check").onclick = () => checkStreet();
 // the .glb for Godot: drop it into the project's folder; its colliders, occluders, lamps and the insides' places come with it
 async function exportStreet() {
   if (await S3.prepareLooks(ST.street)) rebuild();                     // looks tuned in Street paint: their made sets in the .glb
@@ -1291,13 +1322,27 @@ async function exportStreet() {
   return S3.exportGlb(g, GLTFExporter);
 }
 const insideMarkers = () => ST.street.buildings.flatMap(b => SG.insideMarkers(b, SG.footing(b, terrain())));
-$("#glb").onclick = async () => {
-  try {
-    const bin = await exportStreet(), a = document.createElement("a");
+// Export for Godot (DECISIONS 2026-11-03, night): into Exports/streets/<name>/ with its README (the desk's server,
+// storykit/exports.py); Shift-click downloads the .glb instead
+async function exportForGodot(download) {
+  const bin = await exportStreet();
+  if (download) {
+    const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([bin], { type: "model/gltf-binary" })); a.download = `${ST.name}.glb`; a.click();
     toast(`${ST.name}.glb: ${SG.stats(ST.pieces).tris} triangles: drop it into your Godot project's folder`);
-  } catch (e) { status("export failed: " + e.message, "bad"); }
-};
+    return null;
+  }
+  const insides = [...new Set(ST.street.buildings.filter(b => b.inside && b.inside.set).map(b => `inside_${b.id}: the set ${b.inside.set}`))];
+  const q = new URLSearchParams({ what: `(${ST.street.name || ST.name})`, from: "street:" + ST.name, insides: insides.join(",") });
+  const r = await fetch(`/api/exports/streets/${encodeURIComponent(ST.name)}/${encodeURIComponent(ST.name)}.glb?${q}`, { method: "POST", body: bin });
+  const j = await r.json().catch(() => ({ error: r.statusText }));
+  if (!r.ok || j.error) throw new Error(j.error || r.statusText);
+  status(`wrote ${j.path} (${(bin.byteLength / 1048576).toFixed(1)} MB, ${SG.stats(ST.pieces).tris} triangles): drag ${j.folder} into your Godot project`);
+  toast(`exported for Godot: ${j.path}`);
+  return j;
+}
+$("#glb").onclick = e => exportForGodot(e.shiftKey).catch(err => status("export failed: " + err.message, "bad"));
+window.__exportForGodot = () => exportForGodot(false);
 window.__exportGodot = async () => { const bin = new Uint8Array(await exportStreet()); let s = ""; for (let i = 0; i < bin.length; i += 0x8000) s += String.fromCharCode.apply(null, bin.subarray(i, i + 0x8000)); return btoa(s); };
 $("#mode").onchange = e => setMode(e.target.value);
 $("#addShot").onclick = () => {

@@ -7,7 +7,7 @@
 <!-- The studio's guides, one page each (guides/README.md): this folder holds the ones of their own; the desk's lives with
      the desk and the export's is written into each exported project. Nothing here loads from outside. -->
 <style>
-:root{--bg:#121214;--panel:#1b1b1f;--panel2:#232329;--line:#33333b;--text:#e6e3dc;--dim:#9a978f;--accent:#e07a5f;--desk:#d9a441;--export:#8fb8ff}
+:root{--bg:#121214;--panel:#1b1b1f;--panel2:#232329;--line:#33333b;--text:#e6e3dc;--dim:#9a978f;--accent:#e07a5f;--desk:#d9a441;--export:#8fb8ff;--hand:#7fb3d5;--look:#c792ea;--first:#e0a35f}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font:15px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
 a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
@@ -39,12 +39,33 @@ nothing needs a server unless it says so.</p>
 
 <div class="guides">
   <a class="guide" href="director/index.html">
-    <img src="director/img/e_overview.jpg" width="1600" height="1000" alt="Godot's editor with the HorrorStudio dock">
+    <img src="director/img/e_panel_overview.jpg" alt="Godot's editor with the HorrorStudio panel">
     <div class="body"><span class="tag" style="color:var(--accent)">Godot plugin</span>
     <h2>The Director in Godot</h2>
     <p>Build a game in Godot itself: rooms, doors, things and characters dragged in, the story as chapters, tasks,
     dialogue and endings, events for the scares (when, if, then), flags and where the player is, Kimodo motions there
     and back.</p></div>
+  </a>
+  <a class="guide" href="first_game/index.html">
+    <img src="first_game/img/scare.jpg" width="1600" height="900" alt="The first game: her in the flashlight's beam">
+    <div class="body"><span class="tag" style="color:var(--first)">Tutorial</span>
+    <h2>Your first game, by hand</h2>
+    <p>A house from the scene builder, a street from the street builder and a character from the Character Studio,
+    exported for Godot and put together step by step: walk up the path, open the door, the lights die, she's there.</p></div>
+  </a>
+  <a class="guide" href="godot_by_hand/index.html">
+    <img src="godot_by_hand/img/interior_top.jpg" width="1600" height="900" alt="An exported interior in Godot">
+    <div class="body"><span class="tag" style="color:var(--hand)">Godot, by hand</span>
+    <h2>Godot by hand: setting up</h2>
+    <p>A Godot project of your own for the studio's exports (<code>Exports/interiors</code>, <code>streets</code>,
+    <code>characters</code>): the settings, bringing them in, what's in each, lighting it, a player, shipping it.</p></div>
+  </a>
+  <a class="guide" href="look_plugin/index.html">
+    <img src="look_plugin/img/wet.jpg" width="1280" height="720" alt="The Look plugin's wet floor">
+    <div class="body"><span class="tag" style="color:var(--look)">Godot plugin</span>
+    <h2>The HorrorStudio Look plugin</h2>
+    <p>The studio's look as nodes: the realism preset, flickering bulbs, window light, wet floors and rain, blood,
+    mirrors, the character's skin, eyes and hair, a grade and a camcorder's tape. 40 ready-made presets.</p></div>
   </a>
   <a class="guide" href="../tools/director/guide.html">
     <img src="../tools/director/guide/board.jpg" alt="The director's desk: the flow board">
@@ -70,11 +91,15 @@ nothing needs a server unless it says so.</p>
   new game you'll build and light in Godot.</p>
   <p><b>On the desk, then exported</b>: the story plotted, blocked and reviewed in the browser, then exported to Godot
   as a project of its own. The desk's guide and the export's guide cover that way.</p>
+  <p><b>In Godot, by hand</b>: the studio's editors make the pieces (rooms, streets, people), their
+  <b>Export for Godot</b> buttons put them in <code>Exports/</code>, and you build the game yourself in a project of
+  your own. Godot by hand and your first game cover that way; the Look plugin's guide fits all three.</p>
 </div>
 
 <footer>The pictures in the Director's guide are made by Godot from its sample game:
 <code>python tools/godot_director.py guide</code>. The desk's are made by driving the desk:
-<code>node tools/director/guide_shots.mjs</code>.</footer>
+<code>node tools/director/guide_shots.mjs</code>. The by-hand guides' are the first game and the Look plugin's check,
+drawn by Godot: <code>python tools/godot/first_game.py --pictures</code>.</footer>
 </main>
 </body>
 </html>

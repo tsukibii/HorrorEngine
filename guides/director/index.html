@@ -210,7 +210,10 @@ give it your own materials (in a StandardMaterial3D tick <span class="ui">UV1 â†
 or a moment can wait for "the player enters kitchen".</p>
 <p>Two rooms side by side: set them a wall's thickness apart (12 cm unless you change <b>wall</b>) and turn off one
 room's wall where they meet, so the wall isn't doubled. In the sample the hall keeps its east wall, the kitchen has
-none on its west, and the kitchen's door sits in the hall's wall.</p>
+none on its west, and the kitchen's door sits in the hall's wall. Where rooms meet, their walls share the corner by
+themselves: a room's north or south wall stops inside the other room's wall instead of running on to its face, and
+two rooms' floors meet on the middle of the wall between them instead of overlapping under it, so no thin line
+flickers down a wall or across a doorway as you move.</p>
 <h3>Doors</h3>
 <p>An <span class="node">HSDoor</span> on a room's wall <b>cuts its own opening</b>: drag it along the wall and the hole
 follows. It swings away from the player. <b>Locked by</b> an item's id keeps it shut until the player has that item (or

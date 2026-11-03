@@ -19,7 +19,8 @@ probes: `--light=baked`) at the close-up, in profile and on a hand, off, on (as 
 switched off, points on the skin found by their UV (`skin_detail.probe_uvs`): round the eyes and the nose warmer with
 it (red against green up), the ear warmer and back as it was with its switch off, the profile's edge (the chin, the
 forehead) warmer, the lips warmer, a finger lit through, the cheek and the forehead facing the eye as they were, the
-picture no brighter or darker; `depth_sheet.jpg` the three side by side. `--no-depth` leaves it out.
+picture no brighter or darker, and nowhere a glow (no point up more than GLOW, the ear EAR_GLOW); `depth_sheet.jpg`
+the three side by side. `--no-depth` leaves it out.
 """
 import argparse
 import json
@@ -94,6 +95,10 @@ def sheet(keep, rows, path):
     im.save(path, quality=90)
 
 
+# the most the depth layer may warm a point (red against green, against the layer off): over it the skin glows (the
+# user, 2026-11-03: "the subsurface scattering seems too strong in game, looks uncanny": the inner corners up 44%, the
+# nose's wings 48%, the ear 53%, orange rings round the eyes; GODOT_LOOK §5g)
+GLOW, EAR_GLOW = 1.25, 1.30
 DEPTH_RUNS = [("depth_off", ["--depth=0"], "the skin's depth off"), ("depth_on", [], "the skin's depth (as the export asks)"),
               ("depth_noears", ["--ears=off"], "the skin's depth, its ears off")]
 
@@ -130,26 +135,26 @@ def depth_check(g, keep, base, env):
     on, off, noears = "depth_on", "depth_off", "depth_noears"
     core = {k: (warm(off, "cu", k), warm(on, "cu", k)) for k in ("inner corner +x", "alar crease +x", "nose wing +x")}
     seen = {k: v for k, v in core.items() if None not in v}
-    say(len(seen) >= 2 and all(b > a * 1.08 for a, b in seen.values()),
-        "round the eyes and the nose warmer with the skin's depth (red against green, baked light): " + ", ".join(f"{k} {a:.2f} to {b:.2f}" for k, (a, b) in seen.items()))
+    say(len(seen) >= 2 and all(a * 1.05 < b < a * GLOW for a, b in seen.values()),
+        f"round the eyes and the nose warmer with the skin's depth, never a glow (red against green, baked light; up 5% to {GLOW - 1:.0%}): " + ", ".join(f"{k} {a:.2f} to {b:.2f}" for k, (a, b) in seen.items()))
     e0, e1, e2 = warm(off, "side", "ear +x"), warm(on, "side", "ear +x"), warm(noears, "side", "ear +x")
     if None in (e0, e1, e2):
         say(False, "the ear isn't in the profile shot")
     else:
         if shots[on].get("depth_ears", True):
-            say(e1 > e0 * 1.15, f"the ear warmer with it: {e0:.2f} to {e1:.2f}")
+            say(e0 * 1.08 < e1 < e0 * EAR_GLOW, f"the ear warmer with it, not lit up (up 8% to {EAR_GLOW - 1:.0%}): {e0:.2f} to {e1:.2f}")
         else:
             print(f"  ok  the export has its ears' glow off (its hair over them): {e0:.2f} to {e1:.2f}")
         say(abs(e2 / e0 - 1) < 0.05, f"and back as it was with its ears switched off: {e2:.2f} against {e0:.2f}")
     edge = {k: (warm(off, "side", k), warm(on, "side", k)) for k in ("chin", "forehead")}      # the profile's edge: turned away from the eye
     edge = {k: v for k, v in edge.items() if None not in v}
-    say(len(edge) == 2 and all(b > a * 1.06 for a, b in edge.values()),
+    say(len(edge) == 2 and all(a * 1.01 < b < a * GLOW for a, b in edge.values()),
         "warmer where the skin turns away from the eye (the profile's edge): " + ", ".join(f"{k} {a:.2f} to {b:.2f}" for k, (a, b) in edge.items()))
     lips = {k: (warm(off, "cu", k), warm(on, "cu", k)) for k in ("lower lip", "upper lip")}
     lips = {k: v for k, v in lips.items() if None not in v}
-    say(len(lips) >= 1 and all(b > a * 1.06 for a, b in lips.values()), "the lips warmer: " + ", ".join(f"{k} {a:.2f} to {b:.2f}" for k, (a, b) in lips.items()))
+    say(len(lips) >= 1 and all(a * 1.03 < b < a * GLOW for a, b in lips.values()), "the lips warmer: " + ", ".join(f"{k} {a:.2f} to {b:.2f}" for k, (a, b) in lips.items()))
     f0, f1 = warm(off, "hand", "finger +x"), warm(on, "hand", "finger +x")
-    say(None not in (f0, f1) and f1 > f0 * 1.1, "the fingers lit through by the room: " + (f"{f0:.2f} to {f1:.2f}" if None not in (f0, f1) else "the finger isn't in the hand shot"))
+    say(None not in (f0, f1) and f0 * 1.04 < f1 < f0 * GLOW, "the fingers lit through by the room: " + (f"{f0:.2f} to {f1:.2f}" if None not in (f0, f1) else "the finger isn't in the hand shot"))
     rest = {k: (warm(off, "cu", k), warm(on, "cu", k)) for k in ("cheek +x", "forehead")}
     rest = {k: v for k, v in rest.items() if None not in v}
     say(len(rest) == 2 and all(abs(b / a - 1) < 0.06 for a, b in rest.values()),

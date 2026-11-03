@@ -137,7 +137,7 @@ func _initialize() -> void:
 	var lvl: Node = g.level
 	var hidden: Array = []
 	for r in lvl.find_children("*", "", true, false):
-		if str(r.name) == "ceiling" and r is Node3D:
+		if str(r.name).begins_with("ceiling") and r is Node3D:
 			r.visible = false
 			hidden.append(r)
 	for t in lvl.find_children("*", "", true, false):

@@ -68,6 +68,9 @@ svg text{font-family:system-ui,Segoe UI,sans-serif;pointer-events:none}
 .chips button{font-size:11px;padding:1px 6px}
 kbd{border:1px solid var(--line);border-radius:3px;padding:0 4px;font-size:11px;background:var(--panel2)}
 .big{font-size:14px;color:var(--accent);margin:0 0 4px}
+#checkList{position:fixed;right:12px;top:44px;width:420px;max-height:60vh;overflow:auto;background:var(--panel);border:1px solid var(--accent);border-radius:6px;padding:6px;z-index:8;box-shadow:0 6px 24px #0008}
+#checkList .chead{display:flex;gap:8px;align-items:flex-start;color:var(--text);margin-bottom:4px}#checkList .chead span{flex:1}
+#checkList button.hit{display:block;width:100%;text-align:left;margin-top:3px;font-size:12px}#checkList .ok{color:var(--good)}
 #toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#2a2a30;border:1px solid var(--accent);padding:6px 14px;border-radius:6px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:9}
 #toast.on{opacity:1}
 </style>
@@ -80,7 +83,8 @@ kbd{border:1px solid var(--line);border-radius:3px;padding:0 4px;font-size:11px;
   <label title="What a drag snaps to">snap</label><select id="snap"><option value="0.1">10 cm</option><option value="0.25">25 cm</option><option value="0.5">50 cm</option><option value="1">1 m</option></select>
   <button id="undo" title="Undo (Ctrl+Z)">↶</button><button id="redo" title="Redo (Ctrl+Y)">↷</button>
   <button id="pbrShelf" onclick="window.open('pbr.html?from=street', 'pbrshelf')" title="The PBR shelf (assets/pbr): your texture sets; put one on any surface from the inspector's materials">PBR</button>
-  <button id="glb" title="Download the street as a .glb to drop into your Godot project's folder: its chunks, its colliders (walk on the roads, bump into the buildings), occluders, and where each inside's level goes">Export .glb</button><label title="The lamps' lights in the .glb, as Godot lights (a big street has a hundred: leave them out to light it by hand)"><input type="checkbox" id="glbLamps" checked> lamps</label>
+  <button id="glb" title="The street as a .glb for a Godot project you build by hand: Exports/streets/&lt;name&gt;/ (its chunks, its colliders: walk on the roads, bump into the buildings; occluders, the lamps, and where each inside's level goes), with a README. Drag the folder into your project. Shift-click downloads the .glb instead">Export for Godot</button><label title="The lamps' lights in the .glb, as Godot lights (a big street has a hundred: leave them out to light it by hand)"><input type="checkbox" id="glbLamps" checked> lamps</label>
+  <button id="check" title="Look for two surfaces in one plane over each other (a fence along a wall, a thing in another): they'd flicker in Godot. The street's own pieces never do (its rules); this finds what's been placed so">Check</button>
   <button id="save" class="primary" title="Save the street (Content/Studio/Streets/<name>/street.json); Ctrl+S">Save</button>
   <span id="status">loading…</span>
 </header>
@@ -122,6 +126,7 @@ kbd{border:1px solid var(--line);border-radius:3px;padding:0 4px;font-size:11px;
   </section>
 </main>
 <div id="toast"></div>
+<div id="checkList" hidden></div>
 <script type="module" src="./street.js"></script>
 </body>
 </html>

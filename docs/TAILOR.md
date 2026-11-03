@@ -490,6 +490,43 @@ following the handle as it's dragged; a body change in the edit mode measures th
 bakes first. TAILOR compares the guides with real cuts: their top and bottom within 2 cm, each handle within 3 cm of
 the cut's own (8 at a trouser hem, where the relaxed cloth bridges the ankle's hollow).
 
+## 3d. The skin the clothes hide (DECISIONS 2026-11-03, evening)
+
+The user, playing main: "Clothing clips in different poses (see elbow area), any simple fixes to stop clothing from
+clipping?" Their picture: a striped knit's sleeves with the skin poking through at both elbows. The cloth takes the
+weights of the skin round it (§3b), a Gaussian over the skin's points near it, so a sleeve bends more smoothly than
+the elbow under it, and at a deep bend the elbow's point comes out through it. The simple fix games use (Woohill's
+`hideSkinUnderCloth`, the plan in §4): **leave out the skin an opaque garment hides.** With no elbow under the sleeve
+there's nothing to come through it.
+
+- **Which skin** (`tailor.js` `covered`, `COVER`): each garment's cutter (the value its cut is made from: metres inside
+  the garment from its nearest edge, `V`) on every point of the body. A point is hidden when it's at least 3.5 cm inside
+  every edge (`inset`), 6 cm from a neckline or an open front (`open`: they gape; and from a boot's line, whose cutter
+  doesn't say which edge is nearest), and over the ankle by 5 cm (`feet`: a shoe's opening shows the foot). A garment with no cutter on the skin hides nothing: a skirt hangs away from the
+  legs. `make` returns it as the garment's `cover`, one byte a body point; the worker sends it with the garment.
+- **Which garments:** the Studio's export takes the covers of the garments shown and opaque all over (`hiddenUnder`
+  in `index.html`: not a net, lace, sheer tights, a clear coat or a PBR set with holes: a transparent material, an
+  alpha cut, an opacity under 1 or the shader's `uOver`).
+- **Where:** only the export (`exportSkin`): a skin triangle whose three corners are all hidden isn't written, the
+  skin node's extras `underClothes` its count (STUDIO allows for it). The Studio's own view keeps the whole body, and
+  taking a garment off and exporting again brings the skin back.
+- **The desk:** a Studio export worn by a cast member measures its collision capsules from the skin; where the skin's
+  gone under a sleeve it takes the clothes' points instead (`bodies.js` `setupCollision`, under 30 skin points a bone;
+  `capsOnClothes` says which). PEOPLE holds every capsule over a centimetre thick: the test character in the knit has
+  both upper arms measured on the sleeves (without it they'd have none).
+- **Measured:** TAILOR on the feminine body: a cardigan hides 2,752 of MHR's 18,439 points, its elbow all, its wrist
+  and the neck's base none (under 5%); a t-shirt hides 2,192 and none of the elbow; a skirt and the feet nothing.
+  `motion.mjs --hide` draws and measures the body with the hidden skin left out: the user's outfit (the striped knit
+  and the cream midi) on the feminine body, the share of the cardigan's outside under the skin, before and after:
+  arms crossed 0.7% to 0, hands to the face 1% to 0, hugging herself 0.8% to 0, cowering 1.9% to 0.3%, crouching 0.3%
+  to 0 (5,298 of the body's 36,874 triangles left out); the skirt at the knees in a crouch is as it was (§3b: a skirt
+  needs cloth or bones). The sheet: `docs/godot_sheets/2026-11-03_clothes_elbows.jpg`. The Studio's own export of
+  its test character in that outfit: 5,478 of the skin's 36,874 triangles left out (94,188 corners of 110,622), the
+  count in the skin node's extras.
+
+What it doesn't do: cloth through cloth (a shirt's sleeve through a jacket's at a deep bend) and the skin near a
+garment's edges (a cuff, a hem) can still cross; the weights' own smoothing is unchanged.
+
 ## 4. Not done yet
 
 - **The pictures** are the clothes alone: a hat or sunglasses an outfit brings aren't in them (they need the face's
@@ -499,8 +536,8 @@ the cut's own (8 at a trouser hem, where the relaxed cloth bridges the ankle's h
 
 - **Into Unreal:** the weights are there (§3b); the export isn't: the clothes still leave as OBJ. They go to Unreal
   as skeletal meshes on the character's skeleton (an FBX or glTF with `weights.js`'s bones and weights), a skirt's hem
-  or a coat's tails with Chaos Cloth painted onto that mesh. Hide the skin under tight clothes (Woohill's
-  `hideSkinUnderCloth`) so it can't poke through in motion.
+  or a coat's tails with Chaos Cloth painted onto that mesh. (The skin under the clothes is hidden in the Studio's
+  export since 2026-11-03: §3d.)
 - **Fabric in Unreal:** the export has the coordinates and, for a PBR set, its ref and repeat (`# pbr` in the OBJ;
   the shelf already imports a set into Unreal as `MI_<name>`); the made-up tiles, patterns and prints still have to go
   across (a material instance per garment with the tile, its size, the colour or pattern and the print), and Unreal's

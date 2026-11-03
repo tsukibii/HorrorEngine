@@ -164,7 +164,7 @@ it; within 15 mm of the eye's centre the base mesh has 4,391 points at its secon
   the eyeball open or shut, shut the lids meeting (within their edge's own spacing), the lid's edge on the eyeball. The
   Studio's points match it within a micron away from the cornea (over it they ride out with its bulge). `preview` draws
   it as clay (open, shut, and on a character: `Saved/Story/_look/eyes/`).
-- **The export** (Export for desk / Unreal with the grafted eyes on): the skin carries the graft in place of MHR's skin under
+- **The export** (Export for Godot with the grafted eyes on): the skin carries the graft in place of MHR's skin under
   it, each of its corners on its MHR triangle's points and shares (`_MHRP`, `_MHRW`: the desk plays MHR's face shapes
   through them as the Studio does), its blink as `eyesClosed_L`/`_R` and their in-betweens, taken from the Studio's
   own shut states (MHR's skin holds still); the bake draws the graft over MHR's lids in the skin's texture, so its
@@ -202,11 +202,20 @@ it; within 15 mm of the eye's centre the base mesh has 4,391 points at its secon
 The fixes are small and belong in the revamp's first steps (§5): a `made.json` receipt on each bake, the body's
 fingerprint in it, the clothes' lock and order saved, exports in their own folder.
 
-### 3.1 Out to the desk and Unreal, and back (DECISIONS 2026-10-24)
+### 3.1 Out to Godot and the desk, and back (DECISIONS 2026-10-24; Godot 2026-11-03, night)
 
-**Export for desk / Unreal** (the header) saves, writes `body.bin`, and writes `People/<name>/export/<name>.glb`: the
+**Export for Godot** (the header; it was Export for desk / Unreal) saves, writes `body.bin`, and writes
+`People/<name>/export/<name>.glb` (the desk's and the Director's), then its copy for a Godot project built by hand,
+`Exports/characters/<name>/<name>.glb` with a `README.txt`: MHR's 72 face shapes baked into it as blend shapes
+(`tools/face_morphs.mjs`, as the Director's install does for `game/people/`; `/api/godot/<name>`, `storykit/exports.py`
+`character`); in Godot an HSCharacterLook child gives it the studio's skin, eyes and hair. The export: the
 character as it looks, neutral, in metres, Y up, feet on the floor, facing +Z. MHR's skin with the eyes' openings cut
 out as the shader cuts them, the eyeballs, the teeth and the tongue, brows and lashes, the salon's baked hair, the clothes and the accessories.
+**The skin the clothes hide is left out** (DECISIONS 2026-11-03, evening: an elbow came through a knit sleeve in a
+pose): a triangle whose corners are all well inside an opaque garment's edges isn't written (`hiddenUnder`, the
+skin node's extras `underClothes` its count), so a bent elbow or knee has no skin there to come through the cloth;
+the skin near the edges, under see-through clothes and the feet stay (docs/TAILOR.md §3d). The Studio's own view
+keeps the whole body.
 **Rigged** (2026-10-26, so the desk can drive it and Unreal imports a skeletal mesh): MHR's own skeleton
 (`MHR_lod1_rig.bin`'s 127 bones by MHR's names, root `body_world`), each joint where it sits in this body (refitted, as
 the T-pose refits them), the eyes' joints at the eyeballs' middles; the bones unturned, the bind pose MHR's rest pose.

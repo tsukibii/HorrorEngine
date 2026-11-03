@@ -10,6 +10,8 @@
 // (tailor/guides.js, the Studio's edit mode): a garment's lines found on the body alone reach where its cut does (its
 // film's or rings' top and bottom within 2 cm of the cut's) and its handles sit within 3 cm of the cut's own (8 at a
 // trouser hem, where the relaxed cloth bridges the ankle's hollow; 5 for a skirt's flare, found on a waved or pleated hem).
+// The skin the clothes hide (§3d): a cardigan hides its elbow's skin and not its wrist's or the neck's base, a t-shirt
+// not the elbow, a skirt and the feet nothing.
 // Ends "TAILOR ok".
 //
 //   node tools/character/tailor/check.mjs
@@ -169,6 +171,19 @@ for (const [bname, h, names] of HUNG) {
   if (g.drape) errs.push("t-shirt at fit 0: draped (skin tight has nothing to hang)");
   if (far / n > 0.05) errs.push(`t-shirt at fit 0: ${(100 * far / n).toFixed(0)}% of it over 8 mm off the skin`);
   else console.log(`  t-shirt at fit 0: ${(100 * (1 - far / n)).toFixed(0)}% of it within 8 mm of the skin`);
+}
+{                                                                                  // the skin the clothes hide (TAILOR.md §3d), on the feminine body
+  const b = namedBody(m, "feminine", 1.62), B = TAILOR.body(b.P, b.T), F = B.F, n = b.P.length / 3, s = F.s;
+  const near = (side, at, r = 0.025) => { const out = []; for (let i = 0; i < n; i++) { const a = F.arm(b.P[i * 3], b.P[i * 3 + 1], b.P[i * 3 + 2]); if (a && a.side === side && Math.abs(a.t - at) < r) out.push(i); } return out; };
+  const share = (c, ids) => ids.length ? ids.filter(i => c[i]).length / ids.length : -1;
+  const card = TAILOR.make(B, "cardigan", designs.cardigan, {}), tee = TAILOR.make(B, "t-shirt", designs["t-shirt"], {}), skirt = TAILOR.make(B, "skirt", designs.skirt, {});
+  const elbow = near("L", F.arms.L.elbow), wrist = near("L", F.arms.L.wrist, 0.012), feet = [], neck = [];
+  for (let i = 0; i < n; i++) { const y = b.P[i * 3 + 1]; if (y < F.ankleY) feet.push(i); if (Math.abs(y - F.neckBaseY) < 0.01 * s) neck.push(i); }
+  const c = card.cover, got = { elbow: share(c, elbow), wrist: share(c, wrist), neck: share(c, neck), teeElbow: share(tee.cover, elbow), skirt: skirt.cover, feet: feet.filter(i => c[i] || tee.cover[i]).length };
+  const hid = c ? c.reduce((a, x) => a + x, 0) : 0;
+  if (!c || c.length !== n || !(got.elbow > 0.95) || !(got.wrist < 0.05) || !(got.neck < 0.05) || !(got.teeElbow < 0.05) || got.skirt || got.feet)
+    errs.push(`the skin the clothes hide: a cardigan's elbow ${got.elbow.toFixed(2)}, its wrist ${got.wrist.toFixed(2)}, the neck's base ${got.neck.toFixed(2)}, a t-shirt's elbow ${got.teeElbow.toFixed(2)}, a skirt ${got.skirt ? "some" : "none"}, feet ${got.feet}`);
+  else console.log(`  the skin the clothes hide: a cardigan ${hid} of ${n} points, its elbow all (${elbow.length}), its wrist and the neck's base none; a t-shirt's elbow none; a skirt and the feet none`);
 }
 {                                                                                  // the guides against the cuts, on the feminine body
   const b = namedBody(m, "feminine", 1.62), B = TAILOR.body(b.P, b.T), F = frame(b.P, b.T), N = normals(b.P, b.T);

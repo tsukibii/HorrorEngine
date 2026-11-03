@@ -1303,7 +1303,7 @@ const png = rgb => {
       const before = JSON.stringify(b.character()), rec = await b.recipeOf(new File([buf], `${n}.glb`)), made = await (await fetch(`api/package/${n}/export.made.json`)).json();
       const back = await b.importPackage(new File([buf], `${n}.glb`), n + "_back");
       const [s0, s1] = await Promise.all([n, n + "_back"].map(async x => (await (await fetch(`api/recipe/${x}`)).json()).sha1));
-      return { meshes: json.meshes.length, skin: acc ? acc.count : 0, corners: b.TRIS.length, h: acc ? acc.max[1] - acc.min[1] : 0, foot: acc ? acc.min[1] : 1, height: b.st.height,
+      return { meshes: json.meshes.length, skin: acc ? acc.count : 0, corners: b.TRIS.length, under: node?.extras?.underClothes || 0, h: acc ? acc.max[1] - acc.min[1] : 0, foot: acc ? acc.min[1] : 1, height: b.st.height,
                files: Object.keys(rec.files), receipt: !!(made.sources && made.sources["character.json"]), back, who: b.who, same: JSON.stringify(s0) === JSON.stringify(s1),
                settings: JSON.stringify(b.character()) === before, mb: buf.byteLength / 1048576, eyes, rig, through, lids: { ...b.LIDREST },
                face: !!(prim && prim.attributes._MHRP && prim.attributes._MHRW && json.accessors[prim.attributes._MHRP].count === acc.count) };
@@ -1313,7 +1313,7 @@ const png = rgb => {
     if (!r.eyes.every(Boolean)) throw new Error(`the eyeballs don't carry the eye (a baked paint, extras.studioEye, _EYELOCAL, uv, tangents): ${JSON.stringify(r.eyes)}`);
     if (!(r.rig.joints === 127 && r.rig.root === "body_world" && r.rig.all && r.rig.eyes[0] === "l_eye" && r.rig.eyes[1] === "r_eye" && Math.abs(r.rig.turned - 0.6) < 0.05 && r.rig.feet < 1e-4))
       throw new Error(`the export's rig: ${JSON.stringify(r.rig)}`);
-    if (!(r.skin > 0.97 * r.corners && r.skin < 1.5 * r.corners)) throw new Error(`the skin: ${r.skin} corners against MHR's ${r.corners} (only the eyes' openings come out, cut along their outlines)`);
+    if (!(r.skin > 0.97 * (r.corners - 3 * r.under) && r.skin < 1.5 * r.corners)) throw new Error(`the skin: ${r.skin} corners against MHR's ${r.corners}, ${r.under} triangles under the clothes (only the eyes' openings and the skin opaque clothes hide come out: TAILOR.md §3d)`);
     if (!(r.lids.L > 0 && r.lids.R > 0 && r.lids.most < 0.005)) throw new Error(`the lids don't rest on the eyes: ${JSON.stringify(r.lids)}`);
     if (!r.through) throw new Error("the skin doesn't carry its openings' outlines (extras.openings)");
     const worst = Math.max(...r.through.map(v => v.over));
@@ -1325,7 +1325,7 @@ const png = rgb => {
     if (r.back !== NAME + "_back" || r.who !== NAME + "_back" || !r.same || !r.settings) throw new Error(`the import: ${JSON.stringify(r)}`);
     await page.evaluate(n => { const s = document.querySelector("#who"); s.value = n; s.dispatchEvent(new Event("change")); }, NAME);   // back to this test's character
     await page.waitForFunction(([n, k]) => window.__body.who === n && window.__body.pics.length === k, [NAME, pics], { timeout: 120000 });
-    console.log(`       the GLB ${r.mb.toFixed(1)} MB: ${r.meshes} meshes, the skin ${r.skin} of ${r.corners} corners (the eyes' openings out), ${r.h.toFixed(2)} m tall; its recipe ${r.files.length} files; back as ${r.back}, every file and setting the same`);
+    console.log(`       the GLB ${r.mb.toFixed(1)} MB: ${r.meshes} meshes, the skin ${r.skin} of ${r.corners} corners (the eyes' openings out${r.under ? `, ${r.under} triangles under the clothes` : ""}), ${r.h.toFixed(2)} m tall; its recipe ${r.files.length} files; back as ${r.back}, every file and setting the same`);
     console.log(`       the eyes in a file (depth only): the lids rest on them (${r.lids.L} and ${r.lids.R} of MHR's points forward, at most ${(r.lids.most * 1000).toFixed(1)} mm); from the front, above, below and 20° to either side, at most ${(100 * worst).toFixed(2)}% of an eyeball outside its opening`);
     console.log(`       rigged: MHR's ${r.rig.joints} bones from ${r.rig.root}, every part skinned on them; the head turned 0.60 rad takes the eyes ${r.rig.turned.toFixed(2)} round it (each on ${r.rig.eyes.join(" and ")}), the feet stay (${(r.rig.feet * 1000).toFixed(2)} mm)`);
   });

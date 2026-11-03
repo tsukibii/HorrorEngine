@@ -216,20 +216,32 @@ The format grew with it (STORY_FORMAT.md §2):
 `plan.py`, `story_check.py` and `level_check.py` read all of it, and `level_check.check()` can be called on a story
 in memory.
 
-## 7. From here to Unreal, semi-photoreal, quickly
+## 7. Out to Godot: Export for Godot
 
-What the builder now hands over, and what to do with it:
-1. **The shell is exact:** walls, holes cut to your window and door models, trim, built-ins at real sizes.
-   `storykit.importer.build(G)` makes it all; replace the reference cut-outs' holes with the models themselves (they
-   fit by construction).
-2. **Trim and built-ins are separate pieces:** give them one material each (painted wood for trim, white laminate for
-   built-ins) and they read as finished at once. Many small pieces cost draw calls: merge each room's trim (Merge
-   Actors) once the layout is locked.
-3. **Wall items carry their tag:** a `mirror` wants a mirror material (Lumen reflections handle a small one; a
-   bathroom mirror at the player's face may want a planar reflection), a `tv` an emissive screen, posters and frames
-   a texture.
-4. **Lights are placed and warm:** a point light per ceiling light at its colour temperature; swap for rect lights
-   (LED panels) and bake (GPU Lightmass) or leave them to Lumen.
+The toolbar's **Export for Godot** (DECISIONS 2026-11-03, night: "so if I decide to build the game completely in Godot
+instead of through Director I can") writes the level as the 3D view shows it into `Exports/interiors/<name>/` (a set's
+level is named after the set, a game's `<game>_<level>`): `<name>.glb` and a `README.txt` saying what's in it. Drag the
+folder into a Godot 4 project's FileSystem dock and the `.glb` into a scene. `levelexport.js` makes it from the stage
+(`node tools/director/levelexport.mjs --game set:<name> [--level L]` from the command line, `--out FILE` just the file):
+
+- `visual/<piece>`: every piece's mesh with its materials (the PBR sets it wears at their real size, kit things and
+  library meshes inside their blocks), each piece a node by its id.
+- `outside/`: the building round it (§8) when the view shows it, a node of its own: a level going inside a street's
+  building leaves it out (untick outside, export again), since the street's .glb has that shell.
+- `doors/door_<id>`: each door with what's attached to it (its handle, its half of the hinges), the node's origin on
+  the hinge, so turning it about Y swings it (a sliding one slides along its X); its extras say the hinge, the turn that
+  opens it, the width; its collider is its own child.
+- `collision/<room>-colonly`: the solid pieces' boxes, a trimesh a room: Godot makes each a StaticBody3D on import, so
+  a CharacterBody3D walks the floors and stops at the walls.
+- `occluders/<room>_occ-occonly`: the walls', floors' and ceilings' boxes as occluders (Godot's occlusion culling,
+  turned on in the project's settings).
+- `lights/light_<id>`: the level's lamps (KHR_lights_punctual: OmniLight3D, SpotLight3D), a lamp the story lights later
+  among them (`lit: false` in its extras); the windows' fill and the view's own lamp are left out (light it by hand).
+- `markers/`: `player_start`, `spot_<id>`, `trigger_<id>` (a room's volume, a story area: its size in its extras) as
+  empty nodes looking along their -Z, Godot's forward.
+
+Y up, metres, the level where the desk has it (story north is -Z). EXPORTS (`tools/godot/exports_check.py`) drops two
+sets' exports into a fresh project and measures them; guides/godot_by_hand and guides/first_game take it from there.
 
 ## 8. The outside: the building round the level, for the street
 

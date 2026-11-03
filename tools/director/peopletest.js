@@ -46,11 +46,16 @@ const fail = m => { console.error("PEOPLE FAIL: " + m); process.exit(1); };
       const skin = meshes.find(m => /_skin$/.test(m.name)), eyes = meshes.filter(m => m.material.userData.eyeU);
       const bone = m => m.skeleton.bones[m.geometry.attributes.skinIndex.getX(0)].name;
       return { kind: fig.constructor.name, ok: fig.ok, mhr: fig.mhr, clay: skin && skin.material.customProgramCacheKey() === "inkcel-squash", skin: !!skin,
-               eyes: eyes.map(m => [m.name, bone(m), !!m.material.userData.plain]), off: off(fig), ref, tall: fig.height };
+               eyes: eyes.map(m => [m.name, bone(m), !!m.material.userData.plain]), off: off(fig), ref, tall: fig.height,
+               caps: (fig.caps || []).map(c => [c.name, Math.min(c.rx, c.rz)]).concat(Object.entries(fig.limbR || {})), worn: fig.capsOnClothes || [],
+               under: skin && skin.userData.underClothes || 0 };
     }, body);
     if (r.err) throw new Error(r.err);
     if (r.kind !== "BodyFigure" || !r.ok || !r.mhr) throw new Error(`not a body on MHR's skeleton: ${JSON.stringify(r)}`);
     if (!r.skin || r.clay) throw new Error(`the skin ${r.skin ? "is the desk's clay" : "is missing"}`);
+    const thin = r.caps.filter(([, v]) => !(v > 0.01));       // the body's capsules (what the arms clear): a part whose skin its clothes hide measured on them (docs/TAILOR.md §3d)
+    if (r.caps.length < 7 || thin.length) throw new Error(`the body's capsules: ${thin.length ? thin.map(([n, v]) => `${n} ${(v * 100).toFixed(1)} cm`).join(", ") : `only ${r.caps.length}`}`);
+    console.log(`       its ${r.caps.length} capsules all over a centimetre thick${r.under ? `; the skin its clothes hide left out (${r.under} triangles), ${r.worn.join(", ") || "no part"} measured on the clothes` : ""}`);
     const want = [["_eye_L", "l_eye"], ["_eye_R", "r_eye"]];
     if (r.eyes.length !== 2 || !want.every(([n, b]) => r.eyes.some(e => e[0].endsWith(n) && e[1] === b && e[2]))) throw new Error(`the eyes: ${JSON.stringify(r.eyes)}`);
     const cm = a => a.map(v => (v * 100).toFixed(1)).join(", "), worse = r.ref ? Math.max(...r.off.map((v, i) => v - r.ref[i])) : Math.max(...r.off) - 0.08;

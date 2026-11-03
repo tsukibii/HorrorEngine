@@ -1,0 +1,33 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://starter/player.gd" id="1"]
+
+[sub_resource type="CapsuleShape3D" id="body"]
+radius = 0.28
+height = 1.7
+
+[node name="Player" type="CharacterBody3D"]
+floor_snap_length = 0.3
+script = ExtResource("1")
+
+[node name="Body" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
+shape = SubResource("body")
+
+[node name="Eye" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
+fov = 70.0
+near = 0.03
+
+[node name="Aim" type="RayCast3D" parent="Eye"]
+target_position = Vector3(0, 0, -2)
+
+[node name="Flashlight" type="SpotLight3D" parent="Eye"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.18, -0.2, -0.1)
+visible = false
+light_color = Color(1, 0.94, 0.84, 1)
+light_energy = 3.0
+shadow_enabled = true
+spot_range = 14.0
+spot_angle = 24.0
+spot_angle_attenuation = 0.6

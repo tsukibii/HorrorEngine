@@ -76,7 +76,7 @@
   <button id="save" title="The settings into Content/Studio/People/&lt;name&gt;/character.json">Save</button>
   <button id="expBody" title="The whole body, A-pose, metres, Y up, facing +Z: People/&lt;name&gt;/&lt;name&gt;_body.obj">Export body OBJ</button>
   <button id="expHead" title="The head alone, cut at the neck (People/&lt;name&gt;/&lt;name&gt;_head.obj)">Export head OBJ</button>
-  <button id="expPack" title="The character for the desk and Unreal: People/&lt;name&gt;/export/&lt;name&gt;.glb (the body with its openings, eyes, teeth, hair, clothes, accessories, neutral), carrying everything it's made from, so Import brings it back here as it was">Export for desk / Unreal</button>
+  <button id="expPack" title="The character for Godot and the desk: Exports/characters/&lt;name&gt;/&lt;name&gt;.glb to drag into a Godot project you build by hand (MHR's face shapes baked in as blend shapes; its README says how to give it the studio's look), and People/&lt;name&gt;/export/&lt;name&gt;.glb for the desk and the Director (the body with its openings, eyes, teeth, hair, clothes, accessories, neutral), carrying everything it's made from, so Import brings it back here as it was">Export for Godot</button>
   <button id="impPack" title="A character exported from here (its .glb, or its .studio.json) back into the Studio, every setting editable">Import…</button><input id="impFile" type="file" accept=".glb,.json" hidden>
   <button id="pbrShelf" onclick="window.open('pbr.html', '_blank')" title="The PBR sets in assets/pbr (a folder each) on a sphere, a cube, a room corner and a close-up, each map found by its name or chosen by hand: in a new tab">PBR</button>
   <span id="status"></span>
@@ -673,6 +673,7 @@ TAILOR_W.onmessage = e => {
   for (const m of GARMENTS.children) { m.geometry.dispose(); m.material.dispose(); }
   GARMENTS.clear();
   for (const g of garments) for (const q of g.parts) GARMENTS.add(LOOK.mesh(q, g.name, g.look));   // tailor/look.js: the fabric, the pattern, the print, the edges' shade
+  COVERS = new Map(garments.filter(g => g.cover).map(g => [g.name, g.cover]));   // the skin each hides (the export leaves it out: hiddenUnder)
   if (!GARMENTS.parent) rig.add(GARMENTS);
   const on = CUT_ON.get(id); for (const k of [...CUT_ON.keys()]) if (k < id || (k === id && stage !== "cut")) CUT_ON.delete(k);   // (the cut's body stays for its hung clothes)
   GARMENTS.userData.posedFor = null;                   // new clothes: posed afresh
@@ -3239,6 +3240,25 @@ function faceRide(g, lash = false) {
   }
   g.setAttribute("mhrp", new THREE.BufferAttribute(I, 3)); g.setAttribute("mhrw", new THREE.BufferAttribute(W, 3));
 }
+// the skin the clothes hide (docs/TAILOR.md §3d): each garment's cover (tailor.js covered: the body's points well inside
+// its edges), of the garments worn that are opaque all over (not a net, lace, sheer tights, a clear coat or a PBR set
+// with holes), one byte a body point; null when nothing is hidden
+let COVERS = new Map();
+function hiddenUnder() {
+  const shown = new Set(), through = new Set();
+  for (const m of GARMENTS.children) {
+    const g = m.userData.garment, M = m.material; if (!g || !m.visible) continue;
+    shown.add(g);
+    if (M.transparent || M.alphaTest > 0 || M.opacity < 1 || M.userData?.uniforms?.uOver?.value > 0) through.add(g);
+  }
+  let out = null;
+  for (const [g, c] of COVERS) {
+    if (!shown.has(g) || through.has(g) || c.length !== N) continue;
+    out ||= new Uint8Array(N);
+    for (let i = 0; i < N; i++) if (c[i]) out[i] = 1;
+  }
+  return out;
+}
 function exportSkin(SH = null) {
   const DP = dgeo.attributes.position.array, DN = dgeo.attributes.normal.array, UV = dgeo.attributes.uv.array, pos = [], nrm = [], uv = [], srcI = [], srcW = [];
   const poly = P => P.map(v => [v.x, v.y]), L = poly(SKU.uCutL.value), R = poly(SKU.uCutR.value), z = SKU.uCutZ.value, on = SKU.uCutOn.value > 0.5;
@@ -3280,8 +3300,11 @@ function exportSkin(SH = null) {
     split(t, O, A, ab, ca, d + 1); split(t, O, ab, B, bc, d + 1); split(t, O, ca, bc, C, d + 1); split(t, O, ab, bc, ca, d + 1);
   };
   const graft = graftOn() && GRAFTM ? GRAFTM : null;    // the grafted eyes: MHR's skin under them left out, theirs added below
+  const UNDER = hiddenUnder();                          // the skin the clothes hide, left out: a bent elbow or knee can't come through them
+  let under = 0;
   for (let t = 0; t < DP.length; t += 9) {
     if (graft && GRAFT.hideT[t / 9]) continue;
+    if (UNDER && UNDER[TRIS[t / 3]] && UNDER[TRIS[t / 3 + 1]] && UNDER[TRIS[t / 3 + 2]]) { under++; continue; }
     const zz = (DP[t + 2] + DP[t + 5] + DP[t + 8]) / 3;
     const O = !on ? null : zz > z.x && overlaps(SKU.uCutBoxL.value, t) ? L : zz > z.y && overlaps(SKU.uCutBoxR.value, t) ? R : null;   // an eye's opening over it (only the front: not the back of the head behind)
     if (O) split(t, O, [1, 0, 0], [0, 1, 0], [0, 0, 1], 0); else { put(t, [1, 0, 0]); put(t, [0, 1, 0]); put(t, [0, 0, 1]); }
@@ -3341,6 +3364,7 @@ function exportSkin(SH = null) {
   }
   const m = new THREE.Mesh(g, skinFileMaterial());
   m.name = `${WHO}_skin`; m.userData.srcI = srcI; m.userData.srcW = srcW;   // each corner's three MHR points and their shares (its weights)
+  if (under) m.userData.underClothes = under;          // (the file's extras: how many of MHR's triangles the clothes hide, left out)
   if (graft) m.userData.eyeGraft = true;                // (the file's extras: the grafted eyes, their lining inside the eyeballs: EYELIDS)
   g.setAttribute("mhrp", new THREE.Float32BufferAttribute(srcI, 3)); g.setAttribute("mhrw", new THREE.Float32BufferAttribute(srcW, 3));   // the same in the file (_MHRP, _MHRW): the desk plays MHR's face shapes through them (tools/shared/face.js)
   if (on || graft) m.userData.openings = Object.fromEntries(["L", "R"].map(side => {   // each opening's outline as cut, on the lids as they rest (the file's extras: a reader can follow the lid line); the grafted eyes': where their lids meet the eyeball
@@ -3597,7 +3621,7 @@ function exportRig(root, parts, SH = null) {
         const top = [...acc.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4), sum = top.reduce((a, e) => a + e[1], 0) || 1;
         top.forEach(([b, x], k) => { idx[c * 4 + k] = b; w[c * 4 + k] = x / sum; });
       }
-      wear(o.geometry, o.material, o.name, { index: idx, weight: w }).userData = { ...(o.userData.openings ? { openings: o.userData.openings } : {}), ...(o.userData.eyeGraft ? { eyeGraft: true } : {}) }; continue;
+      wear(o.geometry, o.material, o.name, { index: idx, weight: w }).userData = { ...(o.userData.openings ? { openings: o.userData.openings } : {}), ...(o.userData.eyeGraft ? { eyeGraft: true } : {}), ...(o.userData.underClothes ? { underClothes: o.userData.underClothes } : {}) }; continue;
     }
     const own = o.parent === rig;                       // the Studio's own (drawn in the world: back to the rig's space), or made for the file (in it already)
     if (!own) o.updateMatrixWorld(true);
@@ -3685,7 +3709,7 @@ async function exportPackage() {
   if (!WHO) return status("make a character first", "bad");
   if (EDITING) setEditing(false);                      // the clothes as cut and hung, never as lines
   if (/^(cutting|cut|hanging)$/.test(DRAPING.stage)) { status("waiting for the clothes to hang…"); await hung(); }   // exported as they hang
-  status("exporting for the desk and Unreal…");
+  status("exporting for Godot and the desk…");
   await api(`api/people/${encodeURIComponent(WHO)}`, character()); await LAY.save();
   await api(`api/people/${encodeURIComponent(WHO)}/body.bin`, new Blob([neutralBody()])); await saveDrape();
   const rec = await api(`api/recipe/${encodeURIComponent(WHO)}`), was = st.expr.slice(), pose = POSE;
@@ -3710,7 +3734,10 @@ async function exportPackage() {
   await api(at + encodeURIComponent(`${WHO}.studio.json`), rec);
   await api(at + "export.made.json", { made: rec.made, glb: `${WHO}.glb`, bytes: glb.byteLength, sources: rec.sha1,
                                        about: "Character Studio export: the GLB is the character neutral, in metres, Y up, facing +Z; its scene's extras.studio (and the .studio.json) bring it back with Import" });
-  status(`wrote People/${WHO}/export/${WHO}.glb (${(glb.byteLength / 1048576).toFixed(1)} MB), carrying what it's made from: Import brings it back`, "ok");
+  status(`wrote People/${WHO}/export/${WHO}.glb (${(glb.byteLength / 1048576).toFixed(1)} MB); for Godot…`);
+  const g = await api(`api/godot/${encodeURIComponent(WHO)}`, {});            // its copy for a Godot project by hand, the face shapes baked
+  if (g.error) throw new Error(g.error);
+  status(`wrote People/${WHO}/export/${WHO}.glb for the desk and ${g.path} for Godot (drag ${g.folder} into your project; ${g.faces}), carrying what it's made from: Import brings it back`, "ok");
 }
 async function recipeOf(file) {                       // a .glb from Export (its scene's extras), or its .studio.json
   if (/\.json$/i.test(file.name)) return JSON.parse(await file.text());
@@ -3721,7 +3748,7 @@ async function recipeOf(file) {                       // a .glb from Export (its
 }
 async function importPackage(file, as) {
   const rec = await recipeOf(file).catch(e => { status(e.message, "bad"); return null; });
-  if (!rec || !rec.files || !rec.files["character.json"]) return status("that file doesn't carry a Studio character (export one with Export for desk / Unreal)", "bad");
+  if (!rec || !rec.files || !rec.files["character.json"]) return status("that file doesn't carry a Studio character (export one with Export for Godot)", "bad");
   let name = as || prompt("Bring it back as", rec.name);
   while (name) {
     if (!/^[A-Za-z0-9_-][A-Za-z0-9_.-]*$/.test(name)) { name = prompt("A name is letters, digits, _ - .", rec.name); continue; }

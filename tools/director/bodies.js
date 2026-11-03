@@ -369,19 +369,36 @@ export class BodyFigure {
       mesh.geometry.setAttribute("soft", new THREE.BufferAttribute(soft, 1));
     }
     this.skinMesh = mesh;
+    // the clothes' points too, by their bones' names: a Studio export leaves out the skin its clothes hide (docs/TAILOR.md
+    // §3d), so a part with few skin points left is measured on what covers it (what the arms must clear anyway); never
+    // the hair, the eyes or what's in the mouth, which would swell the head
+    const cpts = [], cdom = [];
+    this.model.traverse(o => {
+      if (!o.isSkinnedMesh || o === mesh || /hair|eye|lash|brow|teeth|tongue|tear|scalp/i.test(o.name)) return;
+      const I = o.geometry.attributes.skinIndex, Wt = o.geometry.attributes.skinWeight; if (!I || !Wt) return;
+      o.skeleton.update();
+      for (let i = 0; i < I.count; i += 2) {
+        o.getVertexPosition(i, v); cpts.push(v.clone().applyMatrix4(o.matrixWorld));
+        let best = -1, bw = 0; for (let k = 0; k < 4; k++) { const w = Wt.getComponent(i, k); if (w > bw) { bw = w; best = I.getComponent(i, k); } }
+        cdom.push(bi.get(o.skeleton.bones[best]?.name));
+      }
+    });
+    const FEW = 30;                                 // skin points a part needs before its clothes stand in
     const P = this.restPos, left = P.l_upleg.clone().sub(P.r_upleg).normalize();
     const pct = (arr, q) => { if (!arr.length) return 0; const a = [...arr].sort((x, y) => x - y); return a[Math.min(a.length - 1, Math.floor(q * a.length))]; };
-    this.caps = [];
+    this.caps = []; this.capsOnClothes = [];        // (which parts were measured on their clothes)
     for (const [name, a, b, bones] of BODY_CAPS) {
       if (!P[a] || !P[b]) continue;
       const ids = new Set(bones.map(x => bi.get(x)).filter(x => x !== undefined));
       const axis = P[b].clone().sub(P[a]).normalize(), fwd = new THREE.Vector3().crossVectors(left, axis).normalize(), side = new THREE.Vector3().crossVectors(axis, fwd);
       const xs = [], zs = [];
-      pts.forEach((p, k) => {
-        if (!ids.has(dom[k])) return;
+      const take = (ps, ds) => ps.forEach((p, k) => {
+        if (!ids.has(ds[k])) return;
         const { t, q } = closestOnSegment(p, P[a], P[b]); if (t <= 0.02 || t >= 0.98) return;
         const d = p.clone().sub(q); xs.push(d.dot(side)); zs.push(d.dot(fwd));
       });
+      take(pts, dom);
+      if (xs.length < FEW && name !== "head") { xs.length = 0; zs.length = 0; take(cpts, cdom); this.capsOnClothes.push(name); }
       // the spine runs near the back: centre the capsule in the body (front-to-back), then size it
       const cz = (pct(zs, 0.95) + pct(zs, 0.05)) / 2;
       this.caps.push({ name, a, b, cz, rx: pct(xs.map(Math.abs), 0.8), rz: pct(zs.map(z => Math.abs(z - cz)), 0.8) });
@@ -391,7 +408,9 @@ export class BodyFigure {
     for (const [m] of SIDE) for (const [seg, a, b, bones] of [["up", `${m}_uparm`, `${m}_lowarm`, [0, 1, 2, 3, 4].map(k => `${m}_uparm_twist${k}_proc`)],
                                                               ["low", `${m}_lowarm`, `${m}_wrist`, [1, 2, 3, 4].map(k => `${m}_lowarm_twist${k}_proc`).concat([`${m}_wrist_twist`])]]) {
       const ids = limb(bones), ds = [];
-      pts.forEach((p, k) => { if (ids.has(dom[k])) { const { t, q } = closestOnSegment(p, P[a], P[b]); if (t > 0.1 && t < 0.9) ds.push(p.distanceTo(q)); } });
+      const take = (ps, dd) => ps.forEach((p, k) => { if (ids.has(dd[k])) { const { t, q } = closestOnSegment(p, P[a], P[b]); if (t > 0.1 && t < 0.9) ds.push(p.distanceTo(q)); } });
+      take(pts, dom);
+      if (ds.length < FEW) { ds.length = 0; take(cpts, cdom); this.capsOnClothes.push(`${m}_${seg}`); }   // a sleeve over it: its radius
       this.limbR[`${m}_${seg}`] = pct(ds, 0.6);
     }
   }

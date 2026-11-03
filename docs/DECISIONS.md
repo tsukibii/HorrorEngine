@@ -2,6 +2,47 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-03, night (the user: rules in the editors, exports for Godot, guides)
+
+- **"Is this something that's easy to have as an implemented fix on any interior design or street design? How do I
+  prevent future rooms from having this issue."** Then: **"Don't need to update any of the existing maps etc, just make
+  it that the interior/street editors carry rules to keep everything proper."** No street.json or set is edited. The
+  interiors already build their walls without two rooms' faces in one plane (plan.py's corners, HSRoom's) and the scene
+  builder's Check runs LEVEL with those rules; check_all now runs LEVEL on every set too. The street builder's generator
+  keeps two pieces apart by construction (STREET_BUILDER §5e: the ground under it all, neighbours' parts and roofs half
+  way, pavements meeting once, fences joined at corners, things inset, decals over what's under them); what's placed in
+  one plane anyway (a fence along a wall, two things in each other) the street page's **Check** lists, and STREET warns
+  about in the saved streets (left as drawn).
+- **"Make sure when I export interiors/streets/character models that instead of an export to Unreal/Director there is an
+  export to Godot. So if I decide to build the game completely in Godot instead of through Director I can, just have an
+  exports folder with sub folders for each to get exported to by default so I can drag and drop them into my Godot
+  project."** An `Exports/` folder at the project's root, `interiors/`, `streets/` and `characters/` in it.
+- **"Make a guide on setting up Godot for manual creation as well as an HTML guide on using a plugin and maybe a basic
+  tutorial for your first game that tells you how to set up each part (interior, street and character) to make your
+  first basic game."** In `guides/`.
+
+## 2026-11-03, later evening (the user: lines down the walls)
+
+- **"Looks good"** (the skin and the clothes). **"Could you investigate why we get weird lighting seams (vertical lines
+  in the wall)… they kind of flicker as I move."** TestRoom001's corridor: half way between its doors, where each side
+  room's dividing wall met the corridor's. A room's north and south walls ran half a wall past their corners and ended
+  on the corridor wall's face: two rooms' faces in one plane, z-fighting. They now stop inside the wall that fills the
+  corner, capped where it fills it only part of the way up, in the export's plan and in the Director's HSRoom alike
+  (GODOT_EXPORT §3c). The Director's rooms had the same in their floors: two rooms' floors overlapping under the wall
+  between them, flickering in its doorway; they meet on the wall's middle now. LEVEL and FROMDESK check it.
+
+## 2026-11-03, evening (the user, playing main: the skin and the clothes)
+
+- **"The subsurface scattering seems too strong in game (looks uncanny)."** Their picture: orange rings round the
+  eyes, the nose's wings and the lips, the ear lit up red. The skin's depth layer (GODOT_LOOK §5g) is now about a third
+  of its first strength, and the lamps' light through thin skin (HumanShaders' translucency, whose ramp starts at pure
+  red) at half; GDPORTRAIT fails a glow (no point warmed more than 25%, the ear 30%). The Studio's Depth (game) still
+  goes to 3 for a character that wants more.
+- **"Clothing clips in different poses (see elbow area), any simple fixes to stop clothing from clipping?"** The simple
+  fix games use: the skin an opaque garment hides is left out of the Studio's export (a bent elbow can't come through
+  a sleeve when there's no elbow under it); the skin near a garment's edges, under see-through clothes and the feet
+  stay (TAILOR.md §3d).
+
 ## 2026-11-03, later (the user: `Director-Godot` into main)
 
 - **"Make a PR for this, it looks good and merge in main and resolve conflicts if any exist."** Main (150 commits since

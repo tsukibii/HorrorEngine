@@ -76,6 +76,8 @@ func _settings() -> Array:
 			o.append([lk.side, lk.offset, lk.height, lk.width, lk.drip, lk.wet])
 	for h in door_holes():
 		o.append(h)
+	for r in _level_rooms():                          # a neighbour moved or changed can change which corners this room closes and where its floor stops
+		o.append([r.global_transform, r.size, r.wall, r.walls, r.floor_on, r.ceiling_on, r.id])
 	return o
 
 
@@ -125,21 +127,33 @@ func _rebuild() -> void:
 	_gen = Node3D.new()
 	_gen.name = "_gen"
 	add_child(_gen)
-	var thick := 0.1
+	var mates := _level_rooms()
 	if floor_on:
-		_block("floor", Vector3(size.x + wall * 2.0, thick, size.z + wall * 2.0), Vector3(0, -thick / 2.0, 0), _mat(floor_material, "floor")).set_meta("hs_floor", floor_kind)
+		for f in _slab("floor", mates):
+			f.set_meta("hs_floor", floor_kind)
 	if ceiling_on:
-		_block("ceiling", Vector3(size.x + wall * 2.0, thick, size.z + wall * 2.0), Vector3(0, size.y + thick / 2.0, 0), _mat(ceiling_material, "ceiling"))
-	var holes := {"north": [], "south": [], "east": [], "west": []}
-	for op in openings:
-		if op != null:
-			holes[op.side].append([op.offset, op.width, op.sill, op.sill + op.height])
-	for h in door_holes():
-		holes[h[0]].append([h[1], h[2], 0.0, h[3]])
+		_slab("ceiling", mates)
+	var holes := _holes()
+	var others := _neighbours()
 	for side in ["north", "south", "east", "west"]:
 		var bit: int = {"north": N, "south": S, "east": E, "west": W}[side]
-		if walls & bit:
+		if not (walls & bit):
+			continue
+		if side == "east" or side == "west":
 			_wall(side, holes[side])
+			continue
+		# a north or south wall closes the corners: past them where nothing else fills them, to their middles where
+		# another room's wall does (its end inside that wall: run on to its face, the two faces lay in one plane and
+		# z-fought, a line down the wall flickering as the eye moves), capped where it does only part of the way up
+		var g0 := _corner_gaps(side, 0, others)
+		var g1 := _corner_gaps(side, 1, others)
+		var whole0 := _whole(g0)
+		var whole1 := _whole(g1)
+		_wall(side, holes[side], wall if whole0 else wall / 2.0, wall if whole1 else wall / 2.0)
+		if not whole0:
+			_caps(side, 0, g0)
+		if not whole1:
+			_caps(side, 1, g1)
 	var i := 0
 	for op in openings:                               # a window's glass, in the editor too
 		if op != null and op.glass:
@@ -181,10 +195,227 @@ func _block(nm: String, sz: Vector3, at: Vector3, mat: Material) -> StaticBody3D
 	return b
 
 
-## one wall as boxes round its holes ([offset, width, bottom, top] along it)
-func _wall(side: String, holes: Array) -> void:
+## the floor or the ceiling, a slab 10 cm thick: out to the walls' middle lines (its core), and past them to the walls'
+## outer faces only where no other room of the level carries a slab of its own on at that height (its core). Two rooms'
+## floors never lie in one plane: run under the wall they share, they did, and in its doorway they z-fought, a strip
+## flickering between the two floors (DECISIONS 2026-11-03, later evening). Returns the slab's blocks.
+func _slab(kind: String, mates: Array) -> Array:
+	var thick := 0.1
+	var y := -thick / 2.0 if kind == "floor" else size.y + thick / 2.0
+	var mat := _mat(floor_material if kind == "floor" else ceiling_material, kind)
+	var out: Array = [_block(kind, Vector3(size.x + wall, thick, size.z + wall), Vector3(0, y, 0), mat)]
+	var hx := size.x / 2.0 + wall / 2.0                   # the walls' middle lines
+	var hz := size.z / 2.0 + wall / 2.0
+	# [this room's space into theirs, their core's half size, their whole slab's, its face there, their id]
+	var others: Array = []
+	var me := HSDirector.id_of(self)
+	for r in mates:
+		if (kind == "floor" and r.floor_on) or (kind == "ceiling" and r.ceiling_on):
+			others.append([r.global_transform.affine_inverse() * global_transform, Vector2(r.size.x / 2.0 + r.wall / 2.0, r.size.z / 2.0 + r.wall / 2.0),
+				Vector2(r.size.x / 2.0 + r.wall, r.size.z / 2.0 + r.wall), 0.0 if kind == "floor" else r.size.y, HSDirector.id_of(r)])
+	var top := 0.0 if kind == "floor" else size.y         # the face two rooms' slabs share: a floor's top, a ceiling's bottom
+	# past the middle lines a point is someone else's where another room's core holds it, or where another room's whole
+	# slab would reach it and that room's id comes first (the outer corners two rooms' strips both reach: one builds it)
+	var covered := func(px: float, pz: float) -> bool:
+		for o in others:
+			var q: Vector3 = o[0] * Vector3(px, top, pz)
+			if abs(q.y - float(o[3])) >= 0.002:
+				continue
+			if abs(q.x) <= o[1].x + 1e-4 and abs(q.z) <= o[1].y + 1e-4:
+				return true
+			if str(o[4]) < me and abs(q.x) <= o[2].x + 1e-4 and abs(q.z) <= o[2].y + 1e-4:
+				return true
+		return false
+	# the strips past the middle lines: east and west along the core's depth, north and south the whole width with the corners
+	var sides := [["e", Vector2(hx + wall / 4.0, 0.0), Vector2(0.0, 1.0), -hz, hz], ["w", Vector2(-hx - wall / 4.0, 0.0), Vector2(0.0, 1.0), -hz, hz],
+		["s", Vector2(0.0, hz + wall / 4.0), Vector2(1.0, 0.0), -hx - wall / 2.0, hx + wall / 2.0], ["n", Vector2(0.0, -hz - wall / 4.0), Vector2(1.0, 0.0), -hx - wall / 2.0, hx + wall / 2.0]]
+	for sd in sides:
+		var mid: Vector2 = sd[1]
+		var along: Vector2 = sd[2]
+		var a0: float = sd[3]
+		var a1: float = sd[4]
+		var open := func(t: float) -> bool:
+			var p: Vector2 = mid + along * t
+			return not covered.call(p.x, p.y)
+		var n := maxi(2, int(ceil((a1 - a0) / 0.025)))    # sampled every 2.5 cm, each run's ends found by halving between samples
+		var cell := (a1 - a0) / n
+		var state: Array = []
+		for k in n:
+			state.append(open.call(a0 + cell * (k + 0.5)))
+		var i := 0
+		var k := 0
+		while k < n:
+			if not state[k]:
+				k += 1
+				continue
+			var j := k
+			while j < n and state[j]:
+				j += 1
+			var s0: float = a0 if k == 0 else _edge(open, a0 + cell * (k - 0.5), a0 + cell * (k + 0.5))
+			var s1: float = a1 if j == n else _edge(open, a0 + cell * (j - 0.5), a0 + cell * (j + 0.5))
+			if s1 - s0 > 0.002:
+				var c: Vector2 = mid + along * ((s0 + s1) / 2.0)
+				var sz := Vector3(wall / 2.0, thick, s1 - s0) if along.y != 0.0 else Vector3(s1 - s0, thick, wall / 2.0)
+				out.append(_block("%s_%s%d" % [kind, sd[0], i], sz, Vector3(c.x, y, c.y), mat))
+				i += 1
+			k = j
+	return out
+
+
+## where `open` changes between lo and hi (one each way), to a tenth of a millimetre
+static func _edge(open: Callable, lo: float, hi: float) -> float:
+	var at_lo: bool = open.call(lo)
+	for _i in 12:
+		var m := (lo + hi) / 2.0
+		if open.call(m) == at_lo:
+			lo = m
+		else:
+			hi = m
+	return (lo + hi) / 2.0
+
+
+## the holes in each wall, [offset, width, bottom, top] along it: the openings and the doors on it
+func _holes() -> Dictionary:
+	var holes := {"north": [], "south": [], "east": [], "west": []}
+	for op in openings:
+		if op != null:
+			holes[op.side].append([op.offset, op.width, op.sill, op.sill + op.height])
+	for h in door_holes():
+		holes[h[0]].append([h[1], h[2], 0.0, h[3]])
+	return holes
+
+
+## the level this room is in (rooms in another level are another place, wherever they stand)
+static func _level_of(n: Node) -> Node:
+	var p := n.get_parent()
+	while p != null and not (p is HSLevel):
+		p = p.get_parent()
+	return p
+
+
+## the other rooms of this room's level, each [this room's space into theirs, their walls' boxes with their north and
+## south walls stopped on their corners' middles]: what can fill one of this room's corners. Never another room's own
+## corner, so two rooms meeting decide alike (both stop on the middle, between them the corner is filled)
+func _neighbours() -> Array:
+	var out: Array = []
+	for r in _level_rooms():
+		out.append([r.global_transform.affine_inverse() * global_transform, r.core_boxes()])
+	return out
+
+
+## the other rooms in this room's level
+func _level_rooms() -> Array:
+	var out: Array = []
+	if not is_inside_tree():
+		return out
+	var lv := _level_of(self)
+	for r in get_tree().get_nodes_in_group("hs_rooms"):
+		if r != self and r is HSRoom and r.is_inside_tree() and _level_of(r) == lv:
+			out.append(r)
+	return out
+
+
+## this room's walls as boxes ([centre, size], its own space), its north and south walls stopped on their corners' middles
+func core_boxes() -> Array:
+	var holes := _holes()
+	var out: Array = []
+	for side in ["north", "south", "east", "west"]:
+		if walls & ({"north": N, "south": S, "east": E, "west": W}[side] as int):
+			out.append_array(wall_boxes(side, holes[side], wall / 2.0, wall / 2.0))
+	return out
+
+
+## where nothing but this wall fills its corner's square at `end` (0 west, 1 east) of a north or south wall: the
+## heights, [bottom, top] in the room's own space, of the square's outer half (beyond its middle, away from the room)
+## that no other room's wall fills, sampled 5 by 5, its edges left out; gaps under a centimetre ignored
+func _corner_gaps(side: String, end: int, others: Array) -> Array:
+	var H := size.y
+	if others.is_empty():
+		return [[0.0, H]]
+	var cx := (size.x / 2.0 + wall / 2.0) * (1.0 if end == 1 else -1.0)
+	var cz := (size.z / 2.0 + wall / 2.0) * (1.0 if side == "south" else -1.0)
+	var out_x := 1.0 if end == 1 else -1.0
+	var filled: Array = [[0.0, H]]
+	for i in 5:
+		for j in 5:
+			var p := Vector3(cx + out_x * (0.004 + (wall / 2.0 - 0.008) * i / 4.0), 0.0, cz - wall / 2.0 + 0.004 + (wall - 0.008) * j / 4.0)
+			var here: Array = []
+			for o in others:
+				var q: Vector3 = o[0] * p                   # in that room's space; its y there is this room's floor
+				for b in o[1]:
+					var c: Vector3 = b[0]
+					var s: Vector3 = b[1]
+					if abs(q.x - c.x) <= s.x / 2.0 + 1e-5 and abs(q.z - c.z) <= s.z / 2.0 + 1e-5:
+						here.append([c.y - s.y / 2.0 - q.y, c.y + s.y / 2.0 - q.y])
+			here = _merged(here)
+			var next: Array = []
+			for a in filled:
+				for b in here:
+					var lo: float = max(a[0], b[0])
+					var hi: float = min(a[1], b[1])
+					if hi - lo > 1e-5:
+						next.append([lo, hi])
+			filled = next
+			if filled.is_empty():
+				return [[0.0, H]]
+	var gaps: Array = []
+	var cur := 0.0
+	for f in _merged(filled):
+		if f[0] > cur + 0.01:
+			gaps.append([cur, f[0]])
+		cur = max(cur, f[1])
+	if H > cur + 0.01:
+		gaps.append([cur, H])
+	return gaps
+
+
+static func _merged(iv: Array) -> Array:
+	iv.sort_custom(func(a, b): return a[0] < b[0])
+	var out: Array = []
+	for v in iv:
+		if out.size() and v[0] <= out[-1][1] + 1e-5:
+			out[-1] = [out[-1][0], max(out[-1][1], v[1])]
+		else:
+			out.append([v[0], v[1]])
+	return out
+
+
+## the corner open over the whole wall (nothing else there): the wall runs past it as it always has
+func _whole(gaps: Array) -> bool:
+	return gaps.size() == 1 and gaps[0][0] <= 0.01 and gaps[0][1] >= size.y - 0.01
+
+
+## a north or south wall's corner closed where nothing else fills it, over those heights: its square's outer half
+func _caps(side: String, end: int, gaps: Array) -> void:
+	var x := (size.x / 2.0 + wall * 0.75) * (1.0 if end == 1 else -1.0)
+	var z := (size.z / 2.0 + wall / 2.0) * (1.0 if side == "south" else -1.0)
+	var i := 0
+	for g in gaps:
+		var lo: float = clamp(float(g[0]), 0.0, size.y)
+		var hi: float = clamp(float(g[1]), 0.0, size.y)
+		if hi - lo > 0.01:
+			_block("wall_%sc%d_%d" % [side[0], end, i], Vector3(wall / 2.0, hi - lo, wall), Vector3(x, (lo + hi) / 2.0, z), _mat(wall_material, "wall"))
+			i += 1
+
+
+## one wall built as boxes round its holes ([offset, width, bottom, top] along it); a north or south wall runs `e0`
+## past the space inside at its west end and `e1` at its east (a whole wall closes the corner, the default)
+func _wall(side: String, holes: Array, e0: float = -1.0, e1: float = -1.0) -> void:
+	var i := 0
+	for b in wall_boxes(side, holes, e0, e1):
+		_block("wall_%s_%d" % [side[0], i], b[1], b[0], _mat(wall_material, "wall"))
+		i += 1
+
+
+## one wall as boxes round its holes, [centre, size] each in the room's own space (see _wall)
+func wall_boxes(side: String, holes: Array, e0: float = -1.0, e1: float = -1.0) -> Array:
 	var along_x := side == "north" or side == "south"
-	var L: float = size.x + wall * 2.0 if along_x else size.z
+	if e0 < 0.0:
+		e0 = wall
+	if e1 < 0.0:
+		e1 = wall
+	var lo_u: float = -(size.x / 2.0 + e0) if along_x else -size.z / 2.0
+	var hi_u: float = (size.x / 2.0 + e1) if along_x else size.z / 2.0
 	var H: float = size.y
 	var c := Vector3.ZERO
 	match side:
@@ -198,8 +429,8 @@ func _wall(side: String, holes: Array) -> void:
 			c = Vector3(-(size.x / 2.0 + wall / 2.0), 0, 0)
 	var hs: Array = []
 	for h in holes:
-		var u0: float = clamp(float(h[0]) - float(h[1]) / 2.0, -L / 2.0, L / 2.0)
-		var u1: float = clamp(float(h[0]) + float(h[1]) / 2.0, -L / 2.0, L / 2.0)
+		var u0: float = clamp(float(h[0]) - float(h[1]) / 2.0, lo_u, hi_u)
+		var u1: float = clamp(float(h[0]) + float(h[1]) / 2.0, lo_u, hi_u)
 		if u1 - u0 > 0.01:
 			hs.append([u0, u1, clamp(float(h[2]), 0.0, H), clamp(float(h[3]), 0.0, H)])
 	hs.sort_custom(func(a, b): return a[0] < b[0])
@@ -210,7 +441,7 @@ func _wall(side: String, holes: Array) -> void:
 		else:
 			merged.append(h)
 	var segs: Array = []
-	var u := -L / 2.0
+	var u := lo_u
 	for h in merged:
 		if h[0] > u + 0.005:
 			segs.append([u, h[0], 0.0, H])
@@ -219,17 +450,16 @@ func _wall(side: String, holes: Array) -> void:
 		if h[3] < H - 0.005:
 			segs.append([h[0], h[1], h[3], H])
 		u = max(u, h[1])
-	if u < L / 2.0 - 0.005:
-		segs.append([u, L / 2.0, 0.0, H])
-	var i := 0
+	if u < hi_u - 0.005:
+		segs.append([u, hi_u, 0.0, H])
+	var out: Array = []
 	for s in segs:
 		var len_: float = s[1] - s[0]
 		var hgt: float = s[3] - s[2]
 		var mid: float = (s[0] + s[1]) / 2.0
 		var at := c + Vector3(mid if along_x else 0.0, (s[2] + s[3]) / 2.0, 0.0 if along_x else mid)
-		var sz := Vector3(len_, hgt, wall) if along_x else Vector3(wall, hgt, len_)
-		_block("wall_%s_%d" % [side[0], i], sz, at, _mat(wall_material, "wall"))
-		i += 1
+		out.append([at, Vector3(len_, hgt, wall) if along_x else Vector3(wall, hgt, len_)])
+	return out
 
 
 ## a window's frame in the room's own space: mid (its middle on the wall's middle line), face (its middle on the inside
@@ -411,7 +641,7 @@ func _stamp() -> void:
 		if not (b is StaticBody3D):
 			continue                                  # (a window's glass: its own words below)
 		var nm := str(b.name)
-		var kind := "floor" if nm == "floor" else ("ceiling" if nm == "ceiling" else "wall")
+		var kind := "floor" if nm.begins_with("floor") else ("ceiling" if nm.begins_with("ceiling") else "wall")   # (a slab's strips past the walls' middles too)
 		var sh: BoxShape3D = (b.find_children("*", "CollisionShape3D", false, false)[0] as CollisionShape3D).shape
 		var piece := {"id": rid + "__" + nm, "kind": kind, "shape": "box", "size": [sh.size.x, sh.size.z, sh.size.y], "room": rid,
 			"yaw": HSDirector.story_yaw(b) + 90.0, "pos": HSDirector.story_pos(b.global_position), "tags": ["floor:" + floor_kind] if kind == "floor" else [], "d": {}}

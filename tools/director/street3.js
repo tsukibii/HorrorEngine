@@ -400,16 +400,23 @@ function trisMesh(name, tris) {                                     // story-spa
   geo.setIndex(new (pos.length / 3 > 65535 ? THREE.Uint32BufferAttribute : THREE.Uint16BufferAttribute)(tris.idx, 1)); geo.computeVertexNormals();
   const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0xff00ff })); mesh.name = name; return mesh;
 }
-export function exportGroup(root, S, pieces, lights, blockers, opts = {}) {
-  const out = new THREE.Group(); out.name = (S.name || "street").replace(/[^A-Za-z0-9_]+/g, "_");
-  const visual = new THREE.Group(); visual.name = "visual"; out.add(visual);
-  const made = new Map();
+// a group's chunks as the export's meshes (a node a chunk, a surface a colour): the street's own, and the outside the
+// scene builder builds round a level (levelexport.js)
+export function exportVisual(root, made = new Map(), name = "visual") {
+  const visual = new THREE.Group(); visual.name = name;
   for (const ch of root.children) {
     if (ch.name.startsWith("chunk_inside")) continue;               // the stand-in rooms: the level's own scene goes there
     const g = new THREE.Group(); g.name = ch.name;
     for (const m of ch.children) if (m.isMesh) { const c = m.material.vertexColors ? byColour(m, exportMaterial(m.material, made), made) : new THREE.Mesh(m.geometry, exportMaterial(m.material, made)); c.name = m.name; g.add(c); }
     visual.add(g);
   }
+  visual.position.copy(root.position);
+  return visual;
+}
+export function exportGroup(root, S, pieces, lights, blockers, opts = {}) {
+  const out = new THREE.Group(); out.name = (S.name || "street").replace(/[^A-Za-z0-9_]+/g, "_");
+  const made = new Map();
+  out.add(exportVisual(root, made));
   const index = root.userData.index || {}, byChunk = new Map(), occByChunk = new Map();
   for (const [id, B] of Object.entries(blockers)) {
     const key = (index[id] || {}).chunk || "loose";

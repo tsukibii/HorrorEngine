@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Every offline check for every game (or one: --game Pilot), one line each: story, level, shots (plan).
+"""Every offline check for every game (or one: --game Pilot), one line each: story, level, shots (plan); the sets' level.
 Ends `CHECKS ok` or `CHECKS FAILED`. Run before every commit that touches a story or tools/; the editor checks
 (import, playthrough, shots with pictures) are listed in CLAUDE.md."""
 import subprocess
@@ -29,6 +29,18 @@ for g in ([game] if game else L.games()):
             for ln in lines[:-1]:
                 if ln.startswith(("ERROR", "FAIL")):
                     print("      " + ln)
+# the sets (places designed in the scene builder before their game: Content/Studio/Sets) get the level's rules too: no two
+# rooms' faces in one plane, every corner closed (the user, 2026-11-03: the interior editor carries the rules)
+for st in ([] if game else L.sets()):
+    r = subprocess.run([sys.executable, str(HERE / "level_check.py"), "--game", "set:" + st], capture_output=True, text=True,
+                       encoding="utf-8")
+    lines = [ln for ln in r.stdout.splitlines() if ln.strip()]
+    print(f"{'ok  ' if r.returncode == 0 else 'FAIL'}  {('set:' + st)[:12]:<12} {'level_check.py':<16} {lines[-1] if lines else r.stderr.strip()[-300:]}")
+    if r.returncode:
+        bad += 1
+        for ln in lines[:-1]:
+            if ln.startswith(("ERROR", "FAIL")):
+                print("      " + ln)
 for c in STUDIO:
     run = ["node"] if c[0].endswith(".mjs") else [sys.executable]
     try:

@@ -89,12 +89,12 @@ static func make(origin: Node3D, scope: Node, opts: Dictionary = {}) -> Dictiona
 		if g == null:
 			continue
 		for blk in g.get_children():
-			if not (blk is StaticBody3D) or str(blk.name) == "ceiling":
+			if not (blk is StaticBody3D) or str(blk.name).begins_with("ceiling"):
 				continue
 			var shapes: Array = blk.find_children("*", "CollisionShape3D", false, false)
 			if shapes.is_empty() or not (shapes[0].shape is BoxShape3D):
 				continue
-			box.call(HSDirector.id_of(r) + "__" + str(blk.name), "floor" if str(blk.name) == "floor" else "wall", blk.global_transform, shapes[0].shape.size, false)
+			box.call(HSDirector.id_of(r) + "__" + str(blk.name), "floor" if str(blk.name).begins_with("floor") else "wall", blk.global_transform, shapes[0].shape.size, false)
 	for dn in HSDirector.nodes_of(scope, "HSDoor"):
 		if not inside.call(dn.global_position):
 			continue

@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HorrorStudio Look Plugin</title>
+<!-- The HorrorStudio Look plugin for a Godot project (GodotPlugins/HorrorStudioLook; its notes docs/GODOT_LOOK.md).
+     Nothing loads from outside: the pictures in img/ are the plugin's own check's (LOOKPLUGIN), drawn by Godot, copied
+     here by python tools/godot/first_game.py --pictures. -->
+<style>
+:root{--bg:#121214;--panel:#1b1b1f;--panel2:#232329;--line:#33333b;--text:#e6e3dc;--dim:#9a978f;--accent:#c792ea;--warn:#e0a030;--cue:#9fd39a}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:20px}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.wrap{display:grid;grid-template-columns:250px minmax(0,1fr);max-width:1240px;margin:0 auto}
+nav.toc{position:sticky;top:0;height:100vh;overflow:auto;padding:28px 18px 28px 22px;border-right:1px solid var(--line);font-size:13.5px}
+nav.toc .brand{font-weight:700;letter-spacing:.06em;color:var(--accent);font-size:12px;text-transform:uppercase;margin-bottom:14px}
+nav.toc ol{list-style:none;margin:0;padding:0;counter-reset:s}
+nav.toc li{counter-increment:s}
+nav.toc li a{display:flex;gap:8px;padding:4px 8px;border-radius:6px;color:var(--text)}
+nav.toc li a::before{content:counter(s);color:var(--dim);min-width:18px;text-align:right;font-variant-numeric:tabular-nums}
+nav.toc li a:hover,nav.toc li a.on{background:var(--panel2);text-decoration:none}
+nav.toc li a.on{color:var(--accent)}
+nav.toc .back{display:block;margin-top:18px;color:var(--dim);font-size:12.5px}
+main{padding:34px 44px 90px;min-width:0}
+header.hero{border-bottom:1px solid var(--line);padding-bottom:22px;margin-bottom:10px}
+header.hero h1{font-size:34px;line-height:1.15;margin:0 0 10px;letter-spacing:-.01em}
+header.hero p{color:var(--dim);font-size:16.5px;margin:0;max-width:740px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.chip{font-size:12px;padding:3px 10px;border-radius:99px;border:1px solid var(--line);color:var(--dim);background:var(--panel)}
+section{padding-top:30px;max-width:920px}
+h2{font-size:24px;margin:16px 0 6px;display:flex;align-items:baseline;gap:12px}
+h2 .n{color:var(--accent);font-size:15px;font-variant-numeric:tabular-nums;font-weight:600}
+h3{font-size:16.5px;margin:22px 0 4px}
+p{margin:8px 0}
+ul,ol.steps{padding-left:22px;margin:8px 0}
+li{margin:3px 0}
+kbd{font:600 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--panel2);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:2px 6px;color:var(--text);white-space:nowrap}
+code{font:13px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:1px 5px;overflow-wrap:anywhere}
+pre{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;overflow:auto;font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace}
+.ui{font-weight:600;color:#f2e6cc}
+.node{font:600 13px ui-monospace,SFMono-Regular,Menlo,monospace;color:#cfe3f2}
+figure{margin:16px 0 20px;max-width:100%}
+figure img{display:block;max-width:100%;height:auto;border-radius:10px;border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.45);background:var(--panel)}
+figcaption{color:var(--dim);font-size:13px;margin-top:7px}
+.pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;align-items:start;margin:14px 0}
+.pair figure{margin:0}
+.tip{border-left:3px solid var(--accent);background:linear-gradient(90deg,rgba(199,146,234,.09),transparent);padding:9px 14px;border-radius:0 10px 10px 0;margin:14px 0}
+.tip b{color:var(--accent)}
+.note{border-left:3px solid var(--cue);background:linear-gradient(90deg,rgba(159,211,154,.08),transparent);padding:9px 14px;border-radius:0 10px 10px 0;margin:14px 0}
+.notyet{border-left:3px solid var(--warn);background:linear-gradient(90deg,rgba(224,160,48,.09),transparent);padding:9px 14px;border-radius:0 10px 10px 0;margin:14px 0}
+.notyet b{color:var(--warn)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin:12px 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.card h4{margin:0 0 4px;font-size:14px}
+.card p{margin:0;color:var(--dim);font-size:13.5px}
+table.keys{border-collapse:collapse;width:100%;font-size:14px;margin:8px 0}
+table.keys td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+table.keys td:first-child{white-space:nowrap;width:1%}
+.tree{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font:13px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre;overflow:auto}
+.tree i{color:var(--dim);font-style:normal}
+footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:var(--dim);font-size:13px}
+@media (max-width:900px){.wrap{display:block}nav.toc{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line);padding:18px 16px}nav.toc ol{columns:2;column-gap:14px}main{padding:22px 16px 60px}header.hero h1{font-size:27px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="toc">
+  <div class="brand">HorrorStudio Look</div>
+  <ol>
+    <li><a href="#what">What it is</a></li>
+    <li><a href="#install">Putting it in a project</a></li>
+    <li><a href="#look">The look</a></li>
+    <li><a href="#lights">Lights</a></li>
+    <li><a href="#water">Water, weather, blood</a></li>
+    <li><a href="#mirror">Mirrors</a></li>
+    <li><a href="#people">People</a></li>
+    <li><a href="#finish">The grade and the tape</a></li>
+    <li><a href="#props">Made props</a></li>
+    <li><a href="#presets">The presets</a></li>
+    <li><a href="#code">In your own scripts</a></li>
+    <li><a href="#rules">Good to know</a></li>
+  </ol>
+  <a class="back" href="../godot_by_hand/index.html">← Godot by hand</a>
+  <a class="back" href="../first_game/index.html">Your first game →</a>
+  <a class="back" href="../index.html">← All guides</a>
+</nav>
+<main>
+<header class="hero">
+  <h1>The HorrorStudio Look plugin</h1>
+  <p>The studio's look for any Godot 4.7 game, as nodes you drop into a scene and tune in the Inspector: the
+  pseudo-realism preset, flickering bulbs, light through a window, wet floors and rain, blood, real mirrors, the
+  character's skin, eyes and hair, a film grade and a camcorder's tape. It's in every Director project and every game
+  the desk exports, and it goes into a project you build by hand the same way.</p>
+  <div class="chips"><span class="chip">Godot 4.7</span><span class="chip">GDScript and shaders</span><span class="chip">19 nodes</span>
+  <span class="chip">40 presets</span><span class="chip">a GTX 1060's budget</span></div>
+</header>
+
+<section id="what">
+<h2><span class="n">1</span>What it is</h2>
+<p>One add-on, <code>addons/horrorstudio_look/</code>, with nothing to build. Every effect is a node (a <code>@tool</code>
+script with an icon): <span class="ui">Add Child Node</span> and type <code>HS</code> to see them all. They preview in the
+editor where they can (the rain falls, the bulb flickers, the floor shines) and save only their numbers. What they make
+inside themselves is never saved, and a node that changes a mesh's material puts the mesh's own back before every save.</p>
+<figure><img src="img/nodes.jpg" width="1280" height="720" alt="Every preset of the Look plugin in one room"><figcaption>Every preset in one room, as the plugin's own check draws it.</figcaption></figure>
+</section>
+
+<section id="install">
+<h2><span class="n">2</span>Putting it in a project</h2>
+<p>A new project with it: <code>python tools/godot_byhand.py new ~/Games/MyGame</code>. A project you have:
+<code>python tools/godot_byhand.py install ~/Games/MyGame</code> (again after a pull: it's a copy). Or by hand:</p>
+<ol class="steps">
+  <li>Copy <code>GodotPlugins/HorrorStudioLook/addons/horrorstudio_look</code> into the project as <code>addons/horrorstudio_look</code> (the name kept).</li>
+  <li>Copy <code>GodotPlugins/HumanShaders</code> into the project's root as <code>HumanShaders</code>. The skin and the eyes need its textures.</li>
+  <li><span class="ui">Project → Project Settings → Plugins</span>: tick <b>HorrorStudio Look</b>. The first time, it writes the
+  balanced look's settings into the project (TAA, the shadow atlas, occlusion culling). <span class="ui">Project → Tools → HorrorStudio: apply the
+  balanced project settings</span> writes them again.</li>
+</ol>
+</section>
+
+<section id="look">
+<h2><span class="n">3</span>The look</h2>
+<p><span class="node">HSLookEnvironment</span> is a WorldEnvironment that wears a preset: <code>balanced</code> (the default:
+SSR, SSAO, glow, a thin haze, AgX), <code>realism</code> (all of it overplayed for small, baked-lit rooms) or <code>plain</code>.
+It's meant for editing: in a running game it steps aside for the game's own environment. <b>In a game you build by hand,
+untick <code>Editor Only</code></b> and it's the game's. <code>presets/look_balanced.tscn</code> drops in the environment, a tape and a grade together.</p>
+<div class="pair">
+  <figure><img src="img/look_plain.jpg" width="1280" height="720" alt="A room with the plain look"><figcaption><code>plain</code></figcaption></figure>
+  <figure><img src="img/look_realism.jpg" width="1280" height="720" alt="The same room with the realism look"><figcaption><code>realism</code></figcaption></figure>
+</div>
+</section>
+
+<section id="lights">
+<h2><span class="n">4</span>Lights</h2>
+<table class="keys">
+<tr><td class="node">HSFlickerLight, HSFlickerSpot</td><td>An omni or a spot that flickers: <code>mode</code> fluorescent, dying, candle, pulse, custom
+(<code>letters</code>, <code>a</code> dark to <code>z</code> double, <code>m</code> full), wobble; <code>amount</code>, <code>interval</code>, <code>rate</code>.
+<code>on_mains</code> puts it in the group <code>hs_mains</code>, which a power cut switches off.</td></tr>
+<tr><td class="node">HSPatternLight</td><td>A spot throwing caustics, leaves, blinds or clouds (<code>pattern</code>, <code>feature_m</code>, <code>speed</code>).</td></tr>
+<tr><td class="node">HSLightShaft</td><td>A window's beam: put it in the opening, forward into the room, and fit its orange outline to the glass. Crisp at the glass, soft where it lands.</td></tr>
+<tr><td class="node">HSHeadlightSweep</td><td>A car passing outside the window every so often, the frame's shadow sliding across the ceiling (<code>fire()</code> one now).</td></tr>
+<tr><td class="node">HSLightZone</td><td>A room's box that owns the lights inside it. They light only what's in it, their reach fitted, off while the room's out of view.</td></tr>
+</table>
+<div class="pair">
+  <figure><img src="img/pattern.jpg" width="1280" height="720" alt="Caustics thrown on a wall"><figcaption>HSPatternLight: caustics</figcaption></figure>
+  <figure><img src="img/shaft.jpg" width="1280" height="720" alt="A window's light shaft"><figcaption>HSLightShaft</figcaption></figure>
+  <figure><img src="img/sweep.jpg" width="1280" height="720" alt="A headlight sweeping a wall"><figcaption>HSHeadlightSweep</figcaption></figure>
+  <figure><img src="img/zones.jpg" width="1280" height="720" alt="Two rooms' light zones through a doorway"><figcaption>HSLightZone: the bulb kept to its room</figcaption></figure>
+</div>
+</section>
+
+<section id="water">
+<h2><span class="n">5</span>Water, weather, blood</h2>
+<table class="keys">
+<tr><td class="node">HSWetSurface</td><td>Under a mesh: it's wet, with pools in a noise across it and rain's rings on them (<code>wetness</code>, <code>puddles</code>, <code>ripples</code>).</td></tr>
+<tr><td class="node">HSPuddle</td><td>A puddle decal under it.</td></tr>
+<tr><td class="node">HSRainBox</td><td>Rain in a box, lit by every light that reaches it (the flashlight's beam full of rain), splashes where it lands; <code>follow_camera</code> outdoors.</td></tr>
+<tr><td class="node">HSWindowPane</td><td>Under a pane's mesh: glass with drops running down it, bending what's behind.</td></tr>
+<tr><td class="node">HSWallLeak</td><td>On a wall: water coming in, a wet band running down in rivulets, drops falling to the floor.</td></tr>
+<tr><td class="node">HSBloodSplat</td><td>Blood on the surface its +Y points out of: a ragged pool, flung drops, drips; <code>dry</code> dulls it.</td></tr>
+</table>
+<div class="pair">
+  <figure><img src="img/wet.jpg" width="1280" height="720" alt="A wet floor reflecting the lamp"><figcaption>HSWetSurface: the lamp in the pools</figcaption></figure>
+  <figure><img src="img/blood_rain.jpg" width="1280" height="720" alt="Rain and blood in a room"><figcaption>HSRainBox and HSBloodSplat</figcaption></figure>
+  <figure><img src="img/leak.jpg" width="1280" height="720" alt="Water running down a wall"><figcaption>HSWallLeak</figcaption></figure>
+</div>
+</section>
+
+<section id="mirror">
+<h2><span class="n">6</span>Mirrors</h2>
+<p><span class="node">HSMirrorSurface</span> under a mesh makes it a real mirror in the game: the camera reflected through the glass
+into a view of its own, drawn while the glass is in sight (<code>resolution</code>).</p>
+<figure><img src="img/mirror.jpg" width="1280" height="720" alt="The lamp's glint in a mirror"><figcaption>The room and the bulb in the mirror.</figcaption></figure>
+</section>
+
+<section id="people">
+<h2><span class="n">7</span>People</h2>
+<p><span class="node">HSCharacterLook</span> under a character (a Character Studio export, or any model whose meshes are named
+skin, eye, hair) puts the studio's skin, eyes and hair on it when the game runs:</p>
+<ul>
+  <li><b>the skin</b>: HumanShaders' skin with the pores and furrows at their true size (<code>skin_detail</code> auto, young, natural, adult, old),
+  warm light from under it round the eyes, the nose, the mouth and the ears (<code>skin_depth</code>, <code>ear_glow</code>), and wet:
+  <code>wetness</code>, <code>sweat</code> (beads), <code>drips</code>, <code>oil</code>;</li>
+  <li><b>the eyes</b>: the refracting cornea, the wet layer, the tear line, an idle blink;</li>
+  <li><b>the hair</b>: the salon's bake worn MetaHuman's way (two highlights, light through it from behind).</li>
+</ul>
+<div class="pair">
+  <figure><img src="img/skin.jpg" width="1280" height="720" alt="Skin spheres dry, sweating and oiled"><figcaption>The skin dry, sweating and oiled.</figcaption></figure>
+  <figure><img src="img/hair.jpg" width="1280" height="720" alt="Card hair on the hair shader"><figcaption>Card hair on the hair shader.</figcaption></figure>
+</div>
+<p>It needs <code>HumanShaders/</code> at the project's root. In a shipped game, keep the character's <code>.glb</code> in the
+export (<code>*.glb</code> in the preset's non-resource filters): the look reads its records from it.</p>
+</section>
+
+<section id="finish">
+<h2><span class="n">8</span>The grade and the tape</h2>
+<p><span class="node">HSGrade</span> is a film grade over the picture: <code>preset</code> cinema, teal-orange, cold, sodium, bleach, noir,
+warm or none, then each number (lift, gamma, gain, warmth, saturation, contrast, fade, vignette, grain, aberration).
+<span class="node">HSTape</span> is UltraVHS, a camcorder's tape over it: camcorder, camhybrid, worn, nightmare or off, and a <code>strength</code>.</p>
+<figure><img src="img/grade.jpg" width="1280" height="720" alt="A room under the cinema grade"><figcaption>The cinema grade.</figcaption></figure>
+</section>
+
+<section id="props">
+<h2><span class="n">9</span>Made props</h2>
+<p>The prop generator's props (<code>tools/propgen.py</code>) carry what glows and burns in them.
+<span class="node">HSPropFX</span> switches each on (glow, a candle's flame and its flickering light, smoke, steam, wax) and
+<span class="node">HSLiquidFill</span> keeps a bottle's liquid level and sloshing. A made prop's <code>.tscn</code> has both already.</p>
+</section>
+
+<section id="presets">
+<h2><span class="n">10</span>The presets</h2>
+<p><code>addons/horrorstudio_look/presets/</code> holds 40 ready-made nodes. Drag one from the FileSystem dock into the level and move it:</p>
+<table class="keys">
+<tr><td>Lights</td><td><code>candle</code>, <code>dying_bulb</code>, <code>desk_lamp_dying</code>, <code>fluorescent_tube</code>, <code>faulty_neon</code>, <code>alarm_pulse</code></td></tr>
+<tr><td>Rooms</td><td><code>room_bulb</code>, <code>room_lamp</code>, <code>room_candle</code>, <code>room_dying</code>, <code>room_fluorescent</code>, <code>room_night</code> (light zones with their lights)</td></tr>
+<tr><td>Light's shape</td><td><code>caustics_light</code>, <code>blinds_light</code>, <code>leaves_light</code>, <code>clouds_light</code>, <code>window_shaft</code>, <code>window_sun</code>, <code>headlight_sweep</code></td></tr>
+<tr><td>Water</td><td><code>rain</code>, <code>downpour</code>, <code>wet_floor</code>, <code>wet_floor_raining</code>, <code>damp_floor</code>, <code>puddle</code>, <code>window_pane</code>, <code>wall_leak</code></td></tr>
+<tr><td>Blood</td><td><code>blood_pool</code>, <code>blood_wall</code>, <code>blood_dried</code></td></tr>
+<tr><td>People</td><td><code>character_look</code>, <code>character_sweating</code></td></tr>
+<tr><td>The finish</td><td><code>look_balanced</code>, <code>look_environment</code>, <code>grade_cinema</code>, <code>grade_cold</code>, <code>grade_noir</code>, <code>tape_camhybrid</code>, <code>tape_worn</code>, <code>mirror</code></td></tr>
+</table>
+<figure><img src="img/window_sun.jpg" width="1280" height="720" alt="The window sun preset"><figcaption><code>window_sun</code>: the beam from the glass to the floor.</figcaption></figure>
+</section>
+
+<section id="code">
+<h2><span class="n">11</span>In your own scripts</h2>
+<p>Every piece is also a class you call from GDScript, without the nodes:</p>
+<pre>HSLook.apply(get_viewport(), $WorldEnvironment.environment, "balanced")
+HSWet.wet($Floor, {"wetness": 0.8, "puddles": 0.5, "ripples": 1.0})
+HSBlood.splat(self, hit.position, hit.normal, 0.8, 7)
+add_child(HSRain.make(Vector3(12, 6, 12), 4000, 0.8))
+HSMirror.attach($Bathroom/Mirror, 0, get_viewport().get_camera_3d(), 512)
+HSSkin.wear($Mari, {"sweat": 0.6}, "res://exports/characters/mari/mari.glb")</pre>
+<p>The full list, with what each takes: <code>GodotPlugins/HorrorStudioLook/README.md</code>, and the numbers behind them in the studio's <code>docs/GODOT_LOOK.md</code>.</p>
+</section>
+
+<section id="rules">
+<h2><span class="n">12</span>Good to know</h2>
+<ul>
+  <li><b>Forward is -Z, into the room</b>, for every node that faces a way (a shaft, a sweep, a pane).</li>
+  <li><b>Render layers are shared out</b>: 1 is everything by default, 2 to 10 the light zones, 11 to 19 the mirrors, 20 the hidden.
+  If you use layers yourself, take others.</li>
+  <li><b>MSAA switches off the screen-space reflections</b> (the wet floors' shine). Keep TAA, as the balanced settings do.</li>
+  <li><b>A node saves only its numbers</b>, so a scene stays small and a pull of the studio updates every effect in it.</li>
+</ul>
+</section>
+
+<footer>The HorrorStudio Look, a Godot 4.7 plugin of the studio's (<code>GodotPlugins/HorrorStudioLook</code>). The pictures are its own
+check's (<code>python tools/godot/plugin_check.py</code>, LOOKPLUGIN), drawn by Godot.</footer>
+</main>
+</div>
+<script>
+// the contents follow the reading: the section on screen is lit
+const links = [...document.querySelectorAll("nav.toc ol a")], secs = links.map(a => document.querySelector(a.getAttribute("href")));
+const lit = () => { let at = 0; secs.forEach((s, i) => { if (s && s.getBoundingClientRect().top < 140) at = i; }); links.forEach((a, i) => a.classList.toggle("on", i === at)); };
+addEventListener("scroll", lit, { passive: true }); lit();
+</script>
+</body>
+</html>

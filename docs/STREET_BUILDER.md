@@ -185,8 +185,11 @@ place on the street, the start for the street's own `tree` stand-ins becoming re
 
 ## 5b. Into Godot: drop the .glb in
 
-**Export .glb** (or `node tools/director/streetexport.mjs --street <name>`) writes one file to drop into a Godot
-project's folder (DECISIONS 2026-10-30, later: "as long as the export is as simple as drag and drop into a Godot folder").
+**Export for Godot** (or `node tools/director/streetexport.mjs --street <name>`) writes one file to drop into a Godot
+project's folder (DECISIONS 2026-10-30, later: "as long as the export is as simple as drag and drop into a Godot folder"):
+`Exports/streets/<name>/<name>.glb` with a `README.txt` beside it saying what's in it and which sets its walk-in
+buildings want (DECISIONS 2026-11-03, night: an exports folder, a sub-folder each; Shift-click downloads the file
+instead; `--out FILE` just the file, for the checks).
 Godot 4.7 imports it into a scene with:
 
 - `visual`: a node a chunk (48 m), a surface a material and colour (Godot leaves a glTF's vertex colours off the albedo,
@@ -334,7 +337,7 @@ keeps every pair apart by construction, and STREET measures it (§6):
   leaves 10 cm of wall between).
 - **Things that meet, meet once**: a balcony's slab and its side rails stop at the wall and the front's corner posts; a
   railing round a roof has one post at each corner and its rails stop at the posts' sides; a stair's top step meets
-  its landing; a fascia board runs a GAP past its eave; fence posts end inside their top rail; a gate's two leaves
+  its landing; a fascia board runs a GAP past its eave (no further than half way to a neighbour: §5e); fence posts end inside their top rail; a gate's two leaves
   leave a gap where they meet; the folding gate's lattices are two layers; a bike's tubes differ in thickness where
   they join, its stays either side of the wheel; a lamp's two arms start either side of its pole; the ◇ mark is one
   mitred ring.
@@ -343,6 +346,43 @@ keeps every pair apart by construction, and STREET measures it (§6):
 - **Roofs**: a walk-in building's roof is boxed and 1 cm over the level's top (§5c); a flat roof's parapet runs along
   x across the corners and along y between them, its coping the same; roofs over an outline that isn't a box are
   joined into one, each cut away where it's inside another's volume (on a face of both, the first keeps it).
+
+## 5e. Between pieces: the street's rules
+
+The user (2026-11-03, after the walls' seams in Godot: "dont need to update any of the existing maps etc, just make it
+that the interior/street editors carry rules to keep everything proper"). §5d keeps a piece's own faces apart; these
+keep two pieces apart, by construction, in `street-gen.js`, so a street drawn any way builds without two surfaces in
+one plane over each other (`APART`, 2 mm, is the least any two keep):
+
+- **The ground 6 mm under z 0** (`GROUND_DROP`): a building, a thing or a door's step standing at 0 is never in its
+  plane, and the roads' asphalt (4 mm up and over) neither.
+- **Neighbours meet half way** (`roomBeside`, `roomRound`, `BESIDE` 3 m): what reaches past a building's ends (a
+  canopy, an eave, an awning, a balcony, the bands round the corner, a stair's landing, a noren's rod) stops half way
+  to the next building there, counted from either building's own end, so two neighbours' parts meet in the middle of
+  the gap between them; a neighbour set back or forward up to `BESIDE` counts (the danchi row's canopies). Parts cut
+  there end 6 mm apart, each its own step in, never two cut ends in one plane. A flat roof's coping and a pitched
+  roof's overhang do the same on each side: a gable's or a shed's eave cut short is higher (the same slope), its ridge
+  cap past the slabs only where there's room; a hip roof is cut by the sides with less room and closed up to the cut;
+  a walk-in building's boxed roof keeps one overhang all round, the least its sides have room for.
+- **Pavements meet once**: a road's pavement is cut where an earlier road's pavement is (a side street's meets the
+  main road's at its back edge: never two slabs through each other, a kerb's end in the other's kerb face), and a
+  road's very ends stop 2 mm in (a lane run up to a building's side).
+- **Fences join** (`fenceJoints`, `FENCE_REACH`): at a corner the thicker runs through it out to the other's outer
+  face and the other stops at its face (two the same: the earlier runs through); one ending on another's run stops at
+  its face, or a thicker one goes just through a thinner; a wall's cap meets the other's at its line. Gates never join.
+- **Things are inset 2.5 mm** all round in their own space (`THING_IN`): a slab run up to a wall's line, a box set at a
+  fence's end or flush with a wall never shares its plane.
+- **Decals lie over what's under them** (`decalLift`): 5 mm over the highest face under the decal's quad facing its
+  way (a road's line, a mark, a glyph, an earlier decal), a GAP over a bare surface; the page lays a decal on the first
+  surface its ray meets (often the asphalt under a line), the build lifts it.
+
+What's left is placement: a fence drawn through a door or along a wall's face, two things in each other. **Check**
+(the street page's toolbar) lists every such place with its two pieces and its size, a click picks the one to move (a
+thing or a fence before a building) and goes there; STREET warns about them in the saved streets (the reference town's
+fences along b41, b42 and through b47's door, the school's bike racks: left as drawn, DECISIONS 2026-11-03).
+`SG.between(pieces)` is the test (two pieces' faces facing the same way, every corner of one within `APART` of the
+other's plane, overlapping by more than a square centimetre; faces looking down at the bottom of their own piece and the
+stand-in rooms don't count), the same in STREET, the page and anything else.
 
 ## 6. Checks
 
@@ -353,7 +393,12 @@ keeps every pair apart by construction, and STREET measures it (§6):
   aside; the test tries itself first on two slabs); a pavement is cut where another road crosses it; a hip roof's
   slopes face up; a wall's rectangles and its holes tile it exactly; sets shaped L, T, U, steps and apart under every
   roof kind build one roof over their outline, every roof over the level's top; every street is well formed and
-  builds; each shot's pins land within 2% of the frame's height on average (4.5% at most).
+  builds; each shot's pins land within 2% of the frame's height on average (4.5% at most); **the rules street** (§5e:
+  neighbours' canopies, bands, copings, hips, gables, sheds and eaves, a set-back danchi, balconies cut at a neighbour,
+  a T-junction's pavements, a lane run up to a building's side, fences at corners and T's, slabs flush with walls,
+  decals on a road's glyph, its stop line and each other) has no two pieces' faces in one plane (with the old
+  generator it had 35), the test finds two bikes in each other and two slabs' tops; each saved street's placed pairs
+  are warnings.
 - `node tools/director/streettest.mjs` (STREETPAGE, the desk's server running): the page driven as a person would (a
   lane drawn, filled, a building's floors changed, a sign added on its facade, a photo behind it, a fence and a vending
   machine placed, a shot kept, undo, saved and read back the same, the .glb exported, the Shibuya lane drawn through

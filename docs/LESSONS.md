@@ -3,6 +3,49 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## A street's pieces in one plane (2026-11-03, night)
+
+- **Measure faces against planes, not planes against buckets:** the first street measure keyed each face's plane by its
+  normal and its distance rounded to half a millimetre and called a shared key a clash; on a sloping road every strip
+  of paint 5 mm over the asphalt landed in a neighbour's bucket and the hills were "full" of clashes that weren't
+  there. The test that holds is STREET's own: every corner of one face within the distance of the other's plane, then
+  the overlap's area clipped in that plane (`SG.between`); buckets only to find who to compare.
+- **A rule that clamps makes its own coincidences:** cutting every part at "half way to the neighbour" put a balcony's
+  end and the air conditioner on it at the same cut, in one plane; parts cut there now each end their own step in.
+  Likewise a ridge cap ending "no further than the slabs" ended exactly in their ends' plane. After a clamp, look at
+  what else it clamped to the same number.
+
+## Walls meeting (2026-11-03, later evening)
+
+- **Close a corner only where nothing else does:** a wall run on "to close the corner" was right for a room alone and
+  wrong where it met another room's wall: its end lay on that wall's face, two faces in one plane that z-fight, as a
+  thin line down the wall flickering with the eye. Ask what fills the corner first (every other wall, measured), and
+  check it the same way: LEVEL now counts faces of two rooms in one plane and corners left open, WALLS the same on a
+  Director project's built rooms. The first fix, "filled over the whole height or not at all", missed a stair shaft
+  the building's height beside each storey's corridor: decide by height, and cap only what's left open.
+- **Look for the same fault one dimension over:** the walls' z-fighting had a twin in the Director's floors, each run
+  a whole wall past its room so neighbours' floors overlapped under the wall between them and showed in its doorway.
+  Measured the same way (WALLS counts floors and ceilings too), fixed the same way (stop on the middle line where a
+  neighbour carries on, one builder for what's left).
+- **A level put straight under the root plays alone:** HSLevel's `_enter_tree` takes a parent that's the root (and no
+  current scene) for F6 and holds its rooms back. A test that builds a level's rooms puts it under a holder node, and
+  waits a frame (nodes added in a SceneTree script's `_initialize` enter the tree once the loop runs).
+
+## The skin's depth and the clothes in motion (2026-11-03)
+
+- **A check of a subtle effect needs a ceiling as well as a floor:** the skin's depth layer (GODOT_LOOK §5g) was
+  checked only for being there (round the eyes up over 8%, the ear over 15%), so the first numbers passed at 44% and
+  53% and the user saw orange rings round the eyes and a red ear in the game. GDPORTRAIT now fails a glow too (no point
+  warmed more than 25%, the ear 30%). Look at the effect against the layer off in the game's own light, not only at
+  the numbers going the right way.
+- **A shader ramp's first stop is the hue a little of it shows:** HumanShaders' translucency looks up a ramp from
+  black through pure red to orange by the skin's thinness, so thin skin under a lamp from behind (a nostril's rim, the
+  lips' seam) drew pure red lines. Lower its gain, not the lookup: the lookup only slides along the same red.
+- **A test page with its own little server dies silently on a module it can't serve:** `motion.mjs` served only
+  `tools/director` and `tools/character`; once the desk's `bodies.js` imported `../shared/`, the page's module graph
+  never loaded, nothing threw on the page, and the sheet waited its full half hour. It serves `tools/shared/` now and
+  fails at once on a module that won't load.
+
 ## The prop generator's trees (2026-11-02)
 
 - **A bush is leafy to the ground, so its leaves go on every node, stems too:** the first azalea balls floated, a

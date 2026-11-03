@@ -1,4 +1,4 @@
-// albedo.js: what the Studio's shaders draw, baked into textures for the export (Export for desk / Unreal). glTF carries
+// albedo.js: what the Studio's shaders draw, baked into textures for the export (Export for Godot). glTF carries
 // a material's colour and its maps, never a shader: the procedural skin (skinshader.js: the tone, the makeup, the lips,
 // the nails, the photo and the touch-up), the tailor's fabric (tailor/look.js: the colour, the weave, a pattern, a
 // print, a PBR set's colour) would leave the file white. So the material's own shader is drawn flat into the mesh's UV

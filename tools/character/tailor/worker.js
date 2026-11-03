@@ -1,9 +1,10 @@
 // The tailor off the page's thread (tools/character/index.html). {id, key, P, T, list, designs, drape} in: the garments
 // cut at once ({id, stage: "cut", garments}), then, with `drape`, hung by gravity a few dozen steps at a time
 // ({id, progress: {k, of, name, frac}} between) and sent again ({id, stage: "hung", garments, bakes: {key: points}});
-// a newer job stops an older one's drape between its slices. The garments: {name, key, stats, drape, look, handles,
-// parts: [{name, color, fabric, P, T, N, UV, PART, S, CRZ}]} with the arrays transferred. {bakes: {key: points}} in: drapes
-// kept with the character, taken as they are when they fit (tailor.js dressing). The body is read once per `key`.
+// a newer job stops an older one's drape between its slices. The garments: {name, key, stats, drape, look, handles, cover
+// (the skin it hides: tailor.js covered), parts: [{name, color, fabric, P, T, N, UV, PART, S, CRZ}]} with the arrays
+// transferred. {bakes: {key: points}} in: drapes kept with the character, taken as they are when they fit (tailor.js
+// dressing). The body is read once per `key`.
 // `have` (the wardrobe's): the garments (their `made` keys) the page already shows: sent without their parts.
 // `gpu` (the pages' "Use the GPU", a test of the card: DECISIONS 2026-11-02): each drape's steps on the card
 // (tailor/drape_gpu.js), the CPU's where there's no WebGPU; the last message says which ({gpu: {used, name | why}}).
@@ -25,6 +26,7 @@ function send(id, worn, extra, have = null) {
   const move = [];
   const garments = worn.map(g => ({
     name: g.name, key: g.key, made: g.made, stats: g.stats, drape: g.drape, look: g.look, handles: g.handles,
+    cover: g.cover ? (c => (move.push(c.buffer), c))(g.cover.slice()) : null,   // the skin it hides, a byte a body point (tailor.js covered)
     parts: have && have.has(g.made) ? null : g.parts.map(q => {     // (none for a garment the page already shows: `have`, the wardrobe's)                                        // copies sent (the tailor keeps its garments to give again: transferred, its own would be emptied)
       const { name, color, fabric, surface } = q, [P, T, N, UV, PART, S, CRZ] = [q.P, q.T, q.N, q.UV, q.PART, q.S, q.CRZ].map(a => a.slice());
       move.push(P.buffer, T.buffer, N.buffer, UV.buffer, PART.buffer, S.buffer, CRZ.buffer); return { name, color, fabric, surface, P, T, N, UV, PART, S, CRZ };

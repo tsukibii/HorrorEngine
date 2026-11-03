@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Godot By Hand</title>
+<!-- Setting up Godot to build a game by hand from the studio's exports (DECISIONS 2026-11-03, night). Nothing here loads
+     from outside: the pictures in img/ are the studio's real exports drawn by Godot (python tools/godot/first_game.py
+     --pictures makes them again; FIRSTGAME checks every picture and link). -->
+<style>
+:root{--bg:#121214;--panel:#1b1b1f;--panel2:#232329;--line:#33333b;--text:#e6e3dc;--dim:#9a978f;--accent:#7fb3d5;--warn:#e0a030;--cue:#9fd39a}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:20px}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.wrap{display:grid;grid-template-columns:250px minmax(0,1fr);max-width:1240px;margin:0 auto}
+nav.toc{position:sticky;top:0;height:100vh;overflow:auto;padding:28px 18px 28px 22px;border-right:1px solid var(--line);font-size:13.5px}
+nav.toc .brand{font-weight:700;letter-spacing:.06em;color:var(--accent);font-size:12px;text-transform:uppercase;margin-bottom:14px}
+nav.toc ol{list-style:none;margin:0;padding:0;counter-reset:s}
+nav.toc li{counter-increment:s}
+nav.toc li a{display:flex;gap:8px;padding:4px 8px;border-radius:6px;color:var(--text)}
+nav.toc li a::before{content:counter(s);color:var(--dim);min-width:18px;text-align:right;font-variant-numeric:tabular-nums}
+nav.toc li a:hover,nav.toc li a.on{background:var(--panel2);text-decoration:none}
+nav.toc li a.on{color:var(--accent)}
+nav.toc .back{display:block;margin-top:18px;color:var(--dim);font-size:12.5px}
+main{padding:34px 44px 90px;min-width:0}
+header.hero{border-bottom:1px solid var(--line);padding-bottom:22px;margin-bottom:10px}
+header.hero h1{font-size:34px;line-height:1.15;margin:0 0 10px;letter-spacing:-.01em}
+header.hero p{color:var(--dim);font-size:16.5px;margin:0;max-width:740px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.chip{font-size:12px;padding:3px 10px;border-radius:99px;border:1px solid var(--line);color:var(--dim);background:var(--panel)}
+section{padding-top:30px;max-width:920px}
+h2{font-size:24px;margin:16px 0 6px;display:flex;align-items:baseline;gap:12px}
+h2 .n{color:var(--accent);font-size:15px;font-variant-numeric:tabular-nums;font-weight:600}
+h3{font-size:16.5px;margin:22px 0 4px}
+p{margin:8px 0}
+ul,ol.steps{padding-left:22px;margin:8px 0}
+li{margin:3px 0}
+kbd{font:600 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--panel2);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:2px 6px;color:var(--text);white-space:nowrap}
+code{font:13px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:1px 5px;overflow-wrap:anywhere}
+pre{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;overflow:auto;font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace}
+.ui{font-weight:600;color:#f2e6cc}
+.node{font:600 13px ui-monospace,SFMono-Regular,Menlo,monospace;color:#cfe3f2}
+figure{margin:16px 0 20px;max-width:100%}
+figure img{display:block;max-width:100%;height:auto;border-radius:10px;border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.45);background:var(--panel)}
+figcaption{color:var(--dim);font-size:13px;margin-top:7px}
+.pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;align-items:start;margin:14px 0}
+.pair figure{margin:0}
+.tip{border-left:3px solid var(--accent);background:linear-gradient(90deg,rgba(127,179,213,.09),transparent);padding:9px 14px;border-radius:0 10px 10px 0;margin:14px 0}
+.tip b{color:var(--accent)}
+.note{border-left:3px solid var(--cue);background:linear-gradient(90deg,rgba(159,211,154,.08),transparent);padding:9px 14px;border-radius:0 10px 10px 0;margin:14px 0}
+.notyet{border-left:3px solid var(--warn);background:linear-gradient(90deg,rgba(224,160,48,.09),transparent);padding:9px 14px;border-radius:0 10px 10px 0;margin:14px 0}
+.notyet b{color:var(--warn)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin:12px 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.card h4{margin:0 0 4px;font-size:14px}
+.card p{margin:0;color:var(--dim);font-size:13.5px}
+table.keys{border-collapse:collapse;width:100%;font-size:14px;margin:8px 0}
+table.keys td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+table.keys td:first-child{white-space:nowrap;width:1%}
+.tree{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font:13px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre;overflow:auto}
+.tree i{color:var(--dim);font-style:normal}
+footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:var(--dim);font-size:13px}
+@media (max-width:900px){.wrap{display:block}nav.toc{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line);padding:18px 16px}nav.toc ol{columns:2;column-gap:14px}main{padding:22px 16px 60px}header.hero h1{font-size:27px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="toc">
+  <div class="brand">Godot by hand</div>
+  <ol>
+    <li><a href="#which">By hand, or the Director</a></li>
+    <li><a href="#project">A project</a></li>
+    <li><a href="#settings">The settings that matter</a></li>
+    <li><a href="#exports">Bringing in the exports</a></li>
+    <li><a href="#interior">An interior</a></li>
+    <li><a href="#street">A street</a></li>
+    <li><a href="#character">A character</a></li>
+    <li><a href="#light">Lighting it</a></li>
+    <li><a href="#player">A player</a></li>
+    <li><a href="#ship">Playing and shipping</a></li>
+    <li><a href="#trouble">When something's wrong</a></li>
+  </ol>
+  <a class="back" href="../first_game/index.html">Your first game →</a>
+  <a class="back" href="../look_plugin/index.html">The Look plugin →</a>
+  <a class="back" href="../index.html">← All guides</a>
+</nav>
+<main>
+<header class="hero">
+  <h1>Godot by hand: setting up</h1>
+  <p>The studio's editors make the pieces: rooms in the <b>scene builder</b>, streets in the <b>street builder</b>,
+  people in the <b>Character Studio</b>. Each has an <span class="ui">Export for Godot</span> button that puts a
+  <code>.glb</code> in the studio's <code>Exports/</code> folder. This guide sets up a Godot project to build the rest
+  yourself: drag those in, light them and write the game.</p>
+  <div class="chips"><span class="chip">Godot 4.7</span><span class="chip">GDScript</span><span class="chip">Exports/interiors</span>
+  <span class="chip">Exports/streets</span><span class="chip">Exports/characters</span><span class="chip">the Look plugin</span></div>
+</header>
+
+<section id="which">
+<h2><span class="n">1</span>By hand, or the Director</h2>
+<p>Two ways to make a game in Godot with the studio:</p>
+<div class="cols">
+  <div class="card"><h4>By hand (this guide)</h4><p>Your own Godot project. The studio's exports are plain <code>.glb</code> scenes you drag
+  in, and you write the game in GDScript: the player, the doors, the scares. Nothing to learn but Godot. The
+  <a href="../first_game/index.html">first game</a> walks it through.</p></div>
+  <div class="card"><h4>With the Director</h4><p>The studio's Godot plugin: rooms, doors and things as nodes, the story in one file
+  (quests, conversations, endings), the studio's runtime doing the walking, the inventory, the HUD and the saves.
+  <a href="../director/index.html">Its guide</a>.</p></div>
+</div>
+<p>They mix. The Look plugin (<a href="../look_plugin/index.html">its guide</a>) works in both, and an exported room or
+street dropped into a Director project is a model like any other.</p>
+</section>
+
+<section id="project">
+<h2><span class="n">2</span>A project</h2>
+<p><b>The quick way.</b> From the studio's folder, one command makes the project with everything below in it:</p>
+<pre>python tools/godot_byhand.py new ~/Games/MyGame</pre>
+<div class="cols">
+  <div class="card"><h4><code>project.godot</code></h4><p>The Look plugin switched on and its balanced settings (§3).</p></div>
+  <div class="card"><h4><code>addons/horrorstudio_look/</code></h4><p>The Look plugin: the look, wet floors, rain, blood, mirrors, flickering lights, the character's skin, eyes and hair.</p></div>
+  <div class="card"><h4><code>HumanShaders/</code></h4><p>The skin's and the eyes' textures (MIT). It must sit at the project's root under that name: the plugin looks for <code>res://HumanShaders/</code>.</p></div>
+  <div class="card"><h4><code>starter/</code></h4><p>The first game's scripts: a first-person player, doors, a scare. Yours to change.</p></div>
+  <div class="card"><h4><code>exports/</code></h4><p><code>interiors/</code>, <code>streets/</code>, <code>characters/</code>: where the studio's exports go (§4).</p></div>
+</div>
+<p>Open it in Godot 4.7: the Project Manager's <span class="ui">Import</span>, then pick its <code>project.godot</code>.</p>
+<p><b>By hand instead.</b> In the Project Manager, <span class="ui">New Project</span>, the Forward+ renderer. Then copy
+two folders from the studio into the project's folder:</p>
+<table class="keys">
+<tr><td><code>GodotPlugins/HorrorStudioLook/addons/horrorstudio_look</code></td><td>→ <code>addons/horrorstudio_look</code> (the name kept: its scripts load their shaders by that path)</td></tr>
+<tr><td><code>GodotPlugins/HumanShaders</code></td><td>→ <code>HumanShaders</code>, at the project's root</td></tr>
+<tr><td><code>guides/first_game/starter</code></td><td>→ <code>starter</code> (if you want the first game's scripts)</td></tr>
+</table>
+<p>Then <span class="ui">Project → Project Settings → Plugins</span> and tick <b>HorrorStudio Look</b>. The first time
+it's switched on it writes its balanced settings into the project.</p>
+<div class="tip"><b>After a pull of the studio,</b> the add-ons in your project are still the old copies. To bring them up to date:
+<code>python tools/godot_byhand.py install ~/Games/MyGame</code>. It leaves your <code>starter/</code> alone.</div>
+</section>
+
+<section id="settings">
+<h2><span class="n">3</span>The settings that matter</h2>
+<p>Enabling the Look plugin sets these, and <span class="ui">Project → Tools → HorrorStudio: apply the balanced project
+settings</span> sets them again. They're aimed at a GTX 1060.</p>
+<table class="keys">
+<tr><td>Rendering → Occlusion Culling → Use Occlusion Culling</td><td>On. The exports carry occluders (<code>*-occonly</code>), so what's behind a wall isn't drawn.</td></tr>
+<tr><td>Rendering → Anti Aliasing</td><td>TAA on, MSAA off (MSAA switches off the wet floors' screen-space reflections).</td></tr>
+<tr><td>Rendering → Lights and Shadows</td><td>A 4096 shadow atlas, soft shadows.</td></tr>
+<tr><td>Rendering → Environment</td><td>SSAO and SSR at half size, the volumetric fog's buffer kept small.</td></tr>
+</table>
+<p>Leave the renderer on <b>Forward+</b>: the look's effects (SSR, SSAO, volumetric fog) need it. Some settings only show
+with <span class="ui">Advanced Settings</span> switched on, at the top right of Project Settings.</p>
+</section>
+
+<section id="exports">
+<h2><span class="n">4</span>Bringing in the exports</h2>
+<p>Each export is a folder of its own in the studio's <code>Exports/</code>, with its <code>.glb</code> and a
+<code>README.txt</code> saying what's in it:</p>
+<div class="tree">Exports/
+  interiors/<i>&lt;name&gt;</i>/<i>&lt;name&gt;</i>.glb      <i>the scene builder's Export for Godot: a level</i>
+  streets/<i>&lt;name&gt;</i>/<i>&lt;name&gt;</i>.glb        <i>the street builder's Export for Godot</i>
+  characters/<i>&lt;name&gt;</i>/<i>&lt;name&gt;</i>.glb     <i>the Character Studio's Export for Godot</i></div>
+<p><b>Drag the folder</b> from your file manager into Godot's FileSystem dock, into <code>exports/interiors/</code> (or
+the street's, or the character's). Godot imports the <code>.glb</code> into a scene. To use it, <b>drag the
+<code>.glb</code> into your scene</b> (or onto a node in the Scene dock) and it's an instance there.</p>
+<p>Godot reads the export's names as it imports. That's how it all works with no setup:</p>
+<table class="keys">
+<tr><td><code>…-colonly</code></td><td>The mesh becomes a <span class="node">StaticBody3D</span> with its collision shape and isn't drawn: what you walk on and bump into.</td></tr>
+<tr><td><code>…-occonly</code></td><td>The mesh becomes an <span class="node">OccluderInstance3D</span>: occlusion culling.</td></tr>
+<tr><td>lights</td><td>A lamp comes in as an <span class="node">OmniLight3D</span> or a <span class="node">SpotLight3D</span>.</td></tr>
+<tr><td>extras</td><td>What a node is (a door's hinge, a marker's kind, a room's size) is in its metadata, under <code>extras</code>: <code>node.get_meta("extras")</code>.</td></tr>
+</table>
+<p><b>Exporting again</b> writes the same file in the studio's <code>Exports/</code>. Drag it in again, or make the
+project's <code>exports/</code> links to the studio's, so a new export is in the project straight away (Godot imports
+it when you come back to the editor):</p>
+<pre>python tools/godot_byhand.py exports ~/Games/MyGame --link</pre>
+<div class="tip"><b>Don't edit inside an imported scene:</b> the next export replaces it. Put your own nodes beside the
+instance, or under it, in your scene. To change what's inside, right-click the instance and choose <span class="ui">Editable
+Children</span>, or right-click the <code>.glb</code> and choose <span class="ui">New Inherited Scene</span> to make a scene of your own from it.</div>
+</section>
+
+<section id="interior">
+<h2><span class="n">5</span>An interior</h2>
+<p>The scene builder's <span class="ui">Export for Godot</span> (its toolbar) writes the level you're looking at as the 3D
+view shows it: <code>Exports/interiors/&lt;set&gt;/</code> for a set, <code>&lt;game&gt;_&lt;level&gt;</code> for a game's level.</p>
+<figure><img src="img/interior_top.jpg" width="1600" height="900" alt="The Bungalow set exported from the scene builder, in Godot, its ceilings hidden"><figcaption>The Bungalow set's export in Godot: every room, its doors, trim, floors and kit things, the ceilings hidden for the picture.</figcaption></figure>
+<div class="tree"><b>bungalow</b>
+  visual/        <i>every piece by its id, with its materials (the PBR sets at their real size)</i>
+  doors/         <i>door_&lt;id&gt;: a door and its handle, the node's origin on the hinge (turn it about Y)</i>
+  collision/     <i>&lt;room&gt;-colonly: the walls, floors and things, one trimesh a room</i>
+  occluders/     <i>&lt;room&gt;_occ-occonly</i>
+  lights/        <i>light_&lt;id&gt;: the lamps</i>
+  markers/       <i>player_start, spot_&lt;id&gt;, trigger_&lt;room&gt;: empty nodes looking along their -Z</i>
+  outside/       <i>the building round it, if the scene builder showed it</i></div>
+<p><b>The outside</b> is in the export when the scene builder's 3D view shows it (the <span class="ui">outside</span>
+box in the view's bar). It makes the level a whole building standing alone. Leave it out when the level goes inside a
+street's walk-in building: the street has that shell already, and two shells in one place flicker.</p>
+<p><b>A door</b> is a node on its hinge. Its metadata says which way it opens (<code>opens</code>: the sign of the Y turn),
+whether it slides (<code>slide</code>) and its <code>width</code>. The starter's <code>door.gd</code> uses those.</p>
+</section>
+
+<section id="street">
+<h2><span class="n">6</span>A street</h2>
+<p>The street builder's <span class="ui">Export for Godot</span> writes <code>Exports/streets/&lt;name&gt;/</code>
+(Shift-click it to download the file instead).</p>
+<figure><img src="img/street_top.jpg" width="1600" height="900" alt="The hill motel street in Godot from above"><figcaption>The hill motel street in Godot: its roads and pavements to walk on (the kerbs have ramps a body walks up), the buildings, the motel and the Bungalow's shell.</figcaption></figure>
+<div class="tree"><b>hill_motel</b>
+  visual/        <i>the street in 48 m chunks, a mesh a material</i>
+  collision/     <i>chunk_&lt;x&gt;_&lt;y&gt;-colonly</i>
+  occluders/     <i>inside the buildings</i>
+  lamps/         <i>the street lamps</i>
+  insides/       <i>inside_&lt;building&gt;: where a walk-in building's level goes, its set's name in its metadata</i></div>
+<p><b>A walk-in building</b> (a set inside, put there in the street builder) is a shell with its doors and windows cut
+through it. The level goes at its marker, <code>insides/inside_&lt;building&gt;…</code>, and the README names each one. Export that set
+from the scene builder (without its outside) and stand it there. The starter's <code>interior.gd</code> does it
+(<a href="../first_game/index.html#bungalow">the first game, step 6</a>).</p>
+</section>
+
+<section id="character">
+<h2><span class="n">7</span>A character</h2>
+<p>The Character Studio's <span class="ui">Export for Godot</span> (its header) writes the character for the desk and
+the Director as before, then its copy in <code>Exports/characters/&lt;name&gt;/</code> with MHR's 72 face shapes
+baked in as blend shapes.</p>
+<figure><img src="img/character.jpg" width="1600" height="900" alt="A Character Studio character in Godot"><figcaption>A Character Studio export in Godot, with the Look plugin's character look and its arms brought down.</figcaption></figure>
+<ul>
+  <li><b>A skeleton</b>: MHR's, so the studio's Kimodo clips fit it (through the Director's library, or Godot's retargeting).</li>
+  <li><b>Blend shapes</b>: <code>jawDrop</code>, <code>eyesClosed_L</code>, <code>lipCornerPuller_R</code>… (Meta's names), for faces and talking. Key them in an <span class="node">AnimationPlayer</span>.</li>
+  <li><b>Its look</b>: its colours come baked as plain PBR, so it looks right anywhere. For the studio's own skin, eyes and hair, give it an
+  <span class="node">HSCharacterLook</span> child (Add Child Node, type <code>HSCharacterLook</code>). It puts them on when the game runs.</li>
+  <li><b>Its pose</b>: it's exported in MHR's pose, with its arms out. The starter's <code>arms_down.gd</code>, on a node under it, brings them down.</li>
+</ul>
+</section>
+
+<section id="light">
+<h2><span class="n">8</span>Lighting it</h2>
+<ul>
+  <li><b>The look</b>: add an <span class="node">HSLookEnvironment</span> (a WorldEnvironment) and untick its
+  <code>Editor Only</code>, so it stays in the game. <code>balanced</code> is the default; <code>realism</code> overplays it. Or drag in
+  <code>addons/horrorstudio_look/presets/look_balanced.tscn</code> (the environment, a tape and a grade).</li>
+  <li><b>The lamps</b> come with the exports. Turn on <code>Shadow</code> on the ones that matter (they come in without
+  shadows), and delete the ones you'd rather place yourself.</li>
+  <li><b>The sun or the moon</b>: a <span class="node">DirectionalLight3D</span>. A dim blue one at 0.15 to 0.2 makes a night.</li>
+  <li><b>A room's lights kept in the room</b>: an <span class="node">HSLightZone</span> the room's size owns the lights inside it.</li>
+  <li><b>Bounce light</b>: a <span class="node">VoxelGI</span> over the house, then <span class="ui">Bake</span>. It's cheap, and enough for small rooms.</li>
+  <li><b>Flicker, rain, wet floors, a mirror</b>: the Look plugin's nodes, in <a href="../look_plugin/index.html">its guide</a>.</li>
+</ul>
+</section>
+
+<section id="player">
+<h2><span class="n">9</span>A player</h2>
+<p>The starter's <code>player.tscn</code> is a first-person body (a <span class="node">CharacterBody3D</span> with a
+<span class="node">Camera3D</span> at 1.6 m). Drag it into the scene where the game starts:</p>
+<table class="keys">
+<tr><td><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></td><td>walk (<kbd>Shift</kbd> runs); it steps up anything up to half a metre, like a kerb, a genkan's step or a raised floor</td></tr>
+<tr><td>mouse</td><td>look</td></tr>
+<tr><td><kbd>E</kbd></td><td>use what's in front of you: anything with a <code>use()</code> method, such as a door</td></tr>
+<tr><td><kbd>F</kbd></td><td>the flashlight</td></tr>
+<tr><td><kbd>Esc</kbd></td><td>let the mouse go (a click takes it back)</td></tr>
+</table>
+<p>An interior's <code>markers/player_start</code> is where its level starts the player. Stand the player there, or anywhere you like.</p>
+</section>
+
+<section id="ship">
+<h2><span class="n">10</span>Playing and shipping</h2>
+<p><span class="ui">Project → Project Settings → Application → Run → Main Scene</span> picks the scene <kbd>F5</kbd> plays (<kbd>F6</kbd> plays the one open).
+To ship it: <span class="ui">Project → Export…</span>, add a Windows Desktop and a Linux preset, and download the export templates
+when Godot asks.</p>
+<div class="tip"><b>A character's look in a shipped game:</b> <span class="node">HSCharacterLook</span> reads the character's
+<code>.glb</code> itself (its skin's and eyes' records), and an exported game leaves source files out. In the export preset's
+<span class="ui">Resources</span> tab, put <code>*.glb</code> in <span class="ui">Filters to export non-resource files</span>.</div>
+</section>
+
+<section id="trouble">
+<h2><span class="n">11</span>When something's wrong</h2>
+<table class="keys">
+<tr><td>The character's skin is flat white or pink</td><td><code>HumanShaders/</code> isn't at the project's root (§2), or the plugin isn't enabled.</td></tr>
+<tr><td>The player falls through the floor</td><td>The export's colliders didn't come in. Look for <span class="node">StaticBody3D</span> nodes under the instance (Editable Children). If there are none, export again from the studio.</td></tr>
+<tr><td>The player can't get up a step</td><td>Higher than its <code>step_height</code> (0.5 m). Raise it on the player, or add a ramp.</td></tr>
+<tr><td>A line flickers along a wall or a floor</td><td>Two surfaces in one plane. The studio's editors keep their own pieces apart (the street page's <span class="ui">Check</span> finds what's been placed so); in Godot, two exports overlapping do it, such as an interior with its outside inside a street's shell.</td></tr>
+<tr><td>It's black</td><td>No lights and no environment: add an <span class="node">HSLookEnvironment</span> with <code>Editor Only</code> off, and a light.</td></tr>
+<tr><td>A door doesn't open</td><td>The interior's instance needs <code>interior.gd</code> (or the door <code>door.gd</code>), and the player's aim must reach it (2 m).</td></tr>
+</table>
+</section>
+
+<footer>Godot by hand: the studio's exports in a Godot 4.7 project of your own. The pictures are the studio's real exports
+drawn by Godot (<code>python tools/godot/first_game.py --pictures</code>).</footer>
+</main>
+</div>
+<script>
+// the contents follow the reading: the section on screen is lit
+const links = [...document.querySelectorAll("nav.toc ol a")], secs = links.map(a => document.querySelector(a.getAttribute("href")));
+const lit = () => { let at = 0; secs.forEach((s, i) => { if (s && s.getBoundingClientRect().top < 140) at = i; }); links.forEach((a, i) => a.classList.toggle("on", i === at)); };
+addEventListener("scroll", lit, { passive: true }); lit();
+</script>
+</body>
+</html>

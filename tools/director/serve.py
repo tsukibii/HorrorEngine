@@ -27,6 +27,7 @@ from storykit import library as LIB  # noqa: E402
 from storykit import kit as KIT  # noqa: E402
 from storykit import pbr as PBR  # noqa: E402
 from storykit import life as LIFE  # noqa: E402
+from storykit import exports as EXPORTS  # noqa: E402
 sys.path.insert(0, str(HERE.parent))                 # tools/: the checks (story_check, level_check)
 
 STATIC = {".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".txt": "text/plain",
@@ -732,6 +733,20 @@ class Handler(BaseHTTPRequestHandler):
             r = subprocess.run([sys.executable, str(ROOT / "tools" / "story.py"), "new", name], capture_output=True,
                                text=True, encoding="utf-8")
             return self.send(200 if r.returncode == 0 else 500, {"output": r.stdout + r.stderr, "games": L.games()})
+        if parts[:2] == ["api", "exports"] and len(parts) == 5 and parts[2] in ("interiors", "streets"):
+            # Export for Godot (DECISIONS 2026-11-03, night): the scene builder's level or the street page's street as a .glb
+            # into Exports/<kind>/<name>/ with its README (storykit/exports.py); ?what= says what it is in the README,
+            # ?insides= the street's walk-in buildings' sets
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            kind, name, fname = parts[2], parts[3], parts[4]
+            try:
+                f = EXPORTS.save(kind, name, fname, self.body(), meta={"kind": kind, "from": (q.get("from") or [""])[0]})
+                ins = [x for x in (q.get("insides") or [""])[0].split(",") if x]
+                EXPORTS.readme(kind, name, what=(q.get("what") or [""])[0], outside=(q.get("outside") or [""])[0],
+                               insides=("Its walk-in buildings' sets (each its own interior, from the scene builder):\n" + "".join(f"  {x}\n" for x in ins)) if ins else "")
+            except ValueError as e:
+                return self.send(400, {"error": str(e)})
+            return self.send(200, {"ok": True, "path": EXPORTS.rel(f), "folder": EXPORTS.rel(f.parent)})
         if parts[:2] == ["api", "export"] and len(parts) == 4 and self.game_path(parts[2]):
             out = L.GAMES / parts[2] / "Previs"
             out.mkdir(parents=True, exist_ok=True)

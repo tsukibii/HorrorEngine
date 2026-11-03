@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your First Game</title>
+<!-- A first game built by hand from the studio's exports: the Bungalow set, the hill motel street, a Character Studio
+     character (DECISIONS 2026-11-03, night). Nothing loads from outside: the pictures in img/ are that game drawn by
+     Godot (python tools/godot/first_game.py --pictures); FIRSTGAME builds it as these steps say and plays it through. -->
+<style>
+:root{--bg:#121214;--panel:#1b1b1f;--panel2:#232329;--line:#33333b;--text:#e6e3dc;--dim:#9a978f;--accent:#e0a35f;--warn:#e0a030;--cue:#9fd39a}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:20px}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.wrap{display:grid;grid-template-columns:250px minmax(0,1fr);max-width:1240px;margin:0 auto}
+nav.toc{position:sticky;top:0;height:100vh;overflow:auto;padding:28px 18px 28px 22px;border-right:1px solid var(--line);font-size:13.5px}
+nav.toc .brand{font-weight:700;letter-spacing:.06em;color:var(--accent);font-size:12px;text-transform:uppercase;margin-bottom:14px}
+nav.toc ol{list-style:none;margin:0;padding:0;counter-reset:s}
+nav.toc li{counter-increment:s}
+nav.toc li a{display:flex;gap:8px;padding:4px 8px;border-radius:6px;color:var(--text)}
+nav.toc li a::before{content:counter(s);color:var(--dim);min-width:18px;text-align:right;font-variant-numeric:tabular-nums}
+nav.toc li a:hover,nav.toc li a.on{background:var(--panel2);text-decoration:none}
+nav.toc li a.on{color:var(--accent)}
+nav.toc .back{display:block;margin-top:18px;color:var(--dim);font-size:12.5px}
+main{padding:34px 44px 90px;min-width:0}
+header.hero{border-bottom:1px solid var(--line);padding-bottom:22px;margin-bottom:10px}
+header.hero h1{font-size:34px;line-height:1.15;margin:0 0 10px;letter-spacing:-.01em}
+header.hero p{color:var(--dim);font-size:16.5px;margin:0;max-width:740px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.chip{font-size:12px;padding:3px 10px;border-radius:99px;border:1px solid var(--line);color:var(--dim);background:var(--panel)}
+section{padding-top:30px;max-width:920px}
+h2{font-size:24px;margin:16px 0 6px;display:flex;align-items:baseline;gap:12px}
+h2 .n{color:var(--accent);font-size:15px;font-variant-numeric:tabular-nums;font-weight:600}
+h3{font-size:16.5px;margin:22px 0 4px}
+p{margin:8px 0}
+ul,ol.steps{padding-left:22px;margin:8px 0}
+li{margin:3px 0}
+kbd{font:600 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--panel2);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:2px 6px;color:var(--text);white-space:nowrap}
+code{font:13px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:1px 5px;overflow-wrap:anywhere}
+pre{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;overflow:auto;font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace}
+.ui{font-weight:600;color:#f2e6cc}
+.node{font:600 13px ui-monospace,SFMono-Regular,Menlo,monospace;color:#cfe3f2}
+figure{margin:16px 0 20px;max-width:100%}
+figure img{display:block;max-width:100%;height:auto;border-radius:10px;border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.45);background:var(--panel)}
+figcaption{color:var(--dim);font-size:13px;margin-top:7px}
+.pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;align-items:start;margin:14px 0}
+.pair figure{margin:0}
+.tip{border-left:3px solid var(--accent);background:linear-gradient(90deg,rgba(224,163,95,.09),transparent);padding:9px 14px;border-radius:0 10px 10px 0;margin:14px 0}
+.tip b{color:var(--accent)}
+.note{border-left:3px solid var(--cue);background:linear-gradient(90deg,rgba(159,211,154,.08),transparent);padding:9px 14px;border-radius:0 10px 10px 0;margin:14px 0}
+.notyet{border-left:3px solid var(--warn);background:linear-gradient(90deg,rgba(224,160,48,.09),transparent);padding:9px 14px;border-radius:0 10px 10px 0;margin:14px 0}
+.notyet b{color:var(--warn)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin:12px 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.card h4{margin:0 0 4px;font-size:14px}
+.card p{margin:0;color:var(--dim);font-size:13.5px}
+table.keys{border-collapse:collapse;width:100%;font-size:14px;margin:8px 0}
+table.keys td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+table.keys td:first-child{white-space:nowrap;width:1%}
+.tree{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font:13px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre;overflow:auto}
+.tree i{color:var(--dim);font-style:normal}
+footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:var(--dim);font-size:13px}
+@media (max-width:900px){.wrap{display:block}nav.toc{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line);padding:18px 16px}nav.toc ol{columns:2;column-gap:14px}main{padding:22px 16px 60px}header.hero h1{font-size:27px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="toc">
+  <div class="brand">Your first game</div>
+  <ol>
+    <li><a href="#what">What you'll make</a></li>
+    <li><a href="#before">Before you start</a></li>
+    <li><a href="#interior">The house: an interior</a></li>
+    <li><a href="#street">The street</a></li>
+    <li><a href="#character">Her: a character</a></li>
+    <li><a href="#project">The project</a></li>
+    <li><a href="#bungalow">The scene, part by part</a></li>
+    <li><a href="#scare">The scare</a></li>
+    <li><a href="#play">Play it</a></li>
+    <li><a href="#next">Where to go next</a></li>
+  </ol>
+  <a class="back" href="../godot_by_hand/index.html">← Godot by hand</a>
+  <a class="back" href="../look_plugin/index.html">The Look plugin →</a>
+  <a class="back" href="../index.html">← All guides</a>
+</nav>
+<main>
+<header class="hero">
+  <h1>Your first game, by hand</h1>
+  <p>A street at night. A small house up a garden path. Slide the front door open, go down the passage, and open the
+  guest room. The lights die. When the flashlight comes on, she's standing there. Each part comes from one of the
+  studio's editors: the house from the <b>scene builder</b>, the street from the <b>street builder</b>, her from the
+  <b>Character Studio</b>. They're put together in Godot with a handful of short scripts.</p>
+  <div class="chips"><span class="chip">about an hour</span><span class="chip">Godot 4.7</span><span class="chip">the Bungalow set</span>
+  <span class="chip">the hill motel street</span><span class="chip">a Character Studio character</span><span class="chip">5 starter scripts</span></div>
+</header>
+
+<section id="what">
+<h2><span class="n">1</span>What you'll make</h2>
+<div class="pair">
+  <figure><img src="img/street.jpg" width="1600" height="900" alt="The Bungalow on the hill motel street at night, in Godot"><figcaption>The street at night, the house behind its gate.</figcaption></figure>
+  <figure><img src="img/scare.jpg" width="1600" height="900" alt="The guest room dark, her in the flashlight's beam"><figcaption>The guest room after the lights die.</figcaption></figure>
+</div>
+<p>Every picture here is that game, drawn by Godot. <code>python tools/godot/first_game.py --keep ~/Games/FirstGame_done</code> builds
+it exactly as these steps do, if you'd like to open the finished one beside yours (a folder of its own: it's emptied each time).</p>
+</section>
+
+<section id="before">
+<h2><span class="n">2</span>Before you start</h2>
+<ul>
+  <li><b>Godot 4.7</b> (the standard build).</li>
+  <li><b>The studio's tools running</b>: <code>./studio</code> in the studio's folder lists them, or the dashboard
+  (<code>python dashboard.py</code>). The scene builder and the street builder are the desk's pages (its server: <code>python tools/director/serve.py</code>,
+  then http://127.0.0.1:8780/builder.html and /street.html). The Character Studio has its own (<code>python tools/character/serve.py</code>, http://127.0.0.1:8793).</li>
+  <li><a href="../godot_by_hand/index.html">Godot by hand</a> explains what each step here does underneath. Read it later, or now.</li>
+</ul>
+</section>
+
+<section id="interior">
+<h2><span class="n">3</span>The house: an interior</h2>
+<ol class="steps">
+  <li>Open the <b>scene builder</b> and pick <span class="ui">set: bungalow</span> in its game list (the Bungalow: a
+  garden path, a front engawa, a passage, a guest room, a living room, a kitchen...). Your own set works the same.</li>
+  <li>In the 3D view's bar, <b>untick <span class="ui">outside</span></b>. The house goes inside the street's own shell,
+  which has its outer walls and roof already.</li>
+  <li>Press <span class="ui">Export for Godot</span> in the toolbar. It writes <code>Exports/interiors/bungalow/</code>: <code>bungalow.glb</code> and a README.</li>
+</ol>
+</section>
+
+<section id="street">
+<h2><span class="n">4</span>The street</h2>
+<ol class="steps">
+  <li>Open the <b>street builder</b> and pick <span class="ui">hill_motel</span>. It has the Bungalow already: the walk-in
+  building <code>bungalow1</code>, made from the palette's <span class="ui">Bungalow</span> (a set inside a building). On a street of your own,
+  put one in from the palette the same way.</li>
+  <li>Press <span class="ui">Export for Godot</span>. It writes <code>Exports/streets/hill_motel/</code>. Its README lists the walk-in
+  buildings' markers. The Bungalow's is <code>inside_bungalow1_1_1</code>.</li>
+</ol>
+</section>
+
+<section id="character">
+<h2><span class="n">5</span>Her: a character</h2>
+<ol class="steps">
+  <li>Open the <b>Character Studio</b> and your character (or make one: the Body, Face, Clothes and Hair tabs).</li>
+  <li>Press <span class="ui">Export for Godot</span> in its header. It writes <code>Exports/characters/&lt;her name&gt;/</code>,
+  with her face shapes baked in.</li>
+</ol>
+<figure><img src="img/her.jpg" width="1600" height="900" alt="The character in the guest room under its lamp"><figcaption>She'll stand in the guest room. Here the room's lamp is still on.</figcaption></figure>
+</section>
+
+<section id="project">
+<h2><span class="n">6</span>The project</h2>
+<p>Make the project. It comes with the Look plugin, HumanShaders and the starter scripts:</p>
+<pre>python tools/godot_byhand.py new ~/Games/FirstGame</pre>
+<p>Open it in Godot (Project Manager, <span class="ui">Import</span>, its <code>project.godot</code>). Then bring the
+three exports in: drag <code>Exports/interiors/bungalow</code>, <code>Exports/streets/hill_motel</code> and
+<code>Exports/characters/&lt;her name&gt;</code> from your file manager into the FileSystem dock, each into its own folder under
+<code>res://exports/</code>. Or, from the studio's folder:</p>
+<pre>python tools/godot_byhand.py exports ~/Games/FirstGame --link</pre>
+<div class="tree">res://
+  addons/horrorstudio_look/     <i>the Look plugin</i>
+  HumanShaders/                 <i>its skin and eyes</i>
+  starter/                      <i>player.tscn, player.gd, interior.gd, door.gd, scare_area.gd, arms_down.gd</i>
+  exports/interiors/bungalow/bungalow.glb
+  exports/streets/hill_motel/hill_motel.glb
+  exports/characters/<i>&lt;her name&gt;</i>/<i>&lt;her name&gt;</i>.glb</div>
+</section>
+
+<section id="bungalow">
+<h2><span class="n">7</span>The scene, part by part</h2>
+<p><span class="ui">Scene → New Scene</span>, <span class="ui">3D Scene</span>. Rename the root <code>Main</code> and save it as
+<code>main.tscn</code>. Then <span class="ui">Project → Project Settings → Application → Run → Main Scene</span>: <code>main.tscn</code>.
+When you're done, the Scene dock reads:</p>
+<div class="tree"><b>Main</b>                     <i>Node3D</i>
+  Look                     <i>HSLookEnvironment: preset balanced, Editor Only off</i>
+  Moon                     <i>DirectionalLight3D: pale blue, energy 0.18, shadows on</i>
+  Street                   <i>hill_motel.glb</i>
+  Bungalow                 <i>bungalow.glb + starter/interior.gd: Street = Street, Marker = inside_bungalow1_1_1</i>
+  Mari                     <i>her .glb, in the guest room</i>
+    Look                   <i>HSCharacterLook</i>
+    ArmsDown               <i>Node + starter/arms_down.gd</i>
+  Player                   <i>starter/player.tscn, on the garden path facing the house</i>
+  Scare                    <i>Area3D + starter/scare_area.gd: Lights Of = Bungalow, Appear = Mari</i>
+    Shape                  <i>CollisionShape3D: a BoxShape3D the guest room's size</i>
+    Sound                  <i>AudioStreamPlayer3D: a sting</i></div>
+<h3>The look and the moon</h3>
+<p><span class="ui">Add Child Node</span> (<kbd>Ctrl</kbd>+<kbd>A</kbd>), type <code>HSLookEnvironment</code>, add it and rename it <code>Look</code>.
+In the Inspector, untick <b>Editor Only</b> so it stays in the game. Add a <span class="node">DirectionalLight3D</span>,
+call it <code>Moon</code>, tilt it down about 30°, and give it a pale blue colour, <b>Energy</b> 0.18 and <b>Shadow</b> on.</p>
+<h3>The street and the house</h3>
+<p>Drag <code>exports/streets/hill_motel/hill_motel.glb</code> from the FileSystem onto <code>Main</code> and rename it
+<code>Street</code>. Drag <code>exports/interiors/bungalow/bungalow.glb</code> onto <code>Main</code> and rename it <code>Bungalow</code>.
+Drag <code>starter/interior.gd</code> onto the Bungalow to give it the script. In the Inspector, set <b>Street</b> to
+<code>Street</code> and <b>Marker</b> to <code>inside_bungalow1_1_1</code>, and the house jumps into its shell on the street.
+When the game runs, <code>interior.gd</code> also makes every door open and shut with <kbd>E</kbd>.</p>
+<figure><img src="img/door.jpg" width="1600" height="900" alt="The front door from the engawa"><figcaption>The front door, from the engawa. It slides open with E.</figcaption></figure>
+<h3>Her</h3>
+<p>Drag her <code>.glb</code> onto <code>Main</code> and rename her <code>Mari</code> (or her own name). Move her into the
+<b>guest room</b>: through the front door, then the first sliding door on the left. Turn her to face that door. Give her two
+children: <span class="ui">Add Child Node</span> → <code>HSCharacterLook</code> (the studio's skin, eyes and hair when the game runs),
+and a plain <span class="node">Node</span> called <code>ArmsDown</code> with <code>starter/arms_down.gd</code> (her arms by her sides).</p>
+<figure><img src="img/inside.jpg" width="1600" height="900" alt="Her in the guest room, seen from its door"><figcaption>From the guest room's door: what the player sees after the lights go, once the flashlight comes on.</figcaption></figure>
+<h3>The player</h3>
+<p>Drag <code>starter/player.tscn</code> onto <code>Main</code>. Stand it on the garden path, inside the gate, facing the
+house. The player looks along its <b>-Z</b>: select <code>Player/Eye</code> and tick <span class="ui">Preview</span> at the
+top of the 3D view to see through it.</p>
+</section>
+
+<section id="scare">
+<h2><span class="n">8</span>The scare</h2>
+<ol class="steps">
+  <li>Add an <span class="node">Area3D</span> to <code>Main</code>, call it <code>Scare</code>, and give it <code>starter/scare_area.gd</code>.</li>
+  <li>Give it a <span class="node">CollisionShape3D</span> child with a new <span class="node">BoxShape3D</span>, about
+  <b>3.2 × 2.2 × 2.7</b> m. Move and turn it to fill the guest room. The room's size is in the Bungalow's
+  <code>markers/trigger_kyakuma__volume</code> metadata (Editable Children shows it).</li>
+  <li>In its Inspector: <b>Lights Of</b> → <code>Bungalow</code> (every lamp in the house goes out), <b>Appear</b> →
+  <code>Mari</code> (hidden until then).</li>
+  <li>A sound: give it an <span class="node">AudioStreamPlayer3D</span> child named <code>Sound</code>. Drag a sting from
+  the studio's sound shelf into the project (<code>Content/Studio/SFX/stings/sting_short.ogg</code>, CC0) and set it as its <b>Stream</b>.</li>
+</ol>
+<div class="note">It fires once. Untick <b>Once</b> to fire it every time, or listen to its <code>scared</code> signal for anything else, such as a door slamming shut behind the player.</div>
+</section>
+
+<section id="play">
+<h2><span class="n">9</span>Play it</h2>
+<p>Press <kbd>F5</kbd>.</p>
+<table class="keys">
+<tr><td><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></td><td>walk up the path (the step onto it is taken in stride), <kbd>Shift</kbd> runs</td></tr>
+<tr><td>mouse</td><td>look</td></tr>
+<tr><td><kbd>E</kbd></td><td>slide the front door open, then the guest room's</td></tr>
+<tr><td><kbd>F</kbd></td><td>the flashlight</td></tr>
+<tr><td><kbd>Esc</kbd></td><td>let the mouse go</td></tr>
+</table>
+<p>Walk into the guest room. The lamps die and the sting plays. Press <kbd>F</kbd>.</p>
+<figure><img src="img/scare.jpg" width="1600" height="900" alt="The flashlight on her in the dark guest room"><figcaption>The flashlight on her in the dark.</figcaption></figure>
+</section>
+
+<section id="next">
+<h2><span class="n">10</span>Where to go next</h2>
+<ul>
+  <li><b>More scares</b>: copy <code>Scare</code> into another room. Its <code>scared</code> signal can start anything, such as an
+  <span class="node">AnimationPlayer</span>.</li>
+  <li><b>A dying bulb, rain at the window, a wet floor</b>: the Look plugin's nodes and presets, in
+  <a href="../look_plugin/index.html">its guide</a>. Try <code>presets/dying_bulb.tscn</code> in the passage.</li>
+  <li><b>Her face</b>: an <span class="node">AnimationPlayer</span> keying her blend shapes (<code>eyesClosed_L</code>,
+  <code>jawDrop</code>...), or the face clips the studio's Face page makes.</li>
+  <li><b>More rooms</b>: another set exported, another walk-in building on the street.</li>
+  <li><b>Quests, conversations and endings</b>: that's what the Director is for. <a href="../director/index.html">Its guide</a>.</li>
+</ul>
+</section>
+
+<footer>Your first game, by hand: the Bungalow set, the hill motel street and a Character Studio character in Godot 4.7.
+<code>python tools/godot/first_game.py</code> (FIRSTGAME) builds it as these steps do and plays it through (the player up the
+path, the front door, the scare); <code>--pictures</code> draws the pictures here again.</footer>
+</main>
+</div>
+<script>
+// the contents follow the reading: the section on screen is lit
+const links = [...document.querySelectorAll("nav.toc ol a")], secs = links.map(a => document.querySelector(a.getAttribute("href")));
+const lit = () => { let at = 0; secs.forEach((s, i) => { if (s && s.getBoundingClientRect().top < 140) at = i; }); links.forEach((a, i) => a.classList.toggle("on", i === at)); };
+addEventListener("scroll", lit, { passive: true }); lit();
+</script>
+</body>
+</html>
