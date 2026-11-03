@@ -524,6 +524,7 @@ const CTX = {
       case "todo": return Object.entries(todosOf()).map(([k, a]) => [k, a.text ? `${a.text} (${k})` : k]);
       case "pose": return poseNames().map(p => [p, p]);
       case "motion": return Object.keys(S.motions || {}).map(k => [k, k]);
+      case "expr": return ((XP.list || []).length ? XP.list : EXPRS).map(e => [e.id, e.name && e.name !== e.id ? `${e.name} (${e.id})` : e.id]);
       case "flag": return storyFlags().map(f => [f, f]);
       case "secret": return Object.entries(S.secrets || {}).map(([k, v]) => [k, v.hint ? `${k} · ${v.hint}` : k]);
       case "node": return Object.entries(S.flow || {}).map(([k, n]) => [k, `${nodeTitle(k, n)} (${k})`]);
@@ -2730,6 +2731,8 @@ async function ensureBody(f) {                         // a body loaded into the
   if (f.startsWith("people/")) tpl.userData = { studio: f.slice(7) };
   flowStage.bodies[f] = tpl; watchStage.bodies[f] = tpl;
 }
+let EXPRS = [];                                        // the expression library's ids for the pickers (the `expr` command), before its tab is opened
+api("/api/expressions").then(r => { EXPRS = r.expressions || []; }).catch(() => {});
 const XP = new ExpressionsPanel($("#exprPanel"), { stage: () => flowStage, story: () => S, ensureBody, M, bodies: async () => (await api("/api/bodies")).bodies,
   changed: () => { libraryChanged(); if (currentScene()) renderInspector(); } });   // the library changed (an import, a loop, a rename): the face rows read it again
 function rightTab(r, draw = true) {

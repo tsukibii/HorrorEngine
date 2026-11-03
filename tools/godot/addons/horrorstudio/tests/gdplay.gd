@@ -139,11 +139,20 @@ func tasks() -> Array:
 func _initialize() -> void:
 	create_timer(900.0, true, false, true).timeout.connect(func() -> void: printerr("GDPLAY FAIL: watchdog"); quit(1))
 	t_start = Time.get_ticks_msec()
-	g = (load("res://addons/horrorstudio/main.tscn") as PackedScene).instantiate()
-	g.autostart = false
-	root.add_child(g)
-	await process_frame
-	g.watch(null, null)
+	if OS.get_cmdline_user_args().has("--director"):     # a Director project (godot_director.py from-desk): its HSGame makes the runtime and starts it
+		var hs: Node = (load("res://main.tscn") as PackedScene).instantiate()
+		root.add_child(hs)
+		var k := 0
+		while hs.get("runtime") == null and k < 3000:
+			await process_frame
+			k += 1
+		g = hs.runtime
+	else:
+		g = (load("res://addons/horrorstudio/main.tscn") as PackedScene).instantiate()
+		g.autostart = false
+		root.add_child(g)
+		await process_frame
+		g.watch(null, null)
 	await step("the arrival plays on the porch", func():
 		if not await playing(true):
 			return "no play"

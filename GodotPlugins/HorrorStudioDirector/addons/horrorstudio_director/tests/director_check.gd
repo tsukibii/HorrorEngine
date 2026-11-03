@@ -1,0 +1,735 @@
+## DIRECTOR's play (tools/godot_director.py check): the sample game (make_sample.gd) compiled and played headless on
+## the studio's runtime, the way a player would: the compiled story's shape, the chapter card, the task's objective
+## and to-do list, a wall that stops the player (Godot's physics), the letter read (a to-do ticked, its event's flag),
+## the kitchen door opened and walked through, the figure's jumpscare in the doorway (the user's example: an area
+## after a flag), Mari's "not now" every time she's clicked, the key (the task done), the dialogue's answer, the
+## locked bedroom door opened by the key, the bedroom entered, the choice by act (hiding in the wardrobe): the good
+## ending. Ends "DIRECTORPLAY ok".
+extends SceneTree
+
+var hs: Node
+var g
+var rt
+var fails := 0
+
+
+func fail(what: String, why: String) -> void:
+	printerr("BAD %s: %s  %s" % [what, why, where()])
+	fails += 1
+
+
+func step(what: String, fn: Callable) -> void:
+	if fails > 0:
+		return
+	var r = await fn.call()
+	if r is String and r != "":
+		fail(what, r)
+		return
+	print("ok  %s" % what)
+
+
+func where() -> String:
+	if rt == null:
+		return "(no play)"
+	return JSON.stringify({"trail": g.run["trail"] if g.run != null else null, "active": rt.active, "at": [snapped(rt.player.pos.x, 0.01), snapped(rt.player.pos.y, 0.01), snapped(rt.player.pos.z, 0.01)],
+		"busy": rt.busy, "line": g.hud.line_text, "flags": g.run["flags"].keys() if g.run != null else [], "todo": g.hud.tasks.map(func(t): return str(t["id"]) + ":" + str(t["state"]))})
+
+
+func frames(n: int) -> void:
+	for i in n:
+		await process_frame
+
+
+func game_wait(secs: float) -> void:
+	var c0: float = rt.clock
+	var n := 0
+	while rt.active and rt.clock - c0 < secs and n < 20000:
+		await process_frame
+		n += 1
+
+
+func playing(on: bool, limit := 6000) -> bool:
+	var n := 0
+	while n < limit:
+		var p = g.play if g != null else null
+		if (p != null and p.active) == on:
+			return true
+		await process_frame
+		n += 1
+	return false
+
+
+func hold(key: String, secs: float) -> void:
+	rt.key_event(key, true)
+	await game_wait(secs)
+	rt.key_event(key, false)
+
+
+## stand d metres from a thing facing it, where the cursor lands on it: the cursor's kind
+func go_to(id: String, d: float = 0.9) -> String:
+	var n := 0
+	while (rt.look_tween != null or rt.moving != null) and n < 3000:
+		await process_frame
+		n += 1
+	var o = rt.by_id.get(id)
+	if o == null:
+		return "ERR no " + id
+	var at: Vector3 = o["node"].global_position
+	if o["kind"] == "person":                     # a character's node is at her feet: aim at her chest
+		at.y += float(o["size"][2]) * 0.6
+	for k in 16:
+		var a := k * PI / 8.0
+		var feet := Vector3(at.x + cos(a) * d, rt.player.pos.y, at.z - sin(a) * d)
+		var yaw := rad_to_deg(atan2(-(at.z - feet.z), at.x - feet.x))
+		rt.place(feet, yaw, 0.0)
+		var eye: Vector3 = rt.eye_pos()
+		rt.player.pitch = rad_to_deg(atan2(at.y - eye.y, Vector2(at.x - feet.x, at.z - feet.z).length()))
+		g.camera.global_position = eye
+		g.camera.rotation_degrees = Vector3(rt.player.pitch, rt.player.yaw - 90.0, 0.0)
+		await physics_frame
+		rt.update_cursor(0.0)
+		if rt.target != null and rt.target["id"] == id:
+			return g.hud.cursor_kind
+	return "ERR can't get the cursor on %s (hit %s, vis %s)" % [id, rt.look["id"], o["node"].visible]
+
+
+func flag(f: String) -> bool:
+	return g.run != null and g.run["flags"].has(f)
+
+
+func todo_state(id: String) -> String:
+	for t in g.hud.tasks:
+		if str(t["id"]) == id:
+			return str(t["state"])
+	return "missing"
+
+
+## skip scenes, answer choices with the first, until play is back
+func scenes_until_play() -> String:
+	var n := 0
+	while n < 12000:
+		if g.play != null and g.play.active:
+			return ""
+		if not g.hud.choice_over:
+			g.hud.choice_pick(1)
+			await frames(10)
+		elif g.scene_player.playing:
+			await frames(2)
+		else:
+			await process_frame
+		n += 1
+	return "play never came back"
+
+
+func _initialize() -> void:
+	create_timer(600.0, true, false, true).timeout.connect(func() -> void: printerr("BAD watchdog " + where()); quit(1))
+	var ps: PackedScene = load("res://main.tscn")
+	hs = ps.instantiate()
+	root.add_child(hs)
+	current_scene = hs
+	var n := 0
+	while (hs.runtime == null or hs.runtime.story == null) and n < 600:
+		await process_frame
+		n += 1
+	g = hs.runtime
+	await step("the scene compiles into a story the runtime plays", func():
+		var st: Dictionary = hs.compiled["story"]
+		var errs: Array = hs.compiled["problems"].filter(func(p): return p["error"])
+		if errs.size():
+			return "problems: " + str(errs.map(func(p): return p["text"]))
+		var fl: Dictionary = st["flow"]
+		for k in ["q_intro__card", "q_intro", "q_key", "q_drink", "q_talk", "q_bedroom", "q_night", "q_night__next", "e_morning", "e_asleep"]:
+			if not fl.has(k):
+				return "no flow node %s in %s" % [k, fl.keys()]
+		if st["game"]["start"] != "q_intro__card" or fl["q_intro__card"]["next"] != "q_intro" or fl["q_intro"]["next"] != "q_key" or fl["q_key"]["next"] != "q_drink" or fl["q_talk"]["next"] != "q_bedroom" or fl["q_night"]["next"] != "q_night__next":
+			return "the order: " + JSON.stringify(fl)
+		var ib: Array = st["stitches"]["q_intro"]["beats"].filter(func(b): return b["id"] == "q_intro__start")
+		if ib.is_empty() or (ib[0]["do"] as Array).back() != {"done": true}:
+			return "the intro doesn't end once its opening is over: %s" % [ib]
+		var tb: Array = st["stitches"]["q_talk"]["beats"].filter(func(b): return b["id"] == "q_talk__start")
+		var tt: Array = (tb[0]["do"] as Array).filter(func(a): return a is Dictionary and a.get("todo") == "talk_mari") if tb.size() else []
+		if tt.is_empty() or tt[0].get("hidden") != true or tt[0].get("guide") != "mari":
+			return "the talk quest's step: no list, its marker over Mari: %s" % [tt]
+		var ch: Dictionary = fl["q_night__next"]
+		if ch["by"] != "flag" or ch["options"][0]["to"] != "e_morning" or ch["options"][1]["to"] != "e_asleep" or not str(ch["options"][0]["if"][0]).begins_with("?c"):
+			return "what comes after the night, by what was done: " + JSON.stringify(ch)
+		var beats: Array = st["stitches"]["q_key"]["beats"].map(func(b): return b["id"])
+		if not beats.has("m_figure_scare") or not beats.has("m_letter_thought") or not beats.has("talk__mari__t_not_now"):
+			return "the first quest's beats: %s (the moments and the conversations in every quest)" % [beats]
+		var cpb: Array = st["stitches"]["q_bedroom"]["beats"].filter(func(b): return b["id"] == "m_checkpoint__checkpoint")
+		if cpb.is_empty() or cpb[0]["when"] != {"enter": "checkpoint"} or cpb[0]["do"] != [{"checkpoint": true}] or cpb[0].get("repeat") != true:
+			return "the bedroom's checkpoint: its moment %s" % [cpb]
+		if st["game"].get("player") != {"run": true, "crouch": true, "eye": 1.65} or st["levels"]["house"]["start"] != "start":
+			return "the player's settings %s, the house's start %s (the Player start, not the Test start)" % [st["game"].get("player"), st["levels"]["house"]["start"]]
+		if not st["items"].has("bedroom_key") or not st["items"].has("mug") or not st["notes"].has("letter") or not st["cast"].has("mari"):
+			return "items %s notes %s cast %s" % [st["items"].keys(), st["notes"].keys(), st["cast"].keys()]
+		var br: Dictionary = hs.compiled["brain"]
+		var rest_state = br["states"][0] if br["states"].size() else {}         # her expression first: a state that always holds, under the story's own
+		if br["talks"].get("mari", []).size() != 4 or br["states"].size() != 5 or br["conds"].is_empty() or str(rest_state.get("set", {}).get("mari", {}).get("expr", "")) != "pout_and_glance_loop":
+			return "the brain's: %d conversations, %d states (the first %s), %d conditions" % [br["talks"].get("mari", []).size(), br["states"].size(), rest_state, br["conds"].size()]
+		var ons: Array = (br["states"] as Array).filter(func(x): return x.has("stage"))   # On stage: each line held in its quests, carried on
+		var covers: Array = ons.map(func(x): return [x["stage"], (x["while"]["any"] as Array).map(func(c): return c["quest"])])
+		if covers != [["q_intro", ["q_intro", "q_key"]], ["q_drink", ["q_drink", "q_talk", "q_bedroom"]], ["q_night", ["q_night"]]] or br["states"][4].has("stage"):
+			return "On stage's states: %s (the file's own state last: %s)" % [covers, br["states"][4]]
+		var tif := {}                                  # a line's `talk`: in its own quest only, the line's conversation or none
+		for t in br["talks"]["mari"]:
+			tif[t["id"]] = t["if"]
+		if not JSON.stringify(tif["t_thirsty"]).contains("q_drink") or not JSON.stringify(tif["t_not_now"]).contains("\"not\"") or not JSON.stringify(tif["t_open"]).contains("q_night") or JSON.stringify(tif["t_open"]).contains("q_talk"):
+			return "her conversations narrowed by On stage: %s" % [tif]
+		return "")
+	await step("the chapter card and the intro (its thought, no list, over once its opening is), then the first task: its objective and its two to-dos", func():
+		var k := 0
+		while not (g.run != null and g.run["trail"].has("q_key") and g.play != null and g.play.active and not g.play.busy) and k < 3000:
+			await process_frame
+			k += 1
+		if g.play == null or not g.run["trail"].has("q_key"):
+			return "never got past the chapter card and the intro"
+		var tr: Array = g.run["trail"]
+		if not tr.has("q_intro") or tr.find("q_intro") > tr.find("q_key"):
+			return "the intro first: %s" % [tr]
+		if not g.hud.lines_shown.any(func(l): return str(l).contains("leave the bedroom key")):
+			return "the intro's thought never showed"
+		rt = g.play
+		k = 0
+		while g.hud.tasks.size() < 2 and k < 200:
+			await process_frame
+			k += 1
+		if g.hud.obj.text != "Find the bedroom key":
+			return "objective %s" % g.hud.obj.text
+		if g.hud.tasks.size() != 2:
+			return "to-dos %s" % [g.hud.tasks]
+		if rt.collide == null:
+			return "not on Godot's physics"
+		return "")
+	await step("Mari in her MHR body plays her idle, a motion made on Kimodo's skeleton and brought in", func():
+		var node = rt.cast_nodes.get("mari")
+		if node == null:
+			return "no Mari"
+		var ap = load("res://addons/horrorstudio/play.gd").player_with(node, "sample_idle")
+		if ap == null:
+			return "no player with sample_idle under her (the sample has no body: res://bodies/MHR.fbx?)"
+		await game_wait(0.5)
+		if not ap.is_playing() or not str(ap.current_animation).ends_with("sample_idle"):
+			return "playing %s" % ap.current_animation
+		return "")
+	await step("Mari's face: she rests in a loop from the expression library (brought in by face_export, on her MHR face shapes), moving", func():
+		if rt.faces == null:
+			return "no faces playing (her expression never came)"
+		var st: Dictionary = rt.faces.state("mari")
+		if st["rest"] != "pout_and_glance_loop" or not st.get("mesh", false):
+			return "her face: %s" % [st]
+		var mi: MeshInstance3D = rt.faces.people["mari"]["mesh"]
+		var seen := {}
+		for k in 12:
+			await game_wait(0.1)
+			var s := ""
+			for nm in rt.faces.people["mari"]["live"]:
+				s += "%.2f," % float(rt.faces.people["mari"]["live"][nm])
+			seen[s] = true
+		var big: float = rt.faces.state("mari")["weight"]
+		var idx: int = mi.find_blend_shape_by_name("shape_c_45")
+		if big < 0.05 or seen.size() < 3 or idx < 0:
+			return "her face barely moves (the biggest shape %.3f, %d different frames, shape_c_45 at %d)" % [big, seen.size(), idx]
+		return "")
+	await step("Mari's body and face together: her Kimodo idle (the library's clip, made hers) on her bones and her face loop on her face shapes, both moving in the same moment", func():
+		var node = rt.cast_nodes.get("mari")
+		var ap = load("res://addons/horrorstudio/play.gd").player_with(node, "sample_idle")
+		if ap == null or not str(ap.current_animation).begins_with("anims/"):
+			return "her idle isn't the library's (playing %s)" % (ap.current_animation if ap != null else "nothing")
+		var sk: Skeleton3D = node.find_children("*", "Skeleton3D", true, false)[0]
+		var mi: MeshInstance3D = rt.faces.people["mari"]["mesh"]
+		var pose := func():
+			var o: Array = []
+			for i in sk.get_bone_count():
+				o.append(sk.get_bone_pose_rotation(i))
+			return o
+		var blends := func():
+			var o: Array = []
+			for i in mi.get_blend_shape_count():
+				o.append(mi.get_blend_shape_value(i))
+			return o
+		var p0: Array = pose.call()
+		var b0: Array = blends.call()
+		await game_wait(0.4)
+		var p1: Array = pose.call()
+		var b1: Array = blends.call()
+		var bones := 0
+		var shapes := 0
+		for i in p0.size():
+			if (p0[i] as Quaternion).angle_to(p1[i]) > 0.002:
+				bones += 1
+		for i in b0.size():
+			if absf(float(b0[i]) - float(b1[i])) > 0.002:
+				shapes += 1
+		if bones < 3 or shapes < 2:
+			return "%d of her bones and %d of her face shapes moved" % [bones, shapes]
+		return "")
+	await step("a wall stops the player (Godot's physics: the hall's west wall)", func():
+		rt.place(Vector3(-1.0, 0.0, 0.0), 180.0, 0.0)
+		await hold("W", 2.0)
+		var x: float = rt.player.pos.x
+		if x < -2.5 or x > -2.0:
+			return "walked to x=%.2f: the wall's inner face is at -2.5" % x
+		if abs(rt.player.pos.y) > 0.05:
+			return "the feet at y=%.2f, not on the floor" % rt.player.pos.y
+		return "")
+	await step("the letter: read (the note's card), its to-do ticked, its moment's thought, the fact read:letter", func():
+		var c := await go_to("letter", 0.8)
+		if c != "read":
+			return "cursor " + c
+		rt.use(true)
+		await frames(10)
+		if g.hud.panel_el == null:
+			return "no note's card"
+		g.hud._finish_panel(true)
+		var k := 0
+		while not flag("read:letter") and k < 600:
+			await process_frame
+			k += 1
+		if todo_state("read_letter") != "done":
+			return "read_letter %s" % todo_state("read_letter")
+		if not flag("read:letter"):
+			return "no fact read:letter"
+		return "")
+	await step("the kitchen door: shut it stops the player; a click opens it", func():
+		rt.place(Vector3(1.6, 0.0, 0.8), 0.0, 0.0)
+		await hold("W", 1.5)
+		if rt.player.pos.x > 2.5:
+			return "walked through the shut door to x=%.2f" % rt.player.pos.x
+		var c := await go_to("kitchen_door", 1.0)
+		if c != "open":
+			return "cursor " + c
+		rt.use(true)
+		await game_wait(1.0)
+		if not rt.doors["kitchen_door"]["open"]:
+			return "not open"
+		return "")
+	await step("walking into the kitchen's doorway after the letter: the figure's jumpscare (a moment: when, if a fact, then), its lunge on its MHR body, its face and its own sting", func():
+		rt.place(Vector3(1.4, 0.0, 0.8), 0.0, 0.0)
+		rt.player.yaw = 0.0
+		var fig_node = rt.cast_nodes.get("figure", rt.by_id["figure"]["node"] if rt.by_id.has("figure") else null)
+		var fap = load("res://addons/horrorstudio/play.gd").player_with(fig_node, "figure_lunge") if fig_node != null else null
+		var heard0: int = rt.sounds_heard.size()
+		rt.key_event("W", true)
+		var seen := false
+		var lunged := false
+		var faced := false
+		var k := 0
+		while k < 400 and not flag("saw_figure"):
+			await process_frame
+			if rt.by_id.has("figure") and rt.by_id["figure"]["node"].visible:
+				seen = true
+				lunged = lunged or (fap != null and str(fap.current_animation) == "anims/figure_lunge")
+				faced = faced or (rt.faces != null and rt.faces.people.has("figure") and (rt.faces.people["figure"]["over"] as Array).size() > 0)
+			k += 1
+		rt.key_event("W", false)
+		if not flag("saw_figure"):
+			return "no saw_figure (at x=%.2f)" % rt.player.pos.x
+		if not seen:
+			return "the figure never showed"
+		var stings: Array = rt.sounds_heard.slice(heard0).map(func(x): return str(x["n"])).filter(func(x): return x.begins_with("sting"))
+		if not lunged or not faced or stings != ["sting_short"]:
+			return "the figure's lunge %s (its player %s), its face %s, the sting %s (its own: sting_short)" % [lunged, fap, faced, stings]
+		return "")
+	await step("parts on models: the kettle switched on, its steam where its spout marker was moved; the ornament taken up in the hands, turned by a drag, put back; the finished step crossed out; put down, the easter egg the cat's eyes found (its thought), the quest still on", func():
+		var c := await go_to("kettle", 0.8)
+		if c != "use":
+			return "the kettle's cursor " + c
+		var before = rt.state_of("kettle")
+		rt.use(true)
+		await game_wait(1.0)
+		var now = rt.state_of("kettle")
+		if now == null or now == before:
+			return "the kettle's state %s -> %s" % [before, now]
+		var it = rt.lifefx.items.get("kettle")
+		if it == null or not it["S"].has("spout"):
+			return "the kettle has no spout among its points (%s)" % (it["S"].keys() if it != null else "no kettle in lifefx")
+		var marker: Node3D = rt.by_id["kettle"]["node"].get_node_or_null("spout")
+		if marker == null:
+			return "no spout marker in the level"
+		var w: Dictionary = rt.lifefx.socket_world(it, it["S"]["spout"])
+		if w["p"].distance_to(marker.global_position) > 0.005:
+			return "the steam comes out at %s, the marker is at %s" % [w["p"], marker.global_position]
+		c = await go_to("ornament", 0.7)
+		if c == "" or c.begins_with("ERR"):
+			return "the ornament's cursor " + c
+		rt.use(true)
+		await frames(20)
+		if rt.examining == null or rt.exam == null:
+			return "the ornament wasn't taken up in the hands"
+		if rt.by_id["ornament"]["node"].visible:
+			return "the ornament is still on the table while it's in the hands"
+		var shown: int = rt.exam["pivot"].find_children("*", "MeshInstance3D", true, false).size()
+		if shown < 2:
+			return "nothing in the hands to look at (%d meshes)" % shown
+		rt.exam_turn(120.0, 0.0)                      # a drag across: turned about the view's up
+		await frames(40)
+		if abs(rt.exam_angle() - 120.0 * float(rt.EXAMINE["turn"])) > 0.05:
+			return "a drag didn't turn it as far (%.2f rad)" % rt.exam_angle()
+		rt.key_event("E", true)
+		await frames(10)
+		if rt.examining != null or rt.exam != null or not rt.by_id["ornament"]["node"].visible:
+			return "E didn't put it back on the table"
+		var struck := false
+		for l in g.hud.todo_box.get_children():
+			if l.get_meta("state", "") == "done" and l.get_node_or_null("strike") != null:
+				struck = true
+		if not struck:
+			return "the read letter's to-do isn't crossed out"
+		var k := 0                                     # put down: the easter egg the cat's eyes found (any quest), its thought, the quest still on
+		while not flag("done:egg_cat") and k < 600:
+			await process_frame
+			k += 1
+		if not flag("done:egg_cat") or not g.hud.lines_shown.any(func(l): return str(l).contains("looking at me")):
+			return "the cat's eyes (an easter egg) weren't found: done:egg_cat %s" % flag("done:egg_cat")
+		if (g.run["trail"] as Array).has("q_drink"):
+			return "the egg moved the story on"
+		return "")
+	await step("Mari says not now each time she's clicked (the conversation she offers before the key, heard out each time)", func():
+		for time in 2:
+			var c := await go_to("mari", 1.0)
+			if c != "talk":
+				return "cursor " + c
+			g.run["flags"].erase("heard:t_not_now")
+			rt.use(true)
+			var k := 0
+			var said := false
+			while not flag("heard:t_not_now") and k < 900:
+				await process_frame
+				said = said or g.hud.line_text.find("Not now") >= 0
+				k += 1
+			if not said:
+				return "time %d: her line never came (line %s)" % [time + 1, g.hud.line_text]
+			if not flag("heard:t_not_now"):
+				return "time %d: the conversation never ended" % (time + 1)
+			k = 0
+			while not (g.play.active and not g.play.busy) and k < 300:
+				await process_frame
+				k += 1
+			await game_wait(0.5)                      # a moment, as a player takes, before clicking her again
+		return "")
+	await step("the key: taken, its to-do ticked, the quest done: the drink errand next", func():
+		var c := await go_to("bedroom_key", 0.8)
+		if c != "take":
+			return "cursor " + c
+		rt.use(true)
+		var k := 0
+		while not (g.run["trail"].has("q_drink") and g.play != null and g.play.active and not g.play.busy) and k < 1200:
+			await process_frame
+			k += 1
+		if not rt.items.has("bedroom_key"):
+			return "no key held"
+		if not g.run["trail"].has("q_drink") or not flag("done:q_key"):
+			return "the errand didn't start (trail %s)" % [g.run["trail"]]
+		if g.hud.obj.text != "Bring Mari something to drink":
+			return "objective %s" % g.hud.obj.text
+		return "")
+	await step("giving: the wrong thing answered (Nah, that's not what I want), the right one taken and its step ticked; an achievement", func():
+		for id in ["bottle", "mug"]:
+			var c := await go_to(id, 0.8)
+			if c != "take":
+				return "%s's cursor %s" % [id, c]
+			rt.use(true)
+			await frames(20)
+		for i in rt.inv.size():                     # the bottle in the hand
+			if rt.inv[i]["id"] == "bottle":
+				rt.inv_at = i
+		var c2 := await go_to("mari", 1.0)
+		if c2 == "" or c2.begins_with("ERR"):
+			return "Mari's cursor " + c2
+		rt.use(true)
+		await frames(10)
+		if g.hud.line_text.find("not what I want") < 0:
+			return "the bottle: her line %s" % g.hud.line_text
+		if todo_state("give_mug") != "open" or not flag("gave:bottle:mari"):
+			return "the bottle: give_mug %s" % todo_state("give_mug")
+		await game_wait(3.0)
+		for i in rt.inv.size():
+			if rt.inv[i]["id"] == "mug":
+				rt.inv_at = i
+		c2 = await go_to("mari", 1.0)
+		rt.use(true)
+		var k := 0
+		while not g.run["trail"].has("q_talk") and k < 600:
+			await process_frame
+			k += 1
+		if not flag("gave:mug:mari") or not g.run["trail"].has("q_talk"):
+			return "the mug: give_mug %s, trail %s" % [todo_state("give_mug"), g.run["trail"]]
+		if rt.items.has("mug"):
+			return "the mug wasn't taken"
+		if not flag("achievement:ACH_HOST"):
+			return "no achievement for it"
+		return "")
+	await step("the conversation the story offers now (a quest with no list): a marker over her (her step's guide, bobbing), no objective, no to-dos, her first line with its face over her rest, answered Yes, heard out (its step ticks, the marker gone; she's talked to and heard out as facts of her own too); a state sends Mari to the bedroom door", func():
+		var k := 0
+		while not (g.play != null and g.play.active and not g.play.busy) and k < 1200:
+			await process_frame
+			k += 1
+		rt = g.play
+		var c := await go_to("mari", 1.0)
+		if c == "" or c.begins_with("ERR"):
+			return "Mari's cursor " + c
+		var gy: Array = []                             # her step's marker over her (its guide): shown, softer this close, bobbing
+		for i in 170:
+			await process_frame
+			if g.hud.guide.marks.has("mari"):
+				gy.append(float((g.hud.guide.marks["mari"]["gem"] as Vector2).y))
+		var mk: float = g.hud.guide.shown("mari")
+		var bob: float = (gy.max() - gy.min()) if gy.size() > 20 else 0.0
+		var amp: float = g.hud.guide.BOB * g.hud.guide.get_viewport_rect().size.y / 1080.0   # its swing on this screen (headless: a small one)
+		var hung: bool = g.hud.guide.marks.has("mari") and (g.hud.guide.marks["mari"]["above"] as Vector2).y < (g.hud.guide.marks["mari"]["top"] as Vector2).y
+		if mk < 0.3 or amp <= 0.0 or bob < 1.6 * amp or not hung:
+			return "the marker over Mari: shown %.2f, bobbing %.2f px of a %.2f px swing, over her head %s" % [mk, bob, amp, hung]
+		if not g.hud.tasks.is_empty() or g.hud.obj.text != "":           # her quest has no list: the marker is all
+			return "the talk quest shows words: objective %s, to-dos %s" % [g.hud.obj.text, g.hud.tasks]
+		rt.use(true)
+		var said := false                              # "You found it." as she wears the line's face, over her rest
+		var talked := false                            # and plays her move `talk` while it's up
+		var map = load("res://addons/horrorstudio/play.gd").player_with(rt.cast_nodes["mari"], "sample_idle")
+		var k0 := 0
+		while k0 < 600 and g.hud.choice_over:
+			said = said or (rt.faces != null and rt.faces.state("mari")["over"] == "pout_and_glance")
+			talked = talked or (rt.speaking == "mari" and map != null and str(map.current_animation) == "anims/mari_talk")
+			await process_frame
+			k0 += 1
+		if not said:
+			return "her line's face never came (%s)" % [rt.faces.state("mari") if rt.faces != null else "no faces"]
+		if not talked:
+			return "she never played her talk while her line was up (speaking %s, playing %s)" % [rt.speaking, map.current_animation if map != null else "?"]
+		for i in 5:
+			await process_frame
+		if rt.listening != "mari" or str(map.current_animation) != "anims/sample_idle":   # the player answering: her listen, none: her idle
+			return "while the player answers: listening %s, she plays %s (no listen move: her idle)" % [rt.listening, map.current_animation]
+		var r := await scenes_until_play()
+		if r != "":
+			return r
+		var walked := false                            # off she goes on her walk (half a metre: watched from the answer on)
+		var walk_seen := func() -> bool:
+			var nn = g.play.npcs.get("mari")
+			return nn != null and bool(nn.get("walking", false)) and str(map.current_animation) == "anims/mari_walk"
+		k = 0
+		while not g.run["trail"].has("q_bedroom") and k < 1200:
+			walked = walked or walk_seen.call()
+			await process_frame
+			k += 1
+		for f in ["talked:t_open", "talked:mari", "answered:t_open:yes", "promised", "heard:t_open", "heard:mari"]:   # (her heard out too: Talk to…)
+			if not flag(f):
+				return "no fact %s (trail %s)" % [f, g.run["trail"]]
+		if not g.run["trail"].has("q_bedroom"):
+			return "the bedroom quest didn't start"
+		var c1: float = rt.clock
+		while rt.clock - c1 < 1.0:
+			walked = walked or walk_seen.call()
+			await process_frame
+		if g.hud.guide.marks.has("mari"):
+			return "the marker over Mari stayed after her step was done"
+		var npc = g.play.npcs.get("mari")
+		if npc == null or str(npc.get("as")) != "go":
+			return "Mari isn't going anywhere: %s" % [npc]
+		if not walked:
+			return "she didn't walk on her walk (playing %s)" % map.current_animation
+		return "")
+	await step("Mari's moves: a seat, sitting down (once) then sitting; getting up (once, held there) before she goes; a fast walk on her walk (no run)", func():
+		rt = g.play
+		var map = load("res://addons/horrorstudio/play.gd").player_with(rt.cast_nodes["mari"], "sample_idle")
+		var k := 0
+		while not (rt.npcs["mari"]["st"].get("arrived") != null) and k < 2000:
+			await process_frame
+			k += 1
+		rt.behave("mari", {"as": "sit", "at": "bedroom_spot"})
+		await frames(3)
+		if str(map.current_animation) != "anims/mari_sit_down":
+			return "sitting down: she plays %s" % map.current_animation
+		await game_wait(rt.move_secs("mari", "mari_sit_down") + 0.3)
+		if str(map.current_animation) != "anims/mari_sitting":
+			return "seated: she plays %s" % map.current_animation
+		var at: Vector3 = rt.npcs["mari"]["pos"]
+		rt.behave("mari", {"as": "go", "to": "mari__home", "speed": 2.6})
+		await frames(3)
+		if str(map.current_animation) != "anims/mari_stand_up" or not rt.npcs["mari"].has("start_at"):
+			return "getting up: she plays %s" % map.current_animation
+		await game_wait(rt.move_secs("mari", "mari_stand_up") * 0.6)
+		if (rt.npcs["mari"]["pos"] as Vector3).distance_to(at) > 0.01:
+			return "she left her seat before she was up"
+		var off := false                               # up, then off at 2.6 m/s (a short way: watched frame by frame)
+		var c0: float = rt.clock
+		var seen: Array = []
+		while rt.clock - c0 < rt.move_secs("mari", "mari_stand_up") * 0.4 + 1.5 and not off:
+			off = bool(rt.npcs["mari"].get("walking", false)) and str(map.current_animation) == "anims/mari_walk"
+			if seen.is_empty() or seen[-1] != str(map.current_animation):
+				seen.append(str(map.current_animation))
+			await process_frame
+		if not off:
+			return "up and off at 2.6 m/s: never walking on her walk (no run: her walk); she played %s" % [seen]
+		rt.behave("mari", {"as": "idle", "at": "bedroom_spot"})   # back where the story had sent her
+		return "")
+	await step("Paths and the in-between: a path's stop plays its clip (her look round at the hall path's first stop); a walk to the kitchen goes through its doorway (the brain's way, and On stage's in-between)", func():
+		rt = g.play
+		var map = load("res://addons/horrorstudio/play.gd").player_with(rt.cast_nodes["mari"], "sample_idle")
+		rt.behave("mari", {"as": "path", "route": "hall_path"})
+		var looked := false
+		var c0: float = rt.clock
+		while rt.clock - c0 < 10.0 and not looked:
+			looked = float(rt.npcs["mari"]["st"].get("wait", 0.0)) > 0.0 and str(map.current_animation) == "anims/look_around"
+			await process_frame
+		if not looked:
+			return "no look round at the stop (st %s, playing %s)" % [rt.npcs["mari"]["st"].keys(), map.current_animation]
+		var br = hs.brain
+		var via: Array = br.way("mari__home", "kitchen_spot")
+		var places: Dictionary = br.data["rooms"]["places"]
+		if via.size() != 2 or places.get(via[0]) != "hall" or places.get(via[1]) != "kitchen" or not str(via[0]).begins_with("kitchen_door__"):
+			return "the way to the kitchen: %s (its rooms %s)" % [via, via.map(func(x): return places.get(x))]
+		var acts: Array = br._acts("mari", {"do": "idle", "at": "kitchen_spot", "_in_between": true}, {"do": "idle", "at": "mari__home"})
+		var b: Dictionary = acts[0] if acts.size() else {}
+		if b.get("as") != "go" or b.get("to") != "kitchen_spot" or b.get("via") != via:
+			return "On stage's in-between to the kitchen: %s" % [b]
+		rt.behave("mari", b)
+		var near := []
+		c0 = rt.clock
+		while rt.clock - c0 < 15.0 and rt.npcs["mari"]["st"].get("arrived") == null:
+			var pos: Vector3 = rt.npcs["mari"]["pos"]
+			for v in via:
+				var sp: Vector3 = rt.spot_pos(rt.things[v])
+				if Vector2(pos.x - sp.x, pos.z - sp.z).length() < 0.15 and not near.has(v):
+					near.append(v)
+			await process_frame
+		var at: Vector3 = rt.npcs["mari"]["pos"]
+		if near.size() != 2 or rt.npcs["mari"]["st"].get("arrived") == null or at.x < 2.7:
+			return "through the doorway %s, arrived %s at x=%.2f (the kitchen starts at 2.62)" % [near, rt.npcs["mari"]["st"].get("arrived"), at.x]
+		rt.behave("mari", {"as": "idle", "at": "bedroom_spot"})
+		return "")
+	await step("Reactions: Mari flinches (the story's anim, turned to the player): once, held where she is, turned to the player, then back to her idle and turned back; caught by her, her caught move turned to the player", func():
+		rt = g.play
+		var map = load("res://addons/horrorstudio/play.gd").player_with(rt.cast_nodes["mari"], "sample_idle")
+		rt.behave("mari", {"as": "idle", "at": "kitchen_spot"})
+		await frames(3)
+		var yaw0 := float(rt.npcs["mari"]["yaw"])
+		var her: Vector3 = rt.npcs["mari"]["pos"]
+		var a0 := deg_to_rad(yaw0)
+		var side := Vector3(-sin(a0), 0, -cos(a0)) * 1.5          # the player at her side (the one inside the kitchen, round 4.62, 0, 0): she turns a quarter to face them
+		rt.place(her + side if (her + side).distance_to(Vector3(4.62, 0, 0)) < (her - side).distance_to(Vector3(4.62, 0, 0)) else her - side, 0.0, 0.0)
+		await frames(2)
+		rt.actions.run({"anim": "mari", "clip": "mari_flinch", "face": "player"}, rt)
+		await frames(3)
+		if str(map.current_animation) != "anims/mari_flinch" or not rt.npcs["mari"].has("react"):
+			return "the flinch: she plays %s (react %s)" % [map.current_animation, rt.npcs["mari"].get("react")]
+		var secs: float = rt.move_secs("mari", "mari_flinch")
+		await game_wait(secs * 0.7)
+		var to_player := rad_to_deg(atan2(-(rt.player.pos.z - her.z), rt.player.pos.x - her.x))
+		var off := absf(fposmod(to_player - float(rt.npcs["mari"]["yaw"]) + 180.0, 360.0) - 180.0)
+		var moved: float = (rt.npcs["mari"]["pos"] as Vector3).distance_to(her)
+		if off > 15.0 or moved > 0.01 or str(map.current_animation) != "anims/mari_flinch":
+			return "while it plays (%s): %.0f° off the player, moved %.2f m" % [map.current_animation, off, moved]
+		await game_wait(secs * 0.3 + 1.2)
+		var back := absf(fposmod(yaw0 - float(rt.npcs["mari"]["yaw"]) + 180.0, 360.0) - 180.0)
+		if str(map.current_animation) != "anims/sample_idle" or rt.npcs["mari"].has("react") or back > 3.0:
+			return "after it: she plays %s, %.0f° off the way she was" % [map.current_animation, back]
+		rt.story.cast["mari"]["moves"]["caught"] = "mari_flinch"      # her caught move (the cast's moves, as the Animate tab sets them)
+		rt.caught("mari", null)
+		await frames(3)
+		var rc = rt.npcs["mari"].get("react")
+		var caught_ok: bool = str(map.current_animation) == "anims/mari_flinch" and rc is Dictionary and rc.get("face") == "player"
+		var playing := str(map.current_animation)
+		rt.story.cast["mari"]["moves"].erase("caught")
+		await game_wait(secs + 1.2)
+		rt.behave("mari", {"as": "idle", "at": "bedroom_spot"})
+		if not caught_ok:
+			return "caught: she plays %s (react %s)" % [playing, rc]
+		return "")
+	await step("the locked bedroom door opens with the key; walking in ticks the task", func():
+		rt = g.play
+		if g.hud.obj.text != "Get into the bedroom":
+			return "objective %s" % g.hud.obj.text
+		var c := await go_to("bedroom_door", 1.0)
+		if c != "open":
+			return "cursor " + c
+		rt.use(true)
+		await game_wait(1.0)
+		if not rt.doors["bedroom_door"]["open"]:
+			return "not open (locked %s)" % rt.doors["bedroom_door"]["locked"]
+		rt.place(Vector3(-1.2, 0.0, -1.2), 90.0, 0.0)
+		rt.key_event("W", true)
+		var k := 0
+		while g.play != null and g.play.active and not g.run["trail"].has("q_night") and k < 600:
+			await process_frame
+			k += 1
+		rt.key_event("W", false)
+		if not g.run["trail"].has("q_night"):
+			return "the bedroom never reached (at z=%.2f)" % rt.player.pos.z
+		return "")
+	await step("On stage at night: Mari's line takes over (she sits at the bedroom spot: sitting down once, then sitting) and she's busy (no conversation offered)", func():
+		rt = g.play
+		var map = load("res://addons/horrorstudio/play.gd").player_with(rt.cast_nodes["mari"], "sample_idle")
+		var seen: Array = []
+		var c0: float = rt.clock
+		while rt.clock - c0 < 4.0 and not (seen.has("anims/mari_sit_down") and seen.has("anims/mari_sitting")):
+			if seen.is_empty() or seen[-1] != str(map.current_animation):
+				seen.append(str(map.current_animation))
+			await process_frame
+		if not (seen.has("anims/mari_sit_down") and seen.has("anims/mari_sitting")) or seen.find("anims/mari_sit_down") > seen.find("anims/mari_sitting"):
+			return "she played %s (as %s at %s)" % [seen, rt.npcs["mari"]["as"], rt.npcs["mari"]["s"].get("at")]
+		var offered: Array = g.run["flags"].keys().filter(func(x): return str(x).begins_with("?talk__mari__"))
+		if offered.size():
+			return "she's busy, but offers %s" % [offered]
+		return "")
+	await step("a cutscene in the level (the night's start: Mari's three lines, a moment played as a cutscene): the view held on her, drawn back when the player looks away; a little closer (the lean in, the held focus); the walk slowed; let go at its end; a held view let go by its safety release at its max, and when its target's gone", func():
+		rt = g.play
+		var k := 0
+		while rt.focus == null and k < 600:
+			await process_frame
+			k += 1
+		if rt.focus == null or str(rt.focus["id"]) != "mari":
+			return "no cutscene at the night's start (the view held on %s; the last let go %s)" % [rt.focus, rt.last_focus]
+		k = 0
+		while rt.focus != null and float(rt.focus["k"]) < 0.99 and k < 300:     # eased in
+			await process_frame
+			k += 1
+		var held: Dictionary = rt.focus
+		var fov_in: float = g.camera.fov
+		var lean: float = rt.focus_lean().length()
+		var walk: float = rt.focus_walk()
+		rt.player.yaw = float(rt.player.yaw) + 120.0               # the player looks away
+		await game_wait(1.0)
+		var d: Vector3 = (rt.focus_at("mari") as Vector3) - rt.eye_pos()
+		var off := absf(fposmod(rad_to_deg(atan2(-d.z, d.x)) - float(rt.player.yaw) + 180.0, 360.0) - 180.0)
+		if rt.focus == null or str(rt.focus["going"]) != "" or off > float(held["cone"]) / 2.0 + 4.0 or not is_equal_approx(walk, 0.35) or lean < 0.1:
+			return "held: %.0f° off her a second after looking away (the cone's half %.0f), walking at %.2f, leaning %.2f m (now %s)" % [off, float(held["cone"]) / 2.0, walk, lean, rt.focus]
+		k = 0
+		while not (rt.last_focus != null and str(rt.last_focus["why"]) == "released") and k < 900:
+			await process_frame
+			k += 1
+		await game_wait(1.3)                                     # eased out
+		var fov_out: float = g.camera.fov
+		if rt.last_focus == null or str(rt.last_focus["why"]) != "released" or rt.focus != null or not is_equal_approx(rt.focus_walk(), 1.0):
+			return "not let go at its end (the last %s, now %s)" % [rt.last_focus, rt.focus]
+		if absf(fov_in / fov_out - 0.95) > 0.01:
+			return "the held focus: %.2f° held, %.2f° let go (a 5 %% zoom)" % [fov_in, fov_out]
+		rt.actions.run({"focus": "mari", "max": 1.0}, rt)           # the safety release, whatever happens
+		await game_wait(1.5)
+		var safety: bool = rt.last_focus != null and str(rt.last_focus["why"]) == "safety"
+		await game_wait(1.2)
+		rt.actions.run({"focus": "figure"}, rt)                    # a target that isn't there (the hidden figure)
+		await frames(3)
+		var gone: bool = rt.last_focus != null and str(rt.last_focus["why"]) == "gone"
+		await game_wait(1.2)
+		if not safety or not gone or rt.focus != null:
+			return "the safety release %s, a target gone %s (now %s)" % [safety, gone, rt.focus]
+		return "")
+	await step("a quest that ends on its first step: hiding in the wardrobe, and what comes next by what was done: the good ending", func():
+		if not await playing(true, 2000):
+			return "no play for the choice"
+		rt = g.play
+		var c := await go_to("wardrobe", 0.9)
+		if c != "hide":
+			return "cursor " + c
+		rt.use(true)
+		var k := 0
+		while g.watch_end == null and k < 1500:
+			await process_frame
+			k += 1
+		if str(g.watch_end) != "Morning":
+			return "ended at %s" % g.watch_end
+		return "")
+	if fails == 0:
+		print("DIRECTORPLAY ok")
+	quit(0 if fails == 0 else 1)

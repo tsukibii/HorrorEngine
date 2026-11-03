@@ -1,7 +1,8 @@
 ## The Play HUD (the desk's hud.js, ported to Controls): the objective and the to-do list top left, the timer, the
 ## log, the reticle and its prompt, the line (subtitle) in the footer with a choice's options under it, cards (a note,
 ## a code pad, the player's name), a chapter's title card, the suspicion meter, the inventory's row, the stance, the
-## fade to black over everything. The layout is one rule each; a game's theme comes later (play/ui/themes).
+## fade to black over everything, and under it all the guide markers over what open tasks need (marker.gd). The layout
+## is one rule each; a game's theme comes later (play/ui/themes).
 extends CanvasLayer
 
 signal panel_done(value)
@@ -11,6 +12,7 @@ signal choosing(on)                # a choice up (true) and done (false): play f
 const SHOWN := 5
 
 var root: Control
+var guide = null                               # the markers over what open tasks need (marker.gd: a todo's `guide`)
 var obj: Label
 var todo_box: VBoxContainer
 var line_el: Label
@@ -73,6 +75,8 @@ var env: Environment = null                  # the world's, for brightness
 func wear(name: String) -> void:
 	theme_name = name if ThemeC.THEMES.has(name) or name == "glass-rose" else "glass"
 	root.theme = ThemeC.make(theme_name)
+	if guide != null:
+		guide.accent = ThemeC.colors(theme_name)["accent"]
 	if menu != null:
 		menu.queue_free()
 	menu = MenuC.new(self, theme_name)
@@ -136,6 +140,9 @@ func _ready() -> void:
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
+	guide = load("res://addons/horrorstudio/marker.gd").new()   # first, so everything else draws over it
+	guide.accent = ThemeC.colors(theme_name)["accent"]
+	root.add_child(guide)
 	# top left: the objective and the list
 	var tl := VBoxContainer.new()
 	tl.name = "TopLeft"
@@ -319,7 +326,21 @@ func todo(items: Array, fresh: bool) -> void:
 		elif t["state"] == "done":
 			l.modulate = Color(1, 1, 1, 0.5)
 		todo_box.add_child(l)
+		if t["state"] in ["done", "failed"]:                # kept on the list, crossed out with a single line (DECISIONS 2026-11-01)
+			_strike(l, 15)
 	todo_box.visible = items.size() > 0
+
+
+## a line through a label's words (Godot's Label has no strikethrough), at the middle of its small letters
+func _strike(l: Label, size: int) -> void:
+	var f: Font = l.get_theme_font("font")
+	var line := ColorRect.new()
+	line.name = "strike"
+	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	line.color = l.get_theme_color("font_color")
+	line.size = Vector2(f.get_string_size(l.text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x, max(1.0, size / 10.0))
+	line.position = Vector2(0, f.get_ascent(size) * 0.64 - line.size.y / 2.0)
+	l.add_child(line)
 
 
 func chapter(title, sub, secs: float) -> void:
@@ -643,9 +664,20 @@ func panel(spec: Dictionary) -> Variant:
 	panel_typed = ""
 	panel_el = PanelContainer.new()
 	panel_el.name = "Panel"
-	panel_el.set_anchors_preset(Control.PRESET_CENTER)
-	panel_el.position = Vector2(-260, -160)
-	panel_el.custom_minimum_size = Vector2(520, 200)
+	if spec.get("low", false):                    # under a thing in the hands: low on the screen, growing up from its foot
+		panel_el.anchor_left = 0.5
+		panel_el.anchor_right = 0.5
+		panel_el.anchor_top = 1.0
+		panel_el.anchor_bottom = 1.0
+		panel_el.offset_top = -36
+		panel_el.offset_bottom = -36
+		panel_el.grow_horizontal = Control.GROW_DIRECTION_BOTH
+		panel_el.grow_vertical = Control.GROW_DIRECTION_BEGIN
+		panel_el.custom_minimum_size = Vector2(520, 0)
+	else:
+		panel_el.set_anchors_preset(Control.PRESET_CENTER)
+		panel_el.position = Vector2(-260, -160)
+		panel_el.custom_minimum_size = Vector2(520, 200)
 	var v := VBoxContainer.new()
 	panel_el.add_child(v)
 	var title := _label(named(spec.get("title", "")), 20)
@@ -671,7 +703,7 @@ func panel(spec: Dictionary) -> Variant:
 		text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		text.custom_minimum_size = Vector2(500, 0)
 		v.add_child(text)
-		v.add_child(_label("Esc or click  Close", 12))
+		v.add_child(_label(str(spec.get("hint", "Esc or click  Close")), 12))
 	root.add_child(panel_el)
 	modal(true)
 	var v2 = await panel_done
@@ -865,5 +897,8 @@ func choice_options() -> Array:
 	return out
 
 
+## a thing looked at: its card, under it when it's in the hands (play.gd examine)
 func examine(spec: Dictionary) -> Variant:
+	if spec.get("held", false):
+		return await panel({"title": spec.get("title", ""), "text": spec.get("text", ""), "low": true, "hint": "Drag to turn it   ·   Esc or click  Put it back"})
 	return await panel({"title": spec.get("title", ""), "text": spec.get("text", "")})

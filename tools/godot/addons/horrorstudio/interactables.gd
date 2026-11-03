@@ -25,6 +25,7 @@ const SETTINGS := {
 		"sounds": ["cloth_01", "cloth_02", "cloth_03", "cloth_04"], "every": 0.36},
 	"latch": {"cursor": "use", "lock": "Lock", "unlock": "Unlock", "shut": "Close it first", "stuck": "Locked"},
 	"peephole": {"cursor": "look", "label": "Look through", "look": [32, 22]},
+	"talk": {"cursor": "talk", "label": "Talk"},
 }
 const HOLDS := ["clean"]
 
@@ -32,6 +33,8 @@ const HOLDS := ["clean"]
 ## the part for a thing: its `use` (a door is a door); a little thing with something to do is `life`
 func name_of(t: Dictionary, rt) -> String:
 	var p: Dictionary = t["piece"]
+	if p.get("id") == null:                      # a wall of the level's that's no thing (Godot's physics: collide.gd's stub)
+		return ""
 	if p.get("kind") == "door":
 		return "door"
 	var u = t.get("use")

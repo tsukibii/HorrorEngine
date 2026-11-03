@@ -119,6 +119,28 @@ the fix.
   behind the export's lids too.
 - **Copying a plugin over an imported Godot project leaves stale textures:** the skin came out striped like wood until
   the project was made fresh. The checks always build their project from nothing; a scratch script must too.
+- **A node that rides a rigid body must lose its own colliders while it rides** (the desk's TestRoom as a Director
+  project, 2026-11-01): the die's node is moved onto its rolling body every frame, and a Director thing's collider is
+  a `_solid` StaticBody3D under it (the export's is a `shape` the roll turned off by name): it rode along inside the
+  die and shoved it through the floor, the die settling 9 m under the room. physics.gd now turns off every collision
+  shape under a thing it rolls, whatever it's called, and on again after.
+- **A check measured on one layout fails another's by the walls' thickness** (the same day): the desk's rooms run to
+  their walls' middle, a Director room is its inside; the yard's rain box was 12.9 m wide against a floor of 12.9 and
+  failed by float. Leave a check a margin for both, and ask the running game for what it names itself (a save file by
+  the game's id) rather than writing the desk's in.
+
+- **A Godot node's setup for play runs once, in the copy that plays** (the Director, 2026-10-30): a scene's children
+  are `_ready` before their parent, so a level under the HSGame had set itself up (recentred, colliders, pieces) before
+  the game could take it up as a template, and the runtime's copy would have done it again. The HSGame raises a flag
+  in `_enter_tree` (which runs before the children's `_ready`) and the level's nodes wait for the copy.
+- **Placing the player inside an area isn't entering it:** the runtime's `place` counts the triggers it lands in as
+  already entered, so a test that teleports into a jumpscare's area never fires it; walk in from outside. Found twice
+  (the Director's play check, then its level-alone check).
+- **A Skeleton3D out of the tree doesn't update its poses:** a test that set bone poses and read global poses got the
+  rest every frame (a motion with no travel, a 16 cm "error"); put it in the tree and `force_update_all_bone_transforms()`.
+- **Switching something off for what's hidden needs its way back:** characters are hidden while a level loads, so switching collision
+  off for every hidden thing switched hers off for good; whatever shows a thing again must switch its collision back
+  (draw_npcs does now).
 
 - **A headless test waits on the game's clock, not the wall's:** on slow frames (the cloud's software GPU) the
   runtime clamps each step, so a second of real time is less play; fixed `waitForTimeout`s raced every walk, sit,
@@ -1570,3 +1592,45 @@ guessed margin; and a check that only ever ran on a slow machine hasn't been run
 - **Few wide splits, not many narrow:** a monstera drawn with nine notches a side read as a palm frond, and narrow
   slits a sample wide vanished at the card's resolution. Five rounded lobes a side cut by V-shaped gaps that
   widen to the edge read as the plant.
+
+## A check that a motion "plays" passed on a motion that never moved (2026-11-02)
+
+The sample's Kimodo idle for Mari was made by posing a Skeleton3D built in code, outside the scene tree, frame by
+frame and reading `get_bone_global_pose`: every frame came out the first frame's pose (the arms down, nothing else),
+so the retargeted animation had 120 identical keys a track. DIRECTOR had checked only that her AnimationPlayer was
+playing `sample_idle`, which it was. The new check (her bones and her face shapes moving in the same moment) found it:
+0 bones moved, 31 face shapes did.
+
+- **Check that a motion moves, between two moments while it plays**, never only that its player says it's playing,
+  and never against the pose before it started (the first editor check compared her rest with the preview and
+  counted 48 bones "moving" on a frozen clip).
+- **Work out joint positions yourself when making test motions** (parent's transform times the bone's local, parents
+  first): a Skeleton3D out of the tree isn't a reliable calculator for its own global poses.
+
+## A check that looked for a walk after it was over (2026-11-03)
+
+Mari's moves in DIRECTOR: "she didn't walk on her walk", twice. She did. The story's state sends her half a metre
+(0.45 s at 1.1 m/s), and the check looked after waiting a second; then, getting up off a seat, she went half a metre at
+2.6 m/s (0.2 s) and the check looked once, after her getting up and a margin. Both times she had already arrived and
+was back on her idle.
+
+- **Watch a move frame by frame from before it can start**, keeping what was seen (here: walking on her walk, at any
+  frame), and only then judge; never one look after a fixed wait, which passes or fails by how far the thing had to go.
+- **Know the distances the sample uses**: its spots are close together, so anything that walks there is over in well
+  under a second.
+
+## A soft lock that never looked at what it held the view on (2026-11-03)
+
+The first cutscene's `focus` only pulled the view back to the edge of its cone when it drifted out, which is the right
+feel once the player is looking at the scene, but at the start it left the subject wherever the cone's edge fell: the
+guide's picture of the night's cutscene had Mari at the side of the frame, a wall filling the rest. The numbers
+DIRECTOR measured (within the cone a second after looking away) were all true, and said nothing about whether the
+cutscene ever turned the player toward her.
+
+- **A hold starts by turning the view onto its subject** (as a look does: eased, to its middle), and only then keeps
+  it inside the cone; a cone alone is a fence, not a camera.
+- **Look at the picture of a camera feature, not only its measures**: the angle checks passed on a frame no director
+  would keep.
+- **HUD lines time out on the wall clock** (`hud.line`: `Time.get_ticks_msec`), so a picture taken in a slow,
+  fixed-fps test run misses a line that a real game shows: picture a line by waiting for it to be the current one
+  (`hud.line_text`), never by game time after it started.

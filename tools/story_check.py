@@ -26,13 +26,13 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")   # Windows consoles default to cp1252; the script is Japanese
 
 TRIGGERS = {"start", "enter", "exit", "use", "pickup", "read", "look", "after", "flag", "all", "any", "caught", "rolled", "hidden",
-            "answered", "carrying", "dropped", "played", "state", "ticked", "failed", "arrived", "torch", "peeping", "power", "locked"}
+            "answered", "carrying", "dropped", "played", "state", "ticked", "failed", "arrived", "torch", "peeping", "power", "locked", "gave"}
 TRIGGER_EXTRA = {"secs", "within", "face", "at_least", "option", "in", "result", "is", "at"}
 BOARDS = {}                 # the board games this game's tables can have (storylib.board_games), set in main
 ACTIONS = {"say", "think", "sound", "music", "light", "door", "show", "hide", "move", "objective", "flag", "unflag",
            "give", "take", "wait", "fade", "lookat", "shot", "seq", "anim", "stalker", "trick", "checkpoint", "done",
            "karma", "count", "scene", "behave", "ask", "state", "todo", "tick", "fail", "untodo", "chapter", "name", "torch",
-           "power", "skip", "skin", "sweep"}
+           "power", "skip", "skin", "sweep", "expr", "focus"}
 SKIN_KEYS = ("wet", "sweat", "drips", "oil")            # a cast member's skin (docs/GODOT_LOOK.md §5): each 0..1
 ASK_SECS = 3.0              # the walker's time to answer an ask
 MUSIC = {"silence", "calm", "uneasy", "dread", "chase"}
@@ -183,6 +183,8 @@ MAX_HOLD = 2.5
 MAX_PATHS = 4096            # format 3 sweeps three answer styles and both secret modes
 
 
+MOVES = ("idle", "walk", "run", "sit_down", "sitting", "stand_up", "talk", "listen", "look_around", "caught")   # a cast member's moves (STORY_FORMAT §2)
+
 def asks_of(story):
     """Every ask in the stitches (nested in answers too): its id -> its answers' ids, for `answered` triggers."""
     out = {}
@@ -329,6 +331,20 @@ def check_library(story, r):
     for c, v in story.get("cast", {}).items():
         if "hair" in v:
             check_hair(r, f"cast {c}", v["hair"])
+    for c, v in story.get("cast", {}).items():          # a cast member's moves (STORY_FORMAT §2): role -> a motion, played by what she does
+        mv = v.get("moves")
+        if mv is None:
+            continue
+        if not isinstance(mv, dict):
+            r.err(f"cast {c}: moves {{role: motion}} ({', '.join(MOVES)})")
+            continue
+        for role, m in mv.items():
+            if role not in MOVES:
+                r.err(f"cast {c}: move {role!r} isn't one of {', '.join(MOVES)}")
+            elif not isinstance(m, str) or not m:
+                r.err(f"cast {c}: move {role}: a motion's name")
+            elif m not in (story.get("motions") or {}):
+                r.warn(f"cast {c}: move {role} {m!r} isn't in motions")
     bodies = [("game", story.get("game", {}).get("previs_body"))] + [(c, v.get("previs_body")) for c, v in story.get("cast", {}).items()]
     for c, v in story.get("cast", {}).items():          # a cast member's models (STORY_FORMAT §2): named variants, each a body
         ms = v.get("models")
@@ -445,6 +461,8 @@ def check_world(story, things, r):
                     r.err(f"level {lid}: route {rid} at {q.get('at')}: check {ck!r} isn't a locker in it")
                 if q.get("pose") is not None and q["pose"] not in POSES:
                     r.err(f"level {lid}: route {rid} at {q.get('at')}: pose {q['pose']!r} isn't in Content/Studio/poses.json")
+                if q.get("clip") is not None and q["clip"] not in (story.get("motions") or {}):   # what she plays at the stop (Godot)
+                    r.err(f"level {lid}: route {rid} at {q.get('at')}: clip {q['clip']!r} isn't in motions")
         for k, v in (lvl.get("trim") or {}).items():
             if not trim_ok(k, v):
                 r.err(f"level {lid}: trim {k}: {v!r} (skirting, cornice, casing, threshold: heights or widths in metres up to 0.4; wainscot: up to 1.5; 0 for none)")
@@ -1285,6 +1303,14 @@ def check_trigger(bid, w, story, things, beats, r):
             r.err(f"{bid}: answered {v!r} isn't an ask in any stitch")
         elif "option" in w and w["option"] not in asks[v]:
             r.err(f"{bid}: answered {v!r} option {w['option']!r} isn't one of its answers ({', '.join(sorted(map(str, asks[v])))})")
+    elif k == "gave":                                  # the hand's thing given to someone who wants it (Godot's runtime: play.gd wants_from)
+        items = story.get("items", {})
+        if v != "*" and v not in items:
+            r.err(f"{bid}: gave {v!r}: an item, or \"*\" (anything)")
+        if w.get("to") not in story.get("cast", {}):
+            r.err(f"{bid}: gave to {w.get('to')!r} isn't a cast member")
+        if "except" in w and w["except"] not in items:
+            r.err(f"{bid}: gave except {w['except']!r} isn't an item")
     elif k == "carrying" and v is not True and (v not in things or things[v].use != "carry"):
         r.err(f"{bid}: carrying {v!r}: true (anything) or a thing with use: carry")
     elif k == "dropped":                               # put down and settled: anywhere, or in a room or a trigger
@@ -1408,6 +1434,7 @@ def check_action(bid, a, story, things, r, stage=None):
                    "`secs` and `default` are never used")
         return
     if k == "todo":                                    # a task on the to-do list (STORY_FORMAT §4)
+        GUIDE_BY = ("use", "read", "pickup", "look", "enter", "hidden", "peeping", "locked", "state", "played", "rolled", "dropped", "carrying", "arrived", "to")
         if not isinstance(v, str) or not re.match(r"^[a-z0-9_]+$", v):
             r.err(f"{bid}: todo needs an id (a word: lower case, digits, _), for tick, fail and the ticked trigger")
         if not isinstance(a.get("text"), str) or not a["text"].strip():
@@ -1422,6 +1449,16 @@ def check_action(bid, a, story, things, r, stage=None):
             r.err(f"{bid}: todo {v!r}: secs is a number of seconds (it fails when they're up)")
         if "hidden" in a and not isinstance(a["hidden"], bool):
             r.err(f"{bid}: todo {v!r}: hidden is true (kept, but not on the list) or false")
+        if "guide" in a:                               # a marker over what it needs (Godot's runtime draws it, marker.gd)
+            g, tk = a["guide"], a.get("ticks") if isinstance(a.get("ticks"), dict) else {}
+            if isinstance(g, bool):
+                if g and not any(isinstance(tk.get(k), str) for k in GUIDE_BY):
+                    r.warn(f"{bid}: todo {v!r}: guide is true, but its ticks name nothing to hang the marker over: give guide the id of what it needs")
+            elif isinstance(g, str):
+                if g not in things and g not in cast and g not in (story.get("items") or {}) and g not in (story.get("notes") or {}):
+                    r.err(f"{bid}: todo {v!r}: guide {g!r} isn't a thing, a person, an area, an item or a note of the story's")
+            else:
+                r.err(f"{bid}: todo {v!r}: guide is true (over what its ticks name) or the id of what to hang the marker over")
         on = a.get("on") or {}
         if not isinstance(on, dict) or set(on) - TODO_ON:
             r.err(f"{bid}: todo {v!r}: `on` is {{done: [actions], failed: [actions]}}")
@@ -1508,10 +1545,42 @@ def check_action(bid, a, story, things, r, stage=None):
             r.err(f"{bid}: door {v!r} isn't a door")
         if a.get("set") not in DOOR_SET:
             r.err(f"{bid}: door set {a.get('set')!r}")
-    elif k in ("show", "hide", "anim", "lookat"):
+    elif k in ("show", "hide", "lookat"):
         placed(v)
+    elif k == "anim":                                  # a motion played once: a cast member's (her stand-in's motions) or a thing's
+        if v not in cast:
+            placed(v)
+        if a.get("clip") is not None and a["clip"] not in story.get("motions", {}):
+            r.err(f"{bid}: anim clip {a['clip']!r} isn't in motions")
+        face = a.get("face")                           # turned to the player, a thing or a cast member while it plays (a reaction)
+        if a.get("clip") is None and not face:
+            r.err(f"{bid}: anim {v!r}: a clip to play, or someone to turn to (face)")
+        if face and face != "player" and face not in cast:
+            placed(face)
+        if "secs" in a and not (isinstance(a["secs"], (int, float)) and not isinstance(a["secs"], bool) and 0 < a["secs"] <= 30):
+            r.err(f"{bid}: anim secs {a['secs']!r} (0 to 30)")
+    elif k == "focus":                                 # a cutscene's soft lock (Godot): the view held on someone, a thing or a spot; "" lets go
+        if v not in ("", None) and v not in cast:
+            placed(v)
+        for key, lo, hi in (("push", 0, 0.35), ("zoom", 0, 0.15), ("max", 0.5, 60), ("cone", 10, 170)):
+            if key in a and not (isinstance(a[key], (int, float)) and not isinstance(a[key], bool) and lo <= a[key] <= hi):
+                r.err(f"{bid}: focus {key} {a[key]!r} ({lo} to {hi})")
+        if a.get("walk") not in (None, "slow", "held", "free"):
+            r.err(f"{bid}: focus walk {a.get('walk')!r} (slow, held or free)")
+    elif k == "expr":                                  # an expression on someone's face (STORY_FORMAT §4): from the library, or "" (none)
+        if a.get("who") not in cast:
+            r.err(f"{bid}: expr: who {a.get('who')!r} isn't in the cast")
+        if v not in ("", None) and (not isinstance(v, str) or "/" in v or ".." in v or not (EXPRESSIONS / v / "expression.json").is_file()):
+            r.err(f"{bid}: expr {v!r} isn't in the library (Content/Studio/Expressions)")
+        for key, lo, hi in (("w", 0, 2), ("in", 0, 10), ("out", 0, 10)):
+            if key in a and not (isinstance(a[key], (int, float)) and lo <= a[key] <= hi):
+                r.err(f"{bid}: expr {key} {a[key]!r} (0 to {hi})")
+        for key in ("loop", "rest"):
+            if key in a and not isinstance(a[key], bool):
+                r.err(f"{bid}: expr {key} {a[key]!r} (true or false)")
     elif k == "move":
-        placed(v)
+        if v != "player":                              # the player to a spot (the Director plugin's tasks start there)
+            placed(v)
         if placed(a.get("to"), "spot") and things[a["to"]].use != "spot":
             r.err(f"{bid}: move to {a['to']!r} isn't a spot")
     elif k in ("give", "take") and v not in items:
@@ -1553,6 +1622,11 @@ def check_action(bid, a, story, things, r, stage=None):
             placed(x, "spot")
         if a.get("pose") is not None and a["pose"] not in POSES:
             r.err(f"{bid}: behave pose {a['pose']!r} isn't in Content/Studio/poses.json")
+        if a.get("rest") is not None and a["rest"] not in story.get("motions", {}):   # what she plays at a route's waits
+            r.err(f"{bid}: behave rest {a['rest']!r} isn't in motions")
+        for k in ("walk", "leave", "arrive"):          # the in-between's own clips (§4 behave: Godot, the Director's On stage)
+            if a.get(k) is not None and a[k] not in story.get("motions", {}):
+                r.err(f"{bid}: behave {k} {a[k]!r} isn't in motions")
         if a.get("motion") is not None:                 # what she plays: standing, sitting, or walking (in place) a route
             ms = story.get("motions", {})
             if a["motion"] not in ms:
@@ -1587,6 +1661,16 @@ def check_action(bid, a, story, things, r, stage=None):
         if v in ("glimpse", "jumpscare") and a.get("figure") in things and \
                 not things[a["figure"]].d.get("shape", "").startswith("person"):
             r.err(f"{bid}: {v} figure {a['figure']!r} isn't a person")
+        if v == "jumpscare":                           # its clip (a lunge), its own sound, its face (STORY_FORMAT §4)
+            if a.get("clip") is not None and a["clip"] not in story.get("motions", {}):
+                r.err(f"{bid}: jumpscare clip {a['clip']!r} isn't in motions")
+            if a.get("sound") is not None and a["sound"] not in story.get("sounds", {}):
+                r.err(f"{bid}: jumpscare sound {a['sound']!r} isn't in sounds")
+            ex = a.get("expr")
+            if ex not in (None, "") and (not isinstance(ex, str) or "/" in ex or ".." in ex or not (EXPRESSIONS / ex / "expression.json").is_file()):
+                r.err(f"{bid}: jumpscare expr {ex!r} isn't in the library (Content/Studio/Expressions)")
+            elif ex and a.get("figure") not in cast:
+                r.warn(f"{bid}: jumpscare expr on {a.get('figure')!r}, who isn't in the cast (a face plays on a cast member's body)")
         for sub in a.get("then", []):
             check_action(bid, sub, story, things, r, stage)
 
@@ -1605,6 +1689,12 @@ def check_stitch(tid, st, story, things, r):
             r.warn(f"{b['id']}: a game's result is chance: a beat that needs one result should be optional or secret (a flag the flow branches on), or the player may never get it")
         if b.get("secret") and b["secret"] not in story.get("secrets", {}):
             r.err(f"{b['id']}: secret {b['secret']!r} isn't in secrets")
+        for fl in b.get("if") or []:                     # item:<id> (an item held) besides flags
+            nm = str(fl).lstrip("!")
+            if nm.startswith("item:") and nm[5:] not in story.get("items", {}):
+                r.err(f"{b['id']}: if {fl!r}: {nm[5:]!r} isn't an item")
+        if "every" in b and not (b.get("repeat") and isinstance(b["every"], (int, float)) and not isinstance(b["every"], bool) and b["every"] > 0):
+            r.err(f"{b['id']}: every {b['every']!r}: the seconds between a repeating beat's fires (with repeat: true), above 0")
         cued = "look" in b.get("when", {})
         for act in b.get("do", []):
             check_action(b["id"], act, story, things, r)
@@ -1780,6 +1870,21 @@ def check_flow(story, things, r):
                     r.err(f"game.grade: {k} is three numbers (red, green, blue)")
             elif not isinstance(v, (int, float)) or isinstance(v, bool) or not spec[0] <= v <= spec[1]:
                 r.err(f"game.grade: {k} is a number {spec[0]} to {spec[1]}")
+    coll = story["game"].get("collision")              # the player against the plan's boxes (the desk's own) or Godot's physics (the Director plugin's levels)
+    if coll is not None and coll not in ("boxes", "physics"):
+        r.err(f"game.collision {coll!r}: boxes (the plan's blocks, as the desk) or physics (whatever collides in Godot)")
+    gp = story["game"].get("player")                    # the player's abilities (the Director's Player settings): run, crouch, the eye's height
+    if gp is not None:
+        if not isinstance(gp, dict):
+            r.err("game.player is {run, crouch, eye}")
+        else:
+            for k, v in gp.items():
+                if k in ("run", "crouch") and not isinstance(v, bool):
+                    r.err(f"game.player.{k} is true or false")
+                elif k == "eye" and (not isinstance(v, (int, float)) or isinstance(v, bool) or not 1.2 <= v <= 2.0):
+                    r.err("game.player.eye is the standing eye height, 1.2 to 2.0 m")
+                elif k not in ("run", "crouch", "eye"):
+                    r.err(f"game.player.{k}: only run, crouch and eye")
     lighting = story["game"].get("lighting")           # the runtime's help with the light (DECISIONS 2026-10-30, noon: the lighting is made in Godot)
     if lighting is not None and lighting not in ("on", "off"):
         r.err(f"game.lighting {lighting!r}: on (the time of day's sky and sun unless the level has its own) or off (a flat test light)")

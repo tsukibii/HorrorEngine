@@ -86,6 +86,12 @@ const TRICKS = {
     rt.setVisible(a.hide, false); rt.setVisible(a.show, true);
   },
   // a jumpscare: the figure there all at once with a sting, a moment, gone (a stand-in for the real one: a scene's cut)
-  jumpscare: async (a, rt) => { rt.setVisible(a.figure, true); rt.shelfSound("sting_big", a.figure); rt.hud.log(`jumpscare: ${a.figure}`); await rt.wait(+(a.secs ?? 0.8)); rt.setVisible(a.figure, false); },
+  // its own sound (a sounds id) instead of the big sting, its face (`expr`, on a cast member); its clip plays in Godot
+  jumpscare: async (a, rt) => {
+    rt.setVisible(a.figure, true);
+    if (a.expr) run({ expr: a.expr, who: a.figure }, rt);
+    if (a.sound) rt.sound(a.sound, a.figure); else rt.shelfSound("sting_big", a.figure);
+    rt.hud.log(`jumpscare: ${a.figure}`); await rt.wait(+(a.secs ?? 0.8)); rt.setVisible(a.figure, false);
+  },
 };
 register("action", "trick", { run: (v, a, rt) => (TRICKS[v] ? TRICKS[v](a, rt) : rt.hud.log(`trick not in Play yet: ${v}`)) });

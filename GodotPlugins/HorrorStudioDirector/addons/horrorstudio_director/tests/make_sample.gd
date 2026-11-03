@@ -1,0 +1,357 @@
+## The sample game (docs/GODOT_DIRECTOR.md §8), made by Godot itself so every property is the class's own: a small
+## house (a hall, a kitchen through a door, a bedroom behind a locked one), a letter, a key, a light switch, a
+## wardrobe to hide in and a bed, Mari in the hall, a Player start, a Test start by the bedroom door (the key in hand) and
+## a checkpoint in the bedroom's doorway, a figure that lunges for a second when the player walks into the
+## kitchen after reading the letter (the user's own example of an event), and a story in one chapter: an intro (the
+## chapter card, a thought), find the key, bring her a drink, talk to her (no list: the marker over her), get into the
+## bedroom, then hide or sleep (two endings).
+##   godot --headless --path <project> -s res://addons/horrorstudio_director/tests/make_sample.gd   (SAMPLE ok)
+extends SceneTree
+
+var root_: Node
+
+## the sample's story: the user's example (walk into the kitchen's doorway after reading the letter: the figure), an
+## errand with the wrong thing answered, a conversation offered by what's happened, a state that moves Mari, a choice
+## by what the player does, two endings, an achievement; two easter eggs: the cat's eyes (put the ornament down, any time:
+## a thought) and straight to bed (walk into the bedroom during the drink errand: a thought, then the night, skipping
+## the errand, the talk and the bedroom's quest)
+const STORY := {
+	"format": 1,
+	"quests": [
+		{"id": "q_intro", "title": "Intro", "objective": "", "list": false, "finish": "opening", "start_at": "start", "map": "house",
+			"card": {"title": "Night 1", "sub": "23:40", "time": "night"},
+			"stage": {"mari": {"do": "idle", "at": "mari__home", "face": "player"}},
+			"on_start": [{"think": "Mari's out. She said she'd leave the bedroom key somewhere."}, {"wait": 1.5}]},
+		{"id": "q_key", "title": "The key", "objective": "Find the bedroom key",
+			"steps": [{"id": "read_letter", "text": "Read the letter", "done": {"read": "letter"}},
+				{"id": "find_key", "text": "Find the bedroom key", "done": {"pickup": "bedroom_key"}}]},
+		{"id": "q_drink", "title": "A drink", "objective": "Bring Mari something to drink",
+			"stage": {"mari": {"do": "idle", "at": "mari__home", "face": "player", "talk": "t_thirsty"}},
+			"steps": [{"id": "give_mug", "text": "Give Mari the mug", "who": "mari", "done": {"gave": "mug", "to": "mari"},
+				"wrong": {"say": "Nah, that's not what I want.", "who": "mari"}}]},
+		{"id": "q_talk", "title": "Mari", "objective": "", "list": false,
+			"steps": [{"id": "talk_mari", "text": "Talk to Mari", "done": {"holds": "heard:t_open"}, "guide": true}]},
+		{"id": "q_bedroom", "title": "The bedroom", "objective": "Get into the bedroom",
+			"steps": [{"id": "enter_bedroom", "text": "Open the bedroom", "done": {"enter": "bedroom"}}]},
+		{"id": "q_night", "title": "Something in the hall", "objective": "Something is in the hall.", "finish": "any",
+			"stage": {"mari": {"do": "sit", "at": "bedroom_spot", "talk": ""}},
+			"steps": [{"id": "hide", "text": "Hide in the wardrobe", "done": {"hidden": "wardrobe"}},
+				{"id": "sleep", "text": "Go to sleep", "done": {"use": "bed"}}],
+			"next": [{"if": {"step": "hide"}, "go": "e_morning"}, {"go": "e_asleep"}]},
+		{"id": "egg_cat", "title": "The cat's eyes", "egg": true, "found": {"use": "ornament"},
+			"on_start": [{"think": "When I put it down, I'd swear it was looking at me."}]},
+		{"id": "egg_early", "title": "Straight to bed", "egg": true, "found": {"enter": "bedroom"}, "during": ["q_drink"],
+			"on_start": [{"think": "Mari can wait."}], "next": [{"go": "q_night"}]},
+	],
+	"moments": [
+		{"id": "letter_thought", "when": {"read": "letter"}, "do": [{"think": "She wrote this in a hurry."}]},
+		{"id": "night_cutscene", "when": {"start": true}, "during": ["q_night"],
+			"cutscene": {"target": "mari", "push": 0.15, "zoom": 0.05, "walk": "slow"},
+			"do": [{"say": "Did you hear that?", "who": "mari"}, {"say": "Something's in the hall.", "who": "mari"}, {"say": "Don't open the door.", "who": "mari"}]},
+		{"id": "figure_scare", "when": {"enter": "kitchen_doorway"}, "if": "read:letter",
+			"do": [{"trick": "jumpscare", "figure": "figure", "secs": 0.9, "clip": "figure_lunge", "expr": "pout_and_glance", "sound": "sting_short"},
+				{"think": "What was that?"}, {"flag": "saw_figure"}]},
+	],
+	"talk": {"mari": [
+		{"id": "t_not_now", "if": {"not": {"done": "q_key"}}, "lines": [{"text": "Not now. Find the key."}]},
+		{"id": "t_thirsty", "if": {"quest": "q_drink"}, "lines": [{"text": "Could you bring me something to drink?"}]},
+		{"id": "t_open", "if": {"done": "q_drink"}, "once": true, "lines": [{"text": "You found it.", "expr": "pout_and_glance"},
+			{"text": "Will you open the bedroom?", "answers": [{"id": "yes", "label": "Yes", "sets": ["promised"], "reply": ["Then go. Quickly."]},
+				{"id": "not_yet", "label": "Not yet", "karma": -1, "reply": ["Don't wait too long."]}]}]},
+		{"id": "t_go", "lines": [{"text": "Go on."}]},
+	]},
+	"states": [
+		{"while": {"quest": "q_bedroom"}, "set": {"mari": {"do": "go", "to": "bedroom_spot"}}},
+	],
+	"endings": [
+		{"id": "e_morning", "kind": "good", "title": "Morning", "text": "You waited in the dark until the sun came up."},
+		{"id": "e_asleep", "kind": "bad", "title": "Asleep", "text": "You never woke up."},
+	],
+	"achievements": [{"id": "ACH_HOST", "title": "Good host", "text": "Bring her what she asked for.", "hidden": true, "when": "gave:mug:mari"}],
+	"facts": {"saw_figure": {"about": "the figure seen in the kitchen's doorway"}},
+}
+
+
+func own(n: Node, parent: Node, nm: String) -> Node:
+	n.name = nm
+	parent.add_child(n)
+	n.owner = root_
+	return n
+
+
+func room(parent: Node, nm: String, at: Vector3, size: Vector3, walls: int, floor_kind: String) -> HSRoom:
+	var r := HSRoom.new()
+	r.position = at
+	r.size = size
+	r.walls = walls
+	r.floor_kind = floor_kind
+	return own(r, parent, nm)
+
+
+func thing(parent: Node, nm: String, use: String, at: Vector3, yaw: float = 0.0, fields: Dictionary = {}) -> HSThing:
+	var t := HSThing.new()
+	t.use = use
+	t.position = at
+	t.rotation_degrees = Vector3(0, yaw, 0)
+	for k in fields:
+		t.set(k, fields[k])
+	return own(t, parent, nm)
+
+
+func _own_all(_n: Node) -> void:
+	pass
+
+
+## a motion on Kimodo's SOMA skeleton (soma77.json), [frames, 77, 3] as Kimodo saves it: n frames of `kind`
+## (idle: the arms down at the sides, breathing, a slow weight shift, the head turning a little; look: the head and
+## the chest turned to one side, then the other; walk: a stride in place, the arms swinging against the legs; sitting:
+## seated, breathing; sit_down and stand_up: from standing to seated and back; talk: standing, a hand rising as she
+## speaks). The joints' places worked out here, parent before child (a Skeleton3D out of the tree keeps its first pose:
+## every frame came out the same; LESSONS)
+func idle_frames(n: int, look := false) -> PackedFloat32Array:
+	return soma_frames(n, "look" if look else "idle")
+
+
+func soma_frames(n: int, kind: String) -> PackedFloat32Array:
+	var S := HSRetarget.soma()
+	var names: Array = S["names"]
+	var par: Array = []                             # each joint's parent and its rest offset from it (SOMA's rest has no turns)
+	var off: Array = []
+	for i in names.size():
+		var pn = S["parents"][i]
+		var pi: int = names.find(pn) if pn != null else -1
+		var r: Array = S["rest"][i]
+		var pr: Array = S["rest"][pi] if pi >= 0 else [0, 0, 0]
+		par.append(pi)
+		off.append(Vector3(float(r[0]) - float(pr[0]), float(r[1]) - float(pr[1]), float(r[2]) - float(pr[2])))
+	var R: Array = S["rest"]
+	var foot := Vector3(R[names.find("LeftFoot")][0], R[names.find("LeftFoot")][1], R[names.find("LeftFoot")][2])
+	var shin := Vector3(R[names.find("LeftShin")][0], R[names.find("LeftShin")][1], R[names.find("LeftShin")][2])
+	var hip0 := float(R[0][1])
+	var drop := hip0 - (shin.distance_to(foot) + foot.y)   # seated: the thighs level, the shins down, the feet on the floor
+	var out := PackedFloat32Array()
+	for f in n:
+		var t := f / float(n)
+		var breathe := sin(t * TAU * 2.0)
+		var shift := sin(t * TAU)
+		var down := {"LeftArm": Quaternion(Vector3(0, 0, 1), -1.25 + 0.03 * breathe), "RightArm": Quaternion(Vector3(0, 0, 1), 1.25 - 0.03 * breathe),
+			"LeftForeArm": Quaternion(Vector3(0, 1, 0), 0.15), "RightForeArm": Quaternion(Vector3(0, 1, 0), -0.15),
+			"Chest": Quaternion(Vector3(1, 0, 0), -0.03 * breathe), "Head": Quaternion(Vector3(0, 1, 0), 0.25 * sin(t * TAU + 1.0))}
+		var rot := down.duplicate()
+		var hips := Vector3(0.03 * shift, 0.004 * breathe, 0)
+		match kind:
+			"look":
+				rot["Chest"] = Quaternion(Vector3(0, 1, 0), 0.35 * sin(t * TAU))
+				rot["Head"] = Quaternion(Vector3(0, 1, 0), 0.7 * sin(t * TAU))
+			"walk":                                   # a stride in place: one leg forward as the other goes back, the knee bent on the way through
+				var ph := t * TAU
+				for side in [["Left", 1.0], ["Right", -1.0]]:
+					var sw: float = side[1] * sin(ph)
+					rot[side[0] + "Leg"] = Quaternion(Vector3(1, 0, 0), -0.42 * sw)
+					rot[side[0] + "Shin"] = Quaternion(Vector3(1, 0, 0), 0.55 * maxf(0.0, -side[1] * cos(ph)))
+					rot[side[0] + "Arm"] = Quaternion(Vector3(1, 0, 0), 0.3 * sw) * down[side[0] + "Arm"]
+				hips = Vector3(0, 0.02 * cos(2.0 * ph), 0)
+			"sitting", "sit_down", "stand_up":
+				var k := 1.0
+				if kind != "sitting":
+					var u := t if kind == "sit_down" else 1.0 - t
+					k = u * u * (3.0 - 2.0 * u)
+				for side in ["Left", "Right"]:
+					rot[side + "Leg"] = Quaternion(Vector3(1, 0, 0), -PI / 2.0 * k)
+					rot[side + "Shin"] = Quaternion(Vector3(1, 0, 0), PI / 2.0 * k)
+					rot[side + "Arm"] = Quaternion(Vector3(1, 0, 0), -0.5 * k) * down[side + "Arm"]
+				rot["Chest"] = Quaternion(Vector3(1, 0, 0), 0.08 * k - 0.03 * breathe)
+				hips = Vector3(0, -drop * k + 0.004 * breathe, 0.05 * k)
+			"flinch":                                 # startled: the shoulders up, the hands to the chest, leaning back; eased back
+				var p := smoothstep(0.0, 1.0, t / 0.2) if t < 0.2 else 1.0 - smoothstep(0.0, 1.0, (t - 0.2) / 0.8)
+				rot["Chest"] = Quaternion(Vector3(1, 0, 0), -0.22 * p - 0.03 * breathe)
+				rot["Head"] = Quaternion(Vector3(1, 0, 0), -0.3 * p)
+				for side in [["Left", 1.0], ["Right", -1.0]]:
+					rot[side[0] + "Arm"] = Quaternion(Vector3(1, 0, 0), -1.0 * p) * down[side[0] + "Arm"]
+					rot[side[0] + "ForeArm"] = Quaternion(Vector3(0, 1, 0), side[1] * (0.15 + 1.5 * p))
+				hips = Vector3(0, 0.004 * breathe, -0.06 * p)
+			"lunge":                                  # leaning in fast, both arms reaching out, the front leg forward; held
+				var k := smoothstep(0.0, 1.0, minf(1.0, t / 0.35))
+				rot["Chest"] = Quaternion(Vector3(1, 0, 0), 0.35 * k)
+				rot["Head"] = Quaternion(Vector3(1, 0, 0), -0.25 * k)
+				for side in ["Left", "Right"]:
+					rot[side + "Arm"] = Quaternion(Vector3(1, 0, 0), -1.35 * k) * down[side + "Arm"]
+				rot["LeftLeg"] = Quaternion(Vector3(1, 0, 0), -0.5 * k)
+				rot["LeftShin"] = Quaternion(Vector3(1, 0, 0), 0.4 * k)
+				rot["RightLeg"] = Quaternion(Vector3(1, 0, 0), 0.35 * k)
+				hips = Vector3(0, -0.05 * k, 0.3 * k)
+			"talk":                                   # the right hand up and down as she speaks
+				rot["RightArm"] = Quaternion(Vector3(1, 0, 0), -0.45 - 0.2 * sin(t * TAU * 2.0)) * down["RightArm"]
+				rot["RightForeArm"] = Quaternion(Vector3(0, 1, 0), -0.9 - 0.3 * sin(t * TAU * 2.0))
+				rot["Head"] = Quaternion(Vector3(1, 0, 0), 0.06 * sin(t * TAU * 3.0))
+		var glob: Array = []
+		glob.resize(names.size())
+		var at := func(i: int, me: Callable) -> Transform3D:
+			if glob[i] == null:
+				var o: Vector3 = off[i] + (hips if names[i] == "Hips" else Vector3.ZERO)
+				var local := Transform3D(Basis(rot.get(names[i], Quaternion())), o)
+				glob[i] = (me.call(par[i], me) * local) if par[i] >= 0 else local
+			return glob[i]
+		for i in names.size():
+			var p: Vector3 = at.call(i, at).origin
+			out.append_array([p.x, p.y, p.z])
+	return out
+
+
+func _initialize() -> void:
+	root_ = HSGame.new()
+	root_.name = "Game"
+	root_.title = "The House (sample)"
+	root_.player_name = "Alex"
+	root_.time_of_day = "night"
+	root_.lighting = "off" if OS.get_cmdline_user_args().has("--flat") else "on"
+
+	# ---- the level ----
+	var house: HSLevel = own(HSLevel.new(), root_, "House")
+	var N := HSRoom.N
+	var S := HSRoom.S
+	var E := HSRoom.E
+	var W := HSRoom.W
+	var hall := room(house, "Hall", Vector3(0, 0, 0), Vector3(5, 2.6, 4), N | S | E | W, "wood")
+	var kitchen := room(house, "Kitchen", Vector3(4.62, 0, 0), Vector3(4, 2.6, 4), N | S | E, "tile")
+	var bedroom := room(house, "Bedroom", Vector3(0, 0, -4.12), Vector3(5, 2.6, 4), N | E | W, "carpet")
+	var kd: HSDoor = own(HSDoor.new(), house, "KitchenDoor")
+	kd.position = Vector3(2.56, 0, 0.8)
+	kd.rotation_degrees = Vector3(0, 90, 0)
+	var bd: HSDoor = own(HSDoor.new(), house, "BedroomDoor")
+	bd.position = Vector3(-1.2, 0, -2.06)
+	bd.locked_by = "bedroom_key"
+	bd.latch = true
+	var start: HSPlayerStart = own(HSPlayerStart.new(), house, "Start")   # the panel's Player start: where the game begins
+	start.position = Vector3(0, 0, 1.2)
+	start.rotation_degrees = Vector3(0, 180, 0)          # facing north (-z): its +Z turned round
+	house.start = house.get_path_to(start)
+	var tst: HSPlayerStart = own(HSPlayerStart.new(), house, "TestStart")   # the Test start: F6 and Play from here begin by the bedroom, the key in hand
+	tst.start_for = "test"
+	tst.position = Vector3(-1.2, 0, -1.0)
+	tst.rotation_degrees = Vector3(0, 180, 0)
+	tst.starts_with = PackedStringArray(["bedroom_key"])
+	thing(hall, "Letter", "note", Vector3(-1.6, 0, 1.0), 0.0, {"display_name": "Letter", "note_title": "A letter",
+		"note_text": "Alex,\n\nI left the key in the kitchen. Don't open the bedroom until I'm back.\n\n- M"})
+	var hall_bulb := OmniLight3D.new()
+	hall_bulb.position = Vector3(0, 2.35, 0)
+	hall_bulb.light_energy = 1.4
+	hall_bulb.omni_range = 6.0
+	hall_bulb.shadow_enabled = true
+	own(hall_bulb, hall, "HallBulb")
+	var sw := thing(hall, "LightSwitch", "switch", Vector3(-2.47, 1.15, -0.6), 90.0, {"display_name": "Light switch"})
+	sw.switches = [sw.get_path_to(hall_bulb)]
+	var lamp := OmniLight3D.new()
+	lamp.position = Vector3(0, 2.3, 0)
+	lamp.light_energy = 1.0
+	lamp.light_color = Color(1.0, 0.82, 0.62)
+	lamp.omni_range = 5.0
+	own(lamp, kitchen, "KitchenLamp")
+	thing(kitchen, "BedroomKey", "pickup", Vector3(1.0, 0, -1.2), 0.0, {"item": "bedroom_key", "item_name": "Bedroom key", "display_name": "Bedroom key"})
+	thing(kitchen, "Table", "none", Vector3(-0.6, 0, -1.2))
+	# the parts (DECISIONS 2026-11-01): a model of the user's made a kettle, its spout moved by hand off the kit's place;
+	# another a thing to look at closely
+	var kettle := thing(kitchen, "Kettle", "life", Vector3(-0.66, 0.5, -1.25), 0.0, {"life": "kettle", "display_name": "Kettle"})
+	var kbody := MeshInstance3D.new()
+	var cyl := CylinderMesh.new()
+	cyl.top_radius = 0.065
+	cyl.bottom_radius = 0.08
+	cyl.height = 0.2
+	kbody.mesh = cyl
+	kbody.position = Vector3(0, 0.1, 0)
+	own(kbody, kettle, "KettleModel")
+	var spout := Marker3D.new()
+	spout.position = Vector3(0, 0.19, 0.075)
+	own(spout, kettle, "spout")
+	var orn := thing(kitchen, "Ornament", "inspect", Vector3(-0.44, 0.5, -1.1), 0.0, {"inspect_text": "A porcelain cat. Its eyes are scratched out.", "display_name": "Ornament"})
+	var ball := MeshInstance3D.new()
+	var sph := SphereMesh.new()
+	sph.radius = 0.05
+	sph.height = 0.1
+	ball.mesh = sph
+	ball.position = Vector3(0, 0.05, 0)
+	own(ball, orn, "CatModel")
+	thing(bedroom, "Wardrobe", "hide", Vector3(1.7, 0, -1.4), 0.0, {"display_name": "Wardrobe"})
+	thing(bedroom, "Bed", "sleep", Vector3(-1.3, 0, -0.6), 0.0, {"display_name": "Bed"})
+	var mari: HSActor = own(HSActor.new(), house, "Mari")
+	mari.position = Vector3(1.5, 0, -1.0)
+	mari.face_player = true
+	mari.talk = true
+	mari.display_name = "Mari"
+	# the animation library (docs/GODOT_ANIMATION_PLAN.md §3): Kimodo clips made on SOMA's skeleton, Mari's own in her
+	# folder (her idle, a walk, sitting down, sitting, getting up, talking) and a look round anyone can have
+	for spec in [["mari/sample_idle", "idle", 120], ["look_around", "look", 120], ["mari/mari_walk", "walk", 36], ["mari/mari_sit_down", "sit_down", 45],
+			["mari/mari_sitting", "sitting", 90], ["mari/mari_stand_up", "stand_up", 45], ["mari/mari_talk", "talk", 60], ["mari/mari_flinch", "flinch", 36],
+			["figure/figure_lunge", "lunge", 36]]:
+		var npz := ProjectSettings.globalize_path("res://animations/%s.npz" % spec[0])
+		DirAccess.make_dir_recursive_absolute(npz.get_base_dir())
+		HSNpz.write(npz, {"posed_joints": [[spec[2], 77, 3], soma_frames(spec[2], spec[1])]})
+	if ResourceLoader.exists("res://bodies/MHR.fbx"):           # her body: the studio's MHR, her idle the library's clip made hers
+		var body: Node3D = (load("res://bodies/MHR.fbx") as PackedScene).instantiate()
+		own(body, mari, "Body")
+		_own_all(body)
+		var why := [""]
+		for clip in ["sample_idle", "mari_walk", "mari_sit_down", "mari_sitting", "mari_stand_up", "mari_talk", "look_around", "mari_flinch"]:   # her moves (and a flinch), made hers
+			if HSLibrary.make_for(mari, HSLibrary.clip(clip), why) != clip:
+				printerr("SAMPLE FAIL Mari's %s: %s" % [clip, why[0]])
+				quit(1)
+				return
+		mari.idle_motion = "sample_idle"
+		mari.walk_motion = "mari_walk"
+		mari.moves = {"sit_down": "mari_sit_down", "sitting": "mari_sitting", "stand_up": "mari_stand_up", "talk": "mari_talk", "look_around": "look_around"}
+		mari.height = 1.75
+	mari.expression = "pout_and_glance_loop"          # the face she rests in: a loop from the expression library (new --sample bakes it into faces/loops/)
+	var fig: HSActor = own(HSActor.new(), kitchen, "Figure")
+	fig.position = Vector3(1.4, 0, 1.3)
+	fig.rotation_degrees = Vector3(0, -90, 0)
+	fig.hidden_at_start = true
+	fig.solid = false
+	fig.behaviour = "off"
+	fig.height = 1.9
+	if ResourceLoader.exists("res://bodies/MHR.fbx"):           # the figure's body: MHR too, its lunge made on it (the jumpscare's clip)
+		var fbody: Node3D = (load("res://bodies/MHR.fbx") as PackedScene).instantiate()
+		own(fbody, fig, "Body")
+		var why2 := [""]
+		if HSLibrary.make_for(fig, HSLibrary.clip("figure_lunge"), why2) != "figure_lunge":
+			printerr("SAMPLE FAIL the figure's lunge: %s" % why2[0])
+			quit(1)
+			return
+	var tr: HSTrigger = own(HSTrigger.new(), kitchen, "KitchenDoorway")
+	tr.position = Vector3(-1.2, 0, 0.8)
+	tr.size = Vector3(1.4, 2.4, 1.6)
+
+	# the drink errand's two things (the right one, a mug; the wrong one, a bottle) and where Mari goes after she's talked
+	thing(kitchen, "Mug", "pickup", Vector3(1.0, 0, 1.2), 0.0, {"item": "mug", "item_name": "Mug", "display_name": "Mug"})
+	thing(kitchen, "Bottle", "pickup", Vector3(0.6, 0, 1.4), 0.0, {"item": "bottle", "item_name": "Bottle", "display_name": "Bottle"})
+	var bspot: HSSpot = own(HSSpot.new(), house, "BedroomSpot")
+	bspot.position = Vector3(1.2, 0, -1.4)
+	var kspot: HSSpot = own(HSSpot.new(), kitchen, "KitchenSpot")   # a place in the kitchen: a walk there goes through its doorway
+	kspot.position = Vector3(0.0, 0, -1.0)
+	var hp: HSPath = own(HSPath.new(), house, "HallPath")         # a path in the hall: a look round at its first stop, a pause at its second
+	var hs1: HSSpot = own(HSSpot.new(), hp, "HallStop1")
+	hs1.position = Vector3(-1.6, 0, 1.0)
+	hs1.clip = "look_around"
+	var hs2: HSSpot = own(HSSpot.new(), hp, "HallStop2")
+	hs2.position = Vector3(0.8, 0, 1.0)
+	hs2.wait = 0.5
+	var cp: HSCheckpoint = own(HSCheckpoint.new(), bedroom, "Checkpoint")   # walked into: an autosave
+	cp.position = Vector3(-1.2, 0, 1.2)
+
+	# ---- the story: the Director file (DECISIONS 2026-11-01), the scene left as the world ----
+	var r0 := HSStoryFile.write(STORY)
+	if r0 != OK:
+		printerr("SAMPLE FAIL story %d" % r0)
+		quit(1)
+		return
+
+	var ps := PackedScene.new()
+	var r := ps.pack(root_)
+	if r != OK:
+		printerr("SAMPLE FAIL pack %d" % r)
+		quit(1)
+		return
+	var e := ResourceSaver.save(ps, "res://main.tscn")
+	HSDirector.write_index("res://main.tscn", root_)      # its ids for the Director Manager, as the editor's save would
+	print("SAMPLE ok" if e == OK else "SAMPLE FAIL save %d" % e)
+	root_.free()
+	quit(0 if e == OK else 1)

@@ -84,6 +84,7 @@ var next_node = null
 var timer_left = null
 var timer_fail = null
 var stitch_title = null
+var stitch_now: Dictionary = {}      # the stitch playing (its beats and to-dos say who wants something: wants_from)
 var moving = null
 var look_tween = null
 var holding = null
@@ -114,6 +115,8 @@ const MenuC := preload("res://addons/horrorstudio/menu.gd")      # the saved set
 const LifeSoundC := preload("res://addons/horrorstudio/lifesound.gd")
 const PhysC := preload("res://addons/horrorstudio/physics.gd")
 var physics = null                   # physics.gd: the thing in the hand, the dice
+const FaceC := preload("res://addons/horrorstudio/face.gd")
+var faces = null                     # face.gd: the cast's expressions (`expr`), what each rests in and what plays over it
 var lifefx = null                    # the little things' effects (lifefx.gd), on this level
 var lifesound = null                 # the little things' sounds (lifesound.gd), made from their recipes, placed
 var scene_light_k: Dictionary = {}
@@ -129,6 +132,14 @@ var on_set_time: Callable = Callable()
 var on_quit: Callable = Callable()
 var on_beat: Callable = Callable()
 var on_flag: Callable = Callable()
+var on_event: Callable = Callable()       # every event as it's sent (the Director plugin's debug panel and the editor's dock)
+var on_level: Callable = Callable()       # a level entered (the Director plugin starts its characters' own behaviours there)
+const CollideC := preload("res://addons/horrorstudio/collide.gd")
+var collide = null                        # Godot's physics for the player, the cursor and sight (game.collision: physics), else null: the boxes
+var by_node: Dictionary = {}              # a thing's node -> the thing (the physics rays' hits)
+var anim_players: Dictionary = {}         # a cast member's AnimationPlayer under the stand-in (their motions), null when there's none
+var speaking := ""                         # the cast member whose line is up in a scene (her move `talk`)
+var listening := ""                        # the one the player is answering (her move `listen`)
 
 
 func setup(game_, run_, opts: Dictionary = {}) -> void:
@@ -141,12 +152,15 @@ func setup(game_, run_, opts: Dictionary = {}) -> void:
 	if run != null:
 		flags = run["flags"]
 	settings = opts.get("settings", {})
+	player.eye = stand_eye()
 	lives = run["lives"] if (run != null and run.has("lives")) else opts.get("lives", null)
 	lives_seen = lives.changes.size() if lives != null else 0
 	play_scene = opts.get("play_scene", Callable())
 	on_set_time = opts.get("set_time", Callable())
 	on_quit = opts.get("quit", Callable())
 	todo = TodoC.new(self)
+	if str(story.game.get("collision", "boxes")) == "physics":
+		collide = CollideC.new(self)
 	hud.locked(false)
 	if run != null:
 		for i in run.get("items", {}):
@@ -157,6 +171,9 @@ func stop() -> void:
 	active = false
 	listener = Callable()
 	stopped = true
+	focus = null
+	if collide != null:
+		collide.free_body()
 	for w in waits:
 		w["done"] = true
 	waits = []
@@ -186,7 +203,24 @@ func carried() -> Variant:
 # ---- input ---------------------------------------------------------------------------------------------------
 ## a left click while a card of words is up puts it away, like Esc: taken here, before the HUD's own controls get it
 ## (the card is a Control under the pointer, so it never reached _unhandled_input: the user's note, 2026-10-29)
+## A thing in the hands (examine): a drag with the left button turns it, a click with no drag puts it back.
 func _input(ev: InputEvent) -> void:
+	if exam != null and hud != null and hud.panel_el != null:
+		if ev is InputEventMouseButton and ev.button_index == MOUSE_BUTTON_LEFT:
+			if ev.pressed:
+				exam["drag"] = true
+				exam["moved"] = 0.0
+			elif exam["drag"]:
+				exam["drag"] = false
+				if float(exam["moved"]) < 6.0:
+					hud.panel_click()
+			get_viewport().set_input_as_handled()
+			return
+		if ev is InputEventMouseMotion and exam["drag"]:
+			exam_turn(ev.relative.x, ev.relative.y)
+			exam["moved"] = float(exam["moved"]) + ev.relative.length()
+			get_viewport().set_input_as_handled()
+			return
 	if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT and hud != null and hud.panel_el != null:
 		if hud.panel_click():
 			get_viewport().set_input_as_handled()
@@ -203,7 +237,7 @@ func _unhandled_input(ev: InputEvent) -> void:
 		var code := OS.get_keycode_string(ev.physical_keycode)
 		if ["W", "A", "S", "D", "Up", "Down", "Left", "Right", "Shift", "C"].has(code):
 			keys[code] = ev.pressed
-			if code == "C" and player.seat == null:
+			if code == "C" and player.seat == null and can("crouch"):
 				var cs := setting("crouch")
 				if cs["mode"] == "hold":
 					player.crouched = ev.pressed
@@ -248,15 +282,15 @@ func capture_mouse(on: bool) -> void:
 
 ## a key by its name (W, A, S, D, E, G, C, F, Shift, Space, Escape, Enter, digits...)
 func key_event(code: String, down: bool, repeat: bool = false) -> void:
+	if examining != null and hud.panel_el != null and down and (code == "Escape" or code == "E"):
+		hud._finish_panel(true)
+		return
 	if hud.panel_el != null:
 		if down:
 			hud.panel_key(code)
 		return
 	if down and not hud.choice_over:
 		hud.choice_key(code)
-		return
-	if examining != null and down and (code == "Escape" or code == "E"):
-		hud._finish_panel(true)
 		return
 	if held and hud.menu != null and hud.menu.up:
 		if down:
@@ -282,7 +316,7 @@ func key_event(code: String, down: bool, repeat: bool = false) -> void:
 		drop()
 	if down and not repeat and code == "Q":
 		hand_lower(not hand_down)
-	if player.hiding == null and down and not repeat:
+	if player.hiding == null and down and not repeat and can("crouch"):
 		var cs := setting("crouch")
 		if code == cs["key"]:
 			if cs["mode"] == "hold":
@@ -305,22 +339,39 @@ func ability_look(dx: float, dy: float) -> void:
 	p.pitch = clamp(float(p.pitch) - dy * float(s["sens"]), -pm, pm)
 
 
+## the player's abilities (game.player, STORY_FORMAT §9.10: the Director's Player settings): run and crouch unless told not
+func can(what: String) -> bool:
+	var gp = story.game.get("player", {}) if story != null else {}
+	return not (gp is Dictionary and gp.get(what) == false)
+
+
+## the standing eye height (game.player.eye, 1.65 m)
+func stand_eye() -> float:
+	var gp = story.game.get("player", {}) if story != null else {}
+	return clampf(float(gp.get("eye", StoryC.EYES["stand"])), 1.2, 2.0) if gp is Dictionary else StoryC.EYES["stand"]
+
+
 func ability_walk(dt: float) -> void:
 	var s := setting("walk")
 	var k := keys
 	var f := (1 if (k.get("W", false) or k.get("Up", false)) else 0) - (1 if (k.get("S", false) or k.get("Down", false)) else 0)
 	var r := (1 if (k.get("D", false) or k.get("Right", false)) else 0) - (1 if (k.get("A", false) or k.get("Left", false)) else 0)
-	player.running = not player.crouched and bool(k.get("Shift", false)) and f > 0
+	player.running = can("run") and not player.crouched and bool(k.get("Shift", false)) and f > 0
 	if f == 0 and r == 0:
+		if collide != null:
+			collide.settle(float(s["step"]))
 		return
 	var a := deg_to_rad(float(player.yaw))
 	var ln := sqrt(float(f * f + r * r))
-	var v := float(s["crouched"] if player.crouched else (s["run"] if player.running else s["speed"])) * dt / ln
+	var v := float(s["crouched"] if player.crouched else (s["run"] if player.running else s["speed"])) * dt / ln * focus_walk()
+	if v <= 0.0:
+		return
 	move((cos(a) * f + sin(a) * r) * v, (-sin(a) * f + cos(a) * r) * v, s)
 
 
 func ability_crouch(dt: float) -> void:
-	var want: float = StoryC.EYES["crouch"] if player.crouched else StoryC.EYES["stand"]
+	var se := stand_eye()
+	var want: float = StoryC.EYES["crouch"] * se / StoryC.EYES["stand"] if player.crouched else se
 	player.eye = float(player.eye) + (want - float(player.eye)) * min(1.0, dt * float(setting("crouch")["ease"]))
 
 
@@ -331,6 +382,7 @@ func enter_level(lid: String) -> void:
 		return
 	stop_sfx()                                 # the old level's loops end with it
 	sfx_players = []
+	focus_off("a new level")
 	var first := not kept.has(lid)
 	if first or game.level_id != lid:
 		game.enter_level(lid, first)
@@ -453,6 +505,15 @@ func enter_level(lid: String) -> void:
 		if by_id.has(id):
 			by_id[id]["node"].global_transform = k["bodies"][id]
 
+	by_node = {}
+	anim_players = {}
+	for id in by_id:
+		by_node[by_id[id]["node"]] = by_id[id]
+	if collide != null:
+		collide.make()
+		for id in by_id:
+			if not by_id[id]["node"].visible:
+				CollideC.enable(by_id[id]["node"], false)
 	lifefx = LifeFxC.new(self, game.kit_index)   # the little things' effects, on this level's things
 	lifefx.attach()
 	if lifesound != null:
@@ -467,6 +528,8 @@ func enter_level(lid: String) -> void:
 	if physics != null:
 		physics.clear()
 	physics = PhysC.new(self)
+	if on_level.is_valid():
+		on_level.call(lid)
 
 func _tag(tags: Array, pre: String):
 	for t in tags:
@@ -528,6 +591,18 @@ func _attach_disc(door: Dictionary, local: Vector3, side: int, id: String, use: 
 		bar.material_override = brass
 		bar.position = Vector3(0, 0.011, 0)
 		n.add_child(bar)
+	if collide != null:                                  # Godot's physics: an area the cursor's ray finds, a little proud of the leaf
+		var area := Area3D.new()
+		area.collision_layer = CollideC.INTERACT
+		area.collision_mask = 0
+		area.monitoring = false
+		var cs := CollisionShape3D.new()
+		var bx := BoxShape3D.new()
+		bx.size = Vector3(0.12, 0.024, 0.12)
+		cs.shape = bx
+		cs.position = Vector3(0, 0.006, 0)
+		area.add_child(cs)
+		n.add_child(area)
 	var t := {"id": id, "node": n, "piece": {"id": id, "kind": "mesh", "d": {"name": use}, "tags": [], "size": [0.12, 0.12, 0.004], "shape": "box"}, "kind": "mesh",
 		"tags": [], "size": [0.12, 0.12, 0.004], "shape": "box", "use": use, "hidden": false, "hollow": false, "door": door["id"], "local": local, "side": side, "disc": true}
 	by_id[id] = t
@@ -549,7 +624,7 @@ func place_at(lid: String, spot) -> void:
 	enter_level(lid)
 	var t = things.get(spot)
 	if t != null:
-		place(Vector3(t["node"].global_position.x, 0.0, t["node"].global_position.z), float(t["piece"].get("yaw", 0)), 0.0)
+		place(Vector3(t["node"].global_position.x, t["node"].global_position.y if collide != null else 0.0, t["node"].global_position.z), float(t["piece"].get("yaw", 0)), 0.0)
 
 
 ## carry on from where a scene left the eye: no cut back to a spot
@@ -597,6 +672,9 @@ func extent(t: Dictionary) -> Dictionary:
 
 
 func move(dx: float, dz: float, s: Dictionary) -> void:
+	if collide != null:
+		collide.move(dx, dz, s)
+		return
 	player.pos.x += dx
 	player.pos.z += dz
 	for i in 3:
@@ -650,6 +728,8 @@ func push_out(s: Dictionary) -> void:
 
 
 func ground_at(pos: Vector3, step: float) -> float:
+	if collide != null:
+		return collide.ground_at(pos, step)
 	var best := -INF
 	for t in blocks():
 		var e := extent(t)
@@ -665,6 +745,8 @@ func ground_at(pos: Vector3, step: float) -> float:
 
 func floor_under(p = null) -> String:
 	var pos: Vector3 = player.pos if p == null else p
+	if collide != null:
+		return collide.floor_under(pos)
 	var best = null
 	var top := -INF
 	for t in solid:
@@ -701,6 +783,8 @@ func point_in(t: Dictionary, x: float, y: float, z: float) -> bool:
 func emit(ev: Dictionary) -> void:
 	if ev.get("type") == "todo":
 		todo_log.append("%s:%s" % [ev.get("id"), ev.get("state")])
+	if on_event.is_valid() and ev.get("type") != "tick":
+		on_event.call(ev)
 	if listener.is_valid():
 		listener.call(ev)
 	if todo != null:
@@ -760,6 +844,10 @@ func sound(id, at) -> void:
 	hud.log("♪ %s%s%s" % [id, (" at " + str(at)) if at != null else "", "" if n != "" else " (the game's own file)"])
 	if n != "":
 		shelf_sound(n, at)
+	elif f.begins_with("res://"):                        # a sound file of the project's own (the Director plugin's sounds)
+		if not game.sfx_index.has(f):
+			game.sfx_index[f] = {"file": f, "loop": bool(s.get("loop", false))}
+		shelf_sound(f, at)
 
 
 func shelf_sound(name: String, at = null, db: float = 0.0, floor_ = null) -> Node:
@@ -829,7 +917,7 @@ func sfx_stream(name: String, file: String) -> AudioStream:
 		return sfx_streams[name]
 	var st: AudioStream = null
 	if file != "":
-		var path := "res://game/sfx/" + file
+		var path := file if file.begins_with("res://") else "res://game/sfx/" + file
 		if ResourceLoader.exists(path):
 			st = load(path)
 		elif FileAccess.file_exists(path):
@@ -855,6 +943,8 @@ func set_visible(id, on: bool, restoring: bool = false) -> void:
 		hud.log("no %s in this level" % id)
 		return
 	t["node"].visible = on
+	if collide != null:
+		CollideC.enable(t["node"], on)
 	if not restoring:
 		kept[level]["vis"][id] = on
 	var i := solid.find(t)
@@ -920,15 +1010,22 @@ func latch_side(t: Dictionary) -> int:
 	var floor_t = by_id.get("%s__floor" % t["room"])
 	if floor_t == null:
 		return 1
-	var b: Transform3D = t["base"]
-	var d: Vector3 = floor_t["node"].position - b.origin
+	var b: Transform3D = _global_base(t)
+	var d: Vector3 = floor_t["node"].global_position - b.origin
 	return 1 if d.dot(b.basis * Vector3(0, 0, 1)) >= 0 else -1
+
+
+## a thing's resting transform in the world (its base is in its parent's space: the export's folders sit at the
+## origin, a Director door sits in its room)
+func _global_base(t: Dictionary) -> Transform3D:
+	var par = t["node"].get_parent()
+	return (par.global_transform if par is Node3D else Transform3D()) * (t["base"] as Transform3D)
 
 
 func on_latch_side(id) -> bool:
 	for x in latches:
 		if x["door"] == id:
-			var b: Transform3D = by_id[id]["base"]
+			var b: Transform3D = _global_base(by_id[id])
 			return (player.pos - b.origin).dot(b.basis * Vector3(0, 0, 1)) * float(x["side"]) > 0
 	return false
 
@@ -1160,13 +1257,172 @@ func panel(spec: Dictionary) -> Variant:
 	return await modal(func(): return await hud.panel(spec))
 
 
-## looking at a thing (`use: inspect`): its name and words on a card; the thing stays where it is (the desk takes a small
-## one up in the hands; here the card alone, so a shelf doesn't vanish while you read it: the user's note, 2026-10-29);
-## Esc, E or a click puts the card away
+## an expression on a cast member's face (STORY_FORMAT §4 `expr`: face.gd): opts loop, w, in, out, rest
+func face_play(who: String, id, opts: Dictionary = {}) -> void:
+	if faces == null:
+		faces = FaceC.new(self)
+	if not faces.play(who, cast_nodes.get(who), id, opts):
+		hud.log("no face %s in the project (res://faces/: tools/face_export.mjs)" % str(id))
+
+
+## looking at a thing (`use: inspect`): a small one (its longest side EXAMINE.most or less) is taken up in the hands, as
+## the desk's examine.js does (DECISIONS 2026-11-01: "pick up temporarily to inspect, turn around"): the thing itself in
+## front of the eye, lit by a lamp at the shoulder and drawn over the room (it's in the hands: never inside a wall), a
+## drag turns it, its name and words on a card under it; Esc, E or a click (no drag) puts it back where it was. A
+## bigger thing (a shelf, a wardrobe) keeps the card alone and stays where it is (the user's note, 2026-10-29). The story
+## hears the `use` once it's put back, as before.
+## most: the longest side taken up (m); dist: how far from the eye; up: above the eye's line; fill: its longest side in
+## the hands (m); turn: radians a pixel dragged; ease: how fast it follows; light: the shoulder lamp
+const EXAMINE := {"most": 0.6, "dist": 0.36, "up": 0.03, "fill": 0.14, "turn": 0.012, "ease": 12.0, "light": 1.2}
+const EXAM_LAYER := 1 << 19                   # the render layer the shoulder lamp lights: the thing in the hands alone
+var exam = null                               # the thing in the hands: {node, was, pivot, turner, want, lamp, drag, moved}
+static var _exam_hole: Shader = null
+
+
 func examine(t: Dictionary, title: String, text: String) -> void:
 	examining = t
-	await modal(func(): return await hud.examine({"title": title, "text": text}))
+	var held := exam_small(t) and exam_up(t)
+	await modal(func(): return await hud.examine({"title": title, "text": text, "held": held}))
+	exam_down()
 	examining = null
+
+
+## small enough to take up: its longest side EXAMINE.most or less, with something to show (its model or its block)
+func exam_small(t: Dictionary) -> bool:
+	var sz: Array = t.get("size", [1, 1, 1])
+	var m: float = max(float(sz[0]), float(sz[1]), float(sz[2]))
+	var n = t.get("node")
+	return m > 0.01 and m <= float(EXAMINE["most"]) and n is Node3D and (n.get_node_or_null("art") != null or n.get_node_or_null("mesh") != null)
+
+
+## the thing taken up: a copy of it (its art or its block, without what isn't its look) centred in a turner, at a size the
+## hands hold, in front of the eye on the camera; the thing itself hidden till it's put back. Drawn after the room: first
+## its silhouette writes a depth a little behind it over whatever the room had there (the hole), then its own materials,
+## their depth kept among themselves, so it's never inside a wall and its faces still hide each other
+func exam_up(t: Dictionary) -> bool:
+	var cam: Camera3D = game.camera
+	var copy: Node3D = PhysC.copy_of(t)
+	for x in copy.find_children("*", "", true, false):
+		if is_instance_valid(x) and (x is Light3D or x is CollisionObject3D or x is CollisionShape3D or x is GPUParticles3D or x is CPUParticles3D
+				or x is AudioStreamPlayer3D or x is Camera3D or x is Marker3D):
+			x.free()
+	var box: AABB = hud.bounds_of(copy)
+	var mx: float = max(box.size.x, box.size.y, box.size.z)
+	if cam == null or mx <= 0.0:
+		copy.free()
+		return false
+	if _exam_hole == null:
+		_exam_hole = Shader.new()
+		_exam_hole.code = EXAM_HOLE
+	var hole := ShaderMaterial.new()
+	hole.shader = _exam_hole
+	hole.render_priority = Material.RENDER_PRIORITY_MAX - 1
+	for mi in copy.find_children("*", "MeshInstance3D", true, false):
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		mi.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
+		mi.layers |= EXAM_LAYER
+		if mi.mesh == null:
+			continue
+		for i in mi.mesh.get_surface_count():
+			var m = mi.get_active_material(i)
+			mi.set_surface_override_material(i, exam_mat(m if m != null else StandardMaterial3D.new()))
+		mi.material_override = null
+		var h := MeshInstance3D.new()                 # the hole: the same mesh, the silhouette's depth pushed back
+		h.mesh = mi.mesh
+		h.skin = mi.skin
+		h.skeleton = NodePath("../" + str(mi.skeleton)) if not mi.skeleton.is_empty() else NodePath()
+		h.material_override = hole
+		h.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		h.layers = mi.layers
+		mi.add_child(h)
+	copy.position = -box.get_center()
+	var turner := Node3D.new()
+	turner.add_child(copy)
+	turner.scale = Vector3.ONE * clamp(float(EXAMINE["fill"]) / mx, 0.4, 3.0)
+	var flat: bool = box.size.y <= min(box.size.x, box.size.z)     # lying flat (its thinnest side up): tilted to show its top; standing (a photo): facing you
+	var want := Quaternion(Vector3.RIGHT, 0.6) if flat else Quaternion.IDENTITY
+	turner.quaternion = want
+	var pivot := Node3D.new()
+	pivot.name = "examine"
+	pivot.add_child(turner)
+	pivot.position = Vector3(0, float(EXAMINE["up"]), -float(EXAMINE["dist"]))
+	var lamp := OmniLight3D.new()
+	lamp.light_energy = float(EXAMINE["light"])
+	lamp.omni_range = 1.6
+	lamp.light_color = Color(1.0, 0.95, 0.89)
+	lamp.light_cull_mask = EXAM_LAYER
+	lamp.position = Vector3(0.18, 0.16, -0.04)
+	pivot.add_child(lamp)
+	cam.add_child(pivot)
+	var node: Node3D = t["node"]
+	exam = {"node": node, "was": node.visible, "pivot": pivot, "turner": turner, "want": want, "from": want, "lamp": lamp, "drag": false, "moved": 0.0}
+	node.visible = false                          # in the hands, not where it was
+	return true
+
+
+## its own copy of a material, drawn after the room (in the transparent pass, which comes after everything solid) with
+## its depth written; a texture with an alpha of its own keeps its look and is drawn over instead (its alpha would show)
+func exam_mat(m: Material) -> Material:
+	var c: Material = m.duplicate()
+	c.render_priority = Material.RENDER_PRIORITY_MAX
+	if c is BaseMaterial3D:
+		if c.transparency == BaseMaterial3D.TRANSPARENCY_DISABLED:
+			var img: Image = c.albedo_texture.get_image() if c.albedo_texture != null else null
+			if img != null and img.is_compressed():
+				img.decompress()
+			if img != null and img.detect_alpha() != Image.ALPHA_NONE:
+				c.no_depth_test = true
+			else:
+				c.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		c.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_ALWAYS
+	return c
+
+
+const EXAM_HOLE := """shader_type spatial;
+render_mode unshaded, cull_disabled, depth_test_disabled, depth_draw_always, skip_vertex_transform, shadows_disabled;
+// a thing in the hands (play.gd exam_up): its silhouette's depth written a little behind it over whatever the room had
+// there, pushed along each eye ray (so the same pixels), no colour; the thing drawn next is never inside a wall
+void vertex() {
+	VERTEX = (MODELVIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	VERTEX *= 1.0 + 0.3 / max(length(VERTEX), 0.01);
+	NORMAL = normalize((MODELVIEW_MATRIX * vec4(NORMAL, 0.0)).xyz);
+}
+void fragment() {
+	ALBEDO = vec3(0.0);
+	ALPHA = 0.0;
+}
+"""
+
+
+## a drag: turned about the view's up (across) and its side (up and down), whatever way it's facing now
+func exam_turn(dx: float, dy: float) -> void:
+	if exam == null:
+		return
+	var w: Quaternion = exam["want"]
+	w = Quaternion(Vector3.UP, dx * float(EXAMINE["turn"])) * w
+	w = Quaternion(Vector3.RIGHT, dy * float(EXAMINE["turn"])) * w
+	exam["want"] = w.normalized()
+
+
+## how far it's turned from how it came up (radians)
+func exam_angle() -> float:
+	return exam["turner"].quaternion.angle_to(exam["from"]) if exam != null else 0.0
+
+
+func exam_tick(dt: float) -> void:
+	var tn: Node3D = exam["turner"]
+	tn.quaternion = tn.quaternion.slerp(exam["want"], min(1.0, dt * float(EXAMINE["ease"])))
+
+
+## put back where it was
+func exam_down() -> void:
+	if exam == null:
+		return
+	if is_instance_valid(exam["pivot"]):
+		exam["pivot"].queue_free()
+	if is_instance_valid(exam["node"]):
+		exam["node"].visible = exam["was"]
+	exam = null
 
 
 func choose(spec: Dictionary) -> Variant:
@@ -1207,6 +1463,7 @@ func end(r: Dictionary) -> void:
 	if not has_end:
 		return
 	has_end = false
+	focus_off("ended")
 	listener = Callable()
 	timer_left = null
 	hud.timer(null)
@@ -1608,7 +1865,8 @@ func route(ref) -> Variant:
 			continue
 		if lvl == null:
 			lvl = level
-		points.append({"pos": spot_pos(t), "yaw": float(t["piece"].get("yaw", 0)), "wait": float(q.get("wait", 0)), "pose": q.get("pose"), "check": q.get("check")})
+		points.append({"pos": spot_pos(t), "yaw": float(t["piece"].get("yaw", 0)), "wait": float(q.get("wait", 0)), "pose": q.get("pose"), "check": q.get("check"),
+			"clip": q.get("clip")})
 	return {"level": lvl, "mode": r.get("mode", "loop"), "points": points} if points.size() else null
 
 
@@ -1624,15 +1882,371 @@ func behave(cid, spec: Dictionary) -> void:
 		hud.log("behaviour not in Play yet: %s" % as_)
 		return
 	var n := {"cid": cid, "as": as_, "s": BehavioursC.settings_of(as_, spec), "st": {}, "pos": npc["pos"] if npc != null else null, "yaw": float(npc["yaw"]) if npc != null else 0.0,
-		"level": npc["level"] if npc != null else level, "pose": "idle", "walking": false, "t0": clock}
+		"level": npc["level"] if npc != null else level, "pose": "idle", "walking": false, "t0": clock,
+		"prev_pose": str(npc.get("pose", "")) if npc != null else "sit"}   # (one who's just come in doesn't sit down: she's there)
+	var seated: bool = npc != null and str(npc.get("pose", "")) == "sit" and as_ != "sit"
+	if npc != null and (seated or spec.get("leave") != null):   # getting up first (her stand_up, or the behaviour's `leave`), once, then off
+		var c = spec["leave"] if spec.get("leave") != null else move_of(str(cid), "stand_up")
+		var secs := move_secs(str(cid), c)
+		if secs > 0.0:
+			n["once"] = {"clip": c, "until": clock + secs}
+			n["hold"] = clock + secs
+			n["pose"] = "sit" if seated else str(npc.get("pose", "idle"))
 	npcs[cid] = n
+	if n.has("hold"):
+		n["start_at"] = n["hold"]                         # the behaviour starts once she's up
+		return
 	BehavioursC.start(as_, n, self, n["s"])
+
+
+## a cast member's moves (STORY_FORMAT §2 cast `moves`: role -> motion), each role falling back to another she has, so a
+## game always plays: run to walk; sitting, talk, listen and look_around to idle; sit_down and stand_up to nothing
+const MOVE_FALLBACK := {"run": "walk", "sitting": "idle", "talk": "idle", "listen": "idle", "look_around": "idle"}
+const RUN_SPEED := 2.2                     # m/s: a behaviour this fast plays her run (STORY_FORMAT §2 `moves`)
+const LOOK_POSES := ["look", "search", "check"]   # a route point's pose where she looks round (her look_around)
+
+
+## the motion a role plays on her: her own move, else what it falls back to (`fall` false: hers only), else null
+func move_of(cid: String, role: String, fall: bool = true) -> Variant:
+	var mv = story.cast.get(cid, {}).get("moves") if story.cast.get(cid) is Dictionary else null
+	var r := role
+	while r != "":
+		if mv is Dictionary and str(mv.get(r, "")) != "":
+			return str(mv[r])
+		r = str(MOVE_FALLBACK.get(r, "")) if fall else ""
+	return null
+
+
+## what a cast member plays now, [motion, loops] (STORY_FORMAT §4 behave's `motion` and `rest`, §2 her `moves`): a move
+## begun once (sitting down, getting up) till it ends; walking, the behaviour's motion or her walk (her run when it's
+## fast); at a route's wait that looks round, her look_around; the behaviour's `rest` while she isn't walking; sitting,
+## the behaviour's motion or her sitting; her talk while her line is up, her listen while the player answers her; the
+## behaviour's motion; her idle
+func npc_want(cid: String, n: Dictionary) -> Array:
+	var once = n.get("once")
+	if once is Dictionary and clock < float(once["until"]):
+		return [once["clip"], false]
+	var s: Dictionary = n["s"]
+	if bool(n.get("walking", false)):
+		if s.get("walk") != null:                      # this behaviour's own walk (On stage's "walks with…")
+			return [s["walk"], true]
+		return [s["motion"] if s.get("motion") != null else move_of(cid, "run" if float(s.get("speed", 1.1)) >= RUN_SPEED else "walk"), true]
+	var st: Dictionary = n["st"]
+	if float(st.get("wait", 0.0)) > 0.0 and st.get("clip") != null:   # a route's stop with a clip of its own (she looks round there)
+		return [st["clip"], true]
+	if float(st.get("wait", 0.0)) > 0.0 and str(st.get("pose", "")) in LOOK_POSES and move_of(cid, "look_around", false) != null:
+		return [move_of(cid, "look_around"), true]
+	if s.get("rest") != null:
+		return [s["rest"], true]
+	if str(n.get("pose", "")) == "sit":
+		return [s["motion"] if s.get("motion") != null else move_of(cid, "sitting"), true]
+	for k in [["talk", speaking], ["listen", listening]]:
+		if k[1] == cid and move_of(cid, k[0], false) != null:
+			return [move_of(cid, k[0]), true]
+	return [s["motion"] if s.get("motion") != null else move_of(cid, "idle"), true]
+
+
+# ---- a cutscene in the level: the soft lock (STORY_FORMAT §4 `focus`; docs/GODOT_ANIMATION_PLAN.md step 7) ---------
+## the user (DECISIONS 2026-11-02, night): no black bars, no skipping, everything as if it happens in your gameplay; the
+## view turned onto what the scene is about, then helped to stay on it (a cone to look round in, drawn back when it
+## drifts out of it), a lean in or a held focus if it asks for one; and a safety release, so no glitch can keep the
+## player in it: its `max` (20 s, 60 at most), the target gone (hidden, out of the level), an ending, a new level, the
+## run stopped, or `{"focus": ""}` (the Director's cutscene moment ends with it). cone: its width (degrees, the pitch
+## 0.6 of it); pull: how fast the view is drawn back (1/s); ease: seconds the lean and the zoom take in and out; slow:
+## the walk's pace while it holds; turn: at most this long it first turns the view onto it (the same pull, to its
+## middle), before the cone holds it
+const FOCUS := {"cone": 50.0, "pull": 5.0, "ease": 1.0, "max": 20.0, "most": 60.0, "slow": 0.35, "turn": 1.5}
+var focus = null                              # {id, cone, push, zoom, walk, until, k (its lean and zoom, eased), going, turning}
+var last_focus = null                         # the last one let go: {id, why, clock} (the checks read it)
+
+
+## the view held on `id` (a cast member, a thing, a spot): a = the action's cone, push, zoom, walk (free, slow, held), max
+func focus_on(id, a: Dictionary = {}) -> void:
+	if id == null or str(id) == "":
+		focus_off("released")
+		return
+	focus = {"id": str(id), "cone": clampf(float(a.get("cone", FOCUS["cone"])), 10.0, 170.0), "push": clampf(float(a.get("push", 0.0)), 0.0, 0.35),
+		"zoom": clampf(float(a.get("zoom", 0.0)), 0.0, 0.15), "walk": str(a.get("walk", "slow")),
+		"until": clock + clampf(float(a.get("max", FOCUS["max"])), 0.5, float(FOCUS["most"])), "k": float(focus["k"]) if focus is Dictionary else 0.0,
+		"going": "", "since": clock, "turning": true}
+	hud.log("the view held on %s" % id)
+
+
+## let go (its lean and zoom ease back out): released by the story, `safety` (its max), `gone` (its target), an ending
+func focus_off(why: String) -> void:
+	if focus is Dictionary and str(focus["going"]) == "":
+		focus["going"] = why
+		last_focus = {"id": focus["id"], "why": why, "clock": clock}
+		hud.log("the view let go (%s)" % why)
+
+
+## where it looks: a cast member's eyes, a thing's middle, a spot at eye height; null when it's gone
+func focus_at(id: String) -> Variant:
+	var n = npcs.get(id)
+	if n != null:
+		if n["pos"] == null or n["level"] != level or (cast_nodes.has(id) and not cast_nodes[id].visible):
+			return null
+		var c = story.cast.get(id)
+		var up := 0.62 if str(n.get("pose", "")) == "sit" else 0.93     # her eyes, standing or seated
+		return (n["pos"] as Vector3) + Vector3(0, (float(c.get("height", 1.7)) if c is Dictionary else 1.7) * up, 0)
+	var t = by_id.get(id)
+	if t != null:
+		return middle_of(t) if t["node"].is_visible_in_tree() else null
+	var sp = things.get(id)
+	if sp != null:
+		return spot_pos(sp) + Vector3(0, float(player.eye), 0)
+	return null
+
+
+## each frame: let go when it's over (max, gone, the run not on); else the view drawn back into its cone
+func focus_tick(dt: float) -> void:
+	var F: Dictionary = focus
+	if str(F["going"]) == "":
+		if clock >= float(F["until"]):
+			focus_off("safety")
+		elif not active:
+			focus_off("ended")
+		elif focus_at(str(F["id"])) == null:
+			focus_off("gone")
+	var going := str(F["going"]) != ""
+	F["k"] = move_toward(float(F["k"]), 0.0 if going else 1.0, dt / float(FOCUS["ease"]))
+	if going:
+		if float(F["k"]) <= 0.0:
+			focus = null
+		return
+	var d: Vector3 = (focus_at(str(F["id"])) as Vector3) - eye_pos()
+	var want_yaw := rad_to_deg(atan2(-d.z, d.x))
+	var want_pitch := rad_to_deg(atan2(d.y, Vector2(d.x, d.z).length()))
+	var half := float(F["cone"]) / 2.0
+	var pull := 1.0 - exp(-float(FOCUS["pull"]) * dt)
+	var dy := fposmod(want_yaw - float(player.yaw) + 180.0, 360.0) - 180.0
+	if bool(F["turning"]):                          # first the view turned onto it, as a look does; then held in its cone
+		half = 0.0
+		if (absf(dy) < 2.0 and absf(want_pitch - float(player.pitch)) < 2.0) or clock - float(F["since"]) > FOCUS["turn"]:
+			F["turning"] = false
+	if absf(dy) > half:
+		player.yaw = float(player.yaw) + signf(dy) * (absf(dy) - half) * pull
+	var dp := want_pitch - float(player.pitch)
+	if absf(dp) > half * 0.6:
+		player.pitch = float(player.pitch) + signf(dp) * (absf(dp) - half * 0.6) * pull
+
+
+## the walk's pace while it holds: slow (FOCUS.slow), held (0) or free (1)
+func focus_walk() -> float:
+	if not (focus is Dictionary) or str(focus["going"]) != "":
+		return 1.0
+	match str(focus["walk"]):
+		"held":
+			return 0.0
+		"free":
+			return 1.0
+	return float(FOCUS["slow"])
+
+
+## the lean in toward it (`push` metres, eased) and the held focus (`zoom`, the view narrowed by up to 15 %)
+func focus_lean() -> Vector3:
+	if not (focus is Dictionary) or float(focus["push"]) <= 0.0:
+		return Vector3.ZERO
+	var at = focus_at(str(focus["id"]))
+	if at == null:
+		return Vector3.ZERO
+	var d: Vector3 = (at as Vector3) - eye_pos()
+	return d.normalized() * minf(float(focus["push"]), d.length() * 0.5) * float(focus["k"])
+
+
+func focus_zoom() -> float:
+	return float(focus["zoom"]) * float(focus["k"]) if focus is Dictionary else 0.0
+
+
+## a cast member's reaction (the story's `anim`, STORY_FORMAT §4; her `caught` move): a clip played once, her behaviour
+## held where she is while it plays (she stops walking; it goes on after), turned to `face` (`player`, a thing or a cast
+## member) if it's given and back the way she was after; with no clip she only turns, for `secs` (REACT_SECS). `secs`
+## also cuts the clip short or holds its last frame. Its seconds, 0 when there's nothing to play
+const REACT_SECS := 2.5
+func react(cid: String, clip, face = null, secs: float = 0.0) -> float:
+	var n = npcs.get(cid)
+	if n == null:
+		return 0.0
+	var c = clip if clip != null and str(clip) != "" else null
+	var len_ := move_secs(cid, c) if c != null else 0.0
+	var t := secs if secs > 0.0 else (len_ if len_ > 0.0 else (REACT_SECS if face != null and str(face) != "" else 0.0))
+	if t <= 0.0:
+		return 0.0
+	if len_ > 0.0:
+		n["once"] = {"clip": str(c), "until": clock + t}
+	var was = n.get("react")
+	n["react"] = {"until": clock + t, "face": face if face != null and str(face) != "" else null, "clip": c,
+		"yaw0": float(was["yaw0"]) if was is Dictionary else float(n["yaw"])}
+	n.erase("turn_back")
+	return t
+
+
+## while a reaction plays: her behaviour held (not walking), turned to what it faces; true while it holds. Once it's
+## over she turns back the way she was (draw_npcs' turn_back)
+func react_hold(n: Dictionary, dt: float) -> bool:
+	var rc = n.get("react")
+	if not (rc is Dictionary):
+		return false
+	if clock >= float(rc["until"]):
+		n.erase("react")
+		if rc.get("face") != null:
+			n["turn_back"] = float(rc["yaw0"])
+		return false
+	n["walking"] = false
+	if rc.get("face") != null:
+		BehavioursC.face_thing(n, self, {"face": rc["face"]}, dt)
+	return true
+
+
+## a once-only move's seconds on her (sitting down, getting up: its animation's length), 0 when she hasn't got it; a
+## thing's too (a jumpscare's figure that isn't in play: its own AnimationPlayer)
+func move_secs(cid: String, clip) -> float:
+	var node = cast_nodes.get(cid)
+	if node == null and by_id.has(cid):
+		node = by_id[cid]["node"]
+	if clip == null or node == null:
+		return 0.0
+	var ap := player_with(node, str(clip))
+	var a: Animation = ap.get_animation(anim_name(ap, str(clip))) if ap != null else null
+	return a.length if a != null else 0.0
+
+
+## her sitting down begun (her sit_down, once): the moment her pose becomes a seat's from standing; a `go`'s arrival
+## plays the behaviour's `arrive` once (On stage's "arrives with…") instead
+func npc_seated(cid: String, n: Dictionary) -> void:
+	var pose := str(n.get("pose", ""))
+	if pose == "sit" and str(n.get("prev_pose", "sit")) != "sit":
+		var c = move_of(cid, "sit_down")
+		var secs := move_secs(cid, c)
+		if secs > 0.0:
+			n["once"] = {"clip": c, "until": clock + secs}
+	n["prev_pose"] = pose
+	if n["s"].get("arrive") != null and n["st"].get("arrived") != null and not n.has("arrive_done"):
+		n["arrive_done"] = true
+		var secs2 := move_secs(cid, n["s"]["arrive"])
+		if secs2 > 0.0:
+			n["once"] = {"clip": n["s"]["arrive"], "until": clock + secs2}
+
+
+## a cast member's motion: npc_want's, the animation of that name on the AnimationPlayer under her stand-in (a Director
+## character's Kimodo motions, GODOT_DIRECTOR §6; an export's stand-ins have none yet, so nothing plays there), looped
+## unless it's a move played once
+func npc_motion(cid: String, n: Dictionary, node: Node3D) -> void:
+	var w := npc_want(cid, n)
+	var want = w[0]
+	if want == null:
+		return
+	var key := cid + "|" + str(want)
+	var ap = anim_players.get(key, false)
+	if ap is bool:
+		ap = player_with(node, str(want))
+		anim_players[key] = ap
+	if ap == null:
+		return
+	var nm := anim_name(ap, str(want))
+	if nm != "" and ap.current_animation != nm:
+		var a: Animation = ap.get_animation(nm)
+		if a != null:
+			if bool(w[1]) and a.loop_mode == Animation.LOOP_NONE:
+				a.loop_mode = Animation.LOOP_LINEAR          # a behaviour's motion loops (a copy in memory: the file stays as it is)
+			elif not bool(w[1]):
+				a.loop_mode = Animation.LOOP_NONE            # a move played once (sitting down, getting up)
+		ap.play(nm, 0.3)
+
+
+## the AnimationPlayer under a node that has a motion (a model's own player and the Kimodo imports' can both be there)
+static func player_with(node: Node, name: String) -> AnimationPlayer:
+	for ap in node.find_children("*", "AnimationPlayer", true, false):
+		if anim_name(ap, name) != "":
+			return ap
+	return null
+
+
+## an animation by its motion's name on a player: itself, or in any of its libraries (the Kimodo imports' `kimodo/`)
+static func anim_name(ap: AnimationPlayer, name: String) -> String:
+	if ap.has_animation(name):
+		return name
+	for lib in ap.get_animation_library_list():
+		if ap.has_animation(str(lib) + "/" + name):
+			return str(lib) + "/" + name
+	return ""
+
+
+## the story's `anim` (STORY_FORMAT §4): a cast member or a thing plays a motion once (`clip`), back to her behaviour's
+## after; `wait: true` holds the beat till it ends. A cast member in play reacts (`react`: held, turned to `face`, for
+## `secs`); one who isn't (a jumpscare's figure) and a thing play it on their AnimationPlayer
+func play_motion(who, clip, hold_beat: bool = false, opts: Dictionary = {}) -> void:
+	if npcs.has(who):
+		var t := react(str(who), clip, opts.get("face"), float(opts.get("secs", 0.0)))
+		if t <= 0.0:
+			hud.log("anim: %s has no motion %s" % [who, clip])
+		elif hold_beat:
+			await wait(t)
+		return
+	var node = cast_nodes.get(who)
+	if node == null and by_id.has(who):
+		node = by_id[who]["node"]
+	if node == null:
+		hud.log("anim: no %s here" % who)
+		return
+	var ap: AnimationPlayer = player_with(node, str(clip))
+	if ap == null:
+		hud.log("anim: %s has no motion %s" % [who, clip])
+		return
+	var nm := anim_name(ap, str(clip))
+	ap.play(nm, 0.2)
+	if hold_beat:
+		var a: Animation = ap.get_animation(nm)
+		await wait(a.length if a != null else 1.0)
+
+
+## the story's `move` (STORY_FORMAT §4): a placed thing, a cast member or the player (`player`) to a spot, facing its way
+func move_thing(id, to) -> void:
+	var sp = things.get(to)
+	if sp == null:
+		hud.log("move: no spot %s" % to)
+		return
+	var at: Vector3 = sp["node"].global_position
+	var yaw := float(sp["piece"].get("yaw", 0))
+	if str(id) == "player":
+		player.seat = null
+		leave_hiding()
+		unpeep()
+		moving = null
+		place(Vector3(at.x, at.y if collide != null else 0.0, at.z), yaw, 0.0)
+		return
+	if npcs.has(id):
+		npcs[id]["pos"] = at
+		npcs[id]["yaw"] = yaw
+		return
+	var t = by_id.get(id)
+	if t == null:
+		hud.log("move: no %s here" % id)
+		return
+	t["node"].global_position = at
+	t["base"] = t["node"].transform
+	kept_level()["bodies"][id] = t["node"].global_transform
 
 
 func draw_npcs(dt: float) -> void:
 	for cid in npcs:
 		var n: Dictionary = npcs[cid]
-		BehavioursC.update(n["as"], n, self, dt, n["s"])
+		if n.has("start_at"):                         # getting up: the behaviour waits for her
+			if clock < float(n["start_at"]):
+				var node0 = cast_nodes.get(cid)
+				if node0 != null and node0.visible:
+					npc_motion(str(cid), n, node0)
+				continue
+			n.erase("start_at")
+			n["pose"] = "idle"
+			n["prev_pose"] = "idle"
+			BehavioursC.start(n["as"], n, self, n["s"])
+		if not react_hold(n, dt):                     # a reaction (the story's `anim`, her caught): her behaviour waits for it
+			BehavioursC.update(n["as"], n, self, dt, n["s"])
+			if n.has("turn_back"):                     # turned back the way she was once it's over (a behaviour that faces or walks sees to it)
+				if bool(n.get("walking", false)) or n["s"].get("face") != null or BehavioursC.turn_to(n, float(n["turn_back"]), dt):
+					n.erase("turn_back")
+		npc_seated(str(cid), n)
 		var node = cast_nodes.get(cid)
 		if node == null:
 			continue
@@ -1640,10 +2254,14 @@ func draw_npcs(dt: float) -> void:
 			node.visible = false
 			continue
 		node.visible = n["pos"] != null and n["level"] == level
+		if collide != null and (not node.has_meta("hs_collides") or node.get_meta("hs_collides") != node.visible):   # Godot's physics: she stops the player and takes the click only while she's there
+			CollideC.enable(node, node.visible)
+			node.set_meta("hs_collides", node.visible)
 		if not node.visible:
 			continue
-		node.position = n["pos"]
-		node.rotation_degrees = Vector3(0, float(n["yaw"]) + 90.0, 0)
+		node.global_position = n["pos"]
+		node.global_rotation_degrees = Vector3(0, float(n["yaw"]) + 90.0, 0)
+		npc_motion(str(cid), n, node)
 
 
 # ---- being seen ---------------------------------------------------------------------------------------------------
@@ -1711,6 +2329,8 @@ func caught(by, at) -> void:
 	calm = float(c["calm"])
 	hud.seen(0.0)
 	last_caught = {"by": by, "at": at, "clock": clock}
+	if n != null and move_of(str(by), "caught", false) != null:   # her caught move (STORY_FORMAT §2 `moves`), once, turned to the player
+		react(str(by), move_of(str(by), "caught", false), "player")
 	hud.log("caught by %s%s" % [by, (" in " + str(at)) if at != null else ""])
 	emit({"type": "caught", "by": by, "at": at})
 
@@ -1722,6 +2342,8 @@ func eye_pos() -> Vector3:
 
 ## a ray against the things' boxes (and cylinders as their boxes): the nearest {thing, dist, point} or null
 func ray_hit(from: Vector3, dir: Vector3, far: float, among: Array) -> Variant:
+	if collide != null:                                  # Godot's physics: whatever collides, the first hit (among is the boxes' own list)
+		return collide.ray(from, dir, far)
 	var best = null
 	for t in among:
 		var n: Node3D = t["node"]
@@ -1765,6 +2387,8 @@ func ray_hit(from: Vector3, dir: Vector3, far: float, among: Array) -> Variant:
 
 
 func aim() -> Variant:
+	if collide != null:
+		return collide.aim()
 	var cam: Camera3D = game.camera
 	var among: Array = []
 	for id in by_id:
@@ -1792,6 +2416,11 @@ func use(press: bool) -> void:
 		return
 	var t = target
 	if t == null:
+		return
+	var held = carried()                          # someone who wants something now (a `gave` trigger names her): the hand offers it
+	if held != null and not hand_down and t.get("kind") == "person" and wants_from(t["id"]):
+		hud.press()
+		emit({"type": "gave", "item": held["item"] if held.get("item") != null else held["id"], "to": t["id"]})
 		return
 	var name := interactables.name_of(t, self)
 	hud.press()
@@ -2145,15 +2774,15 @@ static func scrub_meshes(root: Node) -> int:
 		if bad.is_empty():
 			continue
 		var am := ArrayMesh.new()
+		am.blend_shape_mode = m.blend_shape_mode
+		for b in m.get_blend_shape_count():               # its blend shapes (a face's) first: a surface's blend shape arrays need them there
+			am.add_blend_shape(m.get_blend_shape_name(b))
 		for s in m.get_surface_count():
 			if s in bad:
 				continue
 			am.add_surface_from_arrays(m.surface_get_primitive_type(s), m.surface_get_arrays(s), m.surface_get_blend_shape_arrays(s), {}, m.surface_get_format(s))
 			am.surface_set_name(am.get_surface_count() - 1, m.surface_get_name(s))
 			am.surface_set_material(am.get_surface_count() - 1, m.surface_get_material(s))
-		for b in m.get_blend_shape_count():
-			if am.get_blend_shape_count() < m.get_blend_shape_count() and am.get_surface_count() == 0:
-				am.add_blend_shape(m.get_blend_shape_name(b))
 		mi.mesh = am
 		dropped += bad.size()
 		print("%s: %d empty surface(s) left out of its mesh (nothing to draw in them)" % [mi.name, bad.size()])
@@ -2180,13 +2809,11 @@ func mirror_attach() -> void:
 	mirrors = []
 	for id in things:
 		var t: Dictionary = things[id]
-		var m = t.get("mesh")
-		if m == null or not (m is MeshInstance3D):
-			continue
 		var tags: Array = t["tags"]
 		var kit: String = str(t["piece"].get("kit", ""))
 		if not (kit == "mirror" or tags.has("tag:mirror")):
 			continue
+		var m = t.get("mesh")                             # its block (a Director thing with a model has none: its art alone)
 		var target: MeshInstance3D = null                 # the kit's glass (the art child's kit_mirror surface), else the block itself
 		var s := -1
 		var art = t["node"].get_node_or_null("art")
@@ -2196,7 +2823,7 @@ func mirror_attach() -> void:
 				if s >= 0:
 					target = mi
 					break
-		if target == null and m.visible:
+		if target == null and m is MeshInstance3D and m.visible:
 			target = m
 			s = 0
 		if target == null:
@@ -2267,6 +2894,7 @@ func middle_of(t: Dictionary) -> Vector3:
 # ---- running the story --------------------------------------------------------------------------------------------
 ## a stitch: its beats fire from what the player does; it ends on `done`, its timer, or an interrupt
 func run_stitch(st: Dictionary, n: Dictionary, interrupts: Array = []) -> Dictionary:
+	stitch_now = st
 	var beats: Array = []
 	for b in st.get("beats", []):
 		beats.append({"b": b, "fired": false})
@@ -2282,21 +2910,48 @@ func run_stitch(st: Dictionary, n: Dictionary, interrupts: Array = []) -> Dictio
 				end({"to": it.get("to"), "interrupt": true})
 				return
 		for x in beats:
-			if x["fired"] or not StoryC.flags_hold(x["b"].get("if"), flags) or not conditions.matches(x["b"].get("when"), ev, self):
+			if x["fired"] or not if_holds(x["b"].get("if")) or not conditions.matches(x["b"].get("when"), ev, self):
 				continue
 			x["fired"] = true
 			if on_beat.is_valid():
 				on_beat.call(st, x["b"], (float(run["secs"]) if run != null else 0.0) + clock)
-			_run_beat(x["b"])
+			if x["b"].get("repeat", false):
+				_run_again(x)
+			else:
+				_run_beat(x["b"])
 	go()
 	emit({"type": "start"})
 	var r = await stitch_ended
 	return r
 
 
+## a beat's `if` (STORY_FORMAT §4): flags set (`!` for not), and `item:<id>` for an item the player holds (the Director
+## plugin's events: "if they have the key")
+func if_holds(ifs) -> bool:
+	if ifs == null:
+		return true
+	for fl in (ifs if ifs is Array else [ifs]):
+		var s := str(fl)
+		var neg := s.begins_with("!")
+		if neg:
+			s = s.substr(1)
+		var has: bool = items.has(s.substr(5)) if s.begins_with("item:") else flags.has(s)
+		if has == neg:
+			return false
+	return true
+
+
 func _run_beat(b: Dictionary) -> void:
 	await actions.run_all(b.get("do", []), self)
 	ended[b.get("id")] = clock
+
+
+## a beat that fires every time (`repeat: true`, STORY_FORMAT §4): heard again once its actions are over and `every`
+## seconds have gone (1 by default: a trigger that holds, a flag, fires once a second while it holds)
+func _run_again(x: Dictionary) -> void:
+	await _run_beat(x["b"])
+	await wait(float(x["b"].get("every", 1.0)))
+	x["fired"] = false
 
 
 ## a choice by act: the first option whose `when` happens
@@ -2572,8 +3227,12 @@ func cast_steps(dt: float) -> void:
 
 # ---- the frame -----------------------------------------------------------------------------------------------------
 func _process(delta: float) -> void:
+	if exam != null:
+		exam_tick(delta)
 	if held:
 		return
+	if faces != null:
+		faces.tick(min(0.05, delta))
 	if live_scene:
 		live_tick(min(0.05, delta))
 		return
@@ -2610,6 +3269,10 @@ func live_tick(dt: float) -> void:
 		ability_crouch(dt)
 		ability_steps(dt)
 	p.speed = p.pos.distance_to(feet) / dt if dt > 0 else 0.0
+	for cid in npcs:                                   # the cast hold still in a live scene, their moves following it (talk, listen)
+		var node = cast_nodes.get(cid)
+		if node != null and node.visible and not baked_cast.has(cid):
+			npc_motion(str(cid), npcs[cid], node)
 	var cam: Camera3D = game.camera
 	cam.global_position = eye_pos()
 	cam.rotation_degrees = Vector3(float(p.pitch), float(p.yaw) - 90.0, 0.0)
@@ -2630,6 +3293,70 @@ func rain_follow() -> void:
 		if p == null or not is_instance_valid(p) or not (p is AudioStreamPlayer3D):
 			continue
 		p.global_position = eye_pos() if inside.has(rs["room"]) else rs["at"]
+
+
+# ---- the guide markers (STORY_FORMAT §4: a todo's `guide`) ------------------------------------------------------------
+## the open tasks' markers: each over the top of what it needs, by its id (two tasks on one thing: one marker)
+func guide_points() -> Dictionary:
+	var out := {}
+	if todo == null or not active:
+		return out
+	for t in todo.list:
+		if t["state"] != "open" or not t.has("guide"):
+			continue
+		var id := guide_target(t)
+		var p = top_of(id) if id != "" else null
+		if p != null:
+			out[id] = p
+	return out
+
+
+## what a task's marker hangs over: the id it gives, else (true) what its own trigger names (a thing used, read,
+## looked at, picked up; an area walked into; who something is given to; where she gets to...)
+func guide_target(t: Dictionary) -> String:
+	var g = t.get("guide")
+	if g is String:
+		return g
+	if not (g is bool and g) or not (t.get("ticks") is Dictionary):
+		return ""
+	var w: Dictionary = t["ticks"]
+	for k in ["use", "read", "pickup", "look", "enter", "hidden", "peeping", "locked", "state", "played", "rolled", "dropped", "carrying", "arrived"]:
+		if w.get(k) is String and w[k] != "":
+			return str(w[k])
+	if w.get("to") is String:                               # (gave: to whom)
+		return str(w["to"])
+	return ""
+
+
+## the world point at the top of a person, a thing (an item or a note: the thing that holds it) or an area; null when
+## it isn't in this level, isn't shown, or isn't there
+func top_of(id: String) -> Variant:
+	var n = npcs.get(id)
+	if n != null:
+		if n.get("pos") == null or n.get("level") != level:
+			return null
+		var node = cast_nodes.get(id)
+		if node != null and not node.visible:
+			return null
+		return (n["pos"] as Vector3) + Vector3(0, float(story.cast.get(id, {}).get("height", 1.7)), 0)
+	for tr in triggers:                                     # an area or a room: over its middle, about chest high
+		if tr["id"] == id:
+			var mn: Array = tr["min"]
+			var mx: Array = tr["max"]
+			return Vector3((float(mn[0]) + float(mx[0])) / 2.0, float(mn[2]) + 1.3, -(float(mn[1]) + float(mx[1])) / 2.0)
+	var t = things.get(id)
+	if t == null:
+		for x in things.values():                             # an item's or a note's id: the thing holding it
+			var d = x["piece"].get("d", {})
+			if d is Dictionary and (str(d.get("item", "")) == id or str(d.get("note", "")) == id):
+				t = x
+				break
+	if t == null:
+		return null
+	var nd: Node3D = t["node"]
+	if not is_instance_valid(nd) or not nd.is_visible_in_tree():
+		return null
+	return nd.global_position + Vector3(0, float((t["size"] as Array)[2]) / 2.0, 0)
 
 
 func tick(dt: float) -> void:
@@ -2663,6 +3390,8 @@ func tick(dt: float) -> void:
 		p.pitch = float(L["p0"]) + (float(L["p1"]) - float(L["p0"])) * k
 		if u >= 1.0:
 			look_tween = null
+	if focus != null:
+		focus_tick(dt)
 	var feet: Vector3 = p.pos
 	if not busy and playing == null and p.seat == null and p.hiding == null and p.sleeping == null and p.peeping == null and moving == null:
 		ability_walk(dt)
@@ -2706,10 +3435,12 @@ func tick(dt: float) -> void:
 			w["done"] = true
 	var cam: Camera3D = game.camera
 	var eye: Vector3 = p.peeping["at"] if p.peeping != null else eye_pos()
-	cam.global_position = eye
+	cam.global_position = eye + (focus_lean() if p.peeping == null else Vector3.ZERO)
 	cam.rotation_degrees = Vector3(float(p.pitch), float(p.yaw) - 90.0, 0.0)
 	var vp := get_viewport().get_visible_rect().size
-	cam.fov = float(LENS["fov"]) if p.peeping != null else StoryC.vfov(float(story.game.get("fov", StoryC.FOV_H)), (vp.x / vp.y) if vp.y > 0 else 16.0 / 9.0)
+	cam.fov = float(LENS["fov"]) if p.peeping != null else StoryC.vfov(float(story.game.get("fov", StoryC.FOV_H)), (vp.x / vp.y) if vp.y > 0 else 16.0 / 9.0) * (1.0 - focus_zoom())
+	if hud.guide != null:
+		hud.guide.update(guide_points(), cam, dt)
 	var T := clock
 	for t in lights:
 		var u: Dictionary = light_state[t["id"]]
@@ -2773,3 +3504,29 @@ func kept_level() -> Dictionary:
 	if not kept.has(level):
 		kept[level] = {"vis": {}, "doors": {}, "bodies": {}}
 	return kept[level]
+
+
+## whether a person wants something from the player now: a `gave` trigger naming her in the playing stitch's beats or
+## to-dos (STORY_FORMAT §4: she asked for it; anything in the hand is offered, the trigger says if it's the right one)
+func wants_from(who) -> bool:
+	for b in stitch_now.get("beats", []):
+		if _gives_to(b.get("when"), who):
+			return true
+	if todo != null:
+		for td in todo.list:
+			if td.get("state", "open") == "open" and (_gives_to(td.get("ticks"), who) or _gives_to(td.get("fails"), who)):
+				return true
+	return false
+
+
+func _gives_to(w, who) -> bool:
+	if not (w is Dictionary):
+		return false
+	if w.has("gave"):
+		return w.get("to") == who
+	for k in ["all", "any"]:
+		if w.get(k) is Array:
+			for c in w[k]:
+				if _gives_to(c, who):
+					return true
+	return false

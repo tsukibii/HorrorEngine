@@ -1,0 +1,22 @@
+/* the Face page (tools/facecap): the desk's Expressions panel (ui.css's .xp-*) as a page, For Godot beside it */
+.fc-head{display:flex;align-items:baseline;gap:14px;padding:10px 18px;border-bottom:1px solid var(--line);background:var(--panel)}
+.fc-head h1{font-size:14px;margin:0;color:var(--accent);letter-spacing:.04em}
+#fcStatus{margin-left:auto}
+.fc-main{display:flex;gap:0;height:calc(100% - 44px)}
+.fc-lib{flex:1;min-width:0;padding:14px 18px;overflow:auto}
+.fc-godot{width:360px;flex:none;border-left:1px solid var(--line);background:var(--panel);padding:14px 16px;overflow:auto;display:flex;flex-direction:column;gap:8px}
+.fc-main h2{font-size:13px;margin:0 0 10px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);font-weight:600}
+.fc-main h2 .muted{text-transform:none;letter-spacing:0;font-weight:400;margin-left:6px}
+.fc-lib .xp-grid{grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:10px}
+.fc-godot input[type=text]{width:100%}
+.fc-state{font-size:12px;padding:6px 8px;border-radius:6px;border:1px solid var(--line)}
+.fc-state.ok{color:var(--ok);border-color:#2f4a35;background:#18241b}
+.fc-state.bad{color:var(--warn);border-color:#4a3a22;background:#241e14}
+.fc-bar{display:flex;align-items:center;gap:6px;margin-top:6px}.fc-bar .kv{flex:1}
+.fc-list{display:flex;flex-direction:column;gap:2px;border:1px solid var(--line);border-radius:6px;padding:4px;max-height:46vh;overflow:auto;background:var(--panel2)}
+.fc-row{display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:4px;cursor:pointer}.fc-row:hover{background:#2b2b33}
+.fc-nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fc-in{font-size:11px;color:var(--ok);white-space:nowrap}
+#fcSend{align-self:flex-start;margin-top:4px}
+.fc-out{font-size:12px;color:var(--dim);font-family:ui-monospace,monospace;white-space:pre-wrap;border-left:2px solid var(--line);padding-left:8px}
+.fc-out.bad{color:var(--warn)}

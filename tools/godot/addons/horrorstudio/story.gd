@@ -29,12 +29,18 @@ var interrupts: Array = []
 
 
 static func load_file(path: String) -> Variant:
-	var s = load("res://addons/horrorstudio/story.gd").new()
 	var txt := FileAccess.get_file_as_string(path)
 	var parsed = JSON.parse_string(txt)
 	if parsed == null:
 		push_error("story: can't read %s" % path)
-		return s
+		return load("res://addons/horrorstudio/story.gd").new()
+	return from_data(parsed)
+
+
+## the story from a dictionary already made: the Director plugin's compiled game (GodotPlugins/HorrorStudioDirector),
+## built from the nodes in a Godot scene at run time instead of read from game/story.json
+static func from_data(parsed: Dictionary) -> Variant:
+	var s = load("res://addons/horrorstudio/story.gd").new()
 	s.data = parsed
 	s.game = s.data.get("game", {})
 	s.flow = s.data.get("flow", {})

@@ -35,7 +35,7 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
 |---|---|
 | `format` | `2` |
 | `game` | `id`, `title`, `start` (a flow node), `target_min` (the shortest *typical* path to a normal ending must reach it: **150** for a real game), `fast_min` (the shortest *fast* path must reach it: **120**, Steam's refund window; cutscenes can't be skipped, so they count fully), `voice` (`ja`), `text` (`en`), `clip_max` (seconds one take can be: **10** for MiniMax), `fov` (the player's horizontal field of view, 90 by default: the one lens), `previs_body` (the desk's default body), `time` (the time of day the game starts at: `day`, `dusk` or `night`; `night` when unset, the studio's dark interiors; scenes change it, §3.1), `player_name` (the player's name until they type one, §4 `name`; "Alex" when unset), `hair` (the hair look every imported model's hair wears in Godot, docs/GODOT_LOOK.md §5c: `{"retro": true}` the PSX look (unlit, eight colour levels, the ordered dither), or each of `flat`, `steps` (2 to 64), `dither`, `gain`, `shine`, `soft`, `cut`; a cast member's own `hair` over it) |
-| `cast` | `{id: {name, metahuman (asset path or null), height, shape, measures, skin, previs_body}}`: `shape` is up to 45 MHR identity numbers (the desk's Shape page writes it; zero is the average body), `measures` the body's widths in cm at that height (`{height, shoulders, chest, waist, belly, hips, thighs, arms}`, the Shape page writes them too) and `skin` a hex skin tone: what `tools/metahuman.py` gives MetaHuman Creator (docs/METAHUMAN_ROUTE.md); `previs_body` a file in `Content/Studio/Bodies` (default: MHR.fbx; after the MetaHuman is rigged, its exported body), or `people/<name>`: a Character Studio character as it was exported for the desk and Unreal (`Content/Studio/People/<name>/export/<name>.glb`), worn with its own look and its eyes, its own shape (`shape` doesn't apply), scaled to `height`; `models` her other looks, `{name: body file}` (`{"lilac eyes": "people/natsu_lilac", "wet": "people/natsu_wet"}`): variants a scene picks (§3.1 `models`), `previs_body` the default (HANDOFF_DIRECTOR_TODO §5); `hair` their own hair look over the game's (`game.hair`): the salon's cards, brows and lashes on the Studio's hair shader in Godot, `{"retro": true}` for the PSX dither, GODOT_LOOK §5c |
+| `cast` | `{id: {name, metahuman (asset path or null), height, shape, measures, skin, previs_body}}`: `shape` is up to 45 MHR identity numbers (the desk's Shape page writes it; zero is the average body), `measures` the body's widths in cm at that height (`{height, shoulders, chest, waist, belly, hips, thighs, arms}`, the Shape page writes them too) and `skin` a hex skin tone: what `tools/metahuman.py` gives MetaHuman Creator (docs/METAHUMAN_ROUTE.md); `previs_body` a file in `Content/Studio/Bodies` (default: MHR.fbx; after the MetaHuman is rigged, its exported body), or `people/<name>`: a Character Studio character as it was exported for the desk and Unreal (`Content/Studio/People/<name>/export/<name>.glb`), worn with its own look and its eyes, its own shape (`shape` doesn't apply), scaled to `height`; `models` her other looks, `{name: body file}` (`{"lilac eyes": "people/natsu_lilac", "wet": "people/natsu_wet"}`): variants a scene picks (§3.1 `models`), `previs_body` the default (HANDOFF_DIRECTOR_TODO §5); `hair` their own hair look over the game's (`game.hair`): the salon's cards, brows and lashes on the Studio's hair shader in Godot, `{"retro": true}` for the PSX dither, GODOT_LOOK §5c; `moves` her **moves**, `{role: motion}`, the role one of `idle` (standing), `walk`, `run` (walking at 2.2 m/s or faster), `sit_down` and `stand_up` (played once on the way into a seat and out of it: she waits up for her behaviour), `sitting`, `talk` (while her line is up in a scene), `listen` (while the player answers her), `look_around` (at a route's wait whose `pose` is `look`, `search` or `check`), `caught` (played once, turned to the player, when she catches them: her sight's meter full, a hiding place she checks; held where she is till it's over): what Godot's runtime plays by what she's doing (play.gd `npc_want`; a behave's own `motion` or `rest` comes first, §4), an empty role falling back to another she has (`run` to `walk`; `sitting`, `talk`, `listen` and `look_around` to `idle`; `sit_down`, `stand_up` and `caught` to nothing), so a game always plays; the Director's Animate tab sets them (GODOT_DIRECTOR §6g); the desk's Play doesn't play them yet |
 | `items`, `notes`, `sounds` | `{id: {name, shape, inspect, torch}}` (`torch`: a flashlight, below), `{id: {title, text}}`, `{id: {file}}`: a sound's `file` is `sfx/<name>`, a CC0 sound off the Studio's shelf (`Content/Studio/SFX`, `tools/sfx.py list`; the check fails one that isn't on it; docs/SFX.md), or the game's own file under its Audio folder in Unreal |
 | `lines` | one-off voice outside scenes (`say`, `whisper`): `{id: {who, ja, en, mood, dur}}` |
 | `levels` | the world (§2) |
@@ -84,6 +84,8 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
   `"routes": {"r_hall": {"points": [{"at": "hall_back", "wait": 2, "pose": "look_left"}, "hall_near"], "mode": "pingpong"}}`.
   `mode`: `loop` (the default), `pingpong`, `once`. She walks straight from point to point, so place the spots where
   the line between them is clear. A point's `check` (a locker) is a hiding place she looks in there (`behave` sees).
+  A point's `clip` (a `motions` id; Godot) is what she plays while she stops there (looks round, checks a drawer),
+  as long as its `wait`, or as long as the clip when it has none.
 
 **A room:**
 
@@ -259,6 +261,7 @@ class path, `…_C`) is that door's Blueprint, in place of class_map's `door`.
 | `carry` | a thing the player carries in both hands: a click picks it up into the inventory, in the hand; **G** puts it down in front of the player, on whatever is under that spot, facing them (no falling: it's simply there, and stays). Its `shape` (`box`, `cyl`, `sphere`, or `asset` for a library mesh at its size; under 1 m) is its body; `art` dresses it (any library mesh: your own goes in with `python tools/cc0.py add <file> local/<name>`), and in Play a bare plushie's block is drawn rounded, like a cushion. `physics`: how it follows the hand, `rigid` (default: stiffly) or `plushie` (light and soft: it lags and swings, squashes and stretches, bobs with the steps, its top flops behind a turn); `jiggle` 0..2 a plushie's softness (0 still, 1 a plushie, 2 jelly). `{"carrying": id}` holds while it's the one in the hand (the inventory's middle), `{"dropped": id, "in": room}` when it's put down |
 | `game` | a table with a board game: a click sits the player down at its long side (their half), leaning in over it, its rules play it out (`game`: one of `Content/Studio/BoardGames/`, or the game's own `BoardGames/`: `russian_roulette`, `high_dice`, `chohan`, `spin_the_cup`, `shell_game`, `high_card`, `blackjack`, `shinkei_suijaku`; their README has each one's results and settings), they stand up, and `{"played": id, "result": ...}` is heard. `vs` the cast member they play (else the dealer), `settings` the game's own (each named in its rules' meta; `seed` plays the same game every time; a setting's value `"flag:off_pills"` is true while that flag is set, `"!flag:off_pills"` while it isn't: his memory lies only off his pills). Needs a `shape` or a `kit`: the table |
 | `sleep` | a bed (a `kit` like `bed_single`, `futon`, or a shape): a click lies the player down on it, looking up, and the view goes dark; the story hears `{"use": id}`, and its beat plays a `chapter` (§4), which wakes them in the bed and gets them up where they stood (with no chapter they wake by themselves). `if`: a flag or a list (`"!flag"` for not) that must hold before they can sleep (the chores first); until then the bed says **Not tired yet**, and a click thinks `not_yet` (else "I'm not tired yet."), and nothing is heard |
+| `talk` | someone to talk to (the Director plugin's characters, GODOT_DIRECTOR §3: `talk` on): the cursor says **Talk**, a click is heard as `{"use": id}` (a cast member's id), and a beat on it plays the conversation (a `scene`, `say` lines, an `ask`). Not on the desk yet |
 | `clean` | a stain (DECISIONS 2026-10-28: the shift's chores): a flat block (`"shape": "box 0.6 0.4 0.01"`) drawn as a blot on what it lies on, `stain` its kind (`dirt` by default, `mud`, `blood`, `water`, `ash`). The player holds the left button on it to scrub it away: a ring fills round the reticle and it fades over `secs` of scrubbing (3 by default; let go or look away and it waits where it got to). `with`: an item that must be the one in the hand (the mop, a rag), else it says **Need the mop**. Clean, it's gone and `{"use": id}` is heard (tick a to-do with it: `"ticks": {"use": "hall_stain"}`, or `all` of several) |
 | `combo` | `code` (written in some readable text), `then` (a flag), `opens` (a door) |
 | `use_on` | `needs`, `then`, `consume` |
@@ -516,9 +519,16 @@ nobody is caught in a scene). The story check holds them to §4's rules (the spo
 ```
 
 - A stitch is the old beat language. It starts with `{"start": true}` and ends when a beat runs `{"done": true}`.
+- A beat fires once in its stitch; with `"repeat": true` it fires again every time its trigger happens, once its
+  actions are over and `every` seconds have gone (1 by default; a trigger that holds, a flag, fires once a second
+  while it holds): the light that flickers each time the player walks into the bathroom. In Godot (the Director
+  plugin's events that fire every time); the desk and the check's walker fire it once.
 - `target_min` is its intended share of the playtime (the animatic uses it, and the estimator works the real one
   out).
 - `template` names its kind, for reuse. TRICKS.md §4 lists the stitch templates.
+
+A beat's `if` lists flags that must be set (`!` for not set); in Godot `item:<id>` (or `!item:<id>`) asks for an
+item the player holds (the Director plugin's events: "if they have the key").
 
 **A beat:**
 
@@ -553,6 +563,7 @@ with `{"tick": "<id>"}` at the end of that beat, not by its own trigger (the sto
 | `{"hidden": true}`, `{"hidden": locker}` | the player is in any hiding place, or in that one (`use: locker`); holds while they stay |
 | `{"answered": ask}`, `"option": answer` | an `ask` was answered (any answer, or that one) |
 | `{"carrying": id}`, `{"carrying": true}` | the player is carrying it (`use: carry`), or anything; holds while they do |
+| `{"gave": item, "to": who}`, `{"gave": "*", "to": who, "except": item}` | the thing in the player's hand given to someone who wants something now: while a beat or an open to-do of the playing stitch has a `gave` trigger naming her, a click on her with something in the hand offers it instead of talking (any item; the trigger says whether it's the one: `except` for the wrong ones, "Nah, that's not what I want"). Godot's runtime (play.gd `wants_from`, DECISIONS 2026-11-01); the desk's Play doesn't have it yet |
 | `{"played": table}`, `"result": "lose"` | a board game at that table (`use: game`) ended: any result, or that one (its game's `results`). A result is chance, so a beat that needs one is `optional` or `secret` (the check warns otherwise): set a flag, and let the flow branch on it |
 | `{"dropped": id}`, `"in": room_or_trigger` | it was put down and has settled (anywhere, or inside that room or trigger on its level): put the doll back in its bed, the box on the shelf |
 | `{"state": thing, "is": s}` | a little thing is in that state (by itself, the story or the player); holds while it is: `{"state": "kitchen_kettle", "is": "boiled"}` |
@@ -592,18 +603,46 @@ with `{"tick": "<id>"}` at the end of that beat, not by its own trigger (the sto
   unless the word has set her: then hers is hers till the word changes it. The Godot export plays it on the skin shader; the
   desk's stage draws it the same way on her body (the clay MHR body, a Studio export's skin, the figure of cylinders:
   `tools/shared/skinwet.js`) in Play and in the Watch (a scene's cue at its clip edge); Unreal not yet
-- `show`, `hide`, `move` (`to` a spot), `objective`
+- `show`, `hide`, `move` (`to` a spot: a placed thing, a cast member, or `player`: the player stands on the spot,
+  facing its way, wherever they were; the Director plugin's tasks start the player that way), `objective`
 - `state`: a little thing to one of its states, `{"state": "kitchen_kettle", "to": "heating"}`: in a beat, a scene's
   cue (on its clip edge: what lasts counts from there) or an answer's `do`. States carry on through the run
 - `flag`, `unflag`, `give`, `take`
 - `wait`, `fade` (`in`/`out`, `secs`), `lookat` (`secs`, `lock`)
+- `focus`: **a cutscene in the level** (Godot; DECISIONS 2026-11-02, night: no black bars, no skip, as if it happens in
+  your gameplay): `{"focus": "mari", "push": 0.15, "zoom": 0.05, "walk": "slow", "max": 20}` turns the view onto a
+  cast member, a thing or a spot (eased, as a look does, 1.5 s at most) and holds it there: the player looks round
+  within a cone (`cone`, 50°; its pitch 0.6 of it) and is drawn back into it when they look away; `push` leans the eye in toward it (metres, up to 0.35) and `zoom` is a held focus (up to
+  0.15, DIRECTING §1), both eased in and out; `walk` `slow` (the default, 0.35 of the pace), `held` or `free`.
+  `"focus": ""` lets go. A **safety release** always frees the player: after `max` seconds (20; 0.5 to 60) whatever
+  happens, when its target's gone (hidden, out of the level), at an ending, a new level or the run stopped. The
+  Director's cutscene moments put one round their THEN (GODOT_DIRECTOR §6g). The check: the target placed or in the
+  cast, the numbers in range, `walk` one of the three
 - `skip`: **time skipped** (missing time; HANDOFF_DIRECTOR_TODO §7): `{"skip": 5400}` (seconds: an hour and a half, a
   week at most): every little thing lives through it at once, as if each had been that much longer in its state (a
   clock's hands jump on, 02:10 to 03:40; the tea goes cold; a cigarette burns down), and nothing else moves. In a beat,
   a scene's cue (on its clip edge) or an answer's `do`. The walk runs each one's timers through it from its state's
   start
-- `shot` (`closeup`, `who`, `line`), `seq` (a level sequence), `anim` (`clip`: a motions id)
+- `shot` (`closeup`, `who`, `line`), `seq` (a level sequence), `anim` (`clip`: a motions id): a cast member (or a
+  thing) plays it once and goes back to what her behaviour plays; `wait: true` holds the beat till it's over. In
+  Godot, the animation of that name on the AnimationPlayer under her (a Kimodo motion brought in by the Director
+  plugin, GODOT_DIRECTOR §6). **A reaction** (Godot; the Director's Reactions cards, GODOT_DIRECTOR §6g): a cast member
+  in play is held where she is while it plays (she stops walking; her behaviour goes on after), `face` turns her to
+  `player`, a thing or a cast member meanwhile and back the way she was after, and `secs` how long (the clip's length,
+  else 2.5 s turned with no clip: `{"anim": "mari", "face": "player"}` is a look); it cuts the clip short or holds its
+  last frame. The check: `clip` in the motions, else a `face`; `face` placed (or `player` or a cast member); `secs` 0
+  to 30
 - `stalker` (`spawn despawn patrol hunt chase`, `at`, `route`)
+- `expr`: **an expression on someone's face** in play (DECISIONS 2026-11-01): `{"expr": "pout_and_glance", "who":
+  "mari"}`, an id from the expression library (§3.7's `expr`). A capture plays once, faded in and out, and her face goes
+  back to what it rests in; a loop runs until another takes over (`loop` true or false: as the expression is, left
+  out); `rest: true` makes it **the face she rests in** (it runs under the others, kept till another rest: `"expr":
+  ""` with `rest` takes it off); `w` how strong (1; 0 to 2), `in` and `out` its fades in seconds (0.25, 0.3); the
+  newest takes over from the one before over its `in`. `"expr": ""` alone fades out what plays over her face. A
+  scene's own face rows win while it plays her. The desk's Play wears it on her body (play/faces.js, face.js); Godot
+  plays the expression baked into the project (`tools/face_export.mjs`: `faces/<id>.tres`, the loops in
+  `faces/loops/`) on the mesh carrying MHR's face shapes (`face.gd`). The check: `who` in the cast, the id in the
+  library, the numbers in range
 - `behave`: what a cast member does in play, until another `behave` (or a scene takes them and hands them back):
   `{"behave": "mari", "as": "path", "route": "r_hall"}`. `as`: `idle` (`at` a spot, `pose`, `face` a thing, a cast
   member or `player`), `sit` (`at`), `path` (`route`: a level's route or a list of spots; `mode`, `speed` m/s,
@@ -611,14 +650,22 @@ with `{"tick": "<id>"}` at the end of that beat, not by its own trigger (the sto
   `random`), `go` (`to` a spot, by way of `via`, then `then`: `idle` or `sit` there; heard as `arrived`, §9.12),
   `off` (gone). Not AI: the same steps every time, so a player can learn them.
   `motion` (any of them but `off`): a `motions` id she plays, looped: while she stands (`idle`) or sits, or while she
-  walks a `path` or a `patrol` (then `in_place`: the route moves her; a point's `pose` at its waits). Until its
+  walks a `path` or a `patrol` (then `in_place`: the route moves her; a point's `pose` at its waits). `rest`: the
+  `motions` id she plays at a route's waits instead (her idle between the walks; Godot). Until its
   Kimodo take is made, the desk plays its `block` stand-in, else the pose; Unreal plays the take (its `name`).
+  The in-between (Godot; the Director's On stage, docs/GODOT_ANIMATION_PLAN.md §6): `walk` a `motions` id she walks
+  on this time instead of her walk (§2 `moves`), `leave` one she plays once before the behaviour starts, in place of
+  her `stand_up` when she was seated (the behaviour waits for it), `arrive` one she plays once on reaching a `go`'s
+  `to` (instead of her `sit_down` there).
   `sees`: she watches for the player (`true`, or some of `angle` 90 (the cone's full width), `range` 9 m,
   `crouched` 0.55 (the reach for a crouched player), `meter` 1.2 s (to fill), `drain` 1.5 s, `calm` 3 s (after a
   catch)). In her cone, in reach and in her line of sight, the suspicion meter fills; out of it, it drains; full,
   `caught` fires. Hidden (a locker) or in a safe zone, she doesn't see the player, unless a route point `check`s
   that locker (`{"at": "hall_back", "wait": 2, "check": "hall_locker"}`): there, she finds them.
-- `trick` (TRICKS.md §2), `checkpoint` (an autosave in Play)
+- `trick` (TRICKS.md §2), `checkpoint` (an autosave in Play). The `jumpscare` (`figure`, `secs` 0.8) can also have
+  `clip`, a motions id the figure plays while it's there (a lunge: Godot, as `anim` plays on someone not in play; its
+  length is the scare's unless `secs` says), `expr`, a face from the library on it (a cast member: §3.7), and
+  `sound`, a sounds id played at it instead of the shelf's big sting (the desk and Godot); the check knows each
 - `chapter`: **a chapter card** (nights as chapters; DECISIONS 2026-10-27, late night): the view goes dark, the title
   is held up in the middle (`{"chapter": "Night 2", "sub": "23:40", "time": "night"}`: `sub` small under it, `secs` how
   long it's held, 3 by default), the time of day changes behind it (`time`, from here on: the scenes after the stitch
@@ -651,7 +698,13 @@ with `{"tick": "<id>"}` at the end of that beat, not by its own trigger (the sto
   list struck out in the bad colour. `on`: `{"done": [actions], "failed": [actions]}` run when it's ticked or failed
   (set a flag there to branch the flow on it later, §5). `who`: the cast member who asked (a request, §9.12).
   `hidden: true`: kept, timed, ticked, failed and heard like any task, but not on the HUD's list (a task the player
-  only knows of from their thoughts: "I should clean up before she gets here"). Ticked
+  only knows of from their thoughts: "I should clean up before she gets here"). `guide`: **a marker** over what it
+  needs while it's open (the user, 2026-11-02: "a helper… so players can see the object", optional per task): `true`
+  hangs it over what its `ticks` names (a thing used, read, looked at or picked up, an area walked into, who something
+  is given to, where she gets to), or the id of a thing, a person, an area, an item or a note. A flat glyph in the HUD
+  theme's accent (a diamond's outline on a short stem pointing down at it: no fill, no glow), bobbing slowly; hidden
+  behind the eye and past 30 m, softer up close; gone once the task is done or failed. A hidden task can have one: the marker is then how the
+  player knows. Godot's runtime draws it (`marker.gd`); the desk's Play doesn't yet. Ticked
   and failed are heard (`ticked`, `failed`). The list is kept with the run, through the stitches, until `untodo`
   takes a task off (`{"untodo": "mop_floor"}`) or clears it (`{"untodo": true}`).
   `tick`, `fail`: `{"tick": "mop_floor"}` ticks an open task, `{"fail": "mop_floor"}` fails it.
@@ -1040,6 +1093,16 @@ is `on` (the default: the runtime gives the time of day's sky, sun and ambient, 
 its own WorldEnvironment or DirectionalLight3D) or `off` (a test mode, like the editor's viewport: a flat grey ambient and
 a soft key without shadows, the look plain, no fog, no iris; nothing pitch dark, for playing a scene before its lighting
 is made). The story's own lamps (`use: light`, switches, the power, flicker) work in both.
+
+**The collision** (DECISIONS 2026-10-30, night): `game.collision` is `boxes` (the default: the player is a circle
+against the plan's blocks, stepping onto low ones, as the desk) or `physics` (Godot's own: a capsule against whatever
+collides in the level, the cursor's click and the cast's sight by physics rays, a step walked up and a drop fallen;
+the Director plugin's games, whose levels are made in Godot out of anything). `game.track_steps` (the Director
+plugin's): every flow node the run reaches sets the flag `@<node>`, so an event can wait for "from this task on".
+
+**The player** (the Director plugin's Player settings, DECISIONS 2026-11-01, evening): `game.player` (optional),
+`{"run": true, "crouch": true, "eye": 1.65}`: whether Shift runs, whether C crouches, and the standing eye height in
+metres (1.2 to 2.0; crouching keeps its share of it). Left out, all three are as above. Desk and Godot alike.
 
 **The grade** (docs/GODOT_LOOK.md §1d): `game.grade` names the film-style colour grade over the finished picture
 (under the HUD, over the tape): `cinema` (the default: a gentle teal-and-orange, a soft vignette, fine grain),

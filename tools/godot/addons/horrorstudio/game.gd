@@ -49,6 +49,16 @@ var bake = null                    # the desk's bake (game/previs/index.json): t
 var body_scenes: Dictionary = {}   # cast id -> the PackedScene of its baked body
 var time_of_day: String = "night"
 var fading = null
+## the Director plugin (GodotPlugins/HorrorStudioDirector: a game built in Godot's editor, no desk): set before the
+## node enters the tree. `story_data` the story compiled from the scene's nodes (else game/story.json is read);
+## `level_scenes` each level id's PackedScene or a template node, duplicated on each entry (else game/levels/<id>.tscn);
+## `on_step` called with each flow node as the run reaches it (the editor's dock follows where the player is);
+## `life_things_data` the little things the scene's life parts make ({id: {life, d}}; else game/life_things.json)
+var story_data = null
+var level_scenes: Dictionary = {}
+var life_things_data = null
+var on_step: Callable = Callable()
+var on_play: Callable = Callable()        # called with the play node the moment it's made (before it enters a level)
 
 @onready var world: Node3D = $World
 @onready var player: Node3D = $Player
@@ -57,7 +67,7 @@ var fading = null
 
 
 func _ready() -> void:
-	story = StoryC.load_file("res://game/story.json")
+	story = StoryC.from_data(story_data) if story_data is Dictionary else StoryC.load_file("res://game/story.json")
 	hud = HudC.new()
 	hud.name = "Hud"
 	add_child(hud)
@@ -85,7 +95,9 @@ func _ready() -> void:
 	add_child(scene_player)
 	if FileAccess.file_exists("res://game/lives.json"):
 		lives_data = JSON.parse_string(FileAccess.get_file_as_string("res://game/lives.json"))
-	if FileAccess.file_exists("res://game/life_things.json"):
+	if life_things_data is Dictionary:
+		life_things = life_things_data
+	elif FileAccess.file_exists("res://game/life_things.json"):
 		life_things = JSON.parse_string(FileAccess.get_file_as_string("res://game/life_things.json"))
 	if FileAccess.file_exists("res://game/sfx/index.json"):
 		var sj = JSON.parse_string(FileAccess.get_file_as_string("res://game/sfx/index.json"))
@@ -158,8 +170,12 @@ func enter_level(lid: String, fresh: bool = false) -> void:
 	if level != null:
 		world.remove_child(level)
 		level.queue_free()
-	var ps: PackedScene = load("res://game/levels/%s.tscn" % lid)
-	level = ps.instantiate()
+	var src = level_scenes.get(lid)
+	if src is Node:                                  # a Director level: its template duplicated fresh, as an export's file is instanced
+		level = src.duplicate()
+	else:
+		var ps: PackedScene = src if src is PackedScene else load("res://game/levels/%s.tscn" % lid)
+		level = ps.instantiate()
 	world.add_child(level)
 	if ResourceLoader.exists("res://addons/horrorstudio_look/liquid.gd"):   # liquids in made props stay level (docs/PROPGEN.md §10)
 		load("res://addons/horrorstudio_look/liquid.gd").auto(level)
@@ -206,7 +222,17 @@ func pieces(lvl: Node = null) -> Array:
 			out.append_array(n.get_children())
 		else:
 			out.append(n)
+	_grouped(root_, out)
 	return out
+
+
+## a Director level's pieces sit anywhere in its tree (a door in a room in a wing): the nodes in the group `hs_piece`
+## below the level, each once (the export's are its folders' children, none of them in the group)
+func _grouped(n: Node, out: Array) -> void:
+	for c in n.get_children():
+		if c.is_in_group("hs_piece") and not out.has(c):
+			out.append(c)
+		_grouped(c, out)
 
 
 func set_time(t: String) -> void:
@@ -370,6 +396,8 @@ func play_rt() -> Variant:
 		play.name = "Play"
 		add_child(play)
 		play.setup(self, run, {"play_scene": func(sid): return await play_triggered(sid), "set_time": func(t): run["time"] = t; set_time(t), "quit": func(): stop_watch()})
+		if on_play.is_valid():
+			on_play.call(play)
 	return play
 
 
@@ -532,6 +560,10 @@ func watch(from_nid = null, snap = null) -> void:
 		var n: Dictionary = story.flow[nid]
 		reach(nid)
 		run["trail"].append(nid)
+		if story.game.get("track_steps", false):           # a Director game: `@<node>` once the run reaches it (its events' "from this step on")
+			run["flags"]["@" + str(nid)] = true
+		if on_step.is_valid():
+			on_step.call(nid)
 		if n.get("type") == "scene" and story.scenes.get(n.get("ref"), {}).has("time"):
 			run["time"] = story.scenes[n["ref"]]["time"]
 			set_time(run["time"])
@@ -602,7 +634,12 @@ func ending(nid: String, n: Dictionary) -> void:
 	hud.set_fade(0.8 if death else 0.6)
 	var words: String = hud.named(n.get("text", ""))
 	ending_words = words
-	var text := "%s\n\n%s\n%.1f min of story time on this path\nkarma %s" % ["YOU DIED" if death else "ENDING · " + str(n.get("kind", "")), words, float(run["secs"]) / 60.0, JSON.stringify(run["karma"])]
+	var kk: Array = []                                # the karma by axis, when there's any ("karma +4"; none: no line)
+	for ax in run["karma"]:
+		if abs(float(run["karma"][ax])) > 0.001:
+			kk.append("%s %s%s" % [ax, "+" if float(run["karma"][ax]) > 0 else "", str(snappedf(float(run["karma"][ax]), 0.1))])
+	var text := "%s\n\n%s\n%.1f min of story time on this path%s" % ["YOU DIED" if death else "ENDING · " + str(n.get("kind", "")), words, float(run["secs"]) / 60.0,
+		("\n" + ", ".join(PackedStringArray(kk))) if kk.size() else ""]
 	watch_end = n.get("title", nid)
 	hud.objective(null)
 	hud.todo([], false)

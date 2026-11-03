@@ -12,7 +12,7 @@ static func todo_add(lst: Array, a: Dictionary, now: float) -> Dictionary:
 	var id = a["todo"]
 	var old = todo_of(lst, id)
 	var t: Dictionary = {"id": id, "text": a.get("text", str(id).replace("_", " ")), "state": "open", "at": now}
-	for k in ["ticks", "fails", "secs", "on", "who", "hidden"]:
+	for k in ["ticks", "fails", "secs", "on", "who", "hidden", "guide"]:
 		if a.has(k):
 			t[k] = a[k]
 	if old != null:

@@ -209,6 +209,11 @@ func cue_times(tl: Dictionary, v: Dictionary) -> Array:
 
 
 ## a cue's action at its moment: what the Watch plays (a state, a skip, a sound) and what the stage shows (a light)
+## the actions a cue runs through Play's own (instant ones: no camera, no wait), besides the ones fire_cue does itself
+const CUE_ACTS := ["expr", "flag", "unflag", "give", "take", "karma", "count", "show", "hide", "door", "torch", "power", "skin", "anim", "move",
+	"objective", "todo", "tick", "fail", "untodo", "checkpoint"]
+
+
 func fire_cue(c: Dictionary, t0: float) -> void:
 	var d: Dictionary = c["do"]
 	var rt = game.play
@@ -229,6 +234,8 @@ func fire_cue(c: Dictionary, t0: float) -> void:
 		_relight(d.get("room"), float(d.get("secs", 1)))
 	elif d.has("behave") and rt != null:
 		rt.behave(d["behave"], d)
+	elif rt != null and CUE_ACTS.has(rt.actions.verb_of(d)):    # the rest a cue can say that takes no time, as Play runs it: a face, a fact, an item, a door... (a Director line's own commands)
+		rt.actions.run(d, rt)
 
 
 func _relight(room, secs: float) -> void:
@@ -263,8 +270,8 @@ func play(sc: Dictionary, nid: String, sid: String) -> Variant:
 		var sp = game.things.get(v["stage"][cid])
 		if sp != null and rt.cast_nodes.has(cid):
 			var n: Node3D = rt.cast_nodes[cid]
-			n.position = sp["node"].global_position
-			n.rotation_degrees = Vector3(0, float(sp["piece"].get("yaw", 0)) + 90.0, 0)
+			n.global_position = sp["node"].global_position
+			n.global_rotation_degrees = Vector3(0, float(sp["piece"].get("yaw", 0)) + 90.0, 0)
 			n.visible = true
 	bk = null
 	bmap = {}
@@ -399,7 +406,10 @@ func play(sc: Dictionary, nid: String, sid: String) -> Variant:
 		if seg != null and seg["type"] == "reply" and not replied.has(seg["clip"]["id"]):
 			var c: Dictionary = seg["clip"]
 			replied[c["id"]] = true
+			rt.speaking = ""
+			rt.listening = str(c.get("who", "")) if c.get("who") != null else ""   # her move `listen` while the player answers
 			var id = await run_reply(c["reply"], c.get("who"))
+			rt.listening = ""
 			picks[c["id"]] = id
 			var want = c["reply"].get("timeout") if id == null else id
 			var o = null
@@ -425,6 +435,7 @@ func play(sc: Dictionary, nid: String, sid: String) -> Variant:
 			var c: Dictionary = seg["clip"]
 			var who: String = game.hud.named(story().cast_name(c["who"])) if (c.get("who") != null and not c.get("think", false)) else ""
 			game.hud.line(c.get("en", ""), who, float(seg["dur"]) + 0.3, bool(c.get("think", false)), {"retype": c.get("retype"), "breaks": c.get("breaks", false)} if c.get("think", false) else null)
+			rt.speaking = str(c["who"]) if (c.get("who") != null and not c.get("think", false)) else ""   # her move `talk` while it's up
 		elif seg != null and seg["type"] == "seam" and spoken != seg:
 			spoken = seg
 			if bk == null and not live and ["blink", "dip", "flicker"].has(seg["seam"].get("kind")):
@@ -436,6 +447,8 @@ func play(sc: Dictionary, nid: String, sid: String) -> Variant:
 				rt.cast_nodes[cid].visible = true
 		bk.close(rt)
 		bk = null
+	rt.speaking = ""
+	rt.listening = ""
 	if live:
 		rt.live_end()
 	if game.run == null:

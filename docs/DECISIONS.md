@@ -2,6 +2,192 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-03, later (the user: `Director-Godot` into main)
+
+- **"Make a PR for this, it looks good and merge in main and resolve conflicts if any exist."** Main (150 commits since
+  the branch left it on 2026-10-31: the streets, the prop generator, the clothes, the eyes, the school, the trees) was
+  merged into `Director-Godot` first, both sides kept in every conflict (CLAUDE.md's table row by row, the docs' new
+  entries side by side, check_all's studio checks together), checked, and the branch merged into main by its pull
+  request.
+
+## 2026-11-03 (the user, after trying the Animate tab)
+
+- **"1 tested and works, 2, just go chronologically."** The Animate tab (step 1) works in their own hands. The plan's
+  steps go in order from here: the Face page (2), a character's moves (3), On stage (4), paths and patrols (5),
+  reactions and scares (6), cutscenes in the level (7), each checked and pushed.
+
+## 2026-11-02, night (the user's answers to the animation plan)
+
+- **Clips: "Kimodo & whatever tooling we are using in director to upload the face videos (if we haven't separated that
+  tool out of director tool let's make it a separate page so I can save the facial mocap), make sure I can mix facial
+  data with kimodo animations in godot."** So the library takes Kimodo's `.npz` and Godot clips first (FBX and glTF
+  later), and the face videos get **a page of their own** (the desk's Expressions import, out of the desk), saving
+  the face mocap and making it a Godot face clip; a body clip and a face clip play together on one character.
+- **"Nah, I'll just manually move over what I need every project, keep an empty folder for face expressions and
+  animations."** No shared studio folder: every new project gets `res://animations/` and `res://faces/`, empty.
+- **On stage carried until a later quest changes it**: "sure, go with your suggestion".
+- **Cutscenes: "no black bars, not skippable, I'm moving away from cutscenes that feel out of the level, everything
+  should feel like it's happening in your gameplay. Cutscenes should have a soft lock… keep the camera focused on the
+  spot or NPC that is the target… maybe even allow a camera style zoom in. Need a safety lock though so we don't get
+  some glitch where we lock the player into the cutscene forever."** So a cutscene is a moment in the level with a
+  **soft lock** on its target (the view drawn back to it, the player still in their body), its zoom the format's
+  lean-in and held focus (`push`, `zoom`: the lens never changes, DIRECTING §1), and a **safety release** that always
+  frees the player.
+- **"Sure"** to starting with the library, the moves and On stage.
+
+## 2026-11-02, evening (the user: animation made easy, by quest)
+
+- **"Anything you can think we could do to make animation, patrol/walking, cinematic animations easy based on
+  'quest', should we add an animation and facial animation tab to store animations, these can be project specific,
+  how do I easily be like at this point npc is doing this, then if quest complete they get up and walk here with this
+  animation, you can talk to them here, they have this expression etc, jump scare plays this… an easy drag and drop
+  animation system, ideally I can just drag animations into the folders… come up with a good plan first."** The plan
+  is **docs/GODOT_ANIMATION_PLAN.md**: a library of body and face clips filled by dropping files into
+  `res://animations/` and `res://faces/` (retargeted onto MHR on import), an **Animate** tab of cards, a character's
+  **moves** (PATTERNS_PLAN's motion set), **On stage** per quest (who's where doing what, her face, whether you can
+  talk to her, carried until changed, the in-between played by itself), paths, reactions, scares, cutscenes and faces
+  by drag and drop. Not built: waiting on the user's answers (its §10) and yes.
+
+## 2026-11-02, later (the user: the story as a flowchart)
+
+- **"Would it be hard for you to make a story flowchart tab where we can basically see the story in a flowchart… we
+  don't need the little stuff, only a flowchart of the quests' flow, we also want to make sure we can label easter egg
+  quests (special hidden quests that might just be jump scares or certain animations). We should be allowed to set up
+  the quests too in this flow (without the detail)… set the branching up in the flowchart… a quest where it's the normal
+  path but if you find the easter egg you can maybe skip a bunch of quests and jump straight to another one… then I
+  don't have to manually look through 1 by 1 in story and try see prerequisites."** Offered as a main screen in Godot's
+  editor beside 2D, 3D and Script, in three steps (the chart; setting up quests and branches in it; easter eggs and
+  skips), the user said "go for it". **Story Flow** (GODOT_DIRECTOR §6f): step 1, the chart; step 2, setting the quests
+  and their branches up in it; step 3, **easter eggs**: a quest marked `egg`, found during the quests that point at it
+  by a WHEN, playing its thing once, then the game going on or a jump ahead (a skip). An egg has no steps of its own
+  (they'd hold up the quest it's found in); eggs chain by an ONLY IF on another's `done:`.
+
+## 2026-11-02 (the user: an intro first, quests that aren't lists, and a marker over what to interact with)
+
+- **"Can we update the story so it always starts with a quest1 which is intro, quests shouldn't all be task based"**
+  and **"without ripping off the exact same UI element, can you make one that suits our style that helps the player
+  know what to interact with… toggle in the UI that we want a helper (identifier)… lightly bounce up and down (in a
+  fluid hypnotic motion)… optional… useful for non-list based quests e.g. talk"** (with a picture of a game's yellow
+  triangle over a thing). Built in two steps: **the marker** (a todo's `guide`, STORY_FORMAT §4: at first a small gem
+  on a thread in the HUD theme's accent, bobbing on a slow sine while its core and glow breathe a beat behind, made
+  plainer below; a step's *Show a marker over it* in the Story tab and the Manager; Godot's runtime draws it, the
+  desk's Play not yet), then
+  **the intro and quests that aren't lists** (a quest's opening, its to-do list shown or not; every Director file
+  starting with an Intro quest).
+- **"Could you simplify the UI, I actually preferred the duller version you had, and maybe instead of an intricate
+  design have it more like a vectorish style"** (with a picture of the marker's first try, pale and thin): the marker
+  is a flat glyph now, in the theme's accent as it is (no longer deepened): a diamond's outline on a short stem
+  pointing down at the thing, one stroke, no fill, no glow, no pulsing core. It still bobs on its slow sine.
+
+## 2026-11-01, evening (the user: a friendlier panel in Godot)
+
+- **"Is it possible to create a new UI type of panel in Godot as part of the plugin that is more visually friendly,
+  category sorted and will sync to the scripts, so I have visual things to drag and drop onto objects or I could just
+  click an object and then the UI will have assign to object"**, then **"start by showing me a rough Figma style UI
+  design, focus on clarity and ease of use… a plugin that would allow a layman to make a game code free (like Unreal's
+  nodes do but even easier), ideally a category for a player prefab so we can just add a player into the starting
+  level or testing levels"**: the design is the canvas "Director Panel Design" (five boards: the editor with the
+  panel, assigning, the Player, the story as when/if/then sentences, the pieces). The user: "looks good", then "work
+  through everything": built in four steps (the Build panel; the Player category; the Story tab; the guide and the
+  checks), each checked and pushed (GODOT_DIRECTOR §6e).
+- **"For quests do we have talk to as a quest"**: it was there (a step done when she's clicked, or when a conversation
+  is heard out: the sample's quest Mari), but two pickers deep and read by a conversation's id. Offered a first-class
+  *Talk to…* in the Story tab and the Manager, the user said "ye": who, then when it counts (she's clicked, she's
+  heard out, one of her conversations heard out, by its title or first line), kept as the facts the game already writes
+  (`talked:`, `heard:`; `heard:<person>` added), read in the same words in both (`words.js`).
+
+## 2026-11-01, later (the user: the desk's games in the new system)
+
+- **"Can we make sure that when we export from director to godot it now follows this format/new system too (if you
+  haven't already)"**: a game written on the desk comes into Godot as a Director project, the new system all through:
+  the desk's levels as the Director's own nodes, its story as the Director file (each task a quest, its beats moments,
+  its endings; the cutscenes and the desk's choices kept as the desk had them), editable in the dock and the Manager:
+  `python tools/godot_director.py from-desk <Game>` (GODOT_DIRECTOR §6d). Read as (Claude's call, theirs to change):
+  a second way out of the desk, beside the export (`godot_export.py`, the desk's Godot button), which stays as it was
+  for its checks and the levels already lit by hand in its versions. Checked by playing the Pilot and TestRoom001
+  through on the Director projects as their exports' checks play them (FROMDESK).
+
+## 2026-11-01 (the user: the Director as a puppeteer)
+
+Asked what the Director still lacks against the desk's stories (the little things, interrupts, lines and answers by
+what's happened, secrets and achievements, and the smaller ones), the user answered with the shape they want; the plan
+is docs/GODOT_DIRECTOR_PLAN.md, waiting on their yes to it.
+
+- **Logic as droppable parts**: "some kind of folder that contains the logic for all these parts as droppables, so I
+  can just select an object in the scene (let's say it's a kettle), place a kettle script (the smoke's position should
+  be adjustable too, since the exit...), so I can basically make any prop an interactable"; inspecting (picked up for a
+  moment, turned round) a droppable too.
+- **One world, a director that watches**: "for now our games will be more linear like Chilla's, with just secret
+  endings and easter egg scenes in between. Ideally I don't want so much jumping from level to level, but a
+  director/watcher script that tracks the whole game's story and quests and checks if the player has done this: should
+  they continue, or branch and continue; we never load new levels (unless we change map, e.g. the player gets into a
+  car which takes them to a new level); the director just triggers events." Branching that skips ahead ("if this
+  happens go here") is for future games.
+- **Unlocked by what's been done**: lines and answers by the same state: "has the player done this, if so they can now
+  do this", easter eggs needing extra things ("did they do z, or enter x"). A thing used for a quest counts only while
+  that quest is the active one ("turn the light on then off: even if we did that before the quest, we wouldn't want the
+  quest to complete instantly"); quests are linear, one at a time; a finished task stays, crossed out with a single
+  line.
+- **Steam achievements later, planned for now**: "build everything around the idea that we will have Steam
+  achievements using the existing Godot plugin, unlocked like the director's system, except their criteria might be
+  more hidden: variables that are tracked but the player doesn't see as quests". Not built yet.
+- **Failing a to-do** is needed: taking too long, or giving someone the wrong thing ("they asked for lemonade and you
+  gave them beer"), and optionally not a fail at all: "they just say nah, that's not what I want".
+- **Not wanted** (for now): skipping time, answers on a timer, board games (built per game when needed), kit props in
+  one click (the user imports their own objects); the odds and ends later.
+- **Kimodo's fingers retargeted**, and **faces without the desk**: "a tool to export a facial animation and add it into
+  Godot (we'd just have a facial animation folder); the exporter should export the loopables separately."
+- **The characters' animation, paths and patrols managed by the director's state.**
+- **The plan's §9, answered**: "Just work your way through this in the cleanest best way for yourself": the story
+  nodes give way to the Director file (one way to write the story, the scene left as the world), built in the
+  plan's order (parts, the Director in the game, the Manager, fingers, faces; achievements designed for, not built).
+- **The director's UI**: "a UI-friendly director for Godot; I don't even mind you creating an HTML tools folder that
+  lets us manage and save over our Godot stuff via a nice UI". The director "doesn't attach itself directly to anything
+  in game (it just sits in the game's main area; a new save should reset, or have a way to manage saves), but we assign
+  what things relate to via id: if npc 2 is here and tasks 224, 422 are completed then make npc 2 be here"; "a helper
+  tool to see what ids/things haven't been assigned anything in game, so we can figure out what we're missing";
+  dialogue managed by the same id state; "the director script just puppeteers the whole game (if that's what makes
+  sense; if this is a bad system, make something better)".
+
+## 2026-10-31 (the user: a guide to the Director)
+
+- **"Can you make a .html guide on how to use this tool, if we dont have a dedicated guide folder we should"**: the
+  studio's guides get a folder of their own, `guides/` (its `index.html` lists them all, the desk's and the
+  export's too, which stay where they are). The first is the Director's, `guides/director/index.html`: start to
+  finish with pictures Godot makes of the sample (`python tools/godot_director.py guide`), copied into every Director
+  project's `guide/` and opened by the dock's Guide button.
+
+## 2026-10-30, night (the user: "Director-Godot")
+
+- **The game built in Godot itself, no desk in between**: "the goal of this tool is to make a plugin for Godot, so
+  rather than going from Director -> Export to Godot, we have all the easy drag and drop functionality and filesystem
+  set up that we can just rapidly build out the game in godot without a middle man... I don't need to go through
+  director anymore, instead I can just look through my writer block notes and build the game as I want in godot."
+  So a third plugin of ours, **HorrorStudio Director** (`GodotPlugins/HorrorStudioDirector`, docs/GODOT_DIRECTOR.md):
+  drag-and-drop nodes for the level (rooms, doors, things to take, read, use, hide in or sit on, triggers, spots,
+  paths, characters) and for the story (chapters, tasks with their to-do lists, events, dialogue, choices, endings),
+  a dock to see and rearrange it all, and the runtime the export already ships underneath: the scene's nodes are
+  compiled into the same story the runtime plays, so the controls, the interactions, the HUD, the menu and the saves
+  are the export's, one runtime for both. The branch is `Director-Godot`, as asked.
+- **"Pre-packaged with all the control system/interactions"**: the runtime add-on (`tools/godot/addons/horrorstudio`)
+  comes with the plugin; a Director game moves the player with Godot's own physics (`game.collision: physics`), so
+  whatever the user builds or imports in Godot (CSG, a model with its collision) stops them and takes the cursor's
+  click; the export keeps its boxes (the desk's parity).
+- **Events the user makes**: "I want to be able to make my own events (for jumpscares etc) very easily too, like if
+  person moves on this area after they've ticked off these other boolean flags then we trigger this": an event is a
+  node: *when* (the player enters an area, uses or takes a thing, a flag is set...), *if* (flags set, flags not set,
+  items held), *then* (the actions: a jumpscare, a sound, a light, a line, a flag...), once or every time, at any time
+  or only during a task; templates for the common ones.
+- **"The most easy to use management system for event tracking, quest tracking, where you are tracking"**: the dock's
+  Story tab is the quest log (chapters, their tasks and to-do lists, in play order, dragged to reorder), Events lists
+  every event as a sentence, Flags shows where each flag is set and where it's checked (and the ones never set), and
+  while the game runs from the editor the dock shows where the player is and the flags as they're set; F9 in the game
+  shows the same.
+- **"If we can create a godot -> kimodo link that would be amazing"**: a room and a character in Godot sent to
+  Kimodo's demo as its stage (the same stage file `kimodo.py stage` writes from a story), and the motion saved there
+  (NPZ) brought back as a Godot animation on the character's own skeleton, ready to play by an event or as the
+  character's idle and walk.
+
 ## 2026-11-02, night (the user: potted plants and vines, on `procedural-trees`)
 
 - **"Could you make some indoor small potted plants with these techniques + the techniques we already use for bowl

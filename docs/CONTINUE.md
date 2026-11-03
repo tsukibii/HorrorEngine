@@ -9,9 +9,198 @@ on `game-research-001`: The Visitor's research, abstract and chart, the director
 the to-do built there, with the Studio's eyes from the side, a small nose and the face's bake; 2026-10-28 and 29 on
 `godot-support`: the Godot export, its runtime, its look, the look plugin; 2026-10-30 and 31 on `buildings-streets`: the
 street builder, its paint and the PBR sets, with `prop-gen-tool` merged in; 2026-11-01 the school on
-`claude/laughing-goldberg-6l5of3`, merged, then the prop generator's picture editor on `enhance-prop-editor`). Read this
+`claude/laughing-goldberg-6l5of3`, merged, then the prop generator's picture editor on `enhance-prop-editor`; 2026-10-30
+to 2026-11-03 on `Director-Godot`: the Director in Godot, its panel, Story Flow and the animation steps, merged into
+main on 2026-11-03 with main's own work since 2026-10-31 brought in). Read this
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
+
+## Where it stopped last (2026-11-03, branch `Director-Godot`): animation steps 1 to 7, the Animate tab, the Face page, moves, On stage, paths, reactions, cutscenes
+
+The user tried the Animate tab ("tested and works") and asked to go through the plan's steps in order (DECISIONS
+2026-11-03). **Step 2, the Face page, is built** (`tools/facecap`, GODOT_DIRECTOR §6g): the desk's Expressions import
+as a page of its own (port 8797, the desk's server loaded as a module so the library's endpoints are shared), Import a
+video of a face, the preview on the default MHR or a Studio export, Accept into the library, a loop from a range; **For
+Godot** sends the picked faces into a project's `faces/`; the Animate tab's Face side opens it for its project.
+FACEMOCAP checks it. **Step 3, a character's moves, is built** (GODOT_DIRECTOR §6g): idle, walk, run, sitting down,
+sitting, getting up, talk, listen and look round, set on the Animate tab (a card's menu, her moves' rows, Fill the
+empty ones from the library) and played by the runtime by what she's doing, an empty one falling back to another she
+has. **Step 4, On stage, is built** (GODOT_DIRECTOR §6g): a quest's line per character in the Story tab (where she
+is, what she does, her face, the conversation she offers), carried on until a later quest changes it, the in-between
+walked by itself from her moves, Show on stage in the 3D view, chips on Story Flow's cards. **Step 5, paths, is
+built**: a path's stops each with a clip (This object lists them; a card dropped on a stop), and walks between places
+going through doorways (a spot each side of every door, the brain's `way`). **Step 6, reactions and scares, is
+built**: the Reactions cards (turns to look, flinches, screams, points, waves) filled in for the nearest character,
+her clip swapped by an Animate card dropped on the area, `anim` played as a reaction (held, turned to the player and
+back), the jumpscare's clip, face and sound, a Caught move. **Step 7, cutscenes in the level, is built**: a moment
+played as a cutscene (the Story tab's CUTSCENE row and timeline), the runtime's `focus` (a soft lock in a cone, a lean
+in and a held focus, the walk slowed, the safety release at its max, its target gone, an ending). The plan's seven steps
+are done; next is the user's to say (step 8 is later: FBX and glTF clips, the cast's lanes in Story Flow, PATTERNS_PLAN's
+styles), after a playtest of these on their machine.
+
+### Step 1 (2026-11-02, night): the library and the Animate tab
+
+The user asked for an easy drag-and-drop animation system by quest; the plan is docs/GODOT_ANIMATION_PLAN.md, with
+their answers (DECISIONS 2026-11-02, night: Kimodo and the desk's face-video tool, face and body mixed in Godot, a new
+project's folders empty, cutscenes in the level with a soft lock and a safety release, start with the library, moves
+and On stage). **Step 1 is built** (GODOT_DIRECTOR §6g): `animations/` and `faces/` in every project (empty; `new
+--sample` brings the sample's two faces, `from-desk` its story's; `godot_director.py faces <project> [id ...]` brings
+more), `core/library.gd` reading them, and the panel's **Animate** tab: the clips as cards by role (a Kimodo card
+drawn as its own figure, played on hover), a click or a drag onto a character for her idle, her walk, hers for the
+story, or a preview in the 3D view (in memory, never saved), a face on her face shapes at the same time. The Kimodo
+tab imports into the library. On the way the check found the sample's Kimodo idle had always been one frozen pose
+(LESSONS): Mari breathes and looks round now.
+
+Next, in the plan's order (ask first): **2, the Face page** (the desk's face-video import as a page of its own with
+Save and For Godot), **3, moves** (a character's slots by role, every behaviour playing them), **4, On stage** (what
+each person does during each quest, the in-between played by itself). To ask the user: the Animate tab in their own
+hands (the cards, the drag onto a character, the preview), whether a card's figure is enough of a picture or they
+want each on a grey MHR body.
+
+## Before that (2026-11-02, branch `Director-Godot`): talk to, the marker, an intro first
+
+After the panel (below), three asks, each checked and pushed (DECISIONS 2026-11-01, evening, and 2026-11-02):
+- **Talk to…** as a quest step and a moment's WHEN (the Story tab and the Manager): who, then when it counts (she's
+  clicked, heard out, or one conversation heard out); the facts `talked:` and `heard:` by person or conversation.
+- **The marker** (a todo's `guide`, STORY_FORMAT §4; Godot's `marker.gd`): a step's *Show a marker over it*, over what
+  its WHEN names or a thing, person or area picked. The user then asked for it plainer ("the duller version… more like
+  a vectorish style"): a flat diamond's outline on a short stem in the theme's accent as it is, bobbing on a slow
+  sine. The desk's Play doesn't draw it yet.
+- **An intro first, quests that aren't lists**: every new Director file starts with an Intro quest (`finish:
+  "opening"`: over once what happens as it starts is; `list: false`); a quest's steps shown as a to-do list or not
+  (`list`), so a talk quest needs only the marker; after the last quest with no ending, a free roam. The sample's
+  Intro is a thought and a pause; its talk quest has no objective and no list.
+
+Then **Story Flow** (DECISIONS 2026-11-02, later; GODOT_DIRECTOR §6f), the user's "a story flowchart tab… so I don't
+have to look through them one by one to see the prerequisites", in three steps: a main screen beside 2D, 3D and
+Script with every quest and ending as a card and the arrows as the game plays them (a card's prerequisites on the
+right); setting the quests and their branches up in it (new cards, titles, ways dragged, conditions picked, Delete,
+Number them by the flow); and **easter eggs** (a quest marked `egg`: found during the quests that point at it, its
+thing played once, then the game going on or a jump ahead).
+
+To ask the user: Story Flow in their own hands (with a mouse and a real screen: the cards' size, the wrapped rows, the
+arrows round the cards), whether the Manager should get the chart too, the marker's look in their own play, and
+whether the desk's Play should draw the marker.
+
+## 0. Where it stopped (2026-11-01, evening, branch `Director-Godot`): the HorrorStudio panel
+
+The user asked for a friendlier panel in Godot (DECISIONS 2026-11-01, evening): category sorted, synced to the
+scripts, drag and drop onto objects or click an object and assign. The design is the canvas "Director Panel Design"
+(https://claude.ai/artifact/Q21Wv6misQnt5LwkZgNfRs, five boards: Main, Assign, Player, Story, Pieces); the user said
+"looks good", then "work through everything". **Built in four steps, each checked and pushed** (GODOT_DIRECTOR §6e,
+the guide's §2, §3 and §8):
+1. **Build** (`editor/panel.gd`, `build_tab.gd`, `glyphs.gd`, `inspector.gd`, `parts/catalog.json`): the panel along
+   the bottom (an EditorDock), picture cards in categories, a click in front of the camera, a drag onto a model (the
+   mouse's ray on its triangles, collider or not), a model selected and one click; This object in words; the
+   Inspector's box; a window into a room; Scares as an area and its moment. The dock's Add tab went.
+2. **Player** (`level/player_start.gd`, `level/checkpoint.gd`): the Player start, the Test start (F6, Play from here,
+   Try it on a thing: a test begins at the first quest in the Test start's level, the player kept there), the
+   Checkpoint (an autosave each time it's walked into); `game.player` {run, crouch, eye} in the format, the story
+   check, Godot's runtime and the desk's.
+3. **Story** (`editor/story_tab.gd`, `story/commands.gd`): the quests in order, their steps and moments as WHEN /
+   ONLY IF / THEN sentences with a picker for each blue word, how often, what it reads as, Try this moment, Show it in
+   the 3D view; ready-made moments clicked or dropped onto an area or a door; every change on the editor's undo. **The
+   same words as the Manager**: `tools/director_manager/words.js` (conditions as words, "they've read letter", now
+   the Manager's chips too) and the desk's `commands.js`, written for Godot by `tools/director_manager/commands_json.mjs`
+   (run it after changing either: DIRECTOR fails on a stale `story/commands.json` or a sentence that reads differently).
+4. **The guide and the checks**: the guide's panel parts and pictures (38, each at its own size in the page), and
+   DIRECTOR driving every tab of the panel (Build, the Player category, Story, Test).
+
+Not measured here: the panel with a real GPU and a mouse (everything is driven by code in the headless editor, and
+pictured under lavapipe); a real drag from the panel into the 3D view (the check drops the preset the way the view
+does). GDTESTROOM's station 6 fails in this container as before (no bake bodies). To ask the user: does the bottom
+slot have room for them (the Story tab scrolls there; the panel's ⋮ floats it on a second screen), which ready-made
+moments they want next, and whether the Story tab should also edit conversations, states and a quest's next (the
+Manager does them now).
+
+## 0a. Where it stopped (2026-11-01, branch `Director-Godot`)
+
+The user answered what the Director still lacks (DECISIONS 2026-11-01): the game as state, puppeteered by one
+Director over things with ids, logic as droppable parts, an HTML Director Manager, faces exported without the desk,
+Kimodo's fingers, Steam achievements planned for. **docs/GODOT_DIRECTOR_PLAN.md** is the plan, written and waiting
+on their yes (its §9), given: "work your way through this in the cleanest best way". **Built so far**: step 1, the
+parts (droppables, the little things with their markers, the crossed-out step); step 2, the Director in the game (the
+Director file `director/director.json` with its quests, states, moments, conversations, endings, achievements; the
+brain `run/brain.gd`; the story nodes and the Story, Events and Flags tabs removed for the dock's Director tab; giving,
+`gave`, in the runtime; the sample remade); step 3, the Director Manager (`tools/director_manager`: a page over a
+Godot project, the desk's commands and triggers, its own condition editor, Coverage, the saves; MANAGERPAGE); then
+**Inspect in the hands in Godot** (the user's "pick up temporarily to inspect, turn around": `play.gd` `examine` as
+the desk's examine.js, drawn over the room by its silhouette's depth pushed back first; a thing's model named `art` at
+play, so the hand's copy and the kit's slots find it) and **the guide rewritten** (`guides/director`: parts, the
+Director file, facts, moments, conversations, states, the Manager; 34 pictures, the Manager's by
+`tools/director_manager/guide_shots.mjs`); then **Kimodo's fingers** (`kimodo/retarget.gd`: each finger bone aimed
+along SOMA's segment, the hand turned by SOMA's own palm; 32 MHR finger bones at 0.00°). GDTESTROOM's station 6 fails
+in this container as before (no stand-in bodies here; the stations before and after pass); then **faces, part one**
+(`tools/face_export.mjs`: the expression library baked as HSFaceClips into a project's `faces/`, the loops apart in
+`faces/loops/`, FACEEXPORT in CHECKS; the story format's `expr` action, played by the runtime's `face.gd` on the mesh
+carrying MHR's face shapes and by the desk's `play/faces.js`; an HSActor's `expression` (her resting face), a state's
+and a line's `expr`, the Manager's pickers; the scene player now runs a cue's instant actions too, so a Director
+line's own commands play). Then **faces, part two** without touching the Character Studio: `tools/face_morphs.mjs` bakes MHR's 72 face shapes into a
+Studio export's copy for Godot (`game/people/`, by `install` and the desk game's export) from its corners' MHR points,
+sparse morph targets by Meta's names, lash cards turned about their eye (FACEMORPHS; Godot reads 72 blend shapes);
+the runtime's mesh scrub keeps a rebuilt mesh's blend shapes now. **The plan's five steps are built.** Not yet: the
+eyes turned by the gaze and the lids kept off the eyeballs on a Studio character in Godot (the desk's); in-game Load;
+a moment that ends a quest early; Steam. Untested here: a real Studio export through face_morphs (no character on
+this machine: STUDIO makes `_studiotest`, slow on the CPU; ask the user for a local run of GDPEOPLE after
+`install`). Not merged into main yet: main has moved on (PR #6, the street builder); bringing main in conflicts
+only in CLAUDE.md, CONTINUE, DECISIONS and LESSONS (both sides added entries), the runtime merging by itself (run
+GDPLAY, GDTESTROOM and DIRECTOR after).
+
+Then the user asked that the desk's way into Godot follow the new system too (DECISIONS 2026-11-01, later): **a desk
+game as a Director project**, `python tools/godot_director.py from-desk <Game> [folder] [--force] [--play]`
+(GODOT_DIRECTOR §6d): `storykit/director_desk.py` writes the world (`director/desk_world.json`) and the Director file,
+the plugin's `desk/desk_build.gd` builds the world as nodes and saves `main.tscn`. To carry the desk's games whole the
+Director grew: a room's **windows** (an opening's `glass`, `daylight` by the time of day, `shaft`, a car passing) and
+**leaks** (`core/leak.gd`), a path point's `pose` and `check`, a little thing's `life_light` (a candle's flame), an
+actor's cast id in the ids index, a quest's **round** (the format's `play`: hide and seek; `result:<quest>:<result>`
+its fact; the Manager edits it), a level's `look` and `weather`, aimed pattern lights as the Look plugin's
+HSPatternLight, kit mirrors; the runtime turns off every collider of a thing it rolls (the die). **FROMDESK**: the
+Pilot plays through to its good ending; TestRoom001 passes every station but 6 (the same skin check the export fails
+here: no bake bodies in this container). Not carried yet: the trims and thresholds, a kit door's own model, the light
+zones per room; the desk's Godot button still makes the export only (a `from-desk` choice there would be next if the
+user wants it). The desk's export stays as it was beside it.
+
+## 0. The Director-Godot session (2026-10-30, night; branch `Director-Godot`)
+
+The user asked for a Godot plugin to build the games in Godot itself, no desk in between (DECISIONS 2026-10-30,
+night). Built, each step checked and pushed: **HorrorStudio Director** (`GodotPlugins/HorrorStudioDirector`,
+docs/GODOT_DIRECTOR.md is the user's guide, the plugin's CLAUDE.md the map):
+- **Nodes**: the level's (HSLevel, HSRoom with doors cutting their own openings, HSDoor, HSThing with fifteen uses,
+  HSTrigger, HSSpot, HSPath, HSActor; the user's lights by name) and the story's (HSGame, HSChapter, HSTask with
+  HSTodos, HSEvent when/if/then on HSWhen and HSAction resources, HSDialogue with HSLines and HSOption answers,
+  HSChoice, HSEnding); steps play in the tree's order; where an event sits is when it listens.
+- **compile.gd** turns them into the runtime's story at play; **HSGame** starts the runtime with it (levels as
+  templates), F9's panel, the editor's dock told where the player is; F6 on a level plays it alone.
+- **The runtime** grew for it (STORY_FORMAT and the story check with it): `game.collision: physics` (collide.gd: a
+  capsule against whatever collides, physics rays for the cursor and sight), `game.track_steps` (`@<step>` flags),
+  `move` (the player to a spot), `anim` and a behaviour's `rest`, a beat's `repeat`/`every`, `item:<id>` in an `if`,
+  `use: talk`, a project's own sound files; `game.gd` takes `story_data`, `level_scenes`, `on_step`, `on_play`;
+  pieces anywhere in a level (the group `hs_piece`). The export's games are unchanged (GDPLAY, GDEXPORT; GDTESTROOM
+  stations 1-5 and 7 on: station 6 fails the same on main in a fresh cloud container, no stand-in bodies there).
+- **The dock** under the Inspector: Story (the quest log, + Add, drag to reorder, Play from here, ▶ where the game
+  is), Events (sentences and nine templates: the user's jumpscare in an area after flags first), Flags (set where,
+  checked where, ⚠ never set), Things, Add (click, or drag into the 3D view), Check, Kimodo.
+- **Kimodo**: a room sent as the demo's stage (kimodo/stage.gd, the format `kimodo.py stage` writes), an .npz brought
+  back (kimodo/npz.gd) and retargeted onto the character's own skeleton (kimodo/retarget.gd, the desk's bodies.js way;
+  MHR, SOMA, Godot's humanoid profile, Mixamo), played as her idle or walk or by an event.
+- **tools/godot_director.py**: `new <folder> [--sample]`, `install <folder> [--link]`, `guide`, `check` (DIRECTOR: the
+  sample played to its good ending, the Kimodo link measured, a level alone, the editor driven, the guide's pictures
+  and links). The launcher's Godot section has all four.
+- **The guide** (2026-10-31, the user asked for one): `guides/director/index.html`, the Director start to finish with
+  24 pictures Godot makes of the sample (`godot_director.py guide`); `guides/index.html` lists the studio's guides
+  (the desk's and the export's too). Every project gets a copy in `guide/`; the dock's Guide button opens it.
+  Found while writing it and fixed: a game table defaulted to a board game the Godot runtime can't play (now
+  chohan), and a character's `studio_character` export was never copied in (`install` does now).
+
+**For the user to try** (on their machine, Godot 4.7): read the guide (`guides/director/index.html`), then
+`python tools/godot_director.py new ~/Games/Sample --sample`, open it, F5 (walk to the letter, the kitchen, the key, Mari, the bedroom, the wardrobe), then the dock's tabs; F9 in
+the game. Then a level of their own from their notes (docs/GODOT_DIRECTOR.md §1's table), and the Kimodo round trip
+with a real motion (the sample's idle is a made one). What to ask them: whether the dock under the Inspector suits
+them (Godot lets it move), which event templates they want next, and which of their models need a BoneMap for the
+retarget (MHR from the Character Studio works as it is).
+
+**Open** (GODOT_DIRECTOR §9): fingers and MHR's twist bones in the retarget; a kit thing or a CC0 prop in one click; an
+event inside a dialogue; no way back from a Director game to the desk (the scene is the game).
 
 ## 0. `procedural-trees` (2026-11-02, evening): the prop generator's trees, after Modular Tree
 

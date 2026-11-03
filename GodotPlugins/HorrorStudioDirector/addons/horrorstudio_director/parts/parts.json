@@ -1,0 +1,170 @@
+{
+ "uses": [
+  [
+   "pickup",
+   "Pickup"
+  ],
+  [
+   "inspect",
+   "Inspect"
+  ],
+  [
+   "note",
+   "Note"
+  ],
+  [
+   "flashlight",
+   "Flashlight"
+  ],
+  [
+   "switch",
+   "Switch"
+  ],
+  [
+   "breaker",
+   "Breaker"
+  ],
+  [
+   "seat",
+   "Seat"
+  ],
+  [
+   "bed",
+   "Bed"
+  ],
+  [
+   "hiding_place",
+   "HidingPlace"
+  ],
+  [
+   "carry",
+   "Carry"
+  ],
+  [
+   "die",
+   "Die"
+  ],
+  [
+   "code_lock",
+   "CodeLock"
+  ],
+  [
+   "use_item",
+   "UseItem"
+  ],
+  [
+   "stain",
+   "Stain"
+  ],
+  [
+   "game_table",
+   "GameTable"
+  ],
+  [
+   "solid",
+   "Solid"
+  ]
+ ],
+ "lives": [
+  [
+   "kettle",
+   "Kettle",
+   "an electric kettle"
+  ],
+  [
+   "whistling_kettle",
+   "WhistlingKettle",
+   "a kettle on the hob"
+  ],
+  [
+   "tetsubin",
+   "Tetsubin",
+   "a tetsubin on the hob"
+  ],
+  [
+   "hob",
+   "Hob",
+   "a hob"
+  ],
+  [
+   "gas_hob",
+   "GasHob",
+   "a gas hob"
+  ],
+  [
+   "pot",
+   "Pot",
+   "a pot"
+  ],
+  [
+   "cup",
+   "Cup",
+   "a cup"
+  ],
+  [
+   "coffee",
+   "Coffee",
+   "a takeaway coffee"
+  ],
+  [
+   "teapot",
+   "Teapot",
+   "a teapot"
+  ],
+  [
+   "cigarette",
+   "Cigarette",
+   "a cigarette"
+  ],
+  [
+   "lighter",
+   "Lighter",
+   "a lighter"
+  ],
+  [
+   "candle",
+   "Candle",
+   "a candle"
+  ],
+  [
+   "coil",
+   "MosquitoCoil",
+   "a mosquito coil"
+  ],
+  [
+   "incense",
+   "Incense",
+   "incense"
+  ],
+  [
+   "clock",
+   "Clock",
+   "a clock"
+  ],
+  [
+   "rice_cooker",
+   "RiceCooker",
+   "a rice cooker"
+  ],
+  [
+   "phone",
+   "Phone",
+   "a phone"
+  ],
+  [
+   "tap",
+   "Tap",
+   "a tap"
+  ],
+  [
+   "tv",
+   "TV",
+   "a TV"
+  ],
+  [
+   "fridge",
+   "Fridge",
+   "a fridge"
+  ]
+ ]
+}

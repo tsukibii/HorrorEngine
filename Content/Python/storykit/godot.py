@@ -1361,6 +1361,46 @@ def import_project(out, timeout=600):
     return True
 
 
+def faces_used(story):
+    """the expression ids the story puts on someone's face (`expr` with a `who`: an action, a scene's face row)"""
+    out, todo = set(), [story]
+    while todo:
+        o = todo.pop()
+        if isinstance(o, dict):
+            if isinstance(o.get("expr"), str) and o["expr"] and "who" in o:
+                out.add(o["expr"])
+            todo.extend(o.values())
+        elif isinstance(o, list):
+            todo.extend(o)
+    return out
+
+
+def copy_previs(game, out):
+    """The desk's bake (tools/godot/bake.mjs, or the desk's Generate: the scenes as recorded) into a project's game/previs/:
+    each scene's frames a file, its reply branches a file each, the index, the shaped bodies; how many bodies."""
+    out = Path(out)
+    previs = L.GAMES / game / "Previs"
+    baked = 0
+    if (previs / "preview.json").exists():
+        pv = json.loads((previs / "preview.json").read_text(encoding="utf-8"))
+        (out / "game" / "previs" / "scenes").mkdir(parents=True, exist_ok=True)
+        index = {k: v for k, v in pv.items() if k != "scenes"}
+        index["scenes"] = {}
+        for sid, sc in pv.get("scenes", {}).items():      # the frames a file a scene; the index keeps each scene's facts
+            index["scenes"][sid] = {k: v for k, v in sc.items() if k not in ("frames", "subs", "events", "lights", "recordings")}
+            index["scenes"][sid]["frames"] = len(sc.get("frames", []))
+            recs = sc.get("recordings") or {}             # the reply branches, a file each: <sid>__<key>.json
+            index["scenes"][sid]["recordings"] = {k: rec_file(k) for k in recs}
+            (out / "game" / "previs" / "scenes" / f"{sid}.json").write_text(json.dumps({k: v for k, v in sc.items() if k != "recordings"}, separators=(",", ":")), encoding="utf-8")
+            for key, rec in recs.items():
+                (out / "game" / "previs" / "scenes" / f"{sid}__{rec_file(key)}.json").write_text(json.dumps(rec, separators=(",", ":")), encoding="utf-8")
+        (out / "game" / "previs" / "index.json").write_text(json.dumps(index, separators=(",", ":")), encoding="utf-8")
+        for f in sorted(previs.glob("Body_*.glb")):
+            shutil.copy(f, out / "game" / "previs" / f.name)
+            baked += 1
+    return baked
+
+
 def export(game, out=None, make_zip=False, do_import=True):
     """The project for a game: a new version folder (Saved/Godot/<game>_v<NNN>, next_version) when out is None, else into
     out, overwritten with the receipt's merge (the checks' scratch projects); returns {"dir", "zip", "levels", "pieces", "arts",
@@ -1409,25 +1449,14 @@ def export(game, out=None, make_zip=False, do_import=True):
                     (out / "game" / "people").mkdir(parents=True, exist_ok=True)
                     shutil.copy(src, out / "game" / "people" / f"{name}.glb")
                     people += 1
-    previs = L.GAMES / game / "Previs"                 # the desk's bake (tools/godot/bake.mjs, or the desk's Generate): the scenes as recorded
-    baked = 0
-    if (previs / "preview.json").exists():
-        pv = json.loads((previs / "preview.json").read_text(encoding="utf-8"))
-        (out / "game" / "previs" / "scenes").mkdir(parents=True, exist_ok=True)
-        index = {k: v for k, v in pv.items() if k != "scenes"}
-        index["scenes"] = {}
-        for sid, sc in pv.get("scenes", {}).items():      # the frames a file a scene; the index keeps each scene's facts
-            index["scenes"][sid] = {k: v for k, v in sc.items() if k not in ("frames", "subs", "events", "lights", "recordings")}
-            index["scenes"][sid]["frames"] = len(sc.get("frames", []))
-            recs = sc.get("recordings") or {}             # the reply branches, a file each: <sid>__<key>.json
-            index["scenes"][sid]["recordings"] = {k: rec_file(k) for k in recs}
-            (out / "game" / "previs" / "scenes" / f"{sid}.json").write_text(json.dumps({k: v for k, v in sc.items() if k != "recordings"}, separators=(",", ":")), encoding="utf-8")
-            for key, rec in recs.items():
-                (out / "game" / "previs" / "scenes" / f"{sid}__{rec_file(key)}.json").write_text(json.dumps(rec, separators=(",", ":")), encoding="utf-8")
-        (out / "game" / "previs" / "index.json").write_text(json.dumps(index, separators=(",", ":")), encoding="utf-8")
-        for f in sorted(previs.glob("Body_*.glb")):
-            shutil.copy(f, out / "game" / "previs" / f.name)
-            baked += 1
+                    if shutil.which("node"):                  # MHR's 72 face shapes baked into the copy (tools/face_morphs.mjs): the story's `expr` plays on her face
+                        import subprocess  # noqa: PLC0415
+                        try:
+                            subprocess.run([shutil.which("node"), str(ROOT / "tools" / "face_morphs.mjs"), str(out / "game" / "people" / f"{name}.glb")], capture_output=True, text=True, timeout=300)
+                        except (OSError, subprocess.TimeoutExpired):
+                            pass
+    previs = L.GAMES / game / "Previs"
+    baked = copy_previs(game, out)
     if LIVES.exists():
         shutil.copy(LIVES, out / "game" / "lives.json")
     lt = {}                                            # the little things with a life: {id: {life, d}} (app.js lifeThings)
@@ -1463,10 +1492,18 @@ def export(game, out=None, make_zip=False, do_import=True):
             if ref.startswith("kit/") and LIB.mesh_info(ref):
                 kit_index[ref] = LIB.mesh_info(ref)
     (out / "game" / "kit.json").write_text(json.dumps(kit_index, separators=(",", ":")), encoding="utf-8")
-    acts = write_acts(out, story, pv if (previs / "preview.json").exists() else None)   # the editable layer: the tasks as scenes with their beats in the Inspector, the scenes as timelines to scrub
+    pv = json.loads((previs / "preview.json").read_text(encoding="utf-8")) if (previs / "preview.json").exists() else None
+    acts = write_acts(out, story, pv)   # the editable layer: the tasks as scenes with their beats in the Inspector, the scenes as timelines to scrub
     sfx = ROOT / "Content" / "Studio" / "SFX"                      # the sound shelf (docs/SFX.md, CC0): every sound and its index
     if (sfx / "index.json").exists():
         shutil.copytree(sfx, out / "game" / "sfx", ignore=shutil.ignore_patterns("*.import", "__pycache__"))
+    faces = sorted(faces_used(story))                             # the expressions the story puts on faces in play (`expr`): baked into faces/ (tools/face_export.mjs)
+    if faces and shutil.which("node"):
+        import subprocess  # noqa: PLC0415
+        try:
+            subprocess.run([shutil.which("node"), str(ROOT / "tools" / "face_export.mjs"), "--project", str(out)] + faces, capture_output=True, text=True, timeout=300)
+        except (OSError, subprocess.TimeoutExpired):
+            pass
     import datetime  # noqa: PLC0415
     info = {"game": game, "story": str(path), "levels": levels, "pieces": len(pieces), "arts": arts, "acts": acts, "surfaced": surfaced, "occluders": occluders, "surface_sets": sorted(surface_sets),
             "materials": {r: m for r, m in sorted(mats.files.items(), key=lambda kv: str(kv[0])) if m and isinstance(r, str)},

@@ -1,0 +1,277 @@
+extends Node
+## The Director at play (docs/GODOT_DIRECTOR.md §2, DECISIONS 2026-11-01: "the director script just puppeteers the whole
+## game"): beside the runtime, it never touches the scene's nodes itself. It writes down what the player does as facts
+## (the run's flags, so a save keeps them: used:<id>, picked:<item>, read:<note>, entered:<area>, left:<area>,
+## talked:<person> and talked:<id> (she's clicked: the conversation she offers begun), heard:<id> and heard:<person> (one
+## played to its end), answered:<talk>:<answer>, gave:<item>:<who>,
+## step:<id>, failed:<id>, done:<quest>, ending:<id>), keeps
+## every condition the story asks true or false as a flag of its own (?c<n>: the runtime's beats, choices, lines and
+## answers read them as plain flags), keeps on the one conversation each person offers now (?talk__<who>__<id>), and
+## works out the **states**: who is where doing what, what's shown, what's locked or lit, applying only what changed;
+## again after every change and every level entered (a load, a retry), so the world always matches the story.
+## Achievements are worked out the same way (achievement:<id>, `unlocked`): Steam later (docs/GODOT_DIRECTOR_PLAN.md §6).
+
+signal unlocked(id: String, title: String)
+
+var game = null                     # the HSGame
+var runtime = null                  # the studio's runtime (its run, its play)
+var data: Dictionary = {}           # the story compiler's brain: conds, talks, states, achievements, quests, steps
+var quest := ""                     # the quest on now ("" between them)
+var applied := {}                   # who or what -> the state last applied
+var log_lines: Array = []           # what it did, newest last (F9, the dock)
+var _busy := false
+var _again := false
+
+
+func ctx() -> Dictionary:
+	var run = runtime.run if runtime != null else null
+	if run == null:
+		return {"flags": {}, "counters": {}, "karma": 0.0, "items": {}, "quest": quest}
+	var k = run.get("karma", {})
+	return {"flags": run["flags"], "counters": run.get("counters", {}), "karma": float(k.get("karma", 0.0)) if k is Dictionary else 0.0,
+		"items": run.get("items", {}), "quest": quest}
+
+
+func fact(f: String) -> void:
+	if runtime == null or runtime.run == null or f == "":
+		return
+	runtime.run["flags"][f] = true
+
+
+func note(s: String) -> void:
+	log_lines.append(s)
+	if log_lines.size() > 40:
+		log_lines.pop_front()
+
+
+# ---- what happens -------------------------------------------------------------------------------------------------
+## every event the runtime sends (play.gd emit, before its beats hear it): the facts it makes, then everything again
+func event(ev: Dictionary) -> void:
+	var t := str(ev.get("type", ""))
+	match t:
+		"use":
+			var id := str(ev.get("id", ""))
+			fact("used:" + id)
+			for tk in data.get("talks", {}).get(id, []):          # the conversation she offers now is the one had
+				if ctx()["flags"].has(tk["flag"]):
+					fact("talked:" + id)
+					fact("talked:" + str(tk["id"]))
+		"pickup":
+			fact("picked:" + str(ev.get("item", "")))
+		"read":
+			fact("read:" + str(ev.get("note", "")))
+		"enter":
+			fact("entered:" + str(ev.get("id", "")))
+		"exit":
+			fact("left:" + str(ev.get("id", "")))
+		"answered":
+			fact("answered:%s:%s" % [ev.get("ask", ""), ev.get("option", "")])
+		"gave":
+			fact("gave:%s:%s" % [ev.get("item", ""), ev.get("to", "")])
+		"todo":
+			if ev.get("state") == "done":
+				fact("step:" + str(ev.get("id", "")))
+			elif ev.get("state") == "failed":
+				fact("failed:" + str(ev.get("id", "")))
+		"caught":
+			fact("caught:" + str(ev.get("by", "")))
+		"rolled":
+			fact("rolled:%s:%s" % [ev.get("id", ""), ev.get("face", "")])
+		"played":
+			fact("played:%s:%s" % [ev.get("id", ""), ev.get("result", "")])
+		"dropped":
+			fact("dropped:" + str(ev.get("id", "")))
+		"tick":
+			return                                 # every frame: nothing new (a flag the story sets comes as "flag", and counts)
+	refresh()
+
+
+## the flow reached a node (game.gd on_step): a quest on, the one before it done, an ending reached
+func step(nid: String) -> void:
+	var was := quest
+	quest = nid if data.get("quests", []).has(nid) else ""
+	if was != "" and was != quest:
+		fact("done:" + was)
+		note("done " + was)
+		var run = runtime.get("run") if runtime != null else null
+		if run is Dictionary and (run.get("results", {}) as Dictionary).has(was):   # a round's result (hide and seek: hidden or found)
+			fact("result:%s:%s" % [was, run["results"][was]])
+	if quest != "":
+		note("quest " + quest)
+	var flow: Dictionary = runtime.story.flow if runtime != null and runtime.story != null else {}
+	if flow.get(nid, {}).get("type") == "ending":
+		fact("ending:" + nid)
+	refresh()
+
+
+## a level entered (its things fresh, a load or a retry): every state applied again
+func level(_lid: String) -> void:
+	applied.clear()
+	refresh()
+
+
+# ---- working it out -------------------------------------------------------------------------------------------------
+func refresh() -> void:
+	if _busy:
+		_again = true
+		return
+	_busy = true
+	for i in 6:                                    # until nothing more changes (applying a state can make a fact)
+		_again = false
+		_conds()
+		_talks()
+		_states()
+		_achievements()
+		if not _again:
+			break
+	_busy = false
+
+
+func _conds() -> void:
+	var c := ctx()
+	var flags: Dictionary = c["flags"]
+	for f in data.get("conds", {}):
+		var on := HSCond.holds(data["conds"][f], c)
+		if on and not flags.has(f):
+			flags[f] = true
+		elif not on and flags.has(f):
+			flags.erase(f)
+
+
+func _talks() -> void:
+	var c := ctx()
+	var flags: Dictionary = c["flags"]
+	for who in data.get("talks", {}):
+		var chosen := ""
+		for t in data["talks"][who]:
+			if t["once"] and flags.has("heard:" + str(t["id"])):      # a once-only one goes when it's been heard out (not as it starts)
+				continue
+			if HSCond.holds(t["if"], c):
+				chosen = t["flag"]
+				break
+		for t in data["talks"][who]:
+			if t["flag"] == chosen:
+				flags[t["flag"]] = true
+			else:
+				flags.erase(t["flag"])
+
+
+## the states that hold, in order (a later one's settings over an earlier one's), against what was last applied
+func wanted() -> Dictionary:
+	var c := ctx()
+	var want := {}
+	for s in data.get("states", []):
+		if not (s is Dictionary) or not (s.get("set") is Dictionary) or not HSCond.holds(s.get("while"), c):
+			continue
+		for target in s["set"]:
+			var cur: Dictionary = want.get(target, {})
+			var set_: Dictionary = s["set"][target] if s["set"][target] is Dictionary else {}
+			for k in set_:
+				cur[k] = set_[k]
+			want[target] = cur
+	return want
+
+
+func _states() -> void:
+	var rt = runtime.play if runtime != null else null
+	if rt == null or rt.level == "":
+		return
+	var want := wanted()
+	for target in want:
+		var w: Dictionary = want[target]
+		var had: Dictionary = applied.get(target, {})
+		if HSCond.key(w) == HSCond.key(had):
+			continue
+		applied[target] = w.duplicate(true)
+		for a in _acts(target, w, had):
+			note("%s: %s" % [target, JSON.stringify(a)])
+			rt.actions.run(a, rt)
+
+
+## a state as the runtime's actions: a person placed or set going (behave: with what she plays there, `motion`, and
+## the in-between's clips, `walk`, `leave`, `arrive`; whom she faces), a motion alone played once, her face (expr),
+## shown or hidden, a door locked or opened, a light, a little thing's state
+func _acts(target: String, w: Dictionary, had: Dictionary) -> Array:
+	var acts: Array = []
+	var moved := false
+	for k in ["do", "at", "to", "path", "paths", "sees", "motion", "walk", "leave", "arrive", "face"]:
+		if w.get(k) != had.get(k):
+			moved = true
+	var placed: bool = w.has("do") or w.has("at") or w.has("to") or w.has("path") or w.has("paths")
+	if moved and placed:                              # where she is and what she does there (On stage's line: STORY_FORMAT §4 behave)
+		var b := {"behave": target, "as": str(w.get("do", "idle"))}
+		for k in [["at", "at"], ["to", "to"], ["path", "route"], ["paths", "routes"], ["sees", "sees"], ["motion", "motion"], ["walk", "walk"],
+				["leave", "leave"], ["arrive", "arrive"], ["face", "face"]]:
+			if w.has(k[0]):
+				b[k[1]] = w[k[0]]
+		if str(w.get("do", "")) == "go" and str(w.get("then", "")) != "":
+			b["then"] = w["then"]
+		var here = had.get("to") if str(had.get("do", "idle")) == "go" else had.get("at")   # On stage's in-between: a line standing or sitting her
+		var there = w.get("to") if str(w.get("do", "idle")) == "go" else w.get("at")     # somewhere else walks her there (her walk, then her
+		if w.get("_in_between", false) and here != null and there != null and str(here) != str(there):   # sitting down), through the doorways
+			if str(w.get("do", "idle")) in ["idle", "sit"]:   # between (`way`); the first time in a level she's just put there
+				b["as"] = "go"
+				b.erase("at")
+				b["to"] = there
+				b["then"] = "sit" if str(w.get("do")) == "sit" else "idle"
+			if b["as"] == "go":
+				var via := way(str(here), str(there))
+				if via.size():
+					b["via"] = via
+		acts.append(b)
+	if w.has("shown") and w["shown"] != had.get("shown"):
+		acts.append({"show": target} if w["shown"] else {"hide": target})
+	if not placed and w.has("motion") and w["motion"] != had.get("motion"):   # a motion alone (no place): played once, as it was
+		acts.append({"anim": target, "clip": w["motion"]})
+	if w.has("locked") and w["locked"] != had.get("locked"):
+		acts.append({"door": target, "set": "lock" if w["locked"] else "unlock"})
+	if w.has("open") and w["open"] != had.get("open"):
+		acts.append({"door": target, "set": "open" if w["open"] else "close"})
+	if w.has("light") and w["light"] != had.get("light"):
+		acts.append({"light": target, "set": str(w["light"])})
+	if w.has("state") and w["state"] != had.get("state"):
+		acts.append({"state": target, "to": w["state"]})
+	if w.has("expr") and w["expr"] != had.get("expr"):        # the face she rests in (face.gd)
+		acts.append({"expr": str(w["expr"]) if w["expr"] != null else "", "who": target, "rest": true})
+	return acts
+
+
+## the doorways a walk from one place to another goes through (compile.gd's room map): each door's side in the room
+## she's in, then its side in the next room, room by room on the fewest doors; [] in the same room or no way known
+func way(from: String, to: String) -> Array:
+	var map: Dictionary = data.get("rooms", {})
+	var places: Dictionary = map.get("places", {})
+	var a := str(places.get(from, ""))
+	var b := str(places.get(to, ""))
+	if a == "" or b == "" or a == b:
+		return []
+	var prev := {a: null}
+	var todo: Array = [a]
+	while todo.size() and not prev.has(b):
+		var r: String = todo.pop_front()
+		for l in map.get("links", []):
+			for dir in [[l[0], l[1], l[2], l[3]], [l[1], l[0], l[3], l[2]]]:
+				if dir[0] == r and not prev.has(dir[1]):
+					prev[dir[1]] = [r, dir[2], dir[3]]
+					todo.append(dir[1])
+	if not prev.has(b):
+		return []
+	var out: Array = []
+	var r2 := b
+	while prev[r2] != null:
+		out.push_front(prev[r2][2])
+		out.push_front(prev[r2][1])
+		r2 = prev[r2][0]
+	return out
+
+
+func _achievements() -> void:
+	var c := ctx()
+	for a in data.get("achievements", []):
+		var id := str(a.get("id", ""))
+		if id == "" or c["flags"].has("achievement:" + id):
+			continue
+		if HSCond.holds(a.get("when"), c) and not HSCond.empty(a.get("when")):
+			fact("achievement:" + id)
+			note("achievement " + id)
+			unlocked.emit(id, str(a.get("title", id)))
