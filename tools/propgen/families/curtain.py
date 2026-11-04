@@ -29,6 +29,16 @@ from .. import noise as N
 from .. import sim
 from .bedding import grid_normals, paint_cover, sheet_grid
 
+# the page's settings (PROPGEN §13: a family's own, picked from a list), their choices and a list's labels
+FIELDS = {"window": [1800, 1300], "sill": 800, "panels": 2, "side": "left", "heading": "pinch", "fullness": 2.2, "pitch": 120,
+          "length": "floor", "open": 0.15, "tie": {"at": 0.42, "bundle": 150, "depth": 90}, "fabric": "cotton",
+          "rod": {"kind": "rail", "over": 150, "above": 120, "out": 200, "d": 25, "color": "#e6e4de", "metal": 0.0, "finial": "ball"},
+          "cover": {"color": "#a89a80", "pattern": "plain", "rough": 0.9}, "air": 1.0, "flare": 0.08, "relax": 0.35, "settle": 150}
+CHOICES = {"side": ["left", "right"], "heading": ["pinch", "wave", "grommet", "gather", "flat"], "length": ["floor", "sill", "below", "puddle"],
+           "fabric": ["sheer", "cotton", "linen", "blackout", "velvet"], "rod.kind": ["rail", "track", "rod", "none"],
+           "rod.finial": ["ball", "cap"], "cover.pattern": ["plain", "stripes", "check", "dots", "seigaiha"]}
+LABELS = {"window": ["width", "height"]}
+
 # fabric: thickness (mm), the bend's stiffness, roughness, opacity (a sheer is see-through)
 FABRICS = {
     "sheer": dict(thick=0.6, stiff=0.012, rough=0.8, opacity=0.4),
@@ -417,8 +427,8 @@ def make(spec, th):
     th.anchor = (0.0, 0.0, 0.0)                                    # the floor under the window's middle, the wall at y = 0
     th.keep_z = True
     th.view = {"azim": -18, "elev": 8}
-    th.spec.setdefault("reach", 0.004)
-    th.spec.setdefault("cage", 0.003)
+    th.reach = 0.004
+    th.cage = 0.003
     op = float(cov.get("opacity", fab["opacity"]))
 
     def paint(fr):

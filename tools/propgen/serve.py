@@ -3,7 +3,7 @@
 liquids, designs, a PBR set from the shelf on any material, your own pictures placed on its texture), made by Blender
 in the background with its log, seen turning in 3D, kept as a recipe of its own (docs/PROPGEN.md §13).
 
-    python tools/propgen/serve.py           then open http://127.0.0.1:8797 (PROPS_PORT for another)
+    python tools/propgen/serve.py           then open http://127.0.0.1:8799 (PROPS_PORT for another)
 
 It runs tools/propgen.py for every make, so it needs what that needs (Blender). Your recipes stay in
 Content/Studio/Props/presets.json (a copy of it kept in Saved/Props/_history/ before every save), what's made in
@@ -31,7 +31,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 sys.path.insert(0, str(ROOT / "Content" / "Python"))
 from propgen import recipes  # noqa: E402  (plain Python: no Blender)
 
-PORT = int(os.environ.get("PROPS_PORT", 8797))
+PORT = int(os.environ.get("PROPS_PORT", 8799))      # 8797 is the face mocap page's
 PRESETS = Path(os.environ.get("PROPS_PRESETS") or recipes.PRESETS).resolve()
 OUT = Path(os.environ.get("PROPS_OUT") or recipes.OUT).resolve()
 IMAGES = Path(os.environ.get("PROPS_IMAGES") or (ROOT / "Content" / "Studio" / "Props" / "images")).resolve()
@@ -58,6 +58,18 @@ def _literal(path, var):
     return []
 
 
+def _literal_value(path, var):
+    """A module-level literal (a dict of a family's settings) evaluated, without importing its module; {} without one."""
+    tree = ast.parse(Path(path).read_text(encoding="utf-8"))
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == var for t in node.targets):
+            try:
+                return ast.literal_eval(node.value)
+            except ValueError:
+                return {}
+    return {}
+
+
 def _doc_options(doc):
     """What a family's docstring says a key may be: "kind": "pillar" | "church" | ... -> {kind: [pillar, church]}."""
     out = {}
@@ -77,6 +89,10 @@ def choices():
         f = P / "families" / f"{mod}.py"
         doc = ast.get_docstring(ast.parse(f.read_text(encoding="utf-8"))) if f.exists() else ""
         fams[fam] = {"doc": doc or "", "options": _doc_options(doc)}
+        if f.exists():                              # a family's own settings for the page (PROPGEN §13): what it takes,
+            fams[fam]["fields"] = _literal_value(f, "FIELDS")       # each with an example; its choices, a dotted key a
+            fams[fam]["options"].update(_literal_value(f, "CHOICES"))   # nested one's ("cushion.pattern"); a list's labels
+            fams[fam]["labels"] = _literal_value(f, "LABELS")
     book = recipes.load(PRESETS)
     for n, r in book.items():                       # the kinds the recipes use, as options too
         try:

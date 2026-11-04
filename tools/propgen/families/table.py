@@ -169,8 +169,8 @@ def make(spec, th):
     th.weighted = 35                                     # the game mesh's normals by face size (its chamfers smooth)
     th.pose = "stand"
     th.view = {"azim": -35, "elev": 24}
-    th.spec.setdefault("reach", 0.008)
-    th.spec.setdefault("cage", 0.004)
+    th.reach = 0.008
+    th.cage = 0.004
     boards = int(S.get("boards", 1))
     d = {"wood": S.get("wood", "#8a5a36"), "ring": S.get("ring", 5.0), "finish": S.get("finish", "oil"), "flaws": flaws,
          "painted": S.get("painted", False), "paint_color": S.get("paint_color", "#d8d4cc")}

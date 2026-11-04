@@ -442,8 +442,8 @@ def _cloth(spec, th, seed, r, folded=False):
     th.pose = "stand"
     th.view = {"azim": -35, "elev": 32}
     if thick > 0.004:
-        th.spec.setdefault("reach", max(0.012, thick * 0.6))
-        th.spec.setdefault("cage", max(0.003, thick * 0.4))
+        th.reach = max(0.012, thick * 0.6)
+        th.cage = max(0.003, thick * 0.4)
 
     def paint(fr):
         paint_cover(fr["top"], cov, seed, quilt, (W * 1000, L * 1000))

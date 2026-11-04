@@ -362,8 +362,8 @@ def make(spec, th):
     th.weighted = 35
     th.pose = "stand"
     th.view = {"azim": -32, "elev": 20}
-    th.spec.setdefault("reach", 0.01)
-    th.spec.setdefault("cage", 0.004)
+    th.reach = 0.01
+    th.cage = 0.004
     d = {"wood": S.get("wood", "#7a4e2d"), "ring": S.get("ring", 5.0), "finish": S.get("finish", "oil"), "flaws": flaws,
          "painted": S.get("painted", False), "paint_color": S.get("paint_color", "#d8d4cc")}
 

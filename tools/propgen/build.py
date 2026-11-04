@@ -41,6 +41,8 @@ class Thing:
         self.fx = {}                # the enhancers Godot's HSPropFX gives it: glow, flame, smoke, steam, wax (PROPGEN.md §14)
         self.anchor = None          # a point of the made thing (metres) that stays at x = y = 0 when it's set down: a tree's trunk
         self.keep_z = False         # its heights as made (the floor at z = 0 already: a blanket on a bed, clear of the floor)
+        self.reach = None           # the bake's reach and cage for this thing (a family's own, where the recipe gives none:
+        self.cage = None            # set here, not in the recipe, so a made prop's recipe stays the recipe it was made from)
         self.bake_ao = True         # off for a thing whose texture tiles over itself (a tree's bark): a bake over it would be a jumble
         self.tree = None            # what a tree family records about its growth (meta.json's "tree")
 
@@ -397,11 +399,11 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
     # per-texel attributes of the game mesh, and the bakes from the detailed one
     bs = int(samples or spec.get("bake_samples", 24))
     ao = BK.bake("AO", low_ob, high_ob, px=max(v["px"] for v in th.mats.values()), samples=bs, gpu=gpu,
-                 ao_dist=float(spec.get("ao_dist", 0.012)), extrude=float(spec.get("cage", 0.003)), reach=float(spec.get("reach", 0.012))) if th.bake_ao else {}
+                 ao_dist=float(spec.get("ao_dist", 0.012)), extrude=float(spec.get("cage", th.cage or 0.003)), reach=float(spec.get("reach", th.reach or 0.012))) if th.bake_ao else {}
     nb = BK.bake("NORMAL", low_ob, high_ob, px=max(v["px"] for v in th.mats.values()), samples=4, gpu=gpu,
-                 extrude=float(spec.get("cage", 0.003)), reach=float(spec.get("reach", 0.012))) if high_ob else {}
+                 extrude=float(spec.get("cage", th.cage or 0.003)), reach=float(spec.get("reach", th.reach or 0.012))) if high_ob else {}
     cb = BK.bake("EMIT", low_ob, high_ob, px=max(v["px"] for v in th.mats.values()), samples=1, gpu=gpu, attr="curv",
-                 extrude=float(spec.get("cage", 0.003)), reach=float(spec.get("reach", 0.012))) if high_ob else {}
+                 extrude=float(spec.get("cage", th.cage or 0.003)), reach=float(spec.get("reach", th.reach or 0.012))) if high_ob else {}
     log(f"  {name}: baked ({time.time() - t0:.1f}s)")
     vn = BK.vertex_normals(th.low)
     kl = BK.curvature(th.low, vn)

@@ -150,8 +150,15 @@ function optionsFor(path, v) {
   if (k === "age") return C.ages;
   if (k === "pose") return C.poses;
   if (k === "metal" && typeof v === "string" && !v.startsWith("#")) return C.metals;
-  if (path.length === 1 && C.families[fam] && C.families[fam].options[k]) return C.families[fam].options[k];
+  const F = C.families[fam], dotted = path.filter(p => typeof p !== "number").join(".");
+  if (F && F.options[dotted]) return F.options[dotted];                     // a family's own choices, nested ones by their dotted key
+  if (path.length === 1 && F && F.options[k]) return F.options[k];
   return null;
+}
+// a list's entries named (a family's LABELS: a table's size as length, width and height)
+function labelsFor(path) {
+  const F = S.choices.families[S.spec.family];
+  return (F && F.labels && F.labels[path.filter(p => typeof p !== "number").join(".")]) || null;
 }
 const isPicture = (path, v) => path[path.length - 1] === "image" || (path.length === 1 && path[0] === "logo" && typeof v === "string") ||
   (path.length === 2 && path[0] === "pictures" && typeof v === "string");
@@ -218,7 +225,10 @@ function fieldRow(path, v, parent) {
     return;
   }
   const row = el("div", { class: "row" }, el("label", { title: path.join(".") }, name));
-  if (Array.isArray(v)) row.append(el("div", { class: "list" }, v.map((x, i) => plainInput([...path, i], x))));
+  const labs = Array.isArray(v) ? labelsFor(path) : null;
+  if (Array.isArray(v)) row.append(el("div", { class: "list" }, v.map((x, i) => labs && labs[i]
+    ? el("span", { class: "lab", title: labs[i] }, el("small", {}, labs[i]), plainInput([...path, i], x))
+    : plainInput([...path, i], x))));
   else row.append(plainInput(path, v));
   if (removable(path)) row.append(xbtn(path));
   parent.append(row);
@@ -247,7 +257,14 @@ function renderSettings() {
   if (LIQUID_FAMS.has(fam) && !S.spec.liquid) adds.append(el("button", { onclick: () => setAt(["liquid"], { kind: "tea", fill: 0.7 }, true) }, "+ a liquid in it"));
   if (ART_FAMS.has(fam) && !S.spec.art) adds.append(el("button", { onclick: () => setAt(["art"], { design: S.choices.designs[0] }, true) }, "+ a print (art)"));
   if (!S.spec.wear) adds.append(el("button", { onclick: () => setAt(["wear"], { grime: 0.2, dirt: 0.1 }, true) }, "+ wear"));
-  adds.append(el("button", { onclick: () => addKey([]) }, "+ a setting…"),
+  const own = (F && F.fields) || {}, missing = Object.keys(own).filter(k => !(k in S.spec));
+  if (missing.length) {                                // the family's own settings not in the recipe yet, each with its example
+    const pick = el("select", { class: "addfield", title: "a setting this family takes, added with an example value",
+      onchange: e => { const k = e.target.value; if (k) setAt([k], clone(own[k]), true); } },
+      el("option", { value: "" }, "+ a setting of this family…"), missing.map(k => el("option", { value: k }, k)));
+    adds.append(pick);
+  }
+  adds.append(el("button", { onclick: () => addKey([]) }, missing.length ? "+ another setting…" : "+ a setting…"),
     el("button", { onclick: () => switchTab("texture") }, "Pictures, logos and PBR sets →"));
   box.append(adds);
 }
