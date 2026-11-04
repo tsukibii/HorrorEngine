@@ -188,12 +188,6 @@
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe cedar_real (Content/Studio/Props/presets.json)"
  },
- "props/chair_cafe": {
-  "date": "2026-11-04",
-  "kind": "mesh",
-  "licence": "ours",
-  "source": "ours: tools/propgen.py, recipe chair_cafe (Content/Studio/Props/presets.json)"
- },
  "props/chair_dining": {
   "date": "2026-11-04",
   "kind": "mesh",
@@ -967,6 +961,12 @@
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe stockpot_broth (Content/Studio/Props/presets.json)"
+ },
+ "props/stool_cafe": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe stool_cafe (Content/Studio/Props/presets.json)"
  },
  "props/stool_kitchen": {
   "date": "2026-11-04",

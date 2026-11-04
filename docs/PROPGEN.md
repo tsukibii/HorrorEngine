@@ -144,7 +144,7 @@ and set the fill and the colours on each placed copy in Godot (its `HSLiquidFill
 | `bedding` | §21: pillows, cushions, blankets and futons by the cloth simulation: `kind` pillow, cushion (a zabuton: `tuft`, `thread`), blanket (`on` floor, futon, bed_single or your boxes; `floor` mm, the ground round it (tatami: 60); `at` mm over it; `mode` spread, turned (`turn_back`), rumpled (`heaps`); `thick`, `quilt` {cell, style channels, low}) or folded (`folds` [[axis, 2 or 3], ...]); `fill`, `lumps`, `dent`, `wrinkle`, `hem_full`; `cover` {color, pattern stripes, check, dots or seigaiha, size, ink, rough}, `back` | makura_sobakawa, pillow_bed, zabuton_real, kakebuton_turned, comforter_bed, futon_folded |
 | `curtain` | §22: curtains made for a window: `window` [w, h] mm, `sill`, `panels` 1 or 2 (`side`), `heading` pinch, wave, grommet, gather or flat (`fullness`, `pitch`), `length` sill, below, floor, puddle or mm, `open` 0 to 1, `tie` {at, bundle, depth, color}, `rod` {kind rail, track, rod or none, out, over, above, d, color, metal, finial}, `fabric` sheer, cotton, linen, blackout or velvet, `cover`; `air`, `flare`, `relax`, `settle` | curtain_pair, curtain_tied, curtain_sheer, curtain_grommet, curtain_wave, curtain_velvet_old |
 | `table` | §23: wooden tables: `size` [length, width, height] mm, `style` dining, shaker, farmhouse, parsons, midcentury, trestle, pedestal or chabudai; `top` rect, rounded, round or oval (`corner`), `edge` eased, square, chamfer, round, bullnose or underbevel, `thick`, `overhang`, `boards`; `leg` square, taper, turned or round (`leg_w`, `taper`, `splay`), `apron`, `stretcher` none, h or box; `wood`, `ring`, `finish` raw, oil, satin or gloss, `flaws` {grain, cracks, scratches, dents}, `painted` (`paint_color`) | table_dining, table_farmhouse, table_midcentury, table_trestle, table_pedestal, table_chabudai, table_kitchen_painted |
-| `chair` | §24: chairs and their cushions: `style` dining, ladderback, spindle, cafe, school, stool, bench or zaisu; `seat_h`, `seat` [width, depth], `back_h` (mm), `rake` (degrees); the wood as a table's, `frame_color` (a school chair's steel); `cushion` {seat, back, thick, fill, ties, color, pattern, ink, size, rough} or false | chair_dining, chair_ladderback, chair_windsor, chair_cafe, chair_school, stool_kitchen, bench_wood, zaisu_lacquer |
+| `chair` | §24: chairs and their cushions: `style` dining, ladderback, spindle, cafe (a bentwood stool), school, stool, bench or zaisu; `seat_h`, `seat` [width, depth], `back_h` (mm), `rake` (degrees); the wood as a table's, `frame_color` (a school chair's steel); `cushion` {on, seat, back, thick, fill, ties, color, pattern, ink, size, rough} or false (`"on": false` bare, its settings kept) | chair_dining, chair_ladderback, chair_windsor, stool_cafe, chair_school, stool_kitchen, bench_wood, zaisu_lacquer |
 
 ### Designs
 
@@ -1068,12 +1068,15 @@ baked; a bit of realism while keeping the poly count low". The `chair` family (`
 
 - **Styles**: `dining` (square legs, a seat board on rails, a top rail and three slats), `ladderback` (round posts,
   four slats across, rungs), `spindle` (a Windsor: a thick shaped seat, splayed turned legs, spindles to a bent
-  crest), `cafe` (bentwood: a round seat, the back legs and the back one bent loop with an inner hoop, a ring between
-  the legs), `school` (a steel tube frame, `frame_color`, a plywood seat and back), `stool` (a round seat on splayed
+  crest), `cafe` (a bentwood stool, the user, 2026-11-04: its back and the ring that missed two legs taken off: a
+  round seat on a bent ring, four bent legs inside the ring touching it and the seat, thinning and flaring out to
+  their feet; a `bent` part's radius can taper, [start, end]), `school` (a steel tube frame, `frame_color`, a plywood
+  seat and back), `stool` (a round seat on splayed
   legs and a ring of rails), `bench` (a long seat on four legs), `zaisu` (a legless Japanese chair: a low seat and a
   reclined back). `seat_h`, `seat` [width, depth], `back_h` (mm) and `rake` (degrees) each style's by default
   (DEFAULTS); the wood as a table's (§23). 1 700 to 3 200 triangles with their cushions.
-- **Cushions** (`cushion`: {seat, back, thick, fill, ties, color, pattern, ink, size, rough}, or false): the
+- **Cushions** (`cushion`: {on, seat, back, thick, fill, ties, color, pattern, ink, size, rough}, or false; `"on":
+  false` makes the chair bare and keeps the pads' settings, the page's switch in the cushion box's title): the
   bedding's bag (§21) made to any outline. The seat's own outline (its trapezoid, a round seat's circle; in front of
   the back posts) or the back's is triangulated finely (a constrained Delaunay) as two pieces sewn round their border,
   filled by pressure firm **between the floor and a ceiling at its thickness** (a pad's foam: a bag only filled to a

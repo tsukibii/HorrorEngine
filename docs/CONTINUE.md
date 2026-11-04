@@ -28,7 +28,7 @@ cloth, the prop generator's page for them and on the dashboard.
 - **The `table` family** (PROPGEN §23) and **the `chair` family** (§24) on `families/furniture.py` (board, turned,
   bent, top; the wood's colour and flaws) and `families/cushion.py` (pads to any outline). Fifteen recipes in the
   library: `table_dining`, `table_farmhouse`, `table_midcentury`, `table_trestle`, `table_pedestal`,
-  `table_chabudai`, `table_kitchen_painted`, `chair_dining`, `chair_ladderback`, `chair_windsor`, `chair_cafe`,
+  `table_chabudai`, `table_kitchen_painted`, `chair_dining`, `chair_ladderback`, `chair_windsor`, `stool_cafe`,
   `chair_school`, `stool_kitchen`, `bench_wood`, `zaisu_lacquer`. PROPGEN's cases `table_farmhouse`, `chair_dining`.
 - **The page** reads a family's `FIELDS`, `CHOICES` (nested by dotted keys) and `LABELS`; the curtain family has them
   too. **The dashboard**: the prop generator among the start tiles; its page on port 8799 now (8797 is the face mocap

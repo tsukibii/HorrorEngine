@@ -161,11 +161,12 @@ def turned(p, isl, hi):
 
 def bent(p, isl, hi):
     """A round part bent along a path (bentwood, a steel tube): `path` (k, 3) points it passes through (smoothed),
-    radius `rad`; rings round it framed by parallel transport, capped at its ends unless `closed`. Its island: x along
-    its length, y round it."""
+    radius `rad` (or [at its start, at its end]: a bentwood leg thinning to its foot); rings round it framed by
+    parallel transport, capped at its ends unless `closed`. Its island: x along its length, y round it."""
     P0 = np.asarray(p["path"], float)
     closed = bool(p.get("closed", False))
-    rad = float(p["rad"])
+    r0, r1 = _radii(p["rad"])
+    rad = max(r0, r1)
     step = max(rad * (1.2 if hi else 3.5), 0.006)
     if closed:
         Q = M.spline(np.concatenate([P0[-2:], P0, P0[:2]]), step)
@@ -191,10 +192,11 @@ def bent(p, isl, hi):
         Nn[i] = nv
     Bn = np.cross(Tn, Nn)
     a = np.linspace(0, 2 * math.pi, n, endpoint=False)
-    V = (Q[:, None, :] + rad * (np.cos(a)[None, :, None] * Nn[:, None, :] + np.sin(a)[None, :, None] * Bn[:, None, :])).reshape(-1, 3)
     seg = np.linalg.norm(np.diff(np.concatenate([Q, Q[:1]]) if closed else Q, axis=0), axis=1)
     cum = np.concatenate([[0.0], np.cumsum(seg)])
     Ltot = max(cum[-1], 1e-9)
+    rr = r0 + (r1 - r0) * (cum[:k] / (cum[k - 1] if k > 1 and cum[k - 1] > 0 else 1.0))
+    V = (Q[:, None, :] + rr[:, None, None] * (np.cos(a)[None, :, None] * Nn[:, None, :] + np.sin(a)[None, :, None] * Bn[:, None, :])).reshape(-1, 3)
     S = isl[p["name"]]
     F, UV = [], []
     for j in range(k if closed else k - 1):
@@ -210,7 +212,7 @@ def bent(p, isl, hi):
     if not closed:
         for end, j in (("_a", 0), ("_b", k - 1)):
             ring = V[j * n:(j + 1) * n]
-            cv, cf, cu = _cap(ring, Q[j], isl[p["name"] + end], lambda q, j=j: (0.5 + (q - Q[j]) @ Nn[j] / (2 * rad), 0.5 + (q - Q[j]) @ Bn[j] / (2 * rad)))
+            cv, cf, cu = _cap(ring, Q[j], isl[p["name"] + end], lambda q, j=j: (0.5 + (q - Q[j]) @ Nn[j] / (2 * rr[j]), 0.5 + (q - Q[j]) @ Bn[j] / (2 * rr[j])))
             sgn = -1.0 if j == 0 else 1.0
             cf, cu = _orient(cv, cf, cu, lambda c, j=j, sgn=sgn: c - sgn * Tn[j])
             parts.append(_mesh(cv, cf, cu, p["mat"]))
@@ -218,6 +220,13 @@ def bent(p, isl, hi):
     m.v = m.v @ np.asarray(p["R"], float).T + np.asarray(p["at"], float)
     m.a["rest"] = m.v.copy()
     return m
+
+
+def _radii(rad):
+    """A bent part's radius at its start and its end: one number for both, or a pair."""
+    if isinstance(rad, (list, tuple, np.ndarray)):
+        return float(rad[0]), float(rad[-1])
+    return float(rad), float(rad)
 
 
 def _nearest(Q, c):
@@ -417,11 +426,12 @@ class Plan:
                     kinds[nm + e] = "end"
             elif p["part"] == "bent":
                 Lp = float(np.linalg.norm(np.diff(p["path"], axis=0), axis=1).sum()) + (float(np.linalg.norm(p["path"][0] - p["path"][-1])) if p["closed"] else 0.0)
-                th.island(nm, Lp * 1000, 2 * math.pi * p["rad"] * 1000, mat=p["mat"])
+                rmax = max(_radii(p["rad"]))
+                th.island(nm, Lp * 1000, 2 * math.pi * rmax * 1000, mat=p["mat"])
                 kinds[nm] = p["kind"]
                 if not p["closed"]:
                     for e in ("_a", "_b"):
-                        th.island(nm + e, 2 * p["rad"] * 1000, 2 * p["rad"] * 1000, mat=p["mat"])
+                        th.island(nm + e, 2 * rmax * 1000, 2 * rmax * 1000, mat=p["mat"])
                         kinds[nm + e] = "end"
             elif p["part"] == "turned":
                 rmax = max(r for _, r in p["prof"])

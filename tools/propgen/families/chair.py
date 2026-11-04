@@ -4,14 +4,15 @@ the seat `seat_h` (mm) high and `seat` [width, depth] (mm), the whole `back_h` (
 
 - `dining` (square legs, a seat board on rails, a top rail and three slats), `ladderback` (round posts, four slats
   across, rungs), `spindle` (a Windsor: a thick shaped seat, splayed turned legs, spindles to a bent crest), `cafe`
-  (bentwood: a round seat, the back legs and the back one bent loop, a ring between the legs), `school` (a steel tube
+  (a bentwood stool: a round seat on a bent ring, four bent legs flaring to their feet), `school` (a steel tube
   frame, a plywood seat and back), `stool` (a round seat on splayed legs and a ring of rails), `bench` (a long seat on
   four legs), `zaisu` (a Japanese legless chair: a low seat and a reclined back);
 - the wood as the table's (families/furniture.py): `wood`, `ring`, `finish` "raw" | "oil" | "satin" | "gloss",
   `flaws`, `painted` with `paint_color`; a school chair's tubes `frame_color`;
-- `cushion`: {"seat": true, "back": false, "thick": 45 (mm), "fill": 0.75, "ties": true, "color", "pattern", "ink",
-  "rough"} or false: pads made by the cloth (families/cushion.py) to the seat's own outline and the back's, settled on
-  them, baked onto a light mesh; ties round the back posts.
+- `cushion`: {"on": true, "seat": true, "back": false, "thick": 45 (mm), "fill": 0.75, "ties": true, "color", "pattern",
+  "ink", "rough"} or false: pads made by the cloth (families/cushion.py) to the seat's own outline and the back's,
+  settled on them, baked onto a light mesh; ties round the back posts. `"on": false` makes it bare with the pads'
+  settings kept (the page's switch on the cushion's box; a thumbnail of each, docs/PROPGEN.md §25).
 
     {"family": "chair", "style": "dining", "wood": "#6e4529", "cushion": {"seat": true, "color": "#7a2e2a"}}
     {"family": "chair", "style": "school", "frame_color": "#8a8f96", "wood": "#c9a46e"}
@@ -28,8 +29,8 @@ from .bedding import paint_cover
 FIELDS = {"style": "dining", "seat_h": 450, "seat": [440, 420], "back_h": 880, "rake": 8, "wood": "#7a4e2d", "ring": 5.0,
           "finish": "oil", "flaws": {"grain": 0.5, "cracks": 0.15, "scratches": 0.3, "dents": 0.2}, "painted": False,
           "paint_color": "#d8d4cc", "frame_color": "#8a8f96",
-          "cushion": {"seat": True, "back": False, "thick": 45, "fill": 0.75, "ties": True, "color": "#7a5c4a", "pattern": "plain",
-                      "ink": "#c8b9a0", "rough": 0.9}}
+          "cushion": {"on": True, "seat": True, "back": False, "thick": 45, "fill": 0.75, "ties": True, "color": "#7a5c4a",
+                      "pattern": "plain", "ink": "#c8b9a0", "rough": 0.9}}
 CHOICES = {"style": ["dining", "ladderback", "spindle", "cafe", "school", "stool", "bench", "zaisu"],
            "finish": ["raw", "oil", "satin", "gloss"], "cushion.pattern": ["plain", "stripes", "check", "dots", "seigaiha"]}
 LABELS = {"seat": ["width", "depth"]}
@@ -38,7 +39,7 @@ DEFAULTS = {   # each style's own numbers (mm, degrees) where the recipe gives n
     "dining": dict(seat_h=450, seat=[440, 420], back_h=880, rake=8),
     "ladderback": dict(seat_h=440, seat=[460, 400], back_h=1020, rake=7),
     "spindle": dict(seat_h=450, seat=[460, 420], back_h=900, rake=10),
-    "cafe": dict(seat_h=460, seat=[410, 410], back_h=880, rake=9),
+    "cafe": dict(seat_h=460, seat=[360, 360], back_h=460, rake=0),
     "school": dict(seat_h=430, seat=[400, 380], back_h=780, rake=6),
     "stool": dict(seat_h=650, seat=[340, 340], back_h=650, rake=0),
     "bench": dict(seat_h=440, seat=[1200, 340], back_h=440, rake=0),
@@ -176,28 +177,24 @@ def _build(S, P, spec):
         info["seat"] = dict(shape="trapezoid", W=W, D=D, back=0.94, top=sh, post=0.0, back_in=0.07)
         info["back"] = dict(y=float(ys.min()) - 0.012, w=W * 0.62, z0=0.08, z1=bh - sh - 0.08, up=up)
     elif st == "cafe":
+        # a bentwood cafe stool (the user, 2026-11-04: the chair's back and its leg ring went): a round seat on a bent
+        # ring, four bent legs inside the ring, each touching it and the seat's underside, thinning to feet splayed
+        # out in a curve
         R = W / 2
-        P.top("seat", "round", W, W, 0.025, edge="round", at=(0, 0, sh - 0.025), kind="seat")
-        P.bent("seat_ring", [[R * 0.88 * math.cos(a), R * 0.88 * math.sin(a), sh - 0.045] for a in np.linspace(0, 2 * math.pi, 16, endpoint=False)],
-               0.012, closed=True, kind="rail")
-        for i, sx in enumerate((1, -1)):
-            top = np.array([sx * R * 0.6, -R * 0.62, sh - 0.03])
-            foot = top + np.array([sx * 0.035, -0.04, -(sh - 0.03)])
-            _turned_between(P, f"leg_f{i}", foot, top, [(0, 0.012), (1, 0.017)], smooth=False)
-        a = math.radians(rake)
-        hb = bh - sh
-        ys = R * 0.62                                       # foot, seat, up the back, over the top, and down the other side
-        ptsL = [[-R * 0.62 - 0.03, ys + 0.07, 0.0], [-R * 0.62, ys, sh - 0.03], [-R * 0.6, ys + math.tan(a) * hb * 0.5, sh + hb * 0.5],
-                [-R * 0.45, ys + math.tan(a) * hb * 0.92, sh + hb * 0.9]]
-        top = [0.0, ys + math.tan(a) * hb, sh + hb]
-        path = ptsL + [top] + [[-p[0], p[1], p[2]] for p in ptsL[::-1]]
-        P.bent("back_loop", np.array(path), 0.014, kind="turned")
-        inner = [[-R * 0.32, ys + 0.005, sh + 0.02], [-R * 0.34, ys + math.tan(a) * hb * 0.45, sh + hb * 0.45], [0.0, ys + math.tan(a) * hb * 0.62, sh + hb * 0.6],
-                 [R * 0.34, ys + math.tan(a) * hb * 0.45, sh + hb * 0.45], [R * 0.32, ys + 0.005, sh + 0.02]]
-        P.bent("back_inner", np.array(inner), 0.01, kind="turned")
-        rr = R * 0.66
-        P.bent("leg_ring", [[rr * 1.02 * math.cos(t), rr * math.sin(t) + 0.0, 0.2] for t in np.linspace(0, 2 * math.pi, 14, endpoint=False)], 0.009,
-               closed=True, kind="rail")
+        ts = 0.025
+        P.top("seat", "round", W, W, ts, edge="round", at=(0, 0, sh - ts), kind="seat")
+        Rr, tr = R * 0.86, 0.012                             # the ring's line and its tube
+        zr = sh - ts - tr - 0.006                           # the ring's middle, its top under the seat
+        P.bent("seat_ring", [[Rr * math.cos(a), Rr * math.sin(a), zr] for a in np.linspace(0, 2 * math.pi, 16, endpoint=False)],
+               tr, closed=True, kind="rail")
+        rl = 0.016                                          # a leg's radius at the top (0.012 at the foot)
+        r_top = Rr - tr - rl + 0.002                        # inside the ring, touching it
+        flare = 0.055 + sh * 0.04
+        for i in range(4):
+            ang = math.pi / 4 + i * math.pi / 2
+            c, s_ = math.cos(ang), math.sin(ang)
+            path = [(r_top, sh - ts + 0.001), (r_top + 0.004, sh * 0.62), (r_top + flare * 0.45, sh * 0.22), (r_top + flare, 0.012)]
+            P.bent(f"leg{i}", [[r * c, r * s_, z] for r, z in path], [rl, 0.012], kind="turned")
         info["seat"] = dict(shape="round", W=W, D=W, top=sh, post=0.0)
         info["back"] = None
     elif st == "school":
@@ -283,6 +280,14 @@ def _seat_outline(si):
     return pts, (0.0, shift)
 
 
+def cushion_of(spec):
+    """The recipe's cushions with the family's defaults under them, or None when it has none: `cushion` false, absent,
+    or switched off (`"on": false`, its settings kept for when it's switched back on: the page's switch)."""
+    cu = spec.get("cushion")
+    cu = dict(FIELDS["cushion"], **cu) if isinstance(cu, dict) else (dict(FIELDS["cushion"]) if cu is True else None)
+    return cu if cu is not None and cu.get("on", True) else None
+
+
 def make(spec, th):
     seed = int(spec.get("seed", 0))
     style = spec.get("style", "dining")
@@ -295,8 +300,7 @@ def make(spec, th):
                 rough=FU.FINISH.get(S.get("finish", "oil"), 0.55))
     if style == "school":
         th.material("frame", "metal", color=S.get("frame_color", "#8a8f96"), rough=0.32, metal=0.85)
-    cu = spec.get("cushion")
-    cu = dict(FIELDS["cushion"], **cu) if isinstance(cu, dict) else (dict(FIELDS["cushion"]) if cu is True else None)
+    cu = cushion_of(spec)
     if cu is not None:
         th.material("fabric", "fabric", color=cu.get("color", "#7a5c4a"), rough=float(cu.get("rough", 0.9)))
     P = FU.Plan(th, "wood")

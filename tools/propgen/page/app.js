@@ -207,9 +207,32 @@ function plainInput(path, v) {
 function removable(path) { return !(path.length === 1 && ["family", "kind"].includes(path[0])); }
 const xbtn = path => el("button", { class: "x", title: "take it out of the recipe", onclick: e => { e.stopPropagation(); delAt(path); } }, "×");
 
+// a family's setting that can be switched off with its settings kept: its FIELDS entry a box with an "on" (a chair's
+// cushions: the switch in the box's title; off greys the rest; a recipe's false or true becomes the box when switched)
+function switchOf(path, v) {
+  if (path.length !== 1) return null;
+  const F = S.choices.families[S.spec.family], own = F && F.fields && F.fields[path[0]];
+  if (!own || typeof own !== "object" || Array.isArray(own) || !("on" in own)) return null;
+  if (typeof v === "boolean" || v === null) return own;
+  return v && typeof v === "object" && !Array.isArray(v) ? own : null;
+}
+
 function fieldRow(path, v, parent) {
   const k = path[path.length - 1];
   const name = typeof k === "number" ? `${path[path.length - 2]} ${k + 1}` : k;
+  const own = switchOf(path, v);
+  if (own) {
+    const box = v && typeof v === "object", on = box ? v.on !== false : !!v;
+    const sw = el("input", { type: "checkbox", class: "sw", checked: on, title: `${name} on or off (off keeps its settings for when it's back on)`,
+      onchange: e => box ? setAt([...path, "on"], e.target.checked, true) : setAt(path, e.target.checked ? { ...clone(own), on: true } : false, true) });
+    const fs = el("fieldset", { class: "switch" + (on ? "" : " off") }, el("legend", {}, sw, name, removable(path) ? xbtn(path) : null));
+    if (box) {
+      for (const [kk, vv] of Object.entries(v)) if (kk !== "on") fieldRow([...path, kk], vv, fs);
+      fs.append(el("div", { class: "adds" }, el("button", { onclick: () => addKey(path) }, "+ a setting here")));
+    } else if (!on) fs.append(el("div", { class: "hint" }, `none: switch it on for ${name} with the family's settings`));
+    parent.append(fs);
+    return;
+  }
   if (v !== null && typeof v === "object" && !Array.isArray(v)) {
     const fs = el("fieldset", {}, el("legend", {}, name, removable(path) ? xbtn(path) : null));
     for (const [kk, vv] of Object.entries(v)) fieldRow([...path, kk], vv, fs);

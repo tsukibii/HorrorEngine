@@ -56,6 +56,9 @@ main{display:flex;height:calc(100% - 46px)}
 fieldset{border:1px solid var(--line);border-radius:5px;margin:8px 0;padding:4px 10px 6px}
 fieldset legend{color:var(--accent);padding:0 4px;display:flex;align-items:center;gap:6px}
 fieldset legend .x{font-size:11px}
+fieldset.switch legend input.sw{margin:0}
+fieldset.switch.off>:not(legend){opacity:.45}
+fieldset.switch.off legend{color:var(--dim)}
 .adds{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
 .adds button{font-size:12px}
 .hint{color:var(--dim);font-size:12px;margin:4px 0 8px}
