@@ -369,7 +369,10 @@ class Cloth(Paper):
             g = g / gl[:, None] * np.where(rel[hit] >= 0, 1.0, -1.0)
             self._contact(P, X0, hit, g, pad - d[hit], fr)
 
-    def step(self, gravity=0.0, damping=0.92, iters=8, boxes=(), floor=0.0, friction=0.5, pressure=0.0, collide=True, spheres=(), pad=None):
+    def step(self, gravity=0.0, damping=0.92, iters=8, boxes=(), floor=0.0, friction=0.5, pressure=0.0, collide=True, spheres=(), pad=None,
+             extra=None):
+        """One step; `extra(P, X0)` a constraint of the caller's own, projected every iteration after the others (a
+        curtain's tie-back ring)."""
         X0 = self.X
         P = X0 + self.V * damping
         if gravity:
@@ -404,6 +407,8 @@ class Cloth(Paper):
                     self._contact(P, X0, hit, v[hit] / L[hit, None], R + pad - L[hit], fr)
             if boxes:
                 self.boxes(P, X0, boxes, pad, fr)
+            if extra is not None:
+                extra(P, X0)
             if floor is not None:
                 hit = np.nonzero(P[:, 2] < floor + pad)[0]
                 if len(hit):

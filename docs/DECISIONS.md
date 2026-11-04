@@ -2,6 +2,16 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-04, afternoon (the user: a curtain generator)
+
+- **"Could you try work on a curtain generator prop that uses a bit of drape physics to get more natural curtains,
+  ideally the curtain gen prop has fields for how many sides (1 curtain or 2 on each side), you add the height and
+  length of the window and it generates curtains to use. Research first for the easiest technique."** The research
+  (docs/research/curtains.md): shape the hung curtain from its heading's own geometry, then let the cloth settle with
+  tethers to the heading (so it can't stretch) and a tie-back's ring; the prop generator's `curtain` family
+  (PROPGEN §22): `window` [w, h], `sill`, `panels` 1 or 2, a heading, `length`, `open`, `tie`, a rail or a pole, a
+  fabric; six recipes.
+
 ## 2026-11-04, morning (the user: pillows and blankets for the maison flat)
 
 - **"Can you make proper better prop pillows and blankets and then add them to this level."** The prop generator's

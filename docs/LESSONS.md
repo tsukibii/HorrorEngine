@@ -1711,3 +1711,20 @@ neatly. A blanket made for a bed and placed by its origin in the level landed of
   (a tree's trunk, a blanket's bed) records its `box_m`, and a layout places it where its box falls.
 - **Rewriting a hand-formatted JSON file with `json.dumps` reflows all of it** (presets.json grew 2500 lines of
   diff): append to its text, then check it still parses to the same thing.
+
+## A curtain's pleats finer than its cloth, and a rod's bake scrambled (2026-11-04)
+
+The curtain family (PROPGEN §22) took three tries in two places. A pinch pleat's three folds, drawn as a zigzag of six
+legs 23 mm long on a cloth sampled every 32 mm, crumpled into dark specks under the tape: the grid skipped legs and
+folded triangles over each other. And the rod's parts (the pole, its finials, brackets and rings) shared one small
+island: their bake's rays, cast a few millimetres out, caught each other (a ring is 5 mm round the pole) and the
+normal map came out facing away (PROPGEN: 0.38).
+
+- **Model at the grid's resolution, detail below it in the paint or the bake**: a pleat's three folds became one
+  narrow loop at the tape, its pinch the stitching's.
+- **Parts the same in both meshes don't need a bake**: `th.material(..., bake=False)` keeps a material out of it (its
+  normal from its paint's relief alone), so they can share one island.
+- **One long thin island sets the whole texture's density** (the packer fits every island at one pixels-per-mm, and
+  nothing may be wider than the texture): a plain strip (a hem round a blanket, 6.6 m) is declared short and squeezed.
+  The bedding's hem islands are still long (their textures at about a third of a pixel a millimetre): worth the same
+  change and a make again.

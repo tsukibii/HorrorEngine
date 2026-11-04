@@ -142,6 +142,7 @@ and set the fill and the colours on each placed copy in Godot (its `HSLiquidFill
 | `tree` | §18: a street's trees grown by Mtree's functions: `kind` zelkova, ginkgo, cherry, camphor, plane, maple, crape_myrtle, pine, cedar, dead, and the bushes azalea (`clip` to a ball or a box), shrub, grass; `height`, `clear` (the stem below the first branch), `season` summer, autumn, spring (blossom on a cherry), winter (bare); `spread`, `droop`, `density`, `crown`, `levels`, `lean`, `multi`, `pollard`, `twigs`; `leaves` {count, size, tint; `set` a leaf set off the shelf for realistic leaves, `set_mm`, `spray`, `hue`, `sat`, `light`}, `bark` {pbr, tint, tile, relief; color, style for the drawn tile}; `stakes` torii, tripod or single, `pit` kerb or soil | zelkova_street, zelkova_young, zelkova_autumn, zelkova_winter, ginkgo_street, ginkgo_autumn, cherry_tree, cherry_blossom, camphor_tree, plane_street, plane_pollarded, maple_garden, crape_myrtle, black_pine, dead_tree, sapling_staked; the realistic category: zelkova_real, zelkova_autumn_real, cherry_real, camphor_real, plane_real, maple_autumn_real, crape_myrtle_real, black_pine_real, cedar_real; the bushes: azalea_ball, azalea_flowering, azalea_hedge, azalea_low, shrub_loose, shrub_autumn, shrub_real, grass_tuft, grass_dry; the small trees (`habit: upright`, under a two-storey house): small_zelkova, small_zelkova_staked, small_zelkova_autumn, small_hornbeam_real, small_cherry, small_cherry_blossom, small_ginkgo, small_ginkgo_autumn, small_maple_autumn, small_dead |
 | `plant` | §19: a potted plant, a table's to a floor's: `form` rosette (an aloe, an echeveria), blades (a snake plant), fern, palm (an areca's canes), big_leaf (a monstera, a rubber plant, a fiddle leaf fig: `leaf`, `stem`), tree (`species` ficus, bonsai, herb, dead), trailing (a pothos, ivy: `length`), canes (lucky bamboo), yucca, cactus (`ribs`, `radius`); `plant` {size, count, color, leaf, species, lean, spread}; `pot` {kind terracotta, glazed, plastic, cylinder, bowl, concrete or cube; d (w, dd), h, color, soil, topping pebbles, pumice, moss or bark, cracked, glaze} | pot_aloe, pot_echeveria, pot_basil, pot_cactus, pot_cactus_tall, pot_pothos, pot_ivy, pot_fern, pot_snake_plant, pot_bonsai, pot_monstera, pot_rubber_plant, pot_fiddle_leaf, pot_ficus, pot_palm, pot_yucca, pot_bamboo, pot_dead |
 | `bedding` | §21: pillows, cushions, blankets and futons by the cloth simulation: `kind` pillow, cushion (a zabuton: `tuft`, `thread`), blanket (`on` floor, futon, bed_single or your boxes; `floor` mm, the ground round it (tatami: 60); `at` mm over it; `mode` spread, turned (`turn_back`), rumpled (`heaps`); `thick`, `quilt` {cell, style channels, low}) or folded (`folds` [[axis, 2 or 3], ...]); `fill`, `lumps`, `dent`, `wrinkle`, `hem_full`; `cover` {color, pattern stripes, check, dots or seigaiha, size, ink, rough}, `back` | makura_sobakawa, pillow_bed, zabuton_real, kakebuton_turned, comforter_bed, futon_folded |
+| `curtain` | §22: curtains made for a window: `window` [w, h] mm, `sill`, `panels` 1 or 2 (`side`), `heading` pinch, wave, grommet, gather or flat (`fullness`, `pitch`), `length` sill, below, floor, puddle or mm, `open` 0 to 1, `tie` {at, bundle, depth, color}, `rod` {kind rail, track, rod or none, out, over, above, d, color, metal, finial}, `fabric` sheer, cotton, linen, blackout or velvet, `cover`; `air`, `flare`, `relax`, `settle` | curtain_pair, curtain_tied, curtain_sheer, curtain_grommet, curtain_wave, curtain_velvet_old |
 
 ### Designs
 
@@ -984,4 +985,42 @@ detail mesh, baked onto the game mesh as every prop's is:
 The check's cases: `pillow_bed`, `futon_folded`, and `kakebuton_turned` (made lying on its futon: over the floor,
 never under it). A layout places a library prop as a kit (`[room, "props/<name>", x, y, rot, {z, extra}]`,
 `layoutset.mjs` reads the index's sizes).
+
+## 22. Curtains: made for the window, hung by the cloth
+
+The user (2026-11-04): "a curtain generator prop that uses a bit of drape physics to get more natural curtains ...
+fields for how many sides (1 curtain or 2 on each side), you add the height and length of the window and it generates
+curtains to use. Research first for the easiest technique." The research and the way chosen: docs/research/curtains.md.
+The `curtain` family (`families/curtain.py`):
+
+- **For the window**: `window` [w, h] mm (the opening) and `sill` (its bottom over the floor, mm). The rail runs
+  `rod.over` (150 mm) past each side and `rod.above` (120 mm) over the top; the drop by `length`: `sill` (just above
+  it), `below` (150 mm under it), `floor` (just off it), `puddle` (100 mm on it) or mm below the opening. `panels` 1 or
+  2; a single one draws to its `side`, left or right seen from the room.
+- **The heading**, its `fullness` and `pitch` the makers' numbers by default: `pinch` (2.2x, a pleat every 120 mm, on
+  a wall rail), `wave` (2x, carriers every 72 mm, a ceiling track), `grommet` (1.8x, eyelets every 160 mm on a pole),
+  `gather` (2.5x, a rod pocket's small gathers), `flat` (1.3x, a Japanese flat curtain's hooks). `open` 0 (drawn
+  across) to 1 (stacked at its side, each fold a `stack` of rail); `tie` {`at` (of its hang from the hem), `bundle`
+  (mm wide), `depth`, `color`} gathers each panel into a band at its side.
+- **How** (shape it, then let it settle): each row shaped from the heading's crossings, the cloth between two of them
+  a half sine as deep as its length over its chord asks (`fold_depth`), a little wider (`flare`) and softer (`relax`:
+  the bend's rest flatter) toward the hem, each fold its own depth and lean; a pinch pleat's three folds taken up at
+  the tape as one narrow loop (three are finer than the cloth's 32 mm grid). The tape pinned; **tethers** to it, so
+  the cloth can't stretch (unilateral: they never stop a fold); a **breeze** while it settles (`air`), gone by half
+  way, so no two folds hang alike; a tie-back's **ring** drawn in over the first half of the settle; the wall, the
+  window's frame (`frame_out`, 120 mm: the scene builder's frames) and the floor (a pooling hem) in the way. Each
+  panel one sheet drawn on both sides (a curtain is seen from the room; its texture all front), its fine creases in
+  the detailed copy and baked: about 10 000 triangles a pair, the rail's few more.
+- **The rail or the rod** (`rod`: `kind` rail, track, rod or none; `out` mm from the wall's face, 200 by default,
+  clear of the scene builder's window frames; `d`, `color`, `metal`, `finial` ball or cap): brackets back to the wall,
+  rings on a pole for pleats, grommets round it for a grommet heading.
+- **The cloth**: `fabric` sheer (see-through: its hems and tape doubled), cotton, linen, blackout, velvet (each a
+  thickness, stiffness and roughness); `cover` as the bedding's (§21: colour, pattern, ink, `thread`); the hems' and
+  the tape's stitching drawn; `wear` as any prop's.
+- **In a level**: made with the floor under the window's middle at the origin and the wall's face at y = 0, the
+  curtains in front of it (facing -y, the room), its heights as made (`keep_z`) and its box in meta.json and the
+  library's index (`box_m`, §21): a layout puts it where its box falls from the window's middle on the wall's face,
+  turned as the wall faces into the room (a south wall's: 180).
+
+The check's case: `curtain_tied` (pinch pleats, a pole, tie-backs).
 

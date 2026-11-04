@@ -17,7 +17,30 @@ by-hand guides, merged; then on the same branch from main the map-building skill
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-04, morning, the same branch): bedding for the flat
+## Where it stopped last (2026-11-04, afternoon, the same branch): a curtain generator
+
+The user's ask (DECISIONS 2026-11-04, afternoon): a curtain prop with "a bit of drape physics", one panel or two, made
+from the window's width and height; research first for the easiest technique.
+
+- **The research** (docs/research/curtains.md): what makes a curtain read (the heading sets the folds at its fullness,
+  they relax toward a heavier hem, stack-back, tie-backs, the length), three ways (simulate from flat, shape by
+  numbers, or shape it and let it settle) and the one chosen: the hung shape from the heading's own geometry, then the
+  prop generator's cloth settled with **tethers** to the heading (long range attachments: the cloth can't stretch)
+  and a tie-back as a ring drawn in.
+- **The `curtain` family** (PROPGEN §22, `tools/propgen/families/curtain.py`; `sim.Cloth.step` takes a caller's own
+  constraint, `extra`): `window`, `sill`, `panels` (1 or 2, `side`), `heading` (pinch, wave, grommet, gather, flat),
+  `length` (sill, below, floor, puddle, mm), `open`, `tie`, `rod` (rail, track, pole, none), `fabric` (sheer, cotton,
+  linen, blackout, velvet), `cover`. Six recipes: `curtain_pair`, `curtain_tied`, `curtain_sheer`,
+  `curtain_grommet`, `curtain_wave`, `curtain_velvet_old`, in the library; PROPGEN's case `curtain_tied`. About two
+  minutes each to make (the 2048 bake).
+
+Worth doing with the user: put them up in the maison flat in place of the kit's curtains (a layout places a library
+prop where its `box_m` falls: the window's middle on the wall's face, turned to the room; a Japanese window's usual
+pair is a sheer behind drapes: two props, the sheer's `rod.out` 120 and the drapes' 200); a window's own sizes from
+the set (the bedroom's 2400 x 1300 over an 800 sill). Making them on the user's machine: `python tools/propgen.py make
+curtain_pair curtain_tied curtain_sheer curtain_grommet curtain_wave curtain_velvet_old --library`.
+
+## Before that (2026-11-04, morning, the same branch): bedding for the flat
 
 The user's ask (DECISIONS 2026-11-04, morning): "proper better prop pillows and blankets", then into the map.
 

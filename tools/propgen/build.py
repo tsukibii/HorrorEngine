@@ -44,9 +44,12 @@ class Thing:
         self.bake_ao = True         # off for a thing whose texture tiles over itself (a tree's bark): a bake over it would be a jumble
         self.tree = None            # what a tree family records about its growth (meta.json's "tree")
 
-    def material(self, name, kind="paint", px=None, alpha=False, double=False, color="#808080", rough=0.5, metal=0.0, specular=None):
+    def material(self, name, kind="paint", px=None, alpha=False, double=False, color="#808080", rough=0.5, metal=0.0, specular=None,
+                 bake=True):
+        """bake=False: no detail baked onto it (parts the same in both meshes sharing one island: a curtain's rod, its
+        rings and brackets, whose overlapping maps a bake would scramble); its normal from its paint's relief alone."""
         self.mats[name] = dict(kind=kind, px=px or int(self.spec.get("tex", 1024)), alpha=alpha, double=double,
-                               color=color, rough=rough, metal=metal, specular=specular)
+                               color=color, rough=rough, metal=metal, specular=specular, bake=bake)
 
     def island(self, name, w_mm, h_mm, mat="main", wrap=False):
         self.islands[name] = M.Island(name, w_mm, h_mm, mat)
@@ -428,15 +431,16 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
             k2 = a.shape[0] // px
             return a.reshape(px, k2, px, k2, -1).mean((1, 3))
 
-        a_ao = fit(ao[key])[..., 0] if key in ao else np.ones((px, px), np.float32)
+        baked = mt.get("bake", True)
+        a_ao = fit(ao[key])[..., 0] if key in ao and baked else np.ones((px, px), np.float32)
         tex["ao"] = a_ao
-        if key in cb:
+        if key in cb and baked:
             tex["curv"] = (fit(cb[key])[..., 0] - 0.5) * 2
         if th.texel_paint:
             th.texel_paint(mname, cv, tex)
         S.wear(cv, tex, wl, mt["kind"], seed + 7 * mi, th.density.get(mname, 4.0))
         det = S.combine_normals(cv.nrm, S.height_normal(cv.height, th.density.get(mname, 4.0), float(spec.get("relief", 1.0))))
-        if key in nb:
+        if key in nb and baked:
             base = fit(nb[key])[..., :3] * 2 - 1
             base /= np.maximum(np.linalg.norm(base, axis=-1, keepdims=True), 1e-9)
             nrm = S.combine_normals(base, det)

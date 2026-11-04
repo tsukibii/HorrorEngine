@@ -361,5 +361,17 @@
  "comforter_bed": {"label": "bedding: a comforter on the single bed, turned back from the pillow, a grey-blue check", "family": "bedding", "kind": "blanket", "seed": 405, "size": [1500, 2100], "thick": 26, "on": "bed_single", "at": [0, -150], "mode": "turned", "turn_back": 560, "tex": 2048,
    "quilt": {"cell": 420, "style": "channels", "low": 0.5}, "cover": {"pattern": "check", "size": 90, "color": "#c9ced3", "ink": "#7c8ea3"}, "back": {"color": "#e6e4df"}},
  "futon_folded": {"label": "bedding: a futon folded in half and in three, put away (an oshiire's)", "family": "bedding", "kind": "folded", "seed": 406, "size": [1000, 2000], "thick": 60, "folds": [["x", 2], ["y", 3]], "tex": 1024, "hem_full": 0.95,
-   "cover": {"pattern": "dots", "size": 60, "color": "#ece6d8", "ink": "#c9b9a0"}}
+   "cover": {"pattern": "dots", "size": 60, "color": "#ece6d8", "ink": "#c9b9a0"}},
+ "curtain_pair": {"label": "curtains: a pair of drapes on a wall rail, pinch pleated, to the floor, drawn a little open (a Japanese flat's 180 x 130 cm window)", "family": "curtain", "seed": 501, "window": [1800, 1300], "sill": 800, "panels": 2, "heading": "pinch", "length": "floor", "open": 0.12, "fabric": "cotton", "tex": 2048,
+   "cover": {"color": "#a89a80", "rough": 0.9}, "rod": {"kind": "rail", "color": "#e9e7e1"}},
+ "curtain_tied": {"label": "curtains: a pair tied back on a wooden pole with ball finials, linen, to the floor", "family": "curtain", "seed": 502, "window": [1800, 1300], "sill": 800, "panels": 2, "heading": "pinch", "length": "floor", "open": 0.3, "fabric": "linen", "tex": 2048,
+   "tie": {"at": 0.42, "bundle": 150}, "cover": {"color": "#8e5a45", "rough": 0.92}, "rod": {"kind": "rod", "d": 30, "color": "#6a4a30", "finial": "ball"}},
+ "curtain_sheer": {"label": "curtains: a white sheer gathered on a thin rod, to the sill, drawn (the lace behind a Japanese window's drapes)", "family": "curtain", "seed": 503, "window": [1800, 1300], "sill": 800, "panels": 2, "heading": "gather", "fullness": 2.0, "length": "sill", "open": 0.04, "fabric": "sheer", "tex": 2048,
+   "cover": {"color": "#f3f1ec", "rough": 0.8}, "rod": {"kind": "rod", "d": 16, "color": "#d9d6cf", "metal": 1.0, "finial": "cap"}},
+ "curtain_grommet": {"label": "curtains: one blackout panel on grommets, a black metal pole, open to the right", "family": "curtain", "seed": 504, "window": [1800, 1300], "sill": 800, "panels": 1, "side": "right", "heading": "grommet", "length": "floor", "open": 0.3, "fabric": "blackout", "tex": 2048,
+   "cover": {"color": "#3c4047", "rough": 0.86}, "rod": {"kind": "rod", "d": 28, "color": "#232323", "metal": 1.0, "finial": "cap"}},
+ "curtain_wave": {"label": "curtains: a pair of wave curtains on a ceiling track, linen, pooling on the floor, half open", "family": "curtain", "seed": 505, "window": [2400, 1300], "sill": 800, "panels": 2, "heading": "wave", "length": "puddle", "open": 0.45, "fabric": "linen", "tex": 2048,
+   "cover": {"color": "#d8d1c2", "rough": 0.93}, "rod": {"kind": "track", "color": "#f0efeb", "above": 200}},
+ "curtain_velvet_old": {"label": "curtains: old velvet drapes on a brass pole, dusty, pooling, mostly open (a horror house's)", "family": "curtain", "seed": 506, "window": [1800, 1500], "sill": 700, "panels": 2, "heading": "pinch", "length": "puddle", "open": 0.6, "fabric": "velvet", "tex": 2048,
+   "cover": {"color": "#4c171b", "rough": 0.6}, "rod": {"kind": "rod", "d": 32, "color": "#8b6b3a", "metal": 1.0, "finial": "ball"}, "wear": {"dust": 0.35, "grime": 0.3, "fade": 0.25}}
 }
