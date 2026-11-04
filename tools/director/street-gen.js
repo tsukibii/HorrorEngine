@@ -1840,7 +1840,7 @@ export const THING_KINDS = {
   pot: { label: "Plant pot", cat: "Shop and street", h: 0.45, note: "a pot (no plant yet)" },
   ac: { label: "AC unit", cat: "Shop and street", h: 0.6, note: "an air conditioner's outdoor unit on the ground" },
   box: { label: "Block", cat: "Shop and street", h: 1.0, note: "a plain block of any size and material: stand in for anything" },
-  tree: { label: "Tree (stand-in)", cat: "Plants", h: 8, note: "a trunk and a lumpy crown `w` across: a stand-in for a street's or a schoolyard's tree (the real ones: the prop generator's trees, `python tools/propgen.py make zelkova_street`, dropped into the Godot project at the stand-in's place; or Blender's Foliage)" },
+  tree: { label: "Tree (stand-in)", cat: "Plants", h: 8, note: "a trunk and a lumpy crown `w` across: a stand-in for a street's or a schoolyard's tree; its `prop` the real one standing in its place on the page and in the export (the prop generator's, in the library: `python tools/propgen.py make zelkova_real --library`, then `prop: props/zelkova_real`), the stand-in drawn until it's made" },
 };
 export const SIGN_KINDS = { stop: "止まれ (stop)", oneway: "one way", straight: "straight on only", noentry: "no entry", speed30: "30 limit", walk: "walkers", school: "school", noparking: "no parking" };
 export function thingParts(t) {
@@ -2507,7 +2507,7 @@ export function pinErrors(shot) {
 // ---- what the player bumps into, and what hides what (the Godot export, GODOT_EXPORT §8's occluders): a few boxes and
 // the walkable surfaces a piece. boxes: [{c: [x, y, z], ax: [3 unit axes], h: [3 half sizes]}] in the street;
 // surface: triangles {pos, idx} (the roads' tops and kerbs, the ground). Occluders sit inside what they stand for.
-const BLOCKERS = new Set(["lamp", "lantern", "postlamp", "pole", "sign", "mirror", "bollard", "cone"]);
+const BLOCKERS = new Set(["lamp", "lantern", "postlamp", "pole", "sign", "mirror", "bollard", "cone", "tree"]);   // a pole's box (a tree: its trunk, walked under its crown)
 const turned = (piece) => { const a = num(piece.turn, 0) * Math.PI / 180; return [[Math.cos(a), Math.sin(a), 0], [-Math.sin(a), Math.cos(a), 0], [0, 0, 1]]; };
 const boxAt = (piece, lo, hi) => ({ c: place([(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2], piece), ax: turned(piece), h: [(hi[0] - lo[0]) / 2, (hi[1] - lo[1]) / 2, (hi[2] - lo[2]) / 2] });
 function localBounds(G) {

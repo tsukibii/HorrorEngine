@@ -189,9 +189,11 @@ const BUILT = new Map();
 function rebuild() {
   rebuildAt = performance.now();
   ST.pieces = SG.build(ST.street, BUILT);
-  const g = S3.group(ST.street, ST.pieces, mats, { shadows: true, prev: root ? root.userData.chunks : null });
+  const g = S3.group(ST.street, ST.pieces, mats, { shadows: true, prev: root ? root.userData.chunks : null, hide: ST.props ? ST.props.ids : null });
   if (root) scene.remove(root);
   root = g; scene.add(root);
+  if (ST.props) root.add(ST.props.group);
+  placeProps();
   ST.lights = S3.lightsOf(ST.pieces);
   look.set(ST.street.time, renderer, SG.bounds2(ST.street));
   mats.setTime(look.time);
@@ -199,6 +201,20 @@ function rebuild() {
   if (errs.length) status(`couldn't build ${errs.map(p => p.id).join(", ")}: ${errs[0].error}`, "bad");
   highlight(); render(); renderFacades();
   ST.built = (ST.built || 0) + 1;
+}
+// the made props in their things' places (a tree's `prop`: street3's propsGroup), loaded when what they are or where
+// they stand changes, then the street drawn again with them; the export waits for them (ST.propsLoading)
+let propsKey = "";
+function placeProps() {
+  const key = JSON.stringify(S3.propThings(ST.street).map(t => [t.id, t.prop, t.at, t.turn, t.lift]));
+  if (key === propsKey) return;
+  propsKey = key;
+  ST.propsLoading = S3.propsGroup(ST.street).then(r => {
+    if (key !== propsKey) return;
+    const had = ST.props;
+    ST.props = r.ids.size ? r : null;
+    if (had || ST.props) rebuild();
+  });
 }
 function highlight() {
   const p = selected(); selBox.visible = false;
@@ -475,7 +491,8 @@ function drawMap() {
   // a scale bar
   const bar = s > 20 ? 1 : s > 5 ? 5 : s > 2 ? 10 : 50;
   out.push(`<line x1="12" y1="${MH - 14}" x2="${12 + bar * s}" y2="${MH - 14}" stroke="#aaa" stroke-width="2"/><text x="${14 + bar * s}" y="${MH - 10}" font-size="11" fill="#aaa">${bar} m</text>`);
-  svg.innerHTML = out.join("");
+  // the selected thing's handles over everything else (a building drawn after a fence covered its bends' handles)
+  svg.innerHTML = out.filter(x => !x.includes("data-handle=")).concat(out.filter(x => x.includes("data-handle="))).join("");
 }
 let ghost = "";
 const roadCtl = r => [r.from, ...(Array.isArray(r.via) ? r.via : []), r.to];
@@ -1250,6 +1267,7 @@ function inspectThing(t) {
     insp.append(field("signs", el("div", { class: "chips" }, ...Object.entries(SG.SIGN_KINDS).map(([k, v]) => el("label", {}, el("input", { type: "checkbox", checked: t.signs.includes(k), on: { change: e => edit(() => { t.signs = e.target.checked ? [...t.signs, k].slice(-3) : t.signs.filter(x => x !== k); }) } }), v)))));
   }
   if (t.kind === "box") insp.append(field("size", el("div", { class: "row" }, num(t, "w", { def: 1 }), "×", num(t, "d", { def: 1, unit: "m" }))));
+  if (t.kind === "tree") insp.append(field("the real tree", text(t, "prop", { ph: "props/zelkova_real (made: propgen.py make <name> --library)" })));
   if (t.kind === "crates") insp.append(field("stacked", num(t, "n", { def: 3, step: 1, int: true })));
   insp.append(field("material", pick(t, "slot", Object.fromEntries([["", "(its own)"], ...Object.keys(SG.SLOTS).filter(s => !SG.SLOTS[s][3]).map(s => [s, SLOT_LABELS[s] || s])]), { def: "" })));
 }
@@ -1320,6 +1338,7 @@ $("#check").onclick = () => checkStreet();
 // the .glb for Godot: drop it into the project's folder; its colliders, occluders, lamps and the insides' places come with it
 async function exportStreet() {
   if (await S3.prepareLooks(ST.street)) rebuild();                     // looks tuned in Street paint: their made sets in the .glb
+  if (ST.propsLoading) await ST.propsLoading;                          // the made props (a tree's realistic one) in their places
   const g = S3.exportGroup(root, ST.street, ST.pieces, ST.lights, SG.blockers(ST.street, ST.pieces), { insides: insideMarkers(), lamps: $("#glbLamps").checked });
   return S3.exportGlb(g, GLTFExporter);
 }
