@@ -3,6 +3,17 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## Every prop's picture and the sticker passes (2026-11-04, night)
+
+- **A picture laid on a render is lit through the surface's own detail**: the first light and gloss passes ignored the
+  materials' normal maps, so a sticker on a crushed can lay smooth over its creases while the label round it was
+  crumpled. The override shaders take the material's own normal now (`stage._override`), and the passes carry a
+  version (`_st.json` `v`) so the older ones are made again.
+- **A batch longer than a background command's two hours runs detached and resumes**: the first run of every recipe
+  would have been stopped at the limit; `setsid nohup` and a command that skips what's done (`thumbs --make`).
+- **Python's prints into a log file wait in a buffer**: the batch's progress showed nothing for minutes until its
+  output was line-buffered (`sys.stdout.reconfigure(line_buffering=True)`).
+
 ## The user's floor plan as a map (2026-11-04, small hours)
 
 - **Look at the export, not only the plan**: the plan view (plan.py on the set) had the kitchen open to the living

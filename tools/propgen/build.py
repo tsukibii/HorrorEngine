@@ -536,6 +536,8 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
         if liq_ob is not None:
             liq_ob.data.materials[0] = th.liquid_preview
         render([low_ob] + ([liq_ob] if liq_ob else []), pv, samples=int(spec.get("preview_samples", 48)), gpu=gpu,
+               passes=base + "_st.png", mats=list(th.low.mats),
+               ground={m: os.path.join(odir, d["ground"]) for m, d in (design or {}).items() if d.get("ground")},
                **(spec.get("view") or th.view or {}))
     lo, hi = th.low.bounds()
     rec_sockets = {k: [round(float(x), 5) for x in (Mx @ np.asarray(v[0], float) + shift)] for k, v in th.sockets.items()}

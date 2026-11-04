@@ -29,6 +29,11 @@ exported. No image or 3D generator anywhere.
                                                        seamless vine sets for walls onto the project's shelf
                                                        (pbr/foliage/vine_<kind>/: colour with the opacity, normal,
                                                        roughness; --tex the pixels, --out another folder)
+    python tools/propgen.py thumbs [names...]          each made prop's picture and sticker passes kept in the project
+                                                       (Content/Studio/Props/thumbs/: the page's cards before it's made,
+                                                       your pictures laid on them; docs/PROPGEN.md §25)
+        --make --bare --jobs 2 --tex 1024              make what isn't made first (a chair bare too), 2 at once
+        --check                                        THUMBS: every kept picture well formed, what's missing
     python tools/propgen.py check                      PROPGEN: a few recipes made small and measured
     python tools/propgen.py godot [names...]           GDPROPS: the made props imported by Godot 4.7, their materials
                                                        read back, pictured (Saved/Props/_godot/godot_props.png)
@@ -151,6 +156,9 @@ def main():
     if argv[0] == "godot":
         from propgen import godot_check
         sys.exit(godot_check.main(argv[1:]))
+    if argv[0] == "thumbs":
+        from propgen import thumbs
+        sys.exit(thumbs.main(argv[1:]))
     cpu = "--cpu" in argv
     if cpu:
         argv.remove("--cpu")

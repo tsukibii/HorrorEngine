@@ -45,6 +45,8 @@ python tools/propgen.py godot [names...]                  # GDPROPS: imported by
 python tools/propgen.py pbr                               # the PBR shelf's sets
 python tools/propgen.py pbr-add Metal/brushed ~/Downloads/brushed_*.png   # a set onto the shelf
 python tools/propgen.py vines [ivy ivy_real creeper creeper_autumn bare]   # seamless vine sets onto the shelf (§20)
+python tools/propgen.py thumbs [names...] --make --bare   # every recipe's picture kept in the project, with its sticker passes (§25)
+python tools/propgen.py thumbs --check                    # THUMBS
 python tools/propgen.py check                             # PROPGEN
 ```
 
@@ -55,8 +57,8 @@ python tools/propgen.py check                             # PROPGEN
 - **Options.** `--formats glb,fbx,obj,blend` (all four by default), `--tex 2048` (the texture size), `--no-preview`,
   `--samples N` (the bakes'), `--library` (also into the library).
 - **What it makes.** `Saved/Props/<name>/` holds `<name>.glb`, `.fbx`, `.obj` + `.mtl`, `.blend`,
-  `<name>_<material>_albedo.png`, `_orm.png` and `_normal.png`, `<name>_preview.png`, and `meta.json` (the resolved
-  recipe, size, triangles, time).
+  `<name>_<material>_albedo.png`, `_orm.png` and `_normal.png`, `<name>_preview.png` with its sticker passes beside it
+  (`_st.png`, `_st.json`, `_st_ground.png`: §25), and `meta.json` (the resolved recipe, size, triangles, time).
 - **Time.** About 20 to 40 s a prop on the cloud's 4 CPUs (half of it the preview); much less on the 3090.
 - **Blender versions.** Tested on Blender 4.2 (the cloud's module) and Blender 5.2 LTS (Python 3.13): PROPGEN ok on
   both, every format written. Only `bpy` and the numpy Blender ships are used; no add-ons beyond the bundled
@@ -449,10 +451,13 @@ thing is turned, and swings when it's moved.
 `python tools/propgen/serve.py`, then http://127.0.0.1:8799 (`PROPS_PORT` for another; 8797 until 2026-11-04, when the face mocap page had it too; the launcher has it under
 Pages). A wrapper over `tools/propgen.py`: what it writes is the same recipe JSON, and what it makes the same files.
 
-- **The gallery:** every recipe a card with its picture (the preview of its last make; small JPEGs in
-  `Saved/Props/_thumbs/` when Pillow is there), in families, found by name, family or words. Badges mark a prop made
-  with settings its recipe doesn't have ("made with changes", as `--set` does) and one made under a name of its own
-  that isn't a recipe (variations). *Make the unmade* makes every recipe not made yet.
+- **The gallery:** every recipe a card with its picture (the preview of its last make here, small JPEGs in
+  `Saved/Props/_thumbs/` when Pillow is there; else the picture kept in the project, `Content/Studio/Props/thumbs/`,
+  marked *kept*: §25), in families, found by name, family or words. Badges mark a prop made with settings its recipe
+  doesn't have ("made with changes", as `--set` does), one made under a name of its own that isn't a recipe
+  (variations) and a kept picture of an older recipe ("older picture"); a chair's *cushions* chip shows it without
+  them. *Make the unmade* makes every recipe not made yet. **Try a picture on them…** (top right, or a picture file
+  dropped on the cards) lays one of your pictures on every card, lit as the prop is (§25).
 - **The form** (Settings) is built from the recipe itself: colours as colour pickers, shares (wear, fill, burn...) as
   sliders, words as text, and lists for what the generator knows. Those are its designs, fonts, liquids, finishes,
   metals and poses, and each family's kinds and options, read from the family's own docstring (`"kind": "a" | "b"`),
@@ -1088,3 +1093,54 @@ baked; a bit of realism while keeping the poly count low". The `chair` family (`
 
 The check's case: `chair_dining` (a seat pad and its ties).
 
+## 25. Every prop's picture kept, and your pictures tried on them
+
+The user (2026-11-04): "can you pre-add (prerender and save) thumbnails for each ... a thumbnail (prerendered image)
+for each prop but do it in a clever way that we can preview what custom stickers would look like on props like cans".
+`tools/propgen/thumbs.py`, `stage.py`'s passes, `tone.py`, and on the page `page/sticker.js` and `page/tone.js`:
+
+- **Kept in the project:** `Content/Studio/Props/thumbs/` holds every recipe's picture as it was made here, so the
+  page's cards show one on any machine before anything is made there (*kept* on the card; *older picture* once its
+  recipe has changed since). Per recipe: `<name>.webp` (400 x 300, the preview at half its size), `<name>.st.webp`
+  (its sticker passes, lossless), `<name>.ground.webp` (its picture with its own picture slots empty, where it has
+  some), `<name>.bare.webp` (a chair without its cushions: the card's *cushions* chip switches to it) and
+  `<name>.json` (the recipe it was made from, its materials in the passes' order, its parts: their places on the
+  texture and sizes in mm, its picture slots, its size). About 25 KB a prop.
+- **The sticker passes** (the clever part): beside every preview, at half its size and from the same camera, Cycles
+  renders three cheap passes with the prop's materials swapped: the light a white matt surface would get there (its
+  shading, shadows and the floor's bounce), the gloss of a clear coat at roughness 0.35 (both through the material's
+  own normal map, so a crumpled can's creases are in them too), and, at one sample a pixel and no filter, which
+  material's texture point each pixel sees (u and v in 12 bits). One 8-bit PNG of two panes, no alpha (a browser's
+  canvas would round colours under alpha): left R u's high 8 bits, G v's high 8, B their low 4 and 4; right R the
+  material (its slot + 1, the high 4 bits) and how much of the pixel it covers (the low 4), G the light and B the
+  gloss, each coded sqrt(L / (1 + L)) (`tone.enc`). A picture placed anywhere on the texture is looked up at every
+  pixel (four points a pixel, from a mip level its size there), lit as its colour x light + gloss (matte a quarter of
+  the coat's, satin six tenths, gloss all of it) and toned: in the browser, no Blender, a card in a few milliseconds.
+- **One tone curve:** the preview is rendered as light and toned by `tone.py` (AgX: Troy Sobotka's curve, Benjamin
+  Wrensch's approximation), and the page tones a laid picture by `page/tone.js`, the same numbers, so they agree
+  pixel for pixel (until 2026-11-04 the preview used Blender's own AgX view; this is close to it).
+- **The ground:** where the prop's paint has its own picture slots (a can's logo, an ema's motif), the picture is
+  rendered once more with every slot empty (`write_design`'s ground texture swapped in): a picture laid in a slot
+  takes away what was drawn there (*replace*), as Make does.
+- **On the page:** *Try a picture on them…* (top right: one of your pictures or a file; or a file dropped on the
+  cards) lays it on every card that has passes: in its own logo or picture slot (a logo before a picture, a stamp,
+  words, a flourish, a pattern), else on its most seen part as a sticker at the middle of what's seen; the card's
+  corner button moves it to the next place; the finish (matte, satin, gloss) for all. An opened prop shows it larger
+  with its places to choose from: for a slot fit, scale, dx, dy, a quarter turn, flip and replace; for a part its
+  middle (x, y), width, turn, fit and flip. **Put it in the recipe** writes it as Make reads it (`pictures`
+  {"<island>.<name>": {image, fit, scale, dx, dy, rot, flip, rough}}, or a `decals` entry {image, island, x, y, w,
+  rot, rough}), the picture copied into `Content/Studio/Props/images/` first, so Make makes what the card showed:
+  the page places it as `paint.py`'s Frame.picture and build.py's `lay_pictures` do.
+- **Made here:** a prop made here has passes of its own (`Saved/Props/<name>/<name>_st.png`, `_st.json`,
+  `_st_ground.png`), used before the kept ones; one made from another recipe than its kept picture has none until
+  it's made again.
+- **The command:** `python tools/propgen.py thumbs [names] [--make] [--bare] [--jobs 2] [--tex 1024]` keeps the made
+  props' pictures; `--make` makes first what isn't made, was made from another recipe or has older passes (each in a
+  Blender of its own, two at once, textures at 1024, the glb alone: about 70 minutes for all on the cloud's 4 CPUs);
+  `--bare` makes the chairs without their cushions too (`cushion.on: false`, into `Saved/Props/_bare/`). `chair_worn`
+  isn't kept here: it wears your own shelf set `pbr/Wood/worn_planks` (`thumbs chair_worn --make` on your machine).
+
+The checks: THUMBS (`python tools/propgen.py thumbs --check`, in check_all: every kept picture well formed, its
+picture and passes the same size, nine tenths of its pixels' texture points on its parts, the missing and the older
+listed); PROPPAGE lays a picture on the made ema and on a kept can, places it by hand, puts it in the recipe, and
+switches a chair's cushions off and on.

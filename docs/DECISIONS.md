@@ -2,6 +2,22 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-04, night (the user: the cafe chair a stool, cushions switched off, every prop's thumbnail)
+
+- **"This one looks a bit weird and the circle isn't attached to all four legs, you can get rid of the small circle
+  and backrest and make this a stool instead."** The `cafe` style is a bentwood café stool: a round seat on a bent
+  ring, four bent legs inside the ring touching it and the seat, flaring to their feet; `chair_cafe` is `stool_cafe`.
+- **"Make sure pillows are toggleable so we can gen versions without pillow."** `cushion.on: false` makes a chair
+  bare and keeps the pads' settings: the page's switch in the cushion box's title; every cushioned chair's kept
+  picture has one without its cushions too (the card's *cushions* chip).
+- **"Can you pre-add (prerender and save) thumbnails for each ... a thumbnail (prerendered image) for each prop but do
+  it in a clever way that we can preview what custom stickers would look like on props like cans etc."** Every
+  recipe's picture kept in `Content/Studio/Props/thumbs/` (`propgen.py thumbs`), shown on the cards before anything
+  is made; beside each, its sticker passes (the light a white matt surface gets at each pixel, a clear coat's gloss,
+  and which texture point it sees), so the page lays any picture of yours onto any card in the browser, in the prop's
+  own logo slot or as a sticker on a part, lit and toned as the render was, and puts it into the recipe for Make
+  (PROPGEN §25).
+
 ## 2026-11-04, evening (the user: tables and chairs, and the prop generator on the dashboard)
 
 - **"Similar research: could you create a prop gen for tables and chairs. For tables take a length/width/height
