@@ -192,22 +192,24 @@ def _merged(iv):
     return out
 
 
-def corner_gaps(boxes, room, wall, end):
+def corner_gaps(boxes, room, wall, end, half=0):
     """The heights ((z0, z1) pairs, story metres) at which no other wall fills the square at a north or south wall's
     corner (`end` 0 its west end, 1 its east): where it must close the corner itself. `boxes`: every wall of the level
     built without its corners (`_box`), this one's too. Filled where a wall runs on through the corner (a corridor's
     side a room's dividing wall meets, the room beyond's wall going on, two rooms' side walls meeting end to end), or
     only as high as it goes (a stair shaft's wall the whole building high past each storey's corridor). The square is
-    sampled 5 by 5, its edges left out; gaps under a centimetre ignored."""
+    sampled 5 by 5, its edges left out; gaps under a centimetre ignored. `half` -1 or 1: the square's south or north
+    half alone (a wall running on from the corner to one side only: room_pieces caps the other half)."""
     T = L.WALL_T
     x0, y0, z0 = room["at"]
     w, d, h = room["size"]
     cx, cy = x0 + (w if end else 0.0), y0 + (d if wall == "n" else 0.0)
     filled = [[z0, z0 + h]]
     k = [i / 4 for i in range(5)]
+    ylo, yspan = (cy - T / 2, T) if not half else ((cy - T / 2) if half < 0 else cy, T / 2)
     for fx in k:
         for fy in k:
-            px, py = cx - T / 2 + 0.004 + fx * (T - 0.008), cy - T / 2 + 0.004 + fy * (T - 0.008)
+            px, py = cx - T / 2 + 0.004 + fx * (T - 0.008), ylo + 0.004 + fy * (yspan - 0.008)
             here = _merged([[b[4], b[5]] for b in boxes if b[0] - 1e-6 <= px <= b[1] + 1e-6 and b[2] - 1e-6 <= py <= b[3] + 1e-6])
             filled = [[max(a0, a1), min(b0, b1)] for a0, b0 in filled for a1, b1 in here if min(b0, b1) - max(a0, a1) > 1e-6]
             if not filled:
@@ -260,6 +262,32 @@ def open_corners(lvl, walls):
     return out
 
 
+def _wall_spans(cuts, a_lo, a_hi, h):
+    """A wall's solid rectangles (a0, a1, z_lo, z_hi) round its holes (a0, a1, sill, height) when they stand one over
+    another along it: column by column between their edges, each column the wall's height less the holes over it, the
+    neighbouring columns of the same heights joined. (The walk along the wall in room_pieces cut each hole from the floor
+    up, so a stair shaft's arch onto each landing walled up the door under it.)"""
+    xs = sorted({a_lo, a_hi} | {min(max(v, a_lo), a_hi) for a0, a1, _, _ in cuts for v in (a0, a1)})
+    runs, out = {}, []
+    for xa, xb in zip(xs, xs[1:]):
+        if xb - xa < 0.001:
+            continue
+        xm, solid, cur = (xa + xb) / 2, [], 0.0
+        for lo, hi in sorted((sill, sill + oh) for a0, a1, sill, oh in cuts if a0 <= xm <= a1):
+            if lo > cur + 0.001:
+                solid.append((round(cur, 6), round(lo, 6)))
+            cur = max(cur, hi)
+        if h > cur + 0.001:
+            solid.append((round(cur, 6), round(h, 6)))
+        for key in list(runs):                              # a run whose heights this column doesn't continue ends here
+            if key not in solid:
+                out.append((runs.pop(key), xa) + key)
+        for key in solid:
+            runs.setdefault(key, xa)
+    out += [(a0, a_hi) + key for key, a0 in runs.items()]
+    return sorted(out)
+
+
 def room_pieces(lid, room, corner=None):
     """A room's floor, its volume, its ceiling and its walls round their openings. `corner(room, wall, end)`: the
     heights at which a north or south wall must close its corner at `end` (0 west, 1 east) itself (`corner_gaps`): over
@@ -267,7 +295,9 @@ def room_pieces(lid, room, corner=None):
     corner's line, its end inside the wall that fills it; in between, it stops there and a cap half a wall long closes
     the rest. Run on to another room's wall, its end lay in the same plane as that wall's face and the two z-fought: a
     line down the wall, flickering as the eye moves (a corridor's side where each room's dividing wall met it, DECISIONS
-    2026-11-03)."""
+    2026-11-03). A corner another room's wall fills on one side only (it runs on from the corner that way; the other
+    side open: an open plan's kitchen beside the bath) is closed by a cap on the open half alone (`corner(room, wall,
+    end, half)`), for the same reason."""
     out = []
     x0, y0, z0 = room["at"]
     w, d, h = room["size"]
@@ -290,23 +320,34 @@ def room_pieces(lid, room, corner=None):
         # n and s walls close the corners: run past them by half a wall where nothing else fills them, capped where
         # something does part of the way up
         gaps = ([None, None] if corner is None else [corner(room, wall, 0), corner(room, wall, 1)]) if wall in ("n", "s") else [[], []]
-        full = [g is None or (len(g) == 1 and g[0][0] <= z0 + 0.01 and g[0][1] >= z0 + h - 0.01) for g in gaps]
+        whole = lambda g: g is not None and len(g) == 1 and g[0][0] <= z0 + 0.01 and g[0][1] >= z0 + h - 0.01
+        halves = [None, None]                               # a corner filled on one side only: each half's gaps
+        for end in (0, 1):
+            if corner is not None and whole(gaps[end]):
+                hg = (corner(room, wall, end, -1), corner(room, wall, end, 1))
+                if not (whole(hg[0]) and whole(hg[1])):
+                    halves[end] = hg
+        full = [g is None or (whole(g) and halves[e] is None) for e, g in enumerate(gaps)]
         ext0, ext1 = (T / 2 if full[0] else 0.0), (T / 2 if full[1] else 0.0)
         spans = []                                          # (a0, a1, z_lo, z_hi) along the wall
         cur = -ext0
         # openings cut a hole; a skipped stretch (a neighbour builds that part of the wall) cuts all of it
         cuts = [(o["at"] - o["w"] / 2, o["at"] + o["w"] / 2, o.get("sill", 0.0), o["h"]) for o in room.get("openings", []) if o["wall"] == wall]
         cuts += [(a0, a1, 0.0, h) for a0, a1 in L.skipped_stretches(room, wall)]
-        for a0, a1, sill, oh in sorted(cuts):
-            if a0 > cur + 0.001:
-                spans.append((cur, a0, 0.0, h))
-            if sill > 0.001:
-                spans.append((max(a0, cur), a1, 0.0, sill))
-            if h - (sill + oh) > 0.001:
-                spans.append((max(a0, cur), a1, sill + oh, h))
-            cur = max(cur, a1)
-        if length + ext1 > cur + 0.001:
-            spans.append((cur, length + ext1, 0.0, h))
+        stacked = any(c[0] < d[1] - 1e-6 and d[0] < c[1] - 1e-6 for i, c in enumerate(cuts) for d in cuts[i + 1:])
+        if stacked:                                         # openings one over another (a stair shaft's door on every
+            spans = _wall_spans(cuts, -ext0, length + ext1, h)   # landing): cut column by column
+        else:
+            for a0, a1, sill, oh in sorted(cuts):
+                if a0 > cur + 0.001:
+                    spans.append((cur, a0, 0.0, h))
+                if sill > 0.001:
+                    spans.append((max(a0, cur), a1, 0.0, sill))
+                if h - (sill + oh) > 0.001:
+                    spans.append((max(a0, cur), a1, sill + oh, h))
+                cur = max(cur, a1)
+            if length + ext1 > cur + 0.001:
+                spans.append((cur, length + ext1, 0.0, h))
         for i, (a0, a1, lo, hi) in enumerate(spans):
             a, along, zc, hh = (a0 + a1) / 2, a1 - a0, z0 + (lo + hi) / 2, hi - lo
             if wall in ("n", "s"):
@@ -319,6 +360,17 @@ def room_pieces(lid, room, corner=None):
                 continue
             ends = [(lo, hi) for a0, a1, lo, hi in spans if (a0 <= 0.001 if end == 0 else a1 >= length - 0.001)]
             j = 0
+            if halves[end] is not None:                      # the open half alone, a quarter of the corner's square
+                for side, hg in zip((-1, 1), halves[end]):
+                    for za, zb in hg:
+                        for lo, hi in ends:
+                            c0, c1 = max(za, z0 + lo), min(zb, z0 + hi)
+                            if c1 - c0 > 0.01:
+                                pos = (x0 + (w + T / 4 if end else -T / 4), y0 + (d if wall == "n" else 0.0) + side * T / 4, (c0 + c1) / 2)
+                                out.append(dict(base, id=f"{room['id']}__wall_{wall}c{end}{j}", kind="wall", pos=pos, size=(T / 2, T / 2, c1 - c0),
+                                                tags=tags + look("walls")))
+                                j += 1
+                continue
             for za, zb in gaps[end]:
                 for lo, hi in ends:
                     c0, c1 = max(za, z0 + lo), min(zb, z0 + hi)
@@ -523,10 +575,14 @@ def plan(story, level=None):
     for lid, lvl in story["levels"].items():
         if level and lid != level:
             continue
-        core = [_box(p) for room in lvl["rooms"] for p in room_pieces(lid, room, lambda *_: []) if p["kind"] == "wall"]   # the walls without their corners
+        core = [(room["id"], _box(p)) for room in lvl["rooms"] for p in room_pieces(lid, room, lambda *_: []) if p["kind"] == "wall"]   # the walls without their corners
+        every = [b for _, b in core]
+
+        def corner(r, wall, end, half=0):                # a half: filled by another room's wall alone (a room's own side wall fills its own corner's half: the wall runs on past it as ever)
+            return corner_gaps(every, r, wall, end) if not half else corner_gaps([b for rid, b in core if rid != r["id"]], r, wall, end, half)
         mine = []
         for room in lvl["rooms"]:
-            mine += room_pieces(lid, room, lambda r, wall, end: corner_gaps(core, r, wall, end))
+            mine += room_pieces(lid, room, corner)
         walls = [p for p in mine if p["kind"] == "wall"]
         ops = []
         for room in lvl["rooms"]:

@@ -3,6 +3,8 @@
 triggers (dashed), spots and the start (arrows), people (circles). A quick look before importing.
 
     python tools/plan_view.py [--game Pilot] [level] [out.png]      (needs Pillow: pip install pillow)
+    python tools/plan_view.py --game set:<name> --floor 2.85           (one storey of a building of several: the
+                                                                         pieces on the floor at that height)
 """
 import math
 import sys
@@ -16,11 +18,28 @@ PX = 60   # pixels a metre
 
 
 def main():
-    game, args = L.pick_game(sys.argv[1:])
+    argv = sys.argv[1:]
+    fz = None
+    if "--floor" in argv:
+        i = argv.index("--floor")
+        fz = float(argv[i + 1])
+        argv = argv[:i] + argv[i + 2:]
+    game, args = L.pick_game(argv)
     story, spath = L.load(game)
     level = args[0] if args else next(iter(story["levels"]))
-    out = Path(args[1] if len(args) > 1 else L.ROOT / "Saved" / "Story" / spath.parent.name / f"plan_{level}.png")
+    tail = f"_{fz:g}" if fz is not None else ""
+    out = Path(args[1] if len(args) > 1 else L.ROOT / "Saved" / "Story" / spath.parent.name / f"plan_{level}{tail}.png")
     pieces = [p for p in P.plan(story, level) if not p["id"].endswith("__volume")]   # room volumes would cover it all
+
+    def on_floor(p):                                    # --floor: what stands on that storey (a floor its top there)
+        z, h = p["pos"][2], (p.get("size") or (0, 0, 0))[2]
+        if p["kind"] == "floor":
+            return abs(z + h / 2 - fz) < 0.3
+        if h <= 0:
+            return fz - 0.2 <= z <= fz + 2.7
+        return z - h / 2 <= fz + 2.0 and z + h / 2 >= fz + 0.05
+    if fz is not None:
+        pieces = [p for p in pieces if on_floor(p)]
     xs = [p["pos"][0] + s * p["size"][0] / 2 for p in pieces for s in (-1, 1)]
     ys = [p["pos"][1] + s * p["size"][1] / 2 for p in pieces for s in (-1, 1)]
     x0, y0 = min(xs) - 1, min(ys) - 1

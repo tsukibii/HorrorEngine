@@ -127,14 +127,23 @@ export function levelToModel(story, levelName) {
              ceilKit: noSize(((r.props || []).find(p => p.id === `${r.id}_fx_ceiling`) || {}).kit) };
   });
   const byId = Object.fromEntries(rooms.map(r => [r.id, r]));
-  // a wall skipped whole that no neighbour builds is an open side (a porch, a balcony's railing side)
+  // a wall skipped whole that no neighbour builds is an open side (a porch, a balcony's railing side); so is one a
+  // neighbour leaves out too where they meet (an open plan: a kitchen open to the living room, both sides skipped; read
+  // back as walls, the page put them up again on its next save)
+  const srOf = Object.fromEntries(lvl.rooms.map(q => [q.id, q]));
+  const skipsOver = (sr, wl, lo, hi) => (sr.skip || []).some(sk => {
+    if (typeof sk === "string") return sk === wl;
+    if (sk[0] !== wl) return false;
+    const ln = wallLine(byId[sr.id], wl);
+    return Math.min(hi, ln.lo + sk[2]) - Math.max(lo, ln.lo + sk[1]) > 0.05;
+  });
   for (const sr of lvl.rooms) {
     for (const wl of sr.skip || []) {
       if (typeof wl !== "string") continue;
       const r = byId[sr.id], ln = wallLine(r, wl);
-      let cover = 0;
-      for (const o of rooms) if (o !== r) for (const sh of shared(r, o)) if (sh.wa === wl) cover += sh.hi - sh.lo;
-      if (cover < ln.hi - ln.lo - 0.05) r.open.push(wl);
+      let cover = 0, both = false;
+      for (const o of rooms) if (o !== r) for (const sh of shared(r, o)) if (sh.wa === wl) { cover += sh.hi - sh.lo; if (skipsOver(srOf[o.id], sh.wb, sh.lo, sh.hi)) both = true; }
+      if (cover < ln.hi - ln.lo - 0.05 || both) r.open.push(wl);
     }
   }
   const ops = [];

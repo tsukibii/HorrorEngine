@@ -135,6 +135,30 @@ def check(story, level=None):
         if not ok:
             errs.append(f"{t['id']}: nowhere to stand within {REACH} m")
 
+    # a doorway's own wall: never a wall piece standing in a door or an arch (openings one over another on a stair
+    # shaft's wall once walled up the lower ones: plan.py _wall_spans), never one of no width
+    for w in walls:
+        if min(w["size"][0], w["size"][1]) < 0.005 or w["size"][2] < 0.005:
+            errs.append(f"{w['id']}: a wall piece of no width")
+    for r in rooms.values():
+        if level is not None and level_of[r["id"]] != level:
+            continue
+        for op in r.get("openings", []):
+            if op.get("window"):
+                continue
+            x, y = L.wall_point(r, op["wall"], op["at"])
+            wx, wy, wz = L.room_world(r, x, y)
+            zm = wz + op.get("sill", 0) + op["h"] / 2
+            along_x = op["wall"] in ("n", "s")
+            for w in walls:
+                (cx, cy, cz), (sx, sy, sz) = w["pos"], w["size"]
+                if w.get("level") != level_of[r["id"]] or min(sx, sy) < 0.005:
+                    continue
+                inside = (abs(cx - wx) < sx / 2 - 0.05 and abs(cy - wy) < sy / 2 + 0.01) if along_x else (abs(cy - wy) < sy / 2 - 0.05 and abs(cx - wx) < sx / 2 + 0.01)
+                if inside and cz - sz / 2 < zm < cz + sz / 2:
+                    name = (op.get("door") or {}).get("id") or f"{r['id']} {op['wall']} opening"
+                    errs.append(f"{name}: walled up by {w['id']}")
+
     for name, lv in story["levels"].items():           # walls meeting: never two rooms' faces in one plane, every corner closed
         if level and name != level:
             continue
