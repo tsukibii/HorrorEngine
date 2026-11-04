@@ -349,5 +349,17 @@
  "pot_bamboo": {"label": "potted plant: lucky bamboo canes in a white cylinder (table)", "family": "plant", "form": "canes", "seed": 317,
    "pot": {"kind": "cylinder", "d": 110, "h": 160, "color": "#f0ece4", "topping": "pebbles"}, "plant": {"size": 0.55, "canes": 5}},
  "pot_dead": {"label": "potted plant: a dead one, dry stems in a cracked terracotta pot", "family": "plant", "form": "tree", "seed": 318,
-   "pot": {"kind": "terracotta", "d": 130, "h": 115, "cracked": true}, "plant": {"species": "dead", "size": 0.45}}
+   "pot": {"kind": "terracotta", "d": 130, "h": 115, "cracked": true}, "plant": {"species": "dead", "size": 0.45}},
+ "makura_sobakawa": {"label": "bedding: a buckwheat-hull pillow (sobakawa makura), its cover striped, a head's dent in it", "family": "bedding", "kind": "pillow", "seed": 401, "size": [500, 350], "fill": 0.68, "lumps": 0.8, "dent": 0.45, "tex": 1024,
+   "cover": {"pattern": "stripes", "size": 34, "color": "#ece8de", "ink": "#3c5677"}, "wear": {"dust": 0.1, "grime": 0.08}},
+ "pillow_bed": {"label": "bedding: a bed pillow 63 x 43 in a white cotton case, slept on", "family": "bedding", "kind": "pillow", "seed": 402, "size": [630, 430], "fill": 0.86, "dent": 0.6, "tex": 1024,
+   "cover": {"color": "#efede6", "rough": 0.84}, "wear": {"grime": 0.06}},
+ "zabuton_real": {"label": "bedding: a floor cushion (zabuton) tufted through its middle, indigo with waves", "family": "bedding", "kind": "cushion", "seed": 403, "size": [550, 590], "fill": 0.42, "tuft": 0.8, "tex": 1024, "thread": "#9a2f2a",
+   "cover": {"pattern": "seigaiha", "size": 46, "color": "#2b3a58", "ink": "#3a4c70", "rough": 0.7}, "wear": {"dust": 0.12}},
+ "kakebuton_turned": {"label": "bedding: a quilted futon (kakebuton) on the futon on tatami, its head end turned back, pushed toward its foot and one side (a small washitsu's)", "family": "bedding", "kind": "blanket", "seed": 404, "size": [1400, 1900], "thick": 50, "on": "futon", "floor": 60, "at": [140, -160], "mode": "turned", "turn_back": 500, "tex": 2048,
+   "quilt": {"cell": 330}, "cover": {"pattern": "seigaiha", "size": 70, "color": "#e9e3d4", "ink": "#9fb2c8"}, "back": {"color": "#efe9dc"}, "wear": {"dust": 0.08}},
+ "comforter_bed": {"label": "bedding: a comforter on the single bed, turned back from the pillow, a grey-blue check", "family": "bedding", "kind": "blanket", "seed": 405, "size": [1500, 2100], "thick": 26, "on": "bed_single", "at": [0, -150], "mode": "turned", "turn_back": 560, "tex": 2048,
+   "quilt": {"cell": 420, "style": "channels", "low": 0.5}, "cover": {"pattern": "check", "size": 90, "color": "#c9ced3", "ink": "#7c8ea3"}, "back": {"color": "#e6e4df"}},
+ "futon_folded": {"label": "bedding: a futon folded in half and in three, put away (an oshiire's)", "family": "bedding", "kind": "folded", "seed": 406, "size": [1000, 2000], "thick": 60, "folds": [["x", 2], ["y", 3]], "tex": 1024, "hem_full": 0.95,
+   "cover": {"pattern": "dots", "size": 60, "color": "#ece6d8", "ink": "#c9b9a0"}}
 }

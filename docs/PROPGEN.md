@@ -141,6 +141,7 @@ and set the fill and the colours on each placed copy in Godot (its `HSLiquidFill
 | `import` | your own mesh, worn (§5) | chair_worn |
 | `tree` | §18: a street's trees grown by Mtree's functions: `kind` zelkova, ginkgo, cherry, camphor, plane, maple, crape_myrtle, pine, cedar, dead, and the bushes azalea (`clip` to a ball or a box), shrub, grass; `height`, `clear` (the stem below the first branch), `season` summer, autumn, spring (blossom on a cherry), winter (bare); `spread`, `droop`, `density`, `crown`, `levels`, `lean`, `multi`, `pollard`, `twigs`; `leaves` {count, size, tint; `set` a leaf set off the shelf for realistic leaves, `set_mm`, `spray`, `hue`, `sat`, `light`}, `bark` {pbr, tint, tile, relief; color, style for the drawn tile}; `stakes` torii, tripod or single, `pit` kerb or soil | zelkova_street, zelkova_young, zelkova_autumn, zelkova_winter, ginkgo_street, ginkgo_autumn, cherry_tree, cherry_blossom, camphor_tree, plane_street, plane_pollarded, maple_garden, crape_myrtle, black_pine, dead_tree, sapling_staked; the realistic category: zelkova_real, zelkova_autumn_real, cherry_real, camphor_real, plane_real, maple_autumn_real, crape_myrtle_real, black_pine_real, cedar_real; the bushes: azalea_ball, azalea_flowering, azalea_hedge, azalea_low, shrub_loose, shrub_autumn, shrub_real, grass_tuft, grass_dry; the small trees (`habit: upright`, under a two-storey house): small_zelkova, small_zelkova_staked, small_zelkova_autumn, small_hornbeam_real, small_cherry, small_cherry_blossom, small_ginkgo, small_ginkgo_autumn, small_maple_autumn, small_dead |
 | `plant` | §19: a potted plant, a table's to a floor's: `form` rosette (an aloe, an echeveria), blades (a snake plant), fern, palm (an areca's canes), big_leaf (a monstera, a rubber plant, a fiddle leaf fig: `leaf`, `stem`), tree (`species` ficus, bonsai, herb, dead), trailing (a pothos, ivy: `length`), canes (lucky bamboo), yucca, cactus (`ribs`, `radius`); `plant` {size, count, color, leaf, species, lean, spread}; `pot` {kind terracotta, glazed, plastic, cylinder, bowl, concrete or cube; d (w, dd), h, color, soil, topping pebbles, pumice, moss or bark, cracked, glaze} | pot_aloe, pot_echeveria, pot_basil, pot_cactus, pot_cactus_tall, pot_pothos, pot_ivy, pot_fern, pot_snake_plant, pot_bonsai, pot_monstera, pot_rubber_plant, pot_fiddle_leaf, pot_ficus, pot_palm, pot_yucca, pot_bamboo, pot_dead |
+| `bedding` | §21: pillows, cushions, blankets and futons by the cloth simulation: `kind` pillow, cushion (a zabuton: `tuft`, `thread`), blanket (`on` floor, futon, bed_single or your boxes; `floor` mm, the ground round it (tatami: 60); `at` mm over it; `mode` spread, turned (`turn_back`), rumpled (`heaps`); `thick`, `quilt` {cell, style channels, low}) or folded (`folds` [[axis, 2 or 3], ...]); `fill`, `lumps`, `dent`, `wrinkle`, `hem_full`; `cover` {color, pattern stripes, check, dots or seigaiha, size, ink, rough}, `back` | makura_sobakawa, pillow_bed, zabuton_real, kakebuton_turned, comforter_bed, futon_folded |
 
 ### Designs
 
@@ -942,3 +943,45 @@ repeat (`--tex` the pixels, 1024 by default; `--seed` another growth; `--out` an
   `docs/godot_sheets/2026-11-02_vines.jpg` shows each kind tiled two by two and the ivy over the plaster set. For
   vines standing off a wall, the set goes on a plane a few centimetres in front of it in Godot, its material cut by
   the opacity (alpha scissor).
+
+## 21. Bedding: pillows, cushions, blankets and futons
+
+The user (2026-11-04): "can you make proper better prop pillows and blankets and then add them to this level" (the
+maison flat: SCENE_BUILDER §10d). The `bedding` family (`families/bedding.py`) makes them with the cloth simulation
+(`sim.Cloth`, after the paper's: position-based dynamics, its stretch and bend kept, the sheet's own layers kept apart
+by its thickness, rounded boxes and the floor as what it rests on with friction), then draws the cloth's look into the
+detail mesh, baked onto the game mesh as every prop's is:
+
+- **Pillows and cushions** (`pillow`, `cushion`): two pieces of cover sewn round their edge, filled by pressure to a
+  share of what they could hold (`fill`: 0.42 a zabuton, 0.68 a buckwheat makura, 0.86 a bed pillow), set down and
+  settled; a head's `dent` pressed in by a sphere, a zabuton's `tuft` tied through its middle (its thread's knot
+  painted, `thread` its colour). The folds a filled bag makes at its corners, the seam's puckers and the fill's
+  `lumps` go into the detail mesh, faded to nothing at the seam (the simulation leaves a bag smooth: a cloth that
+  thin wrinkles below its grid).
+- **Blankets** (`blanket`): a quilted sheet `thick` mm (its `quilt` cells or channels puffed between the stitches,
+  thinner at the hem), laid over what it's `on` (`futon` and `bed_single`: the kit's own at its defaults; or boxes of
+  your own, `[[lo, hi, radius], ...]` in metres from its middle on the floor), `floor` mm the ground it falls onto
+  round its support (a kit futon stands in 6 cm of tatami: `"floor": 60`, or its flaps lie under the mats), `at` mm
+  along it from its middle; in
+  `mode` `turned` its head end folded back `turn_back` mm (a little askew) before it falls, `rumpled` pushed about
+  into soft heaps; settled with friction over its support's edges, so it hangs where it's longer.
+- **Folded futons** (`folded`): `folds` in order, each in half or in three, rolled round the layers inside it (each
+  layer bends round the fold's middle at its own radius, the outer ones wider: `sim.hinge`), each flap a little longer
+  than what it covers by what its bend takes, so the layers end even; left as folded with a soft unevenness and the
+  top's `sag` (a settle crumples a stack that thick into a heap). The maison oshiire's is folded in half and in three
+  (`[["x", 2], ["y", 3]]`): 0.55 x 0.82 x 0.36 m, shallow enough for its 0.6 m.
+- **The cover**: `cover` {color, pattern (stripes, check, dots, seigaiha), size (mm a repeat), ink, rough}, `back`
+  the lining's; the weave's grain as a height, the quilt's stitches as a dashed thread in a groove; `wear` as any
+  prop's.
+- **Laid on a bed** (`on` a futon or a bed): the blanket is made where it lies (`keep_z`: its heights over the floor
+  as made, the support's middle at the origin: dropped by hand into Godot at the bed's own place, it lies on it). A
+  level places a library mesh by its box (centred, on its base), so meta.json and the library's index carry its
+  `box_m` (story metres from its origin, z up): a layout puts it where its box falls over the bed's middle turned by
+  the bed's `rot`, at the box's lowest height, `on` the bed (the maison layout's `laid`, `Content/Studio/Sets/
+  maison_1f/layout.json`'s source). A blanket made for a futon or a bed fits that kit at its defaults; give the kit
+  `{"pillows": 0, "duvet": 0}` so its own blocks don't lie under it.
+
+The check's cases: `pillow_bed`, `futon_folded`, and `kakebuton_turned` (made lying on its futon: over the floor,
+never under it). A layout places a library prop as a kit (`[room, "props/<name>", x, y, rot, {z, extra}]`,
+`layoutset.mjs` reads the index's sizes).
+

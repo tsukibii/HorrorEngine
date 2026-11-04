@@ -1692,3 +1692,22 @@ cutscene ever turned the player toward her.
 - **HUD lines time out on the wall clock** (`hud.line`: `Time.get_ticks_msec`), so a picture taken in a slow,
   fixed-fps test run misses a line that a real game shows: picture a line by waiting for it to be the current one
   (`hud.line_text`), never by game time after it started.
+
+## Cloth that came out smooth, crumpled, or in the wrong place (2026-11-04)
+
+The bedding family (PROPGEN §21) took several tries. A pillow simulated as a filled bag stayed smooth at every
+stiffness, iteration count and jitter tried: the folds a filled bag makes at its corners are smaller than any grid
+a prop can afford to simulate. A folded futon creased by reflecting its flap (the old `sim.hinge`) and then settled
+came out a crumpled heap: a stack of layers that thick, pushed apart by self-collision under gravity, never settles
+neatly. A blanket made for a bed and placed by its origin in the level landed off the bed.
+
+- **The simulation gives the form, the detail mesh the small folds**: fill, the seam, the drape over an edge from the
+  simulation; the corner folds, the seam's puckers, lumps and wrinkles drawn into the high mesh and baked (faded to
+  nothing at a seam, so two pieces still meet).
+- **Fold a thick thing by rolling, and leave it folded**: each layer round the fold's middle at its own radius, each
+  flap longer than what it covers by what its bend takes; a soft unevenness and a sag drawn on, no settle.
+- **`sim.fold` works in the flat sheet's coordinates**: fold first, then move the sheet onto what it lies on.
+- **Every exporter places a library mesh by its box** (centred, on its base), not by its origin: an anchored prop
+  (a tree's trunk, a blanket's bed) records its `box_m`, and a layout places it where its box falls.
+- **Rewriting a hand-formatted JSON file with `json.dumps` reflows all of it** (presets.json grew 2500 lines of
+  diff): append to its text, then check it still parses to the same thing.

@@ -248,6 +248,12 @@
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe coffee_cup_tipped (Content/Studio/Props/presets.json)"
  },
+ "props/comforter_bed": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe comforter_bed (Content/Studio/Props/presets.json)"
+ },
  "props/crape_myrtle": {
   "date": "2026-11-02",
   "kind": "mesh",
@@ -338,6 +344,12 @@
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe frying_pan (Content/Studio/Props/presets.json)"
  },
+ "props/futon_folded": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe futon_folded (Content/Studio/Props/presets.json)"
+ },
  "props/ginkgo_autumn": {
   "date": "2026-11-02",
   "kind": "mesh",
@@ -392,6 +404,12 @@
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe jar_umeboshi (Content/Studio/Props/presets.json)"
  },
+ "props/kakebuton_turned": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe kakebuton_turned (Content/Studio/Props/presets.json)"
+ },
  "props/key_brass": {
   "date": "2026-10-30",
   "kind": "mesh",
@@ -439,6 +457,12 @@
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe koro (Content/Studio/Props/presets.json)"
+ },
+ "props/makura_sobakawa": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe makura_sobakawa (Content/Studio/Props/presets.json)"
  },
  "props/manga_volume": {
   "date": "2026-11-01",
@@ -547,6 +571,12 @@
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe pill_bottle_capsules (Content/Studio/Props/presets.json)"
+ },
+ "props/pillow_bed": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe pillow_bed (Content/Studio/Props/presets.json)"
  },
  "props/pizza_slice_box": {
   "date": "2026-10-30",
@@ -937,6 +967,12 @@
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe yukihira (Content/Studio/Props/presets.json)"
+ },
+ "props/zabuton_real": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe zabuton_real (Content/Studio/Props/presets.json)"
  },
  "props/zelkova_autumn": {
   "date": "2026-11-02",

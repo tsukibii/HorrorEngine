@@ -40,6 +40,7 @@ class Thing:
         self.sockets = {}           # name -> (point, direction) at rest, metres: empties in the glb (socket_flame, socket_steam...)
         self.fx = {}                # the enhancers Godot's HSPropFX gives it: glow, flame, smoke, steam, wax (PROPGEN.md §14)
         self.anchor = None          # a point of the made thing (metres) that stays at x = y = 0 when it's set down: a tree's trunk
+        self.keep_z = False         # its heights as made (the floor at z = 0 already: a blanket on a bed, clear of the floor)
         self.bake_ao = True         # off for a thing whose texture tiles over itself (a tree's bark): a bake over it would be a jumble
         self.tree = None            # what a tree family records about its growth (meta.json's "tree")
 
@@ -350,7 +351,7 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
     if th.anchor is not None:
         # the anchor, not the middle of the bounds, over the origin (a tree stands on its trunk, its crown wherever it leans)
         a = Mx @ np.asarray(th.anchor, float) + shift
-        off = np.array([a[0], a[1], 0.0])
+        off = np.array([a[0], a[1], shift[2] if th.keep_z else 0.0])
         for x in [th.high, th.low] + ([th.liquid[0]] if th.liquid else []):
             if x is not None:
                 x.v = x.v - off
@@ -542,6 +543,11 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
            "slots": slots, "design": design}
     if th.anchor is not None:
         rec["anchor"] = [round(float(x), 5) for x in (Mx @ np.asarray(th.anchor, float) + shift)]
+        # its box from its origin (story metres, z up): a level places a mesh by its box (centred, on its base), so a
+        # blanket made for a bed goes where its box falls over the bed's middle (docs/PROPGEN.md §21)
+        rec["box_m"] = [round(float(x), 4) for x in list(lo) + list(hi)]
+        if th.keep_z:
+            rec["keep_z"] = True                        # its heights as made: on what it lies on, not on the floor
     if th.tree:
         rec["tree"] = th.tree
     with open(os.path.join(odir, "meta.json"), "w", encoding="utf-8") as fh:

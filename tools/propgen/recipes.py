@@ -102,6 +102,8 @@ def to_library(rec, out):
     index = json.load(open(ip, encoding="utf-8")) if os.path.exists(ip) else {}
     x, y, z = rec["size_m"]                       # Blender's x, y, z (z up) -> the index's glTF x, y (up), z
     index[name] = {"kb": os.path.getsize(src) // 1024, "size_m": [x, z, y], "tris": rec["tris"]}
+    if rec.get("box_m"):                          # an anchored prop's box from its origin, story metres (as serve.py's)
+        index[name]["box_m"] = rec["box_m"]
     with open(ip, "w", encoding="utf-8") as fh:
         json.dump(dict(sorted(index.items())), fh, indent=1)
     lp = os.path.join(LIB, "LEDGER.json")

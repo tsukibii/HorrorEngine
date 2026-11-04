@@ -305,3 +305,169 @@ def drape(pp, steps=60, gravity=0.0003, friction=0.7, stiff=0.5, log=None):
     pp.stiff = keep
     pp.X[:, 2] -= pp.X[:, 2].min()
     return pp
+
+
+# ---- cloth: bedding (families/bedding.py; the user, 2026-11-04: "proper better pillows and blankets") -------------------
+
+class Cloth(Paper):
+    """Cloth: the paper's solver with a soft bend that springs back (no creases set), for pillows and blankets. Thick (its
+    layers kept `thick` apart: a quilted futon's 5 cm), pushed by gravity or a filling's pressure (a pillow: a bag sewn
+    from two pieces, inflated until its volume is reached), lying on supports (boxes with rounded edges: a futon, a
+    mattress, a headboard) and the floor with friction, tied where it's tufted (a zabuton's middle). `sep`: the points'
+    places for telling apart what was near on the cloth (a bag's two pieces lie on one flat: one is put a metre off)."""
+
+    def __init__(self, X, T, flat, stiff=0.02, thick=0.0, sep=None):
+        super().__init__(X, T, flat, stiff=stiff, yield_=1e9, plastic=0.0)
+        self.thick = float(thick)
+        self.d = max(self.h * 0.85, self.thick)
+        self.sep = np.asarray(sep if sep is not None else np.concatenate([self.flat, np.zeros((self.n, 1))], 1), float)
+        self.ties = None              # (i, j, dist): held within dist of each other
+
+    def normals(self, P=None):
+        P = self.X if P is None else P
+        a, b, c = P[self.T[:, 0]], P[self.T[:, 1]], P[self.T[:, 2]]
+        fn = np.cross(b - a, c - a)
+        n = np.zeros_like(P)
+        for k in range(3):
+            for j in range(3):
+                n[:, j] += np.bincount(self.T[:, k], weights=fn[:, j], minlength=self.n)
+        return n / np.maximum(np.linalg.norm(n, axis=1), 1e-12)[:, None]
+
+    def volume(self, P=None):
+        """The volume a closed cloth holds (outward triangles)."""
+        P = self.X if P is None else P
+        a, b, c = P[self.T[:, 0]], P[self.T[:, 1]], P[self.T[:, 2]]
+        return float(np.einsum("ij,ij->i", a, np.cross(b, c)).sum() / 6.0)
+
+    def _contact(self, P, X0, idx, g, push, fr):
+        """Points idx pushed out along g by push; their slide since the step began kept by (1 - fr)."""
+        P[idx] += g * push[:, None]
+        if fr > 0:
+            mv = P[idx] - X0[idx]
+            nm = (mv * g).sum(1, keepdims=True) * g
+            P[idx] = X0[idx] + nm + (mv - nm) * (1 - fr)
+
+    def boxes(self, P, X0, boxes, pad, fr):
+        for lo, hi, r in boxes:
+            lo, hi = np.asarray(lo, float), np.asarray(hi, float)
+            c, half = (lo + hi) / 2, (hi - lo) / 2 - r
+            rel = P - c
+            q = np.abs(rel) - half
+            outq = np.maximum(q, 0)
+            ol = np.linalg.norm(outq, axis=1)
+            d = ol + np.minimum(q.max(1), 0) - r
+            hit = np.nonzero(d < pad)[0]
+            if not len(hit):
+                continue
+            g, gl = outq[hit], ol[hit]
+            inner = gl < 1e-9
+            if inner.any():                          # inside the box's core: out through its nearest face
+                ax = q[hit][inner].argmax(1)
+                gi = np.zeros((int(inner.sum()), 3))
+                gi[np.arange(len(ax)), ax] = 1.0
+                g[inner], gl[inner] = gi, 1.0
+            g = g / gl[:, None] * np.where(rel[hit] >= 0, 1.0, -1.0)
+            self._contact(P, X0, hit, g, pad - d[hit], fr)
+
+    def step(self, gravity=0.0, damping=0.92, iters=8, boxes=(), floor=0.0, friction=0.5, pressure=0.0, collide=True, spheres=(), pad=None):
+        X0 = self.X
+        P = X0 + self.V * damping
+        if gravity:
+            P[:, 2] -= gravity
+        if pressure:
+            P += self.normals(P) * pressure
+        P[self.pinned] = X0[self.pinned]
+        pad = self.thick / 2 + 0.002 if pad is None else pad
+        fr = 1 - (1 - friction) ** (1.0 / iters)     # the friction a step spread over its iterations
+        pairs = None
+        if collide:
+            i, j = pairs_within(P, self.d * 1.2)
+            if len(i):
+                far = np.linalg.norm(self.sep[i] - self.sep[j], axis=1) > self.d * 1.6
+                pairs = (i[far], j[far])
+        for _ in range(iters):
+            self.stretch(P)
+            self.bend(P)
+            if self.ties is not None:
+                ti, tj, td = self.ties
+                v = P[tj] - P[ti]
+                L = np.maximum(np.linalg.norm(v, axis=1), 1e-12)
+                over = L > td
+                if over.any():
+                    c = ((L[over] - td[over]) / L[over] * 0.5)[:, None] * v[over]
+                    self._apply(P, np.concatenate([ti[over], tj[over]]), np.concatenate([c, -c]), 1.0)
+            for c, R in spheres:
+                v = P - np.asarray(c, float)
+                L = np.maximum(np.linalg.norm(v, axis=1), 1e-12)
+                hit = np.nonzero(L < R + pad)[0]
+                if len(hit):
+                    self._contact(P, X0, hit, v[hit] / L[hit, None], R + pad - L[hit], fr)
+            if boxes:
+                self.boxes(P, X0, boxes, pad, fr)
+            if floor is not None:
+                hit = np.nonzero(P[:, 2] < floor + pad)[0]
+                if len(hit):
+                    g = np.zeros((len(hit), 3))
+                    g[:, 2] = 1.0
+                    self._contact(P, X0, hit, g, floor + pad - P[hit, 2], fr)
+            if pairs is not None and len(pairs[0]):
+                pi, pj = pairs
+                v = P[pi] - P[pj]
+                L = np.linalg.norm(v, axis=1)
+                close = L < self.d
+                if close.any():
+                    ii, jj, vv, LL = pi[close], pj[close], v[close], np.maximum(L[close], 1e-9)
+                    c = ((self.d - LL) / LL * 0.5)[:, None] * vv
+                    self._apply(P, np.concatenate([ii, jj]), np.concatenate([c, -c]), 1.0)
+        self.V = P - X0
+        self.X = P
+
+
+def inflate(cl, volume, steps=220, pressure=0.0012, floor=None, iters=18, log=None):
+    """A bag filled: pushed out along its normals until it holds `volume` (m³), the push easing as it nears it. Many
+    iterations a step keep the cloth from stretching, so it buckles instead: the folds at a pillow's corners."""
+    for s in range(steps):
+        v = cl.volume()
+        p = pressure * float(np.clip(1 - v / volume, 0, 1)) ** 0.5
+        cl.step(pressure=p, damping=0.6, iters=iters, floor=floor, friction=0.3, collide=True)
+    return cl
+
+
+def settle(cl, steps=160, gravity=0.0004, boxes=(), floor=0.0, friction=0.55, pressure=0.0, volume=None, spheres=(), damping=0.85):
+    """Gravity onto what the cloth lies on until it's still; a bag keeps its filling (pressure toward its volume)."""
+    for s in range(steps):
+        p = 0.0
+        if volume:
+            p = pressure * float(np.clip(1 - cl.volume() / volume, 0, 1)) ** 0.5
+        cl.step(gravity=gravity, damping=damping, iters=8, boxes=boxes, floor=floor, friction=friction, pressure=p, spheres=spheres)
+    return cl
+
+
+def hinge(cl, axis, at, side, t):
+    """Folds what lies past a line (x = at for axis 0, y = at for axis 1; side +1 beyond it, -1 before it) over onto
+    the rest, rolled round the line rather than creased: each layer past it bends in a half circle about the fold's
+    middle (the outer layers of a stack wider), then lies flat a layer's thickness `t` over the rest's top (a futon
+    folded for the oshiire). The bends are kept as they are (a fold that stays folded)."""
+    X = cl.X
+    s = (X[:, axis] - at) * side
+    m = s > 0
+    if not m.any() or m.all():
+        return cl
+    src_top, dst_top = X[m, 2].max(), X[~m, 2].max()
+    zc = (src_top + dst_top + t) / 2                    # the bend's middle: the part folded lands a layer over the rest
+    rho = np.maximum(zc - X[m, 2], 1e-4)                # each layer round it at its own radius
+    sm = s[m]
+    a = np.minimum(sm / rho, np.pi)
+    on_arc = sm < np.pi * rho
+    X[m, axis] = np.where(on_arc, at + side * rho * np.sin(a), at - side * (sm - np.pi * rho))
+    X[m, 2] = np.where(on_arc, zc - rho * np.cos(a), zc + rho)
+    cl.V[:] = 0
+    cl.D0 = np.linalg.norm(X[cl.B[:, 0]] - X[cl.B[:, 1]], axis=1)
+    return cl
+    src_top, dst_top = X[m, 2].max(), X[~m, 2].max()
+    zm = (src_top + dst_top + t) / 2
+    X[m, axis] = 2 * at - X[m, axis]
+    X[m, 2] = 2 * zm - X[m, 2]
+    cl.V[:] = 0
+    cl.D0 = np.linalg.norm(X[cl.B[:, 0]] - X[cl.B[:, 1]], axis=1)
+    return cl
