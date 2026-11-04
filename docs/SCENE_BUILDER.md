@@ -447,7 +447,7 @@ reference.md). **`repeat`** builds a building of storeys alike: the rooms it nam
 (a landing, its arch onto the stair shaft). `python tools/plan_view.py --game set:<set> --floor 2.85` draws one storey.
 
 `maison_1f` is the user's image 1: bedroom 1 with its walk-in closet behind a sliding door and its L-shaped entry
-(two rooms, `open` between them), bedroom 2 a washitsu (tatami painted `Tatami001`, fusuma, a futon, a low table) with
+(two rooms, `open` between them), bedroom 2 a washitsu (tatami painted `Tatami001`, fusuma, a futon) with
 its tokonoma in the L's foot (the kit's alcove, a kōro in it) and its oshiire, a unit bath (the tub, a vanity and
 mirror, a toilet, white plastic walls), the kitchen open to the living room (a fridge, the run with a gas konro and
 its kettle, a rice cooker), the living room (a low table with tea on a rug, zabuton, the TV on its board, a bookshelf,
@@ -456,6 +456,16 @@ peephole, a latch, swinging out) opens onto the entrance hall: mailboxes, a noti
 `flag:outside_open`) and the dog-leg stair behind **`gate_bars`** (a kit door of steel bars, `Metal063`, locked:
 `flag:upstairs_open`). Three storeys of the same flat above, a landing each. Its outside: white plaster, a flat roof
 with a railing, rails across the tall windows, a canopy, the name plate メゾン白鷺 and a lamp at the entrance.
+
+**Its bedding** (DECISIONS 2026-11-04, morning; the prop generator's `bedding` family, PROPGEN §21): the washitsu's
+futon under a quilted kakebuton turned back from its buckwheat makura, made lying on the kit futon on 6 cm of tatami
+(`"floor": 60`: its flaps on the mats, not under them), so the low table went to make room; bedroom 1's bed under a
+checked comforter with its pillow (the kits' own pillows and duvet off, `{"pillows": 0, "duvet": 0}`); a futon folded
+in half and in three in the oshiire; the living room's zabuton tufted. A layout places a library prop as a kit,
+`[room, "props/<name>", x, y, rot, {z, extra}]` (`layoutset.mjs` reads the index's sizes, `presetToModel` the
+`props/` refs), a blanket where its `box_m` falls over its bed (the layout script's `laid`). LEVEL keeps a door's
+0.8 m clearance off the inside of a closet, an oshiire or a storeroom now (they're reached into, not walked into: an
+oshiire's futon sits right behind its fusuma).
 
 What it taught the builder (each now a rule, none changing an existing set's walls but where they were wrong):
 

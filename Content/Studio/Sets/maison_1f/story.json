@@ -199,6 +199,8 @@
        "id": "br1_kt_bed_single_1",
        "kit": {
         "preset": "bed_single",
+        "pillows": 0,
+        "duvet": 0,
         "size": [
          0.97,
          2,
@@ -210,6 +212,28 @@
         1.75
        ],
        "rot": 90
+      },
+      {
+       "on": "br1_kt_bed_single_1",
+       "id": "br1_kt_comforter_bed_1",
+       "shape": "asset props/comforter_bed",
+       "at": [
+        1.429,
+        1.769
+       ],
+       "rot": 90,
+       "z": 0.159
+      },
+      {
+       "on": "br1_kt_bed_single_1",
+       "id": "br1_kt_pillow_bed_1",
+       "shape": "asset props/pillow_bed",
+       "at": [
+        0.38,
+        1.75
+       ],
+       "rot": 90,
+       "z": 0.47
       },
       {
        "id": "br1_kt_desk_1",
@@ -239,7 +263,7 @@
        },
        "at": [
         2.32,
-        0.95
+        0.8
        ],
        "rot": 90
       },
@@ -1114,6 +1138,8 @@
        "id": "washitsu_kt_futon_1",
        "kit": {
         "preset": "futon",
+        "pillows": 0,
+        "duvet": 0,
         "size": [
          1,
          2.1,
@@ -1121,10 +1147,32 @@
         ]
        },
        "at": [
-        0.6,
-        1.2
+        0.62,
+        1.24
        ],
        "rot": 0
+      },
+      {
+       "on": "washitsu_kt_futon_1",
+       "id": "washitsu_kt_kakebuton_turned_1",
+       "shape": "asset props/kakebuton_turned",
+       "at": [
+        0.781,
+        0.9
+       ],
+       "rot": 0,
+       "z": 0.07
+      },
+      {
+       "on": "washitsu_kt_futon_1",
+       "id": "washitsu_kt_makura_sobakawa_1",
+       "shape": "asset props/makura_sobakawa",
+       "at": [
+        0.62,
+        2.03
+       ],
+       "rot": 0,
+       "z": 0.12
       },
       {
        "id": "washitsu_kt_floor_lamp_1",
@@ -1141,56 +1189,6 @@
         2.6
        ],
        "rot": 0
-      },
-      {
-       "id": "washitsu_kt_zabuton_1",
-       "kit": {
-        "preset": "zabuton",
-        "size": [
-         0.55,
-         0.59,
-         0.06
-        ]
-       },
-       "at": [
-        1.65,
-        0.55
-       ],
-       "rot": 0
-      },
-      {
-       "id": "washitsu_kt_low_table_1",
-       "kit": {
-        "preset": "low_table",
-        "size": [
-         0.6,
-         0.45,
-         0.33
-        ]
-       },
-       "at": [
-        1.65,
-        1.25
-       ],
-       "rot": 0
-      },
-      {
-       "on": "washitsu_kt_low_table_1",
-       "id": "washitsu_kt_yunomi_1",
-       "kit": {
-        "preset": "yunomi",
-        "size": [
-         0.071,
-         0.071,
-         0.089
-        ]
-       },
-       "at": [
-        1.6,
-        1.25
-       ],
-       "rot": 0,
-       "z": 0.33
       },
       {
        "id": "washitsu_kt_curtain_sheer_1",
@@ -1350,6 +1348,17 @@
         }
        }
       }
+     ],
+     "props": [
+      {
+       "id": "oshiire_kt_futon_folded_1",
+       "shape": "asset props/futon_folded",
+       "at": [
+        0.355,
+        0.645
+       ],
+       "rot": 0
+      }
      ]
     },
     {
@@ -1502,15 +1511,8 @@
        "rot": 90
       },
       {
-       "id": "living_kt_zabuton_1",
-       "kit": {
-        "preset": "zabuton",
-        "size": [
-         0.55,
-         0.59,
-         0.06
-        ]
-       },
+       "id": "living_kt_zabuton_real_1",
+       "shape": "asset props/zabuton_real",
        "at": [
         0.8,
         1.6
@@ -1518,15 +1520,8 @@
        "rot": 90
       },
       {
-       "id": "living_kt_zabuton_2",
-       "kit": {
-        "preset": "zabuton",
-        "size": [
-         0.55,
-         0.59,
-         0.06
-        ]
-       },
+       "id": "living_kt_zabuton_real_2",
+       "shape": "asset props/zabuton_real",
        "at": [
         0.8,
         2.2
@@ -1534,15 +1529,8 @@
        "rot": 90
       },
       {
-       "id": "living_kt_zabuton_3",
-       "kit": {
-        "preset": "zabuton",
-        "size": [
-         0.55,
-         0.59,
-         0.06
-        ]
-       },
+       "id": "living_kt_zabuton_real_3",
+       "shape": "asset props/zabuton_real",
        "at": [
         2.25,
         1.9

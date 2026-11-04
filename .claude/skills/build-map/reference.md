@@ -33,6 +33,11 @@ Metres; x east, y north, z up. Facing: a kit or a street thing at `rot`/`turn` 0
 - **Items** (on a wall, `at` 0..1): poster, frame, mirror, tv, ac, clock, calendar, board, shelf, switch.
 - **Kits**: x, y from the room's (x0, y0) corner (wall faces are 0.05 in from the lines); `z` over the room's floor;
   ids `<room>_kt_<preset>_<n>`; a thing on another: `{"z": its top, "extra": {"on": "<that id>"}}`.
+- **Prop generator props** as kits: `[room, "props/<name>", x, y, rot, {z, extra}]` (made and in the library:
+  `python tools/propgen.py make <name>`, then `library <name>`), x, y its box's middle, at its size from the index
+  (id `<room>_kt_<name>_<n>`). A blanket made for a futon or bed lies on it from its index's `box_m` (PROPGEN §21: its
+  box from the support's middle; maison_1f's layout script's `laid`): put it where its box falls, `z` the box's
+  lowest, `on` the bed; give the futon or bed `{"pillows": 0, "duvet": 0}`.
 - **Stairs**: a shaft as one room from the ground to the top floor + its ceiling (`h`); a dog-leg needs ≥ 1.82 across
   and about 4.6 along `dir` (a run of 1.9 m for a 2.85 m storey); `dir: "s"`: each floor's landing at the north end,
   the first flight up the east half. One flight: the floor above ≤ its `z + h − 1.9`.
@@ -56,6 +61,8 @@ nurse, library, gym. Wood rooms get oak_planks.
 
 ## 3. Kit presets (`node -e` on kit.js's resolve for a size; KIT checks them)
 
+- Bedding (the prop generator's, `props/`): makura_sobakawa, pillow_bed, zabuton_real, kakebuton_turned (on a
+  futon), comforter_bed (on bed_single), futon_folded (0.55 x 0.82: an oshiire's).
 - Japanese home: futon, tatami, tatami_kyo, low_table (chabudai), zabuton, floor_cushion, tokonoma (a raised alcove:
   `holes` its recess), fusuma and shoji (as a slide door's `kit`), genkan_step, shoe_cabinet, sliding_wardrobe,
   a living room's: low_table on rug_plain with zabuton; tea: kyusu, yunomi, tetsubin, donabe, rice_cooker,

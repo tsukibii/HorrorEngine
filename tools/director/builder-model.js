@@ -93,6 +93,11 @@ export function presetToModel(P) {
   const kits = [];
   for (const [rid, preset, x, y, rot = 0, o = {}] of P.kits || []) {
     if (!byId[rid]) { problems.push(`layout: kit ${preset} in ${rid}, no such room`); continue; }
+    if (/^props\//.test(preset)) {                                      // a prop generator's prop (props/<name>): its mesh at its size
+      const nm = preset.slice(6); let j = 1; while (kits.some(k => k.id === `${rid}_kt_${nm}_${j}`)) j++;
+      kits.push({ id: `${rid}_kt_${nm}_${j}`, room: rid, x: r3(x), y: r3(y), z: o.z || 0, rot, spec: { asset: preset }, size: (o.size || assetSize(preset)).slice(), extra: clone(o.extra || {}) });
+      continue;
+    }
     let i = 1; while (kits.some(k => k.id === `${rid}_kt_${preset}_${i}`)) i++;
     const own = Object.assign({}, o); delete own.z; delete own.size; delete own.extra;
     const k = newKit(preset, `${rid}_kt_${preset}_${i}`, rid, r3(x), r3(y), { z: o.z, rot });

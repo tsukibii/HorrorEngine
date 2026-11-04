@@ -11,6 +11,9 @@ import { fileURLToPath } from "url";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const BP = await import("./builder-presets.js"), BM = await import("./builder-model.js");
 BM.KITS.presets = JSON.parse(fs.readFileSync(path.join(ROOT, "Content/Studio/Kit/presets.json"), "utf8")).presets;
+// the prop generator's props in the library (a layout's kit `props/<name>`: placed at its size), as the page's /api/library
+BM.KITS.props = Object.fromEntries(Object.entries(JSON.parse(fs.readFileSync(path.join(ROOT, "Content/Studio/Library/index/props.json"), "utf8")))
+  .map(([n, i]) => [`props/${n}`, { size: [i.size_m[0], i.size_m[2], i.size_m[1]] }]));          // glTF y up: [w, d, h] as LIB.mesh_size
 const argv = process.argv.slice(2), fi = argv.indexOf("--file"), file0 = fi >= 0 ? argv[fi + 1] : null;
 const args = argv.filter((a, i) => !a.startsWith("--") && !(fi >= 0 && i === fi + 1)), dry = argv.includes("--dry");
 if (file0) args.unshift(null);                                        // the set's name is the first word left

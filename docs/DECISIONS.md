@@ -2,6 +2,17 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-04, morning (the user: pillows and blankets for the maison flat)
+
+- **"Can you make proper better prop pillows and blankets and then add them to this level."** The prop generator's
+  `bedding` family (PROPGEN §21): pillows, cushions, blankets and folded futons made by a cloth simulation (sewn,
+  filled, laid over what they're on, folded), their small folds and quilting drawn into the detail mesh and baked;
+  six recipes (a buckwheat makura, a bed pillow, a tufted zabuton, a kakebuton turned back on its futon, a comforter
+  on the single bed, a futon folded for the oshiire). In maison_1f: the washitsu's futon under the kakebuton with the
+  makura, bedroom 1's bed under the comforter with its pillow (the kits' own pillows and duvet off), the folded futon
+  in the oshiire, the living room's three zabuton the tufted ones; the washitsu's low table and its cushion went to
+  make room for the futon.
+
 ## 2026-11-04, small hours (the user: a map-building guide for Claude, and a map from their floor plan)
 
 - **"Create an optimized guide for claude (yourself) on how to use interior and street tool to build a coherent map

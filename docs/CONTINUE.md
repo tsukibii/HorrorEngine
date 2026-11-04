@@ -17,7 +17,30 @@ by-hand guides, merged; then on the same branch from main the map-building skill
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-04, small hours, branch `claude/festive-euler-o7axpl` from main): the map skill, image 1 as a map
+## Where it stopped last (2026-11-04, morning, the same branch): bedding for the flat
+
+The user's ask (DECISIONS 2026-11-04, morning): "proper better prop pillows and blankets", then into the map.
+
+- **The prop generator's `bedding` family** (PROPGEN §21, `tools/propgen/families/bedding.py`): a cloth simulation
+  (`sim.Cloth` in `tools/propgen/sim.py`, the paper's PBD with thickness, self-collision, rounded boxes and a floor
+  with friction, pressure for a filled bag, `hinge` rolling a fold round the layers inside it) gives each its form;
+  the small folds, the quilting's puff, the stitches and the cover's print go into the detail mesh and the paint,
+  baked as every prop's. Six recipes: `makura_sobakawa`, `pillow_bed`, `zabuton_real`, `kakebuton_turned` (on the kit
+  futon on tatami), `comforter_bed` (on `bed_single`), `futon_folded`; in the library (the index ships, the meshes are
+  made: `python tools/propgen.py make <names>` then `library <names>` on the user's machine, about a minute each).
+  PROPGEN's cases: `pillow_bed`, `futon_folded`, `kakebuton_turned`.
+- **In maison_1f**: the washitsu's futon with the kakebuton and the makura (its low table and cushion gone for room),
+  bedroom 1's bed with the comforter and pillow, the folded futon in the oshiire, the living room's zabuton. Layouts
+  place library props (`props/<name>` as a kit), a blanket by its `box_m` over its bed; LEVEL skips a door's
+  clearance inside a closet or an oshiire. Pictures: `map_shots.py` with the shots `15_futon`, `16_bed`, `17_oshiire`.
+
+Worth doing with the user: look at the bedding in Godot under their own light (the folds are in the normal maps:
+they show under a lamp at a grazing angle more than in the flat day light here); more bedding is a recipe away
+(another cover's `pattern` and colours, `mode: rumpled` for a slept-in bed, a `cushion` for a sofa; a blanket for
+another support takes its boxes as `on`). The folded futon's layers show dark seams at their sides (the hem's
+rounding): a gentler hem if the user finds them too strong.
+
+## Before that (2026-11-04, small hours, branch `claude/festive-euler-o7axpl` from main): the map skill, image 1 as a map
 
 The user's two asks (DECISIONS 2026-11-04), after tsukibii/HorrorEngine#13 was merged:
 
