@@ -14,6 +14,8 @@ from .. import designs
 from .. import mesh as M
 from .. import noise as N
 
+CUSTOM = True       # your own pictures go on it: the picture editor previews them on its picture (PROPGEN §25)
+
 
 def profile(H=205.0, R=32.5, neck=13.5, label=(60.0, 128.0), ribs=True):
     """(base, low body, label band, high body, shoulder, neck) runs in mm, the cap's from H - 15.5 to H."""

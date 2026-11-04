@@ -1,0 +1,2493 @@
+{
+ "format": 1,
+ "name": "maison_lane",
+ "about": "A residential lane bending round the corner of a small white block of flats (Maison Shirasagi: the set maison_1f, one flat a floor, the player's on the ground floor), a curved board-formed concrete wall on the far side of the bend with finer houses behind it (an old estate under kawara, modern villas), street trees down the far walk, poles and their wires on the near side. Seen from the flat's south windows and its glass entrance.",
+ "time": "dusk",
+ "look": {
+  "asphalt": "pbr/road/Road012A_1K-PNG",
+  "pavement": "pbr/concrete/Concrete010_1K-PNG",
+  "kerb": "pbr/concrete/Concrete006_1K-PNG",
+  "blocks": "pbr/concrete/Concrete029_1K-PNG",
+  "bark": "pbr/bark/Bark006_1K-PNG",
+  "ground": "pbr/gravel/Gravel006_1K-PNG"
+ },
+ "roads": [
+  {
+   "id": "lane",
+   "name": "the lane round the block",
+   "from": [
+    -48,
+    -8.75
+   ],
+   "via": [
+    [
+     -20,
+     -8.75
+    ],
+    [
+     5.88,
+     -8.75
+    ],
+    [
+     9.44,
+     -8.28
+    ],
+    [
+     12.76,
+     -6.91
+    ],
+    [
+     15.6,
+     -4.72
+    ],
+    [
+     17.79,
+     -1.87
+    ],
+    [
+     19.16,
+     1.44
+    ],
+    [
+     19.63,
+     5
+    ],
+    [
+     19.63,
+     22
+    ]
+   ],
+   "to": [
+    19.63,
+    48
+   ],
+   "width": 6,
+   "walks": [
+    1.5,
+    2.5
+   ],
+   "kerb": 0.15,
+   "edge": [
+    0.4,
+    0.4
+   ],
+   "centre": "none"
+  }
+ ],
+ "buildings": [
+  {
+   "id": "maison",
+   "name": "Maison Shirasagi (the set maison_1f)",
+   "style": "set",
+   "at": [
+    5.94,
+    3.23
+   ],
+   "turn": 90,
+   "seed": 1,
+   "floors": 1,
+   "inside": {
+    "set": "maison_1f",
+    "level": "maison_1f",
+    "rows": 1,
+    "floors": 1,
+    "raise": 0.45,
+    "rooms": [
+     {
+      "id": "br1",
+      "at": [
+       0,
+       0,
+       0
+      ],
+      "size": [
+       3.22,
+       3.38,
+       2.4
+      ],
+      "skip": [
+       "n"
+      ],
+      "openings": [
+       {
+        "wall": "s",
+        "at": 1.729,
+        "w": 2.4,
+        "h": 1.3,
+        "sill": 0.8,
+        "window": true,
+        "frame": "window_slide"
+       }
+      ]
+     },
+     {
+      "id": "br1_closet",
+      "at": [
+       0,
+       3.38,
+       0
+      ],
+      "size": [
+       2.33,
+       1.44,
+       2.4
+      ],
+      "skip": [
+       [
+        "e",
+        0.82,
+        1.44
+       ]
+      ],
+      "openings": [
+       {
+        "wall": "s",
+        "at": 1.165,
+        "w": 1.8,
+        "h": 2,
+        "door": {
+         "id": "br1_br1_closet_door",
+         "kit": "door_slide"
+        }
+       }
+      ]
+     },
+     {
+      "id": "br1_nook",
+      "at": [
+       2.33,
+       3.38,
+       0
+      ],
+      "size": [
+       0.89,
+       0.82,
+       2.4
+      ],
+      "skip": [
+       "n",
+       "e",
+       "s",
+       "w"
+      ],
+      "openings": []
+     },
+     {
+      "id": "bath",
+      "at": [
+       2.33,
+       4.2,
+       0
+      ],
+      "size": [
+       2.3,
+       2.26,
+       2.4
+      ],
+      "skip": [
+       "e"
+      ],
+      "openings": [
+       {
+        "wall": "s",
+        "at": 1.313,
+        "w": 0.7,
+        "h": 2,
+        "door": {
+         "id": "bath_hall_door",
+         "kit": "door_flush"
+        }
+       }
+      ]
+     },
+     {
+      "id": "kitchen",
+      "at": [
+       4.63,
+       4.2,
+       0
+      ],
+      "size": [
+       3.65,
+       2.26,
+       2.4
+      ],
+      "skip": [
+       "s"
+      ],
+      "openings": [
+       {
+        "wall": "n",
+        "at": 2.77,
+        "w": 0.9,
+        "h": 0.9,
+        "sill": 1.05,
+        "window": true,
+        "frame": "window_slide"
+       }
+      ]
+     },
+     {
+      "id": "genkan",
+      "at": [
+       8.28,
+       4.2,
+       0
+      ],
+      "size": [
+       1,
+       2.26,
+       2.4
+      ],
+      "skip": [
+       "e",
+       "s",
+       "w"
+      ],
+      "openings": []
+     },
+     {
+      "id": "hall",
+      "at": [
+       3.22,
+       2.89,
+       0
+      ],
+      "size": [
+       2.9,
+       1.31,
+       2.4
+      ],
+      "skip": [
+       "n",
+       "e",
+       [
+        "s",
+        0,
+        2.19
+       ],
+       [
+        "w",
+        0,
+        0.49
+       ]
+      ],
+      "openings": [
+       {
+        "wall": "w",
+        "at": 0.9,
+        "w": 0.7,
+        "h": 2,
+        "door": {
+         "id": "br1_nook_hall_door",
+         "kit": "door_flush"
+        }
+       }
+      ]
+     },
+     {
+      "id": "washitsu",
+      "at": [
+       3.22,
+       0,
+       0
+      ],
+      "size": [
+       2.19,
+       2.89,
+       2.4
+      ],
+      "skip": [
+       "e",
+       "w"
+      ],
+      "openings": [
+       {
+        "wall": "n",
+        "at": 1.599,
+        "w": 0.9,
+        "h": 1.8,
+        "door": {
+         "id": "hall_washitsu_door",
+         "kit": "fusuma"
+        }
+       },
+       {
+        "wall": "s",
+        "at": 1.11,
+        "w": 1.7,
+        "h": 1.3,
+        "sill": 0.8,
+        "window": true,
+        "frame": "window_slide"
+       }
+      ]
+     },
+     {
+      "id": "tokonoma",
+      "at": [
+       5.41,
+       0,
+       0
+      ],
+      "size": [
+       0.71,
+       1.6,
+       2.4
+      ],
+      "skip": [
+       "w"
+      ],
+      "openings": []
+     },
+     {
+      "id": "oshiire",
+      "at": [
+       5.41,
+       1.6,
+       0
+      ],
+      "size": [
+       0.71,
+       1.29,
+       2.4
+      ],
+      "skip": [
+       "n",
+       "s"
+      ],
+      "openings": [
+       {
+        "wall": "w",
+        "at": 0.645,
+        "w": 1.1,
+        "h": 1.8,
+        "door": {
+         "id": "washitsu_oshiire_door",
+         "kit": "fusuma"
+        }
+       }
+      ]
+     },
+     {
+      "id": "living",
+      "at": [
+       6.12,
+       0,
+       0
+      ],
+      "size": [
+       3.16,
+       4.2,
+       2.4
+      ],
+      "skip": [
+       "n",
+       "e",
+       "w"
+      ],
+      "openings": [
+       {
+        "wall": "s",
+        "at": 1.571,
+        "w": 2.5,
+        "h": 1.75,
+        "sill": 0.35,
+        "window": true,
+        "frame": "window_big"
+       }
+      ]
+     },
+     {
+      "id": "lobby",
+      "at": [
+       9.28,
+       4.66,
+       0
+      ],
+      "size": [
+       2.6,
+       1.8,
+       2.5
+      ],
+      "skip": [
+       "s"
+      ],
+      "openings": [
+       {
+        "wall": "w",
+        "at": 1.315,
+        "w": 0.85,
+        "h": 2.05,
+        "door": {
+         "id": "front_door",
+         "kit": "door_front"
+        }
+       },
+       {
+        "wall": "e",
+        "at": 0.9,
+        "w": 1,
+        "h": 2.1,
+        "door": {
+         "id": "lobby_e_door",
+         "kit": "door_glass"
+        }
+       }
+      ]
+     },
+     {
+      "id": "stairs",
+      "at": [
+       9.28,
+       0,
+       0
+      ],
+      "size": [
+       2.6,
+       4.66,
+       10.95
+      ],
+      "openings": [
+       {
+        "wall": "n",
+        "at": 1.872,
+        "w": 0.9,
+        "h": 1.95,
+        "door": {
+         "id": "stair_gate",
+         "kit": "gate_bars"
+        }
+       },
+       {
+        "wall": "n",
+        "at": 1.872,
+        "w": 1.1,
+        "h": 2.1,
+        "sill": 2.85
+       },
+       {
+        "wall": "n",
+        "at": 1.872,
+        "w": 1.1,
+        "h": 2.1,
+        "sill": 5.7
+       },
+       {
+        "wall": "n",
+        "at": 1.872,
+        "w": 1.1,
+        "h": 2.1,
+        "sill": 8.55
+       },
+       {
+        "wall": "e",
+        "at": 0.652,
+        "w": 0.45,
+        "h": 1.5,
+        "sill": 1.9,
+        "window": true,
+        "frame": "window_fixed"
+       },
+       {
+        "wall": "e",
+        "at": 0.652,
+        "w": 0.45,
+        "h": 1.5,
+        "sill": 4.75,
+        "window": true,
+        "frame": "window_fixed"
+       },
+       {
+        "wall": "e",
+        "at": 0.652,
+        "w": 0.45,
+        "h": 1.5,
+        "sill": 7.6,
+        "window": true,
+        "frame": "window_fixed"
+       },
+       {
+        "wall": "s",
+        "at": 1.3,
+        "w": 0.9,
+        "h": 1,
+        "sill": 2.2,
+        "window": true,
+        "frame": "window_fixed"
+       },
+       {
+        "wall": "s",
+        "at": 1.3,
+        "w": 0.9,
+        "h": 1,
+        "sill": 5.05,
+        "window": true,
+        "frame": "window_fixed"
+       },
+       {
+        "wall": "s",
+        "at": 1.3,
+        "w": 0.9,
+        "h": 1,
+        "sill": 7.9,
+        "window": true,
+        "frame": "window_fixed"
+       }
+      ]
+     },
+     {
+      "id": "br1_2f",
+      "at": [
+       0,
+       0,
+       2.85
+      ],
+      "size": [
+       3.22,
+       3.38,
+       2.4
+      ],
+      "skip": [
+       "n"
+      ],
+      "openings": [
+       {
+        "wall": "s",
+        "at": 1.729,
+        "w": 2.4,
+        "h": 1.3,
+        "sill": 0.8,
+        "window": true,
+        "frame": "window_slide"
+       }
+      ]
+     },
+     {
+      "id": "br1_closet_2f",
+      "at": [
+       0,
+       3.38,
+       2.85
+      ],
+      "size": [
+       2.33,
+       1.44,
+       2.4
+      ],
+      "skip": [
+       [
+        "e",
+        0.82,
+        1.44
+       ]
+      ],
+      "openings": [
+       {
+        "wall": "s",
+        "at": 1.165,
+        "w": 1.8,
+        "h": 2,
+        "door": {
+         "id": "br1_2f_br1_closet_2f_door",
+         "kit": "door_slide"
+        }
+       }
+      ]
+     },
+     {
+      "id": "br1_nook_2f",
+      "at": [
+       2.33,
+       3.38,
+       2.85
+      ],
+      "size": [
+       0.89,
+       0.82,
+       2.4
+      ],
+      "skip": [
+       "n",
+       "e",
+       "s",
+       "w"
+      ],
+      "openings": []
+     },
+     {
+      "id": "bath_2f",
+      "at": [
+       2.33,
+       4.2,
+       2.85
+      ],
+      "size": [
+       2.3,
+       2.26,
+       2.4
+      ],
+      "skip": [
+       "e"
+      ],
+      "openings": [
+       {
+        "wall": "s",
+        "at": 1.313,
+        "w": 0.7,
+        "h": 2,
+        "door": {
+         "id": "bath_2f_hall_2f_door",
+         "kit": "door_flush"
+        }
+       }
+      ]
+     },
+     {
+      "id": "kitchen_2f",
+      "at": [
+       4.63,
+       4.2,
+       2.85
+      ],
+      "size": [
+       3.65,
+       2.26,
+       2.4
+      ],
+      "skip": [
+       "s"
+      ],
+      "openings": [
+       {
+        "wall": "n",
+        "at": 2.77,
+        "w": 0.9,
+        "h": 0.9,
+        "sill": 1.05,
+        "window": true,
+        "frame": "window_slide"
+       }
+      ]
+     },
+     {
+      "id": "genkan_2f",
+      "at": [
+       8.28,
+       4.2,
+       2.85
+      ],
+      "size": [
+       1,
+       2.26,
+       2.4
+      ],
+      "skip": [
+       "e",
+       "s",
+       "w"
+      ],
+      "openings": []
+     },
+     {
+      "id": "hall_2f",
+      "at": [
+       3.22,
+       2.89,
+       2.85
+      ],
+      "size": [
+       2.9,
+       1.31,
+       2.4
+      ],
+      "skip": [
+       "n",
+       "e",
+       [
+        "s",
+        0,
+        2.19
+       ],
+       [
+        "w",
+        0,
+        0.49
+       ]
+      ],
+      "openings": [
+       {
+        "wall": "w",
+        "at": 0.9,
+        "w": 0.7,
+        "h": 2,
+        "door": {
+         "id": "br1_nook_2f_hall_2f_door",
+         "kit": "door_flush"
+        }
+       }
+      ]
+     },
+     {
+      "id": "washitsu_2f",
+      "at": [
+       3.22,
+       0,
+       2.85
+      ],
+      "size": [
+       2.19,
+       2.89,
+       2.4
+      ],
+      "skip": [
+       "e",
+       "w"
+      ],
+      "openings": [
+       {
+        "wall": "n",
+        "at": 1.599,
+        "w": 0.9,
+        "h": 1.8,
+        "door": {
+         "id": "hall_2f_washitsu_2f_door",
+         "kit": "fusuma"
+        }
+       },
+       {
+        "wall": "s",
+        "at": 1.11,
+        "w": 1.7,
+        "h": 1.3,
+        "sill": 0.8,
+        "window": true,
+        "frame": "window_slide"
+       }
+      ]
+     },
+     {
+      "id": "tokonoma_2f",
+      "at": [
+       5.41,
+       0,
+       2.85
+      ],
+      "size": [
+       0.71,
+       1.6,
+       2.4
+      ],
+      "skip": [
+       "w"
+      ],
+      "openings": []
+     },
+     {
+      "id": "oshiire_2f",
+      "at": [
+       5.41,
+       1.6,
+       2.85
+      ],
+      "size": [
+       0.71,
+       1.29,
+       2.4
+      ],
+      "skip": [
+       "n",
+       "s"
+      ],
+      "openings": [
+       {
+        "wall": "w",
+        "at": 0.645,
+        "w": 1.1,
+        "h": 1.8,
+        "door": {
+         "id": "washitsu_2f_oshiire_2f_door",
+         "kit": "fusuma"
+        }
+       }
+      ]
+     },
+     {
+      "id": "living_2f",
+      "at": [
+       6.12,
+       0,
+       2.85
+      ],
+      "size": [
+       3.16,
+       4.2,
+       2.4
+      ],
+      "skip": [
+       "n",
+       "e",
+       "w"
+      ],
+      "openings": [
+       {
+        "wall": "s",
+        "at": 1.571,
+        "w": 2.5,
+        "h": 1.75,
+        "sill": 0.35,
+        "window": true,
+        "frame": "window_big"
+       }
+      ]
+     },
+     {
+      "id": "landing_2f",
+      "at": [
+       9.28,
+       4.66,
+       2.85
+      ],
+      "size": [
+       2.6,
+       1.8,
+       2.4
+      ],
+      "skip": [
+       "s"
+      ],
+      "openings": [
+       {
+        "wall": "w",
+        "at": 1.315,
+        "w": 0.85,
+        "h": 2.05,
+        "door": {
+         "id": "front_door_2f",
+         "kit": "door_front"
+        }
+       },
+       {
+        "wall": "e",
+        "at": 0.9,
+        "w": 0.45,
+        "h": 1.6,
+        "sill": 0.6,
+        "window": true,
+        "frame": "window_fixed"
+       }
+      ]
+     },
+     {
+      "id": "br1_3f",
+      "at": [
+       0,
+       0,
+       5.7
+      ],
+      "size": [
+       3.22,
+       3.38,
+       2.4
+      ],
+      "skip": [
+       "n"
+      ],
+      "openings": [
+       {
+        "wall": "s",
+        "at": 1.729,
+        "w": 2.4,
+        "h": 1.3,
+        "sill": 0.8,
+        "window": true,
+        "frame": "window_slide"
+       }
+      ]
+     },
+     {
+      "id": "br1_closet_3f",
+      "at": [
+       0,
+       3.38,
+       5.7
+      ],
+      "size": [
+       2.33,
+       1.44,
+       2.4
+      ],
+      "skip": [
+       [
+        "e",
+        0.82,
+        1.44
+       ]
+      ],
+      "openings": [
+       {
+        "wall": "s",
+        "at": 1.165,
+        "w": 1.8,
+        "h": 2,
+        "door": {
+         "id": "br1_3f_br1_closet_3f_door",
+         "kit": "door_slide"
+        }
+       }
+      ]
+     },
+     {
+      "id": "br1_nook_3f",
+      "at": [
+       2.33,
+       3.38,
+       5.7
+      ],
+      "size": [
+       0.89,
+       0.82,
+       2.4
+      ],
+      "skip": [
+       "n",
+       "e",
+       "s",
+       "w"
+      ],
+      "openings": []
+     },
+     {
+      "id": "bath_3f",
+      "at": [
+       2.33,
+       4.2,
+       5.7
+      ],
+      "size": [
+       2.3,
+       2.26,
+       2.4
+      ],
+      "skip": [
+       "e"
+      ],
+      "openings": [
+       {
+        "wall": "s",
+        "at": 1.313,
+        "w": 0.7,
+        "h": 2,
+        "door": {
+         "id": "bath_3f_hall_3f_door",
+         "kit": "door_flush"
+        }
+       }
+      ]
+     },
+     {
+      "id": "kitchen_3f",
+      "at": [
+       4.63,
+       4.2,
+       5.7
+      ],
+      "size": [
+       3.65,
+       2.26,
+       2.4
+      ],
+      "skip": [
+       "s"
+      ],
+      "openings": [
+       {
+        "wall": "n",
+        "at": 2.77,
+        "w": 0.9,
+        "h": 0.9,
+        "sill": 1.05,
+        "window": true,
+        "frame": "window_slide"
+       }
+      ]
+     },
+     {
+      "id": "genkan_3f",
+      "at": [
+       8.28,
+       4.2,
+       5.7
+      ],
+      "size": [
+       1,
+       2.26,
+       2.4
+      ],
+      "skip": [
+       "e",
+       "s",
+       "w"
+      ],
+      "openings": []
+     },
+     {
+      "id": "hall_3f",
+      "at": [
+       3.22,
+       2.89,
+       5.7
+      ],
+      "size": [
+       2.9,
+       1.31,
+       2.4
+      ],
+      "skip": [
+       "n",
+       "e",
+       [
+        "s",
+        0,
+        2.19
+       ],
+       [
+        "w",
+        0,
+        0.49
+       ]
+      ],
+      "openings": [
+       {
+        "wall": "w",
+        "at": 0.9,
+        "w": 0.7,
+        "h": 2,
+        "door": {
+         "id": "br1_nook_3f_hall_3f_door",
+         "kit": "door_flush"
+        }
+       }
+      ]
+     },
+     {
+      "id": "washitsu_3f",
+      "at": [
+       3.22,
+       0,
+       5.7
+      ],
+      "size": [
+       2.19,
+       2.89,
+       2.4
+      ],
+      "skip": [
+       "e",
+       "w"
+      ],
+      "openings": [
+       {
+        "wall": "n",
+        "at": 1.599,
+        "w": 0.9,
+        "h": 1.8,
+        "door": {
+         "id": "hall_3f_washitsu_3f_door",
+         "kit": "fusuma"
+        }
+       },
+       {
+        "wall": "s",
+        "at": 1.11,
+        "w": 1.7,
+        "h": 1.3,
+        "sill": 0.8,
+        "window": true,
+        "frame": "window_slide"
+       }
+      ]
+     },
+     {
+      "id": "tokonoma_3f",
+      "at": [
+       5.41,
+       0,
+       5.7
+      ],
+      "size": [
+       0.71,
+       1.6,
+       2.4
+      ],
+      "skip": [
+       "w"
+      ],
+      "openings": []
+     },
+     {
+      "id": "oshiire_3f",
+      "at": [
+       5.41,
+       1.6,
+       5.7
+      ],
+      "size": [
+       0.71,
+       1.29,
+       2.4
+      ],
+      "skip": [
+       "n",
+       "s"
+      ],
+      "openings": [
+       {
+        "wall": "w",
+        "at": 0.645,
+        "w": 1.1,
+        "h": 1.8,
+        "door": {
+         "id": "washitsu_3f_oshiire_3f_door",
+         "kit": "fusuma"
+        }
+       }
+      ]
+     },
+     {
+      "id": "living_3f",
+      "at": [
+       6.12,
+       0,
+       5.7
+      ],
+      "size": [
+       3.16,
+       4.2,
+       2.4
+      ],
+      "skip": [
+       "n",
+       "e",
+       "w"
+      ],
+      "openings": [
+       {
+        "wall": "s",
+        "at": 1.571,
+        "w": 2.5,
+        "h": 1.75,
+        "sill": 0.35,
+        "window": true,
+        "frame": "window_big"
+       }
+      ]
+     },
+     {
+      "id": "landing_3f",
+      "at": [
+       9.28,
+       4.66,
+       5.7
+      ],
+      "size": [
+       2.6,
+       1.8,
+       2.4
+      ],
+      "skip": [
+       "s"
+      ],
+      "openings": [
+       {
+        "wall": "w",
+        "at": 1.315,
+        "w": 0.85,
+        "h": 2.05,
+        "door": {
+         "id": "front_door_3f",
+         "kit": "door_front"
+        }
+       },
+       {
+        "wall": "e",
+        "at": 0.9,
+        "w": 0.45,
+        "h": 1.6,
+        "sill": 0.6,
+        "window": true,
+        "frame": "window_fixed"
+       }
+      ]
+     },
+     {
+      "id": "br1_4f",
+      "at": [
+       0,
+       0,
+       8.55
+      ],
+      "size": [
+       3.22,
+       3.38,
+       2.4
+      ],
+      "skip": [
+       "n"
+      ],
+      "openings": [
+       {
+        "wall": "s",
+        "at": 1.729,
+        "w": 2.4,
+        "h": 1.3,
+        "sill": 0.8,
+        "window": true,
+        "frame": "window_slide"
+       }
+      ]
+     },
+     {
+      "id": "br1_closet_4f",
+      "at": [
+       0,
+       3.38,
+       8.55
+      ],
+      "size": [
+       2.33,
+       1.44,
+       2.4
+      ],
+      "skip": [
+       [
+        "e",
+        0.82,
+        1.44
+       ]
+      ],
+      "openings": [
+       {
+        "wall": "s",
+        "at": 1.165,
+        "w": 1.8,
+        "h": 2,
+        "door": {
+         "id": "br1_4f_br1_closet_4f_door",
+         "kit": "door_slide"
+        }
+       }
+      ]
+     },
+     {
+      "id": "br1_nook_4f",
+      "at": [
+       2.33,
+       3.38,
+       8.55
+      ],
+      "size": [
+       0.89,
+       0.82,
+       2.4
+      ],
+      "skip": [
+       "n",
+       "e",
+       "s",
+       "w"
+      ],
+      "openings": []
+     },
+     {
+      "id": "bath_4f",
+      "at": [
+       2.33,
+       4.2,
+       8.55
+      ],
+      "size": [
+       2.3,
+       2.26,
+       2.4
+      ],
+      "skip": [
+       "e"
+      ],
+      "openings": [
+       {
+        "wall": "s",
+        "at": 1.313,
+        "w": 0.7,
+        "h": 2,
+        "door": {
+         "id": "bath_4f_hall_4f_door",
+         "kit": "door_flush"
+        }
+       }
+      ]
+     },
+     {
+      "id": "kitchen_4f",
+      "at": [
+       4.63,
+       4.2,
+       8.55
+      ],
+      "size": [
+       3.65,
+       2.26,
+       2.4
+      ],
+      "skip": [
+       "s"
+      ],
+      "openings": [
+       {
+        "wall": "n",
+        "at": 2.77,
+        "w": 0.9,
+        "h": 0.9,
+        "sill": 1.05,
+        "window": true,
+        "frame": "window_slide"
+       }
+      ]
+     },
+     {
+      "id": "genkan_4f",
+      "at": [
+       8.28,
+       4.2,
+       8.55
+      ],
+      "size": [
+       1,
+       2.26,
+       2.4
+      ],
+      "skip": [
+       "e",
+       "s",
+       "w"
+      ],
+      "openings": []
+     },
+     {
+      "id": "hall_4f",
+      "at": [
+       3.22,
+       2.89,
+       8.55
+      ],
+      "size": [
+       2.9,
+       1.31,
+       2.4
+      ],
+      "skip": [
+       "n",
+       "e",
+       [
+        "s",
+        0,
+        2.19
+       ],
+       [
+        "w",
+        0,
+        0.49
+       ]
+      ],
+      "openings": [
+       {
+        "wall": "w",
+        "at": 0.9,
+        "w": 0.7,
+        "h": 2,
+        "door": {
+         "id": "br1_nook_4f_hall_4f_door",
+         "kit": "door_flush"
+        }
+       }
+      ]
+     },
+     {
+      "id": "washitsu_4f",
+      "at": [
+       3.22,
+       0,
+       8.55
+      ],
+      "size": [
+       2.19,
+       2.89,
+       2.4
+      ],
+      "skip": [
+       "e",
+       "w"
+      ],
+      "openings": [
+       {
+        "wall": "n",
+        "at": 1.599,
+        "w": 0.9,
+        "h": 1.8,
+        "door": {
+         "id": "hall_4f_washitsu_4f_door",
+         "kit": "fusuma"
+        }
+       },
+       {
+        "wall": "s",
+        "at": 1.11,
+        "w": 1.7,
+        "h": 1.3,
+        "sill": 0.8,
+        "window": true,
+        "frame": "window_slide"
+       }
+      ]
+     },
+     {
+      "id": "tokonoma_4f",
+      "at": [
+       5.41,
+       0,
+       8.55
+      ],
+      "size": [
+       0.71,
+       1.6,
+       2.4
+      ],
+      "skip": [
+       "w"
+      ],
+      "openings": []
+     },
+     {
+      "id": "oshiire_4f",
+      "at": [
+       5.41,
+       1.6,
+       8.55
+      ],
+      "size": [
+       0.71,
+       1.29,
+       2.4
+      ],
+      "skip": [
+       "n",
+       "s"
+      ],
+      "openings": [
+       {
+        "wall": "w",
+        "at": 0.645,
+        "w": 1.1,
+        "h": 1.8,
+        "door": {
+         "id": "washitsu_4f_oshiire_4f_door",
+         "kit": "fusuma"
+        }
+       }
+      ]
+     },
+     {
+      "id": "living_4f",
+      "at": [
+       6.12,
+       0,
+       8.55
+      ],
+      "size": [
+       3.16,
+       4.2,
+       2.4
+      ],
+      "skip": [
+       "n",
+       "e",
+       "w"
+      ],
+      "openings": [
+       {
+        "wall": "s",
+        "at": 1.571,
+        "w": 2.5,
+        "h": 1.75,
+        "sill": 0.35,
+        "window": true,
+        "frame": "window_big"
+       }
+      ]
+     },
+     {
+      "id": "landing_4f",
+      "at": [
+       9.28,
+       4.66,
+       8.55
+      ],
+      "size": [
+       2.6,
+       1.8,
+       2.4
+      ],
+      "skip": [
+       "s"
+      ],
+      "openings": [
+       {
+        "wall": "w",
+        "at": 1.315,
+        "w": 0.85,
+        "h": 2.05,
+        "door": {
+         "id": "front_door_4f",
+         "kit": "door_front"
+        }
+       },
+       {
+        "wall": "e",
+        "at": 0.9,
+        "w": 0.45,
+        "h": 1.6,
+        "sill": 0.6,
+        "window": true,
+        "frame": "window_fixed"
+       }
+      ]
+     }
+    ],
+    "front": "e",
+    "from": "1buxech"
+   },
+   "look": {
+    "wall": "pbr/wall/Plaster001_1K-PNG",
+    "trim": "#f2f1ec",
+    "roof_flat": "pbr/concrete/Concrete029_1K-PNG",
+    "plinth": "pbr/concrete/Concrete006_1K-PNG",
+    "rail": "#c9ccce",
+    "frame": "#3a3d42",
+    "glass": "#4a5664"
+   },
+   "roof": {
+    "kind": "flat",
+    "parapet": 0.5,
+    "rail": true
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "face": "front",
+     "x": 2.3,
+     "z": 2.75,
+     "w": 1.9,
+     "h": 0.15,
+     "out": 1.1
+    },
+    {
+     "kind": "sign",
+     "face": "front",
+     "x": 0.9,
+     "z": 2.05,
+     "w": 1.1,
+     "h": 0.3,
+     "out": 0.03,
+     "text": "メゾン白鷺",
+     "fg": "#2c2c2e",
+     "bg": "#e9e7e1",
+     "lit": false
+    },
+    {
+     "kind": "lamp",
+     "face": "front",
+     "x": 1.05,
+     "z": 2.45
+    },
+    {
+     "kind": "pipe",
+     "face": "front",
+     "x": -3.3,
+     "h": 11.6,
+     "out": 0.1
+    },
+    {
+     "kind": "ac",
+     "face": "back",
+     "x": -1.5,
+     "z": 0.05,
+     "w": 0.8,
+     "h": 0.6,
+     "out": 0.3,
+     "floors": [
+      2,
+      4
+     ]
+    },
+    {
+     "kind": "ac",
+     "face": "right",
+     "x": 2,
+     "z": 0,
+     "w": 0.8,
+     "h": 0.6
+    }
+   ],
+   "facade": {
+    "rails": {
+     "h": 1.1,
+     "out": 0.14
+    }
+   },
+   "w": 6.86,
+   "d": 12.28,
+   "h": 12.41
+  },
+  {
+   "id": "brown_flats",
+   "name": "the brown tiled flats",
+   "style": "apartment",
+   "w": 12.5,
+   "d": 10,
+   "floors": 4,
+   "gh": 3,
+   "fh": 2.9,
+   "seed": 31,
+   "at": [
+    -8.6,
+    2.5
+   ],
+   "turn": 0,
+   "look": {
+    "wall": "#7a5c48",
+    "trim": "#ebe6dc",
+    "rail": "#3e3a36"
+   },
+   "faces": {
+    "front": {
+     "win": "tall",
+     "cols": 3,
+     "ww": 1.6,
+     "wh": 2,
+     "sill": 0.15,
+     "ground": "door",
+     "door": 0.5,
+     "lit": 0.5
+    },
+    "left": {
+     "win": "small",
+     "cols": 2
+    },
+    "right": {
+     "win": "small",
+     "cols": 2
+    },
+    "back": {
+     "win": "punched",
+     "cols": 3
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "parapet": 0.9
+   },
+   "parts": [
+    {
+     "kind": "balcony",
+     "x": -4,
+     "w": 3.9,
+     "out": 1.1,
+     "floors": [
+      2,
+      4
+     ],
+     "rail": "bars"
+    },
+    {
+     "kind": "balcony",
+     "x": 0.15,
+     "w": 3.9,
+     "out": 1.1,
+     "floors": [
+      2,
+      4
+     ],
+     "rail": "bars"
+    },
+    {
+     "kind": "balcony",
+     "x": 4.3,
+     "w": 3.6,
+     "out": 1.1,
+     "floors": [
+      2,
+      4
+     ],
+     "rail": "bars"
+    },
+    {
+     "kind": "ac",
+     "x": -2.6,
+     "z": 0.05,
+     "out": 0.3,
+     "floors": [
+      2,
+      4
+     ]
+    },
+    {
+     "kind": "ac",
+     "x": 5.6,
+     "z": 0.05,
+     "out": 0.3,
+     "floors": [
+      2,
+      4
+     ]
+    }
+   ]
+  },
+  {
+   "id": "north_house",
+   "name": "the house behind the kitchen",
+   "style": "house",
+   "w": 8,
+   "d": 8.8,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 41,
+   "at": [
+    10.4,
+    12.3
+   ],
+   "turn": 90,
+   "look": {
+    "wall": "#cdbfa8",
+    "roof": "#4a3f3a"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.4
+    },
+    "left": {
+     "win": "small",
+     "cols": 2
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 24,
+    "over": 0.5
+   }
+  },
+  {
+   "id": "back_house",
+   "name": "the house behind",
+   "style": "house",
+   "w": 8.5,
+   "d": 8,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 43,
+   "at": [
+    0.6,
+    12.6
+   ],
+   "turn": 180,
+   "look": {
+    "wall": "#d6d0c4",
+    "roof": "#2f3a46"
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 24,
+    "over": 0.5
+   }
+  },
+  {
+   "id": "old_house",
+   "name": "an older house down the lane",
+   "style": "house",
+   "w": 8,
+   "d": 9,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 47,
+   "at": [
+    -24,
+    2.6
+   ],
+   "turn": 0,
+   "look": {
+    "wall": "#c8bfae",
+    "roof": "pbr/roofing_tiles/RoofingTiles010_1K-PNG"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.3
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 26,
+    "over": 0.7
+   }
+  },
+  {
+   "id": "estate",
+   "name": "the old estate behind the wall",
+   "style": "house",
+   "w": 13,
+   "d": 10,
+   "floors": 2,
+   "gh": 3,
+   "fh": 2.8,
+   "seed": 5,
+   "at": [
+    25.4,
+    -14.52
+   ],
+   "turn": 45,
+   "look": {
+    "wall": "#e6dfd0",
+    "trim": "#3b2a1f",
+    "roof": "pbr/roofing_tiles/RoofingTiles010_1K-PNG",
+    "tiles": "pbr/roofing_tiles/RoofingTiles010_1K-PNG"
+   },
+   "faces": {
+    "front": {
+     "win": "lattice",
+     "ground": "lattice",
+     "lit": 0.35
+    },
+    "left": {
+     "win": "shutters",
+     "cols": 2
+    },
+    "right": {
+     "win": "shutters",
+     "cols": 2
+    },
+    "back": {
+     "win": "small"
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 26,
+    "over": 1
+   },
+   "parts": [
+    {
+     "kind": "eave",
+     "z": 2.95,
+     "out": 0.9,
+     "h": 0.5
+    }
+   ]
+  },
+  {
+   "id": "villa_white",
+   "name": "a white villa",
+   "style": "house",
+   "w": 11,
+   "d": 9,
+   "floors": 2,
+   "gh": 3.2,
+   "fh": 3,
+   "seed": 11,
+   "at": [
+    11.11,
+    -21.9
+   ],
+   "turn": 11,
+   "look": {
+    "wall": "#eeece6",
+    "trim": "#2f3135",
+    "roof": "#3a3d42",
+    "wood": "#8a6446"
+   },
+   "faces": {
+    "front": {
+     "win": "band",
+     "ground": "glass",
+     "lit": 0.55
+    },
+    "left": {
+     "win": "tall",
+     "cols": 2
+    },
+    "right": {
+     "win": "tall",
+     "cols": 2
+    },
+    "back": {
+     "win": "punched",
+     "cols": 3
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "parapet": 0.4
+   },
+   "parts": [
+    {
+     "kind": "panel",
+     "x": -3.2,
+     "z": 3.4,
+     "w": 3.6,
+     "h": 2.6,
+     "out": 0.03,
+     "slot": "wood"
+    }
+   ]
+  },
+  {
+   "id": "villa_dark",
+   "name": "a dark villa with a set-back top",
+   "style": "house",
+   "w": 10.5,
+   "d": 9.5,
+   "floors": 2,
+   "gh": 3.2,
+   "fh": 3,
+   "seed": 23,
+   "at": [
+    32.97,
+    -0.27
+   ],
+   "turn": 79,
+   "look": {
+    "wall": "#4a4c50",
+    "trim": "#d9d4c8",
+    "roof": "#2b2c2f",
+    "wood": "#9a7350"
+   },
+   "faces": {
+    "front": {
+     "win": "glass",
+     "ground": "glass",
+     "lit": 0.6
+    },
+    "left": {
+     "win": "band"
+    },
+    "right": {
+     "win": "band"
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "parapet": 0.3
+   },
+   "tiers": [
+    {
+     "floors": 1,
+     "inset": [
+      2,
+      1.5,
+      1,
+      0
+     ]
+    }
+   ],
+   "parts": [
+    {
+     "kind": "panel",
+     "x": 3,
+     "z": 0.3,
+     "w": 2.4,
+     "h": 2.6,
+     "out": 0.03,
+     "slot": "wood"
+    }
+   ]
+  },
+  {
+   "id": "villa_concrete",
+   "name": "a concrete house down the lane",
+   "style": "house",
+   "w": 10,
+   "d": 9,
+   "floors": 2,
+   "gh": 3.1,
+   "fh": 3,
+   "seed": 29,
+   "at": [
+    -6.5,
+    -20.6
+   ],
+   "turn": 180,
+   "look": {
+    "wall": "pbr/concrete/Concrete027_1K-PNG",
+    "trim": "#26282b",
+    "roof": "#3a3c40"
+   },
+   "faces": {
+    "front": {
+     "win": "band",
+     "ground": "glass",
+     "lit": 0.45
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "parapet": 0.35
+   }
+  },
+  {
+   "id": "villa_up",
+   "name": "a villa up the lane",
+   "style": "house",
+   "w": 10,
+   "d": 9.5,
+   "floors": 3,
+   "gh": 3.1,
+   "fh": 2.9,
+   "seed": 37,
+   "at": [
+    31.9,
+    16.5
+   ],
+   "turn": 270,
+   "look": {
+    "wall": "#e3e0d8",
+    "trim": "#2f3135",
+    "roof": "#3a3d42"
+   },
+   "faces": {
+    "front": {
+     "win": "tall",
+     "cols": 3,
+     "ground": "glass",
+     "lit": 0.5
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "parapet": 0.5
+   }
+  }
+ ],
+ "fences": [
+  {
+   "id": "curved_wall",
+   "name": "the curved concrete wall",
+   "kind": "block",
+   "slot": "concrete",
+   "h": 2,
+   "from": [
+    -12,
+    -14.43
+   ],
+   "via": [
+    [
+     -3,
+     -14.43
+    ],
+    [
+     5.88,
+     -14.43
+    ],
+    [
+     10.91,
+     -13.76
+    ],
+    [
+     15.59,
+     -11.82
+    ],
+    [
+     19.62,
+     -8.74
+    ],
+    [
+     22.7,
+     -4.71
+    ],
+    [
+     24.64,
+     -0.03
+    ],
+    [
+     25.3,
+     5
+    ],
+    [
+     25.3,
+     14
+    ]
+   ],
+   "to": [
+    25.3,
+    24
+   ],
+   "look": {
+    "concrete": "pbr/concrete/Concrete027_1K-PNG"
+   }
+  },
+  {
+   "id": "garden_screen",
+   "name": "the flat's garden screen",
+   "kind": "slats",
+   "h": 0.8,
+   "from": [
+    -0.1,
+    -3.85
+   ],
+   "via": [
+    [
+     5.88,
+     -3.95
+    ],
+    [
+     9,
+     -3.42
+    ]
+   ],
+   "to": [
+    11.3,
+    -2.1
+   ]
+  },
+  {
+   "id": "north_wall",
+   "name": "the block wall behind",
+   "kind": "block",
+   "h": 1.5,
+   "from": [
+    -0.4,
+    7.45
+   ],
+   "to": [
+    14.6,
+    7.45
+   ]
+  }
+ ],
+ "things": [
+  {
+   "id": "tree_1",
+   "kind": "tree",
+   "at": [
+    -8,
+    -13
+   ],
+   "h": 7.5,
+   "w": 4.6,
+   "seed": 50,
+   "turn": 0,
+   "prop": "props/zelkova_real"
+  },
+  {
+   "id": "tree_2",
+   "kind": "tree",
+   "at": [
+    1,
+    -13
+   ],
+   "h": 7.5,
+   "w": 4.6,
+   "seed": 51,
+   "turn": 137,
+   "prop": "props/zelkova_real"
+  },
+  {
+   "id": "tree_3",
+   "kind": "tree",
+   "at": [
+    8.41,
+    -12.97
+   ],
+   "h": 7.5,
+   "w": 4.6,
+   "seed": 52,
+   "turn": 274,
+   "prop": "props/zelkova_real"
+  },
+  {
+   "id": "tree_4",
+   "kind": "tree",
+   "at": [
+    13.26,
+    -11.58
+   ],
+   "h": 7.5,
+   "w": 4.6,
+   "seed": 53,
+   "turn": 51,
+   "prop": "props/zelkova_real"
+  },
+  {
+   "id": "tree_5",
+   "kind": "tree",
+   "at": [
+    17.3,
+    -9.11
+   ],
+   "h": 7.5,
+   "w": 4.6,
+   "seed": 54,
+   "turn": 188,
+   "prop": "props/zelkova_real"
+  },
+  {
+   "id": "tree_6",
+   "kind": "tree",
+   "at": [
+    22.71,
+    -1.8
+   ],
+   "h": 7.5,
+   "w": 4.6,
+   "seed": 55,
+   "turn": 325,
+   "prop": "props/zelkova_real"
+  },
+  {
+   "id": "tree_7",
+   "kind": "tree",
+   "at": [
+    23.93,
+    3.1
+   ],
+   "h": 7.5,
+   "w": 4.6,
+   "seed": 56,
+   "turn": 102,
+   "prop": "props/zelkova_real"
+  },
+  {
+   "id": "tree_8",
+   "kind": "tree",
+   "at": [
+    24.03,
+    14.5
+   ],
+   "h": 7.5,
+   "w": 4.6,
+   "seed": 57,
+   "turn": 239,
+   "prop": "props/zelkova_real"
+  },
+  {
+   "id": "pine_1",
+   "kind": "tree",
+   "at": [
+    15.6,
+    -14.07
+   ],
+   "h": 5.5,
+   "w": 4.6,
+   "seed": 70,
+   "turn": 30,
+   "prop": "props/black_pine_real"
+  },
+  {
+   "id": "pine_2",
+   "kind": "tree",
+   "at": [
+    24.95,
+    -4.72
+   ],
+   "h": 5.5,
+   "w": 4.6,
+   "seed": 71,
+   "turn": 200,
+   "prop": "props/black_pine_real"
+  },
+  {
+   "id": "curve_mirror",
+   "kind": "mirror",
+   "at": [
+    19.7,
+    -5.41
+   ],
+   "turn": 233
+  },
+  {
+   "id": "pole_1",
+   "kind": "pole",
+   "at": [
+    -30,
+    -5.4
+   ],
+   "turn": 90,
+   "to": "pole_2"
+  },
+  {
+   "id": "pole_2",
+   "kind": "pole",
+   "at": [
+    -8.5,
+    -5.4
+   ],
+   "turn": 90,
+   "to": "pole_3"
+  },
+  {
+   "id": "pole_3",
+   "kind": "pole",
+   "at": [
+    10.76,
+    -4.18
+   ],
+   "turn": 298,
+   "to": "pole_4"
+  },
+  {
+   "id": "pole_4",
+   "kind": "pole",
+   "at": [
+    16.18,
+    3.55
+   ],
+   "turn": 352,
+   "to": "pole_5"
+  },
+  {
+   "id": "pole_5",
+   "kind": "pole",
+   "at": [
+    16.28,
+    17
+   ],
+   "turn": 0,
+   "to": "pole_6"
+  },
+  {
+   "id": "pole_6",
+   "kind": "pole",
+   "at": [
+    16.28,
+    31
+   ],
+   "turn": 0
+  },
+  {
+   "id": "lamp_1",
+   "kind": "lamp",
+   "at": [
+    -1.5,
+    -5.6
+   ],
+   "turn": 0
+  },
+  {
+   "id": "lamp_2",
+   "kind": "lamp",
+   "at": [
+    14.97,
+    -0.25
+   ],
+   "turn": 240
+  },
+  {
+   "id": "vending",
+   "kind": "vending",
+   "at": [
+    -1.2,
+    -3.15
+   ],
+   "turn": 0
+  },
+  {
+   "id": "postbox",
+   "kind": "postbox",
+   "at": [
+    11.24,
+    -11.5
+   ],
+   "turn": 18
+  }
+ ],
+ "shots": [
+  {
+   "id": "shot_block",
+   "name": "the block from across the bend (image 2)",
+   "eye": [
+    18.6,
+    -7.7,
+    1.6
+   ],
+   "look": [
+    9.5,
+    2.4,
+    4.6
+   ],
+   "vfov": 62,
+   "aspect": [
+    16,
+    9
+   ]
+  },
+  {
+   "id": "shot_window",
+   "name": "out of the living room's window",
+   "eye": [
+    7.7,
+    0.9,
+    2.05
+   ],
+   "look": [
+    11.5,
+    -14.5,
+    1.6
+   ],
+   "vfov": 62,
+   "aspect": [
+    16,
+    9
+   ]
+  },
+  {
+   "id": "shot_bend",
+   "name": "down the lane into the bend",
+   "eye": [
+    -14,
+    -7.4,
+    1.6
+   ],
+   "look": [
+    12,
+    -6.5,
+    2.2
+   ],
+   "vfov": 62,
+   "aspect": [
+    16,
+    9
+   ]
+  }
+ ]
+}

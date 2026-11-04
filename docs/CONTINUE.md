@@ -13,11 +13,174 @@ street builder, its paint and the PBR sets, with `prop-gen-tool` merged in; 2026
 to 2026-11-03 on `Director-Godot`: the Director in Godot, its panel, Story Flow and the animation steps, merged into
 main on 2026-11-03 with main's own work since 2026-10-31 brought in; then the skin's depth softened and the skin under
 clothes hidden on `claude/festive-euler-o7axpl`, the walls meeting, the editors' rules, Export for Godot and the
-by-hand guides). Read this
+by-hand guides, merged; then on the same branch from main the map-building skill and the user's floor plan as a map, its
+bedding, curtains, tables and chairs, the props' kept pictures, real wood in the flat and, last, its curtains). Read this
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-03, night, branch `claude/festive-euler-o7axpl`): rules, exports, guides
+## Where it stopped last (2026-11-04, after the wood, the same branch): the flat's curtains, bare chairs, a cleaner street
+
+The user's ask (DECISIONS 2026-11-04, after the wood): the prop generator's curtains in the map, the chairs without
+their cushions, the bicycles and bins off the street, the folded futon out of the oshiire.
+
+- **Curtains made for each window** (PROPGEN §22): `curtain_maison_bedroom` (blackout, blue-grey, a little below the
+  sill), `curtain_maison_living` (linen to the floor), `curtain_maison_washitsu` (a white sheer to the sill), set down
+  in the layout from their `box_m` (SCENE_BUILDER §10d) in place of the kit's, at seeds that hang clean (LESSONS: a
+  pucker that stays put is the seed's); **hollow** (the family's `HOLLOW = True`, the library index's `hollow`,
+  storykit/plan.py's tag: no collider in the exports or Play, out of LEVEL's overlap test).
+- **The chairs bare**: `chair_desk_oak` and `zaisu_walnut` with `cushion.on: false` (their pads kept); the bedroom's
+  desk, chair and lamp 10 cm further from the window.
+- **The oshiire empty**; **maison_lane** without its two bikes and two empty plant pots (the "bins").
+
+Worth doing with the user: plants in pots by the entrance if they want the corner dressed again (`plant` family,
+`props/pot_*`); a lace behind the bedroom's and living room's drapes (a second, sheer curtain on a rail nearer the
+window: the two simulated apart, so their folds would need a gap between rails).
+
+## Before that (2026-11-04, latest, the same branch): real wood in the flat
+
+The user's ask (DECISIONS 2026-11-04, latest): the flat's wood floors looked fake; the latest tables and chairs with
+wood textures in the interior, and a custom PBR for Japanese wooden floors as real as the imported sets.
+
+- **Our own wood sets** (`tools/woodpbr.py`, ASSETS §6; WOODPBR in check_all): `pbr/floor/FlooringOak001_2K-JPG`
+  (light natural oak sheet flooring, 2P: 303 x 1818 mm sheets of two boards, staggered), `FlooringOak002` (stained),
+  `FlooringBirch001`; `pbr/wood/WoodOak001_2K-JPG`, `WoodWalnut001_2K-JPG` (edge-glued furniture panels). 2K JPGs in
+  ambientCG's names, each board its own cut of a log, tileable, the floors' boards found as cells.
+- **maison_1f** (SCENE_BUILDER §10d): the wood rooms' kit planks wear `FlooringOak001`, laid by its cells; the
+  bedroom's `desk_oak` and `chair_desk_oak`, the living room's `zataku_walnut` and `zaisu_walnut` (new recipes, in the
+  library, their pictures kept) replace the kit's desk, dining chair and low table; the bed's frame and the genkan's
+  step in `WoodOak001`, the TV board and the tokonoma in `WoodWalnut001`; a bigger rug. Godot's pictures:
+  `Saved/Godot/_map/maison_1f/shots_day/sheet.jpg` (before: `shots_day_before/`).
+- **A kit's `mats` in a layout file** dress it now (`builder-model.js` `presetToModel` puts them on the thing, where
+  Paint keeps them): they had sat in its spec, read by nothing, so the flat's curtains never wore their colours.
+
+Worth doing with the user: walk it in Godot and say whether the floor's tone and gloss sit with the plaster and the
+tatami; `FlooringOak002` or `FlooringBirch001` are a word away (a room's `_fx_floor` mats); more woods (ash, cherry,
+pine, a wide-plank floor, a parquet) are a few numbers each in `woodpbr.py`'s SETS; the kitchen could take a small
+dining set (`table_*`, `chair_*` with `"pbr": {"wood": ...}`).
+
+## Before that (2026-11-04, later night, the same branch): customizable props previewed in the picture editor
+
+The user's asks (DECISIONS 2026-11-04, night and later night): the café chair a stool, cushions toggleable, every
+prop's picture pre-rendered; then, more exactly, customizing only the props meant to be (cans, books, appliances'
+fake brands) with the uploaded picture previewed in the picture editor before it's made.
+
+- **`stool_cafe`** (was `chair_cafe`): a bentwood stool; **`cushion.on`**: false keeps a chair bare with its pads'
+  settings (the switch in the cushion box's title); a cushioned chair's card shows it without them too.
+- **Every recipe's picture kept** in `Content/Studio/Props/thumbs/` (PROPGEN §25), the cards' before anything is made.
+- **Customizable families** (`CUSTOM = True`: can, bottle, cup, box, sheet, book, pills, appliance, charm, ware): ✎ on
+  their cards and a filter; in the picture editor **Its picture** shows the prop's own rendered picture with your
+  pictures laid on it (the sticker passes beside every preview: `stage.py`, `page/preview.js`, toned by `tone.py` /
+  `page/tone.js`), live, before Make, and before it's made here at all from what's kept of it (its parts, slots and
+  paint at 512 px: `serve.py kept_meta`). THUMBS in check_all; PROPPAGE drives it on a made ema and a kept can.
+
+Worth doing with the user: their own labels on the cans, books and the rice cooker's lid, then Make, and the made
+prop against what its picture showed; whether more families are customizable (`CUSTOM = True` in a family's module,
+then `python tools/propgen.py thumbs --make <its recipes>`); a closer preview (the passes are half the preview's size:
+a rice cooker's lid logo is small in them) would mean rendering them at full size.
+
+## Before that (2026-11-04, evening, the same branch): tables, chairs and their cushions
+
+The user's ask (DECISIONS 2026-11-04, evening): research first, then table and chair generators, cushions by the
+cloth, the prop generator's page for them and on the dashboard.
+
+- **The research** (docs/research/tables_chairs.md): table bases, sizes, tops and edges; game furniture mid-poly
+  (chamfers, weighted normals, a bake of the rounded copy), UVs along the grain; wood's micro detail as bumps under a
+  set of your own; chair styles and sizes; cushions filled by pressure, simulated dense, a light mesh baked from it.
+- **The `table` family** (PROPGEN §23) and **the `chair` family** (§24) on `families/furniture.py` (board, turned,
+  bent, top; the wood's colour and flaws) and `families/cushion.py` (pads to any outline). Fifteen recipes in the
+  library: `table_dining`, `table_farmhouse`, `table_midcentury`, `table_trestle`, `table_pedestal`,
+  `table_chabudai`, `table_kitchen_painted`, `chair_dining`, `chair_ladderback`, `chair_windsor`, `stool_cafe`,
+  `chair_school`, `stool_kitchen`, `bench_wood`, `zaisu_lacquer`. PROPGEN's cases `table_farmhouse`, `chair_dining`.
+- **The page** reads a family's `FIELDS`, `CHOICES` (nested by dotted keys) and `LABELS`; the curtain family has them
+  too. **The dashboard**: the prop generator among the start tiles; its page on port 8799 now (8797 is the face mocap
+  page's: they couldn't both run).
+
+Worth doing with the user: lay their own wood sets over the tables and chairs (`"pbr": {"wood": "pbr/Wood/<set>"}` in
+a recipe, or the page's PBR picker on the material `wood`; `rot` 90 if a set's grain runs up its picture) and see the
+flaws hold under them; put the chairs and tables in the maison flat in place of the kit's (the kitchen's dining set,
+the bedroom desk's chair); more styles are a few lines each in `chair.py` `_build` or `table.py`'s STYLES. The
+bedding's long hem islands still hold its textures to about a third of a texel a millimetre (LESSONS, the curtains).
+
+## Before that (2026-11-04, afternoon, the same branch): a curtain generator
+
+The user's ask (DECISIONS 2026-11-04, afternoon): a curtain prop with "a bit of drape physics", one panel or two, made
+from the window's width and height; research first for the easiest technique.
+
+- **The research** (docs/research/curtains.md): what makes a curtain read (the heading sets the folds at its fullness,
+  they relax toward a heavier hem, stack-back, tie-backs, the length), three ways (simulate from flat, shape by
+  numbers, or shape it and let it settle) and the one chosen: the hung shape from the heading's own geometry, then the
+  prop generator's cloth settled with **tethers** to the heading (long range attachments: the cloth can't stretch)
+  and a tie-back as a ring drawn in.
+- **The `curtain` family** (PROPGEN §22, `tools/propgen/families/curtain.py`; `sim.Cloth.step` takes a caller's own
+  constraint, `extra`): `window`, `sill`, `panels` (1 or 2, `side`), `heading` (pinch, wave, grommet, gather, flat),
+  `length` (sill, below, floor, puddle, mm), `open`, `tie`, `rod` (rail, track, pole, none), `fabric` (sheer, cotton,
+  linen, blackout, velvet), `cover`. Six recipes: `curtain_pair`, `curtain_tied`, `curtain_sheer`,
+  `curtain_grommet`, `curtain_wave`, `curtain_velvet_old`, in the library; PROPGEN's case `curtain_tied`. About two
+  minutes each to make (the 2048 bake).
+
+Worth doing with the user: put them up in the maison flat in place of the kit's curtains (a layout places a library
+prop where its `box_m` falls: the window's middle on the wall's face, turned to the room; a Japanese window's usual
+pair is a sheer behind drapes: two props, the sheer's `rod.out` 120 and the drapes' 200); a window's own sizes from
+the set (the bedroom's 2400 x 1300 over an 800 sill). Making them on the user's machine: `python tools/propgen.py make
+curtain_pair curtain_tied curtain_sheer curtain_grommet curtain_wave curtain_velvet_old --library`.
+
+## Before that (2026-11-04, morning, the same branch): bedding for the flat
+
+The user's ask (DECISIONS 2026-11-04, morning): "proper better prop pillows and blankets", then into the map.
+
+- **The prop generator's `bedding` family** (PROPGEN §21, `tools/propgen/families/bedding.py`): a cloth simulation
+  (`sim.Cloth` in `tools/propgen/sim.py`, the paper's PBD with thickness, self-collision, rounded boxes and a floor
+  with friction, pressure for a filled bag, `hinge` rolling a fold round the layers inside it) gives each its form;
+  the small folds, the quilting's puff, the stitches and the cover's print go into the detail mesh and the paint,
+  baked as every prop's. Six recipes: `makura_sobakawa`, `pillow_bed`, `zabuton_real`, `kakebuton_turned` (on the kit
+  futon on tatami), `comforter_bed` (on `bed_single`), `futon_folded`; in the library (the index ships, the meshes are
+  made: `python tools/propgen.py make <names>` then `library <names>` on the user's machine, about a minute each).
+  PROPGEN's cases: `pillow_bed`, `futon_folded`, `kakebuton_turned`.
+- **In maison_1f**: the washitsu's futon with the kakebuton and the makura (its low table and cushion gone for room),
+  bedroom 1's bed with the comforter and pillow, the folded futon in the oshiire, the living room's zabuton. Layouts
+  place library props (`props/<name>` as a kit), a blanket by its `box_m` over its bed; LEVEL skips a door's
+  clearance inside a closet or an oshiire. Pictures: `map_shots.py` with the shots `15_futon`, `16_bed`, `17_oshiire`.
+
+Worth doing with the user: look at the bedding in Godot under their own light (the folds are in the normal maps:
+they show under a lamp at a grazing angle more than in the flat day light here); more bedding is a recipe away
+(another cover's `pattern` and colours, `mode: rumpled` for a slept-in bed, a `cushion` for a sofa; a blanket for
+another support takes its boxes as `on`). The folded futon's layers show dark seams at their sides (the hem's
+rounding): a gentler hem if the user finds them too strong.
+
+## Before that (2026-11-04, small hours, branch `claude/festive-euler-o7axpl` from main): the map skill, image 1 as a map
+
+The user's two asks (DECISIONS 2026-11-04), after tsukibii/HorrorEngine#13 was merged:
+
+- **A token-efficient guide for Claude** to build a coherent map with the interior and street tools: the skill
+  `/build-map` (`.claude/skills/build-map/SKILL.md` the steps, `reference.md` the formats compact). Its tools:
+  `layoutset.mjs --file` (a layout file as a set; `repeat` for storeys alike), `streetsync.mjs` (a street's insides
+  read again without the page), `plan_view.py --floor`, `streetcheck.mjs --street`, `tools/godot/map_shots.py` (the
+  set in its street pictured by Godot, a contact sheet: MAPSHOTS).
+- **The map**: the set `maison_1f` (the user's image 1, furnished Japanese, four storeys alike, the stairs behind a
+  locked barred gate; `layout.json` its source, `shots.json` its pictures) in the street `maison_lane` (a lane round the
+  block's corner, a curved board-formed concrete wall, an estate and villas behind it, street trees). SCENE_BUILDER
+  §10d, STREET_BUILDER §7c. The pictures: `python tools/godot/map_shots.py --set maison_1f --street maison_lane
+  --shots Content/Studio/Sets/maison_1f/shots.json` (the desk's server running).
+- What the map found in the builders, fixed with a rule each (every older set and game's walls compared before and
+  after: identical but where wrong): open plans read back walled by the scene builder's page (so its export walled
+  the kitchen off), a corner half filled by another room's wall, openings one over another on a stair shaft (they
+  walled up the gate, and the two schools' upper stair arches: LEVEL says *walled up* now), a setback flush on a side
+  and a terrace's parapet at its corners (street), the poles' wires, the export's milky glass (12 % now, as the game
+  export's). Fences curve (`via`), and the kit has `gate_bars`.
+
+Worth doing with the user: walk the flat in Godot (Exports: `node tools/director/levelexport.mjs --game set:maison_1f`
+and `node tools/director/streetexport.mjs --street maison_lane`, the flat at the street's marker
+`inside_maison_1_1`, as guides/first_game) and light it by hand; the look's haze is thick across a street (the
+balanced preset is tuned for rooms): the far side of the lane greys out by day. The trees are the realistic ones
+(the user's ask during the work): `zelkova_real` and `black_pine_real` made by the prop generator (Blender's module,
+`python tools/retarget.py setup`, about 25 s a tree) and put in the library; on the user's machine `python
+tools/propgen.py make zelkova_real black_pine_real` then `python tools/propgen.py library zelkova_real
+black_pine_real` before the street's export, or its stand-ins show (STREET warns). The toilet in the unit bath is a
+box (no kit for one yet). BUILDER passed here; STREETPAGE passes but for the 404 that was there before (a PBR set
+missing from this machine's shelf), and once its *Fill a street* clashed a drain pipe with a neighbour's rail (the
+fill is random: a generator rule still to find).
+
+## Before that (2026-11-03, night): rules, exports, guides
 
 The user's three asks (DECISIONS 2026-11-03, night), each a commit:
 

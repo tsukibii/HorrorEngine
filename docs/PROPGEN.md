@@ -45,6 +45,8 @@ python tools/propgen.py godot [names...]                  # GDPROPS: imported by
 python tools/propgen.py pbr                               # the PBR shelf's sets
 python tools/propgen.py pbr-add Metal/brushed ~/Downloads/brushed_*.png   # a set onto the shelf
 python tools/propgen.py vines [ivy ivy_real creeper creeper_autumn bare]   # seamless vine sets onto the shelf (§20)
+python tools/propgen.py thumbs [names...] --make --bare   # every recipe's picture kept in the project, with its sticker passes (§25)
+python tools/propgen.py thumbs --check                    # THUMBS
 python tools/propgen.py check                             # PROPGEN
 ```
 
@@ -55,9 +57,10 @@ python tools/propgen.py check                             # PROPGEN
 - **Options.** `--formats glb,fbx,obj,blend` (all four by default), `--tex 2048` (the texture size), `--no-preview`,
   `--samples N` (the bakes'), `--library` (also into the library).
 - **What it makes.** `Saved/Props/<name>/` holds `<name>.glb`, `.fbx`, `.obj` + `.mtl`, `.blend`,
-  `<name>_<material>_albedo.png`, `_orm.png` and `_normal.png`, `<name>_preview.png`, and `meta.json` (the resolved
-  recipe, size, triangles, time).
-- **Time.** About 20 to 40 s a prop on the cloud's 4 CPUs (half of it the preview); much less on the 3090.
+  `<name>_<material>_albedo.png`, `_orm.png` and `_normal.png`, `<name>_preview.png` with its sticker passes beside it
+  (`_st.png`, `_st.json`, `_st_ground.png`: §25), and `meta.json` (the resolved recipe, size, triangles, time).
+- **Time.** About 30 to 50 s a prop on the cloud's 4 CPUs (half of it the preview and its sticker passes, §25); much
+  less on the 3090.
 - **Blender versions.** Tested on Blender 4.2 (the cloud's module) and Blender 5.2 LTS (Python 3.13): PROPGEN ok on
   both, every format written. Only `bpy` and the numpy Blender ships are used; no add-ons beyond the bundled
   exporters.
@@ -91,7 +94,7 @@ Every family takes these:
 
 Four ways, from clicking to a family of your own:
 
-0. **The page** (§13): `python tools/propgen/serve.py`, then http://127.0.0.1:8797. Every recipe is a card with its
+0. **The page** (§13): `python tools/propgen/serve.py`, then http://127.0.0.1:8799 (the dashboard's start tiles have it). Every recipe is a card with its
    picture; open one, change it in a form, drop your pictures on its texture, pick PBR sets, make it (or several
    variations at once), turn it in 3D, keep it as a recipe. Everything below is what the page writes for you.
 1. **One-off, from the command line:** `--set key.sub=value` changes anything in a recipe (JSON values: a number, a
@@ -141,6 +144,10 @@ and set the fill and the colours on each placed copy in Godot (its `HSLiquidFill
 | `import` | your own mesh, worn (§5) | chair_worn |
 | `tree` | §18: a street's trees grown by Mtree's functions: `kind` zelkova, ginkgo, cherry, camphor, plane, maple, crape_myrtle, pine, cedar, dead, and the bushes azalea (`clip` to a ball or a box), shrub, grass; `height`, `clear` (the stem below the first branch), `season` summer, autumn, spring (blossom on a cherry), winter (bare); `spread`, `droop`, `density`, `crown`, `levels`, `lean`, `multi`, `pollard`, `twigs`; `leaves` {count, size, tint; `set` a leaf set off the shelf for realistic leaves, `set_mm`, `spray`, `hue`, `sat`, `light`}, `bark` {pbr, tint, tile, relief; color, style for the drawn tile}; `stakes` torii, tripod or single, `pit` kerb or soil | zelkova_street, zelkova_young, zelkova_autumn, zelkova_winter, ginkgo_street, ginkgo_autumn, cherry_tree, cherry_blossom, camphor_tree, plane_street, plane_pollarded, maple_garden, crape_myrtle, black_pine, dead_tree, sapling_staked; the realistic category: zelkova_real, zelkova_autumn_real, cherry_real, camphor_real, plane_real, maple_autumn_real, crape_myrtle_real, black_pine_real, cedar_real; the bushes: azalea_ball, azalea_flowering, azalea_hedge, azalea_low, shrub_loose, shrub_autumn, shrub_real, grass_tuft, grass_dry; the small trees (`habit: upright`, under a two-storey house): small_zelkova, small_zelkova_staked, small_zelkova_autumn, small_hornbeam_real, small_cherry, small_cherry_blossom, small_ginkgo, small_ginkgo_autumn, small_maple_autumn, small_dead |
 | `plant` | §19: a potted plant, a table's to a floor's: `form` rosette (an aloe, an echeveria), blades (a snake plant), fern, palm (an areca's canes), big_leaf (a monstera, a rubber plant, a fiddle leaf fig: `leaf`, `stem`), tree (`species` ficus, bonsai, herb, dead), trailing (a pothos, ivy: `length`), canes (lucky bamboo), yucca, cactus (`ribs`, `radius`); `plant` {size, count, color, leaf, species, lean, spread}; `pot` {kind terracotta, glazed, plastic, cylinder, bowl, concrete or cube; d (w, dd), h, color, soil, topping pebbles, pumice, moss or bark, cracked, glaze} | pot_aloe, pot_echeveria, pot_basil, pot_cactus, pot_cactus_tall, pot_pothos, pot_ivy, pot_fern, pot_snake_plant, pot_bonsai, pot_monstera, pot_rubber_plant, pot_fiddle_leaf, pot_ficus, pot_palm, pot_yucca, pot_bamboo, pot_dead |
+| `bedding` | §21: pillows, cushions, blankets and futons by the cloth simulation: `kind` pillow, cushion (a zabuton: `tuft`, `thread`), blanket (`on` floor, futon, bed_single or your boxes; `floor` mm, the ground round it (tatami: 60); `at` mm over it; `mode` spread, turned (`turn_back`), rumpled (`heaps`); `thick`, `quilt` {cell, style channels, low}) or folded (`folds` [[axis, 2 or 3], ...]); `fill`, `lumps`, `dent`, `wrinkle`, `hem_full`; `cover` {color, pattern stripes, check, dots or seigaiha, size, ink, rough}, `back` | makura_sobakawa, pillow_bed, zabuton_real, kakebuton_turned, comforter_bed, futon_folded |
+| `curtain` | §22: curtains made for a window: `window` [w, h] mm, `sill`, `panels` 1 or 2 (`side`), `heading` pinch, wave, grommet, gather or flat (`fullness`, `pitch`), `length` sill, below, floor, puddle or mm, `open` 0 to 1, `tie` {at, bundle, depth, color}, `rod` {kind rail, track, rod or none, out, over, above, d, color, metal, finial}, `fabric` sheer, cotton, linen, blackout or velvet, `cover`; `air`, `flare`, `relax`, `settle` | curtain_pair, curtain_tied, curtain_sheer, curtain_grommet, curtain_wave, curtain_velvet_old, curtain_maison_bedroom, curtain_maison_living, curtain_maison_washitsu |
+| `table` | §23: wooden tables: `size` [length, width, height] mm, `style` dining, shaker, farmhouse, parsons, midcentury, trestle, pedestal or chabudai; `top` rect, rounded, round or oval (`corner`), `edge` eased, square, chamfer, round, bullnose or underbevel, `thick`, `overhang`, `boards`; `leg` square, taper, turned or round (`leg_w`, `taper`, `splay`), `apron`, `stretcher` none, h or box; `wood`, `ring`, `finish` raw, oil, satin or gloss, `flaws` {grain, cracks, scratches, dents}, `painted` (`paint_color`) | table_dining, table_farmhouse, table_midcentury, table_trestle, table_pedestal, table_chabudai, table_kitchen_painted, desk_oak, zataku_walnut |
+| `chair` | §24: chairs and their cushions: `style` dining, ladderback, spindle, cafe (a bentwood stool), school, stool, bench or zaisu; `seat_h`, `seat` [width, depth], `back_h` (mm), `rake` (degrees); the wood as a table's, `frame_color` (a school chair's steel); `cushion` {on, seat, back, thick, fill, ties, color, pattern, ink, size, rough} or false (`"on": false` bare, its settings kept) | chair_dining, chair_ladderback, chair_windsor, stool_cafe, chair_school, stool_kitchen, bench_wood, zaisu_lacquer, chair_desk_oak, zaisu_walnut |
 
 ### Designs
 
@@ -442,19 +449,23 @@ thing is turned, and swings when it's moved.
 
 ## 13. The page: recipes as pictures
 
-`python tools/propgen/serve.py`, then http://127.0.0.1:8797 (`PROPS_PORT` for another; the launcher has it under
+`python tools/propgen/serve.py`, then http://127.0.0.1:8799 (`PROPS_PORT` for another; 8797 until 2026-11-04, when the face mocap page had it too; the launcher has it under
 Pages). A wrapper over `tools/propgen.py`: what it writes is the same recipe JSON, and what it makes the same files.
 
-- **The gallery:** every recipe a card with its picture (the preview of its last make; small JPEGs in
-  `Saved/Props/_thumbs/` when Pillow is there), in families, found by name, family or words. Badges mark a prop made
-  with settings its recipe doesn't have ("made with changes", as `--set` does) and one made under a name of its own
-  that isn't a recipe (variations). *Make the unmade* makes every recipe not made yet.
+- **The gallery:** every recipe a card with its picture (the preview of its last make here, small JPEGs in
+  `Saved/Props/_thumbs/` when Pillow is there; else the picture kept in the project, `Content/Studio/Props/thumbs/`,
+  marked *kept*: §25), in families, found by name, family or words. Badges mark a prop made with settings its recipe
+  doesn't have ("made with changes", as `--set` does), one made under a name of its own that isn't a recipe
+  (variations) and a kept picture of an older recipe ("older picture"); a chair's *cushions* chip shows it without
+  them. *Make the unmade* makes every recipe not made yet. The customizable ones (cans, books, appliances...: §25) are
+  marked ✎, and *✎ customizable* shows them alone.
 - **The form** (Settings) is built from the recipe itself: colours as colour pickers, shares (wear, fill, burn...) as
   sliders, words as text, and lists for what the generator knows. Those are its designs, fonts, liquids, finishes,
   metals and poses, and each family's kinds and options, read from the family's own docstring (`"kind": "a" | "b"`),
   so a new family's options show up by themselves. Any setting can be added (+ a setting) or taken out (×); quick adds
   are a liquid, a print and wear. Recipe JSON is the whole recipe as text, editable.
-- **Texture & pictures** is **the picture editor** (§17, after Figma): the tab takes the whole page, the texture in
+- **Texture & pictures** is **the picture editor** (§17, after Figma; a customizable prop's pictures seen on its own
+  picture as they're laid, made here or not: §25): the tab takes the whole page, the texture in
   the middle with its cuts, its parts and pictures as layers on the left, the picked one's settings and the prop in 3D
   wearing the canvas on the right. Pictures are dragged onto it (a part, one of its own pictures, or the whole
   texture), moved, sized and turned by their handles. A PBR set off the shelf per material is there too, and each
@@ -705,8 +716,10 @@ Texture & pictures tab is that editor (`tools/propgen/page/picedit.js`; the 3D v
   opacity, roughness, tint and its layout; a smudge's; a part's size, the picture it wants, *Fill it with* and its
   template. With nothing picked: how to use it, the material's PBR set and the templates. Every picture shows the
   size it wants (§15).
-- **On the prop** (right, under the settings): the made .glb wearing the canvas as it's edited; a click on it picks
-  the part there.
+- **On the prop** (right, under the settings): *3D*, the made .glb wearing the canvas as it's edited; a click on it picks
+  the part there. A customizable prop (§25) opens on *Its picture* instead: its own
+  rendered picture with your pictures laid on it, lit as Make will light them, made here or only kept in the project
+  (then the editor works from the kept parts and paint: *kept · not made here*).
 - **Templates**: *Template (.ora)* is the whole layout for Krita, as the UV templates are (ASSETS §7): the prop's
   paint on Base, the cuts, its own pictures' boxes and the parts' names on Guide (locked), an empty Paint layer.
   Saved and dropped back onto the canvas, its Paint layer becomes a picture over the whole texture (the server takes
@@ -942,3 +955,210 @@ repeat (`--tex` the pixels, 1024 by default; `--seed` another growth; `--out` an
   `docs/godot_sheets/2026-11-02_vines.jpg` shows each kind tiled two by two and the ivy over the plaster set. For
   vines standing off a wall, the set goes on a plane a few centimetres in front of it in Godot, its material cut by
   the opacity (alpha scissor).
+
+## 21. Bedding: pillows, cushions, blankets and futons
+
+The user (2026-11-04): "can you make proper better prop pillows and blankets and then add them to this level" (the
+maison flat: SCENE_BUILDER §10d). The `bedding` family (`families/bedding.py`) makes them with the cloth simulation
+(`sim.Cloth`, after the paper's: position-based dynamics, its stretch and bend kept, the sheet's own layers kept apart
+by its thickness, rounded boxes and the floor as what it rests on with friction), then draws the cloth's look into the
+detail mesh, baked onto the game mesh as every prop's is:
+
+- **Pillows and cushions** (`pillow`, `cushion`): two pieces of cover sewn round their edge, filled by pressure to a
+  share of what they could hold (`fill`: 0.42 a zabuton, 0.68 a buckwheat makura, 0.86 a bed pillow), set down and
+  settled; a head's `dent` pressed in by a sphere, a zabuton's `tuft` tied through its middle (its thread's knot
+  painted, `thread` its colour). The folds a filled bag makes at its corners, the seam's puckers and the fill's
+  `lumps` go into the detail mesh, faded to nothing at the seam (the simulation leaves a bag smooth: a cloth that
+  thin wrinkles below its grid).
+- **Blankets** (`blanket`): a quilted sheet `thick` mm (its `quilt` cells or channels puffed between the stitches,
+  thinner at the hem), laid over what it's `on` (`futon` and `bed_single`: the kit's own at its defaults; or boxes of
+  your own, `[[lo, hi, radius], ...]` in metres from its middle on the floor), `floor` mm the ground it falls onto
+  round its support (a kit futon stands in 6 cm of tatami: `"floor": 60`, or its flaps lie under the mats), `at` mm
+  along it from its middle; in
+  `mode` `turned` its head end folded back `turn_back` mm (a little askew) before it falls, `rumpled` pushed about
+  into soft heaps; settled with friction over its support's edges, so it hangs where it's longer.
+- **Folded futons** (`folded`): `folds` in order, each in half or in three, rolled round the layers inside it (each
+  layer bends round the fold's middle at its own radius, the outer ones wider: `sim.hinge`), each flap a little longer
+  than what it covers by what its bend takes, so the layers end even; left as folded with a soft unevenness and the
+  top's `sag` (a settle crumples a stack that thick into a heap). The maison oshiire's is folded in half and in three
+  (`[["x", 2], ["y", 3]]`): 0.55 x 0.82 x 0.36 m, shallow enough for its 0.6 m.
+- **The cover**: `cover` {color, pattern (stripes, check, dots, seigaiha), size (mm a repeat), ink, rough}, `back`
+  the lining's; the weave's grain as a height, the quilt's stitches as a dashed thread in a groove; `wear` as any
+  prop's.
+- **Laid on a bed** (`on` a futon or a bed): the blanket is made where it lies (`keep_z`: its heights over the floor
+  as made, the support's middle at the origin: dropped by hand into Godot at the bed's own place, it lies on it). A
+  level places a library mesh by its box (centred, on its base), so meta.json and the library's index carry its
+  `box_m` (story metres from its origin, z up): a layout puts it where its box falls over the bed's middle turned by
+  the bed's `rot`, at the box's lowest height, `on` the bed (the maison layout's `laid`, `Content/Studio/Sets/
+  maison_1f/layout.json`'s source). A blanket made for a futon or a bed fits that kit at its defaults; give the kit
+  `{"pillows": 0, "duvet": 0}` so its own blocks don't lie under it.
+
+The check's cases: `pillow_bed`, `futon_folded`, and `kakebuton_turned` (made lying on its futon: over the floor,
+never under it). A layout places a library prop as a kit (`[room, "props/<name>", x, y, rot, {z, extra}]`,
+`layoutset.mjs` reads the index's sizes).
+
+## 22. Curtains: made for the window, hung by the cloth
+
+The user (2026-11-04): "a curtain generator prop that uses a bit of drape physics to get more natural curtains ...
+fields for how many sides (1 curtain or 2 on each side), you add the height and length of the window and it generates
+curtains to use. Research first for the easiest technique." The research and the way chosen: docs/research/curtains.md.
+The `curtain` family (`families/curtain.py`):
+
+- **For the window**: `window` [w, h] mm (the opening) and `sill` (its bottom over the floor, mm). The rail runs
+  `rod.over` (150 mm) past each side and `rod.above` (120 mm) over the top; the drop by `length`: `sill` (just above
+  it), `below` (150 mm under it), `floor` (just off it), `puddle` (100 mm on it) or mm below the opening. `panels` 1 or
+  2; a single one draws to its `side`, left or right seen from the room.
+- **The heading**, its `fullness` and `pitch` the makers' numbers by default: `pinch` (2.2x, a pleat every 120 mm, on
+  a wall rail), `wave` (2x, carriers every 72 mm, a ceiling track), `grommet` (1.8x, eyelets every 160 mm on a pole),
+  `gather` (2.5x, a rod pocket's small gathers), `flat` (1.3x, a Japanese flat curtain's hooks). `open` 0 (drawn
+  across) to 1 (stacked at its side, each fold a `stack` of rail); `tie` {`at` (of its hang from the hem), `bundle`
+  (mm wide), `depth`, `color`} gathers each panel into a band at its side.
+- **How** (shape it, then let it settle): each row shaped from the heading's crossings, the cloth between two of them
+  a half sine as deep as its length over its chord asks (`fold_depth`), a little wider (`flare`) and softer (`relax`:
+  the bend's rest flatter) toward the hem, each fold its own depth and lean; a pinch pleat's three folds taken up at
+  the tape as one narrow loop (three are finer than the cloth's 32 mm grid). The tape pinned; **tethers** to it, so
+  the cloth can't stretch (unilateral: they never stop a fold); a **breeze** while it settles (`air`), gone by half
+  way, so no two folds hang alike; a tie-back's **ring** drawn in over the first half of the settle; the wall, the
+  window's frame (`frame_out`, 120 mm: the scene builder's frames) and the floor (a pooling hem) in the way. Each
+  panel one sheet drawn on both sides (a curtain is seen from the room; its texture all front), its fine creases in
+  the detailed copy and baked: about 10 000 triangles a pair, the rail's few more.
+- **The rail or the rod** (`rod`: `kind` rail, track, rod or none; `out` mm from the wall's face, 200 by default,
+  clear of the scene builder's window frames; `d`, `color`, `metal`, `finial` ball or cap): brackets back to the wall,
+  rings on a pole for pleats, grommets round it for a grommet heading.
+- **The cloth**: `fabric` sheer (see-through: its hems and tape doubled), cotton, linen, blackout, velvet (each a
+  thickness, stiffness and roughness); `cover` as the bedding's (§21: colour, pattern, ink, `thread`); the hems' and
+  the tape's stitching drawn; `wear` as any prop's.
+- **In a level**: made with the floor under the window's middle at the origin and the wall's face at y = 0, the
+  curtains in front of it (facing -y, the room), its heights as made (`keep_z`) and its box in meta.json and the
+  library's index (`box_m`, §21): a layout puts it where its box falls from the window's middle on the wall's face,
+  turned as the wall faces into the room (a south wall's: 180). A curtain is **hollow** (the family's `HOLLOW = True`,
+  its index entry's `hollow`): a level tags it so (storykit/plan.py), seen and never bumped, with no collider in the
+  exports or Play and left out of LEVEL's overlap test (its box reaches back to the wall over the window's frame,
+  which the cloth itself hangs clear of: the frame stands `frame_out`, 120 mm, into the room in the simulation as
+  the scene builder's frames do). A recipe whose folds pucker somewhere is tried at other seeds (LESSONS).
+
+The check's case: `curtain_tied` (pinch pleats, a pole, tie-backs).
+
+## 23. Tables: wooden, made to their size, unwrapped along their grain
+
+The user (2026-11-04): "a prop gen for tables and chairs; for tables take a length/width/height input; research generic
+table styles (wooden) and shapes, simple modelling techniques, and micro details (cracks, wood grain, scratches, mostly
+bumps, as I still want to overlay custom types of wood PBRs)". The research: docs/research/tables_chairs.md. The
+`table` family (`families/table.py`, its parts from `families/furniture.py`):
+
+- **Its size and style**: `size` [length, width, height] mm (the page shows them by name: a family's `LABELS`) and a
+  `style`, each a base and its numbers, every one of them a setting of its own: `dining` (square legs, an apron),
+  `shaker` (legs tapered on their inside faces), `farmhouse` (a thick top of `boards` on turned legs), `parsons` (legs
+  as thick as the apron is deep, flush with the top), `midcentury` (a rounded top bevelled underneath on splayed round
+  legs), `trestle` (two end frames and a stretcher), `pedestal` (a turned column on four feet), `chabudai` (low and
+  round on a frame and short legs).
+- **Modelled as game furniture is** (mid-poly): every part built from numbers twice, rounded for the detailed copy
+  and chamfered once for the game mesh, the bevels and the parts' contact shadows baked from the one onto the other,
+  the game mesh's normals weighted by face size (`th.weighted`); a dining table is about 400 triangles, a farmhouse one
+  on turned legs about 2 300. The parts: `board` (a box along its own x, its long edges rounded, tapered about a corner
+  for a Shaker leg), `turned` (a profile turned round its x), `bent` (a round part along a path: bentwood, a steel
+  tube), `top` (an outline, rect, rounded, round, oval or a trapezoid, inset along its edge's profile, its band in four
+  islands, its underside at a third of the density: seldom seen).
+- **Unwrapped along the grain**: every part is the plank it was cut from, its island's x along its length at the
+  material's one density, so a wood set of your own laid over the material `wood` (the recipe's `pbr`: `{"wood":
+  "pbr/Wood/<set>"}`, `rot` 90 for a set whose grain runs up its picture) runs along each leg, rail and board.
+  The project's own furniture sets (`pbr/wood/WoodOak001_2K-JPG`, `WoodWalnut001_2K-JPG`: glued panels made by
+  `tools/woodpbr.py`, ASSETS §6) run along their x as the parts do; `desk_oak`, `chair_desk_oak`, `zataku_walnut` and
+  `zaisu_walnut` wear them (maison_1f's furniture, SCENE_BUILDER §10d, the two chairs bare: `cushion.on` false), the
+  flaws' relief kept under the set.
+- **The wood's paint** (`paint_wood`): its colour flat-sawn (a top glued up from boards 12 to 22 cm wide, each from its
+  own log: its heart, the cathedral arches, its own tone; a board's edge its straight edge grain; end grain in rings
+  round the pith) at a `ring` spacing never finer than the texture can show; and its **flaws as relief and roughness
+  only**, so they stay under a set laid over the colour: raised grain and fibres (`grain`), checks along the grain
+  toward a board's ends (`cracks`), scratches every way on a top (`scratches`, a little glossier or duller), dents
+  (`dents`); each sized to at least about two texels, so it reaches the normal map. The finish's roughness (`raw`,
+  `oil`, `satin`, `gloss`), `painted` tables (`paint_color`) with the brush's drag, and `wear` as any prop's.
+
+The check's case: `table_farmhouse`.
+
+## 24. Chairs and their cushions: soft, shaped to the chair, light
+
+The user (2026-11-04): "chairs currently don't look quite right, create some basic chair styles, all chairs should be
+able to support simple cushions; emulate pillows and cushions to custom shapes with puffy soft physics that gets
+baked; a bit of realism while keeping the poly count low". The `chair` family (`families/chair.py`) and its cushions
+(`families/cushion.py`):
+
+- **Styles**: `dining` (square legs, a seat board on rails, a top rail and three slats), `ladderback` (round posts,
+  four slats across, rungs), `spindle` (a Windsor: a thick shaped seat, splayed turned legs, spindles to a bent
+  crest), `cafe` (a bentwood stool, the user, 2026-11-04: its back and the ring that missed two legs taken off: a
+  round seat on a bent ring, four bent legs inside the ring touching it and the seat, thinning and flaring out to
+  their feet; a `bent` part's radius can taper, [start, end]), `school` (a steel tube frame, `frame_color`, a plywood
+  seat and back), `stool` (a round seat on splayed
+  legs and a ring of rails), `bench` (a long seat on four legs), `zaisu` (a legless Japanese chair: a low seat and a
+  reclined back). `seat_h`, `seat` [width, depth], `back_h` (mm) and `rake` (degrees) each style's by default
+  (DEFAULTS); the wood as a table's (§23). 1 700 to 3 200 triangles with their cushions.
+- **Cushions** (`cushion`: {on, seat, back, thick, fill, ties, color, pattern, ink, size, rough}, or false; `"on":
+  false` makes the chair bare and keeps the pads' settings, the page's switch in the cushion box's title): the
+  bedding's bag (§21) made to any outline. The seat's own outline (its trapezoid, a round seat's circle; in front of
+  the back posts) or the back's is triangulated finely (a constrained Delaunay) as two pieces sewn round their border,
+  filled by pressure firm **between the floor and a ceiling at its thickness** (a pad's foam: a bag only filled to a
+  pad's thickness has more cloth than air and crumples all over) and let go to settle, keeping its filling; the
+  seam's puckers and soft wrinkles drawn into the dense copy; then **a coarse triangulation of the same outline takes
+  the dense one's shape** by its flat place (each coarse point found in the dense flat sheet, moved where that point
+  went: no retopology) and the dense one is baked onto it: a pad of about 350 triangles. A back pad is made the same
+  lying down and stood against the back, toward the sitter. `ties` loop round the back posts with two tails.
+
+The check's case: `chair_dining` (a seat pad and its ties).
+
+## 25. Customizable props: your pictures seen on their own picture before they're made
+
+The user (2026-11-04): "pre-render and save thumbnails for each prop ... in a clever way that we can preview what custom
+stickers would look like on props like cans"; then, more exactly: "I don't mean I want a logo on the models; I want to
+be able to customize certain props that should be customizable, e.g. cans, books, and a smart way of previewing what
+the uploaded image (the Figma UI) will look like before actually generating it. Plants etc. don't need it; the only
+time a logo matters is an appliance where we want to fake it having one, like the rice cookers."
+
+- **Customizable families** say so in their module (`CUSTOM = True`, read without importing them by
+  `recipes.custom_families()`): can, bottle, cup, box, sheet (paper: receipts, notes, a newspaper, ofuda), book, pills,
+  appliance (a rice cooker's or a kettle's fake brand), charm (ema, omamori) and ware (mugs, jars). The gallery marks
+  them ✎ and filters them (*✎ customizable* in the families' bar); plants, trees, furniture, bedding, curtains and the
+  rest are left as they are.
+- **Their picture previews your pictures** (`page/preview.js`): in the picture editor (§17) the right column's **On the
+  prop** shows *Its picture*, the prop's own Cycles picture with what you've laid on its texture since it was made (in
+  its own slots, as decals, sheets and smudges) laid onto it, lit and toned as the render was, live as you drag; *3D*
+  is the made model wearing the canvas, as before. Where a slot's picture changed, the picture with its slots empty
+  (its ground) shows under the new one, so a logo swapped in hides the old. A picture moved or taken out since the make
+  still shows where it was, and a slot given back its own drawing shows empty, until it's made again (the note under
+  the picture says so).
+- **How** (the clever part): beside every preview Cycles renders three cheap passes at half its size from the same
+  camera with the prop's materials swapped (`stage.py`): the light a white matt surface would get at each pixel (its
+  shading, shadows and the floor's bounce), the gloss of a clear coat at roughness 0.35 (both through the material's own
+  normal map: a crushed can's creases are in them) and, at one sample a pixel and no filter, which material's texture
+  point each pixel sees (u and v in 12 bits). One 8-bit PNG of two panes, no alpha (a browser's canvas would round
+  colours under alpha): left R u's high 8 bits, G v's high 8, B their low 4 and 4; right R the material (its slot + 1,
+  the high 4 bits) and how much of the pixel it covers (the low 4), G the light and B the gloss, each coded
+  sqrt(L / (1 + L)) (`tone.enc`). The editor draws your layers over a transparent texture (up to 1024 px, as mip
+  levels); every pixel of the picture looks them up at its texture point (four points a pixel, from the level of the
+  size they're seen at), lights them as colour x light + six tenths of the gloss, tones them and lays them over the
+  picture. In the browser, no Blender: a few milliseconds a change.
+- **One tone curve:** the preview is rendered as light and toned by `tone.py` (AgX: Troy Sobotka's curve, Benjamin
+  Wrensch's approximation), and the page tones your pictures by `page/tone.js`, the same numbers (until 2026-11-04 the
+  preview used Blender's own AgX view; this is close to it).
+- **Before it's made at all:** `Content/Studio/Props/thumbs/` keeps every recipe's picture (`<name>.webp`, 400 x 300,
+  the cards' before anything is made here, marked *kept*; *older picture* once its recipe has changed; `<name>.bare.webp`
+  a cushioned chair without its cushions, the card's *cushions* chip), and for a customizable one what the editor needs
+  to work on it without a make: its passes (`<name>.st.webp`, lossless), its ground (`<name>.ground.webp`), each
+  material's paint at 512 px (`<name>.tex.<mat>.webp`, and `.ground.webp` its slots empty), and in `<name>.json` its
+  materials in the passes' order, their colours and pixels, its parts and its slots. The page reads them as a made
+  prop's meta (`serve.py kept_meta`): the editor's parts drawn as boxes (no model, so no cuts and no 3D until it's
+  made), *kept · not made here* in its bar. About 4 MB for all.
+- **Made here:** a prop made here has passes of its own (`Saved/Props/<name>/<name>_st.png`, `_st.json`,
+  `_st_ground.png`), used before the kept ones.
+- **The command:** `python tools/propgen.py thumbs [names] [--make] [--bare] [--jobs 2] [--tex 1024]` keeps the made
+  props' pictures (and a customizable one's passes and textures); `--make` makes first what isn't made, was made from
+  another recipe or has older passes (each in a Blender of its own, two at once, a thumbnail's worth: textures at
+  1024, 10 bake samples, 24 in the preview, the glb alone; about two hours for all on the cloud's 4 CPUs); `--bare` the
+  cushioned chairs without their cushions too (`cushion.on: false`, into `Saved/Props/_bare/`); `--sheet` the kept
+  pictures as contact sheets (`Saved/Props/_thumbs_sheet_<n>.jpg`). `chair_worn` isn't kept here: it wears your own
+  shelf set `pbr/Wood/worn_planks` (`thumbs chair_worn --make` on your machine).
+
+The checks: THUMBS (`python tools/propgen.py thumbs --check`, in check_all: every kept picture well formed; a
+customizable one's passes the picture's size side by side, at least half its pixels' texture points on its parts (a
+broken pass has next to none), its textures there; no other prop carrying them; the missing and the older listed);
+PROPPAGE: the customizable filter, a picture laid on the made ema seen on its own picture, a can not made here opened
+in the editor from what's kept and a picture on its logo seen on its picture.

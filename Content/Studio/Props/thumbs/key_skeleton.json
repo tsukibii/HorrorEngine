@@ -1,0 +1,1 @@
+{"name":"key_skeleton","family":"key","spec":{"label":"an old iron key, rusted","family":"key","kind":"skeleton","metal":"iron","finish":"cast","age":"rust","age_amount":0.5,"seed":2,"wear":{"dirt":0.4,"edges":0.4}},"made":"2026-11-04","size_m":[0.0825,0.0255,0.006],"tris":2940}

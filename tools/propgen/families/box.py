@@ -14,6 +14,8 @@ from .. import designs
 from .. import mesh as M
 from .. import noise as N
 
+CUSTOM = True       # your own pictures go on it: the picture editor previews them on its picture (PROPGEN §25)
+
 
 def chamfered(w, d, c):
     """A rectangle w x d (mm) with its corners cut by c, anticlockwise, centred."""

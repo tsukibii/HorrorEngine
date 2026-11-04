@@ -3,7 +3,7 @@
 liquids, designs, a PBR set from the shelf on any material, your own pictures placed on its texture), made by Blender
 in the background with its log, seen turning in 3D, kept as a recipe of its own (docs/PROPGEN.md §13).
 
-    python tools/propgen/serve.py           then open http://127.0.0.1:8797 (PROPS_PORT for another)
+    python tools/propgen/serve.py           then open http://127.0.0.1:8799 (PROPS_PORT for another)
 
 It runs tools/propgen.py for every make, so it needs what that needs (Blender). Your recipes stay in
 Content/Studio/Props/presets.json (a copy of it kept in Saved/Props/_history/ before every save), what's made in
@@ -31,14 +31,16 @@ sys.path.insert(0, str(ROOT / "tools"))
 sys.path.insert(0, str(ROOT / "Content" / "Python"))
 from propgen import recipes  # noqa: E402  (plain Python: no Blender)
 
-PORT = int(os.environ.get("PROPS_PORT", 8797))
+PORT = int(os.environ.get("PROPS_PORT", 8799))      # 8797 is the face mocap page's
 PRESETS = Path(os.environ.get("PROPS_PRESETS") or recipes.PRESETS).resolve()
 OUT = Path(os.environ.get("PROPS_OUT") or recipes.OUT).resolve()
 IMAGES = Path(os.environ.get("PROPS_IMAGES") or (ROOT / "Content" / "Studio" / "Props" / "images")).resolve()
+THUMBS = Path(os.environ.get("PROPS_THUMBS") or (ROOT / "Content" / "Studio" / "Props" / "thumbs")).resolve()
 PAGE = HERE / "page"
 VENDOR = ROOT / "tools" / "director" / "vendor"
 TYPES = {".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".png": "image/png",
-         ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".glb": "model/gltf-binary", ".svg": "image/svg+xml", ".txt": "text/plain"}
+         ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".glb": "model/gltf-binary", ".svg": "image/svg+xml", ".txt": "text/plain",
+         ".webp": "image/webp"}
 NAME = re.compile(r"^[a-z0-9_][a-z0-9_\-]{0,80}$")
 KEEP = 50
 
@@ -56,6 +58,18 @@ def _literal(path, var):
             if isinstance(v, (ast.Tuple, ast.List)):
                 return [e.value for e in v.elts if isinstance(e, ast.Constant)]
     return []
+
+
+def _literal_value(path, var):
+    """A module-level literal (a dict of a family's settings) evaluated, without importing its module; {} without one."""
+    tree = ast.parse(Path(path).read_text(encoding="utf-8"))
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == var for t in node.targets):
+            try:
+                return ast.literal_eval(node.value)
+            except ValueError:
+                return {}
+    return {}
 
 
 def _doc_options(doc):
@@ -77,6 +91,10 @@ def choices():
         f = P / "families" / f"{mod}.py"
         doc = ast.get_docstring(ast.parse(f.read_text(encoding="utf-8"))) if f.exists() else ""
         fams[fam] = {"doc": doc or "", "options": _doc_options(doc)}
+        if f.exists():                              # a family's own settings for the page (PROPGEN §13): what it takes,
+            fams[fam]["fields"] = _literal_value(f, "FIELDS")       # each with an example; its choices, a dotted key a
+            fams[fam]["options"].update(_literal_value(f, "CHOICES"))   # nested one's ("cushion.pattern"); a list's labels
+            fams[fam]["labels"] = _literal_value(f, "LABELS")
     book = recipes.load(PRESETS)
     for n, r in book.items():                       # the kinds the recipes use, as options too
         try:
@@ -137,6 +155,20 @@ def made(name):
     return meta
 
 
+def saved(name):
+    """A recipe's picture kept in the project (Content/Studio/Props/thumbs/<name>.json and its files, docs/PROPGEN.md
+    §25: `python tools/propgen.py thumbs`), or None."""
+    f = THUMBS / f"{name}.json"
+    if not f.exists():
+        return None
+    try:
+        sv = json.loads(f.read_text(encoding="utf-8"))
+    except ValueError:
+        return None
+    sv["_mtime"] = int(f.stat().st_mtime)
+    return sv
+
+
 def listing():
     book = recipes.load(PRESETS)
     out = []
@@ -145,11 +177,19 @@ def listing():
             sp = recipes.resolve(book, n)
         except SystemExit as e:
             sp = {"family": r.get("family", "?"), "_error": str(e)}
-        mt = made(n)
-        out.append({"name": n, "family": sp.get("family"), "label": sp.get("label", ""), "from": r.get("from"), "raw": r, "spec": sp,
-                    "made": bool(mt), "tris": mt and mt.get("tris"), "size_m": mt and mt.get("size_m"), "secs": mt and mt.get("secs"),
-                    "thumb": f"/thumb/{n}?v={mt['_mtime']}" if mt else None,
-                    "edited": bool(mt) and _bare(mt.get("spec")) != _bare(sp)})
+        mt, sv = made(n), saved(n)
+        custom = sp.get("family") in CUSTOM
+        rec = {"name": n, "family": sp.get("family"), "label": sp.get("label", ""), "from": r.get("from"), "raw": r, "spec": sp,
+               "made": bool(mt), "tris": (mt or sv or {}).get("tris"), "size_m": (mt or sv or {}).get("size_m"), "secs": mt and mt.get("secs"),
+               "thumb": f"/thumb/{n}?v={mt['_mtime']}" if mt else (f"/thumb/{n}?v={sv['_mtime']}" if sv else None),
+               "thumb_from": "made" if mt else ("saved" if sv else None),
+               "edited": bool(mt) and _bare(mt.get("spec")) != _bare(sp),
+               "stale": bool(sv) and not mt and _bare(sv.get("spec")) != _bare(sp),
+               "custom": custom, "preview": custom and bool(preview_info(n, mt, sv, sp.get("family")))}
+        for vk, vd in ((sv or {}).get("variants") or {}).items():
+            if (THUMBS / vd["file"]).exists():
+                rec.setdefault("variants", {})[vk] = {"label": vd.get("label", vk), "thumb": f"/sthumb/{vd['file']}?v={sv['_mtime']}"}
+        out.append(rec)
     # props made from the page under names of their own that aren't recipes (variations), after the recipes
     names = set(book)
     extra = []
@@ -171,10 +211,13 @@ def _bare(sp):
 
 
 def thumb(name):
+    """The card's picture: the made prop's preview at 400 x 300 (half its size, pixel for pixel with its sticker
+    passes), else the one kept in the project."""
     d = OUT / name
     pv = d / f"{name}_preview.png"
     if not pv.exists():
-        return None
+        f = THUMBS / f"{name}.webp"
+        return f if f.exists() else None
     t = OUT / "_thumbs" / f"{name}.jpg"
     if t.exists() and t.stat().st_mtime >= pv.stat().st_mtime:
         return t
@@ -182,11 +225,69 @@ def thumb(name):
         from PIL import Image
         t.parent.mkdir(parents=True, exist_ok=True)
         im = Image.open(pv).convert("RGB")
-        im.thumbnail((400, 300))
-        im.save(t, quality=86)
+        im = im.reduce(2) if im.size == (800, 600) else im.resize((400, 300))
+        im.save(t, quality=88)
         return t
     except Exception:  # noqa: BLE001 - no Pillow: the preview itself
         return pv
+
+
+CUSTOM = recipes.custom_families()               # the families your own pictures go on (PROPGEN §25)
+
+
+def kept_meta(name, sv=None):
+    """A customizable prop not made here, as the picture editor reads a made one's meta.json (docs/PROPGEN.md §25): its
+    parts, its own picture slots, its materials' sizes and colours, its paint (and its paint with the slots empty) as
+    kept at 512 px, the recipe it was made from; no model (the editor draws its parts as boxes, its 3D view waits for a
+    make)."""
+    sv = sv if sv is not None else saved(name)
+    if not sv or not sv.get("custom"):
+        return None
+    v = sv["_mtime"]
+    tex = sv.get("tex") or {}
+
+    def url(f):
+        return f"/sthumb/{f}?v={v}"
+    return {"name": name, "_mtime": v, "kept": True, "family": sv.get("family"), "spec": sv.get("spec") or {},
+            "islands": sv.get("islands") or {}, "slots": sv.get("slots") or [],
+            "materials": {m: {"px": px, "color": (sv.get("colors") or {}).get(m)} for m, px in (sv.get("px") or {}).items()},
+            "textures": {m: [url(t["paint"])] for m, t in tex.items() if t.get("paint")},
+            "design": {m: {k: url(f) for k, f in t.items()} for m, t in tex.items()},
+            "files": [], "tris": sv.get("tris"), "size_m": sv.get("size_m")}
+
+
+def preview_info(name, mt=None, sv=None, family=None):
+    """What the picture editor needs to preview your pictures on a customizable prop's own picture (docs/PROPGEN.md
+    §25): the sticker passes, the picture they belong to, the ground picture (its slots empty), its materials in the
+    passes' order, its parts (islands) and its own picture slots; the made prop's when it was made with its passes,
+    else the project's kept one (unless the made prop was made from another recipe than it). None for a prop that
+    isn't customizable."""
+    mt = mt if mt is not None else made(name)
+    fam = family or (mt or {}).get("family") or (sv or saved(name) or {}).get("family")
+    if fam not in CUSTOM:
+        return None
+    d = OUT / name
+    st, sj = d / f"{name}_st.png", d / f"{name}_st.json"
+    if mt and st.exists() and sj.exists():
+        try:
+            j = json.loads(sj.read_text(encoding="utf-8"))
+        except ValueError:
+            j = None
+        if j:
+            v = mt["_mtime"]
+            return {"from": "made", "passes": f"/props/{name}/{st.name}?v={v}", "picture": f"/thumb/{name}?v={v}",
+                    "ground": f"/props/{name}/{name}_st_ground.png?v={v}" if j.get("ground") else None, "mats": j.get("mats") or [],
+                    "islands": mt.get("islands") or {}, "slots": mt.get("slots") or [],
+                    "px": {m: x.get("px") for m, x in (mt.get("materials") or {}).items()}}
+    sv = sv if sv is not None else saved(name)
+    if sv and (THUMBS / f"{name}.st.webp").exists():
+        if mt and _bare(mt.get("spec")) != _bare(sv.get("spec")):
+            return None
+        v = sv["_mtime"]
+        return {"from": "saved", "passes": f"/sthumb/{name}.st.webp?v={v}", "picture": f"/sthumb/{name}.webp?v={v}",
+                "ground": f"/sthumb/{name}.ground.webp?v={v}" if (THUMBS / f"{name}.ground.webp").exists() else None,
+                "mats": sv.get("mats") or [], "islands": sv.get("islands") or {}, "slots": sv.get("slots") or [], "px": sv.get("px") or {}}
+    return None
 
 
 def diff(a, b):
@@ -448,6 +549,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.file(VENDOR.joinpath(*parts[1:]), cache=True)
         if a == "thumb" and len(parts) == 2:
             return self.file(thumb(parts[1]), cache=True)
+        if a == "sthumb" and len(parts) == 2:
+            return self.file(THUMBS / parts[1], cache=True)
         if a == "props" and len(parts) == 3:
             return self.file(OUT / parts[1] / parts[2])
         if a == "images" and len(parts) == 2:
@@ -471,7 +574,11 @@ class Handler(BaseHTTPRequestHandler):
                     sp = recipes.resolve(book, n) if n in book else ((made(n) or {}).get("spec"))
                     if sp is None:
                         return self.send(404, {"error": "no such recipe"})
-                    return self.send(200, {"name": n, "raw": book.get(n), "spec": sp, "meta": made(n)})
+                    mt = made(n)
+                    return self.send(200, {"name": n, "raw": book.get(n), "spec": sp, "meta": mt, "kept": None if mt else kept_meta(n)})
+                if what == "preview" and len(parts) == 3:
+                    info = preview_info(parts[2])
+                    return self.send(200, info) if info else self.send(404, {"error": "no preview for it: a customizable prop, made (or kept: python tools/propgen.py thumbs)"})
                 if what == "choices":
                     return self.send(200, choices())
                 if what == "shelf":

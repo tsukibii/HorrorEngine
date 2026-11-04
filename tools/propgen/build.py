@@ -40,12 +40,18 @@ class Thing:
         self.sockets = {}           # name -> (point, direction) at rest, metres: empties in the glb (socket_flame, socket_steam...)
         self.fx = {}                # the enhancers Godot's HSPropFX gives it: glow, flame, smoke, steam, wax (PROPGEN.md §14)
         self.anchor = None          # a point of the made thing (metres) that stays at x = y = 0 when it's set down: a tree's trunk
+        self.keep_z = False         # its heights as made (the floor at z = 0 already: a blanket on a bed, clear of the floor)
+        self.reach = None           # the bake's reach and cage for this thing (a family's own, where the recipe gives none:
+        self.cage = None            # set here, not in the recipe, so a made prop's recipe stays the recipe it was made from)
         self.bake_ao = True         # off for a thing whose texture tiles over itself (a tree's bark): a bake over it would be a jumble
         self.tree = None            # what a tree family records about its growth (meta.json's "tree")
 
-    def material(self, name, kind="paint", px=None, alpha=False, double=False, color="#808080", rough=0.5, metal=0.0, specular=None):
+    def material(self, name, kind="paint", px=None, alpha=False, double=False, color="#808080", rough=0.5, metal=0.0, specular=None,
+                 bake=True):
+        """bake=False: no detail baked onto it (parts the same in both meshes sharing one island: a curtain's rod, its
+        rings and brackets, whose overlapping maps a bake would scramble); its normal from its paint's relief alone."""
         self.mats[name] = dict(kind=kind, px=px or int(self.spec.get("tex", 1024)), alpha=alpha, double=double,
-                               color=color, rough=rough, metal=metal, specular=specular)
+                               color=color, rough=rough, metal=metal, specular=specular, bake=bake)
 
     def island(self, name, w_mm, h_mm, mat="main", wrap=False):
         self.islands[name] = M.Island(name, w_mm, h_mm, mat)
@@ -333,7 +339,7 @@ def export(obs, base, formats):
     return out
 
 
-def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=False, log=print):
+def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=False, log=print, preview_samples=None):
     """Makes the prop `name` from `spec` into out_dir/<name>/; returns its record (what meta.json holds)."""
     import bpy
     t0 = time.time()
@@ -350,7 +356,7 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
     if th.anchor is not None:
         # the anchor, not the middle of the bounds, over the origin (a tree stands on its trunk, its crown wherever it leans)
         a = Mx @ np.asarray(th.anchor, float) + shift
-        off = np.array([a[0], a[1], 0.0])
+        off = np.array([a[0], a[1], shift[2] if th.keep_z else 0.0])
         for x in [th.high, th.low] + ([th.liquid[0]] if th.liquid else []):
             if x is not None:
                 x.v = x.v - off
@@ -393,11 +399,11 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
     # per-texel attributes of the game mesh, and the bakes from the detailed one
     bs = int(samples or spec.get("bake_samples", 24))
     ao = BK.bake("AO", low_ob, high_ob, px=max(v["px"] for v in th.mats.values()), samples=bs, gpu=gpu,
-                 ao_dist=float(spec.get("ao_dist", 0.012)), extrude=float(spec.get("cage", 0.003)), reach=float(spec.get("reach", 0.012))) if th.bake_ao else {}
+                 ao_dist=float(spec.get("ao_dist", 0.012)), extrude=float(spec.get("cage", th.cage or 0.003)), reach=float(spec.get("reach", th.reach or 0.012))) if th.bake_ao else {}
     nb = BK.bake("NORMAL", low_ob, high_ob, px=max(v["px"] for v in th.mats.values()), samples=4, gpu=gpu,
-                 extrude=float(spec.get("cage", 0.003)), reach=float(spec.get("reach", 0.012))) if high_ob else {}
+                 extrude=float(spec.get("cage", th.cage or 0.003)), reach=float(spec.get("reach", th.reach or 0.012))) if high_ob else {}
     cb = BK.bake("EMIT", low_ob, high_ob, px=max(v["px"] for v in th.mats.values()), samples=1, gpu=gpu, attr="curv",
-                 extrude=float(spec.get("cage", 0.003)), reach=float(spec.get("reach", 0.012))) if high_ob else {}
+                 extrude=float(spec.get("cage", th.cage or 0.003)), reach=float(spec.get("reach", th.reach or 0.012))) if high_ob else {}
     log(f"  {name}: baked ({time.time() - t0:.1f}s)")
     vn = BK.vertex_normals(th.low)
     kl = BK.curvature(th.low, vn)
@@ -427,15 +433,16 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
             k2 = a.shape[0] // px
             return a.reshape(px, k2, px, k2, -1).mean((1, 3))
 
-        a_ao = fit(ao[key])[..., 0] if key in ao else np.ones((px, px), np.float32)
+        baked = mt.get("bake", True)
+        a_ao = fit(ao[key])[..., 0] if key in ao and baked else np.ones((px, px), np.float32)
         tex["ao"] = a_ao
-        if key in cb:
+        if key in cb and baked:
             tex["curv"] = (fit(cb[key])[..., 0] - 0.5) * 2
         if th.texel_paint:
             th.texel_paint(mname, cv, tex)
         S.wear(cv, tex, wl, mt["kind"], seed + 7 * mi, th.density.get(mname, 4.0))
         det = S.combine_normals(cv.nrm, S.height_normal(cv.height, th.density.get(mname, 4.0), float(spec.get("relief", 1.0))))
-        if key in nb:
+        if key in nb and baked:
             base = fit(nb[key])[..., :3] * 2 - 1
             base /= np.maximum(np.linalg.norm(base, axis=-1, keepdims=True), 1e-9)
             nrm = S.combine_normals(base, det)
@@ -528,7 +535,9 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
         from .stage import preview as render
         if liq_ob is not None:
             liq_ob.data.materials[0] = th.liquid_preview
-        render([low_ob] + ([liq_ob] if liq_ob else []), pv, samples=int(spec.get("preview_samples", 48)), gpu=gpu,
+        render([low_ob] + ([liq_ob] if liq_ob else []), pv, samples=int(preview_samples or spec.get("preview_samples", 48)), gpu=gpu,
+               passes=base + "_st.png", mats=list(th.low.mats),
+               ground={m: os.path.join(odir, d["ground"]) for m, d in (design or {}).items() if d.get("ground")},
                **(spec.get("view") or th.view or {}))
     lo, hi = th.low.bounds()
     rec_sockets = {k: [round(float(x), 5) for x in (Mx @ np.asarray(v[0], float) + shift)] for k, v in th.sockets.items()}
@@ -542,6 +551,11 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
            "slots": slots, "design": design}
     if th.anchor is not None:
         rec["anchor"] = [round(float(x), 5) for x in (Mx @ np.asarray(th.anchor, float) + shift)]
+        # its box from its origin (story metres, z up): a level places a mesh by its box (centred, on its base), so a
+        # blanket made for a bed goes where its box falls over the bed's middle (docs/PROPGEN.md §21)
+        rec["box_m"] = [round(float(x), 4) for x in list(lo) + list(hi)]
+        if th.keep_z:
+            rec["keep_z"] = True                        # its heights as made: on what it lies on, not on the floor
     if th.tree:
         rec["tree"] = th.tree
     with open(os.path.join(odir, "meta.json"), "w", encoding="utf-8") as fh:

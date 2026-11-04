@@ -14,6 +14,8 @@ from .. import designs
 from .. import mesh as M
 from .. import noise as N
 
+CUSTOM = True       # your own pictures go on it: the picture editor previews them on its picture (PROPGEN §25)
+
 SIZES = {   # body diameter, height (mm)
     "330": (66.2, 115.2), "355": (66.2, 122.2), "500": (66.2, 168.0), "250": (53.0, 134.0),
     "190": (52.8, 105.0), "350": (66.2, 122.0),

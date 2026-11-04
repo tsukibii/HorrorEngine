@@ -14,6 +14,8 @@ from .. import designs
 from .. import mesh as M
 from .. import noise as N
 
+CUSTOM = True       # your own pictures go on it: the picture editor previews them on its picture (PROPGEN §25)
+
 SIZES = {"8oz": (80.0, 56.0, 93.0), "12oz": (90.0, 60.0, 110.0), "16oz": (90.0, 59.0, 136.0)}   # top, bottom, height (mm)
 
 

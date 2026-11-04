@@ -15,6 +15,8 @@ from .. import designs
 from .. import mesh as M
 from .. import noise as N
 
+CUSTOM = True       # your own pictures go on it: the picture editor previews them on its picture (PROPGEN §25)
+
 # outer profiles (r, z) mm from the foot up to the lip, the wall's thickness, the foot ring (radius, height)
 SHAPES = {
     "bowl":    dict(out=[(36, 7), (44, 12), (52, 24), (56.5, 40), (58, 56), (58.5, 62)], t=3.2, foot=(28, 7)),

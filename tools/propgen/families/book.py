@@ -20,6 +20,8 @@ import numpy as np
 from .. import mesh as M
 from .. import noise as N
 
+CUSTOM = True       # your own pictures go on it: the picture editor previews them on its picture (PROPGEN §25)
+
 MM = 0.001
 # paper sizes (w, h mm), the common Japanese ones first
 SIZES = {"A4": (210, 297), "B5": (182, 257), "A5": (148, 210), "B6": (128, 182), "A6": (105, 148), "bunko": (106, 152),

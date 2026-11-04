@@ -152,6 +152,8 @@ sane("fences", SG.build({ fences: Object.keys(SG.FENCE_KINDS).map((k, i) => ({ i
         parts: [{ kind: "balcony", x: 4.17, w: 3.92, out: 1.1, floors: [2, 4], rail: "solid" }, { kind: "ac", x: 5.6, z: 0.05, out: 0.3, floors: [2, 4] }] }),
       B("f2", [8.52, 100], 0, { style: "apartment", w: 8, d: 11, floors: 3, gh: 3.1, fh: 2.9, seed: 6 }),
       B("end", [128.35, 1.25], -90, { style: "office", w: 20.5, d: 12, floors: 2, gh: 3.1, fh: 3.4, seed: 3 }),   // the lane runs up to its side
+      B("set1", [100, 60], 0, { style: "house", w: 10, d: 9, floors: 2, gh: 3.2, fh: 3.0, seed: 23, roof: { kind: "flat", parapet: 0.3 }, tiers: [{ floors: 1, inset: [2, 1.5, 1, 0] }] }),   // a setback flush on a side
+      B("set2", [115, 60], 0, { style: "house", w: 10, d: 9, floors: 2, gh: 3.2, fh: 3.0, seed: 23, roof: { kind: "flat", parapet: 0.3 }, tiers: [{ floors: 1, inset: [0, 2, 1.5, 1], edge: "wall" }] }),
     ],
     fences: [
       { id: "fw", kind: "blockmesh", from: [-62, -40], to: [-40, -40], h: 1.9 }, { id: "fs", kind: "mesh", from: [-62, -40], to: [-62, -20], h: 2.4 },
@@ -159,6 +161,8 @@ sane("fences", SG.build({ fences: Object.keys(SG.FENCE_KINDS).map((k, i) => ({ i
       { id: "t1", kind: "mesh", from: [-10, -40], to: [10, -40] }, { id: "t2", kind: "block", from: [0, -40], to: [0, -30] },
       { id: "r1", kind: "ribbed", from: [20, -40], to: [30, -40], h: 1.5 }, { id: "r2", kind: "mesh", from: [30, -40], to: [30, -30] },
       { id: "rw", kind: "ribbed", from: [55, -40], to: [65, -40], h: 1.5 }, { id: "lot", kind: "block", from: [70, -40], to: [76.9, -40], h: 0.9 },
+      { id: "cw", kind: "block", from: [-30, -70], via: [[-15, -64.5], [0, -63]], to: [15, -64.5], h: 1.8, slot: "concrete" },   // curved (`via`)
+      { id: "cm", kind: "mesh", from: [30, -70], via: [[45, -64]], to: [60, -70] }, { id: "cr", kind: "ribbed", from: [70, -70], via: [[80, -66]], to: [90, -70], h: 1.5 },
     ],
     things: [
       { id: "apron", kind: "box", at: [60, -44.95], w: 10, d: 10, h: 0.02, slot: "asphalt" },        // to the ribbed wall's far face
@@ -169,6 +173,17 @@ sane("fences", SG.build({ fences: Object.keys(SG.FENCE_KINDS).map((k, i) => ({ i
       { id: "dd", kind: "oil", at: [-28.7, -1.1, 0.004], n: [0, 0, 1], w: 0.8, h: 0.6 },                     // over the one before
       { id: "ds", kind: "oil", at: [-20, 0, 0.004], n: [0, 0, 1], w: 1.2, h: 0.8 }],                      // over the stop line
   };
+  { // a curved wall (a fence's `via`): its cap's top whole, mitred at every joint (no gap; an overlap the clipping test finds)
+    const f = { id: "cv", kind: "block", from: [0, 0], via: [[10, 4], [20, 3]], to: [28, -4], h: 1.5 }, p = SG.build({ fences: [f] }).find(q => q.id === "cv"), top = [];
+    for (const g of Object.values(p.G)) for (let i = 0; i < g.idx.length; i += 3) { const v = [0, 1, 2].map(k => g.pos.slice(g.idx[i + k] * 3, g.idx[i + k] * 3 + 3)); if (v.every(q => Math.abs(q[2] - 1.56) < 1e-3)) top.push(v); }
+    const inTri = (x, y, v) => { const sd = (a, b) => (b[0] - a[0]) * (y - a[1]) - (b[1] - a[1]) * (x - a[0]), d = [sd(v[0], v[1]), sd(v[1], v[2]), sd(v[2], v[0])]; return d.every(e => e >= -1e-9) || d.every(e => e <= 1e-9); };
+    const L = SG.fenceLine(f); let miss = 0;
+    for (let i = 0; i + 1 < L.length; i++) for (let k = 0; k <= 10; k++) for (const q of [-0.09, 0, 0.09]) {
+      const a = L[i], b = L[i + 1], len = Math.hypot(b[0] - a[0], b[1] - a[1]), t = [(b[0] - a[0]) / len, (b[1] - a[1]) / len], x = a[0] + t[0] * len * k / 10 - t[1] * q, y = a[1] + t[1] * len * k / 10 + t[0] * q;
+      if (!top.some(v => inTri(x, y, v))) miss++;
+    }
+    if (L.length < 8 || miss) errs.push(`a curved wall: ${L.length} points along its curve, its top missing at ${miss} places along it`);
+  }
   const P = SG.build(R), hits = SG.between(P);
   sane("the rules street", P, p => BUDGET[p.type] || 20000);
   for (const h of hits.slice(0, 8)) errs.push(`the rules street: ${h.a.join("'s ")} and ${h.b.join("'s ")} in one plane over each other (${(h.area * 1e4).toFixed(0)} cm², at ${h.at.map(v => v.toFixed(2)).join(", ")}): a rule's missing`);
@@ -322,6 +337,7 @@ if (DECAL_KINDS.size < 10) errs.push(`only ${DECAL_KINDS.size} decal kinds read 
 }
 const names = fs.existsSync(DIR) ? fs.readdirSync(DIR).filter(n => fs.existsSync(path.join(DIR, n, "street.json")) && (!only || n === only)) : [];
 const report = [];
+const PROP_INDEX = (() => { try { const d = JSON.parse(fs.readFileSync(path.join(ROOT, "Content/Studio/Library/index/props.json"), "utf8")); return d.items || d; } catch (e) { return {}; } })();
 for (const name of names) {
   let S; try { S = JSON.parse(fs.readFileSync(path.join(DIR, name, "street.json"), "utf8")); } catch (e) { errs.push(`street ${name}: not JSON: ${e.message}`); continue; }
   const L = `street ${name}`, ids = new Set();
@@ -329,6 +345,11 @@ for (const name of names) {
   for (const [list, need] of Object.entries(KNOWN)) for (const p of S[list] || []) {
     for (const k of need) if (p[k] === undefined) errs.push(`${L}: a ${list.slice(0, -1)} without ${k}: ${JSON.stringify(p).slice(0, 80)}`);
     if (ids.has(p.id)) errs.push(`${L}: the id ${p.id} twice`); ids.add(p.id);
+  }
+  for (const t of S.things || []) if (t.prop !== undefined) {         // a made prop in a thing's place (a tree's realistic one)
+    const m = /^props\/([a-z0-9_]+)$/.exec(String(t.prop));
+    if (!m || !PROP_INDEX[m[1]]) errs.push(`${L}: ${t.id}: its prop ${JSON.stringify(t.prop)} isn't one of the prop generator's (props/<recipe>, Content/Studio/Library/index/props.json)`);
+    else if (!fs.existsSync(path.join(ROOT, "Content/Studio/Library/meshes/props", m[1] + ".glb"))) warns.push(`${L}: ${t.id}: ${t.prop} isn't made on this machine (its stand-in shows): python tools/propgen.py make ${m[1]} --library`);
   }
   for (const b of S.buildings || []) {
     if (b.style && SP && !SP.STYLES[b.style] && !(SP.WALKINS || {})[b.style] && b.style !== "set") warns.push(`${L}: ${b.id}: no style ${b.style}`);

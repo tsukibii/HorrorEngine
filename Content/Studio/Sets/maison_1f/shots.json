@@ -1,0 +1,19 @@
+[
+ {"name": "01_window_south", "eye": [7.7, 2.7, 1.6], "look": [8.5, -10, 1.2], "in": true},
+ {"name": "02_living", "eye": [9.0, 3.95, 1.6], "look": [6.6, 0.8, 0.9], "in": true},
+ {"name": "03_washitsu", "eye": [4.75, 2.75, 1.6], "look": [3.9, 0.4, 0.6], "in": true},
+ {"name": "04_tokonoma", "eye": [3.8, 2.4, 1.5], "look": [5.85, 0.8, 1.0], "in": true},
+ {"name": "05_kitchen", "eye": [7.2, 3.9, 1.6], "look": [5.4, 6.3, 1.2], "in": true},
+ {"name": "06_genkan", "eye": [8.75, 2.6, 1.6], "look": [8.8, 6.0, 1.3], "in": true},
+ {"name": "07_lobby_gate", "eye": [9.75, 6.1, 1.6], "look": [11.1, 3.4, 1.6], "in": true},
+ {"name": "08_gate_close", "eye": [11.15, 5.8, 1.55], "look": [11.15, 2.5, 2.2], "in": true},
+ {"name": "09_bedroom1", "eye": [2.8, 3.1, 1.6], "look": [0.9, 0.6, 0.9], "in": true},
+ {"name": "10_bedroom1_window", "eye": [1.6, 2.6, 1.6], "look": [0.0, -10.0, 1.3], "in": true},
+ {"name": "11_block", "eye": [18.6, -7.7, 1.6], "look": [9.5, 2.4, 4.6]},
+ {"name": "12_bend", "eye": [-14, -7.4, 1.6], "look": [12, -6.5, 2.2]},
+ {"name": "13_entrance", "eye": [17.5, 5.6, 1.6], "look": [11.5, 5.7, 2.2]},
+ {"name": "14_above", "eye": [4.0, -34.0, 30.0], "look": [8.0, -3.0, 0.0]},
+ {"name": "15_futon", "eye": [4.9, 2.25, 1.4], "look": [3.85, 1.05, 0.1], "in": true},
+ {"name": "16_bed", "eye": [2.75, 2.95, 1.5], "look": [0.95, 1.7, 0.45], "in": true},
+ {"name": "17_oshiire", "eye": [6.02, 2.8, 1.25], "look": [5.72, 2.0, 0.15], "in": true}
+]

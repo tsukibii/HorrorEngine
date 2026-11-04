@@ -15,6 +15,7 @@ const ART_FAMS = new Set(["can", "bottle", "cup", "sheet", "box", "ware", "charm
 const S = {
   list: [], choices: null, shelf: [], pics: [], fam: "", q: "", name: null, rec: null, raw: null, spec: null, orig: null, base: null,
   meta: null, tab: "settings", pic: null, busy: new Set(), viewer: null, job: null, smudges: [], ed: null,
+  kept: null, onlyCustom: false, bare: new Set(),
 };
 window.__pp = S;
 
@@ -28,11 +29,14 @@ async function loadList() {
 }
 
 function renderFams() {
-  const counts = {};
+  const counts = {}, custom = r => r.custom;
   for (const r of S.list) counts[r.family] = (counts[r.family] || 0) + 1;
   const box = $("#fams");
   box.innerHTML = "";
-  const fams = Object.keys(S.choices.families).filter(f => counts[f]);
+  const nc = S.list.filter(custom).length;
+  box.append(el("button", { class: "custom" + (S.onlyCustom ? " on" : ""), title: "only the props your own pictures go on: cans, bottles, cups, boxes, paper, books, pill bottles, appliances, charms, ware (docs/PROPGEN.md §25)",
+    onclick: () => { S.onlyCustom = !S.onlyCustom; renderFams(); renderGallery(); } }, `✎ customizable ${nc}`));
+  const fams = Object.keys(S.choices.families).filter(f => counts[f] && (!S.onlyCustom || S.list.some(r => r.family === f && r.custom)));
   for (const f of ["", ...fams]) {
     box.append(el("button", { class: S.fam === f ? "on" : "", onclick: () => { S.fam = f; renderFams(); renderGallery(); } },
       f ? `${f} ${counts[f]}` : `all ${S.list.length}`));
@@ -44,14 +48,24 @@ function card(r) {
   if (S.busy.has(r.name)) badges.push(el("span", { class: "badge busy" }, "making…"));
   else if (r.unsaved) badges.push(el("span", { class: "badge unsaved" }, "made, not a recipe"));
   else if (r.edited) badges.push(el("span", { class: "badge edited" }, "made with changes"));
+  else if (r.stale) badges.push(el("span", { class: "badge edited", title: "its kept picture is of an older recipe: Make it to see this one" }, "older picture"));
+  let pic;
+  const extra = [];
+  if (r.thumb) {
+    const v = r.variants && r.variants.bare;
+    pic = el("img", { src: v && S.bare.has(r.name) ? v.thumb : r.thumb, loading: "lazy", alt: r.name });
+    if (v) extra.push(el("button", { class: "chip var" + (S.bare.has(r.name) ? "" : " on"), title: `its picture with or ${v.label}: switch it off in the recipe's cushion box to make it so`,
+      onclick: e => { e.stopPropagation(); S.bare.has(r.name) ? S.bare.delete(r.name) : S.bare.add(r.name); renderGallery(); } }, S.bare.has(r.name) ? "no cushions" : "cushions"));
+  } else pic = el("div", { class: "ph" }, "not made yet");
+  if (r.custom) extra.push(el("span", { class: "custom", title: "customizable: open it and its Texture & pictures tab to lay your own pictures on it, seen on its own picture before it's made" }, "✎"));
+  if (r.thumb_from === "saved" && !S.busy.has(r.name)) extra.push(el("span", { class: "kept", title: "the picture kept in the project (Content/Studio/Props/thumbs): not made on this machine yet" }, "kept"));
   return el("div", { class: "card" + (r.name === S.name ? " sel" : ""), "data-name": r.name, title: r.label || r.name, onclick: () => open(r.name) },
-    r.thumb ? el("img", { src: r.thumb, loading: "lazy", alt: r.name }) : el("div", { class: "ph" }, "not made yet"),
-    ...badges, el("div", { class: "nm" }, r.name), el("div", { class: "lb" }, r.label || ""));
+    pic, ...badges, ...extra, el("div", { class: "nm" }, r.name), el("div", { class: "lb" }, r.label || ""));
 }
 
 function renderGallery() {
   const q = S.q.trim().toLowerCase();
-  const shown = S.list.filter(r => (!S.fam || r.family === S.fam) &&
+  const shown = S.list.filter(r => (!S.fam || r.family === S.fam) && (!S.onlyCustom || r.custom) &&
     (!q || [r.name, r.family, r.label].join(" ").toLowerCase().includes(q)));
   const box = $("#gallery");
   box.innerHTML = "";
@@ -73,6 +87,7 @@ async function open(name, keepSpec = false) {
   S.name = name;
   S.raw = d.raw;
   S.meta = d.meta;
+  S.kept = d.kept || null;                               // a customizable prop not made here: what the project keeps of it
   S.rec = S.list.find(r => r.name === name) || null;
   if (!keepSpec) {
     S.orig = clone(d.spec);
@@ -97,7 +112,8 @@ function renderHead() {
   const bits = [S.spec.family];
   if (S.raw && S.raw.from) bits.push(`from ${S.raw.from}`);
   if (m) bits.push(`${m.tris} triangles`, `${m.size_m.map(v => Math.round(v * 1000)).join(" × ")} mm`, `made in ${m.secs} s`);
-  else bits.push("not made yet");
+  else bits.push(S.kept ? "not made here (its picture kept in the project)" : "not made yet");
+  if (r && r.custom) bits.push("✎ customizable: Texture & pictures, seen on its own picture before it's made");
   $("#ed-info").textContent = bits.join(" · ");
 }
 
@@ -150,8 +166,15 @@ function optionsFor(path, v) {
   if (k === "age") return C.ages;
   if (k === "pose") return C.poses;
   if (k === "metal" && typeof v === "string" && !v.startsWith("#")) return C.metals;
-  if (path.length === 1 && C.families[fam] && C.families[fam].options[k]) return C.families[fam].options[k];
+  const F = C.families[fam], dotted = path.filter(p => typeof p !== "number").join(".");
+  if (F && F.options[dotted]) return F.options[dotted];                     // a family's own choices, nested ones by their dotted key
+  if (path.length === 1 && F && F.options[k]) return F.options[k];
   return null;
+}
+// a list's entries named (a family's LABELS: a table's size as length, width and height)
+function labelsFor(path) {
+  const F = S.choices.families[S.spec.family];
+  return (F && F.labels && F.labels[path.filter(p => typeof p !== "number").join(".")]) || null;
 }
 const isPicture = (path, v) => path[path.length - 1] === "image" || (path.length === 1 && path[0] === "logo" && typeof v === "string") ||
   (path.length === 2 && path[0] === "pictures" && typeof v === "string");
@@ -200,9 +223,32 @@ function plainInput(path, v) {
 function removable(path) { return !(path.length === 1 && ["family", "kind"].includes(path[0])); }
 const xbtn = path => el("button", { class: "x", title: "take it out of the recipe", onclick: e => { e.stopPropagation(); delAt(path); } }, "×");
 
+// a family's setting that can be switched off with its settings kept: its FIELDS entry a box with an "on" (a chair's
+// cushions: the switch in the box's title; off greys the rest; a recipe's false or true becomes the box when switched)
+function switchOf(path, v) {
+  if (path.length !== 1) return null;
+  const F = S.choices.families[S.spec.family], own = F && F.fields && F.fields[path[0]];
+  if (!own || typeof own !== "object" || Array.isArray(own) || !("on" in own)) return null;
+  if (typeof v === "boolean" || v === null) return own;
+  return v && typeof v === "object" && !Array.isArray(v) ? own : null;
+}
+
 function fieldRow(path, v, parent) {
   const k = path[path.length - 1];
   const name = typeof k === "number" ? `${path[path.length - 2]} ${k + 1}` : k;
+  const own = switchOf(path, v);
+  if (own) {
+    const box = v && typeof v === "object", on = box ? v.on !== false : !!v;
+    const sw = el("input", { type: "checkbox", class: "sw", checked: on, title: `${name} on or off (off keeps its settings for when it's back on)`,
+      onchange: e => box ? setAt([...path, "on"], e.target.checked, true) : setAt(path, e.target.checked ? { ...clone(own), on: true } : false, true) });
+    const fs = el("fieldset", { class: "switch" + (on ? "" : " off") }, el("legend", {}, sw, name, removable(path) ? xbtn(path) : null));
+    if (box) {
+      for (const [kk, vv] of Object.entries(v)) if (kk !== "on") fieldRow([...path, kk], vv, fs);
+      fs.append(el("div", { class: "adds" }, el("button", { onclick: () => addKey(path) }, "+ a setting here")));
+    } else if (!on) fs.append(el("div", { class: "hint" }, `none: switch it on for ${name} with the family's settings`));
+    parent.append(fs);
+    return;
+  }
   if (v !== null && typeof v === "object" && !Array.isArray(v)) {
     const fs = el("fieldset", {}, el("legend", {}, name, removable(path) ? xbtn(path) : null));
     for (const [kk, vv] of Object.entries(v)) fieldRow([...path, kk], vv, fs);
@@ -218,7 +264,10 @@ function fieldRow(path, v, parent) {
     return;
   }
   const row = el("div", { class: "row" }, el("label", { title: path.join(".") }, name));
-  if (Array.isArray(v)) row.append(el("div", { class: "list" }, v.map((x, i) => plainInput([...path, i], x))));
+  const labs = Array.isArray(v) ? labelsFor(path) : null;
+  if (Array.isArray(v)) row.append(el("div", { class: "list" }, v.map((x, i) => labs && labs[i]
+    ? el("span", { class: "lab", title: labs[i] }, el("small", {}, labs[i]), plainInput([...path, i], x))
+    : plainInput([...path, i], x))));
   else row.append(plainInput(path, v));
   if (removable(path)) row.append(xbtn(path));
   parent.append(row);
@@ -247,7 +296,14 @@ function renderSettings() {
   if (LIQUID_FAMS.has(fam) && !S.spec.liquid) adds.append(el("button", { onclick: () => setAt(["liquid"], { kind: "tea", fill: 0.7 }, true) }, "+ a liquid in it"));
   if (ART_FAMS.has(fam) && !S.spec.art) adds.append(el("button", { onclick: () => setAt(["art"], { design: S.choices.designs[0] }, true) }, "+ a print (art)"));
   if (!S.spec.wear) adds.append(el("button", { onclick: () => setAt(["wear"], { grime: 0.2, dirt: 0.1 }, true) }, "+ wear"));
-  adds.append(el("button", { onclick: () => addKey([]) }, "+ a setting…"),
+  const own = (F && F.fields) || {}, missing = Object.keys(own).filter(k => !(k in S.spec));
+  if (missing.length) {                                // the family's own settings not in the recipe yet, each with its example
+    const pick = el("select", { class: "addfield", title: "a setting this family takes, added with an example value",
+      onchange: e => { const k = e.target.value; if (k) setAt([k], clone(own[k]), true); } },
+      el("option", { value: "" }, "+ a setting of this family…"), missing.map(k => el("option", { value: k }, k)));
+    adds.append(pick);
+  }
+  adds.append(el("button", { onclick: () => addKey([]) }, missing.length ? "+ another setting…" : "+ a setting…"),
     el("button", { onclick: () => switchTab("texture") }, "Pictures, logos and PBR sets →"));
   box.append(adds);
 }
@@ -339,6 +395,7 @@ async function make() {
     if (first === S.name) {                              // the same prop: what was made is now what's shown
       const d = await api(`/api/recipe/${encodeURIComponent(first)}`);
       S.meta = d.meta;
+      S.kept = d.kept || null;
       S.rec = S.list.find(x => x.name === first) || null;
       renderHead(); renderTab(); updateDirty();
     } else {                                             // another name (or variations): open what was made, its base kept
@@ -378,7 +435,7 @@ async function del() {
   try { await api("/api/delete", { name: S.name }); } catch (e) { toast(e.message, true); return; }
   toast(`${S.name}: out of presets.json`);
   await loadList();
-  S.name = null; S.spec = null; S.orig = null; S.meta = null; S.raw = null;
+  S.name = null; S.spec = null; S.orig = null; S.meta = null; S.kept = null; S.raw = null;
   $("#editor").classList.add("empty");
   document.body.classList.remove("wide");
   renderGallery();

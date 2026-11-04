@@ -1,0 +1,1 @@
+{"name":"pot_cactus_tall","family":"plant","spec":{"label":"potted plant: a tall column cactus in a terracotta pot (table or floor)","family":"plant","form":"cactus","seed":305,"pot":{"kind":"terracotta","d":150,"h":130,"topping":"pumice"},"plant":{"size":0.5,"ribs":14,"radius":0.07}},"made":"2026-11-04","size_m":[0.1554,0.15,0.6144],"tris":7008}

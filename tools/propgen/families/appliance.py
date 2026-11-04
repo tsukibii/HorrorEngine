@@ -17,6 +17,8 @@ from .. import finish as FN
 from .. import mesh as M
 from .. import noise as N
 
+CUSTOM = True       # your own pictures go on it: the picture editor previews them on its picture (PROPGEN §25)
+
 MM = 0.001
 UI = dict(rough=0.25, height=0.0)
 

@@ -1,0 +1,1 @@
+{"name":"washbasin_blood","family":"sink","spec":{"label":"a washbasin with blood standing in it","family":"sink","kind":"basin","seed":3,"rust":0.7,"limescale":0.5,"crazing":0.4,"wear":{"grime":0.45,"stains":0.4},"liquid":{"kind":"blood","fill":0.3}},"made":"2026-11-04","size_m":[0.56,0.4708,0.4055],"tris":10656}

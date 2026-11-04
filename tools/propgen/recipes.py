@@ -16,6 +16,35 @@ OUT = os.path.join(ROOT, "Saved", "Props")
 LIB = os.path.join(ROOT, "Content", "Studio", "Library")
 
 
+def flagged_families(flag):
+    """The families whose module says `<flag> = True`, read without importing them."""
+    import ast
+    out = set()
+    fams = os.path.join(HERE, "families")
+    for f in sorted(os.listdir(fams)):
+        if not f.endswith(".py") or f.startswith("_"):
+            continue
+        with open(os.path.join(fams, f), encoding="utf-8") as fh:
+            tree = ast.parse(fh.read())
+        for node in tree.body:
+            if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == flag for t in node.targets):
+                if isinstance(node.value, ast.Constant) and node.value.value is True:
+                    out.add("import" if f == "imported.py" else f[:-3])
+    return out
+
+
+def custom_families():
+    """The families your own pictures go on (a can's label, a book's cover, an appliance's fake brand): those whose module
+    says `CUSTOM = True` (docs/PROPGEN.md §25)."""
+    return flagged_families("CUSTOM")
+
+
+def hollow_families():
+    """The families a level never bumps into (a curtain hangs in front of its window: no collider, LEVEL's overlap test
+    leaves it out): those whose module says `HOLLOW = True`; their library entries say `hollow`."""
+    return flagged_families("HOLLOW")
+
+
 def load(path=None):
     with open(path or PRESETS, encoding="utf-8") as fh:
         book = json.load(fh)
@@ -102,6 +131,10 @@ def to_library(rec, out):
     index = json.load(open(ip, encoding="utf-8")) if os.path.exists(ip) else {}
     x, y, z = rec["size_m"]                       # Blender's x, y, z (z up) -> the index's glTF x, y (up), z
     index[name] = {"kb": os.path.getsize(src) // 1024, "size_m": [x, z, y], "tris": rec["tris"]}
+    if rec.get("box_m"):                          # an anchored prop's box from its origin, story metres (as serve.py's)
+        index[name]["box_m"] = rec["box_m"]
+    if (rec.get("spec") or {}).get("family") in hollow_families():
+        index[name]["hollow"] = True              # seen, never bumped: plan.py tags it hollow (no collider, no LEVEL bump)
     with open(ip, "w", encoding="utf-8") as fh:
         json.dump(dict(sorted(index.items())), fh, indent=1)
     lp = os.path.join(LIB, "LEDGER.json")

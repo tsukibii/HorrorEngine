@@ -2,6 +2,137 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-04, after the wood (the user: the flat's curtains and chairs, a cleaner street)
+
+- **"Can you also update the map to use the new prop style curtains we made, also can we use the non cushion
+  versions of chairs in this map. Also remove the bicycles and bins from the outside as they don't look [right], can
+  you remove the weird bed that's inside the cupboard/closet too. Just keep the bed in the bedroom and futon in the
+  spare room."** maison_1f's windows wear the prop generator's curtains, each made for its window
+  (`curtain_maison_bedroom`: blackout drapes, blue-grey, a little below the sill; `curtain_maison_living`: linen to
+  the floor; `curtain_maison_washitsu`: a white sheer to the sill), set down from their `box_m` in place of the kit's;
+  its chairs bare (`chair_desk_oak`, `zaisu_walnut`: `cushion.on: false`, their pads' settings kept); the oshiire's
+  folded futon gone (the bed in the bedroom, the futon in the washitsu); maison_lane's two bikes and two empty plant
+  pots at the entrance (the "bins") gone.
+
+## 2026-11-04, latest (the user: real wood in the flat)
+
+- **"If you look at the map you made for the interior, the wooden inside floor tiles look very fake. Can you now
+  update the interior so it uses the latest tables and chairs with wood textures, and update and make a custom PBR for
+  Japanese wooden floors; aim to capture the realism of the PBRs that we imported from other sources so nothing stands
+  out too much and looks more cohesive."** Our own wood sets, made by code (`tools/woodpbr.py`, ASSETS §6) in the
+  imported ambientCG sets' shape (2K: colour, GL normal, roughness, occlusion, displacement; a meta.json with the
+  repeat) and in git beside them: Japanese sheet flooring (`pbr/floor/FlooringOak001`, light natural oak;
+  `FlooringOak002`, stained; `FlooringBirch001`) and glued furniture panels (`pbr/wood/WoodOak001`, `WoodWalnut001`),
+  each board its own cut of a log, their colours and roughness kept to measured wood (WOODPBR). maison_1f's wood
+  rooms wear `FlooringOak001`, the kit's boards laid where the set's are; its bedroom desk and chair and its living
+  room's zataku and zaisu are the prop generator's tables and chairs wearing the oak and walnut sets (`desk_oak`,
+  `chair_desk_oak`, `zataku_walnut`, `zaisu_walnut`), with the bed's frame, the genkan's step, the TV board and the
+  tokonoma dressed to match (SCENE_BUILDER §10d).
+
+## 2026-11-04, later night (the user: customizable props, not logos on everything)
+
+- **"I think I misrepresented what I meant by logo. I don't mean I want a logo on the models, I mean I want to be able
+  to customize certain props that should be customizable, e.g. cans, books, and want a smart way of previewing what the
+  uploaded image (the Figma UI thing we did) will look like before actually generating it. I don't care about actual
+  logos or marking our models, only for props that we should be able to modify. Plants etc. don't need it; the only
+  time a 'logo' matters is if it's an appliance where we want to fake it having a logo, like the rice cookers."** The
+  gallery's *Try a picture on them…* is gone. Customizable families say so (`CUSTOM = True`: can, bottle, cup, box,
+  sheet, book, pills, appliance, charm, ware; ✎ and a filter on the page). In the picture editor a customizable prop's
+  pictures are seen **on its own picture** as they're laid (*Its picture* beside *3D*), lit as Make will light them,
+  before Make; and before it's made here at all, from what the project keeps of it (its parts, slots and paint). Only
+  customizable props keep their passes and textures (PROPGEN §25).
+
+## 2026-11-04, night (the user: the cafe chair a stool, cushions switched off, every prop's thumbnail)
+
+- **"This one looks a bit weird and the circle isn't attached to all four legs, you can get rid of the small circle
+  and backrest and make this a stool instead."** The `cafe` style is a bentwood café stool: a round seat on a bent
+  ring, four bent legs inside the ring touching it and the seat, flaring to their feet; `chair_cafe` is `stool_cafe`.
+- **"Make sure pillows are toggleable so we can gen versions without pillow."** `cushion.on: false` makes a chair
+  bare and keeps the pads' settings: the page's switch in the cushion box's title; every cushioned chair's kept
+  picture has one without its cushions too (the card's *cushions* chip).
+- **"Can you pre-add (prerender and save) thumbnails for each ... a thumbnail (prerendered image) for each prop but do
+  it in a clever way that we can preview what custom stickers would look like on props like cans etc."** Every
+  recipe's picture kept in `Content/Studio/Props/thumbs/` (`propgen.py thumbs`), shown on the cards before anything
+  is made; beside each, its sticker passes (the light a white matt surface gets at each pixel, a clear coat's gloss,
+  and which texture point it sees), so the page lays any picture of yours onto any card in the browser, in the prop's
+  own logo slot or as a sticker on a part, lit and toned as the render was, and puts it into the recipe for Make
+  (PROPGEN §25).
+
+## 2026-11-04, evening (the user: tables and chairs, and the prop generator on the dashboard)
+
+- **"Similar research: could you create a prop gen for tables and chairs. For tables take a length/width/height
+  input; first research generic table styles (wooden) and shapes, then simple modelling techniques, then adding micro
+  details (not too many, but cracks, wood grain, scratches, mostly bumps, as I still want to be able to overlay custom
+  types of wood PBRs)."** The research (docs/research/tables_chairs.md); the `table` family (PROPGEN §23): `size`
+  [length, width, height], eight styles, top shapes and edges, each part rounded for the bake and chamfered for the
+  game mesh and unwrapped along its grain, the wood's flaws as relief only (a wood set of your own lies over them).
+- **"For chairs currently they don't really look quite right: create some basic chair styles; all chairs should be
+  able to support having simple cushions; research via our curtain technique emulating pillows and cushions to custom
+  shapes (puffy soft physics and stuff that gets baked); a bit of realism while keeping the poly count low (more polys
+  for the sim, then bake and simplify before the final export)."** The `chair` family (PROPGEN §24): eight styles,
+  every one taking seat and back pads shaped to it (`families/cushion.py`: the bedding's bag to any outline, filled firm
+  between a floor and a ceiling, a coarse mesh of the same outline baked from the dense one), ties round the posts.
+- **"Feel free to update the prop gen UI to accommodate for this, also add prop gen to the top in the dashboard
+  wrapper so it's easier to navigate (beside studio/interior etc)."** The page reads a family's own `FIELDS` (a
+  picker of the settings it takes, each with an example), `CHOICES` (dropdowns, nested ones by their dotted key) and
+  `LABELS` (a table's size as length, width, height); the dashboard's start tiles have the prop generator, its page
+  moved to port 8799 (the face mocap page had 8797 too).
+
+## 2026-11-04, afternoon (the user: a curtain generator)
+
+- **"Could you try work on a curtain generator prop that uses a bit of drape physics to get more natural curtains,
+  ideally the curtain gen prop has fields for how many sides (1 curtain or 2 on each side), you add the height and
+  length of the window and it generates curtains to use. Research first for the easiest technique."** The research
+  (docs/research/curtains.md): shape the hung curtain from its heading's own geometry, then let the cloth settle with
+  tethers to the heading (so it can't stretch) and a tie-back's ring; the prop generator's `curtain` family
+  (PROPGEN §22): `window` [w, h], `sill`, `panels` 1 or 2, a heading, `length`, `open`, `tie`, a rail or a pole, a
+  fabric; six recipes.
+
+## 2026-11-04, morning (the user: pillows and blankets for the maison flat)
+
+- **"Can you make proper better prop pillows and blankets and then add them to this level."** The prop generator's
+  `bedding` family (PROPGEN §21): pillows, cushions, blankets and folded futons made by a cloth simulation (sewn,
+  filled, laid over what they're on, folded), their small folds and quilting drawn into the detail mesh and baked;
+  six recipes (a buckwheat makura, a bed pillow, a tufted zabuton, a kakebuton turned back on its futon, a comforter
+  on the single bed, a futon folded for the oshiire). In maison_1f: the washitsu's futon under the kakebuton with the
+  makura, bedroom 1's bed under the comforter with its pillow (the kits' own pillows and duvet off), the folded futon
+  in the oshiire, the living room's three zabuton the tufted ones; the washitsu's low table and its cushion went to
+  make room for the futon.
+
+## 2026-11-04, small hours (the user: a map-building guide for Claude, and a map from their floor plan)
+
+- **"Create an optimized guide for claude (yourself) on how to use interior and street tool to build a coherent map
+  so it's as token efficient as possible."** The skill `/build-map` (`.claude/skills/build-map/`: the steps in
+  SKILL.md, the formats compact in reference.md): a layout file into a set (`layoutset.mjs --file`, its `repeat` for
+  storeys alike), a street file synced with it (`streetsync.mjs`), the checks by their last lines, the plan and the
+  map as one picture each (`plan_view.py --floor`, `tools/godot/map_shots.py`: the set in its street pictured by
+  Godot, a contact sheet). Claude never reads a set's story.json, a street.json or the builders' code whole for it.
+- **"Design me a map for a short video game which uses image 1 as the floor plan, furnish the place (some basic
+  Japanese style furnishing), use PBRs we have where possible."** The set `maison_1f` (Maison Shirasagi): image 1's
+  flat as drawn (bedroom 1 with its closet and L-shaped entry, bedroom 2 a washitsu with its tokonoma in the L's foot
+  and its oshiire, the bath as a unit bath, the kitchen open to the living room), a genkan carved from the kitchen's
+  corner with its front door (a peephole, a latch) onto the block's entrance hall (mailboxes, the glass doors out
+  locked by a flag). Furnished from the kit; walls in plaster, the washitsu's a tinted plaster, the bath's white
+  plastic, the genkan's floor 30 cm pavers, the tatami's weave, the gate's rusting paint (all sets in git).
+- **"We should be located on the ground floor, exterior should be similar to image 2."** A white rendered block of
+  four storeys, one flat a floor (the floors above the same flat, bare), tall narrow windows on its stair front, a
+  railing on the flat roof, a canopy, the name plate and a lamp over the glass entrance; image 2's brown balconied
+  flats beside it.
+- **"We should have stairs going upstairs but a gate should be locked preventing the player from going up."** A
+  dog-leg stair in its shaft from the entrance hall to the fourth floor behind `gate_bars` (a new kit door: a steel
+  gate of bars), locked by `flag:upstairs_open`; the flight up lit, the next landing's light flickering.
+- **"The game should be on a curved street ... opposite the small apartment complex should be a curved concrete wall
+  with more fancier buildings behind, some street style trees; we won't actually be going outside the interior
+  apartment so the street will only be visible from the side windows."** The street `maison_lane`: a lane bending
+  round the block's corner, so its front and the flat's south windows both face it; on the bend's far side a curved
+  board-formed concrete wall (fences can curve now: `via`) with an old estate under kawara and two modern villas
+  behind, street trees down the far walk, poles and their wires on the near side, the bend's mirror. The flat's
+  garden screen kept low (0.8 m) so the road shows from the ground floor; the windows' glass exported clear (12 %, as
+  the game export's).
+- **"Can you use the realistic version of the trees."** The street's trees are the prop generator's realistic ones
+  (`zelkova_real` down the far walk, `black_pine_real` in the estate's garden): a street `tree` now names the made prop
+  that stands in its place (`prop`), on the page and in Export for Godot (STREET_BUILDER §7c).
+
 ## 2026-11-03, night (the user: rules in the editors, exports for Godot, guides)
 
 - **"Is this something that's easy to have as an implemented fix on any interior design or street design? How do I

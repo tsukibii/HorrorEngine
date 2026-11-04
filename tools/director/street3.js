@@ -5,6 +5,7 @@
 // Story space (x, y, z up) becomes three's (x, z, -y), as the stage's s2t.
 import * as THREE from "three";
 import * as SG from "./street-gen.js";
+import { GLTFLoader } from "./vendor/GLTFLoader.js";
 
 export const s2t = (x, y, z) => new THREE.Vector3(x, z, -y);
 export const TIMES = {
@@ -239,6 +240,32 @@ function boundsOf(p) {
   return (p._bb = lo[0] === Infinity ? null : { lo, hi });
 }
 export function disposeChunk(g) { g.traverse(o => { if (o.geometry) o.geometry.dispose(); }); }
+// ---- made props in things' places (the user, 2026-11-04: "can you use the realistic version of the trees"): a tree's
+// `prop`, the prop generator's in the library (props/<name>: a realistic zelkova, a black pine), stands at its spot on
+// the ground, turned by its `turn`; its stand-in is drawn until the mesh has loaded, and on a machine that hasn't made it
+// (python tools/propgen.py make <name> --library)
+const PROP_MESH = new Map();
+export function propMesh(ref) {
+  if (!PROP_MESH.has(ref)) PROP_MESH.set(ref, new GLTFLoader().loadAsync(`/library/meshes/${ref}.glb`).then(g => g.scene).catch(() => null));
+  return PROP_MESH.get(ref);
+}
+export const propThings = S => (S.things || []).filter(t => typeof t.prop === "string" && t.prop);
+// the props loaded: {ids: the things they stand for (their stand-ins left out of the chunks: group's opts.hide), group}
+export async function propsGroup(S) {
+  const T = SG.terrain(S), g = new THREE.Group(), ids = new Set();
+  g.name = "props";
+  for (const t of propThings(S)) {
+    const src = await propMesh(t.prop);
+    if (!src) continue;
+    const c = src.clone(true);
+    c.name = `prop_${t.id}`;
+    c.position.set(t.at[0], T.surface(t.at[0], t.at[1]) + (+t.lift || 0), -t.at[1]);
+    c.rotation.y = (+t.turn || 0) * Math.PI / 180;                  // a turn in the street's plane (left about up) is three's about +y
+    c.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    g.add(c); ids.add(t.id);
+  }
+  return { ids, group: g };
+}
 export function group(S, pieces, mats, opts = {}) {
   const cell = opts.cell || CHUNK, prev = opts.prev || null, root = new THREE.Group(); root.name = S.name || "street";
   const looks = {};
@@ -246,6 +273,7 @@ export function group(S, pieces, mats, opts = {}) {
   for (const p of pieces) for (const sg of p.signs || []) mats.signs[sg.key] = sg;
   const chunks = new Map(), index = {};
   for (const p of pieces) {
+    if (opts.hide && opts.hide.has(p.id)) continue;                  // a stand-in a made prop stands in place of
     if (!p._n) p._n = ++SERIAL;
     const bb = boundsOf(p); if (!bb) continue;
     const key = p.type === "ground" || p.type === "wires" || p.type === "road" || p.type === "inside" ? p.type + ":" + p.id : `${Math.floor((bb.lo[0] + bb.hi[0]) / 2 / cell)},${Math.floor((bb.lo[1] + bb.hi[1]) / 2 / cell)}`;
@@ -405,7 +433,7 @@ function trisMesh(name, tris) {                                     // story-spa
 export function exportVisual(root, made = new Map(), name = "visual") {
   const visual = new THREE.Group(); visual.name = name;
   for (const ch of root.children) {
-    if (ch.name.startsWith("chunk_inside")) continue;               // the stand-in rooms: the level's own scene goes there
+    if (ch.name.startsWith("chunk_inside") || ch.name === "props") continue;   // the stand-in rooms: the level's own scene goes there; the made props: below
     const g = new THREE.Group(); g.name = ch.name;
     for (const m of ch.children) if (m.isMesh) { const c = m.material.vertexColors ? byColour(m, exportMaterial(m.material, made), made) : new THREE.Mesh(m.geometry, exportMaterial(m.material, made)); c.name = m.name; g.add(c); }
     visual.add(g);
@@ -417,6 +445,8 @@ export function exportGroup(root, S, pieces, lights, blockers, opts = {}) {
   const out = new THREE.Group(); out.name = (S.name || "street").replace(/[^A-Za-z0-9_]+/g, "_");
   const made = new Map();
   out.add(exportVisual(root, made));
+  const props = root.children.find(c => c.name === "props");          // the made props (a tree's realistic one) with their own materials
+  if (props && props.children.length) { const pc = props.clone(true); pc.name = "props"; out.add(pc); }
   const index = root.userData.index || {}, byChunk = new Map(), occByChunk = new Map();
   for (const [id, B] of Object.entries(blockers)) {
     const key = (index[id] || {}).chunk || "loose";

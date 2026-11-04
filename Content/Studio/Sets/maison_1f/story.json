@@ -1,0 +1,4823 @@
+{
+ "format": 3,
+ "game": {
+  "id": "maison_1f",
+  "title": "Maison Shirasagi: the ground-floor flat",
+  "start": "n_start",
+  "target_min": 0,
+  "voice": "ja",
+  "text": "en",
+  "clip_max": 8,
+  "subtitles": [
+   "en",
+   "zh"
+  ],
+  "built_with": {
+   "engine": "0.6.0",
+   "format": 3
+  }
+ },
+ "cast": {
+  "someone": {
+   "name": "Someone",
+   "metahuman": null,
+   "height": 1.6
+  }
+ },
+ "items": {},
+ "notes": {},
+ "lines": {},
+ "sounds": {},
+ "levels": {
+  "maison_1f": {
+   "outside": {
+    "look": {
+     "wall": "pbr/wall/Plaster001_1K-PNG",
+     "trim": "#f2f1ec",
+     "roof_flat": "pbr/concrete/Concrete029_1K-PNG",
+     "plinth": "pbr/concrete/Concrete006_1K-PNG",
+     "rail": "#c9ccce",
+     "frame": "#3a3d42",
+     "glass": "#4a5664"
+    },
+    "roof": {
+     "kind": "flat",
+     "parapet": 0.5,
+     "rail": true
+    },
+    "raise": 0.45,
+    "front": "e",
+    "facade": {
+     "rails": {
+      "h": 1.1,
+      "out": 0.14
+     }
+    },
+    "parts": [
+     {
+      "kind": "canopy",
+      "face": "front",
+      "x": 2.3,
+      "z": 2.75,
+      "w": 1.9,
+      "h": 0.15,
+      "out": 1.1
+     },
+     {
+      "kind": "sign",
+      "face": "front",
+      "x": 0.9,
+      "z": 2.05,
+      "w": 1.1,
+      "h": 0.3,
+      "out": 0.03,
+      "text": "メゾン白鷺",
+      "fg": "#2c2c2e",
+      "bg": "#e9e7e1",
+      "lit": false
+     },
+     {
+      "kind": "lamp",
+      "face": "front",
+      "x": 1.05,
+      "z": 2.45
+     },
+     {
+      "kind": "pipe",
+      "face": "front",
+      "x": -3.3,
+      "h": 11.6,
+      "out": 0.1
+     },
+     {
+      "kind": "ac",
+      "face": "back",
+      "x": -1.5,
+      "z": 0.05,
+      "w": 0.8,
+      "h": 0.6,
+      "out": 0.3,
+      "floors": [
+       2,
+       4
+      ]
+     },
+     {
+      "kind": "ac",
+      "face": "right",
+      "x": 2,
+      "z": 0,
+      "w": 0.8,
+      "h": 0.6
+     }
+    ]
+   },
+   "start": "start",
+   "rooms": [
+    {
+     "look": {
+      "walls": "pbr/wall/Plaster001_1K-PNG",
+      "ceiling": "pbr/wall/Plaster001_1K-PNG"
+     },
+     "id": "br1",
+     "at": [
+      0,
+      0,
+      0
+     ],
+     "size": [
+      3.22,
+      3.38,
+      2.4
+     ],
+     "floor": "wood",
+     "light": "dim",
+     "kind": "bedroom",
+     "name": "Bedroom 1",
+     "skip": [
+      "n"
+     ],
+     "openings": [
+      {
+       "wall": "s",
+       "at": 1.729,
+       "w": 2.4,
+       "h": 1.3,
+       "sill": 0.8,
+       "window": true
+      }
+     ],
+     "props": [
+      {
+       "id": "br1_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        1.61,
+        1.69
+       ],
+       "z": 2.365,
+       "kit": "led_flush_300",
+       "kelvin": 2700,
+       "lumens": 2721
+      },
+      {
+       "id": "br1_wi_ac_1",
+       "at": [
+        0.196,
+        1.69
+       ],
+       "rot": 90,
+       "z": 1.925,
+       "tag": "air_conditioner",
+       "kit": {
+        "preset": "air_conditioner",
+        "size": [
+         0.8,
+         0.29,
+         0.25
+        ]
+       }
+      },
+      {
+       "id": "br1_fx_floor",
+       "kit": {
+        "preset": "oak_planks",
+        "size": [
+         3.12,
+         3.28,
+         0.015
+        ]
+       },
+       "at": [
+        1.61,
+        1.69
+       ],
+       "mats": {
+        "wood": "pbr/floor/FlooringOak001_2K-JPG"
+       }
+      },
+      {
+       "mats": {
+        "wood": "pbr/wood/WoodOak001_2K-JPG"
+       },
+       "id": "br1_kt_bed_single_1",
+       "kit": {
+        "preset": "bed_single",
+        "pillows": 0,
+        "duvet": 0,
+        "size": [
+         0.97,
+         2,
+         0.9
+        ]
+       },
+       "at": [
+        1.07,
+        1.75
+       ],
+       "rot": 90
+      },
+      {
+       "on": "br1_kt_bed_single_1",
+       "id": "br1_kt_comforter_bed_1",
+       "shape": "asset props/comforter_bed",
+       "at": [
+        1.429,
+        1.769
+       ],
+       "rot": 90,
+       "z": 0.159
+      },
+      {
+       "on": "br1_kt_bed_single_1",
+       "id": "br1_kt_pillow_bed_1",
+       "shape": "asset props/pillow_bed",
+       "at": [
+        0.38,
+        1.75
+       ],
+       "rot": 90,
+       "z": 0.47
+      },
+      {
+       "id": "br1_kt_desk_oak_1",
+       "shape": "asset props/desk_oak",
+       "at": [
+        2.87,
+        1.05
+       ],
+       "rot": 270
+      },
+      {
+       "id": "br1_kt_chair_desk_oak_1",
+       "shape": "asset props/chair_desk_oak",
+       "at": [
+        2.32,
+        0.8
+       ],
+       "rot": 90
+      },
+      {
+       "id": "br1_kt_floor_lamp_1",
+       "kit": {
+        "preset": "floor_lamp",
+        "size": [
+         0.4,
+         0.4,
+         1.55
+        ]
+       },
+       "at": [
+        2.92,
+        1.95
+       ],
+       "rot": 0
+      },
+      {
+       "id": "br1_kt_curtain_maison_bedroom_1",
+       "shape": "asset props/curtain_maison_bedroom",
+       "at": [
+        1.726,
+        0.206
+       ],
+       "rot": 180,
+       "z": 0.65
+      },
+      {
+       "id": "br1_fx_win1",
+       "kit": {
+        "preset": "window_slide",
+        "size": [
+         2.4,
+         0.22,
+         1.325
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        1.729,
+        0.06
+       ],
+       "rot": 180,
+       "z": 0.775,
+       "in_wall": true,
+       "of": "br1_s_window"
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/wall/Plaster001_1K-PNG",
+      "ceiling": "pbr/wall/Plaster001_1K-PNG"
+     },
+     "id": "br1_closet",
+     "at": [
+      0,
+      3.38,
+      0
+     ],
+     "size": [
+      2.33,
+      1.44,
+      2.4
+     ],
+     "floor": "wood",
+     "light": "dim",
+     "kind": "walkin",
+     "name": "Closet",
+     "skip": [
+      [
+       "e",
+       0.82,
+       1.44
+      ]
+     ],
+     "openings": [
+      {
+       "wall": "s",
+       "at": 1.165,
+       "w": 1.8,
+       "h": 2,
+       "door": {
+        "id": "br1_br1_closet_door",
+        "swing": "slide",
+        "kit": {
+         "preset": "door_slide"
+        }
+       }
+      }
+     ],
+     "props": [
+      {
+       "id": "br1_closet_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        1.165,
+        0.72
+       ],
+       "z": 2.385,
+       "kit": "downlight_100",
+       "kelvin": 3000,
+       "lumens": 839
+      },
+      {
+       "id": "br1_closet_fx_floor",
+       "kit": {
+        "preset": "oak_planks",
+        "size": [
+         2.23,
+         1.34,
+         0.015
+        ]
+       },
+       "at": [
+        1.165,
+        0.72
+       ],
+       "mats": {
+        "wood": "pbr/floor/FlooringOak001_2K-JPG"
+       }
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/wall/Plaster001_1K-PNG",
+      "ceiling": "pbr/wall/Plaster001_1K-PNG"
+     },
+     "id": "br1_nook",
+     "at": [
+      2.33,
+      3.38,
+      0
+     ],
+     "size": [
+      0.89,
+      0.82,
+      2.4
+     ],
+     "floor": "wood",
+     "light": "dim",
+     "kind": "corridor",
+     "name": "Bedroom 1 entry",
+     "skip": [
+      "n",
+      "e",
+      "s",
+      "w"
+     ],
+     "props": [
+      {
+       "id": "br1_nook_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        0.445,
+        0.41
+       ],
+       "z": 2.385,
+       "kit": "downlight_100",
+       "kelvin": 3000,
+       "lumens": 182
+      },
+      {
+       "id": "br1_nook_fx_floor",
+       "kit": {
+        "preset": "oak_planks",
+        "size": [
+         0.79,
+         0.72,
+         0.015
+        ]
+       },
+       "at": [
+        0.445,
+        0.41
+       ],
+       "mats": {
+        "wood": "pbr/floor/FlooringOak001_2K-JPG"
+       }
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/plastic/white_plastic",
+      "ceiling": "pbr/plastic/white_plastic"
+     },
+     "props": [
+      {
+       "id": "bath_toilet",
+       "shape": "box 0.4 0.7 0.8",
+       "at": [
+        1.89,
+        1.05
+       ],
+       "rot": 270,
+       "tag": "toilet",
+       "mat": "pbr/plastic/white_plastic"
+      },
+      {
+       "id": "bath_fx_tub",
+       "shape": "box 1.4 0.8 0.55",
+       "at": [
+        1.15,
+        1.79
+       ],
+       "rot": 0,
+       "tag": "bathtub"
+      },
+      {
+       "id": "bath_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        1.15,
+        1.13
+       ],
+       "z": 2.365,
+       "kit": "led_flush_300",
+       "kelvin": 4000,
+       "lumens": 1299
+      },
+      {
+       "id": "bath_fx_switch",
+       "at": [
+        1.863,
+        0.057
+       ],
+       "rot": 180,
+       "z": 1.14,
+       "tag": "light_switch",
+       "kit": {
+        "preset": "switch_jp_1",
+        "size": [
+         0.07,
+         0.012,
+         0.12
+        ]
+       },
+       "use": "switch",
+       "light": "bath_fx_light"
+      },
+      {
+       "id": "bath_fx_floor",
+       "kit": {
+        "preset": "tile_300",
+        "size": [
+         2.2,
+         2.16,
+         0.01
+        ]
+       },
+       "at": [
+        1.15,
+        1.13
+       ]
+      },
+      {
+       "id": "bath_kt_vanity_drawers_1",
+       "kit": {
+        "preset": "vanity_drawers",
+        "size": [
+         0.75,
+         0.5,
+         0.78
+        ]
+       },
+       "at": [
+        0.31,
+        0.6
+       ],
+       "rot": 90
+      },
+      {
+       "id": "bath_kt_vanity_mirror_1",
+       "kit": {
+        "preset": "vanity_mirror",
+        "size": [
+         0.6,
+         0.02,
+         0.7
+        ]
+       },
+       "at": [
+        0.065,
+        0.6
+       ],
+       "rot": 90,
+       "z": 1
+      },
+      {
+       "id": "bath_kt_bath_mat_1",
+       "kit": {
+        "preset": "bath_mat",
+        "size": [
+         0.6,
+         0.45,
+         0.01
+        ]
+       },
+       "at": [
+        1.05,
+        1.1
+       ],
+       "rot": 0
+      }
+     ],
+     "id": "bath",
+     "at": [
+      2.33,
+      4.2,
+      0
+     ],
+     "size": [
+      2.3,
+      2.26,
+      2.4
+     ],
+     "floor": "tile",
+     "light": "dim",
+     "kind": "bath",
+     "name": "Unit bath",
+     "skip": [
+      "e"
+     ],
+     "openings": [
+      {
+       "wall": "s",
+       "at": 1.313,
+       "w": 0.7,
+       "h": 2,
+       "door": {
+        "id": "bath_hall_door",
+        "swing": "out",
+        "kit": {
+         "preset": "door_flush"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/wall/Plaster001_1K-PNG",
+      "ceiling": "pbr/wall/Plaster001_1K-PNG"
+     },
+     "id": "kitchen",
+     "at": [
+      4.63,
+      4.2,
+      0
+     ],
+     "size": [
+      3.65,
+      2.26,
+      2.4
+     ],
+     "floor": "tile",
+     "light": "dim",
+     "kind": "kitchen",
+     "name": "Kitchen",
+     "skip": [
+      "s"
+     ],
+     "openings": [
+      {
+       "wall": "n",
+       "at": 2.77,
+       "w": 0.9,
+       "h": 0.9,
+       "sill": 1.05,
+       "window": true
+      }
+     ],
+     "props": [
+      {
+       "id": "kitchen_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        1.825,
+        1.13
+       ],
+       "z": 2.365,
+       "kit": "led_flush_300",
+       "kelvin": 4000,
+       "lumens": 2062
+      },
+      {
+       "id": "kitchen_wi_clock_2",
+       "at": [
+        0.076,
+        1.13
+       ],
+       "rot": 90,
+       "z": 1.75,
+       "tag": "clock",
+       "kit": {
+        "preset": "wall_clock",
+        "size": [
+         0.3,
+         0.05,
+         0.3
+        ]
+       }
+      },
+      {
+       "id": "kitchen_fx_floor",
+       "kit": {
+        "preset": "tile_300",
+        "size": [
+         3.55,
+         2.16,
+         0.01
+        ]
+       },
+       "at": [
+        1.825,
+        1.13
+       ]
+      },
+      {
+       "id": "kitchen_kt_fridge_1",
+       "kit": {
+        "preset": "fridge",
+        "size": [
+         0.68,
+         0.7,
+         1.8
+        ]
+       },
+       "at": [
+        0.4,
+        1.85
+       ],
+       "rot": 0
+      },
+      {
+       "id": "kitchen_kt_kitchen_run_1",
+       "kit": {
+        "preset": "kitchen_run",
+        "size": [
+         2.79,
+         0.65,
+         0.85
+        ]
+       },
+       "at": [
+        2.195,
+        1.875
+       ],
+       "rot": 0
+      },
+      {
+       "on": "kitchen_kt_kitchen_run_1",
+       "id": "kitchen_kt_hob_gas_konro_1",
+       "kit": {
+        "preset": "hob_gas_konro",
+        "size": [
+         0.59,
+         0.45,
+         0.2
+        ]
+       },
+       "at": [
+        1.15,
+        1.85
+       ],
+       "rot": 0,
+       "z": 0.85
+      },
+      {
+       "on": "kitchen_kt_hob_gas_konro_1",
+       "id": "kitchen_kt_kettle_whistling_1",
+       "kit": {
+        "preset": "kettle_whistling",
+        "size": [
+         0.2,
+         0.241,
+         0.194
+        ]
+       },
+       "at": [
+        1,
+        1.85
+       ],
+       "rot": 0,
+       "z": 1.05
+      },
+      {
+       "on": "kitchen_kt_kitchen_run_1",
+       "id": "kitchen_kt_rice_cooker_1",
+       "kit": {
+        "preset": "rice_cooker",
+        "size": [
+         0.25,
+         0.325,
+         0.228
+        ]
+       },
+       "at": [
+        2.1,
+        1.95
+       ],
+       "rot": 0,
+       "z": 0.85
+      },
+      {
+       "id": "kitchen_fx_win1",
+       "kit": {
+        "preset": "window_slide",
+        "size": [
+         0.9,
+         0.22,
+         0.925
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        2.77,
+        2.2
+       ],
+       "rot": 0,
+       "z": 1.025,
+       "in_wall": true,
+       "of": "kitchen_n_window"
+      },
+      {
+       "id": "someone_spot",
+       "use": "spot",
+       "at": [
+        1.67,
+        1.1
+       ],
+       "rot": 90
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/wall/Plaster001_1K-PNG",
+      "ceiling": "pbr/wall/Plaster001_1K-PNG"
+     },
+     "id": "genkan",
+     "at": [
+      8.28,
+      4.2,
+      0
+     ],
+     "size": [
+      1,
+      2.26,
+      2.4
+     ],
+     "floor": "tile",
+     "light": "dim",
+     "kind": "genkan",
+     "name": "Genkan",
+     "skip": [
+      "e",
+      "s",
+      "w"
+     ],
+     "props": [
+      {
+       "id": "genkan_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        0.5,
+        1.13
+       ],
+       "z": 2.385,
+       "kit": "downlight_100",
+       "kelvin": 3000,
+       "lumens": 565
+      },
+      {
+       "id": "genkan_fx_switch",
+       "at": [
+        0.943,
+        1.15
+       ],
+       "rot": 270,
+       "z": 1.14,
+       "tag": "light_switch",
+       "kit": {
+        "preset": "switch_jp_1",
+        "size": [
+         0.07,
+         0.012,
+         0.12
+        ]
+       },
+       "use": "switch",
+       "light": "genkan_fx_light"
+      },
+      {
+       "id": "genkan_fx_floor",
+       "kit": {
+        "preset": "stone_450",
+        "size": [
+         0.9,
+         2.16,
+         0.015
+        ]
+       },
+       "at": [
+        0.5,
+        1.13
+       ],
+       "mats": {
+        "stone": "pbr/concrete/Concrete010_1K-PNG"
+       }
+      },
+      {
+       "id": "genkan_kt_shoe_cabinet_1",
+       "kit": {
+        "preset": "shoe_cabinet",
+        "size": [
+         0.9,
+         0.38,
+         0.95
+        ]
+       },
+       "at": [
+        0.25,
+        0.65
+       ],
+       "rot": 90
+      },
+      {
+       "mats": {
+        "wood": "pbr/wood/WoodOak001_2K-JPG"
+       },
+       "id": "genkan_kt_genkan_step_1",
+       "kit": {
+        "preset": "genkan_step",
+        "size": [
+         0.92,
+         0.12,
+         0.03
+        ]
+       },
+       "at": [
+        0.5,
+        0.06
+       ],
+       "rot": 0
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/wall/Plaster001_1K-PNG",
+      "ceiling": "pbr/wall/Plaster001_1K-PNG"
+     },
+     "id": "hall",
+     "at": [
+      3.22,
+      2.89,
+      0
+     ],
+     "size": [
+      2.9,
+      1.31,
+      2.4
+     ],
+     "floor": "wood",
+     "light": "dim",
+     "kind": "corridor",
+     "name": "Hall",
+     "skip": [
+      "n",
+      "e",
+      [
+       "s",
+       0,
+       2.19
+      ],
+      [
+       "w",
+       0,
+       0.49
+      ]
+     ],
+     "openings": [
+      {
+       "wall": "w",
+       "at": 0.9,
+       "w": 0.7,
+       "h": 2,
+       "door": {
+        "id": "br1_nook_hall_door",
+        "swing": "in",
+        "kit": {
+         "preset": "door_flush"
+        }
+       }
+      }
+     ],
+     "props": [
+      {
+       "id": "hall_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        1.45,
+        0.655
+       ],
+       "z": 2.365,
+       "kit": "led_flush_300",
+       "kelvin": 3000,
+       "lumens": 950
+      },
+      {
+       "id": "hall_fx_switch",
+       "at": [
+        0.057,
+        0.35
+       ],
+       "rot": 90,
+       "z": 1.14,
+       "tag": "light_switch",
+       "kit": {
+        "preset": "switch_jp_1",
+        "size": [
+         0.07,
+         0.012,
+         0.12
+        ]
+       },
+       "use": "switch",
+       "light": "hall_fx_light"
+      },
+      {
+       "id": "hall_fx_floor",
+       "kit": {
+        "preset": "oak_planks",
+        "size": [
+         2.8,
+         1.21,
+         0.015
+        ]
+       },
+       "at": [
+        1.45,
+        0.655
+       ],
+       "mats": {
+        "wood": "pbr/floor/FlooringOak001_2K-JPG"
+       }
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": {
+       "set": "pbr/wall/Plaster001_1K-PNG",
+       "tint": "#cbb89a",
+       "tint_amount": 0.7
+      },
+      "ceiling": "#b99a74",
+      "trim": "#7a5a3c"
+     },
+     "id": "washitsu",
+     "at": [
+      3.22,
+      0,
+      0
+     ],
+     "size": [
+      2.19,
+      2.89,
+      2.4
+     ],
+     "floor": "carpet",
+     "light": "dim",
+     "kind": "washitsu",
+     "name": "Bedroom 2 (washitsu)",
+     "skip": [
+      "e",
+      "w"
+     ],
+     "openings": [
+      {
+       "wall": "n",
+       "at": 1.599,
+       "w": 0.9,
+       "h": 1.8,
+       "door": {
+        "id": "hall_washitsu_door",
+        "swing": "slide",
+        "kit": {
+         "preset": "fusuma"
+        }
+       }
+      },
+      {
+       "wall": "s",
+       "at": 1.11,
+       "w": 1.7,
+       "h": 1.3,
+       "sill": 0.8,
+       "window": true
+      }
+     ],
+     "props": [
+      {
+       "id": "washitsu_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        1.095,
+        1.445
+       ],
+       "z": 2.365,
+       "kit": "led_flush_300",
+       "kelvin": 2700,
+       "lumens": 1582
+      },
+      {
+       "id": "washitsu_fx_switch",
+       "at": [
+        0.949,
+        2.833
+       ],
+       "rot": 0,
+       "z": 1.14,
+       "tag": "light_switch",
+       "kit": {
+        "preset": "switch_jp_1",
+        "size": [
+         0.07,
+         0.012,
+         0.12
+        ]
+       },
+       "use": "switch",
+       "light": "washitsu_fx_light"
+      },
+      {
+       "id": "washitsu_fx_floor",
+       "kit": {
+        "preset": "tatami",
+        "size": [
+         2.09,
+         2.79,
+         0.055
+        ]
+       },
+       "at": [
+        1.095,
+        1.445
+       ],
+       "mats": {
+        "tatami": "pbr/floor/Tatami001_1K-PNG"
+       }
+      },
+      {
+       "id": "washitsu_kt_futon_1",
+       "kit": {
+        "preset": "futon",
+        "pillows": 0,
+        "duvet": 0,
+        "size": [
+         1,
+         2.1,
+         0.2
+        ]
+       },
+       "at": [
+        0.62,
+        1.24
+       ],
+       "rot": 0
+      },
+      {
+       "on": "washitsu_kt_futon_1",
+       "id": "washitsu_kt_kakebuton_turned_1",
+       "shape": "asset props/kakebuton_turned",
+       "at": [
+        0.781,
+        0.9
+       ],
+       "rot": 0,
+       "z": 0.07
+      },
+      {
+       "on": "washitsu_kt_futon_1",
+       "id": "washitsu_kt_makura_sobakawa_1",
+       "shape": "asset props/makura_sobakawa",
+       "at": [
+        0.62,
+        2.03
+       ],
+       "rot": 0,
+       "z": 0.12
+      },
+      {
+       "id": "washitsu_kt_floor_lamp_1",
+       "kit": {
+        "preset": "floor_lamp",
+        "size": [
+         0.3,
+         0.3,
+         0.55
+        ]
+       },
+       "at": [
+        0.25,
+        2.6
+       ],
+       "rot": 0
+      },
+      {
+       "id": "washitsu_kt_curtain_maison_washitsu_1",
+       "shape": "asset props/curtain_maison_washitsu",
+       "at": [
+        1.11,
+        0.182
+       ],
+       "rot": 180,
+       "z": 0.81
+      },
+      {
+       "id": "washitsu_fx_win1",
+       "kit": {
+        "preset": "window_slide",
+        "size": [
+         1.7,
+         0.22,
+         1.325
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        1.11,
+        0.06
+       ],
+       "rot": 180,
+       "z": 0.775,
+       "in_wall": true,
+       "of": "washitsu_s_window"
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": {
+       "set": "pbr/wall/Plaster001_1K-PNG",
+       "tint": "#cbb89a",
+       "tint_amount": 0.7
+      },
+      "ceiling": "#b99a74",
+      "trim": "#7a5a3c"
+     },
+     "id": "tokonoma",
+     "at": [
+      5.41,
+      0,
+      0
+     ],
+     "size": [
+      0.71,
+      1.6,
+      2.4
+     ],
+     "floor": "wood",
+     "light": "dim",
+     "kind": "closet",
+     "name": "Tokonoma",
+     "skip": [
+      "w"
+     ],
+     "props": [
+      {
+       "mats": {
+        "wood": "pbr/wood/WoodWalnut001_2K-JPG"
+       },
+       "id": "tokonoma_kt_tokonoma_1",
+       "kit": {
+        "preset": "tokonoma",
+        "holes": [
+         {
+          "x": 0,
+          "z": 0.12,
+          "w": 1.4,
+          "h": 1.9,
+          "depth": 0.55,
+          "shelves": 0
+         }
+        ],
+        "size": [
+         1.5,
+         0.6,
+         2.35
+        ]
+       },
+       "at": [
+        0.36,
+        0.8
+       ],
+       "rot": 270
+      },
+      {
+       "on": "tokonoma_kt_tokonoma_1",
+       "id": "tokonoma_kt_koro_1",
+       "kit": {
+        "preset": "koro",
+        "size": [
+         0.104,
+         0.104,
+         0.148
+        ]
+       },
+       "at": [
+        0.33,
+        0.8
+       ],
+       "rot": 0,
+       "z": 0.12
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": {
+       "set": "pbr/wall/Plaster001_1K-PNG",
+       "tint": "#cbb89a",
+       "tint_amount": 0.7
+      },
+      "ceiling": "#b99a74",
+      "trim": "#7a5a3c"
+     },
+     "id": "oshiire",
+     "at": [
+      5.41,
+      1.6,
+      0
+     ],
+     "size": [
+      0.71,
+      1.29,
+      2.4
+     ],
+     "floor": "wood",
+     "light": "dim",
+     "kind": "oshiire",
+     "name": "Oshiire",
+     "skip": [
+      "n",
+      "s"
+     ],
+     "openings": [
+      {
+       "wall": "w",
+       "at": 0.645,
+       "w": 1.1,
+       "h": 1.8,
+       "door": {
+        "id": "washitsu_oshiire_door",
+        "swing": "slide",
+        "kit": {
+         "preset": "fusuma"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/wall/Plaster001_1K-PNG",
+      "ceiling": "pbr/wall/Plaster001_1K-PNG"
+     },
+     "id": "living",
+     "at": [
+      6.12,
+      0,
+      0
+     ],
+     "size": [
+      3.16,
+      4.2,
+      2.4
+     ],
+     "floor": "wood",
+     "light": "dim",
+     "kind": "living",
+     "name": "Living room",
+     "skip": [
+      "n",
+      "e",
+      "w"
+     ],
+     "openings": [
+      {
+       "wall": "s",
+       "at": 1.571,
+       "w": 2.5,
+       "h": 1.75,
+       "sill": 0.35,
+       "window": true
+      }
+     ],
+     "props": [
+      {
+       "id": "living_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        1.58,
+        2.1
+       ],
+       "z": 2.31,
+       "kit": "led_dome_500",
+       "kelvin": 2700,
+       "lumens": 3318
+      },
+      {
+       "id": "living_wi_ac_3",
+       "at": [
+        0.196,
+        0.84
+       ],
+       "rot": 90,
+       "z": 1.925,
+       "tag": "air_conditioner",
+       "kit": {
+        "preset": "air_conditioner",
+        "size": [
+         0.8,
+         0.29,
+         0.25
+        ]
+       }
+      },
+      {
+       "id": "living_fx_floor",
+       "kit": {
+        "preset": "oak_planks",
+        "size": [
+         3.06,
+         4.1,
+         0.015
+        ]
+       },
+       "at": [
+        1.58,
+        2.1
+       ],
+       "mats": {
+        "wood": "pbr/floor/FlooringOak001_2K-JPG"
+       }
+      },
+      {
+       "mats": {
+        "body": "pbr/wood/WoodWalnut001_2K-JPG",
+        "front": "pbr/wood/WoodWalnut001_2K-JPG"
+       },
+       "id": "living_kt_tv_board_1",
+       "kit": {
+        "preset": "tv_board",
+        "size": [
+         1.8,
+         0.4,
+         0.4
+        ]
+       },
+       "at": [
+        2.9,
+        1.9
+       ],
+       "rot": 270
+      },
+      {
+       "on": "living_kt_tv_board_1",
+       "id": "living_kt_tv_55_1",
+       "kit": {
+        "preset": "tv_55",
+        "size": [
+         1.23,
+         0.06,
+         0.71
+        ]
+       },
+       "at": [
+        2.98,
+        1.9
+       ],
+       "rot": 270,
+       "z": 0.4
+      },
+      {
+       "id": "living_kt_rug_plain_1",
+       "kit": {
+        "preset": "rug_plain",
+        "size": [
+         2.5,
+         2,
+         0.01
+        ]
+       },
+       "at": [
+        1.55,
+        1.9
+       ],
+       "rot": 90
+      },
+      {
+       "id": "living_kt_zataku_walnut_1",
+       "shape": "asset props/zataku_walnut",
+       "at": [
+        1.55,
+        1.9
+       ],
+       "rot": 90
+      },
+      {
+       "id": "living_kt_zaisu_walnut_1",
+       "shape": "asset props/zaisu_walnut",
+       "at": [
+        0.85,
+        1.9
+       ],
+       "rot": 90
+      },
+      {
+       "id": "living_kt_zabuton_real_1",
+       "shape": "asset props/zabuton_real",
+       "at": [
+        2.25,
+        1.9
+       ],
+       "rot": 270
+      },
+      {
+       "on": "living_kt_zataku_walnut_1",
+       "id": "living_kt_kyusu_1",
+       "kit": {
+        "preset": "kyusu",
+        "size": [
+         0.172,
+         0.144,
+         0.084
+        ]
+       },
+       "at": [
+        1.5,
+        2.15
+       ],
+       "rot": 0,
+       "z": 0.35
+      },
+      {
+       "on": "living_kt_zataku_walnut_1",
+       "id": "living_kt_yunomi_1",
+       "kit": {
+        "preset": "yunomi",
+        "size": [
+         0.071,
+         0.071,
+         0.089
+        ]
+       },
+       "at": [
+        1.4,
+        1.7
+       ],
+       "rot": 0,
+       "z": 0.35
+      },
+      {
+       "on": "living_kt_zataku_walnut_1",
+       "id": "living_kt_yunomi_2",
+       "kit": {
+        "preset": "yunomi",
+        "size": [
+         0.071,
+         0.071,
+         0.089
+        ]
+       },
+       "at": [
+        1.7,
+        1.75
+       ],
+       "rot": 0,
+       "z": 0.35
+      },
+      {
+       "id": "living_kt_curtain_maison_living_1",
+       "shape": "asset props/curtain_maison_living",
+       "at": [
+        1.568,
+        0.208
+       ],
+       "rot": 180,
+       "z": 0.012
+      },
+      {
+       "id": "living_kt_floor_lamp_1",
+       "kit": {
+        "preset": "floor_lamp",
+        "size": [
+         0.4,
+         0.4,
+         1.55
+        ]
+       },
+       "at": [
+        2.9,
+        0.75
+       ],
+       "rot": 0
+      },
+      {
+       "id": "living_kt_bookshelf_1",
+       "kit": {
+        "preset": "bookshelf",
+        "size": [
+         0.9,
+         0.3,
+         1.8
+        ]
+       },
+       "at": [
+        0.21,
+        1
+       ],
+       "rot": 90
+      },
+      {
+       "id": "living_fx_win1",
+       "kit": {
+        "preset": "window_big",
+        "size": [
+         2.5,
+         0.22,
+         1.775
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        1.571,
+        0.06
+       ],
+       "rot": 180,
+       "z": 0.325,
+       "in_wall": true,
+       "of": "living_s_window"
+      },
+      {
+       "id": "start",
+       "use": "spot",
+       "at": [
+        1.58,
+        2.6
+       ],
+       "rot": 270
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/wall/Plaster001_1K-PNG",
+      "ceiling": "pbr/wall/Plaster001_1K-PNG",
+      "floor": "pbr/concrete/Concrete006_1K-PNG"
+     },
+     "id": "lobby",
+     "at": [
+      9.28,
+      4.66,
+      0
+     ],
+     "size": [
+      2.6,
+      1.8,
+      2.5
+     ],
+     "floor": "stone",
+     "light": "dim",
+     "kind": "common",
+     "name": "Entrance hall",
+     "skip": [
+      "s"
+     ],
+     "openings": [
+      {
+       "wall": "w",
+       "at": 1.315,
+       "w": 0.85,
+       "h": 2.05,
+       "door": {
+        "id": "front_door",
+        "swing": "out",
+        "kit": {
+         "preset": "door_front"
+        },
+        "mats": {
+         "frame": "pbr/building/Paint005_1K-PNG"
+        },
+        "peephole": true,
+        "latch": true
+       }
+      },
+      {
+       "wall": "e",
+       "at": 0.9,
+       "w": 1,
+       "h": 2.1,
+       "door": {
+        "id": "lobby_e_door",
+        "swing": "in",
+        "kit": {
+         "preset": "door_glass"
+        },
+        "mats": {
+         "front": "#c9cdd1"
+        },
+        "locked_by": "flag:outside_open"
+       }
+      }
+     ],
+     "props": [
+      {
+       "id": "lobby_wi_board_4",
+       "at": [
+        0.65,
+        0.061
+       ],
+       "rot": 180,
+       "z": 1.1,
+       "tag": "board",
+       "kit": {
+        "preset": "whiteboard",
+        "size": [
+         0.9,
+         0.02,
+         0.6
+        ]
+       }
+      },
+      {
+       "id": "lobby_kt_school_lockers_doors_1",
+       "kit": {
+        "preset": "school_lockers_doors",
+        "grid": [
+         2,
+         2
+        ],
+        "size": [
+         0.8,
+         0.3,
+         0.5
+        ]
+       },
+       "at": [
+        1.6,
+        1.58
+       ],
+       "rot": 0,
+       "z": 0.95
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/concrete/Concrete006_1K-PNG",
+      "ceiling": "pbr/concrete/Concrete006_1K-PNG",
+      "floor": "pbr/concrete/Concrete006_1K-PNG"
+     },
+     "id": "stairs",
+     "at": [
+      9.28,
+      0,
+      0
+     ],
+     "size": [
+      2.6,
+      4.66,
+      10.95
+     ],
+     "floor": "wood",
+     "light": "off",
+     "kind": "stairs",
+     "name": "Stairs",
+     "dir": "s",
+     "flights": 2,
+     "openings": [
+      {
+       "wall": "n",
+       "at": 1.872,
+       "w": 0.9,
+       "h": 1.95,
+       "door": {
+        "id": "stair_gate",
+        "swing": "out",
+        "kit": {
+         "preset": "gate_bars"
+        },
+        "mats": {
+         "steel_paint": "pbr/metal/Metal063_1K-PNG"
+        },
+        "locked_by": "flag:upstairs_open"
+       }
+      },
+      {
+       "wall": "n",
+       "at": 1.872,
+       "w": 1.1,
+       "h": 2.1,
+       "sill": 2.85
+      },
+      {
+       "wall": "n",
+       "at": 1.872,
+       "w": 1.1,
+       "h": 2.1,
+       "sill": 5.7
+      },
+      {
+       "wall": "n",
+       "at": 1.872,
+       "w": 1.1,
+       "h": 2.1,
+       "sill": 8.55
+      },
+      {
+       "wall": "e",
+       "at": 0.652,
+       "w": 0.45,
+       "h": 1.5,
+       "sill": 1.9,
+       "window": true
+      },
+      {
+       "wall": "e",
+       "at": 0.652,
+       "w": 0.45,
+       "h": 1.5,
+       "sill": 4.75,
+       "window": true
+      },
+      {
+       "wall": "e",
+       "at": 0.652,
+       "w": 0.45,
+       "h": 1.5,
+       "sill": 7.6,
+       "window": true
+      },
+      {
+       "wall": "s",
+       "at": 1.3,
+       "w": 0.9,
+       "h": 1,
+       "sill": 2.2,
+       "window": true
+      },
+      {
+       "wall": "s",
+       "at": 1.3,
+       "w": 0.9,
+       "h": 1,
+       "sill": 5.05,
+       "window": true
+      },
+      {
+       "wall": "s",
+       "at": 1.3,
+       "w": 0.9,
+       "h": 1,
+       "sill": 7.9,
+       "window": true
+      }
+     ],
+     "props": [
+      {
+       "id": "stairs_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": false,
+       "at": [
+        1.3,
+        2.33
+       ],
+       "z": 10.915,
+       "kit": "led_flush_300",
+       "kelvin": 3000,
+       "lumens": 3029
+      },
+      {
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "kelvin": 4500,
+       "lumens": 700,
+       "id": "stairs_kt_tube_batten_1",
+       "kit": {
+        "preset": "tube_batten",
+        "size": [
+         1.25,
+         0.07,
+         0.085
+        ]
+       },
+       "at": [
+        1.3,
+        4.574
+       ],
+       "rot": 0,
+       "z": 2.3
+      },
+      {
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "kelvin": 4500,
+       "lumens": 500,
+       "flicker": 0.6,
+       "mode": "dying",
+       "id": "stairs_kt_tube_batten_2",
+       "kit": {
+        "preset": "tube_batten",
+        "size": [
+         1.25,
+         0.07,
+         0.085
+        ]
+       },
+       "at": [
+        1.3,
+        4.574
+       ],
+       "rot": 0,
+       "z": 5.15
+      },
+      {
+       "use": "light",
+       "kind": "bulb",
+       "lit": false,
+       "kelvin": 4500,
+       "lumens": 500,
+       "id": "stairs_kt_tube_batten_3",
+       "kit": {
+        "preset": "tube_batten",
+        "size": [
+         1.25,
+         0.07,
+         0.085
+        ]
+       },
+       "at": [
+        1.3,
+        4.574
+       ],
+       "rot": 0,
+       "z": 8
+      },
+      {
+       "use": "light",
+       "kind": "bulb",
+       "lit": false,
+       "kelvin": 4500,
+       "lumens": 500,
+       "id": "stairs_kt_tube_batten_4",
+       "kit": {
+        "preset": "tube_batten",
+        "size": [
+         1.25,
+         0.07,
+         0.085
+        ]
+       },
+       "at": [
+        1.3,
+        4.574
+       ],
+       "rot": 0,
+       "z": 10.85
+      },
+      {
+       "id": "stairs_fx_win1",
+       "kit": {
+        "preset": "window_fixed",
+        "size": [
+         0.45,
+         0.1,
+         1.5
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        2.6,
+        0.652
+       ],
+       "rot": 270,
+       "z": 1.9,
+       "in_wall": true,
+       "of": "stairs_e_window"
+      },
+      {
+       "id": "stairs_fx_win2",
+       "kit": {
+        "preset": "window_fixed",
+        "size": [
+         0.45,
+         0.1,
+         1.5
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        2.6,
+        0.652
+       ],
+       "rot": 270,
+       "z": 4.75,
+       "in_wall": true,
+       "of": "stairs_e_window"
+      },
+      {
+       "id": "stairs_fx_win3",
+       "kit": {
+        "preset": "window_fixed",
+        "size": [
+         0.45,
+         0.1,
+         1.5
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        2.6,
+        0.652
+       ],
+       "rot": 270,
+       "z": 7.6,
+       "in_wall": true,
+       "of": "stairs_e_window"
+      },
+      {
+       "id": "stairs_fx_win4",
+       "kit": {
+        "preset": "window_fixed",
+        "size": [
+         0.9,
+         0.1,
+         1
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        1.3,
+        0
+       ],
+       "rot": 180,
+       "z": 2.2,
+       "in_wall": true,
+       "of": "stairs_s_window"
+      },
+      {
+       "id": "stairs_fx_win5",
+       "kit": {
+        "preset": "window_fixed",
+        "size": [
+         0.9,
+         0.1,
+         1
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        1.3,
+        0
+       ],
+       "rot": 180,
+       "z": 5.05,
+       "in_wall": true,
+       "of": "stairs_s_window"
+      },
+      {
+       "id": "stairs_fx_win6",
+       "kit": {
+        "preset": "window_fixed",
+        "size": [
+         0.9,
+         0.1,
+         1
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        1.3,
+        0
+       ],
+       "rot": 180,
+       "z": 7.9,
+       "in_wall": true,
+       "of": "stairs_s_window"
+      },
+      {
+       "id": "stairs_fx_stairs_1a",
+       "shape": "stairs 1.14 1.907 1.425",
+       "at": [
+        1.97,
+        2.239
+       ],
+       "z": 0,
+       "rot": 270,
+       "tag": "stairs",
+       "mat": "pbr/concrete/Concrete029_1K-PNG"
+      },
+      {
+       "id": "stairs_fx_stairs_1base",
+       "shape": "box 1.14 1.907 1.425",
+       "at": [
+        0.63,
+        2.239
+       ],
+       "z": 0,
+       "tag": "stairs",
+       "mat": "pbr/concrete/Concrete029_1K-PNG"
+      },
+      {
+       "id": "stairs_fx_stairs_1b",
+       "shape": "stairs 1.14 1.907 1.425",
+       "at": [
+        0.63,
+        2.239
+       ],
+       "z": 1.425,
+       "rot": 90,
+       "tag": "stairs",
+       "mat": "pbr/concrete/Concrete029_1K-PNG"
+      },
+      {
+       "id": "stairs_fx_half_1",
+       "shape": "box 2.48 1.226 1.425",
+       "at": [
+        1.3,
+        0.673
+       ],
+       "z": 0,
+       "tag": "stairs",
+       "mat": "pbr/concrete/Concrete029_1K-PNG"
+      },
+      {
+       "id": "stairs_fx_landing_2",
+       "shape": "box 2.48 1.407 0.25",
+       "at": [
+        1.3,
+        3.896
+       ],
+       "z": 2.6,
+       "tag": "stairs",
+       "mat": "pbr/concrete/Concrete029_1K-PNG"
+      },
+      {
+       "id": "stairs_fx_stairs_2a",
+       "shape": "stairs 1.14 1.907 1.425 0.15",
+       "at": [
+        1.97,
+        2.239
+       ],
+       "z": 2.85,
+       "rot": 270,
+       "tag": "stairs",
+       "mat": "pbr/concrete/Concrete029_1K-PNG"
+      },
+      {
+       "id": "stairs_fx_stairs_2b",
+       "shape": "stairs 1.14 1.907 1.425 0.15",
+       "at": [
+        0.63,
+        2.239
+       ],
+       "z": 4.275,
+       "rot": 90,
+       "tag": "stairs",
+       "mat": "pbr/concrete/Concrete029_1K-PNG"
+      },
+      {
+       "id": "stairs_fx_half_2",
+       "shape": "box 2.48 1.226 0.25",
+       "at": [
+        1.3,
+        0.673
+       ],
+       "z": 4.025,
+       "tag": "stairs",
+       "mat": "pbr/concrete/Concrete029_1K-PNG"
+      },
+      {
+       "id": "stairs_fx_landing_3",
+       "shape": "box 2.48 1.407 0.25",
+       "at": [
+        1.3,
+        3.896
+       ],
+       "z": 5.45,
+       "tag": "stairs",
+       "mat": "pbr/concrete/Concrete029_1K-PNG"
+      },
+      {
+       "id": "stairs_fx_stairs_3a",
+       "shape": "stairs 1.14 1.907 1.425 0.15",
+       "at": [
+        1.97,
+        2.239
+       ],
+       "z": 5.7,
+       "rot": 270,
+       "tag": "stairs",
+       "mat": "pbr/concrete/Concrete029_1K-PNG"
+      },
+      {
+       "id": "stairs_fx_stairs_3b",
+       "shape": "stairs 1.14 1.907 1.425 0.15",
+       "at": [
+        0.63,
+        2.239
+       ],
+       "z": 7.125,
+       "rot": 90,
+       "tag": "stairs",
+       "mat": "pbr/concrete/Concrete029_1K-PNG"
+      },
+      {
+       "id": "stairs_fx_half_3",
+       "shape": "box 2.48 1.226 0.25",
+       "at": [
+        1.3,
+        0.673
+       ],
+       "z": 6.875,
+       "tag": "stairs",
+       "mat": "pbr/concrete/Concrete029_1K-PNG"
+      },
+      {
+       "id": "stairs_fx_landing_4",
+       "shape": "box 2.48 1.407 0.25",
+       "at": [
+        1.3,
+        3.896
+       ],
+       "z": 8.3,
+       "tag": "stairs",
+       "mat": "pbr/concrete/Concrete029_1K-PNG"
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/wall/Plaster001_1K-PNG",
+      "ceiling": "pbr/wall/Plaster001_1K-PNG"
+     },
+     "id": "br1_2f",
+     "at": [
+      0,
+      0,
+      2.85
+     ],
+     "size": [
+      3.22,
+      3.38,
+      2.4
+     ],
+     "floor": "wood",
+     "light": "off",
+     "kind": "bedroom",
+     "name": "Bedroom 1 2F",
+     "skip": [
+      "n"
+     ],
+     "openings": [
+      {
+       "wall": "s",
+       "at": 1.729,
+       "w": 2.4,
+       "h": 1.3,
+       "sill": 0.8,
+       "window": true
+      }
+     ],
+     "props": [
+      {
+       "id": "br1_2f_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": false,
+       "at": [
+        1.61,
+        1.69
+       ],
+       "z": 2.365,
+       "kit": "led_flush_300",
+       "kelvin": 2700,
+       "lumens": 2721
+      },
+      {
+       "id": "br1_2f_fx_win1",
+       "kit": {
+        "preset": "window_slide",
+        "size": [
+         2.4,
+         0.22,
+         1.325
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        1.729,
+        0.06
+       ],
+       "rot": 180,
+       "z": 0.775,
+       "in_wall": true,
+       "of": "br1_2f_s_window"
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/wall/Plaster001_1K-PNG",
+      "ceiling": "pbr/wall/Plaster001_1K-PNG"
+     },
+     "id": "br1_closet_2f",
+     "at": [
+      0,
+      3.38,
+      2.85
+     ],
+     "size": [
+      2.33,
+      1.44,
+      2.4
+     ],
+     "floor": "wood",
+     "light": "off",
+     "kind": "walkin",
+     "name": "Closet 2F",
+     "skip": [
+      [
+       "e",
+       0.82,
+       1.44
+      ]
+     ],
+     "openings": [
+      {
+       "wall": "s",
+       "at": 1.165,
+       "w": 1.8,
+       "h": 2,
+       "door": {
+        "id": "br1_2f_br1_closet_2f_door",
+        "swing": "slide",
+        "kit": {
+         "preset": "door_slide"
+        }
+       }
+      }
+     ],
+     "props": [
+      {
+       "id": "br1_closet_2f_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": false,
+       "at": [
+        1.165,
+        0.72
+       ],
+       "z": 2.385,
+       "kit": "downlight_100",
+       "kelvin": 3000,
+       "lumens": 839
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/wall/Plaster001_1K-PNG",
+      "ceiling": "pbr/wall/Plaster001_1K-PNG"
+     },
+     "id": "br1_nook_2f",
+     "at": [
+      2.33,
+      3.38,
+      2.85
+     ],
+     "size": [
+      0.89,
+      0.82,
+      2.4
+     ],
+     "floor": "wood",
+     "light": "off",
+     "kind": "corridor",
+     "name": "Bedroom 1 entry 2F",
+     "skip": [
+      "n",
+      "e",
+      "s",
+      "w"
+     ],
+     "props": [
+      {
+       "id": "br1_nook_2f_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": false,
+       "at": [
+        0.445,
+        0.41
+       ],
+       "z": 2.385,
+       "kit": "downlight_100",
+       "kelvin": 3000,
+       "lumens": 182
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/plastic/white_plastic",
+      "ceiling": "pbr/plastic/white_plastic"
+     },
+     "id": "bath_2f",
+     "at": [
+      2.33,
+      4.2,
+      2.85
+     ],
+     "size": [
+      2.3,
+      2.26,
+      2.4
+     ],
+     "floor": "tile",
+     "light": "off",
+     "kind": "bath",
+     "name": "Unit bath 2F",
+     "skip": [
+      "e"
+     ],
+     "openings": [
+      {
+       "wall": "s",
+       "at": 1.313,
+       "w": 0.7,
+       "h": 2,
+       "door": {
+        "id": "bath_2f_hall_2f_door",
+        "swing": "out",
+        "kit": {
+         "preset": "door_flush"
+        }
+       }
+      }
+     ],
+     "props": [
+      {
+       "id": "bath_2f_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": false,
+       "at": [
+        1.15,
+        1.13
+       ],
+       "z": 2.365,
+       "kit": "led_flush_300",
+       "kelvin": 4000,
+       "lumens": 1299
+      },
+      {
+       "id": "bath_2f_fx_switch",
+       "at": [
+        1.863,
+        0.057
+       ],
+       "rot": 180,
+       "z": 1.14,
+       "tag": "light_switch",
+       "kit": {
+        "preset": "switch_jp_1",
+        "size": [
+         0.07,
+         0.012,
+         0.12
+        ]
+       },
+       "use": "switch",
+       "light": "bath_2f_fx_light"
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/wall/Plaster001_1K-PNG",
+      "ceiling": "pbr/wall/Plaster001_1K-PNG"
+     },
+     "id": "kitchen_2f",
+     "at": [
+      4.63,
+      4.2,
+      2.85
+     ],
+     "size": [
+      3.65,
+      2.26,
+      2.4
+     ],
+     "floor": "tile",
+     "light": "off",
+     "kind": "kitchen",
+     "name": "Kitchen 2F",
+     "skip": [
+      "s"
+     ],
+     "openings": [
+      {
+       "wall": "n",
+       "at": 2.77,
+       "w": 0.9,
+       "h": 0.9,
+       "sill": 1.05,
+       "window": true
+      }
+     ],
+     "props": [
+      {
+       "id": "kitchen_2f_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": false,
+       "at": [
+        1.825,
+        1.13
+       ],
+       "z": 2.365,
+       "kit": "led_flush_300",
+       "kelvin": 4000,
+       "lumens": 2062
+      },
+      {
+       "id": "kitchen_2f_fx_win1",
+       "kit": {
+        "preset": "window_slide",
+        "size": [
+         0.9,
+         0.22,
+         0.925
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        2.77,
+        2.2
+       ],
+       "rot": 0,
+       "z": 1.025,
+       "in_wall": true,
+       "of": "kitchen_2f_n_window"
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/wall/Plaster001_1K-PNG",
+      "ceiling": "pbr/wall/Plaster001_1K-PNG"
+     },
+     "id": "genkan_2f",
+     "at": [
+      8.28,
+      4.2,
+      2.85
+     ],
+     "size": [
+      1,
+      2.26,
+      2.4
+     ],
+     "floor": "tile",
+     "light": "off",
+     "kind": "genkan",
+     "name": "Genkan 2F",
+     "skip": [
+      "e",
+      "s",
+      "w"
+     ],
+     "props": [
+      {
+       "id": "genkan_2f_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": false,
+       "at": [
+        0.5,
+        1.13
+       ],
+       "z": 2.385,
+       "kit": "downlight_100",
+       "kelvin": 3000,
+       "lumens": 565
+      },
+      {
+       "id": "genkan_2f_fx_switch",
+       "at": [
+        0.943,
+        1.15
+       ],
+       "rot": 270,
+       "z": 1.14,
+       "tag": "light_switch",
+       "kit": {
+        "preset": "switch_jp_1",
+        "size": [
+         0.07,
+         0.012,
+         0.12
+        ]
+       },
+       "use": "switch",
+       "light": "genkan_2f_fx_light"
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/wall/Plaster001_1K-PNG",
+      "ceiling": "pbr/wall/Plaster001_1K-PNG"
+     },
+     "id": "hall_2f",
+     "at": [
+      3.22,
+      2.89,
+      2.85
+     ],
+     "size": [
+      2.9,
+      1.31,
+      2.4
+     ],
+     "floor": "wood",
+     "light": "off",
+     "kind": "corridor",
+     "name": "Hall 2F",
+     "skip": [
+      "n",
+      "e",
+      [
+       "s",
+       0,
+       2.19
+      ],
+      [
+       "w",
+       0,
+       0.49
+      ]
+     ],
+     "openings": [
+      {
+       "wall": "w",
+       "at": 0.9,
+       "w": 0.7,
+       "h": 2,
+       "door": {
+        "id": "br1_nook_2f_hall_2f_door",
+        "swing": "in",
+        "kit": {
+         "preset": "door_flush"
+        }
+       }
+      }
+     ],
+     "props": [
+      {
+       "id": "hall_2f_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": false,
+       "at": [
+        1.45,
+        0.655
+       ],
+       "z": 2.365,
+       "kit": "led_flush_300",
+       "kelvin": 3000,
+       "lumens": 950
+      },
+      {
+       "id": "hall_2f_fx_switch",
+       "at": [
+        0.057,
+        0.35
+       ],
+       "rot": 90,
+       "z": 1.14,
+       "tag": "light_switch",
+       "kit": {
+        "preset": "switch_jp_1",
+        "size": [
+         0.07,
+         0.012,
+         0.12
+        ]
+       },
+       "use": "switch",
+       "light": "hall_2f_fx_light"
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": {
+       "set": "pbr/wall/Plaster001_1K-PNG",
+       "tint": "#cbb89a",
+       "tint_amount": 0.7
+      },
+      "ceiling": "#b99a74",
+      "trim": "#7a5a3c"
+     },
+     "id": "washitsu_2f",
+     "at": [
+      3.22,
+      0,
+      2.85
+     ],
+     "size": [
+      2.19,
+      2.89,
+      2.4
+     ],
+     "floor": "carpet",
+     "light": "off",
+     "kind": "washitsu",
+     "name": "Bedroom 2 (washitsu) 2F",
+     "skip": [
+      "e",
+      "w"
+     ],
+     "openings": [
+      {
+       "wall": "n",
+       "at": 1.599,
+       "w": 0.9,
+       "h": 1.8,
+       "door": {
+        "id": "hall_2f_washitsu_2f_door",
+        "swing": "slide",
+        "kit": {
+         "preset": "fusuma"
+        }
+       }
+      },
+      {
+       "wall": "s",
+       "at": 1.11,
+       "w": 1.7,
+       "h": 1.3,
+       "sill": 0.8,
+       "window": true
+      }
+     ],
+     "props": [
+      {
+       "id": "washitsu_2f_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": false,
+       "at": [
+        1.095,
+        1.445
+       ],
+       "z": 2.365,
+       "kit": "led_flush_300",
+       "kelvin": 2700,
+       "lumens": 1582
+      },
+      {
+       "id": "washitsu_2f_fx_switch",
+       "at": [
+        0.949,
+        2.833
+       ],
+       "rot": 0,
+       "z": 1.14,
+       "tag": "light_switch",
+       "kit": {
+        "preset": "switch_jp_1",
+        "size": [
+         0.07,
+         0.012,
+         0.12
+        ]
+       },
+       "use": "switch",
+       "light": "washitsu_2f_fx_light"
+      },
+      {
+       "id": "washitsu_2f_fx_win1",
+       "kit": {
+        "preset": "window_slide",
+        "size": [
+         1.7,
+         0.22,
+         1.325
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        1.11,
+        0.06
+       ],
+       "rot": 180,
+       "z": 0.775,
+       "in_wall": true,
+       "of": "washitsu_2f_s_window"
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": {
+       "set": "pbr/wall/Plaster001_1K-PNG",
+       "tint": "#cbb89a",
+       "tint_amount": 0.7
+      },
+      "ceiling": "#b99a74",
+      "trim": "#7a5a3c"
+     },
+     "id": "tokonoma_2f",
+     "at": [
+      5.41,
+      0,
+      2.85
+     ],
+     "size": [
+      0.71,
+      1.6,
+      2.4
+     ],
+     "floor": "wood",
+     "light": "off",
+     "kind": "closet",
+     "name": "Tokonoma 2F",
+     "skip": [
+      "w"
+     ]
+    },
+    {
+     "look": {
+      "walls": {
+       "set": "pbr/wall/Plaster001_1K-PNG",
+       "tint": "#cbb89a",
+       "tint_amount": 0.7
+      },
+      "ceiling": "#b99a74",
+      "trim": "#7a5a3c"
+     },
+     "id": "oshiire_2f",
+     "at": [
+      5.41,
+      1.6,
+      2.85
+     ],
+     "size": [
+      0.71,
+      1.29,
+      2.4
+     ],
+     "floor": "wood",
+     "light": "off",
+     "kind": "oshiire",
+     "name": "Oshiire 2F",
+     "skip": [
+      "n",
+      "s"
+     ],
+     "openings": [
+      {
+       "wall": "w",
+       "at": 0.645,
+       "w": 1.1,
+       "h": 1.8,
+       "door": {
+        "id": "washitsu_2f_oshiire_2f_door",
+        "swing": "slide",
+        "kit": {
+         "preset": "fusuma"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/wall/Plaster001_1K-PNG",
+      "ceiling": "pbr/wall/Plaster001_1K-PNG"
+     },
+     "id": "living_2f",
+     "at": [
+      6.12,
+      0,
+      2.85
+     ],
+     "size": [
+      3.16,
+      4.2,
+      2.4
+     ],
+     "floor": "wood",
+     "light": "off",
+     "kind": "living",
+     "name": "Living room 2F",
+     "skip": [
+      "n",
+      "e",
+      "w"
+     ],
+     "openings": [
+      {
+       "wall": "s",
+       "at": 1.571,
+       "w": 2.5,
+       "h": 1.75,
+       "sill": 0.35,
+       "window": true
+      }
+     ],
+     "props": [
+      {
+       "id": "living_2f_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": false,
+       "at": [
+        1.58,
+        2.1
+       ],
+       "z": 2.31,
+       "kit": "led_dome_500",
+       "kelvin": 2700,
+       "lumens": 3318
+      },
+      {
+       "id": "living_2f_fx_win1",
+       "kit": {
+        "preset": "window_big",
+        "size": [
+         2.5,
+         0.22,
+         1.775
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        1.571,
+        0.06
+       ],
+       "rot": 180,
+       "z": 0.325,
+       "in_wall": true,
+       "of": "living_2f_s_window"
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/wall/Plaster001_1K-PNG",
+      "ceiling": "pbr/wall/Plaster001_1K-PNG",
+      "floor": "pbr/concrete/Concrete006_1K-PNG"
+     },
+     "id": "landing_2f",
+     "at": [
+      9.28,
+      4.66,
+      2.85
+     ],
+     "size": [
+      2.6,
+      1.8,
+      2.4
+     ],
+     "floor": "stone",
+     "light": "off",
+     "kind": "common",
+     "name": "Landing 2F",
+     "skip": [
+      "s"
+     ],
+     "openings": [
+      {
+       "wall": "w",
+       "at": 1.315,
+       "w": 0.85,
+       "h": 2.05,
+       "door": {
+        "id": "front_door_2f",
+        "swing": "out",
+        "kit": {
+         "preset": "door_front"
+        },
+        "mats": {
+         "frame": "pbr/building/Paint005_1K-PNG"
+        }
+       }
+      },
+      {
+       "wall": "e",
+       "at": 0.9,
+       "w": 0.45,
+       "h": 1.6,
+       "sill": 0.6,
+       "window": true
+      }
+     ],
+     "props": [
+      {
+       "id": "landing_2f_fx_win1",
+       "kit": {
+        "preset": "window_fixed",
+        "size": [
+         0.45,
+         0.1,
+         1.6
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        2.6,
+        0.9
+       ],
+       "rot": 270,
+       "z": 0.6,
+       "in_wall": true,
+       "of": "landing_2f_e_window"
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/wall/Plaster001_1K-PNG",
+      "ceiling": "pbr/wall/Plaster001_1K-PNG"
+     },
+     "id": "br1_3f",
+     "at": [
+      0,
+      0,
+      5.7
+     ],
+     "size": [
+      3.22,
+      3.38,
+      2.4
+     ],
+     "floor": "wood",
+     "light": "off",
+     "kind": "bedroom",
+     "name": "Bedroom 1 3F",
+     "skip": [
+      "n"
+     ],
+     "openings": [
+      {
+       "wall": "s",
+       "at": 1.729,
+       "w": 2.4,
+       "h": 1.3,
+       "sill": 0.8,
+       "window": true
+      }
+     ],
+     "props": [
+      {
+       "id": "br1_3f_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": false,
+       "at": [
+        1.61,
+        1.69
+       ],
+       "z": 2.365,
+       "kit": "led_flush_300",
+       "kelvin": 2700,
+       "lumens": 2721
+      },
+      {
+       "id": "br1_3f_fx_win1",
+       "kit": {
+        "preset": "window_slide",
+        "size": [
+         2.4,
+         0.22,
+         1.325
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        1.729,
+        0.06
+       ],
+       "rot": 180,
+       "z": 0.775,
+       "in_wall": true,
+       "of": "br1_3f_s_window"
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/wall/Plaster001_1K-PNG",
+      "ceiling": "pbr/wall/Plaster001_1K-PNG"
+     },
+     "id": "br1_closet_3f",
+     "at": [
+      0,
+      3.38,
+      5.7
+     ],
+     "size": [
+      2.33,
+      1.44,
+      2.4
+     ],
+     "floor": "wood",
+     "light": "off",
+     "kind": "walkin",
+     "name": "Closet 3F",
+     "skip": [
+      [
+       "e",
+       0.82,
+       1.44
+      ]
+     ],
+     "openings": [
+      {
+       "wall": "s",
+       "at": 1.165,
+       "w": 1.8,
+       "h": 2,
+       "door": {
+        "id": "br1_3f_br1_closet_3f_door",
+        "swing": "slide",
+        "kit": {
+         "preset": "door_slide"
+        }
+       }
+      }
+     ],
+     "props": [
+      {
+       "id": "br1_closet_3f_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": false,
+       "at": [
+        1.165,
+        0.72
+       ],
+       "z": 2.385,
+       "kit": "downlight_100",
+       "kelvin": 3000,
+       "lumens": 839
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/wall/Plaster001_1K-PNG",
+      "ceiling": "pbr/wall/Plaster001_1K-PNG"
+     },
+     "id": "br1_nook_3f",
+     "at": [
+      2.33,
+      3.38,
+      5.7
+     ],
+     "size": [
+      0.89,
+      0.82,
+      2.4
+     ],
+     "floor": "wood",
+     "light": "off",
+     "kind": "corridor",
+     "name": "Bedroom 1 entry 3F",
+     "skip": [
+      "n",
+      "e",
+      "s",
+      "w"
+     ],
+     "props": [
+      {
+       "id": "br1_nook_3f_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": false,
+       "at": [
+        0.445,
+        0.41
+       ],
+       "z": 2.385,
+       "kit": "downlight_100",
+       "kelvin": 3000,
+       "lumens": 182
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/plastic/white_plastic",
+      "ceiling": "pbr/plastic/white_plastic"
+     },
+     "id": "bath_3f",
+     "at": [
+      2.33,
+      4.2,
+      5.7
+     ],
+     "size": [
+      2.3,
+      2.26,
+      2.4
+     ],
+     "floor": "tile",
+     "light": "off",
+     "kind": "bath",
+     "name": "Unit bath 3F",
+     "skip": [
+      "e"
+     ],
+     "openings": [
+      {
+       "wall": "s",
+       "at": 1.313,
+       "w": 0.7,
+       "h": 2,
+       "door": {
+        "id": "bath_3f_hall_3f_door",
+        "swing": "out",
+        "kit": {
+         "preset": "door_flush"
+        }
+       }
+      }
+     ],
+     "props": [
+      {
+       "id": "bath_3f_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": false,
+       "at": [
+        1.15,
+        1.13
+       ],
+       "z": 2.365,
+       "kit": "led_flush_300",
+       "kelvin": 4000,
+       "lumens": 1299
+      },
+      {
+       "id": "bath_3f_fx_switch",
+       "at": [
+        1.863,
+        0.057
+       ],
+       "rot": 180,
+       "z": 1.14,
+       "tag": "light_switch",
+       "kit": {
+        "preset": "switch_jp_1",
+        "size": [
+         0.07,
+         0.012,
+         0.12
+        ]
+       },
+       "use": "switch",
+       "light": "bath_3f_fx_light"
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/wall/Plaster001_1K-PNG",
+      "ceiling": "pbr/wall/Plaster001_1K-PNG"
+     },
+     "id": "kitchen_3f",
+     "at": [
+      4.63,
+      4.2,
+      5.7
+     ],
+     "size": [
+      3.65,
+      2.26,
+      2.4
+     ],
+     "floor": "tile",
+     "light": "off",
+     "kind": "kitchen",
+     "name": "Kitchen 3F",
+     "skip": [
+      "s"
+     ],
+     "openings": [
+      {
+       "wall": "n",
+       "at": 2.77,
+       "w": 0.9,
+       "h": 0.9,
+       "sill": 1.05,
+       "window": true
+      }
+     ],
+     "props": [
+      {
+       "id": "kitchen_3f_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": false,
+       "at": [
+        1.825,
+        1.13
+       ],
+       "z": 2.365,
+       "kit": "led_flush_300",
+       "kelvin": 4000,
+       "lumens": 2062
+      },
+      {
+       "id": "kitchen_3f_fx_win1",
+       "kit": {
+        "preset": "window_slide",
+        "size": [
+         0.9,
+         0.22,
+         0.925
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        2.77,
+        2.2
+       ],
+       "rot": 0,
+       "z": 1.025,
+       "in_wall": true,
+       "of": "kitchen_3f_n_window"
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/wall/Plaster001_1K-PNG",
+      "ceiling": "pbr/wall/Plaster001_1K-PNG"
+     },
+     "id": "genkan_3f",
+     "at": [
+      8.28,
+      4.2,
+      5.7
+     ],
+     "size": [
+      1,
+      2.26,
+      2.4
+     ],
+     "floor": "tile",
+     "light": "off",
+     "kind": "genkan",
+     "name": "Genkan 3F",
+     "skip": [
+      "e",
+      "s",
+      "w"
+     ],
+     "props": [
+      {
+       "id": "genkan_3f_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": false,
+       "at": [
+        0.5,
+        1.13
+       ],
+       "z": 2.385,
+       "kit": "downlight_100",
+       "kelvin": 3000,
+       "lumens": 565
+      },
+      {
+       "id": "genkan_3f_fx_switch",
+       "at": [
+        0.943,
+        1.15
+       ],
+       "rot": 270,
+       "z": 1.14,
+       "tag": "light_switch",
+       "kit": {
+        "preset": "switch_jp_1",
+        "size": [
+         0.07,
+         0.012,
+         0.12
+        ]
+       },
+       "use": "switch",
+       "light": "genkan_3f_fx_light"
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/wall/Plaster001_1K-PNG",
+      "ceiling": "pbr/wall/Plaster001_1K-PNG"
+     },
+     "id": "hall_3f",
+     "at": [
+      3.22,
+      2.89,
+      5.7
+     ],
+     "size": [
+      2.9,
+      1.31,
+      2.4
+     ],
+     "floor": "wood",
+     "light": "off",
+     "kind": "corridor",
+     "name": "Hall 3F",
+     "skip": [
+      "n",
+      "e",
+      [
+       "s",
+       0,
+       2.19
+      ],
+      [
+       "w",
+       0,
+       0.49
+      ]
+     ],
+     "openings": [
+      {
+       "wall": "w",
+       "at": 0.9,
+       "w": 0.7,
+       "h": 2,
+       "door": {
+        "id": "br1_nook_3f_hall_3f_door",
+        "swing": "in",
+        "kit": {
+         "preset": "door_flush"
+        }
+       }
+      }
+     ],
+     "props": [
+      {
+       "id": "hall_3f_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": false,
+       "at": [
+        1.45,
+        0.655
+       ],
+       "z": 2.365,
+       "kit": "led_flush_300",
+       "kelvin": 3000,
+       "lumens": 950
+      },
+      {
+       "id": "hall_3f_fx_switch",
+       "at": [
+        0.057,
+        0.35
+       ],
+       "rot": 90,
+       "z": 1.14,
+       "tag": "light_switch",
+       "kit": {
+        "preset": "switch_jp_1",
+        "size": [
+         0.07,
+         0.012,
+         0.12
+        ]
+       },
+       "use": "switch",
+       "light": "hall_3f_fx_light"
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": {
+       "set": "pbr/wall/Plaster001_1K-PNG",
+       "tint": "#cbb89a",
+       "tint_amount": 0.7
+      },
+      "ceiling": "#b99a74",
+      "trim": "#7a5a3c"
+     },
+     "id": "washitsu_3f",
+     "at": [
+      3.22,
+      0,
+      5.7
+     ],
+     "size": [
+      2.19,
+      2.89,
+      2.4
+     ],
+     "floor": "carpet",
+     "light": "off",
+     "kind": "washitsu",
+     "name": "Bedroom 2 (washitsu) 3F",
+     "skip": [
+      "e",
+      "w"
+     ],
+     "openings": [
+      {
+       "wall": "n",
+       "at": 1.599,
+       "w": 0.9,
+       "h": 1.8,
+       "door": {
+        "id": "hall_3f_washitsu_3f_door",
+        "swing": "slide",
+        "kit": {
+         "preset": "fusuma"
+        }
+       }
+      },
+      {
+       "wall": "s",
+       "at": 1.11,
+       "w": 1.7,
+       "h": 1.3,
+       "sill": 0.8,
+       "window": true
+      }
+     ],
+     "props": [
+      {
+       "id": "washitsu_3f_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": false,
+       "at": [
+        1.095,
+        1.445
+       ],
+       "z": 2.365,
+       "kit": "led_flush_300",
+       "kelvin": 2700,
+       "lumens": 1582
+      },
+      {
+       "id": "washitsu_3f_fx_switch",
+       "at": [
+        0.949,
+        2.833
+       ],
+       "rot": 0,
+       "z": 1.14,
+       "tag": "light_switch",
+       "kit": {
+        "preset": "switch_jp_1",
+        "size": [
+         0.07,
+         0.012,
+         0.12
+        ]
+       },
+       "use": "switch",
+       "light": "washitsu_3f_fx_light"
+      },
+      {
+       "id": "washitsu_3f_fx_win1",
+       "kit": {
+        "preset": "window_slide",
+        "size": [
+         1.7,
+         0.22,
+         1.325
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        1.11,
+        0.06
+       ],
+       "rot": 180,
+       "z": 0.775,
+       "in_wall": true,
+       "of": "washitsu_3f_s_window"
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": {
+       "set": "pbr/wall/Plaster001_1K-PNG",
+       "tint": "#cbb89a",
+       "tint_amount": 0.7
+      },
+      "ceiling": "#b99a74",
+      "trim": "#7a5a3c"
+     },
+     "id": "tokonoma_3f",
+     "at": [
+      5.41,
+      0,
+      5.7
+     ],
+     "size": [
+      0.71,
+      1.6,
+      2.4
+     ],
+     "floor": "wood",
+     "light": "off",
+     "kind": "closet",
+     "name": "Tokonoma 3F",
+     "skip": [
+      "w"
+     ]
+    },
+    {
+     "look": {
+      "walls": {
+       "set": "pbr/wall/Plaster001_1K-PNG",
+       "tint": "#cbb89a",
+       "tint_amount": 0.7
+      },
+      "ceiling": "#b99a74",
+      "trim": "#7a5a3c"
+     },
+     "id": "oshiire_3f",
+     "at": [
+      5.41,
+      1.6,
+      5.7
+     ],
+     "size": [
+      0.71,
+      1.29,
+      2.4
+     ],
+     "floor": "wood",
+     "light": "off",
+     "kind": "oshiire",
+     "name": "Oshiire 3F",
+     "skip": [
+      "n",
+      "s"
+     ],
+     "openings": [
+      {
+       "wall": "w",
+       "at": 0.645,
+       "w": 1.1,
+       "h": 1.8,
+       "door": {
+        "id": "washitsu_3f_oshiire_3f_door",
+        "swing": "slide",
+        "kit": {
+         "preset": "fusuma"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/wall/Plaster001_1K-PNG",
+      "ceiling": "pbr/wall/Plaster001_1K-PNG"
+     },
+     "id": "living_3f",
+     "at": [
+      6.12,
+      0,
+      5.7
+     ],
+     "size": [
+      3.16,
+      4.2,
+      2.4
+     ],
+     "floor": "wood",
+     "light": "off",
+     "kind": "living",
+     "name": "Living room 3F",
+     "skip": [
+      "n",
+      "e",
+      "w"
+     ],
+     "openings": [
+      {
+       "wall": "s",
+       "at": 1.571,
+       "w": 2.5,
+       "h": 1.75,
+       "sill": 0.35,
+       "window": true
+      }
+     ],
+     "props": [
+      {
+       "id": "living_3f_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": false,
+       "at": [
+        1.58,
+        2.1
+       ],
+       "z": 2.31,
+       "kit": "led_dome_500",
+       "kelvin": 2700,
+       "lumens": 3318
+      },
+      {
+       "id": "living_3f_fx_win1",
+       "kit": {
+        "preset": "window_big",
+        "size": [
+         2.5,
+         0.22,
+         1.775
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        1.571,
+        0.06
+       ],
+       "rot": 180,
+       "z": 0.325,
+       "in_wall": true,
+       "of": "living_3f_s_window"
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/wall/Plaster001_1K-PNG",
+      "ceiling": "pbr/wall/Plaster001_1K-PNG",
+      "floor": "pbr/concrete/Concrete006_1K-PNG"
+     },
+     "id": "landing_3f",
+     "at": [
+      9.28,
+      4.66,
+      5.7
+     ],
+     "size": [
+      2.6,
+      1.8,
+      2.4
+     ],
+     "floor": "stone",
+     "light": "off",
+     "kind": "common",
+     "name": "Landing 3F",
+     "skip": [
+      "s"
+     ],
+     "openings": [
+      {
+       "wall": "w",
+       "at": 1.315,
+       "w": 0.85,
+       "h": 2.05,
+       "door": {
+        "id": "front_door_3f",
+        "swing": "out",
+        "kit": {
+         "preset": "door_front"
+        },
+        "mats": {
+         "frame": "pbr/building/Paint005_1K-PNG"
+        }
+       }
+      },
+      {
+       "wall": "e",
+       "at": 0.9,
+       "w": 0.45,
+       "h": 1.6,
+       "sill": 0.6,
+       "window": true
+      }
+     ],
+     "props": [
+      {
+       "id": "landing_3f_fx_win1",
+       "kit": {
+        "preset": "window_fixed",
+        "size": [
+         0.45,
+         0.1,
+         1.6
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        2.6,
+        0.9
+       ],
+       "rot": 270,
+       "z": 0.6,
+       "in_wall": true,
+       "of": "landing_3f_e_window"
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/wall/Plaster001_1K-PNG",
+      "ceiling": "pbr/wall/Plaster001_1K-PNG"
+     },
+     "id": "br1_4f",
+     "at": [
+      0,
+      0,
+      8.55
+     ],
+     "size": [
+      3.22,
+      3.38,
+      2.4
+     ],
+     "floor": "wood",
+     "light": "off",
+     "kind": "bedroom",
+     "name": "Bedroom 1 4F",
+     "skip": [
+      "n"
+     ],
+     "openings": [
+      {
+       "wall": "s",
+       "at": 1.729,
+       "w": 2.4,
+       "h": 1.3,
+       "sill": 0.8,
+       "window": true
+      }
+     ],
+     "props": [
+      {
+       "id": "br1_4f_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": false,
+       "at": [
+        1.61,
+        1.69
+       ],
+       "z": 2.365,
+       "kit": "led_flush_300",
+       "kelvin": 2700,
+       "lumens": 2721
+      },
+      {
+       "id": "br1_4f_fx_win1",
+       "kit": {
+        "preset": "window_slide",
+        "size": [
+         2.4,
+         0.22,
+         1.325
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        1.729,
+        0.06
+       ],
+       "rot": 180,
+       "z": 0.775,
+       "in_wall": true,
+       "of": "br1_4f_s_window"
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/wall/Plaster001_1K-PNG",
+      "ceiling": "pbr/wall/Plaster001_1K-PNG"
+     },
+     "id": "br1_closet_4f",
+     "at": [
+      0,
+      3.38,
+      8.55
+     ],
+     "size": [
+      2.33,
+      1.44,
+      2.4
+     ],
+     "floor": "wood",
+     "light": "off",
+     "kind": "walkin",
+     "name": "Closet 4F",
+     "skip": [
+      [
+       "e",
+       0.82,
+       1.44
+      ]
+     ],
+     "openings": [
+      {
+       "wall": "s",
+       "at": 1.165,
+       "w": 1.8,
+       "h": 2,
+       "door": {
+        "id": "br1_4f_br1_closet_4f_door",
+        "swing": "slide",
+        "kit": {
+         "preset": "door_slide"
+        }
+       }
+      }
+     ],
+     "props": [
+      {
+       "id": "br1_closet_4f_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": false,
+       "at": [
+        1.165,
+        0.72
+       ],
+       "z": 2.385,
+       "kit": "downlight_100",
+       "kelvin": 3000,
+       "lumens": 839
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/wall/Plaster001_1K-PNG",
+      "ceiling": "pbr/wall/Plaster001_1K-PNG"
+     },
+     "id": "br1_nook_4f",
+     "at": [
+      2.33,
+      3.38,
+      8.55
+     ],
+     "size": [
+      0.89,
+      0.82,
+      2.4
+     ],
+     "floor": "wood",
+     "light": "off",
+     "kind": "corridor",
+     "name": "Bedroom 1 entry 4F",
+     "skip": [
+      "n",
+      "e",
+      "s",
+      "w"
+     ],
+     "props": [
+      {
+       "id": "br1_nook_4f_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": false,
+       "at": [
+        0.445,
+        0.41
+       ],
+       "z": 2.385,
+       "kit": "downlight_100",
+       "kelvin": 3000,
+       "lumens": 182
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/plastic/white_plastic",
+      "ceiling": "pbr/plastic/white_plastic"
+     },
+     "id": "bath_4f",
+     "at": [
+      2.33,
+      4.2,
+      8.55
+     ],
+     "size": [
+      2.3,
+      2.26,
+      2.4
+     ],
+     "floor": "tile",
+     "light": "off",
+     "kind": "bath",
+     "name": "Unit bath 4F",
+     "skip": [
+      "e"
+     ],
+     "openings": [
+      {
+       "wall": "s",
+       "at": 1.313,
+       "w": 0.7,
+       "h": 2,
+       "door": {
+        "id": "bath_4f_hall_4f_door",
+        "swing": "out",
+        "kit": {
+         "preset": "door_flush"
+        }
+       }
+      }
+     ],
+     "props": [
+      {
+       "id": "bath_4f_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": false,
+       "at": [
+        1.15,
+        1.13
+       ],
+       "z": 2.365,
+       "kit": "led_flush_300",
+       "kelvin": 4000,
+       "lumens": 1299
+      },
+      {
+       "id": "bath_4f_fx_switch",
+       "at": [
+        1.863,
+        0.057
+       ],
+       "rot": 180,
+       "z": 1.14,
+       "tag": "light_switch",
+       "kit": {
+        "preset": "switch_jp_1",
+        "size": [
+         0.07,
+         0.012,
+         0.12
+        ]
+       },
+       "use": "switch",
+       "light": "bath_4f_fx_light"
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/wall/Plaster001_1K-PNG",
+      "ceiling": "pbr/wall/Plaster001_1K-PNG"
+     },
+     "id": "kitchen_4f",
+     "at": [
+      4.63,
+      4.2,
+      8.55
+     ],
+     "size": [
+      3.65,
+      2.26,
+      2.4
+     ],
+     "floor": "tile",
+     "light": "off",
+     "kind": "kitchen",
+     "name": "Kitchen 4F",
+     "skip": [
+      "s"
+     ],
+     "openings": [
+      {
+       "wall": "n",
+       "at": 2.77,
+       "w": 0.9,
+       "h": 0.9,
+       "sill": 1.05,
+       "window": true
+      }
+     ],
+     "props": [
+      {
+       "id": "kitchen_4f_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": false,
+       "at": [
+        1.825,
+        1.13
+       ],
+       "z": 2.365,
+       "kit": "led_flush_300",
+       "kelvin": 4000,
+       "lumens": 2062
+      },
+      {
+       "id": "kitchen_4f_fx_win1",
+       "kit": {
+        "preset": "window_slide",
+        "size": [
+         0.9,
+         0.22,
+         0.925
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        2.77,
+        2.2
+       ],
+       "rot": 0,
+       "z": 1.025,
+       "in_wall": true,
+       "of": "kitchen_4f_n_window"
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/wall/Plaster001_1K-PNG",
+      "ceiling": "pbr/wall/Plaster001_1K-PNG"
+     },
+     "id": "genkan_4f",
+     "at": [
+      8.28,
+      4.2,
+      8.55
+     ],
+     "size": [
+      1,
+      2.26,
+      2.4
+     ],
+     "floor": "tile",
+     "light": "off",
+     "kind": "genkan",
+     "name": "Genkan 4F",
+     "skip": [
+      "e",
+      "s",
+      "w"
+     ],
+     "props": [
+      {
+       "id": "genkan_4f_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": false,
+       "at": [
+        0.5,
+        1.13
+       ],
+       "z": 2.385,
+       "kit": "downlight_100",
+       "kelvin": 3000,
+       "lumens": 565
+      },
+      {
+       "id": "genkan_4f_fx_switch",
+       "at": [
+        0.943,
+        1.15
+       ],
+       "rot": 270,
+       "z": 1.14,
+       "tag": "light_switch",
+       "kit": {
+        "preset": "switch_jp_1",
+        "size": [
+         0.07,
+         0.012,
+         0.12
+        ]
+       },
+       "use": "switch",
+       "light": "genkan_4f_fx_light"
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/wall/Plaster001_1K-PNG",
+      "ceiling": "pbr/wall/Plaster001_1K-PNG"
+     },
+     "id": "hall_4f",
+     "at": [
+      3.22,
+      2.89,
+      8.55
+     ],
+     "size": [
+      2.9,
+      1.31,
+      2.4
+     ],
+     "floor": "wood",
+     "light": "off",
+     "kind": "corridor",
+     "name": "Hall 4F",
+     "skip": [
+      "n",
+      "e",
+      [
+       "s",
+       0,
+       2.19
+      ],
+      [
+       "w",
+       0,
+       0.49
+      ]
+     ],
+     "openings": [
+      {
+       "wall": "w",
+       "at": 0.9,
+       "w": 0.7,
+       "h": 2,
+       "door": {
+        "id": "br1_nook_4f_hall_4f_door",
+        "swing": "in",
+        "kit": {
+         "preset": "door_flush"
+        }
+       }
+      }
+     ],
+     "props": [
+      {
+       "id": "hall_4f_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": false,
+       "at": [
+        1.45,
+        0.655
+       ],
+       "z": 2.365,
+       "kit": "led_flush_300",
+       "kelvin": 3000,
+       "lumens": 950
+      },
+      {
+       "id": "hall_4f_fx_switch",
+       "at": [
+        0.057,
+        0.35
+       ],
+       "rot": 90,
+       "z": 1.14,
+       "tag": "light_switch",
+       "kit": {
+        "preset": "switch_jp_1",
+        "size": [
+         0.07,
+         0.012,
+         0.12
+        ]
+       },
+       "use": "switch",
+       "light": "hall_4f_fx_light"
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": {
+       "set": "pbr/wall/Plaster001_1K-PNG",
+       "tint": "#cbb89a",
+       "tint_amount": 0.7
+      },
+      "ceiling": "#b99a74",
+      "trim": "#7a5a3c"
+     },
+     "id": "washitsu_4f",
+     "at": [
+      3.22,
+      0,
+      8.55
+     ],
+     "size": [
+      2.19,
+      2.89,
+      2.4
+     ],
+     "floor": "carpet",
+     "light": "off",
+     "kind": "washitsu",
+     "name": "Bedroom 2 (washitsu) 4F",
+     "skip": [
+      "e",
+      "w"
+     ],
+     "openings": [
+      {
+       "wall": "n",
+       "at": 1.599,
+       "w": 0.9,
+       "h": 1.8,
+       "door": {
+        "id": "hall_4f_washitsu_4f_door",
+        "swing": "slide",
+        "kit": {
+         "preset": "fusuma"
+        }
+       }
+      },
+      {
+       "wall": "s",
+       "at": 1.11,
+       "w": 1.7,
+       "h": 1.3,
+       "sill": 0.8,
+       "window": true
+      }
+     ],
+     "props": [
+      {
+       "id": "washitsu_4f_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": false,
+       "at": [
+        1.095,
+        1.445
+       ],
+       "z": 2.365,
+       "kit": "led_flush_300",
+       "kelvin": 2700,
+       "lumens": 1582
+      },
+      {
+       "id": "washitsu_4f_fx_switch",
+       "at": [
+        0.949,
+        2.833
+       ],
+       "rot": 0,
+       "z": 1.14,
+       "tag": "light_switch",
+       "kit": {
+        "preset": "switch_jp_1",
+        "size": [
+         0.07,
+         0.012,
+         0.12
+        ]
+       },
+       "use": "switch",
+       "light": "washitsu_4f_fx_light"
+      },
+      {
+       "id": "washitsu_4f_fx_win1",
+       "kit": {
+        "preset": "window_slide",
+        "size": [
+         1.7,
+         0.22,
+         1.325
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        1.11,
+        0.06
+       ],
+       "rot": 180,
+       "z": 0.775,
+       "in_wall": true,
+       "of": "washitsu_4f_s_window"
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": {
+       "set": "pbr/wall/Plaster001_1K-PNG",
+       "tint": "#cbb89a",
+       "tint_amount": 0.7
+      },
+      "ceiling": "#b99a74",
+      "trim": "#7a5a3c"
+     },
+     "id": "tokonoma_4f",
+     "at": [
+      5.41,
+      0,
+      8.55
+     ],
+     "size": [
+      0.71,
+      1.6,
+      2.4
+     ],
+     "floor": "wood",
+     "light": "off",
+     "kind": "closet",
+     "name": "Tokonoma 4F",
+     "skip": [
+      "w"
+     ]
+    },
+    {
+     "look": {
+      "walls": {
+       "set": "pbr/wall/Plaster001_1K-PNG",
+       "tint": "#cbb89a",
+       "tint_amount": 0.7
+      },
+      "ceiling": "#b99a74",
+      "trim": "#7a5a3c"
+     },
+     "id": "oshiire_4f",
+     "at": [
+      5.41,
+      1.6,
+      8.55
+     ],
+     "size": [
+      0.71,
+      1.29,
+      2.4
+     ],
+     "floor": "wood",
+     "light": "off",
+     "kind": "oshiire",
+     "name": "Oshiire 4F",
+     "skip": [
+      "n",
+      "s"
+     ],
+     "openings": [
+      {
+       "wall": "w",
+       "at": 0.645,
+       "w": 1.1,
+       "h": 1.8,
+       "door": {
+        "id": "washitsu_4f_oshiire_4f_door",
+        "swing": "slide",
+        "kit": {
+         "preset": "fusuma"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/wall/Plaster001_1K-PNG",
+      "ceiling": "pbr/wall/Plaster001_1K-PNG"
+     },
+     "id": "living_4f",
+     "at": [
+      6.12,
+      0,
+      8.55
+     ],
+     "size": [
+      3.16,
+      4.2,
+      2.4
+     ],
+     "floor": "wood",
+     "light": "off",
+     "kind": "living",
+     "name": "Living room 4F",
+     "skip": [
+      "n",
+      "e",
+      "w"
+     ],
+     "openings": [
+      {
+       "wall": "s",
+       "at": 1.571,
+       "w": 2.5,
+       "h": 1.75,
+       "sill": 0.35,
+       "window": true
+      }
+     ],
+     "props": [
+      {
+       "id": "living_4f_fx_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": false,
+       "at": [
+        1.58,
+        2.1
+       ],
+       "z": 2.31,
+       "kit": "led_dome_500",
+       "kelvin": 2700,
+       "lumens": 3318
+      },
+      {
+       "id": "living_4f_fx_win1",
+       "kit": {
+        "preset": "window_big",
+        "size": [
+         2.5,
+         0.22,
+         1.775
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        1.571,
+        0.06
+       ],
+       "rot": 180,
+       "z": 0.325,
+       "in_wall": true,
+       "of": "living_4f_s_window"
+      }
+     ]
+    },
+    {
+     "look": {
+      "walls": "pbr/wall/Plaster001_1K-PNG",
+      "ceiling": "pbr/wall/Plaster001_1K-PNG",
+      "floor": "pbr/concrete/Concrete006_1K-PNG"
+     },
+     "id": "landing_4f",
+     "at": [
+      9.28,
+      4.66,
+      8.55
+     ],
+     "size": [
+      2.6,
+      1.8,
+      2.4
+     ],
+     "floor": "stone",
+     "light": "off",
+     "kind": "common",
+     "name": "Landing 4F",
+     "skip": [
+      "s"
+     ],
+     "openings": [
+      {
+       "wall": "w",
+       "at": 1.315,
+       "w": 0.85,
+       "h": 2.05,
+       "door": {
+        "id": "front_door_4f",
+        "swing": "out",
+        "kit": {
+         "preset": "door_front"
+        },
+        "mats": {
+         "frame": "pbr/building/Paint005_1K-PNG"
+        }
+       }
+      },
+      {
+       "wall": "e",
+       "at": 0.9,
+       "w": 0.45,
+       "h": 1.6,
+       "sill": 0.6,
+       "window": true
+      }
+     ],
+     "props": [
+      {
+       "id": "landing_4f_fx_win1",
+       "kit": {
+        "preset": "window_fixed",
+        "size": [
+         0.45,
+         0.1,
+         1.6
+        ],
+        "wall": 0.1
+       },
+       "at": [
+        2.6,
+        0.9
+       ],
+       "rot": 270,
+       "z": 0.6,
+       "in_wall": true,
+       "of": "landing_4f_e_window"
+      }
+     ]
+    }
+   ],
+   "links": [
+    {
+     "a": "br1_closet",
+     "b": "br1",
+     "via": "br1_br1_closet_door"
+    },
+    {
+     "a": "hall",
+     "b": "br1_nook",
+     "via": "br1_nook_hall_door"
+    },
+    {
+     "a": "bath",
+     "b": "hall",
+     "via": "bath_hall_door"
+    },
+    {
+     "a": "washitsu",
+     "b": "hall",
+     "via": "hall_washitsu_door"
+    },
+    {
+     "a": "oshiire",
+     "b": "washitsu",
+     "via": "washitsu_oshiire_door"
+    },
+    {
+     "a": "lobby",
+     "b": "genkan",
+     "via": "front_door"
+    },
+    {
+     "a": "stairs",
+     "b": "lobby",
+     "via": "stair_gate"
+    },
+    {
+     "a": "br1_closet_2f",
+     "b": "br1_2f",
+     "via": "br1_2f_br1_closet_2f_door"
+    },
+    {
+     "a": "hall_2f",
+     "b": "br1_nook_2f",
+     "via": "br1_nook_2f_hall_2f_door"
+    },
+    {
+     "a": "bath_2f",
+     "b": "hall_2f",
+     "via": "bath_2f_hall_2f_door"
+    },
+    {
+     "a": "washitsu_2f",
+     "b": "hall_2f",
+     "via": "hall_2f_washitsu_2f_door"
+    },
+    {
+     "a": "oshiire_2f",
+     "b": "washitsu_2f",
+     "via": "washitsu_2f_oshiire_2f_door"
+    },
+    {
+     "a": "landing_2f",
+     "b": "genkan_2f",
+     "via": "front_door_2f"
+    },
+    {
+     "a": "stairs",
+     "b": "landing_2f",
+     "via": null
+    },
+    {
+     "a": "br1_closet_3f",
+     "b": "br1_3f",
+     "via": "br1_3f_br1_closet_3f_door"
+    },
+    {
+     "a": "hall_3f",
+     "b": "br1_nook_3f",
+     "via": "br1_nook_3f_hall_3f_door"
+    },
+    {
+     "a": "bath_3f",
+     "b": "hall_3f",
+     "via": "bath_3f_hall_3f_door"
+    },
+    {
+     "a": "washitsu_3f",
+     "b": "hall_3f",
+     "via": "hall_3f_washitsu_3f_door"
+    },
+    {
+     "a": "oshiire_3f",
+     "b": "washitsu_3f",
+     "via": "washitsu_3f_oshiire_3f_door"
+    },
+    {
+     "a": "landing_3f",
+     "b": "genkan_3f",
+     "via": "front_door_3f"
+    },
+    {
+     "a": "stairs",
+     "b": "landing_3f",
+     "via": null
+    },
+    {
+     "a": "br1_closet_4f",
+     "b": "br1_4f",
+     "via": "br1_4f_br1_closet_4f_door"
+    },
+    {
+     "a": "hall_4f",
+     "b": "br1_nook_4f",
+     "via": "br1_nook_4f_hall_4f_door"
+    },
+    {
+     "a": "bath_4f",
+     "b": "hall_4f",
+     "via": "bath_4f_hall_4f_door"
+    },
+    {
+     "a": "washitsu_4f",
+     "b": "hall_4f",
+     "via": "hall_4f_washitsu_4f_door"
+    },
+    {
+     "a": "oshiire_4f",
+     "b": "washitsu_4f",
+     "via": "washitsu_4f_oshiire_4f_door"
+    },
+    {
+     "a": "landing_4f",
+     "b": "genkan_4f",
+     "via": "front_door_4f"
+    },
+    {
+     "a": "stairs",
+     "b": "landing_4f",
+     "via": null
+    }
+   ],
+   "trim": {
+    "skirting": 0.06,
+    "casing": 0.05,
+    "threshold": 0.012
+   }
+  }
+ },
+ "scenes": {
+  "s_first": {
+   "title": "First words",
+   "level": "maison_1f",
+   "stage": {
+    "someone": "someone_spot"
+   },
+   "view": "start",
+   "camera": {
+    "mode": "soft",
+    "look": "someone",
+    "cone": [
+     30,
+     18
+    ]
+   },
+   "clips": [
+    {
+     "id": "c1",
+     "who": "someone",
+     "ja": "……",
+     "en": "...",
+     "act": "looks up"
+    }
+   ]
+  }
+ },
+ "stitches": {
+  "t_start": {
+   "title": "Start",
+   "level": "maison_1f",
+   "beats": [
+    {
+     "id": "b_start",
+     "when": {
+      "start": true
+     },
+     "do": [
+      {
+       "fade": "in",
+       "secs": 2
+      },
+      {
+       "done": true
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "flow": {
+  "n_start": {
+   "type": "stitch",
+   "ref": "t_start",
+   "next": "n_first"
+  },
+  "n_first": {
+   "type": "scene",
+   "ref": "s_first",
+   "next": "e_end",
+   "final": true
+  },
+  "e_end": {
+   "type": "ending",
+   "kind": "good",
+   "title": "The end"
+  }
+ },
+ "secrets": {}
+}

@@ -1,0 +1,1 @@
+{"name":"kitchen_sink_water","family":"sink","spec":{"label":"a kitchen sink left standing full of grey water","family":"sink","kind":"kitchen","seed":2,"limescale":0.6,"rust":0.6,"wear":{"grime":0.45,"scratches":0.3,"dirt":0.3},"liquid":{"kind":"water","fill":0.45,"color":"#6e7466"}},"made":"2026-11-04","size_m":[0.92,0.52,0.6272],"tris":10524}

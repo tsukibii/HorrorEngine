@@ -15,6 +15,8 @@ from .. import designs
 from .. import mesh as M
 from .. import noise as N
 
+CUSTOM = True       # your own pictures go on it: the picture editor previews them on its picture (PROPGEN §25)
+
 R0, R1, H = 16.6, 17.1, 70.0          # the vial: radius at its foot and its lip (mm), its height
 T = 1.0                                # its wall
 

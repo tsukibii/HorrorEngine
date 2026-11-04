@@ -1,0 +1,1 @@
+{"name":"kitchen_sink","family":"sink","spec":{"label":"a stainless kitchen sink: a rounded basin, a ribbed drainboard, a basket strainer, a gooseneck mixer","family":"sink","kind":"kitchen","seed":1,"limescale":0.6,"rust":0.35,"wear":{"grime":0.25,"scratches":0.3}},"made":"2026-11-04","size_m":[0.92,0.52,0.6272],"tris":10524}

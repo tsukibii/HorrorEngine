@@ -8,10 +8,14 @@
 // whole texture in its layout (a sheet: each part its own piece). The handles move, size and turn what's picked; the
 // wheel zooms, dragging the background (or a middle or right drag) pans. Under your pictures is the generator's own
 // paint as the last make left it (`_paint.png`), so the canvas is what Make will lay before the wear; Make bakes it in.
+// A customizable prop (cans, books, appliances: PROPGEN §25) is previewed **on its own picture** as it's edited (the
+// passes rendered beside it: preview.js), and works before it's made here at all, from what the project keeps of it
+// (its parts, its slots, its paint at 512 px: serve.py kept_meta), its parts drawn as boxes.
 // window.__pp.ed is its state, for the page's check (tools/propgen/pagetest.mjs).
 import { makeViewer } from "/page/view3d.js";
 import { GLTFLoader } from "/vendor/GLTFLoader.js";
 import { $, el, clone, same, api, toast } from "/page/util.js";
+import { loadPasses, levels, layOver } from "/page/preview.js";
 
 const NS = "http://www.w3.org/2000/svg";
 function sv(tag, attrs = {}, ...kids) {
@@ -38,25 +42,28 @@ function state() {
       key: null, mat: null, z: 0, ox: 0, oy: 0, sel: null, mode: "design", cuts: true, names: true, undo: [], redo: [],
       drop: null, dragging: null, open: {}, uv: {}, uvKey: null, comp: {}, viewer: null, viewKey: null, imgs: new Map(),
       info: new Map(), tints: new Map(), hover: null, pending: new Set(), op: null, frame: 0, made3d: 0,
+      prev: null, pane: null, ovc: {}, ovm: {},
     };
   }
   E = S.ed;
   return E;
 }
-const M_ = () => X.S.meta;
+const M_ = () => X.S.meta || X.S.kept;          // a made prop's meta.json, or what the project keeps of a customizable one
 const spec = () => X.S.spec;
 
 function sync() {
-  const S = X.S, M = S.meta;
-  const key = `${S.name}|${M ? M._mtime : "-"}`;
+  const S = X.S, M = M_();
+  const key = `${S.name}|${M ? (M.kept ? "kept" : "made") + M._mtime : "-"}`;
   if (E.key === key) return;
   const sameProp = E.key && E.key.split("|")[0] === S.name;
   E.key = key;
-  if (!sameProp) { E.sel = null; E.undo = []; E.redo = []; E.z = 0; E.mat = null; E.open = {}; }
+  if (!sameProp) { E.sel = null; E.undo = []; E.redo = []; E.z = 0; E.mat = null; E.open = {}; E.snapPix = null; }
   E.comp = {};
   E.uv = {};
   E.uvKey = null;
   E.viewKey = null;
+  E.prev = null;
+  E.pane = null;
   const mats = M && M.textures ? Object.keys(M.textures) : [];
   if (!mats.includes(E.mat)) { E.mat = mats[0] || null; E.z = 0; }
   // a texture made at another size: the view fitted to it again
@@ -65,7 +72,7 @@ function sync() {
   if (E.sel && !selValid(E.sel)) E.sel = null;
 }
 
-function fileUrl(f) { const M = M_(); return `/props/${encodeURIComponent(M.name)}/${f}?v=${M._mtime || 0}`; }
+function fileUrl(f) { if (/^\//.test(f)) return f; const M = M_(); return `/props/${encodeURIComponent(M.name)}/${f}?v=${M._mtime || 0}`; }
 const madeUrl = mat => fileUrl(M_().textures[mat][0]);
 const design = mat => (M_().design || {})[mat] || {};
 const paintUrl = mat => (design(mat).paint ? fileUrl(design(mat).paint) : null);
@@ -483,12 +490,12 @@ function schedule(all = false) {
     raf = 0;
     const a = rafAll;
     rafAll = false;
-    if (!E || !X.S.meta || X.S.tab !== "texture" || !$(".pe")) return;
+    if (!E || !M_() || X.S.tab !== "texture" || !$(".pe")) return;
     if (E.mat) compose(E.mat);
     overlay();
     if (a) renderLayers();
     const now = performance.now();
-    if (now - last3d > (E.op ? 120 : 0)) { last3d = now; wear3d(); } else setTimeout(() => schedule(), 130);
+    if (now - last3d > (E.op ? 120 : 0)) { last3d = now; wear3d(); wearPicture(); } else setTimeout(() => schedule(), 130);
   });
 }
 
@@ -1687,11 +1694,14 @@ function renderBar() {
   const ms = mats();
   if (ms.length > 1) bar.append(el("span", { class: "pe-seg" }, ms.map(m => el("button", { class: m === E.mat ? "on" : "", "data-mat": m, title: `the ${m} texture`,
     onclick: () => { E.mat = m; E.z = 0; if (E.sel && matOf(E.sel) !== m) E.sel = null; stage(); renderBar(); refresh(); } }, m))));
-  bar.append(el("span", { class: "pe-seg" },
-    el("button", { class: E.mode === "design" ? "on" : "", "data-mode": "design", title: "the paint under your pictures and your pictures over it, live: what Make lays before the wear",
-      onclick: () => { E.mode = "design"; E.comp = {}; stage(); renderBar(); schedule(true); } }, "Design"),
-    el("button", { class: E.mode === "made" ? "on" : "", "data-mode": "made", title: "the texture as it was made, the wear and baked shading on it",
-      onclick: () => { E.mode = "made"; E.comp = {}; stage(); renderBar(); schedule(true); } }, "As made")),
+  if (M_().kept) E.mode = "design";
+  bar.append(M_().kept
+    ? el("span", { class: "pe-kept", title: "not made on this machine: its parts, its slots and its paint as the project keeps them (512 px); its picture on the right shows what Make will make" }, "kept · not made here")
+    : el("span", { class: "pe-seg" },
+      el("button", { class: E.mode === "design" ? "on" : "", "data-mode": "design", title: "the paint under your pictures and your pictures over it, live: what Make lays before the wear",
+        onclick: () => { E.mode = "design"; E.comp = {}; stage(); renderBar(); schedule(true); } }, "Design"),
+      el("button", { class: E.mode === "made" ? "on" : "", "data-mode": "made", title: "the texture as it was made, the wear and baked shading on it",
+        onclick: () => { E.mode = "made"; E.comp = {}; stage(); renderBar(); schedule(true); } }, "As made")),
     el("label", { class: "pe-tog", title: "the cuts (where the model's surface is cut apart) and what's off the parts dimmed" },
       el("input", { type: "checkbox", checked: E.cuts, onchange: e => { E.cuts = e.target.checked; stage(); } }), "Cuts"),
     el("label", { class: "pe-tog" }, el("input", { type: "checkbox", checked: E.names, onchange: e => { E.names = e.target.checked; overlay(); } }), "Names"),
@@ -1702,6 +1712,113 @@ function renderBar() {
     el("button", { title: "All of it (Shift+1)", onclick: () => { E.z = 0; place(); } }, "Fit"),
     el("button", { class: "pe-undo", title: "Undo (Ctrl+Z)", disabled: !E.undo.length, onclick: undo }, "↶"),
     el("button", { class: "pe-redo", title: "Redo (Ctrl+Shift+Z)", disabled: !E.redo.length, onclick: redo }, "↷"));
+}
+
+// ---- a customizable prop on its own picture, wearing your pictures (docs/PROPGEN.md §25, preview.js) -----------------------------
+
+const canPicture = () => !!(X.S.rec && X.S.rec.preview);
+const can3d = () => !!((M_().files || []).find(f => f.endsWith(".glb")));
+
+async function loadPreview() {
+  const key = E.key, name = X.S.name;
+  if (!canPicture()) { E.prev = null; views(); return; }
+  if (E.prev && E.prev.key === key) { views(); return; }
+  E.prev = { key, P: null };
+  views();
+  try {
+    const info = await api(`/api/preview/${encodeURIComponent(name)}`);
+    const P = await loadPasses(info);
+    if (E.key !== key) return;
+    E.prev = { key, P, info };
+  } catch (err) {
+    if (E.key === key) E.prev = { key, P: null, err: err.message };
+  }
+  views();
+  schedule(true);
+}
+
+function setView(v) { E.pane = v; views(); schedule(true); }
+// which of the two shows: its picture for a customizable prop, the 3D view for the rest (and only once it's made)
+function views() {
+  const pic = canPicture(), d3 = can3d();
+  if (!E.pane || (E.pane === "picture" && !pic) || (E.pane === "3d" && !d3)) E.pane = pic ? "picture" : "3d";
+  const p = $(".pe-onpic"), t = $(".pe-3d");
+  if (p) p.hidden = E.pane !== "picture";
+  if (t) t.hidden = E.pane !== "3d";
+  for (const b of document.querySelectorAll(".pe-views button")) {
+    b.classList.toggle("on", b.dataset.view === E.pane);
+    b.disabled = b.dataset.view === "picture" ? !pic : !d3;
+  }
+  const seg = $(".pe-views");
+  if (seg) seg.hidden = !pic;
+  const note = $(".pe-onpicnote");
+  if (note && E.pane === "picture") {
+    note.textContent = !E.prev || (!E.prev.P && !E.prev.err) ? "reading its picture…" : E.prev.err ? `its picture couldn't be read: ${E.prev.err}` : note.textContent;
+  }
+}
+
+// a material's layers for its picture: what you've laid on it since it was made (your pictures in its own slots, and
+// the decals, sheets and smudges the make didn't have) over a transparent texture, the smudges that darken over white,
+// and the boxes of the slots whose picture changed (the prop's picture with its slots empty shows there first)
+function overlayFor(mat) {
+  const M = M_(), S = X.S, px = Math.min(texPx(mat), 1024);
+  const made = M.spec || {}, pics = S.spec.pictures || {}, madePics = made.pictures || {};
+  const c = E.ovc[mat] = E.ovc[mat] || document.createElement("canvas");
+  c.width = c.height = px;
+  const g = c.getContext("2d", { willReadFrequently: true });
+  const grounds = [];
+  let any = false, mc = null;
+  for (const sl of M.slots || []) {
+    const isl = M.islands[sl.island];
+    if (!isl || isl.mat !== mat || sl.relief) continue;
+    const now = slotVal(sl, pics), then = slotVal(sl, madePics);
+    if (same(now, then)) continue;
+    const [u0, v0, u1, v1] = isl.rect, [bx, by, bw, bh] = sl.box, ku = (u1 - u0) / isl.mm[0], kv = (v1 - v0) / isl.mm[1];
+    grounds.push([u0 + bx * ku, v0 + by * kv, u0 + (bx + bw) * ku, v0 + (by + bh) * kv]);
+    const p = slotPic(now);
+    if (p) { drawSlot(g, sl, p, px); any = true; }
+  }
+  const fresh = (list, it) => !(list || []).some(x => same(x, it));
+  for (const sh of S.spec.sheets || []) if ((sh.mat || onlyMat()) === mat && fresh(made.sheets, sh)) { drawSheet(g, sh, mat, px); any = true; }
+  for (const d of S.spec.decals || []) {
+    const isl = M.islands[d.island];
+    if (isl && isl.mat === mat && fresh(made.decals, d)) { drawDecal(g, d, isl, px); any = true; }
+  }
+  for (const m of S.spec.smudges || []) {
+    const isl = M.islands[m.island];
+    if (!isl || isl.mat !== mat || scattered(m) || !fresh(made.smudges, m)) continue;
+    if ((m.blend || smudgeBase(m).blend || "multiply") === "mix") { drawSmudge(g, m, isl, px); any = true; continue; }
+    if (!mc) {
+      mc = E.ovm[mat] = E.ovm[mat] || document.createElement("canvas");
+      mc.width = mc.height = px;
+      const mg = mc.getContext("2d");
+      mg.fillStyle = "#fff";
+      mg.fillRect(0, 0, px, px);
+    }
+    drawSmudge(mc.getContext("2d", { willReadFrequently: true }), m, isl, px);
+  }
+  if (!any && !mc && !grounds.length) return null;
+  return { over: any ? levels(c) : null, mult: mc ? levels(mc) : null, grounds };
+}
+
+function wearPicture() {
+  if (E.pane !== "picture" || !E.prev || !E.prev.P || E.prev.key !== E.key) return;
+  const cv = $(".pe-onpiccv"), P = E.prev.P;
+  if (!cv) return;
+  const M = M_(), S = X.S, made = M.spec || {}, layers = {};
+  let n = 0;
+  for (const mat of P.mats) if (mat in (M.textures || {})) { const L = overlayFor(mat); if (L) { layers[mat] = L; n++; } }
+  if (cv.width !== P.W) { cv.width = P.W; cv.height = P.H; }
+  cv.getContext("2d").putImageData(layOver(P, layers), 0, 0);
+  E.prev.shown = n;
+  // what's gone since the make (moved or taken out) still shows where it was until it's made again, and a slot given
+  // back to the prop's own drawing shows empty (its drawing is the next make's)
+  const gone = ["decals", "sheets", "smudges"].some(k => (made[k] || []).some(x => !(S.spec[k] || []).some(y => same(x, y)))) ||
+    (M.slots || []).some(sl => slotVal(sl, S.spec.pictures || {}) === undefined && slotVal(sl, made.pictures || {}) !== undefined);
+  const note = $(".pe-onpicnote");
+  if (note) note.textContent = (n ? "Your pictures on it as Make will make them, lit where they are: " : "Its picture as it was made: ") +
+    (E.prev.info.from === "made" ? "from its last make here." : "kept in the project (not made here yet).") +
+    (gone ? " A picture moved or taken out since the make still shows where it was (a slot given back its own drawing, empty) until it's made again." : "");
 }
 
 // ---- the prop in 3D, wearing the canvas ---------------------------------------------------------------------------------------
@@ -1894,8 +2011,12 @@ function skeleton() {
   const root = el("div", { class: "pe" }, left,
     el("div", { class: "pe-mid" }, el("div", { class: "pe-bar" }), cv, el("div", { class: "pe-foot" }, "Drag pictures onto the parts · the wheel zooms, drag the background to pan · Shift-drop: over the whole texture")),
     el("div", { class: "pe-right" }, el("div", { class: "pe-props" }),
-      el("div", { class: "pe-h3", title: "the prop wearing the canvas as it's edited: drag to turn it, the wheel to come closer, a click on a part picks it" },
-        "On the prop", el("span", { class: "dim" }, "· click a part to pick it")), el("div", { class: "pe-3d" })));
+      el("div", { class: "pe-h3 pe-viewhead", title: "the prop wearing the canvas as it's edited" }, "On the prop",
+        el("span", { class: "pe-seg pe-views" },
+          el("button", { "data-view": "picture", title: "your pictures on its own picture (a customizable prop: rendered as Make renders it, lit there): what Make will make, before it's made", onclick: () => setView("picture") }, "Its picture"),
+          el("button", { "data-view": "3d", title: "the made model wearing the canvas: drag to turn it, the wheel to come closer, a click on a part picks it", onclick: () => setView("3d") }, "3D"))),
+      el("div", { class: "pe-onpic" }, el("canvas", { class: "pe-onpiccv", width: 400, height: 300 }), el("div", { class: "pe-onpicnote dim" })),
+      el("div", { class: "pe-3d" })));
   document.addEventListener("keydown", onKey);
   document.addEventListener("keyup", onKeyUp);
   return root;
@@ -1923,6 +2044,7 @@ export function renderEditor(ctx) {
   refresh();
   loadUV();
   load3d();
+  loadPreview();
   requestAnimationFrame(() => { place(); schedule(true); });
 }
 
@@ -1940,6 +2062,20 @@ Object.assign(window, {
     handle(name) { const h = handlesOf(frameOf(E.sel)).find(x => x.name === name), b = $(".pe-canvas").getBoundingClientRect(); return h ? [b.left + h.s[0], b.top + h.s[1]] : null; },
     live3d() { return E.viewer ? Object.keys(E.viewer.liveMaps()) : []; },
     cuts(mat) { const u = E.uv[mat || E.mat]; return u ? { segs: u.segs.length / 4, tris: u.tris } : null; },
+    // the prop's own picture as shown: how many of its pixels differ from the picture as made, and from where
+    picture() {
+      const P = E.prev && E.prev.P, cv = $(".pe-onpiccv");
+      if (!P || !cv || E.pane !== "picture") return { ready: false, pane: E.pane, err: E.prev && E.prev.err };
+      const d = cv.getContext("2d").getImageData(0, 0, P.W, P.H).data, o = E.snapPix;
+      let k = 0, since = 0;
+      for (let i = 0; i < d.length; i += 4) {
+        if (Math.abs(d[i] - P.base[i]) + Math.abs(d[i + 1] - P.base[i + 1]) + Math.abs(d[i + 2] - P.base[i + 2]) > 30) k++;
+        if (o && Math.abs(d[i] - o[i]) + Math.abs(d[i + 1] - o[i + 1]) + Math.abs(d[i + 2] - o[i + 2]) > 30) since++;
+      }
+      return { ready: true, changed: k, since: o ? since : null, from: E.prev.info.from, layers: E.prev.shown, pane: E.pane };
+    },
+    // the picture as it's shown now, kept to measure what changes after it
+    snapPicture() { const cv = $(".pe-onpiccv"); E.snapPix = cv ? cv.getContext("2d").getImageData(0, 0, cv.width, cv.height).data.slice() : null; },
     putPicture, select, undo, redo, template, upload, zipStored,
   },
 });

@@ -93,12 +93,18 @@ export function presetToModel(P) {
   const kits = [];
   for (const [rid, preset, x, y, rot = 0, o = {}] of P.kits || []) {
     if (!byId[rid]) { problems.push(`layout: kit ${preset} in ${rid}, no such room`); continue; }
+    if (/^props\//.test(preset)) {                                      // a prop generator's prop (props/<name>): its mesh at its size
+      const nm = preset.slice(6); let j = 1; while (kits.some(k => k.id === `${rid}_kt_${nm}_${j}`)) j++;
+      kits.push({ id: `${rid}_kt_${nm}_${j}`, room: rid, x: r3(x), y: r3(y), z: o.z || 0, rot, spec: { asset: preset }, size: (o.size || assetSize(preset)).slice(), extra: clone(o.extra || {}) });
+      continue;
+    }
     let i = 1; while (kits.some(k => k.id === `${rid}_kt_${preset}_${i}`)) i++;
-    const own = Object.assign({}, o); delete own.z; delete own.size; delete own.extra;
+    const own = Object.assign({}, o); delete own.z; delete own.size; delete own.extra; delete own.mats;
     const k = newKit(preset, `${rid}_kt_${preset}_${i}`, rid, r3(x), r3(y), { z: o.z, rot });
     k.spec = Object.assign({ preset }, own);
     try { k.size = (o.size || kitFull(k.spec).size).slice(); } catch (e) { problems.push(`layout: ${preset}: ${e.message}`); continue; }
     if (o.extra) k.extra = clone(o.extra);
+    if (o.mats) k.extra = Object.assign(k.extra || {}, { mats: clone(o.mats) });   // its slots dressed: on the thing, as Paint keeps them
     kits.push(k);
   }
   return { rooms, ops, items, kits, floors, finish: Object.assign({}, FINISH, P.finish || {}), player: { x: P.start[0], y: P.start[1], yaw: P.start[2], z: 0 },
@@ -127,14 +133,23 @@ export function levelToModel(story, levelName) {
              ceilKit: noSize(((r.props || []).find(p => p.id === `${r.id}_fx_ceiling`) || {}).kit) };
   });
   const byId = Object.fromEntries(rooms.map(r => [r.id, r]));
-  // a wall skipped whole that no neighbour builds is an open side (a porch, a balcony's railing side)
+  // a wall skipped whole that no neighbour builds is an open side (a porch, a balcony's railing side); so is one a
+  // neighbour leaves out too where they meet (an open plan: a kitchen open to the living room, both sides skipped; read
+  // back as walls, the page put them up again on its next save)
+  const srOf = Object.fromEntries(lvl.rooms.map(q => [q.id, q]));
+  const skipsOver = (sr, wl, lo, hi) => (sr.skip || []).some(sk => {
+    if (typeof sk === "string") return sk === wl;
+    if (sk[0] !== wl) return false;
+    const ln = wallLine(byId[sr.id], wl);
+    return Math.min(hi, ln.lo + sk[2]) - Math.max(lo, ln.lo + sk[1]) > 0.05;
+  });
   for (const sr of lvl.rooms) {
     for (const wl of sr.skip || []) {
       if (typeof wl !== "string") continue;
       const r = byId[sr.id], ln = wallLine(r, wl);
-      let cover = 0;
-      for (const o of rooms) if (o !== r) for (const sh of shared(r, o)) if (sh.wa === wl) cover += sh.hi - sh.lo;
-      if (cover < ln.hi - ln.lo - 0.05) r.open.push(wl);
+      let cover = 0, both = false;
+      for (const o of rooms) if (o !== r) for (const sh of shared(r, o)) if (sh.wa === wl) { cover += sh.hi - sh.lo; if (skipsOver(srOf[o.id], sh.wb, sh.lo, sh.hi)) both = true; }
+      if (cover < ln.hi - ln.lo - 0.05 || both) r.open.push(wl);
     }
   }
   const ops = [];

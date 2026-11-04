@@ -3,6 +3,66 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## Curtains that crumpled where nothing touched them (2026-11-04, after the wood)
+
+- **A rail keeps its family's distance from the wall**: the flat's curtains were first hung 100 to 110 mm out (to
+  clear a desk), and the sheer's deep gathers pressed against the wall and twisted; the default 200 mm hangs them
+  clean (the desk moved 10 cm instead).
+- **A pucker that stays put whatever changes is the seed's**: the living room's drapes kept the same crumple near one
+  panel's hem through a nearer rail, a further rail and a shallower window frame (the settle has no self-collision:
+  two folds crossing). A few seeds made small in a scratch folder (`propgen.py make <name> --seed N --as try_N
+  --formats glb --tex 1024 --out <scratch>`, two at once) found clean ones in minutes; the recipe keeps that seed.
+
+## Wood sets that looked drawn, then real (2026-11-04, latest)
+
+- **Wood's figure is a cut through rings, not rings drawn on the face**: the first sets drew the growth rings as
+  evenly spaced contours of a noise field, which read as a topographic map, and drew oak's latewood dark where real
+  flat-sawn oak shows its earlywood's band of open pores dark. Rewritten as a board's face cut a little off the pith
+  and slanted to it through rings of their own wandering widths (`ring_table`), so the arches come out of the
+  geometry; oak's figure the porous earlywood band, birch's the latewood.
+- **A set that tiles is checked against its own joints**: the first seam check compared the repeat's edges to the
+  pixels beside them and failed sets whose edge falls on a board joint (a groove is a step by design). It compares
+  each edge's step with the steps at the joints inside the set now.
+- **A stand-out set is measured against its neighbours, not judged alone**: too little tone between boards read as
+  one sheet of vinyl, and the first birch was pink; each set's lightness, saturation and roughness are kept in the
+  imported sets' and measured wood's range (WOODPBR) and its boards varied from the others by tone and warmth.
+- **A word in a layout is checked in the picture, not in the file**: the kits' `mats` were written inside their spec,
+  where nothing reads them; the set built and checked clean while the bed stayed the kit's orange (and the curtains
+  had never worn their colours). Godot's pictures showed it; `presetToModel` moves a kit's `mats` onto the thing.
+
+## Every prop's picture and the sticker passes (2026-11-04, night)
+
+- **A new field or class in a big module is looked up first**: the picture editor's state already had `E.view` (the 3D
+  viewer's loaded model) and its stylesheet `.pe-pic` (the pictures to drag); the preview's switch and box took the same
+  names, the model overwrote the switch (both views hidden) and the box took the thumbnails' style. `E.pane` and
+  `.pe-onpic` now; grep a name before giving it.
+- **A 3D view that isn't shown doesn't draw**: three.js's loop kept rendering the hidden editor view in software GL,
+  and the page's clicks waited seconds behind it (`view3d.js` skips frames while its box has no width).
+
+- **A picture laid on a render is lit through the surface's own detail**: the first light and gloss passes ignored the
+  materials' normal maps, so a sticker on a crushed can lay smooth over its creases while the label round it was
+  crumpled. The override shaders take the material's own normal now (`stage._override`), and the passes carry a
+  version (`_st.json` `v`) so the older ones are made again.
+- **A batch longer than a background command's two hours runs detached and resumes**: the first run of every recipe
+  would have been stopped at the limit; `setsid nohup` and a command that skips what's done (`thumbs --make`).
+- **Python's prints into a log file wait in a buffer**: the batch's progress showed nothing for minutes until its
+  output was line-buffered (`sys.stdout.reconfigure(line_buffering=True)`).
+
+## The user's floor plan as a map (2026-11-04, small hours)
+
+- **Look at the export, not only the plan**: the plan view (plan.py on the set) had the kitchen open to the living
+  room; the Godot export, which goes through the scene builder's page, walled it off (the page read open plans back
+  as walls). A picture of the real thing (`tools/godot/map_shots.py`) is the check of a map.
+- **Restart the desk's server after changing storykit's Python**: it keeps the modules it started with, and every
+  export plans through it. The gate looked still walled up after plan.py was fixed, until the server was restarted.
+- **A rule for every bug the map found, and the old levels compared**: each plan.py fix was run over every set and
+  game's walls before and after (identical but where they were wrong: the schools' stair arches were walled up too,
+  unnoticed), and LEVEL now says what it was.
+- **Glass for Godot is clearer than the desk's**: 25 % of a pale blue reads as glass in three.js and as a milky veil in
+  Godot (lit by the room's lamps, under SSR); the game export already used 12 %, the by-hand export now does too.
+- **A pole's arms cross the road** (`turn`): at turn 0 along an east-west lane every wire hung in one vertical plane.
+- **Cameras for pictures stand where a person could**: a shot "across the bend" stood behind the curved wall.
+
 ## A street's pieces in one plane (2026-11-03, night)
 
 - **Measure faces against planes, not planes against buckets:** the first street measure keyed each face's plane by its
@@ -1677,3 +1737,55 @@ cutscene ever turned the player toward her.
 - **HUD lines time out on the wall clock** (`hud.line`: `Time.get_ticks_msec`), so a picture taken in a slow,
   fixed-fps test run misses a line that a real game shows: picture a line by waiting for it to be the current one
   (`hud.line_text`), never by game time after it started.
+
+## Cloth that came out smooth, crumpled, or in the wrong place (2026-11-04)
+
+The bedding family (PROPGEN §21) took several tries. A pillow simulated as a filled bag stayed smooth at every
+stiffness, iteration count and jitter tried: the folds a filled bag makes at its corners are smaller than any grid
+a prop can afford to simulate. A folded futon creased by reflecting its flap (the old `sim.hinge`) and then settled
+came out a crumpled heap: a stack of layers that thick, pushed apart by self-collision under gravity, never settles
+neatly. A blanket made for a bed and placed by its origin in the level landed off the bed.
+
+- **The simulation gives the form, the detail mesh the small folds**: fill, the seam, the drape over an edge from the
+  simulation; the corner folds, the seam's puckers, lumps and wrinkles drawn into the high mesh and baked (faded to
+  nothing at a seam, so two pieces still meet).
+- **Fold a thick thing by rolling, and leave it folded**: each layer round the fold's middle at its own radius, each
+  flap longer than what it covers by what its bend takes; a soft unevenness and a sag drawn on, no settle.
+- **`sim.fold` works in the flat sheet's coordinates**: fold first, then move the sheet onto what it lies on.
+- **Every exporter places a library mesh by its box** (centred, on its base), not by its origin: an anchored prop
+  (a tree's trunk, a blanket's bed) records its `box_m`, and a layout places it where its box falls.
+- **Rewriting a hand-formatted JSON file with `json.dumps` reflows all of it** (presets.json grew 2500 lines of
+  diff): append to its text, then check it still parses to the same thing.
+
+## A curtain's pleats finer than its cloth, and a rod's bake scrambled (2026-11-04)
+
+The curtain family (PROPGEN §22) took three tries in two places. A pinch pleat's three folds, drawn as a zigzag of six
+legs 23 mm long on a cloth sampled every 32 mm, crumpled into dark specks under the tape: the grid skipped legs and
+folded triangles over each other. And the rod's parts (the pole, its finials, brackets and rings) shared one small
+island: their bake's rays, cast a few millimetres out, caught each other (a ring is 5 mm round the pole) and the
+normal map came out facing away (PROPGEN: 0.38).
+
+- **Model at the grid's resolution, detail below it in the paint or the bake**: a pleat's three folds became one
+  narrow loop at the tape, its pinch the stitching's.
+- **Parts the same in both meshes don't need a bake**: `th.material(..., bake=False)` keeps a material out of it (its
+  normal from its paint's relief alone), so they can share one island.
+- **One long thin island sets the whole texture's density** (the packer fits every island at one pixels-per-mm, and
+  nothing may be wider than the texture): a plain strip (a hem round a blanket, 6.6 m) is declared short and squeezed.
+  The bedding's hem islands are still long (their textures at about a third of a pixel a millimetre): worth the same
+  change and a make again.
+
+## Wood that read as cork, flaws that never reached the normal map, cushions that crumpled (2026-11-04)
+
+The tables and chairs (PROPGEN §23, §24) took a second try in three places. The wood_grain design's rings, 2.2 mm
+apart, landed two texels apart on a 1.6 m table at 2048 and aliased into speckle. The flaws painted at their real size
+(a 0.3 mm scratch, a 1 mm crack, a 0.04 mm grain) were finer than a texel (0.6 px/mm) and left the normal map flat.
+And a seat pad's bag filled only to a pad's thickness had more cloth than air and crumpled all over.
+
+- **Size detail to the texture, not to the world**: a ring, a scratch or a crack at least about two texels wide
+  (`1 / frame.s` is a texel in mm), its depth a share of its width so the normal tilts; a top's underside at a third
+  of the density (seldom seen) leaves more for its face.
+- **A glued-up top is boards**: strips 12 to 22 cm wide, each its own log's heart (the cathedral arches) and tone, read
+  as wood where one wide figure read as noise; a board's edge is straight edge grain.
+- **A pad is foam in a cover, not air**: fill the bag firm between a floor and a ceiling at its thickness, then let it
+  go; and keep its volume (pressure) while it settles, or gravity flattens it.
+

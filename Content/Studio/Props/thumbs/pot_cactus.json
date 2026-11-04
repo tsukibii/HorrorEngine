@@ -1,0 +1,1 @@
+{"name":"pot_cactus","family":"plant","spec":{"label":"potted plant: a ribbed cactus in a concrete cube with pebbles (table)","family":"plant","form":"cactus","seed":304,"pot":{"kind":"cube","w":100,"h":90,"color":"#9a9690","glaze":false,"topping":"pebbles"},"plant":{"size":0.22,"ribs":11}},"made":"2026-11-04","size_m":[0.1313,0.1339,0.2992],"tris":4472}

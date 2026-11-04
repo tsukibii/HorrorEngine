@@ -50,6 +50,12 @@
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe beer_can (Content/Studio/Props/presets.json)"
  },
+ "props/bench_wood": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe bench_wood (Content/Studio/Props/presets.json)"
+ },
  "props/black_pine": {
   "date": "2026-11-02",
   "kind": "mesh",
@@ -182,6 +188,36 @@
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe cedar_real (Content/Studio/Props/presets.json)"
  },
+ "props/chair_desk_oak": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe chair_desk_oak (Content/Studio/Props/presets.json)"
+ },
+ "props/chair_dining": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe chair_dining (Content/Studio/Props/presets.json)"
+ },
+ "props/chair_ladderback": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe chair_ladderback (Content/Studio/Props/presets.json)"
+ },
+ "props/chair_school": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe chair_school (Content/Studio/Props/presets.json)"
+ },
+ "props/chair_windsor": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe chair_windsor (Content/Studio/Props/presets.json)"
+ },
  "props/chair_worn": {
   "date": "2026-10-30",
   "kind": "mesh",
@@ -248,6 +284,12 @@
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe coffee_cup_tipped (Content/Studio/Props/presets.json)"
  },
+ "props/comforter_bed": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe comforter_bed (Content/Studio/Props/presets.json)"
+ },
  "props/crape_myrtle": {
   "date": "2026-11-02",
   "kind": "mesh",
@@ -260,11 +302,71 @@
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe crape_myrtle_real (Content/Studio/Props/presets.json)"
  },
+ "props/curtain_grommet": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe curtain_grommet (Content/Studio/Props/presets.json)"
+ },
+ "props/curtain_maison_bedroom": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe curtain_maison_bedroom (Content/Studio/Props/presets.json)"
+ },
+ "props/curtain_maison_living": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe curtain_maison_living (Content/Studio/Props/presets.json)"
+ },
+ "props/curtain_maison_washitsu": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe curtain_maison_washitsu (Content/Studio/Props/presets.json)"
+ },
+ "props/curtain_pair": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe curtain_pair (Content/Studio/Props/presets.json)"
+ },
+ "props/curtain_sheer": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe curtain_sheer (Content/Studio/Props/presets.json)"
+ },
+ "props/curtain_tied": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe curtain_tied (Content/Studio/Props/presets.json)"
+ },
+ "props/curtain_velvet_old": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe curtain_velvet_old (Content/Studio/Props/presets.json)"
+ },
+ "props/curtain_wave": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe curtain_wave (Content/Studio/Props/presets.json)"
+ },
  "props/dead_tree": {
   "date": "2026-11-02",
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe dead_tree (Content/Studio/Props/presets.json)"
+ },
+ "props/desk_oak": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe desk_oak (Content/Studio/Props/presets.json)"
  },
  "props/diary_closed": {
   "date": "2026-11-01",
@@ -338,6 +440,12 @@
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe frying_pan (Content/Studio/Props/presets.json)"
  },
+ "props/futon_folded": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe futon_folded (Content/Studio/Props/presets.json)"
+ },
  "props/ginkgo_autumn": {
   "date": "2026-11-02",
   "kind": "mesh",
@@ -392,6 +500,12 @@
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe jar_umeboshi (Content/Studio/Props/presets.json)"
  },
+ "props/kakebuton_turned": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe kakebuton_turned (Content/Studio/Props/presets.json)"
+ },
  "props/key_brass": {
   "date": "2026-10-30",
   "kind": "mesh",
@@ -439,6 +553,12 @@
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe koro (Content/Studio/Props/presets.json)"
+ },
+ "props/makura_sobakawa": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe makura_sobakawa (Content/Studio/Props/presets.json)"
  },
  "props/manga_volume": {
   "date": "2026-11-01",
@@ -547,6 +667,12 @@
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe pill_bottle_capsules (Content/Studio/Props/presets.json)"
+ },
+ "props/pillow_bed": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe pillow_bed (Content/Studio/Props/presets.json)"
  },
  "props/pizza_slice_box": {
   "date": "2026-10-30",
@@ -866,6 +992,60 @@
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe stockpot_broth (Content/Studio/Props/presets.json)"
  },
+ "props/stool_cafe": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe stool_cafe (Content/Studio/Props/presets.json)"
+ },
+ "props/stool_kitchen": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe stool_kitchen (Content/Studio/Props/presets.json)"
+ },
+ "props/table_chabudai": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe table_chabudai (Content/Studio/Props/presets.json)"
+ },
+ "props/table_dining": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe table_dining (Content/Studio/Props/presets.json)"
+ },
+ "props/table_farmhouse": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe table_farmhouse (Content/Studio/Props/presets.json)"
+ },
+ "props/table_kitchen_painted": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe table_kitchen_painted (Content/Studio/Props/presets.json)"
+ },
+ "props/table_midcentury": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe table_midcentury (Content/Studio/Props/presets.json)"
+ },
+ "props/table_pedestal": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe table_pedestal (Content/Studio/Props/presets.json)"
+ },
+ "props/table_trestle": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe table_trestle (Content/Studio/Props/presets.json)"
+ },
  "props/tetsubin": {
   "date": "2026-10-31",
   "kind": "mesh",
@@ -937,6 +1117,30 @@
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe yukihira (Content/Studio/Props/presets.json)"
+ },
+ "props/zabuton_real": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe zabuton_real (Content/Studio/Props/presets.json)"
+ },
+ "props/zaisu_lacquer": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe zaisu_lacquer (Content/Studio/Props/presets.json)"
+ },
+ "props/zaisu_walnut": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe zaisu_walnut (Content/Studio/Props/presets.json)"
+ },
+ "props/zataku_walnut": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe zataku_walnut (Content/Studio/Props/presets.json)"
  },
  "props/zelkova_autumn": {
   "date": "2026-11-02",

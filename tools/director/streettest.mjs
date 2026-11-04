@@ -1,6 +1,6 @@
 // The street builder in a headless browser (docs/STREET_BUILDER.md §6), driven as a person would: a lane drawn on the map,
 // filled with buildings, lamps, poles and clutter; a building picked, its floors changed in the inspector, a sign added
-// on its front in the facade view and a photo put behind it; a fence and a vending machine placed (the machine turned to
+// on its front in the facade view and a photo put behind it; a fence (bent, its bend dragged) and a vending machine placed (the machine turned to
 // the street); a shot kept; undo; saved and read back the same; exported for Godot (Exports/streets/, a Shift-click download); Check (nothing in one plane, a twin
 // vending machine found and picked); a motel and the Bungalow from the
 // palette, the Bungalow wearing its set's outside (its own once changed here, the set's again on Follow); and the
@@ -114,6 +114,18 @@ try {
   if ((await ST()).things.length !== nThings - 1) fail("undo didn't take the vending machine away");
   await page.keyboard.press("Control+y");
   if ((await ST()).things.length !== nThings) fail("redo didn't bring it back");
+  // a fence bent (`via`, STREET_BUILDER §7c): drawn along its curve, its bend a handle that drags
+  await page.evaluate(() => { const f = window.ST.street.fences[0]; f.via = [[f.from[0] + 3, (f.from[1] + f.to[1]) / 2]]; window.ST.sel = { list: "fences", id: f.id }; window.__changed(); });
+  const fl = await page.evaluate(() => { const f = window.ST.street.fences[0], pl = document.querySelector(`polyline[data-id="${f.id}"]`), h = document.querySelector('[data-handle="via0"]');
+    const r = h && h.getBoundingClientRect(); return { pts: pl ? pl.getAttribute("points").trim().split(/\s+/).length : 0, at: r ? [r.x + r.width / 2, r.y + r.height / 2] : null }; });
+  if (fl.pts < 4 || !fl.at) fail(`a bent fence isn't drawn along its curve with a handle on its bend: ${JSON.stringify(fl)}`);
+  else {
+    [bx, by] = await at(-9, -22);
+    await page.mouse.move(fl.at[0], fl.at[1]); await page.mouse.down(); await page.mouse.move(bx, by, { steps: 5 }); await page.mouse.up();
+    const v = ((await ST()).fences[0].via || [])[0] || [];
+    if (!(Math.hypot(v[0] + 9, v[1] + 22) < 0.6)) fail("the fence's bend didn't follow its handle: " + JSON.stringify(v));
+    else console.log(`a bent fence: drawn along its curve (${fl.pts} points), its bend dragged to [${v}]`);
+  }
   // a shot from the 3D view
   await page.click("#addShot");
   S = await ST();
