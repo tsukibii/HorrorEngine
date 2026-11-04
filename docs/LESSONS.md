@@ -3,6 +3,23 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## Wood sets that looked drawn, then real (2026-11-04, latest)
+
+- **Wood's figure is a cut through rings, not rings drawn on the face**: the first sets drew the growth rings as
+  evenly spaced contours of a noise field, which read as a topographic map, and drew oak's latewood dark where real
+  flat-sawn oak shows its earlywood's band of open pores dark. Rewritten as a board's face cut a little off the pith
+  and slanted to it through rings of their own wandering widths (`ring_table`), so the arches come out of the
+  geometry; oak's figure the porous earlywood band, birch's the latewood.
+- **A set that tiles is checked against its own joints**: the first seam check compared the repeat's edges to the
+  pixels beside them and failed sets whose edge falls on a board joint (a groove is a step by design). It compares
+  each edge's step with the steps at the joints inside the set now.
+- **A stand-out set is measured against its neighbours, not judged alone**: too little tone between boards read as
+  one sheet of vinyl, and the first birch was pink; each set's lightness, saturation and roughness are kept in the
+  imported sets' and measured wood's range (WOODPBR) and its boards varied from the others by tone and warmth.
+- **A word in a layout is checked in the picture, not in the file**: the kits' `mats` were written inside their spec,
+  where nothing reads them; the set built and checked clean while the bed stayed the kit's orange (and the curtains
+  had never worn their colours). Godot's pictures showed it; `presetToModel` moves a kit's `mats` onto the thing.
+
 ## Every prop's picture and the sticker passes (2026-11-04, night)
 
 - **A new field or class in a big module is looked up first**: the picture editor's state already had `E.view` (the 3D

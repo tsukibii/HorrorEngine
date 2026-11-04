@@ -1,0 +1,15 @@
+{
+ "maps": {
+  "albedo": "FlooringOak002_2K-JPG_Color.jpg",
+  "normal": "FlooringOak002_2K-JPG_NormalGL.jpg",
+  "rough": "FlooringOak002_2K-JPG_Roughness.jpg",
+  "ao": "FlooringOak002_2K-JPG_AmbientOcclusion.jpg",
+  "height": "FlooringOak002_2K-JPG_Displacement.jpg"
+ },
+ "normal": "gl",
+ "tile_m": 1.818,
+ "source": "ours: tools/woodpbr.py FlooringOak002",
+ "url": "",
+ "licence": "ours",
+ "label": "Japanese flooring, oak, medium brown stain, lived on: 2P sheets, 151.5 mm boards"
+}

@@ -13,11 +13,34 @@ street builder, its paint and the PBR sets, with `prop-gen-tool` merged in; 2026
 to 2026-11-03 on `Director-Godot`: the Director in Godot, its panel, Story Flow and the animation steps, merged into
 main on 2026-11-03 with main's own work since 2026-10-31 brought in; then the skin's depth softened and the skin under
 clothes hidden on `claude/festive-euler-o7axpl`, the walls meeting, the editors' rules, Export for Godot and the
-by-hand guides, merged; then on the same branch from main the map-building skill and the user's floor plan as a map). Read this
+by-hand guides, merged; then on the same branch from main the map-building skill and the user's floor plan as a map, its
+bedding, curtains, tables and chairs, the props' kept pictures and, last, real wood in the flat). Read this
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-04, later night, the same branch): customizable props previewed in the picture editor
+## Where it stopped last (2026-11-04, latest, the same branch): real wood in the flat
+
+The user's ask (DECISIONS 2026-11-04, latest): the flat's wood floors looked fake; the latest tables and chairs with
+wood textures in the interior, and a custom PBR for Japanese wooden floors as real as the imported sets.
+
+- **Our own wood sets** (`tools/woodpbr.py`, ASSETS §6; WOODPBR in check_all): `pbr/floor/FlooringOak001_2K-JPG`
+  (light natural oak sheet flooring, 2P: 303 x 1818 mm sheets of two boards, staggered), `FlooringOak002` (stained),
+  `FlooringBirch001`; `pbr/wood/WoodOak001_2K-JPG`, `WoodWalnut001_2K-JPG` (edge-glued furniture panels). 2K JPGs in
+  ambientCG's names, each board its own cut of a log, tileable, the floors' boards found as cells.
+- **maison_1f** (SCENE_BUILDER §10d): the wood rooms' kit planks wear `FlooringOak001`, laid by its cells; the
+  bedroom's `desk_oak` and `chair_desk_oak`, the living room's `zataku_walnut` and `zaisu_walnut` (new recipes, in the
+  library, their pictures kept) replace the kit's desk, dining chair and low table; the bed's frame and the genkan's
+  step in `WoodOak001`, the TV board and the tokonoma in `WoodWalnut001`; a bigger rug. Godot's pictures:
+  `Saved/Godot/_map/maison_1f/shots_day/sheet.jpg` (before: `shots_day_before/`).
+- **A kit's `mats` in a layout file** dress it now (`builder-model.js` `presetToModel` puts them on the thing, where
+  Paint keeps them): they had sat in its spec, read by nothing, so the flat's curtains never wore their colours.
+
+Worth doing with the user: walk it in Godot and say whether the floor's tone and gloss sit with the plaster and the
+tatami; `FlooringOak002` or `FlooringBirch001` are a word away (a room's `_fx_floor` mats); more woods (ash, cherry,
+pine, a wide-plank floor, a parquet) are a few numbers each in `woodpbr.py`'s SETS; the kitchen could take a small
+dining set (`table_*`, `chair_*` with `"pbr": {"wood": ...}`).
+
+## Before that (2026-11-04, later night, the same branch): customizable props previewed in the picture editor
 
 The user's asks (DECISIONS 2026-11-04, night and later night): the café chair a stool, cushions toggleable, every
 prop's picture pre-rendered; then, more exactly, customizing only the props meant to be (cans, books, appliances'

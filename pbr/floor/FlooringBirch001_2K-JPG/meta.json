@@ -1,0 +1,15 @@
+{
+ "maps": {
+  "albedo": "FlooringBirch001_2K-JPG_Color.jpg",
+  "normal": "FlooringBirch001_2K-JPG_NormalGL.jpg",
+  "rough": "FlooringBirch001_2K-JPG_Roughness.jpg",
+  "ao": "FlooringBirch001_2K-JPG_AmbientOcclusion.jpg",
+  "height": "FlooringBirch001_2K-JPG_Displacement.jpg"
+ },
+ "normal": "gl",
+ "tile_m": 1.818,
+ "source": "ours: tools/woodpbr.py FlooringBirch001",
+ "url": "",
+ "licence": "ours",
+ "label": "Japanese flooring, birch (kaba-zakura), warm natural: 2P sheets, 151.5 mm boards"
+}

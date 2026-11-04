@@ -32,7 +32,8 @@ Metres; x east, y north, z up. Facing: a kit or a street thing at `rot`/`turn` 0
   "window_big"}`; type `"door"` is a door to the outside (its own id is `<room>_<wall>_door`).
 - **Items** (on a wall, `at` 0..1): poster, frame, mirror, tv, ac, clock, calendar, board, shelf, switch.
 - **Kits**: x, y from the room's (x0, y0) corner (wall faces are 0.05 in from the lines); `z` over the room's floor;
-  ids `<room>_kt_<preset>_<n>`; a thing on another: `{"z": its top, "extra": {"on": "<that id>"}}`.
+  ids `<room>_kt_<preset>_<n>`; a thing on another: `{"z": its top, "extra": {"on": "<that id>"}}`; its slots dressed:
+  `{"mats": {"wood": "pbr/wood/WoodOak001_2K-JPG", "fabric": "#5f6b73"}}` (on the thing, as the builder's Paint keeps them).
 - **Prop generator props** as kits: `[room, "props/<name>", x, y, rot, {z, extra}]` (made and in the library:
   `python tools/propgen.py make <name>`, then `library <name>`), x, y its box's middle, at its size from the index
   (id `<room>_kt_<name>_<n>`). A blanket made for a futon or bed lies on it from its index's `box_m` (PROPGEN §21: its
@@ -57,7 +58,8 @@ genkan (shoe cabinet; stone_450), corridor, ldk (kitchen run), living, dining, k
 (tatami), bedroom, service, kids, study, bath (tub; tile_300), washroom (vanity, washer), toilet (toilet), closet,
 walkin, oshiire, storage (none of these four get a ceiling light), stairs, balcony (no ceiling, 1.1 high), engawa,
 common (no kit floor: give it a `look.floor`), garden, garage, other; school: classroom, hallway, staffroom, entrance,
-nurse, library, gym. Wood rooms get oak_planks.
+nurse, library, gym. Wood rooms get oak_planks: paint them with a wood floor set (`"props": [{"id": "<room>_fx_floor",
+"mats": {"wood": "pbr/floor/FlooringOak001_2K-JPG"}}]` in the room's extra), the kit's boards then laid where the set's are.
 
 ## 3. Kit presets (`node -e` on kit.js's resolve for a size; KIT checks them)
 
@@ -83,7 +85,10 @@ wall/Plaster001_1K-PNG (white plaster); floor/Tatami001_1K-PNG (weave), Tatami00
 021, 022 (patchy); metal/Metal063_1K-PNG (painted, rusting); plastic/white_plastic (a unit bath); building/Paint005
 (dark teal paint), Bamboo001C; road/Road012A, Road013A (dark), Road010C (patched, yellow edges); asphalt/Asphalt025C;
 gravel/Gravel006, 024; roofing_tiles/RoofingTiles010 (kawara with moss), 001-004 (slate), 006 (terracotta squares),
-013A/B, 014C; bark/Bark001, 006, 014; foliage/Moss002, vine_*; no wood floors (the kit's boards are drawn).
+013A/B, 014C; bark/Bark001, 006, 014; foliage/Moss002, vine_*; ours, made by `tools/woodpbr.py` (2K, ASSETS §6):
+floor/FlooringOak001_2K-JPG (light natural oak sheet flooring), FlooringOak002 (stained medium), FlooringBirch001;
+wood/WoodOak001_2K-JPG, WoodWalnut001_2K-JPG (glued furniture panels: a kit thing's `wood`, `body` or `front`, a
+prop generator table's or chair's `"pbr": {"wood": ...}`).
 
 ## 5. What the checks say, usually
 

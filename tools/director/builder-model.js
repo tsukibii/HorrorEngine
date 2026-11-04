@@ -99,11 +99,12 @@ export function presetToModel(P) {
       continue;
     }
     let i = 1; while (kits.some(k => k.id === `${rid}_kt_${preset}_${i}`)) i++;
-    const own = Object.assign({}, o); delete own.z; delete own.size; delete own.extra;
+    const own = Object.assign({}, o); delete own.z; delete own.size; delete own.extra; delete own.mats;
     const k = newKit(preset, `${rid}_kt_${preset}_${i}`, rid, r3(x), r3(y), { z: o.z, rot });
     k.spec = Object.assign({ preset }, own);
     try { k.size = (o.size || kitFull(k.spec).size).slice(); } catch (e) { problems.push(`layout: ${preset}: ${e.message}`); continue; }
     if (o.extra) k.extra = clone(o.extra);
+    if (o.mats) k.extra = Object.assign(k.extra || {}, { mats: clone(o.mats) });   // its slots dressed: on the thing, as Paint keeps them
     kits.push(k);
   }
   return { rooms, ops, items, kits, floors, finish: Object.assign({}, FINISH, P.finish || {}), player: { x: P.start[0], y: P.start[1], yaw: P.start[2], z: 0 },

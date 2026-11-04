@@ -188,6 +188,12 @@
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe cedar_real (Content/Studio/Props/presets.json)"
  },
+ "props/chair_desk_oak": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe chair_desk_oak (Content/Studio/Props/presets.json)"
+ },
  "props/chair_dining": {
   "date": "2026-11-04",
   "kind": "mesh",
@@ -337,6 +343,12 @@
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe dead_tree (Content/Studio/Props/presets.json)"
+ },
+ "props/desk_oak": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe desk_oak (Content/Studio/Props/presets.json)"
  },
  "props/diary_closed": {
   "date": "2026-11-01",
@@ -1099,6 +1111,18 @@
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe zaisu_lacquer (Content/Studio/Props/presets.json)"
+ },
+ "props/zaisu_walnut": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe zaisu_walnut (Content/Studio/Props/presets.json)"
+ },
+ "props/zataku_walnut": {
+  "date": "2026-11-04",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe zataku_walnut (Content/Studio/Props/presets.json)"
  },
  "props/zelkova_autumn": {
   "date": "2026-11-02",

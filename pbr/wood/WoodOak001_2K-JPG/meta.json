@@ -1,0 +1,15 @@
+{
+ "maps": {
+  "albedo": "WoodOak001_2K-JPG_Color.jpg",
+  "normal": "WoodOak001_2K-JPG_NormalGL.jpg",
+  "rough": "WoodOak001_2K-JPG_Roughness.jpg",
+  "ao": "WoodOak001_2K-JPG_AmbientOcclusion.jpg",
+  "height": "WoodOak001_2K-JPG_Displacement.jpg"
+ },
+ "normal": "gl",
+ "tile_m": 1.2,
+ "source": "ours: tools/woodpbr.py WoodOak001",
+ "url": "",
+ "licence": "ours",
+ "label": "oak, oiled: an edge-glued panel of 45-110 mm strips (furniture, tops, frames)"
+}

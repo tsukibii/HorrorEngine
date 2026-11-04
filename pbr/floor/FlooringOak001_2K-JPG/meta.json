@@ -1,0 +1,15 @@
+{
+ "maps": {
+  "albedo": "FlooringOak001_2K-JPG_Color.jpg",
+  "normal": "FlooringOak001_2K-JPG_NormalGL.jpg",
+  "rough": "FlooringOak001_2K-JPG_Roughness.jpg",
+  "ao": "FlooringOak001_2K-JPG_AmbientOcclusion.jpg",
+  "height": "FlooringOak001_2K-JPG_Displacement.jpg"
+ },
+ "normal": "gl",
+ "tile_m": 1.818,
+ "source": "ours: tools/woodpbr.py FlooringOak001",
+ "url": "",
+ "licence": "ours",
+ "label": "Japanese flooring, oak, natural satin: 2P sheets (303 x 1818 mm), 151.5 mm boards"
+}

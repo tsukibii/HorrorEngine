@@ -2,6 +2,21 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-04, latest (the user: real wood in the flat)
+
+- **"If you look at the map you made for the interior, the wooden inside floor tiles look very fake. Can you now
+  update the interior so it uses the latest tables and chairs with wood textures, and update and make a custom PBR for
+  Japanese wooden floors; aim to capture the realism of the PBRs that we imported from other sources so nothing stands
+  out too much and looks more cohesive."** Our own wood sets, made by code (`tools/woodpbr.py`, ASSETS §6) in the
+  imported ambientCG sets' shape (2K: colour, GL normal, roughness, occlusion, displacement; a meta.json with the
+  repeat) and in git beside them: Japanese sheet flooring (`pbr/floor/FlooringOak001`, light natural oak;
+  `FlooringOak002`, stained; `FlooringBirch001`) and glued furniture panels (`pbr/wood/WoodOak001`, `WoodWalnut001`),
+  each board its own cut of a log, their colours and roughness kept to measured wood (WOODPBR). maison_1f's wood
+  rooms wear `FlooringOak001`, the kit's boards laid where the set's are; its bedroom desk and chair and its living
+  room's zataku and zaisu are the prop generator's tables and chairs wearing the oak and walnut sets (`desk_oak`,
+  `chair_desk_oak`, `zataku_walnut`, `zaisu_walnut`), with the bed's frame, the genkan's step, the TV board and the
+  tokonoma dressed to match (SCENE_BUILDER §10d).
+
 ## 2026-11-04, later night (the user: customizable props, not logos on everything)
 
 - **"I think I misrepresented what I meant by logo. I don't mean I want a logo on the models, I mean I want to be able

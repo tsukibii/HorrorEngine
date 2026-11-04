@@ -140,6 +140,36 @@ foliage, effects; all CC0). They're read after `assets/pbr`, their `meta.json` k
 `_thumb.jpg` isn't. A set's ref is its path (`pbr/concrete/Concrete010_1K-PNG`). `pbr/_made/<hash>` (in `assets/pbr`,
 not in git) is a set the street paint page made from one of them, tinted and layered (docs/STREET_PAINT.md §3b).
 
+**Our own wood sets** (DECISIONS 2026-11-04, latest: "the wooden inside floor tiles look very fake ... make a custom
+pbr for japanese wooden floors, aim to capture the realism of the pbrs that we imported"): made by code,
+`tools/woodpbr.py`, in the imported sets' shape (`<Set>_Color`, `_NormalGL`, `_Roughness`, `_AmbientOcclusion`,
+`_Displacement` as 2K JPGs, a meta.json with one repeat's size, `"source": "ours: tools/woodpbr.py <Set>"`) and in git
+beside them:
+
+| Set | What | One repeat |
+|---|---|---|
+| `pbr/floor/FlooringOak001_2K-JPG` | light natural oak, satin urethane: the flats' floor | 1.818 m |
+| `pbr/floor/FlooringOak002_2K-JPG` | oak stained medium brown, more worn | 1.818 m |
+| `pbr/floor/FlooringBirch001_2K-JPG` | birch, warm and plain (no open pores), a few mineral streaks | 1.818 m |
+| `pbr/wood/WoodOak001_2K-JPG` | oak, oiled: an edge-glued panel of 45 to 110 mm strips (furniture, tops, frames) | 1.2 m |
+| `pbr/wood/WoodWalnut001_2K-JPG` | walnut, oiled, the same panel | 1.2 m |
+
+The floors are Japanese sheet flooring (フローリング, "2P"): 303 x 1818 mm sheets of two 151.5 mm boards, a V-groove
+down the middle and a micro-bevel at the sheet's edges, each row's butt joints staggered; so a kit floor painted with
+one (a room's `<room>_fx_floor` `mats: {"wood": ...}`) lays its boards where the set's are (its cells, below: 12 boards
+a repeat). Each board is its own cut of a log: its face a little off the pith and slanted to it, so its growth rings
+(each its own width, wandering) cut it in the arches flat-sawn boards show or nearly straight lines; earlywood light,
+latewood darker, oak's open pores along the grain in the earlywood and its rays as flecks; each board its own tone and
+warmth, long streaks, now and then a pin knot. The finish is in the roughness (satin or oil, rougher in the grooves and
+pores, scratches, a dent), the grooves and pores in the height, normal and occlusion; made at twice the size and
+halved, so the pores don't alias; every set tiles. Furniture's grain runs along the set's x, which is a prop
+generator part's grain (families/furniture.py), so a table's `"pbr": {"wood": "pbr/wood/WoodOak001_2K-JPG"}` runs
+along each leg, rail and board. The colours are kept to measured wood and the imported sets' own range (a light oak
+floor about sRGB 200, 160, 115; never saturated). `python tools/woodpbr.py [sets...]` makes them again,
+`python tools/woodpbr.py check` (WOODPBR, in check_all): every set's edges meet like its joints inside, its boards
+found as cells, its colour and roughness in wood's range, no NaN. A new set is a few numbers in its `SETS` (colours,
+ring spacing, pores, rays, knots, the layout, the finish).
+
 - **The download:** Poly Haven's ZIP with Blend and glTF off, MaterialX off, the packed AO/Rough/Metal off, and AO, Diffuse
   and Rough as JPG, Displacement and Normal (DX) as PNG. Other names work too: the last word of each file name says
   which map it is (`diff`, `col`, `Color`, `ao`, `AmbientOcclusion`, `rough`, `Roughness`, `disp`, `Displacement`,

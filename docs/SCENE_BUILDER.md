@@ -467,6 +467,15 @@ in half and in three in the oshiire; the living room's zabuton tufted. A layout 
 0.8 m clearance off the inside of a closet, an oshiire or a storeroom now (they're reached into, not walked into: an
 oshiire's futon sits right behind its fusuma).
 
+**Its wood** (DECISIONS 2026-11-04, latest: "the wooden inside floor tiles look very fake ... uses the latest tables
+and chairs with wood textures"): the wood rooms (bedroom 1, its closet and entry, the hall, the living room) wear
+`FlooringOak001`, the sheet flooring made by `tools/woodpbr.py` (ASSETS §6), on the kit's planks, which are laid by
+the set's cells (each board where the set draws one, the gaps in its grooves); bedroom 1's desk and chair are the
+prop generator's `desk_oak` and `chair_desk_oak` in `WoodOak001` (a grey pad tied to the chair), the bed's frame and
+the genkan's step dressed in it too (`mats: {"wood": ...}`); the living room's low table is a `zataku_walnut` with a
+`zaisu_walnut` (oatmeal pads) on a bigger rug, one zabuton across from it, the TV board and the tokonoma in
+`WoodWalnut001`. The tea things sit `on` the zataku (`living_kt_zataku_walnut_1`).
+
 What it taught the builder (each now a rule, none changing an existing set's walls but where they were wrong):
 
 - **Open plans read back**: two rooms open to each other (both skip their shared wall) came back walled when the
@@ -477,6 +486,8 @@ What it taught the builder (each now a rule, none changing an existing set's wal
 - **Openings one over another** (a stair shaft's door on every landing): the wall was cut from the floor up under
   each, walling up the ones below (and the two schools' upper stair arches, with 36 walls of no width); a wall with
   stacked openings is cut column by column. LEVEL now says *walled up* and *a wall piece of no width*.
+- **A kit's `mats` in a layout file** went into its spec, which nothing reads: the curtains' colours and the dressed
+  bed never showed. `presetToModel` puts them on the thing, where the builder's Paint keeps a kit thing's `mats`.
 - **Glass in the export**: Export for Godot gives every window's and glazed door's pane the game export's own glass
   (12 % of a pale blue); the desk's 25 %, lit by the room's lamps in Godot, was a milky veil over the street.
 

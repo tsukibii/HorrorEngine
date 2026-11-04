@@ -193,9 +193,15 @@
        "at": [
         1.61,
         1.69
-       ]
+       ],
+       "mats": {
+        "wood": "pbr/floor/FlooringOak001_2K-JPG"
+       }
       },
       {
+       "mats": {
+        "wood": "pbr/wood/WoodOak001_2K-JPG"
+       },
        "id": "br1_kt_bed_single_1",
        "kit": {
         "preset": "bed_single",
@@ -236,15 +242,8 @@
        "z": 0.47
       },
       {
-       "id": "br1_kt_desk_1",
-       "kit": {
-        "preset": "desk",
-        "size": [
-         1.2,
-         0.6,
-         0.72
-        ]
-       },
+       "id": "br1_kt_desk_oak_1",
+       "shape": "asset props/desk_oak",
        "at": [
         2.87,
         0.95
@@ -252,15 +251,8 @@
        "rot": 270
       },
       {
-       "id": "br1_kt_dining_chair_1",
-       "kit": {
-        "preset": "dining_chair",
-        "size": [
-         0.45,
-         0.5,
-         0.82
-        ]
-       },
+       "id": "br1_kt_chair_desk_oak_1",
+       "shape": "asset props/chair_desk_oak",
        "at": [
         2.32,
         0.8
@@ -284,13 +276,13 @@
        "rot": 0
       },
       {
+       "mats": {
+        "fabric": "#5f6b73"
+       },
        "id": "br1_kt_curtain_blackout_1",
        "kit": {
         "preset": "curtain_blackout",
         "open": 0.75,
-        "mats": {
-         "fabric": "#5f6b73"
-        },
         "size": [
          2.7,
          0.14,
@@ -396,7 +388,10 @@
        "at": [
         1.165,
         0.72
-       ]
+       ],
+       "mats": {
+        "wood": "pbr/floor/FlooringOak001_2K-JPG"
+       }
       }
      ]
     },
@@ -454,7 +449,10 @@
        "at": [
         0.445,
         0.41
-       ]
+       ],
+       "mats": {
+        "wood": "pbr/floor/FlooringOak001_2K-JPG"
+       }
       }
      ]
     },
@@ -911,6 +909,9 @@
        "rot": 90
       },
       {
+       "mats": {
+        "wood": "pbr/wood/WoodOak001_2K-JPG"
+       },
        "id": "genkan_kt_genkan_step_1",
        "kit": {
         "preset": "genkan_step",
@@ -1025,7 +1026,10 @@
        "at": [
         1.45,
         0.655
-       ]
+       ],
+       "mats": {
+        "wood": "pbr/floor/FlooringOak001_2K-JPG"
+       }
       }
      ]
     },
@@ -1260,6 +1264,9 @@
      ],
      "props": [
       {
+       "mats": {
+        "wood": "pbr/wood/WoodWalnut001_2K-JPG"
+       },
        "id": "tokonoma_kt_tokonoma_1",
        "kit": {
         "preset": "tokonoma",
@@ -1442,9 +1449,16 @@
        "at": [
         1.58,
         2.1
-       ]
+       ],
+       "mats": {
+        "wood": "pbr/floor/FlooringOak001_2K-JPG"
+       }
       },
       {
+       "mats": {
+        "body": "pbr/wood/WoodWalnut001_2K-JPG",
+        "front": "pbr/wood/WoodWalnut001_2K-JPG"
+       },
        "id": "living_kt_tv_board_1",
        "kit": {
         "preset": "tv_board",
@@ -1483,8 +1497,8 @@
        "kit": {
         "preset": "rug_plain",
         "size": [
+         2.5,
          2,
-         1.5,
          0.01
         ]
        },
@@ -1495,17 +1509,19 @@
        "rot": 90
       },
       {
-       "id": "living_kt_low_table_1",
-       "kit": {
-        "preset": "low_table",
-        "size": [
-         1.2,
-         0.75,
-         0.35
-        ]
-       },
+       "id": "living_kt_zataku_walnut_1",
+       "shape": "asset props/zataku_walnut",
        "at": [
         1.55,
+        1.9
+       ],
+       "rot": 90
+      },
+      {
+       "id": "living_kt_zaisu_walnut_1",
+       "shape": "asset props/zaisu_walnut",
+       "at": [
+        0.85,
         1.9
        ],
        "rot": 90
@@ -1514,31 +1530,13 @@
        "id": "living_kt_zabuton_real_1",
        "shape": "asset props/zabuton_real",
        "at": [
-        0.8,
-        1.6
-       ],
-       "rot": 90
-      },
-      {
-       "id": "living_kt_zabuton_real_2",
-       "shape": "asset props/zabuton_real",
-       "at": [
-        0.8,
-        2.2
-       ],
-       "rot": 90
-      },
-      {
-       "id": "living_kt_zabuton_real_3",
-       "shape": "asset props/zabuton_real",
-       "at": [
         2.25,
         1.9
        ],
        "rot": 270
       },
       {
-       "on": "living_kt_low_table_1",
+       "on": "living_kt_zataku_walnut_1",
        "id": "living_kt_kyusu_1",
        "kit": {
         "preset": "kyusu",
@@ -1556,7 +1554,7 @@
        "z": 0.35
       },
       {
-       "on": "living_kt_low_table_1",
+       "on": "living_kt_zataku_walnut_1",
        "id": "living_kt_yunomi_1",
        "kit": {
         "preset": "yunomi",
@@ -1574,7 +1572,7 @@
        "z": 0.35
       },
       {
-       "on": "living_kt_low_table_1",
+       "on": "living_kt_zataku_walnut_1",
        "id": "living_kt_yunomi_2",
        "kit": {
         "preset": "yunomi",
@@ -1592,13 +1590,13 @@
        "z": 0.35
       },
       {
+       "mats": {
+        "fabric": "#7a6a58"
+       },
        "id": "living_kt_curtain_blackout_1",
        "kit": {
         "preset": "curtain_blackout",
         "open": 0.8,
-        "mats": {
-         "fabric": "#7a6a58"
-        },
         "size": [
          2.9,
          0.14,
