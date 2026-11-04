@@ -3348,6 +3348,24 @@
    "sash": 0.04,
    "slot": "alu",
    "lock": true
+  },
+  "gate_bars": {
+   "label": "Gate of steel bars (a stair's, a yard's)",
+   "type": "door",
+   "size": [
+    0.9,
+    0.035,
+    1.95
+   ],
+   "style": "bars",
+   "grid": [
+    1,
+    2
+   ],
+   "rail": 0.04,
+   "handle": "bar_pull",
+   "hinges": 2,
+   "slot": "steel_paint"
   }
  }
 }

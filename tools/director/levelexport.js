@@ -43,9 +43,14 @@ function trisMesh(name, T) {
 // a world object as the export's: shared geometry and its full material (not the simple view's), what isn't a surface
 // left out (lights, points, lines, sprites, the hidden), a block whose own box is hidden (a kit thing's, a library mesh's)
 // a plain node over its children
+// a window's or a glazed door's pane as the game's own export has it (storykit/godot.py: 12 % of a pale blue, a glint):
+// the desk's 25 %, lit by the room's lamps in Godot, was a milky veil over the street outside
+let PANE = null;
+const pane = () => PANE || (PANE = Object.assign(new THREE.MeshStandardMaterial({ color: new THREE.Color().setRGB(0.85, 0.9, 0.95, THREE.SRGBColorSpace), roughness: 0.05, metalness: 0,
+  transparent: true, opacity: 0.12, side: THREE.DoubleSide, depthWrite: false }), { name: "glass" }));
 function copyOf(o, shown = false) {                                  // shown: a door the view has taken away (Doors open)
   if ((!o.visible && !shown) || o.isLight || o.isPoints || o.isLine || o.isSprite) return null;
-  const mat = o.isMesh ? (o.userData.fullMat || o.material) : null;
+  const mat = o.isMesh ? (o.userData.slot === "glass" ? pane() : (o.userData.fullMat || o.material)) : null;
   const hidden = o.isMesh && [].concat(mat).every(m => !m || m.visible === false || m.isShaderMaterial);
   const c = o.isMesh && !hidden ? new THREE.Mesh(o.geometry, mat) : new THREE.Group();
   c.name = o.name || (o.userData && o.userData.slot ? "kit_" + o.userData.slot : "");

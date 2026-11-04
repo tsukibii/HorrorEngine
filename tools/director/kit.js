@@ -136,7 +136,7 @@ export const TYPES = {
     ["tufts", "buttons across × along", [0, 0], "n2"], ["tuft", "button depth", 0.35, "num"], ["wrinkle", "wrinkles", 0.004, "mm"], ["seed", "seed", 1, "int"],
     ["stand", "stands up (leans on a back)", false, "bool"], ["lean", "leans back", 0, "deg"], ["n", "detail", 16, "int"],
     ["slot", "material", "fabric", "slot"], ["pipe_slot", "piping material", "fabric_2", "slot"], ["button_slot", "button material", "fabric_2", "slot"]], gen: cushionGen },
-  door: { label: "Door", cat: "door", mount: "door", size: [0.8, 0.04, 2.0], pivot: doorPivot, params: [["style", "style", "panels", "pick", ["flush", "panels", "shaker", "glass", "louvre", "shoji", "slide"]],
+  door: { label: "Door", cat: "door", mount: "door", size: [0.8, 0.04, 2.0], pivot: doorPivot, params: [["style", "style", "panels", "pick", ["flush", "panels", "shaker", "glass", "louvre", "shoji", "slide", "bars"]],
     ["grid", "panels across × up", [1, 2], "n2"], ["rail", "frame width", 0.1, "m"], ["recess", "panel depth", 0.006, "mm"], ["hinges", "hinges", 3, "int"],
     ["hinge_h", "hinge height", 0.1, "m"], ["knuckles", "knuckles a hinge", 5, "int"], ["hinge_tip", "hinge tips", "ball", "pick", ["ball", "flat", "none"]],
     ["hinge_w", "hinge plate width", 0.026, "m"], ["hinge_t", "plate thickness (the mortise's depth)", 0.0025, "mm"], ["barrel", "barrel Ø", 0.013, "mm"],
@@ -1303,6 +1303,10 @@ function doorGen(s, P) {
         if (st === "panels") { const e = Math.min(0.04, pw / 5, ph / 5); slab(x0 + e, x1 - e, z0 + e, z1 - e, s.slot, { b: 0.004 }, T - rc); }   // its raised field
       } else if (st === "glass") bx(P, x0, -0.003, z0, x1, 0.003, z1, "glass");
       else if (st === "louvre") { const k = Math.max(2, Math.round((z1 - z0) / 0.035)); for (let q = 0; q < k; q++) { const z = z0 + (q + 0.5) * (z1 - z0) / k; bx(P, x0, -T * 0.3, z - 0.009, x1, T * 0.3, z + 0.009, s.slot, { b: 0.001 }); } }
+      else if (st === "bars") {                                     // a gate's: upright bars about 11 cm apart, thinner than the frame (never in its faces' planes)
+        const k = Math.max(1, Math.round((x1 - x0) / 0.11)), r = Math.min(0.009, T * 0.3);
+        for (let q = 1; q <= k - 1 || (k === 1 && q === 1); q++) { const x = x0 + q * (x1 - x0) / Math.max(2, k); bx(P, x - r, -r, z0 - 0.004, x + r, r, z1 + 0.004, s.slot, { b: 0.001 }); }
+      }
       else if (shoji) bx(P, x0, T * 0.2, z0, x1, T * 0.2 + 0.0015, z1, "paper");
     }
   }
