@@ -2422,40 +2422,6 @@
    "turn": 0
   },
   {
-   "id": "bike_1",
-   "kind": "bike",
-   "at": [
-    13.3,
-    2.4
-   ],
-   "turn": 90
-  },
-  {
-   "id": "bike_2",
-   "kind": "bike",
-   "at": [
-    13.75,
-    3.15
-   ],
-   "turn": 90
-  },
-  {
-   "id": "pot_1",
-   "kind": "pot",
-   "at": [
-    12.9,
-    4.9
-   ]
-  },
-  {
-   "id": "pot_2",
-   "kind": "pot",
-   "at": [
-    12.9,
-    7
-   ]
-  },
-  {
    "id": "postbox",
    "kind": "postbox",
    "at": [

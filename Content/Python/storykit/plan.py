@@ -660,8 +660,10 @@ def plan(story, level=None):
                     out.append(dict(p, id=f"{t.id}__step{i}", kind="mesh", shape="box",
                                     pos=(t.pos[0] + ox, t.pos[1] + oy, t.pos[2] + (top + bot) / 2),
                                     size=(sw, run / n, top - bot), yaw=t.yaw - 90, tags=_tags(t)))
-            elif kind == "asset":                     # the mesh itself, at its indexed size (its box stands in until fetched)
-                out.append(dict(p, kind="mesh", shape="box", pos=t.centre, size=t.size, tags=_tags(t, [f"art:{args[0]}", "real"])))
+            elif kind == "asset":                     # the mesh itself, at its indexed size (its box stands in until fetched);
+                info = LIB.mesh_info(args[0]) or {}   # hollow when its index says so (a curtain: seen, never bumped)
+                out.append(dict(p, kind="mesh", shape="box", pos=t.centre, size=t.size,
+                                tags=_tags(t, [f"art:{args[0]}", "real"] + (["hollow"] if info.get("hollow") else []))))
             else:
                 shape = {"box": "box", "plane": "box", "cyl": "cyl", "sphere": "sphere"}[kind]
                 out.append(dict(p, kind="mesh", shape=shape, pos=t.centre, size=t.size, tags=_tags(t)))

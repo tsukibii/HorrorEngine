@@ -14,11 +14,29 @@ to 2026-11-03 on `Director-Godot`: the Director in Godot, its panel, Story Flow 
 main on 2026-11-03 with main's own work since 2026-10-31 brought in; then the skin's depth softened and the skin under
 clothes hidden on `claude/festive-euler-o7axpl`, the walls meeting, the editors' rules, Export for Godot and the
 by-hand guides, merged; then on the same branch from main the map-building skill and the user's floor plan as a map, its
-bedding, curtains, tables and chairs, the props' kept pictures and, last, real wood in the flat). Read this
+bedding, curtains, tables and chairs, the props' kept pictures, real wood in the flat and, last, its curtains). Read this
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-04, latest, the same branch): real wood in the flat
+## Where it stopped last (2026-11-04, after the wood, the same branch): the flat's curtains, bare chairs, a cleaner street
+
+The user's ask (DECISIONS 2026-11-04, after the wood): the prop generator's curtains in the map, the chairs without
+their cushions, the bicycles and bins off the street, the folded futon out of the oshiire.
+
+- **Curtains made for each window** (PROPGEN §22): `curtain_maison_bedroom` (blackout, blue-grey, a little below the
+  sill), `curtain_maison_living` (linen to the floor), `curtain_maison_washitsu` (a white sheer to the sill), set down
+  in the layout from their `box_m` (SCENE_BUILDER §10d) in place of the kit's, at seeds that hang clean (LESSONS: a
+  pucker that stays put is the seed's); **hollow** (the family's `HOLLOW = True`, the library index's `hollow`,
+  storykit/plan.py's tag: no collider in the exports or Play, out of LEVEL's overlap test).
+- **The chairs bare**: `chair_desk_oak` and `zaisu_walnut` with `cushion.on: false` (their pads kept); the bedroom's
+  desk, chair and lamp 10 cm further from the window.
+- **The oshiire empty**; **maison_lane** without its two bikes and two empty plant pots (the "bins").
+
+Worth doing with the user: plants in pots by the entrance if they want the corner dressed again (`plant` family,
+`props/pot_*`); a lace behind the bedroom's and living room's drapes (a second, sheer curtain on a rail nearer the
+window: the two simulated apart, so their folds would need a gap between rails).
+
+## Before that (2026-11-04, latest, the same branch): real wood in the flat
 
 The user's ask (DECISIONS 2026-11-04, latest): the flat's wood floors looked fake; the latest tables and chairs with
 wood textures in the interior, and a custom PBR for Japanese wooden floors as real as the imported sets.

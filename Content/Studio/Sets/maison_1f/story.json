@@ -246,7 +246,7 @@
        "shape": "asset props/desk_oak",
        "at": [
         2.87,
-        0.95
+        1.05
        ],
        "rot": 270
       },
@@ -271,30 +271,19 @@
        },
        "at": [
         2.92,
-        1.85
+        1.95
        ],
        "rot": 0
       },
       {
-       "mats": {
-        "fabric": "#5f6b73"
-       },
-       "id": "br1_kt_curtain_blackout_1",
-       "kit": {
-        "preset": "curtain_blackout",
-        "open": 0.75,
-        "size": [
-         2.7,
-         0.14,
-         1.75
-        ]
-       },
+       "id": "br1_kt_curtain_maison_bedroom_1",
+       "shape": "asset props/curtain_maison_bedroom",
        "at": [
-        1.73,
-        0.25
+        1.726,
+        0.206
        ],
        "rot": 180,
-       "z": 0.6
+       "z": 0.65
       },
       {
        "id": "br1_fx_win1",
@@ -1195,22 +1184,14 @@
        "rot": 0
       },
       {
-       "id": "washitsu_kt_curtain_sheer_1",
-       "kit": {
-        "preset": "curtain_sheer",
-        "open": 0.6,
-        "size": [
-         2,
-         0.08,
-         1.75
-        ]
-       },
+       "id": "washitsu_kt_curtain_maison_washitsu_1",
+       "shape": "asset props/curtain_maison_washitsu",
        "at": [
         1.11,
-        0.22
+        0.182
        ],
        "rot": 180,
-       "z": 0.6
+       "z": 0.81
       },
       {
        "id": "washitsu_fx_win1",
@@ -1354,17 +1335,6 @@
          "preset": "fusuma"
         }
        }
-      }
-     ],
-     "props": [
-      {
-       "id": "oshiire_kt_futon_folded_1",
-       "shape": "asset props/futon_folded",
-       "at": [
-        0.355,
-        0.645
-       ],
-       "rot": 0
       }
      ]
     },
@@ -1590,25 +1560,14 @@
        "z": 0.35
       },
       {
-       "mats": {
-        "fabric": "#7a6a58"
-       },
-       "id": "living_kt_curtain_blackout_1",
-       "kit": {
-        "preset": "curtain_blackout",
-        "open": 0.8,
-        "size": [
-         2.9,
-         0.14,
-         2.32
-        ]
-       },
+       "id": "living_kt_curtain_maison_living_1",
+       "shape": "asset props/curtain_maison_living",
        "at": [
-        1.57,
-        0.25
+        1.568,
+        0.208
        ],
        "rot": 180,
-       "z": 0.02
+       "z": 0.012
       },
       {
        "id": "living_kt_floor_lamp_1",

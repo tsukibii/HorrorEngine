@@ -463,7 +463,8 @@ down that walk's middle, poles at the near kerb turned so their arms cross the l
   in the estate's garden, leaning over the wall. STREET says when a prop isn't a recipe, and warns when it isn't made.
 - **The block's side**: image 2's brown tiled flats with their barred balconies, a house behind the kitchen's window
   (its wall 1.5 m away), the flat's garden screen (slats, 0.8 m: low enough for the road to show from the ground
-  floor's windows), a vending machine, bikes and pots at the entrance.
+  floor's windows), a vending machine; the bikes and the empty plant pots at the entrance taken away (the user,
+  2026-11-04: "remove the bicycles and bins from the outside": the pots, plants not yet in them, read as bins).
 - **Setbacks flush on a side** (`tiers` with an `inset` of 0, as the dark villa): the terrace's slab edge, rail and
   parapet are left out on that side (they lay in the storey above's wall's plane); a terrace's `wall` edge (a parapet)
   no longer overlaps itself at its corners. STREET's rules street has both.

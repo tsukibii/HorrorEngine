@@ -29,6 +29,8 @@ from .. import noise as N
 from .. import sim
 from .bedding import grid_normals, paint_cover, sheet_grid
 
+HOLLOW = True       # seen, never bumped: its library entry says `hollow`, so a level gives it no collider (PROPGEN §22)
+
 # the page's settings (PROPGEN §13: a family's own, picked from a list), their choices and a list's labels
 FIELDS = {"window": [1800, 1300], "sill": 800, "panels": 2, "side": "left", "heading": "pinch", "fullness": 2.2, "pitch": 120,
           "length": "floor", "open": 0.15, "tie": {"at": 0.42, "bundle": 150, "depth": 90}, "fabric": "cotton",

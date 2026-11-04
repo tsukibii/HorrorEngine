@@ -3,6 +3,16 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## Curtains that crumpled where nothing touched them (2026-11-04, after the wood)
+
+- **A rail keeps its family's distance from the wall**: the flat's curtains were first hung 100 to 110 mm out (to
+  clear a desk), and the sheer's deep gathers pressed against the wall and twisted; the default 200 mm hangs them
+  clean (the desk moved 10 cm instead).
+- **A pucker that stays put whatever changes is the seed's**: the living room's drapes kept the same crumple near one
+  panel's hem through a nearer rail, a further rail and a shallower window frame (the settle has no self-collision:
+  two folds crossing). A few seeds made small in a scratch folder (`propgen.py make <name> --seed N --as try_N
+  --formats glb --tex 1024 --out <scratch>`, two at once) found clean ones in minutes; the recipe keeps that seed.
+
 ## Wood sets that looked drawn, then real (2026-11-04, latest)
 
 - **Wood's figure is a cut through rings, not rings drawn on the face**: the first sets drew the growth rings as

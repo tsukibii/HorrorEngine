@@ -38,7 +38,9 @@ Metres; x east, y north, z up. Facing: a kit or a street thing at `rot`/`turn` 0
   `python tools/propgen.py make <name>`, then `library <name>`), x, y its box's middle, at its size from the index
   (id `<room>_kt_<name>_<n>`). A blanket made for a futon or bed lies on it from its index's `box_m` (PROPGEN §21: its
   box from the support's middle; maison_1f's layout script's `laid`): put it where its box falls, `z` the box's
-  lowest, `on` the bed; give the futon or bed `{"pillows": 0, "duvet": 0}`.
+  lowest, `on` the bed; give the futon or bed `{"pillows": 0, "duvet": 0}`. A curtain made for a window (PROPGEN §22: its
+  `window` and `sill`) the same way from the window's middle on the wall's face (x = room width × the window's `at`,
+  y = 0.05), turned 180 on a south wall, `z` its box's lowest; curtains are hollow (no collider, no LEVEL overlap).
 - **Stairs**: a shaft as one room from the ground to the top floor + its ceiling (`h`); a dog-leg needs ≥ 1.82 across
   and about 4.6 along `dir` (a run of 1.9 m for a 2.85 m storey); `dir: "s"`: each floor's landing at the north end,
   the first flight up the east half. One flight: the floor above ≤ its `z + h − 1.9`.

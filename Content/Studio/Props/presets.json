@@ -372,6 +372,12 @@
    "cover": {"color": "#3c4047", "rough": 0.86}, "rod": {"kind": "rod", "d": 28, "color": "#232323", "metal": 1.0, "finial": "cap"}},
  "curtain_wave": {"label": "curtains: a pair of wave curtains on a ceiling track, linen, pooling on the floor, half open", "family": "curtain", "seed": 505, "window": [2400, 1300], "sill": 800, "panels": 2, "heading": "wave", "length": "puddle", "open": 0.45, "fabric": "linen", "tex": 2048,
    "cover": {"color": "#d8d1c2", "rough": 0.93}, "rod": {"kind": "track", "color": "#f0efeb", "above": 200}},
+ "curtain_maison_bedroom": {"label": "curtains: blackout drapes, pinch pleated on a wall rail, a little below the sill, blue-grey, drawn open (maison_1f's bedroom: its 240 x 130 cm window)", "family": "curtain", "seed": 511, "window": [2400, 1300], "sill": 800, "panels": 2, "heading": "pinch", "length": "below", "open": 0.3, "fabric": "blackout", "tex": 2048,
+   "cover": {"color": "#5f6b73", "rough": 0.88}, "rod": {"kind": "rail", "color": "#e9e7e1"}},
+ "curtain_maison_living": {"label": "curtains: linen drapes, pinch pleated on a wall rail, to the floor, warm greige, drawn open (maison_1f's living room: its 250 x 175 cm window over a 35 cm sill)", "family": "curtain", "seed": 541, "window": [2500, 1750], "sill": 350, "panels": 2, "heading": "pinch", "length": "floor", "open": 0.35, "fabric": "linen", "tex": 2048,
+   "cover": {"color": "#8f8170", "rough": 0.92}, "rod": {"kind": "rail", "color": "#e9e7e1"}},
+ "curtain_maison_washitsu": {"label": "curtains: a white sheer gathered on a thin rod, to the sill, drawn (maison_1f's washitsu: its 170 x 130 cm window)", "family": "curtain", "seed": 523, "window": [1700, 1300], "sill": 800, "panels": 2, "heading": "gather", "fullness": 2.0, "length": "sill", "open": 0.06, "fabric": "sheer", "tex": 2048,
+   "cover": {"color": "#f3f1ec", "rough": 0.8}, "rod": {"kind": "rod", "d": 16, "color": "#d9d6cf", "metal": 1.0, "finial": "cap"}},
  "curtain_velvet_old": {"label": "curtains: old velvet drapes on a brass pole, dusty, pooling, mostly open (a horror house's)", "family": "curtain", "seed": 506, "window": [1800, 1500], "sill": 700, "panels": 2, "heading": "pinch", "length": "puddle", "open": 0.6, "fabric": "velvet", "tex": 2048,
    "cover": {"color": "#4c171b", "rough": 0.6}, "rod": {"kind": "rod", "d": 32, "color": "#8b6b3a", "metal": 1.0, "finial": "ball"}, "wear": {"dust": 0.35, "grime": 0.3, "fade": 0.25}},
  "table_dining": {"label": "table: a dining table on square legs and an apron, oiled oak-brown, 160 x 90", "family": "table", "seed": 601, "size": [1600, 900, 740], "style": "dining", "wood": "#8d5f3a", "finish": "oil", "tex": 2048},
@@ -401,8 +407,8 @@
    "cushion": {"seat": true, "thick": 40, "color": "#e6dfcf", "pattern": "stripes", "ink": "#5a6a82", "size": 40}},
  "zaisu_lacquer": {"label": "chair: a zaisu (a legless Japanese chair) in dark lacquer, indigo wave pads on its seat and back", "family": "chair", "seed": 708, "style": "zaisu", "wood": "#2e2018", "finish": "gloss", "tex": 2048,
    "cushion": {"seat": true, "back": true, "thick": 55, "color": "#2b3a58", "pattern": "seigaiha", "ink": "#3a4c70", "size": 46}},
- "chair_desk_oak": {"label": "chair: a desk chair in glued oak, a top rail and three slats, a grey seat pad tied to its posts (maison_1f's bedroom)", "family": "chair", "seed": 711, "style": "dining", "wood": "#c49c6c", "finish": "satin", "tex": 2048,
-   "pbr": {"wood": "pbr/wood/WoodOak001_2K-JPG"}, "cushion": {"seat": true, "thick": 35, "ties": true, "color": "#6f757b"}},
- "zaisu_walnut": {"label": "chair: a zaisu in glued walnut, oatmeal pads on its seat and back (maison_1f's living room)", "family": "chair", "seed": 712, "style": "zaisu", "wood": "#7a5439", "finish": "satin", "tex": 2048,
-   "pbr": {"wood": "pbr/wood/WoodWalnut001_2K-JPG"}, "cushion": {"seat": true, "back": true, "thick": 50, "color": "#b9ad97"}}
+ "chair_desk_oak": {"label": "chair: a desk chair in glued oak, a top rail and three slats, bare (its grey seat pad switched off: maison_1f's bedroom)", "family": "chair", "seed": 711, "style": "dining", "wood": "#c49c6c", "finish": "satin", "tex": 2048,
+   "pbr": {"wood": "pbr/wood/WoodOak001_2K-JPG"}, "cushion": {"on": false, "seat": true, "thick": 35, "ties": true, "color": "#6f757b"}},
+ "zaisu_walnut": {"label": "chair: a zaisu in glued walnut, bare (its oatmeal pads switched off: maison_1f's living room)", "family": "chair", "seed": 712, "style": "zaisu", "wood": "#7a5439", "finish": "satin", "tex": 2048,
+   "pbr": {"wood": "pbr/wood/WoodWalnut001_2K-JPG"}, "cushion": {"on": false, "seat": true, "back": true, "thick": 50, "color": "#b9ad97"}}
 }

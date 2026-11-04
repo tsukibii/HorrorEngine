@@ -476,6 +476,15 @@ the genkan's step dressed in it too (`mats: {"wood": ...}`); the living room's l
 `zaisu_walnut` (oatmeal pads) on a bigger rug, one zabuton across from it, the TV board and the tokonoma in
 `WoodWalnut001`. The tea things sit `on` the zataku (`living_kt_zataku_walnut_1`).
 
+**Its curtains and chairs** (DECISIONS 2026-11-04, after the wood): each curtained window wears the prop
+generator's curtains made for it (PROPGEN §22: `curtain_maison_bedroom` blackout drapes a little below the sill,
+`curtain_maison_living` linen to the floor, `curtain_maison_washitsu` a sheer to the sill), set down as a blanket
+is: the curtain's origin is the floor under the window's middle on the wall's face, so its layout `x, y` are that
+point plus its `box_m`'s middle turned with it (180 on a south wall) and its `z` the box's lowest (a curtain is
+hollow: seen, never bumped, no collider, PROPGEN §22); the chairs bare
+(`cushion.on: false`); the oshiire empty (its folded futon taken out: the bed in bedroom 1, the futon in the
+washitsu).
+
 What it taught the builder (each now a rule, none changing an existing set's walls but where they were wrong):
 
 - **Open plans read back**: two rooms open to each other (both skip their shared wall) came back walled when the

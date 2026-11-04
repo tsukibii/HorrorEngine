@@ -2,6 +2,18 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-04, after the wood (the user: the flat's curtains and chairs, a cleaner street)
+
+- **"Can you also update the map to use the new prop style curtains we made, also can we use the non cushion
+  versions of chairs in this map. Also remove the bicycles and bins from the outside as they don't look [right], can
+  you remove the weird bed that's inside the cupboard/closet too. Just keep the bed in the bedroom and futon in the
+  spare room."** maison_1f's windows wear the prop generator's curtains, each made for its window
+  (`curtain_maison_bedroom`: blackout drapes, blue-grey, a little below the sill; `curtain_maison_living`: linen to
+  the floor; `curtain_maison_washitsu`: a white sheer to the sill), set down from their `box_m` in place of the kit's;
+  its chairs bare (`chair_desk_oak`, `zaisu_walnut`: `cushion.on: false`, their pads' settings kept); the oshiire's
+  folded futon gone (the bed in the bedroom, the futon in the washitsu); maison_lane's two bikes and two empty plant
+  pots at the entrance (the "bins") gone.
+
 ## 2026-11-04, latest (the user: real wood in the flat)
 
 - **"If you look at the map you made for the interior, the wooden inside floor tiles look very fake. Can you now
