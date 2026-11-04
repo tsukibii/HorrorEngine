@@ -429,9 +429,10 @@ function drawMap() {
   }
   // fences
   for (const fn of S.fences) {
-    const [a, b] = [W2S(...fn.from), W2S(...fn.to)], on = sel.list === "fences" && sel.id === fn.id;
-    out.push(`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="${on ? "#d9a441" : FENCE_COLOURS[fn.kind] || "#999"}" stroke-width="${on ? 5 : 3.5}" stroke-dasharray="${fn.kind === "mesh" || fn.kind === "blockmesh" ? "6,3" : "none"}" data-list="fences" data-id="${esc(fn.id)}" style="cursor:move"/>`);
+    const on = sel.list === "fences" && sel.id === fn.id, line = SG.fenceLine(fn).map(q => W2S(q[0], q[1]).join(",")).join(" ");   // a curved one (`via`) through its curve
+    out.push(`<polyline points="${line}" fill="none" stroke="${on ? "#d9a441" : FENCE_COLOURS[fn.kind] || "#999"}" stroke-width="${on ? 5 : 3.5}" stroke-dasharray="${fn.kind === "mesh" || fn.kind === "blockmesh" ? "6,3" : "none"}" data-list="fences" data-id="${esc(fn.id)}" style="cursor:move"/>`);
     if (on) for (const h of ["from", "to"]) { const [hx, hy] = W2S(...fn[h]); out.push(`<circle cx="${hx}" cy="${hy}" r="6" fill="#d9a441" stroke="#000" data-handle="${h}" style="cursor:move"/>`); }
+    if (on && Array.isArray(fn.via)) fn.via.forEach((v, i) => { const [hx, hy] = W2S(v[0], v[1]); out.push(`<circle cx="${hx}" cy="${hy}" r="5" fill="#d9a441" stroke="#000" data-handle="via${i}" style="cursor:move"><title>a bend: drag it</title></circle>`); });
   }
   // buildings: the footprint, its front edge thick
   for (const b of S.buildings) {
@@ -623,6 +624,7 @@ function dragHandle(d, wx, wy, e) {
     if (z !== null && Math.abs(z) > 1e-6) { p.z = SG.roadPoints(p).map(q => r2(q[2])); p.z[i] = r2(z); }
     return;
   }
+  if (d.sel.list === "fences" && /^via\d+$/.test(d.h)) { p.via[+d.h.slice(3)] = [r2(snapV(wx)), r2(snapV(wy))]; return; }   // a curved fence's bend
   if ((d.sel.list === "roads" || d.sel.list === "fences") && (d.h === "from" || d.h === "to")) {
     let pt = [snapV(wx), snapV(wy)];
     if (!e.altKey) for (const r of ST.street.roads) if (r.id !== p.id) for (const end of [r.from, r.to]) if (Math.hypot(end[0] - wx, end[1] - wy) < 1.5) pt = end.slice();
@@ -1285,7 +1287,7 @@ function duplicate() {
   const c = JSON.parse(JSON.stringify(p)); c.id = newId(p.id.replace(/\d+$/, "") || "x");
   if (ST.sel.list === "buildings") { const a = rad(p.turn || 0); c.at = [r2(p.at[0] + Math.cos(a) * p.w), r2(p.at[1] + Math.sin(a) * p.w)]; c.seed = Math.floor(Math.random() * 1e6); }
   else if (ST.sel.list === "things") c.at = [r2(p.at[0] + 1), p.at[1]];
-  else if (ST.sel.list === "roads" || ST.sel.list === "fences") { c.from = [p.from[0] + 3, p.from[1]]; c.to = [p.to[0] + 3, p.to[1]]; }
+  else if (ST.sel.list === "roads" || ST.sel.list === "fences") { c.from = [p.from[0] + 3, p.from[1]]; c.to = [p.to[0] + 3, p.to[1]]; if (Array.isArray(p.via)) c.via = p.via.map(v => [v[0] + 3, v[1]]); }
   else if (ST.sel.list === "shots") { c.eye = [p.eye[0] + 1, p.eye[1], p.eye[2]]; c.look = [p.look[0] + 1, p.look[1], p.look[2]]; delete c.ref; }
   ST.street[ST.sel.list].push(c); ST.sel = { list: ST.sel.list, id: c.id };
   if (ST.sel.list === "shots") fillModes();

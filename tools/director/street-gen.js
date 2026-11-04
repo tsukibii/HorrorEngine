@@ -643,8 +643,8 @@ function railGen(o, F, u0, u1, z0, z1, n, fill = null, skip = [false, false]) {
   if (fill) { const P = [fp(F, u0, z0, n), fp(F, u1, z0, n), fp(F, u1, z1 - 0.05, n), fp(F, u0, z1 - 0.05, n)]; two(o, fill, P, [F.N[0], F.N[1], 0]); }
 }
 // a railing all round a box's top, `inset` in from its edges: one post at each corner, the rails meeting it
-function railRound(o, x0, y0, x1, y1, z0, z1, inset = 0.06) {
-  for (const F of Object.values(faceFrames(x0, y0, x1, y1, 0))) railGen(o, F, inset, F.W - inset, z0, z1, -inset, null, [false, true]);
+function railRound(o, x0, y0, x1, y1, z0, z1, inset = 0.06, skip = {}) {     // skip: the faces (front, right...) without
+  for (const F of Object.values(faceFrames(x0, y0, x1, y1, 0))) if (!skip[F.name]) railGen(o, F, inset, F.W - inset, z0, z1, -inset, null, [false, true]);
 }
 
 // ---- roofs -------------------------------------------------------------------------------------------------------------
@@ -977,9 +977,17 @@ export function buildingParts(b, foot) {
     if (ti < tiers.length - 1) {                                      // a setback: the terrace left on this tier's top
       const t = tiers[ti + 1];
       const kind = (t.t && t.t.edge) || "rail";
-      box(o, "roof_flat", T.x0, T.y0, T.z1, T.x1, T.y1, T.z1 + 0.02, kind === "rail" ? "-z" : "-z-x+x-y+y");
-      if (kind === "rail") railRound(o, T.x0, T.y0, T.x1, T.y1, T.z1, T.z1 + 1.1);
-      else for (const F of Object.values(faceFrames(T.x0, T.y0, T.x1, T.y1, 0))) fbox(o, "wall", F, 0, F.W, T.z1, T.z1 + 0.9, -0.15, 0, "");
+      // a side the storey above stands flush on (an inset of 0) goes straight on up: no terrace edge, rail or parapet
+      // there (its slab's edge and a parapet's face lay in that storey's wall's plane: they flickered)
+      const fl = (a, c) => Math.abs(a - c) < 1e-6, flush = { front: fl(t.y0, T.y0), right: fl(t.x1, T.x1), back: fl(t.y1, T.y1), left: fl(t.x0, T.x0) };
+      const sides = (flush.left ? "-x" : "") + (flush.right ? "+x" : "") + (flush.front ? "-y" : "") + (flush.back ? "+y" : "");
+      box(o, "roof_flat", T.x0, T.y0, T.z1, T.x1, T.y1, T.z1 + 0.02, kind === "rail" ? "-z" + sides : "-z-x+x-y+y");
+      if (kind === "rail") railRound(o, T.x0, T.y0, T.x1, T.y1, T.z1, T.z1 + 1.1, 0.06, flush);
+      else for (const F of Object.values(faceFrames(T.x0, T.y0, T.x1, T.y1, 0))) {   // a parapet: the sides' between the front's and the back's (they overlapped at the corners)
+        if (flush[F.name]) continue;
+        const [s0, s1] = F.name === "right" ? ["front", "back"] : F.name === "left" ? ["back", "front"] : [null, null];
+        fbox(o, "wall", F, s0 && !flush[s0] ? 0.15 : 0, F.W - (s1 && !flush[s1] ? 0.15 : 0), T.z1, T.z1 + 0.9, -0.15, 0, "");
+      }
     } else roofGen(o, b, T, R, foot && foot.others);
   });
   box(o, "dark", tiers[0].x0 + 0.01, tiers[0].y0 + 0.01, -0.001, tiers[0].x1 - 0.01, tiers[0].y1 - 0.01, GAP + 0.002, "-x+x-y+y-z");
@@ -2039,45 +2047,47 @@ export function fenceParts(f, surface) {
   const h = num(f.h, K.h), step = num(f.step, K.step), t = [(bx - ax) / L, (by - ay) / L], n = [-t[1], t[0]];
   // made along x from 0 to L (its own space, the run's left at +y), then laid along the run (UVs stay the run's own)
   const n0 = Math.max(1, step > 0 ? Math.round(L / step) : 1), bays = Array.from({ length: n0 + 1 }, (_, i) => L * i / n0);
+  const postBays = f._inner && f._inner[0] ? bays.slice(1) : bays;     // a curved fence's segment: its first post is the last one's (fenceRun)
+  const ends = (f._inner && f._inner[0] ? "-x" : "") + (f._inner && f._inner[1] ? "+x" : "");   // and the ends inside the run left out
   const post = f.post || (f.kind === "wood" || f.kind === "bamboo" || f.kind === "slats" ? "wood" : "post");
   const quadX = (slot, x0, x1, z0, z1, y = 0) => two(o, slot, [[x0, y, z0], [x1, y, z0], [x1, y, z1], [x0, y, z1]], [0, -1, 0]);
   switch (f.kind) {
     case "block": case "blockmesh": {
       const bh = f.kind === "block" ? h : num(f.wall, 0.8), th = 0.15;
-      box(o, f.slot || "blocks", 0, -th / 2, 0, L, th / 2, bh, "-z");
-      box(o, "concrete", -num(f.capFrom, 0.01), -th / 2 - 0.02, bh, L + num(f.capTo, 0.01), th / 2 + 0.02, bh + 0.06);   // its cap (meeting another's at a corner: fenceJoints)
+      box(o, f.slot || "blocks", 0, -th / 2, 0, L, th / 2, bh, "-z" + ends);
+      box(o, "concrete", -num(f.capFrom, 0.01), -th / 2 - 0.02, bh, L + num(f.capTo, 0.01), th / 2 + 0.02, bh + 0.06, ends);   // its cap (meeting another's at a corner: fenceJoints)
       if (f.kind === "blockmesh") {
-        for (const x of bays) cyl(o, post, [clamp(x, 0.05, L - 0.05), 0, bh + 0.06], [clamp(x, 0.05, L - 0.05), 0, h - 0.02], 0.025, 6);
+        for (const x of postBays) cyl(o, post, [clamp(x, 0.05, L - 0.05), 0, bh + 0.06], [clamp(x, 0.05, L - 0.05), 0, h - 0.02], 0.025, 6);
         quadX("chainlink", 0, L, bh + 0.08, h - 0.04);
         cyl(o, post, [0, 0, h - 0.02], [L, 0, h - 0.02], 0.02, 6);
       }
       break;
     }
     case "mesh": {
-      for (const x of bays) cyl(o, post, [clamp(x, 0.03, L - 0.03), 0, 0], [clamp(x, 0.03, L - 0.03), 0, h - 0.02], 0.028, 6);
+      for (const x of postBays) cyl(o, post, [clamp(x, 0.03, L - 0.03), 0, 0], [clamp(x, 0.03, L - 0.03), 0, h - 0.02], 0.028, 6);
       quadX(f.slot || "chainlink", 0, L, 0.04, h - 0.03);
       cyl(o, post, [0, 0, h - 0.02], [L, 0, h - 0.02], 0.022, 6);
       break;
     }
     case "wood": {
-      for (const x of bays) box(o, post, clamp(x, 0.05, L - 0.05) - 0.045, 0.01, 0, clamp(x, 0.05, L - 0.05) + 0.045, 0.1, h + 0.05);
+      for (const x of postBays) box(o, post, clamp(x, 0.05, L - 0.05) - 0.045, 0.01, 0, clamp(x, 0.05, L - 0.05) + 0.045, 0.1, h + 0.05);
       for (const z of [0.25, h - 0.3]) box(o, post, 0, 0.0, z, L, 0.03, z + 0.09);
       quadX(f.slot || "boards", 0, L, 0.05, h, -0.01);
       break;
     }
     case "slats": {
-      for (const x of bays) box(o, post, clamp(x, 0.04, L - 0.04) - 0.04, -0.04, 0, clamp(x, 0.04, L - 0.04) + 0.04, 0.04, h);
+      for (const x of postBays) box(o, post, clamp(x, 0.04, L - 0.04) - 0.04, -0.04, 0, clamp(x, 0.04, L - 0.04) + 0.04, 0.04, h);
       const sl = Math.max(3, Math.round(h / 0.14));
       for (let i = 0; i < sl; i++) box(o, f.slot || "wood", 0, -0.065, 0.06 + i * (h - 0.08) / sl, L, -0.045, 0.06 + i * (h - 0.08) / sl + (h - 0.08) / sl * 0.75);
       break;
     }
     case "panel": {
-      for (const x of bays) box(o, post, clamp(x, 0.04, L - 0.04) - 0.04, 0.02, 0, clamp(x, 0.04, L - 0.04) + 0.04, 0.1, h);
+      for (const x of postBays) box(o, post, clamp(x, 0.04, L - 0.04) - 0.04, 0.02, 0, clamp(x, 0.04, L - 0.04) + 0.04, 0.1, h);
       box(o, f.slot || "panel", 0, -0.02, 0, L, 0.02, h, "-z");
       break;
     }
     case "rail": {
-      for (const x of bays) cyl(o, post, [clamp(x, 0.04, L - 0.04), 0, 0], [clamp(x, 0.04, L - 0.04), 0, h - 0.03], 0.035, 8);
+      for (const x of postBays) cyl(o, post, [clamp(x, 0.04, L - 0.04), 0, 0], [clamp(x, 0.04, L - 0.04), 0, h - 0.03], 0.035, 8);
       for (const z of [h - 0.03, h * 0.55]) cyl(o, f.slot || "post", [0, 0, z], [L, 0, z], 0.03, 8);
       break;
     }
@@ -2096,7 +2106,7 @@ export function fenceParts(f, surface) {
     case "ribbed": {                                                  // precast panels with vertical ribs both sides, posts, a coping
       const th = 0.1, rw = 0.055, rd = 0.035, pitch = num(f.rib, 0.15), sl = f.slot || "concrete";
       box(o, sl, 0, -th / 2, 0, L, th / 2, h, "-z+z-x+x");
-      for (const x of bays) box(o, sl, clamp(x, 0.11, L - 0.11) - 0.11, -th / 2 - rd - 0.03, 0, clamp(x, 0.11, L - 0.11) + 0.11, th / 2 + rd + 0.03, h, "-z+z");   // posts
+      for (const x of postBays) box(o, sl, clamp(x, 0.11, L - 0.11) - 0.11, -th / 2 - rd - 0.03, 0, clamp(x, 0.11, L - 0.11) + 0.11, th / 2 + rd + 0.03, h, "-z+z");   // posts
       for (let i = 0; i < n0; i++) {
         const a = bays[i] + 0.14, b = bays[i + 1] - 0.14, nr = Math.max(1, Math.floor((b - a) / pitch));
         for (let k = 0; k < nr; k++) {
@@ -2109,7 +2119,7 @@ export function fenceParts(f, surface) {
           }
         }
       }
-      box(o, "concrete", -num(f.capFrom, 0.02), -th / 2 - rd - 0.05, h, L + num(f.capTo, 0.02), th / 2 + rd + 0.05, h + 0.08);   // the coping
+      box(o, "concrete", -num(f.capFrom, 0.02), -th / 2 - rd - 0.05, h, L + num(f.capTo, 0.02), th / 2 + rd + 0.05, h + 0.08, ends);   // the coping
       break;
     }
     case "slidegate": {                                               // a frame of bars on wheels, slid back along its run behind it
@@ -2142,7 +2152,7 @@ export function fenceParts(f, surface) {
       break;
     }
     case "bamboo": {
-      for (const x of bays) cyl(o, "wood_dark", [clamp(x, 0.05, L - 0.05), 0.04, 0], [clamp(x, 0.05, L - 0.05), 0.04, h + 0.05], 0.05, 8);
+      for (const x of postBays) cyl(o, "wood_dark", [clamp(x, 0.05, L - 0.05), 0.04, 0], [clamp(x, 0.05, L - 0.05), 0.04, h + 0.05], 0.05, 8);
       quadX(f.slot || "bamboo", 0, L, 0.02, h);
       for (const z of [h * 0.2, h * 0.55, h * 0.88]) box(o, "wood_dark", 0, -0.03, z, L, 0.03, z + 0.04);
       break;
@@ -2152,9 +2162,52 @@ export function fenceParts(f, surface) {
   // into the street: x along the run, y its left; each post on the ground under it, the bays between leaning with it
   const zs = bays.map(x => surface ? surface(ax + t[0] * x, ay + t[1] * x) : 0);
   const zAt = x => { if (x <= 0) return zs[0]; for (let i = 0; i + 1 < bays.length; i++) if (x <= bays[i + 1]) return zs[i] + (zs[i + 1] - zs[i]) * (x - bays[i]) / ((bays[i + 1] - bays[i]) || 1); return zs[zs.length - 1]; };
+  for (const g of Object.values(o.G)) for (let i = 0; i < g.pos.length; i += 3) g.pos[i + 2] += zAt(g.pos[i]);
+  // a curved fence's segment (fenceRun): its ends sheared onto the bisectors of the turns there, so it meets the next in
+  // one plane, mitred (x moves by y times the end's tangent, blended along the run); after the ground's height, so a
+  // joint's two sides stand at the same height on a slope
+  if (f._shear) {
+    const [sa, sb] = f._shear;
+    for (const g of Object.values(o.G)) for (let i = 0; i < g.pos.length; i += 3) {
+      const x = g.pos[i], y = g.pos[i + 1], k = clamp(x / L, 0, 1), s = sa * (1 - k) + sb * k, a = 1 + y * (sb - sa) / L;
+      g.pos[i] = x + y * s;
+      const nx = g.nrm[i] / a, ny = g.nrm[i + 1] - s * g.nrm[i] / a, nz = g.nrm[i + 2], l = Math.hypot(nx, ny, nz) || 1;   // its normal by the shear's inverse transpose
+      g.nrm[i] = nx / l; g.nrm[i + 1] = ny / l; g.nrm[i + 2] = nz / l;
+    }
+  }
   for (const g of Object.values(o.G)) {
-    for (let i = 0; i < g.pos.length; i += 3) { const x = g.pos[i], y = g.pos[i + 1]; g.pos[i] = ax + t[0] * x + n[0] * y; g.pos[i + 1] = ay + t[1] * x + n[1] * y; g.pos[i + 2] += zAt(x); }
+    for (let i = 0; i < g.pos.length; i += 3) { const x = g.pos[i], y = g.pos[i + 1]; g.pos[i] = ax + t[0] * x + n[0] * y; g.pos[i + 1] = ay + t[1] * x + n[1] * y; }
     for (let i = 0; i < g.nrm.length; i += 3) { const x = g.nrm[i], y = g.nrm[i + 1]; g.nrm[i] = t[0] * x + n[0] * y; g.nrm[i + 1] = t[1] * x + n[1] * y; }
+  }
+  return o;
+}
+
+// ---- a curved fence (`via`: points it passes through, as a road's; the user, 2026-11-03: "a curved concrete wall"): the
+// smooth curve through from, via and to (a road's spline), a segment every FENCE_STEP m, each built as a straight fence
+// and its ends sheared onto the bisector of the turn there (fenceParts' `_shear`), so neighbours meet in one plane,
+// mitred: no gap, no overlap, no two faces in a plane; a joint's post once, the caps meeting at the joints. One piece
+export const FENCE_STEP = 2.0;
+export function fenceLine(f) {                                       // the points a fence runs through: its ends, or its curve
+  if (!Array.isArray(f.via) || !f.via.length) return [f.from, f.to];
+  const raw = spline([f.from, ...f.via, f.to].map(p => [num(p[0], 0), num(p[1], 0), 0]), FENCE_STEP);
+  return raw.filter((p, i) => i === 0 || Math.hypot(p[0] - raw[i - 1][0], p[1] - raw[i - 1][1]) > 0.05);
+}
+export function fenceRun(f, surface) {
+  const P = fenceLine(f), n = P.length - 1, o = out();
+  const dir = i => { const a = P[i], b = P[i + 1], L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1; return [(b[0] - a[0]) / L, (b[1] - a[1]) / L]; };
+  const turn = i => { const a = dir(i - 1), b = dir(i); return Math.atan2(a[0] * b[1] - a[1] * b[0], a[0] * b[0] + a[1] * b[1]); };   // left is up
+  for (let i = 0; i < n; i++) {
+    const tA = i > 0 ? Math.tan(turn(i) / 2) : 0, tB = i < n - 1 ? Math.tan(turn(i + 1) / 2) : 0;
+    const seg = Object.assign({}, f, { from: P[i].slice(0, 2), to: P[i + 1].slice(0, 2), _shear: [tA, -tB], _inner: [i > 0, i < n - 1] });
+    delete seg.via;
+    if (i > 0) seg.capFrom = 0;
+    if (i < n - 1) seg.capTo = 0;
+    const g = fenceParts(seg, surface);
+    for (const [slot, b] of Object.entries(g.G)) {
+      const a = buf(o, slot), base = a.pos.length / 3;
+      a.pos.push(...b.pos); a.nrm.push(...b.nrm); a.uv.push(...b.uv); for (const k of b.idx) a.idx.push(k + base);
+    }
+    o.lights.push(...g.lights); o.signs.push(...g.signs);
   }
   return o;
 }
@@ -2167,7 +2220,7 @@ export function fenceParts(f, surface) {
 const FENCE_REACH = { block: [0.075, 0.095, 0.01], blockmesh: [0.075, 0.095, 0.01], ribbed: [0.085, 0.135, 0.02], panel: [0.02, 0.02, 0], slats: [0.065, 0.065, 0], wood: [0.03, 0.03, 0], bamboo: [0.03, 0.03, 0], mesh: [0.028, 0.028, 0], rail: [0.035, 0.035, 0] };
 export function fenceJoints(fences) {
   const NEAR = 0.02, line = f => {
-    const K = FENCE_REACH[f.kind || "mesh"]; if (!K || !Array.isArray(f.from) || !Array.isArray(f.to)) return null;
+    const K = FENCE_REACH[f.kind || "mesh"]; if (!K || !Array.isArray(f.from) || !Array.isArray(f.to) || (Array.isArray(f.via) && f.via.length)) return null;   // (a curved one keeps its ends)
     const a = f.from.map(v => num(v, 0)), b = f.to.map(v => num(v, 0)), L = Math.hypot(b[0] - a[0], b[1] - a[1]);
     return L < 0.05 ? null : { K, a, b, L, t: [(b[0] - a[0]) / L, (b[1] - a[1]) / L] };
   };
@@ -2261,7 +2314,7 @@ export function build(street, cache) {
   }
   const placed = things.map(t => Object.assign({}, t, { z: T.surface(...(t.at || [0, 0])) + num(t.lift, 0) }));
   for (const t of placed) pieces.push(memo("t|" + JSON.stringify(t), () => safe(t.id, "thing", () => placeAll(inset(thingParts(t)), t))));
-  for (const f of fenceJoints(fences)) pieces.push(memo("f|" + JSON.stringify(f) + "|" + (T.flat ? "" : roadsKey), () => safe(f.id, "fence", () => fenceParts(f, T.surface))));
+  for (const f of fenceJoints(fences)) pieces.push(memo("f|" + JSON.stringify(f) + "|" + (T.flat ? "" : roadsKey), () => safe(f.id, "fence", () => Array.isArray(f.via) && f.via.length ? fenceRun(f, T.surface) : fenceParts(f, T.surface))));
   const poles = placed.filter(t => t.kind === "pole");
   if (poles.some(p => p.to)) pieces.push(memo("w|" + JSON.stringify(poles), () => Object.assign({ id: "_wires", type: "wires" }, wiresParts(poles))));
   for (const d of S.decals || []) {                                   // each over whatever's under it there (a road's paint, an earlier decal)
@@ -2504,15 +2557,18 @@ export function blockers(S, pieces) {
     const lb = localBounds(thingParts(t).G); if (lb) out[t.id] = { boxes: [boxAt(piece, lb.lo, lb.hi)], occ: [], surface: null };
   }
   for (const f of S.fences || []) {
-    const K = FENCE_KINDS[f.kind] || FENCE_KINDS.mesh, [ax, ay] = f.from, [bx, by] = f.to, L = Math.hypot(bx - ax, by - ay); if (L < 0.05) continue;
+    const K = FENCE_KINDS[f.kind] || FENCE_KINDS.mesh, line = fenceLine(f), boxes = [];   // a curved one (`via`) a run of boxes along its curve
     if ((f.kind === "gate" || f.kind === "accordion") && num(f.open, f.kind === "accordion" ? 0.5 : 0) >= 0.5) continue;   // an open gate: the way through
-    const step = num(f.step, K.step), n = Math.max(1, step > 0 ? Math.round(L / step) : 1), h = num(f.h, K.h), boxes = [];
+    for (let j = 0; j + 1 < line.length; j++) {
+    const [ax, ay] = line[j], [bx, by] = line[j + 1], L = Math.hypot(bx - ax, by - ay); if (L < 0.05) continue;
+    const step = num(f.step, K.step), n = Math.max(1, step > 0 ? Math.round(L / step) : 1), h = num(f.h, K.h);
     for (let i = 0; i < n; i++) {
       const s0 = L * i / n, s1 = L * (i + 1) / n, p0 = [ax + (bx - ax) * s0 / L, ay + (by - ay) * s0 / L], p1 = [ax + (bx - ax) * s1 / L, ay + (by - ay) * s1 / L];
       const z0 = Math.min(T.surface(...p0), T.surface(...p1)), zt = Math.max(T.surface(...p0), T.surface(...p1)) + h;
       boxes.push({ c: [(p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2, (z0 - 0.2 + zt) / 2], ax: [[(bx - ax) / L, (by - ay) / L, 0], [-(by - ay) / L, (bx - ax) / L, 0], [0, 0, 1]], h: [(s1 - s0) / 2, 0.08, (zt - z0 + 0.2) / 2] });
     }
-    out[f.id] = { boxes, occ: [], surface: null };
+    }
+    if (boxes.length) out[f.id] = { boxes, occ: [], surface: null };
   }
   return out;
 }
