@@ -91,7 +91,7 @@ Every family takes these:
 
 Four ways, from clicking to a family of your own:
 
-0. **The page** (§13): `python tools/propgen/serve.py`, then http://127.0.0.1:8797. Every recipe is a card with its
+0. **The page** (§13): `python tools/propgen/serve.py`, then http://127.0.0.1:8799 (the dashboard's start tiles have it). Every recipe is a card with its
    picture; open one, change it in a form, drop your pictures on its texture, pick PBR sets, make it (or several
    variations at once), turn it in 3D, keep it as a recipe. Everything below is what the page writes for you.
 1. **One-off, from the command line:** `--set key.sub=value` changes anything in a recipe (JSON values: a number, a
@@ -143,6 +143,8 @@ and set the fill and the colours on each placed copy in Godot (its `HSLiquidFill
 | `plant` | §19: a potted plant, a table's to a floor's: `form` rosette (an aloe, an echeveria), blades (a snake plant), fern, palm (an areca's canes), big_leaf (a monstera, a rubber plant, a fiddle leaf fig: `leaf`, `stem`), tree (`species` ficus, bonsai, herb, dead), trailing (a pothos, ivy: `length`), canes (lucky bamboo), yucca, cactus (`ribs`, `radius`); `plant` {size, count, color, leaf, species, lean, spread}; `pot` {kind terracotta, glazed, plastic, cylinder, bowl, concrete or cube; d (w, dd), h, color, soil, topping pebbles, pumice, moss or bark, cracked, glaze} | pot_aloe, pot_echeveria, pot_basil, pot_cactus, pot_cactus_tall, pot_pothos, pot_ivy, pot_fern, pot_snake_plant, pot_bonsai, pot_monstera, pot_rubber_plant, pot_fiddle_leaf, pot_ficus, pot_palm, pot_yucca, pot_bamboo, pot_dead |
 | `bedding` | §21: pillows, cushions, blankets and futons by the cloth simulation: `kind` pillow, cushion (a zabuton: `tuft`, `thread`), blanket (`on` floor, futon, bed_single or your boxes; `floor` mm, the ground round it (tatami: 60); `at` mm over it; `mode` spread, turned (`turn_back`), rumpled (`heaps`); `thick`, `quilt` {cell, style channels, low}) or folded (`folds` [[axis, 2 or 3], ...]); `fill`, `lumps`, `dent`, `wrinkle`, `hem_full`; `cover` {color, pattern stripes, check, dots or seigaiha, size, ink, rough}, `back` | makura_sobakawa, pillow_bed, zabuton_real, kakebuton_turned, comforter_bed, futon_folded |
 | `curtain` | §22: curtains made for a window: `window` [w, h] mm, `sill`, `panels` 1 or 2 (`side`), `heading` pinch, wave, grommet, gather or flat (`fullness`, `pitch`), `length` sill, below, floor, puddle or mm, `open` 0 to 1, `tie` {at, bundle, depth, color}, `rod` {kind rail, track, rod or none, out, over, above, d, color, metal, finial}, `fabric` sheer, cotton, linen, blackout or velvet, `cover`; `air`, `flare`, `relax`, `settle` | curtain_pair, curtain_tied, curtain_sheer, curtain_grommet, curtain_wave, curtain_velvet_old |
+| `table` | §23: wooden tables: `size` [length, width, height] mm, `style` dining, shaker, farmhouse, parsons, midcentury, trestle, pedestal or chabudai; `top` rect, rounded, round or oval (`corner`), `edge` eased, square, chamfer, round, bullnose or underbevel, `thick`, `overhang`, `boards`; `leg` square, taper, turned or round (`leg_w`, `taper`, `splay`), `apron`, `stretcher` none, h or box; `wood`, `ring`, `finish` raw, oil, satin or gloss, `flaws` {grain, cracks, scratches, dents}, `painted` (`paint_color`) | table_dining, table_farmhouse, table_midcentury, table_trestle, table_pedestal, table_chabudai, table_kitchen_painted |
+| `chair` | §24: chairs and their cushions: `style` dining, ladderback, spindle, cafe, school, stool, bench or zaisu; `seat_h`, `seat` [width, depth], `back_h` (mm), `rake` (degrees); the wood as a table's, `frame_color` (a school chair's steel); `cushion` {seat, back, thick, fill, ties, color, pattern, ink, size, rough} or false | chair_dining, chair_ladderback, chair_windsor, chair_cafe, chair_school, stool_kitchen, bench_wood, zaisu_lacquer |
 
 ### Designs
 
@@ -444,7 +446,7 @@ thing is turned, and swings when it's moved.
 
 ## 13. The page: recipes as pictures
 
-`python tools/propgen/serve.py`, then http://127.0.0.1:8797 (`PROPS_PORT` for another; the launcher has it under
+`python tools/propgen/serve.py`, then http://127.0.0.1:8799 (`PROPS_PORT` for another; 8797 until 2026-11-04, when the face mocap page had it too; the launcher has it under
 Pages). A wrapper over `tools/propgen.py`: what it writes is the same recipe JSON, and what it makes the same files.
 
 - **The gallery:** every recipe a card with its picture (the preview of its last make; small JPEGs in
@@ -1023,4 +1025,63 @@ The `curtain` family (`families/curtain.py`):
   turned as the wall faces into the room (a south wall's: 180).
 
 The check's case: `curtain_tied` (pinch pleats, a pole, tie-backs).
+
+## 23. Tables: wooden, made to their size, unwrapped along their grain
+
+The user (2026-11-04): "a prop gen for tables and chairs; for tables take a length/width/height input; research generic
+table styles (wooden) and shapes, simple modelling techniques, and micro details (cracks, wood grain, scratches, mostly
+bumps, as I still want to overlay custom types of wood PBRs)". The research: docs/research/tables_chairs.md. The
+`table` family (`families/table.py`, its parts from `families/furniture.py`):
+
+- **Its size and style**: `size` [length, width, height] mm (the page shows them by name: a family's `LABELS`) and a
+  `style`, each a base and its numbers, every one of them a setting of its own: `dining` (square legs, an apron),
+  `shaker` (legs tapered on their inside faces), `farmhouse` (a thick top of `boards` on turned legs), `parsons` (legs
+  as thick as the apron is deep, flush with the top), `midcentury` (a rounded top bevelled underneath on splayed round
+  legs), `trestle` (two end frames and a stretcher), `pedestal` (a turned column on four feet), `chabudai` (low and
+  round on a frame and short legs).
+- **Modelled as game furniture is** (mid-poly): every part built from numbers twice, rounded for the detailed copy
+  and chamfered once for the game mesh, the bevels and the parts' contact shadows baked from the one onto the other,
+  the game mesh's normals weighted by face size (`th.weighted`); a dining table is about 400 triangles, a farmhouse one
+  on turned legs about 2 300. The parts: `board` (a box along its own x, its long edges rounded, tapered about a corner
+  for a Shaker leg), `turned` (a profile turned round its x), `bent` (a round part along a path: bentwood, a steel
+  tube), `top` (an outline, rect, rounded, round, oval or a trapezoid, inset along its edge's profile, its band in four
+  islands, its underside at a third of the density: seldom seen).
+- **Unwrapped along the grain**: every part is the plank it was cut from, its island's x along its length at the
+  material's one density, so a wood set of your own laid over the material `wood` (the recipe's `pbr`: `{"wood":
+  "pbr/Wood/<set>"}`, `rot` 90 for a set whose grain runs up its picture) runs along each leg, rail and board.
+- **The wood's paint** (`paint_wood`): its colour flat-sawn (a top glued up from boards 12 to 22 cm wide, each from its
+  own log: its heart, the cathedral arches, its own tone; a board's edge its straight edge grain; end grain in rings
+  round the pith) at a `ring` spacing never finer than the texture can show; and its **flaws as relief and roughness
+  only**, so they stay under a set laid over the colour: raised grain and fibres (`grain`), checks along the grain
+  toward a board's ends (`cracks`), scratches every way on a top (`scratches`, a little glossier or duller), dents
+  (`dents`); each sized to at least about two texels, so it reaches the normal map. The finish's roughness (`raw`,
+  `oil`, `satin`, `gloss`), `painted` tables (`paint_color`) with the brush's drag, and `wear` as any prop's.
+
+The check's case: `table_farmhouse`.
+
+## 24. Chairs and their cushions: soft, shaped to the chair, light
+
+The user (2026-11-04): "chairs currently don't look quite right, create some basic chair styles, all chairs should be
+able to support simple cushions; emulate pillows and cushions to custom shapes with puffy soft physics that gets
+baked; a bit of realism while keeping the poly count low". The `chair` family (`families/chair.py`) and its cushions
+(`families/cushion.py`):
+
+- **Styles**: `dining` (square legs, a seat board on rails, a top rail and three slats), `ladderback` (round posts,
+  four slats across, rungs), `spindle` (a Windsor: a thick shaped seat, splayed turned legs, spindles to a bent
+  crest), `cafe` (bentwood: a round seat, the back legs and the back one bent loop with an inner hoop, a ring between
+  the legs), `school` (a steel tube frame, `frame_color`, a plywood seat and back), `stool` (a round seat on splayed
+  legs and a ring of rails), `bench` (a long seat on four legs), `zaisu` (a legless Japanese chair: a low seat and a
+  reclined back). `seat_h`, `seat` [width, depth], `back_h` (mm) and `rake` (degrees) each style's by default
+  (DEFAULTS); the wood as a table's (§23). 1 700 to 3 200 triangles with their cushions.
+- **Cushions** (`cushion`: {seat, back, thick, fill, ties, color, pattern, ink, size, rough}, or false): the
+  bedding's bag (§21) made to any outline. The seat's own outline (its trapezoid, a round seat's circle; in front of
+  the back posts) or the back's is triangulated finely (a constrained Delaunay) as two pieces sewn round their border,
+  filled by pressure firm **between the floor and a ceiling at its thickness** (a pad's foam: a bag only filled to a
+  pad's thickness has more cloth than air and crumples all over) and let go to settle, keeping its filling; the
+  seam's puckers and soft wrinkles drawn into the dense copy; then **a coarse triangulation of the same outline takes
+  the dense one's shape** by its flat place (each coarse point found in the dense flat sheet, moved where that point
+  went: no retopology) and the dense one is baked onto it: a pad of about 350 triangles. A back pad is made the same
+  lying down and stood against the back, toward the sitter. `ties` loop round the back posts with two tails.
+
+The check's case: `chair_dining` (a seat pad and its ties).
 

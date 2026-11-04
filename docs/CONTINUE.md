@@ -17,7 +17,30 @@ by-hand guides, merged; then on the same branch from main the map-building skill
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-04, afternoon, the same branch): a curtain generator
+## Where it stopped last (2026-11-04, evening, the same branch): tables, chairs and their cushions
+
+The user's ask (DECISIONS 2026-11-04, evening): research first, then table and chair generators, cushions by the
+cloth, the prop generator's page for them and on the dashboard.
+
+- **The research** (docs/research/tables_chairs.md): table bases, sizes, tops and edges; game furniture mid-poly
+  (chamfers, weighted normals, a bake of the rounded copy), UVs along the grain; wood's micro detail as bumps under a
+  set of your own; chair styles and sizes; cushions filled by pressure, simulated dense, a light mesh baked from it.
+- **The `table` family** (PROPGEN §23) and **the `chair` family** (§24) on `families/furniture.py` (board, turned,
+  bent, top; the wood's colour and flaws) and `families/cushion.py` (pads to any outline). Fifteen recipes in the
+  library: `table_dining`, `table_farmhouse`, `table_midcentury`, `table_trestle`, `table_pedestal`,
+  `table_chabudai`, `table_kitchen_painted`, `chair_dining`, `chair_ladderback`, `chair_windsor`, `chair_cafe`,
+  `chair_school`, `stool_kitchen`, `bench_wood`, `zaisu_lacquer`. PROPGEN's cases `table_farmhouse`, `chair_dining`.
+- **The page** reads a family's `FIELDS`, `CHOICES` (nested by dotted keys) and `LABELS`; the curtain family has them
+  too. **The dashboard**: the prop generator among the start tiles; its page on port 8799 now (8797 is the face mocap
+  page's: they couldn't both run).
+
+Worth doing with the user: lay their own wood sets over the tables and chairs (`"pbr": {"wood": "pbr/Wood/<set>"}` in
+a recipe, or the page's PBR picker on the material `wood`; `rot` 90 if a set's grain runs up its picture) and see the
+flaws hold under them; put the chairs and tables in the maison flat in place of the kit's (the kitchen's dining set,
+the bedroom desk's chair); more styles are a few lines each in `chair.py` `_build` or `table.py`'s STYLES. The
+bedding's long hem islands still hold its textures to about a third of a texel a millimetre (LESSONS, the curtains).
+
+## Before that (2026-11-04, afternoon, the same branch): a curtain generator
 
 The user's ask (DECISIONS 2026-11-04, afternoon): a curtain prop with "a bit of drape physics", one panel or two, made
 from the window's width and height; research first for the easiest technique.

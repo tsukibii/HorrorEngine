@@ -2,6 +2,26 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-04, evening (the user: tables and chairs, and the prop generator on the dashboard)
+
+- **"Similar research: could you create a prop gen for tables and chairs. For tables take a length/width/height
+  input; first research generic table styles (wooden) and shapes, then simple modelling techniques, then adding micro
+  details (not too many, but cracks, wood grain, scratches, mostly bumps, as I still want to be able to overlay custom
+  types of wood PBRs)."** The research (docs/research/tables_chairs.md); the `table` family (PROPGEN §23): `size`
+  [length, width, height], eight styles, top shapes and edges, each part rounded for the bake and chamfered for the
+  game mesh and unwrapped along its grain, the wood's flaws as relief only (a wood set of your own lies over them).
+- **"For chairs currently they don't really look quite right: create some basic chair styles; all chairs should be
+  able to support having simple cushions; research via our curtain technique emulating pillows and cushions to custom
+  shapes (puffy soft physics and stuff that gets baked); a bit of realism while keeping the poly count low (more polys
+  for the sim, then bake and simplify before the final export)."** The `chair` family (PROPGEN §24): eight styles,
+  every one taking seat and back pads shaped to it (`families/cushion.py`: the bedding's bag to any outline, filled firm
+  between a floor and a ceiling, a coarse mesh of the same outline baked from the dense one), ties round the posts.
+- **"Feel free to update the prop gen UI to accommodate for this, also add prop gen to the top in the dashboard
+  wrapper so it's easier to navigate (beside studio/interior etc)."** The page reads a family's own `FIELDS` (a
+  picker of the settings it takes, each with an example), `CHOICES` (dropdowns, nested ones by their dotted key) and
+  `LABELS` (a table's size as length, width, height); the dashboard's start tiles have the prop generator, its page
+  moved to port 8799 (the face mocap page had 8797 too).
+
 ## 2026-11-04, afternoon (the user: a curtain generator)
 
 - **"Could you try work on a curtain generator prop that uses a bit of drape physics to get more natural curtains,

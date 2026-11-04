@@ -44,6 +44,15 @@
   ],
   "tris": 4320
  },
+ "bench_wood": {
+  "kb": 4785,
+  "size_m": [
+   1.2,
+   0.4842,
+   0.34
+  ],
+  "tris": 1080
+ },
  "black_pine": {
   "kb": 4253,
   "size_m": [
@@ -241,6 +250,51 @@
    5.0073
   ],
   "tris": 7006
+ },
+ "chair_cafe": {
+  "kb": 4871,
+  "size_m": [
+   0.41,
+   0.8963,
+   0.4159
+  ],
+  "tris": 2672
+ },
+ "chair_dining": {
+  "kb": 7234,
+  "size_m": [
+   0.4372,
+   0.8797,
+   0.4687
+  ],
+  "tris": 1532
+ },
+ "chair_ladderback": {
+  "kb": 6742,
+  "size_m": [
+   0.457,
+   1.018,
+   0.4519
+  ],
+  "tris": 2896
+ },
+ "chair_school": {
+  "kb": 2576,
+  "size_m": [
+   0.4,
+   0.8026,
+   0.4128
+  ],
+  "tris": 1728
+ },
+ "chair_windsor": {
+  "kb": 7713,
+  "size_m": [
+   0.4779,
+   0.8914,
+   0.4638
+  ],
+  "tris": 3016
  },
  "chair_worn": {
   "kb": 3645,
@@ -1431,6 +1485,78 @@
   ],
   "tris": 4856
  },
+ "stool_kitchen": {
+  "kb": 820,
+  "size_m": [
+   0.34,
+   0.6519,
+   0.34
+  ],
+  "tris": 864
+ },
+ "table_chabudai": {
+  "kb": 851,
+  "size_m": [
+   0.8,
+   0.32,
+   0.8
+  ],
+  "tris": 576
+ },
+ "table_dining": {
+  "kb": 3095,
+  "size_m": [
+   1.6,
+   0.74,
+   0.9
+  ],
+  "tris": 384
+ },
+ "table_farmhouse": {
+  "kb": 6994,
+  "size_m": [
+   2.0,
+   0.76,
+   0.95
+  ],
+  "tris": 2304
+ },
+ "table_kitchen_painted": {
+  "kb": 684,
+  "size_m": [
+   1.1,
+   0.73,
+   0.7
+  ],
+  "tris": 384
+ },
+ "table_midcentury": {
+  "kb": 2800,
+  "size_m": [
+   1.8,
+   0.7417,
+   0.9
+  ],
+  "tris": 368
+ },
+ "table_pedestal": {
+  "kb": 3011,
+  "size_m": [
+   1.0,
+   0.74,
+   1.0
+  ],
+  "tris": 992
+ },
+ "table_trestle": {
+  "kb": 3242,
+  "size_m": [
+   1.8,
+   0.75,
+   0.85
+  ],
+  "tris": 352
+ },
  "tetsubin": {
   "kb": 1568,
   "size_m": [
@@ -1547,6 +1673,15 @@
    0.6165
   ],
   "tris": 3132
+ },
+ "zaisu_lacquer": {
+  "kb": 6939,
+  "size_m": [
+   0.44,
+   0.5128,
+   0.5848
+  ],
+  "tris": 720
  },
  "zelkova_autumn": {
   "kb": 5733,

@@ -1728,3 +1728,19 @@ normal map came out facing away (PROPGEN: 0.38).
   nothing may be wider than the texture): a plain strip (a hem round a blanket, 6.6 m) is declared short and squeezed.
   The bedding's hem islands are still long (their textures at about a third of a pixel a millimetre): worth the same
   change and a make again.
+
+## Wood that read as cork, flaws that never reached the normal map, cushions that crumpled (2026-11-04)
+
+The tables and chairs (PROPGEN §23, §24) took a second try in three places. The wood_grain design's rings, 2.2 mm
+apart, landed two texels apart on a 1.6 m table at 2048 and aliased into speckle. The flaws painted at their real size
+(a 0.3 mm scratch, a 1 mm crack, a 0.04 mm grain) were finer than a texel (0.6 px/mm) and left the normal map flat.
+And a seat pad's bag filled only to a pad's thickness had more cloth than air and crumpled all over.
+
+- **Size detail to the texture, not to the world**: a ring, a scratch or a crack at least about two texels wide
+  (`1 / frame.s` is a texel in mm), its depth a share of its width so the normal tilts; a top's underside at a third
+  of the density (seldom seen) leaves more for its face.
+- **A glued-up top is boards**: strips 12 to 22 cm wide, each its own log's heart (the cathedral arches) and tone, read
+  as wood where one wide figure read as noise; a board's edge is straight edge grain.
+- **A pad is foam in a cover, not air**: fill the bag firm between a floor and a ceiling at its thickness, then let it
+  go; and keep its volume (pressure) while it settles, or gravity flattens it.
+
