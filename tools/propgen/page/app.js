@@ -7,7 +7,6 @@
 import { makeViewer } from "/page/view3d.js";
 import { renderEditor } from "/page/picedit.js";
 import { $, el, clone, same, api, toast } from "/page/util.js";
-import { loadImage, loadPasses, spotsOf, makePic, lay, toRecipe } from "/page/sticker.js";
 
 const SHARE = new Set(["amount", "fill", "opacity", "burn", "alpha", "soot", "patina", "rust", "puff", "scrape", "limescale", "crazing", "crackle",
   "grime", "dirt", "dust", "scratches", "edges", "stains", "fade", "age_amount", "taper", "squash", "spread", "buckle", "wrinkle", "twist_amt"]);
@@ -16,7 +15,7 @@ const ART_FAMS = new Set(["can", "bottle", "cup", "sheet", "box", "ware", "charm
 const S = {
   list: [], choices: null, shelf: [], pics: [], fam: "", q: "", name: null, rec: null, raw: null, spec: null, orig: null, base: null,
   meta: null, tab: "settings", pic: null, busy: new Set(), viewer: null, job: null, smudges: [], ed: null,
-  sticker: null, passes: new Map(), spotPick: {}, place: {}, bare: new Set(),
+  kept: null, onlyCustom: false, bare: new Set(),
 };
 window.__pp = S;
 
@@ -30,11 +29,14 @@ async function loadList() {
 }
 
 function renderFams() {
-  const counts = {};
+  const counts = {}, custom = r => r.custom;
   for (const r of S.list) counts[r.family] = (counts[r.family] || 0) + 1;
   const box = $("#fams");
   box.innerHTML = "";
-  const fams = Object.keys(S.choices.families).filter(f => counts[f]);
+  const nc = S.list.filter(custom).length;
+  box.append(el("button", { class: "custom" + (S.onlyCustom ? " on" : ""), title: "only the props your own pictures go on: cans, bottles, cups, boxes, paper, books, pill bottles, appliances, charms, ware (docs/PROPGEN.md §25)",
+    onclick: () => { S.onlyCustom = !S.onlyCustom; renderFams(); renderGallery(); } }, `✎ customizable ${nc}`));
+  const fams = Object.keys(S.choices.families).filter(f => counts[f] && (!S.onlyCustom || S.list.some(r => r.family === f && r.custom)));
   for (const f of ["", ...fams]) {
     box.append(el("button", { class: S.fam === f ? "on" : "", onclick: () => { S.fam = f; renderFams(); renderGallery(); } },
       f ? `${f} ${counts[f]}` : `all ${S.list.length}`));
@@ -49,199 +51,21 @@ function card(r) {
   else if (r.stale) badges.push(el("span", { class: "badge edited", title: "its kept picture is of an older recipe: Make it to see this one" }, "older picture"));
   let pic;
   const extra = [];
-  if (S.sticker && r.stickers) {                       // your picture laid on it (docs/PROPGEN.md §25)
-    pic = el("canvas", { class: "stk", width: 400, height: 300 });
-    stickerLater(r, pic);
-    extra.push(el("button", { class: "chip spot", title: "where your picture goes: click for the next place (open the prop to place it by hand)",
-      onclick: e => { e.stopPropagation(); S.spotPick[r.name] = (S.spotPick[r.name] || 0) + 1; delete S.place[r.name]; stickerLater(r, pic, true); } }, "…"));
-  } else if (r.thumb) {
+  if (r.thumb) {
     const v = r.variants && r.variants.bare;
     pic = el("img", { src: v && S.bare.has(r.name) ? v.thumb : r.thumb, loading: "lazy", alt: r.name });
     if (v) extra.push(el("button", { class: "chip var" + (S.bare.has(r.name) ? "" : " on"), title: `its picture with or ${v.label}: switch it off in the recipe's cushion box to make it so`,
       onclick: e => { e.stopPropagation(); S.bare.has(r.name) ? S.bare.delete(r.name) : S.bare.add(r.name); renderGallery(); } }, S.bare.has(r.name) ? "no cushions" : "cushions"));
   } else pic = el("div", { class: "ph" }, "not made yet");
+  if (r.custom) extra.push(el("span", { class: "custom", title: "customizable: open it and its Texture & pictures tab to lay your own pictures on it, seen on its own picture before it's made" }, "✎"));
   if (r.thumb_from === "saved" && !S.busy.has(r.name)) extra.push(el("span", { class: "kept", title: "the picture kept in the project (Content/Studio/Props/thumbs): not made on this machine yet" }, "kept"));
   return el("div", { class: "card" + (r.name === S.name ? " sel" : ""), "data-name": r.name, title: r.label || r.name, onclick: () => open(r.name) },
     pic, ...badges, ...extra, el("div", { class: "nm" }, r.name), el("div", { class: "lb" }, r.label || ""));
 }
 
-// ---- your picture tried on the props (docs/PROPGEN.md §25) ----------------------------------------------------------------
-// Every card with sticker passes (made here, or the picture kept in the project) shows your picture laid on it: in its
-// own logo or picture slot (what it drew there taken away first), else on the part most seen as a sticker. A card's
-// corner button moves it to the next place; an opened prop places it by hand and puts it into the recipe.
-
-function passesOf(r) {
-  const key = r.name + "|" + (r.thumb || "");
-  if (!S.passes.has(key)) {
-    S.passes.set(key, api(`/api/stickers/${encodeURIComponent(r.name)}`).then(info => loadPasses(info).then(P => {
-      P.info = info; P.spots = spotsOf(P); return P;
-    })));
-  }
-  return S.passes.get(key);
-}
-
-function defaultPlace(spot) {
-  return spot.kind === "slot" ? { spot, scale: 1, dx: 0, dy: 0, flip: false, replace: true }
-    : { spot, x: spot.x, y: spot.y, w: spot.w, rot: 0, flip: false };
-}
-
-function placementFor(name, P) {
-  if (!P.spots.length) return null;
-  const own = S.place[name];
-  if (own && P.spots.some(s => s.key === own.spot.key)) return own;
-  const n = P.spots.length, k = (((S.spotPick[name] || 0) % n) + n) % n;
-  return defaultPlace(P.spots[k]);
-}
-
-function spotName(spot) { return spot.kind === "slot" ? spot.id.split(".").pop() : spot.island; }
-
-const stkQueue = [];
-let stkBusy = false;
-const stkSeen = new IntersectionObserver(es => {
-  for (const e of es) if (e.isIntersecting) { stkSeen.unobserve(e.target); stkQueue.push(e.target.__stk); runStickers(); }
-}, { rootMargin: "300px" });
-function stickerLater(r, cv, now = false) {
-  cv.__stk = [r, cv];
-  if (now) { stkQueue.unshift(cv.__stk); runStickers(); } else stkSeen.observe(cv);
-}
-async function runStickers() {
-  if (stkBusy) return;
-  stkBusy = true;
-  while (stkQueue.length) {
-    const [r, cv] = stkQueue.shift();
-    if (!cv.isConnected || !S.sticker) continue;
-    try { await paintSticker(r, cv); } catch (e) { cv.title = "couldn't lay it: " + e.message; }
-    await new Promise(res => setTimeout(res, 0));
-  }
-  stkBusy = false;
-}
-async function paintSticker(r, cv) {
-  const P = await passesOf(r), pl = placementFor(r.name, P);
-  cv.width = P.W; cv.height = P.H;
-  cv.getContext("2d").putImageData(pl ? lay(P, { ...pl, finish: S.sticker.finish }, S.sticker.pic) : new ImageData(new Uint8ClampedArray(P.base), P.W, P.H), 0, 0);
-  cv.dataset.spot = pl ? pl.spot.key : "";
-  const chip = cv.parentNode && cv.parentNode.querySelector(".spot");
-  if (chip) { chip.textContent = pl ? "⟳ " + spotName(pl.spot) : "nowhere"; chip.title = pl ? `${pl.spot.label}: click for the next place` : "nowhere on its picture to lay it"; }
-}
-function repaintCard(name) {
-  const cv = document.querySelector(`.card[data-name="${CSS.escape(name)}"] canvas.stk`);
-  const r = S.list.find(x => x.name === name);
-  if (cv && r) stickerLater(r, cv, true);
-}
-
-async function setSticker(src) {
-  try {
-    const url = src instanceof File ? URL.createObjectURL(src) : src.url;
-    const img = await loadImage(url);
-    S.sticker = { name: src.name, url, path: src instanceof File ? null : src.path, file: src instanceof File ? src : null,
-      pic: makePic(img), finish: (S.sticker && S.sticker.finish) || "satin" };
-  } catch (e) { toast("That picture couldn't be read: " + e.message, true); return; }
-  S.place = {};
-  renderTry(); renderGallery(); renderSticker();
-}
-function stickerOff() { S.sticker = null; S.place = {}; renderTry(); renderGallery(); renderSticker(); }
-
-function renderTry() {
-  const box = $("#try");
-  box.innerHTML = "";
-  const file = el("input", { type: "file", accept: "image/*", hidden: true, onchange: e => e.target.files[0] && setSticker(e.target.files[0]) });
-  const pick = el("select", { title: "one of your pictures (Content/Studio/Props/images)", onchange: e => {
-    const p = S.pics.find(x => x.path === e.target.value);
-    if (e.target.value === "__file") file.click(); else if (p) setSticker(p);
-    e.target.value = ""; } },
-  el("option", { value: "" }, S.sticker ? "another picture…" : "Try a picture on them…"), el("option", { value: "__file" }, "from a file…"),
-  S.pics.map(p => el("option", { value: p.path }, p.name)));
-  box.append(file, pick);
-  if (!S.sticker) return;
-  box.append(el("img", { class: "try-mini", src: S.sticker.url, alt: "", title: S.sticker.name }),
-    el("select", { title: "the picture's finish: a matt paper sticker, satin, or a glossy vinyl one", onchange: e => {
-      S.sticker.finish = e.target.value; renderGallery(); renderSticker(); } },
-    ["matte", "satin", "gloss"].map(f => el("option", { value: f, selected: S.sticker.finish === f }, f))),
-    el("button", { class: "x", title: "take your picture off them", onclick: stickerOff }, "×"));
-}
-
-async function renderSticker() {
-  const box = $("#ed-sticker");
-  box.innerHTML = "";
-  box.hidden = !(S.sticker && S.rec && S.rec.stickers && S.spec);
-  if (box.hidden) return;
-  let P;
-  try { P = await passesOf(S.rec); } catch (e) { box.append(el("div", { class: "hint" }, "Its sticker passes couldn't be read: " + e.message)); return; }
-  if (!P.spots.length) { box.append(el("div", { class: "hint" }, "Nowhere on its picture to lay it: none of its parts is seen enough.")); return; }
-  const name = S.name, pl = S.place[name] = S.place[name] || clone1(placementFor(name, P));
-  const cv = el("canvas", { class: "stk-big", width: P.W, height: P.H });
-  const draw = () => { cv.getContext("2d").putImageData(lay(P, { ...pl, finish: S.sticker.finish }, S.sticker.pic), 0, 0); repaintCard(name); };
-  const s = P.islands[pl.spot.isl], ctl = el("div", { class: "ctl" });
-  const row = (label, input, title) => ctl.append(el("label", { title: title || "" }, label), input);
-  const num = (k, min, max, step, title) => {
-    const out = el("span", { class: "val" }, fmt(pl[k]));
-    const inp = el("input", { type: "range", min, max, step, value: pl[k] ?? 0, oninput: e => { pl[k] = +e.target.value; out.textContent = fmt(pl[k]); draw(); } });
-    row(k, el("span", { class: "rng" }, inp, out), title);
-  };
-  const sel = (k, opts, title) => row(k, el("select", { onchange: e => { pl[k] = e.target.value || undefined; draw(); } },
-    opts.map(o => el("option", { value: o, selected: (pl[k] || "") === o }, o || "(its own)"))), title);
-  const chk = (k, title) => row(k, el("input", { type: "checkbox", checked: !!pl[k], onchange: e => { pl[k] = e.target.checked; draw(); } }), title);
-  row("where", el("select", { onchange: e => { const sp = P.spots.find(x => x.key === e.target.value); S.place[name] = defaultPlace(sp); renderSticker(); } },
-    P.spots.map(sp => el("option", { value: sp.key, selected: sp.key === pl.spot.key }, sp.label))), "its own picture slots first, then its parts as a sticker anywhere on them");
-  if (pl.spot.kind === "slot") {
-    const [, , bw, bh] = pl.spot.box;
-    sel("fit", ["", "contain", "cover", "stretch", "tile"], "contain: its own shape inside the slot; cover: filling it; stretch; tile: repeated");
-    num("scale", 0.1, 3, 0.05);
-    num("dx", -bw, bw, 0.5, "mm across");
-    num("dy", -bh, bh, 0.5, "mm up");
-    row("rot", el("select", { onchange: e => { pl.rot = +e.target.value; draw(); } },
-      [0, 90, 180, 270].map(a => el("option", { value: a, selected: +(pl.rot ?? pl.spot.rot ?? 0) === a }, a + "°"))), "quarter turns, anticlockwise");
-    chk("flip");
-    if (P.ground) chk("replace", "take away what the prop drew there, as Make does when your picture goes in its slot");
-  } else {
-    const [W, H] = s.mm;
-    num("x", 0, W, 0.5, "its middle, mm across the part");
-    num("y", 0, H, 0.5, "its middle, mm up the part");
-    num("w", 2, Math.max(W, H), 0.5, "its width, mm");
-    num("rot", -180, 180, 1, "degrees anticlockwise");
-    sel("fit", ["", "contain", "cover", "stretch", "width", "height"], "over the whole part instead of by its size");
-    chk("flip");
-  }
-  box.append(el("div", { class: "stk-head" }, el("b", {}, "Your picture on it"), el("span", { class: "dim" }, ` ${S.sticker.name} · ${P.info.from === "made" ? "on the made prop" : "on its kept picture"}`)),
-    el("div", { class: "stk-row" }, cv, ctl),
-    el("div", { class: "adds" }, el("button", { class: "primary", onclick: () => stickToRecipe(pl), title: "write it into the recipe (pictures or decals): Make makes it so" }, "Put it in the recipe"),
-      el("button", { onclick: () => { delete S.place[name]; renderSticker(); } }, "Reset")));
-  draw();
-}
-const clone1 = pl => Object.assign({}, pl);
-const fmt = v => (v === undefined || v === null ? "" : Math.abs(v) >= 10 ? String(Math.round(v)) : String(Math.round(v * 100) / 100));
-
-async function pictureData(file) {
-  if (/^image\/(png|jpeg)$/.test(file.type)) return new Promise((ok, no) => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.onerror = no; fr.readAsDataURL(file); });
-  const img = await loadImage(URL.createObjectURL(file)), cv = el("canvas", { width: img.naturalWidth, height: img.naturalHeight });
-  cv.getContext("2d").drawImage(img, 0, 0);
-  return cv.toDataURL("image/png");
-}
-
-async function stickToRecipe(pl) {
-  let path = S.sticker.path;
-  try {
-    if (!path) {
-      const up = await api("/api/upload", { name: S.sticker.file.name, data: await pictureData(S.sticker.file) });
-      path = S.sticker.path = up.path;
-      S.pics = (await api("/api/pictures")).images || S.pics;
-      renderTry();
-    }
-  } catch (e) { toast("Couldn't keep the picture: " + e.message, true); return; }
-  const add = toRecipe({ ...pl, finish: S.sticker.finish }, path);
-  if (add.pictures) S.spec.pictures = Object.assign({}, S.spec.pictures || {}, add.pictures);
-  else S.spec.decals = [...(S.spec.decals || []), ...add.decals];
-  changed();
-  renderTab();
-  toast(add.pictures ? `in its ${Object.keys(add.pictures)[0]} slot (pictures): Make to see it made, Save to keep it` :
-    `a sticker on ${add.decals[0].island} (decals): Make to see it made, Save to keep it`);
-}
-
 function renderGallery() {
-  stkSeen.disconnect();                                 // the cards are drawn anew: their pictures laid again as they come into view
-  stkQueue.length = 0;
   const q = S.q.trim().toLowerCase();
-  const shown = S.list.filter(r => (!S.fam || r.family === S.fam) &&
+  const shown = S.list.filter(r => (!S.fam || r.family === S.fam) && (!S.onlyCustom || r.custom) &&
     (!q || [r.name, r.family, r.label].join(" ").toLowerCase().includes(q)));
   const box = $("#gallery");
   box.innerHTML = "";
@@ -263,6 +87,7 @@ async function open(name, keepSpec = false) {
   S.name = name;
   S.raw = d.raw;
   S.meta = d.meta;
+  S.kept = d.kept || null;                               // a customizable prop not made here: what the project keeps of it
   S.rec = S.list.find(r => r.name === name) || null;
   if (!keepSpec) {
     S.orig = clone(d.spec);
@@ -275,7 +100,6 @@ async function open(name, keepSpec = false) {
   renderHead();
   renderTab();
   renderGallery();
-  renderSticker();
   updateDirty();
 }
 
@@ -288,7 +112,8 @@ function renderHead() {
   const bits = [S.spec.family];
   if (S.raw && S.raw.from) bits.push(`from ${S.raw.from}`);
   if (m) bits.push(`${m.tris} triangles`, `${m.size_m.map(v => Math.round(v * 1000)).join(" × ")} mm`, `made in ${m.secs} s`);
-  else bits.push("not made yet");
+  else bits.push(S.kept ? "not made here (its picture kept in the project)" : "not made yet");
+  if (r && r.custom) bits.push("✎ customizable: Texture & pictures, seen on its own picture before it's made");
   $("#ed-info").textContent = bits.join(" · ");
 }
 
@@ -570,6 +395,7 @@ async function make() {
     if (first === S.name) {                              // the same prop: what was made is now what's shown
       const d = await api(`/api/recipe/${encodeURIComponent(first)}`);
       S.meta = d.meta;
+      S.kept = d.kept || null;
       S.rec = S.list.find(x => x.name === first) || null;
       renderHead(); renderTab(); updateDirty();
     } else {                                             // another name (or variations): open what was made, its base kept
@@ -609,7 +435,7 @@ async function del() {
   try { await api("/api/delete", { name: S.name }); } catch (e) { toast(e.message, true); return; }
   toast(`${S.name}: out of presets.json`);
   await loadList();
-  S.name = null; S.spec = null; S.orig = null; S.meta = null; S.raw = null;
+  S.name = null; S.spec = null; S.orig = null; S.meta = null; S.kept = null; S.raw = null;
   $("#editor").classList.add("empty");
   document.body.classList.remove("wide");
   renderGallery();
@@ -631,15 +457,6 @@ async function boot() {
   S.shelf = sh.sets || [];
   S.pics = pics.images || [];
   await loadList();
-  renderTry();
-  const gal = $("#gallery");
-  gal.addEventListener("dragover", e => { if ([...e.dataTransfer.items].some(i => i.kind === "file")) { e.preventDefault(); gal.classList.add("drop"); } });
-  gal.addEventListener("dragleave", () => gal.classList.remove("drop"));
-  gal.addEventListener("drop", e => {
-    gal.classList.remove("drop");
-    const f = [...e.dataTransfer.files].find(x => x.type.startsWith("image/"));
-    if (f) { e.preventDefault(); setSticker(f); }
-  });
   $("#search").addEventListener("input", e => { S.q = e.target.value; renderGallery(); });
   $("#refresh").addEventListener("click", async () => { S.pics = (await api("/api/pictures")).images; S.shelf = (await api("/api/shelf")).sets || []; await loadList(); toast("read again"); });
   $("#make-unmade").addEventListener("click", async () => {
@@ -676,5 +493,5 @@ async function boot() {
   window.__pp.ready = true;
 }
 
-Object.assign(window.__pp, { open, make, save, switchTab, loadList, api, setSticker, stickerOff, passesOf, renderSticker });
+Object.assign(window.__pp, { open, make, save, switchTab, loadList, api });
 boot().catch(e => toast("The page couldn't start: " + e.message, true));

@@ -1,18 +1,22 @@
 """Every recipe's picture kept in the project (docs/PROPGEN.md §25; the user, 2026-11-04: "pre-render and save
-thumbnails for each prop, in a clever way so we can preview what custom stickers would look like on props like
-cans"), in Content/Studio/Props/thumbs/:
+thumbnails for each prop"; then: "I want to be able to customize certain props that should be customizable, e.g. cans,
+books, and a smart way of previewing what the uploaded image will look like before actually generating it"), in
+Content/Studio/Props/thumbs/:
 
-    <name>.webp         the picture, 400 x 300 (the preview at half its size)
-    <name>.st.webp      its sticker passes, lossless (stage.py: the texture's point each pixel sees, the light a white
-                        matt surface gets there, a clear coat's gloss), pixel for pixel with the picture
-    <name>.ground.webp  the picture with its own picture slots empty, where it has some (a swapped logo hides the old)
-    <name>.bare.webp    a variant: a chair without its cushions
-    <name>.json         the recipe it was made from, its materials in the passes' order, its parts (islands), its
-                        picture slots, its size
+    <name>.webp                 the picture, 400 x 300 (the preview at half its size): the card's before it's made here
+    <name>.bare.webp            a variant: a chair without its cushions
+    <name>.json                 the recipe it was made from, its size
+and for a customizable prop (its family's `CUSTOM = True`: cans, books, appliances...), what the picture editor needs
+to work on it and preview your pictures on its picture before it's made:
+    <name>.st.webp              its sticker passes, lossless (stage.py: the texture's point each pixel sees, the light a
+                                white matt surface gets there, a clear coat's gloss), pixel for pixel with the picture
+    <name>.ground.webp          the picture with its own picture slots empty, where it has some (a swapped logo hides the old)
+    <name>.tex.<mat>.webp       a material's paint at 512 px (the canvas under your pictures), and
+    <name>.tex.<mat>.ground.webp  the paint with its slots empty
+    and in its .json its materials in the passes' order, their colours and pixels, its parts (islands) and its slots
 
-The page (tools/propgen/serve.py) shows them on the cards before a prop is made here and lays your pictures onto them
-(page/sticker.js). Plain Python with Pillow; what isn't made (or was made from another recipe) is made first by
-tools/propgen.py make, each in a Blender of its own, `--jobs` at once.
+Plain Python with Pillow; what isn't made (or was made from another recipe) is made first by tools/propgen.py make,
+each in a Blender of its own, `--jobs` at once.
 
     python tools/propgen.py thumbs [names...] [--make] [--bare] [--jobs 2] [--tex 1024]
     python tools/propgen.py thumbs --check          THUMBS: every kept picture well formed, what's missing or stale
@@ -74,8 +78,17 @@ def up_to_date(name, spec, out=recipes.OUT):
         return False
 
 
+TEX = 512            # a customizable prop's textures kept at this size: the editor's canvas under your pictures
+
+
+def custom_files(name, dst=THUMBS):
+    """A prop's kept files that only a customizable one has."""
+    return [f for f in dst.glob(f"{name}.*") if f.name in (f"{name}.st.webp", f"{name}.ground.webp") or f.name.startswith(f"{name}.tex.")]
+
+
 def save(name, out=recipes.OUT, dst=THUMBS, variants=None):
-    """The made prop's picture, passes and ground into the project, with what the page needs to lay a picture."""
+    """The made prop's picture into the project; a customizable one's passes, ground and textures too, with what the
+    picture editor needs to work on it before it's made."""
     from PIL import Image
     d = Path(out) / name
     meta = _made(name, out)
@@ -87,26 +100,41 @@ def save(name, out=recipes.OUT, dst=THUMBS, variants=None):
         im = Image.open(p).convert("RGB")
         return im.reduce(2) if im.size == (SIZE[0] * 2, SIZE[1] * 2) else im.resize(SIZE)
     half(d / f"{name}_preview.png").save(dst / f"{name}.webp", quality=86, method=6)
-    st = d / f"{name}_st.png"
-    sj = json.loads((d / f"{name}_st.json").read_text(encoding="utf-8")) if (d / f"{name}_st.json").exists() else {}
-    if st.exists():
-        Image.open(st).convert("RGB").save(dst / f"{name}.st.webp", lossless=True, quality=100, method=6)
-    g = d / f"{name}_st_ground.png"
-    if g.exists() and sj.get("ground"):
-        Image.open(g).convert("RGB").save(dst / f"{name}.ground.webp", quality=86, method=6)
-    elif (dst / f"{name}.ground.webp").exists():
-        (dst / f"{name}.ground.webp").unlink()
-    # the textures' pixels as the recipe makes them (the pictures may have been made smaller): a pattern's tiles on the
-    # page are sized by them, as Make sizes them
-    book = recipes.load()
-    want = recipes.resolve(book, name).get("tex") if name in book else None
-    got = (meta.get("spec") or {}).get("tex")
-    k = float(want) / float(got) if want and got else 1.0
     rec = {"name": name, "family": meta.get("family"), "spec": bare_spec(meta.get("spec")), "made": datetime.date.today().isoformat(),
-           "size_m": meta.get("size_m"), "tris": meta.get("tris"), "mats": sj.get("mats") or [],
-           "px": {m: int(round(v.get("px") * k)) for m, v in (meta.get("materials") or {}).items()},
-           "islands": {n: {"mat": i["mat"], "rect": i["rect"], "mm": i["mm"], "wrap": bool(i.get("wrap"))} for n, i in (meta.get("islands") or {}).items()},
-           "slots": [{k: s[k] for k in ("id", "island", "name", "kind", "about", "rot", "box") if k in s} for s in (meta.get("slots") or [])]}
+           "size_m": meta.get("size_m"), "tris": meta.get("tris")}
+    for f in custom_files(name, dst):
+        f.unlink()
+    if meta.get("family") in recipes.custom_families():
+        st = d / f"{name}_st.png"
+        sj = json.loads((d / f"{name}_st.json").read_text(encoding="utf-8")) if (d / f"{name}_st.json").exists() else {}
+        if st.exists():
+            Image.open(st).convert("RGB").save(dst / f"{name}.st.webp", lossless=True, quality=100, method=6)
+        g = d / f"{name}_st_ground.png"
+        if g.exists() and sj.get("ground"):
+            Image.open(g).convert("RGB").save(dst / f"{name}.ground.webp", quality=86, method=6)
+        # the textures' pixels as the recipe makes them (the pictures may have been made smaller): a picture's size in
+        # the editor and a pattern's tiles are reckoned by them, as Make reckons them
+        book = recipes.load()
+        want = recipes.resolve(book, name).get("tex") if name in book else None
+        got = (meta.get("spec") or {}).get("tex")
+        k = float(want) / float(got) if want and got else 1.0
+        tex = {}
+        for m, ds in (meta.get("design") or {}).items():
+            tex[m] = {}
+            for kind, suffix in (("paint", ""), ("ground", ".ground")):
+                f = ds.get(kind)
+                if f and (d / f).exists():
+                    im = Image.open(d / f).convert("RGB")
+                    if max(im.size) > TEX:
+                        im = im.resize((TEX, TEX), Image.LANCZOS)
+                    fn = f"{name}.tex.{m}{suffix}.webp"
+                    im.save(dst / fn, quality=85, method=6)
+                    tex[m][kind] = fn
+        mats = meta.get("materials") or {}
+        rec.update({"custom": True, "mats": sj.get("mats") or [], "px": {m: int(round(v.get("px") * k)) for m, v in mats.items()},
+                    "colors": {m: v.get("color") for m, v in mats.items()}, "tex": tex,
+                    "islands": {n: {"mat": i["mat"], "rect": i["rect"], "mm": i["mm"], "wrap": bool(i.get("wrap"))} for n, i in (meta.get("islands") or {}).items()},
+                    "slots": [{k_: s[k_] for k_ in ("id", "island", "name", "kind", "about", "rot", "box", "relief") if k_ in s} for s in (meta.get("slots") or [])]})
     old = {}
     if (dst / f"{name}.json").exists():
         try:
@@ -122,7 +150,7 @@ def save(name, out=recipes.OUT, dst=THUMBS, variants=None):
         if (dst / f"{name}.{key}.webp").exists():
             vs[key] = {"label": label, "file": f"{name}.{key}.webp"}
     for key in list(vs):
-        if key not in {k for k, _l, _s in variants_of(meta.get("spec") or {})}:
+        if key not in {k_ for k_, _l, _s in variants_of(meta.get("spec") or {})}:
             vs.pop(key)
             try:
                 (dst / f"{name}.{key}.webp").unlink()
@@ -250,11 +278,12 @@ def make_sheets(names, cols=8, rows=6, tile=(240, 180)):
 
 
 def run_check(book, names):
-    """THUMBS: every kept picture well formed (its picture and passes the same size, the passes' materials within its
-    list, its parts and slots on them, at least half its pixels' texture points on its parts), and what's missing or
-    kept from another recipe said."""
+    """THUMBS: every kept picture well formed; a customizable prop's passes too (the picture's size side by side, their
+    materials within its list, its parts and slots on them, at least half its pixels' texture points on its parts) and
+    its textures there; no other prop carrying them; and what's missing or kept from another recipe said."""
     from PIL import Image
     import numpy as np
+    custom = recipes.custom_families()
     bad, missing, stale, n_ok, n_st = [], [], [], 0, 0
     for n in names:
         j = THUMBS / f"{n}.json"
@@ -266,8 +295,15 @@ def run_check(book, names):
             im = Image.open(THUMBS / f"{n}.webp")
             if im.size != SIZE:
                 raise ValueError(f"picture {im.size}, not {SIZE}")
+            fam = recipes.resolve(book, n).get("family")
             stp = THUMBS / f"{n}.st.webp"
-            if stp.exists():
+            if fam not in custom:
+                extra = [f.name for f in custom_files(n)]
+                if extra or rec.get("custom"):
+                    raise ValueError(f"not customizable, yet it keeps {', '.join(extra) or 'its parts'}")
+            else:
+                if not stp.exists() or not rec.get("custom"):
+                    raise ValueError("customizable, but its sticker passes or its parts aren't kept")
                 a = np.asarray(Image.open(stp).convert("RGB")).astype(np.int64)
                 if a.shape != (SIZE[1], SIZE[0] * 2, 3):
                     raise ValueError(f"passes {a.shape[1]} x {a.shape[0]}, not {SIZE[0] * 2} x {SIZE[1]}")
@@ -280,7 +316,18 @@ def run_check(book, names):
                 for iname, isl in (rec.get("islands") or {}).items():
                     if isl["mat"] not in mats:
                         raise ValueError(f"part {iname} on material {isl['mat']}, not in the passes")
-                # every pixel's texture point on one of its material's parts: the passes and the parts agree
+                for s_ in rec.get("slots") or []:
+                    if s_["island"] not in (rec.get("islands") or {}):
+                        raise ValueError(f"slot {s_['id']} on no part")
+                for m, t in (rec.get("tex") or {}).items():
+                    for f in t.values():
+                        if not (THUMBS / f).exists():
+                            raise ValueError(f"its {m} texture {f} isn't there")
+                if not any((rec.get("tex") or {}).values()):
+                    raise ValueError("no texture kept for the editor's canvas")
+                # every pixel's texture point on one of its material's parts: the passes and the parts agree (a lathe's
+                # rim or a burned candle's top can map a little outside its parts, and clear glass is hardly seen in one
+                # sample a pixel: half is what a prop whose passes are sound always has, a broken one next to none)
                 L = a[:, :SIZE[0]]
                 u = ((L[..., 0] << 4) | (L[..., 2] >> 4)) / 4095.0
                 v = ((L[..., 1] << 4) | (L[..., 2] & 15)) / 4095.0
@@ -293,15 +340,9 @@ def run_check(book, names):
                         if isl["mat"] == mname:
                             u0, v0, u1, v1 = isl["rect"]
                             on |= sel & (u >= u0 - e) & (u <= u1 + e) & (v >= v0 - e) & (v <= v1 + e)
-                # (a lathe's rim or a burned candle's top can map a little outside its parts, and clear glass is
-                # hardly seen in one sample a pixel: half is what a prop whose passes are sound always has, a broken
-                # one next to none)
                 share = float(on.sum()) / max(1, int(seen.sum()))
                 if int(seen.sum()) >= 500 and share < 0.5:
                     raise ValueError(f"only {share:.0%} of its pixels on its parts: the passes and its parts disagree")
-                for s in rec.get("slots") or []:
-                    if s["island"] not in (rec.get("islands") or {}):
-                        raise ValueError(f"slot {s['id']} on no part")
                 n_st += 1
             for key, vd in (rec.get("variants") or {}).items():
                 if not (THUMBS / vd["file"]).exists():
@@ -320,5 +361,5 @@ def run_check(book, names):
     if bad:
         print(f"THUMBS failed: {len(bad)} bad")
         return 1
-    print(f"THUMBS ok ({n_ok} pictures kept, {n_st} with sticker passes; {len(missing)} not yet, {len(stale)} from an older recipe)")
+    print(f"THUMBS ok ({n_ok} pictures kept, {n_st} customizable with their passes and textures; {len(missing)} not yet, {len(stale)} from an older recipe)")
     return 0

@@ -15,6 +15,8 @@ from .. import designs
 from .. import mesh as M
 from .. import noise as N
 
+CUSTOM = True       # your own pictures go on it: the picture editor previews them on its picture (PROPGEN §25)
+
 MM = 0.001
 
 

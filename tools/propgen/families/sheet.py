@@ -15,6 +15,8 @@ from .. import mesh as M
 from .. import noise as N
 from .. import sim
 
+CUSTOM = True       # your own pictures go on it: the picture editor previews them on its picture (PROPGEN §25)
+
 SIZES = {"A4": (210, 297), "A5": (148, 210), "news": (300, 420), "napkin": (330, 330), "receipt": (80, 210), "letter": (216, 279)}
 
 

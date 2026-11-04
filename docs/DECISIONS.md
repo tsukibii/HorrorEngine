@@ -2,6 +2,19 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-04, later night (the user: customizable props, not logos on everything)
+
+- **"I think I misrepresented what I meant by logo. I don't mean I want a logo on the models, I mean I want to be able
+  to customize certain props that should be customizable, e.g. cans, books, and want a smart way of previewing what the
+  uploaded image (the Figma UI thing we did) will look like before actually generating it. I don't care about actual
+  logos or marking our models, only for props that we should be able to modify. Plants etc. don't need it; the only
+  time a 'logo' matters is if it's an appliance where we want to fake it having a logo, like the rice cookers."** The
+  gallery's *Try a picture on them…* is gone. Customizable families say so (`CUSTOM = True`: can, bottle, cup, box,
+  sheet, book, pills, appliance, charm, ware; ✎ and a filter on the page). In the picture editor a customizable prop's
+  pictures are seen **on its own picture** as they're laid (*Its picture* beside *3D*), lit as Make will light them,
+  before Make; and before it's made here at all, from what the project keeps of it (its parts, slots and paint). Only
+  customizable props keep their passes and textures (PROPGEN §25).
+
 ## 2026-11-04, night (the user: the cafe chair a stool, cushions switched off, every prop's thumbnail)
 
 - **"This one looks a bit weird and the circle isn't attached to all four legs, you can get rid of the small circle

@@ -9,11 +9,11 @@
 // texture in its layout; a smudge dragged onto a part; the logo made a flourish in each corner; made again with all
 // of it, the made texture where the canvas said; the made prop in 3D with its sockets; a PBR set picked; the layout's
 // template for Krita (.ora) and back in; a part picked on the prop in 3D; two variations made at once; kept as a
-// recipe of its own (`from` its base and only what differs), then deleted again. Then a picture of yours tried on them
-// all (docs/PROPGEN.md §25): laid on the made ema's own picture and on a kept can's logo (its picture and sticker
-// passes from a scratch Content/Studio/Props/thumbs, the card showing it before it's made), placed by hand on the
-// opened ema and put into its recipe; and a chair's cushions switched off and on in its form. Blender is needed
-// (propgen.py's).
+// recipe of its own (`from` its base and only what differs), then deleted again. Then the customizable props
+// (docs/PROPGEN.md §25): their filter; a picture laid on the made ema seen on its own picture before it's made again;
+// a can not made here (what the project keeps of it, from a scratch Content/Studio/Props/thumbs: its picture on its
+// card) opened in the picture editor from its kept parts and paint, a picture dropped on its logo seen on its own
+// picture; and a chair's cushions switched off and on in its form. Blender is needed (propgen.py's).
 //   node tools/propgen/pagetest.mjs           (PROPS_TEST_PORT for another port than 8792)
 import { createRequire } from "module";
 import { spawn } from "child_process";
@@ -31,11 +31,10 @@ const HOME = fs.mkdtempSync(path.join(os.tmpdir(), "props-page-"));
 const PRESETS = path.join(HOME, "presets.json"), OUT = path.join(HOME, "Props"), IMAGES = path.join(HOME, "images"), THUMBS = path.join(HOME, "thumbs");
 fs.copyFileSync(path.join(ROOT, "Content", "Studio", "Props", "presets.json"), PRESETS);
 // one kept picture (the project's soda can, when it has one): its card shows it before it's made, your picture laid on it
-const KEPT = ["soda_can.json", "soda_can.webp", "soda_can.st.webp", "soda_can.ground.webp"].filter(f => fs.existsSync(path.join(ROOT, "Content", "Studio", "Props", "thumbs", f)));
+const KEPT = fs.existsSync(path.join(ROOT, "Content", "Studio", "Props", "thumbs")) ? fs.readdirSync(path.join(ROOT, "Content", "Studio", "Props", "thumbs")).filter(f => f.startsWith("soda_can.")) : [];
 fs.mkdirSync(THUMBS, { recursive: true });
 for (const f of KEPT) fs.copyFileSync(path.join(ROOT, "Content", "Studio", "Props", "thumbs", f), path.join(THUMBS, f));
 const kept = KEPT.includes("soda_can.st.webp") ? 1 : 0;
-const STICKER = path.join(ROOT, "Content", "Studio", "Clothes", "prints", "smiley.png");
 const fails = [], ok = m => console.log("  ok  " + m), fail = m => { fails.push(m); console.log("  FAIL " + m); };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const free = port => new Promise(r => { const s = net.createConnection(port, "127.0.0.1"); s.on("connect", () => { s.destroy(); r(false); }); s.on("error", () => r(true)); });
@@ -298,6 +297,8 @@ try {
   });
   await step("a part picked on the prop in 3D", async () => {
     await page.evaluate(() => window.__pe.select(null));
+    await page.click('.pe-views button[data-view="3d"]');            // a customizable prop opens on its picture
+    await page.waitForFunction(() => { const c = document.querySelector(".pe-3d canvas"); return c && c.clientWidth > 0; });
     const b = await page.locator(".pe-3d canvas").boundingBox();
     let sel = null;
     for (const [fx, fy] of [[0.5, 0.5], [0.45, 0.55], [0.55, 0.45], [0.5, 0.6]]) {
@@ -343,49 +344,56 @@ try {
     if (book().ema_page_test) throw new Error("still in presets.json");
     if (await page.locator('.card[data-name="ema_page_test"]').count()) throw new Error("still a card");
   });
-  // your picture tried on them all (docs/PROPGEN.md §25)
-  const changedPixels = name => page.evaluate(async n => {
-    const r = window.__pp.list.find(x => x.name === n), P = await window.__pp.passesOf(r);
-    const cv = document.querySelector(`.card[data-name="${n}"] canvas.stk`);
-    const d = cv.getContext("2d").getImageData(0, 0, P.W, P.H).data;
-    let k = 0;
-    for (let i = 0; i < d.length; i += 4) if (Math.abs(d[i] - P.base[i]) + Math.abs(d[i + 1] - P.base[i + 1]) + Math.abs(d[i + 2] - P.base[i + 2]) > 30) k++;
-    return [k, cv.dataset.spot, P.info.from];
-  }, name);
-  await step("your picture tried on them all: on the made ema's own picture and on the kept can's logo, the cards' pictures changed there", async () => {
-    await page.setInputFiles("#try input[type=file]", STICKER);
-    await page.evaluate(() => document.querySelector('.card[data-name="ema"]').scrollIntoView());
-    await page.waitForFunction(() => { const c = document.querySelector('.card[data-name="ema"] canvas.stk'); return c && c.dataset.spot; }, null, { timeout: 30000 });
-    const [k, spot, from] = await changedPixels("ema");
-    if (from !== "made" || k < 40) throw new Error(`the ema's card: ${k} pixels changed at ${spot} (${from})`);
-    let note = `ema: ${k} pixels at ${spot}`;
-    if (kept) {
-      await page.evaluate(() => document.querySelector('.card[data-name="soda_can"]').scrollIntoView());
-      await page.waitForFunction(() => { const c = document.querySelector('.card[data-name="soda_can"] canvas.stk'); return c && c.dataset.spot; }, null, { timeout: 30000 });
-      const [k2, spot2, from2] = await changedPixels("soda_can");
-      if (from2 !== "saved" || spot2 !== "slot:label.logo" || k2 < 40) throw new Error(`the kept can: ${k2} pixels changed at ${spot2} (${from2})`);
-      note += `; the kept can: ${k2} at its logo`;
-    }
-    return note;
+  // the customizable props: your pictures seen on their own picture before they're made (docs/PROPGEN.md §25)
+  await step("the customizable props by themselves: the filter, each card marked", async () => {
+    await page.click("#fams button.custom");
+    const shown = await page.$$eval(".card", cs => cs.map(c => c.dataset.name));
+    const list = await page.evaluate(() => window.__pp.list.filter(r => r.custom).map(r => r.name));
+    if (!shown.length || shown.length !== list.length || !shown.includes("ema") || shown.includes("chair_dining")) throw new Error(`${shown.length} cards for ${list.length} customizable`);
+    if ((await page.locator(".card .custom").count()) !== shown.length) throw new Error("not every one marked");
+    await page.click("#fams button.custom");
+    return `${shown.length} of ${await page.locator(".card").count()}`;
   });
-  await step("placed by hand on the opened ema and put into its recipe", async () => {
+  await step("a picture laid on the made ema since its make, seen on its own picture before it's made again", async () => {
     await page.click('.card[data-name="ema"]');
     await page.waitForFunction(() => window.__pp.name === "ema");
-    await page.click('#tabs button[data-tab="settings"]');             // the panel isn't shown while the picture editor has the page
-    await page.waitForFunction(() => document.querySelector("#ed-sticker canvas.stk-big"), null, { timeout: 20000 });
-    const n = await page.locator("#ed-sticker .ctl select").first().locator("option").count();
-    const scale = page.locator('#ed-sticker .ctl input[type=range]').first();
-    await scale.evaluate(e => { e.value = e.max / 2; e.dispatchEvent(new Event("input", { bubbles: true })); });
-    await page.click("#ed-sticker button.primary");
-    await page.waitForFunction(() => { const s = window.__pp.spec; return (s.pictures && Object.values(s.pictures).some(p => p && p.image && /smiley/.test(p.image))) || (s.decals || []).some(d => /smiley/.test(d.image)); });
-    const s = await S();
-    const put = s.spec.pictures && Object.entries(s.spec.pictures).find(([, p]) => p && p.image && /smiley/.test(p.image));
-    const where = put ? `pictures["${put[0]}"] = ${JSON.stringify(put[1])}` : `decals: ${JSON.stringify(s.spec.decals.find(d => /smiley/.test(d.image)))}`;
-    if (!fs.readdirSync(IMAGES).some(f => /smiley/.test(f))) throw new Error("the picture isn't in the pictures folder");
-    return `${n} places to choose from; ${where}`;
+    await page.click('#tabs button[data-tab="texture"]');
+    await page.click('.pe-views button[data-view="picture"]');
+    await page.waitForFunction(() => window.__pe.picture().ready, null, { timeout: 30000 });
+    // (its recipe as saved, without the pictures the made one has: their slot shows empty until it's made again)
+    const before = await page.evaluate(() => window.__pe.picture());
+    if (before.from !== "made") throw new Error(`before: ${JSON.stringify(before)}`);
+    await page.evaluate(() => window.__pe.snapPicture());
+    await page.evaluate(p => window.__pe.putPicture({ kind: "part", island: "front", x: 75, y: 45 }, p), logo);
+    await page.waitForFunction(() => window.__pe.picture().since > 40, null, { timeout: 15000 });
+    return `${(await page.evaluate(() => window.__pe.picture())).since} pixels changed by it`;
+  });
+  await step("a customizable can not made here opened in the picture editor from what the project keeps of it", async () => {
+    if (!kept) return "skipped: no kept can in the project";
+    await page.click('#tabs button[data-tab="settings"]');
+    await page.click('.card[data-name="soda_can"]');
+    await page.waitForFunction(() => window.__pp.name === "soda_can");
+    const s = await page.evaluate(() => ({ kept: !!window.__pp.kept, meta: !!window.__pp.meta }));
+    if (!s.kept || s.meta) throw new Error(JSON.stringify(s));
+    await page.click('#tabs button[data-tab="texture"]');
+    await page.waitForFunction(() => window.__pe.picture().ready, null, { timeout: 30000 });
+    const p = await page.evaluate(() => window.__pe.picture());
+    if (p.from !== "saved" || p.changed > 20) throw new Error(JSON.stringify(p));
+    const parts = await page.locator(".pe-layers .pe-row").count();
+    if (parts < 5 || !(await page.locator(".pe-kept").count())) throw new Error(`${parts} layers`);
+    return `${parts} layers from the kept parts and slots`;
+  });
+  await step("a picture dropped on the kept can's logo, seen on its own picture before it's made", async () => {
+    if (!kept) return "skipped: no kept can in the project";
+    const sl = await page.evaluate(() => window.__pp.kept.slots.find(x => x.id === "label.logo"));
+    const [x, y] = await at("label", sl.box[0] + sl.box[2] / 2, sl.box[1] + sl.box[3] / 2);
+    await dragPic(`.pe-pic[data-path="${logo}"]`, x, y);
+    await page.waitForFunction(() => window.__pp.spec.pictures && window.__pp.spec.pictures["label.logo"]);
+    await page.waitForFunction(() => window.__pe.picture().changed > 100, null, { timeout: 15000 });
+    return JSON.stringify(await page.evaluate(() => window.__pe.picture()));
   });
   await step("a chair's cushions switched off and on in its form, their settings kept", async () => {
-    await page.click('#tabs button[data-tab="settings"]');           // the gallery shown (the picture editor takes the page)
+    await page.click('#tabs button[data-tab="settings"]');
     await page.click('.card[data-name="chair_dining"]');
     await page.waitForFunction(() => window.__pp.name === "chair_dining");
     const sw = page.locator("#tab-settings fieldset.switch legend input.sw");
@@ -399,7 +407,6 @@ try {
     if ((await S()).spec.cushion.color !== kept2) throw new Error("its colour went");
     return `off and on, its colour ${kept2} kept`;
   });
-  await page.evaluate(() => window.__pp.stickerOff());
   await step("no errors on the page", async () => { if (errors.length) throw new Error(errors.slice(0, 3).join(" | ")); });
 } catch (e) {
   fail(e.message);
@@ -413,4 +420,4 @@ if (fails.length) {
   process.exit(1);
 }
 fs.rmSync(HOME, { recursive: true, force: true });
-console.log(`PROPPAGE ok (the page: cards, a form, Blender's make and its log; the picture editor: the cuts, pictures dragged onto a part, onto its own picture and over the whole texture, handles, undo, a smudge, a flourish, made as the canvas showed, the .ora template; 3D, variations, a recipe saved and deleted; your picture tried on the cards, placed by hand and put in a recipe; a chair's cushions off and on; ${secs}s)`);
+console.log(`PROPPAGE ok (the page: cards, a form, Blender's make and its log; the picture editor: the cuts, pictures dragged onto a part, onto its own picture and over the whole texture, handles, undo, a smudge, a flourish, made as the canvas showed, the .ora template; 3D, variations, a recipe saved and deleted; the customizable ones: their filter, pictures seen on a made and a kept prop's own picture before it's made; a chair's cushions off and on; ${secs}s)`);

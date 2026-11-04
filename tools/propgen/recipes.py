@@ -16,6 +16,24 @@ OUT = os.path.join(ROOT, "Saved", "Props")
 LIB = os.path.join(ROOT, "Content", "Studio", "Library")
 
 
+def custom_families():
+    """The families your own pictures go on (a can's label, a book's cover, an appliance's fake brand): those whose module
+    says `CUSTOM = True` (docs/PROPGEN.md §25), read without importing them."""
+    import ast
+    out = set()
+    fams = os.path.join(HERE, "families")
+    for f in sorted(os.listdir(fams)):
+        if not f.endswith(".py") or f.startswith("_"):
+            continue
+        with open(os.path.join(fams, f), encoding="utf-8") as fh:
+            tree = ast.parse(fh.read())
+        for node in tree.body:
+            if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "CUSTOM" for t in node.targets):
+                if isinstance(node.value, ast.Constant) and node.value.value is True:
+                    out.add("import" if f == "imported.py" else f[:-3])
+    return out
+
+
 def load(path=None):
     with open(path or PRESETS, encoding="utf-8") as fh:
         book = json.load(fh)

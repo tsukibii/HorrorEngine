@@ -28,24 +28,13 @@ main{display:flex;height:calc(100% - 46px)}
 .card .badge{position:absolute;top:6px;left:6px;font-size:10px;padding:1px 5px;border-radius:3px;background:#000a}
 .card .badge.edited{background:#5b4318;color:#ffd98a}.card .badge.unsaved{background:#2a3d5b;color:#a9c8ff}
 .card .badge.busy{background:#3d5b2a;color:#c8ffa9}
-.card canvas.stk{width:100%;aspect-ratio:4/3;display:block;background:#2a2a30}
 .card .chip{position:absolute;top:6px;right:6px;font-size:10px;padding:1px 6px;border-radius:3px;background:#000a;border-color:transparent;max-width:70%;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .card .chip.var.on{color:var(--accent)}
 .card .kept{position:absolute;bottom:52px;right:6px;font-size:9px;padding:0 4px;border-radius:3px;background:#0008;color:var(--dim)}
-#gallery.drop{outline:2px dashed var(--accent);outline-offset:-6px}
-#try{display:flex;align-items:center;gap:6px;flex:none}
-#try select{max-width:170px}
-#try .try-mini{width:28px;height:28px;object-fit:contain;border-radius:3px;background:#2a2a30}
-#ed-sticker{padding:8px 12px;border-bottom:1px solid var(--line)}
-body.wide #ed-sticker{display:none}
-#ed-sticker .stk-head{margin-bottom:6px}
-#ed-sticker .stk-row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start}
-#ed-sticker canvas.stk-big{width:min(100%,400px);aspect-ratio:4/3;border-radius:4px;background:#2a2a30;flex:0 1 400px}
-#ed-sticker .ctl{display:grid;grid-template-columns:auto 1fr;gap:4px 8px;align-items:center;flex:1;min-width:200px}
-#ed-sticker .ctl select{max-width:100%}
-#ed-sticker .rng{display:flex;gap:6px;align-items:center}#ed-sticker .rng input{flex:1}
-#ed-sticker .val{min-width:34px;text-align:right;color:var(--dim);font-variant-numeric:tabular-nums}
+.card .custom{position:absolute;top:6px;left:6px;font-size:11px;padding:0 5px;border-radius:3px;background:#000a;color:var(--accent)}
+.card .badge~.custom{top:26px}
+#fams button.custom{color:var(--accent)}
 #editor{width:600px;min-width:600px;border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;overflow:hidden}
 #editor.empty #ed-body{display:none}#editor:not(.empty) #ed-empty{display:none}
 #ed-empty{padding:40px 30px;color:var(--dim)}
@@ -221,6 +210,12 @@ body.wide #job{max-height:120px}
 .pe-howto{font-size:12px;line-height:1.45;margin-bottom:6px}.pe-howto ul{margin:4px 0 0;padding-left:16px}.pe-howto li{margin:2px 0}
 .pe-pbr{border-top:1px solid var(--line);padding-top:4px}
 .pe-3d{flex:none;height:min(300px,34vh);position:relative}
+.pe-viewhead .pe-views{margin-left:auto;text-transform:none;letter-spacing:0;font-weight:400}
+.pe-viewhead .pe-views button{font-size:11px;padding:1px 7px}
+.pe-onpic{flex:none;padding:0 8px 8px}
+.pe-onpic canvas{display:block;width:100%;aspect-ratio:4/3;border-radius:4px;background:#2a2a30}
+.pe-onpicnote{font-size:11px;line-height:1.35;padding-top:4px}
+.pe-kept{font-size:11px;color:var(--accent);border:1px solid var(--line);border-radius:4px;padding:2px 7px}
 .pe-3d canvas{display:block;width:100%;height:100%}
 /* a list's labelled entries (a table's length, width, height) and a family's settings picker */
 .list .lab { display: inline-flex; flex-direction: column; gap: 1px; }

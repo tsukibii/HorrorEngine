@@ -5,6 +5,13 @@ the fix.
 
 ## Every prop's picture and the sticker passes (2026-11-04, night)
 
+- **A new field or class in a big module is looked up first**: the picture editor's state already had `E.view` (the 3D
+  viewer's loaded model) and its stylesheet `.pe-pic` (the pictures to drag); the preview's switch and box took the same
+  names, the model overwrote the switch (both views hidden) and the box took the thumbnails' style. `E.pane` and
+  `.pe-onpic` now; grep a name before giving it.
+- **A 3D view that isn't shown doesn't draw**: three.js's loop kept rendering the hidden editor view in software GL,
+  and the page's clicks waited seconds behind it (`view3d.js` skips frames while its box has no width).
+
 - **A picture laid on a render is lit through the surface's own detail**: the first light and gloss passes ignored the
   materials' normal maps, so a sticker on a crushed can lay smooth over its creases while the label round it was
   crumpled. The override shaders take the material's own normal now (`stage._override`), and the passes carry a

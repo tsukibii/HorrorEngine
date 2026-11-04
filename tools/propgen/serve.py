@@ -178,13 +178,14 @@ def listing():
         except SystemExit as e:
             sp = {"family": r.get("family", "?"), "_error": str(e)}
         mt, sv = made(n), saved(n)
+        custom = sp.get("family") in CUSTOM
         rec = {"name": n, "family": sp.get("family"), "label": sp.get("label", ""), "from": r.get("from"), "raw": r, "spec": sp,
                "made": bool(mt), "tris": (mt or sv or {}).get("tris"), "size_m": (mt or sv or {}).get("size_m"), "secs": mt and mt.get("secs"),
                "thumb": f"/thumb/{n}?v={mt['_mtime']}" if mt else (f"/thumb/{n}?v={sv['_mtime']}" if sv else None),
                "thumb_from": "made" if mt else ("saved" if sv else None),
                "edited": bool(mt) and _bare(mt.get("spec")) != _bare(sp),
                "stale": bool(sv) and not mt and _bare(sv.get("spec")) != _bare(sp),
-               "stickers": bool(sticker_info(n, mt, sv))}
+               "custom": custom, "preview": custom and bool(preview_info(n, mt, sv, sp.get("family")))}
         for vk, vd in ((sv or {}).get("variants") or {}).items():
             if (THUMBS / vd["file"]).exists():
                 rec.setdefault("variants", {})[vk] = {"label": vd.get("label", vk), "thumb": f"/sthumb/{vd['file']}?v={sv['_mtime']}"}
@@ -231,12 +232,40 @@ def thumb(name):
         return pv
 
 
-def sticker_info(name, mt=None, sv=None):
-    """What the page needs to lay a picture onto a prop's thumbnail (docs/PROPGEN.md §25): the passes, the picture
-    they belong to, the ground picture (its slots empty), its materials in the passes' order, its parts (islands) and
-    its own picture slots; the made prop's when it was made with its passes, else the project's kept one (unless the
-    made prop was made from another recipe than it)."""
+CUSTOM = recipes.custom_families()               # the families your own pictures go on (PROPGEN §25)
+
+
+def kept_meta(name, sv=None):
+    """A customizable prop not made here, as the picture editor reads a made one's meta.json (docs/PROPGEN.md §25): its
+    parts, its own picture slots, its materials' sizes and colours, its paint (and its paint with the slots empty) as
+    kept at 512 px, the recipe it was made from; no model (the editor draws its parts as boxes, its 3D view waits for a
+    make)."""
+    sv = sv if sv is not None else saved(name)
+    if not sv or not sv.get("custom"):
+        return None
+    v = sv["_mtime"]
+    tex = sv.get("tex") or {}
+
+    def url(f):
+        return f"/sthumb/{f}?v={v}"
+    return {"name": name, "_mtime": v, "kept": True, "family": sv.get("family"), "spec": sv.get("spec") or {},
+            "islands": sv.get("islands") or {}, "slots": sv.get("slots") or [],
+            "materials": {m: {"px": px, "color": (sv.get("colors") or {}).get(m)} for m, px in (sv.get("px") or {}).items()},
+            "textures": {m: [url(t["paint"])] for m, t in tex.items() if t.get("paint")},
+            "design": {m: {k: url(f) for k, f in t.items()} for m, t in tex.items()},
+            "files": [], "tris": sv.get("tris"), "size_m": sv.get("size_m")}
+
+
+def preview_info(name, mt=None, sv=None, family=None):
+    """What the picture editor needs to preview your pictures on a customizable prop's own picture (docs/PROPGEN.md
+    §25): the sticker passes, the picture they belong to, the ground picture (its slots empty), its materials in the
+    passes' order, its parts (islands) and its own picture slots; the made prop's when it was made with its passes,
+    else the project's kept one (unless the made prop was made from another recipe than it). None for a prop that
+    isn't customizable."""
     mt = mt if mt is not None else made(name)
+    fam = family or (mt or {}).get("family") or (sv or saved(name) or {}).get("family")
+    if fam not in CUSTOM:
+        return None
     d = OUT / name
     st, sj = d / f"{name}_st.png", d / f"{name}_st.json"
     if mt and st.exists() and sj.exists():
@@ -545,10 +574,11 @@ class Handler(BaseHTTPRequestHandler):
                     sp = recipes.resolve(book, n) if n in book else ((made(n) or {}).get("spec"))
                     if sp is None:
                         return self.send(404, {"error": "no such recipe"})
-                    return self.send(200, {"name": n, "raw": book.get(n), "spec": sp, "meta": made(n)})
-                if what == "stickers" and len(parts) == 3:
-                    info = sticker_info(parts[2])
-                    return self.send(200, info) if info else self.send(404, {"error": "no sticker passes for it: make it (or python tools/propgen.py thumbs)"})
+                    mt = made(n)
+                    return self.send(200, {"name": n, "raw": book.get(n), "spec": sp, "meta": mt, "kept": None if mt else kept_meta(n)})
+                if what == "preview" and len(parts) == 3:
+                    info = preview_info(parts[2])
+                    return self.send(200, info) if info else self.send(404, {"error": "no preview for it: a customizable prop, made (or kept: python tools/propgen.py thumbs)"})
                 if what == "choices":
                     return self.send(200, choices())
                 if what == "shelf":

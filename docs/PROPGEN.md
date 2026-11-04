@@ -457,14 +457,15 @@ Pages). A wrapper over `tools/propgen.py`: what it writes is the same recipe JSO
   marked *kept*: §25), in families, found by name, family or words. Badges mark a prop made with settings its recipe
   doesn't have ("made with changes", as `--set` does), one made under a name of its own that isn't a recipe
   (variations) and a kept picture of an older recipe ("older picture"); a chair's *cushions* chip shows it without
-  them. *Make the unmade* makes every recipe not made yet. **Try a picture on them…** (top right, or a picture file
-  dropped on the cards) lays one of your pictures on every card, lit as the prop is (§25).
+  them. *Make the unmade* makes every recipe not made yet. The customizable ones (cans, books, appliances...: §25) are
+  marked ✎, and *✎ customizable* shows them alone.
 - **The form** (Settings) is built from the recipe itself: colours as colour pickers, shares (wear, fill, burn...) as
   sliders, words as text, and lists for what the generator knows. Those are its designs, fonts, liquids, finishes,
   metals and poses, and each family's kinds and options, read from the family's own docstring (`"kind": "a" | "b"`),
   so a new family's options show up by themselves. Any setting can be added (+ a setting) or taken out (×); quick adds
   are a liquid, a print and wear. Recipe JSON is the whole recipe as text, editable.
-- **Texture & pictures** is **the picture editor** (§17, after Figma): the tab takes the whole page, the texture in
+- **Texture & pictures** is **the picture editor** (§17, after Figma; a customizable prop's pictures seen on its own
+  picture as they're laid, made here or not: §25): the tab takes the whole page, the texture in
   the middle with its cuts, its parts and pictures as layers on the left, the picked one's settings and the prop in 3D
   wearing the canvas on the right. Pictures are dragged onto it (a part, one of its own pictures, or the whole
   texture), moved, sized and turned by their handles. A PBR set off the shelf per material is there too, and each
@@ -715,8 +716,10 @@ Texture & pictures tab is that editor (`tools/propgen/page/picedit.js`; the 3D v
   opacity, roughness, tint and its layout; a smudge's; a part's size, the picture it wants, *Fill it with* and its
   template. With nothing picked: how to use it, the material's PBR set and the templates. Every picture shows the
   size it wants (§15).
-- **On the prop** (right, under the settings): the made .glb wearing the canvas as it's edited; a click on it picks
-  the part there.
+- **On the prop** (right, under the settings): *3D*, the made .glb wearing the canvas as it's edited; a click on it picks
+  the part there. A customizable prop (§25) opens on *Its picture* instead: its own
+  rendered picture with your pictures laid on it, lit as Make will light them, made here or only kept in the project
+  (then the editor works from the kept parts and paint: *kept · not made here*).
 - **Templates**: *Template (.ora)* is the whole layout for Krita, as the UV templates are (ASSETS §7): the prop's
   paint on Base, the cuts, its own pictures' boxes and the parts' names on Guide (locked), an empty Paint layer.
   Saved and dropped back onto the canvas, its Paint layer becomes a picture over the whole texture (the server takes
@@ -1094,56 +1097,60 @@ baked; a bit of realism while keeping the poly count low". The `chair` family (`
 
 The check's case: `chair_dining` (a seat pad and its ties).
 
-## 25. Every prop's picture kept, and your pictures tried on them
+## 25. Customizable props: your pictures seen on their own picture before they're made
 
-The user (2026-11-04): "can you pre-add (prerender and save) thumbnails for each ... a thumbnail (prerendered image)
-for each prop but do it in a clever way that we can preview what custom stickers would look like on props like cans".
-`tools/propgen/thumbs.py`, `stage.py`'s passes, `tone.py`, and on the page `page/sticker.js` and `page/tone.js`:
+The user (2026-11-04): "pre-render and save thumbnails for each prop ... in a clever way that we can preview what custom
+stickers would look like on props like cans"; then, more exactly: "I don't mean I want a logo on the models; I want to
+be able to customize certain props that should be customizable, e.g. cans, books, and a smart way of previewing what
+the uploaded image (the Figma UI) will look like before actually generating it. Plants etc. don't need it; the only
+time a logo matters is an appliance where we want to fake it having one, like the rice cookers."
 
-- **Kept in the project:** `Content/Studio/Props/thumbs/` holds every recipe's picture as it was made here, so the
-  page's cards show one on any machine before anything is made there (*kept* on the card; *older picture* once its
-  recipe has changed since). Per recipe: `<name>.webp` (400 x 300, the preview at half its size), `<name>.st.webp`
-  (its sticker passes, lossless), `<name>.ground.webp` (its picture with its own picture slots empty, where it has
-  some), `<name>.bare.webp` (a chair without its cushions: the card's *cushions* chip switches to it) and
-  `<name>.json` (the recipe it was made from, its materials in the passes' order, its parts: their places on the
-  texture and sizes in mm, its picture slots, its size). About 25 KB a prop.
-- **The sticker passes** (the clever part): beside every preview, at half its size and from the same camera, Cycles
-  renders three cheap passes with the prop's materials swapped: the light a white matt surface would get there (its
-  shading, shadows and the floor's bounce), the gloss of a clear coat at roughness 0.35 (both through the material's
-  own normal map, so a crumpled can's creases are in them too), and, at one sample a pixel and no filter, which
-  material's texture point each pixel sees (u and v in 12 bits). One 8-bit PNG of two panes, no alpha (a browser's
-  canvas would round colours under alpha): left R u's high 8 bits, G v's high 8, B their low 4 and 4; right R the
-  material (its slot + 1, the high 4 bits) and how much of the pixel it covers (the low 4), G the light and B the
-  gloss, each coded sqrt(L / (1 + L)) (`tone.enc`). A picture placed anywhere on the texture is looked up at every
-  pixel (four points a pixel, from a mip level its size there), lit as its colour x light + gloss (matte a quarter of
-  the coat's, satin six tenths, gloss all of it) and toned: in the browser, no Blender, a card in a few milliseconds.
+- **Customizable families** say so in their module (`CUSTOM = True`, read without importing them by
+  `recipes.custom_families()`): can, bottle, cup, box, sheet (paper: receipts, notes, a newspaper, ofuda), book, pills,
+  appliance (a rice cooker's or a kettle's fake brand), charm (ema, omamori) and ware (mugs, jars). The gallery marks
+  them ✎ and filters them (*✎ customizable* in the families' bar); plants, trees, furniture, bedding, curtains and the
+  rest are left as they are.
+- **Their picture previews your pictures** (`page/preview.js`): in the picture editor (§17) the right column's **On the
+  prop** shows *Its picture*, the prop's own Cycles picture with what you've laid on its texture since it was made (in
+  its own slots, as decals, sheets and smudges) laid onto it, lit and toned as the render was, live as you drag; *3D*
+  is the made model wearing the canvas, as before. Where a slot's picture changed, the picture with its slots empty
+  (its ground) shows under the new one, so a logo swapped in hides the old. A picture moved or taken out since the make
+  still shows where it was, and a slot given back its own drawing shows empty, until it's made again (the note under
+  the picture says so).
+- **How** (the clever part): beside every preview Cycles renders three cheap passes at half its size from the same
+  camera with the prop's materials swapped (`stage.py`): the light a white matt surface would get at each pixel (its
+  shading, shadows and the floor's bounce), the gloss of a clear coat at roughness 0.35 (both through the material's own
+  normal map: a crushed can's creases are in them) and, at one sample a pixel and no filter, which material's texture
+  point each pixel sees (u and v in 12 bits). One 8-bit PNG of two panes, no alpha (a browser's canvas would round
+  colours under alpha): left R u's high 8 bits, G v's high 8, B their low 4 and 4; right R the material (its slot + 1,
+  the high 4 bits) and how much of the pixel it covers (the low 4), G the light and B the gloss, each coded
+  sqrt(L / (1 + L)) (`tone.enc`). The editor draws your layers over a transparent texture (up to 1024 px, as mip
+  levels); every pixel of the picture looks them up at its texture point (four points a pixel, from the level of the
+  size they're seen at), lights them as colour x light + six tenths of the gloss, tones them and lays them over the
+  picture. In the browser, no Blender: a few milliseconds a change.
 - **One tone curve:** the preview is rendered as light and toned by `tone.py` (AgX: Troy Sobotka's curve, Benjamin
-  Wrensch's approximation), and the page tones a laid picture by `page/tone.js`, the same numbers, so they agree
-  pixel for pixel (until 2026-11-04 the preview used Blender's own AgX view; this is close to it).
-- **The ground:** where the prop's paint has its own picture slots (a can's logo, an ema's motif), the picture is
-  rendered once more with every slot empty (`write_design`'s ground texture swapped in): a picture laid in a slot
-  takes away what was drawn there (*replace*), as Make does.
-- **On the page:** *Try a picture on them…* (top right: one of your pictures or a file; or a file dropped on the
-  cards) lays it on every card that has passes: in its own logo or picture slot (a logo before a picture, a stamp,
-  words, a flourish, a pattern), else on its most seen part as a sticker at the middle of what's seen; the card's
-  corner button moves it to the next place; the finish (matte, satin, gloss) for all. An opened prop shows it larger
-  with its places to choose from: for a slot fit, scale, dx, dy, a quarter turn, flip and replace; for a part its
-  middle (x, y), width, turn, fit and flip. **Put it in the recipe** writes it as Make reads it (`pictures`
-  {"<island>.<name>": {image, fit, scale, dx, dy, rot, flip, rough}}, or a `decals` entry {image, island, x, y, w,
-  rot, rough}), the picture copied into `Content/Studio/Props/images/` first, so Make makes what the card showed:
-  the page places it as `paint.py`'s Frame.picture and build.py's `lay_pictures` do.
+  Wrensch's approximation), and the page tones your pictures by `page/tone.js`, the same numbers (until 2026-11-04 the
+  preview used Blender's own AgX view; this is close to it).
+- **Before it's made at all:** `Content/Studio/Props/thumbs/` keeps every recipe's picture (`<name>.webp`, 400 x 300,
+  the cards' before anything is made here, marked *kept*; *older picture* once its recipe has changed; `<name>.bare.webp`
+  a cushioned chair without its cushions, the card's *cushions* chip), and for a customizable one what the editor needs
+  to work on it without a make: its passes (`<name>.st.webp`, lossless), its ground (`<name>.ground.webp`), each
+  material's paint at 512 px (`<name>.tex.<mat>.webp`, and `.ground.webp` its slots empty), and in `<name>.json` its
+  materials in the passes' order, their colours and pixels, its parts and its slots. The page reads them as a made
+  prop's meta (`serve.py kept_meta`): the editor's parts drawn as boxes (no model, so no cuts and no 3D until it's
+  made), *kept · not made here* in its bar. About 4 MB for all.
 - **Made here:** a prop made here has passes of its own (`Saved/Props/<name>/<name>_st.png`, `_st.json`,
-  `_st_ground.png`), used before the kept ones; one made from another recipe than its kept picture has none until
-  it's made again.
+  `_st_ground.png`), used before the kept ones.
 - **The command:** `python tools/propgen.py thumbs [names] [--make] [--bare] [--jobs 2] [--tex 1024]` keeps the made
-  props' pictures; `--make` makes first what isn't made, was made from another recipe or has older passes (each in a
-  Blender of its own, two at once, a thumbnail's worth: textures at 1024, 10 bake samples, 24 in the preview, the glb
-  alone; about two hours for all on the cloud's 4 CPUs);
-  `--bare` makes the chairs without their cushions too (`cushion.on: false`, into `Saved/Props/_bare/`). `chair_worn`
-  isn't kept here: it wears your own shelf set `pbr/Wood/worn_planks` (`thumbs chair_worn --make` on your machine).
-  `--sheet` lays the kept pictures out as contact sheets (`Saved/Props/_thumbs_sheet_<n>.jpg`).
+  props' pictures (and a customizable one's passes and textures); `--make` makes first what isn't made, was made from
+  another recipe or has older passes (each in a Blender of its own, two at once, a thumbnail's worth: textures at
+  1024, 10 bake samples, 24 in the preview, the glb alone; about two hours for all on the cloud's 4 CPUs); `--bare` the
+  cushioned chairs without their cushions too (`cushion.on: false`, into `Saved/Props/_bare/`); `--sheet` the kept
+  pictures as contact sheets (`Saved/Props/_thumbs_sheet_<n>.jpg`). `chair_worn` isn't kept here: it wears your own
+  shelf set `pbr/Wood/worn_planks` (`thumbs chair_worn --make` on your machine).
 
-The checks: THUMBS (`python tools/propgen.py thumbs --check`, in check_all: every kept picture well formed, its
-picture and passes the same size, at least half its pixels' texture points on its parts (a broken pass has next to none), the missing and the older
-listed); PROPPAGE lays a picture on the made ema and on a kept can, places it by hand, puts it in the recipe, and
-switches a chair's cushions off and on.
+The checks: THUMBS (`python tools/propgen.py thumbs --check`, in check_all: every kept picture well formed; a
+customizable one's passes the picture's size side by side, at least half its pixels' texture points on its parts (a
+broken pass has next to none), its textures there; no other prop carrying them; the missing and the older listed);
+PROPPAGE: the customizable filter, a picture laid on the made ema seen on its own picture, a can not made here opened
+in the editor from what's kept and a picture on its logo seen on its picture.

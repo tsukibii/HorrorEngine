@@ -14,7 +14,6 @@
   <input id="search" type="search" placeholder="Find a recipe: its name, family or words">
   <div id="fams"></div>
   <span class="grow"></span>
-  <span id="try" title="Lay a picture of yours on every prop's picture: in its logo or label slot, else as a sticker (drop one on the cards too)"></span>
   <button id="make-unmade" title="Make every recipe that hasn't been made yet">Make the unmade</button>
   <button id="refresh" title="Read the recipes and what's made again">Refresh</button>
 </header>
@@ -23,7 +22,8 @@
   <aside id="editor" class="empty">
     <div id="ed-empty">Pick a prop on the left to open its recipe.<br><br>Every card is a recipe in
       <code>Content/Studio/Props/presets.json</code>; its picture is the last time it was made here, or the one kept in the
-      project (<code>Content/Studio/Props/thumbs</code>). Try a picture of yours on them all from the top right.</div>
+      project (<code>Content/Studio/Props/thumbs</code>). The ✎ ones are customizable: in their Texture &amp; pictures tab
+      your pictures show on their own picture before they're made.</div>
     <div id="ed-body">
       <div id="ed-head">
         <img id="ed-thumb" alt="">
@@ -33,7 +33,6 @@
           <div id="ed-info"></div>
         </div>
       </div>
-      <div id="ed-sticker" hidden></div>
       <nav id="tabs">
         <button data-tab="settings" class="on">Settings</button>
         <button data-tab="texture">Texture &amp; pictures</button>

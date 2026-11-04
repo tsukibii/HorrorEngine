@@ -17,26 +17,25 @@ by-hand guides, merged; then on the same branch from main the map-building skill
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-04, night, the same branch): the café stool, cushions off, every prop's picture
+## Where it stopped last (2026-11-04, later night, the same branch): customizable props previewed in the picture editor
 
-The user's ask (DECISIONS 2026-11-04, night): the café chair a stool, cushions toggleable, a pre-rendered thumbnail
-for every prop "in a clever way that we can preview what custom stickers would look like on props like cans".
+The user's asks (DECISIONS 2026-11-04, night and later night): the café chair a stool, cushions toggleable, every
+prop's picture pre-rendered; then, more exactly, customizing only the props meant to be (cans, books, appliances'
+fake brands) with the uploaded picture previewed in the picture editor before it's made.
 
-- **`stool_cafe`** (was `chair_cafe`): a bentwood stool, its legs inside the seat ring touching it and the seat;
-  **`cushion.on`**: false keeps a chair bare with its pads' settings (the page's switch in the cushion box's title).
-- **Every recipe's picture kept** in `Content/Studio/Props/thumbs/` (PROPGEN §25): the picture (400 x 300), its
-  **sticker passes** (light, gloss, the texture point each pixel sees: `stage.py` renders them beside every preview),
-  the picture with its slots empty, a chair's picture without its cushions, and a JSON of its parts and slots. The
-  preview is toned by `tone.py` now (AgX), the page lays pictures by the same curve (`page/tone.js`,
-  `page/sticker.js`). `python tools/propgen.py thumbs --make --bare` made them all (`chair_worn` wants your
-  `pbr/Wood/worn_planks`: make its picture on your machine). THUMBS in check_all; PROPPAGE tries a picture.
-- **On the page:** *Try a picture on them…* top right (or a file dropped on the cards): every card wears it, in its
-  logo slot or as a sticker on its most seen part; the corner button moves it; an opened prop places it by hand and
-  **Put it in the recipe** writes `pictures` or `decals` for Make.
+- **`stool_cafe`** (was `chair_cafe`): a bentwood stool; **`cushion.on`**: false keeps a chair bare with its pads'
+  settings (the switch in the cushion box's title); a cushioned chair's card shows it without them too.
+- **Every recipe's picture kept** in `Content/Studio/Props/thumbs/` (PROPGEN §25), the cards' before anything is made.
+- **Customizable families** (`CUSTOM = True`: can, bottle, cup, box, sheet, book, pills, appliance, charm, ware): ✎ on
+  their cards and a filter; in the picture editor **Its picture** shows the prop's own rendered picture with your
+  pictures laid on it (the sticker passes beside every preview: `stage.py`, `page/preview.js`, toned by `tone.py` /
+  `page/tone.js`), live, before Make, and before it's made here at all from what's kept of it (its parts, slots and
+  paint at 512 px: `serve.py kept_meta`). THUMBS in check_all; PROPPAGE drives it on a made ema and a kept can.
 
-Worth doing with the user: try their own stickers and labels on the cans, bottles and boxes and see the made prop
-match the card; whether the kept pictures should be made again on their machine at full texture size (`thumbs --make
---tex 2048`, the 3090 does it quickly); a sticker's own relief or a peeled corner would need Make's side first.
+Worth doing with the user: their own labels on the cans, books and the rice cooker's lid, then Make, and the made
+prop against what its picture showed; whether more families are customizable (`CUSTOM = True` in a family's module,
+then `python tools/propgen.py thumbs --make <its recipes>`); a closer preview (the passes are half the preview's size:
+a rice cooker's lid logo is small in them) would mean rendering them at full size.
 
 ## Before that (2026-11-04, evening, the same branch): tables, chairs and their cushions
 

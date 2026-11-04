@@ -77,6 +77,7 @@ export function makeViewer(box, opts = {}) {
   let alive = true;
   const loop = () => {
     if (!alive) return;
+    if (!box.clientWidth) { requestAnimationFrame(loop); return; }   // not shown (another tab, the picture pane): nothing drawn
     if (spin && !down) orbit.yaw += 0.006;
     place();
     renderer.render(scene, cam);
