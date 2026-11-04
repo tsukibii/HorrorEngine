@@ -3,6 +3,21 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## The user's floor plan as a map (2026-11-04, small hours)
+
+- **Look at the export, not only the plan**: the plan view (plan.py on the set) had the kitchen open to the living
+  room; the Godot export, which goes through the scene builder's page, walled it off (the page read open plans back
+  as walls). A picture of the real thing (`tools/godot/map_shots.py`) is the check of a map.
+- **Restart the desk's server after changing storykit's Python**: it keeps the modules it started with, and every
+  export plans through it. The gate looked still walled up after plan.py was fixed, until the server was restarted.
+- **A rule for every bug the map found, and the old levels compared**: each plan.py fix was run over every set and
+  game's walls before and after (identical but where they were wrong: the schools' stair arches were walled up too,
+  unnoticed), and LEVEL now says what it was.
+- **Glass for Godot is clearer than the desk's**: 25 % of a pale blue reads as glass in three.js and as a milky veil in
+  Godot (lit by the room's lamps, under SSR); the game export already used 12 %, the by-hand export now does too.
+- **A pole's arms cross the road** (`turn`): at turn 0 along an east-west lane every wire hung in one vertical plane.
+- **Cameras for pictures stand where a person could**: a shot "across the bend" stood behind the curved wall.
+
 ## A street's pieces in one plane (2026-11-03, night)
 
 - **Measure faces against planes, not planes against buckets:** the first street measure keyed each face's plane by its

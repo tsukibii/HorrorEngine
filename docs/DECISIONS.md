@@ -2,6 +2,40 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-04, small hours (the user: a map-building guide for Claude, and a map from their floor plan)
+
+- **"Create an optimized guide for claude (yourself) on how to use interior and street tool to build a coherent map
+  so it's as token efficient as possible."** The skill `/build-map` (`.claude/skills/build-map/`: the steps in
+  SKILL.md, the formats compact in reference.md): a layout file into a set (`layoutset.mjs --file`, its `repeat` for
+  storeys alike), a street file synced with it (`streetsync.mjs`), the checks by their last lines, the plan and the
+  map as one picture each (`plan_view.py --floor`, `tools/godot/map_shots.py`: the set in its street pictured by
+  Godot, a contact sheet). Claude never reads a set's story.json, a street.json or the builders' code whole for it.
+- **"Design me a map for a short video game which uses image 1 as the floor plan, furnish the place (some basic
+  Japanese style furnishing), use PBRs we have where possible."** The set `maison_1f` (Maison Shirasagi): image 1's
+  flat as drawn (bedroom 1 with its closet and L-shaped entry, bedroom 2 a washitsu with its tokonoma in the L's foot
+  and its oshiire, the bath as a unit bath, the kitchen open to the living room), a genkan carved from the kitchen's
+  corner with its front door (a peephole, a latch) onto the block's entrance hall (mailboxes, the glass doors out
+  locked by a flag). Furnished from the kit; walls in plaster, the washitsu's a tinted plaster, the bath's white
+  plastic, the genkan's floor 30 cm pavers, the tatami's weave, the gate's rusting paint (all sets in git).
+- **"We should be located on the ground floor, exterior should be similar to image 2."** A white rendered block of
+  four storeys, one flat a floor (the floors above the same flat, bare), tall narrow windows on its stair front, a
+  railing on the flat roof, a canopy, the name plate and a lamp over the glass entrance; image 2's brown balconied
+  flats beside it.
+- **"We should have stairs going upstairs but a gate should be locked preventing the player from going up."** A
+  dog-leg stair in its shaft from the entrance hall to the fourth floor behind `gate_bars` (a new kit door: a steel
+  gate of bars), locked by `flag:upstairs_open`; the flight up lit, the next landing's light flickering.
+- **"The game should be on a curved street ... opposite the small apartment complex should be a curved concrete wall
+  with more fancier buildings behind, some street style trees; we won't actually be going outside the interior
+  apartment so the street will only be visible from the side windows."** The street `maison_lane`: a lane bending
+  round the block's corner, so its front and the flat's south windows both face it; on the bend's far side a curved
+  board-formed concrete wall (fences can curve now: `via`) with an old estate under kawara and two modern villas
+  behind, street trees down the far walk, poles and their wires on the near side, the bend's mirror. The flat's
+  garden screen kept low (0.8 m) so the road shows from the ground floor; the windows' glass exported clear (12 %, as
+  the game export's).
+- **"Can you use the realistic version of the trees."** The street's trees are the prop generator's realistic ones
+  (`zelkova_real` down the far walk, `black_pine_real` in the estate's garden): a street `tree` now names the made prop
+  that stands in its place (`prop`), on the page and in Export for Godot (STREET_BUILDER §7c).
+
 ## 2026-11-03, night (the user: rules in the editors, exports for Godot, guides)
 
 - **"Is this something that's easy to have as an implemented fix on any interior design or street design? How do I

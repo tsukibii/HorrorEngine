@@ -145,7 +145,8 @@ turned by `turn` (degrees, anticlockwise) and set down at `at` (its middle); a r
                             "floors": [from, to], "text", "fg", "bg", "dir": "h|v|r", "lit", "slot", "in", ...}],
                  "refs": {"front|right|back|left": {"file": "refs/<name>", "x", "z", "w", "op", "top"}}}],
   "things": [{"id", "kind" (THING_KINDS), "at", "turn", "lift" (above what's under it), "h", "slot", "look", "to" (a pole's next pole), ...}],
-  "fences": [{"id", "kind" (FENCE_KINDS), "from", "to", "h", "step", "look"}],
+  "fences": [{"id", "kind" (FENCE_KINDS), "from", "to", "via" (a curve through these points), "h", "step", "look"}],
+  (a thing's `prop`, a tree's: the prop generator's made one standing in its place, `props/<recipe>`: §7c)
   "shots": [{"id", "name", "eye": [x, y, z], "look": [x, y, z], "vfov" (degrees tall), "aspect": [w, h],
              "ref": "refs/<photo>", "op", "pins": [{"name", "px": [0..1, 0..1], "at": [x, y, z]}]}] }
 ```
@@ -250,6 +251,8 @@ for a car park or a walkway. So the street builds the outside, round the level:
   scene builder (its Outside panel, SCENE_BUILDER §8: a street style, the walls, the roof, the raise, the front, the
   fittings). A building with that set inside wears it: its `look`, `roof`, `parts` and its inside's `raise`, `slot` and
   `front` are the set's, read again with the rooms whenever the street opens (`inside.from` marks what was put on).
+  Without the page: `node tools/director/streetsync.mjs <street>` reads every inside's set again the same way (after
+  layoutset.mjs or a change by hand to the set; `--dry` says what would change).
   Change any of them in the street and the building keeps its own from then on (`inside.own`; its inspector: *Follow
   the set's outside* takes it back). STREET fails if a building that follows its set no longer matches it (open the
   street and save). The motel preset is the street's own composition (`own` from the start).
@@ -432,6 +435,40 @@ and meters, vending machines, a block wall with mesh, a wooden fence, 止まれ 
 blocks** (concrete flats with shutters and canopies, a building site's long panels, cones and barriers) and **the
 white tower** on the corner. A shot each, framed as its reference was (not matched: the matching is the Shibuya
 lane's). 89 buildings and 224 things in 88,000 triangles.
+
+## 7c. A lane round a block (`maison_lane`, DECISIONS 2026-11-04)
+
+The user's floor plan as a map: the set `maison_1f` (SCENE_BUILDER §10d) walked into from a lane that bends round the
+block's south-east corner, so the block's front (its glass entrance) and the flat's south windows both face the road.
+The set's metres are the street's (the block at the middle of the set's rooms' box, turned 90 for its east front), so
+everything round it was placed by the plan's numbers, from a short script (`.claude/skills/build-map`): the lane's
+points every 15° on a 13.75 m bend, the walks 1.5 m on the block's side and 2.5 m on the far side, its street trees
+down that walk's middle, poles at the near kerb turned so their arms cross the lane, the bend's orange mirror.
+
+- **Curved fences** (`via`, the user's "a curved concrete wall"): a fence's line smoothed through its points as a
+  road's, built as 2 m straight segments, each one's ends sheared onto the bisector of the turn there so the
+  neighbours meet mitred in one plane (no gap, no overlap; the hidden ends left out, a joint's post once); its
+  colliders a box a segment; the page draws it as its curve with its bends as handles. STREET builds three (a block
+  wall, a mesh fence, a ribbed one) and checks a curved wall's cap whole at every joint.
+- **The far side**: the curved wall (`block`, its `slot` concrete wearing `pbr/concrete/Concrete027_1K-PNG`, board-
+  formed, 2 m) with an old estate under kawara (`RoofingTiles010`, a tiled eave between its floors), a white villa
+  and a dark one with its top storey set back; more down the lane both ways.
+- **Realistic trees** (the user, 2026-11-04: "can you use the realistic version of the trees"): a `tree`'s `prop` is
+  the real one standing in its place, the prop generator's made into the library (`python tools/propgen.py make
+  zelkova_real black_pine_real`, then `python tools/propgen.py library zelkova_real black_pine_real`): the page draws
+  it at the stand-in's spot on the ground, turned by its `turn`, and leaves the stand-in out (shown until the mesh
+  has loaded, and on a machine that hasn't made it); Export for Godot carries it under `props` with its own materials
+  (the leaf cards cut out by their alpha); every tree's collider is its trunk now, walked under its crown. Here the
+  far walk's eight zelkovas (`props/zelkova_real`, LeafSet005's leaves) and two black pines (`props/black_pine_real`)
+  in the estate's garden, leaning over the wall. STREET says when a prop isn't a recipe, and warns when it isn't made.
+- **The block's side**: image 2's brown tiled flats with their barred balconies, a house behind the kitchen's window
+  (its wall 1.5 m away), the flat's garden screen (slats, 0.8 m: low enough for the road to show from the ground
+  floor's windows), a vending machine, bikes and pots at the entrance.
+- **Setbacks flush on a side** (`tiers` with an `inset` of 0, as the dark villa): the terrace's slab edge, rail and
+  parapet are left out on that side (they lay in the storey above's wall's plane); a terrace's `wall` edge (a parapet)
+  no longer overlaps itself at its corners. STREET's rules street has both.
+- **Pictures**: `python tools/godot/map_shots.py --set maison_1f --street maison_lane --shots
+  Content/Studio/Sets/maison_1f/shots.json` (the interior stood at its marker in a by-hand project, pictured by Godot).
 
 ## 8. Not yet
 

@@ -13,11 +13,44 @@ street builder, its paint and the PBR sets, with `prop-gen-tool` merged in; 2026
 to 2026-11-03 on `Director-Godot`: the Director in Godot, its panel, Story Flow and the animation steps, merged into
 main on 2026-11-03 with main's own work since 2026-10-31 brought in; then the skin's depth softened and the skin under
 clothes hidden on `claude/festive-euler-o7axpl`, the walls meeting, the editors' rules, Export for Godot and the
-by-hand guides). Read this
+by-hand guides, merged; then on the same branch from main the map-building skill and the user's floor plan as a map). Read this
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-03, night, branch `claude/festive-euler-o7axpl`): rules, exports, guides
+## Where it stopped last (2026-11-04, small hours, branch `claude/festive-euler-o7axpl` from main): the map skill, image 1 as a map
+
+The user's two asks (DECISIONS 2026-11-04), after tsukibii/HorrorEngine#13 was merged:
+
+- **A token-efficient guide for Claude** to build a coherent map with the interior and street tools: the skill
+  `/build-map` (`.claude/skills/build-map/SKILL.md` the steps, `reference.md` the formats compact). Its tools:
+  `layoutset.mjs --file` (a layout file as a set; `repeat` for storeys alike), `streetsync.mjs` (a street's insides
+  read again without the page), `plan_view.py --floor`, `streetcheck.mjs --street`, `tools/godot/map_shots.py` (the
+  set in its street pictured by Godot, a contact sheet: MAPSHOTS).
+- **The map**: the set `maison_1f` (the user's image 1, furnished Japanese, four storeys alike, the stairs behind a
+  locked barred gate; `layout.json` its source, `shots.json` its pictures) in the street `maison_lane` (a lane round the
+  block's corner, a curved board-formed concrete wall, an estate and villas behind it, street trees). SCENE_BUILDER
+  §10d, STREET_BUILDER §7c. The pictures: `python tools/godot/map_shots.py --set maison_1f --street maison_lane
+  --shots Content/Studio/Sets/maison_1f/shots.json` (the desk's server running).
+- What the map found in the builders, fixed with a rule each (every older set and game's walls compared before and
+  after: identical but where wrong): open plans read back walled by the scene builder's page (so its export walled
+  the kitchen off), a corner half filled by another room's wall, openings one over another on a stair shaft (they
+  walled up the gate, and the two schools' upper stair arches: LEVEL says *walled up* now), a setback flush on a side
+  and a terrace's parapet at its corners (street), the poles' wires, the export's milky glass (12 % now, as the game
+  export's). Fences curve (`via`), and the kit has `gate_bars`.
+
+Worth doing with the user: walk the flat in Godot (Exports: `node tools/director/levelexport.mjs --game set:maison_1f`
+and `node tools/director/streetexport.mjs --street maison_lane`, the flat at the street's marker
+`inside_maison_1_1`, as guides/first_game) and light it by hand; the look's haze is thick across a street (the
+balanced preset is tuned for rooms): the far side of the lane greys out by day. The trees are the realistic ones
+(the user's ask during the work): `zelkova_real` and `black_pine_real` made by the prop generator (Blender's module,
+`python tools/retarget.py setup`, about 25 s a tree) and put in the library; on the user's machine `python
+tools/propgen.py make zelkova_real black_pine_real` then `python tools/propgen.py library zelkova_real
+black_pine_real` before the street's export, or its stand-ins show (STREET warns). The toilet in the unit bath is a
+box (no kit for one yet). BUILDER passed here; STREETPAGE passes but for the 404 that was there before (a PBR set
+missing from this machine's shelf), and once its *Fill a street* clashed a drain pipe with a neighbour's rail (the
+fill is random: a generator rule still to find).
+
+## Before that (2026-11-03, night): rules, exports, guides
 
 The user's three asks (DECISIONS 2026-11-03, night), each a commit:
 

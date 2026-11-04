@@ -437,6 +437,39 @@ set `school_tokyo`:
   One teacher moves between the groups (わたり), each group at its own board.
 - **The street**: `tokyo_school` (STREET_BUILDER §5f), a corner of a residential street in Tokyo.
 
+## 10d. A layout file, storeys alike: the user's floor plan (`maison_1f`, DECISIONS 2026-11-04)
+
+A set written as a file instead of drawn: `Content/Studio/Sets/<set>/layout.json`, the PRESETS' shape (rooms, doors,
+windows, items, kits, floors, finish, start, outside), made a set by the builder's own model:
+`node tools/director/layoutset.mjs --file <layout.json> <set> [--dry]` (`.claude/skills/build-map`, the formats in its
+reference.md). **`repeat`** builds a building of storeys alike: the rooms it names copied to each of its `floors`
+(`<id>_{n}f`) with their doors and windows, bare (no furniture, lights off), and `add`'s rooms and doors for each copy
+(a landing, its arch onto the stair shaft). `python tools/plan_view.py --game set:<set> --floor 2.85` draws one storey.
+
+`maison_1f` is the user's image 1: bedroom 1 with its walk-in closet behind a sliding door and its L-shaped entry
+(two rooms, `open` between them), bedroom 2 a washitsu (tatami painted `Tatami001`, fusuma, a futon, a low table) with
+its tokonoma in the L's foot (the kit's alcove, a kōro in it) and its oshiire, a unit bath (the tub, a vanity and
+mirror, a toilet, white plastic walls), the kitchen open to the living room (a fridge, the run with a gas konro and
+its kettle, a rice cooker), the living room (a low table with tea on a rug, zabuton, the TV on its board, a bookshelf,
+the big window), a genkan (30 cm pavers, the shoe cabinet, the step's edge) whose steel front door (`Paint005`, a
+peephole, a latch, swinging out) opens onto the entrance hall: mailboxes, a notice board, the glass doors out (locked:
+`flag:outside_open`) and the dog-leg stair behind **`gate_bars`** (a kit door of steel bars, `Metal063`, locked:
+`flag:upstairs_open`). Three storeys of the same flat above, a landing each. Its outside: white plaster, a flat roof
+with a railing, rails across the tall windows, a canopy, the name plate メゾン白鷺 and a lamp at the entrance.
+
+What it taught the builder (each now a rule, none changing an existing set's walls but where they were wrong):
+
+- **Open plans read back**: two rooms open to each other (both skip their shared wall) came back walled when the
+  page opened the set (`levelToModel` only knew open sides to the outside); the Godot export, which goes through the
+  page, walled the kitchen off from the living room. Both sides now read back open.
+- **A corner filled on one side only** (an open plan's kitchen beside the bath): the wall ending there ran on past the
+  corner into the other room's wall's plane; it stops at the corner and a quarter cap closes the open half.
+- **Openings one over another** (a stair shaft's door on every landing): the wall was cut from the floor up under
+  each, walling up the ones below (and the two schools' upper stair arches, with 36 walls of no width); a wall with
+  stacked openings is cut column by column. LEVEL now says *walled up* and *a wall piece of no width*.
+- **Glass in the export**: Export for Godot gives every window's and glazed door's pane the game export's own glass
+  (12 % of a pale blue); the desk's 25 %, lit by the room's lamps in Godot, was a milky veil over the street.
+
 ## 11. Not done yet
 
 - **Default looks by room kind** (texture sets for a washitsu's walls, a bath's tiles): *Same look for every
