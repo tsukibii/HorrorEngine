@@ -370,7 +370,9 @@ try {
   });
   await step("placed by hand on the opened ema and put into its recipe", async () => {
     await page.click('.card[data-name="ema"]');
-    await page.waitForFunction(() => window.__pp.name === "ema" && document.querySelector("#ed-sticker canvas.stk-big"), null, { timeout: 20000 });
+    await page.waitForFunction(() => window.__pp.name === "ema");
+    await page.click('#tabs button[data-tab="settings"]');             // the panel isn't shown while the picture editor has the page
+    await page.waitForFunction(() => document.querySelector("#ed-sticker canvas.stk-big"), null, { timeout: 20000 });
     const n = await page.locator("#ed-sticker .ctl select").first().locator("option").count();
     const scale = page.locator('#ed-sticker .ctl input[type=range]').first();
     await scale.evaluate(e => { e.value = e.max / 2; e.dispatchEvent(new Event("input", { bubbles: true })); });
@@ -383,7 +385,7 @@ try {
     return `${n} places to choose from; ${where}`;
   });
   await step("a chair's cushions switched off and on in its form, their settings kept", async () => {
-    await page.click('#tabs button[data-tab="settings"]');           // the gallery back (the picture editor takes the page)
+    await page.click('#tabs button[data-tab="settings"]');           // the gallery shown (the picture editor takes the page)
     await page.click('.card[data-name="chair_dining"]');
     await page.waitForFunction(() => window.__pp.name === "chair_dining");
     const sw = page.locator("#tab-settings fieldset.switch legend input.sw");

@@ -59,7 +59,8 @@ python tools/propgen.py check                             # PROPGEN
 - **What it makes.** `Saved/Props/<name>/` holds `<name>.glb`, `.fbx`, `.obj` + `.mtl`, `.blend`,
   `<name>_<material>_albedo.png`, `_orm.png` and `_normal.png`, `<name>_preview.png` with its sticker passes beside it
   (`_st.png`, `_st.json`, `_st_ground.png`: §25), and `meta.json` (the resolved recipe, size, triangles, time).
-- **Time.** About 20 to 40 s a prop on the cloud's 4 CPUs (half of it the preview); much less on the 3090.
+- **Time.** About 30 to 50 s a prop on the cloud's 4 CPUs (half of it the preview and its sticker passes, §25); much
+  less on the 3090.
 - **Blender versions.** Tested on Blender 4.2 (the cloud's module) and Blender 5.2 LTS (Python 3.13): PROPGEN ok on
   both, every format written. Only `bpy` and the numpy Blender ships are used; no add-ons beyond the bundled
   exporters.
@@ -1136,11 +1137,13 @@ for each prop but do it in a clever way that we can preview what custom stickers
   it's made again.
 - **The command:** `python tools/propgen.py thumbs [names] [--make] [--bare] [--jobs 2] [--tex 1024]` keeps the made
   props' pictures; `--make` makes first what isn't made, was made from another recipe or has older passes (each in a
-  Blender of its own, two at once, textures at 1024, the glb alone: about 70 minutes for all on the cloud's 4 CPUs);
+  Blender of its own, two at once, a thumbnail's worth: textures at 1024, 10 bake samples, 24 in the preview, the glb
+  alone; about two hours for all on the cloud's 4 CPUs);
   `--bare` makes the chairs without their cushions too (`cushion.on: false`, into `Saved/Props/_bare/`). `chair_worn`
   isn't kept here: it wears your own shelf set `pbr/Wood/worn_planks` (`thumbs chair_worn --make` on your machine).
+  `--sheet` lays the kept pictures out as contact sheets (`Saved/Props/_thumbs_sheet_<n>.jpg`).
 
 The checks: THUMBS (`python tools/propgen.py thumbs --check`, in check_all: every kept picture well formed, its
-picture and passes the same size, nine tenths of its pixels' texture points on its parts, the missing and the older
+picture and passes the same size, at least half its pixels' texture points on its parts (a broken pass has next to none), the missing and the older
 listed); PROPPAGE lays a picture on the made ema and on a kept can, places it by hand, puts it in the recipe, and
 switches a chair's cushions off and on.

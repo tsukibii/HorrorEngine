@@ -27,6 +27,7 @@ def _args():
     p.add_argument("--no-preview", action="store_true")
     p.add_argument("--gpu", action="store_true")
     p.add_argument("--samples", type=int)
+    p.add_argument("--preview-samples", type=int, help="the preview's, over the recipe's (the kept thumbnails' batch: fewer)")
     p.add_argument("--library", action="store_true")
     p.add_argument("--title", default="Props")
     p.add_argument("--cols", type=int, default=5)
@@ -49,7 +50,7 @@ def main():
             name = a.as_name if a.as_name and len(names) == 1 else n
             bpy.ops.wm.read_factory_settings(use_empty=True)
             rec = build.run(name, spec, out, formats=tuple(x for x in a.formats.split(",") if x), preview=not a.no_preview,
-                            samples=a.samples, gpu=a.gpu)
+                            samples=a.samples, gpu=a.gpu, preview_samples=a.preview_samples)
             if a.library:
                 recipes.to_library(rec, out)
             done.append(rec)

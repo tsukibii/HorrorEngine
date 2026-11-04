@@ -339,7 +339,7 @@ def export(obs, base, formats):
     return out
 
 
-def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=False, log=print):
+def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=False, log=print, preview_samples=None):
     """Makes the prop `name` from `spec` into out_dir/<name>/; returns its record (what meta.json holds)."""
     import bpy
     t0 = time.time()
@@ -535,7 +535,7 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
         from .stage import preview as render
         if liq_ob is not None:
             liq_ob.data.materials[0] = th.liquid_preview
-        render([low_ob] + ([liq_ob] if liq_ob else []), pv, samples=int(spec.get("preview_samples", 48)), gpu=gpu,
+        render([low_ob] + ([liq_ob] if liq_ob else []), pv, samples=int(preview_samples or spec.get("preview_samples", 48)), gpu=gpu,
                passes=base + "_st.png", mats=list(th.low.mats),
                ground={m: os.path.join(odir, d["ground"]) for m, d in (design or {}).items() if d.get("ground")},
                **(spec.get("view") or th.view or {}))

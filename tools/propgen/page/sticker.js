@@ -52,7 +52,7 @@ export async function loadPasses(info) {
   for (const [name, d] of Object.entries(info.islands || {})) {
     const mid = mats.indexOf(d.mat) + 1;
     if (mid > 0) P.islands.push({ name, mat: d.mat, mid, rect: d.rect, mm: d.mm, wrap: !!d.wrap, seen: 0, sx: 0, sy: 0, cs: 0, sn: 0,
-      x0: 1e9, x1: -1e9, y0: 1e9, y1: -1e9, px: (info.px || {})[d.mat] || 1024 });
+      x0: 1e9, x1: -1e9, y0: 1e9, y1: -1e9, qx: 0, qy: 0, best: -1, bestD: 1e18, rep: 0, px: (info.px || {})[d.mat] || 1024 });
   }
   const byMat = {};
   P.islands.forEach((s, k) => (byMat[s.mid] = byMat[s.mid] || []).push(k));
@@ -68,11 +68,25 @@ export async function loadPasses(info) {
     const k = P.isl[i];
     if (k < 0) continue;
     const s = P.islands[k], [x, y] = mmOf(s, u, v);
-    s.seen++; s.sy += y; s.y0 = Math.min(s.y0, y); s.y1 = Math.max(s.y1, y);
+    s.seen++; s.sy += y; s.y0 = Math.min(s.y0, y); s.y1 = Math.max(s.y1, y); s.qx += i % W; s.qy += (i / W) | 0;
     if (s.wrap) { const t = 2 * Math.PI * x / s.mm[0]; s.cs += Math.cos(t); s.sn += Math.sin(t); } else { s.sx += x; s.x0 = Math.min(s.x0, x); s.x1 = Math.max(s.x1, x); }
+  }
+  // each part's seen pixel nearest its middle on the picture (a sticker's middle that's surely seen: the middle of a
+  // folded futon's part in its own space can lie in a fold), and how often its texture points come back far apart on
+  // the picture (leaves sharing one card of an atlas: a sticker there would be on every leaf)
+  for (const s of P.islands) if (s.seen) { s.qx /= s.seen; s.qy /= s.seen; s.keys = new Map(); }
+  for (let i = 0; i < n; i++) {
+    const k = P.isl[i];
+    if (k < 0) continue;
+    const s = P.islands[k], x = i % W, y = (i / W) | 0, d = (x - s.qx) ** 2 + (y - s.qy) ** 2;
+    if (d < s.bestD) { s.bestD = d; s.best = i; }
+    const key = Math.round(P.u[i] * 1024) * 2048 + Math.round(P.v[i] * 1024), j = s.keys.get(key);
+    if (j === undefined) s.keys.set(key, i);
+    else if (Math.abs((j % W) - x) + Math.abs(((j / W) | 0) - y) > 16) s.rep++;
   }
   for (const s of P.islands) {
     if (!s.seen) continue;
+    delete s.keys;
     s.cy = s.sy / s.seen;
     if (s.wrap) {                                     // round a band: the middle of what's seen, its spread from the seen arc
       const t = Math.atan2(s.sn, s.cs), R = Math.hypot(s.cs, s.sn) / s.seen;
@@ -80,6 +94,8 @@ export async function loadPasses(info) {
       s.ew = s.mm[0] * Math.min(0.5, Math.sqrt(Math.max(0, 2 * (1 - R))) / Math.PI);
     } else { s.cx = s.sx / s.seen; s.ew = s.x1 - s.x0; }
     s.eh = s.y1 - s.y0;
+    if (s.best >= 0) [s.cx, s.cy] = mmOf(s, P.u[s.best], P.v[s.best]);
+    s.shared = s.mat === "leaf" || s.rep > s.seen * 0.15;      // a tree's or a plant's leaf cards share their atlas
   }
   // the prop's own picture slots, and how much of each is seen
   for (const sl of info.slots || []) {
@@ -119,10 +135,14 @@ export function spotsOf(P) {
     .sort((a, b) => (RANK[a.kind] ?? 9) - (RANK[b.kind] ?? 9) || b.seen - a.seen)
     .map(sl => ({ key: "slot:" + sl.id, kind: "slot", id: sl.id, isl: sl.isl, box: sl.box, rot: +sl.rot || 0, slotKind: sl.kind, about: sl.about || "",
       label: `${sl.id} (its ${sl.kind}${sl.about ? ": " + sl.about : ""})` }));
+  // the parts by the sticker each can take (the smaller of what's seen of it across and up) and how much of it is seen,
+  // those whose texture comes back all over the picture (shared by many leaves) last
+  const room = s => Math.sqrt(s.seen) * Math.max(1, Math.min(s.ew || s.mm[0], s.eh || s.mm[1]));
   const parts = P.islands.map((s, k) => ({ s, k })).filter(({ s }) => s.seen >= Math.max(40, tot * 0.03))
-    .sort((a, b) => b.s.seen - a.s.seen).slice(0, 8)
+    .sort((a, b) => (a.s.shared - b.s.shared) || room(b.s) - room(a.s)).slice(0, 8)
     .map(({ s, k }) => ({ key: "part:" + s.name, kind: "part", island: s.name, isl: k, x: s.cx, y: s.cy,
-      w: Math.max(4, Math.min(s.ew || s.mm[0], (s.eh || s.mm[1]) * 1.6) * 0.55), label: `on ${s.name} (a sticker anywhere on it)` }));
+      w: Math.max(4, Math.min(s.ew || s.mm[0], (s.eh || s.mm[1]) * 1.6) * 0.55),
+      label: `on ${s.name} (a sticker anywhere on it${s.shared ? "; its texture is shared, so on every copy" : ""})` }));
   return [...slots, ...parts];
 }
 
