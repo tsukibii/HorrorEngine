@@ -14,11 +14,24 @@ to 2026-11-03 on `Director-Godot`: the Director in Godot, its panel, Story Flow 
 main on 2026-11-03 with main's own work since 2026-10-31 brought in; then the skin's depth softened and the skin under
 clothes hidden on `claude/festive-euler-o7axpl`, the walls meeting, the editors' rules, Export for Godot and the
 by-hand guides, merged; then on the same branch from main the map-building skill and the user's floor plan as a map, its
-bedding, curtains, tables and chairs, the props' kept pictures, real wood in the flat and, last, its curtains). Read this
-after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
+bedding, curtains, tables and chairs, the props' kept pictures, real wood in the flat and its curtains; 2026-11-05 on
+`sakura-rabbit-research`: the Sakura Rabbit research note). Read this after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-04, after the wood, the same branch): the flat's curtains, bare chairs, a cleaner street
+## Where it stopped last (2026-11-05, `sakura-rabbit-research`): Sakura Rabbit's experiments as candidates
+
+The user's ask (DECISIONS 2026-11-05): a branch of its own and research into Sakura Rabbit's Unity experiments that
+would suit our look, clothing by shaders first. The note is docs/research/sakura_rabbit.md: ten candidates ranked
+(hosiery painted by the skin shader with stretch and the band's squeeze; wet clothes; wrinkles that move; dissolve
+transitions; contact deformation; the room that changes; snow; fabric detail maps; a CRT screen; heels and lids), each
+with what she showed, the likely how (inferred: nothing is public), what we have and what we'd build; §12 the order that
+pays soonest. Nothing is built; nothing of hers is usable (learning-only files).
+
+Worth doing with the user: pick the candidates (or none, and move on to other research, as they said); if they want the
+articles read in full, allow 80.lv, hitmarker.net, unity.com, 3dvf.com, sakura-rabbit.fanbox.cc and learn.u3d.cn in the
+cloud environment's network settings (the session could reach GitHub only) and re-read the note against them.
+
+## Before that (2026-11-04, after the wood, `claude/festive-euler-o7axpl`): the flat's curtains, bare chairs, a cleaner street
 
 The user's ask (DECISIONS 2026-11-04, after the wood): the prop generator's curtains in the map, the chairs without
 their cushions, the bicycles and bins off the street, the folded futon out of the oshiire.

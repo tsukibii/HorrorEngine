@@ -2,6 +2,20 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-05 (the user: Sakura Rabbit's Unity experiments as candidates; the branch `sakura-rabbit-research`)
+
+- **"I have a lot of tokens to use up before Sunday, can you create a new branch called sakura-rabbit-research, and
+  research some experiments Sakura Rabbit has made in Unity that might be well suited for aesthetics in our engine
+  (either studio, or gameplay etc), especially anything on designing clothing via shaders etc; if you find some good
+  candidates list them, otherwise we will move on to other research."** The research (docs/research/sakura_rabbit.md):
+  ten candidates ranked, the clothing ones first (hosiery and skin-tight layers painted by the skin shader with denier,
+  stretch, the view's angle and the band's squeeze; wet clothes; wrinkles that move with the joints and the expression;
+  dissolve transitions for a change of clothes, a cover creeping over the skin and a ghost's dissipation; fingers and
+  ropes pressing into the skin), then the room that changes, snow as a weather, fabric detail maps, a CRT screen, heels
+  by a slider and lids that follow the gaze; for each what she showed, how it is most likely done (nothing is stated in
+  public: her files are paid and learning-only, so the ideas are built our way), what we have and what we'd build. Read
+  from search extracts: the session's network allows GitHub and little else. **Not decided**: the user picks.
+
 ## 2026-11-04, after the wood (the user: the flat's curtains and chairs, a cleaner street)
 
 - **"Can you also update the map to use the new prop style curtains we made, also can we use the non cushion
