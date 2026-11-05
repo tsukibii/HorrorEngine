@@ -1,16 +1,15 @@
-"""Clothes as props (DECISIONS 2026-11-05, later): folded garments for a suitcase or a closet's shelf, a stack of them,
-and garments hanging from a wire hanger for a closet's rail (the `closet` family uses both).
+"""Clothes as props (DECISIONS 2026-11-05, later; the hanging ones scrapped the same day: "the clothing on the
+hangers looks bad, just scrap it, all we need is the folded clothing for the suitcase"): folded garments for a suitcase
+or a closet's shelf, and a stack of them.
 
 - `folded`: one garment folded into a soft slab (a tee, a shirt, a sweater, jeans, a towel), its top a thick cloth with
   the fold's dome, soft wrinkles and the garment's marks painted (a tee's neckline, a shirt's placket and buttons, a
   sweater's rib, a jean's seam, a towel's terry), its edges the hem round a thick cloth (the bedding's `shell`).
 - `stack`: several folded garments one on another, each turned a little, sizes and colours by the seed.
-- `hanging`: a garment on a wire hanger: a bag of two pieces cut to the garment's outline (the cushion's `flat_bag`),
-  its shoulders pinned to the hanger's slopes, let fall by the cloth (sim.Cloth) with the front and the back kept apart.
 
-    {"family": "clothes", "kind": "folded" | "stack" | "hanging", "garment": "tee" | "shirt" | "sweater" | "jeans" | "towel"
-     | "dress" | "jacket", "size": [w, d] (mm folded) or the garment's own, "thick": 30, "color": "#...", "pattern": ...,
-     "count": 4 (a stack), "hanger": "wire" | "none", "seed": 1}
+    {"family": "clothes", "kind": "folded" | "stack", "garment": "tee" | "shirt" | "sweater" | "jeans" | "towel",
+     "size": [w, d] (mm folded) or the garment's own, "thick": 30, "color": "#...", "pattern": ..., "count": 4 (a stack),
+     "seed": 1}
 """
 import math
 
@@ -18,23 +17,20 @@ import numpy as np
 
 from .. import mesh as M
 from .. import noise as N
-from .. import sim
 from .bedding import paint_cover, sheet_grid, shell
 
 MM = 0.001
-FIELDS = {"kind": "folded", "garment": "tee", "size": [300, 230], "thick": 30, "color": "#c9cfd6", "pattern": "plain", "count": 4, "hanger": "wire"}
-CHOICES = {"kind": ["folded", "stack", "hanging"], "garment": ["tee", "shirt", "sweater", "jeans", "towel", "dress", "jacket"],
-           "pattern": ["plain", "stripes", "check", "dots"], "hanger": ["wire", "none"]}
+FIELDS = {"kind": "folded", "garment": "tee", "size": [300, 230], "thick": 30, "color": "#c9cfd6", "pattern": "plain", "count": 4}
+CHOICES = {"kind": ["folded", "stack"], "garment": ["tee", "shirt", "sweater", "jeans", "towel"],
+           "pattern": ["plain", "stripes", "check", "dots"]}
 LABELS = {"size": ["width", "depth"]}
 PALETTE = ["#c9cfd6", "#2f3e5c", "#8c2f2f", "#e6dfd0", "#5a6b4a", "#3a3a3a", "#d7a86e", "#7e9bb8", "#b9b2a8", "#4a3b5c"]
-GARMENTS = {               # folded size (w, d mm), thickness, the cloth's roughness and weave, a stiffer hang
-    "tee": dict(size=(300, 230), thick=28, rough=0.92, weave=0.9, hang=(0.52, 0.72), stiff=0.004),
-    "shirt": dict(size=(320, 240), thick=24, rough=0.85, weave=1.1, hang=(0.54, 0.78), stiff=0.006),
-    "sweater": dict(size=(330, 260), thick=48, rough=0.95, weave=1.6, hang=(0.56, 0.66), stiff=0.009),
-    "jeans": dict(size=(340, 240), thick=42, rough=0.8, weave=1.3, hang=(0.44, 1.0), stiff=0.012),
-    "towel": dict(size=(360, 260), thick=40, rough=0.98, weave=2.0, hang=(0.5, 1.0), stiff=0.005),
-    "dress": dict(size=(320, 240), thick=22, rough=0.85, weave=0.8, hang=(0.5, 1.15), stiff=0.004),
-    "jacket": dict(size=(360, 280), thick=55, rough=0.75, weave=1.0, hang=(0.58, 0.76), stiff=0.014),
+GARMENTS = {               # folded size (w, d mm), thickness, the cloth's roughness and weave
+    "tee": dict(size=(300, 230), thick=28, rough=0.92, weave=0.9),
+    "shirt": dict(size=(320, 240), thick=24, rough=0.85, weave=1.1),
+    "sweater": dict(size=(330, 260), thick=48, rough=0.95, weave=1.6),
+    "jeans": dict(size=(340, 240), thick=42, rough=0.8, weave=1.3),
+    "towel": dict(size=(360, 260), thick=40, rough=0.98, weave=2.0),
 }
 
 
@@ -108,94 +104,6 @@ def paint_hem(f, cov, seed):
     f.lay_island(np.ones_like(X), height=(0.5 * layers).astype(np.float32), add_height=True)
 
 
-def hanger(w=0.42, drop=0.1, hook_r=0.024, isl=None, mat="metal", wire=0.0018):
-    """A wire coat hanger in the x-z plane, its hook's top at z = 0 and its shoulder apex `hook_r` below, the shoulders
-    sloping to its ends at ±w/2, the bar back across the bottom (drop below the apex)."""
-    pts = []
-    for a in np.linspace(math.pi, 0, 9):                             # the hook, from its tip round to the neck
-        pts.append((hook_r * math.cos(a) + 0.0, 0.0, -hook_r + hook_r * math.sin(a)))
-    pts += [(hook_r, 0.0, -2 * hook_r - 0.01), (0.0, 0.0, -2 * hook_r - 0.02)]
-    apex = -2 * hook_r - 0.02
-    pts += [(-w * 0.1, 0.0, apex - 0.006), (-w / 2, 0.0, apex - drop), (0.0, 0.0, apex - drop - 0.004), (w / 2, 0.0, apex - drop),
-            (w * 0.1, 0.0, apex - 0.006), (0.0, 0.0, apex)]
-    path = M.spline(np.array(pts, float), 0.012)
-    m = M.tube(path, wire, isl, n=7, mat=mat, caps=(True, False), cap_bulge=0.3)
-    return m, apex, drop
-
-
-def outline_of(garment, r):
-    """A garment's flat outline hanging (x across, y up, metres), anticlockwise, its shoulder line at y = top."""
-    if garment == "dress":
-        hw, L, sh = 0.21, 1.0, 0.95
-        pts = [(-hw * 0.5, sh + 0.02), (-hw * 0.6, sh), (-hw * 1.05, sh - 0.12), (-hw * 0.95, sh - 0.2), (-hw * 0.8, sh - 0.25), (-hw * 1.3, 0.0), (hw * 1.3, 0.0),
-               (hw * 0.8, sh - 0.25), (hw * 0.95, sh - 0.2), (hw * 1.05, sh - 0.12), (hw * 0.6, sh), (hw * 0.5, sh + 0.02), (0.0, sh - 0.03)]
-    elif garment in ("shirt", "jacket"):                              # long sleeves hanging down beside the body
-        hw, L, sh = 0.22 if garment == "shirt" else 0.25, 0.72 if garment == "shirt" else 0.66, 0.68 if garment == "shirt" else 0.62
-        pts = [(-hw * 0.4, sh + 0.025), (-hw * 0.95, sh), (-hw * 1.4, sh - 0.1), (-hw * 1.35, sh - 0.52), (-hw * 1.02, sh - 0.5), (-hw, 0.0), (hw, 0.0),
-               (hw * 1.02, sh - 0.5), (hw * 1.35, sh - 0.52), (hw * 1.4, sh - 0.1), (hw * 0.95, sh), (hw * 0.4, sh + 0.025), (0.0, sh - 0.035)]
-    else:                                                             # a tee: short sleeves out from the shoulders
-        hw, L, sh = 0.23, 0.68, 0.64
-        pts = [(-hw * 0.38, sh + 0.02), (-hw * 0.92, sh), (-hw * 1.38, sh - 0.1), (-hw * 1.2, sh - 0.24), (-hw * 0.98, sh - 0.2), (-hw, 0.0), (hw, 0.0),
-               (hw * 0.98, sh - 0.2), (hw * 1.2, sh - 0.24), (hw * 1.38, sh - 0.1), (hw * 0.92, sh), (hw * 0.38, sh + 0.02), (0.0, sh - 0.03)]
-    return np.array(pts, float), sh
-
-
-def hanging_piece(garment, seed, isl_front, isl_back, mat="main", stiff=0.005, thick=0.004, step=0.028, steps=150, log=None):
-    """A garment on a wire hanger: (the game mesh, the detailed mesh, the hanger's mesh), the hook's top at z = 0. The
-    bag is simulated once at `step` and is the game mesh itself (its folds are in it); the detailed mesh is the same
-    cloth with the weave's wrinkles pushed along its normals, for the bake. (A coarser copy interpolated on the
-    simulated one crossed it where the pieces fold at the hem and the sides: dark slivers, 2026-11-05.)"""
-    from .cushion import _two_pieces, flat_bag
-    r = N.rng(seed, "hanging", garment)
-    outline, sh = outline_of(garment, r)
-    P2, T, nb = flat_bag(outline, step)
-    n = len(P2)
-    bot, Tt, Tb = _two_pieces(P2, T, nb)
-    hg, apex, drop = hanger(isl=isl_front, mat="metal")
-    z_sh = apex - 0.004                                               # the shoulder line hangs at the hanger's apex
-    V = np.concatenate([np.c_[P2[:, 0], np.full(n, thick / 2), P2[:, 1] - sh + z_sh],
-                        np.c_[P2[nb:, 0], np.full(n - nb, -thick / 2), P2[nb:, 1] - sh + z_sh]])
-    flat = np.concatenate([P2, P2[nb:]])
-    sep = np.concatenate([np.c_[P2, np.zeros(n)], np.c_[P2[nb:], np.ones(n - nb)]])
-    cl = sim.Cloth(V + r.normal(0, 0.0008, V.shape), np.concatenate([Tt, Tb]), flat, stiff=stiff, thick=thick, sep=sep)
-    # pinned: the border near the shoulder line (both pieces share the border), set onto the hanger's slopes
-    shoulder = (np.abs(P2[:nb, 1] - sh) < 0.03) & (np.abs(P2[:nb, 0]) < 0.215)
-    pin = np.zeros(cl.n, bool)
-    pin[:nb] = shoulder
-    cl.pinned = pin
-    xs = cl.X[:nb][shoulder][:, 0]
-    cl.X[:nb][shoulder, 2] = apex - 0.004 - np.abs(xs) / 0.21 * drop
-    cl.X[:nb][shoulder, 1] = thick / 2
-    # the hanger's bar as a box the cloth can't pass, then gravity
-    bar = [((-0.215, -0.004, apex - drop - 0.008), (0.215, 0.004, apex - drop + 0.004), 0.002)]
-    for k in range(steps):
-        cl.step(gravity=0.0005, damping=0.88, iters=8, boxes=bar, floor=None, friction=0.3, collide=True)
-    X = cl.X
-    nrm = cl.normals(X)
-    q = np.c_[flat / 0.05, np.full(len(flat), seed * 0.3)]
-    wr = (N.ridged3(q, seed + 61, 2) - 0.5) * 0.0012 + N.fbm3(q * 0.5, seed + 62, 2) * 0.0008
-    Xh = X + nrm * wr[:, None]
-    lo, hi_ = outline.min(0), outline.max(0)
-    span = np.maximum(hi_ - lo, 1e-6)
-
-    def mesh(Vv):
-        uvt = (P2[Tt] - lo) / span
-        uvb = (P2[np.where(Tb >= n, Tb - n + nb, Tb)] - lo) / span
-        F = np.concatenate([np.c_[Tt, np.full(len(Tt), -1)], np.c_[Tb, np.full(len(Tb), -1)]])
-        UV = np.zeros((len(F), 4, 2))
-        UV[:len(Tt), :3] = isl_front.to_uv(uvt[..., 0], uvt[..., 1])
-        UV[len(Tt):, :3] = isl_back.to_uv(1 - uvb[..., 0], uvb[..., 1])
-        m = M.Mesh(Vv, F, UV, mats=[mat])
-        m.a["rest"] = np.c_[flat, np.zeros(len(Vv))]
-        return m
-    # the front faces +y (the top piece's winding was "up" on the flat: flip both so the bag faces out in y)
-    low = mesh(X)
-    high = mesh(Xh)
-    for m in (low, high):
-        m.f = m.f[:, [0, 2, 1, 3]]
-    return low, high, hg
-
-
 def make(spec, th):
     seed = int(spec.get("seed", 0))
     r = N.rng(seed, "clothes")
@@ -204,44 +112,6 @@ def make(spec, th):
     if garment not in GARMENTS:
         raise ValueError(f"garment {garment!r}: one of {', '.join(GARMENTS)}")
     Gm = GARMENTS[garment]
-    if kind == "hanging":
-        col = spec.get("color", PALETTE[int(r.integers(len(PALETTE)))])
-        cov = {"color": col, "pattern": spec.get("pattern", "plain"), "size": spec.get("pattern_size", 30), "ink": spec.get("ink", _hex(_shade(col, 0.7))),
-               "rough": Gm["rough"]}
-        th.material("main", "fabric", color=col, rough=Gm["rough"])
-        th.material("metal", "metal", color="#b9b9b9", rough=0.35, metal=1.0)
-        outline, sh = outline_of(garment, r)
-        ow, oh = (outline.max(0) - outline.min(0)) * 1000
-        th.island("front", ow, oh)
-        th.island("back", ow, oh)
-        th.island("wire", 40, 20, mat="metal")
-        th.pack()
-        I = th.islands
-        low, high, hg = hanging_piece(garment, seed, I["front"], I["back"], stiff=Gm["stiff"], thick=0.004 if garment != "jacket" else 0.008)
-        hg.uv[:] = I["wire"].to_uv(np.full(hg.uv.shape[:2], 0.5), np.full(hg.uv.shape[:2], 0.5))
-        hg.mats = ["metal"]
-        hg.fm[:] = 0
-        th.assemble([("cloth", low), ("hanger", hg)], high=[("cloth", high), ("hanger", hg.copy())], mats=["main", "metal"])
-        th.pose = "stand"                             # set down like any prop: its hem on the floor, the hook up top (a level hangs it by its z)
-        th.view = {"azim": -20, "elev": 10}
-        th.reach, th.cage = 0.006, 0.002                   # a thin garment: the bake's rays kept from reaching its other side (what they miss is filled from its neighbours: bake.py fill_misses)
-
-        def paint(fr):
-            for nm in ("front", "back"):
-                paint_cover(fr[nm], cov, seed + (0 if nm == "front" else 1), weave=Gm["weave"])
-                f = fr[nm]
-                X, Y = f.grid()
-                if garment in ("shirt", "jacket") and nm == "front":
-                    f.line([(f.W / 2, f.H * 0.05), (f.W / 2, f.H * 0.9)], 2.4, color=_shade(col, 0.75), alpha=0.35, height=0.2)
-                    for k in range(6):
-                        f.ellipse(f.W / 2, f.H * (0.14 + 0.13 * k), 4.0, color="#efe7d2" if garment == "shirt" else "#2a2a2a", rough=0.45, height=0.3)
-                if garment == "sweater":
-                    knit = (0.5 + 0.5 * np.sin(X * 1.6) * np.sin(Y * 1.0)).astype(np.float32)
-                    f.lay_island(np.ones_like(X), height=(0.4 * knit).astype(np.float32), add_height=True)
-            from .. import finish as FN
-            FN.metal(fr["wire"], "satin", "chrome", seed)
-        th.paint = paint
-        return th
     # folded, or a stack of folded
     count = int(spec.get("count", 4)) if kind == "stack" else 1
     th.material("main", "fabric", color=spec.get("color", PALETTE[0]), rough=0.9)

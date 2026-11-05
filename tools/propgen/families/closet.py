@@ -1,12 +1,13 @@
 """Closets with doors that open (DECISIONS 2026-11-05, later; PROPGEN §26): a carcass of boards (the wood's grain
-along each), a rail with garments on wire hangers and a shelf with a folded stack (the `clothes` family's pieces),
+along each), a rail and a shelf with a folded stack (the `clothes` family's folded pieces; the hanging ones were
+scrapped, DECISIONS 2026-11-05, latest),
 and the doors as **parts**: a wardrobe's pair on hinges, a sliding closet's two panels on their tracks, an oshiire's
 fusuma. Built with the doors shut (`built: "open"` builds them open); the runtime opens and shuts them (the story's
 `open` use, or `hide` with the player inside).
 
     {"family": "closet", "kind": "wardrobe" | "sliding" | "oshiire", "size": [w, d, h] (mm), "wood": "#8a6a4a",
      "finish": "satin", "pbr": {"wood": "pbr/wood/WoodOak001_2K-JPG"}, "open": 100 (a hinge's degrees) or the slide in mm,
-     "built": "shut" | "open", "clothes": ["shirt", "dress", "jacket", "tee"] (hanging, left to right; [] for none),
+     "built": "shut" | "open",
      "stack": true (a folded stack on the shelf), "handles": "bar" | "knob" | "none", "paper": {"color": "#f1ede2",
      "pattern": "plain" | "seigaiha" | "dots"} (an oshiire's fusuma), "seed": 1}
 """
@@ -23,7 +24,7 @@ from .bedding import paint_cover
 
 MM = 0.001
 FIELDS = {"kind": "wardrobe", "size": [1000, 580, 1900], "wood": "#8a6a4a", "finish": "satin", "open": 100, "built": "shut",
-          "clothes": ["shirt", "dress", "jacket", "tee"], "stack": True, "handles": "bar", "paper": {"color": "#f1ede2", "pattern": "plain"}}
+          "stack": True, "handles": "bar", "paper": {"color": "#f1ede2", "pattern": "plain"}}
 CHOICES = {"kind": ["wardrobe", "sliding", "oshiire"], "finish": ["raw", "oil", "satin", "gloss"], "built": ["shut", "open"],
            "handles": ["bar", "knob", "none"]}
 LABELS = {"size": ["width", "depth", "height"]}
@@ -57,7 +58,6 @@ def make(spec, th):
     t = float(spec.get("thick", K["t"])) * MM
     wood = spec.get("wood", "#8a6a4a")
     built_open = spec.get("built", "shut") == "open"
-    garments = spec.get("clothes", ["shirt", "dress", "jacket", "tee"] if kind != "oshiire" else [])
     stack_on = bool(spec.get("stack", True))
     handles = spec.get("handles", "bar" if kind == "wardrobe" else "none")
     paper = dict({"color": "#f1ede2", "pattern": "plain", "size": 60, "ink": "#d9d2c3"}, **(spec.get("paper") or {}))
@@ -82,20 +82,9 @@ def make(spec, th):
         big(nm + "_back", h * 0.5, door_w * 0.5)
     th.island("rail", 80, 40, mat="metal")
     th.island("hw", 60, 60, mat="metal")
-    th.island("wire", 40, 20, mat="metal")
     if kind == "oshiire":
         big("paper_l", h - 0.1, door_w - 0.08, mat="paper")
         big("paper_r", h - 0.1, door_w - 0.08, mat="paper")
-    pieces = []                                       # the clothes: (garment, cov, Gm)
-    for i, g in enumerate(garments):
-        col = CL.PALETTE[int(r.integers(len(CL.PALETTE)))]
-        Gm = CL.GARMENTS.get(g, CL.GARMENTS["tee"])
-        cov = {"color": col, "pattern": ["plain", "plain", "stripes", "check"][int(r.integers(4))], "size": 28, "ink": CL._hex(CL._shade(col, 0.72)), "rough": Gm["rough"]}
-        outline, sh = CL.outline_of(g, r)
-        ow, oh = (outline.max(0) - outline.min(0)) * 1000
-        th.island(f"g{i}_front", ow * 0.6, oh * 0.6, mat="fabric")
-        th.island(f"g{i}_back", ow * 0.45, oh * 0.45, mat="fabric")
-        pieces.append((g, cov, Gm))
     folded = []
     if stack_on:
         n_f = 2 if kind == "oshiire" else 3
@@ -129,7 +118,7 @@ def make(spec, th):
     body.append(plank(w - 2 * t, d - 0.03, t, "shelf_face", "bottom_face", "edges", I, None, (0, 0.012, shelf_z)))
     inside_lo = (-w / 2 + t, -d / 2 + 0.02, plinth + t)
     inside_hi = (w / 2 - t, d / 2 - 0.006, shelf_z - t)
-    # the rail and the hanging clothes
+    # the rail (bare: the hanging clothes were scrapped)
     highs = []
     if kind != "oshiire":
         rail_z = shelf_z - t - 0.07
@@ -137,20 +126,6 @@ def make(spec, th):
         body.append(rail)
         for sx in (-1, 1):
             body.append(M.rbox((0.03, 0.04, 0.03), 0.004, I, top="hw", bottom="hw", edge="hw", at=(sx * (w / 2 - t - 0.015), 0, rail_z - 0.015), mat="metal"))
-        # the hangers along the rail, each kept a garment's half width in from the sides (sleeves reach 0.3 m out; overlapping is a closet's way)
-        xs = np.linspace(-w / 2 + t + 0.34, w / 2 - t - 0.34, max(len(pieces), 1)) if w > 2 * (t + 0.34) + 0.05 else np.zeros(max(len(pieces), 1))
-        for i, (g, cov, Gm) in enumerate(pieces):
-            low, high, hg = CL.hanging_piece(g, seed + 31 * i, I[f"g{i}_front"], I[f"g{i}_back"], mat="fabric", stiff=Gm["stiff"],
-                                             thick=0.004 if g != "jacket" else 0.008, step=0.04, steps=120)   # coarser than one alone: four behind doors
-            hg.uv[:] = I["wire"].to_uv(np.full(hg.uv.shape[:2], 0.5), np.full(hg.uv.shape[:2], 0.5))
-            hg.mats, hg.fm = ["metal"], np.zeros(len(hg.f), np.int64)
-            mv = (float(xs[i]) + r.uniform(-0.01, 0.01), r.uniform(-0.01, 0.01), rail_z + 0.024)
-            yaw = r.uniform(-9, 9)
-            for m in (low, high, hg):
-                M.turn(m, M.rot("z", yaw), move=mv)
-            body.append(low)
-            body.append(hg)
-            highs.append(high)
     # the folded stack on the shelf (an oshiire's futons on its lower and upper floors)
     z = shelf_z + t / 2 if kind != "oshiire" else plinth + t + t / 2
     for i, (g, W, L, thick, cov) in enumerate(folded):
@@ -244,10 +219,6 @@ def make(spec, th):
                 f.rect(x - 10, f.H * 0.44, 20, 120, r=6, color="#262626", rough=0.5, height=-0.9)
         FN.metal(fr["rail"], "satin", "chrome", seed)
         FN.metal(fr["hw"], spec.get("metal_finish", "satin"), spec.get("metal", "nickel"), seed + 1)
-        FN.metal(fr["wire"], "satin", "chrome", seed + 2)
-        for i, (g, cov, Gm) in enumerate(pieces):
-            for nm in (f"g{i}_front", f"g{i}_back"):
-                paint_cover(fr[nm], cov, seed + 3 * i + (0 if nm.endswith("front") else 1), weave=Gm["weave"])
         for i, (g, W, L, thick, cov) in enumerate(folded):
             CL.paint_garment(fr[f"f{i}_top"], g, cov, seed + 7 * i, 1.0)
             CL.paint_hem(fr[f"f{i}_hem"], cov, seed + 9 * i)

@@ -149,8 +149,8 @@ and set the fill and the colours on each placed copy in Godot (its `HSLiquidFill
 | `table` | §23: wooden tables: `size` [length, width, height] mm, `style` dining, shaker, farmhouse, parsons, midcentury, trestle, pedestal or chabudai; `top` rect, rounded, round or oval (`corner`), `edge` eased, square, chamfer, round, bullnose or underbevel, `thick`, `overhang`, `boards`; `leg` square, taper, turned or round (`leg_w`, `taper`, `splay`), `apron`, `stretcher` none, h or box; `wood`, `ring`, `finish` raw, oil, satin or gloss, `flaws` {grain, cracks, scratches, dents}, `painted` (`paint_color`) | table_dining, table_farmhouse, table_midcentury, table_trestle, table_pedestal, table_chabudai, table_kitchen_painted, desk_oak, zataku_walnut |
 | `chair` | §24: chairs and their cushions: `style` dining, ladderback, spindle, cafe (a bentwood stool), school, stool, bench or zaisu; `seat_h`, `seat` [width, depth], `back_h` (mm), `rake` (degrees); the wood as a table's, `frame_color` (a school chair's steel); `cushion` {on, seat, back, thick, fill, ties, color, pattern, ink, size, rough} or false (`"on": false` bare, its settings kept) | chair_dining, chair_ladderback, chair_windsor, stool_cafe, chair_school, stool_kitchen, bench_wood, zaisu_lacquer, chair_desk_oak, zaisu_walnut |
 | `suitcase` | §26: a case lying open on the floor, its lid a part on its hinge (a `container` in play): `kind` hardshell (a polycarbonate spinner: a zip, four wheels, two handles, a brand plate), softside (fabric: a zipped front pocket, two wheels, webbing handles) or vintage (leather over board: brass corners, two latches, a stitched handle); `size` [w, d, h] mm closed, `open` degrees the lid is built at, `color`, `lining` {color, pattern dots, stripes, check or plain, size, ink}, `metal`, `finish`, `wheels`, `brand`, `straps`, `pocket`, `wear` | suitcase_hardshell, suitcase_softside, suitcase_vintage |
-| `clothes` | §26: `kind` folded (a garment folded into a soft slab: `garment` tee, shirt, sweater, jeans or towel, `size` [w, d] mm, `thick`, `color`, `pattern`), stack (`count` of them, mixed, each turned a little) or hanging (a shirt, a dress or a jacket on a wire hanger, hung by the cloth; `hanger` wire or none) | clothes_folded_tee, clothes_folded_sweater, clothes_stack, clothes_hanging_shirt, clothes_hanging_dress, clothes_hanging_jacket |
-| `closet` | §26: `kind` wardrobe (two doors on hinges, `handles` bar, knob or none), sliding (two panels on tracks, recessed pulls) or oshiire (two fusuma, `paper` {color, pattern plain, seigaiha or dots}, folded futons on both floors); `size` [w, d, h] mm, `wood` (a colour, or a set in `pbr`), `finish` raw, oil, satin or gloss, `built` shut or open, `clothes` (the garments on its rail), `stack` (a folded stack on the shelf); its doors parts (an `open`, a `container` or a `locker` in play) | closet_wardrobe, closet_sliding, closet_oshiire |
+| `clothes` | §26: `kind` folded (a garment folded into a soft slab: `garment` tee, shirt, sweater, jeans or towel, `size` [w, d] mm, `thick`, `color`, `pattern`) or stack (`count` of them, mixed, each turned a little); the hanging ones were scrapped (DECISIONS 2026-11-05, latest) | clothes_folded_tee, clothes_folded_sweater, clothes_stack |
+| `closet` | §26: `kind` wardrobe (two doors on hinges, `handles` bar, knob or none), sliding (two panels on tracks, recessed pulls) or oshiire (two fusuma, `paper` {color, pattern plain, seigaiha or dots}, folded futons on both floors); `size` [w, d, h] mm, `wood` (a colour, or a set in `pbr`), `finish` raw, oil, satin or gloss, `built` shut or open, `stack` (a folded stack on the shelf; the rail bare); its doors parts (an `open`, a `container` or a `locker` in play) | closet_wardrobe, closet_sliding, closet_oshiire |
 
 ### Designs
 
@@ -1222,14 +1222,12 @@ the generator only says where the hinge is and how far it goes.
 - **`clothes`** (`families/clothes.py`): `folded` a garment folded into a soft slab (a tee, a shirt, a sweater,
   jeans, a towel: the bedding's `shell` round a thick cloth with the fold's dome and soft wrinkles, the garment's
   marks painted on top: a tee's neckline, a shirt's placket and buttons, a sweater's rib, a jean's seam, a towel's
-  terry), `stack` several one on another, each turned a little, their colours and sizes by the seed, `hanging` a
-  garment on a wire hanger (a bag of two pieces cut to its outline (`cushion.flat_bag`), its shoulders pinned to the
-  hanger's slopes, let fall by the cloth (`sim.Cloth`) with its front and back kept apart; a shirt, a dress, a
-  jacket; set down on the floor like any prop, the hook up top: a level hangs it by its z). A folded tee is a pickup
-  (`item`) that goes into a suitcase; the closets use both.
-- **`closet`** (`families/closet.py`): a carcass of planks (sides, top, bottom, a thin back, a plinth) with a rail and
-  the garments hanging from it (the `clothes` family's pieces, their hangers kept in from the sides), a shelf with a
-  folded stack, and the doors as parts: `wardrobe` two doors on hinges at the sides, bar pulls or knobs (built shut;
+  terry), `stack` several one on another, each turned a little, their colours and sizes by the seed. A folded tee is
+  a pickup (`item`) that goes into a suitcase; the closets' shelves take a stack. (Garments hanging on wire hangers
+  by the cloth were made too and scrapped the same day: "the clothing on the hangers looks bad, just scrap it, all we
+  need is the folded clothing for the suitcase"; what that cloth taught is in LESSONS.)
+- **`closet`** (`families/closet.py`): a carcass of planks (sides, top, bottom, a thin back, a plinth) with a bare
+  rail, a shelf with a folded stack (the `clothes` family's pieces), and the doors as parts: `wardrobe` two doors on hinges at the sides, bar pulls or knobs (built shut;
   `built: "open"` pictures them open), `sliding` two panels on tracks, one in front of the other, recessed pulls (parts
   that slide by their own width), `oshiire` two fusuma on tracks (a wooden frame round a papered panel, a hikite
   each), a middle shelf, folded futons on both floors. The inside box is the hanging space. In a story a closet is an

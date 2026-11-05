@@ -290,24 +290,6 @@
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe clothes_folded_tee (Content/Studio/Props/presets.json)"
  },
- "props/clothes_hanging_dress": {
-  "date": "2026-11-05",
-  "kind": "mesh",
-  "licence": "ours",
-  "source": "ours: tools/propgen.py, recipe clothes_hanging_dress (Content/Studio/Props/presets.json)"
- },
- "props/clothes_hanging_jacket": {
-  "date": "2026-11-05",
-  "kind": "mesh",
-  "licence": "ours",
-  "source": "ours: tools/propgen.py, recipe clothes_hanging_jacket (Content/Studio/Props/presets.json)"
- },
- "props/clothes_hanging_shirt": {
-  "date": "2026-11-05",
-  "kind": "mesh",
-  "licence": "ours",
-  "source": "ours: tools/propgen.py, recipe clothes_hanging_shirt (Content/Studio/Props/presets.json)"
- },
  "props/clothes_stack": {
   "date": "2026-11-05",
   "kind": "mesh",

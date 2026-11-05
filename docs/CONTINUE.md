@@ -31,11 +31,11 @@ right, their text progressing with the game; inspecting as it was. Built:
   dread curve by the minute, a six-night plan, the book that writes itself).
 - **Parts that open** (PROPGEN §26): a made prop's lid, doors or cover cut out of its game mesh as glb nodes of their
   own at their hinge or track (`th.assemble`, `th.part`, `th.inside`; `propgen_part` extras), the prop placed by its
-  size shut; families `suitcase` (hardshell, softside, vintage), `clothes` (folded, a stack, hanging by the cloth),
+  size shut; families `suitcase` (hardshell, softside, vintage), `clothes` (folded, a stack; the hanging ones scrapped),
   `closet` (a wardrobe, a sliding closet, an oshiire); the openable `book` (§27: `journal_diary`, `_notebook`, `_jp`,
-  pages baked blank); all fifteen in the library with kept pictures; the OFL hands in `tools/propgen/fonts/` and the
-  runtime's `fonts/`. The bake fills missed texels (`fill_misses`); a hanging garment's game mesh is the simulated bag
-  itself (LESSONS).
+  pages baked blank); the twelve in the library with kept pictures; the OFL hands in `tools/propgen/fonts/` and the
+  runtime's `fonts/`. The bake fills missed texels (`fill_misses`). The garments on wire hangers (three recipes, and
+  four on each closet's rail) were scrapped at the user's word: "the clothing on the hangers looks bad".
 - **The words** (STORY_FORMAT): uses `open`, `container`, `moveable`, `book`; triggers `opened` (holds), `closed`,
   `placed`, `taken`, `moved`, `read` with `page`; the action `open` (to open, shut, lock, unlock). Godot's add-on:
   `parts.gd`, `book.gd`, play.gd's containers (contents kept as children through closing and carrying), moveables
@@ -57,8 +57,8 @@ check after `commands.gd` learned the new words; THUMBS and PROPGEN after the la
 with station 13, DESK, CMDS, LOOKPLUGIN with the CRT) are for the user's machine (`GPU=1`).
 
 Worth doing with the user: play station 13 in Godot themselves (the chair's shove strength, the book's hand and
-size, the panel); a suitcase's `holds` and where things land in it; the closets' triangle budget (four hanging
-garments at a coarser cloth step); the CRT on the kitchen TV; then the candidates still on the Sakura Rabbit list.
+size, the panel); a suitcase's `holds` and where things land in it; the CRT on the kitchen TV; then the candidates
+still on the Sakura Rabbit list.
 
 ## Before that (2026-11-05, `sakura-rabbit-research`): Sakura Rabbit's experiments as candidates
 

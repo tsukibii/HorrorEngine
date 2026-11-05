@@ -1789,7 +1789,7 @@ And a seat pad's bag filled only to a pad's thickness had more cloth than air an
 - **A pad is foam in a cover, not air**: fill the bag firm between a floor and a ceiling at its thickness, then let it
   go; and keep its volume (pressure) while it settles, or gravity flattens it.
 
-## Parts that open, hanging clothes and a station of things (2026-11-05, the suitcases and the book)
+## Parts that open, cloth on hangers and a station of things (2026-11-05, the suitcases and the book)
 
 - **A library mesh at its real size is `shape: "asset props/<name>"`, not `art`**: `art` dresses a block and needs
   one (a `shape` or a `kit`); the test room's suitcase, closets and journal were given `art` alone, the plan made no
@@ -1800,8 +1800,9 @@ And a seat pad's bag filled only to a pad's thickness had more cloth than air an
 - **A coarse copy interpolated on a simulated cloth crosses it where the cloth folds**: the hanging shirt's game
   mesh (points located in the fine sim's triangles, 2.2 times its step) cut chords through the hem's and the sides'
   folds, and the front's triangles went inside the back's: dark slivers that no bake setting fixed (the maps had no
-  black in them). The simulated bag at a slightly coarser step is the game mesh itself now; the detail mesh is the
-  same cloth with the weave's wrinkles pushed along its normals.
+  black in them). The simulated bag at a slightly coarser step was then the game mesh itself, the detail mesh the
+  same cloth with the weave's wrinkles pushed along its normals. (The user scrapped the hanging clothes that evening
+  all the same: a bag of two pieces hung from a wire never read as a shirt. The lesson about the copy stands.)
 - **A bake's miss is black, and the alpha says where**: a ray from the game mesh that finds nothing of the detailed
   one within its reach leaves (0, 0, 0, 0) with `use_clear`; the image made with alpha, a miss is filled from its
   baked neighbours (`bake.py fill_misses`) instead of being painted in.

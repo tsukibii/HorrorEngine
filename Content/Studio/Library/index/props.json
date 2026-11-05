@@ -424,13 +424,13 @@
   ]
  },
  "closet_sliding": {
-  "kb": 11553,
+  "kb": 10417,
   "size_m": [
    1.63,
    2.009,
    0.6
   ],
-  "tris": 14077,
+  "tris": 2360,
   "parts": {
    "door_l": {
     "kind": "slide",
@@ -488,13 +488,13 @@
   ]
  },
  "closet_wardrobe": {
-  "kb": 13318,
+  "kb": 12073,
   "size_m": [
    1.0,
    1.909,
    0.6247
   ],
-  "tris": 12472,
+  "tris": 3108,
   "parts": {
    "door_l": {
     "kind": "hinge",
@@ -568,33 +568,6 @@
    0.244
   ],
   "tris": 416
- },
- "clothes_hanging_dress": {
-  "kb": 901,
-  "size_m": [
-   0.4702,
-   1.298,
-   0.1767
-  ],
-  "tris": 3615
- },
- "clothes_hanging_jacket": {
-  "kb": 1007,
-  "size_m": [
-   0.5125,
-   0.8383,
-   0.1407
-  ],
-  "tris": 3607
- },
- "clothes_hanging_shirt": {
-  "kb": 1117,
-  "size_m": [
-   0.5255,
-   0.9148,
-   0.1271
-  ],
-  "tris": 3451
  },
  "clothes_stack": {
   "kb": 4308,

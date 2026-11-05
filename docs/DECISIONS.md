@@ -2,6 +2,13 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-05, latest (the user: the hanging clothes scrapped)
+
+- **"The clothing on the hangers looks bad, just scrap it, all we need is the folded clothing for the suitcase."**
+  The `clothes` family keeps `folded` and `stack` (the tee, the sweater, the stack; a pickup that goes into a
+  suitcase); its `hanging` kind, the three recipes (`clothes_hanging_shirt`, `_dress`, `_jacket`) and the garments
+  on the closets' rails are gone (the rail stays, bare; the shelf's stack and the oshiire's futons stay).
+
 ## 2026-11-05, later (the user: the CRT to do; research on simple games that build to dread; suitcases, closets, moveable things and books as parts)
 
 - **"Let's note to do 9."** Candidate 9 of docs/research/sakura_rabbit.md, the CRT screen seen close, is to build
@@ -28,14 +35,14 @@ The user's answers, newest first. They override the plan, the research and the d
   reading notes but exclusive to book type props) where we show the UI on the right with clearer text for people who
   don't want to read the book font. Should have a system so I can progress the text, e.g. quest completed, next time
   I open the book I see different text."** Built on `sakura-rabbit-research`: the prop generator's parts that open
-  (a lid or a door as its own node on a hinge or a slide, PROPGEN), the `suitcase` family (three kinds), folded and
-  hanging clothes, the `closet` family (a hinged wardrobe, a sliding closet, an oshiire), an openable `book`; in the
+  (a lid or a door as its own node on a hinge or a slide, PROPGEN), the `suitcase` family (three kinds), folded
+  clothes, the `closet` family (a hinged wardrobe, a sliding closet, an oshiire), an openable `book`; in the
   runtime and the Director the words `open`, `container`, `moveable` and `book` (STORY_FORMAT), with TestRoom001's
   stations for them. Inspecting is the `inspect` use as it was (a small thing taken up, turned, put back where it
   was).
 - **How it came out** (the same day): a made prop's lid, doors or cover are **parts** (PROPGEN §26: a glb node each
   at its hinge or on its track, swung or slid by the runtime), the prop placed by its size shut; three suitcases
-  (`suitcase_hardshell`, `_softside`, `_vintage`), folded and hanging clothes, three closets (`closet_wardrobe`,
+  (`suitcase_hardshell`, `_softside`, `_vintage`), folded clothes, three closets (`closet_wardrobe`,
   `_sliding`, `_oshiire`) and three openable journals (`journal_diary`, `_notebook`, `_jp`: their pages baked blank,
   written at play in a hand, PROPGEN §27), all in the library (`shape: "asset props/<name>"`). The words: `open`
   (`opened` holds, `closed` is heard), `container` (`placed`, `taken`, `holds`), `moveable` (a RigidBody3D: shoved
