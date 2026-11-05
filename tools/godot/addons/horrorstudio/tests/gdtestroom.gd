@@ -8,10 +8,10 @@
 extends SceneTree
 
 const ORDER := ["n_arrive", "n_hello", "n_front", "n_doors", "n_power", "n_store", "n_kitchen", "n_chores", "n_rest", "n_games",
-	"n_dark", "n_library", "n_bath", "n_talk", "n_hide", "n_run", "n_sneak", "n_sleep", "n_night", "n_annex", "n_final"]
+	"n_dark", "n_library", "n_things", "n_bath", "n_talk", "n_hide", "n_run", "n_sneak", "n_sleep", "n_night", "n_annex", "n_final"]
 const LEAVES := {"n_hello": {"karma": 1, "flags": ["met_aoi"], "states": {"kitchen_tv": "static"}}, "n_doors": {"items": ["key_brass", "fuse"], "flags": ["vault_open"]}, "n_power": {"flags": ["power_cut"]}, "n_kitchen": {"flags": ["phone_rang"], "states": {"kitchen_tv": "off"}},
 	"n_chores": {"items": ["mop"], "flags": ["chores_done", "feat_clean"]}, "n_games": {"karma": 1}, "n_dark": {"items": ["flashlight", "batteries"], "flags": ["torch_on"]},
-	"n_library": {"flags": ["found_painting"]}, "n_talk": {"karma": 2}, "n_annex": {"flags": ["annex_lit"]}}
+	"n_library": {"flags": ["found_painting"]}, "n_things": {"flags": ["things_packed"]}, "n_talk": {"karma": 2}, "n_annex": {"flags": ["annex_lit"]}}
 
 var g
 var rt
@@ -1183,6 +1183,145 @@ func _initialize() -> void:
 				return "the secret's flag"
 			if not rt.by_id["painting_note"]["node"].visible:
 				return "the note isn't shown"
+			return ""))
+
+	await station("n_things", func():
+		await step("13 · Things that open and move: the suitcase's lid swung open (ticks), the tee taken (ticks) and put into it (placed: the case's child, out of the pocket; ticks), the lid shut on it (closed; ticks); the closet's panel slid open (ticks)", func():
+			var r := await enter_room("door_things", "things")
+			if r != "":
+				return r
+			var c := await use("things_case", 0.9)
+			if c.has("err"):
+				return c["err"]
+			if not await until(func(): return rt.open_state("things_case"), 3000):
+				return "the suitcase's lid: never open"
+			r = await ticked("t13_open")
+			if r != "":
+				return r
+			c = await use("things_tee", 0.7)
+			if c.has("err"):
+				return c["err"]
+			r = await ticked("t13_tee")
+			if r != "":
+				return r
+			if not rt.items.has("tee"):
+				return "the tee isn't in the pocket"
+			c = await use("things_case", 0.9)
+			if c.has("err"):
+				return c["err"]
+			if not str(c.get("label", "")).begins_with("Put in"):
+				return "the open case with the tee in hand should offer Put in: %s" % str(c)
+			r = await ticked("t13_pack")
+			if r != "":
+				return r
+			if rt.items.has("tee"):
+				return "the tee is still in the pocket after packing"
+			var tee: Dictionary = rt.by_id["things_tee"]
+			if tee["node"].get_parent() != rt.by_id["things_case"]["node"] or not tee["node"].visible:
+				return "the tee isn't inside the case (its child, shown)"
+			if not flag("things_packed"):
+				return "the packed flag (the beat on placed)"
+			if rt.carried() != null and not rt.hand_down:     # something else in the hand would go in too: Q lowers it, the click shuts the lid
+				press("Q")
+				await frames(2)
+			c = await use("things_case", 0.9)
+			if c.has("err"):
+				return c["err"]
+			if not str(c.get("label", "")).begins_with("Close"):
+				return "the open case with the hand lowered should offer Close: %s" % str(c)
+			if not await until(func(): return not rt.open_state("things_case"), 3000):
+				return "the suitcase's lid: never shut"
+			r = await ticked("t13_shut")
+			if r != "":
+				return r
+			if tee["node"].get_parent() != rt.by_id["things_case"]["node"]:
+				return "the tee didn't stay in the case shut"
+			c = await use("things_closet", 1.0)
+			if c.has("err"):
+				return c["err"]
+			if not await until(func(): return rt.open_state("things_closet"), 3000):
+				return "the closet's panel: never slid open"
+			return await ticked("t13_slide"))
+		await step("the journal in the hands: its cover swung open, its pages written in a hand on their own materials (ticks), the clean text on the panel at the right; turned to the page that appeared once the tee was packed (ticks); put back shut", func():
+			var c := await use("things_journal", 0.6)
+			if c.has("err"):
+				return c["err"]
+			if not await until(func(): return rt.book.up(), 3000):
+				return "the journal isn't open in the hands"
+			if not await until(func(): return g.hud.panel_el != null, 4000):   # the cover swings open first, then the panel comes
+				return "no panel beside the journal"
+			await frames(3)
+			var v: Dictionary = rt.book.cur["views"]
+			if not v.has("page_l") or not v.has("page_r"):
+				return "the pages aren't drawn (%s)" % [v.keys()]
+			if not str(v["page_l"]["label"].text).begins_with("Day 1"):
+				return "the left page should carry Day 1: %s" % str(v["page_l"]["label"].text).left(30)
+			if not str(g.hud.panel_el.find_child("Text", true, false).text).contains("Day 2"):
+				return "the panel's clean text should carry the spread"
+			var r := await ticked("t13_journal")
+			if r != "":
+				return r
+			press("Right")
+			await frames(3)
+			if int(rt.book.cur["at"]) != 2:
+				return "the page didn't turn to the packed entry (at %s)" % str(rt.book.cur["at"])
+			if not str(v["page_l"]["label"].text).begins_with("Day 3"):
+				return "the entry's words aren't on the page: %s" % str(v["page_l"]["label"].text).left(30)
+			r = await ticked("t13_again")
+			if r != "":
+				return r
+			press("Escape")
+			if not await until(func(): return not rt.book.up(), 3000):
+				return "put back: never"
+			if rt.examining != null or not rt.by_id["things_journal"]["node"].visible:
+				return "the journal isn't back on the table"
+			return "")
+		await step("hidden in the wardrobe (its doors open, shut behind you; ticks), then out of it", func():
+			var c := await use("things_wardrobe", 1.0)
+			if c.has("err"):
+				return c["err"]
+			if not await until(func(): return rt.player.hiding == "things_wardrobe", 6000):
+				return "in the wardrobe: never"
+			var r := await ticked("t13_hide")
+			if r != "":
+				return r
+			if rt.open_state("things_wardrobe"):
+				return "the wardrobe's doors should be shut round you"
+			await game_wait(0.5)
+			rt.use(true)                                   # a click with nothing under it: out again
+			if not await until(func(): return rt.player.hiding == null and rt.moving == null, 6000):   # and stood back where you were
+				return "out of the wardrobe: never"
+			if not await until(func(): return not rt.open_state("things_wardrobe"), 4000):   # they shut again once you've stepped out
+				return "the wardrobe's doors should shut again behind you"
+			return "")
+		await step("the chair: walked into, it's shoved and comes to rest elsewhere (moved; ticks); picked up upright into both hands, carried to the corner and put down in it (dropped in the trigger; ticks)", func():
+			var ch: Dictionary = rt.by_id["things_chair"]
+			var at: Vector3 = ch["node"].global_position
+			place(at.x, -at.z - 1.3, 90.0)
+			await hold("W", 1.6)
+			var r := await ticked("t13_shove")
+			if r != "":
+				return r
+			if ch["body"].global_position.distance_to(at) < 0.1:
+				return "the chair hasn't moved"
+			if r != "":
+				return r
+			var c := await use("things_chair", 1.0)
+			if c.has("err"):
+				return c["err"]
+			if rt.held_move == null or rt.held_move["id"] != "things_chair":
+				return "the chair isn't in the hands"
+			place(-7.0, 23.9, 180.0, -45.0)
+			await frames(2)
+			rt.use(true)                                   # put down where aimed: the corner's floor
+			if not await until(func(): return rt.held_move == null, 3000):
+				return "put down: never"
+			r = await ticked("t13_chair")
+			if r != "":
+				return r
+			var b: Transform3D = ch["body"].global_transform
+			if abs(b.basis.y.y) < 0.95:
+				return "the chair isn't upright where it was put"
 			return ""))
 
 	await station("n_bath", func():

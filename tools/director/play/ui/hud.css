@@ -203,6 +203,13 @@
 .play-hud .ph-exam .ph-card{cursor:default;min-width:280px;display:flex;flex-direction:column;gap:8px}
 .play-hud .ph-exam-hint{font-size:calc(var(--ph-fs) * .8);color:var(--ph-text);opacity:.6;text-shadow:0 1px 3px #000a}
 .play-hud .ph-panel{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--ph-veil);pointer-events:auto;cursor:default}
+/* a book in the hands (play/book.js): the view stays, the spread's words in a column at the right in the HUD's own font */
+.play-hud .ph-book{position:absolute;inset:0;pointer-events:auto;cursor:default;user-select:none;-webkit-user-select:none}
+.play-hud .ph-side{position:absolute;right:var(--ph-margin);top:48px;bottom:64px;width:min(430px,38%);box-sizing:border-box;display:flex;flex-direction:column;gap:calc(var(--ph-gap) + 2px);
+  padding:calc(var(--ph-margin) + 2px) calc(var(--ph-margin) + 4px);border-radius:var(--ph-radius-l);background:var(--ph-hidden,rgba(8,10,16,.8));box-shadow:var(--ph-pop-l);
+  -webkit-backdrop-filter:var(--ph-blur,none);backdrop-filter:var(--ph-blur,none);animation:ph-rise .22s ease-out both;cursor:auto}   /* dark enough to read over the lit page behind it */
+.play-hud .ph-side .ph-text{font-family:var(--ph-ui-font,var(--ph-font));font-size:calc(var(--ph-fs) + 2px);line-height:1.6;white-space:pre-wrap;max-width:none;flex:1;overflow:auto;min-height:0}
+.play-hud .ph-side-hint{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:var(--ph-fs-s);color:var(--ph-muted,var(--ph-text));opacity:.8}
 .play-hud .ph-card{min-width:300px;max-width:min(520px,80%);padding:calc(var(--ph-margin) + 4px) calc(var(--ph-margin) + 8px);border-radius:var(--ph-radius-l);background:var(--ph-surface);
   box-shadow:var(--ph-pop-l);-webkit-backdrop-filter:var(--ph-blur,none);backdrop-filter:var(--ph-blur,none);display:flex;flex-direction:column;gap:calc(var(--ph-gap) + 4px);align-items:stretch;
   animation:ph-rise .22s ease-out both}

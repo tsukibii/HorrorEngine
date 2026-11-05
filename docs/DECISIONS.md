@@ -33,6 +33,17 @@ The user's answers, newest first. They override the plan, the research and the d
   runtime and the Director the words `open`, `container`, `moveable` and `book` (STORY_FORMAT), with TestRoom001's
   stations for them. Inspecting is the `inspect` use as it was (a small thing taken up, turned, put back where it
   was).
+- **How it came out** (the same day): a made prop's lid, doors or cover are **parts** (PROPGEN §26: a glb node each
+  at its hinge or on its track, swung or slid by the runtime), the prop placed by its size shut; three suitcases
+  (`suitcase_hardshell`, `_softside`, `_vintage`), folded and hanging clothes, three closets (`closet_wardrobe`,
+  `_sliding`, `_oshiire`) and three openable journals (`journal_diary`, `_notebook`, `_jp`: their pages baked blank,
+  written at play in a hand, PROPGEN §27), all in the library (`shape: "asset props/<name>"`). The words: `open`
+  (`opened` holds, `closed` is heard), `container` (`placed`, `taken`, `holds`), `moveable` (a RigidBody3D: shoved
+  when walked into, picked up upright and put down facing as held: `moved`, `dropped`), `book` (`pages`, `entries`
+  with an `if`, `hand`, `read` with its `page`), in Godot, on the desk and in the Director (Opens, Container,
+  Moveable, Book; a book's text typed with `===` between pages and `@if` lines for the entries). TestRoom001's station
+  13, the things room behind the library, plays them all (GDTESTROOM, TESTROOM). The CRT screen: the look plugin's
+  `crt.gdshader` (GODOT_LOOK).
 
 ## 2026-11-05 (the user: Sakura Rabbit's Unity experiments as candidates; the branch `sakura-rabbit-research`)
 

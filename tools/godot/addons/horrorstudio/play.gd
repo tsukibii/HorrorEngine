@@ -114,7 +114,13 @@ const LifeFxC := preload("res://addons/horrorstudio/lifefx.gd")
 const MenuC := preload("res://addons/horrorstudio/menu.gd")      # the saved settings (the mirrors follow the Reflections row)
 const LifeSoundC := preload("res://addons/horrorstudio/lifesound.gd")
 const PhysC := preload("res://addons/horrorstudio/physics.gd")
+const PartsC := preload("res://addons/horrorstudio/parts.gd")     # parts that open: lids, doors, a book's cover (PROPGEN §26)
+const BookC := preload("res://addons/horrorstudio/book.gd")       # a book in the hands, its pages in a hand (the `book` use)
 var physics = null                   # physics.gd: the thing in the hand, the dice
+var parts = null                     # parts.gd: the things' parts between shut and open
+var book = null                      # book.gd: the book in the hands
+var held_move = null                 # the moveable held in both hands (use: moveable), placed where aimed
+var moveables: Array = []            # this level's moveables: {t, body}
 const FaceC := preload("res://addons/horrorstudio/face.gd")
 var faces = null                     # face.gd: the cast's expressions (`expr`), what each rests in and what plays over it
 var lifefx = null                    # the little things' effects (lifefx.gd), on this level
@@ -159,6 +165,8 @@ func setup(game_, run_, opts: Dictionary = {}) -> void:
 	on_set_time = opts.get("set_time", Callable())
 	on_quit = opts.get("quit", Callable())
 	todo = TodoC.new(self)
+	parts = PartsC.new(self)
+	book = BookC.new(self)
 	if str(story.game.get("collision", "boxes")) == "physics":
 		collide = CollideC.new(self)
 	hud.locked(false)
@@ -205,6 +213,18 @@ func carried() -> Variant:
 ## (the card is a Control under the pointer, so it never reached _unhandled_input: the user's note, 2026-10-29)
 ## A thing in the hands (examine): a drag with the left button turns it, a click with no drag puts it back.
 func _input(ev: InputEvent) -> void:
+	if book != null and book.up() and hud != null and hud.panel_el != null and ev is InputEventMouseButton and ev.pressed:
+		if ev.button_index == MOUSE_BUTTON_LEFT:
+			var vp := get_viewport().get_visible_rect().size
+			book.turn(1 if ev.position.x > vp.x * 0.5 else -1)
+		elif ev.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			book.turn(1)
+		elif ev.button_index == MOUSE_BUTTON_WHEEL_UP:
+			book.turn(-1)
+		elif ev.button_index == MOUSE_BUTTON_RIGHT:
+			hud._finish_panel(true)
+		get_viewport().set_input_as_handled()
+		return
 	if exam != null and hud != null and hud.panel_el != null:
 		if ev is InputEventMouseButton and ev.button_index == MOUSE_BUTTON_LEFT:
 			if ev.pressed:
@@ -216,7 +236,7 @@ func _input(ev: InputEvent) -> void:
 					hud.panel_click()
 			get_viewport().set_input_as_handled()
 			return
-		if ev is InputEventMouseMotion and exam["drag"]:
+		if ev is InputEventMouseMotion and exam["drag"] and not exam.get("lock", false):
 			exam_turn(ev.relative.x, ev.relative.y)
 			exam["moved"] = float(exam["moved"]) + ev.relative.length()
 			get_viewport().set_input_as_handled()
@@ -282,6 +302,12 @@ func capture_mouse(on: bool) -> void:
 
 ## a key by its name (W, A, S, D, E, G, C, F, Shift, Space, Escape, Enter, digits...)
 func key_event(code: String, down: bool, repeat: bool = false) -> void:
+	if book != null and book.up() and down and ["Right", "D", "PageDown", "Down", "Space"].has(code):
+		book.turn(1)
+		return
+	if book != null and book.up() and down and ["Left", "A", "PageUp", "Up"].has(code):
+		book.turn(-1)
+		return
 	if examining != null and hud.panel_el != null and down and (code == "Escape" or code == "E"):
 		hud._finish_panel(true)
 		return
@@ -357,6 +383,7 @@ func ability_walk(dt: float) -> void:
 	var f := (1 if (k.get("W", false) or k.get("Up", false)) else 0) - (1 if (k.get("S", false) or k.get("Down", false)) else 0)
 	var r := (1 if (k.get("D", false) or k.get("Right", false)) else 0) - (1 if (k.get("A", false) or k.get("Left", false)) else 0)
 	player.running = can("run") and not player.crouched and bool(k.get("Shift", false)) and f > 0
+	player["try_speed"] = 0.0                       # the walk asked for this frame (a moveable in the way is shoved by it, blocked or not)
 	if f == 0 and r == 0:
 		if collide != null:
 			collide.settle(float(s["step"]))
@@ -366,6 +393,8 @@ func ability_walk(dt: float) -> void:
 	var v := float(s["crouched"] if player.crouched else (s["run"] if player.running else s["speed"])) * dt / ln * focus_walk()
 	if v <= 0.0:
 		return
+	player["try_speed"] = v * ln / dt
+	player["try_dir"] = Vector3(cos(a) * f + sin(a) * r, 0.0, -sin(a) * f + cos(a) * r).normalized()
 	move((cos(a) * f + sin(a) * r) * v, (-sin(a) * f + cos(a) * r) * v, s)
 
 
@@ -400,8 +429,13 @@ func enter_level(lid: String) -> void:
 	lenses = []
 	latches = []
 	if not kept.has(lid):
-		kept[lid] = {"vis": {}, "doors": {}, "bodies": {}}
+		kept[lid] = {"vis": {}, "doors": {}, "bodies": {}, "opened": {}, "inside": {}}
 	var k: Dictionary = kept[lid]
+	for kk in ["opened", "inside"]:
+		if not k.has(kk):
+			k[kk] = {}
+	held_move = null
+	moveables = []
 	var leak_nodes: Array = []
 	for n in game.pieces():
 		if n is Node3D and n.has_meta("leak"):
@@ -504,6 +538,7 @@ func enter_level(lid: String) -> void:
 	for id in k["bodies"]:
 		if by_id.has(id):
 			by_id[id]["node"].global_transform = k["bodies"][id]
+	parts_attach(k)
 
 	by_node = {}
 	anim_players = {}
@@ -658,7 +693,7 @@ func place(feet: Vector3, yaw: float, pitch: float) -> void:
 func blocks() -> Array:
 	var out: Array = []
 	for t in solid:
-		if t["node"].visible and t["use"] != "carry":
+		if t["node"].visible and t["use"] != "carry" and not t.get("held", false):
 			out.append(t)
 	return out
 
@@ -1503,6 +1538,10 @@ func take(t: Dictionary) -> void:
 	for e in inv:
 		if e["id"] == id:
 			return
+	if t.get("in") != null:
+		var cid = t["in"]
+		contain_detach(t)
+		emit({"type": "taken", "id": id, "from": cid})
 	if d.has("item") and is_torch(d["item"]):
 		set_visible(id, false)
 		k["bodies"].erase(id)
@@ -1584,6 +1623,9 @@ func inv_draw(peek: bool) -> void:
 
 ## G: the one in the hand set down on whatever is under a spot just in front of you, facing you
 func drop() -> void:
+	if held_move != null:
+		move_place()
+		return
 	var e = carried()
 	if e == null or busy or playing != null or player.seat != null or player.hiding != null or player.sleeping != null:
 		return
@@ -1628,6 +1670,340 @@ func drop_spot(e: Dictionary) -> Variant:
 	var down = ray_hit(Vector3(x, player.pos.y + top, z), Vector3.DOWN, top + 0.5, blocks())
 	var y: float = (float(down["point"].y) if down != null else player.pos.y) + float(e["thing"]["size"][2]) / 2.0
 	return Vector3(x, y, z)
+
+
+# ---- parts that open (parts.gd): lids, doors, covers; containers; moveables --------------------------------------
+## the things with parts, read off their nodes once a level is in (after the kept bodies are put back); their state as
+## kept (or as the story starts them, `opened`); what was put into a container back inside it; the moveables' bodies
+func parts_attach(k: Dictionary) -> void:
+	for id in by_id:
+		var t: Dictionary = by_id[id]
+		var u = t.get("use")
+		if not ["open", "container", "book", "hide", "locker", "moveable"].has(u):
+			continue
+		var d := InteractablesC.d_of(t)
+		t["parts"] = PartsC.scan(t["node"])
+		var info := PartsC.info(t["node"])
+		t["prop_root"] = info.get("root")
+		t["inside"] = info.get("inside")
+		t["pages"] = info.get("pages")
+		t["parent0"] = t["node"].get_parent()
+		t["contents"] = []
+		var s0: float = 1.0 if bool(k["opened"].get(id, d.get("opened", false))) else 0.0
+		t["open_s"] = s0
+		PartsC.apply(t["parts"], s0)
+		if u == "moveable":
+			move_body(t, k)
+	for id in k["inside"].keys():
+		var rec = k["inside"][id]
+		if by_id.has(id) and rec is Dictionary and by_id.has(rec.get("in")):
+			contain_attach(by_id[id], by_id[rec["in"]], rec["local"])
+		else:
+			k["inside"].erase(id)
+
+
+## true while the thing's parts are open (the `opened` condition)
+func open_state(id) -> bool:
+	var t = by_id.get(id)
+	return t != null and float(t.get("open_s", 0.0)) > 0.5
+
+
+## a thing's parts to open or shut over a moment, with their sound; the story hears `opened` or `closed` at the end
+func open_set(t: Dictionary, open: bool, secs: float = -1.0) -> void:
+	var id = t["id"]
+	if not t.has("parts"):
+		return
+	var s := setting(t["use"] if InteractablesC.SETTINGS.has(t["use"]) else "open")
+	var sec: float = float(s.get("secs", 0.8)) if secs < 0 else secs
+	var was: bool = float(t.get("open_s", 0.0)) > 0.5
+	kept[level]["opened"][id] = open
+	if was != open:
+		var snd := PartsC.sounds(t["parts"], t["use"])
+		shelf_sound(snd["open"] if open else snd["close"], id, -3.0)
+	parts.go(t, 1.0 if open else 0.0, sec)
+	if sec > 0.0:
+		await wait(sec)
+	emit({"type": "opened" if open else "closed", "id": id})
+
+
+## the story's `open` action: {open: id, to: open | shut | lock | unlock}
+func open_action(id, to: String) -> void:
+	var t = by_id.get(id)
+	if t == null:
+		hud.log("no %s to open" % id)
+		return
+	if to == "lock" or to == "unlock":
+		t["locked"] = to == "lock"
+		return
+	open_set(t, to != "shut" and to != "close")
+
+
+## a thing put into an open container: the one in the hand goes in, laid where the next free spot is, and stays there
+## through closing, carrying and opening again (it's the container's child); the story hears `placed`
+func container_put(c: Dictionary, e: Dictionary) -> bool:
+	var t: Dictionary = e["thing"]
+	var id = t["id"]
+	var d := InteractablesC.d_of(c)
+	var holds: int = int(d.get("holds", 6))
+	if c["contents"].size() >= holds:
+		hud.shake()
+		hud.line("There's no room in it.", "", 1.4, true)
+		return false
+	var box = inside_of(c)
+	if box == null:
+		return false
+	var lo: Vector3 = box[0]
+	var hi: Vector3 = box[1]
+	var sz: Array = t["size"]
+	var w := float(sz[0])
+	var dp := float(sz[1])
+	var h := float(sz[2])
+	var n: int = c["contents"].size()
+	var cols: int = max(1, int((hi.x - lo.x) / max(w, 0.05)))
+	var rows: int = max(1, int((hi.z - lo.z) / max(dp, 0.05)))
+	cols = min(cols, 3)
+	rows = min(rows, 3)
+	var cell: int = n % cols
+	var row: int = int(n / cols) % rows
+	var layer: int = int(n / (cols * rows))
+	var x: float = lo.x + (hi.x - lo.x) * (cell + 0.5) / cols
+	var z: float = lo.z + (hi.z - lo.z) * (row + 0.5) / rows
+	var y: float = lo.y + layer * (h + 0.004) + h / 2.0 + 0.002
+	var yaw_world := Basis(Vector3.UP, deg_to_rad(float(player.yaw) - 90.0))
+	var local := Transform3D(c["node"].global_transform.basis.inverse() * yaw_world, Vector3(x, y, z))
+	contain_attach(t, c, local)
+	set_visible(id, true)
+	inv_remove(id)
+	if e.get("item") != null:
+		items.erase(e["item"])
+		if run != null:
+			run["items"].erase(e["item"])
+	var k: Dictionary = kept[level]
+	k["inside"][id] = {"in": c["id"], "local": local}
+	k["bodies"].erase(id)
+	shelf_sound("cloth_02", c["id"], -8.0)
+	hud.log("put in %s: %s" % [name_of(c), name_of(t)])
+	emit({"type": "placed", "id": id, "in": c["id"]})
+	return true
+
+
+## a container's inside box in its node's own space: [lo, hi], from the prop's extras (its root's space)
+func inside_of(c: Dictionary) -> Variant:
+	var box = c.get("inside")
+	var root = c.get("prop_root")
+	if box == null or root == null or not (root is Node3D):
+		return null
+	var lo := Vector3(float(box[0][0]), float(box[0][1]), float(box[0][2]))
+	var hi := Vector3(float(box[1][0]), float(box[1][1]), float(box[1][2]))
+	var to_c: Transform3D = c["node"].global_transform.affine_inverse() * root.global_transform
+	var mn := Vector3(INF, INF, INF)
+	var mx := Vector3(-INF, -INF, -INF)
+	for cx in [lo.x, hi.x]:
+		for cy in [lo.y, hi.y]:
+			for cz in [lo.z, hi.z]:
+				var p: Vector3 = to_c * Vector3(cx, cy, cz)
+				mn = Vector3(min(mn.x, p.x), min(mn.y, p.y), min(mn.z, p.z))
+				mx = Vector3(max(mx.x, p.x), max(mx.y, p.y), max(mx.z, p.z))
+	return [mn, mx]
+
+
+func contain_attach(t: Dictionary, c: Dictionary, local: Transform3D) -> void:
+	var n: Node3D = t["node"]
+	var p = n.get_parent()
+	if p != c["node"]:
+		if p != null:
+			p.remove_child(n)
+		c["node"].add_child(n)
+	n.transform = local
+	t["in"] = c["id"]
+	if not c["contents"].has(t["id"]):
+		c["contents"].append(t["id"])
+	if collide != null:
+		CollideC.enable(n, n.visible)
+
+
+func contain_detach(t: Dictionary) -> void:
+	var cid = t.get("in")
+	if cid == null:
+		return
+	var c = by_id.get(cid)
+	var n: Node3D = t["node"]
+	var g: Transform3D = n.global_transform
+	var p = n.get_parent()
+	var home = t.get("parent0")
+	if p != null and home != null and p != home:
+		p.remove_child(n)
+		home.add_child(n)
+		n.global_transform = g
+	t.erase("in")
+	if c != null:
+		c["contents"].erase(t["id"])
+	kept[level]["inside"].erase(t["id"])
+
+
+## a moveable's body: the thing under a rigid body of its size (its own colliders off), asleep till it's touched
+func move_body(t: Dictionary, k: Dictionary) -> void:
+	var n: Node3D = t["node"]
+	var d := InteractablesC.d_of(t)
+	var body := RigidBody3D.new()
+	body.name = "move_" + str(t["id"])
+	body.mass = float(d.get("mass", setting("moveable").get("mass", 5.0)))
+	var pm := PhysicsMaterial.new()
+	pm.friction = 0.65
+	pm.bounce = 0.04
+	body.physics_material_override = pm
+	body.linear_damp = 0.9
+	body.angular_damp = 1.4
+	body.can_sleep = true
+	body.continuous_cd = true
+	var cs := CollisionShape3D.new()
+	var bs := BoxShape3D.new()
+	var sz: Array = t["size"]
+	bs.size = Vector3(max(0.05, float(sz[0])), max(0.05, float(sz[2])), max(0.05, float(sz[1])))
+	cs.shape = bs
+	body.add_child(cs)
+	PhysC.shapes_off(n)
+	var parent = n.get_parent()
+	var g: Transform3D = n.global_transform
+	parent.remove_child(n)
+	parent.add_child(body)
+	body.global_transform = Transform3D(g.basis.orthonormalized(), g.origin)
+	body.add_child(n)
+	n.transform = Transform3D(Basis().scaled(g.basis.get_scale()), Vector3.ZERO)
+	body.sleeping = true
+	t["body"] = body
+	t["rest_pos"] = g.origin
+	t["awake"] = false
+	moveables.append(t)
+
+
+## every frame: the held one in both hands before the player, upright, facing as it was picked up; the others pushed
+## when the player walks into them; where one comes to rest kept, and `moved` heard when it's not where it was
+func move_tick(dt: float) -> void:
+	var p := player
+	var s := setting("moveable")
+	for t in moveables:
+		var body = t.get("body")
+		if body == null or not is_instance_valid(body):
+			continue
+		var sz: Array = t["size"]
+		var w: float = max(float(sz[0]), float(sz[1]))
+		var h := float(sz[2])
+		if held_move == t:
+			var dist: float = float(s.get("dist", 0.5)) + w / 2.0
+			var a := deg_to_rad(float(p.yaw))
+			var fwd := Vector3(cos(a), 0, -sin(a))
+			var pos := Vector3(p.pos.x, p.pos.y + 0.1 + h / 2.0, p.pos.z) + fwd * dist
+			body.global_transform = Transform3D(Basis(Vector3.UP, deg_to_rad(float(p.yaw) + float(t.get("hold_yaw", 0.0)))), pos)
+			continue
+		var sp: float = max(float(p.speed), float(p.get("try_speed", 0.0)))   # the walk asked for, blocked by it or not
+		if not busy and player.hiding == null and player.seat == null and sp > 0.15:
+			var inv_t: Transform3D = body.global_transform.affine_inverse()
+			var L: Vector3 = inv_t * p.pos
+			var r := float(setting("walk").get("radius", 0.3)) + 0.06
+			if abs(L.x) < float(sz[0]) / 2.0 + r and abs(L.z) < float(sz[1]) / 2.0 + r and p.pos.y < body.global_position.y + h / 2.0 and p.pos.y + 1.7 > body.global_position.y - h / 2.0:
+				var away: Vector3 = body.global_position - p.pos
+				away.y = 0
+				var dir: Vector3 = p.get("try_dir", away)
+				if away.length() > 1e-4 and dir.dot(away.normalized()) > 0.2:   # walking into it, not away along it
+					away = away.normalized()
+					# a shove, not a kick: brought up toward a share of the walking speed, a bit of it each frame, applied
+					# about hip height so a light chair can tip and a crate just slides
+					var want: float = clamp(sp, 0.5, 2.2) * 0.7
+					var have: float = Vector3(body.linear_velocity.x, 0, body.linear_velocity.z).dot(away)
+					if have < want:
+						var push: float = (want - have) * float(body.mass) * 0.35
+						var at_y: float = clamp(p.pos.y + 0.85 - body.global_position.y, -h / 2.0, h / 2.0) * 0.5
+						body.sleeping = false
+						body.apply_impulse(away * push, Vector3(0, at_y, 0))
+		if body.sleeping:
+			if t.get("awake", false):
+				t["awake"] = false
+				kept[level]["bodies"][t["id"]] = body.global_transform
+				if body.global_position.distance_to(t["rest_pos"]) > 0.12 or abs(body.global_transform.basis.y.y) < 0.8:
+					t["rest_pos"] = body.global_position
+					emit({"type": "moved", "id": t["id"]})
+		else:
+			t["awake"] = true
+
+
+## picked up into both hands: upright, the way it faced relative to the player kept
+func move_pick(t: Dictionary) -> void:
+	var body = t.get("body")
+	if body == null or held_move != null:
+		return
+	body.freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
+	body.freeze = true
+	body.linear_velocity = Vector3.ZERO
+	body.angular_velocity = Vector3.ZERO
+	body.collision_layer = 0
+	var yaw_now: float = rad_to_deg(atan2(-body.global_transform.basis.z.x, body.global_transform.basis.z.z))
+	t["hold_yaw"] = rad_to_deg(body.global_transform.basis.get_euler().y) - float(player.yaw)
+	t["held"] = true
+	held_move = t
+	shelf_sound("cloth_03", t["id"], -10.0)
+	hud.log("picked up: %s" % name_of(t))
+	emit({"type": "carry", "id": t["id"]})
+
+
+## put down where the player aims, upright, facing as held; off a surface it falls
+func move_place() -> void:
+	var t = held_move
+	if t == null:
+		return
+	var body = t["body"]
+	var sz: Array = t["size"]
+	var h := float(sz[2])
+	var w: float = max(float(sz[0]), float(sz[1]))
+	var cam: Camera3D = game.camera
+	var dir: Vector3 = -cam.global_transform.basis.z
+	var hit = null
+	if collide != null:
+		hit = collide.ray(cam.global_position, dir, 3.0)
+	else:
+		var among: Array = []
+		for b in blocks():
+			if b != t:
+				among.append(b)
+		hit = ray_hit(cam.global_position, dir, 3.0, among)
+	var pos: Vector3
+	var falls := false
+	if hit == null and dir.y < -0.05:                  # nothing in the way: the floor where the look meets it
+		var gy := ground_at(Vector3(player.pos.x, player.pos.y + 1.2, player.pos.z), 1.2)
+		if gy == -INF:
+			gy = player.pos.y
+		var tt: float = (gy - cam.global_position.y) / dir.y
+		if tt > 0.0 and tt <= 3.0:
+			hit = {"point": cam.global_position + dir * tt}
+	if hit != null and hit.get("point") != null:
+		var pt: Vector3 = hit["point"]
+		var back: Vector3 = dir
+		back.y = 0
+		pos = Vector3(pt.x, pt.y, pt.z) - back.normalized() * (w * 0.5) + Vector3(0, h / 2.0 + 0.01, 0)
+		if dir.y > -0.2:                               # aimed at a wall or ahead: at its foot, on the floor under it
+			var g := ground_at(Vector3(pos.x, player.pos.y + 1.2, pos.z), 1.2)
+			pos.y = (g if g > -INF else player.pos.y) + h / 2.0 + 0.01
+	else:
+		pos = body.global_position
+		falls = true
+	body.global_transform = Transform3D(body.global_transform.basis, pos)
+	body.freeze = false
+	body.collision_layer = 1
+	body.linear_velocity = Vector3.ZERO
+	body.angular_velocity = Vector3.ZERO
+	body.sleeping = not falls
+	t["held"] = false
+	t["awake"] = falls
+	t["rest_pos"] = pos                            # where it's put is where it rests: `moved` only once it's shoved from here
+	held_move = null
+	kept[level]["bodies"][t["id"]] = body.global_transform
+	shelf_sound("thud_wood_03", t["id"], -12.0)
+	var ins: Array = []
+	for tr in triggers:
+		if point_in(tr, pos.x, -pos.z, pos.y):
+			ins.append(tr["id"])
+	hud.log("put down: %s" % name_of(t))
+	emit({"type": "dropped", "id": t["id"], "in": ins})
 
 
 # ---- a board game (use: game): the player sits down at the table and its rules play out ----------------------
@@ -1778,15 +2154,24 @@ func hide(t: Dictionary, s: Dictionary) -> void:
 	player.stood = {"pos": player.pos, "eye": player.eye}
 	player.hiding = id
 	player.limit = {"yaw": yaw, "dy": float(s["look"][0]), "dp": float(s["look"][1])}
+	if t.get("parts", []).size():                 # a closet: its doors open, the player steps in, the doors shut behind them
+		await open_set(t, true)
 	await tween({"pos": Vector3(at.x, player.pos.y, at.z), "eye": s["eye"], "yaw": yaw, "pitch": 0.0, "secs": s["secs"]})
+	if t.get("parts", []).size():
+		await open_set(t, false)
 	emit({"type": "hidden", "id": id})
 
 
 func unhide(s: Dictionary) -> void:
 	var st = player.stood
+	var ht = by_id.get(player.hiding) if player.hiding != null else null
+	if ht != null and ht.get("parts", []).size():
+		await open_set(ht, true)
 	leave_hiding()
 	if st != null:
 		await tween({"pos": st["pos"], "eye": st["eye"], "yaw": player.yaw, "pitch": player.pitch, "secs": s["secs"]})
+	if ht != null and ht.get("parts", []).size():
+		await open_set(ht, false)
 
 
 func leave_hiding() -> void:
@@ -2346,56 +2731,72 @@ func ray_hit(from: Vector3, dir: Vector3, far: float, among: Array) -> Variant:
 		return collide.ray(from, dir, far)
 	var best = null
 	for t in among:
-		var n: Node3D = t["node"]
-		if not n.visible:
-			continue
-		var inv_t: Transform3D = n.global_transform.affine_inverse()
-		var o: Vector3 = inv_t * from
-		var d: Vector3 = inv_t.basis * dir
-		var e := extent(t)
-		var hx: float = float(e["r"]) if e.has("r") else float(e["hx"])
-		var hz: float = float(e["r"]) if e.has("r") else float(e["hz"])
-		var hy := float(e["hy"])
-		var tmin := 0.0
-		var tmax := far
-		var ok := true
-		for ax in 3:
-			var oo: float = [o.x, o.y, o.z][ax]
-			var dd: float = [d.x, d.y, d.z][ax]
-			var h: float = [hx, hy, hz][ax]
-			if abs(dd) < 1e-9:
-				if abs(oo) > h:
-					ok = false
-					break
-				continue
-			var t1 := (-h - oo) / dd
-			var t2 := (h - oo) / dd
-			if t1 > t2:
-				var tmp := t1
-				t1 = t2
-				t2 = tmp
-			tmin = max(tmin, t1)
-			tmax = min(tmax, t2)
-			if tmin > tmax:
-				ok = false
-				break
-		if not ok:
-			continue
-		if best == null or tmin < float(best["dist"]):
-			best = {"thing": t, "dist": tmin, "point": from + dir * tmin}
+		var h = box_hit(t, from, dir, far)
+		if h != null and (best == null or float(h["dist"]) < float(best["dist"])):
+			best = h
 	return best
 
 
+## the ray against one thing's box (its size about its node): {thing, dist, point} or null
+func box_hit(t: Dictionary, from: Vector3, dir: Vector3, far: float) -> Variant:
+	var n: Node3D = t["node"]
+	if not n.visible:
+		return null
+	var inv_t: Transform3D = n.global_transform.affine_inverse()
+	var o: Vector3 = inv_t * from
+	var d: Vector3 = inv_t.basis * dir
+	var e := extent(t)
+	var hx: float = float(e["r"]) if e.has("r") else float(e["hx"])
+	var hz: float = float(e["r"]) if e.has("r") else float(e["hz"])
+	var hy := float(e["hy"])
+	var tmin := 0.0
+	var tmax := far
+	for ax in 3:
+		var oo: float = [o.x, o.y, o.z][ax]
+		var dd: float = [d.x, d.y, d.z][ax]
+		var h: float = [hx, hy, hz][ax]
+		if abs(dd) < 1e-9:
+			if abs(oo) > h:
+				return null
+			continue
+		var t1 := (-h - oo) / dd
+		var t2 := (h - oo) / dd
+		if t1 > t2:
+			var tmp := t1
+			t1 = t2
+			t2 = tmp
+		tmin = max(tmin, t1)
+		tmax = min(tmax, t2)
+		if tmin > tmax:
+			return null
+	return {"thing": t, "dist": tmin, "point": from + dir * tmin}
+
+
 func aim() -> Variant:
-	if collide != null:
-		return collide.aim()
 	var cam: Camera3D = game.camera
-	var among: Array = []
-	for id in by_id:
-		var t: Dictionary = by_id[id]
-		if ["wall", "floor", "ceiling", "door", "mesh"].has(t["kind"]) and t["node"].visible and not t["hollow"]:
-			among.append(t)
-	return ray_hit(cam.global_position, -cam.global_transform.basis.z, LOOK_RANGE, among)
+	var hit = null
+	if collide != null:
+		hit = collide.aim()
+	else:
+		var among: Array = []
+		for id in by_id:
+			var t: Dictionary = by_id[id]
+			if ["wall", "floor", "ceiling", "door", "mesh"].has(t["kind"]) and t["node"].visible and not t["hollow"]:
+				among.append(t)
+		hit = ray_hit(cam.global_position, -cam.global_transform.basis.z, LOOK_RANGE, among)
+	# an open container: what's in it is aimed at through its open side (its own box holds theirs)
+	if hit != null and hit.get("thing") != null and hit["thing"].get("contents", []).size() and float(hit["thing"].get("open_s", 0.0)) > 0.5:
+		var best = null
+		for cid in hit["thing"]["contents"]:
+			var ct = by_id.get(cid)
+			if ct == null:
+				continue
+			var h2 = box_hit(ct, cam.global_position, -cam.global_transform.basis.z, LOOK_RANGE)
+			if h2 != null and (best == null or float(h2["dist"]) < float(best["dist"])):
+				best = h2
+		if best != null:
+			return best
+	return hit
 
 
 func use(press: bool) -> void:
@@ -2404,6 +2805,10 @@ func use(press: bool) -> void:
 	if player.peeping != null:
 		hud.press()
 		unpeep()
+		return
+	if held_move != null:
+		hud.press()
+		move_place()
 		return
 	var seat = player.seat
 	if seat != null and (target == null or target["id"] == seat):
@@ -2438,6 +2843,10 @@ func use(press: bool) -> void:
 
 
 func update_cursor(dt: float) -> void:
+	if held_move != null:
+		target = null
+		hud.set_cursor("take", setting("moveable")["place"], title_of(held_move))
+		return
 	var hit = aim()
 	var o = hit["thing"] if hit != null else null
 	var id = o["id"] if o != null else null
@@ -3414,6 +3823,10 @@ func tick(dt: float) -> void:
 		follow_leaf(x)
 	for x in latches:
 		follow_leaf(x)
+	if parts != null:
+		parts.tick(dt)
+	if not moveables.is_empty():
+		move_tick(dt)
 	for t in triggers:
 		var now_in := is_in(t)
 		var was: bool = inside.has(t["id"])

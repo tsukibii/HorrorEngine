@@ -1789,3 +1789,29 @@ And a seat pad's bag filled only to a pad's thickness had more cloth than air an
 - **A pad is foam in a cover, not air**: fill the bag firm between a floor and a ceiling at its thickness, then let it
   go; and keep its volume (pressure) while it settles, or gravity flattens it.
 
+## Parts that open, hanging clothes and a station of things (2026-11-05, the suitcases and the book)
+
+- **A library mesh at its real size is `shape: "asset props/<name>"`, not `art`**: `art` dresses a block and needs
+  one (a `shape` or a `kit`); the test room's suitcase, closets and journal were given `art` alone, the plan made no
+  piece of them and Godot's run said "no things_case". The story check now reads the parts of an asset shape too.
+- **Cycles renders the scene, not the list**: the preview was handed the parts it should show, but every object linked
+  to the scene is drawn; a part not in the picture is hidden from the render (`hide_render`) and shown again after.
+  And an empty's `bound_box` is its display size (a metre): never put one in the list the camera is fitted to.
+- **A coarse copy interpolated on a simulated cloth crosses it where the cloth folds**: the hanging shirt's game
+  mesh (points located in the fine sim's triangles, 2.2 times its step) cut chords through the hem's and the sides'
+  folds, and the front's triangles went inside the back's: dark slivers that no bake setting fixed (the maps had no
+  black in them). The simulated bag at a slightly coarser step is the game mesh itself now; the detail mesh is the
+  same cloth with the weave's wrinkles pushed along its normals.
+- **A bake's miss is black, and the alpha says where**: a ray from the game mesh that finds nothing of the detailed
+  one within its reach leaves (0, 0, 0, 0) with `use_clear`; the image made with alpha, a miss is filled from its
+  baked neighbours (`bake.py fill_misses`) instead of being painted in.
+- **GDScript's `:=` from `duplicate()` is a parse error, and the export's load check didn't see it**: `var q :=
+  p.duplicate()` on a Dictionary can't infer its type; GDEXPORT's Pilot loaded fine and only the test room's run,
+  reloading the runtime, failed at the first station that used it. `godot --headless --check-only -s <script>` on each
+  changed script, in an exported project, finds it in seconds.
+- **A Blender make outlives the wrapper you kill**: `propgen.py make` runs Blender's Python as a subprocess (`main.py`);
+  killing the wrapper's PID left the bpy process writing its 54,000-triangle hardshell into the same folder as the
+  coarser remake. Find the `main.py` process too (one command to find the PID, the next to kill it).
+- **A part shares the thing's materials**: the sticker passes blacked out "the other objects'" materials for the
+  prop's picture, and a lid's or a cover's are the thing's own datablocks, so the whole prop went holdout and the kept
+  passes saw nothing. Only materials not the thing's are the others'.

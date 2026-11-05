@@ -11,11 +11,11 @@ import { arrows, cutsOf } from "./flowedit.js";
 const IS = {                                       // what a placed thing must be for a field of each kind
   thing: t => t.kind !== "room", spot: t => t.use === "spot", door: t => t.kind === "door", light: t => t.use === "light",
   room: t => t.kind === "room", zone: t => t.kind === "room" || t.use === "trigger", locker: t => t.use === "locker",
-  carry: t => t.use === "carry", die: t => t.use === "roll", table: t => t.use === "game", life: t => !!t.life,
+  carry: t => t.use === "carry" || t.use === "moveable" || t.use === "pickup", die: t => t.use === "roll", table: t => t.use === "game", life: t => !!t.life,   // carried in the hand, held in both (a moveable), or picked up: all put down (dropped)
   stain: t => t.use === "clean", breaker: t => t.use === "breaker",
 };
 const NOUN = { thing: "placed thing", spot: "spot", door: "door", light: "light", room: "room", zone: "room or trigger", locker: "hiding place",
-  carry: "thing you carry", die: "die", table: "game table", line: "line", sound: "sound", item: "item", note: "note", counter: "counter",
+  carry: "thing you carry or pick up", die: "die", table: "game table", line: "line", sound: "sound", item: "item", note: "note or book", counter: "counter",
   axis: "karma axis", scene: "scene", cast: "cast member", motion: "motion", secret: "secret", route: "route", beat: "beat in this task",
   ask: "question", pose: "pose", life: "thing with a life", todo: "task on the to-do list", stain: "stain", breaker: "breaker box" };
 const TABLE = { line: "lines", sound: "sounds", item: "items", note: "notes", scene: "scenes", cast: "cast", motion: "motions", secret: "secrets" };
@@ -38,7 +38,7 @@ export function lint(S, { things = {}, poses = null, secs = null, lives = null }
   const counters = game.counters || {}, axes = (game.karma || {}).axes || { karma: {} };
   const has = (kind, v, ctx) => {                  // does v name something of this kind?
     if (IS[kind]) { const t = things[v]; return t ? IS[kind](t) || kind === "thing" : kind === "thing" && !!cast[v]; }
-    if (TABLE[kind]) return !!(S[TABLE[kind]] || {})[v];
+    if (TABLE[kind]) return !!(S[TABLE[kind]] || {})[v] || (kind === "note" && !!things[v] && things[v].use === "book");   // `read`: a note, or a book that's placed (use: book)
     if (kind === "counter") return !!counters[v];
     if (kind === "axis") return !!axes[v];
     if (kind === "route") return routes.has(v);

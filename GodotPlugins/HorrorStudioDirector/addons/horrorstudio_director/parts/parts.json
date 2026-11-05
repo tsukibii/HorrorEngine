@@ -63,6 +63,22 @@
   [
    "solid",
    "Solid"
+  ],
+  [
+   "openable",
+   "Openable"
+  ],
+  [
+   "container",
+   "Container"
+  ],
+  [
+   "moveable",
+   "Moveable"
+  ],
+  [
+   "book",
+   "Book"
   ]
  ],
  "lives": [

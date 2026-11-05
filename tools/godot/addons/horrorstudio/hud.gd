@@ -664,7 +664,18 @@ func panel(spec: Dictionary) -> Variant:
 	panel_typed = ""
 	panel_el = PanelContainer.new()
 	panel_el.name = "Panel"
-	if spec.get("low", false):                    # under a thing in the hands: low on the screen, growing up from its foot
+	if spec.get("side", false):                   # beside a book in the hands: a column at the right, its words in the HUD's own font
+		panel_el.anchor_left = 1.0
+		panel_el.anchor_right = 1.0
+		panel_el.anchor_top = 0.0
+		panel_el.anchor_bottom = 1.0
+		panel_el.offset_left = -470
+		panel_el.offset_right = -36
+		panel_el.offset_top = 48
+		panel_el.offset_bottom = -64
+		panel_el.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+		panel_el.custom_minimum_size = Vector2(430, 0)
+	elif spec.get("low", false):                  # under a thing in the hands: low on the screen, growing up from its foot
 		panel_el.anchor_left = 0.5
 		panel_el.anchor_right = 0.5
 		panel_el.anchor_top = 1.0
@@ -697,6 +708,18 @@ func panel(spec: Dictionary) -> Variant:
 		shown.name = "Code"
 		v.add_child(shown)
 		v.add_child(_label("type the digits, Enter OK, Backspace, Esc", 12))
+	elif spec.get("side", false):
+		var sc := ScrollContainer.new()
+		sc.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		var text := _label(named(spec.get("text", "")), 17)
+		text.name = "Text"
+		text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		text.custom_minimum_size = Vector2(400, 0)
+		text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		sc.add_child(text)
+		v.add_child(sc)
+		v.add_child(_label(str(spec.get("hint", "Esc or right click  Put it back")), 12))
 	else:
 		var text := _label(named(spec.get("text", "")), 16)
 		text.name = "Text"
@@ -708,6 +731,15 @@ func panel(spec: Dictionary) -> Variant:
 	modal(true)
 	var v2 = await panel_done
 	return v2
+
+
+## the words on the card up now (a book's spread turned)
+func panel_text(text: String) -> void:
+	if panel_el == null:
+		return
+	var l = panel_el.find_child("Text", true, false)
+	if l != null:
+		l.text = named(text)
 
 
 func _finish_panel(v) -> void:

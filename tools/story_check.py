@@ -26,13 +26,15 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")   # Windows consoles default to cp1252; the script is Japanese
 
 TRIGGERS = {"start", "enter", "exit", "use", "pickup", "read", "look", "after", "flag", "all", "any", "caught", "rolled", "hidden",
-            "answered", "carrying", "dropped", "played", "state", "ticked", "failed", "arrived", "torch", "peeping", "power", "locked", "gave"}
-TRIGGER_EXTRA = {"secs", "within", "face", "at_least", "option", "in", "result", "is", "at"}
+            "answered", "carrying", "dropped", "played", "state", "ticked", "failed", "arrived", "torch", "peeping", "power", "locked", "gave",
+            "opened", "closed", "placed", "taken", "moved"}
+TRIGGER_EXTRA = {"secs", "within", "face", "at_least", "option", "in", "result", "is", "at", "page", "from"}
 BOARDS = {}                 # the board games this game's tables can have (storylib.board_games), set in main
 ACTIONS = {"say", "think", "sound", "music", "light", "door", "show", "hide", "move", "objective", "flag", "unflag",
            "give", "take", "wait", "fade", "lookat", "shot", "seq", "anim", "stalker", "trick", "checkpoint", "done",
            "karma", "count", "scene", "behave", "ask", "state", "todo", "tick", "fail", "untodo", "chapter", "name", "torch",
-           "power", "skip", "skin", "sweep", "expr", "focus"}
+           "power", "skip", "skin", "sweep", "expr", "focus", "open"}
+OPEN_TO = {"open", "shut", "close", "lock", "unlock"}     # the `open` action's `to`: a thing's parts swung, or its lock
 SKIN_KEYS = ("wet", "sweat", "drips", "oil")            # a cast member's skin (docs/GODOT_LOOK.md §5): each 0..1
 ASK_SECS = 3.0              # the walker's time to answer an ask
 MUSIC = {"silence", "calm", "uneasy", "dread", "chase"}
@@ -618,6 +620,33 @@ def check_world(story, things, r):
                 r.warn(f"{t.id}: the code {p.get('code')} isn't written in any note, line or inspect text")
         if u == "inspect" and p.get("line") and p["line"] not in lines:
             r.err(f"{t.id}: line {p['line']!r} doesn't exist")
+        if u in ("open", "container", "book", "moveable"):      # parts that open, a container, a book, a moveable (DECISIONS 2026-11-05, later)
+            sh = str(p.get("shape", "")).split()
+            ref = p.get("art") or p.get("asset") or (sh[1] if sh[:1] == ["asset"] and len(sh) > 1 else None)
+            entry = L.LIBRARY_INDEX().get(ref) if ref else None
+            if u in ("open", "container", "book") and not (entry and entry.get("parts")):
+                (r.warn if u != "book" else r.err)(f"{t.id}: {u} wants a made prop with parts that open (art props/<name>, PROPGEN §26); {ref!r} has none")
+            if u == "container" and "holds" in p and not (isinstance(p["holds"], int) and 1 <= p["holds"] <= 40):
+                r.err(f"{t.id}: holds is a count, 1 to 40")
+            if u == "moveable" and "mass" in p and not (isinstance(p["mass"], (int, float)) and 0.2 <= p["mass"] <= 200):
+                r.err(f"{t.id}: mass is kilograms, 0.2 to 200")
+            if u == "book":
+                if p.get("hand", "hand") not in L.HANDS:
+                    r.err(f"{t.id}: hand {p.get('hand')!r}: one of {', '.join(L.HANDS)}")
+                pages = p.get("pages", [])
+                entries = p.get("entries", [])
+                if not isinstance(pages, list) or not all(isinstance(x, (str, dict)) for x in pages):
+                    r.err(f"{t.id}: pages is a list, a page each (a string, or {{text}})")
+                if not isinstance(entries, list) or not all(isinstance(x, dict) and "text" in x for x in entries):
+                    r.err(f"{t.id}: entries is a list of {{if, text}}: each appended while its `if` holds")
+                if not pages and not entries:
+                    r.warn(f"{t.id}: a book with nothing written in it")
+                for x in (entries if isinstance(entries, list) else []):
+                    for f in (x.get("if") if isinstance(x.get("if"), list) else [x.get("if")] if x.get("if") is not None else []):
+                        if not isinstance(f, str):
+                            r.err(f"{t.id}: an entry's if is a flag (or a list of them, ! for not)")
+            if p.get("opened") is not None and not isinstance(p["opened"], bool):
+                r.err(f"{t.id}: opened is true or false")
         if u == "leak":                                 # water running down a wall: a wet band below it, drips (GODOT_LOOK §2)
             wl = p.get("wall", "n")
             if wl not in L.WALLS:
@@ -1269,8 +1298,12 @@ def check_trigger(bid, w, story, things, beats, r):
     v = w[k]
     if "option" in w and k != "answered":
         r.err(f"{bid}: `option` goes with an answered trigger")
-    if "in" in w and k != "dropped":
-        r.err(f"{bid}: `in` goes with a dropped trigger")
+    if "in" in w and k not in ("dropped", "placed"):
+        r.err(f"{bid}: `in` goes with a dropped or a placed trigger")
+    if "from" in w and k != "taken":
+        r.err(f"{bid}: `from` goes with a taken trigger")
+    if "page" in w and k != "read":
+        r.err(f"{bid}: `page` goes with a read trigger (a book's spread: its left page's number, from 0)")
     if "result" in w and k != "played":
         r.err(f"{bid}: `result` goes with a played trigger")
     if "is" in w and k != "state":
@@ -1289,8 +1322,11 @@ def check_trigger(bid, w, story, things, beats, r):
         r.err(f"{bid}: {k} {v!r} isn't placed anywhere")
     elif k == "pickup" and v not in story.get("items", {}):
         r.err(f"{bid}: pickup {v!r} isn't an item")
-    elif k == "read" and v not in story.get("notes", {}):
-        r.err(f"{bid}: read {v!r} isn't a note")
+    elif k == "read":                                  # a note read, or a book's spread shown (`page`: that one)
+        if v not in story.get("notes", {}) and not (v in things and things[v].use == "book"):
+            r.err(f"{bid}: read {v!r} isn't a note or a book")
+        if "page" in w and (v not in things or things[v].use != "book" or not (isinstance(w["page"], int) and w["page"] >= 0 and w["page"] % 2 == 0)):
+            r.err(f"{bid}: read page {w.get('page')!r}: a book's spread by its left page's number (0, 2, 4...)")
     elif k == "after" and v not in beats:
         r.err(f"{bid}: after {v!r} isn't a beat in this stitch")
     elif k == "caught" and v is not True and v not in story.get("cast", {}):
@@ -1311,15 +1347,27 @@ def check_trigger(bid, w, story, things, beats, r):
             r.err(f"{bid}: gave to {w.get('to')!r} isn't a cast member")
         if "except" in w and w["except"] not in items:
             r.err(f"{bid}: gave except {w['except']!r} isn't an item")
-    elif k == "carrying" and v is not True and (v not in things or things[v].use != "carry"):
-        r.err(f"{bid}: carrying {v!r}: true (anything) or a thing with use: carry")
+    elif k == "carrying" and v is not True and (v not in things or things[v].use not in ("carry", "moveable")):
+        r.err(f"{bid}: carrying {v!r}: true (anything) or a thing with use: carry or moveable")
     elif k == "dropped":                               # put down and settled: anywhere, or in a room or a trigger
-        if v not in things or things[v].use != "carry":
-            r.err(f"{bid}: dropped {v!r} isn't a placed thing with use: carry")
+        if v not in things or things[v].use not in ("carry", "moveable"):
+            r.err(f"{bid}: dropped {v!r} isn't a placed thing with use: carry or moveable")
         elif "in" in w:
             z = things.get(w["in"])
             if not z or (z.kind != "room" and z.use != "trigger") or z.level != things[v].level:
                 r.err(f"{bid}: dropped in {w['in']!r}: a room or a trigger on {v}'s level")
+    elif k in ("opened", "closed"):                    # a thing's parts open (holds) or shut (heard); closed: a door shut too
+        t = things.get(v)
+        if not t or not (t.use in ("open", "container", "book", "locker") or (k == "closed" and t.kind == "door")):
+            r.err(f"{bid}: {k} {v!r} isn't a thing with use: open, container, book or locker" + (" (or a door)" if k == "closed" else ""))
+    elif k in ("placed", "taken"):                     # put into, or taken out of, a container (`in` / `from`: that one)
+        if v not in things or things[v].use not in ("pickup", "carry", "moveable", "inspect", "book"):
+            r.err(f"{bid}: {k} {v!r} isn't a placed thing that can be picked up (use: pickup, carry, moveable, inspect or book)")
+        box = w.get("in") if k == "placed" else w.get("from")
+        if box is not None and (box not in things or things[box].use != "container"):
+            r.err(f"{bid}: {k} {'in' if k == 'placed' else 'from'} {box!r} isn't a thing with use: container")
+    elif k == "moved" and (v not in things or things[v].use != "moveable"):
+        r.err(f"{bid}: moved {v!r} isn't a placed thing with use: moveable")
     elif k == "played":                                # a board game ended (use: game): any result, or one of its game's
         if v not in things or things[v].use != "game":
             r.err(f"{bid}: played {v!r} isn't a table with use: game")
@@ -1434,7 +1482,8 @@ def check_action(bid, a, story, things, r, stage=None):
                    "`secs` and `default` are never used")
         return
     if k == "todo":                                    # a task on the to-do list (STORY_FORMAT §4)
-        GUIDE_BY = ("use", "read", "pickup", "look", "enter", "hidden", "peeping", "locked", "state", "played", "rolled", "dropped", "carrying", "arrived", "to")
+        GUIDE_BY = ("use", "read", "pickup", "look", "enter", "hidden", "peeping", "locked", "state", "played", "rolled", "dropped", "carrying", "arrived", "to",
+                    "opened", "closed", "placed", "taken", "moved")
         if not isinstance(v, str) or not re.match(r"^[a-z0-9_]+$", v):
             r.err(f"{bid}: todo needs an id (a word: lower case, digits, _), for tick, fail and the ticked trigger")
         if not isinstance(a.get("text"), str) or not a["text"].strip():
@@ -1545,6 +1594,11 @@ def check_action(bid, a, story, things, r, stage=None):
             r.err(f"{bid}: door {v!r} isn't a door")
         if a.get("set") not in DOOR_SET:
             r.err(f"{bid}: door set {a.get('set')!r}")
+    elif k == "open":                                  # a thing's parts swung or slid (open, shut), or its lock (lock, unlock)
+        if placed(v) and things[v].use not in ("open", "container", "book", "locker"):
+            r.err(f"{bid}: open {v!r} isn't a thing with use: open, container, book or locker")
+        if a.get("to", "open") not in OPEN_TO:
+            r.err(f"{bid}: open to {a.get('to')!r}: open, shut, lock or unlock")
     elif k in ("show", "hide", "lookat"):
         placed(v)
     elif k == "anim":                                  # a motion played once: a cast member's (her stand-in's motions) or a thing's
@@ -2365,6 +2419,10 @@ class World:
             return any(self.can_reach(t.id) for t in self.things.values() if t.use == "carry" and (v is True or t.id == v))
         if k == "dropped":                                # ... and carries it there to put it down
             return self.can_reach(v) and (w.get("in") is None or self.can_reach(w["in"]))
+        if k in ("opened", "closed", "moved", "taken"):  # the walker clicks it open or shut, shoves it, takes it out
+            return self.can_reach(v)
+        if k == "placed":                                 # ... picks it up (or has it already) and puts it into the container it can reach
+            return (self.can_reach(v) or v in self.taken) and (w.get("in") is None or self.can_reach(w["in"]))
         if k == "use":
             t = self.things[v]
             if t.use == "sleep":                          # a bed sleeps only when its `if` flags hold
@@ -2410,7 +2468,8 @@ class World:
     def where(self, w):
         k = next(iter(set(w) - TRIGGER_EXTRA))
         v = w[k]
-        return v if k in ("enter", "exit", "use", "look", "rolled", "hidden", "carrying", "dropped", "played", "peeping") and v in self.things else None
+        return v if k in ("enter", "exit", "use", "look", "rolled", "hidden", "carrying", "dropped", "played", "peeping",
+                          "opened", "closed", "moved", "placed", "taken") and v in self.things else None
 
     def apply_state(self, a):
         k = verbs(a)[0]
@@ -2434,6 +2493,11 @@ class World:
             if a["set"] == "lock":
                 self.locked.add(v)
             elif a["set"] in ("unlock", "open"):
+                self.locked.discard(v)
+        elif k == "open":                                 # a thing's parts: locked, the walker can't open it till unlocked
+            if a.get("to") == "lock":
+                self.locked.add(v)
+            elif a.get("to") in ("unlock", "open"):
                 self.locked.discard(v)
         elif k == "state":
             self.set_state(v, a.get("to"))
@@ -2561,6 +2625,13 @@ class World:
                 self.add("reading", L.words(n.get("text", "")) / NOTE_WPM * 60 + 10)
                 self.done_events.add(("read", t.d["note"]))
                 return f"reads {t.d['note']}"
+            if u == "book" and ("read", t.id) not in self.done_events:   # the whole book, every page there now
+                self.go(t.id)
+                self.route.append({"node": self.cur, "do": "use", "id": t.id})
+                words = sum(L.words(x.get("text", "") if isinstance(x, dict) else str(x)) for x in t.d.get("pages", []) + t.d.get("entries", []))
+                self.add("reading", words / NOTE_WPM * 60 + 12)
+                self.done_events.add(("read", t.id))
+                return f"reads {t.id}"
             if u in ("combo", "use_on") and t.id not in self.used:
                 if u == "use_on" and t.d["needs"] not in self.inv:
                     continue

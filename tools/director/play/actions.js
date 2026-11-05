@@ -56,6 +56,7 @@ register("action", "state", { run: (v, a, rt) => rt.setState(v, a.to) });      /
 register("action", "show", { run: (v, a, rt) => rt.setVisible(v, true) });
 register("action", "hide", { run: (v, a, rt) => rt.setVisible(v, false) });
 register("action", "door", { run: (v, a, rt) => rt.door(v, a.set || "open") });
+register("action", "open", { run: (v, a, rt) => rt.openAction(v, a.to || "open") });   // a thing's parts (a lid, doors, a cover): {open: id, to: open | shut | lock | unlock}
 register("action", "light", { run: (v, a, rt) => rt.light(v, a.room, a.set || "on") });
 register("action", "torch", { run: (v, a, rt) => rt.torchSet(v) });
 register("action", "skin", { run: (v, a, rt) => { (rt.skinWet = rt.skinWet || {})[v] = Object.assign(rt.stage.setSkin(v, a), { byWord: true }); } });   // a cast member's skin wet, sweating, dripping or oiled (§9.8): drawn on her body by the stage (skinwet.js), as Godot's HSSkin draws it

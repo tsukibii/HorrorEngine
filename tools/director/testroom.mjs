@@ -19,10 +19,10 @@ const REF = path.resolve(path.dirname(new URL(import.meta.url).pathname), "../..
 
 // the stations in the flow's order, and what each leaves the player with (a start --from a later one is given it)
 const ORDER = ["n_arrive", "n_hello", "n_front", "n_doors", "n_power", "n_store", "n_kitchen", "n_chores", "n_rest", "n_games",
-  "n_dark", "n_library", "n_bath", "n_talk", "n_hide", "n_run", "n_sneak", "n_sleep", "n_night", "n_annex", "n_final"];
+  "n_dark", "n_library", "n_things", "n_bath", "n_talk", "n_hide", "n_run", "n_sneak", "n_sleep", "n_night", "n_annex", "n_final"];
 const LEAVES = { n_hello: { karma: 1, flags: ["met_aoi"], states: { kitchen_tv: "static" } }, n_doors: { items: ["key_brass", "fuse"], flags: ["vault_open"] }, n_power: { flags: ["power_cut"] }, n_kitchen: { flags: ["phone_rang"], states: { kitchen_tv: "off" } },
   n_chores: { items: ["mop"], flags: ["chores_done", "feat_clean"] }, n_games: { karma: 1 }, n_dark: { items: ["flashlight", "batteries"], flags: ["torch_on"] },
-  n_library: { flags: ["found_painting"] }, n_talk: { karma: 2 }, n_annex: { flags: ["annex_lit"] } };
+  n_library: { flags: ["found_painting"] }, n_things: { flags: ["things_packed"] }, n_talk: { karma: 2 }, n_annex: { flags: ["annex_lit"] } };
 const snapFor = nid => {                               // the run's state on reaching nid, as the stations before it leave it
   const s = { flags: [], items: [], karma: { karma: 0 }, counters: {}, states: {}, trail: [] };
   for (const n of ORDER.slice(0, ORDER.indexOf(nid))) { const l = LEAVES[n] || {}; s.flags.push(...(l.flags || [])); s.items.push(...(l.items || [])); s.karma.karma += l.karma || 0; Object.assign(s.states, l.states || {}); }
@@ -479,6 +479,63 @@ const snapFor = nid => {                               // the run's state on rea
     });
   });
 
+  await station("n_things", async () => {
+    await step("13 · Things that open and move: the suitcase's lid swung open (ticks), the tee taken (ticks) and put into it (placed: in its contents, out of the pocket; ticks), the lid shut on it (closed; ticks); the closet's panel slid open (ticks)", async () => {
+      await enterRoom("door_things", "things");
+      await use("things_case", 0.9); await until(() => window.__dd.play.openState("things_case"), null, "the suitcase's lid open", 30000); await ticked("t13_open");
+      await use("things_tee", 0.7); await ticked("t13_tee");
+      if (!(await page.evaluate(() => window.__dd.play.inv.list.some(e => e.id === "things_tee" || e.item === "tee")))) throw new Error("the tee isn't in the pocket");
+      const r = await use("things_case", 0.9);
+      if (!/^Put in/.test(r.label)) throw new Error("the open case with the tee in hand should offer Put in: " + JSON.stringify(r));
+      await ticked("t13_pack");
+      const inside = await page.evaluate(() => { const rt = window.__dd.play; return { pocket: rt.inv.list.some(e => e.id === "things_tee" || e.item === "tee"), contents: (rt.things.things_case.contents || []).slice(), shown: !!rt.byId.things_tee.visible }; });
+      if (inside.pocket || !inside.contents.includes("things_tee") || !inside.shown) throw new Error("the tee isn't inside the case (its contents, shown, out of the pocket): " + JSON.stringify(inside));
+      if (!(await flag("things_packed"))) throw new Error("the packed flag (the beat on placed)");
+      if (await page.evaluate(() => !!window.__dd.play.inv.held && !window.__dd.play.inv.lowered)) await press("KeyQ");   // something else in the hand would go in too: Q lowers it
+      const r2 = await use("things_case", 0.9);
+      if (!/^Close/.test(r2.label)) throw new Error("the open case with the hand lowered should offer Close: " + JSON.stringify(r2));
+      await until(() => !window.__dd.play.openState("things_case"), null, "the suitcase's lid shut", 30000); await ticked("t13_shut");
+      if (!(await page.evaluate(() => (window.__dd.play.things.things_case.contents || []).includes("things_tee")))) throw new Error("the tee didn't stay in the case shut");
+      await use("things_closet", 1.0); await until(() => window.__dd.play.openState("things_closet"), null, "the closet's panel slid open", 30000); await ticked("t13_slide");
+    });
+    await step("the journal in the hands: its cover swung open, its pages written in a hand on their own materials (ticks), the clean text on the panel at the right; turned to the page that appeared once the tee was packed (ticks); put back shut", async () => {
+      await use("things_journal", 0.6);
+      await until(() => window.__dd.play.book && window.__dd.play.book.up(), null, "the journal open in the hands", 30000);
+      await page.waitForSelector(".ph-book .ph-side .ph-text", { timeout: 30000 }); await gameWait(0.3);
+      const v = await page.evaluate(() => { const b = window.__dd.play.book.cur; return { at: b.at, l: ((b.views || {}).page_l || {}).text || "", r: ((b.views || {}).page_r || {}).text || "" }; });
+      if (!/^Day 1/.test(v.l)) throw new Error("the left page should carry Day 1: " + JSON.stringify(v));
+      if (!/Day 2/.test(await page.textContent(".ph-side .ph-text"))) throw new Error("the side column's clean text should carry the spread");
+      await ticked("t13_journal");
+      await press("ArrowRight"); await gameWait(0.3);
+      const v2 = await page.evaluate(() => { const b = window.__dd.play.book.cur; return { at: b.at, l: ((b.views || {}).page_l || {}).text || "" }; });
+      if (v2.at !== 2) throw new Error(`the page didn't turn to the packed entry (at ${v2.at})`);
+      if (!/^Day 3/.test(v2.l)) throw new Error("the entry's words aren't on the page: " + v2.l.slice(0, 30));
+      await ticked("t13_again");
+      await page.keyboard.press("Escape"); await until(() => !(window.__dd.play.book && window.__dd.play.book.up()), null, "put back", 30000);
+      if (!(await page.evaluate(() => !window.__dd.play.examining && window.__dd.play.byId.things_journal.visible))) throw new Error("the journal isn't back on the table");
+    });
+    await step("hidden in the wardrobe (its doors open, shut behind you; ticks), then out of it", async () => {
+      await use("things_wardrobe", 1.0);
+      await until(() => window.__dd.play.player.hiding === "things_wardrobe", null, "in the wardrobe", 60000);
+      await ticked("t13_hide");
+      await until(() => !window.__dd.play.openState("things_wardrobe"), null, "the wardrobe's doors shut round you", 30000);
+      await gameWait(0.5); await click();                 // a click with nothing under it: out again
+      await until(() => !window.__dd.play.player.hiding && !window.__dd.play.moving, null, "out of the wardrobe", 60000);   // and stood back where you were
+      await until(() => !window.__dd.play.openState("things_wardrobe"), null, "the wardrobe's doors shut again behind you", 30000);
+    });
+    await step("the chair: walked into, it's shoved and comes to rest elsewhere (moved; ticks); picked up upright into both hands, carried to the corner and put down in it (dropped in the trigger; ticks)", async () => {
+      const at = await page.evaluate(() => { const o = window.__dd.play.byId.things_chair, p = new (o.position.constructor)(); o.getWorldPosition(p); return [p.x, -p.z]; });
+      await place(at[0], at[1] - 1.3, 90); await hold("KeyW", 1.6); await ticked("t13_shove");
+      await use("things_chair", 1.0);
+      if (!(await page.evaluate(() => { const h = window.__dd.play.heldMove; return !!h && ((h.userData || {}).id || h.id) === "things_chair"; }))) throw new Error("the chair isn't in the hands");
+      await place(-7.0, 23.9, 180, -45); await gameWait(0.1); await click();
+      await until(() => !window.__dd.play.heldMove, null, "put down", 30000);
+      await ticked("t13_chair");
+      const up = await page.evaluate(() => { const o = window.__dd.play.byId.things_chair, V = o.position.constructor; return new V(0, 1, 0).applyQuaternion(o.getWorldQuaternion(new o.quaternion.constructor())).y; });
+      if (up < 0.95) throw new Error("the chair isn't upright where it was put");
+    });
+  });
+
   await station("n_bath", async () => {
     await step("12 · Hiding: the tap turned on (running: ticks); in the locker (hidden), the room changes while you're not looking (the towel gone, writing on the mirror: ticks)", async () => {
       await place(1.5, 27.5, 180);
@@ -600,7 +657,8 @@ const snapFor = nid => {                               // the run's state on rea
       const end = await page.evaluate(() => ({ end: window.__watchEnd, trail: window.__dd.run.trail.slice(-4), karma: window.__dd.run.karma.karma }));
       if (end.end !== "Passed" || !end.trail.includes("n_egg")) throw new Error(JSON.stringify(end));
       const words = await page.evaluate(() => (document.querySelector("#watchBox .wcard .etext") || {}).textContent || "");
-      if (words !== "Every room passed, Riko. The report goes in tomorrow.") throw new Error("the title card's words: " + JSON.stringify(words));
+      const who = from <= ORDER.indexOf("n_rest") ? "Riko" : await page.evaluate(() => window.__dd.run.name);   // typed in the rest room; a run from after it keeps the default
+      if (words !== `Every room passed, ${who}. The report goes in tomorrow.`) throw new Error("the title card's words: " + JSON.stringify(words));
     });
   });
 

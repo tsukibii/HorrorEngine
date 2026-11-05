@@ -4,7 +4,8 @@
 extends RefCounted
 
 const VERBS := ["start", "enter", "exit", "use", "pickup", "read", "caught", "hidden", "answered", "flag", "after", "look", "rolled",
-	"power", "locked", "peeping", "torch", "carrying", "dropped", "played", "state", "ticked", "failed", "arrived", "all", "any", "gave"]
+	"power", "locked", "peeping", "torch", "carrying", "dropped", "played", "state", "ticked", "failed", "arrived", "all", "any", "gave",
+	"opened", "closed", "placed", "taken", "moved"]
 
 var Todo := preload("res://addons/horrorstudio/todo.gd")
 
@@ -35,8 +36,18 @@ func matches(when, ev: Dictionary, rt) -> bool:
 			return t == "use" and ev.get("id") == val
 		"pickup":
 			return t == "pickup" and ev.get("item") == val
-		"read":
-			return t == "read" and ev.get("note") == val
+		"read":                                    # a note read, or a book's spread shown (its left page's number as `page`)
+			return t == "read" and (ev.get("note") == val or ev.get("book") == val) and (not when.has("page") or int(ev.get("page", -1)) == int(when["page"]))
+		"opened":                                  # holds while the thing's parts are open (a lid, doors, a cover)
+			return rt.open_state(val)
+		"closed":                                  # a thing's parts swung or slid shut (a lid, doors), or a door closed
+			return t == "closed" and ev.get("id") == val
+		"placed":                                  # a thing put into a container (`in`: that one)
+			return t == "placed" and ev.get("id") == val and (not when.has("in") or ev.get("in") == when["in"])
+		"taken":                                   # a thing taken out of a container (`from`: that one)
+			return t == "taken" and ev.get("id") == val and (not when.has("from") or ev.get("from") == when["from"])
+		"moved":                                   # a moveable come to rest somewhere else (pushed over, carried off)
+			return t == "moved" and ev.get("id") == val
 		"caught":
 			return t == "caught" and ((val is bool and val) or val == ev.get("by"))
 		"hidden":
@@ -60,6 +71,8 @@ func matches(when, ev: Dictionary, rt) -> bool:
 		"torch":
 			return t == "torch" and val == ("on" if ev.get("on") else "off")
 		"carrying":
+			if rt.held_move != null and ((val is bool and val) or val == rt.held_move["id"]):
+				return true
 			return rt.carried() != null and ((val is bool and val) or val == rt.carried()["id"])
 		"dropped":
 			return t == "dropped" and ev.get("id") == val and (not when.has("in") or (ev.get("in", []) as Array).has(when["in"]))

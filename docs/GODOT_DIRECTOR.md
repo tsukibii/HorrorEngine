@@ -144,6 +144,43 @@ thing a node makes that's saved (they're your positions); a model put in after t
 haven't touched. At play they're the life's sockets (`life_sockets`, the runtime's `lifefx.gd` reading a thing's own
 `d.sockets` before the kit's), and the compiler hands the little things to the runtime (`life_things_data`).
 
+### 3c. Things that open, hold, move and are read (DECISIONS 2026-11-05, later)
+
+The user: "Suitcases that can open (and a system for placing items into them, opening them, closing them, placement
+carrying through...)... Sliding closet doors, clothing closets, closets with opening doors... a drag and drop system so
+we can pick up chairs and place them/drop them... a system for opening up books... writing in the book that looks like
+hand writing... an overlay UI on the right with clearer text... a system so I can progress the text". Four more parts
+in the panel's cards (`parts/openable.tscn`, `container.tscn`, `moveable.tscn`, `book.tscn`; `HSThing.USES`: `open`,
+`container`, `moveable`, `book`; the runtime's words of the same names, STORY_FORMAT's uses table):
+
+- **Opens** (`open`): a lid or doors that swing or slide. The model is a made prop with **parts** (the prop
+  generator's suitcases, closets and books, PROPGEN §26: each lid, door or cover a node of its own in the glb with its
+  hinge or track in its extras); the runtime finds them under the thing (`parts.gd`) and a click swings them. Fields:
+  *Opened* (starts open), *Needs item* (locked until the player has it). The story hears `opened` (holds while open)
+  and `closed`.
+- **Container** (`container`): an Opens that holds things: with it open and something in the hand, a click puts the
+  thing in (laid at the next free spot of a grid over the prop's inside box, `propgen_inside`), where it stays through
+  closing, carrying and opening again (it's the container's child, kept per level); a thing inside is clicked to take
+  it back. Fields: *Opened*, *Holds* (how many). The story hears `placed` (`in`: which) and `taken` (`from`).
+- **Moveable** (`moveable`): a thing with a body (a chair, a stool, a crate): walked into, it's shoved and can tip
+  (a RigidBody3D under it, `game.collision: physics` or not); clicked, it's picked up into both hands upright, turned
+  with the view keeping the way it faced relative to the player, and a click puts it down where the cursor lands,
+  upright (off a surface it falls). Field: *Mass* (kilograms). `carrying` holds for it; the story hears `dropped`
+  (`in` a trigger) and `moved` (it came to rest somewhere else).
+- **Book** (`book`): a book opened in the hands (a made prop with `openable: true`, PROPGEN §27: its cover on its
+  hinge, its spread shown, its two pages materials of their own), its text written on the pages in a hand (`book.gd`:
+  a SubViewport a page over the page's own paper, the fonts in `fonts/`), two pages a spread, the arrows, the wheel or
+  a click turning them, the clean text on a panel at the right, Esc or a right click putting it back shut where it
+  was. Fields: *Book title*, *Book hand* (`hand` Caveat, `hand2` Indie Flower, `hand_jp` Yomogi, `pen_jp` Zen
+  Kurenaido, `print` the HUD's font) and *Book text*: a page each, pages apart by a line of `===`, and after them the
+  entries that come later, each starting with a line `@if <flag> [<flag>...]` (`!` for not) and running to the next
+  `@if` (`HSThing.book_pages`): an entry is on the page while its flags hold, so what's read grows with the game
+  ("quest completed, next time I open the book I see different text"). The story hears `read` with the left page's
+  number at every spread. A model with no parts still reads: its pages on the panel only.
+
+TestRoom001's station 13 (docs/games/TestRoom001.md) plays all four in the export; `from-desk` carries them into a
+Director project as it does every desk prop (their words in `extra`).
+
 ## 4. Moments: when, if, then
 
 The user's ask: "I want to be able to make my own events (for jumpscares etc) very easily too, like if person moves on

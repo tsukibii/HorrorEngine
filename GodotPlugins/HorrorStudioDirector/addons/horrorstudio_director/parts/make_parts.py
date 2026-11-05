@@ -28,6 +28,10 @@ USES = {                                   # file: (node name, its fields), the 
     "stain": ("Stain", {"use": '"clean"'}),
     "game_table": ("GameTable", {"use": '"game"'}),
     "solid": ("Solid", {"use": '"none"'}),
+    "openable": ("Openable", {"use": '"open"'}),                     # a lid, doors, a cover: a made prop's parts swing or slide (PROPGEN §26)
+    "container": ("Container", {"use": '"container"'}),             # a suitcase, a box: what the player puts in stays in
+    "moveable": ("Moveable", {"use": '"moveable"'}),                # a chair: pushed when walked into, picked up upright, put down where aimed
+    "book": ("Book", {"use": '"book"', "book_title": '"Diary"', "book_hand": '"hand"', "book_text": '"..."'}),   # opened in the hands, read page by page in a hand
 }
 LIVES = json.loads((HERE / "life_points.json").read_text(encoding="utf-8"))["lives"]
 

@@ -17,6 +17,8 @@ import "./faces.js";
 import { lensesFor, followLeaf, LENS } from "./peephole.js";
 import { latchFor, turnBar } from "./latch.js";
 import { Examine } from "./examine.js";
+import { Book } from "./book.js";
+import { scanParts, infoOf, applyParts, partSounds, Movers } from "./openable.js";
 import { behaviourOf } from "./behaviours.js";
 import * as M from "../motion.js";
 import { Hud, besideAt, setName, playerName } from "./hud.js";
@@ -61,6 +63,7 @@ export class PlayRuntime {
     this.look = { id: null, t: 0, dist: Infinity }; this.target = null; this.busy = false; this.active = false; this.level = null;
     this.inv = new Inventory(this); this.hand = null;  // what the player has picked up (inventory.js); the copy of the one in the hand ({entry, x: its spring})
     this.torchLight = null;                            // the flashlight (torch.js), made once the player has one
+    this.book = new Book(this); this.movers = new Movers(); this.heldMove = null; this.moveables = []; this.containers = [];   // parts that open (openable.js), a book in the hands (book.js), the moveable held in both hands
     this.playing = null; this.anims = []; this.boardTitles = {};   // a board game going on (its id); tweens on the game's clock
     fetch(`/api/boardgames/${encodeURIComponent(opts.game || "_")}`).then(r => (r.ok ? r.json() : {})).then(j => { for (const g of j.games || []) this.boardTitles[g.id] = g.title; }).catch(() => { });
     this.listener = null; this.ray = new THREE.Raycaster(); this.ray.layers.enableAll();   // every ray sees what the simple view leaves undrawn (stage.cull)
@@ -133,6 +136,8 @@ export class PlayRuntime {
     this.stage.setFree(false);
     this.level = level; this.world = this.stage.world.children[0]; this.byId = {}; this.doors = {};
     const kept = (this.kept = this.kept || {})[level] = this.kept[level] || { vis: {}, doors: {}, bodies: {} };
+    kept.opened = kept.opened || {}; kept.inside = kept.inside || {}; kept.unlocked = kept.unlocked || {};   // parts that open, what's in which container, locks met
+    this.heldMove = null; this.moveables = []; this.containers = [];
     for (const o of this.stage.world.children) if (o.userData && o.userData.id) this.byId[o.userData.id] = o;
     for (const l of this.stage.lights) { this.byId[l.userData.id] = l; l.userData.on = l.intensity > 0; if (!l.userData.base) l.userData.base = LIT; }
     for (const m of this.stage.world.children) if (m.userData && m.userData.kind === "door") {
@@ -169,6 +174,8 @@ export class PlayRuntime {
       const rv = p.tags.find(t => t.startsWith("room_volume:")), [w, d, h] = p.size, [x, y, z] = p.pos;
       return { id: rv ? rv.slice(12) : p.id, safe: !!(p.d || {}).safe, min: [x - w / 2, y - d / 2, z - h / 2], max: [x + w / 2, y + d / 2, z + h / 2] };
     });
+    this.partsAttach();                                  // things with parts that open, what's in which container, the moveables (openable.js)
+    const w = this.world; Promise.all(this.stage.pending || []).then(() => { if (this.world === w && !this.stopped) this.partsAttach(); });   // again once the library meshes are on their blocks
   }
   placeAt(level, spot) {                               // the player on a spot (story coordinates and its yaw)
     this.player.seat = null; this.leaveHiding(); this.unpeep();
@@ -194,7 +201,7 @@ export class PlayRuntime {
   }
 
   // ---- collision: the player is an upright circle against every solid block, stepping onto low ones ----------------
-  blocks() { return this.stage.solid.filter(m => m.visible && m.geometry && m.geometry.parameters && m.userData.use !== "carry"); }   // a thing you carry never stops you
+  blocks() { return this.stage.solid.filter(m => m.visible && m.geometry && m.geometry.parameters && m.userData.use !== "carry" && m !== this.heldMove); }   // a thing you carry never stops you
   extent(m) {
     const g = m.geometry.parameters, cy = m.getWorldPosition(new THREE.Vector3()).y;
     if (g.radiusTop !== undefined) return { r: g.radiusTop, hy: g.height / 2, cy };
@@ -242,6 +249,18 @@ export class PlayRuntime {
       if (inside && top > best) best = top;
     }
     return best > -Infinity ? best : pos.y;
+  }
+  groundUnder(pos, step, except) {                     // the same for a thing set down (not itself): -Infinity when nothing's under it
+    let best = -Infinity;
+    for (const m of this.blocks()) {
+      if (m === except) continue;
+      const e = this.extent(m); if (!e) continue;
+      const top = e.cy + e.hy; if (top > pos.y + step) continue;
+      const L = m.worldToLocal(pos.clone());
+      const inside = e.r !== undefined ? Math.hypot(L.x, L.z) <= e.r : Math.abs(L.x) <= e.hx && Math.abs(L.z) <= e.hz;
+      if (inside && top > best) best = top;
+    }
+    return best;
   }
   // the floor under the feet (the player's, or anyone's), the room's `floor` (wood, stone, carpet, tile, dirt, metal,
   // water): its footsteps (steps.js)
@@ -429,6 +448,7 @@ export class PlayRuntime {
   take(t) {
     const id = t.userData.id, d = (t.userData.piece || {}).d || {}, kept = this.kept[this.level], back = (kept.brought || {})[id];
     if (this.inv.has(id)) return;
+    if (t.userData.in) { const from = t.userData.in; this.containDetach(t); this.emit({ type: "taken", id, from }); }   // out of the container it was in
     if (d.item && this.isTorch(d.item)) {             // a flashlight: into the pocket (F), not the row
       this.setVisible(id, false); delete kept.bodies[id]; this.give(d.item); this.torchOf();
       this.emit({ type: "pickup", item: d.item }); return;
@@ -472,6 +492,7 @@ export class PlayRuntime {
   // a copy of it stays there (kept with that level)
   drop() {
     const e = this.inv.held, p = this.player;
+    if (this.heldMove && !this.busy && !this.playing) { this.movePlace(); return; }   // the moveable in both hands: set down where the reticle is
     if (!e || this.busy || this.playing || p.seat || p.hiding || p.sleeping) return;
     const at = this.dropSpot(e); if (!at) { this.hud.shake(); this.hud.line("There's no room to put it down.", "", 1.4, true); return; }
     const kept = this.kept[this.level], q = new THREE.Quaternion().setFromAxisAngle(UP, (p.yaw - 90) * Math.PI / 180);
@@ -613,13 +634,17 @@ export class PlayRuntime {
     p.stood = { pos: p.pos.clone(), eye: p.eye };
     p.hiding = id; p.limit = { yaw, dy: s.look[0], dp: s.look[1] };
     this.stage.seeThrough(id, this.stage.seeThroughOf(id));
+    if (this.partsOf(t).length) await this.openSet(t, true);   // a closet: its doors open, the player steps in, the doors shut behind them
     await this.tween({ pos: new THREE.Vector3(at.x, p.pos.y, at.z), eye: s.eye, yaw, pitch: 0, secs: s.secs });
+    if (this.partsOf(t).length) await this.openSet(t, false);
     this.emit({ type: "hidden", id });
   }
   async unhide(s) {
-    const p = this.player, st = p.stood;
+    const p = this.player, st = p.stood, ht = p.hiding ? this.byId[p.hiding] : null, doors = !!(ht && this.partsOf(ht).length);
+    if (doors) await this.openSet(ht, true);
     this.leaveHiding();
     if (st) await this.tween({ pos: st.pos, eye: st.eye, yaw: p.yaw, pitch: p.pitch, secs: s.secs });
+    if (doors) await this.openSet(ht, false);
   }
   leaveHiding() {
     const p = this.player, id = p.hiding; if (!id) return;
@@ -743,13 +768,24 @@ export class PlayRuntime {
   // what the reticle is on: the first visible thing along the ray, never a hollow piece (a kit door's frame: its block
   // spans the doorway, its drawn parts only the edges; you walk and click through it)
   // (nor a light effect drawn in the room: a window's shaft box, a pattern's plane (lightfx.js): the eye sees through them, so does the reticle)
-  aim() { return this.ray.intersectObjects(this.stage.world.children.filter(o => o.isMesh && o.visible && !o.userData.shaft && !o.userData.pattern && !((o.userData.piece || {}).tags || []).includes("hollow")), false)[0] || null; }
+  aim() {
+    const among = this.stage.world.children.filter(o => o.isMesh && o.visible && o !== this.heldMove && !o.userData.shaft && !o.userData.pattern && !((o.userData.piece || {}).tags || []).includes("hollow"));
+    for (const c of this.containers) if (c.visible && this.openState(c.userData.id)) for (const id of c.userData.contents || []) { const o = this.byId[id]; if (o && o.visible) among.push(o); }   // what's in an open case
+    const hits = this.ray.intersectObjects(among, false), first = hits[0];
+    if (!first) return null;
+    if (first.object.userData.use === "container" && this.openState(first.object.userData.id)) {   // an open case's block is hit first: what's in it, seen through its open top, is what's aimed at
+      const inside = hits.find(h => h.object.userData.in === first.object.userData.id);
+      if (inside) return inside;
+    }
+    return first;
+  }
   async use(press) {
     if (this.player.sleeping || this.inChapter) return;
     if (this.player.peeping) { this.hud.press(); this.unpeep(); return; }   // a click takes the eye from the peephole
     const seat = this.player.seat;
     if (seat && (!this.target || this.target === seat)) { this.hud.press(); this.stand(this.set("sit")); return; }   // a click stands you up
     if (this.player.hiding && !this.target) { this.hud.press(); this.unhide(this.set("hide")); return; }             // a click gets you out
+    if (this.heldMove) { this.hud.press(); this.movePlace(); return; }                                               // the moveable in both hands: put down where the reticle is
     const t = this.target; if (!t) return;
     const ip = interactableOf(t, this);
     this.hud.press();
@@ -767,6 +803,7 @@ export class PlayRuntime {
     const hit = this.aim(), o = hit && hit.object, id = o && o.userData.id;
     if (id && id === this.look.id) this.look.t += dt; else this.look = { id, t: 0, dist: hit ? hit.distance : Infinity };
     if (hit) this.look.dist = hit.distance;
+    if (this.heldMove) { this.target = null; this.hud.setCursor("take", this.set("moveable").place, null, this.titleOf(this.heldMove)); return; }   // holding a moveable: a click puts it down
     const ip = o && hit.distance <= USE_RANGE ? interactableOf(o, this) : null;
     this.target = ip ? o : null;
     if (!ip) { this.hud.setCursor("none", this.player.seat ? this.set("sit").stand : ""); return; }
@@ -811,6 +848,220 @@ export class PlayRuntime {
     const d = (t.userData.piece || {}).d || {};
     return d.item ? this.itemName(d.item) : d.note ? ((this.story.notes || {})[d.note] || {}).title || null
          : t.userData.use === "game" && d.game ? this.boardTitles[d.game] || d.game.replace(/_/g, " ") : d.name || null;
+  }
+
+  // ---- parts that open (play/openable.js): lids, doors, covers; containers; moveables (DECISIONS 2026-11-05, later) ----
+  keptLevel() { const k = this.kept[this.level]; k.opened = k.opened || {}; k.inside = k.inside || {}; k.unlocked = k.unlocked || {}; return k; }
+  get things() { const o = {}; for (const [id, m] of Object.entries(this.byId)) o[id] = m.userData; return o; }   // every thing's record by id (Godot's by_id): its use, openS, contents (ids), in...
+  // an `if`: a flag, or a list of them (`!` for not, `item:<id>` for an item held), as a bed's or a book's entry's
+  ifHolds(ifs) {
+    if (ifs === undefined || ifs === null) return true;
+    for (const f of Array.isArray(ifs) ? ifs : [ifs]) {
+      let x = String(f); const neg = x.startsWith("!"); if (neg) x = x.slice(1);
+      const has = x.startsWith("item:") ? this.items.has(x.slice(5)) : this.flags.has(x);
+      if (has === neg) return false;
+    }
+    return true;
+  }
+  // a thing's parts, read off its library mesh once it's on its block (a use before the mesh is in finds none yet)
+  partsOf(t) {
+    const u = t.userData;
+    if (!u.parts && u.dressed) {
+      u.parts = scanParts(t); const info = infoOf(t); u.propRoot = info.root; u.inside = info.inside; u.pages = info.pages; u.contents = u.contents || [];
+      if (u.parts.length) this.recentre(t);
+      applyParts(u.parts, u.openS ?? 0);
+    }
+    return u.parts || [];
+  }
+  // the dress (stage.js) sets a library mesh in its block by its glb's box, which for a prop built open (a suitcase, its
+  // lid up) or carrying a spread (a book's, seen only open) is the open pose's: the parts put shut, the mesh is centred
+  // on its block by the shut box (the block is the shut size, the index's size_m), its base on the block's
+  recentre(t) {
+    const u = t.userData, holder = t.children.find(o => o.children.length && o !== u.propRoot), g = holder && holder.children[0];
+    if (!g || !holder) return;
+    applyParts(u.parts, 0);
+    g.position.set(0, 0, 0); g.updateMatrixWorld(true);
+    const box = new THREE.Box3(), v = new THREE.Vector3(), toHolder = new THREE.Matrix4().copy(holder.matrixWorld).invert();
+    g.traverse(o => {                                      // the shut box in the holder's space (a part seen only open, hidden, left out)
+      if (!o.isMesh || !o.geometry) return;
+      for (let q = o; q && q !== g; q = q.parent) if (!q.visible) return;
+      if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+      const b = o.geometry.boundingBox, m = new THREE.Matrix4().multiplyMatrices(toHolder, o.matrixWorld);
+      for (let k = 0; k < 8; k++) box.expandByPoint(v.set(k & 1 ? b.max.x : b.min.x, k & 2 ? b.max.y : b.min.y, k & 4 ? b.max.z : b.min.z).applyMatrix4(m));
+    });
+    if (box.isEmpty()) return;
+    const c = box.getCenter(new THREE.Vector3());
+    g.position.set(-c.x, -box.min.y, -c.z); g.updateMatrixWorld(true);
+  }
+  // the things with parts, their state as kept (or as the story starts them, `opened`); what was put into a container
+  // back inside it; the moveables and where each rests. Run as the level is entered and again once its meshes are in
+  partsAttach() {
+    const k = this.keptLevel();
+    this.containers = []; this.moveables = [];
+    for (const t of Object.values(this.byId)) {
+      const u = t.userData; if (!t.isMesh || !["open", "container", "book", "hide", "locker", "moveable"].includes(u.use)) continue;
+      const d = (u.piece || {}).d || {};
+      if (u.openS === undefined) u.openS = (k.opened[u.id] !== undefined ? k.opened[u.id] : !!d.opened) ? 1 : 0;
+      u.contents = u.contents || [];
+      this.partsOf(t);
+      if (u.use === "container") this.containers.push(t);
+      if (u.use === "moveable") { this.moveables.push(t); if (!u.restPos) u.restPos = t.position.clone(); }
+    }
+    for (const [id, rec] of Object.entries(k.inside)) {
+      const t = this.byId[id], c = rec && this.byId[rec.in];
+      if (t && c) { if (t.userData.in !== rec.in) this.containAttach(t, c, rec.local); } else delete k.inside[id];
+    }
+  }
+  openState(id) { const t = this.byId[id]; return !!t && (t.userData.openS || 0) > 0.5; }   // true while its parts are open (the `opened` condition)
+  openLocked(t) {                                      // the story's lock, or a `locked_by` not yet met (a flag, or an item in the pocket)
+    const u = t.userData, d = (u.piece || {}).d || {}, k = this.keptLevel();
+    if (k.locked && k.locked[u.id]) return true;
+    const by = d.locked_by; if (!by || k.unlocked[u.id] || this.openState(u.id)) return false;
+    return String(by).startsWith("flag:") ? !this.flags.has(String(by).slice(5)) : !this.items.has(by);
+  }
+  openUnlock(t) {                                      // its key or flag met: used (logged), and from here on it opens freely
+    const u = t.userData, d = (u.piece || {}).d || {}, k = this.keptLevel();
+    if (!d.locked_by || k.unlocked[u.id]) return;
+    k.unlocked[u.id] = true;
+    if (!String(d.locked_by).startsWith("flag:")) this.hud.log(`used: ${this.itemName(d.locked_by)}`);
+  }
+  // a thing's parts to open or shut over a moment, with their sound; the story hears `opened` or `closed` at the end
+  async openSet(t, open, secs) {
+    const u = t.userData, id = u.id, k = this.keptLevel(), sec = secs === undefined || secs === null || secs < 0 ? +(this.set(part("interactable", u.use) ? u.use : "open").secs ?? 0.8) : secs;
+    const was = (u.openS || 0) > 0.5;
+    k.opened[id] = open; u.openS = u.openS || 0;
+    if (was !== open && this.partsOf(t).length) { const snd = partSounds(u.parts, u.use); this.shelfSound(open ? snd.open : snd.close, id, -3); }
+    this.movers.go(u, open ? 1 : 0, sec);                // the thing's userData is the record: its parts and openS
+    if (sec > 0) await this.wait(sec);
+    this.emit({ type: open ? "opened" : "closed", id });
+  }
+  openAction(id, to) {                                 // the story's `open`: {open: id, to: open | shut | lock | unlock}
+    const t = this.byId[id]; if (!t) { this.hud.log(`no ${id} to open`); return; }
+    const k = this.keptLevel();
+    if (to === "lock" || to === "unlock") { (k.locked = k.locked || {})[id] = to === "lock"; return; }
+    return this.openSet(t, to !== "shut" && to !== "close");
+  }
+  // a container's inside box in its block's own space: [lo, hi], from the prop's extras (its root's space, y up)
+  insideOf(c) {
+    const u = c.userData, box = u.inside, root = u.propRoot; if (!box || !root) return null;
+    c.updateMatrixWorld(true);
+    const toC = new THREE.Matrix4().copy(c.matrixWorld).invert().multiply(root.matrixWorld);
+    const mn = new THREE.Vector3(Infinity, Infinity, Infinity), mx = new THREE.Vector3(-Infinity, -Infinity, -Infinity);
+    for (const x of [box[0][0], box[1][0]]) for (const y of [box[0][1], box[1][1]]) for (const z of [box[0][2], box[1][2]]) { const q = new THREE.Vector3(x, y, z).applyMatrix4(toC); mn.min(q); mx.max(q); }
+    return [mn, mx];
+  }
+  // a thing put into an open container: the one in the hand goes in, laid where the next free spot is (a grid over its
+  // inside, a layer at a time), and stays there through closing, carrying and opening again (it's the container's
+  // child); out of the pocket and the row; the story hears `placed`
+  containerPut(c, e, s) {
+    const cu = c.userData, d = (cu.piece || {}).d || {}, holds = +(d.holds ?? (s || {}).holds ?? 6), k = this.keptLevel();
+    if ((cu.contents || []).length >= holds) { this.hud.shake(); this.hud.line("There's no room in it.", "", 1.4, true); return false; }
+    const box = this.insideOf(c); if (!box) { this.hud.log(`${this.nameOf(c)}: nothing to put things in (no made prop with an inside)`); return false; }
+    let o = e.level === this.level ? this.byId[e.id] : null;
+    if (!o) { o = e.src.clone(); this.byId[e.id] = o; (k.brought = k.brought || {})[e.id] = { src: e.src, from: e.level }; }   // from another level: a copy stays here
+    const [lo, hi] = box, [w, dp, h] = (o.userData.piece || {}).size || [0.1, 0.1, 0.1], n = (cu.contents || []).length;
+    const cols = Math.min(3, Math.max(1, Math.floor((hi.x - lo.x) / Math.max(w, 0.05)))), rows = Math.min(3, Math.max(1, Math.floor((hi.z - lo.z) / Math.max(dp, 0.05))));
+    const cell = n % cols, row = Math.floor(n / cols) % rows, layer = Math.floor(n / (cols * rows));
+    const x = lo.x + (hi.x - lo.x) * (cell + 0.5) / cols, z = lo.z + (hi.z - lo.z) * (row + 0.5) / rows, y = lo.y + layer * (h + 0.004) + h / 2 + 0.002;
+    const yawWorld = new THREE.Quaternion().setFromAxisAngle(UP, (this.player.yaw - 90) * Math.PI / 180);
+    const local = { p: new THREE.Vector3(x, y, z), q: c.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(yawWorld) };
+    this.containAttach(o, c, local);
+    o.visible = true; k.vis[e.id] = true;
+    this.inv.remove(e.id);
+    if (e.item) this.items.delete(e.item);
+    k.inside[e.id] = { in: cu.id, local }; delete k.bodies[e.id];
+    this.shelfSound("cloth_02", cu.id, -8);
+    this.hud.log(`put in ${this.nameOf(c)}: ${e.name}`);
+    this.emit({ type: "placed", id: e.id, in: cu.id });
+    return true;
+  }
+  containAttach(t, c, local) {
+    if (t.parent !== c) { t.removeFromParent(); c.add(t); }
+    t.position.copy(local.p); t.quaternion.copy(local.q); t.updateMatrixWorld(true);
+    t.userData.in = c.userData.id;
+    c.userData.contents = c.userData.contents || [];
+    if (!c.userData.contents.includes(t.userData.id)) c.userData.contents.push(t.userData.id);   // its contents as ids (Godot's the same)
+    const i = this.stage.solid.indexOf(t); if (i >= 0) this.stage.solid.splice(i, 1);   // in a case: not in the way
+    if (this.physics) this.physics.removeStatic(t);
+  }
+  containDetach(t) {
+    const cid = t.userData.in; if (!cid) return;
+    const c = this.byId[cid];
+    this.stage.world.attach(t);                          // back in the world, where it is now
+    delete t.userData.in;
+    if (c) c.userData.contents = (c.userData.contents || []).filter(id => id !== t.userData.id);
+    delete this.keptLevel().inside[t.userData.id];
+  }
+  // a moveable (use: moveable) picked up into both hands: upright, the way it faced relative to the player kept
+  movePick(t) {
+    if (this.heldMove || this.busy) return false;
+    const u = t.userData;
+    u.holdYaw = t.rotation.y * 180 / Math.PI - this.player.yaw; u.held = true;
+    this.heldMove = t;
+    if (this.physics) this.physics.removeStatic(t);
+    this.shelfSound("cloth_03", u.id, -10);
+    this.hud.log(`picked up: ${this.nameOf(t)}`);
+    this.emit({ type: "carry", id: u.id });
+  }
+  // every frame: the held one in both hands before the player, upright, facing as it was picked up; the others shoved
+  // along the floor when the player walks into them (Godot's physics tips them over; the desk slides them: no tipping);
+  // where one comes to rest kept, and `moved` heard when it's not where it was
+  moveTick(dt) {
+    const p = this.player, s = this.set("moveable"), r = (+this.set("walk").radius || 0.3) + 0.06;
+    for (const t of this.moveables) {
+      const u = t.userData, [w, d, h] = (u.piece || {}).size || [0.5, 0.5, 0.5], big = Math.max(w, d);
+      if (this.heldMove === t) {
+        const a = p.yaw * Math.PI / 180, fwd = new THREE.Vector3(Math.cos(a), 0, -Math.sin(a));
+        t.position.set(p.pos.x, p.pos.y + 0.1 + h / 2, p.pos.z).addScaledVector(fwd, (+s.dist || 0.5) + big / 2);
+        t.rotation.set(0, (p.yaw + (u.holdYaw || 0)) * Math.PI / 180, 0); t.updateMatrixWorld(true);
+        continue;
+      }
+      if (!t.visible || u.in) continue;
+      if (!this.busy && !p.hiding && !p.seat && !p.sleeping && (p.speed || 0) > 0.15) {
+        const L = t.worldToLocal(p.pos.clone()), cy = t.position.y;
+        if (Math.abs(L.x) < w / 2 + r && Math.abs(L.z) < d / 2 + r && p.pos.y < cy + h / 2 && p.pos.y + 1.7 > cy - h / 2) {
+          const away = t.position.clone().sub(p.pos).setY(0);
+          if (away.length() > 1e-4) {
+            const mass = +(((u.piece || {}).d || {}).mass ?? s.mass ?? 5), push = Math.min(2.2, Math.max(0.5, p.speed)) * dt * 0.9 * Math.min(1.5, Math.max(0.3, 5 / mass));
+            this.shove(t, away.normalize(), push, big, h); u.awake = this.clock;
+          }
+        }
+      }
+      if (u.awake !== undefined && this.clock - u.awake > 0.3) {       // come to rest
+        delete u.awake; this.keptLevel().bodies[u.id] = { p: t.position.clone(), q: t.quaternion.clone() };
+        if (!u.restPos || t.position.distanceTo(u.restPos) > 0.12) { u.restPos = t.position.clone(); this.emit({ type: "moved", id: u.id }); }
+      }
+    }
+  }
+  shove(t, dir, dist, big, h) {                        // slid along the floor, stopped short of a wall, kept on the ground under it
+    this.ray.set(t.position.clone(), dir); this.ray.far = big / 2 + dist + 0.02;
+    const hit = this.ray.intersectObjects(this.blocks().filter(m => m !== t), false)[0];
+    if (hit) dist = Math.max(0, Math.min(dist, hit.distance - big / 2 - 0.02));
+    t.position.addScaledVector(dir, dist);
+    const g = this.groundUnder(new THREE.Vector3(t.position.x, t.position.y - h / 2 + 0.3, t.position.z), 0.3, t);
+    if (g > -Infinity) t.position.y = g + h / 2;
+    t.updateMatrixWorld(true);
+  }
+  // put down where the player aims, upright, facing as held: on the floor or the top under the reticle, at a wall's foot;
+  // nothing under the reticle: set down where it's held, on the ground there. Heard as `dropped` (with the triggers it's in)
+  movePlace() {
+    const t = this.heldMove; if (!t) return;
+    const u = t.userData, [w, d, h] = (u.piece || {}).size || [0.5, 0.5, 0.5], big = Math.max(w, d), p = this.player;
+    const cam = this.stage.camera, dir = new THREE.Vector3(); cam.getWorldDirection(dir);
+    this.ray.set(cam.position.clone(), dir); this.ray.far = 3;
+    const hit = this.ray.intersectObjects(this.blocks(), false)[0], pos = t.position.clone();
+    const onGround = () => { const g = this.groundUnder(new THREE.Vector3(pos.x, p.pos.y + 1.2, pos.z), 1.2, t); pos.y = (g > -Infinity ? g : p.pos.y) + h / 2 + 0.01; };
+    if (hit) {
+      pos.copy(hit.point).addScaledVector(dir.clone().setY(0).normalize(), -big / 2).add(new THREE.Vector3(0, h / 2 + 0.01, 0));
+      if (dir.y > -0.2) onGround();                     // aimed at a wall or ahead: at its foot, on the floor under it
+    } else onGround();
+    t.position.copy(pos); t.rotation.set(0, t.rotation.y, 0); t.updateMatrixWorld(true);
+    u.held = false; this.heldMove = null; u.restPos = pos.clone(); delete u.awake;
+    this.keptLevel().bodies[u.id] = { p: pos.clone(), q: t.quaternion.clone() };
+    if (this.physics) this.physics.addStatic(t);
+    this.shelfSound("thud_wood_03", u.id, -12);
+    this.hud.log(`put down: ${this.nameOf(t)}`);
+    this.emit({ type: "dropped", id: u.id, in: this.triggers.filter(tr => this.pointIn(tr, pos.x, -pos.z, pos.y)).map(tr => tr.id) });
   }
 
   // ---- running the story -----------------------------------------------------------------------------------------
@@ -926,6 +1177,8 @@ export class PlayRuntime {
     for (const x of this.lenses || []) followLeaf(x.l, x.door);
     for (const x of this.latches || []) followLeaf(x.l, x.door);
     if (this.examining) this.examining.tick(dt);
+    this.movers.tick(dt);                                // lids, doors and covers on their way open or shut (openable.js)
+    if (this.moveables.length) this.moveTick(dt);
     for (const t of this.triggers) {
       const now = this.isIn(t), was = this.inside.has(t.id);
       if (now && !was) { this.inside.add(t.id); this.emit({ type: "enter", id: t.id }); }
