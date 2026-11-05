@@ -25,6 +25,13 @@ func puff_shader() -> Shader:
 	if shader_puff == null:
 		shader_puff = load("res://addons/horrorstudio_look/puff.gdshader")
 	return shader_puff
+var crt_script = null         # the look plugin's CRT (crt.gd, GODOT_LOOK §5i) when it's in the project: the kit's televisions wear it; false when it isn't
+
+
+func crt() -> Variant:
+	if crt_script == null:
+		crt_script = load("res://addons/horrorstudio_look/crt.gd") if ResourceLoader.exists("res://addons/horrorstudio_look/crt.gd") else false
+	return crt_script
 var last_T: float = -1.0
 
 
@@ -597,12 +604,18 @@ func screen(it: Dictionary, on, T: float, key: String) -> void:
 		var h: float = float(q["h"]) if q != null else float(it["t"]["size"][2]) * 0.86
 		qm.size = Vector2(w, h)
 		mi.mesh = qm
-		var mat := StandardMaterial3D.new()
-		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		var img := Image.create(64, 48, false, Image.FORMAT_RGB8)
 		img.fill(Color.BLACK)
-		mat.albedo_texture = ImageTexture.create_from_image(img)
-		mi.material_override = mat
+		var tex := ImageTexture.create_from_image(img)
+		var C = crt()
+		if q == null and C:                       # a television (a kit panel's front): the look plugin's CRT, its glass dark till it's on, its own snow
+			C.screen(mi, Vector2(w, h) * 1000.0, {"picture": tex, "brightness": 0.0, "flicker": 0.6, "roll": 0.3})
+		else:                                     # a phone's face, or no plugin: the picture drawn here, unlit
+			var mat := StandardMaterial3D.new()
+			mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			mat.albedo_texture = tex
+			mi.material_override = mat
+		mi.set_meta("tex", tex)
 		mi.set_meta("img", img)
 		mi.set_meta("frame", -1)
 		var lab := Label3D.new()
@@ -621,8 +634,11 @@ func screen(it: Dictionary, on, T: float, key: String) -> void:
 	else:
 		var xf: Transform3D = it["node"].global_transform
 		m.global_transform = Transform3D(xf.basis, xf * Vector3(0, 0, float(it["t"]["size"][1]) / 2.0 + 0.0005))
-	m.visible = on != null
+	var is_crt: bool = m.material_override is ShaderMaterial
+	m.visible = on != null or is_crt                   # a CRT's glass stays when the set is off: dark, the room in it
 	it["show"]["screen"] = on.get("mode") if on != null else null
+	if is_crt:
+		m.material_override.set_shader_parameter("brightness", 1.0 if on != null else 0.0)
 	if on == null:
 		return
 	var frame := int(floor(T * 15))
@@ -635,15 +651,18 @@ func screen(it: Dictionary, on, T: float, key: String) -> void:
 	var W := img.get_width()
 	var H := img.get_height()
 	var mode = on.get("mode")
+	if is_crt:
+		m.material_override.set_shader_parameter("use_picture", mode != "static")   # the CRT's own snow is finer than a drawn one
 	if mode == "static":
-		for y in H:
-			for x in W:
-				var v: float = hash2(y * W + x, frame) * 0.78 + 0.12
-				img.set_pixel(x, y, Color(v, v, min(1.0, v * 1.05)))
-		for y in range((frame * 3) % 6, H, 6):
-			for x in W:
-				var c := img.get_pixel(x, y)
-				img.set_pixel(x, y, c * 0.75)
+		if not is_crt:
+			for y in H:
+				for x in W:
+					var v: float = hash2(y * W + x, frame) * 0.78 + 0.12
+					img.set_pixel(x, y, Color(v, v, min(1.0, v * 1.05)))
+			for y in range((frame * 3) % 6, H, 6):
+				for x in W:
+					var c := img.get_pixel(x, y)
+					img.set_pixel(x, y, c * 0.75)
 		lab.text = ""
 	elif mode == "on":                         # a programme seen from across the room: shifting blocks of colour
 		var k := int(floor(T / 3.1))
@@ -668,7 +687,7 @@ func screen(it: Dictionary, on, T: float, key: String) -> void:
 					if Vector2(x - W / 2.0, y - H * 0.7).length() < r:
 						img.set_pixel(x, y, Color(0.29, 0.87, 0.5))
 		lab.text = "着信" if call else "02:47"
-	(m.material_override as StandardMaterial3D).albedo_texture.update(img)
+	(m.get_meta("tex") as ImageTexture).update(img)
 	it["show"]["screen_frame"] = frame
 
 

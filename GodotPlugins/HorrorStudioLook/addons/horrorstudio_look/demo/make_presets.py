@@ -66,6 +66,10 @@ scene("window_pane.tscn", [
     ("WindowPane", "MeshInstance3D", None, None, {"mesh": 'SubResource("quad")'}),
     ("Glass", "Node3D", ".", N + "window_pane.gd", {"rain": "0.6"}),
 ], subs=[("quad", "QuadMesh", {"size": "Vector2(1.2, 1.1)"})])
+scene("crt_screen.tscn", [
+    ("CrtScreen", "MeshInstance3D", None, None, {"mesh": 'SubResource("quad")'}),
+    ("Screen", "Node3D", ".", N + "crt_screen.gd", {}),
+], subs=[("quad", "QuadMesh", {"size": "Vector2(0.28, 0.21)"})])
 one("grade_cinema.tscn", "GradeCinema", "Node", "grade.gd")
 one("grade_cold.tscn", "GradeCold", "Node", "grade.gd", {"preset": '"cold"', "lift": "Vector3(0, 0.012, 0.035)", "gamma": "Vector3(0.98, 1, 1.04)", "gain": "Vector3(1, 1, 1)",
     "warmth": "-0.45", "saturation": "0.8", "contrast": "1.06", "vignette": "0.35", "grain": "0.2", "aberration": "0.0"})

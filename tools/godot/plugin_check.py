@@ -1,8 +1,10 @@
 """LOOKPLUGIN: the HorrorStudio look plugin (GodotPlugins/HorrorStudioLook) runs in a Godot 4.7 project of its own and
 its parts show: the demo scene (addons/horrorstudio_look/demo/demo.gd) pictured under xvfb (lavapipe) with the plain
-look, the realism preset, the wet floor, blood and rain, and the skin spheres, each measured (report.json): the lamp
-brighter in the wet floor than the dry, the rain moving between frames, the blood red, the sweat's glints and the
-oil's gloss over dry skin. Ends "LOOKPLUGIN ok". Pictures kept in --keep (default Saved/Story/_look/godot_plugin).
+look, the realism preset, the wet floor, blood and rain, the skin spheres and a CRT screen, each measured
+(report.json): the lamp brighter in the wet floor than the dry, the rain moving between frames, the blood red, the
+sweat's glints and the oil's gloss over dry skin, the CRT's scanlines at the pitch the camera should see and its
+stripes in order close up, gone across the room. Ends "LOOKPLUGIN ok". Pictures kept in --keep (default
+Saved/Story/_look/godot_plugin).
 
     python tools/godot/plugin_check.py [--keep DIR]
 """
@@ -78,7 +80,7 @@ def main():
     cmd = [g, "--path", str(OUT), "--rendering-driver", "vulkan", "--fixed-fps", "60", "-s", "res://addons/horrorstudio_look/demo/demo.gd", "--", f"--out={keep}"]
     if shutil.which("xvfb-run"):                                          # Xvfb when it's there (the card still draws through Vulkan): a fixed-size window no window manager resizes
         cmd = ["xvfb-run", "-a"] + cmd
-    r = subprocess.run(cmd, capture_output=True, text=True, timeout=900, env=env)
+    r = subprocess.run(cmd, capture_output=True, text=True, timeout=1800, env=env)   # sixteen stages on lavapipe: over fifteen minutes on a loaded machine (2026-11-05)
     text = quiet(r.stdout + r.stderr)
     bad = [l for l in text.splitlines() if "SCRIPT ERROR" in l or "SHADER ERROR" in l or "Parse Error" in l or "error(" in l.lower()]
     if "switching to OpenGL 3" in text:                                   # no SSR, fog, compositor or auto exposure there: nothing measured would mean anything
@@ -91,6 +93,22 @@ def main():
         return 1
     print("  " + next((l for l in text.splitlines() if "Using Device" in l), "renderer: ?"))
     rep = json.loads((keep / "report.json").read_text(encoding="utf-8"))
+    checks = demo_checks(rep)
+    ok = nodes_ok
+    for what, good in checks:
+        print(("  ok  " if good else "  BAD ") + what)
+        ok = ok and good
+    print("  measures: " + json.dumps({k: ({kk: round(vv, 4) if isinstance(vv, float) else vv for kk, vv in v.items()} if isinstance(v, dict) else round(v, 4)) for k, v in rep.items()}))
+    print("  pictures in " + str(keep))
+    if not ok:
+        print("LOOKPLUGIN FAIL")
+        return 1
+    print("LOOKPLUGIN ok")
+    return 0
+
+
+def demo_checks(rep):
+    """The demo's measures (report.json) judged: (what, passed) for each part."""
     checks = []
     checks.append(("the wet floor carries the lamp (brighter under it than dry)", rep["wet"]["mean"] > rep["realism"]["mean"] * 1.05 or rep["wet"]["max"] > rep["realism"]["max"] * 1.05))
     checks.append(("the realism preset changes the picture", abs(rep["realism"]["mean"] - rep["plain"]["mean"]) > 0.002))
@@ -118,20 +136,19 @@ def main():
     checks.append(("the grade (cinema): the shadows cooler and the highlights warmer than ungraded, the corners darker by the vignette, the middle kept",
                    gt.get("dark_b_over_r", 0) > gt.get("dark_b_over_r_plain", 9) * 1.03 and gt.get("bright_r_over_b", 0) > gt.get("bright_r_over_b_plain", 9) * 1.02
                    and rep.get("grade_corner", {}).get("mean", 9) < rep.get("grade_corner_plain", {}).get("mean", 0) * 0.9 and abs(rep.get("grade_middle", {}).get("mean", 9) - rep.get("grade_middle_plain", {}).get("mean", 0)) < 0.08))
+    crt_line = rep.get("crt_line_px", 0)
+    crt_exp = rep.get("crt_line_px_expected", 1)
+    checks.append(("a CRT screen seen close: the scanlines' period in the picture is the pitch the camera should see (%.1f px against %.1f), the stripes run red, green, blue along a row (%.0f%% of the colour changes in that order), the picture flickers with the hum (%.1f%% over twelve frames)"
+                   % (crt_line, crt_exp, 100 * rep.get("crt_triad_order", 0), 100 * rep.get("crt_flicker", 0)),
+                   crt_line > 0 and abs(crt_line / max(crt_exp, 1e-6) - 1.0) < 0.2 and rep.get("crt_triad_order", 0) > 0.8 and rep.get("crt_triads_per_row", 0) > 20 and rep.get("crt_flicker", 0) > 0.01 and rep.get("crt_frames", 0) >= 10))
+    checks.append(("across the room the lines and stripes fade out (its grey field's row-to-row contrast %.4f against %.4f close: no moiré), the raster lit (%.3f) over the set off (%.3f: dark glass), a lamp by the eye glinting in the glass off (a peak %.2f over the lower glass's mean of %.3f), its snow grained (%.3f)"
+                   % (rep.get("crt_far_contrast", 9), rep.get("crt_near_contrast", 0), rep.get("crt_far", {}).get("mean", 0), rep.get("crt_off", {}).get("mean", 9), rep.get("crt_glint", {}).get("max", 0), rep.get("crt_glint_lower", {}).get("mean", 9), rep.get("crt_static_grain", 0)),
+                   rep.get("crt_far_contrast", 9) < rep.get("crt_near_contrast", 0) * 0.25 and rep.get("crt_far", {}).get("mean", 0) > rep.get("crt_off", {}).get("mean", 9) * 1.5
+                   and rep.get("crt_glint", {}).get("max", 0) > rep.get("crt_glint_lower", {}).get("mean", 9) * 3.0 and rep.get("crt_static_grain", 0) > 0.01))
     ml = rep.get("mirror2_layers", {})
     checks.append(("a mirror seen in a mirror: the second mirror's glass in the first's picture holds a picture (a bright peak well over its mean, not a flat wall), each mirror on its own layer, never itself",
                    ml.get("second_seen_by_first") is True and ml.get("first_not_itself") is True and ml.get("first") != ml.get("second") and rep.get("mirror2_in_first", {}).get("max", 0) > 0.3 and rep.get("mirror2_in_first", {}).get("max", 0) > rep.get("mirror2_in_first", {}).get("mean", 9) * 2.0))
-    ok = nodes_ok
-    for what, good in checks:
-        print(("  ok  " if good else "  BAD ") + what)
-        ok = ok and good
-    print("  measures: " + json.dumps({k: ({kk: round(vv, 4) if isinstance(vv, float) else vv for kk, vv in v.items()} if isinstance(v, dict) else round(v, 4)) for k, v in rep.items()}))
-    print("  pictures in " + str(keep))
-    if not ok:
-        print("LOOKPLUGIN FAIL")
-        return 1
-    print("LOOKPLUGIN ok")
-    return 0
+    return checks
 
 
 def run_godot(cmd, env, timeout=600):
@@ -145,7 +162,7 @@ def nodes(g, keep, env):
     """The effect nodes (addons/horrorstudio_look/nodes/) and every preset (presets/): in a game (demo/nodes.gd: each
     one's work measured, a save as the editor does it), then in the editor itself (demo/editor_test.gd as a plugin:
     a scene of presets opened, the nodes running in the editor's viewport, saved, the file holding nothing they made)."""
-    text = run_godot([g, "--path", str(OUT), "--rendering-driver", "vulkan", "--fixed-fps", "60", "-s", "res://addons/horrorstudio_look/demo/nodes.gd", "--", f"--out={keep}"], env)
+    text = run_godot([g, "--path", str(OUT), "--rendering-driver", "vulkan", "--fixed-fps", "60", "-s", "res://addons/horrorstudio_look/demo/nodes.gd", "--", f"--out={keep}"], env, timeout=1200)   # 41 presets at once: slow on a loaded machine (2026-11-05: ten minutes under four parallel jobs)
     bad = [l for l in text.splitlines() if "SCRIPT ERROR" in l or "SHADER ERROR" in l or "Parse Error" in l or "error(" in l.lower()]
     if bad or "LOOKNODES" not in text:
         print(text[-3000:])
@@ -164,7 +181,7 @@ def nodes(g, keep, env):
         ("a headlight sweep fired and passing", rep.get("sweep_passing") is True),
         ("the four pattern lights each throwing their frames", rep.get("patterns", 0) == 4),
         ("the flicker lights moving (%s)" % ", ".join(moved), len(moved) >= 5),
-        ("a mirror's reflection attached to the game's camera, a window pane's glass", rep.get("mirror") is True and rep.get("pane") is True),
+        ("a mirror's reflection attached to the game's camera, a window pane's glass, a CRT screen's glass", rep.get("mirror") is True and rep.get("pane") is True and rep.get("crt") is True),
         ("a character's skin worn (%d materials)" % rep.get("character", 0), rep.get("character", 0) >= 1),
         ("the editor-only look environment stepping aside in the game", rep.get("look_env_freed") is True),
         ("a save: the meshes' own materials back, the lights at full, no projector, nothing the nodes made in the packed scene; on again after",
@@ -235,7 +252,7 @@ def editor(g, keep, env):
     if errs:
         print("\n".join(errs[:20]))
     return [
-        ("in the editor: the rain, the wet floor, the shaft, the pattern, the flicker and a room's light zone run in the viewport (%s)" % json.dumps(rep.get("live", {})), all(rep.get("live", {}).values()) and len(rep.get("live", {})) >= 5 and not errs),
+        ("in the editor: the rain, the wet floor, the shaft, the pattern, the flicker, the CRT and a room's light zone run in the viewport (%s)" % json.dumps(rep.get("live", {})), all(rep.get("live", {}).values()) and len(rep.get("live", {})) >= 5 and rep.get("live", {}).get("crt") is True and not errs),
         ("in the editor: saved, the file holds only what was placed (%s)" % (", ".join(made) or "nothing made"), rep.get("saved") is True and not made),
         ("in the editor: after the save the nodes are on again", rep.get("after") is True),
     ]

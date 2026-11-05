@@ -29,7 +29,7 @@ Four kinds, by what they work on:
 | Kind | Nodes | How |
 |---|---|---|
 | **Things of their own** | `HSRainBox`, `HSPuddle`, `HSBloodSplat`, `HSLightShaft`, `HSHeadlightSweep` | drop it where it goes. It makes its streaks, decal, quad, card or lamp as children of its own that are never saved (no owner), so the scene file holds only the node and its numbers. They run in the editor: the rain falls, the dust drifts, a sweep passes every `preview_every` seconds |
-| **On a mesh you have** | `HSWetSurface`, `HSWindowPane`, `HSWallLeak` (all `HSOnMesh`), `HSMirrorSurface`, `HSCharacterLook`, `HSLiquidFill` | drop it under the mesh (or the node holding the meshes, or set `target`). The first three change the meshes' materials while they're there, in the editor too, and put the meshes' own back before every save (the editor's pre-save notification) and when removed, so a re-export's level and yours never fight over a material. The mirror reflects and the character wears its skin, eyes and hair when the game runs (they need its camera and its glb). `HSLiquidFill` keeps a bottle's liquid level and sloshing, in the editor too (liquid.gd, docs/PROPGEN.md §10; the game puts one under every made prop's `<name>_liquid` as it enters a level). `HSPropFX` under a made prop (or in the prop's own `.tscn`; the game puts one on every made prop that has some) gives it its enhancers, each a switch: glow, flame (with its candle light), smoke, steam, wax; a kind off for the whole project in Project Settings, `horrorstudio/prop_fx/*` (docs/PROPGEN.md §14) |
+| **On a mesh you have** | `HSWetSurface`, `HSWindowPane`, `HSWallLeak`, `HSCrtScreen` (all `HSOnMesh`), `HSMirrorSurface`, `HSCharacterLook`, `HSLiquidFill` | drop it under the mesh (or the node holding the meshes, or set `target`). The first four change the meshes' materials while they're there, in the editor too, and put the meshes' own back before every save (the editor's pre-save notification) and when removed, so a re-export's level and yours never fight over a material (`HSCrtScreen`: a tube television's glass on a quad or on one `surface` of the set's mesh, §5i). The mirror reflects and the character wears its skin, eyes and hair when the game runs (they need its camera and its glb). `HSLiquidFill` keeps a bottle's liquid level and sloshing, in the editor too (liquid.gd, docs/PROPGEN.md §10; the game puts one under every made prop's `<name>_liquid` as it enters a level). `HSPropFX` under a made prop (or in the prop's own `.tscn`; the game puts one on every made prop that has some) gives it its enhancers, each a switch: glow, flame (with its candle light), smoke, steam, wax; a kind off for the whole project in Project Settings, `horrorstudio/prop_fx/*` (docs/PROPGEN.md §14) |
 | **Lights with behaviour** | `HSFlickerLight` (omni), `HSFlickerSpot`, `HSPatternLight` (spot) | the light itself, its effect in the inspector beside its own settings. A flicker multiplies the Energy you set (the light at full), previewed in the editor, saved at full; `on_mains` puts it in the group `hs_mains`, which the game's power cut switches off and on (any light of yours in that group too). A pattern light draws its loop when the scene starts and is saved without it |
 | **Over the picture** | `HSGrade`, `HSTape` | the level's own grade or tape while it's loaded, over the story's `game.grade` and `game.vhs`, which come back when it goes; in a project of your own they add the layer themselves. Picking a grade's `preset` fills its numbers to tune from. Seen when the game runs (a screen effect isn't drawn in the editor's 3D view) |
 
@@ -38,11 +38,12 @@ shaft's beam runs along it (tilt the node down for the sun); a sweep's and a lea
 wall with forward into the room and X along the street or the wall; a blood splat lies on the surface its +Y (the
 green arrow) points out of.
 
-The presets (`presets/*.tscn`, 33): `rain`, `downpour`; `wet_floor`, `wet_floor_raining` (ripples), `damp_floor`;
+The presets (`presets/*.tscn`, 41): `rain`, `downpour`; `wet_floor`, `wet_floor_raining` (ripples), `damp_floor`;
 `puddle`; `blood_pool`, `blood_dried`, `blood_wall`; `wall_leak`; `window_shaft`, `window_sun` (the shaft with a
 warm spot shining the same way, a child of it); `headlight_sweep`; `caustics_light`, `blinds_light`, `leaves_light`,
 `clouds_light`; `fluorescent_tube`, `dying_bulb`, `candle`, `alarm_pulse`, `faulty_neon`, `desk_lamp_dying`;
-`mirror` (a glass quad with its reflection), `window_pane` (a quad with rain on it); `grade_cinema`, `grade_cold`,
+`mirror` (a glass quad with its reflection), `window_pane` (a quad with rain on it), `crt_screen` (a 14-inch tube's
+glass showing snow, §5i); `grade_cinema`, `grade_cold`,
 `grade_noir`; `tape_camhybrid`, `tape_worn`; `character_look`, `character_sweating`; `look_environment`. A preset is
 a scene: its root's settings are in the inspector where it's placed; for one with children (`window_sun`, `mirror`,
 `window_pane`) right-click it, Editable Children, to tune those too.
@@ -857,6 +858,74 @@ numbers unchanged (the white 1.04 and 0.94 of the skin under the eye, the lower 
 **Not yet**: the eyes' own life (micro-saccades, a glance: the eyes don't turn in Godot yet, §5f) is the next lever after
 the shading.
 
+## 5i. A CRT screen seen close (`crt.gdshader`, `HSCrt`, `HSCrtScreen`; DECISIONS 2026-11-05)
+
+Candidate 9 of docs/research/sakura_rabbit.md (her 2020 Retro Shaders entry: "a postprocess effect to mimic the
+surface of a screen as seen from close"), the one the user said to build. Not the tape: `vhs.gdshader` is what the
+game is seen through; this is what a screen *in* the game looks like, on its glass, when the player leans in. A
+television of snow, a monitor, a security feed.
+
+**What the shader draws** (`crt.gdshader`, a spatial material on the glass's mesh: a quad on the set's front, or the
+glass surface of the set's own mesh), everything at its true size from the glass's size in millimetres (`size_mm`,
+280 × 210 for a 14-inch tube; the node reads it off the mesh):
+
+- **The phosphors** as an aperture grille: a red, a green and a blue stripe every `pitch_mm` (0.3 mm, a 14-inch
+  tube's; a 29-inch set 0.7), each lit over 0.16 of the pitch and black between, normalised so their mean over a
+  pitch is 1 (the picture keeps its brightness at a distance); `phosphor` their strength (0.6: the stripes 4.2 times
+  the picture at their middle, 0.4 between). They stay on the glass: the stripes are physically on the tube's face,
+  so the curve doesn't bend them.
+- **The scanlines**: `scan_lines` (240, a console's picture; 480 broadcast) down the raster, a cosine gap between
+  them `scan_dark` deep (0.55), bent with the picture.
+- **No moiré at a distance**: both patterns fade out as they shrink on the screen, from the derivative of their
+  phase (`fwidth`: the period in pixels): whole at twice `fade_px` (3) pixels a period, gone at `fade_px`, each
+  replaced by its own mean. At 1080p through the game's 90° lens a 0.875 mm line pitch is 3 pixels at 16 cm from
+  the glass, so the lines show only when the player leans right in (`push`), and the 0.3 mm stripes only in a
+  close-up on a 4K screen. That is their true size; `scale` (1) coarsens both for a stronger look at the game's
+  resolution, the user's call per set.
+- **The glass's curve**: a barrel bulge of the raster (`curve` 0.08), the tube's black band between the raster and
+  the glass's edge (`border_mm` 6), the raster's edge soft over a millimetre, the corners a little dimmer.
+- **The halo**: the bright parts bleeding into a soft glow (`bleed` 0.35: the picture read from its fourth mip, half
+  of it added, spilling 4 mm past the raster).
+- **The hum and the bar**: `flicker` (0.5) a mains hum of two sines (3.5 % at 37 rad/s, 2.5 % at 113), `roll` (0.3)
+  a dark bar 6 % of the raster tall rolling down every `roll_secs` (7).
+- **The glass itself**: dark (albedo 0.02), its gloss `glass` (specular 0.5) at `roughness` 0.12, so the room's
+  lights glint in it and SSR puts the room in it; with `brightness` 0 the set is off and only the glass is left.
+- **The picture**: `picture` a texture (`use_picture`); none, snow made in the shader: grains two stripes wide and a
+  line tall, a new field thirty times a second, brighter in streaks line by line, slow bands drifting down.
+- Emission at `brightness` 1 is half the picture's value: a white picture about a lit white wall's.
+
+**The node** (`nodes/crt_screen.gd`, `HSCrtScreen`, an `HSOnMesh` with the tube icon): under the glass's mesh, or
+`target`; `surface` −1 the whole mesh (`material_override`), else that surface alone (a set's mesh with its glass as
+one surface: its own override put back with the rest before a save and when the node goes); every uniform in the
+inspector (`scale_up` is the shader's `scale`); `materials` the material on each mesh. `HSCrt` (`crt.gd`):
+`screen(mesh_instance, size_mm, settings, surface)`, `material`, `set_picture(material, texture)` (null: snow),
+`set_brightness`, `size_of(mesh)` (its two long sides in mm). The preset `presets/crt_screen.tscn`: a 280 × 210 mm
+quad showing snow.
+
+**In the game**: the little things' televisions (lifefx.gd's `screen`: a kit panel's front, the TV of static in
+IMMERSION.md) wear it when the plugin is in the project (every export has it; a project without it draws the old
+unshaded picture): off, the glass stays, dark, the room in it; `static` the shader's own snow (finer than the 64 × 48
+one drawn before); `on` the drawn programme through the tube. A phone's face keeps its flat picture: an LCD isn't a
+tube.
+
+**Checked** (LOOKPLUGIN's `crt` stage, `demo/demo.gd`; `--only=crt` alone): a 14-inch set on the demo's table
+showing a test card (colour bars, a grey field, a ramp), the eye 20 cm off the glass through a 10° lens
+(`crt_near.png`: 35 mm of the screen fill the frame, 20.6 pixels a millimetre), measured on the grey field: the
+scanlines' period down the picture from the row profile's peaks against the pitch the camera should see (210 mm over
+240 lines through that lens: within 20 %), the stripes' order along the rows (the dominant channel pixel by pixel:
+the changes must run red, green, blue, red: over 80 %, and the count of triads across the box about the box's
+width over 0.3 mm), twelve frames' means for the hum (over 1 %); then across the room (`crt_far.png`, 1.2 m, the
+game's 75°): the grey field's row-to-row contrast under a quarter of the close picture's (the lines gone, no moiré),
+the raster lit over the set off (`crt_off.png`: dark glass); a lamp by the eye with the set off (`crt_glint.png`): a
+glint's peak over three times the lower glass's mean; then snow, close (`crt_static.png`, the stage's picture:
+grained). The nodes part puts the preset on the wall (its material on, back at a save, on again after) and the editor
+part sees it working in the editor's viewport (`live.crt`). First full run (2026-11-05, lavapipe, LOOKPLUGIN ok): the
+lines 18.0 px a period against 18.0 expected, every colour change along the rows in the grille's order, 64.3 triads
+across the 400 px box against 64.8, the hum 3.3 % over twelve frames; across the room the field's row contrast 0.0013
+against 0.0174 close, the raster 0.327 over the set off 0.020, the glint's peak 1.00 over the lower glass's 0.152; the
+snow's grain 0.024. The check's two Godot runs that take longest (the nodes demo with its 41 presets, the demo's
+sixteen stages) were given 20 and 30 minutes that day: on a machine running three other jobs they took over 10 and 15.
+
 ## 5d. Streets from the Blender bake (`street.gdshader`, `HSStreet`)
 
 A street baked in Blender (`tools/street.py bake`, docs/STREET_TEXTURING.md) comes as plain glTF:
@@ -893,7 +962,8 @@ shader, the paint and decals shadowless, a picture through the street's shot.
 - **LOOKPLUGIN** (`tools/godot/plugin_check.py`): the demo (`demo/demo.gd`) in a project of its own under xvfb:
   a room with a lamp (its bulb emissive, so it has something to reflect), a cool fill, a table and a glossy cabinet;
   pictured plain, with the realism preset, with the floor wet, with blood (on the floor, up the wall) and rain, and
-  with three skin spheres (dry; wet, sweating and dripping; oiled). The measures (`report.json`): the lamp's
+  with three skin spheres (dry; wet, sweating and dripping; oiled); then the softener, a pattern light, a shaft, a
+  sweep, the iris, a leak, hair, the grade and a CRT screen (§5i). The measures (`report.json`): the lamp's
   reflection region brighter wet than dry; the preset changing the picture; the blood's red pixels; the rain moving
   between two frames; the sweat's peak brighter than dry skin; the oil's glint from the fill light brighter than the
   same region on dry skin. First run 2026-10-29 (lavapipe): wet 0.514 against dry 0.444 in the lamp's region; rain

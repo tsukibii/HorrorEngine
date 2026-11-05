@@ -288,7 +288,11 @@ fabric into the look plugin's `textures/` the way the skin's detail tiles are) o
 roughness, so the knit, the rib, denim's twill and the sequins' discs read at any distance the tape allows, with the
 albedo left to the colour and the prints. Small, because the UV is already there.
 
-## 10. A CRT screen seen close (candidate 9)
+## 10. A CRT screen seen close (candidate 9): built
+
+**Built 2026-11-05** (the user: "lets note to do 9"): the look plugin's `crt.gdshader`, `HSCrt` and the `HSCrtScreen`
+node, the `crt_screen` preset, on the little things' televisions in the game; docs/GODOT_LOOK.md §5i has the numbers
+and LOOKPLUGIN's `crt` stage the measures.
 
 **What she showed.** Her 2020 Retro Shaders challenge entry (Technically Art, issue 67, Sep 2020): "a postprocess effect to
 mimic the surface of a screen as seen from close".
@@ -319,9 +323,10 @@ is what a screen in the game looks like. Small, and the TV is a prop already.
 
 A **clothes shader** in the look plugin is the thread through candidates 2, 3 and 8 (wet, moving folds, detail);
 candidates 1 and 5 extend `HSSkin` (the painted layer, the presses); 4 and 7 add two surface effects (`dissolve`,
-`snow`); 6 adds a level word. The order that pays soonest: 8 (small, the export has the UV), then 2 and 3's clothes half
-(one shader with `wet` and the flexion), then 1 (the strain into the sheer, then hosiery as paint), 5, 4, and 10's two
-small ones; 7 and 6 are a chapter's mood and a game's trick, built when a game asks for them. Each grows the format, the
+`snow`); 6 adds a level word; 9 (the CRT, §10) is built: a surface shader of its own with a node, no new story word.
+The order that pays soonest: 8 (small, the export has the UV), then 2 and 3's clothes half (one shader with `wet` and
+the flexion), then 1 (the strain into the sheer, then hosiery as paint), 5, 4, and 10's two small ones; 7 and 6 are a
+chapter's mood and a game's trick, built when a game asks for them. Each grows the format, the
 runner, the check and STORY_FORMAT in one commit (CLAUDE.md's rule), with a check that pictures it (GDPEOPLE's and
 GDPORTRAIT's pattern: the character in Godot beside the Studio's own render, measured).
 

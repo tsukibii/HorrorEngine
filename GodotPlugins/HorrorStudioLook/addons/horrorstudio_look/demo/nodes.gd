@@ -121,6 +121,7 @@ func _initialize() -> void:
 	put("desk_lamp_dying", world, Vector3(0, 2.0, 2.4))
 	put("mirror", world, Vector3(2.6, 1.4, -2.99))
 	put("window_pane", world, Vector3(-2.7, 1.6, -2.99))
+	put("crt_screen", world, Vector3(0.3, 2.2, -2.99))
 	put("character_look", body, Vector3.ZERO)
 	put("character_sweating", body, Vector3.ZERO).target = body
 	put("look_environment", world, Vector3.ZERO)
@@ -202,6 +203,7 @@ func measure() -> void:
 	rep["mirror"] = hm != null and hm.frames > 10 and got["mirror"].material_override == null   # drawing its reflection, nothing over it
 	rep["mirror_frames"] = hm.frames if hm != null else 0
 	rep["pane"] = got["window_pane"].material_override is ShaderMaterial and got["window_pane"].material_override.shader == HSGlass.shader()
+	rep["crt"] = got["crt_screen"].material_override is ShaderMaterial and got["crt_screen"].material_override.shader == HSCrt.shader() and got["crt_screen"].get_node("Screen").materials.size() == 1
 	rep["character"] = got["character_look"].materials.size()
 	rep["look_env_freed"] = not is_instance_valid(got["look_environment"])
 
@@ -213,7 +215,7 @@ func saving() -> void:
 		lights[k] = got[k].drive.base
 	world.propagate_notification(Node.NOTIFICATION_EDITOR_PRE_SAVE)
 	var ok := floor_mi.material_override == null and wall.material_override == null and tiles[0].material_override == null and not floor_mi.has_meta(HSWet.META)
-	ok = ok and got["window_pane"].material_override == null
+	ok = ok and got["window_pane"].material_override == null and got["crt_screen"].material_override == null
 	var lit := true
 	for k in lights:
 		lit = lit and absf(got[k].light_energy - float(lights[k])) < 0.0001
@@ -238,7 +240,7 @@ func saving() -> void:
 
 
 func after_save() -> void:
-	rep["after_save_on"] = floor_mi.material_override is ShaderMaterial and got["window_pane"].material_override is ShaderMaterial and wall.material_override is ShaderMaterial
+	rep["after_save_on"] = floor_mi.material_override is ShaderMaterial and got["window_pane"].material_override is ShaderMaterial and wall.material_override is ShaderMaterial and got["crt_screen"].material_override is ShaderMaterial
 	# a node taken off: its mesh's own material back
 	var t0: MeshInstance3D = tiles[0]
 	got["wet_floor_raining"].get_parent().remove_child(got["wet_floor_raining"])
