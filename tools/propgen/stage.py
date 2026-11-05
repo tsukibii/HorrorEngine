@@ -219,7 +219,8 @@ def _passes(sc, objects, floor_ob, out, names, ground=None):
     floor_ob.visible_camera = False                     # still lighting the thing and bouncing, but not in the picture
     obj = objects[0]
     mts = [s.material for s in obj.material_slots]
-    others = [s.material for o in objects[1:] for s in o.material_slots]
+    # the other objects' materials: a part of the thing (a lid, a door, a cover) shares the thing's own, so those are its
+    others = [s.material for o in objects[1:] for s in o.material_slots if s.material is not None and s.material not in mts]
 
     def white(t, k):
         n = t.nodes.new("ShaderNodeBsdfDiffuse")

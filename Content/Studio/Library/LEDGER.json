@@ -260,6 +260,60 @@
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe cig_butts (Content/Studio/Props/presets.json)"
  },
+ "props/closet_oshiire": {
+  "date": "2026-11-05",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe closet_oshiire (Content/Studio/Props/presets.json)"
+ },
+ "props/closet_sliding": {
+  "date": "2026-11-05",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe closet_sliding (Content/Studio/Props/presets.json)"
+ },
+ "props/closet_wardrobe": {
+  "date": "2026-11-05",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe closet_wardrobe (Content/Studio/Props/presets.json)"
+ },
+ "props/clothes_folded_sweater": {
+  "date": "2026-11-05",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe clothes_folded_sweater (Content/Studio/Props/presets.json)"
+ },
+ "props/clothes_folded_tee": {
+  "date": "2026-11-05",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe clothes_folded_tee (Content/Studio/Props/presets.json)"
+ },
+ "props/clothes_hanging_dress": {
+  "date": "2026-11-05",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe clothes_hanging_dress (Content/Studio/Props/presets.json)"
+ },
+ "props/clothes_hanging_jacket": {
+  "date": "2026-11-05",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe clothes_hanging_jacket (Content/Studio/Props/presets.json)"
+ },
+ "props/clothes_hanging_shirt": {
+  "date": "2026-11-05",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe clothes_hanging_shirt (Content/Studio/Props/presets.json)"
+ },
+ "props/clothes_stack": {
+  "date": "2026-11-05",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe clothes_stack (Content/Studio/Props/presets.json)"
+ },
  "props/coffee_can": {
   "date": "2026-10-30",
   "kind": "mesh",
@@ -499,6 +553,24 @@
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe jar_umeboshi (Content/Studio/Props/presets.json)"
+ },
+ "props/journal_diary": {
+  "date": "2026-11-05",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe journal_diary (Content/Studio/Props/presets.json)"
+ },
+ "props/journal_jp": {
+  "date": "2026-11-05",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe journal_jp (Content/Studio/Props/presets.json)"
+ },
+ "props/journal_notebook": {
+  "date": "2026-11-05",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe journal_notebook (Content/Studio/Props/presets.json)"
  },
  "props/kakebuton_turned": {
   "date": "2026-11-04",
@@ -1003,6 +1075,24 @@
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe stool_kitchen (Content/Studio/Props/presets.json)"
+ },
+ "props/suitcase_hardshell": {
+  "date": "2026-11-05",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe suitcase_hardshell (Content/Studio/Props/presets.json)"
+ },
+ "props/suitcase_softside": {
+  "date": "2026-11-05",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe suitcase_softside (Content/Studio/Props/presets.json)"
+ },
+ "props/suitcase_vintage": {
+  "date": "2026-11-05",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe suitcase_vintage (Content/Studio/Props/presets.json)"
  },
  "props/table_chabudai": {
   "date": "2026-11-04",

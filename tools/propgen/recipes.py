@@ -133,6 +133,14 @@ def to_library(rec, out):
     index[name] = {"kb": os.path.getsize(src) // 1024, "size_m": [x, z, y], "tris": rec["tris"]}
     if rec.get("box_m"):                          # an anchored prop's box from its origin, story metres (as serve.py's)
         index[name]["box_m"] = rec["box_m"]
+    if rec.get("parts"):                          # parts that open (PROPGEN §26): the glb's built pose is their `built` state;
+        index[name]["parts"] = rec["parts"]       # a level places it by its size shut (a suitcase closed, a closet's doors to)
+        index[name]["size_open_m"] = index[name]["size_m"]
+        sx, sy, sz = rec["size_shut_m"]
+        index[name]["size_m"] = [sx, sz, sy]
+        index[name]["box_shut_m"] = rec["box_shut_m"]
+    if rec.get("inside_m"):                       # a container's inside, story metres from its origin (z up)
+        index[name]["inside_m"] = rec["inside_m"]
     if (rec.get("spec") or {}).get("family") in hollow_families():
         index[name]["hollow"] = True              # seen, never bumped: plan.py tags it hollow (no collider, no LEVEL bump)
     with open(ip, "w", encoding="utf-8") as fh:

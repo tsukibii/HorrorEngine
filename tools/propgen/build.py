@@ -45,6 +45,10 @@ class Thing:
         self.cage = None            # set here, not in the recipe, so a made prop's recipe stays the recipe it was made from)
         self.bake_ao = True         # off for a thing whose texture tiles over itself (a tree's bark): a bake over it would be a jumble
         self.tree = None            # what a tree family records about its growth (meta.json's "tree")
+        self.pieces = {}            # name -> (f0, f1): a named run of th.low's faces as assemble() joined them (a lid, a door)
+        self.parts = {}             # name -> {piece, kind, pivot, axis, open, shut, built}: a piece that moves in play (PROPGEN §26)
+        self.inside = None          # a container's inner box ((x0, y0, z0), (x1, y1, z1)) metres, built space: where things go in it
+        self.extras = {}            # more for the glb's root node, by name: `propgen_<name>` (a book's page materials, PROPGEN §26)
 
     def material(self, name, kind="paint", px=None, alpha=False, double=False, color="#808080", rough=0.5, metal=0.0, specular=None,
                  bake=True):
@@ -94,6 +98,37 @@ class Thing:
                 x1, y1 = x0 + it.w_mm * d, y0 + it.h_mm * d
                 it.rect = (x0 / px, 1 - y1 / px, x1 / px, 1 - y0 / px)
             self.density[mname] = d
+
+    def assemble(self, low, high=None, mats=None):
+        """th.low (and th.high) joined from named pieces [(name, Mesh), ...] in order, each piece's run of faces
+        remembered by name (`pieces`), so a part (`part`) can be cut out again at the export as a node of its own.
+        A deformation after this moves vertices only, so the runs stay right."""
+        out = []
+        at = 0
+        for nm, m in low:
+            if m is None or not len(m.v):
+                continue
+            self.pieces[nm] = (at, at + len(m.f))
+            at += len(m.f)
+            out.append(m)
+        self.low = M.join(out, mats)
+        if high is not None:
+            self.high = M.join([m for _, m in high if m is not None and len(m.v)], mats)
+        return self.low
+
+    def part(self, name, pivot, axis, kind="hinge", open=100.0, shut=0.0, built=None, piece=None, **extra):
+        """A piece that moves in play (PROPGEN §26): the piece named `piece` (or `name`) leaves the glb as a child node
+        of its own, its origin at `pivot` (metres, the built space), carrying `propgen_part` extras: `kind` hinge (its
+        `axis` the hinge line, `open` and `shut` in degrees) or slide (`axis` the way it slides, `open` and `shut` in
+        metres), `show` (seen only while the thing is open: a book's spread) or `hide` (seen only while it's shut: the
+        closed book's block), and `built`, the state it's built and exported in (open unless said: a suitcase is built
+        with its lid up; a closet with its doors shut, built=0). The runtime swings or slides it from `built` to the
+        state the story wants. A positive hinge angle turns the piece about `axis` by the right hand. `extra` goes out
+        with it (`hide_open`: a hinged cover hidden once fully open, under the spread that takes its place)."""
+        a = np.asarray(axis, float)
+        a = a / max(float(np.linalg.norm(a)), 1e-12)
+        self.parts[name] = dict(piece=piece or name, kind=kind, pivot=tuple(float(x) for x in pivot), axis=tuple(float(x) for x in a),
+                                open=float(open), shut=float(shut), built=float(open if built is None else built), extra=dict(extra))
 
 
 def write_tscn(odir, name, fx, liquid):
@@ -361,6 +396,18 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
             if x is not None:
                 x.v = x.v - off
         shift = shift - off
+    # the parts' hinges and a container's inside, set down with the thing
+    parts_w = {}
+    for pname, pt in th.parts.items():
+        if pt["piece"] not in th.pieces:
+            raise ValueError(f"part {pname!r}: no piece {pt['piece']!r} (assemble() names them: {', '.join(th.pieces) or 'none'})")
+        parts_w[pname] = dict(pt, pivot=tuple(float(x) for x in (Mx @ np.asarray(pt["pivot"], float) + shift)),
+                              axis=tuple(float(x) for x in (Mx @ np.asarray(pt["axis"], float))))
+    inside_w = None
+    if th.inside is not None:
+        lo_i, hi_i = (np.asarray(v, float) for v in th.inside)
+        cs = np.array([[x, y, z] for x in (lo_i[0], hi_i[0]) for y in (lo_i[1], hi_i[1]) for z in (lo_i[2], hi_i[2])]) @ Mx.T + shift
+        inside_w = (cs.min(0), cs.max(0))
     odir = os.path.join(out_dir, name)
     os.makedirs(odir, exist_ok=True)
     # Blender objects with stand-in materials (the bakes need materials to put their images in)
@@ -525,8 +572,63 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
         socks.append(em)
     if fx:
         low_ob["propgen_fx"] = json.dumps(dict(fx, version=1))
+    # the parts that move: each cut out of the game mesh as a child object with its origin at its hinge (glTF is y up:
+    # Blender's (x, y, z) goes out as (x, z, -y), a proper rotation, so an axis maps the same way and angles keep their sign)
+    gl = lambda v: [round(float(v[0]), 5), round(float(v[2]), 5), round(-float(v[1]), 5)]
+
+    def part_extras(pname, pt):
+        return dict(pt.get("extra") or {}, name=pname, kind=pt["kind"], axis=gl(pt["axis"]), pivot=gl(pt["pivot"]), open=pt["open"], shut=pt["shut"],
+                    built=pt["built"], version=1)
+    part_obs = []
+    if parts_w:
+        keep = np.ones(len(th.low.f), bool)
+        real = {mname: low_me.materials[i] for i, mname in enumerate(th.low.mats)}
+        wt = spec.get("weighted", th.weighted)
+        for pname, pt in parts_w.items():
+            f0, f1 = th.pieces[pt["piece"]]
+            sel = np.zeros(len(th.low.f), bool)
+            sel[f0:f1] = True
+            keep &= ~sel
+            sub = M.select(th.low, sel)
+            piv = np.asarray(pt["pivot"], float)
+            sub.v = sub.v - piv
+            if "rest" in sub.a:
+                sub.a["rest"] = sub.a["rest"] - piv
+            pme = M.to_blender(sub, f"{name}_{pname}", real, sharp_angle=sharp, weighted=wt)
+            pob = bpy.data.objects.new(f"{name}_{pname}", pme)
+            bpy.context.scene.collection.objects.link(pob)
+            pob.location = tuple(piv)
+            pob.parent = low_ob
+            pob["propgen_part"] = json.dumps(part_extras(pname, pt))
+            part_obs.append(pob)
+        main = M.select(th.low, keep)
+        if len(main.f):
+            old_me = low_ob.data
+            low_ob.data = M.to_blender(main, name, real, sharp_angle=sharp, weighted=wt)
+            bpy.data.meshes.remove(old_me)
+        else:                                        # every face a part's (a book: its block, cover and spread): the root an empty, the parts under it
+            root = bpy.data.objects.new(name + "_root", None)
+            bpy.context.scene.collection.objects.link(root)
+            for kk in list(low_ob.keys()):
+                root[kk] = low_ob[kk]
+            for ob in part_obs + socks:
+                ob.parent = root
+            old_me = low_ob.data
+            bpy.data.objects.remove(low_ob, do_unlink=True)
+            bpy.data.meshes.remove(old_me)
+            low_ob = root
+            root.name = name
+        low_ob["propgen_parts"] = json.dumps({n: part_extras(n, pt) for n, pt in parts_w.items()})
+    if inside_w is not None:
+        c0, c1 = gl(inside_w[0]), gl(inside_w[1])
+        low_ob["propgen_inside"] = json.dumps([[min(a, b) for a, b in zip(c0, c1)], [max(a, b) for a, b in zip(c0, c1)]])
+    for xk, xv in (th.extras or {}).items():
+        low_ob["propgen_" + xk] = json.dumps(xv)
+    # a part seen only open (`show`) built shut isn't in the picture, nor a `hide` part built open
+    shown = [pob for pob, (pn, pt) in zip(part_obs, parts_w.items())
+             if not ((pt["kind"] == "show" and pt["built"] <= pt["shut"]) or (pt["kind"] == "hide" and pt["built"] > pt["shut"]))]
     base = os.path.join(odir, name)
-    outs = export([low_ob] + ([liq_ob] if liq_ob else []) + socks, base, formats)
+    outs = export([low_ob] + part_obs + ([liq_ob] if liq_ob else []) + socks, base, formats)
     if "glb" in formats:
         outs.append(write_tscn(odir, name, fx, bool(th.liquid)))
     pv = None
@@ -535,10 +637,16 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
         from .stage import preview as render
         if liq_ob is not None:
             liq_ob.data.materials[0] = th.liquid_preview
-        render([low_ob] + ([liq_ob] if liq_ob else []), pv, samples=int(preview_samples or spec.get("preview_samples", 48)), gpu=gpu,
+        # Cycles draws every object in the scene: the parts not in the picture are hidden for it (an empty root isn't
+        # listed: its bound box is its display size, a metre, which would push the camera back)
+        for pob in part_obs:
+            pob.hide_render = pob not in shown
+        render(([low_ob] if low_ob.type == "MESH" else []) + shown + ([liq_ob] if liq_ob else []), pv, samples=int(preview_samples or spec.get("preview_samples", 48)), gpu=gpu,
                passes=base + "_st.png", mats=list(th.low.mats),
                ground={m: os.path.join(odir, d["ground"]) for m, d in (design or {}).items() if d.get("ground")},
                **(spec.get("view") or th.view or {}))
+        for pob in part_obs:
+            pob.hide_render = False
     lo, hi = th.low.bounds()
     rec_sockets = {k: [round(float(x), 5) for x in (Mx @ np.asarray(v[0], float) + shift)] for k, v in th.sockets.items()}
     rec = {"name": name, "family": spec["family"], "version": VERSION, "seed": seed, "size_m": [round(float(x), 4) for x in (hi - lo)],
@@ -558,6 +666,30 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
             rec["keep_z"] = True                        # its heights as made: on what it lies on, not on the floor
     if th.tree:
         rec["tree"] = th.tree
+    if parts_w:
+        # the parts (story metres, z up, as the sockets): each hinge or slide, and the thing's size with every part shut
+        rec["parts"] = {n: dict(pt.get("extra") or {}, kind=pt["kind"], pivot=[round(float(x), 5) for x in pt["pivot"]], axis=[round(float(x), 5) for x in pt["axis"]],
+                                open=pt["open"], shut=pt["shut"], built=pt["built"]) for n, pt in parts_w.items()}
+        vs = th.low.v.copy()
+        keep_v = np.ones(len(vs), bool)
+        for n, pt in parts_w.items():
+            f0, f1 = th.pieces[pt["piece"]]
+            fcs = th.low.f[f0:f1]
+            idx = np.unique(fcs[fcs >= 0])
+            d = pt["shut"] - pt["built"]
+            if pt["kind"] == "slide":
+                vs[idx] += np.asarray(pt["axis"], float) * d
+            elif pt["kind"] == "hinge":
+                piv = np.asarray(pt["pivot"], float)
+                vs[idx] = (vs[idx] - piv) @ M.rodrigues(pt["axis"], d).T + piv
+            elif pt["kind"] == "show":                   # not there shut
+                keep_v[idx] = False
+        vs = vs[keep_v] if keep_v.any() else vs
+        slo, shi = vs.min(0), vs.max(0)
+        rec["size_shut_m"] = [round(float(x), 4) for x in (shi - slo)]
+        rec["box_shut_m"] = [round(float(x), 4) for x in list(slo) + list(shi)]
+    if inside_w is not None:
+        rec["inside_m"] = [round(float(x), 4) for x in list(inside_w[0]) + list(inside_w[1])]
     with open(os.path.join(odir, "meta.json"), "w", encoding="utf-8") as fh:
         json.dump(rec, fh, indent=1)
     if th.liquid:
@@ -570,4 +702,6 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
         bpy.data.objects.remove(liq_ob, do_unlink=True)
     for em in socks:
         bpy.data.objects.remove(em, do_unlink=True)
+    for pob in part_obs:
+        bpy.data.objects.remove(pob, do_unlink=True)
     return rec

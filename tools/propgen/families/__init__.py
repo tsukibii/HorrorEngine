@@ -1,6 +1,6 @@
 """The prop families: each a module with make(spec, thing) that fills in a build.Thing (its materials, islands, game
 mesh, detailed mesh and paint). FAMILIES names them; a recipe's `family` picks one."""
-from . import appliance, bedding, bits, book, bottle, box, can, candle, chair, charm, cookware, cup, curtain, doll, imported, key, pills, plant, rope, sack, sheet, shrine, sink, table, tree, utensil, ware
+from . import appliance, bedding, bits, book, bottle, box, can, candle, chair, charm, closet, clothes, cookware, cup, curtain, doll, imported, key, pills, plant, rope, sack, sheet, shrine, sink, suitcase, table, tree, utensil, ware
 
 FAMILIES = {"can": can, "bottle": bottle, "cup": cup, "sheet": sheet, "box": box, "import": imported, "utensil": utensil,
-            "key": key, "ware": ware, "bits": bits, "sack": sack, "pills": pills, "candle": candle, "charm": charm, "rope": rope, "doll": doll, "shrine": shrine, "cookware": cookware, "appliance": appliance, "sink": sink, "book": book, "tree": tree, "plant": plant, "bedding": bedding, "curtain": curtain, "table": table, "chair": chair}
+            "key": key, "ware": ware, "bits": bits, "sack": sack, "pills": pills, "candle": candle, "charm": charm, "rope": rope, "doll": doll, "shrine": shrine, "cookware": cookware, "appliance": appliance, "sink": sink, "book": book, "tree": tree, "plant": plant, "bedding": bedding, "curtain": curtain, "table": table, "chair": chair, "suitcase": suitcase, "clothes": clothes, "closet": closet}
