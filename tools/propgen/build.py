@@ -396,6 +396,34 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
             if x is not None:
                 x.v = x.v - off
         shift = shift - off
+    if th.parts:
+        # set down by its box shut (a level places it by that box, PROPGEN §26): every part turned or slid to `shut`, a
+        # `show` part left out, the middle of what's left over the origin and its lowest point on the floor; what a lid
+        # built open adds beyond that box is the runtime's to swing
+        vs = th.low.v.copy()
+        keep_v = np.ones(len(vs), bool)
+        for pname, pt in th.parts.items():
+            if pt["piece"] not in th.pieces:
+                raise ValueError(f"part {pname!r}: no piece {pt['piece']!r} (assemble() names them: {', '.join(th.pieces) or 'none'})")
+            f0, f1 = th.pieces[pt["piece"]]
+            fcs = th.low.f[f0:f1]
+            idx = np.unique(fcs[fcs >= 0])
+            d = pt["shut"] - pt["built"]
+            piv = Mx @ np.asarray(pt["pivot"], float) + shift
+            ax = Mx @ np.asarray(pt["axis"], float)
+            if pt["kind"] == "slide":
+                vs[idx] += ax * d
+            elif pt["kind"] == "hinge":
+                vs[idx] = (vs[idx] - piv) @ M.rodrigues(ax, d).T + piv
+            elif pt["kind"] == "show":
+                keep_v[idx] = False
+        vs = vs[keep_v] if keep_v.any() else vs
+        slo, shi = vs.min(0), vs.max(0)
+        off = np.array([(slo[0] + shi[0]) / 2, (slo[1] + shi[1]) / 2, slo[2]])
+        for x in [th.high, th.low] + ([th.liquid[0]] if th.liquid else []):
+            if x is not None:
+                x.v = x.v - off
+        shift = shift - off
     # the parts' hinges and a container's inside, set down with the thing
     parts_w = {}
     for pname, pt in th.parts.items():

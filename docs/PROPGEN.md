@@ -1195,9 +1195,11 @@ the generator only says where the hinge is and how far it goes.
   the kept picture and the `.tscn` show the thing as built (a `show` part built shut is left out of the picture, a
   `hide` part built open too).
 - **In the meta and the library:** `parts` (story metres, z up, as the sockets), `size_shut_m` and `box_shut_m`
-  (every part turned to `shut`; a `show` part left out), `inside_m`. The library index keeps `parts`, `inside_m` and
-  `box_shut_m`, and its `size_m` is the size **shut** (a level places the thing by it; the swing is the runtime's),
-  `size_open_m` the size as built. The story check wants a made prop with parts under an `open`, `container` or
+  (every part turned to `shut`; a `show` part left out), `inside_m`. The thing is **set down by its box shut**: the
+  middle of that box over the origin, its lowest point on the floor (a suitcase built with its lid up still stands
+  where its closed box says; what the lid adds beyond it is the runtime's to swing). The library index keeps `parts`,
+  `inside_m` and `box_shut_m`, and its `size_m` is the size **shut** (a level places the thing by it), `size_open_m`
+  the size as built. The story check wants a made prop with parts under an `open`, `container` or
   `book` thing (a warning, an error for a book).
 - **In play:** the story's `open` (a click swings or slides its parts: `opened` holds while they are, `closed` is
   heard when they shut; `locked_by` a flag or an item), `container` (an `open` that takes the thing in the hand: laid

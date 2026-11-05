@@ -37,8 +37,23 @@ def _glb(path):
 
 
 def _positions(j, binc):
+    """Every mesh's vertices where its node puts them (a part that opens is a node of its own at its hinge: its vertices
+    are kept about the hinge, PROPGEN §26); a mesh no node uses, where it is."""
     out = []
-    for m in j["meshes"]:
+    used = set()
+    for nd in j["nodes"]:
+        if "mesh" not in nd:
+            continue
+        used.add(nd["mesh"])
+        tr = np.asarray(nd.get("translation", [0.0, 0.0, 0.0]), np.float32)
+        for p in j["meshes"][nd["mesh"]]["primitives"]:
+            a = j["accessors"][p["attributes"]["POSITION"]]
+            bv = j["bufferViews"][a["bufferView"]]
+            off = bv.get("byteOffset", 0) + a.get("byteOffset", 0)
+            out.append(np.frombuffer(binc[off:off + a["count"] * 12], np.float32).reshape(-1, 3) + tr)
+    for i, m in enumerate(j["meshes"]):
+        if i in used:
+            continue
         for p in m["primitives"]:
             a = j["accessors"][p["attributes"]["POSITION"]]
             bv = j["bufferViews"][a["bufferView"]]

@@ -1815,3 +1815,7 @@ And a seat pad's bag filled only to a pad's thickness had more cloth than air an
 - **A part shares the thing's materials**: the sticker passes blacked out "the other objects'" materials for the
   prop's picture, and a lid's or a cover's are the thing's own datablocks, so the whole prop went holdout and the kept
   passes saw nothing. Only materials not the thing's are the others'.
+- **A thing with parts is set down by its box shut**: built with its lid up, a suitcase was centred as built, so the
+  closed case a level places by its shut size sat 11 cm off its spot; the builder now turns every part to shut before
+  centring (`build.run`), and a check reads a part's vertices where its node puts them (a part keeps its vertices
+  about its hinge), or the lid "hangs below the floor".
