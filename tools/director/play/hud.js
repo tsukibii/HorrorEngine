@@ -215,6 +215,33 @@ export class Hud {
       this.modal(p); this.root.append(p);
     });
   }
+  // a book in the hands (play/book.js): the view stays (the book itself in front of the eye, its pages written), and a
+  // column at the right carries the spread's words in the HUD's own font for those who'd rather not read the hand
+  // (DECISIONS 2026-11-05, later). The arrows, A/D, PageUp/Down, Space, the wheel and a click on either half of the view
+  // turn the pages (spec.turn(±1)); Esc, E or a right click put it back (resolves true). panelText swaps the words
+  book(spec) {
+    return new Promise(done => {
+      const p = mk("div", "ph-book"), card = mk("div", "ph-side"), text = mk("div", "ph-text", named(spec.text) || "");
+      card.append(mk("div", "ph-title", named(spec.title) || ""), text);
+      const hint = mk("div", "ph-side-hint"); hint.append(key("←"), key("→"), mk("span", "", "turn the page"), key("Esc"), mk("span", "", spec.hint || "or right click: put it back"));
+      card.append(hint); p.append(card);
+      let finish;
+      p.onpointerdown = e => { if (e.button === 2) { e.preventDefault(); finish(); } };
+      p.oncontextmenu = e => e.preventDefault();
+      p.onclick = e => { if (e.target.closest(".ph-side") || e.button !== 0) return; spec.turn(e.clientX < this.root.clientWidth / 2 ? -1 : 1); };
+      p.onwheel = e => { e.preventDefault(); if (Math.abs(e.deltaY) > 2) spec.turn(e.deltaY > 0 ? 1 : -1); };
+      const kd = e => {
+        if (e.key === "Escape" || e.code === "KeyE") { e.preventDefault(); finish(); }
+        else if (["ArrowRight", "KeyD", "PageDown", "ArrowDown", "Space"].includes(e.code)) { e.preventDefault(); spec.turn(1); }
+        else if (["ArrowLeft", "KeyA", "PageUp", "ArrowUp"].includes(e.code)) { e.preventDefault(); spec.turn(-1); }
+      };
+      finish = () => { window.removeEventListener("keydown", kd, true); p.remove(); this.modal(null); this.sideText = null; done(true); };
+      window.addEventListener("keydown", kd, true);
+      this.sideText = text;
+      this.modal(p); this.root.append(p);
+    });
+  }
+  panelText(t) { if (this.sideText) { this.sideText.textContent = named(t) || ""; this.sideText.scrollTop = 0; } }   // the words on the side column (a spread turned)
   panel(spec) {
     return new Promise(done => {
       const p = mk("div", "ph-panel"), card = mk("div", "ph-card");

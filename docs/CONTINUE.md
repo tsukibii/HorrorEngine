@@ -14,11 +14,66 @@ to 2026-11-03 on `Director-Godot`: the Director in Godot, its panel, Story Flow 
 main on 2026-11-03 with main's own work since 2026-10-31 brought in; then the skin's depth softened and the skin under
 clothes hidden on `claude/festive-euler-o7axpl`, the walls meeting, the editors' rules, Export for Godot and the
 by-hand guides, merged; then on the same branch from main the map-building skill and the user's floor plan as a map, its
-bedding, curtains, tables and chairs, the props' kept pictures, real wood in the flat and, last, its curtains). Read this
-after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
+bedding, curtains, tables and chairs, the props' kept pictures, real wood in the flat and its curtains; 2026-11-05 on
+`sakura-rabbit-research`: the Sakura Rabbit research note, then the three notes on dread, the CRT, and the props and
+systems that open, hold, move and are read). Read this after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-04, after the wood, the same branch): the flat's curtains, bare chairs, a cleaner street
+## Where it stopped last (2026-11-05, later, `sakura-rabbit-research`): suitcases, closets, moveable things, books, the CRT
+
+The user's ask (DECISIONS 2026-11-05, later): note candidate 9 (the CRT) to do; more research on simple games that
+build to a story, uncovery and dread; and, as props with workable systems in the drag-and-drop engine: suitcases that
+open and hold things (three kinds), sliding and hinged closets, a drag-and-drop moveable (a chair shoved when walked
+into, picked up upright, placed facing as held), books opened in the hands with handwriting and a clearer panel at the
+right, their text progressing with the game; inspecting as it was. Built:
+
+- **Research:** docs/research/dread_structure.md, story_in_objects.md, simple_loops.md (the rules, the numbers, a
+  dread curve by the minute, a six-night plan, the book that writes itself).
+- **Parts that open** (PROPGEN §26): a made prop's lid, doors or cover cut out of its game mesh as glb nodes of their
+  own at their hinge or track (`th.assemble`, `th.part`, `th.inside`; `propgen_part` extras), the prop placed by its
+  size shut; families `suitcase` (hardshell, softside, vintage), `clothes` (folded, a stack; the hanging ones scrapped),
+  `closet` (a wardrobe, a sliding closet, an oshiire); the openable `book` (§27: `journal_diary`, `_notebook`, `_jp`,
+  pages baked blank); the twelve in the library with kept pictures; the OFL hands in `tools/propgen/fonts/` and the
+  runtime's `fonts/`. The bake fills missed texels (`fill_misses`). The garments on wire hangers (three recipes, and
+  four on each closet's rail) were scrapped at the user's word: "the clothing on the hangers looks bad".
+- **The words** (STORY_FORMAT): uses `open`, `container`, `moveable`, `book`; triggers `opened` (holds), `closed`,
+  `placed`, `taken`, `moved`, `read` with `page`; the action `open` (to open, shut, lock, unlock). Godot's add-on:
+  `parts.gd`, `book.gd`, play.gd's containers (contents kept as children through closing and carrying), moveables
+  (a RigidBody3D shoved by the walk the player asks for, blocked or not; picked up upright; put down where the look
+  meets the floor), hiding in a closet (its doors round you); the desk's Play the same (`openable.js`, `book.js`:
+  the fork's report in this session); the Director's parts Opens, Container, Moveable, Book (GODOT_DIRECTOR §3c; a
+  book's text typed with `===` between pages and `@if` lines), its words in the Story tab (`story/commands.gd`); the
+  story check and its walker know them all.
+- **TestRoom001 station 13** (docs/games/TestRoom001.md): the things room behind the library; played in Godot from
+  the library station to the end (GDTESTROOM from `n_things`: ok). A library prop at its real size is
+  `shape: "asset props/<name>"` (`art` dresses a block: LESSONS).
+- **The CRT screen** (the look plugin's `crt.gdshader`, `HSCrtScreen`, its preset; GODOT_LOOK): the fork's report in
+  this session says what it measured.
+
+What was still running or open when this was written (see the last commits' messages for how they ended): the full
+GDTESTROOM from the start on this cloud machine needs the test room's bake (`node tools/godot/bake.mjs --game
+TestRoom001`, the desk's server up) for the kitchen station's skin check, which a bare clone hasn't got; the DIRECTOR
+check after `commands.gd` learned the new words; THUMBS and PROPGEN after the last remakes; the browser checks (TESTROOM
+with station 13, DESK, CMDS, LOOKPLUGIN with the CRT) are for the user's machine (`GPU=1`).
+
+Worth doing with the user: play station 13 in Godot themselves (the chair's shove strength, the book's hand and
+size, the panel); a suitcase's `holds` and where things land in it; the CRT on the kitchen TV; then the candidates
+still on the Sakura Rabbit list.
+
+## Before that (2026-11-05, `sakura-rabbit-research`): Sakura Rabbit's experiments as candidates
+
+The user's ask (DECISIONS 2026-11-05): a branch of its own and research into Sakura Rabbit's Unity experiments that
+would suit our look, clothing by shaders first. The note is docs/research/sakura_rabbit.md: ten candidates ranked
+(hosiery painted by the skin shader with stretch and the band's squeeze; wet clothes; wrinkles that move; dissolve
+transitions; contact deformation; the room that changes; snow; fabric detail maps; a CRT screen; heels and lids), each
+with what she showed, the likely how (inferred: nothing is public), what we have and what we'd build; §12 the order that
+pays soonest. Nothing is built; nothing of hers is usable (learning-only files).
+
+Worth doing with the user: pick the candidates (or none, and move on to other research, as they said); if they want the
+articles read in full, allow 80.lv, hitmarker.net, unity.com, 3dvf.com, sakura-rabbit.fanbox.cc and learn.u3d.cn in the
+cloud environment's network settings (the session could reach GitHub only) and re-read the note against them.
+
+## Before that (2026-11-04, after the wood, `claude/festive-euler-o7axpl`): the flat's curtains, bare chairs, a cleaner street
 
 The user's ask (DECISIONS 2026-11-04, after the wood): the prop generator's curtains in the map, the chairs without
 their cushions, the bicycles and bins off the street, the folded futon out of the oshiire.

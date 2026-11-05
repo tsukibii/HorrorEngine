@@ -225,6 +225,8 @@ static func action_text(a, n: Callable = Callable()) -> String:
 			return "Karma " + ", ".join(PackedStringArray(parts))
 		"door":
 			return cap(js(_or(g.call("set"), "open"))) + " " + n.call("thing", g.call("door"))
+		"open":
+			return cap(js(_or(g.call("to"), "open"))) + " " + n.call("thing", g.call("open"))
 		"light":
 			return (("Lights in " + n.call("thing", a["room"])) if _t(g.call("room")) else ("Light " + n.call("thing", g.call("light")))) + ": " + js(_or(g.call("set"), "on"))
 		"power":
@@ -366,7 +368,7 @@ static func trigger_text(w, n: Callable = Callable()) -> String:
 		"pickup":
 			return "the player picks up " + n.call("item", g.call("pickup"))
 		"read":
-			return "the player reads " + n.call("note", g.call("read"))
+			return "the player reads " + n.call("note", g.call("read")) + ((" at page " + js(w["page"])) if _t(g.call("page")) else "")
 		"look":
 			return "the player looks at " + n.call("thing", g.call("look")) + " for " + js(_qq(g.call("secs"), 1)) + " s"
 		"after":
@@ -383,6 +385,16 @@ static func trigger_text(w, n: Callable = Callable()) -> String:
 			return "the player is carrying " + ("anything" if g.call("carrying") is bool and g.call("carrying") == true else n.call("thing", g.call("carrying")))
 		"dropped":
 			return n.call("thing", g.call("dropped")) + " is put down" + ((" in " + n.call("thing", w["in"])) if _t(g.call("in")) else "")
+		"opened":
+			return n.call("thing", g.call("opened")) + " is open"
+		"closed":
+			return n.call("thing", g.call("closed")) + " is shut"
+		"placed":
+			return n.call("thing", g.call("placed")) + " is put in" + (("to " + n.call("thing", w["in"])) if _t(g.call("in")) else "")
+		"taken":
+			return n.call("thing", g.call("taken")) + " is taken out" + ((" of " + n.call("thing", w["from"])) if _t(g.call("from")) else "")
+		"moved":
+			return n.call("thing", g.call("moved")) + " has been moved"
 		"played":
 			return "the game at " + n.call("thing", g.call("played")) + " ends" + ((" " + q(w["result"])) if _t(g.call("result")) else "")
 		"rolled":

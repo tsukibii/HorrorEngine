@@ -49,8 +49,13 @@ var post_n: HSPost = null              # the grade stage
 var grade_plain: Image = null
 var splash_peak := 0.0
 var splash_n := 0
+var crt_q: MeshInstance3D = null       # the CRT stage: a set on the table, its glass a quad on the front
+var crt_mat: ShaderMaterial = null
+var crt_lamp: OmniLight3D = null
+var crt_means: Array = []
+var crt_rect := Rect2i()
 
-const STAGES := ["plain", "realism", "wet", "blood_rain", "mirror", "skin", "soften_off", "soften", "pattern", "shaft", "sweep", "iris", "leak", "hair", "grade"]
+const STAGES := ["plain", "realism", "wet", "blood_rain", "mirror", "skin", "soften_off", "soften", "pattern", "shaft", "sweep", "iris", "leak", "hair", "grade", "crt"]
 
 
 func _initialize() -> void:
@@ -300,6 +305,39 @@ func _process(_d: float) -> bool:
 			HSLook.iris(root, true, true)                        # night: held a stop under
 		if n < 280:
 			return false
+	if STAGES[stage] == "crt":
+		if n == 30:
+			crt_measure_near(shot("crt_near"))                   # close: the lines' period, the stripes' order
+		if n > 30 and n <= 42:                                   # twelve frames: the hum
+			var r := Rect2i(440, 60, 400, 600)
+			crt_means.append(measure(root.get_texture().get_image(), r.position.x, r.position.y, r.end.x, r.end.y)["mean"])
+		if n == 43:
+			crt_view(75.0, 1.2)                                  # across the room: the lines gone, no moiré
+		if n == 80:
+			var img := shot("crt_far")
+			crt_rect = screen_rect(crt_q, Vector2(0.28, 0.21))
+			var mid := Rect2i(crt_rect.position.x + crt_rect.size.x / 4, crt_rect.position.y + int(crt_rect.size.y * 0.36), crt_rect.size.x / 2, int(crt_rect.size.y * 0.28))
+			report["crt_far_contrast"] = row_contrast(img, mid)
+			report["crt_far"] = measure(img, crt_rect.position.x, crt_rect.position.y, crt_rect.end.x, crt_rect.end.y)
+			HSCrt.set_brightness(crt_mat, 0.0)                   # the set off: the dark glass
+		if n == 100:
+			var img := shot("crt_off")
+			report["crt_off"] = measure(img, crt_rect.position.x, crt_rect.position.y, crt_rect.end.x, crt_rect.end.y)
+			crt_lamp = OmniLight3D.new()                         # a lamp by the eye: its glint in the glass
+			crt_lamp.light_energy = 0.8
+			crt_lamp.omni_range = 4.0
+			world.add_child(crt_lamp)
+			crt_lamp.position = cam.position + Vector3(0.05, 0.16, 0.0)
+		if n == 120:
+			var img := shot("crt_glint")
+			report["crt_glint"] = measure(img, crt_rect.position.x, crt_rect.position.y, crt_rect.end.x, crt_rect.end.y)
+			report["crt_glint_lower"] = measure(img, crt_rect.position.x, crt_rect.position.y + int(crt_rect.size.y * 0.6), crt_rect.end.x, crt_rect.end.y)   # the glass away from the glint
+			HSCrt.set_brightness(crt_mat, 1.0)
+			HSCrt.set_picture(crt_mat, null)                     # no picture: snow
+			crt_lamp.visible = false
+			crt_view(35.0, 0.45)                                 # the set and its snow, close
+		if n < 150:
+			return false
 	if n < 24:                                 # the first frames: TAA settles, the lamp's shadow maps
 		return false
 	var name: String = STAGES[stage]
@@ -449,6 +487,20 @@ func _process(_d: float) -> bool:
 			report["pattern_motion"] = diff(pat_prev, img, box.position.x, box.position.y, box.end.x, box.end.y) if pat_prev != null else 0.0
 			var hp = pat_spot.get_node_or_null("Pattern")
 			report["pattern_attached"] = 1 if hp != null and hp is HSPattern and pat_spot.light_projector != null and hp.textures.size() == 40 else 0
+		"crt":
+			var img := shot("crt_static")                        # snow, seen close: the stage's own picture
+			var r := screen_rect(crt_q, Vector2(0.28, 0.21))
+			report["crt_static_grain"] = grain(img, r)
+			report["crt_static"] = measure(img, r.position.x, r.position.y, r.end.x, r.end.y)
+			var lo := INF
+			var hi := -INF
+			var sum := 0.0
+			for m in crt_means:
+				lo = min(lo, m)
+				hi = max(hi, m)
+				sum += m
+			report["crt_flicker"] = (hi - lo) / max(sum / max(crt_means.size(), 1), 1e-6)
+			report["crt_frames"] = crt_means.size()
 	stage += 1
 	if stage >= STAGES.size() or only != "":
 		finish()
@@ -522,6 +574,21 @@ func setup(name: String) -> void:
 			world.add_child(glow_q)
 		"soften":
 			HSSoften.attach(cam).set_amounts(0.9, 7.0, 1.6, 0.25)
+		"crt":
+			if post_n != null:
+				post_n.apply("none")                                 # the grade off: the screen's own numbers
+			if hair_key != null:
+				hair_key.visible = false
+			box(Vector3(0.36, 0.3, 0.34), Vector3(-2.2, 0.9, -1.8), Color(0.12, 0.11, 0.1), 0.6)   # a 14-inch set on the table
+			crt_q = MeshInstance3D.new()
+			var qm := QuadMesh.new()
+			qm.size = Vector2(0.28, 0.21)
+			crt_q.mesh = qm
+			world.add_child(crt_q)
+			crt_q.position = Vector3(-2.2, 0.92, -1.6295)          # its glass, half a millimetre proud of the front
+			crt_mat = HSCrt.screen(crt_q, Vector2(280.0, 210.0), {"picture": test_card(), "flicker": 1.0, "roll": 0.0})
+			crt_means = []
+			crt_view(10.0, 0.2)                                      # the eye 20 cm off the glass through a narrow lens: 35 mm of the screen fill the frame
 		"grade":
 			cam.look_at_from_position(Vector3(0.0, 1.5, 2.6), Vector3(0.0, 1.2, -2.0))   # the room: the lamp bright, the corners dark
 			if hair_key != null:
@@ -738,6 +805,101 @@ func hair_atlas() -> ImageTexture:
 					im.set_pixel(xi, y, c)
 	im.generate_mipmaps()
 	return ImageTexture.create_from_image(im)
+
+
+## the CRT stage's camera: straight on to the glass, `d` metres off it, through a lens of `fov` degrees
+func crt_view(fov: float, d: float) -> void:
+	cam.fov = fov
+	cam.look_at_from_position(Vector3(-2.2, 0.92, -1.6295 + d), Vector3(-2.2, 0.92, -1.6295))
+
+
+## a test card for the CRT: colour bars over the top third, a grey field in the middle, a ramp along the bottom
+func test_card() -> ImageTexture:
+	var w := 256
+	var h := 192
+	var im := Image.create(w, h, true, Image.FORMAT_RGB8)
+	var bars := [Color(0.75, 0.75, 0.75), Color(0.75, 0.75, 0.0), Color(0.0, 0.75, 0.75), Color(0.0, 0.75, 0.0), Color(0.75, 0.0, 0.75), Color(0.75, 0.0, 0.0), Color(0.0, 0.0, 0.75), Color(0.1, 0.1, 0.1)]
+	for y in h:
+		for x in w:
+			var c: Color
+			if y < h / 3:
+				c = bars[min(7, x * 8 / w)]
+			elif y < 2 * h / 3:
+				c = Color(0.6, 0.6, 0.6)
+			else:
+				var t := float(x) / float(w - 1)
+				c = Color(t, t, t)
+			im.set_pixel(x, y, c)
+	im.generate_mipmaps()
+	return ImageTexture.create_from_image(im)
+
+
+## the close picture of the CRT (the grey field): the scanlines' period down the picture against the pitch the
+## camera should see, and the stripes' order along the rows (red, green, blue, red...)
+func crt_measure_near(img: Image) -> void:
+	var b := Rect2i(440, 60, 400, 600)
+	var prof := PackedFloat32Array()
+	for y in range(b.position.y, b.end.y):
+		var s := 0.0
+		for x in range(b.position.x, b.end.x):
+			s += img.get_pixel(x, y).get_luminance()
+		prof.append(s / float(b.size.x))
+	var p0 := cam.unproject_position(crt_q.global_position)
+	var p1 := cam.unproject_position(crt_q.global_position + Vector3(0.0, 0.001, 0.0))
+	var px_mm := p0.distance_to(p1)
+	report["crt_px_per_mm"] = px_mm
+	report["crt_line_px"] = period_of(prof)
+	report["crt_line_px_expected"] = px_mm * 210.0 / 240.0
+	report["crt_triad_px_expected"] = px_mm * 0.3
+	var good := 0
+	var total := 0
+	for y in range(b.position.y, b.end.y, 2):
+		var last := -1
+		for x in range(b.position.x, b.end.x):
+			var c := img.get_pixel(x, y)
+			var d := -1
+			if c.r > c.g * 1.1 and c.r > c.b * 1.1:
+				d = 0
+			elif c.g > c.r * 1.1 and c.g > c.b * 1.1:
+				d = 1
+			elif c.b > c.r * 1.1 and c.b > c.g * 1.1:
+				d = 2
+			if d >= 0 and last >= 0 and d != last:
+				total += 1
+				if d == (last + 1) % 3:
+					good += 1
+			if d >= 0:
+				last = d
+	report["crt_triad_order"] = float(good) / float(max(total, 1))
+	report["crt_triads_per_row"] = float(total) / 3.0 / float(max(b.size.y / 2, 1))
+	report["crt_near_contrast"] = row_contrast(img, b)
+
+
+## the period of a profile's peaks (rows between its first and last peak over the peaks between), 0 with under two
+func period_of(v: PackedFloat32Array) -> float:
+	var mean := 0.0
+	for x in v:
+		mean += x
+	mean /= float(max(v.size(), 1))
+	var peaks: Array = []
+	for i in range(2, v.size() - 2):
+		if v[i] > mean and v[i] >= v[i - 1] and v[i] >= v[i + 1] and v[i] >= v[i - 2] and v[i] >= v[i + 2] and (v[i] > v[i - 1] or v[i] > v[i + 1]):
+			if peaks.is_empty() or i - int(peaks[-1]) > 2:
+				peaks.append(i)
+	if peaks.size() < 2:
+		return 0.0
+	return float(peaks[-1] - peaks[0]) / float(peaks.size() - 1)
+
+
+## the picture's contrast row to row in a box: the mean difference between a pixel and the one under it
+func row_contrast(img: Image, b: Rect2i) -> float:
+	var s := 0.0
+	var k := 0
+	for y in range(max(0, b.position.y), min(img.get_height() - 1, b.end.y - 1)):
+		for x in range(max(0, b.position.x), min(img.get_width(), b.end.x)):
+			s += abs(img.get_pixel(x, y + 1).get_luminance() - img.get_pixel(x, y).get_luminance())
+			k += 1
+	return s / float(max(k, 1))
 
 
 ## how many colours a box of the picture holds (at 6 bits a channel): few on a stepped picture, thousands on a lit one

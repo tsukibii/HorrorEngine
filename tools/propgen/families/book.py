@@ -93,9 +93,10 @@ def curved_block(wb, hb, t, z0, lift, I, top, side, bottom, mirror=False, nu=16,
     return m
 
 
-def one_book(p, k, w, h, t, I, binding="left", open_at=None, lift=3.0, lite=False):
+def one_book(p, k, w, h, t, I, binding="left", open_at=None, lift=3.0, lite=False, split=False):
     """A book lying on its back cover (x across, y up its height, z through it from 0), its islands named with prefix p:
-    closed, or open flat at `open_at` (0 to 1 of its pages turned) with its spread up."""
+    closed, or open flat at `open_at` (0 to 1 of its pages turned) with its spread up. `split` (closed only): the rest
+    and the front cover as two meshes (the cover a part on its hinge: an openable book, PROPGEN §27)."""
     K = KINDS[k]
     rb = (lambda *a, **kw: M.rbox(*a, steps=1, corner_n=2, **kw)) if lite else M.rbox     # many books: fewer rings round each edge
     ct = min(float(K["board"]), t * 0.2)
@@ -106,8 +107,9 @@ def one_book(p, k, w, h, t, I, binding="left", open_at=None, lift=3.0, lite=Fals
     if open_at is None:
         bt = t - 2 * ct
         bw, bh = w - ct - sq, h - 2 * sq
+        cover = []
         parts.append(rb((w * MM, h * MM, ct * MM), bev, I, top=p + "inside", bottom=p + "back", edge=p + "edge", at=(0, 0, 0)))
-        parts.append(rb((w * MM, h * MM, ct * MM), bev, I, top=p + "front", bottom=p + "inside", edge=p + "edge", at=(0, 0, (t - ct) * MM)))
+        cover.append(rb((w * MM, h * MM, ct * MM), bev, I, top=p + "front", bottom=p + "inside", edge=p + "edge", at=(0, 0, (t - ct) * MM)))
         sp = rb((t * MM, h * MM, ct * MM), bev, I, top=p + "spine", bottom=p + "inside", edge=p + "edge")
         M.turn(sp, M.rot("y", -90 if side < 0 else 90), move=(side * (w / 2 - ct) * MM, 0, t / 2 * MM))
         parts.append(sp)
@@ -116,11 +118,13 @@ def one_book(p, k, w, h, t, I, binding="left", open_at=None, lift=3.0, lite=Fals
         if k == "diary":                                     # its elastic band round the fore-edge, its ribbon out of the tail
             xb = -side * (w / 2 - 14)
             for z0, z1 in ((-0.6, 0.0), (t, t + 0.6)):
-                parts.append(M.box((8 * MM, (h + 0.4) * MM, (z1 - z0) * MM), at=(xb * MM, 0, z0 * MM), island="band", islands=I, mat="main"))
+                (cover if z0 >= t else parts).append(M.box((8 * MM, (h + 0.4) * MM, (z1 - z0) * MM), at=(xb * MM, 0, z0 * MM), island="band", islands=I, mat="main"))
             parts.append(M.box((8 * MM, 4 * MM, 1.0 * MM), at=(xb * MM, (-h / 2 - 1.6) * MM, ct * MM), island="band", islands=I, mat="main"))
             rb = M.box((5 * MM, 38 * MM, 0.3 * MM), at=((bx + side * bw * 0.15) * MM, (-h / 2 - 12) * MM, (ct + bt * 0.55) * MM), island="band", islands=I, mat="main")
             parts.append(rb)
-        return M.join(parts)
+        if split:
+            return M.join(parts), M.join(cover)
+        return M.join(parts + cover)
     # open flat: the covers side by side, the spine flat between them, a block of pages on each with its top page curved
     bt = t - 2 * ct
     sw = max(t * 0.9, 4.0)
@@ -156,6 +160,11 @@ def make(spec, th):
         raise ValueError(f"book kind {kind!r}: one of {', '.join(KINDS)}")
     th.material("main", "card", color="#e9e2cf", rough=0.7)
     pose = spec.get("pose", "lie")
+    openable = bool(spec.get("openable")) and arrange == "one"
+    if openable:                                             # its pages on materials of their own: Godot draws the story's handwriting on them (PROPGEN §27)
+        pose = "lie"
+        th.material("page_l", "paper", color="#f2eedf", rough=0.85, bake=False)
+        th.material("page_r", "paper", color="#f2eedf", rough=0.85, bake=False)
     books = []                                               # (prefix, kind, w, h, t, art, spine, back, binding)
     titles = list(spec.get("titles") or TITLES)
     mix = list(spec.get("mix") or [kind])
@@ -221,16 +230,31 @@ def make(spec, th):
     maxt = max(b[4] for b in books)
     th.island("pages", 2 * (maxw + maxh), maxt)
     th.island("leaf", 40, 40)
-    if pose == "open" and not many:
+    if (pose == "open" or openable) and not many:
         w, h = books[0][2], books[0][3]
-        th.island("page_l", w, h)
-        th.island("page_r", w, h)
+        th.island("page_l", w, h, mat="page_l" if openable else "main")
+        th.island("page_r", w, h, mat="page_r" if openable else "main")
     if any(b[1] == "diary" for b in books):
         th.island("band", 20, 20)
     th.pack()
     I = th.islands
     parts = []
-    if not many:
+    if openable:
+        p, k, w, h, t, art, sp, bk, binding = books[0]
+        side = -1 if binding == "left" else 1
+        rest, cover = one_book(p, k, w, h, t, I, binding, open_at=None, lift=float(spec.get("lift", 3.0)), split=True)
+        spread = one_book(p, k, w, h, t, I, binding, open_at=float(spec.get("open_at", 0.5)), lift=float(spec.get("lift", 3.0)))
+        sw = max(t * 0.9, 4.0)
+        spread.v[:, 0] -= side * (sw / 2 + w / 2) * MM      # its cover that stays put over the closed book's
+        spread.a["rest"] = spread.v.copy()
+        th.assemble([("block", rest), ("cover", cover), ("spread", spread)])
+        pivot = (side * w / 2 * MM, 0.0, 0.0)                # the cover hinges at the spine's foot: open flat it lies where the spread's does
+        th.part("cover", pivot, (0.0, -1.0 if side < 0 else 1.0, 0.0), kind="hinge", open=180.0, shut=0.0, built=0.0, hide_open=True)
+        th.part("block", (0.0, 0.0, 0.0), (0.0, 0.0, 1.0), kind="hide", open=1.0, shut=0.0, built=0.0)
+        th.part("spread", (0.0, 0.0, 0.0), (0.0, 0.0, 1.0), kind="show", open=1.0, shut=0.0, built=0.0)
+        th.extras["pages"] = {nm: {"material": nm, "rect": [round(float(x), 5) for x in I[nm].rect], "mm": [w, h]} for nm in ("page_l", "page_r")}
+        th.extras["book"] = {"binding": binding, "size_mm": [w, h, t]}
+    elif not many:
         p, k, w, h, t, art, sp, bk, binding = books[0]
         m = one_book(p, k, w, h, t, I, binding, open_at=float(spec.get("open_at", 0.45)) if pose == "open" else None,
                      lift=float(spec.get("lift", 3.0)))
@@ -252,14 +276,19 @@ def make(spec, th):
             M.turn(m, np.eye(3), move=((x + t / 2) * MM, (-fit[1] / 2 + w / 2 + 3) * MM, 0))
             parts.append(m)
             x += t + 0.4
-    th.low = M.join(parts)
+    if not openable:
+        th.low = M.join(parts)
     th.high = None
     th.pose = "stand"
     th.sharp_angle = 40
     age = float(spec.get("age", 0.2))
     pages = dict({"design": "book_pages", "age": age}, **(spec.get("pages") or {}))
-    page_l = dict({"design": "page_text"}, **(spec.get("page_l") or {}))
-    page_r = dict({"design": "page_text"}, **(spec.get("page_r") or {}))
+    page_design = "diary_page" if kind in ("diary", "notebook") else "page_text"
+    # an openable book's pages are baked blank (their rules and paper only): the game draws the story's handwriting on
+    # them at play (PROPGEN §27); a `page_l`/`page_r` of your own in the recipe still paints what it says
+    blank = {"text": "", "date": "", "head": "", "page": ""} if openable else {}
+    page_l = {"design": page_design, "font": "hand", **blank, **(spec.get("page_l") or {})}
+    page_r = {"design": page_design, "font": "hand", **blank, **(spec.get("page_r") or {})}
 
     def paint(fr):
         from .. import designs

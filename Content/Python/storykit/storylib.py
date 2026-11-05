@@ -16,7 +16,22 @@ WALL_T = 0.1          # wall thickness, centred on the room's edge
 EYE = 1.65            # the player's eye height
 SHAPE_ARGS = {"box": 3, "cyl": 2, "sphere": 1, "plane": 2, "stairs": 3}
 USES = {"door", "pickup", "note", "inspect", "switch", "light", "locker", "combo", "use_on", "trigger", "spot", "sit", "roll",
-        "carry", "game", "sleep", "clean", "breaker", "leak", "talk"}
+        "carry", "game", "sleep", "clean", "breaker", "leak", "talk", "open", "container", "moveable", "book"}
+HANDS = ("hand", "hand2", "hand_jp", "pen_jp", "print")   # a book's hand: the fonts in tools/godot/addons/horrorstudio/fonts (book.gd)
+_LIB_INDEX = None
+
+
+def LIBRARY_INDEX():
+    """The library's made props by ref (`props/<name>`: index/props.json; their `parts` that open, their `inside`)."""
+    global _LIB_INDEX
+    if _LIB_INDEX is None:
+        import json as _json
+        _LIB_INDEX = {}
+        p = STUDIO / "Library" / "index" / "props.json"
+        if p.exists():
+            for k, v in _json.loads(p.read_text(encoding="utf-8")).items():
+                _LIB_INDEX["props/" + k] = v
+    return _LIB_INDEX
 STAINS = ("dirt", "mud", "blood", "water", "ash")   # a stain's kinds (use: clean; the desk's stain.js draws them)
 PHYSICS = ("rigid", "plushie")   # how a thing you carry moves: the desk's physics kinds (tools/director/play/physics.js)
 BOARD_GAMES = STUDIO / "BoardGames"   # board games' rules, one JS module each (its README.md); a game may add its own BoardGames/

@@ -22,7 +22,7 @@ export class Examine {
   constructor(rt, t) {
     this.rt = rt; this.t = t; this.mats = [];
     const copy = t.clone(true);                         // as it is, without its place: centred, at a size the hands hold
-    copy.position.set(0, 0, 0); copy.quaternion.identity(); copy.updateMatrixWorld(true);
+    copy.position.set(0, 0, 0); copy.quaternion.identity(); copy.visible = true; copy.traverse(o => o.layers.set(0)); copy.updateMatrixWorld(true);   // (drawn even when its room is culled out of sight: stage.cull's layer)
     copy.traverse(o => { if (o.material) { o.material = Array.isArray(o.material) ? o.material.map(m => this.mat(m)) : this.mat(o.material); o.renderOrder = 999; } });
     const box = new THREE.Box3().setFromObject(copy), size = box.getSize(new THREE.Vector3());
     copy.position.sub(box.getCenter(new THREE.Vector3()));
@@ -49,7 +49,7 @@ export class Examine {
   tick(dt) {
     const cam = this.rt.stage.camera; cam.updateMatrixWorld();
     this.turner.quaternion.slerp(this.want, dt ? Math.min(1, dt * EXAMINE.ease) : 1);
-    this.pivot.position.copy(cam.localToWorld(new THREE.Vector3(0, EXAMINE.up, -EXAMINE.dist)));
+    this.pivot.position.copy(cam.localToWorld(new THREE.Vector3(this.x ?? 0, this.up ?? EXAMINE.up, -EXAMINE.dist)));   // (a book in the hands sits a little left, clear of its column: book.js)
     this.pivot.quaternion.copy(cam.getWorldQuaternion(new THREE.Quaternion()));
     this.lamp.position.copy(cam.localToWorld(new THREE.Vector3(0.18, 0.16, -0.04)));
   }

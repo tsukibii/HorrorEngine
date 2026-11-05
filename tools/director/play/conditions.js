@@ -15,7 +15,7 @@ register("condition", "enter", on("enter"));               // a room or a trigge
 register("condition", "exit", on("exit"));
 register("condition", "use", on("use"));
 register("condition", "pickup", on("pickup", "item"));
-register("condition", "read", on("read", "note"));
+register("condition", "read", { test: (v, w, ev) => ev.type === "read" && (ev.note === v || ev.book === v) && (w.page === undefined || +ev.page === +w.page) });   // a note read, or a book's spread shown (its left page's number as `page`)
 register("condition", "caught", { test: (v, w, ev) => ev.type === "caught" && (v === true || v === ev.by) });   // by anyone, or by that cast member
 register("condition", "hidden", { test: (v, w, ev, rt) => !!rt.player.hiding && (v === true || v === rt.player.hiding) });   // in any or that hiding place
 register("condition", "answered", { test: (v, w, ev) => ev.type === "answered" && ev.ask === v && (w.option === undefined || ev.option === w.option) });   // an ask, any or that answer
@@ -31,7 +31,7 @@ register("condition", "power", { test: (v, w, ev, rt) => (rt.powered() ? "on" : 
 register("condition", "locked", { test: (v, w, ev, rt) => !!rt.doorOf(v).locked });   // that door is locked (its latch, its key not yet used, the story); holds while it is
 register("condition", "peeping", { test: (v, w, ev, rt) => !!rt.player.peeping && rt.player.peeping.door === v });   // the eye at that door's peephole; holds while it is
 register("condition", "torch", { test: (v, w, ev) => ev.type === "torch" && v === (ev.on ? "on" : "off") });   // the player switched the flashlight (F) on, or off
-register("condition", "carrying", { test: (v, w, ev, rt) => !!rt.carried && (v === true || v === rt.carried.id) });   // in the hand (the inventory's one): anything, or that; holds while it is
+register("condition", "carrying", { test: (v, w, ev, rt) => (!!rt.carried && (v === true || v === rt.carried.id)) || (!!rt.heldMove && (v === true || v === rt.heldMove.userData.id)) });   // in the hand (the inventory's one, or a moveable held in both): anything, or that; holds while it is
 register("condition", "dropped", {                        // put down (G): anywhere, or `in` a room or a trigger
   test: (v, w, ev) => ev.type === "dropped" && ev.id === v && (w.in === undefined || ev.in.includes(w.in)) });
 register("condition", "played", { test: (v, w, ev) => ev.type === "played" && ev.id === v && (w.result === undefined || ev.result === w.result) });   // a board game ended: any result, or that one
@@ -39,5 +39,10 @@ register("condition", "state", { test: (v, w, ev, rt) => rt.stateOf(v) === w.is 
 register("condition", "ticked", { test: (v, w, ev, rt) => ticked(rt.todo.list, v) });   // a task ticked, or (true) the list through; holds
 register("condition", "failed", { test: (v, w, ev, rt) => failed(rt.todo.list, v) });   // a task failed, or (true) any; holds
 register("condition", "arrived", { test: (v, w, ev, rt) => { const n = rt.npcs[v]; return !!(n && n.as === "go" && n.st.arrived && (w.at === undefined || n.st.arrived === w.at)); } });   // she's got where she was going (behave go); holds while she's there
+register("condition", "opened", { test: (v, w, ev, rt) => rt.openState(v) });   // its parts are open (a lid, doors, a cover: use open, container, book); holds while they are
+register("condition", "closed", { test: (v, w, ev) => ev.type === "closed" && ev.id === v });   // its parts swung or slid shut (a lid, doors, a cover), or a door closed
+register("condition", "placed", { test: (v, w, ev) => ev.type === "placed" && ev.id === v && (w.in === undefined || ev.in === w.in) });   // put into a container (`in`: that one)
+register("condition", "taken", { test: (v, w, ev) => ev.type === "taken" && ev.id === v && (w.from === undefined || ev.from === w.from) });   // taken out of a container (`from`: that one)
+register("condition", "moved", { test: (v, w, ev) => ev.type === "moved" && ev.id === v });   // a moveable came to rest somewhere else (shoved along)
 register("condition", "all", { test: (v, w, ev, rt) => v.every(c => matches(c, ev, rt)) });
 register("condition", "any", { test: (v, w, ev, rt) => v.some(c => matches(c, ev, rt)) });

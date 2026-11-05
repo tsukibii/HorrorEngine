@@ -24,7 +24,8 @@ CASES = {"soda_can": (115, 6000), "soda_can_crushed": (125, 14000), "water_bottl
          "books_cubby": (420, 16000), "zelkova_street": (9000, 26000), "dead_tree": (7000, 26000), "cedar_real": (8000, 14000),
          "azalea_ball": (800, 6000), "grass_tuft": (420, 100), "small_zelkova": (4400, 9000), "pot_ficus": (1700, 12000),
          "pot_cactus": (320, 5000), "pillow_bed": (680, 4000), "futon_folded": (820, 5000), "kakebuton_turned": (1650, 8000),
-         "curtain_tied": (2300, 15000), "table_farmhouse": (2000, 4000), "chair_dining": (880, 4000)}
+         "curtain_tied": (2300, 15000), "table_farmhouse": (2000, 4000), "chair_dining": (880, 4000),
+         "suitcase_hardshell": (600, 12000), "clothes_folded_tee": (314, 1000), "closet_oshiire": (1865, 4000), "journal_diary": (241, 5000)}
 
 
 def _glb(path):
@@ -36,8 +37,23 @@ def _glb(path):
 
 
 def _positions(j, binc):
+    """Every mesh's vertices where its node puts them (a part that opens is a node of its own at its hinge: its vertices
+    are kept about the hinge, PROPGEN §26); a mesh no node uses, where it is."""
     out = []
-    for m in j["meshes"]:
+    used = set()
+    for nd in j["nodes"]:
+        if "mesh" not in nd:
+            continue
+        used.add(nd["mesh"])
+        tr = np.asarray(nd.get("translation", [0.0, 0.0, 0.0]), np.float32)
+        for p in j["meshes"][nd["mesh"]]["primitives"]:
+            a = j["accessors"][p["attributes"]["POSITION"]]
+            bv = j["bufferViews"][a["bufferView"]]
+            off = bv.get("byteOffset", 0) + a.get("byteOffset", 0)
+            out.append(np.frombuffer(binc[off:off + a["count"] * 12], np.float32).reshape(-1, 3) + tr)
+    for i, m in enumerate(j["meshes"]):
+        if i in used:
+            continue
         for p in m["primitives"]:
             a = j["accessors"][p["attributes"]["POSITION"]]
             bv = j["bufferViews"][a["bufferView"]]
@@ -110,6 +126,66 @@ def orientation(path, dirs=26, grid=40):
     worst = sorted(where, key=where.get, reverse=True)[:3]
     return {"back": backs / max(hits, 1), "hits": hits, "mixed": int(np.sum(pf[:, 0] == pf[:, 1])),
             "at": [np.round(P[T[f]].mean(0) * 1000, 1).tolist() for f in worst]}
+
+def parts_case(rec, spec, j, parts):
+    """A thing with parts that open (PROPGEN §26): every part a node of its own in the glb with its `propgen_part`
+    extras, sitting at its pivot, the root carrying them all as `propgen_parts`; a container's inside inside its box
+    shut; an openable book's page materials in the glb and named in its `propgen_pages`."""
+    problems = []
+    ex = lambda nd: nd.get("extras") or {}
+    pnodes = {}
+    for nd in j["nodes"]:
+        if "propgen_part" in ex(nd):
+            d = json.loads(ex(nd)["propgen_part"])
+            pnodes[d["name"]] = (nd, d)
+    if set(pnodes) != set(parts):
+        problems.append(f"its parts in the glb are {sorted(pnodes)}, its meta says {sorted(parts)}")
+    roots = [nd for nd in j["nodes"] if "propgen_parts" in ex(nd)]
+    if len(roots) != 1:
+        problems.append(f"{len(roots)} nodes carry propgen_parts, not one root")
+    else:
+        if set(json.loads(ex(roots[0])["propgen_parts"])) != set(parts):
+            problems.append("the root's propgen_parts don't name its parts")
+        kids = set(roots[0].get("children") or [])
+        for pname, (nd, d) in pnodes.items():
+            if j["nodes"].index(nd) not in kids:
+                problems.append(f"part {pname} isn't a child of the root")
+    for pname, (nd, d) in pnodes.items():
+        tr = nd.get("translation", [0.0, 0.0, 0.0])
+        if max(abs(a - b) for a, b in zip(tr, d["pivot"])) > 1e-4:
+            problems.append(f"part {pname}'s node isn't at its pivot")
+        if d["kind"] not in ("hinge", "slide", "show", "hide"):
+            problems.append(f"part {pname} of kind {d['kind']!r}")
+        if d["kind"] in ("hinge", "slide") and abs(np.linalg.norm(d["axis"]) - 1) > 1e-3:
+            problems.append(f"part {pname}'s axis isn't a unit vector")
+        if not (min(d["open"], d["shut"]) - 1e-6 <= d["built"] <= max(d["open"], d["shut"]) + 1e-6):
+            problems.append(f"part {pname} built at {d['built']}, outside shut {d['shut']} to open {d['open']}")
+    if rec.get("inside_m"):
+        ins, bs = rec["inside_m"], rec["box_shut_m"]
+        if any(ins[k] < bs[k] - 1e-3 for k in range(3)) or any(ins[k] > bs[k] + 1e-3 for k in range(3, 6)):
+            problems.append("its inside reaches out of its box shut")
+        if any(ins[k + 3] - ins[k] < 0.02 for k in range(3)):
+            problems.append("its inside is thinner than 2 cm")
+        if not [nd for nd in j["nodes"] if "propgen_inside" in ex(nd)]:
+            problems.append("its inside isn't in the glb")
+    if spec.get("openable"):
+        pg = [nd for nd in j["nodes"] if "propgen_pages" in ex(nd)]
+        if not pg:
+            problems.append("an openable book without propgen_pages in its glb")
+        else:
+            pages = json.loads(ex(pg[0])["propgen_pages"])
+            names = {m.get("name") for m in j.get("materials", [])}
+            for nm, pd in pages.items():
+                if f"{rec['name']}_{pd['material']}" not in names:
+                    problems.append(f"page {nm}'s material {pd['material']} isn't in the glb")
+                if not (0 <= pd["rect"][0] < pd["rect"][2] <= 1 and 0 <= pd["rect"][1] < pd["rect"][3] <= 1):
+                    problems.append(f"page {nm}'s rect is malformed")
+            if set(pages) != {"page_l", "page_r"}:
+                problems.append("its pages aren't page_l and page_r")
+        if not any(d["kind"] == "show" for _, d in pnodes.values()) or not any(d.get("hide_open") for _, d in pnodes.values()):
+            problems.append("an openable book needs a spread shown open and a cover hidden open")
+    return problems
+
 
 def pictures_case(book, tmp):
     """The picture editor's words (PROPGEN.md §17): a hardcover made with one picture over its whole texture (a sheet,
@@ -205,7 +281,13 @@ def run(book, out):
             continue
         spec = recipes.resolve(book, name, sets=["tex=256"])
         bpy.ops.wm.read_factory_settings(use_empty=True)
-        rec = build.run(name, spec, tmp, formats=("glb",), preview=False, samples=4, log=lambda *a: None)
+        try:
+            rec = build.run(name, spec, tmp, formats=("glb",), preview=False, samples=4, log=lambda *a: None)
+        except (ValueError, SystemExit) as e:
+            if "PBR set" in str(e) and "no folder" in str(e):   # a recipe wearing a set of your own shelf (chair_worn): not on this machine, said so
+                print(f"  skip {name}: {e}")
+                continue
+            raise
         glb = os.path.join(tmp, name, name + ".glb")
         problems = []
         j, binc = _glb(glb)
@@ -223,12 +305,20 @@ def run(book, out):
                 problems.append(f"its lowest point {-lo[1] * 1000:.2f} mm under the floor")
         elif abs(lo[1]) > 1e-4:
             problems.append(f"its lowest point at {lo[1] * 1000:.2f} mm, not on the floor")
-        if rec.get("anchor"):
+        parts = rec.get("parts") or {}
+        if parts:                                       # built with its parts as they're exported: judged by its box shut (PROPGEN §26)
+            problems += parts_case(rec, spec, j, parts)
+            bs = rec["box_shut_m"]
+            if abs((bs[0] + bs[3]) / 2) > 1e-3 or abs((bs[1] + bs[4]) / 2) > 1e-3:
+                problems.append("not centred with its parts shut")
+            longest = float(max(rec["size_shut_m"])) * 1000
+        elif rec.get("anchor"):
             if abs(rec["anchor"][0]) > 1e-3 or abs(rec["anchor"][1]) > 1e-3:
                 problems.append("its anchor isn't over the origin")
         elif abs((lo[0] + hi[0]) / 2) > 1e-3 or abs((lo[2] + hi[2]) / 2) > 1e-3:
             problems.append("not centred")
-        longest = float((hi - lo).max()) * 1000
+        if not parts:
+            longest = float((hi - lo).max()) * 1000
         if not (0.5 * size_mm <= longest <= 2.0 * size_mm):
             problems.append(f"{longest:.0f} mm long, against about {size_mm}")
         if rec["tris"] > budget:

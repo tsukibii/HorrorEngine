@@ -1247,10 +1247,15 @@ def page_text(f, d, rng):
     size = float(d.get("size", min(3.2, W * 0.022)))
     rows = int((H - 2 * m - 8) / (size * 1.6))
     ink = d.get("ink", "#2a2622")
-    f.text(str(d.get("head", "THE QUIET HOUSE")), (W / 2, H - m * 0.6), size * 0.75, font="serif", tracking=0.5, color=ink, **PAPER_INK)
-    f.slot("text", (W / 2, H / 2, W - 2 * m, H - 2 * m - 6), lambda: _lines(f, m, H - m - 4, W - 2 * m, rows, size, ink, rng, gap=1.6),
-           kind="text", about="the page's words", **PAPER_INK)
-    f.text(str(d.get("page", int(rng.integers(12, 280)))), (W / 2, m * 0.5), size * 0.8, font="serif", color=ink, **PAPER_INK)
+    head = str(d.get("head", "THE QUIET HOUSE"))
+    if head.strip():
+        f.text(head, (W / 2, H - m * 0.6), size * 0.75, font="serif", tracking=0.5, color=ink, **PAPER_INK)
+    if str(d.get("text", "words")).strip():                 # `text: ""` a blank page (an openable book's: the game writes on it)
+        f.slot("text", (W / 2, H / 2, W - 2 * m, H - 2 * m - 6), lambda: _lines(f, m, H - m - 4, W - 2 * m, rows, size, ink, rng, gap=1.6),
+               kind="text", about="the page's words", **PAPER_INK)
+    pg = str(d.get("page", int(rng.integers(12, 280))))
+    if pg.strip():
+        f.text(pg, (W / 2, m * 0.5), size * 0.8, font="serif", color=ink, **PAPER_INK)
 
 
 def diary_page(f, d, rng):
@@ -1261,17 +1266,20 @@ def diary_page(f, d, rng):
         f.rect(6, top - i * gap, W - 12, 0.25, color="#9fb3c8", alpha=0.7, **PAPER_INK)
     ink = d.get("ink", "#1d2340")
     font = d.get("font", "marker")
-    f.text(str(d.get("date", "6月14日 (金) 雨")), (8, H - 9), 3.2, font="gothic_jp" if _jp(d.get("date", "6月14日")) else font, anchor="left baseline",
-           color=ink, **PAPER_INK)
+    date = str(d.get("date", "6月14日 (金) 雨"))
+    if date.strip():
+        f.text(date, (8, H - 9), 3.2, font="gothic_jp" if _jp(date) else font, anchor="left baseline", color=ink, **PAPER_INK)
     text = str(d.get("text", "the bell rang again\nafter everyone left\nsomeone was still\nin the classroom\ndon't look back"))
     size = float(d.get("size", 5.0))
     lines = [(ln, 8 + rng.uniform(-0.8, 0.8), top + 1.8 - i * gap * int(d.get("spacing", 1)), rng.uniform(-1.4, 1.4)) for i, ln in enumerate(text.split("\n"))]
+    lines = [ln for ln in lines if ln[0].strip()]            # a blank page (an openable book's: the game writes on it)
 
     def writing():
         for ln, x, y, rot in lines:
             f.text(ln, (x, y), size, font="brush_jp" if _jp(ln) else font, anchor="left baseline", rot=rot, fit=W - 16, color=ink, **PAPER_INK)
-    f.slot("writing", (W / 2, (top - len(lines) * gap + top) / 2 + 2, W - 12, len(lines) * gap + 4), writing, kind="text",
-           about="the handwriting on the page", **PAPER_INK)
+    if lines:
+        f.slot("writing", (W / 2, (top - len(lines) * gap + top) / 2 + 2, W - 12, len(lines) * gap + 4), writing, kind="text",
+               about="the handwriting on the page", **PAPER_INK)
 
 
 SUBJECT_COLORS = {"国語": "#b8353a", "数学": "#2f5fa8", "英語": "#3a8a5a", "理科": "#2f8f9c", "社会": "#b07a2a", "音楽": "#8a4fa0", "美術": "#c4553a",

@@ -1113,6 +1113,86 @@
      }
     ]
    }
+  },
+  {
+   "id": "openable",
+   "cat": "play",
+   "kind": "part",
+   "path": "parts/openable.tscn",
+   "title": "Opens",
+   "desc": "A lid or doors that swing or slide: a made prop's parts",
+   "glyph": "wardrobe",
+   "keywords": [
+    "lid",
+    "doors",
+    "closet",
+    "wardrobe",
+    "cabinet",
+    "chest",
+    "trunk",
+    "cupboard",
+    "hatch",
+    "cover"
+   ]
+  },
+  {
+   "id": "container",
+   "cat": "play",
+   "kind": "part",
+   "path": "parts/container.tscn",
+   "title": "Container",
+   "desc": "Opens; what's put in stays in, through carrying",
+   "glyph": "box",
+   "keywords": [
+    "suitcase",
+    "case",
+    "box",
+    "crate",
+    "chest",
+    "trunk",
+    "bag",
+    "drawer",
+    "basket"
+   ]
+  },
+  {
+   "id": "moveable",
+   "cat": "play",
+   "kind": "part",
+   "path": "parts/moveable.tscn",
+   "title": "Moveable",
+   "desc": "Pushed when walked into; picked up upright, put down where aimed",
+   "glyph": "box",
+   "keywords": [
+    "chair",
+    "stool",
+    "crate",
+    "table",
+    "bin",
+    "barrel",
+    "cart",
+    "ladder"
+   ]
+  },
+  {
+   "id": "book",
+   "cat": "look",
+   "kind": "part",
+   "path": "parts/book.tscn",
+   "title": "Book",
+   "desc": "Opened in the hands, read page by page; its text grows with the game",
+   "glyph": "note",
+   "keywords": [
+    "book",
+    "diary",
+    "journal",
+    "notebook",
+    "ledger",
+    "album",
+    "scrapbook",
+    "manual",
+    "bible"
+   ]
   }
  ]
 }

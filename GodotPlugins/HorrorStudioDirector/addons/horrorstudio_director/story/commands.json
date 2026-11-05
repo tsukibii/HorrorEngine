@@ -478,6 +478,36 @@
    }
   },
   {
+   "verb": "open",
+   "label": "Open or shut a thing",
+   "icon": "door",
+   "group": "world",
+   "hint": "a lid, a closet's doors, a book's cover: a made prop's parts (PROPGEN §26)",
+   "fields": [
+    {
+     "key": "open",
+     "label": "Thing",
+     "kind": "thing",
+     "verb": true
+    },
+    {
+     "key": "to",
+     "label": "to",
+     "kind": "choice",
+     "opts": [
+      "open",
+      "shut",
+      "lock",
+      "unlock"
+     ]
+    }
+   ],
+   "make": {
+    "open": "",
+    "to": "open"
+   }
+  },
+  {
    "verb": "light",
    "label": "Light",
    "icon": "light",
@@ -1311,12 +1341,20 @@
    "verb": "read",
    "label": "The player reads",
    "icon": "note",
+   "hint": "a note, or a book (use: book): its id, and `page` the left page's number of the spread shown",
    "fields": [
     {
      "key": "read",
-     "label": "Note",
+     "label": "Note or book",
      "kind": "note",
      "verb": true
+    },
+    {
+     "key": "page",
+     "label": "page",
+     "kind": "number",
+     "opt": true,
+     "ph": "0"
     }
    ],
    "make": {
@@ -1484,6 +1522,101 @@
    ],
    "make": {
     "dropped": ""
+   }
+  },
+  {
+   "verb": "opened",
+   "label": "A thing is open",
+   "icon": "door",
+   "hint": "holds while its lid, doors or cover are open (use: open, container, book)",
+   "fields": [
+    {
+     "key": "opened",
+     "label": "Thing",
+     "kind": "thing",
+     "verb": true
+    }
+   ],
+   "make": {
+    "opened": ""
+   }
+  },
+  {
+   "verb": "closed",
+   "label": "A thing is shut",
+   "icon": "door",
+   "hint": "its lid, doors or cover swung or slid shut (use: open, container), or a door closed",
+   "fields": [
+    {
+     "key": "closed",
+     "label": "Thing",
+     "kind": "thing",
+     "verb": true
+    }
+   ],
+   "make": {
+    "closed": ""
+   }
+  },
+  {
+   "verb": "placed",
+   "label": "Something is put into a container",
+   "icon": "move",
+   "fields": [
+    {
+     "key": "placed",
+     "label": "Thing",
+     "kind": "thing",
+     "verb": true
+    },
+    {
+     "key": "in",
+     "label": "into",
+     "kind": "thing",
+     "opt": true
+    }
+   ],
+   "make": {
+    "placed": ""
+   }
+  },
+  {
+   "verb": "taken",
+   "label": "Something is taken out of a container",
+   "icon": "item",
+   "fields": [
+    {
+     "key": "taken",
+     "label": "Thing",
+     "kind": "thing",
+     "verb": true
+    },
+    {
+     "key": "from",
+     "label": "out of",
+     "kind": "thing",
+     "opt": true
+    }
+   ],
+   "make": {
+    "taken": ""
+   }
+  },
+  {
+   "verb": "moved",
+   "label": "A moveable comes to rest elsewhere",
+   "icon": "move",
+   "hint": "pushed over, carried off and put down (use: moveable)",
+   "fields": [
+    {
+     "key": "moved",
+     "label": "Thing",
+     "kind": "thing",
+     "verb": true
+    }
+   ],
+   "make": {
+    "moved": ""
    }
   },
   {
@@ -2750,6 +2883,46 @@
   {
    "what": "action",
    "value": {
+    "open": "",
+    "to": "open"
+   },
+   "text": "Open …"
+  },
+  {
+   "what": "action",
+   "value": {
+    "open": "thing_0",
+    "to": "open"
+   },
+   "text": "Open thing_0"
+  },
+  {
+   "what": "action",
+   "value": {
+    "open": "thing_0",
+    "to": "shut"
+   },
+   "text": "Shut thing_0"
+  },
+  {
+   "what": "action",
+   "value": {
+    "open": "thing_0",
+    "to": "lock"
+   },
+   "text": "Lock thing_0"
+  },
+  {
+   "what": "action",
+   "value": {
+    "open": "thing_0",
+    "to": "unlock"
+   },
+   "text": "Unlock thing_0"
+  },
+  {
+   "what": "action",
+   "value": {
     "light": null,
     "room": "",
     "set": "off"
@@ -4011,6 +4184,14 @@
   {
    "what": "trigger",
    "value": {
+    "read": "note_0",
+    "page": 3
+   },
+   "text": "the player reads note_0 at page 3"
+  },
+  {
+   "what": "trigger",
+   "value": {
     "read": "note_0"
    },
    "text": "the player reads note_0"
@@ -4170,6 +4351,92 @@
     "dropped": "carry_0"
    },
    "text": "carry_0 is put down"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "opened": ""
+   },
+   "text": "… is open"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "opened": "thing_0"
+   },
+   "text": "thing_0 is open"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "closed": ""
+   },
+   "text": "… is shut"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "closed": "thing_0"
+   },
+   "text": "thing_0 is shut"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "placed": ""
+   },
+   "text": "… is put in"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "placed": "thing_0",
+    "in": "thing_1"
+   },
+   "text": "thing_0 is put into thing_1"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "placed": "thing_0"
+   },
+   "text": "thing_0 is put in"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "taken": ""
+   },
+   "text": "… is taken out"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "taken": "thing_0",
+    "from": "thing_1"
+   },
+   "text": "thing_0 is taken out of thing_1"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "taken": "thing_0"
+   },
+   "text": "thing_0 is taken out"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "moved": ""
+   },
+   "text": "… has been moved"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "moved": "thing_0"
+   },
+   "text": "thing_0 has been moved"
   },
   {
    "what": "trigger",

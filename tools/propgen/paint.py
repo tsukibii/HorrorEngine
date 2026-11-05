@@ -19,6 +19,8 @@ FONT_FILES = {
     "marker": "PermanentMarker-Regular.ttf", "mono": "CourierPrime-Regular.ttf", "bungee": "Bungee-Regular.ttf",
     "righteous": "Righteous-Regular.ttf", "rubik": "RubikMonoOne-Regular.ttf", "gothic_jp": "DelaGothicOne-Regular.ttf",
     "brush_jp": "YujiSyuku-Subset.ttf",          # a calligrapher's hand: kana and JIS level 1 kanji (talismans, ema)
+    # handwriting for the books' pages (DECISIONS 2026-11-05, later; all OFL, their texts in fonts/licences/)
+    "hand": "Caveat-Variable.ttf", "hand2": "IndieFlower-Regular.ttf", "hand_jp": "Yomogi-Regular.ttf", "pen_jp": "ZenKurenaido-Regular.ttf",
 }
 
 

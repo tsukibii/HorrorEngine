@@ -22,6 +22,7 @@ LOOKPLUGIN). The pieces, the numbers behind them and what was measured: **docs/G
 | **The softener** | `soften.gd` (`HSSoften`) | `HSSoften.attach(camera)` a CompositorEffect on the camera, run after the transparents (a compute pass over the colour buffer by its depth: almost sharp up close, soft with distance, `set_amounts(near_m, far_m, pixels, least)`; the digits, steam and glows softened with the room, never lost); the camhybrid tape switches it on, `detach` takes it off; `debug` 2 draws the depth it reads as grey (10 m white), 3 the raw depth; the demo measures it: a checker at arm's length kept, one across the room softened, a glow kept |
 | **Mirrors** | `mirror.gd` (`HSMirror`), `mirror.gdshader` | `HSMirror.attach(mesh_instance, surface, camera, res)` a real reflection on a surface: the camera reflected through the glass's plane into a SubViewport of its own each frame the glass is in view, the glass reading the texel that camera gave each of its points (its view-projection), its own wall and itself kept out of the picture, each mirror on a layer of its own (11 to 19) so a mirror seen in a mirror shows its last frame; `mirror_surface(mesh_instance)` finds a kit panel's `kit_mirror` face |
 | **Window panes** | `glass.gd` (`HSGlass`), `glass.gdshader` | `HSGlass.pane(mesh_instance, size_m)` clear glass on a quad, the room's lights in it; `set_rain(material, k)` drops running down it with trails and a mist, each bending the view behind |
+| **CRT screens** | `crt.gd` (`HSCrt`), `crt.gdshader` | `HSCrt.screen(mesh_instance, size_mm)` a tube television's glass seen close (docs/GODOT_LOOK.md §5i): red, green and blue phosphor stripes at their true pitch and the beam's scanlines, both fading out as they shrink under a few pixels (no moiré), the glass's curve and black border, the bright parts' halo, a mains hum and a rolling bar, the glass dark and glossy with the room's lights in it; `set_picture` a texture or snow made in the shader, `set_brightness` (0: the set off). The little things' televisions wear it (lifefx.gd) |
 | **Blood** | `blood.gd` (`HSBlood`), `blood.gdshader` | `HSBlood.material(seed)` a splat for a flat thing (a pool with a ragged edge, flung drops, drips down a wall), glossy wet, `set_dry(k)` to dull it, `set_opacity(k)` to scrub it; `HSBlood.splat(parent, at, normal, size, seed)` a quad over any surface |
 | **Rain** | `rain.gd` (`HSRain`), `rain.gdshader` | `HSRain.make(size, count, strength)` a box of streaks falling and wrapping in the vertex shader (no particle system), turned to the camera, faint up close, lit by every light that reaches it (the flashlight's beam full of rain); `follow` a node to keep it round the player outdoors; splashes where they land (`splash.gdshader`, a child MultiMesh: a landing glint, a wet sheen and five thrown droplets, nothing drawn; the ripple is the wet floor's; `set_splashes(on)`) |
 | **The eye** | `eye.gd` (`HSEye`), `eye.gdshader` | the Studio's eye on a Character Studio export's eyeballs: `HSEye.wear(node, glb_path)` reads each eye's shape and paint from the glb's material extras and puts the refracting cornea on it (the iris behind the dome, read where the bent view lands; the catchlights on the clear coat). The same maths as the Studio's and Unreal's M_StudioEye |
@@ -33,10 +34,11 @@ LOOKPLUGIN). The pieces, the numbers behind them and what was measured: **docs/G
 
 ## The effects as nodes: drag and drop
 
-Every effect is also a node to drop into a scene and tune in the inspector (`nodes/`), and `presets/` holds 33 ready
+Every effect is also a node to drop into a scene and tune in the inspector (`nodes/`), and `presets/` holds 41 ready
 ones (rain, a downpour, wet floors, a puddle, blood on a floor and up a wall, a leak, a window's shaft and its sun,
 a headlight sweep, caustics, blinds, leaves and clouds lights, a fluorescent tube, a dying bulb, a candle, an alarm,
-a faulty neon, a mirror, a rainy window pane, grades, tapes, a character's look): drag one from the FileSystem dock
+a faulty neon, a mirror, a rainy window pane, a CRT screen of snow, grades, tapes, a character's look, the room
+lights' zones, the balanced look): drag one from the FileSystem dock
 into the level, or Add Child Node and type `HS`. They preview in the editor where they can (the rain falls, the dust
 drifts, the floor is wet, the lights flicker, the patterns move) and save only their numbers: what they make inside
 themselves is never saved, and a node that changes a mesh's material (a wet floor, a pane, a leak) puts the mesh's
@@ -51,6 +53,7 @@ own back before every save. Forward (-Z) is always into the room. The list and h
 | `HSHeadlightSweep` | Node3D | a car passing outside the window it sits in (`every`, `secs`, `out`, `span`, `energy`, `aim`, `seed`, `color`, `preview_every`; `fire()`) |
 | `HSWetSurface` | HSOnMesh | the mesh it's under made wet (`wetness`, `puddles`, `puddle_scale`, `ripples`, `ripple_rate`, `water_tint`, `edge`) |
 | `HSWindowPane` | HSOnMesh | glass with rain on the mesh it's under (`rain`, `clarity`, `tint`, `drop_cm`, `speed`, `bend`, `size_m`, `seed`) |
+| `HSCrtScreen` | HSOnMesh | a tube television's glass on the mesh it's under, or one `surface` of it (`picture`, `brightness`, `size_mm`, `pitch_mm`, `scan_lines`, `scan_dark`, `phosphor`, `scale_up`, `curve`, `border_mm`, `bleed`, `flicker`, `roll`, `roll_secs`, `fade_px`, `glass`, `roughness`, `seed`) |
 | `HSWallLeak` | HSOnMesh | water down the wall it's on (`width`, `length`, `wet`, `drip`) |
 | `HSMirrorSurface` | Node | the mesh it's under as a real mirror, in the game (`surface`, `resolution`) |
 | `HSLiquidFill` | Node | a bottle's liquid kept level and sloshing (a made prop's `<name>_liquid`, or any closed mesh of a container's inside; `fill`, its colours, `slosh`, `settle`, `swing`; the game puts one under every made prop's liquid itself) |

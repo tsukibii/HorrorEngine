@@ -203,7 +203,9 @@ def main():
             ref = ROOT / "Saved" / "Story" / game / "godot_reference"
             extra = ["--fixed-fps", "60", "--", f"--ref={ref}"] + ([f"--from={a.from_nid}"] if a.from_nid else [])
             code, out = run_godot(r["dir"], "res://addons/horrorstudio/tests/gdtestroom.gd", extra, timeout=1800)
-            print("\n".join("  " + ln for ln in out.splitlines()[-60:]))
+            lines = out.splitlines()
+            kept = [ln for ln in lines[:-60] if ln.startswith("GDTESTROOM") or ln.startswith("    ok  ") or ln.startswith("    BAD ") or ln.startswith("       n_")]
+            print("\n".join("  " + ln for ln in kept + lines[-60:]))   # the stations and the verdict, wherever Godot's exit warnings put them
             if code != 0 or "GDTESTROOM ok" not in out:
                 ok = False
         if a.cull:

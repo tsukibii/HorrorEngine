@@ -277,6 +277,28 @@ def compact(m, keep):
         m.sharp = newi[m.sharp[ok]]
 
 
+def select(m, faces):
+    """A copy of the faces `faces` (a bool mask over m.f) with only the vertices they use: a part cut out of a thing
+    (a lid, a door) to go out as a node of its own."""
+    faces = np.asarray(faces, bool)
+    out = m.copy()
+    out.f, out.uv, out.fm, out.fs = m.f[faces], m.uv[faces], m.fm[faces], m.fs[faces]
+    used = np.zeros(len(m.v), bool)
+    used[out.f[out.f >= 0]] = True
+    compact(out, used)
+    return out
+
+
+def rodrigues(axis, deg):
+    """The 3x3 rotation by `deg` degrees about a unit `axis` (any direction)."""
+    a = np.asarray(axis, float)
+    a = a / max(np.linalg.norm(a), 1e-12)
+    t = math.radians(deg)
+    c, s_ = math.cos(t), math.sin(t)
+    K = np.array([[0, -a[2], a[1]], [a[2], 0, -a[0]], [-a[1], a[0], 0]])
+    return np.eye(3) * c + s_ * K + (1 - c) * np.outer(a, a)
+
+
 def sheet(w, h, step, islands, front="front", back="back", thick=0.0, mats=None, mat=None):
     """A flat sheet w x h metres on z = 0, centred, a grid every `step`: front faces up (+z) into island `front`,
     the back down into `back` (seen from below: mirrored so print reads the right way), and with `thick` an edge
@@ -386,7 +408,7 @@ def to_blender(m, name, materials=None, sharp_angle=None, weighted=None):
     me.loops.add(len(corners))
     me.loops.foreach_set("vertex_index", corners.astype(np.int32))
     me.polygons.add(len(f))
-    starts = np.concatenate([[0], np.cumsum(sizes)[:-1]]).astype(np.int32)
+    starts = np.concatenate([[0], np.cumsum(sizes)[:-1]]).astype(np.int32) if len(f) else np.zeros(0, np.int32)
     me.polygons.foreach_set("loop_start", starts)
     me.update(calc_edges=True)
     uvs = m.uv[f >= 0]

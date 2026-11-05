@@ -127,6 +127,53 @@ register("interactable", "hide", {                // a locker, a wardrobe: a cli
   use: (t, rt, s) => (rt.player.hiding === t.userData.id ? rt.unhide(s) : rt.hide(t, s)),
 });
 register("interactable", "locker", Object.assign({}, part("interactable", "hide")));     // the format's word for it
+// parts that open (play/openable.js, PROPGEN §26; DECISIONS 2026-11-05, later): a made prop's lid or doors swing or slide
+// on a click, Open then Close; `locked_by` a flag (`flag:x`) or an item in the pocket (used once, logged), else **Locked**;
+// the story's `open` action does the same, and `lock`s or `unlock`s it. `{"opened": id}` holds while it's open
+register("interactable", "open", {
+  settings: { cursor: "open", label: "Open", close: "Close", locked: "Locked", secs: 0.8 },
+  prompt: (t, rt, s) => (rt.openLocked(t) ? { cursor: "locked", label: s.locked } : { cursor: s.cursor, label: rt.openState(t.userData.id) ? s.close : s.label }),
+  use: async (t, rt, s) => {
+    if (rt.openLocked(t)) { rt.hud.shake(); rt.hud.line(s.locked + ".", "", 1.2); return; }
+    if (!rt.openState(t.userData.id)) rt.openUnlock(t);          // its key or flag: used, from here on it opens freely
+    await rt.openSet(t, !rt.openState(t.userData.id), s.secs);
+  },
+});
+// a container (a suitcase, a chest): an `open` that holds things. Open, a click with something in the hand puts it in
+// (**Put in: <name>**, laid where the next free spot is, and it stays there, closed, carried off, opened again; `holds`
+// the most it takes), heard as `{"placed": id, "in": container}`; what's inside is clicked to take back (`taken`)
+register("interactable", "container", {
+  settings: { cursor: "open", label: "Open", close: "Close", put: "Put in", locked: "Locked", secs: 0.75, holds: 6 },
+  prompt: (t, rt, s) => {
+    if (rt.openLocked(t)) return { cursor: "locked", label: s.locked };
+    const held = rt.carried;
+    if (held && rt.openState(t.userData.id) && !rt.inv.lowered) return { cursor: "use", label: `${s.put}: ${held.name}` };
+    return { cursor: s.cursor, label: rt.openState(t.userData.id) ? s.close : s.label };
+  },
+  use: async (t, rt, s) => {
+    if (rt.openLocked(t)) { rt.hud.shake(); rt.hud.line(s.locked + ".", "", 1.2); return; }
+    const held = rt.carried;
+    if (held && rt.openState(t.userData.id) && !rt.inv.lowered) { rt.containerPut(t, held, s); return; }
+    if (!rt.openState(t.userData.id)) rt.openUnlock(t);
+    await rt.openSet(t, !rt.openState(t.userData.id), s.secs);
+  },
+});
+// a moveable (a chair, a crate): walked into, it's shoved along (Godot's physics tips it over; the desk slides it); a
+// click picks it up into both hands, upright, facing as it was held, nothing in the inventory; a click puts it down where
+// the reticle is (runtime.movePlace). `{"carrying": id}` holds while it's held, `dropped` when it's set down, `moved`
+// once it has come to rest somewhere else after a shove
+register("interactable", "moveable", {
+  settings: { cursor: "take", label: "Pick up", place: "Put down", mass: 5.0, dist: 0.5 },
+  prompt: (t, rt, s) => ({ cursor: s.cursor, label: s.label }),
+  use: (t, rt) => rt.movePick(t),
+});
+// a book (play/book.js): taken up in the hands and opened, its pages written in a hand, the spread's words in a column
+// at the right, the pages turned; put back shut where it was. `{"read": id, "page": n}` at every spread
+register("interactable", "book", {
+  settings: { cursor: "read", label: "Read", hint: "or right click: put it back" },
+  prompt: (t, rt, s) => ({ cursor: s.cursor, label: s.label }),
+  use: (t, rt, s) => rt.book.open(t, s),
+});
 register("interactable", "life", {                // a little thing (docs/IMMERSION.md): a click does what its state offers (switch the kettle on, put the cigarette out, pour)
   settings: { cursor: "use" },
   prompt: (t, rt, s) => { const a = rt.lifeActs(t.userData.id)[0]; return { cursor: s.cursor, label: a ? a.label : "" }; },

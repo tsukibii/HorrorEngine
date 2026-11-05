@@ -58,7 +58,9 @@
    "subject": "she",
    "skin": "#c99f84",
    "previs_body": "MHR.fbx",
-   "models": {"second": "MHR.fbx"}
+   "models": {
+    "second": "MHR.fbx"
+   }
   }
  },
  "items": {
@@ -97,6 +99,10 @@
    "name": "Porcelain doll",
    "shape": "box 0.12 0.08 0.25",
    "inspect": true
+  },
+  "tee": {
+   "name": "Folded tee",
+   "shape": "box 0.31 0.24 0.03"
   }
  },
  "notes": {
@@ -320,7 +326,27 @@
        "z": 2.3,
        "kelvin": 2400
       },
-      {"id": "yard_puddle_light", "use": "light", "kind": "lamp", "lit": true, "at": [7.4, 2.4], "z": 0.03, "pattern": "caustics", "aim": [7.4, 3.95, 1.5], "spread": 70, "scale": 0.45, "speed": 0.5, "open": 0.25}
+      {
+       "id": "yard_puddle_light",
+       "use": "light",
+       "kind": "lamp",
+       "lit": true,
+       "at": [
+        7.4,
+        2.4
+       ],
+       "z": 0.03,
+       "pattern": "caustics",
+       "aim": [
+        7.4,
+        3.95,
+        1.5
+       ],
+       "spread": 70,
+       "scale": 0.45,
+       "speed": 0.5,
+       "open": 0.25
+      }
      ]
     },
     {
@@ -367,7 +393,11 @@
        "sill": 0.9,
        "window": true,
        "shaft": true,
-       "sweep": {"every": 30, "secs": 3, "out": 2.5}
+       "sweep": {
+        "every": 30,
+        "secs": 3,
+        "out": 2.5
+       }
       },
       {
        "wall": "s",
@@ -574,7 +604,9 @@
         "swing": "out",
         "creak": true,
         "kit": "door_panels",
-        "mats": {"metal": "pbr/metal/Metal063_1K-PNG"}
+        "mats": {
+         "metal": "pbr/metal/Metal063_1K-PNG"
+        }
        }
       },
       {
@@ -626,7 +658,9 @@
         15
        ],
        "z": 2.9,
-       "flicker": 0.3, "mode": "fluorescent", "interval": 5
+       "flicker": 0.3,
+       "mode": "fluorescent",
+       "interval": 5
       },
       {
        "id": "corr_lamp_3",
@@ -1215,7 +1249,18 @@
       "s",
       "e"
      ],
-     "openings": [],
+     "openings": [
+      {
+       "wall": "w",
+       "at": 1.6,
+       "w": 0.9,
+       "h": 2.1,
+       "door": {
+        "id": "door_things",
+        "swing": "out"
+       }
+      }
+     ],
      "props": [
       {
        "id": "library_floor",
@@ -1324,6 +1369,145 @@
      ]
     },
     {
+     "id": "things",
+     "at": [
+      -9,
+      20,
+      0
+     ],
+     "size": [
+      4,
+      5,
+      3
+     ],
+     "floor": "wood",
+     "light": "dim",
+     "kind": "storage",
+     "name": "Things room",
+     "skip": [
+      "e"
+     ],
+     "openings": [],
+     "props": [
+      {
+       "id": "things_table",
+       "shape": "box 0.8 0.5 0.75",
+       "at": [
+        3.4,
+        2.5
+       ],
+       "tag": "table"
+      },
+      {
+       "id": "things_journal",
+       "at": [
+        3.2,
+        2.5
+       ],
+       "on": "things_table",
+       "rot": 0,
+       "use": "book",
+       "title": "Lab journal",
+       "hand": "hand",
+       "pages": [
+        "Day 1. Every room tests one thing. Today's is the things that open: the case, the closet, the wardrobe. If a lid swings here it has to swing in the real build too.",
+        "Day 2. Packed nothing yet. The chair is in the way again; whoever moved it last didn't put it back."
+       ],
+       "entries": [
+        {
+         "if": "things_packed",
+         "text": "Day 3. Packed the tee in the case at last. Shut the lid on it. Whatever is in there stays in there now, closed or carried."
+        }
+       ],
+       "shape": "asset props/journal_diary"
+      },
+      {
+       "id": "things_tee",
+       "at": [
+        3.6,
+        2.5
+       ],
+       "on": "things_table",
+       "rot": 0,
+       "use": "pickup",
+       "item": "tee",
+       "tag": "tee",
+       "shape": "asset props/clothes_folded_tee"
+      },
+      {
+       "id": "things_case",
+       "at": [
+        2.2,
+        3.5
+       ],
+       "rot": 0,
+       "use": "container",
+       "holds": 4,
+       "tag": "suitcase",
+       "shape": "asset props/suitcase_hardshell"
+      },
+      {
+       "id": "things_closet",
+       "at": [
+        2.3,
+        4.65
+       ],
+       "rot": 0,
+       "use": "open",
+       "tag": "closet",
+       "shape": "asset props/closet_sliding"
+      },
+      {
+       "id": "things_wardrobe",
+       "at": [
+        0.4,
+        2.5
+       ],
+       "rot": 90,
+       "use": "locker",
+       "tag": "wardrobe",
+       "shape": "asset props/closet_wardrobe"
+      },
+      {
+       "id": "things_chair",
+       "kit": "dining_chair",
+       "at": [
+        2.5,
+        2.4
+       ],
+       "rot": 0,
+       "use": "moveable",
+       "mass": 6,
+       "tag": "chair"
+      },
+      {
+       "id": "things_corner",
+       "use": "trigger",
+       "size": [
+        1.0,
+        1.0,
+        2.4
+       ],
+       "at": [
+        0.7,
+        4.3
+       ]
+      },
+      {
+       "id": "things_lamp",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        2.0,
+        2.5
+       ],
+       "z": 2.9,
+       "flicker": 0.1
+      }
+     ]
+    },
+    {
      "id": "bath",
      "at": [
       -5,
@@ -1418,7 +1602,19 @@
        ],
        "tag": "bathtub"
       },
-      {"id": "bath_leak", "use": "leak", "wall": "w", "at": [0.08, 2.4], "z": 2.85, "width": 0.45, "drip": 2.2, "wet": 0.85},
+      {
+       "id": "bath_leak",
+       "use": "leak",
+       "wall": "w",
+       "at": [
+        0.08,
+        2.4
+       ],
+       "z": 2.85,
+       "width": 0.45,
+       "drip": 2.2,
+       "wet": 0.85
+      },
       {
        "id": "bath_lamp",
        "use": "light",
@@ -1469,7 +1665,9 @@
       {
        "id": "power_switch",
        "kit": "switch_jp_1",
-       "mats": {"plastic": "pbr/plastic/white_plastic"},
+       "mats": {
+        "plastic": "pbr/plastic/white_plastic"
+       },
        "at": [
         0.07,
         3.4
@@ -1510,7 +1708,8 @@
         4.5
        ],
        "z": 1.45,
-       "mode": "dying", "interval": 4
+       "mode": "dying",
+       "interval": 4
       },
       {
        "id": "power_bench",
@@ -1728,7 +1927,9 @@
       {
        "id": "kitchen_fridge",
        "kit": "fridge",
-       "mats": {"white": "pbr/plastic/white_plastic"},
+       "mats": {
+        "white": "pbr/plastic/white_plastic"
+       },
        "at": [
         0.5,
         4.55
@@ -2435,6 +2636,11 @@
      "a": "corridor",
      "b": "atrium",
      "via": null
+    },
+    {
+     "a": "library",
+     "b": "things",
+     "via": "door_things"
     }
    ]
   },
@@ -2649,7 +2855,9 @@
  },
  "scenes": {
   "s_hello": {
-    "models": {"aoi": "second"},
+   "models": {
+    "aoi": "second"
+   },
    "title": "Aoi in the lobby",
    "level": "lab",
    "stage": {
@@ -5065,6 +5273,137 @@
      ]
     }
    ]
+  },
+  "t_things": {
+   "title": "13 · Things that open and move",
+   "level": "lab",
+   "template": "explore",
+   "beats": [
+    {
+     "id": "b_things_start",
+     "when": {
+      "start": true
+     },
+     "do": [
+      {
+       "objective": "13 · Things that open and move: the case, the journal, the chair, the closets"
+      },
+      {
+       "todo": "t13_open",
+       "text": "Open the suitcase",
+       "ticks": {
+        "opened": "things_case"
+       }
+      },
+      {
+       "todo": "t13_tee",
+       "text": "Take the folded tee",
+       "ticks": {
+        "pickup": "tee"
+       }
+      },
+      {
+       "todo": "t13_pack",
+       "text": "Put the tee in the suitcase",
+       "ticks": {
+        "placed": "things_tee",
+        "in": "things_case"
+       }
+      },
+      {
+       "todo": "t13_shut",
+       "text": "Close the suitcase on it",
+       "ticks": {
+        "closed": "things_case"
+       }
+      },
+      {
+       "todo": "t13_journal",
+       "text": "Read the journal",
+       "ticks": {
+        "read": "things_journal"
+       }
+      },
+      {
+       "todo": "t13_again",
+       "text": "Read what's new in it once the tee is packed",
+       "ticks": {
+        "read": "things_journal",
+        "page": 2
+       }
+      },
+      {
+       "todo": "t13_slide",
+       "text": "Slide the closet open",
+       "ticks": {
+        "opened": "things_closet"
+       }
+      },
+      {
+       "todo": "t13_hide",
+       "text": "Hide in the wardrobe"
+      },
+      {
+       "todo": "t13_shove",
+       "text": "Walk into the chair",
+       "ticks": {
+        "moved": "things_chair"
+       }
+      },
+      {
+       "todo": "t13_chair",
+       "text": "Carry the chair to the corner and put it down",
+       "ticks": {
+        "dropped": "things_chair",
+        "in": "things_corner"
+       }
+      }
+     ]
+    },
+    {
+     "id": "b_things_packed",
+     "when": {
+      "placed": "things_tee",
+      "in": "things_case"
+     },
+     "do": [
+      {
+       "flag": "things_packed"
+      },
+      {
+       "think": "In. Now it goes where the case goes."
+      }
+     ]
+    },
+    {
+     "id": "b_things_hidden",
+     "when": {
+      "hidden": "things_wardrobe"
+     },
+     "do": [
+      {
+       "think": "Coats. Dust. Room enough."
+      },
+      {
+       "tick": "t13_hide"
+      }
+     ]
+    },
+    {
+     "id": "b_things_done",
+     "when": {
+      "ticked": true
+     },
+     "do": [
+      {
+       "untodo": true
+      },
+      {
+       "done": true
+      }
+     ]
+    }
+   ]
   }
  },
  "flow": {
@@ -5126,7 +5465,7 @@
   "n_library": {
    "type": "stitch",
    "ref": "t_library",
-   "next": "n_bath"
+   "next": "n_things"
   },
   "n_bath": {
    "type": "stitch",
@@ -5289,6 +5628,11 @@
    "kind": "death",
    "title": "Too slow",
    "retry": "n_run"
+  },
+  "n_things": {
+   "type": "stitch",
+   "ref": "t_things",
+   "next": "n_bath"
   }
  },
  "frames": [

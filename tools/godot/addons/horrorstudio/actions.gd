@@ -3,7 +3,7 @@
 extends RefCounted
 
 const Typing := preload("res://addons/horrorstudio/typing.gd")
-const VERBS := ["objective", "todo", "tick", "fail", "untodo", "think", "skip", "name", "say", "ask", "flag", "unflag", "give", "take",
+const VERBS := ["objective", "todo", "tick", "fail", "untodo", "think", "skip", "name", "say", "ask", "flag", "unflag", "give", "take", "open",
 	"karma", "count", "state", "show", "hide", "door", "light", "torch", "skin", "power", "sweep", "wait", "fade", "lookat", "sound", "music",
 	"checkpoint", "chapter", "done", "scene", "behave", "trick", "move", "anim", "expr", "focus"]
 const TAKES_TIME := ["wait", "fade", "ask", "name", "chapter", "scene", "trick", "say"]
@@ -107,6 +107,8 @@ func run(a: Dictionary, rt) -> void:
 			rt.set_visible(val, false)
 		"door":
 			rt.door(val, a.get("set", "open"))
+		"open":                                     # a thing's parts (a lid, doors, a cover): {open: id, to: open | shut | lock | unlock}
+			rt.open_action(val, str(a.get("to", "open")))
 		"light":
 			rt.light(val, a.get("room"), a.get("set", "on"))
 		"torch":

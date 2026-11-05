@@ -174,6 +174,36 @@ def cycles(samples=16, gpu=False):
     return sc
 
 
+def fill_misses(a, steps=12):
+    """A selected-to-active bake leaves black where a ray from the game mesh found nothing of the detailed one within
+    its reach (a thin garment's folded edge, a hem the coarse mesh cuts across): those texels (alpha 0, the cleared
+    image) take the mean of their baked neighbours, grown outward `steps` pixels, so no speck of black is baked in."""
+    hit = a[..., 3] > 0.5
+    if hit.all() or not hit.any():
+        return a
+    rgb = a[..., :3] * hit[..., None]
+    w = hit.astype(np.float32)
+    for _ in range(steps):
+        miss = w <= 0
+        if not miss.any():
+            break
+        acc = np.zeros_like(rgb)
+        cnt = np.zeros_like(w)
+        for dy in (-1, 0, 1):
+            for dx in (-1, 0, 1):
+                if dx == 0 and dy == 0:
+                    continue
+                acc += np.roll(np.roll(rgb, dy, 0), dx, 1)
+                cnt += np.roll(np.roll(w, dy, 0), dx, 1)
+        grow = miss & (cnt > 0)
+        rgb[grow] = acc[grow] / cnt[grow][:, None]
+        w[grow] = 1.0
+    out = a.copy()
+    out[..., :3] = rgb
+    out[..., 3] = w
+    return out
+
+
 def bake(kind, low, high=None, px=1024, samples=16, extrude=0.003, reach=0.012, attr=None, gpu=False, ao_dist=0.02):
     """Bakes onto the low object's UVs, an image a material (each material's islands fill its own texture): 'NORMAL'
     (tangent space, from high), 'AO', or 'EMIT' (the high's or low's vertex attribute `attr` as an emission).
@@ -185,7 +215,7 @@ def bake(kind, low, high=None, px=1024, samples=16, extrude=0.003, reach=0.012, 
         mt = slot.material
         if mt is None or mt.name in imgs:
             continue
-        img = bpy.data.images.new(f"bake_{kind}_{mt.name}", px, px, alpha=False, float_buffer=True)
+        img = bpy.data.images.new(f"bake_{kind}_{mt.name}", px, px, alpha=True, float_buffer=True)   # alpha: 1 where a ray hit
         img.colorspace_settings.name = "Non-Color"
         imgs[mt.name] = img
         nd = mt.node_tree.nodes.new("ShaderNodeTexImage")
@@ -227,7 +257,11 @@ def bake(kind, low, high=None, px=1024, samples=16, extrude=0.003, reach=0.012, 
     for name, img in imgs.items():
         a = np.zeros(px * px * 4, np.float32)
         img.pixels.foreach_get(a)
-        out[name] = a.reshape(px, px, 4)[::-1].copy()
+        a = a.reshape(px, px, 4)[::-1].copy()
+        if high is not None:
+            a = fill_misses(a)
+        a[..., 3] = 1.0
+        out[name] = a
     for mt, nd in added:
         mt.node_tree.nodes.remove(nd)
     for tree, o, sock, nodes in saved:

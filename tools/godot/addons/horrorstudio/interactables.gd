@@ -26,6 +26,10 @@ const SETTINGS := {
 	"latch": {"cursor": "use", "lock": "Lock", "unlock": "Unlock", "shut": "Close it first", "stuck": "Locked"},
 	"peephole": {"cursor": "look", "label": "Look through", "look": [32, 22]},
 	"talk": {"cursor": "talk", "label": "Talk"},
+	"open": {"cursor": "open", "label": "Open", "close": "Close", "locked": "Locked", "secs": 0.8},
+	"container": {"cursor": "open", "label": "Open", "close": "Close", "put": "Put in", "locked": "Locked", "secs": 0.75, "holds": 6},
+	"moveable": {"cursor": "take", "label": "Pick up", "place": "Put down", "mass": 5.0, "dist": 0.5},
+	"book": {"cursor": "read", "label": "Read", "hint": "← →  turn the page   ·   Esc or right click  Put it back"},
 }
 const HOLDS := ["clean"]
 
@@ -110,6 +114,21 @@ func prompt(name: String, t: Dictionary, rt, s: Dictionary) -> Dictionary:
 				return {"cursor": "locked", "label": s["stuck"]}
 			return {"cursor": s["cursor"], "label": s["unlock"] if dr.get("latched", false) else s["lock"]}
 		"peephole":
+			return {"cursor": s["cursor"], "label": s["label"]}
+		"open":
+			if t.get("locked", false) or (d.get("locked_by") != null and not rt.flags.has(str(d["locked_by"]).trim_prefix("flag:")) and not rt.items.has(d["locked_by"])):
+				return {"cursor": "locked", "label": s["locked"]}
+			return {"cursor": s["cursor"], "label": s["close"] if rt.open_state(id) else s["label"]}
+		"container":
+			if t.get("locked", false):
+				return {"cursor": "locked", "label": s["locked"]}
+			var held = rt.carried()
+			if held != null and rt.open_state(id) and not rt.hand_down:
+				return {"cursor": "use", "label": "%s: %s" % [s["put"], held["name"]]}
+			return {"cursor": s["cursor"], "label": s["close"] if rt.open_state(id) else s["label"]}
+		"moveable":
+			return {"cursor": s["cursor"], "label": s["label"]}
+		"book":
 			return {"cursor": s["cursor"], "label": s["label"]}
 		_:
 			return {"cursor": s.get("cursor", "use"), "label": s.get("label", "")}
@@ -225,6 +244,40 @@ func use(name: String, t: Dictionary, rt, s: Dictionary):
 			return false
 		"peephole":
 			rt.peep(t["door"], s)
+			return true
+		"open":
+			if t.get("locked", false):
+				rt.hud.shake()
+				rt.hud.line(s["locked"] + ".", "", 1.2, false)
+				return true
+			var by = d.get("locked_by")
+			if by != null and not rt.open_state(id):
+				var fl := str(by).begins_with("flag:")
+				if (fl and not rt.flags.has(str(by).substr(5))) or (not fl and not rt.items.has(by)):
+					rt.hud.shake()
+					rt.hud.line(s["locked"] + ".", "", 1.2, false)
+					return true
+				if not fl:
+					rt.hud.log("used: %s" % rt.story.item_name(by))
+				d["locked_by"] = null
+			await rt.open_set(t, not rt.open_state(id))
+			return true
+		"container":
+			if t.get("locked", false):
+				rt.hud.shake()
+				rt.hud.line(s["locked"] + ".", "", 1.2, false)
+				return true
+			var held = rt.carried()
+			if held != null and rt.open_state(id) and not rt.hand_down:
+				rt.container_put(t, held)
+				return true
+			await rt.open_set(t, not rt.open_state(id))
+			return true
+		"moveable":
+			rt.move_pick(t)
+			return true
+		"book":
+			await rt.book.open(t, s)
 			return true
 	return true
 

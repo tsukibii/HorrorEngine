@@ -9,13 +9,15 @@
 class_name HSThing
 extends Node3D
 
-const USES := ["none", "pickup", "note", "inspect", "switch", "breaker", "sit", "sleep", "hide", "carry", "roll", "code", "use_item", "clean", "game", "life"]
+const USES := ["none", "pickup", "note", "inspect", "switch", "breaker", "sit", "sleep", "hide", "carry", "roll", "code", "use_item", "clean", "game", "life",
+	"open", "container", "moveable", "book"]
 ## each use's own fields in the Inspector
 const FIELDS := {
 	"pickup": ["item", "item_name", "flashlight"], "carry": ["item", "item_name"], "note": ["note_title", "note_text"],
 	"inspect": ["inspect_text"], "switch": ["switches"], "code": ["code", "opens_flag"],
 	"use_item": ["needs_item", "opens_flag", "consume"], "sleep": ["sleep_needs"], "hide": ["see_through"],
 	"clean": ["clean_with", "stain"], "game": ["board_game"], "life": ["life", "life_state", "life_light"],
+	"open": ["opened", "needs_item"], "container": ["opened", "holds"], "moveable": ["mass"], "book": ["book_title", "book_hand", "book_text"],
 }
 ## the stand-in each use shows with no model: its size (x, y, z) and colour
 const STANDIN := {"none": [Vector3(0.5, 0.5, 0.5), Color(0.5, 0.5, 0.5)], "pickup": [Vector3(0.12, 0.05, 0.08), Color(0.85, 0.7, 0.2)],
@@ -25,12 +27,14 @@ const STANDIN := {"none": [Vector3(0.5, 0.5, 0.5), Color(0.5, 0.5, 0.5)], "picku
 	"hide": [Vector3(1.0, 2.0, 0.6), Color(0.35, 0.25, 0.18)], "carry": [Vector3(0.4, 0.3, 0.3), Color(0.6, 0.45, 0.3)],
 	"roll": [Vector3(0.15, 0.15, 0.15), Color(0.95, 0.95, 0.95)], "code": [Vector3(0.12, 0.16, 0.03), Color(0.2, 0.22, 0.25)],
 	"use_item": [Vector3(0.3, 0.3, 0.3), Color(0.5, 0.6, 0.5)], "clean": [Vector3(0.7, 0.006, 0.55), Color(0.3, 0.2, 0.12)],
-	"game": [Vector3(1.2, 0.75, 0.8), Color(0.3, 0.45, 0.3)], "life": [Vector3(0.2, 0.2, 0.2), Color(0.8, 0.82, 0.86)]}
+	"game": [Vector3(1.2, 0.75, 0.8), Color(0.3, 0.45, 0.3)], "life": [Vector3(0.2, 0.2, 0.2), Color(0.8, 0.82, 0.86)],
+	"open": [Vector3(1.0, 1.9, 0.6), Color(0.5, 0.38, 0.25)], "container": [Vector3(0.55, 0.23, 0.4), Color(0.2, 0.4, 0.45)],
+	"moveable": [Vector3(0.45, 0.9, 0.45), Color(0.5, 0.35, 0.22)], "book": [Vector3(0.148, 0.02, 0.21), Color(0.35, 0.2, 0.25)]}
 ## the uses that stop the player by default (furniture); the rest only take the cursor's click
-const SOLID := ["none", "breaker", "sit", "sleep", "hide", "roll", "game", "use_item"]
+const SOLID := ["none", "breaker", "sit", "sleep", "hide", "roll", "game", "use_item", "open", "container", "moveable"]
 
 @export var id: String = ""
-@export_enum("none", "pickup", "note", "inspect", "switch", "breaker", "sit", "sleep", "hide", "carry", "roll", "code", "use_item", "clean", "game", "life") var use: String = "pickup":
+@export_enum("none", "pickup", "note", "inspect", "switch", "breaker", "sit", "sleep", "hide", "carry", "roll", "code", "use_item", "clean", "game", "life", "open", "container", "moveable", "book") var use: String = "pickup":
 	set(v):
 		use = v
 		notify_property_list_changed()
@@ -73,6 +77,18 @@ const SOLID := ["none", "breaker", "sit", "sleep", "hide", "roll", "game", "use_
 ## life: the light it gives (a candle's flame: lit while it burns, out when it's blown out)
 @export var life_light: NodePath
 ## stops the player (its own collider, or a box round it); off: only the cursor finds it
+## open, container: starts open (its lid up, its doors apart); else shut
+@export var opened: bool = false
+## container: how many things it holds
+@export_range(1, 40) var holds: int = 6
+## moveable: its weight in kilograms (a chair 5, a stool 3, a crate 12)
+@export_range(0.2, 200.0) var mass: float = 5.0
+## book: its title on the panel; the hand its pages are written in (hand, hand2, hand_jp, pen_jp, print); its text: a
+## page each, pages apart by a line of "===", and after them the entries that come later, each starting with a line
+## "@if <flag> [<flag>...]" (! for not) and running to the next "@if" (a form feed "\f" splits one entry's pages)
+@export var book_title: String = ""
+@export_enum("hand", "hand2", "hand_jp", "pen_jp", "print") var book_hand: String = "hand"
+@export_multiline var book_text: String = ""
 @export_enum("auto", "solid", "not solid") var solidity: String = "auto"
 ## more of the runtime's words for it that the fields above haven't got (STORY_FORMAT §2: a desk game's prop brought in,
 ## its `not_yet`, a code lock's `opens`, a locker's `inside`...), as the runtime reads them; `tags` adds to its tags
@@ -244,6 +260,22 @@ func data() -> Dictionary:
 				d["with"] = clean_with
 		"game":
 			d["game"] = board_game
+		"open":
+			d["opened"] = opened
+			if needs_item != "":
+				d["locked_by"] = needs_item
+		"container":
+			d["opened"] = opened
+			d["holds"] = holds
+		"moveable":
+			d["mass"] = mass
+		"book":
+			if book_title != "":
+				d["title"] = book_title
+			d["hand"] = book_hand
+			var bk := book_pages(book_text)
+			d["pages"] = bk["pages"]
+			d["entries"] = bk["entries"]
 		"life":
 			d["life"] = life
 			var kit_art := false                          # a kit thing (a desk game's: its art:kit/ tag): the kit's own sockets, with their sizes and slots
@@ -261,6 +293,33 @@ func data() -> Dictionary:
 		if str(k) != "tags":
 			d[str(k)] = extra[k]
 	return d
+
+
+## a book's text as the runtime takes it: pages split by a line of "===", then entries from each "@if" line on
+static func book_pages(text: String) -> Dictionary:
+	var pages: Array = []
+	var entries: Array = []
+	var cur: Array = []
+	var cond = null
+	var lines := text.replace("\r", "").split("\n")
+	var flush := func():
+		var body := "\n".join(cur).strip_edges()
+		if cond == null:
+			for pg in body.split("==="):
+				if pg.strip_edges() != "":
+					pages.append(pg.strip_edges())
+		elif body != "":
+			entries.append({"if": cond, "text": body.replace("===", "\f")})
+	for ln in lines:
+		if ln.strip_edges().begins_with("@if"):
+			flush.call()
+			cur = []
+			var words := ln.strip_edges().substr(3).strip_edges().split(" ", false)
+			cond = Array(words) if words.size() != 1 else words[0]
+		else:
+			cur.append(ln)
+	flush.call()
+	return {"pages": pages, "entries": entries}
 
 
 ## the item it is (pickup, carry): its id

@@ -140,7 +140,7 @@ and set the fill and the colours on each placed copy in Godot (its `HSLiquidFill
 | `cookware` | `kind` saucepan, stockpot, frypan, yukihira, donabe, tetsubin, enamel; `lid`, `liquid` (§10), `tint` (the heat's colours on steel), `scrape` (a pan's coating), `color`, `decal`, `chips` (enamel), `rust` (iron); sockets steam, rim, lid, handle, vent, spout as the kit's pots | saucepan, stockpot, stockpot_broth, frying_pan, yukihira (miso), donabe, tetsubin, enamel_pot |
 | `appliance` | `kind` rice_cooker (`style` modern or retro, `time` on its LCD, `color`, `accent`; sockets lcd, led_warm, led_cook, vent, button) or kettle (`finish` steel or white; sockets spout, lid, switch, led, base); the maker's mark on both: `brand` (a name) with `brand_font` and `brand_color`, or `logo` (your picture: a PNG path or {image, w (mm), rough}) | rice_cooker, rice_cooker_retro, electric_kettle, electric_kettle_white |
 | `sink` | `kind` kitchen (pressed stainless: a basin, a ribbed drainboard, a basket strainer, a gooseneck mixer) or basin (glazed fireclay: an oval bowl, two pillar taps, a bottle trap); `liquid` standing in it, `rust`, `limescale`, `crazing`, `glaze`; sockets spout (`spout_cold`), handle, drain | kitchen_sink, kitchen_sink_water, washbasin, washbasin_blood |
-| `book` | §16: `kind` hardcover, paperback, bunko, manga, textbook, notebook, diary; `size` (A4, B5, A5, B6, A6, bunko, shinsho, tankobon or [w, h] mm), `thick`, `binding` left or right, `pose` lie, stand or open (`open_at`), `arrange` one, stack or row with `fit` [w, d, h] mm, `count`, `mix`, `titles`; `art`, `spine`, `back`, `page_l`, `page_r`; `age` | book_hardcover, book_paperback, bunko, manga_volume, textbook_kokugo, textbook_math, notebook_math, diary_closed, diary_open, book_open, books_desk_box, books_cubby, books_shelf, books_stack_desk |
+| `book` | §16: `kind` hardcover, paperback, bunko, manga, textbook, notebook, diary; `size` (A4, B5, A5, B6, A6, bunko, shinsho, tankobon or [w, h] mm), `thick`, `binding` left or right, `pose` lie, stand or open (`open_at`), `arrange` one, stack or row with `fit` [w, d, h] mm, `count`, `mix`, `titles`; `art`, `spine`, `back`, `page_l`, `page_r`; `age`; **`openable`** (§27: one book whose cover is a part on its hinge and whose spread shows open, its pages materials of their own baked blank for the game's handwriting) | book_hardcover, book_paperback, bunko, manga_volume, textbook_kokugo, textbook_math, notebook_math, diary_closed, diary_open, book_open, books_desk_box, books_cubby, books_shelf, books_stack_desk, journal_diary, journal_notebook, journal_jp |
 | `import` | your own mesh, worn (§5) | chair_worn |
 | `tree` | §18: a street's trees grown by Mtree's functions: `kind` zelkova, ginkgo, cherry, camphor, plane, maple, crape_myrtle, pine, cedar, dead, and the bushes azalea (`clip` to a ball or a box), shrub, grass; `height`, `clear` (the stem below the first branch), `season` summer, autumn, spring (blossom on a cherry), winter (bare); `spread`, `droop`, `density`, `crown`, `levels`, `lean`, `multi`, `pollard`, `twigs`; `leaves` {count, size, tint; `set` a leaf set off the shelf for realistic leaves, `set_mm`, `spray`, `hue`, `sat`, `light`}, `bark` {pbr, tint, tile, relief; color, style for the drawn tile}; `stakes` torii, tripod or single, `pit` kerb or soil | zelkova_street, zelkova_young, zelkova_autumn, zelkova_winter, ginkgo_street, ginkgo_autumn, cherry_tree, cherry_blossom, camphor_tree, plane_street, plane_pollarded, maple_garden, crape_myrtle, black_pine, dead_tree, sapling_staked; the realistic category: zelkova_real, zelkova_autumn_real, cherry_real, camphor_real, plane_real, maple_autumn_real, crape_myrtle_real, black_pine_real, cedar_real; the bushes: azalea_ball, azalea_flowering, azalea_hedge, azalea_low, shrub_loose, shrub_autumn, shrub_real, grass_tuft, grass_dry; the small trees (`habit: upright`, under a two-storey house): small_zelkova, small_zelkova_staked, small_zelkova_autumn, small_hornbeam_real, small_cherry, small_cherry_blossom, small_ginkgo, small_ginkgo_autumn, small_maple_autumn, small_dead |
 | `plant` | §19: a potted plant, a table's to a floor's: `form` rosette (an aloe, an echeveria), blades (a snake plant), fern, palm (an areca's canes), big_leaf (a monstera, a rubber plant, a fiddle leaf fig: `leaf`, `stem`), tree (`species` ficus, bonsai, herb, dead), trailing (a pothos, ivy: `length`), canes (lucky bamboo), yucca, cactus (`ribs`, `radius`); `plant` {size, count, color, leaf, species, lean, spread}; `pot` {kind terracotta, glazed, plastic, cylinder, bowl, concrete or cube; d (w, dd), h, color, soil, topping pebbles, pumice, moss or bark, cracked, glaze} | pot_aloe, pot_echeveria, pot_basil, pot_cactus, pot_cactus_tall, pot_pothos, pot_ivy, pot_fern, pot_snake_plant, pot_bonsai, pot_monstera, pot_rubber_plant, pot_fiddle_leaf, pot_ficus, pot_palm, pot_yucca, pot_bamboo, pot_dead |
@@ -148,6 +148,9 @@ and set the fill and the colours on each placed copy in Godot (its `HSLiquidFill
 | `curtain` | §22: curtains made for a window: `window` [w, h] mm, `sill`, `panels` 1 or 2 (`side`), `heading` pinch, wave, grommet, gather or flat (`fullness`, `pitch`), `length` sill, below, floor, puddle or mm, `open` 0 to 1, `tie` {at, bundle, depth, color}, `rod` {kind rail, track, rod or none, out, over, above, d, color, metal, finial}, `fabric` sheer, cotton, linen, blackout or velvet, `cover`; `air`, `flare`, `relax`, `settle` | curtain_pair, curtain_tied, curtain_sheer, curtain_grommet, curtain_wave, curtain_velvet_old, curtain_maison_bedroom, curtain_maison_living, curtain_maison_washitsu |
 | `table` | §23: wooden tables: `size` [length, width, height] mm, `style` dining, shaker, farmhouse, parsons, midcentury, trestle, pedestal or chabudai; `top` rect, rounded, round or oval (`corner`), `edge` eased, square, chamfer, round, bullnose or underbevel, `thick`, `overhang`, `boards`; `leg` square, taper, turned or round (`leg_w`, `taper`, `splay`), `apron`, `stretcher` none, h or box; `wood`, `ring`, `finish` raw, oil, satin or gloss, `flaws` {grain, cracks, scratches, dents}, `painted` (`paint_color`) | table_dining, table_farmhouse, table_midcentury, table_trestle, table_pedestal, table_chabudai, table_kitchen_painted, desk_oak, zataku_walnut |
 | `chair` | §24: chairs and their cushions: `style` dining, ladderback, spindle, cafe (a bentwood stool), school, stool, bench or zaisu; `seat_h`, `seat` [width, depth], `back_h` (mm), `rake` (degrees); the wood as a table's, `frame_color` (a school chair's steel); `cushion` {on, seat, back, thick, fill, ties, color, pattern, ink, size, rough} or false (`"on": false` bare, its settings kept) | chair_dining, chair_ladderback, chair_windsor, stool_cafe, chair_school, stool_kitchen, bench_wood, zaisu_lacquer, chair_desk_oak, zaisu_walnut |
+| `suitcase` | §26: a case lying open on the floor, its lid a part on its hinge (a `container` in play): `kind` hardshell (a polycarbonate spinner: a zip, four wheels, two handles, a brand plate), softside (fabric: a zipped front pocket, two wheels, webbing handles) or vintage (leather over board: brass corners, two latches, a stitched handle); `size` [w, d, h] mm closed, `open` degrees the lid is built at, `color`, `lining` {color, pattern dots, stripes, check or plain, size, ink}, `metal`, `finish`, `wheels`, `brand`, `straps`, `pocket`, `wear` | suitcase_hardshell, suitcase_softside, suitcase_vintage |
+| `clothes` | §26: `kind` folded (a garment folded into a soft slab: `garment` tee, shirt, sweater, jeans or towel, `size` [w, d] mm, `thick`, `color`, `pattern`) or stack (`count` of them, mixed, each turned a little); the hanging ones were scrapped (DECISIONS 2026-11-05, latest) | clothes_folded_tee, clothes_folded_sweater, clothes_stack |
+| `closet` | §26: `kind` wardrobe (two doors on hinges, `handles` bar, knob or none), sliding (two panels on tracks, recessed pulls) or oshiire (two fusuma, `paper` {color, pattern plain, seigaiha or dots}, folded futons on both floors); `size` [w, d, h] mm, `wood` (a colour, or a set in `pbr`), `finish` raw, oil, satin or gloss, `built` shut or open, `stack` (a folded stack on the shelf; the rail bare); its doors parts (an `open`, a `container` or a `locker` in play) | closet_wardrobe, closet_sliding, closet_oshiire |
 
 ### Designs
 
@@ -1162,3 +1165,103 @@ customizable one's passes the picture's size side by side, at least half its pix
 broken pass has next to none), its textures there; no other prop carrying them; the missing and the older listed);
 PROPPAGE: the customizable filter, a picture laid on the made ema seen on its own picture, a can not made here opened
 in the editor from what's kept and a picture on its logo seen on its picture.
+
+## 26. Parts that open: lids, doors and covers as nodes of their own; suitcases, clothes and closets
+
+The user (2026-11-05, later): "Suitcases that can open (and a system for placing items into them, opening them, closing
+them, placement carrying through...), do a variation of 3 diff types of suitcases and should be easily modifiable.
+Sliding closet doors, clothing closets, closets with opening doors." A made prop can carry **parts**: pieces that move
+in play, cut out of its game mesh into child nodes of their own, each at its hinge or on its track, with what a runtime
+needs to swing or slide them in the glb's extras. The runtime does the moving (Godot's `parts.gd`, the desk's Play);
+the generator only says where the hinge is and how far it goes.
+
+- **In a family** (`build.py`): the pieces are built as meshes of their own and put together with
+  `th.assemble([("base", base_m), ("lid", lid_m)], high=[...], mats=[...])` (each piece's faces are remembered by its
+  name), then `th.part("lid", pivot, axis, kind="hinge", open=100, shut=0, built=100)`: `pivot` (metres, in the built
+  space) and `axis` (a unit vector) its hinge; `kind` `hinge` (the value in degrees about the axis), `slide` (metres
+  along it), `show` (a piece there only when open: a book's spread) or `hide` (there only when shut: its closed
+  block); `open` and `shut` the two values; `built` the value the piece is made, baked and exported at (a suitcase is
+  built with its lid up so its lining bakes lit; a closet with its doors shut); `hide_open=True` a hinged piece hidden
+  once fully open (a book's cover under the spread that takes its place). `th.inside = ((x0, y0, z0), (x1, y1, z1))`
+  a container's inner box (built space); `th.extras["k"] = ...` anything else a runtime reads (`propgen_k` on the
+  root).
+- **In the glb:** each part is a node `<name>_<part>`, a child of the root sitting at its pivot (its own translation),
+  carrying `propgen_part` = {name, kind, axis, pivot, open, shut, built, hide_open} (glTF's y-up coordinates: Blender's
+  (x, y, z) go out as (x, z, −y), a proper rotation, so an axis maps the same way and an angle keeps its sign); the
+  root carries `propgen_parts` (all of them), `propgen_inside` (the container's box, glTF coordinates) and the
+  family's extras. A thing made only of parts (the openable book: its block, cover and spread) has an empty root. A
+  runtime applies a value v to a part as: a hinge, the node turned about its own origin by (v − built) degrees about
+  `axis` from its exported rotation; a slide, moved by axis · (v − built); show and hide, visibility. The preview,
+  the kept picture and the `.tscn` show the thing as built (a `show` part built shut is left out of the picture, a
+  `hide` part built open too).
+- **In the meta and the library:** `parts` (story metres, z up, as the sockets), `size_shut_m` and `box_shut_m`
+  (every part turned to `shut`; a `show` part left out), `inside_m`. The thing is **set down by its box shut**: the
+  middle of that box over the origin, its lowest point on the floor (a suitcase built with its lid up still stands
+  where its closed box says; what the lid adds beyond it is the runtime's to swing). The library index keeps `parts`,
+  `inside_m` and `box_shut_m`, and its `size_m` is the size **shut** (a level places the thing by it), `size_open_m`
+  the size as built. The story check wants a made prop with parts under an `open`, `container` or
+  `book` thing (a warning, an error for a book).
+- **In play:** the story's `open` (a click swings or slides its parts: `opened` holds while they are, `closed` is
+  heard when they shut; `locked_by` a flag or an item), `container` (an `open` that takes the thing in the hand: laid
+  at the next free spot of a grid over its inside box, kept there shut, carried and opened again: `placed`, `taken`;
+  `holds` its capacity), `locker` (a closet: its doors open round the player and shut behind them), `book` (§27);
+  the Director's parts Openable, Container and Book (GODOT_DIRECTOR). STORY_FORMAT's uses table has the words.
+
+**The families made with them:**
+
+- **`suitcase`** (`families/suitcase.py`): a base tray and a lid hinged along its back edge, lying on the floor as a
+  case is opened, both from one swept outline (a rounded rectangle, the shell's edge radius, a lip the lid's rim sits
+  on): `hardshell` (a polycarbonate spinner: two halves as deep as each other, a zip round the middle with its pulls
+  and lock, four wheels at the foot end, two on each shell (lying on its back it stands 34 cm shut, wheels both
+  sides), a top handle on the head end and one on the front, a brand plate on the lid (a slot: your logo), the ribs'
+  relief), `softside` (fabric: a deep base and a shallow lid with a zipped front pocket, two wheels and two studs,
+  webbing handles), `vintage` (leather over board: brass corners, two latches on the front, a stitched handle in its
+  brackets, the hinges' plates on the back). Inside: a patterned lining, two elastic straps crossing the base with a
+  buckle, a pocket panel in the lid. The lid is the part `lid` (a hinge about the back rim, built at `open` degrees,
+  100 by default); the inside box the base's well. The brand plate is customizable (✎, §25).
+- **`clothes`** (`families/clothes.py`): `folded` a garment folded into a soft slab (a tee, a shirt, a sweater,
+  jeans, a towel: the bedding's `shell` round a thick cloth with the fold's dome and soft wrinkles, the garment's
+  marks painted on top: a tee's neckline, a shirt's placket and buttons, a sweater's rib, a jean's seam, a towel's
+  terry), `stack` several one on another, each turned a little, their colours and sizes by the seed. A folded tee is
+  a pickup (`item`) that goes into a suitcase; the closets' shelves take a stack. (Garments hanging on wire hangers
+  by the cloth were made too and scrapped the same day: "the clothing on the hangers looks bad, just scrap it, all we
+  need is the folded clothing for the suitcase"; what that cloth taught is in LESSONS.)
+- **`closet`** (`families/closet.py`): a carcass of planks (sides, top, bottom, a thin back, a plinth) with a bare
+  rail, a shelf with a folded stack (the `clothes` family's pieces), and the doors as parts: `wardrobe` two doors on hinges at the sides, bar pulls or knobs (built shut;
+  `built: "open"` pictures them open), `sliding` two panels on tracks, one in front of the other, recessed pulls (parts
+  that slide by their own width), `oshiire` two fusuma on tracks (a wooden frame round a papered panel, a hikite
+  each), a middle shelf, folded futons on both floors. The inside box is the hanging space. In a story a closet is an
+  `open` (its doors), a `container` (things put on its floor) or a `locker` (a hiding place).
+
+Checked by PROPGEN (`suitcase_hardshell`, `clothes_folded_tee`, `closet_oshiire`, `journal_diary`: each part a node at
+its pivot under one root that names them all, the thing centred and sized shut, a container's inside inside its box
+shut, a book's page materials in the glb and named in its pages). The bake fills what a ray from the game mesh missed
+of the detailed one within its reach (a thin garment's folded edge, a hem the coarse mesh cuts across) from its
+neighbours instead of baking it black (`bake.py fill_misses`: the bake's alpha says where a ray hit).
+
+## 27. The openable book: a cover on its hinge, pages the game writes on
+
+The user (2026-11-05, later): "Create a system for opening up books, in godot being able to place writing in the book
+that looks like hand writing ... inspect the book (open to the page, allow going forward 1 page) and on the right side
+we have an overlay ui ... with clearer text ... a system so I can progress the text e.g. quest completed next time I
+open the book I see different text." A book recipe with `openable: true` (one book, `arrange: one`) is made as three
+parts (§26): `block` (the closed book without its front cover: `hide`, there only shut), `cover` (the front board: a
+`hinge` at the spine's foot, 0 to 180 degrees, `hide_open`) and `spread` (the whole book open flat at `open_at`,
+`show`, there only open, lying where the closed book lies with its other half out to the side). Its two pages are
+materials of their own, `page_l` and `page_r` (`<name>_page_l`, `_page_r` in the glb: the paper with its rules, baked
+**blank**, so the game draws the story's words on them), their place on the texture and their size in mm in
+`propgen_pages` {page_l: {material, rect, mm}, page_r: ...}, the binding and the size in `propgen_book`. A `page_l` or
+`page_r` design of your own in the recipe still paints what it says (then the words are baked in, as `diary_open`'s).
+
+The hands (`tools/propgen/fonts/`, OFL, the same files the runtime draws with in
+`tools/godot/addons/horrorstudio/fonts/`): Caveat (`hand`), Indie Flower (`hand2`), Yomogi (`hand_jp`), Zen Kurenaido
+(`pen_jp`); `print` is the HUD's own font. Recipes: `journal_diary` (A5, "Diary" on purple cloth, a band and a ribbon),
+`journal_notebook` (a school notebook, a round hand), `journal_jp` (B6, bound on the right, a Japanese hand).
+
+In play (Godot's `book.gd`, the desk's Play; STORY_FORMAT: `book`): a click takes it up as `inspect` does, the cover
+swings open and the spread shows, the story's `pages` and then the `entries` whose `if` holds drawn in the book's
+`hand` on its page materials (a SubViewport a page over the page's own paper), two a spread, the arrows, the wheel or
+a click turning them, the clean text of the spread on a panel at the right for anyone who doesn't want to read the
+hand, Esc or a right click putting it back shut where it was; `read` is heard with the left page's number at every
+spread, so a task can wait for the page that appeared once a flag was set ("quest completed, next time I open the book
+I see different text": an entry's `if`). TestRoom001's station 13 (docs/games/TestRoom001.md) has one.
