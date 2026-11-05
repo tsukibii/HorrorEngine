@@ -266,7 +266,13 @@ def run(book, out):
             continue
         spec = recipes.resolve(book, name, sets=["tex=256"])
         bpy.ops.wm.read_factory_settings(use_empty=True)
-        rec = build.run(name, spec, tmp, formats=("glb",), preview=False, samples=4, log=lambda *a: None)
+        try:
+            rec = build.run(name, spec, tmp, formats=("glb",), preview=False, samples=4, log=lambda *a: None)
+        except (ValueError, SystemExit) as e:
+            if "PBR set" in str(e) and "no folder" in str(e):   # a recipe wearing a set of your own shelf (chair_worn): not on this machine, said so
+                print(f"  skip {name}: {e}")
+                continue
+            raise
         glb = os.path.join(tmp, name, name + ".glb")
         problems = []
         j, binc = _glb(glb)
