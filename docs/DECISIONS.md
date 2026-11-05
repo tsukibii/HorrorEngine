@@ -2,6 +2,38 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-05, later (the user: the CRT to do; research on simple games that build to dread; suitcases, closets, moveable things and books as parts)
+
+- **"Let's note to do 9."** Candidate 9 of docs/research/sakura_rabbit.md, the CRT screen seen close, is to build
+  (the look plugin's `crt.gdshader` on a screen's glass). The other nine stay on the list.
+- **"Can you come up with some more research notes, I want my games to be simple but build up to a story / uncovery /
+  dread."** Three notes: docs/research/dread_structure.md (how short horror games build dread over their running
+  time: the designers' rules, the games' beats measured, a curve for 2.5 to 3 hours), docs/research/story_in_objects.md
+  (uncovering a story through documents, books and containers: the rules, a book whose entries are gated by what's
+  happened, what persists in a container) and docs/research/simple_loops.md (one loop, a night or a shift, escalating
+  into story and dread night by night; the numbers).
+- **"For props and Godot I want you to make the following props with workable in-game systems using our drag and drop
+  horror engine. Suitcases that can open (and a system for placing items into them, opening them, closing them,
+  placement carrying through; think how users can pick up, open them, drop them in), do a variation of 3 different
+  types of suitcases and should be easily modifiable. Sliding closet doors, clothing closets, closets with opening
+  doors. In Godot add a drag and drop system so we can pick up chairs and place them/drop them etc ... we might want a
+  drag and drop element to make objects moveable e.g. if I walk into it it should move, fall over etc, but if we pick
+  up and place we should be able to save its default vertical orientation; the direction a chair would face would be
+  based off how we picked it up. Create a system for opening up books, in Godot being able to place writing in the
+  book that looks like handwriting, being able to inspect objects (orientate them in hand but not equip into
+  inventory so they always default back to where they were picked up from). Make sure our models adhere to the
+  quality of our other props, feel free to create new Blender PBRs for anything required. An example for a suitcase
+  would be a journal, some folded-up clothing. How I imagine opening a book: we can inspect the book (open to the
+  page, allow going forward 1 page) and on the right side we have an overlay UI (similar to what we have now when
+  reading notes but exclusive to book type props) where we show the UI on the right with clearer text for people who
+  don't want to read the book font. Should have a system so I can progress the text, e.g. quest completed, next time
+  I open the book I see different text."** Built on `sakura-rabbit-research`: the prop generator's parts that open
+  (a lid or a door as its own node on a hinge or a slide, PROPGEN), the `suitcase` family (three kinds), folded and
+  hanging clothes, the `closet` family (a hinged wardrobe, a sliding closet, an oshiire), an openable `book`; in the
+  runtime and the Director the words `open`, `container`, `moveable` and `book` (STORY_FORMAT), with TestRoom001's
+  stations for them. Inspecting is the `inspect` use as it was (a small thing taken up, turned, put back where it
+  was).
+
 ## 2026-11-05 (the user: Sakura Rabbit's Unity experiments as candidates; the branch `sakura-rabbit-research`)
 
 - **"I have a lot of tokens to use up before Sunday, can you create a new branch called sakura-rabbit-research, and
