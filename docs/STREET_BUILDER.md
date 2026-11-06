@@ -68,18 +68,16 @@ The page has the **palette** (left), the **map** or the **facade** (middle), and
   **Photo…** or Ctrl+V puts a photo over it, *see* sets how much of the photo shows, and with **adjust** ticked:
   drag to turn the shot, WASD to move it, Q and E down and up, the wheel for the lens. Then build until the street
   sits on the photo. The frame takes the photo's shape.
-- **Paths, steps and rivers** (§7d): in the same palette as the streets, drawn the same way. A *Path* is a footpath
-  (gravel, soil, stone, concrete or mown grass, no kerbs); *Steps* climb from their start to their end (give the end a
-  height: stone slabs with ragged fronts, timber sleepers with their straps and bolts, or concrete); a *River* is water
-  between two banks, with rocks and white water in it and a fall wherever it drops. Each can have **banks**: the ground
-  rising beside it (a cutting's sides, a river's banks: grass, soil, moss, a concrete block revetment in courses, a grass
-  bank with stones, river stones along the water, a concrete wall; a level strip before the rise). **The ground** (the
-  street's inspector): its cover (grass, mown grass, moss, soil, gravel, rock, forest on the far hills), hills and
-  ridges, roughness, a far ground out to the horizon, patches of another cover. **Scatters** (+ Scatter): many of a
-  thing at once along the picked path or river, or in a circle: grasses, stones, a hillside's canopy, trees; each a
-  made prop or a stand-in. The new things: a rock, a bridge (a timber footbridge, a steel girder bridge, a red arched
-  bridge), a bell path light, a paper lantern, a notice board, a plant and a canopy stand-in; the new fences: a log
-  rail and a dry stone wall.
+- **Paths and steps** (§7d): in the same palette as the streets, drawn the same way. A *Path* is a footpath (gravel,
+  soil, stone, concrete or mown grass, no kerbs); *Steps* climb from their start to their end (give the end a height:
+  stone slabs with ragged fronts, timber sleepers with their straps and bolts, or concrete). Each can have **banks**:
+  the ground rising beside it (a cutting's sides: grass, soil, moss; a level strip before the rise). **The ground**
+  (the street's inspector): its cover (grass, mown grass, moss, soil, gravel, rock, forest on the far hills), hills and
+  ridges, roughness, flats held level, a far ground out to the horizon, patches of another cover. **Scatters**
+  (+ Scatter): many of a thing at once along the picked street or path, or in a circle: grasses, stones, a hillside's
+  canopy, trees; each a made prop or a stand-in. The things: a rock, a bridge (a timber footbridge, a steel girder
+  bridge, a red arched bridge), a bell path light, a paper lantern, a notice board, a plant and a canopy stand-in; the
+  fences: a log rail and a dry stone wall. (The river kind was scrapped on 2026-11-06: DECISIONS.)
 - **Time**: day, overcast, dusk (the blue hour) or night: the sky, the light, the lit windows, signs and lamps.
 - **Keys**: Del removes, R turns, Ctrl+D copies, the arrows nudge (Shift a metre), Ctrl+Z / Ctrl+Y, Ctrl+S saves,
   Esc stops placing. **Export .glb** downloads the street (a node a piece, a material a surface) for Godot or Blender.
@@ -157,13 +155,11 @@ turned by `turn` (degrees, anticlockwise) and set down at `at` (its middle); a r
                             "floors": [from, to], "text", "fg", "bg", "dir": "h|v|r", "lit", "slot", "in", ...}],
                  "refs": {"front|right|back|left": {"file": "refs/<name>", "x", "z", "w", "op", "top"}}}],
   (a road's kind, §7d: "kind": "path" ("surface", "width" one number or one a point), "steps" ("tread": "stone|sleepers|concrete",
-   "rise", "infill"), "river" ("width" one a point, "depth", "rocks": {"every", "size"}, "rapids": [{"at", "len", "x", "w"}],
-   "drops": [{"at", "h"}]); any: "banks": [{"h", "w", "flat", "kind": "grass|soil|moss|concrete|stone|rock|wall", "course", "rocks"}, ...])
+   "rise", "infill"); any: "banks": [{"h", "w", "flat", "kind": "grass|soil|moss"}, ...])
   "terrain": {"cover", "cell", "drop", "blend", "haze", "far": {"r", "cell", "cover"}, "hills": [{"at", "r", "h", "flat"} | {"ridge": [[x, y], ...], "r", "h"}],
               "noise": {"amp", "scale", "seed", "octaves"}, "patches": [{"kind", "at", "r"} | {"kind", "poly"}],
               "flats": [{"z", "at", "r", "blend"} | {"z", "poly", "blend"}]},
-  (a river's "rocks" and a bank's "rocks" may name made props: {"every", "size", "prop" | "props": [...]}, §7e;
-   a thing with a "prop" may have "fit": its longest way across, metres: the prop scaled to it; "top": its highest point this far over what's under it)
+  (a thing with a "prop" may have "fit": its longest way across, metres: the prop scaled to it; "top": its highest point this far over what's under it)
   "scatters": [{"id", "kind": "plant|rock|canopy|tree", "prop" | "props", "size": [min, max], "w", "h", "slot", "seed",
                 "along": <road id>, "side": 0|1|-1, "off": [near, far], "every", "jitter", "from", "to"  |  "at", "r", "n" | "density"  |  "poly"}],
   "things": [{"id", "kind" (THING_KINDS), "at", "turn", "lift" (above what's under it), "h", "slot", "look", "to" (a pole's next pole), ...}],
@@ -440,9 +436,9 @@ stand-in rooms don't count), the same in STREET, the page and anything else.
   camera solved from its pins (its eye, where it looks, its lens, by Nelder-Mead over the pins' errors; `--fix` holds
   any of x, y, z, yaw, pitch, vfov); `--cast u,v[@z]` where a pixel of the photo lands on the street through the shot
   as it is (on the ground, or on the plane z), to place what the photo shows by its pixel.
-- STREET's outdoors fixture (streetcheck.mjs §5f): a path with a bank, two flights of steps, a river under its banks
-  with a revetment, a grass bank with stones, rocks, white water and a fall, hills and a ridge on a far ground, scatters;
-  every new thing and fence builds; the ground's heights and covers where they should be; nothing in one plane.
+- STREET's outdoors fixture (streetcheck.mjs §5f): a path with a bank, a sunken lane with a mossy bank after a level
+  strip, two flights of steps, hills and a ridge on a far ground, flats, scatters; every new thing and fence builds;
+  the ground's heights and covers where they should be; nothing in one plane.
 
 ## 7. The Shibuya lane (the first reference, matched)
 
@@ -501,127 +497,70 @@ down that walk's middle, poles at the near kerb turned so their arms cross the l
 - **Pictures**: `python tools/godot/map_shots.py --set maison_1f --street maison_lane --shots
   Content/Studio/Sets/maison_1f/shots.json` (the interior stood at its marker in a by-hand project, pictured by Godot).
 
-## 7d. The nature park: paths, steps, rivers, banks, hills and foliage (the five photos, DECISIONS 2026-11-06)
+## 7d. The outdoors: paths, steps, banks, hills and foliage (DECISIONS 2026-11-06; the rivers scrapped the same day)
 
-The user's ask: "a new more nature park update ... build tools that let you build the following styles ... re-create
-1:1 framing/shots in our style of each of the photos ... this includes rivers too (the river doesn't need to be
-moving) ... create foliage, fences, stone steps that are needed". The plan is docs/STREET_NATURE_PLAN.md; the five
-streets are `garden_steps`, `shrine_steps`, `river_town`, `mountain_stream` and `park_brook`, each with a shot `photo`
-framed as its picture (its aspect), pinned to it (STREET holds every pin within its tolerance: 1.3%, 0.9%, 0.5%, 0.3%
-and 1.5% of the frame off on average), the photos themselves on the user's machine (`refs/shot_photo.webp`, git-ignored:
-paste each into its shot to see the two together, or `python tools/street.py shot <name>`); the five drawings:
-`docs/street_sheets/2026-11-06_nature_five.jpg`.
+The user's ask, 2026-11-06: "a new more nature park update ... re-create 1:1 framing/shots in our style of each of the
+photos". Five photos were matched (docs/STREET_NATURE_PLAN.md), then the user: "forget the 1:1 ... a lot of the
+environments you made look ugly (except for the new realistic plants)", and last: **"Scrap the rivers, keep all the
+foliage and rocks you made as props to generate. I'll use them for gardens."** So the river kind went (its bed, water,
+stone and concrete banks, white water, falls, rocks in it) with the three river streets and the park; what stays is a
+garden's: paths, steps, banks, the ground's shape and covers, scatters, the small things, and the props. The two step
+streets, `garden_steps` (timber sleeper steps up a garden with forest grass and a bell light, 1.3% of the frame off
+its photo) and `shrine_steps` (stone steps up a shrine hill with a log rail, moss and ferns, 0.9%), stay with their
+shots `photo` pinned to their pictures (the photos themselves on the user's machine, `refs/`, git-ignored); their
+drawings: `docs/street_sheets/2026-11-06_steps_two.jpg`.
 
-**What's new in the builder** (`street-gen.js`, all of it the street's own words, §4):
+**What's in the builder** (`street-gen.js`, all of it the street's own words, §4):
 
-- **Roads of a kind.** A road's `kind` is `road` (as before), `path`, `steps` or `river`; the line, bends and heights
-  are the road's (roadPath), so the page's drawing, dragging and bending serve all four. A path is one strip (`surface`:
-  gravel, soil, stone, concrete, grass, asphalt, paving). Steps climb from the low end up: `rise` a step, the run from
-  the flight's length (`nSteps`, `stepZ`); `tread` stone (slabs, each riser's ragged front shared with the tread
-  below it, the risers in a darker stone), sleepers (a landscape timber at each riser with a steel strap and a bolt
-  head on each end, `infill` behind it) or concrete. A river is its water at its heights (`z`; `drops` where it falls:
-  a white face and a lip of stones), a bed `depth` under it with shelves up to the water's edge (the water sees through
-  to it), `rocks` in it with white water round the ones that break the surface, `rapids` as stretches of white water,
-  and a bank each side. A path's or a river's `width` can be one number, one a point (from, the bends, to) or [at
-  from, at to] (the photo's river doubles by its bridge).
+- **Roads of a kind.** A road's `kind` is `road` (as before), `path` or `steps`; the line, bends and heights are the
+  road's (roadPath), so the page's drawing, dragging and bending serve all three. A path is one strip (`surface`:
+  gravel, soil, stone, concrete, grass, asphalt, paving), its `width` one number or one a point. Steps climb from the
+  low end up: `rise` a step, the run from the flight's length (`nSteps`, `stepZ`); `tread` stone (slabs, each riser's
+  ragged front shared with the tread below it, the risers in a darker stone), sleepers (a landscape timber at each
+  riser with a steel strap and a bolt head on each end, `infill` behind it) or concrete.
 - **Banks** (`banks`, [left, right], one given: both; `null`: none): the ground beside a road rising `h` over `w`
-  metres after a level `flat` strip, of a `kind` that is its cover (grass, soil, moss) or built geometry on a river
-  (`concrete`: a block revetment in `course`s, `stone`: a grass bank with stones, `rock`: river stones along the
-  water, `wall`: a concrete wall to the top). The terrain's `ground()` carries every road's bank; a river draws its own
-  bank strips at the terrain's own ground (so the grid under them stays under) with a skirt past the bank's edge.
+  metres after a level `flat` strip, of a `kind` that is its cover (grass, soil, moss). The terrain's `ground()`
+  carries every road's bank; a bank holds its own level to its end, the relief ramping in past it.
 - **The ground** (`terrain`): the roads' heights blended as before, each road's bank added beside it, then the hills
   (`hills`: a bump `h` high within `r` of `at` with a `flat` top, or along a `ridge` of points) and `noise` (value noise,
-  `amp` metres, `scale` metres a wave) where the roads let go (fully `blend` metres from any road's edge). The drawn
-  grid is fine near the street (`cell`, 1 m in the parks) and grows coarser out to `far.r` (one grid: no cracks), each
-  cell in its cover's slot (`cover` everywhere, `patches` of another, `far.cover` beyond the street: `forest` on the
-  hills), `drop` under the ground it stands for, so things on open ground stand on what's drawn. A bank holds its own
-  level to its end: the relief ramps in past it, not from the road's edge. **Flats** (`flats`: a circle or a polygon
-  at a `z`) are areas the ground holds level in place of the hills and noise, a town's floor, a field, a car park: the
-  roads through one keep their heights and their banks their slopes, the ground ramping into the flat's level over
-  `blend` as it ramps into the relief (the mountain stream's town stands on four of them, at the two banks' levels).
-  `haze` scales the time's fog (the far hills seen through it); the time `overcast`.
-- **Things**: `rock` (a boulder), `bridge` (`style` wood: a timber footbridge on a frame with posts and two rails;
-  steel: a girder deck with a blue railing and concrete abutments; arch: a red arched bridge on webs; `w` its span,
-  `d` its width, `deck` above what's under its middle, `piers`), `belllamp` (a bell on a shepherd's hook, lit at
+  `amp` metres, `scale` metres a wave) where the roads let go (fully `blend` metres from any road's bank). **Flats**
+  (`flats`: a circle or a polygon at a `z`) are areas the ground holds level in place of the hills and noise (a
+  garden's lawn, a car park): the roads through one keep their heights, the ground ramping into the flat's level as it
+  ramps into the relief. The drawn grid is fine near the street (`cell`) and grows coarser out to `far.r` (one grid: no
+  cracks), each cell in its cover's slot (`cover` everywhere, `patches` of another, `far.cover` beyond the street:
+  `forest` on the hills), with a normal of its own at each corner (the slopes shade smooth), `drop` under the ground it
+  stands for. `haze` scales the time's fog; the time `overcast`.
+- **Things**: `rock` (a boulder stand-in), `bridge` (`style` wood: a timber footbridge on a frame with posts and two
+  rails; steel: a girder deck with a blue railing and concrete abutments; arch: a red arched bridge on webs; `w` its
+  span, `d` its width, `deck` above what's under its middle, `piers`), `belllamp` (a bell on a shepherd's hook, lit at
   dusk), `chochin` (a paper lantern on a post), `signboard` (words on a board), `plant` and `canopy` stand-ins (a
-  clump, a crown; a plant's `prop` the real one as a tree's). Fences `lograil` (round posts, two rails, a bolt head a
-  rail a post) and `stonewall` (courses of lumpy stones). Every slot can wear a colour or a set (`grass`, `mown`,
-  `moss`, `soil`, `forest`, `water`, `riverbed`, `rock`, `stone`, `stone_dark`, `revet`, `sleeper`, `log`, `deck`,
-  `foam`, `foliage`...; their patterns drawn in code in `street3.js`).
+  clump, a crown). Fences `lograil` (round posts, two rails, a bolt head a rail a post) and `stonewall` (courses of
+  lumpy stones). Every slot can wear a colour or a set (`grass`, `mown`, `moss`, `soil`, `forest`, `rock`, `stone`,
+  `stone_dark`, `sleeper`, `log`, `deck`, `foliage`...; their patterns drawn in code in `street3.js`: the lawn and
+  grass tiles with soft blotches and mow stripes).
 - **Scatters** (`scatters`): many of a thing at once, the same by seed: along a road (`along`, `side`, `off` metres
   out from its edge, `every`, `jitter`, `from`, `to`), in a circle (`at`, `r`, `n` or `density`) or a polygon
-  (`poly`); never on a road or in a river; `kind` the stand-in (plant, rock, canopy, tree), `prop` or `props` the made
-  ones standing in their places (the page draws them when loaded and the export carries them), `size` [min, max] a
-  scale each. The page draws them as dots (a click picks the scatter), the inspector changes the lot.
-- **Colliders**: a river's bed and banks, steps and paths are walked on; a bridge's deck and rails; rocks; the posts;
-  plants and canopies are walked through.
+  (`poly`); never on a road, a path or steps; `kind` the stand-in (plant, rock, canopy, tree), `prop` or `props` the
+  made ones standing in their places (the page draws them when loaded and the export carries them), `size` [min, max]
+  a scale each. The page draws them as dots (a click picks the scatter), the inspector changes the lot.
+- **A made prop placed as a thing** (a tree's, a plant's, a rock's `prop: "props/<recipe>"`): `fit` scales it so its
+  longest way across is that many metres (a scatter's `size` stays a multiplier); `top` sets it so its highest point is
+  that far over what's under it (a rock sunk into the ground), else `lift` above it.
+- **Colliders**: steps and paths are walked on; a bridge's deck and rails; rocks; the posts; plants and canopies are
+  walked through.
 
-**The foliage** (PROPGEN §18, the blade plants): the prop generator's `hakone_grass` (Japanese forest grass),
-`hakone_green`, `sedge_evergold`, `flax_bronze`, `fern_clump`, `reed_clump` (susuki) and `meadow_tuft`, blades as
-strips bent in an arc out of the crown; with the realistic trees (`camphor_real`, `zelkova_real`, `cedar_real`,
-`cherry_real`, `small_hornbeam_real`, `shrub_real`) they stand in the five streets' plants' places
-(`python tools/propgen.py make <names> --library`; the stand-ins show until they're made).
+**The props** (the prop generator's, for the user's gardens): the blade plants (PROPGEN §18: `hakone_grass`,
+`hakone_green`, `sedge_evergold`, `flax_bronze`, `fern_clump`, `reed_clump`, `meadow_tuft`), the realistic trees and
+bushes (`camphor_real`, `zelkova_real`, `cedar_real`, `cherry_real`, `small_hornbeam_real`, `shrub_real`,
+`azalea_ball`, `grass_tuft`) and the rocks (PROPGEN §28: `rock_boulder`, `rock_mossy`, `rock_basalt`,
+`rock_sandstone`, `rock_slab`, `stone_river`, `stone_river_wet`, `rocks_cluster`, `pebbles_river`); made on the user's
+machine by `python tools/propgen.py make <names> --library` (the stand-ins show until then).
 
-**How each photo was matched** (the way the Shibuya lane was, §7, with two tools: `shotfit.mjs` solves the camera
-from pins on what can be measured in the photo, `--cast` places the rest by its pixel):
-
-1. **`garden_steps`** (timber steps up a garden, 550 x 734): the sleepers' strap tops read off the photo (the first
-   timber's front and back top edges, the next five fronts' right ends) pinned to a flight 1.15 m wide, 0.8 m a step,
-   0.18 up; the camera solved: an ultra-wide lens (106° tall), the eye 0.6 m before the first timber, 1.23 m up,
-   tilted 24° down. The plants and the lamp placed by casting their pixels onto the ground (`--cast`), the grasses
-   scaled 1.1 to 1.9 as the photo has them, the flax at the top left, the soil cover, trees over it.
-2. **`shrine_steps`** (stone steps up a shrine hill, 601 x 900): the log rail's posts (their feet and tops) pinned on
-   a fence climbing the lower flight; the posts' heights say the eye is 9 m below the second post, so a 24° lens
-   from the lower path, which falls 1.7 m toward the camera; the fence kinks at the fifth post in the photo, so the
-   lower flight is turned 2.4 m west of the upper one. Two flights (16 steps of 0.15, then 55 of 0.18 to the landing
-   with its board and lantern), the moss banks with ferns, the dry stone wall along the rail, trees in from both
-   sides; overcast.
-3. **`river_town`** (a river town from above, 1200 x 673): a judged camera first (28 m up), the water's edges and the
-   bridge's ends cast through it, the river laid through them (31 m wide near, 47 by the bridge), then the pins on
-   those edges and ends and the camera solved again (49 m up, 80 m back, 14° down): a red arched bridge 53 m long,
-   a ridge 85 m high along the left bank under a canopy scatter, the town's houses the house style's own along two
-   roads, flats, a white block and a tower, the far mountains hazed; rapids where the photo has white water.
-4. **`mountain_stream`** (a mountain town's stream, 1600 x 1153): the same way from 5.6 m up: a stream 3 to 7 m wide
-   with a grass strip and a stepped revetment on the left (`flat` 1.7, 13 courses of 0.32 m up to the lane 4.2 m
-   over the water), a grass bank with stones and a meadow of tufts and reeds on the right, a blue girder bridge 30 m
-   long 98 m off, houses on both sides and the village beyond on flats at the banks' levels (the valley's noise is for
-   the mountains: without the flats the houses stood in its dips), poles with their wires (their arms across the lane:
-   a pole turned along its run puts its wires in one line), five ridges and hills under the forest cover.
-5. **`park_brook`** (a park brook, 800 x 530): the brook stepping down three falls between mown mounds, river stones
-   along both edges, a timber footbridge 4.6 m long 8.8 m from the eye (its rail's height against its deck's says
-   so), a big camphor's trunk at the right, a woodland scattered behind; the eye 0.9 m up, a 44° lens.
-
-What still tells (the sheet): the canopy and plant stand-ins are lumps until the props are made; the far hills are
-smooth cones under one tile of forest; the sky is a gradient (the photos' clouds aren't drawn); the water is a flat
-colour (the Godot shader is later work, not this branch's); the steps' moss is the stone's flecks.
-
-## 7e. A simple park with a stream: the made rocks in the water (DECISIONS 2026-11-06, later)
-
-The user, the same day: "forget the 1:1 now, a lot of the environments you made look ugly (except for the new
-realistic plants) ... create a simple park with a small river stream ... work on modelling some new rocks". So the
-five matched streets stay as they are, and:
-
-- **Real rocks in a river and on its banks.** A river's `rocks` and a bank's `rocks` can name made props (the prop
-  generator's rock family, PROPGEN §28): `"rocks": {"every": 2.3, "size": 0.5, "props": ["props/stone_river_wet",
-  "props/rock_mossy"]}` (one `prop`, or `props` to pick from by the river's seed). The rocks then come as prop things
-  (`scatterThings`: `<river>_rock_<n>` in the water, `<river>_stone<side>_<n>` on a bank), each in the place the lump
-  would have taken, turned, **`fit`** to the place's size (a thing's `fit` scales any prop so its longest way across
-  is that many metres; a scatter's `size` stays a multiplier), its **`top`** where the lump's was (a thing's `top` sets
-  a prop so its highest point is that far over what's under it: a rock breaks the water as its lump did, or stays
-  under; a bank's stone sits a little proud of the ground, sunk like the lump; `lift` as before where no `top`); the
-  river draws no lumps there but keeps the foam rings round the ones that break the surface. The inspector's *the real
-  rocks* (a river) and *its stones* (a bank) take the names; `riverRocks` and `bankStones` give the places (their own
-  seeds: changing a river's banks doesn't move its rocks). Stones on a `stone` or `rock` bank come by default (every
-  2.2 m, 0.5 m; every 0.45 m, 0.3 m): give them props the same way.
-- **`park_stream`** (`Content/Studio/Streets/park_stream/`): a simple park, no photo to match: mown grass with a
-  gentle roll and three mounds, a winding gravel path from the west gate over a **timber footbridge** and on to the
-  east, a side path up a mound, the **stream** between a stone bank and a grass bank (2.4 to 3.4 m wide, falling a
-  metre over its length with two small falls and two runs of white water) with `stone_river`, `stone_river_wet`,
-  `rock_mossy` and a `rock_boulder` in it and along it, pebble patches at the water's edge, the forest grass, sedges
-  and ferns along the banks, reeds and meadow tufts further out, zelkovas, camphors, cherries, hornbeams and a cedar
-  (a wood scattered at each end), shrubs and azaleas by the path, a bench, two post lamps, a sign, a log rail at the
-  bridge; four shots (along the path, from the bridge upstream, across the stream, low by the water); the sheet
-  `docs/street_sheets/2026-11-06_park_stream.jpg`.
+**How a photo is matched** (the way the Shibuya lane was, §7, with two tools): `shotfit.mjs` solves a shot's camera
+from pins on what can be measured in the photo (a timber's strap tops, a fence's posts), `--cast` places the rest by
+its pixel: judge a camera, cast the photo's pixels through it, lay the geometry on the casts, pin the laid features,
+solve, draw (`streetshot`), compare, adjust. The garden's camera came out an ultra-wide lens 0.6 m before the first
+timber, 1.23 m up; the shrine's a 24° lens from the lower path, the log rail kinked at its fifth post.
 
 ## 8. Not yet
 
@@ -633,4 +572,4 @@ five matched streets stay as they are, and:
 - Pots stand empty (the plants are the prop generator's, placed as things or scatters).
 - A stair street between buildings (§7d's steps are a flight with banks, not a street with houses along it); a
   retaining wall as a bank kind beside a road.
-- Clouds in the sky; a river's shader (the water is a flat see-through colour here and in the export).
+- Clouds in the sky.

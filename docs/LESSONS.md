@@ -1845,6 +1845,13 @@ The five nature photos (STREET_BUILDER §7d) took several tries each to pin unde
   town's floor is a `flat` (an area held at a level in place of the relief). Drop a body on every street in Godot
   (GDSTREET) before calling a match done: the drawing through the shot hid all of it.
 
+## The rivers (2026-11-06, last)
+
+A day's river work (the kind, its banks, white water, falls, rocks in it, three streets, a park) went on the user's
+word the same evening: "scrap the rivers, keep the foliage and rocks as props". What survived was what stood on its
+own as a reusable piece: the props, the paths and steps, the ground. Build the reusable piece first and the showcase
+last; a showcase that needs the piece is cheap to drop, a piece buried in a showcase is not.
+
 ## Rocks by code (2026-11-06, later, the rock family)
 
 The first boulder came out a pale marshmallow: a smooth pancake with a few pen-line cracks and green dots. What made

@@ -417,7 +417,7 @@ function frameMap() {
   ST.view.s = clamp(Math.min(MW / (b[2] - b[0] + 16), MH / (b[3] - b[1] + 16)), 1.5, 80);
 }
 const THING_COLOURS = { Lights: "#e8c060", "Poles and wires": "#b0aca4", "Shop and street": "#7fb3d5", Road: "#e08a50", People: "#d58fb5", Plants: "#6a9a46", Nature: "#8a8578" };
-const ROAD_FILL = { road: "#2f3237", path: "#5d4f3f", steps: "#6e6456", river: "#3a5f6c" };
+const ROAD_FILL = { road: "#2f3237", path: "#5d4f3f", steps: "#6e6456" };
 const BANK_FILL = { grass: "#4f7a3a", soil: "#5a4636", moss: "#4a6a32", concrete: "#8a8a84", stone: "#5f7a46", rock: "#7a7870", wall: "#8a8a84" };
 let SCAT = { v: -2, items: [] };
 function scattered() { if (SCAT.v !== ST.version) SCAT = { v: ST.version, items: SG.scatterThings(ST.street) }; return SCAT.items; }
@@ -441,7 +441,6 @@ function drawMap() {
     out.push(`<polygon points="${pts(band(f, side * f.W / 2, side * (f.W / 2 + ww)))}" fill="#4f4c47" data-list="roads" data-id="${esc(r.id)}"/>`);
   for (const [r, f] of paths) {
     const on = sel.list === "roads" && sel.id === r.id, kind = SG.roadKind(r);
-    if (kind === "river") for (const sd of [1, -1]) { const b = f.banks[sd > 0 ? 0 : 1]; if (b) out.push(`<polygon points="${pts(band(f, sd * f.W / 2, sd * (f.W / 2 + b.w)))}" fill="${BANK_FILL[b.kind] || "#4f6a3a"}" fill-opacity="0.7" data-list="roads" data-id="${esc(r.id)}"/>`); }
     out.push(`<polygon points="${pts(band(f, -f.W / 2, f.W / 2))}" fill="${ROAD_FILL[kind]}" stroke="${on ? "#d9a441" : "none"}" stroke-width="2" data-list="roads" data-id="${esc(r.id)}"/>`);
     if (kind === "steps" && s > 2) for (let i = 1; i < f.nSteps; i++) { const a = W2S(...f.at(f.L * i / f.nSteps, -f.W / 2)), b = W2S(...f.at(f.L * i / f.nSteps, f.W / 2)); out.push(`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#2a2520" stroke-width="1" pointer-events="none"/>`); }
     if (r.centre && r.centre !== "none") out.push(`<polyline points="${along(f, 0)}" fill="none" stroke="${r.centre === "yellow" ? "#d89a3a" : "#bbb"}" stroke-dasharray="${r.centre === "dashed" ? `${5 * s},${5 * s}` : "none"}" stroke-width="1" pointer-events="none"/>`);
@@ -724,12 +723,11 @@ const ROADS = {
   // the outdoors (docs/STREET_NATURE_PLAN.md)
   path: { label: "Path", note: "a footpath: gravel, soil, stone, concrete or mown grass, no kerbs; banks can rise beside it", colour: "#5d4f3f", proto: { kind: "path", width: 1.6, surface: "gravel", marks: [] } },
   steps: { label: "Steps", note: "a flight of steps climbing from its start to its end (its heights): stone slabs, timber sleepers or concrete", colour: "#6e6456", proto: { kind: "steps", width: 2.4, tread: "stone", rise: 0.17, z: [0, 2], marks: [] } },
-  river: { label: "River", note: "water between two banks (grass, stones, a concrete revetment, a wall), rocks and white water in it, a fall where it drops", colour: "#3a5f6c", proto: { kind: "river", width: 8, depth: 0.5, banks: [{ h: 0.8, w: 1.6, kind: "grass" }, { h: 0.8, w: 1.6, kind: "grass" }], rocks: { every: 5, size: 0.8 }, marks: [] } },
 };
 function palette() {
   const L = $("#left"); L.innerHTML = "";
   const btn = (t, label, title, colour) => el("button", { "data-tool": toolKey(t), title, on: { click: () => setTool(ST.tool && toolKey(ST.tool) === toolKey(t) ? null : t) } }, colour ? el("i", { style: `background:${colour}` }) : null, label);
-  L.append(el("h2", {}, "Streets, paths and rivers"), el("div", { class: "pal" }, ...Object.entries(ROADS).map(([k, R]) => btn({ what: "road", kind: k, proto: R.proto, width: R.proto.width }, R.label, R.note, R.colour || "#3a3d42"))));
+  L.append(el("h2", {}, "Streets, paths and steps"), el("div", { class: "pal" }, ...Object.entries(ROADS).map(([k, R]) => btn({ what: "road", kind: k, proto: R.proto, width: R.proto.width }, R.label, R.note, R.colour || "#3a3d42"))));
   L.append(el("h2", {}, "Buildings"), el("div", { class: "pal" }, ...Object.entries(SP.STYLES).map(([k, S]) => btn({ what: "building", style: k, proto: SP.makeBuilding(k, 7 + k.length) }, S.label, `${S.note} (after ${S.ref})`, "#bdb8ae"))));
   const known = new Set(Object.values(SP.WALKINS).map(W => W.set));
   L.append(el("h2", {}, "Buildings to walk into"), el("div", { class: "pal" }, ...Object.entries(SP.WALKINS).map(([k, S]) => btn({ what: "building", style: k, proto: SP.walkIn(k), walkin: true }, S.label, S.note, "#d9a441")),
@@ -740,8 +738,8 @@ function palette() {
   for (const [cat, list] of Object.entries(cats)) L.append(el("h2", {}, cat), el("div", { class: "pal" }, ...list.map(([k, K]) => btn({ what: "thing", kind: k }, K.label, K.note, THING_COLOURS[cat]))));
   L.append(el("h2", {}, "Fences and walls"), el("div", { class: "pal" }, ...Object.entries(SG.FENCE_KINDS).map(([k, K]) => btn({ what: "fence", kind: k }, K.label, K.note, FENCE_COLOURS[k]))));
   L.append(el("h2", {}, "Scatters"), el("div", { class: "pal one" },
-    el("button", { title: "Many of a thing at once: grasses along a bank, stones along a brook, a hillside's canopy. Along the picked street (or path, steps, river), or in a circle on the map; each a made prop (the prop generator's) or a stand-in", on: { click: addScatter } }, "+ Scatter")),
-    el("div", { class: "hint" }, "Pick a street or a river first to scatter along it; else it goes in a circle at the map's middle. Click a dot to change it."));
+    el("button", { title: "Many of a thing at once: grasses along a bank, stones along a brook, a hillside's canopy. Along the picked street (or path, steps), or in a circle on the map; each a made prop (the prop generator's) or a stand-in", on: { click: addScatter } }, "+ Scatter")),
+    el("div", { class: "hint" }, "Pick a street or a path first to scatter along it; else it goes in a circle at the map's middle. Click a dot to change it."));
   const mix = el("select", { id: "mix" }, ...Object.entries(SP.MIXES).map(([k, M]) => new Option(M.label, k)));
   L.append(el("h2", {}, "Fill a street"), el("div", { class: "hint" }, "Pick a street, then:"),
     el("div", { class: "prop" }, el("label", {}, "kind"), mix),
@@ -1057,7 +1055,7 @@ const insp = $("#inspector");
 const SLOT_LABELS = { wall: "walls", wall2: "ground floor walls", trim: "trim, slabs, sills", frame: "window frames", glass: "glass", roof: "roof", tiles: "roof tiles", door: "doors",
   shutter: "shutters", concrete: "concrete", metal: "metal", rail: "railings", awning: "awnings", wood_dark: "dark timber", lattice: "lattice", asphalt: "road", pavement: "pavements",
   kerb: "kerbs", paint: "road paint", ground: "ground", roof_flat: "flat roofs", chainlink: "wire mesh", boards: "fence boards", panel: "metal panels", blocks: "block walls", bamboo: "bamboo", post: "posts", pole: "poles", steel: "steel",
-  grass: "grass", mown: "mown grass", moss: "moss", soil: "soil", forest: "forest (far hills)", water: "water", riverbed: "river bed", rock: "rocks", stone: "stone (steps, walls)", revet: "revetment blocks", sleeper: "timber sleepers", log: "log rails", deck: "bridge timber", foliage: "leaves (stand-ins)", foam: "white water" };
+  grass: "grass", mown: "mown grass", moss: "moss", soil: "soil", forest: "forest (far hills)", rock: "rocks", stone: "stone (steps, walls)", sleeper: "timber sleepers", log: "log rails", deck: "bridge timber", foliage: "leaves (stand-ins)" };
 function field(label, input, note) { return el("div", { class: "prop" }, el("label", { title: note || "" }, label), input); }
 function num(obj, key, opts = {}) {
   const v = obj[key] ?? opts.def ?? "";
@@ -1108,33 +1106,26 @@ function inspectStreet() {
   insp.append(el("div", { class: "big" }, "The street: " + ST.name), el("div", { class: "hint" }, count()));
   insp.append(field("about", text(S, "about", { ph: "what this place is" })));
   insp.append(section("Surfaces everywhere", el("div", { class: "hint" }, "A colour or a set from the PBR shelf on every surface of a kind (a building's own beats it)."),
-    ...["asphalt", "pavement", "kerb", "ground", "wall", "tiles", "roof_flat", "chainlink", "boards", "blocks", "panel", "grass", "mown", "moss", "soil", "forest", "water", "riverbed", "rock", "stone", "sleeper", "log", "deck", "foliage"].map(s => lookRow(S, s))));
+    ...["asphalt", "pavement", "kerb", "ground", "wall", "tiles", "roof_flat", "chainlink", "boards", "blocks", "panel", "grass", "mown", "moss", "soil", "forest", "rock", "stone", "sleeper", "log", "deck", "foliage"].map(s => lookRow(S, s))));
   insp.append(terrainSection(S));
   insp.append(section("Start here", el("div", { class: "hint" },
     "1. Streets: pick one on the left, drag on the map. 2. Fill a street: click it, then Fill it all (left). 3. Click a building: change its floors, windows, roof; double-click it for its front and side, where you add balconies, signs, boxes, doors... and paste a photo behind it. 4. Walk it: View, walk. 5. A shot: + Shot, then Photo… to match a picture.")));
 }
-// a road's banks: the ground rising beside it, a side each (a cutting's sides, a river's banks)
+// a road's banks: the ground rising beside it, a side each (a cutting's sides, a sunken path's)
 function banksSection(r) {
   const kind = SG.roadKind(r), B = SG.banksOf(r), was = Array.isArray(r.banks) ? r.banks : [r.banks, r.banks];
-  r.banks = [0, 1].map(i => B[i] ? Object.assign({}, was[i] && typeof was[i] === "object" ? was[i] : {}, { h: B[i].h, w: B[i].w, kind: B[i].kind }) : null);   // its flat strip, courses and stones kept
-  const stones = i => {                                              // the bank's stones: the made props standing in their places (rock family: props/stone_river...)
-    const b = r.banks[i]; if (!b) return null;
-    b.rocks = b.rocks && typeof b.rocks === "object" ? b.rocks : (b.kind === "stone" || b.kind === "rock" ? Object.assign({}, SG.bankRocks(b)) : null);
-    if (!b.rocks) return null;
-    const inp = el("input", { type: "text", value: Array.isArray(b.rocks.props) ? b.rocks.props.join(", ") : b.rocks.prop || "", placeholder: "props/stone_river, props/stone_river_wet (else lumps)", on: { input: e => edit(() => { const v = e.target.value.split(",").map(x => x.trim()).filter(Boolean); delete b.rocks.prop; delete b.rocks.props; if (v.length === 1) b.rocks.prop = v[0]; else if (v.length) b.rocks.props = v; }) } });
-    return field("its stones", el("div", { class: "row" }, "every", num(b.rocks, "every", { def: 2.2, step: 0.1, min: 0.1, unit: "m" }), "about", num(b.rocks, "size", { def: 0.5, step: 0.05, min: 0.05, unit: "m" }), inp));
-  };
+  r.banks = [0, 1].map(i => B[i] ? Object.assign({}, was[i] && typeof was[i] === "object" ? was[i] : {}, { h: B[i].h, w: B[i].w, kind: B[i].kind }) : null);   // its flat strip kept
   const row = i => {
     const b = r.banks[i] || { h: 0, w: 1.5, kind: "grass" }, kinds = Object.assign({ "": "none (the ground as it is)" }, SG.BANK_KINDS), on = !!r.banks[i];
-    const sel = el("select", { on: { change: e => edit(() => { r.banks[i] = e.target.value ? Object.assign({ h: b.h || (kind === "river" ? 0.8 : 1), w: b.w || 1.5 }, b, { kind: e.target.value }) : null; }, true) } }, ...Object.entries(kinds).map(([k, v]) => new Option(v, k)));
+    const sel = el("select", { on: { change: e => edit(() => { r.banks[i] = e.target.value ? Object.assign({ h: b.h || 1, w: b.w || 1.5 }, b, { kind: e.target.value }) : null; }, true) } }, ...Object.entries(kinds).map(([k, v]) => new Option(v, k)));
     sel.value = on ? b.kind : "";
     return field(i === 0 ? "left bank" : "right bank", el("div", { class: "row" }, sel, on ? "rises" : null, on ? num(r.banks[i], "h", { step: 0.1, unit: "m" }) : null, on ? "over" : null, on ? num(r.banks[i], "w", { step: 0.1, min: 0.1, unit: "m" }) : null));
   };
-  return section(["Banks", el("span", { class: "hint" }, kind === "river" ? "the ground rising from the water's edge each side" : "the ground rising beside it (left and right walking from its start)")], row(0), stones(0), row(1), stones(1));
+  return section(["Banks", el("span", { class: "hint" }, "the ground rising beside it (left and right walking from its start)")], row(0), row(1));
 }
 function inspectRoad(r) {
   const kind = SG.roadKind(r), f = SG.roadPath(r);
-  insp.append(head({ road: "Street", path: "Path", steps: "Steps", river: "River" }[kind], r));
+  insp.append(head({ road: "Street", path: "Path", steps: "Steps" }[kind], r));
   insp.append(field("length", el("span", { class: "hint" }, `${r1(f.L)} m (drag its ends on the map; drag the dot in its middle to bend it)`)));
   if (kind === "path") {
     insp.append(field("width", num(r, "width", { step: 0.1, min: 0.3, unit: "m" })));
@@ -1146,21 +1137,6 @@ function inspectRoad(r) {
     insp.append(el("div", { class: "hint" }, `${f.nSteps} steps, each ${r2(Math.abs(f.rise))} m up and ${r2(f.run)} m along: give its end a height below to make it climb`));
     if ((r.tread || "stone") === "sleepers") insp.append(field("behind each timber", pick(r, "infill", { gravel: "gravel", soil: "soil", stone: "stone", grass: "grass" }, { def: "gravel" })));
     insp.append(banksSection(r));
-  } else if (kind === "river") {
-    insp.append(field("width", el("div", { class: "row" }, num(r, "width", { step: 0.1, min: 0.3, unit: "m of water" }), "deep", num(r, "depth", { def: 0.5, step: 0.05, min: 0.05, unit: "m" }))));
-    insp.append(banksSection(r));
-    r.rocks = r.rocks && typeof r.rocks === "object" ? r.rocks : null;
-    insp.append(field("rocks in it", el("div", { class: "row" }, el("label", { class: "row" }, el("input", { type: "checkbox", checked: !!r.rocks, on: { change: e => edit(() => { r.rocks = e.target.checked ? { every: 5, size: 0.8 } : null; if (!r.rocks) delete r.rocks; }, true) } }), "yes"),
-      r.rocks ? "every" : null, r.rocks ? num(r.rocks, "every", { def: 5, step: 0.5, min: 0.3, unit: "m" }) : null, r.rocks ? "about" : null, r.rocks ? num(r.rocks, "size", { def: 0.8, step: 0.1, min: 0.1, unit: "m" }) : null)));
-    if (r.rocks) insp.append(field("the real rocks", el("input", { type: "text", value: Array.isArray(r.rocks.props) ? r.rocks.props.join(", ") : r.rocks.prop || "", placeholder: "props/stone_river_wet, props/rock_mossy (else lumps)",
-      on: { input: e => edit(() => { const v = e.target.value.split(",").map(x => x.trim()).filter(Boolean); delete r.rocks.prop; delete r.rocks.props; if (v.length === 1) r.rocks.prop = v[0]; else if (v.length) r.rocks.props = v; }) } })));
-    r.rapids = Array.isArray(r.rapids) ? r.rapids : []; r.drops = Array.isArray(r.drops) ? r.drops : [];
-    const rapids = el("div", { class: "list" }), drops = el("div", { class: "list" });
-    r.rapids.forEach((q, i) => rapids.append(el("div", { class: "row" }, "at", num(q, "at", { step: 0.5, unit: "m" }), "for", num(q, "len", { def: 6, step: 0.5, unit: "m" }), "wide", num(q, "w", { def: r2(f.W * 0.5), step: 0.5 }), el("button", { on: { click: () => { pushUndo(); r.rapids.splice(i, 1); changed(); } } }, "✕"))));
-    r.drops.forEach((q, i) => drops.append(el("div", { class: "row" }, "at", num(q, "at", { step: 0.5, unit: "m" }), "falls", num(q, "h", { def: 0.3, step: 0.05, unit: "m" }), el("button", { on: { click: () => { pushUndo(); r.drops.splice(i, 1); changed(); } } }, "✕"))));
-    insp.append(section(["White water", el("span", { class: "hint" }, "a stretch of rapids: at metres from its start")], rapids, el("button", { on: { click: () => { pushUndo(); r.rapids.push({ at: r1(f.L / 2), len: 6 }); changed(); } } }, "+ rapids")));
-    insp.append(section(["Falls", el("span", { class: "hint" }, "the water drops at these places (a brook's cascade): at metres from its start")], drops, el("button", { on: { click: () => { pushUndo(); r.drops.push({ at: r1(f.L / 2), h: 0.3 }); changed(); } } }, "+ fall")));
-    insp.append(field("seed", num(r, "seed", { def: 0, step: 1, int: true })));
   } else {
   insp.append(field("road width", num(r, "width", { step: 0.1, min: 2, unit: "m (kerb to kerb)" })));
   r.walks = Array.isArray(r.walks) ? r.walks : [2, 2]; r.edge = Array.isArray(r.edge) ? r.edge : [0, 0];

@@ -1312,8 +1312,9 @@ centre, so the shape and the paint read one source:
   (`count` small stones in a patch), `cluster` (`count` rocks leaning together, the first the biggest). **Recipes**:
   `rock_boulder` (granite, 1.3 m), `rock_mossy`, `rock_basalt`, `rock_sandstone`, `rock_slab`, `stone_river`,
   `stone_river_wet`, `rocks_cluster`, `pebbles_river`. `size` is the longest way in metres; `tex` 2048 on the big ones.
-- **In the street builder** (STREET_BUILDER §7e): a river's `rocks` and a bank's `rocks` name them (`prop`, or
-  `props` to pick from): the made rocks stand in the lumps' places, scaled to each place's size (`fit`), sunk to the
-  bed or into the bank; the foam rings stay. A thing or a scatter places one as any prop.
+- **Where they go**: the user's gardens (DECISIONS 2026-11-06, last: "keep all the foliage and rocks you made as
+  props to generate. I'll use them for gardens"): made into the library and dropped into a Godot project like any
+  prop (`Saved/Props/<name>/<name>.glb`, or the library's copy), or placed in a street as a thing or a scatter
+  (`prop: "props/rock_mossy"`, `fit` its size, `top` to sink it: STREET_BUILDER §7d).
 
 The check (PROPGEN) makes `rock_boulder` and `pebbles_river` small.

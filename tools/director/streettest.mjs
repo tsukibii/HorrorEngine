@@ -126,27 +126,23 @@ try {
     if (!(Math.hypot(v[0] + 9, v[1] + 22) < 0.6)) fail("the fence's bend didn't follow its handle: " + JSON.stringify(v));
     else console.log(`a bent fence: drawn along its curve (${fl.pts} points), its bend dragged to [${v}]`);
   }
-  // the outdoors (docs/STREET_BUILDER.md §7d): a river and a path dragged on the map build with the water, its banks and the
-  // path's strip; a scatter added along the path (the picked road) is drawn as dots and built as its stand-ins
-  await page.click("#left >> text=\"River\"");
-  [ax, ay] = await at(22, -30); [bx, by] = await at(22, 10);
-  await page.mouse.move(ax, ay); await page.mouse.down(); await page.mouse.move(bx, by, { steps: 5 }); await page.mouse.up();
+  // the outdoors (docs/STREET_BUILDER.md §7d): a path dragged on the map builds its strip; a scatter added along the path
+  // (the picked road) is drawn as dots and built as its stand-ins
   await page.click("#left >> text=\"Path\"");
   [ax, ay] = await at(34, -30); [bx, by] = await at(34, 10);
   await page.mouse.move(ax, ay); await page.mouse.down(); await page.mouse.move(bx, by, { steps: 5 }); await page.mouse.up();
   await page.click("#left >> text=\"+ Scatter\"");
   await page.waitForTimeout(500);
   S = await ST();
-  const river = S.roads.find(r => r.kind === "river"), trail = S.roads.find(r => r.kind === "path"), sc = (S.scatters || [])[0];
-  if (!river || !Array.isArray(river.banks) || Math.abs(river.to[1] - river.from[1] - 40) > 0.6) fail("the river wasn't dragged out with its banks: " + JSON.stringify(river));
+  const trail = S.roads.find(r => r.kind === "path"), sc = (S.scatters || [])[0];
   if (!trail || Math.abs(trail.to[1] - trail.from[1] - 40) > 0.6) fail("the path wasn't dragged out: " + JSON.stringify(trail));
   if (!sc || sc.along !== (trail || {}).id) fail("the scatter didn't go along the picked path: " + JSON.stringify(sc));
-  const built = await page.evaluate(() => { const S = window.ST.street, river = S.roads.find(r => r.kind === "river"), trail = S.roads.find(r => r.kind === "path"), sc = S.scatters[0];
-    const rp = window.ST.pieces.find(p => p.id === river.id), tp = window.ST.pieces.find(p => p.id === trail.id), dots = document.querySelectorAll(`circle[data-list="scatters"][data-id="${sc.id}"]`).length, stand = window.ST.pieces.filter(p => p.id.startsWith(sc.id + "_")).length;
-    return { water: rp && rp.G.water ? rp.G.water.idx.length / 3 : 0, bank: rp && rp.G.grass ? rp.G.grass.idx.length / 3 : 0, path: tp && tp.G.gravel ? tp.G.gravel.idx.length / 3 : 0, dots, stand }; });
-  if (!(built.water > 0 && built.bank > 0 && built.path > 0)) fail(`the river or the path didn't build: ${JSON.stringify(built)}`);
+  const built = await page.evaluate(() => { const S = window.ST.street, trail = S.roads.find(r => r.kind === "path"), sc = S.scatters[0];
+    const tp = window.ST.pieces.find(p => p.id === trail.id), dots = document.querySelectorAll(`circle[data-list="scatters"][data-id="${sc.id}"]`).length, stand = window.ST.pieces.filter(p => p.id.startsWith(sc.id + "_")).length;
+    return { path: tp && tp.G.gravel ? tp.G.gravel.idx.length / 3 : 0, dots, stand }; });
+  if (!(built.path > 0)) fail(`the path didn't build: ${JSON.stringify(built)}`);
   if (!(built.dots > 5 && built.stand === built.dots)) fail(`the scatter isn't drawn and built (${built.dots} dots, ${built.stand} stand-ins)`);
-  else console.log(`a river (${built.water} water triangles, ${built.bank} on its banks), a path (${built.path}), a scatter of ${built.dots} along it`);
+  else console.log(`a path (${built.path} triangles), a scatter of ${built.dots} along it`);
   // a shot from the 3D view
   await page.click("#addShot");
   S = await ST();

@@ -14,7 +14,7 @@ const load = async f => { try { return await import(pathToFileURL(path.join(ROOT
 const SG = await load("tools/director/street-gen.js");
 const SP = await (async () => { try { return await import(pathToFileURL(path.join(ROOT, "tools/director/street-presets.js")).href); } catch (e) { return null; } })();
 const errs = [], warns = [], args = process.argv.slice(2), only = args.includes("--street") ? args[args.indexOf("--street") + 1] : null;
-const BUDGET = { building: 30000, thing: 3000, fence: 6000, road: 6000, river: 90000, ground: 400000 };
+const BUDGET = { building: 30000, thing: 3000, fence: 6000, road: 6000, ground: 400000 };
 // clipping: two triangles of a piece facing the same way, one within NEAR of the other's plane where they overlap by
 // more than a square centimetre (what flickers as the depth buffer picks between them). Faces down on the ground are
 // never seen and don't count.
@@ -322,55 +322,46 @@ function touches(r, o, q) {                                           // the roo
   return p && p[0] > q.at[0] && p[0] < q.at[0] + q.size[0] && p[1] > q.at[1] && p[1] < q.at[1] + q.size[1];
 }
 const budgetOf = (S, p) => p.type === "ground" ? BUDGET.ground : p.type === "road" && (S.roads || []).some(r => r.id === p.id && SG.roadKind(r) === "river") ? BUDGET.river : BUDGET[p.type] || 20000;
-// 5f. the outdoors (docs/STREET_NATURE_PLAN.md): a path with a bank rising beside it, two flights of steps climbing their
-// rise (sleepers, stone), a river under its banks (a concrete revetment in courses, a grass bank with stones) with
-// rocks, white water and a fall, hills and a ridge far off on a far ground in the forest cover, scatters along a bank
-// and in a circle; every new thing and fence (the loops above build them all); nothing in one plane
+// 5f. the outdoors (docs/STREET_NATURE_PLAN.md): a path with a bank rising beside it, a sunken lane with a mossy bank
+// after a level strip, two flights of steps climbing their rise (sleepers, stone), hills and a ridge far off on a far
+// ground in the forest cover, flats held level, scatters along the lane and in a circle; every new thing and fence (the
+// loops above build them all); nothing in one plane
 {
   const N = { roads: [
-      { id: "river", kind: "river", from: [0, -40], via: [[6, 0]], to: [0, 40], width: 8, depth: 0.6, z: [0, -0.5, -1], banks: [{ h: 3, w: 3.5, kind: "concrete" }, { h: 1.2, w: 2.5, kind: "stone" }], rocks: { every: 3, size: 0.8 }, rapids: [{ at: 10, len: 6 }], drops: [{ at: 50, h: 0.4 }] },
       { id: "path", kind: "path", from: [-10, -40], to: [-10, 40], width: 1.6, surface: "gravel", z: [0, 2], banks: [{ h: 1.5, w: 2 }, null] },
+      { id: "lane", kind: "path", from: [0, -40], via: [[6, 0]], to: [0, 40], width: 2.4, surface: "soil", z: [0, -0.5, -1], banks: [{ h: 0.8, w: 2.5, kind: "moss", flat: 0.5 }, { h: 0.6, w: 2, kind: "soil" }] },
       { id: "steps", kind: "steps", from: [14, -10], to: [14, 10], width: 2.6, tread: "sleepers", z: [0, 3.4], rise: 0.17, banks: [{ h: 1, w: 2, kind: "moss" }] },
       { id: "steps2", kind: "steps", from: [20, -10], to: [20, 10], width: 3, tread: "stone", z: [0, 3.4] }],
     terrain: { cell: 1, far: { r: 200, cell: 30, cover: "forest" }, cover: "grass", patches: [{ kind: "soil", at: [16, 0], r: 3 }], hills: [{ at: [-250, 0], r: 150, h: 60 }, { ridge: [[0, 200], [200, 260]], r: 80, h: 90 }], noise: { amp: 0.4, scale: 12, seed: 3 }, flats: [{ at: [40, -30], r: 6, z: 3 }, { poly: [[-40, 20], [-30, 20], [-30, 30], [-40, 30]], z: -2 }] },
     things: [{ id: "b1", kind: "bridge", style: "wood", at: [3, 20], turn: 90, w: 14, d: 2.2, deck: 1.5 }, { id: "b2", kind: "bridge", style: "steel", at: [3, -20], turn: 90, w: 14, d: 3.5, deck: 1.8, piers: 1 }, { id: "b3", kind: "bridge", style: "arch", at: [3, 32], turn: 90, w: 16, d: 3, deck: 2 },
       { id: "lamp", kind: "belllamp", at: [15.8, -11] }, { id: "ch", kind: "chochin", at: [22, 11] }, { id: "sb", kind: "signboard", at: [18, 11], text: "テスト" }, { id: "rk", kind: "rock", at: [-5, 10], w: 1.4, d: 1, h: 0.8 }],
     fences: [{ id: "lr", kind: "lograil", from: [21.8, -12], to: [21.8, 12] }, { id: "sw", kind: "stonewall", from: [18, -12], to: [24, -12] }],
-    scatters: [{ id: "grass", along: "river", side: -1, off: [0.2, 2], every: 1.2, kind: "plant", w: 0.6, h: 0.4, size: [0.7, 1.3], seed: 1 }, { id: "canopy", at: [-60, 0], r: 30, density: 0.02, kind: "canopy", w: 5, h: 5 }] };
-  const L = "the outdoors", T = SG.terrain(N), P = once(L, N), get = id => P.find(p => p.id === id), f = SG.roadPath(N.roads[0]);
+    scatters: [{ id: "grass", along: "lane", side: -1, off: [0.2, 2], every: 1.2, kind: "plant", w: 0.6, h: 0.4, size: [0.7, 1.3], seed: 1 }, { id: "canopy", at: [-60, 0], r: 30, density: 0.02, kind: "canopy", w: 5, h: 5 }] };
+  const L = "the outdoors", T = SG.terrain(N), P = once(L, N), get = id => P.find(p => p.id === id), f = SG.roadPath(N.roads[1]);
   sane(L, P, p => budgetOf(N, p));
   const near = (a, b, tol, what) => { if (!(Math.abs(a - b) <= tol)) errs.push(`${L}: ${what}: ${(+a).toFixed(2)}, not ${(+b).toFixed(2)}`); };
   near(T.surface(-10, 0), 1.0, 0.02, "the path's height half way up");                 // its heights 0 to 2 over 80 m
   near(T.ground(-13.3, 0), 2.5, 0.5, "the ground at the path's bank's top (1.5 m over 2 m)");
-  near(T.ground(6, 0), -1.25, 0.02, "the ground in the river (under its bed)");
-  near(T.surface(6, 0), -0.5, 0.02, "the water's level at the bend");
-  near(T.ground(-1.6, 0), 2.4, 0.45, "the ground at the top of the river's concrete bank (3 m over 3.5 m)");
-  near(f.z(49) - f.z(51), 0.4 + 0.025 * 2 * 0.5 / 1, 0.06, "the fall: the water 0.4 m lower past it");
+  near(T.surface(6, 0), -0.5, 0.02, "the lane's level at the bend");
+  near(T.ground(1.8, 0), 0.3, 0.45, "the ground at the top of the lane's mossy bank (0.8 m over 2.5 m after a level strip)");
+  near(T.ground(5.2, 0), -0.5, 0.03, "the lane's level strip before its bank rises");
+  if (T.cover(3.8, 0, false) !== "moss") errs.push(`${L}: the lane's bank wears ${T.cover(3.8, 0, false)}, not moss`);
   near(T.surface(14, -9.9), 0.17, 0.01, "the first sleeper step's tread"); near(T.surface(14, 9.9), 3.4, 0.01, "the top step's tread");
   near(T.ground(40, -30), 3, 0.01, "the ground on a round flat (held at its level)"); near(T.ground(-35, 25), -2, 0.01, "the ground on a polygon flat");
-  {                                                                  // a river's rocks and a bank's stones as made props: things in the lumps' places, scaled to fit, no lumps left, the foam rings still
-    const N2 = JSON.parse(JSON.stringify(N)); N2.roads[0].rocks.prop = "props/stone_river_wet"; N2.roads[0].banks[1].rocks = { every: 1.5, size: 0.4, props: ["props/stone_river", "props/rock_mossy"] };
-    const th = SG.scatterThings(N2), inWater = th.filter(t => t.id.startsWith("river_rock_")), onBank = th.filter(t => t.id.startsWith("river_stone1_"));
-    const riv = once(L + " with props", N2).find(p => p.id === "river"), rock = riv.G.rock ? riv.G.rock.idx.length / 3 : 0;
-    if (inWater.length < 8 || !inWater.every(t => t.prop === "props/stone_river_wet" && t.fit > 0 && typeof t.top === "number") || !inWater.some(t => t.top > 0.05)) errs.push(`${L}: a river naming a prop: ${inWater.length} rock things in the water, some breaking the water (${JSON.stringify(inWater[0])})`);
-    if (onBank.length < 10 || !onBank.every(t => /stone_river|rock_mossy/.test(t.prop) && t.fit > 0)) errs.push(`${L}: a bank naming props: ${onBank.length} stone things (${JSON.stringify(onBank[0])})`);
-    if (rock > get("river").G.rock.idx.length / 3 * 0.4) errs.push(`${L}: the river's rock lumps still drawn with props standing in (${rock} triangles; the fall's lip stones stay)`);
-    if (!(riv.G.foam && riv.G.foam.idx.length > 60)) errs.push(`${L}: the foam rings went with the lumps`);
-  }
   if (Math.abs(T.ground(40, -30 - 6 - 20) - 3) < 0.3) errs.push(`${L}: the ground 20 m past the flat's edge is still at its level`);
   near(T.relief(-250, 0), 60, 0.5, "the hill's top far off (its relief)"); near(T.relief(100, 230), 90, 0.5, "the ridge's top (its relief)"); near(T.relief(-250, 160), 0, 0.5, "the ground past the hill's foot");
   if (T.cover(16, 0, false) !== "soil" || T.cover(-30, 20, false) !== "grass" || T.cover(-200, 100, true) !== "forest") errs.push(`${L}: the covers: ${T.cover(16, 0, false)}, ${T.cover(-30, 20, false)}, ${T.cover(-200, 100, true)}`);
   const tris = (p, slot) => { const g = p && p.G[slot]; return g ? g.idx.length / 3 : 0; };
-  if (tris(get("river"), "water") < 20 || tris(get("river"), "revet") < 40 || tris(get("river"), "foam") < 12 || tris(get("river"), "rock") < 200) errs.push(`${L}: the river's water ${tris(get("river"), "water")}, revetment ${tris(get("river"), "revet")}, white water ${tris(get("river"), "foam")}, rocks ${tris(get("river"), "rock")} triangles`);
+  if (tris(get("lane"), "soil") < 20) errs.push(`${L}: the lane's strip: ${tris(get("lane"), "soil")} triangles`);
   if (tris(get("steps"), "sleeper") < 100 || tris(get("steps"), "strap") < 40 || tris(get("steps2"), "stone") < 200) errs.push(`${L}: the steps: ${tris(get("steps"), "sleeper")} sleeper, ${tris(get("steps"), "strap")} strap, ${tris(get("steps2"), "stone")} stone triangles`);
   if (SG.roadPath(N.roads[2]).nSteps !== 20 || SG.roadPath(N.roads[3]).nSteps !== 20) errs.push(`${L}: ${SG.roadPath(N.roads[2]).nSteps} and ${SG.roadPath(N.roads[3]).nSteps} steps for 3.4 m at 0.17 (20)`);
   const gnd = get("_ground"), gt = Object.entries(gnd ? gnd.G : {}).map(([k, g]) => [k, g.idx.length / 3]);
   if (!gnd || !gnd.G.grass || !gnd.G.soil || !gnd.G.forest || tris(gnd, "grass") < 5000) errs.push(`${L}: the ground's covers: ${JSON.stringify(gt)}`);
-  const sc = SG.scatterThings(N), inWater = sc.filter(t => { const q = f.nearest(...t.at); return q.s >= 0 && q.s <= f.L && Math.abs(q.q) < f.W / 2; });
-  if (sc.length < 100 || sc.length > 220 || inWater.length || !sc.every(t => P.some(p => p.id === t.id))) errs.push(`${L}: ${sc.length} scattered (${inWater.length} in the water), ${sc.filter(t => !P.some(p => p.id === t.id)).length} not built`);
+  const sc = SG.scatterThings(N), onLane = sc.filter(t => { const q = f.nearest(...t.at); return q.s >= 0 && q.s <= f.L && Math.abs(q.q) < f.wAt(q.s) / 2; });
+  if (sc.length < 100 || sc.length > 220 || onLane.length || !sc.every(t => P.some(p => p.id === t.id))) errs.push(`${L}: ${sc.length} scattered (${onLane.length} on the lane), ${sc.filter(t => !P.some(p => p.id === t.id)).length} not built`);
   if (JSON.stringify(SG.scatterThings(N)) !== JSON.stringify(sc)) errs.push(`${L}: a scatter isn't the same twice`);
   const B = SG.blockers(N, P);
-  if (!B.b1 || B.b1.boxes.length !== 3 || !B.river || !(B.river.surface.idx.length > 100) || !B.lr || !B.rk || B.grass_0) errs.push(`${L}: the colliders: a bridge ${B.b1 ? B.b1.boxes.length : 0} boxes, the river ${B.river ? B.river.surface.idx.length / 3 : 0} triangles, a scattered plant ${!!B.grass_0}`);
+  if (!B.b1 || B.b1.boxes.length !== 3 || !B.lane || !(B.lane.surface.idx.length > 100) || !B.lr || !B.rk || B.grass_0) errs.push(`${L}: the colliders: a bridge ${B.b1 ? B.b1.boxes.length : 0} boxes, the lane ${B.lane ? B.lane.surface.idx.length / 3 : 0} triangles, a scattered plant ${!!B.grass_0}`);
   const hits = SG.between(P);
   for (const h of hits.slice(0, 6)) errs.push(`${L}: ${h.a.join("'s ")} and ${h.b.join("'s ")} in one plane over each other (${(h.area * 1e4).toFixed(0)} cm², at ${h.at.map(v => v.toFixed(2)).join(", ")})`);
 }

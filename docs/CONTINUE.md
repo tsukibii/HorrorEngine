@@ -19,20 +19,21 @@ bedding, curtains, tables and chairs, the props' kept pictures, real wood in the
 systems that open, hold, move and are read). Read this after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-06, later, `street-nature`): real rocks, a simple park with a stream
+## Where it stopped last (2026-11-06, last, `street-nature`): the rivers scrapped, the foliage and rocks kept as props
 
-The user (DECISIONS 2026-11-06, later): forget the 1:1, the environments look ugly but for the realistic plants; a
-simple park with a small stream; new rocks after a Blender rock tutorial. Done: docs/research/rocks.md (Blender's rock
-generator read from its source, the tutorials' recipe); the prop generator's `rock` family (PROPGEN §28: nine recipes,
-`rock_boulder` to `pebbles_river`; made here into the library); a river's and a bank's rocks as made props in the
-street builder (`rocks.prop`/`props`, a thing's `fit`; STREET_BUILDER §7e); the park `park_stream` with four shots and
-its sheet `docs/street_sheets/2026-11-06_park_stream.jpg`. On the user's machine the rocks must be made once:
-`python tools/propgen.py make rock_boulder rock_mossy rock_basalt rock_sandstone rock_slab stone_river stone_river_wet
-rocks_cluster pebbles_river --library` (the stand-in lumps show until then).
+The user (DECISIONS 2026-11-06, last): "Scrap the rivers, keep all the foliage and rocks you made as props to generate.
+I'll use them for gardens." Done: the street builder's river kind is gone (its bed, water, stone and concrete banks,
+white water, falls, rocks in it, the page's River and its inspector, the fixture's river), with the three river streets
+and the park; paths, steps, banks (grass, soil, moss, a level strip), the ground's hills, flats and covers, scatters,
+the bridges, lamps, boards, log rails and stone walls, the smooth ground and the lawn tiles stay; the two step streets
+stay (`docs/street_sheets/2026-11-06_steps_two.jpg`). The props the user will use for gardens: the blade plants and the
+realistic trees (PROPGEN §18) and the rock family (§28, docs/research/rocks.md), all recipes in presets.json with
+their thumbnails; on their machine `python tools/propgen.py make hakone_grass hakone_green sedge_evergold flax_bronze
+fern_clump reed_clump meadow_tuft rock_boulder rock_mossy rock_basalt rock_sandstone rock_slab stone_river
+stone_river_wet rocks_cluster pebbles_river --library` (the trees as before).
 
-Worth doing next: look at the park on the user's card (`GPU=1`); more rock kinds the park could use (a stepping-stone
-row, a stone lantern's base); the water's look on the page (a ripple normal, the bed seen through) before the Godot
-shader; grass as a PBR set on the lawn (the shelf has none of its own yet); clouds.
+Worth doing next, if the user wants: more garden props (a stepping-stone row, a stone lantern, a tsukubai basin, a
+bamboo fence, more rock kinds), the moss as cushions rather than paint, a grass PBR set of our own for lawns.
 
 ## Before that (2026-11-06, `street-nature`): the street builder outdoors, five photos matched
 

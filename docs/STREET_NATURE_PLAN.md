@@ -124,6 +124,13 @@ strap tops, a fence's posts). Godot's check (GDSTREET) then found the mountain t
 a feature's height assumed wrongly (a bridge's deck over a bank, a post's height) moves the whole camera; a pole turned
 along its wires puts them in one line.
 
+## 3c. Scrapped (the same day, last)
+
+The user: "Scrap the rivers, keep all the foliage and rocks you made as props to generate. I'll use them for gardens."
+The river kind, its banks of stone and concrete, the white water, falls and rocks in the water, the three river
+streets and the park went (git has them before `street-nature`'s last commit). Paths, steps, banks, the ground, the
+scatters, the small things, the two step streets and all the props stay. This plan is history from §2's river rows on.
+
 ## 4. Acceptance
 
 - Each of the five streets has a shot `photo` framed as its picture (the picture's own aspect), with at least six

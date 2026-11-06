@@ -2,6 +2,16 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-06, last (the user: the rivers scrapped; the foliage and rocks kept as props, for gardens)
+
+- **"Scrap the rivers, keep all the foliage and rocks you made as props to generate. I'll use them for gardens."** So:
+  the street builder's river (its bed, water, banks of stone and concrete, white water, falls, the rocks in it) is
+  gone, with the three river streets (`river_town`, `mountain_stream`, `park_brook`) and the park (`park_stream`);
+  paths, steps, the ground's hills and flats, scatters, the bridges, lamps, boards, log rails and stone walls stay
+  (a garden's); the two step streets (`garden_steps`, `shrine_steps`) stay as what they are. The prop generator's
+  **foliage** (the trees, bushes and the blade plants: PROPGEN §18) and **rocks** (§28) stay as recipes to generate,
+  for the user's gardens (`python tools/propgen.py make <names> --library`, or the prop generator's page).
+
 ## 2026-11-06, later (the user: the 1:1 dropped; a simple park with a stream; new rocks after a Blender tutorial)
 
 - **"Ok, forget the 1:1 now, a lot of the environments you made look ugly (except for the new realistic plants they
@@ -12,10 +22,8 @@ The user's answers, newest first. They override the plan, the research and the d
 - **What came of it** (the same day): docs/research/rocks.md (what Blender's own rock generator and the tutorials do,
   and what we take); the prop generator's **rock family** (PROPGEN §28: a boulder, a rock, a river stone, a slab, a
   patch of pebbles, a cluster; granite, basalt, sandstone, limestone, slate, river; moss, lichen, a wet line); the
-  street builder's **rivers and banks take the made rocks** (`rocks.prop` / `props`, the lumps left out, the foam rings
-  kept; a thing's `fit` scales a prop to a place's size); the **park** `park_stream` (mown grass, a winding gravel path
-  over a timber footbridge, a stream with the rock family's stones in and along it, the realistic trees and plants, a
-  bench, lamps), pictured from its own shots, no photo to match.
+  street builder's rivers and banks took the made rocks, and the **park** `park_stream` was built round a stream
+  (both scrapped the same day: the next entry; a thing's `fit` and `top` for a prop stay).
 
 ## 2026-11-06 (the user: the street builder outdoors, the branch `street-nature`)
 
