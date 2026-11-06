@@ -392,6 +392,82 @@
     16,
     9
    ]
+  },
+  {
+   "id": "close_tower",
+   "name": "the tower's stair close: a stage of the dog-leg",
+   "eye": [
+    31,
+    11,
+    3.2
+   ],
+   "look": [
+    23.2,
+    15.5,
+    5.0
+   ],
+   "vfov": 55,
+   "aspect": [
+    16,
+    9
+   ]
+  },
+  {
+   "id": "close_danchi",
+   "name": "the danchi's stair close: a flight meeting the walkway",
+   "eye": [
+    -4.5,
+    1.0,
+    1.65
+   ],
+   "look": [
+    -8.2,
+    7.2,
+    3.6
+   ],
+   "vfov": 55,
+   "aspect": [
+    16,
+    9
+   ]
+  },
+  {
+   "id": "close_panels",
+   "name": "the mid-rise's stair close: a stage behind its panels",
+   "eye": [
+    -53,
+    11.5,
+    3.0
+   ],
+   "look": [
+    -45.6,
+    15.5,
+    4.5
+   ],
+   "vfov": 55,
+   "aspect": [
+    16,
+    9
+   ]
+  },
+  {
+   "id": "under_danchi",
+   "name": "the danchi's stair from under its first flight",
+   "eye": [
+    -9.5,
+    2.5,
+    1.65
+   ],
+   "look": [
+    -7.5,
+    6.5,
+    3.2
+   ],
+   "vfov": 70,
+   "aspect": [
+    16,
+    9
+   ]
   }
  ]
 }

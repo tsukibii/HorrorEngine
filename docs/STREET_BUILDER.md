@@ -261,8 +261,8 @@ for a car park or a walkway. So the street builds the outside, round the level:
   **steel stair** (the `stairs` part's `style: "steel"`, DECISIONS 2026-11-05, night: two C-channel stringers, pan
   treads filled with concrete over steel risers, a picket guard rail at 1.07 m on the open side with posts, a wall
   rail, a landing plate on an edge channel with its rail and its legs; `concrete` is the other style, a concrete stair
-  with a sloping parapet); its collider stays a ramp to its top and the landing's slab (§5b), which Godot's capsule
-  walks up.
+  on a waist slab with a sloping parapet); its collider stays a ramp to its top and the landing's slab (§5b), which
+  Godot's capsule walks up.
 - **Stair stacks** (DECISIONS 2026-11-06, later: the user's three photos, "a system for building these kind of
   stairs"): a `stairs` part with `floors: [a, b]` climbs the building's floors a stage a storey, from each floor's
   level to the next (an inside building's storeys the same). `form`: **zigzag** (one flight a storey, each in the
@@ -285,8 +285,17 @@ for a car park or a walkway. So the street builds the outside, round the level:
   floors*), and an inside building with floors gets *+ walkway and a zigzag stair* beside the motel's button. The
   colliders: a ramp a flight, a box a landing, the shaft's walls (§5b). STREET builds every form, style, rail and
   shaft, beside a walkway and not, with no two faces in one plane (a parapet outside the treads, a rail's bars
-  ending inside a post, posts 12 mm off a stringer's end, the flights' rail line the landings'). The reference
-  street **danchi_court** has the three photos' stairs.
+  ending inside a post, posts 12 mm off a stringer's end, the flights' rail line the landings'). **The details**
+  (the user, 2026-11-06, "the rails poke out", a polish pass over everything): a rail stands on the nosing line, the
+  line through the step noses (a riser over the floor at the first riser), sloped to the last nose and level over
+  the last tread, so a flight's rail meets the landing's at the same height, with a knuckle at the bend (`nosing`,
+  `polyBar`); pickets are set out from the steps (half a space off every riser) and each stands on its tread, a post
+  every tenth and one at each end; a steel flight's channel stringers run 5 cm over the straight nosing line (their
+  top ends stand a riser over the landing, where the post is) and land on a header channel under each landing's
+  inner edge; a concrete flight is steps on a sloping waist slab (a flat soffit from below); panels and parapets
+  bend the same way as two convex slabs, rising from the treads and the slabs; the columns under the landings stop
+  at the highest landing at their end. The reference street **danchi_court** has the three photos' stairs, with
+  close shots of each (`close_*`, `under_danchi`).
 - **The palette's** *Buildings to walk into*: every set (put it down, build the street round it), and **Motel** (the set `motel_room`: a room, a bath and a closet, its door
   with a peephole and a latch; six rooms on two floors, a walkway on posts, a stair, a lamp by each door, AC units, a
   neon sign) and **Bungalow** (the set `bungalow`: the scene builder's single-storey house round an engawa, raised 45

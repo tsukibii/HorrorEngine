@@ -39,6 +39,16 @@ stair's flights are in two lanes, so the lower flight's railing clears the fligh
 the rest was a parapet outside the treads, bars ending inside posts, posts 12 mm off the stringers' ends, the
 flights' rail line the landings' (LESSONS).
 
+**The polish pass** (the user: "the rails don't align with the top but poke out; go through everything"): close
+shots of every stack showed the rails and the steel stringers one riser high (built from the first tread's nose, not
+the floor), pickets floating over the treads and landing in risers' planes, no beam under the landings for the
+stringers, a sawtooth soffit under concrete flights, panels floating 10 cm over the treads, a rail bar's end against
+a post's face, columns rising past the last landing at their end: all fixed (STREET_BUILDER §5c's details; the old
+single flight's rails and stringers too). The rail's line, got right at last: through the noses, a riser over the
+floor at the first riser, bent level at the last nose (the last tread is the landing's edge), a knuckle at the bend;
+the kit's interior stairs had the same riser-high rail and got the same bend (KIT.md §11, the kit VERSION 8). The
+probe over every form passes the clipping test again; the pictures were made again.
+
 **Known here:** STREETPAGE (`node tools/director/streettest.mjs`) fails in this cloud checkout on a 404 for
 `shibuya_lane/refs/shot_photo.webp`, the Shibuya shot's reference photo, which `refs/` keeps out of git; the page
 itself opens every street clean (a probe with a 404 logger), and the stairs inspector's stack fields and the zigzag

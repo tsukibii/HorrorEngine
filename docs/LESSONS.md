@@ -1854,6 +1854,14 @@ And a seat pad's bag filled only to a pad's thickness had more cloth than air an
   rail 2 cm inside the landings' rail line. Found by the check's own test lifted into a 10-second probe over every
   form, style, rail and shaft (`stack_probe`: build, `clashes`, the triangles printed). Pick offsets by listing the
   other part's face planes and keeping more than the test's 4 mm from all of them.
+- **A handrail follows the noses, then goes level over the last tread.** The line through a flight's step noses
+  starts a riser over the floor and reaches the landing's level at the last nose, one tread short of the landing's
+  edge; a rail run straight on to the edge ends a riser over the landing's rail ("the rails poke out", the user).
+  The first fix moved the whole line down a riser (right at the top, a riser low everywhere else); the right one
+  bends the rail level at the last nose, with a knuckle at the bend so two bars never meet end-on in one plane, and
+  splits a bent panel or parapet into two convex slabs (a bent polygon fans into overlapping triangles). Look at the
+  junctions from a metre away before calling a stair done: a picture from the street says a stair is there, a
+  picture from close says whether it is built right.
 - **A preset's arrays are shared until copied.** The floors buttons change `B.model.floors` in place; `presetToModel`
   handed the model the preset's own array, so after a basement was added the house preset itself had four floors and
   the builder test's reopen waited forever for two. Copy what a loader hands out.
