@@ -1844,6 +1844,16 @@ And a seat pad's bag filled only to a pad's thickness had more cloth than air an
   the runtime steps by the animation frame's timestamp (capped at 0.05 s). After a stall the timestamp lags the clock,
   the next interval comes out short, and a 4 cm "jump" was only the two clocks disagreeing (and only under load: it
   passed the next three runs). Read the frame's seconds the way the code under test does.
+- **When the geometry needs hack after hack to pass a check, the model is wrong: look at the reference again.** The
+  first zigzag stair put both flights in one lane, crossing in an X as the photo looks from the street. Its flights
+  met end-on at every landing, their rails ran through each other's posts, and each fix (odd stages narrower, 6 mm
+  shorter, their rails 7 cm in) uncovered the next pair of faces in one plane. The photo, read once more: the lower
+  flight's railing would run up through the flight above if they shared a lane; a scissor stair alternates lanes as
+  well as directions. Two lanes, and every hack went. The clashes that remained were honest ones: a parapet drawn
+  over the treads' side, a rail's bar ending 2 mm from a post's face, a post against a stringer's end, a flight's
+  rail 2 cm inside the landings' rail line. Found by the check's own test lifted into a 10-second probe over every
+  form, style, rail and shaft (`stack_probe`: build, `clashes`, the triangles printed). Pick offsets by listing the
+  other part's face planes and keeping more than the test's 4 mm from all of them.
 - **A preset's arrays are shared until copied.** The floors buttons change `B.model.floors` in place; `presetToModel`
   handed the model the preset's own array, so after a basement was added the house preset itself had four floors and
   the builder test's reopen waited forever for two. Copy what a loader hands out.

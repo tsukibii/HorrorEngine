@@ -2,6 +2,26 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-06, later (the user: "I want a system for building these kind of stairs": exterior stair stacks)
+
+- **Three photos** of Japanese exterior stairs, and "I want a system for building these kind of stairs":
+  1. A TV still of a three-storey apartment block (a danchi): open walkways along the front on every floor with white
+     picket railings, the slab edges painted light blue; the stair in front of the walkways: one straight concrete
+     flight a storey, each in the other of two lanes side by side and climbing back the other way, so the two
+     flights cross in an X from the street (a scissor stair), landing on the walkway at alternate ends through
+     openings in its railing; white pickets on the flights; a curved amber canopy over the mailboxes at the foot.
+  2. A stock photo of a modern mid-rise: a dog-leg stair stacked up the building's side in a recess between a tiled wall
+     and a column, two flights a storey with a half landing at the turn, the landings' fronts solid metal panels with
+     big rounded corners under a thin handrail, a downpipe beside it.
+  3. A stock photo of a tall apartment tower: a steel dog-leg stair stacked up an open concrete shaft, two flights a
+     storey with pickets (vertical bars), a thick concrete landing slab at every floor between the shaft's side walls,
+     the floor numbers painted by each landing.
+- **Built as the street builder's stair stacks** (STREET_BUILDER §5c): the `stairs` part's `floors: [a, b]` climbs the
+  building's floors a stage a storey, in a `form` (zigzag, straight, dogleg), a `style` (concrete, steel), a `rail`
+  (pickets, panel, parapet, pipe, none), a `shaft` (none, walls) and `gap` m off the wall, beyond a walkway, whose
+  railing opens where the landings meet it; the reference street `danchi_court` has the three. The floor numbers and
+  the curved canopy aren't built (words on a wall need a texture; the canopy slab stands in).
+
 ## 2026-11-06 (the user: stairs from points, not presets; winders for tight spaces; the motel's switchback)
 
 - **"Any smarter way we can do stairs indoors (what if they need to be more strongly angled due to tighter spaces)?

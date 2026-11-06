@@ -1,0 +1,397 @@
+{
+ "format": 1,
+ "name": "danchi_court",
+ "about": "A court off a road: the three exterior stair stacks after the user's photos (DECISIONS 2026-11-06). A three-storey danchi with open walkways and a zigzag stair beyond them (concrete flights behind white pickets, the slab edges painted blue), a seven-storey tower with a steel dog-leg stacked in an open concrete shaft, and a mid-rise whose concrete dog-leg climbs behind solid panels with rounded corners.",
+ "time": "day",
+ "look": {},
+ "roads": [
+  {
+   "id": "road",
+   "name": "the court's road",
+   "from": [
+    -48,
+    0
+   ],
+   "to": [
+    48,
+    0
+   ],
+   "width": 7,
+   "walks": [
+    2.5,
+    2.5
+   ],
+   "kerb": 0.15,
+   "edge": [
+    0.5,
+    0.5
+   ],
+   "centre": "dashed",
+   "marks": []
+  }
+ ],
+ "buildings": [
+  {
+   "id": "danchi_a",
+   "style": "danchi",
+   "w": 24,
+   "d": 9,
+   "floors": 3,
+   "gh": 3.0,
+   "fh": 2.8,
+   "seed": 31,
+   "at": [
+    -14,
+    12.5
+   ],
+   "turn": 0,
+   "look": {
+    "wall": "#d9d4c4",
+    "concrete": "#8a8578",
+    "trim": "#7fb8d8",
+    "rail": "#f2f2ee"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "cols": 6,
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "same",
+     "lit": 0.4,
+     "bands": false
+    },
+    "left": {
+     "win": "small",
+     "cols": 1,
+     "lit": 0.1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 6
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "parapet": 0.7,
+    "things": [
+     {
+      "kind": "tank",
+      "x": 8
+     }
+    ]
+   },
+   "parts": [
+    {
+     "kind": "door",
+     "face": "front",
+     "x": -9.5,
+     "floors": [
+      1,
+      3
+     ],
+     "repeat": 5,
+     "gap": 4
+    },
+    {
+     "kind": "balcony",
+     "face": "front",
+     "x": 0,
+     "w": 24,
+     "out": 1.3,
+     "floors": [
+      2,
+      3
+     ],
+     "rail": "rail",
+     "slot": "trim",
+     "walkway": true
+    },
+    {
+     "kind": "stairs",
+     "face": "front",
+     "x": 5.5,
+     "w": 7.6,
+     "out": 1.1,
+     "floors": [
+      1,
+      3
+     ],
+     "form": "zigzag",
+     "style": "concrete",
+     "rail": "pickets",
+     "gap": 1.3,
+     "dir": 1,
+     "walkway": true
+    },
+    {
+     "kind": "canopy",
+     "face": "front",
+     "x": -7.5,
+     "z": 2.3,
+     "w": 3.2,
+     "h": 0.3,
+     "out": 2.6
+    },
+    {
+     "kind": "pipe",
+     "face": "front",
+     "x": -11.6,
+     "h": 8.5
+    },
+    {
+     "kind": "ac",
+     "face": "front",
+     "x": 10.2,
+     "floors": [
+      1,
+      3
+     ],
+     "z": 0.2
+    },
+    {
+     "kind": "block",
+     "face": "front",
+     "x": -5.2,
+     "z": 1.0,
+     "w": 1.6,
+     "h": 1.1,
+     "out": 0.4,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "tower_b",
+   "style": "apartment",
+   "w": 14,
+   "d": 12,
+   "floors": 7,
+   "gh": 3.4,
+   "fh": 3.0,
+   "seed": 7,
+   "at": [
+    16,
+    15
+   ],
+   "turn": 0,
+   "look": {
+    "wall": "#c9c3b6",
+    "concrete": "#b9a98c"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "cols": 4,
+     "ww": 1.6,
+     "wh": 1.4,
+     "ground": "door",
+     "lit": 0.3
+    },
+    "left": {
+     "win": "small",
+     "cols": 2
+    },
+    "right": {
+     "win": "none"
+    },
+    "back": {
+     "win": "punched",
+     "cols": 4
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "parapet": 0.9
+   },
+   "parts": [
+    {
+     "kind": "stairs",
+     "face": "right",
+     "x": -2.4,
+     "w": 6.6,
+     "out": 1.1,
+     "floors": [
+      1,
+      7
+     ],
+     "form": "dogleg",
+     "style": "steel",
+     "rail": "pickets",
+     "shaft": "walls",
+     "dir": 1
+    },
+    {
+     "kind": "door",
+     "face": "right",
+     "x": 0.3,
+     "floors": [
+      1,
+      7
+     ]
+    }
+   ]
+  },
+  {
+   "id": "midrise_c",
+   "style": "office",
+   "w": 11,
+   "d": 12,
+   "floors": 6,
+   "gh": 3.3,
+   "fh": 3.0,
+   "seed": 12,
+   "at": [
+    -40,
+    15
+   ],
+   "turn": 0,
+   "look": {
+    "wall": "#d8d8d4",
+    "concrete": "#cfcfcb",
+    "metal": "#d7d8d6"
+   },
+   "faces": {
+    "front": {
+     "win": "band",
+     "lit": 0.3,
+     "ground": "door"
+    },
+    "left": {
+     "win": "none"
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "band"
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "parapet": 0.9
+   },
+   "parts": [
+    {
+     "kind": "stairs",
+     "face": "left",
+     "x": 2.4,
+     "w": 6.6,
+     "out": 1.0,
+     "floors": [
+      1,
+      6
+     ],
+     "form": "dogleg",
+     "style": "concrete",
+     "rail": "panel",
+     "shaft": "none",
+     "dir": -1
+    },
+    {
+     "kind": "door",
+     "face": "left",
+     "x": -0.3,
+     "floors": [
+      1,
+      6
+     ]
+    }
+   ]
+  }
+ ],
+ "things": [
+  {
+   "id": "bike1",
+   "kind": "bike",
+   "at": [
+    -20,
+    5.2
+   ],
+   "turn": 85
+  },
+  {
+   "id": "vend1",
+   "kind": "vending",
+   "at": [
+    -2,
+    5.4
+   ],
+   "turn": 180
+  },
+  {
+   "id": "pot1",
+   "kind": "pot",
+   "at": [
+    -24.5,
+    5.6
+   ],
+   "turn": 0
+  }
+ ],
+ "fences": [],
+ "shots": [
+  {
+   "id": "shot_danchi",
+   "name": "the danchi's zigzag stair from the pavement",
+   "eye": [
+    -6.5,
+    -4.5,
+    1.65
+   ],
+   "look": [
+    -8.5,
+    7.5,
+    4.5
+   ],
+   "vfov": 62,
+   "aspect": [
+    16,
+    9
+   ]
+  },
+  {
+   "id": "shot_tower",
+   "name": "the tower's stair shaft from the road",
+   "eye": [
+    27,
+    -6,
+    1.65
+   ],
+   "look": [
+    23.5,
+    10,
+    9
+   ],
+   "vfov": 62,
+   "aspect": [
+    16,
+    9
+   ]
+  },
+  {
+   "id": "shot_panels",
+   "name": "the mid-rise's dog-leg behind its panels",
+   "eye": [
+    -52,
+    -5,
+    1.65
+   ],
+   "look": [
+    -46,
+    10,
+    8
+   ],
+   "vfov": 62,
+   "aspect": [
+    16,
+    9
+   ]
+  }
+ ]
+}

@@ -103,6 +103,10 @@ for (const win of Object.keys(SG.WIN_STYLES)) for (const ground of Object.keys(S
   sane(`windows ${win}, ground ${ground}`, SG.build({ buildings: [Object.assign({}, base, { faces: { front: { win, ground, bands: true }, left: { win }, right: { win }, back: { win } } })], ground: false }), () => BUDGET.building);
 for (const kind of Object.keys(SG.PART_KINDS)) for (const face of ["front", "right", "back", "left"])
   sane(`part ${kind} on the ${face}`, SG.build({ buildings: [Object.assign({}, base, { parts: [{ kind, face, x: 1, text: "テスト", win: true }, { kind, face, x: -2, floors: [2, 4], rail: "bars" }] })], ground: false }), () => BUDGET.building);
+// the stair stacks (DECISIONS 2026-11-06): every form, style, rail and shaft up four floors, beside a walkway and not
+for (const form of ["zigzag", "straight", "dogleg"]) for (const style of ["concrete", "steel"]) for (const rail of ["pickets", "panel", "parapet", "pipe", "none"]) for (const shaft of ["none", "walls"]) for (const gap of [0, 1.3])
+  sane(`stairs ${form} ${style} ${rail} ${shaft}${gap ? " beyond a walkway" : ""}`, SG.build({ buildings: [Object.assign({}, base, { parts: [{ kind: "stairs", face: "front", x: 0, w: 7, out: 1.1, floors: [1, 4], form, style, rail, shaft, gap, walkway: gap > 0 },
+    ...(gap > 0 ? [{ kind: "balcony", face: "front", x: 0, w: 9, out: 1.3, floors: [2, 4], rail: "rail", slot: "concrete", walkway: true }] : [])] })], ground: false }), () => BUDGET.building);
 for (const kind of Object.keys(SG.ROOF_KINDS)) for (const ridge of ["x", "y"])
   sane(`roof ${kind} ${ridge}`, SG.build({ buildings: [Object.assign({}, base, { roof: { kind, ridge, things: [{ kind: "tank", x: 1 }] }, tiers: [{ floors: 2, inset: [1.5, 1, 1, 1] }] })], ground: false }), () => BUDGET.building);
 for (const thing of Object.keys(SG.ROOF_THINGS)) for (const kind of ["flat", "rail", "hip"])   // each thing on its own roof
@@ -130,7 +134,8 @@ sane("fences", SG.build({ fences: Object.keys(SG.FENCE_KINDS).map((k, i) => ({ i
 {
   const B = (id, at, turn, o) => Object.assign({ id, at, turn }, o);
   const danchi = (id, w, d, floors, at) => B(id, at, 0, { style: "danchi", w, d, floors, gh: 3.3, fh: 2.8, seed: 7, faces: { front: { win: "punched", cols: 5, ground: "shutter", bands: true }, back: { win: "punched" } },
-    roof: { kind: "flat", parapet: 0.7 }, parts: [{ kind: "canopy", x: 0, z: 3.2, w: w + 0.6, h: 0.45, out: 2.2 }, { kind: "stairs", face: "left", w: 6, h: 3.3, out: 1.2, dir: 1 }] });
+    roof: { kind: "flat", parapet: 0.7 }, parts: [{ kind: "canopy", x: 0, z: 3.2, w: w + 0.6, h: 0.45, out: 2.2 }, { kind: "stairs", face: "left", w: 6, h: 3.3, out: 1.2, dir: 1 },
+      { kind: "balcony", face: "front", x: 0, w: w - 1.2, out: 1.3, floors: [2, floors], rail: "rail", slot: "concrete", walkway: true }, { kind: "stairs", face: "front", x: 1, w: 7.4, out: 1.1, floors: [1, floors], form: "zigzag", style: "concrete", rail: "pickets", gap: 1.3, dir: 1, walkway: true }] });   // (the walkway short of the neighbours: their railings never in one line)
   const shop = (id, w, at) => B(id, at, -90, { style: "shotengai", w, d: 11.5, floors: 3, gh: 3.4, fh: 2.8, seed: 3, faces: { front: { win: "punched", ground: "shop" }, back: { win: "punched" } },
     roof: { kind: "flat" }, parts: [{ kind: "sign", x: 0, z: 3.65, w: w - 0.6, h: 0.9, text: "テスト" }, { kind: "awning", x: 0, z: 3.25, w: w - 0.2, h: 0.45, out: 1.3 }] });
   const house = (id, w, d, turn, roof, at) => B(id, at, turn, { style: "house", w, d, floors: 2, gh: 2.9, fh: 2.7, seed: 5, roof, faces: { front: { win: "punched", ground: "door", bands: true } },

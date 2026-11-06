@@ -20,6 +20,30 @@ systems that open, hold, move and are read; 2026-11-05, night, on `gameplay-enha
 builder's floors, the street's steel stair, climbing in Godot and on the desk). Read this after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
+## Where it stopped last (2026-11-06, later, `gameplay-enhancements`): exterior stair stacks
+
+The user's ask (DECISIONS 2026-11-06, later): three photos of Japanese exterior stairs, "I want a system for building
+these kind of stairs". Built in the street builder (STREET_BUILDER §5c): the `stairs` part's `floors: [a, b]` climbs
+the building's floors a stage a storey, `form` zigzag (one flight a storey, crossing in an X, landing at alternate
+ends: the danchi's), straight or dogleg (two flights a storey, a half platform: the tower's and the mid-rise's),
+`style` concrete or steel, `rail` pickets, panel (solid, rounded corners, a handrail), parapet, pipe or none,
+`shaft: "walls"` (side walls, thick floor slabs), `gap` m beyond a walkway whose railing opens where the landings
+meet it (`stackCuts`); `stackLayout` in street-gen.js is one function for the geometry (`stackGen`) and the colliders
+(a ramp a flight, a box a landing, the walls). The page's stairs inspector (up the building's floors, form, rail,
+shaft, off the wall), *+ walkway and a zigzag stair* on an inside building, the danchi preset's stair a stack. STREET
+builds every form × style × rail × shaft, beside a walkway and not, and its rules street has a zigzag beyond a
+walkway; the reference street `danchi_court` has the three photos' stairs with a shot of each (pictured by Godot in
+`Saved/Streets/danchi_court/godot_<shot>.png`). The clipping rule took most of the work, and the first zigzag (both
+flights in one lane, crossing) needed offset after offset to pass it until the photo was read again: a scissor
+stair's flights are in two lanes, so the lower flight's railing clears the flight above; then the hacks went and
+the rest was a parapet outside the treads, bars ending inside posts, posts 12 mm off the stringers' ends, the
+flights' rail line the landings' (LESSONS).
+
+**Could come next:** floor numbers by each landing (a texture: the sign parts' way); the danchi's curved canopy; a
+stack as a kit thing for interiors (the same layout indoors); the Blender bake's finishes on a stack (the steel's
+paint, the concrete); a GDSTREET walk up a stack (today it checks the colliders are there); the walkway's railing
+opened for a dog-leg's floor landing too.
+
 ## Where it stopped last (2026-11-05, night, `gameplay-enhancements`): stairs, floors, climbing
 
 The user's ask (DECISIONS 2026-11-05, night): a branch `gameplay-enhancements`; model different types of stairs

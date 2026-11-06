@@ -263,6 +263,30 @@ for a car park or a walkway. So the street builds the outside, round the level:
   rail, a landing plate on an edge channel with its rail and its legs; `concrete` is the other style, a concrete stair
   with a sloping parapet); its collider stays a ramp to its top and the landing's slab (§5b), which Godot's capsule
   walks up.
+- **Stair stacks** (DECISIONS 2026-11-06, later: the user's three photos, "a system for building these kind of
+  stairs"): a `stairs` part with `floors: [a, b]` climbs the building's floors a stage a storey, from each floor's
+  level to the next (an inside building's storeys the same). `form`: **zigzag** (one flight a storey, each in the
+  other of two lanes side by side and climbing back the other way, so from the street they cross in an X; a landing
+  1.2 m long across both lanes at alternate ends: the danchi's scissor stair. One lane won't do: the lower flight's
+  railing would run up through the flight above), **straight** (one flight a storey in one lane, all climbing
+  `dir`'s way, a landing at both ends of the upper floors) or **dogleg** (two flights a storey side by side, a half
+  platform at the turn, the floor landing at the other end, both as deep as the two lanes: the tower's and the
+  mid-rise's). A two-lane stack stands 2 × `out` off the wall. `style` concrete (slab
+  flights, each step a box down to the tread below) or steel (channel stringers, pan treads filled with concrete,
+  landing plates on an edge channel). `rail`: **pickets** (a guard rail of bars with a post every tenth), **panel**
+  (solid panels from the nosing line + 10 cm to + 1.1 m under a handrail, their corners cut, the landings' corners
+  rounded: the mid-rise's), **parapet** (concrete's sloping slab outside the treads), **pipe** (a top rail on posts),
+  **none**; the dog-leg's outer flight gets one on the well side too, a steel flight against the wall a wall rail.
+  `shaft: "walls"` stands a 25 cm wall at each end of the stack, the ground to 1.1 m over the top landing, and makes
+  the floor landings 50 cm concrete slabs (the tower's); without it, columns under the landings' outer corners.
+  `gap` m sets the lane off the wall: a walkway's `out` (1.3) puts the flights beyond the walkway, and with `walkway`
+  on both parts the walkway's railing opens where a landing meets it (`stackCuts`); a dog-leg's floor landings lose
+  their end rail with `walkway`, for the corner. The street page's stairs inspector has them all (*up the building's
+  floors*), and an inside building with floors gets *+ walkway and a zigzag stair* beside the motel's button. The
+  colliders: a ramp a flight, a box a landing, the shaft's walls (§5b). STREET builds every form, style, rail and
+  shaft, beside a walkway and not, with no two faces in one plane (a parapet outside the treads, a rail's bars
+  ending inside a post, posts 12 mm off a stringer's end, the flights' rail line the landings'). The reference
+  street **danchi_court** has the three photos' stairs.
 - **The palette's** *Buildings to walk into*: every set (put it down, build the street round it), and **Motel** (the set `motel_room`: a room, a bath and a closet, its door
   with a peephole and a latch; six rooms on two floors, a walkway on posts, a stair, a lamp by each door, AC units, a
   neon sign) and **Bungalow** (the set `bungalow`: the scene builder's single-storey house round an engawa, raised 45
@@ -278,6 +302,11 @@ for a car park or a walkway. So the street builds the outside, round the level:
   the level put at the first room's marker, a ray from outside through the street's doorway meets the set's own door
   leaf (`motel_door`, the bungalow's `front_door`) a metre in; and a ray onto the walkway lands 3.05 m up.
 - One floor a set for now (the user); a two-storey interior would need its stairs inside the set.
+
+The street **danchi_court** (DECISIONS 2026-11-06, later): a court off a road with the three stair stacks after the
+user's photos: a three-storey danchi with walkways on its upper floors and a zigzag stair beyond them (concrete
+flights behind white pickets, the slab edges painted blue, a canopy at the foot), a seven-storey tower with a steel
+dog-leg stacked in a walled shaft, a mid-rise whose concrete dog-leg climbs behind rounded panels; shots of each.
 
 The example street **hill_motel**: a winding road climbing 8.5 m, the motel and its car park (bays, the folding gate,
 a block wall with mesh, a chain) at the bottom, the bungalow up the hill behind a block wall with a gate, houses the
