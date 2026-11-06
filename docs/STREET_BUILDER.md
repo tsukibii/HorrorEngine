@@ -286,16 +286,43 @@ for a car park or a walkway. So the street builds the outside, round the level:
   colliders: a ramp a flight, a box a landing, the shaft's walls (§5b). STREET builds every form, style, rail and
   shaft, beside a walkway and not, with no two faces in one plane (a parapet outside the treads, a rail's bars
   ending inside a post, posts 12 mm off a stringer's end, the flights' rail line the landings'). **The details**
-  (the user, 2026-11-06, "the rails poke out", a polish pass over everything): a rail stands on the nosing line, the
-  line through the step noses (a riser over the floor at the first riser), sloped to the last nose and level over
-  the last tread, so a flight's rail meets the landing's at the same height, with a knuckle at the bend (`nosing`,
-  `polyBar`); pickets are set out from the steps (half a space off every riser) and each stands on its tread, a post
-  every tenth and one at each end; a steel flight's channel stringers run 5 cm over the straight nosing line (their
-  top ends stand a riser over the landing, where the post is) and land on a header channel under each landing's
-  inner edge; a concrete flight is steps on a sloping waist slab (a flat soffit from below); panels and parapets
-  bend the same way as two convex slabs, rising from the treads and the slabs; the columns under the landings stop
-  at the highest landing at their end. The reference street **danchi_court** has the three photos' stairs, with
-  close shots of each (`close_*`, `under_danchi`).
+  (the user, 2026-11-06, "the rails poke out", then the red line over the picture: "one straight edge from the foot
+  to the landing's corner, nothing stepping above it"): every flight has two lines (`lines`): the inner-corner line
+  `ic`, through the base of every riser from the foot's floor to the landing's level, and the nosing line a riser
+  above it. A rail, a panel's top and a parapet's top stand on `ic`, one straight band from the foot to the landing,
+  so they arrive at the landing's rail at exactly its height; what sits against the treads (the bottom bar, a
+  stringer's depth) uses the nosing line. **The rails** (`stackPickets`, `stackPanel`, `stackRail`): bands cut
+  vertically at their ends, so a sloped band meets a level one end to end in one section, and every end is one of a
+  few kinds. A flight's outer rail runs into the landing's rail in one line through a post under the joint
+  ("under"/"pass"); a flight's foot at the ground has a post under the band, its top cut to the slope a hair under it,
+  the band running 6 mm past it ("end": nothing stands above the line); a level rail's free end is a capped post the
+  band butts ("post"), its cap level with the band's top; a landing's end rail butts the same post's side. **The
+  well corner** (`stackWell`, the two-lane forms): at every landing's inner edge the two well rails end against
+  capped posts on the slab's edge, their caps on the landing's line, a cross band between them over the well (and on
+  across the top landing's open lane to the outer rail's post or a post by the wall); panels end level in a cross
+  panel on the slab, a parapet flush against a cross parapet. Where there are columns, each is the landings' corner
+  post too: flush with the slab's end and outer edge, up to the top landing's rail line, the bands butting its faces
+  (pickets and pipe); a panel stack's landings cantilever (the rounded corners are the look); a parapet's columns
+  stop in the slab. A panel runs down to the soffit's line (a steel stair's to the stringer's underside) and its last
+  6 mm onto the landing level, where the landing's panel begins (nothing in the slab's end plane); the landing slab is
+  as thick as a flight's waist (16 cm), so the panels' bottom edge is one line through both. Pickets every 11 cm
+  are set out from the steps (half a space off every riser), each standing on its tread or in the stringer and tucked
+  12 mm into the top band, a post every tenth. A steel flight's channel stringers have their top edge on `ic` (the
+  treads stand as teeth above them, as in the photo) and end flush with the landing, on a header channel under its
+  inner edge; a concrete flight is steps on a sloping waist slab (a flat soffit from below). Beyond a walkway a
+  lane's inner side gets its own rail (`in`); the dog-leg's inner flight has a well rail of its own. **The line
+  rule** (`stackLineFaults`): the stack built alone, no vertex of it stands more than 4 mm above the rail's top
+  line over its flight (`ic` + the rail's top) or its landing (its level + the same); STREET holds every form,
+  style, rail and shaft to it, beside a walkway and not, and the single flights too (below), with the clipping
+  rule beside it. **Every `stairs` part is a stack** (`stackOf`): without `floors`, one stage `h` high laid out
+  as the older single flight was (its flight from u0 to u1, its landing 1.2 m beyond the top; a `turn: "u"`
+  switchback as a dog-leg with its platform at the foot's end and its landing beyond the other), the span grown by
+  the landings so the older streets' flights (`reference_town`, `hill_motel`'s motel) and the Motel preset's stay
+  where they were, now with the same rails, posts and columns. The reference street **danchi_court** has the three
+  photos' stairs, with close shots of each (`close_*`, `under_danchi`); **`tools/director/stairlines.mjs`** draws
+  the ideal lines in the page's own scene as thin red bars (a hair toward the eye, hidden wherever the street hides
+  them) and pictures a shot through `streetshot.mjs --lines`: where the geometry is right the red lies exactly on the
+  rails' and panels' top edges, and anything above a line shows over it (`docs/godot_sheets/2026-11-06_stair_lines.jpg`).
 - **The palette's** *Buildings to walk into*: every set (put it down, build the street round it), and **Motel** (the set `motel_room`: a room, a bath and a closet, its door
   with a peephole and a latch; six rooms on two floors, a walkway on posts, a stair, a lamp by each door, AC units, a
   neon sign) and **Bungalow** (the set `bungalow`: the scene builder's single-storey house round an engawa, raised 45

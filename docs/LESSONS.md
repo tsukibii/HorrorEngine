@@ -1854,14 +1854,18 @@ And a seat pad's bag filled only to a pad's thickness had more cloth than air an
   rail 2 cm inside the landings' rail line. Found by the check's own test lifted into a 10-second probe over every
   form, style, rail and shaft (`stack_probe`: build, `clashes`, the triangles printed). Pick offsets by listing the
   other part's face planes and keeping more than the test's 4 mm from all of them.
-- **A handrail follows the noses, then goes level over the last tread.** The line through a flight's step noses
-  starts a riser over the floor and reaches the landing's level at the last nose, one tread short of the landing's
-  edge; a rail run straight on to the edge ends a riser over the landing's rail ("the rails poke out", the user).
-  The first fix moved the whole line down a riser (right at the top, a riser low everywhere else); the right one
-  bends the rail level at the last nose, with a knuckle at the bend so two bars never meet end-on in one plane, and
-  splits a bent panel or parapet into two convex slabs (a bent polygon fans into overlapping triangles). Look at the
-  junctions from a metre away before calling a stair done: a picture from the street says a stair is there, a
-  picture from close says whether it is built right.
+- **The standard for a stair is the line, not the code book.** The rails were built a riser high ("the rails poke
+  out"), then bent level at the last nose as a real handrail is, and the user drew the answer over the picture in
+  red: one straight edge from the foot to the landing's corner with nothing stepping above it. Every element that
+  shows in silhouette (a rail, a panel's top, a parapet's top, a stringer's top edge) now runs on the inner-corner
+  line, through the risers' feet from the floor to the landing, so it lands at the landing's own height in one
+  straight line; what sits against the treads (the bottom bar, the stringer's depth) uses the nosing line. Two
+  lines, no bends, no knuckles. And check it the way the user did: draw the ideal lines over the picture
+  (`stairlines.mjs`) and look at the junctions from a metre away. Two more things that round came out of it: a
+  **flat projection of the lines is useless** (hidden lines through walls, nothing to judge); draw them in the scene
+  itself, depth-tested, a hair toward the eye. And **a rule you can state, make a check**: "nothing above the line"
+  became `stackLineFaults` (no vertex of the stack 4 mm over the rail's line) and found the posts' caps, the bars'
+  ends and the panels' nubs that the eye had passed.
 - **A preset's arrays are shared until copied.** The floors buttons change `B.model.floors` in place; `presetToModel`
   handed the model the preset's own array, so after a basement was added the house preset itself had four floors and
   the builder test's reopen waited forever for two. Copy what a loader hands out.

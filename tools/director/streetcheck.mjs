@@ -103,10 +103,19 @@ for (const win of Object.keys(SG.WIN_STYLES)) for (const ground of Object.keys(S
   sane(`windows ${win}, ground ${ground}`, SG.build({ buildings: [Object.assign({}, base, { faces: { front: { win, ground, bands: true }, left: { win }, right: { win }, back: { win } } })], ground: false }), () => BUDGET.building);
 for (const kind of Object.keys(SG.PART_KINDS)) for (const face of ["front", "right", "back", "left"])
   sane(`part ${kind} on the ${face}`, SG.build({ buildings: [Object.assign({}, base, { parts: [{ kind, face, x: 1, text: "テスト", win: true }, { kind, face, x: -2, floors: [2, 4], rail: "bars" }] })], ground: false }), () => BUDGET.building);
-// the stair stacks (DECISIONS 2026-11-06): every form, style, rail and shaft up four floors, beside a walkway and not
+// the stair stacks (DECISIONS 2026-11-06): every form, style, rail and shaft up four floors, beside a walkway and not,
+// and the single flights (the older streets' concrete one, the Motel's steel switchback) as one-stage stacks; each
+// built clean and on the line rule (the user, 2026-11-06, the red line: nothing of a stack above its rails' lines)
+const stackParts = [];
 for (const form of ["zigzag", "straight", "dogleg"]) for (const style of ["concrete", "steel"]) for (const rail of ["pickets", "panel", "parapet", "pipe", "none"]) for (const shaft of ["none", "walls"]) for (const gap of [0, 1.3])
-  sane(`stairs ${form} ${style} ${rail} ${shaft}${gap ? " beyond a walkway" : ""}`, SG.build({ buildings: [Object.assign({}, base, { parts: [{ kind: "stairs", face: "front", x: 0, w: 7, out: 1.1, floors: [1, 4], form, style, rail, shaft, gap, walkway: gap > 0 },
-    ...(gap > 0 ? [{ kind: "balcony", face: "front", x: 0, w: 9, out: 1.3, floors: [2, 4], rail: "rail", slot: "concrete", walkway: true }] : [])] })], ground: false }), () => BUDGET.building);
+  stackParts.push([`stairs ${form} ${style} ${rail} ${shaft}${gap ? " beyond a walkway" : ""}`, { kind: "stairs", face: "front", x: 0, w: 7, out: 1.1, floors: [1, 4], form, style, rail, shaft, gap, walkway: gap > 0 }, gap]);
+stackParts.push(["one concrete flight", { kind: "stairs", face: "left", w: 6, h: 3.3, out: 1.2, dir: 1 }, 0], ["one concrete flight the other way", { kind: "stairs", face: "front", w: 6, h: 3.3, out: 1.2, dir: -1 }, 0],
+  ["the motel's steel switchback", { kind: "stairs", face: "left", x: 0.7, w: 5.2, h: 3.05, out: 1.1, dir: 1, walkway: true, style: "steel", turn: "u" }, 0], ["a steel flight", { kind: "stairs", face: "front", w: 5, h: 3, out: 1.1, dir: -1, style: "steel" }, 0]);
+for (const [label, part, gap] of stackParts) {
+  sane(label, SG.build({ buildings: [Object.assign({}, base, { parts: [part, ...(gap > 0 ? [{ kind: "balcony", face: "front", x: 0, w: 9, out: 1.3, floors: [2, 4], rail: "rail", slot: "concrete", walkway: true }] : [])] })], ground: false }), () => BUDGET.building);
+  const r = SG.stackLineFaults(part, base);
+  if (r.faults.length) errs.push(`${label}: ${r.faults.length} vertices stand above the rails' lines (e.g. ${r.faults[0].slot} ${r.faults[0].over} m over at u ${r.faults[0].u}, n ${r.faults[0].n}, z ${r.faults[0].z})`);
+}
 for (const kind of Object.keys(SG.ROOF_KINDS)) for (const ridge of ["x", "y"])
   sane(`roof ${kind} ${ridge}`, SG.build({ buildings: [Object.assign({}, base, { roof: { kind, ridge, things: [{ kind: "tank", x: 1 }] }, tiers: [{ floors: 2, inset: [1.5, 1, 1, 1] }] })], ground: false }), () => BUDGET.building);
 for (const thing of Object.keys(SG.ROOF_THINGS)) for (const kind of ["flat", "rail", "hip"])   // each thing on its own roof

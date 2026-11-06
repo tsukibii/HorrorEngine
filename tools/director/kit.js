@@ -1465,9 +1465,9 @@ function stairsGen(s, P, R, warn) {
   const m = { tread: s.slot, riser: s.riser_slot, string: s.string_slot, rail: s.rail_slot, post: s.post_slot };
   const railH = clamp(s.rail_h, 0.6, 1.3), bars = clamp(+s.bars || 0, 0, 1);
   const N = y => r + (r / g) * (y - y0);                                                     // the nosing line: through the treads' front top corners
-  const yK = yN - g, NL = y => Math.min(rise, N(y));                                           // and bent level at the last nose: the last tread is the landing's edge, so a rail or a stringer on past it ended a riser over the landing (the user, 2026-11-06)
-  // a band along NL: two boards when it spans the bend (a prism is straight between its ends)
-  const bandNL = (yA, yB, dz0, dz, x, w, slot, o) => { if (yA < yK - 0.02 && yB > yK + 0.02) { band(yA, yK, y => NL(y) + dz0, dz, x, w, slot, o); band(yK, yB, y => NL(y) + dz0, dz, x, w, slot, o); } else band(yA, yB, y => NL(y) + dz0, dz, x, w, slot, o); };
+  const yK = yN - g, IC = y => N(y) - r;                                                       // the inner-corner line: through the risers' feet, the floor at the foot to the landing at the top. A rail stands on it, one straight line from railH over the floor to railH over the landing, meeting the landing's rail (the user, 2026-11-06: on the nosing line it ended a riser over it, "the rails poke out")
+  // a band along a line clipped at `cap` (a closed stringer's top edge cut level at the floor): two boards where it meets the cap
+  const bandCap = (yA, yB, zAt, cap, dz, x, w, slot, o) => { const za = zAt(yA), zb = zAt(yB); if (za < cap - 1e-6 && zb > cap + 1e-6) { const yc = yA + (yB - yA) * (cap - za) / (zb - za); band(yA, yc, zAt, dz, x, w, slot, o); band(yc, yB, () => cap, dz, x, w, slot, o); } else band(yA, yB, y => Math.min(cap, zAt(y)), dz, x, w, slot, o); };
   const railed = side => s.rail === "both" || s.rail === side, walled = side => s.wall_rail === "both" || s.wall_rail === side;
   if (s.rail !== "none" && top < railH + 0.05) warn.push(`stairs: the box's top (${top.toFixed(2)} m above the top tread) is under its rail (${railH} m): the rail is cut off there`);
   // a convex polygon in (y, z) kept to 0..H and y0..D/2 (Sutherland-Hodgman): the sloped boards' clipping
@@ -1484,7 +1484,7 @@ function stairsGen(s, P, R, warn) {
       bx(P, x0, Math.max(y0, yi(i) - nose), zi(i) - t, x1, yi(i + 1), zi(i), m.tread, { b: 0.002 });           // the tread, a rounded nosing
       if (s.risers !== "open") bx(P, x0, yi(i), i ? zi(i - 1) : 0, x1, yi(i) + 0.018, zi(i) - t, m.riser);      // the riser board under its front
     }
-    for (const sd of [-1, 1]) bandNL(y0, yN, 0.05, -sD, sd < 0 ? -W / 2 : W / 2 - sT, sT, m.string);   // closed stringers: a board each side over the nosings, level past the last
+    for (const sd of [-1, 1]) bandCap(y0, yN, y => N(y) + 0.05, rise, -sD, sd < 0 ? -W / 2 : W / 2 - sT, sT, m.string);   // closed stringers: a board each side over the nosings, cut level at the floor
     if (!waist) band(y0 + g * (t / r), yN, y => N(y) - r - t, -0.012, x0, x1 - x0, m.string);                // the soffit: a board under the treads' back corners
     else band(y0 + g * (t / r), yN, y => N(y) - r - t, -waist, x0, x1 - x0, m.string);                     // a thick soffit (a flight over another)
     if (landing > 0) { bx(P, -W / 2, yN, rise - landT, W / 2, D / 2, rise - 0.03, m.string); bx(P, -W / 2, yN - 0.002, rise - 0.03, W / 2, D / 2, rise, m.tread, { b: 0.002 }); }   // the landing: joists boxed in, boards on top
@@ -1504,7 +1504,7 @@ function stairsGen(s, P, R, warn) {
       if (pan) { bx(P, x0, Math.max(y0, yi(i) - nose), zi(i) - t - 0.004, x1, yi(i + 1), zi(i) - t, m.riser); if (s.risers !== "open") bx(P, x0, yi(i), i ? zi(i - 1) : 0, x1, yi(i) + 0.004, zi(i) - t, m.riser); }   // the pan's steel under and its riser
       else if (s.risers !== "open") bx(P, x0, yi(i), i ? zi(i - 1) + 0.02 : 0.02, x1, yi(i) + 0.004, zi(i) - t, m.riser);
     }
-    for (const sd of [-1, 1]) { const x = sd < 0 ? -W / 2 : W / 2 - cW; band(y0, yN, y => N(y) + 0.04, -cD, x, cW, m.string); band(y0, yN, y => N(y) + 0.04, -0.012, sd < 0 ? x + cW : x - 0.02, 0.02, m.string); band(y0, yN, y => N(y) + 0.04 - cD + 0.012, -0.012, sd < 0 ? x + cW : x - 0.02, 0.02, m.string); }   // a C channel: its web and flanges
+    for (const sd of [-1, 1]) { const x = sd < 0 ? -W / 2 : W / 2 - cW; band(y0, yN, y => IC(y), -cD, x, cW, m.string); band(y0, yN, y => IC(y), -0.012, sd < 0 ? x + cW : x - 0.02, 0.02, m.string); band(y0, yN, y => IC(y) - cD + 0.012, -0.012, sd < 0 ? x + cW : x - 0.02, 0.02, m.string); }   // a C channel: its web and flanges
     if (landing > 0) {                                                                        // the landing: a plate (concrete or checker) on an edge channel
       bx(P, x0, yN, rise - landT, x1, D / 2, rise, m.tread);
       for (const [a, b, c, d] of [[-W / 2, yN, -W / 2 + cW, D / 2], [W / 2 - cW, yN, W / 2, D / 2], [-W / 2, D / 2 - cW, W / 2, D / 2]]) bx(P, a, b, Math.max(0, rise - cD), c, d, rise, m.string);
@@ -1512,24 +1512,24 @@ function stairsGen(s, P, R, warn) {
   }
   // ---- rails -------------------------------------------------------------------------------------------------------------
   const pr = st === "apartment" ? 0.019 : 0.017, hp = H - 2.2 * pr;                                       // a pipe rail's radius; the pipes' line kept under the box's top
-  const railLine = y => Math.min(hp, NL(y) + railH), railTop = Math.min(hp, rise + railH), yA = y0 + 0.06, yB = yN - 0.06;   // on the bent nosing line: level over the last tread, meeting the landing's rail
+  const railLine = y => Math.min(hp, IC(y) + railH), railTop = Math.min(hp, rise + railH), yA = y0 + 0.06, yB = yN - 0.06;   // one straight line, meeting the landing's rail at its height
   const yEnd = landing > 0 ? D / 2 - 0.06 : yB;                                                // the rail runs on along the landing's side
   const treadTop = y => { const i = Math.min(n - 1, Math.max(0, Math.floor((y - y0) / g))); return y < yN ? zi(i) : rise; };
   for (const side of ["left", "right"]) {
     const sd = SIDE[side];
     if (walled(side)) {                                                                       // a wall rail: on brackets, 5 cm off the wall
       const x = sd < 0 ? -W / 2 + 0.03 : W / 2 - 0.03 - 0.045;
-      bandNL(yA, yB, Math.min(H, railH - 0.1), -0.045, x, 0.045, m.rail, { b: 0.004 });
-      for (let y = yA + 0.3; y < yB - 0.2; y += 0.9) bx(P, sd < 0 ? -W / 2 : W / 2 - 0.03, y - 0.015, Math.min(H - 0.12, NL(y) + railH - 0.22), sd < 0 ? -W / 2 + 0.03 : W / 2, y + 0.015, Math.min(H - 0.05, NL(y) + railH - 0.1), m.post);
+      band(yA, yB, y => Math.min(H, IC(y) + railH - 0.1), -0.045, x, 0.045, m.rail, { b: 0.004 });
+      for (let y = yA + 0.3; y < yB - 0.2; y += 0.9) bx(P, sd < 0 ? -W / 2 : W / 2 - 0.03, y - 0.015, Math.min(H - 0.12, IC(y) + railH - 0.22), sd < 0 ? -W / 2 + 0.03 : W / 2, y + 0.015, Math.min(H - 0.05, IC(y) + railH - 0.1), m.post);
     }
     if (!railed(side)) continue;
     const xr = sd < 0 ? -W / 2 + 0.045 : W / 2 - 0.045;                                     // the rail's middle, in from the edge
     if (st === "house") {                                                                     // newels, a 60 x 40 handrail, square balusters
       const nw = 0.09, newel = (y, z0) => bx(P, xr - nw / 2, y - nw / 2, z0, xr + nw / 2, y + nw / 2, Math.min(H, z0 + railH + 0.12), m.post, { b: 0.004 });
       newel(yA + nw / 2, 0); newel(Math.min(yEnd - nw / 2, yN + (landing > 0 ? landing - nw / 2 - 0.06 : -nw / 2 - 0.06)), landing > 0 ? rise : treadTop(yN - 0.1));
-      bandNL(yA + nw, yB - (landing > 0 ? 0 : nw), Math.min(H, railH), -0.04, xr - 0.03, 0.06, m.rail, { b: 0.006 });
+      band(yA + nw, yB - (landing > 0 ? 0 : nw), y => Math.min(H, IC(y) + railH), -0.04, xr - 0.03, 0.06, m.rail, { b: 0.006 });
       if (landing > 0 && s.land_rail !== "none" && s.land_rail !== "end") bx(P, xr - 0.03, yN, Math.min(H, railTop - 0.04), xr + 0.03, yEnd - nw, Math.min(H, railTop), m.rail, { b: 0.006 });
-      for (let i = 0; i < n; i++) for (const f of [0.28, 0.72]) { const y = yi(i) + g * f; if (y > yA + nw && y < yB) bx(P, xr - 0.016, y - 0.016, zi(i), xr + 0.016, y + 0.016, Math.min(H, NL(y) + railH - 0.04), m.post); }
+      for (let i = 0; i < n; i++) for (const f of [0.28, 0.72]) { const y = yi(i) + g * f; if (y > yA + nw && y < yB) bx(P, xr - 0.016, y - 0.016, zi(i), xr + 0.016, y + 0.016, Math.min(H, IC(y) + railH - 0.04), m.post); }
       if (landing > 0 && s.land_rail !== "none" && s.land_rail !== "end") for (let y = yN + 0.11; y < yEnd - nw; y += 0.11) bx(P, xr - 0.016, y - 0.016, rise, xr + 0.016, y + 0.016, Math.min(H, railTop - 0.04), m.post);
     } else {                                                                                  // a steel rail: round posts, a pipe on top, a mid pipe or bars between
       const postR = 0.017, every = Math.max(1, Math.round(1.2 / g));
@@ -1543,8 +1543,8 @@ function stairsGen(s, P, R, warn) {
       for (const y of posts) if (y > yA && y <= yEnd) cy(P, xr, y, treadTop(y), postR, Math.max(0.05, (y < yN ? railLine(y) : railTop) - treadTop(y) - pr), m.post, { n: 12 });
       if (!bars) { const mid = []; for (const p of pts) mid.push([p[0], p[1], Math.min(H, p[2] - railH * 0.45)]); sweep(P, mid, { a: pr * 0.7, b: pr * 0.7, r: pr * 0.7, k: 3 }, m.rail); }   // the mid rail
       else {                                                                                  // a bottom bar 8 cm over the nosings, bars up to the rail
-        bandNL(yA, yB, Math.min(H, 0.1), -0.012, xr - 0.02, 0.04, m.rail);
-        for (let y = yA + bars / 2; y < yB; y += bars) bx(P, xr - 0.005, y - 0.005, Math.min(H, NL(y) + 0.1), xr + 0.005, y + 0.005, Math.min(H, NL(y) + railH - pr), m.post);
+        band(yA, Math.min(yB, yK), y => Math.min(H, N(y) + 0.1), -0.012, xr - 0.02, 0.04, m.rail);                   // the bottom bar over the noses, to the last nose
+        for (let y = yA + bars / 2; y < yB; y += bars) bx(P, xr - 0.005, y - 0.005, treadTop(y), xr + 0.005, y + 0.005, Math.min(H, IC(y) + railH - pr), m.post);   // the bars from their treads
         if (landing > 0 && s.land_rail !== "none" && s.land_rail !== "end") for (let y = yN + bars / 2; y < yEnd; y += bars) bx(P, xr - 0.005, y - 0.005, rise, xr + 0.005, y + 0.005, Math.min(H, railTop - pr), m.post);
       }
     }

@@ -1430,6 +1430,19 @@ new ResizeObserver(() => { drawMap(); renderAll(); renderFacades(); }).observe(d
 })();
 // for the checks: the street's group, a build now, the build cache emptied
 window.__terrain = () => terrain(); window.__root = () => root; window.__rebuild = () => rebuild(); window.__changed = () => changed(); window.__clearCache = () => { BUILT.clear(); if (root) { for (const v of root.userData.chunks.values()) S3.disposeChunk(v.group); root.userData.chunks = new Map(); } };
+// for the checks: lines drawn in the scene as thin red bars (world coordinates, [{ a, b }]), hidden where the street
+// hides them: the stair stacks' ideal lines over a shot (tools/director/stairlines.mjs); [] takes them away
+let linesGroup = null;
+window.__lines = (segs, w = 0.02, color = 0xff2040) => {
+  if (linesGroup) { scene.remove(linesGroup); linesGroup.traverse(o => { if (o.geometry) o.geometry.dispose(); }); linesGroup = null; }
+  if (!segs || !segs.length) { render(); return 0; }
+  linesGroup = new THREE.Group(); const mat = new THREE.MeshBasicMaterial({ color }); let n = 0;
+  for (const sg of segs) {
+    const a = S3.s2t(...sg.a), b = S3.s2t(...sg.b), L = a.distanceTo(b); if (L < 1e-4) continue;
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, w, L), mat); m.position.copy(a).add(b).multiplyScalar(0.5); m.lookAt(b); linesGroup.add(m); n++;
+  }
+  scene.add(linesGroup); render(); return n;
+};
 // for the checks: draw a shot at a size, straight away
 window.__shot = (id, w, h) => {
   const s = ST.street.shots.find(x => x.id === id); if (!s) return false;

@@ -43,21 +43,35 @@ flights' rail line the landings' (LESSONS).
 shots of every stack showed the rails and the steel stringers one riser high (built from the first tread's nose, not
 the floor), pickets floating over the treads and landing in risers' planes, no beam under the landings for the
 stringers, a sawtooth soffit under concrete flights, panels floating 10 cm over the treads, a rail bar's end against
-a post's face, columns rising past the last landing at their end: all fixed (STREET_BUILDER §5c's details; the old
-single flight's rails and stringers too). The rail's line, got right at last: through the noses, a riser over the
-floor at the first riser, bent level at the last nose (the last tread is the landing's edge), a knuckle at the bend;
-the kit's interior stairs had the same riser-high rail and got the same bend (KIT.md §11, the kit VERSION 8). The
-probe over every form passes the clipping test again; the pictures were made again.
+a post's face, columns rising past the last landing at their end: all fixed. Then the user's red line over the
+picture ("the standard for your refinement is weak... one straight edge from the foot to the landing's corner,
+nothing stepping above it; create these ideal angle overlays, then work on your stair maker until you accomplish a
+clean look"). Done in three parts (STREET_BUILDER §5c's details): (1) **the rails rebuilt as bands** cut vertically
+at their ends, every end one of a few kinds (a flight's rail runs into the landing's in one line through a post
+under the joint; a foot's post under the band, cut to the slope; a free end's capped post the band butts; the well
+corner at every landing's inner edge: capped posts on the slab's edge with a cross band, cross panel or cross
+parapet; the columns as the landings' corner posts, flush with the slabs); the dog-leg's inner flight got its well
+rail, a lane beyond a walkway its inner rail; (2) **the line rule as a check**: `stackLineFaults` builds a stack
+alone and lets no vertex stand 4 mm above the rail's top line over its flight or landing; STREET holds every form,
+style, rail and shaft to it, and the single flights, which are now one-stage stacks of the same system (`stackOf`:
+the older streets' concrete flight and the motel's switchback laid out where they were); (3) **the overlays drawn in
+the scene**: `stairlines.mjs` puts the ideal lines into the street page as thin red bars through `streetshot.mjs
+--lines`, hidden where the street hides them (a flat projection showed hidden lines through walls and couldn't be
+judged), so the red lies on the edges or shows what stands above:
+`docs/godot_sheets/2026-11-06_stair_lines.jpg` has the four close shots. The kit's interior stairs got the straight
+rail on the inner-corner line too (KIT.md §11, the kit VERSION 8; GDTESTROOM ok on it). STREET ok, GDSTREET on the
+stair street and the motel, the Godot pictures made again (`2026-11-06_stair_stacks.jpg`).
 
 **Known here:** STREETPAGE (`node tools/director/streettest.mjs`) fails in this cloud checkout on a 404 for
 `shibuya_lane/refs/shot_photo.webp`, the Shibuya shot's reference photo, which `refs/` keeps out of git; the page
 itself opens every street clean (a probe with a 404 logger), and the stairs inspector's stack fields and the zigzag
 walkway button were driven in a browser. It passes where the refs are (the user's machine).
 
-**Could come next:** floor numbers by each landing (a texture: the sign parts' way); the danchi's curved canopy; a
-stack as a kit thing for interiors (the same layout indoors); the Blender bake's finishes on a stack (the steel's
-paint, the concrete); a GDSTREET walk up a stack (today it checks the colliders are there); the walkway's railing
-opened for a dog-leg's floor landing too.
+**Could come next:** the kit's interior stairs held to the same line rule as a check (today by eye on the
+`2026-11-05_stairs.jpg` sheet: their rail is on the line, their posts and ends are the older kind); floor numbers by
+each landing (a texture: the sign parts' way); the danchi's curved canopy; a stack as a kit thing for interiors (the
+same layout indoors); the Blender bake's finishes on a stack (the steel's paint, the concrete); a GDSTREET walk up a
+stack (today it checks the colliders are there); the walkway's railing opened for a dog-leg's floor landing too.
 
 ## Where it stopped last (2026-11-05, night, `gameplay-enhancements`): stairs, floors, climbing
 

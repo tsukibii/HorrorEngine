@@ -431,9 +431,11 @@ A tube light is a fitting like the round LEDs (§4): a story light with one as i
 The `stairs` type is one **flight** from its front (its local -y, the foot, at z 0) to its back, climbing to `size[2] -
 top`: the box stands `top` m (1.0) on above the top tread so the rails and newels fit in it (clamped so the risers keep
 at least 10 cm each when `treads` is given, else to 60 % of the box: the old 60 % rule alone took a third of a winder's
-rise, 2026-11-06). The rails, the closed stringers and the bars run on the nosing line, through the treads' noses, and
-bend level at the last nose: the last tread is the landing's edge, so a rail run straight on ended a riser over the
-landing's rail (the user, 2026-11-06, "the rails poke out"). `treads` 0 picks about 18 cm a riser (2.85 m: 16 treads); `landing` m of the depth is a landing at the top (a side door there is the way off);
+rise, 2026-11-06). A rail is one straight line on the inner-corner line (through the risers' feet), from `rail_h` over
+the floor to `rail_h` over the landing, meeting the landing's rail at its height (built on the nosing line it ended a
+riser over it: the user, 2026-11-06, "the rails poke out"); the bars stand on their treads, the bottom bar runs over
+the noses to the last one, a closed stringer's top edge is cut level at the floor, a channel stringer's top edge is the
+inner-corner line, flush with the landing. `treads` 0 picks about 18 cm a riser (2.85 m: 16 treads); `landing` m of the depth is a landing at the top (a side door there is the way off);
 `nosing` and `tread_t` the treads; `risers` closed or open; `waist` a slab that thick under the treads (a dog-leg's upper
 flights, open beneath), 0 solid to the floor (a house's soffit, concrete's block). The rails: `rail` on the left, the
 right or both sides **when climbing**, `wall_rail` a handrail on brackets 5 cm off a wall, `rail_h` (0.85; a motel's
