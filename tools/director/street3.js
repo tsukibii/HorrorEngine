@@ -12,6 +12,7 @@ export const TIMES = {
   day: { label: "day", top: "#4f86c9", horizon: "#cfe0ec", ground: "#6d6a64", hemiSky: "#c5d8ec", hemiGround: "#5d5952", hemi: 1.15, sun: 2.6, sunColor: "#fff1df", sunEl: 48, sunAz: 140, lit: 0.08, lamps: false, exposure: 1.0, fog: 0.0035 },
   dusk: { label: "dusk", top: "#aeb2c8", horizon: "#ead3cf", ground: "#3d3a38", hemiSky: "#99b8c4", hemiGround: "#44393a", hemi: 1.6, sun: 0.0, sunColor: "#ffc9a0", sunEl: 4, sunAz: 250, lit: 1.0, lamps: true, exposure: 1.0, fog: 0.0065 },
   night: { label: "night", top: "#04060c", horizon: "#141b29", ground: "#0b0b0c", hemiSky: "#2a3550", hemiGround: "#101012", hemi: 0.22, sun: 0.0, sunColor: "#9fb3ff", sunEl: 40, sunAz: 200, lit: 1.25, lamps: true, exposure: 1.1, fog: 0.012 },
+  overcast: { label: "overcast", top: "#98a2ab", horizon: "#dfe4e7", ground: "#56574f", hemiSky: "#d2d8dd", hemiGround: "#59564e", hemi: 1.35, sun: 0.75, sunColor: "#e9ecee", sunEl: 62, sunAz: 190, lit: 0.1, lamps: false, exposure: 1.0, fog: 0.004 },
 };
 
 // ---- patterns made in code: a canvas each, cached; `tile` the metres one repeat covers --------------------------------
@@ -33,12 +34,40 @@ const PATTERNS = {
   bamboo: { tile: 0.6, alpha: true, draw: (g, w, h) => { g.fillStyle = "#000"; g.fillRect(0, 0, w, h); const n = 12, s = w / n; for (let i = 0; i < n; i++) { g.fillStyle = "#fff"; g.fillRect(i * s + 1, 0, s - 3, h); g.fillStyle = "#000"; g.fillRect(i * s + 1, ((i * 37) % 9) * 6 + 20, s - 3, 2); } } },
   bars: { tile: 0.44, alpha: true, draw: (g, w, h) => { g.fillStyle = "#000"; g.fillRect(0, 0, w, h); g.fillStyle = "#fff"; const n = 4, s = w / n; for (let i = 0; i < n; i++) g.fillRect(i * s, 0, 6, h); } },
   grate: { tile: 0.35, alpha: true, draw: (g, w, h) => { g.fillStyle = "#fff"; g.fillRect(0, 0, w, h); g.fillStyle = "#000"; const n = 6, s = w / n; for (let i = 0; i < n; i++) g.fillRect(i * s + 4, 4, s - 8, h - 8); } },
+  // the outdoors (docs/STREET_NATURE_PLAN.md): the ground's covers, a river's bed, stone, timber; each tile repeats
+  grass: { tile: 1.5, px: 256, draw: (g, w, h) => natureTile(g, w, h, 11, "#4d7a2e", [["#3f6a26", 0.5], ["#6a9a3a", 0.5], ["#86a848", 0.25], ["#5c8630", 0.6]], 1400, [1, 5], true) },
+  mown: { tile: 1.2, px: 256, draw: (g, w, h) => { natureTile(g, w, h, 12, "#5f8f3a", [["#538430", 0.5], ["#75a648", 0.5], ["#8db85a", 0.2]], 1800, [1, 3], true); g.fillStyle = "rgba(255,255,255,0.045)"; g.fillRect(0, 0, w, h / 2); } },
+  moss: { tile: 0.8, px: 256, draw: (g, w, h) => natureTile(g, w, h, 13, "#4e7030", [["#3f6226", 0.6], ["#64883a", 0.5], ["#7a9a46", 0.25], ["#2f4a1e", 0.4]], 900, [2, 7], false) },
+  soil: { tile: 1.2, px: 256, draw: (g, w, h) => natureTile(g, w, h, 14, "#4a3b2f", [["#3b2e24", 0.6], ["#5c493a", 0.5], ["#6b5844", 0.25], ["#2e241c", 0.3]], 700, [2, 8], false) },
+  forest: { tile: 14, px: 256, draw: (g, w, h) => natureTile(g, w, h, 15, "#2e5230", [["#224224", 0.7], ["#3a6a36", 0.6], ["#4a7c3c", 0.35], ["#1d3a20", 0.5]], 260, [8, 22], false) },
+  riverbed: { tile: 1.0, px: 256, draw: (g, w, h) => natureTile(g, w, h, 16, "#5a5247", [["#4a433a", 0.6], ["#6e665a", 0.5], ["#7d766a", 0.3], ["#3a342d", 0.4]], 500, [3, 10], false) },
+  rock: { tile: 1.0, px: 256, draw: (g, w, h) => natureTile(g, w, h, 17, "#7a7770", [["#6a675f", 0.5], ["#8b887f", 0.5], ["#5a574f", 0.3], ["#9a978c", 0.2]], 600, [3, 12], false) },
+  stone: { tile: 0.8, px: 256, draw: (g, w, h) => natureTile(g, w, h, 18, "#86827a", [["#75716a", 0.5], ["#969289", 0.5], ["#6f8a5a", 0.3], ["#5e7a4c", 0.25]], 700, [3, 12], false) },
+  revet: { tile: 1.0, px: 256, draw: (g, w, h) => { g.fillStyle = "#8d8a82"; g.fillRect(0, 0, w, h); const bw = w / 2, bh = h / 4; for (let j = 0; j < 4; j++) for (let i = -1; i < 3; i++) { const x = i * bw + (j % 2 ? bw / 2 : 0), v = 150 + ((i + 2) * 5 + j * 3) % 4 * 7; g.fillStyle = `rgb(${v},${v - 2},${v - 8})`; g.fillRect(x + 3, j * bh + 3, bw - 6, bh - 6); } g.fillStyle = "rgba(60,90,40,0.18)"; for (let k = 0; k < 40; k++) { const x = (k * 37) % w, y = (k * 53) % h; g.fillRect(x, y, 10, 4); } } },
+  sleeper: { tile: 0.6, px: 256, draw: (g, w, h) => { g.fillStyle = "#6b5236"; g.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 3) { const v = 70 + Math.round(30 * Math.abs(Math.sin(y * 0.37) * Math.sin(y * 0.11 + 1))); g.fillStyle = `rgba(${v + 40},${v + 10},${v - 20},0.55)`; g.fillRect(0, y, w, 2); } } },
+  deck: { tile: 1.2, px: 256, draw: (g, w, h) => { g.fillStyle = "#4e3326"; g.fillRect(0, 0, w, h); const n = 8, s = w / n; for (let i = 0; i < n; i++) { const v = 70 + ((i * 7) % 5) * 6; g.fillStyle = `rgb(${v + 20},${v - 12},${v - 30})`; g.fillRect(i * s + 2, 0, s - 4, h); for (let y = 0; y < h; y += 5) { g.fillStyle = "rgba(0,0,0,0.12)"; g.fillRect(i * s + 2, y, s - 4, 1); } } } },
+  foam: { tile: 2.0, px: 256, alpha: true, draw: (g, w, h) => { g.fillStyle = "#000"; g.fillRect(0, 0, w, h); let seed = 5; const R = () => (seed = (seed * 16807) % 2147483647) / 2147483647; g.fillStyle = "#fff"; for (let k = 0; k < 420; k++) { const x = R() * w, y = R() * h, L = 6 + R() * 26, t = 1 + R() * 3; g.fillRect(x, y, t, L); g.fillRect(x - w, y, t, L); g.fillRect(x, y - h, t, L); } g.fillStyle = "rgba(255,255,255,0.5)"; for (let k = 0; k < 60; k++) g.fillRect(R() * w, R() * h, 2 + R() * 4, 2 + R() * 4); } },
 };
+// a tile of a natural cover: a ground colour, flecks of a few colours (blades, leaves, pebbles) scattered by a seed
+// (the same tile on every machine), `blades` long thin ones leaning (grass) or round ones (moss, stones)
+function natureTile(g, w, h, seed, base, cols, n, size, blades) {
+  let sd = seed * 7919; const R = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  g.fillStyle = base; g.fillRect(0, 0, w, h);
+  for (let k = 0; k < n; k++) {
+    const [c, a] = cols[Math.floor(R() * cols.length)], x = R() * w, y = R() * h, s = size[0] + R() * (size[1] - size[0]);
+    g.fillStyle = c; g.globalAlpha = a * (0.5 + R() * 0.5);
+    for (const [dx, dy] of [[0, 0], [-w, 0], [w, 0], [0, -h], [0, h]]) {             // drawn over the edges too, so it tiles
+      if (blades) { g.save(); g.translate(x + dx, y + dy); g.rotate((R() - 0.5) * 0.9); g.fillRect(-s * 0.15, -s, s * 0.3, s * 2); g.restore(); }
+      else { g.beginPath(); g.ellipse(x + dx, y + dy, s, s * (0.6 + R() * 0.5), R() * Math.PI, 0, 7); g.fill(); }
+    }
+  }
+  g.globalAlpha = 1;
+}
 const TEXCACHE = {};
 function patternTexture(name) {
   if (TEXCACHE[name] !== undefined) return TEXCACHE[name];
   const P = PATTERNS[name]; if (!P) return (TEXCACHE[name] = null);
-  const c = canvas(128, 128, P.draw); if (!c) return (TEXCACHE[name] = null);
+  const c = canvas(P.px || 128, P.px || 128, P.draw); if (!c) return (TEXCACHE[name] = null);
   const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4;
   if (P.tile) t.repeat.set(1 / P.tile, 1 / P.tile);
   if (!P.alpha) t.colorSpace = THREE.SRGBColorSpace;
@@ -204,6 +233,7 @@ export class Materials {
     }
     const pat = PATTERNS[base] ? patternTexture(base) : null;
     if (pat) { if (PATTERNS[base].alpha) { m.alphaMap = pat; m.alphaTest = 0.5; m.side = THREE.DoubleSide; } else { m.map = pat; m.color.set("#ffffff"); } }
+    if (base === "water") { m.transparent = true; m.opacity = 0.82; m.userData.water = true; }   // a river: its bed and stones seen through it
     if (base === "fan") { m.map = patternTexture("fan"); m.color.set("#ffffff"); }
     if (base === "paint" || base === "paint_y") { m.polygonOffset = true; m.polygonOffsetFactor = -2; m.polygonOffsetUnits = -2; }
     if (over && /^#[0-9a-f]{6}$/i.test(over)) { m.color.set(over); if (m.map && !PATTERNS[base]?.alpha && base !== "fan") m.color.set(over).multiplyScalar(1.25); m.userData.base = over; }
@@ -231,7 +261,7 @@ const WHITE = [1, 1, 1];
 // piece each run of its triangles is (picking); root.userData.index each piece's chunk and bounds (three's space). A
 // chunk whose pieces haven't changed since the last build is kept as it was (opts.prev: the last build's chunks).
 export const CHUNK = 48;
-const SHADOWLESS = new Set(["lamp", "lamp_cool", "lit", "lit_cool", "shop", "lobby", "paper", "vend_lit", "headlight", "taillight", "glass", "asphalt", "pavement", "ground", "paint", "paint_y", "wire", "decal"]);   // paint and decals lie on a surface: no shadow of their own
+const SHADOWLESS = new Set(["lamp", "lamp_cool", "lit", "lit_cool", "shop", "lobby", "paper", "vend_lit", "headlight", "taillight", "glass", "asphalt", "pavement", "ground", "paint", "paint_y", "wire", "decal", "water", "foam", "grass", "mown", "moss", "soil", "forest", "riverbed"]);   // paint and decals lie on a surface: no shadow of their own
 let SERIAL = 0;
 function boundsOf(p) {
   if (p._bb) return p._bb;
@@ -249,7 +279,7 @@ export function propMesh(ref) {
   if (!PROP_MESH.has(ref)) PROP_MESH.set(ref, new GLTFLoader().loadAsync(`/library/meshes/${ref}.glb`).then(g => g.scene).catch(() => null));
   return PROP_MESH.get(ref);
 }
-export const propThings = S => (S.things || []).filter(t => typeof t.prop === "string" && t.prop);
+export const propThings = S => (S.things || []).concat(SG.scatterThings(S)).filter(t => typeof t.prop === "string" && t.prop);   // placed by hand, and a scatter's
 // the props loaded: {ids: the things they stand for (their stand-ins left out of the chunks: group's opts.hide), group}
 export async function propsGroup(S) {
   const T = SG.terrain(S), g = new THREE.Group(), ids = new Set();
@@ -261,6 +291,7 @@ export async function propsGroup(S) {
     c.name = `prop_${t.id}`;
     c.position.set(t.at[0], T.surface(t.at[0], t.at[1]) + (+t.lift || 0), -t.at[1]);
     c.rotation.y = (+t.turn || 0) * Math.PI / 180;                  // a turn in the street's plane (left about up) is three's about +y
+    if (+t.scale && +t.scale !== 1) c.scale.setScalar(+t.scale);     // a scatter's size
     c.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
     g.add(c); ids.add(t.id);
   }
@@ -353,7 +384,8 @@ export class Look {
     const el = T.sunEl * Math.PI / 180, az = T.sunAz * Math.PI / 180, dir = [Math.sin(az) * Math.cos(el), Math.cos(az) * Math.cos(el), Math.sin(el)];
     this.sun.target.position.copy(s2t(cx, cy, 0)); this.sun.position.copy(s2t(cx + dir[0] * R * 2, cy + dir[1] * R * 2, dir[2] * R * 2));
     const sc = this.sun.shadow.camera; sc.left = -R; sc.right = R; sc.top = R; sc.bottom = -R; sc.near = 1; sc.far = R * 5; sc.updateProjectionMatrix();
-    this.scene.fog = T.fog ? new THREE.FogExp2(new THREE.Color(T.horizon).lerp(new THREE.Color(T.top), 0.15), T.fog) : null;
+    const haze = this.haze === undefined || this.haze === null ? 1 : +this.haze;   // a street's `terrain.haze` scales the time's fog (its far hills seen through it)
+    this.scene.fog = T.fog && haze > 0 ? new THREE.FogExp2(new THREE.Color(T.horizon).lerp(new THREE.Color(T.top), 0.15), T.fog * haze) : null;
     if (renderer) { renderer.toneMapping = THREE.AgXToneMapping; renderer.toneMappingExposure = T.exposure; }
     return T;
   }
@@ -385,7 +417,7 @@ function exportMaterial(m, made) {
   const e = new THREE.MeshStandardMaterial({ name: `street_${m.userData.slot || "slot"}${over ? "_" + over.replace(/[^a-z0-9]+/gi, "_") : ""}`,
     color: m.color.clone(), roughness: m.roughness, metalness: m.metalness, map: m.map || null, normalMap: m.normalMap || null, roughnessMap: m.roughnessMap || null, metalnessMap: m.metalnessMap || null,
     emissive: m.emissive.clone(), emissiveIntensity: m.emissiveIntensity, emissiveMap: m.emissiveMap || null, side: m.side, vertexColors: !!m.vertexColors,
-    transparent: !!m.userData.decal, depthWrite: !m.userData.decal });                    // a decal blends over what's under it
+    transparent: !!m.userData.decal || !!m.userData.water, opacity: m.opacity, depthWrite: !m.userData.decal });   // a decal blends over what's under it; water sees through
   if (m.alphaMap && typeof document !== "undefined") {                // glTF has no alpha map: the pattern goes into the colour map's alpha
     const img = m.alphaMap.image, c = document.createElement("canvas"); c.width = img.width; c.height = img.height;
     const g = c.getContext("2d"); g.drawImage(img, 0, 0); const d = g.getImageData(0, 0, c.width, c.height);
