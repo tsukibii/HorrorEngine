@@ -59,7 +59,9 @@ TestRoom001's two stairs redrawn as points (a half turn with a platform, an L wi
 platform as colliders). KIT.md §11b has the rules. On the checks' way: the kit's `top` allowance clamped by what
 the risers need (a winder's treads stood 7 cm high: kit.js `stairsTop`, `winderTop`, kit.py the same; the kit VERSION
 7), the desk's climb test timing its frames as the runtime does (a false 4 cm jump under load), the preset's floors
-copied into the model (the builder test's reopen waited forever); LESSONS has the three.
+copied into the model (the builder test's reopen waited forever), a clicked stair's selection carrying its room under
+its own key (`stairsRoom`: with `room` the inspector showed the room and Delete took it), and BUILDER's Stairs-tool
+step in a stair hall it adds to the house (the house's 0.91 m stairs room can't turn); LESSONS has the first three.
 
 **Known before this branch:** FROMDESK (`godot_director.py from-desk TestRoom001 --force --play`) fails at station 4
 on the branch's base commit too (the power bulb's fitting: the desk conversion makes the light a Light3D source; the

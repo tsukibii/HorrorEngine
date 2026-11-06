@@ -594,10 +594,10 @@ const png = rgb => {                    // a 4x4 PNG of one colour (a scratch ma
     await page.waitForFunction(() => window.B.plan && window.B.model.floors.length === 2 && window.B.model.rooms.some(r => r.kind === "stairs"), null, { timeout: 120000 });
     await page.evaluate(() => { const B = window.B; window.builder.addRoom("stairs"); const r = B.model.rooms[B.model.rooms.length - 1];
       r.id = "stairhall"; r.name = "Stair hall"; r.x = 9.1; r.y = 4.55; r.w = 2.73; r.d = 3.64; r.fixtures = false; B.sel = { room: r.id }; window.builder.changed();
-      window.builder.addOpening(9.1, 6.37, "door"); });                                                  // through the pantry's east wall
-    await page.waitForFunction(() => window.B.plan && window.B.plan.pieces.some(p => p.id.startsWith("stairhall")) && window.B.model.ops.some(o => o.id.includes("stairhall")), null, { timeout: 60000 });
+      window.builder.addOpening(9.1, 6.37, "door"); });                                                  // through the pantry's east wall (named after the pantry: the first room on that wall)
+    await page.waitForFunction(() => window.B.plan && window.B.plan.pieces.some(p => p.id.startsWith("stairhall")) && window.B.model.ops.some(o => o.axis === "x" && Math.abs(o.v - 9.1) < 0.02 && o.c > 4.55 && o.c < 8.19), null, { timeout: 60000 });
     await page.evaluate(() => { const B = window.B, st = B.model.rooms.find(r => r.id === "stairhall"); B.tool = "stairs";
-      window.builder.stairsPoint(st.x + 0.6, st.y + 0.5, false); window.builder.stairsPoint(st.x + 0.6, st.y + st.d - 0.6, false); window.builder.stairsPoint(st.x + st.w - 0.3, st.y + st.d - 0.6, true); });
+      window.builder.stairsPoint(st.x + st.w - 0.6, st.y + 0.5, false); window.builder.stairsPoint(st.x + st.w - 0.6, st.y + st.d - 0.6, false); window.builder.stairsPoint(st.x + 0.3, st.y + st.d - 0.6, true); });   // up the east side, clear of the door, a left turn at the north end
     await page.waitForFunction(() => window.B.plan && window.B.plan.pieces.some(p => /^stairhall_stairs_1__w\d+__tread\d+$/.test(p.id)), null, { timeout: 60000 });
     const sp = await page.evaluate(async () => {
       const B = window.B, st = B.model.rooms.find(r => r.id === "stairhall"), prop = (st.extra.props || []).find(p => p.stairs), pcs = B.plan.pieces.filter(p => p.id.startsWith(prop.id + "__"));
@@ -606,7 +606,7 @@ const png = rgb => {                    // a 4x4 PNG of one colour (a scratch ma
       prop.stairs.w = 0.8; window.builder.changed();
       await new Promise(r => setTimeout(r, 1500));
       out.wAfter = B.exported.level.rooms.find(r => r.id === st.id).props.find(p => p.id === prop.id).stairs.w;
-      B.sel = { stairs: prop.id, room: st.id }; window.builder.changed(false);
+      B.sel = { stairs: prop.id, stairsRoom: st.id }; window.builder.changed(false);
       return out;
     });
     console.log("stairs from points:", JSON.stringify({ kinds: sp.kinds, colliders: sp.colliders, hollow: sp.hollow, solid: sp.solid, errors: sp.errors.length, w: sp.wAfter }), sp.text.match(/\d+ risers of [\d.]+ cm[^:]*/) ? sp.text.match(/\d+ risers of [\d.]+ cm[^:]*/)[0] : "(no summary)");

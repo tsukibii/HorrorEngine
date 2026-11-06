@@ -343,7 +343,7 @@ svg.addEventListener("mousedown", e => {
   if (B.tool === "kit" && e.button === 0) { addKit(x, y); return; }
   if (B.tool === "prop" && e.button === 0) { addProp(x, y); return; }
   if (B.tool === "stairs" && e.button === 0) { stairsPoint(x, y, e.detail >= 2); return; }
-  if (t.dataset.stairs && e.button === 0) { B.sel = { stairs: t.dataset.stairs, room: t.dataset.room }; changed(false); return; }
+  if (t.dataset.stairs && e.button === 0) { B.sel = { stairs: t.dataset.stairs, stairsRoom: t.dataset.room }; changed(false); return; }   // (its room under its own key: `room` would read as the room selected, and Delete took the room, 2026-11-06)
   if (B.tool === "fit" && e.button === 0) { addItem(x, y, B.fitPreset); return; }
   if (B.tool !== "select" && e.button === 0) { addOpening(x, y); return; }
   if (t.dataset.item) { B.sel = { item: t.dataset.item }; const it = B.model.items.find(i => i.id === t.dataset.item); pushUndo(); drag = { kind: "item", it, a0: it.a, p: wallCoord(it, x, y) }; changed(false); return; }
@@ -585,7 +585,7 @@ function renderProps() {
     box.append(grid);
     const del = document.createElement("button"); del.textContent = "Remove"; del.onclick = () => removeSel(); box.append(document.createElement("br"), del);
   } else if (B.sel && B.sel.stairs) {
-    const r = roomOf(B.sel.room), sp = r && (r.extra.props || []).find(q => q.id === B.sel.stairs);
+    const r = roomOf(B.sel.stairsRoom), sp = r && (r.extra.props || []).find(q => q.id === B.sel.stairs);
     if (!sp) { B.sel = null; return renderProps(); }
     const st = sp.stairs, lay = KIT.stairsLayout(st);
     const head = document.createElement("div"); head.innerHTML = `<b>Stairs from points</b> <span class="hint">${sp.id} in ${r.name || r.id}</span>`;
@@ -631,7 +631,7 @@ function removeSel() {
   if (B.sel.room) { B.model.rooms = B.model.rooms.filter(r => r.id !== B.sel.room); B.model.items = (B.model.items || []).filter(i => i.room !== B.sel.room); B.model.kits = (B.model.kits || []).filter(k => k.room !== B.sel.room); }
   else if (B.sel.item) B.model.items = B.model.items.filter(i => i.id !== B.sel.item);
   else if (B.sel.kit) B.model.kits = B.model.kits.filter(k => k.id !== B.sel.kit);
-  else if (B.sel.stairs) { const r = roomOf(B.sel.room); if (r && r.extra.props) { r.extra.props = r.extra.props.filter(q => q.id !== B.sel.stairs); if (!r.extra.props.length) delete r.extra.props; } }
+  else if (B.sel.stairs) { const r = roomOf(B.sel.stairsRoom); if (r && r.extra.props) { r.extra.props = r.extra.props.filter(q => q.id !== B.sel.stairs); if (!r.extra.props.length) delete r.extra.props; } }
   else B.model.ops = B.model.ops.filter(o => o.id !== B.sel.op);
   B.sel = null; changed();
 }
@@ -657,7 +657,7 @@ function stairsPoint(x, y, done) {
   pushUndo();
   (r.extra.props = r.extra.props || []).push(prop);
   if (r.h < rise + 1.9) r.h = r2(rise + 2.4);                       // the room reaches the floor above and a ceiling past it
-  B.stairsPts = null; B.sel = { stairs: prop.id, room: r.id }; B.tool = "select"; svg.style.cursor = "default"; renderTools();
+  B.stairsPts = null; B.sel = { stairs: prop.id, stairsRoom: r.id }; B.tool = "select"; svg.style.cursor = "default"; renderTools();
   changed();
   const lay = KIT.stairsLayout(prop.stairs);
   status(lay.warnings.length ? "stairs: " + lay.warnings[0] : `stairs: ${lay.n} risers of ${(lay.riser * 100).toFixed(1)} cm, ${lay.pitch.toFixed(0)}°`, lay.warnings.length ? "bad" : "");
