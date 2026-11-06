@@ -19,7 +19,22 @@ bedding, curtains, tables and chairs, the props' kept pictures, real wood in the
 systems that open, hold, move and are read). Read this after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-06, `street-nature`): the street builder outdoors, five photos matched
+## Where it stopped last (2026-11-06, later, `street-nature`): real rocks, a simple park with a stream
+
+The user (DECISIONS 2026-11-06, later): forget the 1:1, the environments look ugly but for the realistic plants; a
+simple park with a small stream; new rocks after a Blender rock tutorial. Done: docs/research/rocks.md (Blender's rock
+generator read from its source, the tutorials' recipe); the prop generator's `rock` family (PROPGEN §28: nine recipes,
+`rock_boulder` to `pebbles_river`; made here into the library); a river's and a bank's rocks as made props in the
+street builder (`rocks.prop`/`props`, a thing's `fit`; STREET_BUILDER §7e); the park `park_stream` with four shots and
+its sheet `docs/street_sheets/2026-11-06_park_stream.jpg`. On the user's machine the rocks must be made once:
+`python tools/propgen.py make rock_boulder rock_mossy rock_basalt rock_sandstone rock_slab stone_river stone_river_wet
+rocks_cluster pebbles_river --library` (the stand-in lumps show until then).
+
+Worth doing next: look at the park on the user's card (`GPU=1`); more rock kinds the park could use (a stepping-stone
+row, a stone lantern's base); the water's look on the page (a ripple normal, the bed seen through) before the Godot
+shader; grass as a PBR set on the lawn (the shelf has none of its own yet); clouds.
+
+## Before that (2026-11-06, `street-nature`): the street builder outdoors, five photos matched
 
 The user's ask (DECISIONS 2026-11-06): a nature park update for the street builder on the branch `street-nature`,
 with the acceptance that each of five photos is re-created 1:1 in our style (rivers included, no water shader yet).

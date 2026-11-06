@@ -1279,3 +1279,41 @@ a click turning them, the clean text of the spread on a panel at the right for a
 hand, Esc or a right click putting it back shut where it was; `read` is heard with the left page's number at every
 spread, so a task can wait for the page that appeared once a flag was set ("quest completed, next time I open the book
 I see different text": an entry's `if`). TestRoom001's station 13 (docs/games/TestRoom001.md) has one.
+
+## 28. Rocks: a boulder, a river stone, a slab, pebbles, a cluster (docs/research/rocks.md, DECISIONS 2026-11-06, later)
+
+The user: "a lot of the environments you made look ugly (except for the new realistic plants) ... work on modelling
+some new rocks, research a Blender creating realistic rocks tutorial first". The research (docs/research/rocks.md)
+read Blender's own rock generator and the tutorials' recipe: a lopsided base, Voronoi facets, a swell and two grains,
+smoothing by type; a material of mottled tones, speckles, cracks, moss by the up-facing normal and the cavities. The
+`rock` family (`families/rock.py`) does the same in numpy, every ingredient a field of the direction from the rock's
+centre, so the shape and the paint read one source:
+
+- **The shape**: a star-shaped radius on an icosphere. An ellipsoid of a random `aspect` (leaning by the seed, sizes
+  skewed small as the generator's presets), **facets** cut by random planes all round (`facets` 0 to 1: none to eight
+  cuts, each at 62 to 88% of the ellipsoid's reach; a fractured rock's flat faces), blended by a soft minimum whose
+  width is the `rounding` (river stones round, quarried rock crisp), **lumps** (the cells' crackle, read through a
+  direction bent by a slow noise so they're no honeycomb) and **waves** (a fractal swell), a **flat** underside so it
+  sits. On the detailed mesh alone: **cracks** (the joints between the facet cells where a second noise lets them run,
+  a few ridged lines besides, cut in 1.6% of the radius times `cracks`), **pits** (small cells dented: basalt's
+  vesicles, weathered granite) and **grain**. The game mesh is the same shape on a coarse icosphere (80 to 1280
+  triangles by size), the bake carries the rest as its normal map and occlusion (the cage and reach scale with the
+  rock). UVs by a cube projection, six islands a rock (a patch of pebbles: a top and an underside).
+- **The paint** (`texel_paint`, by each texel's place and the same fields): the **stone**'s tone (granite, basalt,
+  sandstone, limestone, slate, river) mottled slow and fast, tinted per facet, warmer or cooler in patches; **speckles**
+  as a fine cellular noise, each grain a mineral of the stone's (quartz, feldspar, mica: every other grain the stone's
+  own tone; `speck` their size in mm, `speckle` how much); sandstone's and limestone's **strata** (a sine of the height
+  warped by noise, in thicker and thinner runs); the **cracks** darkened, rougher and dented; the **pits**; the
+  **cavities** dirtied by the bake's occlusion and the creases; **moss** (`moss`) where it faces up, sits low and
+  shades, in ragged patches of four greens, a cushion in the relief; **lichen** (`lichen`) as crusts on the sun side
+  where no moss is; a **wet** line (`wet`, of the height: darker and glossy below it, a pale mineral line at it);
+  **dirt** at the foot.
+- **Kinds**: `boulder`, `stone`, `river` (rounded, smooth, polished), `slab` (a flat stepping stone), `pebbles`
+  (`count` small stones in a patch), `cluster` (`count` rocks leaning together, the first the biggest). **Recipes**:
+  `rock_boulder` (granite, 1.3 m), `rock_mossy`, `rock_basalt`, `rock_sandstone`, `rock_slab`, `stone_river`,
+  `stone_river_wet`, `rocks_cluster`, `pebbles_river`. `size` is the longest way in metres; `tex` 2048 on the big ones.
+- **In the street builder** (STREET_BUILDER §7e): a river's `rocks` and a bank's `rocks` name them (`prop`, or
+  `props` to pick from): the made rocks stand in the lumps' places, scaled to each place's size (`fit`), sunk to the
+  bed or into the bank; the foam rings stay. A thing or a scatter places one as any prop.
+
+The check (PROPGEN) makes `rock_boulder` and `pebbles_river` small.

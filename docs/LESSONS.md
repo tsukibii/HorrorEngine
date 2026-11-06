@@ -1844,3 +1844,14 @@ The five nature photos (STREET_BUILDER §7d) took several tries each to pin unde
   collapsed into them; GDSTREET found it (a house's roof over the road behind it). A bank now holds to its end, and a
   town's floor is a `flat` (an area held at a level in place of the relief). Drop a body on every street in Godot
   (GDSTREET) before calling a match done: the drawing through the shot hid all of it.
+
+## Rocks by code (2026-11-06, later, the rock family)
+
+The first boulder came out a pale marshmallow: a smooth pancake with a few pen-line cracks and green dots. What made
+it a rock, in order of how much each mattered: the planes' cuts all round and deep (not mostly on top: a flat top
+reads as a pillow from a low eye), the crackle lumps nearly off (they made brain folds on the sides), the base tone
+darker than it looks right (the preview's light and the occlusion's gamma both lift it), cracks only where a second
+noise lets a joint run (a network of cell borders reads as cracked glaze), every stone of a patch its own tone, and
+the fine grain in the paint's relief rather than the detailed mesh (a 1 m rock's 80k triangles can't carry a 2 mm
+grain; the normal map's height can). Judge a prop on a sheet of several beside each other, not one at a time: the
+pale one shows.

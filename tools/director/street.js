@@ -1115,15 +1115,22 @@ function inspectStreet() {
 }
 // a road's banks: the ground rising beside it, a side each (a cutting's sides, a river's banks)
 function banksSection(r) {
-  const kind = SG.roadKind(r), B = SG.banksOf(r);
-  r.banks = [0, 1].map(i => B[i] ? { h: B[i].h, w: B[i].w, kind: B[i].kind } : null);
+  const kind = SG.roadKind(r), B = SG.banksOf(r), was = Array.isArray(r.banks) ? r.banks : [r.banks, r.banks];
+  r.banks = [0, 1].map(i => B[i] ? Object.assign({}, was[i] && typeof was[i] === "object" ? was[i] : {}, { h: B[i].h, w: B[i].w, kind: B[i].kind }) : null);   // its flat strip, courses and stones kept
+  const stones = i => {                                              // the bank's stones: the made props standing in their places (rock family: props/stone_river...)
+    const b = r.banks[i]; if (!b) return null;
+    b.rocks = b.rocks && typeof b.rocks === "object" ? b.rocks : (b.kind === "stone" || b.kind === "rock" ? Object.assign({}, SG.bankRocks(b)) : null);
+    if (!b.rocks) return null;
+    const inp = el("input", { type: "text", value: Array.isArray(b.rocks.props) ? b.rocks.props.join(", ") : b.rocks.prop || "", placeholder: "props/stone_river, props/stone_river_wet (else lumps)", on: { input: e => edit(() => { const v = e.target.value.split(",").map(x => x.trim()).filter(Boolean); delete b.rocks.prop; delete b.rocks.props; if (v.length === 1) b.rocks.prop = v[0]; else if (v.length) b.rocks.props = v; }) } });
+    return field("its stones", el("div", { class: "row" }, "every", num(b.rocks, "every", { def: 2.2, step: 0.1, min: 0.1, unit: "m" }), "about", num(b.rocks, "size", { def: 0.5, step: 0.05, min: 0.05, unit: "m" }), inp));
+  };
   const row = i => {
     const b = r.banks[i] || { h: 0, w: 1.5, kind: "grass" }, kinds = Object.assign({ "": "none (the ground as it is)" }, SG.BANK_KINDS), on = !!r.banks[i];
     const sel = el("select", { on: { change: e => edit(() => { r.banks[i] = e.target.value ? Object.assign({ h: b.h || (kind === "river" ? 0.8 : 1), w: b.w || 1.5 }, b, { kind: e.target.value }) : null; }, true) } }, ...Object.entries(kinds).map(([k, v]) => new Option(v, k)));
     sel.value = on ? b.kind : "";
     return field(i === 0 ? "left bank" : "right bank", el("div", { class: "row" }, sel, on ? "rises" : null, on ? num(r.banks[i], "h", { step: 0.1, unit: "m" }) : null, on ? "over" : null, on ? num(r.banks[i], "w", { step: 0.1, min: 0.1, unit: "m" }) : null));
   };
-  return section(["Banks", el("span", { class: "hint" }, kind === "river" ? "the ground rising from the water's edge each side" : "the ground rising beside it (left and right walking from its start)")], row(0), row(1));
+  return section(["Banks", el("span", { class: "hint" }, kind === "river" ? "the ground rising from the water's edge each side" : "the ground rising beside it (left and right walking from its start)")], row(0), stones(0), row(1), stones(1));
 }
 function inspectRoad(r) {
   const kind = SG.roadKind(r), f = SG.roadPath(r);
@@ -1145,6 +1152,8 @@ function inspectRoad(r) {
     r.rocks = r.rocks && typeof r.rocks === "object" ? r.rocks : null;
     insp.append(field("rocks in it", el("div", { class: "row" }, el("label", { class: "row" }, el("input", { type: "checkbox", checked: !!r.rocks, on: { change: e => edit(() => { r.rocks = e.target.checked ? { every: 5, size: 0.8 } : null; if (!r.rocks) delete r.rocks; }, true) } }), "yes"),
       r.rocks ? "every" : null, r.rocks ? num(r.rocks, "every", { def: 5, step: 0.5, min: 0.3, unit: "m" }) : null, r.rocks ? "about" : null, r.rocks ? num(r.rocks, "size", { def: 0.8, step: 0.1, min: 0.1, unit: "m" }) : null)));
+    if (r.rocks) insp.append(field("the real rocks", el("input", { type: "text", value: Array.isArray(r.rocks.props) ? r.rocks.props.join(", ") : r.rocks.prop || "", placeholder: "props/stone_river_wet, props/rock_mossy (else lumps)",
+      on: { input: e => edit(() => { const v = e.target.value.split(",").map(x => x.trim()).filter(Boolean); delete r.rocks.prop; delete r.rocks.props; if (v.length === 1) r.rocks.prop = v[0]; else if (v.length) r.rocks.props = v; }) } })));
     r.rapids = Array.isArray(r.rapids) ? r.rapids : []; r.drops = Array.isArray(r.drops) ? r.drops : [];
     const rapids = el("div", { class: "list" }), drops = el("div", { class: "list" });
     r.rapids.forEach((q, i) => rapids.append(el("div", { class: "row" }, "at", num(q, "at", { step: 0.5, unit: "m" }), "for", num(q, "len", { def: 6, step: 0.5, unit: "m" }), "wide", num(q, "w", { def: r2(f.W * 0.5), step: 0.5 }), el("button", { on: { click: () => { pushUndo(); r.rapids.splice(i, 1); changed(); } } }, "✕"))));

@@ -35,8 +35,8 @@ const PATTERNS = {
   bars: { tile: 0.44, alpha: true, draw: (g, w, h) => { g.fillStyle = "#000"; g.fillRect(0, 0, w, h); g.fillStyle = "#fff"; const n = 4, s = w / n; for (let i = 0; i < n; i++) g.fillRect(i * s, 0, 6, h); } },
   grate: { tile: 0.35, alpha: true, draw: (g, w, h) => { g.fillStyle = "#fff"; g.fillRect(0, 0, w, h); g.fillStyle = "#000"; const n = 6, s = w / n; for (let i = 0; i < n; i++) g.fillRect(i * s + 4, 4, s - 8, h - 8); } },
   // the outdoors (docs/STREET_NATURE_PLAN.md): the ground's covers, a river's bed, stone, timber; each tile repeats
-  grass: { tile: 1.5, px: 256, draw: (g, w, h) => natureTile(g, w, h, 11, "#4d7a2e", [["#3f6a26", 0.5], ["#6a9a3a", 0.5], ["#86a848", 0.25], ["#5c8630", 0.6]], 1400, [1, 5], true) },
-  mown: { tile: 1.2, px: 256, draw: (g, w, h) => { natureTile(g, w, h, 12, "#5f8f3a", [["#538430", 0.5], ["#75a648", 0.5], ["#8db85a", 0.2]], 1800, [1, 3], true); g.fillStyle = "rgba(255,255,255,0.045)"; g.fillRect(0, 0, w, h / 2); } },
+  grass: { tile: 3.0, px: 512, draw: (g, w, h) => { natureTile(g, w, h, 11, "#4d7a2e", [["#3f6a26", 0.5], ["#6a9a3a", 0.5], ["#86a848", 0.25], ["#5c8630", 0.6]], 3400, [2, 8], true); blotches(g, w, h, 21, [["#3c6424", 0.22], ["#79a444", 0.25], ["#5f8a30", 0.22], ["#8a9a4a", 0.12]], 70, [18, 60]); } },
+  mown: { tile: 1.6, px: 512, draw: (g, w, h) => { natureTile(g, w, h, 12, "#5a8a36", [["#4f7f2e", 0.5], ["#6f9f44", 0.5], ["#86b054", 0.2]], 4200, [1, 4], true); blotches(g, w, h, 22, [["#4f7f2f", 0.16], ["#6f9e42", 0.22], ["#7ea24c", 0.16], ["#8a9850", 0.08]], 90, [16, 56]); g.fillStyle = "rgba(255,255,255,0.035)"; for (let x = 0; x < w; x += w / 2) g.fillRect(x, 0, w / 4, h); } },
   moss: { tile: 0.8, px: 256, draw: (g, w, h) => natureTile(g, w, h, 13, "#6a8c3c", [["#56782e", 0.6], ["#80a248", 0.5], ["#9ab858", 0.25], ["#44642a", 0.4]], 900, [2, 7], false) },
   soil: { tile: 1.2, px: 256, draw: (g, w, h) => natureTile(g, w, h, 14, "#5e4c3d", [["#4a3b2f", 0.6], ["#6e5a48", 0.5], ["#7e6a54", 0.25], ["#3a2e24", 0.3], ["#8a7a5a", 0.15]], 700, [2, 8], false) },
   forest: { tile: 36, px: 256, draw: (g, w, h) => { natureTile(g, w, h, 15, "#2f5a32", [["#1f4222", 0.75], ["#3b6e38", 0.65], ["#4c843e", 0.4], ["#183620", 0.6], ["#5a9448", 0.25]], 120, [10, 40], false); natureTile2(g, w, h, 19, [["#1a3a1e", 0.5], ["#3f7a3a", 0.35]], 700, [3, 9]); } },
@@ -53,6 +53,18 @@ const PATTERNS = {
 function natureTile2(g, w, h, seed, cols, n, size) {
   let sd = seed * 7919; const R = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
   for (let k = 0; k < n; k++) { const [c, a] = cols[Math.floor(R() * cols.length)], x = R() * w, y = R() * h, s = size[0] + R() * (size[1] - size[0]); g.fillStyle = c; g.globalAlpha = a * (0.5 + R() * 0.5); for (const [dx, dy] of [[0, 0], [-w, 0], [w, 0], [0, -h], [0, h]]) { g.beginPath(); g.ellipse(x + dx, y + dy, s, s * 0.8, 0, 0, 7); g.fill(); } }
+  g.globalAlpha = 1;
+}
+// soft blotches of a few colours over a cover (a lawn's drier and lusher patches), drawn over the edges so it tiles
+function blotches(g, w, h, seed, cols, n, size) {
+  let sd = seed * 7919; const R = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  for (let k = 0; k < n; k++) {
+    const [c, a] = cols[Math.floor(R() * cols.length)], x = R() * w, y = R() * h, s = size[0] + R() * (size[1] - size[0]);
+    for (const [dx, dy] of [[0, 0], [-w, 0], [w, 0], [0, -h], [0, h]]) {
+      const gr = g.createRadialGradient(x + dx, y + dy, 0, x + dx, y + dy, s); gr.addColorStop(0, c); gr.addColorStop(1, "rgba(0,0,0,0)");
+      g.globalAlpha = a * (0.6 + R() * 0.4); g.fillStyle = gr; g.beginPath(); g.ellipse(x + dx, y + dy, s, s * (0.7 + R() * 0.5), R() * Math.PI, 0, 7); g.fill();
+    }
+  }
   g.globalAlpha = 1;
 }
 // a tile of a natural cover: a ground colour, flecks of a few colours (blades, leaves, pebbles) scattered by a seed
@@ -281,11 +293,12 @@ export function disposeChunk(g) { g.traverse(o => { if (o.geometry) o.geometry.d
 // `prop`, the prop generator's in the library (props/<name>: a realistic zelkova, a black pine), stands at its spot on
 // the ground, turned by its `turn`; its stand-in is drawn until the mesh has loaded, and on a machine that hasn't made it
 // (python tools/propgen.py make <name> --library)
-const PROP_MESH = new Map();
+const PROP_MESH = new Map(), PROP_BOX = new Map();
 export function propMesh(ref) {
   if (!PROP_MESH.has(ref)) PROP_MESH.set(ref, new GLTFLoader().loadAsync(`/library/meshes/${ref}.glb`).then(g => g.scene).catch(() => null));
   return PROP_MESH.get(ref);
 }
+const propBox = (ref, src) => { if (!PROP_BOX.has(ref)) PROP_BOX.set(ref, new THREE.Box3().setFromObject(src)); return PROP_BOX.get(ref); };
 export const propThings = S => (S.things || []).concat(SG.scatterThings(S)).filter(t => typeof t.prop === "string" && t.prop);   // placed by hand, and a scatter's
 // the props loaded: {ids: the things they stand for (their stand-ins left out of the chunks: group's opts.hide), group}
 export async function propsGroup(S) {
@@ -296,9 +309,14 @@ export async function propsGroup(S) {
     if (!src) continue;
     const c = src.clone(true);
     c.name = `prop_${t.id}`;
-    c.position.set(t.at[0], T.surface(t.at[0], t.at[1]) + (+t.lift || 0), -t.at[1]);
     c.rotation.y = (+t.turn || 0) * Math.PI / 180;                  // a turn in the street's plane (left about up) is three's about +y
-    if (+t.scale && +t.scale !== 1) c.scale.setScalar(+t.scale);     // a scatter's size
+    const bb = propBox(t.prop, src);
+    if (+t.fit > 0) { const ext = Math.max(bb.max.x - bb.min.x, bb.max.z - bb.min.z) || 1; c.scale.setScalar(+t.fit / ext); }   // a river's rock: the prop scaled to the place's size
+    else if (+t.scale && +t.scale !== 1) c.scale.setScalar(+t.scale);     // a scatter's size
+    const under = T.surface(t.at[0], t.at[1]);
+    // `top`: the prop set so its highest point is that far over what's under it (a rock in a river breaking the water
+    // as its lump did, a bank's stone sunk); else `lift` above it
+    c.position.set(t.at[0], t.top !== undefined && t.top !== null && t.top !== "" ? under + (+t.top) - (bb.max.y - bb.min.y) * c.scale.y - bb.min.y * c.scale.y : under + (+t.lift || 0), -t.at[1]);
     c.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
     g.add(c); ids.add(t.id);
   }

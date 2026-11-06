@@ -2,6 +2,21 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-06, later (the user: the 1:1 dropped; a simple park with a stream; new rocks after a Blender tutorial)
+
+- **"Ok, forget the 1:1 now, a lot of the environments you made look ugly (except for the new realistic plants they
+  look great), can you create a simple park with a small river stream. Maybe work on modelling some new rocks, research
+  a Blender creating realistic rocks tutorial first."** So: the five matched streets stay as they are (the 1:1 work is
+  done with, not to be polished); what looks good is the realistic props (the trees and the blade plants); the next
+  step is a park that looks good, not one that matches a photo, and real rocks before it.
+- **What came of it** (the same day): docs/research/rocks.md (what Blender's own rock generator and the tutorials do,
+  and what we take); the prop generator's **rock family** (PROPGEN §28: a boulder, a rock, a river stone, a slab, a
+  patch of pebbles, a cluster; granite, basalt, sandstone, limestone, slate, river; moss, lichen, a wet line); the
+  street builder's **rivers and banks take the made rocks** (`rocks.prop` / `props`, the lumps left out, the foam rings
+  kept; a thing's `fit` scales a prop to a place's size); the **park** `park_stream` (mown grass, a winding gravel path
+  over a timber footbridge, a stream with the rock family's stones in and along it, the realistic trees and plants, a
+  bench, lamps), pictured from its own shots, no photo to match.
+
 ## 2026-11-06 (the user: the street builder outdoors, the branch `street-nature`)
 
 - **"For street builder I want a new more nature park update, create a branch called street-nature. And using our

@@ -85,6 +85,18 @@ function poly(o, slot, P, n, uv) {
   for (let i = 1; i + 1 < order.length; i++) g.idx.push(base, base + i, base + i + 1);
 }
 const two = (o, slot, P, n, uv) => { poly(o, slot, P, n, uv); poly(o, slot, P, [-n[0], -n[1], -n[2]], uv); };   // seen from both sides
+// a polygon facing up with a normal of its own at each corner (the ground's cells: the slopes shade smooth, not faceted)
+function polySmooth(o, slot, P, N) {
+  let cx = 0, cy = 0, cz = 0;
+  for (let i = 0; i < P.length; i++) { const a = P[i], b = P[(i + 1) % P.length]; cx += (a[1] - b[1]) * (a[2] + b[2]); cy += (a[2] - b[2]) * (a[0] + b[0]); cz += (a[0] - b[0]) * (a[1] + b[1]); }
+  const l = Math.hypot(cx, cy, cz); if (l < 1e-10) return;
+  const nn = cz >= 0 ? [cx / l, cy / l, cz / l] : [-cx / l, -cy / l, -cz / l];
+  let order = P.map((_, i) => i);
+  if (cx * nn[0] + cy * nn[1] + cz * nn[2] < 0) order = order.reverse();
+  const g = buf(o, slot), base = g.pos.length / 3;
+  for (const i of order) { g.pos.push(P[i][0], P[i][1], P[i][2]); g.nrm.push(N[i][0], N[i][1], N[i][2]); const t = uvAt(P[i], nn); g.uv.push(t[0], t[1]); }
+  for (let i = 1; i + 1 < order.length; i++) g.idx.push(base, base + i, base + i + 1);
+}
 // an upright box in the piece's space; skip: faces to leave out ("-z" its bottom, "+x" ...)
 function box(o, slot, x0, y0, z0, x1, y1, z1, skip = "") {
   if (x1 < x0) [x0, x1] = [x1, x0]; if (y1 < y0) [y0, y1] = [y1, y0]; if (z1 < z0) [z0, z1] = [z1, z0];
@@ -1958,22 +1970,13 @@ function riverParts(r, index, T) {
       // the skirt: down under the drawn ground past the bank's edge, so the grid's edge never shows
       polyUp(o, slot === "concrete" ? "grass" : slot, [Q(a, bw, zAt(a, bw)), Q(c, bw, zAt(c, bw)), Q(c, bw + 0.4, zAt(c, bw + 0.4) - drop - 0.01), Q(a, bw + 0.4, zAt(a, bw + 0.4) - drop - 0.01)]);
     }
-    const rk = b.rocks || (b.kind === "rock" ? { every: 0.45, size: 0.3 } : b.kind === "stone" ? { every: 2.2, size: 0.5 } : null);
-    if (rk) {                                                         // stones along it, half sunk: at the water's edge (river stones) or up the bank
-      const every = Math.max(0.1, num(rk.every, 1)), size = num(rk.size, 0.4), lo = b.kind === "rock" ? -0.15 : 0, hi = b.kind === "rock" ? Math.min(bw, 0.7) : bw;
-      for (let s = every * R(); s < L; s += every * (0.7 + R() * 0.6)) {
-        const e = lo + (hi - lo) * R(), sz = size * (0.7 + R() * 0.6), c = Q(s, e, zAt(s, Math.max(e, 0.001)) - sz * 0.3);
-        if (e < 0) c[2] = f.z(s) - sz * 0.25;
-        lumpS(o, "rock", c, sz * (0.8 + R() * 0.4), sz * (0.8 + R() * 0.4), sz * 0.6, R);
-      }
-    }
+    if (!propsOf(bankRocks(b))) for (const k of bankStones(r, f, sd, b, T)) lumpS(o, "rock", [k.x, k.y, k.zc], k.rx, k.ry, k.sz * 0.6, R);   // the stones along it (a made prop stands in each place instead when the bank names one)
   }
-  const rk = r.rocks ? Object.assign({ every: 4, size: 0.9 }, r.rocks) : null;
-  if (rk) {                                                           // rocks in the water, white water round the ones that stand out of it
-    const every = Math.max(0.3, num(rk.every, 4)), size = num(rk.size, 0.9), rings = [];
-    for (let s = every * R(); s < L; s += every * (0.6 + R() * 0.8)) {
-      const reach = Math.max(0, hw(s) - sh(s) - size * 0.6), q = (R() * 2 - 1) * reach, sz = size * (0.6 + R() * 0.8), zc = -depth + sz * (0.2 + R() * 0.55), c = P3(s, q, zc), rz = sz * 0.7;
-      lumpS(o, "rock", c, sz * (0.7 + R() * 0.5), sz * (0.7 + R() * 0.5), rz, R);
+  {                                                                   // rocks in the water, white water round the ones that stand out of it
+    const rings = [], made = propsOf(r.rocks);
+    for (const k of riverRocks(r, f)) {
+      const { s, q, sz, zc, rz } = k;
+      if (!made) lumpS(o, "rock", [k.x, k.y, k.z + zc], k.rx, k.ry, rz, R);    // a made prop stands in its place instead when the river names one
       if (zc + rz * 0.84 > 0.05) {                                     // out of the water: a ring of foam round it (a layer over the rapids; never over another ring)
         const ri = sz * 0.75, ro = sz * 1.7, zf = f.z(s) + 0.012;
         if (rings.some(g => Math.hypot(g[0] - s, g[1] - q) < g[2] + ro + 0.05)) continue;
@@ -1993,6 +1996,38 @@ function riverParts(r, index, T) {
   }
   return o;
 }
+// the real rocks a river or a bank names (`rocks.prop`, or `rocks.props` to pick from): made props (the prop generator's
+// rock family: props/rock_mossy, props/stone_river_wet...) standing in the places the lumps would take
+export const propsOf = rk => { if (!rk) return null; const p = Array.isArray(rk.props) ? rk.props.filter(x => typeof x === "string" && x) : typeof rk.prop === "string" && rk.prop ? [rk.prop] : []; return p.length ? p : null; };
+export const bankRocks = b => b ? b.rocks || (b.kind === "rock" ? { every: 0.45, size: 0.3 } : b.kind === "stone" ? { every: 2.2, size: 0.5 } : null) : null;
+// a river's rocks in the water: where each is (its station and offset, its place, its centre `zc` under the water's
+// level, its size: `sz` the longest way, `rz` its height's half), by the river's own seed
+export function riverRocks(r, f) {
+  const rk = r.rocks ? Object.assign({ every: 4, size: 0.9 }, r.rocks) : null; if (!rk) return [];
+  const R = rng(seedOf((r.id || "river") + ":rocks") + num(r.seed, 0)), L = f.L, depth = f.depth, hw = s => f.wAt(s) / 2;
+  const shelf = Math.min(f.W / 4, Math.max(0.3, depth * 1.5)), sh = s => Math.min(hw(s) / 2, shelf);
+  const every = Math.max(0.3, num(rk.every, 4)), size = num(rk.size, 0.9), out = [];
+  for (let s = every * R(); s < L; s += every * (0.6 + R() * 0.8)) {
+    const reach = Math.max(0, hw(s) - sh(s) - size * 0.6), q = (R() * 2 - 1) * reach, sz = size * (0.6 + R() * 0.8), zc = -depth + sz * (0.2 + R() * 0.55), rz = sz * 0.7;
+    const rx = sz * (0.7 + R() * 0.5), ry = sz * (0.7 + R() * 0.5), p = f.at(s, q);
+    out.push({ s, q, x: p[0], y: p[1], z: p[2], zc, sz, rz, rx, ry, turn: Math.round(R() * 360) });
+  }
+  return out;
+}
+// a bank's stones (`rocks`, or the stone and rock kinds' own): half sunk at the water's edge (river stones) or up the bank
+export function bankStones(r, f, sd, b, T) {
+  const rk = bankRocks(b); if (!rk) return [];
+  const R = rng(seedOf((r.id || "river") + ":stones" + sd) + num(r.seed, 0)), L = f.L, hw = s => f.wAt(s) / 2, bw = (b.flat || 0) + b.w;
+  const ground = T ? T.ground : null;
+  const zAt = (s, e) => { if (e <= 0) return f.z(s); const p = f.at(s, sd * (hw(s) + e)); return ground ? ground(p[0], p[1]) : f.z(s) + bankZ(b, e); };
+  const every = Math.max(0.1, num(rk.every, 1)), size = num(rk.size, 0.4), lo = b.kind === "rock" ? -0.15 : 0, hi = b.kind === "rock" ? Math.min(bw, 0.7) : bw, out = [];
+  for (let s = every * R(); s < L; s += every * (0.7 + R() * 0.6)) {
+    const e = lo + (hi - lo) * R(), sz = size * (0.7 + R() * 0.6), p = f.at(s, sd * (hw(s) + e)), zg = e < 0 ? f.z(s) : zAt(s, Math.max(e, 0.001));
+    const zc = e < 0 ? f.z(s) - sz * 0.25 : zg - sz * 0.3, rx = sz * (0.8 + R() * 0.4), ry = sz * (0.8 + R() * 0.4);
+    out.push({ s, e, x: p[0], y: p[1], zg, zc, sz, rx, ry, turn: Math.round(R() * 360) });
+  }
+  return out;
+}
 // the ground drawn: one grid of cells, fine (`cell`) over the street and growing coarser out to `far.r` (one grid: no
 // cracks between near and far), each cell in its cover's slot, `drop` under the ground it stands for
 function groundParts(S, T, bb, m) {
@@ -2006,9 +2041,16 @@ function groundParts(S, T, bb, m) {
     return [...outward(a0, -1).reverse(), ...xs, ...outward(a1, 1)];
   };
   const X = axis(x0, x1), Y = axis(y0, y1), Z = Y.map(y => X.map(x => T.ground(x, y) - T.drop));
+  // each grid vertex's normal from the heights beside it (central differences along the grid), so the slopes shade smooth
+  const Nn = Y.map((y, j) => X.map((x, i) => {
+    const i0 = Math.max(0, i - 1), i1 = Math.min(X.length - 1, i + 1), j0 = Math.max(0, j - 1), j1 = Math.min(Y.length - 1, j + 1);
+    const dzx = (Z[j][i1] - Z[j][i0]) / Math.max(1e-6, X[i1] - X[i0]), dzy = (Z[j1][i] - Z[j0][i]) / Math.max(1e-6, Y[j1] - Y[j0]);
+    const l = Math.hypot(dzx, dzy, 1); return [-dzx / l, -dzy / l, 1 / l];
+  }));
   for (let j = 0; j + 1 < Y.length; j++) for (let i = 0; i + 1 < X.length; i++) {
     const cx = (X[i] + X[i + 1]) / 2, cy = (Y[j] + Y[j + 1]) / 2, isFar = cx < x0 || cx > x1 || cy < y0 || cy > y1;
-    polyUp(o, T.cover(cx, cy, isFar), [[X[i], Y[j], Z[j][i]], [X[i + 1], Y[j], Z[j][i + 1]], [X[i + 1], Y[j + 1], Z[j + 1][i + 1]], [X[i], Y[j + 1], Z[j + 1][i]]]);
+    polySmooth(o, T.cover(cx, cy, isFar), [[X[i], Y[j], Z[j][i]], [X[i + 1], Y[j], Z[j][i + 1]], [X[i + 1], Y[j + 1], Z[j + 1][i + 1]], [X[i], Y[j + 1], Z[j + 1][i]]],
+      [Nn[j][i], Nn[j][i + 1], Nn[j + 1][i + 1], Nn[j + 1][i]]);
   }
   return o;
 }
@@ -2020,6 +2062,22 @@ function groundParts(S, T, bb, m) {
 export const SCATTER_KINDS = ["plant", "rock", "canopy", "tree"];
 export function scatterThings(S) {
   const out = [], paths = (S.roads || []).map(roadPath);
+  const rivers = (S.roads || []).filter(r => roadKind(r) === "river");
+  const T = rivers.some(r => roadPath(r).banks.some(b => propsOf(bankRocks(b)))) ? terrain(S) : null;   // a bank's stones sit on the ground
+  for (const r of rivers) {                                          // a river's rocks and its banks' stones as the made props it names (riverRocks, bankStones)
+    const f = roadPath(r), made = propsOf(r.rocks);
+    if (made) {
+      const R = rng(seedOf((r.id || "river") + ":rockprops") + num(r.seed, 0));
+      riverRocks(r, f).forEach((k, i) => out.push({ id: `${r.id}_rock_${i}`, kind: "rock", river: r.id, prop: made[Math.floor(R() * made.length)], at: [Math.round(k.x * 100) / 100, Math.round(k.y * 100) / 100],
+        turn: k.turn, fit: Math.round(k.sz * 140) / 100, top: Math.round((k.zc + k.rz * 0.84) * 100) / 100, w: Math.round(k.sz * 100) / 100, h: Math.round(k.rz * 200) / 100 }));   // its top where the lump's broke the water (or stayed under)
+    }
+    f.banks.forEach((b, side) => {
+      const mb = propsOf(bankRocks(b)); if (!mb) return;
+      const sd = side === 0 ? 1 : -1, R = rng(seedOf((r.id || "river") + ":stoneprops" + sd) + num(r.seed, 0));
+      bankStones(r, f, sd, b, T).forEach((k, i) => out.push({ id: `${r.id}_stone${side}_${i}`, kind: "rock", river: r.id, prop: mb[Math.floor(R() * mb.length)], at: [Math.round(k.x * 100) / 100, Math.round(k.y * 100) / 100],
+        turn: k.turn, fit: Math.round(k.sz * 120) / 100, top: Math.round(k.sz * 0.3 * 100) / 100, w: Math.round(k.sz * 100) / 100, h: Math.round(k.sz * 60) / 100 }));   // its top a little over the ground: sunk like the lump
+    });
+  }
   const onRoad = (x, y) => paths.some(g => { if (!inBox(g, x, y)) return false; const q = g.nearest(x, y); return q.s >= 0 && q.s <= g.L && Math.abs(q.q) <= (g.kind === "road" ? g.W / 2 + g.walks[q.q >= 0 ? 0 : 1] : g.wAt(q.s) / 2) + 0.05; });
   for (const sc of S.scatters || []) {
     if (!sc || !sc.id) continue;

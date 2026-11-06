@@ -740,6 +740,12 @@
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe paper_ball (Content/Studio/Props/presets.json)"
  },
+ "props/pebbles_river": {
+  "date": "2026-11-06",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe pebbles_river (Content/Studio/Props/presets.json)"
+ },
  "props/pill_bottle": {
   "date": "2026-10-30",
   "kind": "mesh",
@@ -926,6 +932,42 @@
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe rice_cooker_retro (Content/Studio/Props/presets.json)"
  },
+ "props/rock_basalt": {
+  "date": "2026-11-06",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe rock_basalt (Content/Studio/Props/presets.json)"
+ },
+ "props/rock_boulder": {
+  "date": "2026-11-06",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe rock_boulder (Content/Studio/Props/presets.json)"
+ },
+ "props/rock_mossy": {
+  "date": "2026-11-06",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe rock_mossy (Content/Studio/Props/presets.json)"
+ },
+ "props/rock_sandstone": {
+  "date": "2026-11-06",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe rock_sandstone (Content/Studio/Props/presets.json)"
+ },
+ "props/rock_slab": {
+  "date": "2026-11-06",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe rock_slab (Content/Studio/Props/presets.json)"
+ },
+ "props/rocks_cluster": {
+  "date": "2026-11-06",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe rocks_cluster (Content/Studio/Props/presets.json)"
+ },
  "props/sanbo": {
   "date": "2026-10-31",
   "kind": "mesh",
@@ -1087,6 +1129,18 @@
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe stockpot_broth (Content/Studio/Props/presets.json)"
+ },
+ "props/stone_river": {
+  "date": "2026-11-06",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe stone_river (Content/Studio/Props/presets.json)"
+ },
+ "props/stone_river_wet": {
+  "date": "2026-11-06",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe stone_river_wet (Content/Studio/Props/presets.json)"
  },
  "props/stool_cafe": {
   "date": "2026-11-04",

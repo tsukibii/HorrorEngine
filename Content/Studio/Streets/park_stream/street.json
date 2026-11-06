@@ -1,0 +1,539 @@
+{
+ "format": 1,
+ "name": "park_stream",
+ "time": "day",
+ "about": "A simple park with a small stream (DECISIONS 2026-11-06, later): mown grass, a winding gravel path over a timber footbridge, the stream between grass and stone banks with the rock family's stones in and along it, the realistic trees and the blade plants, a bench and a lamp. No photo to match: a place to look good from its three shots.",
+ "look": {
+  "riverbed": "#8a8070",
+  "rock": "#8a8276",
+  "water": "#86a6ac",
+  "gravel": "#b3a894"
+ },
+ "terrain": {
+  "cover": "mown",
+  "cell": 1,
+  "blend": 5,
+  "haze": 0.9,
+  "far": {
+   "r": 320,
+   "cell": 24,
+   "cover": "grass"
+  },
+  "noise": {
+   "amp": 0.5,
+   "scale": 22,
+   "seed": 7
+  },
+  "hills": [
+   {
+    "at": [ -30, 26 ],
+    "r": 24,
+    "h": 2.2,
+    "flat": 0.2
+   },
+   {
+    "at": [ 30, -24 ],
+    "r": 20,
+    "h": 1.6
+   },
+   {
+    "at": [ 44, 20 ],
+    "r": 26,
+    "h": 2.8
+   }
+  ],
+  "patches": [
+   {
+    "kind": "soil",
+    "at": [ -24, 17 ],
+    "r": 1.6
+   },
+   {
+    "kind": "soil",
+    "at": [ 19, -21 ],
+    "r": 2
+   }
+  ]
+ },
+ "roads": [
+  {
+   "id": "stream",
+   "name": "the stream",
+   "kind": "river",
+   "from": [ -42, 13 ],
+   "via": [
+    [ -22, 7 ],
+    [ -6, 2 ],
+    [ 8, -4 ],
+    [ 24, -12 ]
+   ],
+   "to": [ 44, -19 ],
+   "width": [
+    2.4,
+    3.1,
+    2.3,
+    3.4, 2.7, 2.5 ],
+   "depth": 0.35,
+   "z": [
+    1.05,
+    0.85,
+    0.62,
+    0.44, 0.18, 0 ],
+   "drops": [
+    {
+     "at": 26,
+     "h": 0.22
+    },
+    {
+     "at": 58,
+     "h": 0.28
+    }
+   ],
+   "banks": [
+    {
+     "h": 0.36,
+     "w": 1.9,
+     "flat": 0.3,
+     "kind": "stone",
+     "rocks": {
+      "every": 0.9,
+      "size": 0.36,
+      "props": [
+       "props/stone_river",
+       "props/stone_river_wet",
+       "props/rock_mossy"
+      ]
+     }
+    },
+    {
+     "h": 0.3,
+     "w": 1.7,
+     "flat": 0.25,
+     "kind": "grass",
+     "rocks": {
+      "every": 2.4,
+      "size": 0.4,
+      "props": [
+       "props/stone_river",
+       "props/rock_mossy"
+      ]
+     }
+    }
+   ],
+   "rocks": {
+    "every": 1.9,
+    "size": 0.55,
+    "props": [
+     "props/stone_river_wet",
+     "props/stone_river",
+     "props/rock_mossy",
+     "props/rock_boulder"
+    ]
+   },
+   "rapids": [
+    {
+     "at": 34,
+     "len": 4,
+     "x": 0.2,
+     "w": 1
+    },
+    {
+     "at": 70,
+     "len": 5,
+     "x": -0.3,
+     "w": 1.1
+    }
+   ]
+  },
+  {
+   "id": "path_w",
+   "name": "the path from the west gate",
+   "kind": "path",
+   "surface": "gravel",
+   "width": 1.8,
+   "from": [ -40, -16 ],
+   "via": [
+    [ -26, -10 ],
+    [ -12, -7 ]
+   ],
+   "to": [ -1.2, -3.2 ],
+   "z": [
+    1.35,
+    1.25, 1.12, 1 ]
+  },
+  {
+   "id": "path_e",
+   "name": "the path on to the east",
+   "kind": "path",
+   "surface": "gravel",
+   "width": 1.8,
+   "from": [ 3, -0.2 ],
+   "via": [
+    [ 12, 3 ],
+    [ 24, 6 ]
+   ],
+   "to": [ 42, 9 ],
+   "z": [
+    0.95,
+    0.85, 0.75, 0.62 ]
+  },
+  {
+   "id": "path_n",
+   "name": "a side path to the mound",
+   "kind": "path",
+   "surface": "soil",
+   "width": 1.2,
+   "from": [ -12, -7 ],
+   "via": [
+    [ -16, 4 ]
+   ],
+   "to": [ -24, 14 ],
+   "z": [
+    1.12, 1.3, 1.6 ]
+  }
+ ],
+ "buildings": [],
+ "things": [
+  {
+   "id": "bridge",
+   "kind": "bridge",
+   "style": "wood",
+   "at": [ 0.9, -1.7 ],
+   "turn": 66,
+   "w": 5.2,
+   "d": 1.7,
+   "deck": 0.62,
+   "h": 1,
+   "bay": 1.2
+  },
+  {
+   "id": "bench",
+   "kind": "bench",
+   "at": [ -13.5, -9.6 ],
+   "turn": 20
+  },
+  {
+   "id": "lamp",
+   "kind": "postlamp",
+   "at": [ 7.2, -8.4 ],
+   "turn": 0
+  },
+  {
+   "id": "lamp2",
+   "kind": "postlamp",
+   "at": [ -27, -12.2 ],
+   "turn": 0
+  },
+  {
+   "id": "board",
+   "kind": "signboard",
+   "at": [ -38, -13.5 ],
+   "turn": -20,
+   "text": "せせらぎ公園"
+  },
+  {
+   "id": "zelkova",
+   "kind": "tree",
+   "at": [ -25, 17 ],
+   "h": 11,
+   "w": 9,
+   "prop": "props/zelkova_real"
+  },
+  {
+   "id": "camphor",
+   "kind": "tree",
+   "at": [ 18, -21 ],
+   "h": 12,
+   "w": 11,
+   "prop": "props/camphor_real"
+  },
+  {
+   "id": "cherry",
+   "kind": "tree",
+   "at": [ -9, -15 ],
+   "h": 7,
+   "w": 7,
+   "prop": "props/cherry_real"
+  },
+  {
+   "id": "cherry2",
+   "kind": "tree",
+   "at": [ 31, -5 ],
+   "h": 7,
+   "w": 7,
+   "prop": "props/cherry_real",
+   "turn": 120
+  },
+  {
+   "id": "hornbeam",
+   "kind": "tree",
+   "at": [ 11, 10 ],
+   "h": 5,
+   "w": 4,
+   "prop": "props/small_hornbeam_real"
+  },
+  {
+   "id": "hornbeam2",
+   "kind": "tree",
+   "at": [ -3, 9 ],
+   "h": 5,
+   "w": 4,
+   "prop": "props/small_hornbeam_real",
+   "turn": 200
+  },
+  {
+   "id": "cedar",
+   "kind": "tree",
+   "at": [ 36, 18 ],
+   "h": 14,
+   "w": 7,
+   "prop": "props/cedar_real"
+  },
+  {
+   "id": "zelkova2",
+   "kind": "tree",
+   "at": [ -37, -3 ],
+   "h": 10,
+   "w": 9,
+   "prop": "props/zelkova_real",
+   "turn": 70
+  },
+  {
+   "id": "shrub",
+   "kind": "plant",
+   "at": [ -15, 6 ],
+   "h": 1.6,
+   "w": 2.2,
+   "prop": "props/shrub_real",
+   "scale": 1.2
+  },
+  {
+   "id": "shrub2",
+   "kind": "plant",
+   "at": [ 21, 2 ],
+   "h": 1.6,
+   "w": 2.2,
+   "prop": "props/shrub_real",
+   "scale": 1,
+   "turn": 90
+  },
+  {
+   "id": "azalea",
+   "kind": "plant",
+   "at": [ -7.5, -8.6 ],
+   "h": 0.8,
+   "w": 1.1,
+   "prop": "props/azalea_ball"
+  },
+  {
+   "id": "azalea2",
+   "kind": "plant",
+   "at": [ 7.6, 1.6 ],
+   "h": 0.8,
+   "w": 1.1,
+   "prop": "props/azalea_ball",
+   "scale": 0.9
+  },
+  {
+   "id": "slab",
+   "kind": "rock",
+   "at": [ -19, 10.5 ],
+   "w": 0.9,
+   "d": 0.7,
+   "h": 0.2,
+   "prop": "props/rock_slab"
+  },
+  {
+   "id": "cluster",
+   "kind": "rock",
+   "at": [ 26, -16 ],
+   "w": 1.2,
+   "d": 1,
+   "h": 0.7,
+   "prop": "props/rocks_cluster"
+  }
+ ],
+ "fences": [],
+ "scatters": [
+  {
+   "id": "hakone",
+   "along": "stream",
+   "side": 0,
+   "off": [ 0.3, 1.9 ],
+   "every": 1.3,
+   "jitter": 0.6,
+   "kind": "plant",
+   "w": 0.6,
+   "h": 0.45,
+   "size": [ 0.8, 1.3 ],
+   "props": [
+    "props/hakone_grass",
+    "props/sedge_evergold",
+    "props/hakone_green"
+   ],
+   "seed": 11
+  },
+  {
+   "id": "ferns",
+   "along": "stream",
+   "side": 1,
+   "off": [ 0.5, 2.4 ],
+   "every": 1.6,
+   "jitter": 0.7,
+   "kind": "plant",
+   "w": 0.7,
+   "h": 0.6,
+   "size": [ 0.7, 1.2 ],
+   "props": [
+    "props/fern_clump",
+    "props/hakone_green",
+    "props/sedge_evergold"
+   ],
+   "seed": 12
+  },
+  {
+   "id": "reeds",
+   "along": "stream",
+   "side": 0,
+   "off": [ 1.6, 3.2 ],
+   "every": 2.8,
+   "jitter": 0.8,
+   "kind": "plant",
+   "w": 0.8,
+   "h": 1.2,
+   "size": [ 0.8, 1.2 ],
+   "props": [
+    "props/reed_clump",
+    "props/meadow_tuft"
+   ],
+   "from": 20,
+   "to": 75,
+   "seed": 13
+  },
+  {
+   "id": "pebbles",
+   "along": "stream",
+   "side": 0,
+   "off": [ 0, 0.5 ],
+   "every": 3,
+   "jitter": 0.9,
+   "kind": "rock",
+   "w": 0.5,
+   "d": 0.4,
+   "h": 0.08,
+   "size": [ 0.8, 1.3 ],
+   "prop": "props/pebbles_river",
+   "seed": 14
+  },
+  {
+   "id": "tufts",
+   "along": "path_w",
+   "side": 0,
+   "off": [ 0.1, 0.5 ],
+   "every": 2.2,
+   "jitter": 0.9,
+   "kind": "plant",
+   "w": 0.35,
+   "h": 0.3,
+   "size": [ 0.7, 1.2 ],
+   "prop": "props/grass_tuft",
+   "seed": 15
+  },
+  {
+   "id": "tufts_e",
+   "along": "path_e",
+   "side": 0,
+   "off": [ 0.1, 0.5 ],
+   "every": 2.4,
+   "jitter": 0.9,
+   "kind": "plant",
+   "w": 0.35,
+   "h": 0.3,
+   "size": [ 0.7, 1.2 ],
+   "prop": "props/grass_tuft",
+   "seed": 16
+  },
+  {
+   "id": "wood",
+   "poly": [
+    [ -44, 20 ],
+    [ -10, 24 ],
+    [ -6, 34 ],
+    [ -46, 34 ]
+   ],
+   "density": 0.03,
+   "kind": "tree",
+   "w": 6,
+   "h": 9,
+   "size": [ 0.8, 1.3 ],
+   "props": [
+    "props/zelkova_real",
+    "props/camphor_real",
+    "props/cedar_real"
+   ],
+   "seed": 17
+  },
+  {
+   "id": "wood_e",
+   "poly": [
+    [ 22, 14 ],
+    [ 48, 12 ],
+    [ 50, 34 ],
+    [ 24, 34 ]
+   ],
+   "density": 0.03,
+   "kind": "tree",
+   "w": 6,
+   "h": 9,
+   "size": [ 0.8, 1.3 ],
+   "props": [
+    "props/zelkova_real",
+    "props/cedar_real",
+    "props/small_hornbeam_real"
+   ],
+   "seed": 18
+  }
+ ],
+ "shots": [
+  {
+   "id": "walk",
+   "name": "from the path by the bench, the bridge over the stream",
+   "eye": [
+    -8, -6.4, 2.53 ],
+   "look": [
+    4, 0, 0.7 ],
+   "vfov": 55,
+   "aspect": [ 16, 9 ]
+  },
+  {
+   "id": "on_bridge",
+   "name": "from the bridge, downstream",
+   "eye": [
+    0.2, -2.4, 3.43 ],
+   "look": [
+    19, -10, 0.2 ],
+   "vfov": 58,
+   "aspect": [ 16, 9 ]
+  },
+  {
+   "id": "across",
+   "name": "from the east bank, upstream to the bridge",
+   "eye": [
+    12.5, -2.6, 1.67 ],
+   "look": [
+    -8, 2.5, 0.5 ],
+   "vfov": 52,
+   "aspect": [ 16, 9 ]
+  },
+  {
+   "id": "low",
+   "name": "low on the stone bank, downstream",
+   "eye": [
+    -15, 3.2, 2.28 ],
+   "look": [
+    3, -3.5, 0.45 ],
+   "vfov": 52,
+   "aspect": [ 16, 9 ]
+  }
+ ]
+}

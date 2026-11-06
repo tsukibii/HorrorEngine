@@ -348,6 +348,15 @@ const budgetOf = (S, p) => p.type === "ground" ? BUDGET.ground : p.type === "roa
   near(f.z(49) - f.z(51), 0.4 + 0.025 * 2 * 0.5 / 1, 0.06, "the fall: the water 0.4 m lower past it");
   near(T.surface(14, -9.9), 0.17, 0.01, "the first sleeper step's tread"); near(T.surface(14, 9.9), 3.4, 0.01, "the top step's tread");
   near(T.ground(40, -30), 3, 0.01, "the ground on a round flat (held at its level)"); near(T.ground(-35, 25), -2, 0.01, "the ground on a polygon flat");
+  {                                                                  // a river's rocks and a bank's stones as made props: things in the lumps' places, scaled to fit, no lumps left, the foam rings still
+    const N2 = JSON.parse(JSON.stringify(N)); N2.roads[0].rocks.prop = "props/stone_river_wet"; N2.roads[0].banks[1].rocks = { every: 1.5, size: 0.4, props: ["props/stone_river", "props/rock_mossy"] };
+    const th = SG.scatterThings(N2), inWater = th.filter(t => t.id.startsWith("river_rock_")), onBank = th.filter(t => t.id.startsWith("river_stone1_"));
+    const riv = once(L + " with props", N2).find(p => p.id === "river"), rock = riv.G.rock ? riv.G.rock.idx.length / 3 : 0;
+    if (inWater.length < 8 || !inWater.every(t => t.prop === "props/stone_river_wet" && t.fit > 0 && typeof t.top === "number") || !inWater.some(t => t.top > 0.05)) errs.push(`${L}: a river naming a prop: ${inWater.length} rock things in the water, some breaking the water (${JSON.stringify(inWater[0])})`);
+    if (onBank.length < 10 || !onBank.every(t => /stone_river|rock_mossy/.test(t.prop) && t.fit > 0)) errs.push(`${L}: a bank naming props: ${onBank.length} stone things (${JSON.stringify(onBank[0])})`);
+    if (rock > get("river").G.rock.idx.length / 3 * 0.4) errs.push(`${L}: the river's rock lumps still drawn with props standing in (${rock} triangles; the fall's lip stones stay)`);
+    if (!(riv.G.foam && riv.G.foam.idx.length > 60)) errs.push(`${L}: the foam rings went with the lumps`);
+  }
   if (Math.abs(T.ground(40, -30 - 6 - 20) - 3) < 0.3) errs.push(`${L}: the ground 20 m past the flat's edge is still at its level`);
   near(T.relief(-250, 0), 60, 0.5, "the hill's top far off (its relief)"); near(T.relief(100, 230), 90, 0.5, "the ridge's top (its relief)"); near(T.relief(-250, 160), 0, 0.5, "the ground past the hill's foot");
   if (T.cover(16, 0, false) !== "soil" || T.cover(-30, 20, false) !== "grass" || T.cover(-200, 100, true) !== "forest") errs.push(`${L}: the covers: ${T.cover(16, 0, false)}, ${T.cover(-30, 20, false)}, ${T.cover(-200, 100, true)}`);

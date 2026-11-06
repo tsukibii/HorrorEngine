@@ -162,6 +162,8 @@ turned by `turn` (degrees, anticlockwise) and set down at `at` (its middle); a r
   "terrain": {"cover", "cell", "drop", "blend", "haze", "far": {"r", "cell", "cover"}, "hills": [{"at", "r", "h", "flat"} | {"ridge": [[x, y], ...], "r", "h"}],
               "noise": {"amp", "scale", "seed", "octaves"}, "patches": [{"kind", "at", "r"} | {"kind", "poly"}],
               "flats": [{"z", "at", "r", "blend"} | {"z", "poly", "blend"}]},
+  (a river's "rocks" and a bank's "rocks" may name made props: {"every", "size", "prop" | "props": [...]}, §7e;
+   a thing with a "prop" may have "fit": its longest way across, metres: the prop scaled to it; "top": its highest point this far over what's under it)
   "scatters": [{"id", "kind": "plant|rock|canopy|tree", "prop" | "props", "size": [min, max], "w", "h", "slot", "seed",
                 "along": <road id>, "side": 0|1|-1, "off": [near, far], "every", "jitter", "from", "to"  |  "at", "r", "n" | "density"  |  "poly"}],
   "things": [{"id", "kind" (THING_KINDS), "at", "turn", "lift" (above what's under it), "h", "slot", "look", "to" (a pole's next pole), ...}],
@@ -592,6 +594,34 @@ from pins on what can be measured in the photo, `--cast` places the rest by its 
 What still tells (the sheet): the canopy and plant stand-ins are lumps until the props are made; the far hills are
 smooth cones under one tile of forest; the sky is a gradient (the photos' clouds aren't drawn); the water is a flat
 colour (the Godot shader is later work, not this branch's); the steps' moss is the stone's flecks.
+
+## 7e. A simple park with a stream: the made rocks in the water (DECISIONS 2026-11-06, later)
+
+The user, the same day: "forget the 1:1 now, a lot of the environments you made look ugly (except for the new
+realistic plants) ... create a simple park with a small river stream ... work on modelling some new rocks". So the
+five matched streets stay as they are, and:
+
+- **Real rocks in a river and on its banks.** A river's `rocks` and a bank's `rocks` can name made props (the prop
+  generator's rock family, PROPGEN §28): `"rocks": {"every": 2.3, "size": 0.5, "props": ["props/stone_river_wet",
+  "props/rock_mossy"]}` (one `prop`, or `props` to pick from by the river's seed). The rocks then come as prop things
+  (`scatterThings`: `<river>_rock_<n>` in the water, `<river>_stone<side>_<n>` on a bank), each in the place the lump
+  would have taken, turned, **`fit`** to the place's size (a thing's `fit` scales any prop so its longest way across
+  is that many metres; a scatter's `size` stays a multiplier), its **`top`** where the lump's was (a thing's `top` sets
+  a prop so its highest point is that far over what's under it: a rock breaks the water as its lump did, or stays
+  under; a bank's stone sits a little proud of the ground, sunk like the lump; `lift` as before where no `top`); the
+  river draws no lumps there but keeps the foam rings round the ones that break the surface. The inspector's *the real
+  rocks* (a river) and *its stones* (a bank) take the names; `riverRocks` and `bankStones` give the places (their own
+  seeds: changing a river's banks doesn't move its rocks). Stones on a `stone` or `rock` bank come by default (every
+  2.2 m, 0.5 m; every 0.45 m, 0.3 m): give them props the same way.
+- **`park_stream`** (`Content/Studio/Streets/park_stream/`): a simple park, no photo to match: mown grass with a
+  gentle roll and three mounds, a winding gravel path from the west gate over a **timber footbridge** and on to the
+  east, a side path up a mound, the **stream** between a stone bank and a grass bank (2.4 to 3.4 m wide, falling a
+  metre over its length with two small falls and two runs of white water) with `stone_river`, `stone_river_wet`,
+  `rock_mossy` and a `rock_boulder` in it and along it, pebble patches at the water's edge, the forest grass, sedges
+  and ferns along the banks, reeds and meadow tufts further out, zelkovas, camphors, cherries, hornbeams and a cedar
+  (a wood scattered at each end), shrubs and azaleas by the path, a bench, two post lamps, a sign, a log rail at the
+  bridge; four shots (along the path, from the bridge upstream, across the stream, low by the water); the sheet
+  `docs/street_sheets/2026-11-06_park_stream.jpg`.
 
 ## 8. Not yet
 
