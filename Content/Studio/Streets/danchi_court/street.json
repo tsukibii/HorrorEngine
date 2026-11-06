@@ -251,8 +251,8 @@
    ],
    "turn": 0,
    "look": {
-    "wall": "#d8d8d4",
-    "concrete": "#cfcfcb",
+    "wall": "#9c9b96",
+    "concrete": "#e6e6e2",
     "metal": "#d7d8d6"
    },
    "faces": {
@@ -357,16 +357,16 @@
   },
   {
    "id": "shot_tower",
-   "name": "the tower's stair shaft from the road",
+   "name": "the tower's stair shaft from the court",
    "eye": [
-    27,
-    -6,
+    34.5,
+    4.5,
     1.65
    ],
    "look": [
     23.5,
-    10,
-    9
+    15,
+    9.5
    ],
    "vfov": 62,
    "aspect": [
@@ -378,14 +378,14 @@
    "id": "shot_panels",
    "name": "the mid-rise's dog-leg behind its panels",
    "eye": [
-    -52,
-    -5,
+    -58.5,
+    20.5,
     1.65
    ],
    "look": [
     -46,
-    10,
-    8
+    15,
+    8.5
    ],
    "vfov": 62,
    "aspect": [
