@@ -39,15 +39,22 @@ const PATTERNS = {
   mown: { tile: 1.2, px: 256, draw: (g, w, h) => { natureTile(g, w, h, 12, "#5f8f3a", [["#538430", 0.5], ["#75a648", 0.5], ["#8db85a", 0.2]], 1800, [1, 3], true); g.fillStyle = "rgba(255,255,255,0.045)"; g.fillRect(0, 0, w, h / 2); } },
   moss: { tile: 0.8, px: 256, draw: (g, w, h) => natureTile(g, w, h, 13, "#6a8c3c", [["#56782e", 0.6], ["#80a248", 0.5], ["#9ab858", 0.25], ["#44642a", 0.4]], 900, [2, 7], false) },
   soil: { tile: 1.2, px: 256, draw: (g, w, h) => natureTile(g, w, h, 14, "#5e4c3d", [["#4a3b2f", 0.6], ["#6e5a48", 0.5], ["#7e6a54", 0.25], ["#3a2e24", 0.3], ["#8a7a5a", 0.15]], 700, [2, 8], false) },
-  forest: { tile: 14, px: 256, draw: (g, w, h) => natureTile(g, w, h, 15, "#2e5230", [["#224224", 0.7], ["#3a6a36", 0.6], ["#4a7c3c", 0.35], ["#1d3a20", 0.5]], 260, [8, 22], false) },
+  forest: { tile: 36, px: 256, draw: (g, w, h) => { natureTile(g, w, h, 15, "#2f5a32", [["#1f4222", 0.75], ["#3b6e38", 0.65], ["#4c843e", 0.4], ["#183620", 0.6], ["#5a9448", 0.25]], 120, [10, 40], false); natureTile2(g, w, h, 19, [["#1a3a1e", 0.5], ["#3f7a3a", 0.35]], 700, [3, 9]); } },
   riverbed: { tile: 1.0, px: 256, draw: (g, w, h) => natureTile(g, w, h, 16, "#5a5247", [["#4a433a", 0.6], ["#6e665a", 0.5], ["#7d766a", 0.3], ["#3a342d", 0.4]], 500, [3, 10], false) },
   rock: { tile: 1.0, px: 256, draw: (g, w, h) => natureTile(g, w, h, 17, "#7a7770", [["#6a675f", 0.5], ["#8b887f", 0.5], ["#5a574f", 0.3], ["#9a978c", 0.2]], 600, [3, 12], false) },
   stone: { tile: 0.8, px: 256, draw: (g, w, h) => natureTile(g, w, h, 18, "#9a968a", [["#8a867a", 0.5], ["#aaa69a", 0.5], ["#7f9a60", 0.3], ["#6e8a52", 0.25], ["#b4b0a4", 0.2]], 700, [3, 12], false) },
-  revet: { tile: 1.0, px: 256, draw: (g, w, h) => { g.fillStyle = "#8d8a82"; g.fillRect(0, 0, w, h); const bw = w / 2, bh = h / 4; for (let j = 0; j < 4; j++) for (let i = -1; i < 3; i++) { const x = i * bw + (j % 2 ? bw / 2 : 0), v = 150 + ((i + 2) * 5 + j * 3) % 4 * 7; g.fillStyle = `rgb(${v},${v - 2},${v - 8})`; g.fillRect(x + 3, j * bh + 3, bw - 6, bh - 6); } g.fillStyle = "rgba(60,90,40,0.18)"; for (let k = 0; k < 40; k++) { const x = (k * 37) % w, y = (k * 53) % h; g.fillRect(x, y, 10, 4); } } },
+  stone_dark: { tile: 0.8, px: 256, draw: (g, w, h) => natureTile(g, w, h, 18, "#7e7a70", [["#6e6a62", 0.5], ["#8e8a80", 0.5], ["#6f8a56", 0.3], ["#5e7a4a", 0.25]], 700, [3, 12], false) },
+  revet: { tile: 1.0, px: 256, draw: (g, w, h) => { g.fillStyle = "#5e5c56"; g.fillRect(0, 0, w, h); const bw = w / 2, bh = h / 4; for (let j = 0; j < 4; j++) for (let i = -1; i < 3; i++) { const x = i * bw + (j % 2 ? bw / 2 : 0), v = 104 + ((i + 2) * 5 + j * 3) % 4 * 7; g.fillStyle = `rgb(${v},${v - 2},${v - 8})`; g.fillRect(x + 3, j * bh + 3, bw - 6, bh - 6); } g.fillStyle = "rgba(70,100,40,0.28)"; for (let k = 0; k < 70; k++) { const x = (k * 37) % w, y = (k * 53) % h; g.fillRect(x, y, 14, 5); } g.fillStyle = "rgba(0,0,0,0.22)"; for (let k = 0; k < 50; k++) { const x = (k * 71) % w, y = (k * 29) % h; g.fillRect(x, y, 6, 12); } } },
   sleeper: { tile: 0.6, px: 256, draw: (g, w, h) => { g.fillStyle = "#6b5236"; g.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 3) { const v = 70 + Math.round(30 * Math.abs(Math.sin(y * 0.37) * Math.sin(y * 0.11 + 1))); g.fillStyle = `rgba(${v + 40},${v + 10},${v - 20},0.55)`; g.fillRect(0, y, w, 2); } } },
   deck: { tile: 1.2, px: 256, draw: (g, w, h) => { g.fillStyle = "#4e3326"; g.fillRect(0, 0, w, h); const n = 8, s = w / n; for (let i = 0; i < n; i++) { const v = 70 + ((i * 7) % 5) * 6; g.fillStyle = `rgb(${v + 20},${v - 12},${v - 30})`; g.fillRect(i * s + 2, 0, s - 4, h); for (let y = 0; y < h; y += 5) { g.fillStyle = "rgba(0,0,0,0.12)"; g.fillRect(i * s + 2, y, s - 4, 1); } } } },
   foam: { tile: 2.0, px: 256, alpha: true, draw: (g, w, h) => { g.fillStyle = "#000"; g.fillRect(0, 0, w, h); let seed = 5; const R = () => (seed = (seed * 16807) % 2147483647) / 2147483647; g.fillStyle = "#fff"; for (let k = 0; k < 420; k++) { const x = R() * w, y = R() * h, L = 6 + R() * 26, t = 1 + R() * 3; g.fillRect(x, y, t, L); g.fillRect(x - w, y, t, L); g.fillRect(x, y - h, t, L); } g.fillStyle = "rgba(255,255,255,0.5)"; for (let k = 0; k < 60; k++) g.fillRect(R() * w, R() * h, 2 + R() * 4, 2 + R() * 4); } },
 };
+// a second layer of flecks over a tile (the forest's finer crowns over its blotches)
+function natureTile2(g, w, h, seed, cols, n, size) {
+  let sd = seed * 7919; const R = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  for (let k = 0; k < n; k++) { const [c, a] = cols[Math.floor(R() * cols.length)], x = R() * w, y = R() * h, s = size[0] + R() * (size[1] - size[0]); g.fillStyle = c; g.globalAlpha = a * (0.5 + R() * 0.5); for (const [dx, dy] of [[0, 0], [-w, 0], [w, 0], [0, -h], [0, h]]) { g.beginPath(); g.ellipse(x + dx, y + dy, s, s * 0.8, 0, 0, 7); g.fill(); } }
+  g.globalAlpha = 1;
+}
 // a tile of a natural cover: a ground colour, flecks of a few colours (blades, leaves, pebbles) scattered by a seed
 // (the same tile on every machine), `blades` long thin ones leaning (grass) or round ones (moss, stones)
 function natureTile(g, w, h, seed, base, cols, n, size, blades) {
@@ -485,7 +492,7 @@ export function exportGroup(root, S, pieces, lights, blockers, opts = {}) {
     if (!byChunk.has(key)) { byChunk.set(key, { pos: [], idx: [] }); occByChunk.set(key, { pos: [], idx: [] }); }
     const T = byChunk.get(key);
     for (const b of B.boxes) SG.boxTris(b, T);
-    if (B.surface && B.surface.idx.length) { const v0 = T.pos.length / 3; T.pos.push(...B.surface.pos); for (const i of B.surface.idx) T.idx.push(i + v0); }
+    if (B.surface && B.surface.idx.length) { const v0 = T.pos.length / 3; SG.pushAll(T.pos, B.surface.pos); for (const i of B.surface.idx) T.idx.push(i + v0); }   // the ground's surface is big: no spread
     for (const b of B.occ) SG.boxTris(b, occByChunk.get(key));
   }
   const col = new THREE.Group(); col.name = "collision"; out.add(col);

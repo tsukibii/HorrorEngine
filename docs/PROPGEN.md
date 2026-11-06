@@ -840,6 +840,20 @@ path's edge; `grass` a tuft of blades on a few cards and no wood at all. Recipes
 `azalea_flowering`, `azalea_hedge` (1.8 m along a path), `azalea_low`, `shrub_loose`, `shrub_autumn`, `shrub_real`
 (the leaf set's leaves), `grass_tuft`, `grass_dry`; 1.4k to 3.7k triangles, a tuft 18.
 
+**The blade plants** (the street builder outdoors, docs/STREET_BUILDER.md §7d, DECISIONS 2026-11-06): no wood;
+every card a strip of five quads bent in an arc out of the crown (`BLADES` in tree.py: how many, how long and wide,
+rising at `rise` degrees off the vertical and bending over `bend` more toward the tip, their feet `spread` off the
+middle, a `twist` about their length), narrow at the foot and tapered at the tip so the clump reads as a tuft and not a
+vase, with a spray of blades painted along it (`paint_blades`: each a tapering sinuous wedge drawn as stripes down its
+length, widest first, the variegation of a cultivar: `stripes`), browner at the tip, a feathery plume on a reed; or one
+pinnate frond over the card (the plant family's painter). The kinds: `hakone` (Japanese forest grass, Hakonechloa
+'Aureola': a fountain of arching yellow-green striped blades, 50 cm), `sedge` (Carex 'Evergold': finer, stiffer,
+cream-edged, 40 cm), `flax` (a bronze phormium: stiff striped sword leaves fanning up, 1.3 m), `reed` (susuki: tall
+blades with plumes, 1.5 m), `fern` (a crown of arching fronds, 65 cm). Recipes: `hakone_grass`, `hakone_green` (plain
+green: `leaves.stripes`), `sedge_evergold`, `flax_bronze`, `fern_clump`, `reed_clump`, and `meadow_tuft` (the grass
+tuft grown to 65 cm with more cards, a riverbank's); 130 to 440 triangles each; `height` scales one, `leaves.count`,
+`size`, `stripes`, `blades` over the kind's numbers. They stand in the five nature streets' plants' places.
+
 **Small trees** (the user, 2026-11-02: "smaller thinner trees that don't go as tall as a double floor house, and
 their branches are up at 80-90 degree angles so less chance of clipping into the house; call these trees small trees,
 big trees won't be placed beside houses"): `habit: upright` grows any species as a narrow column: every order's

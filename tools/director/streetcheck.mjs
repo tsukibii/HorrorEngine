@@ -14,7 +14,7 @@ const load = async f => { try { return await import(pathToFileURL(path.join(ROOT
 const SG = await load("tools/director/street-gen.js");
 const SP = await (async () => { try { return await import(pathToFileURL(path.join(ROOT, "tools/director/street-presets.js")).href); } catch (e) { return null; } })();
 const errs = [], warns = [], args = process.argv.slice(2), only = args.includes("--street") ? args[args.indexOf("--street") + 1] : null;
-const BUDGET = { building: 30000, thing: 3000, fence: 6000, road: 6000, river: 40000, ground: 400000 };
+const BUDGET = { building: 30000, thing: 3000, fence: 6000, road: 6000, river: 90000, ground: 400000 };
 // clipping: two triangles of a piece facing the same way, one within NEAR of the other's plane where they overlap by
 // more than a square centimetre (what flickers as the depth buffer picks between them). Faces down on the ground are
 // never seen and don't count.
@@ -332,7 +332,7 @@ const budgetOf = (S, p) => p.type === "ground" ? BUDGET.ground : p.type === "roa
       { id: "path", kind: "path", from: [-10, -40], to: [-10, 40], width: 1.6, surface: "gravel", z: [0, 2], banks: [{ h: 1.5, w: 2 }, null] },
       { id: "steps", kind: "steps", from: [14, -10], to: [14, 10], width: 2.6, tread: "sleepers", z: [0, 3.4], rise: 0.17, banks: [{ h: 1, w: 2, kind: "moss" }] },
       { id: "steps2", kind: "steps", from: [20, -10], to: [20, 10], width: 3, tread: "stone", z: [0, 3.4] }],
-    terrain: { cell: 1, far: { r: 200, cell: 30, cover: "forest" }, cover: "grass", patches: [{ kind: "soil", at: [16, 0], r: 3 }], hills: [{ at: [-250, 0], r: 150, h: 60 }, { ridge: [[0, 200], [200, 260]], r: 80, h: 90 }], noise: { amp: 0.4, scale: 12, seed: 3 } },
+    terrain: { cell: 1, far: { r: 200, cell: 30, cover: "forest" }, cover: "grass", patches: [{ kind: "soil", at: [16, 0], r: 3 }], hills: [{ at: [-250, 0], r: 150, h: 60 }, { ridge: [[0, 200], [200, 260]], r: 80, h: 90 }], noise: { amp: 0.4, scale: 12, seed: 3 }, flats: [{ at: [40, -30], r: 6, z: 3 }, { poly: [[-40, 20], [-30, 20], [-30, 30], [-40, 30]], z: -2 }] },
     things: [{ id: "b1", kind: "bridge", style: "wood", at: [3, 20], turn: 90, w: 14, d: 2.2, deck: 1.5 }, { id: "b2", kind: "bridge", style: "steel", at: [3, -20], turn: 90, w: 14, d: 3.5, deck: 1.8, piers: 1 }, { id: "b3", kind: "bridge", style: "arch", at: [3, 32], turn: 90, w: 16, d: 3, deck: 2 },
       { id: "lamp", kind: "belllamp", at: [15.8, -11] }, { id: "ch", kind: "chochin", at: [22, 11] }, { id: "sb", kind: "signboard", at: [18, 11], text: "テスト" }, { id: "rk", kind: "rock", at: [-5, 10], w: 1.4, d: 1, h: 0.8 }],
     fences: [{ id: "lr", kind: "lograil", from: [21.8, -12], to: [21.8, 12] }, { id: "sw", kind: "stonewall", from: [18, -12], to: [24, -12] }],
@@ -347,6 +347,8 @@ const budgetOf = (S, p) => p.type === "ground" ? BUDGET.ground : p.type === "roa
   near(T.ground(-1.6, 0), 2.4, 0.45, "the ground at the top of the river's concrete bank (3 m over 3.5 m)");
   near(f.z(49) - f.z(51), 0.4 + 0.025 * 2 * 0.5 / 1, 0.06, "the fall: the water 0.4 m lower past it");
   near(T.surface(14, -9.9), 0.17, 0.01, "the first sleeper step's tread"); near(T.surface(14, 9.9), 3.4, 0.01, "the top step's tread");
+  near(T.ground(40, -30), 3, 0.01, "the ground on a round flat (held at its level)"); near(T.ground(-35, 25), -2, 0.01, "the ground on a polygon flat");
+  if (Math.abs(T.ground(40, -30 - 6 - 20) - 3) < 0.3) errs.push(`${L}: the ground 20 m past the flat's edge is still at its level`);
   near(T.relief(-250, 0), 60, 0.5, "the hill's top far off (its relief)"); near(T.relief(100, 230), 90, 0.5, "the ridge's top (its relief)"); near(T.relief(-250, 160), 0, 0.5, "the ground past the hill's foot");
   if (T.cover(16, 0, false) !== "soil" || T.cover(-30, 20, false) !== "grass" || T.cover(-200, 100, true) !== "forest") errs.push(`${L}: the covers: ${T.cover(16, 0, false)}, ${T.cover(-30, 20, false)}, ${T.cover(-200, 100, true)}`);
   const tris = (p, slot) => { const g = p && p.G[slot]; return g ? g.idx.length / 3 : 0; };

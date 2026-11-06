@@ -1,4 +1,4 @@
-// A shot's camera solved from its pins (the street builder, docs/STREET_BUILDER.md §9): where a point of the street is
+// A shot's camera solved from its pins (the street builder, docs/STREET_BUILDER.md §7d): where a point of the street is
 // in the photo (`pins`: px 0..1 across and down, `at` in the street) pins the shot down, and the camera that lands
 // them best (its eye, where it looks, its lens) is found by Nelder-Mead over SG.pinErrors, from the shot as it is.
 //

@@ -1,0 +1,2190 @@
+{
+ "format": 1,
+ "name": "mountain_stream",
+ "about": "A mountain town's stream after the user's fourth nature photo (2026-11-06): grass banks, a stepped concrete revetment with a lane on top, a blue steel bridge, houses, poles and wires, forested mountains round it; its shot 'photo' frames it as the picture does.",
+ "time": "day",
+ "look": {
+  "grass": "#5f9a3a",
+  "mown": "#6aa040",
+  "water": "#5a6c70",
+  "revet": "#7a7870"
+ },
+ "roads": [
+  {
+   "id": "river",
+   "kind": "river",
+   "name": "the stream",
+   "from": [ 2.6, -30 ],
+   "via": [
+    [ 2.8, 4 ],
+    [ 3.4, 9.5 ],
+    [ 2.8, 20.5 ],
+    [ 0.5, 40 ],
+    [ -4, 73 ]
+   ],
+   "to": [ -9, 150 ],
+   "width": [
+    3,
+    3.15,
+    3.5,
+    5,
+    6.2, 7, 7 ],
+   "depth": 0.35,
+   "banks": [
+    {
+     "h": 4.2,
+     "w": 2.6,
+     "flat": 1.7,
+     "kind": "concrete",
+     "course": 0.32
+    },
+    {
+     "h": 1.3,
+     "w": 4.5,
+     "flat": 1.5,
+     "kind": "stone",
+     "rocks": {
+      "every": 1.4,
+      "size": 0.45
+     }
+    }
+   ],
+   "rocks": {
+    "every": 6,
+    "size": 0.4
+   },
+   "rapids": [
+    {
+     "at": 36,
+     "len": 8,
+     "w": 1.6
+    },
+    {
+     "at": 60,
+     "len": 6,
+     "w": 1.4
+    }
+   ]
+  },
+  {
+   "id": "lane",
+   "kind": "path",
+   "name": "the lane on the bank",
+   "from": [ -4, -30 ],
+   "via": [
+    [ -4.5, 9.8 ],
+    [ -6.75, 28 ]
+   ],
+   "to": [ -14, 95 ],
+   "width": 2.2,
+   "surface": "asphalt",
+   "z": 4.2,
+   "banks": [
+    {
+     "h": 0.3,
+     "w": 2,
+     "kind": "grass"
+    },
+    null
+   ]
+  },
+  {
+   "id": "road_r",
+   "name": "the road behind the houses",
+   "from": [ 42, -30 ],
+   "to": [ 34, 130 ],
+   "width": 5,
+   "walks": [ 0, 0 ],
+   "z": 1.6,
+   "centre": "none"
+  },
+  {
+   "id": "road_l",
+   "name": "the road behind the lane",
+   "from": [ -24, -30 ],
+   "to": [ -30, 95 ],
+   "width": 5,
+   "walks": [ 0, 0 ],
+   "z": 4.4,
+   "centre": "none"
+  },
+  {
+   "id": "cross",
+   "name": "the road over the bridge",
+   "from": [ -40, 90 ],
+   "to": [ 40, 90 ],
+   "width": 5,
+   "walks": [ 0, 0 ],
+   "z": 2.6,
+   "centre": "none"
+  }
+ ],
+ "terrain": {
+  "cover": "grass",
+  "cell": 1.5,
+  "far": {
+   "r": 1700,
+   "cell": 60,
+   "cover": "forest"
+  },
+  "haze": 0.7,
+  "blend": 8,
+  "hills": [
+   {
+    "ridge": [
+     [ -260, 420 ],
+     [ 260, 380 ]
+    ],
+    "r": 240,
+    "h": 250
+   },
+   {
+    "at": [ -220, 200 ],
+    "r": 170,
+    "h": 160
+   },
+   {
+    "at": [ 260, 170 ],
+    "r": 170,
+    "h": 180
+   },
+   {
+    "at": [ -120, 720 ],
+    "r": 300,
+    "h": 300
+   },
+   {
+    "at": [ 400, 500 ],
+    "r": 260,
+    "h": 230
+   },
+   {
+    "at": [ 60, 470 ],
+    "r": 110,
+    "h": 120
+   },
+   {
+    "at": [ -80, 390 ],
+    "r": 90,
+    "h": 90
+   },
+   {
+    "at": [ 180, 330 ],
+    "r": 100,
+    "h": 110
+   },
+   {
+    "at": [ -330, 330 ],
+    "r": 150,
+    "h": 220
+   },
+   {
+    "at": [ 330, 300 ],
+    "r": 120,
+    "h": 140
+   }
+  ],
+  "noise": {
+   "amp": 14,
+   "scale": 90,
+   "seed": 9
+  },
+  "flats": [
+   {
+    "poly": [
+     [ 7, 10 ],
+     [ 46, 10 ],
+     [ 46, 100 ],
+     [ 7, 100 ]
+    ],
+    "z": 1.6
+   },
+   {
+    "poly": [
+     [ -3, 100 ],
+     [ 46, 100 ],
+     [ 46, 165 ],
+     [ -3, 165 ]
+    ],
+    "z": 2.6
+   },
+   {
+    "poly": [
+     [ -45, 100 ],
+     [ -12, 100 ],
+     [ -12, 165 ],
+     [ -45, 165 ]
+    ],
+    "z": 4.2
+   },
+   {
+    "poly": [
+     [ -45, -30 ],
+     [ -9, -30 ],
+     [ -9, 100 ],
+     [ -45, 100 ]
+    ],
+    "z": 4.3
+   }
+  ]
+ },
+ "buildings": [
+  {
+   "id": "r1",
+   "at": [ 23, 66 ],
+   "turn": -90,
+   "style": "house",
+   "w": 12,
+   "d": 10,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 848989,
+   "look": {
+    "tiles": "#5a3a2e",
+    "wall": "#b89a8a"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.30000000000000004
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 22,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.8,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.9,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "r2",
+   "at": [ 19, 80 ],
+   "turn": -90,
+   "style": "house",
+   "w": 9,
+   "d": 8,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 493757,
+   "look": {
+    "tiles": "#3a4a6a",
+    "wall": "#e0d8c8"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.2
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 22,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "r3",
+   "at": [ 26, 54 ],
+   "turn": -90,
+   "style": "house",
+   "w": 8,
+   "d": 8,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 434345,
+   "look": {
+    "tiles": "#6a4a30"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.6000000000000001
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 25,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.05,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.15,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "r4",
+   "at": [ 17, 92 ],
+   "turn": -90,
+   "style": "house",
+   "w": 9,
+   "d": 8,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 952407,
+   "look": {
+    "tiles": "#6a4a30"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.25
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 22,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "r5",
+   "at": [ 30, 44 ],
+   "turn": -90,
+   "style": "house",
+   "w": 7,
+   "d": 7,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 646255,
+   "look": {
+    "wall": "#e8e0cf",
+    "roof": "#4a3f3a"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.5
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 24,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "l1",
+   "at": [ -13, 4 ],
+   "turn": 90,
+   "style": "house",
+   "w": 8,
+   "d": 8,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 785770,
+   "look": {
+    "tiles": "#4a6a9a",
+    "wall": "#dcd6c8"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.25
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 26,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "l2",
+   "at": [ -16, 16 ],
+   "turn": 90,
+   "style": "house",
+   "w": 7,
+   "d": 7,
+   "floors": 1,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 488158,
+   "look": {
+    "tiles": "#8a5a40"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.45
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 27,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "l3",
+   "at": [ -14, 26 ],
+   "turn": 90,
+   "style": "house",
+   "w": 9,
+   "d": 8,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 949227,
+   "look": {
+    "wall": "#efe8da",
+    "roof": "#2f3a46"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.45
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 20,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "shed",
+   "style": "kiosk",
+   "at": [ -9, -4 ],
+   "turn": 90,
+   "w": 4,
+   "d": 3,
+   "floors": 1,
+   "gh": 2.6,
+   "fh": 2.6,
+   "seed": 5,
+   "roof": {
+    "kind": "shed",
+    "pitch": 10,
+    "over": 0.3
+   },
+   "look": {
+    "wall": "#8fa0a8",
+    "tiles": "#7a8088"
+   }
+  },
+  {
+   "id": "v0",
+   "at": [ -27, 112 ],
+   "turn": 180,
+   "style": "house",
+   "w": 8,
+   "d": 8,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 812345,
+   "look": {
+    "wall": "#efe8da",
+    "roof": "#2f3a46"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.4
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 28,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "v1",
+   "at": [ -21, 121 ],
+   "turn": 180,
+   "style": "house",
+   "w": 8,
+   "d": 8,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 697393,
+   "look": {
+    "wall": "#bfb7a4",
+    "roof": "#2f3a46"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.35000000000000003
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 28,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "v2",
+   "at": [ -36, 112 ],
+   "turn": 180,
+   "style": "house",
+   "w": 8,
+   "d": 8,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 737917,
+   "look": {
+    "wall": "#e3dccb",
+    "roof": "#2f3a46"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.45
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 24,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.05,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.15,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "v3",
+   "at": [ -27, 121 ],
+   "turn": 180,
+   "style": "house",
+   "w": 8,
+   "d": 8,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 396599,
+   "look": {
+    "wall": "#e8e0cf",
+    "roof": "#4a3f3a"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.55
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 23,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "v4",
+   "at": [ 11, 112 ],
+   "turn": 180,
+   "style": "house",
+   "w": 8,
+   "d": 8,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 303323,
+   "look": {
+    "wall": "#efe8da",
+    "roof": "#4a3f3a"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.30000000000000004
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 26,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.8,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.9,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "v5",
+   "at": [ 15.5, 121 ],
+   "turn": 180,
+   "style": "house",
+   "w": 8,
+   "d": 8,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 348843,
+   "look": {
+    "wall": "#d6cbb5",
+    "roof": "#2f3a46"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.35000000000000003
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 26,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "v6",
+   "at": [ 24, 112 ],
+   "turn": 180,
+   "style": "house",
+   "w": 8,
+   "d": 8,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 831854,
+   "look": {
+    "wall": "#efe8da",
+    "roof": "#4a3f3a"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.6000000000000001
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 24,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "v7",
+   "at": [ 32.5, 121 ],
+   "turn": 180,
+   "style": "house",
+   "w": 8,
+   "d": 8,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 404011,
+   "look": {
+    "wall": "#d6cbb5",
+    "roof": "#3c3f45"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.5
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 21,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "w0",
+   "at": [ -34, 136 ],
+   "turn": 180,
+   "style": "house",
+   "w": 8.5,
+   "d": 8,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 879500,
+   "look": {
+    "wall": "#c9c0ae",
+    "roof": "#3c3f45"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.55
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 24,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "w1",
+   "at": [ -24.5, 143 ],
+   "turn": 180,
+   "style": "house",
+   "w": 8.5,
+   "d": 8,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 765605,
+   "look": {
+    "wall": "#ddd3bf",
+    "roof": "#2f3a46"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.35000000000000003
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 25,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "w2",
+   "at": [ -21, 150 ],
+   "turn": 180,
+   "style": "house",
+   "w": 8.5,
+   "d": 8,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 842851,
+   "look": {
+    "wall": "#e8e0cf",
+    "roof": "#4a3f3a"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.55
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 24,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "w3",
+   "at": [ -42, 136 ],
+   "turn": 180,
+   "style": "house",
+   "w": 8.5,
+   "d": 8,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 598621,
+   "look": {
+    "wall": "#c9c0ae",
+    "roof": "#3c3f45"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.30000000000000004
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 25,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "w4",
+   "at": [ 12, 143 ],
+   "turn": 180,
+   "style": "house",
+   "w": 8.5,
+   "d": 8,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 46654,
+   "look": {
+    "wall": "#d6cbb5",
+    "roof": "#4a3f3a"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.4
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 21,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "w5",
+   "at": [ 13.5, 150 ],
+   "turn": 180,
+   "style": "house",
+   "w": 8.5,
+   "d": 8,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 717392,
+   "look": {
+    "wall": "#ddd3bf",
+    "roof": "#4a3f3a"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.4
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 28,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.8,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.9,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "w6",
+   "at": [ 23, 136 ],
+   "turn": 180,
+   "style": "house",
+   "w": 8.5,
+   "d": 8,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 738594,
+   "look": {
+    "wall": "#e8e0cf",
+    "roof": "#3c3f45"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.55
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 27,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  }
+ ],
+ "fences": [],
+ "things": [
+  {
+   "id": "bridge",
+   "kind": "bridge",
+   "style": "steel",
+   "at": [ -5.5, 90 ],
+   "turn": 0,
+   "w": 30.5,
+   "d": 4.5,
+   "deck": 2.6,
+   "h": 1.05
+  },
+  {
+   "id": "pole1",
+   "kind": "pole",
+   "at": [ -6.2, 5 ],
+   "turn": 0,
+   "h": 11,
+   "to": "pole2"
+  },
+  {
+   "id": "pole2",
+   "kind": "pole",
+   "at": [ -7.5, 30 ],
+   "turn": 0,
+   "h": 11,
+   "to": "pole3"
+  },
+  {
+   "id": "pole3",
+   "kind": "pole",
+   "at": [ -10, 58 ],
+   "turn": 0,
+   "h": 11,
+   "to": "pole4"
+  },
+  {
+   "id": "pole4",
+   "kind": "pole",
+   "at": [ -13, 90 ],
+   "turn": 0,
+   "h": 11
+  },
+  {
+   "id": "pole5",
+   "kind": "pole",
+   "at": [ 14, 20 ],
+   "turn": 0,
+   "h": 11,
+   "to": "pole6"
+  },
+  {
+   "id": "pole6",
+   "kind": "pole",
+   "at": [ 13, 48 ],
+   "turn": 0,
+   "h": 11,
+   "to": "pole7"
+  },
+  {
+   "id": "pole7",
+   "kind": "pole",
+   "at": [ 12, 80 ],
+   "turn": 0,
+   "h": 11
+  },
+  {
+   "id": "tree_l1",
+   "kind": "tree",
+   "at": [ -9, 20 ],
+   "turn": 0,
+   "h": 7,
+   "w": 6,
+   "prop": "props/zelkova_real"
+  },
+  {
+   "id": "tree_l2",
+   "kind": "tree",
+   "at": [ -11, 34 ],
+   "turn": 0,
+   "h": 6,
+   "w": 5,
+   "prop": "props/cherry_real"
+  },
+  {
+   "id": "tree_r1",
+   "kind": "tree",
+   "at": [ 14, 74 ],
+   "turn": 0,
+   "h": 7,
+   "w": 6,
+   "prop": "props/zelkova_real"
+  },
+  {
+   "id": "tree_r2",
+   "kind": "tree",
+   "at": [ 16, 58 ],
+   "turn": 0,
+   "h": 5,
+   "w": 4,
+   "prop": "props/small_hornbeam_real"
+  },
+  {
+   "id": "bush_l",
+   "kind": "plant",
+   "at": [ -8, 14 ],
+   "turn": 0,
+   "w": 2,
+   "h": 2,
+   "scale": 2,
+   "prop": "props/shrub_real"
+  }
+ ],
+ "scatters": [
+  {
+   "id": "meadow_r",
+   "along": "river",
+   "side": -1,
+   "off": [ 1, 7.5 ],
+   "every": 0.4,
+   "kind": "plant",
+   "w": 0.8,
+   "h": 0.7,
+   "size": [ 0.9, 1.6 ],
+   "props": [
+    "props/meadow_tuft",
+    "props/reed_clump",
+    "props/meadow_tuft",
+    "props/meadow_tuft"
+   ],
+   "seed": 3
+  },
+  {
+   "id": "meadow_l",
+   "along": "river",
+   "side": 1,
+   "off": [ 0.2, 1.1 ],
+   "every": 0.9,
+   "kind": "plant",
+   "w": 0.6,
+   "h": 0.5,
+   "size": [ 0.6, 1.1 ],
+   "prop": "props/meadow_tuft",
+   "seed": 4
+  },
+  {
+   "id": "riprap",
+   "at": [ 15, 36 ],
+   "r": 9,
+   "density": 0.22,
+   "kind": "rock",
+   "w": 0.9,
+   "d": 0.7,
+   "h": 0.5,
+   "size": [ 0.7, 1.6 ],
+   "seed": 8
+  },
+  {
+   "id": "lane_grass",
+   "along": "lane",
+   "side": 1,
+   "off": [ 0.1, 1.5 ],
+   "every": 1.1,
+   "kind": "plant",
+   "w": 0.5,
+   "h": 0.4,
+   "size": [ 0.6, 1 ],
+   "prop": "props/grass_tuft",
+   "seed": 5
+  }
+ ],
+ "shots": [
+  {
+   "id": "photo",
+   "name": "the photo (a mountain town's stream)",
+   "eye": [
+    0.731, -8.405, 5.606 ],
+   "look": [
+    0.433, 11.461, 3.316 ],
+   "vfov": 42,
+   "aspect": [ 1600, 1153 ],
+   "ref": "refs/shot_photo.webp",
+   "op": 0.5,
+   "pins": [
+    {
+     "name": "the bridge's left end, the deck",
+     "px": [ 0.31, 0.39 ],
+     "at": [
+      -20.75, 90, 2.6 ]
+    },
+    {
+     "name": "the bridge's right end, the deck",
+     "px": [ 0.6, 0.39 ],
+     "at": [
+      9.75, 90, 2.6 ]
+    },
+    {
+     "name": "the water's left edge near",
+     "px": [ 0.55, 0.92 ],
+     "at": [
+      1.2294996958227677, 4.118933391172903, 0 ]
+    },
+    {
+     "name": "the water's right edge near",
+     "px": [ 0.78, 0.92 ],
+     "at": [
+      4.370500304177231, 3.881066608827093, 0 ]
+    },
+    {
+     "name": "the water's left edge a quarter up",
+     "px": [ 0.56, 0.75 ],
+     "at": [
+      1.651520939586557, 9.574685052784664, 0 ]
+    },
+    {
+     "name": "the water's right edge a quarter up",
+     "px": [ 0.74, 0.75 ],
+     "at": [
+      5.148479060413443, 9.425314947215336, 0 ]
+    },
+    {
+     "name": "the water's left edge at the bend",
+     "px": [ 0.5, 0.6 ],
+     "at": [
+      0.3093739204483592, 20.281875742944752, 0 ]
+    },
+    {
+     "name": "the water's right edge at the bend",
+     "px": [ 0.66, 0.6 ],
+     "at": [
+      5.2906260795516395, 20.71812425705524, 0 ]
+    },
+    {
+     "name": "the water's left edge half way",
+     "px": [ 0.45, 0.5 ],
+     "at": [
+      -2.57471157395497, 39.60443314490455, 0 ]
+    },
+    {
+     "name": "the water's right edge half way",
+     "px": [ 0.57, 0.5 ],
+     "at": [
+      3.57471157395497, 40.39556685509545, 0 ]
+    },
+    {
+     "name": "the lane's edge at the frame's left",
+     "px": [ 0, 0.62 ],
+     "at": [
+      -2.992457403202971, -1.7860523109415858, 4.2 ]
+    },
+    {
+     "name": "the lane's edge further on",
+     "px": [ 0.3, 0.45 ],
+     "at": [
+      -3.4026562356902916, 9.876398055803806, 4.2 ]
+    }
+   ]
+  }
+ ]
+}

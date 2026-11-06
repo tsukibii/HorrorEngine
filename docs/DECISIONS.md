@@ -2,6 +2,25 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-06 (the user: the street builder outdoors, the branch `street-nature`)
+
+- **"For street builder I want a new more nature park update, create a branch called street-nature. And using our
+  standard for realistic trees and foliage and streets build tools that let you build the following styles. Create a
+  plan and then your acceptance criteria is being able to re-create 1:1 framing/shots in our style of each of the
+  photos above, note this includes rivers too, the river doesn't need to be moving or anything (we will later create a
+  shader for it in Godot, not part of this branch though). Try make sure you can do accurate 1:1s so create foliage,
+  fences, stone steps that are needed. Go through it image by image, we are trying to do the 1:1 recreation similar to
+  how we did the first street app one."** Five photos: timber sleeper steps up a garden with forest grass and a bell
+  light; stone steps up a shrine hill with a log rail, moss and ferns; a river town from above with a red arched bridge;
+  a mountain town's stream with a concrete revetment and a blue bridge; a park brook with a timber footbridge.
+- **How it came out** (the same day, docs/STREET_NATURE_PLAN.md, STREET_BUILDER §7d): roads of a kind (path, steps,
+  river) with banks, the ground's hills and covers on a far grid, scatters, rocks, bridges, a bell light, a paper
+  lantern, a notice board, log rails and stone walls, an overcast sky; the prop generator's blade plants (forest grass,
+  sedge, flax, reeds, ferns, PROPGEN §18); each photo matched the Shibuya lane's way, with a shot solver
+  (`shotfit.mjs`: the camera from pins, the scene placed by casting pixels through it); the five streets' shots pinned
+  within STREET's tolerance (0.3 to 1.5% of the frame). The photos stay on the user's machine (`refs/`); the drawings
+  are `docs/street_sheets/2026-11-06_nature_five.jpg`. Not this branch's: the river's shader, clouds.
+
 ## 2026-11-05, latest (the user: the hanging clothes scrapped)
 
 - **"The clothing on the hangers looks bad, just scrap it, all we need is the folded clothing for the suitcase."**

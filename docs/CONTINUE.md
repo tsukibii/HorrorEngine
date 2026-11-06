@@ -19,6 +19,33 @@ bedding, curtains, tables and chairs, the props' kept pictures, real wood in the
 systems that open, hold, move and are read). Read this after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
+## Where it stopped last (2026-11-06, `street-nature`): the street builder outdoors, five photos matched
+
+The user's ask (DECISIONS 2026-11-06): a nature park update for the street builder on the branch `street-nature`,
+with the acceptance that each of five photos is re-created 1:1 in our style (rivers included, no water shader yet).
+Built: docs/STREET_NATURE_PLAN.md, then STREET_BUILDER §7d: roads of a kind (path, steps, river) with banks, the
+ground's hills, ridges, noise, covers and far grid, scatters, the new things and fences, the overcast time, the
+page's palette, inspectors and map for them; the prop generator's blade plants (PROPGEN §18: hakone_grass,
+sedge_evergold, flax_bronze, fern_clump, reed_clump, meadow_tuft, hakone_green); `shotfit.mjs` (a shot's camera from
+its pins; a pixel cast onto the street); the five streets `garden_steps`, `shrine_steps`, `river_town`,
+`mountain_stream`, `park_brook`, each with its shot `photo` pinned (STREET ok: 0.3 to 1.5% of the frame); the
+drawings in `docs/street_sheets/2026-11-06_nature_five.jpg`. The photos are in each street's `refs/` on the cloud
+machine only (git-ignored): paste them into the shots on the user's machine (the page's Photo…) to see the overlays.
+
+Checks run here before the push: STREET (the outdoors fixture and the five streets' pins), STREETPAGE (a river, a path
+and a scatter on the page), GDSTREET on `garden_steps`, `park_brook`, `mountain_stream` and `shibuya_lane` (Godot
+installed by `tools/godot_setup.sh`: a body stands on a river's bed, on a flight's treads, on a path), PROPGEN and THUMBS
+after the tree family's change. GDSTREET found the mountain town's houses in the terrain's noise and on the road behind
+them (LESSONS): a bank now holds its level to its end, and `terrain.flats` (areas held level) carry the town's floor.
+The props were made here with Blender's module
+(`tools/retarget.py setup`); on the user's machine `python tools/propgen.py make hakone_grass sedge_evergold
+flax_bronze fern_clump reed_clump meadow_tuft hakone_green camphor_real zelkova_real cedar_real cherry_real
+small_hornbeam_real shrub_real grass_tuft --library` puts them in the library (the stand-ins show until then).
+
+Worth doing with the user: look at the five overlays with the photos pasted in; the river's shader in Godot (their
+next step, said so); clouds in the sky; a forest cover with more than one tile; the canopy scatter as real trees where
+near; a stair street between houses; GDSTREET on every nature street.
+
 ## Where it stopped last (2026-11-05, later, `sakura-rabbit-research`): suitcases, closets, moveable things, books, the CRT
 
 The user's ask (DECISIONS 2026-11-05, later): note candidate 9 (the CRT) to do; more research on simple games that

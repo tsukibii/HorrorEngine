@@ -1820,3 +1820,27 @@ And a seat pad's bag filled only to a pad's thickness had more cloth than air an
   closed case a level places by its shut size sat 11 cm off its spot; the builder now turns every part to shut before
   centring (`build.run`), and a check reads a part's vertices where its node puts them (a part keeps its vertices
   about its hinge), or the lid "hangs below the floor".
+
+## A photo matched outdoors (2026-11-06, the street builder's nature streets)
+
+The five nature photos (STREET_BUILDER §7d) took several tries each to pin under 2% of the frame.
+
+- **Fit the camera from what can be measured, then place the rest by casting**: pins on a lamp or a plant placed by
+  eye fought the pins on the steps; the fit came under 2% only with pins on the timbers' strap tops and the fence's
+  posts alone, the camera solved from those (`shotfit.mjs`), and everything else cast through it (`--cast`).
+- **A wrong height moves the whole camera**: a fence post taken as 1.1 m when it was 1.3, a bridge's deck measured
+  above the water when its middle stood on the bank, a point pinned exactly on a fall: each pulled the solver metres
+  away or down to the ground. When a fit won't close, question a height before a position.
+- **A layer of flat quads must meet edge to edge**: white water drawn as strips with a new jitter at each station
+  overlapped itself and the foam rings round the rocks (STREET: hundreds of faces in one plane); the jitter is now a
+  function of the station, the rings a layer over the strips and never over each other.
+- **A thing placed by hand follows the placement rules the page's snapping gives**: a utility pole turned along its
+  wires puts its cross-arm along the run and three wires in one line; houses given a smaller front than the house style
+  makes put its parts in the wall's plane. Use the style's own maker (`SP.makeBuilding`) and face poles across the road.
+- **Random angles can coincide**: the stand-in tree's three limbs at random angles twice came out nearly parallel
+  (two cylinders in one plane); they leave a third of a turn apart now.
+- **Noise for the mountains is noise under the houses**: a terrain's `noise` big enough to roughen far hills (14 m)
+  dug 3 m dips beside the stream and under the town, and the relief ramped in from the river's edge, so its bank
+  collapsed into them; GDSTREET found it (a house's roof over the road behind it). A bank now holds to its end, and a
+  town's floor is a `flat` (an area held at a level in place of the relief). Drop a body on every street in Godot
+  (GDSTREET) before calling a match done: the drawing through the shot hid all of it.

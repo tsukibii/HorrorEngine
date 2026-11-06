@@ -82,7 +82,7 @@ roads: [{ ..., "kind": "road|path|steps|river",
 terrain: { "cell": 1 (the ground grid near the street), "far": {"r": 1500, "cell": 40, "cover": "forest"},
            "cover": "grass" (the ground's slot; or [{"kind", "at", "r"}] patches), "drop": the grid's offset,
            "hills": [{"at", "r", "h"}, {"ridge": [[x, y], ...], "r", "h"}], "noise": {"amp", "scale", "seed"} },
-things:  rock {w, d, h, seed}, bridge {kind: wood|steel|arch, w (span), d (width), deck (z), rail, piers},
+things:  rock {w, d, h, seed}, bridge {style: wood|steel|arch, w (span), d (width), deck (above what's under it), h (rail), piers},
          belllamp, chochin, signboard {text}, plant {w, h, prop}  (and tree, as before)
 fences:  lograil, stonewall
 scatters: [{ "id", "prop": "props/<recipe>" (or a list), "kind": "plant|rock|canopy", "along": <road id>,
@@ -111,7 +111,18 @@ by cell. Everything stands on `surface()` as before: a river's water, bed and ba
    meadow, fern, succulent, moss tuft; recipes; made with Blender's module and put in the library (PROPGEN ok).
 6. The five streets, one at a time: the camera measured from the photo, the scene placed through it, pins, the shot
    rendered beside the photo (`python tools/street.py shot <name>`) until it sits on it; STREET holds the pins.
-7. Docs: STREET_BUILDER §9, PROPGEN §18, CLAUDE.md's table, DECISIONS, CONTINUE; the sheets.
+7. Docs: STREET_BUILDER §7d, PROPGEN §18, CLAUDE.md's table, DECISIONS, CONTINUE; the sheets.
+
+## 3b. What came out (the same day)
+
+Built as planned (STREET_BUILDER §7d has the whole of it): the road kinds with banks (`flat` added: a stream's grass
+strip before its revetment), widths that change along a path or river, the terrain, the things and fences, scatters,
+the blade plants, and the five streets. Two tools made the matching tractable: `shotfit.mjs` solves a shot's camera
+from its pins (Nelder-Mead; hold any of x, y, z, yaw, pitch, vfov) and casts a pixel through the shot onto the ground
+or a plane, so a scene is placed by the photo's pixels once the camera is known from what can be measured (a timber's
+strap tops, a fence's posts). Godot's check (GDSTREET) then found the mountain town's houses standing in the terrain's noise and on the road behind them: a bank now holds its level to its end, and `flats` (areas held level) carry a town's floor. Lessons (docs/LESSONS.md): fit the camera from measurable things only, then cast;
+a feature's height assumed wrongly (a bridge's deck over a bank, a post's height) moves the whole camera; a pole turned
+along its wires puts them in one line.
 
 ## 4. Acceptance
 

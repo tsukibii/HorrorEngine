@@ -1,0 +1,7265 @@
+{
+ "format": 1,
+ "name": "river_town",
+ "about": "A river town from above after the user's third nature photo (2026-11-06): a wide river with white water over its rocks between a wooded hillside and the town, a red arched bridge across it, mountains in the haze; its shot 'photo' frames it as the picture does.",
+ "time": "overcast",
+ "look": {
+  "water": "#5f8a8c",
+  "grass": "#4f7a36",
+  "foliage": "#4a7a36"
+ },
+ "roads": [
+  {
+   "id": "river",
+   "kind": "river",
+   "name": "the river",
+   "from": [
+    5,
+    -140
+   ],
+   "via": [
+    [
+     6.07,
+     -4.76
+    ],
+    [
+     9.79,
+     21.5
+    ],
+    [
+     13.17,
+     54.6
+    ],
+    [
+     12.41,
+     104.4
+    ],
+    [
+     11.1,
+     173.8
+    ],
+    [
+     12.57,
+     245.5
+    ],
+    [
+     18,
+     400
+    ]
+   ],
+   "to": [
+    40,
+    720
+   ],
+   "width": [
+    31,
+    31.1,
+    29.7,
+    27.9,
+    46.7,
+    41.1,
+    24.1,
+    30,
+    30
+   ],
+   "depth": 1.5,
+   "banks": [
+    {
+     "h": 3,
+     "w": 3.5,
+     "kind": "stone"
+    },
+    {
+     "h": 4,
+     "w": 2,
+     "kind": "wall"
+    }
+   ],
+   "rocks": {
+    "every": 9,
+    "size": 2.4
+   },
+   "rapids": [
+    {
+     "at": 150,
+     "len": 16,
+     "x": 4,
+     "w": 18
+    },
+    {
+     "at": 182,
+     "len": 12,
+     "x": -5,
+     "w": 16
+    },
+    {
+     "at": 255,
+     "len": 14,
+     "x": 2,
+     "w": 20
+    },
+    {
+     "at": 212,
+     "len": 10,
+     "x": 8,
+     "w": 12
+    },
+    {
+     "at": 120,
+     "len": 8,
+     "x": -6,
+     "w": 10
+    }
+   ]
+  },
+  {
+   "id": "road",
+   "name": "the river road",
+   "from": [
+    42,
+    -80
+   ],
+   "to": [
+    42,
+    440
+   ],
+   "width": 6,
+   "walks": [
+    1.5,
+    1.5
+   ],
+   "z": 4,
+   "centre": "none"
+  },
+  {
+   "id": "back",
+   "name": "the back road",
+   "from": [
+    60,
+    -80
+   ],
+   "to": [
+    60,
+    440
+   ],
+   "width": 5,
+   "walks": [
+    1,
+    1
+   ],
+   "z": 4.5,
+   "centre": "none"
+  }
+ ],
+ "terrain": {
+  "cover": "grass",
+  "cell": 6,
+  "far": {
+   "r": 1800,
+   "cell": 70,
+   "cover": "forest"
+  },
+  "haze": 0.35,
+  "blend": 10,
+  "hills": [
+   {
+    "ridge": [
+     [
+      -62,
+      -200
+     ],
+     [
+      -48,
+      420
+     ]
+    ],
+    "r": 58,
+    "h": 85,
+    "flat": 0.1
+   },
+   {
+    "ridge": [
+     [
+      -220,
+      -100
+     ],
+     [
+      -150,
+      600
+     ]
+    ],
+    "r": 170,
+    "h": 200
+   },
+   {
+    "at": [
+     90,
+     1400
+    ],
+    "r": 560,
+    "h": 300,
+    "flat": 0.1
+   },
+   {
+    "ridge": [
+     [
+      170,
+      250
+     ],
+     [
+      330,
+      800
+     ]
+    ],
+    "r": 150,
+    "h": 190
+   },
+   {
+    "at": [
+     330,
+     150
+    ],
+    "r": 190,
+    "h": 150
+   },
+   {
+    "at": [
+     -260,
+     900
+    ],
+    "r": 320,
+    "h": 240
+   }
+  ],
+  "noise": {
+   "amp": 6,
+   "scale": 60,
+   "seed": 3
+  }
+ },
+ "buildings": [
+  {
+   "id": "h0",
+   "at": [
+    48.00039914483223,
+    -60
+   ],
+   "turn": -92.1108608125294,
+   "style": "house",
+   "w": 10.535871431946696,
+   "d": 10.594104485397276,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 828344,
+   "look": {
+    "tiles": "#3a4a6a",
+    "wall": "#bcb4a2"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.30000000000000004
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 25,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h1",
+   "at": [
+    50.16691850273261,
+    -50.77182785597249
+   ],
+   "turn": -87.60193219482989,
+   "style": "house",
+   "w": 9.622100560284267,
+   "d": 10.096077798444814,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 222033,
+   "look": {
+    "tiles": "#5a3a30",
+    "wall": "#d8d2c4"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.6000000000000001
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 27,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h2",
+   "at": [
+    49.558605951982834,
+    -38.21271093199621
+   ],
+   "turn": -87.35937339875818,
+   "style": "house",
+   "w": 8.379232651730643,
+   "d": 10.17545175793369,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 345782,
+   "look": {
+    "tiles": "#3d4148",
+    "wall": "#d8d2c4"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.30000000000000004
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 22,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h3",
+   "at": [
+    48.01470986009329,
+    -25.5773197489685
+   ],
+   "turn": -90.72368376549505,
+   "style": "house",
+   "w": 8.39260749676852,
+   "d": 10.036132125666427,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 915617,
+   "look": {
+    "tiles": "#3d4148",
+    "wall": "#bcb4a2"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.6000000000000001
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 21,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h4",
+   "at": [
+    48.29178469734815,
+    -16.032047597706338
+   ],
+   "turn": -88.59891111897254,
+   "style": "house",
+   "w": 8.037808785698287,
+   "d": 10.634840820745957,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 960093,
+   "look": {
+    "tiles": "#3a4a6a",
+    "wall": "#d8d2c4"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.30000000000000004
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 28,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.05,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.15,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h5",
+   "at": [
+    50.873367656894665,
+    -5.492699043123375
+   ],
+   "turn": -89.49277485697193,
+   "style": "house",
+   "w": 8.34986707724159,
+   "d": 9.143978132933368,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 584837,
+   "look": {
+    "tiles": "#5a3a30",
+    "wall": "#d8d2c4"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.25
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 23,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h6",
+   "at": [
+    49.42636235497257,
+    7.18826137910982
+   ],
+   "turn": -86.34106660277632,
+   "style": "house",
+   "w": 9.385102676872677,
+   "d": 10.613793466060326,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 490415,
+   "look": {
+    "tiles": "#3d4148",
+    "wall": "#bcb4a2"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.35000000000000003
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 25,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h7",
+   "at": [
+    49.739945532632966,
+    18.241829530914238
+   ],
+   "turn": -87.96115476729402,
+   "style": "house",
+   "w": 10.576934783522475,
+   "d": 10.695271108157593,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 458830,
+   "look": {
+    "tiles": "#3d4148",
+    "wall": "#d8d2c4"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.2
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 27,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h8",
+   "at": [
+    48.598983165621284,
+    28.084859140256825
+   ],
+   "turn": -88.37316107487919,
+   "style": "house",
+   "w": 8.855680439554007,
+   "d": 10.6140983894533,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 573411,
+   "look": {
+    "tiles": "#3a4a6a",
+    "wall": "#d8d2c4"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.30000000000000004
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 20,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h9",
+   "at": [
+    48.70698003038158,
+    37.388122223498364
+   ],
+   "turn": -88.09767833822299,
+   "style": "house",
+   "w": 8.12006355734545,
+   "d": 10.272138869982278,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 771163,
+   "look": {
+    "tiles": "#5a3a30",
+    "wall": "#bcb4a2"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.30000000000000004
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 27,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.8,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.9,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h10",
+   "at": [
+    48.09123367168532,
+    48.06409780777251
+   ],
+   "turn": -93.02847995936334,
+   "style": "house",
+   "w": 8.12649611762096,
+   "d": 10.346832570315726,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 706129,
+   "look": {
+    "tiles": "#3d4148",
+    "wall": "#d8d2c4"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.2
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 23,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h11",
+   "at": [
+    50.4918672211896,
+    57.494116400598614
+   ],
+   "turn": -91.8336359103367,
+   "style": "house",
+   "w": 8.780470614219304,
+   "d": 9.913075455889606,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 880572,
+   "look": {
+    "tiles": "#3d4148",
+    "wall": "#d8d2c4"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.4
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 27,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.8,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.9,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h12",
+   "at": [
+    49.1373077091469,
+    66.6124906738347
+   ],
+   "turn": -89.38488631480601,
+   "style": "house",
+   "w": 10.330890145772551,
+   "d": 9.84711999951262,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 5842,
+   "look": {
+    "tiles": "#3a4a6a",
+    "wall": "#bcb4a2"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.55
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 28,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h13",
+   "at": [
+    49.192810934126754,
+    78.70415429105246
+   ],
+   "turn": -89.80434701768884,
+   "style": "house",
+   "w": 9.627377638885461,
+   "d": 9.223984498634927,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 109261,
+   "look": {
+    "tiles": "#5a3a30",
+    "wall": "#d8d2c4"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.35000000000000003
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 26,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h14",
+   "at": [
+    49.5360618343279,
+    88.71909140549559
+   ],
+   "turn": -89.75666786905222,
+   "style": "house",
+   "w": 10.131171814692753,
+   "d": 10.069793027392492,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 60909,
+   "look": {
+    "tiles": "#3d4148",
+    "wall": "#d8d2c4"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.4
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 26,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h15",
+   "at": [
+    50.686737072508194,
+    97.74191417672762
+   ],
+   "turn": -86.02672627942019,
+   "style": "house",
+   "w": 10.554283169356307,
+   "d": 10.891484914296997,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 735945,
+   "look": {
+    "tiles": "#3d4148",
+    "wall": "#bcb4a2"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.5
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 25,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.05,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.15,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h16",
+   "at": [
+    48.218682312974096,
+    107.11582335602299
+   ],
+   "turn": -92.95030891846415,
+   "style": "house",
+   "w": 8.809252764940846,
+   "d": 10.407480240523572,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 877027,
+   "look": {
+    "tiles": "#3a4a6a",
+    "wall": "#d8d2c4"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.35000000000000003
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 27,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h17",
+   "at": [
+    50.10671431250252,
+    119.15662831540995
+   ],
+   "turn": -89.87346605391869,
+   "style": "house",
+   "w": 8.996011920737107,
+   "d": 10.981567885718107,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 257353,
+   "look": {
+    "tiles": "#5a3a30",
+    "wall": "#d8d2c4"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.5
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 27,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h18",
+   "at": [
+    50.892938800106265,
+    128.57953884386436
+   ],
+   "turn": -92.3402309708019,
+   "style": "house",
+   "w": 10.901777649718234,
+   "d": 10.451305876230498,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 666960,
+   "look": {
+    "tiles": "#3d4148",
+    "wall": "#bcb4a2"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.30000000000000004
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 24,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h19",
+   "at": [
+    49.145059565615405,
+    137.77526245581697
+   ],
+   "turn": -93.95701520515466,
+   "style": "house",
+   "w": 8.917042612059527,
+   "d": 10.15678725631758,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 56626,
+   "look": {
+    "tiles": "#3d4148",
+    "wall": "#d8d2c4"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.30000000000000004
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 28,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h20",
+   "at": [
+    48.40250275395927,
+    147.02209631494344
+   ],
+   "turn": -86.36323788406479,
+   "style": "house",
+   "w": 10.647830946206968,
+   "d": 9.06314193367173,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 640563,
+   "look": {
+    "tiles": "#3a4a6a",
+    "wall": "#d8d2c4"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.2
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 27,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h21",
+   "at": [
+    50.15439535265527,
+    158.4750547564938
+   ],
+   "turn": -88.87282112747097,
+   "style": "house",
+   "w": 9.685741473308644,
+   "d": 9.171294598919943,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 740125,
+   "look": {
+    "tiles": "#5a3a30",
+    "wall": "#bcb4a2"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.5
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 24,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h22",
+   "at": [
+    48.72339875796968,
+    169.37170285143503
+   ],
+   "turn": -88.23219947620863,
+   "style": "house",
+   "w": 9.2837762605789,
+   "d": 9.285074366389344,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 70988,
+   "look": {
+    "tiles": "#3d4148",
+    "wall": "#d8d2c4"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.30000000000000004
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 25,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h23",
+   "at": [
+    48.94402023821325,
+    180.86145466280237
+   ],
+   "turn": -88.27161693306249,
+   "style": "house",
+   "w": 9.850327256997268,
+   "d": 9.30013890205889,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 431357,
+   "look": {
+    "tiles": "#3d4148",
+    "wall": "#d8d2c4"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.30000000000000004
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 22,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.05,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.15,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h24",
+   "at": [
+    49.64050716936612,
+    190.73050847031666
+   ],
+   "turn": -88.65601190303266,
+   "style": "house",
+   "w": 8.152979648743282,
+   "d": 9.085970952215591,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 3766,
+   "look": {
+    "tiles": "#3a4a6a",
+    "wall": "#bcb4a2"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.55
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 21,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h25",
+   "at": [
+    48.2007992361676,
+    201.5580962451911
+   ],
+   "turn": -86.44596728330755,
+   "style": "house",
+   "w": 8.235451043693093,
+   "d": 9.150460899877576,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 457889,
+   "look": {
+    "tiles": "#5a3a30",
+    "wall": "#d8d2c4"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.45
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 25,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.8,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.9,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h26",
+   "at": [
+    48.236523769440375,
+    212.15078473005016
+   ],
+   "turn": -93.32001870838926,
+   "style": "house",
+   "w": 9.667088038133032,
+   "d": 10.165771267919695,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 475151,
+   "look": {
+    "tiles": "#3d4148",
+    "wall": "#d8d2c4"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.30000000000000004
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 22,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h27",
+   "at": [
+    49.77399219329189,
+    223.3861845826666
+   ],
+   "turn": -90.03521958181412,
+   "style": "house",
+   "w": 9.524183168785733,
+   "d": 10.964345187863495,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 458857,
+   "look": {
+    "tiles": "#3d4148",
+    "wall": "#bcb4a2"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.35000000000000003
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 27,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h28",
+   "at": [
+    48.09553911168852,
+    233.88532942621288
+   ],
+   "turn": -92.06439960285294,
+   "style": "house",
+   "w": 9.363453068939714,
+   "d": 10.037153113185035,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 178341,
+   "look": {
+    "tiles": "#3a4a6a",
+    "wall": "#d8d2c4"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.25
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 28,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h29",
+   "at": [
+    50.84710137492377,
+    245.75007602793636
+   ],
+   "turn": -90.71251108344296,
+   "style": "house",
+   "w": 9.809832715340812,
+   "d": 9.572297822019223,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 510606,
+   "look": {
+    "tiles": "#5a3a30",
+    "wall": "#d8d2c4"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.45
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 25,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h30",
+   "at": [
+    50.66555696151478,
+    255.96906538213096
+   ],
+   "turn": -91.29106085621335,
+   "style": "house",
+   "w": 8.427571108298176,
+   "d": 9.791744778301448,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 259445,
+   "look": {
+    "tiles": "#3d4148",
+    "wall": "#bcb4a2"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.25
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 21,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h31",
+   "at": [
+    50.092726978050884,
+    266.6780432070038
+   ],
+   "turn": -92.76714639680793,
+   "style": "house",
+   "w": 8.213940818428034,
+   "d": 10.135556879982145,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 307439,
+   "look": {
+    "tiles": "#3d4148",
+    "wall": "#d8d2c4"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.4
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 22,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h32",
+   "at": [
+    48.639929673466796,
+    278.2870069268565
+   ],
+   "turn": -93.20527478270478,
+   "style": "house",
+   "w": 9.855022655266813,
+   "d": 9.910511379554174,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 360373,
+   "look": {
+    "tiles": "#3a4a6a",
+    "wall": "#d8d2c4"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.4
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 21,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.8,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.9,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h33",
+   "at": [
+    48.98534844815049,
+    289.2165192608799
+   ],
+   "turn": -91.99635182600298,
+   "style": "house",
+   "w": 9.243072637935668,
+   "d": 9.21455052318729,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 634114,
+   "look": {
+    "tiles": "#5a3a30",
+    "wall": "#bcb4a2"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.55
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 27,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h34",
+   "at": [
+    48.69061510483297,
+    302.1178056784523
+   ],
+   "turn": -93.55182152593127,
+   "style": "house",
+   "w": 9.70085512739646,
+   "d": 10.51475076820457,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 390213,
+   "look": {
+    "tiles": "#3d4148",
+    "wall": "#d8d2c4"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.55
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 27,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h35",
+   "at": [
+    48.632290469776976,
+    311.95012810684284
+   ],
+   "turn": -91.58419855571547,
+   "style": "house",
+   "w": 8.89057778375716,
+   "d": 9.627207737708096,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 498746,
+   "look": {
+    "tiles": "#3d4148",
+    "wall": "#d8d2c4"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.2
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 24,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h36",
+   "at": [
+    50.825731380295814,
+    323.9110234267596
+   ],
+   "turn": -88.48717698198146,
+   "style": "house",
+   "w": 10.256173939097753,
+   "d": 10.67692961063093,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 577529,
+   "look": {
+    "tiles": "#3a4a6a",
+    "wall": "#bcb4a2"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.5
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 24,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.05,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.15,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h37",
+   "at": [
+    49.97766759152415,
+    333.222955174848
+   ],
+   "turn": -89.57543800937731,
+   "style": "house",
+   "w": 9.355016148348811,
+   "d": 9.504270198989785,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 413307,
+   "look": {
+    "tiles": "#5a3a30",
+    "wall": "#d8d2c4"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.5
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 22,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h38",
+   "at": [
+    48.03437875585369,
+    344.76142401749337
+   ],
+   "turn": -89.19000097885262,
+   "style": "house",
+   "w": 8.620080658989064,
+   "d": 10.797090419473633,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 408076,
+   "look": {
+    "tiles": "#3d4148",
+    "wall": "#d8d2c4"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.4
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 26,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h39",
+   "at": [
+    50.57449394537811,
+    357.1587842042366
+   ],
+   "turn": -92.61402674699855,
+   "style": "house",
+   "w": 10.269673698241672,
+   "d": 9.937230898503786,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 918688,
+   "look": {
+    "tiles": "#3d4148",
+    "wall": "#bcb4a2"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.5
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 24,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.8,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.9,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h40",
+   "at": [
+    50.138026568637244,
+    366.238206510543
+   ],
+   "turn": -86.49989577033553,
+   "style": "house",
+   "w": 10.344420489084172,
+   "d": 9.450106691778688,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 537801,
+   "look": {
+    "tiles": "#3a4a6a",
+    "wall": "#d8d2c4"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.45
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 26,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.05,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.15,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h41",
+   "at": [
+    50.75512635882717,
+    377.1245439593329
+   ],
+   "turn": -92.9100991780451,
+   "style": "house",
+   "w": 10.23616797348306,
+   "d": 10.516753553187826,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 874727,
+   "look": {
+    "tiles": "#5a3a30",
+    "wall": "#d8d2c4"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.55
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 25,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h42",
+   "at": [
+    50.41254863162178,
+    386.2784808148996
+   ],
+   "turn": -86.7870622206419,
+   "style": "house",
+   "w": 9.441971626804197,
+   "d": 9.811421132093026,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 172044,
+   "look": {
+    "tiles": "#3d4148",
+    "wall": "#bcb4a2"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.30000000000000004
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 21,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.05,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.15,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h43",
+   "at": [
+    48.497759072807504,
+    398.38841498987216
+   ],
+   "turn": -89.10203553135602,
+   "style": "house",
+   "w": 8.033309187289937,
+   "d": 10.21834052131434,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 708868,
+   "look": {
+    "tiles": "#3d4148",
+    "wall": "#d8d2c4"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.4
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 25,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.8,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.9,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h44",
+   "at": [
+    48.187586979096565,
+    408.68669845009543
+   ],
+   "turn": -86.60171286417251,
+   "style": "house",
+   "w": 10.629459444726566,
+   "d": 9.21659167959196,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 479462,
+   "look": {
+    "tiles": "#3a4a6a",
+    "wall": "#d8d2c4"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.35000000000000003
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 27,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "h45",
+   "at": [
+    48.936101126454815,
+    418.19941625427435
+   ],
+   "turn": -91.19564713034576,
+   "style": "house",
+   "w": 9.784505104545739,
+   "d": 9.784861400157615,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 639984,
+   "look": {
+    "tiles": "#5a3a30",
+    "wall": "#bcb4a2"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.5
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 22,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "g0",
+   "at": [
+    70.32003224283459,
+    -40
+   ],
+   "turn": -97.39364893054294,
+   "style": "house",
+   "w": 9.741363654724026,
+   "d": 9.732629964469295,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 581746,
+   "look": {
+    "wall": "#bfb7a4",
+    "roof": "#3c3f45"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.55
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 27,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "g1",
+   "at": [
+    70.91497496651252,
+    -22.064561493724845
+   ],
+   "turn": -86.71912608049769,
+   "style": "house",
+   "w": 10.747194761292633,
+   "d": 9.734902030199255,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 181213,
+   "look": {
+    "wall": "#e3dccb",
+    "roof": "#4a3f3a"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.5
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 23,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.8,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.9,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "g2",
+   "at": [
+    71.91342012300781,
+    -3.5692968170946884
+   ],
+   "turn": -90.49330869246894,
+   "style": "house",
+   "w": 11.84412085117964,
+   "d": 10.426097184152388,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 467470,
+   "look": {
+    "wall": "#ddd3bf",
+    "roof": "#4a3f3a"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.5
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 25,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "g3",
+   "at": [
+    69.5749336525681,
+    11.676825330442206
+   ],
+   "turn": -80.3003376258073,
+   "style": "house",
+   "w": 10.833828458485113,
+   "d": 10.436601172870304,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 509304,
+   "look": {
+    "wall": "#e8e0cf",
+    "roof": "#2f3a46"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.4
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 26,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "g4",
+   "at": [
+    66.06069433319415,
+    28.544562624089686
+   ],
+   "turn": -99.70114001990349,
+   "style": "house",
+   "w": 9.440952822305706,
+   "d": 9.729389661331377,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 391019,
+   "look": {
+    "wall": "#efe8da",
+    "roof": "#2f3a46"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.4
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 20,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.05,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.15,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "g5",
+   "at": [
+    66.60781902848176,
+    45.10067661344105
+   ],
+   "turn": -87.95196102371065,
+   "style": "house",
+   "w": 10.708661174265975,
+   "d": 9.978903925502163,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 476273,
+   "look": {
+    "wall": "#e8e0cf",
+    "roof": "#4a3f3a"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.30000000000000004
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 27,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "g6",
+   "at": [
+    66.30990231517232,
+    60.41550435797102
+   ],
+   "turn": -98.23929632931915,
+   "style": "house",
+   "w": 10.821988969958383,
+   "d": 9.779078727019522,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 684113,
+   "look": {
+    "wall": "#ddd3bf",
+    "roof": "#3c3f45"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.25
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 23,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.8,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.9,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "g7",
+   "at": [
+    70.21632729946465,
+    80.34399940927699
+   ],
+   "turn": -87.29025965895981,
+   "style": "house",
+   "w": 10.890886779358091,
+   "d": 9.756067114302919,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 73620,
+   "look": {
+    "wall": "#efe8da",
+    "roof": "#3c3f45"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.35000000000000003
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 24,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.05,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.15,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "g8",
+   "at": [
+    67.1202861662583,
+    98.00396967679447
+   ],
+   "turn": -97.8346789897581,
+   "style": "house",
+   "w": 10.882532870342272,
+   "d": 10.153301228374849,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 609939,
+   "look": {
+    "wall": "#efe8da",
+    "roof": "#4a3f3a"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.55
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 27,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "g9",
+   "at": [
+    70.97157376770468,
+    116.60520556504149
+   ],
+   "turn": -95.86562062421145,
+   "style": "house",
+   "w": 9.977125331748802,
+   "d": 9.363633801398628,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 523598,
+   "look": {
+    "wall": "#c9c0ae",
+    "roof": "#4a3f3a"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.35000000000000003
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 26,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "g10",
+   "at": [
+    67.78468223092364,
+    135.38510588527893
+   ],
+   "turn": -96.152482887801,
+   "style": "house",
+   "w": 9.783015709269334,
+   "d": 10.430017126458704,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 614778,
+   "look": {
+    "wall": "#c9c0ae",
+    "roof": "#2f3a46"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.45
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 22,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "g11",
+   "at": [
+    71.61206154600347,
+    150.27863905964355
+   ],
+   "turn": -93.60532106533894,
+   "style": "house",
+   "w": 11.305328227256112,
+   "d": 9.434343662315209,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 655084,
+   "look": {
+    "wall": "#c9c0ae",
+    "roof": "#2f3a46"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.4
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 20,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "g12",
+   "at": [
+    66.49218114954056,
+    164.32043665476164
+   ],
+   "turn": -86.37139890639642,
+   "style": "house",
+   "w": 11.384787029300252,
+   "d": 9.743734299551573,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 142368,
+   "look": {
+    "wall": "#bfb7a4",
+    "roof": "#3c3f45"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.5
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 27,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.8,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.9,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "g13",
+   "at": [
+    70.36701254749997,
+    184.14755434456634
+   ],
+   "turn": -85.40038055991772,
+   "style": "house",
+   "w": 11.370589419440641,
+   "d": 10.664248359233257,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 27833,
+   "look": {
+    "wall": "#d6cbb5",
+    "roof": "#2f3a46"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.2
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 20,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.05,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.15,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "g14",
+   "at": [
+    71.01676681871375,
+    201.2140752445972
+   ],
+   "turn": -84.00025959312927,
+   "style": "house",
+   "w": 10.145552741431423,
+   "d": 10.536616825282861,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 231489,
+   "look": {
+    "wall": "#c9c0ae",
+    "roof": "#3c3f45"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.25
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 20,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "g15",
+   "at": [
+    67.0180969112637,
+    220.97102283172825
+   ],
+   "turn": -82.81737463679974,
+   "style": "house",
+   "w": 10.257671896022591,
+   "d": 10.79437096779904,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 108284,
+   "look": {
+    "wall": "#e8e0cf",
+    "roof": "#4a3f3a"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.4
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 28,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "g16",
+   "at": [
+    71.78221363564126,
+    240.94959022707755
+   ],
+   "turn": -81.11808592505665,
+   "style": "house",
+   "w": 10.249478635960015,
+   "d": 10.991623053323302,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 268835,
+   "look": {
+    "wall": "#bfb7a4",
+    "roof": "#3c3f45"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.5
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 21,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "g17",
+   "at": [
+    71.70492001050381,
+    258.5755618412865
+   ],
+   "turn": -91.36461154155649,
+   "style": "house",
+   "w": 11.246073159038122,
+   "d": 9.50105596915868,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 677409,
+   "look": {
+    "wall": "#efe8da",
+    "roof": "#2f3a46"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.45
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 25,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.05,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.15,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "g18",
+   "at": [
+    70.95310271016932,
+    276.3185827910521
+   ],
+   "turn": -90.67583394733995,
+   "style": "house",
+   "w": 10.688827058621136,
+   "d": 9.744249496955542,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 460286,
+   "look": {
+    "wall": "#d6cbb5",
+    "roof": "#4a3f3a"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.5
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 25,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "g19",
+   "at": [
+    71.91192332744222,
+    292.12246878637114
+   ],
+   "turn": -94.34878559519946,
+   "style": "house",
+   "w": 11.994075222403778,
+   "d": 10.614841960191187,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 466671,
+   "look": {
+    "wall": "#e8e0cf",
+    "roof": "#3c3f45"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.35000000000000003
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 27,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "g20",
+   "at": [
+    68.40196127090694,
+    308.0689435862326
+   ],
+   "turn": -94.1230662232838,
+   "style": "house",
+   "w": 11.043897790389089,
+   "d": 10.193442046266721,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 68782,
+   "look": {
+    "wall": "#e8e0cf",
+    "roof": "#2f3a46"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.55
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 21,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.8,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.9,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "g21",
+   "at": [
+    69.55878430956918,
+    322.61035840055456
+   ],
+   "turn": -85.04036356929707,
+   "style": "house",
+   "w": 9.991423623632372,
+   "d": 9.57122825950907,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 13575,
+   "look": {
+    "wall": "#c9c0ae",
+    "roof": "#3c3f45"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.35000000000000003
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 25,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.8,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.9,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "g22",
+   "at": [
+    68.52198346914815,
+    338.5104311073713
+   ],
+   "turn": -90.07944675631795,
+   "style": "house",
+   "w": 11.210754984622241,
+   "d": 9.772684364008105,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 312287,
+   "look": {
+    "wall": "#e8e0cf",
+    "roof": "#3c3f45"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.25
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 24,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.8,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.9,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "g23",
+   "at": [
+    66.3647879531443,
+    354.02874876001323
+   ],
+   "turn": -83.362905012147,
+   "style": "house",
+   "w": 11.94831912682779,
+   "d": 9.933043063121403,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 147471,
+   "look": {
+    "wall": "#d6cbb5",
+    "roof": "#2f3a46"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.5
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 24,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "g24",
+   "at": [
+    70.74882241093964,
+    372.9930344042335
+   ],
+   "turn": -95.13913112466183,
+   "style": "house",
+   "w": 11.493478171291517,
+   "d": 9.59174993102986,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 381551,
+   "look": {
+    "wall": "#d6cbb5",
+    "roof": "#2f3a46"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.45
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 27,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.8,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.9,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "g25",
+   "at": [
+    69.34017671427698,
+    391.6163068607525
+   ],
+   "turn": -92.1665438228131,
+   "style": "house",
+   "w": 11.534695497031647,
+   "d": 9.418145740599439,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 56938,
+   "look": {
+    "wall": "#e3dccb",
+    "roof": "#4a3f3a"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.4
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 27,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "f1",
+   "style": "apartment",
+   "at": [
+    88,
+    180
+   ],
+   "turn": -90,
+   "w": 28,
+   "d": 12,
+   "floors": 5,
+   "gh": 3.1,
+   "fh": 2.9,
+   "seed": 41,
+   "roof": {
+    "kind": "flat",
+    "parapet": 0.8
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "cols": 6
+    }
+   }
+  },
+  {
+   "id": "f2",
+   "style": "apartment",
+   "at": [
+    84,
+    250
+   ],
+   "turn": -90,
+   "w": 22,
+   "d": 12,
+   "floors": 4,
+   "gh": 3.1,
+   "fh": 2.9,
+   "seed": 42,
+   "roof": {
+    "kind": "flat",
+    "parapet": 0.8
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "cols": 6
+    }
+   }
+  },
+  {
+   "id": "f3",
+   "style": "apartment",
+   "at": [
+    100,
+    330
+   ],
+   "turn": -90,
+   "w": 30,
+   "d": 13,
+   "floors": 6,
+   "gh": 3.1,
+   "fh": 2.9,
+   "seed": 43,
+   "roof": {
+    "kind": "flat",
+    "parapet": 0.8
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "cols": 6
+    }
+   }
+  },
+  {
+   "id": "white",
+   "style": "office",
+   "at": [
+    75,
+    300
+   ],
+   "turn": -90,
+   "w": 32,
+   "d": 16,
+   "floors": 4,
+   "gh": 3.4,
+   "fh": 3.2,
+   "seed": 7,
+   "roof": {
+    "kind": "flat",
+    "parapet": 0.9
+   },
+   "faces": {
+    "front": {
+     "win": "band",
+     "cols": 8
+    }
+   },
+   "look": {
+    "wall": "#eef0ee"
+   }
+  },
+  {
+   "id": "tower",
+   "style": "tower",
+   "at": [
+    140,
+    560
+   ],
+   "turn": -90,
+   "w": 22,
+   "d": 20,
+   "floors": 12,
+   "gh": 3.6,
+   "fh": 3.1,
+   "seed": 9,
+   "roof": {
+    "kind": "flat",
+    "parapet": 1
+   },
+   "faces": {
+    "front": {
+     "win": "small",
+     "cols": 7
+    }
+   },
+   "look": {
+    "wall": "#e8e8e6"
+   }
+  },
+  {
+   "id": "far0",
+   "style": "apartment",
+   "at": [
+    -20,
+    640
+   ],
+   "turn": 180,
+   "w": 12,
+   "d": 12,
+   "floors": 3,
+   "gh": 3.1,
+   "fh": 2.9,
+   "seed": 500,
+   "roof": {
+    "kind": "flat",
+    "parapet": 0.8
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "cols": 6
+    }
+   }
+  },
+  {
+   "id": "far1",
+   "style": "apartment",
+   "at": [
+    -6,
+    665
+   ],
+   "turn": 180,
+   "w": 12,
+   "d": 12,
+   "floors": 4,
+   "gh": 3.1,
+   "fh": 2.9,
+   "seed": 501,
+   "roof": {
+    "kind": "flat",
+    "parapet": 0.8
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "cols": 6
+    }
+   }
+  },
+  {
+   "id": "far2",
+   "style": "apartment",
+   "at": [
+    8,
+    690
+   ],
+   "turn": 180,
+   "w": 12,
+   "d": 12,
+   "floors": 5,
+   "gh": 3.1,
+   "fh": 2.9,
+   "seed": 502,
+   "roof": {
+    "kind": "flat",
+    "parapet": 0.8
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "cols": 6
+    }
+   }
+  },
+  {
+   "id": "far3",
+   "style": "apartment",
+   "at": [
+    22,
+    640
+   ],
+   "turn": 180,
+   "w": 12,
+   "d": 12,
+   "floors": 6,
+   "gh": 3.1,
+   "fh": 2.9,
+   "seed": 503,
+   "roof": {
+    "kind": "flat",
+    "parapet": 0.8
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "cols": 6
+    }
+   }
+  },
+  {
+   "id": "far4",
+   "style": "apartment",
+   "at": [
+    36,
+    665
+   ],
+   "turn": 180,
+   "w": 12,
+   "d": 12,
+   "floors": 3,
+   "gh": 3.1,
+   "fh": 2.9,
+   "seed": 504,
+   "roof": {
+    "kind": "flat",
+    "parapet": 0.8
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "cols": 6
+    }
+   }
+  },
+  {
+   "id": "far5",
+   "style": "apartment",
+   "at": [
+    50,
+    690
+   ],
+   "turn": 180,
+   "w": 12,
+   "d": 12,
+   "floors": 4,
+   "gh": 3.1,
+   "fh": 2.9,
+   "seed": 505,
+   "roof": {
+    "kind": "flat",
+    "parapet": 0.8
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "cols": 6
+    }
+   }
+  },
+  {
+   "id": "far6",
+   "style": "apartment",
+   "at": [
+    64,
+    640
+   ],
+   "turn": 180,
+   "w": 12,
+   "d": 12,
+   "floors": 5,
+   "gh": 3.1,
+   "fh": 2.9,
+   "seed": 506,
+   "roof": {
+    "kind": "flat",
+    "parapet": 0.8
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "cols": 6
+    }
+   }
+  },
+  {
+   "id": "far7",
+   "style": "apartment",
+   "at": [
+    78,
+    665
+   ],
+   "turn": 180,
+   "w": 12,
+   "d": 12,
+   "floors": 6,
+   "gh": 3.1,
+   "fh": 2.9,
+   "seed": 507,
+   "roof": {
+    "kind": "flat",
+    "parapet": 0.8
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "cols": 6
+    }
+   }
+  },
+  {
+   "id": "far8",
+   "style": "apartment",
+   "at": [
+    92,
+    690
+   ],
+   "turn": 180,
+   "w": 12,
+   "d": 12,
+   "floors": 3,
+   "gh": 3.1,
+   "fh": 2.9,
+   "seed": 508,
+   "roof": {
+    "kind": "flat",
+    "parapet": 0.8
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "cols": 6
+    }
+   }
+  },
+  {
+   "id": "fh0",
+   "at": [
+    -80,
+    700
+   ],
+   "turn": 180,
+   "style": "house",
+   "w": 9,
+   "d": 9,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 866522,
+   "look": {
+    "wall": "#e8e0cf",
+    "roof": "#2f3a46"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.2
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 23,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "fh1",
+   "at": [
+    -68,
+    715
+   ],
+   "turn": 180,
+   "style": "house",
+   "w": 9,
+   "d": 9,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 240321,
+   "look": {
+    "wall": "#ddd3bf",
+    "roof": "#4a3f3a"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.5
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 22,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "fh2",
+   "at": [
+    -56,
+    700
+   ],
+   "turn": 180,
+   "style": "house",
+   "w": 9,
+   "d": 9,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 389626,
+   "look": {
+    "wall": "#e3dccb",
+    "roof": "#3c3f45"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.5
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 25,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.8,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.9,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "fh3",
+   "at": [
+    -44,
+    715
+   ],
+   "turn": 180,
+   "style": "house",
+   "w": 9,
+   "d": 9,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 33985,
+   "look": {
+    "wall": "#bfb7a4",
+    "roof": "#4a3f3a"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.5
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 20,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.8,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.9,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "fh4",
+   "at": [
+    -32,
+    700
+   ],
+   "turn": 180,
+   "style": "house",
+   "w": 9,
+   "d": 9,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 74112,
+   "look": {
+    "wall": "#efe8da",
+    "roof": "#4a3f3a"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.35000000000000003
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 27,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "fh5",
+   "at": [
+    -20,
+    715
+   ],
+   "turn": 180,
+   "style": "house",
+   "w": 9,
+   "d": 9,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 586643,
+   "look": {
+    "wall": "#efe8da",
+    "roof": "#4a3f3a"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.2
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 22,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "fh6",
+   "at": [
+    -8,
+    700
+   ],
+   "turn": 180,
+   "style": "house",
+   "w": 9,
+   "d": 9,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 473681,
+   "look": {
+    "wall": "#e8e0cf",
+    "roof": "#2f3a46"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.5
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 21,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.8,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.9,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "fh7",
+   "at": [
+    4,
+    715
+   ],
+   "turn": 180,
+   "style": "house",
+   "w": 9,
+   "d": 9,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 312463,
+   "look": {
+    "wall": "#e3dccb",
+    "roof": "#3c3f45"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.5
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 20,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.55,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.65,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "fh8",
+   "at": [
+    16,
+    700
+   ],
+   "turn": 180,
+   "style": "house",
+   "w": 9,
+   "d": 9,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 896623,
+   "look": {
+    "wall": "#c9c0ae",
+    "roof": "#3c3f45"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.30000000000000004
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 28,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "fh9",
+   "at": [
+    28,
+    715
+   ],
+   "turn": 180,
+   "style": "house",
+   "w": 9,
+   "d": 9,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 3599,
+   "look": {
+    "wall": "#d6cbb5",
+    "roof": "#2f3a46"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.25
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "gable",
+    "pitch": 26,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.8,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.9,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "fh10",
+   "at": [
+    40,
+    700
+   ],
+   "turn": 180,
+   "style": "house",
+   "w": 9,
+   "d": 9,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 548231,
+   "look": {
+    "wall": "#bfb7a4",
+    "roof": "#2f3a46"
+   },
+   "faces": {
+    "front": {
+     "win": "punched",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.75,
+     "lit": 0.4
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "hip",
+    "pitch": 26,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -3.05,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 3.15,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  },
+  {
+   "id": "fh11",
+   "at": [
+    52,
+    715
+   ],
+   "turn": 180,
+   "style": "house",
+   "w": 9,
+   "d": 9,
+   "floors": 2,
+   "gh": 2.9,
+   "fh": 2.7,
+   "seed": 325742,
+   "look": {
+    "wall": "#d6cbb5",
+    "roof": "#4a3f3a"
+   },
+   "faces": {
+    "front": {
+     "win": "shutters",
+     "ww": 1.5,
+     "wh": 1.2,
+     "ground": "door",
+     "door": 0.2,
+     "lit": 0.35000000000000003
+    },
+    "left": {
+     "win": "small",
+     "cols": 1
+    },
+    "right": {
+     "win": "small",
+     "cols": 1
+    },
+    "back": {
+     "win": "punched",
+     "cols": 2
+    }
+   },
+   "roof": {
+    "kind": "flat",
+    "pitch": 22,
+    "over": 0.5,
+    "parapet": 0.5
+   },
+   "parts": [
+    {
+     "kind": "canopy",
+     "x": 0,
+     "z": 2.35,
+     "w": 1.6,
+     "h": 0.12,
+     "out": 0.8,
+     "slot": "metal"
+    },
+    {
+     "kind": "block",
+     "x": -2.3,
+     "z": 1.3,
+     "w": 0.28,
+     "h": 0.42,
+     "out": 0.14,
+     "slot": "red"
+    },
+    {
+     "kind": "block",
+     "x": 2.4,
+     "z": 1.4,
+     "w": 0.32,
+     "h": 0.4,
+     "out": 0.12,
+     "slot": "metal"
+    }
+   ]
+  }
+ ],
+ "fences": [],
+ "things": [
+  {
+   "id": "bridge",
+   "kind": "bridge",
+   "style": "arch",
+   "at": [
+    8.7,
+    92.7
+   ],
+   "turn": 0,
+   "w": 53,
+   "d": 4,
+   "deck": 7.5,
+   "h": 1.1,
+   "sag": 3
+  }
+ ],
+ "scatters": [
+  {
+   "id": "canopy",
+   "poly": [
+    [
+     -75,
+     -140
+    ],
+    [
+     -9,
+     -140
+    ],
+    [
+     -5,
+     25
+    ],
+    [
+     -1,
+     60
+    ],
+    [
+     -2,
+     110
+    ],
+    [
+     -2,
+     170
+    ],
+    [
+     3,
+     330
+    ],
+    [
+     -30,
+     440
+    ],
+    [
+     -110,
+     440
+    ]
+   ],
+   "density": 0.034,
+   "kind": "canopy",
+   "w": 7,
+   "h": 6,
+   "size": [
+    0.7,
+    1.4
+   ],
+   "seed": 2
+  },
+  {
+   "id": "edge_trees",
+   "along": "river",
+   "side": 1,
+   "off": [
+    0.5,
+    4
+   ],
+   "every": 9,
+   "kind": "tree",
+   "w": 7,
+   "h": 9,
+   "size": [
+    0.9,
+    1.3
+   ],
+   "prop": "props/camphor_real",
+   "seed": 3
+  },
+  {
+   "id": "town_trees",
+   "along": "river",
+   "side": -1,
+   "off": [
+    3,
+    6
+   ],
+   "every": 11,
+   "kind": "tree",
+   "w": 6,
+   "h": 8,
+   "size": [
+    0.8,
+    1.2
+   ],
+   "prop": "props/zelkova_real",
+   "seed": 4
+  },
+  {
+   "id": "far_canopy",
+   "poly": [
+    [
+     -140,
+     430
+    ],
+    [
+     -30,
+     430
+    ],
+    [
+     -60,
+     640
+    ],
+    [
+     -160,
+     640
+    ]
+   ],
+   "density": 0.006,
+   "kind": "canopy",
+   "w": 9,
+   "h": 7,
+   "size": [
+    0.8,
+    1.3
+   ],
+   "seed": 5
+  }
+ ],
+ "shots": [
+  {
+   "id": "photo",
+   "name": "the photo (a river town from above)",
+   "eye": [
+    -1.589,
+    -79.745,
+    48.89
+   ],
+   "look": [
+    -1.456,
+    -60.347,
+    44.022
+   ],
+   "vfov": 38,
+   "aspect": [
+    1200,
+    673
+   ],
+   "ref": "refs/shot_photo.webp",
+   "op": 0.5,
+   "pins": [
+    {
+     "name": "the bridge's left end, the deck",
+     "px": [
+      0.42,
+      0.485
+     ],
+     "at": [
+      -17.8,
+      92.7,
+      7.5
+     ]
+    },
+    {
+     "name": "the bridge's right end, the deck",
+     "px": [
+      0.665,
+      0.485
+     ],
+     "at": [
+      35.2,
+      92.7,
+      7.5
+     ]
+    },
+    {
+     "name": "the water's left edge at the frame's foot",
+     "px": [
+      0.42,
+      1
+     ],
+     "at": [
+      -9.426833552163096,
+      -3.4958615678034626,
+      0
+     ]
+    },
+    {
+     "name": "the water's right edge at the frame's foot",
+     "px": [
+      0.72,
+      1
+     ],
+     "at": [
+      21.57553046389079,
+      -5.9161093151473825,
+      0
+     ]
+    },
+    {
+     "name": "the water's left edge a fifth up",
+     "px": [
+      0.47,
+      0.8
+     ],
+     "at": [
+      -4.943213164270688,
+      23.35442511659521,
+      0
+     ]
+    },
+    {
+     "name": "the water's right edge a fifth up",
+     "px": [
+      0.69,
+      0.8
+     ],
+     "at": [
+      24.523511308126736,
+      19.64799851443326,
+      0
+     ]
+    },
+    {
+     "name": "the water's left edge a third up",
+     "px": [
+      0.5,
+      0.65
+     ],
+     "at": [
+      -0.7719198297652152,
+      55.21224107942114,
+      0
+     ]
+    },
+    {
+     "name": "the water's right edge a third up",
+     "px": [
+      0.66,
+      0.65
+     ],
+     "at": [
+      27.112014375600467,
+      53.99013879687822,
+      0
+     ]
+    },
+    {
+     "name": "the water's left edge below the bridge",
+     "px": [
+      0.455,
+      0.52
+     ],
+     "at": [
+      -10.859554869840546,
+      103.57205612547254,
+      0
+     ]
+    },
+    {
+     "name": "the water's right edge below the bridge",
+     "px": [
+      0.655,
+      0.52
+     ],
+     "at": [
+      35.694226231244535,
+      104.42858022579803,
+      0
+     ]
+    }
+   ]
+  }
+ ]
+}

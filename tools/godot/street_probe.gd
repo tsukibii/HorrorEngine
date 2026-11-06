@@ -75,6 +75,8 @@ func _initialize():
 		var back := Vector2(b.global_position.x - p1.x, b.global_position.z - p1.z).length()
 		print("GDPROBE bump ", w.name, " ", went, " ", back, " ", floor0, " ", p0.y - 0.85)
 		b.queue_free()
+	await physics_frame                                       # the last body's queue_free lands before the rays (a street with no
+	await physics_frame                                       # buildings casts them right after its drops: the capsule stood in the way)
 	var space = s.get_world_3d().direct_space_state
 	for r in expect.get("rays", []):
 		var p = Vector3(r.at[0], r.at[1], r.at[2])

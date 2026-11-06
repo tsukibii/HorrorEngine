@@ -57,7 +57,8 @@ const SG = await import(pathToFileURL(process.argv[1] + "/tools/director/street-
 const S = JSON.parse(fs.readFileSync(process.argv[2], "utf8")), T = SG.terrain(S), out = { rays: [], lamps: 0, insides: [], doors: [] };
 const g3 = (x, y, z) => [x, z, -y];
 for (const r of (S.roads || []).slice(0, 3)) { const f = SG.roadPath(r), s = f.L / 2, c = f.at(s, 0), w = f.at(s, -(f.W / 2 + f.walks[1] / 2));
-  out.rays.push({ name: r.id + ":road", at: g3(c[0], c[1], c[2] + 30), want: c[2] + 0.004 });
+  const top = f.kind === "steps" ? f.stepZ(s) : f.kind === "river" ? c[2] - f.depth : c[2];   // a flight: the tread's top there, not the ramp's; a river: its bed
+  out.rays.push({ name: r.id + ":road", at: g3(c[0], c[1], top + 30), want: top + 0.004 });
   if (f.walks[1] > 0.3) out.rays.push({ name: r.id + ":walk", at: g3(w[0], w[1], w[2] + 30), want: w[2] + f.kerb }); }
 for (const b of (S.buildings || []).filter(b => !b.inside).slice(0, 3)) { const foot = SG.footing(b, T), h = SG.buildingHeight(b); out.rays.push({ name: b.id + ":roof", at: g3(b.at[0], b.at[1], foot.z + h + 40), want: foot.z + h, tol: 0.2 }); }
 // an inside's door: a ray from a metre outside it, level, toward it, must go in (the shell's hole is open); a walkway: to stand on
@@ -79,7 +80,8 @@ for (const b of (S.buildings || []).filter(b => b.inside && (b.inside.rooms || [
 // and floor so I don't fall through")
 out.walks = []; out.bumps = [];
 for (const r of (S.roads || []).slice(0, 2)) { const f = SG.roadPath(r), s = f.L / 2, c = f.at(s, 0), w = f.at(s, -(f.W / 2 + f.walks[1] / 2));
-  out.walks.push({ name: r.id + ":road", at: g3(c[0], c[1], c[2] + 1.2), want: c[2] + 0.004 });
+  const top = f.kind === "steps" ? f.stepZ(s) : f.kind === "river" ? c[2] - f.depth : c[2];
+  out.walks.push({ name: r.id + ":road", at: g3(c[0], c[1], top + 1.2), want: top + 0.004 });
   if (f.walks[1] > 0.7) out.walks.push({ name: r.id + ":walk", at: g3(w[0], w[1], w[2] + 1.2), want: w[2] + f.kerb }); }
 const pip = (x, y, P) => { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) if ((P[i][1] > y) !== (P[j][1] > y) && x < (P[j][0] - P[i][0]) * (y - P[i][1]) / (P[j][1] - P[i][1]) + P[i][0]) c = !c; return c; };
 const solid = (S.buildings || []).filter(b => !b.inside), feet = solid.map(b => SG.footprint(b));

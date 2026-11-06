@@ -1187,8 +1187,13 @@ function terrainSection(S) {
   const TR = S.terrain = S.terrain && typeof S.terrain === "object" ? S.terrain : {};
   TR.far = TR.far && typeof TR.far === "object" ? TR.far : { r: 0, cell: 40, cover: "forest" };
   TR.noise = TR.noise && typeof TR.noise === "object" ? TR.noise : { amp: 0, scale: 20, seed: 1 };
-  TR.hills = Array.isArray(TR.hills) ? TR.hills : []; TR.patches = Array.isArray(TR.patches) ? TR.patches : [];
-  const hills = el("div", { class: "list" }), patches = el("div", { class: "list" });
+  TR.hills = Array.isArray(TR.hills) ? TR.hills : []; TR.patches = Array.isArray(TR.patches) ? TR.patches : []; TR.flats = Array.isArray(TR.flats) ? TR.flats : [];
+  const hills = el("div", { class: "list" }), patches = el("div", { class: "list" }), flats = el("div", { class: "list" });
+  TR.flats.forEach((f, i) => {                                       // an area held level (§7d): a circle, or a polygon drawn in the file
+    const gone = el("button", { on: { click: () => { pushUndo(); TR.flats.splice(i, 1); changed(); } } }, "✕");
+    if (Array.isArray(f.poly)) flats.append(el("div", { class: "row" }, `a polygon of ${f.poly.length} points`, "at level", num(f, "z", { def: 0, step: 0.1, unit: "m" }), gone));
+    else { f.at = Array.isArray(f.at) ? f.at : [0, 0]; flats.append(el("div", { class: "row" }, "flat at", num(f.at, 0, { step: 1 }), num(f.at, 1, { step: 1 }), "across", num(f, "r", { def: 10, step: 1, min: 0.5, unit: "m" }), "at level", num(f, "z", { def: 0, step: 0.1, unit: "m" }), gone)); }
+  });
   TR.hills.forEach((h, i) => {
     if (Array.isArray(h.ridge)) { h.ridge = h.ridge.map(q => [+q[0] || 0, +q[1] || 0]); hills.append(el("div", { class: "row" }, "ridge from", num(h.ridge[0], 0, { step: 5 }), num(h.ridge[0], 1, { step: 5 }), "to", num(h.ridge[h.ridge.length - 1], 0, { step: 5 }), num(h.ridge[h.ridge.length - 1], 1, { step: 5 }), "wide", num(h, "r", { def: 60, step: 5, unit: "m" }), "high", num(h, "h", { def: 40, step: 5, unit: "m" }), el("button", { on: { click: () => { pushUndo(); TR.hills.splice(i, 1); changed(); } } }, "✕"))); }
     else { h.at = Array.isArray(h.at) ? h.at : [0, 0]; hills.append(el("div", { class: "row" }, "hill at", num(h.at, 0, { step: 5 }), num(h.at, 1, { step: 5 }), "wide", num(h, "r", { def: 40, step: 5, unit: "m" }), "high", num(h, "h", { def: 10, step: 1, unit: "m" }), "flat top", num(h, "flat", { def: 0, step: 0.1, min: 0, max: 0.9 }), el("button", { on: { click: () => { pushUndo(); TR.hills.splice(i, 1); changed(); } } }, "✕"))); }
@@ -1202,6 +1207,8 @@ function terrainSection(S) {
     field("roughness", el("div", { class: "row" }, num(TR.noise, "amp", { def: 0, step: 0.1, min: 0, unit: "m" }), "every", num(TR.noise, "scale", { def: 20, step: 1, min: 1, unit: "m" }), "seed", num(TR.noise, "seed", { def: 1, step: 1, int: true }))),
     el("div", { class: "hint" }, "Hills and ridges rise where the roads let go (6 m from any); set a far ground to draw them beyond the street."),
     hills, el("div", { class: "chips" }, el("button", { on: { click: () => { pushUndo(); TR.hills.push({ at: [r1(c.cx + 60), r1(c.cy)], r: 60, h: 20 }); changed(); } } }, "+ hill"), el("button", { on: { click: () => { pushUndo(); TR.hills.push({ ridge: [[r1(c.cx - 80), r1(c.cy + 120)], [r1(c.cx + 80), r1(c.cy + 140)]], r: 60, h: 40 }); changed(); } } }, "+ ridge")),
+    el("div", { class: "hint", style: "margin-top:6px" }, "Flats: areas held level in place of the hills and roughness (a town's floor, a field, a car park); the roads through them keep their heights:"), flats,
+    el("button", { on: { click: () => { pushUndo(); TR.flats.push({ at: [r1(c.cx), r1(c.cy)], r: 20, z: 0 }); changed(); } } }, "+ flat"),
     el("div", { class: "hint", style: "margin-top:6px" }, "Patches of another cover (a lawn, bare soil, moss):"), patches, el("button", { on: { click: () => { pushUndo(); TR.patches.push({ kind: "grass", at: [r1(c.cx), r1(c.cy)], r: 5 }); changed(); } } }, "+ patch"));
 }
 function addScatter() {

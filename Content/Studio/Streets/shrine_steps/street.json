@@ -1,0 +1,667 @@
+{
+ "format": 1,
+ "name": "shrine_steps",
+ "about": "A long flight of mossy stone steps up a shrine's hill after the user's second nature photo (2026-11-06): ferns on the moss banks, a log rail coming down the right side, a dry wall of mossy stones at its foot, a paper lantern and a notice board at the top; its shot 'photo' frames it as the picture does.",
+ "time": "overcast",
+ "look": {
+  "moss": "#8aa64c",
+  "stone": "#dcd8c8",
+  "stone_dark": "#b8b4a8"
+ },
+ "roads": [
+  {
+   "id": "steps",
+   "kind": "steps",
+   "name": "the lower flight",
+   "from": [
+    -2.4,
+    0
+   ],
+   "to": [
+    0,
+    8
+   ],
+   "width": 3,
+   "tread": "stone",
+   "rise": 0.15,
+   "z": [
+    0,
+    2.4
+   ],
+   "banks": [
+    {
+     "h": 2.6,
+     "w": 3.2,
+     "kind": "moss"
+    },
+    {
+     "h": 1,
+     "w": 2.2,
+     "kind": "moss"
+    }
+   ]
+  },
+  {
+   "id": "steps2",
+   "kind": "steps",
+   "name": "the upper flight",
+   "from": [
+    0,
+    8
+   ],
+   "to": [
+    0,
+    30
+   ],
+   "width": 3,
+   "tread": "stone",
+   "rise": 0.18,
+   "z": [
+    2.4,
+    12.3
+   ],
+   "banks": [
+    {
+     "h": 3,
+     "w": 3.5,
+     "kind": "moss"
+    },
+    {
+     "h": 1.6,
+     "w": 2.6,
+     "kind": "moss"
+    }
+   ]
+  },
+  {
+   "id": "landing",
+   "kind": "path",
+   "name": "the landing",
+   "from": [
+    0,
+    30
+   ],
+   "to": [
+    0,
+    38
+   ],
+   "width": 4,
+   "surface": "gravel",
+   "z": [
+    12.3,
+    12.5
+   ],
+   "banks": [
+    {
+     "h": 1.5,
+     "w": 3,
+     "kind": "moss"
+    },
+    {
+     "h": 0.6,
+     "w": 3,
+     "kind": "moss"
+    }
+   ]
+  },
+  {
+   "id": "foot",
+   "kind": "path",
+   "name": "the path below",
+   "from": [
+    -2.4,
+    0
+   ],
+   "to": [
+    -5.8,
+    -8.3
+   ],
+   "width": 3,
+   "surface": "soil",
+   "z": [
+    0,
+    -1.7
+   ],
+   "banks": [
+    {
+     "h": 1.2,
+     "w": 3,
+     "kind": "moss"
+    },
+    {
+     "h": 0.4,
+     "w": 3,
+     "kind": "moss"
+    }
+   ]
+  }
+ ],
+ "terrain": {
+  "cover": "moss",
+  "cell": 0.5,
+  "blend": 4,
+  "hills": [
+   {
+    "at": [
+     -16,
+     10
+    ],
+    "r": 24,
+    "h": 9
+   },
+   {
+    "at": [
+     12,
+     24
+    ],
+    "r": 20,
+    "h": 5
+   },
+   {
+    "at": [
+     8,
+     -4
+    ],
+    "r": 10,
+    "h": 1.2
+   }
+  ],
+  "noise": {
+   "amp": 0.4,
+   "scale": 1.6,
+   "seed": 11
+  },
+  "haze": 0.7
+ },
+ "buildings": [],
+ "fences": [
+  {
+   "id": "rail",
+   "kind": "lograil",
+   "from": [
+    -1.298499771995676,
+    -1.374480719292352
+   ],
+   "to": [
+    1.3888481135706694,
+    7.583345565928799
+   ],
+   "h": 1.3,
+   "step": 1.8
+  },
+  {
+   "id": "rail_up",
+   "kind": "lograil",
+   "from": [
+    1.3888481135706694,
+    7.583345565928799
+   ],
+   "to": [
+    1.45,
+    30.2
+   ],
+   "h": 1.3,
+   "step": 1.8
+  },
+  {
+   "id": "rail_top",
+   "kind": "lograil",
+   "from": [
+    1.45,
+    30.2
+   ],
+   "to": [
+    5.95,
+    30.2
+   ],
+   "h": 1.3,
+   "step": 1.8
+  },
+  {
+   "id": "wall",
+   "kind": "stonewall",
+   "from": [
+    -0.6759126866019275,
+    -3.127302821247059
+   ],
+   "to": [
+    2.442457027313936,
+    7.267262891805819
+   ],
+   "h": 0.75,
+   "slot": "stone",
+   "look": {
+    "stone": "#bcb8ac"
+   }
+  }
+ ],
+ "things": [
+  {
+   "id": "lantern",
+   "kind": "chochin",
+   "at": [
+    1.6,
+    32.2
+   ],
+   "turn": 180,
+   "h": 2.6
+  },
+  {
+   "id": "board",
+   "kind": "signboard",
+   "at": [
+    0.2,
+    33
+   ],
+   "turn": 0,
+   "w": 1.3,
+   "h": 1.9,
+   "text": "御由緒"
+  },
+  {
+   "id": "tree_tr",
+   "kind": "tree",
+   "at": [
+    4.5,
+    33
+   ],
+   "turn": 0,
+   "h": 9,
+   "w": 8,
+   "prop": "props/camphor_real"
+  },
+  {
+   "id": "tree_r",
+   "kind": "tree",
+   "at": [
+    5.5,
+    8
+   ],
+   "turn": 0,
+   "h": 6,
+   "w": 5,
+   "prop": "props/camphor_real"
+  },
+  {
+   "id": "shrub_r",
+   "kind": "plant",
+   "at": [
+    3.3,
+    4.5
+   ],
+   "turn": 0,
+   "w": 2,
+   "h": 2,
+   "scale": 2.4,
+   "prop": "props/shrub_real"
+  },
+  {
+   "id": "tree_r0",
+   "kind": "tree",
+   "at": [
+    4.6,
+    7.5
+   ],
+   "turn": 0,
+   "h": 6,
+   "w": 5,
+   "prop": "props/camphor_real"
+  },
+  {
+   "id": "shrub_r2",
+   "kind": "plant",
+   "at": [
+    3,
+    10.5
+   ],
+   "turn": 0,
+   "w": 2,
+   "h": 2,
+   "scale": 2,
+   "prop": "props/shrub_real"
+  },
+  {
+   "id": "shrub_l",
+   "kind": "plant",
+   "at": [
+    -3.2,
+    7
+   ],
+   "turn": 0,
+   "w": 2,
+   "h": 2,
+   "scale": 2.6,
+   "prop": "props/shrub_real"
+  },
+  {
+   "id": "shrub_l2",
+   "kind": "plant",
+   "at": [
+    -2.6,
+    2.5
+   ],
+   "turn": 0,
+   "w": 2,
+   "h": 2,
+   "scale": 2,
+   "prop": "props/shrub_real"
+  },
+  {
+   "id": "tree_l",
+   "kind": "tree",
+   "at": [
+    -5,
+    9
+   ],
+   "turn": 0,
+   "h": 8,
+   "w": 7,
+   "prop": "props/cedar_real"
+  },
+  {
+   "id": "tree_l4",
+   "kind": "tree",
+   "at": [
+    -4.5,
+    14.5
+   ],
+   "turn": 0,
+   "h": 10,
+   "w": 9,
+   "prop": "props/camphor_real"
+  },
+  {
+   "id": "tree_l5",
+   "kind": "tree",
+   "at": [
+    -3.5,
+    20
+   ],
+   "turn": 0,
+   "h": 9,
+   "w": 8,
+   "prop": "props/zelkova_real"
+  },
+  {
+   "id": "tree_l2",
+   "kind": "tree",
+   "at": [
+    -4.5,
+    3
+   ],
+   "turn": 0,
+   "h": 7,
+   "w": 6,
+   "prop": "props/camphor_real"
+  },
+  {
+   "id": "tree_l3",
+   "kind": "tree",
+   "at": [
+    -6,
+    15
+   ],
+   "turn": 0,
+   "h": 9,
+   "w": 8,
+   "prop": "props/zelkova_real"
+  }
+ ],
+ "scatters": [
+  {
+   "id": "ferns_up",
+   "along": "steps2",
+   "side": 1,
+   "off": [
+    0.1,
+    1.8
+   ],
+   "every": 0.5,
+   "kind": "plant",
+   "w": 0.6,
+   "h": 0.4,
+   "size": [
+    1,
+    1.6
+   ],
+   "prop": "props/fern_clump",
+   "seed": 8
+  },
+  {
+   "id": "ferns_r",
+   "along": "steps2",
+   "side": -1,
+   "off": [
+    0.3,
+    1.5
+   ],
+   "every": 1.2,
+   "kind": "plant",
+   "w": 0.6,
+   "h": 0.4,
+   "size": [
+    0.8,
+    1.3
+   ],
+   "prop": "props/fern_clump",
+   "seed": 9
+  },
+  {
+   "id": "ferns",
+   "along": "steps",
+   "side": 1,
+   "off": [
+    0.1,
+    1.6
+   ],
+   "every": 0.45,
+   "kind": "plant",
+   "w": 0.6,
+   "h": 0.4,
+   "size": [
+    1.1,
+    1.8
+   ],
+   "prop": "props/fern_clump",
+   "seed": 3
+  },
+  {
+   "id": "ferns2",
+   "along": "steps",
+   "side": 1,
+   "off": [
+    1.6,
+    3.2
+   ],
+   "every": 0.8,
+   "kind": "plant",
+   "w": 0.6,
+   "h": 0.4,
+   "size": [
+    0.8,
+    1.3
+   ],
+   "prop": "props/fern_clump",
+   "seed": 7
+  },
+  {
+   "id": "ferns_r",
+   "along": "steps",
+   "side": -1,
+   "off": [
+    0.5,
+    1.8
+   ],
+   "every": 1.4,
+   "from": 4,
+   "kind": "plant",
+   "w": 0.6,
+   "h": 0.4,
+   "size": [
+    0.5,
+    0.9
+   ],
+   "prop": "props/fern_clump",
+   "seed": 4
+  },
+  {
+   "id": "stones",
+   "at": [
+    3.2,
+    -2
+   ],
+   "r": 1.4,
+   "density": 0.9,
+   "kind": "rock",
+   "w": 0.45,
+   "d": 0.35,
+   "h": 0.22,
+   "size": [
+    0.6,
+    1.3
+   ],
+   "slot": "stone",
+   "seed": 5
+  },
+  {
+   "id": "tufts",
+   "along": "foot",
+   "side": 0,
+   "off": [
+    0.1,
+    1.2
+   ],
+   "every": 0.9,
+   "kind": "plant",
+   "w": 0.4,
+   "h": 0.3,
+   "size": [
+    0.6,
+    1
+   ],
+   "prop": "props/grass_tuft",
+   "seed": 6
+  }
+ ],
+ "shots": [
+  {
+   "id": "photo",
+   "name": "the photo (stone steps up a shrine hill)",
+   "eye": [
+    -0.209,
+    -9.336,
+    0.727
+   ],
+   "look": [
+    -0.13,
+    10.478,
+    3.45
+   ],
+   "vfov": 24,
+   "aspect": [
+    601,
+    900
+   ],
+   "ref": "refs/shot_photo.webp",
+   "op": 0.5,
+   "pins": [
+    {
+     "name": "the 2nd post's foot",
+     "px": [
+      0.285,
+      0.925
+     ],
+     "at": [
+      -0.7610301948824068,
+      0.4170845377518786,
+      0.3
+     ]
+    },
+    {
+     "name": "the 2nd post's top",
+     "px": [
+      0.285,
+      0.595
+     ],
+     "at": [
+      -0.7610301948824068,
+      0.4170845377518786,
+      1.6
+     ]
+    },
+    {
+     "name": "the 3rd post's foot",
+     "px": [
+      0.478,
+      0.8
+     ],
+     "at": [
+      -0.2235606177691376,
+      2.2086497947961092,
+      0.8999999999999999
+     ]
+    },
+    {
+     "name": "the 3rd post's top",
+     "px": [
+      0.478,
+      0.535
+     ],
+     "at": [
+      -0.2235606177691376,
+      2.2086497947961092,
+      2.2
+     ]
+    },
+    {
+     "name": "the 4th post's foot",
+     "px": [
+      0.622,
+      0.705
+     ],
+     "at": [
+      0.31390895934413154,
+      4.00021505184034,
+      1.3499999999999999
+     ]
+    },
+    {
+     "name": "the 4th post's top",
+     "px": [
+      0.622,
+      0.49
+     ],
+     "at": [
+      0.31390895934413154,
+      4.00021505184034,
+      2.65
+     ]
+    },
+    {
+     "name": "the 5th post's top",
+     "px": [
+      0.745,
+      0.435
+     ],
+     "at": [
+      0.8513785364574007,
+      5.7917803088845705,
+      3.25
+     ]
+    },
+    {
+     "name": "the flight's top, the landing's edge, middle",
+     "px": [
+      0.5,
+      0.14
+     ],
+     "at": [
+      0,
+      30,
+      12.3
+     ]
+    }
+   ]
+  }
+ ]
+}
