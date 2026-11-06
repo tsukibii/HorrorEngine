@@ -585,18 +585,22 @@ const png = rgb => {                    // a 4x4 PNG of one colour (a scratch ma
       fail("the floors: " + JSON.stringify(fl2));
     await page.evaluate(() => { window.B.dirty = false; });
 
-    // stairs from points (KIT.md §11b): the Stairs tool in the house's stairs room, its own flight turned off: the foot
+    // stairs from points (KIT.md §11b): the Stairs tool in a stair hall added east of the pantry (the house's own stairs
+    // room is 0.91 m wide: a straight flight's room, where a turn can't fit a width each side of the way): the foot
     // clicked, a turn, the top double-clicked (on the floor above); a `stairs` prop in the room, laid out as a flight,
-    // winders and a flight with the plan's collider steps and cells, the checks passing; its width changed on the
+    // three winders and a flight with the plan's collider steps and cells, the checks passing; its width changed on the
     // inspector's words; removed
     await page.evaluate(() => { window.B.dirty = false; window.builder.openPreset("house"); });
     await page.waitForFunction(() => window.B.plan && window.B.model.floors.length === 2 && window.B.model.rooms.some(r => r.kind === "stairs"), null, { timeout: 120000 });
-    await page.evaluate(() => { const B = window.B, st = B.model.rooms.find(r => r.kind === "stairs"); st.fixtures = false; B.tool = "stairs";
-      window.builder.stairsPoint(st.x + st.w / 2, st.y + 0.5, false); window.builder.stairsPoint(st.x + st.w / 2, st.y + st.d - 0.45, false); window.builder.stairsPoint(st.x + 0.1, st.y + st.d - 0.45, true); });
-    await page.waitForFunction(() => window.B.plan && window.B.plan.pieces.some(p => /_stairs_1__w\d+__tread\d+$/.test(p.id)), null, { timeout: 60000 });
+    await page.evaluate(() => { const B = window.B; window.builder.addRoom("stairs"); const r = B.model.rooms[B.model.rooms.length - 1];
+      r.id = "stairhall"; r.name = "Stair hall"; r.x = 9.1; r.y = 4.55; r.w = 2.73; r.d = 3.64; r.fixtures = false; B.sel = { room: r.id }; window.builder.changed();
+      window.builder.addOpening(9.1, 6.37, "door"); });                                                  // through the pantry's east wall
+    await page.waitForFunction(() => window.B.plan && window.B.plan.pieces.some(p => p.id.startsWith("stairhall")) && window.B.model.ops.some(o => o.id.includes("stairhall")), null, { timeout: 60000 });
+    await page.evaluate(() => { const B = window.B, st = B.model.rooms.find(r => r.id === "stairhall"); B.tool = "stairs";
+      window.builder.stairsPoint(st.x + 0.6, st.y + 0.5, false); window.builder.stairsPoint(st.x + 0.6, st.y + st.d - 0.6, false); window.builder.stairsPoint(st.x + st.w - 0.3, st.y + st.d - 0.6, true); });
+    await page.waitForFunction(() => window.B.plan && window.B.plan.pieces.some(p => /^stairhall_stairs_1__w\d+__tread\d+$/.test(p.id)), null, { timeout: 60000 });
     const sp = await page.evaluate(async () => {
-      const B = window.B, st = B.model.rooms.find(r => r.kind === "stairs"), prop = (st.extra.props || []).find(p => p.stairs), pcs = B.plan.pieces.filter(p => p.id.startsWith(prop.id + "__"));
-      const lay = window.KITJS ? null : null;
+      const B = window.B, st = B.model.rooms.find(r => r.id === "stairhall"), prop = (st.extra.props || []).find(p => p.stairs), pcs = B.plan.pieces.filter(p => p.id.startsWith(prop.id + "__"));
       const out = { prop: prop && prop.stairs, sel: B.sel, kinds: [...new Set(pcs.map(p => p.id.split("__")[1][0]))].sort(), colliders: pcs.filter(p => p.tags.includes("collider")).length, hollow: pcs.filter(p => p.tags.includes("hollow")).length,
                     solid: pcs.filter(p => !p.tags.includes("collider") && !p.tags.includes("hollow")).length, errors: (await window.builder.runChecks()).errors, text: document.querySelector("#props").textContent };
       prop.stairs.w = 0.8; window.builder.changed();
@@ -609,7 +613,7 @@ const png = rgb => {                    // a 4x4 PNG of one colour (a scratch ma
     if (!sp.prop || sp.prop.via.length !== 1 || sp.kinds.join() !== "f,w" || sp.colliders < 20 || sp.hollow !== 3 || sp.errors.length || sp.wAfter !== 0.8 || !/risers of/.test(sp.text)) fail("stairs from points in the builder: " + JSON.stringify(sp).slice(0, 600));
     await page.evaluate(() => { window.builder.removeSel(); });
     await page.waitForTimeout(600);
-    const gone = await page.evaluate(() => { const st = window.B.model.rooms.find(r => r.kind === "stairs"); return !(st.extra.props || []).some(p => p.stairs); });
+    const gone = await page.evaluate(() => { const st = window.B.model.rooms.find(r => r.id === "stairhall"); return !(st.extra.props || []).some(p => p.stairs); });
     if (!gone) fail("the stairs weren't removed");
     await page.evaluate(() => { window.B.dirty = false; });
   } finally {

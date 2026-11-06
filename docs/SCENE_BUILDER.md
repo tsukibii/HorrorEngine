@@ -53,7 +53,10 @@ rooms that can change between chapters. The panel under the 3D view counts what 
   and takes the width, the style (a house's wooden box stair, one side open, an apartment's concrete flight, a
   motel's steel stair, an outside steel stair), how the turns are made, the rails, the top's height and the points
   themselves (one added before the top, the last taken away). Esc starts the clicking over. A stairs room's own
-  flight (above) is the quick way; a stair from points goes anywhere a room is tall enough.
+  flight (above) is the quick way; a stair from points goes anywhere a room is tall enough. A turn needs room: the
+  way must step more than half the stair's width to the side for a quarter turn (less is a landing straight on), so
+  the house's 0.91 m stairs room holds a straight flight only; a turn wants a room about two widths wide (BUILDER
+  adds a 2.73 m stair hall to the house for its turn).
 - **The selected room:**
   - Its `kind`, `name`, size, height, footsteps (`floor`) and `light`.
   - Its **open sides**, for walls left out: a porch's, a railing side.
