@@ -2,6 +2,23 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-06 (the user: stairs from points, not presets; winders for tight spaces; the motel's switchback)
+
+- **"Any smarter way we can do stairs indoors (what if they need to be more strongly angled due to tighter spaces)?
+  What about outdoor U-turn stairs (motels don't tend to have one direct stair, tends to be two with a platform U-turn
+  in the middle)?"** Asked which to build, the user picked sane steep flights (the riser count by the 2R + G rule) and
+  turning stairs with winders for indoors, and the motel's switchback along the end wall; then:
+- **"Could you create some smart system where the stairs aren't pre-defined but you select end + start points or
+  start + mid + end points and they get generated to our rules?"** Built as **stairs from points** (KIT.md §11b,
+  STORY_FORMAT §2 `stairs`): a prop names the foot, the top and the points on the way; a point straight on is a
+  landing, to the side a quarter turn (a house's winders, three fan treads round a newel: the new `winder` kit; else a
+  landing), back the way you came a half turn with a platform across both lanes; the risers by 2R + G = 63 cm within
+  the style's limits (a house's riser up to 23 cm, tread no shallower than 18; an apartment's 20 and 23; a motel's 20
+  and 26), the treads from the runs, a warning when the rules object. kit.js and storykit/stairs.py lay out the same
+  (KIT compares them); the plan makes the flights, landings and winders with their collider steps; the scene builder's
+  Stairs tool clicks the way and its inspector shows the risers, treads and pitch. TestRoom001's station 19 climbs a
+  stairwell drawn as three points and comes down a house's L with winders drawn as three.
+
 ## 2026-11-05, night (the user: stairs of three kinds, floors in the scene builder, climbing in Godot; the branch `gameplay-enhancements`)
 
 - **"Make a new branch called gameplay-enhancements, model different types of stairs (outdoor motel level stairs,

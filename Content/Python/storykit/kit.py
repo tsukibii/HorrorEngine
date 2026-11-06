@@ -133,7 +133,10 @@ def stairs_boxes(spec):
     r = resolve(spec)
     w, d, h = size(spec)
     g = lambda k: r.get(k, STAIRS[k])  # noqa: E731
-    top = _clamp(float(g("top") or 0), 0, h * 0.6)
+    # the top allowance keeps the risers at least 0.1 m each when their count is known, else 60 % of the box (kit.js
+    # stairsTop: the same; the old 60 % rule took a third of a winder's rise, 2026-11-06)
+    nt = int(_round(float(g("treads")))) if float(g("treads") or 0) > 0 else 0
+    top = _clamp(float(g("top") or 0), 0, max(0.0, h - 0.1 * nt) if nt > 0 else h * 0.6)
     rise = h - top
     landing = _clamp(float(g("landing") or 0), 0, d * 0.6)
     run = d - landing
@@ -159,3 +162,68 @@ def stairs_boxes(spec):
     if landing > 0 and land_rail in ("end", "both"):
         out.append((-w / 2, d / 2 - 0.09, rise, w / 2, d / 2, min(h, rise + rail_h), "rail"))
     return [tuple(round(v, 6) if isinstance(v, float) else v for v in b) for b in out]
+
+
+def _winder_fans(w, d, right, n):
+    """kit.js winderFans: the fan's treads as polygons (the newel first) and their middle angles, item space."""
+    import math
+    nx, ny = (w / 2 if right else -w / 2), -d / 2
+    a0, a1 = (math.pi if right else 0.0), math.pi / 2
+    far = [(-w / 2 if right else w / 2), d / 2]
+
+    def hit(ang):
+        dx, dy = math.cos(ang), math.sin(ang)
+        best = math.inf
+        if dx < -1e-9:
+            best = min(best, (-w / 2 - nx) / dx)
+        if dx > 1e-9:
+            best = min(best, (w / 2 - nx) / dx)
+        if dy > 1e-9:
+            best = min(best, (d / 2 - ny) / dy)
+        return [nx + dx * best, ny + dy * best]
+
+    def side(p):
+        return "y" if abs(p[1] - d / 2) < 1e-6 else "x"
+    polys, angles = [], []
+    for j in range(n):
+        f0, f1 = a0 + (a1 - a0) * j / n, a0 + (a1 - a0) * (j + 1) / n
+        p0, p1 = hit(f0), hit(f1)
+        poly = [[nx, ny], p0]
+        if side(p0) != side(p1):
+            poly.append(far)
+        poly.append(p1)
+        polys.append(poly)
+        angles.append((f0 + f1) / 2)
+    return nx, ny, polys, angles
+
+
+WINDER_GRID = 4
+
+
+def winder_boxes(spec):
+    """A winder's collision (kit.js winderBoxes, the same numbers): the square as a grid of cells, each at the tread
+    under its middle, {"at", "size", "yaw", "z"} in item space."""
+    import math
+    from . import stairs as ST
+    r = resolve(spec)
+    w, d, h = size(spec)
+    n = max(1, min(8, int(ST._round(float(r.get("n") or 3)))))
+    top = _clamp(float(r.get("top") or 0), 0, max(0.0, h - 0.1 * n))   # kit.js winderTop: the risers keep 0.1 m each
+    rise = h - top
+    ri = rise / n
+    right = r.get("turn") != "left"
+    nx, ny, _polys, _angles = _winder_fans(w, d, right, n)
+    a0, a1 = (math.pi if right else 0.0), math.pi / 2
+    out = []
+    G = WINDER_GRID
+    for i in range(G):
+        for j in range(G):
+            cx, cy = -w / 2 + (i + 0.5) * w / G, -d / 2 + (j + 0.5) * d / G
+            ang = math.atan2(cy - ny, cx - nx)
+            if ang < 0:
+                ang += 2 * math.pi
+            t = int(math.floor((ang - a0) / ((a1 - a0) / n) + 1e-9))
+            t = max(0, min(n - 1, t))
+            out.append({"at": [ST.r6(cx), ST.r6(cy)], "size": [ST.r6(w / G), ST.r6(d / G)], "yaw": 0,
+                        "z": [ST.r6(ri * t if t else 0.0), ST.r6(ri * (t + 1))]})
+    return out

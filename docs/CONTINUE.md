@@ -48,12 +48,27 @@ going up and down stairs in Godot without bugs, feeling good. Built:
 - Fixes on the way: the level check lets hollow things stand in a doorway's clearance; the shots sheet keeps a room's
   entrance camera 0.3 m off its walls and ignores hollow boxes; LESSONS has the gap-under-the-feet lesson.
 
+**Then, the same night (DECISIONS 2026-11-06): stairs from points.** The user: "a smart system where the stairs aren't
+pre-defined but you select end + start points or start + mid + end points and they get generated to our rules."
+Built: the `stairs` prop (STORY_FORMAT §2: `from`, `to`, `via`, `w`, `style`, `turn`, `rail`, `wall_rail`), the layout
+in kit.js `stairsLayout` and `storykit/stairs.py` (KIT compares five cases), the `winder` kit type (`winder_house`,
+`winder_apartment`) with its collision cells, the plan's `stairs_pieces`, the story index's box from the layout, the
+story check's rules, the scene builder's Stairs tool (`stairsPoint`, `drawStairs`, the inspector; BUILDER drives it),
+TestRoom001's two stairs redrawn as points (a half turn with a platform, an L with winders), the motel's switchback
+(`turn: "u"` on the street's steel stairs part: two flights along the end wall, the platform, two ramps and the
+platform as colliders). KIT.md §11b has the rules. On the checks' way: the kit's `top` allowance clamped by what
+the risers need (a winder's treads stood 7 cm high: kit.js `stairsTop`, `winderTop`, kit.py the same; the kit VERSION
+7), the desk's climb test timing its frames as the runtime does (a false 4 cm jump under load), the preset's floors
+copied into the model (the builder test's reopen waited forever); LESSONS has the three.
+
 **Known before this branch:** FROMDESK (`godot_director.py from-desk TestRoom001 --force --play`) fails at station 4
 on the branch's base commit too (the power bulb's fitting: the desk conversion makes the light a Light3D source; the
 conversion never learned light fittings, GODOT_EXPORT §3b): its WALLS check passes with the stairwell's rooms, and
 the other Godot checks (GDEXPORT, GDPLAY, GDTESTROOM, DIRECTOR, GDSTREET) pass here.
 
-**Could come next:** the desk conversion's light fittings (above); an L-shaped stair (a quarter landing) in the builder; a stair's own railing round a stairwell's
+**Could come next:** the desk conversion's light fittings (above); winders at a half turn (six fan treads round the
+well); a spiral from the same fans; the points dragged on the plan; the street's stairs from points too (the kit
+drawn in the street's own geometry); a stair's own railing round a stairwell's
 opening in the floor above (a room's floor with a hole); `HSStairs` for the Director (a flight from numbers in GDScript
 with step colliders, for a world built by hand in Godot); the dog-leg's landings railed along the well; the kit stair
 drawn in the street builder's own stairs part (one generator for both); a slower walk on stairs if the user wants it

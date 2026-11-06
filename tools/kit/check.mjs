@@ -67,6 +67,26 @@ try {
   }
   if (!names.length) errs.push("no stairs presets");
 } catch (e) { errs.push("stairs boxes: " + e.message.split("\n")[0]); }
+// stairs from points (§11b): kit.js's layout and storykit/stairs.py's are the same numbers (parts, risers, treads, bounds)
+// for a straight flight, an L with winders, a U with a platform and a run with rests and an anchored landing; the winder
+// presets' collision cells agree too
+try {
+  const cases = [
+    { from: [0.6, 0.85, 0], to: [0.6, 4.5, 2.85], w: 0.77, style: "house" },
+    { from: [2.08, 0.5, 0], via: [[2.08, 3.48]], to: [0.52, 3.48, 3.45], w: 0.9, style: "house" },
+    { from: [1.97, 3.427, 0], via: [[1.3, 0.719]], to: [0.63, 3.427, 3.45], w: 1.14, style: "apartment" },
+    { from: [0.5, 0.5, 0], via: [[0.5, 3.0], [0.5, 4.2, 2.0]], to: [0.5, 7.0, 3.45], w: 1.0, style: "motel", turn: "landing" },
+    { from: [0.5, 0.5, 0], via: [[0.5, 2.5], [3.0, 2.5]], to: [3.0, 0.3, 2.85], w: 0.9, style: "steel", turn: "winders", rail: "both" },
+  ];
+  const winders = Object.keys(PR.presets).filter(n => PR.presets[n].type === "winder");
+  const py = JSON.parse(execFileSync("python3", ["-c", "import sys,json; sys.path.insert(0,'Content/Python'); from storykit import stairs, kit; c=json.loads(sys.argv[1]); print(json.dumps({'layouts': [stairs.layout(s) for s in c['cases']], 'winders': {n: kit.winder_boxes(n) for n in c['winders']}}))", JSON.stringify({ cases, winders })], { cwd: ROOT }).toString());
+  const same = (a, b) => typeof a === "number" && typeof b === "number" ? Math.abs(a - b) <= 1e-5 : Array.isArray(a) && Array.isArray(b) ? a.length === b.length && a.every((v, i) => same(v, b[i]))
+    : a && b && typeof a === "object" && typeof b === "object" ? Object.keys(a).every(k => k === "warnings" || same(a[k], b[k])) && Object.keys(b).every(k => k === "warnings" || k in a) : a === b;
+  cases.forEach((c, i) => { const js = KIT.stairsLayout(c); if (!same(js, py.layouts[i])) errs.push(`stairs from points, case ${i + 1}: kit.js and stairs.py lay them out differently (${JSON.stringify(js.parts.map(p => [p.kind, p.at, p.z, p.rot]))} vs ${JSON.stringify(py.layouts[i].parts.map(p => [p.kind, p.at, p.z, p.rot]))})`);
+    if (!js.parts.length || js.n < 2) errs.push(`stairs from points, case ${i + 1}: no parts`); });
+  for (const n of winders) if (!same(KIT.winderBoxes(KIT.withDefaults(KIT.resolve(n, PR.presets))), py.winders[n])) errs.push(`${n}: its collision cells differ between kit.js and kit.py`);
+  if (!winders.length) errs.push("no winder presets");
+} catch (e) { errs.push("stairs from points: " + e.message.split("\n")[0]); }
 // every kit mesh every game's plan needs (props, floors, frames, doors' parts), as the importer would build them
 let props = 0;
 try {

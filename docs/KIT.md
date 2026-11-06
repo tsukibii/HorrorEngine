@@ -429,8 +429,9 @@ A tube light is a fitting like the round LEDs (§4): a story light with one as i
 ## 11. Stairs (DECISIONS 2026-11-05, night: "model different types of stairs")
 
 The `stairs` type is one **flight** from its front (its local -y, the foot, at z 0) to its back, climbing to `size[2] -
-top`: the box stands `top` m (1.0) on above the top tread so the rails and newels fit in it. `treads` 0 picks about 18 cm a
-riser (2.85 m: 16 treads); `landing` m of the depth is a landing at the top (a side door there is the way off);
+top`: the box stands `top` m (1.0) on above the top tread so the rails and newels fit in it (clamped so the risers keep
+at least 10 cm each when `treads` is given, else to 60 % of the box: the old 60 % rule alone took a third of a winder's
+rise, 2026-11-06). `treads` 0 picks about 18 cm a riser (2.85 m: 16 treads); `landing` m of the depth is a landing at the top (a side door there is the way off);
 `nosing` and `tread_t` the treads; `risers` closed or open; `waist` a slab that thick under the treads (a dog-leg's upper
 flights, open beneath), 0 solid to the floor (a house's soffit, concrete's block). The rails: `rail` on the left, the
 right or both sides **when climbing**, `wall_rail` a handrail on brackets 5 cm off a wall, `rail_h` (0.85; a motel's
@@ -460,3 +461,33 @@ landing; a straight flight is one kit stair (`<room>_fx_stairs`, the box `STAIR_
 dog-leg's flights are two (`_1a`, `_1b`: the ground storey's solid, the others on a waist, their rail on the well
 side) with the landings as slabs. **In the street builder** (STREET_BUILDER §5c) a building's outside stairs are
 drawn by the street's own geometry (`style: "steel"`: the motel's).
+
+### 11b. Stairs from points (DECISIONS 2026-11-06)
+
+The user: "a smart system where the stairs aren't pre-defined but you select end + start points or start + mid + end
+points and they get generated to our rules." A story prop carries `stairs` (STORY_FORMAT §2): `from` at the foot, `to`
+at the top, `via` points on the way, a width, a style, how its turns are made. `stairsLayout` in kit.js (and
+`storykit/stairs.py`, the same numbers: KIT compares them on five cases) walks the way:
+
+- **The way.** The first axis is the way to the first point, snapped to the room's sides or a diagonal; each via
+  point is a node: the point after it straight on makes a **landing to rest on** (a width square), to the side (more
+  than half a width across) a **quarter turn**, back behind the node (further than half a width) a **half turn** with
+  a platform across both lanes, the way back down the lane the next point lies on. A turn's axis follows from the
+  one before (a quarter turn at right angles, a half turn straight back), so a lazy click still makes a square stair.
+- **The risers.** As many as the rule of comfortable stairs wants (2R + G = 63 cm over the walking line, a quarter
+  turn's winders counted as their arc), never fewer than the style's riser limit asks (a house 23 cm, an apartment or a
+  motel 20, a steel stair 22); the winders take three each; the flights share the rest by their runs, one at least; a
+  via point with a height fixes the count before it. The treads come out of the runs: shallower than the style's
+  least (a house 18 cm, an apartment 23, a motel 26) is a warning: a longer run, or a turn with winders.
+- **The parts.** A flight is a `stairs` kit (the style's preset, its riser count, the ground flight solid, the upper
+  ones on a waist, the rails on the well side of a half turn), a landing a `block` (a slab, or solid to the floor when
+  there's no head room under it anyway), a quarter turn with winders a **`winder`** kit (§2: three fan treads round
+  the newel in the corner on the turn's side, the corner across from it swept past, their risers along the fans'
+  edges, the newel post; `winder_house`, `winder_apartment`). The plan makes each part's mesh hollow and lays
+  collider boxes where the treads are (a flight's steps and rails, a winder's square as a grid of cells each at its
+  tread's height), a landing solid, every piece tagged `stairs`.
+- **In the scene builder** (SCENE_BUILDER §1): the Stairs tool clicks the way; the inspector shows the risers, treads
+  and pitch, the rules' warnings, and takes the width, style, turns, rails, the top's height and the points.
+
+TestRoom001's station 19 climbs a stairwell drawn as three points (the foot, the platform's middle, the top on the
+other lane) and comes down a house's L drawn as three (the foot, the corner, the top at the wall).

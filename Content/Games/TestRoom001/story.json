@@ -2591,70 +2591,27 @@
      ],
      "props": [
       {
-       "id": "shaft_fx_stairs_1a",
-       "kit": {
-        "preset": "stairs_apartment",
-        "size": [
-         1.14,
-         2.049,
-         2.725
+       "id": "shaft_stairs",
+       "stairs": {
+        "from": [
+         1.97,
+         3.427,
+         0
         ],
-        "top": 1.0,
-        "landing": 0,
-        "waist": 0,
-        "rail": "right",
-        "wall_rail": "none",
-        "land_rail": "none"
-       },
-       "at": [
-        1.97,
-        2.4025
-       ],
-       "rot": 180,
-       "tag": "stairs"
-      },
-      {
-       "id": "shaft_fx_stairs_1base",
-       "shape": "box 1.14 2.049 1.725",
-       "at": [
-        0.63,
-        2.4025
-       ],
-       "z": 0,
-       "tag": "stairs"
-      },
-      {
-       "id": "shaft_fx_stairs_1b",
-       "kit": {
-        "preset": "stairs_apartment",
-        "size": [
-         1.14,
-         2.049,
-         2.725
+        "via": [
+         [
+          1.3,
+          0.719
+         ]
         ],
-        "top": 1.0,
-        "landing": 0,
-        "waist": 0.15,
-        "rail": "right",
-        "wall_rail": "none",
-        "land_rail": "none"
+        "to": [
+         0.63,
+         3.427,
+         3.45
+        ],
+        "w": 1.14,
+        "style": "apartment"
        },
-       "at": [
-        0.63,
-        2.4025
-       ],
-       "z": 1.725,
-       "rot": 0,
-       "tag": "stairs"
-      },
-      {
-       "id": "shaft_fx_half_1",
-       "shape": "box 2.48 1.318 1.725",
-       "at": [
-        1.3,
-        0.719
-       ],
-       "z": 0,
        "tag": "stairs"
       },
       {
@@ -2714,7 +2671,11 @@
        0,
        2.6
       ],
-      "e"
+      [
+       "e",
+       0,
+       3.7
+      ]
      ],
      "openings": [],
      "props": [
@@ -2753,7 +2714,11 @@
        0,
        1.9
       ],
-      "e"
+      [
+       "e",
+       0,
+       3.7
+      ]
      ],
      "openings": [],
      "props": [
@@ -2774,12 +2739,12 @@
      "id": "back_stairs",
      "at": [
       14.6,
-      24.6,
+      24.7,
       0
      ],
      "size": [
-      1.2,
-      6.0,
+      2.6,
+      4.0,
       5.85
      ],
      "floor": "wood",
@@ -2800,7 +2765,7 @@
       },
       {
        "wall": "w",
-       "at": 5.1,
+       "at": 3.48,
        "w": 0.9,
        "h": 2.1,
        "sill": 3.45
@@ -2808,23 +2773,27 @@
      ],
      "props": [
       {
-       "id": "back_stairs_fx_stairs",
-       "kit": {
-        "preset": "stairs_house",
-        "size": [
-         1.06,
-         4.9,
-         4.45
+       "id": "back_stairs_stairs",
+       "stairs": {
+        "from": [
+         2.08,
+         0.5,
+         0
         ],
-        "top": 1.0,
-        "landing": 0.9,
-        "waist": 0
+        "via": [
+         [
+          2.08,
+          3.48
+         ]
+        ],
+        "to": [
+         0.07,
+         3.48,
+         3.45
+        ],
+        "w": 0.9,
+        "style": "house"
        },
-       "at": [
-        0.6,
-        3.48
-       ],
-       "rot": 0,
        "tag": "stairs"
       },
       {
@@ -2833,8 +2802,8 @@
        "kind": "bulb",
        "lit": true,
        "at": [
-        0.6,
-        3.0
+        1.3,
+        2.0
        ],
        "z": 5.6
       }

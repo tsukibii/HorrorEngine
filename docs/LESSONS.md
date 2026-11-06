@@ -1835,3 +1835,15 @@ And a seat pad's bag filled only to a pad's thickness had more cloth than air an
   said why.
 - **A test's hold must be shorter than the run.** "Stuck for half a second" fired at the wall at the end of a flight
   because the key was held longer than the flight took; the flights' holds are now a little under their length.
+- **A "sanity" clamp with a ratio in it is a rule about the size, not the thing.** The kit's `top` allowance (the metre
+  a stair's box stands on above its last tread) was clamped to 60 % of the box: fine for a 3 m flight, but a winder's
+  box is three risers and that metre, so the clamp took a third of its rise and its treads stood 2 to 7 cm above the
+  flights they joined (the feet at 2.23 m where no tread should be). Clamp by what the parts need (10 cm a riser), and
+  write the twin (kit.py) the same day.
+- **A test's clock must be the runtime's clock.** The desk's climb test timed its frames with performance.now() while
+  the runtime steps by the animation frame's timestamp (capped at 0.05 s). After a stall the timestamp lags the clock,
+  the next interval comes out short, and a 4 cm "jump" was only the two clocks disagreeing (and only under load: it
+  passed the next three runs). Read the frame's seconds the way the code under test does.
+- **A preset's arrays are shared until copied.** The floors buttons change `B.model.floors` in place; `presetToModel`
+  handed the model the preset's own array, so after a basement was added the house preset itself had four floors and
+  the builder test's reopen waited forever for two. Copy what a loader hands out.

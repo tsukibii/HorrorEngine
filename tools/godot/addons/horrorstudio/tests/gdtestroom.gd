@@ -294,7 +294,9 @@ func turn_to(x: float, y: float, yaw: float) -> void:
 
 
 ## a stair walked: from (x, y) facing yaw, W held secs, the feet ending at `want` m up; never stuck on the way (half a
-## second without moving), and the eye never jumping a riser in a frame (the glide: at most its rate times the frame)
+## second without moving), and the eye never jumping a riser in a frame (the glide: at most its rate times the frame,
+## 0.35 / 0.12 m/s at the most: play.gd glide_step) (want < 0: only that the feet came down below 3 m: a walk ending
+## mid-way, on winders)
 func climb(x: float, y: float, yaw: float, secs: float, want: float) -> String:
 	turn_to(x, y, yaw)
 	var c0: float = rt.clock
@@ -310,7 +312,7 @@ func climb(x: float, y: float, yaw: float, secs: float, want: float) -> String:
 		n += 1
 		var dt: float = max(0.001, rt.get_process_delta_time())
 		var e: float = rt.eye_pos().y
-		jump = max(jump, abs(e - last_eye) - 1.7 * dt)
+		jump = max(jump, abs(e - last_eye) - (0.35 / 0.12) * dt)
 		last_eye = e
 		var moved: float = Vector2(rt.player.pos.x - last_pos.x, rt.player.pos.z - last_pos.z).length()
 		still = still + dt if moved < 0.002 else 0.0
@@ -319,7 +321,9 @@ func climb(x: float, y: float, yaw: float, secs: float, want: float) -> String:
 			still = 0.0
 		last_pos = rt.player.pos
 	rt.key_event("W", false)
-	if abs(float(rt.player.pos.y) - want) > 0.05:
+	if want < 0.0 and float(rt.player.pos.y) > 3.0:
+		return "the feet still at %.2f m: never down the top flight  %s" % [rt.player.pos.y, where()]
+	if want >= 0.0 and abs(float(rt.player.pos.y) - want) > 0.05:
 		return "the feet at %.2f m, not %.2f  %s" % [rt.player.pos.y, want, where()]
 	if stuck > 0:
 		return "stuck on the way (%d times)  %s" % [stuck, where()]
@@ -1447,7 +1451,7 @@ func _initialize() -> void:
 			return ""))
 
 	await station("n_stairs", func():
-		await step("19 · Stairs: from the workshop up the stairwell's dog-leg (the kit's concrete flights, each tread a step) to the gallery (ticks), never stuck, the eye gliding over every riser; across and down the back stairs (a house's box stair, its top landing) to the back room (ticks); out into the court (ticks)", func():
+		await step("19 · Stairs: from the workshop up the stairwell's dog-leg (stairs from points: a half turn with its platform, concrete flights, each tread a step) to the gallery (ticks), never stuck, the eye gliding over every riser; across and down the back stairs (a house's L from points: the top flight, three winders round the newel, the long flight) to the back room (ticks); out into the court (ticks)", func():
 			if not await until(func(): return rt.moving == null and rt.look_tween == null, 3000):   # the scene's hand-over to Play settles first
 				return "the eye still moving after the scene"
 			place(8.2, 24.3, 0.0)
@@ -1467,15 +1471,18 @@ func _initialize() -> void:
 			r = await ticked("t19_up")
 			if r != "":
 				return r
-			turn_to(13.6, 29.7, 0.0)                                   # east across the gallery onto the back stairs' top landing
-			await hold("W", 1.4)
-			if not rt.inside.has("back_stairs") or abs(float(rt.player.pos.y) - 3.45) > 0.05:
-				return "not on the back stairs' landing  " + where()
-			r = await climb(15.2, 29.9, 270.0, 4.0, 0.0)                # down the flight to its foot
+			turn_to(13.6, 28.18, 0.0)                                  # east across the gallery through the door onto the back stairs' top treads
+			await hold("W", 1.0)
+			if not rt.inside.has("back_stairs") or float(rt.player.pos.y) < 3.2:
+				return "not on the back stairs' top  " + where()
+			r = await climb(14.9, 28.18, 0.0, 1.2, -1.0)                  # down the top flight, east, onto the winders
 			if r != "":
-				return "down: " + r
-			turn_to(15.2, 25.2, 180.0)
-			await hold("W", 1.3)
+				return "the top flight: " + r
+			r = await climb(16.68, 28.18, 270.0, 2.6, 0.0)                # round the winders and down the long flight, south, to the foot
+			if r != "":
+				return "the long flight: " + r
+			turn_to(16.0, 25.3, 180.0)
+			await hold("W", 1.6)
 			if not rt.inside.has("under"):
 				return "not in the back room  " + where()
 			r = await ticked("t19_down")

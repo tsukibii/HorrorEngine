@@ -1,6 +1,6 @@
 {
  "_note": "The kit's presets (docs/KIT.md): each is a kit spec plus label, cat, mount and z (the height of its base above the floor). The kit maker (tools/director/kit.html) adds yours. version must match VERSION in tools/director/kit.js.",
- "version": 6,
+ "version": 7,
  "presets": {
   "oak_planks": {
    "label": "Oak planks, 150 mm, random lengths",
@@ -3516,6 +3516,44 @@
    "string_slot": "frame",
    "rail_slot": "frame",
    "post_slot": "frame"
+  },
+  "winder_house": {
+   "label": "Winders, a house's: three wooden fan treads round a newel (回り階段の隅)",
+   "cat": "stairs",
+   "mount": "floor",
+   "z": 0,
+   "type": "winder",
+   "size": [
+    0.9,
+    0.9,
+    1.58
+   ],
+   "top": 1.0,
+   "n": 3,
+   "turn": "right",
+   "tread_t": 0.03,
+   "slot": "wood",
+   "riser_slot": "white",
+   "post_slot": "white"
+  },
+  "winder_apartment": {
+   "label": "Winders in concrete: three fan treads round a post",
+   "cat": "stairs",
+   "mount": "floor",
+   "z": 0,
+   "type": "winder",
+   "size": [
+    1.1,
+    1.1,
+    1.58
+   ],
+   "top": 1.0,
+   "n": 3,
+   "turn": "right",
+   "tread_t": 0.03,
+   "slot": "concrete",
+   "riser_slot": "concrete",
+   "post_slot": "steel_paint"
   }
  }
 }

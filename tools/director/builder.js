@@ -198,6 +198,7 @@ function draw() {
       t2.textContent = OUT(r) ? `${r2(r.w)} × ${r2(r.d)} m` : roomy ? `約${(BM.jo(r)).toFixed(1)}帖 · ${BM.area(r).toFixed(1)} m²` : `${BM.jo(r).toFixed(1)}帖`;
     }
   }
+  drawStairs();
   // walls and props as the plan builds them (the importer's own pieces)
   if (B.plan) {
     const z0 = floorZ() + 1.0;
@@ -341,6 +342,8 @@ svg.addEventListener("mousedown", e => {
   if (B.tool === "item" && e.button === 0) { addItem(x, y); return; }
   if (B.tool === "kit" && e.button === 0) { addKit(x, y); return; }
   if (B.tool === "prop" && e.button === 0) { addProp(x, y); return; }
+  if (B.tool === "stairs" && e.button === 0) { stairsPoint(x, y, e.detail >= 2); return; }
+  if (t.dataset.stairs && e.button === 0) { B.sel = { stairs: t.dataset.stairs, room: t.dataset.room }; changed(false); return; }
   if (B.tool === "fit" && e.button === 0) { addItem(x, y, B.fitPreset); return; }
   if (B.tool !== "select" && e.button === 0) { addOpening(x, y); return; }
   if (t.dataset.item) { B.sel = { item: t.dataset.item }; const it = B.model.items.find(i => i.id === t.dataset.item); pushUndo(); drag = { kind: "item", it, a0: it.a, p: wallCoord(it, x, y) }; changed(false); return; }
@@ -462,6 +465,7 @@ function renderTools() {
                                   ["ref", "Reference cut-out", "cut a wall to the reference model chosen under References"], ["item", "Wall item", "a mirror, a poster, a TV... on the wall you click"],
                                   ["kit", "Furniture", "cabinets, built-ins, beds, sofas, tables, rugs, curtains, downlights: click in a room (ones that stand against a wall go to the nearest)"],
                                   ["prop", "Prop", "the prop maker's props (books, a diary, cans...): click on a desk, a shelf or a cubby to put it on or in it"],
+                                  ["stairs", "Stairs", "stairs from points: click the foot, then each turn or landing on the way, then double-click the top (it lands on the floor above); the flights, landings and winders follow the rules"],
                                   ["fit", "Wall fitting", "switch plates, sockets, panels, vents: click near a wall"],
                                   ["measure", "Measure", "drag to measure (it snaps like a room)"]]) {
     const b = document.createElement("button"); b.textContent = label; b.className = B.tool === t ? "on" : ""; if (tip) b.title = tip;
@@ -490,6 +494,16 @@ function renderTools() {
     const h = document.createElement("div"); h.className = "hint";
     h.textContent = names.length ? "click on a desk, a shelf or a cubby: it goes on or into the thing, at the place under the click" : "no props in the library yet: python tools/propgen.py library <names>";
     box.append(sel, h);
+  }
+  if (B.tool === "stairs") {
+    const st = B.stairsNew = B.stairsNew || { w: 0.9, style: "house", turn: "auto" };
+    const row = document.createElement("div"); row.className = "row";
+    row.append("width ", num(st.w, v => { st.w = Math.max(0.6, Math.min(2.5, v)); }, 0.05), " m");
+    const sty = pick(st.style, Object.keys(KIT.STAIR_RULES.preset).map(k => [k, STAIR_STYLE_NAMES[k] || k]), v => { st.style = v; });
+    const tn = pick(st.turn, [["auto", "turns: as the style has them (a house's winders, else landings)"], ["winders", "turns: winders (fan treads round the newel)"], ["landing", "turns: landings"]], v => { st.turn = v; });
+    const h = document.createElement("div"); h.className = "hint";
+    h.textContent = B.stairsPts && B.stairsPts.length ? `${B.stairsPts.length} point${B.stairsPts.length > 1 ? "s" : ""} so far: click the next turn or landing, double-click the top (Esc starts over)` : "click the foot of the stair (on this floor); a point straight on is a landing, to the side a quarter turn, back the way you came a half turn with a platform (click the platform's middle, then the top on the other lane)";
+    box.append(row, sty, tn, h);
   }
   if (B.tool === "ref") {
     const n = document.createElement("div"); n.className = "hint"; n.style.marginTop = "4px";
@@ -570,6 +584,33 @@ function renderProps() {
       ...field("off the wall", num(it.t, v => { it.t = Math.max(0.002, v); }, 0.005)), ...field("middle at", num(it.z, v => { it.z = Math.max(it.h / 2, v); }, 0.05)));
     box.append(grid);
     const del = document.createElement("button"); del.textContent = "Remove"; del.onclick = () => removeSel(); box.append(document.createElement("br"), del);
+  } else if (B.sel && B.sel.stairs) {
+    const r = roomOf(B.sel.room), sp = r && (r.extra.props || []).find(q => q.id === B.sel.stairs);
+    if (!sp) { B.sel = null; return renderProps(); }
+    const st = sp.stairs, lay = KIT.stairsLayout(st);
+    const head = document.createElement("div"); head.innerHTML = `<b>Stairs from points</b> <span class="hint">${sp.id} in ${r.name || r.id}</span>`;
+    box.append(head);
+    grid.append(...field("width", num(st.w || 0.9, v => { st.w = Math.max(0.6, Math.min(2.5, v)); }, 0.05)),
+      ...field("style", pick(st.style || "house", Object.keys(KIT.STAIR_RULES.preset).map(k => [k, STAIR_STYLE_NAMES[k] || k]), v => { st.style = v; })),
+      ...field("turns", pick(st.turn || "auto", [["auto", "as the style has them"], ["winders", "winders"], ["landing", "landings"]], v => { st.turn = v; })),
+      ...field("rail", pick(st.rail || "auto", [["auto", "as the style has it (a half turn's well side)"], ["none", "none"], ["left", "left, climbing"], ["right", "right, climbing"], ["both", "both"]], v => { if (v === "auto") delete st.rail; else st.rail = v; })),
+      ...field("wall rail", pick(st.wall_rail || "auto", [["auto", "as the style has it"], ["none", "none"], ["left", "left, climbing"], ["right", "right, climbing"], ["both", "both"]], v => { if (v === "auto") delete st.wall_rail; else st.wall_rail = v; })),
+      ...field("top at", wrap(num(st.to[2], v => { st.to[2] = Math.max(0.3, v); }, 0.05), document.createTextNode(" m up"))));
+    box.append(grid);
+    const pts = [["foot", st.from], ...(st.via || []).map((v, i) => [`point ${i + 2}`, v]), ["top", st.to]];
+    const pg = document.createElement("div"); pg.className = "prop";
+    for (const [label, pt] of pts) pg.append(...field(label, wrap(num(pt[0], v => { pt[0] = v; }), num(pt[1], v => { pt[1] = v; }))));
+    box.append(pg);
+    const add = document.createElement("button"); add.textContent = "+ a point before the top";
+    add.onclick = () => { pushUndo(); const last = (st.via || []).length ? st.via[st.via.length - 1] : st.from; st.via = (st.via || []).concat([[r2((last[0] + st.to[0]) / 2), r2((last[1] + st.to[1]) / 2)]]); changed(); };
+    const less = document.createElement("button"); less.textContent = "− the last point"; less.disabled = !(st.via || []).length;
+    less.onclick = () => { pushUndo(); st.via.pop(); if (!st.via.length) delete st.via; changed(); };
+    box.append(add, " ", less);
+    const sum = document.createElement("div"); sum.className = "hint";
+    sum.textContent = lay.parts.length ? `${lay.n} risers of ${(lay.riser * 100).toFixed(1)} cm, treads ${lay.treads.map(t => (t * 100).toFixed(0)).join(" / ")} cm, ${lay.pitch.toFixed(0)}°: ${lay.parts.map(p => p.kind === "flight" ? `a flight of ${p.n}` : p.kind === "winder" ? "winders" : p.turn === "half" ? "a platform" : "a landing").join(", ")}` : "nothing to build yet";
+    box.append(sum);
+    for (const w of lay.warnings) { const d = document.createElement("div"); d.className = "hint"; d.style.color = "#d9a441"; d.textContent = "⚠ " + w; box.append(d); }
+    const del = document.createElement("button"); del.textContent = "Remove stairs"; del.onclick = () => removeSel(); box.append(document.createElement("br"), del);
   } else if (B.sel && B.sel.kit) {
     const k = (B.model.kits || []).find(q => q.id === B.sel.kit);
     if (!k) { B.sel = null; return renderProps(); }
@@ -590,8 +631,66 @@ function removeSel() {
   if (B.sel.room) { B.model.rooms = B.model.rooms.filter(r => r.id !== B.sel.room); B.model.items = (B.model.items || []).filter(i => i.room !== B.sel.room); B.model.kits = (B.model.kits || []).filter(k => k.room !== B.sel.room); }
   else if (B.sel.item) B.model.items = B.model.items.filter(i => i.id !== B.sel.item);
   else if (B.sel.kit) B.model.kits = B.model.kits.filter(k => k.id !== B.sel.kit);
+  else if (B.sel.stairs) { const r = roomOf(B.sel.room); if (r && r.extra.props) { r.extra.props = r.extra.props.filter(q => q.id !== B.sel.stairs); if (!r.extra.props.length) delete r.extra.props; } }
   else B.model.ops = B.model.ops.filter(o => o.id !== B.sel.op);
   B.sel = null; changed();
+}
+// ---- stairs from points (KIT.md §11b): the Stairs tool collects the way's points on the plan into a `stairs` prop of
+// the room the foot is in; the top lands on the floor above (or a storey up); Esc starts over ----
+const STAIR_STYLE_NAMES = { house: "a house's wooden box stair", house_open: "a house's, one side open: balusters", apartment: "an apartment's concrete flight, a pipe rail", motel: "a motel's steel stair, pan treads", steel: "an outside steel stair" };
+function stairsPoint(x, y, done) {
+  const [px, py] = snapPt(x, y), st = B.stairsNew || (B.stairsNew = { w: 0.9, style: "house", turn: "auto" });
+  if (!B.stairsPts || !B.stairsPts.length) {
+    const r = BM.roomAt(B.model, px, py, floorZ());
+    if (!r) { status("click inside a room: the stair's foot", "bad"); return; }
+    B.stairsPts = [{ x: px, y: py, room: r.id }]; renderTools(); draw(); return;
+  }
+  const r = roomOf(B.stairsPts[0].room);
+  if (!done) { if (Math.hypot(px - B.stairsPts[B.stairsPts.length - 1].x, py - B.stairsPts[B.stairsPts.length - 1].y) > 0.05) B.stairsPts.push({ x: px, y: py }); renderTools(); draw(); return; }
+  const pts = B.stairsPts.slice(); if (Math.hypot(px - pts[pts.length - 1].x, py - pts[pts.length - 1].y) > 0.05) pts.push({ x: px, y: py });
+  if (pts.length < 2) { status("the top too: double-click it", "bad"); return; }
+  const above = B.model.floors.filter(z => z > r.z + 0.5).sort((a, b) => a - b)[0], rise = r2((above ?? r.z + STOREY) - r.z);
+  const loc = q => [r2(q.x - r.x), r2(q.y - r.y)];
+  let i = 1; while ((r.extra.props || []).some(q => q.id === `${r.id}_stairs_${i}`)) i++;
+  const prop = { id: `${r.id}_stairs_${i}`, stairs: { from: [...loc(pts[0]), 0], to: [...loc(pts[pts.length - 1]), rise], w: st.w, style: st.style, turn: st.turn }, tag: "stairs" };
+  if (pts.length > 2) prop.stairs.via = pts.slice(1, -1).map(loc);
+  pushUndo();
+  (r.extra.props = r.extra.props || []).push(prop);
+  if (r.h < rise + 1.9) r.h = r2(rise + 2.4);                       // the room reaches the floor above and a ceiling past it
+  B.stairsPts = null; B.sel = { stairs: prop.id, room: r.id }; B.tool = "select"; svg.style.cursor = "default"; renderTools();
+  changed();
+  const lay = KIT.stairsLayout(prop.stairs);
+  status(lay.warnings.length ? "stairs: " + lay.warnings[0] : `stairs: ${lay.n} risers of ${(lay.riser * 100).toFixed(1)} cm, ${lay.pitch.toFixed(0)}°`, lay.warnings.length ? "bad" : "");
+}
+// the stairs of the rooms on this floor (and the way being clicked), drawn over the plan: the flights' treads, the
+// landings, the winders' fans, the way's points
+function drawStairs() {
+  const S = B.view.s, P = (x, y) => `${sx(x)} ${sy(y)}`;
+  for (const r of visibleRooms()) for (const sp of (r.extra.props || [])) {
+    if (!sp.stairs) continue;
+    const lay = KIT.stairsLayout(sp.stairs), sel = B.sel && B.sel.stairs === sp.id;
+    const g = el("g", { "data-stairs": sp.id, "data-room": r.id, style: "cursor:pointer" });
+    const corners = (at, w, d, rot) => { const c = Math.cos(rot * Math.PI / 180), sn = Math.sin(rot * Math.PI / 180); return [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([i, j]) => [r.x + at[0] + (i * w / 2) * c - (j * d / 2) * sn, r.y + at[1] + (i * w / 2) * sn + (j * d / 2) * c]); };
+    for (const p of lay.parts) {
+      const [w, d] = p.kind === "landing" ? p.size : [p.w, p.kind === "flight" ? p.run : p.w], cs = corners(p.at, w, d, p.rot);
+      el("path", { d: "M" + cs.map(q => P(q[0], q[1])).join("L") + "Z", fill: sel ? "#d9a441" : "#8d6f8f", "fill-opacity": 0.35, stroke: sel ? "#d9a441" : "#b89ab9", "stroke-width": 1, "data-stairs": sp.id, "data-room": r.id }, g);
+      if (p.kind === "flight") for (let i = 1; i < p.n; i++) {      // the treads' edges across the flight
+        const c = Math.cos(p.rot * Math.PI / 180), sn = Math.sin(p.rot * Math.PI / 180), v = -p.run / 2 + p.run * i / p.n;
+        const a = [r.x + p.at[0] - (w / 2) * c - v * sn, r.y + p.at[1] - (w / 2) * sn + v * c], b = [r.x + p.at[0] + (w / 2) * c - v * sn, r.y + p.at[1] + (w / 2) * sn + v * c];
+        el("path", { d: `M${P(a[0], a[1])}L${P(b[0], b[1])}`, stroke: "#ece8df", "stroke-opacity": 0.5, "stroke-width": 1, "data-stairs": sp.id, "data-room": r.id }, g);
+      }
+      if (p.kind === "winder") { const c = cs[0]; el("circle", { cx: sx(r.x + p.at[0]), cy: sy(r.y + p.at[1]), r: Math.max(2, S * 0.03), fill: "#ece8df", "fill-opacity": 0.6 }, g); void c; }
+    }
+    const pts = [sp.stairs.from, ...(sp.stairs.via || []), sp.stairs.to];
+    el("path", { d: "M" + pts.map(q => P(r.x + q[0], r.y + q[1])).join("L"), fill: "none", stroke: sel ? "#d9a441" : "#ece8df", "stroke-opacity": 0.7, "stroke-width": 1.5, "stroke-dasharray": "3 3" }, g);
+    pts.forEach((q, i) => el("circle", { cx: sx(r.x + q[0]), cy: sy(r.y + q[1]), r: i === 0 || i === pts.length - 1 ? 4 : 3, fill: i === pts.length - 1 ? "#d9a441" : "#ece8df", "data-stairs": sp.id, "data-room": r.id }, g));
+    if (S > 30) { const t = el("text", { x: sx(r.x + sp.stairs.to[0]) + 6, y: sy(r.y + sp.stairs.to[1]) - 6, fill: "#ece8df", "font-size": 10 }, g); t.textContent = lay.parts.length ? `${lay.n} × ${(lay.riser * 100).toFixed(0)} cm, ${lay.pitch.toFixed(0)}°` : "?"; }
+  }
+  if (B.stairsPts && B.stairsPts.length) {                              // the way being clicked
+    const pts = B.stairsPts;
+    el("path", { d: "M" + pts.map(q => P(q.x, q.y)).join("L"), fill: "none", stroke: "#d9a441", "stroke-width": 1.5, "stroke-dasharray": "4 3" });
+    for (const q of pts) el("circle", { cx: sx(q.x), cy: sy(q.y), r: 4, fill: "#d9a441" });
+  }
 }
 
 export const floorName = (floors, i) => { const below = floors.filter(z => z < -0.3).length; return floors[i] < -0.3 ? `B${below - i}` : `${i - below + 1}F`; };
@@ -766,6 +865,7 @@ const keys = new Set();
 view.addEventListener("keydown", e => { if (/^(Key[WASDQE]|Arrow)/.test(e.code)) { keys.add(e.code); e.preventDefault(); if (keys.size === 1) requestAnimationFrame(walk); } });
 view.addEventListener("keyup", e => keys.delete(e.code));
 view.addEventListener("blur", () => keys.clear());
+document.addEventListener("keydown", e => { if (e.key === "Escape" && B.stairsPts) { B.stairsPts = null; renderTools(); draw(); } });
 let lastT = 0;
 function walk(t) {
   if (!keys.size) { lastT = 0; changedPlayer(); return; }
@@ -897,7 +997,7 @@ async function boot() {
   window.__builderReady = true;
 }
 window.B = B; window.BM = BM; Object.defineProperty(window, "__builderStage", { get: () => stage });
-window.builder = { paint: { on: setPaint, hit: e => targetOfHit(paintHit(e)), at(fx, fy, alt = false) { const c = stage.renderer.domElement.getBoundingClientRect(); return paintAt(paintHit({ clientX: c.left + fx * c.width, clientY: c.top + fy * c.height }), alt); },
+window.builder = { stairsPoint, removeSel, paint: { on: setPaint, hit: e => targetOfHit(paintHit(e)), at(fx, fy, alt = false) { const c = stage.renderer.domElement.getBoundingClientRect(); return paintAt(paintHit({ clientX: c.left + fx * c.width, clientY: c.top + fy * c.height }), alt); },
     targetAt(fx, fy) { const c = stage.renderer.domElement.getBoundingClientRect(); return targetOfHit(paintHit({ clientX: c.left + fx * c.width, clientY: c.top + fy * c.height })); },
     // a piece of the plan as a click on it would take it (its slot, for a kit thing): the target, without the view's aim
     targetOfPiece(id, slot) { const p = (B.plan.pieces || []).find(q => q.id === id && q.level === B.target); return p ? targetOfHit({ piece: p, object: { userData: { slot: slot || "" } } }) : null; },

@@ -211,6 +211,18 @@ tags it `kit:<type>` and `art:kit/<type>_<hash>`, the mesh `tools/kit/build.mjs`
 rugs and ceiling steps are also tagged `surface` (the level check doesn't count them as obstacles). `in_wall: true`
 marks a thing that sits in its wall, like a window frame.
 
+**Stairs from points** (DECISIONS 2026-11-06: "stairs aren't pre-defined: you select start, mid and end points and they
+get generated to our rules"; KIT.md §11b): a prop with `"stairs": {"from": [x, y, z], "to": [x, y, z], "via": [[x, y],
+[x, y, z]...], "w": 0.9, "style": "house", "turn": "auto", "rail": "right", "wall_rail": "left"}` in place of a shape or a
+kit (room metres, z above the room's floor; `from` the foot, `to` the top, `via` the points on the way: straight on a
+landing to rest on, to the side a quarter turn (a house's: three winders round the newel; else a landing, or `turn`
+says: `winders`, `landing`), back the way you came a half turn with a platform (click the platform's middle; the next
+point says which lane the way back takes); a via point with a `z` fixes that landing's height). The plan lays it out
+to the rules (the risers by 2R + G = 63 cm within the style's riser and tread limits) as kit flights, landings and
+winders with their collider steps, the same in Godot and on the desk; the story check says what the rules object to
+(treads too shallow, flights too far apart). The scene builder's Stairs tool writes one (SCENE_BUILDER §1); the thing's
+box is the one round its parts.
+
 **A kit thing's slots dressed** (2026-10-31, the paint bucket on furniture): `"mats": {"white": "pbr/plastic/white_plastic",
 "fabric": {"set": "pbr/...", "tint": "#5a4a3a"}}`: a look on any of its kit's material slots (`wood`, `fabric`, `top`,
 `body`, `front`, `metal`... the ones its kit builds), each as a room's `look` takes it (§1: a set, a colour or a tuned

@@ -83,7 +83,7 @@ export function presetToModel(P) {
     const w = Math.min(o.w || OPENINGS[type].w, ln.hi - ln.lo - 0.3);
     ops.push(newOpening(type, `${rid}_${wall}_${type}`, ln, r3(ln.lo + (ln.hi - ln.lo) * (o.at ?? 0.5)), r.z, Object.assign({}, o, { w })));
   }
-  const floors = P.floors || [0];
+  const floors = (P.floors || [0]).slice();      // a copy: the floors buttons change the model's array in place, never the preset's (a reopened house came back with the basement, 2026-11-06)
   const items = (P.items || []).map(([rid, wall, kind, at = 0.5], i) => {
     const r = byId[rid], ln = wallLine(r, wall), W = WALL_ITEMS[kind];
     return newItem(kind, `${rid}_wi_${kind}_${i + 1}`, rid, wall, r3((ln.hi - ln.lo) * at));

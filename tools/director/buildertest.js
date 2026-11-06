@@ -584,6 +584,34 @@ const png = rgb => {                    // a 4x4 PNG of one colour (a scratch ma
     if (fl2.floors.length !== 4 || fl2.floors[0] !== -2.85 || fl2.labels.join() !== "B1,1F,2F,3F" || !fl2.up || fl2.up !== fl2.second || Math.abs(fl2.z - 5.7) > 0.01 || !fl2.doors || Math.abs(fl2.stairsH - 5.25) > 0.01)
       fail("the floors: " + JSON.stringify(fl2));
     await page.evaluate(() => { window.B.dirty = false; });
+
+    // stairs from points (KIT.md §11b): the Stairs tool in the house's stairs room, its own flight turned off: the foot
+    // clicked, a turn, the top double-clicked (on the floor above); a `stairs` prop in the room, laid out as a flight,
+    // winders and a flight with the plan's collider steps and cells, the checks passing; its width changed on the
+    // inspector's words; removed
+    await page.evaluate(() => { window.B.dirty = false; window.builder.openPreset("house"); });
+    await page.waitForFunction(() => window.B.plan && window.B.model.floors.length === 2 && window.B.model.rooms.some(r => r.kind === "stairs"), null, { timeout: 120000 });
+    await page.evaluate(() => { const B = window.B, st = B.model.rooms.find(r => r.kind === "stairs"); st.fixtures = false; B.tool = "stairs";
+      window.builder.stairsPoint(st.x + st.w / 2, st.y + 0.5, false); window.builder.stairsPoint(st.x + st.w / 2, st.y + st.d - 0.45, false); window.builder.stairsPoint(st.x + 0.1, st.y + st.d - 0.45, true); });
+    await page.waitForFunction(() => window.B.plan && window.B.plan.pieces.some(p => /_stairs_1__w\d+__tread\d+$/.test(p.id)), null, { timeout: 60000 });
+    const sp = await page.evaluate(async () => {
+      const B = window.B, st = B.model.rooms.find(r => r.kind === "stairs"), prop = (st.extra.props || []).find(p => p.stairs), pcs = B.plan.pieces.filter(p => p.id.startsWith(prop.id + "__"));
+      const lay = window.KITJS ? null : null;
+      const out = { prop: prop && prop.stairs, sel: B.sel, kinds: [...new Set(pcs.map(p => p.id.split("__")[1][0]))].sort(), colliders: pcs.filter(p => p.tags.includes("collider")).length, hollow: pcs.filter(p => p.tags.includes("hollow")).length,
+                    solid: pcs.filter(p => !p.tags.includes("collider") && !p.tags.includes("hollow")).length, errors: (await window.builder.runChecks()).errors, text: document.querySelector("#props").textContent };
+      prop.stairs.w = 0.8; window.builder.changed();
+      await new Promise(r => setTimeout(r, 1500));
+      out.wAfter = B.exported.level.rooms.find(r => r.id === st.id).props.find(p => p.id === prop.id).stairs.w;
+      B.sel = { stairs: prop.id, room: st.id }; window.builder.changed(false);
+      return out;
+    });
+    console.log("stairs from points:", JSON.stringify({ kinds: sp.kinds, colliders: sp.colliders, hollow: sp.hollow, solid: sp.solid, errors: sp.errors.length, w: sp.wAfter }), sp.text.match(/\d+ risers of [\d.]+ cm[^:]*/) ? sp.text.match(/\d+ risers of [\d.]+ cm[^:]*/)[0] : "(no summary)");
+    if (!sp.prop || sp.prop.via.length !== 1 || sp.kinds.join() !== "f,w" || sp.colliders < 20 || sp.hollow !== 3 || sp.errors.length || sp.wAfter !== 0.8 || !/risers of/.test(sp.text)) fail("stairs from points in the builder: " + JSON.stringify(sp).slice(0, 600));
+    await page.evaluate(() => { window.builder.removeSel(); });
+    await page.waitForTimeout(600);
+    const gone = await page.evaluate(() => { const st = window.B.model.rooms.find(r => r.kind === "stairs"); return !(st.extra.props || []).some(p => p.stairs); });
+    if (!gone) fail("the stairs weren't removed");
+    await page.evaluate(() => { window.B.dirty = false; });
   } finally {
     if (setDir) fs.rmSync(setDir, { recursive: true, force: true });
     fs.rmSync(path.join(ROOT, "Content/Studio/Sets", SETNAME), { recursive: true, force: true });

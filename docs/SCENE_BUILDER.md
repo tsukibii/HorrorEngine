@@ -44,6 +44,16 @@ rooms that can change between chapters. The panel under the 3D view counts what 
   turning on a half landing, a shaft through every floor it reaches, as a school's or a mansion's stairwell). The
   stairs' collision is their steps (the plan's collider boxes), their rails stop you going off the side, and the
   runtime climbs them with the eye gliding over each riser (play.gd, Play).
+- **Stairs from points** (the *Stairs* tool; DECISIONS 2026-11-06, KIT.md §11b): click the foot of the stair in a room,
+  then each turn or landing on the way (a point straight on is a landing, to the side a quarter turn, back the way you
+  came a half turn with a platform: click the platform's middle, then the top on the other lane), then double-click
+  the top: it lands on the floor above (a storey up when there is none) and the room reaches that floor. The flights,
+  landings and winders follow the rules (the risers by 2R + G = 63 cm, the treads from the runs), drawn over the plan
+  with their treads and the way's points; the inspector shows the risers, treads and pitch with the rules' warnings,
+  and takes the width, the style (a house's wooden box stair, one side open, an apartment's concrete flight, a
+  motel's steel stair, an outside steel stair), how the turns are made, the rails, the top's height and the points
+  themselves (one added before the top, the last taken away). Esc starts the clicking over. A stairs room's own
+  flight (above) is the quick way; a stair from points goes anywhere a room is tall enough.
 - **The selected room:**
   - Its `kind`, `name`, size, height, footsteps (`floor`) and `light`.
   - Its **open sides**, for walls left out: a porch's, a railing side.

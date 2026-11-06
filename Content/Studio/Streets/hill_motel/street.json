@@ -239,7 +239,8 @@
      "out": 1.1,
      "dir": 1,
      "walkway": true,
-     "style": "steel"
+     "style": "steel",
+     "turn": "u"
     },
     {
      "kind": "sign",
