@@ -206,15 +206,17 @@ function rebuild() {
 // the made props in their things' places (a tree's `prop`: street3's propsGroup), loaded when what they are or where
 // they stand changes, then the street drawn again with them; the export waits for them (ST.propsLoading)
 let propsKey = "";
+ST.propsReady = true;                                                // false while made props are loading (the checks' pictures wait)
 function placeProps() {
-  const key = JSON.stringify(S3.propThings(ST.street).map(t => [t.id, t.prop, t.at, t.turn, t.lift]));
+  const key = JSON.stringify(S3.propThings(ST.street).map(t => [t.id, t.prop, t.at, t.turn, t.lift, t.scale]));
   if (key === propsKey) return;
-  propsKey = key;
+  propsKey = key; ST.propsReady = false;
   ST.propsLoading = S3.propsGroup(ST.street).then(r => {
     if (key !== propsKey) return;
     const had = ST.props;
     ST.props = r.ids.size ? r : null;
     if (had || ST.props) rebuild();
+    ST.propsReady = true;
   });
 }
 function highlight() {

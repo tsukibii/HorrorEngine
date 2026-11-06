@@ -11,6 +11,7 @@ to a clear stem (`clear`), and a young one is held by stakes (`stakes`) in a tre
      "leaves": {"size": 0.42, "count": 1800, "tint": null}, "bark": {"color": null, "relief": 1.0}}
 
     "kind": "zelkova" | "ginkgo" | "cherry" | "camphor" | "plane" | "maple" | "crape_myrtle" | "pine" | "cedar" | "dead" | "azalea" | "shrub" | "grass"
+            | "hakone" | "sedge" | "flax" | "reed" | "fern"   (the blade plants, below)
     "season": "summer" | "autumn" | "spring" | "winter"
     "stakes": "none" | "torii" | "tripod" | "single"
     "pit": "none" | "kerb" | "soil"
@@ -30,6 +31,13 @@ ground (a crape myrtle; `spread_m` how far apart, or `clump` [w, d] metres the p
 are the same growth kept small: `azalea` (a clump of short stems, `clip` {"kind": "ball", "r"} or {"kind": "box", "w",
 "d", "h"} metres cuts every branch and card to the shape: the street's clipped balls and hedges; pink flowers in
 spring), `shrub` (loose, at a path's edge), `grass` (a tuft of blades on a few cards, no wood). Winter and the dead tree are bare. The same seed grows the same tree; another seed another one.
+
+**The blade plants** (the street builder outdoors, docs/STREET_NATURE_PLAN.md, 2026-11-06): no wood, every card a
+strip bent in an arc out of the crown (`BLADES`: how many, how long and wide, rising at `rise` degrees off the
+vertical and bending over `bend` more toward the tip), a spray of blades painted along it (variegated by `stripes`) or
+one frond: `hakone` (Japanese forest grass, a fountain of arching yellow-green striped blades), `sedge` (finer,
+stiffer, cream-edged), `flax` (phormium: stiff bronze-striped sword leaves fanning up), `reed` (susuki: tall blades
+with a plume), `fern` (a crown of arching pinnate fronds). `height` scales one; `leaves.count`, `size`, `stripes`.
 """
 import math
 
@@ -237,6 +245,27 @@ SPECIES = {
         "bark": {"style": "smooth", "color": "#6f6256", "relief": 0.4},
         "pipe": {"end": 0.002, "growth": 0.3, "power": 2.3},
     },
+    # the blade plants (make_blades): no growth, their numbers in BLADES; `leaf` their colours by season
+    "hakone": {"height": 0.5, "clear": 0.0, "radius": 0.01, "trunk": {"frac": 0.3, "shape": 0.8, "randomness": 0.5, "up": 0.5}, "levels": [],
+               "leaf": {"shape": "blades", "card": 0.5, "cluster": 1, "gloss": 0.55, "count": 36,
+                        "colors": {"summer": ["#c9c84a", "#9ab84a"], "spring": ["#d4d85a", "#a8c452"], "autumn": ["#c8a84a", "#b08a3a"]}},
+               "bark": {"style": "smooth", "color": "#6f6256", "relief": 0.4}, "pipe": {"end": 0.002, "growth": 0.3, "power": 2.3}},
+    "sedge": {"height": 0.38, "clear": 0.0, "radius": 0.01, "trunk": {"frac": 0.3, "shape": 0.8, "randomness": 0.5, "up": 0.5}, "levels": [],
+              "leaf": {"shape": "blades", "card": 0.38, "cluster": 1, "gloss": 0.55, "count": 44,
+                       "colors": {"summer": ["#d6cf86", "#86aa4c"], "spring": ["#dcd690", "#90b454"], "autumn": ["#c8b870", "#8a9a48"]}},
+              "bark": {"style": "smooth", "color": "#6f6256", "relief": 0.4}, "pipe": {"end": 0.002, "growth": 0.3, "power": 2.3}},
+    "flax": {"height": 1.3, "clear": 0.0, "radius": 0.01, "trunk": {"frac": 0.3, "shape": 0.8, "randomness": 0.5, "up": 0.5}, "levels": [],
+             "leaf": {"shape": "blades", "card": 1.3, "cluster": 1, "gloss": 0.45, "count": 24,
+                      "colors": {"summer": ["#6e4a46", "#86604e"], "spring": ["#6e4a46", "#86604e"], "autumn": ["#6a4440", "#7e5848"]}},
+             "bark": {"style": "smooth", "color": "#6f6256", "relief": 0.4}, "pipe": {"end": 0.002, "growth": 0.3, "power": 2.3}},
+    "reed": {"height": 1.5, "clear": 0.0, "radius": 0.01, "trunk": {"frac": 0.3, "shape": 0.8, "randomness": 0.5, "up": 0.5}, "levels": [],
+             "leaf": {"shape": "blades", "card": 1.5, "cluster": 1, "gloss": 0.6, "count": 34,
+                      "colors": {"summer": ["#8aa64a", "#aab860"], "spring": ["#8ab450", "#a8c060"], "autumn": ["#b8a860", "#c8b070"]}},
+             "bark": {"style": "smooth", "color": "#6f6256", "relief": 0.4}, "pipe": {"end": 0.002, "growth": 0.3, "power": 2.3}},
+    "fern": {"height": 0.65, "clear": 0.0, "radius": 0.01, "trunk": {"frac": 0.3, "shape": 0.8, "randomness": 0.5, "up": 0.5}, "levels": [],
+             "leaf": {"shape": "frond", "card": 0.65, "cluster": 1, "gloss": 0.5, "count": 13,
+                      "colors": {"summer": ["#4a8a34", "#6aa84a"], "spring": ["#62a042", "#86bc58"], "autumn": ["#5a7a30", "#8a8a3a"]}},
+             "bark": {"style": "smooth", "color": "#6f6256", "relief": 0.4}, "pipe": {"end": 0.002, "growth": 0.3, "power": 2.3}},
     "dead": {  # a dead tree: bare, bleached, its branches broken short, bending down
         "height": 7.0, "clear": 2.2, "radius": 0.16, "trunk": {"frac": 0.75, "shape": 0.7, "randomness": 0.9, "up": 0.5},
         "levels": [
@@ -699,6 +728,143 @@ def make_grass(spec, sp, th, seed, season, leaf, palette):
     return th
 
 
+# ---- the blade plants: strips bent in an arc out of the crown, a spray of blades (or a frond) painted along each -------------
+# n cards; length and width metres (the card: its painted blades run its length); rise degrees off the vertical at the
+# foot, bend more by the tip (bent toward the tip by `power`); spread metres the feet stand off the crown's middle;
+# twist degrees a card turns about its own length; blades a card and their width in mm; stripes [(colour, share of
+# the blade's width), ...] drawn widest first down each blade (variegation); plume: a feathery head at the tip; frond:
+# one pinnate frond over the card (the plant family's painter) instead of blades
+BLADES = {
+    "hakone": dict(n=32, length=0.52, width=0.1, rise=22, bend=100, power=1.7, spread=0.11, twist=14, blades=6, blade_w=7.0, segs=5,
+                   stripes=[("#c4cc5c", 1.0), ("#86ad3e", 0.5), ("#e0e28c", 0.25)], tip="#b8a050"),
+    "sedge": dict(n=36, length=0.4, width=0.08, rise=12, bend=78, power=1.5, spread=0.1, twist=10, blades=8, blade_w=4.5, segs=5,
+                  stripes=[("#e2dc96", 1.0), ("#7faa4a", 0.55), ("#ece6a8", 0.2)], tip="#c8b870"),
+    "flax": dict(n=24, length=1.35, width=0.08, rise=9, bend=24, power=2.2, spread=0.07, twist=5, blades=1, blade_w=62.0, segs=4,
+                 stripes=[("#4e3634", 1.0), ("#6e4e42", 0.78), ("#8a6a58", 0.5), ("#a88470", 0.26), ("#5a4038", 0.1)], tip="#3e2a26"),
+    "reed": dict(n=34, length=1.55, width=0.1, rise=6, bend=52, power=1.8, spread=0.08, twist=10, blades=5, blade_w=9.0, segs=5,
+                 stripes=[("#8fae4a", 1.0), ("#b9c46a", 0.4)], tip="#c8b880", plume=True),
+    "fern": dict(n=13, length=0.7, width=0.26, rise=32, bend=82, power=1.6, spread=0.06, twist=8, segs=5, frond=True),
+}
+
+
+def make_blades(spec, sp, th, seed, season, leaf, palette, kind):
+    """A clump of `n` cards, each a strip of `segs` quads bent in an arc out of the crown (rising at `rise` off the
+    vertical, bending `bend` more by its tip) and turned a little, a spray of blades painted along it; its vertex
+    normals rounded over the clump so the mass lights as one. No wood."""
+    K = dict(BLADES[kind])
+    K.update({k: v for k, v in (spec.get("blades") or {}).items() if k in K})
+    r = N.rng(seed, "blades")
+    k_h = float(spec.get("height", sp["height"])) / sp["height"]
+    n = int(leaf.get("count", K["n"]))
+    length, width = K["length"] * k_h * float(leaf.get("size", 1.0)), K["width"] * max(0.6, k_h ** 0.5)
+    th.material("leaf", "paint", alpha="clip", double=True, color=palette[0], rough=float(leaf.get("gloss", 0.55)))
+    isls = [th.island(f"leaf{i}", width * 1000.0, length * 1000.0, mat="leaf") for i in range(4)]
+    th.pack()
+    segs = int(K["segs"])
+    corners, uvs, normals, faces = [], [], [], []
+    hi = 0.0
+    for i in range(n):
+        a = 2 * math.pi * i / n + float(r.uniform(-0.35, 0.35))
+        out = np.array([math.cos(a), math.sin(a), 0.0])
+        side = np.array([-math.sin(a), math.cos(a), 0.0])
+        L = length * float(r.uniform(0.72, 1.15))
+        w = width * float(r.uniform(0.85, 1.15))
+        rise, bend = K["rise"] * float(r.uniform(0.7, 1.3)), K["bend"] * float(r.uniform(0.75, 1.2))
+        tw = math.radians(K["twist"] * float(r.uniform(-1, 1)))
+        s_vec = T._unit(side * math.cos(tw) + UP * math.sin(tw) * 0.5 + out * math.sin(tw) * 0.3)
+        p = out * K["spread"] * float(r.uniform(0.0, 1.0)) - UP * 0.01
+        pts = [p.copy()]
+        for k in range(segs):
+            t = (k + 0.5) / segs
+            th_ = math.radians(rise + bend * t ** K["power"])
+            d = out * math.sin(th_) + UP * math.cos(th_)
+            p = p + d * (L / segs)
+            pts.append(p.copy())
+        light = T._unit(out * 0.7 + UP * 0.55 + r.normal(0, 0.15, 3))
+        cell = isls[int(r.integers(4))]
+        flip = r.random() < 0.5
+        v0 = len(corners) * 1
+        base = sum(len(c) for c in corners)
+        strip = []
+        for k, q in enumerate(pts):
+            ww = w * (0.42 if k == 0 else 0.8 if k == 1 else 0.55 if k == segs else 1.0)   # narrow at the foot (a tuft, not a vase), tapered at the tip
+            strip.append(q - s_vec * ww / 2)
+            strip.append(q + s_vec * ww / 2)
+            hi = max(hi, float(q[2]))
+        corners.append(np.asarray(strip))
+        for k in range(segs):
+            b0 = base + 2 * k
+            faces.append([b0, b0 + 1, b0 + 3, b0 + 2])
+            u = (1.0, 0.0) if flip else (0.0, 1.0)
+            v0_, v1_ = k / segs, (k + 1) / segs
+            uvs.append(cell.to_uv(np.array([u[0], u[1], u[1], u[0]]), np.array([v0_, v0_, v1_, v1_])))
+        normals.append(np.repeat(light[None], len(strip), 0))
+        del v0
+    V = np.concatenate(corners)
+    m = M.Mesh(V, np.asarray(faces), np.stack(uvs), mats=["leaf"])
+    m.a["rest"] = V.copy()
+    m.a["normal"] = np.concatenate(normals)
+    th.low = M.join([m], ["leaf"])
+    th.high = None
+    th.pose = "stand"
+    th.anchor = np.zeros(3)
+    th.bake_ao = False
+    th.mats["leaf"]["wear"] = {k: 0.0 for k in ("grime", "dirt", "dust", "scratches", "edges", "stains", "fade")}
+    th.sockets["base"] = ((0.0, 0.0, 0.0), (0, 0, 1))
+    th.view = {"azim": -32, "elev": 10, "lens": 60, "fill": 0.9}
+    th.tree = {"kind": kind, "season": season, "height_m": round(hi, 2), "nodes": 0, "cards": n}
+    stripes = leaf.get("stripes", K.get("stripes"))
+    if stripes is None and not K.get("frond"):
+        stripes = [(palette[0], 1.0), (palette[1] if len(palette) > 1 else palette[0], 0.45)]
+
+    def paint(fr):
+        for i, isl in enumerate(isls):
+            f = fr[isl.name]
+            if K.get("frond"):
+                from . import plant as PL
+                PL.paint_single(f, "fern", [rgb(c) for c in palette], N.rng(seed * 4 + i, "frond"), seed * 4 + i, float(leaf.get("gloss", 0.5)))
+            else:
+                paint_blades(f, K, stripes, palette, N.rng(seed * 4 + i, "blades"), float(leaf.get("gloss", 0.55)))
+
+    th.paint = paint
+    return th
+
+
+def paint_blades(f, K, stripes, palette, rng, gloss):
+    """A card's texture: `blades` blades from its foot to near its top, each a tapering sinuous wedge drawn as stripes
+    down its length (widest first), browner at the tip; a feathery plume at the top of a reed; see-through elsewhere."""
+    W, H = f.W, f.H
+    f.fill(color=_hex(rgb(palette[0])), opacity=0.0, rough=gloss, height=0.0)
+    n = int(K["blades"])
+    for i in range(n):
+        one = n == 1
+        x0 = W / 2 + float(rng.uniform(-0.22, 0.22)) * W * (0.0 if one else 1.0)
+        x1 = x0 + float(rng.uniform(-0.45, 0.45)) * W * (0.25 if one else 1.0)      # fanning apart toward the top
+        bow = float(rng.uniform(-0.18, 0.18)) * W * (0.3 if one else 1.0)             # a sideways bow along its length
+        top = H * float(rng.uniform(0.5, 1.0) if not one else rng.uniform(0.92, 1.0))
+        bw = K["blade_w"] * float(rng.uniform(0.85, 1.15))
+        ts = [0.0, 0.18, 0.36, 0.54, 0.72, 0.86, 1.0]
+        pts = [(x0 + (x1 - x0) * t + bow * math.sin(math.pi * t) * (1 if i % 2 else -1), top * t) for t in ts]
+        tipc = rgb(K.get("tip", palette[0]))
+        for col, share in stripes:
+            c = rgb(col) * float(rng.uniform(0.92, 1.06))
+            for k in range(len(pts) - 1):
+                t = ts[k]
+                cc = c * (1 - 0.55 * t * t) + tipc * 0.55 * t * t
+                wk = bw * share * (1 - 0.72 * t * t) + 0.35
+                f.line([pts[k], pts[k + 1]], wk, color=_hex(cc), opacity=1.0, rough=gloss, height=0.12 * share)
+        if K.get("plume"):
+            tip = pts[-1]
+            for q in range(int(rng.integers(26, 40))):
+                a = math.radians(float(rng.uniform(-70, 70)))
+                ln = H * float(rng.uniform(0.06, 0.16))
+                p1 = (tip[0] + math.sin(a) * ln, tip[1] - abs(math.cos(a)) * ln * float(rng.uniform(0.2, 1.0)))
+                f.line([tip, p1], 0.9, color="#d8c8a0", opacity=1.0, rough=0.7, height=0.05)
+    X, Y = f.grid()
+    sh = N.fbm3(np.stack([X / 50.0, Y / 50.0, np.full_like(X, 0.37)], -1), 41, 2)
+    f.lay_island(np.ones_like(X), color=np.clip(rgb(palette[0])[None, None] * (1 + 0.4 * sh[..., None]), 0, 1).astype(np.float32), alpha=0.18)
+
+
 def make(spec, th):
     seed = int(spec.get("seed", 0))
     kind = spec.get("kind", "zelkova")
@@ -708,7 +874,7 @@ def make(spec, th):
     season = "dead" if kind == "dead" else spec.get("season", "summer")
     leaf = dict(sp["leaf"])
     k_h = float(spec.get("height", sp["height"])) / sp["height"]          # a tree kept small has fewer, smaller sprays
-    if k_h < 0.95 and kind not in ("grass",):
+    if k_h < 0.95 and kind not in ("grass",) and kind not in BLADES:
         leaf["count"] = int(leaf.get("count", 1800) * max(0.3, k_h ** 1.15))
         leaf["card"] = leaf.get("card", 0.45) * max(0.7, k_h ** 0.3)
     leaf.update(spec.get("leaves") or {})
@@ -717,6 +883,8 @@ def make(spec, th):
     leafy = LEAF_SEASON.get(season) is not None and int(leaf.get("count", 1)) > 0
     if kind == "grass":
         return make_grass(spec, sp, th, seed, season, leaf, palette_of(leaf, season))
+    if kind in BLADES:
+        return make_blades(spec, sp, th, seed, season, leaf, palette_of(leaf, season), kind)
     stems, ids = grow(spec, sp, seed)
     twigs = spec.get("twigs", "auto")
     meshed = set(ids) if (not leafy or twigs == "mesh" or len(ids) <= 2) and twigs != "cards" else set(ids[:-1])

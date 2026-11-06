@@ -24,6 +24,7 @@ try {
   page.on("pageerror", e => errors.push(e.message));
   await page.goto(`${URL0}street.html?street=${encodeURIComponent(street)}&shot=${encodeURIComponent(shotId)}${opt("--time") ? "&time=" + opt("--time") : ""}`);
   await page.waitForFunction(() => window.__streetReady, null, { timeout: 120000 });
+  await page.waitForFunction(() => window.ST.propsReady !== false, null, { timeout: 180000 });   // the made props in their places
   const info = await page.evaluate(async ({ shotId, height }) => {
     const s = window.ST.street.shots.find(x => x.id === shotId);
     if (!s) return { error: `no shot ${shotId}: ${window.ST.street.shots.map(x => x.id).join(", ")}` };

@@ -1617,12 +1617,14 @@ export function banksOf(r) {
     if (!b && !def) return null;
     if (b === null) return null;
     const o = Object.assign({}, def || { h: 0, w: 1, kind: "grass" }, b || {});
-    return { h: num(o.h, 0), w: Math.max(0.05, num(o.w, 1)), kind: BANK_KINDS[o.kind] ? o.kind : "grass", rocks: o.rocks || null, course: num(o.course, 0.35) };
+    return { h: num(o.h, 0), w: Math.max(0.05, num(o.w, 1)), kind: BANK_KINDS[o.kind] ? o.kind : "grass", rocks: o.rocks || null, course: num(o.course, 0.35), flat: Math.max(0, num(o.flat, 0)) };
   });
 }
 // a bank's height `e` metres out from the road's edge
 export function bankZ(b, e) {
   if (!b || !b.h) return 0;
+  e -= b.flat || 0;                                                 // level ground before it rises (a stream's grass strip before its revetment)
+  if (e <= 0) return 0;
   if (b.kind === "wall") return e > 0.001 ? b.h : 0;
   const t = clamp(e / b.w, 0, 1);
   return b.kind === "concrete" ? b.h * t : b.h * t * t * (3 - 2 * t);
@@ -1632,7 +1634,17 @@ export function roadPath(r) {
   const P = spline(roadPoints(r), 1.5), n = P.length, S = [0];
   for (let i = 1; i < n; i++) S.push(S[i - 1] + Math.max(1e-6, Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1])));
   const T = P.map((_, i) => { const a = P[Math.max(0, i - 1)], b = P[Math.min(n - 1, i + 1)], l = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1; return [(b[0] - a[0]) / l, (b[1] - a[1]) / l]; });
-  const L = S[n - 1], W = num(r.width, 6), walks = roadKind(r) !== "road" ? [0, 0] : Array.isArray(r.walks) ? r.walks.map(v => num(v, 0)) : [num(r.walks, 2), num(r.walks, 2)];
+  // a path's or a river's width can change along it: `width` one number, or one a point (from, the bends, to), or [at from, at to]
+  const Ws = roadKind(r) !== "road" && Array.isArray(r.width) && r.width.length ? r.width.map(v => Math.max(0.1, num(v, 6))) : null;
+  const L = S[n - 1], W = Ws ? Math.max(...Ws) : num(r.width, 6), walks = roadKind(r) !== "road" ? [0, 0] : Array.isArray(r.walks) ? r.walks.map(v => num(v, 0)) : [num(r.walks, 2), num(r.walks, 2)];
+  const cp = roadPoints(r), cd = [0]; for (let i = 1; i < cp.length; i++) cd.push(cd[i - 1] + Math.hypot(cp[i][0] - cp[i - 1][0], cp[i][1] - cp[i - 1][1]));
+  const wAt = s => {
+    if (!Ws) return W;
+    const k = clamp(s, 0, L) / (L || 1) * (cd[cd.length - 1] || 1);
+    if (Ws.length !== cp.length) { const t = k / (cd[cd.length - 1] || 1); return Ws[0] + (Ws[Ws.length - 1] - Ws[0]) * t; }
+    for (let i = 0; i + 1 < cp.length; i++) if (k <= cd[i + 1] || i + 2 === cp.length) { const t = (cd[i + 1] - cd[i]) > 1e-9 ? clamp((k - cd[i]) / (cd[i + 1] - cd[i]), 0, 1) : 0; return Ws[i] + (Ws[i + 1] - Ws[i]) * t; }
+    return W;
+  };
   const seg = s => { let lo = 0, hi = n - 1; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (S[m] <= s) lo = m; else hi = m; } return lo; };
   const frame = s => {
     const i = seg(Math.max(0, Math.min(L, s))), u = Math.max(-2, Math.min(3, (s - S[i]) / ((S[i + 1] - S[i]) || 1)));
@@ -1646,7 +1658,7 @@ export function roadPath(r) {
   const dropBefore = s => { let d = 0; for (const [a, h] of drops) if (s > a) d += h; return d; };
   const zAt = s => frame(s).p[2] - dropBefore(s);
   const at = (s, q) => { const f = frame(s); return [f.p[0] + f.n[0] * q, f.p[1] + f.n[1] * q, zAt(s)]; };
-  const xs = P.map(p => p[0]), ys = P.map(p => p[1]), pad = W / 2 + Math.max(...walks) + Math.max(0, ...banks.map(b => b ? b.w : 0)) + 0.5;
+  const xs = P.map(p => p[0]), ys = P.map(p => p[1]), pad = W / 2 + Math.max(...walks) + Math.max(0, ...banks.map(b => b ? b.w + (b.flat || 0) : 0)) + 0.5;
   const box = [Math.min(...xs) - pad, Math.min(...ys) - pad, Math.max(...xs) + pad, Math.max(...ys) + pad];
   const nearest = (x, y) => {
     let best = null;
@@ -1670,7 +1682,7 @@ export function roadPath(r) {
   const nSteps = kind === "steps" ? Math.max(1, Math.round(Math.abs(total) / Math.max(0.05, num(r.rise, 0.17)))) : 0;
   const rise = nSteps ? total / nSteps : 0, run = nSteps ? L / nSteps : L;
   const stepZ = s => { if (!nSteps) return zAt(s); const u = climbing ? s : L - s; const i = clamp(Math.floor(u / run), 0, nSteps - 1); return (climbing ? z0 : z1) + (i + 1) * Math.abs(rise); };
-  return { P, S, T, L, W, walks, kerb: num(r.kerb, 0.15), frame, at, z: zAt, nearest, stations, box, curved: n > 2, id: r.id,
+  return { P, S, T, L, W, wAt, walks, kerb: num(r.kerb, 0.15), frame, at, z: zAt, nearest, stations, box, curved: n > 2, id: r.id,
     kind, banks, drops, depth: kind === "river" ? Math.max(0.05, num(r.depth, 0.5)) : 0, nSteps, rise, run, climbing, stepZ, z0, z1 };
 }
 export const roadFrame = roadPath;                                    // (the old name)
@@ -1846,7 +1858,8 @@ const pathSlot = surf => PATH_SURFACES[surf] ? ({ grass: "mown", paving: "paveme
 function pathParts(r, index) {
   const o = out(), f = roadPath(r), W = f.W, L = f.L, zA = 0.004 + 0.003 * (index % 8), slot = pathSlot(r.surface);
   const P3 = (s, q, dz) => { const p = f.at(s, q); return [p[0], p[1], p[2] + dz]; }, st = f.stations(0, L);
-  for (let i = 0; i + 1 < st.length; i++) { const a = st[i], b = st[i + 1]; polyUp(o, slot, [P3(a, -W / 2, zA), P3(b, -W / 2, zA), P3(b, W / 2, zA), P3(a, W / 2, zA)], [[W / 2, a], [W / 2, b], [-W / 2, b], [-W / 2, a]]); }
+  for (let i = 0; i + 1 < st.length; i++) { const a = st[i], b = st[i + 1], ha = f.wAt(a) / 2, hb = f.wAt(b) / 2; polyUp(o, slot, [P3(a, -ha, zA), P3(b, -hb, zA), P3(b, hb, zA), P3(a, ha, zA)], [[ha, a], [hb, b], [-hb, b], [-ha, a]]); }
+  void W;
   return o;
 }
 // steps: a flight from the low end up (roadPath's nSteps, rise, run), each step a riser and a tread the road's width.
@@ -1905,23 +1918,26 @@ function riverParts(r, index, T) {
   const o = out(), f = roadPath(r), W = f.W, L = f.L, depth = f.depth, R = rng(seedOf(r.id || "river") + num(r.seed, 0));
   const ground = T ? T.ground : null, drop = T ? T.drop : GROUND_DROP, shelf = Math.min(W / 4, Math.max(0.3, depth * 1.5)), st = f.stations(0, L);
   const P3 = (s, q, dz) => { const p = f.at(s, q); return [p[0], p[1], p[2] + dz]; };
-  const strip = (slot, q0, q1, dz0, dz1) => { for (let i = 0; i + 1 < st.length; i++) { const a = st[i], b = st[i + 1]; if (b - a < 0.0025) continue; polyUp(o, slot, [P3(a, q0, dz0), P3(b, q0, dz0), P3(b, q1, dz1), P3(a, q1, dz1)], [[-q0, a], [-q0, b], [-q1, b], [-q1, a]]); } };
-  strip("riverbed", -(W / 2 - shelf), W / 2 - shelf, -depth, -depth);
-  strip("riverbed", -W / 2, -(W / 2 - shelf), 0, -depth); strip("riverbed", W / 2 - shelf, W / 2, -depth, 0);
-  strip("water", -W / 2, W / 2, 0, 0);
+  // q0 and q1 as shares of the half width (-1 the right edge, 1 the left), since the width can change along it
+  const hw = s => f.wAt(s) / 2, sh = s => Math.min(hw(s) / 2, shelf);
+  const strip = (slot, k0, k1, dz0, dz1) => { for (let i = 0; i + 1 < st.length; i++) { const a = st[i], b = st[i + 1]; if (b - a < 0.0025) continue; const q0a = k0(a), q0b = k0(b), q1a = k1(a), q1b = k1(b); polyUp(o, slot, [P3(a, q0a, dz0), P3(b, q0b, dz0), P3(b, q1b, dz1), P3(a, q1a, dz1)], [[-q0a, a], [-q0b, b], [-q1b, b], [-q1a, a]]); } };
+  strip("riverbed", s => -(hw(s) - sh(s)), s => hw(s) - sh(s), -depth, -depth);
+  strip("riverbed", s => -hw(s), s => -(hw(s) - sh(s)), 0, -depth); strip("riverbed", s => hw(s) - sh(s), s => hw(s), -depth, 0);
+  strip("water", s => -hw(s), s => hw(s), 0, 0);
   for (const [d, h] of f.drops) {                                    // a fall: the water's face down it, white, and a lip of stones
     if (d <= 0.01 || d >= L - 0.01) continue;
-    const fr = f.frame(d), zHi = f.z(d - 0.002), zLo = f.z(d + 0.002), p = q => { const v = f.at(d, q); return [v[0], v[1]]; };
-    poly(o, "foam", [[...p(-W / 2), zLo - 0.02], [...p(W / 2), zLo - 0.02], [...p(W / 2), zHi + 0.01], [...p(-W / 2), zHi + 0.01]], [fr.t[0], fr.t[1], 0]);
-    for (let q = -W / 2 + 0.12; q < W / 2; q += 0.26) { const c = P3(d - 0.12, q, 0); lumpS(o, "rock", [c[0], c[1], zHi - 0.08 + R() * 0.06], 0.1 + R() * 0.06, 0.16, 0.1, R); }
+    const fr = f.frame(d), zHi = f.z(d - 0.002), zLo = f.z(d + 0.002), p = q => { const v = f.at(d, q); return [v[0], v[1]]; }, hd = hw(d);
+    poly(o, "foam", [[...p(-hd), zLo - 0.02], [...p(hd), zLo - 0.02], [...p(hd), zHi + 0.01], [...p(-hd), zHi + 0.01]], [fr.t[0], fr.t[1], 0]);
+    for (let q = -hd + 0.12; q < hd; q += 0.26) { const c = P3(d - 0.12, q, 0); lumpS(o, "rock", [c[0], c[1], zHi - 0.08 + R() * 0.06], 0.1 + R() * 0.06, 0.16, 0.1, R); }
     void h;
   }
   for (const sd of [1, -1]) {                                        // the banks
     const b = f.banks[sd > 0 ? 0 : 1]; if (!b) continue;
     const slot = { grass: "grass", soil: "soil", moss: "moss", stone: "grass", rock: "rock", concrete: "concrete", wall: "concrete" }[b.kind] || "grass";
-    const zAt = (s, e) => { if (e <= 0) return f.z(s); const p = f.at(s, sd * (W / 2 + e)); return ground ? ground(p[0], p[1]) : f.z(s) + bankZ(b, e); };
-    const Q = (s, e, z) => { const p = f.at(s, sd * (W / 2 + e)); return [p[0], p[1], z]; };
-    const m = b.kind === "concrete" ? Math.max(1, Math.round(Math.abs(b.h) / b.course)) : 5, es = Array.from({ length: m + 1 }, (_, k) => b.w * k / m);
+    const zAt = (s, e) => { if (e <= 0) return f.z(s); const p = f.at(s, sd * (hw(s) + e)); return ground ? ground(p[0], p[1]) : f.z(s) + bankZ(b, e); };
+    const Q = (s, e, z) => { const p = f.at(s, sd * (hw(s) + e)); return [p[0], p[1], z]; };
+    const fl = b.flat || 0, m = b.kind === "concrete" ? Math.max(1, Math.round(Math.abs(b.h) / b.course)) : 5, es = (fl > 0 ? [0] : []).concat(Array.from({ length: m + 1 }, (_, k) => fl + b.w * k / m));
+    const bw = fl + b.w;
     for (let i = 0; i + 1 < st.length; i++) {
       const a = st[i], c = st[i + 1]; if (c - a < 0.0025) continue;
       if (b.kind === "wall") {
@@ -1930,18 +1946,19 @@ function riverParts(r, index, T) {
         polyUp(o, "concrete", [Q(a, 0, top), Q(c, 0, topc), Q(c, 0.35, zAt(c, 0.35)), Q(a, 0.35, zAt(a, 0.35))]);
         polyUp(o, slot === "concrete" ? "grass" : slot, [Q(a, 0.35, zAt(a, 0.35)), Q(c, 0.35, zAt(c, 0.35)), Q(c, b.w, zAt(c, b.w)), Q(a, b.w, zAt(a, b.w))]);
       } else if (b.kind === "concrete") {
-        for (let k = 0; k < m; k++) {                                 // a course: its riser up from the tread below, its tread
+        if (fl > 0) polyUp(o, "grass", [Q(a, 0, zAt(a, 0)), Q(c, 0, zAt(c, 0)), Q(c, fl, zAt(c, fl)), Q(a, fl, zAt(a, fl))]);   // the level strip before the courses
+        for (let k = es.length - m - 1; k + 1 < es.length; k++) {     // a course: its riser up from the tread below, its tread
           const e0 = es[k], e1 = es[k + 1], fr = f.frame((a + c) / 2), nn = [-sd * fr.n[0], -sd * fr.n[1], 0];
           poly(o, "revet", [Q(a, e0, zAt(a, e0)), Q(c, e0, zAt(c, e0)), Q(c, e0, zAt(c, e1)), Q(a, e0, zAt(a, e1))], nn);
           polyUp(o, "concrete", [Q(a, e0, zAt(a, e1)), Q(c, e0, zAt(c, e1)), Q(c, e1, zAt(c, e1)), Q(a, e1, zAt(a, e1))]);
         }
-      } else for (let k = 0; k < m; k++) polyUp(o, slot, [Q(a, es[k], zAt(a, es[k])), Q(c, es[k], zAt(c, es[k])), Q(c, es[k + 1], zAt(c, es[k + 1])), Q(a, es[k + 1], zAt(a, es[k + 1]))]);
+      } else for (let k = 0; k + 1 < es.length; k++) polyUp(o, slot, [Q(a, es[k], zAt(a, es[k])), Q(c, es[k], zAt(c, es[k])), Q(c, es[k + 1], zAt(c, es[k + 1])), Q(a, es[k + 1], zAt(a, es[k + 1]))]);
       // the skirt: down under the drawn ground past the bank's edge, so the grid's edge never shows
-      polyUp(o, slot === "concrete" ? "grass" : slot, [Q(a, b.w, zAt(a, b.w)), Q(c, b.w, zAt(c, b.w)), Q(c, b.w + 0.4, zAt(c, b.w + 0.4) - drop - 0.01), Q(a, b.w + 0.4, zAt(a, b.w + 0.4) - drop - 0.01)]);
+      polyUp(o, slot === "concrete" ? "grass" : slot, [Q(a, bw, zAt(a, bw)), Q(c, bw, zAt(c, bw)), Q(c, bw + 0.4, zAt(c, bw + 0.4) - drop - 0.01), Q(a, bw + 0.4, zAt(a, bw + 0.4) - drop - 0.01)]);
     }
     const rk = b.rocks || (b.kind === "rock" ? { every: 0.45, size: 0.3 } : b.kind === "stone" ? { every: 2.2, size: 0.5 } : null);
     if (rk) {                                                         // stones along it, half sunk: at the water's edge (river stones) or up the bank
-      const every = Math.max(0.1, num(rk.every, 1)), size = num(rk.size, 0.4), lo = b.kind === "rock" ? -0.15 : 0, hi = b.kind === "rock" ? Math.min(b.w, 0.7) : b.w;
+      const every = Math.max(0.1, num(rk.every, 1)), size = num(rk.size, 0.4), lo = b.kind === "rock" ? -0.15 : 0, hi = b.kind === "rock" ? Math.min(bw, 0.7) : bw;
       for (let s = every * R(); s < L; s += every * (0.7 + R() * 0.6)) {
         const e = lo + (hi - lo) * R(), sz = size * (0.7 + R() * 0.6), c = Q(s, e, zAt(s, Math.max(e, 0.001)) - sz * 0.3);
         if (e < 0) c[2] = f.z(s) - sz * 0.25;
@@ -1951,9 +1968,9 @@ function riverParts(r, index, T) {
   }
   const rk = r.rocks ? Object.assign({ every: 4, size: 0.9 }, r.rocks) : null;
   if (rk) {                                                           // rocks in the water, white water round the ones that stand out of it
-    const every = Math.max(0.3, num(rk.every, 4)), size = num(rk.size, 0.9), reach = Math.max(0, W / 2 - shelf - size * 0.6);
+    const every = Math.max(0.3, num(rk.every, 4)), size = num(rk.size, 0.9);
     for (let s = every * R(); s < L; s += every * (0.6 + R() * 0.8)) {
-      const q = (R() * 2 - 1) * reach, sz = size * (0.6 + R() * 0.8), zc = -depth + sz * (0.2 + R() * 0.55), c = P3(s, q, zc), rz = sz * 0.7;
+      const reach = Math.max(0, hw(s) - sh(s) - size * 0.6), q = (R() * 2 - 1) * reach, sz = size * (0.6 + R() * 0.8), zc = -depth + sz * (0.2 + R() * 0.55), c = P3(s, q, zc), rz = sz * 0.7;
       lumpS(o, "rock", c, sz * (0.7 + R() * 0.5), sz * (0.7 + R() * 0.5), rz, R);
       if (zc + rz * 0.84 > 0.05) {                                     // out of the water: a ring of foam round it
         const ri = sz * 0.75, ro = sz * 1.7, zf = f.z(s) + 0.006, pts = k => { const t = k / 10 * Math.PI * 2; const pi = f.at(s, q + Math.cos(t) * ri), po = f.at(s, q + Math.cos(t) * ro); const u = [Math.sin(t) * ri, Math.sin(t) * ro]; const fr = f.frame(s); return [[pi[0] + fr.t[0] * u[0], pi[1] + fr.t[1] * u[0], zf], [po[0] + fr.t[0] * u[1], po[1] + fr.t[1] * u[1], zf]]; };
@@ -1962,7 +1979,7 @@ function riverParts(r, index, T) {
     }
   }
   for (const rp of r.rapids || []) {                                  // white water along a stretch, `w` of the river's width about `x`
-    const s0 = clamp(num(rp.at, 0), 0, L), s1 = clamp(s0 + num(rp.len, 6), 0, L), w = Math.min(W, num(rp.w, W * 0.5)), x = -num(rp.x, 0), z = 0.006;
+    const s0 = clamp(num(rp.at, 0), 0, L), s1 = clamp(s0 + num(rp.len, 6), 0, L), w = Math.min(f.wAt(s0), num(rp.w, f.wAt(s0) * 0.5)), x = -num(rp.x, 0), z = 0.006;
     for (let a = s0; a < s1; a += 1.5) { const b = Math.min(s1, a + 1.5), j0 = (R() - 0.5) * w * 0.3, j1 = (R() - 0.5) * w * 0.3; polyUp(o, "foam", [P3(a, x - w / 2 + j0, z), P3(b, x - w / 2 + j1, z), P3(b, x + w / 2 + j1, z), P3(a, x + w / 2 + j0, z)], [[0, a], [0, b], [1, b], [1, a]]); }
   }
   return o;
@@ -1994,7 +2011,7 @@ function groundParts(S, T, bb, m) {
 export const SCATTER_KINDS = ["plant", "rock", "canopy", "tree"];
 export function scatterThings(S) {
   const out = [], paths = (S.roads || []).map(roadPath);
-  const onRoad = (x, y) => paths.some(g => { if (!inBox(g, x, y)) return false; const q = g.nearest(x, y); return q.s >= 0 && q.s <= g.L && Math.abs(q.q) <= (g.kind === "road" ? g.W / 2 + g.walks[q.q >= 0 ? 0 : 1] : g.W / 2) + 0.05; });
+  const onRoad = (x, y) => paths.some(g => { if (!inBox(g, x, y)) return false; const q = g.nearest(x, y); return q.s >= 0 && q.s <= g.L && Math.abs(q.q) <= (g.kind === "road" ? g.W / 2 + g.walks[q.q >= 0 ? 0 : 1] : g.wAt(q.s) / 2) + 0.05; });
   for (const sc of S.scatters || []) {
     if (!sc || !sc.id) continue;
     const R = rng(seedOf(sc.id) + num(sc.seed, 0)), kind = SCATTER_KINDS.includes(sc.kind) ? sc.kind : "plant";
@@ -2007,8 +2024,7 @@ export function scatterThings(S) {
       const off = Array.isArray(sc.off) ? [num(sc.off[0], 0.3), num(sc.off[1], 1.5)] : [num(sc.off, 0.5), num(sc.off, 0.5)], every = Math.max(0.1, num(sc.every, 1.5)), jitter = clamp(num(sc.jitter, 0.5), 0, 1);
       const s0 = clamp(num(sc.from, 0), 0, f.L), s1 = clamp(num(sc.to, f.L), 0, f.L);
       for (const sd of sides) {
-        const edge = f.kind === "road" ? f.W / 2 + f.walks[sd > 0 ? 0 : 1] : f.W / 2;
-        for (let s = s0 + every * R() * 0.5; s <= s1; s += every) { const ss = clamp(s + (R() - 0.5) * jitter * every, s0, s1), e = off[0] + (off[1] - off[0]) * R(), p = f.at(ss, sd * (edge + e)); push(p[0], p[1]); }
+        for (let s = s0 + every * R() * 0.5; s <= s1; s += every) { const ss = clamp(s + (R() - 0.5) * jitter * every, s0, s1), e = off[0] + (off[1] - off[0]) * R(), edge = f.kind === "road" ? f.W / 2 + f.walks[sd > 0 ? 0 : 1] : f.wAt(ss) / 2, p = f.at(ss, sd * (edge + e)); push(p[0], p[1]); }
       }
     } else if (Array.isArray(sc.poly) && sc.poly.length > 2) {
       const P = sc.poly.map(q => [num(q[0], 0), num(q[1], 0)]), xs = P.map(q => q[0]), ys = P.map(q => q[1]), bx0 = Math.min(...xs), bx1 = Math.max(...xs), by0 = Math.min(...ys), by1 = Math.max(...ys);
@@ -2061,10 +2077,10 @@ export function terrain(S) {
   const flat = roadsFlat && !hills.length && !noise && !banked;
   const cell = Math.max(0.25, num(TR.cell, num(S.cell, 3)));
   const drop = flat ? 0 : Math.min(0.06, Math.max(GROUND_DROP, cell * 0.02));   // (a flat street's one quad lies GROUND_DROP under 0, and things stand at 0)
-  const edgeOf = (g, side) => g.kind === "road" ? g.W / 2 + g.walks[side] : g.W / 2;
+  const edgeOf = (g, side, s) => g.kind === "road" ? g.W / 2 + g.walks[side] : g.wAt(s) / 2;
   const near = (g, x, y) => {                                        // a road's own ground at a point: its height, its bank beside it
     const q = g.nearest(x, y), side = q.q >= 0 ? 0 : 1, past = q.s < 0 ? -q.s : q.s > g.L ? q.s - g.L : 0;
-    const e = Math.hypot(Math.max(0, Math.abs(q.q) - edgeOf(g, side)), past), b = g.banks[side];
+    const e = Math.hypot(Math.max(0, Math.abs(q.q) - edgeOf(g, side, q.s)), past), b = g.banks[side];
     return { q, e, z: q.z + (b ? bankZ(b, e) : 0), side, b, g };
   };
   const relief = (x, y) => { let z = 0; for (const h of hills) z += hillZ(h, x, y); return z + (noise ? noise(x, y) : 0); };
@@ -2089,9 +2105,10 @@ export function terrain(S) {
       const q = g.nearest(x, y); if (q.s < 0 || q.s > g.L) continue;
       const a = Math.abs(q.q), side = q.q >= 0 ? 0 : 1;
       if (g.kind === "road") { if (a <= g.W / 2) return q.z; if (a <= g.W / 2 + g.walks[side]) return q.z + g.kerb; continue; }
-      if (a <= g.W / 2) return g.kind === "steps" ? g.stepZ(q.s) : q.z;
+      const hw = g.wAt(q.s) / 2;
+      if (a <= hw) return g.kind === "steps" ? g.stepZ(q.s) : q.z;
       const b = g.banks[side];
-      if (g.kind === "river" && b && a <= g.W / 2 + b.w) return ground(x, y);   // its bank: the river's own strip, at the ground
+      if (g.kind === "river" && b && a <= hw + b.w + (b.flat || 0)) return ground(x, y);   // its bank: the river's own strip, at the ground
     }
     return ground(x, y) - drop;
   };
@@ -2103,7 +2120,7 @@ export function terrain(S) {
     for (const p of patches) if (p.poly ? inPoly(x, y, p.poly) : p.at && Math.hypot(x - p.at[0], y - p.at[1]) <= p.r) return p.kind;
     for (const g of paths) {
       if (g.kind === "river" || !inBox(g, x, y)) continue;
-      const n = near(g, x, y); if (n.b && n.b.h && n.e <= n.b.w + 0.3 && COVER_KINDS[n.b.kind]) return n.b.kind;
+      const n = near(g, x, y); if (n.b && n.b.h && n.e <= n.b.w + (n.b.flat || 0) + 0.3 && COVER_KINDS[n.b.kind]) return n.b.kind;
     }
     return isFar && farCover ? farCover : base;
   };
@@ -2869,7 +2886,7 @@ export function decalParts(d, lift = GAP) {
 export function bounds2(S) {
   const xs = [], ys = [];
   const pt = (x, y) => { xs.push(x); ys.push(y); };
-  for (const r of S.roads || []) { const f = roadPath(r), q = f.W / 2 + Math.max(...f.walks) + Math.max(0, ...f.banks.map(b => b ? b.w : 0)); for (const p of f.P) { pt(p[0] - q, p[1] - q); pt(p[0] + q, p[1] + q); } }
+  for (const r of S.roads || []) { const f = roadPath(r), q = f.W / 2 + Math.max(...f.walks) + Math.max(0, ...f.banks.map(b => b ? b.w + (b.flat || 0) : 0)); for (const p of f.P) { pt(p[0] - q, p[1] - q); pt(p[0] + q, p[1] + q); } }
   for (const sc of S.scatters || []) if (Array.isArray(sc.at)) { const rr = num(sc.r, 5); pt(sc.at[0] - rr, sc.at[1] - rr); pt(sc.at[0] + rr, sc.at[1] + rr); }
   for (const b of S.buildings || []) for (const [x, y] of footprint(b)) pt(x, y);
   for (const t of S.things || []) pt(...(t.at || [0, 0]));
