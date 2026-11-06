@@ -23,15 +23,18 @@ const pick = (k, fam) => {                         // one of the family's sounds
 const onWet = rt => { const lv = (rt.story.levels || {})[rt.level] || {}, rain = (lv.weather ?? (rt.story.game || {}).weather) === "rain";
   return (lv.rooms || []).some(r => rt.inside.has(r.id) && ((rain && r.ceiling === false) || +(r.wet || 0) >= 0.5)); };
 register("ability", "steps", {
-  // stride, run, crouch: metres a step walking, running and crouched; db, runDb, crouchDb: how loud against the shelf's
+  // stride, run, crouch: metres a step walking, running and crouched; riser: what a riser climbed counts as, in metres of
+  // ground a metre of rise (2.5: a footfall a tread); db, runDb, crouchDb: how loud against the shelf's
   // own level; creak: the chance a step on wood creaks; castStride, castDb: the cast's (placed: fainter with distance)
-  settings: { stride: 0.7, run: 1.05, crouch: 0.45, db: -8, runDb: -4, crouchDb: -17, creak: 0.08, castStride: 0.65, castDb: -2 },
+  settings: { stride: 0.7, run: 1.05, crouch: 0.45, db: -8, runDb: -4, crouchDb: -17, creak: 0.08, castStride: 0.65, castDb: -2, riser: 2.5 },
   update: (rt, dt, s) => {
     const p = rt.player, at = p.pos, last = rt.stepFrom, gap = rt.clock - (rt.stepClock ?? -9) > 0.25;
     rt.stepFrom = at.clone(); rt.stepClock = rt.clock;
     if (!last || gap || !dt) { rt.stepAt = 0.5; return; }       // back from a scene, a seat or a hide: from here
-    const d = Math.hypot(at.x - last.x, at.z - last.z);
+    let d = Math.hypot(at.x - last.x, at.z - last.z);
     if (d > 1 || d / dt < 0.2) { rt.stepAt = 0.5; return; }       // standing (or put somewhere new): the next step half a stride on
+    const dy = Math.abs(at.y - last.y);
+    if (dy > 0.004 && dy <= rt.set("walk").step + 0.001) d += dy * (s.riser ?? 2.5);   // a riser climbed or dropped: a footfall a tread on a stair
     rt.stepAt = (rt.stepAt ?? 0.5) + d / (p.crouched ? s.crouch : p.running ? s.run : s.stride);
     if (rt.stepAt < 1) return;
     rt.stepAt -= 1;

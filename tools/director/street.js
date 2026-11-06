@@ -1202,7 +1202,7 @@ function addWalkway(b) {
   const sz = SG.insideSize(b), floors = Math.round(+b.inside.floors || 1), fl = SG.insideFloors(b), top = fl[fl.length - 1];
   b.parts = (b.parts || []).filter(p => !p.walkway);
   b.parts.push({ kind: "balcony", face: "front", x: 0, w: r2(sz.w), out: 1.3, floors: [2, floors], rail: "rail", slot: "concrete", walkway: true });
-  b.parts.push({ kind: "stairs", face: "left", x: r2(sz.d / 2 - 2.6), w: 5.2, h: r2(fl[1].z0), out: 1.1, dir: 1, slot: "concrete", walkway: true });
+  b.parts.push({ kind: "stairs", face: "left", x: r2(sz.d / 2 - 2.6), w: 5.2, h: r2(fl[1].z0), out: 1.1, dir: 1, style: "steel", walkway: true });
   void top;
 }
 function inspectFloor(b, face, k) {
@@ -1243,7 +1243,7 @@ function inspectPart(b, p, i) {
   }
   if (p.kind === "balcony") insp.append(field("its edge", pick(p, "rail", { solid: "a solid parapet", rail: "a railing", bars: "bars" }, { def: "solid" })));
   if (p.kind === "bay") insp.append(field("windows", el("div", { class: "row" }, check(p, "win", "on its front"), "per floor", num(p, "cols", { def: 1, step: 1, int: true }), check(p, "rail", "railing on top"))));
-  if (p.kind === "stairs") insp.append(field("climbs", pick(p, "dir", { 1: "to the right", "-1": "to the left" }, { def: 1, numeric: true })));
+  if (p.kind === "stairs") insp.append(field("climbs", pick(p, "dir", { 1: "to the right", "-1": "to the left" }, { def: 1, numeric: true })), field("built", pick(p, "style", { concrete: "concrete, a parapet", steel: "steel: channel stringers, pan treads, a picket rail (a motel's)" }, { def: "concrete" })));
   if (["window", "lattice_window", "glassblock", "shopfront"].includes(p.kind)) insp.append(field("lit", check(p, "lit", "lit at night", { def: p.kind === "shopfront" })));
   if (["lamp", "lantern"].includes(p.kind)) insp.append(field("light", el("div", { class: "row" }, el("input", { type: "color", value: p.color || "#ffd9a0", on: { input: e => edit(() => { p.color = e.target.value; }) } }), "power", num(p, "power", { def: p.kind === "lamp" ? 4 : 5, step: 1 }))));
   if (!K.hole) insp.append(field("material", el("div", { class: "row" }, pick(p, "slot", Object.fromEntries([["", "(its own)"], ...Object.keys(SG.SLOTS).filter(s => !SG.SLOTS[s][3] || SG.SLOTS[s][3] === "t").map(s => [s, SLOT_LABELS[s] || s])]), { def: "" }))));

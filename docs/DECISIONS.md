@@ -2,6 +2,36 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-05, night (the user: stairs of three kinds, floors in the scene builder, climbing in Godot; the branch `gameplay-enhancements`)
+
+- **"Make a new branch called gameplay-enhancements, model different types of stairs (outdoor motel level stairs,
+  apartment stairs, interior stairs), update the interior builder so it can support multiple floor levels, make sure
+  in Godot we can go up and down the stairs without bugs and it feels good gameplay-wise."** Built on
+  `gameplay-enhancements`:
+  - **The kit's `stairs`** (KIT.md §11): one flight with its rails and a landing, in four styles with a preset each:
+    `house` (a wooden box stair: closed risers and stringers, a soffit, a wall rail; `stairs_house_open` one side
+    open with balusters and newels), `apartment` (a concrete flight on its slab, nosing strips, a steel pipe rail on
+    posts), `motel` (steel channel stringers, pan treads filled with concrete, a picket guard rail both sides, a
+    landing on an edge channel) and `steel` (an apāto's outside stair: checker plates, open risers). **Its collision
+    is its steps**: the plan tags the mesh hollow and adds collider boxes for the steps, the landing and the rails
+    (kit.js and kit.py make the same numbers; the desk, the Godot export and Export for Godot honour them).
+  - **The street's outside stairs** get a `style`: `steel` (the motel's: stringers, pan treads, a picket rail, a
+    landing with legs; `hill_motel` wears it) beside the concrete one with a parapet; the walkway button makes steel.
+  - **The scene builder's floors** (SCENE_BUILDER §1): named by level (B1, 1F, 2F), added above or below, a floor's
+    height set (its rooms, doors and windows move; stairs rooms reach the floor above again), a floor copied up with
+    everything in it, an empty one removed; a stairs room picks its *stairs* style and a *landing at the top* (the
+    room words `stair`, `landing`), straight flights and dog-legs as kit stairs.
+  - **Climbing in Godot** (play.gd, and the desk's runtime.js the same): the export's own box collision never got
+    onto a steep house stair at all (the tread two risers up stands within the radius before the feet are on the
+    next: the simulation stuck at the foot); now a block is walked onto when its top is a step above the ground
+    where the player touches it. The eye glides over every riser (a tenth of a second, every engine's stair
+    smoothing); a riser climbed counts toward the footstep's stride (a footfall a tread); the feet rest on anything
+    within 6 cm of the centre (a hair's gap between a landing and its wall was a hole three metres deep). The
+    Director's physics mode (a floating capsule) climbed already and glides the same.
+  - **TestRoom001's station 19** (`n_stairs`, after the workshop scene): a dog-leg stairwell up to a gallery, a house
+    stair down, measured in Godot and on the desk: the feet's height at each landing, never stuck, the eye never
+    jumping a riser in a frame.
+
 ## 2026-11-05, latest (the user: the hanging clothes scrapped)
 
 - **"The clothing on the hangers looks bad, just scrap it, all we need is the folded clothing for the suitcase."**

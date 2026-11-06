@@ -257,7 +257,12 @@ for a car park or a walkway. So the street builds the outside, round the level:
   the set's outside* takes it back). STREET fails if a building that follows its set no longer matches it (open the
   street and save). The motel preset is the street's own composition (`own` from the start).
 - **Copies**: `rows` side by side and `floors` stacked: **a motel** or a block of flats, a set a room. *+ walkway and
-  stairs* adds a walkway along the front of the upper floors with a railing and a stair up to it at the left end.
+  stairs* adds a walkway along the front of the upper floors with a railing and a stair up to it at the left end: a
+  **steel stair** (the `stairs` part's `style: "steel"`, DECISIONS 2026-11-05, night: two C-channel stringers, pan
+  treads filled with concrete over steel risers, a picket guard rail at 1.07 m on the open side with posts, a wall
+  rail, a landing plate on an edge channel with its rail and its legs; `concrete` is the other style, a concrete stair
+  with a sloping parapet); its collider stays a ramp to its top and the landing's slab (§5b), which Godot's capsule
+  walks up.
 - **The palette's** *Buildings to walk into*: every set (put it down, build the street round it), and **Motel** (the set `motel_room`: a room, a bath and a closet, its door
   with a peephole and a latch; six rooms on two floors, a walkway on posts, a stair, a lamp by each door, AC units, a
   neon sign) and **Bungalow** (the set `bungalow`: the scene builder's single-storey house round an engawa, raised 45

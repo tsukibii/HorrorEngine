@@ -6,6 +6,8 @@ A piece: {"id", "kind", "level", "room", "pos" (world metres: the centre for mes
 people, lights and spots), "size" (w, d, h in metres, along the piece's own axes), "yaw" (story degrees),
 "shape" (box, cyl, sphere), "tags", "d" (the source dict, for the class map)}.
 kind: wall, floor, ceiling, door, mesh, person, light, trigger, spot, start.
+Tags that change what a piece is: `hollow` (seen, never bumped), `hidden` (built unseen and not solid, till shown),
+`collider` (unseen and solid, never shown: a kit stair's steps and rails under its hollow mesh).
 """
 import math
 
@@ -645,6 +647,12 @@ def plan(story, level=None):
             except ValueError:
                 continue                                # story_check says why
             extra = [f"kit:{ktype}", f"art:{ref}", "real"] + (["surface"] if ktype in KIT.SURFACE else []) + (["in_wall"] if t.d.get("in_wall") else [])
+            if ktype == "stairs":                   # a kit stair (KIT.md §11): its mesh hollow, climbed on its steps and held by
+                extra.append("hollow")              # its rails, collider boxes where the kit says they are (kit.py stairs_boxes)
+                for i, (x0, y0, z0, x1, y1, z1, what) in enumerate(KIT.stairs_boxes(spec)):
+                    ox, oy = _rot((x0 + x1) / 2, (y0 + y1) / 2, t.yaw)
+                    out.append(dict(p, id=f"{t.id}__{what}{i}", kind="mesh", shape="box", pos=(t.pos[0] + ox, t.pos[1] + oy, t.pos[2] + (z0 + z1) / 2),
+                                    size=(x1 - x0, y1 - y0, z1 - z0), yaw=t.yaw, tags=_tags(t, ["collider", f"stairs:{what}"])))
             out.append(dict(p, kind="mesh", shape="box", pos=t.centre, size=t.size, kit=spec, tags=_tags(t, extra)))
         elif t.d.get("shape"):
             kind, args = L.parse_shape(t.d["shape"])

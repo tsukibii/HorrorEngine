@@ -450,7 +450,7 @@ function addRoom(kind) {
   const id = kind + (i > 1 ? "_" + i : "");
   pushUndo();
   const r = BM.newRoom(kind, id, snapV(B.view.cx - K.size[0] / 2), snapV(B.view.cy - K.size[1] / 2), floorZ());
-  if (kind === "stairs") r.h = r2(STOREY + 2.4);
+  if (kind === "stairs") r.h = r2((B.model.floors[B.floor + 1] ?? floorZ() + STOREY) - floorZ() + 2.4);
   B.model.rooms.push(r); B.sel = { room: id };
   changed();
 }
@@ -526,7 +526,9 @@ function renderProps() {
       ...field("height", num(r.h, v => { r.h = Math.max(0.5, v); })), ...field("floor", pick(r.floor, ["wood", "stone", "carpet", "tile", "dirt", "metal", "water"], v => { r.floor = v; })),
       ...field("light", pick(r.light, ["off", "dark", "dim", "lit"], v => { r.light = v; })));
     if (r.kind === "stairs") grid.append(...field("climbs", pick(r.dir, [["n", "north ↑"], ["e", "east →"], ["s", "south ↓"], ["w", "west ←"]], v => { r.dir = v; })),
-      ...field("flights", pick(String(r.flights || 1), [["1", "one straight flight"], ["2", "a dog-leg: two a storey, a half landing (a school's)"]], v => { r.flights = +v; })));
+      ...field("flights", pick(String(r.flights || 1), [["1", "one straight flight"], ["2", "a dog-leg: two a storey, a half landing (a school's, a mansion's)"]], v => { r.flights = +v; })),
+      ...field("stairs", pick(r.stair || (r.flights === 2 ? "apartment" : "house"), [["house", "a house's wooden box stair, a wall rail"], ["house_open", "a house's, one side open: balusters, newels"], ["apartment", "an apartment's concrete flight, a pipe rail"], ["motel", "a motel's: steel stringers, pan treads, a picket rail"], ["steel", "an outside steel stair: checker plates, open risers"]], v => { r.stair = v; })),
+      ...field("landing at the top", num(r.landing || 0, v => { r.landing = Math.max(0, v); }, 0.1)));
     box.append(grid);
     const walls = document.createElement("div"); walls.className = "walls";
     walls.append("open sides:", ...BM.WALLS.map(wl => check(r.open.includes(wl), wl, on => { r.open = on ? [...r.open, wl] : r.open.filter(x => x !== wl); })));
@@ -592,16 +594,50 @@ function removeSel() {
   B.sel = null; changed();
 }
 
+export const floorName = (floors, i) => { const below = floors.filter(z => z < -0.3).length; return floors[i] < -0.3 ? `B${below - i}` : `${i - below + 1}F`; };
 function renderFloors() {
   const box = $("#floors"); box.innerHTML = "";
   B.model.floors.forEach((z, i) => {
-    const b = document.createElement("button"); b.textContent = `${i + 1}F`; b.title = `floor at ${z} m`;
+    const b = document.createElement("button"); b.textContent = floorName(B.model.floors, i); b.title = `floor at ${z} m`;
     b.className = i === B.floor ? "on" : ""; b.onclick = () => { B.floor = i; B.sel = null; renderFloors(); draw(); renderProps(); };
     box.append(b);
   });
-  const add = document.createElement("button"); add.textContent = "+"; add.title = `add a floor ${STOREY} m above the top one`;
-  add.onclick = () => { pushUndo(); B.model.floors.push(r2(B.model.floors[B.model.floors.length - 1] + STOREY)); B.floor = B.model.floors.length - 1; renderFloors(); changed(); };
-  box.append(add);
+  const btn = (label, title, on) => { const b = document.createElement("button"); b.textContent = label; b.title = title; b.onclick = on; box.append(b); return b; };
+  btn("+", `add a floor ${STOREY} m above the top one`, () => { pushUndo(); B.model.floors.push(r2(B.model.floors[B.model.floors.length - 1] + STOREY)); B.floor = B.model.floors.length - 1; fitStairs(); renderFloors(); changed(); });
+  btn("+ below", `add a basement ${STOREY} m under the lowest floor`, () => { pushUndo(); B.model.floors.unshift(r2(B.model.floors[0] - STOREY)); B.floor = 0; fitStairs(); renderFloors(); changed(); });
+  if (B.floor > 0 || B.model.floors.length > 1) {
+    const h = document.createElement("input"); h.type = "number"; h.step = 0.05; h.value = r2(B.model.floors[B.floor]); h.title = "this floor's height (m): its rooms, doors and windows move with it; a stairs room reaches the floor above again";
+    h.style.width = "5em"; h.onchange = () => { pushUndo(); setFloorZ(B.floor, +h.value); renderFloors(); changed(); };
+    box.append(" at ", h, " m");
+  }
+  btn("copy ↑", "a floor like this one above it: its rooms, doors, windows and furniture copied (ids with the new floor's name), a storey up", () => { pushUndo(); copyFloorUp(B.floor); renderFloors(); changed(); });
+  if (B.model.floors.length > 1 && !B.model.rooms.some(r => Math.abs(r.z - floorZ()) < 0.3)) btn("remove", "take this empty floor away", () => { pushUndo(); B.model.floors.splice(B.floor, 1); B.floor = Math.max(0, B.floor - 1); fitStairs(); renderFloors(); changed(); });
+}
+// a stairs room reaches the floor above it (a storey up when there's none) and a ceiling's height past it
+function fitStairs() {
+  for (const r of B.model.rooms) if (r.kind === "stairs") { const above = B.model.floors.filter(z => z > r.z + 0.5).sort((a, b) => a - b)[0]; r.h = r2((above ?? r.z + STOREY) - r.z + 2.4); }
+}
+function setFloorZ(i, z) {
+  const old = B.model.floors[i], dz = r2(z) - old; if (!dz) return;
+  for (const r of B.model.rooms) if (Math.abs(r.z - old) < 0.3) r.z = r2(r.z + dz);
+  for (const op of B.model.ops) if (Math.abs(op.z - old) < 0.3) op.z = r2(op.z + dz);
+  B.model.floors[i] = r2(z); B.model.floors.sort((a, b) => a - b); B.floor = B.model.floors.indexOf(r2(z));
+  if (Math.abs(B.model.player.z - old) < 0.3) B.model.player.z = r2(B.model.player.z + dz);
+  fitStairs();
+}
+function copyFloorUp(i) {
+  const z0 = B.model.floors[i], above = B.model.floors.filter(z => z > z0 + 0.5).sort((a, b) => a - b)[0], z1 = r2(above ?? z0 + STOREY);
+  if (above === undefined) B.model.floors.push(z1);
+  const tag = floorName(B.model.floors, B.model.floors.indexOf(z1)).toLowerCase(), dz = r2(z1 - z0), ids = new Map();
+  const fresh = id => { let n = `${id}_${tag}`, k = 2; while (B.model.rooms.some(r => r.id === n) || ids.has(n)) n = `${id}_${tag}${k++}`; return n; };
+  for (const r of B.model.rooms.filter(r => Math.abs(r.z - z0) < 0.3 && r.kind !== "stairs")) {
+    const c = JSON.parse(JSON.stringify(r)); c.id = fresh(r.id); ids.set(r.id, c.id); c.z = r2(r.z + dz); c.extra = {}; B.model.rooms.push(c);
+  }
+  const onCopied = op => B.model.rooms.filter(r => ids.has(r.id)).some(r => BM.WALLS.some(wl => { const ln = BM.wallLine(r, wl); return ln.axis === op.axis && Math.abs(ln.v - op.v) < 0.02 && op.c >= ln.lo - 0.01 && op.c <= ln.hi + 0.01; }));   // on a copied room's wall
+  for (const op of B.model.ops.filter(o => Math.abs(o.z - z0) < 0.3 && onCopied(o))) { const c = JSON.parse(JSON.stringify(op)); c.id = fresh(op.id); c.z = r2(op.z + dz); B.model.ops.push(c); }
+  for (const it of (B.model.items || []).filter(it => ids.has(it.room))) { const c = JSON.parse(JSON.stringify(it)); c.id = fresh(it.id); c.room = ids.get(it.room); B.model.items.push(c); }
+  for (const k of (B.model.kits || []).filter(k => ids.has(k.room))) { const c = JSON.parse(JSON.stringify(k)); c.id = fresh(k.id); c.room = ids.get(k.room); B.model.kits.push(c); }
+  B.floor = B.model.floors.indexOf(z1); fitStairs();
 }
 
 // ---- stats: what the plan can hold ----

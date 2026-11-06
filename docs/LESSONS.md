@@ -1820,3 +1820,18 @@ And a seat pad's bag filled only to a pad's thickness had more cloth than air an
   closed case a level places by its shut size sat 11 cm off its spot; the builder now turns every part to shut before
   centring (`build.run`), and a check reads a part's vertices where its node puts them (a part keeps its vertices
   about its hinge), or the lid "hangs below the floor".
+
+## Stairs (2026-11-05, night)
+
+- **A point under the feet is a hole waiting.** The box collision's ground test took the highest top exactly under
+  the player's centre; a dog-leg's landing slab stops a centimetre short of the wall it meets (the builder's
+  `DOGLEG.wall` 0.06 over a 0.05 half wall), and a frame whose centre landed in that centimetre dropped the player
+  three metres onto the ground floor, in Godot every time and on the desk when the frames were slow enough to land
+  there. The feet now rest on anything within 6 cm of the centre (`SUPPORT`, play.gd and runtime.js). Any walkable
+  surface made of pieces needs the same: never trust two tops to meet exactly.
+- **Simulate the walk before building the stair.** Thirty lines of Python with the runtime's own rule (a block is an
+  obstacle when its top is more than a step above the feet) showed the steep house stair unclimbable at its very
+  foot, before any geometry existed, and showed the contact-point rule climbing it. Cheaper than a Godot run, and it
+  said why.
+- **A test's hold must be shorter than the run.** "Stuck for half a second" fired at the wall at the end of a flight
+  because the key was held longer than the flight took; the flights' holds are now a little under their length.

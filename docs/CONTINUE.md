@@ -16,8 +16,48 @@ clothes hidden on `claude/festive-euler-o7axpl`, the walls meeting, the editors'
 by-hand guides, merged; then on the same branch from main the map-building skill and the user's floor plan as a map, its
 bedding, curtains, tables and chairs, the props' kept pictures, real wood in the flat and its curtains; 2026-11-05 on
 `sakura-rabbit-research`: the Sakura Rabbit research note, then the three notes on dread, the CRT, and the props and
-systems that open, hold, move and are read). Read this after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
+systems that open, hold, move and are read; 2026-11-05, night, on `gameplay-enhancements`: the kit's stairs, the scene
+builder's floors, the street's steel stair, climbing in Godot and on the desk). Read this after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
+
+## Where it stopped last (2026-11-05, night, `gameplay-enhancements`): stairs, floors, climbing
+
+The user's ask (DECISIONS 2026-11-05, night): a branch `gameplay-enhancements`; model different types of stairs
+(outdoor motel stairs, apartment stairs, interior stairs); the interior builder supporting multiple floor levels; and
+going up and down stairs in Godot without bugs, feeling good. Built:
+
+- **The kit's `stairs`** (KIT.md §11, `tools/director/kit.js` `stairsGen`, `stairsBoxes`; kit.py `STAIRS`,
+  `stairs_boxes`; the presets `stairs_house`, `stairs_house_open`, `stairs_apartment`, `stairs_motel`, `stairs_steel`;
+  the slots `concrete`, `checker`; the kit maker's new Stairs category): one flight with treads, risers, stringers or a
+  slab, rails (balusters, pickets or a pipe on posts), a wall rail and a landing, the box `top` m on above the top
+  tread. **Its collision is its steps**: plan.py gives the mesh `hollow` and adds `collider` pieces (unseen, solid:
+  stage.js, Play's `blocks()`, godot.py, levelexport); KIT compares kit.js's and kit.py's boxes.
+- **The street's outside stairs** (`street-gen.js` PART_KINDS.stairs `style`): `steel` (the motel's) beside `concrete`;
+  the walkway button makes steel; `hill_motel` restyled; STREET's no-clipping rule met (pans inset in the channels,
+  pickets between the rails, the rails stopping short of the landing's own post).
+- **The scene builder** (builder.js `renderFloors`, `fitStairs`, `setFloorZ`, `copyFloorUp`; builder-model.js
+  `stairsProp`, `doglegProps`, `STAIR_PRESET`, `STAIR_ROT`, `STAIR_TOP`; the room words `stair`, `landing` in
+  ROOM_KEYS and STORY_FORMAT): floors named by level, added above or below, a floor's height set, a floor copied up,
+  removed; a stairs room's style and landing; straight flights and dog-legs as kit stairs.
+- **Climbing** (play.gd `push_out`, `ground_at` with `SUPPORT`, `glide_step`, `eye_pos`, `ability_steps`; runtime.js
+  and steps.js the same): the contact-point rule, the feet's 6 cm reach, the eye's glide, a footfall a tread
+  (GODOT_EXPORT §7). A numeric simulation first showed the old rule stuck at the foot of a steep stair.
+- **TestRoom001's station 19** (`n_stairs` between `n_talk` and `n_hide`: the stairwell, the gallery, the back stairs,
+  the back room; gdtestroom.gd `turn_to`, `climb`; testroom.mjs `turnTo`, `climb`): passes in Godot (GDTESTROOM from
+  n_stairs) and on the desk.
+- Fixes on the way: the level check lets hollow things stand in a doorway's clearance; the shots sheet keeps a room's
+  entrance camera 0.3 m off its walls and ignores hollow boxes; LESSONS has the gap-under-the-feet lesson.
+
+**Known before this branch:** FROMDESK (`godot_director.py from-desk TestRoom001 --force --play`) fails at station 4
+on the branch's base commit too (the power bulb's fitting: the desk conversion makes the light a Light3D source; the
+conversion never learned light fittings, GODOT_EXPORT §3b): its WALLS check passes with the stairwell's rooms, and
+the other Godot checks (GDEXPORT, GDPLAY, GDTESTROOM, DIRECTOR, GDSTREET) pass here.
+
+**Could come next:** the desk conversion's light fittings (above); an L-shaped stair (a quarter landing) in the builder; a stair's own railing round a stairwell's
+opening in the floor above (a room's floor with a hole); `HSStairs` for the Director (a flight from numbers in GDScript
+with step colliders, for a world built by hand in Godot); the dog-leg's landings railed along the well; the kit stair
+drawn in the street builder's own stairs part (one generator for both); a slower walk on stairs if the user wants it
+(`walk.stairs`); pictures of the stairs in the guides.
 
 ## Where it stopped last (2026-11-05, later, `sakura-rabbit-research`): suitcases, closets, moveable things, books, the CRT
 

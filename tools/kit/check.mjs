@@ -55,6 +55,18 @@ try {
   const py = JSON.parse(execFileSync("python3", ["-c", "import sys,json; sys.path.insert(0,'Content/Python'); from storykit import kit; print(json.dumps([kit.ref(s) for s in json.loads(sys.argv[1])]))", JSON.stringify(specs)], { cwd: ROOT }).toString());
   specs.forEach((s, i) => { const js = refOf(KIT, s, PR.presets, PR.version); if (js !== py[i]) errs.push(`ref of ${JSON.stringify(s)}: node ${js}, python ${py[i]}`); });
 } catch (e) { errs.push("storykit.kit refs: " + e.message.split("\n")[0]); }
+// a kit stair's collision boxes (§11): python's and node's are the same numbers for every stairs preset
+try {
+  const names = Object.keys(PR.presets).filter(n => PR.presets[n].type === "stairs");
+  const py = JSON.parse(execFileSync("python3", ["-c", "import sys,json; sys.path.insert(0,'Content/Python'); from storykit import kit; print(json.dumps({n: kit.stairs_boxes(n) for n in json.loads(sys.argv[1])}))", JSON.stringify(names)], { cwd: ROOT }).toString());
+  for (const n of names) {
+    const js = KIT.stairsBoxes(KIT.withDefaults(KIT.resolve(n, PR.presets))).map(b => b.map(v => typeof v === "number" ? +v.toFixed(6) : v));
+    const pyb = (py[n] || []).map(b => b.map(v => typeof v === "number" ? +v.toFixed(6) : v));
+    if (JSON.stringify(js) !== JSON.stringify(pyb)) errs.push(`${n}: its collision boxes differ between kit.js (${js.length}) and kit.py (${pyb.length})`);
+    if (!js.some(b => b[6] === "step")) errs.push(`${n}: no steps`);
+  }
+  if (!names.length) errs.push("no stairs presets");
+} catch (e) { errs.push("stairs boxes: " + e.message.split("\n")[0]); }
 // every kit mesh every game's plan needs (props, floors, frames, doors' parts), as the importer would build them
 let props = 0;
 try {

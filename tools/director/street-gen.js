@@ -377,7 +377,7 @@ export const PART_KINDS = {
   pipe: { label: "Pipe", w: 0.1, h: 9, z: 0, out: 0.1, note: "a drain pipe up the wall" },
   lamp: { label: "Wall lamp", w: 0.3, h: 0.35, z: 2.3, out: 0.25, note: "a lamp on the wall (lights at dusk)" },
   lantern: { label: "Hanging lantern", w: 0.4, h: 0.5, z: 2.6, out: 0.7, note: "a lantern hung out on a bracket (the old town)" },
-  stairs: { label: "Outside stairs", w: 5, h: 3, z: 0, out: 1.1, note: "a concrete stair up the wall to a floor" },
+  stairs: { label: "Outside stairs", w: 5, h: 3, z: 0, out: 1.1, note: "a stair up the wall to a floor: concrete with a parapet, or a motel's steel one (`style`: concrete, steel)" },
   block: { label: "Small box", w: 0.4, h: 0.5, z: 1.2, out: 0.15, note: "a box on the wall: a meter, a fire extinguisher, a post box..." },
   panel: { label: "Panel", w: 2, h: 2, z: 1, out: 0.03, note: "a flat panel of any material on the wall" },
   rail: { label: "Railing", w: 3, h: 1.1, z: 3, out: 0.05, note: "a railing along the wall" },
@@ -593,14 +593,46 @@ function partGen(o, b, F0, p, rows, R, signs, near = [], others = []) {
         break;
       }
       case "stairs": {                                               // up the wall from u0 (ground) to u1 (z + h), `dir` -1 the other way
-        const dir = num(p.dir, 1) < 0 ? -1 : 1, n = Math.max(2, Math.round(h / 0.19)), run = (u1 - u0) / n, rise = h / n, t = 0.22, sl = slot || "concrete";
+        const dir = num(p.dir, 1) < 0 ? -1 : 1, n = Math.max(2, Math.round(h / 0.19)), run = (u1 - u0) / n, rise = h / n;
+        const ua = dir > 0 ? u0 : u1, ub = dir > 0 ? u1 : u0;          // the foot and the top along the face
+        const la = dir > 0 ? u1 : Math.max(u0 - 1.2, rl + SIDE_IN), lb = dir > 0 ? Math.min(u1 + 1.2, rr - SIDE_IN) : u0;   // the landing's run
+        if ((p.style || "concrete") === "steel") {                   // a motel's: two steel channel stringers, pan treads filled with
+          const sl = slot || "frame", t = 0.045, cD = 0.25, cW = 0.06, ch = (nA, nB) => {   // concrete, steel risers, a picket guard rail on the open
+            fslab(o, sl, F, [[ua, z + rise + 0.04 - cD], [ub, z + h + rise + 0.04 - cD], [ub, z + h + rise + 0.04], [ua, z + rise + 0.04]], nA, nB);   // side and the wall's, a landing on channels
+          };
+          ch(0.1, 0.1 + cW); ch(out - 0.12 - cW, out - 0.12);        // the stringers: a sloping band each, over the nosings' line
+          for (let i = 0; i < n; i++) {
+            const a = dir > 0 ? u0 + i * run : u1 - (i + 1) * run, bb = a + run, zt = z + (i + 1) * rise;
+            const nA = 0.1 + cW + 0.003, nB = out - 0.12 - cW - 0.003;                                                      // the pans sit a hair inside the channels
+            fbox(o, "concrete", F, a, bb, zt - t, zt, nA, nB, nKey(F, -1));                                                   // the tread's concrete
+            fbox(o, sl, F, a, bb, zt - t - 0.004, zt - t, nA, nB, nKey(F, -1));                                                // the pan under it
+            fbox(o, sl, F, dir > 0 ? a + 0.002 : bb - 0.006, dir > 0 ? a + 0.006 : bb - 0.002, zt - rise, zt - t - 0.004, nA + 0.002, nB - 0.002);   // its riser, up to the pan
+          }
+          const rz = 1.07, rails = [out - 0.1];                        // the guard rail on the open side (a wall rail by the wall)
+          for (const nr of rails) {
+            const landed = p.landing !== false, ue = landed ? ub - dir * 0.05 : ub;                                              // the rails stop short of the landing's own post
+            bar(o, "rail", fp(F, ua, z + rise + rz, nr), fp(F, ue, z + h + rz - (landed ? (h - rise) * 0.05 / Math.abs(ub - ua) : 0), nr), 0.042);   // the top rail
+            bar(o, "rail", fp(F, ua, z + rise + 0.1, nr), fp(F, ue, z + h + 0.1 - (landed ? (h - rise) * 0.05 / Math.abs(ub - ua) : 0), nr), 0.04, 0.012);   // the bottom rail
+            const nb = Math.max(2, Math.round(Math.abs(ub - ua) / 0.11));
+            for (let i = 0; i <= nb; i++) { const u = ua + (ub - ua) * i / nb, zb = z + rise + (h - rise) * i / nb; const post = (i % 10 === 0 && i < nb - 2) || (i === nb && !landed); if (i === nb && landed) continue; const pw = post ? 0.032 : 0.005; fbox(o, "rail", F, u - pw, u + pw, zb + (post ? 0 : 0.125), zb + rz - (post ? 0 : 0.022), nr - pw, nr + pw); }   // pickets between the bottom rail and the top; posts every tenth
+          }
+          bar(o, "rail", fp(F, ua, z + rise + 0.85, 0.06), fp(F, ub, z + h + 0.85, 0.06), 0.04);                               // the wall rail
+          if (p.landing !== false) {                                   // the landing: a plate on an edge channel, its rail on the open side and its end
+            fbox(o, "concrete", F, la, lb, z + h - t, z + h, 0, out, nKey(F, -1));
+            fbox(o, sl, F, la, lb, z + h - cD, z + h - t, out - 0.12 - cW, out - 0.12);
+            railGen(o, F, Math.min(la, lb), Math.max(la, lb), z + h, z + h + rz, out - 0.1, null, [dir < 0, dir > 0]);
+            if (!p.walkway) { const ue = dir > 0 ? lb : la; for (let k = 0; k < 2; k++) bar(o, "rail", fp(F, ue, z + h + (k ? rz : 0.1), 0.06), fp(F, ue, z + h + (k ? rz : 0.1), out - 0.1), k ? 0.042 : 0.04, k ? 0.042 : 0.012); }
+            for (const u of [la + 0.05, lb - 0.05]) bar(o, sl, fp(F, u, z, out - 0.15), fp(F, u, z + h - cD, out - 0.15), 0.08);   // its legs
+          }
+          break;
+        }
+        const t = 0.22, sl = slot || "concrete";
         for (let i = 0; i < n; i++) {                                // from u0 to u1 exactly: the top step meets the landing, never under it
           const a = dir > 0 ? u0 + i * run : u1 - (i + 1) * run, bb = a + run, zt = z + (i + 1) * rise;
           fbox(o, sl, F, a, bb, zt - t - (i === 0 ? 0 : rise), zt, 0.0, out - 0.12, nKey(F, -1));
         }
-        const ua = dir > 0 ? u0 : u1, ub = dir > 0 ? u1 : u0;          // the parapet on its open side: a sloping slab
-        fslab(o, sl, F, [[ua, z - 0.25], [ub, z + h - 0.25], [ub, z + h + 1.0], [ua, z + 1.0]], out - 0.12, out);
-        if (p.landing !== false) fbox(o, sl, F, dir > 0 ? u1 : Math.max(u0 - 1.2, rl + SIDE_IN), dir > 0 ? Math.min(u1 + 1.2, rr - SIDE_IN) : u0, z + h - t, z + h, 0, out, nKey(F, -1));
+        fslab(o, sl, F, [[ua, z - 0.25], [ub, z + h - 0.25], [ub, z + h + 1.0], [ua, z + 1.0]], out - 0.12, out);   // the parapet on its open side: a sloping slab
+        if (p.landing !== false) fbox(o, sl, F, la, lb, z + h - t, z + h, 0, out, nKey(F, -1));
         break;
       }
       case "block": fbox(o, slot || "metal", F, u0, u1, z, z + h, 0, out, nKey(F, -1)); break;

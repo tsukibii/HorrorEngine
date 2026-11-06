@@ -106,7 +106,13 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
   builder colours and labels by it and gives some kinds their built-ins (below); `name` is its label (optional,
   any text, Japanese welcome); `dir` is the way a `stairs` room climbs (`n e s w`); `flights: 2` makes it a dog-leg (a
   school's: a shaft through every floor its height reaches, each storey climbed in two flights turning on a half
-  landing, a landing at every floor; the scene builder makes the steps, SCENE_BUILDER §10b).
+  landing, a landing at every floor; the scene builder makes the steps, SCENE_BUILDER §10b); `stair` the kind of
+  stairs the scene builder puts in it (`house` a wooden box stair, `house_open` one side open with balusters,
+  `apartment` a concrete flight with a pipe rail, `motel` a steel stair with pan treads and a picket rail, `steel` an
+  outside steel stair: the kit's `stairs` presets, KIT.md §11), `landing` metres of landing at its top (a door on a
+  side wall there is the way off). The stairs themselves are props the builder writes (`<room>_fx_stairs`, a dog-leg's
+  `_1a` and `_1b` with its landings as boxes): a kit stair's collision is its steps and rails (the plan's `collider`
+  pieces, unseen and solid), its mesh hollow.
 - `ceiling: false` for outdoors.
 - `wet` (0..1, optional): a wet floor without rain (a bathroom, a cellar): in the Godot export the floor wears the
   look plugin's wet (the damp darkening, pools that carry the lights, no rings: GODOT_LOOK §2) by that much, and from

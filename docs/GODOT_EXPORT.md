@@ -201,6 +201,18 @@ to a headless Godot script that walks the Pilot to its good ending (Woohill's `*
 export; and **GDEXPORT**, the exporter's own (every game exports, the project opens headless, every scene and level
 loads, every verb in the games has a part).
 
+**Walking the export's own boxes** (play.gd `move`, `push_out`, `ground_at`; the desk's runtime.js the same; DECISIONS
+2026-11-05, night): the player is an upright circle against every solid block; a block whose top is no more than a
+step (35 cm) above the feet is walked onto, one whose bottom is over the head passed under. **Stairs** (KIT.md §11): a
+block is walked onto when its top is a step above **the ground where the player touches it**, not above where their
+feet are now (on a steep flight the tread two risers up stands within the radius before the feet are on the next one:
+the foot of a house stair never let the player on at all). The feet rest on the highest top within 6 cm of the
+centre (`SUPPORT`: a hair's gap between a landing's slab and its wall is never a hole). A step taken (the feet moved
+within a step, not a fall) keeps the eye at its height and **glides** it to the new one over a tenth of a second
+(`glide`, `eye_pos`), every engine's stair smoothing; a riser climbed counts toward the footstep's stride (`steps.riser`:
+a footfall a tread). The Director's physics mode (collide.gd, a capsule floating a step above the feet) climbs a
+flight by itself and glides the same, play.gd's `move` wrapping it.
+
 ## 8. The order (replaces GODOT_PLAN §8's steps 4 and 5)
 
 1. **The trial** (GODOT_PLAN §4): the Pilot's hall exported by a first cut of the level writer (rooms, props, doors,

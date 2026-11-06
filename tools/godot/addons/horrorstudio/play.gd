@@ -29,7 +29,7 @@ const ABILITY_SETTINGS := {
 	"look": {"sens": 0.12, "pitch": 80.0},
 	"walk": {"speed": 1.4, "run": 2.8, "crouched": 0.7, "radius": 0.25, "step": 0.35},
 	"crouch": {"mode": "toggle", "key": "C", "ease": 8.0},
-	"steps": {"stride": 0.7, "run": 1.05, "crouch": 0.45, "db": -8, "runDb": -4, "crouchDb": -17, "creak": 0.08, "castStride": 0.65, "castDb": -2},
+	"steps": {"stride": 0.7, "run": 1.05, "crouch": 0.45, "db": -8, "runDb": -4, "crouchDb": -17, "creak": 0.08, "castStride": 0.65, "castDb": -2, "riser": 2.5},
 	"torch": {"key": "F", "cone": 26.0, "spill": 62.0, "range": 18.0, "strength": 7.5, "kelvin": 5200.0, "lag": 0.09, "hand": [0.2, -0.2, -0.05]},
 }
 const FLOOR_STEPS := {"wood": "step_wood", "stone": "step_concrete", "tile": "step_concrete", "carpet": "step_carpet",
@@ -683,6 +683,7 @@ func place(feet: Vector3, yaw: float, pitch: float) -> void:
 	player.yaw = yaw
 	player.pitch = pitch
 	player.pos.y = ground_at(player.pos, 0.5)
+	player["glide"] = 0.0
 	inside = {}
 	for t in triggers:
 		if is_in(t):
@@ -707,8 +708,10 @@ func extent(t: Dictionary) -> Dictionary:
 
 
 func move(dx: float, dz: float, s: Dictionary) -> void:
+	var y0: float = player.pos.y
 	if collide != null:
 		collide.move(dx, dz, s)
+		glide_step(y0, float(s["step"]))
 		return
 	player.pos.x += dx
 	player.pos.z += dz
@@ -717,21 +720,38 @@ func move(dx: float, dz: float, s: Dictionary) -> void:
 	var g := ground_at(player.pos, float(s["step"]))
 	if g > -INF:
 		player.pos.y = g
+	glide_step(y0, float(s["step"]))
+
+
+## a step taken (the feet moved up or down within a step, not a fall): the eye keeps its height and glides to the new
+## one over a tenth of a second (every engine's stair smoothing), so a flight reads as a slope to the eye, not a
+## stutter of risers; `glide` is what the eye still has to make up (eye_pos adds it), decayed in tick
+func glide_step(y0: float, step: float) -> void:
+	var dy: float = float(player.pos.y) - y0
+	if abs(dy) < 0.004 or abs(dy) > step + 0.001:
+		return
+	var gl: float = clampf(float(player.get("glide", 0.0)) - dy, -step, step)
+	player["glide"] = gl
+	player["glide_rate"] = max(1.0, abs(gl) / 0.12)
 
 
 func push_out(s: Dictionary) -> void:
 	var p := player
 	var r := float(s["radius"])
 	var feet: float = p.pos.y
+	var step: float = float(s["step"])
 	var head: float = feet + float(p.eye) + 0.1
 	for t in blocks():
 		var e := extent(t)
-		if float(e["cy"]) + float(e["hy"]) <= feet + float(s["step"]) or float(e["cy"]) - float(e["hy"]) >= head:
+		var top: float = float(e["cy"]) + float(e["hy"])
+		if top <= feet + step or float(e["cy"]) - float(e["hy"]) >= head:
 			continue
 		var inv_t: Transform3D = t["node"].global_transform.affine_inverse()
 		var L: Vector3 = inv_t * p.pos
 		var px := 0.0
 		var pz := 0.0
+		var cx: float = 0.0
+		var cz: float = 0.0
 		if e.has("r"):
 			var d := sqrt(L.x * L.x + L.z * L.z)
 			if d >= float(e["r"]) + r:
@@ -739,9 +759,11 @@ func push_out(s: Dictionary) -> void:
 			var k := (float(e["r"]) + r - d) / d if d > 1e-6 else 0.0
 			px = L.x * k
 			pz = L.z * k if d > 1e-6 else float(e["r"]) + r
+			cx = L.x / d * float(e["r"]) if d > 1e-6 else 0.0          # where the circle touches the cylinder's side
+			cz = L.z / d * float(e["r"]) if d > 1e-6 else 0.0
 		else:
-			var cx: float = clamp(L.x, -float(e["hx"]), float(e["hx"]))
-			var cz: float = clamp(L.z, -float(e["hz"]), float(e["hz"]))
+			cx = clamp(L.x, -float(e["hx"]), float(e["hx"]))
+			cz = clamp(L.z, -float(e["hz"]), float(e["hz"]))
 			var ox := L.x - cx
 			var oz := L.z - cz
 			var d := sqrt(ox * ox + oz * oz)
@@ -757,11 +779,25 @@ func push_out(s: Dictionary) -> void:
 					px = (sign(L.x) if L.x != 0 else 1.0) * (fx + r)
 				else:
 					pz = (sign(L.z) if L.z != 0 else 1.0) * (fz + r)
+		if top <= feet + 2.0 * step:
+			# a stair's next tread but one is in reach before the feet are on the next (a steep flight: the tread two
+			# risers up stands within the radius): a block is walked onto when its top is a step above the GROUND
+			# where the player touches it, not above where their feet are now (the foot of a steep stair never let
+			# the player on at all, till 2026-11-05)
+			var tx: float = cx + (L.x - cx) * 0.03 / max(0.03, abs(L.x - cx) + abs(L.z - cz))
+			var tz: float = cz + (L.z - cz) * 0.03 / max(0.03, abs(L.x - cx) + abs(L.z - cz))
+			var touch: Vector3 = t["node"].global_transform * Vector3(tx, L.y, tz)
+			var ref: float = max(feet, ground_at(Vector3(touch.x, feet, touch.z), step))
+			if top <= ref + step:
+				continue
 		var W: Vector3 = t["node"].global_transform * Vector3(L.x + px, L.y, L.z + pz)
 		p.pos.x = W.x
 		p.pos.z = W.z
 
 
+## the feet rest on the highest top under them within a step up; `SUPPORT` out from the centre, a foot's reach: a hair's
+## gap between two tops (a landing's slab and the wall it meets, 2026-11-05) is never a hole to fall through
+const SUPPORT := 0.06
 func ground_at(pos: Vector3, step: float) -> float:
 	if collide != null:
 		return collide.ground_at(pos, step)
@@ -772,7 +808,7 @@ func ground_at(pos: Vector3, step: float) -> float:
 		if top > pos.y + step:
 			continue
 		var L: Vector3 = t["node"].global_transform.affine_inverse() * pos
-		var ins: bool = (sqrt(L.x * L.x + L.z * L.z) <= float(e["r"])) if e.has("r") else (abs(L.x) <= float(e["hx"]) and abs(L.z) <= float(e["hz"]))
+		var ins: bool = (sqrt(L.x * L.x + L.z * L.z) <= float(e["r"]) + SUPPORT) if e.has("r") else (abs(L.x) <= float(e["hx"]) + SUPPORT and abs(L.z) <= float(e["hz"]) + SUPPORT)
 		if ins and top > best:
 			best = top
 	return best if best > -INF else pos.y
@@ -2722,7 +2758,7 @@ func caught(by, at) -> void:
 
 # ---- the player's use and the cursor ----------------------------------------------------------------------------
 func eye_pos() -> Vector3:
-	return player.pos + Vector3(0, float(player.eye), 0)
+	return player.pos + Vector3(0, float(player.eye) + float(player.get("glide", 0.0)), 0)
 
 
 ## a ray against the things' boxes (and cylinders as their boxes): the nearest {thing, dist, point} or null
@@ -3589,6 +3625,9 @@ func ability_steps(dt: float) -> void:
 	if d > 1 or d / dt < 0.2:
 		step_at = 0.5
 		return
+	var dy: float = abs(at.y - last.y)
+	if dy > 0.004 and dy <= float(setting("walk")["step"]) + 0.001:
+		d += dy * float(s.get("riser", 2.5))          # a riser climbed or dropped: a footfall a tread on a stair
 	step_at += d / float(s["crouch"] if player.crouched else (s["run"] if player.running else s["stride"]))
 	if step_at < 1:
 		return
@@ -3807,6 +3846,9 @@ func tick(dt: float) -> void:
 		ability_crouch(dt)
 		ability_steps(dt)
 	p.speed = p.pos.distance_to(feet) / dt if dt > 0 else 0.0
+	var gl: float = float(p.get("glide", 0.0))
+	if gl != 0.0:                                      # the eye catching up with the feet after a step (glide_step)
+		p["glide"] = move_toward(gl, 0.0, float(p.get("glide_rate", 2.0)) * dt)
 	if active and not busy:
 		cast_steps(dt)
 	hud.set_stance("hidden" if p.hiding != null else ("crouched" if p.crouched else ""))

@@ -18,6 +18,9 @@ DOOR = {"leaf_t": 0.04, "lining": 0.02, "gap": 0.003, "floor_gap": 0.008, "handl
         "handle_in": 0.065, "frame": "door_frame", "hinge": "left", "style": "panels", "hinges": 3, "hinge_h": 0.1,
         "knuckles": 5, "hinge_tip": "ball", "hinge_slot": "metal", "hinge_w": 0.026, "hinge_t": 0.0025, "barrel": 0.013,
         "mortise": True, "hinge_model": "kit"}
+# a kit stair's numbers the plan needs for its collision (kit.js TYPES.stairs: the same defaults; tools/kit/check.mjs
+# compares them and the boxes both sides make)
+STAIRS = {"top": 1.0, "treads": 0, "landing": 0.0, "waist": 0.0, "rail": "none", "rail_h": 0.85, "land_rail": "none"}
 _cache = {}
 
 
@@ -117,3 +120,42 @@ def write_specs(story, path, level=None):
     pathlib.Path(path).parent.mkdir(parents=True, exist_ok=True)
     pathlib.Path(path).write_text(json.dumps(items), encoding="utf-8")
     return items
+
+
+def _clamp(v, a, b):
+    return min(b, max(a, v))
+
+
+def stairs_boxes(spec):
+    """A kit stair's collision (kit.js stairsBoxes, the same numbers): its steps, its landing and its rails as boxes
+    (x0, y0, z0, x1, y1, z1, what) in item space (x across, y deep with the foot at -y, z up from the base). The
+    plan puts them where the stair stands, unseen and solid, and makes the stair's own mesh hollow."""
+    r = resolve(spec)
+    w, d, h = size(spec)
+    g = lambda k: r.get(k, STAIRS[k])  # noqa: E731
+    top = _clamp(float(g("top") or 0), 0, h * 0.6)
+    rise = h - top
+    landing = _clamp(float(g("landing") or 0), 0, d * 0.6)
+    run = d - landing
+    n = max(2, int(_round(float(g("treads")) if float(g("treads") or 0) > 0 else rise / 0.18)))
+    ri, go, y0 = rise / n, run / n, -d / 2
+    yn = y0 + run
+    waist = _clamp(float(g("waist") or 0), 0, rise)
+    rail_h = _clamp(float(g("rail_h")), 0.6, 1.3)
+    rail, land_rail = g("rail"), g("land_rail")
+    out = []
+    for i in range(n):
+        out.append((-w / 2, y0 + go * i, (max(0.0, ri * i - waist) if waist else 0.0), w / 2, y0 + go * (i + 1), ri * (i + 1), "step"))
+    if landing > 0:
+        out.append((-w / 2, yn, max(0.0, rise - 0.25), w / 2, d / 2, rise, "landing"))
+    for side, sd in (("left", -1), ("right", 1)):
+        if not (rail == "both" or rail == side):
+            continue
+        xa, xb = (-w / 2, -w / 2 + 0.09) if sd < 0 else (w / 2 - 0.09, w / 2)
+        for i in range(n):
+            out.append((xa, y0 + go * i, ri * (i + 1), xb, y0 + go * (i + 1), min(h, ri * (i + 1) + rail_h), "rail"))
+        if landing > 0 and land_rail not in ("none", "end"):
+            out.append((xa, yn, rise, xb, d / 2, min(h, rise + rail_h), "rail"))
+    if landing > 0 and land_rail in ("end", "both"):
+        out.append((-w / 2, d / 2 - 0.09, rise, w / 2, d / 2, min(h, rise + rail_h), "rail"))
+    return [tuple(round(v, 6) if isinstance(v, float) else v for v in b) for b in out]

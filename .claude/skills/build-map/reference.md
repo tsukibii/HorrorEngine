@@ -8,7 +8,7 @@ Metres; x east, y north, z up. Facing: a kit or a street thing at `rot`/`turn` 0
 ```
 { "id", "name", "note",
   "floors": [0, 2.85, ...],                     every storey's floor (one storey: [0])
-  "rooms":   [[id, kind, name, x0, y0, x1, y1, {z, h, open, fixtures, light, floorKit, dir, flights, extra}]],
+  "rooms":   [[id, kind, name, x0, y0, x1, y1, {z, h, open, fixtures, light, floorKit, dir, flights, stair, landing, extra}]],
   "doors":   [[roomA, roomB, "door"|"slide"|"arch", {at, w, h, swing, id, locked_by, z, extra}]],
   "windows": [[room, "n"|"e"|"s"|"w", "window"|"door", {at, w, h, sill, frame, locked_by, extra}]],
   "items":   [[room, wall, kind, at]],
@@ -21,7 +21,8 @@ Metres; x east, y north, z up. Facing: a kit or a street thing at `rot`/`turn` 0
 - **Room options**: `h` ceiling (2.4 a flat's); `open: ["n", ...]` a side left without a wall: between two rooms only
   where **both** list it (an open plan, an L-shaped room), to the outside on its own (a porch); `fixtures: false`
   (no built-ins: you place them as kits); `light`: dim, bright, off; `floorKit: {"preset": ...}` or null; stairs:
-  `dir` (the way up), `flights: 2` (a dog-leg); `extra`: any level-room field: `look` (§4), `props` (a raw prop:
+  `dir` (the way up), `flights: 2` (a dog-leg), `stair` (the kit's style: house, house_open, apartment, motel,
+  steel: KIT.md §11), `landing` (m of landing at the top); `extra`: any level-room field: `look` (§4), `props` (a raw prop:
   `{"id", "shape": "box w d h", "at": [x, y], "rot", "tag", "mat"}`; `{"id": "<room>_fx_floor", "mats": {...}}` dresses
   a fitting the finish makes: `_fx_floor`, `_fx_kitchen`, `_fx_tub`, `_fx_stairs_1a`...).
 - **Doors**: `at` 0..1 along the stretch the two rooms share; `swing: "in"` opens into the room that builds the wall

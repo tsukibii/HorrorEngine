@@ -42,6 +42,7 @@ export const SLOTS = {
   paint_blue: [0x8cc6dc, 0.4], steel_sash: [0x6f726c, 0.45, 0.35],
   cover: [0x8e302a, 0.6], cover_2: [0x2f4b7c, 0.6], cover_3: [0x3e6c47, 0.6], cover_4: [0xd8c79d, 0.6], pages: [0xeee6d1, 0.9],
   curtain: [0xcfa443, 0.9],
+  concrete: [0xa8a49d, 0.85], checker: [0x5b5d60, 0.5, 0.6],     // stairs (§11): a concrete flight, a checker-plate tread
 };
 export const slotOf = m => SLOTS[m] ? m : (SLOTS[m.replace(/_\d+$/, "")] ? m.replace(/_\d+$/, "") : "body");
 const tone = (base, n, R) => { const i = n > 1 ? Math.floor(R() * n) : 0; return i && !/_\d+$/.test(base) ? `${base}_${i + 1}` : base; };
@@ -160,6 +161,12 @@ export const TYPES = {
     ["pocket", "curtain pocket on", "none", "pick", ["none", "n", "e", "s", "w"]], ["pocket_w", "pocket width", 0.13, "m"], ["slot", "material", "body", "slot"]], gen: bulkheadGen },
   block: { label: "Block: a step, a plinth, a board", cat: "furniture", mount: "floor", size: [1.2, 0.3, 0.18], params: [["bevel", "edge bevel", 0.003, "mm"],
     ["nosing", "nosing (front lip)", 0, "m"], ["slot", "material", "wood", "slot"]], gen: blockGen },
+  stairs: { label: "Stairs: a flight, its landing and rails", cat: "stairs", mount: "floor", size: [0.91, 3.64, 3.85], params: [["style", "style", "house", "pick", ["house", "apartment", "motel", "steel"]],
+    ["top", "box above the top tread (the rails')", 1.0, "m"], ["treads", "treads (0: about 18 cm a riser)", 0, "int"], ["landing", "landing at the top", 0, "m"],
+    ["nosing", "nosing", 0.025, "mm"], ["tread_t", "tread thickness", 0.03, "mm"], ["risers", "risers", "closed", "pick", ["closed", "open"]], ["waist", "slab under (0: solid to the floor)", 0, "m"],
+    ["rail", "rail (climbing)", "none", "pick", ["none", "left", "right", "both"]], ["wall_rail", "wall rail", "left", "pick", ["none", "left", "right", "both"]], ["rail_h", "rail height", 0.85, "m"], ["bars", "bars every (0: a mid rail)", 0, "mm"],
+    ["land_rail", "the landing's rail", "none", "pick", ["none", "side", "end", "both"]],
+    ["slot", "treads", "wood", "slot"], ["riser_slot", "risers", "white", "slot"], ["string_slot", "stringers, soffit, slab", "wood_3", "slot"], ["rail_slot", "rail", "wood_2", "slot"], ["post_slot", "posts, balusters", "white", "slot"]], gen: stairsGen },
   parts: { label: "Free parts (any furniture)", cat: "furniture", mount: "floor", size: [0.6, 0.6, 0.6], params: [["parts", "parts", [{ s: "box", at: [0, 0, 0], size: [0.6, 0.6, 0.6], m: "body", b: 0.003 }], "parts"]], gen: partsGen },
   // a Japanese school (§10): desks and chairs on bent steel tube (JIS S 1021's sizes), the teacher's lectern and a staff
   // room's steel desk, the chalkboard and its tray, cubbies and steel lockers, fluorescent fittings, books to fill them
@@ -235,7 +242,7 @@ export const TYPES = {
   candle: { label: "Candle", cat: "small", mount: "on", size: [0.07, 0.07, 0.103], params: [["style", "kind", "pillar", "pick", ["pillar", "taper", "tealight"]],
     ["left", "how much is left (0.15 to 1)", 1, "num"], ["slot", "wax", "wax", "slot"], ["holder_slot", "candlestick material", "brass", "slot"]], gen: candleGen },
 };
-export const CATS = { floor: "Floors", cabinet: "Cabinets and built-ins", furniture: "Furniture", school: "School", soft: "Cushions, pillows, mattresses", door: "Doors and handles", wall: "On and in the walls", fitting: "Wall fittings",
+export const CATS = { floor: "Floors", cabinet: "Cabinets and built-ins", furniture: "Furniture", stairs: "Stairs", school: "School", soft: "Cushions, pillows, mattresses", door: "Doors and handles", wall: "On and in the walls", fitting: "Wall fittings",
   ceiling: "Ceilings", opening: "Windows", curtain: "Curtains", small: "Little things (they come alive)" };
 
 // ---- specs: presets merged under a spec, defaults filled ---------------------------------------------------------
@@ -1429,6 +1436,131 @@ function partsGen(s, P) {
     P.push({ s: q.s, at: q.at.map(Number), size: q.size.map(v => Math.max(0.0005, +v)), m: q.m || "body",
              b: +q.b || 0, rz: +q.rz || 0, axis: q.axis, ri: +q.ri || 0 });
   }
+}
+// ---- stairs (§11; DECISIONS 2026-11-05, night: "model different types of stairs") ----------------------------------
+// A flight from its FRONT (-y, the foot, z 0) to its BACK (+y): treads over closed or open risers, what holds them up
+// (a house's closed stringers and soffit, concrete's solid block or its slab (`waist`), steel channels), a landing at
+// the top (`landing` m of the depth), rails (balusters, pickets or a pipe on posts: `rail`, the side(s) when climbing)
+// and a wall rail (`wall_rail`), the box going `top` m on above the top tread for them. The styles:
+//   house      a wooden box stair: closed risers, closed stringers, a soffit under, a baluster rail with newels
+//   apartment  a concrete flight (a mansion's stairwell): nosing strips, a slab under (waist), a steel pipe rail
+//   motel      steel channel stringers, pan treads filled with concrete, steel risers, a picket guard rail
+//   steel      an apaato's outside stair: channel stringers, checker-plate treads, open risers, a pipe rail with bars
+// The plan gives it collision as its steps and its rails (storykit/kit.py stairs_boxes: the same numbers), so the
+// mesh is hollow in the level: the player climbs the treads, never the box.
+function stairsGen(s, P, R, warn) {
+  const [W, D, H] = s.size, st = s.style || "house";
+  const top = clamp(+s.top || 0, 0, H * 0.6), rise = H - top, landing = clamp(+s.landing || 0, 0, D * 0.6), run = D - landing;
+  const n = Math.max(2, Math.round(s.treads > 0 ? s.treads : rise / 0.18)), r = rise / n, g = run / n;
+  const y0 = -D / 2, yN = y0 + run, yi = i => y0 + g * i, zi = i => r * (i + 1);          // tread i: y yi(i)..yi(i+1), its top zi(i)
+  const t = clamp(s.tread_t, 0.004, r * 0.6), nose = clamp(s.nosing, 0, g * 0.3), waist = clamp(+s.waist || 0, 0, rise);
+  const m = { tread: s.slot, riser: s.riser_slot, string: s.string_slot, rail: s.rail_slot, post: s.post_slot };
+  const railH = clamp(s.rail_h, 0.6, 1.3), bars = clamp(+s.bars || 0, 0, 1);
+  const N = y => r + (r / g) * (y - y0);                                                     // the nosing line: through the treads' front top corners
+  const railed = side => s.rail === "both" || s.rail === side, walled = side => s.wall_rail === "both" || s.wall_rail === side;
+  if (s.rail !== "none" && top < railH + 0.05) warn.push(`stairs: the box's top (${top.toFixed(2)} m above the top tread) is under its rail (${railH} m): the rail is cut off there`);
+  // a convex polygon in (y, z) kept to 0..H and y0..D/2 (Sutherland-Hodgman): the sloped boards' clipping
+  const clip = (pts, ...planes) => { let out = pts; for (const [k, lim, keepBelow] of planes) { const inp = out; out = []; for (let i = 0; i < inp.length; i++) { const a = inp[i], b = inp[(i + 1) % inp.length], ina = keepBelow ? a[k] <= lim : a[k] >= lim, inb = keepBelow ? b[k] <= lim : b[k] >= lim; if (ina) out.push(a); if (ina !== inb) { const u = (lim - a[k]) / (b[k] - a[k]); out.push([a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u]); } } if (out.length < 3) return []; } return out; };
+  const inBox = pts => clip(pts, [1, 0, false], [1, H, true], [0, y0, false], [0, D / 2, true]);
+  const band = (yA, yB, zAt, dz, x, w, slot, o) => { const q = inBox([[yA, zAt(yA)], [yB, zAt(yB)], [yB, zAt(yB) + dz], [yA, zAt(yA) + dz]]); if (q.length >= 3) prism(P, x, 0, 0, q, w, "x", slot, o); };   // a sloped board: its top edge the line zAt, dz deep (vertical), w wide across
+  const SIDE = { left: -1, right: 1 };
+  const xs = side => SIDE[side] * W / 2;                                                       // the side's outer x
+  // ---- the flight by style -------------------------------------------------------------------------------------------
+  let x0 = -W / 2, x1 = W / 2, landT = 0.22;                                                   // where the treads run across; the landing's slab
+  if (st === "house") {
+    const sT = 0.035, sD = 0.26; x0 += sT; x1 -= sT;
+    for (let i = 0; i < n; i++) {
+      bx(P, x0, Math.max(y0, yi(i) - nose), zi(i) - t, x1, yi(i + 1), zi(i), m.tread, { b: 0.002 });           // the tread, a rounded nosing
+      if (s.risers !== "open") bx(P, x0, yi(i), i ? zi(i - 1) : 0, x1, yi(i) + 0.018, zi(i) - t, m.riser);      // the riser board under its front
+    }
+    for (const sd of [-1, 1]) band(y0, yN, y => N(y) + 0.05, -sD, sd < 0 ? -W / 2 : W / 2 - sT, sT, m.string);   // closed stringers: a board each side over the nosings
+    if (!waist) band(y0 + g * (t / r), yN, y => N(y) - r - t, -0.012, x0, x1 - x0, m.string);                // the soffit: a board under the treads' back corners
+    else band(y0 + g * (t / r), yN, y => N(y) - r - t, -waist, x0, x1 - x0, m.string);                     // a thick soffit (a flight over another)
+    if (landing > 0) { bx(P, -W / 2, yN, rise - landT, W / 2, D / 2, rise - 0.03, m.string); bx(P, -W / 2, yN - 0.002, rise - 0.03, W / 2, D / 2, rise, m.tread, { b: 0.002 }); }   // the landing: joists boxed in, boards on top
+  } else if (st === "apartment") {
+    landT = 0.25;
+    for (let i = 0; i < n; i++) {
+      bx(P, x0, yi(i), waist ? (i ? zi(i - 1) : 0) : 0, x1, yi(i + 1), zi(i), m.tread);                    // a concrete step: solid to the floor, or down to the slab
+      bx(P, x0 + 0.02, yi(i), zi(i), x1 - 0.02, yi(i) + 0.035, zi(i) + 0.003, "black");                      // the anti-slip strip along its nose
+    }
+    if (waist) { const q = inBox([[y0, 0], [yN, rise], [yN, rise - waist], [y0 + waist * g / r, 0]]); if (q.length >= 3) prism(P, x0, 0, 0, q, W, "x", m.string); }   // the slab under
+    if (landing > 0) bx(P, x0, yN, rise - landT, x1, D / 2, rise, m.tread);
+  } else {                                                                                    // motel, steel: channel stringers each side, the treads between
+    const cW = st === "motel" ? 0.06 : 0.05, cD = st === "motel" ? 0.25 : 0.2, pan = st === "motel";
+    x0 += cW; x1 -= cW; landT = st === "motel" ? 0.05 : 0.03;
+    for (let i = 0; i < n; i++) {
+      bx(P, x0, Math.max(y0, yi(i) - nose), zi(i) - t, x1, yi(i + 1), zi(i), m.tread, { b: pan ? 0 : 0.001 });  // a pan filled with concrete, or a checker plate
+      if (pan) { bx(P, x0, Math.max(y0, yi(i) - nose), zi(i) - t - 0.004, x1, yi(i + 1), zi(i) - t, m.riser); if (s.risers !== "open") bx(P, x0, yi(i), i ? zi(i - 1) : 0, x1, yi(i) + 0.004, zi(i) - t, m.riser); }   // the pan's steel under and its riser
+      else if (s.risers !== "open") bx(P, x0, yi(i), i ? zi(i - 1) + 0.02 : 0.02, x1, yi(i) + 0.004, zi(i) - t, m.riser);
+    }
+    for (const sd of [-1, 1]) { const x = sd < 0 ? -W / 2 : W / 2 - cW; band(y0, yN, y => N(y) + 0.04, -cD, x, cW, m.string); band(y0, yN, y => N(y) + 0.04, -0.012, sd < 0 ? x + cW : x - 0.02, 0.02, m.string); band(y0, yN, y => N(y) + 0.04 - cD + 0.012, -0.012, sd < 0 ? x + cW : x - 0.02, 0.02, m.string); }   // a C channel: its web and flanges
+    if (landing > 0) {                                                                        // the landing: a plate (concrete or checker) on an edge channel
+      bx(P, x0, yN, rise - landT, x1, D / 2, rise, m.tread);
+      for (const [a, b, c, d] of [[-W / 2, yN, -W / 2 + cW, D / 2], [W / 2 - cW, yN, W / 2, D / 2], [-W / 2, D / 2 - cW, W / 2, D / 2]]) bx(P, a, b, Math.max(0, rise - cD), c, d, rise, m.string);
+    }
+  }
+  // ---- rails -------------------------------------------------------------------------------------------------------------
+  const pr = st === "apartment" ? 0.019 : 0.017, hp = H - 2.2 * pr;                                       // a pipe rail's radius; the pipes' line kept under the box's top
+  const railLine = y => Math.min(hp, N(y) + railH), railTop = Math.min(hp, rise + railH), yA = y0 + 0.06, yB = yN - 0.06;
+  const yEnd = landing > 0 ? D / 2 - 0.06 : yB;                                                // the rail runs on along the landing's side
+  const treadTop = y => { const i = Math.min(n - 1, Math.max(0, Math.floor((y - y0) / g))); return y < yN ? zi(i) : rise; };
+  for (const side of ["left", "right"]) {
+    const sd = SIDE[side];
+    if (walled(side)) {                                                                       // a wall rail: on brackets, 5 cm off the wall
+      const x = sd < 0 ? -W / 2 + 0.03 : W / 2 - 0.03 - 0.045;
+      band(yA, yB, y => Math.min(H, N(y) + railH - 0.1), -0.045, x, 0.045, m.rail, { b: 0.004 });
+      for (let y = yA + 0.3; y < yB - 0.2; y += 0.9) bx(P, sd < 0 ? -W / 2 : W / 2 - 0.03, y - 0.015, Math.min(H - 0.12, N(y) + railH - 0.22), sd < 0 ? -W / 2 + 0.03 : W / 2, y + 0.015, Math.min(H - 0.05, N(y) + railH - 0.1), m.post);
+    }
+    if (!railed(side)) continue;
+    const xr = sd < 0 ? -W / 2 + 0.045 : W / 2 - 0.045;                                     // the rail's middle, in from the edge
+    if (st === "house") {                                                                     // newels, a 60 x 40 handrail, square balusters
+      const nw = 0.09, newel = (y, z0) => bx(P, xr - nw / 2, y - nw / 2, z0, xr + nw / 2, y + nw / 2, Math.min(H, z0 + railH + 0.12), m.post, { b: 0.004 });
+      newel(yA + nw / 2, 0); newel(Math.min(yEnd - nw / 2, yN + (landing > 0 ? landing - nw / 2 - 0.06 : -nw / 2 - 0.06)), landing > 0 ? rise : treadTop(yN - 0.1));
+      band(yA + nw, yB - (landing > 0 ? 0 : nw), y => Math.min(H, N(y) + railH), -0.04, xr - 0.03, 0.06, m.rail, { b: 0.006 });
+      if (landing > 0 && s.land_rail !== "none" && s.land_rail !== "end") bx(P, xr - 0.03, yN, Math.min(H, railTop - 0.04), xr + 0.03, yEnd - nw, Math.min(H, railTop), m.rail, { b: 0.006 });
+      for (let i = 0; i < n; i++) for (const f of [0.28, 0.72]) { const y = yi(i) + g * f; if (y > yA + nw && y < yB) bx(P, xr - 0.016, y - 0.016, zi(i), xr + 0.016, y + 0.016, Math.min(H, N(y) + railH - 0.04), m.post); }
+      if (landing > 0 && s.land_rail !== "none" && s.land_rail !== "end") for (let y = yN + 0.11; y < yEnd - nw; y += 0.11) bx(P, xr - 0.016, y - 0.016, rise, xr + 0.016, y + 0.016, Math.min(H, railTop - 0.04), m.post);
+    } else {                                                                                  // a steel rail: round posts, a pipe on top, a mid pipe or bars between
+      const postR = 0.017, every = Math.max(1, Math.round(1.2 / g));
+      const pts = [];
+      for (let y = yA; y <= yB + 1e-6; y += Math.max(0.1, (yB - yA) / 12)) pts.push([xr, y, railLine(y)]);
+      if (pts[pts.length - 1][1] < yB - 1e-6) pts.push([xr, yB, railLine(yB)]);
+      if (landing > 0 && s.land_rail !== "none" && s.land_rail !== "end") pts.push([xr, yN + 0.12, railTop], [xr, yEnd, railTop]);
+      sweep(P, pts, { a: pr, b: pr, r: pr, k: 3 }, m.rail);
+      const posts = []; for (let i = 0; i < n; i += every) posts.push(yi(i) + g * 0.5); if (yN - posts[posts.length - 1] > 0.5) posts.push(yN - 0.1);
+      if (landing > 0 && s.land_rail !== "none" && s.land_rail !== "end") posts.push(yEnd - 0.03);
+      for (const y of posts) if (y > yA && y <= yEnd) cy(P, xr, y, treadTop(y), postR, Math.max(0.05, (y < yN ? railLine(y) : railTop) - treadTop(y) - pr), m.post, { n: 12 });
+      if (!bars) { const mid = []; for (const p of pts) mid.push([p[0], p[1], Math.min(H, p[2] - railH * 0.45)]); sweep(P, mid, { a: pr * 0.7, b: pr * 0.7, r: pr * 0.7, k: 3 }, m.rail); }   // the mid rail
+      else {                                                                                  // a bottom bar 8 cm over the nosings, bars up to the rail
+        band(yA, yB, y => Math.min(H, N(y) + 0.1), -0.012, xr - 0.02, 0.04, m.rail);
+        for (let y = yA + bars / 2; y < yB; y += bars) bx(P, xr - 0.005, y - 0.005, Math.min(H, N(y) + 0.1), xr + 0.005, y + 0.005, Math.min(H, N(y) + railH - pr), m.post);
+        if (landing > 0 && s.land_rail !== "none" && s.land_rail !== "end") for (let y = yN + bars / 2; y < yEnd; y += bars) bx(P, xr - 0.005, y - 0.005, rise, xr + 0.005, y + 0.005, Math.min(H, railTop - pr), m.post);
+      }
+    }
+  }
+  if (landing > 0 && (s.land_rail === "end" || s.land_rail === "both")) {                     // a rail across the landing's far end
+    const ye = D / 2 - 0.045, xa = -W / 2 + 0.045, xb = W / 2 - 0.045;
+    if (st === "house") { bx(P, xa - 0.03, ye - 0.03, Math.min(H, railTop - 0.04), xb + 0.03, ye + 0.03, Math.min(H, railTop), m.rail, { b: 0.006 }); for (let x = xa + 0.11; x < xb - 0.05; x += 0.11) bx(P, x - 0.016, ye - 0.016, rise, x + 0.016, ye + 0.016, Math.min(H, railTop - 0.04), m.post); }
+    else { sweep(P, [[xa + pr, ye, railTop], [xb - pr, ye, railTop]], { a: pr, b: pr, r: pr, k: 3 }, m.rail); for (const x of [xa, xb]) cy(P, x, ye, rise, 0.017, Math.max(0.05, railTop - rise - pr), m.post, { n: 12 }); if (bars) for (let x = xa + bars; x < xb - bars / 2; x += bars) bx(P, x - 0.005, ye - 0.005, rise, x + 0.005, ye + 0.005, Math.min(H, railTop - pr), m.post); else sweep(P, [[xa, ye, Math.min(H, railTop - railH * 0.45)], [xb, ye, Math.min(H, railTop - railH * 0.45)]], { a: pr * 0.7, b: pr * 0.7, r: pr * 0.7, k: 3 }, m.rail); }
+  }
+}
+// the flight's numbers the plan shares (storykit/kit.py stairs_boxes): the steps, the landing and the rails as boxes
+// [x0, y0, z0, x1, y1, z1, what] in item space; the mesh above is hollow in the level, these are its collision
+export function stairsBoxes(s) {
+  const [W, D, H] = s.size;
+  const top = clamp(+s.top || 0, 0, H * 0.6), rise = H - top, landing = clamp(+s.landing || 0, 0, D * 0.6), run = D - landing;
+  const n = Math.max(2, Math.round(s.treads > 0 ? s.treads : rise / 0.18)), r = rise / n, g = run / n, y0 = -D / 2, yN = y0 + run;
+  const waist = clamp(+s.waist || 0, 0, rise), railH = clamp(s.rail_h, 0.6, 1.3), out = [];
+  for (let i = 0; i < n; i++) out.push([-W / 2, y0 + g * i, waist ? Math.max(0, r * i - waist) : 0, W / 2, y0 + g * (i + 1), r * (i + 1), "step"]);
+  if (landing > 0) out.push([-W / 2, yN, Math.max(0, rise - 0.25), W / 2, D / 2, rise, "landing"]);
+  for (const [side, sd] of [["left", -1], ["right", 1]]) {
+    if (!(s.rail === "both" || s.rail === side)) continue;
+    const xa = sd < 0 ? -W / 2 : W / 2 - 0.09, xb = sd < 0 ? -W / 2 + 0.09 : W / 2;
+    for (let i = 0; i < n; i++) out.push([xa, y0 + g * i, r * (i + 1), xb, y0 + g * (i + 1), Math.min(H, r * (i + 1) + railH), "rail"]);
+    if (landing > 0 && s.land_rail !== "none" && s.land_rail !== "end") out.push([xa, yN, rise, xb, D / 2, Math.min(H, rise + railH), "rail"]);
+  }
+  if (landing > 0 && (s.land_rail === "end" || s.land_rail === "both")) out.push([-W / 2, D / 2 - 0.09, rise, W / 2, D / 2, Math.min(H, rise + railH), "rail"]);
+  return out;
 }
 // ---- little things (docs/IMMERSION.md) -----------------------------------------------------------------------------
 // Kettles, hobs, pots, cups, teapots, ashtrays, cigarettes and their packs, lighters, clocks, rice cookers, mosquito

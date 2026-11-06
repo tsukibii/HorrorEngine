@@ -41,6 +41,7 @@ const UP = new THREE.Vector3(0, 1, 0), DOWN = new THREE.Vector3(0, -1, 0);
 const ELECTRIC = l => !["candle", "fire"].includes(l.userData.kind);   // a power cut darkens these
 const flagsHold = (ifs, flags) => (ifs || []).every(f => f.startsWith("!") ? !flags.has(f.slice(1)) : flags.has(f));
 
+const SUPPORT = 0.06;                                  // the feet's reach out from the centre (groundAt)
 export class PlayRuntime {
   // opts: run (the Watch's run: flags, karma, counters), settings ({crouch: {mode: "hold"}}), theme, fade(to, secs),
   //       onBeat(stitch, beat, secs) (a beat fired: the desk's debug panel), onFlag(flag) (a flag set: the desk's
@@ -196,12 +197,12 @@ export class PlayRuntime {
   place(feet, yaw, pitch) {
     const p = this.player;
     p.pos.copy(feet); p.yaw = yaw; p.pitch = pitch;
-    p.pos.y = this.groundAt(p.pos, 0.5);
+    p.pos.y = this.groundAt(p.pos, 0.5); p.glide = 0;
     this.inside = new Set(this.triggers.filter(t => this.isIn(t)).map(t => t.id));      // where you are isn't an "enter"
   }
 
   // ---- collision: the player is an upright circle against every solid block, stepping onto low ones ----------------
-  blocks() { return this.stage.solid.filter(m => m.visible && m.geometry && m.geometry.parameters && m.userData.use !== "carry" && m !== this.heldMove); }   // a thing you carry never stops you
+  blocks() { return this.stage.solid.filter(m => (m.visible || m.userData.collider) && m.geometry && m.geometry.parameters && m.userData.use !== "carry" && m !== this.heldMove); }   // a thing you carry never stops you; a collider (a stair's steps) is unseen but there
   extent(m) {
     const g = m.geometry.parameters, cy = m.getWorldPosition(new THREE.Vector3()).y;
     if (g.radiusTop !== undefined) return { r: g.radiusTop, hy: g.height / 2, cy };
@@ -209,25 +210,38 @@ export class PlayRuntime {
     return { hx: g.width / 2, hy: g.height / 2, hz: g.depth / 2, cy };
   }
   move(dx, dz, s) {
-    const p = this.player;
+    const p = this.player, y0 = p.pos.y;
     p.pos.x += dx; p.pos.z += dz;
     this.stage.world.updateMatrixWorld(true);
     for (let i = 0; i < 3; i++) this.pushOut(s);
     const g = this.groundAt(p.pos, s.step);
     if (g > -Infinity) p.pos.y = g;
+    this.glideStep(y0, s.step);
+  }
+  // a step taken (the feet moved up or down within a step, not a fall): the eye keeps its height and glides to the
+  // new one over a tenth of a second (every engine's stair smoothing), so a flight reads as a slope to the eye, not a
+  // stutter of risers; `glide` is what the eye still has to make up (eyePos adds it), decayed in tick
+  glideStep(y0, step) {
+    const p = this.player, dy = p.pos.y - y0;
+    if (Math.abs(dy) < 0.004 || Math.abs(dy) > step + 0.001) return;
+    p.glide = Math.max(-step, Math.min(step, (p.glide || 0) - dy));
+    p.glideRate = Math.max(1, Math.abs(p.glide) / 0.12);
   }
   pushOut(s) {
-    const p = this.player, r = s.radius, feet = p.pos.y, head = feet + p.eye + 0.1;
+    const p = this.player, r = s.radius, feet = p.pos.y, step = s.step, head = feet + p.eye + 0.1;
     for (const m of this.blocks()) {
       const e = this.extent(m); if (!e) continue;
-      if (e.cy + e.hy <= feet + s.step || e.cy - e.hy >= head) continue;      // walked onto, or overhead
+      const top = e.cy + e.hy;
+      if (top <= feet + step || e.cy - e.hy >= head) continue;      // walked onto, or overhead
       const L = m.worldToLocal(p.pos.clone());
-      let px = 0, pz = 0;
+      let px = 0, pz = 0, cx = 0, cz = 0;
       if (e.r !== undefined) {
         const d = Math.hypot(L.x, L.z); if (d >= e.r + r) continue;
         const k = d > 1e-6 ? (e.r + r - d) / d : 0; px = L.x * k; pz = d > 1e-6 ? L.z * k : e.r + r;
+        if (d > 1e-6) { cx = L.x / d * e.r; cz = L.z / d * e.r; }
       } else {
-        const cx = Math.max(-e.hx, Math.min(e.hx, L.x)), cz = Math.max(-e.hz, Math.min(e.hz, L.z)), ox = L.x - cx, oz = L.z - cz, d = Math.hypot(ox, oz);
+        cx = Math.max(-e.hx, Math.min(e.hx, L.x)); cz = Math.max(-e.hz, Math.min(e.hz, L.z));
+        const ox = L.x - cx, oz = L.z - cz, d = Math.hypot(ox, oz);
         if (d >= r) continue;
         if (d > 1e-6) { px = ox / d * (r - d); pz = oz / d * (r - d); }
         else {                                                                   // inside: out by the nearest face
@@ -235,17 +249,29 @@ export class PlayRuntime {
           if (fx < fz) px = Math.sign(L.x || 1) * (fx + r); else pz = Math.sign(L.z || 1) * (fz + r);
         }
       }
+      if (top <= feet + 2 * step) {
+        // a stair's next tread but one is in reach before the feet are on the next (a steep flight: the tread two
+        // risers up stands within the radius): a block is walked onto when its top is a step above the GROUND where
+        // the player touches it, not above where their feet are now (the foot of a steep stair never let the player
+        // on at all, till 2026-11-05)
+        const n = Math.max(0.03, Math.abs(L.x - cx) + Math.abs(L.z - cz));
+        const touch = m.localToWorld(new THREE.Vector3(cx + (L.x - cx) * 0.03 / n, L.y, cz + (L.z - cz) * 0.03 / n));
+        const ref = Math.max(feet, this.groundAt(new THREE.Vector3(touch.x, feet, touch.z), step));
+        if (top <= ref + step) continue;
+      }
       const W = m.localToWorld(new THREE.Vector3(L.x + px, L.y, L.z + pz));
       p.pos.x = W.x; p.pos.z = W.z;
     }
   }
-  groundAt(pos, step) {                                // the highest top under the feet that's no more than a step up
+  // the highest top under the feet that's no more than a step up, SUPPORT out from the centre (a foot's reach): a hair's
+  // gap between two tops (a landing's slab and the wall it meets, 2026-11-05) is never a hole to fall through
+  groundAt(pos, step) {
     let best = -Infinity;
     for (const m of this.blocks()) {
       const e = this.extent(m); if (!e) continue;
       const top = e.cy + e.hy; if (top > pos.y + step) continue;
       const L = m.worldToLocal(pos.clone());
-      const inside = e.r !== undefined ? Math.hypot(L.x, L.z) <= e.r : Math.abs(L.x) <= e.hx && Math.abs(L.z) <= e.hz;
+      const inside = e.r !== undefined ? Math.hypot(L.x, L.z) <= e.r + SUPPORT : Math.abs(L.x) <= e.hx + SUPPORT && Math.abs(L.z) <= e.hz + SUPPORT;
       if (inside && top > best) best = top;
     }
     return best > -Infinity ? best : pos.y;
@@ -761,7 +787,7 @@ export class PlayRuntime {
   }
 
   // ---- the player's use and the cursor ---------------------------------------------------------------------------
-  eyePos() { return this.player.pos.clone().add(new THREE.Vector3(0, this.player.eye, 0)); }
+  eyePos() { return this.player.pos.clone().add(new THREE.Vector3(0, this.player.eye + (this.player.glide || 0), 0)); }
   // the player's abilities (game.player, STORY_FORMAT §9.10): run and crouch unless told not; the standing eye height
   can(what) { const p = (this.story.game || {}).player; return !(p && p[what] === false); }
   standEye() { const p = (this.story.game || {}).player; return p && typeof p.eye === "number" ? Math.max(1.2, Math.min(2.0, p.eye)) : EYES.stand; }
@@ -1167,6 +1193,7 @@ export class PlayRuntime {
     const feet = p.pos.clone();
     if (!this.busy && !this.playing && !p.seat && !p.hiding && !p.sleeping && !p.peeping && !this.moving) for (const a of ABILITIES) this.ability(a, "update", dt);
     p.speed = dt ? p.pos.distanceTo(feet) / dt : 0;
+    if (p.glide) p.glide = Math.abs(p.glide) <= (p.glideRate || 2) * dt ? 0 : p.glide - Math.sign(p.glide) * (p.glideRate || 2) * dt;   // the eye catching up with the feet after a step (glideStep)
     if (this.active && !this.busy) castSteps(this, dt, this.set("steps"));   // the cast walking about: heard where they are (steps.js)
     this.hud.setStance(p.hiding ? "hidden" : p.crouched ? "crouched" : "");
     for (const [id, d] of Object.entries(this.doors)) if (d.t < 1) {

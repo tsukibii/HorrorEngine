@@ -76,6 +76,7 @@ Anything made of boxes and cylinders is made here, from presets you change.
 | `door_frame` | a doorway's lining (sides and head, in the wall's thickness) and the stop the door closes against | lining, stop |
 | `bulkhead` | a ceiling step round the room, and the curtain pocket at the window wall | step width per wall, pocket on, pocket width |
 | `block` | a single bevelled box: a genkan step (with a nosing), a zabuton, a plinth, a shelf | bevel, nosing |
+| `stairs` | §11: a flight with its rails and a landing, in four styles: a house's wooden box stair, an apartment's concrete flight on its slab, a motel's steel stair with pan treads and a picket rail, an outside steel stair with checker plates | style, the box's top above the top tread, treads, landing, nosing, tread thickness, risers (closed, open), waist, rail (which side, climbing), wall rail, rail height, bars every, the landing's rail, the materials |
 | `parts` | free parts: anything made of boxes and cylinders | the parts |
 | **A school** | §10: a student's desk and chair, the lectern, a staff room's steel desk, the chalkboard, cubbies and shoe lockers, steel lockers, fluorescent lights, books | §10 |
 | **Little things** | §9: kettles, hobs, pots, cups, teapots, ashtrays, cigarettes and a pack, lighters, clocks, a rice cooker, mosquito coils, incense, phones, taps, candles | their kind, their materials |
@@ -424,3 +425,38 @@ as a cloth with two faces (the tied curtains). Steel tubes are sweeps along corn
 desk's book box).
 
 A tube light is a fitting like the round LEDs (§4): a story light with one as its `kit` glows its tubes while it's on.
+
+## 11. Stairs (DECISIONS 2026-11-05, night: "model different types of stairs")
+
+The `stairs` type is one **flight** from its front (its local -y, the foot, at z 0) to its back, climbing to `size[2] -
+top`: the box stands `top` m (1.0) on above the top tread so the rails and newels fit in it. `treads` 0 picks about 18 cm a
+riser (2.85 m: 16 treads); `landing` m of the depth is a landing at the top (a side door there is the way off);
+`nosing` and `tread_t` the treads; `risers` closed or open; `waist` a slab that thick under the treads (a dog-leg's upper
+flights, open beneath), 0 solid to the floor (a house's soffit, concrete's block). The rails: `rail` on the left, the
+right or both sides **when climbing**, `wall_rail` a handrail on brackets 5 cm off a wall, `rail_h` (0.85; a motel's
+guard 1.07), `bars` the pickets' or balusters' spacing (0: a mid rail instead), `land_rail` the landing's open edges
+(side, end, both). The materials: `slot` the treads, `riser_slot`, `string_slot` (stringers, soffit, slab),
+`rail_slot`, `post_slot`. The styles and their presets:
+
+| Style | Built | Preset |
+|---|---|---|
+| `house` | a wooden box stair: treads with a rounded nosing over closed risers, closed stringers (a board each side over the nosings), a soffit under; a baluster rail with newels where a side is open, a wall rail where it isn't; a landing of boards on boxed joists | `stairs_house` (between walls, a wall rail), `stairs_house_open` (one side open: balusters, newels, a landing and its rail: the living-room stair) |
+| `apartment` | a concrete flight: each step a block, an anti-slip strip along its nose, a slab (`waist`) under the upper flights; a round steel pipe rail on round posts, a mid pipe; a 25 cm landing slab | `stairs_apartment` (half a storey: a dog-leg's flight, its rail on the well side) |
+| `motel` | two steel C-channel stringers, pan treads filled with concrete, steel risers, a picket guard rail both sides at 1.07 m (bars every 11 cm, posts at the ends and every 1.2 m), a landing plate on an edge channel | `stairs_motel` (3.05 m up with a 1.2 m landing: a walkway's) |
+| `steel` | an apāto's outside stair: channel stringers, checker-plate treads, open risers, a pipe rail with thin bars | `stairs_steel` |
+
+**Its collision is its steps**, never its box (the box is the whole flight's and its rails'): the plan (plan.py) gives
+a kit stair's piece the tag `hollow` and adds **collider** pieces where the kit's steps, landing and rails are
+(`stairsBoxes` in kit.js, `stairs_boxes` in kit.py: the same numbers; KIT compares them), unseen and solid in the
+desk's Play, the Godot export (a StaticBody3D with its shape, its mesh hidden) and Export for Godot (`-colonly`), so
+the player climbs the treads and a rail stops them going off the side. The runtime climbs any flight (play.gd,
+runtime.js, 2026-11-05): a block is walked onto when its top is a step above the ground where the player touches it
+(a steep flight's tread two risers up stands within the radius before the feet are on the next one: the foot of a
+house stair never let the player on at all), the eye glides over each riser (a tenth of a second, as every engine's
+stair smoothing), and a riser climbed counts toward the footstep's stride (one footfall a tread).
+
+**In the scene builder** (SCENE_BUILDER §1): a `stairs` room's *stairs* picks the style and *landing at the top* its
+landing; a straight flight is one kit stair (`<room>_fx_stairs`, the box `STAIR_TOP` above the floor above), a
+dog-leg's flights are two (`_1a`, `_1b`: the ground storey's solid, the others on a waist, their rail on the well
+side) with the landings as slabs. **In the street builder** (STREET_BUILDER §5c) a building's outside stairs are
+drawn by the street's own geometry (`style: "steel"`: the motel's).
