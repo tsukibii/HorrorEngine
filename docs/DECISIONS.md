@@ -30,7 +30,8 @@ The user's answers, newest first. They override the plan, the research and the d
     Director's physics mode (a floating capsule) climbed already and glides the same.
   - **TestRoom001's station 19** (`n_stairs`, after the workshop scene): a dog-leg stairwell up to a gallery, a house
     stair down, measured in Godot and on the desk: the feet's height at each landing, never stuck, the eye never
-    jumping a riser in a frame.
+    jumping a riser in a frame. Pictured from the player's eye by day and night:
+    `docs/godot_sheets/2026-11-05_stairs.jpg`.
 
 ## 2026-11-05, latest (the user: the hanging clothes scrapped)
 
