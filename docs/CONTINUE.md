@@ -39,6 +39,11 @@ stair's flights are in two lanes, so the lower flight's railing clears the fligh
 the rest was a parapet outside the treads, bars ending inside posts, posts 12 mm off the stringers' ends, the
 flights' rail line the landings' (LESSONS).
 
+**Known here:** STREETPAGE (`node tools/director/streettest.mjs`) fails in this cloud checkout on a 404 for
+`shibuya_lane/refs/shot_photo.webp`, the Shibuya shot's reference photo, which `refs/` keeps out of git; the page
+itself opens every street clean (a probe with a 404 logger), and the stairs inspector's stack fields and the zigzag
+walkway button were driven in a browser. It passes where the refs are (the user's machine).
+
 **Could come next:** floor numbers by each landing (a texture: the sign parts' way); the danchi's curved canopy; a
 stack as a kit thing for interiors (the same layout indoors); the Blender bake's finishes on a stack (the steel's
 paint, the concrete); a GDSTREET walk up a stack (today it checks the colliders are there); the walkway's railing
