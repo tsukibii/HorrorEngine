@@ -335,7 +335,7 @@ function touches(r, o, q) {                                           // the roo
   const p = { n: [x0 + at, y0 + d + 0.05], s: [x0 + at, y0 - 0.05], e: [x0 + w + 0.05, y0 + at], w: [x0 - 0.05, y0 + at] }[o.wall];
   return p && p[0] > q.at[0] && p[0] < q.at[0] + q.size[0] && p[1] > q.at[1] && p[1] < q.at[1] + q.size[1];
 }
-const budgetOf = (S, p) => p.type === "ground" ? BUDGET.ground : p.type === "road" && (S.roads || []).some(r => r.id === p.id && SG.roadKind(r) === "river") ? BUDGET.river : BUDGET[p.type] || 20000;
+const budgetOf = (S, p) => p.type === "ground" ? BUDGET.ground : BUDGET[p.type] || 20000;
 // 5f. the outdoors (docs/STREET_NATURE_PLAN.md): a path with a bank rising beside it, a sunken lane with a mossy bank
 // after a level strip, two flights of steps climbing their rise (sleepers, stone), hills and a ridge far off on a far
 // ground in the forest cover, flats held level, scatters along the lane and in a circle; every new thing and fence (the
