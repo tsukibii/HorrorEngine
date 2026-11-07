@@ -2,6 +2,39 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-07 (the user: a list to build for a motel game; jump scares researched; a flashlight on batteries; characters that feel its light)
+
+- **The question first**: "Can you think of some game elements we should add that we might be missing. Do we have an
+  easy drag and drop way to maybe cause an event to dim the light temporarily e.g. if quest x and player triggered
+  event y light turns off or dims (we can select which light). What other elements would be good to make a horror
+  game ... imagine we are restricted to making a game that takes place inside a motel or hotel based off current
+  mechanics what else could help keep the game interesting for 1-2 hours." The answer: a moment (WHEN, ONLY IF quest
+  X, THEN Light) picks one light by its node's name and turns it off, on, flickering or dim, and the Scares card *The
+  lights die* darkens a room for a moment; but **dim and flicker never go back** (`on` leaves a light at 35% or still
+  flickering: play.gd `light`, runtime.js `light`), *the lights die* is a whole room's and turns every light in it on
+  after, a Director state's light isn't let go when its condition stops, and `loop_hall`, `cut_away` and `stalker` are
+  in the panel's palette but Godot only logs them. Then ten things a motel game lacks.
+- **"We can ignore 7 since we don't have audio dialogue, can ignore 10 too. Rest add as a list to implement but note
+  anything that doesn't exist like vending machine or whatever needs to conform to the standard of existing props like
+  logo-able cans etc and need to be easily customizable."** So: the ear to the wall (7) and the log of everything read
+  (10) are dropped; the rest is a list to build, **docs/HORROR_TODO.md**, the lights' fix first; every prop it needs
+  that doesn't exist yet (a vending machine, an ice machine, a landline, door numbers, a neon sign, the batteries...)
+  is a **prop generator recipe of a customizable family** (PROPGEN §25, as the cans, the bottles and the rice cooker:
+  `CUSTOM = True`, the maker's mark a `brand` or your `logo`, every print a slot your picture replaces in the picture
+  editor, PBR sets per material, parts that open where the real thing's do, sockets for what glows, its kept picture
+  and passes, made into the library and Godot), or a kit thing with its `mats` where the kit makes it (a door's chain,
+  a bed on legs).
+- **"Can you research some more jump scare game stuff, how its done well and come up with what we'd need to add (if
+  anything)."** docs/research/jump_scares.md, its last section folded into HORROR_TODO.
+- **"Can you design a flashlight that's battery powered and has flicker mechanics etc, we also want mechanics where a
+  npc might not like light so backs off (so we need a drag and drop thing for npcs to basically let them know if
+  someone is flashing a light at them so we can trigger reactions or mechanics off of that)."** Designed in
+  **docs/FLASHLIGHT_PLAN.md**: a charge that drains while it's on, an old bulb's beam yellowing and dimming or an LED's
+  step down, flickering as it runs low, batteries found and changed, the story's flicker and dim with a length;
+  characters and things that feel the beam (`lit`, `flashed`), a reaction of their own dropped onto them in the
+  Director (backs off, freezes, flees, vanishes, covers her eyes, comes toward it, charges) and any moment off it.
+  Not built: waiting on the user's yes.
+
 ## 2026-11-06, last (the user: the rivers scrapped; the foliage and rocks kept as props, for gardens)
 
 - **"Scrap the rivers, keep all the foliage and rocks you made as props to generate. I'll use them for gardens."** So:
