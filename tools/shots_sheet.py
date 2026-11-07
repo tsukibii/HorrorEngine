@@ -23,8 +23,8 @@ OUT = None   # Saved/Story/<Game>/Shots, set in main
 
 def eye_inside(eye, pieces, through=()):
     for p in pieces:
-        if p["kind"] not in ("wall", "mesh", "door", "floor", "ceiling") or p["id"] in through:
-            continue
+        if p["kind"] not in ("wall", "mesh", "door", "floor", "ceiling") or p["id"] in through or "hollow" in p["tags"]:
+            continue                                   # (a hollow thing is stood in: a kit stair's box, a light's fitting)
         w, d, h = p["size"]
         r = max(w, d) / 2 if p["yaw"] % 90 else None
         hw, hd = (r, r) if r else ((w / 2, d / 2) if p["yaw"] % 180 == 0 else (d / 2, w / 2))

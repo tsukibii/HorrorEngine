@@ -579,10 +579,36 @@ def check_world(story, things, r):
         if t.kind != "prop":
             continue
         p, u = t.d, t.use
-        if u is None and "shape" not in p and "kit" not in p:
-            r.err(f"{t.id}: needs a shape, a kit or a use")
+        if u is None and "shape" not in p and "kit" not in p and "stairs" not in p:
+            r.err(f"{t.id}: needs a shape, a kit, stairs or a use")
         if "kit" in p and "shape" in p:
             r.err(f"{t.id}: a shape or a kit, not both")
+        if "stairs" in p:                               # stairs from points (KIT.md §11b, STORY_FORMAT §2)
+            from storykit import stairs as ST  # noqa: PLC0415
+            st = p["stairs"]
+            if "shape" in p or "kit" in p or u is not None:
+                r.err(f"{t.id}: stairs stand alone: no shape, kit or use with them")
+            if not isinstance(st, dict):
+                r.err(f"{t.id}: stairs is {{from, to, via, w, style, turn, rail, wall_rail}}")
+            else:
+                for key in ("from", "to"):
+                    v = st.get(key)
+                    if not (isinstance(v, list) and len(v) == 3 and all(isinstance(x, (int, float)) for x in v)):
+                        r.err(f"{t.id}: stairs.{key} is [x, y, z] in the room")
+                if not all(isinstance(v, list) and 2 <= len(v) <= 3 and all(isinstance(x, (int, float)) for x in v) for v in (st.get("via") or [])):
+                    r.err(f"{t.id}: stairs.via is a list of [x, y] or [x, y, z] points on the way")
+                if "w" in st and not (isinstance(st["w"], (int, float)) and 0.6 <= st["w"] <= 2.5):
+                    r.err(f"{t.id}: stairs.w is the flight's width in metres, 0.6 to 2.5")
+                if "style" in st and st["style"] not in ST.STYLES:
+                    r.err(f"{t.id}: stairs.style is one of {', '.join(ST.STYLES)}")
+                if "turn" in st and st["turn"] not in ST.TURNS:
+                    r.err(f"{t.id}: stairs.turn is one of {', '.join(ST.TURNS)}")
+                for key in ("rail", "wall_rail"):
+                    if key in st and st[key] not in ST.RAILS:
+                        r.err(f"{t.id}: stairs.{key} is one of {', '.join(ST.RAILS)}")
+                lay = ST.layout(st)
+                for wmsg in lay["warnings"]:
+                    (r.err if "needs a foot" in wmsg or "climbs at least" in wmsg else r.warn)(f"{t.id}: stairs: {wmsg}")
         if "mats" in p:                                # a kit thing's slots dressed (STORY_FORMAT §2); the looks: check_library
             if "kit" not in p or not isinstance(p["mats"], dict):
                 r.err(f"{t.id}: mats is {{slot: look}} on a thing with a kit (its slots: wood, fabric, top...)")

@@ -1303,17 +1303,19 @@ function insideSection(b) {
       el("div", { class: "row", style: "display:flex;gap:4px;flex-wrap:wrap;margin-top:4px" },
         el("button", { title: "read the set again (it's read whenever the street opens)", on: { click: async () => { pushUndo(); if (await syncInside(b)) { changed(); toast("its inside followed the set"); } else toast("the set hasn't changed"); } } }, "Read the set again"),
         el("a", { href: `builder.html?game=${encodeURIComponent("set:" + ins.set)}`, target: "builder", style: "color:var(--accent);font-size:12px;align-self:center" }, "open the set in the scene builder"),
-        Math.round(+ins.floors || 1) > 1 ? el("button", { title: "a walkway along the front of the upper floors, a railing on it, and a stair up from the ground at its left end", on: { click: () => { pushUndo(); addWalkway(b); changed(); } } }, "+ walkway and stairs") : null),
+        Math.round(+ins.floors || 1) > 1 ? el("button", { title: "a walkway along the front of the upper floors, a railing on it, and a motel's steel switchback up from the ground at its left end", on: { click: () => { pushUndo(); addWalkway(b); changed(); } } }, "+ walkway and stairs") : null,
+        Math.round(+ins.floors || 1) > 1 ? el("button", { title: "a walkway along the front of the upper floors and a danchi's zigzag stair beyond it: one concrete flight a floor behind white pickets, landing on the walkway at alternate ends", on: { click: () => { pushUndo(); addWalkway(b, "zigzag"); changed(); } } }, "+ walkway and a zigzag stair") : null),
       el("div", { class: "hint", style: "margin-top:4px" }, "In Godot: the .glb has a marker (insides/inside_<id>_<floor>_<copy>) where each copy's level goes; put the set's level scene there and its door is this one."));
   }
   return section("Inside (a set you can walk into)", ...kids);
 }
 // a motel's (or a flats') way up: a walkway along the front of each upper floor and a stair at its left end
-function addWalkway(b) {
+function addWalkway(b, kind = "motel") {
   const sz = SG.insideSize(b), floors = Math.round(+b.inside.floors || 1), fl = SG.insideFloors(b), top = fl[fl.length - 1];
   b.parts = (b.parts || []).filter(p => !p.walkway);
   b.parts.push({ kind: "balcony", face: "front", x: 0, w: r2(sz.w), out: 1.3, floors: [2, floors], rail: "rail", slot: "concrete", walkway: true });
-  b.parts.push({ kind: "stairs", face: "left", x: r2(sz.d / 2 - 2.6), w: 5.2, h: r2(fl[1].z0), out: 1.1, dir: 1, slot: "concrete", walkway: true });
+  if (kind === "zigzag") b.parts.push({ kind: "stairs", face: "front", x: r2(-sz.w / 2 + 4.2), w: 7.4, out: 1.1, floors: [1, floors], form: "zigzag", style: "concrete", rail: "pickets", gap: 1.3, dir: 1, walkway: true });   // a danchi's: beyond the walkway, landing on it
+  else b.parts.push({ kind: "stairs", face: "left", x: r2(sz.d / 2 - 2.6), w: 5.2, h: r2(fl[1].z0), out: 1.1, dir: 1, style: "steel", turn: "u", walkway: true });
   void top;
 }
 function inspectFloor(b, face, k) {
@@ -1354,7 +1356,17 @@ function inspectPart(b, p, i) {
   }
   if (p.kind === "balcony") insp.append(field("its edge", pick(p, "rail", { solid: "a solid parapet", rail: "a railing", bars: "bars" }, { def: "solid" })));
   if (p.kind === "bay") insp.append(field("windows", el("div", { class: "row" }, check(p, "win", "on its front"), "per floor", num(p, "cols", { def: 1, step: 1, int: true }), check(p, "rail", "railing on top"))));
-  if (p.kind === "stairs") insp.append(field("climbs", pick(p, "dir", { 1: "to the right", "-1": "to the left" }, { def: 1, numeric: true })));
+  if (p.kind === "stairs") {
+    const stack = Array.isArray(p.floors), nf = Math.max(2, Math.round(+b.floors || (b.inside ? +b.inside.floors || 1 : 1)));
+    insp.append(field("climbs", pick(p, "dir", { 1: "to the right", "-1": "to the left" }, { def: 1, numeric: true })), field("built", pick(p, "style", { concrete: "concrete: slab flights", steel: "steel: channel stringers, pan treads (a motel's)" }, { def: "concrete" })),
+      field("up", el("div", { class: "row" }, el("label", {}, el("input", { type: "checkbox", checked: stack, on: { change: e => edit(() => { if (e.target.checked) { p.floors = [1, nf]; p.form = p.form || (p.turn === "u" ? "dogleg" : "zigzag"); p.rail = p.rail || (p.style === "steel" ? "pickets" : "pickets"); } else delete p.floors; }) } }), " the building's floors (a stack)"),
+        stack ? el("span", {}, " from floor ", num({ get v() { return p.floors[0]; }, set v(x) { p.floors[0] = x; } }, "v", { def: 1, step: 1, int: true, min: 1 }), " to ", num({ get v() { return p.floors[1]; }, set v(x) { p.floors[1] = x; } }, "v", { def: nf, step: 1, int: true, min: 2 })) : el("span"))));
+    if (stack) insp.append(field("form", pick(p, "form", { zigzag: "a zigzag: one flight a floor, each climbing back the other way (the danchi's)", straight: "straight: one flight a floor, all the same way, a landing each end", dogleg: "a dog-leg: two flights a floor, a platform at the turn (the tower's)" }, { def: "zigzag" })),
+      field("rail", pick(p, "rail", { pickets: "pickets: a guard rail of bars", panel: "solid panels with rounded corners, a handrail", parapet: "a concrete parapet (slab flights)", pipe: "a pipe rail on posts", none: "none" }, { def: p.style === "steel" ? "pickets" : "parapet" })),
+      field("shaft", pick(p, "shaft", { none: "open: posts under the landings", walls: "side walls up the stack, thick floor slabs (a stair tower)" }, { def: "none" })),
+      field("off the wall", el("div", { class: "row" }, num(p, "gap", { def: 0, step: 0.1, min: 0 }), "m (beyond a walkway: its railing opens where the landings meet it)", check(p, "walkway", "lands on the walkway"))));
+    else insp.append(p.style === "steel" ? field("shape", pick(p, "turn", { none: "one straight flight", u: "a switchback: two flights along the wall, a platform at the turn" }, { def: "none" })) : el("span"));
+  }
   if (["window", "lattice_window", "glassblock", "shopfront"].includes(p.kind)) insp.append(field("lit", check(p, "lit", "lit at night", { def: p.kind === "shopfront" })));
   if (["lamp", "lantern"].includes(p.kind)) insp.append(field("light", el("div", { class: "row" }, el("input", { type: "color", value: p.color || "#ffd9a0", on: { input: e => edit(() => { p.color = e.target.value; }) } }), "power", num(p, "power", { def: p.kind === "lamp" ? 4 : 5, step: 1 }))));
   if (!K.hole) insp.append(field("material", el("div", { class: "row" }, pick(p, "slot", Object.fromEntries([["", "(its own)"], ...Object.keys(SG.SLOTS).filter(s => !SG.SLOTS[s][3] || SG.SLOTS[s][3] === "t").map(s => [s, SLOT_LABELS[s] || s])]), { def: "" }))));
@@ -1538,6 +1550,19 @@ new ResizeObserver(() => { drawMap(); renderAll(); renderFacades(); }).observe(d
 })();
 // for the checks: the street's group, a build now, the build cache emptied
 window.__terrain = () => terrain(); window.__root = () => root; window.__rebuild = () => rebuild(); window.__changed = () => changed(); window.__clearCache = () => { BUILT.clear(); if (root) { for (const v of root.userData.chunks.values()) S3.disposeChunk(v.group); root.userData.chunks = new Map(); } };
+// for the checks: lines drawn in the scene as thin red bars (world coordinates, [{ a, b }]), hidden where the street
+// hides them: the stair stacks' ideal lines over a shot (tools/director/stairlines.mjs); [] takes them away
+let linesGroup = null;
+window.__lines = (segs, w = 0.02, color = 0xff2040) => {
+  if (linesGroup) { scene.remove(linesGroup); linesGroup.traverse(o => { if (o.geometry) o.geometry.dispose(); }); linesGroup = null; }
+  if (!segs || !segs.length) { render(); return 0; }
+  linesGroup = new THREE.Group(); const mat = new THREE.MeshBasicMaterial({ color }); let n = 0;
+  for (const sg of segs) {
+    const a = S3.s2t(...sg.a), b = S3.s2t(...sg.b), L = a.distanceTo(b); if (L < 1e-4) continue;
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, w, L), mat); m.position.copy(a).add(b).multiplyScalar(0.5); m.lookAt(b); linesGroup.add(m); n++;
+  }
+  scene.add(linesGroup); render(); return n;
+};
 // for the checks: draw a shot at a size, straight away
 window.__shot = (id, w, h) => {
   const s = ST.street.shots.find(x => x.id === id); if (!s) return false;

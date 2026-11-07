@@ -478,6 +478,7 @@ export class Stage {
       if (p.level !== level) continue;
       if (["wall", "floor", "ceiling", "door", "mesh"].includes(p.kind)) {
         const hidden = p.tags.includes("hidden");     // built but unseen and not solid, so Play can `show` it
+        const collider = p.tags.includes("collider"); // unseen and solid, never shown: a kit stair's steps and rails (plan.py)
         const [w, d, h] = p.size;
         const geo = p.shape === "cyl" ? new THREE.CylinderGeometry(w / 2, w / 2, h, 16) :
                     p.shape === "sphere" ? new THREE.SphereGeometry(w / 2, 16, 12) : new THREE.BoxGeometry(w, h, d);
@@ -494,7 +495,7 @@ export class Stage {
         m.rotation.y = p.yaw * Math.PI / 180;
         m.userData = { id: p.id, kind: p.kind, art: artRef || null, use: (p.tags.find(t => t.startsWith("use:")) || "").slice(4) || null, piece: p };
         if (m.userData.use === "clean") m.material = stainMaterial((p.d || {}).stain, p.id);   // a stain: a blot on what it lies on
-        m.visible = !hidden;
+        m.visible = !hidden && !collider; m.userData.collider = collider;
         m.userData.doorPart = (p.tags.find(t => t.startsWith("door_part:")) || "").slice(10) || null;
         m.userData.attach = (p.tags.find(t => t.startsWith("attach:")) || "").slice(7) || null;
         if (p.kind === "door" && p.d && p.d.kit) {          // where a kit door turns: its hinge axis, in the block's space

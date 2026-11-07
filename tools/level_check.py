@@ -122,7 +122,7 @@ def check(story, level=None):
             zone = ((wx - hw, wy + a0) if along_x else (wx + a0, wy - hw)) + (wz + 0.05,)
             zone = zone + ((wx + hw, wy + a1) if along_x else (wx + a1, wy + hw)) + (wz + 1.8,)
             for s in solid:
-                if "hidden" in s["tags"] or "in_wall" in s["tags"] or any(t.startswith("door_part:") for t in s["tags"]) or s.get("level", level_of[r["id"]]) != level_of[r["id"]]:
+                if "hidden" in s["tags"] or "hollow" in s["tags"] or "in_wall" in s["tags"] or any(t.startswith("door_part:") for t in s["tags"]) or s.get("level", level_of[r["id"]]) != level_of[r["id"]]:
                     continue
                 o = overlap(zone, aabb(s))
                 if o > TOL:

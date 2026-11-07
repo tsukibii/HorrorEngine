@@ -106,7 +106,13 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
   builder colours and labels by it and gives some kinds their built-ins (below); `name` is its label (optional,
   any text, Japanese welcome); `dir` is the way a `stairs` room climbs (`n e s w`); `flights: 2` makes it a dog-leg (a
   school's: a shaft through every floor its height reaches, each storey climbed in two flights turning on a half
-  landing, a landing at every floor; the scene builder makes the steps, SCENE_BUILDER §10b).
+  landing, a landing at every floor; the scene builder makes the steps, SCENE_BUILDER §10b); `stair` the kind of
+  stairs the scene builder puts in it (`house` a wooden box stair, `house_open` one side open with balusters,
+  `apartment` a concrete flight with a pipe rail, `motel` a steel stair with pan treads and a picket rail, `steel` an
+  outside steel stair: the kit's `stairs` presets, KIT.md §11), `landing` metres of landing at its top (a door on a
+  side wall there is the way off). The stairs themselves are props the builder writes (`<room>_fx_stairs`, a dog-leg's
+  `_1a` and `_1b` with its landings as boxes): a kit stair's collision is its steps and rails (the plan's `collider`
+  pieces, unseen and solid), its mesh hollow.
 - `ceiling: false` for outdoors.
 - `wet` (0..1, optional): a wet floor without rain (a bathroom, a cellar): in the Godot export the floor wears the
   look plugin's wet (the damp darkening, pools that carry the lights, no rings: GODOT_LOOK §2) by that much, and from
@@ -204,6 +210,18 @@ the room's built-ins are on. The builder also writes kit props (docs/KIT.md §4)
 tags it `kit:<type>` and `art:kit/<type>_<hash>`, the mesh `tools/kit/build.mjs` writes for the importer. Floors,
 rugs and ceiling steps are also tagged `surface` (the level check doesn't count them as obstacles). `in_wall: true`
 marks a thing that sits in its wall, like a window frame.
+
+**Stairs from points** (DECISIONS 2026-11-06: "stairs aren't pre-defined: you select start, mid and end points and they
+get generated to our rules"; KIT.md §11b): a prop with `"stairs": {"from": [x, y, z], "to": [x, y, z], "via": [[x, y],
+[x, y, z]...], "w": 0.9, "style": "house", "turn": "auto", "rail": "right", "wall_rail": "left"}` in place of a shape or a
+kit (room metres, z above the room's floor; `from` the foot, `to` the top, `via` the points on the way: straight on a
+landing to rest on, to the side a quarter turn (a house's: three winders round the newel; else a landing, or `turn`
+says: `winders`, `landing`), back the way you came a half turn with a platform (click the platform's middle; the next
+point says which lane the way back takes); a via point with a `z` fixes that landing's height). The plan lays it out
+to the rules (the risers by 2R + G = 63 cm within the style's riser and tread limits) as kit flights, landings and
+winders with their collider steps, the same in Godot and on the desk; the story check says what the rules object to
+(treads too shallow, flights too far apart). The scene builder's Stairs tool writes one (SCENE_BUILDER §1); the thing's
+box is the one round its parts.
 
 **A kit thing's slots dressed** (2026-10-31, the paint bucket on furniture): `"mats": {"white": "pbr/plastic/white_plastic",
 "fabric": {"set": "pbr/...", "tint": "#5a4a3a"}}`: a look on any of its kit's material slots (`wood`, `fabric`, `top`,

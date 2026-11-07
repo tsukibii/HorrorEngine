@@ -98,7 +98,13 @@ def _entrance(story, things, room_id):
                 inside = (rm.pos[0] - rm.size[0] / 2 - 0.01 <= wx <= rm.pos[0] + rm.size[0] / 2 + 0.01 and
                           rm.pos[1] - rm.size[1] / 2 - 0.01 <= wy <= rm.pos[1] + rm.size[1] / 2 + 0.01)
                 if inside and op["h"] >= 1.8 and op.get("sill", 0) < 0.3:
-                    return _toward((wx, wy, rm.pos[2]), rm.pos, 0.6)
+                    px, py, pz = _toward((wx, wy, rm.pos[2]), rm.pos, 0.6)
+                    for k, v in ((0, px), (1, py)):                   # kept 0.3 m off the walls (a door at the end of a narrow stair room)
+                        lo, hi = rm.pos[k] - rm.size[k] / 2 + 0.3, rm.pos[k] + rm.size[k] / 2 - 0.3
+                        if lo < hi:
+                            v = min(hi, max(lo, v))
+                        px, py = (v, py) if k == 0 else (px, v)
+                    return (px, py, pz)
     for lv in story["levels"].values():               # no doorway in: the player starts here (the level's start spot)
         st = things.get(lv.get("start"))
         if st and st.room == room_id:

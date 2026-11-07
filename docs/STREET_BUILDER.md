@@ -275,7 +275,72 @@ for a car park or a walkway. So the street builds the outside, round the level:
   the set's outside* takes it back). STREET fails if a building that follows its set no longer matches it (open the
   street and save). The motel preset is the street's own composition (`own` from the start).
 - **Copies**: `rows` side by side and `floors` stacked: **a motel** or a block of flats, a set a room. *+ walkway and
-  stairs* adds a walkway along the front of the upper floors with a railing and a stair up to it at the left end.
+  stairs* adds a walkway along the front of the upper floors with a railing and a stair up to it at the left end: a
+  **steel stair** (the `stairs` part's `style: "steel"`, DECISIONS 2026-11-05, night: two C-channel stringers, pan
+  treads filled with concrete over steel risers, a picket guard rail at 1.07 m on the open side with posts, a wall
+  rail, a landing plate on an edge channel with its rail and its legs; `concrete` is the other style, a concrete stair
+  on a waist slab with a sloping parapet); its collider stays a ramp to its top and the landing's slab (§5b), which
+  Godot's capsule walks up.
+- **Stair stacks** (DECISIONS 2026-11-06, later: the user's three photos, "a system for building these kind of
+  stairs"): a `stairs` part with `floors: [a, b]` climbs the building's floors a stage a storey, from each floor's
+  level to the next (an inside building's storeys the same). `form`: **zigzag** (one flight a storey, each in the
+  other of two lanes side by side and climbing back the other way, so from the street they cross in an X; a landing
+  1.2 m long across both lanes at alternate ends: the danchi's scissor stair. One lane won't do: the lower flight's
+  railing would run up through the flight above), **straight** (one flight a storey in one lane, all climbing
+  `dir`'s way, a landing at both ends of the upper floors) or **dogleg** (two flights a storey side by side, a half
+  platform at the turn, the floor landing at the other end, both as deep as the two lanes: the tower's and the
+  mid-rise's). A two-lane stack stands 2 × `out` off the wall. `style` concrete (slab
+  flights, each step a box down to the tread below) or steel (channel stringers, pan treads filled with concrete,
+  landing plates on an edge channel). `rail`: **pickets** (a guard rail of bars with a post every tenth), **panel**
+  (solid panels from the nosing line + 10 cm to + 1.1 m under a handrail, their corners cut, the landings' corners
+  rounded: the mid-rise's), **parapet** (concrete's sloping slab outside the treads), **pipe** (a top rail on posts),
+  **none**; the dog-leg's outer flight gets one on the well side too, a steel flight against the wall a wall rail.
+  `shaft: "walls"` stands a 25 cm wall at each end of the stack, the ground to 1.1 m over the top landing, and makes
+  the floor landings 50 cm concrete slabs (the tower's); without it, columns under the landings' outer corners.
+  `gap` m sets the lane off the wall: a walkway's `out` (1.3) puts the flights beyond the walkway, and with `walkway`
+  on both parts the walkway's railing opens where a landing meets it (`stackCuts`); a dog-leg's floor landings lose
+  their end rail with `walkway`, for the corner. The street page's stairs inspector has them all (*up the building's
+  floors*), and an inside building with floors gets *+ walkway and a zigzag stair* beside the motel's button. The
+  colliders: a ramp a flight, a box a landing, the shaft's walls (§5b). STREET builds every form, style, rail and
+  shaft, beside a walkway and not, with no two faces in one plane (a parapet outside the treads, a rail's bars
+  ending inside a post, posts 12 mm off a stringer's end, the flights' rail line the landings'). **The details**
+  (the user, 2026-11-06, "the rails poke out", then the red line over the picture: "one straight edge from the foot
+  to the landing's corner, nothing stepping above it"): every flight has two lines (`lines`): the inner-corner line
+  `ic`, through the base of every riser from the foot's floor to the landing's level, and the nosing line a riser
+  above it. A rail, a panel's top and a parapet's top stand on `ic`, one straight band from the foot to the landing,
+  so they arrive at the landing's rail at exactly its height; what sits against the treads (the bottom bar, a
+  stringer's depth) uses the nosing line. **The rails** (`stackPickets`, `stackPanel`, `stackRail`): bands cut
+  vertically at their ends, so a sloped band meets a level one end to end in one section, and every end is one of a
+  few kinds. A flight's outer rail runs into the landing's rail in one line through a post under the joint
+  ("under"/"pass"); a flight's foot at the ground has a post under the band, its top cut to the slope a hair under it,
+  the band running 6 mm past it ("end": nothing stands above the line); a level rail's free end is a capped post the
+  band butts ("post"), its cap level with the band's top; a landing's end rail butts the same post's side. **The
+  well corner** (`stackWell`, the two-lane forms): at every landing's inner edge the two well rails end against
+  capped posts on the slab's edge, their caps on the landing's line, a cross band between them over the well (and on
+  across the top landing's open lane to the outer rail's post or a post by the wall); panels end level in a cross
+  panel on the slab, a parapet flush against a cross parapet. Where there are columns, each is the landings' corner
+  post too: flush with the slab's end and outer edge, up to the top landing's rail line, the bands butting its faces
+  (pickets and pipe); a panel stack's landings cantilever (the rounded corners are the look); a parapet's columns
+  stop in the slab. A panel runs down to the soffit's line (a steel stair's to the stringer's underside) and its last
+  6 mm onto the landing level, where the landing's panel begins (nothing in the slab's end plane); the landing slab is
+  as thick as a flight's waist (16 cm), so the panels' bottom edge is one line through both. Pickets every 11 cm
+  are set out from the steps (half a space off every riser), each standing on its tread or in the stringer and tucked
+  12 mm into the top band, a post every tenth. A steel flight's channel stringers have their top edge on `ic` (the
+  treads stand as teeth above them, as in the photo) and end flush with the landing, on a header channel under its
+  inner edge; a concrete flight is steps on a sloping waist slab (a flat soffit from below). Beyond a walkway a
+  lane's inner side gets its own rail (`in`); the dog-leg's inner flight has a well rail of its own. **The line
+  rule** (`stackLineFaults`): the stack built alone, no vertex of it stands more than 4 mm above the rail's top
+  line over its flight (`ic` + the rail's top) or its landing (its level + the same); STREET holds every form,
+  style, rail and shaft to it, beside a walkway and not, and the single flights too (below), with the clipping
+  rule beside it. **Every `stairs` part is a stack** (`stackOf`): without `floors`, one stage `h` high laid out
+  as the older single flight was (its flight from u0 to u1, its landing 1.2 m beyond the top; a `turn: "u"`
+  switchback as a dog-leg with its platform at the foot's end and its landing beyond the other), the span grown by
+  the landings so the older streets' flights (`reference_town`, `hill_motel`'s motel) and the Motel preset's stay
+  where they were, now with the same rails, posts and columns. The reference street **danchi_court** has the three
+  photos' stairs, with close shots of each (`close_*`, `under_danchi`); **`tools/director/stairlines.mjs`** draws
+  the ideal lines in the page's own scene as thin red bars (a hair toward the eye, hidden wherever the street hides
+  them) and pictures a shot through `streetshot.mjs --lines`: where the geometry is right the red lies exactly on the
+  rails' and panels' top edges, and anything above a line shows over it (`docs/godot_sheets/2026-11-06_stair_lines.jpg`).
 - **The palette's** *Buildings to walk into*: every set (put it down, build the street round it), and **Motel** (the set `motel_room`: a room, a bath and a closet, its door
   with a peephole and a latch; six rooms on two floors, a walkway on posts, a stair, a lamp by each door, AC units, a
   neon sign) and **Bungalow** (the set `bungalow`: the scene builder's single-storey house round an engawa, raised 45
@@ -291,6 +356,11 @@ for a car park or a walkway. So the street builds the outside, round the level:
   the level put at the first room's marker, a ray from outside through the street's doorway meets the set's own door
   leaf (`motel_door`, the bungalow's `front_door`) a metre in; and a ray onto the walkway lands 3.05 m up.
 - One floor a set for now (the user); a two-storey interior would need its stairs inside the set.
+
+The street **danchi_court** (DECISIONS 2026-11-06, later): a court off a road with the three stair stacks after the
+user's photos: a three-storey danchi with walkways on its upper floors and a zigzag stair beyond them (concrete
+flights behind white pickets, the slab edges painted blue, a canopy at the foot), a seven-storey tower with a steel
+dog-leg stacked in a walled shaft, a mid-rise whose concrete dog-leg climbs behind rounded panels; shots of each.
 
 The example street **hill_motel**: a winding road climbing 8.5 m, the motel and its car park (bays, the folding gate,
 a block wall with mesh, a chain) at the bottom, the bungalow up the hill behind a block wall with a gate, houses the

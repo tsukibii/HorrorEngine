@@ -2,9 +2,11 @@
 // shots at the shot's own size, and, when the shot has its photo, the photo, the drawing and the two blended, side by
 // side, to see and measure how the drawing frames what the photo does. The desk's server running.
 //
-//   node tools/director/streetshot.mjs --street shibuya_lane --shot photo [--out Saved/Streets/shibuya_lane/photo.png] [--height 750] [--time night]
+//   node tools/director/streetshot.mjs --street shibuya_lane --shot photo [--out Saved/Streets/shibuya_lane/photo.png] [--height 750] [--time night] [--lines segs.json]
 //
 // Writes <out> (the drawing) and, with a photo, <out>-compare.png (photo | drawing | blended). Needs Playwright.
+// --lines: a JSON { segs: [{ a: [x, y, z], b: [x, y, z] }] } drawn in the scene as thin red bars before the shot (the
+// stair stacks' ideal lines, stairlines.mjs), hidden where the street hides them.
 import fs from "fs";
 import path from "path";
 import { createRequire } from "module";
@@ -25,9 +27,11 @@ try {
   await page.goto(`${URL0}street.html?street=${encodeURIComponent(street)}&shot=${encodeURIComponent(shotId)}${opt("--time") ? "&time=" + opt("--time") : ""}`);
   await page.waitForFunction(() => window.__streetReady, null, { timeout: 120000 });
   await page.waitForFunction(() => window.ST.propsReady !== false, null, { timeout: 180000 });   // the made props in their places
-  const info = await page.evaluate(async ({ shotId, height }) => {
+  const lines = opt("--lines") ? JSON.parse(fs.readFileSync(path.resolve(opt("--lines")), "utf8")) : null;
+  const info = await page.evaluate(async ({ shotId, height, lines }) => {
     const s = window.ST.street.shots.find(x => x.id === shotId);
     if (!s) return { error: `no shot ${shotId}: ${window.ST.street.shots.map(x => x.id).join(", ")}` };
+    if (lines) window.__lines(lines.segs, lines.w || 0.02);
     const a = Array.isArray(s.aspect) ? s.aspect[0] / s.aspect[1] : 16 / 9, H = height, W = Math.round(H * a);
     window.__shot(shotId, W, H);
     await new Promise(r => setTimeout(r, 400));
@@ -49,7 +53,7 @@ try {
       }
     }
     return { W, H, dpr, drawn, compare, tris: window.ST.pieces.reduce((n, p) => n + Object.values(p.G).reduce((m, g) => m + g.idx.length / 3, 0), 0) };
-  }, { shotId, height: +opt("--height", 750) });
+  }, { shotId, height: +opt("--height", 750), lines });
   if (info.error) { console.log("FAIL " + info.error); process.exitCode = 1; }
   else {
     fs.mkdirSync(path.dirname(out), { recursive: true });

@@ -2196,7 +2196,8 @@
      "name": "Workshop",
      "skip": [
       "s",
-      "w"
+      "w",
+      "e"
      ],
      "openings": [],
      "props": [
@@ -2340,7 +2341,14 @@
      ],
      "ceiling": false,
      "acoustics": "outdoors",
-     "openings": [],
+     "openings": [
+      {
+       "wall": "e",
+       "at": 1.5,
+       "w": 1.0,
+       "h": 2.1
+      }
+     ],
      "props": [
       {
        "id": "court_tree",
@@ -2544,6 +2552,262 @@
        "z": 3.8
       }
      ]
+    },
+    {
+     "id": "shaft",
+     "at": [
+      8,
+      20,
+      0
+     ],
+     "size": [
+      2.6,
+      5,
+      5.85
+     ],
+     "floor": "stone",
+     "light": "dim",
+     "kind": "stairs",
+     "name": "Stairwell",
+     "acoustics": "stairwell",
+     "dir": "s",
+     "flights": 2,
+     "stair": "apartment",
+     "skip": [],
+     "openings": [
+      {
+       "wall": "w",
+       "at": 4.3,
+       "w": 0.9,
+       "h": 2.1
+      },
+      {
+       "wall": "n",
+       "at": 1.3,
+       "w": 0.9,
+       "h": 2.1,
+       "sill": 3.45
+      }
+     ],
+     "props": [
+      {
+       "id": "shaft_stairs",
+       "stairs": {
+        "from": [
+         1.97,
+         3.427,
+         0
+        ],
+        "via": [
+         [
+          1.3,
+          0.719
+         ]
+        ],
+        "to": [
+         0.63,
+         3.427,
+         3.45
+        ],
+        "w": 1.14,
+        "style": "apartment"
+       },
+       "tag": "stairs"
+      },
+      {
+       "id": "shaft_fx_landing_2",
+       "shape": "box 2.48 1.513 0.25",
+       "at": [
+        1.3,
+        4.1835
+       ],
+       "z": 3.2,
+       "tag": "stairs"
+      },
+      {
+       "id": "shaft_lamp",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        1.3,
+        2.5
+       ],
+       "z": 5.6
+      },
+      {
+       "id": "shaft_lamp_low",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        1.3,
+        4.2
+       ],
+       "z": 3.0
+      }
+     ]
+    },
+    {
+     "id": "under",
+     "at": [
+      8,
+      25,
+      0
+     ],
+     "size": [
+      6.6,
+      5.0,
+      3
+     ],
+     "floor": "stone",
+     "light": "dim",
+     "kind": "storage",
+     "name": "Back room",
+     "skip": [
+      "w",
+      [
+       "s",
+       0,
+       2.6
+      ],
+      [
+       "e",
+       0,
+       3.7
+      ]
+     ],
+     "openings": [],
+     "props": [
+      {
+       "id": "under_lamp",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        3.3,
+        2.8
+       ],
+       "z": 2.9
+      }
+     ]
+    },
+    {
+     "id": "gallery",
+     "at": [
+      8.7,
+      25,
+      3.45
+     ],
+     "size": [
+      5.9,
+      5.3,
+      2.4
+     ],
+     "floor": "wood",
+     "light": "dim",
+     "kind": "corridor",
+     "name": "Gallery",
+     "skip": [
+      [
+       "s",
+       0,
+       1.9
+      ],
+      [
+       "e",
+       0,
+       3.7
+      ]
+     ],
+     "openings": [],
+     "props": [
+      {
+       "id": "gallery_lamp",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        3.05,
+        2.8
+       ],
+       "z": 2.3
+      }
+     ]
+    },
+    {
+     "id": "back_stairs",
+     "at": [
+      14.6,
+      24.7,
+      0
+     ],
+     "size": [
+      2.6,
+      4.0,
+      5.85
+     ],
+     "floor": "wood",
+     "light": "dim",
+     "kind": "stairs",
+     "name": "Back stairs",
+     "acoustics": "stairwell",
+     "dir": "n",
+     "stair": "house",
+     "landing": 0.9,
+     "skip": [],
+     "openings": [
+      {
+       "wall": "w",
+       "at": 0.6,
+       "w": 0.9,
+       "h": 2.1
+      },
+      {
+       "wall": "w",
+       "at": 3.48,
+       "w": 0.9,
+       "h": 2.1,
+       "sill": 3.45
+      }
+     ],
+     "props": [
+      {
+       "id": "back_stairs_stairs",
+       "stairs": {
+        "from": [
+         2.08,
+         0.5,
+         0
+        ],
+        "via": [
+         [
+          2.08,
+          3.48
+         ]
+        ],
+        "to": [
+         0.07,
+         3.48,
+         3.45
+        ],
+        "w": 0.9,
+        "style": "house"
+       },
+       "tag": "stairs"
+      },
+      {
+       "id": "back_stairs_lamp",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        1.3,
+        2.0
+       ],
+       "z": 5.6
+      }
+     ]
     }
    ],
    "links": [
@@ -2641,6 +2905,31 @@
      "a": "library",
      "b": "things",
      "via": "door_things"
+    },
+    {
+     "a": "workshop",
+     "b": "shaft",
+     "via": null
+    },
+    {
+     "a": "shaft",
+     "b": "gallery",
+     "via": null
+    },
+    {
+     "a": "gallery",
+     "b": "back_stairs",
+     "via": null
+    },
+    {
+     "a": "back_stairs",
+     "b": "under",
+     "via": null
+    },
+    {
+     "a": "court",
+     "b": "under",
+     "via": null
     }
    ]
   },
@@ -5404,6 +5693,70 @@
      ]
     }
    ]
+  },
+  "t_stairs": {
+   "title": "19 · Stairs",
+   "level": "lab",
+   "template": "explore",
+   "beats": [
+    {
+     "id": "b_stairs_start",
+     "when": {
+      "start": true
+     },
+     "do": [
+      {
+       "objective": "19 · Stairs: up the stairwell to the gallery, down the back stairs, out into the court"
+      },
+      {
+       "todo": "t19_up",
+       "text": "Up the stairwell to the gallery",
+       "ticks": {
+        "enter": "gallery"
+       }
+      },
+      {
+       "todo": "t19_down",
+       "text": "Down the back stairs to the back room",
+       "ticks": {
+        "enter": "under"
+       }
+      },
+      {
+       "todo": "t19_out",
+       "text": "Out into the court",
+       "ticks": {
+        "enter": "court"
+       }
+      }
+     ]
+    },
+    {
+     "id": "b_stairs_up",
+     "when": {
+      "enter": "gallery"
+     },
+     "do": [
+      {
+       "think": "Up. The rail was cold."
+      }
+     ]
+    },
+    {
+     "id": "b_stairs_done",
+     "when": {
+      "ticked": true
+     },
+     "do": [
+      {
+       "untodo": true
+      },
+      {
+       "done": true
+      }
+     ]
+    }
+   ]
   }
  },
  "flow": {
@@ -5475,7 +5828,7 @@
   "n_talk": {
    "type": "scene",
    "ref": "s_talk",
-   "next": "n_hide"
+   "next": "n_stairs"
   },
   "n_hide": {
    "type": "stitch",
@@ -5633,6 +5986,11 @@
    "type": "stitch",
    "ref": "t_things",
    "next": "n_bath"
+  },
+  "n_stairs": {
+   "type": "stitch",
+   "ref": "t_stairs",
+   "next": "n_hide"
   }
  },
  "frames": [
@@ -5678,6 +6036,7 @@
    "color": "#c2453d",
    "nodes": [
     "n_talk",
+    "n_stairs",
     "n_hide",
     "n_hide_r",
     "n_found",

@@ -107,7 +107,7 @@ export const STYLES = {
         faces: { front: { win: "punched", cols: Math.round(w / 3.2), ww: 1.5, wh: 1.2, ground: "shutter", lit: abandoned ? 0.03 : 0.4, bands: true }, left: { win: "small", cols: 1, lit: 0.1 }, right: { win: "none" }, back: { win: "punched", cols: Math.round(w / 3.2) } },
         roof: { kind: "flat", parapet: 0.7, things: [{ kind: "tank", x: r2(w / 2 - 2) }] },
         parts: [{ kind: "canopy", x: 0, z: r2(gh - 0.1), w: r2(w + 0.6), h: 0.45, out: 2.2 }, { kind: "pipe", x: r2(w / 2 - 0.4), h: r2(gh + fh * (floors - 1)) }, { kind: "pipe", x: r2(-w / 6), h: r2(gh + fh * (floors - 1)), z: 0 },
-                { kind: "stairs", face: "left", w: 6, h: r2(gh), out: 1.2, dir: 1 }] };
+                { kind: "stairs", face: "left", x: 0, w: 7, out: 1.1, floors: [1, floors], form: "zigzag", style: "concrete", rail: "pickets", dir: 1 }] };   // a stack up the gable end (DECISIONS 2026-11-06)
     } },
   // a small Japanese school (the user, 2026-11-01: "consider the hallway and exterior building too (a small japanese
   // school)"; STREET_BUILDER §3): its classroom wing and its gym

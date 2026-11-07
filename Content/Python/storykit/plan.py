@@ -6,6 +6,8 @@ A piece: {"id", "kind", "level", "room", "pos" (world metres: the centre for mes
 people, lights and spots), "size" (w, d, h in metres, along the piece's own axes), "yaw" (story degrees),
 "shape" (box, cyl, sphere), "tags", "d" (the source dict, for the class map)}.
 kind: wall, floor, ceiling, door, mesh, person, light, trigger, spot, start.
+Tags that change what a piece is: `hollow` (seen, never bumped), `hidden` (built unseen and not solid, till shown),
+`collider` (unseen and solid, never shown: a kit stair's steps and rails under its hollow mesh).
 """
 import math
 
@@ -13,6 +15,7 @@ from . import storylib as L
 from . import kit as KIT
 from . import library as LIB
 from . import life as LIFE
+from . import stairs as ST
 
 STEP = 0.18   # a stair's rise
 
@@ -173,6 +176,43 @@ def door_pieces(p, t):
         hx = side * (lw / 2 - float(g("handle_in")))
         out.append(part(f"{t.id}__handle", "mesh", hs, at(hx, ly, float(g("handle_z"))), (hw, lt + 2 * proj, hh),
                         ["door_part:handle", f"attach:{t.id}"]))
+    return out
+
+
+def stairs_pieces(p, t, room):
+    """Stairs from points (KIT.md §11b, storykit/stairs.py): each part of the layout a piece. A flight or a winder is its
+    kit's mesh, hollow, with collider boxes where its steps (and a flight's rails) are; a landing a kit block, solid.
+    Every piece carries the prop's tags and `tag:stairs`."""
+    lay = ST.layout(t.d["stairs"])
+    out = []
+    base = [x for x in _tags(t) if not x.startswith("tag:")] + ["tag:stairs"]
+    for i, part in enumerate(lay["parts"]):
+        spec = part["kit"]
+        try:
+            ktype, ref = KIT.kind(spec), KIT.ref(spec)
+            w, d, h = KIT.size(spec)
+        except ValueError:
+            continue
+        pid = f"{t.id}__{part['kind'][0]}{i}"
+        wx, wy, wz = L.room_world(room, part["at"][0], part["at"][1], part["z"])
+        yaw = float(part["rot"])
+        q = dict(p, id=pid, kind="mesh", shape="box", pos=(wx, wy, wz + h / 2), size=(w, d, h), yaw=yaw, kit=spec, d={"kit": spec, "tag": "stairs"},
+                 tags=base + [f"kit:{ktype}", f"art:{ref}", "real"])
+        if part["kind"] == "landing":
+            out.append(q)
+            continue
+        q["tags"] = q["tags"] + ["hollow"]
+        out.append(q)
+        if part["kind"] == "flight":
+            for j, (x0, y0, z0, x1, y1, z1, what) in enumerate(KIT.stairs_boxes(spec)):
+                ox, oy = _rot((x0 + x1) / 2, (y0 + y1) / 2, yaw)
+                out.append(dict(p, id=f"{pid}__{what}{j}", kind="mesh", shape="box", pos=(wx + ox, wy + oy, wz + (z0 + z1) / 2), size=(x1 - x0, y1 - y0, z1 - z0), yaw=yaw,
+                                d={"tag": "stairs"}, tags=base + ["collider", f"stairs:{what}"]))
+        else:
+            for j, b in enumerate(KIT.winder_boxes(spec)):
+                ox, oy = _rot(b["at"][0], b["at"][1], yaw)
+                out.append(dict(p, id=f"{pid}__tread{j}", kind="mesh", shape="box", pos=(wx + ox, wy + oy, wz + (b["z"][0] + b["z"][1]) / 2), size=(b["size"][0], b["size"][1], b["z"][1] - b["z"][0]),
+                                yaw=yaw + float(b["yaw"]), d={"tag": "stairs"}, tags=base + ["collider", "stairs:tread"]))
     return out
 
 
@@ -638,6 +678,8 @@ def plan(story, level=None):
         elif t.d.get("shape", "").startswith("person"):
             cast, pose = L.parse_shape(t.d["shape"])[1]
             out.append(dict(p, kind="person", pos=t.pos, size=t.size, shape=None, tags=_tags(t, [f"cast:{cast}", f"pose:{pose}"])))
+        elif t.d.get("stairs") is not None:         # stairs from points (KIT.md §11b): their flights, landings and winders
+            out += stairs_pieces(p, t, things[t.room].d)
         elif t.d.get("kit") is not None:            # a kit thing (docs/KIT.md): its box here; its mesh is kit/<type>_<hash>
             try:
                 spec = fitted(t.d["kit"], t.d.get("mats"))   # a floor laid out by its set's own tiles, boards or mats
@@ -645,6 +687,12 @@ def plan(story, level=None):
             except ValueError:
                 continue                                # story_check says why
             extra = [f"kit:{ktype}", f"art:{ref}", "real"] + (["surface"] if ktype in KIT.SURFACE else []) + (["in_wall"] if t.d.get("in_wall") else [])
+            if ktype == "stairs":                   # a kit stair (KIT.md §11): its mesh hollow, climbed on its steps and held by
+                extra.append("hollow")              # its rails, collider boxes where the kit says they are (kit.py stairs_boxes)
+                for i, (x0, y0, z0, x1, y1, z1, what) in enumerate(KIT.stairs_boxes(spec)):
+                    ox, oy = _rot((x0 + x1) / 2, (y0 + y1) / 2, t.yaw)
+                    out.append(dict(p, id=f"{t.id}__{what}{i}", kind="mesh", shape="box", pos=(t.pos[0] + ox, t.pos[1] + oy, t.pos[2] + (z0 + z1) / 2),
+                                    size=(x1 - x0, y1 - y0, z1 - z0), yaw=t.yaw, tags=_tags(t, ["collider", f"stairs:{what}"])))
             out.append(dict(p, kind="mesh", shape="box", pos=t.centre, size=t.size, kit=spec, tags=_tags(t, extra)))
         elif t.d.get("shape"):
             kind, args = L.parse_shape(t.d["shape"])
