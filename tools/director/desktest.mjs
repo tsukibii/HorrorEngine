@@ -623,5 +623,23 @@ print(json.dumps({"typed": [L.typed_secs(t, r, b) for t, r, b in d["texts"]], "c
     : fail("flicker: " + JSON.stringify({ flu, dy, ca, pu: [pu[0], pu[60], pu[120]], cu: [cu[0], cu[20], cu[40]], plain, none, half, same, differs }));
 }
 
+// ---- the flashlight's battery (tools/shared/torchbeam.js, FLASHLIGHT_PLAN §1): the beam by its charge, from the clock alone
+{
+  const B = await import("../shared/torchbeam.js");
+  const bulb = c => B.beam({ kind: "bulb", charge: c, low: 0.2, lowAt: null, kelvin: 3200 }, 0.01);
+  const full = bulb(1), quarter = bulb(0.25), fifth = bulb(0.2);
+  const dips = c => { let n = 0, d = 0; for (let t = 0; t < 30; t += 1 / 60) { const b = B.beam({ kind: "bulb", charge: c, low: 0.2, lowAt: null, kelvin: 3200 }, t).b; n++; if (b < Math.sqrt(c) * 0.5) d++; } return d / n; };
+  const early = dips(0.18), late = dips(0.04);
+  const led = (c, t, at = 0) => B.beam({ kind: "led", charge: c, low: 0.15, lowAt: at, kelvin: 6000 }, t).b;
+  const blinks = [0.02, 0.1, 0.22, 0.3, 0.42, 0.5].map(t => led(0.14, t)), after = led(0.14, 2), strobe = [0.1, 0.45].map(t => led(0.03, t + 10)), fullLed = led(0.5, 1, null);
+  const def = B.batteryOf({ battery: 60 }), old = B.batteryOf(true), ledDef = B.batteryOf({ battery: 10, kind: "led", rest: true });
+  Math.abs(full.b - 1) < 1e-9 && Math.abs(quarter.b - 0.5) < 1e-9 && Math.abs(quarter.reach - Math.sqrt(0.5)) < 1e-9 && quarter.kelvin < 3200 && quarter.kelvin > 2400
+    && Math.abs(fifth.kelvin - (3200 - 1100 * 0.64)) < 1e-6 && early > 0 && late > early * 2
+    && blinks.join() === "0,1,0,1,0,1" && Math.abs(after - 0.35) < 1e-9 && strobe.join() === "0.35,0" && fullLed === 1
+    && def.kind === "bulb" && def.low === 0.2 && def.kelvin === 3200 && def.charge === 1 && old.battery === 0 && ledDef.rest === false && ledDef.low === 0.15
+    ? ok(`the flashlight's battery: a bulb at a quarter charge half as bright, reaching ${(quarter.reach * 100).toFixed(0)} %, ${Math.round(quarter.kelvin)} K; browning out ${(early * 100).toFixed(1)} % of the time just under low and ${(late * 100).toFixed(1)} % near empty; an LED's three blinks, its low mode of 35 %, its strobe; the defaults by kind; a flashlight with no battery never runs down`)
+    : fail("torchbeam: " + JSON.stringify({ full, quarter, fifth, early, late, blinks, after, strobe, fullLed, def, old, ledDef }));
+}
+
 console.log(fails.length ? `DESK FAILED (${fails.length})` : "DESK ok");
 process.exit(fails.length ? 1 : 0);

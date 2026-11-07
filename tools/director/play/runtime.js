@@ -330,16 +330,19 @@ export class PlayRuntime {
   // the flashlight (torch.js): the item with `torch` the player has; F switches it (heard as {type: "torch", on}), the
   // story's `torch` sets it. Dead, F only clicks
   isTorch(item) { return !!((this.story.items || {})[item] || {}).torch; }
+  isBattery(item) { const b = ((this.story.items || {})[item] || {}).battery; return typeof b === "number" && b > 0; }   // batteries for the flashlight (how full a set)
+  batteries() { return [...this.items].filter(id => this.isBattery(id)); }   // the sets in the pocket, in the order they were picked up
+  torchCharge() { return this.torchLight ? (this.torchLight.battery(), this.torchLight.chargeNow()) : 1; }   // 0..1; 1 on no battery
   torchItem() { for (const id of this.items) if (this.isTorch(id)) return this.story.items[id]; return null; }
   torchOf() { if (!this.torchLight) { this.torchLight = new Torch(this); this.hud.hintKey("F", "flashlight"); } return this.torchLight; }
   torchSwitch() {
     if (!this.torchItem() || this.player.sleeping || this.inChapter) return;
     const t = this.torchOf(); this.shelfSound(t.on ? "flashlight_02" : "flashlight_01");
-    if (t.dead) { this.hud.log("the flashlight is dead"); return; }
+    if (t.dead || t.changing) { this.hud.log("the flashlight is dead"); return; }
     t.on = !t.on; t.flick = 0;
     this.emit({ type: "torch", on: t.on });
   }
-  torchSet(v) { if (!this.torchItem() && (v === "on" || v === "flicker")) { this.hud.log(`torch ${v}: the player has no flashlight`); return; } this.torchOf().set(v); }
+  torchSet(v, a = {}) { if (!this.torchItem() && (v === "on" || v === "flicker")) { this.hud.log(`torch ${v}: the player has no flashlight`); return; } this.torchOf().set(v, a); }
   nameOf(t) { const p = t.userData.piece || {}, d = p.d || {}; return d.name || (p.tags || []).find(x => x.startsWith("tag:"))?.slice(4).replace(/_/g, " ") || t.userData.id.replace(/_/g, " "); }
   lineText(id) { const l = (this.story.lines || {})[id]; return l ? l.en || l.ja : null; }
   // a story sound: off the Studio's shelf when its file is sfx/<name>, placed at `at` (a thing or a cast member) when
@@ -523,8 +526,8 @@ export class PlayRuntime {
     const id = t.userData.id, d = (t.userData.piece || {}).d || {}, kept = this.kept[this.level], back = (kept.brought || {})[id];
     if (this.inv.has(id)) return;
     if (t.userData.in) { const from = t.userData.in; this.containDetach(t); this.emit({ type: "taken", id, from }); }   // out of the container it was in
-    if (d.item && this.isTorch(d.item)) {             // a flashlight: into the pocket (F), not the row
-      this.setVisible(id, false); delete kept.bodies[id]; this.give(d.item); this.torchOf();
+    if (d.item && (this.isTorch(d.item) || this.isBattery(d.item))) {   // a flashlight (F) or its batteries: into the pocket, not the row
+      this.setVisible(id, false); delete kept.bodies[id]; this.give(d.item); if (this.isTorch(d.item)) this.torchOf();
       this.emit({ type: "pickup", item: d.item }); return;
     }
     const src = t.clone(); delete src.userData.mid;
@@ -1176,7 +1179,8 @@ export class PlayRuntime {
     if (this.held) return;
     this.held = true; this.busy = true; this.keys = {};
     if (document.pointerLockElement === this.box) document.exitPointerLock();
-    const v = await pauseMenu(this.hud, { game: this.gameTitle(), where: this.stitchTitle, secs: this.run ? this.run.secs + this.clock : this.clock, torch: !!this.torchItem() });
+    const v = await pauseMenu(this.hud, { game: this.gameTitle(), where: this.stitchTitle, secs: this.run ? this.run.secs + this.clock : this.clock, torch: !!this.torchItem(),
+      battery: this.torchLight && (this.torchLight.battery(), this.torchLight.onBattery()) ? { charge: this.torchLight.charge, sets: this.batteries().length, change: () => this.torchLight.change() } : null });
     this.held = false; this.busy = false; this.last = this.resumed = performance.now();
     if (v && v.quit) { if (this.opts.quit) this.opts.quit(v.quit); return; }
     if (v === "escaped") return;                     // closed by Esc: asking for the lock now, the browser would take the same Esc as leaving it

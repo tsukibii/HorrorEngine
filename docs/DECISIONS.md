@@ -14,6 +14,10 @@ The user's answers, newest first. They override the plan, the research and the d
   room, `order: "toward"` with its `gap`, every light back as it was; a Director state's light let go back as the
   level has it; the Scares cards *A light dims* (the light nearest where it lands, `{light}`) and *The lights die one
   by one*; the desk's quick beat *A light dims*; `loop_hall` and `cut_away` out of the palette (the check warns).
+- **The flashlight on batteries, built** (FLASHLIGHT_PLAN §1, but its props): a `battery` on the flashlight item, a
+  bulb's or an LED's beam by its charge, `low`/`dead`/`changed` heard, `battery` items as sets changed by themselves,
+  the pause menu's charge and change, the story's `dim`, `drain` and timed `flicker`; the condition is
+  `{"charge": 0.25}` (a number, as the editors' forms take).
 
 ## 2026-11-07 (the user: a list to build for a motel game; jump scares researched; a flashlight on batteries; characters that feel its light)
 

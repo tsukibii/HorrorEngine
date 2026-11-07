@@ -672,7 +672,7 @@
    "label": "Flashlight",
    "icon": "torch",
    "group": "world",
-   "hint": "the player's flashlight (an item marked Flashlight in the Database): on, off, a flicker, dead (it flickers out and F only clicks) or working again (new batteries)",
+   "hint": "the player's flashlight (an item marked Flashlight in the Database): on, off, a flicker (for a while in a lamp's way), dimming, dead (it flickers out and F only clicks), working again (new batteries) or its battery drained to a charge",
    "fields": [
     {
      "key": "torch",
@@ -684,8 +684,43 @@
       "off",
       "flicker",
       "dead",
-      "works"
+      "works",
+      "dim",
+      "drain"
      ]
+    },
+    {
+     "key": "to",
+     "label": "how bright, or the charge (dim, drain: 0 to 1)",
+     "kind": "number",
+     "ph": "0.35",
+     "opt": true
+    },
+    {
+     "key": "mode",
+     "label": "its flicker (a flicker)",
+     "kind": "choice",
+     "opts": [
+      "fluorescent",
+      "dying",
+      "candle",
+      "pulse",
+      "custom"
+     ],
+     "opt": true
+    },
+    {
+     "key": "secs",
+     "label": "for (s)",
+     "kind": "number",
+     "opt": true
+    },
+    {
+     "key": "over",
+     "label": "over (s)",
+     "kind": "number",
+     "ph": "0",
+     "opt": true
     }
    ],
    "make": {
@@ -1758,22 +1793,49 @@
   },
   {
    "verb": "torch",
-   "label": "The player switches the flashlight",
+   "label": "The flashlight is switched, runs low, dies or is changed",
    "icon": "torch",
    "fields": [
     {
      "key": "torch",
-     "label": "Switched",
+     "label": "It",
      "kind": "choice",
      "verb": true,
      "opts": [
       "on",
-      "off"
-     ]
+      "off",
+      "low",
+      "dead",
+      "changed"
+     ],
+     "labels": {
+      "on": "is switched on",
+      "off": "is switched off",
+      "low": "runs low",
+      "dead": "dies",
+      "changed": "gets new batteries"
+     }
     }
    ],
    "make": {
     "torch": "on"
+   }
+  },
+  {
+   "verb": "charge",
+   "label": "The flashlight's charge is under",
+   "icon": "torch",
+   "fields": [
+    {
+     "key": "charge",
+     "label": "Under (0 to 1)",
+     "kind": "number",
+     "verb": true,
+     "ph": "0.25"
+    }
+   ],
+   "make": {
+    "charge": 0.25
    }
   },
   {
@@ -3262,30 +3324,163 @@
   {
    "what": "action",
    "value": {
-    "torch": "on"
+    "torch": "on",
+    "to": 3,
+    "mode": "fluorescent",
+    "secs": 5,
+    "over": 6
    },
-   "text": "The flashlight comes on"
+   "text": "The flashlight comes on for 5 s, over 6 s"
   },
   {
    "what": "action",
    "value": {
-    "torch": "off"
+    "torch": "off",
+    "to": 3,
+    "mode": "fluorescent",
+    "secs": 5,
+    "over": 6
    },
-   "text": "The flashlight goes off"
+   "text": "The flashlight goes off for 5 s, over 6 s"
   },
   {
    "what": "action",
    "value": {
-    "torch": "dead"
+    "torch": "flicker",
+    "to": 3,
+    "mode": "fluorescent",
+    "secs": 5,
+    "over": 6
    },
-   "text": "The flashlight dies"
+   "text": "The flashlight flickers (fluorescent) for 5 s, over 6 s"
   },
   {
    "what": "action",
    "value": {
-    "torch": "works"
+    "torch": "dead",
+    "to": 3,
+    "mode": "fluorescent",
+    "secs": 5,
+    "over": 6
    },
-   "text": "The flashlight works again"
+   "text": "The flashlight dies for 5 s, over 6 s"
+  },
+  {
+   "what": "action",
+   "value": {
+    "torch": "works",
+    "to": 3,
+    "mode": "fluorescent",
+    "secs": 5,
+    "over": 6
+   },
+   "text": "The flashlight works again for 5 s, over 6 s"
+  },
+  {
+   "what": "action",
+   "value": {
+    "torch": "dim",
+    "to": 3,
+    "mode": "fluorescent",
+    "secs": 5,
+    "over": 6
+   },
+   "text": "The flashlight dims to 3 for 5 s, over 6 s"
+  },
+  {
+   "what": "action",
+   "value": {
+    "torch": "drain",
+    "to": 3,
+    "mode": "fluorescent",
+    "secs": 5,
+    "over": 6
+   },
+   "text": "The flashlight's battery drains to 3 for 5 s, over 6 s"
+  },
+  {
+   "what": "action",
+   "value": {
+    "torch": "on",
+    "to": 3,
+    "mode": "dying",
+    "secs": 5,
+    "over": 6
+   },
+   "text": "The flashlight comes on for 5 s, over 6 s"
+  },
+  {
+   "what": "action",
+   "value": {
+    "torch": "on",
+    "to": 3,
+    "mode": "candle",
+    "secs": 5,
+    "over": 6
+   },
+   "text": "The flashlight comes on for 5 s, over 6 s"
+  },
+  {
+   "what": "action",
+   "value": {
+    "torch": "on",
+    "to": 3,
+    "mode": "pulse",
+    "secs": 5,
+    "over": 6
+   },
+   "text": "The flashlight comes on for 5 s, over 6 s"
+  },
+  {
+   "what": "action",
+   "value": {
+    "torch": "on",
+    "to": 3,
+    "mode": "custom",
+    "secs": 5,
+    "over": 6
+   },
+   "text": "The flashlight comes on for 5 s, over 6 s"
+  },
+  {
+   "what": "action",
+   "value": {
+    "torch": "on",
+    "mode": "fluorescent",
+    "secs": 5,
+    "over": 6
+   },
+   "text": "The flashlight comes on for 5 s, over 6 s"
+  },
+  {
+   "what": "action",
+   "value": {
+    "torch": "on",
+    "to": 3,
+    "secs": 5,
+    "over": 6
+   },
+   "text": "The flashlight comes on for 5 s, over 6 s"
+  },
+  {
+   "what": "action",
+   "value": {
+    "torch": "on",
+    "to": 3,
+    "mode": "fluorescent",
+    "over": 6
+   },
+   "text": "The flashlight comes on, over 6 s"
+  },
+  {
+   "what": "action",
+   "value": {
+    "torch": "on",
+    "to": 3,
+    "mode": "fluorescent",
+    "secs": 5
+   },
+   "text": "The flashlight comes on for 5 s"
   },
   {
    "what": "action",
@@ -4734,6 +4929,41 @@
     "torch": "off"
    },
    "text": "the player switches the flashlight off"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "torch": "low"
+   },
+   "text": "the flashlight runs low"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "torch": "dead"
+   },
+   "text": "the flashlight dies"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "torch": "changed"
+   },
+   "text": "the flashlight gets new batteries"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "charge": 0.25
+   },
+   "text": "the flashlight's charge is under 0.25"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "charge": 2
+   },
+   "text": "the flashlight's charge is under 2"
   },
   {
    "what": "trigger",

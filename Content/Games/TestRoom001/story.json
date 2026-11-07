@@ -86,7 +86,9 @@
    "torch": {
     "kelvin": 4200,
     "cone": 24,
-    "range": 16
+    "range": 16,
+    "battery": 12,
+    "low": 0.3
    }
   },
   "batteries": {
@@ -103,6 +105,10 @@
   "tee": {
    "name": "Folded tee",
    "shape": "box 0.31 0.24 0.03"
+  },
+  "spare_cells": {
+   "name": "Spare batteries",
+   "battery": 1
   }
  },
  "notes": {
@@ -2162,6 +2168,18 @@
        "on": "dark_shelf",
        "use": "pickup",
        "item": "batteries",
+       "hidden": true
+      },
+      {
+       "id": "spare_pickup",
+       "shape": "box 0.06 0.04 0.02",
+       "at": [
+        3.6,
+        4.6
+       ],
+       "on": "dark_shelf",
+       "use": "pickup",
+       "item": "spare_cells",
        "hidden": true
       },
       {
@@ -5118,6 +5136,23 @@
       },
       {
        "think": "Better. Time to go."
+      },
+      {
+       "show": "spare_pickup"
+      },
+      {
+       "todo": "t10_low",
+       "text": "Keep it on: it runs low",
+       "ticks": {
+        "torch": "low"
+       }
+      },
+      {
+       "todo": "t10_change",
+       "text": "Let it die: the spare set changes itself",
+       "ticks": {
+        "torch": "changed"
+       }
       }
      ]
     },

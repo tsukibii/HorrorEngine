@@ -30,7 +30,8 @@ register("condition", "rolled", {                         // a die settled: any 
 register("condition", "power", { test: (v, w, ev, rt) => (rt.powered() ? "on" : "off") === v });   // the level's power on or off; holds while it is
 register("condition", "locked", { test: (v, w, ev, rt) => !!rt.doorOf(v).locked });   // that door is locked (its latch, its key not yet used, the story); holds while it is
 register("condition", "peeping", { test: (v, w, ev, rt) => !!rt.player.peeping && rt.player.peeping.door === v });   // the eye at that door's peephole; holds while it is
-register("condition", "torch", { test: (v, w, ev) => ev.type === "torch" && v === (ev.on ? "on" : "off") });   // the player switched the flashlight (F) on, or off
+register("condition", "torch", { test: (v, w, ev) => ev.type === "torch" && (v === "on" || v === "off" ? "on" in ev && v === (ev.on ? "on" : "off") : !!ev[v]) });   // the player switched the flashlight (F) on or off; it ran low, died, its batteries were changed
+register("condition", "charge", { test: (v, w, ev, rt) => !!rt.torchItem() && rt.torchCharge() < +v });   // holds while the flashlight's charge is under that
 register("condition", "carrying", { test: (v, w, ev, rt) => (!!rt.carried && (v === true || v === rt.carried.id)) || (!!rt.heldMove && (v === true || v === rt.heldMove.userData.id)) });   // in the hand (the inventory's one, or a moveable held in both): anything, or that; holds while it is
 register("condition", "dropped", {                        // put down (G): anywhere, or `in` a room or a trigger
   test: (v, w, ev) => ev.type === "dropped" && ev.id === v && (w.in === undefined || ev.in.includes(w.in)) });

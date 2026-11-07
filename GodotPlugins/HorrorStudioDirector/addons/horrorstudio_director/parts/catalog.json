@@ -91,6 +91,12 @@
    "title": "Reactions",
    "glyph": "react",
    "about": "Drop one in a room: an area, and a moment in which whoever's nearest reacts to the player (turns to look, flinches, screams, points, waves), then goes back to what she was doing. Her clip: a card from the Animate tab dropped on the area."
+  },
+  {
+   "id": "more",
+   "title": "More",
+   "glyph": "cube",
+   "about": "Parts not sorted into a category yet."
   }
  ],
  "items": [
@@ -281,6 +287,22 @@
    ]
   },
   {
+   "id": "batteries",
+   "cat": "lights",
+   "kind": "part",
+   "path": "parts/batteries.tscn",
+   "title": "Batteries",
+   "desc": "A set for the flashlight: into the pocket, changed by itself when it dies",
+   "glyph": "battery",
+   "keywords": [
+    "batteries",
+    "battery",
+    "cells",
+    "aa",
+    "d_cell"
+   ]
+  },
+  {
    "id": "pickup",
    "cat": "look",
    "kind": "part",
@@ -293,8 +315,6 @@
     "fuse",
     "tin",
     "coin",
-    "battery",
-    "batteries",
     "item",
     "can"
    ]

@@ -467,6 +467,23 @@ const snapFor = nid => {                               // the run's state on rea
       await use("batteries_pickup", 0.6); await ticked("t10_bat");
       await gameWait(0.3); if (await page.evaluate(() => window.__dd.play.torchLight.dead)) throw new Error("still dead");
     });
+    await step("its battery (FLASHLIGHT_PLAN §1): the spare set into the pocket; on again it runs low (ticks: the beam dimmer and warmer), dies, and the spare set changes itself (ticks: a moment of dark, then full)", async () => {
+      await use("spare_pickup", 0.6);
+      const pk = await page.evaluate(() => { const rt = window.__dd.play; return { pocket: rt.items.has("spare_cells"), row: rt.inv.list.some(e => e.item === "spare_cells") }; });
+      if (!pk.pocket || pk.row) throw new Error("the spare set in the pocket, not the row: " + JSON.stringify(pk));
+      await press("KeyF"); await gameWait(0.4);
+      const t0 = await page.evaluate(() => { const t = window.__dd.play.torchLight; return { on: t.on, k: t.k, kelvin: t.kelvinNow }; });
+      if (!t0.on) throw new Error("the flashlight on again: no");
+      await ticked("t10_low"); await gameWait(0.5);
+      const t1 = await page.evaluate(() => { const t = window.__dd.play.torchLight; return { k: t.k, kelvin: t.kelvinNow, charge: t.charge }; });
+      if (!(t1.k < t0.k * 0.75) || !(t1.kelvin < t0.kelvin - 150)) throw new Error("running low: " + JSON.stringify({ t0, t1 }));
+      await until(() => !!window.__dd.play.torchLight.changing, null, "the change by itself", 90000);
+      await gameWait(0.1);
+      if (await page.evaluate(() => window.__dd.play.torchLight.hot.intensity) !== 0) throw new Error("the beam while the batteries are changed");
+      await ticked("t10_change");
+      const t2 = await page.evaluate(() => { const rt = window.__dd.play, t = rt.torchLight; return { spare: rt.items.has("spare_cells"), charge: t.charge, on: t.on }; });
+      if (t2.spare || Math.abs(t2.charge - 1) > 0.01 || !t2.on) throw new Error("after the change: " + JSON.stringify(t2));
+    });
     await step("on the way out the glimpse: a creak, the figure there for a moment and gone; out of the room (ticks)", async () => {
       await page.evaluate(() => { window.__seen = false; const f = window.__dd.play.byId.dark_figure; const t = setInterval(() => { if (f.visible) window.__seen = true; }, 20); window.__stopSeen = () => clearInterval(t); });
       await place(5.6, 17.5, 180); await hold("KeyW", 1.2);      // west, into the doorway's trigger

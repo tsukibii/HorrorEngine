@@ -79,7 +79,20 @@ TestRoom001 station.
   - GDTESTROOM `--from n_power` fails at the hand-placed mains light on the code before the change too (it wants the
     run from the start).
 
-  Next: FLASHLIGHT_PLAN §1, the flashlight on batteries.
+  - The desk: TESTROOM ok through station 12 and from 14 to the end, PLAY ok.
+
+**FLASHLIGHT_PLAN §1 built** (the flashlight on batteries):
+- the curves in `tools/shared/torchbeam.js` and `tools/godot/addons/horrorstudio/torch_beam.gd` (DESK tests the curves);
+- the battery on torch.js's Torch and play.gd's torch: the drain, `low`, `dead`, `rest`, the change by itself, the story's
+  `dim`, `drain` and timed `flicker`;
+- batteries (`battery` items) into the pocket;
+- the pause menus' charge and *Change the batteries*;
+- the conditions' `torch` low/dead/changed and `charge`;
+- the Director's Flashlight fields and Batteries card;
+- TestRoom001 station 10 (desk and Godot ok).
+
+Not yet: its props (1f), the change's own sounds, `game.torch_meter`. Next: FLASHLIGHT_PLAN §2, characters that feel the
+light.
 
 ## Before that (2026-11-06, last, `street-nature`): the rivers scrapped, the foliage and rocks kept as props
 

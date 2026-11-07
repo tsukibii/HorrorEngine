@@ -112,7 +112,7 @@ func run(a: Dictionary, rt) -> void:
 		"light":
 			rt.light(val, a.get("room"), a.get("set", "on"), a)          # `to`, `secs`, `fade`, `mode`: a timed change goes by itself
 		"torch":
-			rt.torch_set(val)
+			rt.torch_set(val, a)                                  # `secs`, `mode`, `to`, `over` (FLASHLIGHT_PLAN §1)
 		"skin":
 			rt.skin_set(val, a)
 		"power":

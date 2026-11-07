@@ -13,7 +13,7 @@ const USES := ["none", "pickup", "note", "inspect", "switch", "breaker", "sit", 
 	"open", "container", "moveable", "book"]
 ## each use's own fields in the Inspector
 const FIELDS := {
-	"pickup": ["item", "item_name", "flashlight"], "carry": ["item", "item_name"], "note": ["note_title", "note_text"],
+	"pickup": ["item", "item_name", "flashlight", "flashlight_battery", "flashlight_kind", "flashlight_charge", "batteries"], "carry": ["item", "item_name"], "note": ["note_title", "note_text"],
 	"inspect": ["inspect_text"], "switch": ["switches"], "code": ["code", "opens_flag"],
 	"use_item": ["needs_item", "opens_flag", "consume"], "sleep": ["sleep_needs"], "hide": ["see_through"],
 	"clean": ["clean_with", "stain"], "game": ["board_game"], "life": ["life", "life_state", "life_light"],
@@ -45,6 +45,15 @@ const SOLID := ["none", "breaker", "sit", "sleep", "hide", "roll", "game", "use_
 @export var item_name: String = ""
 ## pickup: it's a flashlight (F switches it)
 @export var flashlight: bool = false
+## a flashlight's battery (FLASHLIGHT_PLAN §1): minutes of light from full (0: it never runs down), an old bulb (dimmer
+## and warmer as it goes, browning out when low) or an LED (full till low, then three blinks and a low mode), how full
+## it starts
+@export_range(0.0, 120.0, 0.5) var flashlight_battery: float = 0.0
+@export_enum("bulb", "led") var flashlight_kind: String = "bulb"
+@export_range(0.0, 1.0, 0.05) var flashlight_charge: float = 1.0
+## pickup: batteries for the flashlight, how full a set (0: not batteries, 1 a new set, 0.5 a used one): into the
+## pocket; changed by themselves when it dies
+@export_range(0.0, 1.0, 0.05) var batteries: float = 0.0
 ## the note's id, when it isn't the thing's own (a desk game's letter on a table: the story reads "letter_mari")
 @export var note: String = ""
 @export var note_title: String = ""

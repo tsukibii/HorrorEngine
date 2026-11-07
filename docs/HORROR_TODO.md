@@ -292,7 +292,7 @@ sound played with its place and loudness (`sounds_heard`).
 
 Dropped (DECISIONS 2026-11-07).
 
-## 11. The flashlight on batteries
+## 11. The flashlight on batteries — built 2026-11-07 (but its props)
 
 docs/FLASHLIGHT_PLAN.md §1.
 

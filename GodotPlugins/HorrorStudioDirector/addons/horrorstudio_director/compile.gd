@@ -182,6 +182,10 @@ func _thing(n: Node) -> void:
 			_item(iid, n.item_name if n.item_name != "" else n.display_name)
 			if n.flashlight:
 				story["items"][iid]["torch"] = true
+				if float(n.flashlight_battery) > 0.0:             # on batteries (FLASHLIGHT_PLAN §1): its seconds of light, its kind, how full
+					story["items"][iid]["torch"] = {"battery": float(n.flashlight_battery) * 60.0, "kind": str(n.flashlight_kind), "charge": float(n.flashlight_charge)}
+			elif float(n.batteries) > 0.0:
+				story["items"][iid]["battery"] = float(n.batteries)   # a set of batteries: into the pocket
 		"note":
 			story["notes"][n.note if n.note != "" else HSDirector.id_of(n)] = {"title": n.note_title if n.note_title != "" else str(n.name), "text": n.note_text}
 		"use_item":

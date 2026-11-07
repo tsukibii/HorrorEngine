@@ -9,6 +9,7 @@ signal stitch_ended(result)
 signal choice_made(option)
 
 const StoryC := preload("res://addons/horrorstudio/story.gd")
+const TorchBeam := preload("res://addons/horrorstudio/torch_beam.gd")   # the flashlight's battery and beam (FLASHLIGHT_PLAN §1)
 const ConditionsC := preload("res://addons/horrorstudio/conditions.gd")
 const ActionsC := preload("res://addons/horrorstudio/actions.gd")
 const InteractablesC := preload("res://addons/horrorstudio/interactables.gd")
@@ -96,7 +97,9 @@ var in_chapter: bool = false
 var inv: Array = []
 var inv_at: int = -1
 var inv_shown: bool = true
-var torch := {"on": false, "dead": false, "flick": 0.0, "dying": false, "dir": null, "made": false}
+var torch := {"on": false, "dead": false, "flick": 0.0, "dying": false, "dir": null, "made": false,
+	"item": null, "bat": null, "charge": 1.0, "low_at": null, "low_heard": false, "rest_t": 0.0, "rests": 2, "changing": null,
+	"layers": [], "mode": null, "fl": {}}   # its battery (torch_beam.gd): the charge, when it ran low, a rest, a change of batteries; the story's timed dims and flickers
 var torch_hot: SpotLight3D = null
 var torch_spill: SpotLight3D = null
 var step_at: float = 0.5
@@ -1690,6 +1693,21 @@ func torch_item() -> Variant:
 	return null
 
 
+## an item that's batteries for the flashlight (`battery`: how full a set it is, 1 a new one)
+func is_battery(item) -> bool:
+	var it = story.items.get(str(item), null)
+	return it is Dictionary and (it.get("battery") is float or it.get("battery") is int) and float(it["battery"]) > 0.0
+
+
+## the batteries in the pocket, in the order they were picked up
+func batteries() -> Array:
+	var out: Array = []
+	for id in items:
+		if is_battery(id):
+			out.append(id)
+	return out
+
+
 func take(t: Dictionary) -> void:
 	var id = t["id"]
 	var d: Dictionary = t["piece"].get("d", {}) if t["piece"].get("d") is Dictionary else {}
@@ -1701,11 +1719,12 @@ func take(t: Dictionary) -> void:
 		var cid = t["in"]
 		contain_detach(t)
 		emit({"type": "taken", "id": id, "from": cid})
-	if d.has("item") and is_torch(d["item"]):
+	if d.has("item") and (is_torch(d["item"]) or is_battery(d["item"])):   # a flashlight or its batteries: into the pocket, not the row
 		set_visible(id, false)
 		k["bodies"].erase(id)
 		give(d["item"])
-		torch_make()
+		if is_torch(d["item"]):
+			torch_make()
 		emit({"type": "pickup", "item": d["item"]})
 		return
 	set_visible(id, false)
@@ -3549,7 +3568,10 @@ func pause() -> void:
 	if hud.menu == null:
 		hud.log("paused (Esc)")
 		return
-	var r = await hud.menu.open({"game": str(story.game.get("id", "game")), "where": str(story.game.get("title", "")), "secs": now(), "has": {"torch": torch_item() != null}})
+	var bat := {}                                              # the flashlight's battery: its charge, the sets in the pocket, a change (FLASHLIGHT_PLAN §1d)
+	if torch_item() != null and torch["bat"] != null and float(torch["bat"]["battery"]) > 0.0:
+		bat = {"charge": torch_charge(), "sets": batteries().size(), "change": torch_change}
+	var r = await hud.menu.open({"game": str(story.game.get("id", "game")), "where": str(story.game.get("title", "")), "secs": now(), "has": {"torch": torch_item() != null}, "battery": bat})
 	held = false
 	busy = false
 	since = clock
@@ -3637,7 +3659,7 @@ func torch_switch() -> void:
 		return
 	torch_make()
 	shelf_sound("flashlight_02" if torch["on"] else "flashlight_01")
-	if torch["dead"]:
+	if torch["dead"] or torch["changing"] != null:
 		hud.log("the flashlight is dead")
 		return
 	torch["on"] = not torch["on"]
@@ -3645,28 +3667,113 @@ func torch_switch() -> void:
 	emit({"type": "torch", "on": torch["on"]})
 
 
-func torch_set(v: String) -> void:
+## the story's `torch` (STORY_FORMAT §4): on, off, flicker (a stutter; with `secs` or `mode` that long in a lamp's
+## mode), dim (`to` how bright, `secs`, `over`), dead (the charge gone: a stutter and out), works (full: new
+## batteries), drain (`to`: the charge; FLASHLIGHT_PLAN §1)
+func torch_set(v: String, a: Dictionary = {}) -> void:
 	if torch_item() == null and (v == "on" or v == "flicker"):
 		hud.log("torch %s: the player has no flashlight" % v)
 		return
 	torch_make()
+	torch_battery()
+	var secs: float = float(a["secs"]) if a.get("secs") != null else 0.0
+	var over: float = maxf(0.0, float(a["over"])) if a.get("over") != null else 0.0
 	match v:
 		"on":
 			if not torch["dead"]:
 				torch["on"] = true
+			torch["layers"].clear()
 		"off":
 			torch["on"] = false
 		"flicker":
 			torch["on"] = not torch["dead"]
-			torch["flick"] = 1.4
+			if secs > 0.0 or HSFlicker.MODES.has(a.get("mode")):
+				var m = a.get("mode") if HSFlicker.MODES.has(a.get("mode")) else "dying"
+				torch["layers"].append({"set": "flicker", "mode": m, "t0": clock, "end": clock + (secs if secs > 0.0 else 1.4), "fade": over, "to": 1.0})
+			else:
+				torch["flick"] = 1.4
+		"dim":
+			var to: float = clampf(float(a["to"]) if a.get("to") != null else DIM, 0.0, 1.0)
+			torch["layers"].append({"set": "dim", "to": to, "t0": clock, "end": clock + (secs if secs > 0.0 else 1.0e9), "fade": over, "mode": null})
 		"dead":
 			if torch["on"]:
 				torch["flick"] = 1.1
 				torch["dying"] = true
+			elif not torch["dead"]:
+				torch_died()
 			torch["dead"] = true
+			torch["charge"] = 0.0
 		"works":
 			torch["dead"] = false
 			torch["dying"] = false
+			torch["charge"] = 1.0
+			torch["low_heard"] = false
+			torch["low_at"] = null
+			torch["rests"] = TorchBeam.RESTS
+		"drain":
+			var c: float = clampf(float(a["to"]) if a.get("to") != null else 0.0, 0.0, 1.0)
+			torch["charge"] = c
+			if c <= 0.0:
+				torch_set("dead")
+			elif torch["bat"] != null and c >= float(torch["bat"]["low"]):
+				torch["low_heard"] = false
+				torch["low_at"] = null
+
+
+## the flashlight's battery from its item (torch_beam.gd battery_of), read again when the flashlight changes
+func torch_battery() -> void:
+	var it = torch_item()
+	if it == null or torch["item"] == it:
+		return
+	torch["item"] = it
+	torch["bat"] = TorchBeam.battery_of(it.get("torch"))
+	torch["charge"] = float(torch["bat"]["charge"])
+	torch["low_heard"] = torch["charge"] < float(torch["bat"]["low"])
+	torch["low_at"] = null
+	torch["rests"] = TorchBeam.RESTS
+
+
+## out for good (its stutter over): heard as {"torch": "dead"}; a set of batteries in the pocket is then changed by
+## itself (torch_tick)
+func torch_died() -> void:
+	emit({"type": "torch", "dead": true})
+
+
+## the batteries changed, from the pocket (by itself once it's dead, or from the pause menu): about two seconds of dark
+## with its sounds, then the light full; heard as {"torch": "changed"}. False with none to change
+func torch_change() -> bool:
+	var sets := batteries()
+	if sets.is_empty() or torch_item() == null or torch["changing"] != null:
+		return false
+	torch_battery()
+	torch["changing"] = {"at": clock + TorchBeam.CHANGE_SECS, "item": sets[0]}
+	torch["on"] = false
+	torch["flick"] = 0.0
+	torch["dying"] = false
+	shelf_sound("flashlight_02")
+	hud.log("changing the flashlight's batteries")
+	return true
+
+
+func _torch_changed() -> void:
+	var c: Dictionary = torch["changing"]
+	torch["changing"] = null
+	var full: float = clampf(float(story.items.get(str(c["item"]), {}).get("battery", 1.0)), 0.0, 1.0)
+	take_item(c["item"])
+	torch["charge"] = full
+	torch["dead"] = false
+	torch["low_heard"] = torch["bat"] != null and full < float(torch["bat"]["low"])
+	torch["low_at"] = null
+	torch["rests"] = TorchBeam.RESTS
+	torch["on"] = true
+	shelf_sound("flashlight_01")
+	emit({"type": "torch", "changed": true})
+	emit({"type": "torch", "on": true})
+
+
+## the charge now (0..1); 1 for a flashlight with no battery, or none at all
+func torch_charge() -> float:
+	return float(torch["charge"]) if torch["bat"] != null and float(torch["bat"]["battery"]) > 0.0 else 1.0
 
 
 static func kelvin_color(k: float) -> Color:
@@ -3680,11 +3787,37 @@ static func kelvin_color(k: float) -> Color:
 func torch_tick(dt: float) -> void:
 	if torch_hot == null:
 		return
+	torch_battery()
 	var s := setting("torch")
 	var it = torch_item()
 	if it != null and it.get("torch") is Dictionary:
 		for k in it["torch"]:
 			s[k] = it["torch"][k]
+	var bat = torch["bat"]
+	var on_battery: bool = bat != null and float(bat["battery"]) > 0.0
+	if torch["changing"] != null and clock >= float(torch["changing"]["at"]):
+		_torch_changed()
+	if on_battery:                                                  # its battery (FLASHLIGHT_PLAN §1)
+		if torch["on"] and not torch["dead"] and not torch["dying"]:
+			torch["charge"] = maxf(0.0, float(torch["charge"]) - dt / float(bat["battery"]))
+			torch["rest_t"] = 0.0
+		if float(torch["charge"]) < float(bat["low"]) and not torch["low_heard"]:
+			torch["low_heard"] = true
+			torch["low_at"] = clock
+			emit({"type": "torch", "low": true})
+		if float(torch["charge"]) <= 0.0 and torch["on"] and not torch["dying"] and not torch["dead"]:
+			torch["flick"] = 1.1                                     # the last of it: a stutter, then out
+			torch["dying"] = true
+			torch["dead"] = true
+		if bool(bat["rest"]) and not torch["on"] and float(torch["charge"]) < float(bat["low"]) and int(torch["rests"]) > 0:
+			torch["rest_t"] = float(torch["rest_t"]) + dt              # a rest: a bulb's cells give a little more
+			if float(torch["rest_t"]) >= TorchBeam.REST_SECS:
+				torch["rest_t"] = 0.0
+				torch["rests"] = int(torch["rests"]) - 1
+				torch["charge"] = float(torch["charge"]) + TorchBeam.REST_GAIN
+				torch["dead"] = false
+	if torch["dead"] and not torch["dying"] and torch["changing"] == null and not batteries().is_empty():
+		torch_change()                                               # a set in the pocket: changed by itself
 	var cam: Camera3D = game.camera
 	var fwd: Vector3 = -cam.global_transform.basis.z
 	if torch["dir"] == null:
@@ -3706,11 +3839,40 @@ func torch_tick(dt: float) -> void:
 		if float(torch["flick"]) <= 0 and torch["dying"]:
 			torch["on"] = false
 			torch["dying"] = false
-	var col := kelvin_color(float(s["kelvin"]))
+			torch_died()
+	var kelvin: float = float(s["kelvin"])
+	var reach := 1.0
+	if on_battery:                                                  # the beam by its charge (torch_beam.gd)
+		var bm: Dictionary = TorchBeam.beam({"kind": bat["kind"], "charge": torch["charge"], "low": bat["low"], "low_at": torch["low_at"],
+			"kelvin": float(bat["kelvin"]) if float(bat["kelvin"]) > 0.0 else kelvin}, clock)
+		k *= float(bm["b"])
+		reach = float(bm["reach"])
+		if float(bm["kelvin"]) > 0.0:
+			kelvin = float(bm["kelvin"])
+	var keep: Array = []                                            # the story's timed dims and flickers on the beam (as a lamp's)
+	for L in torch["layers"]:
+		if clock >= float(L["end"]) + float(L["fade"]):
+			continue
+		keep.append(L)
+		var w := layer_w(L, clock)
+		if w <= 0.0:
+			continue
+		if L["set"] == "dim":
+			k *= lerpf(1.0, float(L["to"]), w)
+		else:
+			torch["fl"]["flicker"] = 1.0
+			torch["fl"]["mode"] = L["mode"]
+			torch["fl"]["seed"] = 7
+			torch["fl"]["interval"] = 1.0
+			k *= lerpf(1.0, HSFlicker.k(torch["fl"], clock), w)
+	torch["layers"] = keep
+	torch["k"] = k
+	torch["kelvin_now"] = kelvin
+	var col := kelvin_color(kelvin)
 	for pair in [[torch_hot, float(s["cone"]), 1.0], [torch_spill, float(s["spill"]), 0.22]]:
 		var l: SpotLight3D = pair[0]
 		l.light_color = col
-		l.spot_range = float(s["range"])
+		l.spot_range = float(s["range"]) * maxf(0.05, reach)
 		l.spot_angle = float(pair[1]) / 2.0
 		l.light_energy = float(s["strength"]) * float(pair[2]) * k
 		l.global_position = from
@@ -3719,7 +3881,8 @@ func torch_tick(dt: float) -> void:
 
 
 func torch_state() -> Dictionary:
-	return {"on": torch["on"], "dead": torch["dead"], "k": torch_hot.light_energy if torch_hot != null else 0.0, "made": torch["made"]}
+	return {"on": torch["on"], "dead": torch["dead"], "k": torch_hot.light_energy if torch_hot != null else 0.0, "made": torch["made"],
+		"charge": torch_charge(), "changing": torch["changing"] != null, "sets": batteries().size()}
 
 
 # ---- footsteps (steps.js) ----------------------------------------------------------------------------------------

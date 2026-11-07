@@ -1212,6 +1212,39 @@ func _initialize() -> void:
 			if rt.torch["dead"]:
 				return "still dead"
 			return "")
+		await step("its battery (FLASHLIGHT_PLAN §1): the spare set into the pocket; on again it runs low (ticks: the beam dimmer and warmer), dies, and the spare set changes itself (ticks: a moment of dark, then full)", func():
+			await use("spare_pickup", 0.6)
+			if not rt.items.has("spare_cells") or rt.inv.any(func(e): return e.get("item") == "spare_cells"):
+				return "the spare set in the pocket, not the row: " + JSON.stringify(rt.items.keys())
+			await press("F")
+			await game_wait(0.4)
+			if not rt.torch["on"]:
+				return "the flashlight on again: no " + JSON.stringify(rt.torch_state())
+			var k0: float = float(rt.torch["k"])
+			var kv0: float = float(rt.torch["kelvin_now"])
+			var r := await ticked("t10_low")
+			if r != "":
+				return r
+			await game_wait(0.5)
+			var lo_k := INF
+			var t0: float = rt.clock
+			while rt.clock < t0 + 0.6:                                   # past a brownout's dip: its steady level
+				lo_k = minf(lo_k, float(rt.torch["k"]))
+				await frames(1)
+			var k_low: float = float(rt.torch["k"])
+			if not (k_low < k0 * 0.75) or not (float(rt.torch["kelvin_now"]) < kv0 - 150.0):
+				return "running low: the beam %.2f of %.2f, %d K of %d K" % [k_low, k0, int(rt.torch["kelvin_now"]), int(kv0)]
+			if not await until(func(): return rt.torch["changing"] != null, 9000):
+				return "the change by itself: never " + JSON.stringify(rt.torch_state())
+			await frames(2)
+			if rt.torch_hot.light_energy != 0.0:
+				return "the beam while the batteries are changed: %.2f" % rt.torch_hot.light_energy
+			r = await ticked("t10_change")
+			if r != "":
+				return r
+			if rt.items.has("spare_cells") or absf(rt.torch_charge() - 1.0) > 0.01 or not rt.torch["on"]:
+				return "after the change: " + JSON.stringify(rt.torch_state())
+			return "")
 		await step("on the way out the glimpse: a creak, the figure there for a moment and gone; out of the room (ticks)", func():
 			var seen := [false]
 			place(5.6, 17.5, 180)

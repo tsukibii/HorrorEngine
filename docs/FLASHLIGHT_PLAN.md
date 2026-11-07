@@ -19,7 +19,16 @@ and cards. A game whose torch has no `battery` plays exactly as it does now.
 - **What's missing:** no charge, no batteries, nothing that runs low. Nothing knows where the beam falls: the cast see
   the player (`sees`: an angle, a range, a ray, a meter) but not the light.
 
-## 1. The flashlight on batteries
+## 1. The flashlight on batteries — built 2026-11-07 (but its props, 1f)
+
+**Built** (DECISIONS 2026-11-07, later): 1a to 1e on the desk and in Godot with the same numbers
+(`tools/shared/torchbeam.js`, `tools/godot/addons/horrorstudio/torch_beam.gd`): the charge and its drain, the bulb's
+and the LED's beams, the brownouts, `rest`, batteries into the pocket and changed by themselves, the pause menu's
+charge and *Change the batteries*, the story's `dim`, `drain` and timed `flicker`, the triggers `low`, `dead`,
+`changed` and the condition `{"charge": 0.25}` (a number: forms take one, not an object); the Director's Flashlight
+fields and its Batteries card; TestRoom001's station 10. Not built yet: the props (1f), the battery-change sounds (the
+switch's clicks stand in), `game.torch_meter`.
+
 
 ### 1a. The charge
 
@@ -105,7 +114,7 @@ is how a person tries, and with `rest` it gives a few seconds.
 - **Triggers.**
   - `{"torch": "on" | "off" | "low" | "dead" | "changed"}`. The last three are new: it ran under its `low`, it died,
     its batteries were changed.
-  - `{"charge": {"below": 0.25}}` holds while the charge is under that.
+  - `{"charge": 0.25}` holds while the charge is under that.
 - **The check:**
   - a `battery` item in a game with no flashlight: a warning;
   - a torch that runs out with no batteries the player can reach, before a room that needs it: a warning, from the

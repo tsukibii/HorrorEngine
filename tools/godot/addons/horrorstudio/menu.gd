@@ -274,12 +274,18 @@ func show_nav() -> void:
 	nav.add_child(label("Settings" if settings else "Paused", 11, c["muted"]))
 	if not settings:
 		nav.add_child(label("%s · %s" % [ctx.get("where", ctx.get("game", "")), clock(float(ctx.get("secs", 0)))], 14, c["muted"]))
+	var bat: Dictionary = ctx.get("battery", {}) if ctx.get("battery") is Dictionary else {}
+	if not settings and not bat.is_empty():                      # the flashlight's charge and the sets in the pocket (FLASHLIGHT_PLAN §1d)
+		var n := int(bat.get("sets", 0))
+		nav.add_child(label("Flashlight %d%% · %s" % [roundi(float(bat.get("charge", 1.0)) * 100.0), ("%d spare set%s" % [n, "" if n == 1 else "s"]) if n > 0 else "no spare batteries"], 14, c["muted"]))
 	var list: Array = []
 	if settings:
 		for p in SETTINGS:
 			list.append([p["title"], func(): open_page("set:" + p["id"]), "set:" + p["id"]])
 	else:
 		list = [["Resume", func(): close("resume"), ""], ["Save game", func(): open_page("save"), "save"], ["Settings", func(): open_page("set:" + SETTINGS[0]["id"]), "settings"], ["Quit", func(): open_page("quit"), "quit"]]
+		if not bat.is_empty() and int(bat.get("sets", 0)) > 0 and float(bat.get("charge", 1.0)) < 1.0 and bat.get("change") is Callable:
+			list.insert(1, ["Change the batteries", func(): (bat["change"] as Callable).call(); close("resume"), "batteries"])
 	for row in list:
 		var b := HBoxContainer.new()
 		b.add_theme_constant_override("separation", 12)

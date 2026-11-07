@@ -26,7 +26,7 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")   # Windows consoles default to cp1252; the script is Japanese
 
 TRIGGERS = {"start", "enter", "exit", "use", "pickup", "read", "look", "after", "flag", "all", "any", "caught", "rolled", "hidden",
-            "answered", "carrying", "dropped", "played", "state", "ticked", "failed", "arrived", "torch", "peeping", "power", "locked", "gave",
+            "answered", "carrying", "dropped", "played", "state", "ticked", "failed", "arrived", "torch", "charge", "peeping", "power", "locked", "gave",
             "opened", "closed", "placed", "taken", "moved"}
 TRIGGER_EXTRA = {"secs", "within", "face", "at_least", "option", "in", "result", "is", "at", "page", "from"}
 BOARDS = {}                 # the board games this game's tables can have (storylib.board_games), set in main
@@ -41,8 +41,11 @@ MUSIC = {"silence", "calm", "uneasy", "dread", "chase"}
 LIGHT_SET = {"on", "off", "flicker", "dim", "normal"}   # normal: its own brightness and flicker back, on or off as it is
 FLICKER_MODES = {"fluorescent", "dying", "candle", "pulse", "custom"}   # a light's `mode` (STORY_FORMAT §2)
 PATTERNS = {"caustics", "leaves", "blinds", "clouds"}                     # a light's `pattern` (STORY_FORMAT §2)
-TORCH_SET = {"on", "off", "flicker", "dead", "works"}   # the flashlight (an item with `torch`): dead flickers out, works is new batteries
-TORCH_KEYS = {"kelvin": (1500, 12000), "cone": (5, 120), "range": (1, 60), "strength": (0.1, 100)}
+TORCH_SET = {"on", "off", "flicker", "dead", "works", "dim", "drain"}   # the flashlight (an item with `torch`): dead flickers out, works is new batteries, drain sets the charge (FLASHLIGHT_PLAN §1)
+TORCH_HEARD = {"on", "off", "low", "dead", "changed"}   # the trigger: switched by F, ran low, died, its batteries changed
+TORCH_KEYS = {"kelvin": (1500, 12000), "cone": (5, 120), "range": (1, 60), "strength": (0.1, 100),
+              "battery": (1, 86400), "charge": (0, 1), "low": (0, 1)}   # battery: seconds of light from full (FLASHLIGHT_PLAN §1)
+TORCH_KINDS = {"bulb", "led"}
 DOOR_SET = {"lock", "unlock", "open", "close", "slam"}
 STALKER = {"spawn", "despawn", "patrol", "hunt", "chase"}
 BEHAVE = {"idle": ("at",), "sit": ("at",), "path": ("route",), "patrol": ("routes",), "go": ("to",), "off": ()}   # a cast member in play: what each needs
@@ -452,8 +455,23 @@ def check_world(story, things, r):
                 r.err(f"item {k}: {e}")
         tc = it.get("torch")
         if tc is not None and tc is not True and tc is not False and not (isinstance(tc, dict) and all(
-                kk in TORCH_KEYS and isinstance(vv, (int, float)) and TORCH_KEYS[kk][0] <= vv <= TORCH_KEYS[kk][1] for kk, vv in tc.items())):
-            r.err(f"item {k}: torch is true (a flashlight: F turns it on) or {{" + ", ".join(f"{kk}: {lo}..{hi}" for kk, (lo, hi) in TORCH_KEYS.items()) + "}")
+                (kk == "kind" and vv in TORCH_KINDS) or (kk == "rest" and isinstance(vv, bool)) or
+                (kk in TORCH_KEYS and isinstance(vv, (int, float)) and not isinstance(vv, bool) and TORCH_KEYS[kk][0] <= vv <= TORCH_KEYS[kk][1])
+                for kk, vv in tc.items())):
+            r.err(f"item {k}: torch is true (a flashlight: F turns it on) or {{" + ", ".join(f"{kk}: {lo}..{hi}" for kk, (lo, hi) in TORCH_KEYS.items())
+                  + ", kind: bulb or led, rest: true or false}")
+        if isinstance(tc, dict) and tc.get("rest") and tc.get("kind") == "led":
+            r.warn(f"item {k}: torch rest is a bulb's (an LED's cells don't come back): it's ignored")
+        if isinstance(tc, dict) and ("charge" in tc or "low" in tc or "kind" in tc or "rest" in tc) and "battery" not in tc:
+            r.warn(f"item {k}: torch {', '.join(x for x in ('kind', 'charge', 'low', 'rest') if x in tc)} only count with a battery (its seconds of light)")
+        if "battery" in it:                            # batteries for the flashlight: how full a set (FLASHLIGHT_PLAN §1b)
+            bv = it["battery"]
+            if isinstance(bv, bool) or not isinstance(bv, (int, float)) or not 0 < bv <= 1:
+                r.err(f"item {k}: battery is how full a set is, more than 0 up to 1 (1 a new one)")
+            if "torch" in it:
+                r.err(f"item {k}: an item is a flashlight or its batteries, not both")
+            if not any(isinstance(x, dict) and isinstance(x.get("torch"), dict) and x["torch"].get("battery") for x in items.values()):
+                r.warn(f"item {k}: batteries, but no flashlight in the game runs on them (an item's torch with a battery)")
     for k, ln in lines.items():
         check_spoken(f"line {k}", ln, cast, r)
     for lid, lvl in story.get("levels", {}).items():
@@ -1448,11 +1466,16 @@ def check_trigger(bid, w, story, things, beats, r):
     elif k == "peeping":                               # the player's eye at that door's peephole; holds while it is
         if v not in things or things[v].kind != "door" or not things[v].d.get("peephole"):
             r.err(f"{bid}: peeping {v!r} isn't a door with a peephole (its door's \"peephole\": true)")
-    elif k == "torch":                                 # the player switched the flashlight (F) on, or off
-        if v not in ("on", "off"):
-            r.err(f"{bid}: torch {v!r}: \"on\" or \"off\" (the player switched it with F)")
+    elif k == "torch":                                 # the player switched the flashlight (F) on or off; it ran low, died, was changed
+        if v not in TORCH_HEARD:
+            r.err(f"{bid}: torch {v!r}: one of {', '.join(sorted(TORCH_HEARD))} (on, off: switched with F; low, dead, changed: its battery)")
         if not torch_items(story):
             r.err(f"{bid}: torch: no item is a flashlight (an item's torch: true)")
+    elif k == "charge":                                # holds while the flashlight's charge is under that
+        if isinstance(v, bool) or not isinstance(v, (int, float)) or not 0 < v <= 1:
+            r.err(f"{bid}: charge {v!r}: a number more than 0 up to 1 (holds while the flashlight's charge is under it)")
+        if not any(isinstance(x, dict) and isinstance(x.get("torch"), dict) and x["torch"].get("battery") for x in (story.get("items") or {}).values()):
+            r.warn(f"{bid}: charge: no flashlight in the game runs on a battery, so its charge is always full")
     elif k in ("ticked", "failed"):                    # a to-do task ticked or failed; true: the list through, any failed
         if v is not True and v not in todos_of(story):
             r.err(f"{bid}: {k} {v!r}: true or a task some stitch puts on the to-do list (`todo`)")
@@ -1635,11 +1658,15 @@ def check_action(bid, a, story, things, r, stage=None):
         for x in SKIN_KEYS:
             if x in a and (isinstance(a[x], bool) or not isinstance(a[x], (int, float)) or not 0 <= a[x] <= 1):
                 r.err(f"{bid}: skin {x} {a[x]!r}: a number 0..1")
-    elif k == "torch":                                  # the flashlight: on, off, flicker, dead, works
+    elif k == "torch":                                  # the flashlight: on, off, flicker, dead, works, dim, drain
         if v not in TORCH_SET:
             r.err(f"{bid}: torch {v!r} (one of {', '.join(sorted(TORCH_SET))})")
         if not torch_items(story):
             r.err(f"{bid}: torch: no item is a flashlight (an item's torch: true)")
+        if v == "drain" and not (isinstance(a.get("to"), (int, float)) and not isinstance(a.get("to"), bool) and 0 <= a["to"] <= 1):
+            r.err(f"{bid}: torch drain needs to, the charge 0..1")
+        elif v != "drain":
+            check_light_change(bid, "torch", dict(a, set="dim" if v == "dim" else ("flicker" if v == "flicker" else v)), r)
     elif k == "door":
         if placed(v, "door") and things[v].kind != "door":
             r.err(f"{bid}: door {v!r} isn't a door")
@@ -2515,6 +2542,9 @@ class World:
             return self.power.get(self.level, "on") == v or any(self.can_reach(t.id) for t in self.things.values() if t.use == "breaker")
         if k == "torch":                                  # the walker switches it once it has a flashlight
             return any(i in self.inv for i in torch_items(self.story))
+        if k == "charge":                                 # a battery runs down by itself while it's on: once it has one
+            return any(i in self.inv and isinstance(self.story["items"][i].get("torch"), dict) and self.story["items"][i]["torch"].get("battery")
+                       for i in torch_items(self.story))
         if k == "arrived":                                # she walked where a behave go sent her
             return v in self.arrived and (w.get("at") is None or self.arrived[v] == w["at"])
         if k == "ticked":                                 # holds: that task ticked, or the list through (nothing open)

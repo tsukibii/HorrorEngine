@@ -16,6 +16,7 @@ USES = {                                   # file: (node name, its fields), the 
     "inspect": ("Inspect", {"use": '"inspect"', "inspect_text": '"..."'}),
     "note": ("Note", {"use": '"note"', "note_title": '"A note"', "note_text": '"..."'}),
     "flashlight": ("Flashlight", {"use": '"pickup"', "flashlight": "true"}),
+    "batteries": ("Batteries", {"use": '"pickup"', "batteries": "1.0"}),   # a set for the flashlight (FLASHLIGHT_PLAN §1b): into the pocket
     "switch": ("Switch", {"use": '"switch"'}),
     "breaker": ("Breaker", {"use": '"breaker"'}),
     "seat": ("Seat", {"use": '"sit"'}),

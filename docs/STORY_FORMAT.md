@@ -601,6 +601,8 @@ with `{"tick": "<id>"}` at the end of that beat, not by its own trigger (the sto
 | `{"peeping": door}` | the player's eye is at that door's peephole (`peephole: true`); holds while it is |
 | `{"locked": door}` | that door is locked: its `latch` turned, its `locked_by` key not yet used, or a `door` `lock`; holds while it is |
 | `{"torch": "on"}`, `{"torch": "off"}` | the player switched the flashlight on or off with **F** (either: `any` of both) |
+| `{"torch": "low"}`, `{"torch": "dead"}`, `{"torch": "changed"}` | the flashlight's battery ran under its `low`, it died (out for good: its battery empty, or `dead`), its batteries were changed (by itself from the pocket, or the pause menu's) |
+| `{"charge": 0.25}` | the flashlight's charge is under that; holds while it is (a flashlight on no battery is always full) |
 | `{"rolled": die, "face": 6}`, `"at_least": 5` | a die (`use: roll`) settled; no face means any roll. A roll is chance, so a beat that needs a face is `optional` or `secret` (the check warns otherwise): `{"when": {"rolled": "big_die", "face": 6}, "secret": true, "do": [{"flag": "lucky"}]}`, then a flag choice sends `lucky` down a side path that rejoins the main line (§5) |
 
 **Actions (`do`, one verb each):**
@@ -635,7 +637,21 @@ with `{"tick": "<id>"}` at the end of that beat, not by its own trigger (the sto
   (`use: pickup`) or given (`give`), it goes in the pocket, not the inventory's row, and **F** switches it (heard as
   `{"torch": "on"}` or `"off"`); its beam comes from the right hand and follows the look a moment late. Its own settings
   ride on the item, `"torch": {"kelvin": 3200, "cone": 20, "range": 12, "strength": 6}` (an old warm one; the default
-  is 5200 K, a 26° cone, 18 m). Taken away (`take`), it goes off. The check fails a `torch` with no flashlight item
+  is 5200 K, a 26° cone, 18 m). Taken away (`take`), it goes off. The check fails a `torch` with no flashlight item.
+  **On batteries** (DECISIONS 2026-11-07, docs/FLASHLIGHT_PLAN.md §1): the item's `battery` is the seconds of light
+  from full (`"torch": {"battery": 420}`: seven minutes; none: it never runs down, as before), `charge` how full it
+  starts (0..1, 1), `kind` `bulb` (the default: dimmer and warmer from the start, √charge, toward 2100 K, browning out
+  under its `low`, 0.2) or `led` (full and white to its `low`, 0.15, then three blinks and a low mode of 35 %, a slow
+  strobe near empty), `low`, and `rest` (a bulb's: switched off 30 s when low it gives 3 % more, twice a set). The
+  charge drains only while it's on; its reach goes with its brightness. Empty, it stutters out and is **heard** as
+  `{"torch": "dead"}` (and `{"torch": "low"}` as it runs under its `low`). An item with `"battery": 1` (how full a
+  set, 0.5 a used one) is **batteries**: picked up, they go in the pocket; when the flashlight dies with a set there
+  it's **changed by itself**, two seconds of dark with its sounds, the light full again and heard as
+  `{"torch": "changed"}`; the pause menu shows the charge and the sets and changes them early (*Change the
+  batteries*). Each set is an item of its own (items are a set: two pickups of one item give one). The story's
+  `flicker` takes `secs` and `mode` (a lamp's mode for that long), `dim` `to`, `secs` and `over` (the beam sags and
+  comes back), `drain` `to` (the charge: 0 kills it), `works` fills it, `dead` empties it. The condition
+  `{"charge": 0.25}` holds while the charge is under that
 - `skin`: **a cast member's skin** (DECISIONS 2026-10-29; docs/GODOT_LOOK.md §5): `{"skin": "aoi", "wet": 0.7,
   "sweat": 0.5}`: `wet` the sweat film (a sheen, the skin a touch darker), `sweat` beads standing on it, `drips` runs,
   `oil` oiled up, each 0..1 (left out: unchanged; 0 takes it off). From a beat, a scene's cue or an answer's `do`; it

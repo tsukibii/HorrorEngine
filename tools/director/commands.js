@@ -15,7 +15,7 @@ export const GROUPS = [
 export const MUSIC = ["silence", "calm", "uneasy", "dread", "chase"];
 export const LIGHT_SET = ["on", "off", "flicker", "dim", "normal"];   // normal: its own brightness and flicker back, on or off as it is
 export const FLICKER_MODES = ["fluorescent", "dying", "candle", "pulse", "custom"];   // a light's flicker modes (tools/shared/flicker.js)
-export const TORCH_SET = ["on", "off", "flicker", "dead", "works"];      // the flashlight: dead flickers it out (F only clicks), works is new batteries
+export const TORCH_SET = ["on", "off", "flicker", "dead", "works", "dim", "drain"];   // the flashlight: dead flickers it out (F only clicks), works is new batteries, drain sets its charge
 export const DOOR_SET = ["lock", "unlock", "open", "close", "slam"];
 export const BEHAVE_AS = ["idle", "sit", "path", "patrol", "go", "off"];
 // tricks (TRICKS.md §2): each one's own fields
@@ -152,9 +152,14 @@ export const ACTIONS = [
     fields: [{ key: "skin", label: "Who", kind: "cast", verb: true }, { key: "wet", label: "wet", kind: "number", ph: "0.7", opt: true }, { key: "sweat", label: "sweat", kind: "number", ph: "0.5", opt: true },
       { key: "drips", label: "drips", kind: "number", ph: "0.3", opt: true }, { key: "oil", label: "oil", kind: "number", ph: "0", opt: true }],
     make: () => ({ skin: "", wet: 0.7 }), text: (a, n) => `${cap(n("cast", a.skin))}'s skin: ${["wet", "sweat", "drips", "oil"].filter(k => a[k] != null).map(k => `${k} ${a[k]}`).join(", ") || "…"}` },
-  { verb: "torch", label: "Flashlight", icon: "torch", group: "world", hint: "the player's flashlight (an item marked Flashlight in the Database): on, off, a flicker, dead (it flickers out and F only clicks) or working again (new batteries)",
-    fields: [{ key: "torch", label: "Flashlight", kind: "choice", verb: true, opts: TORCH_SET }],
-    make: () => ({ torch: "flicker" }), text: a => ({ on: "The flashlight comes on", off: "The flashlight goes off", flicker: "The flashlight flickers", dead: "The flashlight dies", works: "The flashlight works again" })[a.torch] || `Flashlight: ${a.torch || "…"}` },
+  { verb: "torch", label: "Flashlight", icon: "torch", group: "world", hint: "the player's flashlight (an item marked Flashlight in the Database): on, off, a flicker (for a while in a lamp's way), dimming, dead (it flickers out and F only clicks), working again (new batteries) or its battery drained to a charge",
+    fields: [{ key: "torch", label: "Flashlight", kind: "choice", verb: true, opts: TORCH_SET },
+      { key: "to", label: "how bright, or the charge (dim, drain: 0 to 1)", kind: "number", ph: "0.35", opt: true },
+      { key: "mode", label: "its flicker (a flicker)", kind: "choice", opts: FLICKER_MODES, opt: true },
+      { key: "secs", label: "for (s)", kind: "number", opt: true },
+      { key: "over", label: "over (s)", kind: "number", ph: "0", opt: true }],
+    make: () => ({ torch: "flicker" }),
+    text: a => `${({ on: "The flashlight comes on", off: "The flashlight goes off", flicker: "The flashlight flickers", dead: "The flashlight dies", works: "The flashlight works again", dim: "The flashlight dims", drain: "The flashlight's battery drains" })[a.torch] || `Flashlight: ${a.torch || "…"}`}${(a.torch === "dim" || a.torch === "drain") && a.to !== undefined && a.to !== null && a.to !== "" ? ` to ${a.to}` : ""}${a.torch === "flicker" && a.mode ? ` (${a.mode})` : ""}${a.secs ? ` for ${a.secs} s` : ""}${a.over ? `, over ${a.over} s` : ""}` },
   { verb: "state", label: "Set a thing's state", icon: "life", group: "world", hint: "a little thing to one of its states: the kettle on, the cigarette lit, the clock stopped, the phone ringing (docs/IMMERSION.md)",
     fields: [{ key: "state", label: "Thing", kind: "life", verb: true }, { key: "to", label: "to", kind: "lifestate" }],
     make: () => ({ state: "", to: "" }), text: (a, n) => `${cap(n("thing", a.state))}: ${a.to || "…"}` },
@@ -299,8 +304,11 @@ export const TRIGGERS = [
     fields: [{ key: "locked", label: "Door", kind: "door", verb: true }], make: () => ({ locked: "" }), text: (w, n) => `${n("thing", w.locked)} is locked` },
   { verb: "peeping", label: "The player looks through a peephole", icon: "eye", fields: [{ key: "peeping", label: "Door", kind: "door", verb: true }],
     make: () => ({ peeping: "" }), text: (w, n) => `the player looks through ${n("thing", w.peeping)}'s peephole` },
-  { verb: "torch", label: "The player switches the flashlight", icon: "torch", fields: [{ key: "torch", label: "Switched", kind: "choice", verb: true, opts: ["on", "off"] }],
-    make: () => ({ torch: "on" }), text: w => `the player switches the flashlight ${w.torch || "…"}` },
+  { verb: "torch", label: "The flashlight is switched, runs low, dies or is changed", icon: "torch", fields: [{ key: "torch", label: "It", kind: "choice", verb: true, opts: ["on", "off", "low", "dead", "changed"],
+      labels: { on: "is switched on", off: "is switched off", low: "runs low", dead: "dies", changed: "gets new batteries" } }],
+    make: () => ({ torch: "on" }), text: w => ({ low: "the flashlight runs low", dead: "the flashlight dies", changed: "the flashlight gets new batteries" })[w.torch] || `the player switches the flashlight ${w.torch || "…"}` },
+  { verb: "charge", label: "The flashlight's charge is under", icon: "torch", fields: [{ key: "charge", label: "Under (0 to 1)", kind: "number", verb: true, ph: "0.25" }],
+    make: () => ({ charge: 0.25 }), text: w => `the flashlight's charge is under ${w.charge ?? "…"}` },
   { verb: "state", label: "A thing is in a state", icon: "life", fields: [{ key: "state", label: "Thing", kind: "life", verb: true },
     { key: "is", label: "is", kind: "lifestate" }], make: () => ({ state: "", is: "" }), text: (w, n) => `${n("thing", w.state)} is ${w.is || "…"}` },
   { verb: "gave", label: "Something is given to someone", icon: "item", fields: [{ key: "gave", label: "Item (* any)", kind: "item", verb: true },

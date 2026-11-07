@@ -249,8 +249,19 @@ static func action_text(a, n: Callable = Callable()) -> String:
 					bits.append("%s %s" % [kk, js(a[kk])])
 			return cap(n.call("cast", g.call("skin"))) + "'s skin: " + (", ".join(PackedStringArray(bits)) if bits.size() else "…")
 		"torch":
-			var T := {"on": "The flashlight comes on", "off": "The flashlight goes off", "flicker": "The flashlight flickers", "dead": "The flashlight dies", "works": "The flashlight works again"}
-			return T.get(str(g.call("torch")), "Flashlight: " + js(_or(g.call("torch"), "…")))
+			var T := {"on": "The flashlight comes on", "off": "The flashlight goes off", "flicker": "The flashlight flickers", "dead": "The flashlight dies", "works": "The flashlight works again",
+				"dim": "The flashlight dims", "drain": "The flashlight's battery drains"}
+			var tx: String = T.get(str(g.call("torch")), "Flashlight: " + js(_or(g.call("torch"), "…")))
+			var tv = g.call("torch")
+			if (tv == "dim" or tv == "drain") and a.has("to") and a["to"] != null and not (a["to"] is String and a["to"] == ""):
+				tx += " to " + js(a["to"])
+			if tv == "flicker" and _t(g.call("mode")):
+				tx += " (" + js(a["mode"]) + ")"
+			if _t(g.call("secs")):
+				tx += " for " + js(a["secs"]) + " s"
+			if _t(g.call("over")):
+				tx += ", over " + js(a["over"]) + " s"
+			return tx
 		"state":
 			return cap(n.call("thing", g.call("state"))) + ": " + js(_or(g.call("to"), "…"))
 		"show":
@@ -415,7 +426,10 @@ static func trigger_text(w, n: Callable = Callable()) -> String:
 		"peeping":
 			return "the player looks through " + n.call("thing", g.call("peeping")) + "'s peephole"
 		"torch":
-			return "the player switches the flashlight " + js(_or(g.call("torch"), "…"))
+			var TT := {"low": "the flashlight runs low", "dead": "the flashlight dies", "changed": "the flashlight gets new batteries"}
+			return TT.get(str(g.call("torch")), "the player switches the flashlight " + js(_or(g.call("torch"), "…")))
+		"charge":
+			return "the flashlight's charge is under " + js(_qq(g.call("charge"), "…"))
 		"state":
 			return n.call("thing", g.call("state")) + " is " + js(_or(g.call("is"), "…"))
 		"gave":
