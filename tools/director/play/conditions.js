@@ -32,6 +32,8 @@ register("condition", "locked", { test: (v, w, ev, rt) => !!rt.doorOf(v).locked 
 register("condition", "peeping", { test: (v, w, ev, rt) => !!rt.player.peeping && rt.player.peeping.door === v });   // the eye at that door's peephole; holds while it is
 register("condition", "torch", { test: (v, w, ev) => ev.type === "torch" && (v === "on" || v === "off" ? "on" in ev && v === (ev.on ? "on" : "off") : !!ev[v]) });   // the player switched the flashlight (F) on or off; it ran low, died, its batteries were changed
 register("condition", "charge", { test: (v, w, ev, rt) => !!rt.torchItem() && rt.torchCharge() < +v });   // holds while the flashlight's charge is under that
+register("condition", "lit", { test: (v, w, ev, rt) => rt.litFor(v) >= +(w.secs ?? 0.3) });   // the beam on someone or something `secs` at her `bright` or more; holds while it is
+register("condition", "flashed", { test: (v, w, ev, rt) => ev.type === "flashed" && ev.who === v && rt.flashes(v, +(w.within ?? 3)) >= +(w.times ?? 1) });   // the beam landed on them `times` within `within` s
 register("condition", "carrying", { test: (v, w, ev, rt) => (!!rt.carried && (v === true || v === rt.carried.id)) || (!!rt.heldMove && (v === true || v === rt.heldMove.userData.id)) });   // in the hand (the inventory's one, or a moveable held in both): anything, or that; holds while it is
 register("condition", "dropped", {                        // put down (G): anywhere, or `in` a room or a trigger
   test: (v, w, ev) => ev.type === "dropped" && ev.id === v && (w.in === undefined || ev.in.includes(w.in)) });

@@ -484,6 +484,24 @@ const snapFor = nid => {                               // the run's state on rea
       const t2 = await page.evaluate(() => { const rt = window.__dd.play, t = rt.torchLight; return { spare: rt.items.has("spare_cells"), charge: t.charge, on: t.on }; });
       if (t2.spare || Math.abs(t2.charge - 1) > 0.01 || !t2.on) throw new Error("after the change: " + JSON.stringify(t2));
     });
+    await step("characters that feel the light (FLASHLIGHT_PLAN §2): Aoi in the dark; the beam on her and she backs off (ticks) and keeps away; flashed twice (ticks); near her the flashlight flickers", async () => {
+      await until(() => { const n = window.__dd.play.npcs.aoi; return n && n.pos && n.level === window.__dd.play.level; }, null, "Aoi in the dark room", 60000);
+      await gameWait(0.3);
+      const at0 = await page.evaluate(() => { const p = window.__dd.play.npcs.aoi.pos; return [p.x, p.z]; });
+      await place(5.5, 19.2, 270, -12);                                       // by the shelf, looking at her
+      if (!(await page.evaluate(() => window.__dd.play.torchLight.on))) await press("KeyF");
+      await ticked("t10_lit"); await gameWait(1.5);
+      const r = await page.evaluate(([x0, z0]) => { const rt = window.__dd.play, p = rt.npcs.aoi.pos, me = rt.player.pos;
+        return { moved: Math.hypot(p.x - x0, p.z - z0), farther: Math.hypot(p.x - me.x, p.z - me.z) > Math.hypot(x0 - me.x, z0 - me.z) }; }, at0);
+      if (!(r.moved > 0.6) || !r.farther) throw new Error("she didn't back off: " + JSON.stringify(r));
+      for (let i = 0; i < 2; i++) { await press("KeyF"); await gameWait(0.3); await press("KeyF"); await gameWait(0.4); }   // flashed: off her and on her again, twice
+      await ticked("t10_flash");
+      const at = await page.evaluate(() => { const p = window.__dd.play.npcs.aoi.pos; return [p.x, p.z]; });
+      await place(at[0], -at[1] + 0.8, 270, -25); await gameWait(0.2);         // near her: the flashlight flickers by her (story y is three's -z)
+      const ks = await page.evaluate(() => new Promise(res => { const rt = window.__dd.play, t0 = rt.clock, out = []; const tick = () => { out.push(rt.torchLight.k); if (rt.clock - t0 < 2.5) requestAnimationFrame(tick); else res(out); }; tick(); }));
+      const lo = Math.min(...ks), hi = Math.max(...ks);
+      if (!(lo < hi * 0.5)) throw new Error(`near her the flashlight should flicker: ${lo.toFixed(2)} to ${hi.toFixed(2)}`);
+    });
     await step("on the way out the glimpse: a creak, the figure there for a moment and gone; out of the room (ticks)", async () => {
       await page.evaluate(() => { window.__seen = false; const f = window.__dd.play.byId.dark_figure; const t = setInterval(() => { if (f.visible) window.__seen = true; }, 20); window.__stopSeen = () => clearInterval(t); });
       await place(5.6, 17.5, 180); await hold("KeyW", 1.2);      // west, into the doorway's trigger

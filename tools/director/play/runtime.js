@@ -19,7 +19,7 @@ import { latchFor, turnBar } from "./latch.js";
 import { Examine } from "./examine.js";
 import { Book } from "./book.js";
 import { scanParts, infoOf, applyParts, partSounds, Movers } from "./openable.js";
-import { behaviourOf } from "./behaviours.js";
+import { behaviourOf, turnTo } from "./behaviours.js";
 import * as M from "../motion.js";
 import { Hud, besideAt, setName, playerName } from "./hud.js";
 import { Todo } from "./todo.js";
@@ -40,6 +40,8 @@ export const SIGHT = { angle: 90, range: 9, crouched: 0.55, meter: 1.2, drain: 1
 const UP = new THREE.Vector3(0, 1, 0), DOWN = new THREE.Vector3(0, -1, 0);
 const ELECTRIC = l => !["candle", "fire"].includes(l.userData.kind);   // a power cut darkens these
 const DIM = 0.35;                                  // a dim's brightness when the story gives no `to`
+// what someone does in the flashlight's beam (FLASHLIGHT_PLAN §2b): play.gd's BEAM
+const BEAM = { does: "nothing", after: 0.4, bright: 0.3, dist: 2.5, speed: 1.6, keep: 4, near: 0, near_torch: "none", near_lamps: "none" };
 // a light's own flicker kept, its lasting state's (bFlicker, bMode), the story's timed changes over it (play.gd light_own)
 const lightOwn = u => { u.own = { flicker: u.flicker || 0, mode: u.mode || null }; u.bFlicker = u.flicker || 0; u.bMode = u.mode || null; u.layers = []; u.fadeTo = null; u.dim = null; u.s = u.on ? 1 : 0; };
 const smooth01 = x => { const t = Math.max(0, Math.min(1, x)); return t * t * (3 - 2 * t); };
@@ -788,9 +790,9 @@ export class PlayRuntime {
   drawNpcs(dt) {
     const lib = this.stage.lib, X = new THREE.Vector3(1, 0, 0);
     for (const n of Object.values(this.npcs)) {
-      const b = behaviourOf(n.as); if (b && b.update) b.update(n, this, dt, n.s);
+      const b = behaviourOf(n.as); if (b && b.update && !this.beamHold(n, dt)) b.update(n, this, dt, n.s);   // (the light on her holds it: her `beam`)
       const f = this.stage.cast[n.cid]; if (!f) continue;
-      f.group.visible = !!n.pos && n.level === this.level;
+      f.group.visible = !!n.pos && n.level === this.level && !n.vanished;
       if (!f.group.visible) continue;
       f.group.position.copy(n.pos); f.group.rotation.y = (n.yaw + 90) * Math.PI / 180;
       const h = +((this.story.cast || {})[n.cid] || {}).height || 1.7;
@@ -804,6 +806,130 @@ export class PlayRuntime {
       p.q.spine_02.multiply(new THREE.Quaternion().setFromAxisAngle(X, Math.sin(this.clock * 2.2) * 0.012));   // breathing
       f.update(M.fk(lib, p, h).pos);
     }
+  }
+
+  // ---- what feels the flashlight's beam (FLASHLIGHT_PLAN §2): play.gd's beam_watch, the same rules ---------------
+  // each cast member (and each thing a lit or flashed trigger names) against the beam every frame: its reach, its cone
+  // (the spill a fifth), the fall-off, a clear way to her chest or head; her `beam` says what she does in it
+  beamCfg(cid) {
+    const b = ((this.story.cast || {})[cid] || {}).beam, o = (this.beamOver || {})[cid];
+    if ((!b || typeof b !== "object") && !o) return null;
+    return Object.assign({}, BEAM, typeof b === "object" ? b : {}, o || {});
+  }
+  beamSet(cid, a) {                                 // the story's `beam`: her settings from now (a field left out stays)
+    this.beamOver = this.beamOver || {};
+    const cur = Object.assign({}, this.beamOver[cid] || {}); for (const [k, v] of Object.entries(a)) if (k !== "beam") cur[k] = v;
+    this.beamOver[cid] = cur;
+    const b = (this.beamSt || {})[cid]; if (b && b.react) this.beamEnd(cid, false);
+  }
+  beamAt(p) {                                       // the beam's strength at a point, 0..1
+    const t = this.torchLight; if (!t || !t.on || this.player.peeping || !t.from || !(t.k > 0)) return 0;
+    const d = p.clone().sub(t.from), dist = d.length(); if (dist < 0.01 || dist > t.reachM) return 0;
+    const ang = Math.acos(Math.max(-1, Math.min(1, t.aim.dot(d.clone().divideScalar(dist))))) * 180 / Math.PI;
+    const cone = ang <= t.cone / 2 ? 1 : ang <= t.spillA / 2 ? 0.2 : 0; if (!cone) return 0;
+    const fall = dist <= t.reachM / 3 ? 1 : Math.max(0, Math.min(1, 1 - (dist - t.reachM / 3) / (t.reachM * 2 / 3)));
+    this.ray.set(t.from, d.clone().divideScalar(dist)); this.ray.far = dist;
+    const hit = this.ray.intersectObjects(this.blocks(), false)[0];
+    if (hit && hit.distance < dist - 0.25) return 0;
+    return cone * fall * Math.min(1, t.k);
+  }
+  litNow(id) { const b = (this.beamSt || {})[id]; return b ? b.lit : 0; }
+  litFor(id) { const b = (this.beamSt || {})[id]; return b ? b.litFor : 0; }
+  flashes(id, within) { const b = (this.beamSt || {})[id]; return b ? b.flashes.filter(t => this.clock - t <= within).length : 0; }
+  beamFeel(id, lit, bright, dt) {
+    const S = this.beamSt = this.beamSt || {}, b = S[id] = S[id] || { lit: 0, litFor: 0, prev: false, flashes: [], react: null, waitUnlit: false };
+    const on = lit >= bright; b.lit = lit; b.litFor = on ? b.litFor + dt : 0;
+    if (on && !b.prev) { b.flashes.push(this.clock); if (b.flashes.length > 12) b.flashes.shift(); this.emit({ type: "flashed", who: id }); }   // the beam landed on it
+    b.prev = on; if (!on) b.waitUnlit = false;
+    return b;
+  }
+  litThings() {                                     // the things the story's lit and flashed triggers name (not the cast)
+    this.litIds = new Set(); const txt = JSON.stringify(this.story);
+    for (const m of txt.matchAll(/"(?:lit|flashed)":\s*"([^"]+)"/g)) if (!(this.story.cast || {})[m[1]]) this.litIds.add(m[1]);
+  }
+  beamWatch(dt) {
+    if (!this.litIds) this.litThings();
+    let tk = 1; const lk = {};
+    for (const [cid, n] of Object.entries(this.npcs)) {
+      const f = this.stage.cast[cid], cfg = this.beamCfg(cid), here = !!n.pos && n.level === this.level && !!f && f.group.visible;
+      let lit = 0;
+      if (here) { const h = +((this.story.cast || {})[cid] || {}).height || 1.7; lit = Math.max(this.beamAt(n.pos.clone().setY(n.pos.y + h * 0.7)), this.beamAt(n.pos.clone().setY(n.pos.y + h * 0.93))); }
+      const b = this.beamFeel(cid, lit, cfg ? +cfg.bright : BEAM.bright, dt);
+      if (!cfg) continue;
+      if (!b.react && !b.waitUnlit && cfg.does !== "nothing" && b.litFor >= +cfg.after && here) this.beamStart(cid, n, cfg);
+      else if (b.react && b.react.cfg.does === "flees") {
+        if (lit >= +cfg.bright) b.react.lastLit = this.clock;
+        if (n.st.arrived && this.clock - b.react.lastLit >= +cfg.keep) this.beamEnd(cid, true);
+      }
+      const near = +cfg.near;
+      if (here && near > 0) {                         // her presence on the lights round her
+        let seed = 0; for (const ch of cid) seed = (seed * 31 + ch.charCodeAt(0)) & 0xffff;
+        if (cfg.near_torch !== "none" && this.torchLight && this.torchLight.on) tk *= this.nearK(cfg.near_torch, Math.max(0, Math.min(1, 1 - n.pos.distanceTo(this.player.pos) / near)), cid + "/torch", seed);
+        if (cfg.near_lamps !== "none") for (const l of this.stage.lights) {
+          const pr = Math.max(0, Math.min(1, 1 - l.position.distanceTo(n.pos) / near));
+          if (pr > 0) lk[l.userData.id] = (lk[l.userData.id] || 1) * this.nearK(cfg.near_lamps, pr, cid + "/" + l.userData.id, seed + 7);
+        }
+      }
+    }
+    for (const id of this.litIds) { const o = this.byId[id]; this.beamFeel(id, o && o.visible ? this.beamAt(o.getWorldPosition(new THREE.Vector3())) : 0, BEAM.bright, dt); }
+    this.nearTorchK = tk; this.nearLightK = lk;
+  }
+  nearK(how, pr, key, seed) {                       // a light's multiplier from someone near: flicker (a dying tube's), dim, die
+    if (how === "flicker") { const N = this.nearFl = this.nearFl || {}; const u = N[key] = N[key] || { mode: "dying", interval: 1.2, seed, flicker: 0 }; u.flicker = pr; return flickerK(u, this.clock); }
+    if (how === "dim") return 1 - 0.7 * pr;
+    if (how === "die") return Math.max(0, Math.min(1, 1 - pr * 1.6));
+    return 1;
+  }
+  beamStart(cid, n, cfg) {                          // the light on her long enough: what she does, her sound and face
+    const b = this.beamSt[cid], r = { cfg, t0: this.clock, lastLit: this.clock, moved: 0 };
+    b.react = r;
+    if (cfg.sound) this.sound(cfg.sound, cid);
+    if (cfg.face) runAll([{ expr: cfg.face, who: cid }], this);
+    this.hud.log(`${cid} in the light: ${cfg.does}`);
+    if (cfg.does === "covers") { n.holdUntil = this.clock + +cfg.keep; b.react = null; b.waitUnlit = true; }   // held where she is (the desk plays no clip for it)
+    else if (cfg.does === "flees") {
+      if (!cfg.flee || !this.plan.things[cfg.flee]) { this.hud.log(`${cid} flees, but has no flee spot`); b.react = null; b.waitUnlit = true; return; }
+      r.prev = { as: n.as, s: Object.assign({}, n.s) };
+      const g = behaviourOf("go"); n.as = "go"; n.s = settingsOf(g, { to: cfg.flee, then: "idle", speed: +cfg.speed }); n.st = {}; g.start(n, this, n.s);
+    } else if (cfg.does === "vanishes") n.vanished = true;
+  }
+  beamEnd(cid, resume) {                            // over: her behaviour again from where she is
+    const b = this.beamSt[cid], r = b.react; b.react = null; b.waitUnlit = true;
+    const n = this.npcs[cid]; if (!n || !r) return;
+    delete n.vanished;
+    if (r.prev) { n.as = r.prev.as; n.s = r.prev.s; }
+    if (resume) { n.st = {}; const bh = behaviourOf(n.as); if (bh) bh.start(n, this, n.s); }
+  }
+  beamHold(n, dt) {                                 // while the light holds her: true, her behaviour waits
+    if (n.holdUntil) { if (this.clock < n.holdUntil) { n.walking = false; return true; } delete n.holdUntil; }
+    const b = (this.beamSt || {})[n.cid]; if (!b || !b.react) return false;
+    const r = b.react, cfg = r.cfg, does = cfg.does; if (does === "flees") return false;
+    const lit = b.lit >= +cfg.bright; if (lit) r.lastLit = this.clock;
+    const over = !lit && this.clock - r.lastLit >= +cfg.keep;
+    n.walking = false;
+    if (["backs_off", "comes", "charges"].includes(does) && n.pos) {
+      const away = does === "backs_off", to = this.player.pos.clone().sub(n.pos).setY(0), dist = to.length();
+      if (dist > 0.01) turnTo(n, Math.atan2(-to.z, to.x) * 180 / Math.PI, dt);   // facing the player all the while
+      const go = (away && r.moved < +cfg.dist && !over) || (!away && lit && dist > (does === "charges" ? 0.8 : 1.3));
+      if (go && dist > 0.01) {
+        const dir = to.clone().divideScalar(dist).multiplyScalar(away ? -1 : 1);
+        let step = +cfg.speed * (does === "charges" ? 2 : 1) * dt; if (away) step = Math.min(step, +cfg.dist - r.moved);
+        this.ray.set(n.pos.clone().setY(n.pos.y + 0.9), dir); this.ray.far = step + 0.35;
+        if (!this.ray.intersectObjects(this.blocks(), false)[0]) { n.pos.addScaledVector(dir, step); r.moved += step; n.walking = true; }
+      }
+      if (does === "charges" && dist < 0.9) { this.beamEnd(n.cid, true); this.caught(n.cid, null); return true; }
+    }
+    if (over) { this.beamEnd(n.cid, does !== "freezes"); return false; }
+    return true;
+  }
+  torchSeen(n) {                                    // the flashlight seen by her (her sight's `torch`): the light gives you away
+    const c = this.sightOf(n), t = this.torchLight;
+    if (!c || !(+c.torch > 0) || !n.pos || n.level !== this.level || !t || !t.on || !(t.k > 0.05) || !t.from) return false;
+    const h = +((this.story.cast || {})[n.cid] || {}).height || 1.7, eye = n.pos.clone().setY(n.pos.y + h * 0.93), d = t.from.clone().sub(eye), dist = d.length();
+    if (dist > c.range || dist < 0.01) return false;
+    this.ray.set(eye, d.clone().divideScalar(dist)); this.ray.far = dist;
+    const hit = this.ray.intersectObjects(this.blocks(), false)[0];
+    return !(hit && hit.distance < dist - 0.3);
   }
 
   // ---- being seen (GAMEPLAY_PLAN §3): a cast member who `sees` fills the suspicion meter while the player is in her
@@ -824,8 +950,10 @@ export class PlayRuntime {
   }
   watch(dt) {
     if (this.calm > 0) { this.calm -= dt; this.suspicion = Math.max(0, this.suspicion - dt / SIGHT.drain); this.hud.seen(this.suspicion); return; }
-    const by = Object.values(this.npcs).find(n => this.sees(n));
-    if (by) { this.suspicion += dt / this.sightOf(by).meter; if (this.suspicion >= 1) return this.caught(by.cid, null); }
+    let by = Object.values(this.npcs).find(n => this.sees(n)), rate = 1;
+    if (by && this.torchSeen(by)) rate = Math.max(1, +this.sightOf(by).torch);   // seen with the light on: at least her `torch`'s rate
+    if (!by) { by = Object.values(this.npcs).find(n => this.torchSeen(n)); if (by) rate = +this.sightOf(by).torch; }   // only the light gives you away
+    if (by) { this.suspicion += dt / this.sightOf(by).meter * rate; if (this.suspicion >= 1) return this.caught(by.cid, null); }
     else this.suspicion = Math.max(0, this.suspicion - dt / SIGHT.drain);
     this.hud.seen(this.suspicion);
   }
@@ -1275,12 +1403,13 @@ export class PlayRuntime {
     c.updateMatrixWorld();                               // the cursor's ray (and the hands) from where the eye is now, not the last frame
     const T = this.clock;
     for (const l of this.stage.lights) {
-      const u = l.userData, k = this.lightK(u, T);         // its state, the story's changes over it, its flicker by mode (tools/shared/flicker.js)
+      const u = l.userData, k = this.lightK(u, T) * ((this.nearLightK || {})[u.id] ?? 1);   // its state, the story's changes over it, its flicker by mode (tools/shared/flicker.js), someone near it
       l.intensity = (u.base || 1) * k;
     }
     this.stage.sweepTick(dt);                            // the windows' headlight sweeps
     this.handTick(dt);
     if (this.torchLight) { if (!this.torchItem()) this.torchLight.on = false; this.ability("torch", "update", dt); }   // taken away: off
+    this.beamWatch(dt);                                // what feels the beam (FLASHLIGHT_PLAN §2)
     for (const a of [...this.anims]) { a.t += dt; const k = Math.min(1, a.t / a.secs); a.fn(k); if (k >= 1) { this.anims.splice(this.anims.indexOf(a), 1); a.done(); } }
     this.drawNpcs(dt);
     this.rainWet(dt);

@@ -262,6 +262,16 @@ static func action_text(a, n: Callable = Callable()) -> String:
 			if _t(g.call("over")):
 				tx += ", over " + js(a["over"]) + " s"
 			return tx
+		"beam":
+			var BL := {"nothing": "nothing (only heard)", "backs_off": "backs off", "freezes": "freezes", "flees": "flees to a spot", "vanishes": "vanishes", "covers": "covers her eyes", "comes": "comes toward it", "charges": "charges"}
+			var bx: String = n.call("cast", g.call("beam")) + " in the flashlight's beam: " + str(BL.get(str(g.call("does")), js(_or(g.call("does"), "…"))))
+			if _t(g.call("after")):
+				bx += " after " + js(a["after"]) + " s"
+			if g.call("does") == "flees" and _t(g.call("flee")):
+				bx += " to " + n.call("thing", a["flee"])
+			if _t(g.call("near")):
+				bx += "; the lights near her " + js(a["near"]) + " m"
+			return bx
 		"state":
 			return cap(n.call("thing", g.call("state"))) + ": " + js(_or(g.call("to"), "…"))
 		"show":
@@ -430,6 +440,11 @@ static func trigger_text(w, n: Callable = Callable()) -> String:
 			return TT.get(str(g.call("torch")), "the player switches the flashlight " + js(_or(g.call("torch"), "…")))
 		"charge":
 			return "the flashlight's charge is under " + js(_qq(g.call("charge"), "…"))
+		"lit":
+			return "the flashlight is on " + n.call("cast", g.call("lit")) + ((" for " + js(w["secs"]) + " s") if _t(g.call("secs")) else "")
+		"flashed":
+			var tm = g.call("times")
+			return n.call("cast", g.call("flashed")) + " is flashed" + ((" " + js(tm) + " times") if (tm is float or tm is int) and float(tm) > 1 else "") + ((" within " + js(w["within"]) + " s") if _t(g.call("within")) else "")
 		"state":
 			return n.call("thing", g.call("state")) + " is " + js(_or(g.call("is"), "…"))
 		"gave":

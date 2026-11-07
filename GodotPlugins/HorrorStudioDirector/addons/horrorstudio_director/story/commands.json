@@ -728,6 +728,133 @@
    }
   },
   {
+   "verb": "beam",
+   "label": "Someone in the flashlight's beam",
+   "icon": "torch",
+   "group": "people",
+   "hint": "what a cast member does when the flashlight's on her, from now: backs off, freezes, flees to a spot, vanishes, covers her eyes, comes toward it or charges; how long in it first, how bright it must be, how far, how long she keeps away; the lights near her flickering, dimming or dying",
+   "fields": [
+    {
+     "key": "beam",
+     "label": "Who",
+     "kind": "cast",
+     "verb": true
+    },
+    {
+     "key": "does",
+     "label": "does",
+     "kind": "choice",
+     "opts": [
+      "nothing",
+      "backs_off",
+      "freezes",
+      "flees",
+      "vanishes",
+      "covers",
+      "comes",
+      "charges"
+     ],
+     "labels": {
+      "nothing": "nothing (only heard)",
+      "backs_off": "backs off",
+      "freezes": "freezes",
+      "flees": "flees to a spot",
+      "vanishes": "vanishes",
+      "covers": "covers her eyes",
+      "comes": "comes toward it",
+      "charges": "charges"
+     }
+    },
+    {
+     "key": "after",
+     "label": "after (s) in it",
+     "kind": "number",
+     "ph": "0.4",
+     "opt": true
+    },
+    {
+     "key": "bright",
+     "label": "how bright it must be (0 to 1)",
+     "kind": "number",
+     "ph": "0.3",
+     "opt": true
+    },
+    {
+     "key": "dist",
+     "label": "how far (m)",
+     "kind": "number",
+     "ph": "2.5",
+     "opt": true
+    },
+    {
+     "key": "keep",
+     "label": "keeps away (s)",
+     "kind": "number",
+     "ph": "4",
+     "opt": true
+    },
+    {
+     "key": "flee",
+     "label": "flees to",
+     "kind": "spot",
+     "opt": true
+    },
+    {
+     "key": "clip",
+     "label": "her move (a motion)",
+     "kind": "motion",
+     "opt": true
+    },
+    {
+     "key": "face",
+     "label": "her face",
+     "kind": "expr",
+     "opt": true
+    },
+    {
+     "key": "sound",
+     "label": "a sound",
+     "kind": "sound",
+     "opt": true
+    },
+    {
+     "key": "near",
+     "label": "near her (m): the lights",
+     "kind": "number",
+     "ph": "0",
+     "opt": true
+    },
+    {
+     "key": "near_torch",
+     "label": "the flashlight near her",
+     "kind": "choice",
+     "opts": [
+      "none",
+      "flicker",
+      "dim",
+      "die"
+     ],
+     "opt": true
+    },
+    {
+     "key": "near_lamps",
+     "label": "the lamps near her",
+     "kind": "choice",
+     "opts": [
+      "none",
+      "flicker",
+      "dim",
+      "die"
+     ],
+     "opt": true
+    }
+   ],
+   "make": {
+    "beam": "",
+    "does": "backs_off"
+   }
+  },
+  {
    "verb": "state",
    "label": "Set a thing's state",
    "icon": "life",
@@ -1819,6 +1946,59 @@
    ],
    "make": {
     "torch": "on"
+   }
+  },
+  {
+   "verb": "lit",
+   "label": "The flashlight is on someone",
+   "icon": "torch",
+   "fields": [
+    {
+     "key": "lit",
+     "label": "On",
+     "kind": "cast",
+     "verb": true
+    },
+    {
+     "key": "secs",
+     "label": "for (s)",
+     "kind": "number",
+     "ph": "0.3",
+     "opt": true
+    }
+   ],
+   "make": {
+    "lit": ""
+   }
+  },
+  {
+   "verb": "flashed",
+   "label": "Someone is flashed",
+   "icon": "torch",
+   "fields": [
+    {
+     "key": "flashed",
+     "label": "Who",
+     "kind": "cast",
+     "verb": true
+    },
+    {
+     "key": "times",
+     "label": "times",
+     "kind": "number",
+     "ph": "1",
+     "opt": true
+    },
+    {
+     "key": "within",
+     "label": "within (s)",
+     "kind": "number",
+     "ph": "3",
+     "opt": true
+    }
+   ],
+   "make": {
+    "flashed": ""
    }
   },
   {
@@ -3485,6 +3665,478 @@
   {
    "what": "action",
    "value": {
+    "beam": "",
+    "does": "backs_off"
+   },
+   "text": "… in the flashlight's beam: backs off"
+  },
+  {
+   "what": "action",
+   "value": {
+    "beam": "cast_0",
+    "does": "nothing",
+    "after": 4,
+    "bright": 5,
+    "dist": 6,
+    "keep": 7,
+    "flee": "spot_6",
+    "clip": "motion_7",
+    "face": "expr_8",
+    "sound": "sound_9",
+    "near": 12,
+    "near_torch": "none",
+    "near_lamps": "none"
+   },
+   "text": "cast_0 in the flashlight's beam: nothing (only heard) after 4 s; the lights near her 12 m"
+  },
+  {
+   "what": "action",
+   "value": {
+    "beam": "cast_0",
+    "does": "backs_off",
+    "after": 4,
+    "bright": 5,
+    "dist": 6,
+    "keep": 7,
+    "flee": "spot_6",
+    "clip": "motion_7",
+    "face": "expr_8",
+    "sound": "sound_9",
+    "near": 12,
+    "near_torch": "none",
+    "near_lamps": "none"
+   },
+   "text": "cast_0 in the flashlight's beam: backs off after 4 s; the lights near her 12 m"
+  },
+  {
+   "what": "action",
+   "value": {
+    "beam": "cast_0",
+    "does": "freezes",
+    "after": 4,
+    "bright": 5,
+    "dist": 6,
+    "keep": 7,
+    "flee": "spot_6",
+    "clip": "motion_7",
+    "face": "expr_8",
+    "sound": "sound_9",
+    "near": 12,
+    "near_torch": "none",
+    "near_lamps": "none"
+   },
+   "text": "cast_0 in the flashlight's beam: freezes after 4 s; the lights near her 12 m"
+  },
+  {
+   "what": "action",
+   "value": {
+    "beam": "cast_0",
+    "does": "flees",
+    "after": 4,
+    "bright": 5,
+    "dist": 6,
+    "keep": 7,
+    "flee": "spot_6",
+    "clip": "motion_7",
+    "face": "expr_8",
+    "sound": "sound_9",
+    "near": 12,
+    "near_torch": "none",
+    "near_lamps": "none"
+   },
+   "text": "cast_0 in the flashlight's beam: flees to a spot after 4 s to spot_6; the lights near her 12 m"
+  },
+  {
+   "what": "action",
+   "value": {
+    "beam": "cast_0",
+    "does": "vanishes",
+    "after": 4,
+    "bright": 5,
+    "dist": 6,
+    "keep": 7,
+    "flee": "spot_6",
+    "clip": "motion_7",
+    "face": "expr_8",
+    "sound": "sound_9",
+    "near": 12,
+    "near_torch": "none",
+    "near_lamps": "none"
+   },
+   "text": "cast_0 in the flashlight's beam: vanishes after 4 s; the lights near her 12 m"
+  },
+  {
+   "what": "action",
+   "value": {
+    "beam": "cast_0",
+    "does": "covers",
+    "after": 4,
+    "bright": 5,
+    "dist": 6,
+    "keep": 7,
+    "flee": "spot_6",
+    "clip": "motion_7",
+    "face": "expr_8",
+    "sound": "sound_9",
+    "near": 12,
+    "near_torch": "none",
+    "near_lamps": "none"
+   },
+   "text": "cast_0 in the flashlight's beam: covers her eyes after 4 s; the lights near her 12 m"
+  },
+  {
+   "what": "action",
+   "value": {
+    "beam": "cast_0",
+    "does": "comes",
+    "after": 4,
+    "bright": 5,
+    "dist": 6,
+    "keep": 7,
+    "flee": "spot_6",
+    "clip": "motion_7",
+    "face": "expr_8",
+    "sound": "sound_9",
+    "near": 12,
+    "near_torch": "none",
+    "near_lamps": "none"
+   },
+   "text": "cast_0 in the flashlight's beam: comes toward it after 4 s; the lights near her 12 m"
+  },
+  {
+   "what": "action",
+   "value": {
+    "beam": "cast_0",
+    "does": "charges",
+    "after": 4,
+    "bright": 5,
+    "dist": 6,
+    "keep": 7,
+    "flee": "spot_6",
+    "clip": "motion_7",
+    "face": "expr_8",
+    "sound": "sound_9",
+    "near": 12,
+    "near_torch": "none",
+    "near_lamps": "none"
+   },
+   "text": "cast_0 in the flashlight's beam: charges after 4 s; the lights near her 12 m"
+  },
+  {
+   "what": "action",
+   "value": {
+    "beam": "cast_0",
+    "does": "nothing",
+    "after": 4,
+    "bright": 5,
+    "dist": 6,
+    "keep": 7,
+    "flee": "spot_6",
+    "clip": "motion_7",
+    "face": "expr_8",
+    "sound": "sound_9",
+    "near": 12,
+    "near_torch": "flicker",
+    "near_lamps": "none"
+   },
+   "text": "cast_0 in the flashlight's beam: nothing (only heard) after 4 s; the lights near her 12 m"
+  },
+  {
+   "what": "action",
+   "value": {
+    "beam": "cast_0",
+    "does": "nothing",
+    "after": 4,
+    "bright": 5,
+    "dist": 6,
+    "keep": 7,
+    "flee": "spot_6",
+    "clip": "motion_7",
+    "face": "expr_8",
+    "sound": "sound_9",
+    "near": 12,
+    "near_torch": "dim",
+    "near_lamps": "none"
+   },
+   "text": "cast_0 in the flashlight's beam: nothing (only heard) after 4 s; the lights near her 12 m"
+  },
+  {
+   "what": "action",
+   "value": {
+    "beam": "cast_0",
+    "does": "nothing",
+    "after": 4,
+    "bright": 5,
+    "dist": 6,
+    "keep": 7,
+    "flee": "spot_6",
+    "clip": "motion_7",
+    "face": "expr_8",
+    "sound": "sound_9",
+    "near": 12,
+    "near_torch": "die",
+    "near_lamps": "none"
+   },
+   "text": "cast_0 in the flashlight's beam: nothing (only heard) after 4 s; the lights near her 12 m"
+  },
+  {
+   "what": "action",
+   "value": {
+    "beam": "cast_0",
+    "does": "nothing",
+    "after": 4,
+    "bright": 5,
+    "dist": 6,
+    "keep": 7,
+    "flee": "spot_6",
+    "clip": "motion_7",
+    "face": "expr_8",
+    "sound": "sound_9",
+    "near": 12,
+    "near_torch": "none",
+    "near_lamps": "flicker"
+   },
+   "text": "cast_0 in the flashlight's beam: nothing (only heard) after 4 s; the lights near her 12 m"
+  },
+  {
+   "what": "action",
+   "value": {
+    "beam": "cast_0",
+    "does": "nothing",
+    "after": 4,
+    "bright": 5,
+    "dist": 6,
+    "keep": 7,
+    "flee": "spot_6",
+    "clip": "motion_7",
+    "face": "expr_8",
+    "sound": "sound_9",
+    "near": 12,
+    "near_torch": "none",
+    "near_lamps": "dim"
+   },
+   "text": "cast_0 in the flashlight's beam: nothing (only heard) after 4 s; the lights near her 12 m"
+  },
+  {
+   "what": "action",
+   "value": {
+    "beam": "cast_0",
+    "does": "nothing",
+    "after": 4,
+    "bright": 5,
+    "dist": 6,
+    "keep": 7,
+    "flee": "spot_6",
+    "clip": "motion_7",
+    "face": "expr_8",
+    "sound": "sound_9",
+    "near": 12,
+    "near_torch": "none",
+    "near_lamps": "die"
+   },
+   "text": "cast_0 in the flashlight's beam: nothing (only heard) after 4 s; the lights near her 12 m"
+  },
+  {
+   "what": "action",
+   "value": {
+    "beam": "cast_0",
+    "does": "nothing",
+    "bright": 5,
+    "dist": 6,
+    "keep": 7,
+    "flee": "spot_6",
+    "clip": "motion_7",
+    "face": "expr_8",
+    "sound": "sound_9",
+    "near": 12,
+    "near_torch": "none",
+    "near_lamps": "none"
+   },
+   "text": "cast_0 in the flashlight's beam: nothing (only heard); the lights near her 12 m"
+  },
+  {
+   "what": "action",
+   "value": {
+    "beam": "cast_0",
+    "does": "nothing",
+    "after": 4,
+    "dist": 6,
+    "keep": 7,
+    "flee": "spot_6",
+    "clip": "motion_7",
+    "face": "expr_8",
+    "sound": "sound_9",
+    "near": 12,
+    "near_torch": "none",
+    "near_lamps": "none"
+   },
+   "text": "cast_0 in the flashlight's beam: nothing (only heard) after 4 s; the lights near her 12 m"
+  },
+  {
+   "what": "action",
+   "value": {
+    "beam": "cast_0",
+    "does": "nothing",
+    "after": 4,
+    "bright": 5,
+    "keep": 7,
+    "flee": "spot_6",
+    "clip": "motion_7",
+    "face": "expr_8",
+    "sound": "sound_9",
+    "near": 12,
+    "near_torch": "none",
+    "near_lamps": "none"
+   },
+   "text": "cast_0 in the flashlight's beam: nothing (only heard) after 4 s; the lights near her 12 m"
+  },
+  {
+   "what": "action",
+   "value": {
+    "beam": "cast_0",
+    "does": "nothing",
+    "after": 4,
+    "bright": 5,
+    "dist": 6,
+    "flee": "spot_6",
+    "clip": "motion_7",
+    "face": "expr_8",
+    "sound": "sound_9",
+    "near": 12,
+    "near_torch": "none",
+    "near_lamps": "none"
+   },
+   "text": "cast_0 in the flashlight's beam: nothing (only heard) after 4 s; the lights near her 12 m"
+  },
+  {
+   "what": "action",
+   "value": {
+    "beam": "cast_0",
+    "does": "nothing",
+    "after": 4,
+    "bright": 5,
+    "dist": 6,
+    "keep": 7,
+    "clip": "motion_7",
+    "face": "expr_8",
+    "sound": "sound_9",
+    "near": 12,
+    "near_torch": "none",
+    "near_lamps": "none"
+   },
+   "text": "cast_0 in the flashlight's beam: nothing (only heard) after 4 s; the lights near her 12 m"
+  },
+  {
+   "what": "action",
+   "value": {
+    "beam": "cast_0",
+    "does": "nothing",
+    "after": 4,
+    "bright": 5,
+    "dist": 6,
+    "keep": 7,
+    "flee": "spot_6",
+    "face": "expr_8",
+    "sound": "sound_9",
+    "near": 12,
+    "near_torch": "none",
+    "near_lamps": "none"
+   },
+   "text": "cast_0 in the flashlight's beam: nothing (only heard) after 4 s; the lights near her 12 m"
+  },
+  {
+   "what": "action",
+   "value": {
+    "beam": "cast_0",
+    "does": "nothing",
+    "after": 4,
+    "bright": 5,
+    "dist": 6,
+    "keep": 7,
+    "flee": "spot_6",
+    "clip": "motion_7",
+    "sound": "sound_9",
+    "near": 12,
+    "near_torch": "none",
+    "near_lamps": "none"
+   },
+   "text": "cast_0 in the flashlight's beam: nothing (only heard) after 4 s; the lights near her 12 m"
+  },
+  {
+   "what": "action",
+   "value": {
+    "beam": "cast_0",
+    "does": "nothing",
+    "after": 4,
+    "bright": 5,
+    "dist": 6,
+    "keep": 7,
+    "flee": "spot_6",
+    "clip": "motion_7",
+    "face": "expr_8",
+    "near": 12,
+    "near_torch": "none",
+    "near_lamps": "none"
+   },
+   "text": "cast_0 in the flashlight's beam: nothing (only heard) after 4 s; the lights near her 12 m"
+  },
+  {
+   "what": "action",
+   "value": {
+    "beam": "cast_0",
+    "does": "nothing",
+    "after": 4,
+    "bright": 5,
+    "dist": 6,
+    "keep": 7,
+    "flee": "spot_6",
+    "clip": "motion_7",
+    "face": "expr_8",
+    "sound": "sound_9",
+    "near_torch": "none",
+    "near_lamps": "none"
+   },
+   "text": "cast_0 in the flashlight's beam: nothing (only heard) after 4 s"
+  },
+  {
+   "what": "action",
+   "value": {
+    "beam": "cast_0",
+    "does": "nothing",
+    "after": 4,
+    "bright": 5,
+    "dist": 6,
+    "keep": 7,
+    "flee": "spot_6",
+    "clip": "motion_7",
+    "face": "expr_8",
+    "sound": "sound_9",
+    "near": 12,
+    "near_lamps": "none"
+   },
+   "text": "cast_0 in the flashlight's beam: nothing (only heard) after 4 s; the lights near her 12 m"
+  },
+  {
+   "what": "action",
+   "value": {
+    "beam": "cast_0",
+    "does": "nothing",
+    "after": 4,
+    "bright": 5,
+    "dist": 6,
+    "keep": 7,
+    "flee": "spot_6",
+    "clip": "motion_7",
+    "face": "expr_8",
+    "sound": "sound_9",
+    "near": 12,
+    "near_torch": "none"
+   },
+   "text": "cast_0 in the flashlight's beam: nothing (only heard) after 4 s; the lights near her 12 m"
+  },
+  {
+   "what": "action",
+   "value": {
     "state": "",
     "to": ""
    },
@@ -4950,6 +5602,60 @@
     "torch": "changed"
    },
    "text": "the flashlight gets new batteries"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "lit": ""
+   },
+   "text": "the flashlight is on …"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "lit": "cast_0",
+    "secs": 3
+   },
+   "text": "the flashlight is on cast_0 for 3 s"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "lit": "cast_0"
+   },
+   "text": "the flashlight is on cast_0"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "flashed": ""
+   },
+   "text": "… is flashed"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "flashed": "cast_0",
+    "times": 3,
+    "within": 4
+   },
+   "text": "cast_0 is flashed 3 times within 4 s"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "flashed": "cast_0",
+    "within": 4
+   },
+   "text": "cast_0 is flashed within 4 s"
+  },
+  {
+   "what": "trigger",
+   "value": {
+    "flashed": "cast_0",
+    "times": 3
+   },
+   "text": "cast_0 is flashed 3 times"
   },
   {
    "what": "trigger",

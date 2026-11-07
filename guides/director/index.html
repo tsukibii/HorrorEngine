@@ -340,9 +340,24 @@ its skeleton.</p>
 <ul>
 <li><b>Behaviour</b>: how she starts: <i>idle</i> (stands where you put her), <i>sit</i> (on a <b>seat</b>), <i>path</i> (walks an HSPath), <i>patrol</i> (several paths in turn), or <i>off</i> (not there until the story brings her). <b>Face player</b> turns her to them. Later the story's <b>states</b> move her (§8).</li>
 <li><b>Sees player</b>: she watches; in her cone and range the suspicion meter fills, and when it's full the player is caught (a step or a moment can wait for it).</li>
+<li><b>Sees torch</b> (with Sees player): <b>the light gives you away</b>. While the player's flashlight is on within her
+range and she has a clear line to it, from any side, her meter fills this many times as fast (0: it doesn't; 1: as if
+she saw you). So in a sneaking round the player chooses between seeing and being seen.</li>
+<li><b>Feels light</b>: what she does when the flashlight's on her: <i>nothing</i> (only heard: a moment's WHEN <i>the
+flashlight is on her</i> or <i>she's flashed</i> starts anything), <i>backs off</i> (steps back, facing you, up to
+<b>light dist</b> metres), <i>freezes</i> (still while it's on her), <i>flees</i> (to the <b>light flee</b> spot),
+<i>vanishes</i>, <i>covers her eyes</i> (her <i>In the light</i> move, Animate tab), <i>comes toward it</i> (switch it off
+to hide) or <i>charges</i> (and catches you). <b>Light after</b>: the seconds in the beam first; <b>light bright</b>: how
+strong it must be (a dying battery's short beam scares her only close up); <b>light keep</b>: how long she keeps away
+once it's off her; <b>light sound</b>: a sound as it starts. The People cards <span class="ui">Feels the light</span>,
+<span class="ui">Backs off from the light</span>, <span class="ui">Freezes in the light</span> and <span class="ui">Drawn
+to the light</span> set it: drag one onto her in the 3D view, or select her and click it. A Reactions card (Screams,
+Flinches...) dropped on her makes a moment <i>when the flashlight is on her</i>, in which she reacts.</li>
+<li><b>Near lights</b> (metres): her presence on the lights round her. Within that reach the flashlight (<b>near
+torch</b>) and the lamps (<b>near lamps</b>) flicker, dim or die, more the nearer she is, seen or not.</li>
 <li><b>Talk</b>: someone the Director file has conversations for takes a click whether this is ticked or not (the cursor says Talk) and plays the one the story offers now (§8); tick it for a click with no conversation behind it.</li>
 <li><b>Idle motion</b>, <b>walk motion</b>: two of her <b>moves</b> (below): what she plays standing and walking.
-Her other moves (running, sitting down, sitting, getting up, talking, listening, looking round) are set on the
+Her other moves (running, sitting down, sitting, getting up, talking, listening, looking round, being caught, in the light: shielding her eyes) are set on the
 Animate tab; This object (the Build tab) says how many she has.</li>
 <li><b>Cast</b>: who she is in the story when that isn't her id (a desk game's character placed in two places is both of them).</li>
 <li><b>Expression</b>: the face she rests in, a face clip from the project's <code>faces/</code> (a loop, from

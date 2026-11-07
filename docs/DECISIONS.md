@@ -18,6 +18,11 @@ The user's answers, newest first. They override the plan, the research and the d
   bulb's or an LED's beam by its charge, `low`/`dead`/`changed` heard, `battery` items as sets changed by themselves,
   the pause menu's charge and change, the story's `dim`, `drain` and timed `flicker`; the condition is
   `{"charge": 0.25}` (a number, as the editors' forms take).
+- **Characters that feel the light, built** (FLASHLIGHT_PLAN §2, but `avoids`): the beam tested against the cast and
+  the things a trigger names, `lit` and `flashed` heard, the cast's `beam` (backs off, freezes, flees, vanishes,
+  covers her eyes, comes, charges; `near` making the lights round her flicker, dim or die) and the `beam` action, the
+  sight's `torch` (the light gives you away); in the Director the character's Feels light rows and four People cards
+  dragged onto her, a Reactions card dropped on her firing when the flashlight is on her.
 
 ## 2026-11-07 (the user: a list to build for a motel game; jump scares researched; a flashlight on batteries; characters that feel its light)
 

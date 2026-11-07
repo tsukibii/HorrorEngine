@@ -804,6 +804,73 @@
    ]
   },
   {
+   "id": "feels_light",
+   "cat": "people",
+   "kind": "actor",
+   "title": "Feels the light",
+   "desc": "On a character: the flashlight on her is heard (WHEN the flashlight is on her); what she does is hers to pick",
+   "glyph": "flashlight",
+   "keywords": [
+    "light",
+    "flashlight",
+    "torch",
+    "beam"
+   ],
+   "set": {
+    "feels_light": "nothing"
+   }
+  },
+  {
+   "id": "light_backs_off",
+   "cat": "people",
+   "kind": "actor",
+   "title": "Backs off from the light",
+   "desc": "The flashlight on her: she steps back, keeps away a while, then carries on",
+   "glyph": "flashlight",
+   "keywords": [
+    "back off",
+    "afraid of light",
+    "shy"
+   ],
+   "set": {
+    "feels_light": "backs off"
+   }
+  },
+  {
+   "id": "light_freezes",
+   "cat": "people",
+   "kind": "actor",
+   "title": "Freezes in the light",
+   "desc": "Still while the flashlight's on her, moving again once it's off",
+   "glyph": "flashlight",
+   "keywords": [
+    "freeze",
+    "still",
+    "statue"
+   ],
+   "set": {
+    "feels_light": "freezes",
+    "light_keep": 0.0
+   }
+  },
+  {
+   "id": "light_drawn",
+   "cat": "people",
+   "kind": "actor",
+   "title": "Drawn to the light",
+   "desc": "She comes toward the flashlight while it's on her: switch it off to hide",
+   "glyph": "flashlight",
+   "keywords": [
+    "drawn",
+    "moth",
+    "attracted"
+   ],
+   "set": {
+    "feels_light": "comes toward it",
+    "light_keep": 1.0
+   }
+  },
+  {
    "id": "area",
    "cat": "areas",
    "kind": "preset",

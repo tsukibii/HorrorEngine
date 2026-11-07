@@ -154,7 +154,20 @@ is how a person tries, and with `rest` it gives a few seconds.
 Both go in the library and Godot as every prop does. The torch lives in the pocket, so its picture shows only in the
 pause menu.
 
-## 2. Characters and things that feel the light
+## 2. Characters and things that feel the light — built 2026-11-07 (but `avoids`)
+
+**Built** (DECISIONS 2026-11-07, later): 2a, 2b, 2d and 2e on the desk and in Godot (play.gd `beam_watch`, `beam_at`,
+`beam_hold`, `torch_seen`; runtime.js the same): the beam tested against every cast member and every thing a `lit` or
+`flashed` trigger names; the cast's `beam` (`does`, `after`, `bright`, `dist`, `speed`, `keep`, `clip`, `face`,
+`sound`, `flee`, and `near`, `near_torch`, `near_lamps` flat on it: a form takes fields, not an object) and the `beam`
+action over it; the triggers `lit` and `flashed`; the sight's `torch`; the Director's character fields (Feels light,
+Sees torch, Near lights), the People cards *Feels the light*, *Backs off from the light*, *Freezes in the light* and
+*Drawn to the light* (a card of a new kind, `actor`: clicked with her selected or dragged onto her), a Reactions card
+dropped on a character making a moment *when the flashlight is on her*, her *In the light* move. TestRoom001's station
+10: Aoi backs off, two flashes heard, the flashlight flickering by her, on the desk and in Godot. **Not built yet**:
+`in_light` and `avoids` (2c: lamps she won't walk into, the walks between rooms closed while lit), and the
+`shows_in_beam` extra.
+
 
 ### 2a. What feels the beam
 

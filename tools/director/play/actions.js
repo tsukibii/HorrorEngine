@@ -59,6 +59,7 @@ register("action", "door", { run: (v, a, rt) => rt.door(v, a.set || "open") });
 register("action", "open", { run: (v, a, rt) => rt.openAction(v, a.to || "open") });   // a thing's parts (a lid, doors, a cover): {open: id, to: open | shut | lock | unlock}
 register("action", "light", { run: (v, a, rt) => rt.light(v, a.room, a.set || "on", a) });   // `to`, `secs`, `fade`, `mode`: a timed change goes by itself
 register("action", "torch", { run: (v, a, rt) => rt.torchSet(v, a) });   // `secs`, `mode`, `to`, `over` (FLASHLIGHT_PLAN §1)
+register("action", "beam", { run: (v, a, rt) => rt.beamSet(v, a) });   // what someone does in the flashlight's beam from now (FLASHLIGHT_PLAN §2)
 register("action", "skin", { run: (v, a, rt) => { (rt.skinWet = rt.skinWet || {})[v] = Object.assign(rt.stage.setSkin(v, a), { byWord: true }); } });   // a cast member's skin wet, sweating, dripping or oiled (§9.8): drawn on her body by the stage (skinwet.js), as Godot's HSSkin draws it
 register("action", "power", { run: (v, a, rt) => rt.power(v, a.level) });
 register("action", "sweep", { run: (v, a, rt) => rt.sweep(v) });   // a car passes the room's windows (their `sweep`) now   // the power cut (the electric lights dark, the switches dead), or back   // the flashlight: on, off, flicker, dead, works (torch.js)

@@ -5,7 +5,7 @@ extends RefCounted
 
 const VERBS := ["start", "enter", "exit", "use", "pickup", "read", "caught", "hidden", "answered", "flag", "after", "look", "rolled",
 	"power", "locked", "peeping", "torch", "carrying", "dropped", "played", "state", "ticked", "failed", "arrived", "all", "any", "gave",
-	"opened", "closed", "placed", "taken", "moved", "charge"]
+	"opened", "closed", "placed", "taken", "moved", "charge", "lit", "flashed"]
 
 var Todo := preload("res://addons/horrorstudio/todo.gd")
 
@@ -74,6 +74,10 @@ func matches(when, ev: Dictionary, rt) -> bool:
 			return t == "torch" and bool(ev.get(str(val), false))
 		"charge":                                  # holds while the flashlight's charge is under that (0..1)
 			return rt.torch_item() != null and rt.torch_charge() < float(val)
+		"lit":                                     # the beam on someone or something `secs` (0.3) at her `bright` or more; holds while it is
+			return rt.lit_for(val) >= float(when.get("secs", 0.3))
+		"flashed":                                 # the beam landed on someone or something, `times` (1) within `within` seconds (3)
+			return t == "flashed" and ev.get("who") == val and rt.flashes(val, float(when.get("within", 3.0))) >= int(when.get("times", 1))
 		"carrying":
 			if rt.held_move != null and ((val is bool and val) or val == rt.held_move["id"]):
 				return true

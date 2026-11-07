@@ -15,6 +15,10 @@ export const GROUPS = [
 export const MUSIC = ["silence", "calm", "uneasy", "dread", "chase"];
 export const LIGHT_SET = ["on", "off", "flicker", "dim", "normal"];   // normal: its own brightness and flicker back, on or off as it is
 export const FLICKER_MODES = ["fluorescent", "dying", "candle", "pulse", "custom"];   // a light's flicker modes (tools/shared/flicker.js)
+// what someone does in the flashlight's beam (FLASHLIGHT_PLAN §2b): the cast's `beam`, the `beam` action
+export const BEAM_DOES = ["nothing", "backs_off", "freezes", "flees", "vanishes", "covers", "comes", "charges"];
+export const BEAM_LABELS = { nothing: "nothing (only heard)", backs_off: "backs off", freezes: "freezes", flees: "flees to a spot", vanishes: "vanishes", covers: "covers her eyes", comes: "comes toward it", charges: "charges" };
+export const NEAR_SET = ["none", "flicker", "dim", "die"];
 export const TORCH_SET = ["on", "off", "flicker", "dead", "works", "dim", "drain"];   // the flashlight: dead flickers it out (F only clicks), works is new batteries, drain sets its charge
 export const DOOR_SET = ["lock", "unlock", "open", "close", "slam"];
 export const BEHAVE_AS = ["idle", "sit", "path", "patrol", "go", "off"];
@@ -160,6 +164,16 @@ export const ACTIONS = [
       { key: "over", label: "over (s)", kind: "number", ph: "0", opt: true }],
     make: () => ({ torch: "flicker" }),
     text: a => `${({ on: "The flashlight comes on", off: "The flashlight goes off", flicker: "The flashlight flickers", dead: "The flashlight dies", works: "The flashlight works again", dim: "The flashlight dims", drain: "The flashlight's battery drains" })[a.torch] || `Flashlight: ${a.torch || "…"}`}${(a.torch === "dim" || a.torch === "drain") && a.to !== undefined && a.to !== null && a.to !== "" ? ` to ${a.to}` : ""}${a.torch === "flicker" && a.mode ? ` (${a.mode})` : ""}${a.secs ? ` for ${a.secs} s` : ""}${a.over ? `, over ${a.over} s` : ""}` },
+  { verb: "beam", label: "Someone in the flashlight's beam", icon: "torch", group: "people", hint: "what a cast member does when the flashlight's on her, from now: backs off, freezes, flees to a spot, vanishes, covers her eyes, comes toward it or charges; how long in it first, how bright it must be, how far, how long she keeps away; the lights near her flickering, dimming or dying",
+    fields: [{ key: "beam", label: "Who", kind: "cast", verb: true }, { key: "does", label: "does", kind: "choice", opts: BEAM_DOES, labels: BEAM_LABELS },
+      { key: "after", label: "after (s) in it", kind: "number", ph: "0.4", opt: true }, { key: "bright", label: "how bright it must be (0 to 1)", kind: "number", ph: "0.3", opt: true },
+      { key: "dist", label: "how far (m)", kind: "number", ph: "2.5", opt: true }, { key: "keep", label: "keeps away (s)", kind: "number", ph: "4", opt: true },
+      { key: "flee", label: "flees to", kind: "spot", opt: true }, { key: "clip", label: "her move (a motion)", kind: "motion", opt: true },
+      { key: "face", label: "her face", kind: "expr", opt: true }, { key: "sound", label: "a sound", kind: "sound", opt: true },
+      { key: "near", label: "near her (m): the lights", kind: "number", ph: "0", opt: true }, { key: "near_torch", label: "the flashlight near her", kind: "choice", opts: NEAR_SET, opt: true },
+      { key: "near_lamps", label: "the lamps near her", kind: "choice", opts: NEAR_SET, opt: true }],
+    make: () => ({ beam: "", does: "backs_off" }),
+    text: (a, n) => `${n("cast", a.beam)} in the flashlight's beam: ${BEAM_LABELS[a.does] || a.does || "…"}${a.after ? ` after ${a.after} s` : ""}${a.does === "flees" && a.flee ? ` to ${n("thing", a.flee)}` : ""}${a.near ? `; the lights near her ${a.near} m` : ""}` },
   { verb: "state", label: "Set a thing's state", icon: "life", group: "world", hint: "a little thing to one of its states: the kettle on, the cigarette lit, the clock stopped, the phone ringing (docs/IMMERSION.md)",
     fields: [{ key: "state", label: "Thing", kind: "life", verb: true }, { key: "to", label: "to", kind: "lifestate" }],
     make: () => ({ state: "", to: "" }), text: (a, n) => `${cap(n("thing", a.state))}: ${a.to || "…"}` },
@@ -307,6 +321,11 @@ export const TRIGGERS = [
   { verb: "torch", label: "The flashlight is switched, runs low, dies or is changed", icon: "torch", fields: [{ key: "torch", label: "It", kind: "choice", verb: true, opts: ["on", "off", "low", "dead", "changed"],
       labels: { on: "is switched on", off: "is switched off", low: "runs low", dead: "dies", changed: "gets new batteries" } }],
     make: () => ({ torch: "on" }), text: w => ({ low: "the flashlight runs low", dead: "the flashlight dies", changed: "the flashlight gets new batteries" })[w.torch] || `the player switches the flashlight ${w.torch || "…"}` },
+  { verb: "lit", label: "The flashlight is on someone", icon: "torch", fields: [{ key: "lit", label: "On", kind: "cast", verb: true }, { key: "secs", label: "for (s)", kind: "number", ph: "0.3", opt: true }],
+    make: () => ({ lit: "" }), text: (w, n) => `the flashlight is on ${n("cast", w.lit)}${w.secs ? ` for ${w.secs} s` : ""}` },
+  { verb: "flashed", label: "Someone is flashed", icon: "torch", fields: [{ key: "flashed", label: "Who", kind: "cast", verb: true }, { key: "times", label: "times", kind: "number", ph: "1", opt: true },
+    { key: "within", label: "within (s)", kind: "number", ph: "3", opt: true }],
+    make: () => ({ flashed: "" }), text: (w, n) => `${n("cast", w.flashed)} is flashed${w.times > 1 ? ` ${w.times} times` : ""}${w.within ? ` within ${w.within} s` : ""}` },
   { verb: "charge", label: "The flashlight's charge is under", icon: "torch", fields: [{ key: "charge", label: "Under (0 to 1)", kind: "number", verb: true, ph: "0.25" }],
     make: () => ({ charge: 0.25 }), text: w => `the flashlight's charge is under ${w.charge ?? "…"}` },
   { verb: "state", label: "A thing is in a state", icon: "life", fields: [{ key: "state", label: "Thing", kind: "life", verb: true },

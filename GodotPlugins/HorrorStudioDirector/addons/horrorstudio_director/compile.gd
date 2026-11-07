@@ -165,6 +165,12 @@ func _level_things(lv: Node, lid: String) -> void:
 						mv.erase(role)
 				if mv.size():
 					c["moves"] = mv
+				var bm = n.beam()                            # what she does in the flashlight's beam (FLASHLIGHT_PLAN §2b)
+				if bm != null:
+					c["beam"] = bm
+					if bm.has("flee") and str(bm["flee"]) == "":
+						warn(n, "%s flees the light, but no spot is set for it (light_flee)" % nid)
+						bm.erase("flee")
 				if n.behaviour in ["path", "patrol"] and n.get_node_or_null(n.path) == null and n.patrol.is_empty():
 					warn(n, "%s walks a path, but none is set: she'll stand" % nid)
 			"HSDoor":

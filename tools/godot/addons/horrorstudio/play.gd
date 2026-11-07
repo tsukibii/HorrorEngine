@@ -2804,7 +2804,7 @@ func draw_npcs(dt: float) -> void:
 			n["pose"] = "idle"
 			n["prev_pose"] = "idle"
 			BehavioursC.start(n["as"], n, self, n["s"])
-		if not react_hold(n, dt):                     # a reaction (the story's `anim`, her caught): her behaviour waits for it
+		if not react_hold(n, dt) and not beam_hold(n, dt):   # a reaction (the story's `anim`, her caught, the light on her): her behaviour waits for it
 			BehavioursC.update(n["as"], n, self, dt, n["s"])
 			if n.has("turn_back"):                     # turned back the way she was once it's over (a behaviour that faces or walks sees to it)
 				if bool(n.get("walking", false)) or n["s"].get("face") != null or BehavioursC.turn_to(n, float(n["turn_back"]), dt):
@@ -2816,7 +2816,7 @@ func draw_npcs(dt: float) -> void:
 		if baked_cast.has(cid):           # a scene's recorded body stands in for the stand-in while the bake plays
 			node.visible = false
 			continue
-		node.visible = n["pos"] != null and n["level"] == level
+		node.visible = n["pos"] != null and n["level"] == level and not bool(n.get("vanished", false))   # (gone in the light: her `beam` vanishes)
 		if collide != null and (not node.has_meta("hs_collides") or node.get_meta("hs_collides") != node.visible):   # Godot's physics: she stops the player and takes the click only while she's there
 			CollideC.enable(node, node.visible)
 			node.set_meta("hs_collides", node.visible)
@@ -2825,6 +2825,288 @@ func draw_npcs(dt: float) -> void:
 		node.global_position = n["pos"]
 		node.global_rotation_degrees = Vector3(0, float(n["yaw"]) + 90.0, 0)
 		npc_motion(str(cid), n, node)
+
+
+# ---- what feels the flashlight's beam (FLASHLIGHT_PLAN §2, DECISIONS 2026-11-07) -------------------------------------
+## each cast member (and each thing a `lit` or `flashed` trigger names) tested against the beam every frame: in its
+## reach, in its cone (the hot cone whole, the spill a fifth), whole within a third of the reach and fading to its end,
+## nothing in between (a ray to her chest and one to her head); `lit` how strongly (0..1, times the beam's brightness:
+## a dying battery scares less), `lit_for` the seconds at her `bright` or more, `flashes` the times the beam landed on
+## her. Her `beam` (the cast's, or a `beam` action's over it) says what she does: nothing, backs_off, freezes, flees,
+## vanishes, covers, comes, charges. Her `near` (metres) makes the flashlight (`near_torch`) and the lamps
+## (`near_lamps`) flicker, dim or die by her, more the nearer she is
+const BEAM := {"does": "nothing", "after": 0.4, "bright": 0.3, "dist": 2.5, "speed": 1.6, "keep": 4.0, "near": 0.0, "near_torch": "none", "near_lamps": "none"}
+const BEAM_DOES := ["nothing", "backs_off", "freezes", "flees", "vanishes", "covers", "comes", "charges"]
+var beam_st := {}                   # cid or thing id -> {lit, lit_for, prev, flashes, react, wait_unlit}
+var beam_over := {}                 # cid -> a `beam` action's settings over her cast's
+var lit_ids := {}                   # things (not the cast) a lit or flashed trigger names: watched too
+var near_light_k := {}              # light id -> its multiplier from someone near it (her near_lamps)
+var near_torch_k := 1.0
+var near_fl := {}                   # cid -> the flicker state of her presence (flicker.gd's)
+
+
+## her light settings now: the cast's `beam` with a `beam` action's over it; null when she has none
+func beam_cfg(cid) -> Variant:
+	var c = story.cast.get(str(cid), {})
+	var b = c.get("beam") if c is Dictionary else null
+	var o = beam_over.get(str(cid))
+	if not (b is Dictionary) and not (o is Dictionary):
+		return null
+	var out := BEAM.duplicate()
+	for src in [b, o]:
+		if src is Dictionary:
+			for k in src:
+				out[k] = src[k]
+	return out
+
+
+## the story's `beam` action: her light settings changed from now (a field left out stays as it was)
+func beam_set(cid, a: Dictionary) -> void:
+	var cur: Dictionary = beam_over.get(str(cid), {}).duplicate() if beam_over.get(str(cid)) is Dictionary else {}
+	for k in a:
+		if k != "beam":
+			cur[k] = a[k]
+	beam_over[str(cid)] = cur
+	var b = beam_st.get(str(cid))
+	if b is Dictionary and b.get("react") != null:
+		beam_end(str(cid), false)
+
+
+## the beam's strength at a point (0..1): its reach, its cone, the fall-off and a clear way to it
+func beam_at(p: Vector3) -> float:
+	if torch_hot == null or not torch["on"] or player.peeping != null or not torch.has("from"):
+		return 0.0
+	var kb: float = float(torch.get("k", 0.0))
+	if kb <= 0.0:
+		return 0.0
+	var from: Vector3 = torch["from"]
+	var d := p - from
+	var dist := d.length()
+	var reach: float = float(torch["reach_m"])
+	if dist < 0.01 or dist > reach:
+		return 0.0
+	var ang := rad_to_deg(acos(clampf((torch["aim"] as Vector3).dot(d / dist), -1.0, 1.0)))
+	var cone_k := 1.0 if ang <= float(torch["cone"]) / 2.0 else (0.2 if ang <= float(torch["spill"]) / 2.0 else 0.0)
+	if cone_k <= 0.0:
+		return 0.0
+	var dist_k := 1.0 if dist <= reach / 3.0 else clampf(1.0 - (dist - reach / 3.0) / (reach * 2.0 / 3.0), 0.0, 1.0)
+	var hit = ray_hit(from, d / dist, dist, blocks())
+	if hit != null and float(hit["dist"]) < dist - 0.25:
+		return 0.0
+	return cone_k * dist_k * minf(1.0, kb)
+
+
+## how strongly the beam's on someone or something now, and for how long (the triggers `lit`, `flashed`)
+func lit_now(id) -> float:
+	var b = beam_st.get(str(id))
+	return float(b["lit"]) if b is Dictionary else 0.0
+
+
+func lit_for(id) -> float:
+	var b = beam_st.get(str(id))
+	return float(b["lit_for"]) if b is Dictionary else 0.0
+
+
+func flashes(id, within: float) -> int:
+	var b = beam_st.get(str(id))
+	if not (b is Dictionary):
+		return 0
+	var n := 0
+	for t in b["flashes"]:
+		if clock - float(t) <= within:
+			n += 1
+	return n
+
+
+func _beam_feel(id: String, lit: float, bright: float, dt: float) -> Dictionary:
+	if not beam_st.has(id):
+		beam_st[id] = {"lit": 0.0, "lit_for": 0.0, "prev": false, "flashes": [], "react": null, "wait_unlit": false}
+	var b: Dictionary = beam_st[id]
+	var on := lit >= bright
+	b["lit"] = lit
+	b["lit_for"] = float(b["lit_for"]) + dt if on else 0.0
+	if on and not b["prev"]:                                          # the beam landed on it: a flash
+		b["flashes"].append(clock)
+		while (b["flashes"] as Array).size() > 12:
+			(b["flashes"] as Array).pop_front()
+		emit({"type": "flashed", "who": id})
+	b["prev"] = on
+	if not on:
+		b["wait_unlit"] = false
+	return b
+
+
+## the things the story's lit and flashed triggers name (not the cast): read once
+var lit_read := false
+func lit_things() -> void:
+	lit_read = true
+	var txt := JSON.stringify(story.data) + JSON.stringify(story.stitches)   # (the stitches as played: an act edited by hand too)
+	for key in ["\"lit\":", "\"flashed\":"]:
+		var i := txt.find(key)
+		while i >= 0:
+			var q0 := txt.find("\"", i + key.length())
+			var q1 := txt.find("\"", q0 + 1)
+			if q0 >= 0 and q1 > q0 and q0 - (i + key.length()) <= 1:
+				var id := txt.substr(q0 + 1, q1 - q0 - 1)
+				if not story.cast.has(id):
+					lit_ids[id] = true
+			i = txt.find(key, i + 1)
+
+
+func beam_watch(dt: float) -> void:
+	if not lit_read:
+		lit_things()
+	var tk := 1.0
+	var lk := {}
+	for cid in npcs:
+		var n: Dictionary = npcs[cid]
+		var node = cast_nodes.get(cid)
+		var cfg = beam_cfg(cid)
+		var here: bool = n["pos"] != null and n["level"] == level and node != null and node.visible
+		var lit := 0.0
+		if here:
+			var h := float(story.cast.get(cid, {}).get("height", 1.7))
+			lit = maxf(beam_at(n["pos"] + Vector3(0, h * 0.7, 0)), beam_at(n["pos"] + Vector3(0, h * 0.93, 0)))
+		var b := _beam_feel(str(cid), lit, float(cfg["bright"]) if cfg != null else BEAM["bright"], dt)
+		if cfg == null:
+			continue
+		if b["react"] == null and not b["wait_unlit"] and str(cfg["does"]) != "nothing" and float(b["lit_for"]) >= float(cfg["after"]) and here:
+			beam_start(str(cid), n, cfg)
+		elif b["react"] != null and str(b["react"]["cfg"]["does"]) == "flees":
+			var r: Dictionary = b["react"]
+			if lit >= float(cfg["bright"]):
+				r["last_lit"] = clock
+			if n["st"].get("arrived") != null and clock - float(r["last_lit"]) >= float(cfg["keep"]):
+				beam_end(str(cid), true)
+		var near: float = float(cfg["near"])
+		if here and near > 0.0:                                         # her presence on the lights round her
+			var seed: int = 0
+			for ch in str(cid).to_utf8_buffer():
+				seed = (seed * 31 + int(ch)) & 0xffff
+			if str(cfg["near_torch"]) != "none" and torch["on"]:
+				var pr := clampf(1.0 - Vector3(n["pos"] - player.pos).length() / near, 0.0, 1.0)
+				tk *= _near_k(str(cfg["near_torch"]), pr, str(cid) + "/torch", seed)
+			if str(cfg["near_lamps"]) != "none":
+				for t in lights:
+					var pr := clampf(1.0 - Vector3((t["node"] as Node3D).global_position - n["pos"]).length() / near, 0.0, 1.0)
+					if pr > 0.0:
+						lk[t["id"]] = float(lk.get(t["id"], 1.0)) * _near_k(str(cfg["near_lamps"]), pr, str(cid) + "/" + str(t["id"]), seed + 7)
+	for id in lit_ids:                                                  # the things the triggers name
+		var t = by_id.get(id)
+		var lit := 0.0
+		if t != null and (t["node"] as Node3D).is_visible_in_tree():
+			lit = beam_at((t["node"] as Node3D).global_position)
+		_beam_feel(str(id), lit, BEAM["bright"], dt)
+	near_torch_k = tk
+	near_light_k = lk
+
+
+## a light's multiplier from someone near it: flicker (a dying tube's, as much as she's near), dim, die
+func _near_k(how: String, pr: float, key: String, seed: int) -> float:
+	match how:
+		"flicker":
+			if not near_fl.has(key):
+				near_fl[key] = {"mode": "dying", "interval": 1.2, "seed": seed, "flicker": 0.0}
+			near_fl[key]["flicker"] = pr
+			return HSFlicker.k(near_fl[key], clock)
+		"dim":
+			return 1.0 - 0.7 * pr
+		"die":
+			return clampf(1.0 - pr * 1.6, 0.0, 1.0)
+	return 1.0
+
+
+## the light on her long enough: what she does (FLASHLIGHT_PLAN §2b), her sound and face as it starts
+func beam_start(cid: String, n: Dictionary, cfg: Dictionary) -> void:
+	var b: Dictionary = beam_st[cid]
+	var r := {"cfg": cfg, "t0": clock, "last_lit": clock, "moved": 0.0}
+	b["react"] = r
+	if cfg.get("sound") != null and str(cfg["sound"]) != "":
+		sound(cfg["sound"], cid)
+	if cfg.get("face") != null and str(cfg["face"]) != "":
+		face_play(cid, cfg["face"], {})
+	hud.log("%s in the light: %s" % [cid, cfg["does"]])
+	match str(cfg["does"]):
+		"covers":                                                       # her move (or her `lit` move), held where she is
+			var clip = cfg.get("clip") if cfg.get("clip") != null and str(cfg["clip"]) != "" else move_of(cid, "lit", false)
+			react(cid, clip, null, float(cfg["keep"]))
+			b["react"] = null
+			b["wait_unlit"] = true
+		"flees":
+			var spot = cfg.get("flee")
+			if spot == null or str(spot) == "" or not by_id.has(str(spot)):
+				hud.log("%s flees, but has no flee spot" % cid)
+				b["react"] = null
+				b["wait_unlit"] = true
+				return
+			r["prev"] = {"as": n["as"], "s": n["s"].duplicate(true)}
+			n["as"] = "go"
+			n["s"] = BehavioursC.settings_of("go", {"to": spot, "then": "idle", "speed": float(cfg["speed"])})
+			n["st"] = {}
+			BehavioursC.start("go", n, self, n["s"])
+		"vanishes":
+			n["vanished"] = true
+
+
+## her reaction over: her behaviour again from where she is (`resume`: started again, a path or patrol from the nearest)
+func beam_end(cid: String, resume: bool) -> void:
+	var b: Dictionary = beam_st[cid]
+	var r = b["react"]
+	b["react"] = null
+	b["wait_unlit"] = true
+	var n = npcs.get(cid)
+	if n == null or not (r is Dictionary):
+		return
+	n.erase("vanished")
+	if r.has("prev"):
+		n["as"] = r["prev"]["as"]
+		n["s"] = r["prev"]["s"]
+	if resume:
+		n["st"] = {}
+		BehavioursC.start(n["as"], n, self, n["s"])
+
+
+## while the light holds her (backs_off, freezes, vanishes, comes, charges): her behaviour waits; true while it does
+func beam_hold(n: Dictionary, dt: float) -> bool:
+	var b = beam_st.get(str(n["cid"]))
+	if not (b is Dictionary) or b["react"] == null:
+		return false
+	var r: Dictionary = b["react"]
+	var cfg: Dictionary = r["cfg"]
+	var does := str(cfg["does"])
+	if does == "flees":
+		return false                                                 # (her go walks her there)
+	var lit: bool = float(b["lit"]) >= float(cfg["bright"])
+	if lit:
+		r["last_lit"] = clock
+	var over: bool = not lit and clock - float(r["last_lit"]) >= float(cfg["keep"])
+	n["walking"] = false
+	if does in ["backs_off", "comes", "charges"] and n["pos"] != null:
+		var away := does == "backs_off"
+		var to_p: Vector3 = player.pos - n["pos"]
+		to_p.y = 0.0
+		var dist := to_p.length()
+		if dist > 0.01:
+			BehavioursC.turn_to(n, rad_to_deg(atan2(-to_p.z, to_p.x)), dt)   # facing the player all the while
+		var go := (away and float(r["moved"]) < float(cfg["dist"]) and not over) or (not away and lit and dist > (0.8 if does == "charges" else 1.3))
+		if go and dist > 0.01:
+			var dirv: Vector3 = (-to_p if away else to_p) / dist
+			var step := float(cfg["speed"]) * (2.0 if does == "charges" else 1.0) * dt
+			if away:
+				step = minf(step, float(cfg["dist"]) - float(r["moved"]))
+			var hit = ray_hit(n["pos"] + Vector3(0, 0.9, 0), dirv, step + 0.35, blocks())
+			if hit == null:
+				n["pos"] = n["pos"] + dirv * step
+				r["moved"] = float(r["moved"]) + step
+				n["walking"] = true
+		if does == "charges" and dist < 0.9:
+			beam_end(str(n["cid"]), true)
+			caught(n["cid"], null)
+			return true
+	if over:
+		beam_end(str(n["cid"]), does != "freezes")
+		return false
+	return true
 
 
 # ---- being seen ---------------------------------------------------------------------------------------------------
@@ -2862,6 +3144,22 @@ func sees(n: Dictionary) -> bool:
 	return not (hit != null and float(hit["dist"]) < dist - 0.3)
 
 
+## the player's flashlight seen by her (her sight's `torch`, FLASHLIGHT_PLAN §2b: the light gives you away): on, within
+## her range, from any side, a clear way from her eye to it
+func torch_seen(n: Dictionary) -> bool:
+	var c = sight_of(n)
+	if c == null or float(c.get("torch", 0.0)) <= 0.0 or n["pos"] == null or n["level"] != level or not torch["on"] or float(torch.get("k", 0.0)) <= 0.05 or not torch.has("from"):
+		return false
+	var h := float(story.cast.get(n["cid"], {}).get("height", 1.7))
+	var eye: Vector3 = n["pos"] + Vector3(0, h * 0.93, 0)
+	var d: Vector3 = (torch["from"] as Vector3) - eye
+	var dist := d.length()
+	if dist > float(c["range"]) or dist < 0.01:
+		return false
+	var hit = ray_hit(eye, d / dist, dist, blocks())
+	return not (hit != null and float(hit["dist"]) < dist - 0.3)
+
+
 func watch(dt: float) -> void:
 	if calm > 0:
 		calm -= dt
@@ -2869,12 +3167,21 @@ func watch(dt: float) -> void:
 		hud.seen(suspicion)
 		return
 	var by = null
+	var rate := 1.0
 	for cid in npcs:
 		if sees(npcs[cid]):
 			by = npcs[cid]
+			if torch_seen(by):                                    # seen with the light on: at least as fast as her `torch` says
+				rate = maxf(1.0, float(sight_of(by)["torch"]))
 			break
+	if by == null:
+		for cid in npcs:
+			if torch_seen(npcs[cid]):                             # only the light: her meter at her `torch`'s rate
+				by = npcs[cid]
+				rate = float(sight_of(by)["torch"])
+				break
 	if by != null:
-		suspicion += dt / float(sight_of(by)["meter"])
+		suspicion += dt / float(sight_of(by)["meter"]) * rate
 		if suspicion >= 1.0:
 			caught(by["cid"], null)
 			return
@@ -3866,8 +4173,14 @@ func torch_tick(dt: float) -> void:
 			torch["fl"]["interval"] = 1.0
 			k *= lerpf(1.0, HSFlicker.k(torch["fl"], clock), w)
 	torch["layers"] = keep
+	k *= near_torch_k                                               # someone near (her `near`): the beam flickers, dims or dies (FLASHLIGHT_PLAN §2b)
 	torch["k"] = k
 	torch["kelvin_now"] = kelvin
+	torch["from"] = from                                            # where the beam falls, for what feels it (beam_at)
+	torch["aim"] = torch["dir"]
+	torch["cone"] = float(s["cone"])
+	torch["spill"] = float(s["spill"])
+	torch["reach_m"] = float(s["range"]) * maxf(0.05, reach)
 	var col := kelvin_color(kelvin)
 	for pair in [[torch_hot, float(s["cone"]), 1.0], [torch_spill, float(s["spill"]), 0.22]]:
 		var l: SpotLight3D = pair[0]
@@ -4187,6 +4500,7 @@ func tick(dt: float) -> void:
 		var u: Dictionary = light_state[t["id"]]
 		var k: float = light_k(u, T)                              # its state, the story's changes over it, its flicker by mode (flicker.gd, as the desk's)
 		k *= float(scene_light_k.get(t["id"], 1.0))
+		k *= float(near_light_k.get(t["id"], 1.0))                 # someone near it (her `near` lamps, FLASHLIGHT_PLAN §2b)
 		u["level"] = float(u["base"]) * k
 		if t["node"] is Light3D:
 			t["node"].light_energy = float(u["level"])
@@ -4204,6 +4518,7 @@ func tick(dt: float) -> void:
 		if torch_item() == null:
 			torch["on"] = false
 		torch_tick(dt)
+	beam_watch(dt)
 	for a in anims.duplicate():
 		a["t"] = float(a["t"]) + dt
 		var k: float = min(1.0, float(a["t"]) / float(a["secs"]))

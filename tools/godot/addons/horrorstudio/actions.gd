@@ -5,7 +5,7 @@ extends RefCounted
 const Typing := preload("res://addons/horrorstudio/typing.gd")
 const VERBS := ["objective", "todo", "tick", "fail", "untodo", "think", "skip", "name", "say", "ask", "flag", "unflag", "give", "take", "open",
 	"karma", "count", "state", "show", "hide", "door", "light", "torch", "skin", "power", "sweep", "wait", "fade", "lookat", "sound", "music",
-	"checkpoint", "chapter", "done", "scene", "behave", "trick", "move", "anim", "expr", "focus"]
+	"checkpoint", "chapter", "done", "scene", "behave", "trick", "move", "anim", "expr", "focus", "beam"]
 const TAKES_TIME := ["wait", "fade", "ask", "name", "chapter", "scene", "trick", "say"]
 
 
@@ -113,6 +113,8 @@ func run(a: Dictionary, rt) -> void:
 			rt.light(val, a.get("room"), a.get("set", "on"), a)          # `to`, `secs`, `fade`, `mode`: a timed change goes by itself
 		"torch":
 			rt.torch_set(val, a)                                  # `secs`, `mode`, `to`, `over` (FLASHLIGHT_PLAN §1)
+		"beam":                                                   # what someone does in the flashlight's beam from now (FLASHLIGHT_PLAN §2)
+			rt.beam_set(val, a)
 		"skin":
 			rt.skin_set(val, a)
 		"power":

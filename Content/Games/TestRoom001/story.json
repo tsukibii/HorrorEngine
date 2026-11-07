@@ -2183,6 +2183,15 @@
        "hidden": true
       },
       {
+       "id": "dark_aoi_spot",
+       "use": "spot",
+       "at": [
+        2.5,
+        1.6
+       ],
+       "rot": 90
+      },
+      {
        "id": "dark_figure",
        "shape": "person aoi stand",
        "at": [
@@ -5185,11 +5194,62 @@
      ]
     },
     {
+     "id": "b_dark_aoi",
+     "when": {
+      "ticked": "t10_change"
+     },
+     "do": [
+      {
+       "behave": "aoi",
+       "as": "idle",
+       "at": "dark_aoi_spot"
+      },
+      {
+       "beam": "aoi",
+       "does": "backs_off",
+       "after": 0.4,
+       "dist": 1.2,
+       "keep": 2,
+       "near": 2.5,
+       "near_torch": "flicker"
+      },
+      {
+       "think": "Aoi? In the dark. She hates the light."
+      },
+      {
+       "todo": "t10_lit",
+       "text": "Shine the flashlight on Aoi: she backs off",
+       "ticks": {
+        "lit": "aoi",
+        "secs": 0.5
+       }
+      },
+      {
+       "todo": "t10_flash",
+       "text": "Flash her twice",
+       "ticks": {
+        "flashed": "aoi",
+        "times": 2,
+        "within": 4
+       }
+      }
+     ]
+    },
+    {
      "id": "b_dark_done",
      "when": {
       "ticked": true
      },
      "do": [
+      {
+       "beam": "aoi",
+       "does": "nothing",
+       "near": 0
+      },
+      {
+       "behave": "aoi",
+       "as": "off"
+      },
       {
        "untodo": true
       },

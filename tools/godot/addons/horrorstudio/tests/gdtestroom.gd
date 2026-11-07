@@ -1245,6 +1245,42 @@ func _initialize() -> void:
 			if rt.items.has("spare_cells") or absf(rt.torch_charge() - 1.0) > 0.01 or not rt.torch["on"]:
 				return "after the change: " + JSON.stringify(rt.torch_state())
 			return "")
+		await step("characters that feel the light (FLASHLIGHT_PLAN §2): Aoi in the dark; the beam on her and she backs off (ticks) and keeps away; flashed twice (ticks); near her the flashlight flickers", func():
+			if not await until(func(): return rt.npcs.has("aoi") and rt.npcs["aoi"]["pos"] != null and rt.npcs["aoi"]["level"] == rt.level, 3000):
+				return "Aoi in the dark room: never"
+			await game_wait(0.3)
+			var p0: Vector3 = rt.npcs["aoi"]["pos"]
+			place(5.5, 19.2, 270, -12)                                    # by the shelf, looking at her (the dark room is at 3, 15)
+			if not rt.torch["on"]:
+				await press("F")
+			var r := await ticked("t10_lit")
+			if r != "":
+				return r
+			await game_wait(1.5)
+			var p1: Vector3 = rt.npcs["aoi"]["pos"]
+			var moved: float = (p1 - p0).length()
+			if not (moved > 0.6) or not (Vector3(p1 - rt.player.pos).length() > Vector3(p0 - rt.player.pos).length()):
+				return "she didn't back off: moved %.2f m, from %s to %s" % [moved, str(p0), str(p1)]
+			for i in 2:                                                  # flashed: the beam off her and on her again, twice
+				await press("F")
+				await game_wait(0.3)
+				await press("F")
+				await game_wait(0.4)
+			r = await ticked("t10_flash")
+			if r != "":
+				return r
+			var at: Vector3 = rt.npcs["aoi"]["pos"]                      # near her: the flashlight flickers by her
+			place(at.x, -at.z + 0.8, 270, -25)                           # (story y is Godot's -z)
+			await game_wait(0.2)
+			var ks: Array = []
+			var t0: float = rt.clock
+			while rt.clock < t0 + 2.5:
+				ks.append(float(rt.torch["k"]))
+				await frames(1)
+			ks.sort()
+			if not (float(ks[0]) < float(ks[ks.size() - 1]) * 0.5):
+				return "near her the flashlight should flicker: %.2f to %.2f (%.2f m from her)" % [float(ks[0]), float(ks[ks.size() - 1]), Vector3(rt.npcs["aoi"]["pos"] - rt.player.pos).length()]
+			return "")
 		await step("on the way out the glimpse: a creak, the figure there for a moment and gone; out of the room (ticks)", func():
 			var seen := [false]
 			place(5.6, 17.5, 180)

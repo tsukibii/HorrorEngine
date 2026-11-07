@@ -91,8 +91,24 @@ TestRoom001 station.
 - the Director's Flashlight fields and Batteries card;
 - TestRoom001 station 10 (desk and Godot ok).
 
-Not yet: its props (1f), the change's own sounds, `game.torch_meter`. Next: FLASHLIGHT_PLAN §2, characters that feel the
-light.
+Not yet: its props (1f), the change's own sounds, `game.torch_meter`.
+
+**FLASHLIGHT_PLAN §2 built** (characters that feel the light):
+- `beam_watch` and `beam_at` on both runtimes;
+- the cast's `beam`, the `beam` action, `lit`, `flashed`, the sight's `torch`, `near`;
+- the Director's Feels light rows, the People cards (a card kind `actor`: build_tab.gd `set_actor`, `actor_landed`,
+  plugin.gd `pending_actor`) and a Reactions card dropped on a character (`_lit_moment`);
+- TestRoom001 station 10 (desk and Godot ok).
+
+Not yet: `in_light` and `avoids` (2c).
+
+**Checks here for the three steps:**
+- CHECKS, DESK, CMDS, DIRECTOR, GDPLAY, FROMDESK (Pilot) ok.
+- TestRoom001 station 10, desk and Godot, ok.
+- `from-desk TestRoom001 --force --play` fails at WALLS (2) and at station 4's fitting bulb ("the export shouldn't make it a
+  light source"). It fails the same on the code before 2026-11-07 (2fecbeb), so it was already broken: worth a look.
+
+Next: HORROR_TODO 13's first, music and room tone played, the hush before a sting.
 
 ## Before that (2026-11-06, last, `street-nature`): the rivers scrapped, the foliage and rocks kept as props
 

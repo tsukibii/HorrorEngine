@@ -106,3 +106,4 @@ register("behaviour", "go", {
 });
 
 export const behaviourOf = name => part("behaviour", name);
+export { turnTo };   // (the runtime turns someone held by the light: runtime.js beamHold)

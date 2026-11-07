@@ -296,7 +296,7 @@ Dropped (DECISIONS 2026-11-07).
 
 docs/FLASHLIGHT_PLAN.md §1.
 
-## 12. Characters and things that feel the light
+## 12. Characters and things that feel the light — built 2026-11-07 (but `avoids`)
 
 docs/FLASHLIGHT_PLAN.md §2.
 

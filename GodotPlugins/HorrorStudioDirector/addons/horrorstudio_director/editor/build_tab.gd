@@ -363,6 +363,9 @@ func _drag(b: Button, it: Dictionary):
 	elif kind == "scare":
 		path = ROOT + "presets/area.tscn"
 		panel.plugin.pending_scare = {"item": it, "at": Time.get_ticks_msec()}
+	elif kind == "actor":                                      # a character's settings: a spot dragged as the token (Animate's way)
+		path = ROOT + "presets/spot.tscn"
+		panel.plugin.pending_actor = {"item": it, "at": Time.get_ticks_msec()}
 	else:
 		return null
 	var pv := PanelContainer.new()
@@ -382,6 +385,14 @@ func _drag(b: Button, it: Dictionary):
 func activate(it: Dictionary) -> void:
 	var sel = _sel()
 	match str(it.get("kind")):
+		"actor":                                               # a character's settings (Feels the light...): the one selected
+			var a = sel
+			while a != null and not HSDirector.is_a(a, "HSActor"):
+				a = a.get_parent()
+			if a == null:
+				panel.say("Select a character first, or drag the card onto her")
+			else:
+				set_actor(a, it)
 		"part":
 			if sel != null and (HSDirector.class_of(sel) == "HSThing" or is_model(sel)):
 				assign(sel, it)
@@ -649,8 +660,58 @@ static func face_by_words(words: Array) -> String:
 
 ## a scare's area landed (clicked in front of the camera, or dragged into the view): named for the scare, and its
 ## moment written into the Director file, listening while the player walks in
+## a character's card (kind actor) dropped (plugin.gd _unlink): the character under the mouse or by the token, given its
+## settings; the token taken back
+func actor_landed(token: Node, it: Dictionary) -> void:
+	var a = null
+	if panel.animate._mouse_in_view():
+		a = panel.animate._actor_under_mouse()
+	if a == null:
+		var n = token.get_parent()
+		while n != null and a == null:
+			if HSDirector.is_a(n, "HSActor"):
+				a = n
+			n = n.get_parent()
+	if a == null:
+		var best := 1.5
+		for x in HSDirector.nodes_of(panel.dock.root(), "HSActor"):
+			var d: float = (x.global_position - token.global_position).length()
+			if d < best:
+				best = d
+				a = x
+	var ur = panel.plugin.get_undo_redo()
+	var r = panel.dock.root()
+	ur.get_history_undo_redo(ur.get_object_history_id(r)).undo()   # the drop's spot, taken back
+	if a == null:
+		panel.say("Drop it on a character")
+		return
+	set_actor(a, it)
+
+
+## the card's settings on a character (its `set`: her fields), on the scene's undo
+func set_actor(a: Node, it: Dictionary) -> void:
+	var set_: Dictionary = it.get("set", {})
+	var ur = panel.plugin.get_undo_redo()
+	ur.create_action("%s: %s" % [str(it.get("title", "")), str(a.name)], UndoRedo.MERGE_DISABLE, a)
+	for k in set_:
+		ur.add_do_property(a, k, set_[k])
+		ur.add_undo_property(a, k, a.get(k))
+	ur.commit_action()
+	a.notify_property_list_changed()
+	panel.dock.select(a)
+	panel.say("%s: %s. Her Light rows are in the Inspector; a moment's WHEN \"the flashlight is on %s\" starts anything" % [str(it.get("title", "")), str(a.name), HSDirector.id_of(a)])
+	refresh()
+
+
 func scare_landed(area: Node, it: Dictionary, during: Array = []) -> void:
 	var dock = panel.dock
+	if str(it.get("cat")) == "reactions" and during.is_empty() and panel.animate._mouse_in_view():   # a reaction dropped on a character:
+		var who = panel.animate._actor_under_mouse()                # when the flashlight's on her (FLASHLIGHT_PLAN §2e)
+		if who != null:
+			var ur = panel.plugin.get_undo_redo()
+			ur.get_history_undo_redo(ur.get_object_history_id(dock.root())).undo()   # (its area taken back)
+			_lit_moment(who, it)
+			return
 	var p := area.get_parent()
 	var nm: String = dock.fresh_name(p, str(it.get("name", "Scare")))
 	area.name = nm                                     # (its id follows the new name: HSDirector.auto_id)
@@ -697,6 +758,32 @@ func _sel():
 
 
 # ---- this object (the right column) ----------------------------------------------------------------------------------
+## a Reactions card dropped on a character: a moment, when the flashlight's on her, in which she reacts
+func _lit_moment(who: Node, it: Dictionary) -> void:
+	var dock = panel.dock
+	var cid: String = who.cast_id() if who.has_method("cast_id") else HSDirector.id_of(who)
+	var acts: Array = fill_ready(it.get("moment", {}).get("do", []), who)
+	var path: String = dock.game().story_file if dock.game() != null else HSStoryFile.DEFAULT
+	var f := HSStoryFile.read(path)
+	if f.has("_error"):
+		panel.say(str(f["_error"]))
+		return
+	var ids := {}
+	for m in f.get("moments", []):
+		ids[str(m.get("id", ""))] = true
+	var base := "%s_in_the_light" % cid
+	var mid := base
+	var k := 2
+	while ids.has(mid):
+		mid = "%s_%d" % [base, k]
+		k += 1
+	(f["moments"] as Array).append({"id": mid, "when": {"lit": cid, "secs": 0.3}, "do": acts, "once": true})
+	HSStoryFile.write(f, path)
+	dock.select(who)
+	panel.say("%s: when the flashlight is on %s. Its words are in the Story tab" % [it["title"], cid])
+	refresh()
+
+
 func refresh() -> void:
 	if side == null:
 		return

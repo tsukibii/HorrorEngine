@@ -127,7 +127,9 @@ export class Torch {
       if (L.set === "dim") k *= 1 + (L.to - 1) * w;
       else { Object.assign(this.fl, { flicker: 1, mode: L.mode, seed: 7, interval: 1 }); k *= 1 + (flickerK(this.fl, T) - 1) * w; }
     }
+    k *= rt.nearTorchK ?? 1;                                                       // someone near (her `near`): it flickers, dims or dies
     this.layers = keep; this.k = k; this.kelvinNow = kelvin;
+    this.from = from; this.aim = this.dir.clone(); this.cone = s.cone; this.spillA = s.spill; this.reachM = s.range * Math.max(0.05, reach);   // for what feels it (runtime.js beamAt)
     const col = kelvinColor(kelvin);
     for (const [l, cone, part] of [[this.hot, s.cone, 1], [this.spill, s.spill, 0.22]]) {
       l.color.copy(col); l.distance = s.range * Math.max(0.05, reach); l.angle = cone / 2 * Math.PI / 180; l.penumbra = part === 1 ? 0.7 : 0.95;
