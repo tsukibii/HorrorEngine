@@ -20,7 +20,43 @@ systems that open, hold, move and are read; 2026-11-05, night, on `gameplay-enha
 builder's floors, the street's steel stair, climbing in Godot and on the desk). Read this after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-06, last, `street-nature`): the rivers scrapped, the foliage and rocks kept as props
+## Where it stopped last (2026-11-07, `claude/optimistic-tesla-q01qg6`): a motel game's list, the flashlight's plan, jump scares
+
+**The question.** The user asked what a horror game set in a motel lacks with our mechanics, and whether a light can be
+dimmed for a while by drag and drop when a quest and an event line up.
+
+**The light answer.** A moment (WHEN, ONLY IF quest X, THEN Light) picks one light by its node's name, and *The lights
+die* darkens a room for a moment. But **dim and flicker never go back**: `on` leaves a light at 35% or still
+flickering (play.gd `light`, runtime.js `light`). *The lights die* turns every light in the room on after, and a
+Director state's light isn't let go. `loop_hall`, `cut_away` and `stalker` are in the panel's palette but Godot only
+logs them.
+
+**The user's answers** (DECISIONS 2026-11-07): items 7 and 10 dropped, the rest a list. Three docs, none of it
+built:
+- **docs/HORROR_TODO.md**, the list:
+  - 0 lights that dim and come back, first;
+  - 1 the walkway that loops, 2 an analogue phone, 3 CCTV, 4 numbers and signs, 5 hiding under the bed and behind the
+    shower curtain, 6 the door tried from outside and its chain, 8 the motel's machines alive, 9 being heard;
+  - 11 and 12 the flashlight, 13 jump scares.
+
+  At its top, **the prop standard**: every new prop a customizable prop generator recipe (PROPGEN §25, as the cans
+  are), with a table of the new props.
+- **docs/FLASHLIGHT_PLAN.md**: batteries, a bulb's or an LED's curve, flicker; `lit`, `flashed`, a cast member's
+  `beam` reaction; the Director's *Feels the light* card. Waiting on the user's yes.
+- **docs/research/jump_scares.md**: still being researched when this was written; its last section becomes HORROR_TODO
+  13. If it isn't in the repo, the research didn't finish: run it again (how jump scares are done well, the startle
+  reflex's numbers, pacing, accessibility settings, and what our tools need).
+
+**Found while answering:**
+- the `music` action only logs, on the desk and in Godot: no music or room tone plays in play, so there's no silence
+  to make before a sting;
+- `hud.gd` `shake()` is empty;
+- the tape shader has `glitch`, `tracking_error` and `dropouts` with no story word to drive them.
+
+**Next, if the user says yes:** HORROR_TODO's order (0, then the flashlight, then the small ones), each with its
+TestRoom001 station.
+
+## Before that (2026-11-06, last, `street-nature`): the rivers scrapped, the foliage and rocks kept as props
 
 The user (DECISIONS 2026-11-06, last): "Scrap the rivers, keep all the foliage and rocks you made as props to generate.
 I'll use them for gardens." Done: the street builder's river kind is gone (its bed, water, stone and concrete banks,
