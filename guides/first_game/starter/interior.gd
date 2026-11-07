@@ -60,6 +60,35 @@ func marker_at(marker_name: String) -> Transform3D:
 	return m.global_transform if m != null else global_transform
 
 
+## a room's box from the export (its markers/trigger_<room>__volume: the room's middle, its size in the metadata):
+## {xform: where its middle is in the world, size: its width, height and depth}; empty when there's no such room
+func room_box(room: String) -> Dictionary:
+	var m := find_child("trigger_%s__volume" % room, true, false) as Node3D
+	if m == null:
+		return {}
+	var e: Dictionary = m.get_meta("extras", {}) if m.has_meta("extras") else {}
+	var s: Array = e.get("size", [2.0, 2.0, 2.4])
+	var local: Vector3 = global_transform.affine_inverse() * m.global_position
+	return {"xform": global_transform * Transform3D(Basis(), local), "size": Vector3(float(s[0]), float(s[2]), float(s[1]))}
+
+
+## an Area3D the size of one of its rooms, put there (its CollisionShape3D made when the game runs: room_tone.gd,
+## event_area.gd and scare_area.gd call this with their `room`)
+func fit_area(area: Area3D, room: String) -> bool:
+	var b := room_box(room)
+	if b.is_empty():
+		push_warning("%s: no room %s in %s" % [area.name, room, name])
+		return false
+	var sh := CollisionShape3D.new()
+	sh.name = "_room"
+	var bs := BoxShape3D.new()
+	bs.size = b["size"]
+	sh.shape = bs
+	area.add_child(sh)
+	sh.global_transform = b["xform"]
+	return true
+
+
 func _lights() -> void:
 	if is_inside_tree():
 		for l in lamps():

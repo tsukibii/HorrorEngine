@@ -1,7 +1,26 @@
-The starter scripts of guides/first_game: copy this folder into your Godot project as res://starter/.
+The starter scripts of the by-hand guides (guides/first_game, guides/tutorial_v2): copied into a Godot project as
+res://starter/ by tools/godot_byhand.py. Yours to change.
 
-  player.tscn, player.gd   the player: WASD, Shift runs, the mouse looks, E uses, F the flashlight, Esc frees the mouse
-  interior.gd              on an interior's instance: stood at a street's marker, its doors opened with E, its lamps
-  door.gd                  a door from an interior's export swinging on its hinge (interior.gd puts it on every door)
-  scare_area.gd            an Area3D: walked into, the lamps go out and she's there
+  player.tscn, player.gd   the player: WASD, Shift runs, the mouse looks, E uses (or puts a note away), F the
+                           flashlight, Esc frees the mouse; it steps up a tread or a kerb; stops when the Story ends
+  flashlight.gd            the player's flashlight (on its Eye/Flashlight): batteries that run down, a bulb's or an
+                           LED's curve, low and dead, spare sets going in by themselves; beam_on(point)
+  interior.gd              on an interior's instance: stood at a street's marker, its doors opened with E, its lamps;
+                           room_box(room) and fit_area(area, room): an area the size of one of its rooms
+  door.gd                  a door from an interior's export swinging on its hinge (interior.gd puts it on every door);
+                           locked by an item or a fact (the scene builder's lock comes with the export)
+  story.gd                 the Story node: the objective, the to-do list, lines, a note's card, the pocket, facts,
+                           the ending
+  sound.gd                 the Sound node: the music by mood (music/), a room's tone, the hush before a scare
+  room_tone.gd             an Area3D: a room's tone while the player's in it
+  event_area.gd            an Area3D: walked into, an objective, tasks added or ticked, a line, a fact, the music, the end
+  scare_area.gd            an Area3D: walked into (or fire() from a signal), the lights go out, dim, flicker or go out
+                           one by one, for good or for a while; someone appears (for a moment: a jump scare); a sting;
+                           a hush first
+  pickup.gd                a thing picked up with E into the Story's pocket (batteries: a spare set)
+  note.gd                  a thing read with E: its words on the Story's card
+  light_shy.gd             under a character: she backs off, freezes, vanishes or comes when the flashlight holds her;
+                           lit, flashed, flashed_twice to wire anything to
   arms_down.gd             under a Character Studio character: its arms down by its sides
+  lights.gd, reach.gd      helpers the others use: lights switched and dimmed as the Look plugin keeps them, a collider
+                           round a thing you use

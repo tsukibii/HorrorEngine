@@ -7,7 +7,7 @@
 //                               level put inside a street's building leaves it out, the street has that shell)
 //   doors/door_<id>             a door's leaf and what's attached to it (its handle, its half of the hinges), the node's
 //                               origin on the hinge: turned about Y it swings (extras: hinge, the turn that opens it,
-//                               slide); its collider under it
+//                               slide, locked_by: what opens it, an item's name or flag:<name>); its collider under it
 //   collision/<room>-colonly    the solid pieces' boxes, one trimesh a room: Godot makes each a StaticBody3D on import
 //   occluders/<room>_occ-occonly  the walls', floors' and ceilings' boxes: OccluderInstance3D, occlusion culling
 //   lights/light_<id>           the level's lamps (KHR_lights_punctual), their energy as Godot's
@@ -80,7 +80,8 @@ export function levelGroup(stage, plan, story, level, opts = {}) {
       const base = (dm && dm.userData.base) || { pos: dm ? dm.position.clone() : s2t(...dp.pos), rot: dm ? dm.rotation.y : (dp.yaw || 0) * Math.PI / 180 };
       const n = new THREE.Group(); n.name = "door_" + clean(did);
       n.position.copy(sw.pivot.clone().applyAxisAngle(Y, base.rot).add(base.pos)); n.rotation.y = base.rot;   // on the hinge, square with the door
-      n.userData = { kind: "door", id: did, hinge: sw.hinge || "left", opens: sw.slide ? 0 : (sw.hinge === "right" ? 1 : -1), slide: !!sw.slide, width: +(dp.size[0]).toFixed(3) };
+      const lk = (dp.d || {}).locked_by || ((dp.tags || []).find(t => t.startsWith("locked_by:")) || "").slice(10);   // what opens it (an item's name, or flag:<name>)
+      n.userData = Object.assign({ kind: "door", id: did, hinge: sw.hinge || "left", opens: sw.slide ? 0 : (sw.hinge === "right" ? 1 : -1), slide: !!sw.slide, width: +(dp.size[0]).toFixed(3) }, lk ? { locked_by: lk } : {});
       const inv = new THREE.Matrix4().copy(n.matrix.compose(n.position, n.quaternion, n.scale)).invert();
       const T = { pos: [], idx: [] }; boxInto(T, Object.assign({}, dp, { pos: dp.pos, yaw: base.rot * 180 / Math.PI }), inv);
       n.add(trisMesh(n.name + "_col-colonly", T));

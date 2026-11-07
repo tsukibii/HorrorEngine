@@ -4,11 +4,13 @@ Godot instead of through Director I can"; guides/godot_by_hand): what guides/god
 
     python tools/godot_byhand.py new ~/Games/MyGame [--name "My Game"]
         a new project: project.godot (the HorrorStudio Look plugin on, its balanced settings), addons/horrorstudio_look,
-        HumanShaders/ (the skin's and the eyes' textures), starter/ (the first game's scripts: the player, doors, a
-        scare), exports/interiors, exports/streets, exports/characters (where the studio's exports go)
+        HumanShaders/ (the skin's and the eyes' textures), starter/ (the by-hand guides' scripts: the player and its
+        flashlight, doors and locks, the story on screen, the music and room tones, scares, pickups, notes, a
+        character who doesn't like the light), sfx/ (the studio's sound shelf, CC0), music/ (the four moods),
+        exports/interiors, exports/streets, exports/characters (where the studio's exports go)
     python tools/godot_byhand.py install ~/Games/MyGame
-        the same add-ons into a project you have (again after a pull of the studio: they're copies); starter/ only if
-        it isn't there (it's yours to change)
+        the same add-ons into a project you have (again after a pull of the studio: they're copies); starter/, sfx/ and
+        music/ only if they aren't there (they're yours to change)
     python tools/godot_byhand.py exports ~/Games/MyGame [--link]
         the studio's Exports/ (interiors, streets, characters) copied into the project's exports/; --link makes them
         links instead, so an export from the studio's editors is in the project at once (Godot imports it on focus)
@@ -26,6 +28,8 @@ from storykit import exports as EX  # noqa: E402
 LOOK = ROOT / "GodotPlugins" / "HorrorStudioLook" / "addons" / "horrorstudio_look"
 HUMAN = ROOT / "GodotPlugins" / "HumanShaders"
 STARTER = ROOT / "guides" / "first_game" / "starter"
+SFX = ROOT / "Content" / "Studio" / "SFX"                       # the sound shelf (docs/SFX.md, CC0)
+MOODS = ROOT / "Content" / "Studio" / "Music" / "moods"         # the music's moods (tools/score/moods.mjs)
 
 
 def project_godot(name):
@@ -53,6 +57,14 @@ def install(proj, starter=True):
     if starter or not (proj / "starter").exists():
         shutil.copytree(STARTER, proj / "starter", dirs_exist_ok=True)
         did.append("starter")
+    if (starter or not (proj / "sfx").exists()) and (SFX / "index.json").is_file():
+        shutil.copytree(SFX, proj / "sfx", dirs_exist_ok=True, ignore=shutil.ignore_patterns("*.import", "__pycache__", "*.py"))
+        did.append("sfx")
+    if (starter or not (proj / "music").exists()) and MOODS.is_dir():
+        (proj / "music").mkdir(exist_ok=True)
+        for f in MOODS.glob("*.ogg"):
+            shutil.copy2(f, proj / "music" / f.name)
+        did.append("music")
     for k in EX.KINDS:
         (proj / "exports" / k).mkdir(parents=True, exist_ok=True)
     return did
