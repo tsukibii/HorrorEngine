@@ -1845,6 +1845,11 @@ The five nature photos (STREET_BUILDER §7d) took several tries each to pin unde
   town's floor is a `flat` (an area held at a level in place of the relief). Drop a body on every street in Godot
   (GDSTREET) before calling a match done: the drawing through the shot hid all of it.
 
+- **A probe on steps samples the middle of a tread**: GDSTREET's ray at a flight's half way landed exactly on a riser
+  in `shrine_steps` (16 treads: the middle is a boundary), and stone fronts are ragged, so it hit the tread below, one
+  rise lower than the street said (0.154 m). The probe takes the middle of a tread now, and a station clear of bridges
+  (the park's footbridge had the same trap). A probe must stand where one surface is the only one there.
+
 ## The rivers (2026-11-06, last)
 
 A day's river work (the kind, its banks, white water, falls, rocks in it, three streets, a park) went on the user's

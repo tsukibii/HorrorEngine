@@ -59,7 +59,10 @@ const g3 = (x, y, z) => [x, z, -y];
 // a station of a road to probe: its middle, unless a bridge stands over it (a body dropped there lands on the deck)
 const num = (v, d = 0) => Number.isFinite(+v) ? +v : d;
 const bridges = (S.things || []).filter(t => t.kind === "bridge").map(t => [num(t.at[0]), num(t.at[1]), Math.max(num(t.w, 6), num(t.d, 2)) / 2 + 1.5]);
-const station = f => { for (const k of [0.5, 0.35, 0.65, 0.2, 0.8]) { const s = f.L * k, c = f.at(s, 0); if (!bridges.some(b => Math.hypot(c[0] - b[0], c[1] - b[1]) < b[2])) return s; } return f.L / 2; };
+const station = f => {
+  // a flight: the middle of a tread (a ray at a riser lands on the tread below: stone fronts are ragged)
+  if (f.kind === "steps" && f.nSteps) { const u = (Math.floor(f.nSteps / 2) + 0.5) * f.run; return f.climbing ? u : f.L - u; }
+  for (const k of [0.5, 0.35, 0.65, 0.2, 0.8]) { const s = f.L * k, c = f.at(s, 0); if (!bridges.some(b => Math.hypot(c[0] - b[0], c[1] - b[1]) < b[2])) return s; } return f.L / 2; };
 for (const r of (S.roads || []).slice(0, 3)) { const f = SG.roadPath(r), s = station(f), c = f.at(s, 0), w = f.at(s, -(f.W / 2 + f.walks[1] / 2));
   const top = f.kind === "steps" ? f.stepZ(s) : c[2];                        // a flight: the tread's top there, not the ramp's
   out.rays.push({ name: r.id + ":road", at: g3(c[0], c[1], top + 30), want: top + 0.004 });
