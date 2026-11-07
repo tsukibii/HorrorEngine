@@ -884,7 +884,7 @@
    "cat": "scares",
    "kind": "scare",
    "title": "The lights die",
-   "desc": "The room goes dark for a moment",
+   "desc": "The room goes dark for a moment, then every light as it was",
    "glyph": "lights_die",
    "keywords": [
     "dark",
@@ -897,6 +897,58 @@
       "trick": "lights_die",
       "room": "{room}",
       "secs": 1.5
+     }
+    ]
+   }
+  },
+  {
+   "id": "scare_lights_toward",
+   "cat": "scares",
+   "kind": "scare",
+   "title": "The lights die one by one",
+   "desc": "Out one after another toward you, then back as they were",
+   "glyph": "lights_die",
+   "keywords": [
+    "dark",
+    "lights",
+    "one by one",
+    "toward"
+   ],
+   "name": "LightsDieTowardYou",
+   "moment": {
+    "do": [
+     {
+      "trick": "lights_die",
+      "room": "{room}",
+      "secs": 2,
+      "order": "toward"
+     }
+    ]
+   }
+  },
+  {
+   "id": "scare_dim",
+   "cat": "scares",
+   "kind": "scare",
+   "title": "A light dims",
+   "desc": "The nearest light sags for a few seconds, then comes back",
+   "glyph": "bulb",
+   "keywords": [
+    "dim",
+    "sag",
+    "light",
+    "lamp",
+    "brownout"
+   ],
+   "name": "LightDims",
+   "moment": {
+    "do": [
+     {
+      "light": "{light}",
+      "set": "dim",
+      "to": 0.2,
+      "secs": 3,
+      "over": 0.4
      }
     ]
    }

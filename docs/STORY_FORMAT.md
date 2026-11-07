@@ -609,7 +609,17 @@ with `{"tick": "<id>"}` at the end of that beat, not by its own trigger (the sto
   name kept when nothing is typed, else `game.player_name`). From then on `{name}` in anything shown (a clip's `en`, a
   line, a thought, an answer, an objective, a to-do, a note) is that name; before it, `game.player_name` ("Alex" when
   unset). It's kept with the run (a checkpoint has it). The walker counts 8 s for the typing. Not in Unreal yet
-- `light` (`set`: `on off flicker dim`; or `room`), `door` (`set`: `lock unlock open close slam`)
+- `light`: a light by its id, or every light in a `room`; `set` `on`, `off`, `flicker`, `dim` or `normal`
+  (DECISIONS 2026-11-07, docs/HORROR_TODO.md 0). `dim` takes `to`, how bright (0..1, 0.35 when left out); `flicker`
+  takes `mode`, one of a light's modes (§2: `fluorescent`, `dying`, `candle`, `pulse`, `custom`); any of them takes
+  `over`, the seconds it takes (and the seconds back; not `fade`, the screen's own verb), and `secs`, how long:
+  `{"light": "lobby_lamp", "set": "dim", "to": 0.2, "secs": 4, "over": 0.5}` sags over half a second, holds four,
+  and comes back to **how it was**. A change without `secs` lasts. `on` and `normal` bring back the light's own brightness and its own flicker (the story's dim
+  and flicker undone); `on` switches it on too, `normal` leaves it on or off as it is. A timed change is laid over the
+  light's own state and goes by itself, so a light the player switched off stays off after it, and a switch still
+  works under it; a lasting change clears the timed ones on that light. Both runtimes, the same numbers (play.gd
+  `light_k`, runtime.js `lightK`)
+- `door` (`set`: `lock unlock open close slam`)
 - `open`: **a thing's parts** (`use: open`, `container`, `book`: a lid, a closet's doors, a cover): `{"open": "attic_case",
   "to": "open"}` swings or slides them open over a moment, `shut` (or `close`) shuts them, `lock` holds them shut
   (**Locked** on a click, whatever its `locked_by`) and `unlock` lets go of that lock. Heard as `opened` or `closed`
@@ -693,7 +703,11 @@ with `{"tick": "<id>"}` at the end of that beat, not by its own trigger (the sto
   catch)). In her cone, in reach and in her line of sight, the suspicion meter fills; out of it, it drains; full,
   `caught` fires. Hidden (a locker) or in a safe zone, she doesn't see the player, unless a route point `check`s
   that locker (`{"at": "hall_back", "wait": 2, "check": "hall_locker"}`): there, she finds them.
-- `trick` (TRICKS.md §2), `checkpoint` (an autosave in Play). The `jumpscare` (`figure`, `secs` 0.8) can also have
+- `trick` (TRICKS.md §2), `checkpoint` (an autosave in Play). `lights_die` (`room`, or one `light`; `secs` 1) puts
+  the lights out for `secs` and brings each back as it was (one switched off stays off); `order: "toward"` puts them
+  out one by one toward the player, the farthest first, `gap` seconds apart (0.4), all back together `secs` after the
+  last; the beat waits for it. `loop_hall` and `cut_away` are no longer offered (the story check warns: the loop isn't
+  in Play yet, docs/HORROR_TODO.md 1; the eye is never turned for the player, DIRECTING §1). The `jumpscare` (`figure`, `secs` 0.8) can also have
   `clip`, a motions id the figure plays while it's there (a lunge: Godot, as `anim` plays on someone not in play; its
   length is the scare's unless `secs` says), `expr`, a face from the library on it (a cast member: §3.7), and
   `sound`, a sounds id played at it instead of the shelf's big sting (the desk and Godot); the check knows each

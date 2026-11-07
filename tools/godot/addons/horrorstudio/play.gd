@@ -469,8 +469,9 @@ func enter_level(lid: String) -> void:
 			if t["kind"] == "light":
 				lights.append(t)
 				var lm = JSON.parse_string(n.get_meta("light")) if n.has_meta("light") else {}
-				light_state[p["id"]] = {"on": bool(lm.get("on", true)), "flicker": float(lm.get("flicker", 0)), "base": float(lm.get("base", LIT)), "dim": null, "surge": null, "flicker0": null, "kind": lm.get("kind", "bulb"), "room": lm.get("room")}
+				light_state[p["id"]] = {"on": bool(lm.get("on", true)), "flicker": float(lm.get("flicker", 0)), "base": float(lm.get("base", LIT)), "dim": null, "surge": null, "kind": lm.get("kind", "bulb"), "room": lm.get("room")}
 				light_state[p["id"]].merge(HSFlicker.of(lm, str(p["id"])), true)   # its flicker's mode, interval, rate, letters, seed (flicker.gd)
+				light_own(light_state[p["id"]])
 				if n.has_meta("pattern") and n is SpotLight3D:              # its pattern (caustics, leaves, blinds, clouds) drawn into the light's projector (HSPattern)
 					var pm: Dictionary = JSON.parse_string(n.get_meta("pattern"))
 					HSPattern.attach(n, pm, float(pm.get("distance", 3.0)))
@@ -1193,10 +1194,7 @@ func power(set_to, lid = null) -> void:
 		for t in lights:
 			var u: Dictionary = light_state[t["id"]]
 			if _electric(u):
-				if u["flicker0"] == null:
-					u["flicker0"] = u["flicker"]
-				u["flicker"] = max(float(u["flicker0"]), 0.8)
-				u["surge"] = clock + 0.9
+				u["surge"] = clock + 0.9                          # flickering up (light_k), then its own flicker again
 				HSFlicker.on(u, clock)                           # a tube's starter clicks
 	emit({"type": "power", "on": on})
 
@@ -1205,31 +1203,156 @@ func _electric(u: Dictionary) -> bool:
 	return not ["candle", "fire"].has(u.get("kind"))
 
 
-func light(id, room, set_to: String) -> void:
+## a light's own flicker kept (the story's `flicker` and `mode`), its lasting state's (`b_flicker`, `b_mode`: what the
+## story's lasting changes leave it at), the story's timed changes over it (`layers`) and a lasting change's fade
+func light_own(u: Dictionary) -> void:
+	u["own"] = {"flicker": u.get("flicker", 0.0), "mode": u.get("mode"), "on": u.get("on", true)}   # (on: as the level has it, a Director state let go)
+	u["b_flicker"] = u.get("flicker", 0.0)
+	u["b_mode"] = u.get("mode")
+	u["layers"] = []
+	u["fade"] = null
+	u["s"] = 1.0 if u.get("on", true) else 0.0
+
+
+## the ids of one light, or of every light in a room
+func lights_of(id, room) -> Array:
 	var ls: Array = []
-	if id != null:
+	if id != null and str(id) != "":
 		if light_state.has(id):
 			ls.append(id)
 	else:
 		for t in lights:
 			if light_state[t["id"]]["room"] == room:
 				ls.append(t["id"])
-	for lid in ls:
+	return ls
+
+
+## the story's `light` (STORY_FORMAT §4), or a switch's `toggle`: `set` on, off, flicker, dim or normal; `to` how bright
+## a dim is (0..1, DIM), `mode` a flicker's (the lamps' own modes), `fade` seconds to change (and to come back), `secs`
+## how long. Without `secs` the change lasts: the light's own state changes, and the story's timed changes on it go (a
+## switch's toggle leaves them). With `secs` it's laid over the light's own state and goes by itself after (a moment
+## of dark, `lights_die`, the same): a light switched off before stays off. `on` and `normal` bring back the light's own
+## brightness and flicker, undoing the story's dim and flicker (`on` switches it on too). `delay` holds a timed change
+## back (the lights dying one by one)
+const DIM := 0.35
+func light(id, room, set_to: String, o: Dictionary = {}) -> void:
+	var secs := float(o.get("secs", 0.0)) if o.get("secs") != null else 0.0
+	var fade := maxf(0.0, float(o.get("over", 0.0)) if o.get("over") != null else 0.0)   # (`over`: `fade` is the screen's verb)
+	var to := clampf(float(o.get("to", DIM)) if o.get("to") != null else DIM, 0.0, 1.0)
+	var mode = o.get("mode") if HSFlicker.MODES.has(o.get("mode")) else null
+	for lid in lights_of(id, room):
 		var u: Dictionary = light_state[lid]
 		var was: bool = u["on"]
+		if secs > 0.0:
+			var t0: float = clock + maxf(0.0, float(o.get("delay", 0.0)) if o.get("delay") != null else 0.0)
+			u["layers"].append({"set": set_to, "to": to, "mode": mode, "t0": t0, "end": t0 + secs, "fade": fade})
+			continue
+		if set_to != "toggle":
+			u["layers"].clear()
+		if fade > 0.0:
+			u["fade"] = {"from": float(u.get("s", 0.0)), "t0": clock, "secs": fade}
 		match set_to:
 			"toggle":
 				u["on"] = not u["on"]
-			"on", "off":
-				u["on"] = set_to == "on"
+			"on", "normal":
+				if set_to == "on":
+					u["on"] = true
+				u["dim"] = null
+				u["b_flicker"] = u["own"]["flicker"]
+				u["b_mode"] = u["own"]["mode"]
+			"off":
+				u["on"] = false
 			"flicker":
 				u["on"] = true
-				u["flicker"] = max(0.6, float(u["flicker"]))
+				u["b_flicker"] = maxf(0.6, float(u["b_flicker"]))
+				if mode != null:
+					u["b_mode"] = mode
 			"dim":
 				u["on"] = true
-				u["dim"] = 0.35
+				u["dim"] = to
 		if u["on"] and not was:
 			HSFlicker.on(u, clock)                                   # switched on: a tube stutters on
+
+
+## the story's `lights_die` (TRICKS.md §2): a room's lights, or one, out for `secs` and back as they were; `order`
+## "toward": out one by one toward the player, `gap` seconds apart (0.4), the farthest first, all back together `secs`
+## after the last went out. Its seconds
+func lights_die(a: Dictionary) -> float:
+	var secs: float = float(a.get("secs", 1)) if a.get("secs") != null else 1.0
+	var ids: Array = lights_of(a.get("light"), a.get("room"))
+	if str(a.get("order", "")) != "toward" or ids.size() < 2:
+		light(a.get("light"), a.get("room"), "off", {"secs": secs})
+		return secs
+	var gap: float = float(a.get("gap", 0.4)) if a.get("gap") != null else 0.4
+	var me: Vector3 = player.pos
+	ids.sort_custom(func(x, y): return (by_id[x]["node"].global_position - me).length() > (by_id[y]["node"].global_position - me).length())
+	var n := ids.size()
+	for i in n:
+		light(ids[i], null, "off", {"secs": secs + gap * (n - 1 - i), "delay": gap * i})
+	return secs + gap * (n - 1)
+
+
+## a timed change's weight now: 0 before it starts and after it's gone, 1 while it holds, smoothed over its fade both ways
+static func layer_w(L: Dictionary, T: float) -> float:
+	var fd: float = float(L["fade"])
+	var a: float = clampf((T - float(L["t0"])) / fd, 0.0, 1.0) if fd > 0.0 else (1.0 if T >= float(L["t0"]) else 0.0)
+	var b: float = clampf((float(L["end"]) + fd - T) / fd, 0.0, 1.0) if fd > 0.0 else (1.0 if T < float(L["end"]) else 0.0)
+	return smoothstep(0.0, 1.0, minf(a, b))
+
+
+## the multiplier on a light's energy now: its steady brightness (on or off, dimmed, the power) from its own state, a
+## lasting change's fade and the story's timed changes over it, times its flicker (its own, the power's surge, a timed
+## flicker's), the effective amount and mode kept in `flicker` and `mode` (what the checks and flicker.gd read)
+func light_k(u: Dictionary, T: float) -> float:
+	var lit_ok: bool = powered() or not _electric(u)
+	var own_s: float = (float(u["dim"]) if u["dim"] != null else 1.0) if lit_ok else 0.0
+	var s: float = own_s if u["on"] else 0.0
+	var f = u.get("fade")
+	if f != null:
+		var x: float = (T - float(f["t0"])) / maxf(0.001, float(f["secs"]))
+		if x >= 1.0:
+			u["fade"] = null
+		else:
+			s = lerpf(float(f["from"]), s, smoothstep(0.0, 1.0, x))
+	var amt: float = float(u["b_flicker"])
+	var mode = u["b_mode"]
+	if u["surge"] != null:
+		if T >= float(u["surge"]):
+			u["surge"] = null
+		else:
+			amt = maxf(amt, 0.8)
+	var keep: Array = []
+	for L in u["layers"]:
+		if T >= float(L["end"]) + float(L["fade"]):
+			if L["set"] == "off" and u["on"]:
+				HSFlicker.on(u, T)                                   # back after the dark: a tube stutters on
+			continue
+		keep.append(L)
+		var w := layer_w(L, T)
+		if w <= 0.0:
+			continue
+		match str(L["set"]):
+			"off":
+				s = lerpf(s, 0.0, w)
+			"on":
+				s = lerpf(s, own_s, w)
+			"dim":
+				s = lerpf(s, float(L["to"]) if lit_ok else 0.0, w)
+			"flicker":
+				s = lerpf(s, own_s, w)
+				amt = lerpf(amt, maxf(0.6, amt), w)
+				if L["mode"] != null and w >= 0.5:
+					mode = L["mode"]
+			"normal":
+				s = lerpf(s, (1.0 if lit_ok else 0.0) if u["on"] else 0.0, w)
+				amt = lerpf(amt, float(u["own"]["flicker"]), w)
+				if w >= 0.5:
+					mode = u["own"]["mode"]
+	u["layers"] = keep
+	u["s"] = s
+	u["flicker"] = amt
+	u["mode"] = mode
+	return s * HSFlicker.k(u, T)
 
 
 func light_energy(id) -> float:
@@ -3899,11 +4022,7 @@ func tick(dt: float) -> void:
 	var T := clock
 	for t in lights:
 		var u: Dictionary = light_state[t["id"]]
-		var k: float = (float(u["dim"]) if u["dim"] != null else 1.0) if (u["on"] and (powered() or not _electric(u))) else 0.0
-		if u["surge"] != null and T >= float(u["surge"]):
-			u["flicker"] = float(u["flicker0"]) if u["flicker0"] != null else 0.0
-			u["surge"] = null
-		k *= HSFlicker.k(u, T)                                    # its flicker by mode (flicker.gd, as the desk's)
+		var k: float = light_k(u, T)                              # its state, the story's changes over it, its flicker by mode (flicker.gd, as the desk's)
 		k *= float(scene_light_k.get(t["id"], 1.0))
 		u["level"] = float(u["base"]) * k
 		if t["node"] is Light3D:

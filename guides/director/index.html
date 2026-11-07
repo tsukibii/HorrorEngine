@@ -739,8 +739,9 @@ adds one; ↑ ↓ move it, ✕ takes it away.</li>
 <p>Under it, <b>It reads as</b> says the whole moment as one sentence. <span class="ui">Try this moment</span> plays the
 game from this quest as a test, with what it asks for already done and you standing by where it happens;
 <span class="ui">Show it in the 3D view</span> selects what its WHEN names (press <kbd>F</kbd> over the view to frame it).
-On the right are <b>ready-made moments</b> (a jumpscare, a knock at a door, the lights dying, a door slamming, a
-whisper, a thought, the flashlight flickering, and the reactions, §5): click one to add it onto what's selected (an area, a room, a door, a
+On the right are <b>ready-made moments</b> (a jumpscare, a knock at a door, the lights dying (all at once, or one by
+one toward you), a light dimming for a few seconds (the light nearest where it lands), a door slamming, a whisper, a
+thought, the flashlight flickering, and the reactions, §5): click one to add it onto what's selected (an area, a room, a door, a
 thing), or drag it onto an area or a door in the 3D view. Every change is saved at once, and <kbd>Ctrl</kbd>+<kbd>Z</kbd>
 takes it back.</p>
 <figure class="wide"><img src="img/e_panel_story.jpg" width="1417" height="664" alt="The panel's Story tab: the quests in order on the left with the first, The key, being edited, and the endings; in the middle its moment figure_scare open: WHEN the player enters Kitchen doorway, ONLY IF they've read letter, THEN a jump scare on the figure, the thought What was that? and the flag saw_figure, how often Just once, and what it reads as; the seven ready-made moments on the right">
@@ -760,6 +761,15 @@ once…</span>: the moment a condition becomes true.</li>
 behind, a thought, a sound, music, show or hide something, a door, a light, the power, a little thing's state, a
 character sent somewhere or animated (a reaction), a fact set, an item given or taken, karma, a counter...</li>
 </ul>
+<p><b>A light</b> (THEN, <span class="ui">Light</span>): pick one of your lights by its name, or the room, and set it
+<i>on</i>, <i>off</i>, <i>flicker</i>, <i>dim</i> or <i>normal</i>. A dim has <i>how bright</i> (0 to 1); a flicker
+can take one of the lamps' flickers (a fluorescent, a dying tube, a candle...); <i>fading over</i> makes the change
+take that long. Give it <i>for</i> seconds and it comes back <b>as it was</b> by itself (a lamp the player switched off
+stays off); without it the change stays. <i>On</i> and <i>normal</i> bring back the light's own brightness and its own
+flicker after a dim or a flicker. So "when the player walks into the hall, if the key's quest is on, the hall lamp dims
+to 0.2 for 4 seconds" is one moment: drop <span class="ui">A light dims</span> in the hall, pick the quest under
+<b>Only during</b>, and change the light or the numbers if you like. A state's light (§7) goes back as the level has
+it once its condition stops holding.</p>
 <div class="pair">
 <figure><img src="img/m_moments.jpg" width="1400" height="940" alt="The Manager's Moments: letter_thought when the player reads the letter, and figure_scare when the player enters the kitchen doorway, if read:letter, then a jump scare, a thought and a fact"><figcaption>The sample's two moments in the Manager.</figcaption></figure>
 <figure><img src="img/g_jumpscare.jpg" width="1280" height="720" alt="In the game: the figure in the kitchen for a moment, lunging"><figcaption>In the game: the figure (the sample's MHR body, lunging; put your model in it).</figcaption></figure>

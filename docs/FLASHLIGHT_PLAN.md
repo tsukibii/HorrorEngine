@@ -63,7 +63,7 @@ One beam, four reasons to flicker:
 
 1. **Low charge:** the curve's own brownouts or an LED's blinks (1a).
 2. **The story's.** `{"torch": "flicker"}` as now, with `secs` (how long) and `mode` (the lamps' modes: `dying`,
-   `fluorescent`, `pulse`, `custom` with `letters`). `{"torch": "dim", "to": 0.4, "secs": 5, "fade": 1}` dims the
+   `fluorescent`, `pulse`, `custom` with `letters`). `{"torch": "dim", "to": 0.4, "secs": 5, "over": 1}` dims the
    beam and brings it back: the lights' words from HORROR_TODO 0, the same for the torch.
 3. **Near someone.** A cast member's `near` (§2b): within its `radius` the beam flickers (more often and deeper the
    nearer she is), dims or dies, and the lamps near her do the same. She needn't be seen; the light knows. TRICKS.md
@@ -98,7 +98,7 @@ is how a person tries, and with `rest` it gives a few seconds.
 - **Actions.** `torch` takes:
   - `on` and `off`;
   - `flicker` (+ `secs`, `mode`);
-  - `dim` (+ `to`, `secs`, `fade`);
+  - `dim` (+ `to`, `secs`, `over`);
   - `dead`: the charge to 0, out;
   - `works`: full, as new batteries;
   - `drain` (+ `to`: the charge).

@@ -512,7 +512,7 @@
    "label": "Light",
    "icon": "light",
    "group": "world",
-   "hint": "one light, or every light in a room",
+   "hint": "one light, or every light in a room: on, off, flickering, dim; for a while (then back as it was) or for good, fading if you like; normal brings back its own brightness and flicker",
    "fields": [
     {
      "key": "light",
@@ -535,8 +535,43 @@
       "on",
       "off",
       "flicker",
-      "dim"
+      "dim",
+      "normal"
      ]
+    },
+    {
+     "key": "to",
+     "label": "how bright (a dim: 0 to 1)",
+     "kind": "number",
+     "ph": "0.35",
+     "opt": true
+    },
+    {
+     "key": "mode",
+     "label": "its flicker (a flicker)",
+     "kind": "choice",
+     "opts": [
+      "fluorescent",
+      "dying",
+      "candle",
+      "pulse",
+      "custom"
+     ],
+     "opt": true
+    },
+    {
+     "key": "secs",
+     "label": "for (s), then back as it was",
+     "kind": "number",
+     "ph": "for good",
+     "opt": true
+    },
+    {
+     "key": "over",
+     "label": "fading over (s)",
+     "kind": "number",
+     "ph": "0",
+     "opt": true
     }
    ],
    "make": {
@@ -804,9 +839,7 @@
       "lights_die",
       "glimpse",
       "jumpscare",
-      "swap",
-      "loop_hall",
-      "cut_away"
+      "swap"
      ],
      "labels": {
       "knock": "a knock",
@@ -1913,13 +1946,39 @@
    {
     "key": "room",
     "label": "room",
-    "kind": "room"
+    "kind": "room",
+    "opt": true
+   },
+   {
+    "key": "light",
+    "label": "or one light",
+    "kind": "light",
+    "opt": true
    },
    {
     "key": "secs",
     "label": "for (s)",
     "kind": "number",
     "ph": "1"
+   },
+   {
+    "key": "order",
+    "label": "how",
+    "kind": "choice",
+    "opts": [
+     "toward"
+    ],
+    "labels": {
+     "toward": "one by one toward the player"
+    },
+    "opt": true
+   },
+   {
+    "key": "gap",
+    "label": "one by one, apart (s)",
+    "kind": "number",
+    "ph": "0.4",
+    "opt": true
    }
   ],
   "glimpse": [
@@ -2934,52 +2993,177 @@
    "value": {
     "light": "light_0",
     "room": "room_1",
-    "set": "on"
+    "set": "on",
+    "to": 5,
+    "mode": "fluorescent",
+    "secs": 7,
+    "over": 8
    },
-   "text": "Lights in room_1: on"
+   "text": "Lights in room_1: on for 7 s, fading over 8 s"
   },
   {
    "what": "action",
    "value": {
     "light": "light_0",
     "room": "room_1",
-    "set": "off"
+    "set": "off",
+    "to": 5,
+    "mode": "fluorescent",
+    "secs": 7,
+    "over": 8
    },
-   "text": "Lights in room_1: off"
+   "text": "Lights in room_1: off for 7 s, fading over 8 s"
   },
   {
    "what": "action",
    "value": {
     "light": "light_0",
     "room": "room_1",
-    "set": "flicker"
+    "set": "flicker",
+    "to": 5,
+    "mode": "fluorescent",
+    "secs": 7,
+    "over": 8
    },
-   "text": "Lights in room_1: flicker"
+   "text": "Lights in room_1: flicker (fluorescent) for 7 s, fading over 8 s"
   },
   {
    "what": "action",
    "value": {
     "light": "light_0",
     "room": "room_1",
-    "set": "dim"
+    "set": "dim",
+    "to": 5,
+    "mode": "fluorescent",
+    "secs": 7,
+    "over": 8
    },
-   "text": "Lights in room_1: dim"
-  },
-  {
-   "what": "action",
-   "value": {
-    "room": "room_1",
-    "set": "on"
-   },
-   "text": "{\"room\":\"room_1\",\"set\":\"on\"}"
+   "text": "Lights in room_1: dim to 5 for 7 s, fading over 8 s"
   },
   {
    "what": "action",
    "value": {
     "light": "light_0",
-    "set": "on"
+    "room": "room_1",
+    "set": "normal",
+    "to": 5,
+    "mode": "fluorescent",
+    "secs": 7,
+    "over": 8
    },
-   "text": "Light light_0: on"
+   "text": "Lights in room_1: normal for 7 s, fading over 8 s"
+  },
+  {
+   "what": "action",
+   "value": {
+    "light": "light_0",
+    "room": "room_1",
+    "set": "on",
+    "to": 5,
+    "mode": "dying",
+    "secs": 7,
+    "over": 8
+   },
+   "text": "Lights in room_1: on for 7 s, fading over 8 s"
+  },
+  {
+   "what": "action",
+   "value": {
+    "light": "light_0",
+    "room": "room_1",
+    "set": "on",
+    "to": 5,
+    "mode": "candle",
+    "secs": 7,
+    "over": 8
+   },
+   "text": "Lights in room_1: on for 7 s, fading over 8 s"
+  },
+  {
+   "what": "action",
+   "value": {
+    "light": "light_0",
+    "room": "room_1",
+    "set": "on",
+    "to": 5,
+    "mode": "pulse",
+    "secs": 7,
+    "over": 8
+   },
+   "text": "Lights in room_1: on for 7 s, fading over 8 s"
+  },
+  {
+   "what": "action",
+   "value": {
+    "light": "light_0",
+    "room": "room_1",
+    "set": "on",
+    "to": 5,
+    "mode": "custom",
+    "secs": 7,
+    "over": 8
+   },
+   "text": "Lights in room_1: on for 7 s, fading over 8 s"
+  },
+  {
+   "what": "action",
+   "value": {
+    "light": "light_0",
+    "set": "on",
+    "to": 5,
+    "mode": "fluorescent",
+    "secs": 7,
+    "over": 8
+   },
+   "text": "Light light_0: on for 7 s, fading over 8 s"
+  },
+  {
+   "what": "action",
+   "value": {
+    "light": "light_0",
+    "room": "room_1",
+    "set": "on",
+    "mode": "fluorescent",
+    "secs": 7,
+    "over": 8
+   },
+   "text": "Lights in room_1: on for 7 s, fading over 8 s"
+  },
+  {
+   "what": "action",
+   "value": {
+    "light": "light_0",
+    "room": "room_1",
+    "set": "on",
+    "to": 5,
+    "secs": 7,
+    "over": 8
+   },
+   "text": "Lights in room_1: on for 7 s, fading over 8 s"
+  },
+  {
+   "what": "action",
+   "value": {
+    "light": "light_0",
+    "room": "room_1",
+    "set": "on",
+    "to": 5,
+    "mode": "fluorescent",
+    "over": 8
+   },
+   "text": "Lights in room_1: on, fading over 8 s"
+  },
+  {
+   "what": "action",
+   "value": {
+    "light": "light_0",
+    "room": "room_1",
+    "set": "on",
+    "to": 5,
+    "mode": "fluorescent",
+    "secs": 7
+   },
+   "text": "Lights in room_1: on for 7 s"
   },
   {
    "what": "action",
@@ -3288,9 +3472,12 @@
    "value": {
     "trick": "lights_die",
     "room": "room_0",
-    "secs": 3
+    "light": "light_1",
+    "secs": 4,
+    "order": "toward",
+    "gap": 6
    },
-   "text": "Scare: the lights die in room_0 for 3 s"
+   "text": "Scare: light_1 dies, one by one toward the player for 4 s"
   },
   {
    "what": "action",

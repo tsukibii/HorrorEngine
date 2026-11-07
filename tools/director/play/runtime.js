@@ -9,7 +9,7 @@ import { runAll } from "./actions.js";
 import { playShelf, shelfName } from "../sfx.js";
 import { interactableOf } from "./interactables.js";
 import "./abilities.js";
-import { flickerK, flickerOn } from "../../shared/flicker.js";
+import { flickerK, flickerOn, MODES } from "../../shared/flicker.js";
 import { castSteps } from "./steps.js";
 import { Torch } from "./torch.js";
 import "./clean.js";
@@ -39,6 +39,12 @@ const DROP_AHEAD = 0.55, ICON = 112;               // G sets a thing down this f
 export const SIGHT = { angle: 90, range: 9, crouched: 0.55, meter: 1.2, drain: 1.5, calm: 3 };
 const UP = new THREE.Vector3(0, 1, 0), DOWN = new THREE.Vector3(0, -1, 0);
 const ELECTRIC = l => !["candle", "fire"].includes(l.userData.kind);   // a power cut darkens these
+const DIM = 0.35;                                  // a dim's brightness when the story gives no `to`
+// a light's own flicker kept, its lasting state's (bFlicker, bMode), the story's timed changes over it (play.gd light_own)
+const lightOwn = u => { u.own = { flicker: u.flicker || 0, mode: u.mode || null }; u.bFlicker = u.flicker || 0; u.bMode = u.mode || null; u.layers = []; u.fadeTo = null; u.dim = null; u.s = u.on ? 1 : 0; };
+const smooth01 = x => { const t = Math.max(0, Math.min(1, x)); return t * t * (3 - 2 * t); };
+// a timed change's weight now: 0 before and after, 1 while it holds, smoothed over its fade both ways (play.gd layer_w)
+const layerW = (L, T) => smooth01(Math.min(L.fade > 0 ? (T - L.t0) / L.fade : (T >= L.t0 ? 1 : 0), L.fade > 0 ? (L.end + L.fade - T) / L.fade : (T < L.end ? 1 : 0)));
 const flagsHold = (ifs, flags) => (ifs || []).every(f => f.startsWith("!") ? !flags.has(f.slice(1)) : flags.has(f));
 
 const SUPPORT = 0.06;                                  // the feet's reach out from the centre (groundAt)
@@ -140,7 +146,7 @@ export class PlayRuntime {
     kept.opened = kept.opened || {}; kept.inside = kept.inside || {}; kept.unlocked = kept.unlocked || {};   // parts that open, what's in which container, locks met
     this.heldMove = null; this.moveables = []; this.containers = [];
     for (const o of this.stage.world.children) if (o.userData && o.userData.id) this.byId[o.userData.id] = o;
-    for (const l of this.stage.lights) { this.byId[l.userData.id] = l; l.userData.on = l.intensity > 0; if (!l.userData.base) l.userData.base = LIT; }
+    for (const l of this.stage.lights) { this.byId[l.userData.id] = l; l.userData.on = l.intensity > 0; if (!l.userData.base) l.userData.base = LIT; lightOwn(l.userData); }
     for (const m of this.stage.world.children) if (m.userData && m.userData.kind === "door") {
       const p = m.userData.piece || {}, by = (p.tags || []).find(t => t.startsWith("locked_by:"));
       const d = this.doors[m.userData.id] = kept.doors[m.userData.id] || { open: false, locked: !!by, by: by ? by.slice(10) : null, deg: 0, from: 0, to: 0, t: 1, secs: DOOR_SECS };
@@ -401,22 +407,64 @@ export class PlayRuntime {
     const k = (this.kept = this.kept || {})[level] = this.kept[level] || { vis: {}, doors: {}, bodies: {} }, on = set !== "off";
     if (on === (k.power !== false)) return;
     k.power = on; this.hud.log(on ? "the power is back" : "the power's out");
-    if (on && level === this.level) for (const l of this.stage.lights) if (ELECTRIC(l)) {   // flickering up for a moment, then its own flicker again
-      const u = l.userData; if (u.flicker0 === undefined) u.flicker0 = u.flicker || 0;
-      u.flicker = Math.max(u.flicker0, 0.8); u.surge = this.clock + 0.9; flickerOn(u, this.clock);   // a tube's starter clicks
+    if (on && level === this.level) for (const l of this.stage.lights) if (ELECTRIC(l)) {   // flickering up for a moment (lightK), then its own flicker again
+      const u = l.userData; u.surge = this.clock + 0.9; flickerOn(u, this.clock);   // a tube's starter clicks
     }
     this.emit({ type: "power", on });
   }
-  light(id, room, set) {
-    const ls = id ? [this.byId[id]].filter(Boolean) : this.stage.lights.filter(l => l.userData.room === room);
-    for (const l of ls) {
-      const was = l.userData.on;
-      if (set === "toggle") l.userData.on = !l.userData.on;
-      else if (set === "on" || set === "off") l.userData.on = set === "on";
-      else if (set === "flicker") { l.userData.on = true; l.userData.flicker = Math.max(0.6, l.userData.flicker || 0); }
-      else if (set === "dim") { l.userData.on = true; l.userData.dim = 0.35; }
-      if (l.userData.on && !was) flickerOn(l.userData, this.clock);   // switched on: a tube stutters on
+  // the ids' lights: one, or every light in a room
+  lightsOf(id, room) { return id ? [this.byId[id]].filter(l => l && l.isLight) : this.stage.lights.filter(l => l.userData.room === room); }
+  // the story's `light` (STORY_FORMAT §4), or a switch's `toggle`: play.gd's light, the same rules. Without `secs` the
+  // change lasts (the light's own state; the story's timed changes on it go, a toggle leaves them); with `secs` it's
+  // laid over the light's own state and goes by itself; `on` and `normal` bring back its own brightness and flicker
+  light(id, room, set, o = {}) {
+    const secs = +o.secs || 0, fade = Math.max(0, +o.over || 0), to = Math.max(0, Math.min(1, o.to !== undefined && o.to !== null ? +o.to : DIM));
+    const mode = MODES.includes(o.mode) ? o.mode : null;
+    for (const l of this.lightsOf(id, room)) {
+      const u = l.userData, was = u.on;
+      if (secs > 0) { const t0 = this.clock + Math.max(0, +o.delay || 0); u.layers.push({ set, to, mode, t0, end: t0 + secs, fade }); continue; }
+      if (set !== "toggle") u.layers = [];
+      if (fade > 0) u.fadeTo = { from: u.s || 0, t0: this.clock, secs: fade };
+      if (set === "toggle") u.on = !u.on;
+      else if (set === "on" || set === "normal") { if (set === "on") u.on = true; u.dim = null; u.bFlicker = u.own.flicker; u.bMode = u.own.mode; }
+      else if (set === "off") u.on = false;
+      else if (set === "flicker") { u.on = true; u.bFlicker = Math.max(0.6, u.bFlicker || 0); if (mode) u.bMode = mode; }
+      else if (set === "dim") { u.on = true; u.dim = to; }
+      if (u.on && !was) flickerOn(u, this.clock);   // switched on: a tube stutters on
     }
+  }
+  // the story's `lights_die` (TRICKS.md §2): out for `secs`, back as they were; `order: "toward"` one by one toward the
+  // player, `gap` s apart, the farthest first, all back together `secs` after the last. Its seconds (play.gd's)
+  lightsDie(a) {
+    const secs = a.secs !== undefined && a.secs !== null ? +a.secs : 1, ls = this.lightsOf(a.light || null, a.room);
+    if (a.order !== "toward" || ls.length < 2) { this.light(a.light || null, a.room, "off", { secs }); return secs; }
+    const gap = a.gap !== undefined && a.gap !== null ? +a.gap : 0.4, me = this.player.pos;
+    ls.sort((x, y) => y.position.distanceTo(me) - x.position.distanceTo(me));
+    ls.forEach((l, i) => this.light(l.userData.id, null, "off", { secs: secs + gap * (ls.length - 1 - i), delay: gap * i }));
+    return secs + gap * (ls.length - 1);
+  }
+  // the multiplier on a light's energy now (play.gd's light_k): its steady brightness from its own state, a lasting
+  // change's fade and the story's timed changes over it, times its flicker; the amount and mode kept in flicker, mode
+  lightK(u, T) {
+    const litOk = this.powered() || u.kind === "candle" || u.kind === "fire", ownS = litOk ? (u.dim !== null && u.dim !== undefined ? u.dim : 1) : 0;
+    let s = u.on ? ownS : 0;
+    if (u.fadeTo) { const x = (T - u.fadeTo.t0) / Math.max(0.001, u.fadeTo.secs); if (x >= 1) u.fadeTo = null; else s = u.fadeTo.from + (s - u.fadeTo.from) * smooth01(x); }
+    let amt = u.bFlicker || 0, mode = u.bMode;
+    if (u.surge) { if (T >= u.surge) u.surge = null; else amt = Math.max(amt, 0.8); }
+    const keep = [];
+    for (const L of u.layers) {
+      if (T >= L.end + L.fade) { if (L.set === "off" && u.on) flickerOn(u, T); continue; }   // back after the dark: a tube stutters on
+      keep.push(L);
+      const w = layerW(L, T); if (w <= 0) continue;
+      const mix = v => { s = s + (v - s) * w; };
+      if (L.set === "off") mix(0);
+      else if (L.set === "on") mix(ownS);
+      else if (L.set === "dim") mix(litOk ? L.to : 0);
+      else if (L.set === "flicker") { mix(ownS); amt = amt + (Math.max(0.6, amt) - amt) * w; if (L.mode && w >= 0.5) mode = L.mode; }
+      else if (L.set === "normal") { mix(u.on && litOk ? 1 : 0); amt = amt + (u.own.flicker - amt) * w; if (w >= 0.5) mode = u.own.mode; }
+    }
+    u.layers = keep; u.s = s; u.flicker = amt; u.mode = mode;
+    return s * flickerK(u, T);
   }
   wait(secs) { return new Promise(res => this.waits.push({ at: this.clock + secs, res })); }
   anim(secs, fn) { return new Promise(done => this.anims.push({ t: 0, secs: Math.max(0.01, secs), fn, done })); }   // fn(0..1) each frame, on the game's clock
@@ -1223,9 +1271,7 @@ export class PlayRuntime {
     c.updateMatrixWorld();                               // the cursor's ray (and the hands) from where the eye is now, not the last frame
     const T = this.clock;
     for (const l of this.stage.lights) {
-      const u = l.userData; let k = u.on && (this.powered() || !ELECTRIC(l)) ? (u.dim || 1) : 0;
-      if (u.surge && T >= u.surge) { u.flicker = u.flicker0 || 0; delete u.surge; }   // back after the power's flicker-up
-      k *= flickerK(u, T);                                                           // its mode (tools/shared/flicker.js)
+      const u = l.userData, k = this.lightK(u, T);         // its state, the story's changes over it, its flicker by mode (tools/shared/flicker.js)
       l.intensity = (u.base || 1) * k;
     }
     this.stage.sweepTick(dt);                            // the windows' headlight sweeps

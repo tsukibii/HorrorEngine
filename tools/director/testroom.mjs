@@ -131,6 +131,17 @@ const snapFor = nid => {                               // the run's state on rea
   const press = async (key, ms = 120) => { await page.keyboard.down(key); await page.waitForTimeout(ms); await page.keyboard.up(key); };
   const place = (x, y, yaw = 90, pitch = 0) => page.evaluate(([x, y, yaw, pitch]) => { const rt = window.__dd.play; rt.place(new (rt.player.pos.constructor)(x, 0, -y), yaw, pitch); }, [x, y, yaw, pitch]);
   const flag = f => page.evaluate(f => window.__dd.run.flags.has(f), f);
+  // lights' strengths (their share of their own strength) every frame for `secs` of the game's time, in the page;
+  // `untilBack`: done early once the first two have been out together and are both back
+  const watchLights = (ids, secs, untilBack = false) => page.evaluate(([ids, secs, untilBack]) => new Promise(res => {
+    const rt = window.__dd.play, out = [], t0 = rt.clock; let dark = false;
+    const tick = () => {
+      const row = ids.map(id => { const l = rt.byId[id]; return l.intensity / (l.userData.base || 1); }); out.push(row);
+      if (row[0] === 0 && row[1] === 0) dark = true;
+      if ((untilBack && dark && row[0] > 0.9 && row[1] > 0.9) || rt.clock - t0 >= secs) res(out); else requestAnimationFrame(tick);
+    };
+    tick();
+  }), [ids, secs, untilBack]);
   const tasks = () => page.evaluate(() => [...document.querySelectorAll(".ph-todo .ph-task")].map(e => ({ id: e.dataset.id, state: e.dataset.state })));
   const task = async id => ((await tasks()).find(t => t.id === id) || {}).state || null;
   // every task ticked or failed, heard as it happens (a station's last tick ends it, and its list is cleared straight away)
@@ -326,12 +337,25 @@ const snapFor = nid => {                               // the run's state on rea
       await gameWait(0.3); await ticked("t4_candle");
       if (!(await page.evaluate(() => window.__dd.play.byId.power_candle_light.intensity === 0))) throw new Error("the candle's light is still on");
     });
+    await step("a light that dims and comes back: the bulb sags to a fifth for a moment and is back to full by itself (ticks); a lasting dim on the lamp undone by on (its own dying flicker back)", async () => {
+      const seen = await watchLights(["power_bulb"], 2.4), ks = seen.map(x => x[0]);
+      if (!(Math.min(...ks) < 0.3)) throw new Error("the bulb never sagged: lowest " + Math.min(...ks).toFixed(2));
+      if (!(ks[ks.length - 1] > 0.9)) throw new Error("the bulb didn't come back: " + ks[ks.length - 1].toFixed(2));
+      await ticked("t4_dim");
+      const u = await page.evaluate(() => { const d = window.__dd.play.byId.power_lamp.userData; return { dim: d.dim, mode: d.mode, layers: d.layers.length }; });
+      if (u.dim !== null || u.mode !== "dying" || u.layers) throw new Error("the lamp after its dim and on: " + JSON.stringify(u));
+    });
   });
 
   await station("n_store", async () => {
-    await step("5 · In your hands: the three tins into the inventory's row (each ticks), the box carried to the shelf and put down there (G: it ticks), the plushie in the hand (ticks)", async () => {
+    await step("5 · In your hands: the store's lights die one by one toward you as you come in (the far one first, both back, the one that was off still off); the three tins into the inventory's row (each ticks), the box carried to the shelf and put down there (G: it ticks), the plushie in the hand (ticks)", async () => {
       await place(1.5, 7.5, 180);
+      const watching = watchLights(["store_lamp", "store_lamp_back", "store_shelf_light"], 15, true);   // watched from outside: the lights die one by one toward the player as they come in
       await enterRoom("door_store", "store");
+      const seen = await watching;
+      const farFirst = seen.some(([near, far]) => far === 0 && near > 0.5), both = seen.findIndex(([near, far]) => near === 0 && far === 0);
+      if (!farFirst || both < 0 || !seen.slice(both).some(([near, far]) => near > 0.9 && far > 0.9) || seen.some(x => x[2] > 0))
+        throw new Error("one by one toward the player: " + JSON.stringify({ farFirst, both, end: seen[seen.length - 1] }));
       for (const t of ["a", "b", "c"]) { await use(`tin_${t}_pickup`, 0.6); await ticked(`t5_${t}`); }
       const row = await page.evaluate(() => document.querySelectorAll(".ph-inv-i").length);
       if (row < 3) throw new Error("the row holds " + row);

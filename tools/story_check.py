@@ -38,7 +38,7 @@ OPEN_TO = {"open", "shut", "close", "lock", "unlock"}     # the `open` action's 
 SKIN_KEYS = ("wet", "sweat", "drips", "oil")            # a cast member's skin (docs/GODOT_LOOK.md §5): each 0..1
 ASK_SECS = 3.0              # the walker's time to answer an ask
 MUSIC = {"silence", "calm", "uneasy", "dread", "chase"}
-LIGHT_SET = {"on", "off", "flicker", "dim"}
+LIGHT_SET = {"on", "off", "flicker", "dim", "normal"}   # normal: its own brightness and flicker back, on or off as it is
 FLICKER_MODES = {"fluorescent", "dying", "candle", "pulse", "custom"}   # a light's `mode` (STORY_FORMAT §2)
 PATTERNS = {"caustics", "leaves", "blinds", "clouds"}                     # a light's `pattern` (STORY_FORMAT §2)
 TORCH_SET = {"on", "off", "flicker", "dead", "works"}   # the flashlight (an item with `torch`): dead flickers out, works is new batteries
@@ -139,10 +139,34 @@ def check_outside(lid, out, r):
                 r.err(f"level {lid}: outside: part {i + 1}: {k} {pt[k]!r} (metres)")
 SIGHT = {"angle", "range", "crouched", "meter", "drain", "calm"}      # behave sees: the play runtime's SIGHT
 TRICKS = {  # name: (required fields, seconds it takes)
-    "swap": ({"hide", "show"}, 0), "slam_behind": ({"door"}, 2), "lights_die": ({"room"}, 3),
+    "swap": ({"hide", "show"}, 0), "slam_behind": ({"door"}, 2), "lights_die": (set(), 3),   # lights_die: a room or a light
     "glimpse": ({"figure"}, 2), "knock": ({"at"}, 3), "whisper": ({"line", "at"}, 0),
     "jumpscare": ({"figure"}, 3), "loop_hall": ({"trigger", "back_to"}, 0), "cut_away": ({"lookat", "then"}, 2),
 }
+# tricks the palette no longer offers: what to use instead (docs/HORROR_TODO.md 0)
+RETIRED_TRICKS = {
+    "cut_away": "the eye is never turned for the player (DIRECTING §1): a soft `focus` or a slow `lookat` asked for on purpose",
+    "loop_hall": "not in Play yet (docs/HORROR_TODO.md 1, the walkway that loops): nothing happens in a game",
+}
+
+
+def check_light_change(bid, what, a, r):
+    """A light's change (STORY_FORMAT §4): `to` how bright a dim is, `secs` how long (then back as it was), `over` the
+    seconds it takes (not `fade`: that's the screen's verb), `mode` a flicker's mode."""
+    if "to" in a and not (isinstance(a["to"], (int, float)) and 0 <= a["to"] <= 1):
+        r.err(f"{bid}: {what} to is how bright, 0 to 1")
+    for k, lo, word in (("secs", 0, "more than"), ("over", 0, "at least")):
+        if k in a and not (isinstance(a[k], (int, float)) and (a[k] > lo if word == "more than" else a[k] >= lo)):
+            r.err(f"{bid}: {what} {k} is seconds ({word} {lo})")
+    if "mode" in a:
+        if a["mode"] not in FLICKER_MODES:
+            r.err(f"{bid}: {what} mode {a['mode']!r}: one of {', '.join(sorted(FLICKER_MODES))}")
+        elif a.get("set") != "flicker":
+            r.warn(f"{bid}: {what} mode {a['mode']!r} only counts with set flicker")
+    if "to" in a and a.get("set") != "dim":
+        r.warn(f"{bid}: {what} to only counts with set dim")
+
+
 SEAMS = {  # kind: (fields it needs, seconds it adds)
     "none": (set(), 0.0), "blink": (set(), 0.2), "glance": ({"look"}, 1.0), "flicker": (set(), 0.4),
     "occlude": (set(), 0.8), "cutaway": ({"look"}, 1.5), "turn": (set(), 0.0), "stumble": (set(), 1.0),
@@ -1584,6 +1608,7 @@ def check_action(bid, a, story, things, r, stage=None):
             r.err(f"{bid}: light {v!r} isn't a light")
         if a.get("set") not in LIGHT_SET:
             r.err(f"{bid}: light set {a.get('set')!r}")
+        check_light_change(bid, "light", a, r)
     elif k == "power":                                  # the power cut (every electric light dark, the switches dead) or back
         if v not in ("on", "off"):
             r.err(f"{bid}: power {v!r}: \"on\" or \"off\"")
@@ -1733,9 +1758,22 @@ def check_action(bid, a, story, things, r, stage=None):
         missing = TRICKS[v][0] - set(a)
         if missing:
             r.err(f"{bid}: trick {v} needs {', '.join(sorted(missing))}")
-        for f in ("hide", "show", "door", "room", "figure", "at", "trigger", "back_to", "lookat"):
+        for f in ("hide", "show", "door", "room", "figure", "at", "trigger", "back_to", "lookat", "light"):
             if f in a:
                 placed(a[f])
+        if v == "lights_die":                           # a room's lights, or one; back as they were (STORY_FORMAT §4)
+            if not a.get("room") and not a.get("light"):
+                r.err(f"{bid}: trick lights_die needs a room or a light")
+            if a.get("light") in things and things[a["light"]].use != "light":
+                r.err(f"{bid}: lights_die light {a['light']!r} isn't a light")
+            if "order" in a and a["order"] != "toward":
+                r.err(f"{bid}: lights_die order {a['order']!r}: \"toward\" (one by one toward the player) or none")
+            if "gap" in a and not (isinstance(a["gap"], (int, float)) and a["gap"] >= 0):
+                r.err(f"{bid}: lights_die gap is seconds (0 or more)")
+            if "secs" in a and not (isinstance(a["secs"], (int, float)) and a["secs"] > 0):
+                r.err(f"{bid}: lights_die secs is seconds (more than 0)")
+        if v in RETIRED_TRICKS:
+            r.warn(f"{bid}: trick {v}: {RETIRED_TRICKS[v]}")
         if v == "whisper" and a.get("line") not in lines:
             r.err(f"{bid}: whisper line {a.get('line')!r} isn't a line")
         if v in ("glimpse", "jumpscare") and a.get("figure") in things and \

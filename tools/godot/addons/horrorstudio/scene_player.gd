@@ -228,21 +228,13 @@ func fire_cue(c: Dictionary, t0: float) -> void:
 			if sn.begins_with("sfx/"):
 				rt.play_sfx(sn.substr(4), d.get("at"))
 	elif d.has("light") and rt != null:
-		rt.light(d["light"], d.get("room"), d.get("set", "on"))
+		rt.light(d["light"], d.get("room"), d.get("set", "on"), d)
 	elif d.has("trick") and rt != null and d["trick"] == "lights_die":
-		rt.light(null, d.get("room"), "off")
-		_relight(d.get("room"), float(d.get("secs", 1)))
+		rt.lights_die(d)                                         # a timed change: back as they were by itself
 	elif d.has("behave") and rt != null:
 		rt.behave(d["behave"], d)
 	elif rt != null and CUE_ACTS.has(rt.actions.verb_of(d)):    # the rest a cue can say that takes no time, as Play runs it: a face, a fact, an item, a door... (a Director line's own commands)
 		rt.actions.run(d, rt)
-
-
-func _relight(room, secs: float) -> void:
-	var t := get_tree().create_timer(secs)
-	await t.timeout
-	if game.play != null:
-		game.play.light(null, room, "on")
 
 
 func play(sc: Dictionary, nid: String, sid: String) -> Variant:

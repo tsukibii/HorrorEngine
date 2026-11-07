@@ -56,7 +56,13 @@ Where the kit already makes the thing (a door, its handle, a bed: docs/KIT.md), 
 | an ice bucket | 8 | the ware family's `bucket` kind | the motel's mark | the lid (a part) |
 | a flashlight and batteries | 11 | FLASHLIGHT_PLAN §1f | FLASHLIGHT_PLAN §1f | FLASHLIGHT_PLAN §1f |
 
-## 0. Lights that dim and come back (small; first)
+## 0. Lights that dim and come back (small; first) — built 2026-11-07
+
+**Built** (DECISIONS 2026-11-07, later): as below, with one change: the seconds a change takes are `over`, not `fade`
+(`fade` is the screen's own verb, and an action can have only one). TestRoom001's station 4 (the bulb sags to a fifth
+and comes back by itself; a lasting dim undone by `on`) and station 5 (the store's lamps die one by one toward the
+player, back together, the one that was off staying off), on the desk and in Godot.
+
 
 **Now**
 - `light` sets a light on, off, flickering or dim; it picks one light, or every light in a room.
@@ -70,7 +76,7 @@ Where the kit already makes the thing (a door, its handle, a bed: docs/KIT.md), 
 - `light` takes:
   - `to`: how bright, 0..1 (dim's 0.35 when left out);
   - `secs`: how long, then back to how it was (left out: it stays);
-  - `fade`: seconds to dim and to come back (0 snaps);
+  - `over`: seconds to dim and to come back (0 snaps; not `fade`, the screen's own verb);
   - with `flicker`, a `mode` (the lamps' own: fluorescent, dying, candle, pulse, custom).
 - `on` brings a light back to its own brightness and its own flicker, undoing the story's dim and flicker. `normal`
   does the same without switching it on.
@@ -80,7 +86,7 @@ Where the kit already makes the thing (a door, its handle, a bed: docs/KIT.md), 
 - **The Director:**
   - a Scares card *A light dims* (one light, or the room it's dropped in; how dark; for how long; the fade);
   - *The lights die* with a light picker and *one by one*;
-  - the Story tab's Light row with *how bright*, *for (s)* and *fade*.
+  - the Story tab's Light row with *how bright*, *for (s)* and *fading over (s)*.
 - **Where:** the desk (runtime.js, actions.js), Godot (play.gd, actions.gd), STORY_FORMAT §4, story_check, commands.js
   and commands.json (`commands_json.mjs`), TestRoom001's station of lights.
 - **Words the palette offers that Godot can't play:**

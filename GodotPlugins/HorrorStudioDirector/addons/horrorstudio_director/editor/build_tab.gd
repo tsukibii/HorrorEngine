@@ -545,6 +545,8 @@ func fill_ready(acts: Array, target: Node) -> Array:
 				a[k] = HSDirector.id_of(room) if room != null else ""
 			elif v == "{who}":
 				a[k] = who.cast_id() if who != null else ""
+			elif v == "{light}":                               # the story's light nearest where it lands (A light dims)
+				a[k] = nearest_light(target, root)
 			elif v.begins_with("{clip:") and v.ends_with("}"):
 				var c := clip_by_words(who, v.substr(6, v.length() - 7).split(",", false))
 				if c == "":
@@ -562,6 +564,24 @@ func fill_ready(acts: Array, target: Node) -> Array:
 		if keep:
 			out.append(a)
 	return out
+
+
+## the story's id of the light nearest a node (your OmniLight3D and SpotLight3D lights, as HSLevel names them: a
+## window's daylight, a flicker node and a light the editor made aren't the story's); "" when there's none
+static func nearest_light(near: Node, root: Node) -> String:
+	if root == null:
+		return ""
+	var at: Vector3 = (near as Node3D).global_position if near is Node3D and near.is_inside_tree() else Vector3.ZERO
+	var best = null
+	var bd := INF
+	for l in root.find_children("*", "Light3D", true, false):
+		if l is DirectionalLight3D or (l.owner == null and l != root) or HSDirector.class_of(l).begins_with("HSFlicker"):   # (what a node makes has no owner)
+			continue
+		var d: float = (l.global_position - at).length() if l.is_inside_tree() else INF
+		if best == null or d < bd:
+			best = l
+			bd = d
+	return HSDirector.snake(str(best.name)) if best != null else ""
 
 
 ## the character nearest a node (a reaction's who): of the cast in the game from the start (not hidden, not off), else

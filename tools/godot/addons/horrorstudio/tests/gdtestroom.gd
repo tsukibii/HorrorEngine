@@ -66,6 +66,27 @@ func where() -> String:
 		"hiding": rt.player.hiding, "choice": not g.hud.choice_over, "panel": g.hud.panel_el != null})
 
 
+## lights' strengths (each its share of its own strength) every frame for `secs` of the game's time, into `out` (an
+## array the caller holds, so it can watch while something else happens: not awaited, it runs alongside); `until_back`:
+## done early once the first two have been out together and are both back; `out` ends with "done"
+func watch_lights(ids: Array, secs: float, out: Array = [], until_back := false) -> Array:
+	var t0: float = rt.clock
+	var dark := false
+	while true:
+		var row: Array = []
+		for id in ids:
+			var b: float = float(rt.light_state[id]["base"])
+			row.append(rt.light_energy(id) / b if b > 0.0 else 0.0)
+		out.append(row)
+		if float(row[0]) == 0.0 and float(row[1] if row.size() > 1 else 0.0) == 0.0:
+			dark = true
+		if rt.clock - t0 >= secs or (until_back and dark and float(row[0]) > 0.9 and float(row[1]) > 0.9):
+			out.append("done")
+			return out
+		await frames(1)
+	return out
+
+
 func frames(n: int) -> void:
 	for i in n:
 		await process_frame
@@ -850,6 +871,19 @@ func _initialize() -> void:
 			await frames(3)
 			if rt.light_energy("power_candle_light") != 0:
 				return "the candle's light is still on"
+			var bulb: Array = await watch_lights(["power_bulb"], 2.4)      # a light that dims and comes back (b_power_dim, DECISIONS 2026-11-07)
+			bulb.pop_back()
+			var bulb_lo := INF
+			for x in bulb:
+				bulb_lo = minf(bulb_lo, float(x[0]))
+			if not (bulb_lo < 0.3) or not (float(bulb[bulb.size() - 1][0]) > 0.9):
+				return "the bulb's dim: lowest %.2f, last %.2f (it should sag to a fifth and come back by itself)" % [bulb_lo, float(bulb[bulb.size() - 1][0])]
+			r = await ticked("t4_dim")
+			if r != "":
+				return r
+			var pl: Dictionary = rt.light_state["power_lamp"]                 # a lasting dim undone by on: its own dying flicker back
+			if pl["dim"] != null or pl.get("b_mode") != "dying" or not (pl["layers"] as Array).is_empty():
+				return "the lamp after its dim and on: " + JSON.stringify({"dim": pl["dim"], "mode": pl.get("b_mode"), "layers": (pl["layers"] as Array).size()})
 			var u: Dictionary = rt.light_state["power_lamp"]                  # the lamp is a dying tube (its `mode`): it drops out now and then, never quite full between
 			if u.get("mode") != "dying" or float(u.get("interval", 0)) != 4.0 or float(u.get("flicker", 0)) <= 0.0:
 				return "the power lamp's flicker mode: " + JSON.stringify({"mode": u.get("mode"), "interval": u.get("interval"), "flicker": u.get("flicker")})
@@ -869,11 +903,32 @@ func _initialize() -> void:
 			return ""))
 
 	await station("n_store", func():
-		await step("5 · In your hands: the three tins into the inventory's row (each ticks), the box carried to the shelf and put down there (G: it ticks), the plushie in the hand (ticks)", func():
+		await step("5 · In your hands: the store's lights die one by one toward you as you come in (the far one first, both back, the one that was off still off); the three tins into the inventory's row (each ticks), the box carried to the shelf and put down there (G: it ticks), the plushie in the hand (ticks)", func():
 			place(1.5, 7.5, 180)
+			var seen: Array = []
+			watch_lights(["store_lamp", "store_lamp_back", "store_shelf_light"], 15.0, seen, true)   # watched from outside, alongside: the lights die one by one as the player comes in
 			var r := await enter_room("door_store", "store")
 			if r != "":
 				return r
+			while seen.is_empty() or str(seen[seen.size() - 1]) != "done":
+				await frames(1)
+			seen.pop_back()
+			var far_first := false
+			var both := -1
+			var back := false
+			var lit_off := false
+			for i in seen.size():
+				var x: Array = seen[i]
+				if float(x[1]) == 0.0 and float(x[0]) > 0.5:
+					far_first = true
+				if both < 0 and float(x[0]) == 0.0 and float(x[1]) == 0.0:
+					both = i
+				if both >= 0 and float(x[0]) > 0.9 and float(x[1]) > 0.9:
+					back = true
+				if float(x[2]) > 0.0:
+					lit_off = true
+			if not far_first or both < 0 or not back or lit_off:
+				return "one by one toward the player: " + JSON.stringify({"far_first": far_first, "both": both, "back": back, "the off one lit": lit_off, "end": seen[seen.size() - 1]})
 			for t in ["a", "b", "c"]:
 				await use("tin_%s_pickup" % t, 0.6)
 				r = await ticked("t5_%s" % t)

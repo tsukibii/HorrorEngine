@@ -306,7 +306,7 @@ console.log("quick events (templates.js)");
     if (r.round) { S.flow[nid].next = nid + "_r"; S.flow[nid + "_r"] = { type: "choice", by: "result", of: nid, options: Object.values({ hide: ["hidden", "found"], run: ["escaped", "caught"] }[r.round]).map(x => ({ result: x, to: back })) }; }
     made.push(nid);
   }
-  const bv = { jumpscare: { zone: room[0], figure: person[0], sound: Object.keys(S.sounds)[0] }, knock: { zone: room[0], at: door[0], count: 3 }, lights_die: { room: room[0], secs: 1 },
+  const bv = { jumpscare: { zone: room[0], figure: person[0], sound: Object.keys(S.sounds)[0] }, knock: { zone: room[0], at: door[0], count: 3 }, lights_die: { room: room[0], secs: 1 }, light_dims: { zone: room[0], light: of(t => t.use === "light")[0], to: 0.2, secs: 2 },
     slam: { zone: room[0], door: door[0] }, whisper: { look: door[0], line: Object.keys(S.lines)[0], at: door[0] }, speaks: { zone: room[0], line: Object.keys(S.lines)[0] }, checkpoint: { zone: room[0] }, car: { zone: room[0], room: (Object.values(S.levels).flatMap(l => l.rooms || []).find(r => (r.openings || []).some(o => o.window)) || {}).id },
     kettle_on: { zone: "kitchen", kettle: "kitchen_kettle" }, still_burning: { zone: "hall", cigarette: "hall_ash" }, phone_rings: { zone: "study", phone: "study_phone" },
     tv_on: { zone: "study", tv: "study_tv" }, clock_stops: { clock: "kitchen_clock", thought: "2:47. It's stopped." }, torch_flickers: { zone: room[0], how: "dead" } };

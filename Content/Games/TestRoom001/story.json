@@ -990,6 +990,28 @@
         2.5
        ],
        "z": 2.9
+      },
+      {
+       "id": "store_lamp_back",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        0.8,
+        2.5
+       ],
+       "z": 2.9
+      },
+      {
+       "id": "store_shelf_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": false,
+       "at": [
+        2.5,
+        4.4
+       ],
+       "z": 1.9
       }
      ]
     },
@@ -4380,6 +4402,13 @@
         "state": "power_candle",
         "is": "out"
        }
+      },
+      {
+       "todo": "t4_dim",
+       "text": "Watch the bulb sag and come back",
+       "ticks": {
+        "flag": "dim_back"
+       }
       }
      ]
     },
@@ -4423,6 +4452,39 @@
      ]
     },
     {
+     "id": "b_power_dim",
+     "when": {
+      "ticked": "t4_candle"
+     },
+     "do": [
+      {
+       "light": "power_bulb",
+       "set": "dim",
+       "to": 0.2,
+       "secs": 1.5,
+       "over": 0.3
+      },
+      {
+       "think": "The bulb sags. Then it's back."
+      },
+      {
+       "wait": 2.3
+      },
+      {
+       "light": "power_lamp",
+       "set": "dim",
+       "to": 0.5
+      },
+      {
+       "light": "power_lamp",
+       "set": "on"
+      },
+      {
+       "flag": "dim_back"
+      }
+     ]
+    },
+    {
      "id": "b_power_done",
      "when": {
       "ticked": true
@@ -4451,11 +4513,6 @@
      "do": [
       {
        "objective": "5 · In your hands: the inventory (E), carrying, putting down (G)"
-      },
-      {
-       "trick": "lights_die",
-       "room": "store",
-       "secs": 2
       },
       {
        "todo": "t5_a",
@@ -4492,6 +4549,21 @@
        "ticks": {
         "carrying": "store_plush"
        }
+      }
+     ]
+    },
+    {
+     "id": "b_store_dark",
+     "when": {
+      "enter": "store"
+     },
+     "do": [
+      {
+       "trick": "lights_die",
+       "room": "store",
+       "secs": 2,
+       "order": "toward",
+       "gap": 0.8
       }
      ]
     },

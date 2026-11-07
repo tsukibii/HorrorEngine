@@ -228,7 +228,16 @@ static func action_text(a, n: Callable = Callable()) -> String:
 		"open":
 			return cap(js(_or(g.call("to"), "open"))) + " " + n.call("thing", g.call("open"))
 		"light":
-			return (("Lights in " + n.call("thing", a["room"])) if _t(g.call("room")) else ("Light " + n.call("thing", g.call("light")))) + ": " + js(_or(g.call("set"), "on"))
+			var lx := ""
+			if g.call("set") == "dim" and a.has("to") and a["to"] != null and not (a["to"] is String and a["to"] == ""):
+				lx += " to " + js(a["to"])
+			if g.call("set") == "flicker" and _t(g.call("mode")):
+				lx += " (" + js(a["mode"]) + ")"
+			if _t(g.call("secs")):
+				lx += " for " + js(a["secs"]) + " s"
+			if _t(g.call("over")):
+				lx += ", fading over " + js(a["over"]) + " s"
+			return (("Lights in " + n.call("thing", a["room"])) if _t(g.call("room")) else ("Light " + n.call("thing", g.call("light")))) + ": " + js(_or(g.call("set"), "on")) + lx
 		"power":
 			return "The power comes back" if g.call("power") == "on" else "The power goes out"
 		"sweep":
@@ -307,7 +316,7 @@ static func _trick_text(a: Dictionary, n: Callable) -> String:
 		"slam_behind":
 			return n.call("thing", g.call("door")) + " slams shut behind the player"
 		"lights_die":
-			return "the lights die in " + n.call("thing", g.call("room")) + ((" for " + js(a["secs"]) + " s") if _t(g.call("secs")) else "")
+			return ((n.call("thing", a["light"]) + " dies") if _t(g.call("light")) else ("the lights die in " + n.call("thing", g.call("room")))) + (", one by one toward the player" if g.call("order") == "toward" else "") + ((" for " + js(a["secs"]) + " s") if _t(g.call("secs")) else "")
 		"glimpse":
 			return "a glimpse of " + n.call("thing", g.call("figure")) + ((" (" + js(a["secs"]) + " s)") if _t(g.call("secs")) else "")
 		"jumpscare":

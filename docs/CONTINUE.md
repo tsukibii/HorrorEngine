@@ -62,6 +62,25 @@ built:
 **Next, if the user says yes:** HORROR_TODO's order (0, then the flashlight, then the small ones), each with its
 TestRoom001 station.
 
+**Then "go for it"** (DECISIONS 2026-11-07, later): HORROR_TODO 0 built.
+- **The words:** `light` `to`, `secs`, `over` (not `fade`), `mode`, `normal`; a timed change laid over the light's own
+  state (play.gd `light_k`, runtime.js `lightK`); `lights_die` `light`, `order: "toward"`, `gap`.
+- **The Director:** a state's light let go; the cards *A light dims* (`{light}`, build_tab.gd `nearest_light`) and
+  *The lights die one by one*.
+- **The desk:** the quick beat *A light dims*.
+- **TestRoom001:** stations 4 and 5.
+- **commands_json.mjs** no longer makes an example without its command's verb.
+- **Checks here:**
+  - CHECKS, DESK, CMDS, DIRECTOR, GDPLAY and FROMDESK ok.
+  - GDTESTROOM ok through station 12 and from 14 to the end. Station 13 fails the same on the code before the change: the
+    suitcase's and closets' made meshes aren't in a fresh container (`propgen.py make ... --library` needs Blender).
+  - Station 6 needs the desk's bake (`node tools/godot/bake.mjs --game TestRoom001`, the desk's server running) for
+    Aoi's skin, as before.
+  - GDTESTROOM `--from n_power` fails at the hand-placed mains light on the code before the change too (it wants the
+    run from the start).
+
+  Next: FLASHLIGHT_PLAN §1, the flashlight on batteries.
+
 ## Before that (2026-11-06, last, `street-nature`): the rivers scrapped, the foliage and rocks kept as props
 
 The user (DECISIONS 2026-11-06, last): "Scrap the rivers, keep all the foliage and rocks you made as props to generate.

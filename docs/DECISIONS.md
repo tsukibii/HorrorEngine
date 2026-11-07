@@ -2,6 +2,19 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-07, later (the user: "go for it": the lights, then the flashlight, then the sound that can go quiet)
+
+- Asked which to build first ("the lights fix, then the flashlight, then music, room sound and the hush, since most of
+  the other scare features depend on it"), the user: **"go for it"**. So: HORROR_TODO 0 (lights that dim and come
+  back), then FLASHLIGHT_PLAN §1 and §2 (the flashlight on batteries, characters that feel its light), then HORROR_TODO
+  13's first (music and room tone played, the hush before a sting), one step a commit with its TestRoom001 station.
+- **The lights, built** (HORROR_TODO 0): `light` with `to`, `secs`, `over` (not `fade`: the screen's own verb, which
+  the story check reads as a second command), `mode` and `set: normal`; a timed change laid over the light's own state
+  and gone by itself, `on` and `normal` bringing back its own brightness and flicker; `lights_die` on one `light` or a
+  room, `order: "toward"` with its `gap`, every light back as it was; a Director state's light let go back as the
+  level has it; the Scares cards *A light dims* (the light nearest where it lands, `{light}`) and *The lights die one
+  by one*; the desk's quick beat *A light dims*; `loop_hall` and `cut_away` out of the palette (the check warns).
+
 ## 2026-11-07 (the user: a list to build for a motel game; jump scares researched; a flashlight on batteries; characters that feel its light)
 
 - **The question first**: "Can you think of some game elements we should add that we might be missing. Do we have an

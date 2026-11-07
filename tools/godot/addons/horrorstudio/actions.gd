@@ -110,7 +110,7 @@ func run(a: Dictionary, rt) -> void:
 		"open":                                     # a thing's parts (a lid, doors, a cover): {open: id, to: open | shut | lock | unlock}
 			rt.open_action(val, str(a.get("to", "open")))
 		"light":
-			rt.light(val, a.get("room"), a.get("set", "on"))
+			rt.light(val, a.get("room"), a.get("set", "on"), a)          # `to`, `secs`, `fade`, `mode`: a timed change goes by itself
 		"torch":
 			rt.torch_set(val)
 		"skin":
@@ -170,10 +170,8 @@ func trick(v: String, a: Dictionary, rt) -> void:
 			rt.set_visible(a.get("figure"), true)
 			await rt.wait(float(a.get("secs", 0.6)))
 			rt.set_visible(a.get("figure"), false)
-		"lights_die":
-			rt.light(null, a.get("room"), "off")
-			await rt.wait(float(a.get("secs", 1)))
-			rt.light(null, a.get("room"), "on")
+		"lights_die":                                     # out for a while, then back as they were (one by one toward the player with `order`)
+			await rt.wait(rt.lights_die(a))
 		"swap":
 			var until: float = rt.clock + float(a.get("secs", 8))
 			while rt.active and (rt.seen(a.get("hide")) or rt.seen(a.get("show"))) and rt.clock < until:
