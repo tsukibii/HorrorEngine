@@ -68,7 +68,8 @@ func _ray(from: Vector3, to: Vector3, mask: int, areas: bool, bodies: bool = tru
 	return space().intersect_ray(q)
 
 
-## the walk: dx, dz in metres this frame, slid along what's in the way, then the feet onto the floor
+## the walk: dx, dz in metres this frame, slid along what's in the way, then the feet onto the floor (a step taken
+## here glides the eye as play.gd's own collision does: play.gd move wraps this)
 func move(dx: float, dz: float, s: Dictionary) -> void:
 	make()
 	var step := float(s["step"])

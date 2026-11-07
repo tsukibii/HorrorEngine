@@ -8,7 +8,7 @@
 extends SceneTree
 
 const ORDER := ["n_arrive", "n_hello", "n_front", "n_doors", "n_power", "n_store", "n_kitchen", "n_chores", "n_rest", "n_games",
-	"n_dark", "n_library", "n_things", "n_bath", "n_talk", "n_hide", "n_run", "n_sneak", "n_sleep", "n_night", "n_annex", "n_final"]
+	"n_dark", "n_library", "n_things", "n_bath", "n_talk", "n_stairs", "n_hide", "n_run", "n_sneak", "n_sleep", "n_night", "n_annex", "n_final"]
 const LEAVES := {"n_hello": {"karma": 1, "flags": ["met_aoi"], "states": {"kitchen_tv": "static"}}, "n_doors": {"items": ["key_brass", "fuse"], "flags": ["vault_open"]}, "n_power": {"flags": ["power_cut"]}, "n_kitchen": {"flags": ["phone_rang"], "states": {"kitchen_tv": "off"}},
 	"n_chores": {"items": ["mop"], "flags": ["chores_done", "feat_clean"]}, "n_games": {"karma": 1}, "n_dark": {"items": ["flashlight", "batteries"], "flags": ["torch_on"]},
 	"n_library": {"flags": ["found_painting"]}, "n_things": {"flags": ["things_packed"]}, "n_talk": {"karma": 2}, "n_annex": {"flags": ["annex_lit"]}}
@@ -61,7 +61,7 @@ func step(what: String, fn: Callable) -> void:
 func where() -> String:
 	if rt == null:
 		return "(no play)"
-	return JSON.stringify({"trail": (g.run["trail"] as Array).slice(-3) if g.run != null else null, "active": rt.active, "at": [snapped(rt.player.pos.x, 0.01), snapped(-rt.player.pos.z, 0.01)],
+	return JSON.stringify({"trail": (g.run["trail"] as Array).slice(-3) if g.run != null else null, "active": rt.active, "at": [snapped(rt.player.pos.x, 0.01), snapped(-rt.player.pos.z, 0.01), snapped(rt.player.pos.y, 0.01)],
 		"busy": rt.busy, "line": g.hud.line_text, "todo": g.hud.tasks.map(func(t): return str(t["id"]) + ":" + str(t["state"])), "heard": (rt.todo_log as Array).slice(-6), "flags": (g.run["flags"].keys() as Array).slice(-6) if g.run != null else null,
 		"hiding": rt.player.hiding, "choice": not g.hud.choice_over, "panel": g.hud.panel_el != null})
 
@@ -282,6 +282,54 @@ func walk_through(door_id: String, into: String, secs: float = 2.2) -> void:
 	feet.y = 0
 	rt.place(feet, rad_to_deg(atan2(-(at.z - feet.z), at.x - feet.x)), 0.0)
 	await hold("W", secs)
+
+
+## the player turned and moved on their floor without touching their height (place() would drop them to the ground
+## under a landing): where a stair's walk starts
+func turn_to(x: float, y: float, yaw: float) -> void:
+	rt.player.pos = Vector3(x, rt.player.pos.y, -y)
+	rt.player.yaw = yaw
+	rt.player.pitch = 0.0
+	rt.player["glide"] = 0.0
+
+
+## a stair walked: from (x, y) facing yaw, W held secs, the feet ending at `want` m up; never stuck on the way (half a
+## second without moving), and the eye never jumping a riser in a frame (the glide: at most its rate times the frame,
+## 0.35 / 0.12 m/s at the most: play.gd glide_step) (want < 0: only that the feet came down below 3 m: a walk ending
+## mid-way, on winders)
+func climb(x: float, y: float, yaw: float, secs: float, want: float) -> String:
+	turn_to(x, y, yaw)
+	var c0: float = rt.clock
+	var last_eye: float = rt.eye_pos().y
+	var last_pos: Vector3 = rt.player.pos
+	var still := 0.0
+	var stuck := 0
+	var jump := 0.0
+	var n := 0
+	rt.key_event("W", true)
+	while rt.active and rt.clock - c0 < secs and n < 20000:
+		await process_frame
+		n += 1
+		var dt: float = max(0.001, rt.get_process_delta_time())
+		var e: float = rt.eye_pos().y
+		jump = max(jump, abs(e - last_eye) - (0.35 / 0.12) * dt)
+		last_eye = e
+		var moved: float = Vector2(rt.player.pos.x - last_pos.x, rt.player.pos.z - last_pos.z).length()
+		still = still + dt if moved < 0.002 else 0.0
+		if still > 0.5:
+			stuck += 1
+			still = 0.0
+		last_pos = rt.player.pos
+	rt.key_event("W", false)
+	if want < 0.0 and float(rt.player.pos.y) > 3.0:
+		return "the feet still at %.2f m: never down the top flight  %s" % [rt.player.pos.y, where()]
+	if want >= 0.0 and abs(float(rt.player.pos.y) - want) > 0.05:
+		return "the feet at %.2f m, not %.2f  %s" % [rt.player.pos.y, want, where()]
+	if stuck > 0:
+		return "stuck on the way (%d times)  %s" % [stuck, where()]
+	if jump > 0.02:
+		return "the eye jumped %.3f m more than its glide allows in a frame" % jump
+	return ""
 
 
 func enter_room(door_id: String, room: String) -> String:
@@ -1400,6 +1448,51 @@ func _initialize() -> void:
 			var k := float(g.run["karma"].get("karma", 0))
 			if k - k0 != 2:
 				return "karma %s then %s" % [k0, k]
+			return ""))
+
+	await station("n_stairs", func():
+		await step("19 · Stairs: from the workshop up the stairwell's dog-leg (stairs from points: a half turn with its platform, concrete flights, each tread a step) to the gallery (ticks), never stuck, the eye gliding over every riser; across and down the back stairs (a house's L from points: the top flight, three winders round the newel, the long flight) to the back room (ticks); out into the court (ticks)", func():
+			if not await until(func(): return rt.moving == null and rt.look_tween == null, 3000):   # the scene's hand-over to Play settles first
+				return "the eye still moving after the scene"
+			place(8.2, 24.3, 0.0)
+			await hold("W", 1.2)
+			if not rt.inside.has("shaft"):
+				return "not in the stairwell  " + where()
+			var r := await climb(9.97, 24.2, 270.0, 2.4, 1.725)       # flight A, on the east: south to the half landing
+			if r != "":
+				return "flight A: " + r
+			r = await climb(8.63, 20.9, 90.0, 2.5, 3.45)                # flight B, on the west: north to the upper landing
+			if r != "":
+				return "flight B: " + r
+			turn_to(9.3, 24.5, 90.0)                                   # through the arch at the landing's west end
+			await hold("W", 1.3)
+			if not rt.inside.has("gallery"):
+				return "not in the gallery  " + where()
+			r = await ticked("t19_up")
+			if r != "":
+				return r
+			turn_to(13.6, 28.18, 0.0)                                  # east across the gallery through the door onto the back stairs' top treads
+			await hold("W", 1.0)
+			if not rt.inside.has("back_stairs") or float(rt.player.pos.y) < 3.2:
+				return "not on the back stairs' top  " + where()
+			r = await climb(14.9, 28.18, 0.0, 1.2, -1.0)                  # down the top flight, east, onto the winders
+			if r != "":
+				return "the top flight: " + r
+			r = await climb(16.68, 28.18, 270.0, 2.6, 0.0)                # round the winders and down the long flight, south, to the foot
+			if r != "":
+				return "the long flight: " + r
+			turn_to(16.0, 25.3, 180.0)
+			await hold("W", 1.6)
+			if not rt.inside.has("under"):
+				return "not in the back room  " + where()
+			r = await ticked("t19_down")
+			if r != "":
+				return r
+			turn_to(8.8, 26.5, 180.0)
+			await hold("W", 1.5)
+			r = await ticked("t19_out")
+			if r != "":
+				return r
 			return ""))
 
 	await station("n_hide", func():

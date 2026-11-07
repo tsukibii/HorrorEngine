@@ -472,6 +472,7 @@ class LevelWriter:
         tags = p["tags"]
         hidden = "hidden" in tags
         hollow = "hollow" in tags
+        collider = "collider" in tags                 # unseen and solid (a kit stair's steps and rails, plan.py): the body stays on
         use = next((t[4:] for t in tags if t.startswith("use:")), None)
         tagged = BY_TAG.get(next((t[4:] for t in tags if t.startswith("tag:")), ""))
         if p["kind"] == "mesh":
@@ -507,7 +508,7 @@ class LevelWriter:
                 self.surfaced += 1
         art = next((t[4:] for t in tags if t.startswith("art:")), None) if p["kind"] in ("mesh", "door") else None
         ext = self.art_of(art) if art else None
-        if ext:                                       # the mesh in its block; the block stays, unseen, for the cursor and the walls
+        if ext or collider:                           # the mesh in its block; the block stays, unseen, for the cursor and the walls
             mprops["visible"] = "false"
         if moves:
             mprops["gi_mode"] = "2"                    # it moves (a leaf, its handle, a thing taken up): a LightmapGI the user adds lights it by its probes, never bakes it in place

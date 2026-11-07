@@ -25,10 +25,12 @@ export function refOf(KIT, spec, presets, version) {
   return `kit/${r.type}_${h}`;
 }
 // every kit spec in a story: the props that carry one (rooms' props, on every level)
-export function storySpecs(story) {
+export function storySpecs(story, KIT = null) {
   const out = [];
-  for (const [lid, lvl] of Object.entries(story.levels || {})) for (const r of lvl.rooms || []) for (const p of r.props || [])
+  for (const [lid, lvl] of Object.entries(story.levels || {})) for (const r of lvl.rooms || []) for (const p of r.props || []) {
     if (p.kit !== undefined) out.push({ level: lid, room: r.id, id: p.id, kit: p.kit });
+    if (p.stairs !== undefined && KIT) for (const [i, part] of KIT.stairsLayout(p.stairs).parts.entries()) out.push({ level: lid, room: r.id, id: `${p.id}__${part.kind[0]}${i}`, kit: part.kit });   // stairs from points: their parts
+  }
   return out;
 }
 export function games() {

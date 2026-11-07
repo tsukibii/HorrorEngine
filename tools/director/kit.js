@@ -4,7 +4,7 @@
 // x across, y deep with the FRONT at -y, z up from the base; every part stays inside the size box, so the box the
 // plan and the checks see is the thing. The gaps (between tiles, boards, doors and drawers) and the bevels are real
 // geometry: they're what a light bake turns into the thin dark lines and bright edges of a real room.
-export const VERSION = 6;          // bump when a generator's output changes (presets.json carries the same number)
+export const VERSION = 8;          // bump when a generator's output changes (presets.json carries the same number)
 
 // ---- material slots: one material each in Unreal (kit_<slot>), a flat colour in the desk ----------------------
 // [colour, roughness, metalness, opacity, emissive]
@@ -42,6 +42,7 @@ export const SLOTS = {
   paint_blue: [0x8cc6dc, 0.4], steel_sash: [0x6f726c, 0.45, 0.35],
   cover: [0x8e302a, 0.6], cover_2: [0x2f4b7c, 0.6], cover_3: [0x3e6c47, 0.6], cover_4: [0xd8c79d, 0.6], pages: [0xeee6d1, 0.9],
   curtain: [0xcfa443, 0.9],
+  concrete: [0xa8a49d, 0.85], checker: [0x5b5d60, 0.5, 0.6],     // stairs (§11): a concrete flight, a checker-plate tread
 };
 export const slotOf = m => SLOTS[m] ? m : (SLOTS[m.replace(/_\d+$/, "")] ? m.replace(/_\d+$/, "") : "body");
 const tone = (base, n, R) => { const i = n > 1 ? Math.floor(R() * n) : 0; return i && !/_\d+$/.test(base) ? `${base}_${i + 1}` : base; };
@@ -160,6 +161,15 @@ export const TYPES = {
     ["pocket", "curtain pocket on", "none", "pick", ["none", "n", "e", "s", "w"]], ["pocket_w", "pocket width", 0.13, "m"], ["slot", "material", "body", "slot"]], gen: bulkheadGen },
   block: { label: "Block: a step, a plinth, a board", cat: "furniture", mount: "floor", size: [1.2, 0.3, 0.18], params: [["bevel", "edge bevel", 0.003, "mm"],
     ["nosing", "nosing (front lip)", 0, "m"], ["slot", "material", "wood", "slot"]], gen: blockGen },
+  stairs: { label: "Stairs: a flight, its landing and rails", cat: "stairs", mount: "floor", size: [0.91, 3.64, 3.85], params: [["style", "style", "house", "pick", ["house", "apartment", "motel", "steel"]],
+    ["top", "box above the top tread (the rails')", 1.0, "m"], ["treads", "treads (0: about 18 cm a riser)", 0, "int"], ["landing", "landing at the top", 0, "m"],
+    ["nosing", "nosing", 0.025, "mm"], ["tread_t", "tread thickness", 0.03, "mm"], ["risers", "risers", "closed", "pick", ["closed", "open"]], ["waist", "slab under (0: solid to the floor)", 0, "m"],
+    ["rail", "rail (climbing)", "none", "pick", ["none", "left", "right", "both"]], ["wall_rail", "wall rail", "left", "pick", ["none", "left", "right", "both"]], ["rail_h", "rail height", 0.85, "m"], ["bars", "bars every (0: a mid rail)", 0, "mm"],
+    ["land_rail", "the landing's rail", "none", "pick", ["none", "side", "end", "both"]],
+    ["slot", "treads", "wood", "slot"], ["riser_slot", "risers", "white", "slot"], ["string_slot", "stringers, soffit, slab", "wood_3", "slot"], ["rail_slot", "rail", "wood_2", "slot"], ["post_slot", "posts, balusters", "white", "slot"]], gen: stairsGen },
+  winder: { label: "Winders: a quarter turn of fan treads round a newel", cat: "stairs", mount: "floor", size: [0.9, 0.9, 1.58], params: [["top", "box above the last tread", 1.0, "m"], ["n", "treads", 3, "int"],
+    ["turn", "turns", "right", "pick", ["left", "right"]], ["tread_t", "tread thickness", 0.03, "mm"],
+    ["slot", "treads", "wood", "slot"], ["riser_slot", "risers", "white", "slot"], ["post_slot", "the newel", "white", "slot"]], gen: winderGen },
   parts: { label: "Free parts (any furniture)", cat: "furniture", mount: "floor", size: [0.6, 0.6, 0.6], params: [["parts", "parts", [{ s: "box", at: [0, 0, 0], size: [0.6, 0.6, 0.6], m: "body", b: 0.003 }], "parts"]], gen: partsGen },
   // a Japanese school (§10): desks and chairs on bent steel tube (JIS S 1021's sizes), the teacher's lectern and a staff
   // room's steel desk, the chalkboard and its tray, cubbies and steel lockers, fluorescent fittings, books to fill them
@@ -235,7 +245,7 @@ export const TYPES = {
   candle: { label: "Candle", cat: "small", mount: "on", size: [0.07, 0.07, 0.103], params: [["style", "kind", "pillar", "pick", ["pillar", "taper", "tealight"]],
     ["left", "how much is left (0.15 to 1)", 1, "num"], ["slot", "wax", "wax", "slot"], ["holder_slot", "candlestick material", "brass", "slot"]], gen: candleGen },
 };
-export const CATS = { floor: "Floors", cabinet: "Cabinets and built-ins", furniture: "Furniture", school: "School", soft: "Cushions, pillows, mattresses", door: "Doors and handles", wall: "On and in the walls", fitting: "Wall fittings",
+export const CATS = { floor: "Floors", cabinet: "Cabinets and built-ins", furniture: "Furniture", stairs: "Stairs", school: "School", soft: "Cushions, pillows, mattresses", door: "Doors and handles", wall: "On and in the walls", fitting: "Wall fittings",
   ceiling: "Ceilings", opening: "Windows", curtain: "Curtains", small: "Little things (they come alive)" };
 
 // ---- specs: presets merged under a spec, defaults filled ---------------------------------------------------------
@@ -1429,6 +1439,323 @@ function partsGen(s, P) {
     P.push({ s: q.s, at: q.at.map(Number), size: q.size.map(v => Math.max(0.0005, +v)), m: q.m || "body",
              b: +q.b || 0, rz: +q.rz || 0, axis: q.axis, ri: +q.ri || 0 });
   }
+}
+// ---- stairs (§11; DECISIONS 2026-11-05, night: "model different types of stairs") ----------------------------------
+// A flight from its FRONT (-y, the foot, z 0) to its BACK (+y): treads over closed or open risers, what holds them up
+// (a house's closed stringers and soffit, concrete's solid block or its slab (`waist`), steel channels), a landing at
+// the top (`landing` m of the depth), rails (balusters, pickets or a pipe on posts: `rail`, the side(s) when climbing)
+// and a wall rail (`wall_rail`), the box going `top` m on above the top tread for them. The styles:
+//   house      a wooden box stair: closed risers, closed stringers, a soffit under, a baluster rail with newels
+//   apartment  a concrete flight (a mansion's stairwell): nosing strips, a slab under (waist), a steel pipe rail
+//   motel      steel channel stringers, pan treads filled with concrete, steel risers, a picket guard rail
+//   steel      an apaato's outside stair: channel stringers, checker-plate treads, open risers, a pipe rail with bars
+// the box stands `top` m on above the last tread (a flight's headroom; the layout's 1 m): clamped so the risers keep
+// at least 0.1 m each when their count is known (a winder's three risers and 1 m of top in a 1.5 m box lost a third
+// of their rise to the old 60 % rule, 2026-11-06), else to 60 % of the box (storykit/kit.py: the same)
+const stairsTop = s => { const H = s.size[2], n = Math.round(s.treads > 0 ? s.treads : 0); return clamp(+s.top || 0, 0, n > 0 ? Math.max(0, H - 0.1 * n) : H * 0.6); };
+const winderTop = (s, n) => clamp(+s.top || 0, 0, Math.max(0, s.size[2] - 0.1 * n));
+// The plan gives it collision as its steps and its rails (storykit/kit.py stairs_boxes: the same numbers), so the
+// mesh is hollow in the level: the player climbs the treads, never the box.
+function stairsGen(s, P, R, warn) {
+  const [W, D, H] = s.size, st = s.style || "house";
+  const top = stairsTop(s), rise = H - top, landing = clamp(+s.landing || 0, 0, D * 0.6), run = D - landing;
+  const n = Math.max(2, Math.round(s.treads > 0 ? s.treads : rise / 0.18)), r = rise / n, g = run / n;
+  const y0 = -D / 2, yN = y0 + run, yi = i => y0 + g * i, zi = i => r * (i + 1);          // tread i: y yi(i)..yi(i+1), its top zi(i)
+  const t = clamp(s.tread_t, 0.004, r * 0.6), nose = clamp(s.nosing, 0, g * 0.3), waist = clamp(+s.waist || 0, 0, rise);
+  const m = { tread: s.slot, riser: s.riser_slot, string: s.string_slot, rail: s.rail_slot, post: s.post_slot };
+  const railH = clamp(s.rail_h, 0.6, 1.3), bars = clamp(+s.bars || 0, 0, 1);
+  const N = y => r + (r / g) * (y - y0);                                                     // the nosing line: through the treads' front top corners
+  const yK = yN - g, IC = y => N(y) - r;                                                       // the inner-corner line: through the risers' feet, the floor at the foot to the landing at the top. A rail stands on it, one straight line from railH over the floor to railH over the landing, meeting the landing's rail (the user, 2026-11-06: on the nosing line it ended a riser over it, "the rails poke out")
+  // a band along a line clipped at `cap` (a closed stringer's top edge cut level at the floor): two boards where it meets the cap
+  const bandCap = (yA, yB, zAt, cap, dz, x, w, slot, o) => { const za = zAt(yA), zb = zAt(yB); if (za < cap - 1e-6 && zb > cap + 1e-6) { const yc = yA + (yB - yA) * (cap - za) / (zb - za); band(yA, yc, zAt, dz, x, w, slot, o); band(yc, yB, () => cap, dz, x, w, slot, o); } else band(yA, yB, y => Math.min(cap, zAt(y)), dz, x, w, slot, o); };
+  const railed = side => s.rail === "both" || s.rail === side, walled = side => s.wall_rail === "both" || s.wall_rail === side;
+  if (s.rail !== "none" && top < railH + 0.05) warn.push(`stairs: the box's top (${top.toFixed(2)} m above the top tread) is under its rail (${railH} m): the rail is cut off there`);
+  // a convex polygon in (y, z) kept to 0..H and y0..D/2 (Sutherland-Hodgman): the sloped boards' clipping
+  const clip = (pts, ...planes) => { let out = pts; for (const [k, lim, keepBelow] of planes) { const inp = out; out = []; for (let i = 0; i < inp.length; i++) { const a = inp[i], b = inp[(i + 1) % inp.length], ina = keepBelow ? a[k] <= lim : a[k] >= lim, inb = keepBelow ? b[k] <= lim : b[k] >= lim; if (ina) out.push(a); if (ina !== inb) { const u = (lim - a[k]) / (b[k] - a[k]); out.push([a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u]); } } if (out.length < 3) return []; } return out; };
+  const inBox = pts => clip(pts, [1, 0, false], [1, H, true], [0, y0, false], [0, D / 2, true]);
+  const band = (yA, yB, zAt, dz, x, w, slot, o) => { const q = inBox([[yA, zAt(yA)], [yB, zAt(yB)], [yB, zAt(yB) + dz], [yA, zAt(yA) + dz]]); if (q.length >= 3) prism(P, x, 0, 0, q, w, "x", slot, o); };   // a sloped board: its top edge the line zAt, dz deep (vertical), w wide across
+  const SIDE = { left: -1, right: 1 };
+  const xs = side => SIDE[side] * W / 2;                                                       // the side's outer x
+  // ---- the flight by style -------------------------------------------------------------------------------------------
+  let x0 = -W / 2, x1 = W / 2, landT = 0.22;                                                   // where the treads run across; the landing's slab
+  if (st === "house") {
+    const sT = 0.035, sD = 0.26; x0 += sT; x1 -= sT;
+    for (let i = 0; i < n; i++) {
+      bx(P, x0, Math.max(y0, yi(i) - nose), zi(i) - t, x1, yi(i + 1), zi(i), m.tread, { b: 0.002 });           // the tread, a rounded nosing
+      if (s.risers !== "open") bx(P, x0, yi(i), i ? zi(i - 1) : 0, x1, yi(i) + 0.018, zi(i) - t, m.riser);      // the riser board under its front
+    }
+    for (const sd of [-1, 1]) bandCap(y0, yN, y => N(y) + 0.05, rise, -sD, sd < 0 ? -W / 2 : W / 2 - sT, sT, m.string);   // closed stringers: a board each side over the nosings, cut level at the floor
+    if (!waist) band(y0 + g * (t / r), yN, y => N(y) - r - t, -0.012, x0, x1 - x0, m.string);                // the soffit: a board under the treads' back corners
+    else band(y0 + g * (t / r), yN, y => N(y) - r - t, -waist, x0, x1 - x0, m.string);                     // a thick soffit (a flight over another)
+    if (landing > 0) { bx(P, -W / 2, yN, rise - landT, W / 2, D / 2, rise - 0.03, m.string); bx(P, -W / 2, yN - 0.002, rise - 0.03, W / 2, D / 2, rise, m.tread, { b: 0.002 }); }   // the landing: joists boxed in, boards on top
+  } else if (st === "apartment") {
+    landT = 0.25;
+    for (let i = 0; i < n; i++) {
+      bx(P, x0, yi(i), waist ? (i ? zi(i - 1) : 0) : 0, x1, yi(i + 1), zi(i), m.tread);                    // a concrete step: solid to the floor, or down to the slab
+      bx(P, x0 + 0.02, yi(i), zi(i), x1 - 0.02, yi(i) + 0.035, zi(i) + 0.003, "black");                      // the anti-slip strip along its nose
+    }
+    if (waist) { const q = inBox([[y0, 0], [yN, rise], [yN, rise - waist], [y0 + waist * g / r, 0]]); if (q.length >= 3) prism(P, x0, 0, 0, q, W, "x", m.string); }   // the slab under
+    if (landing > 0) bx(P, x0, yN, rise - landT, x1, D / 2, rise, m.tread);
+  } else {                                                                                    // motel, steel: channel stringers each side, the treads between
+    const cW = st === "motel" ? 0.06 : 0.05, cD = st === "motel" ? 0.25 : 0.2, pan = st === "motel";
+    x0 += cW; x1 -= cW; landT = st === "motel" ? 0.05 : 0.03;
+    for (let i = 0; i < n; i++) {
+      bx(P, x0, Math.max(y0, yi(i) - nose), zi(i) - t, x1, yi(i + 1), zi(i), m.tread, { b: pan ? 0 : 0.001 });  // a pan filled with concrete, or a checker plate
+      if (pan) { bx(P, x0, Math.max(y0, yi(i) - nose), zi(i) - t - 0.004, x1, yi(i + 1), zi(i) - t, m.riser); if (s.risers !== "open") bx(P, x0, yi(i), i ? zi(i - 1) : 0, x1, yi(i) + 0.004, zi(i) - t, m.riser); }   // the pan's steel under and its riser
+      else if (s.risers !== "open") bx(P, x0, yi(i), i ? zi(i - 1) + 0.02 : 0.02, x1, yi(i) + 0.004, zi(i) - t, m.riser);
+    }
+    for (const sd of [-1, 1]) { const x = sd < 0 ? -W / 2 : W / 2 - cW; band(y0, yN, y => IC(y), -cD, x, cW, m.string); band(y0, yN, y => IC(y), -0.012, sd < 0 ? x + cW : x - 0.02, 0.02, m.string); band(y0, yN, y => IC(y) - cD + 0.012, -0.012, sd < 0 ? x + cW : x - 0.02, 0.02, m.string); }   // a C channel: its web and flanges
+    if (landing > 0) {                                                                        // the landing: a plate (concrete or checker) on an edge channel
+      bx(P, x0, yN, rise - landT, x1, D / 2, rise, m.tread);
+      for (const [a, b, c, d] of [[-W / 2, yN, -W / 2 + cW, D / 2], [W / 2 - cW, yN, W / 2, D / 2], [-W / 2, D / 2 - cW, W / 2, D / 2]]) bx(P, a, b, Math.max(0, rise - cD), c, d, rise, m.string);
+    }
+  }
+  // ---- rails -------------------------------------------------------------------------------------------------------------
+  const pr = st === "apartment" ? 0.019 : 0.017, hp = H - 2.2 * pr;                                       // a pipe rail's radius; the pipes' line kept under the box's top
+  const railLine = y => Math.min(hp, IC(y) + railH), railTop = Math.min(hp, rise + railH), yA = y0 + 0.06, yB = yN - 0.06;   // one straight line, meeting the landing's rail at its height
+  const yEnd = landing > 0 ? D / 2 - 0.06 : yB;                                                // the rail runs on along the landing's side
+  const treadTop = y => { const i = Math.min(n - 1, Math.max(0, Math.floor((y - y0) / g))); return y < yN ? zi(i) : rise; };
+  for (const side of ["left", "right"]) {
+    const sd = SIDE[side];
+    if (walled(side)) {                                                                       // a wall rail: on brackets, 5 cm off the wall
+      const x = sd < 0 ? -W / 2 + 0.03 : W / 2 - 0.03 - 0.045;
+      band(yA, yB, y => Math.min(H, IC(y) + railH - 0.1), -0.045, x, 0.045, m.rail, { b: 0.004 });
+      for (let y = yA + 0.3; y < yB - 0.2; y += 0.9) bx(P, sd < 0 ? -W / 2 : W / 2 - 0.03, y - 0.015, Math.min(H - 0.12, IC(y) + railH - 0.22), sd < 0 ? -W / 2 + 0.03 : W / 2, y + 0.015, Math.min(H - 0.05, IC(y) + railH - 0.1), m.post);
+    }
+    if (!railed(side)) continue;
+    const xr = sd < 0 ? -W / 2 + 0.045 : W / 2 - 0.045;                                     // the rail's middle, in from the edge
+    if (st === "house") {                                                                     // newels, a 60 x 40 handrail, square balusters
+      const nw = 0.09, newel = (y, z0) => bx(P, xr - nw / 2, y - nw / 2, z0, xr + nw / 2, y + nw / 2, Math.min(H, z0 + railH + 0.12), m.post, { b: 0.004 });
+      newel(yA + nw / 2, 0); newel(Math.min(yEnd - nw / 2, yN + (landing > 0 ? landing - nw / 2 - 0.06 : -nw / 2 - 0.06)), landing > 0 ? rise : treadTop(yN - 0.1));
+      band(yA + nw, yB - (landing > 0 ? 0 : nw), y => Math.min(H, IC(y) + railH), -0.04, xr - 0.03, 0.06, m.rail, { b: 0.006 });
+      if (landing > 0 && s.land_rail !== "none" && s.land_rail !== "end") bx(P, xr - 0.03, yN, Math.min(H, railTop - 0.04), xr + 0.03, yEnd - nw, Math.min(H, railTop), m.rail, { b: 0.006 });
+      for (let i = 0; i < n; i++) for (const f of [0.28, 0.72]) { const y = yi(i) + g * f; if (y > yA + nw && y < yB) bx(P, xr - 0.016, y - 0.016, zi(i), xr + 0.016, y + 0.016, Math.min(H, IC(y) + railH - 0.04), m.post); }
+      if (landing > 0 && s.land_rail !== "none" && s.land_rail !== "end") for (let y = yN + 0.11; y < yEnd - nw; y += 0.11) bx(P, xr - 0.016, y - 0.016, rise, xr + 0.016, y + 0.016, Math.min(H, railTop - 0.04), m.post);
+    } else {                                                                                  // a steel rail: round posts, a pipe on top, a mid pipe or bars between
+      const postR = 0.017, every = Math.max(1, Math.round(1.2 / g));
+      const pts = [];
+      for (let y = yA; y <= yB + 1e-6; y += Math.max(0.1, (yB - yA) / 12)) pts.push([xr, y, railLine(y)]);
+      if (pts[pts.length - 1][1] < yB - 1e-6) pts.push([xr, yB, railLine(yB)]);
+      if (landing > 0 && s.land_rail !== "none" && s.land_rail !== "end") pts.push([xr, yN + 0.12, railTop], [xr, yEnd, railTop]);
+      sweep(P, pts, { a: pr, b: pr, r: pr, k: 3 }, m.rail);
+      const posts = []; for (let i = 0; i < n; i += every) posts.push(yi(i) + g * 0.5); if (yN - posts[posts.length - 1] > 0.5) posts.push(yN - 0.1);
+      if (landing > 0 && s.land_rail !== "none" && s.land_rail !== "end") posts.push(yEnd - 0.03);
+      for (const y of posts) if (y > yA && y <= yEnd) cy(P, xr, y, treadTop(y), postR, Math.max(0.05, (y < yN ? railLine(y) : railTop) - treadTop(y) - pr), m.post, { n: 12 });
+      if (!bars) { const mid = []; for (const p of pts) mid.push([p[0], p[1], Math.min(H, p[2] - railH * 0.45)]); sweep(P, mid, { a: pr * 0.7, b: pr * 0.7, r: pr * 0.7, k: 3 }, m.rail); }   // the mid rail
+      else {                                                                                  // a bottom bar 8 cm over the nosings, bars up to the rail
+        band(yA, Math.min(yB, yK), y => Math.min(H, N(y) + 0.1), -0.012, xr - 0.02, 0.04, m.rail);                   // the bottom bar over the noses, to the last nose
+        for (let y = yA + bars / 2; y < yB; y += bars) bx(P, xr - 0.005, y - 0.005, treadTop(y), xr + 0.005, y + 0.005, Math.min(H, IC(y) + railH - pr), m.post);   // the bars from their treads
+        if (landing > 0 && s.land_rail !== "none" && s.land_rail !== "end") for (let y = yN + bars / 2; y < yEnd; y += bars) bx(P, xr - 0.005, y - 0.005, rise, xr + 0.005, y + 0.005, Math.min(H, railTop - pr), m.post);
+      }
+    }
+  }
+  if (landing > 0 && (s.land_rail === "end" || s.land_rail === "both")) {                     // a rail across the landing's far end
+    const ye = D / 2 - 0.045, xa = -W / 2 + 0.045, xb = W / 2 - 0.045;
+    if (st === "house") { bx(P, xa - 0.03, ye - 0.03, Math.min(H, railTop - 0.04), xb + 0.03, ye + 0.03, Math.min(H, railTop), m.rail, { b: 0.006 }); for (let x = xa + 0.11; x < xb - 0.05; x += 0.11) bx(P, x - 0.016, ye - 0.016, rise, x + 0.016, ye + 0.016, Math.min(H, railTop - 0.04), m.post); }
+    else { sweep(P, [[xa + pr, ye, railTop], [xb - pr, ye, railTop]], { a: pr, b: pr, r: pr, k: 3 }, m.rail); for (const x of [xa, xb]) cy(P, x, ye, rise, 0.017, Math.max(0.05, railTop - rise - pr), m.post, { n: 12 }); if (bars) for (let x = xa + bars; x < xb - bars / 2; x += bars) bx(P, x - 0.005, ye - 0.005, rise, x + 0.005, ye + 0.005, Math.min(H, railTop - pr), m.post); else sweep(P, [[xa, ye, Math.min(H, railTop - railH * 0.45)], [xb, ye, Math.min(H, railTop - railH * 0.45)]], { a: pr * 0.7, b: pr * 0.7, r: pr * 0.7, k: 3 }, m.rail); }
+  }
+}
+// the flight's numbers the plan shares (storykit/kit.py stairs_boxes): the steps, the landing and the rails as boxes
+// [x0, y0, z0, x1, y1, z1, what] in item space; the mesh above is hollow in the level, these are its collision
+export function stairsBoxes(s) {
+  const [W, D, H] = s.size;
+  const top = stairsTop(s), rise = H - top, landing = clamp(+s.landing || 0, 0, D * 0.6), run = D - landing;
+  const n = Math.max(2, Math.round(s.treads > 0 ? s.treads : rise / 0.18)), r = rise / n, g = run / n, y0 = -D / 2, yN = y0 + run;
+  const waist = clamp(+s.waist || 0, 0, rise), railH = clamp(s.rail_h, 0.6, 1.3), out = [];
+  for (let i = 0; i < n; i++) out.push([-W / 2, y0 + g * i, waist ? Math.max(0, r * i - waist) : 0, W / 2, y0 + g * (i + 1), r * (i + 1), "step"]);
+  if (landing > 0) out.push([-W / 2, yN, Math.max(0, rise - 0.25), W / 2, D / 2, rise, "landing"]);
+  for (const [side, sd] of [["left", -1], ["right", 1]]) {
+    if (!(s.rail === "both" || s.rail === side)) continue;
+    const xa = sd < 0 ? -W / 2 : W / 2 - 0.09, xb = sd < 0 ? -W / 2 + 0.09 : W / 2;
+    for (let i = 0; i < n; i++) out.push([xa, y0 + g * i, r * (i + 1), xb, y0 + g * (i + 1), Math.min(H, r * (i + 1) + railH), "rail"]);
+    if (landing > 0 && s.land_rail !== "none" && s.land_rail !== "end") out.push([xa, yN, rise, xb, D / 2, Math.min(H, rise + railH), "rail"]);
+  }
+  if (landing > 0 && (s.land_rail === "end" || s.land_rail === "both")) out.push([-W / 2, D / 2 - 0.09, rise, W / 2, D / 2, Math.min(H, rise + railH), "rail"]);
+  return out;
+}
+// ---- winders: a quarter turn of fan treads round a newel (§11b) --------------------------------------------------
+// The walker comes in over the front (-y) and leaves by a side (`turn`: right +x, left -x); the newel stands in the
+// near corner on the turn's side and `n` treads fan round it (three in a house: the 回り階段 corner), each a riser
+// up, the corner across from the newel swept past on the way. The box stands `top` m on above the last tread.
+function winderGen(s, P) {
+  const [W, D, H] = s.size, n = Math.max(1, Math.min(8, Math.round(s.n) || 3)), top = winderTop(s, n), rise = H - top, r = rise / n;
+  const right = s.turn !== "left", t = clamp(s.tread_t, 0.004, r * 0.6), m = { tread: s.slot, riser: s.riser_slot, post: s.post_slot };
+  const f = winderFans(W, D, right, n);
+  for (let j = 0; j < n; j++) {
+    const zt = r * (j + 1), zb = j ? r * j : 0, poly = f.polys[j], p0 = poly[1];
+    prism(P, 0, 0, zt - t, poly.map(q => [q[0], q[1]]), t, "z", m.tread, { b: 0.002 });
+    const L = Math.hypot(p0[0] - f.nx, p0[1] - f.ny), ang = Math.atan2(p0[1] - f.ny, p0[0] - f.nx), ux = Math.cos(ang), uy = Math.sin(ang);
+    const inw = right ? -1 : 1, px = -uy * inw, py = ux * inw;                                                      // into the tread, off the square's edge
+    if (zt - t - zb > 0.004 && L > 0.08) P.push({ s: "box", at: [f.nx + ux * (0.03 + (L - 0.042) / 2) + px * 0.011, f.ny + uy * (0.03 + (L - 0.042) / 2) + py * 0.011, zb], size: [L - 0.042, 0.018, zt - t - zb], m: m.riser, rz: ang * 180 / Math.PI });   // the riser along the leading edge, off the newel (its post covers the corner) and inside the square
+  }
+  const pw = 0.09;
+  bx(P, right ? f.nx - pw : f.nx, f.ny, 0, right ? f.nx : f.nx + pw, f.ny + pw, H, m.post, { b: 0.004 });   // the newel
+}
+// the fan's treads as polygons in item space (the newel first, then anticlockwise or clockwise round): shared with the
+// collision boxes
+function winderFans(W, D, right, n) {
+  const nx = right ? W / 2 : -W / 2, ny = -D / 2, a0 = right ? Math.PI : 0, a1 = Math.PI / 2, far = [right ? -W / 2 : W / 2, D / 2];
+  const hit = ang => { const dx = Math.cos(ang), dy = Math.sin(ang); let best = Infinity;
+    if (dx < -1e-9) best = Math.min(best, (-W / 2 - nx) / dx); if (dx > 1e-9) best = Math.min(best, (W / 2 - nx) / dx);
+    if (dy > 1e-9) best = Math.min(best, (D / 2 - ny) / dy);
+    return [nx + dx * best, ny + dy * best]; };
+  const side = p => Math.abs(p[1] - D / 2) < 1e-6 ? "y" : "x", polys = [], angles = [];
+  for (let j = 0; j < n; j++) {
+    const f0 = a0 + (a1 - a0) * j / n, f1 = a0 + (a1 - a0) * (j + 1) / n, p0 = hit(f0), p1 = hit(f1), poly = [[nx, ny], p0];
+    if (side(p0) !== side(p1)) poly.push(far);
+    poly.push(p1); polys.push(poly); angles.push((f0 + f1) / 2);
+  }
+  return { nx, ny, polys, angles };
+}
+// a winder's collision: the square as a grid of cells (GRID a side), each cell the tread under its middle (its angle
+// from the newel), {at, size, yaw 0, z: [bottom, top]} in item space; no gap between cells, the treads' heights
+// stepped along the way round (storykit/kit.py winder_boxes: the same)
+export const WINDER_GRID = 4;
+export function winderBoxes(s) {
+  const [W, D, H] = s.size, n = Math.max(1, Math.min(8, Math.round(s.n) || 3)), top = winderTop(s, n), rise = H - top, r = rise / n;
+  const right = s.turn !== "left", f = winderFans(W, D, right, n), a0 = right ? Math.PI : 0, a1 = Math.PI / 2, out = [], G = WINDER_GRID;
+  for (let i = 0; i < G; i++) for (let j = 0; j < G; j++) {
+    const cx = -W / 2 + (i + 0.5) * W / G, cy = -D / 2 + (j + 0.5) * D / G;
+    let ang = Math.atan2(cy - f.ny, cx - f.nx); if (ang < 0) ang += 2 * Math.PI;
+    let t = Math.floor((ang - a0) / ((a1 - a0) / n) + 1e-9); t = Math.max(0, Math.min(n - 1, t));
+    out.push({ at: [r6(cx), r6(cy)], size: [r6(W / G), r6(D / G)], yaw: 0, z: [r6(t ? r * t : 0), r6(r * (t + 1))] });
+  }
+  return out;
+}
+const r6 = v => Math.round(v * 1e6) / 1e6;
+
+// ---- stairs from points (§11b; DECISIONS 2026-11-06: "stairs aren't pre-defined: you select start, mid and end
+// points and they get generated to our rules") ---------------------------------------------------------------------
+// A stair laid out from its walking line: `from` at the foot, `to` at the top (x, y, z in the room), `via` points on
+// the way: a point straight on is a landing to rest on, a right-angle turn a quarter turn (a house's: three winders
+// round the newel; else a landing), a turn back a half turn with a platform, the two flights side by side (the point
+// after it says which lane the way back takes). The risers: as many as 2R + G = 63 cm wants, never taller than a
+// style allows; the treads shared out along the flights by their runs, a warning when they come out shallower than
+// the style allows; a via point with a height of its own fixes the landing there. The parts (flights as `stairs`,
+// landings as `block`s, winders as `winder`s) are kit specs with their places (the part's base centre, room metres)
+// and the rot a kit thing takes. storykit/stairs.py lays out the same (KIT compares them); the plan builds the level
+// from the parts.
+export const STAIR_RULES = {
+  blondel: 0.63, winders: 3, top: 1.0, slab: 0.25, under: 2.0,
+  riser_max: { house: 0.23, house_open: 0.23, apartment: 0.2, motel: 0.2, steel: 0.22 },
+  tread_min: { house: 0.18, house_open: 0.18, apartment: 0.23, motel: 0.26, steel: 0.22 },
+  preset: { house: "stairs_house", house_open: "stairs_house_open", apartment: "stairs_apartment", motel: "stairs_motel", steel: "stairs_steel" },
+  winder: { house: "winder_house", house_open: "winder_house", apartment: "winder_apartment", motel: "winder_apartment", steel: "winder_apartment" },
+  slot: { house: "wood", house_open: "wood", apartment: "concrete", motel: "concrete", steel: "checker" },
+  rail: { house: "none", house_open: "right", apartment: "right", motel: "both", steel: "right" },
+  wall_rail: { house: "left", house_open: "left", apartment: "none", motel: "none", steel: "none" },
+};
+export const rotOf = A => r6(((Math.atan2(A[1], A[0]) * 180 / Math.PI - 90) % 360 + 360) % 360);
+const snap45 = A => { const a = Math.round(Math.atan2(A[1], A[0]) / (Math.PI / 4)) * (Math.PI / 4); return [r6(Math.cos(a)), r6(Math.sin(a))]; };   // the way runs along the room or across it (or a diagonal)
+export function stairsLayout(spec) {
+  const RU = STAIR_RULES, style = RU.preset[spec.style] ? spec.style : "house";
+  const w = clamp(+spec.w || 0.9, 0.6, 2.5), top = +spec.top > 0 ? +spec.top : RU.top, turnMode = ["auto", "landing", "winders"].includes(spec.turn) ? spec.turn : "auto";
+  const pt = p => [+(p && p[0]) || 0, +(p && p[1]) || 0, p && p.length > 2 && p[2] !== null && p[2] !== undefined && p[2] !== "" ? +p[2] : null];
+  const P = [pt(spec.from), ...(Array.isArray(spec.via) ? spec.via.map(pt) : []), pt(spec.to)];
+  const warnings = [], parts = [], k = P.length - 1, z0 = P[0][2] ?? 0, H = (P[k][2] ?? z0) - z0;
+  const out = { parts, warnings, n: 0, riser: 0, treads: [], pitch: 0, walk: 0, bounds: null, style, w };
+  if (k < 1) { warnings.push("a stair needs a foot and a top"); return out; }
+  if (!(H > 0.3)) { warnings.push(`the top is ${H.toFixed(2)} m above the foot: a stair climbs at least 0.3 m`); return out; }
+  const unit = (p, q) => { const dx = q[0] - p[0], dy = q[1] - p[1], l = Math.hypot(dx, dy); return l > 1e-6 ? [dx / l, dy / l] : null; };
+  // the way: a cursor walks the centreline from the foot; each via point is a node: straight on a landing to rest on,
+  // to the side (more than half a width across) a quarter turn, back behind (the point after it behind the node) a
+  // half turn whose way back runs down the lane that point lies on. The first axis is the way to the first point,
+  // snapped to the room's sides or a diagonal; a turn's axis follows from it
+  const flights = [], nodes = [];
+  let cur = [P[0][0], P[0][1]], A = snap45(unit(P[0], P[1]) || [0, 1]), well = 0;
+  for (let i = 0; i < k; i++) {
+    const nx = P[i + 1], nrm = [-A[1], A[0]], s = (nx[0] - cur[0]) * A[0] + (nx[1] - cur[1]) * A[1];
+    let node = null;
+    if (i < k - 1) {
+      const after = P[i + 2], along = (after[0] - nx[0]) * A[0] + (after[1] - nx[1]) * A[1], across = (after[0] - nx[0]) * nrm[0] + (after[1] - nx[1]) * nrm[1];
+      const kind = along < -w / 2 ? "half" : Math.abs(across) > w / 2 ? "quarter" : "rest", sign = across > 0 ? 1 : -1;
+      node = { kind, sign, z: nx[2], winders: kind === "quarter" && (turnMode === "winders" || (turnMode === "auto" && (style === "house" || style === "house_open"))) };
+    }
+    let run = node ? s - w / 2 : s;
+    if (run < -0.01) warnings.push(`point ${i + 2} lies behind flight ${i + 1}'s start: that flight is dropped`);
+    run = Math.max(0, run);
+    flights.push({ start: cur.slice(), axis: A, run, end: [cur[0] + A[0] * run, cur[1] + A[1] * run] });
+    if (!node) break;
+    nodes[i + 1] = node;
+    if (node.kind === "half") {
+      const after = P[i + 2], lane = (after[0] - cur[0]) * nrm[0] + (after[1] - cur[1]) * nrm[1];
+      if (Math.abs(lane) < w * 0.9) warnings.push(`the half turn's flights lie ${Math.abs(lane).toFixed(2)} m apart: a stair's width (${w} m) and a well between`);
+      node.centre = [cur[0] + A[0] * s + nrm[0] * lane / 2, cur[1] + A[1] * s + nrm[1] * lane / 2]; node.size = [Math.abs(lane) + w, w]; node.rot = rotOf(A);
+      well = lane > 0 ? 1 : -1;
+      cur = [cur[0] + A[0] * (s - w / 2) + nrm[0] * lane, cur[1] + A[1] * (s - w / 2) + nrm[1] * lane]; A = [-A[0], -A[1]];
+    } else {
+      node.centre = [cur[0] + A[0] * s, cur[1] + A[1] * s]; node.size = [w, w]; node.rot = rotOf(A);
+      const o = node.kind === "quarter" ? (node.sign > 0 ? [-A[1], A[0]] : [A[1], -A[0]]) : A;
+      cur = [node.centre[0] + o[0] * w / 2, node.centre[1] + o[1] * w / 2]; A = o;
+    }
+  }
+  // the risers: by the rule, within the style's limits, the winders' fixed, the rest shared out by the flights' runs
+  // (a via point with its own height anchors the count before it)
+  const winderTurns = nodes.filter(nd => nd && nd.kind === "quarter" && nd.winders).length;
+  const L = flights.reduce((t, f) => t + f.run, 0) + winderTurns * Math.PI / 2 * (w / 2);
+  const live = flights.filter(f => f.run > 0.001).length;
+  let n = Math.max(Math.max(1, Math.ceil(H / RU.riser_max[style] - 1e-9)), Math.floor((2 * H + L) / RU.blondel + 0.5));
+  if (n - winderTurns * RU.winders < live) n = winderTurns * RU.winders + live;
+  const R = H / n, items = [];
+  for (let i = 0; i < k; i++) {
+    items.push({ type: "flight", i, run: flights[i].run });
+    const nd = nodes[i + 1]; if (!nd) break;
+    if (nd.z !== null && nd.z !== undefined) items.push({ type: "anchor", before: Math.floor((nd.z - z0) / R + 0.5), i: i + 1 });
+    if (nd.kind === "quarter" && nd.winders) items.push({ type: "winders", i: i + 1 });
+  }
+  const count = new Array(k).fill(0); let done = 0, from = 0;
+  const share = (list, budget) => {                                   // the flights of a stage share its risers by run, one each at least
+    const fl = list.filter(it => it.type === "flight" && it.run > 0.001), tot = fl.reduce((t, it) => t + it.run, 0);
+    if (!fl.length) return;
+    let left = budget - fl.length; if (left < 0) { warnings.push("not enough risers for every flight: a via point's height is too low"); left = 0; }
+    const fr = fl.map(it => { const v = left * it.run / tot, fl0 = Math.floor(v); return { it, fl0, frac: v - fl0 }; });
+    let rem = left - fr.reduce((t, x) => t + x.fl0, 0);
+    fr.sort((p, q) => q.frac - p.frac || p.it.i - q.it.i);
+    for (const x of fr) { count[x.it.i] = 1 + x.fl0 + (rem > 0 ? 1 : 0); if (rem > 0) rem--; }
+  };
+  for (let i = 0; i <= items.length; i++) {
+    const it = items[i];
+    if (it && it.type !== "anchor") continue;
+    const stage = items.slice(from, i), wind = stage.filter(x => x.type === "winders").length * RU.winders;
+    const budget = (it ? Math.max(done + wind, Math.min(n, it.before)) : n) - done - wind;
+    share(stage, budget);
+    done += wind + stage.filter(x => x.type === "flight").reduce((t, x) => t + count[x.i], 0);
+    if (it && it.before !== done) warnings.push(`the landing at point ${it.i + 1} comes out ${(z0 + done * R).toFixed(2)} m up, not ${(+nodes[it.i].z).toFixed(2)}`);
+    from = i + 1;
+  }
+  // the parts
+  const rail = ["none", "left", "right", "both"].includes(spec.rail) ? spec.rail : (well ? (well > 0 ? "left" : "right") : RU.rail[style]);
+  const wallRail = ["none", "left", "right", "both"].includes(spec.wall_rail) ? spec.wall_rail : RU.wall_rail[style];
+  let z = z0, pitch = 0; const treads = [];
+  for (let i = 0; i < k; i++) {
+    const f = flights[i], ni = count[i];
+    if (f.run > 0.001 && ni > 0) {
+      const G = f.run / ni; treads.push(r6(G)); pitch = Math.max(pitch, Math.atan2(R, G) * 180 / Math.PI);
+      if (G < RU.tread_min[style] - 1e-6) warnings.push(`flight ${i + 1}: treads of ${Math.floor(G * 100 + 0.5)} cm (the ${style} rule wants ${Math.floor(RU.tread_min[style] * 100 + 0.5)}); a longer run, or a turn with winders`);
+      parts.push({ kind: "flight", at: [r6((f.start[0] + f.end[0]) / 2), r6((f.start[1] + f.end[1]) / 2)], z: r6(z), rot: rotOf(f.axis), w: r6(w), run: r6(f.run), n: ni, rise: r6(ni * R),
+                   kit: { preset: RU.preset[style], size: [r6(w), r6(f.run), r6(ni * R + top)], top: r6(top), treads: ni, landing: 0, waist: z - z0 > 0.01 ? 0.15 : 0, rail, wall_rail: wallRail, land_rail: "none" } });
+      z += ni * R;
+    }
+    const nd = nodes[i + 1]; if (!nd) break;
+    if (nd.kind === "quarter" && nd.winders) {
+      parts.push({ kind: "winder", at: [r6(nd.centre[0]), r6(nd.centre[1])], z: r6(z), rot: nd.rot, w: r6(w), n: RU.winders, rise: r6(RU.winders * R), turn: nd.sign > 0 ? "left" : "right",
+                   kit: { preset: RU.winder[style], size: [r6(w), r6(w), r6(RU.winders * R + top)], top: r6(top), n: RU.winders, turn: nd.sign > 0 ? "left" : "right" } });
+      z += RU.winders * R;
+    } else {
+      const solid = z - z0 - RU.slab < RU.under, thick = solid ? z - z0 : RU.slab;
+      parts.push({ kind: "landing", at: [r6(nd.centre[0]), r6(nd.centre[1])], z: r6(z - thick), rot: nd.rot, size: [r6(nd.size[0]), r6(nd.size[1]), r6(thick)], turn: nd.kind,
+                   kit: { type: "block", size: [r6(nd.size[0]), r6(nd.size[1]), r6(thick)], slot: RU.slot[style], bevel: 0.003, nosing: 0 } });
+    }
+  }
+  if (Math.abs(z - z0 - H) > 1e-6) warnings.push("the risers don't add up to the rise (a via point's height?)");
+  // the box round it all (room metres), the top's allowance above
+  let bx0 = Infinity, by0 = Infinity, bx1 = -Infinity, by1 = -Infinity;
+  for (const p of parts) {
+    const [sx, sy] = p.kind === "landing" ? p.size : [p.w, p.kind === "flight" ? p.run : p.w], c = Math.cos(p.rot * Math.PI / 180), sn = Math.sin(p.rot * Math.PI / 180);
+    for (const [i, j] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) { const x = p.at[0] + (i * sx / 2) * c - (j * sy / 2) * sn, y = p.at[1] + (i * sx / 2) * sn + (j * sy / 2) * c; bx0 = Math.min(bx0, x); by0 = Math.min(by0, y); bx1 = Math.max(bx1, x); by1 = Math.max(by1, y); }
+  }
+  Object.assign(out, { n, riser: r6(R), treads, pitch: r6(pitch), walk: r6(L), bounds: parts.length ? [r6(bx0), r6(by0), r6(z0), r6(bx1), r6(by1), r6(z0 + H + top)] : null });
+  return out;
 }
 // ---- little things (docs/IMMERSION.md) -----------------------------------------------------------------------------
 // Kettles, hobs, pots, cups, teapots, ashtrays, cigarettes and their packs, lighters, clocks, rice cookers, mosquito

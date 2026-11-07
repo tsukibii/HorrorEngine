@@ -1820,3 +1820,52 @@ And a seat pad's bag filled only to a pad's thickness had more cloth than air an
   closed case a level places by its shut size sat 11 cm off its spot; the builder now turns every part to shut before
   centring (`build.run`), and a check reads a part's vertices where its node puts them (a part keeps its vertices
   about its hinge), or the lid "hangs below the floor".
+
+## Stairs (2026-11-05, night)
+
+- **A point under the feet is a hole waiting.** The box collision's ground test took the highest top exactly under
+  the player's centre; a dog-leg's landing slab stops a centimetre short of the wall it meets (the builder's
+  `DOGLEG.wall` 0.06 over a 0.05 half wall), and a frame whose centre landed in that centimetre dropped the player
+  three metres onto the ground floor, in Godot every time and on the desk when the frames were slow enough to land
+  there. The feet now rest on anything within 6 cm of the centre (`SUPPORT`, play.gd and runtime.js). Any walkable
+  surface made of pieces needs the same: never trust two tops to meet exactly.
+- **Simulate the walk before building the stair.** Thirty lines of Python with the runtime's own rule (a block is an
+  obstacle when its top is more than a step above the feet) showed the steep house stair unclimbable at its very
+  foot, before any geometry existed, and showed the contact-point rule climbing it. Cheaper than a Godot run, and it
+  said why.
+- **A test's hold must be shorter than the run.** "Stuck for half a second" fired at the wall at the end of a flight
+  because the key was held longer than the flight took; the flights' holds are now a little under their length.
+- **A "sanity" clamp with a ratio in it is a rule about the size, not the thing.** The kit's `top` allowance (the metre
+  a stair's box stands on above its last tread) was clamped to 60 % of the box: fine for a 3 m flight, but a winder's
+  box is three risers and that metre, so the clamp took a third of its rise and its treads stood 2 to 7 cm above the
+  flights they joined (the feet at 2.23 m where no tread should be). Clamp by what the parts need (10 cm a riser), and
+  write the twin (kit.py) the same day.
+- **A test's clock must be the runtime's clock.** The desk's climb test timed its frames with performance.now() while
+  the runtime steps by the animation frame's timestamp (capped at 0.05 s). After a stall the timestamp lags the clock,
+  the next interval comes out short, and a 4 cm "jump" was only the two clocks disagreeing (and only under load: it
+  passed the next three runs). Read the frame's seconds the way the code under test does.
+- **When the geometry needs hack after hack to pass a check, the model is wrong: look at the reference again.** The
+  first zigzag stair put both flights in one lane, crossing in an X as the photo looks from the street. Its flights
+  met end-on at every landing, their rails ran through each other's posts, and each fix (odd stages narrower, 6 mm
+  shorter, their rails 7 cm in) uncovered the next pair of faces in one plane. The photo, read once more: the lower
+  flight's railing would run up through the flight above if they shared a lane; a scissor stair alternates lanes as
+  well as directions. Two lanes, and every hack went. The clashes that remained were honest ones: a parapet drawn
+  over the treads' side, a rail's bar ending 2 mm from a post's face, a post against a stringer's end, a flight's
+  rail 2 cm inside the landings' rail line. Found by the check's own test lifted into a 10-second probe over every
+  form, style, rail and shaft (`stack_probe`: build, `clashes`, the triangles printed). Pick offsets by listing the
+  other part's face planes and keeping more than the test's 4 mm from all of them.
+- **The standard for a stair is the line, not the code book.** The rails were built a riser high ("the rails poke
+  out"), then bent level at the last nose as a real handrail is, and the user drew the answer over the picture in
+  red: one straight edge from the foot to the landing's corner with nothing stepping above it. Every element that
+  shows in silhouette (a rail, a panel's top, a parapet's top, a stringer's top edge) now runs on the inner-corner
+  line, through the risers' feet from the floor to the landing, so it lands at the landing's own height in one
+  straight line; what sits against the treads (the bottom bar, the stringer's depth) uses the nosing line. Two
+  lines, no bends, no knuckles. And check it the way the user did: draw the ideal lines over the picture
+  (`stairlines.mjs`) and look at the junctions from a metre away. Two more things that round came out of it: a
+  **flat projection of the lines is useless** (hidden lines through walls, nothing to judge); draw them in the scene
+  itself, depth-tested, a hair toward the eye. And **a rule you can state, make a check**: "nothing above the line"
+  became `stackLineFaults` (no vertex of the stack 4 mm over the rail's line) and found the posts' caps, the bars'
+  ends and the panels' nubs that the eye had passed.
+- **A preset's arrays are shared until copied.** The floors buttons change `B.model.floors` in place; `presetToModel`
+  handed the model the preset's own array, so after a basement was added the house preset itself had four floors and
+  the builder test's reopen waited forever for two. Copy what a loader hands out.

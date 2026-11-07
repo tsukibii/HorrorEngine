@@ -16,8 +16,118 @@ clothes hidden on `claude/festive-euler-o7axpl`, the walls meeting, the editors'
 by-hand guides, merged; then on the same branch from main the map-building skill and the user's floor plan as a map, its
 bedding, curtains, tables and chairs, the props' kept pictures, real wood in the flat and its curtains; 2026-11-05 on
 `sakura-rabbit-research`: the Sakura Rabbit research note, then the three notes on dread, the CRT, and the props and
-systems that open, hold, move and are read). Read this after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
+systems that open, hold, move and are read; 2026-11-05, night, on `gameplay-enhancements`: the kit's stairs, the scene
+builder's floors, the street's steel stair, climbing in Godot and on the desk). Read this after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
+
+## Where it stopped last (2026-11-06, later, `gameplay-enhancements`): exterior stair stacks
+
+The user's ask (DECISIONS 2026-11-06, later): three photos of Japanese exterior stairs, "I want a system for building
+these kind of stairs". Built in the street builder (STREET_BUILDER §5c): the `stairs` part's `floors: [a, b]` climbs
+the building's floors a stage a storey, `form` zigzag (one flight a storey, crossing in an X, landing at alternate
+ends: the danchi's), straight or dogleg (two flights a storey, a half platform: the tower's and the mid-rise's),
+`style` concrete or steel, `rail` pickets, panel (solid, rounded corners, a handrail), parapet, pipe or none,
+`shaft: "walls"` (side walls, thick floor slabs), `gap` m beyond a walkway whose railing opens where the landings
+meet it (`stackCuts`); `stackLayout` in street-gen.js is one function for the geometry (`stackGen`) and the colliders
+(a ramp a flight, a box a landing, the walls). The page's stairs inspector (up the building's floors, form, rail,
+shaft, off the wall), *+ walkway and a zigzag stair* on an inside building, the danchi preset's stair a stack. STREET
+builds every form × style × rail × shaft, beside a walkway and not, and its rules street has a zigzag beyond a
+walkway; the reference street `danchi_court` has the three photos' stairs with a shot of each (pictured by Godot in
+`Saved/Streets/danchi_court/godot_<shot>.png`). The clipping rule took most of the work, and the first zigzag (both
+flights in one lane, crossing) needed offset after offset to pass it until the photo was read again: a scissor
+stair's flights are in two lanes, so the lower flight's railing clears the flight above; then the hacks went and
+the rest was a parapet outside the treads, bars ending inside posts, posts 12 mm off the stringers' ends, the
+flights' rail line the landings' (LESSONS).
+
+**The polish pass** (the user: "the rails don't align with the top but poke out; go through everything"): close
+shots of every stack showed the rails and the steel stringers one riser high (built from the first tread's nose, not
+the floor), pickets floating over the treads and landing in risers' planes, no beam under the landings for the
+stringers, a sawtooth soffit under concrete flights, panels floating 10 cm over the treads, a rail bar's end against
+a post's face, columns rising past the last landing at their end: all fixed. Then the user's red line over the
+picture ("the standard for your refinement is weak... one straight edge from the foot to the landing's corner,
+nothing stepping above it; create these ideal angle overlays, then work on your stair maker until you accomplish a
+clean look"). Done in three parts (STREET_BUILDER §5c's details): (1) **the rails rebuilt as bands** cut vertically
+at their ends, every end one of a few kinds (a flight's rail runs into the landing's in one line through a post
+under the joint; a foot's post under the band, cut to the slope; a free end's capped post the band butts; the well
+corner at every landing's inner edge: capped posts on the slab's edge with a cross band, cross panel or cross
+parapet; the columns as the landings' corner posts, flush with the slabs); the dog-leg's inner flight got its well
+rail, a lane beyond a walkway its inner rail; (2) **the line rule as a check**: `stackLineFaults` builds a stack
+alone and lets no vertex stand 4 mm above the rail's top line over its flight or landing; STREET holds every form,
+style, rail and shaft to it, and the single flights, which are now one-stage stacks of the same system (`stackOf`:
+the older streets' concrete flight and the motel's switchback laid out where they were); (3) **the overlays drawn in
+the scene**: `stairlines.mjs` puts the ideal lines into the street page as thin red bars through `streetshot.mjs
+--lines`, hidden where the street hides them (a flat projection showed hidden lines through walls and couldn't be
+judged), so the red lies on the edges or shows what stands above:
+`docs/godot_sheets/2026-11-06_stair_lines.jpg` has the four close shots. The kit's interior stairs got the straight
+rail on the inner-corner line too (KIT.md §11, the kit VERSION 8; GDTESTROOM ok on it). STREET ok, GDSTREET on the
+stair street and the motel, the Godot pictures made again (`2026-11-06_stair_stacks.jpg`).
+
+**Known here:** STREETPAGE (`node tools/director/streettest.mjs`) fails in this cloud checkout on a 404 for
+`shibuya_lane/refs/shot_photo.webp`, the Shibuya shot's reference photo, which `refs/` keeps out of git; the page
+itself opens every street clean (a probe with a 404 logger), and the stairs inspector's stack fields and the zigzag
+walkway button were driven in a browser. It passes where the refs are (the user's machine).
+
+**Could come next:** the kit's interior stairs held to the same line rule as a check (today by eye on the
+`2026-11-05_stairs.jpg` sheet: their rail is on the line, their posts and ends are the older kind); floor numbers by
+each landing (a texture: the sign parts' way); the danchi's curved canopy; a stack as a kit thing for interiors (the
+same layout indoors); the Blender bake's finishes on a stack (the steel's paint, the concrete); a GDSTREET walk up a
+stack (today it checks the colliders are there); the walkway's railing opened for a dog-leg's floor landing too.
+
+## Where it stopped last (2026-11-05, night, `gameplay-enhancements`): stairs, floors, climbing
+
+The user's ask (DECISIONS 2026-11-05, night): a branch `gameplay-enhancements`; model different types of stairs
+(outdoor motel stairs, apartment stairs, interior stairs); the interior builder supporting multiple floor levels; and
+going up and down stairs in Godot without bugs, feeling good. Built:
+
+- **The kit's `stairs`** (KIT.md §11, `tools/director/kit.js` `stairsGen`, `stairsBoxes`; kit.py `STAIRS`,
+  `stairs_boxes`; the presets `stairs_house`, `stairs_house_open`, `stairs_apartment`, `stairs_motel`, `stairs_steel`;
+  the slots `concrete`, `checker`; the kit maker's new Stairs category): one flight with treads, risers, stringers or a
+  slab, rails (balusters, pickets or a pipe on posts), a wall rail and a landing, the box `top` m on above the top
+  tread. **Its collision is its steps**: plan.py gives the mesh `hollow` and adds `collider` pieces (unseen, solid:
+  stage.js, Play's `blocks()`, godot.py, levelexport); KIT compares kit.js's and kit.py's boxes.
+- **The street's outside stairs** (`street-gen.js` PART_KINDS.stairs `style`): `steel` (the motel's) beside `concrete`;
+  the walkway button makes steel; `hill_motel` restyled; STREET's no-clipping rule met (pans inset in the channels,
+  pickets between the rails, the rails stopping short of the landing's own post).
+- **The scene builder** (builder.js `renderFloors`, `fitStairs`, `setFloorZ`, `copyFloorUp`; builder-model.js
+  `stairsProp`, `doglegProps`, `STAIR_PRESET`, `STAIR_ROT`, `STAIR_TOP`; the room words `stair`, `landing` in
+  ROOM_KEYS and STORY_FORMAT): floors named by level, added above or below, a floor's height set, a floor copied up,
+  removed; a stairs room's style and landing; straight flights and dog-legs as kit stairs.
+- **Climbing** (play.gd `push_out`, `ground_at` with `SUPPORT`, `glide_step`, `eye_pos`, `ability_steps`; runtime.js
+  and steps.js the same): the contact-point rule, the feet's 6 cm reach, the eye's glide, a footfall a tread
+  (GODOT_EXPORT §7). A numeric simulation first showed the old rule stuck at the foot of a steep stair.
+- **TestRoom001's station 19** (`n_stairs` between `n_talk` and `n_hide`: the stairwell, the gallery, the back stairs,
+  the back room; gdtestroom.gd `turn_to`, `climb`; testroom.mjs `turnTo`, `climb`): passes in Godot (GDTESTROOM from
+  n_stairs) and on the desk.
+- Fixes on the way: the level check lets hollow things stand in a doorway's clearance; the shots sheet keeps a room's
+  entrance camera 0.3 m off its walls and ignores hollow boxes; LESSONS has the gap-under-the-feet lesson.
+
+**Then, the same night (DECISIONS 2026-11-06): stairs from points.** The user: "a smart system where the stairs aren't
+pre-defined but you select end + start points or start + mid + end points and they get generated to our rules."
+Built: the `stairs` prop (STORY_FORMAT §2: `from`, `to`, `via`, `w`, `style`, `turn`, `rail`, `wall_rail`), the layout
+in kit.js `stairsLayout` and `storykit/stairs.py` (KIT compares five cases), the `winder` kit type (`winder_house`,
+`winder_apartment`) with its collision cells, the plan's `stairs_pieces`, the story index's box from the layout, the
+story check's rules, the scene builder's Stairs tool (`stairsPoint`, `drawStairs`, the inspector; BUILDER drives it),
+TestRoom001's two stairs redrawn as points (a half turn with a platform, an L with winders), the motel's switchback
+(`turn: "u"` on the street's steel stairs part: two flights along the end wall, the platform, two ramps and the
+platform as colliders). KIT.md §11b has the rules. On the checks' way: the kit's `top` allowance clamped by what
+the risers need (a winder's treads stood 7 cm high: kit.js `stairsTop`, `winderTop`, kit.py the same; the kit VERSION
+7), the desk's climb test timing its frames as the runtime does (a false 4 cm jump under load), the preset's floors
+copied into the model (the builder test's reopen waited forever), a clicked stair's selection carrying its room under
+its own key (`stairsRoom`: with `room` the inspector showed the room and Delete took it), and BUILDER's Stairs-tool
+step in a stair hall it adds to the house (the house's 0.91 m stairs room can't turn); LESSONS has the first three.
+
+**Known before this branch:** FROMDESK (`godot_director.py from-desk TestRoom001 --force --play`) fails at station 4
+on the branch's base commit too (the power bulb's fitting: the desk conversion makes the light a Light3D source; the
+conversion never learned light fittings, GODOT_EXPORT §3b): its WALLS check passes with the stairwell's rooms, and
+the other Godot checks (GDEXPORT, GDPLAY, GDTESTROOM, DIRECTOR, GDSTREET) pass here.
+
+**Could come next:** the desk conversion's light fittings (above); winders at a half turn (six fan treads round the
+well); a spiral from the same fans; the points dragged on the plan; the street's stairs from points too (the kit
+drawn in the street's own geometry); a stair's own railing round a stairwell's
+opening in the floor above (a room's floor with a hole); `HSStairs` for the Director (a flight from numbers in GDScript
+with step colliders, for a world built by hand in Godot); the dog-leg's landings railed along the well; the kit stair
+drawn in the street builder's own stairs part (one generator for both); a slower walk on stairs if the user wants it
+(`walk.stairs`); pictures of the stairs in the guides.
 
 ## Where it stopped last (2026-11-05, later, `sakura-rabbit-research`): suitcases, closets, moveable things, books, the CRT
 

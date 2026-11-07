@@ -377,7 +377,7 @@ export const PART_KINDS = {
   pipe: { label: "Pipe", w: 0.1, h: 9, z: 0, out: 0.1, note: "a drain pipe up the wall" },
   lamp: { label: "Wall lamp", w: 0.3, h: 0.35, z: 2.3, out: 0.25, note: "a lamp on the wall (lights at dusk)" },
   lantern: { label: "Hanging lantern", w: 0.4, h: 0.5, z: 2.6, out: 0.7, note: "a lantern hung out on a bracket (the old town)" },
-  stairs: { label: "Outside stairs", w: 5, h: 3, z: 0, out: 1.1, note: "a concrete stair up the wall to a floor" },
+  stairs: { label: "Outside stairs", w: 5, h: 3, z: 0, out: 1.1, note: "a stair up the wall: one flight `h` high from u0 to u1 with its landing 1.2 m beyond the top (concrete with a parapet, or a motel's steel one with pickets: `style`; `turn: \"u\"` a switchback, two flights side by side along the wall with a platform at the turn), or with `floors: [a, b]` a stack up the building's floors (`form`: zigzag, straight, dogleg; `rail`: pickets, panel, parapet, pipe, none; `shaft: \"walls\"`; `gap` m off the wall, beyond a walkway); every one on the line rule (stackLineFaults)" },
   block: { label: "Small box", w: 0.4, h: 0.5, z: 1.2, out: 0.15, note: "a box on the wall: a meter, a fire extinguisher, a post box..." },
   panel: { label: "Panel", w: 2, h: 2, z: 1, out: 0.03, note: "a flat panel of any material on the wall" },
   rail: { label: "Railing", w: 3, h: 1.1, z: 3, out: 0.05, note: "a railing along the wall" },
@@ -451,10 +451,345 @@ function roomRound(x0, y0, x1, y1, others) {
   }
   return r;
 }
+// ---- exterior stair stacks (DECISIONS 2026-11-06, the user's three photos: a danchi's flights crossing in an X and
+// landing on each floor's walkway behind white pickets; a mid-rise's dog-leg behind solid panels with rounded corners;
+// a tower's steel dog-leg stacked in an open concrete shaft) -----------------------------------------------------------
+// A `stairs` part with `floors: [a, b]` climbs from floor a's level to floor b's, a stage a storey. `form`: "zigzag"
+// (one flight a storey, each starting where the one below ended and climbing back the other way, a landing at
+// alternate ends), "straight" (one flight a storey, all climbing `dir`'s way, a landing at each end) or "dogleg" (two
+// flights a storey side by side, a half platform at the turn, the floor landing at the other end: `turn: "u"` stacked).
+// `style` concrete (slab flights) or steel (channel stringers, pan treads); `rail`: pickets (a guard rail of bars),
+// panel (solid panels, rounded corners, a handrail on top), parapet (concrete's sloping slab), pipe (a rail on posts),
+// none; `shaft: "walls"` side walls up the whole stack with thick floor slabs between them (the tower); `gap` m off the
+// wall: the lane runs beyond a walkway, whose railing opens where a landing meets it (stackCuts). The layout (face
+// metres: u along the face, z, n out from the wall) is one function for the geometry and the colliders.
+const STACK = { pl: 1.2, plate: 0.045, slab: 0.16, thick: 0.5, waist: 0.16 };   // the landing slab as thick as a flight's waist: a panel's bottom edge one line through both
+export function stackLayout(p, rows, u0, u1, z, out) {
+  const [a, bb] = (Array.isArray(p.floors) ? p.floors : [1, 2]).map(v => Math.round(num(v, 1)));
+  const lv = rows.filter(r => r.k >= a && r.k <= Math.max(a + 1, bb || a)).sort((x, y) => x.z0 - y.z0);
+  const zs = lv.length >= 2 ? lv.map(r => r.z0) : [z, z + num(p.h, 3)];
+  const form = ["zigzag", "straight", "dogleg"].includes(p.form) ? p.form : p.turn === "u" ? "dogleg" : "zigzag";
+  const dir = num(p.dir, 1) < 0 ? -1 : 1, pl = STACK.pl, gap = Math.max(0, num(p.gap, 0)), style = (p.style || "concrete") === "steel" ? "steel" : "concrete";
+  const rail0 = ["pickets", "panel", "parapet", "pipe", "none"].includes(p.rail) ? p.rail : style === "steel" ? "pickets" : "parapet";
+  const rail = style === "steel" && rail0 === "parapet" ? "pickets" : rail0, two = form !== "straight";   // a zigzag and a dog-leg: two lanes side by side
+  const nA = gap + (gap > 0.02 ? SIDE_IN : 0), ld = out - 0.12, pp = two && rail === "parapet" ? 0.12 : 0;   // pp: a parapet each side of the outer lane
+  const nB = two ? nA + 0.2 + 2 * ld : nA + out;
+  const pn = rail === "panel" ? (style === "steel" ? 0.07 : 0.04) : 0.06;   // a rail's line in from its lane's edge (the landings' too)
+  const S = { form, dir, gap, style, rail, shaft: p.shaft === "walls" ? "walls" : "none", nA, nB, zs, stages: [], ground: zs[0], top: zs[zs.length - 1], two,
+    pn, rz: rail === "pipe" ? 0.95 : 1.07, railTop: { pickets: 1.091, pipe: 0.971, panel: 1.15, parapet: 1.0, none: 0 }[rail] };   // rz: a bar's centre over `ic`; railTop: the rail's top edge over `ic` (the line)
+  const lanes = two ? { inner: [nA + 0.1, nA + 0.1 + ld - pp], outer: [nA + 0.2 + ld + pp, nA + 0.2 + 2 * ld - pp] }
+    : { one: style === "steel" ? [nA + 0.06, nA + out] : [nA, rail === "parapet" ? nA + out - 0.12 : nA + out] };   // a steel lane's outer stringer flush with the stack's edge, as the two-lane forms'
+  S.lanes = lanes;
+  if (two) S.well = rail === "parapet" ? [lanes.inner[1], lanes.outer[0]] : [lanes.inner[1] - pn, lanes.outer[0] + pn];   // the two well rails' lines (a parapet: the well's own edges), either side of the well between the lanes
+  const uLo = u0 + pl, uHi = u1 - pl, wallRail = gap > 0.02 ? "in" : "wall";   // the lane's inner side: against the wall, or its own rail beyond a walkway
+  // a flight's rails: `out` on its outer side (the stack's edge: the rail line at nB), `well` on the side facing the
+  // other lane, `wall` against the building (a steel flight's wall rail), null for nothing
+  for (let i = 0; i + 1 < zs.length; i++) {
+    const z0 = zs[i], z1 = zs[i + 1], st = { i, z0, z1, flights: [], landings: [] }, last = i + 2 === zs.length;
+    if (form === "straight") {
+      const d = dir, uF = d > 0 ? uLo : uHi, uT = d > 0 ? uHi : uLo;
+      st.flights.push({ uF, zF: z0, uT, zT: z1, n0: lanes.one[0], n1: lanes.one[1], d, rails: ["out", wallRail] });
+      st.landings.push({ ua: Math.min(uT, uT + d * pl), ub: Math.max(uT, uT + d * pl), z: z1, n0: nA, n1: nB, kind: "floor", end: d, last });
+      if (i > 0) st.landings.push({ ua: Math.min(uF, uF - d * pl), ub: Math.max(uF, uF - d * pl), z: z0, n0: nA, n1: nB, kind: "foot", end: -d, last: false });
+    } else if (form === "zigzag") {                                   // one flight a storey, each in the other lane and climbing back the other way
+      const d = dir * (i % 2 ? -1 : 1), uF = d > 0 ? uLo : uHi, uT = d > 0 ? uHi : uLo, L = i % 2 ? lanes.outer : lanes.inner;
+      st.flights.push({ uF, zF: z0, uT, zT: z1, n0: L[0], n1: L[1], d, rails: i % 2 ? ["out", "well"] : ["well", wallRail] });
+      st.landings.push({ ua: Math.min(uT, uT + d * pl), ub: Math.max(uT, uT + d * pl), z: z1, n0: nA, n1: nB, kind: "floor", end: d, last });
+    } else {                                                           // a dog-leg: two flights a storey, the half platform at the other end
+      const d = dir, uE = d > 0 ? uHi : uLo, uP = d > 0 ? uLo : uHi, zm = (z0 + z1) / 2;
+      st.flights.push({ uF: uE, zF: z0, uT: uP, zT: zm, n0: lanes.outer[0], n1: lanes.outer[1], d: -d, rails: ["out", "well"] });
+      st.flights.push({ uF: uP, zF: zm, uT: uE, zT: z1, n0: lanes.inner[0], n1: lanes.inner[1], d, rails: ["well", wallRail] });
+      st.landings.push({ ua: Math.min(uP, uP - d * pl), ub: Math.max(uP, uP - d * pl), z: zm, n0: nA, n1: nB, kind: "half", end: -d, last: false });
+      st.landings.push({ ua: Math.min(uE, uE + d * pl), ub: Math.max(uE, uE + d * pl), z: z1, n0: nA, n1: nB, kind: "floor", end: d, last });
+    }
+    S.stages.push(st);
+  }
+  const flights = S.stages.flatMap(st => st.flights);
+  for (const f of flights) { f.steps = Math.max(2, Math.round((f.zT - f.zF) / 0.19)); f.rise = (f.zT - f.zF) / f.steps; f.run = Math.abs(f.uT - f.uF) / f.steps; }
+  for (const L of S.stages.flatMap(st => st.landings)) {              // each landing's inner edge (the flights' end) and the flights meeting it there
+    L.uIn = L.end > 0 ? L.ua : L.ub; L.uEnd = L.end > 0 ? L.ub : L.ua;
+    L.arrive = flights.filter(f => Math.abs(f.uT - L.uIn) < 1e-6 && Math.abs(f.zT - L.z) < 1e-6);
+    L.leave = flights.filter(f => Math.abs(f.uF - L.uIn) < 1e-6 && Math.abs(f.zF - L.z) < 1e-6);
+    L.open = null;                                                     // a two-lane landing's lane with no flight at its inner edge (the top landing's): a drop, railed across
+    if (two) { const used = new Set([...L.arrive, ...L.leave].map(f => f.n0 === lanes.inner[0] ? "inner" : "outer")); for (const k of ["inner", "outer"]) if (!used.has(k)) L.open = k; }
+  }
+  S.posts = [];                                                      // columns under the landings' outer corners, the ground to the highest landing at that end, flush with the slabs' ends and outer edges (6 mm in: nothing of a slab stands past them)
+  const cw = style === "steel" ? 0.12 : 0.16, nCol = (rail === "parapet" ? nB - 0.12 : nB) - cw / 2 - SIDE_IN;
+  if (S.shaft === "none" && rail !== "panel") for (const u of [u0 + cw / 2 + SIDE_IN, u1 - cw / 2 - SIDE_IN]) {   // (a panel stack's landings cantilever: the rounded corners are the look)
+    const over = S.stages.flatMap(st => st.landings).filter(L => u >= L.ua - 0.01 && u <= L.ub + 0.01);
+    if (over.length) S.posts.push({ u, n: nCol, top: Math.max(...over.map(L => L.z)), w: cw });
+  }
+  S.colW = cw;
+  S.walls = S.shaft === "walls" ? [[u0 - 0.25 - SIDE_IN, u0 - SIDE_IN], [u1 + SIDE_IN, u1 + 0.25 + SIDE_IN]] : [];
+  return S;
+}
+// a `stairs` part as a stack: with `floors`, over the building's floors between u0 and u1 (stackLayout); without, one
+// stage `h` high laid out as the older single flight was: its flight from u0 to u1 and its landing 1.2 m beyond the
+// top (a switchback, `turn: "u"`, its platform at the foot's end and its landing beyond the other), the span grown by
+// the landings so the flight stays where it was (the older streets' and the Motel preset's)
+export function stackOf(p, rows, u0, u1, z, out) {
+  if (Array.isArray(p.floors)) return stackLayout(p, rows, u0, u1, z, out);
+  const dir = num(p.dir, 1) < 0 ? -1 : 1, pl = STACK.pl, q = Object.assign({ form: p.turn === "u" ? "dogleg" : "straight" }, p);
+  if (q.form === "dogleg") return stackLayout(q, rows, dir > 0 ? u0 : u0 - pl, dir > 0 ? u1 + pl : u1, z, out);
+  return stackLayout(q, rows, u0 - pl, u1 + pl, z, out);
+}
+// A flight's two lines (the user, 2026-11-06, "the rails poke out", then the red line: one straight edge from the foot
+// to the landing's corner, nothing stepping above it): the inner-corner line `ic`, through the base of every riser from
+// the foot's floor to the landing's level, and the nosing line `nose`, a riser above it through the step noses. A rail,
+// a panel's top and a parapet's top stand on `ic` so they arrive at the landing's at exactly its height, one straight
+// line; a bottom bar and the stringers' depth sit against the treads, so they use `nose`. `steps` 0: a level edge.
+function lines(uF, zF, uT, zT, steps) {
+  const L = Math.abs(uT - uF), dr = uT > uF ? 1 : -1, run = steps > 0 ? L / steps : L, rise = steps > 0 ? (zT - zF) / steps : 0, slope = run > 1e-6 ? rise / run : 0;
+  const ic = u => zF + slope * dr * (u - uF), nose = u => ic(u) + rise;
+  return { L, dr, run, rise, slope, ic, nose };
+}
+// the rails' sections (metres, halves): a post 64 mm square, the top band 42 mm deep, the bottom band 20 x 40 mm,
+// a picket 10 mm; `in`: a capped post's centre from a run's free end
+const RAIL = { post: 0.032, top: 0.021, bot: 0.02, picket: 0.005, in: 0.044 };
+// A run of pickets (bars true) or a pipe rail along (uF, zF) -> (uT, zT) at n (the user, 2026-11-06, the red line:
+// "one straight edge from the foot to the landing's corner, nothing stepping above it"): the top band's top edge on
+// `ic` + rz + RAIL.top, one straight line. The bands are cut vertically at their ends (fslab), so a sloped band meets
+// a level one end to end in one section, and each end (ends[0] at uF, ends[1] at uT) is one of
+//   "post":  a capped post 44 mm in from the end of a level run, the bands from its far face, its cap level with the
+//            band's top: the band butts the post and nothing of its end shows (a landing's corner, where the end
+//            rail butts the same post's side)
+//   "cap":   the same post on the end itself (a landing's edge: its face in the slab's end plane meets it on an edge)
+//   "end":   a sloped run's free end: a post 44 mm in under the band (its top cut to the slope a hair under it, so
+//            nothing stands above the line), the bands running on to 6 mm from the end
+//   "flush": the bands cut at the end point: a post's face or a cross band is there to butt, or the next run's band
+//            meets them end to end (a well corner, a flight's band into a landing's)
+//   "under": a post on the end a hair under the bands (a landing's corner post); the top band from the end, where a
+//            flight's band meets it in one line; the bottom band from the post's centre
+//   "pass":  the top band cut at the end, the bottom band carried on into the "under" post standing there
+// Pickets every 11 cm, set out from the steps (half a space off every riser's face) and tucked 12 mm into the top
+// band; a post every tenth, its top cut to the band's slope a hair under it. Each picket and post stands on its tread
+// (`treadAt`: a slab stair's) or in the stringer (a steel stair's, whose top edge is `ic`); on a level run, on the
+// slab. `bars` false: a pipe rail, the band on posts about every 1.2 m, each mid-tread.
+function stackPickets(o, F, uF, zF, uT, zT, n, rz, bars = true, ends = ["post", "post"], steps = 0, treadAt = null) {
+  const N = lines(uF, zF, uT, zT, steps), { L, dr } = N; if (L < 0.12) return;
+  const clear = z => { if (steps > 0 && !treadAt) for (let k = 0; k <= steps + 1; k++) for (const dd of [-0.051, -0.045, 0]) { const pl = zF + k * N.rise + dd; if (Math.abs(z - pl) < 0.006) z = pl - 0.012; } return z; };
+  const zbPost = u => treadAt ? treadAt(u) - 0.006 : steps > 0 ? clear(N.ic(u) - 0.19) : zF, zbPicket = u => treadAt ? treadAt(u) + 0.03 : steps > 0 ? clear(N.ic(u) - 0.02) : zF + 0.03;
+  const P = RAIL.post, T = RAIL.top, top = u => N.ic(u) + rz + T;
+  const band = (a, b, lo, hi, w) => { if (Math.abs(b - a) < 0.008) return; fslab(o, "rail", F, [[a, lo(a)], [b, lo(b)], [b, hi(b)], [a, hi(a)]], n - w, n + w); };
+  const post = (u, cap = null) => cap !== null ? fbox(o, "rail", F, u - P, u + P, zbPost(u), cap, n - P, n + P)
+    : fslab(o, "rail", F, [[u - P, zbPost(u)], [u + P, zbPost(u)], [u + P, top(u + P) - 2 * T - 0.001], [u - P, top(u - P) - 2 * T - 0.001]], n - P, n + P);
+  const edge = (uE, d, kind) => {                                   // where the top and the bottom band start at this end (d: into the run)
+    if (kind === "post" || kind === "cap") { const c = uE + d * (kind === "post" ? RAIL.in : P); post(c, top(c + d * P)); return [c + d * P, c + d * P]; }
+    if (kind === "end") { post(uE + d * RAIL.in); return [uE + d * 0.006, uE + d * 0.006]; }
+    if (kind === "under") { const c = uE + d * P; post(c); return [uE, c]; }
+    if (kind === "pass") return [uE, uE - d * P];
+    return [uE, uE];
+  };
+  const [ta, ba] = edge(uF, dr, ends[0]), [tb, bb] = edge(uT, -dr, ends[1]);
+  band(ta, tb, u => top(u) - 2 * T, top, T);
+  if (bars) band(ba, bb, u => N.nose(u) + 0.09, u => N.nose(u) + 0.11, RAIL.bot);
+  if (bars) {
+    const m = steps > 0 ? Math.max(1, Math.round(L / steps / 0.11)) : 1, nb = steps > 0 ? steps * m : Math.max(2, Math.round(L / 0.11)), sp = L / nb;
+    for (let j = 0; j < nb; j++) {
+      const u = uF + dr * (j + 0.5) * sp; if (Math.abs(u - uF) < 0.1 || Math.abs(u - uT) < 0.1) continue;   // clear of the end posts
+      if (j % 10 === 5) post(u); else fbox(o, "rail", F, u - RAIL.picket, u + RAIL.picket, zbPicket(u), top(u) - 0.03, n - RAIL.picket, n + RAIL.picket);
+    }
+  } else if (steps > 0) {                                           // a pipe rail's posts about every 1.2 m, each in the middle of a tread (never in a riser's plane)
+    const m = Math.max(1, Math.round(1.2 / N.run));
+    for (let k = 0; k < steps; k++) { const u = uF + dr * (k + 0.5) * N.run; if (k % m === Math.floor(m / 2) && Math.abs(u - uF) > 0.3 && Math.abs(u - uT) > 0.3) post(u); }
+  } else for (let u = uF + dr * 1.2; Math.abs(u - uF) < L - 0.3; u += dr * 1.2) post(u);
+}
+// a solid panel along a flight (or a level edge) at n: a slab from `bottom` under `ic` (the soffit's line, or the
+// slab's underside) to 1.1 over it and a handrail band on top, both cut vertically at their ends: one straight line,
+// one section where two meet. An end is "flush" (cut at the point: a cross panel is there, or the next panel), "cont"
+// (it runs 6 mm past the point with its top level, where the landing's panel begins: nothing of either in the slab's
+// end plane, and the line meets the landing's at exactly its height) or "free" (12 mm past the point on its line,
+// clear of the first riser's plane)
+function stackPanel(o, F, slot, uF, zF, uT, zT, n, bottom = -0.1, steps = 0, ends = ["flush", "flush"]) {
+  const N = lines(uF, zF, uT, zT, steps), { dr } = N; if (N.L < 0.05) return;
+  const ext = k => k === "cont" ? 0.006 : k === "free" ? 0.012 : 0, a = uF - dr * ext(ends[0]), b = uT + dr * ext(ends[1]);
+  const Q = (lo, hi) => {
+    const q = [[a, N.ic(a) + lo], [b, N.ic(b) + lo]];
+    if (ends[1] === "cont") q.push([b, N.ic(uT) + hi], [uT, N.ic(uT) + hi]); else q.push([b, N.ic(b) + hi]);
+    if (ends[0] === "cont") q.push([uF, N.ic(uF) + hi], [a, N.ic(uF) + hi]); else q.push([a, N.ic(a) + hi]);
+    return q;
+  };
+  fslab(o, slot, F, Q(bottom, 1.1), n - 0.02, n + 0.02);
+  fslab(o, "rail", F, Q(1.11, 1.15), n - 0.02, n + 0.02);
+}
+// a rounded corner between a landing's two panels: the arc as short panels (r 0.25, four of them), at the corner (u, n)
+// where the outer edge (along u, at nE) meets the end (along n, at uE); zb the landing's level
+function stackCorner(o, F, slot, uE, nE, du, dn, zb, bottom = -0.1) {
+  const r = 0.25, pts = [], h = 1.1 - bottom;
+  for (let k = 0; k <= 4; k++) { const a = Math.PI / 2 * k / 4; pts.push([uE - du * r + du * r * Math.sin(a), nE - dn * r + dn * r * Math.cos(a)]); }
+  for (let k = 0; k < 4; k++) bar(o, slot, fp(F, pts[k][0], zb + bottom + h / 2, pts[k][1]), fp(F, pts[k + 1][0], zb + bottom + h / 2, pts[k + 1][1]), h, 0.04);
+  for (let k = 0; k < 4; k++) bar(o, "rail", fp(F, pts[k][0], zb + 1.13, pts[k][1]), fp(F, pts[k + 1][0], zb + 1.13, pts[k + 1][1]), 0.04);
+}
+// a rail of the stack's kind along (uF, zF) -> (uT, zT) at n, on a flight or a landing's level edge; `ends` as
+// stackPickets' (a panel's "post", "cap" and "pass" read as "cont", "flush" as "flush")
+function stackRail(o, F, S, sl, uF, zF, uT, zT, n, ends = ["post", "post"], steps = 0, treadAt = null, bottom = -0.1) {
+  if (S.rail === "pickets") stackPickets(o, F, uF, zF, uT, zT, n, 1.07, true, ends, steps, treadAt);
+  else if (S.rail === "pipe") stackPickets(o, F, uF, zF, uT, zT, n, 0.95, false, ends, steps, treadAt);
+  else if (S.rail === "panel") stackPanel(o, F, S.style === "steel" ? "metal" : sl, uF, zF, uT, zT, n, bottom, steps, ends.map(k => k === "flush" || k === "free" || k === "cont" ? k : "cont"));
+  else if (S.rail === "parapet") {                                  // a concrete slab from the soffit's line to 1 m over `ic`, one straight band, cut at its ends
+    const N = lines(uF, zF, uT, zT, steps);
+    fslab(o, sl, F, [[uF, N.ic(uF) + bottom], [uT, N.ic(uT) + bottom], [uT, N.ic(uT) + 1.0], [uF, N.ic(uF) + 1.0]], n - 0.06, n + 0.06);
+  }
+}
+// the well corner at a landing's inner edge (the two-lane forms): the two well rails end there, one arriving and one
+// leaving (at the top landing one arrives and the other lane lies open over a drop, railed across). Pickets and pipe:
+// a capped post on the slab's edge in each well line, their caps on the landing's line, the flights' bands butting
+// their faces, a cross band between them over the well, and on across the open lane into the outer rail's corner post
+// or to a post by the wall; panels: a cross panel the flights' panels end in; a parapet: a cross parapet
+function stackWell(o, F, S, sl, psl, L, lb) {
+  const [nI, nO] = S.well, e = L.end, uIn = L.uIn, P = RAIL.post, rz = S.rz, T = RAIL.top, open = L.open, bars = S.rail === "pickets";
+  if (S.rail === "pickets" || S.rail === "pipe") {
+    const c = uIn + e * P, EF = { name: F.name, o: fp(F, c, 0, 0), U: [F.N[0], F.N[1]], N: [-F.U[0], -F.U[1]], W: S.nB };
+    for (const nn of [nI, nO]) fbox(o, "rail", F, c - P, c + P, L.z, L.z + rz + T, nn - P, nn + P);
+    stackPickets(o, EF, nI + P, L.z, nO - P, L.z, 0, rz, bars, ["flush", "flush"], 0, null);
+    if (open === "outer") stackPickets(o, EF, nO + P, L.z, S.nB - S.pn - P, L.z, 0, rz, bars, ["flush", "flush"], 0, null);   // into the outer rail's post on the edge
+    else if (open === "inner") stackPickets(o, EF, nI - P, L.z, L.n0 + (S.gap > 0.02 ? 0.08 : 0.1), L.z, 0, rz, bars, ["flush", "post"], 0, null);
+  } else if (S.rail === "panel") {                                   // on the slab, 6 mm in from its edge, where the flights' panels end level (their last 6 mm butt its face)
+    const u0 = uIn + e * 0.006, u1 = uIn + e * 0.046, n0 = open === "inner" ? L.n0 + (S.gap > 0.02 ? 0.02 : 0.06) : nI - 0.02, n1 = open === "outer" ? S.nB - S.pn - 0.02 : nO + 0.02;
+    fbox(o, psl, F, u0, u1, L.z + lb, L.z + 1.1, n0, n1); fbox(o, "rail", F, u0, u1, L.z + 1.11, L.z + 1.15, n0, n1);
+  } else if (S.rail === "parapet") {                                 // on the slab's edge, over it (the well parapets end flush against its face, their ends below it flush with the slab's)
+    const u0 = uIn, u1 = uIn + e * 0.12, n0 = open === "inner" ? S.nA : nI, n1 = open === "outer" ? S.nB : nO;
+    fbox(o, sl, F, u0, u1, L.z + 0.006, L.z + 1.0, n0, n1);
+  }
+}
+// the stack's geometry: its flights, landings, rails, posts or shaft walls
+function stackGen(o, F, S, slot, b) {
+  const sl = slot || (S.style === "steel" ? "frame" : "concrete"), t = S.style === "steel" ? STACK.plate : STACK.slab, cD = 0.25, cW = 0.06;
+  for (const st of S.stages) {
+    for (const f of st.flights) {
+      const nf = f.steps, runF = (f.uT - f.uF) / nf, riseF = f.rise, dr = f.uT > f.uF ? 1 : -1;
+      if (S.style === "steel") {                                       // two channel stringers, pan treads filled with concrete over steel risers
+        const ch = (nA2, nB2) => fslab(o, sl, F, [[f.uF, f.zF - cD], [f.uT, f.zT - cD], [f.uT, f.zT], [f.uF, f.zF]], nA2, nB2);   // the channel's top edge on the inner-corner line: the treads stand as teeth above it, its end flush with the landing (the photo's)
+        ch(f.n0, f.n0 + cW); ch(f.n1 - cW, f.n1);
+        const nA2 = f.n0 + cW + 0.003, nB2 = f.n1 - cW - 0.003;
+        for (let i = 0; i < nf; i++) {
+          const a = f.uF + i * runF, bb = a + runF, zt = f.zF + (i + 1) * riseF, lo = Math.min(a, bb), hi = Math.max(a, bb);
+          fbox(o, "concrete", F, lo, hi, zt - 0.045, zt, nA2, nB2);
+          fbox(o, sl, F, lo, hi, zt - 0.051, zt - 0.045, nA2, nB2);
+          fbox(o, sl, F, dr > 0 ? lo + 0.002 : hi - 0.006, dr > 0 ? lo + 0.006 : hi - 0.002, zt - riseF, zt - 0.051, nA2 + 0.002, nB2 - 0.002);
+        }
+      } else {                                                         // a slab stair: the steps as boxes on a sloping slab (the waist, a flat soffit seen from below)
+        for (let i = 0; i < nf; i++) {
+          const a = f.uF + i * runF, bb = a + runF, zt = f.zF + (i + 1) * riseF, lo = Math.min(a, bb), hi = Math.max(a, bb);
+          fbox(o, sl, F, lo, hi, zt - riseF + (i === 0 ? SIDE_IN : 0), zt, f.n0, f.n1, S.gap > 0.02 ? "" : nKey(F, -1));
+        }
+        const wst = STACK.waist, wn0 = f.n0 + SIDE_IN, wn1 = f.n1 - SIDE_IN, e = SIDE_IN * dr, sk = riseF / Math.abs(runF);   // the slab a hair narrower and shorter than the steps: no face in their planes
+        fslab(o, sl, F, [[f.uF + e, f.zF + sk * SIDE_IN - wst], [f.uT - e, f.zT - sk * SIDE_IN - wst], [f.uT - e, f.zT - sk * SIDE_IN], [f.uF + e, f.zF + sk * SIDE_IN]], wn0, wn1);
+      }
+      // the rails on the inner-corner line: a flight's top edge arrives at the landing's at exactly its height, one
+      // straight line (the user, 2026-11-06). Its ends: at the ground a capped post (a panel 12 mm clear of the
+      // riser), at a landing's outer rail one line on through it, at a well corner cut flush against its post
+      const [outer, inner] = f.rails, treadAt = S.style === "steel" ? null : u => f.zF + (Math.min(nf - 1, Math.floor(Math.abs(u - f.uF) / Math.abs(runF))) + 1) * riseF;
+      const ground = f.zF <= S.ground + 1e-6, pk = S.rail === "panel", pb = S.style === "steel" ? -cD + SIDE_IN : -STACK.waist + SIDE_IN;   // a panel's bottom on the stringer's or the soffit's underside
+      const free = pk ? "free" : "end", on = pk ? "cont" : "pass";
+      const outEnds = [ground ? free : on, on], wellEnds = [ground ? free : pk ? "cont" : "flush", pk ? "cont" : "flush"], inEnds = [free, pk ? "cont" : "end"];   // a panel's end at a landing always runs 6 mm onto it, level: clear of the top step's end plane
+      const par = S.rail === "parapet";
+      if (outer === "out") stackRail(o, F, S, sl, f.uF, f.zF, f.uT, f.zT, par ? f.n1 + 0.06 : S.nB - S.pn, outEnds, nf, treadAt, pb);   // on the landings' rail line
+      else if (outer === "well") stackRail(o, F, S, sl, f.uF, f.zF, f.uT, f.zT, par ? f.n1 + 0.06 : f.n1 - S.pn, wellEnds, nf, treadAt, pb);
+      if (inner === "well") stackRail(o, F, S, sl, f.uF, f.zF, f.uT, f.zT, par ? f.n0 - 0.06 : f.n0 + S.pn, wellEnds, nf, treadAt, pb);
+      else if (inner === "in") {                                      // beyond a walkway: its own rail on the lane's inner side (a parapet on the steps' inner edge, cut 12 mm short at both ends on its own line, clear of the risers' planes, 6 mm off the waist's face)
+        const sh = par ? 0.012 : 0, sk = riseF / Math.abs(runF);
+        stackRail(o, F, S, sl, f.uF + dr * sh, f.zF + sh * sk, f.uT - dr * sh, f.zT - sh * sk, par ? (S.two ? f.n0 - 0.034 : f.n0 + 0.072) : f.n0 + S.pn, inEnds, nf, treadAt, pb);
+      }
+      else if (inner === "wall" && S.style === "steel") bar(o, "rail", fp(F, f.uF, f.zF + 0.85, f.n0 - 0.05), fp(F, f.uT, f.zT + 0.85, f.n0 - 0.05), 0.04);
+    }
+    for (const L of st.landings) {
+      const thick = L.kind === "floor" && S.shaft === "walls" ? STACK.thick : t, lsl = L.kind === "floor" && S.shaft === "walls" ? "concrete" : S.style === "steel" ? "concrete" : sl;
+      const n1 = S.rail === "parapet" ? L.n1 - 0.12 : L.n1;              // a parapet stands outside the slab's edge
+      fbox(o, lsl, F, L.ua, L.ub, L.z - thick, L.z, L.n0, n1, S.gap > 0.02 ? "" : nKey(F, -1));
+      if (S.style === "steel" && thick === t) {
+        fbox(o, sl, F, L.ua, L.ub, L.z - cD, L.z - t, n1 - cW, n1);     // the plate's edge channel
+        const uIn0 = L.uIn;                                             // and a header channel under its inner edge, where the flights' stringers land
+        fbox(o, sl, F, Math.min(uIn0, uIn0 + L.end * cW), Math.max(uIn0, uIn0 + L.end * cW), L.z - cD, L.z - t, L.n0 + 0.02, n1 - cW - 0.003);
+      }
+      const { uIn, uEnd } = L, e = L.end, endRail = !(L.last && b.walkwayEnd), psl = S.style === "steel" ? "metal" : sl;
+      const lb = -thick + SIDE_IN, nR = S.rail === "parapet" ? L.n1 - 0.06 : L.n1 - S.pn;   // a panel's or parapet's bottom at the slab's underside; the outer rail's line, the flights' too
+      const outAt = [...L.arrive, ...L.leave].some(f => f.rails[0] === "out");   // a flight's rail meets the outer rail at the inner edge (else it starts with a capped post there)
+      if (S.rail === "panel") {                                        // the outer edge's panel and the end's meet in a rounded corner
+        const r = 0.25;
+        stackPanel(o, F, psl, uIn + e * 0.006, L.z, uEnd - e * (endRail ? 0.04 + r : 0.012), L.z, nR, lb);   // from 6 mm in, where a flight's panel ends level; 12 mm in from the slab's end
+        if (endRail) { stackEndPanel(o, F, psl, uEnd - e * 0.04, L.z, L.n0 + (S.gap > 0.02 ? 0.04 : 0.06), nR - r, lb); stackCorner(o, F, psl, uEnd - e * 0.04, nR, e, 1, L.z, lb); }
+      } else if (S.rail === "pickets" || S.rail === "pipe") {
+        const col = S.posts.find(q => Math.abs(q.u - (uEnd - e * (S.colW / 2 + SIDE_IN))) < 1e-6);   // the column at this end: the corner post itself, the bands butting its faces
+        if (col) {
+          stackRail(o, F, S, sl, uIn, L.z, uEnd - e * (S.colW + SIDE_IN), L.z, nR, [outAt ? "under" : "cap", "flush"], 0, null, lb);
+          if (endRail) stackEndRail(o, F, S, sl, col.u, L.z, L.n0 + (S.gap > 0.02 ? 0.016 : 0.056), col.n - S.colW / 2, lb);
+        } else {
+          stackRail(o, F, S, sl, uIn, L.z, uEnd, L.z, nR, [outAt ? "under" : "cap", "post"], 0, null, lb);   // its corner post 44 mm in from the end; the end rail butts that post
+          if (endRail) stackEndRail(o, F, S, sl, uEnd - e * RAIL.in, L.z, L.n0 + (S.gap > 0.02 ? 0.016 : 0.056), nR - RAIL.post, lb);
+        }
+      } else if (S.rail === "parapet") {
+        stackRail(o, F, S, sl, uIn + (outAt ? 0 : e * 0.12), L.z, uEnd, L.z, nR, ["flush", "flush"], 0, null, lb);   // from the edge where a flight's parapet meets it, else from the cross parapet's far face
+        if (endRail) stackEndRail(o, F, S, sl, uEnd - e * (S.shaft === "walls" ? 0.066 : 0.16 + SIDE_IN + 0.066), L.z, L.n0 + (S.gap > 0.02 ? 0.06 : 0.1), S.nB - 0.12, lb);   // to the outer parapet's inner face; inside the column under the corner (its faces never in the column's)
+      }
+      if (S.two && S.rail !== "none") stackWell(o, F, S, sl, psl, L, lb);
+    }
+  }
+  const zg = S.ground, corner = S.rail === "pickets" || S.rail === "pipe";   // the columns under the landings' outer corners: with pickets or a pipe rail each is the landings' corner post too, up to the top landing's rail line; else into the highest slab (a concrete one 3 cm up into it, a steel one into its edge channel)
+  for (const q of S.posts) bar(o, sl, fp(F, q.u, zg, q.n), fp(F, q.u, corner ? q.top + S.railTop : q.top - t + (S.style === "steel" ? -0.01 : 0.03), q.n), q.w);
+  for (const [wa, wb] of S.walls) fbox(o, b.shaftSlot || "concrete", F, wa, wb, zg, S.top + 1.1, 0, S.nB + 0.05, nKey(F, -1));
+}
+// The line rule (the user, 2026-11-06, the red line over the picture: "one straight edge from the foot to the
+// landing's corner, nothing stepping above it"): nothing of a stack stands above its rails' lines. The stack built
+// alone (its part `p` on building `b`, in the building's own space), every vertex over a flight (u within it, n within
+// its lane and 0.1 beyond) or a landing against the rail's top line there (`ic` + railTop; a landing's level + it; the
+// higher where two meet; 0.9 over `ic` where there's no rail: a steel flight's wall bar), a fault above it by more
+// than `tol`. Returns { S, faults: [{ slot, u, n, z, over }], tris }
+export function stackLineFaults(p, b, tol = 0.004) {
+  const K = PART_KINDS.stairs, rows = b.inside && Array.isArray(b.inside.rooms) && b.inside.rooms.length ? insideFloors(b) : floorsOf(b).rows;
+  const w = num(b.w, 8), d = num(b.d, 10), F = faceFrames(-w / 2, -d / 2, w / 2, d / 2, 0)[p.face || "front"];
+  const pw = num(p.w, K.w), out = num(p.out, K.out), c = F.W / 2 + num(p.x, 0);
+  const S = stackOf(p, rows, c - pw / 2 + SIDE_IN, c + pw / 2 - SIDE_IN, 0, out), o = { G: {} };
+  stackGen(o, F, S, p.slot, { walkwayEnd: !!p.walkway && S.form === "dogleg", shaftSlot: p.wall_slot });
+  const top = Math.max(S.railTop, 0.9), faults = [];
+  const ceiling = (u, n) => {
+    let cz = -Infinity;
+    for (const st of S.stages) {
+      for (const f of st.flights) if (u >= Math.min(f.uF, f.uT) - 1e-6 && u <= Math.max(f.uF, f.uT) + 1e-6 && n >= f.n0 - 0.1 && n <= f.n1 + 0.1) cz = Math.max(cz, lines(f.uF, f.zF, f.uT, f.zT, f.steps).ic(u) + top);
+      for (const L of st.landings) if (u >= L.ua - 1e-6 && u <= L.ub + 1e-6 && n >= L.n0 - 0.1 && n <= L.n1 + 0.1) cz = Math.max(cz, L.z + top);
+    }
+    return cz;
+  };
+  for (const [slot, g] of Object.entries(o.G)) for (let i = 0; i < g.pos.length; i += 3) {
+    const px = g.pos[i] - F.o[0], py = g.pos[i + 1] - F.o[1], u = px * F.U[0] + py * F.U[1], n = px * F.N[0] + py * F.N[1], z = g.pos[i + 2];
+    const cz = ceiling(u, n); if (cz > -Infinity && z > cz + tol) faults.push({ slot, u: +u.toFixed(3), n: +n.toFixed(3), z: +z.toFixed(3), over: +(z - cz).toFixed(3) });   // (the shaft's walls stand outside every flight and landing)
+  }
+  return { S, faults, tris: Object.values(o.G).reduce((m, g) => m + g.idx.length / 3, 0) };
+}
+// a rail across a landing's end (along n at u): pickets or a pipe from a capped post by the wall into the side of the
+// outer rail's corner post; a parapet's end from the slab's underside up to its outer parapet's inner face
+function stackEndRail(o, F, S, sl, u, zb, n0, n1, bottom = -0.1) {
+  const EF = { name: F.name, o: fp(F, u, 0, 0), U: [F.N[0], F.N[1]], N: [-F.U[0], -F.U[1]], W: n1 };   // a frame along the landing's end: its u runs out from the wall
+  if (S.rail === "pickets") stackPickets(o, EF, n0, zb, n1, zb, 0, 1.07, true, ["post", "flush"], 0, null);
+  else if (S.rail === "pipe") stackPickets(o, EF, n0, zb, n1, zb, 0, 0.95, false, ["post", "flush"], 0, null);
+  else if (S.rail === "parapet") fbox(o, sl, EF, n0, n1, zb + 0.006, zb + 1.0, -0.06, 0.06);   // on the slab, butting the outer parapet's inner face (its top meets that one's on an edge)
+}
+function stackEndPanel(o, F, slot, u, zb, n0, n1, bottom = -0.1) {
+  const EF = { name: F.name, o: fp(F, u, 0, 0), U: [F.N[0], F.N[1]], N: [-F.U[0], -F.U[1]], W: n1 };
+  stackPanel(o, EF, slot, n0, zb, n1, zb, 0, bottom);
+}
+// where a stack with `walkway` lands on a walkway at z (a balcony at `out` from the wall, the stack's lane beyond it):
+// the u ranges its landings cover, where the walkway's railing opens
+export function stackCuts(parts, rows, W, z, out) {
+  const cuts = [];
+  for (const q of parts || []) {
+    if (q.kind !== "stairs" || !q.walkway || Math.abs(num(q.gap, 0) - out) > 0.08) continue;
+    const K = PART_KINDS.stairs, w = num(q.w, K.w), c = W / 2 + num(q.x, 0), S = stackOf(q, rows, c - w / 2 + SIDE_IN, c + w / 2 - SIDE_IN, 0, num(q.out, K.out));
+    for (const st of S.stages) for (const L of st.landings) if (Math.abs(L.z - z) < 0.03) cuts.push([L.ua - 0.02, L.ub + 0.02]);
+  }
+  return cuts.sort((p, q) => p[0] - q[0]);
+}
+// a run [u0, u1] less the cuts: the pieces left
+export function cutRuns(u0, u1, cuts) {
+  const runs = []; let a = u0;
+  for (const [c0, c1] of cuts) { if (c1 <= a || c0 >= u1) continue; if (c0 > a + 0.05) runs.push([a, c0]); a = Math.max(a, c1); }
+  if (u1 > a + 0.05) runs.push([a, u1]);
+  return runs;
+}
 function partGen(o, b, F0, p, rows, R, signs, near = [], others = []) {
   const K = PART_KINDS[p.kind]; if (!K || K.hole) return;
   const F = p.in ? Object.assign({}, F0, { o: [F0.o[0] - F0.N[0] * num(p.in, 0), F0.o[1] - F0.N[1] * num(p.in, 0), F0.o[2]] }) : F0;   // set back into a recess
-  const zs = partZs(p, rows);
+  const zs = p.kind === "stairs" && Array.isArray(p.floors) ? partZs(p, rows).slice(0, 1) : partZs(p, rows);   // a stair stack: once, over its floors (stackLayout)
   for (const [zi, zb] of zs.entries()) {
     // its top, and its bottom when it's off its floor, a few mm in too: never in the plane of a floor's line, a fin's end, a
     // slab's top; never into its own copy on the next floor
@@ -489,7 +824,7 @@ function partGen(o, b, F0, p, rows, R, signs, near = [], others = []) {
           fbox(o, p.slot2 || sl, F, u0, u1, z, z + h, out - 0.1, out);
           fbox(o, p.slot2 || sl, F, u0, u0 + 0.1, z, z + h, 0, out - 0.1); fbox(o, p.slot2 || sl, F, u1 - 0.1, u1, z, z + h, 0, out - 0.1);
         } else {
-          railGen(o, F, u0, u1, z, z + h, out - 0.04, kind === "bars" ? "bars" : null);
+          for (const [a, bb] of cutRuns(u0, u1, p.walkway ? stackCuts(near, rows, F.W, z, out) : [])) railGen(o, F, a, bb, z, z + h, out - 0.04, kind === "bars" ? "bars" : null);   // open where a stair stack lands
           const sideF = (u) => ({ name: F.name, o: fp(F, u, 0, 0), U: F.N, N: [-F.U[0], -F.U[1], 0], W: out });
           railGen(o, sideF(u0), 0.04, out - 0.04, z, z + h, 0, kind === "bars" ? "bars" : null, [false, true]);   // to the front's corner posts
           railGen(o, { ...sideF(u1), U: F.N, N: [F.U[0], F.U[1], 0] }, 0.04, out - 0.04, z, z + h, 0, kind === "bars" ? "bars" : null, [false, true]);
@@ -592,15 +927,9 @@ function partGen(o, b, F0, p, rows, R, signs, near = [], others = []) {
         o.lights.push({ at: [a[0], a[1], z + h / 2], color: p.color || "#ffc27a", power: num(p.power, 5), dist: num(p.dist, 8), z: z + h / 2 });
         break;
       }
-      case "stairs": {                                               // up the wall from u0 (ground) to u1 (z + h), `dir` -1 the other way
-        const dir = num(p.dir, 1) < 0 ? -1 : 1, n = Math.max(2, Math.round(h / 0.19)), run = (u1 - u0) / n, rise = h / n, t = 0.22, sl = slot || "concrete";
-        for (let i = 0; i < n; i++) {                                // from u0 to u1 exactly: the top step meets the landing, never under it
-          const a = dir > 0 ? u0 + i * run : u1 - (i + 1) * run, bb = a + run, zt = z + (i + 1) * rise;
-          fbox(o, sl, F, a, bb, zt - t - (i === 0 ? 0 : rise), zt, 0.0, out - 0.12, nKey(F, -1));
-        }
-        const ua = dir > 0 ? u0 : u1, ub = dir > 0 ? u1 : u0;          // the parapet on its open side: a sloping slab
-        fslab(o, sl, F, [[ua, z - 0.25], [ub, z + h - 0.25], [ub, z + h + 1.0], [ua, z + 1.0]], out - 0.12, out);
-        if (p.landing !== false) fbox(o, sl, F, dir > 0 ? u1 : Math.max(u0 - 1.2, rl + SIDE_IN), dir > 0 ? Math.min(u1 + 1.2, rr - SIDE_IN) : u0, z + h - t, z + h, 0, out, nKey(F, -1));
+      case "stairs": {                                               // a stair stack up the floors, or one flight `h` high laid out as the older single flight was (stackOf)
+        const S = stackOf(p, rows, u0, u1, z, out);
+        stackGen(o, F, S, slot, { walkwayEnd: !!p.walkway && S.form === "dogleg", shaftSlot: p.wall_slot });
         break;
       }
       case "block": fbox(o, slot || "metal", F, u0, u1, z, z + h, 0, out, nKey(F, -1)); break;
@@ -2542,11 +2871,20 @@ export function blockers(S, pieces) {
     for (const p of b.parts || []) if (p.kind === "stairs") {                // a stair up the wall: a ramp to its top, its landing
       const K = PART_KINDS.stairs, F = faceFrames(-num(b.w, 8) / 2, -num(b.d, 10) / 2, num(b.w, 8) / 2, num(b.d, 10) / 2, 0)[p.face || "front"];
       const w = num(p.w, K.w), h = num(p.h, K.h), out2 = num(p.out, K.out), c = F.W / 2 + num(p.x, 0), z = num(p.z, 0), dir = num(p.dir, 1) < 0 ? -1 : 1;
-      const a = fp(F, c - dir * w / 2, z, out2 / 2), bb = fp(F, c + dir * w / 2, z + h, out2 / 2), mid = place([(a[0] + bb[0]) / 2, (a[1] + bb[1]) / 2, (z + z + h) / 2 - 0.12], piece);
-      const along = [bb[0] - a[0], bb[1] - a[1], h], L = Math.hypot(...along), A = place([along[0] / L, along[1] / L, 0], { turn: b.turn }), Aw = [A[0], A[1], h / L];
-      const Nw = place([F.N[0], F.N[1], 0], { turn: b.turn }), up = cross(Aw, Nw);
-      boxes.push({ c: mid, ax: [Aw, [Nw[0], Nw[1], 0], up], h: [L / 2, out2 / 2, 0.12] });
-      if (p.landing !== false) { const e = dir > 0 ? c + w / 2 : c - w / 2 - 1.2; const l0 = fp(F, e, z + h - 0.22, 0), l1 = fp(F, e + 1.2, z + h, out2); boxes.push(boxAt(piece, [Math.min(l0[0], l1[0]), Math.min(l0[1], l1[1]), z + h - 0.22], [Math.max(l0[0], l1[0]), Math.max(l0[1], l1[1]), z + h])); }
+      const ramp = (uF, zF, uT, zT, nMid, nHalf) => {                   // a sloped slab from the foot to the top of a flight, in its lane
+        const a = fp(F, uF, zF, nMid), bb = fp(F, uT, zT, nMid), mid = place([(a[0] + bb[0]) / 2, (a[1] + bb[1]) / 2, (zF + zT) / 2 - 0.12], piece);
+        const along = [bb[0] - a[0], bb[1] - a[1], zT - zF], L = Math.hypot(...along), A = place([along[0] / L, along[1] / L, 0], { turn: b.turn }), Aw = [A[0], A[1], (zT - zF) / L];
+        const Nw = place([F.N[0], F.N[1], 0], { turn: b.turn }), up = cross(Aw, Nw);
+        boxes.push({ c: mid, ax: [Aw, [Nw[0], Nw[1], 0], up], h: [L / 2, nHalf, 0.12] });
+      };
+      {                                                                // a stack (or one flight): a ramp a flight, a box a landing, the shaft's walls
+        const S = stackOf(p, b.inside && Array.isArray(b.inside.rooms) && b.inside.rooms.length ? insideFloors(b) : floorsOf(b).rows, c - w / 2, c + w / 2, z, out2);
+        for (const st of S.stages) {
+          for (const f of st.flights) ramp(f.uF, f.zF, f.uT, f.zT, (f.n0 + f.n1) / 2, (f.n1 - f.n0) / 2);
+          for (const L of st.landings) { const l0 = fp(F, L.ua, 0, L.n0), l1 = fp(F, L.ub, 0, L.n1); boxes.push(boxAt(piece, [Math.min(l0[0], l1[0]), Math.min(l0[1], l1[1]), L.z - 0.22], [Math.max(l0[0], l1[0]), Math.max(l0[1], l1[1]), L.z])); }
+        }
+        for (const [wa, wb] of S.walls) { const l0 = fp(F, wa, 0, 0), l1 = fp(F, wb, 0, S.nB + 0.05); boxes.push(boxAt(piece, [Math.min(l0[0], l1[0]), Math.min(l0[1], l1[1]), S.ground], [Math.max(l0[0], l1[0]), Math.max(l0[1], l1[1]), S.top + 1.1])); }
+      }
     }
     out[b.id] = { boxes, occ, surface: null };
   }

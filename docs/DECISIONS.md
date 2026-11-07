@@ -2,6 +2,74 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-06, later (the user: "I want a system for building these kind of stairs": exterior stair stacks)
+
+- **Three photos** of Japanese exterior stairs, and "I want a system for building these kind of stairs":
+  1. A TV still of a three-storey apartment block (a danchi): open walkways along the front on every floor with white
+     picket railings, the slab edges painted light blue; the stair in front of the walkways: one straight concrete
+     flight a storey, each in the other of two lanes side by side and climbing back the other way, so the two
+     flights cross in an X from the street (a scissor stair), landing on the walkway at alternate ends through
+     openings in its railing; white pickets on the flights; a curved amber canopy over the mailboxes at the foot.
+  2. A stock photo of a modern mid-rise: a dog-leg stair stacked up the building's side in a recess between a tiled wall
+     and a column, two flights a storey with a half landing at the turn, the landings' fronts solid metal panels with
+     big rounded corners under a thin handrail, a downpipe beside it.
+  3. A stock photo of a tall apartment tower: a steel dog-leg stair stacked up an open concrete shaft, two flights a
+     storey with pickets (vertical bars), a thick concrete landing slab at every floor between the shaft's side walls,
+     the floor numbers painted by each landing.
+- **Built as the street builder's stair stacks** (STREET_BUILDER §5c): the `stairs` part's `floors: [a, b]` climbs the
+  building's floors a stage a storey, in a `form` (zigzag, straight, dogleg), a `style` (concrete, steel), a `rail`
+  (pickets, panel, parapet, pipe, none), a `shaft` (none, walls) and `gap` m off the wall, beyond a walkway, whose
+  railing opens where the landings meet it; the reference street `danchi_court` has the three. The floor numbers and
+  the curved canopy aren't built (words on a wall need a texture; the canopy slab stands in).
+
+## 2026-11-06 (the user: stairs from points, not presets; winders for tight spaces; the motel's switchback)
+
+- **"Any smarter way we can do stairs indoors (what if they need to be more strongly angled due to tighter spaces)?
+  What about outdoor U-turn stairs (motels don't tend to have one direct stair, tends to be two with a platform U-turn
+  in the middle)?"** Asked which to build, the user picked sane steep flights (the riser count by the 2R + G rule) and
+  turning stairs with winders for indoors, and the motel's switchback along the end wall; then:
+- **"Could you create some smart system where the stairs aren't pre-defined but you select end + start points or
+  start + mid + end points and they get generated to our rules?"** Built as **stairs from points** (KIT.md §11b,
+  STORY_FORMAT §2 `stairs`): a prop names the foot, the top and the points on the way; a point straight on is a
+  landing, to the side a quarter turn (a house's winders, three fan treads round a newel: the new `winder` kit; else a
+  landing), back the way you came a half turn with a platform across both lanes; the risers by 2R + G = 63 cm within
+  the style's limits (a house's riser up to 23 cm, tread no shallower than 18; an apartment's 20 and 23; a motel's 20
+  and 26), the treads from the runs, a warning when the rules object. kit.js and storykit/stairs.py lay out the same
+  (KIT compares them); the plan makes the flights, landings and winders with their collider steps; the scene builder's
+  Stairs tool clicks the way and its inspector shows the risers, treads and pitch. TestRoom001's station 19 climbs a
+  stairwell drawn as three points and comes down a house's L with winders drawn as three.
+
+## 2026-11-05, night (the user: stairs of three kinds, floors in the scene builder, climbing in Godot; the branch `gameplay-enhancements`)
+
+- **"Make a new branch called gameplay-enhancements, model different types of stairs (outdoor motel level stairs,
+  apartment stairs, interior stairs), update the interior builder so it can support multiple floor levels, make sure
+  in Godot we can go up and down the stairs without bugs and it feels good gameplay-wise."** Built on
+  `gameplay-enhancements`:
+  - **The kit's `stairs`** (KIT.md §11): one flight with its rails and a landing, in four styles with a preset each:
+    `house` (a wooden box stair: closed risers and stringers, a soffit, a wall rail; `stairs_house_open` one side
+    open with balusters and newels), `apartment` (a concrete flight on its slab, nosing strips, a steel pipe rail on
+    posts), `motel` (steel channel stringers, pan treads filled with concrete, a picket guard rail both sides, a
+    landing on an edge channel) and `steel` (an apāto's outside stair: checker plates, open risers). **Its collision
+    is its steps**: the plan tags the mesh hollow and adds collider boxes for the steps, the landing and the rails
+    (kit.js and kit.py make the same numbers; the desk, the Godot export and Export for Godot honour them).
+  - **The street's outside stairs** get a `style`: `steel` (the motel's: stringers, pan treads, a picket rail, a
+    landing with legs; `hill_motel` wears it) beside the concrete one with a parapet; the walkway button makes steel.
+  - **The scene builder's floors** (SCENE_BUILDER §1): named by level (B1, 1F, 2F), added above or below, a floor's
+    height set (its rooms, doors and windows move; stairs rooms reach the floor above again), a floor copied up with
+    everything in it, an empty one removed; a stairs room picks its *stairs* style and a *landing at the top* (the
+    room words `stair`, `landing`), straight flights and dog-legs as kit stairs.
+  - **Climbing in Godot** (play.gd, and the desk's runtime.js the same): the export's own box collision never got
+    onto a steep house stair at all (the tread two risers up stands within the radius before the feet are on the
+    next: the simulation stuck at the foot); now a block is walked onto when its top is a step above the ground
+    where the player touches it. The eye glides over every riser (a tenth of a second, every engine's stair
+    smoothing); a riser climbed counts toward the footstep's stride (a footfall a tread); the feet rest on anything
+    within 6 cm of the centre (a hair's gap between a landing and its wall was a hole three metres deep). The
+    Director's physics mode (a floating capsule) climbed already and glides the same.
+  - **TestRoom001's station 19** (`n_stairs`, after the workshop scene): a dog-leg stairwell up to a gallery, a house
+    stair down, measured in Godot and on the desk: the feet's height at each landing, never stuck, the eye never
+    jumping a riser in a frame. Pictured from the player's eye by day and night:
+    `docs/godot_sheets/2026-11-05_stairs.jpg`.
+
 ## 2026-11-05, latest (the user: the hanging clothes scrapped)
 
 - **"The clothing on the hangers looks bad, just scrap it, all we need is the folded clothing for the suitcase."**

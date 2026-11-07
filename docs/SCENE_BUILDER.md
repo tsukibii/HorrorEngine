@@ -30,9 +30,33 @@ rooms that can change between chapters. The panel under the 3D view counts what 
   - **Snap** sets the drag step: 10 cm, 20 cm, half a module or a module.
 - **Doors and windows:** pick *Door*, *Sliding door*, *Opening* or *Window*, then click on a wall. Drag one along
   its wall. Select one to set its width, height, sill, swing (into its room or out), lock (`locked_by`) and creak.
-- **Floors:** the 1F, 2F and + buttons. A `stairs` room is two storeys tall: the builder fills it with steps from a
-  0.85 m landing up to the floor above, in the direction it *climbs*. A door on its wall at the upper floor is the
-  top.
+- **Floors** (DECISIONS 2026-11-05, night: "support multiple floor levels"): the floor buttons, named by their level
+  (B1, 1F, 2F...), **+** a floor a storey (2.85 m) above the top one, **+ below** a basement a storey under the lowest,
+  **at … m** the floor's own height (its rooms, doors and windows move with it; every stairs room reaches the floor
+  above again), **copy ↑** a floor like this one above it (its rooms, doors, windows, wall items and furniture copied,
+  their ids with the new floor's name, a storey up), **remove** an empty floor. The plan shows one floor at a time, the
+  floor below faint; the 3D walk follows you up and down. A `stairs` room reaches from its floor to the one above plus
+  a ceiling's height: the builder fills it with **the kit's stairs** (KIT.md §11) from a 0.85 m landing up to the
+  floor above, in the direction it *climbs*: *stairs* picks the style (a house's wooden box stair between walls, one
+  side open with balusters and newels, an apartment's concrete flight with a pipe rail, a motel's steel stair, an
+  outside steel stair), *landing at the top* a landing that deep before the far wall (a door on a side wall there is
+  the way off; else a door at the far wall at the upper floor is the top), *flights* 2 a dog-leg (two flights a storey
+  turning on a half landing, a shaft through every floor it reaches, as a school's or a mansion's stairwell). The
+  stairs' collision is their steps (the plan's collider boxes), their rails stop you going off the side, and the
+  runtime climbs them with the eye gliding over each riser (play.gd, Play).
+- **Stairs from points** (the *Stairs* tool; DECISIONS 2026-11-06, KIT.md §11b): click the foot of the stair in a room,
+  then each turn or landing on the way (a point straight on is a landing, to the side a quarter turn, back the way you
+  came a half turn with a platform: click the platform's middle, then the top on the other lane), then double-click
+  the top: it lands on the floor above (a storey up when there is none) and the room reaches that floor. The flights,
+  landings and winders follow the rules (the risers by 2R + G = 63 cm, the treads from the runs), drawn over the plan
+  with their treads and the way's points; the inspector shows the risers, treads and pitch with the rules' warnings,
+  and takes the width, the style (a house's wooden box stair, one side open, an apartment's concrete flight, a
+  motel's steel stair, an outside steel stair), how the turns are made, the rails, the top's height and the points
+  themselves (one added before the top, the last taken away). Esc starts the clicking over. A stairs room's own
+  flight (above) is the quick way; a stair from points goes anywhere a room is tall enough. A turn needs room: the
+  way must step more than half the stair's width to the side for a quarter turn (less is a landing straight on), so
+  the house's 0.91 m stairs room holds a straight flight only; a turn wants a room about two widths wide (BUILDER
+  adds a 2.73 m stair hall to the house for its turn).
 - **The selected room:**
   - Its `kind`, `name`, size, height, footsteps (`floor`) and `light`.
   - Its **open sides**, for walls left out: a porch's, a railing side.

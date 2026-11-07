@@ -19,7 +19,7 @@ const REF = path.resolve(path.dirname(new URL(import.meta.url).pathname), "../..
 
 // the stations in the flow's order, and what each leaves the player with (a start --from a later one is given it)
 const ORDER = ["n_arrive", "n_hello", "n_front", "n_doors", "n_power", "n_store", "n_kitchen", "n_chores", "n_rest", "n_games",
-  "n_dark", "n_library", "n_things", "n_bath", "n_talk", "n_hide", "n_run", "n_sneak", "n_sleep", "n_night", "n_annex", "n_final"];
+  "n_dark", "n_library", "n_things", "n_bath", "n_talk", "n_stairs", "n_hide", "n_run", "n_sneak", "n_sleep", "n_night", "n_annex", "n_final"];
 const LEAVES = { n_hello: { karma: 1, flags: ["met_aoi"], states: { kitchen_tv: "static" } }, n_doors: { items: ["key_brass", "fuse"], flags: ["vault_open"] }, n_power: { flags: ["power_cut"] }, n_kitchen: { flags: ["phone_rang"], states: { kitchen_tv: "off" } },
   n_chores: { items: ["mop"], flags: ["chores_done", "feat_clean"] }, n_games: { karma: 1 }, n_dark: { items: ["flashlight", "batteries"], flags: ["torch_on"] },
   n_library: { flags: ["found_painting"] }, n_things: { flags: ["things_packed"] }, n_talk: { karma: 2 }, n_annex: { flags: ["annex_lit"] } };
@@ -55,7 +55,7 @@ const snapFor = nid => {                               // the run's state on rea
     catch (e) { await page.screenshot({ path: shot || "testroom_fail.png" }); fail(`${what}: ${e.message}${errors.length ? "\n  page errors: " + errors.join(" | ") : ""}\n  at ${await where()}`); }
   };
   const where = () => page.evaluate(() => { const R = window.__dd.run, rt = window.__dd.play;
-    return JSON.stringify({ trail: R && R.trail.slice(-3), play: !!(rt && rt.active), at: rt ? [+rt.player.pos.x.toFixed(2), +(-rt.player.pos.z).toFixed(2)] : null,
+    return JSON.stringify({ trail: R && R.trail.slice(-3), play: !!(rt && rt.active), at: rt ? [+rt.player.pos.x.toFixed(2), +(-rt.player.pos.z).toFixed(2), +rt.player.pos.y.toFixed(2)] : null,
       todo: R && (R.todo || []).map(t => `${t.id}:${t.state}`), heard: (window.__todoLog || []).slice(-8), flags: R && [...R.flags].slice(-8),
       hiding: rt && rt.player.hiding, busy: rt && rt.busy, cards: [...document.querySelectorAll("#watchBox .wcard")].map(c => c.textContent.slice(0, 60)) }); }).catch(() => "?");
   const playing = (on = true, ms = 90000) => page.waitForFunction(on => { const p = window.__dd.play; return on ? !!(p && p.active) : !(p && p.active); }, on, { timeout: ms });
@@ -554,6 +554,51 @@ const snapFor = nid => {                               // the run's state on rea
       await scene([1]);
       const k = await page.evaluate(() => window.__dd.run.karma.karma);
       if (k - k0 !== 2) throw new Error(`karma ${k0} then ${k}`);
+    });
+  });
+
+  // the player turned and moved on their floor without touching their height (place() drops them to the ground under
+  // a landing); a stair walked: W held, the feet ending `want` m up, never stuck, the eye never jumping a riser in a
+  // frame (the glide: at most its rate times the frame, 0.35 / 0.12 m/s at the most). The frame's seconds are read as
+  // the runtime reads them (the animation frame's own timestamp, capped at 0.05: runtime.js's loop), not from
+  // performance.now(): after a stall the frame's timestamp lags the clock, and the next frame's clock interval came
+  // out shorter than the runtime's step, a 4 cm "jump" that was only the two clocks disagreeing (2026-11-06)
+  const turnTo = (x, y, yaw) => page.evaluate(([x, y, yaw]) => { const rt = window.__dd.play; rt.player.pos.x = x; rt.player.pos.z = -y; rt.player.yaw = yaw; rt.player.pitch = 0; rt.player.glide = 0; }, [x, y, yaw]);
+  const climb = async (x, y, yaw, secs, want) => {
+    await turnTo(x, y, yaw);
+    await page.evaluate(() => { const rt = window.__dd.play; const c = window.__climb = { last: rt.eyePos().y, lastY: rt.player.pos.y, lastPos: rt.player.pos.clone(), still: 0, stuck: 0, jump: 0, worst: null, t: null };
+      const f = now => { if (window.__climb !== c) return; const dt = c.t === null ? 0.016 : Math.max(0.001, Math.min(0.05, (now - c.t) / 1000)); c.t = now; const e = rt.eyePos().y, j = Math.abs(e - c.last) - (0.35 / 0.12) * dt;
+        if (j > c.jump) { c.jump = j; c.worst = { dt: +dt.toFixed(3), eye: [+c.last.toFixed(3), +e.toFixed(3)], feet: [+c.lastY.toFixed(3), +rt.player.pos.y.toFixed(3)], glide: +(rt.player.glide || 0).toFixed(3), at: [+rt.player.pos.x.toFixed(2), +(-rt.player.pos.z).toFixed(2)] }; }
+        c.last = e; c.lastY = rt.player.pos.y;
+        const moved = Math.hypot(rt.player.pos.x - c.lastPos.x, rt.player.pos.z - c.lastPos.z); c.still = moved < 0.002 ? c.still + dt : 0; if (c.still > 0.5) { c.stuck++; c.still = 0; } c.lastPos.copy(rt.player.pos); requestAnimationFrame(f); }; requestAnimationFrame(f); });
+    await hold("KeyW", secs);
+    const r = await page.evaluate(() => { const c = window.__climb; window.__climb = null; return { y: window.__dd.play.player.pos.y, stuck: c.stuck, jump: c.jump, worst: c.worst }; });
+    if (want < 0 && r.y > 3.0) throw new Error(`the feet still at ${r.y.toFixed(2)} m: never down the top flight`);   // (want < 0: a walk ending mid-way, on winders)
+    if (want >= 0 && Math.abs(r.y - want) > 0.05) throw new Error(`the feet at ${r.y.toFixed(2)} m, not ${want}`);
+    if (r.stuck) throw new Error(`stuck on the way (${r.stuck} times)`);
+    if (r.jump > 0.02) throw new Error(`the eye jumped ${r.jump.toFixed(3)} m more than its glide allows in a frame (${JSON.stringify(r.worst)})`);
+  };
+  const inRoom = id => page.evaluate(id => window.__dd.play.inside.has(id), id);
+  await station("n_stairs", async () => {
+    await step("19 · Stairs: from the workshop up the stairwell's dog-leg (stairs from points: a half turn with its platform, concrete flights, each tread a step) to the gallery (ticks), never stuck, the eye gliding over every riser; across and down the back stairs (a house's L from points: the top flight, three winders round the newel, the long flight) to the back room (ticks); out into the court (ticks)", async () => {
+      await until(() => !window.__dd.play.moving && !window.__dd.play.lookTween, null, "the scene's hand-over to Play settling", 30000);
+      await place(8.2, 24.3, 0); await hold("KeyW", 1.2);
+      if (!(await inRoom("shaft"))) throw new Error("not in the stairwell");
+      await climb(9.97, 24.2, 270, 2.4, 1.725);                    // flight A, on the east: south to the half landing
+      await climb(8.63, 20.9, 90, 2.5, 3.45);                       // flight B, on the west: north to the upper landing
+      await turnTo(9.3, 24.5, 90); await hold("KeyW", 1.3);         // through the arch at the landing's west end
+      if (!(await inRoom("gallery"))) throw new Error("not in the gallery");
+      await ticked("t19_up");
+      await turnTo(13.6, 28.18, 0); await hold("KeyW", 1.0);        // east across the gallery through the door onto the back stairs' top tread
+      const y = await page.evaluate(() => window.__dd.play.player.pos.y);
+      if (!(await inRoom("back_stairs")) || y < 3.2) throw new Error(`not on the back stairs' top (feet at ${y.toFixed(2)})`);
+      await climb(14.9, 28.18, 0, 1.2, -1);                         // down the top flight, east, onto the winders
+      await climb(16.68, 28.18, 270, 2.6, 0);                       // round the winders and down the long flight, south, to the foot
+      await turnTo(16.0, 25.3, 180); await hold("KeyW", 1.6);
+      if (!(await inRoom("under"))) throw new Error("not in the back room");
+      await ticked("t19_down");
+      await turnTo(8.8, 26.5, 180); await hold("KeyW", 1.5);
+      await ticked("t19_out");
     });
   });
 

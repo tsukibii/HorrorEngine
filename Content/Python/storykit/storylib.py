@@ -259,6 +259,13 @@ def index(story):
                         size = KIT.size(p["kit"])
                     except ValueError as e:
                         errs.append(f"{pid}: {e}")
+                elif "stairs" in p:                   # stairs from points (KIT.md §11b): the box round their layout
+                    from . import stairs as ST
+                    b = ST.bounds(p["stairs"])
+                    size = (b[3] - b[0], b[4] - b[1], b[5] - b[2])
+                    t = Thing(pid, "prop", lid, room["id"], p, room_world(room, (b[0] + b[3]) / 2, (b[1] + b[4]) / 2, b[2]), size, 0.0)
+                    placed[pid] = t
+                    return t
                 elif p.get("use") == "trigger":
                     size = tuple(p.get("size", (1, 1, 2)))
                 z = p.get("z")
