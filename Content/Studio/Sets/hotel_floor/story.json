@@ -77,12 +77,12 @@
        }
       },
       {
-       "wall": "w",
-       "at": 0.864,
+       "wall": "s",
+       "at": 1.3,
        "w": 0.9,
        "h": 2.05,
        "door": {
-        "id": "stairs_w_door",
+        "id": "door_2f",
         "swing": "in",
         "kit": {
          "preset": "door_flush"
@@ -117,10 +117,10 @@
       {
        "id": "stairs_fx_switch",
        "at": [
-        0.057,
-        1.514
+        1.95,
+        0.057
        ],
-       "rot": 90,
+       "rot": 180,
        "z": 1.14,
        "tag": "light_switch",
        "kit": {
@@ -1094,7 +1094,7 @@
         1,
         1.93
        ],
-       "rot": 180,
+       "rot": 0,
        "z": 1
       }
      ],
@@ -1178,7 +1178,7 @@
         1,
         2.2
        ],
-       "rot": 180
+       "rot": 0
       }
      ]
     },
@@ -1223,7 +1223,7 @@
         0.5,
         2
        ],
-       "rot": 180
+       "rot": 0
       },
       {
        "id": "vending_kt_desk_1",
@@ -1239,7 +1239,7 @@
         1.65,
         2.05
        ],
-       "rot": 180
+       "rot": 0
       }
      ]
     },
@@ -1402,6 +1402,35 @@
      "skip": [
       "s",
       "w"
+     ]
+    },
+    {
+     "look": {
+      "walls": {
+       "set": "pbr/wall/Plaster001_1K-PNG",
+       "tint": "#cbbd9e",
+       "tint_amount": 0.5
+      },
+      "ceiling": "pbr/wall/Plaster001_1K-PNG",
+      "floor": "#4b2a2c"
+     },
+     "id": "landing_2f",
+     "at": [
+      0,
+      6,
+      0
+     ],
+     "size": [
+      2.6,
+      2,
+      2.6
+     ],
+     "floor": "carpet",
+     "light": "off",
+     "kind": "common",
+     "name": "Second floor landing",
+     "skip": [
+      "n"
      ]
     },
     {
@@ -1606,6 +1635,11 @@
      "a": "stairs",
      "b": "corridor",
      "via": "stair_door"
+    },
+    {
+     "a": "stairs",
+     "b": "landing_2f",
+     "via": "door_2f"
     },
     {
      "a": "corridor",

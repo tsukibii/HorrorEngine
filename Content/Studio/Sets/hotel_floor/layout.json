@@ -293,6 +293,31 @@
    }
   ],
   [
+   "landing_2f",
+   "common",
+   "Second floor landing",
+   0,
+   6,
+   2.6,
+   8,
+   {
+    "h": 2.6,
+    "light": "off",
+    "floor": "carpet",
+    "extra": {
+     "look": {
+      "walls": {
+       "set": "pbr/wall/Plaster001_1K-PNG",
+       "tint": "#cbbd9e",
+       "tint_amount": 0.5
+      },
+      "ceiling": "pbr/wall/Plaster001_1K-PNG",
+      "floor": "#4b2a2c"
+     }
+    }
+   }
+  ],
+  [
    "r302",
    "bedroom",
    "Room 302",
@@ -386,6 +411,23 @@
     "id": "stair_door",
     "w": 0.9,
     "h": 2.05,
+    "extra": {
+     "kit": {
+      "preset": "door_flush"
+     }
+    }
+   }
+  ],
+  [
+   "landing_2f",
+   "stairs",
+   "door",
+   {
+    "id": "door_2f",
+    "w": 0.9,
+    "h": 2.05,
+    "z": 0,
+    "locked_by": "flag:never",
     "extra": {
      "kit": {
       "preset": "door_flush"
@@ -586,22 +628,6 @@
     "w": 1.8,
     "h": 1.4,
     "sill": 0.7
-   }
-  ],
-  [
-   "stairs",
-   "w",
-   "door",
-   {
-    "at": 0.18,
-    "w": 0.9,
-    "h": 2.05,
-    "locked_by": "flag:never",
-    "extra": {
-     "kit": {
-      "preset": "door_flush"
-     }
-    }
    }
   ],
   [
@@ -856,7 +882,7 @@
    "vanity_mirror",
    1.0,
    1.93,
-   180,
+   0,
    {
     "z": 1.0
    }
@@ -866,7 +892,7 @@
    "bookshelf",
    1.0,
    2.2,
-   180,
+   0,
    {}
   ],
   [
@@ -874,7 +900,7 @@
    "fridge",
    0.5,
    2.0,
-   180,
+   0,
    {}
   ],
   [
@@ -882,7 +908,7 @@
    "desk",
    1.65,
    2.05,
-   180,
+   0,
    {}
   ]
  ],

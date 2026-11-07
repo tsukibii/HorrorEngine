@@ -20,6 +20,22 @@ systems that open, hold, move and are read; 2026-11-05, night, on `gameplay-enha
 builder's floors, the street's steel stair, climbing in Godot and on the desk). Read this after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
+## Where it stopped last (2026-11-07, night, `claude/optimistic-tesla-q01qg6`): Tutorial v2, Room 304
+
+The user asked for "tutorial v2": a hotel floor modelled in the scene builder, then the story built by hand in Godot
+with the Look plugin (not the Director), using every aspect so far (DECISIONS 2026-11-07, night). Built:
+`guides/tutorial_v2/index.html` (23 sections, 20 pictures), the set `hotel_floor` (`layout.py` writes its
+`layout.json`), the grown starter kit (`guides/first_game/starter/`: story, sound, room_tone, event_area, pickup, note,
+flashlight, light_shy, lights, reach; door, scare_area, player, interior extended), a door's `locked_by` in the
+interior export, `godot_byhand.py new` with `sfx/` and `music/`, and TUTORIAL2 (`python tools/godot/tutorial_v2.py
+[--pictures] [--keep DIR] [--reuse]`, the desk's server running: the game built as the steps say and played through
+headless, every step checked).
+
+- Checks: TUTORIAL2, FIRSTGAME, CHECKS and EXPORTS ok.
+- Her pictures are a stand-in figure: no Character Studio export on this machine. With `_studiotest` (STUDIO) or
+  another export, the check uses it.
+- The rain barely shows at night in a software-rendered picture; a look on the user's card would say more.
+
 ## Where it stopped last (2026-11-07, `claude/optimistic-tesla-q01qg6`): a motel game's list, the flashlight's plan, jump scares
 
 **The question.** The user asked what a horror game set in a motel lacks with our mechanics, and whether a light can be

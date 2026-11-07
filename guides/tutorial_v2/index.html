@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tutorial v2</title>
+<!-- Tutorial v2 (the user, 2026-11-07: "a tutorial that goes from modelling an interior for a floor in a hotel to building
+     out the story from scratch in godot using our plugin (not director), should make use of every aspect we've added so
+     far"). Nothing loads from outside: the pictures in img/ are that game drawn by Godot and the scene builder showing
+     its floor (python tools/godot/tutorial_v2.py --pictures); TUTORIAL2 builds the game as these steps say and plays it
+     through. -->
+<style>
+:root{--bg:#111314;--panel:#1a1d1e;--panel2:#222627;--line:#313738;--text:#e4e6e2;--dim:#959a96;--accent:#8fd0c2;--warn:#e0a030;--cue:#e0a35f}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:20px}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.wrap{display:grid;grid-template-columns:260px minmax(0,1fr);max-width:1260px;margin:0 auto}
+nav.toc{position:sticky;top:0;height:100vh;overflow:auto;padding:28px 18px 28px 22px;border-right:1px solid var(--line);font-size:13.5px}
+nav.toc .brand{font-weight:700;letter-spacing:.06em;color:var(--accent);font-size:12px;text-transform:uppercase;margin-bottom:14px}
+nav.toc li.part{counter-increment:none;color:var(--dim);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;margin:12px 0 4px 8px}
+nav.toc ol{list-style:none;margin:0;padding:0;counter-reset:s}
+nav.toc li{counter-increment:s}
+nav.toc li a{display:flex;gap:8px;padding:3px 8px;border-radius:6px;color:var(--text)}
+nav.toc li a::before{content:counter(s);color:var(--dim);min-width:18px;text-align:right;font-variant-numeric:tabular-nums}
+nav.toc li a:hover,nav.toc li a.on{background:var(--panel2);text-decoration:none}
+nav.toc li a.on{color:var(--accent)}
+nav.toc .back{display:block;margin-top:14px;color:var(--dim);font-size:12.5px}
+main{padding:34px 44px 90px;min-width:0}
+header.hero{border-bottom:1px solid var(--line);padding-bottom:22px;margin-bottom:10px}
+header.hero h1{font-size:34px;line-height:1.15;margin:0 0 10px;letter-spacing:-.01em}
+header.hero p{color:var(--dim);font-size:16.5px;margin:0;max-width:760px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.chip{font-size:12px;padding:3px 10px;border-radius:99px;border:1px solid var(--line);color:var(--dim);background:var(--panel)}
+section{padding-top:30px;max-width:940px}
+h2{font-size:24px;margin:16px 0 6px;display:flex;align-items:baseline;gap:12px}
+h2 .n{color:var(--accent);font-size:15px;font-variant-numeric:tabular-nums;font-weight:600}
+h3{font-size:16.5px;margin:22px 0 4px}
+p{margin:8px 0}
+ul,ol.steps{padding-left:22px;margin:8px 0}
+li{margin:3px 0}
+kbd{font:600 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--panel2);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:2px 6px;color:var(--text);white-space:nowrap}
+code{font:13px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:1px 5px;overflow-wrap:anywhere}
+pre{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;overflow:auto;font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace}
+.ui{font-weight:600;color:#e8f0e6}
+.node{font:600 13px ui-monospace,SFMono-Regular,Menlo,monospace;color:#cfe3f2}
+figure{margin:16px 0 20px;max-width:100%}
+figure img{display:block;max-width:100%;height:auto;border-radius:10px;border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.45);background:var(--panel)}
+figcaption{color:var(--dim);font-size:13px;margin-top:7px}
+.pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;align-items:start;margin:14px 0}
+.pair figure{margin:0}
+.tip{border-left:3px solid var(--accent);background:linear-gradient(90deg,rgba(143,208,194,.08),transparent);padding:9px 14px;border-radius:0 10px 10px 0;margin:14px 0}
+.tip b{color:var(--accent)}
+.note{border-left:3px solid var(--cue);background:linear-gradient(90deg,rgba(224,163,95,.08),transparent);padding:9px 14px;border-radius:0 10px 10px 0;margin:14px 0}
+table.keys,table.vals{border-collapse:collapse;width:100%;font-size:14px;margin:8px 0}
+table.keys td,table.vals td,table.vals th{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left}
+table.vals th{color:var(--dim);font-weight:600;font-size:12.5px}
+table.keys td:first-child,table.vals td:first-child{white-space:nowrap;width:1%}
+.tree{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font:13px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre;overflow:auto}
+.tree i{color:var(--dim);font-style:normal}
+footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:var(--dim);font-size:13px}
+@media (max-width:900px){.wrap{display:block}nav.toc{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line);padding:18px 16px}nav.toc ol{columns:2;column-gap:14px}main{padding:22px 16px 60px}header.hero h1{font-size:27px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="toc">
+  <div class="brand">Tutorial v2</div>
+  <ol>
+    <li><a href="#what">What you'll make</a></li>
+    <li><a href="#before">Before you start</a></li>
+    <li class="part">The floor: the scene builder</li>
+    <li><a href="#plan">The plan: rooms and floors</a></li>
+    <li><a href="#stairs">The stairwell</a></li>
+    <li><a href="#doors">Doors, locks and windows</a></li>
+    <li><a href="#furnish">Furniture and lights</a></li>
+    <li><a href="#paint">Paint</a></li>
+    <li><a href="#export">Export it</a></li>
+    <li class="part">The game: Godot, by hand</li>
+    <li><a href="#project">The project</a></li>
+    <li><a href="#scene">The scene: the hotel and you</a></li>
+    <li><a href="#light">Lighting it</a></li>
+    <li><a href="#dress">Rain, a car, the TV, the bath</a></li>
+    <li><a href="#sound">Music and room tones</a></li>
+    <li><a href="#story">The story on screen</a></li>
+    <li><a href="#things">A note, a key, batteries</a></li>
+    <li><a href="#moments">Moments</a></li>
+    <li><a href="#scares">Scares</a></li>
+    <li><a href="#flashlight">The flashlight's batteries</a></li>
+    <li><a href="#her">Her, who hates the light</a></li>
+    <li><a href="#jump">The jump scare and the hush</a></li>
+    <li><a href="#ending">The way out</a></li>
+    <li><a href="#play">Play it</a></li>
+    <li><a href="#next">Where to go next</a></li>
+  </ol>
+  <a class="back" href="../first_game/index.html">← Your first game (v1)</a>
+  <a class="back" href="../look_plugin/index.html">The Look plugin →</a>
+  <a class="back" href="../index.html">← All guides</a>
+</nav>
+<main>
+<header class="hero">
+  <h1>Tutorial v2: Room 304</h1>
+  <p>A business hotel's third floor at night. You come up the stairwell because the lift is out. Your room's card
+  reader is broken, the master key is in the linen closet, the corridor's lights won't stay on, and your flashlight is
+  dying. Someone is standing at the end of the corridor, and she doesn't like the light. You'll model the floor in the
+  <b>scene builder</b>, then build the whole game in Godot by hand: the <b>Look plugin</b> for the light, the weather and
+  the surfaces, and the <b>starter scripts</b> for the story, the sound and the scares. No Director.</p>
+  <div class="chips"><span class="chip">about two hours</span><span class="chip">Godot 4.7</span><span class="chip">the scene builder</span>
+  <span class="chip">the HorrorStudio Look plugin</span><span class="chip">15 starter scripts</span><span class="chip">the sound shelf and the four moods</span></div>
+</header>
+
+<section id="what">
+<h2><span class="n">1</span>What you'll make</h2>
+<div class="pair">
+  <figure><img src="img/corridor.jpg" width="1600" height="900" alt="The hotel's third floor corridor in Godot: fluorescent tubes, doors, a runner, the fire exit at the end"><figcaption>The third floor corridor, lit by the Look plugin's tubes.</figcaption></figure>
+  <figure><img src="img/her.jpg" width="1600" height="900" alt="Her at the end of the corridor in the flashlight's beam"><figcaption>Her at the end of the corridor. She backs away from the beam.</figcaption></figure>
+</div>
+<p>It uses everything the studio has for a game built by hand:</p>
+<ul>
+  <li><b>The scene builder:</b> rooms, two floors, a dog-leg stair, doors locked by a key, windows, furniture, lamps and paint.</li>
+  <li><b>The Look plugin:</b> its look, a grade, light zones, flickering tubes, a dying bulb, rain on a window, a car's
+  lights crossing a room, a CRT's static, a real mirror, a wet floor and blood.</li>
+  <li><b>The starter kit:</b> a to-do list on screen, notes, keys and pickups, music by mood, a tone for each room, lights
+  that dim and come back or go out one by one, a flashlight on batteries, a character who backs off from the light, and
+  a jump scare with the hush before it.</li>
+</ul>
+<p>Every picture here is that game, drawn by Godot or the scene builder. <code>python tools/godot/tutorial_v2.py --keep ~/Games/Room304_done</code>
+builds it exactly as these steps do, so you can open the finished one beside yours. It goes in a folder of its own,
+emptied each time.</p>
+</section>
+
+<section id="before">
+<h2><span class="n">2</span>Before you start</h2>
+<ul>
+  <li><b>Godot 4.7</b> (the standard build).</li>
+  <li><b>The studio's desk server</b> for the scene builder: <code>python tools/director/serve.py</code>, then
+  http://127.0.0.1:8780/builder.html. You can also use the dashboard's <span class="ui">Scene builder</span> tile (<code>python dashboard.py</code>).</li>
+  <li><a href="../first_game/index.html">Your first game</a> is the short version of this. It's worth reading if Godot is new to you. <a href="../godot_by_hand/index.html">Godot by hand</a>
+  explains what's underneath (the export's folders, the settings, shipping).</li>
+  <li>The finished floor is in the studio already as <span class="ui">set: hotel_floor</span>. Open it to compare with
+  yours, or use it and go straight to <a href="#export">Export it</a>.</li>
+</ul>
+</section>
+
+<section id="plan">
+<h2><span class="n">3</span>The plan: rooms and floors</h2>
+<p>Open the scene builder. In its <span class="ui">game</span> list pick <span class="ui">+ new set…</span> and call it
+<code>hotel_floor</code>. A set is a place designed before any game uses it, kept in <code>Content/Studio/Sets/</code>.
+The plan is a top-down grid: one square is a metre, north is up, and rooms are rectangles you drag out.</p>
+<figure><img src="img/builder_plan.jpg" width="1600" height="900" alt="The scene builder with the hotel's third floor: the plan on the left, the corridor from the player's eye on the right"><figcaption>The third floor in the scene builder: the plan, and the corridor seen from the player's eye at 1.65 m.</figcaption></figure>
+<ol class="steps">
+  <li><b>Floors.</b> The floors bar at the top has <span class="ui">+</span> (a floor above) and <span class="ui">+ below</span>.
+  You need two: the second floor's landing at 0 m, where the player comes from, and the third floor at 2.85 m. The builder
+  counts from the lowest floor, so these show as 1F and 2F. Rooms go on the floor that's lit in the bar.</li>
+  <li><b>The corridor.</b> From <span class="ui">Add a room</span>, drag a <span class="ui">Corridor</span> 18.4 m long
+  and 2 m deep, running east to west.</li>
+  <li><b>The guest rooms.</b> <span class="ui">Bedroom</span>s 4.6 × 6 m along both sides: 301 and 303 north of the
+  corridor, 302, 306 and 308 south of it. Nobody goes into those, so untick their <b>fixtures</b> and set their
+  <b>light</b> off.</li>
+  <li><b>Room 304</b> is three rooms: a Bedroom (4.6 × 4), an entry (a Corridor, 2.6 × 2) and a <span class="ui">Bath</span> (2 × 2)
+  beside it. The entry and the bedroom have no wall between them: tick <b>open</b> on the side they share, in both.
+  A bath brings its own tub and tiled floor.</li>
+  <li><b>The rest:</b> a <span class="ui">Closet</span> for the linen (2 × 2.4: closets get no ceiling light, so it's dark), a
+  vending corner (a <span class="ui">Common walkway</span>, 2.4 × 2.4), a <span class="ui">Storage</span> room, "Staff only". On the
+  lower floor, a <span class="ui">Common walkway</span> for the second floor's landing, right under the corridor's west end.</li>
+  <li>For each room, the inspector on the right sets its <b>name</b>, its <b>floor</b> (what the footsteps sound like:
+  carpet in the corridor and the rooms) and its <b>tone</b>, a quiet loop off the sound shelf. You'll set tones in
+  Godot in this tutorial; the field is there for games the desk exports.</li>
+</ol>
+<figure><img src="img/builder_room.jpg" width="1600" height="900" alt="Room 304 picked in the scene builder, the view inside it: the bed, the desk, the TV, the curtains"><figcaption>Room 304 picked. Its inspector shows its kind, size, floor, light and tone, and the view is inside it.</figcaption></figure>
+</section>
+
+<section id="stairs">
+<h2><span class="n">4</span>The stairwell</h2>
+<p>A stairwell is one room the building's whole height. Add a <span class="ui">Stairs</span> room 2.6 × 4.8 m on the
+lower floor, north of the second floor's landing, and give it a <b>height</b> of 5.45 m (both storeys: 2.85 + 2.6). In its inspector:</p>
+<ul>
+  <li><b>climbs</b> north: the first flight goes up from the south end;</li>
+  <li><b>flights</b>: a dog-leg (two flights a storey, a half landing between them);</li>
+  <li><b>stairs</b>: <i>apartment</i> (concrete flights, a pipe rail).</li>
+</ul>
+<p>The builder lays out the flights to the stair rules: each riser about 18 cm, landings at each floor. Drag the green
+<b>you</b> marker onto the bottom landing, facing up the first flight. That's where the game starts.</p>
+<figure><img src="img/builder_stairs.jpg" width="1600" height="900" alt="The stairwell's foot in the scene builder: the dog-leg's flights on the plan, the first flight in the view"><figcaption>The lower floor: the stairwell's landing and the dog-leg's two flights.</figcaption></figure>
+</section>
+
+<section id="doors">
+<h2><span class="n">5</span>Doors, locks and windows</h2>
+<ol class="steps">
+  <li>Pick the <span class="ui">Door</span> tool and click a wall two rooms share. Each guest room's door goes in the
+  corridor's wall, and so does the linen closet's. Put one between the corridor and the stairwell too: it lands on the
+  stairwell's top landing by itself, at the corridor's floor.</li>
+  <li><b>Locks.</b> A door's inspector has <b>locked by</b>. For room 304 type <code>key_304</code>, the name of the key
+  you'll hide in the linen closet. For the rooms nobody enters, and the second floor's door the player came through, type
+  <code>flag:never</code>: never opens. The lock goes with the export, and the starter's <code>door.gd</code> keeps it.</li>
+  <li>An <span class="ui">Opening</span> 2 m wide between the corridor and the vending corner: no door, an arch.</li>
+  <li>With the <span class="ui">Window</span> tool, add a window at the corridor's west end (sill 0.9 m) and one in 304's
+  south wall (sill 0.7 m, 1.8 m wide). A <span class="ui">Door</span> on the corridor's east wall, an outer wall, is the
+  fire exit.</li>
+</ol>
+<figure><img src="img/builder_door.jpg" width="1600" height="900" alt="Room 304's door picked: locked by key_304"><figcaption>304's door picked: locked by <code>key_304</code>. The red doors on the plan are locked.</figcaption></figure>
+</section>
+
+<section id="furnish">
+<h2><span class="n">6</span>Furniture and lights</h2>
+<p>The <span class="ui">Furniture</span> tool places the kit's things at their real sizes. Pick one in its list and click
+in a room. <kbd>R</kbd> turns it, and dragging moves it.</p>
+<table class="vals">
+<tr><th>Where</th><th>What (the kit's presets)</th></tr>
+<tr><td>304</td><td><code>bed_double</code> on the west wall, <code>desk</code> and a <code>dining_chair</code> on the east wall, <code>tv_55</code> on the wall above the desk (1.15 m up), a <code>floor_lamp</code> in the corner, <code>curtain_blackout</code> at the window</td></tr>
+<tr><td>304's bath</td><td><code>vanity_mirror</code> on the north wall (1 m up), a toilet (a <span class="ui">Prop</span> block, white)</td></tr>
+<tr><td>Linen closet</td><td>a <code>bookshelf</code> on the back wall: its shelves are where the key goes</td></tr>
+<tr><td>Vending corner</td><td>a <code>fridge</code> (the drinks) and a <code>desk</code> as a counter</td></tr>
+<tr><td>Corridor</td><td>three <code>runner</code> rugs, and five <code>tube_batten</code>s on the ceiling with <b>a lamp</b> ticked (4200 K)</td></tr>
+<tr><td>Stairwell</td><td>a <code>tube_batten</code> lamp over each landing</td></tr>
+</table>
+<p>A lamp in the scene builder is a light in the export, at the fitting. Here you'll light the floor yourself with the Look
+plugin, so the lamps mostly mark where the lights go.</p>
+</section>
+
+<section id="paint">
+<h2><span class="n">7</span>Paint</h2>
+<p><span class="ui">Paint</span> over the 3D view is a paint bucket. Pick a PBR set or a colour below it, tune it, and
+click a surface:</p>
+<ul>
+  <li>the corridor's and the rooms' walls: <code>Plaster001</code> tinted beige, for a hotel's wallpaper;</li>
+  <li>the corridor's carpet a dark red (<code>#4b2a2c</code>), the rooms' a dusty brown (<code>#6a5a4a</code>);</li>
+  <li>the bath's walls and ceiling: <code>white_plastic</code> (a unit bath);</li>
+  <li>the stairwell: <code>Concrete006</code>, its flights <code>Concrete029</code>.</li>
+</ul>
+<figure><img src="img/builder_paint.jpg" width="1600" height="900" alt="The paint bucket on in the scene builder"><figcaption>The paint bucket with a plaster set picked.</figcaption></figure>
+<p>Then <span class="ui">Save to story</span>. The stats under the view say what the plan holds. 304 is "unreachable"
+because it's locked by its key, which is what you want, and the stairwell and the guest rooms are dead ends.</p>
+<figure><img src="img/builder_around.jpg" width="1600" height="900" alt="The whole floor seen from outside in the scene builder"><figcaption><span class="ui">Round the building</span>: the floor seen from outside.</figcaption></figure>
+<div class="note">The finished set was written as a layout file, <code>Content/Studio/Sets/hotel_floor/layout.json</code>, and made by
+<code>node tools/director/layoutset.mjs --file Content/Studio/Sets/hotel_floor/layout.json hotel_floor</code>. The scene
+builder opens it like any set.</div>
+</section>
+
+<section id="export">
+<h2><span class="n">8</span>Export it</h2>
+<p>Press <span class="ui">Export for Godot</span> in the toolbar. It writes <code>Exports/interiors/hotel_floor/</code>:
+<code>hotel_floor.glb</code> and a README. Inside the .glb:</p>
+<table class="vals">
+<tr><td><code>visual/</code></td><td>every room's walls, floors, ceilings and things, each piece a node named by its id (<code>r304_kt_tv_55_1</code>...), with its materials</td></tr>
+<tr><td><code>doors/</code></td><td>each door on its hinge, with its lock in its metadata (<code>locked_by: key_304</code>)</td></tr>
+<tr><td><code>collision/</code>, <code>occluders/</code></td><td>what you bump into (Godot makes them bodies on import), and the boxes for occlusion culling</td></tr>
+<tr><td><code>lights/</code></td><td>the lamps, at their fittings</td></tr>
+<tr><td><code>markers/</code></td><td><code>player_start</code>, <code>spot_someone_spot</code> (her mark), and <code>trigger_&lt;room&gt;__volume</code> for every room: its middle, and its size in the metadata</td></tr>
+</table>
+</section>
+
+<section id="project">
+<h2><span class="n">9</span>The project</h2>
+<p>Make the project. It comes with the Look plugin, HumanShaders, the starter scripts, the studio's sound shelf and
+the four moods:</p>
+<pre>python tools/godot_byhand.py new ~/Games/Room304 --name "Room 304"
+python tools/godot_byhand.py exports ~/Games/Room304 --link</pre>
+<p>Open it in Godot (Project Manager, <span class="ui">Import</span>). The second command links the studio's
+<code>Exports/</code> in, so a new export from the scene builder shows up at once. You can drag the folders in instead.</p>
+<div class="tree">res://
+  addons/horrorstudio_look/     <i>the Look plugin (on)</i>
+  HumanShaders/                 <i>skin and eyes</i>
+  starter/                      <i>the starter kit: player, flashlight, story, sound, areas, pickups, notes, doors...</i>
+  sfx/                          <i>the sound shelf: 240 CC0 sounds (ambience/, stings/, doors/, house/...)</i>
+  music/                        <i>calm.ogg, uneasy.ogg, dread.ogg, chase.ogg</i>
+  exports/interiors/hotel_floor/hotel_floor.glb
+  exports/characters/<i>&lt;her name&gt;</i>/     <i>if you've made her in the Character Studio</i></div>
+</section>
+
+<section id="scene">
+<h2><span class="n">10</span>The scene: the hotel and you</h2>
+<p><span class="ui">Scene → New Scene</span>, <span class="ui">3D Scene</span>, rename the root <code>Main</code>, save it
+as <code>main.tscn</code> and make it the main scene (<span class="ui">Project Settings → Application → Run → Main Scene</span>).
+You'll end with this tree (built step by step below):</p>
+<div class="tree"><b>Main</b>                <i>Node3D</i>
+  Look                <i>HSLookEnvironment: balanced, Editor Only off</i>
+  Grade               <i>HSGrade: cold</i>
+  Hotel               <i>hotel_floor.glb + starter/interior.gd, Lights On off</i>
+  Zones/              <i>an HSLightZone a room, its lights inside it</i>
+  Weather/            <i>Rain (HSRainBox), Pane (HSWindowPane), Sweep (HSHeadlightSweep)</i>
+  Dressing/           <i>TV (HSCrtScreen), Mirror (HSMirrorSurface), WetFloor (HSWetSurface), Blood (HSBloodSplat)</i>
+  Tones/              <i>a room_tone.gd area a room</i>
+  Things/             <i>Note (note.gd), Key and Batteries (pickup.gd)</i>
+  Her                 <i>her .glb (hidden): HSCharacterLook, ArmsDown, LightShy (light_shy.gd)</i>
+  HerAgain            <i>her again by the fire exit (hidden): the jump scare</i>
+  Events/             <i>UpStairs, In304 (event_area.gd); Welcome, LightsDie, SheIsThere, LightsOut, Jump (scare_area.gd)</i>
+  Player              <i>starter/player.tscn at the hotel's player_start; its Flashlight on batteries</i>
+  Story               <i>CanvasLayer + starter/story.gd</i>
+  Sound               <i>Node + starter/sound.gd</i></div>
+<ol class="steps">
+  <li><b>The look.</b> Add an <span class="node">HSLookEnvironment</span> called <code>Look</code> (preset
+  <i>balanced</i>) and untick <b>Editor Only</b>. Add an <span class="node">HSGrade</span> called <code>Grade</code>, preset <i>cold</i>.</li>
+  <li><b>The hotel.</b> Drag <code>exports/interiors/hotel_floor/hotel_floor.glb</code> onto <code>Main</code>, rename it
+  <code>Hotel</code>, and drag <code>starter/interior.gd</code> onto it. Untick its <b>Lights On</b>: you'll light it
+  yourself. When the game runs, <code>interior.gd</code> makes every door open with <kbd>E</kbd> and keeps their locks.
+  Right-click <code>Hotel</code> → <span class="ui">Editable Children</span>: you'll need its meshes and markers.</li>
+  <li><b>You.</b> Drag <code>starter/player.tscn</code> onto <code>Main</code>. Put it where <code>Hotel → hotel_floor → markers → player_start</code>
+  is (copy its transform): the stairwell's bottom landing, facing up the first flight.</li>
+</ol>
+<figure><img src="img/stairs.jpg" width="1600" height="900" alt="The stairwell's foot in Godot, the first flight going up"><figcaption>Where you start. The player walks up the treads: it steps up anything 50 cm or lower.</figcaption></figure>
+</section>
+
+<section id="light">
+<h2><span class="n">11</span>Lighting it</h2>
+<p>An <span class="node">HSLightZone</span> owns the lights inside its box. Only what's in the box gets their light, so a
+lamp never lights the next room through a wall, and they switch off while you can't see the box. Make a
+<code>Zones</code> node with a zone for each room you'll light. Put each at its room's marker
+(<code>markers/trigger_&lt;room&gt;__volume</code>) and give it the size in that marker's metadata (width, height, depth):</p>
+<table class="vals">
+<tr><th>Zone</th><th>Room</th><th>Size (m)</th><th>Its lights (children)</th></tr>
+<tr><td>Stairwell</td><td>stairs</td><td>2.5 × 5.4 × 4.7</td><td>two <code>presets/fluorescent_tube.tscn</code> at the stair's battens (Amount 0.15)</td></tr>
+<tr><td>Corridor</td><td>corridor</td><td>18.3 × 2.55 × 1.9</td><td>five fluorescent tubes at the five battens (<code>lights/light_corridor_kt_tube_batten_1</code>...), Energy 1.3, Range 5, Amount 0.12; the third Amount 1: it stutters</td></tr>
+<tr><td>Room304</td><td>r304</td><td>4.5 × 2.55 × 3.9</td><td>an OmniLight3D at the floor lamp: warm (1, 0.78, 0.55), Energy 1.1, shadows</td></tr>
+<tr><td>Entry304</td><td>r304_entry</td><td>2.5 × 2.55 × 1.9</td><td>an OmniLight3D near the ceiling, Energy 0.5</td></tr>
+<tr><td>Bath304</td><td>r304_bath</td><td>1.9 × 2.35 × 1.9</td><td>an OmniLight3D, cold (0.85, 0.92, 1), Energy 0.9, shadows</td></tr>
+<tr><td>Vending</td><td>vending</td><td>2.3 × 2.55 × 2.3</td><td><code>presets/dying_bulb.tscn</code>: out more than on</td></tr>
+</table>
+<p>The linen closet gets no light at all: you'll need the flashlight in there.</p>
+<div class="pair">
+  <figure><img src="img/corridor.jpg" width="1600" height="900" alt="The corridor under its tubes"><figcaption>The corridor under its five tubes.</figcaption></figure>
+  <figure><img src="img/vending.jpg" width="1600" height="900" alt="The vending corner under its dying bulb, batteries on the counter"><figcaption>The vending corner's dying bulb.</figcaption></figure>
+</div>
+<div class="tip"><b>Scares' lights:</b> since each zone holds its room's lights, a scare can name the zone and get exactly
+those lights: "every light under the Corridor zone".</div>
+</section>
+
+<section id="dress">
+<h2><span class="n">12</span>Rain, a car, the TV, the bath</h2>
+<p>The Look plugin's nodes go on the hotel's own meshes (their <b>Target</b>) or stand in the world. Make a
+<code>Weather</code> node and a <code>Dressing</code> node for them:</p>
+<table class="vals">
+<tr><td><span class="node">HSRainBox</span> <code>Rain</code></td><td>outside the corridor's end window, 2.2 m out: Size 3.6 × 7 × 6, Count 3000, Strength 0.75</td></tr>
+<tr><td><span class="node">OmniLight3D</span> <code>StreetLamp</code></td><td>outside, below the window: orange (1, 0.66, 0.34), Energy 4, Range 10, shadows on (so it only comes in through the window). Rain at night is only seen where a light catches it</td></tr>
+<tr><td><span class="node">HSWindowPane</span> <code>Pane</code></td><td>Target: the end window's glass (<code>visual/corridor_fx_win1/…/kit_glass2</code>), Rain 0.7: drops running down it</td></tr>
+<tr><td><span class="node">HSHeadlightSweep</span> <code>Sweep</code></td><td>at 304's window, its −Z into the room: Every 18 s, Out 7, Energy 8. A car's lights cross the ceiling</td></tr>
+<tr><td><code>TV</code>, its <span class="node">HSCrtScreen</span></td><td>a <span class="node">MeshInstance3D</span> with a <span class="node">QuadMesh</span> the screen's size (1.2 × 0.68) just in front of the TV's screen, facing the room, and an <code>HSCrtScreen</code> child, Brightness 1.3: static. A CRT wants its glass's UVs to run corner to corner, which the quad's do; the kit's own screen is mapped in metres</td></tr>
+<tr><td><span class="node">HSMirrorSurface</span> <code>Mirror</code></td><td>Target: the bath's mirror (<code>visual/r304_bath_kt_vanity_mirror_1/…/kit_mirror</code>): a real reflection</td></tr>
+<tr><td><span class="node">HSWetSurface</span> <code>WetFloor</code></td><td>Target: <code>visual/r304_bath_fx_floor</code> (the tiles), Wetness 0.85, Puddles 0.6</td></tr>
+<tr><td><span class="node">HSBloodSplat</span> <code>Blood</code></td><td>on the bath floor beside the tub: Size 0.55, Seed 3</td></tr>
+</table>
+<div class="pair">
+  <figure><img src="img/window.jpg" width="1600" height="900" alt="The corridor's end window at night: the street lamp below, drops on the glass"><figcaption>The end window at night: the street lamp below, drops on the glass.</figcaption></figure>
+  <figure><img src="img/room304.jpg" width="1600" height="900" alt="Room 304: the bed, the TV's static, the lamp"><figcaption>304: the TV's static, the lamp, the curtains.</figcaption></figure>
+</div>
+<figure><img src="img/bath.jpg" width="1600" height="900" alt="304's bath: the mirror, the wet tiles, blood by the tub"><figcaption>The bath: the mirror, the wet tiles, the blood.</figcaption></figure>
+</section>
+
+<section id="sound">
+<h2><span class="n">13</span>Music and room tones</h2>
+<p>Add a <span class="node">Node</span> called <code>Sound</code> with <code>starter/sound.gd</code>. It plays the
+studio's four moods from <code>music/</code> (calm, uneasy, dread, chase: made from the score room's cues, all at
+the same loudness) looped under the game. Moving to the next mood crossfades it in so the loudness doesn't dip. Set
+its <b>Mood</b> to <i>uneasy</i>: that plays from the start. The music sits low, under the game.</p>
+<p>Each room gets its own sound while you're in it. Make a <code>Tones</code> node and an <span class="node">Area3D</span>
+for each room with <code>starter/room_tone.gd</code>. Set its <b>Interior</b> to <code>Hotel</code> and its <b>Room</b>
+to the room's id; it takes the room's size by itself. Then drag a loop from <code>sfx/ambience/</code> onto its <b>Tone</b>:</p>
+<table class="vals">
+<tr><td>stairs</td><td><code>ambient_01.ogg</code> (a low drone)</td></tr>
+<tr><td>corridor</td><td><code>electric_hum_01.ogg</code> (the tubes' hum)</td></tr>
+<tr><td>r304, r304_entry</td><td><code>room_tone_02.ogg</code></td></tr>
+<tr><td>r304_bath</td><td><code>water_running.ogg</code> (a tap left on)</td></tr>
+<tr><td>linen</td><td><code>room_tone_05.ogg</code></td></tr>
+<tr><td>vending</td><td><code>electric_hum_03.ogg</code> (the fridge)</td></tr>
+</table>
+<p>They crossfade as you walk from room to room, and sit well under the music, barely there.</p>
+</section>
+
+<section id="story">
+<h2><span class="n">14</span>The story on screen</h2>
+<p>Add a <span class="node">CanvasLayer</span> called <code>Story</code> with <code>starter/story.gd</code>. It draws the
+objective and a to-do list at the top left, a line at the bottom, a note's card in the middle and the ending. It also
+keeps what you carry and the facts you've set. The other scripts find it themselves. Set:</p>
+<table class="vals">
+<tr><td><b>Objective Text</b></td><td>Room 304, third floor. The lift is out.</td></tr>
+<tr><td><b>Tasks</b></td><td><code>up: Go up to the third floor</code> and <code>find304: Find room 304</code>. Each task is an id, a colon, then what it says. The id is how the rest of the game ticks it.</td></tr>
+<tr><td><b>Ending Title</b>, <b>Ending Text</b></td><td>Checked out / The fire stairs took you down to the street. Nobody ever asked who was staying in 308.</td></tr>
+</table>
+<figure><img src="img/door304.jpg" width="1600" height="900" alt="Room 304's door, the note on the carpet, the to-do list and 'Locked.' on screen"><figcaption>At 304's door: the to-do list, and the line the door says when it's locked.</figcaption></figure>
+</section>
+
+<section id="things">
+<h2><span class="n">15</span>A note, a key, batteries</h2>
+<p>Things you use with <kbd>E</kbd> are a <span class="node">Node3D</span> with a script and a mesh under it. The script makes
+its own collider when the game runs, so E finds even a key. Make a <code>Things</code> node:</p>
+<ol class="steps">
+  <li><b>The note.</b> A <code>Note</code> with <code>starter/note.gd</code> and a <span class="node">MeshInstance3D</span>
+  child (a <span class="node">PlaneMesh</span> 0.21 × 0.297: an A4 sheet) on the carpet in front of 304's door. <b>Title</b>
+  "Under 304's door", <b>Text</b>: the night desk's apology, saying the master key is on the shelf in the linen closet.
+  <b>Add Tasks</b>: <code>key: Find the master key in the linen closet</code>.</li>
+  <li><b>The key.</b> A <code>Key</code> with <code>starter/pickup.gd</code> and a small brass mesh, on the front edge of
+  the linen bookshelf's third shelf, 1.1 m up. <b>Item</b> <code>key_304</code>: the name 304's door is locked by, so carrying it
+  opens the door. <b>Label</b> "the master key", <b>Tick</b> <code>key</code>.</li>
+  <li><b>The batteries.</b> A <code>Batteries</code> pickup on the vending corner's counter: <b>Item</b> <code>batteries</code>
+  (a spare set for the flashlight), <b>Tick</b> <code>batteries</code>.</li>
+</ol>
+<div class="pair">
+  <figure><img src="img/note.jpg" width="1600" height="900" alt="The note's card open on screen"><figcaption>The note's card. E puts it away.</figcaption></figure>
+  <figure><img src="img/linen.jpg" width="1600" height="900" alt="The linen closet in the flashlight's beam, the key on the shelf"><figcaption>The linen closet, dark but for the flashlight. The key's on the shelf.</figcaption></figure>
+</div>
+</section>
+
+<section id="moments">
+<h2><span class="n">16</span>Moments</h2>
+<p>An <span class="node">Area3D</span> with <code>starter/event_area.gd</code> is a moment when you walk in. It can set
+the objective, add or tick tasks, say a line, set a fact, change the music's mood, or end the game. With
+<b>Interior</b> <code>Hotel</code> and a <b>Room</b> it fills that room. <b>Needs</b> holds it back until something's
+true: <code>task:find304</code> (a task done), <code>item:key_304</code> (carried), a fact, or <code>!</code> for not.
+Make an <code>Events</code> node and:</p>
+<table class="vals">
+<tr><td><code>UpStairs</code></td><td>Room <code>corridor</code>: Tick <code>up</code>, Say "The third floor."</td></tr>
+<tr><td><code>In304</code></td><td>Room <code>r304</code>: Tick <code>find304</code>, Music <i>dread</i>, Objective "Get out. The fire exit is at the end of the corridor.", Add Tasks <code>out: Get out by the fire exit</code></td></tr>
+</table>
+</section>
+
+<section id="scares">
+<h2><span class="n">17</span>Scares</h2>
+<p>An <span class="node">Area3D</span> with <code>starter/scare_area.gd</code> is a scare. It can work the lights under
+<b>Lights Of</b>: out, dim, flicker, or out <i>one by one</i> toward you, farthest first. They stay that way, or
+come back as they were after <b>For Seconds</b>. It can also show someone (<b>Appear</b>, for good or for <b>Appear For</b>
+seconds), hide someone (<b>Hide</b>), play its <code>Sound</code> child (an <span class="node">AudioStreamPlayer3D</span>
+with a sting from <code>sfx/</code>), and change the music. Untick <b>Walk In</b> and only a signal starts it: its
+<code>fire</code> method. Add to <code>Events</code>:</p>
+<table class="vals">
+<tr><td><code>Welcome</code></td><td>Room <code>corridor</code>, Lights Of <code>Zones/Corridor</code>, Lights Do <i>dim</i>, Dim To 0.15, For Seconds 3, a Sound: <code>sfx/house/power_hum_cut.ogg</code>. The tubes sag as you come in, then come back.</td></tr>
+<tr><td><code>LightsDie</code></td><td>Walk In off, Lights Of <code>Zones/Corridor</code>, <i>one by one</i>, Gap 0.35, For Seconds 4, a Sound: <code>sfx/stings/sting_short.ogg</code>. Select <code>Things/Key</code>, open the <span class="ui">Node</span> tab, double-click <b>picked</b> and connect it to <code>LightsDie</code> → <code>fire</code>. Taking the key puts the corridor out behind you, one tube at a time.</td></tr>
+<tr><td><code>SheIsThere</code></td><td>Room <code>r304_entry</code>, Needs <code>task:find304</code>, Appear <code>Her</code>, a Sound: <code>sfx/house/floorboard_creak.ogg</code>. On your way out of 304 she's at the end of the corridor.</td></tr>
+</table>
+<figure><img src="img/corridor_dim.jpg" width="1600" height="900" alt="The corridor with its tubes dimmed"><figcaption><code>Welcome</code>: the tubes at 15 % for three seconds.</figcaption></figure>
+</section>
+
+<section id="flashlight">
+<h2><span class="n">18</span>The flashlight's batteries</h2>
+<p>The player's <code>Eye/Flashlight</code> runs on <code>starter/flashlight.gd</code>. Select <code>Player</code>, tick
+<span class="ui">Editable Children</span>, select <code>Eye/Flashlight</code> and set:</p>
+<table class="vals">
+<tr><td><b>Battery</b> 90</td><td>seconds of light from full (0: it never runs down)</td></tr>
+<tr><td><b>Charge</b> 0.5</td><td>half full when the night starts</td></tr>
+<tr><td><b>Kind</b> bulb</td><td>a bulb gets dimmer, warmer and shorter as it empties, and browns out near the end. An LED stays full, blinks three times at low, then drops to a third.</td></tr>
+<tr><td><b>Low At</b> 0.3, <b>Low Says</b>, <b>Low Task</b></td><td>"The flashlight is dying." and the task <code>batteries: Find batteries (the vending corner)</code></td></tr>
+</table>
+<p>When it dies it stutters out, and <kbd>F</kbd> only clicks. The batteries from the vending corner go in by themselves:
+two seconds of dark, then full light.</p>
+</section>
+
+<section id="her">
+<h2><span class="n">19</span>Her, who hates the light</h2>
+<p>Drag her <code>.glb</code> from <code>exports/characters/</code> onto <code>Main</code> and call her <code>Her</code>.
+Make her yours in the Character Studio and press its <span class="ui">Export for Godot</span>. Or use a stand-in, as
+the pictures here do: a <span class="node">Node3D</span> with a few meshes under it (a <span class="node">CylinderMesh</span> gown, two arms, a head,
+and long black hair over her face: a sphere for the scalp and a cylinder that widens as it falls). Then:</p>
+<ol class="steps">
+  <li>Put her at <code>markers/spot_someone_spot</code> (the corridor's east end), facing down the corridor, and untick <b>Visible</b>: <code>SheIsThere</code> shows her.</li>
+  <li>Give her an <span class="node">HSCharacterLook</span> child (the studio's skin, eyes and hair) and a <span class="node">Node</span> with <code>starter/arms_down.gd</code>.</li>
+  <li>Give her a <span class="node">Node</span> called <code>LightShy</code> with <code>starter/light_shy.gd</code>:
+  <b>Does</b> <i>backs off</i>, <b>Distance</b> 2.5, <b>After</b> 0.4. When the beam holds her for 0.4 s she backs away
+  from you, facing you. The other choices: freezes, vanishes until the light's been off her a while, comes toward it.</li>
+  <li>Its signals: <b>lit</b>, <b>flashed</b>, <b>flashed_twice</b>. Add a <code>LightsOut</code> scare (Walk In off,
+  Lights Of <code>Zones/Corridor</code>, <i>one by one</i>, Gap 0.25, for good) and connect LightShy's
+  <b>flashed_twice</b> to its <code>fire</code>. Shine the light on her twice and the corridor goes dark.</li>
+</ol>
+<figure><img src="img/dark.jpg" width="1600" height="900" alt="The corridor dark, her in the flashlight's beam"><figcaption>After she's flashed twice: the corridor dark, only your flashlight on her.</figcaption></figure>
+</section>
+
+<section id="jump">
+<h2><span class="n">20</span>The jump scare and the hush</h2>
+<p>Duplicate <code>Her</code> as <code>HerAgain</code>, delete its <code>LightShy</code>, and stand her just inside the
+fire door facing down the corridor. Untick her <b>Visible</b>. Add a <code>Jump</code> scare with its own
+<span class="node">CollisionShape3D</span> (a box 1 × 2.5 × 1.9 m across the corridor, 2.4 m before the fire door):</p>
+<table class="vals">
+<tr><td><b>Needs</b></td><td><code>task:find304</code>: not on the way in</td></tr>
+<tr><td><b>Quiet</b> 1.5</td><td>the hush first: the music and the room's tone fade to nothing. The last half second is silent.</td></tr>
+<tr><td><b>Appear</b> <code>HerAgain</code>, <b>Appear For</b> 0.9, <b>Hide</b> <code>Her</code></td><td>she's suddenly right there, then gone</td></tr>
+<tr><td><code>Sound</code></td><td><code>sfx/stings/sting_big.ogg</code></td></tr>
+</table>
+<p>Why the hush: a sound just before a scare warns the body and takes up to two thirds off the startle. Silence before
+the hit lets it land, and the music creeping back afterwards is the release. The studio's research is in
+<code>docs/research/jump_scares.md</code>.</p>
+<figure><img src="img/jump.jpg" width="1600" height="900" alt="Her right in front of you by the fire door"><figcaption>The jump: 0.9 seconds of her, out of silence.</figcaption></figure>
+</section>
+
+<section id="ending">
+<h2><span class="n">21</span>The way out</h2>
+<p>With <code>Hotel</code>'s Editable Children on, select <code>hotel_floor/doors/door_corridor_e_door</code> (the fire
+door) and drag <code>starter/door.gd</code> onto it. Set its <b>Tick</b> to <code>out</code>. In the
+<span class="ui">Node</span> tab connect its <b>opened</b> signal to <code>Story</code> → <code>end</code>. Opening the
+fire door ends the night: the screen goes black and the ending's title comes up.</p>
+<figure><img src="img/ending.jpg" width="1600" height="900" alt="The ending card: Checked out"><figcaption>The ending.</figcaption></figure>
+</section>
+
+<section id="play">
+<h2><span class="n">22</span>Play it</h2>
+<p>Press <kbd>F5</kbd>.</p>
+<table class="keys">
+<tr><td><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></td><td>walk (up the stairs too), <kbd>Shift</kbd> runs</td></tr>
+<tr><td>mouse</td><td>look</td></tr>
+<tr><td><kbd>E</kbd></td><td>open a door, pick a thing up, read a note; E again puts the note away</td></tr>
+<tr><td><kbd>F</kbd></td><td>the flashlight</td></tr>
+<tr><td><kbd>Esc</kbd></td><td>let the mouse go</td></tr>
+</table>
+<ol class="steps">
+  <li>Up the stairwell. Open the door at the top. The corridor's tubes sag, then come back.</li>
+  <li>304 is locked. Read the note on the carpet.</li>
+  <li>The linen closet is dark: <kbd>F</kbd>. Take the key and the corridor goes out behind you, one tube at a time, then comes back.</li>
+  <li>Open 304 with the key. The TV's on. The music turns to dread. Look in the bath.</li>
+  <li>The flashlight dies. Batteries in the vending corner.</li>
+  <li>On the way out she's at the end of the corridor. Shine the light on her and she backs off. Do it twice and the corridor goes dark.</li>
+  <li>Walk to the fire exit.</li>
+</ol>
+</section>
+
+<section id="next">
+<h2><span class="n">23</span>Where to go next</h2>
+<ul>
+  <li><b>Another floor</b>: in the scene builder, <span class="ui">copy ↑</span> copies a floor up with everything on it;
+  export again, and the export's link puts it in your project at once.</li>
+  <li><b>The hotel from the street</b>: put the set in a building on a street in the street builder, as <a href="../first_game/index.html">your first game</a> does with its house.</li>
+  <li><b>Made props</b>: the prop generator's props come with a Godot scene each (<code>Saved/Props/&lt;name&gt;/&lt;name&gt;.tscn</code>): a
+  suitcase that opens, a journal, cans with your own labels. Drop one in and give it <code>pickup.gd</code> or <code>note.gd</code>.</li>
+  <li><b>Her face and her moves</b>: an <span class="node">AnimationPlayer</span> on her blend shapes, or the face clips the studio's Face page makes.</li>
+  <li><b>The whole look</b>: the plugin's other nodes and its 40 presets, in <a href="../look_plugin/index.html">its guide</a>.</li>
+  <li><b>Quests, conversations, branching endings</b>: what the Director does, in <a href="../director/index.html">its guide</a>.</li>
+  <li><b>Shipping it</b>: <a href="../godot_by_hand/index.html#ship">Godot by hand</a>.</li>
+</ul>
+</section>
+
+<footer>Tutorial v2: the hotel floor set from the scene builder, built into a game by hand in Godot 4.7 with the
+HorrorStudio Look plugin and the starter kit. <code>python tools/godot/tutorial_v2.py</code> (TUTORIAL2) builds it as
+these steps do and plays it through: the stairs, the dim, the locked door, the note, the key and the lights out one by one,
+304, the flashlight's batteries, her in the beam, the hush and the jump, the ending. <code>--pictures</code> draws the
+pictures here again.</footer>
+</main>
+</div>
+<script>
+// the contents follow the reading: the section on screen is lit
+const links = [...document.querySelectorAll("nav.toc ol a")], secs = links.map(a => document.querySelector(a.getAttribute("href")));
+const lit = () => { let at = 0; secs.forEach((s, i) => { if (s && s.getBoundingClientRect().top < 140) at = i; }); links.forEach((a, i) => a.classList.toggle("on", i === at)); };
+addEventListener("scroll", lit, { passive: true }); lit();
+</script>
+</body>
+</html>

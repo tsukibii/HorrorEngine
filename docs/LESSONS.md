@@ -1933,3 +1933,25 @@ pale one shows.
   silences at −37.5 dB mean, the chase at −13.6); each is brought to −20 LUFS when it's made (ffmpeg's `loudnorm`
   measuring, a plain gain applied, peaks under −1.5 dBTP). The meter prints to stderr: Node's `execFileSync` returns
   only stdout, so it's read with `spawnSync`.
+
+## Tutorial v2: a hotel floor built by hand (2026-11-07, night)
+
+- **Every floor needs a room of its own, not just a stairwell**: the scene builder takes a level's floors from where
+  its rooms stand, leaving stairwells out. With only the stairwell's foot on the lower floor, reopening the set gave
+  one floor, and the builder said "stairs need a floor above". A real second-floor landing under the corridor fixed it,
+  and reads better.
+- **Rotation 0 faces south**: things against a north wall face the room at 0. The first floor had the linen bookshelf,
+  the fridge and the bath's mirror at 180, so their backs (and the mirror's glass) faced the wall, and the key floated
+  in front of a blank panel. It's in the map skill's reference now.
+- **A thing to use stands clear of the furniture's collider**: the export makes a kit thing one collision box, so a key
+  placed inside the bookshelf's box was behind the box's face. The aim hit the shelf, and E did nothing. On the
+  shelf's front edge, its own collider comes first.
+- **A CRT wants its glass's UVs corner to corner**: the kit's TV screen is mapped in metres, so the static covered part
+  of it. A QuadMesh the screen's size in front of it is the by-hand answer.
+- **A Godot script that errors in `_initialize` never quits**: the process sits until the caller's timeout (ten
+  minutes, twice). The scripts check what they load and quit with a word, and the play test has a watchdog.
+- **A fresh project's first `--import` can stop short of the exports**: the hotel wasn't in the cache after it. The
+  check imports again until it is.
+- **`@export_enum` can't have an empty option** (the Director's notes say so too): `keep` for "leave it as it is".
+- **Pictures at night need the iris held**: a dimmed corridor shot after 40 frames looked as bright as the lit one,
+  because the look's auto exposure had opened up. Eight frames shows it as the player sees it happen.

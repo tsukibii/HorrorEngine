@@ -2,6 +2,31 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-07, night (the user: "tutorial v2": a hotel floor from the scene builder to a story built by hand in Godot)
+
+- **The ask**: "can you make a tutorial that goes from modelling an interior for a floor in a hotel to building out the
+  story from scratch in godot using our plugin (not director), should make use of every aspect we've added so far, its
+  basically a tutorial, call it tutorial v2 in the html guide we made". Read as: the by-hand route (the Look plugin and
+  the starter scripts, no Director), a second tutorial beside guides/first_game, its card in guides/index.html titled
+  Tutorial v2.
+- **Built**: `guides/tutorial_v2/` (Room 304). It covers:
+  - the hotel floor modelled in the scene builder: two floors, a dog-leg stairwell, rooms, doors locked by a key's name
+    and for good, windows, furniture, lamps, paint;
+  - exported for Godot;
+  - a by-hand project lit with the Look plugin: light zones, flickering tubes, a dying bulb, rain and a street lamp, a
+    car's lights, a CRT, a mirror, a wet floor, blood;
+  - the story built from the starter kit: a to-do list, a note, a key, batteries, moments, music by mood, room tones,
+    lights that dim and come back or go out one by one, the flashlight on batteries, a character who backs off from
+    the light, the hush before a jump scare, the fire door's ending.
+- **What it needed**: the set `hotel_floor` (its `layout.py` and `layout.json`); a door's lock in the interior export
+  (extras `locked_by`, kept by door.gd); the starter kit grown with story, sound, room_tone, event_area, pickup, note,
+  flashlight, light_shy, lights and reach, with door.gd, scare_area.gd, player.gd and interior.gd extended (the first
+  game unchanged, FIRSTGAME); `godot_byhand.py new` giving a project the sound shelf (`sfx/`) and the moods (`music/`);
+  TUTORIAL2 (`tools/godot/tutorial_v2.py`) building it as the steps say and playing it through, with the pictures (Godot's
+  and the scene builder's).
+- Not in it: the Director (the user's "not director"), the street (a hotel floor stands alone; the first tutorial
+  covers streets), made props (they need Blender to make; mentioned under where to go next).
+
 ## 2026-11-07, later (the user: "go for it": the lights, then the flashlight, then the sound that can go quiet)
 
 - Asked which to build first ("the lights fix, then the flashlight, then music, room sound and the hush, since most of

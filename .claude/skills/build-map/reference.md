@@ -1,7 +1,8 @@
 # build-map: the formats, compact
 
 Metres; x east, y north, z up. Facing: a kit or a street thing at `rot`/`turn` 0 faces **south (−y)**, 90 east,
-180 north, 270 west. A start's yaw: 0 east, 90 north, 180 west, 270 south.
+180 north, 270 west. So a thing against a north wall (a bookshelf, a mirror, a fridge) faces into the room at
+`rot` 0, against a south wall at 180 (the hotel floor's first try had them backwards: a bookshelf showing its back). A start's yaw: 0 east, 90 north, 180 west, 270 south.
 
 ## 1. The layout file (layoutset.mjs --file; builder-presets.js PRESETS have the same shape)
 

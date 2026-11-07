@@ -2,8 +2,9 @@
 ## picked up, a character flashed twice). The lights of `lights_of` (every light under it: an interior, a room's light
 ## zone, one lamp) go out, dim, flicker, or go out one by one toward the player, the farthest first; for good, or for
 ## `for_seconds` and then back as they were. `appear` (hidden until then) is there, for good or for `appear_for` seconds
-## (a jump scare); the Sound child (an AudioStreamPlayer3D, a sting) plays; the music changes its mood. `quiet` hushes
-## the music and the room's tone first (the Sound node), so its last half second is silent and the sting lands in it.
+## (a jump scare), and `hide` gone; the Sound child (an AudioStreamPlayer3D, a sting) plays; the music changes its
+## mood. `quiet` hushes the music and the room's tone first (the Sound node), so its last half second is silent and
+## the sting lands in it.
 ## Once, or every time; only when `needs` holds (as event_area.gd's). Its box: a CollisionShape3D, or `interior` and
 ## `room` (that room's size).
 extends Area3D
@@ -19,6 +20,7 @@ const Lights := preload("res://starter/lights.gd")
 @export var gap := 0.4                          ## one by one: seconds between them
 @export var appear: Node3D
 @export var appear_for := 0.0                   ## 0: it stays; else gone again after this long (a jump scare)
+@export var hide: Node3D                        ## hidden when it fires (she was down the corridor: now she's here)
 @export var quiet := 0.0                        ## seconds of hush before it (its last half second silent); 0: none
 @export_enum("keep", "silence", "calm", "uneasy", "dread", "chase") var music := "keep"   ## the music's mood after (keep: as it is)
 @export var needs := ""
@@ -58,6 +60,8 @@ func fire(_a = null, _b = null) -> void:
 		await get_tree().create_timer(snd.hush(quiet)).timeout
 	var lamps := Lights.under(lights_of).filter(func(l): return Lights.is_on(l))
 	_lights(lamps)
+	if hide != null:
+		hide.visible = false
 	if appear != null:
 		appear.visible = true
 		if appear_for > 0.0:
