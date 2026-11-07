@@ -963,6 +963,7 @@
    "label": "Music",
    "icon": "music",
    "group": "world",
+   "hint": "the music's mood under the game, crossfading from the one before (silence fades it out)",
    "fields": [
     {
      "key": "music",
@@ -976,10 +977,43 @@
       "dread",
       "chase"
      ]
+    },
+    {
+     "key": "secs",
+     "label": "crossfade (s)",
+     "kind": "number",
+     "ph": "2",
+     "opt": true
     }
    ],
    "make": {
     "music": "uneasy"
+   }
+  },
+  {
+   "verb": "hush",
+   "label": "Hush before a sting",
+   "icon": "music",
+   "group": "world",
+   "hint": "the music and the room's tone die away, the last half second silent, so the next thing (a sound, a jump scare) lands in silence; then they come back slowly",
+   "fields": [
+    {
+     "key": "hush",
+     "label": "for (s)",
+     "kind": "number",
+     "verb": true,
+     "ph": "1.5"
+    },
+    {
+     "key": "back",
+     "label": "back over (s)",
+     "kind": "number",
+     "ph": "6",
+     "opt": true
+    }
+   ],
+   "make": {
+    "hush": 1.5
    }
   },
   {
@@ -2265,6 +2299,13 @@
     "label": "for (s)",
     "kind": "number",
     "ph": "0.8, or its motion's",
+    "opt": true
+   },
+   {
+    "key": "quiet",
+    "label": "hushed first (s)",
+    "kind": "number",
+    "ph": "game.quiet, else none",
     "opt": true
    }
   ],
@@ -4226,6 +4267,46 @@
   {
    "what": "action",
    "value": {
+    "music": "silence",
+    "secs": 3
+   },
+   "text": "Music: silence over 3 s"
+  },
+  {
+   "what": "action",
+   "value": {
+    "music": "calm",
+    "secs": 3
+   },
+   "text": "Music: calm over 3 s"
+  },
+  {
+   "what": "action",
+   "value": {
+    "music": "uneasy",
+    "secs": 3
+   },
+   "text": "Music: uneasy over 3 s"
+  },
+  {
+   "what": "action",
+   "value": {
+    "music": "dread",
+    "secs": 3
+   },
+   "text": "Music: dread over 3 s"
+  },
+  {
+   "what": "action",
+   "value": {
+    "music": "chase",
+    "secs": 3
+   },
+   "text": "Music: chase over 3 s"
+  },
+  {
+   "what": "action",
+   "value": {
     "music": "silence"
    },
    "text": "Music: silence"
@@ -4233,23 +4314,24 @@
   {
    "what": "action",
    "value": {
-    "music": "calm"
+    "hush": 1.5
    },
-   "text": "Music: calm"
+   "text": "Hush 1.5 s (silence before a sting)"
   },
   {
    "what": "action",
    "value": {
-    "music": "dread"
+    "hush": 2,
+    "back": 3
    },
-   "text": "Music: dread"
+   "text": "Hush 2 s (silence before a sting), back over 3 s"
   },
   {
    "what": "action",
    "value": {
-    "music": "chase"
+    "hush": 2
    },
-   "text": "Music: chase"
+   "text": "Hush 2 s (silence before a sting)"
   },
   {
    "what": "action",
@@ -4357,9 +4439,10 @@
     "clip": "motion_1",
     "expr": "expr_2",
     "sound": "sound_3",
-    "secs": 6
+    "secs": 6,
+    "quiet": 7
    },
-   "text": "Scare: a jump scare: thing_0, playing motion_1, its face expr_2, with sound_3"
+   "text": "Scare: a jump scare: thing_0, playing motion_1, its face expr_2, with sound_3, after 7 s of hush"
   },
   {
    "what": "action",

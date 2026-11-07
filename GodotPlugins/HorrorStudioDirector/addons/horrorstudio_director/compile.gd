@@ -124,6 +124,10 @@ func _game_settings(g: Node) -> void:
 		gs["ui_theme"] = g.ui_theme
 		gs["lighting"] = g.lighting
 		gs["weather"] = g.weather
+		if g.get("tone") != null and str(g.tone) != "none":
+			gs["tone"] = str(g.tone)
+		if g.get("quiet") != null and float(g.quiet) > 0.0:
+			gs["quiet"] = float(g.quiet)
 		gs["player"] = {"run": bool(g.get("can_run") if g.get("can_run") != null else true), "crouch": bool(g.get("can_crouch") if g.get("can_crouch") != null else true),
 			"eye": float(g.get("eye_height") if g.get("eye_height") != null else 1.65)}
 		var cs := {}

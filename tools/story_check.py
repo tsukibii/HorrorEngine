@@ -33,7 +33,7 @@ BOARDS = {}                 # the board games this game's tables can have (story
 ACTIONS = {"say", "think", "sound", "music", "light", "door", "show", "hide", "move", "objective", "flag", "unflag",
            "give", "take", "wait", "fade", "lookat", "shot", "seq", "anim", "stalker", "trick", "checkpoint", "done",
            "karma", "count", "scene", "behave", "ask", "state", "todo", "tick", "fail", "untodo", "chapter", "name", "torch", "beam",
-           "power", "skip", "skin", "sweep", "expr", "focus", "open"}
+           "power", "skip", "skin", "sweep", "expr", "focus", "open", "hush"}
 OPEN_TO = {"open", "shut", "close", "lock", "unlock"}     # the `open` action's `to`: a thing's parts swung, or its lock
 SKIN_KEYS = ("wet", "sweat", "drips", "oil")            # a cast member's skin (docs/GODOT_LOOK.md §5): each 0..1
 ASK_SECS = 3.0              # the walker's time to answer an ask
@@ -1677,8 +1677,16 @@ def check_action(bid, a, story, things, r, stage=None):
             r.err(f"{bid}: sound {v!r} isn't in sounds")
         if a.get("at"):
             placed(a["at"])
-    elif k == "music" and v not in MUSIC:
-        r.err(f"{bid}: music {v!r} (one of {', '.join(sorted(MUSIC))})")
+    elif k == "music":                                  # the music's mood, a bed under the game (HORROR_TODO 13.1)
+        if v not in MUSIC:
+            r.err(f"{bid}: music {v!r} (one of {', '.join(sorted(MUSIC))})")
+        if "secs" in a and not secs_ok(a["secs"], 0, 30):
+            r.err(f"{bid}: music secs {a['secs']!r}: the crossfade in seconds, 0 to 30")
+    elif k == "hush":                                   # the beds down to nothing before a sting (jump_scares.md §8)
+        if not secs_ok(v, 0.5, 30):
+            r.err(f"{bid}: hush {v!r}: seconds, 0.5 to 30 (its last half second silent)")
+        if "back" in a and not secs_ok(a["back"], 0, 120):
+            r.err(f"{bid}: hush back {a['back']!r}: the seconds the beds take to come back, 0 to 120")
     elif k == "light":
         if a.get("room"):
             placed(a["room"], "room")
@@ -1865,6 +1873,8 @@ def check_action(bid, a, story, things, r, stage=None):
         if v in ("glimpse", "jumpscare") and a.get("figure") in things and \
                 not things[a["figure"]].d.get("shape", "").startswith("person"):
             r.err(f"{bid}: {v} figure {a['figure']!r} isn't a person")
+        if v == "jumpscare" and "quiet" in a and not (secs_ok(a["quiet"], 0.5, 30) or a["quiet"] == 0):
+            r.err(f"{bid}: jumpscare quiet {a['quiet']!r}: the seconds of hush before it, 0.5 to 30 (0 for none)")
         if v == "jumpscare":                           # its clip (a lunge), its own sound, its face (STORY_FORMAT §4)
             if a.get("clip") is not None and a["clip"] not in story.get("motions", {}):
                 r.err(f"{bid}: jumpscare clip {a['clip']!r} isn't in motions")
@@ -1954,7 +1964,7 @@ def check_stitch(tid, st, story, things, r):
 
 
 # actions that take time in Play (a beat waits for them before its next action), and the tricks that do
-TIMED = {"wait", "fade", "ask", "name", "chapter", "scene", "lookat"}
+TIMED = {"wait", "fade", "ask", "name", "chapter", "scene", "lookat", "hush"}
 TIMED_TRICKS = {"knock", "glimpse", "lights_die", "swap", "jumpscare"}
 
 
@@ -2000,6 +2010,28 @@ def check_painted(story, r):
         st = UV.stale(GAME_DIR.name, tid, t)
         if st:
             r.warn(f"{tid}: {st}")
+
+
+def secs_ok(v, lo, hi):
+    return isinstance(v, (int, float)) and not isinstance(v, bool) and lo <= v <= hi
+
+
+def check_tone(where, tone, r):
+    """A room's tone (or the game's): a loop off the sound shelf heard while the player's in the room, or none."""
+    if tone == "none":
+        return
+    try:
+        shelf = json.loads(SFX_INDEX.read_text("utf-8")).get("sounds", {})
+    except (OSError, ValueError):
+        shelf = None
+    if not isinstance(tone, str) or not tone:
+        r.err(f"{where}: tone {tone!r}: a sound on the shelf (room_tone_01...) or none")
+    elif shelf is None:
+        r.warn(f"{where}: tone {tone}: the Studio's sound shelf isn't here (python tools/sfx.py fetch)")
+    elif tone not in shelf:
+        r.err(f"{where}: tone {tone!r} isn't on the Studio's sound shelf (python tools/sfx.py list ambience)")
+    elif not shelf[tone].get("loop"):
+        r.warn(f"{where}: tone {tone} isn't a loop on the shelf: it'll repeat with a seam")
 
 
 def check_sounds(story, r):
@@ -2678,6 +2710,8 @@ class World:
                 self.add("scripted", NAME_SECS)
             elif k == "wait":
                 self.add("scripted", float(v))
+            elif k == "hush":
+                self.add("scripted", max(0.5, float(v)))
             elif k in ("fade", "lookat"):
                 self.add("scripted", float(a.get("secs", 1)))
             elif k == "shot":
@@ -2687,6 +2721,8 @@ class World:
             elif k == "stalker":
                 self.secs.setdefault(self.cur, {})["_stalker"] = 1
             elif k == "trick":
+                if v == "jumpscare":                      # its hush first (its quiet, else game.quiet)
+                    self.add("scripted", float(a.get("quiet", self.story["game"].get("quiet") or 0)))
                 if v in MINOR or v == "jumpscare":
                     self.scares.append((self.clock, v, where))
                 self.add("scripted", TRICKS[v][1] + float(a.get("secs", 0)))
@@ -3173,6 +3209,13 @@ def main():
         for rm in lvl.get("rooms", []):
             if rm.get("acoustics") and rm["acoustics"] not in L.ACOUSTICS:
                 r.err(f"room {rm.get('id')}: acoustics {rm['acoustics']!r} (one of {', '.join(L.ACOUSTICS)})")
+            if "tone" in rm:
+                check_tone(f"room {rm.get('id')}", rm["tone"], r)
+    if "tone" in story["game"]:
+        check_tone("game", story["game"]["tone"], r)
+    q = story["game"].get("quiet")                     # the hush before every jumpscare (HORROR_TODO 13.1)
+    if q is not None and not (secs_ok(q, 0.5, 30) or q == 0):
+        r.err(f"game.quiet {q!r}: the seconds of hush before every jumpscare, 0.5 to 30 (0 for none)")
     if not r.errors:
         check_world(story, things, r)
         for sid, sc in story.get("scenes", {}).items():

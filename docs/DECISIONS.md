@@ -23,6 +23,16 @@ The user's answers, newest first. They override the plan, the research and the d
   covers her eyes, comes, charges; `near` making the lights round her flicker, dim or die) and the `beam` action, the
   sight's `torch` (the light gives you away); in the Director the character's Feels light rows and four People cards
   dragged onto her, a Reactions card dropped on her firing when the flashlight is on her.
+- **The sound that can go quiet, built** (HORROR_TODO 13.1, jump_scares.md §8): the story's `music` plays at last,
+  each mood (calm, uneasy, dread, chase) a bed rendered from the score room's own cues by `tools/score/moods.mjs`
+  (`Content/Studio/Music/moods/`, a game's own `Music/moods/` over them; MOODS), looped and crossfading with equal
+  power, kept with the run; a room's `tone` (a loop off the sound shelf, `game.tone` the default, `none` silence)
+  crossfading room to room; the `hush` action (the beds down to nothing, the last half second silent, the beat waiting
+  it out, then back over `back` seconds) and the jumpscare's `quiet` (`game.quiet` for every one). Music on the Music
+  bus, the tone on SFX (both made when a project hasn't them, so the pause menu's rows work); owned by the main scene
+  (Godot's `beds.gd`, the desk's `play/beds.js`), so the music carries through scenes; on the play's clock, so a hush
+  ends with its beat's wait even on slow frames. Sounds in the room (the shelf's, the little things') aren't hushed:
+  they're the world's. The Director: a room's Tone, the game's Tone and Quiet, the Music and Hush commands.
 
 ## 2026-11-07 (the user: a list to build for a motel game; jump scares researched; a flashlight on batteries; characters that feel its light)
 

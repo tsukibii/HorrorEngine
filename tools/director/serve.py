@@ -325,6 +325,12 @@ class Handler(BaseHTTPRequestHandler):
             if sf.is_file():
                 return self.send(200, sf.read_bytes(), "audio/ogg", cache=True)
             return self.send(404, {"error": "not on the sound shelf"})
+        if parts[0] == "music" and len(parts) == 3 and ".." not in parts and parts[2].endswith(".ogg"):
+            for mf in (L.ROOT / "Content" / "Games" / parts[1] / "Music" / "moods" / parts[2],   # the music's moods (tools/score/moods.mjs): a game's own over the studio's
+                       L.STUDIO / "Music" / "moods" / parts[2]):
+                if mf.is_file():
+                    return self.send(200, mf.read_bytes(), "audio/ogg", cache=True)
+            return self.send(404, {"error": "no such mood"})
         if parts[:2] == ["api", "lives"]:            # the little things' lives (Content/Studio/Life/lives.json, life.js)
             return self.send(200, LIFE.data())
         if parts[:2] == ["api", "soma"]:             # Kimodo's 77-joint skeleton, for retargeting its motions, and its twin of each previs joint

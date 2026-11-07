@@ -13,6 +13,9 @@ export const GROUPS = [
   { id: "flow", label: "Flow", color: "#a8a59c" },
 ];
 export const MUSIC = ["silence", "calm", "uneasy", "dread", "chase"];
+// the sound shelf's loops a room's `tone` (or game.tone) can be, under everything while the player's in the room (docs/SFX.md)
+export const TONES = ["room_tone_01", "room_tone_02", "room_tone_03", "room_tone_04", "room_tone_05", "room_tone_06", "electric_hum_01", "electric_hum_02", "electric_hum_03",
+  "ambient_01", "ambient_02", "ambient_03", "ambient_wind_01", "ambient_wind_02", "ambient_wind_03", "ambient_wind_04", "rain", "water_running", "record_crackle", "noise_01", "noise_02"];
 export const LIGHT_SET = ["on", "off", "flicker", "dim", "normal"];   // normal: its own brightness and flicker back, on or off as it is
 export const FLICKER_MODES = ["fluorescent", "dying", "candle", "pulse", "custom"];   // a light's flicker modes (tools/shared/flicker.js)
 // what someone does in the flashlight's beam (FLASHLIGHT_PLAN §2b): the cast's `beam`, the `beam` action
@@ -33,7 +36,8 @@ export const TRICKS = {
   glimpse: [{ key: "figure", label: "figure", kind: "thing" }, { key: "secs", label: "for (s)", kind: "number", ph: "0.6" }],
   jumpscare: [{ key: "figure", label: "figure", kind: "thing" }, { key: "clip", label: "playing (a motion)", kind: "motion", opt: true },
     { key: "expr", label: "its face", kind: "expr", opt: true }, { key: "sound", label: "sound (the big sting if none)", kind: "sound", opt: true },
-    { key: "secs", label: "for (s)", kind: "number", ph: "0.8, or its motion's", opt: true }],
+    { key: "secs", label: "for (s)", kind: "number", ph: "0.8, or its motion's", opt: true },
+    { key: "quiet", label: "hushed first (s)", kind: "number", ph: "game.quiet, else none", opt: true }],
   swap: [{ key: "hide", label: "hide", kind: "thing" }, { key: "show", label: "show", kind: "thing" }],
   loop_hall: [{ key: "trigger", label: "at the end of", kind: "zone" }, { key: "back_to", label: "back to", kind: "spot" }],
   cut_away: [{ key: "lookat", label: "look at", kind: "thing" }, { key: "then", label: "then", kind: "text" }],
@@ -45,7 +49,7 @@ const TRICK_TEXT = {
   slam_behind: (a, n) => `${n("thing", a.door)} slams shut behind the player`,
   lights_die: (a, n) => `${a.light ? `${n("thing", a.light)} dies` : `the lights die in ${n("thing", a.room)}`}${a.order === "toward" ? ", one by one toward the player" : ""}${a.secs ? ` for ${a.secs} s` : ""}`,
   glimpse: (a, n) => `a glimpse of ${n("thing", a.figure)}${a.secs ? ` (${a.secs} s)` : ""}`,
-  jumpscare: (a, n) => `a jump scare: ${n("thing", a.figure)}${a.clip ? `, playing ${a.clip}` : ""}${a.expr ? `, its face ${n("expr", a.expr)}` : ""}${a.sound ? `, with ${a.sound}` : ""}`,
+  jumpscare: (a, n) => `a jump scare: ${n("thing", a.figure)}${a.clip ? `, playing ${a.clip}` : ""}${a.expr ? `, its face ${n("expr", a.expr)}` : ""}${a.sound ? `, with ${a.sound}` : ""}${a.quiet ? `, after ${a.quiet} s of hush` : ""}`,
   swap: (a, n) => `while unseen, ${n("thing", a.hide)} becomes ${n("thing", a.show)}`,
   loop_hall: (a, n) => `the hall loops: the end of ${n("thing", a.trigger)} leads back to ${n("thing", a.back_to)}`,
   cut_away: (a, n) => `a cut away to ${n("thing", a.lookat)}`,
@@ -187,8 +191,12 @@ export const ACTIONS = [
   { verb: "sound", label: "Sound", icon: "sound", group: "world",
     fields: [{ key: "sound", label: "Sound", kind: "sound", verb: true }, { key: "at", label: "from", kind: "thing", opt: true }],
     make: () => ({ sound: "" }), text: (a, n) => `Sound ${a.sound || "…"}${a.at ? " from " + n("thing", a.at) : ""}` },
-  { verb: "music", label: "Music", icon: "music", group: "world", fields: [{ key: "music", label: "Mood", kind: "choice", verb: true, opts: MUSIC }],
-    make: () => ({ music: "uneasy" }), text: a => `Music: ${a.music}` },
+  { verb: "music", label: "Music", icon: "music", group: "world", hint: "the music's mood under the game, crossfading from the one before (silence fades it out)",
+    fields: [{ key: "music", label: "Mood", kind: "choice", verb: true, opts: MUSIC }, { key: "secs", label: "crossfade (s)", kind: "number", ph: "2", opt: true }],
+    make: () => ({ music: "uneasy" }), text: a => `Music: ${a.music}${a.secs ? ` over ${a.secs} s` : ""}` },
+  { verb: "hush", label: "Hush before a sting", icon: "music", group: "world", hint: "the music and the room's tone die away, the last half second silent, so the next thing (a sound, a jump scare) lands in silence; then they come back slowly",
+    fields: [{ key: "hush", label: "for (s)", kind: "number", verb: true, ph: "1.5" }, { key: "back", label: "back over (s)", kind: "number", ph: "6", opt: true }],
+    make: () => ({ hush: 1.5 }), text: a => `Hush ${a.hush} s (silence before a sting)${a.back ? `, back over ${a.back} s` : ""}` },
   { verb: "trick", label: "A scare (trick)", icon: "trick", group: "world", hint: "the composites in TRICKS.md §2: a knock, a glimpse, a door slamming behind",
     fields: [{ key: "trick", label: "Trick", kind: "choice", verb: true, opts: Object.keys(TRICKS).filter(k => !RETIRED_TRICKS.includes(k)), labels: TRICK_LABELS }],
     more: a => TRICKS[a.trick] || [], make: () => ({ trick: "knock", at: "", count: 3 }),

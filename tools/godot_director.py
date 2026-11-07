@@ -51,6 +51,7 @@ RUNTIME = ROOT / "tools" / "godot" / "addons" / "horrorstudio"
 LOOK = ROOT / "GodotPlugins" / "HorrorStudioLook" / "addons" / "horrorstudio_look"
 HUMAN = ROOT / "GodotPlugins" / "HumanShaders"
 SFX = ROOT / "Content" / "Studio" / "SFX"
+MOODS = ROOT / "Content" / "Studio" / "Music" / "moods"
 LIVES = ROOT / "Content" / "Studio" / "Life" / "lives.json"
 SOMA = ROOT / "Content" / "Studio" / "soma77.json"
 ANIM_GROUPS = ["IDLE", "WALK", "SIT", "STAND UP", "TALK", "LOOK & SEARCH", "REACTIONS", "SCARES", "OTHER"]   # the sample's clips on the Animate tab, in its order
@@ -152,6 +153,8 @@ def install(out, link=False):
     game.mkdir(exist_ok=True)
     if (SFX / "index.json").exists():
         place(SFX, game / "sfx", link)
+    if MOODS.is_dir():                                         # the music's moods as beds (tools/score/moods.mjs)
+        place(MOODS, game / "music", link)
     if LIVES.exists():
         shutil.copy(LIVES, game / "lives.json")
     if not (game / "life_things.json").exists():

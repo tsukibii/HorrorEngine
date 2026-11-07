@@ -10,6 +10,7 @@ const PlayC := preload("res://addons/horrorstudio/play.gd")
 const HudC := preload("res://addons/horrorstudio/hud.gd")
 const LifeC := preload("res://addons/horrorstudio/life.gd")
 const ScenePlayerC := preload("res://addons/horrorstudio/scene_player.gd")
+const BedsC := preload("res://addons/horrorstudio/beds.gd")   # the music's mood and the room's tone (HORROR_TODO 13.1)
 
 ## The time of day (Light Kit's sky rig as Godot nodes; the numbers of docs/BLENDER_LOOK.md §2): the sun or the moon
 ## (a DirectionalLight3D: its height, where from, strength, colour), the sky (a procedural sky: zenith and horizon), the
@@ -37,6 +38,7 @@ var things: Dictionary = {}        # id -> {node, piece}
 var hud
 var play
 var scene_player
+var beds                                   # the music and the room tone: here so they carry through scenes and stitches (beds.gd)
 var lives_data: Dictionary = {}
 var life_things: Dictionary = {}
 var run = null
@@ -89,6 +91,10 @@ func _ready() -> void:
 	add_child(post)
 	post.apply(story.game.get("grade", "cinema"))
 	post.set_grain_cap(1.0 if int(load("res://addons/horrorstudio/menu.gd").load_settings().get("grain", 1)) == 1 else 0.0)
+	beds = BedsC.new()
+	beds.name = "Beds"
+	beds.game = self
+	add_child(beds)
 	scene_player = ScenePlayerC.new()
 	scene_player.name = "ScenePlayer"
 	scene_player.game = self
@@ -387,7 +393,7 @@ func fade_alpha() -> float:
 
 # ---- the run ----------------------------------------------------------------------------------------------------
 func new_run() -> Dictionary:
-	return {"secs": 0.0, "flags": {}, "results": {}, "trail": [], "done": {}, "karma": {}, "counters": {}, "answers": [], "items": {}, "todo": [], "name": null, "time": null, "models": {}}
+	return {"secs": 0.0, "flags": {}, "results": {}, "trail": [], "done": {}, "karma": {}, "counters": {}, "answers": [], "items": {}, "todo": [], "name": null, "time": null, "models": {}, "music": null}
 
 
 func play_rt() -> Variant:
@@ -508,7 +514,7 @@ func snap_of() -> Dictionary:
 				states[id] = s["state"]
 	return {"secs": run["secs"], "flags": run["flags"].keys(), "results": run["results"].duplicate(), "karma": run["karma"].duplicate(), "counters": run["counters"].duplicate(),
 		"answers": run["answers"].duplicate(), "trail": run["trail"].duplicate(), "todo": (run.get("todo", []) as Array).duplicate(true), "name": run.get("name"),
-		"items": (rt.items.keys() if rt != null else run["items"].keys()), "states": states}
+		"items": (rt.items.keys() if rt != null else run["items"].keys()), "states": states, "music": run.get("music")}
 
 
 func reach(nid: String) -> void:
@@ -519,6 +525,9 @@ func reach(nid: String) -> void:
 
 
 func stop_watch() -> void:
+	if beds != null:
+		beds.music(null, 1.0)
+		beds.room_tone(null, 1.0)
 	if play != null:
 		play.stop()
 		play.queue_free()
@@ -546,6 +555,10 @@ func watch(from_nid = null, snap = null) -> void:
 		run["todo"] = (snap.get("todo", []) as Array).duplicate(true)
 		for id in snap.get("states", {}):
 			run["lives"].set_state(id, snap["states"][id], 0.0, "start")
+	if snap != null and snap.get("music") != null:
+		run["music"] = str(snap["music"])
+	if beds != null:
+		beds.music(run["music"], 1.0)                     # the mood the save was in, or silence
 	if run["name"] == null:
 		run["name"] = story.game.get("player_name", "Alex")
 	hud.player_name = str(run["name"])

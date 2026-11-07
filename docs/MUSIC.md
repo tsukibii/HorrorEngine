@@ -229,6 +229,33 @@ The desk loads the same scripts and the same palette. The plan:
 
 Every palette save keeps the previous file in `Saved/Score/<scope>/history/` (the last 30).
 
+### 5a. The moods, played now (DECISIONS 2026-11-07, later)
+
+The first piece of it is in: the story's `music` words (`calm`, `uneasy`, `dread`, `chase`; `silence`) play in the
+desk's Play and the Watch and in Godot, each mood a bed made from one of this room's cues by `tools/score/moods.mjs`:
+
+| Mood | Cue (seed) | What it is |
+| --- | --- | --- |
+| calm | `close_moment` (3) | high piano notes far apart, a breath of strings, long silences |
+| uneasy | `house_creaks` (5) | low pizzicato taps like wood settling, tremolo swelling in and out |
+| dread | `dread_drone` (2) | a low string pedal swelling and ebbing, a dissonance creeping in, drips |
+| chase | `chase` (4) | driving strings and pizzicato over low piano octaves, timpani, the key climbing |
+
+Each is written at its longest so its loop rarely shows, rendered through the sampled orchestra and its room as the WAV
+button does (`Engine.renderWav`), brought to **−20 LUFS** (peaks under −1.5 dBTP: as written they differ by 24 dB, a
+pizzicato with its silences to a chase) and made Ogg Vorbis in `Content/Studio/Music/moods/` with `moods.json` saying
+what made each. A game's own `Content/Games/<G>/Music/moods/<mood>.ogg` plays over the studio's. To make them again,
+with this room's server running:
+
+```bash
+node /home/user/HorrorEngine/tools/score/moods.mjs
+```
+
+The runtimes play them looped under the game at −6 dB (about −26 LUFS), crossfading mood to mood with equal power
+over the action's `secs` (2), and a `hush` takes them away before a sting (§5's "silence before a scare"; Godot's
+`beds.gd`, the desk's `play/beds.js`, STORY_FORMAT §4). The rest of §5 (favourites by id, a cue on a clip edge, the
+ducking under lines) is still to come.
+
 ## 6. A listening list
 
 These are works whose music fits our instruments, to listen to with the score room open. Research §1.4 and §3 have

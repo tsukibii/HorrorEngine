@@ -26,6 +26,10 @@ const RUN_FILE := "user://hs_director_run.json"     # "play from here": the dock
 ## off: a flat test light, for playing before the lighting is made
 @export_enum("on", "off") var lighting: String = "on"
 @export_enum("clear", "rain") var weather: String = "clear"
+## every room's tone unless it has its own: a loop off the sound shelf under everything (none: silence)
+@export_enum("none", "room_tone_01", "room_tone_02", "room_tone_03", "room_tone_04", "room_tone_05", "room_tone_06", "electric_hum_01", "electric_hum_02", "electric_hum_03", "ambient_01", "ambient_02", "ambient_03", "ambient_wind_01", "ambient_wind_02", "ambient_wind_03", "ambient_wind_04", "rain", "water_running", "record_crackle", "noise_01", "noise_02") var tone: String = "none"
+## seconds of hush before every jump scare: the music and the tone die away, the last half second silent (0: none)
+@export_range(0.0, 5.0, 0.1) var quiet: float = 0.0
 ## the game's counters (times caught, candles lit...): an event's Counter action counts them
 @export var counters: PackedStringArray = PackedStringArray()
 ## F9 in the game: where the player is, the flags, the items, the events as they fire

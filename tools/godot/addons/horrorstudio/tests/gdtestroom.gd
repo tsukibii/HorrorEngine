@@ -248,6 +248,18 @@ func task(id: String) -> Variant:
 	return null
 
 
+## the beds' state (HORROR_TODO 13.1) every frame into `out` till the music is calm (or 20 s of the game), then "done"
+func watch_beds(out: Array, limit: float = 20.0) -> void:
+	var c0: float = rt.clock
+	while rt.clock - c0 < limit:
+		var s: Dictionary = rt.game.beds.state()
+		out.append(s)
+		if s["music"] == "calm":
+			break
+		await process_frame
+	out.append("done")
+
+
 func ticked(id: String, what: String = "") -> String:
 	if await until(func(): return rt.todo_log.has(id + ":done"), 9000):
 		return ""
@@ -1190,6 +1202,9 @@ func _initialize() -> void:
 			var r := await enter_room("door_dark", "dark")
 			if r != "":
 				return r
+			var tn = rt.game.beds.state()["tone"]                # the room's tone: none (HORROR_TODO 13.1)
+			if tn != null:
+				return "the dark room's tone %s: none, silence there" % tn
 			await use("torch_pickup", 0.6)
 			r = await ticked("t10_torch")
 			if r != "":
@@ -1653,24 +1668,53 @@ func _initialize() -> void:
 			if not (t1 > 0 and t2 < t1):
 				return "the timer %s then %s" % [t1, t2]
 			place(1.5, 28.5, 90)
+			await process_frame
+			var b0: Dictionary = rt.game.beds.state()             # the beds (HORROR_TODO 13.1): the chase, the corridor's tone
+			if b0["music"] != "chase" or b0["tone"] != "room_tone_03":
+				return "the beds in the run " + JSON.stringify(b0)
+			var bs: Array = []
+			watch_beds(bs)                                        # alongside: the beds every frame till the calm comes
 			await hold("W", 2.5)
-			return await ticked("t15_run")))
+			var r := await ticked("t15_run")
+			if r != "":
+				return r
+			if not await until(func(): return bs.size() > 0 and str(bs[-1]) == "done", 6000):
+				return "the calm after the run: never"
+			var quiet := 0                                        # made it: a hush, its last half second silent, before the calm
+			for b in bs:
+				if b is Dictionary and b["hushing"] and float(b["duck"]) == 0.0 and b["music"] == "chase":
+					quiet += 1
+			if quiet < 3:
+				return "the hush after the run: %d silent frames before the calm %s" % [quiet, JSON.stringify(bs[-2] if bs.size() > 1 else {})]
+			return ""))
 
 	await station("n_sneak", func():
 		await step("16 · Sneak: the jumpscare as you come in; then Aoi walks her route; her eyes fill the meter in the open, never in the safe corner; the far corner reached (ticks)", func():
-			var js := [false]
+			var b2: Dictionary = rt.game.beds.state()             # after the run's hush: the calm crossfading in under it, the atrium's hum from the corridor's
+			if b2["music"] != "calm" or b2["tone"] != "electric_hum_02" or not (float(b2["levels"].get("t:electric_hum_02", 0)) > 0.9) or not (float(b2["levels"].get("t:room_tone_03", 1)) < 0.1):
+				return "the beds in the atrium " + JSON.stringify(b2)
+			var js := [false, null]
 			place(1.5, 30.4, 90)
 			rt.key_event("W", true)
 			var c0: float = rt.clock
 			var n := 0
 			while rt.clock - c0 < 0.8 and n < 3000:
-				if rt.by_id["atr_figure"]["node"].visible:
+				if rt.by_id["atr_figure"]["node"].visible and not js[0]:
 					js[0] = true
+					js[1] = rt.game.beds.state()
 				await process_frame
 				n += 1
 			rt.key_event("W", false)
-			if not await until(func(): if rt.by_id["atr_figure"]["node"].visible: js[0] = true; return js[0], 3000):
+			var seen := func() -> bool:
+				if rt.by_id["atr_figure"]["node"].visible and not js[0]:
+					js[0] = true
+					js[1] = rt.game.beds.state()
+				return js[0]
+			if not await until(seen, 3000):
 				return "the jumpscare: never"
+			var bj: Dictionary = js[1]                            # its quiet: hushed first, silent at the sting
+			if not bj["hushing"] or not (float(bj["duck"]) < 0.02):
+				return "the beds at the jumpscare " + JSON.stringify(bj)
 			if not await until(func(): return rt.npcs.has("aoi") and rt.npcs["aoi"]["as"] == "path", 3000):
 				return "Aoi on her route: never"
 			place(-3.8, 31.2, 45)
@@ -1692,7 +1736,13 @@ func _initialize() -> void:
 				return "the meter didn't drain in the safe corner"
 			place(6.5, 33.6, 90)
 			await hold("W", 0.6)
-			return await ticked("t16_cross")))
+			var r := await ticked("t16_cross")
+			if r != "":
+				return r
+			var b3: Dictionary = rt.game.beds.state()             # the beds back after the scare
+			if b3["hushing"] or not (float(b3["duck"]) > 0.99) or not (float(b3["levels"].get("m:calm", 0)) > 0.99):
+				return "the beds after the scare " + JSON.stringify(b3)
+			return ""))
 
 	await station("n_sleep", func():
 		await step("17 · Night: back to the rest room's bed, it sleeps you (the chapter card Night 2 · 23:40, the time now night), you wake and it ticks; the lobby's clock stopped", func():

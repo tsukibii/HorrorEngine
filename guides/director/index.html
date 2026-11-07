@@ -206,8 +206,10 @@ only for a new map (the player drives somewhere else). Inside it:</p>
 width, height, depth). Its origin is the middle of the floor; north is Godot's −Z. Turn walls off with <b>walls</b>,
 give it your own materials (in a StandardMaterial3D tick <span class="ui">UV1 → Triplanar</span> and
 <span class="ui">World Triplanar</span>, so a texture tiles by the metre whatever the room's size), and set its
-<b>floor kind</b> (wood, stone, tile, carpet, dirt, metal, water) for the footsteps. Its id is an <b>area</b>: a step
-or a moment can wait for "the player enters kitchen".</p>
+<b>floor kind</b> (wood, stone, tile, carpet, dirt, metal, water) for the footsteps. Its <b>tone</b> is what the room
+sounds like while you're in it: a quiet loop off the sound shelf (a room tone, a hum, wind, rain; <i>game</i> takes the
+HSGame's <b>tone</b>, <i>none</i> is silence), crossfading into the next room's as you walk through. Its id is an
+<b>area</b>: a step or a moment can wait for "the player enters kitchen".</p>
 <p>Two rooms side by side: set them a wall's thickness apart (12 cm unless you change <b>wall</b>) and turn off one
 room's wall where they meet, so the wall isn't doubled. In the sample the hall keeps its east wall, the kitchen has
 none on its west, and the kitchen's door sits in the hall's wall. Where rooms meet, their walls share the corner by
@@ -776,6 +778,11 @@ once…</span>: the moment a condition becomes true.</li>
 behind, a thought, a sound, music, show or hide something, a door, a light, the power, a little thing's state, a
 character sent somewhere or animated (a reaction), a fact set, an item given or taken, karma, a counter...</li>
 </ul>
+<p><b>Music</b> (THEN, <span class="ui">Music</span>): a mood under the game, <i>calm</i>, <i>uneasy</i>, <i>dread</i>
+or <i>chase</i>, crossfading from the one before (<i>silence</i> fades it out); a save comes back to it.
+<span class="ui">Hush before a sting</span> takes the music and the rooms' tone away for a second or two, the last half
+second silent, so the sound or the jump scare after it lands in silence, then lets them back slowly. The HSGame's
+<b>quiet</b> hushes before every jump scare by itself.</p>
 <p><b>A light</b> (THEN, <span class="ui">Light</span>): pick one of your lights by its name, or the room, and set it
 <i>on</i>, <i>off</i>, <i>flicker</i>, <i>dim</i> or <i>normal</i>. A dim has <i>how bright</i> (0 to 1); a flicker
 can take one of the lamps' flickers (a fluorescent, a dying tube, a candle...); <i>fading over</i> makes the change
@@ -954,9 +961,9 @@ must be set up first (<code>python setup/setup.py kimodo</code>).</div>
 <h2><span class="n">15</span>Every node, every word</h2>
 <table class="keys">
 <tr class="h"><td>The world (nodes)</td><td></td></tr>
-<tr><td class="node">HSGame</td><td>The main scene's root: the title, the player's name, the time of day, the look, the camcorder tape, the grade, the HUD's theme, lighting, weather, counters, F9; the player (can run, can crouch, eye height); its <b>story file</b>.</td></tr>
+<tr><td class="node">HSGame</td><td>The main scene's root: the title, the player's name, the time of day, the look, the camcorder tape, the grade, the HUD's theme, lighting, weather, the rooms' tone, the quiet before a jump scare, counters, F9; the player (can run, can crouch, eye height); its <b>story file</b>.</td></tr>
 <tr><td class="node">HSLevel</td><td>A place: its <b>start</b>, time of day, look and weather over the game's.</td></tr>
-<tr><td class="node">HSRoom</td><td>Floor, walls, ceiling from a size; doors on its walls cut openings; <b>openings</b> for the rest (a window's glass, daylight, shaft, a car passing); <b>leaks</b>; floor kind; materials; a wet floor.</td></tr>
+<tr><td class="node">HSRoom</td><td>Floor, walls, ceiling from a size; doors on its walls cut openings; <b>openings</b> for the rest (a window's glass, daylight, shaft, a car passing); <b>leaks</b>; floor kind; its tone; materials; a wet floor.</td></tr>
 <tr><td class="node">HSDoor</td><td>A leaf on its hinges or sliding, in a frame; locked by an item or a fact; peephole; latch; your model as its child.</td></tr>
 <tr><td class="node">HSThing</td><td>Something to use, a part (§4); your model as its child; a little thing's effect points as markers.</td></tr>
 <tr><td class="node">HSTrigger</td><td>An area to walk into; safe or not.</td></tr>

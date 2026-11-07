@@ -25,6 +25,8 @@ const FRAME := 0.05               # a door's frame, each side: the opening a doo
 @export var floor_on: bool = true
 @export var ceiling_on: bool = true
 @export_enum("wood", "stone", "tile", "carpet", "dirt", "metal", "water") var floor_kind: String = "wood"
+## the room's tone: a loop off the sound shelf heard while the player's in it (game: the game's; none: silence)
+@export_enum("game", "none", "room_tone_01", "room_tone_02", "room_tone_03", "room_tone_04", "room_tone_05", "room_tone_06", "electric_hum_01", "electric_hum_02", "electric_hum_03", "ambient_01", "ambient_02", "ambient_03", "ambient_wind_01", "ambient_wind_02", "ambient_wind_03", "ambient_wind_04", "rain", "water_running", "record_crackle", "noise_01", "noise_02") var tone: String = "game"
 ## doorways and windows with no door in them
 @export var openings: Array[HSOpening] = []
 ## water running down a wall from where it comes in (a wet band below it, drips)
@@ -688,4 +690,6 @@ func as_story() -> Dictionary:
 		"floor": floor_kind, "ceiling": ceiling_on, "name": str(name)}
 	if wet > 0.0:
 		r["wet"] = wet
+	if tone != "game" and tone != "":
+		r["tone"] = tone
 	return r

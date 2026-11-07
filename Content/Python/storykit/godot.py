@@ -47,6 +47,18 @@ OUT = ROOT / "Saved" / "Godot"
 CHECK_OUT = OUT / "_check"                 # the checks' own projects (GDEXPORT, GDPLAY, GDTESTROOM): overwritten each run, never a version
 
 
+
+def copy_moods(out, game):
+    """The story's music moods (calm, uneasy, dread, chase) as the beds the runtime plays (docs/HORROR_TODO.md 13):
+    Content/Studio/Music/moods/<mood>.ogg, a game's own Content/Games/<G>/Music/moods/<mood>.ogg over them, into
+    game/music/."""
+    dst = out / "game" / "music"
+    for src in (ROOT / "Content" / "Studio" / "Music" / "moods", ROOT / "Content" / "Games" / game / "Music" / "moods"):
+        if src.is_dir():
+            dst.mkdir(parents=True, exist_ok=True)
+            for f in src.glob("*.ogg"):
+                shutil.copy2(f, dst / f.name)
+
 def versions(game, root=None):
     """A game's exported versions, oldest first: Saved/Godot/<game>_v001, _v002... (DECISIONS 2026-10-30, noon: every
     export a new folder, so the lighting set up in one can be copied from it into the next)."""
@@ -1498,6 +1510,7 @@ def export(game, out=None, make_zip=False, do_import=True):
     sfx = ROOT / "Content" / "Studio" / "SFX"                      # the sound shelf (docs/SFX.md, CC0): every sound and its index
     if (sfx / "index.json").exists():
         shutil.copytree(sfx, out / "game" / "sfx", ignore=shutil.ignore_patterns("*.import", "__pycache__"))
+    copy_moods(out, game)                                          # the music's moods as beds (tools/score/moods.mjs): the game's over the studio's
     faces = sorted(faces_used(story))                             # the expressions the story puts on faces in play (`expr`): baked into faces/ (tools/face_export.mjs)
     if faces and shutil.which("node"):
         import subprocess  # noqa: PLC0415

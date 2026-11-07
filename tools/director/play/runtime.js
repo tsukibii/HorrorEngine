@@ -7,6 +7,7 @@ import { part, names, settingsOf, KINDS } from "./parts.js";
 import { matches } from "./conditions.js";
 import { runAll } from "./actions.js";
 import { playShelf, shelfName } from "../sfx.js";
+import { BEDS } from "./beds.js";                     // the music's mood and the room's tone (HORROR_TODO 13.1)
 import { interactableOf } from "./interactables.js";
 import "./abilities.js";
 import { flickerK, flickerOn, MODES } from "../../shared/flicker.js";
@@ -65,6 +66,7 @@ export class PlayRuntime {
     this.player = { pos: new THREE.Vector3(), yaw: 0, pitch: 0, eye: EYES.stand, crouched: false };
     this.keys = {}; this.ended = {}; this.clock = 0; this.inside = new Set(); this.doors = {}; this.waits = [];
     this.npcs = {};                                 // cast id -> what they're doing in play (behave), kept across stitches
+    this.beds = BEDS; BEDS.game = opts.game || (story.game || {}).id || null; this.roomTones = {};
     this.files = opts.files || {};
     this.lives = (this.run && this.run.lives) || opts.lives || null;   // the little things' states (life.js States), kept with the run
     this.livesSeen = this.lives ? this.lives.changes.length : 0; this.clock0 = 0;
@@ -144,6 +146,8 @@ export class PlayRuntime {
     if (first || this.stage.level !== level || !this.stage.world.children.length) this.stage.setWorld(this.plan, this.story, level);
     this.stage.setFree(false);
     this.level = level; this.world = this.stage.world.children[0]; this.byId = {}; this.doors = {};
+    this.roomTones = {}; const gtone = (this.story.game || {}).tone;   // its rooms' tones (a room's `tone`, else game.tone): the beds play the one you're in
+    for (const rm of ((this.story.levels || {})[level] || {}).rooms || []) if (rm && rm.id) this.roomTones[rm.id] = "tone" in rm ? rm.tone : gtone;
     const kept = (this.kept = this.kept || {})[level] = this.kept[level] || { vis: {}, doors: {}, bodies: {} };
     kept.opened = kept.opened || {}; kept.inside = kept.inside || {}; kept.unlocked = kept.unlocked || {};   // parts that open, what's in which container, locks met
     this.heldMove = null; this.moveables = []; this.containers = [];
@@ -353,6 +357,20 @@ export class PlayRuntime {
     const s = (this.story.sounds || {})[id], n = s && shelfName(s.file);
     this.hud.log(`♪ ${id}${at ? " at " + at : ""}${n ? "" : " (the game's own file: in Unreal)"}`);
     if (n) this.shelfSound(n, at);
+  }
+  music(m, a = {}) {                                  // the story's `music`: the mood's bed, kept in the run (a save comes back to it)
+    const to = !m || m === "silence" ? null : String(m);
+    if (this.run) this.run.music = to;
+    this.beds.music(to, +(a.secs ?? 2)); this.hud.log(`music: ${to || "silence"}`);
+  }
+  hush(a) {                                           // the story's `hush`: its seconds, to wait out before the sting
+    const secs = +(a.hush ?? a.quiet ?? 1.5); this.hud.log(`hush ${secs.toFixed(1)} s`);
+    return this.beds.hush(secs, +(a.back ?? 6));
+  }
+  toneTick() {                                        // the room you're in its tone, crossfading as you walk between them
+    let want = (this.story.game || {}).tone;
+    for (const id of this.inside) if (id in this.roomTones) { want = this.roomTones[id]; break; }
+    this.beds.roomTone(want);
   }
   shelfSound(name, at, db = 0) {
     if (!this.active) return;
@@ -1356,6 +1374,7 @@ export class PlayRuntime {
   }
   tick(dt) {
     this.clock += dt;
+    this.beds.drive(dt);                               // the music and the room tone on the game's clock
     if (this.lives) { this.lives.advance(this.now()); this.lifeEvents(); }
     if (this.faces) this.faces.tick(dt);                // the cast's expressions (faces.js: `expr`)
     const p = this.player;
@@ -1391,6 +1410,7 @@ export class PlayRuntime {
       if (now && !was) { this.inside.add(t.id); this.emit({ type: "enter", id: t.id }); }
       if (!now && was) { this.inside.delete(t.id); this.emit({ type: "exit", id: t.id }); }
     }
+    this.toneTick();
     if (this.timerLeft !== null && this.timerLeft !== undefined && this.end) {
       this.timerLeft -= dt; this.hud.timer(this.timerLeft);
       if (this.timerLeft <= 0) { const to = this.timerFail; this.end({ to, timeout: true }); }

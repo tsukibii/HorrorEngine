@@ -108,7 +108,29 @@ Not yet: `in_light` and `avoids` (2c).
 - `from-desk TestRoom001 --force --play` fails at WALLS (2) and at station 4's fitting bulb ("the export shouldn't make it a
   light source"). It fails the same on the code before 2026-11-07 (2fecbeb), so it was already broken: worth a look.
 
-Next: HORROR_TODO 13's first, music and room tone played, the hush before a sting.
+**HORROR_TODO 13.1 built** (the sound that can go quiet):
+- **the moods:** the story's `music` words as beds made from the score room's cues by `tools/score/moods.mjs` (calm
+  `close_moment`, uneasy `house_creaks`, dread `dread_drone`, chase `chase`), at −20 LUFS in
+  `Content/Studio/Music/moods/` (a game's own `Music/moods/` over them), copied into every export's and Director
+  project's `game/music/`; MOODS (check_all);
+- **the players:** Godot's `beds.gd` on the main scene (the Music and SFX buses made when missing), the desk's
+  `play/beds.js` (`BEDS`, served at `/music/<G>/<mood>.ogg`); looped, equal power crossfades, the run keeps its mood,
+  on the play's clock;
+- **the words:** a room's `tone` and `game.tone` (a loop off the shelf, `none`), the `hush` action (`back`), the
+  jumpscare's `quiet` and `game.quiet`; the check knows each; the commands *Music* (its crossfade) and *Hush before a
+  sting*;
+- **the Director:** HSRoom's Tone, HSGame's Tone and Quiet, from-desk carrying them; the guide's paragraph;
+- **TestRoom001:** the game's `room_tone_01`, the corridor's, the atrium's hum, the yards' wind, the dark room none;
+  station 15's hush after the run, station 16's jump scare `quiet` 1.5.
+
+- **the desk's editors:** the Database's Sound rows (the game's room tone, its quiet), the scene builder's room `tone`.
+- **Checks here:** CHECKS (MOODS in it), DESK (the beds' numbers: the hush's curve, the crossfade's power), CMDS,
+  DIRECTOR, GDEXPORT, GDPLAY, FROMDESK (Pilot) ok; GDTESTROOM and TESTROOM ok from station 10 to 12 and 14 to the end
+  (13 needs the made props, as before), PLAY ok.
+
+Not yet: the shelf's stings measured for their attack (13.1's last line); the rest of 13. On the user's machine, a
+listen: the moods' levels under the game (music −6 dB, room tone −22 dB: `beds.gd`, `play/beds.js`) are set by
+measurement, not by ear.
 
 ## Before that (2026-11-06, last, `street-nature`): the rivers scrapped, the foliage and rocks kept as props
 

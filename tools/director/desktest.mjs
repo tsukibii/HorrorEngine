@@ -641,5 +641,27 @@ print(json.dumps({"typed": [L.typed_secs(t, r, b) for t, r, b in d["texts"]], "c
     : fail("torchbeam: " + JSON.stringify({ full, quarter, fifth, early, late, blinks, after, strobe, fullLed, def, old, ledDef }));
 }
 
+// ---- the beds under the game (play/beds.js, beds.gd's twin: HORROR_TODO 13.1): a hush silent its last half second and
+// back over its `back`, a crossfade of equal power, a room's tone into the next; the clock stepped by hand, no sound
+{
+  const { Beds } = await import("./play/beds.js");
+  const b = new Beds(); b.start = () => {}; b.wake = () => {};   // no files, no timer: the numbers alone
+  const step = s => { for (let n = Math.round(s / 0.05); n > 0; n--) b.tick(0.05); };
+  b.music("dread", 0); b.roomTone("room_tone_01", 0);
+  b.hush(1.5, 6); step(0.5); const half = b.duck(); step(0.55); const quiet1 = b.duck(); step(0.4); const quiet2 = b.duck();
+  step(3); const back = b.duck(); step(3.2); const after = b.duck(), done = !b.state().hushing;
+  b.music("calm", 2); let worst = 0;
+  for (let i = 0; i < 40; i++) { step(0.05); const L = b.state().levels; worst = Math.max(worst, Math.abs(L["m:calm"] ** 2 + L["m:dread"] ** 2 - 1)); }
+  const mood = b.state();
+  b.roomTone("room_tone_03"); step(0.75); const mid = b.state().levels; step(0.8); const tone = b.state();
+  b.music("silence", 1); step(1.05); const silent = b.state();
+  const good = Math.abs(half - 0.5) < 0.01 && quiet1 === 0 && quiet2 === 0 && back > 0.3 && back < 0.7 && after === 1 && done &&
+    worst < 0.002 && mood.music === "calm" && mood.levels["m:calm"] === 1 && mood.levels["m:dread"] === 0 &&
+    Math.abs(mid["t:room_tone_03"] - Math.SQRT1_2) < 0.01 && tone.tone === "room_tone_03" && tone.levels["t:room_tone_01"] === 0 &&
+    silent.music === null && silent.levels["m:calm"] === 0;
+  good ? ok(`the beds: a hush of 1.5 s at half after 0.5 s, silent its last half second, half back 3 s later, whole after 6; a crossfade's power within ${(worst * 100).toFixed(2)} % of one all through; a room's tone into the next; silence fading the music out`)
+    : fail("beds: " + JSON.stringify({ half, quiet1, quiet2, back, after, done, worst, mood, mid, tone, silent }));
+}
+
 console.log(fails.length ? `DESK FAILED (${fails.length})` : "DESK ok");
 process.exit(fails.length ? 1 : 0);

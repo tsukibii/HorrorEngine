@@ -34,7 +34,7 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
 | Key | Holds |
 |---|---|
 | `format` | `2` |
-| `game` | `id`, `title`, `start` (a flow node), `target_min` (the shortest *typical* path to a normal ending must reach it: **150** for a real game), `fast_min` (the shortest *fast* path must reach it: **120**, Steam's refund window; cutscenes can't be skipped, so they count fully), `voice` (`ja`), `text` (`en`), `clip_max` (seconds one take can be: **10** for MiniMax), `fov` (the player's horizontal field of view, 90 by default: the one lens), `previs_body` (the desk's default body), `time` (the time of day the game starts at: `day`, `dusk` or `night`; `night` when unset, the studio's dark interiors; scenes change it, §3.1), `player_name` (the player's name until they type one, §4 `name`; "Alex" when unset), `hair` (the hair look every imported model's hair wears in Godot, docs/GODOT_LOOK.md §5c: `{"retro": true}` the PSX look (unlit, eight colour levels, the ordered dither), or each of `flat`, `steps` (2 to 64), `dither`, `gain`, `shine`, `soft`, `cut`; a cast member's own `hair` over it) |
+| `game` | `id`, `title`, `start` (a flow node), `target_min` (the shortest *typical* path to a normal ending must reach it: **150** for a real game), `fast_min` (the shortest *fast* path must reach it: **120**, Steam's refund window; cutscenes can't be skipped, so they count fully), `voice` (`ja`), `text` (`en`), `clip_max` (seconds one take can be: **10** for MiniMax), `fov` (the player's horizontal field of view, 90 by default: the one lens), `previs_body` (the desk's default body), `time` (the time of day the game starts at: `day`, `dusk` or `night`; `night` when unset, the studio's dark interiors; scenes change it, §3.1), `player_name` (the player's name until they type one, §4 `name`; "Alex" when unset), `hair` (the hair look every imported model's hair wears in Godot, docs/GODOT_LOOK.md §5c: `{"retro": true}` the PSX look (unlit, eight colour levels, the ordered dither), or each of `flat`, `steps` (2 to 64), `dither`, `gain`, `shine`, `soft`, `cut`; a cast member's own `hair` over it), `tone` (the room tone of every room without its own, §2: a shelf loop, or `none`), `quiet` (seconds of `hush` before every jumpscare that doesn't say, §4; none when unset) |
 | `cast` | `{id: {name, metahuman (asset path or null), height, shape, measures, skin, previs_body}}`: `shape` is up to 45 MHR identity numbers (the desk's Shape page writes it; zero is the average body), `measures` the body's widths in cm at that height (`{height, shoulders, chest, waist, belly, hips, thighs, arms}`, the Shape page writes them too) and `skin` a hex skin tone: what `tools/metahuman.py` gives MetaHuman Creator (docs/METAHUMAN_ROUTE.md); `previs_body` a file in `Content/Studio/Bodies` (default: MHR.fbx; after the MetaHuman is rigged, its exported body), or `people/<name>`: a Character Studio character as it was exported for the desk and Unreal (`Content/Studio/People/<name>/export/<name>.glb`), worn with its own look and its eyes, its own shape (`shape` doesn't apply), scaled to `height`; `models` her other looks, `{name: body file}` (`{"lilac eyes": "people/natsu_lilac", "wet": "people/natsu_wet"}`): variants a scene picks (§3.1 `models`), `previs_body` the default (HANDOFF_DIRECTOR_TODO §5); `beam` what she does in the flashlight's beam and her presence on the lights near her (§4 `beam`, FLASHLIGHT_PLAN §2); `hair` their own hair look over the game's (`game.hair`): the salon's cards, brows and lashes on the Studio's hair shader in Godot, `{"retro": true}` for the PSX dither, GODOT_LOOK §5c; `moves` her **moves**, `{role: motion}`, the role one of `idle` (standing), `walk`, `run` (walking at 2.2 m/s or faster), `sit_down` and `stand_up` (played once on the way into a seat and out of it: she waits up for her behaviour), `sitting`, `talk` (while her line is up in a scene), `listen` (while the player answers her), `look_around` (at a route's wait whose `pose` is `look`, `search` or `check`), `caught` (played once, turned to the player, when she catches them: her sight's meter full, a hiding place she checks; held where she is till it's over): what Godot's runtime plays by what she's doing (play.gd `npc_want`; a behave's own `motion` or `rest` comes first, §4), an empty role falling back to another she has (`run` to `walk`; `sitting`, `talk`, `listen` and `look_around` to `idle`; `sit_down`, `stand_up` and `caught` to nothing), so a game always plays; the Director's Animate tab sets them (GODOT_DIRECTOR §6g); the desk's Play doesn't play them yet |
 | `items`, `notes`, `sounds` | `{id: {name, shape, inspect, torch}}` (`torch`: a flashlight, below), `{id: {title, text}}`, `{id: {file}}`: a sound's `file` is `sfx/<name>`, a CC0 sound off the Studio's shelf (`Content/Studio/SFX`, `tools/sfx.py list`; the check fails one that isn't on it; docs/SFX.md), or the game's own file under its Audio folder in Unreal |
 | `lines` | one-off voice outside scenes (`say`, `whisper`): `{id: {who, ja, en, mood, dur}}` |
@@ -96,6 +96,9 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
 
 - `size` is `[w (x), d (y), h]`.
 - `floor` is `wood stone carpet tile dirt metal water`: it sets footsteps.
+- `tone`: **the room's tone**, a loop off the sound shelf heard while the player's in the room (`room_tone_01` to
+  `_06`, `electric_hum_01`, `ambient_wind_01`...; `none` for silence), crossfading 1.5 s into the next room's;
+  without it the game's `tone` (§1). Played on the SFX bus, under everything; a `hush` takes it down too.
 - `light` is `off dark dim lit`: a mood note for the lighting pass.
 - `skip`: two touching rooms share one wall, and **exactly one of them skips it**. A plain letter (`"s"`) skips the whole
   wall; `["e", 1.0, 3.5]` skips only that stretch (metres along the wall from its west or south end), for a room that
@@ -608,7 +611,15 @@ with `{"tick": "<id>"}` at the end of that beat, not by its own trigger (the sto
 | `{"rolled": die, "face": 6}`, `"at_least": 5` | a die (`use: roll`) settled; no face means any roll. A roll is chance, so a beat that needs a face is `optional` or `secret` (the check warns otherwise): `{"when": {"rolled": "big_die", "face": 6}, "secret": true, "do": [{"flag": "lucky"}]}`, then a flag choice sends `lucky` down a side path that rejoins the main line (§5) |
 
 **Actions (`do`, one verb each):**
-- `say`, `think`, `sound` (`at`), `music` (`silence calm uneasy dread chase`)
+- `say`, `think`, `sound` (`at`), `music` (`silence calm uneasy dread chase`): **the music's mood**, a bed under the
+  game looped from `Content/Studio/Music/moods/<mood>.ogg` (the score room's cues rendered by `tools/score/moods.mjs`;
+  a game's own `Content/Games/<G>/Music/moods/<mood>.ogg` over them), crossfading from the one before over `secs` (2);
+  `silence` fades it out. Kept with the run (a checkpoint has it). Played low on the Music bus, the pause menu's row
+  (the desk's Play and the Watch, Godot: docs/HORROR_TODO.md 13.1)
+- `hush` (seconds, at least 0.5; `back` 6): **the beds go quiet before a sting** (docs/research/jump_scares.md §8): the
+  music and the room's tone fade to nothing over all but the last half second, which is silent, and the beat waits it
+  out, so what comes next (a `sound`, a jumpscare) lands in silence; then they come back over `back` seconds, slow at
+  first. Sounds in the room (the shelf's, the little things') go on. A scene's cue can hush too
 - `name`: **the player types their name** (`{"name": "What's your name?"}`: the question over the box; `default`: the
   name kept when nothing is typed, else `game.player_name`). From then on `{name}` in anything shown (a clip's `en`, a
   line, a thought, an answer, an objective, a to-do, a note) is that name; before it, `game.player_name` ("Alex" when
@@ -746,7 +757,9 @@ with `{"tick": "<id>"}` at the end of that beat, not by its own trigger (the sto
   in Play yet, docs/HORROR_TODO.md 1; the eye is never turned for the player, DIRECTING §1). The `jumpscare` (`figure`, `secs` 0.8) can also have
   `clip`, a motions id the figure plays while it's there (a lunge: Godot, as `anim` plays on someone not in play; its
   length is the scare's unless `secs` says), `expr`, a face from the library on it (a cast member: §3.7), and
-  `sound`, a sounds id played at it instead of the shelf's big sting (the desk and Godot); the check knows each
+  `sound`, a sounds id played at it instead of the shelf's big sting (the desk and Godot); the check knows each.
+  `quiet` (seconds): a `hush` first, so the beds are silent the last half second before it (`game.quiet` the default
+  for every jumpscare; none when unset)
 - `chapter`: **a chapter card** (nights as chapters; DECISIONS 2026-10-27, late night): the view goes dark, the title
   is held up in the middle (`{"chapter": "Night 2", "sub": "23:40", "time": "night"}`: `sub` small under it, `secs` how
   long it's held, 3 by default), the time of day changes behind it (`time`, from here on: the scenes after the stitch

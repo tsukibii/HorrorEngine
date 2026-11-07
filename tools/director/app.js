@@ -7,6 +7,7 @@ import { GLTFExporter } from "./vendor/GLTFExporter.js";
 import { bakePreview } from "./bake.js";
 import { loadBody, BodyFigure } from "./bodies.js";
 import { PlayRuntime } from "./play/runtime.js";
+import { BEDS } from "./play/beds.js";
 import { chooser, loadTheme, paintLine, docked, besideAt, setName, named, setWords } from "./play/hud.js";
 import { applySettings } from "./play/menu.js";
 import { beatsEditor, actionList, triggerPill, modal, form, sortable, grip, toast, contextMenu, pick, pickAll, picked, unpick, focusOf, setFocus, CLIP, copyPicks, pasteAtPicks, copyNow, deletePicks, picPick, pickGrid, pickVerb, editAction, condRow } from "./ui.js";
@@ -2044,6 +2045,20 @@ function soundCues(tl, ver) {
   }
   return out.sort((x, y) => x.t - y.t);
 }
+// a scene's music and hush cues, at their times on its timeline: the beds under the game (play/beds.js) as Play's
+function bedCues(tl, ver) {
+  const out = [];
+  for (const cu of ver.cues || []) {
+    if (!cu.do || !("music" in cu.do || "hush" in cu.do)) continue;
+    const a = cu.at || {}, sg = tl.segs.find(s => s.type === "clip" && s.clip.id === a.clip && !s.answer);
+    if (sg) out.push({ t: (a.edge === "end" ? sg.end : sg.start) + (+a.offset || 0), a: cu.do });
+  }
+  return out.sort((x, y) => x.t - y.t);
+}
+function watchBed(c, skipped) {
+  if ("music" in c.a) { const to = c.a.music === "silence" ? null : c.a.music; if (RUN) RUN.music = to; BEDS.music(to, skipped ? 0.5 : +(c.a.secs ?? 2)); }
+  else if (!skipped) BEDS.hush(+c.a.hush || 1.5, +(c.a.back ?? 6));
+}
 // the Watch's footer: the Play HUD's footer in the game's theme (or the one picked), so scene subtitles, replies and
 // timed choices look as they will in the game: the speaker over the line, the options in their panel under it
 let WHUD = null;
@@ -2102,6 +2117,7 @@ async function watchScene(sc, nid, sid, k) {
   const cues = stateCues(tl, sc), t0 = RUN ? RUN.secs : 0;   // the little things set by its cues, at their clip edges
   const sounds = soundCues(tl, sc);                         // and its sounds, off the shelf
   const skins = skinCues(tl, sc);                           // and its cast's skin, wet or oiled
+  const beds = bedCues(tl, sc);                             // and its music and hush
   while (RUN && T < tl.total) {
     await new Promise(r => requestAnimationFrame(r));
     if (!RUN) break;                                       // stopped while it waited for the frame
@@ -2109,6 +2125,7 @@ async function watchScene(sc, nid, sid, k) {
     while (cues.length && cues[0].t <= T && RUN.lives) { const c = cues.shift(); if (c.skip) RUN.lives.skip(t0 + c.t, c.skip); else RUN.lives.set(c.id, c.to, t0 + c.t); }
     while (sounds.length && sounds[0].t <= T) { const c = sounds.shift(); if (T - c.t < 0.5) watchSound(c); }
     while (skins.length && skins[0].t <= T) watchSkin(skins.shift());
+    while (beds.length && beds[0].t <= T) watchBed(beds.shift());
     const st = watchStage.stateAt(tl, T, FILES, LOOK);
     if (st.seg && st.seg.type === "event" && !RUN.done.has(st.seg)) { RUN.done.add(st.seg); const ev = st.seg.event, res = await runEvent(ev); RUN.results[nid] = res; karmaAct((ev.on || {})[res]);
       if (ev.type === "choose") { const o = (ev.options || []).find(x => x.id === res); if (o && o.karma !== undefined) { addKarma(RUN.karma, o.karma); RUN.answers.push(`${o.label} (${JSON.stringify(o.karma)})`); } }
@@ -2137,6 +2154,7 @@ async function watchScene(sc, nid, sid, k) {
   }
   if (RUN) while (cues.length && RUN.lives) { const c = cues.shift(); if (c.skip) RUN.lives.skip(t0 + c.t, c.skip); else RUN.lives.set(c.id, c.to, t0 + c.t); }   // skipped to its end: its states still change
   if (RUN) while (skins.length) watchSkin(skins.shift());
+  if (RUN) while (beds.length) watchBed(beds.shift(), true);   // skipped to its end: the mood it leaves, no hush
   if (lrt) lrt.liveEnd();
   stopTakes(); paintLine(watchHud().line, "");          // the scene's last line goes with it (play may follow straight on)
   if (!RUN) return;
@@ -2339,7 +2357,7 @@ function progress() { try { return JSON.parse(localStorage.getItem(PKEY()) || "{
 function saveProgress(p) { try { localStorage.setItem(PKEY(), JSON.stringify(p)); } catch (e) { } }
 function snapOf(R) {                                 // a checkpoint: the run as it is, the pocket and the little things too (a retry after a death keeps them)
   const rt = R.play, T = rt ? rt.now() : R.secs;
-  return { secs: R.secs, flags: [...R.flags], results: R.results, karma: R.karma, counters: R.counters, answers: R.answers, trail: R.trail, todo: R.todo || [], name: R.name, models: R.models || {},
+  return { secs: R.secs, flags: [...R.flags], results: R.results, karma: R.karma, counters: R.counters, answers: R.answers, trail: R.trail, todo: R.todo || [], name: R.name, models: R.models || {}, music: R.music || null,
     items: [...((rt && rt.items) || R.items || [])],
     states: R.lives ? Object.fromEntries(Object.keys(R.lives.things).map(id => [id, (R.lives.at(id, T) || {}).state]).filter(([, st]) => st)) : {} };
 }
@@ -2359,6 +2377,7 @@ async function watch(fromNid, snap) {
   if (snap) Object.assign(RUN, JSON.parse(JSON.stringify(snap)), { flags: new Set(snap.flags || []), timers: [], done: new Set(), trail: [...(snap.trail || [])], items: new Set(snap.items || []) });
   for (const [id, to] of Object.entries((snap && snap.states) || {})) RUN.lives.set(id, to, 0, "start");   // the little things as the nodes before it leave them (a scene's cue: the TV to static)
   RUN.name = setName(RUN.name || (S.game || {}).player_name, true);   // {name}: the game's until the player types theirs (a `name` action)
+  BEDS.game = GAME; BEDS.music(RUN.music || null, 1);   // the mood a checkpoint was in, or silence (the beds: play/beds.js)
   watchStage.runState = RUN;                            // its flags and counters: the lines and faces it leaves out (§9.14)
   DBG.reset();
   wclock();
@@ -2431,7 +2450,7 @@ function renderBranches(hl) {
   v.append(wrap);
   window.__branchDone = true;
 }
-function stopWatch() { stopTakes(); if (watchStage) { watchStage.soundOn = false; watchStage.runState = null; if (watchStage.life && watchStage.life.sound) watchStage.life.sound.stop(); } if (RUN) { RUN.timers.forEach(clearTimeout); if (RUN.play) RUN.play.stop(); RUN = null; } wclear(); paintOv("#watchOv", {});
+function stopWatch() { stopTakes(); BEDS.stopAll(1); if (watchStage) { watchStage.soundOn = false; watchStage.runState = null; if (watchStage.life && watchStage.life.sound) watchStage.life.sound.stop(); } if (RUN) { RUN.timers.forEach(clearTimeout); if (RUN.play) RUN.play.stop(); RUN = null; } wclear(); paintOv("#watchOv", {});
   if (SYNC_AFTER_WATCH) { const w = SYNC_AFTER_WATCH; SYNC_AFTER_WATCH = null; syncFromDisk(w); } }
 document.addEventListener("keydown", e => { if (e.key === "Escape" && RUN && $("#wSkip").checked && !(RUN.play && RUN.play.active)) RUN.skip = true; });   // in Play, Esc pauses
 

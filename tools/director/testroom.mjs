@@ -459,6 +459,8 @@ const snapFor = nid => {                               // the run's state on rea
     await step("10 · The dark: the flashlight into the pocket (ticks), F lights it (ticks), it flickers and dies (F only clicks), the batteries shown and taken bring it back", async () => {
       await place(1.5, 17.5, 0);
       await enterRoom("door_dark", "dark");
+      const tn = await page.evaluate(() => window.__dd.play.beds.state().tone);   // the room's tone: none (HORROR_TODO 13.1)
+      if (tn !== null) throw new Error(`the dark room's tone ${tn}: none, silence there`);
       await use("torch_pickup", 0.6); await ticked("t10_torch");
       await press("KeyF"); await ticked("t10_on");
       await until(() => { const t = window.__dd.play.torchLight; return t && t.dead && !t.on; }, null, "the flashlight dead (its stutter over, out)", 60000);
@@ -683,16 +685,28 @@ const snapFor = nid => {                               // the run's state on rea
     await step("15 · Run: its timer counting down on the HUD; into the atrium in time (ticks)", async () => {
       const t1 = +(await page.textContent(".ph-timer")); await gameWait(1); const t2 = +(await page.textContent(".ph-timer"));
       if (!(t1 > 0 && t2 < t1)) throw new Error(`the timer ${t1} then ${t2}`);
-      await place(1.5, 28.5, 90); await hold("KeyW", 2.5);
+      await place(1.5, 28.5, 90);
+      const b0 = await page.evaluate(() => window.__dd.play.beds.state());   // the beds (HORROR_TODO 13.1): the chase, the corridor's tone
+      if (b0.music !== "chase" || b0.tone !== "room_tone_03") throw new Error("the beds in the run " + JSON.stringify(b0));
+      await page.evaluate(() => { const rt = window.__dd.play, out = window.__beds = [];   // the beds every frame till the calm comes
+        const t = setInterval(() => { const s = rt.beds.state(); out.push(s); if (s.music === "calm" || out.length > 2000) clearInterval(t); }, 20); });
+      await hold("KeyW", 2.5);
       await ticked("t15_run");
+      await until(() => { const b = window.__beds; return b.length && b[b.length - 1].music === "calm"; }, null, "the calm after the run", 30000);
+      const bs = await page.evaluate(() => window.__beds), quiet = bs.filter(s => s.hushing && s.duck === 0 && s.music === "chase");   // made it: a hush, its last half second silent, before the calm
+      if (quiet.length < 3) throw new Error(`the hush after the run: ${quiet.length} silent samples before the calm, ${JSON.stringify(bs[bs.length - 1])}`);
     });
   });
 
   await station("n_sneak", async () => {
     await step("16 · Sneak: the jumpscare as you come in (a creak, the figure there and gone); then Aoi walks her route; her eyes fill the meter in the open, never in the safe corner; the far corner reached (ticks)", async () => {
-      await page.evaluate(() => { window.__js = false; const f = window.__dd.play.byId.atr_figure; const t = setInterval(() => { if (f.visible) window.__js = true; }, 20); window.__stopJs = () => clearInterval(t); });
+      const b2 = await page.evaluate(() => window.__dd.play.beds.state());   // after the run's hush: the calm crossfading in under it, the atrium's hum from the corridor's
+      if (b2.music !== "calm" || b2.tone !== "electric_hum_02" || !(b2.levels["t:electric_hum_02"] > 0.9) || !(b2.levels["t:room_tone_03"] < 0.1)) throw new Error("the beds in the atrium " + JSON.stringify(b2));
+      await page.evaluate(() => { window.__js = false; const rt = window.__dd.play, f = rt.byId.atr_figure; const t = setInterval(() => { if (f.visible && !window.__js) { window.__js = true; window.__jsBeds = rt.beds.state(); } }, 20); window.__stopJs = () => clearInterval(t); });
       await place(1.5, 30.4, 90); await hold("KeyW", 0.8);   // walked into the middle (a place there isn't an enter)
       await until(() => window.__js, null, "the jumpscare", 60000); await page.evaluate(() => window.__stopJs());
+      const bj = await page.evaluate(() => window.__jsBeds);       // its quiet: hushed first, silent at the sting
+      if (!bj.hushing || !(bj.duck < 0.02)) throw new Error("the beds at the jumpscare " + JSON.stringify(bj));
       await until(() => { const n = window.__dd.play.npcs.aoi; return n && n.as === "path"; }, null, "Aoi on her route", 30000);
       await place(-3.8, 31.2, 45); await gameWait(2.5);     // the safe corner: unseen
       if (await page.evaluate(() => window.__dd.play.suspicion > 0.05)) throw new Error("seen in the safe corner");
@@ -705,6 +719,8 @@ const snapFor = nid => {                               // the run's state on rea
       if (await page.evaluate(() => window.__dd.play.suspicion > 0.05)) throw new Error("the meter didn't drain in the safe corner");
       await place(6.5, 33.6, 90); await hold("KeyW", 0.6);   // walked into the far corner
       await ticked("t16_cross");
+      const b3 = await page.evaluate(() => window.__dd.play.beds.state());   // the beds back after the scare
+      if (b3.hushing || !(b3.duck > 0.99) || !(b3.levels["m:calm"] > 0.99)) throw new Error("the beds after the scare " + JSON.stringify(b3));
     });
   });
 

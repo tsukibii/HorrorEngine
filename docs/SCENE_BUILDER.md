@@ -58,7 +58,8 @@ rooms that can change between chapters. The panel under the 3D view counts what 
   the house's 0.91 m stairs room holds a straight flight only; a turn wants a room about two widths wide (BUILDER
   adds a 2.73 m stair hall to the house for its turn).
 - **The selected room:**
-  - Its `kind`, `name`, size, height, footsteps (`floor`) and `light`.
+  - Its `kind`, `name`, size, height, footsteps (`floor`), `light` and `tone` (what it sounds like inside: a loop off
+    the sound shelf, the game's when unset, `none` for silence; STORY_FORMAT §2).
   - Its **open sides**, for walls left out: a porch's, a railing side.
   - Whether it has a **ceiling**.
   - Its **built-ins**: a kitchen counter, a bath tub, a toilet, a vanity and washing machine, a shoe cabinet, stairs.

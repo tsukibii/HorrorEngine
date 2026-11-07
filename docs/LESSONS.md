@@ -1917,3 +1917,19 @@ the fine grain in the paint's relief rather than the detailed mesh (a 1 m rock's
 grain; the normal map's height can). Judge a prop on a sheet of several beside each other, not one at a time: the
 pale one shows.
 
+
+## The sound that can go quiet (2026-11-07, later: music, room tone and the hush)
+
+- **A brief state is sampled from before what fires it, not read after the helper returns**: station 15's hush lasts a
+  second, and the check read the beds after `ticked`; but the task ticks partway through the 2.5 s walk that the test
+  holds, so by the time `ticked` returned the hush was over and the calm coming in. Both drivers now sample the beds
+  every frame from before the walk until the calm comes, then look for silent frames while the chase was still the
+  mood (and not at the first calm frame, which still rounds to silence as the beds start back: expected).
+- **A bed that must line up with a beat runs on the play's clock**: the beat waits the hush in game time (each frame's
+  step capped at 0.05 s), so beds on wall time drift from it on slow frames, and the sting can land after the silence
+  has ended. Godot's beds step by the same capped delta; the desk's are driven by Play's frame, on their own timer
+  only in the Watch.
+- **Rendered cues are levelled before they're beds**: the four moods came out 24 dB apart (a pizzicato with its
+  silences at −37.5 dB mean, the chase at −13.6); each is brought to −20 LUFS when it's made (ffmpeg's `loudnorm`
+  measuring, a plain gain applied, peaks under −1.5 dBTP). The meter prints to stderr: Node's `execFileSync` returns
+  only stdout, so it's read with `spawnSync`.

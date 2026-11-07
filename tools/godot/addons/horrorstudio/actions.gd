@@ -4,9 +4,9 @@ extends RefCounted
 
 const Typing := preload("res://addons/horrorstudio/typing.gd")
 const VERBS := ["objective", "todo", "tick", "fail", "untodo", "think", "skip", "name", "say", "ask", "flag", "unflag", "give", "take", "open",
-	"karma", "count", "state", "show", "hide", "door", "light", "torch", "skin", "power", "sweep", "wait", "fade", "lookat", "sound", "music",
+	"karma", "count", "state", "show", "hide", "door", "light", "torch", "skin", "power", "sweep", "wait", "fade", "lookat", "sound", "music", "hush",
 	"checkpoint", "chapter", "done", "scene", "behave", "trick", "move", "anim", "expr", "focus", "beam"]
-const TAKES_TIME := ["wait", "fade", "ask", "name", "chapter", "scene", "trick", "say"]
+const TAKES_TIME := ["wait", "fade", "ask", "name", "chapter", "scene", "trick", "say", "hush"]
 
 
 static func line_secs(t) -> float:
@@ -129,8 +129,10 @@ func run(a: Dictionary, rt) -> void:
 			rt.look_at(val, float(a.get("secs", 1)))
 		"sound":
 			rt.sound(val, a.get("at"))
-		"music":
-			rt.hud.log("music: %s" % val)
+		"music":                                  # the mood's bed, crossfading over `secs` (beds.gd)
+			rt.music(val, a)
+		"hush":                                   # the beds down to nothing, the last half second silent, then back slowly
+			await rt.wait(rt.hush(a))
 		"checkpoint":
 			rt.autosave(rt.stitch_title)
 			rt.hud.log("checkpoint")
@@ -182,6 +184,9 @@ func trick(v: String, a: Dictionary, rt) -> void:
 			rt.set_visible(a.get("show"), true)
 		"jumpscare":                                       # the figure there all at once: its clip (a lunge), its face, a sting
 			var fig = a.get("figure")
+			var q := float(a.get("quiet", rt.story.game.get("quiet", 0)))
+			if q > 0.0:                                     # the beds hushed first: the last half second before the sting silent
+				await rt.wait(rt.hush({"hush": q}))
 			rt.set_visible(fig, true)
 			var secs := float(a.get("secs", 0.8))
 			var c = a.get("clip")

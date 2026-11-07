@@ -306,7 +306,7 @@ docs/research/jump_scares.md §8, from what designers say and the startle's numb
 silence count, not volume; the player finds the scare (no forced look); the last half second before a sting is silent.
 
 **Now:**
-- `music` only logs on the desk and in Godot, and no room tone plays, so there's no silence to make before a sting;
+- ~~`music` only logs on the desk and in Godot, and no room tone plays~~ (built: 1 below);
 - `glimpse` isn't kept to the edge of the view;
 - `swap` fires after 8 s even in view;
 - `seen` ignores walls and size;
@@ -314,9 +314,11 @@ silence count, not volume; the player finds the scare (no forced look); the last
 - nothing is random, and nothing spaces scares in play.
 
 **To build** (each small but the first two):
-1. **Sound that can go quiet** (medium). Music and room tone played on their own buses, the score room's cues by
-   `music` and a room's `tone`. `hush` before a sting: the bed ducked over 1 to 3 s, the last 0.5 s clean, the sting,
-   the bed back slowly; by itself before every `jumpscare`. The shelf's stings measured for their attack.
+1. **Sound that can go quiet** (medium). **Built** (DECISIONS 2026-11-07, later; but the stings' attack measured):
+   the moods' beds (`tools/score/moods.mjs`) by `music`, a room's `tone` off the shelf (`game.tone`), `hush` (the
+   beds down over all but the last 0.5 s, that half second silent, back slowly) and the jumpscare's `quiet`
+   (`game.quiet` for every one); Godot's `beds.gd`, the desk's `play/beds.js`; TestRoom001 stations 10, 15 and 16.
+   Still to do: the shelf's stings measured for their attack.
 2. **A better "seen"** (medium). Bounds, walls and the light on it, through mirrors and peepholes too. An edge test
    for glimpses (25 to 50° off the centre, gone when looked at). A `swap` that never fires in view. Triggers *turned
    round* and *seen, then gone*.

@@ -67,7 +67,8 @@ register("action", "wait", { run: (v, a, rt) => rt.wait(+v || 0) });
 register("action", "fade", { run: (v, a, rt) => rt.fade(v === "out" ? 1 : 0, +(a.secs ?? 1)) });
 register("action", "lookat", { run: (v, a, rt) => rt.lookAt(v, +(a.secs ?? 1)) });
 register("action", "sound", { run: (v, a, rt) => rt.sound(v, a.at) });      // off the Studio's sound shelf when its file is sfx/<name> (sfx.js)
-register("action", "music", { run: (v, a, rt) => rt.hud.log(`music: ${v}`) });
+register("action", "music", { run: (v, a, rt) => rt.music(v, a) });          // the mood's bed, crossfading over `secs` (beds.js)
+register("action", "hush", { run: (v, a, rt) => rt.wait(rt.hush(a)) });      // the beds down to nothing, the last half second silent, then back slowly
 register("action", "checkpoint", { run: (v, a, rt) => { autosave(rt.gameTitle(), rt.stitchTitle, rt.run ? rt.run.secs + rt.clock : rt.clock); rt.hud.log("checkpoint"); } });
 register("action", "chapter", { run: (v, a, rt) => rt.chapter(v, a) });   // a title card ("Night 2"), the time of day, an autosave
 register("action", "done", { run: (v, a, rt) => rt.finish() });
@@ -90,6 +91,8 @@ const TRICKS = {
   // a jumpscare: the figure there all at once with a sting, a moment, gone (a stand-in for the real one: a scene's cut)
   // its own sound (a sounds id) instead of the big sting, its face (`expr`, on a cast member); its clip plays in Godot
   jumpscare: async (a, rt) => {
+    const q = +(a.quiet ?? (rt.story.game || {}).quiet ?? 0);
+    if (q > 0) await rt.wait(rt.hush({ hush: q }));            // the beds hushed first: the last half second before the sting silent
     rt.setVisible(a.figure, true);
     if (a.expr) run({ expr: a.expr, who: a.figure }, rt);
     if (a.sound) rt.sound(a.sound, a.figure); else rt.shelfSound("sting_big", a.figure);

@@ -19,6 +19,7 @@ import * as SG from "./street-gen.js";
 import * as S3 from "./street3.js";
 import { STYLES as STREET_STYLES } from "./street-presets.js";
 import { Brush, lookName as brushLook } from "./brush.js";
+import { TONES } from "./commands.js";
 
 const $ = s => document.querySelector(s);
 const SVGNS = "http://www.w3.org/2000/svg";
@@ -538,7 +539,8 @@ function renderProps() {
       ...field("name", txt(r.name, v => { r.name = v; })),
       ...field("x, y", wrap(num(r.x, v => { r.x = v; }), num(r.y, v => { r.y = v; }))), ...field("w × d", wrap(num(r.w, v => { r.w = Math.max(0.3, v); }), num(r.d, v => { r.d = Math.max(0.3, v); }))),
       ...field("height", num(r.h, v => { r.h = Math.max(0.5, v); })), ...field("floor", pick(r.floor, ["wood", "stone", "carpet", "tile", "dirt", "metal", "water"], v => { r.floor = v; })),
-      ...field("light", pick(r.light, ["off", "dark", "dim", "lit"], v => { r.light = v; })));
+      ...field("light", pick(r.light, ["off", "dark", "dim", "lit"], v => { r.light = v; })),
+      ...field("tone", pick(r.extra.tone || "", [["", "the game's"], ["none", "none: silence"], ...TONES], v => { if (v) r.extra.tone = v; else delete r.extra.tone; })));   // what it sounds like inside: a loop off the sound shelf
     if (r.kind === "stairs") grid.append(...field("climbs", pick(r.dir, [["n", "north ↑"], ["e", "east →"], ["s", "south ↓"], ["w", "west ←"]], v => { r.dir = v; })),
       ...field("flights", pick(String(r.flights || 1), [["1", "one straight flight"], ["2", "a dog-leg: two a storey, a half landing (a school's, a mansion's)"]], v => { r.flights = +v; })),
       ...field("stairs", pick(r.stair || (r.flights === 2 ? "apartment" : "house"), [["house", "a house's wooden box stair, a wall rail"], ["house_open", "a house's, one side open: balusters, newels"], ["apartment", "an apartment's concrete flight, a pipe rail"], ["motel", "a motel's: steel stringers, pan treads, a picket rail"], ["steel", "an outside steel stair: checker plates, open risers"]], v => { r.stair = v; })),

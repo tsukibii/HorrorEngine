@@ -54,6 +54,7 @@ var ended: Dictionary = {}
 var clock: float = 0.0
 var clock0: float = 0.0
 var inside: Dictionary = {}
+var room_tones: Dictionary = {}      # this level's rooms' tones (a room's `tone`, else game.tone): beds.gd plays the one you're in
 var doors: Dictionary = {}
 var waits: Array = []
 var anims: Array = []
@@ -414,6 +415,11 @@ func enter_level(lid: String) -> void:
 		return
 	stop_sfx()                                 # the old level's loops end with it
 	sfx_players = []
+	room_tones = {}
+	var gtone = story.game.get("tone")
+	for rm in story.levels.get(lid, {}).get("rooms", []):
+		if rm is Dictionary and rm.has("id"):
+			room_tones[str(rm["id"])] = rm.get("tone", gtone)
 	focus_off("a new level")
 	var first := not kept.has(lid)
 	if first or game.level_id != lid:
@@ -949,6 +955,35 @@ func sound_pos(at) -> Variant:
 	if n != null and n["pos"] != null:
 		return n["pos"]
 	return null
+
+
+## the story's `music`: the mood's bed (beds.gd), crossfading over `secs`; kept in the run, so a save comes back to it
+func music(m, a: Dictionary = {}) -> void:
+	var to = null if (m == null or str(m) == "silence") else str(m)
+	if run != null:
+		run["music"] = to
+	if game.beds != null:
+		game.beds.music(to, float(a.get("secs", 2.0)))
+	hud.log("music: %s" % (to if to != null else "silence"))
+
+
+## the story's `hush`: the beds down to nothing, the last half second silent, back over `back`; its seconds (to wait)
+func hush(a: Dictionary) -> float:
+	var secs := float(a.get("hush", a.get("quiet", 1.5)))
+	hud.log("hush %.1f s" % secs)
+	return game.beds.hush(secs, float(a.get("back", 6.0))) if game.beds != null else max(secs, 0.5)
+
+
+## the room you're in its tone (the room tones of this level, else the game's), crossfading as you walk between them
+func tone_tick() -> void:
+	if game.beds == null:
+		return
+	var want = story.game.get("tone")
+	for id in inside:
+		if room_tones.has(id):
+			want = room_tones[id]
+			break
+	game.beds.room_tone(want)
 
 
 ## a sound off the shelf (game/sfx/, docs/SFX.md): placed in the room when it has a place (quieter across it, from its
@@ -4477,6 +4512,7 @@ func tick(dt: float) -> void:
 		if not now_in and was:
 			inside.erase(t["id"])
 			emit({"type": "exit", "id": t["id"]})
+	tone_tick()
 	if timer_left != null and has_end:
 		timer_left = float(timer_left) - dt
 		hud.timer(timer_left)

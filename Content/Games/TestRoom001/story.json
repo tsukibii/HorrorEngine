@@ -48,7 +48,8 @@
    ]
   },
   "look": "realism",
-  "weather": "rain"
+  "weather": "rain",
+  "tone": "room_tone_01"
  },
  "cast": {
   "aoi": {
@@ -353,7 +354,8 @@
        "speed": 0.5,
        "open": 0.25
       }
-     ]
+     ],
+     "tone": "ambient_wind_01"
     },
     {
      "id": "lobby",
@@ -701,7 +703,8 @@
      "look": {
       "floor": "pbr/Wood/worn_planks",
       "walls": "pbr/Plaster/stained_plaster"
-     }
+     },
+     "tone": "room_tone_03"
     },
     {
      "id": "keys",
@@ -2114,7 +2117,8 @@
        ],
        "rot": 180
       }
-     ]
+     ],
+     "tone": "ambient_wind_01"
     },
     {
      "id": "dark",
@@ -2225,7 +2229,8 @@
        ],
        "z": 2.9
       }
-     ]
+     ],
+     "tone": "none"
     },
     {
      "id": "workshop",
@@ -2433,7 +2438,8 @@
        ],
        "z": 2.4
       }
-     ]
+     ],
+     "tone": "ambient_wind_01"
     },
     {
      "id": "atrium",
@@ -2600,7 +2606,8 @@
        ],
        "z": 3.8
       }
-     ]
+     ],
+     "tone": "electric_hum_02"
     },
     {
      "id": "shaft",
@@ -5495,6 +5502,9 @@
        "untodo": true
       },
       {
+       "hush": 1
+      },
+      {
        "music": "calm"
       },
       {
@@ -5552,11 +5562,9 @@
        "at": "atr_figure"
       },
       {
-       "wait": 1
-      },
-      {
        "trick": "jumpscare",
-       "figure": "atr_figure"
+       "figure": "atr_figure",
+       "quiet": 1.5
       },
       {
        "behave": "aoi",

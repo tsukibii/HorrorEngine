@@ -46,6 +46,13 @@ A sound's `file` names the shelf with `sfx/<name>`:
 Any other `file` is the game's own sound under its Audio folder in Unreal (`/Game/Games/<Game>/Audio`), as before.
 The story check fails a `sfx/` sound that isn't on the shelf. The Pilot's and the Sample's ten sounds all come from it.
 
+**A room's tone** (DECISIONS 2026-11-07, later): a room's `tone` (or `game.tone` for every room without one) names a
+loop off the shelf by its name, no `sounds` entry needed: `room_tone_01` to `_06`, `electric_hum_01` to `_03`,
+`ambient_01` to `_03`, `ambient_wind_01` to `_04`, `rain`, `water_running`, `record_crackle`, `noise_01` and `_02`;
+`none` is silence. It's heard while the player's in the room, about −38 LUFS (the shelf's loops are near −16, so 22 dB
+under), crossfading 1.5 s into the next room's, and a `hush` takes it down with the music (STORY_FORMAT §2, §4). The
+check fails a tone that isn't on the shelf and warns at one that isn't a loop.
+
 ## 3. On the desk
 
 - **The Database's Sounds tab:** ▶ beside the file plays it. **From the shelf…** opens the shelf in a dialog: a

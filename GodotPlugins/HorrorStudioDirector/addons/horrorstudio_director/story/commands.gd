@@ -283,7 +283,9 @@ static func action_text(a, n: Callable = Callable()) -> String:
 		"sound":
 			return "Sound " + js(_or(g.call("sound"), "…")) + ((" from " + n.call("thing", a["at"])) if _t(g.call("at")) else "")
 		"music":
-			return "Music: " + (js(a["music"]) if a.has("music") else "undefined")
+			return "Music: " + (js(a["music"]) if a.has("music") else "undefined") + ((" over " + js(a["secs"]) + " s") if _t(g.call("secs")) else "")
+		"hush":
+			return "Hush " + (js(a["hush"]) if a.has("hush") else "undefined") + " s (silence before a sting)" + ((", back over " + js(a["back"]) + " s") if _t(g.call("back")) else "")
 		"trick":
 			var tt := _trick_text(a, n)
 			return "Scare: " + (tt if tt != "" else js(g.call("trick")))
@@ -342,7 +344,8 @@ static func _trick_text(a: Dictionary, n: Callable) -> String:
 			return "a glimpse of " + n.call("thing", g.call("figure")) + ((" (" + js(a["secs"]) + " s)") if _t(g.call("secs")) else "")
 		"jumpscare":
 			return "a jump scare: " + n.call("thing", g.call("figure")) + ((", playing " + js(a["clip"])) if _t(g.call("clip")) else "") \
-				+ ((", its face " + n.call("expr", a["expr"])) if _t(g.call("expr")) else "") + ((", with " + js(a["sound"])) if _t(g.call("sound")) else "")
+				+ ((", its face " + n.call("expr", a["expr"])) if _t(g.call("expr")) else "") + ((", with " + js(a["sound"])) if _t(g.call("sound")) else "") \
+				+ ((", after " + js(a["quiet"]) + " s of hush") if _t(g.call("quiet")) else "")
 		"swap":
 			return "while unseen, " + n.call("thing", g.call("hide")) + " becomes " + n.call("thing", g.call("show"))
 		"loop_hall":

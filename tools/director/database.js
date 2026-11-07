@@ -7,6 +7,7 @@ import { h, modal, triggerPill, sortable, grip, condRow } from "./ui.js";
 import { icon } from "./icons.js";
 import { KINDS, usesOf, flagsOf, renameRef, allIds, ID_RE, placeOf, tableOf } from "./refs.js";
 import { shelf, shelfName, pickShelf, preview } from "./sfx.js";
+import { TONES } from "./commands.js";
 
 const TABS = [
   { id: "game", label: "Game", icon: "gear", hint: "The game's own settings: its length, the player's lens, the language of the takes, where it starts." },
@@ -191,6 +192,9 @@ export class Database {
       this.row("Lens", this.f(g, "fov", { num: true, ph: "90" }), "° across (the one lens; never on a clip)"),
       this.row("HUD theme", this.sel(g, "ui_theme", THEMES, { blank: "glass (when unset)" })),
       this.row("Hiding places", this.f(g, "see_through", { num: true, step: "0.05", min: 0, max: 1, ph: "0.3" }), "of a locker's slats are gaps (0..1), when the locker doesn't say"),
+      this.sec("Sound"),
+      this.row("Room tone", this.sel(g, "tone", [["none", "none: silence"], ...TONES], { blank: "none (when unset)" }), "every room without its own: a loop off the sound shelf, under everything"),
+      this.row("Quiet", this.f(g, "quiet", { num: true, step: "0.1", min: 0, max: 30, ph: "0" }), "s of hush before every jump scare (its last half second silent; none when unset)"),
       this.sec("Takes and languages"),
       this.row("A take", "≤", this.f(g, "clip_max", { num: true, ph: v3 ? "8" : "10" }), "s (one MiniMax clip)"),
       this.row("Spoken in", this.f(g, "voice", { ph: "ja" }), "subtitled in", this.f(g, "text", { ph: "en" })),
