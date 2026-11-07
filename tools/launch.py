@@ -195,6 +195,7 @@ TOOLS = [
     ("Streets", "A street as text", "tools/street.py show {ask:Street}", {}),
     ("Streets", "A street drawn through its shot, beside its photo (into Saved/Streets; the desk running)", "tools/street.py shot {ask:Street} {opt:Shot (Enter: photo)}", {}),
     ("Streets", "New street", "tools/street.py new {ask:New street's name}", {}),
+    ("Streets", "A shot's camera solved from its pins (eye, aim, lens; --write puts it in the street); --cast u,v casts a photo's pixel onto the street", "node tools/director/shotfit.mjs --street {ask:Street} {opt:Shot (Enter: photo)|--shot} --write", {}),
     ("Streets", "A street in Blender: procedural finishes and its wear, rendered through its shot beside the photo (the desk running)", "tools/street.py look {ask:Street} {opt:Shot (Enter: the first; all)}", {}),
     ("Streets", "A street baked for Godot: tileable sets, its wear atlas, the .glb and .blend (colliders kept), pictured in Godot (the desk running)", "tools/street.py bake {ask:Street} --godot", {}),
     ("Streets", "The procedural finishes baked onto the PBR shelf as tileable sets (assets/pbr/Procedural)", "tools/street.py finishes", {}),

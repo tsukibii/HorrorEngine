@@ -1,0 +1,495 @@
+{
+ "format": 1,
+ "name": "garden_steps",
+ "about": "Timber sleeper steps up a garden slope after the user's first nature photo (2026-11-06): forest grass and sedges spilling over the steps, a flax at the top left, a bell light on its hook, trees overhead; its shot 'photo' frames it as the picture does.",
+ "time": "day",
+ "look": {
+  "soil": "#8a7560"
+ },
+ "roads": [
+  {
+   "id": "steps",
+   "kind": "steps",
+   "name": "the steps",
+   "from": [
+    0,
+    0
+   ],
+   "to": [
+    0,
+    5.6000000000000005
+   ],
+   "width": 1.15,
+   "tread": "sleepers",
+   "rise": 0.18,
+   "infill": "soil",
+   "z": [
+    0,
+    1.26
+   ],
+   "banks": [
+    {
+     "h": 0.35,
+     "w": 0.9,
+     "kind": "soil"
+    },
+    {
+     "h": 0.3,
+     "w": 1.3,
+     "kind": "soil"
+    }
+   ]
+  },
+  {
+   "id": "path",
+   "kind": "path",
+   "name": "the path above",
+   "from": [
+    0,
+    5.6000000000000005
+   ],
+   "via": [
+    [
+     0.5,
+     9.2
+    ]
+   ],
+   "to": [
+    2.6,
+    12.5
+   ],
+   "width": 0.9,
+   "surface": "soil",
+   "z": [
+    1.26,
+    1.75,
+    2.3
+   ],
+   "banks": [
+    {
+     "h": 0.4,
+     "w": 1.2,
+     "kind": "soil"
+    },
+    {
+     "h": 0.3,
+     "w": 1.2,
+     "kind": "soil"
+    }
+   ]
+  }
+ ],
+ "terrain": {
+  "cover": "soil",
+  "cell": 0.5,
+  "blend": 4,
+  "hills": [
+   {
+    "at": [
+     -14,
+     16
+    ],
+    "r": 26,
+    "h": 3
+   },
+   {
+    "at": [
+     14,
+     18
+    ],
+    "r": 22,
+    "h": 1.5
+   }
+  ],
+  "noise": {
+   "amp": 0.12,
+   "scale": 3,
+   "seed": 5
+  },
+  "haze": 0.5
+ },
+ "buildings": [],
+ "fences": [],
+ "things": [
+  {
+   "id": "lamp",
+   "kind": "belllamp",
+   "at": [
+    0.9,
+    0.57
+   ],
+   "turn": 25,
+   "h": 1.05
+  },
+  {
+   "id": "hakone_l1",
+   "kind": "plant",
+   "at": [
+    -0.79,
+    0.41
+   ],
+   "turn": 10,
+   "w": 0.8,
+   "h": 0.4,
+   "scale": 1.9,
+   "prop": "props/hakone_grass"
+  },
+  {
+   "id": "hakone_l2",
+   "kind": "plant",
+   "at": [
+    -0.82,
+    1.51
+   ],
+   "turn": 80,
+   "w": 0.8,
+   "h": 0.4,
+   "scale": 1.5,
+   "prop": "props/hakone_grass"
+  },
+  {
+   "id": "hakone_l3",
+   "kind": "plant",
+   "at": [
+    -0.52,
+    2.4
+   ],
+   "turn": 150,
+   "w": 0.8,
+   "h": 0.4,
+   "scale": 1.15,
+   "prop": "props/hakone_grass"
+  },
+  {
+   "id": "sedge_l4",
+   "kind": "plant",
+   "at": [
+    -0.4,
+    3.3
+   ],
+   "turn": 40,
+   "w": 0.6,
+   "h": 0.35,
+   "scale": 1,
+   "prop": "props/sedge_evergold"
+  },
+  {
+   "id": "hakone_r1",
+   "kind": "plant",
+   "at": [
+    1,
+    1.51
+   ],
+   "turn": 200,
+   "w": 0.8,
+   "h": 0.4,
+   "scale": 1.6,
+   "prop": "props/hakone_grass"
+  },
+  {
+   "id": "sedge_r2",
+   "kind": "plant",
+   "at": [
+    1.89,
+    2.63
+   ],
+   "turn": 300,
+   "w": 0.6,
+   "h": 0.35,
+   "scale": 1,
+   "prop": "props/sedge_evergold"
+  },
+  {
+   "id": "flax",
+   "kind": "plant",
+   "at": [
+    -1.2,
+    2.6
+   ],
+   "turn": 0,
+   "w": 0.9,
+   "h": 1.4,
+   "scale": 1.25,
+   "prop": "props/flax_bronze"
+  },
+  {
+   "id": "shrub_tl",
+   "kind": "plant",
+   "at": [
+    -2.4,
+    4.6
+   ],
+   "turn": 0,
+   "w": 2,
+   "h": 2,
+   "scale": 2.6,
+   "prop": "props/shrub_real"
+  },
+  {
+   "id": "bush_top",
+   "kind": "plant",
+   "at": [
+    1.16,
+    5.82
+   ],
+   "turn": 0,
+   "w": 1.2,
+   "h": 0.7,
+   "scale": 1.8,
+   "prop": "props/hakone_green"
+  },
+  {
+   "id": "sedum",
+   "kind": "plant",
+   "at": [
+    0.74,
+    -0.22
+   ],
+   "turn": 0,
+   "w": 0.6,
+   "h": 0.25,
+   "scale": 0.7,
+   "prop": "props/shrub_real"
+  },
+  {
+   "id": "shrub_r",
+   "kind": "plant",
+   "at": [
+    1.6,
+    0.4
+   ],
+   "turn": 0,
+   "w": 1.2,
+   "h": 1.2,
+   "scale": 1.1,
+   "prop": "props/shrub_real"
+  },
+  {
+   "id": "shrub_r2",
+   "kind": "plant",
+   "at": [
+    2.6,
+    3
+   ],
+   "turn": 0,
+   "w": 1.2,
+   "h": 1.2,
+   "scale": 1.3,
+   "prop": "props/shrub_real"
+  },
+  {
+   "id": "tree_r",
+   "kind": "tree",
+   "at": [
+    3,
+    5
+   ],
+   "turn": 0,
+   "h": 4.5,
+   "w": 2.2,
+   "prop": "props/small_hornbeam_real"
+  },
+  {
+   "id": "tree_l",
+   "kind": "tree",
+   "at": [
+    -3.5,
+    6.5
+   ],
+   "turn": 0,
+   "h": 9,
+   "w": 8,
+   "prop": "props/camphor_real"
+  },
+  {
+   "id": "tree_back",
+   "kind": "tree",
+   "at": [
+    -5,
+    15
+   ],
+   "turn": 0,
+   "h": 9,
+   "w": 7,
+   "prop": "props/zelkova_real"
+  },
+  {
+   "id": "tree_red",
+   "kind": "tree",
+   "at": [
+    4.5,
+    12
+   ],
+   "turn": 0,
+   "h": 7,
+   "w": 5,
+   "prop": "props/cherry_real"
+  },
+  {
+   "id": "tree_far",
+   "kind": "tree",
+   "at": [
+    8,
+    18
+   ],
+   "turn": 0,
+   "h": 9,
+   "w": 7,
+   "prop": "props/camphor_real"
+  }
+ ],
+ "scatters": [
+  {
+   "id": "tufts",
+   "along": "path",
+   "side": 0,
+   "off": [
+    0.05,
+    0.5
+   ],
+   "every": 1,
+   "kind": "plant",
+   "w": 0.4,
+   "h": 0.3,
+   "size": [
+    0.6,
+    1
+   ],
+   "prop": "props/grass_tuft",
+   "seed": 2
+  }
+ ],
+ "shots": [
+  {
+   "id": "photo",
+   "name": "the photo (timber steps up a garden)",
+   "eye": [
+    -0.054,
+    -0.569,
+    1.229
+   ],
+   "look": [
+    3.973,
+    17.225,
+    -6.965
+   ],
+   "vfov": 105.6,
+   "aspect": [
+    550,
+    734
+   ],
+   "ref": "refs/shot_photo.webp",
+   "op": 0.5,
+   "pins": [
+    {
+     "name": "the first timber's front top edge, left end",
+     "px": [
+      0.14,
+      0.855
+     ],
+     "at": [
+      -0.575,
+      0,
+      0.18
+     ]
+    },
+    {
+     "name": "the first timber's front top edge, right end",
+     "px": [
+      0.72,
+      0.745
+     ],
+     "at": [
+      0.575,
+      0,
+      0.18
+     ]
+    },
+    {
+     "name": "the first timber's back top edge, left end",
+     "px": [
+      0.13,
+      0.76
+     ],
+     "at": [
+      -0.575,
+      0.22,
+      0.18
+     ]
+    },
+    {
+     "name": "the first timber's back top edge, right end",
+     "px": [
+      0.7,
+      0.665
+     ],
+     "at": [
+      0.575,
+      0.22,
+      0.18
+     ]
+    },
+    {
+     "name": "the second timber's front top edge, right end",
+     "px": [
+      0.58,
+      0.535
+     ],
+     "at": [
+      0.575,
+      0.8,
+      0.36
+     ]
+    },
+    {
+     "name": "the third timber's front top edge, right end",
+     "px": [
+      0.52,
+      0.455
+     ],
+     "at": [
+      0.575,
+      1.6,
+      0.54
+     ]
+    },
+    {
+     "name": "the fourth timber's front top edge, right end",
+     "px": [
+      0.49,
+      0.4
+     ],
+     "at": [
+      0.575,
+      2.4000000000000004,
+      0.72
+     ]
+    },
+    {
+     "name": "the fifth timber's front top edge, right end",
+     "px": [
+      0.48,
+      0.37
+     ],
+     "at": [
+      0.575,
+      3.2,
+      0.8999999999999999
+     ]
+    },
+    {
+     "name": "the sixth timber's front top edge, right end",
+     "px": [
+      0.47,
+      0.345
+     ],
+     "at": [
+      0.575,
+      4,
+      1.08
+     ]
+    }
+   ]
+  }
+ ]
+}

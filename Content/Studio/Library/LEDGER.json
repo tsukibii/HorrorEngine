@@ -21,7 +21,7 @@
   "url": "https://raw.githubusercontent.com/M3-org/base-meshes/main/models/wooden_chair_01/wooden_chair_01.glb"
  },
  "props/azalea_ball": {
-  "date": "2026-11-02",
+  "date": "2026-11-06",
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe azalea_ball (Content/Studio/Props/presets.json)"
@@ -63,7 +63,7 @@
   "source": "ours: tools/propgen.py, recipe black_pine (Content/Studio/Props/presets.json)"
  },
  "props/black_pine_real": {
-  "date": "2026-11-02",
+  "date": "2026-11-06",
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe black_pine_real (Content/Studio/Props/presets.json)"
@@ -129,7 +129,7 @@
   "source": "ours: tools/propgen.py, recipe burger_box (Content/Studio/Props/presets.json)"
  },
  "props/camphor_real": {
-  "date": "2026-11-02",
+  "date": "2026-11-06",
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe camphor_real (Content/Studio/Props/presets.json)"
@@ -183,7 +183,7 @@
   "source": "ours: tools/propgen.py, recipe candle_votive (Content/Studio/Props/presets.json)"
  },
  "props/cedar_real": {
-  "date": "2026-11-02",
+  "date": "2026-11-06",
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe cedar_real (Content/Studio/Props/presets.json)"
@@ -237,7 +237,7 @@
   "source": "ours: tools/propgen.py, recipe cherry_blossom (Content/Studio/Props/presets.json)"
  },
  "props/cherry_real": {
-  "date": "2026-11-02",
+  "date": "2026-11-06",
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe cherry_real (Content/Studio/Props/presets.json)"
@@ -458,6 +458,18 @@
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe energy_can_crushed (Content/Studio/Props/presets.json)"
  },
+ "props/fern_clump": {
+  "date": "2026-11-06",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe fern_clump (Content/Studio/Props/presets.json)"
+ },
+ "props/flax_bronze": {
+  "date": "2026-11-06",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe flax_bronze (Content/Studio/Props/presets.json)"
+ },
  "props/fork_tarnished": {
   "date": "2026-10-30",
   "kind": "mesh",
@@ -507,10 +519,22 @@
   "source": "ours: tools/propgen.py, recipe grass_dry (Content/Studio/Props/presets.json)"
  },
  "props/grass_tuft": {
-  "date": "2026-11-02",
+  "date": "2026-11-06",
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe grass_tuft (Content/Studio/Props/presets.json)"
+ },
+ "props/hakone_grass": {
+  "date": "2026-11-06",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe hakone_grass (Content/Studio/Props/presets.json)"
+ },
+ "props/hakone_green": {
+  "date": "2026-11-06",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe hakone_green (Content/Studio/Props/presets.json)"
  },
  "props/hokora": {
   "date": "2026-10-31",
@@ -632,6 +656,12 @@
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe maple_garden (Content/Studio/Props/presets.json)"
  },
+ "props/meadow_tuft": {
+  "date": "2026-11-06",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe meadow_tuft (Content/Studio/Props/presets.json)"
+ },
  "props/mug_green_tea": {
   "date": "2026-10-31",
   "kind": "mesh",
@@ -709,6 +739,12 @@
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe paper_ball (Content/Studio/Props/presets.json)"
+ },
+ "props/pebbles_river": {
+  "date": "2026-11-06",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe pebbles_river (Content/Studio/Props/presets.json)"
  },
  "props/pill_bottle": {
   "date": "2026-10-30",
@@ -872,6 +908,12 @@
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe receipt (Content/Studio/Props/presets.json)"
  },
+ "props/reed_clump": {
+  "date": "2026-11-06",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe reed_clump (Content/Studio/Props/presets.json)"
+ },
  "props/rice_bowl": {
   "date": "2026-10-30",
   "kind": "mesh",
@@ -889,6 +931,42 @@
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe rice_cooker_retro (Content/Studio/Props/presets.json)"
+ },
+ "props/rock_basalt": {
+  "date": "2026-11-06",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe rock_basalt (Content/Studio/Props/presets.json)"
+ },
+ "props/rock_boulder": {
+  "date": "2026-11-06",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe rock_boulder (Content/Studio/Props/presets.json)"
+ },
+ "props/rock_mossy": {
+  "date": "2026-11-06",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe rock_mossy (Content/Studio/Props/presets.json)"
+ },
+ "props/rock_sandstone": {
+  "date": "2026-11-06",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe rock_sandstone (Content/Studio/Props/presets.json)"
+ },
+ "props/rock_slab": {
+  "date": "2026-11-06",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe rock_slab (Content/Studio/Props/presets.json)"
+ },
+ "props/rocks_cluster": {
+  "date": "2026-11-06",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe rocks_cluster (Content/Studio/Props/presets.json)"
  },
  "props/sanbo": {
   "date": "2026-10-31",
@@ -913,6 +991,12 @@
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe saucepan (Content/Studio/Props/presets.json)"
+ },
+ "props/sedge_evergold": {
+  "date": "2026-11-06",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe sedge_evergold (Content/Studio/Props/presets.json)"
  },
  "props/shimenawa": {
   "date": "2026-10-31",
@@ -939,7 +1023,7 @@
   "source": "ours: tools/propgen.py, recipe shrub_loose (Content/Studio/Props/presets.json)"
  },
  "props/shrub_real": {
-  "date": "2026-11-02",
+  "date": "2026-11-06",
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe shrub_real (Content/Studio/Props/presets.json)"
@@ -975,7 +1059,7 @@
   "source": "ours: tools/propgen.py, recipe small_ginkgo_autumn (Content/Studio/Props/presets.json)"
  },
  "props/small_hornbeam_real": {
-  "date": "2026-11-02",
+  "date": "2026-11-06",
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe small_hornbeam_real (Content/Studio/Props/presets.json)"
@@ -1045,6 +1129,18 @@
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe stockpot_broth (Content/Studio/Props/presets.json)"
+ },
+ "props/stone_river": {
+  "date": "2026-11-06",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe stone_river (Content/Studio/Props/presets.json)"
+ },
+ "props/stone_river_wet": {
+  "date": "2026-11-06",
+  "kind": "mesh",
+  "licence": "ours",
+  "source": "ours: tools/propgen.py, recipe stone_river_wet (Content/Studio/Props/presets.json)"
  },
  "props/stool_cafe": {
   "date": "2026-11-04",
@@ -1227,7 +1323,7 @@
   "source": "ours: tools/propgen.py, recipe zelkova_autumn_real (Content/Studio/Props/presets.json)"
  },
  "props/zelkova_real": {
-  "date": "2026-11-02",
+  "date": "2026-11-06",
   "kind": "mesh",
   "licence": "ours",
   "source": "ours: tools/propgen.py, recipe zelkova_real (Content/Studio/Props/presets.json)"

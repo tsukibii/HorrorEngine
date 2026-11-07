@@ -12,6 +12,7 @@ export const TIMES = {
   day: { label: "day", top: "#4f86c9", horizon: "#cfe0ec", ground: "#6d6a64", hemiSky: "#c5d8ec", hemiGround: "#5d5952", hemi: 1.15, sun: 2.6, sunColor: "#fff1df", sunEl: 48, sunAz: 140, lit: 0.08, lamps: false, exposure: 1.0, fog: 0.0035 },
   dusk: { label: "dusk", top: "#aeb2c8", horizon: "#ead3cf", ground: "#3d3a38", hemiSky: "#99b8c4", hemiGround: "#44393a", hemi: 1.6, sun: 0.0, sunColor: "#ffc9a0", sunEl: 4, sunAz: 250, lit: 1.0, lamps: true, exposure: 1.0, fog: 0.0065 },
   night: { label: "night", top: "#04060c", horizon: "#141b29", ground: "#0b0b0c", hemiSky: "#2a3550", hemiGround: "#101012", hemi: 0.22, sun: 0.0, sunColor: "#9fb3ff", sunEl: 40, sunAz: 200, lit: 1.25, lamps: true, exposure: 1.1, fog: 0.012 },
+  overcast: { label: "overcast", top: "#98a2ab", horizon: "#dfe4e7", ground: "#56574f", hemiSky: "#d2d8dd", hemiGround: "#59564e", hemi: 1.35, sun: 0.75, sunColor: "#e9ecee", sunEl: 62, sunAz: 190, lit: 0.1, lamps: false, exposure: 1.0, fog: 0.004 },
 };
 
 // ---- patterns made in code: a canvas each, cached; `tile` the metres one repeat covers --------------------------------
@@ -33,12 +34,56 @@ const PATTERNS = {
   bamboo: { tile: 0.6, alpha: true, draw: (g, w, h) => { g.fillStyle = "#000"; g.fillRect(0, 0, w, h); const n = 12, s = w / n; for (let i = 0; i < n; i++) { g.fillStyle = "#fff"; g.fillRect(i * s + 1, 0, s - 3, h); g.fillStyle = "#000"; g.fillRect(i * s + 1, ((i * 37) % 9) * 6 + 20, s - 3, 2); } } },
   bars: { tile: 0.44, alpha: true, draw: (g, w, h) => { g.fillStyle = "#000"; g.fillRect(0, 0, w, h); g.fillStyle = "#fff"; const n = 4, s = w / n; for (let i = 0; i < n; i++) g.fillRect(i * s, 0, 6, h); } },
   grate: { tile: 0.35, alpha: true, draw: (g, w, h) => { g.fillStyle = "#fff"; g.fillRect(0, 0, w, h); g.fillStyle = "#000"; const n = 6, s = w / n; for (let i = 0; i < n; i++) g.fillRect(i * s + 4, 4, s - 8, h - 8); } },
+  // the outdoors (docs/STREET_NATURE_PLAN.md): the ground's covers, stone, timber; each tile repeats
+  grass: { tile: 3.0, px: 512, draw: (g, w, h) => { natureTile(g, w, h, 11, "#4d7a2e", [["#3f6a26", 0.5], ["#6a9a3a", 0.5], ["#86a848", 0.25], ["#5c8630", 0.6]], 3400, [2, 8], true); blotches(g, w, h, 21, [["#3c6424", 0.22], ["#79a444", 0.25], ["#5f8a30", 0.22], ["#8a9a4a", 0.12]], 70, [18, 60]); } },
+  mown: { tile: 1.6, px: 512, draw: (g, w, h) => { natureTile(g, w, h, 12, "#5a8a36", [["#4f7f2e", 0.5], ["#6f9f44", 0.5], ["#86b054", 0.2]], 4200, [1, 4], true); blotches(g, w, h, 22, [["#4f7f2f", 0.16], ["#6f9e42", 0.22], ["#7ea24c", 0.16], ["#8a9850", 0.08]], 90, [16, 56]); g.fillStyle = "rgba(255,255,255,0.035)"; for (let x = 0; x < w; x += w / 2) g.fillRect(x, 0, w / 4, h); } },
+  moss: { tile: 0.8, px: 256, draw: (g, w, h) => natureTile(g, w, h, 13, "#6a8c3c", [["#56782e", 0.6], ["#80a248", 0.5], ["#9ab858", 0.25], ["#44642a", 0.4]], 900, [2, 7], false) },
+  soil: { tile: 1.2, px: 256, draw: (g, w, h) => natureTile(g, w, h, 14, "#5e4c3d", [["#4a3b2f", 0.6], ["#6e5a48", 0.5], ["#7e6a54", 0.25], ["#3a2e24", 0.3], ["#8a7a5a", 0.15]], 700, [2, 8], false) },
+  forest: { tile: 36, px: 256, draw: (g, w, h) => { natureTile(g, w, h, 15, "#2f5a32", [["#1f4222", 0.75], ["#3b6e38", 0.65], ["#4c843e", 0.4], ["#183620", 0.6], ["#5a9448", 0.25]], 120, [10, 40], false); natureTile2(g, w, h, 19, [["#1a3a1e", 0.5], ["#3f7a3a", 0.35]], 700, [3, 9]); } },
+  rock: { tile: 1.0, px: 256, draw: (g, w, h) => natureTile(g, w, h, 17, "#7a7770", [["#6a675f", 0.5], ["#8b887f", 0.5], ["#5a574f", 0.3], ["#9a978c", 0.2]], 600, [3, 12], false) },
+  stone: { tile: 0.8, px: 256, draw: (g, w, h) => natureTile(g, w, h, 18, "#9a968a", [["#8a867a", 0.5], ["#aaa69a", 0.5], ["#7f9a60", 0.3], ["#6e8a52", 0.25], ["#b4b0a4", 0.2]], 700, [3, 12], false) },
+  stone_dark: { tile: 0.8, px: 256, draw: (g, w, h) => natureTile(g, w, h, 18, "#7e7a70", [["#6e6a62", 0.5], ["#8e8a80", 0.5], ["#6f8a56", 0.3], ["#5e7a4a", 0.25]], 700, [3, 12], false) },
+  sleeper: { tile: 0.6, px: 256, draw: (g, w, h) => { g.fillStyle = "#6b5236"; g.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 3) { const v = 70 + Math.round(30 * Math.abs(Math.sin(y * 0.37) * Math.sin(y * 0.11 + 1))); g.fillStyle = `rgba(${v + 40},${v + 10},${v - 20},0.55)`; g.fillRect(0, y, w, 2); } } },
+  deck: { tile: 1.2, px: 256, draw: (g, w, h) => { g.fillStyle = "#4e3326"; g.fillRect(0, 0, w, h); const n = 8, s = w / n; for (let i = 0; i < n; i++) { const v = 70 + ((i * 7) % 5) * 6; g.fillStyle = `rgb(${v + 20},${v - 12},${v - 30})`; g.fillRect(i * s + 2, 0, s - 4, h); for (let y = 0; y < h; y += 5) { g.fillStyle = "rgba(0,0,0,0.12)"; g.fillRect(i * s + 2, y, s - 4, 1); } } } },
 };
+// a second layer of flecks over a tile (the forest's finer crowns over its blotches)
+function natureTile2(g, w, h, seed, cols, n, size) {
+  let sd = seed * 7919; const R = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  for (let k = 0; k < n; k++) { const [c, a] = cols[Math.floor(R() * cols.length)], x = R() * w, y = R() * h, s = size[0] + R() * (size[1] - size[0]); g.fillStyle = c; g.globalAlpha = a * (0.5 + R() * 0.5); for (const [dx, dy] of [[0, 0], [-w, 0], [w, 0], [0, -h], [0, h]]) { g.beginPath(); g.ellipse(x + dx, y + dy, s, s * 0.8, 0, 0, 7); g.fill(); } }
+  g.globalAlpha = 1;
+}
+// soft blotches of a few colours over a cover (a lawn's drier and lusher patches), drawn over the edges so it tiles
+function blotches(g, w, h, seed, cols, n, size) {
+  let sd = seed * 7919; const R = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  for (let k = 0; k < n; k++) {
+    const [c, a] = cols[Math.floor(R() * cols.length)], x = R() * w, y = R() * h, s = size[0] + R() * (size[1] - size[0]);
+    for (const [dx, dy] of [[0, 0], [-w, 0], [w, 0], [0, -h], [0, h]]) {
+      const gr = g.createRadialGradient(x + dx, y + dy, 0, x + dx, y + dy, s); gr.addColorStop(0, c); gr.addColorStop(1, "rgba(0,0,0,0)");
+      g.globalAlpha = a * (0.6 + R() * 0.4); g.fillStyle = gr; g.beginPath(); g.ellipse(x + dx, y + dy, s, s * (0.7 + R() * 0.5), R() * Math.PI, 0, 7); g.fill();
+    }
+  }
+  g.globalAlpha = 1;
+}
+// a tile of a natural cover: a ground colour, flecks of a few colours (blades, leaves, pebbles) scattered by a seed
+// (the same tile on every machine), `blades` long thin ones leaning (grass) or round ones (moss, stones)
+function natureTile(g, w, h, seed, base, cols, n, size, blades) {
+  let sd = seed * 7919; const R = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  g.fillStyle = base; g.fillRect(0, 0, w, h);
+  for (let k = 0; k < n; k++) {
+    const [c, a] = cols[Math.floor(R() * cols.length)], x = R() * w, y = R() * h, s = size[0] + R() * (size[1] - size[0]);
+    g.fillStyle = c; g.globalAlpha = a * (0.5 + R() * 0.5);
+    for (const [dx, dy] of [[0, 0], [-w, 0], [w, 0], [0, -h], [0, h]]) {             // drawn over the edges too, so it tiles
+      if (blades) { g.save(); g.translate(x + dx, y + dy); g.rotate((R() - 0.5) * 0.9); g.fillRect(-s * 0.15, -s, s * 0.3, s * 2); g.restore(); }
+      else { g.beginPath(); g.ellipse(x + dx, y + dy, s, s * (0.6 + R() * 0.5), R() * Math.PI, 0, 7); g.fill(); }
+    }
+  }
+  g.globalAlpha = 1;
+}
 const TEXCACHE = {};
 function patternTexture(name) {
   if (TEXCACHE[name] !== undefined) return TEXCACHE[name];
   const P = PATTERNS[name]; if (!P) return (TEXCACHE[name] = null);
-  const c = canvas(128, 128, P.draw); if (!c) return (TEXCACHE[name] = null);
+  const c = canvas(P.px || 128, P.px || 128, P.draw); if (!c) return (TEXCACHE[name] = null);
   const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4;
   if (P.tile) t.repeat.set(1 / P.tile, 1 / P.tile);
   if (!P.alpha) t.colorSpace = THREE.SRGBColorSpace;
@@ -231,7 +276,7 @@ const WHITE = [1, 1, 1];
 // piece each run of its triangles is (picking); root.userData.index each piece's chunk and bounds (three's space). A
 // chunk whose pieces haven't changed since the last build is kept as it was (opts.prev: the last build's chunks).
 export const CHUNK = 48;
-const SHADOWLESS = new Set(["lamp", "lamp_cool", "lit", "lit_cool", "shop", "lobby", "paper", "vend_lit", "headlight", "taillight", "glass", "asphalt", "pavement", "ground", "paint", "paint_y", "wire", "decal"]);   // paint and decals lie on a surface: no shadow of their own
+const SHADOWLESS = new Set(["lamp", "lamp_cool", "lit", "lit_cool", "shop", "lobby", "paper", "vend_lit", "headlight", "taillight", "glass", "asphalt", "pavement", "ground", "paint", "paint_y", "wire", "decal", "grass", "mown", "moss", "soil", "forest"]);   // paint and decals lie on a surface: no shadow of their own
 let SERIAL = 0;
 function boundsOf(p) {
   if (p._bb) return p._bb;
@@ -244,12 +289,13 @@ export function disposeChunk(g) { g.traverse(o => { if (o.geometry) o.geometry.d
 // `prop`, the prop generator's in the library (props/<name>: a realistic zelkova, a black pine), stands at its spot on
 // the ground, turned by its `turn`; its stand-in is drawn until the mesh has loaded, and on a machine that hasn't made it
 // (python tools/propgen.py make <name> --library)
-const PROP_MESH = new Map();
+const PROP_MESH = new Map(), PROP_BOX = new Map();
 export function propMesh(ref) {
   if (!PROP_MESH.has(ref)) PROP_MESH.set(ref, new GLTFLoader().loadAsync(`/library/meshes/${ref}.glb`).then(g => g.scene).catch(() => null));
   return PROP_MESH.get(ref);
 }
-export const propThings = S => (S.things || []).filter(t => typeof t.prop === "string" && t.prop);
+const propBox = (ref, src) => { if (!PROP_BOX.has(ref)) PROP_BOX.set(ref, new THREE.Box3().setFromObject(src)); return PROP_BOX.get(ref); };
+export const propThings = S => (S.things || []).concat(SG.scatterThings(S)).filter(t => typeof t.prop === "string" && t.prop);   // placed by hand, and a scatter's
 // the props loaded: {ids: the things they stand for (their stand-ins left out of the chunks: group's opts.hide), group}
 export async function propsGroup(S) {
   const T = SG.terrain(S), g = new THREE.Group(), ids = new Set();
@@ -259,8 +305,14 @@ export async function propsGroup(S) {
     if (!src) continue;
     const c = src.clone(true);
     c.name = `prop_${t.id}`;
-    c.position.set(t.at[0], T.surface(t.at[0], t.at[1]) + (+t.lift || 0), -t.at[1]);
     c.rotation.y = (+t.turn || 0) * Math.PI / 180;                  // a turn in the street's plane (left about up) is three's about +y
+    const bb = propBox(t.prop, src);
+    if (+t.fit > 0) { const ext = Math.max(bb.max.x - bb.min.x, bb.max.z - bb.min.z) || 1; c.scale.setScalar(+t.fit / ext); }   // the prop scaled to a size: its longest way across
+    else if (+t.scale && +t.scale !== 1) c.scale.setScalar(+t.scale);     // a scatter's size
+    const under = T.surface(t.at[0], t.at[1]);
+    // `top`: the prop set so its highest point is that far over what's under it (a rock sunk into the ground); else
+    // `lift` above it
+    c.position.set(t.at[0], t.top !== undefined && t.top !== null && t.top !== "" ? under + (+t.top) - (bb.max.y - bb.min.y) * c.scale.y - bb.min.y * c.scale.y : under + (+t.lift || 0), -t.at[1]);
     c.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
     g.add(c); ids.add(t.id);
   }
@@ -353,7 +405,8 @@ export class Look {
     const el = T.sunEl * Math.PI / 180, az = T.sunAz * Math.PI / 180, dir = [Math.sin(az) * Math.cos(el), Math.cos(az) * Math.cos(el), Math.sin(el)];
     this.sun.target.position.copy(s2t(cx, cy, 0)); this.sun.position.copy(s2t(cx + dir[0] * R * 2, cy + dir[1] * R * 2, dir[2] * R * 2));
     const sc = this.sun.shadow.camera; sc.left = -R; sc.right = R; sc.top = R; sc.bottom = -R; sc.near = 1; sc.far = R * 5; sc.updateProjectionMatrix();
-    this.scene.fog = T.fog ? new THREE.FogExp2(new THREE.Color(T.horizon).lerp(new THREE.Color(T.top), 0.15), T.fog) : null;
+    const haze = this.haze === undefined || this.haze === null ? 1 : +this.haze;   // a street's `terrain.haze` scales the time's fog (its far hills seen through it)
+    this.scene.fog = T.fog && haze > 0 ? new THREE.FogExp2(new THREE.Color(T.horizon).lerp(new THREE.Color(T.top), 0.15), T.fog * haze) : null;
     if (renderer) { renderer.toneMapping = THREE.AgXToneMapping; renderer.toneMappingExposure = T.exposure; }
     return T;
   }
@@ -385,7 +438,7 @@ function exportMaterial(m, made) {
   const e = new THREE.MeshStandardMaterial({ name: `street_${m.userData.slot || "slot"}${over ? "_" + over.replace(/[^a-z0-9]+/gi, "_") : ""}`,
     color: m.color.clone(), roughness: m.roughness, metalness: m.metalness, map: m.map || null, normalMap: m.normalMap || null, roughnessMap: m.roughnessMap || null, metalnessMap: m.metalnessMap || null,
     emissive: m.emissive.clone(), emissiveIntensity: m.emissiveIntensity, emissiveMap: m.emissiveMap || null, side: m.side, vertexColors: !!m.vertexColors,
-    transparent: !!m.userData.decal, depthWrite: !m.userData.decal });                    // a decal blends over what's under it
+    transparent: !!m.userData.decal, opacity: m.opacity, depthWrite: !m.userData.decal });   // a decal blends over what's under it
   if (m.alphaMap && typeof document !== "undefined") {                // glTF has no alpha map: the pattern goes into the colour map's alpha
     const img = m.alphaMap.image, c = document.createElement("canvas"); c.width = img.width; c.height = img.height;
     const g = c.getContext("2d"); g.drawImage(img, 0, 0); const d = g.getImageData(0, 0, c.width, c.height);
@@ -453,7 +506,7 @@ export function exportGroup(root, S, pieces, lights, blockers, opts = {}) {
     if (!byChunk.has(key)) { byChunk.set(key, { pos: [], idx: [] }); occByChunk.set(key, { pos: [], idx: [] }); }
     const T = byChunk.get(key);
     for (const b of B.boxes) SG.boxTris(b, T);
-    if (B.surface && B.surface.idx.length) { const v0 = T.pos.length / 3; T.pos.push(...B.surface.pos); for (const i of B.surface.idx) T.idx.push(i + v0); }
+    if (B.surface && B.surface.idx.length) { const v0 = T.pos.length / 3; SG.pushAll(T.pos, B.surface.pos); for (const i of B.surface.idx) T.idx.push(i + v0); }   // the ground's surface is big: no spread
     for (const b of B.occ) SG.boxTris(b, occByChunk.get(key));
   }
   const col = new THREE.Group(); col.name = "collision"; out.add(col);

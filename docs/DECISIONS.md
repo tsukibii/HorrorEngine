@@ -2,6 +2,29 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-06, last (the user: the rivers scrapped; the foliage and rocks kept as props, for gardens)
+
+- **"Scrap the rivers, keep all the foliage and rocks you made as props to generate. I'll use them for gardens."** So:
+  the street builder's river (its bed, water, banks of stone and concrete, white water, falls, the rocks in it) is
+  gone, with the three river streets (`river_town`, `mountain_stream`, `park_brook`) and the park (`park_stream`);
+  paths, steps, the ground's hills and flats, scatters, the bridges, lamps, boards, log rails and stone walls stay
+  (a garden's); the two step streets (`garden_steps`, `shrine_steps`) stay as what they are. The prop generator's
+  **foliage** (the trees, bushes and the blade plants: PROPGEN §18) and **rocks** (§28) stay as recipes to generate,
+  for the user's gardens (`python tools/propgen.py make <names> --library`, or the prop generator's page).
+
+## 2026-11-06, later (the user: the 1:1 dropped; a simple park with a stream; new rocks after a Blender tutorial)
+
+- **"Ok, forget the 1:1 now, a lot of the environments you made look ugly (except for the new realistic plants they
+  look great), can you create a simple park with a small river stream. Maybe work on modelling some new rocks, research
+  a Blender creating realistic rocks tutorial first."** So: the five matched streets stay as they are (the 1:1 work is
+  done with, not to be polished); what looks good is the realistic props (the trees and the blade plants); the next
+  step is a park that looks good, not one that matches a photo, and real rocks before it.
+- **What came of it** (the same day): docs/research/rocks.md (what Blender's own rock generator and the tutorials do,
+  and what we take); the prop generator's **rock family** (PROPGEN §28: a boulder, a rock, a river stone, a slab, a
+  patch of pebbles, a cluster; granite, basalt, sandstone, limestone, slate, river; moss, lichen, a wet line); the
+  street builder's rivers and banks took the made rocks, and the **park** `park_stream` was built round a stream
+  (both scrapped the same day: the next entry; a thing's `fit` and `top` for a prop stay).
+
 ## 2026-11-06, later (the user: "I want a system for building these kind of stairs": exterior stair stacks)
 
 - **Three photos** of Japanese exterior stairs, and "I want a system for building these kind of stairs":
@@ -21,6 +44,25 @@ The user's answers, newest first. They override the plan, the research and the d
   (pickets, panel, parapet, pipe, none), a `shaft` (none, walls) and `gap` m off the wall, beyond a walkway, whose
   railing opens where the landings meet it; the reference street `danchi_court` has the three. The floor numbers and
   the curved canopy aren't built (words on a wall need a texture; the canopy slab stands in).
+
+## 2026-11-06 (the user: the street builder outdoors, the branch `street-nature`)
+
+- **"For street builder I want a new more nature park update, create a branch called street-nature. And using our
+  standard for realistic trees and foliage and streets build tools that let you build the following styles. Create a
+  plan and then your acceptance criteria is being able to re-create 1:1 framing/shots in our style of each of the
+  photos above, note this includes rivers too, the river doesn't need to be moving or anything (we will later create a
+  shader for it in Godot, not part of this branch though). Try make sure you can do accurate 1:1s so create foliage,
+  fences, stone steps that are needed. Go through it image by image, we are trying to do the 1:1 recreation similar to
+  how we did the first street app one."** Five photos: timber sleeper steps up a garden with forest grass and a bell
+  light; stone steps up a shrine hill with a log rail, moss and ferns; a river town from above with a red arched bridge;
+  a mountain town's stream with a concrete revetment and a blue bridge; a park brook with a timber footbridge.
+- **How it came out** (the same day, docs/STREET_NATURE_PLAN.md, STREET_BUILDER §7d): roads of a kind (path, steps,
+  river) with banks, the ground's hills and covers on a far grid, scatters, rocks, bridges, a bell light, a paper
+  lantern, a notice board, log rails and stone walls, an overcast sky; the prop generator's blade plants (forest grass,
+  sedge, flax, reeds, ferns, PROPGEN §18); each photo matched the Shibuya lane's way, with a shot solver
+  (`shotfit.mjs`: the camera from pins, the scene placed by casting pixels through it); the five streets' shots pinned
+  within STREET's tolerance (0.3 to 1.5% of the frame). The photos stay on the user's machine (`refs/`); the drawings
+  are `docs/street_sheets/2026-11-06_nature_five.jpg`. Not this branch's: the river's shader, clouds.
 
 ## 2026-11-06 (the user: stairs from points, not presets; winders for tight spaces; the motel's switchback)
 
@@ -69,6 +111,7 @@ The user's answers, newest first. They override the plan, the research and the d
     stair down, measured in Godot and on the desk: the feet's height at each landing, never stuck, the eye never
     jumping a riser in a frame. Pictured from the player's eye by day and night:
     `docs/godot_sheets/2026-11-05_stairs.jpg`.
+
 
 ## 2026-11-05, latest (the user: the hanging clothes scrapped)
 

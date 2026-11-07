@@ -20,6 +20,49 @@ systems that open, hold, move and are read; 2026-11-05, night, on `gameplay-enha
 builder's floors, the street's steel stair, climbing in Godot and on the desk). Read this after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
+## Where it stopped last (2026-11-06, last, `street-nature`): the rivers scrapped, the foliage and rocks kept as props
+
+The user (DECISIONS 2026-11-06, last): "Scrap the rivers, keep all the foliage and rocks you made as props to generate.
+I'll use them for gardens." Done: the street builder's river kind is gone (its bed, water, stone and concrete banks,
+white water, falls, rocks in it, the page's River and its inspector, the fixture's river), with the three river streets
+and the park; paths, steps, banks (grass, soil, moss, a level strip), the ground's hills, flats and covers, scatters,
+the bridges, lamps, boards, log rails and stone walls, the smooth ground and the lawn tiles stay; the two step streets
+stay (`docs/street_sheets/2026-11-06_steps_two.jpg`). The props the user will use for gardens: the blade plants and the
+realistic trees (PROPGEN §18) and the rock family (§28, docs/research/rocks.md), all recipes in presets.json with
+their thumbnails; on their machine `python tools/propgen.py make hakone_grass hakone_green sedge_evergold flax_bronze
+fern_clump reed_clump meadow_tuft rock_boulder rock_mossy rock_basalt rock_sandstone rock_slab stone_river
+stone_river_wet rocks_cluster pebbles_river --library` (the trees as before).
+
+Worth doing next, if the user wants: more garden props (a stepping-stone row, a stone lantern, a tsukubai basin, a
+bamboo fence, more rock kinds), the moss as cushions rather than paint, a grass PBR set of our own for lawns.
+
+## Before that (2026-11-06, `street-nature`): the street builder outdoors, five photos matched
+
+The user's ask (DECISIONS 2026-11-06): a nature park update for the street builder on the branch `street-nature`,
+with the acceptance that each of five photos is re-created 1:1 in our style (rivers included, no water shader yet).
+Built: docs/STREET_NATURE_PLAN.md, then STREET_BUILDER §7d: roads of a kind (path, steps, river) with banks, the
+ground's hills, ridges, noise, covers and far grid, scatters, the new things and fences, the overcast time, the
+page's palette, inspectors and map for them; the prop generator's blade plants (PROPGEN §18: hakone_grass,
+sedge_evergold, flax_bronze, fern_clump, reed_clump, meadow_tuft, hakone_green); `shotfit.mjs` (a shot's camera from
+its pins; a pixel cast onto the street); the five streets `garden_steps`, `shrine_steps`, `river_town`,
+`mountain_stream`, `park_brook`, each with its shot `photo` pinned (STREET ok: 0.3 to 1.5% of the frame); the
+drawings in `docs/street_sheets/2026-11-06_nature_five.jpg`. The photos are in each street's `refs/` on the cloud
+machine only (git-ignored): paste them into the shots on the user's machine (the page's Photo…) to see the overlays.
+
+Checks run here before the push: STREET (the outdoors fixture and the five streets' pins), STREETPAGE (a river, a path
+and a scatter on the page), GDSTREET on `garden_steps`, `park_brook`, `mountain_stream` and `shibuya_lane` (Godot
+installed by `tools/godot_setup.sh`: a body stands on a river's bed, on a flight's treads, on a path), PROPGEN and THUMBS
+after the tree family's change. GDSTREET found the mountain town's houses in the terrain's noise and on the road behind
+them (LESSONS): a bank now holds its level to its end, and `terrain.flats` (areas held level) carry the town's floor.
+The props were made here with Blender's module
+(`tools/retarget.py setup`); on the user's machine `python tools/propgen.py make hakone_grass sedge_evergold
+flax_bronze fern_clump reed_clump meadow_tuft hakone_green camphor_real zelkova_real cedar_real cherry_real
+small_hornbeam_real shrub_real grass_tuft --library` puts them in the library (the stand-ins show until then).
+
+Worth doing with the user: look at the five overlays with the photos pasted in; the river's shader in Godot (their
+next step, said so); clouds in the sky; a forest cover with more than one tile; the canopy scatter as real trees where
+near; a stair street between houses; GDSTREET on every nature street.
+
 ## Where it stopped last (2026-11-06, later, `gameplay-enhancements`): exterior stair stacks
 
 The user's ask (DECISIONS 2026-11-06, later): three photos of Japanese exterior stairs, "I want a system for building
@@ -128,6 +171,7 @@ opening in the floor above (a room's floor with a hole); `HSStairs` for the Dire
 with step colliders, for a world built by hand in Godot); the dog-leg's landings railed along the well; the kit stair
 drawn in the street builder's own stairs part (one generator for both); a slower walk on stairs if the user wants it
 (`walk.stairs`); pictures of the stairs in the guides.
+
 
 ## Where it stopped last (2026-11-05, later, `sakura-rabbit-research`): suitcases, closets, moveable things, books, the CRT
 

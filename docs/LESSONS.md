@@ -1869,3 +1869,51 @@ And a seat pad's bag filled only to a pad's thickness had more cloth than air an
 - **A preset's arrays are shared until copied.** The floors buttons change `B.model.floors` in place; `presetToModel`
   handed the model the preset's own array, so after a basement was added the house preset itself had four floors and
   the builder test's reopen waited forever for two. Copy what a loader hands out.
+
+## A photo matched outdoors (2026-11-06, the street builder's nature streets)
+
+The five nature photos (STREET_BUILDER §7d) took several tries each to pin under 2% of the frame.
+
+- **Fit the camera from what can be measured, then place the rest by casting**: pins on a lamp or a plant placed by
+  eye fought the pins on the steps; the fit came under 2% only with pins on the timbers' strap tops and the fence's
+  posts alone, the camera solved from those (`shotfit.mjs`), and everything else cast through it (`--cast`).
+- **A wrong height moves the whole camera**: a fence post taken as 1.1 m when it was 1.3, a bridge's deck measured
+  above the water when its middle stood on the bank, a point pinned exactly on a fall: each pulled the solver metres
+  away or down to the ground. When a fit won't close, question a height before a position.
+- **A layer of flat quads must meet edge to edge**: white water drawn as strips with a new jitter at each station
+  overlapped itself and the foam rings round the rocks (STREET: hundreds of faces in one plane); the jitter is now a
+  function of the station, the rings a layer over the strips and never over each other.
+- **A thing placed by hand follows the placement rules the page's snapping gives**: a utility pole turned along its
+  wires puts its cross-arm along the run and three wires in one line; houses given a smaller front than the house style
+  makes put its parts in the wall's plane. Use the style's own maker (`SP.makeBuilding`) and face poles across the road.
+- **Random angles can coincide**: the stand-in tree's three limbs at random angles twice came out nearly parallel
+  (two cylinders in one plane); they leave a third of a turn apart now.
+- **Noise for the mountains is noise under the houses**: a terrain's `noise` big enough to roughen far hills (14 m)
+  dug 3 m dips beside the stream and under the town, and the relief ramped in from the river's edge, so its bank
+  collapsed into them; GDSTREET found it (a house's roof over the road behind it). A bank now holds to its end, and a
+  town's floor is a `flat` (an area held at a level in place of the relief). Drop a body on every street in Godot
+  (GDSTREET) before calling a match done: the drawing through the shot hid all of it.
+
+- **A probe on steps samples the middle of a tread**: GDSTREET's ray at a flight's half way landed exactly on a riser
+  in `shrine_steps` (16 treads: the middle is a boundary), and stone fronts are ragged, so it hit the tread below, one
+  rise lower than the street said (0.154 m). The probe takes the middle of a tread now, and a station clear of bridges
+  (the park's footbridge had the same trap). A probe must stand where one surface is the only one there.
+
+## The rivers (2026-11-06, last)
+
+A day's river work (the kind, its banks, white water, falls, rocks in it, three streets, a park) went on the user's
+word the same evening: "scrap the rivers, keep the foliage and rocks as props". What survived was what stood on its
+own as a reusable piece: the props, the paths and steps, the ground. Build the reusable piece first and the showcase
+last; a showcase that needs the piece is cheap to drop, a piece buried in a showcase is not.
+
+## Rocks by code (2026-11-06, later, the rock family)
+
+The first boulder came out a pale marshmallow: a smooth pancake with a few pen-line cracks and green dots. What made
+it a rock, in order of how much each mattered: the planes' cuts all round and deep (not mostly on top: a flat top
+reads as a pillow from a low eye), the crackle lumps nearly off (they made brain folds on the sides), the base tone
+darker than it looks right (the preview's light and the occlusion's gamma both lift it), cracks only where a second
+noise lets a joint run (a network of cell borders reads as cracked glaze), every stone of a patch its own tone, and
+the fine grain in the paint's relief rather than the detailed mesh (a 1 m rock's 80k triangles can't carry a 2 mm
+grain; the normal map's height can). Judge a prop on a sheet of several beside each other, not one at a time: the
+pale one shows.
+

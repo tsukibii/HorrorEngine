@@ -36,7 +36,7 @@ try {
   const ctx = await browser.newContext({ viewport: { width: 1600, height: 950 }, acceptDownloads: true }), page = await ctx.newPage();
   const errors = [];
   page.on("pageerror", e => errors.push(e.message));
-  page.on("console", m => { if (m.type() === "error" && !/favicon|WebGL|GPU stall/i.test(m.text())) errors.push(m.text()); });
+  page.on("console", m => { if (m.type() === "error" && !/favicon|WebGL|GPU stall/i.test(m.text()) && !/\/decals\/|\/refs\//.test(m.location().url || "")) errors.push(m.text() + (m.location().url ? ` (${m.location().url})` : "")); });   // the decals are made per machine (street.py decals) and the photos are the user's (git-ignored): a missing one is no fault of the page
   page.on("dialog", d => d.accept());
   await page.goto(URL0 + `street.html?street=${NAME}`);
   await page.waitForFunction(() => window.__streetReady && window.ST.name, null, { timeout: 120000 });
@@ -126,6 +126,23 @@ try {
     if (!(Math.hypot(v[0] + 9, v[1] + 22) < 0.6)) fail("the fence's bend didn't follow its handle: " + JSON.stringify(v));
     else console.log(`a bent fence: drawn along its curve (${fl.pts} points), its bend dragged to [${v}]`);
   }
+  // the outdoors (docs/STREET_BUILDER.md §7d): a path dragged on the map builds its strip; a scatter added along the path
+  // (the picked road) is drawn as dots and built as its stand-ins
+  await page.click("#left >> text=\"Path\"");
+  [ax, ay] = await at(34, -30); [bx, by] = await at(34, 10);
+  await page.mouse.move(ax, ay); await page.mouse.down(); await page.mouse.move(bx, by, { steps: 5 }); await page.mouse.up();
+  await page.click("#left >> text=\"+ Scatter\"");
+  await page.waitForTimeout(500);
+  S = await ST();
+  const trail = S.roads.find(r => r.kind === "path"), sc = (S.scatters || [])[0];
+  if (!trail || Math.abs(trail.to[1] - trail.from[1] - 40) > 0.6) fail("the path wasn't dragged out: " + JSON.stringify(trail));
+  if (!sc || sc.along !== (trail || {}).id) fail("the scatter didn't go along the picked path: " + JSON.stringify(sc));
+  const built = await page.evaluate(() => { const S = window.ST.street, trail = S.roads.find(r => r.kind === "path"), sc = S.scatters[0];
+    const tp = window.ST.pieces.find(p => p.id === trail.id), dots = document.querySelectorAll(`circle[data-list="scatters"][data-id="${sc.id}"]`).length, stand = window.ST.pieces.filter(p => p.id.startsWith(sc.id + "_")).length;
+    return { path: tp && tp.G.gravel ? tp.G.gravel.idx.length / 3 : 0, dots, stand }; });
+  if (!(built.path > 0)) fail(`the path didn't build: ${JSON.stringify(built)}`);
+  if (!(built.dots > 5 && built.stand === built.dots)) fail(`the scatter isn't drawn and built (${built.dots} dots, ${built.stand} stand-ins)`);
+  else console.log(`a path (${built.path} triangles), a scatter of ${built.dots} along it`);
   // a shot from the 3D view
   await page.click("#addShot");
   S = await ST();
