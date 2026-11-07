@@ -43,9 +43,15 @@ built:
   are), with a table of the new props.
 - **docs/FLASHLIGHT_PLAN.md**: batteries, a bulb's or an LED's curve, flicker; `lit`, `flashed`, a cast member's
   `beam` reaction; the Director's *Feels the light* card. Waiting on the user's yes.
-- **docs/research/jump_scares.md**: still being researched when this was written; its last section becomes HORROR_TODO
-  13. If it isn't in the repo, the research didn't finish: run it again (how jump scares are done well, the startle
-  reflex's numbers, pacing, accessibility settings, and what our tools need).
+- **docs/research/jump_scares.md**, the research:
+  - the designers' rules: the threat over the hit, the player finds the scare, repetition kills it;
+  - fifteen scares taken apart;
+  - the startle's numbers: the attack matters more than the loudness; a sound 30 to 500 ms before the hit cuts it by
+    up to two thirds, so the last half second is silent;
+  - pacing, and players' settings with the flash limit.
+
+  Its §8 is HORROR_TODO 13: sound that can go quiet, a better "seen", scares that wait for the eye, figures that move
+  unseen, chance and spacing, the flinch, settings, a scare log.
 
 **Found while answering:**
 - the `music` action only logs, on the desk and in Godot: no music or room tone plays in play, so there's no silence

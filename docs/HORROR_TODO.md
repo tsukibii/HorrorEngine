@@ -296,7 +296,49 @@ docs/FLASHLIGHT_PLAN.md §2.
 
 ## 13. Jump scares
 
-What the research says to add: docs/research/jump_scares.md §8, the list below once it's written.
+docs/research/jump_scares.md §8, from what designers say and the startle's numbers. The rules: variety, timing and
+silence count, not volume; the player finds the scare (no forced look); the last half second before a sting is silent.
+
+**Now:**
+- `music` only logs on the desk and in Godot, and no room tone plays, so there's no silence to make before a sting;
+- `glimpse` isn't kept to the edge of the view;
+- `swap` fires after 8 s even in view;
+- `seen` ignores walls and size;
+- `hud.shake()` is empty;
+- nothing is random, and nothing spaces scares in play.
+
+**To build** (each small but the first two):
+1. **Sound that can go quiet** (medium). Music and room tone played on their own buses, the score room's cues by
+   `music` and a room's `tone`. `hush` before a sting: the bed ducked over 1 to 3 s, the last 0.5 s clean, the sting,
+   the bed back slowly; by itself before every `jumpscare`. The shelf's stings measured for their attack.
+2. **A better "seen"** (medium). Bounds, walls and the light on it, through mirrors and peepholes too. An edge test
+   for glimpses (25 to 50° off the centre, gone when looked at). A `swap` that never fires in view. Triggers *turned
+   round* and *seen, then gone*.
+3. **Scares that wait for the eye:** a `jumpscare` held until its spot is looked at, or placed where the player looks.
+4. **Figures that move unseen:** mark by mark toward the player while unseen, and while the lights are out.
+5. **Chance and variety:** a random wait, a pool of scares drawn without repeats and kept with the save, and the check
+   warning at the same trick three times in a night.
+6. **Spacing in play** as the check spaces the flow, and a declared fake-out the check lets its real scare follow.
+7. **Sound placed by the player** (`at: "behind"`), and footsteps that keep the player's pace from behind and stop
+   when they stop.
+8. **The flinch:** a 0.1 s, 2° head jolt with the sting (TRICKS.md) and a moment of the tape's glitch; never a turn.
+9. **Death that stays scary:** the caught scare varied, short, and back in play fast.
+10. **Settings and safety:**
+    - a *Scares* setting (Normal or Reduced);
+    - a flash limit of three a second on every flicker;
+    - an optional content warning at the start;
+    - a check counting flashes in the playtests' frames.
+11. **A scare log** from the playtests, to read a night's curve off.
+
+**The Director:** Scares cards for the new ones:
+- *A glimpse at the edge*;
+- *Closer each time you look away*;
+- *Closer when the lights come back*;
+- *Waits until you look*;
+- *Footsteps behind you*;
+- *A face at the peephole*.
+
+**Checks:** TESTROOM and GDTESTROOM stations, and the scare log read by them.
 
 ## The order (mine)
 
