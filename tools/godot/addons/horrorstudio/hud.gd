@@ -77,6 +77,7 @@ func wear(name: String) -> void:
 	root.theme = ThemeC.make(theme_name)
 	if guide != null:
 		guide.accent = ThemeC.colors(theme_name)["accent"]
+		guide.text_color = ThemeC.colors(theme_name)["text"]
 	if menu != null:
 		menu.queue_free()
 	menu = MenuC.new(self, theme_name)
@@ -142,6 +143,7 @@ func _ready() -> void:
 	add_child(root)
 	guide = load("res://addons/horrorstudio/marker.gd").new()   # first, so everything else draws over it
 	guide.accent = ThemeC.colors(theme_name)["accent"]
+	guide.text_color = ThemeC.colors(theme_name)["text"]
 	root.add_child(guide)
 	# top left: the objective and the list
 	var tl := VBoxContainer.new()
@@ -447,6 +449,8 @@ func shake() -> void:
 
 func modal(up: bool) -> void:
 	modal_up = up
+	if guide != null:
+		guide.modal = up                              # the marker steps back behind a card or a choice
 	if up:
 		hint_el.visible = false
 	cursor_el.visible = not up                    # no dot and no "Look" over a card (the user's note, 2026-10-29)

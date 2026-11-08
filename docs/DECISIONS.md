@@ -2,6 +2,21 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-08 (the user: a better quest marker, and the rest of the UI, on the branch `ui-v3`)
+
+- **"Make an enhanced ui quest marker (something that tells the player where to go/who to speak to), so even if it's in
+  another room we can roughly see it (but it's more faint, and gets less transparent the closer we get), keep it the
+  diamond shape but see how you can enhance aesthetics without making it distract from the horror vibe. See what else
+  can be enhanced in the ui and do it as part of this new branch called ui-v3."** Built as ui-v3 (STORY_FORMAT §4, the
+  marker; `marker.gd`): the marker's strength is one rule, the nearer the clearer (nearly opaque inside 3 m, a faint
+  floor from 36 m, gone by 72 m) and about half as strong with the building between (play.gd's `guide_clear`: a ray
+  against walls, floors, ceilings and doors, a few times a second), so it shows roughly through the rooms; it stays the
+  diamond (corners barely rounded, a glass tint, a stem that fades out, a small core and the name near, no glow); a
+  small diamond with a chevron points to it from the screen's edge once it's been out of view a moment; the pause menu's
+  Quest marker (Off, Subtle, Clear). The standing rules held: flat, vector, one stroke, nothing that pops; the
+  player's eye is never moved for them. The check GDUI (`tools/godot/ui_check.py`) holds it; `tests/uishot.gd` and
+  `tests/hudlab.gd` are the pictures (the game, and the HUD alone over a picture).
+
 ## 2026-11-06, last (the user: the rivers scrapped; the foliage and rocks kept as props, for gardens)
 
 - **"Scrap the rivers, keep all the foliage and rocks you made as props to generate. I'll use them for gardens."** So:
