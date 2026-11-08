@@ -115,7 +115,7 @@ var audio_log: Array = []            # every shelf sound played: {n, loaded, at}
 var sfx_streams: Dictionary = {}     # name -> AudioStream, loaded once
 var sfx_players: Array = []          # a pool of AudioStreamPlayer3D / AudioStreamPlayer under the world
 const LifeFxC := preload("res://addons/horrorstudio/lifefx.gd")
-const MenuC := preload("res://addons/horrorstudio/menu.gd")      # the saved settings (the mirrors follow the Reflections row)
+const MenuC := preload("res://addons/horrorstudio_ui/menu.gd")      # the saved settings (the mirrors follow the Reflections row)
 const LifeSoundC := preload("res://addons/horrorstudio/lifesound.gd")
 const PhysC := preload("res://addons/horrorstudio/physics.gd")
 const PartsC := preload("res://addons/horrorstudio/parts.gd")     # parts that open: lids, doors, a book's cover (PROPGEN §26)
@@ -4426,19 +4426,82 @@ func top_of(id: String) -> Variant:
 			var mn: Array = tr["min"]
 			var mx: Array = tr["max"]
 			return Vector3((float(mn[0]) + float(mx[0])) / 2.0, float(mn[2]) + 1.3, -(float(mn[1]) + float(mx[1])) / 2.0)
-	var t = things.get(id)
-	if t == null:
-		for x in things.values():                             # an item's or a note's id: the thing holding it
-			var d = x["piece"].get("d", {})
-			if d is Dictionary and (str(d.get("item", "")) == id or str(d.get("note", "")) == id):
-				t = x
-				break
+	var t = guide_thing(id)
 	if t == null:
 		return null
 	var nd: Node3D = t["node"]
 	if not is_instance_valid(nd) or not nd.is_visible_in_tree():
 		return null
 	return nd.global_position + Vector3(0, float((t["size"] as Array)[2]) / 2.0, 0)
+
+
+## the thing a marker's id means: a thing by its id, or (an item's or a note's id) the thing that holds it; null for a
+## person, an area or nothing here
+func guide_thing(id: String) -> Variant:
+	var t = things.get(id)
+	if t == null:
+		for x in things.values():
+			var d = x["piece"].get("d", {})
+			if d is Dictionary and (str(d.get("item", "")) == id or str(d.get("note", "")) == id):
+				return x
+	return t
+
+
+## what a marker is called when it's near enough to say: a person by her name now (a word: "the guide" till she's met),
+## a thing by what the cursor would call it (its item, its note's title, its own name); an area and the rest, nothing
+func guide_name(id: String) -> String:
+	if npcs.has(id) or story.cast.has(id):
+		return hud.named(story.cast_name(id))
+	var t = guide_thing(id)
+	if t == null:
+		return ""
+	var ti = title_of(t)
+	return hud.named(str(ti)) if ti != null else ""
+
+
+var guide_los: Dictionary = {}                 # id -> {clear: bool, at: the clock}: the markers' lines of sight, looked at a few times a second
+var guide_among: Array = []                    # the structure a line of sight is stopped by (walls, floors, ceilings, doors), refreshed with them
+var guide_among_at: float = -9.0
+
+
+## is there a clear line from the eye to that point, that is: nothing of the building between (furniture doesn't count: a
+## marker over a table across the room is still in the room)
+func guide_clear(id: String, p: Vector3, eye: Vector3) -> bool:
+	var e = guide_los.get(id)
+	if e != null and clock - float(e["at"]) < 0.12:
+		return bool(e["clear"])
+	var to := p + Vector3(0, 0.15, 0)
+	var d := to - eye
+	var dist := d.length()
+	var clear := true
+	if dist > 0.5:
+		if clock - guide_among_at > 0.12:
+			guide_among = []
+			for tid in by_id:
+				var t: Dictionary = by_id[tid]
+				if ["wall", "floor", "ceiling", "door"].has(t["kind"]) and t["node"].visible and not t["hollow"]:
+					guide_among.append(t)
+			guide_among_at = clock
+		var hit = ray_hit(eye, d / dist, dist, guide_among)
+		if hit != null and float(hit["dist"]) < dist - 0.35:
+			var ht = hit.get("thing")                    # (Godot's physics returns whatever collided first: only the building stops it)
+			clear = ht != null and not ["wall", "floor", "ceiling", "door"].has(str(ht.get("kind", "wall")))
+	guide_los[id] = {"clear": clear, "at": clock}
+	return clear
+
+
+## what the marker needs besides where things are: which ones the eye has a clear line to, what each is called, which the
+## cursor is on, and whether a card or a choice has the player's eye
+func guide_ctx(pts: Dictionary, eye: Vector3) -> Dictionary:
+	var seen := {}
+	var names := {}
+	var aimed := ""
+	for id in pts:
+		seen[id] = guide_clear(str(id), pts[id], eye)
+		names[id] = guide_name(str(id))
+		if target != null and (str(target.get("id", "")) == str(id) or guide_thing(str(id)) == target):
+			aimed = str(id)
+	return {"seen": seen, "names": names, "aimed": aimed}
 
 
 func tick(dt: float) -> void:
@@ -4530,7 +4593,8 @@ func tick(dt: float) -> void:
 	var vp := get_viewport().get_visible_rect().size
 	cam.fov = float(LENS["fov"]) if p.peeping != null else StoryC.vfov(float(story.game.get("fov", StoryC.FOV_H)), (vp.x / vp.y) if vp.y > 0 else 16.0 / 9.0) * (1.0 - focus_zoom())
 	if hud.guide != null:
-		hud.guide.update(guide_points(), cam, dt)
+		var gp: Dictionary = guide_points() if hud.guide.mode > 0 else {}
+		hud.guide.update(gp, cam, dt, guide_ctx(gp, cam.global_position) if not gp.is_empty() else {})
 	var T := clock
 	for t in lights:
 		var u: Dictionary = light_state[t["id"]]

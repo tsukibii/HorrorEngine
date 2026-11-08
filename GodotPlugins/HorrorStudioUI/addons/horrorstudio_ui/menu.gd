@@ -7,7 +7,7 @@
 ## saves in user://saves_<game>.json. open(ctx) returns "resume", "escaped" or {"quit": "title" | "desktop"}.
 extends Control
 
-const ThemeC := preload("res://addons/horrorstudio/theme.gd")
+const ThemeC := preload("res://addons/horrorstudio_ui/theme.gd")
 const ONOFF := ["Off", "On"]
 const QUALITY := ["Low", "Medium", "High", "Epic"]
 const SETTINGS := [
@@ -19,7 +19,9 @@ const SETTINGS := [
 			{"id": "fps", "label": "Frame rate limit", "values": ["30", "60", "120", "144", "Unlimited"], "def": 1, "ue": "t.MaxFPS", "godot": "Engine.max_fps"},
 			{"id": "brightness", "label": "Brightness", "steps": 10, "def": 5, "ue": "r.TonemapperGamma", "godot": "Environment.adjustment_brightness"},
 			{"id": "motion_blur", "label": "Motion blur", "values": ONOFF, "def": 0, "ue": "r.MotionBlurQuality", "godot": "(a post effect, later)"},
-			{"id": "grain", "label": "Film grain", "values": ONOFF, "def": 1, "ue": "PostProcess FilmGrainIntensity", "godot": "the tape's noise and the grade's grain"}]}]},
+			{"id": "grain", "label": "Film grain", "values": ONOFF, "def": 1, "ue": "PostProcess FilmGrainIntensity", "godot": "the tape's noise and the grade's grain"}]},
+		{"title": "Interface", "rows": [
+			{"id": "guide", "label": "Quest marker", "values": ["Off", "Subtle", "Clear"], "def": 1, "ue": "UI", "godot": "the HUD's guide marker (marker.gd): off, faint and near (the default), or stronger with names from farther"}]}]},
 	{"id": "graphics", "title": "Graphics", "groups": [
 		{"title": "Graphics", "rows": [
 			{"id": "quality", "label": "Quality", "values": ["Low", "Medium", "High", "Epic", "Custom"], "def": 2, "ue": "scalability <0-3>"},
@@ -183,6 +185,13 @@ func label(text: String, size: int, color = null) -> Label:
 	return l
 
 
+## the small letter-spaced capitals that name a part (Paused, Settings, a group: the HUD's OBJECTIVE and TO DO the same)
+func crumb(text: String, color = null) -> Label:
+	var l := label(text.to_upper(), 11, color if color != null else c["muted"])
+	l.add_theme_font_override("font", ThemeC.tracked(2.0))
+	return l
+
+
 func key_tile(k: String) -> PanelContainer:         # a key as a frosted tile standing on its lip, the legend in its middle
 	var p := PanelContainer.new()
 	var sb := ThemeC.box(c, 8, c["key_bg"], Color(1, 1, 1, 0.24) if c["shadow"] else Color(0.7, 0.72, 0.76))
@@ -271,7 +280,7 @@ func show_nav() -> void:
 	for ch in nav.get_children():
 		ch.queue_free()
 	var settings: bool = at.begins_with("set:") or at == "settings"
-	nav.add_child(label("Settings" if settings else "Paused", 11, c["muted"]))
+	nav.add_child(crumb("Settings" if settings else "Paused"))
 	if not settings:
 		nav.add_child(label("%s · %s" % [ctx.get("where", ctx.get("game", "")), clock(float(ctx.get("secs", 0)))], 14, c["muted"]))
 	var bat: Dictionary = ctx.get("battery", {}) if ctx.get("battery") is Dictionary else {}
@@ -362,7 +371,7 @@ func show_page() -> void:
 	controls_box.visible = at == "root" or at == "quit"
 	nav.position = Vector2(430, 90) if controls_box.visible else Vector2(48, 90)   # the controls on the left till a page opens
 	if at == "save":
-		page_box.add_child(label("Save game", 11, c["muted"]))
+		page_box.add_child(crumb("Save game"))
 		page_box.add_child(slot_el("Autosave", saves.get("auto"), true))
 		for n in [1, 2, 3]:
 			page_box.add_child(item("page", slot_el("Slot %d" % n, saves.get(str(n)), false, n), func(): save_to(n)))
@@ -371,7 +380,11 @@ func show_page() -> void:
 			if "set:" + p["id"] != at:
 				continue
 			for g in p["groups"]:
-				page_box.add_child(label(g["title"], 11, c["muted"]))
+				if g != p["groups"][0]:
+					var gap := Control.new()                          # a little air before the next group
+					gap.custom_minimum_size = Vector2(0, 8)
+					page_box.add_child(gap)
+				page_box.add_child(crumb(g["title"]))
 				for r in g["rows"]:
 					page_box.add_child(item("page", row_el(r), func(): step(r, 1), func(d): step(r, d)))
 
@@ -440,6 +453,8 @@ static func apply(st: Dictionary, hud_) -> void:
 			postn.set_grain_cap(1.0 if int(st.get("grain", 1)) == 1 else 0.0)   # and on the grade's
 		hud_.subs_on = true                                    # (an old settings file's "subs": 0 is ignored)
 		hud_.sub_scale = [0.85, 1.0, 1.2][clampi(int(st.get("sub_size", 1)), 0, 2)]
+		if hud_.guide != null:
+			hud_.guide.mode = clampi(int(st.get("guide", 1)), 0, 2)                       # Quest marker: off, subtle, clear
 		hud_.brightness = 0.6 + float(st.get("brightness", 5)) * 0.08
 		hud_.apply_settings()
 

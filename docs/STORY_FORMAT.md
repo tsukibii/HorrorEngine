@@ -796,9 +796,18 @@ with `{"tick": "<id>"}` at the end of that beat, not by its own trigger (the sto
   needs while it's open (the user, 2026-11-02: "a helper… so players can see the object", optional per task): `true`
   hangs it over what its `ticks` names (a thing used, read, looked at or picked up, an area walked into, who something
   is given to, where she gets to), or the id of a thing, a person, an area, an item or a note. A flat glyph in the HUD
-  theme's accent (a diamond's outline on a short stem pointing down at it: no fill, no glow), bobbing slowly; hidden
-  behind the eye and past 30 m, softer up close; gone once the task is done or failed. A hidden task can have one: the marker is then how the
-  player knows. Godot's runtime draws it (`marker.gd`); the desk's Play doesn't yet. Ticked
+  theme's accent (a diamond's outline, its corners softly rounded, on a short stem that fades out toward the thing, a
+  faint glass tint inside, no glow), bobbing slowly. **The nearer the clearer** (ui-v3, DECISIONS 2026-11-08): nearly
+  opaque inside 3 m, half as strong across a room, a faint floor from 36 m, gone by 72 m; and about half as strong again
+  with the building between (a wall, a floor, a shut door: the structure only, furniture doesn't count), small and bare, so
+  it can be seen roughly through the rooms; nearer than 7 m in clear view a small core takes shape inside it and the name
+  of what it marks comes over it (a person's, as the HUD names her: "the guide" till she's met; an item's, a note's title);
+  a little softer when it is the very thing the cursor is on (its prompt says what it is); out of the view (behind, to a side) a
+  small diamond with a chevron rides an ellipse near the screen's edge on the way to it, after a moment out of sight; gone
+  once the task is done or failed, behind a card or a choice, and with the HUD in a held scene and the pause menu. The player
+  can turn it Off or make it Clear (stronger, the names from farther, the pointer at once) in the pause menu's Display page
+  (Quest marker; the default is Subtle). A hidden task can have one: the marker is then how the
+  player knows. Godot's runtime draws it (the HorrorStudioUI plugin's `marker.gd`, fed by play.gd; a game made by hand puts an `HSQuestMarker` node on the thing); the desk's Play doesn't yet. Ticked
   and failed are heard (`ticked`, `failed`). The list is kept with the run, through the stitches, until `untodo`
   takes a task off (`{"untodo": "mop_floor"}`) or clears it (`{"untodo": true}`).
   `tick`, `fail`: `{"tick": "mop_floor"}` ticks an open task, `{"fail": "mop_floor"}` fails it.

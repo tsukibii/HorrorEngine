@@ -29,7 +29,7 @@ func _ready() -> void:
 			var i := AudioServer.bus_count - 1
 			AudioServer.set_bus_name(i, b)
 			AudioServer.set_bus_send(i, "Master")
-	var st: Dictionary = load("res://addons/horrorstudio/menu.gd").load_settings()
+	var st: Dictionary = load("res://addons/horrorstudio_ui/menu.gd").load_settings()
 	for pair in [["music", "Music"], ["sfx", "SFX"]]:
 		var k: float = float(st.get(pair[0], 8)) / 10.0
 		AudioServer.set_bus_volume_db(AudioServer.get_bus_index(pair[1]), linear_to_db(max(0.0001, k)))

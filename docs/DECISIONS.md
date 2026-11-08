@@ -2,6 +2,36 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-08 (the user: a better quest marker, and the rest of the UI, on the branch `ui-v3`)
+
+- **"Make an enhanced ui quest marker (something that tells the player where to go/who to speak to), so even if it's in
+  another room we can roughly see it (but it's more faint, and gets less transparent the closer we get), keep it the
+  diamond shape but see how you can enhance aesthetics without making it distract from the horror vibe. See what else
+  can be enhanced in the ui and do it as part of this new branch called ui-v3."** Built as ui-v3 (STORY_FORMAT §4, the
+  marker; `marker.gd`): the marker's strength is one rule, the nearer the clearer (nearly opaque inside 3 m, a faint
+  floor from 36 m, gone by 72 m) and about half as strong with the building between (play.gd's `guide_clear`: a ray
+  against walls, floors, ceilings and doors, a few times a second), so it shows roughly through the rooms; it stays the
+  diamond (corners barely rounded, a glass tint, a stem that fades out, a small core and the name near, no glow); a
+  small diamond with a chevron points to it from the screen's edge once it's been out of view a moment; the pause menu's
+  Quest marker (Off, Subtle, Clear). The standing rules held: flat, vector, one stroke, nothing that pops; the
+  player's eye is never moved for them. The check GDUI (`tools/godot/ui_check.py`) holds it; `tests/uishot.gd` and
+  `demo/hudlab.gd` are the pictures (the game, and the HUD alone over a picture). The rest of the HUD came with it, to
+  the desk's own design (play/ui/hud.css) and quieted: the corners rest at 74% and come up on a change (OBJECTIVE, TO DO,
+  rows kept so a tick draws its line across; a marked task's bullet is the marker's diamond), the reticle a dot that
+  opens into a ring, lines in a serif over a scrim, toasts that ease, the keys as chips (they ran off the screen),
+  the chapter card with a diamond rule, the dark closing in while hidden, the pause menu's small capitals.
+- **"I think the glassmorphism panel actually removes some of the immersion, consider a style where the panel isn't as
+  noticeable and the text is there"** (mid-build): the frosted card was dropped for **no panel at all**: the glass
+  themes' panels are ghosts (no fill, no border, no shadow); a card is its words in a serif with the world dimmed a
+  little and a soft, edgeless dark behind them (`halo.gdshader`); the inventory's band the same, no border; the menu's
+  page just its rows. (The `neumorph` and `plain` themes keep their surfaces: they are their look.)
+- **"I forgot to mention the ui should be part of the godot plugin for horrorengine"** (mid-build): the UI now lives in
+  a plugin of its own, **HorrorStudio UI** (`GodotPlugins/HorrorStudioUI/addons/horrorstudio_ui/`, README and CLAUDE.md
+  as the others): `HSHud`, the marker, the themes, the pause menu and typing moved out of the runtime add-on into it
+  (the runtime uses them by path, as it uses the Look plugin); the export, the Director's install and the by-hand
+  projects all copy it in and enable it; a game made by hand adds an `HSHud` and puts an `HSQuestMarker` on what to
+  point at, its theme and quest marker setting in Project Settings. GDUI has a by-hand half.
+
 ## 2026-11-08, night, later (the user: a mechanic for jump scares by what's so, for other events too)
 
 - **The ask**: "can you add another mechanic if we dont have it for jump scares, with variabels like is player looking
