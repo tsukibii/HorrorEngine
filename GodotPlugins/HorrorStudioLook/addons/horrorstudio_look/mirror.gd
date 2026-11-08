@@ -3,17 +3,23 @@
 ## the mirror is in view and the eye is on its side; the glass reads the texel that camera gave each of its points,
 ## through the camera's view-projection (so the image is never mirrored the wrong way round). The wall the mirror
 ## hangs on is put on the hidden layer for that camera (a mirror never shows its own wall) and the near plane is set
-## at the glass, so what's behind the wall stays out. Each mirror and its wall go on a layer of their own (11 to 19,
-## the first free one; past nine mirrors, 20 shared): the player's camera draws every layer, a mirror's camera all
-## but its own (and 20, the softener's), so **a mirror seen in a mirror** shows its last frame, a frame late, and
-## never itself (2026-10-30). `HSMirror.attach(mesh_instance, surface, camera, size)` on a
+## at the glass, so what's behind the wall stays out. Each mirror and its wall go on a layer of their own (11 to 18,
+## the first free one; past eight mirrors, 20 shared): the player's camera draws every layer but 19, a mirror's camera
+## all but its own and 20 (the softener's), so **a mirror seen in a mirror** shows its last frame, a frame late, and
+## never itself (2026-10-30). **Only in the mirror** and **missing from it** (docs/research/intensity.md §5.3,
+## DECISIONS 2026-11-08, night): layer 19 is drawn by the mirrors' cameras alone (`only_in_mirrors(node)`: her there
+## behind you in the glass, nobody when you turn round), layer 20 by every camera but theirs (`never_in_mirrors(node)`:
+## no reflection). `HSMirror.attach(mesh_instance, surface, camera, size)` on a
 ## kit panel's `kit_mirror` surface or any quad; `res` the picture's height in pixels (its width by the window's
-## aspect); `active` false when the mirror is out of view (the viewport then isn't drawn).
+## aspect); `active` false when the mirror is out of view (the viewport then isn't drawn). **Steam** and **writing in
+## it** (docs/GODOT_LOOK.md §5m: the bath's mirror fogging over and words showing in it): `set_steam(k)` fogs it from
+## its bottom edge (1 all of it), `write(text)` the words a finger left on the glass, clear lines once it steams.
 class_name HSMirror
 extends Node3D
 
-const HIDDEN_LAYER := 20            # the softener's layer, and the mirrors' past the ninth
-const OWN_LAYERS := [11, 12, 13, 14, 15, 16, 17, 18, 19]
+const HIDDEN_LAYER := 20            # the softener's layer, the mirrors' past the eighth, and what's never in a mirror
+const MIRROR_ONLY := 19             # what only the mirrors' cameras draw (the user, 2026-11-08: the mirrors' last layer)
+const OWN_LAYERS := [11, 12, 13, 14, 15, 16, 17, 18]
 var layer := HIDDEN_LAYER            # this mirror's own layer (its glass and its wall)
 
 var mi: MeshInstance3D
@@ -32,6 +38,10 @@ var enabled := true            # set_enabled(false): the glass dull, no render (
 var active := false
 var frames := 0
 var last: Dictionary = {}       # the last frame's reckoning (the checks read it)
+var hid: Array = []             # what's behind the glass, put on this mirror's layer (its wall: the checks read it)
+var steam := 0.0                # fogged over now (set_steam)
+var written := ""               # the words on the glass (write)
+var _ink: SubViewport = null
 
 
 static func attach(mi_: MeshInstance3D, surface_: int, cam_: Camera3D, res_: int = 288) -> HSMirror:
@@ -55,6 +65,40 @@ static func mirror_surface(mi_: MeshInstance3D) -> int:
 		if nm == "kit_mirror" or nm == "mirror" or (old != null and old.resource_name == "mirror"):
 			return s
 	return -1
+
+
+## what's under `node` (its meshes, decals, particles) seen only in mirrors: layer 19, which no camera but a mirror's
+## draws; with no shadow (a shadow would give it away), unless `shadow`. The camera drawing the view now leaves 19 out
+## (a mirror does that to the camera it reflects too).
+static func only_in_mirrors(node: Node, shadow := false) -> void:
+	for g in _geometry(node):
+		g.layers = 1 << (MIRROR_ONLY - 1)
+		if not shadow and g is GeometryInstance3D:
+			(g as GeometryInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var vp := node.get_viewport() if node.is_inside_tree() else null
+	var c := vp.get_camera_3d() if vp != null else null
+	if c != null:
+		c.cull_mask &= ~(1 << (MIRROR_ONLY - 1))
+
+
+## what's under `node` never seen in a mirror: layer 20, which the mirrors' cameras leave out (every other camera draws it)
+static func never_in_mirrors(node: Node) -> void:
+	for g in _geometry(node):
+		g.layers = 1 << (HIDDEN_LAYER - 1)
+
+
+## back on layer 1, seen by every camera as before
+static func in_mirrors_too(node: Node) -> void:
+	for g in _geometry(node):
+		g.layers = 1
+
+
+static func _geometry(node: Node) -> Array:
+	var out: Array = []
+	for v in [node] + node.find_children("*", "VisualInstance3D", true, false):
+		if v is GeometryInstance3D or v is Decal:       # what's drawn (not a light, a probe or a fog volume)
+			out.append(v)
+	return out
 
 
 ## the first of the mirrors' layers no live mirror holds (a mirror's layer is its own and its wall's)
@@ -89,7 +133,8 @@ func _ready() -> void:
 	add_child(view)
 	mcam = Camera3D.new()
 	mcam.name = "Eye"
-	mcam.cull_mask = cam.cull_mask & ~(1 << (HIDDEN_LAYER - 1)) & ~(1 << (layer - 1))   # not itself, nor the softener; the other mirrors' glass it sees
+	cam.cull_mask &= ~(1 << (MIRROR_ONLY - 1))                                           # the eye never sees what's only in mirrors
+	mcam.cull_mask = (cam.cull_mask | (1 << (MIRROR_ONLY - 1))) & ~(1 << (HIDDEN_LAYER - 1)) & ~(1 << (layer - 1))   # not itself, nor the softener; the other mirrors' glass it sees, and what's only in mirrors
 	mcam.near = 0.05
 	var w3 := get_viewport().find_world_3d() if get_viewport() != null else null
 	if w3 != null and w3.environment != null:        # the room's own light, but tone-mapped once: the glass's picture goes through the main pass's tone map
@@ -110,6 +155,76 @@ func _ready() -> void:
 	mi.set_surface_override_material(surface, mat)
 	mi.layers = 1 << (layer - 1)            # a mirror doesn't see itself (no reading the picture it's drawing): its own layer, which the player's camera and the other mirrors' draw and this one doesn't
 	_hide_wall()
+	_glass_axes()
+	set_steam(steam)
+	if written != "":
+		write(written)
+
+
+## the glass as the steam and the writing see it, in the world: its middle, its right and up as seen from in front,
+## its size, its bottom and top
+func _glass_axes() -> void:
+	var xf := mi.global_transform
+	var n := (xf.basis * normal).normalized()
+	var up := Vector3.UP if absf(n.dot(Vector3.UP)) < 0.9 else Vector3.FORWARD
+	var right := up.cross(n).normalized()                    # the right of someone looking at it (along -n)
+	up = n.cross(right).normalized()
+	var c := xf * centre
+	var half := Vector2.ZERO
+	var lo := INF
+	var hi := -INF
+	for k in corners:
+		var p: Vector3 = xf * (k as Vector3)
+		half.x = maxf(half.x, absf((p - c).dot(right)))
+		half.y = maxf(half.y, absf((p - c).dot(up)))
+		lo = minf(lo, p.y)
+		hi = maxf(hi, p.y)
+	mat.set_shader_parameter("glass_centre", c)
+	mat.set_shader_parameter("glass_right", right)
+	mat.set_shader_parameter("glass_up", up)
+	mat.set_shader_parameter("glass_size", Vector2(maxf(half.x * 2.0, 0.01), maxf(half.y * 2.0, 0.01)))
+	mat.set_shader_parameter("steam_bottom", lo)
+	mat.set_shader_parameter("steam_top", hi)
+
+
+## steam on the glass: 0 clear, 1 fogged all over (up from its bottom edge)
+func set_steam(k: float) -> void:
+	steam = clampf(k, 0.0, 1.0)
+	if mat != null:
+		mat.set_shader_parameter("steam", steam)
+
+
+## words a finger left on the glass: clear lines in the steam, so they show only as it comes. `rect` where on the
+## glass (0..1 from its top left, as seen from in front); "" wipes them
+func write(text: String, rect := Rect2(0.1, 0.22, 0.8, 0.5)) -> void:
+	written = text
+	if mat == null:
+		return                                       # (before _ready: written when the glass is)
+	if _ink == null:
+		_ink = SubViewport.new()                     # the words drawn once into a picture of their own (no owner: never saved)
+		_ink.name = "Ink"
+		_ink.size = Vector2i(1024, 512)
+		_ink.disable_3d = true
+		_ink.transparent_bg = false
+		var bg := ColorRect.new()
+		bg.color = Color.BLACK
+		bg.size = Vector2(1024, 512)
+		_ink.add_child(bg)
+		var lab := Label.new()
+		lab.name = "Words"
+		lab.size = Vector2(1024, 512)
+		lab.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lab.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		lab.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		lab.add_theme_font_size_override("font_size", 230)
+		lab.add_theme_color_override("font_color", Color.WHITE)
+		_ink.add_child(lab)
+		add_child(_ink)
+	(_ink.get_node("Words") as Label).text = text
+	_ink.render_target_update_mode = SubViewport.UPDATE_ONCE
+	mat.set_shader_parameter("writing_tex", _ink.get_texture())
+	mat.set_shader_parameter("writing", 1.0 if text != "" else 0.0)
+	mat.set_shader_parameter("writing_rect", Vector4(rect.position.x, rect.position.y, rect.size.x, rect.size.y))
 
 
 ## the glass's middle, facing and corners from its own triangles (the facing the area-weighted normal, so a panel's
@@ -160,11 +275,40 @@ func _measure() -> void:
 
 ## the wall the mirror hangs on (the body just behind the glass) onto the layer the mirror's camera doesn't draw
 func _hide_wall() -> void:
+	var xf := mi.global_transform
+	var p := xf * centre
+	var nw := (xf.basis * normal).normalized()
+	# what's drawn just behind the glass: an export's wall and the room's lining on it (its collider a body of its own
+	# with no mesh under it, which the ray below can't lead back to), or a wall with no collider; never a whole level in
+	# one mesh (then the wall stays, the near plane keeping most of it out). The near plane is square to the view, not
+	# the glass: a wall left in sits in front of the room below a line across the glass (2026-11-08: the demo's mirror
+	# showed its wall's back there, the hotel bath's its 4 mm lining). Short segments straight back from the glass's
+	# middle and its corners drawn in, 25 cm (a panel's both sides, 9 cm: either can be the room), against each mesh's box.
+	var spots: Array = [centre]
+	for c in corners:
+		var q: Vector3 = centre + ((c as Vector3) - centre) * 0.85
+		spots.append(q - normal * (q - centre).dot(normal))
+	var sides: Array = [-1.0, 1.0] if block else [-1.0]
+	var reach := 0.09 if block else 0.25
+	var segs: Array = []
+	for sp in spots:
+		var w: Vector3 = xf * (sp as Vector3)
+		for sd in sides:
+			segs.append([w + nw * float(sd) * (half + 0.001), w + nw * float(sd) * (half + reach)])
+	for g in get_tree().root.find_children("*", "GeometryInstance3D", true, false):
+		if g == mi or not (g as Node3D).is_visible_in_tree():
+			continue
+		var ab: AABB = (g as GeometryInstance3D).global_transform * (g as GeometryInstance3D).get_aabb()
+		if ab.get_volume() >= 60.0:
+			continue
+		for sg in segs:
+			if ab.intersects_segment(sg[0], sg[1]) != null:
+				(g as GeometryInstance3D).layers = 1 << (layer - 1)
+				hid.append(g)
+				break
 	var space := get_world_3d().direct_space_state
 	if space == null:
 		return
-	var p := mi.global_transform * centre
-	var nw := (mi.global_transform.basis * normal).normalized()
 	var q := PhysicsRayQueryParameters3D.create(p + nw * 0.01, p - nw * 0.6)
 	var body: Node = mi.get_parent()                   # the mirror's own body (a kit's glb sits under it): not the wall
 	while body != null and not (body is CollisionObject3D):
@@ -179,8 +323,10 @@ func _hide_wall() -> void:
 		return
 	for v in col.find_children("*", "VisualInstance3D", true, false):
 		v.layers = 1 << (layer - 1)
+		hid.append(v)
 	if col is VisualInstance3D:
 		col.layers = 1 << (layer - 1)
+		hid.append(col)
 
 
 ## off: the glass dull, nothing rendered; on: reflecting again from the next frame it's in view

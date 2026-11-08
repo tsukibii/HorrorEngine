@@ -799,9 +799,13 @@ def find(path):
 
 
 def read_image(path):
-    """Any picture Blender reads (PNG, JPG, TGA...) as RGBA floats 0-1, rows top first, in the file's own values."""
+    """Any picture Blender reads (PNG, JPG, TGA...) as RGBA floats 0-1, rows top first, in the file's own values. Tagged
+    Non-Color before its pixels are read: Blender decodes a 16-bit PNG (every ambientCG normal map) into a float buffer
+    and would turn an sRGB-tagged one linear (0.5 -> 0.21: a normal map tilted everywhere; docs/LESSONS.md 2026-11-08);
+    an 8-bit one's values are the same either way."""
     import bpy
     im = bpy.data.images.load(os.path.abspath(find(path)), check_existing=False)
+    im.colorspace_settings.name = "Non-Color"
     w, h = im.size
     px = np.zeros(w * h * 4, np.float32)
     im.pixels.foreach_get(px)

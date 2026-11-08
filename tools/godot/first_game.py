@@ -195,7 +195,7 @@ if "--pictures" in args and not errs:
 
 # the look plugin's guide wears its own check's pictures (LOOKPLUGIN: python tools/godot/plugin_check.py)
 LOOK_PICS = ["nodes", "look_plain", "look_realism", "pattern", "shaft", "sweep", "zones", "wet", "blood_rain", "leak", "mirror",
-             "skin", "hair", "grade", "window_sun"]
+             "skin", "hair", "grade", "window_sun", "air_level_25", "air_level_50", "air_woods_mist", "air_side"]
 if "--pictures" in args:
     from PIL import Image
     src = ROOT / "Saved" / "Story" / "_look" / "godot_plugin"

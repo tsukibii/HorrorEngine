@@ -206,8 +206,10 @@ only for a new map (the player drives somewhere else). Inside it:</p>
 width, height, depth). Its origin is the middle of the floor; north is Godot's −Z. Turn walls off with <b>walls</b>,
 give it your own materials (in a StandardMaterial3D tick <span class="ui">UV1 → Triplanar</span> and
 <span class="ui">World Triplanar</span>, so a texture tiles by the metre whatever the room's size), and set its
-<b>floor kind</b> (wood, stone, tile, carpet, dirt, metal, water) for the footsteps. Its id is an <b>area</b>: a step
-or a moment can wait for "the player enters kitchen".</p>
+<b>floor kind</b> (wood, stone, tile, carpet, dirt, metal, water) for the footsteps. Its <b>tone</b> is what the room
+sounds like while you're in it: a quiet loop off the sound shelf (a room tone, a hum, wind, rain; <i>game</i> takes the
+HSGame's <b>tone</b>, <i>none</i> is silence), crossfading into the next room's as you walk through. Its id is an
+<b>area</b>: a step or a moment can wait for "the player enters kitchen".</p>
 <p>Two rooms side by side: set them a wall's thickness apart (12 cm unless you change <b>wall</b>) and turn off one
 room's wall where they meet, so the wall isn't doubled. In the sample the hall keeps its east wall, the kitchen has
 none on its west, and the kitchen's door sits in the hall's wall. Where rooms meet, their walls share the corner by
@@ -285,7 +287,7 @@ give it a <b>display name</b> for the cursor ("Read · Letter").</p>
 </div>
 <table class="keys">
 <tr class="h"><td>Use</td><td>What the player does, and what to fill in</td></tr>
-<tr><td>pickup</td><td>Takes it into the inventory. <b>item</b> is its id (a locked door or a quest's step asks for it). Tick <b>flashlight</b> and <kbd>F</kbd> switches it.</td></tr>
+<tr><td>pickup</td><td>Takes it into the inventory. <b>item</b> is its id (a locked door or a quest's step asks for it). Tick <b>flashlight</b> and <kbd>F</kbd> switches it. Give the flashlight a <b>battery</b> (minutes of light; 0: it never runs down), an old <b>bulb</b> (dimmer and yellower as it goes, flickering when it's low) or an <b>LED</b> (full till it's low, then three blinks and a dim low mode), and how full it starts. <b>Batteries</b> (the Lights card, or <i>batteries</i> on a pickup: how full a set) go in the pocket; when the flashlight dies they're changed by themselves, a couple of seconds of dark, and the pause menu shows the charge and changes them early. WHEN <i>the flashlight runs low</i>, <i>dies</i> or <i>gets new batteries</i> start moments.</td></tr>
 <tr><td>note</td><td>Reads it on a card: <b>note title</b>, <b>note text</b>.</td></tr>
 <tr><td>inspect</td><td>Takes it up in the hands: the thing itself in front of the eye, turned by dragging the mouse, its <b>inspect text</b> under it; <kbd>Esc</kbd>, <kbd>E</kbd> or a click puts it back. Something big (a bookshelf) stays where it is and shows its words on a card.</td></tr>
 <tr><td>switch</td><td>A light switch: the lights in its room, or the ones in <b>switches</b>.</td></tr>
@@ -340,9 +342,24 @@ its skeleton.</p>
 <ul>
 <li><b>Behaviour</b>: how she starts: <i>idle</i> (stands where you put her), <i>sit</i> (on a <b>seat</b>), <i>path</i> (walks an HSPath), <i>patrol</i> (several paths in turn), or <i>off</i> (not there until the story brings her). <b>Face player</b> turns her to them. Later the story's <b>states</b> move her (§8).</li>
 <li><b>Sees player</b>: she watches; in her cone and range the suspicion meter fills, and when it's full the player is caught (a step or a moment can wait for it).</li>
+<li><b>Sees torch</b> (with Sees player): <b>the light gives you away</b>. While the player's flashlight is on within her
+range and she has a clear line to it, from any side, her meter fills this many times as fast (0: it doesn't; 1: as if
+she saw you). So in a sneaking round the player chooses between seeing and being seen.</li>
+<li><b>Feels light</b>: what she does when the flashlight's on her: <i>nothing</i> (only heard: a moment's WHEN <i>the
+flashlight is on her</i> or <i>she's flashed</i> starts anything), <i>backs off</i> (steps back, facing you, up to
+<b>light dist</b> metres), <i>freezes</i> (still while it's on her), <i>flees</i> (to the <b>light flee</b> spot),
+<i>vanishes</i>, <i>covers her eyes</i> (her <i>In the light</i> move, Animate tab), <i>comes toward it</i> (switch it off
+to hide) or <i>charges</i> (and catches you). <b>Light after</b>: the seconds in the beam first; <b>light bright</b>: how
+strong it must be (a dying battery's short beam scares her only close up); <b>light keep</b>: how long she keeps away
+once it's off her; <b>light sound</b>: a sound as it starts. The People cards <span class="ui">Feels the light</span>,
+<span class="ui">Backs off from the light</span>, <span class="ui">Freezes in the light</span> and <span class="ui">Drawn
+to the light</span> set it: drag one onto her in the 3D view, or select her and click it. A Reactions card (Screams,
+Flinches...) dropped on her makes a moment <i>when the flashlight is on her</i>, in which she reacts.</li>
+<li><b>Near lights</b> (metres): her presence on the lights round her. Within that reach the flashlight (<b>near
+torch</b>) and the lamps (<b>near lamps</b>) flicker, dim or die, more the nearer she is, seen or not.</li>
 <li><b>Talk</b>: someone the Director file has conversations for takes a click whether this is ticked or not (the cursor says Talk) and plays the one the story offers now (§8); tick it for a click with no conversation behind it.</li>
 <li><b>Idle motion</b>, <b>walk motion</b>: two of her <b>moves</b> (below): what she plays standing and walking.
-Her other moves (running, sitting down, sitting, getting up, talking, listening, looking round) are set on the
+Her other moves (running, sitting down, sitting, getting up, talking, listening, looking round, being caught, in the light: shielding her eyes) are set on the
 Animate tab; This object (the Build tab) says how many she has.</li>
 <li><b>Cast</b>: who she is in the story when that isn't her id (a desk game's character placed in two places is both of them).</li>
 <li><b>Expression</b>: the face she rests in, a face clip from the project's <code>faces/</code> (a loop, from
@@ -739,8 +756,9 @@ adds one; ↑ ↓ move it, ✕ takes it away.</li>
 <p>Under it, <b>It reads as</b> says the whole moment as one sentence. <span class="ui">Try this moment</span> plays the
 game from this quest as a test, with what it asks for already done and you standing by where it happens;
 <span class="ui">Show it in the 3D view</span> selects what its WHEN names (press <kbd>F</kbd> over the view to frame it).
-On the right are <b>ready-made moments</b> (a jumpscare, a knock at a door, the lights dying, a door slamming, a
-whisper, a thought, the flashlight flickering, and the reactions, §5): click one to add it onto what's selected (an area, a room, a door, a
+On the right are <b>ready-made moments</b> (a jumpscare, a knock at a door, the lights dying (all at once, or one by
+one toward you), a light dimming for a few seconds (the light nearest where it lands), a door slamming, a whisper, a
+thought, the flashlight flickering, and the reactions, §5): click one to add it onto what's selected (an area, a room, a door, a
 thing), or drag it onto an area or a door in the 3D view. Every change is saved at once, and <kbd>Ctrl</kbd>+<kbd>Z</kbd>
 takes it back.</p>
 <figure class="wide"><img src="img/e_panel_story.jpg" width="1417" height="664" alt="The panel's Story tab: the quests in order on the left with the first, The key, being edited, and the endings; in the middle its moment figure_scare open: WHEN the player enters Kitchen doorway, ONLY IF they've read letter, THEN a jump scare on the figure, the thought What was that? and the flag saw_figure, how often Just once, and what it reads as; the seven ready-made moments on the right">
@@ -760,6 +778,20 @@ once…</span>: the moment a condition becomes true.</li>
 behind, a thought, a sound, music, show or hide something, a door, a light, the power, a little thing's state, a
 character sent somewhere or animated (a reaction), a fact set, an item given or taken, karma, a counter...</li>
 </ul>
+<p><b>Music</b> (THEN, <span class="ui">Music</span>): a mood under the game, <i>calm</i>, <i>uneasy</i>, <i>dread</i>
+or <i>chase</i>, crossfading from the one before (<i>silence</i> fades it out); a save comes back to it.
+<span class="ui">Hush before a sting</span> takes the music and the rooms' tone away for a second or two, the last half
+second silent, so the sound or the jump scare after it lands in silence, then lets them back slowly. The HSGame's
+<b>quiet</b> hushes before every jump scare by itself.</p>
+<p><b>A light</b> (THEN, <span class="ui">Light</span>): pick one of your lights by its name, or the room, and set it
+<i>on</i>, <i>off</i>, <i>flicker</i>, <i>dim</i> or <i>normal</i>. A dim has <i>how bright</i> (0 to 1); a flicker
+can take one of the lamps' flickers (a fluorescent, a dying tube, a candle...); <i>fading over</i> makes the change
+take that long. Give it <i>for</i> seconds and it comes back <b>as it was</b> by itself (a lamp the player switched off
+stays off); without it the change stays. <i>On</i> and <i>normal</i> bring back the light's own brightness and its own
+flicker after a dim or a flicker. So "when the player walks into the hall, if the key's quest is on, the hall lamp dims
+to 0.2 for 4 seconds" is one moment: drop <span class="ui">A light dims</span> in the hall, pick the quest under
+<b>Only during</b>, and change the light or the numbers if you like. A state's light (§7) goes back as the level has
+it once its condition stops holding.</p>
 <div class="pair">
 <figure><img src="img/m_moments.jpg" width="1400" height="940" alt="The Manager's Moments: letter_thought when the player reads the letter, and figure_scare when the player enters the kitchen doorway, if read:letter, then a jump scare, a thought and a fact"><figcaption>The sample's two moments in the Manager.</figcaption></figure>
 <figure><img src="img/g_jumpscare.jpg" width="1280" height="720" alt="In the game: the figure in the kitchen for a moment, lunging"><figcaption>In the game: the figure (the sample's MHR body, lunging; put your model in it).</figcaption></figure>
@@ -929,9 +961,9 @@ must be set up first (<code>python setup/setup.py kimodo</code>).</div>
 <h2><span class="n">15</span>Every node, every word</h2>
 <table class="keys">
 <tr class="h"><td>The world (nodes)</td><td></td></tr>
-<tr><td class="node">HSGame</td><td>The main scene's root: the title, the player's name, the time of day, the look, the camcorder tape, the grade, the HUD's theme, lighting, weather, counters, F9; the player (can run, can crouch, eye height); its <b>story file</b>.</td></tr>
+<tr><td class="node">HSGame</td><td>The main scene's root: the title, the player's name, the time of day, the look, the camcorder tape, the grade, the HUD's theme, lighting, weather, the rooms' tone, the quiet before a jump scare, counters, F9; the player (can run, can crouch, eye height); its <b>story file</b>.</td></tr>
 <tr><td class="node">HSLevel</td><td>A place: its <b>start</b>, time of day, look and weather over the game's.</td></tr>
-<tr><td class="node">HSRoom</td><td>Floor, walls, ceiling from a size; doors on its walls cut openings; <b>openings</b> for the rest (a window's glass, daylight, shaft, a car passing); <b>leaks</b>; floor kind; materials; a wet floor.</td></tr>
+<tr><td class="node">HSRoom</td><td>Floor, walls, ceiling from a size; doors on its walls cut openings; <b>openings</b> for the rest (a window's glass, daylight, shaft, a car passing); <b>leaks</b>; floor kind; its tone; materials; a wet floor.</td></tr>
 <tr><td class="node">HSDoor</td><td>A leaf on its hinges or sliding, in a frame; locked by an item or a fact; peephole; latch; your model as its child.</td></tr>
 <tr><td class="node">HSThing</td><td>Something to use, a part (§4); your model as its child; a little thing's effect points as markers.</td></tr>
 <tr><td class="node">HSTrigger</td><td>An area to walk into; safe or not.</td></tr>

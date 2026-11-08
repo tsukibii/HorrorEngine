@@ -3,6 +3,67 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## The retro pack: pictures read inside Blender, and a mask read upside down (2026-11-08)
+
+- **An image read inside Blender is tagged Non-Color before its pixels are touched**: Blender hands back an 8-bit
+  PNG's own values from `Image.pixels`, but decodes a 16-bit PNG into a float buffer and, the image being tagged sRGB
+  by default, converts it to linear on the way. Every ambientCG normal map on the shelf (NormalGL, NormalDX) is 16-bit,
+  so `paint.read_image` had been giving every set's normal map as 0.5 -> 0.21: each texel's normal tilted about 37
+  degrees the same way, everywhere a family laid a shelf set (the trees' bark and leaves read 40 to 45 degrees of mean
+  tilt in the quality bar), and Blender 5.1's 16-bit exports (the retro pack's textures) came back at half their
+  lightness: a road went near black. Found by the retro road's normal map being one flat light blue, and its colour
+  measured 0.31 outside Blender and 0.14 inside; `read_image` and `quality.decode` now set Non-Color first (8-bit
+  values unchanged).
+- **glTF's v runs down the image**: a texel's row is v x height, not (1 - v) x height. The quality measures first
+  flipped it and judged a bag's colours over the wrong texels (its unused corner counted, a darkening that wasn't
+  there).
+- **Relief from a picture's colours follows its features, not its pixels**: a 256-pixel texture upscaled four times
+  gave the high-pass four-texel steps, and the normal map came out in tiles; the filters are at least one source
+  texel wide now, the source's edges softened by half of one first.
+
+## A beam in the fog and dust in the light (2026-11-08)
+
+- **`VIEWPORT_SIZE` is 0 in a spatial shader's `vertex()`** (Godot 4.7, Forward+, a particle's draw pass): pass the
+  picture's size as a uniform. The motes' "never under 2 px" read it there, so every mote grew 20,000-fold into a
+  full-screen quad dimmed to nothing: 6.3 s a frame on lavapipe and not one mote seen. Timing each piece on its own
+  found it (the standard material 47 ms a frame, ours 6258). A growth gets a cap too (6).
+- **A cone hull from SurfaceTool drew nothing; Godot's CylinderMesh did.** Its winding faced the other way for
+  `cull_front`. Use a primitive mesh, whose faces are known, and a debug colour for "the hull is drawn here" before
+  judging the shader.
+- **The softness of a beam in Godot's froxel fog is the light's own profile, not the grid.** 128 froxels without the
+  filter cost 9.5 times as much for an edge 2 px sharper. A hard-edged spot narrowed it more, and a beam of its own
+  with a cookie made it a beam.
+- **`pow` of a negative is NaN, and NaN draws black.** On the beam's axis, the cone's cosine rounded a hair over 1, the
+  rim went negative, and `pow(rim, attenuation)` left black dots along the beam; and a mote with the light straight
+  behind it had no half vector (`normalize(0)`). Clamp before `pow`, guard a normalize that can meet zero.
+- **A picture's difference counts every jittered pixel.** The motes were measured as lit pixels with dust on against
+  off; with any haze, the beam's per-frame jitter counted too (239 "motes" that were the beam). Measure a thing alone
+  (the motes in clear air), or against a frame that has everything else.
+- **An eased value can't also carry direct changes.** The air eased every change over 1.5 s, so `fog_to` lagged its
+  tween and a zone let go at the default rate. The level's own numbers apply at once now; only each zone's pull
+  eases, over that zone's own seconds.
+- **An additive speck adds to what's behind it, however it's capped.** The motes were capped at 1.0, under the glow's
+  1.05, but `blend_add` adds to the pixel behind: over a lit corridor wall a capped mote can take the pixel past the
+  glow, and dust shouldn't show there at all. The woods at night hid it (nothing behind). A mote reads the screen
+  behind it now: it fades as that gets lighter (dust is only seen against the dark) and never adds more than takes the
+  pixel to the cap. Judge an effect over a lit background as well as a dark one. (The corridor's soft discs themselves
+  were the size bug below: I blamed the background first.)
+- **A `.tscn` writes a Transform3D's basis by rows.** `Transform3D(xx, yx, zx, xy, yy, zy, xz, yz, zz, origin)`: a
+  helper that wrote the x, y and z axes one after another wrote the transpose, and tutorial v2's leaves light looked
+  west when it was aimed east. Print the node's `-basis.z` once it's loaded.
+- **What's found by place must prefer what's on.** The light zone gives each glowing fitting to a light beside it, and
+  the interior export brings its own lamp markers at every fitting, hidden by `interior.gd`. They came first in the
+  tree and took every tube's glass, so the tutorial's tubes had none (TUTORIAL2 caught it: the glass still lit with the
+  corridor dark). Each glowing mesh now goes to the nearest light that's on.
+- **Godot's `PROJECTION_MATRIX[1][1]` is negative under Vulkan** (the clip space's y flipped): the motes' size in
+  pixels came out negative, so every mote took the growth's cap (8-fold), dimmed by 64 and then lifted back to full
+  by the brightness cap: the near ones were 17 px soft discs, the very look the user called stylized, and the far ones
+  still looked like points, so the pictures half hid it. Found by turning the near fade and the growth off in a small
+  scene of its own. Take `abs()` of a projection term used as a size.
+- **Glass from a glTF casts a shadow in Godot**: the importer draws see-through glass with a depth pre-pass, and
+  depth pre-pass materials cast shadows (plain alpha doesn't). The street lamp outside the stairwell window lit nothing
+  inside. The starter's `interior.gd` turns the glass's shadow off in the game.
+
 ## Curtains that crumpled where nothing touched them (2026-11-04, after the wood)
 
 - **A rail keeps its family's distance from the wall**: the flat's curtains were first hung 100 to 110 mm out (to
@@ -1917,3 +1978,136 @@ the fine grain in the paint's relief rather than the detailed mesh (a 1 m rock's
 grain; the normal map's height can). Judge a prop on a sheet of several beside each other, not one at a time: the
 pale one shows.
 
+
+## The sound that can go quiet (2026-11-07, later: music, room tone and the hush)
+
+- **A brief state is sampled from before what fires it, not read after the helper returns**: station 15's hush lasts a
+  second, and the check read the beds after `ticked`; but the task ticks partway through the 2.5 s walk that the test
+  holds, so by the time `ticked` returned the hush was over and the calm coming in. Both drivers now sample the beds
+  every frame from before the walk until the calm comes, then look for silent frames while the chase was still the
+  mood (and not at the first calm frame, which still rounds to silence as the beds start back: expected).
+- **A bed that must line up with a beat runs on the play's clock**: the beat waits the hush in game time (each frame's
+  step capped at 0.05 s), so beds on wall time drift from it on slow frames, and the sting can land after the silence
+  has ended. Godot's beds step by the same capped delta; the desk's are driven by Play's frame, on their own timer
+  only in the Watch.
+- **Rendered cues are levelled before they're beds**: the four moods came out 24 dB apart (a pizzicato with its
+  silences at −37.5 dB mean, the chase at −13.6); each is brought to −20 LUFS when it's made (ffmpeg's `loudnorm`
+  measuring, a plain gain applied, peaks under −1.5 dBTP). The meter prints to stderr: Node's `execFileSync` returns
+  only stdout, so it's read with `spawnSync`.
+
+## Tutorial v2: a hotel floor built by hand (2026-11-07, night)
+
+- **Every floor needs a room of its own, not just a stairwell**: the scene builder takes a level's floors from where
+  its rooms stand, leaving stairwells out. With only the stairwell's foot on the lower floor, reopening the set gave
+  one floor, and the builder said "stairs need a floor above". A real second-floor landing under the corridor fixed it,
+  and reads better.
+- **Rotation 0 faces south**: things against a north wall face the room at 0. The first floor had the linen bookshelf,
+  the fridge and the bath's mirror at 180, so their backs (and the mirror's glass) faced the wall, and the key floated
+  in front of a blank panel. It's in the map skill's reference now.
+- **A thing to use stands clear of the furniture's collider**: the export makes a kit thing one collision box, so a key
+  placed inside the bookshelf's box was behind the box's face. The aim hit the shelf, and E did nothing. On the
+  shelf's front edge, its own collider comes first.
+- **A CRT wants its glass's UVs corner to corner**: the kit's TV screen is mapped in metres, so the static covered part
+  of it. A QuadMesh the screen's size in front of it is the by-hand answer.
+- **A Godot script that errors in `_initialize` never quits**: the process sits until the caller's timeout (ten
+  minutes, twice). The scripts check what they load and quit with a word, and the play test has a watchdog.
+- **A fresh project's first `--import` can stop short of the exports**: the hotel wasn't in the cache after it. The
+  check imports again until it is.
+- **`@export_enum` can't have an empty option** (the Director's notes say so too): `keep` for "leave it as it is".
+- **Pictures at night need the iris held**: a dimmed corridor shot after 40 frames looked as bright as the lit one,
+  because the look's auto exposure had opened up. Eight frames shows it as the player sees it happen.
+
+## Making it intense (2026-11-08, night: the sound physics, the body, her signs, the uncanny seen)
+
+- **A cache keyed on the wall clock never goes stale in a fixed-fps test**: the sound's traces were kept for half a
+  second of `Time.get_ticks_msec`, and the play test at `--fixed-fps 60` outruns real time, so 304's knock was heard
+  through the same trace shut and open. Kept on the game's own clock (each frame's delta added up), they go stale as
+  the game does.
+- **What answers the player's steps waits for the first one**: the steps behind you, started by the batteries' pickup
+  while the player stood still, took "no step for a second" for "stopped" and ended at once, with its step too many
+  for nobody. It waits (a minute at most) for you to walk.
+- **Parse-check a new script before a long run**: the play test took six minutes to find an untyped loop variable
+  (`for h in [...]`, the lesson above, made again), which
+  `godot --headless --path PROJECT --check-only -s starter/closer.gd` reports in two seconds (exit 1, the line).
+  Every new or changed starter script gets that first.
+- **A mirror's near plane is square to the view, not the glass**: looking down at a mirror, its camera's near plane
+  (set at the glass's nearest corner) leaves the wall behind the glass in, below a line across it, so the room below
+  that line was the wall's back. `_hide_wall` found the wall only through a collider with the wall's meshes under it:
+  the demo's wall has no collider and an export's walls have `-colonly` bodies with no meshes, so neither was ever
+  hidden. It now also takes every mesh whose box a short segment back from the glass crosses (never a whole level's
+  mesh). A point 3 cm back found the hotel bath's corridor wall but not the 4 mm lining in front of it: a slab that
+  thin falls between sampled points, so test segments, not points.
+- **A measure that passes for the wrong reason**: LOOKPLUGIN's "a mirror seen in a mirror" wanted a peak at twice
+  its box's mean, and had it only because that uncovered wall darkened most of the box. With the wall gone the second
+  mirror's glass is the room's brightness. Found while adding a box that should have shown in the mirror and didn't,
+  even on layer 1: when a new measure fails, put the thing on the plainest settings before blaming the new part.
+- **A moment armed by a scare goes off with the scare**: the feet under 308's door, armed when the corridor went dark,
+  came at once and were gone before anyone looked: the player stood within their 6 m with the door's foot in the
+  frustum, while looking at her. What wants to be noticed waits for the eye: near (4 m), and the place within 30° of
+  where you look, not merely somewhere in the frame.
+- **Place a figure before you show it**: the shadow pass set her visible, then moved her onto her path the next frame,
+  so for one frame she stood at her node's origin (the test read her "walk" as 7.8 m).
+- **A light put inside a lampshade is boxed in by it**: 304's lamp, moved up from the floor into its floor lamp's shade
+  (where the guide always said), lit the room only through the shade's open top and bottom, and a figure's shadow on
+  the wall measured nothing (0.1419 against 0.1418): the shade's mesh casts shadows. A fabric shade lets light
+  through, so interior.gd turns the kit lamps' shadows off as it does the windows' glass. Before blaming a faint
+  shadow, render the frame with and without the thing and compare.
+- **Only an ArrayMesh answers about blend shapes**: `mesh.get_blend_shape_count()` is ArrayMesh's, so HSBlink's search
+  for the blink's shapes stopped with a script error on the stand-in's CylinderMesh (a box in a character's hand would
+  have done the same). Ask the MeshInstance3D (`get_blend_shape_count`, `find_blend_shape_by_name`) or check
+  `mesh is ArrayMesh` first.
+- **A compressed playthrough leaves a director little room**: tutorial v2's play test fires a scare every 20 s or so,
+  so the dread director spent most of it at its peak or relaxing (its intensity falls 0.01 a second), and two of its
+  moments came, not the three the check first wanted, and on the next run one. Check what it's for (its phases,
+  moments in place, none twice running) and bring its moments on deliberately where they're ready (its gap cut to
+  nothing in the corridor); a count left to chance is luck.
+- **One pending time for a thing that can overlap is a bug**: the lightning kept its thunder's due time in one value,
+  so a strike two seconds after another cancelled the first's thunder (thunder comes 3 s a kilometre later, often
+  after the next flash). Each strike queues its own. The demo's stage strikes twice and times the first thunder.
+- **An interior's furniture is solid to its top**: the hotel's export gives each room one collider with every piece of
+  furniture in it as a box up to its highest point (304's bed to its headboard, 0.95 m). A seat's own box for E,
+  lower than that, was never reached: the aim stopped on the room's box. And an eye lying inside such a box would hear
+  every sound through its faces (the tracer's rays hit them on the way in). So a seat's eye goes just over what's
+  under it, its box reaches above it, and the player lifts an eye placed inside one. Before blaming a ray, print what
+  it hit.
+- **A walk in a check needs room to walk**: the check's walk from 304's chair went west, into the bed's box within half
+  a metre, and `doing()` read the stopped slide as standing. Walk where nothing's in the way, or watch the position.
+- **Headless, Godot's window is 64 px square**: a cue's regions are the frame's, and the frame's shape sets where a
+  thing lands in it. Her place from 304's pillow, 0.7 of the way to the right edge of the game's 16:9 view, was off a
+  square one (u 1.24) and read "out of view". The check gives the window the game's 1600 × 900 for the cues and puts
+  it back (the older checks were tuned in the square frame). Any check of where something is in the frame sets the
+  frame first.
+- **Steps walked in a check are heard**: the check's walk in 304 had her copying the steps from the corridor (uncanny.gd's
+  mimic), and the time there filled her menace gauge, so her own checks later started 2 m nearer. A part checked in the
+  middle of a playthrough goes where nothing else is listening: before she's out.
+- **Breath is light scattered, not a cloud painted on**: the first breath, puff.gdshader's look lit by the scene, showed
+  as a bluish ball in the dark (the ambient lit it) and darkened what was behind it when unlit (mixed, not added).
+  Breath scatters light and hides nothing: lit by direct lights only and added, the dark hides it and a beam shows it.
+  And a flashlight's beam starts at the hand, 18 cm right and 20 cm down: breath 15 cm ahead of the mouth is outside
+  it until it's carried 60 cm out. Before tuning a look, check the thing is where the light is (print its place
+  against the light's cone), and measure it against a background that can show it (white added to white is nothing).
+- **A flashlight's cookie is part of its light**: in the hotel the breath hardly showed in the beam that lit it in the
+  demo, because the game's flashlight wears a cookie (a hot core, a ring, a dim spill) and breath carried a metre out
+  sits 15 to 20° off the beam's axis, in the spill. The demo's spot had none. Measure an effect with the light the
+  game gives it. Breath also reads best backlit (droplets scatter forward), so its shader has a forward lobe of its
+  own and the guide's picture faces the street lamp.
+- **A spot light's projector needs its shadow setup**: the cold stage's flashlight wore the game's cookie (HSBeam's
+  projector) and went almost black, breath and frost with it, until its shadows were turned on as the starter's
+  flashlight has them. Godot projects a spot's cookie through the light's shadow matrix. A light given a projector in
+  code gets `shadow_enabled` with it.
+- **A teleport is a footstep to the player**: her copied steps (uncanny.gd's mimic) went from 2 to 1 when the steam's
+  check stood the player at the basin while she was out. player.gd counts a stride by the ground covered since the
+  last frame, so the check's jump was a step, she copied it, and she started the later walk one step nearer the 2.5 m
+  she stops at. The light was blamed first, wrongly: turning it off changed nothing. A check that moves the player
+  while something listens to its steps clears the last position (`_was`), as settle() and rise() do.
+- **A script constant can't take a native class's name**: the starter's preload of noise.gd as `const Noise` failed to
+  parse in every script that held it, because Godot has a class `Noise` (FastNoiseLite's base). It's `Noises`. Name a
+  preload after what it is, not the obvious word, and parse each new script (`--check-only -s`) before a long run.
+- **A state that leads back to its own trigger loops**: in the hunt's check she found you 30 times in a row, because
+  finding you pulled you out into the open in front of her, she turned to go, saw you, and found you again. A
+  reaction that puts the player where its own trigger fires needs a once: a search finds you at most once now.
+- **A check's clock counts every frame, or it times only part of what it measures**: the hunt's check timed her
+  listening (3 to 6 s) with a counter its waiting loop advanced, but she hears you during the run before that loop
+  starts, so about 0.6 s went uncounted. It passed twice, while the dice gave her a long listen, and failed on the
+  merged tree at 2.7 s. A time the game keeps is read off the engine's own count (`Engine.get_physics_frames()` over
+  the fixed 60), never off a counter that runs only while the check is looking.

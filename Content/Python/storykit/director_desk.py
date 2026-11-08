@@ -219,7 +219,7 @@ def world(story, out):
             L_["rooms"].append({"id": room["id"], "pos": list(G.s2g((x0 + w / 2, y0 + d / 2, z0))), "size": [w - T, h, d - T], "wall": T,
                                 "walls": walls, "floor_on": True, "ceiling_on": bool(room.get("ceiling", True)),
                                 "floor_kind": FLOORS.get(room.get("floor", "wood"), "wood"), "openings": ops, "materials": mats,
-                                "wet": float(room.get("wet", 0) or 0)})
+                                "wet": float(room.get("wet", 0) or 0), "tone": room.get("tone") or "game"})
             for op in room.get("openings", []):           # its doors, in their doorways
                 door = op.get("door")
                 if not door:
@@ -392,7 +392,7 @@ def world(story, out):
     g = story.get("game") or {}
     game = {"title": g.get("title") or g.get("id") or "Game", "time_of_day": g.get("time") or L.TIME_DEFAULT}
     for k, gk in (("player_name", "player_name"), ("fov", "fov"), ("look", "look"), ("vhs", "vhs"), ("grade", "grade"), ("ui_theme", "ui_theme"),
-                  ("weather", "weather"), ("lighting", "lighting")):
+                  ("weather", "weather"), ("lighting", "lighting"), ("tone", "tone"), ("quiet", "quiet")):
         if g.get(gk) not in (None, ""):
             game[k] = g[gk]
     if isinstance(g.get("counters"), dict):

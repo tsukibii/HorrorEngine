@@ -56,7 +56,7 @@ for (const d of C.ACTIONS) {
   const full = fill(d.make(), d.fields);
   add("action", full);
   d.fields.forEach(f => { if (f.kind === "choice") for (const o of f.opts) add("action", { ...full, [f.key]: o }); });
-  d.fields.forEach(f => { if (f.opt) { const x = { ...full }; delete x[f.key]; add("action", x); } });
+  d.fields.forEach(f => { if (f.opt && !f.verb) { const x = { ...full }; delete x[f.key]; add("action", x); } });   // (a command keeps its verb: the desk never saves one without it)
 }
 add("action", { karma: -1 }); add("action", { karma: { trust: 2, fear: -1 } });
 add("action", { count: "found", add: -2 }); add("action", { count: "found", set: 0 });

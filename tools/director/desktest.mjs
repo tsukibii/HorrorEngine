@@ -306,7 +306,7 @@ console.log("quick events (templates.js)");
     if (r.round) { S.flow[nid].next = nid + "_r"; S.flow[nid + "_r"] = { type: "choice", by: "result", of: nid, options: Object.values({ hide: ["hidden", "found"], run: ["escaped", "caught"] }[r.round]).map(x => ({ result: x, to: back })) }; }
     made.push(nid);
   }
-  const bv = { jumpscare: { zone: room[0], figure: person[0], sound: Object.keys(S.sounds)[0] }, knock: { zone: room[0], at: door[0], count: 3 }, lights_die: { room: room[0], secs: 1 },
+  const bv = { jumpscare: { zone: room[0], figure: person[0], sound: Object.keys(S.sounds)[0] }, knock: { zone: room[0], at: door[0], count: 3 }, lights_die: { room: room[0], secs: 1 }, light_dims: { zone: room[0], light: of(t => t.use === "light")[0], to: 0.2, secs: 2 },
     slam: { zone: room[0], door: door[0] }, whisper: { look: door[0], line: Object.keys(S.lines)[0], at: door[0] }, speaks: { zone: room[0], line: Object.keys(S.lines)[0] }, checkpoint: { zone: room[0] }, car: { zone: room[0], room: (Object.values(S.levels).flatMap(l => l.rooms || []).find(r => (r.openings || []).some(o => o.window)) || {}).id },
     kettle_on: { zone: "kitchen", kettle: "kitchen_kettle" }, still_burning: { zone: "hall", cigarette: "hall_ash" }, phone_rings: { zone: "study", phone: "study_phone" },
     tv_on: { zone: "study", tv: "study_tv" }, clock_stops: { clock: "kitchen_clock", thought: "2:47. It's stopped." }, torch_flickers: { zone: room[0], how: "dead" } };
@@ -621,6 +621,46 @@ print(json.dumps({"typed": [L.typed_secs(t, r, b) for t, r, b in d["texts"]], "c
     && plain.lo < 0.8 && plain.hi === 1 && none.lo === 1 && none.hi === 1 && half.lo > dy.lo && half.lo >= 0.5 && same && differs
     ? ok(`the flicker modes: a fluorescent stutters ${(flu.drops * 100).toFixed(1)} % of the time, a dying one drops out ${(dy.drops * 100).toFixed(0)} % of the time and sits at ${dy.mid.toFixed(2)} between, a candle wobbles ${ca.lo.toFixed(2)} to ${ca.hi.toFixed(2)}, a pulse breathes, custom letters read a m z, half the amount halves the drop, the same light the same on every run`)
     : fail("flicker: " + JSON.stringify({ flu, dy, ca, pu: [pu[0], pu[60], pu[120]], cu: [cu[0], cu[20], cu[40]], plain, none, half, same, differs }));
+}
+
+// ---- the flashlight's battery (tools/shared/torchbeam.js, FLASHLIGHT_PLAN §1): the beam by its charge, from the clock alone
+{
+  const B = await import("../shared/torchbeam.js");
+  const bulb = c => B.beam({ kind: "bulb", charge: c, low: 0.2, lowAt: null, kelvin: 3200 }, 0.01);
+  const full = bulb(1), quarter = bulb(0.25), fifth = bulb(0.2);
+  const dips = c => { let n = 0, d = 0; for (let t = 0; t < 30; t += 1 / 60) { const b = B.beam({ kind: "bulb", charge: c, low: 0.2, lowAt: null, kelvin: 3200 }, t).b; n++; if (b < Math.sqrt(c) * 0.5) d++; } return d / n; };
+  const early = dips(0.18), late = dips(0.04);
+  const led = (c, t, at = 0) => B.beam({ kind: "led", charge: c, low: 0.15, lowAt: at, kelvin: 6000 }, t).b;
+  const blinks = [0.02, 0.1, 0.22, 0.3, 0.42, 0.5].map(t => led(0.14, t)), after = led(0.14, 2), strobe = [0.1, 0.45].map(t => led(0.03, t + 10)), fullLed = led(0.5, 1, null);
+  const def = B.batteryOf({ battery: 60 }), old = B.batteryOf(true), ledDef = B.batteryOf({ battery: 10, kind: "led", rest: true });
+  Math.abs(full.b - 1) < 1e-9 && Math.abs(quarter.b - 0.5) < 1e-9 && Math.abs(quarter.reach - Math.sqrt(0.5)) < 1e-9 && quarter.kelvin < 3200 && quarter.kelvin > 2400
+    && Math.abs(fifth.kelvin - (3200 - 1100 * 0.64)) < 1e-6 && early > 0 && late > early * 2
+    && blinks.join() === "0,1,0,1,0,1" && Math.abs(after - 0.35) < 1e-9 && strobe.join() === "0.35,0" && fullLed === 1
+    && def.kind === "bulb" && def.low === 0.2 && def.kelvin === 3200 && def.charge === 1 && old.battery === 0 && ledDef.rest === false && ledDef.low === 0.15
+    ? ok(`the flashlight's battery: a bulb at a quarter charge half as bright, reaching ${(quarter.reach * 100).toFixed(0)} %, ${Math.round(quarter.kelvin)} K; browning out ${(early * 100).toFixed(1)} % of the time just under low and ${(late * 100).toFixed(1)} % near empty; an LED's three blinks, its low mode of 35 %, its strobe; the defaults by kind; a flashlight with no battery never runs down`)
+    : fail("torchbeam: " + JSON.stringify({ full, quarter, fifth, early, late, blinks, after, strobe, fullLed, def, old, ledDef }));
+}
+
+// ---- the beds under the game (play/beds.js, beds.gd's twin: HORROR_TODO 13.1): a hush silent its last half second and
+// back over its `back`, a crossfade of equal power, a room's tone into the next; the clock stepped by hand, no sound
+{
+  const { Beds } = await import("./play/beds.js");
+  const b = new Beds(); b.start = () => {}; b.wake = () => {};   // no files, no timer: the numbers alone
+  const step = s => { for (let n = Math.round(s / 0.05); n > 0; n--) b.tick(0.05); };
+  b.music("dread", 0); b.roomTone("room_tone_01", 0);
+  b.hush(1.5, 6); step(0.5); const half = b.duck(); step(0.55); const quiet1 = b.duck(); step(0.4); const quiet2 = b.duck();
+  step(3); const back = b.duck(); step(3.2); const after = b.duck(), done = !b.state().hushing;
+  b.music("calm", 2); let worst = 0;
+  for (let i = 0; i < 40; i++) { step(0.05); const L = b.state().levels; worst = Math.max(worst, Math.abs(L["m:calm"] ** 2 + L["m:dread"] ** 2 - 1)); }
+  const mood = b.state();
+  b.roomTone("room_tone_03"); step(0.75); const mid = b.state().levels; step(0.8); const tone = b.state();
+  b.music("silence", 1); step(1.05); const silent = b.state();
+  const good = Math.abs(half - 0.5) < 0.01 && quiet1 === 0 && quiet2 === 0 && back > 0.3 && back < 0.7 && after === 1 && done &&
+    worst < 0.002 && mood.music === "calm" && mood.levels["m:calm"] === 1 && mood.levels["m:dread"] === 0 &&
+    Math.abs(mid["t:room_tone_03"] - Math.SQRT1_2) < 0.01 && tone.tone === "room_tone_03" && tone.levels["t:room_tone_01"] === 0 &&
+    silent.music === null && silent.levels["m:calm"] === 0;
+  good ? ok(`the beds: a hush of 1.5 s at half after 0.5 s, silent its last half second, half back 3 s later, whole after 6; a crossfade's power within ${(worst * 100).toFixed(2)} % of one all through; a room's tone into the next; silence fading the music out`)
+    : fail("beds: " + JSON.stringify({ half, quiet1, quiet2, back, after, done, worst, mood, mid, tone, silent }));
 }
 
 console.log(fails.length ? `DESK FAILED (${fails.length})` : "DESK ok");

@@ -131,6 +131,17 @@ const snapFor = nid => {                               // the run's state on rea
   const press = async (key, ms = 120) => { await page.keyboard.down(key); await page.waitForTimeout(ms); await page.keyboard.up(key); };
   const place = (x, y, yaw = 90, pitch = 0) => page.evaluate(([x, y, yaw, pitch]) => { const rt = window.__dd.play; rt.place(new (rt.player.pos.constructor)(x, 0, -y), yaw, pitch); }, [x, y, yaw, pitch]);
   const flag = f => page.evaluate(f => window.__dd.run.flags.has(f), f);
+  // lights' strengths (their share of their own strength) every frame for `secs` of the game's time, in the page;
+  // `untilBack`: done early once the first two have been out together and are both back
+  const watchLights = (ids, secs, untilBack = false) => page.evaluate(([ids, secs, untilBack]) => new Promise(res => {
+    const rt = window.__dd.play, out = [], t0 = rt.clock; let dark = false;
+    const tick = () => {
+      const row = ids.map(id => { const l = rt.byId[id]; return l.intensity / (l.userData.base || 1); }); out.push(row);
+      if (row[0] === 0 && row[1] === 0) dark = true;
+      if ((untilBack && dark && row[0] > 0.9 && row[1] > 0.9) || rt.clock - t0 >= secs) res(out); else requestAnimationFrame(tick);
+    };
+    tick();
+  }), [ids, secs, untilBack]);
   const tasks = () => page.evaluate(() => [...document.querySelectorAll(".ph-todo .ph-task")].map(e => ({ id: e.dataset.id, state: e.dataset.state })));
   const task = async id => ((await tasks()).find(t => t.id === id) || {}).state || null;
   // every task ticked or failed, heard as it happens (a station's last tick ends it, and its list is cleared straight away)
@@ -326,12 +337,25 @@ const snapFor = nid => {                               // the run's state on rea
       await gameWait(0.3); await ticked("t4_candle");
       if (!(await page.evaluate(() => window.__dd.play.byId.power_candle_light.intensity === 0))) throw new Error("the candle's light is still on");
     });
+    await step("a light that dims and comes back: the bulb sags to a fifth for a moment and is back to full by itself (ticks); a lasting dim on the lamp undone by on (its own dying flicker back)", async () => {
+      const seen = await watchLights(["power_bulb"], 2.4), ks = seen.map(x => x[0]);
+      if (!(Math.min(...ks) < 0.3)) throw new Error("the bulb never sagged: lowest " + Math.min(...ks).toFixed(2));
+      if (!(ks[ks.length - 1] > 0.9)) throw new Error("the bulb didn't come back: " + ks[ks.length - 1].toFixed(2));
+      await ticked("t4_dim");
+      const u = await page.evaluate(() => { const d = window.__dd.play.byId.power_lamp.userData; return { dim: d.dim, mode: d.mode, layers: d.layers.length }; });
+      if (u.dim !== null || u.mode !== "dying" || u.layers) throw new Error("the lamp after its dim and on: " + JSON.stringify(u));
+    });
   });
 
   await station("n_store", async () => {
-    await step("5 · In your hands: the three tins into the inventory's row (each ticks), the box carried to the shelf and put down there (G: it ticks), the plushie in the hand (ticks)", async () => {
+    await step("5 · In your hands: the store's lights die one by one toward you as you come in (the far one first, both back, the one that was off still off); the three tins into the inventory's row (each ticks), the box carried to the shelf and put down there (G: it ticks), the plushie in the hand (ticks)", async () => {
       await place(1.5, 7.5, 180);
+      const watching = watchLights(["store_lamp", "store_lamp_back", "store_shelf_light"], 15, true);   // watched from outside: the lights die one by one toward the player as they come in
       await enterRoom("door_store", "store");
+      const seen = await watching;
+      const farFirst = seen.some(([near, far]) => far === 0 && near > 0.5), both = seen.findIndex(([near, far]) => near === 0 && far === 0);
+      if (!farFirst || both < 0 || !seen.slice(both).some(([near, far]) => near > 0.9 && far > 0.9) || seen.some(x => x[2] > 0))
+        throw new Error("one by one toward the player: " + JSON.stringify({ farFirst, both, end: seen[seen.length - 1] }));
       for (const t of ["a", "b", "c"]) { await use(`tin_${t}_pickup`, 0.6); await ticked(`t5_${t}`); }
       const row = await page.evaluate(() => document.querySelectorAll(".ph-inv-i").length);
       if (row < 3) throw new Error("the row holds " + row);
@@ -435,6 +459,8 @@ const snapFor = nid => {                               // the run's state on rea
     await step("10 · The dark: the flashlight into the pocket (ticks), F lights it (ticks), it flickers and dies (F only clicks), the batteries shown and taken bring it back", async () => {
       await place(1.5, 17.5, 0);
       await enterRoom("door_dark", "dark");
+      const tn = await page.evaluate(() => window.__dd.play.beds.state().tone);   // the room's tone: none (HORROR_TODO 13.1)
+      if (tn !== null) throw new Error(`the dark room's tone ${tn}: none, silence there`);
       await use("torch_pickup", 0.6); await ticked("t10_torch");
       await press("KeyF"); await ticked("t10_on");
       await until(() => { const t = window.__dd.play.torchLight; return t && t.dead && !t.on; }, null, "the flashlight dead (its stutter over, out)", 60000);
@@ -442,6 +468,41 @@ const snapFor = nid => {                               // the run's state on rea
       if (await page.evaluate(() => window.__dd.play.torchLight.on)) throw new Error("a dead flashlight lit");
       await use("batteries_pickup", 0.6); await ticked("t10_bat");
       await gameWait(0.3); if (await page.evaluate(() => window.__dd.play.torchLight.dead)) throw new Error("still dead");
+    });
+    await step("its battery (FLASHLIGHT_PLAN §1): the spare set into the pocket; on again it runs low (ticks: the beam dimmer and warmer), dies, and the spare set changes itself (ticks: a moment of dark, then full)", async () => {
+      await use("spare_pickup", 0.6);
+      const pk = await page.evaluate(() => { const rt = window.__dd.play; return { pocket: rt.items.has("spare_cells"), row: rt.inv.list.some(e => e.item === "spare_cells") }; });
+      if (!pk.pocket || pk.row) throw new Error("the spare set in the pocket, not the row: " + JSON.stringify(pk));
+      await press("KeyF"); await gameWait(0.4);
+      const t0 = await page.evaluate(() => { const t = window.__dd.play.torchLight; return { on: t.on, k: t.k, kelvin: t.kelvinNow }; });
+      if (!t0.on) throw new Error("the flashlight on again: no");
+      await ticked("t10_low"); await gameWait(0.5);
+      const t1 = await page.evaluate(() => { const t = window.__dd.play.torchLight; return { k: t.k, kelvin: t.kelvinNow, charge: t.charge }; });
+      if (!(t1.k < t0.k * 0.75) || !(t1.kelvin < t0.kelvin - 150)) throw new Error("running low: " + JSON.stringify({ t0, t1 }));
+      await until(() => !!window.__dd.play.torchLight.changing, null, "the change by itself", 90000);
+      await gameWait(0.1);
+      if (await page.evaluate(() => window.__dd.play.torchLight.hot.intensity) !== 0) throw new Error("the beam while the batteries are changed");
+      await ticked("t10_change");
+      const t2 = await page.evaluate(() => { const rt = window.__dd.play, t = rt.torchLight; return { spare: rt.items.has("spare_cells"), charge: t.charge, on: t.on }; });
+      if (t2.spare || Math.abs(t2.charge - 1) > 0.01 || !t2.on) throw new Error("after the change: " + JSON.stringify(t2));
+    });
+    await step("characters that feel the light (FLASHLIGHT_PLAN §2): Aoi in the dark; the beam on her and she backs off (ticks) and keeps away; flashed twice (ticks); near her the flashlight flickers", async () => {
+      await until(() => { const n = window.__dd.play.npcs.aoi; return n && n.pos && n.level === window.__dd.play.level; }, null, "Aoi in the dark room", 60000);
+      await gameWait(0.3);
+      const at0 = await page.evaluate(() => { const p = window.__dd.play.npcs.aoi.pos; return [p.x, p.z]; });
+      await place(5.5, 19.2, 270, -12);                                       // by the shelf, looking at her
+      if (!(await page.evaluate(() => window.__dd.play.torchLight.on))) await press("KeyF");
+      await ticked("t10_lit"); await gameWait(1.5);
+      const r = await page.evaluate(([x0, z0]) => { const rt = window.__dd.play, p = rt.npcs.aoi.pos, me = rt.player.pos;
+        return { moved: Math.hypot(p.x - x0, p.z - z0), farther: Math.hypot(p.x - me.x, p.z - me.z) > Math.hypot(x0 - me.x, z0 - me.z) }; }, at0);
+      if (!(r.moved > 0.6) || !r.farther) throw new Error("she didn't back off: " + JSON.stringify(r));
+      for (let i = 0; i < 2; i++) { await press("KeyF"); await gameWait(0.3); await press("KeyF"); await gameWait(0.4); }   // flashed: off her and on her again, twice
+      await ticked("t10_flash");
+      const at = await page.evaluate(() => { const p = window.__dd.play.npcs.aoi.pos; return [p.x, p.z]; });
+      await place(at[0], -at[1] + 0.8, 270, -25); await gameWait(0.2);         // near her: the flashlight flickers by her (story y is three's -z)
+      const ks = await page.evaluate(() => new Promise(res => { const rt = window.__dd.play, t0 = rt.clock, out = []; const tick = () => { out.push(rt.torchLight.k); if (rt.clock - t0 < 2.5) requestAnimationFrame(tick); else res(out); }; tick(); }));
+      const lo = Math.min(...ks), hi = Math.max(...ks);
+      if (!(lo < hi * 0.5)) throw new Error(`near her the flashlight should flicker: ${lo.toFixed(2)} to ${hi.toFixed(2)}`);
     });
     await step("on the way out the glimpse: a creak, the figure there for a moment and gone; out of the room (ticks)", async () => {
       await page.evaluate(() => { window.__seen = false; const f = window.__dd.play.byId.dark_figure; const t = setInterval(() => { if (f.visible) window.__seen = true; }, 20); window.__stopSeen = () => clearInterval(t); });
@@ -624,16 +685,28 @@ const snapFor = nid => {                               // the run's state on rea
     await step("15 · Run: its timer counting down on the HUD; into the atrium in time (ticks)", async () => {
       const t1 = +(await page.textContent(".ph-timer")); await gameWait(1); const t2 = +(await page.textContent(".ph-timer"));
       if (!(t1 > 0 && t2 < t1)) throw new Error(`the timer ${t1} then ${t2}`);
-      await place(1.5, 28.5, 90); await hold("KeyW", 2.5);
+      await place(1.5, 28.5, 90);
+      const b0 = await page.evaluate(() => window.__dd.play.beds.state());   // the beds (HORROR_TODO 13.1): the chase, the corridor's tone
+      if (b0.music !== "chase" || b0.tone !== "room_tone_03") throw new Error("the beds in the run " + JSON.stringify(b0));
+      await page.evaluate(() => { const rt = window.__dd.play, out = window.__beds = [];   // the beds every frame till the calm comes
+        const t = setInterval(() => { const s = rt.beds.state(); out.push(s); if (s.music === "calm" || out.length > 2000) clearInterval(t); }, 20); });
+      await hold("KeyW", 2.5);
       await ticked("t15_run");
+      await until(() => { const b = window.__beds; return b.length && b[b.length - 1].music === "calm"; }, null, "the calm after the run", 30000);
+      const bs = await page.evaluate(() => window.__beds), quiet = bs.filter(s => s.hushing && s.duck === 0 && s.music === "chase");   // made it: a hush, its last half second silent, before the calm
+      if (quiet.length < 3) throw new Error(`the hush after the run: ${quiet.length} silent samples before the calm, ${JSON.stringify(bs[bs.length - 1])}`);
     });
   });
 
   await station("n_sneak", async () => {
     await step("16 · Sneak: the jumpscare as you come in (a creak, the figure there and gone); then Aoi walks her route; her eyes fill the meter in the open, never in the safe corner; the far corner reached (ticks)", async () => {
-      await page.evaluate(() => { window.__js = false; const f = window.__dd.play.byId.atr_figure; const t = setInterval(() => { if (f.visible) window.__js = true; }, 20); window.__stopJs = () => clearInterval(t); });
+      const b2 = await page.evaluate(() => window.__dd.play.beds.state());   // after the run's hush: the calm crossfading in under it, the atrium's hum from the corridor's
+      if (b2.music !== "calm" || b2.tone !== "electric_hum_02" || !(b2.levels["t:electric_hum_02"] > 0.9) || !(b2.levels["t:room_tone_03"] < 0.1)) throw new Error("the beds in the atrium " + JSON.stringify(b2));
+      await page.evaluate(() => { window.__js = false; const rt = window.__dd.play, f = rt.byId.atr_figure; const t = setInterval(() => { if (f.visible && !window.__js) { window.__js = true; window.__jsBeds = rt.beds.state(); } }, 20); window.__stopJs = () => clearInterval(t); });
       await place(1.5, 30.4, 90); await hold("KeyW", 0.8);   // walked into the middle (a place there isn't an enter)
       await until(() => window.__js, null, "the jumpscare", 60000); await page.evaluate(() => window.__stopJs());
+      const bj = await page.evaluate(() => window.__jsBeds);       // its quiet: hushed first, silent at the sting
+      if (!bj.hushing || !(bj.duck < 0.02)) throw new Error("the beds at the jumpscare " + JSON.stringify(bj));
       await until(() => { const n = window.__dd.play.npcs.aoi; return n && n.as === "path"; }, null, "Aoi on her route", 30000);
       await place(-3.8, 31.2, 45); await gameWait(2.5);     // the safe corner: unseen
       if (await page.evaluate(() => window.__dd.play.suspicion > 0.05)) throw new Error("seen in the safe corner");
@@ -646,6 +719,8 @@ const snapFor = nid => {                               // the run's state on rea
       if (await page.evaluate(() => window.__dd.play.suspicion > 0.05)) throw new Error("the meter didn't drain in the safe corner");
       await place(6.5, 33.6, 90); await hold("KeyW", 0.6);   // walked into the far corner
       await ticked("t16_cross");
+      const b3 = await page.evaluate(() => window.__dd.play.beds.state());   // the beds back after the scare
+      if (b3.hushing || !(b3.duck > 0.99) || !(b3.levels["m:calm"] > 0.99)) throw new Error("the beds after the scare " + JSON.stringify(b3));
     });
   });
 

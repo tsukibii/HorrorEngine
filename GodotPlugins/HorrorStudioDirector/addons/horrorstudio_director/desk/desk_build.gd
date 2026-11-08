@@ -123,7 +123,7 @@ func _initialize() -> void:
 	root_ = HSGame.new()
 	root_.name = "Game"
 	var gw: Dictionary = w.get("game", {})
-	for k in ["title", "player_name", "time_of_day", "fov", "look", "vhs", "grade", "ui_theme", "lighting", "weather"]:
+	for k in ["title", "player_name", "time_of_day", "fov", "look", "vhs", "grade", "ui_theme", "lighting", "weather", "tone", "quiet"]:
 		if gw.has(k):
 			root_.set(k, gw[k])
 	if gw.get("counters") is Array:
@@ -145,6 +145,7 @@ func _initialize() -> void:
 			room.ceiling_on = bool(r.get("ceiling_on", true))
 			room.floor_kind = str(r.get("floor_kind", "wood"))
 			room.wet = float(r.get("wet", 0.0))
+			room.tone = str(r.get("tone", "game"))             # its tone off the sound shelf (game: the game's)
 			var ops: Array[HSOpening] = []
 			for o in r.get("openings", []):
 				var op := HSOpening.new()

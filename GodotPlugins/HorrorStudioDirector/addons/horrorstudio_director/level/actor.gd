@@ -29,6 +29,24 @@ extends Node3D
 @export var sees_player: bool = false
 @export_range(10.0, 180.0) var sight_angle: float = 90.0
 @export_range(1.0, 30.0) var sight_range: float = 9.0
+## her meter's speed when she sees only the player's flashlight (from any side, within her range): 0 the light doesn't
+## give you away, 1 as if she saw you, 2 twice as fast (FLASHLIGHT_PLAN §2b)
+@export_range(0.0, 3.0, 0.1) var sees_torch: float = 0.0
+## what she does when the flashlight's on her (FLASHLIGHT_PLAN §2b): off (she doesn't feel it), nothing (only heard: a
+## moment's WHEN "the flashlight is on her"), backs off, freezes, flees (to `light_flee`), vanishes, covers her eyes (her
+## In the light move), comes toward it, charges; after how long in it, how bright it must be, how far, how long she
+## keeps away once it's off her, a sound (a story sound's id)
+@export_enum("off", "nothing", "backs off", "freezes", "flees", "vanishes", "covers her eyes", "comes toward it", "charges") var feels_light: String = "off"
+@export_range(0.0, 10.0, 0.1) var light_after: float = 0.4
+@export_range(0.0, 1.0, 0.05) var light_bright: float = 0.3
+@export_range(0.0, 20.0, 0.1) var light_dist: float = 2.5
+@export_range(0.0, 60.0, 0.5) var light_keep: float = 4.0
+@export var light_flee: NodePath
+@export var light_sound: String = ""
+## her presence on the lights near her (metres; 0: none): the flashlight and the lamps flicker, dim or die by her
+@export_range(0.0, 30.0, 0.5) var near_lights: float = 0.0
+@export_enum("none", "flicker", "dim", "die") var near_torch: String = "flicker"
+@export_enum("none", "flicker", "dim", "die") var near_lamps: String = "flicker"
 @export var talk: bool = false
 ## stops the player (a capsule round her)
 @export var solid: bool = true
@@ -51,7 +69,7 @@ extends Node3D
 ## role a clip for each has by its name (core/library.gd role_of)
 const MOVES := [["idle", "Idle", "idle"], ["walk", "Walk", "walk"], ["run", "Run", "run"], ["sit_down", "Sit down", "sit"],
 	["sitting", "Sitting", "sit"], ["stand_up", "Stand up", "stand"], ["talk", "Talk", "talk"], ["listen", "Listen", "listen"],
-	["look_around", "Look round", "look"], ["caught", "Caught", "react"]]
+	["look_around", "Look round", "look"], ["caught", "Caught", "react"], ["lit", "In the light", "react"]]
 
 var _gen: Node3D = null
 var _key := 0
@@ -68,7 +86,10 @@ func _validate_property(p: Dictionary) -> void:
 	var nm: String = p["name"]
 	if (nm == "seat" and behaviour != "sit") or (nm == "path" and behaviour != "path") or (nm == "patrol" and behaviour != "patrol"):
 		p["usage"] = PROPERTY_USAGE_STORAGE
-	elif nm in ["sight_angle", "sight_range"] and not sees_player:
+	elif nm in ["sight_angle", "sight_range", "sees_torch"] and not sees_player:
+		p["usage"] = PROPERTY_USAGE_STORAGE
+	elif (nm in ["light_after", "light_bright", "light_dist", "light_keep", "light_sound"] and feels_light == "off") or (nm == "light_flee" and feels_light != "flees") \
+			or (nm == "light_dist" and not feels_light in ["backs off"]) or (nm in ["near_torch", "near_lamps"] and near_lights <= 0.0):
 		p["usage"] = PROPERTY_USAGE_STORAGE
 	elif nm in ["idle_motion", "walk_motion"]:
 		p["hint"] = PROPERTY_HINT_ENUM_SUGGESTION
@@ -202,6 +223,27 @@ func home_id() -> String:
 
 
 ## her behaviour as the story's `behave`, with the ids of the level's nodes
+## her `beam` for the story (STORY_FORMAT §2 cast `beam`): null when she neither feels the light nor touches the lights
+const LIGHT_DOES := {"nothing": "nothing", "backs off": "backs_off", "freezes": "freezes", "flees": "flees", "vanishes": "vanishes",
+	"covers her eyes": "covers", "comes toward it": "comes", "charges": "charges"}
+func beam() -> Variant:
+	if feels_light == "off" and near_lights <= 0.0:
+		return null
+	var b := {"does": LIGHT_DOES.get(feels_light, "nothing"), "after": light_after, "bright": light_bright, "dist": light_dist, "keep": light_keep}
+	if feels_light == "flees":
+		var s = get_node_or_null(light_flee)
+		b["flee"] = HSDirector.id_of(s) if s != null else ""
+	if light_sound != "":
+		b["sound"] = light_sound
+	if moves.get("lit", "") != "":
+		b["clip"] = moves["lit"]
+	if near_lights > 0.0:
+		b["near"] = near_lights
+		b["near_torch"] = near_torch
+		b["near_lamps"] = near_lamps
+	return b
+
+
 func behave() -> Dictionary:
 	var b := {"behave": HSDirector.id_of(self), "as": behaviour, "speed": speed}
 	match behaviour:
@@ -232,4 +274,6 @@ func behave() -> Dictionary:
 				b["routes"] = rs
 	if sees_player:
 		b["sees"] = {"angle": sight_angle, "range": sight_range}
+		if sees_torch > 0.0:
+			b["sees"]["torch"] = sees_torch               # the light gives you away (FLASHLIGHT_PLAN §2b)
 	return b                                          # (her motions: her moves, the cast's `moves`: compile.gd)

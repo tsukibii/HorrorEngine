@@ -7,6 +7,8 @@ the score room's instruments are music, these are the doors, steps, knocks, brea
     python tools/sfx.py add FILE --name N --category C --tags "a, b" [--loop]   one of our own (recorded or made by us)
     python tools/sfx.py check             SFX: every sound's file is there and plays, every licence CC0 or ours,
                                           and every story sound that names the shelf (`sfx/<name>`) is on it
+    python tools/sfx.py tails [NAMES] [--force] [--check]   the rooms' reverb for the sound physics: every sound's
+                                          tail for each reverb slot, rendered (below)
 
 The shelf: Content/Studio/SFX/<category>/<name>.ogg and Content/Studio/SFX/index.json (name -> file, category, tags,
 secs, loop, credit, licence, source). A story sound uses one by name: `"sounds": {"slam": {"file": "sfx/door_slam"}}`.
@@ -191,6 +193,7 @@ BUILT = {
 # Sounds made here from nothing (ours): name -> (category, tags, maker)
 MADE = {
     "machine_beep": ("house", ["beep", "answering machine", "phone", "electronic"], "beep"),
+    "heart_beat": ("body", ["heartbeat", "heart", "body", "fear", "lub-dub"], "heart"),
 }
 
 
@@ -263,6 +266,19 @@ def made(kind):
         x = 0.6 * np.sin(2 * math.pi * 1000 * t) + 0.08 * np.sin(2 * math.pi * 3000 * t)
         env = np.minimum(1, np.minimum(t / 0.01, (t[-1] - t) / 0.02))
         return (x * env).astype(np.float32)
+    if kind == "heart":                                      # one beat, lub-dub: two low thumps 0.3 s apart (the starter's fear.gd
+        t = np.arange(int(0.75 * SR)) / SR                   # plays it on the Body bus at 60 to 140 a minute)
+        x = np.zeros_like(t)
+        rng = np.random.default_rng(7)
+        for at, f0, amp, dec in ((0.0, 52.0, 1.0, 0.07), (0.30, 61.0, 0.7, 0.06)):
+            u = np.clip(t - at, 0, None)
+            on = t >= at
+            env = (1 - np.exp(-u / 0.006)) * np.exp(-u / dec)
+            thump = np.sin(2 * math.pi * (f0 * u - 18 * u * u)) * env          # a falling low tone
+            body = np.convolve(rng.standard_normal(len(t)) * env, np.ones(40) / 40, "same") * 0.25
+            x += amp * on * (thump + body)
+        x /= max(1e-9, np.abs(x).max()) / 0.85
+        return x.astype(np.float32)
     raise ValueError(kind)
 
 
@@ -397,6 +413,126 @@ def count_by(sounds):
     return out
 
 
+# ---- the reverb tails (the sound physics: guides/first_game/starter/acoustics.gd, sound.gd) ------------------------
+# Lifted from Woohill's tools/sfx/tails.py (the user, 2026-11-08: "for reverb you can lift the system we made in Woohill
+# repo"). Godot's own reverb rings on sharp hits (Woohill measured a chop through it three times as peaky as a smooth
+# reverb), so the game doesn't use it: each sound's reverb is rendered here once per reverb slot, the sound convolved
+# with a smooth, decorrelated stereo noise tail decaying with the slot's time (the highs faster, by its hf_ratio), wet
+# only. The game plays a sound's tails beside it at the gains its ray tracer works out. The slots, the dry categories
+# and the steps (their short slots only) are the starter's acoustics.json. Out: Saved/SFX/tails/<category>/<name>.<slot>.ogg
+# and _generic/<slot>.ogg (the slot's tail alone, for sounds without their own), stereo Vorbis at 22050 Hz, normalised
+# to the IR's unit energy (so a slot's send gain is its level); godot_byhand.py copies them into a project's
+# sfx/_tails/. Only what changed is rendered (--force all); --check fails when one is missing or stale.
+ACOUSTICS = ROOT / "guides" / "first_game" / "starter" / "acoustics.json"
+TAILS = ROOT / "Saved" / "SFX" / "tails"
+TAIL_SR = 22050
+
+
+def _one_pole(x, hz):
+    a = math.exp(-2 * math.pi * hz / SR)
+    y = np.empty_like(x)
+    acc = np.zeros(x.shape[1:])
+    for i in range(len(x)):
+        acc = (1 - a) * x[i] + a * acc
+        y[i] = acc
+    return y
+
+
+def tail_ir(slot, seed):
+    """A slot's impulse response: stereo noise, independent per channel, its lows decaying over `decay` s (T60) and
+    its highs over decay * hf_ratio, after `delay` s; unit energy per channel."""
+    rng = np.random.default_rng(seed)
+    t60 = float(slot["decay"])
+    n = int(SR * (float(slot.get("delay", 0.0)) + t60 * 1.1 + 0.02))
+    t = np.arange(n) / SR
+    noise = rng.standard_normal((n, 2))
+    low = _one_pole(noise, float(slot.get("split_hz", 2500.0)))
+    high = noise - low
+    k_low = np.exp(-6.91 * t / t60)
+    k_high = np.exp(-6.91 * t / max(0.02, t60 * float(slot.get("hf_ratio", 0.8))))
+    h = low * k_low[:, None] + high * k_high[:, None] * float(slot.get("hf_gain", 0.7))
+    a = int(0.004 * SR)                                     # a soft onset (no click)
+    h[:a] *= np.linspace(0, 1, a)[:, None]
+    h = np.concatenate([np.zeros((int(float(slot.get("delay", 0.0)) * SR), 2)), h])
+    h /= np.sqrt((h ** 2).sum(axis=0, keepdims=True))
+    return h
+
+
+def _convolve(x, h):
+    n = len(x) + len(h) - 1
+    m = 1 << (n - 1).bit_length()
+    X = np.fft.rfft(x, m)
+    return np.stack([np.fft.irfft(X * np.fft.rfft(h[:, c], m), m)[:n] for c in range(2)], axis=1)
+
+
+def _write_tail(y, path):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    env = np.abs(y).max(axis=1)
+    loud = np.nonzero(env > (env.max() + 1e-12) * 10 ** (-60 / 20))[0]   # trimmed where it falls 60 dB under its peak
+    y = y[:(loud[-1] + 1) if len(loud) else len(y)]
+    f = int(0.02 * SR)
+    if len(y) > f:
+        y[-f:] *= np.linspace(1, 0, f)[:, None]
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "f64le", "-ac", "2", "-ar", str(SR), "-i", "-",
+                    "-ar", str(TAIL_SR), "-c:a", "libvorbis", "-q:a", "0", str(path)],
+                   input=y.astype(np.float64).tobytes(), check=True)
+
+
+def cmd_tails(names, force=False, check=False):
+    cfg = json.loads(ACOUSTICS.read_text("utf-8"))
+    slots = cfg["slots"]
+    dry = set(cfg.get("dry", []))
+    short = {"steps"}                                     # (your own body: only the short slots ever play)
+    cfg_t = ACOUSTICS.stat().st_mtime
+    sounds = json.loads(INDEX.read_text("utf-8")).get("sounds", {})
+    irs = None
+    stale, made, want = [], 0, set()
+    for name, s in sorted(sounds.items()):
+        cat = s.get("category", "")
+        if cat in dry or s.get("loop") or (names and not any(name.startswith(n) for n in names)):
+            continue
+        src = SHELF / s["file"]
+        x = None
+        for i, sl in enumerate(slots):
+            if i >= 2 and cat in short:
+                continue
+            out = TAILS / cat / ("%s.%s.ogg" % (Path(s["file"]).stem, sl["name"]))
+            want.add(out)
+            if not force and out.is_file() and out.stat().st_mtime >= max(src.stat().st_mtime, cfg_t):
+                continue
+            if check:
+                stale.append(str(out.relative_to(ROOT)))
+                continue
+            if irs is None:
+                irs = [tail_ir(sl2, 1000 + k) for k, sl2 in enumerate(slots)]
+            if x is None:
+                x = load(src)
+            _write_tail(_convolve(x, irs[i]), out)
+            made += 1
+    for i, sl in enumerate(slots):                        # the generic tails: the IR alone
+        out = TAILS / "_generic" / ("%s.ogg" % sl["name"])
+        want.add(out)
+        if check:
+            if not out.is_file() or out.stat().st_mtime < cfg_t:
+                stale.append(str(out.relative_to(ROOT)))
+        elif force or not out.is_file() or out.stat().st_mtime < cfg_t:
+            if irs is None:
+                irs = [tail_ir(sl2, 1000 + k) for k, sl2 in enumerate(slots)]
+            _write_tail(irs[i].copy(), out)
+            made += 1
+    if not names and TAILS.is_dir():                      # tails whose sound is gone
+        for f in TAILS.rglob("*.ogg"):
+            if f not in want:
+                if check:
+                    stale.append(str(f.relative_to(ROOT)) + " (orphan)")
+                else:
+                    f.unlink()
+    if check:
+        print("TAILS %s" % ("ok" if not stale else "stale: %d, e.g. %s" % (len(stale), stale[:3])))
+        sys.exit(1 if stale else 0)
+    print("TAILS made %d (%s)" % (made, TAILS.relative_to(ROOT)))
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -414,8 +550,12 @@ def main():
     ad.add_argument("--credit")
     ad.add_argument("--license", default="ours", choices=["ours", "CC0-1.0"])
     sub.add_parser("check")
+    ta = sub.add_parser("tails")
+    ta.add_argument("names", nargs="*")
+    ta.add_argument("--force", action="store_true")
+    ta.add_argument("--check", action="store_true")
     a = ap.parse_args()
-    if a.cmd in ("fetch", "add", "check") and not shutil.which("ffmpeg"):
+    if a.cmd in ("fetch", "add", "check", "tails") and not shutil.which("ffmpeg"):
         sys.exit("needs ffmpeg on the PATH")
     if a.cmd == "fetch":
         fetch(a.force)
@@ -423,6 +563,8 @@ def main():
         cmd_list(a.words)
     elif a.cmd == "add":
         cmd_add(a)
+    elif a.cmd == "tails":
+        cmd_tails(a.names, a.force, a.check)
     else:
         cmd_check()
 

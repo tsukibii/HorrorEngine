@@ -150,6 +150,11 @@ for f, m in got.items():
             errs.append(f"{f}: no player_start marker with its metadata: {list(m['markers'])[:6]}")
         if not any(k.startswith("spot_") for k in m["markers"]) or not any(k.startswith("trigger_") for k in m["markers"]):
             errs.append(f"{f}: the spots or the triggers didn't come in as markers")
+        vols = {k: v for k, v in m["markers"].items() if k.endswith("__volume") and isinstance(v, dict)}
+        if not vols or not all(v.get("floor") and isinstance(v.get("mats"), dict) for v in vols.values()):
+            errs.append(f"{f}: a room's volume marker without its floor and surfaces (the starter's sound reads them): {list(vols.items())[:2]}")
+        else:
+            say += f"; {len(vols)} rooms' surfaces on their markers (e.g. {next(iter(vols.values())).get('floor')})"
         if len(m["doors"]) < 3:
             errs.append(f"{f}: {len(m['doors'])} doors, the set has more")
     if f == "interior_bungalow.glb" and "outside" not in m["top"]:

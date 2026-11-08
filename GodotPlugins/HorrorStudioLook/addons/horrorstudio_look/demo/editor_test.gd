@@ -48,6 +48,10 @@ func _process(dt: float) -> void:
 		live["pane"] = root.get_node("WindowPane").material_override is ShaderMaterial
 		live["puddle"] = root.get_node("Puddle").decal != null
 		live["crt"] = root.get_node("CrtScreen").material_override is ShaderMaterial
+		var fl = root.get_node("Flashlight")
+		var ab = fl.get_node("AirBeam")
+		live["beam"] = ab.hull != null and ab.hull.visible and fl.light_projector != null
+		live["air"] = root.get_node("AirHazyNight").fog_volume != null and root.get_node("AirHazyNight").active()
 		var zone = root.get_node("RoomBulb")
 		rep["zone_dbg"] = [zone.layer, zone.lights.size(), zone.get_node("Bulb").omni_range, zone.get_node("Bulb").light_cull_mask]
 		live["zone"] = zone.layer > 0 and zone.lights.size() >= 1 and zone.get_node("Bulb").omni_range < 6.0 and zone.get_node("Bulb").light_cull_mask != 0xFFFFFFFF
@@ -57,6 +61,6 @@ func _process(dt: float) -> void:
 		busy = false
 		return
 	if saved_at > 0.0 and t > saved_at + 1.0:
-		rep["after"] = root.get_node("Floor").material_override is ShaderMaterial and root.get_node("WindowPane").material_override is ShaderMaterial
+		rep["after"] = root.get_node("Floor").material_override is ShaderMaterial and root.get_node("WindowPane").material_override is ShaderMaterial and root.get_node("Flashlight").light_projector != null
 		print("HSEDITOR " + JSON.stringify(rep))
 		get_tree().quit()

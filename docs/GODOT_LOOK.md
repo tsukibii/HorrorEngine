@@ -31,6 +31,7 @@ Four kinds, by what they work on:
 | **Things of their own** | `HSRainBox`, `HSPuddle`, `HSBloodSplat`, `HSLightShaft`, `HSHeadlightSweep` | drop it where it goes. It makes its streaks, decal, quad, card or lamp as children of its own that are never saved (no owner), so the scene file holds only the node and its numbers. They run in the editor: the rain falls, the dust drifts, a sweep passes every `preview_every` seconds |
 | **On a mesh you have** | `HSWetSurface`, `HSWindowPane`, `HSWallLeak`, `HSCrtScreen` (all `HSOnMesh`), `HSMirrorSurface`, `HSCharacterLook`, `HSLiquidFill` | drop it under the mesh (or the node holding the meshes, or set `target`). The first four change the meshes' materials while they're there, in the editor too, and put the meshes' own back before every save (the editor's pre-save notification) and when removed, so a re-export's level and yours never fight over a material (`HSCrtScreen`: a tube television's glass on a quad or on one `surface` of the set's mesh, §5i). The mirror reflects and the character wears its skin, eyes and hair when the game runs (they need its camera and its glb). `HSLiquidFill` keeps a bottle's liquid level and sloshing, in the editor too (liquid.gd, docs/PROPGEN.md §10; the game puts one under every made prop's `<name>_liquid` as it enters a level). `HSPropFX` under a made prop (or in the prop's own `.tscn`; the game puts one on every made prop that has some) gives it its enhancers, each a switch: glow, flame (with its candle light), smoke, steam, wax; a kind off for the whole project in Project Settings, `horrorstudio/prop_fx/*` (docs/PROPGEN.md §14) |
 | **Lights with behaviour** | `HSFlickerLight` (omni), `HSFlickerSpot`, `HSPatternLight` (spot) | the light itself, its effect in the inspector beside its own settings. A flicker multiplies the Energy you set (the light at full), previewed in the editor, saved at full; `on_mains` puts it in the group `hs_mains`, which the game's power cut switches off and on (any light of yours in that group too). A pattern light draws its loop when the scene starts and is saved without it |
+| **The air** (§5j) | `HSAtmosphere`, `HSBeam`, `HSDust`, `HSAirZone` | one `HSAtmosphere` a level: its fog level (one number), ground mist, wind, dust; `HSBeam` under any SpotLight3D draws its beam in that air (a flashlight's, with a cookie); `HSAirZone` a box whose air is different while the eye is in it. They run in the editor too; the environment's own fog and the light's projector go back before every save |
 | **Over the picture** | `HSGrade`, `HSTape` | the level's own grade or tape while it's loaded, over the story's `game.grade` and `game.vhs`, which come back when it goes; in a project of your own they add the layer themselves. Picking a grade's `preset` fills its numbers to tune from. Seen when the game runs (a screen effect isn't drawn in the editor's 3D view) |
 
 Orientation, the same for every node that has one: **forward (-Z, the way the node looks) is into the room.** A
@@ -38,13 +39,16 @@ shaft's beam runs along it (tilt the node down for the sun); a sweep's and a lea
 wall with forward into the room and X along the street or the wall; a blood splat lies on the surface its +Y (the
 green arrow) points out of.
 
-The presets (`presets/*.tscn`, 41): `rain`, `downpour`; `wet_floor`, `wet_floor_raining` (ripples), `damp_floor`;
+The presets (`presets/*.tscn`, 52): `rain`, `downpour`; `wet_floor`, `wet_floor_raining` (ripples), `damp_floor`;
 `puddle`; `blood_pool`, `blood_dried`, `blood_wall`; `wall_leak`; `window_shaft`, `window_sun` (the shaft with a
 warm spot shining the same way, a child of it); `headlight_sweep`; `caustics_light`, `blinds_light`, `leaves_light`,
 `clouds_light`; `fluorescent_tube`, `dying_bulb`, `candle`, `alarm_pulse`, `faulty_neon`, `desk_lamp_dying`;
 `mirror` (a glass quad with its reflection), `window_pane` (a quad with rain on it), `crt_screen` (a 14-inch tube's
 glass showing snow, §5i); `grade_cinema`, `grade_cold`,
-`grade_noir`; `tape_camhybrid`, `tape_worn`; `character_look`, `character_sweating`; `look_environment`. A preset is
+`grade_noir`; `tape_camhybrid`, `tape_worn`; `character_look`, `character_sweating`; `look_environment`; the air (§5j):
+`air_clean_room`, `air_dusty_room`, `air_hazy_night`, `air_woods_mist`, `air_fog`, `air_thick_fog`, `flashlight` and
+`flashlight_led` (a SpotLight3D with its `AirBeam` and cookie), `lamp_beam` (a lamp's cone in the air), `dust`,
+`air_zone_dusty`. A preset is
 a scene: its root's settings are in the inspector where it's placed; for one with children (`window_sun`, `mirror`,
 `window_pane`) right-click it, Editable Children, to tune those too.
 
@@ -67,7 +71,7 @@ beside the opening, its sides parallel, its length to the floor, its light outsi
 `room_candle`, `room_night`; the user, 2026-10-30, evening: "presets for different room lights with a cubed area
 affected, like VoxelGI, the zone is what will be lit; I'm ok limiting the architecture to boxes"). A zone is a box
 (`size`, drawn in the editor as VoxelGI's is, coloured by its layer) that owns every light inside it, its children or
-anywhere in the scene. It does three things with them:
+anywhere in the scene. It does four things with them:
 
 - **Keeps them to the box** (`keep_inside`): the meshes wholly inside it (by `margin`, so a wall between two rooms
   is in both) go on the zone's render layer, 2 to 10, chosen so that zones touching each other differ. Its lights
@@ -79,6 +83,15 @@ anywhere in the scene. It does three things with them:
 - **Switches them off unseen** (`hide_unseen`, in the game): while the eye is outside the box and the box is out of
   view or beyond `cull_distance`, its lights are off, shadow maps and all. A power cut and a zone agree through
   `HSLightZone.show_light`: a light shows when its own visibility, the power and its zone all say so.
+- **Takes their fittings' glass with them** (`glass_follows`, in the game; DECISIONS 2026-11-08, tutorial v2's dark
+  corridor, where the tubes went out and their glass kept glowing): whatever glows within `glass_reach` (0.3 m) of a
+  light (a mesh whose material has emission: an exported fitting's tube or diffuser, your own lamp's bulb) is that
+  light's glass, each taken by one light. It wears its own copy of the material, its emission the light's output
+  against its full light every frame the zone is seen: out with the light, the power or a scare; dimmed by the starter
+  kit's `Lights.set_level`; flickering with an HSFlickerLight. The full light is the starter's (`hs_full`), a
+  flickering light's own (its drive's), else what it had when its glass was found, a few frames into the game. An
+  exported game's story lights (`metadata/light`) are left to its runtime, which dims their fittings itself (play.gd
+  `fitting_light`). `glass_of(light)` says how bright a light's glass is (LOOKPLUGIN's zones stage, TUTORIAL2).
 
 In the editor the layers, cull masks and ranges are shown as the game will have them, and put back before every
 save. The room presets are a zone of 4 × 3 × 4 m about its middle, with one shadowed light, a GTX 1060's budget:
@@ -462,12 +475,30 @@ of the room per mirror in view: keep mirrors to the rooms that need one; the pau
 them off at Low (dull glass) and halves them at Medium (`set_quality`). Not yet: a mirror seen in a mirror.
 
 **A mirror seen in a mirror** (2026-10-30, CONTINUE's second step): each mirror and its wall sit on a layer of their
-own (11 to 19, the first free one; the tenth onward share 20), and a mirror's camera draws every layer but its own
-(and the softener's 20), so another mirror's glass is in its picture with that mirror's last frame on it, a frame
-late, and a mirror never draws itself (no reading the picture it's writing). Two bounces, not an endless hall: the
-third would need a third render. The demo's mirror stage has a second mirror facing the first across the room and
-measures the second's glass inside the first's picture: the room's bulb glints there, brighter than the wall beside
-(LOOKPLUGIN); the bath's mirror in GDTESTROOM sits on its own layer.
+own (11 to 18 since 2026-11-08, the first free one; the ninth onward share 20), and a mirror's camera draws every
+layer but its own (and the softener's 20), so another mirror's glass is in its picture with that mirror's last frame
+on it, a frame late, and a mirror never draws itself (no reading the picture it's writing). Two bounces, not an
+endless hall: the third would need a third render. The demo's mirror stage has a second mirror facing the first
+across the room and measures the second's glass inside the first's picture: a picture lit like the room, not a hole
+(LOOKPLUGIN; until 2026-11-08 it wanted a peak at twice the mean, which it had only because the first mirror's own
+wall was left in its picture, below); the bath's mirror in GDTESTROOM sits on its own layer.
+
+**Its own wall, out of its picture** (2026-11-08): the mirror camera's near plane is square to its view, not to the
+glass, so looking down at a mirror the wall behind the glass stays in below a line across it, in front of the room.
+`_hide_wall` puts that wall on the mirror's own layer: every mesh whose box a short segment straight back from the
+glass's middle or its corners (drawn in) crosses, 25 cm deep (a closed panel's both sides, 9 cm: either can be the
+room), so an export's wall (its `-colonly` collider has no mesh under it) and the room's 4 mm lining on it both go;
+never a mesh bigger than 60 m³ (a whole level); and whatever mesh sits under the collider a ray finds there. `hid`
+lists them; LOOKPLUGIN wants the demo's wall among them, TUTORIAL2 the bath's wall and lining.
+
+**Only in the mirror, missing from it** (2026-11-08, docs/research/intensity.md §5.3; DECISIONS 2026-11-08, night:
+the mirrors' last layer): layer 19 is drawn by the mirrors' cameras alone. A mirror leaves it out of the camera it
+reflects, and adds it to its own; `HSMirror.only_in_mirrors(node)` puts a node's meshes and decals there with no
+shadow (the shadow would give it away; `shadow` true keeps it as a clue) and leaves 19 out of the current camera;
+`never_in_mirrors(node)` puts them on 20, which every camera but a mirror's draws; `in_mirrors_too(node)` back on 1.
+The starter's player leaves 19 out of its eye, and `mirror_figure.gd` stands a figure there (tutorial v2: her in
+304's tub, in the glass only). The demo's mirror stage counts a green box on 19 and a red one on 20 in the eye's
+picture and the mirror camera's (LOOKPLUGIN). Lights reach both layers (a light zone's lights take 11 to 20).
 
 ## 5c. Hair on imported models (`hair.gdshader`, `HSHair`)
 
@@ -925,6 +956,195 @@ across the 400 px box against 64.8, the hum 3.3 % over twelve frames; across the
 against 0.0174 close, the raster 0.327 over the set off 0.020, the glint's peak 1.00 over the lower glass's 0.152; the
 snow's grain 0.024. The check's two Godot runs that take longest (the nodes demo with its 41 presets, the demo's
 sixteen stages) were given 20 and 30 minutes that day: on a machine running three other jobs they took over 10 and 15.
+
+## 5j. The air: a beam in the fog, the fog level, dust (`air.gd`, `HSAtmosphere`, `HSBeam`, `HSDust`, `HSAirZone`; DECISIONS 2026-11-08)
+
+The user: "when we put a light in real life in the woods it's more like a beam in a fog, maybe have a fog level
+adjuster and dust particle visible". The research (docs/research/eye_candy.md §2) measured the old look:
+- the balanced haze (0.009 at anisotropy 0.55) left the flashlight's beam invisible from the player's eye;
+- Godot's froxel fog only draws a beam as a soft glow, and finer froxels cost nine times as much.
+
+So the beam draws itself, and one node sets the air.
+
+**`HSAtmosphere`, the fog level.** One a level (a second waits until the first goes).
+- `fog` 0..1 is the fog level, `HSAir.density(level)` = 0.15 × level^2.03 per metre:
+  - 0.25 is the balanced look's haze (0.009);
+  - 0.5 sees about 80 m;
+  - 0.75 about 35 m;
+  - 1 about 20 m (to see through ≈ 3 / density).
+- It sets the environment's volumetric fog density and colour.
+- A World FogVolume of its own (`air_fog.gdshader`) varies the density by 3D noise drifting on `wind` (`noise`: wisps
+  and pockets) and adds **ground mist** (`mist`, 0.12 × mist² per metre at `ground`, thinning over `mist_height`).
+- It keeps motes round the eye (an `HSDust`, `dust`).
+- `beams` scales every HSBeam in it.
+- **Presets** (`preset`, or the `air_*` scenes): `clear`, `clean_room`, `dusty_room`, `hazy_night`, `woods_mist`,
+  `fog`, `thick_fog`. A number changed afterwards makes it `custom`.
+- `fog_to(level, seconds)` rolls the fog in or out; `air_to({fog, mist, dust, noise}, seconds)` moves several.
+- **`HSAirZone`**, a box (`size`) with its own `fog`, `dust` and `mist` (under 0 keeps the level's). While the eye is
+  inside, it pulls the air to its numbers over `seconds`, and lets go over the same on the way out. The smallest box
+  holding the eye wins.
+- With the look's effects on Low (`HSLook.quality`, the environment's `hs_no_haze` meta) the froxels stay off; the
+  beams and the dust carry the air.
+
+**`HSBeam`, a light's beam in that air.** Under a SpotLight3D, or `light` pointing at one.
+- **Its cone** (`beam.gdshader`): a cone hull round the light, its back faces drawn (so the eye can be inside it),
+  added after the opaque pass.
+  - Along each view ray it sums the light scattered toward the eye inside the cone with 24 equiangular samples about
+    the apex (`quality` 12 or 32), jittered per pixel and frame for TAA.
+  - The ray stops at the depth buffer.
+  - It uses the spot's own falloffs (Godot's: the rim to `spot_angle_attenuation`, the range window, `spot_attenuation`).
+  - It uses the light's projector as its profile.
+  - Its phase is even by default (`phase`: below 0 brighter from behind the light, above 0 facing it).
+  - The air's density, mist and noise are the same as the FogVolume's, on the same wind, with extinction both ways.
+- **What it reads.** Every frame it reads its light: on or off, energy, colour, range, angle. So a battery running
+  down, a flicker and a power cut show in the air.
+- **Brightness**: `GAIN` 3 × energy × `strength` × the atmosphere's `beams`, over `beam_density(d)` =
+  0.06 × (d / 0.06)^0.75 (thin air carries a little more than its share: the tone curve's toe would eat a faint beam).
+- **`cookie`** puts a flashlight's beam on the light, as its projector and the beam's profile both (`HSAir.cookie`):
+  - `flashlight`: a hot core to a third of the cone, a faint ring, a dim spill;
+  - `led`: whiter, flatter, a sharper edge;
+  - `lantern`: an even wash.
+- **`leave_fog`** sets the light's volumetric fog energy to 0, so the froxels don't draw a second, softer beam that
+  trails a turn.
+- **Without an HSAtmosphere** it reads the environment's own haze.
+- **No shadows in the beam**: Godot's shadow atlas can't be read from a shader. From the holder's eye a shadow lies
+  behind its occluder anyway. Seen from the side, a lamp's or a window's shafts come from the froxels and HSLightShaft.
+
+**`HSDust`** (the motes rebuilt after the user's "too stylized", research §2.3b: dust seen the way an eye sees it in a
+beam, never a camera's soft discs).
+- **Where they are** (`dust_particles.gdshader`): `most` (12,000 at dust 1, 70 a cubic metre) in a box round the eye
+  (`box` 7 × 3.5 × 7 m, wrapped round it, so nothing pops in view).
+- **How they move**: they ride a **curl-noise flow**, two octaves of slow eddies (about 1.5 m and 0.6 m across) at
+  `stir` (3 cm/s, a still room's air), with the atmosphere's wind on top and a slow settling of the biggest.
+- **What they look like** (`dust.gdshader`):
+  - **Flakes** (88%): sizes from a power law about `size_mm` (0.9 mm, from 0.4 to 2.5 mm), each tumbling about an axis
+    of its own at a rate of its own. Their light is a dim glow through a two-lobed phase (forward 0.6; back −0.5 at
+    45%, the flakes' glint back toward the light, so they show in your own beam), plus a **mirror flash** when a face
+    lines up with the light and the eye (`pow(|n·h|, shine)`): the twinkle.
+  - **Fibres** (`fibres`, 12%): threads of lint 2.5 to 5 times as long as wide, drawn along their own axis as seen,
+    glinting where the light meets them square.
+  - Gaussian points, never discs, a touch of each mote's own colour (lint isn't white).
+- **Lit in the beams.** A mote inside an HSBeam's light (the four nearest the eye) is lit by it directly: the cone,
+  the cookie and the falloff are worked out per mote, its glow is `beam_scatter` 30 and the flash is the same. Dust
+  shows in a flashlight's beam and a sunbeam, as it does: a real flashlight packs its light into its beam, far brighter
+  than a lamp, and Godot's spots don't.
+- **Everywhere else** the ordinary lights reach it through `light()` with a faint glow (`scatter` 8) and a `knee` of 2
+  (full at 6). A room's lamps hardly show dust, and moonlight shows none.
+- **How bright**: its size and the growth's dimming go into the sum, and the result is capped at 1.0 (`most_light`),
+  under the look's glow (1.05). A speck stays a point and never blooms into a blob.
+- **Against what's behind it** (found in tutorial v2's lit corridor, 2026-11-08, where motes showed as soft blobs over
+  the walls): each mote reads the screen behind it (the opaque pass, `hint_screen_texture`). It fades out as that gets
+  lighter (`dark` 0.06 to `lit_bg` 0.5, linear), as dust does (a lit room's dust is never seen; a beam's is, against
+  the dark), and never adds more than takes the pixel to `most_light` (a mote adds to what's behind it, so over a lit
+  wall a capped speck could still pass the glow). `fragment()` passes both to `light()` in a varying.
+- **Its size on screen** uses `abs(PROJECTION_MATRIX[1][1])`: under Vulkan the term is negative, and until
+  2026-11-08 every mote took the growth's cap (8-fold), the near ones 17 px soft discs (LESSONS).
+- **On screen**: never under 1.6 px (grown and dimmed to keep its light, so TAA doesn't average it away). Faded out
+  within 0.7 m of the eye (it doesn't focus that close) and at the box's edge (seen to about 3.6 m).
+- `VIEWPORT_SIZE` reads 0 in `vertex()`: the picture's height is a uniform (LESSONS).
+
+**The flashlight.** The starter kit's (`guides/first_game/starter/player.tscn`) is now:
+- energy 4, angle attenuation 2.5;
+- an `AirBeam` (HSBeam, cookie `flashlight`);
+- `beam_on` weighed by the cookie, so a character is flashed in the core, not the spill.
+
+The `flashlight` preset is the same light; `flashlight_led` the LED torch. The export's torch (play.gd, a hot spot and a
+spill) has no beam yet: the story's air word and the desk's side come with it (CONTINUE).
+
+**Measured** (LOOKPLUGIN's `demo/air.gd`, the woods at night):
+
+| What | Measured |
+|---|---|
+| The beam in the air 6 m out at fog 0, 0.25, 0.5, 0.75 | 0, 28.9, 59.1 and 73.2 |
+| Half the energy | 0.58 of the beam |
+| The light off | 0 |
+| The old place after a 40° turn | nothing |
+| Motes in the beam's core | 40 a thousand pixels; none beside it, none by moonlight |
+| The motes' twinkle and spread | every lit pixel changed in a quarter of a second; the brightest tenth 19 times the faintest |
+| `fog_to(0.75, 1)` | 0.0343 half way (from 0.009 to 0.0836), there at the end |
+| A zone's fog | 0.697 of 0.7 inside, 0.253 of 0.25 after |
+| A lamp in mist | +25 near the ground, +13 up high |
+| A save | the projector, fog energy and density back, on again after |
+
+The nodes demo has every air preset (one atmosphere acting, three beams, the cookies) and the editor test a
+flashlight and the hazy night.
+
+## 5k. Lightning within the flash limits (`lightning.gd`, `HSLightning`, `HSLightningStorm`; DECISIONS 2026-11-08, night)
+
+docs/research/intensity.md §5.4: a real flash is three to five strokes about 60 ms apart, which is more than the
+limits allow. ITU-R BT.1702, Ofcom and WCAG 2.3.1 bar more than three flashes a second, a flash being a pair of
+opposite changes of about a tenth of white. So a strike here is **one flash**: a rise to full in 25 ms, up to two
+re-brightenings 0.35 s apart riding on a glow that sags no more than a tenth (`DIP`: none counts as a flash of its
+own), a hold, a 0.3 s fall; then at least a second of dark (`dark_min`), and a strike asked for sooner waits for it.
+`HSLightning.make(settings)` is a DirectionalLight3D (cold blue-white, shadows on: it reaches inside only through the
+windows, whose glass the starter's interior.gd and the export keep shadowless) striking every `every` seconds
+jittered from a seed (0: only on `fire()`), each strike queuing its own thunder `km` kilometres off, 3 s a
+kilometre later (a second strike never cancels the first's). `figure` is shown only while the flash is over half,
+in the first `figure_times` strikes; `reduce` scales the flash for a player's setting. `struck` and `thundered`.
+`HSLightningStorm` is the node (no strikes in the editor unless `preview_every`), `presets/lightning.tscn` the
+preset.
+
+LOOKPLUGIN's lightning stage strikes, asks for a second strike during the first, and reads the flash every frame at
+a fixed 60 fps: each strike one rise past half, the glow never under 0.89 between three brightenings, at least a
+second of dark between, the first thunder 3 s after for a kilometre, the figure shown exactly while the flash is
+over half, the room brighter; the nodes demo strikes the preset once to full and back.
+
+## 5l. The cold: breath and frost (`breath.gd`, `breath.gdshader`, `HSBreath`, `HSBreathPuffs`; `HSGlass.frost`; DECISIONS 2026-11-08, night)
+
+docs/research/intensity.md §5.5: breath shows when 34 °C breath, saturated, mixes with air cold enough to pass
+saturation (below about 7 °C, warmer in damp air); frost and mist start at a pane's bottom edge, its coldest part.
+
+- **Breath**: `HSBreath.make(mouth, settings)` breathes out every `every` seconds, jittered a quarter either way.
+  - Each breath is four puffs 60 ms apart from `offset` in the mouth's space (an eye's: 10 cm under it, 15 cm ahead),
+    carried out at 1.4 m/s and slowed by the air (about a metre in all), a little downward as breath leaves the mouth
+    and rising as it slows, spreading as a plume, growing from 3 to 32 cm and thinning over `life` (2 s).
+  - The puffs are a top-level MultiMesh: they stay where they were breathed.
+  - `breath.gdshader` is puff.gdshader's noise-eroded disc made wispy, lit only by the lights that reach it (no
+    ambient) and added, not mixed. Breath scatters light and hides nothing, so a dark room hides it entirely.
+  - It has a light of its own: droplets throw light forward. A lamp behind the breath lights it up toward the eye
+    (`forward`), like a street lamp outside a window you breathe at. Your own flashlight, from beside you, catches it
+    softly (`wrap`): held at the chest, its beam takes the falling breath in from about 60 cm on, in the cookie's ring
+    and spill (its hot core is only 4 to 8° wide).
+  - It's faded into what's behind it and right at the lens.
+  - `HSBreathPuffs` is the node: put it where breath comes out (under the player's Eye, a character's head), with `on`,
+    `every`, `strength`, and nothing in the editor unless `preview`.
+- **Frost**: `HSGlass.frost(mesh_instance, k)` frosts a pane from its bottom edge, by world height (`frost_bottom`,
+  `frost_top` from the mesh's box), so it works whatever the glass's UVs.
+  - The line sits at k × 0.75 of the way up, ragged by noise about 15 cm across.
+  - Below it the room behind is seen as a blur (the screen texture's fourth to fifth mip), through crystals that take
+    the lights (their own white, rough, a normal of centimetre grain); a mist of condensation lies above it.
+  - `HSWindowPane.frost` sets it live, without rebuilding the pane, so a cold area can raise it while you watch.
+- The starter's `cold_area.gd` uses both: walk in and the panes frost up over `frost_seconds` and your breath shows
+  after `breath_after`; walk out and the breath stops and the frost thaws over `thaw_seconds`.
+
+LOOKPLUGIN's cold stage is a set of its own: a checker seen through a pane, the starter's flashlight by the eye (its
+cookie and its shadows: a spot's projector needs the light's shadow setup).
+- **Breath**: a breath half a metre to a metre out, against the dark below the pane, adds light where the beam takes
+  it, half again as much with a lamp behind it, and a breath in the dark changes nothing.
+- **Frost**: frosted to 0.6, the pane's bottom quarter loses its sharpness (the Laplacian's variance under 0.4 of the
+  clear glass's) while the top, above the line, keeps it.
+
+## 5m. Steam on a mirror and writing in it (`mirror.gdshader`, `HSMirror.set_steam`, `HSMirror.write`; DECISIONS 2026-11-08, night)
+
+docs/research/intensity.md §5.3: What Lies Beneath's "You know", written in the steam on a bathroom mirror. Grease
+changes how glass fogs (Rayleigh, 1911): where a finger went, the steam doesn't form, so old writing shows as the
+glass mists over.
+
+- `set_steam(k)` fogs the glass from its bottom edge, by world height (the glass's box): a ragged line at
+  k × 1.3 − 0.15 of the way up, so all of it by 1, with a bead grain.
+- Through the steam the reflection is a wide blur, 25 taps in three rings of the mirror's picture: a soft, pale,
+  flattened glow of the room's light and dark.
+- `write(text, rect)` draws the words once, in white, into a picture of their own (a SubViewport updated once, never
+  saved). They're laid on the glass by its own axes as seen from in front (`glass_centre`, `glass_right`, `glass_up`,
+  `glass_size`), so they read the right way round whatever the mesh's UVs. Where they are, the steam is cut back by
+  nine tenths, and drips run down from some of the strokes.
+- `HSMirrorSurface.steam` and `.writing` are the node's, both live. The starter's `steam_mirror.gd` steams a mirror
+  over, holds and clears it.
+
+LOOKPLUGIN's steam stage is a mirror of its own with a checker on the wall behind the eye.
+- **Half steamed**: the bottom fifth of the glass loses its sharpness (under 0.4 of the clear glass's) while the
+  top keeps it.
+- **Steamed all over with 308 written**: the words' box is more than three times sharper than the fog beside it.
 
 ## 5d. Streets from the Blender bake (`street.gdshader`, `HSStreet`)
 

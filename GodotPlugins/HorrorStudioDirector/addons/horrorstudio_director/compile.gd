@@ -124,6 +124,10 @@ func _game_settings(g: Node) -> void:
 		gs["ui_theme"] = g.ui_theme
 		gs["lighting"] = g.lighting
 		gs["weather"] = g.weather
+		if g.get("tone") != null and str(g.tone) != "none":
+			gs["tone"] = str(g.tone)
+		if g.get("quiet") != null and float(g.quiet) > 0.0:
+			gs["quiet"] = float(g.quiet)
 		gs["player"] = {"run": bool(g.get("can_run") if g.get("can_run") != null else true), "crouch": bool(g.get("can_crouch") if g.get("can_crouch") != null else true),
 			"eye": float(g.get("eye_height") if g.get("eye_height") != null else 1.65)}
 		var cs := {}
@@ -165,6 +169,12 @@ func _level_things(lv: Node, lid: String) -> void:
 						mv.erase(role)
 				if mv.size():
 					c["moves"] = mv
+				var bm = n.beam()                            # what she does in the flashlight's beam (FLASHLIGHT_PLAN §2b)
+				if bm != null:
+					c["beam"] = bm
+					if bm.has("flee") and str(bm["flee"]) == "":
+						warn(n, "%s flees the light, but no spot is set for it (light_flee)" % nid)
+						bm.erase("flee")
 				if n.behaviour in ["path", "patrol"] and n.get_node_or_null(n.path) == null and n.patrol.is_empty():
 					warn(n, "%s walks a path, but none is set: she'll stand" % nid)
 			"HSDoor":
@@ -182,6 +192,10 @@ func _thing(n: Node) -> void:
 			_item(iid, n.item_name if n.item_name != "" else n.display_name)
 			if n.flashlight:
 				story["items"][iid]["torch"] = true
+				if float(n.flashlight_battery) > 0.0:             # on batteries (FLASHLIGHT_PLAN §1): its seconds of light, its kind, how full
+					story["items"][iid]["torch"] = {"battery": float(n.flashlight_battery) * 60.0, "kind": str(n.flashlight_kind), "charge": float(n.flashlight_charge)}
+			elif float(n.batteries) > 0.0:
+				story["items"][iid]["battery"] = float(n.batteries)   # a set of batteries: into the pocket
 		"note":
 			story["notes"][n.note if n.note != "" else HSDirector.id_of(n)] = {"title": n.note_title if n.note_title != "" else str(n.name), "text": n.note_text}
 		"use_item":

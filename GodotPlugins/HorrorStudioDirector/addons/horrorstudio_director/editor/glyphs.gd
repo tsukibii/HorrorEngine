@@ -27,6 +27,7 @@ const G := {
 	"switch": '<rect x="7" y="3" width="10" height="18" rx="2"/><rect x="10" y="7" width="4" height="6" rx="1"/>',
 	"breaker": '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 8v8M15 8v8M8 11h2M14 13h2"/>',
 	"flashlight": '<path d="M3 10h8l4-3v10l-4-3H3z"/><path d="M18 9l3-1M18 12h3.5M18 15l3 1"/>',
+	"battery": '<rect x="3" y="8" width="16" height="8" rx="1.5"/><path d="M21 11v2M7 11v2M11 11v2M15 11v2"/>',
 	"key": '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/>',
 	"note": '<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h7M9 16h7"/>',
 	"inspect": '<circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5.5 5.5"/>',

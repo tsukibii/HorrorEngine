@@ -9,6 +9,7 @@ signal stitch_ended(result)
 signal choice_made(option)
 
 const StoryC := preload("res://addons/horrorstudio/story.gd")
+const TorchBeam := preload("res://addons/horrorstudio/torch_beam.gd")   # the flashlight's battery and beam (FLASHLIGHT_PLAN §1)
 const ConditionsC := preload("res://addons/horrorstudio/conditions.gd")
 const ActionsC := preload("res://addons/horrorstudio/actions.gd")
 const InteractablesC := preload("res://addons/horrorstudio/interactables.gd")
@@ -53,6 +54,7 @@ var ended: Dictionary = {}
 var clock: float = 0.0
 var clock0: float = 0.0
 var inside: Dictionary = {}
+var room_tones: Dictionary = {}      # this level's rooms' tones (a room's `tone`, else game.tone): beds.gd plays the one you're in
 var doors: Dictionary = {}
 var waits: Array = []
 var anims: Array = []
@@ -96,7 +98,9 @@ var in_chapter: bool = false
 var inv: Array = []
 var inv_at: int = -1
 var inv_shown: bool = true
-var torch := {"on": false, "dead": false, "flick": 0.0, "dying": false, "dir": null, "made": false}
+var torch := {"on": false, "dead": false, "flick": 0.0, "dying": false, "dir": null, "made": false,
+	"item": null, "bat": null, "charge": 1.0, "low_at": null, "low_heard": false, "rest_t": 0.0, "rests": 2, "changing": null,
+	"layers": [], "mode": null, "fl": {}}   # its battery (torch_beam.gd): the charge, when it ran low, a rest, a change of batteries; the story's timed dims and flickers
 var torch_hot: SpotLight3D = null
 var torch_spill: SpotLight3D = null
 var step_at: float = 0.5
@@ -111,7 +115,7 @@ var audio_log: Array = []            # every shelf sound played: {n, loaded, at}
 var sfx_streams: Dictionary = {}     # name -> AudioStream, loaded once
 var sfx_players: Array = []          # a pool of AudioStreamPlayer3D / AudioStreamPlayer under the world
 const LifeFxC := preload("res://addons/horrorstudio/lifefx.gd")
-const MenuC := preload("res://addons/horrorstudio/menu.gd")      # the saved settings (the mirrors follow the Reflections row)
+const MenuC := preload("res://addons/horrorstudio_ui/menu.gd")      # the saved settings (the mirrors follow the Reflections row)
 const LifeSoundC := preload("res://addons/horrorstudio/lifesound.gd")
 const PhysC := preload("res://addons/horrorstudio/physics.gd")
 const PartsC := preload("res://addons/horrorstudio/parts.gd")     # parts that open: lids, doors, a book's cover (PROPGEN §26)
@@ -411,6 +415,11 @@ func enter_level(lid: String) -> void:
 		return
 	stop_sfx()                                 # the old level's loops end with it
 	sfx_players = []
+	room_tones = {}
+	var gtone = story.game.get("tone")
+	for rm in story.levels.get(lid, {}).get("rooms", []):
+		if rm is Dictionary and rm.has("id"):
+			room_tones[str(rm["id"])] = rm.get("tone", gtone)
 	focus_off("a new level")
 	var first := not kept.has(lid)
 	if first or game.level_id != lid:
@@ -469,8 +478,9 @@ func enter_level(lid: String) -> void:
 			if t["kind"] == "light":
 				lights.append(t)
 				var lm = JSON.parse_string(n.get_meta("light")) if n.has_meta("light") else {}
-				light_state[p["id"]] = {"on": bool(lm.get("on", true)), "flicker": float(lm.get("flicker", 0)), "base": float(lm.get("base", LIT)), "dim": null, "surge": null, "flicker0": null, "kind": lm.get("kind", "bulb"), "room": lm.get("room")}
+				light_state[p["id"]] = {"on": bool(lm.get("on", true)), "flicker": float(lm.get("flicker", 0)), "base": float(lm.get("base", LIT)), "dim": null, "surge": null, "kind": lm.get("kind", "bulb"), "room": lm.get("room")}
 				light_state[p["id"]].merge(HSFlicker.of(lm, str(p["id"])), true)   # its flicker's mode, interval, rate, letters, seed (flicker.gd)
+				light_own(light_state[p["id"]])
 				if n.has_meta("pattern") and n is SpotLight3D:              # its pattern (caustics, leaves, blinds, clouds) drawn into the light's projector (HSPattern)
 					var pm: Dictionary = JSON.parse_string(n.get_meta("pattern"))
 					HSPattern.attach(n, pm, float(pm.get("distance", 3.0)))
@@ -947,6 +957,35 @@ func sound_pos(at) -> Variant:
 	return null
 
 
+## the story's `music`: the mood's bed (beds.gd), crossfading over `secs`; kept in the run, so a save comes back to it
+func music(m, a: Dictionary = {}) -> void:
+	var to = null if (m == null or str(m) == "silence") else str(m)
+	if run != null:
+		run["music"] = to
+	if game.beds != null:
+		game.beds.music(to, float(a.get("secs", 2.0)))
+	hud.log("music: %s" % (to if to != null else "silence"))
+
+
+## the story's `hush`: the beds down to nothing, the last half second silent, back over `back`; its seconds (to wait)
+func hush(a: Dictionary) -> float:
+	var secs := float(a.get("hush", a.get("quiet", 1.5)))
+	hud.log("hush %.1f s" % secs)
+	return game.beds.hush(secs, float(a.get("back", 6.0))) if game.beds != null else max(secs, 0.5)
+
+
+## the room you're in its tone (the room tones of this level, else the game's), crossfading as you walk between them
+func tone_tick() -> void:
+	if game.beds == null:
+		return
+	var want = story.game.get("tone")
+	for id in inside:
+		if room_tones.has(id):
+			want = room_tones[id]
+			break
+	game.beds.room_tone(want)
+
+
 ## a sound off the shelf (game/sfx/, docs/SFX.md): placed in the room when it has a place (quieter across it, from its
 ## side), else on the player; looping ones loop as the shelf says. Headless, the stream still loads: audio_log says
 func play_sfx(name: String, at = null, db: float = 0.0) -> Node:
@@ -1193,10 +1232,7 @@ func power(set_to, lid = null) -> void:
 		for t in lights:
 			var u: Dictionary = light_state[t["id"]]
 			if _electric(u):
-				if u["flicker0"] == null:
-					u["flicker0"] = u["flicker"]
-				u["flicker"] = max(float(u["flicker0"]), 0.8)
-				u["surge"] = clock + 0.9
+				u["surge"] = clock + 0.9                          # flickering up (light_k), then its own flicker again
 				HSFlicker.on(u, clock)                           # a tube's starter clicks
 	emit({"type": "power", "on": on})
 
@@ -1205,31 +1241,156 @@ func _electric(u: Dictionary) -> bool:
 	return not ["candle", "fire"].has(u.get("kind"))
 
 
-func light(id, room, set_to: String) -> void:
+## a light's own flicker kept (the story's `flicker` and `mode`), its lasting state's (`b_flicker`, `b_mode`: what the
+## story's lasting changes leave it at), the story's timed changes over it (`layers`) and a lasting change's fade
+func light_own(u: Dictionary) -> void:
+	u["own"] = {"flicker": u.get("flicker", 0.0), "mode": u.get("mode"), "on": u.get("on", true)}   # (on: as the level has it, a Director state let go)
+	u["b_flicker"] = u.get("flicker", 0.0)
+	u["b_mode"] = u.get("mode")
+	u["layers"] = []
+	u["fade"] = null
+	u["s"] = 1.0 if u.get("on", true) else 0.0
+
+
+## the ids of one light, or of every light in a room
+func lights_of(id, room) -> Array:
 	var ls: Array = []
-	if id != null:
+	if id != null and str(id) != "":
 		if light_state.has(id):
 			ls.append(id)
 	else:
 		for t in lights:
 			if light_state[t["id"]]["room"] == room:
 				ls.append(t["id"])
-	for lid in ls:
+	return ls
+
+
+## the story's `light` (STORY_FORMAT §4), or a switch's `toggle`: `set` on, off, flicker, dim or normal; `to` how bright
+## a dim is (0..1, DIM), `mode` a flicker's (the lamps' own modes), `fade` seconds to change (and to come back), `secs`
+## how long. Without `secs` the change lasts: the light's own state changes, and the story's timed changes on it go (a
+## switch's toggle leaves them). With `secs` it's laid over the light's own state and goes by itself after (a moment
+## of dark, `lights_die`, the same): a light switched off before stays off. `on` and `normal` bring back the light's own
+## brightness and flicker, undoing the story's dim and flicker (`on` switches it on too). `delay` holds a timed change
+## back (the lights dying one by one)
+const DIM := 0.35
+func light(id, room, set_to: String, o: Dictionary = {}) -> void:
+	var secs := float(o.get("secs", 0.0)) if o.get("secs") != null else 0.0
+	var fade := maxf(0.0, float(o.get("over", 0.0)) if o.get("over") != null else 0.0)   # (`over`: `fade` is the screen's verb)
+	var to := clampf(float(o.get("to", DIM)) if o.get("to") != null else DIM, 0.0, 1.0)
+	var mode = o.get("mode") if HSFlicker.MODES.has(o.get("mode")) else null
+	for lid in lights_of(id, room):
 		var u: Dictionary = light_state[lid]
 		var was: bool = u["on"]
+		if secs > 0.0:
+			var t0: float = clock + maxf(0.0, float(o.get("delay", 0.0)) if o.get("delay") != null else 0.0)
+			u["layers"].append({"set": set_to, "to": to, "mode": mode, "t0": t0, "end": t0 + secs, "fade": fade})
+			continue
+		if set_to != "toggle":
+			u["layers"].clear()
+		if fade > 0.0:
+			u["fade"] = {"from": float(u.get("s", 0.0)), "t0": clock, "secs": fade}
 		match set_to:
 			"toggle":
 				u["on"] = not u["on"]
-			"on", "off":
-				u["on"] = set_to == "on"
+			"on", "normal":
+				if set_to == "on":
+					u["on"] = true
+				u["dim"] = null
+				u["b_flicker"] = u["own"]["flicker"]
+				u["b_mode"] = u["own"]["mode"]
+			"off":
+				u["on"] = false
 			"flicker":
 				u["on"] = true
-				u["flicker"] = max(0.6, float(u["flicker"]))
+				u["b_flicker"] = maxf(0.6, float(u["b_flicker"]))
+				if mode != null:
+					u["b_mode"] = mode
 			"dim":
 				u["on"] = true
-				u["dim"] = 0.35
+				u["dim"] = to
 		if u["on"] and not was:
 			HSFlicker.on(u, clock)                                   # switched on: a tube stutters on
+
+
+## the story's `lights_die` (TRICKS.md §2): a room's lights, or one, out for `secs` and back as they were; `order`
+## "toward": out one by one toward the player, `gap` seconds apart (0.4), the farthest first, all back together `secs`
+## after the last went out. Its seconds
+func lights_die(a: Dictionary) -> float:
+	var secs: float = float(a.get("secs", 1)) if a.get("secs") != null else 1.0
+	var ids: Array = lights_of(a.get("light"), a.get("room"))
+	if str(a.get("order", "")) != "toward" or ids.size() < 2:
+		light(a.get("light"), a.get("room"), "off", {"secs": secs})
+		return secs
+	var gap: float = float(a.get("gap", 0.4)) if a.get("gap") != null else 0.4
+	var me: Vector3 = player.pos
+	ids.sort_custom(func(x, y): return (by_id[x]["node"].global_position - me).length() > (by_id[y]["node"].global_position - me).length())
+	var n := ids.size()
+	for i in n:
+		light(ids[i], null, "off", {"secs": secs + gap * (n - 1 - i), "delay": gap * i})
+	return secs + gap * (n - 1)
+
+
+## a timed change's weight now: 0 before it starts and after it's gone, 1 while it holds, smoothed over its fade both ways
+static func layer_w(L: Dictionary, T: float) -> float:
+	var fd: float = float(L["fade"])
+	var a: float = clampf((T - float(L["t0"])) / fd, 0.0, 1.0) if fd > 0.0 else (1.0 if T >= float(L["t0"]) else 0.0)
+	var b: float = clampf((float(L["end"]) + fd - T) / fd, 0.0, 1.0) if fd > 0.0 else (1.0 if T < float(L["end"]) else 0.0)
+	return smoothstep(0.0, 1.0, minf(a, b))
+
+
+## the multiplier on a light's energy now: its steady brightness (on or off, dimmed, the power) from its own state, a
+## lasting change's fade and the story's timed changes over it, times its flicker (its own, the power's surge, a timed
+## flicker's), the effective amount and mode kept in `flicker` and `mode` (what the checks and flicker.gd read)
+func light_k(u: Dictionary, T: float) -> float:
+	var lit_ok: bool = powered() or not _electric(u)
+	var own_s: float = (float(u["dim"]) if u["dim"] != null else 1.0) if lit_ok else 0.0
+	var s: float = own_s if u["on"] else 0.0
+	var f = u.get("fade")
+	if f != null:
+		var x: float = (T - float(f["t0"])) / maxf(0.001, float(f["secs"]))
+		if x >= 1.0:
+			u["fade"] = null
+		else:
+			s = lerpf(float(f["from"]), s, smoothstep(0.0, 1.0, x))
+	var amt: float = float(u["b_flicker"])
+	var mode = u["b_mode"]
+	if u["surge"] != null:
+		if T >= float(u["surge"]):
+			u["surge"] = null
+		else:
+			amt = maxf(amt, 0.8)
+	var keep: Array = []
+	for L in u["layers"]:
+		if T >= float(L["end"]) + float(L["fade"]):
+			if L["set"] == "off" and u["on"]:
+				HSFlicker.on(u, T)                                   # back after the dark: a tube stutters on
+			continue
+		keep.append(L)
+		var w := layer_w(L, T)
+		if w <= 0.0:
+			continue
+		match str(L["set"]):
+			"off":
+				s = lerpf(s, 0.0, w)
+			"on":
+				s = lerpf(s, own_s, w)
+			"dim":
+				s = lerpf(s, float(L["to"]) if lit_ok else 0.0, w)
+			"flicker":
+				s = lerpf(s, own_s, w)
+				amt = lerpf(amt, maxf(0.6, amt), w)
+				if L["mode"] != null and w >= 0.5:
+					mode = L["mode"]
+			"normal":
+				s = lerpf(s, (1.0 if lit_ok else 0.0) if u["on"] else 0.0, w)
+				amt = lerpf(amt, float(u["own"]["flicker"]), w)
+				if w >= 0.5:
+					mode = u["own"]["mode"]
+	u["layers"] = keep
+	u["s"] = s
+	u["flicker"] = amt
+	u["mode"] = mode
+	return s * HSFlicker.k(u, T)
 
 
 func light_energy(id) -> float:
@@ -1567,6 +1728,21 @@ func torch_item() -> Variant:
 	return null
 
 
+## an item that's batteries for the flashlight (`battery`: how full a set it is, 1 a new one)
+func is_battery(item) -> bool:
+	var it = story.items.get(str(item), null)
+	return it is Dictionary and (it.get("battery") is float or it.get("battery") is int) and float(it["battery"]) > 0.0
+
+
+## the batteries in the pocket, in the order they were picked up
+func batteries() -> Array:
+	var out: Array = []
+	for id in items:
+		if is_battery(id):
+			out.append(id)
+	return out
+
+
 func take(t: Dictionary) -> void:
 	var id = t["id"]
 	var d: Dictionary = t["piece"].get("d", {}) if t["piece"].get("d") is Dictionary else {}
@@ -1578,11 +1754,12 @@ func take(t: Dictionary) -> void:
 		var cid = t["in"]
 		contain_detach(t)
 		emit({"type": "taken", "id": id, "from": cid})
-	if d.has("item") and is_torch(d["item"]):
+	if d.has("item") and (is_torch(d["item"]) or is_battery(d["item"])):   # a flashlight or its batteries: into the pocket, not the row
 		set_visible(id, false)
 		k["bodies"].erase(id)
 		give(d["item"])
-		torch_make()
+		if is_torch(d["item"]):
+			torch_make()
 		emit({"type": "pickup", "item": d["item"]})
 		return
 	set_visible(id, false)
@@ -2662,7 +2839,7 @@ func draw_npcs(dt: float) -> void:
 			n["pose"] = "idle"
 			n["prev_pose"] = "idle"
 			BehavioursC.start(n["as"], n, self, n["s"])
-		if not react_hold(n, dt):                     # a reaction (the story's `anim`, her caught): her behaviour waits for it
+		if not react_hold(n, dt) and not beam_hold(n, dt):   # a reaction (the story's `anim`, her caught, the light on her): her behaviour waits for it
 			BehavioursC.update(n["as"], n, self, dt, n["s"])
 			if n.has("turn_back"):                     # turned back the way she was once it's over (a behaviour that faces or walks sees to it)
 				if bool(n.get("walking", false)) or n["s"].get("face") != null or BehavioursC.turn_to(n, float(n["turn_back"]), dt):
@@ -2674,7 +2851,7 @@ func draw_npcs(dt: float) -> void:
 		if baked_cast.has(cid):           # a scene's recorded body stands in for the stand-in while the bake plays
 			node.visible = false
 			continue
-		node.visible = n["pos"] != null and n["level"] == level
+		node.visible = n["pos"] != null and n["level"] == level and not bool(n.get("vanished", false))   # (gone in the light: her `beam` vanishes)
 		if collide != null and (not node.has_meta("hs_collides") or node.get_meta("hs_collides") != node.visible):   # Godot's physics: she stops the player and takes the click only while she's there
 			CollideC.enable(node, node.visible)
 			node.set_meta("hs_collides", node.visible)
@@ -2683,6 +2860,288 @@ func draw_npcs(dt: float) -> void:
 		node.global_position = n["pos"]
 		node.global_rotation_degrees = Vector3(0, float(n["yaw"]) + 90.0, 0)
 		npc_motion(str(cid), n, node)
+
+
+# ---- what feels the flashlight's beam (FLASHLIGHT_PLAN §2, DECISIONS 2026-11-07) -------------------------------------
+## each cast member (and each thing a `lit` or `flashed` trigger names) tested against the beam every frame: in its
+## reach, in its cone (the hot cone whole, the spill a fifth), whole within a third of the reach and fading to its end,
+## nothing in between (a ray to her chest and one to her head); `lit` how strongly (0..1, times the beam's brightness:
+## a dying battery scares less), `lit_for` the seconds at her `bright` or more, `flashes` the times the beam landed on
+## her. Her `beam` (the cast's, or a `beam` action's over it) says what she does: nothing, backs_off, freezes, flees,
+## vanishes, covers, comes, charges. Her `near` (metres) makes the flashlight (`near_torch`) and the lamps
+## (`near_lamps`) flicker, dim or die by her, more the nearer she is
+const BEAM := {"does": "nothing", "after": 0.4, "bright": 0.3, "dist": 2.5, "speed": 1.6, "keep": 4.0, "near": 0.0, "near_torch": "none", "near_lamps": "none"}
+const BEAM_DOES := ["nothing", "backs_off", "freezes", "flees", "vanishes", "covers", "comes", "charges"]
+var beam_st := {}                   # cid or thing id -> {lit, lit_for, prev, flashes, react, wait_unlit}
+var beam_over := {}                 # cid -> a `beam` action's settings over her cast's
+var lit_ids := {}                   # things (not the cast) a lit or flashed trigger names: watched too
+var near_light_k := {}              # light id -> its multiplier from someone near it (her near_lamps)
+var near_torch_k := 1.0
+var near_fl := {}                   # cid -> the flicker state of her presence (flicker.gd's)
+
+
+## her light settings now: the cast's `beam` with a `beam` action's over it; null when she has none
+func beam_cfg(cid) -> Variant:
+	var c = story.cast.get(str(cid), {})
+	var b = c.get("beam") if c is Dictionary else null
+	var o = beam_over.get(str(cid))
+	if not (b is Dictionary) and not (o is Dictionary):
+		return null
+	var out := BEAM.duplicate()
+	for src in [b, o]:
+		if src is Dictionary:
+			for k in src:
+				out[k] = src[k]
+	return out
+
+
+## the story's `beam` action: her light settings changed from now (a field left out stays as it was)
+func beam_set(cid, a: Dictionary) -> void:
+	var cur: Dictionary = beam_over.get(str(cid), {}).duplicate() if beam_over.get(str(cid)) is Dictionary else {}
+	for k in a:
+		if k != "beam":
+			cur[k] = a[k]
+	beam_over[str(cid)] = cur
+	var b = beam_st.get(str(cid))
+	if b is Dictionary and b.get("react") != null:
+		beam_end(str(cid), false)
+
+
+## the beam's strength at a point (0..1): its reach, its cone, the fall-off and a clear way to it
+func beam_at(p: Vector3) -> float:
+	if torch_hot == null or not torch["on"] or player.peeping != null or not torch.has("from"):
+		return 0.0
+	var kb: float = float(torch.get("k", 0.0))
+	if kb <= 0.0:
+		return 0.0
+	var from: Vector3 = torch["from"]
+	var d := p - from
+	var dist := d.length()
+	var reach: float = float(torch["reach_m"])
+	if dist < 0.01 or dist > reach:
+		return 0.0
+	var ang := rad_to_deg(acos(clampf((torch["aim"] as Vector3).dot(d / dist), -1.0, 1.0)))
+	var cone_k := 1.0 if ang <= float(torch["cone"]) / 2.0 else (0.2 if ang <= float(torch["spill"]) / 2.0 else 0.0)
+	if cone_k <= 0.0:
+		return 0.0
+	var dist_k := 1.0 if dist <= reach / 3.0 else clampf(1.0 - (dist - reach / 3.0) / (reach * 2.0 / 3.0), 0.0, 1.0)
+	var hit = ray_hit(from, d / dist, dist, blocks())
+	if hit != null and float(hit["dist"]) < dist - 0.25:
+		return 0.0
+	return cone_k * dist_k * minf(1.0, kb)
+
+
+## how strongly the beam's on someone or something now, and for how long (the triggers `lit`, `flashed`)
+func lit_now(id) -> float:
+	var b = beam_st.get(str(id))
+	return float(b["lit"]) if b is Dictionary else 0.0
+
+
+func lit_for(id) -> float:
+	var b = beam_st.get(str(id))
+	return float(b["lit_for"]) if b is Dictionary else 0.0
+
+
+func flashes(id, within: float) -> int:
+	var b = beam_st.get(str(id))
+	if not (b is Dictionary):
+		return 0
+	var n := 0
+	for t in b["flashes"]:
+		if clock - float(t) <= within:
+			n += 1
+	return n
+
+
+func _beam_feel(id: String, lit: float, bright: float, dt: float) -> Dictionary:
+	if not beam_st.has(id):
+		beam_st[id] = {"lit": 0.0, "lit_for": 0.0, "prev": false, "flashes": [], "react": null, "wait_unlit": false}
+	var b: Dictionary = beam_st[id]
+	var on := lit >= bright
+	b["lit"] = lit
+	b["lit_for"] = float(b["lit_for"]) + dt if on else 0.0
+	if on and not b["prev"]:                                          # the beam landed on it: a flash
+		b["flashes"].append(clock)
+		while (b["flashes"] as Array).size() > 12:
+			(b["flashes"] as Array).pop_front()
+		emit({"type": "flashed", "who": id})
+	b["prev"] = on
+	if not on:
+		b["wait_unlit"] = false
+	return b
+
+
+## the things the story's lit and flashed triggers name (not the cast): read once
+var lit_read := false
+func lit_things() -> void:
+	lit_read = true
+	var txt := JSON.stringify(story.data) + JSON.stringify(story.stitches)   # (the stitches as played: an act edited by hand too)
+	for key in ["\"lit\":", "\"flashed\":"]:
+		var i := txt.find(key)
+		while i >= 0:
+			var q0 := txt.find("\"", i + key.length())
+			var q1 := txt.find("\"", q0 + 1)
+			if q0 >= 0 and q1 > q0 and q0 - (i + key.length()) <= 1:
+				var id := txt.substr(q0 + 1, q1 - q0 - 1)
+				if not story.cast.has(id):
+					lit_ids[id] = true
+			i = txt.find(key, i + 1)
+
+
+func beam_watch(dt: float) -> void:
+	if not lit_read:
+		lit_things()
+	var tk := 1.0
+	var lk := {}
+	for cid in npcs:
+		var n: Dictionary = npcs[cid]
+		var node = cast_nodes.get(cid)
+		var cfg = beam_cfg(cid)
+		var here: bool = n["pos"] != null and n["level"] == level and node != null and node.visible
+		var lit := 0.0
+		if here:
+			var h := float(story.cast.get(cid, {}).get("height", 1.7))
+			lit = maxf(beam_at(n["pos"] + Vector3(0, h * 0.7, 0)), beam_at(n["pos"] + Vector3(0, h * 0.93, 0)))
+		var b := _beam_feel(str(cid), lit, float(cfg["bright"]) if cfg != null else BEAM["bright"], dt)
+		if cfg == null:
+			continue
+		if b["react"] == null and not b["wait_unlit"] and str(cfg["does"]) != "nothing" and float(b["lit_for"]) >= float(cfg["after"]) and here:
+			beam_start(str(cid), n, cfg)
+		elif b["react"] != null and str(b["react"]["cfg"]["does"]) == "flees":
+			var r: Dictionary = b["react"]
+			if lit >= float(cfg["bright"]):
+				r["last_lit"] = clock
+			if n["st"].get("arrived") != null and clock - float(r["last_lit"]) >= float(cfg["keep"]):
+				beam_end(str(cid), true)
+		var near: float = float(cfg["near"])
+		if here and near > 0.0:                                         # her presence on the lights round her
+			var seed: int = 0
+			for ch in str(cid).to_utf8_buffer():
+				seed = (seed * 31 + int(ch)) & 0xffff
+			if str(cfg["near_torch"]) != "none" and torch["on"]:
+				var pr := clampf(1.0 - Vector3(n["pos"] - player.pos).length() / near, 0.0, 1.0)
+				tk *= _near_k(str(cfg["near_torch"]), pr, str(cid) + "/torch", seed)
+			if str(cfg["near_lamps"]) != "none":
+				for t in lights:
+					var pr := clampf(1.0 - Vector3((t["node"] as Node3D).global_position - n["pos"]).length() / near, 0.0, 1.0)
+					if pr > 0.0:
+						lk[t["id"]] = float(lk.get(t["id"], 1.0)) * _near_k(str(cfg["near_lamps"]), pr, str(cid) + "/" + str(t["id"]), seed + 7)
+	for id in lit_ids:                                                  # the things the triggers name
+		var t = by_id.get(id)
+		var lit := 0.0
+		if t != null and (t["node"] as Node3D).is_visible_in_tree():
+			lit = beam_at((t["node"] as Node3D).global_position)
+		_beam_feel(str(id), lit, BEAM["bright"], dt)
+	near_torch_k = tk
+	near_light_k = lk
+
+
+## a light's multiplier from someone near it: flicker (a dying tube's, as much as she's near), dim, die
+func _near_k(how: String, pr: float, key: String, seed: int) -> float:
+	match how:
+		"flicker":
+			if not near_fl.has(key):
+				near_fl[key] = {"mode": "dying", "interval": 1.2, "seed": seed, "flicker": 0.0}
+			near_fl[key]["flicker"] = pr
+			return HSFlicker.k(near_fl[key], clock)
+		"dim":
+			return 1.0 - 0.7 * pr
+		"die":
+			return clampf(1.0 - pr * 1.6, 0.0, 1.0)
+	return 1.0
+
+
+## the light on her long enough: what she does (FLASHLIGHT_PLAN §2b), her sound and face as it starts
+func beam_start(cid: String, n: Dictionary, cfg: Dictionary) -> void:
+	var b: Dictionary = beam_st[cid]
+	var r := {"cfg": cfg, "t0": clock, "last_lit": clock, "moved": 0.0}
+	b["react"] = r
+	if cfg.get("sound") != null and str(cfg["sound"]) != "":
+		sound(cfg["sound"], cid)
+	if cfg.get("face") != null and str(cfg["face"]) != "":
+		face_play(cid, cfg["face"], {})
+	hud.log("%s in the light: %s" % [cid, cfg["does"]])
+	match str(cfg["does"]):
+		"covers":                                                       # her move (or her `lit` move), held where she is
+			var clip = cfg.get("clip") if cfg.get("clip") != null and str(cfg["clip"]) != "" else move_of(cid, "lit", false)
+			react(cid, clip, null, float(cfg["keep"]))
+			b["react"] = null
+			b["wait_unlit"] = true
+		"flees":
+			var spot = cfg.get("flee")
+			if spot == null or str(spot) == "" or not by_id.has(str(spot)):
+				hud.log("%s flees, but has no flee spot" % cid)
+				b["react"] = null
+				b["wait_unlit"] = true
+				return
+			r["prev"] = {"as": n["as"], "s": n["s"].duplicate(true)}
+			n["as"] = "go"
+			n["s"] = BehavioursC.settings_of("go", {"to": spot, "then": "idle", "speed": float(cfg["speed"])})
+			n["st"] = {}
+			BehavioursC.start("go", n, self, n["s"])
+		"vanishes":
+			n["vanished"] = true
+
+
+## her reaction over: her behaviour again from where she is (`resume`: started again, a path or patrol from the nearest)
+func beam_end(cid: String, resume: bool) -> void:
+	var b: Dictionary = beam_st[cid]
+	var r = b["react"]
+	b["react"] = null
+	b["wait_unlit"] = true
+	var n = npcs.get(cid)
+	if n == null or not (r is Dictionary):
+		return
+	n.erase("vanished")
+	if r.has("prev"):
+		n["as"] = r["prev"]["as"]
+		n["s"] = r["prev"]["s"]
+	if resume:
+		n["st"] = {}
+		BehavioursC.start(n["as"], n, self, n["s"])
+
+
+## while the light holds her (backs_off, freezes, vanishes, comes, charges): her behaviour waits; true while it does
+func beam_hold(n: Dictionary, dt: float) -> bool:
+	var b = beam_st.get(str(n["cid"]))
+	if not (b is Dictionary) or b["react"] == null:
+		return false
+	var r: Dictionary = b["react"]
+	var cfg: Dictionary = r["cfg"]
+	var does := str(cfg["does"])
+	if does == "flees":
+		return false                                                 # (her go walks her there)
+	var lit: bool = float(b["lit"]) >= float(cfg["bright"])
+	if lit:
+		r["last_lit"] = clock
+	var over: bool = not lit and clock - float(r["last_lit"]) >= float(cfg["keep"])
+	n["walking"] = false
+	if does in ["backs_off", "comes", "charges"] and n["pos"] != null:
+		var away := does == "backs_off"
+		var to_p: Vector3 = player.pos - n["pos"]
+		to_p.y = 0.0
+		var dist := to_p.length()
+		if dist > 0.01:
+			BehavioursC.turn_to(n, rad_to_deg(atan2(-to_p.z, to_p.x)), dt)   # facing the player all the while
+		var go := (away and float(r["moved"]) < float(cfg["dist"]) and not over) or (not away and lit and dist > (0.8 if does == "charges" else 1.3))
+		if go and dist > 0.01:
+			var dirv: Vector3 = (-to_p if away else to_p) / dist
+			var step := float(cfg["speed"]) * (2.0 if does == "charges" else 1.0) * dt
+			if away:
+				step = minf(step, float(cfg["dist"]) - float(r["moved"]))
+			var hit = ray_hit(n["pos"] + Vector3(0, 0.9, 0), dirv, step + 0.35, blocks())
+			if hit == null:
+				n["pos"] = n["pos"] + dirv * step
+				r["moved"] = float(r["moved"]) + step
+				n["walking"] = true
+		if does == "charges" and dist < 0.9:
+			beam_end(str(n["cid"]), true)
+			caught(n["cid"], null)
+			return true
+	if over:
+		beam_end(str(n["cid"]), does != "freezes")
+		return false
+	return true
 
 
 # ---- being seen ---------------------------------------------------------------------------------------------------
@@ -2720,6 +3179,22 @@ func sees(n: Dictionary) -> bool:
 	return not (hit != null and float(hit["dist"]) < dist - 0.3)
 
 
+## the player's flashlight seen by her (her sight's `torch`, FLASHLIGHT_PLAN §2b: the light gives you away): on, within
+## her range, from any side, a clear way from her eye to it
+func torch_seen(n: Dictionary) -> bool:
+	var c = sight_of(n)
+	if c == null or float(c.get("torch", 0.0)) <= 0.0 or n["pos"] == null or n["level"] != level or not torch["on"] or float(torch.get("k", 0.0)) <= 0.05 or not torch.has("from"):
+		return false
+	var h := float(story.cast.get(n["cid"], {}).get("height", 1.7))
+	var eye: Vector3 = n["pos"] + Vector3(0, h * 0.93, 0)
+	var d: Vector3 = (torch["from"] as Vector3) - eye
+	var dist := d.length()
+	if dist > float(c["range"]) or dist < 0.01:
+		return false
+	var hit = ray_hit(eye, d / dist, dist, blocks())
+	return not (hit != null and float(hit["dist"]) < dist - 0.3)
+
+
 func watch(dt: float) -> void:
 	if calm > 0:
 		calm -= dt
@@ -2727,12 +3202,21 @@ func watch(dt: float) -> void:
 		hud.seen(suspicion)
 		return
 	var by = null
+	var rate := 1.0
 	for cid in npcs:
 		if sees(npcs[cid]):
 			by = npcs[cid]
+			if torch_seen(by):                                    # seen with the light on: at least as fast as her `torch` says
+				rate = maxf(1.0, float(sight_of(by)["torch"]))
 			break
+	if by == null:
+		for cid in npcs:
+			if torch_seen(npcs[cid]):                             # only the light: her meter at her `torch`'s rate
+				by = npcs[cid]
+				rate = float(sight_of(by)["torch"])
+				break
 	if by != null:
-		suspicion += dt / float(sight_of(by)["meter"])
+		suspicion += dt / float(sight_of(by)["meter"]) * rate
 		if suspicion >= 1.0:
 			caught(by["cid"], null)
 			return
@@ -3426,7 +3910,10 @@ func pause() -> void:
 	if hud.menu == null:
 		hud.log("paused (Esc)")
 		return
-	var r = await hud.menu.open({"game": str(story.game.get("id", "game")), "where": str(story.game.get("title", "")), "secs": now(), "has": {"torch": torch_item() != null}})
+	var bat := {}                                              # the flashlight's battery: its charge, the sets in the pocket, a change (FLASHLIGHT_PLAN §1d)
+	if torch_item() != null and torch["bat"] != null and float(torch["bat"]["battery"]) > 0.0:
+		bat = {"charge": torch_charge(), "sets": batteries().size(), "change": torch_change}
+	var r = await hud.menu.open({"game": str(story.game.get("id", "game")), "where": str(story.game.get("title", "")), "secs": now(), "has": {"torch": torch_item() != null}, "battery": bat})
 	held = false
 	busy = false
 	since = clock
@@ -3514,7 +4001,7 @@ func torch_switch() -> void:
 		return
 	torch_make()
 	shelf_sound("flashlight_02" if torch["on"] else "flashlight_01")
-	if torch["dead"]:
+	if torch["dead"] or torch["changing"] != null:
 		hud.log("the flashlight is dead")
 		return
 	torch["on"] = not torch["on"]
@@ -3522,28 +4009,113 @@ func torch_switch() -> void:
 	emit({"type": "torch", "on": torch["on"]})
 
 
-func torch_set(v: String) -> void:
+## the story's `torch` (STORY_FORMAT §4): on, off, flicker (a stutter; with `secs` or `mode` that long in a lamp's
+## mode), dim (`to` how bright, `secs`, `over`), dead (the charge gone: a stutter and out), works (full: new
+## batteries), drain (`to`: the charge; FLASHLIGHT_PLAN §1)
+func torch_set(v: String, a: Dictionary = {}) -> void:
 	if torch_item() == null and (v == "on" or v == "flicker"):
 		hud.log("torch %s: the player has no flashlight" % v)
 		return
 	torch_make()
+	torch_battery()
+	var secs: float = float(a["secs"]) if a.get("secs") != null else 0.0
+	var over: float = maxf(0.0, float(a["over"])) if a.get("over") != null else 0.0
 	match v:
 		"on":
 			if not torch["dead"]:
 				torch["on"] = true
+			torch["layers"].clear()
 		"off":
 			torch["on"] = false
 		"flicker":
 			torch["on"] = not torch["dead"]
-			torch["flick"] = 1.4
+			if secs > 0.0 or HSFlicker.MODES.has(a.get("mode")):
+				var m = a.get("mode") if HSFlicker.MODES.has(a.get("mode")) else "dying"
+				torch["layers"].append({"set": "flicker", "mode": m, "t0": clock, "end": clock + (secs if secs > 0.0 else 1.4), "fade": over, "to": 1.0})
+			else:
+				torch["flick"] = 1.4
+		"dim":
+			var to: float = clampf(float(a["to"]) if a.get("to") != null else DIM, 0.0, 1.0)
+			torch["layers"].append({"set": "dim", "to": to, "t0": clock, "end": clock + (secs if secs > 0.0 else 1.0e9), "fade": over, "mode": null})
 		"dead":
 			if torch["on"]:
 				torch["flick"] = 1.1
 				torch["dying"] = true
+			elif not torch["dead"]:
+				torch_died()
 			torch["dead"] = true
+			torch["charge"] = 0.0
 		"works":
 			torch["dead"] = false
 			torch["dying"] = false
+			torch["charge"] = 1.0
+			torch["low_heard"] = false
+			torch["low_at"] = null
+			torch["rests"] = TorchBeam.RESTS
+		"drain":
+			var c: float = clampf(float(a["to"]) if a.get("to") != null else 0.0, 0.0, 1.0)
+			torch["charge"] = c
+			if c <= 0.0:
+				torch_set("dead")
+			elif torch["bat"] != null and c >= float(torch["bat"]["low"]):
+				torch["low_heard"] = false
+				torch["low_at"] = null
+
+
+## the flashlight's battery from its item (torch_beam.gd battery_of), read again when the flashlight changes
+func torch_battery() -> void:
+	var it = torch_item()
+	if it == null or torch["item"] == it:
+		return
+	torch["item"] = it
+	torch["bat"] = TorchBeam.battery_of(it.get("torch"))
+	torch["charge"] = float(torch["bat"]["charge"])
+	torch["low_heard"] = torch["charge"] < float(torch["bat"]["low"])
+	torch["low_at"] = null
+	torch["rests"] = TorchBeam.RESTS
+
+
+## out for good (its stutter over): heard as {"torch": "dead"}; a set of batteries in the pocket is then changed by
+## itself (torch_tick)
+func torch_died() -> void:
+	emit({"type": "torch", "dead": true})
+
+
+## the batteries changed, from the pocket (by itself once it's dead, or from the pause menu): about two seconds of dark
+## with its sounds, then the light full; heard as {"torch": "changed"}. False with none to change
+func torch_change() -> bool:
+	var sets := batteries()
+	if sets.is_empty() or torch_item() == null or torch["changing"] != null:
+		return false
+	torch_battery()
+	torch["changing"] = {"at": clock + TorchBeam.CHANGE_SECS, "item": sets[0]}
+	torch["on"] = false
+	torch["flick"] = 0.0
+	torch["dying"] = false
+	shelf_sound("flashlight_02")
+	hud.log("changing the flashlight's batteries")
+	return true
+
+
+func _torch_changed() -> void:
+	var c: Dictionary = torch["changing"]
+	torch["changing"] = null
+	var full: float = clampf(float(story.items.get(str(c["item"]), {}).get("battery", 1.0)), 0.0, 1.0)
+	take_item(c["item"])
+	torch["charge"] = full
+	torch["dead"] = false
+	torch["low_heard"] = torch["bat"] != null and full < float(torch["bat"]["low"])
+	torch["low_at"] = null
+	torch["rests"] = TorchBeam.RESTS
+	torch["on"] = true
+	shelf_sound("flashlight_01")
+	emit({"type": "torch", "changed": true})
+	emit({"type": "torch", "on": true})
+
+
+## the charge now (0..1); 1 for a flashlight with no battery, or none at all
+func torch_charge() -> float:
+	return float(torch["charge"]) if torch["bat"] != null and float(torch["bat"]["battery"]) > 0.0 else 1.0
 
 
 static func kelvin_color(k: float) -> Color:
@@ -3557,11 +4129,37 @@ static func kelvin_color(k: float) -> Color:
 func torch_tick(dt: float) -> void:
 	if torch_hot == null:
 		return
+	torch_battery()
 	var s := setting("torch")
 	var it = torch_item()
 	if it != null and it.get("torch") is Dictionary:
 		for k in it["torch"]:
 			s[k] = it["torch"][k]
+	var bat = torch["bat"]
+	var on_battery: bool = bat != null and float(bat["battery"]) > 0.0
+	if torch["changing"] != null and clock >= float(torch["changing"]["at"]):
+		_torch_changed()
+	if on_battery:                                                  # its battery (FLASHLIGHT_PLAN §1)
+		if torch["on"] and not torch["dead"] and not torch["dying"]:
+			torch["charge"] = maxf(0.0, float(torch["charge"]) - dt / float(bat["battery"]))
+			torch["rest_t"] = 0.0
+		if float(torch["charge"]) < float(bat["low"]) and not torch["low_heard"]:
+			torch["low_heard"] = true
+			torch["low_at"] = clock
+			emit({"type": "torch", "low": true})
+		if float(torch["charge"]) <= 0.0 and torch["on"] and not torch["dying"] and not torch["dead"]:
+			torch["flick"] = 1.1                                     # the last of it: a stutter, then out
+			torch["dying"] = true
+			torch["dead"] = true
+		if bool(bat["rest"]) and not torch["on"] and float(torch["charge"]) < float(bat["low"]) and int(torch["rests"]) > 0:
+			torch["rest_t"] = float(torch["rest_t"]) + dt              # a rest: a bulb's cells give a little more
+			if float(torch["rest_t"]) >= TorchBeam.REST_SECS:
+				torch["rest_t"] = 0.0
+				torch["rests"] = int(torch["rests"]) - 1
+				torch["charge"] = float(torch["charge"]) + TorchBeam.REST_GAIN
+				torch["dead"] = false
+	if torch["dead"] and not torch["dying"] and torch["changing"] == null and not batteries().is_empty():
+		torch_change()                                               # a set in the pocket: changed by itself
 	var cam: Camera3D = game.camera
 	var fwd: Vector3 = -cam.global_transform.basis.z
 	if torch["dir"] == null:
@@ -3583,11 +4181,46 @@ func torch_tick(dt: float) -> void:
 		if float(torch["flick"]) <= 0 and torch["dying"]:
 			torch["on"] = false
 			torch["dying"] = false
-	var col := kelvin_color(float(s["kelvin"]))
+			torch_died()
+	var kelvin: float = float(s["kelvin"])
+	var reach := 1.0
+	if on_battery:                                                  # the beam by its charge (torch_beam.gd)
+		var bm: Dictionary = TorchBeam.beam({"kind": bat["kind"], "charge": torch["charge"], "low": bat["low"], "low_at": torch["low_at"],
+			"kelvin": float(bat["kelvin"]) if float(bat["kelvin"]) > 0.0 else kelvin}, clock)
+		k *= float(bm["b"])
+		reach = float(bm["reach"])
+		if float(bm["kelvin"]) > 0.0:
+			kelvin = float(bm["kelvin"])
+	var keep: Array = []                                            # the story's timed dims and flickers on the beam (as a lamp's)
+	for L in torch["layers"]:
+		if clock >= float(L["end"]) + float(L["fade"]):
+			continue
+		keep.append(L)
+		var w := layer_w(L, clock)
+		if w <= 0.0:
+			continue
+		if L["set"] == "dim":
+			k *= lerpf(1.0, float(L["to"]), w)
+		else:
+			torch["fl"]["flicker"] = 1.0
+			torch["fl"]["mode"] = L["mode"]
+			torch["fl"]["seed"] = 7
+			torch["fl"]["interval"] = 1.0
+			k *= lerpf(1.0, HSFlicker.k(torch["fl"], clock), w)
+	torch["layers"] = keep
+	k *= near_torch_k                                               # someone near (her `near`): the beam flickers, dims or dies (FLASHLIGHT_PLAN §2b)
+	torch["k"] = k
+	torch["kelvin_now"] = kelvin
+	torch["from"] = from                                            # where the beam falls, for what feels it (beam_at)
+	torch["aim"] = torch["dir"]
+	torch["cone"] = float(s["cone"])
+	torch["spill"] = float(s["spill"])
+	torch["reach_m"] = float(s["range"]) * maxf(0.05, reach)
+	var col := kelvin_color(kelvin)
 	for pair in [[torch_hot, float(s["cone"]), 1.0], [torch_spill, float(s["spill"]), 0.22]]:
 		var l: SpotLight3D = pair[0]
 		l.light_color = col
-		l.spot_range = float(s["range"])
+		l.spot_range = float(s["range"]) * maxf(0.05, reach)
 		l.spot_angle = float(pair[1]) / 2.0
 		l.light_energy = float(s["strength"]) * float(pair[2]) * k
 		l.global_position = from
@@ -3596,7 +4229,8 @@ func torch_tick(dt: float) -> void:
 
 
 func torch_state() -> Dictionary:
-	return {"on": torch["on"], "dead": torch["dead"], "k": torch_hot.light_energy if torch_hot != null else 0.0, "made": torch["made"]}
+	return {"on": torch["on"], "dead": torch["dead"], "k": torch_hot.light_energy if torch_hot != null else 0.0, "made": torch["made"],
+		"charge": torch_charge(), "changing": torch["changing"] != null, "sets": batteries().size()}
 
 
 # ---- footsteps (steps.js) ----------------------------------------------------------------------------------------
@@ -3792,19 +4426,82 @@ func top_of(id: String) -> Variant:
 			var mn: Array = tr["min"]
 			var mx: Array = tr["max"]
 			return Vector3((float(mn[0]) + float(mx[0])) / 2.0, float(mn[2]) + 1.3, -(float(mn[1]) + float(mx[1])) / 2.0)
-	var t = things.get(id)
-	if t == null:
-		for x in things.values():                             # an item's or a note's id: the thing holding it
-			var d = x["piece"].get("d", {})
-			if d is Dictionary and (str(d.get("item", "")) == id or str(d.get("note", "")) == id):
-				t = x
-				break
+	var t = guide_thing(id)
 	if t == null:
 		return null
 	var nd: Node3D = t["node"]
 	if not is_instance_valid(nd) or not nd.is_visible_in_tree():
 		return null
 	return nd.global_position + Vector3(0, float((t["size"] as Array)[2]) / 2.0, 0)
+
+
+## the thing a marker's id means: a thing by its id, or (an item's or a note's id) the thing that holds it; null for a
+## person, an area or nothing here
+func guide_thing(id: String) -> Variant:
+	var t = things.get(id)
+	if t == null:
+		for x in things.values():
+			var d = x["piece"].get("d", {})
+			if d is Dictionary and (str(d.get("item", "")) == id or str(d.get("note", "")) == id):
+				return x
+	return t
+
+
+## what a marker is called when it's near enough to say: a person by her name now (a word: "the guide" till she's met),
+## a thing by what the cursor would call it (its item, its note's title, its own name); an area and the rest, nothing
+func guide_name(id: String) -> String:
+	if npcs.has(id) or story.cast.has(id):
+		return hud.named(story.cast_name(id))
+	var t = guide_thing(id)
+	if t == null:
+		return ""
+	var ti = title_of(t)
+	return hud.named(str(ti)) if ti != null else ""
+
+
+var guide_los: Dictionary = {}                 # id -> {clear: bool, at: the clock}: the markers' lines of sight, looked at a few times a second
+var guide_among: Array = []                    # the structure a line of sight is stopped by (walls, floors, ceilings, doors), refreshed with them
+var guide_among_at: float = -9.0
+
+
+## is there a clear line from the eye to that point, that is: nothing of the building between (furniture doesn't count: a
+## marker over a table across the room is still in the room)
+func guide_clear(id: String, p: Vector3, eye: Vector3) -> bool:
+	var e = guide_los.get(id)
+	if e != null and clock - float(e["at"]) < 0.12:
+		return bool(e["clear"])
+	var to := p + Vector3(0, 0.15, 0)
+	var d := to - eye
+	var dist := d.length()
+	var clear := true
+	if dist > 0.5:
+		if clock - guide_among_at > 0.12:
+			guide_among = []
+			for tid in by_id:
+				var t: Dictionary = by_id[tid]
+				if ["wall", "floor", "ceiling", "door"].has(t["kind"]) and t["node"].visible and not t["hollow"]:
+					guide_among.append(t)
+			guide_among_at = clock
+		var hit = ray_hit(eye, d / dist, dist, guide_among)
+		if hit != null and float(hit["dist"]) < dist - 0.35:
+			var ht = hit.get("thing")                    # (Godot's physics returns whatever collided first: only the building stops it)
+			clear = ht != null and not ["wall", "floor", "ceiling", "door"].has(str(ht.get("kind", "wall")))
+	guide_los[id] = {"clear": clear, "at": clock}
+	return clear
+
+
+## what the marker needs besides where things are: which ones the eye has a clear line to, what each is called, which the
+## cursor is on, and whether a card or a choice has the player's eye
+func guide_ctx(pts: Dictionary, eye: Vector3) -> Dictionary:
+	var seen := {}
+	var names := {}
+	var aimed := ""
+	for id in pts:
+		seen[id] = guide_clear(str(id), pts[id], eye)
+		names[id] = guide_name(str(id))
+		if target != null and (str(target.get("id", "")) == str(id) or guide_thing(str(id)) == target):
+			aimed = str(id)
+	return {"seen": seen, "names": names, "aimed": aimed}
 
 
 func tick(dt: float) -> void:
@@ -3878,6 +4575,7 @@ func tick(dt: float) -> void:
 		if not now_in and was:
 			inside.erase(t["id"])
 			emit({"type": "exit", "id": t["id"]})
+	tone_tick()
 	if timer_left != null and has_end:
 		timer_left = float(timer_left) - dt
 		hud.timer(timer_left)
@@ -3895,16 +4593,14 @@ func tick(dt: float) -> void:
 	var vp := get_viewport().get_visible_rect().size
 	cam.fov = float(LENS["fov"]) if p.peeping != null else StoryC.vfov(float(story.game.get("fov", StoryC.FOV_H)), (vp.x / vp.y) if vp.y > 0 else 16.0 / 9.0) * (1.0 - focus_zoom())
 	if hud.guide != null:
-		hud.guide.update(guide_points(), cam, dt)
+		var gp: Dictionary = guide_points() if hud.guide.mode > 0 else {}
+		hud.guide.update(gp, cam, dt, guide_ctx(gp, cam.global_position) if not gp.is_empty() else {})
 	var T := clock
 	for t in lights:
 		var u: Dictionary = light_state[t["id"]]
-		var k: float = (float(u["dim"]) if u["dim"] != null else 1.0) if (u["on"] and (powered() or not _electric(u))) else 0.0
-		if u["surge"] != null and T >= float(u["surge"]):
-			u["flicker"] = float(u["flicker0"]) if u["flicker0"] != null else 0.0
-			u["surge"] = null
-		k *= HSFlicker.k(u, T)                                    # its flicker by mode (flicker.gd, as the desk's)
+		var k: float = light_k(u, T)                              # its state, the story's changes over it, its flicker by mode (flicker.gd, as the desk's)
 		k *= float(scene_light_k.get(t["id"], 1.0))
+		k *= float(near_light_k.get(t["id"], 1.0))                 # someone near it (her `near` lamps, FLASHLIGHT_PLAN §2b)
 		u["level"] = float(u["base"]) * k
 		if t["node"] is Light3D:
 			t["node"].light_energy = float(u["level"])
@@ -3922,6 +4618,7 @@ func tick(dt: float) -> void:
 		if torch_item() == null:
 			torch["on"] = false
 		torch_tick(dt)
+	beam_watch(dt)
 	for a in anims.duplicate():
 		a["t"] = float(a["t"]) + dt
 		var k: float = min(1.0, float(a["t"]) / float(a["secs"]))

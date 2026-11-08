@@ -19,6 +19,8 @@ var rain: HSRain = null
 var nosplash: Image = null
 var mirror_q: MeshInstance3D = null
 var mirror2_q: MeshInstance3D = null
+var only_box: MeshInstance3D = null           # seen only in the mirror (HSMirror.only_in_mirrors: layer 19)
+var never_box: MeshInstance3D = null          # never seen in it (HSMirror.never_in_mirrors: layer 20)
 var spheres: Array = []
 var report := {}
 var prev: Image = null
@@ -33,6 +35,14 @@ var shaft_fv: HSShaft = null
 var shaft_off: Image = null
 var sweep_n: HSSweep = null
 var sweep_before: Image = null
+var lightning_n: HSLightning = null      # the lightning stage: a strike, a second asked for during it, sampled each frame
+var lightning_fig: MeshInstance3D = null
+var lightning_levels: Array = []
+var lightning_struck: Array = []         # its clock at each strike
+var lightning_thunder := -1.0
+var lightning_fig_ok := true
+var lightning_before: Image = null
+var lightning_lit: Image = null
 var iris_lamp: OmniLight3D = null
 var leak_n: HSLeak = null
 var leak_wall: MeshInstance3D = null
@@ -54,8 +64,16 @@ var crt_mat: ShaderMaterial = null
 var crt_lamp: OmniLight3D = null
 var crt_means: Array = []
 var crt_rect := Rect2i()
+var cold_breath: HSBreath = null         # the cold stage: a breath in a flashlight's beam and in the dark; a pane frosting over
+var cold_spot: SpotLight3D = null
+var cold_pane: MeshInstance3D = null
+var cold_imgs := {}
+var cold_back: OmniLight3D = null
+var steam_q: MeshInstance3D = null       # the steam stage: a mirror fogging over from the bottom, words showing in it
+var steam_m: HSMirror = null
+var steam_imgs := {}
 
-const STAGES := ["plain", "realism", "wet", "blood_rain", "mirror", "skin", "soften_off", "soften", "pattern", "shaft", "sweep", "iris", "leak", "hair", "grade", "crt"]
+const STAGES := ["plain", "realism", "wet", "blood_rain", "mirror", "skin", "soften_off", "soften", "pattern", "shaft", "sweep", "lightning", "iris", "leak", "hair", "grade", "crt", "cold", "steam"]
 
 
 func _initialize() -> void:
@@ -157,6 +175,37 @@ func measure(img: Image, x0: int, y0: int, x1: int, y1: int) -> Dictionary:
 			if c.r > 0.12 and c.r > c.g * 2.2 and c.r > c.b * 2.2:
 				red += 1
 	return {"mean": sum / max(cnt, 1), "max": mx, "red": red}
+
+
+## where a box lands in a picture (pixels), through camera `c` whose own image is `size` (scaled to `img_size`)
+func box_rect(c: Camera3D, b: MeshInstance3D, img_size: Vector2, size: Vector2) -> Rect2i:
+	var lo := Vector2(1e9, 1e9)
+	var hi := Vector2(-1e9, -1e9)
+	var h := (b.mesh as BoxMesh).size * 0.5
+	for sx in [-1.0, 1.0]:
+		for sy in [-1.0, 1.0]:
+			for sz in [-1.0, 1.0]:
+				var sp := c.unproject_position(b.global_transform * Vector3(sx * h.x, sy * h.y, sz * h.z)) / size * img_size
+				lo = lo.min(sp)
+				hi = hi.max(sp)
+	lo = lo.clamp(Vector2.ZERO, img_size - Vector2(1, 1))
+	hi = hi.clamp(Vector2.ZERO, img_size - Vector2(1, 1))
+	var mid := (lo + hi) * 0.5                     # its middle half (clear of its edges' blending)
+	var half := (hi - lo) * 0.25
+	return Rect2i(Vector2i(mid - half), Vector2i((half * 2.0).max(Vector2(1, 1))))
+
+
+## how many pixels in a box of the picture are plainly green or red
+func count_in(img: Image, r: Rect2i, what: String) -> int:
+	var n := 0
+	for y in range(r.position.y, r.end.y):
+		for x in range(r.position.x, r.end.x):
+			var c := img.get_pixel(x, y)
+			if what == "green" and c.g > 0.1 and c.g > c.r * 1.8 and c.g > c.b * 1.8:
+				n += 1
+			elif what == "red" and c.r > 0.1 and c.r > c.g * 1.8 and c.r > c.b * 1.8:
+				n += 1
+	return n
 
 
 ## where a flat quad lands in the picture (pixels)
@@ -262,6 +311,20 @@ func _process(_d: float) -> bool:
 		sweep_n.clock += 0.5 * sweep_n.secs
 	if STAGES[stage] == "sweep" and n < 90:
 		return false
+	if STAGES[stage] == "lightning" and lightning_n != null:
+		if n == 30:
+			lightning_before = root.get_texture().get_image()
+			lightning_n.fire()
+		if n > 30:
+			lightning_levels.append(lightning_n.level)
+			lightning_fig_ok = lightning_fig_ok and lightning_fig.visible == (lightning_n.level > 0.5)
+		if n == 34:
+			lightning_lit = root.get_texture().get_image()      # the flash at full, the figure there
+			lightning_lit.save_png(out_dir.path_join("lightning_lit.png"))
+		if n == 45:
+			lightning_n.fire()                                  # asked again during the strike: it waits for the dark between
+		if n < 280:
+			return false
 	if STAGES[stage] == "grade":
 		if n == 30:
 			grade_plain = root.get_texture().get_image()          # ungraded, then the cinema grade on
@@ -338,6 +401,53 @@ func _process(_d: float) -> bool:
 			crt_view(35.0, 0.45)                                 # the set and its snow, close
 		if n < 150:
 			return false
+	if STAGES[stage] == "cold" and cold_breath != null:
+		if n == 20:
+			cold_imgs["none_lit"] = root.get_texture().get_image()      # no breath yet, the flashlight on
+			cold_breath.exhale()
+		if n == 68:
+			cold_imgs["breath_lit"] = root.get_texture().get_image()    # 0.8 s into a breath, out in the beam
+			cold_imgs["breath_lit"].save_png(out_dir.path_join("cold_breath_lit.png"))
+			cold_spot.visible = false
+		if n == 170:
+			cold_imgs["none_dark"] = root.get_texture().get_image()     # its puffs gone, the flashlight off
+			cold_breath.exhale()
+		if n == 218:
+			cold_imgs["breath_dark"] = root.get_texture().get_image()   # a breath in the dark: nothing to light it
+			cold_imgs["breath_dark"].save_png(out_dir.path_join("cold_breath_dark.png"))
+			cold_back = OmniLight3D.new()                              # a lamp behind the breath (as a street lamp outside the window it's breathed at)
+			cold_back.light_energy = 1.0
+			cold_back.omni_range = 4.0
+			world.add_child(cold_back)
+			cold_back.global_position = cam.global_position + Vector3(0.0, -0.1, -1.6)
+		if n == 330:
+			cold_imgs["none_back"] = root.get_texture().get_image()
+			cold_breath.exhale()
+		if n == 378:
+			cold_imgs["breath_back"] = root.get_texture().get_image()   # backlit: droplets throw light forward, at the eye
+			cold_imgs["breath_back"].save_png(out_dir.path_join("cold_breath_back.png"))
+			cold_back.visible = false
+			cold_spot.visible = true
+		if n == 520:
+			cold_imgs["clear"] = root.get_texture().get_image()         # the puffs gone: the pane clear
+			HSGlass.frost(cold_pane, 0.6)
+		if n == 550:
+			cold_imgs["frost"] = root.get_texture().get_image()         # frosted from its bottom edge
+			cold_breath.exhale()                                       # and a breath in front of it, for the stage's picture
+		if n < 598:
+			return false
+	if STAGES[stage] == "steam" and steam_m != null:
+		if n == 40:
+			steam_imgs["clear"] = root.get_texture().get_image()         # the glass clear: the checker behind you sharp in it
+			steam_m.set_steam(0.5)
+		if n == 70:
+			steam_imgs["half"] = root.get_texture().get_image()          # fogged half way up from the bottom
+			steam_m.set_steam(1.0)
+			steam_m.write("308")
+		if n == 100:
+			steam_imgs["full"] = root.get_texture().get_image()          # fogged all over, the words a finger left showing clear
+		if n < 104:
+			return false
 	if n < 24:                                 # the first frames: TAA settles, the lamp's shadow maps
 		return false
 	var name: String = STAGES[stage]
@@ -387,6 +497,20 @@ func _process(_d: float) -> bool:
 			hi = hi.clamp(Vector2.ZERO, vs - Vector2(1, 1))
 			var in2 := measure(mv, int(lo.x) + 1, int(lo.y) + 1, max(int(hi.x), int(lo.x) + 2), max(int(hi.y), int(lo.y) + 2))
 			report["mirror2_in_first"] = in2
+			report["mirror_only"] = {                      # the green box in the mirror's picture, not the eye's; the red one the other way
+				"eye_green": count_in(img, box_rect(cam, only_box, Vector2(img.get_width(), img.get_height()), root.get_visible_rect().size), "green"),
+				"mirror_green": count_in(mv, box_rect(hm.mcam, only_box, vs, Vector2(hm.view.size)), "green"),
+				"eye_red": count_in(img, box_rect(cam, never_box, Vector2(img.get_width(), img.get_height()), root.get_visible_rect().size), "red"),
+				"mirror_red": count_in(mv, box_rect(hm.mcam, never_box, vs, Vector2(hm.view.size)), "red"),
+				"in_mirror_view": hm.mcam.is_position_in_frustum(only_box.global_position) and hm.mcam.is_position_in_frustum(never_box.global_position),
+				"in_eye_view": cam.is_position_in_frustum(only_box.global_position) and cam.is_position_in_frustum(never_box.global_position),
+				"wall_hidden": hm.hid.size(),
+				"eye_mask_19": (cam.cull_mask & (1 << (HSMirror.MIRROR_ONLY - 1))) != 0,
+				"mirror_mask_19": (hm.mcam.cull_mask & (1 << (HSMirror.MIRROR_ONLY - 1))) != 0,
+				"mirror_mask_20": (hm.mcam.cull_mask & (1 << (HSMirror.HIDDEN_LAYER - 1))) != 0,
+				}
+			only_box.queue_free()
+			never_box.queue_free()
 			report["mirror2_layers"] = {"first": hm.layer, "second": hm2.layer, "second_seen_by_first": (hm.mcam.cull_mask & (1 << (hm2.layer - 1))) != 0, "first_not_itself": (hm.mcam.cull_mask & (1 << (hm.layer - 1))) == 0, "active2": hm2.active}
 			print("MIRROR normal ", hm.normal, " centre ", hm.centre, " corners ", hm.corners.size(), " in frustum ", cam.is_position_in_frustum(mirror_q.global_transform * hm.centre), " d ", (cam.global_position - mirror_q.global_transform * hm.centre).dot(mirror_q.global_transform.basis * hm.normal))
 			print("MIRROR eye ", hm.mcam.global_position, " near ", hm.mcam.near, " active ", hm.active, " vp ", hm.mat.get_shader_parameter("mirror_vp"))
@@ -462,6 +586,45 @@ func _process(_d: float) -> bool:
 			report["sweep_passing"] = 1 if sweep_n != null and sweep_n.passing() else 0
 			if sweep_n != null:
 				print("SWEEP lamp at ", sweep_n.lamp.global_position, " energy ", sweep_n.lamp.light_energy, " visible ", sweep_n.lamp.visible, " passing ", sweep_n.passing(), " clock ", sweep_n.clock, " started ", sweep_n.started, " aimed ", -sweep_n.lamp.global_transform.basis.z)
+		"lightning":
+			shot("lightning")                                           # after: dark again
+			var segs: Array = []                                        # each strike: [first frame, last frame] where the flash was on
+			var on := false
+			for i in lightning_levels.size():
+				var v: float = lightning_levels[i]
+				if v > 0.0 and not on:
+					segs.append([i, i])
+					on = true
+				elif v > 0.0:
+					segs.back()[1] = i
+				else:
+					on = false
+			var rises: Array = []                                       # rises past half in each strike (a flash each)
+			var glow_min := 1.0                                         # the glow's lowest between the first strike's first and last time at full
+			var maxima := 0                                             # its brightenings (the first and the re-brightenings)
+			for k in segs.size():
+				var r := 0
+				for i in range(segs[k][0], segs[k][1] + 1):
+					var v0: float = lightning_levels[i - 1] if i > 0 else 0.0
+					if v0 < 0.5 and lightning_levels[i] >= 0.5:
+						r += 1
+					if k == 0 and i > 0 and i + 1 < lightning_levels.size() and lightning_levels[i] >= 0.995 and lightning_levels[i - 1] < lightning_levels[i] and lightning_levels[i + 1] <= lightning_levels[i]:
+						maxima += 1
+				rises.append(r)
+			if not segs.is_empty():
+				var full: Array = []
+				for i in range(segs[0][0], segs[0][1] + 1):
+					if lightning_levels[i] >= 0.995:
+						full.append(i)
+				if full.size() > 1:
+					for i in range(full[0], full.back() + 1):
+						glow_min = minf(glow_min, lightning_levels[i])
+			var before_m := measure(lightning_before, 0, 0, 1280, 720)
+			var lit_m := measure(lightning_lit, 0, 0, 1280, 720)
+			report["lightning"] = {"strikes": segs.size(), "rises": rises, "glow_min": glow_min, "brightenings": maxima,
+				"dark_between_s": (float(segs[1][0] - segs[0][1]) / 60.0) if segs.size() > 1 else -1.0,
+				"thunder_s": (lightning_thunder - float(lightning_struck[0])) if lightning_struck.size() > 0 and lightning_thunder >= 0.0 else -1.0,
+				"figure_ok": lightning_fig_ok, "lit_gain": lit_m["mean"] / maxf(before_m["mean"], 0.001), "km": lightning_n.km}
 		"shaft":
 			var img := shot("shaft")
 			var box := Rect2i(360, 150, 420, 200)                        # the air the beam crosses, against the dark back of the room
@@ -501,6 +664,31 @@ func _process(_d: float) -> bool:
 				sum += m
 			report["crt_flicker"] = (hi - lo) / max(sum / max(crt_means.size(), 1), 1e-6)
 			report["crt_frames"] = crt_means.size()
+		"steam":
+			shot("steam")
+			var r := screen_rect(steam_q, Vector2(0.9, 0.7))
+			var bottom := Rect2i(r.position.x, r.position.y + int(r.size.y * 0.78), r.size.x, int(r.size.y * 0.2))
+			var top := Rect2i(r.position.x, r.position.y + 2, r.size.x, int(r.size.y * 0.16))
+			var words := Rect2i(r.position.x + int(r.size.x * 0.28), r.position.y + int(r.size.y * 0.3), int(r.size.x * 0.44), int(r.size.y * 0.36))   # the middle of the writing's box
+			var edge := Rect2i(r.position.x + 2, r.position.y + int(r.size.y * 0.3), int(r.size.x * 0.08), int(r.size.y * 0.36))                      # beside it, fogged
+			report["steam"] = {"clear_bottom": sharpness(steam_imgs["clear"], bottom), "half_bottom": sharpness(steam_imgs["half"], bottom),
+				"clear_top": sharpness(steam_imgs["clear"], top), "half_top": sharpness(steam_imgs["half"], top),
+				"full_words": sharpness(steam_imgs["full"], words), "full_beside": sharpness(steam_imgs["full"], edge),
+				"clear_words": sharpness(steam_imgs["clear"], words), "written": steam_m.written}
+		"cold":
+			shot("cold")                                                # the frosted pane, a breath in front of it in the beam
+			var low := Rect2i(400, 380, 480, 300)                       # where the breath goes: below the middle, out into the beam, against the dark
+			var r := screen_rect(cold_pane, Vector2(1.0, 1.0))
+			var bottom := Rect2i(r.position.x, r.position.y + int(r.size.y * 0.72), r.size.x, int(r.size.y * 0.26))
+			var top := Rect2i(r.position.x, r.position.y + 2, r.size.x, int(r.size.y * 0.22))
+			report["cold"] = {"breaths": cold_breath.count,
+				"breath_lit": diff(cold_imgs["breath_lit"], cold_imgs["none_lit"], low.position.x, low.position.y, low.end.x, low.end.y),
+				"breath_dark": diff(cold_imgs["breath_dark"], cold_imgs["none_dark"], low.position.x, low.position.y, low.end.x, low.end.y),
+				"breath_back": diff(cold_imgs["breath_back"], cold_imgs["none_back"], low.position.x, low.position.y, low.end.x, low.end.y),
+				"clear_bottom": sharpness(cold_imgs["clear"], bottom), "frost_bottom": sharpness(cold_imgs["frost"], bottom),
+				"clear_top": sharpness(cold_imgs["clear"], top), "frost_top": sharpness(cold_imgs["frost"], top),
+				"frost_bottom_mean": measure(cold_imgs["frost"], bottom.position.x, bottom.position.y, bottom.end.x, bottom.end.y)["mean"],
+				"clear_bottom_mean": measure(cold_imgs["clear"], bottom.position.x, bottom.position.y, bottom.end.x, bottom.end.y)["mean"]}
 	stage += 1
 	if stage >= STAGES.size() or only != "":
 		finish()
@@ -554,6 +742,11 @@ func setup(name: String) -> void:
 			mirror2_q.position = Vector3(3.99, 1.6, -1.2)
 			mirror2_q.rotation_degrees.y = -90.0
 			HSMirror.attach(mirror2_q, 0, cam, 288)
+			only_box = box(Vector3(0.7, 0.7, 0.7), Vector3(-1.5, 0.35, 1.5), Color(0.05, 0.9, 0.1), 0.6)     # low on the left as the eye sees it; in the mirror's camera's picture, but not in the glass (the glass measures above stay as they were)
+			never_box = box(Vector3(0.2, 0.2, 0.2), Vector3(0.9, 1.7, 0.0), Color(0.9, 0.05, 0.05), 0.6)
+			never_box.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			HSMirror.only_in_mirrors(only_box)
+			HSMirror.never_in_mirrors(never_box)
 		"soften_off":
 			for sp in spheres:
 				sp.visible = false
@@ -574,6 +767,50 @@ func setup(name: String) -> void:
 			world.add_child(glow_q)
 		"soften":
 			HSSoften.attach(cam).set_amounts(0.9, 7.0, 1.6, 0.25)
+		"steam":
+			if post_n != null:
+				post_n.apply("none")
+			if cold_spot != null:
+				cold_spot.visible = false
+			cam.fov = 75.0
+			var at := Vector3(45.0, 1.5, 0.0)                         # a set of its own: a bathroom mirror, a checker on the wall behind you to see in it
+			var ck := checker_quad(2.4, 24, at + Vector3(0.0, 0.0, 2.4))
+			ck.rotation_degrees.y = 180.0                             # facing the mirror
+			steam_q = MeshInstance3D.new()
+			var sq := QuadMesh.new()
+			sq.size = Vector2(0.9, 0.7)
+			steam_q.mesh = sq
+			world.add_child(steam_q)
+			steam_q.position = at + Vector3(0.0, 0.0, -0.6)
+			cam.look_at_from_position(at + Vector3(0.0, 0.0, 0.7), at + Vector3(0.0, 0.0, -0.6))
+			steam_m = HSMirror.attach(steam_q, 0, cam, 512)
+		"cold":
+			if post_n != null:
+				post_n.apply("none")
+			cam.fov = 75.0
+			var at := Vector3(30.0, 1.5, 0.0)                         # a set of its own, away from the room: a checker seen through a pane, in the dark
+			checker_quad(1.3, 13, at + Vector3(0.0, 0.62, -1.0))     # high in the view: the breath crosses the beam below it against the dark
+			cold_pane = MeshInstance3D.new()
+			var pq := QuadMesh.new()
+			pq.size = Vector2(1.0, 1.0)
+			cold_pane.mesh = pq
+			world.add_child(cold_pane)
+			cold_pane.position = at + Vector3(0.0, 0.55, -0.6)
+			HSGlass.pane(cold_pane, Vector2(1.0, 1.0), 3.0, {"rain": 0.0})
+			cam.look_at_from_position(at + Vector3(0.0, 0.0, 1.2), at + Vector3(0.0, 0.0, -0.6))   # level: the pane above the middle, the breath below it
+			cold_spot = SpotLight3D.new()                             # the starter's flashlight, where it sits by the eye
+			cold_spot.light_energy = 4.0
+			cold_spot.spot_range = 14.0
+			cold_spot.spot_angle = 24.0
+			cold_spot.spot_angle_attenuation = 2.5
+			cold_spot.shadow_enabled = true                           # as the starter's (a projector needs the light's shadow setup)
+			cam.add_child(cold_spot)
+			cold_spot.position = Vector3(0.18, -0.2, -0.1)
+			var cb := HSBeam.new()                                    # with its cookie, as the game's: the breath beside the beam's core gets its spill
+			cb.cookie = "flashlight"
+			cold_spot.add_child(cb)
+			cold_breath = HSBreath.make(cam, {"on": false, "strength": 1.0})   # the eye's breath, breathed only when asked
+			world.add_child(cold_breath)
 		"crt":
 			if post_n != null:
 				post_n.apply("none")                                 # the grade off: the screen's own numbers
@@ -649,6 +886,21 @@ func setup(name: String) -> void:
 			world.add_child(iris_lamp)
 			iris_lamp.position = Vector3(0.0, 2.2, 0.0)
 			HSLook.iris(root, true, false)
+		"lightning":
+			if sweep_n != null:
+				sweep_n.queue_free()
+				sweep_n = null
+			cam.look_at_from_position(Vector3(1.5, 1.3, 2.4), Vector3(-1.5, 1.2, -1.5))
+			lightning_n = HSLightning.make({"every": 0, "strength": 3.0, "restrikes": 2, "km": 1.0})
+			world.add_child(lightning_n)
+			lightning_n.rotation = Vector3(-1.0, 0.6, 0.0)
+			lightning_fig = box(Vector3(0.4, 1.7, 0.3), Vector3(-1.6, 0.85, -1.9), Color(0.08, 0.08, 0.09), 0.9)   # someone there only in the flash
+			lightning_fig.visible = false
+			lightning_n.figure = lightning_fig
+			lightning_n.struck.connect(func() -> void: lightning_struck.append(lightning_n.clock))
+			lightning_n.thundered.connect(func() -> void:
+				if lightning_thunder < 0.0:
+					lightning_thunder = lightning_n.clock)
 		"sweep":
 			if shaft_fv != null:
 				shaft_fv.visible = false

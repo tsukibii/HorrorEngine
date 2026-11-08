@@ -2,6 +2,228 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-08 (the user: a better quest marker, and the rest of the UI, on the branch `ui-v3`)
+
+- **"Make an enhanced ui quest marker (something that tells the player where to go/who to speak to), so even if it's in
+  another room we can roughly see it (but it's more faint, and gets less transparent the closer we get), keep it the
+  diamond shape but see how you can enhance aesthetics without making it distract from the horror vibe. See what else
+  can be enhanced in the ui and do it as part of this new branch called ui-v3."** Built as ui-v3 (STORY_FORMAT §4, the
+  marker; `marker.gd`): the marker's strength is one rule, the nearer the clearer (nearly opaque inside 3 m, a faint
+  floor from 36 m, gone by 72 m) and about half as strong with the building between (play.gd's `guide_clear`: a ray
+  against walls, floors, ceilings and doors, a few times a second), so it shows roughly through the rooms; it stays the
+  diamond (corners barely rounded, a glass tint, a stem that fades out, a small core and the name near, no glow); a
+  small diamond with a chevron points to it from the screen's edge once it's been out of view a moment; the pause menu's
+  Quest marker (Off, Subtle, Clear). The standing rules held: flat, vector, one stroke, nothing that pops; the
+  player's eye is never moved for them. The check GDUI (`tools/godot/ui_check.py`) holds it; `tests/uishot.gd` and
+  `demo/hudlab.gd` are the pictures (the game, and the HUD alone over a picture). The rest of the HUD came with it, to
+  the desk's own design (play/ui/hud.css) and quieted: the corners rest at 74% and come up on a change (OBJECTIVE, TO DO,
+  rows kept so a tick draws its line across; a marked task's bullet is the marker's diamond), the reticle a dot that
+  opens into a ring, lines in a serif over a scrim, toasts that ease, the keys as chips (they ran off the screen),
+  the chapter card with a diamond rule, the dark closing in while hidden, the pause menu's small capitals.
+- **"I think the glassmorphism panel actually removes some of the immersion, consider a style where the panel isn't as
+  noticeable and the text is there"** (mid-build): the frosted card was dropped for **no panel at all**: the glass
+  themes' panels are ghosts (no fill, no border, no shadow); a card is its words in a serif with the world dimmed a
+  little and a soft, edgeless dark behind them (`halo.gdshader`); the inventory's band the same, no border; the menu's
+  page just its rows. (The `neumorph` and `plain` themes keep their surfaces: they are their look.)
+- **"I forgot to mention the ui should be part of the godot plugin for horrorengine"** (mid-build): the UI now lives in
+  a plugin of its own, **HorrorStudio UI** (`GodotPlugins/HorrorStudioUI/addons/horrorstudio_ui/`, README and CLAUDE.md
+  as the others): `HSHud`, the marker, the themes, the pause menu and typing moved out of the runtime add-on into it
+  (the runtime uses them by path, as it uses the Look plugin); the export, the Director's install and the by-hand
+  projects all copy it in and enable it; a game made by hand adds an `HSHud` and puts an `HSQuestMarker` on what to
+  point at, its theme and quest marker setting in Project Settings. GDUI has a by-hand half.
+
+## 2026-11-08, night, later (the user: a mechanic for jump scares by what's so, for other events too)
+
+- **The ask**: "can you add another mechanic if we dont have it for jump scares, with variabels like is player looking
+  at the events direction (can check if its looking on the sides of the frame, corners, or middle + range of acceptance
+  so it doesnt have to be exact), is player on x quest, is player doing certain action e.g. is player in bed or
+  sitting, if criteria met can show a brief jumpscare, can be an npc + sound + animation + disappears after x seconds
+  etc, can also use this mecchanism for non jumpscares too".
+- **What we had**:
+  - the by-hand starter kit's scare area: walked into, or fired by a signal;
+  - glimpse.gd: an angle off where you look, not a part of the frame;
+  - the dread director's moments: behind, in view or out of sight;
+  - the story format's `look` trigger (looked at for some seconds within a distance) and its `sit` and `sleep` uses.
+- **What we didn't have**: a part of the frame with a tolerance, being on a task as a condition, what the player's
+  doing (sitting, lying in bed) as a condition, or one piece that checks all of it and then plays someone, a sound
+  and an animation and takes them away.
+- **Read as**: a new starter kit piece, `cue.gd`, plus a seat to sit or lie on (`seat.gd`; the player gets a pose
+  and `doing()`) and the Story's `on:<task>` ("on that quest": the task on the list and not done). It goes into
+  tutorial v2 as two cues:
+  - a jump scare from 304's bed: her on the ceiling in the corner of your view;
+  - one that isn't a scare: knocks at 304's door while you sit and watch the TV.
+- The desk's story format and the Director keep their own `look` and `sit`; the cue's conditions can go there too
+  if the user wants.
+
+## 2026-11-08 (the user: the retro pack into the prop generator, enhanced, in a tab of its own; the branch `retro-enhance`)
+
+- **"I made a new folder called retro inside branch retro-enhance. I want you to analyse the old 3 models I made in the
+  past, add them to the prop tool but with a more adjusted to match our style of higher quality textures pbrs/materials
+  etc, and smoothign if requried for more low poly psx."** Then: a quality reference off about fifteen of the best
+  props; each model checked for whether its vertices and mesh are good enough; those that pass enhanced where needed
+  ("more pbr, style match with our current game style props"); and "a new genre/tab in our prop tool called retro".
+  The folder holds two packs of 3D models (193 .glb), read as "the old 3D models".
+- **What came of it** (the same day, docs/PROPGEN.md §29): the bar (`tools/propgen/quality.py`: fifteen made props
+  measured, `Content/Studio/Props/quality_reference.json`); the audit (`propgen.py quality audit`, every file's nearest
+  LOD judged: 168 pass, one fails (Gas_Station/Trash.glb, a photo of litter folded into an 8-triangle pyramid), the
+  heavy poles' LOD1 taken; `Content/Studio/Props/retro_audit.json`, the review by eye with its notes in
+  `retro_review.json`); the `retro` family (the model kept, low poly smoothed by angle, its texture given base colour,
+  ORM and normal by what each part is, a shelf set's grain at real size, baked occlusion and the made props' wear);
+  174 recipes `retro_*` in eight groups; the page's Retro tab first in its bar with the groups as chips. Notes for
+  before a game ships: Light_Sign says V-Power Racing (Shell's), the cooker carries INMETRO's mark, three posters are
+  real campaign posters, the conifers' cut log ends are a Textures.com texture.
+
+## 2026-11-08, night (the user: build it; the reverb from Woohill; into the tutorial)
+
+- **The ask**: "I think for reverb you can lift the system we made in Woohill repo, feel free to work on the rest and
+  include them as part of the new tutorial too".
+- **Read as**:
+  - the sound of rooms is Woohill's sound physics (`tsukibii/woohill`: `game/audio/acoustics.gd` rays for occlusion
+    and reflections into four reverb slots, `cinema_mix.gd` the buses and each play's shape, `sound_bank.gd` the tails
+    and echoes, `footsteps.gd` a step a stride, `tools/sfx/tails.py` the tails rendered offline), lifted into the
+    by-hand starter kit;
+  - "the rest" is docs/research/intensity.md §7, built in steps (a commit each);
+  - "the new tutorial" is tutorial v2 (Room 304), which gets each step.
+- **Its three decisions, taken by me since "feel free"** (say if not):
+  - only in the mirror: the mirrors' last layer (19) becomes the reflection-only layer;
+  - the player gets no body yet (the out-of-step reflection waits);
+  - Nexus Resonance (binaural) waits; the mix pans as Godot does.
+
+## 2026-11-08, later (the user: more atmospheric horror, researched)
+
+- **The ask**: "Any other atmospheric horror elements you can think of adding? Research some more things that could
+  elevate our simple game to a more intense level".
+- **Read as**: research only, then the user picks (docs/research/intensity.md). What's researched already isn't
+  repeated (jump scares, the dread curve, loop games, story in objects, the eye candy catalogue, HORROR_TODO); this
+  covers what isn't: sound and the player's own body, pacing and the threat's warning signs, the uncanny seen.
+
+## 2026-11-08 (the user: a better flashlight and the level's air: "a beam in a fog", a fog level, dust; eye candy first)
+
+- **The ask**: "Anyway we could work on a better flashlight + level atmosphere system, you know when we put a light in
+  real life in the woods it's more like a beam in a fog, maybe have a fog level adjuster and dust particle visible,
+  before you do anything do eye candy research meaning the little visual things that make the game feel more immersion
+  and then work on this, include this system part of the tutorial too".
+- **Read as**:
+  1. research first: docs/research/eye_candy.md;
+  2. then build the system;
+  3. then put it into tutorial v2.
+- **The research found** (the fog lab, measured in Godot 4.7):
+  - The balanced look's haze (0.009 at anisotropy 0.55) leaves the flashlight's beam **invisible** from the player's
+    eye: 0 out of 255 in the air 6 m out. The forward-scattering 0.55 takes about 90% of the beam a holder would see.
+  - Godot's froxel fog only draws a soft glow, and froxels at 128 cost 9.5× for an edge 2 px sharper.
+  - A beam drawn by its own shader with a flashlight's cookie reads as a beam, costs a quarter of the froxels' time and
+    leaves no ghost.
+  - Dust motes show only in light, but need a back lobe to glint in your own beam and a knee so the moon doesn't
+    speckle the sky.
+- **To build** (the note's §2.4):
+  - **HSAtmosphere**, the fog level: one number, ground mist drifting on the wind, dust, `fog_to` for moments, presets;
+  - **HSBeam**, a light's beam in that air, on the flashlight by default; the flashlight's own froxel fog energy off;
+  - **the flashlight's cookie**: a hot core, a ring, the spill;
+  - **HSDust**, motes lit by every light.
+- **Then eye candy A**: the TV lighting the room, a pickup's glint in the beam, eyeshine, moths round a lamp, dust
+  shaken down.
+- **Then into tutorial v2**: the atmosphere and the eye candy, with the Look nodes it doesn't use yet (the tape, a
+  shaft, a pattern light, a puddle, a leak, her look).
+- **Later the same day**: "The dust motes look too stylized, can you research on making better more realistic motes".
+  Researched (docs/research/eye_candy.md §2.3b):
+  - dust is flat flakes and lint, which flash as they tumble;
+  - it's white in the light's colour;
+  - the eye sees sharp points where a camera sees soft discs;
+  - it rides slow air in eddies (curl noise);
+  - sizes vary widely.
+
+  The motes were rebuilt that way.
+
+## 2026-11-07, night (the user: "tutorial v2": a hotel floor from the scene builder to a story built by hand in Godot)
+
+- **The ask**: "can you make a tutorial that goes from modelling an interior for a floor in a hotel to building out the
+  story from scratch in godot using our plugin (not director), should make use of every aspect we've added so far, its
+  basically a tutorial, call it tutorial v2 in the html guide we made". Read as: the by-hand route (the Look plugin and
+  the starter scripts, no Director), a second tutorial beside guides/first_game, its card in guides/index.html titled
+  Tutorial v2.
+- **Built**: `guides/tutorial_v2/` (Room 304). It covers:
+  - the hotel floor modelled in the scene builder: two floors, a dog-leg stairwell, rooms, doors locked by a key's name
+    and for good, windows, furniture, lamps, paint;
+  - exported for Godot;
+  - a by-hand project lit with the Look plugin: light zones, flickering tubes, a dying bulb, rain and a street lamp, a
+    car's lights, a CRT, a mirror, a wet floor, blood;
+  - the story built from the starter kit: a to-do list, a note, a key, batteries, moments, music by mood, room tones,
+    lights that dim and come back or go out one by one, the flashlight on batteries, a character who backs off from
+    the light, the hush before a jump scare, the fire door's ending.
+- **What it needed**: the set `hotel_floor` (its `layout.py` and `layout.json`); a door's lock in the interior export
+  (extras `locked_by`, kept by door.gd); the starter kit grown with story, sound, room_tone, event_area, pickup, note,
+  flashlight, light_shy, lights and reach, with door.gd, scare_area.gd, player.gd and interior.gd extended (the first
+  game unchanged, FIRSTGAME); `godot_byhand.py new` giving a project the sound shelf (`sfx/`) and the moods (`music/`);
+  TUTORIAL2 (`tools/godot/tutorial_v2.py`) building it as the steps say and playing it through, with the pictures (Godot's
+  and the scene builder's).
+- Not in it: the Director (the user's "not director"), the street (a hotel floor stands alone; the first tutorial
+  covers streets), made props (they need Blender to make; mentioned under where to go next).
+
+## 2026-11-07, later (the user: "go for it": the lights, then the flashlight, then the sound that can go quiet)
+
+- Asked which to build first ("the lights fix, then the flashlight, then music, room sound and the hush, since most of
+  the other scare features depend on it"), the user: **"go for it"**. So: HORROR_TODO 0 (lights that dim and come
+  back), then FLASHLIGHT_PLAN §1 and §2 (the flashlight on batteries, characters that feel its light), then HORROR_TODO
+  13's first (music and room tone played, the hush before a sting), one step a commit with its TestRoom001 station.
+- **The lights, built** (HORROR_TODO 0): `light` with `to`, `secs`, `over` (not `fade`: the screen's own verb, which
+  the story check reads as a second command), `mode` and `set: normal`; a timed change laid over the light's own state
+  and gone by itself, `on` and `normal` bringing back its own brightness and flicker; `lights_die` on one `light` or a
+  room, `order: "toward"` with its `gap`, every light back as it was; a Director state's light let go back as the
+  level has it; the Scares cards *A light dims* (the light nearest where it lands, `{light}`) and *The lights die one
+  by one*; the desk's quick beat *A light dims*; `loop_hall` and `cut_away` out of the palette (the check warns).
+- **The flashlight on batteries, built** (FLASHLIGHT_PLAN §1, but its props): a `battery` on the flashlight item, a
+  bulb's or an LED's beam by its charge, `low`/`dead`/`changed` heard, `battery` items as sets changed by themselves,
+  the pause menu's charge and change, the story's `dim`, `drain` and timed `flicker`; the condition is
+  `{"charge": 0.25}` (a number, as the editors' forms take).
+- **Characters that feel the light, built** (FLASHLIGHT_PLAN §2, but `avoids`): the beam tested against the cast and
+  the things a trigger names, `lit` and `flashed` heard, the cast's `beam` (backs off, freezes, flees, vanishes,
+  covers her eyes, comes, charges; `near` making the lights round her flicker, dim or die) and the `beam` action, the
+  sight's `torch` (the light gives you away); in the Director the character's Feels light rows and four People cards
+  dragged onto her, a Reactions card dropped on her firing when the flashlight is on her.
+- **The sound that can go quiet, built** (HORROR_TODO 13.1, jump_scares.md §8): the story's `music` plays at last,
+  each mood (calm, uneasy, dread, chase) a bed rendered from the score room's own cues by `tools/score/moods.mjs`
+  (`Content/Studio/Music/moods/`, a game's own `Music/moods/` over them; MOODS), looped and crossfading with equal
+  power, kept with the run; a room's `tone` (a loop off the sound shelf, `game.tone` the default, `none` silence)
+  crossfading room to room; the `hush` action (the beds down to nothing, the last half second silent, the beat waiting
+  it out, then back over `back` seconds) and the jumpscare's `quiet` (`game.quiet` for every one). Music on the Music
+  bus, the tone on SFX (both made when a project hasn't them, so the pause menu's rows work); owned by the main scene
+  (Godot's `beds.gd`, the desk's `play/beds.js`), so the music carries through scenes; on the play's clock, so a hush
+  ends with its beat's wait even on slow frames. Sounds in the room (the shelf's, the little things') aren't hushed:
+  they're the world's. The Director: a room's Tone, the game's Tone and Quiet, the Music and Hush commands.
+
+## 2026-11-07 (the user: a list to build for a motel game; jump scares researched; a flashlight on batteries; characters that feel its light)
+
+- **The question first**: "Can you think of some game elements we should add that we might be missing. Do we have an
+  easy drag and drop way to maybe cause an event to dim the light temporarily e.g. if quest x and player triggered
+  event y light turns off or dims (we can select which light). What other elements would be good to make a horror
+  game ... imagine we are restricted to making a game that takes place inside a motel or hotel based off current
+  mechanics what else could help keep the game interesting for 1-2 hours." The answer: a moment (WHEN, ONLY IF quest
+  X, THEN Light) picks one light by its node's name and turns it off, on, flickering or dim, and the Scares card *The
+  lights die* darkens a room for a moment; but **dim and flicker never go back** (`on` leaves a light at 35% or still
+  flickering: play.gd `light`, runtime.js `light`), *the lights die* is a whole room's and turns every light in it on
+  after, a Director state's light isn't let go when its condition stops, and `loop_hall`, `cut_away` and `stalker` are
+  in the panel's palette but Godot only logs them. Then ten things a motel game lacks.
+- **"We can ignore 7 since we don't have audio dialogue, can ignore 10 too. Rest add as a list to implement but note
+  anything that doesn't exist like vending machine or whatever needs to conform to the standard of existing props like
+  logo-able cans etc and need to be easily customizable."** So: the ear to the wall (7) and the log of everything read
+  (10) are dropped; the rest is a list to build, **docs/HORROR_TODO.md**, the lights' fix first; every prop it needs
+  that doesn't exist yet (a vending machine, an ice machine, a landline, door numbers, a neon sign, the batteries...)
+  is a **prop generator recipe of a customizable family** (PROPGEN §25, as the cans, the bottles and the rice cooker:
+  `CUSTOM = True`, the maker's mark a `brand` or your `logo`, every print a slot your picture replaces in the picture
+  editor, PBR sets per material, parts that open where the real thing's do, sockets for what glows, its kept picture
+  and passes, made into the library and Godot), or a kit thing with its `mats` where the kit makes it (a door's chain,
+  a bed on legs).
+- **"Can you research some more jump scare game stuff, how its done well and come up with what we'd need to add (if
+  anything)."** docs/research/jump_scares.md, its last section folded into HORROR_TODO.
+- **"Can you design a flashlight that's battery powered and has flicker mechanics etc, we also want mechanics where a
+  npc might not like light so backs off (so we need a drag and drop thing for npcs to basically let them know if
+  someone is flashing a light at them so we can trigger reactions or mechanics off of that)."** Designed in
+  **docs/FLASHLIGHT_PLAN.md**: a charge that drains while it's on, an old bulb's beam yellowing and dimming or an LED's
+  step down, flickering as it runs low, batteries found and changed, the story's flicker and dim with a length;
+  characters and things that feel the beam (`lit`, `flashed`), a reaction of their own dropped onto them in the
+  Director (backs off, freezes, flees, vanishes, covers her eyes, comes toward it, charges) and any moment off it.
+  Not built: waiting on the user's yes.
+
 ## 2026-11-06, last (the user: the rivers scrapped; the foliage and rocks kept as props, for gardens)
 
 - **"Scrap the rivers, keep all the foliage and rocks you made as props to generate. I'll use them for gardens."** So:

@@ -1,7 +1,10 @@
 ## An interior from the scene builder's Export for Godot (Exports/interiors/<name>/<name>.glb), made usable: put this on
 ## the interior's instance (the .glb dragged into your scene). It stands where a street wants it (`street` and `marker`:
 ## the street's README names its walk-in buildings' markers, inside_<building>), in the editor too; when the game runs
-## every door under its doors/ opens and shuts with E (door.gd), and `lights_on` puts its lamps on or off.
+## every door under its doors/ opens and shuts with E (door.gd), `lights_on` puts its lamps on or off, its windows'
+## glass casts no shadow (Godot's importer draws glTF's see-through glass with a depth pre-pass, which casts one: a
+## street lamp or the moon outside never got through a window), and nor do its kit lamps (a light you put in a floor
+## lamp's shade was boxed in by the shade: a fabric shade lets its light through).
 @tool
 extends Node3D
 
@@ -22,6 +25,7 @@ const DOOR := preload("res://starter/door.gd")
 
 
 func _ready() -> void:
+	add_to_group("hs_interior")                  # (the Sound node reads its rooms' surfaces off its markers)
 	place()
 	_lights()
 	if Engine.is_editor_hint():
@@ -30,6 +34,25 @@ func _ready() -> void:
 		if d.get_script() == null:
 			d.set_script(DOOR)
 			d.setup()
+	clear_glass()
+	clear_shades()
+
+
+## the kit's lamps (a node named *_kt_*lamp*: a floor lamp, a desk lamp) cast no shadow: their light comes through
+## their shades
+func clear_shades() -> void:
+	for n in find_children("*_kt_*lamp*", "", true, false):
+		for g in [n] + n.find_children("*", "GeometryInstance3D", true, false):
+			if g is GeometryInstance3D:
+				(g as GeometryInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+
+## the windows' glass (a mesh named for it with a see-through material) casts no shadow: light comes through
+func clear_glass() -> void:
+	for mi in find_children("*glass*", "MeshInstance3D", true, false):
+		var m: Material = mi.mesh.surface_get_material(0) if mi.mesh != null and mi.mesh.get_surface_count() > 0 else null   # its own (a pane may wear the rain's over it)
+		if m is BaseMaterial3D and m.transparency != BaseMaterial3D.TRANSPARENCY_DISABLED:
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 
 ## stood at the street's marker (the marker's place and turn are where the level's own origin goes)
@@ -58,6 +81,35 @@ func lamps() -> Array:
 func marker_at(marker_name: String) -> Transform3D:
 	var m := find_child(marker_name, true, false) as Node3D
 	return m.global_transform if m != null else global_transform
+
+
+## a room's box from the export (its markers/trigger_<room>__volume: the room's middle, its size in the metadata):
+## {xform: where its middle is in the world, size: its width, height and depth}; empty when there's no such room
+func room_box(room: String) -> Dictionary:
+	var m := find_child("trigger_%s__volume" % room, true, false) as Node3D
+	if m == null:
+		return {}
+	var e: Dictionary = m.get_meta("extras", {}) if m.has_meta("extras") else {}
+	var s: Array = e.get("size", [2.0, 2.0, 2.4])
+	var local: Vector3 = global_transform.affine_inverse() * m.global_position
+	return {"xform": global_transform * Transform3D(Basis(), local), "size": Vector3(float(s[0]), float(s[2]), float(s[1]))}
+
+
+## an Area3D the size of one of its rooms, put there (its CollisionShape3D made when the game runs: room_tone.gd,
+## event_area.gd and scare_area.gd call this with their `room`)
+func fit_area(area: Area3D, room: String) -> bool:
+	var b := room_box(room)
+	if b.is_empty():
+		push_warning("%s: no room %s in %s" % [area.name, room, name])
+		return false
+	var sh := CollisionShape3D.new()
+	sh.name = "_room"
+	var bs := BoxShape3D.new()
+	bs.size = b["size"]
+	sh.shape = bs
+	area.add_child(sh)
+	sh.global_transform = b["xform"]
+	return true
 
 
 func _lights() -> void:

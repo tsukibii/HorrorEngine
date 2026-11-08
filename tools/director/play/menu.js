@@ -174,8 +174,11 @@ export function pauseMenu(hud, ctx) {
       const settings = at.startsWith("set:") || at === "settings";
       nav.append(mk("div", "ph-crumb", settings ? "Settings" : "Paused"));
       if (!settings) nav.append(mk("div", "ph-where", `${ctx.where || ctx.game} · ${clock(ctx.secs || 0)}`));
+      const bat = ctx.battery;                                                 // the flashlight's charge and the sets in the pocket (FLASHLIGHT_PLAN §1d)
+      if (!settings && bat) nav.append(mk("div", "ph-where", `Flashlight ${Math.round(bat.charge * 100)}% · ${bat.sets ? `${bat.sets} spare set${bat.sets === 1 ? "" : "s"}` : "no spare batteries"}`));
       const list = settings ? SETTINGS.map(p => [p.title, () => open("set:" + p.id), "set:" + p.id])
-        : [["Resume", () => close("resume")], ["Save game", () => open("save"), "save"], ["Settings", () => open("set:" + SETTINGS[0].id), "settings"], ["Quit", () => open("quit"), "quit"]];
+        : [["Resume", () => close("resume")], ...(bat && bat.sets && bat.charge < 1 ? [["Change the batteries", () => { bat.change(); close("resume"); }]] : []),
+          ["Save game", () => open("save"), "save"], ["Settings", () => open("set:" + SETTINGS[0].id), "settings"], ["Quit", () => open("quit"), "quit"]];
       for (const [t, act, page] of list) {
         const b = mk("button", "ph-item"); b.append(mk("span", "ph-mark"), mk("span", "", t));
         b.classList.toggle("open", page === at || (page === "settings" && settings)); nav.append(item("nav", b, act));

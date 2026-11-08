@@ -58,7 +58,8 @@ rooms that can change between chapters. The panel under the 3D view counts what 
   the house's 0.91 m stairs room holds a straight flight only; a turn wants a room about two widths wide (BUILDER
   adds a 2.73 m stair hall to the house for its turn).
 - **The selected room:**
-  - Its `kind`, `name`, size, height, footsteps (`floor`) and `light`.
+  - Its `kind`, `name`, size, height, footsteps (`floor`), `light` and `tone` (what it sounds like inside: a loop off
+    the sound shelf, the game's when unset, `none` for silence; STORY_FORMAT §2).
   - Its **open sides**, for walls left out: a porch's, a railing side.
   - Whether it has a **ceiling**.
   - Its **built-ins**: a kitchen counter, a bath tub, a toilet, a vanity and washing machine, a shoe cabinet, stairs.
@@ -262,7 +263,9 @@ folder into a Godot 4 project's FileSystem dock and the `.glb` into a scene. `le
 - `lights/light_<id>`: the level's lamps (KHR_lights_punctual: OmniLight3D, SpotLight3D), a lamp the story lights later
   among them (`lit: false` in its extras); the windows' fill and the view's own lamp are left out (light it by hand).
 - `markers/`: `player_start`, `spot_<id>`, `trigger_<id>` (a room's volume, a story area: its size in its extras) as
-  empty nodes looking along their -Z, Godot's forward.
+  empty nodes looking along their -Z, Godot's forward. A room's volume (`trigger_<room>__volume`) also carries its floor's
+  kind (`floor`: carpet, tile, stone, wood...) and the sets or colours on its floor, walls and ceiling (`mats`): the
+  starter kit's sound physics and footsteps read them (DECISIONS 2026-11-08, night).
 
 Y up, metres, the level where the desk has it (story north is -Z). EXPORTS (`tools/godot/exports_check.py`) drops two
 sets' exports into a fresh project and measures them; guides/godot_by_hand and guides/first_game take it from there.

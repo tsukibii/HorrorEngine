@@ -45,6 +45,7 @@ scene("window_sun.tscn", [
     ("Sun", "SpotLight3D", ".", None, {"light_color": "Color(1, 0.9, 0.74, 1)", "light_energy": "6.0", "shadow_enabled": "true", "light_size": "0.15", "spot_range": "9.0", "spot_angle": "20.0", "spot_angle_attenuation": "0.4"}),
 ])
 one("headlight_sweep.tscn", "HeadlightSweep", "Node3D", "headlight_sweep.gd")
+one("lightning.tscn", "Lightning", "Node3D", "lightning_storm.gd", {"rotation": "Vector3(-1.0, 0.6, 0)", "every": "45.0", "km": "1.5"})
 spot = {"shadow_enabled": "true", "spot_range": "8.0", "spot_angle": "38.0"}
 one("caustics_light.tscn", "CausticsLight", "SpotLight3D", "pattern_light.gd", {**spot, "light_color": "Color(0.62, 0.86, 1, 1)", "light_energy": "3.0", "pattern": '"caustics"'})
 one("blinds_light.tscn", "BlindsLight", "SpotLight3D", "pattern_light.gd", {**spot, "light_color": "Color(1, 0.88, 0.7, 1)", "light_energy": "5.0", "pattern": '"blinds"', "open": "0.45"})
@@ -114,4 +115,24 @@ scene("look_balanced.tscn", [
     ("Grade", "Node", ".", N + "grade.gd", {}),
 ])
 scene("look_environment.tscn", [("LookEnvironment", "WorldEnvironment", None, "res://addons/horrorstudio_look/look_env.gd", {})])
+# the air (docs/GODOT_LOOK.md §5j): a place's air a preset each (one HSAtmosphere a level), a flashlight and an LED torch
+# with their beams and cookies, a lamp's cone in the air, motes alone, a dusty room's own air
+for fname, name, kind in [("air_clean_room.tscn", "AirCleanRoom", "clean_room"), ("air_dusty_room.tscn", "AirDustyRoom", "dusty_room"),
+                          ("air_hazy_night.tscn", "AirHazyNight", "hazy_night"), ("air_woods_mist.tscn", "AirWoodsMist", "woods_mist"),
+                          ("air_fog.tscn", "AirFog", "fog"), ("air_thick_fog.tscn", "AirThickFog", "thick_fog")]:
+    one(fname, name, "Node3D", "atmosphere.gd", {"preset": f'"{kind}"'})
+scene("flashlight.tscn", [
+    ("Flashlight", "SpotLight3D", None, None, {"light_color": "Color(1, 0.94, 0.84, 1)", "light_energy": "4.0", "shadow_enabled": "true", "spot_range": "14.0", "spot_angle": "24.0", "spot_angle_attenuation": "2.5"}),
+    ("AirBeam", "Node3D", ".", N + "beam.gd", {"cookie": '"flashlight"'}),
+])
+scene("flashlight_led.tscn", [
+    ("FlashlightLED", "SpotLight3D", None, None, {"light_color": "Color(0.92, 0.96, 1, 1)", "light_energy": "5.0", "shadow_enabled": "true", "spot_range": "18.0", "spot_angle": "20.0", "spot_angle_attenuation": "3.0"}),
+    ("AirBeam", "Node3D", ".", N + "beam.gd", {"cookie": '"led"'}),
+])
+scene("lamp_beam.tscn", [
+    ("LampBeam", "SpotLight3D", None, None, {"rotation": "Vector3(-1.5708, 0, 0)", "light_color": "Color(1, 0.72, 0.42, 1)", "light_energy": "3.0", "shadow_enabled": "true", "spot_range": "7.0", "spot_angle": "40.0", "spot_angle_attenuation": "1.5"}),
+    ("AirBeam", "Node3D", ".", N + "beam.gd", {"cookie": '"lantern"', "phase": "0.3"}),
+])
+one("dust.tscn", "Dust", "Node3D", "dust.gd")
+one("air_zone_dusty.tscn", "DustyRoomAir", "Node3D", "air_zone.gd", {"fog": "0.45", "dust": "0.85"})
 print(len(list(D.glob("*.tscn"))))

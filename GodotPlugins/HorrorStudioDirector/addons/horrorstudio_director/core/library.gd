@@ -210,6 +210,9 @@ static func for_move(move: String, who: String) -> Array:
 		if move == "caught":                         # a clip named for it (caught, catch, grab, found): a reaction's or a scare's
 			if not Array(words).any(func(w): return w.begins_with("caught") or w.begins_with("catch") or w.begins_with("grab") or w == "found"):
 				continue
+		elif move == "lit":                          # In the light: a clip named for it (shielding, covering her eyes, squinting, cowering)
+			if not Array(words).any(func(w): return w.begins_with("shield") or w.begins_with("cover") or w.begins_with("squint") or w.begins_with("cower") or w == "light" or w == "blinded"):
+				continue
 		elif c["role"] != role:
 			continue
 		if move == "sit_down" and not words.has("down"):

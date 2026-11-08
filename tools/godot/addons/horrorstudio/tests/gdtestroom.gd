@@ -66,6 +66,27 @@ func where() -> String:
 		"hiding": rt.player.hiding, "choice": not g.hud.choice_over, "panel": g.hud.panel_el != null})
 
 
+## lights' strengths (each its share of its own strength) every frame for `secs` of the game's time, into `out` (an
+## array the caller holds, so it can watch while something else happens: not awaited, it runs alongside); `until_back`:
+## done early once the first two have been out together and are both back; `out` ends with "done"
+func watch_lights(ids: Array, secs: float, out: Array = [], until_back := false) -> Array:
+	var t0: float = rt.clock
+	var dark := false
+	while true:
+		var row: Array = []
+		for id in ids:
+			var b: float = float(rt.light_state[id]["base"])
+			row.append(rt.light_energy(id) / b if b > 0.0 else 0.0)
+		out.append(row)
+		if float(row[0]) == 0.0 and float(row[1] if row.size() > 1 else 0.0) == 0.0:
+			dark = true
+		if rt.clock - t0 >= secs or (until_back and dark and float(row[0]) > 0.9 and float(row[1]) > 0.9):
+			out.append("done")
+			return out
+		await frames(1)
+	return out
+
+
 func frames(n: int) -> void:
 	for i in n:
 		await process_frame
@@ -225,6 +246,18 @@ func task(id: String) -> Variant:
 		if t["id"] == id:
 			return t["state"]
 	return null
+
+
+## the beds' state (HORROR_TODO 13.1) every frame into `out` till the music is calm (or 20 s of the game), then "done"
+func watch_beds(out: Array, limit: float = 20.0) -> void:
+	var c0: float = rt.clock
+	while rt.clock - c0 < limit:
+		var s: Dictionary = rt.game.beds.state()
+		out.append(s)
+		if s["music"] == "calm":
+			break
+		await process_frame
+	out.append("done")
 
 
 func ticked(id: String, what: String = "") -> String:
@@ -850,6 +883,19 @@ func _initialize() -> void:
 			await frames(3)
 			if rt.light_energy("power_candle_light") != 0:
 				return "the candle's light is still on"
+			var bulb: Array = await watch_lights(["power_bulb"], 2.4)      # a light that dims and comes back (b_power_dim, DECISIONS 2026-11-07)
+			bulb.pop_back()
+			var bulb_lo := INF
+			for x in bulb:
+				bulb_lo = minf(bulb_lo, float(x[0]))
+			if not (bulb_lo < 0.3) or not (float(bulb[bulb.size() - 1][0]) > 0.9):
+				return "the bulb's dim: lowest %.2f, last %.2f (it should sag to a fifth and come back by itself)" % [bulb_lo, float(bulb[bulb.size() - 1][0])]
+			r = await ticked("t4_dim")
+			if r != "":
+				return r
+			var pl: Dictionary = rt.light_state["power_lamp"]                 # a lasting dim undone by on: its own dying flicker back
+			if pl["dim"] != null or pl.get("b_mode") != "dying" or not (pl["layers"] as Array).is_empty():
+				return "the lamp after its dim and on: " + JSON.stringify({"dim": pl["dim"], "mode": pl.get("b_mode"), "layers": (pl["layers"] as Array).size()})
 			var u: Dictionary = rt.light_state["power_lamp"]                  # the lamp is a dying tube (its `mode`): it drops out now and then, never quite full between
 			if u.get("mode") != "dying" or float(u.get("interval", 0)) != 4.0 or float(u.get("flicker", 0)) <= 0.0:
 				return "the power lamp's flicker mode: " + JSON.stringify({"mode": u.get("mode"), "interval": u.get("interval"), "flicker": u.get("flicker")})
@@ -869,11 +915,32 @@ func _initialize() -> void:
 			return ""))
 
 	await station("n_store", func():
-		await step("5 · In your hands: the three tins into the inventory's row (each ticks), the box carried to the shelf and put down there (G: it ticks), the plushie in the hand (ticks)", func():
+		await step("5 · In your hands: the store's lights die one by one toward you as you come in (the far one first, both back, the one that was off still off); the three tins into the inventory's row (each ticks), the box carried to the shelf and put down there (G: it ticks), the plushie in the hand (ticks)", func():
 			place(1.5, 7.5, 180)
+			var seen: Array = []
+			watch_lights(["store_lamp", "store_lamp_back", "store_shelf_light"], 15.0, seen, true)   # watched from outside, alongside: the lights die one by one as the player comes in
 			var r := await enter_room("door_store", "store")
 			if r != "":
 				return r
+			while seen.is_empty() or str(seen[seen.size() - 1]) != "done":
+				await frames(1)
+			seen.pop_back()
+			var far_first := false
+			var both := -1
+			var back := false
+			var lit_off := false
+			for i in seen.size():
+				var x: Array = seen[i]
+				if float(x[1]) == 0.0 and float(x[0]) > 0.5:
+					far_first = true
+				if both < 0 and float(x[0]) == 0.0 and float(x[1]) == 0.0:
+					both = i
+				if both >= 0 and float(x[0]) > 0.9 and float(x[1]) > 0.9:
+					back = true
+				if float(x[2]) > 0.0:
+					lit_off = true
+			if not far_first or both < 0 or not back or lit_off:
+				return "one by one toward the player: " + JSON.stringify({"far_first": far_first, "both": both, "back": back, "the off one lit": lit_off, "end": seen[seen.size() - 1]})
 			for t in ["a", "b", "c"]:
 				await use("tin_%s_pickup" % t, 0.6)
 				r = await ticked("t5_%s" % t)
@@ -1135,6 +1202,9 @@ func _initialize() -> void:
 			var r := await enter_room("door_dark", "dark")
 			if r != "":
 				return r
+			var tn = rt.game.beds.state()["tone"]                # the room's tone: none (HORROR_TODO 13.1)
+			if tn != null:
+				return "the dark room's tone %s: none, silence there" % tn
 			await use("torch_pickup", 0.6)
 			r = await ticked("t10_torch")
 			if r != "":
@@ -1156,6 +1226,75 @@ func _initialize() -> void:
 			await game_wait(0.3)
 			if rt.torch["dead"]:
 				return "still dead"
+			return "")
+		await step("its battery (FLASHLIGHT_PLAN §1): the spare set into the pocket; on again it runs low (ticks: the beam dimmer and warmer), dies, and the spare set changes itself (ticks: a moment of dark, then full)", func():
+			await use("spare_pickup", 0.6)
+			if not rt.items.has("spare_cells") or rt.inv.any(func(e): return e.get("item") == "spare_cells"):
+				return "the spare set in the pocket, not the row: " + JSON.stringify(rt.items.keys())
+			await press("F")
+			await game_wait(0.4)
+			if not rt.torch["on"]:
+				return "the flashlight on again: no " + JSON.stringify(rt.torch_state())
+			var k0: float = float(rt.torch["k"])
+			var kv0: float = float(rt.torch["kelvin_now"])
+			var r := await ticked("t10_low")
+			if r != "":
+				return r
+			await game_wait(0.5)
+			var lo_k := INF
+			var t0: float = rt.clock
+			while rt.clock < t0 + 0.6:                                   # past a brownout's dip: its steady level
+				lo_k = minf(lo_k, float(rt.torch["k"]))
+				await frames(1)
+			var k_low: float = float(rt.torch["k"])
+			if not (k_low < k0 * 0.75) or not (float(rt.torch["kelvin_now"]) < kv0 - 150.0):
+				return "running low: the beam %.2f of %.2f, %d K of %d K" % [k_low, k0, int(rt.torch["kelvin_now"]), int(kv0)]
+			if not await until(func(): return rt.torch["changing"] != null, 9000):
+				return "the change by itself: never " + JSON.stringify(rt.torch_state())
+			await frames(2)
+			if rt.torch_hot.light_energy != 0.0:
+				return "the beam while the batteries are changed: %.2f" % rt.torch_hot.light_energy
+			r = await ticked("t10_change")
+			if r != "":
+				return r
+			if rt.items.has("spare_cells") or absf(rt.torch_charge() - 1.0) > 0.01 or not rt.torch["on"]:
+				return "after the change: " + JSON.stringify(rt.torch_state())
+			return "")
+		await step("characters that feel the light (FLASHLIGHT_PLAN §2): Aoi in the dark; the beam on her and she backs off (ticks) and keeps away; flashed twice (ticks); near her the flashlight flickers", func():
+			if not await until(func(): return rt.npcs.has("aoi") and rt.npcs["aoi"]["pos"] != null and rt.npcs["aoi"]["level"] == rt.level, 3000):
+				return "Aoi in the dark room: never"
+			await game_wait(0.3)
+			var p0: Vector3 = rt.npcs["aoi"]["pos"]
+			place(5.5, 19.2, 270, -12)                                    # by the shelf, looking at her (the dark room is at 3, 15)
+			if not rt.torch["on"]:
+				await press("F")
+			var r := await ticked("t10_lit")
+			if r != "":
+				return r
+			await game_wait(1.5)
+			var p1: Vector3 = rt.npcs["aoi"]["pos"]
+			var moved: float = (p1 - p0).length()
+			if not (moved > 0.6) or not (Vector3(p1 - rt.player.pos).length() > Vector3(p0 - rt.player.pos).length()):
+				return "she didn't back off: moved %.2f m, from %s to %s" % [moved, str(p0), str(p1)]
+			for i in 2:                                                  # flashed: the beam off her and on her again, twice
+				await press("F")
+				await game_wait(0.3)
+				await press("F")
+				await game_wait(0.4)
+			r = await ticked("t10_flash")
+			if r != "":
+				return r
+			var at: Vector3 = rt.npcs["aoi"]["pos"]                      # near her: the flashlight flickers by her
+			place(at.x, -at.z + 0.8, 270, -25)                           # (story y is Godot's -z)
+			await game_wait(0.2)
+			var ks: Array = []
+			var t0: float = rt.clock
+			while rt.clock < t0 + 2.5:
+				ks.append(float(rt.torch["k"]))
+				await frames(1)
+			ks.sort()
+			if not (float(ks[0]) < float(ks[ks.size() - 1]) * 0.5):
+				return "near her the flashlight should flicker: %.2f to %.2f (%.2f m from her)" % [float(ks[0]), float(ks[ks.size() - 1]), Vector3(rt.npcs["aoi"]["pos"] - rt.player.pos).length()]
 			return "")
 		await step("on the way out the glimpse: a creak, the figure there for a moment and gone; out of the room (ticks)", func():
 			var seen := [false]
@@ -1529,24 +1668,53 @@ func _initialize() -> void:
 			if not (t1 > 0 and t2 < t1):
 				return "the timer %s then %s" % [t1, t2]
 			place(1.5, 28.5, 90)
+			await process_frame
+			var b0: Dictionary = rt.game.beds.state()             # the beds (HORROR_TODO 13.1): the chase, the corridor's tone
+			if b0["music"] != "chase" or b0["tone"] != "room_tone_03":
+				return "the beds in the run " + JSON.stringify(b0)
+			var bs: Array = []
+			watch_beds(bs)                                        # alongside: the beds every frame till the calm comes
 			await hold("W", 2.5)
-			return await ticked("t15_run")))
+			var r := await ticked("t15_run")
+			if r != "":
+				return r
+			if not await until(func(): return bs.size() > 0 and str(bs[-1]) == "done", 6000):
+				return "the calm after the run: never"
+			var quiet := 0                                        # made it: a hush, its last half second silent, before the calm
+			for b in bs:
+				if b is Dictionary and b["hushing"] and float(b["duck"]) == 0.0 and b["music"] == "chase":
+					quiet += 1
+			if quiet < 3:
+				return "the hush after the run: %d silent frames before the calm %s" % [quiet, JSON.stringify(bs[-2] if bs.size() > 1 else {})]
+			return ""))
 
 	await station("n_sneak", func():
 		await step("16 · Sneak: the jumpscare as you come in; then Aoi walks her route; her eyes fill the meter in the open, never in the safe corner; the far corner reached (ticks)", func():
-			var js := [false]
+			var b2: Dictionary = rt.game.beds.state()             # after the run's hush: the calm crossfading in under it, the atrium's hum from the corridor's
+			if b2["music"] != "calm" or b2["tone"] != "electric_hum_02" or not (float(b2["levels"].get("t:electric_hum_02", 0)) > 0.9) or not (float(b2["levels"].get("t:room_tone_03", 1)) < 0.1):
+				return "the beds in the atrium " + JSON.stringify(b2)
+			var js := [false, null]
 			place(1.5, 30.4, 90)
 			rt.key_event("W", true)
 			var c0: float = rt.clock
 			var n := 0
 			while rt.clock - c0 < 0.8 and n < 3000:
-				if rt.by_id["atr_figure"]["node"].visible:
+				if rt.by_id["atr_figure"]["node"].visible and not js[0]:
 					js[0] = true
+					js[1] = rt.game.beds.state()
 				await process_frame
 				n += 1
 			rt.key_event("W", false)
-			if not await until(func(): if rt.by_id["atr_figure"]["node"].visible: js[0] = true; return js[0], 3000):
+			var seen := func() -> bool:
+				if rt.by_id["atr_figure"]["node"].visible and not js[0]:
+					js[0] = true
+					js[1] = rt.game.beds.state()
+				return js[0]
+			if not await until(seen, 3000):
 				return "the jumpscare: never"
+			var bj: Dictionary = js[1]                            # its quiet: hushed first, silent at the sting
+			if not bj["hushing"] or not (float(bj["duck"]) < 0.02):
+				return "the beds at the jumpscare " + JSON.stringify(bj)
 			if not await until(func(): return rt.npcs.has("aoi") and rt.npcs["aoi"]["as"] == "path", 3000):
 				return "Aoi on her route: never"
 			place(-3.8, 31.2, 45)
@@ -1568,7 +1736,13 @@ func _initialize() -> void:
 				return "the meter didn't drain in the safe corner"
 			place(6.5, 33.6, 90)
 			await hold("W", 0.6)
-			return await ticked("t16_cross")))
+			var r := await ticked("t16_cross")
+			if r != "":
+				return r
+			var b3: Dictionary = rt.game.beds.state()             # the beds back after the scare
+			if b3["hushing"] or not (float(b3["duck"]) > 0.99) or not (float(b3["levels"].get("m:calm", 0)) > 0.99):
+				return "the beds after the scare " + JSON.stringify(b3)
+			return ""))
 
 	await station("n_sleep", func():
 		await step("17 · Night: back to the rest room's bed, it sleeps you (the chapter card Night 2 · 23:40, the time now night), you wake and it ticks; the lobby's clock stopped", func():

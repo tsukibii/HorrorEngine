@@ -157,6 +157,7 @@ static func quality(env: Environment, q: Dictionary) -> void:
 		env.ssil_enabled = false
 	if fx <= 0:
 		env.volumetric_fog_enabled = false
+	env.set_meta("hs_no_haze", fx <= 0)                     # HSAtmosphere leaves the froxels off (its beams and dust go on)
 	if gi <= 0:
 		env.ssil_enabled = false
 

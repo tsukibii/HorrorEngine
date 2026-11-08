@@ -135,6 +135,7 @@ def _looks(ob):
                 lk["metal"] = float(bs.inputs["Metallic"].default_value)
                 if bc.links and bc.links[0].from_node.type == "TEX_IMAGE" and bc.links[0].from_node.image:
                     im = bc.links[0].from_node.image
+                    im.colorspace_settings.name = "Non-Color"     # its own values, a 16-bit PNG too (docs/LESSONS.md 2026-11-08)
                     w, h = im.size
                     if w and h:
                         px = np.zeros(w * h * 4, np.float32)

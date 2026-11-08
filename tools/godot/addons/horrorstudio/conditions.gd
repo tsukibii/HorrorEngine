@@ -5,7 +5,7 @@ extends RefCounted
 
 const VERBS := ["start", "enter", "exit", "use", "pickup", "read", "caught", "hidden", "answered", "flag", "after", "look", "rolled",
 	"power", "locked", "peeping", "torch", "carrying", "dropped", "played", "state", "ticked", "failed", "arrived", "all", "any", "gave",
-	"opened", "closed", "placed", "taken", "moved"]
+	"opened", "closed", "placed", "taken", "moved", "charge", "lit", "flashed"]
 
 var Todo := preload("res://addons/horrorstudio/todo.gd")
 
@@ -68,8 +68,16 @@ func matches(when, ev: Dictionary, rt) -> bool:
 			return bool(rt.door_of(val).get("locked", false))
 		"peeping":
 			return rt.player.peeping != null and rt.player.peeping.get("door") == val
-		"torch":
-			return t == "torch" and val == ("on" if ev.get("on") else "off")
+		"torch":                                   # switched on or off by F; ran low, died, its batteries changed (FLASHLIGHT_PLAN §1)
+			if val == "on" or val == "off":
+				return t == "torch" and ev.has("on") and val == ("on" if ev.get("on") else "off")
+			return t == "torch" and bool(ev.get(str(val), false))
+		"charge":                                  # holds while the flashlight's charge is under that (0..1)
+			return rt.torch_item() != null and rt.torch_charge() < float(val)
+		"lit":                                     # the beam on someone or something `secs` (0.3) at her `bright` or more; holds while it is
+			return rt.lit_for(val) >= float(when.get("secs", 0.3))
+		"flashed":                                 # the beam landed on someone or something, `times` (1) within `within` seconds (3)
+			return t == "flashed" and ev.get("who") == val and rt.flashes(val, float(when.get("within", 3.0))) >= int(when.get("times", 1))
 		"carrying":
 			if rt.held_move != null and ((val is bool and val) or val == rt.held_move["id"]):
 				return true

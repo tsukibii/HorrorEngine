@@ -73,8 +73,11 @@ invisible:
   - a door slams behind you (`slam_behind`)
   - a locked door rattles from the other side
   - a door is found open that you closed
-- **Lights dying (`lights_die`)**, one by one toward the player.
-- **The loop (`loop_hall`):** walk through a door and be back at its start, one thing changed each time.
+- **Lights dying (`lights_die`)**: a room's lights or one light out for `secs` and back as they were; `order: "toward"`
+  one by one toward the player, `gap` seconds apart (STORY_FORMAT §4). A single lamp sagging and coming back is a
+  `light` `dim` with `to` and `secs`.
+- **The loop (`loop_hall`):** walk through a door and be back at its start, one thing changed each time. Not in Play
+  yet: docs/HORROR_TODO.md 1 (the walkway that loops) builds it.
 - **The forced close-up (`shot: closeup`):** the generated-face trick. Her face fills the screen for the line, the
   camera cuts back, and nobody checks her body.
 - **The breather:** after every chase or grab, about 2 minutes with no threat, then a note or a story beat (dread,

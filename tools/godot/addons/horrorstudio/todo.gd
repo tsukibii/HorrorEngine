@@ -118,5 +118,5 @@ func show(fresh: bool) -> void:
 		var left = null
 		if t.has("secs") and t["state"] == "open":
 			left = max(0.0, float(t["secs"]) - (rt.clock - float(t["at"])))
-		items.append({"id": t["id"], "text": t["text"], "state": t["state"], "who": who, "left": left})
+		items.append({"id": t["id"], "text": t["text"], "state": t["state"], "who": who, "left": left, "guide": t.has("guide")})   # (guide: the bullet is the marker's diamond)
 	rt.hud.todo(items, fresh)

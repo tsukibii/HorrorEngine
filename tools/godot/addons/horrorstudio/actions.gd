@@ -2,11 +2,11 @@
 ## shows on the HUD's log as "not in Play yet", so a stitch still runs end to end and the gap is visible.
 extends RefCounted
 
-const Typing := preload("res://addons/horrorstudio/typing.gd")
+const Typing := preload("res://addons/horrorstudio_ui/typing.gd")
 const VERBS := ["objective", "todo", "tick", "fail", "untodo", "think", "skip", "name", "say", "ask", "flag", "unflag", "give", "take", "open",
-	"karma", "count", "state", "show", "hide", "door", "light", "torch", "skin", "power", "sweep", "wait", "fade", "lookat", "sound", "music",
-	"checkpoint", "chapter", "done", "scene", "behave", "trick", "move", "anim", "expr", "focus"]
-const TAKES_TIME := ["wait", "fade", "ask", "name", "chapter", "scene", "trick", "say"]
+	"karma", "count", "state", "show", "hide", "door", "light", "torch", "skin", "power", "sweep", "wait", "fade", "lookat", "sound", "music", "hush",
+	"checkpoint", "chapter", "done", "scene", "behave", "trick", "move", "anim", "expr", "focus", "beam"]
+const TAKES_TIME := ["wait", "fade", "ask", "name", "chapter", "scene", "trick", "say", "hush"]
 
 
 static func line_secs(t) -> float:
@@ -110,9 +110,11 @@ func run(a: Dictionary, rt) -> void:
 		"open":                                     # a thing's parts (a lid, doors, a cover): {open: id, to: open | shut | lock | unlock}
 			rt.open_action(val, str(a.get("to", "open")))
 		"light":
-			rt.light(val, a.get("room"), a.get("set", "on"))
+			rt.light(val, a.get("room"), a.get("set", "on"), a)          # `to`, `secs`, `fade`, `mode`: a timed change goes by itself
 		"torch":
-			rt.torch_set(val)
+			rt.torch_set(val, a)                                  # `secs`, `mode`, `to`, `over` (FLASHLIGHT_PLAN §1)
+		"beam":                                                   # what someone does in the flashlight's beam from now (FLASHLIGHT_PLAN §2)
+			rt.beam_set(val, a)
 		"skin":
 			rt.skin_set(val, a)
 		"power":
@@ -127,8 +129,10 @@ func run(a: Dictionary, rt) -> void:
 			rt.look_at(val, float(a.get("secs", 1)))
 		"sound":
 			rt.sound(val, a.get("at"))
-		"music":
-			rt.hud.log("music: %s" % val)
+		"music":                                  # the mood's bed, crossfading over `secs` (beds.gd)
+			rt.music(val, a)
+		"hush":                                   # the beds down to nothing, the last half second silent, then back slowly
+			await rt.wait(rt.hush(a))
 		"checkpoint":
 			rt.autosave(rt.stitch_title)
 			rt.hud.log("checkpoint")
@@ -170,10 +174,8 @@ func trick(v: String, a: Dictionary, rt) -> void:
 			rt.set_visible(a.get("figure"), true)
 			await rt.wait(float(a.get("secs", 0.6)))
 			rt.set_visible(a.get("figure"), false)
-		"lights_die":
-			rt.light(null, a.get("room"), "off")
-			await rt.wait(float(a.get("secs", 1)))
-			rt.light(null, a.get("room"), "on")
+		"lights_die":                                     # out for a while, then back as they were (one by one toward the player with `order`)
+			await rt.wait(rt.lights_die(a))
 		"swap":
 			var until: float = rt.clock + float(a.get("secs", 8))
 			while rt.active and (rt.seen(a.get("hide")) or rt.seen(a.get("show"))) and rt.clock < until:
@@ -182,6 +184,9 @@ func trick(v: String, a: Dictionary, rt) -> void:
 			rt.set_visible(a.get("show"), true)
 		"jumpscare":                                       # the figure there all at once: its clip (a lunge), its face, a sting
 			var fig = a.get("figure")
+			var q := float(a.get("quiet", rt.story.game.get("quiet", 0)))
+			if q > 0.0:                                     # the beds hushed first: the last half second before the sting silent
+				await rt.wait(rt.hush({"hush": q}))
 			rt.set_visible(fig, true)
 			var secs := float(a.get("secs", 0.8))
 			var c = a.get("clip")

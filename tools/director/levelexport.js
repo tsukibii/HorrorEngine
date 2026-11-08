@@ -7,12 +7,14 @@
 //                               level put inside a street's building leaves it out, the street has that shell)
 //   doors/door_<id>             a door's leaf and what's attached to it (its handle, its half of the hinges), the node's
 //                               origin on the hinge: turned about Y it swings (extras: hinge, the turn that opens it,
-//                               slide); its collider under it
+//                               slide, locked_by: what opens it, an item's name or flag:<name>); its collider under it
 //   collision/<room>-colonly    the solid pieces' boxes, one trimesh a room: Godot makes each a StaticBody3D on import
 //   occluders/<room>_occ-occonly  the walls', floors' and ceilings' boxes: OccluderInstance3D, occlusion culling
 //   lights/light_<id>           the level's lamps (KHR_lights_punctual), their energy as Godot's
 //   markers/                    player_start, spot_<id>, trigger_<id>: empty nodes looking along their -Z (Godot's
-//                               forward), what they are in their extras
+//                               forward), what they are in their extras; a room's trigger_<room>__volume also its
+//                               floor's kind and the sets on its floor, walls and ceiling (floor, mats: the starter's
+//                               acoustics and footsteps read them)
 // Y up, metres, story north -Z (the desk's s2t). Plain three.js: the page hands it its stage, its plan and its outside.
 import * as THREE from "three";
 import { s2t } from "./stage.js";
@@ -80,7 +82,8 @@ export function levelGroup(stage, plan, story, level, opts = {}) {
       const base = (dm && dm.userData.base) || { pos: dm ? dm.position.clone() : s2t(...dp.pos), rot: dm ? dm.rotation.y : (dp.yaw || 0) * Math.PI / 180 };
       const n = new THREE.Group(); n.name = "door_" + clean(did);
       n.position.copy(sw.pivot.clone().applyAxisAngle(Y, base.rot).add(base.pos)); n.rotation.y = base.rot;   // on the hinge, square with the door
-      n.userData = { kind: "door", id: did, hinge: sw.hinge || "left", opens: sw.slide ? 0 : (sw.hinge === "right" ? 1 : -1), slide: !!sw.slide, width: +(dp.size[0]).toFixed(3) };
+      const lk = (dp.d || {}).locked_by || ((dp.tags || []).find(t => t.startsWith("locked_by:")) || "").slice(10);   // what opens it (an item's name, or flag:<name>)
+      n.userData = Object.assign({ kind: "door", id: did, hinge: sw.hinge || "left", opens: sw.slide ? 0 : (sw.hinge === "right" ? 1 : -1), slide: !!sw.slide, width: +(dp.size[0]).toFixed(3) }, lk ? { locked_by: lk } : {});
       const inv = new THREE.Matrix4().copy(n.matrix.compose(n.position, n.quaternion, n.scale)).invert();
       const T = { pos: [], idx: [] }; boxInto(T, Object.assign({}, dp, { pos: dp.pos, yaw: base.rot * 180 / Math.PI }), inv);
       n.add(trisMesh(n.name + "_col-colonly", T));
@@ -112,12 +115,24 @@ export function levelGroup(stage, plan, story, level, opts = {}) {
     lights.add(L);
     if (L.isSpotLight) { L.target.position.copy(l.target.position); lights.add(L.target); L.target.name = L.name + "_aim"; }
   }
+  // each room's surfaces (its floor's kind, the sets or colours on its floor, walls and ceiling), carried on its volume
+  // marker: the room's sound and its footsteps (the starter's acoustics) are read off them
+  const surf = new Map();
+  for (const p of pieces) {
+    if (!p.room || !["floor", "wall", "ceiling"].includes(p.kind)) continue;
+    if (!surf.has(p.room)) surf.set(p.room, { floor: null, mats: {} });
+    const s = surf.get(p.room), part = p.kind === "wall" ? "walls" : p.kind, mat = (p.tags.find(t => t.startsWith("mat:")) || "").slice(4);
+    if (p.kind === "floor" && !s.floor) s.floor = (p.tags.find(t => t.startsWith("floor:")) || "").slice(6) || null;
+    if (mat && !s.mats[part]) s.mats[part] = mat;
+  }
   // where the player starts, the spots and the trigger areas: empty nodes looking along their -Z
   for (const p of pieces) {
     if (!["spot", "start", "trigger"].includes(p.kind)) continue;
     const o = new THREE.Object3D(); o.name = p.kind === "start" ? "player_start" : `${p.kind}_${clean(p.id)}`;
     o.position.copy(s2t(...p.pos)); o.rotation.y = ((p.yaw || 0) - 90) * Math.PI / 180;
-    o.userData = Object.assign({ kind: p.kind, id: p.id, room: p.room || null, yaw: p.yaw || 0 }, p.kind === "trigger" ? { size: p.size } : {});
+    const vol = p.kind === "trigger" && p.room && p.id === `${p.room}__volume` && surf.get(p.room);
+    o.userData = Object.assign({ kind: p.kind, id: p.id, room: p.room || null, yaw: p.yaw || 0 }, p.kind === "trigger" ? { size: p.size } : {},
+                               vol ? { floor: vol.floor || "wood", mats: vol.mats } : {});
     markers.add(o);
   }
   if (opts.outside) out.add(S3.exportVisual(opts.outside, new Map(), "outside"));   // its own node: hidden or left out when the level goes in a street's building

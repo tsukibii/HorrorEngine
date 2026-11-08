@@ -8,6 +8,7 @@
 extends SceneTree
 
 const P := "res://addons/horrorstudio_look/presets/"
+var lightning_peak := 0.0                     # the lightning preset's flash at its brightest (fired with the sweep)
 var out_dir := "res://"
 var world: Node3D
 var cam: Camera3D
@@ -108,6 +109,7 @@ func _initialize() -> void:
 	put("window_shaft", world, Vector3(2.4, 2.6, 1.2))
 	put("window_sun", world, Vector3(-1.0, 2.8, 2.0))
 	put("headlight_sweep", world, Vector3(0, 1.6, -3.0), Vector3(0, PI, 0))
+	put("lightning", world, Vector3(0, 3.0, 0), Vector3(-1.0, 0.6, 0))
 	var down := Vector3(-PI / 2.0, 0, 0)
 	put("caustics_light", world, Vector3(-2.5, 2.8, 0), down)
 	put("blinds_light", world, Vector3(-0.8, 2.8, -1.5), down)
@@ -125,6 +127,15 @@ func _initialize() -> void:
 	put("character_look", body, Vector3.ZERO)
 	put("character_sweating", body, Vector3.ZERO).target = body
 	put("look_environment", world, Vector3.ZERO)
+	# the air: one atmosphere acts (the first in), the others wait; a flashlight and an LED torch aimed across the room
+	# with their beams; a lamp's cone; motes; a dusty room's own air
+	for k in ["air_hazy_night", "air_clean_room", "air_dusty_room", "air_woods_mist", "air_fog", "air_thick_fog"]:
+		put(k, world, Vector3.ZERO)
+	put("flashlight", world, Vector3(-3.2, 1.6, 2.4), Vector3(0, -0.9, 0))
+	put("flashlight_led", world, Vector3(3.2, 1.6, 2.4), Vector3(0, 0.9, 0))
+	put("lamp_beam", world, Vector3(0.0, 2.9, 0.4))
+	put("dust", world, Vector3.ZERO)
+	put("air_zone_dusty", world, Vector3(0, 1.5, 0))
 
 
 func _process(dt: float) -> bool:
@@ -133,9 +144,12 @@ func _process(dt: float) -> bool:
 		var l: Light3D = got[k]
 		var e: Array = energies.get(k, [INF, -INF])
 		energies[k] = [min(e[0], l.light_energy), max(e[1], l.light_energy)]
+	if got.has("lightning") and got["lightning"].storm != null:
+		lightning_peak = maxf(lightning_peak, got["lightning"].storm.level)
 	if n == 60 and not fired:
 		fired = true
 		got["headlight_sweep"].fire()
+		got["lightning"].fire()
 	if n == 150:
 		measure()
 		var img := root.get_texture().get_image()
@@ -190,11 +204,24 @@ func measure() -> void:
 	var beam: FogVolume = got["window_shaft"].beam
 	rep["shaft"] = beam != null and beam.get_node_or_null("Card") != null and absf(beam.size.z - got["window_shaft"].length) < 0.001 and got["window_shaft"].length < got["window_shaft"].reach
 	rep["sweep_passing"] = got["headlight_sweep"].passing() and got["headlight_sweep"].sweep.lamp.visible
+	rep["lightning"] = lightning_peak > 0.95 and got["lightning"].storm.strikes == 1 and not got["lightning"].striking() and not got["lightning"].storm.light.visible
 	var pats := 0
 	for k in ["caustics_light", "blinds_light", "leaves_light", "clouds_light"]:
 		if got[k].hp != null and got[k].light_projector != null:
 			pats += 1
 	rep["patterns"] = pats
+	var acting := 0
+	for k in ["air_hazy_night", "air_clean_room", "air_dusty_room", "air_woods_mist", "air_fog", "air_thick_fog"]:
+		acting += int(got[k].active())
+	rep["air_one_acts"] = acting == 1 and got["air_hazy_night"].active()
+	rep["air_presets"] = is_equal_approx(got["air_dusty_room"].dust, HSAir.PRESETS["dusty_room"]["dust"]) and is_equal_approx(got["air_thick_fog"].fog, HSAir.PRESETS["thick_fog"]["fog"])
+	var beams := 0
+	for k in ["flashlight", "flashlight_led", "lamp_beam"]:
+		var b: HSBeam = got[k].get_node("AirBeam")
+		beams += int(b.hull != null and b.hull.visible)
+	rep["air_beams"] = beams
+	rep["air_cookies"] = got["flashlight"].light_projector != null and got["flashlight_led"].light_projector != null and is_zero_approx(got["flashlight"].light_volumetric_fog_energy)
+	rep["air_dust"] = got["dust"].particles != null and got["air_zone_dusty"].is_in_group("hs_air_zone")
 	var fl := {}
 	for k in energies:
 		fl[k] = [snappedf(energies[k][0], 0.001), snappedf(energies[k][1], 0.001)]
@@ -220,8 +247,9 @@ func saving() -> void:
 	for k in lights:
 		lit = lit and absf(got[k].light_energy - float(lights[k])) < 0.0001
 	var proj := true
-	for k in ["caustics_light", "blinds_light", "leaves_light", "clouds_light"]:
+	for k in ["caustics_light", "blinds_light", "leaves_light", "clouds_light", "flashlight", "flashlight_led"]:
 		proj = proj and got[k].light_projector == null
+	rep["save_air_back"] = got["air_hazy_night"]._env == null and is_equal_approx(got["flashlight"].light_volumetric_fog_energy, 1.0)
 	rep["save_materials_back"] = ok
 	rep["save_lights_full"] = lit
 	rep["save_no_projector"] = proj
@@ -232,7 +260,7 @@ func saving() -> void:
 	var made: Array = []
 	for i in st.get_node_count():
 		var nm := str(st.get_node_name(i))
-		if nm in ["Beam", "Card", "Sweep", "Lamp", "Pattern", "Leak", "Splashes", "Draw", "Mirror"] or nm.begins_with("puddle_") or nm.begins_with("blood_"):
+		if nm in ["Beam", "Card", "Sweep", "Lamp", "Pattern", "Leak", "Splashes", "Draw", "Mirror", "BeamCone", "Air", "Motes"] or nm.begins_with("puddle_") or nm.begins_with("blood_"):
 			made.append(nm)
 	rep["save_nothing_made"] = made.is_empty()
 	rep["save_made"] = made

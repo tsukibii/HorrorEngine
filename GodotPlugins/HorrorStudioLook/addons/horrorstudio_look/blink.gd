@@ -49,8 +49,8 @@ static func attach(node: Node) -> HSBlink:
 func find(node: Node) -> void:
 	shapes.clear()
 	for mi in node.find_children("*", "MeshInstance3D", true, false):
-		if mi.mesh == null or mi.mesh.get_blend_shape_count() == 0:
-			continue
+		if not (mi.mesh is ArrayMesh) or (mi.mesh as ArrayMesh).get_blend_shape_count() == 0:
+			continue                                   # (a primitive mesh, a stand-in's or a thing in her hand, has no blend shapes to ask about)
 		var row := [mi, [], []]
 		for i in mi.mesh.get_blend_shape_count():
 			var nm := String(mi.mesh.get_blend_shape_name(i))

@@ -17,10 +17,283 @@ by-hand guides, merged; then on the same branch from main the map-building skill
 bedding, curtains, tables and chairs, the props' kept pictures, real wood in the flat and its curtains; 2026-11-05 on
 `sakura-rabbit-research`: the Sakura Rabbit research note, then the three notes on dread, the CRT, and the props and
 systems that open, hold, move and are read; 2026-11-05, night, on `gameplay-enhancements`: the kit's stairs, the scene
-builder's floors, the street's steel stair, climbing in Godot and on the desk). Read this after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
+builder's floors, the street's steel stair, climbing in Godot and on the desk; 2026-11-08 on
+`claude/friendly-newton-9o2xey`, from the user's `retro-enhance`: the retro pack in the prop generator). Read this after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-06, last, `street-nature`): the rivers scrapped, the foliage and rocks kept as props
+## Where it stopped last (2026-11-08, `claude/optimistic-tesla-q01qg6`): the air built and in tutorial v2
+
+**Merged** (2026-11-08, the user: "make a pr for this, then merge in" `ui-v3` and `claude/friendly-newton-9o2xey`):
+this branch is [PR #18](https://github.com/tsukibii/HorrorEngine/pull/18), with both merged in; their notes are below.
+`ui-v3` moved the HUD, the marker, the themes, the pause menu and typing into `GodotPlugins/HorrorStudioUI`, so this
+branch's music beds, `beds.gd`, read the pause menu's settings from `res://addons/horrorstudio_ui/menu.gd` now.
+`claude/friendly-newton-9o2xey` brought the prop generator's retro family and its quality bar; it shares only docs
+with this branch.
+
+The user asked for a better flashlight and the level's air: "a beam in a fog", a fog level adjuster, dust in the
+light, eye candy researched first, the system then put into tutorial v2 (DECISIONS 2026-11-08). Later the same day:
+"The dust motes look too stylized".
+
+- **The research**: docs/research/eye_candy.md (§2 the fog lab measured; §2.3b realistic motes; §3 the catalogue).
+- **Built in the Look plugin** (GODOT_LOOK §5j):
+  - `HSAtmosphere`: the fog level as one number, mist, wind, dust, `fog_to`, presets;
+  - `HSBeam`: a light's beam drawn by its own cone shader, with a flashlight's cookie;
+  - `HSDust`: tumbling flakes and lint on a curl-noise flow, seen only against the dark (each mote reads the screen
+    behind it: over a lit wall it fades, and it never pushes a pixel into the glow);
+  - `HSAirZone`;
+  - 11 presets (52 in all);
+  - `HSLightZone` takes each light's fitting glass with it in the game (what glows within 0.3 m: out, dimmed and
+    flickering with its light; the nearest light that's on gets it; an exported game's story lights left to play.gd).
+- **The starter kit**: the flashlight wears the beam and the cookie (`beam_on` weighs by it); `event_area.gd` and
+  `scare_area.gd` roll the fog (`fog`, `fog_seconds`); `scare_area.gd` breaks the tape up for a moment (`tape`,
+  `tape_for`).
+- **Tutorial v2's §13 The air**: the hotel's haze and dust, the stairwell's dustier air zone, the beam in it, the fog
+  rolling in when the corridor goes dark; with the Look nodes it hadn't used: the street lamp's shaft through the
+  stairwell window, the leak under it and the puddle in its light, the leaves on 304's wall, her wet look, the tape at
+  the jump. Its play test checks each (and the tubes' glass going out with them); two new pictures (`landing`, `air`).
+- **Checked**: LOOKPLUGIN (`demo/air.gd`; `demo/zones.gd` now with a fitting's glass), TUTORIAL2, FIRSTGAME.
+
+Then the user asked for more atmospheric horror, researched (DECISIONS 2026-11-08, later): docs/research/intensity.md (sound and the body, pacing and the threat's signs, the uncanny seen; §7 what to build first, §7's three decisions for the user). Nothing of it built: the user picks.
+
+**Then (2026-11-08, night) the user: "for reverb you can lift the system we made in Woohill repo, feel free to work on the rest and include them as part of the new tutorial too".** Built in steps, a commit each (the tasks: sound physics; the body and the behind-you layer; her presence and the uncanny; the dread director; lightning, the cold and steam; being hunted), each into tutorial v2. Done so far: **the sound physics** (Woohill's: the starter's `acoustics.gd`, `sound.gd`'s mix and `play`/`step`/`shaped`, `footsteps.gd`; the tails by `tools/sfx.py tails`; the interior export's room markers carrying `floor` and `mats`; TUTORIAL2 checks the stairwell rings 3x the corridor and a knock behind 304's shut door is muffled); **the body and the steps behind you** (the starter's `fear.gd`: a heartbeat off the shelf's made `heart_beat`, breathing, the world dulled, the vignette, the beam's tremor, each a switch; `behind_you.gd`; tutorial v2's new §22 Making it intense); **her signs, the corner of the eye and closer each time** (the starter's `presence.gd` under her: the lights within 10 m on her floor and the flashlight dipping under the flash limit, the vending table's radio hissing, a false alarm, `warn`; `glimpse.gd`: her at 308's door after the note, only 30 to 42° off, gone as you turn to it in Tube5's blink; `closer.gd`: out of 304's bath mark by mark while unseen, then 0.35 m behind you, caught, gone in the lamp's blink, the Fear node's scare; `lights.gd` `set_flicker` and `blink`; §22's three new parts and two pictures, `glimpse` and `closer`; `tutorial_v2.py --only` draws only some pictures); **only in the mirror** (the Look plugin: render layer 19 drawn by the mirrors' cameras alone, the mirrors now 11 to 18, `HSMirror.only_in_mirrors`/`never_in_mirrors`; a mirror's own wall now kept out of its picture, which it wasn't for an export's walls (their `-colonly` colliders hold no mesh) nor the demo's; LOOKPLUGIN counts a box on each layer and its "mirror in a mirror" measure honest again; the starter's `mirror_figure.gd`, the player's eye leaving 19 out; tutorial v2: her in 304's tub, in the bath's mirror only); **a shadow that isn't yours and feet under the door** (the starter's `shadow_pass.gd` and `door_feet.gd`; tutorial v2: someone crossing behind you on 304's wall once she's gone from the mirror, the floor lamp now in its shade, 1.4 m up, where the guide always said; the light under 308's door and the feet in it once the corridor's dark); **something wrong with her** (the starter's `uncanny.gd`: her blink off, the smile with no eyes in it, her head bent, her steps copying yours; HSBlink no longer stops on a primitive mesh; tutorial v2: Her bent and walking when you walk, the closer's figure smiling); **the night's director and her menace** (the starter's `dread.gd`, `dread_moment.gd`, `menace.gd`; scare_area.gd marks what it hides; tutorial v2: six small moments round the floor, the stairwell safe, her menace); **lightning** (the Look plugin's `HSLightning` and `HSLightningStorm`, its preset, LOOKPLUGIN's lightning stage measuring the flash limits; tutorial v2: the storm low in the west, in through the end window and down the corridor, someone there in the first flash, the shelf's thunder); **the cold** (the Look plugin's `HSBreath` and `HSBreathPuffs`: breath lit by direct lights only and added, so a flashlight's beam shows it and the dark hides it; frost on the glass, `HSGlass.frost`, `HSWindowPane.frost` live; LOOKPLUGIN's cold stage; the starter's `cold_area.gd`; tutorial v2: the metre by the end window, your breath and the glass frosting up); **writing in the steam** (the Look plugin's HSMirror `set_steam` and `write`, `HSMirrorSurface.steam`/`.writing`; LOOKPLUGIN's steam stage; the starter's `steam_mirror.gd`; tutorial v2: once she's gone from the bath's mirror, a moment looking into it and it fogs over, 308 in it).
+
+**Then the user, mid-run (2026-11-08, night, later): a mechanic for jump scares by what's so, for other events too.** Built as
+the starter's **`cue.gd`** (DECISIONS: where you look as a region of the frame, middle, sides, top and bottom, corners,
+the edge, with a tolerance; the Story's `on:<task>`, "on that quest"; what you're doing, sitting or lying in bed among
+them; the flashlight, a distance band, how long, a chance; then someone for a moment with a sound and an animation,
+gone in a blink, or the story's side for a cue that isn't a scare) with **`seat.gd`** (sit or lie down; the player's
+`pose`, `settle`, `rise`, `doing()`). Tutorial v2's §23: her face down on 304's ceiling in the corner of your view
+as you lie in the bed; three knocks at 304's door as you sit at the desk watching the static. TUTORIAL2 checks both,
+what mustn't set them off (standing, looking straight at her place, the window), the frame's regions and the timings.
+Not done: the desk's story format and the Director have their own `look` trigger and `sit`/`sleep` uses, without the
+frame's regions or what the player's doing; ask the user before carrying the cue's conditions there.
+
+**Being hunted, first step** (intensity.md §4, HORROR_TODO 5): the starter's **`noise.gd`** (a noise heard by the
+group `hs_listener`: the player's steps, a run, a door, a gasp), **`searcher.gd`** (a copy of her armed in her other
+self's place; heard, she listens 3 to 6 s, comes for the places to hide nearest the noise, opening a shut door on the
+way, and stands at one 2 to 4 s breathing, 1 to 1.5 m from you: the close pass; held breath halves her chance, a light
+on makes it certain; found, you're pulled out and she's in your face, once a search; seen in the open 7 m lit, 3 m
+dark; back to her post; `searches`; `stop()`; the director held back while she's out), `seat.gd`'s `hiding` pose and
+the player's held breath (Space, 8 s, then a gasp). Tutorial v2's §22 *Hiding while she searches*: once the corridor's
+dark she hunts from 308's door; the linen closet's far corner to hide in; one search, then back into 308; the jump
+scare stops her. TUTORIAL2 checks both runs (not found with your breath held; the gasp, found, pulled out).
+
+**Chases** (intensity.md §4): the starter's **`chase.gd`** (after you at 0.95 of your run along the way she saw you
+go, no navigation mesh: your trail, and a step on the way you were heading where she lost you; a door you shut holds
+her 2 s and a bang, a locked one for good; 6 s out of her sight and she's lost you, her searcher searching there;
+caught, the searcher's fright; `safe_rooms` she won't follow you into; 20 to 40 s at most; the chase mood, then the
+hush and the mood before; `start()` from a signal or the searcher's sight, `stop()`); the searcher's `chase`, `hold`,
+`search_at`, `give_up`, `catch`, and no place behind a locked door, no walk to a noise through a wall. Tutorial v2's
+§22 *A chase*: seen in the open while she searches, she's after you; the stairwell is the way out. TUTORIAL2 checks
+the run to the stairwell (her speed, the gap, the mood), 304's door holding her 2 s, and being lost.
+
+That ends the run's list (the user's "the rest" of intensity.md §7; its 11, later, still later: the reflection out of
+step needs a body, Nexus Resonance waits). Not done for the desk's story format: a `cold` word (the export's runtime
+and Play), nor lightning's, nor hiding's held breath, the close pass, noises or a chase like this one (the format's
+`hide` use and its hide-and-seek and chase rounds have none of them): ask the user before carrying them there.
+
+Next:
+0. **The user's pick from intensity.md §7** (the first five are small: footsteps in 3D and the behind-you layer, presence signs, the dead stare, the edge figure and closer-each-time, the shadow that isn't yours).
+1. **Eye candy A** (research §4): the TV lighting the room, a pickup's glint, eyeshine, moths, dust shaken down.
+2. **The export's torch** (play.gd: a hot spot and a spill) has no beam yet. It wants the story's `air` word (the
+   level's fog, a room's) with the desk's side, the check and STORY_FORMAT in one commit; GDPLAY, GDTESTROOM, DIRECTOR.
+3. **The scene builder's round fitting in a room with fittings of its own**: the hotel corridor has a round LED from
+   the Finish under its third tube batten (builder-model.js adds one to every room with a ceiling). A room whose own
+   kit lights are ceiling fittings (not a blackboard's) could skip it; the zone hands that glass to the third tube
+   meanwhile.
+4. **GDTESTROOM fails at station 13** (2026-11-08): the tee is taken and its task ticks, but `t13_pack` (put into the
+   suitcase) never does. It fails the same with the last commit's Look plugin, so it isn't the air's change; it
+   wants a look at the runtime's `container` use and `tests/gdtestroom.gd`'s station (`--from n_things` runs it alone).
+
+## Beside it (2026-11-08, `ui-v3`, merged in PR #18): the quest marker v3, the HUD quieted, the UI a plugin
+
+The user (DECISIONS 2026-11-08): a better quest marker (seen roughly through the rooms, fainter far off and behind walls,
+clearer the nearer, still the diamond), "see what else can be enhanced in the ui"; then, while it was built, no glass
+panels ("the panel isn't as noticeable and the text is there") and "the ui should be part of the godot plugin for
+horrorengine". Two commits on `ui-v3`:
+- **The marker** (`marker.gd`, play.gd `guide_clear`/`guide_ctx`): strength a log-scale function of distance (nearly opaque
+  inside 3 m, a faint floor from 36 m, gone by 72), about half as strong behind walls (a throttled ray against walls,
+  floors, ceilings and doors: furniture isn't "another room"), a small core and the thing's name near, a pointer on an
+  ellipse toward it once it's been out of view a moment, the pause menu's Quest marker (Off, Subtle, Clear).
+- **The HUD** to the desk's design (play/ui/hud.css), quieted: OBJECTIVE and TO DO resting at 74% and up on a change, rows
+  kept so a tick eases (the marked task's bullet is the marker's diamond), the reticle a dot that opens into a ring, lines
+  in a serif over a scrim, chips for the keys (the old row ran off the screen), toasts, the chapter card centred with a
+  diamond rule, the dark while hidden, the menu's small capitals. **No panels**: the glass themes' panels are ghosts, a card
+  is its words with a soft edgeless dark behind (`halo.gdshader`), the inventory's row has no border.
+- **A plugin**: `GodotPlugins/HorrorStudioUI/addons/horrorstudio_ui/` (hud, marker, quest_marker = `HSQuestMarker`, theme,
+  menu, typing, halo, plugin.gd with Project Settings `horrorstudio/ui`); the runtime uses it by path; the export, the
+  Director's install and the by-hand projects copy it in; a game by hand adds an `HSHud` and `HSQuestMarker`s.
+- **GDUI** (`python tools/godot/ui_check.py`, headless, ~20 s): the marker's rules and every piece above in the Pilot, then
+  the by-hand half. Pictures: `--pictures` (the game, 1080p under xvfb), the plugin's `demo/hudlab.gd` (the HUD alone over a
+  picture, seconds each).
+Checks run here: GDUI, GDPLAY, GDEXPORT, DIRECTOR, FROMDESK, CHECKS ok; GDTESTROOM from `n_chores` and from `n_bath` the same
+as main (stations 6 and 13 fail on main too in a cloud checkout: they need the local Studio character export and made
+props; `--from n_bath` passes whole). FIRSTGAME and EXPORTS need the desk's server and local files: run them on the user's
+machine.
+Not done, if the user wants it: the **desk's Play HUD** (browser) has none of this; **the Director guide's pictures**
+(`guides/director/img`) show the old HUD (`godot_director.py guide` makes them again); the serif is a **system font chain**
+(the proxy blocked a font download: an OFL serif bundled in the plugin would make it the same on every machine); a
+per-game default for the quest marker (a `game.marker` word would grow STORY_FORMAT, the check and the runtime together).
+
+## Beside it (2026-11-08, `claude/friendly-newton-9o2xey` from the user's `retro-enhance`, merged in PR #18): the retro pack
+
+The user (DECISIONS 2026-11-08): their old low-poly models in `retro/` (193 .glb: *3D_Retro_World 0.01* and *Utility
+Infrastructure*) into the prop generator, held to a quality bar made from about fifteen of the best props, each model
+checked as good enough or not, those that pass enhanced to our PBR style (smoothed where low poly), and a new tab
+called retro. Done (docs/PROPGEN.md §29):
+
+- **The bar**: `tools/propgen/quality.py` measures any .glb with numpy alone (geometry; each material's maps, texel
+  density, the base colour's range and detail, roughness and its spread, occlusion, the normal map's relief);
+  `python tools/propgen.py quality reference` made `Content/Studio/Props/quality_reference.json` from fifteen props.
+- **The audit**: `quality audit` judged every file's nearest LOD (`Content/Studio/Props/retro_audit.json`, the review
+  by eye in `retro_review.json`): 168 pass, one fails (Gas_Station/Trash.glb: a photo of litter on an 8-triangle
+  pyramid); the two heavy poles take their LOD1.
+- **The family** `retro` (`families/retro.py`) and **174 recipes** `retro_*` in eight groups; the page's **Retro**
+  tab first in its bar, its groups as chips; their kept pictures in `Content/Studio/Props/thumbs/`; before and after
+  sheets in `docs/prop_sheets/2026-11-08_retro_*.jpg`.
+- **After** (made at the thumbnails' 1024; the recipes' 2048 ones double the density): every material of all 174 has base colour, ORM and normal (0 of 232 had them); the gaps against the bar went from 1,565 to 594; texel density up in every group (camp 319 to 1,278 px/m, the gas station 142 to 1,024, the trees 397 to 848, the rocks 45 to 100: a 5 to 8 m rock on one texture); roughness now varies (0 to 0.02-0.07 spread), relief in every normal map, no texel black (the darkest 0.000 to about 0.05). What's left against the bar is mostly what scale and the pack's own look decide: one texture over a 10 m road or wall can't reach a prop's density, concrete and asphalt at 0.9 roughness sit just over the bar's 0.88, the pack's blacks a shade under our darkest, its palette more saturated than ours (kept: it's the pack's). Godot 4.7 imports them as they should be (GDPROPS on 22 of them: materials, cut-outs, glass, the glows).
+- **Found on the way**: Blender turned every 16-bit PNG linear when read (all the shelf's ambientCG normal maps): the
+  sets' normal maps had been tilted about 37 degrees wherever a family laid one (cedar_real's bark measured 42 degrees
+  of mean tilt, 7 once fixed); fixed in `paint.read_image` (LESSONS). Every tree recipe lays a bark set and the
+  realistic ones a leaf set: their kept pictures are of the old make; `python tools/propgen.py thumbs <the tree family's
+  names> --make` on the user's machine renews them.
+- **Notes for before a game ships** (in the audit): Light_Sign says V-Power Racing (Shell's), the cooker carries
+  INMETRO's mark, three gas-station posters are real campaign posters, the conifers' cut log ends are a Textures.com
+  texture.
+
+Worth doing next, if the user wants: the ice box's lid as a part that opens (a `container` in play: the pack has the
+lid as its own file), the trees' billboards as a far LOD in Godot, a tiling material for the road and wall kit pieces
+(one texture over 10 m can't reach the props' density), the posters and the V-Power sign swapped for our own pictures.
+
+## Where it stopped before (2026-11-07, night, `claude/optimistic-tesla-q01qg6`): Tutorial v2, Room 304
+
+The user asked for "tutorial v2": a hotel floor modelled in the scene builder, then the story built by hand in Godot
+with the Look plugin (not the Director), using every aspect so far (DECISIONS 2026-11-07, night). Built:
+`guides/tutorial_v2/index.html` (23 sections, 20 pictures), the set `hotel_floor` (`layout.py` writes its
+`layout.json`), the grown starter kit (`guides/first_game/starter/`: story, sound, room_tone, event_area, pickup, note,
+flashlight, light_shy, lights, reach; door, scare_area, player, interior extended), a door's `locked_by` in the
+interior export, `godot_byhand.py new` with `sfx/` and `music/`, and TUTORIAL2 (`python tools/godot/tutorial_v2.py
+[--pictures] [--keep DIR] [--reuse]`, the desk's server running: the game built as the steps say and played through
+headless, every step checked).
+
+- Checks: TUTORIAL2, FIRSTGAME, CHECKS and EXPORTS ok.
+- Her pictures are a stand-in figure: no Character Studio export on this machine. With `_studiotest` (STUDIO) or
+  another export, the check uses it.
+- The rain barely shows at night in a software-rendered picture; a look on the user's card would say more.
+
+## Where it stopped last (2026-11-07, `claude/optimistic-tesla-q01qg6`): a motel game's list, the flashlight's plan, jump scares
+
+**The question.** The user asked what a horror game set in a motel lacks with our mechanics, and whether a light can be
+dimmed for a while by drag and drop when a quest and an event line up.
+
+**The light answer.** A moment (WHEN, ONLY IF quest X, THEN Light) picks one light by its node's name, and *The lights
+die* darkens a room for a moment. But **dim and flicker never go back**: `on` leaves a light at 35% or still
+flickering (play.gd `light`, runtime.js `light`). *The lights die* turns every light in the room on after, and a
+Director state's light isn't let go. `loop_hall`, `cut_away` and `stalker` are in the panel's palette but Godot only
+logs them.
+
+**The user's answers** (DECISIONS 2026-11-07): items 7 and 10 dropped, the rest a list. Three docs, none of it
+built:
+- **docs/HORROR_TODO.md**, the list:
+  - 0 lights that dim and come back, first;
+  - 1 the walkway that loops, 2 an analogue phone, 3 CCTV, 4 numbers and signs, 5 hiding under the bed and behind the
+    shower curtain, 6 the door tried from outside and its chain, 8 the motel's machines alive, 9 being heard;
+  - 11 and 12 the flashlight, 13 jump scares.
+
+  At its top, **the prop standard**: every new prop a customizable prop generator recipe (PROPGEN §25, as the cans
+  are), with a table of the new props.
+- **docs/FLASHLIGHT_PLAN.md**: batteries, a bulb's or an LED's curve, flicker; `lit`, `flashed`, a cast member's
+  `beam` reaction; the Director's *Feels the light* card. Waiting on the user's yes.
+- **docs/research/jump_scares.md**, the research:
+  - the designers' rules: the threat over the hit, the player finds the scare, repetition kills it;
+  - fifteen scares taken apart;
+  - the startle's numbers: the attack matters more than the loudness; a sound 30 to 500 ms before the hit cuts it by
+    up to two thirds, so the last half second is silent;
+  - pacing, and players' settings with the flash limit.
+
+  Its §8 is HORROR_TODO 13: sound that can go quiet, a better "seen", scares that wait for the eye, figures that move
+  unseen, chance and spacing, the flinch, settings, a scare log.
+
+**Found while answering:**
+- the `music` action only logs, on the desk and in Godot: no music or room tone plays in play, so there's no silence
+  to make before a sting;
+- `hud.gd` `shake()` is empty;
+- the tape shader has `glitch`, `tracking_error` and `dropouts` with no story word to drive them.
+
+**Next, if the user says yes:** HORROR_TODO's order (0, then the flashlight, then the small ones), each with its
+TestRoom001 station.
+
+**Then "go for it"** (DECISIONS 2026-11-07, later): HORROR_TODO 0 built.
+- **The words:** `light` `to`, `secs`, `over` (not `fade`), `mode`, `normal`; a timed change laid over the light's own
+  state (play.gd `light_k`, runtime.js `lightK`); `lights_die` `light`, `order: "toward"`, `gap`.
+- **The Director:** a state's light let go; the cards *A light dims* (`{light}`, build_tab.gd `nearest_light`) and
+  *The lights die one by one*.
+- **The desk:** the quick beat *A light dims*.
+- **TestRoom001:** stations 4 and 5.
+- **commands_json.mjs** no longer makes an example without its command's verb.
+- **Checks here:**
+  - CHECKS, DESK, CMDS, DIRECTOR, GDPLAY and FROMDESK ok.
+  - GDTESTROOM ok through station 12 and from 14 to the end. Station 13 fails the same on the code before the change: the
+    suitcase's and closets' made meshes aren't in a fresh container (`propgen.py make ... --library` needs Blender).
+  - Station 6 needs the desk's bake (`node tools/godot/bake.mjs --game TestRoom001`, the desk's server running) for
+    Aoi's skin, as before.
+  - GDTESTROOM `--from n_power` fails at the hand-placed mains light on the code before the change too (it wants the
+    run from the start).
+
+  - The desk: TESTROOM ok through station 12 and from 14 to the end, PLAY ok.
+
+**FLASHLIGHT_PLAN §1 built** (the flashlight on batteries):
+- the curves in `tools/shared/torchbeam.js` and `tools/godot/addons/horrorstudio/torch_beam.gd` (DESK tests the curves);
+- the battery on torch.js's Torch and play.gd's torch: the drain, `low`, `dead`, `rest`, the change by itself, the story's
+  `dim`, `drain` and timed `flicker`;
+- batteries (`battery` items) into the pocket;
+- the pause menus' charge and *Change the batteries*;
+- the conditions' `torch` low/dead/changed and `charge`;
+- the Director's Flashlight fields and Batteries card;
+- TestRoom001 station 10 (desk and Godot ok).
+
+Not yet: its props (1f), the change's own sounds, `game.torch_meter`.
+
+**FLASHLIGHT_PLAN §2 built** (characters that feel the light):
+- `beam_watch` and `beam_at` on both runtimes;
+- the cast's `beam`, the `beam` action, `lit`, `flashed`, the sight's `torch`, `near`;
+- the Director's Feels light rows, the People cards (a card kind `actor`: build_tab.gd `set_actor`, `actor_landed`,
+  plugin.gd `pending_actor`) and a Reactions card dropped on a character (`_lit_moment`);
+- TestRoom001 station 10 (desk and Godot ok).
+
+Not yet: `in_light` and `avoids` (2c).
+
+**Checks here for the three steps:**
+- CHECKS, DESK, CMDS, DIRECTOR, GDPLAY, FROMDESK (Pilot) ok.
+- TestRoom001 station 10, desk and Godot, ok.
+- `from-desk TestRoom001 --force --play` fails at WALLS (2) and at station 4's fitting bulb ("the export shouldn't make it a
+  light source"). It fails the same on the code before 2026-11-07 (2fecbeb), so it was already broken: worth a look.
+
+**HORROR_TODO 13.1 built** (the sound that can go quiet):
+- **the moods:** the story's `music` words as beds made from the score room's cues by `tools/score/moods.mjs` (calm
+  `close_moment`, uneasy `house_creaks`, dread `dread_drone`, chase `chase`), at −20 LUFS in
+  `Content/Studio/Music/moods/` (a game's own `Music/moods/` over them), copied into every export's and Director
+  project's `game/music/`; MOODS (check_all);
+- **the players:** Godot's `beds.gd` on the main scene (the Music and SFX buses made when missing), the desk's
+  `play/beds.js` (`BEDS`, served at `/music/<G>/<mood>.ogg`); looped, equal power crossfades, the run keeps its mood,
+  on the play's clock;
+- **the words:** a room's `tone` and `game.tone` (a loop off the shelf, `none`), the `hush` action (`back`), the
+  jumpscare's `quiet` and `game.quiet`; the check knows each; the commands *Music* (its crossfade) and *Hush before a
+  sting*;
+- **the Director:** HSRoom's Tone, HSGame's Tone and Quiet, from-desk carrying them; the guide's paragraph;
+- **TestRoom001:** the game's `room_tone_01`, the corridor's, the atrium's hum, the yards' wind, the dark room none;
+  station 15's hush after the run, station 16's jump scare `quiet` 1.5.
+
+- **the desk's editors:** the Database's Sound rows (the game's room tone, its quiet), the scene builder's room `tone`.
+- **Checks here:** CHECKS (MOODS in it), DESK (the beds' numbers: the hush's curve, the crossfade's power), CMDS,
+  DIRECTOR, GDEXPORT, GDPLAY, FROMDESK (Pilot) ok; GDTESTROOM and TESTROOM ok from station 10 to 12 and 14 to the end
+  (13 needs the made props, as before), PLAY ok.
+
+Not yet: the shelf's stings measured for their attack (13.1's last line); the rest of 13. On the user's machine, a
+listen: the moods' levels under the game (music −6 dB, room tone −22 dB: `beds.gd`, `play/beds.js`) are set by
+measurement, not by ear.
+
+## Before that (2026-11-06, last, `street-nature`): the rivers scrapped, the foliage and rocks kept as props
 
 The user (DECISIONS 2026-11-06, last): "Scrap the rivers, keep all the foliage and rocks you made as props to generate.
 I'll use them for gardens." Done: the street builder's river kind is gone (its bed, water, stone and concrete banks,

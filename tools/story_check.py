@@ -26,23 +26,26 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")   # Windows consoles default to cp1252; the script is Japanese
 
 TRIGGERS = {"start", "enter", "exit", "use", "pickup", "read", "look", "after", "flag", "all", "any", "caught", "rolled", "hidden",
-            "answered", "carrying", "dropped", "played", "state", "ticked", "failed", "arrived", "torch", "peeping", "power", "locked", "gave",
+            "answered", "carrying", "dropped", "played", "state", "ticked", "failed", "arrived", "torch", "charge", "lit", "flashed", "peeping", "power", "locked", "gave",
             "opened", "closed", "placed", "taken", "moved"}
-TRIGGER_EXTRA = {"secs", "within", "face", "at_least", "option", "in", "result", "is", "at", "page", "from"}
+TRIGGER_EXTRA = {"secs", "within", "face", "at_least", "option", "in", "result", "is", "at", "page", "from", "times"}   # times: flashed (FLASHLIGHT_PLAN §2)
 BOARDS = {}                 # the board games this game's tables can have (storylib.board_games), set in main
 ACTIONS = {"say", "think", "sound", "music", "light", "door", "show", "hide", "move", "objective", "flag", "unflag",
            "give", "take", "wait", "fade", "lookat", "shot", "seq", "anim", "stalker", "trick", "checkpoint", "done",
-           "karma", "count", "scene", "behave", "ask", "state", "todo", "tick", "fail", "untodo", "chapter", "name", "torch",
-           "power", "skip", "skin", "sweep", "expr", "focus", "open"}
+           "karma", "count", "scene", "behave", "ask", "state", "todo", "tick", "fail", "untodo", "chapter", "name", "torch", "beam",
+           "power", "skip", "skin", "sweep", "expr", "focus", "open", "hush"}
 OPEN_TO = {"open", "shut", "close", "lock", "unlock"}     # the `open` action's `to`: a thing's parts swung, or its lock
 SKIN_KEYS = ("wet", "sweat", "drips", "oil")            # a cast member's skin (docs/GODOT_LOOK.md §5): each 0..1
 ASK_SECS = 3.0              # the walker's time to answer an ask
 MUSIC = {"silence", "calm", "uneasy", "dread", "chase"}
-LIGHT_SET = {"on", "off", "flicker", "dim"}
+LIGHT_SET = {"on", "off", "flicker", "dim", "normal"}   # normal: its own brightness and flicker back, on or off as it is
 FLICKER_MODES = {"fluorescent", "dying", "candle", "pulse", "custom"}   # a light's `mode` (STORY_FORMAT §2)
 PATTERNS = {"caustics", "leaves", "blinds", "clouds"}                     # a light's `pattern` (STORY_FORMAT §2)
-TORCH_SET = {"on", "off", "flicker", "dead", "works"}   # the flashlight (an item with `torch`): dead flickers out, works is new batteries
-TORCH_KEYS = {"kelvin": (1500, 12000), "cone": (5, 120), "range": (1, 60), "strength": (0.1, 100)}
+TORCH_SET = {"on", "off", "flicker", "dead", "works", "dim", "drain"}   # the flashlight (an item with `torch`): dead flickers out, works is new batteries, drain sets the charge (FLASHLIGHT_PLAN §1)
+TORCH_HEARD = {"on", "off", "low", "dead", "changed"}   # the trigger: switched by F, ran low, died, its batteries changed
+TORCH_KEYS = {"kelvin": (1500, 12000), "cone": (5, 120), "range": (1, 60), "strength": (0.1, 100),
+              "battery": (1, 86400), "charge": (0, 1), "low": (0, 1)}   # battery: seconds of light from full (FLASHLIGHT_PLAN §1)
+TORCH_KINDS = {"bulb", "led"}
 DOOR_SET = {"lock", "unlock", "open", "close", "slam"}
 STALKER = {"spawn", "despawn", "patrol", "hunt", "chase"}
 BEHAVE = {"idle": ("at",), "sit": ("at",), "path": ("route",), "patrol": ("routes",), "go": ("to",), "off": ()}   # a cast member in play: what each needs
@@ -137,12 +140,78 @@ def check_outside(lid, out, r):
         for k in ("x", "z", "w", "h", "out"):
             if k in pt and not isinstance(pt[k], (int, float)):
                 r.err(f"level {lid}: outside: part {i + 1}: {k} {pt[k]!r} (metres)")
-SIGHT = {"angle", "range", "crouched", "meter", "drain", "calm"}      # behave sees: the play runtime's SIGHT
+SIGHT = {"angle", "range", "crouched", "meter", "drain", "calm", "torch"}   # behave sees: the play runtime's SIGHT (torch: the light gives you away)
+BEAM_DOES = {"nothing", "backs_off", "freezes", "flees", "vanishes", "covers", "comes", "charges"}   # what someone does in the beam (FLASHLIGHT_PLAN §2b)
+BEAM_NEAR = {"none", "flicker", "dim", "die"}
+BEAM_NUM = {"after": (0, 60), "bright": (0, 1), "dist": (0, 30), "speed": (0.1, 10), "keep": (0, 600), "near": (0, 50)}
 TRICKS = {  # name: (required fields, seconds it takes)
-    "swap": ({"hide", "show"}, 0), "slam_behind": ({"door"}, 2), "lights_die": ({"room"}, 3),
+    "swap": ({"hide", "show"}, 0), "slam_behind": ({"door"}, 2), "lights_die": (set(), 3),   # lights_die: a room or a light
     "glimpse": ({"figure"}, 2), "knock": ({"at"}, 3), "whisper": ({"line", "at"}, 0),
     "jumpscare": ({"figure"}, 3), "loop_hall": ({"trigger", "back_to"}, 0), "cut_away": ({"lookat", "then"}, 2),
 }
+# tricks the palette no longer offers: what to use instead (docs/HORROR_TODO.md 0)
+RETIRED_TRICKS = {
+    "cut_away": "the eye is never turned for the player (DIRECTING §1): a soft `focus` or a slow `lookat` asked for on purpose",
+    "loop_hall": "not in Play yet (docs/HORROR_TODO.md 1, the walkway that loops): nothing happens in a game",
+}
+
+
+def check_beam(where, b, story, things, r):
+    """A cast member's `beam`, or a `beam` action's fields: what she does in the flashlight's beam and what her
+    presence does to the lights near her (FLASHLIGHT_PLAN §2b)."""
+    if not isinstance(b, dict):
+        r.err(f"{where}: beam is {{does, after, bright, dist, speed, keep, clip, face, sound, flee, near, near_torch, near_lamps}}")
+        return
+    for k, x in b.items():
+        if k in ("beam",):
+            continue
+        if k == "does":
+            if x not in BEAM_DOES:
+                r.err(f"{where}: beam does {x!r}: one of {', '.join(sorted(BEAM_DOES))}")
+        elif k in BEAM_NUM:
+            lo, hi = BEAM_NUM[k]
+            if isinstance(x, bool) or not isinstance(x, (int, float)) or not lo <= x <= hi:
+                r.err(f"{where}: beam {k} is a number {lo} to {hi}")
+        elif k in ("near_torch", "near_lamps"):
+            if x not in BEAM_NEAR:
+                r.err(f"{where}: beam {k} {x!r}: one of {', '.join(sorted(BEAM_NEAR))}")
+        elif k == "clip":
+            if x not in story.get("motions", {}):
+                r.err(f"{where}: beam clip {x!r} isn't in motions")
+        elif k == "sound":
+            if x not in story.get("sounds", {}):
+                r.err(f"{where}: beam sound {x!r} isn't in sounds")
+        elif k == "face":
+            if not isinstance(x, str) or "/" in x or ".." in x or not (EXPRESSIONS / x / "expression.json").is_file():
+                r.err(f"{where}: beam face {x!r} isn't in the library (Content/Studio/Expressions)")
+        elif k == "flee":
+            if x not in things or things[x].use != "spot":
+                r.err(f"{where}: beam flee {x!r} isn't a spot")
+        else:
+            r.err(f"{where}: beam {k!r}: not a word of its (does, after, bright, dist, speed, keep, clip, face, sound, flee, near, near_torch, near_lamps)")
+    if b.get("does") == "flees" and not b.get("flee"):
+        r.err(f"{where}: beam does flees, but has no flee spot")
+    if not torch_items(story):
+        r.warn(f"{where}: a beam, but no item is a flashlight: nothing ever lights her")
+
+
+def check_light_change(bid, what, a, r):
+    """A light's change (STORY_FORMAT §4): `to` how bright a dim is, `secs` how long (then back as it was), `over` the
+    seconds it takes (not `fade`: that's the screen's verb), `mode` a flicker's mode."""
+    if "to" in a and not (isinstance(a["to"], (int, float)) and 0 <= a["to"] <= 1):
+        r.err(f"{bid}: {what} to is how bright, 0 to 1")
+    for k, lo, word in (("secs", 0, "more than"), ("over", 0, "at least")):
+        if k in a and not (isinstance(a[k], (int, float)) and (a[k] > lo if word == "more than" else a[k] >= lo)):
+            r.err(f"{bid}: {what} {k} is seconds ({word} {lo})")
+    if "mode" in a:
+        if a["mode"] not in FLICKER_MODES:
+            r.err(f"{bid}: {what} mode {a['mode']!r}: one of {', '.join(sorted(FLICKER_MODES))}")
+        elif a.get("set") != "flicker":
+            r.warn(f"{bid}: {what} mode {a['mode']!r} only counts with set flicker")
+    if "to" in a and a.get("set") != "dim":
+        r.warn(f"{bid}: {what} to only counts with set dim")
+
+
 SEAMS = {  # kind: (fields it needs, seconds it adds)
     "none": (set(), 0.0), "blink": (set(), 0.2), "glance": ({"look"}, 1.0), "flicker": (set(), 0.4),
     "occlude": (set(), 0.8), "cutaway": ({"look"}, 1.5), "turn": (set(), 0.0), "stumble": (set(), 1.0),
@@ -419,6 +488,9 @@ def torch_items(story):
 
 def check_world(story, things, r):
     check_library(story, r)
+    for c, v in story.get("cast", {}).items():          # what she does in the flashlight's beam (STORY_FORMAT §2, FLASHLIGHT_PLAN §2)
+        if "beam" in v:
+            check_beam(f"cast {c}", v["beam"], story, things, r)
     cast, items, notes, lines = (story.get(k, {}) for k in ("cast", "items", "notes", "lines"))
     for k, it in items.items():
         if "shape" in it:
@@ -428,8 +500,23 @@ def check_world(story, things, r):
                 r.err(f"item {k}: {e}")
         tc = it.get("torch")
         if tc is not None and tc is not True and tc is not False and not (isinstance(tc, dict) and all(
-                kk in TORCH_KEYS and isinstance(vv, (int, float)) and TORCH_KEYS[kk][0] <= vv <= TORCH_KEYS[kk][1] for kk, vv in tc.items())):
-            r.err(f"item {k}: torch is true (a flashlight: F turns it on) or {{" + ", ".join(f"{kk}: {lo}..{hi}" for kk, (lo, hi) in TORCH_KEYS.items()) + "}")
+                (kk == "kind" and vv in TORCH_KINDS) or (kk == "rest" and isinstance(vv, bool)) or
+                (kk in TORCH_KEYS and isinstance(vv, (int, float)) and not isinstance(vv, bool) and TORCH_KEYS[kk][0] <= vv <= TORCH_KEYS[kk][1])
+                for kk, vv in tc.items())):
+            r.err(f"item {k}: torch is true (a flashlight: F turns it on) or {{" + ", ".join(f"{kk}: {lo}..{hi}" for kk, (lo, hi) in TORCH_KEYS.items())
+                  + ", kind: bulb or led, rest: true or false}")
+        if isinstance(tc, dict) and tc.get("rest") and tc.get("kind") == "led":
+            r.warn(f"item {k}: torch rest is a bulb's (an LED's cells don't come back): it's ignored")
+        if isinstance(tc, dict) and ("charge" in tc or "low" in tc or "kind" in tc or "rest" in tc) and "battery" not in tc:
+            r.warn(f"item {k}: torch {', '.join(x for x in ('kind', 'charge', 'low', 'rest') if x in tc)} only count with a battery (its seconds of light)")
+        if "battery" in it:                            # batteries for the flashlight: how full a set (FLASHLIGHT_PLAN §1b)
+            bv = it["battery"]
+            if isinstance(bv, bool) or not isinstance(bv, (int, float)) or not 0 < bv <= 1:
+                r.err(f"item {k}: battery is how full a set is, more than 0 up to 1 (1 a new one)")
+            if "torch" in it:
+                r.err(f"item {k}: an item is a flashlight or its batteries, not both")
+            if not any(isinstance(x, dict) and isinstance(x.get("torch"), dict) and x["torch"].get("battery") for x in items.values()):
+                r.warn(f"item {k}: batteries, but no flashlight in the game runs on them (an item's torch with a battery)")
     for k, ln in lines.items():
         check_spoken(f"line {k}", ln, cast, r)
     for lid, lvl in story.get("levels", {}).items():
@@ -1424,11 +1511,26 @@ def check_trigger(bid, w, story, things, beats, r):
     elif k == "peeping":                               # the player's eye at that door's peephole; holds while it is
         if v not in things or things[v].kind != "door" or not things[v].d.get("peephole"):
             r.err(f"{bid}: peeping {v!r} isn't a door with a peephole (its door's \"peephole\": true)")
-    elif k == "torch":                                 # the player switched the flashlight (F) on, or off
-        if v not in ("on", "off"):
-            r.err(f"{bid}: torch {v!r}: \"on\" or \"off\" (the player switched it with F)")
+    elif k == "torch":                                 # the player switched the flashlight (F) on or off; it ran low, died, was changed
+        if v not in TORCH_HEARD:
+            r.err(f"{bid}: torch {v!r}: one of {', '.join(sorted(TORCH_HEARD))} (on, off: switched with F; low, dead, changed: its battery)")
         if not torch_items(story):
             r.err(f"{bid}: torch: no item is a flashlight (an item's torch: true)")
+    elif k in ("lit", "flashed"):                      # the flashlight's beam on someone or something (FLASHLIGHT_PLAN §2a)
+        if v not in story.get("cast", {}) and v not in things:
+            r.err(f"{bid}: {k} {v!r} isn't a cast member or a thing")
+        if not torch_items(story):
+            r.err(f"{bid}: {k}: no item is a flashlight (an item's torch: true)")
+        for x, lo in (("secs", 0), ("within", 0)):
+            if x in w and (isinstance(w[x], bool) or not isinstance(w[x], (int, float)) or w[x] <= lo):
+                r.err(f"{bid}: {k} {x} is seconds (more than 0)")
+        if "times" in w and (isinstance(w["times"], bool) or not isinstance(w["times"], int) or w["times"] < 1):
+            r.err(f"{bid}: flashed times is a whole number, 1 or more")
+    elif k == "charge":                                # holds while the flashlight's charge is under that
+        if isinstance(v, bool) or not isinstance(v, (int, float)) or not 0 < v <= 1:
+            r.err(f"{bid}: charge {v!r}: a number more than 0 up to 1 (holds while the flashlight's charge is under it)")
+        if not any(isinstance(x, dict) and isinstance(x.get("torch"), dict) and x["torch"].get("battery") for x in (story.get("items") or {}).values()):
+            r.warn(f"{bid}: charge: no flashlight in the game runs on a battery, so its charge is always full")
     elif k in ("ticked", "failed"):                    # a to-do task ticked or failed; true: the list through, any failed
         if v is not True and v not in todos_of(story):
             r.err(f"{bid}: {k} {v!r}: true or a task some stitch puts on the to-do list (`todo`)")
@@ -1575,8 +1677,16 @@ def check_action(bid, a, story, things, r, stage=None):
             r.err(f"{bid}: sound {v!r} isn't in sounds")
         if a.get("at"):
             placed(a["at"])
-    elif k == "music" and v not in MUSIC:
-        r.err(f"{bid}: music {v!r} (one of {', '.join(sorted(MUSIC))})")
+    elif k == "music":                                  # the music's mood, a bed under the game (HORROR_TODO 13.1)
+        if v not in MUSIC:
+            r.err(f"{bid}: music {v!r} (one of {', '.join(sorted(MUSIC))})")
+        if "secs" in a and not secs_ok(a["secs"], 0, 30):
+            r.err(f"{bid}: music secs {a['secs']!r}: the crossfade in seconds, 0 to 30")
+    elif k == "hush":                                   # the beds down to nothing before a sting (jump_scares.md §8)
+        if not secs_ok(v, 0.5, 30):
+            r.err(f"{bid}: hush {v!r}: seconds, 0.5 to 30 (its last half second silent)")
+        if "back" in a and not secs_ok(a["back"], 0, 120):
+            r.err(f"{bid}: hush back {a['back']!r}: the seconds the beds take to come back, 0 to 120")
     elif k == "light":
         if a.get("room"):
             placed(a["room"], "room")
@@ -1584,6 +1694,7 @@ def check_action(bid, a, story, things, r, stage=None):
             r.err(f"{bid}: light {v!r} isn't a light")
         if a.get("set") not in LIGHT_SET:
             r.err(f"{bid}: light set {a.get('set')!r}")
+        check_light_change(bid, "light", a, r)
     elif k == "power":                                  # the power cut (every electric light dark, the switches dead) or back
         if v not in ("on", "off"):
             r.err(f"{bid}: power {v!r}: \"on\" or \"off\"")
@@ -1610,11 +1721,19 @@ def check_action(bid, a, story, things, r, stage=None):
         for x in SKIN_KEYS:
             if x in a and (isinstance(a[x], bool) or not isinstance(a[x], (int, float)) or not 0 <= a[x] <= 1):
                 r.err(f"{bid}: skin {x} {a[x]!r}: a number 0..1")
-    elif k == "torch":                                  # the flashlight: on, off, flicker, dead, works
+    elif k == "beam":                                   # what someone does in the flashlight's beam from now (FLASHLIGHT_PLAN §2)
+        if v not in story.get("cast", {}):
+            r.err(f"{bid}: beam {v!r} isn't a cast member")
+        check_beam(f"{bid}: beam", {kk: vv for kk, vv in a.items() if kk != "beam"}, story, things, r)
+    elif k == "torch":                                  # the flashlight: on, off, flicker, dead, works, dim, drain
         if v not in TORCH_SET:
             r.err(f"{bid}: torch {v!r} (one of {', '.join(sorted(TORCH_SET))})")
         if not torch_items(story):
             r.err(f"{bid}: torch: no item is a flashlight (an item's torch: true)")
+        if v == "drain" and not (isinstance(a.get("to"), (int, float)) and not isinstance(a.get("to"), bool) and 0 <= a["to"] <= 1):
+            r.err(f"{bid}: torch drain needs to, the charge 0..1")
+        elif v != "drain":
+            check_light_change(bid, "torch", dict(a, set="dim" if v == "dim" else ("flicker" if v == "flicker" else v)), r)
     elif k == "door":
         if placed(v, "door") and things[v].kind != "door":
             r.err(f"{bid}: door {v!r} isn't a door")
@@ -1733,14 +1852,29 @@ def check_action(bid, a, story, things, r, stage=None):
         missing = TRICKS[v][0] - set(a)
         if missing:
             r.err(f"{bid}: trick {v} needs {', '.join(sorted(missing))}")
-        for f in ("hide", "show", "door", "room", "figure", "at", "trigger", "back_to", "lookat"):
+        for f in ("hide", "show", "door", "room", "figure", "at", "trigger", "back_to", "lookat", "light"):
             if f in a:
                 placed(a[f])
+        if v == "lights_die":                           # a room's lights, or one; back as they were (STORY_FORMAT §4)
+            if not a.get("room") and not a.get("light"):
+                r.err(f"{bid}: trick lights_die needs a room or a light")
+            if a.get("light") in things and things[a["light"]].use != "light":
+                r.err(f"{bid}: lights_die light {a['light']!r} isn't a light")
+            if "order" in a and a["order"] != "toward":
+                r.err(f"{bid}: lights_die order {a['order']!r}: \"toward\" (one by one toward the player) or none")
+            if "gap" in a and not (isinstance(a["gap"], (int, float)) and a["gap"] >= 0):
+                r.err(f"{bid}: lights_die gap is seconds (0 or more)")
+            if "secs" in a and not (isinstance(a["secs"], (int, float)) and a["secs"] > 0):
+                r.err(f"{bid}: lights_die secs is seconds (more than 0)")
+        if v in RETIRED_TRICKS:
+            r.warn(f"{bid}: trick {v}: {RETIRED_TRICKS[v]}")
         if v == "whisper" and a.get("line") not in lines:
             r.err(f"{bid}: whisper line {a.get('line')!r} isn't a line")
         if v in ("glimpse", "jumpscare") and a.get("figure") in things and \
                 not things[a["figure"]].d.get("shape", "").startswith("person"):
             r.err(f"{bid}: {v} figure {a['figure']!r} isn't a person")
+        if v == "jumpscare" and "quiet" in a and not (secs_ok(a["quiet"], 0.5, 30) or a["quiet"] == 0):
+            r.err(f"{bid}: jumpscare quiet {a['quiet']!r}: the seconds of hush before it, 0.5 to 30 (0 for none)")
         if v == "jumpscare":                           # its clip (a lunge), its own sound, its face (STORY_FORMAT §4)
             if a.get("clip") is not None and a["clip"] not in story.get("motions", {}):
                 r.err(f"{bid}: jumpscare clip {a['clip']!r} isn't in motions")
@@ -1830,7 +1964,7 @@ def check_stitch(tid, st, story, things, r):
 
 
 # actions that take time in Play (a beat waits for them before its next action), and the tricks that do
-TIMED = {"wait", "fade", "ask", "name", "chapter", "scene", "lookat"}
+TIMED = {"wait", "fade", "ask", "name", "chapter", "scene", "lookat", "hush"}
 TIMED_TRICKS = {"knock", "glimpse", "lights_die", "swap", "jumpscare"}
 
 
@@ -1876,6 +2010,28 @@ def check_painted(story, r):
         st = UV.stale(GAME_DIR.name, tid, t)
         if st:
             r.warn(f"{tid}: {st}")
+
+
+def secs_ok(v, lo, hi):
+    return isinstance(v, (int, float)) and not isinstance(v, bool) and lo <= v <= hi
+
+
+def check_tone(where, tone, r):
+    """A room's tone (or the game's): a loop off the sound shelf heard while the player's in the room, or none."""
+    if tone == "none":
+        return
+    try:
+        shelf = json.loads(SFX_INDEX.read_text("utf-8")).get("sounds", {})
+    except (OSError, ValueError):
+        shelf = None
+    if not isinstance(tone, str) or not tone:
+        r.err(f"{where}: tone {tone!r}: a sound on the shelf (room_tone_01...) or none")
+    elif shelf is None:
+        r.warn(f"{where}: tone {tone}: the Studio's sound shelf isn't here (python tools/sfx.py fetch)")
+    elif tone not in shelf:
+        r.err(f"{where}: tone {tone!r} isn't on the Studio's sound shelf (python tools/sfx.py list ambience)")
+    elif not shelf[tone].get("loop"):
+        r.warn(f"{where}: tone {tone} isn't a loop on the shelf: it'll repeat with a seam")
 
 
 def check_sounds(story, r):
@@ -2477,6 +2633,11 @@ class World:
             return self.power.get(self.level, "on") == v or any(self.can_reach(t.id) for t in self.things.values() if t.use == "breaker")
         if k == "torch":                                  # the walker switches it once it has a flashlight
             return any(i in self.inv for i in torch_items(self.story))
+        if k in ("lit", "flashed"):                       # the walker shines it once it has a flashlight
+            return any(i in self.inv for i in torch_items(self.story))
+        if k == "charge":                                 # a battery runs down by itself while it's on: once it has one
+            return any(i in self.inv and isinstance(self.story["items"][i].get("torch"), dict) and self.story["items"][i]["torch"].get("battery")
+                       for i in torch_items(self.story))
         if k == "arrived":                                # she walked where a behave go sent her
             return v in self.arrived and (w.get("at") is None or self.arrived[v] == w["at"])
         if k == "ticked":                                 # holds: that task ticked, or the list through (nothing open)
@@ -2549,6 +2710,8 @@ class World:
                 self.add("scripted", NAME_SECS)
             elif k == "wait":
                 self.add("scripted", float(v))
+            elif k == "hush":
+                self.add("scripted", max(0.5, float(v)))
             elif k in ("fade", "lookat"):
                 self.add("scripted", float(a.get("secs", 1)))
             elif k == "shot":
@@ -2558,6 +2721,8 @@ class World:
             elif k == "stalker":
                 self.secs.setdefault(self.cur, {})["_stalker"] = 1
             elif k == "trick":
+                if v == "jumpscare":                      # its hush first (its quiet, else game.quiet)
+                    self.add("scripted", float(a.get("quiet", self.story["game"].get("quiet") or 0)))
                 if v in MINOR or v == "jumpscare":
                     self.scares.append((self.clock, v, where))
                 self.add("scripted", TRICKS[v][1] + float(a.get("secs", 0)))
@@ -3044,6 +3209,13 @@ def main():
         for rm in lvl.get("rooms", []):
             if rm.get("acoustics") and rm["acoustics"] not in L.ACOUSTICS:
                 r.err(f"room {rm.get('id')}: acoustics {rm['acoustics']!r} (one of {', '.join(L.ACOUSTICS)})")
+            if "tone" in rm:
+                check_tone(f"room {rm.get('id')}", rm["tone"], r)
+    if "tone" in story["game"]:
+        check_tone("game", story["game"]["tone"], r)
+    q = story["game"].get("quiet")                     # the hush before every jumpscare (HORROR_TODO 13.1)
+    if q is not None and not (secs_ok(q, 0.5, 30) or q == 0):
+        r.err(f"game.quiet {q!r}: the seconds of hush before every jumpscare, 0.5 to 30 (0 for none)")
     if not r.errors:
         check_world(story, things, r)
         for sid, sc in story.get("scenes", {}).items():

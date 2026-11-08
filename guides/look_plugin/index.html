@@ -73,6 +73,7 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
     <li><a href="#install">Putting it in a project</a></li>
     <li><a href="#look">The look</a></li>
     <li><a href="#lights">Lights</a></li>
+    <li><a href="#air">The air: fog, beams, dust</a></li>
     <li><a href="#water">Water, weather, blood</a></li>
     <li><a href="#mirror">Mirrors</a></li>
     <li><a href="#people">People</a></li>
@@ -140,7 +141,7 @@ untick <code>Editor Only</code></b> and it's the game's. <code>presets/look_bala
 <tr><td class="node">HSPatternLight</td><td>A spot throwing caustics, leaves, blinds or clouds (<code>pattern</code>, <code>feature_m</code>, <code>speed</code>).</td></tr>
 <tr><td class="node">HSLightShaft</td><td>A window's beam: put it in the opening, forward into the room, and fit its orange outline to the glass. Crisp at the glass, soft where it lands.</td></tr>
 <tr><td class="node">HSHeadlightSweep</td><td>A car passing outside the window every so often, the frame's shadow sliding across the ceiling (<code>fire()</code> one now).</td></tr>
-<tr><td class="node">HSLightZone</td><td>A room's box that owns the lights inside it. They light only what's in it, their reach fitted, off while the room's out of view.</td></tr>
+<tr><td class="node">HSLightZone</td><td>A room's box that owns the lights inside it. They light only what's in it, their reach fitted, off while the room's out of view. In the game each light's glass (what glows beside it: a tube, a bulb) goes out, dims and flickers with it.</td></tr>
 </table>
 <div class="pair">
   <figure><img src="img/pattern.jpg" width="1280" height="720" alt="Caustics thrown on a wall"><figcaption>HSPatternLight: caustics</figcaption></figure>
@@ -150,8 +151,39 @@ untick <code>Editor Only</code></b> and it's the game's. <code>presets/look_bala
 </div>
 </section>
 
+<section id="air">
+<h2><span class="n">5</span>The air: fog, a beam in it, dust</h2>
+<p>How thick the air is, set by one number, and the lights' beams in it. A flashlight in the woods at night is a beam in
+the fog; a dusty room shows motes where the light falls. (docs/research/eye_candy.md has why, measured.)</p>
+<table class="keys">
+<tr><td class="node">HSAtmosphere</td><td>One a level. <code>fog</code> is the fog level: 0 clear air, 0.25 the look's own haze, 0.5 about
+80 m to see through, 0.75 about 35 m, 1 about 20 m. <code>mist</code> is ground mist thinning with height (<code>ground</code>,
+<code>mist_height</code>). <code>wind</code> drifts it, <code>noise</code> breaks it into wisps and pockets, and <code>dust</code>
+is motes seen in the light. Or pick a <code>preset</code>: clear, clean_room, dusty_room, hazy_night, woods_mist, fog or
+thick_fog. From a script, <code>$Air.fog_to(0.7, 3.0)</code> rolls the fog in over three seconds.</td></tr>
+<tr><td class="node">HSBeam</td><td>Under a SpotLight3D: its beam in the air, as bright as the air is thick. It follows the light
+every frame, so a battery running down or a flicker shows in the air. <code>cookie</code> = flashlight gives the light a
+flashlight's beam, a hot core, a faint ring and a dim spill, on the walls and in the air alike.</td></tr>
+<tr><td class="node">HSAirZone</td><td>A box where the air is different: a dusty stairwell, a damp cellar. While you're inside, the
+air eases to its <code>fog</code>, <code>dust</code> and <code>mist</code> over <code>seconds</code>, and back when you leave.</td></tr>
+<tr><td class="node">HSDust</td><td>Motes round the eye, seen only where light reaches them, the way your eye sees dust in a beam:
+sharp specks of many sizes, flakes that flash as they tumble, threads of lint, drifting on slow eddies of the air. In
+your flashlight's beam, round a lamp, never by moonlight, and only against the dark: over a lit wall they fade, as dust
+does. An HSAtmosphere keeps one itself.</td></tr>
+</table>
+<p>The presets <code>flashlight</code> and <code>flashlight_led</code> are a SpotLight3D with its beam: put one under your
+camera, a little right of it and down. <code>lamp_beam</code> is a lamp's cone in the air. The starter kit's flashlight has
+its beam already.</p>
+<div class="pair">
+  <figure><img src="img/air_level_25.jpg" width="1280" height="720" alt="A flashlight's faint beam in a thin haze"><figcaption>The look's haze (fog 0.25): the beam faint but there</figcaption></figure>
+  <figure><img src="img/air_level_50.jpg" width="1280" height="720" alt="A flashlight's beam in fog"><figcaption>Fog 0.5: the core, the ring and the spill</figcaption></figure>
+  <figure><img src="img/air_woods_mist.jpg" width="1280" height="720" alt="The beam in ground mist with dust in it"><figcaption><code>woods_mist</code>: mist, and dust glinting in the beam</figcaption></figure>
+  <figure><img src="img/air_side.jpg" width="1280" height="720" alt="A flashlight's beam seen from the side"><figcaption>Someone else's flashlight, from the side</figcaption></figure>
+</div>
+</section>
+
 <section id="water">
-<h2><span class="n">5</span>Water, weather, blood</h2>
+<h2><span class="n">6</span>Water, weather, blood</h2>
 <table class="keys">
 <tr><td class="node">HSWetSurface</td><td>Under a mesh: it's wet, with pools in a noise across it and rain's rings on them (<code>wetness</code>, <code>puddles</code>, <code>ripples</code>).</td></tr>
 <tr><td class="node">HSPuddle</td><td>A puddle decal under it.</td></tr>
@@ -168,14 +200,14 @@ untick <code>Editor Only</code></b> and it's the game's. <code>presets/look_bala
 </section>
 
 <section id="mirror">
-<h2><span class="n">6</span>Mirrors</h2>
+<h2><span class="n">7</span>Mirrors</h2>
 <p><span class="node">HSMirrorSurface</span> under a mesh makes it a real mirror in the game: the camera reflected through the glass
 into a view of its own, drawn while the glass is in sight (<code>resolution</code>).</p>
 <figure><img src="img/mirror.jpg" width="1280" height="720" alt="The lamp's glint in a mirror"><figcaption>The room and the bulb in the mirror.</figcaption></figure>
 </section>
 
 <section id="people">
-<h2><span class="n">7</span>People</h2>
+<h2><span class="n">8</span>People</h2>
 <p><span class="node">HSCharacterLook</span> under a character (a Character Studio export, or any model whose meshes are named
 skin, eye, hair) puts the studio's skin, eyes and hair on it when the game runs:</p>
 <ul>
@@ -194,7 +226,7 @@ export (<code>*.glb</code> in the preset's non-resource filters): the look reads
 </section>
 
 <section id="finish">
-<h2><span class="n">8</span>The grade and the tape</h2>
+<h2><span class="n">9</span>The grade and the tape</h2>
 <p><span class="node">HSGrade</span> is a film grade over the picture: <code>preset</code> cinema, teal-orange, cold, sodium, bleach, noir,
 warm or none, then each number (lift, gamma, gain, warmth, saturation, contrast, fade, vignette, grain, aberration).
 <span class="node">HSTape</span> is UltraVHS, a camcorder's tape over it: camcorder, camhybrid, worn, nightmare or off, and a <code>strength</code>.</p>
@@ -202,19 +234,20 @@ warm or none, then each number (lift, gamma, gain, warmth, saturation, contrast,
 </section>
 
 <section id="props">
-<h2><span class="n">9</span>Made props</h2>
+<h2><span class="n">10</span>Made props</h2>
 <p>The prop generator's props (<code>tools/propgen.py</code>) carry what glows and burns in them.
 <span class="node">HSPropFX</span> switches each on (glow, a candle's flame and its flickering light, smoke, steam, wax) and
 <span class="node">HSLiquidFill</span> keeps a bottle's liquid level and sloshing. A made prop's <code>.tscn</code> has both already.</p>
 </section>
 
 <section id="presets">
-<h2><span class="n">10</span>The presets</h2>
-<p><code>addons/horrorstudio_look/presets/</code> holds 40 ready-made nodes. Drag one from the FileSystem dock into the level and move it:</p>
+<h2><span class="n">11</span>The presets</h2>
+<p><code>addons/horrorstudio_look/presets/</code> holds 52 ready-made nodes. Drag one from the FileSystem dock into the level and move it:</p>
 <table class="keys">
 <tr><td>Lights</td><td><code>candle</code>, <code>dying_bulb</code>, <code>desk_lamp_dying</code>, <code>fluorescent_tube</code>, <code>faulty_neon</code>, <code>alarm_pulse</code></td></tr>
 <tr><td>Rooms</td><td><code>room_bulb</code>, <code>room_lamp</code>, <code>room_candle</code>, <code>room_dying</code>, <code>room_fluorescent</code>, <code>room_night</code> (light zones with their lights)</td></tr>
 <tr><td>Light's shape</td><td><code>caustics_light</code>, <code>blinds_light</code>, <code>leaves_light</code>, <code>clouds_light</code>, <code>window_shaft</code>, <code>window_sun</code>, <code>headlight_sweep</code></td></tr>
+<tr><td>The air</td><td><code>air_clean_room</code>, <code>air_dusty_room</code>, <code>air_hazy_night</code>, <code>air_woods_mist</code>, <code>air_fog</code>, <code>air_thick_fog</code>, <code>air_zone_dusty</code>, <code>dust</code>, <code>flashlight</code>, <code>flashlight_led</code>, <code>lamp_beam</code></td></tr>
 <tr><td>Water</td><td><code>rain</code>, <code>downpour</code>, <code>wet_floor</code>, <code>wet_floor_raining</code>, <code>damp_floor</code>, <code>puddle</code>, <code>window_pane</code>, <code>wall_leak</code></td></tr>
 <tr><td>Blood</td><td><code>blood_pool</code>, <code>blood_wall</code>, <code>blood_dried</code></td></tr>
 <tr><td>People</td><td><code>character_look</code>, <code>character_sweating</code></td></tr>
@@ -224,19 +257,21 @@ warm or none, then each number (lift, gamma, gain, warmth, saturation, contrast,
 </section>
 
 <section id="code">
-<h2><span class="n">11</span>In your own scripts</h2>
+<h2><span class="n">12</span>In your own scripts</h2>
 <p>Every piece is also a class you call from GDScript, without the nodes:</p>
 <pre>HSLook.apply(get_viewport(), $WorldEnvironment.environment, "balanced")
 HSWet.wet($Floor, {"wetness": 0.8, "puddles": 0.5, "ripples": 1.0})
 HSBlood.splat(self, hit.position, hit.normal, 0.8, 7)
 add_child(HSRain.make(Vector3(12, 6, 12), 4000, 0.8))
 HSMirror.attach($Bathroom/Mirror, 0, get_viewport().get_camera_3d(), 512)
+$Air.fog_to(0.75, 4.0)                       # the fog rolls in (an HSAtmosphere)
+$Flashlight.light_projector = HSAir.cookie("flashlight")
 HSSkin.wear($Mari, {"sweat": 0.6}, "res://exports/characters/mari/mari.glb")</pre>
 <p>The full list, with what each takes: <code>GodotPlugins/HorrorStudioLook/README.md</code>, and the numbers behind them in the studio's <code>docs/GODOT_LOOK.md</code>.</p>
 </section>
 
 <section id="rules">
-<h2><span class="n">12</span>Good to know</h2>
+<h2><span class="n">13</span>Good to know</h2>
 <ul>
   <li><b>Forward is -Z, into the room</b>, for every node that faces a way (a shaft, a sweep, a pane).</li>
   <li><b>Render layers are shared out</b>: 1 is everything by default, 2 to 10 the light zones, 11 to 19 the mirrors, 20 the hidden.

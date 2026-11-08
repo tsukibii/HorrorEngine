@@ -4,7 +4,9 @@
 ## looking through the doorway, the second room's floor no brighter with the bulb on than off (the bulb kept to its
 ## room), and brighter when the zone lets it out (the measure can tell); the second room's lamp switched off while the
 ## eye looks away from it and on again when it looks back; a save puts every layer, mask and reach back, and after it
-## they're on again. Pictured: zones.png (through the doorway).
+## they're on again; the bulb's fitting (a glowing glass by it) going out, dimming and coming back with it, a glowing
+## sign across the room left alone, the glass's material put back before a save and found again after it. Pictured:
+## zones.png (through the doorway).
 ##   godot --path PROJECT --fixed-fps 60 -s res://addons/horrorstudio_look/demo/zones.gd -- --out=DIR
 extends SceneTree
 
@@ -20,6 +22,8 @@ var n := 0
 var rep := {}
 var on_img: Image = null
 var mask0 := 0                     # the bulb's own cull mask, as the preset has it
+var glass: MeshInstance3D          # the bulb's fitting: a glowing glass round it
+var sign_mi: MeshInstance3D        # a glowing sign on room A's wall, nowhere near a light
 
 
 func box(size: Vector3, at: Vector3, col := Color(0.55, 0.53, 0.5)) -> MeshInstance3D:
@@ -33,6 +37,28 @@ func box(size: Vector3, at: Vector3, col := Color(0.55, 0.53, 0.5)) -> MeshInsta
 	world.add_child(mi)
 	mi.position = at
 	return mi
+
+
+func glow(at: Vector3, r: float, energy: float) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	var sm := SphereMesh.new()
+	sm.radius = r
+	sm.height = r * 2.0
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color(0.9, 0.88, 0.85)
+	m.emission_enabled = true
+	m.emission = Color(1, 0.85, 0.6)
+	m.emission_energy_multiplier = energy
+	sm.material = m
+	mi.mesh = sm
+	world.add_child(mi)
+	mi.position = at
+	return mi
+
+
+func glass_now() -> float:
+	var m: Material = glass.get_surface_override_material(0)
+	return (m as BaseMaterial3D).emission_energy_multiplier if m != null else -1.0
 
 
 func _initialize() -> void:
@@ -66,6 +92,8 @@ func _initialize() -> void:
 	za = (load("res://addons/horrorstudio_look/presets/room_bulb.tscn") as PackedScene).instantiate()
 	world.add_child(za)
 	za.position = Vector3(-2, 1.5, 0)
+	glass = glow(Vector3(-2, 2.86, 0), 0.07, 3.0)                    # the bulb at 2.8 m: its glass round it
+	sign_mi = glow(Vector3(-3.9, 2.2, 1.2), 0.1, 2.0)
 	zb = (load("res://addons/horrorstudio_look/presets/room_lamp.tscn") as PackedScene).instantiate()
 	world.add_child(zb)
 	zb.position = Vector3(2, 1.5, 0)
@@ -99,6 +127,9 @@ func bulb() -> OmniLight3D:
 func _process(_d: float) -> bool:
 	n += 1
 	if n == 20:
+		rep["glass_on"] = za.glass_of(bulb())
+		rep["glass_on_energy"] = glass_now()
+		rep["sign_left"] = sign_mi.get_surface_override_material(0) == null
 		rep["layers"] = [za.layer, zb.layer]
 		rep["floor_a"] = floor_a.layers
 		rep["floor_b"] = floor_b.layers
@@ -117,6 +148,8 @@ func _process(_d: float) -> bool:
 		var off := root.get_texture().get_image()
 		rep["b_floor_bulb_on"] = lum(on_img)
 		rep["b_floor_bulb_off"] = lum(off)
+		rep["glass_off"] = za.glass_of(bulb())
+		rep["glass_off_energy"] = glass_now()
 		bulb().visible = true
 		bulb().omni_range = 6.0                                       # the bulb let out of its room, with its own reach: the measure must see it
 		bulb().light_cull_mask = mask0                                # of its room: the measure must see it
@@ -131,13 +164,23 @@ func _process(_d: float) -> bool:
 	elif n == 44:
 		rep["b_lamp_away"] = zb.get_node("Lamp").visible
 		aim(Vector3(2.5, 0.0, 0))                                      # back through the doorway
+	elif n == 46:
+		rep["glass_again"] = za.glass_of(bulb())                       # found again after the zone was applied again
+		bulb().set_meta("hs_full", bulb().light_energy)                # dimmed as the starter's lights.gd dims a light
+		bulb().light_energy *= 0.3
 	elif n == 48:
+		rep["glass_dim"] = za.glass_of(bulb())
+		bulb().light_energy = float(bulb().get_meta("hs_full"))
+		bulb().remove_meta("hs_full")
 		rep["b_lamp_back"] = zb.get_node("Lamp").visible
 		world.propagate_notification(Node.NOTIFICATION_EDITOR_PRE_SAVE)
 		rep["save_back"] = floor_a.layers == 1 and floor_b.layers == 1 and wall_ab.layers == 1 and bulb().light_cull_mask == mask0 and absf(bulb().omni_range - 6.0) < 0.001 and not floor_a.has_meta("hs_layers_was") and not bulb().has_meta("hs_zone")
+		rep["glass_put_back"] = glass.get_surface_override_material(0) == null and not glass.has_meta("hs_glass")
 		world.propagate_notification(Node.NOTIFICATION_EDITOR_POST_SAVE)
 	elif n == 52:
 		rep["after_save"] = floor_a.layers != 1 and bulb().omni_range < 6.0
+	elif n == 58:
+		rep["glass_after_save"] = za.glass_of(bulb())
 		var f := FileAccess.open(out_dir.path_join("zones.json"), FileAccess.WRITE)
 		f.store_string(JSON.stringify(rep, "  "))
 		f.close()

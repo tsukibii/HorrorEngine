@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="PackedScene" path="res://addons/horrorstudio_look/presets/rain.tscn" id="1"]
 [ext_resource type="PackedScene" path="res://addons/horrorstudio_look/presets/wet_floor.tscn" id="2"]
@@ -9,6 +9,9 @@
 [ext_resource type="PackedScene" path="res://addons/horrorstudio_look/presets/puddle.tscn" id="7"]
 [ext_resource type="PackedScene" path="res://addons/horrorstudio_look/presets/room_bulb.tscn" id="8"]
 [ext_resource type="PackedScene" path="res://addons/horrorstudio_look/presets/crt_screen.tscn" id="9"]
+[ext_resource type="PackedScene" path="res://addons/horrorstudio_look/presets/flashlight.tscn" id="10"]
+[ext_resource type="PackedScene" path="res://addons/horrorstudio_look/presets/air_hazy_night.tscn" id="11"]
+[ext_resource type="PackedScene" path="res://addons/horrorstudio_look/presets/air_zone_dusty.tscn" id="12"]
 
 [sub_resource type="PlaneMesh" id="floor"]
 size = Vector2(8, 8)
@@ -42,3 +45,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
 
 [node name="CrtScreen" parent="." instance=ExtResource("9")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 1.4, -3)
+
+[node name="Flashlight" parent="." instance=ExtResource("10")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 3)
+
+[node name="AirHazyNight" parent="." instance=ExtResource("11")]
+
+[node name="DustyRoomAir" parent="." instance=ExtResource("12")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)

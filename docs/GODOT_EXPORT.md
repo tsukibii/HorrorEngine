@@ -392,6 +392,12 @@ objects, the same frame. **The dialogue choice** (the user: "I can't click
    pseudo-realism preset (`game.look`; SSR, SSAO, SSIL, glow, haze, AgX, TAA alone: MSAA switches SSR off in 4.7),
    wet floors, blood, rain (`game.weather`), wet or oiled skin on HumanShaders. LOOKPLUGIN pictures and measures
    each in a demo room; GDTESTROOM checks the yard's rain and wet floor and the chores room's blood.
+   **The UI plugin** (2026-11-08, ui-v3, the user: "the ui should be part of the godot plugin for horrorengine"): the HUD
+   (`hud.gd`: `HSHud`), the quest marker (`marker.gd`, `HSQuestMarker`), the four themes, the pause menu and typed thoughts
+   moved out of the runtime add-on into `GodotPlugins/HorrorStudioUI/addons/horrorstudio_ui/`; the export copies it in
+   beside the look plugin (`addons/horrorstudio_ui`, enabled in project.godot), and so do the Director's install and the
+   by-hand projects (`tools/godot_byhand.py`: a game by hand has the HUD and can put an `HSQuestMarker` on a thing).
+   The runtime makes the HUD with `standalone = false` and drives it itself. GDUI holds it (`tools/godot/ui_check.py`).
    **Window panes** (2026-10-29, `LevelWriter.windows`): a quad of glass in every window opening (`__pane_<room>_<i>`,
    `metadata/pane`), plain glass from the export, the rain running down it from the runtime when `game.weather` is
    rain (HSGlass); `HSWet.puddle` a puddle as a Decal for any surface.

@@ -1,0 +1,21 @@
+{
+ "_note": "The retro pack's review by eye (docs/PROPGEN.md §29), beside the measures tools/propgen/quality.py takes: `fail` keeps a file out of the prop generator with its reason, `notes` travel with a file into retro_audit.json (what to swap before a game ships). Edit freely; python tools/propgen.py quality audit reads it.",
+ "fail": {
+  "retro/3D_Retro_World 0.01/GLTF/Props/Gas_Station/Trash.glb": "a photo of litter on a black square folded into an 8-triangle pyramid 10 cm high: a decal, not a model; its black surround reads as a hole in the ground. The other trash (Trash_Bag, Trash_Box, Trash_Can) and the PBR-made trash_bag stand in for it"
+ },
+ "notes": {
+  "retro/3D_Retro_World 0.01/GLTF/Props/Gas_Station/Light_Sign.glb": "its texture says V-Power Racing: Shell's fuel brand (a trademark). Swap the words before a game ships",
+  "retro/3D_Retro_World 0.01/GLTF/Props/Gas_Station/Flag_Black.glb": "shares its texture with Light_Sign (Shell's V-Power), though the flag itself shows only a plain colour",
+  "retro/3D_Retro_World 0.01/GLTF/Props/Gas_Station/Flag_Red.glb": "shares its texture with Light_Sign (Shell's V-Power), though the flag itself shows only a plain colour",
+  "retro/3D_Retro_World 0.01/GLTF/Props/Gas_Station/Flag_Yellow.glb": "shares its texture with Light_Sign (Shell's V-Power), though the flag itself shows only a plain colour",
+  "retro/3D_Retro_World 0.01/GLTF/Props/Gas_Station/Number_Sign.glb": "shares its texture with Light_Sign (Shell's V-Power)",
+  "retro/3D_Retro_World 0.01/GLTF/Props/Camp/Cooker.glb": "its cartridge carries INMETRO's mark (Brazil's real certification mark) beside the made-up TEK GAS and MUTUM: swap the mark before a game ships",
+  "retro/3D_Retro_World 0.01/GLTF/Props/Gas_Station/Sign_01.glb": "a real public-health campaign poster (Brazil's vaccination campaign): someone else's artwork, swap it before a game ships",
+  "retro/3D_Retro_World 0.01/GLTF/Props/Gas_Station/Sign_02.glb": "a real public-health campaign poster (a dogs and cats vaccination campaign): someone else's artwork, swap it before a game ships",
+  "retro/3D_Retro_World 0.01/GLTF/Props/Gas_Station/Sign_03.glb": "a real public-health campaign poster (a meningitis vaccination campaign): someone else's artwork, swap it before a game ships",
+  "retro/3D_Retro_World 0.01/GLTF/Vegetation/Trees/Douglas Fir/Douglas_Fir_Props.glb": "its cut log end (material Cap) is Textures.com's TCom_WoodEnds0090: their licence, not CC0; fine in your own game, not to share as a texture",
+  "retro/3D_Retro_World 0.01/GLTF/Vegetation/Trees/Picea Abies/Picea_Abies_Props.glb": "its cut log end (material Cap) is Textures.com's TCom_WoodEnds0090: their licence, not CC0; fine in your own game, not to share as a texture",
+  "retro/3D_Retro_World 0.01/GLTF/Vegetation/Vegetation/WhiteClover_A.glb": "54 cm tall for white clover (a real patch stands 10 to 30 cm): scale it down when placing if it reads too big",
+  "retro/3D_Retro_World 0.01/GLTF/Vegetation/Vegetation/WhiteClover_B.glb": "a patch 1.3 m across: scale it down when placing if it reads too big"
+ }
+}

@@ -145,9 +145,29 @@ def demo_checks(rep):
                    % (rep.get("crt_far_contrast", 9), rep.get("crt_near_contrast", 0), rep.get("crt_far", {}).get("mean", 0), rep.get("crt_off", {}).get("mean", 9), rep.get("crt_glint", {}).get("max", 0), rep.get("crt_glint_lower", {}).get("mean", 9), rep.get("crt_static_grain", 0)),
                    rep.get("crt_far_contrast", 9) < rep.get("crt_near_contrast", 0) * 0.25 and rep.get("crt_far", {}).get("mean", 0) > rep.get("crt_off", {}).get("mean", 9) * 1.5
                    and rep.get("crt_glint", {}).get("max", 0) > rep.get("crt_glint_lower", {}).get("mean", 9) * 3.0 and rep.get("crt_static_grain", 0) > 0.01))
+    lg = rep.get("lightning", {})
+    checks.append(("lightning within the flash limits: each strike one flash (one rise past half, its glow dipping no more than a tenth between three brightenings), a second strike asked for during the first waiting a second of dark, the thunder 3 s a kilometre after, someone there only in the flash, the room lit by it",
+                   lg.get("strikes") == 2 and lg.get("rises") == [1, 1] and lg.get("glow_min", 0) >= 0.89 and lg.get("brightenings") == 3 and lg.get("dark_between_s", 0) >= 0.98
+                   and abs(lg.get("thunder_s", -9) - 3.0 * lg.get("km", 1.0)) < 0.05 and lg.get("figure_ok") is True and lg.get("lit_gain", 0) > 1.3))
+    cd = rep.get("cold", {})
+    checks.append(("the cold: a breath shows in a flashlight's beam (%.3f over the same frame without it), more with a lamp behind it (%.3f: droplets throw light forward) and not in the dark (%.3f); a pane frosts from its bottom edge, the room behind blurred there (its sharpness %.4f from %.4f clear) and sharp above the frost line (%.4f from %.4f)"
+                   % (cd.get("breath_lit", 0), cd.get("breath_back", 0), cd.get("breath_dark", 9), cd.get("frost_bottom", 9), cd.get("clear_bottom", 0), cd.get("frost_top", 0), cd.get("clear_top", 9)),
+                   cd.get("breaths", 0) >= 3 and cd.get("breath_lit", 0) > 0.01 and cd.get("breath_back", 0) > cd.get("breath_lit", 0) * 1.5 and cd.get("breath_dark", 9) < cd.get("breath_lit", 0) * 0.35
+                   and cd.get("frost_bottom", 9) < cd.get("clear_bottom", 0) * 0.4 and cd.get("frost_top", 0) > cd.get("clear_top", 9) * 0.7))
+    sm = rep.get("steam", {})
+    checks.append(("steam on a mirror: from its bottom edge (half way, the bottom's reflection blurred %.4f from %.4f clear, the top still sharp %.4f from %.4f); fogged all over, a finger's words (%s) showing clear in it (the words' box %.4f against the fog beside them %.4f)"
+                   % (sm.get("half_bottom", 9), sm.get("clear_bottom", 0), sm.get("half_top", 0), sm.get("clear_top", 9), sm.get("written", ""), sm.get("full_words", 0), sm.get("full_beside", 9)),
+                   sm.get("half_bottom", 9) < sm.get("clear_bottom", 0) * 0.4 and sm.get("half_top", 0) > sm.get("clear_top", 9) * 0.7
+                   and sm.get("written") == "308" and sm.get("full_words", 0) > sm.get("full_beside", 9) * 3.0))
+    mo = rep.get("mirror_only", {})
+    checks.append(("only in the mirror and never in it (layer 19 drawn by the mirrors' cameras alone, layer 20 by every camera but theirs): the green box in the mirror's picture and not the eye's, the red box in the eye's and not the mirror's",
+                   mo.get("in_mirror_view") is True and mo.get("in_eye_view") is True and mo.get("eye_mask_19") is False and mo.get("mirror_mask_19") is True and mo.get("mirror_mask_20") is False
+                   and mo.get("mirror_green", 0) >= 9 and mo.get("eye_green", 99) <= 2 and mo.get("eye_red", 0) >= 20 and mo.get("mirror_red", 99) <= 2))
+    checks.append(("a mirror's own wall kept out of its camera's picture (what's drawn just behind the glass, found without a collider: the near plane is square to the view, not the glass)", mo.get("wall_hidden", 0) >= 1))
     ml = rep.get("mirror2_layers", {})
-    checks.append(("a mirror seen in a mirror: the second mirror's glass in the first's picture holds a picture (a bright peak well over its mean, not a flat wall), each mirror on its own layer, never itself",
-                   ml.get("second_seen_by_first") is True and ml.get("first_not_itself") is True and ml.get("first") != ml.get("second") and rep.get("mirror2_in_first", {}).get("max", 0) > 0.3 and rep.get("mirror2_in_first", {}).get("max", 0) > rep.get("mirror2_in_first", {}).get("mean", 9) * 2.0))
+    checks.append(("a mirror seen in a mirror: the second mirror's glass in the first's picture holds a picture lit like the room (not a hole), each mirror on its own layer, never itself",
+                   ml.get("second_seen_by_first") is True and ml.get("first_not_itself") is True and ml.get("first") != ml.get("second") and ml.get("active2") is True
+                   and rep.get("mirror2_in_first", {}).get("max", 0) > 0.3 and rep.get("mirror2_in_first", {}).get("mean", 0) > 0.2))
     return checks
 
 
@@ -179,6 +199,7 @@ def nodes(g, keep, env):
         ("a leak's band on the wall it was dropped on", rep.get("leak") is True),
         ("a light shaft's card running to the floor (shorter than its reach)", rep.get("shaft") is True),
         ("a headlight sweep fired and passing", rep.get("sweep_passing") is True),
+        ("lightning struck once to full and gone again (HSLightningStorm)", rep.get("lightning") is True),
         ("the four pattern lights each throwing their frames", rep.get("patterns", 0) == 4),
         ("the flicker lights moving (%s)" % ", ".join(moved), len(moved) >= 5),
         ("a mirror's reflection attached to the game's camera, a window pane's glass, a CRT screen's glass", rep.get("mirror") is True and rep.get("pane") is True and rep.get("crt") is True),
@@ -217,6 +238,40 @@ def nodes(g, keep, env):
          abs(zr.get("b_floor_bulb_on", 1) - zr.get("b_floor_bulb_off", 0)) < 0.004 and zr.get("b_floor_bulb_free", 0) > zr.get("b_floor_bulb_off", 1) + 0.01),
         ("the next room's lamp off while the eye looks away, on when it looks back", zr.get("b_lamp_away") is False and zr.get("b_lamp_back") is True),
         ("a save puts every layer, mask and reach back, and they're on again after", zr.get("save_back") is True and zr.get("after_save") is True),
+        ("the bulb's fitting glass goes with it: found (%.2f), out with the light off (%.2f, emission %.2f), dimmed with it (%.2f of 0.3), a glowing sign across the room left alone; put back before a save (%s) and found again after (%.2f)"
+         % (zr.get("glass_on", -1), zr.get("glass_off", -1), zr.get("glass_off_energy", -1), zr.get("glass_dim", -1), zr.get("glass_put_back"), zr.get("glass_after_save", -1)),
+         abs(zr.get("glass_on", 0) - 1.0) < 0.01 and abs(zr.get("glass_on_energy", 0) - 3.0) < 0.01 and zr.get("glass_off", 9) == 0 and zr.get("glass_off_energy", 9) == 0
+         and abs(zr.get("glass_again", 0) - 1.0) < 0.01 and abs(zr.get("glass_dim", 0) - 0.3) < 0.02 and zr.get("sign_left") is True and zr.get("glass_put_back") is True
+         and abs(zr.get("glass_after_save", 0) - 1.0) < 0.01),
+    ]
+    text = run_godot([g, "--path", str(OUT), "--rendering-driver", "vulkan", "--fixed-fps", "60", "-s", "res://addons/horrorstudio_look/demo/air.gd", "--", f"--out={keep}"], env, timeout=2400)
+    al = next((l for l in text.splitlines() if l.startswith("LOOKAIR ")), None)
+    ar = json.loads(al[len("LOOKAIR "):]) if al else {}
+    if not al:
+        print(text[-2000:])
+    lv = ar.get("levels", {})
+    b0, b25, b50, b75 = (lv.get(k, 0) for k in ["0.0", "0.25", "0.5", "0.75"])
+    mo = ar.get("motes", [0, 9])
+    checks += [
+        ("the air (air_level_*.png): a flashlight's beam in it as thick as the fog: none in clear air (%.1f), faint at the look's haze (%.1f), more at 0.5 (%.1f) and 0.75 (%.1f)" % (b0, b25, b50, b75),
+         b0 < 1.0 and b25 >= 2.0 and b50 > b25 * 1.6 and b75 > b50),
+        ("the beam follows its light: half the energy about half the beam (%.2f), none with the light off (%.1f), no trail where it was after a turn (%.2f of it)" % (ar.get("battery_half", 0), ar.get("off", 9), ar.get("turn_first", 9)),
+         0.35 <= ar.get("battery_half", 0) <= 0.65 and ar.get("off", 9) < 0.5 and ar.get("turn_first", 9) < 0.1),
+        ("dust (air_dust.png): motes lit in the beam's core (%.1f a thousand pixels) and fewer beside it (%.2f), none by moonlight (air_moon.png: %.2f)" % (mo[0], mo[1], ar.get("moon_motes", 9)),
+         mo[0] >= 4.0 * max(mo[1], 0.25) and ar.get("moon_motes", 9) < 0.3),
+        ("the motes look like dust, not dots (docs/research/eye_candy.md §2.3b): they twinkle and drift (%.0f%% of the lit pixels changed in a quarter of a second) and vary (the brightest tenth %.1f times the faintest, over %d pixels)" % (100 * ar.get("twinkle", 0), ar.get("mote_spread", 0), ar.get("mote_pixels", 0)),
+         ar.get("twinkle", 0) >= 0.3 and ar.get("mote_spread", 0) >= 4.0 and ar.get("mote_pixels", 0) >= 10),
+        ("fog_to: half way through (%.4f) between where it was (%.4f) and where it's going (%.4f), there at the end (%.4f)" % (ar.get("fog_to_half", 0), ar.get("fog_to_from", 0), ar.get("fog_to_want", 0), ar.get("fog_to_end", 0)),
+         ar.get("fog_to_from", 0) < ar.get("fog_to_half", 0) < ar.get("fog_to_want", 0) and abs(ar.get("fog_to_end", 0) - ar.get("fog_to_want", 1)) < 0.03 * ar.get("fog_to_want", 1)),
+        ("an air zone round the eye: its fog while inside (%.3f of 0.7), the level's again after (%.3f of 0.25)" % (ar.get("zone_in", 0), ar.get("zone_out", 9)),
+         abs(ar.get("zone_in", 0) - 0.7) < 0.03 and abs(ar.get("zone_out", 9) - 0.25) < 0.03),
+        ("ground mist (air_woods_mist.png): a lamp lights it more near the ground (%+.1f) than up high (%+.1f)" % (ar.get("mist_low", 0), ar.get("mist_high", 0)),
+         ar.get("mist_low", 0) > 1.0 and ar.get("mist_low", 0) > 1.5 * max(ar.get("mist_high", 0), 0.0)),
+        ("a save: the light's projector and fog energy and the environment's density go back, and come again after",
+         all(ar.get(k) is True for k in ["save_projector_back", "save_fog_energy_back", "save_env_back", "save_taken_again"])),
+        ("the air's presets in the room: one atmosphere acts and the others wait, each preset's numbers, three beams drawn, the cookies on, motes and a zone",
+         rep.get("air_one_acts") is True and rep.get("air_presets") is True and rep.get("air_beams") == 3 and rep.get("air_cookies") is True and rep.get("air_dust") is True),
+        ("a save puts the air back: the atmosphere's environment, the flashlight's fog energy", rep.get("save_air_back") is True),
     ]
     ed = editor(g, keep, env)
     checks += ed
@@ -247,12 +302,13 @@ def editor(g, keep, env):
     rep = json.loads(line[len("HSEDITOR "):])
     saved = (proj / "editor_scene.tscn").read_text(encoding="utf-8")
     made = [w for w in ['name="Beam"', 'name="Card"', 'name="Sweep"', 'name="Pattern"', 'name="Leak"', 'name="Splashes"', 'name="Box"', "light_projector", "ShaderMaterial", "hs_wet_was", "material_override = SubResource",
+                        'name="BeamCone"', 'name="Air"', 'name="Motes"', "volumetric_fog", "FogVolume",
                         "layers =", "light_cull_mask", "hs_layers_was", "hs_zone", "omni_range"] if w in saved]
     errs = [l for l in text.splitlines() if "SCRIPT ERROR" in l or "Parse Error" in l]
     if errs:
         print("\n".join(errs[:20]))
     return [
-        ("in the editor: the rain, the wet floor, the shaft, the pattern, the flicker, the CRT and a room's light zone run in the viewport (%s)" % json.dumps(rep.get("live", {})), all(rep.get("live", {}).values()) and len(rep.get("live", {})) >= 5 and rep.get("live", {}).get("crt") is True and not errs),
+        ("in the editor: the rain, the wet floor, the shaft, the pattern, the flicker, the CRT, a room's light zone, a flashlight's beam and the air run in the viewport (%s)" % json.dumps(rep.get("live", {})), all(rep.get("live", {}).values()) and len(rep.get("live", {})) >= 5 and rep.get("live", {}).get("crt") is True and rep.get("live", {}).get("beam") is True and rep.get("live", {}).get("air") is True and not errs),
         ("in the editor: saved, the file holds only what was placed (%s)" % (", ".join(made) or "nothing made"), rep.get("saved") is True and not made),
         ("in the editor: after the save the nodes are on again", rep.get("after") is True),
     ]

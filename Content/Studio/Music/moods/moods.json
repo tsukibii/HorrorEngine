@@ -1,0 +1,63 @@
+{
+ "format": "horrorstudio-moods",
+ "made": "2026-11-07",
+ "by": "tools/score/moods.mjs: the score room's cues rendered through its sampled orchestra (CC0 samples: Content/Studio/Music/samples)",
+ "moods": {
+  "calm": {
+   "cue": "close_moment",
+   "params": {
+    "len": 32
+   },
+   "seed": 3,
+   "note": "high piano notes far apart, a breath of strings, long silences",
+   "file": "calm.ogg",
+   "secs": 34.5,
+   "cue_secs": 32,
+   "gain_db": 1.46,
+   "lufs": -19.97,
+   "peak": -13.48
+  },
+  "uneasy": {
+   "cue": "house_creaks",
+   "params": {
+    "len": 36
+   },
+   "seed": 5,
+   "note": "low pizzicato taps like wood settling, tremolo swelling in and out",
+   "file": "uneasy.ogg",
+   "secs": 38.5,
+   "cue_secs": 36,
+   "gain_db": 10.39,
+   "lufs": -19.99,
+   "peak": -6.37
+  },
+  "dread": {
+   "cue": "dread_drone",
+   "params": {
+    "len": 40
+   },
+   "seed": 2,
+   "note": "a low string pedal swelling and ebbing, a dissonance creeping in, drips",
+   "file": "dread.ogg",
+   "secs": 42.5,
+   "cue_secs": 40,
+   "gain_db": 5.3,
+   "lufs": -20.05,
+   "peak": -11.51
+  },
+  "chase": {
+   "cue": "chase",
+   "params": {
+    "len": 48
+   },
+   "seed": 4,
+   "note": "driving strings and pizzicato over low piano octaves, timpani, the key climbing",
+   "file": "chase.ogg",
+   "secs": 51.83,
+   "cue_secs": 49.33,
+   "gain_db": -8.8,
+   "lufs": -20.02,
+   "peak": -12.14
+  }
+ }
+}

@@ -228,7 +228,16 @@ static func action_text(a, n: Callable = Callable()) -> String:
 		"open":
 			return cap(js(_or(g.call("to"), "open"))) + " " + n.call("thing", g.call("open"))
 		"light":
-			return (("Lights in " + n.call("thing", a["room"])) if _t(g.call("room")) else ("Light " + n.call("thing", g.call("light")))) + ": " + js(_or(g.call("set"), "on"))
+			var lx := ""
+			if g.call("set") == "dim" and a.has("to") and a["to"] != null and not (a["to"] is String and a["to"] == ""):
+				lx += " to " + js(a["to"])
+			if g.call("set") == "flicker" and _t(g.call("mode")):
+				lx += " (" + js(a["mode"]) + ")"
+			if _t(g.call("secs")):
+				lx += " for " + js(a["secs"]) + " s"
+			if _t(g.call("over")):
+				lx += ", fading over " + js(a["over"]) + " s"
+			return (("Lights in " + n.call("thing", a["room"])) if _t(g.call("room")) else ("Light " + n.call("thing", g.call("light")))) + ": " + js(_or(g.call("set"), "on")) + lx
 		"power":
 			return "The power comes back" if g.call("power") == "on" else "The power goes out"
 		"sweep":
@@ -240,8 +249,29 @@ static func action_text(a, n: Callable = Callable()) -> String:
 					bits.append("%s %s" % [kk, js(a[kk])])
 			return cap(n.call("cast", g.call("skin"))) + "'s skin: " + (", ".join(PackedStringArray(bits)) if bits.size() else "…")
 		"torch":
-			var T := {"on": "The flashlight comes on", "off": "The flashlight goes off", "flicker": "The flashlight flickers", "dead": "The flashlight dies", "works": "The flashlight works again"}
-			return T.get(str(g.call("torch")), "Flashlight: " + js(_or(g.call("torch"), "…")))
+			var T := {"on": "The flashlight comes on", "off": "The flashlight goes off", "flicker": "The flashlight flickers", "dead": "The flashlight dies", "works": "The flashlight works again",
+				"dim": "The flashlight dims", "drain": "The flashlight's battery drains"}
+			var tx: String = T.get(str(g.call("torch")), "Flashlight: " + js(_or(g.call("torch"), "…")))
+			var tv = g.call("torch")
+			if (tv == "dim" or tv == "drain") and a.has("to") and a["to"] != null and not (a["to"] is String and a["to"] == ""):
+				tx += " to " + js(a["to"])
+			if tv == "flicker" and _t(g.call("mode")):
+				tx += " (" + js(a["mode"]) + ")"
+			if _t(g.call("secs")):
+				tx += " for " + js(a["secs"]) + " s"
+			if _t(g.call("over")):
+				tx += ", over " + js(a["over"]) + " s"
+			return tx
+		"beam":
+			var BL := {"nothing": "nothing (only heard)", "backs_off": "backs off", "freezes": "freezes", "flees": "flees to a spot", "vanishes": "vanishes", "covers": "covers her eyes", "comes": "comes toward it", "charges": "charges"}
+			var bx: String = n.call("cast", g.call("beam")) + " in the flashlight's beam: " + str(BL.get(str(g.call("does")), js(_or(g.call("does"), "…"))))
+			if _t(g.call("after")):
+				bx += " after " + js(a["after"]) + " s"
+			if g.call("does") == "flees" and _t(g.call("flee")):
+				bx += " to " + n.call("thing", a["flee"])
+			if _t(g.call("near")):
+				bx += "; the lights near her " + js(a["near"]) + " m"
+			return bx
 		"state":
 			return cap(n.call("thing", g.call("state"))) + ": " + js(_or(g.call("to"), "…"))
 		"show":
@@ -253,7 +283,9 @@ static func action_text(a, n: Callable = Callable()) -> String:
 		"sound":
 			return "Sound " + js(_or(g.call("sound"), "…")) + ((" from " + n.call("thing", a["at"])) if _t(g.call("at")) else "")
 		"music":
-			return "Music: " + (js(a["music"]) if a.has("music") else "undefined")
+			return "Music: " + (js(a["music"]) if a.has("music") else "undefined") + ((" over " + js(a["secs"]) + " s") if _t(g.call("secs")) else "")
+		"hush":
+			return "Hush " + (js(a["hush"]) if a.has("hush") else "undefined") + " s (silence before a sting)" + ((", back over " + js(a["back"]) + " s") if _t(g.call("back")) else "")
 		"trick":
 			var tt := _trick_text(a, n)
 			return "Scare: " + (tt if tt != "" else js(g.call("trick")))
@@ -307,12 +339,13 @@ static func _trick_text(a: Dictionary, n: Callable) -> String:
 		"slam_behind":
 			return n.call("thing", g.call("door")) + " slams shut behind the player"
 		"lights_die":
-			return "the lights die in " + n.call("thing", g.call("room")) + ((" for " + js(a["secs"]) + " s") if _t(g.call("secs")) else "")
+			return ((n.call("thing", a["light"]) + " dies") if _t(g.call("light")) else ("the lights die in " + n.call("thing", g.call("room")))) + (", one by one toward the player" if g.call("order") == "toward" else "") + ((" for " + js(a["secs"]) + " s") if _t(g.call("secs")) else "")
 		"glimpse":
 			return "a glimpse of " + n.call("thing", g.call("figure")) + ((" (" + js(a["secs"]) + " s)") if _t(g.call("secs")) else "")
 		"jumpscare":
 			return "a jump scare: " + n.call("thing", g.call("figure")) + ((", playing " + js(a["clip"])) if _t(g.call("clip")) else "") \
-				+ ((", its face " + n.call("expr", a["expr"])) if _t(g.call("expr")) else "") + ((", with " + js(a["sound"])) if _t(g.call("sound")) else "")
+				+ ((", its face " + n.call("expr", a["expr"])) if _t(g.call("expr")) else "") + ((", with " + js(a["sound"])) if _t(g.call("sound")) else "") \
+				+ ((", after " + js(a["quiet"]) + " s of hush") if _t(g.call("quiet")) else "")
 		"swap":
 			return "while unseen, " + n.call("thing", g.call("hide")) + " becomes " + n.call("thing", g.call("show"))
 		"loop_hall":
@@ -406,7 +439,15 @@ static func trigger_text(w, n: Callable = Callable()) -> String:
 		"peeping":
 			return "the player looks through " + n.call("thing", g.call("peeping")) + "'s peephole"
 		"torch":
-			return "the player switches the flashlight " + js(_or(g.call("torch"), "…"))
+			var TT := {"low": "the flashlight runs low", "dead": "the flashlight dies", "changed": "the flashlight gets new batteries"}
+			return TT.get(str(g.call("torch")), "the player switches the flashlight " + js(_or(g.call("torch"), "…")))
+		"charge":
+			return "the flashlight's charge is under " + js(_qq(g.call("charge"), "…"))
+		"lit":
+			return "the flashlight is on " + n.call("cast", g.call("lit")) + ((" for " + js(w["secs"]) + " s") if _t(g.call("secs")) else "")
+		"flashed":
+			var tm = g.call("times")
+			return n.call("cast", g.call("flashed")) + " is flashed" + ((" " + js(tm) + " times") if (tm is float or tm is int) and float(tm) > 1 else "") + ((" within " + js(w["within"]) + " s") if _t(g.call("within")) else "")
 		"state":
 			return n.call("thing", g.call("state")) + " is " + js(_or(g.call("is"), "…"))
 		"gave":

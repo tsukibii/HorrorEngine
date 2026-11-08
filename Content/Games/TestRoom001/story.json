@@ -48,7 +48,8 @@
    ]
   },
   "look": "realism",
-  "weather": "rain"
+  "weather": "rain",
+  "tone": "room_tone_01"
  },
  "cast": {
   "aoi": {
@@ -86,7 +87,9 @@
    "torch": {
     "kelvin": 4200,
     "cone": 24,
-    "range": 16
+    "range": 16,
+    "battery": 12,
+    "low": 0.3
    }
   },
   "batteries": {
@@ -103,6 +106,10 @@
   "tee": {
    "name": "Folded tee",
    "shape": "box 0.31 0.24 0.03"
+  },
+  "spare_cells": {
+   "name": "Spare batteries",
+   "battery": 1
   }
  },
  "notes": {
@@ -347,7 +354,8 @@
        "speed": 0.5,
        "open": 0.25
       }
-     ]
+     ],
+     "tone": "ambient_wind_01"
     },
     {
      "id": "lobby",
@@ -695,7 +703,8 @@
      "look": {
       "floor": "pbr/Wood/worn_planks",
       "walls": "pbr/Plaster/stained_plaster"
-     }
+     },
+     "tone": "room_tone_03"
     },
     {
      "id": "keys",
@@ -990,6 +999,28 @@
         2.5
        ],
        "z": 2.9
+      },
+      {
+       "id": "store_lamp_back",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        0.8,
+        2.5
+       ],
+       "z": 2.9
+      },
+      {
+       "id": "store_shelf_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": false,
+       "at": [
+        2.5,
+        4.4
+       ],
+       "z": 1.9
       }
      ]
     },
@@ -2086,7 +2117,8 @@
        ],
        "rot": 180
       }
-     ]
+     ],
+     "tone": "ambient_wind_01"
     },
     {
      "id": "dark",
@@ -2143,6 +2175,27 @@
        "hidden": true
       },
       {
+       "id": "spare_pickup",
+       "shape": "box 0.06 0.04 0.02",
+       "at": [
+        3.6,
+        4.6
+       ],
+       "on": "dark_shelf",
+       "use": "pickup",
+       "item": "spare_cells",
+       "hidden": true
+      },
+      {
+       "id": "dark_aoi_spot",
+       "use": "spot",
+       "at": [
+        2.5,
+        1.6
+       ],
+       "rot": 90
+      },
+      {
        "id": "dark_figure",
        "shape": "person aoi stand",
        "at": [
@@ -2176,7 +2229,8 @@
        ],
        "z": 2.9
       }
-     ]
+     ],
+     "tone": "none"
     },
     {
      "id": "workshop",
@@ -2384,7 +2438,8 @@
        ],
        "z": 2.4
       }
-     ]
+     ],
+     "tone": "ambient_wind_01"
     },
     {
      "id": "atrium",
@@ -2551,7 +2606,8 @@
        ],
        "z": 3.8
       }
-     ]
+     ],
+     "tone": "electric_hum_02"
     },
     {
      "id": "shaft",
@@ -4380,6 +4436,13 @@
         "state": "power_candle",
         "is": "out"
        }
+      },
+      {
+       "todo": "t4_dim",
+       "text": "Watch the bulb sag and come back",
+       "ticks": {
+        "flag": "dim_back"
+       }
       }
      ]
     },
@@ -4423,6 +4486,39 @@
      ]
     },
     {
+     "id": "b_power_dim",
+     "when": {
+      "ticked": "t4_candle"
+     },
+     "do": [
+      {
+       "light": "power_bulb",
+       "set": "dim",
+       "to": 0.2,
+       "secs": 1.5,
+       "over": 0.3
+      },
+      {
+       "think": "The bulb sags. Then it's back."
+      },
+      {
+       "wait": 2.3
+      },
+      {
+       "light": "power_lamp",
+       "set": "dim",
+       "to": 0.5
+      },
+      {
+       "light": "power_lamp",
+       "set": "on"
+      },
+      {
+       "flag": "dim_back"
+      }
+     ]
+    },
+    {
      "id": "b_power_done",
      "when": {
       "ticked": true
@@ -4451,11 +4547,6 @@
      "do": [
       {
        "objective": "5 · In your hands: the inventory (E), carrying, putting down (G)"
-      },
-      {
-       "trick": "lights_die",
-       "room": "store",
-       "secs": 2
       },
       {
        "todo": "t5_a",
@@ -4492,6 +4583,21 @@
        "ticks": {
         "carrying": "store_plush"
        }
+      }
+     ]
+    },
+    {
+     "id": "b_store_dark",
+     "when": {
+      "enter": "store"
+     },
+     "do": [
+      {
+       "trick": "lights_die",
+       "room": "store",
+       "secs": 2,
+       "order": "toward",
+       "gap": 0.8
       }
      ]
     },
@@ -5046,6 +5152,23 @@
       },
       {
        "think": "Better. Time to go."
+      },
+      {
+       "show": "spare_pickup"
+      },
+      {
+       "todo": "t10_low",
+       "text": "Keep it on: it runs low",
+       "ticks": {
+        "torch": "low"
+       }
+      },
+      {
+       "todo": "t10_change",
+       "text": "Let it die: the spare set changes itself",
+       "ticks": {
+        "torch": "changed"
+       }
       }
      ]
     },
@@ -5078,11 +5201,62 @@
      ]
     },
     {
+     "id": "b_dark_aoi",
+     "when": {
+      "ticked": "t10_change"
+     },
+     "do": [
+      {
+       "behave": "aoi",
+       "as": "idle",
+       "at": "dark_aoi_spot"
+      },
+      {
+       "beam": "aoi",
+       "does": "backs_off",
+       "after": 0.4,
+       "dist": 1.2,
+       "keep": 2,
+       "near": 2.5,
+       "near_torch": "flicker"
+      },
+      {
+       "think": "Aoi? In the dark. She hates the light."
+      },
+      {
+       "todo": "t10_lit",
+       "text": "Shine the flashlight on Aoi: she backs off",
+       "ticks": {
+        "lit": "aoi",
+        "secs": 0.5
+       }
+      },
+      {
+       "todo": "t10_flash",
+       "text": "Flash her twice",
+       "ticks": {
+        "flashed": "aoi",
+        "times": 2,
+        "within": 4
+       }
+      }
+     ]
+    },
+    {
      "id": "b_dark_done",
      "when": {
       "ticked": true
      },
      "do": [
+      {
+       "beam": "aoi",
+       "does": "nothing",
+       "near": 0
+      },
+      {
+       "behave": "aoi",
+       "as": "off"
+      },
       {
        "untodo": true
       },
@@ -5328,6 +5502,9 @@
        "untodo": true
       },
       {
+       "hush": 1
+      },
+      {
        "music": "calm"
       },
       {
@@ -5385,11 +5562,9 @@
        "at": "atr_figure"
       },
       {
-       "wait": 1
-      },
-      {
        "trick": "jumpscare",
-       "figure": "atr_figure"
+       "figure": "atr_figure",
+       "quiet": 1.5
       },
       {
        "behave": "aoi",

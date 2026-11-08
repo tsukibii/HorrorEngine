@@ -7,9 +7,10 @@ import { part, names, settingsOf, KINDS } from "./parts.js";
 import { matches } from "./conditions.js";
 import { runAll } from "./actions.js";
 import { playShelf, shelfName } from "../sfx.js";
+import { BEDS } from "./beds.js";                     // the music's mood and the room's tone (HORROR_TODO 13.1)
 import { interactableOf } from "./interactables.js";
 import "./abilities.js";
-import { flickerK, flickerOn } from "../../shared/flicker.js";
+import { flickerK, flickerOn, MODES } from "../../shared/flicker.js";
 import { castSteps } from "./steps.js";
 import { Torch } from "./torch.js";
 import "./clean.js";
@@ -19,7 +20,7 @@ import { latchFor, turnBar } from "./latch.js";
 import { Examine } from "./examine.js";
 import { Book } from "./book.js";
 import { scanParts, infoOf, applyParts, partSounds, Movers } from "./openable.js";
-import { behaviourOf } from "./behaviours.js";
+import { behaviourOf, turnTo } from "./behaviours.js";
 import * as M from "../motion.js";
 import { Hud, besideAt, setName, playerName } from "./hud.js";
 import { Todo } from "./todo.js";
@@ -39,6 +40,14 @@ const DROP_AHEAD = 0.55, ICON = 112;               // G sets a thing down this f
 export const SIGHT = { angle: 90, range: 9, crouched: 0.55, meter: 1.2, drain: 1.5, calm: 3 };
 const UP = new THREE.Vector3(0, 1, 0), DOWN = new THREE.Vector3(0, -1, 0);
 const ELECTRIC = l => !["candle", "fire"].includes(l.userData.kind);   // a power cut darkens these
+const DIM = 0.35;                                  // a dim's brightness when the story gives no `to`
+// what someone does in the flashlight's beam (FLASHLIGHT_PLAN §2b): play.gd's BEAM
+const BEAM = { does: "nothing", after: 0.4, bright: 0.3, dist: 2.5, speed: 1.6, keep: 4, near: 0, near_torch: "none", near_lamps: "none" };
+// a light's own flicker kept, its lasting state's (bFlicker, bMode), the story's timed changes over it (play.gd light_own)
+const lightOwn = u => { u.own = { flicker: u.flicker || 0, mode: u.mode || null }; u.bFlicker = u.flicker || 0; u.bMode = u.mode || null; u.layers = []; u.fadeTo = null; u.dim = null; u.s = u.on ? 1 : 0; };
+const smooth01 = x => { const t = Math.max(0, Math.min(1, x)); return t * t * (3 - 2 * t); };
+// a timed change's weight now: 0 before and after, 1 while it holds, smoothed over its fade both ways (play.gd layer_w)
+const layerW = (L, T) => smooth01(Math.min(L.fade > 0 ? (T - L.t0) / L.fade : (T >= L.t0 ? 1 : 0), L.fade > 0 ? (L.end + L.fade - T) / L.fade : (T < L.end ? 1 : 0)));
 const flagsHold = (ifs, flags) => (ifs || []).every(f => f.startsWith("!") ? !flags.has(f.slice(1)) : flags.has(f));
 
 const SUPPORT = 0.06;                                  // the feet's reach out from the centre (groundAt)
@@ -57,6 +66,7 @@ export class PlayRuntime {
     this.player = { pos: new THREE.Vector3(), yaw: 0, pitch: 0, eye: EYES.stand, crouched: false };
     this.keys = {}; this.ended = {}; this.clock = 0; this.inside = new Set(); this.doors = {}; this.waits = [];
     this.npcs = {};                                 // cast id -> what they're doing in play (behave), kept across stitches
+    this.beds = BEDS; BEDS.game = opts.game || (story.game || {}).id || null; this.roomTones = {};
     this.files = opts.files || {};
     this.lives = (this.run && this.run.lives) || opts.lives || null;   // the little things' states (life.js States), kept with the run
     this.livesSeen = this.lives ? this.lives.changes.length : 0; this.clock0 = 0;
@@ -136,11 +146,13 @@ export class PlayRuntime {
     if (first || this.stage.level !== level || !this.stage.world.children.length) this.stage.setWorld(this.plan, this.story, level);
     this.stage.setFree(false);
     this.level = level; this.world = this.stage.world.children[0]; this.byId = {}; this.doors = {};
+    this.roomTones = {}; const gtone = (this.story.game || {}).tone;   // its rooms' tones (a room's `tone`, else game.tone): the beds play the one you're in
+    for (const rm of ((this.story.levels || {})[level] || {}).rooms || []) if (rm && rm.id) this.roomTones[rm.id] = "tone" in rm ? rm.tone : gtone;
     const kept = (this.kept = this.kept || {})[level] = this.kept[level] || { vis: {}, doors: {}, bodies: {} };
     kept.opened = kept.opened || {}; kept.inside = kept.inside || {}; kept.unlocked = kept.unlocked || {};   // parts that open, what's in which container, locks met
     this.heldMove = null; this.moveables = []; this.containers = [];
     for (const o of this.stage.world.children) if (o.userData && o.userData.id) this.byId[o.userData.id] = o;
-    for (const l of this.stage.lights) { this.byId[l.userData.id] = l; l.userData.on = l.intensity > 0; if (!l.userData.base) l.userData.base = LIT; }
+    for (const l of this.stage.lights) { this.byId[l.userData.id] = l; l.userData.on = l.intensity > 0; if (!l.userData.base) l.userData.base = LIT; lightOwn(l.userData); }
     for (const m of this.stage.world.children) if (m.userData && m.userData.kind === "door") {
       const p = m.userData.piece || {}, by = (p.tags || []).find(t => t.startsWith("locked_by:"));
       const d = this.doors[m.userData.id] = kept.doors[m.userData.id] || { open: false, locked: !!by, by: by ? by.slice(10) : null, deg: 0, from: 0, to: 0, t: 1, secs: DOOR_SECS };
@@ -324,16 +336,19 @@ export class PlayRuntime {
   // the flashlight (torch.js): the item with `torch` the player has; F switches it (heard as {type: "torch", on}), the
   // story's `torch` sets it. Dead, F only clicks
   isTorch(item) { return !!((this.story.items || {})[item] || {}).torch; }
+  isBattery(item) { const b = ((this.story.items || {})[item] || {}).battery; return typeof b === "number" && b > 0; }   // batteries for the flashlight (how full a set)
+  batteries() { return [...this.items].filter(id => this.isBattery(id)); }   // the sets in the pocket, in the order they were picked up
+  torchCharge() { return this.torchLight ? (this.torchLight.battery(), this.torchLight.chargeNow()) : 1; }   // 0..1; 1 on no battery
   torchItem() { for (const id of this.items) if (this.isTorch(id)) return this.story.items[id]; return null; }
   torchOf() { if (!this.torchLight) { this.torchLight = new Torch(this); this.hud.hintKey("F", "flashlight"); } return this.torchLight; }
   torchSwitch() {
     if (!this.torchItem() || this.player.sleeping || this.inChapter) return;
     const t = this.torchOf(); this.shelfSound(t.on ? "flashlight_02" : "flashlight_01");
-    if (t.dead) { this.hud.log("the flashlight is dead"); return; }
+    if (t.dead || t.changing) { this.hud.log("the flashlight is dead"); return; }
     t.on = !t.on; t.flick = 0;
     this.emit({ type: "torch", on: t.on });
   }
-  torchSet(v) { if (!this.torchItem() && (v === "on" || v === "flicker")) { this.hud.log(`torch ${v}: the player has no flashlight`); return; } this.torchOf().set(v); }
+  torchSet(v, a = {}) { if (!this.torchItem() && (v === "on" || v === "flicker")) { this.hud.log(`torch ${v}: the player has no flashlight`); return; } this.torchOf().set(v, a); }
   nameOf(t) { const p = t.userData.piece || {}, d = p.d || {}; return d.name || (p.tags || []).find(x => x.startsWith("tag:"))?.slice(4).replace(/_/g, " ") || t.userData.id.replace(/_/g, " "); }
   lineText(id) { const l = (this.story.lines || {})[id]; return l ? l.en || l.ja : null; }
   // a story sound: off the Studio's shelf when its file is sfx/<name>, placed at `at` (a thing or a cast member) when
@@ -342,6 +357,20 @@ export class PlayRuntime {
     const s = (this.story.sounds || {})[id], n = s && shelfName(s.file);
     this.hud.log(`♪ ${id}${at ? " at " + at : ""}${n ? "" : " (the game's own file: in Unreal)"}`);
     if (n) this.shelfSound(n, at);
+  }
+  music(m, a = {}) {                                  // the story's `music`: the mood's bed, kept in the run (a save comes back to it)
+    const to = !m || m === "silence" ? null : String(m);
+    if (this.run) this.run.music = to;
+    this.beds.music(to, +(a.secs ?? 2)); this.hud.log(`music: ${to || "silence"}`);
+  }
+  hush(a) {                                           // the story's `hush`: its seconds, to wait out before the sting
+    const secs = +(a.hush ?? a.quiet ?? 1.5); this.hud.log(`hush ${secs.toFixed(1)} s`);
+    return this.beds.hush(secs, +(a.back ?? 6));
+  }
+  toneTick() {                                        // the room you're in its tone, crossfading as you walk between them
+    let want = (this.story.game || {}).tone;
+    for (const id of this.inside) if (id in this.roomTones) { want = this.roomTones[id]; break; }
+    this.beds.roomTone(want);
   }
   shelfSound(name, at, db = 0) {
     if (!this.active) return;
@@ -401,22 +430,64 @@ export class PlayRuntime {
     const k = (this.kept = this.kept || {})[level] = this.kept[level] || { vis: {}, doors: {}, bodies: {} }, on = set !== "off";
     if (on === (k.power !== false)) return;
     k.power = on; this.hud.log(on ? "the power is back" : "the power's out");
-    if (on && level === this.level) for (const l of this.stage.lights) if (ELECTRIC(l)) {   // flickering up for a moment, then its own flicker again
-      const u = l.userData; if (u.flicker0 === undefined) u.flicker0 = u.flicker || 0;
-      u.flicker = Math.max(u.flicker0, 0.8); u.surge = this.clock + 0.9; flickerOn(u, this.clock);   // a tube's starter clicks
+    if (on && level === this.level) for (const l of this.stage.lights) if (ELECTRIC(l)) {   // flickering up for a moment (lightK), then its own flicker again
+      const u = l.userData; u.surge = this.clock + 0.9; flickerOn(u, this.clock);   // a tube's starter clicks
     }
     this.emit({ type: "power", on });
   }
-  light(id, room, set) {
-    const ls = id ? [this.byId[id]].filter(Boolean) : this.stage.lights.filter(l => l.userData.room === room);
-    for (const l of ls) {
-      const was = l.userData.on;
-      if (set === "toggle") l.userData.on = !l.userData.on;
-      else if (set === "on" || set === "off") l.userData.on = set === "on";
-      else if (set === "flicker") { l.userData.on = true; l.userData.flicker = Math.max(0.6, l.userData.flicker || 0); }
-      else if (set === "dim") { l.userData.on = true; l.userData.dim = 0.35; }
-      if (l.userData.on && !was) flickerOn(l.userData, this.clock);   // switched on: a tube stutters on
+  // the ids' lights: one, or every light in a room
+  lightsOf(id, room) { return id ? [this.byId[id]].filter(l => l && l.isLight) : this.stage.lights.filter(l => l.userData.room === room); }
+  // the story's `light` (STORY_FORMAT §4), or a switch's `toggle`: play.gd's light, the same rules. Without `secs` the
+  // change lasts (the light's own state; the story's timed changes on it go, a toggle leaves them); with `secs` it's
+  // laid over the light's own state and goes by itself; `on` and `normal` bring back its own brightness and flicker
+  light(id, room, set, o = {}) {
+    const secs = +o.secs || 0, fade = Math.max(0, +o.over || 0), to = Math.max(0, Math.min(1, o.to !== undefined && o.to !== null ? +o.to : DIM));
+    const mode = MODES.includes(o.mode) ? o.mode : null;
+    for (const l of this.lightsOf(id, room)) {
+      const u = l.userData, was = u.on;
+      if (secs > 0) { const t0 = this.clock + Math.max(0, +o.delay || 0); u.layers.push({ set, to, mode, t0, end: t0 + secs, fade }); continue; }
+      if (set !== "toggle") u.layers = [];
+      if (fade > 0) u.fadeTo = { from: u.s || 0, t0: this.clock, secs: fade };
+      if (set === "toggle") u.on = !u.on;
+      else if (set === "on" || set === "normal") { if (set === "on") u.on = true; u.dim = null; u.bFlicker = u.own.flicker; u.bMode = u.own.mode; }
+      else if (set === "off") u.on = false;
+      else if (set === "flicker") { u.on = true; u.bFlicker = Math.max(0.6, u.bFlicker || 0); if (mode) u.bMode = mode; }
+      else if (set === "dim") { u.on = true; u.dim = to; }
+      if (u.on && !was) flickerOn(u, this.clock);   // switched on: a tube stutters on
     }
+  }
+  // the story's `lights_die` (TRICKS.md §2): out for `secs`, back as they were; `order: "toward"` one by one toward the
+  // player, `gap` s apart, the farthest first, all back together `secs` after the last. Its seconds (play.gd's)
+  lightsDie(a) {
+    const secs = a.secs !== undefined && a.secs !== null ? +a.secs : 1, ls = this.lightsOf(a.light || null, a.room);
+    if (a.order !== "toward" || ls.length < 2) { this.light(a.light || null, a.room, "off", { secs }); return secs; }
+    const gap = a.gap !== undefined && a.gap !== null ? +a.gap : 0.4, me = this.player.pos;
+    ls.sort((x, y) => y.position.distanceTo(me) - x.position.distanceTo(me));
+    ls.forEach((l, i) => this.light(l.userData.id, null, "off", { secs: secs + gap * (ls.length - 1 - i), delay: gap * i }));
+    return secs + gap * (ls.length - 1);
+  }
+  // the multiplier on a light's energy now (play.gd's light_k): its steady brightness from its own state, a lasting
+  // change's fade and the story's timed changes over it, times its flicker; the amount and mode kept in flicker, mode
+  lightK(u, T) {
+    const litOk = this.powered() || u.kind === "candle" || u.kind === "fire", ownS = litOk ? (u.dim !== null && u.dim !== undefined ? u.dim : 1) : 0;
+    let s = u.on ? ownS : 0;
+    if (u.fadeTo) { const x = (T - u.fadeTo.t0) / Math.max(0.001, u.fadeTo.secs); if (x >= 1) u.fadeTo = null; else s = u.fadeTo.from + (s - u.fadeTo.from) * smooth01(x); }
+    let amt = u.bFlicker || 0, mode = u.bMode;
+    if (u.surge) { if (T >= u.surge) u.surge = null; else amt = Math.max(amt, 0.8); }
+    const keep = [];
+    for (const L of u.layers) {
+      if (T >= L.end + L.fade) { if (L.set === "off" && u.on) flickerOn(u, T); continue; }   // back after the dark: a tube stutters on
+      keep.push(L);
+      const w = layerW(L, T); if (w <= 0) continue;
+      const mix = v => { s = s + (v - s) * w; };
+      if (L.set === "off") mix(0);
+      else if (L.set === "on") mix(ownS);
+      else if (L.set === "dim") mix(litOk ? L.to : 0);
+      else if (L.set === "flicker") { mix(ownS); amt = amt + (Math.max(0.6, amt) - amt) * w; if (L.mode && w >= 0.5) mode = L.mode; }
+      else if (L.set === "normal") { mix(u.on && litOk ? 1 : 0); amt = amt + (u.own.flicker - amt) * w; if (w >= 0.5) mode = u.own.mode; }
+    }
+    u.layers = keep; u.s = s; u.flicker = amt; u.mode = mode;
+    return s * flickerK(u, T);
   }
   wait(secs) { return new Promise(res => this.waits.push({ at: this.clock + secs, res })); }
   anim(secs, fn) { return new Promise(done => this.anims.push({ t: 0, secs: Math.max(0.01, secs), fn, done })); }   // fn(0..1) each frame, on the game's clock
@@ -475,8 +546,8 @@ export class PlayRuntime {
     const id = t.userData.id, d = (t.userData.piece || {}).d || {}, kept = this.kept[this.level], back = (kept.brought || {})[id];
     if (this.inv.has(id)) return;
     if (t.userData.in) { const from = t.userData.in; this.containDetach(t); this.emit({ type: "taken", id, from }); }   // out of the container it was in
-    if (d.item && this.isTorch(d.item)) {             // a flashlight: into the pocket (F), not the row
-      this.setVisible(id, false); delete kept.bodies[id]; this.give(d.item); this.torchOf();
+    if (d.item && (this.isTorch(d.item) || this.isBattery(d.item))) {   // a flashlight (F) or its batteries: into the pocket, not the row
+      this.setVisible(id, false); delete kept.bodies[id]; this.give(d.item); if (this.isTorch(d.item)) this.torchOf();
       this.emit({ type: "pickup", item: d.item }); return;
     }
     const src = t.clone(); delete src.userData.mid;
@@ -737,9 +808,9 @@ export class PlayRuntime {
   drawNpcs(dt) {
     const lib = this.stage.lib, X = new THREE.Vector3(1, 0, 0);
     for (const n of Object.values(this.npcs)) {
-      const b = behaviourOf(n.as); if (b && b.update) b.update(n, this, dt, n.s);
+      const b = behaviourOf(n.as); if (b && b.update && !this.beamHold(n, dt)) b.update(n, this, dt, n.s);   // (the light on her holds it: her `beam`)
       const f = this.stage.cast[n.cid]; if (!f) continue;
-      f.group.visible = !!n.pos && n.level === this.level;
+      f.group.visible = !!n.pos && n.level === this.level && !n.vanished;
       if (!f.group.visible) continue;
       f.group.position.copy(n.pos); f.group.rotation.y = (n.yaw + 90) * Math.PI / 180;
       const h = +((this.story.cast || {})[n.cid] || {}).height || 1.7;
@@ -753,6 +824,130 @@ export class PlayRuntime {
       p.q.spine_02.multiply(new THREE.Quaternion().setFromAxisAngle(X, Math.sin(this.clock * 2.2) * 0.012));   // breathing
       f.update(M.fk(lib, p, h).pos);
     }
+  }
+
+  // ---- what feels the flashlight's beam (FLASHLIGHT_PLAN §2): play.gd's beam_watch, the same rules ---------------
+  // each cast member (and each thing a lit or flashed trigger names) against the beam every frame: its reach, its cone
+  // (the spill a fifth), the fall-off, a clear way to her chest or head; her `beam` says what she does in it
+  beamCfg(cid) {
+    const b = ((this.story.cast || {})[cid] || {}).beam, o = (this.beamOver || {})[cid];
+    if ((!b || typeof b !== "object") && !o) return null;
+    return Object.assign({}, BEAM, typeof b === "object" ? b : {}, o || {});
+  }
+  beamSet(cid, a) {                                 // the story's `beam`: her settings from now (a field left out stays)
+    this.beamOver = this.beamOver || {};
+    const cur = Object.assign({}, this.beamOver[cid] || {}); for (const [k, v] of Object.entries(a)) if (k !== "beam") cur[k] = v;
+    this.beamOver[cid] = cur;
+    const b = (this.beamSt || {})[cid]; if (b && b.react) this.beamEnd(cid, false);
+  }
+  beamAt(p) {                                       // the beam's strength at a point, 0..1
+    const t = this.torchLight; if (!t || !t.on || this.player.peeping || !t.from || !(t.k > 0)) return 0;
+    const d = p.clone().sub(t.from), dist = d.length(); if (dist < 0.01 || dist > t.reachM) return 0;
+    const ang = Math.acos(Math.max(-1, Math.min(1, t.aim.dot(d.clone().divideScalar(dist))))) * 180 / Math.PI;
+    const cone = ang <= t.cone / 2 ? 1 : ang <= t.spillA / 2 ? 0.2 : 0; if (!cone) return 0;
+    const fall = dist <= t.reachM / 3 ? 1 : Math.max(0, Math.min(1, 1 - (dist - t.reachM / 3) / (t.reachM * 2 / 3)));
+    this.ray.set(t.from, d.clone().divideScalar(dist)); this.ray.far = dist;
+    const hit = this.ray.intersectObjects(this.blocks(), false)[0];
+    if (hit && hit.distance < dist - 0.25) return 0;
+    return cone * fall * Math.min(1, t.k);
+  }
+  litNow(id) { const b = (this.beamSt || {})[id]; return b ? b.lit : 0; }
+  litFor(id) { const b = (this.beamSt || {})[id]; return b ? b.litFor : 0; }
+  flashes(id, within) { const b = (this.beamSt || {})[id]; return b ? b.flashes.filter(t => this.clock - t <= within).length : 0; }
+  beamFeel(id, lit, bright, dt) {
+    const S = this.beamSt = this.beamSt || {}, b = S[id] = S[id] || { lit: 0, litFor: 0, prev: false, flashes: [], react: null, waitUnlit: false };
+    const on = lit >= bright; b.lit = lit; b.litFor = on ? b.litFor + dt : 0;
+    if (on && !b.prev) { b.flashes.push(this.clock); if (b.flashes.length > 12) b.flashes.shift(); this.emit({ type: "flashed", who: id }); }   // the beam landed on it
+    b.prev = on; if (!on) b.waitUnlit = false;
+    return b;
+  }
+  litThings() {                                     // the things the story's lit and flashed triggers name (not the cast)
+    this.litIds = new Set(); const txt = JSON.stringify(this.story);
+    for (const m of txt.matchAll(/"(?:lit|flashed)":\s*"([^"]+)"/g)) if (!(this.story.cast || {})[m[1]]) this.litIds.add(m[1]);
+  }
+  beamWatch(dt) {
+    if (!this.litIds) this.litThings();
+    let tk = 1; const lk = {};
+    for (const [cid, n] of Object.entries(this.npcs)) {
+      const f = this.stage.cast[cid], cfg = this.beamCfg(cid), here = !!n.pos && n.level === this.level && !!f && f.group.visible;
+      let lit = 0;
+      if (here) { const h = +((this.story.cast || {})[cid] || {}).height || 1.7; lit = Math.max(this.beamAt(n.pos.clone().setY(n.pos.y + h * 0.7)), this.beamAt(n.pos.clone().setY(n.pos.y + h * 0.93))); }
+      const b = this.beamFeel(cid, lit, cfg ? +cfg.bright : BEAM.bright, dt);
+      if (!cfg) continue;
+      if (!b.react && !b.waitUnlit && cfg.does !== "nothing" && b.litFor >= +cfg.after && here) this.beamStart(cid, n, cfg);
+      else if (b.react && b.react.cfg.does === "flees") {
+        if (lit >= +cfg.bright) b.react.lastLit = this.clock;
+        if (n.st.arrived && this.clock - b.react.lastLit >= +cfg.keep) this.beamEnd(cid, true);
+      }
+      const near = +cfg.near;
+      if (here && near > 0) {                         // her presence on the lights round her
+        let seed = 0; for (const ch of cid) seed = (seed * 31 + ch.charCodeAt(0)) & 0xffff;
+        if (cfg.near_torch !== "none" && this.torchLight && this.torchLight.on) tk *= this.nearK(cfg.near_torch, Math.max(0, Math.min(1, 1 - n.pos.distanceTo(this.player.pos) / near)), cid + "/torch", seed);
+        if (cfg.near_lamps !== "none") for (const l of this.stage.lights) {
+          const pr = Math.max(0, Math.min(1, 1 - l.position.distanceTo(n.pos) / near));
+          if (pr > 0) lk[l.userData.id] = (lk[l.userData.id] || 1) * this.nearK(cfg.near_lamps, pr, cid + "/" + l.userData.id, seed + 7);
+        }
+      }
+    }
+    for (const id of this.litIds) { const o = this.byId[id]; this.beamFeel(id, o && o.visible ? this.beamAt(o.getWorldPosition(new THREE.Vector3())) : 0, BEAM.bright, dt); }
+    this.nearTorchK = tk; this.nearLightK = lk;
+  }
+  nearK(how, pr, key, seed) {                       // a light's multiplier from someone near: flicker (a dying tube's), dim, die
+    if (how === "flicker") { const N = this.nearFl = this.nearFl || {}; const u = N[key] = N[key] || { mode: "dying", interval: 1.2, seed, flicker: 0 }; u.flicker = pr; return flickerK(u, this.clock); }
+    if (how === "dim") return 1 - 0.7 * pr;
+    if (how === "die") return Math.max(0, Math.min(1, 1 - pr * 1.6));
+    return 1;
+  }
+  beamStart(cid, n, cfg) {                          // the light on her long enough: what she does, her sound and face
+    const b = this.beamSt[cid], r = { cfg, t0: this.clock, lastLit: this.clock, moved: 0 };
+    b.react = r;
+    if (cfg.sound) this.sound(cfg.sound, cid);
+    if (cfg.face) runAll([{ expr: cfg.face, who: cid }], this);
+    this.hud.log(`${cid} in the light: ${cfg.does}`);
+    if (cfg.does === "covers") { n.holdUntil = this.clock + +cfg.keep; b.react = null; b.waitUnlit = true; }   // held where she is (the desk plays no clip for it)
+    else if (cfg.does === "flees") {
+      if (!cfg.flee || !this.plan.things[cfg.flee]) { this.hud.log(`${cid} flees, but has no flee spot`); b.react = null; b.waitUnlit = true; return; }
+      r.prev = { as: n.as, s: Object.assign({}, n.s) };
+      const g = behaviourOf("go"); n.as = "go"; n.s = settingsOf(g, { to: cfg.flee, then: "idle", speed: +cfg.speed }); n.st = {}; g.start(n, this, n.s);
+    } else if (cfg.does === "vanishes") n.vanished = true;
+  }
+  beamEnd(cid, resume) {                            // over: her behaviour again from where she is
+    const b = this.beamSt[cid], r = b.react; b.react = null; b.waitUnlit = true;
+    const n = this.npcs[cid]; if (!n || !r) return;
+    delete n.vanished;
+    if (r.prev) { n.as = r.prev.as; n.s = r.prev.s; }
+    if (resume) { n.st = {}; const bh = behaviourOf(n.as); if (bh) bh.start(n, this, n.s); }
+  }
+  beamHold(n, dt) {                                 // while the light holds her: true, her behaviour waits
+    if (n.holdUntil) { if (this.clock < n.holdUntil) { n.walking = false; return true; } delete n.holdUntil; }
+    const b = (this.beamSt || {})[n.cid]; if (!b || !b.react) return false;
+    const r = b.react, cfg = r.cfg, does = cfg.does; if (does === "flees") return false;
+    const lit = b.lit >= +cfg.bright; if (lit) r.lastLit = this.clock;
+    const over = !lit && this.clock - r.lastLit >= +cfg.keep;
+    n.walking = false;
+    if (["backs_off", "comes", "charges"].includes(does) && n.pos) {
+      const away = does === "backs_off", to = this.player.pos.clone().sub(n.pos).setY(0), dist = to.length();
+      if (dist > 0.01) turnTo(n, Math.atan2(-to.z, to.x) * 180 / Math.PI, dt);   // facing the player all the while
+      const go = (away && r.moved < +cfg.dist && !over) || (!away && lit && dist > (does === "charges" ? 0.8 : 1.3));
+      if (go && dist > 0.01) {
+        const dir = to.clone().divideScalar(dist).multiplyScalar(away ? -1 : 1);
+        let step = +cfg.speed * (does === "charges" ? 2 : 1) * dt; if (away) step = Math.min(step, +cfg.dist - r.moved);
+        this.ray.set(n.pos.clone().setY(n.pos.y + 0.9), dir); this.ray.far = step + 0.35;
+        if (!this.ray.intersectObjects(this.blocks(), false)[0]) { n.pos.addScaledVector(dir, step); r.moved += step; n.walking = true; }
+      }
+      if (does === "charges" && dist < 0.9) { this.beamEnd(n.cid, true); this.caught(n.cid, null); return true; }
+    }
+    if (over) { this.beamEnd(n.cid, does !== "freezes"); return false; }
+    return true;
+  }
+  torchSeen(n) {                                    // the flashlight seen by her (her sight's `torch`): the light gives you away
+    const c = this.sightOf(n), t = this.torchLight;
+    if (!c || !(+c.torch > 0) || !n.pos || n.level !== this.level || !t || !t.on || !(t.k > 0.05) || !t.from) return false;
+    const h = +((this.story.cast || {})[n.cid] || {}).height || 1.7, eye = n.pos.clone().setY(n.pos.y + h * 0.93), d = t.from.clone().sub(eye), dist = d.length();
+    if (dist > c.range || dist < 0.01) return false;
+    this.ray.set(eye, d.clone().divideScalar(dist)); this.ray.far = dist;
+    const hit = this.ray.intersectObjects(this.blocks(), false)[0];
+    return !(hit && hit.distance < dist - 0.3);
   }
 
   // ---- being seen (GAMEPLAY_PLAN §3): a cast member who `sees` fills the suspicion meter while the player is in her
@@ -773,8 +968,10 @@ export class PlayRuntime {
   }
   watch(dt) {
     if (this.calm > 0) { this.calm -= dt; this.suspicion = Math.max(0, this.suspicion - dt / SIGHT.drain); this.hud.seen(this.suspicion); return; }
-    const by = Object.values(this.npcs).find(n => this.sees(n));
-    if (by) { this.suspicion += dt / this.sightOf(by).meter; if (this.suspicion >= 1) return this.caught(by.cid, null); }
+    let by = Object.values(this.npcs).find(n => this.sees(n)), rate = 1;
+    if (by && this.torchSeen(by)) rate = Math.max(1, +this.sightOf(by).torch);   // seen with the light on: at least her `torch`'s rate
+    if (!by) { by = Object.values(this.npcs).find(n => this.torchSeen(n)); if (by) rate = +this.sightOf(by).torch; }   // only the light gives you away
+    if (by) { this.suspicion += dt / this.sightOf(by).meter * rate; if (this.suspicion >= 1) return this.caught(by.cid, null); }
     else this.suspicion = Math.max(0, this.suspicion - dt / SIGHT.drain);
     this.hud.seen(this.suspicion);
   }
@@ -1128,7 +1325,8 @@ export class PlayRuntime {
     if (this.held) return;
     this.held = true; this.busy = true; this.keys = {};
     if (document.pointerLockElement === this.box) document.exitPointerLock();
-    const v = await pauseMenu(this.hud, { game: this.gameTitle(), where: this.stitchTitle, secs: this.run ? this.run.secs + this.clock : this.clock, torch: !!this.torchItem() });
+    const v = await pauseMenu(this.hud, { game: this.gameTitle(), where: this.stitchTitle, secs: this.run ? this.run.secs + this.clock : this.clock, torch: !!this.torchItem(),
+      battery: this.torchLight && (this.torchLight.battery(), this.torchLight.onBattery()) ? { charge: this.torchLight.charge, sets: this.batteries().length, change: () => this.torchLight.change() } : null });
     this.held = false; this.busy = false; this.last = this.resumed = performance.now();
     if (v && v.quit) { if (this.opts.quit) this.opts.quit(v.quit); return; }
     if (v === "escaped") return;                     // closed by Esc: asking for the lock now, the browser would take the same Esc as leaving it
@@ -1176,6 +1374,7 @@ export class PlayRuntime {
   }
   tick(dt) {
     this.clock += dt;
+    this.beds.drive(dt);                               // the music and the room tone on the game's clock
     if (this.lives) { this.lives.advance(this.now()); this.lifeEvents(); }
     if (this.faces) this.faces.tick(dt);                // the cast's expressions (faces.js: `expr`)
     const p = this.player;
@@ -1211,6 +1410,7 @@ export class PlayRuntime {
       if (now && !was) { this.inside.add(t.id); this.emit({ type: "enter", id: t.id }); }
       if (!now && was) { this.inside.delete(t.id); this.emit({ type: "exit", id: t.id }); }
     }
+    this.toneTick();
     if (this.timerLeft !== null && this.timerLeft !== undefined && this.end) {
       this.timerLeft -= dt; this.hud.timer(this.timerLeft);
       if (this.timerLeft <= 0) { const to = this.timerFail; this.end({ to, timeout: true }); }
@@ -1223,14 +1423,13 @@ export class PlayRuntime {
     c.updateMatrixWorld();                               // the cursor's ray (and the hands) from where the eye is now, not the last frame
     const T = this.clock;
     for (const l of this.stage.lights) {
-      const u = l.userData; let k = u.on && (this.powered() || !ELECTRIC(l)) ? (u.dim || 1) : 0;
-      if (u.surge && T >= u.surge) { u.flicker = u.flicker0 || 0; delete u.surge; }   // back after the power's flicker-up
-      k *= flickerK(u, T);                                                           // its mode (tools/shared/flicker.js)
+      const u = l.userData, k = this.lightK(u, T) * ((this.nearLightK || {})[u.id] ?? 1);   // its state, the story's changes over it, its flicker by mode (tools/shared/flicker.js), someone near it
       l.intensity = (u.base || 1) * k;
     }
     this.stage.sweepTick(dt);                            // the windows' headlight sweeps
     this.handTick(dt);
     if (this.torchLight) { if (!this.torchItem()) this.torchLight.on = false; this.ability("torch", "update", dt); }   // taken away: off
+    this.beamWatch(dt);                                // what feels the beam (FLASHLIGHT_PLAN §2)
     for (const a of [...this.anims]) { a.t += dt; const k = Math.min(1, a.t / a.secs); a.fn(k); if (k >= 1) { this.anims.splice(this.anims.indexOf(a), 1); a.done(); } }
     this.drawNpcs(dt);
     this.rainWet(dt);

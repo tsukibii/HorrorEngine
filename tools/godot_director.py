@@ -49,8 +49,10 @@ from storykit import godot as G  # noqa: E402
 DIRECTOR = ROOT / "GodotPlugins" / "HorrorStudioDirector" / "addons" / "horrorstudio_director"
 RUNTIME = ROOT / "tools" / "godot" / "addons" / "horrorstudio"
 LOOK = ROOT / "GodotPlugins" / "HorrorStudioLook" / "addons" / "horrorstudio_look"
+UI = ROOT / "GodotPlugins" / "HorrorStudioUI" / "addons" / "horrorstudio_ui"
 HUMAN = ROOT / "GodotPlugins" / "HumanShaders"
 SFX = ROOT / "Content" / "Studio" / "SFX"
+MOODS = ROOT / "Content" / "Studio" / "Music" / "moods"
 LIVES = ROOT / "Content" / "Studio" / "Life" / "lives.json"
 SOMA = ROOT / "Content" / "Studio" / "soma77.json"
 ANIM_GROUPS = ["IDLE", "WALK", "SIT", "STAND UP", "TALK", "LOOK & SEARCH", "REACTIONS", "SCARES", "OTHER"]   # the sample's clips on the Animate tab, in its order
@@ -58,7 +60,7 @@ SAMPLE_FACES = ["pout_and_glance", "pout_and_glance_loop"]                # the 
 CHECK = ROOT / "Saved" / "Godot" / "_director_check"
 GUIDE_PROJECT = ROOT / "Saved" / "Godot" / "_director_guide"
 GUIDES = ROOT / "guides"
-PLUGINS = ["res://addons/horrorstudio_director/plugin.cfg", "res://addons/horrorstudio_look/plugin.cfg"]
+PLUGINS = ["res://addons/horrorstudio_director/plugin.cfg", "res://addons/horrorstudio_look/plugin.cfg", "res://addons/horrorstudio_ui/plugin.cfg"]
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -145,6 +147,7 @@ def install(out, link=False):
     out = Path(out).resolve()
     place(RUNTIME, out / "addons" / "horrorstudio", link)
     place(LOOK, out / "addons" / "horrorstudio_look", link)
+    place(UI, out / "addons" / "horrorstudio_ui", link)
     place(DIRECTOR, out / "addons" / "horrorstudio_director", link)
     if HUMAN.exists():
         place(HUMAN, out / "HumanShaders", link)
@@ -152,6 +155,8 @@ def install(out, link=False):
     game.mkdir(exist_ok=True)
     if (SFX / "index.json").exists():
         place(SFX, game / "sfx", link)
+    if MOODS.is_dir():                                         # the music's moods as beds (tools/score/moods.mjs)
+        place(MOODS, game / "music", link)
     if LIVES.exists():
         shutil.copy(LIVES, game / "lives.json")
     if not (game / "life_things.json").exists():
@@ -754,7 +759,7 @@ def editor_check(out):
         ("her moves %s; a way in or out played once by its name %s; her talk cleared and filled again from the library %s, undone (%s); sitting clicked: the clips that suit it first %s; the moves in the story the game plays %s"
          % (rep.get("anim_moves"), rep.get("anim_loops"), rep.get("anim_fill"), rep.get("anim_fill_undone"), (rep.get("anim_move_menu") or [])[:3], rep.get("anim_cast_moves")),
          rep.get("anim_moves") == ["Idle: sample_idle", "Walk: mari_walk", "Run: —", "Sit down: mari_sit_down", "Sitting: mari_sitting", "Stand up: mari_stand_up",
-                                   "Talk: mari_talk", "Listen: —", "Look round: look_around", "Caught: —"]
+                                   "Talk: mari_talk", "Listen: —", "Look round: look_around", "Caught: —", "In the light: —"]
          and rep.get("anim_loops") == [True, False, False, True] and rep.get("anim_fill") == [True, ["talk: mari_talk"], "mari_talk"] and rep.get("anim_fill_undone") is True
          and (rep.get("anim_move_menu") or [""])[0] == "mari_sitting" and "sample_idle" in (rep.get("anim_move_menu") or []) and (rep.get("anim_move_menu") or [""])[-1].startswith("None")
          and rep.get("anim_cast_moves") == {"idle": "sample_idle", "walk": "mari_walk", "sit_down": "mari_sit_down", "sitting": "mari_sitting", "stand_up": "mari_stand_up",
@@ -768,7 +773,7 @@ def editor_check(out):
         ("a card dropped on Mari: her menu %s, the drop taken back (%s); a preview left playing stopped by the save, nothing of it saved (%s)"
          % (rep.get("anim_dropped"), rep.get("anim_drop_gone"), rep.get("anim_save_stopped")),
          rep.get("anim_dropped") == ["Her idle", "Her walk", "Her run", "Her sit down", "Her sitting", "Her stand up", "Her talk", "Her listen",
-                                     "Her look round   ✓ by its name", "Her caught", "Hers, for the story to play", "Look at it on her (▶)"] and rep.get("anim_drop_gone") is True
+                                     "Her look round   ✓ by its name", "Her caught", "Her in the light", "Hers, for the story to play", "Look at it on her (▶)"] and rep.get("anim_drop_gone") is True
          and rep.get("anim_save_stopped") is True),
         ("the Reactions cards %s; Flinches and Waves on the kitchen's doorway: %s; a face by its name's words %s; the look round dropped on the doorway: %s (the first reaction's clip swapped, the drop taken back); undone (%s)"
          % (rep.get("react_cards"), rep.get("react_words"), rep.get("react_faces"), rep.get("react_dropped"), rep.get("react_undone")),

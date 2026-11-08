@@ -14,7 +14,8 @@ CHECKS = [["story_check.py"], ["level_check.py"], ["shots_sheet.py", "--plan"]]
 STUDIO = [["pbr.py", "check"], ["sfx.py", "check"], ["face_capture.py", "check"], ["uv_templates.py", "check"],   # once, not per game: the PBR shelf, the sound shelf, the expression library, the texture templates,
           ["street.py", "check"], ["skin_detail.py", "check"], ["eye_patch.py", "check"], ["fabric_bake.py", "check"],   # the streets, the skin's detail tiles, the grafted eyes, the made fabrics,
           ["face_export.mjs", "--check"], ["face_morphs.mjs", "--check"],                                            # the library baked for Godot (FACEEXPORT), a Studio export's face shapes (FACEMORPHS)
-          ["propgen.py", "thumbs", "--check"], ["woodpbr.py", "check"]]                                                 # the props' kept pictures and sticker passes (THUMBS), the made wood sets (WOODPBR)
+          ["propgen.py", "thumbs", "--check"], ["woodpbr.py", "check"],                                                 # the props' kept pictures and sticker passes (THUMBS), the made wood sets (WOODPBR),
+          ["score/moods.mjs", "--check"]]                                                                                # the music's moods as beds (MOODS)
 
 game, _ = L.pick_game(sys.argv[1:])
 bad = 0

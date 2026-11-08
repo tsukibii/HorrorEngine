@@ -1,6 +1,8 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://starter/player.gd" id="1"]
+[ext_resource type="Script" path="res://starter/flashlight.gd" id="2"]
+[ext_resource type="Script" path="res://addons/horrorstudio_look/nodes/beam.gd" id="3"]
 
 [sub_resource type="CapsuleShape3D" id="body"]
 radius = 0.28
@@ -22,12 +24,17 @@ near = 0.03
 [node name="Aim" type="RayCast3D" parent="Eye"]
 target_position = Vector3(0, 0, -2)
 
-[node name="Flashlight" type="SpotLight3D" parent="Eye"]
+[node name="Flashlight" type="SpotLight3D" parent="Eye" groups=["hs_no_zone"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.18, -0.2, -0.1)
 visible = false
 light_color = Color(1, 0.94, 0.84, 1)
-light_energy = 3.0
+light_energy = 4.0
 shadow_enabled = true
 spot_range = 14.0
 spot_angle = 24.0
-spot_angle_attenuation = 0.6
+spot_angle_attenuation = 2.5
+script = ExtResource("2")
+
+[node name="AirBeam" type="Node3D" parent="Eye/Flashlight"]
+script = ExtResource("3")
+cookie = "flashlight"

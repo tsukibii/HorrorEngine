@@ -24,6 +24,7 @@ var inspector: EditorInspectorPlugin = null
 var debugger: EditorDebuggerPlugin = null
 var pending_scare = null             # a scare card being dragged: {item, at}; its area's moment made when it lands
 var pending_anim = null              # an Animate card being dragged: {clip, face, at}; the character it lands on given it
+var pending_actor = null             # a character's card being dragged (Feels the light...): {item, at}; the one it lands on given it
 var _tri := {}                       # a mesh's triangles, for the mouse's ray (model_on_ray)
 
 
@@ -332,5 +333,8 @@ func _unlink(n: Node) -> void:
 	if pending_anim is Dictionary and HSDirector.class_of(n) == "HSSpot" and Time.get_ticks_msec() - int(pending_anim["at"]) < 30000 and panel != null:
 		panel.animate.landed(n, pending_anim)          # an Animate card dropped on a character: her menu, the spot taken back
 	pending_anim = null
+	if pending_actor is Dictionary and HSDirector.class_of(n) == "HSSpot" and Time.get_ticks_msec() - int(pending_actor["at"]) < 30000 and panel != null:
+		panel.build.actor_landed(n, pending_actor["item"])     # a character's card dropped on her: her settings, the spot taken back
+	pending_actor = null
 	if dock != null:
 		dock.refresh()

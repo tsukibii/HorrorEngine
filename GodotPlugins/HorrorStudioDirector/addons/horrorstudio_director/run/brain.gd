@@ -177,6 +177,15 @@ func _states() -> void:
 	if rt == null or rt.level == "":
 		return
 	var want := wanted()
+	for target in applied.keys():                     # a light no state sets any more: back as the level has it
+		var had0: Dictionary = applied[target]
+		if had0.has("light") and not (want.get(target, {}) as Dictionary).has("light"):
+			var u = rt.light_state.get(target)
+			var placed_on: bool = bool(u["own"].get("on", true)) if u is Dictionary and u.has("own") else true
+			for a in ([{"light": target, "set": "on"}] if placed_on else [{"light": target, "set": "off"}, {"light": target, "set": "normal"}]):
+				note("%s: %s (let go)" % [target, JSON.stringify(a)])
+				rt.actions.run(a, rt)
+			had0.erase("light")
 	for target in want:
 		var w: Dictionary = want[target]
 		var had: Dictionary = applied.get(target, {})

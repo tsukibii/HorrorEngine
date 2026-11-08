@@ -49,6 +49,9 @@ class Thing:
         self.parts = {}             # name -> {piece, kind, pivot, axis, open, shut, built}: a piece that moves in play (PROPGEN §26)
         self.inside = None          # a container's inner box ((x0, y0, z0), (x1, y1, z1)) metres, built space: where things go in it
         self.extras = {}            # more for the glb's root node, by name: `propgen_<name>` (a book's page materials, PROPGEN §26)
+        self.ao_dist = None         # the occlusion's reach (metres) where the recipe gives none: a family's own for its size
+        self.record = {}            # more for meta.json, by name (the retro pack's fixes and layouts, PROPGEN §29)
+        self.after_wear = None      # fn(material name, canvas): after the wear is laid (the retro pack's colour floor)
 
     def material(self, name, kind="paint", px=None, alpha=False, double=False, color="#808080", rough=0.5, metal=0.0, specular=None,
                  bake=True):
@@ -474,7 +477,7 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
     # per-texel attributes of the game mesh, and the bakes from the detailed one
     bs = int(samples or spec.get("bake_samples", 24))
     ao = BK.bake("AO", low_ob, high_ob, px=max(v["px"] for v in th.mats.values()), samples=bs, gpu=gpu,
-                 ao_dist=float(spec.get("ao_dist", 0.012)), extrude=float(spec.get("cage", th.cage or 0.003)), reach=float(spec.get("reach", th.reach or 0.012))) if th.bake_ao else {}
+                 ao_dist=float(spec.get("ao_dist", th.ao_dist or 0.012)), extrude=float(spec.get("cage", th.cage or 0.003)), reach=float(spec.get("reach", th.reach or 0.012))) if th.bake_ao else {}
     nb = BK.bake("NORMAL", low_ob, high_ob, px=max(v["px"] for v in th.mats.values()), samples=4, gpu=gpu,
                  extrude=float(spec.get("cage", th.cage or 0.003)), reach=float(spec.get("reach", th.reach or 0.012))) if high_ob else {}
     cb = BK.bake("EMIT", low_ob, high_ob, px=max(v["px"] for v in th.mats.values()), samples=1, gpu=gpu, attr="curv",
@@ -516,6 +519,8 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
         if th.texel_paint:
             th.texel_paint(mname, cv, tex)
         S.wear(cv, tex, wl, mt["kind"], seed + 7 * mi, th.density.get(mname, 4.0))
+        if th.after_wear:
+            th.after_wear(mname, cv)                    # the family's last word on its colours (retro: no texel left black)
         det = S.combine_normals(cv.nrm, S.height_normal(cv.height, th.density.get(mname, 4.0), float(spec.get("relief", 1.0))))
         if key in nb and baked:
             base = fit(nb[key])[..., :3] * 2 - 1
@@ -694,6 +699,7 @@ def run(name, spec, out_dir, formats=("glb",), preview=True, samples=None, gpu=F
             rec["keep_z"] = True                        # its heights as made: on what it lies on, not on the floor
     if th.tree:
         rec["tree"] = th.tree
+    rec.update(th.record or {})
     if parts_w:
         # the parts (story metres, z up, as the sockets): each hinge or slide, and the thing's size with every part shut
         rec["parts"] = {n: dict(pt.get("extra") or {}, kind=pt["kind"], pivot=[round(float(x), 5) for x in pt["pivot"]], axis=[round(float(x), 5) for x in pt["axis"]],

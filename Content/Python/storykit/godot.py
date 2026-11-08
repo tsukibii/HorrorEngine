@@ -9,6 +9,8 @@ What's written (parity first, GODOT_EXPORT §3 is the shape to reach):
   addons/horrorstudio/                 the runtime (tools/godot/addons/horrorstudio, copied)
   addons/horrorstudio_look/            the look plugin (GodotPlugins/HorrorStudioLook, copied: UltraVHS, the realism
                                        preset, puffs, rain, wet floors, blood, wet skin; docs/GODOT_LOOK.md)
+  addons/horrorstudio_ui/              the UI plugin (GodotPlugins/HorrorStudioUI, copied: the HUD, the quest marker, the pause
+                                       menu; ui-v3, DECISIONS 2026-11-08): the runtime's HUD is this plugin's HSHud
   HumanShaders/                        GodotPlugins/HumanShaders (copied; its own files refer to res://HumanShaders/)
   game/story.json                      the story as data (the runtime reads it: flow, stitches, scenes, items...)
   game/people/<name>.glb               the cast's Character Studio exports (previs_body "people/<name>"), for HSSkin
@@ -42,10 +44,23 @@ ROOT = L.ROOT
 ADDON = ROOT / "tools" / "godot" / "addons" / "horrorstudio"
 HUMAN = ROOT / "GodotPlugins" / "HumanShaders"
 LOOK = ROOT / "GodotPlugins" / "HorrorStudioLook" / "addons" / "horrorstudio_look"
+UI = ROOT / "GodotPlugins" / "HorrorStudioUI" / "addons" / "horrorstudio_ui"
 LIVES = L.STUDIO / "Life" / "lives.json"
 OUT = ROOT / "Saved" / "Godot"
 CHECK_OUT = OUT / "_check"                 # the checks' own projects (GDEXPORT, GDPLAY, GDTESTROOM): overwritten each run, never a version
 
+
+
+def copy_moods(out, game):
+    """The story's music moods (calm, uneasy, dread, chase) as the beds the runtime plays (docs/HORROR_TODO.md 13):
+    Content/Studio/Music/moods/<mood>.ogg, a game's own Content/Games/<G>/Music/moods/<mood>.ogg over them, into
+    game/music/."""
+    dst = out / "game" / "music"
+    for src in (ROOT / "Content" / "Studio" / "Music" / "moods", ROOT / "Content" / "Games" / game / "Music" / "moods"):
+        if src.is_dir():
+            dst.mkdir(parents=True, exist_ok=True)
+            for f in src.glob("*.ogg"):
+                shutil.copy2(f, dst / f.name)
 
 def versions(game, root=None):
     """A game's exported versions, oldest first: Saved/Godot/<game>_v001, _v002... (DECISIONS 2026-10-30, noon: every
@@ -1168,7 +1183,7 @@ window/size/viewport_height=720
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/horrorstudio_look/plugin.cfg")
+enabled=PackedStringArray("res://addons/horrorstudio_look/plugin.cfg", "res://addons/horrorstudio_ui/plugin.cfg")
 
 [rendering]
 
@@ -1437,6 +1452,7 @@ def export(game, out=None, make_zip=False, do_import=True):
     (out / "project.godot").write_text(project_godot(story, version), encoding="utf-8")
     shutil.copytree(ADDON, out / "addons" / "horrorstudio", ignore=shutil.ignore_patterns(".godot", "*.uid.bak"))
     shutil.copytree(LOOK, out / "addons" / "horrorstudio_look", ignore=shutil.ignore_patterns(".godot", "*.uid.bak"))
+    shutil.copytree(UI, out / "addons" / "horrorstudio_ui", ignore=shutil.ignore_patterns(".godot", "*.uid.bak"))
     if HUMAN.exists():
         shutil.copytree(HUMAN, out / "HumanShaders", ignore=shutil.ignore_patterns("*.import"))
     (out / "game" / "story.json").write_text(json.dumps(story, ensure_ascii=False, indent=0), encoding="utf-8")
@@ -1498,6 +1514,7 @@ def export(game, out=None, make_zip=False, do_import=True):
     sfx = ROOT / "Content" / "Studio" / "SFX"                      # the sound shelf (docs/SFX.md, CC0): every sound and its index
     if (sfx / "index.json").exists():
         shutil.copytree(sfx, out / "game" / "sfx", ignore=shutil.ignore_patterns("*.import", "__pycache__"))
+    copy_moods(out, game)                                          # the music's moods as beds (tools/score/moods.mjs): the game's over the studio's
     faces = sorted(faces_used(story))                             # the expressions the story puts on faces in play (`expr`): baked into faces/ (tools/face_export.mjs)
     if faces and shutil.which("node"):
         import subprocess  # noqa: PLC0415

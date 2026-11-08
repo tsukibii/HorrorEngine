@@ -4,6 +4,7 @@
 // clip edges) and from ▶ in the Database. A sound of the game's own (any other file) lives in Unreal and is only named.
 //   await shelf()                         {name: {file, category, tags, secs, loop, credit}}
 //   playShelf(name, {pos, camera, db, loop}) -> {stop()}; playStorySound(story, id, opts) -> false if it isn't the shelf's
+//   audioOut() -> {ctx, master}; shelfBuffer(name), urlBuffer(url) -> an AudioBuffer (play/beds.js)
 //   pickShelf(current) -> a name, or null: the shelf in a dialog, searchable, each one heard on a click
 import { h, modal } from "./ui.js";
 import { icon } from "./icons.js";
@@ -33,6 +34,14 @@ function listen(camera) {
   const L = ctx().listener, p = camera.position, f = camera.getWorldDirection(camera.position.clone());
   if (L.positionX) { L.positionX.value = p.x; L.positionY.value = p.y; L.positionZ.value = p.z; L.forwardX.value = f.x; L.forwardY.value = f.y; L.forwardZ.value = f.z; L.upX.value = 0; L.upY.value = 1; L.upZ.value = 0; }
   else { L.setPosition(p.x, p.y, p.z); L.setOrientation(f.x, f.y, f.z, 0, 1, 0); }
+}
+// the context and the shelf's master, for the beds under the game (play/beds.js: the music's mood, the room's tone)
+export function audioOut() { return { ctx: ctx(), master: MASTER }; }
+export const shelfBuffer = name => buffer(name);
+const URLBUF = {};
+export async function urlBuffer(url) {                     // a file the desk serves (a mood's bed: /music/<game>/<mood>.ogg)
+  if (!URLBUF[url]) URLBUF[url] = fetch(url).then(r => { if (!r.ok) throw new Error(url + " " + r.status); return r.arrayBuffer(); }).then(b => ctx().decodeAudioData(b));
+  try { return await URLBUF[url]; } catch (e) { delete URLBUF[url]; console.warn("music", url, e); return null; }
 }
 export async function playShelf(name, o = {}) {
   const buf = await buffer(name); if (!buf) return null;

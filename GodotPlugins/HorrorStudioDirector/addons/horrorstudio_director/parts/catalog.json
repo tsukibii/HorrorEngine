@@ -91,6 +91,12 @@
    "title": "Reactions",
    "glyph": "react",
    "about": "Drop one in a room: an area, and a moment in which whoever's nearest reacts to the player (turns to look, flinches, screams, points, waves), then goes back to what she was doing. Her clip: a card from the Animate tab dropped on the area."
+  },
+  {
+   "id": "more",
+   "title": "More",
+   "glyph": "cube",
+   "about": "Parts not sorted into a category yet."
   }
  ],
  "items": [
@@ -281,6 +287,22 @@
    ]
   },
   {
+   "id": "batteries",
+   "cat": "lights",
+   "kind": "part",
+   "path": "parts/batteries.tscn",
+   "title": "Batteries",
+   "desc": "A set for the flashlight: into the pocket, changed by itself when it dies",
+   "glyph": "battery",
+   "keywords": [
+    "batteries",
+    "battery",
+    "cells",
+    "aa",
+    "d_cell"
+   ]
+  },
+  {
    "id": "pickup",
    "cat": "look",
    "kind": "part",
@@ -293,8 +315,6 @@
     "fuse",
     "tin",
     "coin",
-    "battery",
-    "batteries",
     "item",
     "can"
    ]
@@ -784,6 +804,73 @@
    ]
   },
   {
+   "id": "feels_light",
+   "cat": "people",
+   "kind": "actor",
+   "title": "Feels the light",
+   "desc": "On a character: the flashlight on her is heard (WHEN the flashlight is on her); what she does is hers to pick",
+   "glyph": "flashlight",
+   "keywords": [
+    "light",
+    "flashlight",
+    "torch",
+    "beam"
+   ],
+   "set": {
+    "feels_light": "nothing"
+   }
+  },
+  {
+   "id": "light_backs_off",
+   "cat": "people",
+   "kind": "actor",
+   "title": "Backs off from the light",
+   "desc": "The flashlight on her: she steps back, keeps away a while, then carries on",
+   "glyph": "flashlight",
+   "keywords": [
+    "back off",
+    "afraid of light",
+    "shy"
+   ],
+   "set": {
+    "feels_light": "backs off"
+   }
+  },
+  {
+   "id": "light_freezes",
+   "cat": "people",
+   "kind": "actor",
+   "title": "Freezes in the light",
+   "desc": "Still while the flashlight's on her, moving again once it's off",
+   "glyph": "flashlight",
+   "keywords": [
+    "freeze",
+    "still",
+    "statue"
+   ],
+   "set": {
+    "feels_light": "freezes",
+    "light_keep": 0.0
+   }
+  },
+  {
+   "id": "light_drawn",
+   "cat": "people",
+   "kind": "actor",
+   "title": "Drawn to the light",
+   "desc": "She comes toward the flashlight while it's on her: switch it off to hide",
+   "glyph": "flashlight",
+   "keywords": [
+    "drawn",
+    "moth",
+    "attracted"
+   ],
+   "set": {
+    "feels_light": "comes toward it",
+    "light_keep": 1.0
+   }
+  },
+  {
    "id": "area",
    "cat": "areas",
    "kind": "preset",
@@ -884,7 +971,7 @@
    "cat": "scares",
    "kind": "scare",
    "title": "The lights die",
-   "desc": "The room goes dark for a moment",
+   "desc": "The room goes dark for a moment, then every light as it was",
    "glyph": "lights_die",
    "keywords": [
     "dark",
@@ -897,6 +984,58 @@
       "trick": "lights_die",
       "room": "{room}",
       "secs": 1.5
+     }
+    ]
+   }
+  },
+  {
+   "id": "scare_lights_toward",
+   "cat": "scares",
+   "kind": "scare",
+   "title": "The lights die one by one",
+   "desc": "Out one after another toward you, then back as they were",
+   "glyph": "lights_die",
+   "keywords": [
+    "dark",
+    "lights",
+    "one by one",
+    "toward"
+   ],
+   "name": "LightsDieTowardYou",
+   "moment": {
+    "do": [
+     {
+      "trick": "lights_die",
+      "room": "{room}",
+      "secs": 2,
+      "order": "toward"
+     }
+    ]
+   }
+  },
+  {
+   "id": "scare_dim",
+   "cat": "scares",
+   "kind": "scare",
+   "title": "A light dims",
+   "desc": "The nearest light sags for a few seconds, then comes back",
+   "glyph": "bulb",
+   "keywords": [
+    "dim",
+    "sag",
+    "light",
+    "lamp",
+    "brownout"
+   ],
+   "name": "LightDims",
+   "moment": {
+    "do": [
+     {
+      "light": "{light}",
+      "set": "dim",
+      "to": 0.2,
+      "secs": 3,
+      "over": 0.4
      }
     ]
    }

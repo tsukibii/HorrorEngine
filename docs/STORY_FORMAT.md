@@ -34,8 +34,8 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
 | Key | Holds |
 |---|---|
 | `format` | `2` |
-| `game` | `id`, `title`, `start` (a flow node), `target_min` (the shortest *typical* path to a normal ending must reach it: **150** for a real game), `fast_min` (the shortest *fast* path must reach it: **120**, Steam's refund window; cutscenes can't be skipped, so they count fully), `voice` (`ja`), `text` (`en`), `clip_max` (seconds one take can be: **10** for MiniMax), `fov` (the player's horizontal field of view, 90 by default: the one lens), `previs_body` (the desk's default body), `time` (the time of day the game starts at: `day`, `dusk` or `night`; `night` when unset, the studio's dark interiors; scenes change it, §3.1), `player_name` (the player's name until they type one, §4 `name`; "Alex" when unset), `hair` (the hair look every imported model's hair wears in Godot, docs/GODOT_LOOK.md §5c: `{"retro": true}` the PSX look (unlit, eight colour levels, the ordered dither), or each of `flat`, `steps` (2 to 64), `dither`, `gain`, `shine`, `soft`, `cut`; a cast member's own `hair` over it) |
-| `cast` | `{id: {name, metahuman (asset path or null), height, shape, measures, skin, previs_body}}`: `shape` is up to 45 MHR identity numbers (the desk's Shape page writes it; zero is the average body), `measures` the body's widths in cm at that height (`{height, shoulders, chest, waist, belly, hips, thighs, arms}`, the Shape page writes them too) and `skin` a hex skin tone: what `tools/metahuman.py` gives MetaHuman Creator (docs/METAHUMAN_ROUTE.md); `previs_body` a file in `Content/Studio/Bodies` (default: MHR.fbx; after the MetaHuman is rigged, its exported body), or `people/<name>`: a Character Studio character as it was exported for the desk and Unreal (`Content/Studio/People/<name>/export/<name>.glb`), worn with its own look and its eyes, its own shape (`shape` doesn't apply), scaled to `height`; `models` her other looks, `{name: body file}` (`{"lilac eyes": "people/natsu_lilac", "wet": "people/natsu_wet"}`): variants a scene picks (§3.1 `models`), `previs_body` the default (HANDOFF_DIRECTOR_TODO §5); `hair` their own hair look over the game's (`game.hair`): the salon's cards, brows and lashes on the Studio's hair shader in Godot, `{"retro": true}` for the PSX dither, GODOT_LOOK §5c; `moves` her **moves**, `{role: motion}`, the role one of `idle` (standing), `walk`, `run` (walking at 2.2 m/s or faster), `sit_down` and `stand_up` (played once on the way into a seat and out of it: she waits up for her behaviour), `sitting`, `talk` (while her line is up in a scene), `listen` (while the player answers her), `look_around` (at a route's wait whose `pose` is `look`, `search` or `check`), `caught` (played once, turned to the player, when she catches them: her sight's meter full, a hiding place she checks; held where she is till it's over): what Godot's runtime plays by what she's doing (play.gd `npc_want`; a behave's own `motion` or `rest` comes first, §4), an empty role falling back to another she has (`run` to `walk`; `sitting`, `talk`, `listen` and `look_around` to `idle`; `sit_down`, `stand_up` and `caught` to nothing), so a game always plays; the Director's Animate tab sets them (GODOT_DIRECTOR §6g); the desk's Play doesn't play them yet |
+| `game` | `id`, `title`, `start` (a flow node), `target_min` (the shortest *typical* path to a normal ending must reach it: **150** for a real game), `fast_min` (the shortest *fast* path must reach it: **120**, Steam's refund window; cutscenes can't be skipped, so they count fully), `voice` (`ja`), `text` (`en`), `clip_max` (seconds one take can be: **10** for MiniMax), `fov` (the player's horizontal field of view, 90 by default: the one lens), `previs_body` (the desk's default body), `time` (the time of day the game starts at: `day`, `dusk` or `night`; `night` when unset, the studio's dark interiors; scenes change it, §3.1), `player_name` (the player's name until they type one, §4 `name`; "Alex" when unset), `hair` (the hair look every imported model's hair wears in Godot, docs/GODOT_LOOK.md §5c: `{"retro": true}` the PSX look (unlit, eight colour levels, the ordered dither), or each of `flat`, `steps` (2 to 64), `dither`, `gain`, `shine`, `soft`, `cut`; a cast member's own `hair` over it), `tone` (the room tone of every room without its own, §2: a shelf loop, or `none`), `quiet` (seconds of `hush` before every jumpscare that doesn't say, §4; none when unset) |
+| `cast` | `{id: {name, metahuman (asset path or null), height, shape, measures, skin, previs_body}}`: `shape` is up to 45 MHR identity numbers (the desk's Shape page writes it; zero is the average body), `measures` the body's widths in cm at that height (`{height, shoulders, chest, waist, belly, hips, thighs, arms}`, the Shape page writes them too) and `skin` a hex skin tone: what `tools/metahuman.py` gives MetaHuman Creator (docs/METAHUMAN_ROUTE.md); `previs_body` a file in `Content/Studio/Bodies` (default: MHR.fbx; after the MetaHuman is rigged, its exported body), or `people/<name>`: a Character Studio character as it was exported for the desk and Unreal (`Content/Studio/People/<name>/export/<name>.glb`), worn with its own look and its eyes, its own shape (`shape` doesn't apply), scaled to `height`; `models` her other looks, `{name: body file}` (`{"lilac eyes": "people/natsu_lilac", "wet": "people/natsu_wet"}`): variants a scene picks (§3.1 `models`), `previs_body` the default (HANDOFF_DIRECTOR_TODO §5); `beam` what she does in the flashlight's beam and her presence on the lights near her (§4 `beam`, FLASHLIGHT_PLAN §2); `hair` their own hair look over the game's (`game.hair`): the salon's cards, brows and lashes on the Studio's hair shader in Godot, `{"retro": true}` for the PSX dither, GODOT_LOOK §5c; `moves` her **moves**, `{role: motion}`, the role one of `idle` (standing), `walk`, `run` (walking at 2.2 m/s or faster), `sit_down` and `stand_up` (played once on the way into a seat and out of it: she waits up for her behaviour), `sitting`, `talk` (while her line is up in a scene), `listen` (while the player answers her), `look_around` (at a route's wait whose `pose` is `look`, `search` or `check`), `caught` (played once, turned to the player, when she catches them: her sight's meter full, a hiding place she checks; held where she is till it's over): what Godot's runtime plays by what she's doing (play.gd `npc_want`; a behave's own `motion` or `rest` comes first, §4), an empty role falling back to another she has (`run` to `walk`; `sitting`, `talk`, `listen` and `look_around` to `idle`; `sit_down`, `stand_up` and `caught` to nothing), so a game always plays; the Director's Animate tab sets them (GODOT_DIRECTOR §6g); the desk's Play doesn't play them yet |
 | `items`, `notes`, `sounds` | `{id: {name, shape, inspect, torch}}` (`torch`: a flashlight, below), `{id: {title, text}}`, `{id: {file}}`: a sound's `file` is `sfx/<name>`, a CC0 sound off the Studio's shelf (`Content/Studio/SFX`, `tools/sfx.py list`; the check fails one that isn't on it; docs/SFX.md), or the game's own file under its Audio folder in Unreal |
 | `lines` | one-off voice outside scenes (`say`, `whisper`): `{id: {who, ja, en, mood, dur}}` |
 | `levels` | the world (§2) |
@@ -96,6 +96,9 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
 
 - `size` is `[w (x), d (y), h]`.
 - `floor` is `wood stone carpet tile dirt metal water`: it sets footsteps.
+- `tone`: **the room's tone**, a loop off the sound shelf heard while the player's in the room (`room_tone_01` to
+  `_06`, `electric_hum_01`, `ambient_wind_01`...; `none` for silence), crossfading 1.5 s into the next room's;
+  without it the game's `tone` (§1). Played on the SFX bus, under everything; a `hush` takes it down too.
 - `light` is `off dark dim lit`: a mood note for the lighting pass.
 - `skip`: two touching rooms share one wall, and **exactly one of them skips it**. A plain letter (`"s"`) skips the whole
   wall; `["e", 1.0, 3.5]` skips only that stretch (metres along the wall from its west or south end), for a room that
@@ -601,15 +604,37 @@ with `{"tick": "<id>"}` at the end of that beat, not by its own trigger (the sto
 | `{"peeping": door}` | the player's eye is at that door's peephole (`peephole: true`); holds while it is |
 | `{"locked": door}` | that door is locked: its `latch` turned, its `locked_by` key not yet used, or a `door` `lock`; holds while it is |
 | `{"torch": "on"}`, `{"torch": "off"}` | the player switched the flashlight on or off with **F** (either: `any` of both) |
+| `{"torch": "low"}`, `{"torch": "dead"}`, `{"torch": "changed"}` | the flashlight's battery ran under its `low`, it died (out for good: its battery empty, or `dead`), its batteries were changed (by itself from the pocket, or the pause menu's) |
+| `{"charge": 0.25}` | the flashlight's charge is under that; holds while it is (a flashlight on no battery is always full) |
+| `{"lit": "aoi"}`, `"secs": 0.5` | the flashlight's beam on her (a cast member, or a thing) `secs` (0.3) at her `bright` or more (0.3 for a thing); holds while it is (FLASHLIGHT_PLAN §2a) |
+| `{"flashed": "aoi"}`, `"times": 2`, `"within": 3` | the beam landed on her (switched on at her, or swung onto her) that many times (1) within that many seconds (3) |
 | `{"rolled": die, "face": 6}`, `"at_least": 5` | a die (`use: roll`) settled; no face means any roll. A roll is chance, so a beat that needs a face is `optional` or `secret` (the check warns otherwise): `{"when": {"rolled": "big_die", "face": 6}, "secret": true, "do": [{"flag": "lucky"}]}`, then a flag choice sends `lucky` down a side path that rejoins the main line (§5) |
 
 **Actions (`do`, one verb each):**
-- `say`, `think`, `sound` (`at`), `music` (`silence calm uneasy dread chase`)
+- `say`, `think`, `sound` (`at`), `music` (`silence calm uneasy dread chase`): **the music's mood**, a bed under the
+  game looped from `Content/Studio/Music/moods/<mood>.ogg` (the score room's cues rendered by `tools/score/moods.mjs`;
+  a game's own `Content/Games/<G>/Music/moods/<mood>.ogg` over them), crossfading from the one before over `secs` (2);
+  `silence` fades it out. Kept with the run (a checkpoint has it). Played low on the Music bus, the pause menu's row
+  (the desk's Play and the Watch, Godot: docs/HORROR_TODO.md 13.1)
+- `hush` (seconds, at least 0.5; `back` 6): **the beds go quiet before a sting** (docs/research/jump_scares.md §8): the
+  music and the room's tone fade to nothing over all but the last half second, which is silent, and the beat waits it
+  out, so what comes next (a `sound`, a jumpscare) lands in silence; then they come back over `back` seconds, slow at
+  first. Sounds in the room (the shelf's, the little things') go on. A scene's cue can hush too
 - `name`: **the player types their name** (`{"name": "What's your name?"}`: the question over the box; `default`: the
   name kept when nothing is typed, else `game.player_name`). From then on `{name}` in anything shown (a clip's `en`, a
   line, a thought, an answer, an objective, a to-do, a note) is that name; before it, `game.player_name` ("Alex" when
   unset). It's kept with the run (a checkpoint has it). The walker counts 8 s for the typing. Not in Unreal yet
-- `light` (`set`: `on off flicker dim`; or `room`), `door` (`set`: `lock unlock open close slam`)
+- `light`: a light by its id, or every light in a `room`; `set` `on`, `off`, `flicker`, `dim` or `normal`
+  (DECISIONS 2026-11-07, docs/HORROR_TODO.md 0). `dim` takes `to`, how bright (0..1, 0.35 when left out); `flicker`
+  takes `mode`, one of a light's modes (§2: `fluorescent`, `dying`, `candle`, `pulse`, `custom`); any of them takes
+  `over`, the seconds it takes (and the seconds back; not `fade`, the screen's own verb), and `secs`, how long:
+  `{"light": "lobby_lamp", "set": "dim", "to": 0.2, "secs": 4, "over": 0.5}` sags over half a second, holds four,
+  and comes back to **how it was**. A change without `secs` lasts. `on` and `normal` bring back the light's own brightness and its own flicker (the story's dim
+  and flicker undone); `on` switches it on too, `normal` leaves it on or off as it is. A timed change is laid over the
+  light's own state and goes by itself, so a light the player switched off stays off after it, and a switch still
+  works under it; a lasting change clears the timed ones on that light. Both runtimes, the same numbers (play.gd
+  `light_k`, runtime.js `lightK`)
+- `door` (`set`: `lock unlock open close slam`)
 - `open`: **a thing's parts** (`use: open`, `container`, `book`: a lid, a closet's doors, a cover): `{"open": "attic_case",
   "to": "open"}` swings or slides them open over a moment, `shut` (or `close`) shuts them, `lock` holds them shut
   (**Locked** on a click, whatever its `locked_by`) and `unlock` lets go of that lock. Heard as `opened` or `closed`
@@ -625,7 +650,21 @@ with `{"tick": "<id>"}` at the end of that beat, not by its own trigger (the sto
   (`use: pickup`) or given (`give`), it goes in the pocket, not the inventory's row, and **F** switches it (heard as
   `{"torch": "on"}` or `"off"`); its beam comes from the right hand and follows the look a moment late. Its own settings
   ride on the item, `"torch": {"kelvin": 3200, "cone": 20, "range": 12, "strength": 6}` (an old warm one; the default
-  is 5200 K, a 26° cone, 18 m). Taken away (`take`), it goes off. The check fails a `torch` with no flashlight item
+  is 5200 K, a 26° cone, 18 m). Taken away (`take`), it goes off. The check fails a `torch` with no flashlight item.
+  **On batteries** (DECISIONS 2026-11-07, docs/FLASHLIGHT_PLAN.md §1): the item's `battery` is the seconds of light
+  from full (`"torch": {"battery": 420}`: seven minutes; none: it never runs down, as before), `charge` how full it
+  starts (0..1, 1), `kind` `bulb` (the default: dimmer and warmer from the start, √charge, toward 2100 K, browning out
+  under its `low`, 0.2) or `led` (full and white to its `low`, 0.15, then three blinks and a low mode of 35 %, a slow
+  strobe near empty), `low`, and `rest` (a bulb's: switched off 30 s when low it gives 3 % more, twice a set). The
+  charge drains only while it's on; its reach goes with its brightness. Empty, it stutters out and is **heard** as
+  `{"torch": "dead"}` (and `{"torch": "low"}` as it runs under its `low`). An item with `"battery": 1` (how full a
+  set, 0.5 a used one) is **batteries**: picked up, they go in the pocket; when the flashlight dies with a set there
+  it's **changed by itself**, two seconds of dark with its sounds, the light full again and heard as
+  `{"torch": "changed"}`; the pause menu shows the charge and the sets and changes them early (*Change the
+  batteries*). Each set is an item of its own (items are a set: two pickups of one item give one). The story's
+  `flicker` takes `secs` and `mode` (a lamp's mode for that long), `dim` `to`, `secs` and `over` (the beam sags and
+  comes back), `drain` `to` (the charge: 0 kills it), `works` fills it, `dead` empties it. The condition
+  `{"charge": 0.25}` holds while the charge is under that
 - `skin`: **a cast member's skin** (DECISIONS 2026-10-29; docs/GODOT_LOOK.md §5): `{"skin": "aoi", "wet": 0.7,
   "sweat": 0.5}`: `wet` the sweat film (a sheen, the skin a touch darker), `sweat` beads standing on it, `drips` runs,
   `oil` oiled up, each 0..1 (left out: unchanged; 0 takes it off). From a beat, a scene's cue or an answer's `do`; it
@@ -692,11 +731,35 @@ with `{"tick": "<id>"}` at the end of that beat, not by its own trigger (the sto
   `crouched` 0.55 (the reach for a crouched player), `meter` 1.2 s (to fill), `drain` 1.5 s, `calm` 3 s (after a
   catch)). In her cone, in reach and in her line of sight, the suspicion meter fills; out of it, it drains; full,
   `caught` fires. Hidden (a locker) or in a safe zone, she doesn't see the player, unless a route point `check`s
-  that locker (`{"at": "hall_back", "wait": 2, "check": "hall_locker"}`): there, she finds them.
-- `trick` (TRICKS.md §2), `checkpoint` (an autosave in Play). The `jumpscare` (`figure`, `secs` 0.8) can also have
+  that locker (`{"at": "hall_back", "wait": 2, "check": "hall_locker"}`): there, she finds them. `torch` (0 when left
+  out): **the light gives you away** (FLASHLIGHT_PLAN §2b): while the player's flashlight is on within her range and
+  her eye has a clear way to it, from any side, the meter fills at `torch` times its speed (1 as if she saw them, 2
+  twice as fast), and at least that fast while she sees them with it on.
+- `beam`: **what someone does in the flashlight's beam** from now (DECISIONS 2026-11-07, FLASHLIGHT_PLAN §2): the
+  cast's `beam` (below) with these fields over it, `{"beam": "aoi", "does": "backs_off", "dist": 1.2, "keep": 2}`; a
+  field left out stays as it was; `"does": "nothing"` leaves her only heard (`lit`, `flashed`). The cast's `beam`:
+  `does` one of `nothing`, `backs_off` (steps back from the light along the line from the player, facing them, `dist`
+  metres at `speed`, stopping at a wall; keeps away while lit and `keep` seconds after, then her behaviour again from
+  there), `freezes` (still while lit, on again `keep` seconds after), `flees` (walks to her `flee` spot, stays `keep`
+  seconds unlit, then her behaviour again), `vanishes` (gone while lit and `keep` seconds after), `covers` (her `clip`,
+  else her `lit` move, held `keep` seconds), `comes` (walks toward the light while it's on her), `charges` (comes at twice
+  `speed`; within 0.9 m she catches the player: `caught`); `after` (0.4) the seconds in the beam first, `bright` (0.3)
+  how strong it must be (the spill alone is 0.2; a dying battery's short reach moves her only close up); `face` an
+  expression and `sound` a sounds id as it starts; `near` (metres, 0) her presence on the lights round her:
+  `near_torch` and `near_lamps` (`flicker`, `dim`, `die` or `none`) the flashlight and the lamps within reach of her,
+  more as she's nearer. The beam's strength on her: the flashlight on, her chest or head in its reach and cone (the
+  hot cone whole, the spill a fifth), whole within a third of the reach and fading to its end, nothing in between,
+  times the beam's brightness (play.gd `beam_at`, runtime.js `beamAt`)
+- `trick` (TRICKS.md §2), `checkpoint` (an autosave in Play). `lights_die` (`room`, or one `light`; `secs` 1) puts
+  the lights out for `secs` and brings each back as it was (one switched off stays off); `order: "toward"` puts them
+  out one by one toward the player, the farthest first, `gap` seconds apart (0.4), all back together `secs` after the
+  last; the beat waits for it. `loop_hall` and `cut_away` are no longer offered (the story check warns: the loop isn't
+  in Play yet, docs/HORROR_TODO.md 1; the eye is never turned for the player, DIRECTING §1). The `jumpscare` (`figure`, `secs` 0.8) can also have
   `clip`, a motions id the figure plays while it's there (a lunge: Godot, as `anim` plays on someone not in play; its
   length is the scare's unless `secs` says), `expr`, a face from the library on it (a cast member: §3.7), and
-  `sound`, a sounds id played at it instead of the shelf's big sting (the desk and Godot); the check knows each
+  `sound`, a sounds id played at it instead of the shelf's big sting (the desk and Godot); the check knows each.
+  `quiet` (seconds): a `hush` first, so the beds are silent the last half second before it (`game.quiet` the default
+  for every jumpscare; none when unset)
 - `chapter`: **a chapter card** (nights as chapters; DECISIONS 2026-10-27, late night): the view goes dark, the title
   is held up in the middle (`{"chapter": "Night 2", "sub": "23:40", "time": "night"}`: `sub` small under it, `secs` how
   long it's held, 3 by default), the time of day changes behind it (`time`, from here on: the scenes after the stitch
@@ -733,9 +796,18 @@ with `{"tick": "<id>"}` at the end of that beat, not by its own trigger (the sto
   needs while it's open (the user, 2026-11-02: "a helper… so players can see the object", optional per task): `true`
   hangs it over what its `ticks` names (a thing used, read, looked at or picked up, an area walked into, who something
   is given to, where she gets to), or the id of a thing, a person, an area, an item or a note. A flat glyph in the HUD
-  theme's accent (a diamond's outline on a short stem pointing down at it: no fill, no glow), bobbing slowly; hidden
-  behind the eye and past 30 m, softer up close; gone once the task is done or failed. A hidden task can have one: the marker is then how the
-  player knows. Godot's runtime draws it (`marker.gd`); the desk's Play doesn't yet. Ticked
+  theme's accent (a diamond's outline, its corners softly rounded, on a short stem that fades out toward the thing, a
+  faint glass tint inside, no glow), bobbing slowly. **The nearer the clearer** (ui-v3, DECISIONS 2026-11-08): nearly
+  opaque inside 3 m, half as strong across a room, a faint floor from 36 m, gone by 72 m; and about half as strong again
+  with the building between (a wall, a floor, a shut door: the structure only, furniture doesn't count), small and bare, so
+  it can be seen roughly through the rooms; nearer than 7 m in clear view a small core takes shape inside it and the name
+  of what it marks comes over it (a person's, as the HUD names her: "the guide" till she's met; an item's, a note's title);
+  a little softer when it is the very thing the cursor is on (its prompt says what it is); out of the view (behind, to a side) a
+  small diamond with a chevron rides an ellipse near the screen's edge on the way to it, after a moment out of sight; gone
+  once the task is done or failed, behind a card or a choice, and with the HUD in a held scene and the pause menu. The player
+  can turn it Off or make it Clear (stronger, the names from farther, the pointer at once) in the pause menu's Display page
+  (Quest marker; the default is Subtle). A hidden task can have one: the marker is then how the
+  player knows. Godot's runtime draws it (the HorrorStudioUI plugin's `marker.gd`, fed by play.gd; a game made by hand puts an `HSQuestMarker` node on the thing); the desk's Play doesn't yet. Ticked
   and failed are heard (`ticked`, `failed`). The list is kept with the run, through the stitches, until `untodo`
   takes a task off (`{"untodo": "mop_floor"}`) or clears it (`{"untodo": true}`).
   `tick`, `fail`: `{"tick": "mop_floor"}` ticks an open task, `{"fail": "mop_floor"}` fails it.
