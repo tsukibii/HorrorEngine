@@ -29,6 +29,15 @@ The user's answers, newest first. They override the plan, the research and the d
   shaken down.
 - **Then into tutorial v2**: the atmosphere and the eye candy, with the Look nodes it doesn't use yet (the tape, a
   shaft, a pattern light, a puddle, a leak, her look).
+- **Later the same day**: "The dust motes look too stylized, can you research on making better more realistic motes".
+  Researched (docs/research/eye_candy.md §2.3b):
+  - dust is flat flakes and lint, which flash as they tumble;
+  - it's white in the light's colour;
+  - the eye sees sharp points where a camera sees soft discs;
+  - it rides slow air in eddies (curl noise);
+  - sizes vary widely.
+
+  The motes were rebuilt that way.
 
 ## 2026-11-07, night (the user: "tutorial v2": a hotel floor from the scene builder to a story built by hand in Godot)
 

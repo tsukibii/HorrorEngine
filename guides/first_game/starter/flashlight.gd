@@ -4,7 +4,8 @@
 ## LED full and white to `low_at`, three blinks, then its low mode at a third; near empty it strobes. Dead, it stutters
 ## out and F only clicks. A spare set (`spares`, or batteries picked up: pickup.gd) goes in by itself after
 ## `change_seconds` of dark. `beam_on(point)` says how lit a point is, 0..1 (light_shy.gd). `battery` 0: it never runs
-## down (the first game's).
+## down (the first game's). Its AirBeam (the Look plugin's HSBeam) draws the beam in the air and gives the light a
+## flashlight's cookie (a hot core, a ring, a dim spill): beam_on weighs by the same.
 extends SpotLight3D
 
 signal low
@@ -140,7 +141,7 @@ func beam_on(p: Vector3) -> float:
 	if dist < 0.01 or dist > spot_range:
 		return 0.0
 	var ang := rad_to_deg((-global_basis.z).angle_to(d))
-	var cone := 1.0 if ang <= spot_angle else (0.2 if ang <= spot_angle * 1.6 else 0.0)
+	var cone := _cone(ang)
 	if cone == 0.0:
 		return 0.0
 	var fall := 1.0 if dist <= spot_range / 3.0 else clampf(1.0 - (dist - spot_range / 3.0) / (spot_range * 2.0 / 3.0), 0.0, 1.0)
@@ -152,6 +153,18 @@ func beam_on(p: Vector3) -> float:
 	if not hit.is_empty() and global_position.distance_to(hit["position"]) < dist - 0.3:
 		return 0.0
 	return cone * fall * minf(1.0, b)
+
+
+## how much of the beam a way off its axis gets: the cookie's profile when the beam wears one (the AirBeam's: a hot
+## core, a ring, a dim spill), else the whole cone (and a fifth in the spill round it)
+func _cone(ang: float) -> float:
+	var beam := get_node_or_null("AirBeam")
+	var kind := str(beam.get("cookie")) if beam != null else ""
+	if kind in ["flashlight", "led", "lantern"]:
+		if ang >= spot_angle:
+			return 0.0
+		return HSAir.profile(kind, tan(deg_to_rad(ang)) / tan(deg_to_rad(spot_angle)))
+	return 1.0 if ang <= spot_angle else (0.2 if ang <= spot_angle * 1.6 else 0.0)
 
 
 func _story_says(text: String, task: String) -> void:

@@ -172,6 +172,58 @@ The docs' warning is for fast lights; a flashlight swung hard smears for about 5
 - A weak light mustn't show them everywhere: the candidate's moon (energy 0.06) speckled the whole sky. Motes need a
   knee, a light level under which they stay dark. Real dust isn't seen by moonlight.
 
+### 2.3b Realistic motes (the user, 2026-11-08: "The dust motes look too stylized, can you research on making better more realistic motes")
+
+The first motes were round soft dots of one size, lit evenly, drifting by a sine wander: a camera's bokeh, not dust.
+What makes real ones read:
+
+1. **What they are.** Household dust is mostly flat skin scales and fabric fibres (lint), 1 to 100 µm; the ones seen
+   in a beam are the bigger flakes and threads. Most dust by count is under 10 µm, invisible, and hangs in the air
+   for minutes to hours. Shares of skin and fibre vary by source and home: consumer pages, not studies.
+2. **Why they twinkle** (mine, from the flake models). A flat flake tumbling in the air sends the light
+   back like a mirror only when its face lines up with the light and the eye: it flashes, goes dim, flashes again.
+   Glitter is rendered the same way: a discrete set of mirror flakes (Jakob et al., "Discrete stochastic microfacet
+   models", SIGGRAPH 2014; Zirr and Kaplanyan 2016; Deliot and Belcour 2023), each bright only within a narrow lobe.
+   A fibre glints along its length where the light meets it square, as hair does.
+3. **Their colour.** Particles over a micrometre scatter by Mie, "all colors equally": white or grey, the light's own
+   colour, never the sky's blue (the Tyndall effect proper is the colloids').
+4. **Seen by the eye, not a camera.** A camera at a wide aperture turns motes into soft discs (bokeh), and a film's
+   dust is often that: "even the best-looking particles in those photos are out of focus". The eye focuses past them
+   to what it's looking at: in the beam they're sharp points, and the ones a hand's width from the face aren't seen at
+   all (mine; a VFX critique asks for soft motes, for a camera). In first person: points, faded out near the eye, never
+   discs.
+5. **How they move.** Brownian motion is microscopic. What you see is the air moving: convection, people, doors.
+   Indoors that's about 0 to 10 cm/s still, 15 to 20 cm/s at most where many people are comfortable, a mean of up
+   to 35 cm/s in an occupied zone. So motes drift slowly in coherent eddies, not jitter. The standard way is **curl
+   noise** (Bridson, Hourihan and Nordenstam 2007): the curl of a smooth potential is a divergence-free flow, so
+   particles swirl without bunching up or thinning out. Small ones settle very slowly.
+6. **Sizes vary a lot.** Epic's dust tutorial sets the size "random non-uniform" over about 1 to 10. Many small and
+   faint, a few big and bright (a power law).
+7. **Shown by contrast.** "They need a dark surround and a hard beam"; backlit or sidelit they glow. In a lit room the
+   same motes vanish (§2.3 H's knee).
+
+**So the motes become:**
+- **Flakes** (88%): a size from a power law (0.4 to 2.5 mm), each tumbling about its own axis at its own rate. Its
+  light is a dim glow (the two-lobed phase, §2.3 H) plus a **mirror flash** when its face lines up with the light and
+  the eye (`pow(|n·h|, shine)`).
+- **Fibres** (12%): a thread 3 to 8 times as long as wide, drawn along its own axis as seen, glinting where the light
+  meets it square.
+- **Shape**: points with a Gaussian edge, never discs. Under a pixel and a half they grow, dimmed to keep their light
+  (TAA). They fade out within half a metre of the eye.
+- **Motion**: a curl-noise flow, two octaves of eddies about 1.5 m and 0.6 m across, at `stir` (3 cm/s, a still
+  room's air), the atmosphere's wind on top, a slow settling, wrapped round the eye.
+- **Colour**: the light's, with a touch of each mote's own (lint isn't white).
+- **Where they show** (found tuning them, 2026-11-08). One light level can't tell a flashlight's beam from a lamp
+  nearby: Godot's spot lights don't pack their light into the beam the way a real flashlight does, and a lamp at 1.5 m
+  outshone the spill. So:
+  - a mote inside an HSBeam's light is lit by the beam directly (the cone, cookie and falloff per mote);
+  - the other lights reach it faintly above a knee of 2.
+
+  Dust shows in beams and sunbeams, and a lit room stays clear. "A Unity asset uses collision volumes to brighten
+  dust that passes through light rays" is the same idea.
+- **Never blooming**: a mote's brightest pixel is capped under the look's glow (1.05). Specks that bloomed read as
+  soft blobs, the stylized look again.
+
 ### 2.4 The design that follows
 
 | Piece | What it is |
@@ -179,7 +231,7 @@ The docs' warning is for fast lights; a flashlight swung hard smears for about 5
 | **HSAtmosphere** (the fog level) | One node for a level's air. `fog` 0..1 (clear, dusty, haze, mist, fog, thick) mapped onto the fog's density, so it's one number to set by eye. It also holds the fog's colour, **ground mist** (a fog shader on a world FogVolume: thick low down, thinning with height, broken by noise drifting on the `wind`), `dust` and the beams' strength. `fog_to(level, seconds)` lets a moment roll the fog in or out. Its presets name the places: a clean room, a dusty room, a hazy night, mist in the woods, fog, a thick fog. The look's haze keeps its anisotropy (0.55) for lamps and windows; the atmosphere sets the density. |
 | **HSBeam** (a light's beam in the air) | The cone's shader of §2.3 F, on any SpotLight3D: the flashlight by default, a car's lamps, a street lamp, a searchlight. It reads its light every frame (energy, colour, range, angle, attenuation, the cookie as its profile), so the battery's curve, a flicker and a dying bulb show in the air. Its density is the atmosphere's: the same haze, the same mist by height, the same noise on the same wind. The flashlight's own fog energy goes to 0: no double beam, no ghost. |
 | **The flashlight's cookie** | A hot core, a ring and a dim spill to a soft edge (a reflector's beam: "hotspot, beam (corona) and spill"; an IES-style profile is "bands for rings, cores, gaps"). It goes on the starter's flashlight as a projector, its edge from the angle attenuation, and the beam reads it too. |
-| **HSDust** | Motes in a box round the eye, drifting on the wind. They're lit by every light through a two-lobed phase (forward 0.6, back −0.35 at 35%) with a knee, faded out near the eye, a pixel or two big. How many follows the atmosphere's `dust`. |
+| **HSDust** | Motes in a box round the eye, riding a curl-noise flow of slow eddies with the wind on top: tumbling flakes that flash when a face catches the light, and threads of lint (§2.3b). They're lit by every light through a two-lobed phase with a knee, sharp points never discs, faded out near the eye. How many follows the atmosphere's `dust`. |
 
 **Cost** (mine, to be measured on the user's card):
 - The beam costs its pixels × 24 samples: a flashlight's cone covers 20 to 40% of the screen.

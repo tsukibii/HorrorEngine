@@ -4,7 +4,9 @@ res://starter/ by tools/godot_byhand.py. Yours to change.
   player.tscn, player.gd   the player: WASD, Shift runs, the mouse looks, E uses (or puts a note away), F the
                            flashlight, Esc frees the mouse; it steps up a tread or a kerb; stops when the Story ends
   flashlight.gd            the player's flashlight (on its Eye/Flashlight): batteries that run down, a bulb's or an
-                           LED's curve, low and dead, spare sets going in by themselves; beam_on(point)
+                           LED's curve, low and dead, spare sets going in by themselves; beam_on(point), weighed by
+                           its cookie; its AirBeam child (the Look plugin's HSBeam) draws the beam in the air (an
+                           HSAtmosphere sets how thick the air is) and gives the light a flashlight's cookie
   interior.gd              on an interior's instance: stood at a street's marker, its doors opened with E, its lamps;
                            room_box(room) and fit_area(area, room): an area the size of one of its rooms
   door.gd                  a door from an interior's export swinging on its hinge (interior.gd puts it on every door);

@@ -3,6 +3,28 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## A beam in the fog and dust in the light (2026-11-08)
+
+- **`VIEWPORT_SIZE` is 0 in a spatial shader's `vertex()`** (Godot 4.7, Forward+, a particle's draw pass): pass the
+  picture's size as a uniform. The motes' "never under 2 px" read it there, so every mote grew 20,000-fold into a
+  full-screen quad dimmed to nothing: 6.3 s a frame on lavapipe and not one mote seen. Timing each piece on its own
+  found it (the standard material 47 ms a frame, ours 6258). A growth gets a cap too (6).
+- **A cone hull from SurfaceTool drew nothing; Godot's CylinderMesh did.** Its winding faced the other way for
+  `cull_front`. Use a primitive mesh, whose faces are known, and a debug colour for "the hull is drawn here" before
+  judging the shader.
+- **The softness of a beam in Godot's froxel fog is the light's own profile, not the grid.** 128 froxels without the
+  filter cost 9.5 times as much for an edge 2 px sharper. A hard-edged spot narrowed it more, and a beam of its own
+  with a cookie made it a beam.
+- **`pow` of a negative is NaN, and NaN draws black.** On the beam's axis, the cone's cosine rounded a hair over 1, the
+  rim went negative, and `pow(rim, attenuation)` left black dots along the beam; and a mote with the light straight
+  behind it had no half vector (`normalize(0)`). Clamp before `pow`, guard a normalize that can meet zero.
+- **A picture's difference counts every jittered pixel.** The motes were measured as lit pixels with dust on against
+  off; with any haze, the beam's per-frame jitter counted too (239 "motes" that were the beam). Measure a thing alone
+  (the motes in clear air), or against a frame that has everything else.
+- **An eased value can't also carry direct changes.** The air eased every change over 1.5 s, so `fog_to` lagged its
+  tween and a zone let go at the default rate. The level's own numbers apply at once now; only each zone's pull
+  eases, over that zone's own seconds.
+
 ## Curtains that crumpled where nothing touched them (2026-11-04, after the wood)
 
 - **A rail keeps its family's distance from the wall**: the flat's curtains were first hung 100 to 110 mm out (to

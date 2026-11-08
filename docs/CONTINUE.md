@@ -20,22 +20,33 @@ systems that open, hold, move and are read; 2026-11-05, night, on `gameplay-enha
 builder's floors, the street's steel stair, climbing in Godot and on the desk). Read this after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-08, `claude/optimistic-tesla-q01qg6`): eye candy researched, the atmosphere next
+## Where it stopped last (2026-11-08, `claude/optimistic-tesla-q01qg6`): the air built, the tutorial next
 
 The user asked for a better flashlight and the level's air: "a beam in a fog", a fog level adjuster, dust in the
-light, with eye candy researched first and the system then put into tutorial v2 (DECISIONS 2026-11-08). The research
-is docs/research/eye_candy.md. The fog lab, measured in Godot 4.7 (its sheet `docs/godot_sheets/2026-11-08_fog_beam.jpg`),
-found:
-- the balanced haze hides the flashlight's beam;
-- Godot's froxel fog only draws a glow;
-- a beam drawn by its own shader with the flashlight's cookie reads as a beam.
+light, eye candy researched first, the system then put into tutorial v2 (DECISIONS 2026-11-08). Later the same day:
+"The dust motes look too stylized".
 
-Next, in order:
-1. HSAtmosphere, HSBeam, the cookie and HSDust (the note's §2.4) with a check;
-2. eye candy A (the TV's light, a pickup's glint, eyeshine, moths, dust shaken down);
-3. all of it in tutorial v2, with the Look nodes it doesn't use yet.
+- **The research**: docs/research/eye_candy.md (§2 the fog lab measured; §2.3b realistic motes; §3 the catalogue).
+- **Built in the Look plugin** (GODOT_LOOK §5j):
+  - `HSAtmosphere`: the fog level as one number, mist, wind, dust, `fog_to`, presets;
+  - `HSBeam`: a light's beam drawn by its own cone shader, with a flashlight's cookie;
+  - `HSDust`: tumbling flakes and lint on a curl-noise flow;
+  - `HSAirZone`;
+  - 11 presets (52 in all).
+- **The starter kit's flashlight**: wears the beam and the cookie; `beam_on` weighs by it.
+- **Checked by LOOKPLUGIN**: `demo/air.gd`, every air preset in the nodes room, the editor test with a flashlight and
+  the air.
 
-Blender's module is set up here (`vendor/blender`), for made props in the tutorial.
+Next:
+1. **Tutorial v2** (the user's "include this system part of the tutorial too"):
+   - the hotel's air: haze, dust, a dustier stairwell (an air zone);
+   - a moment that changes the fog (the starter's event and scare areas get `fog`);
+   - the Look nodes it doesn't use yet: the tape at the jump, the street lamp's shaft, the leak and a puddle in the
+     stairwell, the leaves on 304's wall, her look wet;
+   - its pictures and play test.
+2. **Eye candy A** (research §4): the TV lighting the room, a pickup's glint, eyeshine, moths, dust shaken down.
+3. **The export's torch** (play.gd: a hot spot and a spill) has no beam yet. It wants the story's `air` word (the
+   level's fog, a room's) with the desk's side, the check and STORY_FORMAT in one commit; GDPLAY, GDTESTROOM, DIRECTOR.
 
 ## Where it stopped before (2026-11-07, night, `claude/optimistic-tesla-q01qg6`): Tutorial v2, Room 304
 

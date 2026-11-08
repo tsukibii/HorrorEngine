@@ -1,0 +1,17 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://addons/horrorstudio_look/nodes/beam.gd" id="1"]
+
+[node name="LampBeam" type="SpotLight3D"]
+rotation = Vector3(-1.5708, 0, 0)
+light_color = Color(1, 0.72, 0.42, 1)
+light_energy = 3.0
+shadow_enabled = true
+spot_range = 7.0
+spot_angle = 40.0
+spot_angle_attenuation = 1.5
+
+[node name="AirBeam" type="Node3D" parent="."]
+script = ExtResource("1")
+cookie = "lantern"
+phase = 0.3

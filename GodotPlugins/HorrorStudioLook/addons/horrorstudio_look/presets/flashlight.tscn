@@ -1,0 +1,15 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://addons/horrorstudio_look/nodes/beam.gd" id="1"]
+
+[node name="Flashlight" type="SpotLight3D"]
+light_color = Color(1, 0.94, 0.84, 1)
+light_energy = 4.0
+shadow_enabled = true
+spot_range = 14.0
+spot_angle = 24.0
+spot_angle_attenuation = 2.5
+
+[node name="AirBeam" type="Node3D" parent="."]
+script = ExtResource("1")
+cookie = "flashlight"

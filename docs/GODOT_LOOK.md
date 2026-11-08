@@ -31,6 +31,7 @@ Four kinds, by what they work on:
 | **Things of their own** | `HSRainBox`, `HSPuddle`, `HSBloodSplat`, `HSLightShaft`, `HSHeadlightSweep` | drop it where it goes. It makes its streaks, decal, quad, card or lamp as children of its own that are never saved (no owner), so the scene file holds only the node and its numbers. They run in the editor: the rain falls, the dust drifts, a sweep passes every `preview_every` seconds |
 | **On a mesh you have** | `HSWetSurface`, `HSWindowPane`, `HSWallLeak`, `HSCrtScreen` (all `HSOnMesh`), `HSMirrorSurface`, `HSCharacterLook`, `HSLiquidFill` | drop it under the mesh (or the node holding the meshes, or set `target`). The first four change the meshes' materials while they're there, in the editor too, and put the meshes' own back before every save (the editor's pre-save notification) and when removed, so a re-export's level and yours never fight over a material (`HSCrtScreen`: a tube television's glass on a quad or on one `surface` of the set's mesh, §5i). The mirror reflects and the character wears its skin, eyes and hair when the game runs (they need its camera and its glb). `HSLiquidFill` keeps a bottle's liquid level and sloshing, in the editor too (liquid.gd, docs/PROPGEN.md §10; the game puts one under every made prop's `<name>_liquid` as it enters a level). `HSPropFX` under a made prop (or in the prop's own `.tscn`; the game puts one on every made prop that has some) gives it its enhancers, each a switch: glow, flame (with its candle light), smoke, steam, wax; a kind off for the whole project in Project Settings, `horrorstudio/prop_fx/*` (docs/PROPGEN.md §14) |
 | **Lights with behaviour** | `HSFlickerLight` (omni), `HSFlickerSpot`, `HSPatternLight` (spot) | the light itself, its effect in the inspector beside its own settings. A flicker multiplies the Energy you set (the light at full), previewed in the editor, saved at full; `on_mains` puts it in the group `hs_mains`, which the game's power cut switches off and on (any light of yours in that group too). A pattern light draws its loop when the scene starts and is saved without it |
+| **The air** (§5j) | `HSAtmosphere`, `HSBeam`, `HSDust`, `HSAirZone` | one `HSAtmosphere` a level: its fog level (one number), ground mist, wind, dust; `HSBeam` under any SpotLight3D draws its beam in that air (a flashlight's, with a cookie); `HSAirZone` a box whose air is different while the eye is in it. They run in the editor too; the environment's own fog and the light's projector go back before every save |
 | **Over the picture** | `HSGrade`, `HSTape` | the level's own grade or tape while it's loaded, over the story's `game.grade` and `game.vhs`, which come back when it goes; in a project of your own they add the layer themselves. Picking a grade's `preset` fills its numbers to tune from. Seen when the game runs (a screen effect isn't drawn in the editor's 3D view) |
 
 Orientation, the same for every node that has one: **forward (-Z, the way the node looks) is into the room.** A
@@ -38,13 +39,16 @@ shaft's beam runs along it (tilt the node down for the sun); a sweep's and a lea
 wall with forward into the room and X along the street or the wall; a blood splat lies on the surface its +Y (the
 green arrow) points out of.
 
-The presets (`presets/*.tscn`, 41): `rain`, `downpour`; `wet_floor`, `wet_floor_raining` (ripples), `damp_floor`;
+The presets (`presets/*.tscn`, 52): `rain`, `downpour`; `wet_floor`, `wet_floor_raining` (ripples), `damp_floor`;
 `puddle`; `blood_pool`, `blood_dried`, `blood_wall`; `wall_leak`; `window_shaft`, `window_sun` (the shaft with a
 warm spot shining the same way, a child of it); `headlight_sweep`; `caustics_light`, `blinds_light`, `leaves_light`,
 `clouds_light`; `fluorescent_tube`, `dying_bulb`, `candle`, `alarm_pulse`, `faulty_neon`, `desk_lamp_dying`;
 `mirror` (a glass quad with its reflection), `window_pane` (a quad with rain on it), `crt_screen` (a 14-inch tube's
 glass showing snow, §5i); `grade_cinema`, `grade_cold`,
-`grade_noir`; `tape_camhybrid`, `tape_worn`; `character_look`, `character_sweating`; `look_environment`. A preset is
+`grade_noir`; `tape_camhybrid`, `tape_worn`; `character_look`, `character_sweating`; `look_environment`; the air (§5j):
+`air_clean_room`, `air_dusty_room`, `air_hazy_night`, `air_woods_mist`, `air_fog`, `air_thick_fog`, `flashlight` and
+`flashlight_led` (a SpotLight3D with its `AirBeam` and cookie), `lamp_beam` (a lamp's cone in the air), `dust`,
+`air_zone_dusty`. A preset is
 a scene: its root's settings are in the inspector where it's placed; for one with children (`window_sun`, `mirror`,
 `window_pane`) right-click it, Editable Children, to tune those too.
 
@@ -925,6 +929,111 @@ across the 400 px box against 64.8, the hum 3.3 % over twelve frames; across the
 against 0.0174 close, the raster 0.327 over the set off 0.020, the glint's peak 1.00 over the lower glass's 0.152; the
 snow's grain 0.024. The check's two Godot runs that take longest (the nodes demo with its 41 presets, the demo's
 sixteen stages) were given 20 and 30 minutes that day: on a machine running three other jobs they took over 10 and 15.
+
+## 5j. The air: a beam in the fog, the fog level, dust (`air.gd`, `HSAtmosphere`, `HSBeam`, `HSDust`, `HSAirZone`; DECISIONS 2026-11-08)
+
+The user: "when we put a light in real life in the woods it's more like a beam in a fog, maybe have a fog level
+adjuster and dust particle visible". The research (docs/research/eye_candy.md §2) measured the old look:
+- the balanced haze (0.009 at anisotropy 0.55) left the flashlight's beam invisible from the player's eye;
+- Godot's froxel fog only draws a beam as a soft glow, and finer froxels cost nine times as much.
+
+So the beam draws itself, and one node sets the air.
+
+**`HSAtmosphere`, the fog level.** One a level (a second waits until the first goes).
+- `fog` 0..1 is the fog level, `HSAir.density(level)` = 0.15 × level^2.03 per metre:
+  - 0.25 is the balanced look's haze (0.009);
+  - 0.5 sees about 80 m;
+  - 0.75 about 35 m;
+  - 1 about 20 m (to see through ≈ 3 / density).
+- It sets the environment's volumetric fog density and colour.
+- A World FogVolume of its own (`air_fog.gdshader`) varies the density by 3D noise drifting on `wind` (`noise`: wisps
+  and pockets) and adds **ground mist** (`mist`, 0.12 × mist² per metre at `ground`, thinning over `mist_height`).
+- It keeps motes round the eye (an `HSDust`, `dust`).
+- `beams` scales every HSBeam in it.
+- **Presets** (`preset`, or the `air_*` scenes): `clear`, `clean_room`, `dusty_room`, `hazy_night`, `woods_mist`,
+  `fog`, `thick_fog`. A number changed afterwards makes it `custom`.
+- `fog_to(level, seconds)` rolls the fog in or out; `air_to({fog, mist, dust, noise}, seconds)` moves several.
+- **`HSAirZone`**, a box (`size`) with its own `fog`, `dust` and `mist` (under 0 keeps the level's). While the eye is
+  inside, it pulls the air to its numbers over `seconds`, and lets go over the same on the way out. The smallest box
+  holding the eye wins.
+- With the look's effects on Low (`HSLook.quality`, the environment's `hs_no_haze` meta) the froxels stay off; the
+  beams and the dust carry the air.
+
+**`HSBeam`, a light's beam in that air.** Under a SpotLight3D, or `light` pointing at one.
+- **Its cone** (`beam.gdshader`): a cone hull round the light, its back faces drawn (so the eye can be inside it),
+  added after the opaque pass.
+  - Along each view ray it sums the light scattered toward the eye inside the cone with 24 equiangular samples about
+    the apex (`quality` 12 or 32), jittered per pixel and frame for TAA.
+  - The ray stops at the depth buffer.
+  - It uses the spot's own falloffs (Godot's: the rim to `spot_angle_attenuation`, the range window, `spot_attenuation`).
+  - It uses the light's projector as its profile.
+  - Its phase is even by default (`phase`: below 0 brighter from behind the light, above 0 facing it).
+  - The air's density, mist and noise are the same as the FogVolume's, on the same wind, with extinction both ways.
+- **What it reads.** Every frame it reads its light: on or off, energy, colour, range, angle. So a battery running
+  down, a flicker and a power cut show in the air.
+- **Brightness**: `GAIN` 3 × energy × `strength` × the atmosphere's `beams`, over `beam_density(d)` =
+  0.06 × (d / 0.06)^0.75 (thin air carries a little more than its share: the tone curve's toe would eat a faint beam).
+- **`cookie`** puts a flashlight's beam on the light, as its projector and the beam's profile both (`HSAir.cookie`):
+  - `flashlight`: a hot core to a third of the cone, a faint ring, a dim spill;
+  - `led`: whiter, flatter, a sharper edge;
+  - `lantern`: an even wash.
+- **`leave_fog`** sets the light's volumetric fog energy to 0, so the froxels don't draw a second, softer beam that
+  trails a turn.
+- **Without an HSAtmosphere** it reads the environment's own haze.
+- **No shadows in the beam**: Godot's shadow atlas can't be read from a shader. From the holder's eye a shadow lies
+  behind its occluder anyway. Seen from the side, a lamp's or a window's shafts come from the froxels and HSLightShaft.
+
+**`HSDust`** (the motes rebuilt after the user's "too stylized", research §2.3b: dust seen the way an eye sees it in a
+beam, never a camera's soft discs).
+- **Where they are** (`dust_particles.gdshader`): `most` (12,000 at dust 1, 70 a cubic metre) in a box round the eye
+  (`box` 7 × 3.5 × 7 m, wrapped round it, so nothing pops in view).
+- **How they move**: they ride a **curl-noise flow**, two octaves of slow eddies (about 1.5 m and 0.6 m across) at
+  `stir` (3 cm/s, a still room's air), with the atmosphere's wind on top and a slow settling of the biggest.
+- **What they look like** (`dust.gdshader`):
+  - **Flakes** (88%): sizes from a power law about `size_mm` (0.9 mm, from 0.4 to 2.5 mm), each tumbling about an axis
+    of its own at a rate of its own. Their light is a dim glow through a two-lobed phase (forward 0.6; back −0.5 at
+    45%, the flakes' glint back toward the light, so they show in your own beam), plus a **mirror flash** when a face
+    lines up with the light and the eye (`pow(|n·h|, shine)`): the twinkle.
+  - **Fibres** (`fibres`, 12%): threads of lint 2.5 to 5 times as long as wide, drawn along their own axis as seen,
+    glinting where the light meets them square.
+  - Gaussian points, never discs, a touch of each mote's own colour (lint isn't white).
+- **Lit in the beams.** A mote inside an HSBeam's light (the four nearest the eye) is lit by it directly: the cone,
+  the cookie and the falloff are worked out per mote, its glow is `beam_scatter` 30 and the flash is the same. Dust
+  shows in a flashlight's beam and a sunbeam, as it does: a real flashlight packs its light into its beam, far brighter
+  than a lamp, and Godot's spots don't.
+- **Everywhere else** the ordinary lights reach it through `light()` with a faint glow (`scatter` 8) and a `knee` of 2
+  (full at 6). A room's lamps hardly show dust, and moonlight shows none.
+- **How bright**: its size and the growth's dimming go into the sum, and the result is capped at 1.0 (`most_light`),
+  under the look's glow (1.05). A speck stays a point and never blooms into a blob.
+- **On screen**: never under 1.6 px (grown and dimmed to keep its light, so TAA doesn't average it away). Faded out
+  within 0.7 m of the eye (it doesn't focus that close) and at the box's edge (seen to about 3.6 m).
+- `VIEWPORT_SIZE` reads 0 in `vertex()`: the picture's height is a uniform (LESSONS).
+
+**The flashlight.** The starter kit's (`guides/first_game/starter/player.tscn`) is now:
+- energy 4, angle attenuation 2.5;
+- an `AirBeam` (HSBeam, cookie `flashlight`);
+- `beam_on` weighed by the cookie, so a character is flashed in the core, not the spill.
+
+The `flashlight` preset is the same light; `flashlight_led` the LED torch. The export's torch (play.gd, a hot spot and a
+spill) has no beam yet: the story's air word and the desk's side come with it (CONTINUE).
+
+**Measured** (LOOKPLUGIN's `demo/air.gd`, the woods at night):
+
+| What | Measured |
+|---|---|
+| The beam in the air 6 m out at fog 0, 0.25, 0.5, 0.75 | 0, 28.9, 59.1 and 73.2 |
+| Half the energy | 0.58 of the beam |
+| The light off | 0 |
+| The old place after a 40° turn | nothing |
+| Motes in the beam's core | 40 a thousand pixels; none beside it, none by moonlight |
+| The motes' twinkle and spread | every lit pixel changed in a quarter of a second; the brightest tenth 19 times the faintest |
+| `fog_to(0.75, 1)` | 0.0343 half way (from 0.009 to 0.0836), there at the end |
+| A zone's fog | 0.697 of 0.7 inside, 0.253 of 0.25 after |
+| A lamp in mist | +25 near the ground, +13 up high |
+| A save | the projector, fog energy and density back, on again after |
+
+The nodes demo has every air preset (one atmosphere acting, three beams, the cookies) and the editor test a
+flashlight and the hazy night.
 
 ## 5d. Streets from the Blender bake (`street.gdshader`, `HSStreet`)
 

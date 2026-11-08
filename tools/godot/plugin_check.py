@@ -218,6 +218,35 @@ def nodes(g, keep, env):
         ("the next room's lamp off while the eye looks away, on when it looks back", zr.get("b_lamp_away") is False and zr.get("b_lamp_back") is True),
         ("a save puts every layer, mask and reach back, and they're on again after", zr.get("save_back") is True and zr.get("after_save") is True),
     ]
+    text = run_godot([g, "--path", str(OUT), "--rendering-driver", "vulkan", "--fixed-fps", "60", "-s", "res://addons/horrorstudio_look/demo/air.gd", "--", f"--out={keep}"], env, timeout=2400)
+    al = next((l for l in text.splitlines() if l.startswith("LOOKAIR ")), None)
+    ar = json.loads(al[len("LOOKAIR "):]) if al else {}
+    if not al:
+        print(text[-2000:])
+    lv = ar.get("levels", {})
+    b0, b25, b50, b75 = (lv.get(k, 0) for k in ["0.0", "0.25", "0.5", "0.75"])
+    mo = ar.get("motes", [0, 9])
+    checks += [
+        ("the air (air_level_*.png): a flashlight's beam in it as thick as the fog: none in clear air (%.1f), faint at the look's haze (%.1f), more at 0.5 (%.1f) and 0.75 (%.1f)" % (b0, b25, b50, b75),
+         b0 < 1.0 and b25 >= 2.0 and b50 > b25 * 1.6 and b75 > b50),
+        ("the beam follows its light: half the energy about half the beam (%.2f), none with the light off (%.1f), no trail where it was after a turn (%.2f of it)" % (ar.get("battery_half", 0), ar.get("off", 9), ar.get("turn_first", 9)),
+         0.35 <= ar.get("battery_half", 0) <= 0.65 and ar.get("off", 9) < 0.5 and ar.get("turn_first", 9) < 0.1),
+        ("dust (air_dust.png): motes lit in the beam's core (%.1f a thousand pixels) and fewer beside it (%.2f), none by moonlight (air_moon.png: %.2f)" % (mo[0], mo[1], ar.get("moon_motes", 9)),
+         mo[0] >= 4.0 * max(mo[1], 0.25) and ar.get("moon_motes", 9) < 0.3),
+        ("the motes look like dust, not dots (docs/research/eye_candy.md §2.3b): they twinkle and drift (%.0f%% of the lit pixels changed in a quarter of a second) and vary (the brightest tenth %.1f times the faintest, over %d pixels)" % (100 * ar.get("twinkle", 0), ar.get("mote_spread", 0), ar.get("mote_pixels", 0)),
+         ar.get("twinkle", 0) >= 0.3 and ar.get("mote_spread", 0) >= 4.0 and ar.get("mote_pixels", 0) >= 10),
+        ("fog_to: half way through (%.4f) between where it was (%.4f) and where it's going (%.4f), there at the end (%.4f)" % (ar.get("fog_to_half", 0), ar.get("fog_to_from", 0), ar.get("fog_to_want", 0), ar.get("fog_to_end", 0)),
+         ar.get("fog_to_from", 0) < ar.get("fog_to_half", 0) < ar.get("fog_to_want", 0) and abs(ar.get("fog_to_end", 0) - ar.get("fog_to_want", 1)) < 0.03 * ar.get("fog_to_want", 1)),
+        ("an air zone round the eye: its fog while inside (%.3f of 0.7), the level's again after (%.3f of 0.25)" % (ar.get("zone_in", 0), ar.get("zone_out", 9)),
+         abs(ar.get("zone_in", 0) - 0.7) < 0.03 and abs(ar.get("zone_out", 9) - 0.25) < 0.03),
+        ("ground mist (air_woods_mist.png): a lamp lights it more near the ground (%+.1f) than up high (%+.1f)" % (ar.get("mist_low", 0), ar.get("mist_high", 0)),
+         ar.get("mist_low", 0) > 1.0 and ar.get("mist_low", 0) > 1.5 * max(ar.get("mist_high", 0), 0.0)),
+        ("a save: the light's projector and fog energy and the environment's density go back, and come again after",
+         all(ar.get(k) is True for k in ["save_projector_back", "save_fog_energy_back", "save_env_back", "save_taken_again"])),
+        ("the air's presets in the room: one atmosphere acts and the others wait, each preset's numbers, three beams drawn, the cookies on, motes and a zone",
+         rep.get("air_one_acts") is True and rep.get("air_presets") is True and rep.get("air_beams") == 3 and rep.get("air_cookies") is True and rep.get("air_dust") is True),
+        ("a save puts the air back: the atmosphere's environment, the flashlight's fog energy", rep.get("save_air_back") is True),
+    ]
     ed = editor(g, keep, env)
     checks += ed
     ok = True
@@ -247,12 +276,13 @@ def editor(g, keep, env):
     rep = json.loads(line[len("HSEDITOR "):])
     saved = (proj / "editor_scene.tscn").read_text(encoding="utf-8")
     made = [w for w in ['name="Beam"', 'name="Card"', 'name="Sweep"', 'name="Pattern"', 'name="Leak"', 'name="Splashes"', 'name="Box"', "light_projector", "ShaderMaterial", "hs_wet_was", "material_override = SubResource",
+                        'name="BeamCone"', 'name="Air"', 'name="Motes"', "volumetric_fog", "FogVolume",
                         "layers =", "light_cull_mask", "hs_layers_was", "hs_zone", "omni_range"] if w in saved]
     errs = [l for l in text.splitlines() if "SCRIPT ERROR" in l or "Parse Error" in l]
     if errs:
         print("\n".join(errs[:20]))
     return [
-        ("in the editor: the rain, the wet floor, the shaft, the pattern, the flicker, the CRT and a room's light zone run in the viewport (%s)" % json.dumps(rep.get("live", {})), all(rep.get("live", {}).values()) and len(rep.get("live", {})) >= 5 and rep.get("live", {}).get("crt") is True and not errs),
+        ("in the editor: the rain, the wet floor, the shaft, the pattern, the flicker, the CRT, a room's light zone, a flashlight's beam and the air run in the viewport (%s)" % json.dumps(rep.get("live", {})), all(rep.get("live", {}).values()) and len(rep.get("live", {})) >= 5 and rep.get("live", {}).get("crt") is True and rep.get("live", {}).get("beam") is True and rep.get("live", {}).get("air") is True and not errs),
         ("in the editor: saved, the file holds only what was placed (%s)" % (", ".join(made) or "nothing made"), rep.get("saved") is True and not made),
         ("in the editor: after the save the nodes are on again", rep.get("after") is True),
     ]

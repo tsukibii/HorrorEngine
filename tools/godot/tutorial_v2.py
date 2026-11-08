@@ -57,6 +57,7 @@ reuse = "--reuse" in args and (proj / "hotel.json").is_file() and (proj / "tutor
 if reuse:                                                  # the project as the last run made it: the kit and the scene again
     who = json.loads((proj / "tutorial.json").read_text(encoding="utf-8")).get("who")
     BH.install(proj, starter=True)
+    run([G, "--headless", "--path", str(proj), "--import"], timeout=1200)   # the scripts' classes registered again (a new class_name in the kit or the plugin)
     print(f"  reusing {proj} (its exports and import kept)")
 else:
     if proj.exists() and any(proj.iterdir()) and not (proj / "tutorial.json").exists():
