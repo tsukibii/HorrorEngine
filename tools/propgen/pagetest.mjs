@@ -440,4 +440,4 @@ if (fails.length) {
   process.exit(1);
 }
 fs.rmSync(HOME, { recursive: true, force: true });
-console.log(`PROPPAGE ok (the page: cards, a form, Blender's make and its log; the picture editor: the cuts, pictures dragged onto a part, onto its own picture and over the whole texture, handles, undo, a smudge, a flourish, made as the canvas showed, the .ora template; 3D, variations, a recipe saved and deleted; the customizable ones: their filter, pictures seen on a made and a kept prop's own picture before it's made; a chair's cushions off and on; ${secs}s)`);
+console.log(`PROPPAGE ok (the page: cards, the Retro tab and its groups, a form, Blender's make and its log; the picture editor: the cuts, pictures dragged onto a part, onto its own picture and over the whole texture, handles, undo, a smudge, a flourish, made as the canvas showed, the .ora template; 3D, variations, a recipe saved and deleted; the customizable ones: their filter, pictures seen on a made and a kept prop's own picture before it's made; a chair's cushions off and on; ${secs}s)`);

@@ -1,0 +1,1 @@
+{"name":"retro_guardrail","family":"retro","spec":{"family":"retro","label":"road: a 2 m galvanised guardrail on its post","group":"road","file":"retro/3D_Retro_World 0.01/GLTF/Roads/Guardrail.glb","smooth":40,"pivot":"keep","materials":{"*":{"kind":"metal","rough":0.5}},"wear":{"dirt":0.35,"grime":0.3,"scratches":0.2}},"made":"2026-11-08","size_m":[2.0,0.18,0.7],"tris":404}

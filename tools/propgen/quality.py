@@ -577,6 +577,7 @@ REFERENCE_PROPS = ["soda_can_crushed", "coffee_can", "trash_bag", "saucepan", "f
                    "hakone_grass"]
 REVIEW = os.path.join(ROOT, "Content", "Studio", "Props", "retro_review.json")
 AUDIT = os.path.join(ROOT, "Content", "Studio", "Props", "retro_audit.json")
+AUDIT_MD = os.path.join(ROOT, "docs", "retro_audit.md")
 
 
 def budget(diag):
@@ -671,6 +672,7 @@ def audit(folder="retro", presets=None, out=AUDIT, log=print):
         row["recipes"] = sorted(n for r in pieces for n in used[r])
         # what each recipe made of it measures now, against the bar (Saved/Props/<recipe>/<recipe>.glb, where made)
         if os.path.exists(REFERENCE):
+            row["gaps_before"] = [list(g[:2]) + [g[4]] for g in against(m)]
             for n in row["recipes"]:
                 mg = os.path.join(recipes.OUT, n, n + ".glb")
                 if os.path.exists(mg):
@@ -685,7 +687,46 @@ def audit(folder="retro", presets=None, out=AUDIT, log=print):
     if out:
         with open(out, "w", encoding="utf-8") as fh:
             json.dump(res, fh, indent=1)
+        write_markdown(res, AUDIT_MD if out == AUDIT else os.path.splitext(out)[0] + ".md", book)
     return res
+
+
+def write_markdown(res, path, book=None):
+    """The audit as a page to read (docs/retro_audit.md): a table a group, each file's triangles, size, verdict and why,
+    its recipes, and its gaps against the bar as it came and as made."""
+    from . import recipes
+    group = {}
+    for n in book or {}:
+        try:
+            sp = recipes.resolve(book, n)
+        except SystemExit:
+            continue
+        if sp.get("family") == "retro":
+            group[n] = sp.get("group", "")
+    by = {}
+    for r in res["files"]:
+        g = group.get(r["recipes"][0], "") if r["recipes"] else "not added"
+        by.setdefault(g, []).append(r)
+    lines = ["# The retro pack, model by model", "",
+             "Made by `python tools/propgen.py quality audit` (docs/PROPGEN.md §29) from `Content/Studio/Props/retro_audit.json`:",
+             "each file's nearest LOD measured and judged, the review by eye (`retro_review.json`), its recipes and their gaps",
+             "against the bar (`quality_reference.json`, fifteen of the best made props) as the file came and as made (where",
+             "made on this machine). A gap is a measure outside the bar's 10th to 90th percentile.", "",
+             f"**{res['passed']} pass, {res['failed']} fail** of {len(res['files'])} files (the poles' LOD1 and LOD2 files judged beside their LOD0).", ""]
+    for g in sorted(by, key=lambda k: (k == "not added", k)):
+        lines += [f"## {g.capitalize() if g else 'Other'}", "", "| file | triangles | size (m) | verdict | recipes | gaps as it came -> as made | notes |",
+                  "| --- | ---: | --- | --- | --- | --- | --- |"]
+        for r in by[g]:
+            f = r["file"].split("/GLTF/")[-1].split("/Poles/")[-1]
+            used = "" if r["use"] == r["file"] else f" (uses {r['use'].split('/')[-1]})"
+            after = [len(a["gaps"]) for a in (r.get("after") or {}).values()]
+            gaps = f"{len(r.get('gaps_before') or [])} -> {', '.join(map(str, after))}" if after else f"{len(r.get('gaps_before') or [])} -> not made"
+            notes = "; ".join(r["why"] + r["notes"]).replace("|", "/")
+            size = " x ".join(f"{x:.2f}" for x in r["size_m"])
+            lines.append(f"| {f}{used} | {r['tris']} | {size} | {r['verdict']} | {', '.join(r['recipes']) or '-'} | {gaps} | {notes} |")
+        lines.append("")
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write("\n".join(lines))
 
 
 def made_against(names, out_dir=None, log=print):
@@ -718,7 +759,7 @@ def main(argv):
         return 0
     if argv[0] == "audit":
         res = audit(argv[1] if len(argv) > 1 else "retro")
-        print(f"QUALITY audit: {res['passed']} pass, {res['failed']} fail -> {_rel(AUDIT)}")
+        print(f"QUALITY audit: {res['passed']} pass, {res['failed']} fail -> {_rel(AUDIT)}, {_rel(AUDIT_MD)}")
         return 0
     made_against(argv[1:])
     return 0

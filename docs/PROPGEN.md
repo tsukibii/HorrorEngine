@@ -1342,7 +1342,8 @@ etc), then create a ne w genre/tab in our prop tool called retro" (the folder ho
   lightness range, saturation and fine detail, roughness and its spread, the occlusion and the normal map's relief;
   each measure's range is its 10th to 90th percentile over their materials. `python tools/propgen.py quality reference`
   makes it again; `quality made <names>` holds made props to it.
-- **The audit** (`python tools/propgen.py quality audit`, `Content/Studio/Props/retro_audit.json`): every file's
+- **The audit** (`python tools/propgen.py quality audit`, `Content/Studio/Props/retro_audit.json`, and to read:
+  `docs/retro_audit.md`, a table a group with each file's gaps against the bar as it came and as made): every file's
   nearest LOD measured (triangles and size, degenerate and inside-out faces, open and non-manifold edges, facets,
   shading, its UVs: in 0-1 or tiled, overlapping, the share of the texture used) and judged: it fails without UVs on a
   textured material, with most of its UV triangles collapsed, with more than 5% of its faces degenerate, or by the hand
@@ -1372,7 +1373,17 @@ etc), then create a ne w genre/tab in our prop tool called retro" (the folder ho
 - **The tab**: a family whose module says `TAB = True` is listed first in the page's families bar, after *all*; its
   recipes' `group` (camp, gas station, gas store, road, rocks, trees, plants, utility) are chips over its cards and
   headings between them. 174 recipes `retro_<name>`, written from the audit's passes (Content/Studio/Props/presets.json);
-  their pictures kept in `Content/Studio/Props/thumbs/`.
+  their pictures kept in `Content/Studio/Props/thumbs/`; each group as it came beside as made in
+  `docs/prop_sheets/2026-11-08_retro_<group>.jpg` (the trees and plants as it came made by `enhance: false`: Blender's
+  importer multiplies their colours by the wind data their vertex colours hold).
+- **What it gave** (all 174 made at the kept pictures' 1024; a recipe at 2048 doubles its density): every material
+  base colour, ORM and normal (none had more than a base colour); the gaps against the bar from 1,565 to 594; texel
+  density up in every group (camp 319 to 1,278 px/m, the gas station 142 to 1,024, trees 397 to 848, rocks 45 to 100);
+  roughness that varies, relief in every normal map, no texel black. What stays outside the bar is scale's and the
+  pack's: one texture over a 10 m road or wall can't reach a prop's density (a tiling material would), concrete and
+  asphalt at 0.9 roughness just over the bar's 0.88, the pack's blacks a shade under our darkest, its palette more
+  saturated than ours (kept as the pack's). GDPROPS imports them as they should be (22 tried: the cut-outs, the glass,
+  the glows). For the PSX look itself: `smooth: 0` (every face flat) and `pixel: true` (the texture's pixels square).
 - **Found on the way**: Blender decodes a 16-bit PNG into a float buffer and, the image tagged sRGB by default, turns it
   linear; every ambientCG normal map on the shelf is 16-bit, so `paint.read_image` had given each set's normal map
   tilted about 37 degrees everywhere (the trees' bark and leaves among them) and the pack's 16-bit textures at half their
