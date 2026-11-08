@@ -33,6 +33,7 @@ func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	aim.target_position = Vector3(0, 0, -reach)
 	aim.add_exception(self)
+	eye.cull_mask &= ~(1 << 18)              # layer 19: what's only in mirrors (the Look plugin's HSMirror.MIRROR_ONLY) is never seen straight
 
 
 func _unhandled_input(e: InputEvent) -> void:

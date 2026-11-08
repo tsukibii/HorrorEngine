@@ -19,6 +19,8 @@ var rain: HSRain = null
 var nosplash: Image = null
 var mirror_q: MeshInstance3D = null
 var mirror2_q: MeshInstance3D = null
+var only_box: MeshInstance3D = null           # seen only in the mirror (HSMirror.only_in_mirrors: layer 19)
+var never_box: MeshInstance3D = null          # never seen in it (HSMirror.never_in_mirrors: layer 20)
 var spheres: Array = []
 var report := {}
 var prev: Image = null
@@ -157,6 +159,37 @@ func measure(img: Image, x0: int, y0: int, x1: int, y1: int) -> Dictionary:
 			if c.r > 0.12 and c.r > c.g * 2.2 and c.r > c.b * 2.2:
 				red += 1
 	return {"mean": sum / max(cnt, 1), "max": mx, "red": red}
+
+
+## where a box lands in a picture (pixels), through camera `c` whose own image is `size` (scaled to `img_size`)
+func box_rect(c: Camera3D, b: MeshInstance3D, img_size: Vector2, size: Vector2) -> Rect2i:
+	var lo := Vector2(1e9, 1e9)
+	var hi := Vector2(-1e9, -1e9)
+	var h := (b.mesh as BoxMesh).size * 0.5
+	for sx in [-1.0, 1.0]:
+		for sy in [-1.0, 1.0]:
+			for sz in [-1.0, 1.0]:
+				var sp := c.unproject_position(b.global_transform * Vector3(sx * h.x, sy * h.y, sz * h.z)) / size * img_size
+				lo = lo.min(sp)
+				hi = hi.max(sp)
+	lo = lo.clamp(Vector2.ZERO, img_size - Vector2(1, 1))
+	hi = hi.clamp(Vector2.ZERO, img_size - Vector2(1, 1))
+	var mid := (lo + hi) * 0.5                     # its middle half (clear of its edges' blending)
+	var half := (hi - lo) * 0.25
+	return Rect2i(Vector2i(mid - half), Vector2i((half * 2.0).max(Vector2(1, 1))))
+
+
+## how many pixels in a box of the picture are plainly green or red
+func count_in(img: Image, r: Rect2i, what: String) -> int:
+	var n := 0
+	for y in range(r.position.y, r.end.y):
+		for x in range(r.position.x, r.end.x):
+			var c := img.get_pixel(x, y)
+			if what == "green" and c.g > 0.1 and c.g > c.r * 1.8 and c.g > c.b * 1.8:
+				n += 1
+			elif what == "red" and c.r > 0.1 and c.r > c.g * 1.8 and c.r > c.b * 1.8:
+				n += 1
+	return n
 
 
 ## where a flat quad lands in the picture (pixels)
@@ -387,6 +420,20 @@ func _process(_d: float) -> bool:
 			hi = hi.clamp(Vector2.ZERO, vs - Vector2(1, 1))
 			var in2 := measure(mv, int(lo.x) + 1, int(lo.y) + 1, max(int(hi.x), int(lo.x) + 2), max(int(hi.y), int(lo.y) + 2))
 			report["mirror2_in_first"] = in2
+			report["mirror_only"] = {                      # the green box in the mirror's picture, not the eye's; the red one the other way
+				"eye_green": count_in(img, box_rect(cam, only_box, Vector2(img.get_width(), img.get_height()), root.get_visible_rect().size), "green"),
+				"mirror_green": count_in(mv, box_rect(hm.mcam, only_box, vs, Vector2(hm.view.size)), "green"),
+				"eye_red": count_in(img, box_rect(cam, never_box, Vector2(img.get_width(), img.get_height()), root.get_visible_rect().size), "red"),
+				"mirror_red": count_in(mv, box_rect(hm.mcam, never_box, vs, Vector2(hm.view.size)), "red"),
+				"in_mirror_view": hm.mcam.is_position_in_frustum(only_box.global_position) and hm.mcam.is_position_in_frustum(never_box.global_position),
+				"in_eye_view": cam.is_position_in_frustum(only_box.global_position) and cam.is_position_in_frustum(never_box.global_position),
+				"wall_hidden": hm.hid.size(),
+				"eye_mask_19": (cam.cull_mask & (1 << (HSMirror.MIRROR_ONLY - 1))) != 0,
+				"mirror_mask_19": (hm.mcam.cull_mask & (1 << (HSMirror.MIRROR_ONLY - 1))) != 0,
+				"mirror_mask_20": (hm.mcam.cull_mask & (1 << (HSMirror.HIDDEN_LAYER - 1))) != 0,
+				}
+			only_box.queue_free()
+			never_box.queue_free()
 			report["mirror2_layers"] = {"first": hm.layer, "second": hm2.layer, "second_seen_by_first": (hm.mcam.cull_mask & (1 << (hm2.layer - 1))) != 0, "first_not_itself": (hm.mcam.cull_mask & (1 << (hm.layer - 1))) == 0, "active2": hm2.active}
 			print("MIRROR normal ", hm.normal, " centre ", hm.centre, " corners ", hm.corners.size(), " in frustum ", cam.is_position_in_frustum(mirror_q.global_transform * hm.centre), " d ", (cam.global_position - mirror_q.global_transform * hm.centre).dot(mirror_q.global_transform.basis * hm.normal))
 			print("MIRROR eye ", hm.mcam.global_position, " near ", hm.mcam.near, " active ", hm.active, " vp ", hm.mat.get_shader_parameter("mirror_vp"))
@@ -554,6 +601,11 @@ func setup(name: String) -> void:
 			mirror2_q.position = Vector3(3.99, 1.6, -1.2)
 			mirror2_q.rotation_degrees.y = -90.0
 			HSMirror.attach(mirror2_q, 0, cam, 288)
+			only_box = box(Vector3(0.7, 0.7, 0.7), Vector3(-1.5, 0.35, 1.5), Color(0.05, 0.9, 0.1), 0.6)     # low on the left as the eye sees it; in the mirror's camera's picture, but not in the glass (the glass measures above stay as they were)
+			never_box = box(Vector3(0.2, 0.2, 0.2), Vector3(0.9, 1.7, 0.0), Color(0.9, 0.05, 0.05), 0.6)
+			never_box.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			HSMirror.only_in_mirrors(only_box)
+			HSMirror.never_in_mirrors(never_box)
 		"soften_off":
 			for sp in spheres:
 				sp.visible = false

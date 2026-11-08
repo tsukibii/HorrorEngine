@@ -145,9 +145,15 @@ def demo_checks(rep):
                    % (rep.get("crt_far_contrast", 9), rep.get("crt_near_contrast", 0), rep.get("crt_far", {}).get("mean", 0), rep.get("crt_off", {}).get("mean", 9), rep.get("crt_glint", {}).get("max", 0), rep.get("crt_glint_lower", {}).get("mean", 9), rep.get("crt_static_grain", 0)),
                    rep.get("crt_far_contrast", 9) < rep.get("crt_near_contrast", 0) * 0.25 and rep.get("crt_far", {}).get("mean", 0) > rep.get("crt_off", {}).get("mean", 9) * 1.5
                    and rep.get("crt_glint", {}).get("max", 0) > rep.get("crt_glint_lower", {}).get("mean", 9) * 3.0 and rep.get("crt_static_grain", 0) > 0.01))
+    mo = rep.get("mirror_only", {})
+    checks.append(("only in the mirror and never in it (layer 19 drawn by the mirrors' cameras alone, layer 20 by every camera but theirs): the green box in the mirror's picture and not the eye's, the red box in the eye's and not the mirror's",
+                   mo.get("in_mirror_view") is True and mo.get("in_eye_view") is True and mo.get("eye_mask_19") is False and mo.get("mirror_mask_19") is True and mo.get("mirror_mask_20") is False
+                   and mo.get("mirror_green", 0) >= 9 and mo.get("eye_green", 99) <= 2 and mo.get("eye_red", 0) >= 20 and mo.get("mirror_red", 99) <= 2))
+    checks.append(("a mirror's own wall kept out of its camera's picture (what's drawn just behind the glass, found without a collider: the near plane is square to the view, not the glass)", mo.get("wall_hidden", 0) >= 1))
     ml = rep.get("mirror2_layers", {})
-    checks.append(("a mirror seen in a mirror: the second mirror's glass in the first's picture holds a picture (a bright peak well over its mean, not a flat wall), each mirror on its own layer, never itself",
-                   ml.get("second_seen_by_first") is True and ml.get("first_not_itself") is True and ml.get("first") != ml.get("second") and rep.get("mirror2_in_first", {}).get("max", 0) > 0.3 and rep.get("mirror2_in_first", {}).get("max", 0) > rep.get("mirror2_in_first", {}).get("mean", 9) * 2.0))
+    checks.append(("a mirror seen in a mirror: the second mirror's glass in the first's picture holds a picture lit like the room (not a hole), each mirror on its own layer, never itself",
+                   ml.get("second_seen_by_first") is True and ml.get("first_not_itself") is True and ml.get("first") != ml.get("second") and ml.get("active2") is True
+                   and rep.get("mirror2_in_first", {}).get("max", 0) > 0.3 and rep.get("mirror2_in_first", {}).get("mean", 0) > 0.2))
     return checks
 
 

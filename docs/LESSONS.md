@@ -2012,3 +2012,14 @@ pale one shows.
   (`for h in [...]`, the lesson above, made again), which
   `godot --headless --path PROJECT --check-only -s starter/closer.gd` reports in two seconds (exit 1, the line).
   Every new or changed starter script gets that first.
+- **A mirror's near plane is square to the view, not the glass**: looking down at a mirror, its camera's near plane
+  (set at the glass's nearest corner) leaves the wall behind the glass in, below a line across it, so the room below
+  that line was the wall's back. `_hide_wall` found the wall only through a collider with the wall's meshes under it:
+  the demo's wall has no collider and an export's walls have `-colonly` bodies with no meshes, so neither was ever
+  hidden. It now also takes every mesh whose box a short segment back from the glass crosses (never a whole level's
+  mesh). A point 3 cm back found the hotel bath's corridor wall but not the 4 mm lining in front of it: a slab that
+  thin falls between sampled points, so test segments, not points.
+- **A measure that passes for the wrong reason**: LOOKPLUGIN's "a mirror seen in a mirror" wanted a peak at twice
+  its box's mean, and had it only because that uncovered wall darkened most of the box. With the wall gone the second
+  mirror's glass is the room's brightness. Found while adding a box that should have shown in the mirror and didn't,
+  even on layer 1: when a new measure fails, put the thing on the plainest settings before blaming the new part.

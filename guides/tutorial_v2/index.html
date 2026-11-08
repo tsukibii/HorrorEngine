@@ -108,7 +108,7 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
   <b>scene builder</b>, then build the whole game in Godot by hand: the <b>Look plugin</b> for the light, the weather and
   the surfaces, and the <b>starter scripts</b> for the story, the sound and the scares. No Director.</p>
   <div class="chips"><span class="chip">about two hours</span><span class="chip">Godot 4.7</span><span class="chip">the scene builder</span>
-  <span class="chip">the HorrorStudio Look plugin</span><span class="chip">22 starter scripts</span><span class="chip">the sound shelf and the four moods</span></div>
+  <span class="chip">the HorrorStudio Look plugin</span><span class="chip">23 starter scripts</span><span class="chip">the sound shelf and the four moods</span></div>
 </header>
 
 <section id="what">
@@ -626,6 +626,19 @@ second and a half and she's on the next mark, turned a little more toward you. U
 after a moment she's gone in the lamp's blink. Look away instead and she's simply gone. Walk right up to her on a mark
 and she goes in a blink too: she's never seen to move or vanish.</p>
 <figure><img src="img/closer.jpg" width="1600" height="900" alt="Her standing where 304's entry opens into the room"><figcaption>Her second mark, where the entry opens into the room. You only looked at the window.</figcaption></figure>
+
+<h3 id="mirror">Only in the mirror</h3>
+<p>Add a <span class="node">Node3D</span> called <code>MirrorHer</code> under <code>Events</code> with
+<code>starter/mirror_figure.gd</code>. Stand it in the bath's tub, turned to face the mirror, with one more copy of her
+under it. Add an event area called <code>InBath</code> (Room <code>r304_bath</code>, nothing else set), connect its
+<b>entered</b> to <code>MirrorHer</code>'s <code>arm</code>, and <code>MirrorHer</code>'s <b>seen</b> to
+<code>Fear</code> → <code>scare</code>.</p>
+<p>Walk into the bath and look in the mirror: she's standing in the tub behind you. Turn round and the tub is empty,
+and so is the mirror when you look back. She's on render layer 19, which only the mirrors' cameras draw (the Look
+plugin keeps it for this), and she casts no shadow, which would give her away on the floor. Untick <b>Only In
+Mirror</b> for the other way round: she's there when you turn round, and missing from the mirror (layer 20). Use it
+once a game at most: after the first time, players watch every mirror.</p>
+<figure><img src="img/mirror.jpg" width="1600" height="900" alt="The bath's mirror: her standing in the tub behind you"><figcaption>At the basin: in the glass she's standing in the tub behind you.</figcaption></figure>
 </section>
 
 <section id="ending">
@@ -651,7 +664,7 @@ fire door ends the night: the screen goes black and the ending's title comes up.
   <li>Up the stairwell. Open the door at the top. The corridor's tubes sag, then come back.</li>
   <li>304 is locked. Read the note on the carpet. Was someone at 308's door just then?</li>
   <li>The linen closet is dark: <kbd>F</kbd>. Take the key and the corridor goes out behind you, one tube at a time, then comes back.</li>
-  <li>Open 304 with the key. The TV's on. The music turns to dread. Look at the window, then back at the bath's door. And again.</li>
+  <li>Open 304 with the key. The TV's on. The music turns to dread. Look at the window, then back at the bath's door. And again. Then wash your face.</li>
   <li>The flashlight dies. Batteries in the vending corner, where the radio's hissing. Walk back out and listen behind you.</li>
   <li>On the way out she's at the end of the corridor, the tubes stuttering round her. Your heart picks up as you near her. Shine the light on her and she backs off. Do it twice and the corridor goes dark.</li>
   <li>Walk to the fire exit.</li>

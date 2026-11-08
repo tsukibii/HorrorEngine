@@ -271,6 +271,9 @@ push it higher. The weakest evidence is for infrasound.
   - **Only in the mirror** needs a layer the player's camera skips and the mirrors' cameras add back (line 92). All 20
     are allotted (1 everything, 2 to 10 the zones, 11 to 19 the mirrors, 20 the hidden), so it costs one mirror layer,
     say 19: **the user's call**. Whether a camera's mask hides that mesh's shadow is untested: off, or kept as the clue.
+    *Built (2026-11-08, night, the user's yes): layer 19, the mirrors now 11 to 18; `HSMirror.only_in_mirrors` turns
+    her shadow off (whether the eye would see it stays untested: off is safe), the starter's `mirror_figure.gd`,
+    tutorial v2's bath.*
   - **Writing in the steam** (M): a `fog` uniform on the mirror's shader and a mask of the writing that fogs
     differently (real: grease changes how glass fogs, Rayleigh 1911).
   - **The reflection out of step** (L): needs a body for the player, on the mirror-only layer, 0.3 to 0.5 s late. The
@@ -366,7 +369,8 @@ runner and story_check in one commit, as the rules say).
 **Built so far** (2026-11-08, night: the user, "feel free to work on the rest and include them as part of the new
 tutorial too"; the starter kit and tutorial v2's §22): 1 (`footsteps.gd`, `behind_you.gd`), 2 (`presence.gd`; the
 breath near her waits for the cold), 4 (`glimpse.gd`, `closer.gd`), 6 (Woohill's sound physics: `acoustics.gd`,
-`sound.gd`), 8 (`fear.gd`) and 10's occlusion. Not yet for the desk's export: no story words.
+`sound.gd`), 8 (`fear.gd`), 10's occlusion and 5's mirror (`mirror_figure.gd`; the Look plugin's layer 19). Not yet
+for the desk's export: no story words.
 
 1. **Footsteps in 3D, and the behind-you layer** (S). The player's steps by floor at the feet (the by-hand player has
    none), then the phantom steps copying them 0.3 s late, one step too many, a door shutting out of sight.

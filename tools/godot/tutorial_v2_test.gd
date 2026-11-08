@@ -9,8 +9,8 @@
 ## breaking up at the jump, her wet look. Making it intense: the sound physics (the rooms' surfaces, the floors' steps,
 ## the stairwell ringing longer than the corridor, a knock muffled behind 304's door), the steps behind you, your body
 ## under fear, the figure at the corner of your eye (at 308's door, gone as you turn to it), the one closer each time
-## you look away (out of 304's bath, then behind you), her signs (the tubes by her and your flashlight dipping, the
-## radio's static). Prints `TUTORIAL <what> <how>` lines and `TUTORIAL result {errors}`, quits.
+## you look away (out of 304's bath, then behind you), her in the bath's mirror only (in the tub behind you, nobody when
+## you turn round), her signs (the tubes by her and your flashlight dipping, the radio's static). Prints `TUTORIAL <what> <how>` lines and `TUTORIAL result {errors}`, quits.
 extends SceneTree
 
 const Lights := preload("res://starter/lights.gd")
@@ -383,6 +383,32 @@ func _initialize() -> void:
 		bad("she should end 0.35 m behind your eye: %.2f m, behind %s" % [gap, at_back])
 	if caught[0] != 1 or cfig.visible or lamp_min > 0.5 or fear1 < fear0 + 0.2:
 		bad("turned round: caught %d, then gone in the lamp's blink (gone %s, the lamp to %.2f), the Fear node's scare (%.2f to %.2f)" % [caught[0], not cfig.visible, lamp_min, fear0, fear1])
+	# only in the mirror (mirror_figure.gd, armed by InBath): her in the tub behind you in the bath's mirror; nobody when you turn round
+	var bd := door("door_304_bath")
+	var bdp := bd.global_position + bd.global_basis.x * 0.38 + Vector3.UP * 1.0
+	await use_at(Vector3(bdp.x + 0.9, fl + 0.02, bdp.z), bdp)
+	await frames(50)
+	var mg := v3(cfg["boxes"]["mirror"]["at"])
+	var mh: Node3D = main.get_node("Events/MirrorHer")
+	var mfig: Node3D = mh.figure
+	stand(Vector3(mg.x + 0.15, fl + 0.02, mg.z + 1.03), mg + Vector3(0, -0.05, 0))     # at the basin, looking in the mirror
+	await secs(1.5)
+	var glass_m: Node = null
+	for m in get_nodes_in_group("hs_mirror"):
+		glass_m = m
+	var meshes := mfig.find_children("*", "GeometryInstance3D", true, false)
+	var on19 := meshes.size() > 0 and meshes.all(func(g): return g.layers == 1 << 18 and g.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF)
+	var eye19 := (eye.cull_mask & (1 << 18)) != 0
+	var mirror19: bool = glass_m != null and glass_m.mcam != null and (glass_m.mcam.cull_mask & (1 << 18)) != 0
+	var m_seen: bool = mh.was_seen
+	var wall_out: int = glass_m.hid.size() if glass_m != null else 0           # the corridor's wall and the bath's lining on it
+	look(mfig.global_position + Vector3.UP * 1.45)             # turn round: the tub
+	await frames(6)
+	say("only in the mirror", "the bath's door %s; at the basin, her in the tub behind you in the glass %.1f s (seen %s); her meshes on layer 19 alone with no shadow %s, your eye drawing 19 %s, the mirror's camera %s, its wall and lining out of its picture %d; turned round: %s" % [
+		"open" if bd.open else "SHUT", float(mh.seen_for), m_seen, on19, eye19, mirror19, wall_out, "nobody" if not mfig.visible else "SHE'S THERE"])
+	if not bd.open or not m_seen or not on19 or eye19 or not mirror19 or mfig.visible or wall_out < 2:
+		bad("only in the mirror (mirror_figure.gd, HSMirror.only_in_mirrors): the door %s, seen in the glass %s, on layer 19 %s, the eye leaving 19 out %s, the mirror's camera drawing it %s, its wall hidden %d, gone when you turned round %s" % [
+			bd.open, m_seen, on19, not eye19, mirror19, wall_out, not mfig.visible])
 	# 6. the flashlight: on, low, dead
 	await press(KEY_F)
 	await frames(5)

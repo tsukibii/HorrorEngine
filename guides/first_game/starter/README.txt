@@ -3,7 +3,8 @@ res://starter/ by tools/godot_byhand.py. Yours to change.
 
   player.tscn, player.gd   the player: WASD, Shift runs, the mouse looks, E uses (or puts a note away), F the
                            flashlight, Esc frees the mouse; it steps up a tread or a kerb; stops when the Story ends;
-                           its footsteps a stride walked, the floor's own (footsteps.gd, the Sound node)
+                           its footsteps a stride walked, the floor's own (footsteps.gd, the Sound node); its eye never
+                           draws render layer 19 (what's only in mirrors)
   flashlight.gd            the player's flashlight (on its Eye/Flashlight): batteries that run down, a bulb's or an
                            LED's curve, low and dead, spare sets going in by themselves; beam_on(point), weighed by
                            its cookie; its AirBeam child (the Look plugin's HSBeam) draws the beam in the air (an
@@ -42,6 +43,8 @@ res://starter/ by tools/godot_byhand.py. Yours to change.
                            you turn to it (in a lamp's blink), silent, once; arm() from a signal
   closer.gd                a figure that moves only while it's unseen, mark by mark toward you, then right behind you;
                            caught when you turn round, gone in a blink; arm() from a signal
+  mirror_figure.gd         a figure only in the mirror (layer 19: gone when you turn round to her), or there and
+                           missing from it (layer 20); arm() from a signal
   arms_down.gd             under a Character Studio character: its arms down by its sides
   lights.gd, reach.gd      helpers the others use: lights switched, dimmed, flickered and blinked as the Look plugin
                            keeps them, a collider round a thing you use

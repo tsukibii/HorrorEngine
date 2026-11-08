@@ -158,6 +158,7 @@ r304b = R["r304_entry"]
 closer_marks = [("BathDoor", [r304b["at"][0] - 0.9, floor_y, r304b["at"][2] + 0.4]),     # by the bath's door, in the entry
                 ("EntryMouth", [r304b["at"][0] - 0.3, floor_y, r304b["at"][2] + 1.4]),   # where the entry opens into the room
                 ("BedFoot", [r304b["at"][0] - 1.0, floor_y, r304b["at"][2] + 2.3])]      # at the foot of the bed
+mirror_her_at = [tub["at"][0], tub["at"][1] - tub["size"][1] / 2 + 0.08, tub["at"][2] + 0.4]   # standing in the tub, behind you at the bath's mirror
 sg = B["stair_glass"]["at"]                                             # the stairwell's window (its glass's middle)
 land = B["stairs_fx_half_1"]["top"]                                     # the half landing's top
 sill = B["stairs__wall_n1"]["top"]                                      # the wall under the window: up to the sill
@@ -176,6 +177,7 @@ ext = [("PackedScene", "res://exports/interiors/hotel_floor/hotel_floor.glb", "h
        ("Script", "res://starter/light_shy.gd", "shy"), ("Script", "res://addons/horrorstudio_look/nodes/atmosphere.gd", "air"),
        ("Script", "res://starter/fear.gd", "fear"), ("Script", "res://starter/behind_you.gd", "behind"),
        ("Script", "res://starter/presence.gd", "presence"), ("Script", "res://starter/glimpse.gd", "glimpse"), ("Script", "res://starter/closer.gd", "closer"),
+       ("Script", "res://starter/mirror_figure.gd", "mirrorfig"),
        ("Script", "res://addons/horrorstudio_look/nodes/air_zone.gd", "airzone"), ("Script", "res://addons/horrorstudio_look/nodes/light_shaft.gd", "shaft"),
        ("Script", "res://addons/horrorstudio_look/nodes/wall_leak.gd", "leak"), ("Script", "res://addons/horrorstudio_look/nodes/puddle.gd", "puddle"),
        ("Script", "res://addons/horrorstudio_look/nodes/pattern_light.gd", "pattern"), ("Script", "res://addons/horrorstudio_look/nodes/tape.gd", "tape"),
@@ -353,6 +355,9 @@ nd("Closer", "Events", "Node3D", script="closer", props=['blink = NodePath("../.
 for i, (name, at) in enumerate(closer_marks):
     nd(name, "Events/Closer", "Marker3D", props=[f"transform = {tf(at, 180.0)}"])     # facing into the room (a marker's -Z)
 person("Figure", [0, 0, 0], 0.0, False, parent="Events/Closer")
+area("InBath", "Events", "event", "r304_bath")                           # walking into the bath: only its signal
+nd("MirrorHer", "Events", "Node3D", script="mirrorfig", props=[f"transform = {tf(mirror_her_at, 180.0)}"])   # in the tub, facing the mirror
+person("Figure", [0, 0, 0], 0.0, False, parent="Events/MirrorHer")
 # the player, its flashlight on a battery that's seen better days
 nd("Player", ".", inst="player", props=[f"transform = {tf(start['at'], start['turn'])}"])
 nd("Flashlight", "Player/Eye", props=["battery = 90.0", "charge = 0.5", "low_at = 0.3", 'low_says = "The flashlight is dying."',
@@ -371,6 +376,8 @@ lines += ['[connection signal="picked" from="Things/Key" to="Events/LightsDie" m
           '[connection signal="read" from="Things/Note" to="Events/Glimpse" method="arm"]',
           '[connection signal="entered" from="Events/In304" to="Events/Closer" method="arm"]',
           '[connection signal="caught" from="Events/Closer" to="Fear" method="scare"]',
+          '[connection signal="entered" from="Events/InBath" to="Events/MirrorHer" method="arm"]',
+          '[connection signal="seen" from="Events/MirrorHer" to="Fear" method="scare"]',
           f'[connection signal="opened" from="Hotel/{P["door_corridor_e_door"]}" to="Story" method="end"]', "", '[editable path="Hotel"]', '[editable path="Player"]', ""]
 (proj / "main.tscn").write_text("\n".join(lines), encoding="utf-8")
 pg = (proj / "project.godot").read_text(encoding="utf-8")
@@ -379,7 +386,7 @@ if "run/main_scene" not in pg:
     (proj / "project.godot").write_text(pg, encoding="utf-8")
 (proj / "tutorial.json").write_text(json.dumps({"who": who, "start": start, "her": her_at, "again": again_at, "note": note_at, "key": key_at, "batteries": bat_at,
                                                 "door304": d304, "fire": fire, "jump": jump, "floor": floor_y, "radio": radio_at, "glimpse": glimpse_at,
-                                                "closer": {n: a for n, a in closer_marks}, "rooms": R, "lights": L, "paths": P, "boxes": B}, indent=1), encoding="utf-8")
+                                                "closer": {n: a for n, a in closer_marks}, "mirror_her": mirror_her_at, "rooms": R, "lights": L, "paths": P, "boxes": B}, indent=1), encoding="utf-8")
 for f in ["tutorial_v2_test.gd", "tutorial_v2_shots.gd"]:
     shutil.copy(ROOT / "tools/godot" / f, proj / f)
 
@@ -400,8 +407,9 @@ if "--pictures" in args and not errs:
     from PIL import Image
     shots = proj / "_shots"
     shots.mkdir(exist_ok=True)
+    (shots / ".gdignore").touch()                          # the pictures aren't the project's: Godot leaves them unimported
     only = args[args.index("--only") + 1].split(",") if "--only" in args else []
-    for old_png in shots.glob("*.png"):
+    for old_png in list(shots.glob("*.png")) + list(shots.glob("*.import")):
         old_png.unlink()                                   # only this run's pictures go into the guide
     cmd = [G, "--path", str(proj), "--rendering-driver", "vulkan", "--fixed-fps", "30", "-s", "tutorial_v2_shots.gd", "--", f"--out={shots}"]
     if only:

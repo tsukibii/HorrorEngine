@@ -475,12 +475,30 @@ of the room per mirror in view: keep mirrors to the rooms that need one; the pau
 them off at Low (dull glass) and halves them at Medium (`set_quality`). Not yet: a mirror seen in a mirror.
 
 **A mirror seen in a mirror** (2026-10-30, CONTINUE's second step): each mirror and its wall sit on a layer of their
-own (11 to 19, the first free one; the tenth onward share 20), and a mirror's camera draws every layer but its own
-(and the softener's 20), so another mirror's glass is in its picture with that mirror's last frame on it, a frame
-late, and a mirror never draws itself (no reading the picture it's writing). Two bounces, not an endless hall: the
-third would need a third render. The demo's mirror stage has a second mirror facing the first across the room and
-measures the second's glass inside the first's picture: the room's bulb glints there, brighter than the wall beside
-(LOOKPLUGIN); the bath's mirror in GDTESTROOM sits on its own layer.
+own (11 to 18 since 2026-11-08, the first free one; the ninth onward share 20), and a mirror's camera draws every
+layer but its own (and the softener's 20), so another mirror's glass is in its picture with that mirror's last frame
+on it, a frame late, and a mirror never draws itself (no reading the picture it's writing). Two bounces, not an
+endless hall: the third would need a third render. The demo's mirror stage has a second mirror facing the first
+across the room and measures the second's glass inside the first's picture: a picture lit like the room, not a hole
+(LOOKPLUGIN; until 2026-11-08 it wanted a peak at twice the mean, which it had only because the first mirror's own
+wall was left in its picture, below); the bath's mirror in GDTESTROOM sits on its own layer.
+
+**Its own wall, out of its picture** (2026-11-08): the mirror camera's near plane is square to its view, not to the
+glass, so looking down at a mirror the wall behind the glass stays in below a line across it, in front of the room.
+`_hide_wall` puts that wall on the mirror's own layer: every mesh whose box a short segment straight back from the
+glass's middle or its corners (drawn in) crosses, 25 cm deep (a closed panel's both sides, 9 cm: either can be the
+room), so an export's wall (its `-colonly` collider has no mesh under it) and the room's 4 mm lining on it both go;
+never a mesh bigger than 60 m³ (a whole level); and whatever mesh sits under the collider a ray finds there. `hid`
+lists them; LOOKPLUGIN wants the demo's wall among them, TUTORIAL2 the bath's wall and lining.
+
+**Only in the mirror, missing from it** (2026-11-08, docs/research/intensity.md §5.3; DECISIONS 2026-11-08, night:
+the mirrors' last layer): layer 19 is drawn by the mirrors' cameras alone. A mirror leaves it out of the camera it
+reflects, and adds it to its own; `HSMirror.only_in_mirrors(node)` puts a node's meshes and decals there with no
+shadow (the shadow would give it away; `shadow` true keeps it as a clue) and leaves 19 out of the current camera;
+`never_in_mirrors(node)` puts them on 20, which every camera but a mirror's draws; `in_mirrors_too(node)` back on 1.
+The starter's player leaves 19 out of its eye, and `mirror_figure.gd` stands a figure there (tutorial v2: her in
+304's tub, in the glass only). The demo's mirror stage counts a green box on 19 and a red one on 20 in the eye's
+picture and the mirror camera's (LOOKPLUGIN). Lights reach both layers (a light zone's lights take 11 to 20).
 
 ## 5c. Hair on imported models (`hair.gdshader`, `HSHair`)
 

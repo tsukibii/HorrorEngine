@@ -52,6 +52,7 @@ func _initialize() -> void:
 	cam = Camera3D.new()
 	cam.fov = 70.0
 	cam.near = 0.03
+	cam.cull_mask &= ~(1 << 18)                                 # as the player's eye: what's only in mirrors left out
 	main.add_child(cam)
 	cam.current = true
 	torch = SpotLight3D.new()                                  # the starter's flashlight: its light, its beam in the air and its cookie
@@ -148,6 +149,12 @@ func _initialize() -> void:
 	var b: Dictionary = R["r304_bath"]
 	var bc := v3(b["at"])
 	await shot("bath", Vector3(bc.x + 0.85, eye - 0.15, bc.z + 0.7), Vector3(bc.x - 0.4, fl + 0.45, bc.z - 0.4))
+	# only in the mirror: her standing in the tub behind you, in the bath's mirror
+	var mh := main.get_node("Events/MirrorHer")
+	mh.arm()
+	var mg := v3(cfg["boxes"]["mirror"]["at"])
+	await shot("mirror", Vector3(mg.x + 0.15, eye, mg.z + 1.03), mg + Vector3(0, -0.05, 0), 50)
+	(mh.get("figure") as Node3D).visible = false
 	# the vending corner: its dying bulb, the batteries on the counter
 	var bat := v3(cfg["batteries"])
 	var bulb := main.get_node("Zones/Vending/Bulb")
