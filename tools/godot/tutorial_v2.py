@@ -194,13 +194,14 @@ ext = [("PackedScene", "res://exports/interiors/hotel_floor/hotel_floor.glb", "h
        ("Script", "res://starter/mirror_figure.gd", "mirrorfig"), ("Script", "res://starter/shadow_pass.gd", "shadowpass"),
        ("Script", "res://starter/door_feet.gd", "feet"), ("Script", "res://starter/uncanny.gd", "uncanny"),
        ("Script", "res://starter/dread.gd", "dread"), ("Script", "res://starter/dread_moment.gd", "moment"), ("Script", "res://starter/menace.gd", "menace"),
+       ("Script", "res://addons/horrorstudio_look/nodes/lightning_storm.gd", "lightning"),
        ("Script", "res://addons/horrorstudio_look/nodes/air_zone.gd", "airzone"), ("Script", "res://addons/horrorstudio_look/nodes/light_shaft.gd", "shaft"),
        ("Script", "res://addons/horrorstudio_look/nodes/wall_leak.gd", "leak"), ("Script", "res://addons/horrorstudio_look/nodes/puddle.gd", "puddle"),
        ("Script", "res://addons/horrorstudio_look/nodes/pattern_light.gd", "pattern"), ("Script", "res://addons/horrorstudio_look/nodes/tape.gd", "tape"),
        ("Script", "res://addons/horrorstudio_look/nodes/character_look.gd", "charlook")]
 SOUNDS = {"hum": "ambience/electric_hum_01.ogg", "hum3": "ambience/electric_hum_03.ogg", "room": "ambience/room_tone_02.ogg", "closet": "ambience/room_tone_05.ogg",
           "water": "ambience/water_running.ogg", "drone": "ambience/ambient_01.ogg", "cut": "house/power_hum_cut.ogg", "creak": "house/floorboard_creak.ogg",
-          "sting": "stings/sting_short.ogg", "big": "stings/sting_big.ogg"}
+          "sting": "stings/sting_short.ogg", "big": "stings/sting_big.ogg", "thunder": "ambience/thunder.ogg"}
 ext += [("AudioStream", f"res://sfx/{f}", "s_" + k) for k, f in SOUNDS.items()]
 if who:
     ext += [("PackedScene", f"res://exports/characters/{who}/{who}.glb", "her"), ("Script", "res://starter/arms_down.gd", "arms")]
@@ -292,6 +293,8 @@ nd("StairShaft", "Weather", "Node3D", script="shaft", props=[f"transform = {tf([
 nd("Lamp", "Weather/StairShaft", "SpotLight3D", props=["light_color = Color(1, 0.62, 0.32, 1)", "light_energy = 14.0", "shadow_enabled = true"])
 nd("Pane", "Weather", "Node3D", script="pane", props=[f'target = NodePath("../../Hotel/{P["end_glass"]}")', "rain = 0.7"], paths=["target"])
 nd("Sweep", "Weather", "Node3D", script="sweep", props=[f"transform = {tf([win304['at'][0], win304['at'][1], win304['at'][2] - 0.1])}", "every = 18.0", "out = 7.0", "energy = 8.0"])
+nd("Lightning", "Weather", "Node3D", script="lightning", props=[f"transform = {look_tf([9.0, 12.0, -3.0], [9.9, 11.65, -3.25])}", "every = 50.0", "strength = 4.0", "km = 1.2",
+   "figure_times = 1", 'thunder = ExtResource("s_thunder")', 'bus = "SFX"', 'figure = NodePath("../../Events/InTheFlash")'], paths=["figure"])   # the storm: a sky flash low in the west, in through the end window and down the corridor
 nd("Dressing", ".", "Node3D")
 tv = B["tv_screen"]                                                     # its front faces the room (west): a quad 4 mm in front of it
 nd("TV", "Dressing", "MeshInstance3D", props=[f"transform = {tf([tv['at'][0] - tv['size'][0] / 2 - 0.004, tv['at'][1], tv['at'][2]], -90.0)}", 'mesh = SubResource("screen")'])
@@ -379,6 +382,7 @@ nd("MirrorHer", "Events", "Node3D", script="mirrorfig", props=[f"transform = {tf
 person("Figure", [0, 0, 0], 0.0, False, parent="Events/MirrorHer")
 nd("ShadowPass", "Events", "Node3D", script="shadowpass", props=['lamp = NodePath("../../Zones/Room304/Lamp")'], paths=["lamp"])   # a shadow that isn't yours
 person("Figure", [0, 0, 0], 0.0, False, parent="Events/ShadowPass")
+person("InTheFlash", [0.55, floor_y, corr["at"][2]], 90.0, False, parent="Events")   # by the end window, there only in the lightning (once)
 nd("Feet308", "Events", "Node3D", script="feet", props=[f"transform = {tf(feet_at)}", f'door = NodePath("../../Hotel/{P["door_door_308"]}")'], paths=["door"])   # someone behind 308's door
 # the player, its flashlight on a battery that's seen better days
 nd("Player", ".", inst="player", props=[f"transform = {tf(start['at'], start['turn'])}"])

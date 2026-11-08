@@ -705,6 +705,20 @@ you're within 8 m of her and faster while you can see her, and drains when you'r
 a minute and she withdraws: gone for a minute or two, while the director relaxes, then she's back where she was.
 Alien: Isolation's alien does this, and its designers said why: "As soon as the player can predict a pattern in the
 Alien, it stops being scary." Her presence can't be stared down, and she can't be counted on.</p>
+
+<h3 id="lightning">Lightning</h3>
+<p>Add the Look plugin's <span class="node">HSLightningStorm</span> to <code>Weather</code> (or drop in
+<code>presets/lightning.tscn</code>), turned so its forward points down and east through the end window and 304's,
+with <b>Every</b> 50, <b>Km</b> 1.2, <b>Thunder</b> <code>sfx/ambience/thunder.ogg</code> on the <code>SFX</code> bus.
+Add one more copy of her at the corridor's west end by the end window, facing down the corridor, set her as the
+storm's <b>Figure</b>, and its <b>Figure Times</b> to 1: in the first flash someone is standing there against the
+window, and after it there's nobody.</p>
+<p>The thunder comes 3 seconds a kilometre after the flash. Every strike is made safe for players with photosensitive
+epilepsy, who can have seizures from more than three flashes a second: a real flash is three to five strokes 60 ms
+apart, too many, so here a strike is one flash, its flickers riding on a glow that never dips more than a tenth (so
+none counts as a flash of its own), then at least a second of dark before the next. Give your players a <b>Reduce</b>
+setting (0 to 1: how bright the flash is) and turn it down for them when they ask.</p>
+<figure><img src="img/lightning.jpg" width="1600" height="900" alt="The corridor in the lightning's flash, a figure against the end window"><figcaption>The first flash: someone by the end window. The second: nobody.</figcaption></figure>
 </section>
 
 <section id="ending">

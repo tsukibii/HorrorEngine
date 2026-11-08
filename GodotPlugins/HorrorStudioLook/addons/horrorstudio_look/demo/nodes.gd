@@ -8,6 +8,7 @@
 extends SceneTree
 
 const P := "res://addons/horrorstudio_look/presets/"
+var lightning_peak := 0.0                     # the lightning preset's flash at its brightest (fired with the sweep)
 var out_dir := "res://"
 var world: Node3D
 var cam: Camera3D
@@ -108,6 +109,7 @@ func _initialize() -> void:
 	put("window_shaft", world, Vector3(2.4, 2.6, 1.2))
 	put("window_sun", world, Vector3(-1.0, 2.8, 2.0))
 	put("headlight_sweep", world, Vector3(0, 1.6, -3.0), Vector3(0, PI, 0))
+	put("lightning", world, Vector3(0, 3.0, 0), Vector3(-1.0, 0.6, 0))
 	var down := Vector3(-PI / 2.0, 0, 0)
 	put("caustics_light", world, Vector3(-2.5, 2.8, 0), down)
 	put("blinds_light", world, Vector3(-0.8, 2.8, -1.5), down)
@@ -142,9 +144,12 @@ func _process(dt: float) -> bool:
 		var l: Light3D = got[k]
 		var e: Array = energies.get(k, [INF, -INF])
 		energies[k] = [min(e[0], l.light_energy), max(e[1], l.light_energy)]
+	if got.has("lightning") and got["lightning"].storm != null:
+		lightning_peak = maxf(lightning_peak, got["lightning"].storm.level)
 	if n == 60 and not fired:
 		fired = true
 		got["headlight_sweep"].fire()
+		got["lightning"].fire()
 	if n == 150:
 		measure()
 		var img := root.get_texture().get_image()
@@ -199,6 +204,7 @@ func measure() -> void:
 	var beam: FogVolume = got["window_shaft"].beam
 	rep["shaft"] = beam != null and beam.get_node_or_null("Card") != null and absf(beam.size.z - got["window_shaft"].length) < 0.001 and got["window_shaft"].length < got["window_shaft"].reach
 	rep["sweep_passing"] = got["headlight_sweep"].passing() and got["headlight_sweep"].sweep.lamp.visible
+	rep["lightning"] = lightning_peak > 0.95 and got["lightning"].storm.strikes == 1 and not got["lightning"].striking() and not got["lightning"].storm.light.visible
 	var pats := 0
 	for k in ["caustics_light", "blinds_light", "leaves_light", "clouds_light"]:
 		if got[k].hp != null and got[k].light_projector != null:

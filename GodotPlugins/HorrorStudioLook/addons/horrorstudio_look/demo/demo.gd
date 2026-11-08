@@ -35,6 +35,14 @@ var shaft_fv: HSShaft = null
 var shaft_off: Image = null
 var sweep_n: HSSweep = null
 var sweep_before: Image = null
+var lightning_n: HSLightning = null      # the lightning stage: a strike, a second asked for during it, sampled each frame
+var lightning_fig: MeshInstance3D = null
+var lightning_levels: Array = []
+var lightning_struck: Array = []         # its clock at each strike
+var lightning_thunder := -1.0
+var lightning_fig_ok := true
+var lightning_before: Image = null
+var lightning_lit: Image = null
 var iris_lamp: OmniLight3D = null
 var leak_n: HSLeak = null
 var leak_wall: MeshInstance3D = null
@@ -57,7 +65,7 @@ var crt_lamp: OmniLight3D = null
 var crt_means: Array = []
 var crt_rect := Rect2i()
 
-const STAGES := ["plain", "realism", "wet", "blood_rain", "mirror", "skin", "soften_off", "soften", "pattern", "shaft", "sweep", "iris", "leak", "hair", "grade", "crt"]
+const STAGES := ["plain", "realism", "wet", "blood_rain", "mirror", "skin", "soften_off", "soften", "pattern", "shaft", "sweep", "lightning", "iris", "leak", "hair", "grade", "crt"]
 
 
 func _initialize() -> void:
@@ -295,6 +303,20 @@ func _process(_d: float) -> bool:
 		sweep_n.clock += 0.5 * sweep_n.secs
 	if STAGES[stage] == "sweep" and n < 90:
 		return false
+	if STAGES[stage] == "lightning" and lightning_n != null:
+		if n == 30:
+			lightning_before = root.get_texture().get_image()
+			lightning_n.fire()
+		if n > 30:
+			lightning_levels.append(lightning_n.level)
+			lightning_fig_ok = lightning_fig_ok and lightning_fig.visible == (lightning_n.level > 0.5)
+		if n == 34:
+			lightning_lit = root.get_texture().get_image()      # the flash at full, the figure there
+			lightning_lit.save_png(out_dir.path_join("lightning_lit.png"))
+		if n == 45:
+			lightning_n.fire()                                  # asked again during the strike: it waits for the dark between
+		if n < 280:
+			return false
 	if STAGES[stage] == "grade":
 		if n == 30:
 			grade_plain = root.get_texture().get_image()          # ungraded, then the cinema grade on
@@ -509,6 +531,45 @@ func _process(_d: float) -> bool:
 			report["sweep_passing"] = 1 if sweep_n != null and sweep_n.passing() else 0
 			if sweep_n != null:
 				print("SWEEP lamp at ", sweep_n.lamp.global_position, " energy ", sweep_n.lamp.light_energy, " visible ", sweep_n.lamp.visible, " passing ", sweep_n.passing(), " clock ", sweep_n.clock, " started ", sweep_n.started, " aimed ", -sweep_n.lamp.global_transform.basis.z)
+		"lightning":
+			shot("lightning")                                           # after: dark again
+			var segs: Array = []                                        # each strike: [first frame, last frame] where the flash was on
+			var on := false
+			for i in lightning_levels.size():
+				var v: float = lightning_levels[i]
+				if v > 0.0 and not on:
+					segs.append([i, i])
+					on = true
+				elif v > 0.0:
+					segs.back()[1] = i
+				else:
+					on = false
+			var rises: Array = []                                       # rises past half in each strike (a flash each)
+			var glow_min := 1.0                                         # the glow's lowest between the first strike's first and last time at full
+			var maxima := 0                                             # its brightenings (the first and the re-brightenings)
+			for k in segs.size():
+				var r := 0
+				for i in range(segs[k][0], segs[k][1] + 1):
+					var v0: float = lightning_levels[i - 1] if i > 0 else 0.0
+					if v0 < 0.5 and lightning_levels[i] >= 0.5:
+						r += 1
+					if k == 0 and i > 0 and i + 1 < lightning_levels.size() and lightning_levels[i] >= 0.995 and lightning_levels[i - 1] < lightning_levels[i] and lightning_levels[i + 1] <= lightning_levels[i]:
+						maxima += 1
+				rises.append(r)
+			if not segs.is_empty():
+				var full: Array = []
+				for i in range(segs[0][0], segs[0][1] + 1):
+					if lightning_levels[i] >= 0.995:
+						full.append(i)
+				if full.size() > 1:
+					for i in range(full[0], full.back() + 1):
+						glow_min = minf(glow_min, lightning_levels[i])
+			var before_m := measure(lightning_before, 0, 0, 1280, 720)
+			var lit_m := measure(lightning_lit, 0, 0, 1280, 720)
+			report["lightning"] = {"strikes": segs.size(), "rises": rises, "glow_min": glow_min, "brightenings": maxima,
+				"dark_between_s": (float(segs[1][0] - segs[0][1]) / 60.0) if segs.size() > 1 else -1.0,
+				"thunder_s": (lightning_thunder - float(lightning_struck[0])) if lightning_struck.size() > 0 and lightning_thunder >= 0.0 else -1.0,
+				"figure_ok": lightning_fig_ok, "lit_gain": lit_m["mean"] / maxf(before_m["mean"], 0.001), "km": lightning_n.km}
 		"shaft":
 			var img := shot("shaft")
 			var box := Rect2i(360, 150, 420, 200)                        # the air the beam crosses, against the dark back of the room
@@ -701,6 +762,21 @@ func setup(name: String) -> void:
 			world.add_child(iris_lamp)
 			iris_lamp.position = Vector3(0.0, 2.2, 0.0)
 			HSLook.iris(root, true, false)
+		"lightning":
+			if sweep_n != null:
+				sweep_n.queue_free()
+				sweep_n = null
+			cam.look_at_from_position(Vector3(1.5, 1.3, 2.4), Vector3(-1.5, 1.2, -1.5))
+			lightning_n = HSLightning.make({"every": 0, "strength": 3.0, "restrikes": 2, "km": 1.0})
+			world.add_child(lightning_n)
+			lightning_n.rotation = Vector3(-1.0, 0.6, 0.0)
+			lightning_fig = box(Vector3(0.4, 1.7, 0.3), Vector3(-1.6, 0.85, -1.9), Color(0.08, 0.08, 0.09), 0.9)   # someone there only in the flash
+			lightning_fig.visible = false
+			lightning_n.figure = lightning_fig
+			lightning_n.struck.connect(func() -> void: lightning_struck.append(lightning_n.clock))
+			lightning_n.thundered.connect(func() -> void:
+				if lightning_thunder < 0.0:
+					lightning_thunder = lightning_n.clock)
 		"sweep":
 			if shaft_fv != null:
 				shaft_fv.visible = false

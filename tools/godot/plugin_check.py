@@ -145,6 +145,10 @@ def demo_checks(rep):
                    % (rep.get("crt_far_contrast", 9), rep.get("crt_near_contrast", 0), rep.get("crt_far", {}).get("mean", 0), rep.get("crt_off", {}).get("mean", 9), rep.get("crt_glint", {}).get("max", 0), rep.get("crt_glint_lower", {}).get("mean", 9), rep.get("crt_static_grain", 0)),
                    rep.get("crt_far_contrast", 9) < rep.get("crt_near_contrast", 0) * 0.25 and rep.get("crt_far", {}).get("mean", 0) > rep.get("crt_off", {}).get("mean", 9) * 1.5
                    and rep.get("crt_glint", {}).get("max", 0) > rep.get("crt_glint_lower", {}).get("mean", 9) * 3.0 and rep.get("crt_static_grain", 0) > 0.01))
+    lg = rep.get("lightning", {})
+    checks.append(("lightning within the flash limits: each strike one flash (one rise past half, its glow dipping no more than a tenth between three brightenings), a second strike asked for during the first waiting a second of dark, the thunder 3 s a kilometre after, someone there only in the flash, the room lit by it",
+                   lg.get("strikes") == 2 and lg.get("rises") == [1, 1] and lg.get("glow_min", 0) >= 0.89 and lg.get("brightenings") == 3 and lg.get("dark_between_s", 0) >= 0.98
+                   and abs(lg.get("thunder_s", -9) - 3.0 * lg.get("km", 1.0)) < 0.05 and lg.get("figure_ok") is True and lg.get("lit_gain", 0) > 1.3))
     mo = rep.get("mirror_only", {})
     checks.append(("only in the mirror and never in it (layer 19 drawn by the mirrors' cameras alone, layer 20 by every camera but theirs): the green box in the mirror's picture and not the eye's, the red box in the eye's and not the mirror's",
                    mo.get("in_mirror_view") is True and mo.get("in_eye_view") is True and mo.get("eye_mask_19") is False and mo.get("mirror_mask_19") is True and mo.get("mirror_mask_20") is False
@@ -185,6 +189,7 @@ def nodes(g, keep, env):
         ("a leak's band on the wall it was dropped on", rep.get("leak") is True),
         ("a light shaft's card running to the floor (shorter than its reach)", rep.get("shaft") is True),
         ("a headlight sweep fired and passing", rep.get("sweep_passing") is True),
+        ("lightning struck once to full and gone again (HSLightningStorm)", rep.get("lightning") is True),
         ("the four pattern lights each throwing their frames", rep.get("patterns", 0) == 4),
         ("the flicker lights moving (%s)" % ", ".join(moved), len(moved) >= 5),
         ("a mirror's reflection attached to the game's camera, a window pane's glass, a CRT screen's glass", rep.get("mirror") is True and rep.get("pane") is True and rep.get("crt") is True),

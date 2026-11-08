@@ -135,6 +135,7 @@ func _initialize() -> void:
 	var again := main.get_node("HerAgain") as Node3D
 	var fl := float(cfg["floor"])
 	# the night's director (dread.gd): faster for the check (the game's own gaps are 25 to 70 s); each moment checked as it comes
+	main.get_node("Weather/Lightning").every = 0.0         # (the check's: its own strikes only when asked, below)
 	var dread: Node = main.get_node("Dread")
 	dread.gap_min = 6.0
 	dread.gap_max = 9.0
@@ -322,6 +323,32 @@ func _initialize() -> void:
 	say("the director here", "brought on twice in the corridor: %s, each played %s" % [str(asked), played])
 	if asked[0] == asked[1] or not played:
 		bad("the dread director's moments (dread.gd, dread_moment.gd): %s, played %s (two, not the same)" % [str(asked), played])
+	# lightning (the Look plugin's HSLightningStorm): a strike while you look down the corridor to the end window; someone there in the flash
+	var storm: Node = main.get_node("Weather/Lightning")
+	var flash_fig: Node3D = main.get_node("Events/InTheFlash")
+	look(Vector3(0.5, fl + 1.4, cz))
+	storm.fire()
+	var lit_seen := false
+	var fig_in_flash := false
+	var fig_after := true
+	var lit_max := 0.0
+	for i in 40:
+		await frames(1)
+		var st2: HSLightning = storm.storm
+		lit_max = maxf(lit_max, st2.light.light_energy)
+		lit_seen = lit_seen or st2.level > 0.9
+		fig_in_flash = fig_in_flash or (flash_fig.visible and st2.level > 0.5)
+	for i in 60:
+		await frames(1)
+	fig_after = flash_fig.visible
+	var thunder_heard := false
+	for i in 180:
+		await frames(1)
+		thunder_heard = thunder_heard or storm.storm.player.playing
+	say("lightning", "a strike: the flash to %.1f (%s), someone by the end window in it %s, gone after %s; the thunder 3.6 s later on %s %s" % [
+		lit_max, lit_seen, fig_in_flash, not fig_after, storm.storm.player.bus, "heard" if thunder_heard else "NOT HEARD"])
+	if not lit_seen or lit_max < 3.9 or not fig_in_flash or fig_after or not thunder_heard:
+		bad("the lightning (HSLightningStorm): the flash %.1f, the figure in it %s and gone after %s, the thunder %s" % [lit_max, fig_in_flash, not fig_after, thunder_heard])
 	# 4. the linen closet: its door, the key; the corridor's lights out one by one, the farthest first, and back
 	var ld := door("door_linen")
 	var lc := ld.global_position + ld.global_basis.x * 0.38 + Vector3.UP * 1.0

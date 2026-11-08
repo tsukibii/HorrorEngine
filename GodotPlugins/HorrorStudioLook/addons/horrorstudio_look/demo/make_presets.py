@@ -45,6 +45,7 @@ scene("window_sun.tscn", [
     ("Sun", "SpotLight3D", ".", None, {"light_color": "Color(1, 0.9, 0.74, 1)", "light_energy": "6.0", "shadow_enabled": "true", "light_size": "0.15", "spot_range": "9.0", "spot_angle": "20.0", "spot_angle_attenuation": "0.4"}),
 ])
 one("headlight_sweep.tscn", "HeadlightSweep", "Node3D", "headlight_sweep.gd")
+one("lightning.tscn", "Lightning", "Node3D", "lightning_storm.gd", {"rotation": "Vector3(-1.0, 0.6, 0)", "every": "45.0", "km": "1.5"})
 spot = {"shadow_enabled": "true", "spot_range": "8.0", "spot_angle": "38.0"}
 one("caustics_light.tscn", "CausticsLight", "SpotLight3D", "pattern_light.gd", {**spot, "light_color": "Color(0.62, 0.86, 1, 1)", "light_energy": "3.0", "pattern": '"caustics"'})
 one("blinds_light.tscn", "BlindsLight", "SpotLight3D", "pattern_light.gd", {**spot, "light_color": "Color(1, 0.88, 0.7, 1)", "light_energy": "5.0", "pattern": '"blinds"', "open": "0.45"})

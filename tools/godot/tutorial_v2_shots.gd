@@ -82,6 +82,7 @@ func _initialize() -> void:
 	var her := main.get_node("Her") as Node3D
 	var again := main.get_node("HerAgain") as Node3D
 	her.get_node("Presence").process_mode = Node.PROCESS_MODE_DISABLED   # her signs held still: no lamp caught mid-dip
+	main.get_node("Weather/Lightning").every = 0.0                        # no strike of its own in the pictures (one is set by hand below)
 	her.get_node("Uncanny").mimic = false                                 # (her head stays bent; she doesn't walk in the pictures)
 	# the stairwell from its foot, up the first flight
 	var sx := float(st["at"][0])
@@ -170,6 +171,18 @@ func _initialize() -> void:
 	bulb.amount = 1.0
 	# the end window: rain on it
 	await shot("window", Vector3(1.05, eye, cz + 0.15), Vector3(0.0, eye - 0.15, cz - 0.05))
+	# lightning: the corridor from the middle toward the end window, the flash through it, someone standing there in it
+	var storm := main.get_node("Weather/Lightning")
+	await process_frame
+	var flash: HSLightning = storm.get("storm")
+	var flash_fig := main.get_node("Events/InTheFlash") as Node3D
+	flash.light.visible = true
+	flash.light.light_energy = flash.strength
+	flash_fig.visible = true
+	await shot("lightning", Vector3(6.5, eye, cz + 0.2), Vector3(0.0, eye - 0.25, cz - 0.05), 8)   # as the eye meets it: before the iris closes
+	flash.light.visible = false
+	flash.light.light_energy = 0.0
+	flash_fig.visible = false
 	# her at the end of the corridor, in the flashlight's beam; then the corridor dark
 	her.visible = true
 	torch.visible = true

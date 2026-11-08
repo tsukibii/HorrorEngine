@@ -2043,3 +2043,6 @@ pale one shows.
   moments came, not the three the check first wanted, and on the next run one. Check what it's for (its phases,
   moments in place, none twice running) and bring its moments on deliberately where they're ready (its gap cut to
   nothing in the corridor); a count left to chance is luck.
+- **One pending time for a thing that can overlap is a bug**: the lightning kept its thunder's due time in one value,
+  so a strike two seconds after another cancelled the first's thunder (thunder comes 3 s a kilometre later, often
+  after the next flash). Each strike queues its own. The demo's stage strikes twice and times the first thunder.

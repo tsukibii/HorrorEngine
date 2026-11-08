@@ -12,6 +12,7 @@ LOOKPLUGIN). The pieces, the numbers behind them and what was measured: **docs/G
 | **Light patterns** | `pattern.gd` (`HSPattern`), `pattern.gdshader` | `HSPattern.attach(spot, {pattern, scale, speed, open, angle}, distance)`: caustics, leaves, blinds or cloud shadows drawn into a small viewport each frame and projected by the spot light (`light_projector`); `detach` |
 | **Flicker modes** | `flicker.gd` (`HSFlicker`) | a light's flicker by mode: fluorescent, dying, candle, pulse, custom letters; the same curves as the desk's `tools/shared/flicker.js` |
 | **Light shafts** | `shaft.gd` (`HSShaft`), `shaft_card.gdshader` | `HSShaft.make(at, into, width, height, reach, {strength, dust, drift, color})` a window's beam as a card: two crossed translucent planes along it and five slices across it, added, fading along and at the sides, dust drifting in it, each plane fading as it turns edge-on (the node is a FogVolume holding empty fog, the card its child); `HSShaft.light(spot, k)` raises the window light's volumetric energy for the haze near the glass |
+| **Lightning** | `lightning.gd` (`HSLightning`) | `HSLightning.make({every, strength, restrikes, km, reduce, thunder, figure})` the sky's flash through the windows, one flash a strike within the photosensitivity limits (its flickers on a glow that dips no more than a tenth, a second of dark between), each strike's thunder 3 s a kilometre later, a figure there only in the flash; `fire()` |
 | **Headlight sweeps** | `sweep.gd` (`HSSweep`) | `HSSweep.make(window_at, outward, along, {every, secs, out, span, energy})` a spot light that slides along the street outside a window every so often, aimed in, the frame's shadow across the ceiling; `fire()` a car now; `attach(marker, settings)` on the export's marker |
 | **The iris** | `look.gd` (`HSLook.iris`) | `HSLook.iris(viewport, on, night)`: auto exposure on the camera settling over about a second, a stop under at night |
 | **The grade** | `post.gd` (`HSPost`), `post.gdshader` | a film-style colour grade over the finished picture (under the HUD, over the tape): lift, gamma and gain as colours, warmth, saturation, contrast, a film fade, a vignette, fine grain, chromatic aberration; presets `cinema` (the default), `teal-orange`, `cold`, `sodium`, `bleach`, `noir`, `warm`, `none`; `apply(name or {preset, ...})`, `set_grain_cap(k)` |
@@ -37,7 +38,7 @@ LOOKPLUGIN). The pieces, the numbers behind them and what was measured: **docs/G
 
 Every effect is also a node to drop into a scene and tune in the inspector (`nodes/`), and `presets/` holds 41 ready
 ones (rain, a downpour, wet floors, a puddle, blood on a floor and up a wall, a leak, a window's shaft and its sun,
-a headlight sweep, caustics, blinds, leaves and clouds lights, a fluorescent tube, a dying bulb, a candle, an alarm,
+a headlight sweep, lightning, caustics, blinds, leaves and clouds lights, a fluorescent tube, a dying bulb, a candle, an alarm,
 a faulty neon, a mirror, a rainy window pane, a CRT screen of snow, grades, tapes, a character's look, the room
 lights' zones, the balanced look): drag one from the FileSystem dock
 into the level, or Add Child Node and type `HS`. They preview in the editor where they can (the rain falls, the dust
@@ -51,6 +52,7 @@ own back before every save. Forward (-Z) is always into the room. The list and h
 | `HSPuddle` | Node3D | a puddle decal under it (`size`, `seed`, `depth`) |
 | `HSBloodSplat` | Node3D | blood on the surface its +Y points out of (`size`, `seed`, `dry`, `opacity`, `pool`, `ragged`, `drops`, `drips`) |
 | `HSLightShaft` | Node3D | a window's beam, in the opening with forward into the room: the window's rectangle (`width`, `height`, an orange outline in the editor to fit) swept along the sunlight (`sun_down`, `sun_side`) to the floor (`floor_y`, `reach`), crisp at the glass and soft where it lands (`soft_near`, `soft_far`), `strength`, `dust`, `drift`, `color`; `aim_lights` puts the light under it outside, along the beam |
+| `HSLightningStorm` | Node3D | the storm outside, its light falling the node's forward through the windows (`every`, `strength`, `restrikes`, `km`, `reduce`, `color`, `thunder`, `thunder_db`, `bus`, `figure`, `figure_times`, `seed`, `preview_every`; `fire()`) |
 | `HSHeadlightSweep` | Node3D | a car passing outside the window it sits in (`every`, `secs`, `out`, `span`, `energy`, `aim`, `seed`, `color`, `preview_every`; `fire()`) |
 | `HSWetSurface` | HSOnMesh | the mesh it's under made wet (`wetness`, `puddles`, `puddle_scale`, `ripples`, `ripple_rate`, `water_tint`, `edge`) |
 | `HSWindowPane` | HSOnMesh | glass with rain on the mesh it's under (`rain`, `clarity`, `tint`, `drop_cm`, `speed`, `bend`, `size_m`, `seed`) |

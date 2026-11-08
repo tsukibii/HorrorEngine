@@ -1069,6 +1069,26 @@ spill) has no beam yet: the story's air word and the desk's side come with it (C
 The nodes demo has every air preset (one atmosphere acting, three beams, the cookies) and the editor test a
 flashlight and the hazy night.
 
+## 5k. Lightning within the flash limits (`lightning.gd`, `HSLightning`, `HSLightningStorm`; DECISIONS 2026-11-08, night)
+
+docs/research/intensity.md §5.4: a real flash is three to five strokes about 60 ms apart, which is more than the
+limits allow. ITU-R BT.1702, Ofcom and WCAG 2.3.1 bar more than three flashes a second, a flash being a pair of
+opposite changes of about a tenth of white. So a strike here is **one flash**: a rise to full in 25 ms, up to two
+re-brightenings 0.35 s apart riding on a glow that sags no more than a tenth (`DIP`: none counts as a flash of its
+own), a hold, a 0.3 s fall; then at least a second of dark (`dark_min`), and a strike asked for sooner waits for it.
+`HSLightning.make(settings)` is a DirectionalLight3D (cold blue-white, shadows on: it reaches inside only through the
+windows, whose glass the starter's interior.gd and the export keep shadowless) striking every `every` seconds
+jittered from a seed (0: only on `fire()`), each strike queuing its own thunder `km` kilometres off, 3 s a
+kilometre later (a second strike never cancels the first's). `figure` is shown only while the flash is over half,
+in the first `figure_times` strikes; `reduce` scales the flash for a player's setting. `struck` and `thundered`.
+`HSLightningStorm` is the node (no strikes in the editor unless `preview_every`), `presets/lightning.tscn` the
+preset.
+
+LOOKPLUGIN's lightning stage strikes, asks for a second strike during the first, and reads the flash every frame at
+a fixed 60 fps: each strike one rise past half, the glow never under 0.89 between three brightenings, at least a
+second of dark between, the first thunder 3 s after for a kilometre, the figure shown exactly while the flash is
+over half, the room brighter; the nodes demo strikes the preset once to full and back.
+
 ## 5d. Streets from the Blender bake (`street.gdshader`, `HSStreet`)
 
 A street baked in Blender (`tools/street.py bake`, docs/STREET_TEXTURING.md) comes as plain glTF:
