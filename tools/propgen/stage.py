@@ -73,7 +73,10 @@ def preview(objects, path, size=(800, 600), samples=48, gpu=False, elev=30.0, az
     # floor
     me = bpy.data.meshes.new("PG_floor")
     S = rad * 60
-    me.from_pydata([(-S, -S, 0), (S, -S, 0), (S, S, 0), (-S, S, 0)], [], [(0, 1, 2, 3)])
+    # a hair under z = 0 (a card lying flat isn't in the floor's plane), or under its lowest point when it reaches below
+    # it (a kit piece on its own origin: a kerb down to the road); a blanket made on its bed still floats over the floor
+    zf = min(0.0, float(lo[2])) - max(1e-4, rad * 2e-4)
+    me.from_pydata([(-S, -S, zf), (S, -S, zf), (S, S, zf), (-S, S, zf)], [], [(0, 1, 2, 3)])
     fl = bpy.data.objects.new("PG_floor", me)
     sc.collection.objects.link(fl)
     from .surface import flat_material

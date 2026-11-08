@@ -55,6 +55,24 @@ The user's answers, newest first. They override the plan, the research and the d
 - The desk's story format and the Director keep their own `look` and `sit`; the cue's conditions can go there too
   if the user wants.
 
+## 2026-11-08 (the user: the retro pack into the prop generator, enhanced, in a tab of its own; the branch `retro-enhance`)
+
+- **"I made a new folder called retro inside branch retro-enhance. I want you to analyse the old 3 models I made in the
+  past, add them to the prop tool but with a more adjusted to match our style of higher quality textures pbrs/materials
+  etc, and smoothign if requried for more low poly psx."** Then: a quality reference off about fifteen of the best
+  props; each model checked for whether its vertices and mesh are good enough; those that pass enhanced where needed
+  ("more pbr, style match with our current game style props"); and "a new genre/tab in our prop tool called retro".
+  The folder holds two packs of 3D models (193 .glb), read as "the old 3D models".
+- **What came of it** (the same day, docs/PROPGEN.md §29): the bar (`tools/propgen/quality.py`: fifteen made props
+  measured, `Content/Studio/Props/quality_reference.json`); the audit (`propgen.py quality audit`, every file's nearest
+  LOD judged: 168 pass, one fails (Gas_Station/Trash.glb, a photo of litter folded into an 8-triangle pyramid), the
+  heavy poles' LOD1 taken; `Content/Studio/Props/retro_audit.json`, the review by eye with its notes in
+  `retro_review.json`); the `retro` family (the model kept, low poly smoothed by angle, its texture given base colour,
+  ORM and normal by what each part is, a shelf set's grain at real size, baked occlusion and the made props' wear);
+  174 recipes `retro_*` in eight groups; the page's Retro tab first in its bar with the groups as chips. Notes for
+  before a game ships: Light_Sign says V-Power Racing (Shell's), the cooker carries INMETRO's mark, three posters are
+  real campaign posters, the conifers' cut log ends are a Textures.com texture.
+
 ## 2026-11-08, night (the user: build it; the reverb from Woohill; into the tutorial)
 
 - **The ask**: "I think for reverb you can lift the system we made in Woohill repo, feel free to work on the rest and

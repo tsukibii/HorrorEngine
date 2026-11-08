@@ -104,7 +104,8 @@ def choices():
         o = fams.setdefault(sp.get("family", "?"), {"doc": "", "options": {}})["options"]
         if isinstance(sp.get("kind"), str) and sp["kind"] not in o.setdefault("kind", []):
             o["kind"].append(sp["kind"])
-    return {"families": fams, "designs": sorted(_literal(P / "designs.py", "DESIGNS")), "fonts": sorted(_literal(P / "paint.py", "FONT_FILES")),
+    return {"families": fams, "tabs": sorted(recipes.flagged_families("TAB")),
+            "designs": sorted(_literal(P / "designs.py", "DESIGNS")), "fonts": sorted(_literal(P / "paint.py", "FONT_FILES")),
             "liquids": _literal(P / "liquid.py", "LIQUIDS"), "finishes": _literal(P / "finish.py", "FINISHES"),
             "metals": _literal(P / "finish.py", "METALS"), "ages": ["tarnish", "patina", "rust"],
             "poses": ["stand", "lie", "auto", "any", "upside"], "wear": ["grime", "dirt", "dust", "scratches", "edges", "stains", "fade"]}

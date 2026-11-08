@@ -17,15 +17,18 @@ by-hand guides, merged; then on the same branch from main the map-building skill
 bedding, curtains, tables and chairs, the props' kept pictures, real wood in the flat and its curtains; 2026-11-05 on
 `sakura-rabbit-research`: the Sakura Rabbit research note, then the three notes on dread, the CRT, and the props and
 systems that open, hold, move and are read; 2026-11-05, night, on `gameplay-enhancements`: the kit's stairs, the scene
-builder's floors, the street's steel stair, climbing in Godot and on the desk). Read this after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
+builder's floors, the street's steel stair, climbing in Godot and on the desk; 2026-11-08 on
+`claude/friendly-newton-9o2xey`, from the user's `retro-enhance`: the retro pack in the prop generator). Read this after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
 ## Where it stopped last (2026-11-08, `claude/optimistic-tesla-q01qg6`): the air built and in tutorial v2
 
 **Merged** (2026-11-08, the user: "make a pr for this, then merge in" `ui-v3` and `claude/friendly-newton-9o2xey`):
-this branch is [PR #18](https://github.com/tsukibii/HorrorEngine/pull/18), with `ui-v3` merged in (its note is below:
-the HUD, the marker, the themes, the pause menu and typing now live in `GodotPlugins/HorrorStudioUI`; this branch's
-music beds, `beds.gd`, read the pause menu's settings from there, `res://addons/horrorstudio_ui/menu.gd`).
+this branch is [PR #18](https://github.com/tsukibii/HorrorEngine/pull/18), with both merged in; their notes are below.
+`ui-v3` moved the HUD, the marker, the themes, the pause menu and typing into `GodotPlugins/HorrorStudioUI`, so this
+branch's music beds, `beds.gd`, read the pause menu's settings from `res://addons/horrorstudio_ui/menu.gd` now.
+`claude/friendly-newton-9o2xey` brought the prop generator's retro family and its quality bar; it shares only docs
+with this branch.
 
 The user asked for a better flashlight and the level's air: "a beam in a fog", a fog level adjuster, dust in the
 light, eye candy researched first, the system then put into tutorial v2 (DECISIONS 2026-11-08). Later the same day:
@@ -131,6 +134,36 @@ Not done, if the user wants it: the **desk's Play HUD** (browser) has none of th
 (`guides/director/img`) show the old HUD (`godot_director.py guide` makes them again); the serif is a **system font chain**
 (the proxy blocked a font download: an OFL serif bundled in the plugin would make it the same on every machine); a
 per-game default for the quest marker (a `game.marker` word would grow STORY_FORMAT, the check and the runtime together).
+
+## Beside it (2026-11-08, `claude/friendly-newton-9o2xey` from the user's `retro-enhance`, merged in PR #18): the retro pack
+
+The user (DECISIONS 2026-11-08): their old low-poly models in `retro/` (193 .glb: *3D_Retro_World 0.01* and *Utility
+Infrastructure*) into the prop generator, held to a quality bar made from about fifteen of the best props, each model
+checked as good enough or not, those that pass enhanced to our PBR style (smoothed where low poly), and a new tab
+called retro. Done (docs/PROPGEN.md §29):
+
+- **The bar**: `tools/propgen/quality.py` measures any .glb with numpy alone (geometry; each material's maps, texel
+  density, the base colour's range and detail, roughness and its spread, occlusion, the normal map's relief);
+  `python tools/propgen.py quality reference` made `Content/Studio/Props/quality_reference.json` from fifteen props.
+- **The audit**: `quality audit` judged every file's nearest LOD (`Content/Studio/Props/retro_audit.json`, the review
+  by eye in `retro_review.json`): 168 pass, one fails (Gas_Station/Trash.glb: a photo of litter on an 8-triangle
+  pyramid); the two heavy poles take their LOD1.
+- **The family** `retro` (`families/retro.py`) and **174 recipes** `retro_*` in eight groups; the page's **Retro**
+  tab first in its bar, its groups as chips; their kept pictures in `Content/Studio/Props/thumbs/`; before and after
+  sheets in `docs/prop_sheets/2026-11-08_retro_*.jpg`.
+- **After** (made at the thumbnails' 1024; the recipes' 2048 ones double the density): every material of all 174 has base colour, ORM and normal (0 of 232 had them); the gaps against the bar went from 1,565 to 594; texel density up in every group (camp 319 to 1,278 px/m, the gas station 142 to 1,024, the trees 397 to 848, the rocks 45 to 100: a 5 to 8 m rock on one texture); roughness now varies (0 to 0.02-0.07 spread), relief in every normal map, no texel black (the darkest 0.000 to about 0.05). What's left against the bar is mostly what scale and the pack's own look decide: one texture over a 10 m road or wall can't reach a prop's density, concrete and asphalt at 0.9 roughness sit just over the bar's 0.88, the pack's blacks a shade under our darkest, its palette more saturated than ours (kept: it's the pack's). Godot 4.7 imports them as they should be (GDPROPS on 22 of them: materials, cut-outs, glass, the glows).
+- **Found on the way**: Blender turned every 16-bit PNG linear when read (all the shelf's ambientCG normal maps): the
+  sets' normal maps had been tilted about 37 degrees wherever a family laid one (cedar_real's bark measured 42 degrees
+  of mean tilt, 7 once fixed); fixed in `paint.read_image` (LESSONS). Every tree recipe lays a bark set and the
+  realistic ones a leaf set: their kept pictures are of the old make; `python tools/propgen.py thumbs <the tree family's
+  names> --make` on the user's machine renews them.
+- **Notes for before a game ships** (in the audit): Light_Sign says V-Power Racing (Shell's), the cooker carries
+  INMETRO's mark, three gas-station posters are real campaign posters, the conifers' cut log ends are a Textures.com
+  texture.
+
+Worth doing next, if the user wants: the ice box's lid as a part that opens (a `container` in play: the pack has the
+lid as its own file), the trees' billboards as a far LOD in Godot, a tiling material for the road and wall kit pieces
+(one texture over 10 m can't reach the props' density), the posters and the V-Power sign swapped for our own pictures.
 
 ## Where it stopped before (2026-11-07, night, `claude/optimistic-tesla-q01qg6`): Tutorial v2, Room 304
 

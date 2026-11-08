@@ -15,7 +15,7 @@ const ART_FAMS = new Set(["can", "bottle", "cup", "sheet", "box", "ware", "charm
 const S = {
   list: [], choices: null, shelf: [], pics: [], fam: "", q: "", name: null, rec: null, raw: null, spec: null, orig: null, base: null,
   meta: null, tab: "settings", pic: null, busy: new Set(), viewer: null, job: null, smudges: [], ed: null,
-  kept: null, onlyCustom: false, bare: new Set(),
+  kept: null, onlyCustom: false, bare: new Set(), grp: "",
 };
 window.__pp = S;
 
@@ -36,12 +36,20 @@ function renderFams() {
   const nc = S.list.filter(custom).length;
   box.append(el("button", { class: "custom" + (S.onlyCustom ? " on" : ""), title: "only the props your own pictures go on: cans, bottles, cups, boxes, paper, books, pill bottles, appliances, charms, ware (docs/PROPGEN.md §25)",
     onclick: () => { S.onlyCustom = !S.onlyCustom; renderFams(); renderGallery(); } }, `✎ customizable ${nc}`));
-  const fams = Object.keys(S.choices.families).filter(f => counts[f] && (!S.onlyCustom || S.list.some(r => r.family === f && r.custom)));
+  // a family that's a tab of its own (its module's TAB: the retro pack, PROPGEN §29) right after "all", the rest after it
+  const tabs = (S.choices.tabs || []).filter(f => counts[f]);
+  const fams = [...tabs, ...Object.keys(S.choices.families).filter(f => !tabs.includes(f))]
+    .filter(f => counts[f] && (!S.onlyCustom || S.list.some(r => r.family === f && r.custom)));
   for (const f of ["", ...fams]) {
-    box.append(el("button", { class: S.fam === f ? "on" : "", onclick: () => { S.fam = f; renderFams(); renderGallery(); } },
+    box.append(el("button", { class: (S.fam === f ? "on" : "") + (tabs.includes(f) ? " tab" : ""), "data-fam": f,
+      title: tabs.includes(f) ? `${f}: a tab of its own, its recipes by group (docs/PROPGEN.md §29)` : "",
+      onclick: () => { S.fam = f; S.grp = ""; renderFams(); renderGallery(); } },
       f ? `${f} ${counts[f]}` : `all ${S.list.length}`));
   }
 }
+
+// a recipe's group (the retro pack's camp, gas station, road...): its sub-heading under its family, and a chip to show it alone
+const groupOf = r => (r.spec && r.spec.group) || "";
 
 function card(r) {
   const badges = [];
@@ -65,16 +73,30 @@ function card(r) {
 
 function renderGallery() {
   const q = S.q.trim().toLowerCase();
-  const shown = S.list.filter(r => (!S.fam || r.family === S.fam) && (!S.onlyCustom || r.custom) &&
-    (!q || [r.name, r.family, r.label].join(" ").toLowerCase().includes(q)));
+  const inFam = S.list.filter(r => (!S.fam || r.family === S.fam) && (!S.onlyCustom || r.custom) &&
+    (!q || [r.name, r.family, r.label, groupOf(r)].join(" ").toLowerCase().includes(q)));
+  const shown = inFam.filter(r => !S.grp || groupOf(r) === S.grp);
   const box = $("#gallery");
   box.innerHTML = "";
-  const order = Object.keys(S.choices.families);
-  const groups = {};
-  for (const r of shown) (groups[r.family] = groups[r.family] || []).push(r);
-  for (const f of [...order, ...Object.keys(groups).filter(f => !order.includes(f))]) {
-    if (!groups[f]) continue;
-    box.append(el("h3", {}, f), el("div", { class: "cards" }, groups[f].map(card)));
+  // a tab's groups as chips over its cards
+  const gcount = {};
+  for (const r of inFam) if (S.fam && groupOf(r)) gcount[groupOf(r)] = (gcount[groupOf(r)] || 0) + 1;
+  if (Object.keys(gcount).length > 1) {
+    box.append(el("div", { class: "groups" }, ["", ...Object.keys(gcount)].map(g => el("button", { class: S.grp === g ? "on" : "", "data-grp": g,
+      onclick: () => { S.grp = g; renderGallery(); } }, g ? `${g} ${gcount[g]}` : `all ${inFam.length}`))));
+  }
+  const tabs = S.choices.tabs || [];
+  const order = [...tabs, ...Object.keys(S.choices.families).filter(f => !tabs.includes(f))];
+  const fams = {};
+  for (const r of shown) (fams[r.family] = fams[r.family] || []).push(r);
+  for (const f of [...order, ...Object.keys(fams).filter(f => !order.includes(f))]) {
+    if (!fams[f]) continue;
+    box.append(el("h3", {}, f));
+    const byGroup = {};
+    for (const r of fams[f]) (byGroup[groupOf(r)] = byGroup[groupOf(r)] || []).push(r);
+    const names = Object.keys(byGroup);
+    if (names.length === 1 && !names[0]) box.append(el("div", { class: "cards" }, fams[f].map(card)));
+    else for (const g of names) box.append(el("h4", {}, g || "other"), el("div", { class: "cards" }, byGroup[g].map(card)));
   }
   if (!shown.length) box.append(el("div", { class: "hint" }, "Nothing matches."));
 }
