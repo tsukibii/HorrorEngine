@@ -218,7 +218,7 @@ ext = [("PackedScene", "res://exports/interiors/hotel_floor/hotel_floor.glb", "h
        ("Script", "res://starter/door_feet.gd", "feet"), ("Script", "res://starter/uncanny.gd", "uncanny"),
        ("Script", "res://starter/dread.gd", "dread"), ("Script", "res://starter/dread_moment.gd", "moment"), ("Script", "res://starter/menace.gd", "menace"),
        ("Script", "res://addons/horrorstudio_look/nodes/lightning_storm.gd", "lightning"),
-       ("Script", "res://starter/cue.gd", "cue"), ("Script", "res://starter/seat.gd", "seat"), ("Script", "res://starter/cold_area.gd", "cold"),
+       ("Script", "res://starter/cue.gd", "cue"), ("Script", "res://starter/seat.gd", "seat"), ("Script", "res://starter/cold_area.gd", "cold"), ("Script", "res://starter/steam_mirror.gd", "steam"),
        ("Script", "res://addons/horrorstudio_look/nodes/air_zone.gd", "airzone"), ("Script", "res://addons/horrorstudio_look/nodes/light_shaft.gd", "shaft"),
        ("Script", "res://addons/horrorstudio_look/nodes/wall_leak.gd", "leak"), ("Script", "res://addons/horrorstudio_look/nodes/puddle.gd", "puddle"),
        ("Script", "res://addons/horrorstudio_look/nodes/pattern_light.gd", "pattern"), ("Script", "res://addons/horrorstudio_look/nodes/tape.gd", "tape"),
@@ -415,6 +415,10 @@ nd("Uncanny", "Events/Closer/Figure", "Node", script="uncanny", props=["smile = 
 area("InBath", "Events", "event", "r304_bath")                           # walking into the bath: only its signal
 nd("MirrorHer", "Events", "Node3D", script="mirrorfig", props=[f"transform = {tf(mirror_her_at, 180.0)}"])   # in the tub, facing the mirror
 person("Figure", [0, 0, 0], 0.0, False, parent="Events/MirrorHer")
+nd("Steam", "Events", "Node", script="steam", props=['mirror = NodePath("../../Dressing/Mirror")', 'text = "308"'], paths=["mirror"])   # the bath's mirror fogging over, 308 written in it
+nd("MirrorSteam", "Events", "Node3D", script="cue", props=['spot = NodePath("Glass")', 'look = "middle"', "after_secs = 1.0", "scare = false", "armed = false",
+   'target = NodePath("../Steam")'], paths=["spot", "target"])   # once she's gone from the mirror: a moment looking into it, and it steams over
+nd("Glass", "Events/MirrorSteam", "Marker3D", props=[f"transform = {tf(B['mirror']['at'])}"])   # the glass's middle
 nd("ShadowPass", "Events", "Node3D", script="shadowpass", props=['lamp = NodePath("../../Zones/Room304/Lamp")'], paths=["lamp"])   # a shadow that isn't yours
 person("Figure", [0, 0, 0], 0.0, False, parent="Events/ShadowPass")
 person("InTheFlash", [0.55, floor_y, corr["at"][2]], 90.0, False, parent="Events")   # by the end window, there only in the lightning (once)
@@ -455,6 +459,7 @@ lines += ['[connection signal="picked" from="Things/Key" to="Events/LightsDie" m
           '[connection signal="entered" from="Events/InBath" to="Events/MirrorHer" method="arm"]',
           '[connection signal="seen" from="Events/MirrorHer" to="Fear" method="scare"]',
           '[connection signal="gone" from="Events/MirrorHer" to="Events/ShadowPass" method="arm"]',
+          '[connection signal="gone" from="Events/MirrorHer" to="Events/MirrorSteam" method="arm"]',
           '[connection signal="scared" from="Events/LightsOut" to="Events/Feet308" method="arm"]',
           f'[connection signal="opened" from="Hotel/{P["door_corridor_e_door"]}" to="Story" method="end"]', "", '[editable path="Hotel"]', '[editable path="Player"]', ""]
 (proj / "main.tscn").write_text("\n".join(lines), encoding="utf-8")

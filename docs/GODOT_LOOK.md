@@ -1124,6 +1124,28 @@ cookie and its shadows: a spot's projector needs the light's shadow setup).
 - **Frost**: frosted to 0.6, the pane's bottom quarter loses its sharpness (the Laplacian's variance under 0.4 of the
   clear glass's) while the top, above the line, keeps it.
 
+## 5m. Steam on a mirror and writing in it (`mirror.gdshader`, `HSMirror.set_steam`, `HSMirror.write`; DECISIONS 2026-11-08, night)
+
+docs/research/intensity.md §5.3: What Lies Beneath's "You know", written in the steam on a bathroom mirror. Grease
+changes how glass fogs (Rayleigh, 1911): where a finger went, the steam doesn't form, so old writing shows as the
+glass mists over.
+
+- `set_steam(k)` fogs the glass from its bottom edge, by world height (the glass's box): a ragged line at
+  k × 1.3 − 0.15 of the way up, so all of it by 1, with a bead grain.
+- Through the steam the reflection is a wide blur, 25 taps in three rings of the mirror's picture: a soft, pale,
+  flattened glow of the room's light and dark.
+- `write(text, rect)` draws the words once, in white, into a picture of their own (a SubViewport updated once, never
+  saved). They're laid on the glass by its own axes as seen from in front (`glass_centre`, `glass_right`, `glass_up`,
+  `glass_size`), so they read the right way round whatever the mesh's UVs. Where they are, the steam is cut back by
+  nine tenths, and drips run down from some of the strokes.
+- `HSMirrorSurface.steam` and `.writing` are the node's, both live. The starter's `steam_mirror.gd` steams a mirror
+  over, holds and clears it.
+
+LOOKPLUGIN's steam stage is a mirror of its own with a checker on the wall behind the eye.
+- **Half steamed**: the bottom fifth of the glass loses its sharpness (under 0.4 of the clear glass's) while the
+  top keeps it.
+- **Steamed all over with 308 written**: the words' box is more than three times sharper than the fog beside it.
+
 ## 5d. Streets from the Blender bake (`street.gdshader`, `HSStreet`)
 
 A street baked in Blender (`tools/street.py bake`, docs/STREET_TEXTURING.md) comes as plain glTF:

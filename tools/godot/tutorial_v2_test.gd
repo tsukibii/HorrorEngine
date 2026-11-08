@@ -707,6 +707,39 @@ func _initialize() -> void:
 		sp_armed, swept, behind_ok, only_shadow, passed[0] == 1, not sfig.visible])
 	if not sp_armed or passed[0] != 1 or not only_shadow or not behind_ok or swept < 1.0 or sfig.visible:
 		bad("a shadow that isn't yours (shadow_pass.gd): armed %s, passed %d, shadows only %s, behind you toward the lamp %s, %.1f m across, gone %s" % [sp_armed, passed[0], only_shadow, behind_ok, swept, not sfig.visible])
+	# writing in the steam (steam_mirror.gd, its cue armed when she left the mirror; HSMirror's steam and writing): back at
+	# the basin, a moment looking into the mirror and it fogs over from the bottom, 308 showing in it; then it clears
+	var steam_cue: Node3D = main.get_node("Events/MirrorSteam")
+	var stm: Node = main.get_node("Events/Steam")
+	var mirror_n: Node = main.get_node("Dressing/Mirror")
+	stm.steam_seconds = 3.0                                    # (the check's: the game's are 6, 20 and 10 s)
+	stm.hold = 1.0
+	stm.clear_seconds = 1.5
+	var ms_armed: bool = steam_cue.armed
+	stand(Vector3(mg.x + 0.15, fl + 0.02, mg.z + 1.03), mg + Vector3(0, -0.05, 0))      # at the basin again, looking into the mirror
+	player.set("_was", Vector3.INF)                          # (a jump, not a stride: she's out now and would copy it as a step)
+	var t_steam := -1.0
+	var top_steam := 0.0
+	for i in 360:
+		await frames(1)
+		if t_steam < 0.0 and int(steam_cue.count) > 0:
+			t_steam = (i + 1) / 60.0
+		top_steam = maxf(top_steam, float(stm.level))
+		if stm.phase == "holding":
+			break
+	var hm: HSMirror = mirror_n.get("mirror")
+	var glass_steam: float = float(hm.mat.get_shader_parameter("steam")) if hm != null else -1.0
+	var glass_words: String = hm.written if hm != null else ""
+	var writing_on: float = float(hm.mat.get_shader_parameter("writing")) if hm != null else 0.0
+	for i in 240:
+		await frames(1)
+		if stm.phase == "idle":
+			break
+	var cleared_ok: bool = stm.phase == "idle" and float(stm.level) == 0.0 and (hm == null or hm.written == "")
+	say("writing in the steam", "armed when she left the mirror %s; looking into it a moment: steaming after %.2f s, fogged to %.2f (the glass at %.2f), the words on it \"%s\" (writing %.1f); cleared %s" % [
+		ms_armed, t_steam, top_steam, glass_steam, glass_words, writing_on, cleared_ok])
+	if not ms_armed or t_steam < 0.95 or t_steam > 1.3 or top_steam < 0.99 or glass_steam < 0.99 or glass_words != "308" or writing_on < 0.5 or not cleared_ok:
+		bad("writing in the steam (steam_mirror.gd, HSMirror): armed %s, after %.2f s (1), steam %.2f, the glass %.2f, the words \"%s\" (%.1f), cleared %s" % [ms_armed, t_steam, top_steam, glass_steam, glass_words, writing_on, cleared_ok])
 	# 6. the flashlight: on, low, dead
 	await press(KEY_F)
 	await frames(5)

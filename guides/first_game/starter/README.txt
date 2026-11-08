@@ -43,6 +43,9 @@ res://starter/ by tools/godot_byhand.py. Yours to change.
                            scare), and/or a line, a task, a fact, the music, a target's fire()
   seat.gd                  somewhere to sit or lie down: E there and back up; its box on collision layer 2, which
                            only E's aim finds (your body, the sound and sight pass through it)
+  steam_mirror.gd          writing in the steam: a mirror (the Look plugin's HSMirrorSurface) fogs over from the
+                           bottom, the words a finger left on it showing as it comes; it holds, then clears; fire()
+                           from a cue or a signal
   cold_area.gd             an Area3D where it's freezing: your breath shows (the Look plugin's HSBreath at your eye,
                            seen only where a light reaches it) and its window panes frost up from the bottom edge
                            while you watch; out again, the breath stops and the frost thaws

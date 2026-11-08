@@ -154,6 +154,11 @@ def demo_checks(rep):
                    % (cd.get("breath_lit", 0), cd.get("breath_back", 0), cd.get("breath_dark", 9), cd.get("frost_bottom", 9), cd.get("clear_bottom", 0), cd.get("frost_top", 0), cd.get("clear_top", 9)),
                    cd.get("breaths", 0) >= 3 and cd.get("breath_lit", 0) > 0.01 and cd.get("breath_back", 0) > cd.get("breath_lit", 0) * 1.5 and cd.get("breath_dark", 9) < cd.get("breath_lit", 0) * 0.35
                    and cd.get("frost_bottom", 9) < cd.get("clear_bottom", 0) * 0.4 and cd.get("frost_top", 0) > cd.get("clear_top", 9) * 0.7))
+    sm = rep.get("steam", {})
+    checks.append(("steam on a mirror: from its bottom edge (half way, the bottom's reflection blurred %.4f from %.4f clear, the top still sharp %.4f from %.4f); fogged all over, a finger's words (%s) showing clear in it (the words' box %.4f against the fog beside them %.4f)"
+                   % (sm.get("half_bottom", 9), sm.get("clear_bottom", 0), sm.get("half_top", 0), sm.get("clear_top", 9), sm.get("written", ""), sm.get("full_words", 0), sm.get("full_beside", 9)),
+                   sm.get("half_bottom", 9) < sm.get("clear_bottom", 0) * 0.4 and sm.get("half_top", 0) > sm.get("clear_top", 9) * 0.7
+                   and sm.get("written") == "308" and sm.get("full_words", 0) > sm.get("full_beside", 9) * 3.0))
     mo = rep.get("mirror_only", {})
     checks.append(("only in the mirror and never in it (layer 19 drawn by the mirrors' cameras alone, layer 20 by every camera but theirs): the green box in the mirror's picture and not the eye's, the red box in the eye's and not the mirror's",
                    mo.get("in_mirror_view") is True and mo.get("in_eye_view") is True and mo.get("eye_mask_19") is False and mo.get("mirror_mask_19") is True and mo.get("mirror_mask_20") is False

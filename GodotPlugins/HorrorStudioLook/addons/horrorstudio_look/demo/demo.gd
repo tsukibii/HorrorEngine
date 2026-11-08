@@ -69,8 +69,11 @@ var cold_spot: SpotLight3D = null
 var cold_pane: MeshInstance3D = null
 var cold_imgs := {}
 var cold_back: OmniLight3D = null
+var steam_q: MeshInstance3D = null       # the steam stage: a mirror fogging over from the bottom, words showing in it
+var steam_m: HSMirror = null
+var steam_imgs := {}
 
-const STAGES := ["plain", "realism", "wet", "blood_rain", "mirror", "skin", "soften_off", "soften", "pattern", "shaft", "sweep", "lightning", "iris", "leak", "hair", "grade", "crt", "cold"]
+const STAGES := ["plain", "realism", "wet", "blood_rain", "mirror", "skin", "soften_off", "soften", "pattern", "shaft", "sweep", "lightning", "iris", "leak", "hair", "grade", "crt", "cold", "steam"]
 
 
 func _initialize() -> void:
@@ -433,6 +436,18 @@ func _process(_d: float) -> bool:
 			cold_breath.exhale()                                       # and a breath in front of it, for the stage's picture
 		if n < 598:
 			return false
+	if STAGES[stage] == "steam" and steam_m != null:
+		if n == 40:
+			steam_imgs["clear"] = root.get_texture().get_image()         # the glass clear: the checker behind you sharp in it
+			steam_m.set_steam(0.5)
+		if n == 70:
+			steam_imgs["half"] = root.get_texture().get_image()          # fogged half way up from the bottom
+			steam_m.set_steam(1.0)
+			steam_m.write("308")
+		if n == 100:
+			steam_imgs["full"] = root.get_texture().get_image()          # fogged all over, the words a finger left showing clear
+		if n < 104:
+			return false
 	if n < 24:                                 # the first frames: TAA settles, the lamp's shadow maps
 		return false
 	var name: String = STAGES[stage]
@@ -649,6 +664,17 @@ func _process(_d: float) -> bool:
 				sum += m
 			report["crt_flicker"] = (hi - lo) / max(sum / max(crt_means.size(), 1), 1e-6)
 			report["crt_frames"] = crt_means.size()
+		"steam":
+			shot("steam")
+			var r := screen_rect(steam_q, Vector2(0.9, 0.7))
+			var bottom := Rect2i(r.position.x, r.position.y + int(r.size.y * 0.78), r.size.x, int(r.size.y * 0.2))
+			var top := Rect2i(r.position.x, r.position.y + 2, r.size.x, int(r.size.y * 0.16))
+			var words := Rect2i(r.position.x + int(r.size.x * 0.28), r.position.y + int(r.size.y * 0.3), int(r.size.x * 0.44), int(r.size.y * 0.36))   # the middle of the writing's box
+			var edge := Rect2i(r.position.x + 2, r.position.y + int(r.size.y * 0.3), int(r.size.x * 0.08), int(r.size.y * 0.36))                      # beside it, fogged
+			report["steam"] = {"clear_bottom": sharpness(steam_imgs["clear"], bottom), "half_bottom": sharpness(steam_imgs["half"], bottom),
+				"clear_top": sharpness(steam_imgs["clear"], top), "half_top": sharpness(steam_imgs["half"], top),
+				"full_words": sharpness(steam_imgs["full"], words), "full_beside": sharpness(steam_imgs["full"], edge),
+				"clear_words": sharpness(steam_imgs["clear"], words), "written": steam_m.written}
 		"cold":
 			shot("cold")                                                # the frosted pane, a breath in front of it in the beam
 			var low := Rect2i(400, 380, 480, 300)                       # where the breath goes: below the middle, out into the beam, against the dark
@@ -741,6 +767,23 @@ func setup(name: String) -> void:
 			world.add_child(glow_q)
 		"soften":
 			HSSoften.attach(cam).set_amounts(0.9, 7.0, 1.6, 0.25)
+		"steam":
+			if post_n != null:
+				post_n.apply("none")
+			if cold_spot != null:
+				cold_spot.visible = false
+			cam.fov = 75.0
+			var at := Vector3(45.0, 1.5, 0.0)                         # a set of its own: a bathroom mirror, a checker on the wall behind you to see in it
+			var ck := checker_quad(2.4, 24, at + Vector3(0.0, 0.0, 2.4))
+			ck.rotation_degrees.y = 180.0                             # facing the mirror
+			steam_q = MeshInstance3D.new()
+			var sq := QuadMesh.new()
+			sq.size = Vector2(0.9, 0.7)
+			steam_q.mesh = sq
+			world.add_child(steam_q)
+			steam_q.position = at + Vector3(0.0, 0.0, -0.6)
+			cam.look_at_from_position(at + Vector3(0.0, 0.0, 0.7), at + Vector3(0.0, 0.0, -0.6))
+			steam_m = HSMirror.attach(steam_q, 0, cam, 512)
 		"cold":
 			if post_n != null:
 				post_n.apply("none")

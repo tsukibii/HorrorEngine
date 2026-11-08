@@ -2077,3 +2077,8 @@ pale one shows.
   projector) and went almost black, breath and frost with it, until its shadows were turned on as the starter's
   flashlight has them. Godot projects a spot's cookie through the light's shadow matrix. A light given a projector in
   code gets `shadow_enabled` with it.
+- **A teleport is a footstep to the player**: her copied steps (uncanny.gd's mimic) went from 2 to 1 when the steam's
+  check stood the player at the basin while she was out. player.gd counts a stride by the ground covered since the
+  last frame, so the check's jump was a step, she copied it, and she started the later walk one step nearer the 2.5 m
+  she stops at. The light was blamed first, wrongly: turning it off changed nothing. A check that moves the player
+  while something listens to its steps clears the last position (`_was`), as settle() and rise() do.

@@ -642,6 +642,24 @@ Mirror</b> for the other way round: she's there when you turn round, and missing
 once a game at most: after the first time, players watch every mirror.</p>
 <figure><img src="img/mirror.jpg" width="1600" height="900" alt="The bath's mirror: her standing in the tub behind you"><figcaption>At the basin: in the glass she's standing in the tub behind you.</figcaption></figure>
 
+<h3 id="steam">Writing in the steam</h3>
+<p>Once she's gone from the mirror, the mirror has more to say. Add a <span class="node">Node</span> called
+<code>Steam</code> to <code>Events</code> with <code>starter/steam_mirror.gd</code>, its <b>Mirror</b>
+<code>Dressing/Mirror</code> (the bath's <span class="node">HSMirrorSurface</span>) and its <b>Text</b>
+<code>308</code>. Then a cue to start it: a <span class="node">Node3D</span> <code>MirrorSteam</code> with
+<code>starter/cue.gd</code> and a <span class="node">Marker3D</span> <code>Glass</code> under it at the middle of the
+mirror's glass.</p>
+<table class="vals">
+<tr><td><b>Spot</b> <code>Glass</code>, <b>Look</b> <i>middle</i>, <b>After Secs</b> 1</td><td>a moment looking into the mirror</td></tr>
+<tr><td><b>Armed</b> off, <b>Scare</b> off, <b>Target</b> <code>Steam</code></td><td>connect <code>MirrorHer</code>'s <b>gone</b> to its <code>arm</code>: it waits until she's left the glass</td></tr>
+</table>
+<p>Back at the basin, the mirror fogs over from the bottom edge in six seconds, and as it comes, <i>308</i> shows in
+it: clear lines where a finger wrote on the glass, the steam not forming on what the finger left, with drips running
+down from them. It stays twenty seconds, then clears, and the words go with it. The note asked you not to knock on
+308. The Look plugin's <span class="node">HSMirrorSurface</span> takes the same <b>Steam</b> (0 to 1) and
+<b>Writing</b> by hand: a bathroom mirror steamed over for good, or words that were always there.</p>
+<figure><img src="img/steam.jpg" width="1600" height="900" alt="The bath's mirror fogged over, 308 written in it"><figcaption>The mirror steamed over, and what someone wrote on it.</figcaption></figure>
+
 <h3 id="shadow">A shadow that isn't yours</h3>
 <p>Add a <span class="node">Node3D</span> called <code>ShadowPass</code> under <code>Events</code> with
 <code>starter/shadow_pass.gd</code> and one more copy of her under it. Set its <b>Lamp</b> to

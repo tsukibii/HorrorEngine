@@ -170,7 +170,17 @@ func _initialize() -> void:
 	mh.arm()
 	var mg := v3(cfg["boxes"]["mirror"]["at"])
 	await shot("mirror", Vector3(mg.x + 0.15, eye, mg.z + 1.03), mg + Vector3(0, -0.05, 0), 50)
+	mh.set("armed", false)                                     # (stood down: with --only her first frame could still come after this)
 	(mh.get("figure") as Node3D).visible = false
+	# writing in the steam: the same mirror fogged over, 308 in it (once she's gone from it, on the way out)
+	var mirror_n := main.get_node("Dressing/Mirror")
+	mirror_n.steam = 1.0
+	mirror_n.writing = "308"
+	hud_on.call(false)
+	await shot("steam", Vector3(mg.x + 0.15, eye, mg.z + 1.03), mg + Vector3(0, -0.05, 0), 30)
+	hud_on.call(true)
+	mirror_n.steam = 0.0
+	mirror_n.writing = ""
 	# the vending corner: its dying bulb, the batteries on the counter
 	var bat := v3(cfg["batteries"])
 	var bulb := main.get_node("Zones/Vending/Bulb")

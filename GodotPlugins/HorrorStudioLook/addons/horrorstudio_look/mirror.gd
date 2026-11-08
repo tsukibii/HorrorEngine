@@ -11,7 +11,9 @@
 ## behind you in the glass, nobody when you turn round), layer 20 by every camera but theirs (`never_in_mirrors(node)`:
 ## no reflection). `HSMirror.attach(mesh_instance, surface, camera, size)` on a
 ## kit panel's `kit_mirror` surface or any quad; `res` the picture's height in pixels (its width by the window's
-## aspect); `active` false when the mirror is out of view (the viewport then isn't drawn).
+## aspect); `active` false when the mirror is out of view (the viewport then isn't drawn). **Steam** and **writing in
+## it** (docs/GODOT_LOOK.md §5m: the bath's mirror fogging over and words showing in it): `set_steam(k)` fogs it from
+## its bottom edge (1 all of it), `write(text)` the words a finger left on the glass, clear lines once it steams.
 class_name HSMirror
 extends Node3D
 
@@ -37,6 +39,9 @@ var active := false
 var frames := 0
 var last: Dictionary = {}       # the last frame's reckoning (the checks read it)
 var hid: Array = []             # what's behind the glass, put on this mirror's layer (its wall: the checks read it)
+var steam := 0.0                # fogged over now (set_steam)
+var written := ""               # the words on the glass (write)
+var _ink: SubViewport = null
 
 
 static func attach(mi_: MeshInstance3D, surface_: int, cam_: Camera3D, res_: int = 288) -> HSMirror:
@@ -150,6 +155,76 @@ func _ready() -> void:
 	mi.set_surface_override_material(surface, mat)
 	mi.layers = 1 << (layer - 1)            # a mirror doesn't see itself (no reading the picture it's drawing): its own layer, which the player's camera and the other mirrors' draw and this one doesn't
 	_hide_wall()
+	_glass_axes()
+	set_steam(steam)
+	if written != "":
+		write(written)
+
+
+## the glass as the steam and the writing see it, in the world: its middle, its right and up as seen from in front,
+## its size, its bottom and top
+func _glass_axes() -> void:
+	var xf := mi.global_transform
+	var n := (xf.basis * normal).normalized()
+	var up := Vector3.UP if absf(n.dot(Vector3.UP)) < 0.9 else Vector3.FORWARD
+	var right := up.cross(n).normalized()                    # the right of someone looking at it (along -n)
+	up = n.cross(right).normalized()
+	var c := xf * centre
+	var half := Vector2.ZERO
+	var lo := INF
+	var hi := -INF
+	for k in corners:
+		var p: Vector3 = xf * (k as Vector3)
+		half.x = maxf(half.x, absf((p - c).dot(right)))
+		half.y = maxf(half.y, absf((p - c).dot(up)))
+		lo = minf(lo, p.y)
+		hi = maxf(hi, p.y)
+	mat.set_shader_parameter("glass_centre", c)
+	mat.set_shader_parameter("glass_right", right)
+	mat.set_shader_parameter("glass_up", up)
+	mat.set_shader_parameter("glass_size", Vector2(maxf(half.x * 2.0, 0.01), maxf(half.y * 2.0, 0.01)))
+	mat.set_shader_parameter("steam_bottom", lo)
+	mat.set_shader_parameter("steam_top", hi)
+
+
+## steam on the glass: 0 clear, 1 fogged all over (up from its bottom edge)
+func set_steam(k: float) -> void:
+	steam = clampf(k, 0.0, 1.0)
+	if mat != null:
+		mat.set_shader_parameter("steam", steam)
+
+
+## words a finger left on the glass: clear lines in the steam, so they show only as it comes. `rect` where on the
+## glass (0..1 from its top left, as seen from in front); "" wipes them
+func write(text: String, rect := Rect2(0.1, 0.22, 0.8, 0.5)) -> void:
+	written = text
+	if mat == null:
+		return                                       # (before _ready: written when the glass is)
+	if _ink == null:
+		_ink = SubViewport.new()                     # the words drawn once into a picture of their own (no owner: never saved)
+		_ink.name = "Ink"
+		_ink.size = Vector2i(1024, 512)
+		_ink.disable_3d = true
+		_ink.transparent_bg = false
+		var bg := ColorRect.new()
+		bg.color = Color.BLACK
+		bg.size = Vector2(1024, 512)
+		_ink.add_child(bg)
+		var lab := Label.new()
+		lab.name = "Words"
+		lab.size = Vector2(1024, 512)
+		lab.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lab.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		lab.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		lab.add_theme_font_size_override("font_size", 230)
+		lab.add_theme_color_override("font_color", Color.WHITE)
+		_ink.add_child(lab)
+		add_child(_ink)
+	(_ink.get_node("Words") as Label).text = text
+	_ink.render_target_update_mode = SubViewport.UPDATE_ONCE
+	mat.set_shader_parameter("writing_tex", _ink.get_texture())
+	mat.set_shader_parameter("writing", 1.0 if text != "" else 0.0)
+	mat.set_shader_parameter("writing_rect", Vector4(rect.position.x, rect.position.y, rect.size.x, rect.size.y))
 
 
 ## the glass's middle, facing and corners from its own triangles (the facing the area-weighted normal, so a panel's

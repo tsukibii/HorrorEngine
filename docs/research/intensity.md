@@ -275,7 +275,8 @@ push it higher. The weakest evidence is for infrasound.
     her shadow off (whether the eye would see it stays untested: off is safe), the starter's `mirror_figure.gd`,
     tutorial v2's bath.*
   - **Writing in the steam** (M): a `fog` uniform on the mirror's shader and a mask of the writing that fogs
-    differently (real: grease changes how glass fogs, Rayleigh 1911).
+    differently (real: grease changes how glass fogs, Rayleigh 1911). *Built (2026-11-08, night): HSMirror's
+    `set_steam` and `write` (GODOT_LOOK §5m), the starter's `steam_mirror.gd`, tutorial v2's bath mirror (308).*
   - **The reflection out of step** (L): needs a body for the player, on the mirror-only layer, 0.3 to 0.5 s late. The
     starter's player has no mesh: the mirrors show nobody in front of them today.
 - Pitfall: after the first, players watch every mirror. Few.
