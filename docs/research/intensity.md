@@ -369,8 +369,8 @@ runner and story_check in one commit, as the rules say).
 **Built so far** (2026-11-08, night: the user, "feel free to work on the rest and include them as part of the new
 tutorial too"; the starter kit and tutorial v2's §22): 1 (`footsteps.gd`, `behind_you.gd`), 2 (`presence.gd`; the
 breath near her waits for the cold), 4 (`glimpse.gd`, `closer.gd`), 6 (Woohill's sound physics: `acoustics.gd`,
-`sound.gd`), 8 (`fear.gd`), 10's occlusion and 5's mirror (`mirror_figure.gd`; the Look plugin's layer 19). Not yet
-for the desk's export: no story words.
+`sound.gd`), 8 (`fear.gd`), 10's occlusion and 5 (`mirror_figure.gd` with the Look plugin's layer 19,
+`shadow_pass.gd`, `door_feet.gd`). Not yet for the desk's export: no story words.
 
 1. **Footsteps in 3D, and the behind-you layer** (S). The player's steps by floor at the feet (the by-hand player has
    none), then the phantom steps copying them 0.3 s late, one step too many, a door shutting out of sight.

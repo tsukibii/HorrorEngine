@@ -108,7 +108,7 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
   <b>scene builder</b>, then build the whole game in Godot by hand: the <b>Look plugin</b> for the light, the weather and
   the surfaces, and the <b>starter scripts</b> for the story, the sound and the scares. No Director.</p>
   <div class="chips"><span class="chip">about two hours</span><span class="chip">Godot 4.7</span><span class="chip">the scene builder</span>
-  <span class="chip">the HorrorStudio Look plugin</span><span class="chip">23 starter scripts</span><span class="chip">the sound shelf and the four moods</span></div>
+  <span class="chip">the HorrorStudio Look plugin</span><span class="chip">25 starter scripts</span><span class="chip">the sound shelf and the four moods</span></div>
 </header>
 
 <section id="what">
@@ -318,7 +318,7 @@ lamp never lights the next room through a wall, and they switch off while you ca
 <tr><th>Zone</th><th>Room</th><th>Size (m)</th><th>Its lights (children)</th></tr>
 <tr><td>Stairwell</td><td>stairs</td><td>2.5 × 5.4 × 4.7</td><td>two <code>presets/fluorescent_tube.tscn</code> at the stair's battens (Amount 0.15)</td></tr>
 <tr><td>Corridor</td><td>corridor</td><td>18.3 × 2.55 × 1.9</td><td>five fluorescent tubes at the five battens (<code>lights/light_corridor_kt_tube_batten_1</code>...), Energy 1.3, Range 5, Amount 0.12; the third Amount 1: it stutters</td></tr>
-<tr><td>Room304</td><td>r304</td><td>4.5 × 2.55 × 3.9</td><td>an OmniLight3D at the floor lamp: warm (1, 0.78, 0.55), Energy 1.1, shadows</td></tr>
+<tr><td>Room304</td><td>r304</td><td>4.5 × 2.55 × 3.9</td><td>an OmniLight3D in the floor lamp's shade, 1.4 m up (the export's marker is at its foot): warm (1, 0.78, 0.55), Energy 1.1, Range 7, shadows</td></tr>
 <tr><td>Entry304</td><td>r304_entry</td><td>2.5 × 2.55 × 1.9</td><td>an OmniLight3D near the ceiling, Energy 0.5</td></tr>
 <tr><td>Bath304</td><td>r304_bath</td><td>1.9 × 2.35 × 1.9</td><td>an OmniLight3D, cold (0.85, 0.92, 1), Energy 0.9, shadows</td></tr>
 <tr><td>Vending</td><td>vending</td><td>2.3 × 2.55 × 2.3</td><td><code>presets/dying_bulb.tscn</code>: out more than on</td></tr>
@@ -639,6 +639,29 @@ plugin keeps it for this), and she casts no shadow, which would give her away on
 Mirror</b> for the other way round: she's there when you turn round, and missing from the mirror (layer 20). Use it
 once a game at most: after the first time, players watch every mirror.</p>
 <figure><img src="img/mirror.jpg" width="1600" height="900" alt="The bath's mirror: her standing in the tub behind you"><figcaption>At the basin: in the glass she's standing in the tub behind you.</figcaption></figure>
+
+<h3 id="shadow">A shadow that isn't yours</h3>
+<p>Add a <span class="node">Node3D</span> called <code>ShadowPass</code> under <code>Events</code> with
+<code>starter/shadow_pass.gd</code> and one more copy of her under it. Set its <b>Lamp</b> to
+<code>Zones/Room304/Lamp</code>, and connect <code>MirrorHer</code>'s <b>gone</b> to its <code>arm</code>.</p>
+<p>The next time you stand in 304 with the floor lamp behind you and a wall ahead (by the bath's wall, say), someone
+walks across behind you: a shadow slides over the wall in front of you, and when you turn round there's nobody. Your player casts no shadow,
+so it can't be yours. She only casts a shadow (every mesh of hers set to <i>Shadows Only</i>, done for you), so there
+is nothing of her to see. P.T. did this with a corridor's light. The floor lamp's light reaches the walls because
+<code>interior.gd</code> lets the kit's lamps pass their light through their shades, as it does the windows'
+glass.</p>
+<figure><img src="img/shadow.jpg" width="1600" height="900" alt="A figure's shadow on the bath's wall, nobody in the room"><figcaption>Someone crossing behind you, on the bath's wall.</figcaption></figure>
+
+<h3 id="feet">Feet under the door</h3>
+<p>Add a <span class="node">Node3D</span> called <code>Feet308</code> under <code>Events</code> with
+<code>starter/door_feet.gd</code>, put it on the corridor's side of 308's door, and set its <b>Door</b> to
+<code>hotel_floor/doors/door_door_308</code>: it sits itself at the door's foot, as wide as the door, and makes the
+light that comes under it from the room. Connect <code>LightsOut</code>'s <b>scared</b> to its <code>arm</code>.</p>
+<p>While the corridor's lit the line of light under 308's door is barely there. Once it's dark the line is bright,
+and when you come within 4 m and look at it, two shadows walk into it and stop: someone is standing right behind the
+door. Four seconds later they walk away. They wait for your eyes, so they never come while you're looking at her. The
+note asked you not to knock on 308.</p>
+<figure><img src="img/feet.jpg" width="1600" height="900" alt="The dark corridor: light under 308's door, two feet in it"><figcaption>The light under 308's door, and someone standing behind it.</figcaption></figure>
 </section>
 
 <section id="ending">
@@ -664,10 +687,10 @@ fire door ends the night: the screen goes black and the ending's title comes up.
   <li>Up the stairwell. Open the door at the top. The corridor's tubes sag, then come back.</li>
   <li>304 is locked. Read the note on the carpet. Was someone at 308's door just then?</li>
   <li>The linen closet is dark: <kbd>F</kbd>. Take the key and the corridor goes out behind you, one tube at a time, then comes back.</li>
-  <li>Open 304 with the key. The TV's on. The music turns to dread. Look at the window, then back at the bath's door. And again. Then wash your face.</li>
+  <li>Open 304 with the key. The TV's on. The music turns to dread. Look at the window, then back at the bath's door. And again. Then wash your face, and stand by the bath's wall with the lamp behind you.</li>
   <li>The flashlight dies. Batteries in the vending corner, where the radio's hissing. Walk back out and listen behind you.</li>
   <li>On the way out she's at the end of the corridor, the tubes stuttering round her. Your heart picks up as you near her. Shine the light on her and she backs off. Do it twice and the corridor goes dark.</li>
-  <li>Walk to the fire exit.</li>
+  <li>Walk to the fire exit. Don't look under 308's door.</li>
 </ol>
 </section>
 

@@ -10,7 +10,8 @@
 ## the stairwell ringing longer than the corridor, a knock muffled behind 304's door), the steps behind you, your body
 ## under fear, the figure at the corner of your eye (at 308's door, gone as you turn to it), the one closer each time
 ## you look away (out of 304's bath, then behind you), her in the bath's mirror only (in the tub behind you, nobody when
-## you turn round), her signs (the tubes by her and your flashlight dipping, the radio's static). Prints `TUTORIAL <what> <how>` lines and `TUTORIAL result {errors}`, quits.
+## you turn round), a shadow that isn't yours (crossing 304's wall, the lamp behind you), feet under 308's door once the
+## corridor's dark, her signs (the tubes by her and your flashlight dipping, the radio's static). Prints `TUTORIAL <what> <how>` lines and `TUTORIAL result {errors}`, quits.
 extends SceneTree
 
 const Lights := preload("res://starter/lights.gd")
@@ -409,6 +410,34 @@ func _initialize() -> void:
 	if not bd.open or not m_seen or not on19 or eye19 or not mirror19 or mfig.visible or wall_out < 2:
 		bad("only in the mirror (mirror_figure.gd, HSMirror.only_in_mirrors): the door %s, seen in the glass %s, on layer 19 %s, the eye leaving 19 out %s, the mirror's camera drawing it %s, its wall hidden %d, gone when you turned round %s" % [
 			bd.open, m_seen, on19, not eye19, mirror19, wall_out, not mfig.visible])
+	# a shadow that isn't yours (shadow_pass.gd, armed when she's gone from the mirror): 304's floor lamp behind you, her shadow across the wall ahead
+	var sp: Node3D = main.get_node("Events/ShadowPass")
+	var sfig: Node3D = sp.figure
+	var passed := [0]
+	sp.passed.connect(func() -> void: passed[0] += 1)
+	var lamp_at := v3(cfg["lamp304"])
+	var r3: Dictionary = cfg["rooms"]["r304"]
+	var at3 := v3(r3["at"]) + Vector3(-0.9, -float(r3["size"][1]) / 2.0 + 0.05, -1.2)   # between the bed's head and the bath's wall
+	var sp_armed: bool = sp.armed
+	stand(at3, Vector3(at3.x, fl + 1.3, at3.z - 2.0))              # facing the bath's wall, the floor lamp behind you
+	var only_shadow := true
+	var behind_ok := false
+	var swept := 0.0
+	var first := Vector3.INF
+	for i in 150:
+		await frames(1)
+		if sfig.visible:
+			for g in sfig.find_children("*", "GeometryInstance3D", true, false):
+				only_shadow = only_shadow and g.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
+			var off := (sfig.global_position - player.global_position) * Vector3(1, 0, 1)
+			behind_ok = behind_ok or (off.length() < 1.3 and off.dot((lamp_at - player.global_position) * Vector3(1, 0, 1)) > 0.0)
+			if first == Vector3.INF:
+				first = sfig.global_position
+			swept = maxf(swept, sfig.global_position.distance_to(first))
+	say("a shadow not yours", "armed when she left the mirror %s; facing the bath's wall with the floor lamp behind you: someone crossed behind you %.1f m (between you and the lamp %s, only a shadow %s), over %s, nobody now %s" % [
+		sp_armed, swept, behind_ok, only_shadow, passed[0] == 1, not sfig.visible])
+	if not sp_armed or passed[0] != 1 or not only_shadow or not behind_ok or swept < 1.0 or sfig.visible:
+		bad("a shadow that isn't yours (shadow_pass.gd): armed %s, passed %d, shadows only %s, behind you toward the lamp %s, %.1f m across, gone %s" % [sp_armed, passed[0], only_shadow, behind_ok, swept, not sfig.visible])
 	# 6. the flashlight: on, low, dead
 	await press(KEY_F)
 	await frames(5)
@@ -503,6 +532,27 @@ func _initialize() -> void:
 	say("fog", "rolled in to %.2f with the dark (LightsOut's fog 0.55), the environment's density %.4f" % [rolled, HSAir.environment_of(air).volumetric_fog_density])
 	if absf(rolled - 0.55) > 0.02:
 		bad("the fog didn't roll in when the corridor went dark (scare_area.gd fog: %.2f)" % rolled)
+	# feet under 308's door (door_feet.gd, armed when the corridor went dark): the light under it, someone standing behind it
+	var ft: Node3D = main.get_node("Events/Feet308")
+	var came := [0]
+	var went := [0]
+	ft.came.connect(func() -> void: came[0] += 1)
+	ft.left.connect(func() -> void: went[0] += 1)
+	var foot := ft.global_position
+	var out_dir := ft.global_basis.z
+	var feet_armed: bool = ft.armed and ft.state == "away"       # armed, and not come yet while your eyes were on her
+	stand(foot + out_dir * 1.5 + Vector3(-2.0, 0.02, 0.0), foot + Vector3(0, 0.1, 0))
+	var standing_seen := false
+	for i in 420:
+		await frames(1)
+		standing_seen = standing_seen or ft.state == "standing"
+		if went[0] > 0:
+			break
+	say("feet under 308's door", "armed when the corridor went dark %s; its light %s, %.2f m wide (the leaf's), facing the corridor %s, on the floor %s; came %d, stood %s, left %d" % [
+		feet_armed, "on" if ft.lit else "OFF", float(ft.width), out_dir.dot(Vector3(0, 0, -1)) > 0.9, absf(foot.y - fl) < 0.02, came[0], standing_seen, went[0]])
+	if not feet_armed or not ft.lit or absf(float(ft.width) - 0.8) > 0.15 or out_dir.dot(Vector3(0, 0, -1)) < 0.9 or absf(foot.y - fl) > 0.02 or came[0] != 1 or not standing_seen or went[0] != 1:
+		bad("feet under 308's door (door_feet.gd): armed %s, at the leaf's foot facing the corridor (%.2f m wide, %s, %.3f off the floor), came %d, stood %s, left %d" % [
+			feet_armed, float(ft.width), out_dir, foot.y - fl, came[0], standing_seen, went[0]])
 	# 9. the jump scare at the fire exit: the hush, her there for a moment
 	var jp := v3(cfg["jump"])
 	stand(Vector3(jp.x - 1.4, fl + 0.02, cz), Vector3(jp.x + 2.0, fl + 1.5, cz))

@@ -134,9 +134,10 @@ start = H["markers"]["player_start"]
 spot = H["markers"]["spot_someone_spot"]
 tubes = sorted((n for n in L if n.startswith("light_corridor_kt_tube_batten_")), key=lambda n: L[n][0])
 stair_tubes = sorted((n for n in L if n.startswith("light_stairs_kt_tube_batten_")), key=lambda n: L[n][1])
-lamp = L.get("light_r304_kt_floor_lamp_1", [4.9, 2.82, -0.3])
+lamp = L.get("light_r304_kt_floor_lamp_1", [4.9, 2.82, -0.3])                   # the export's marker: at the lamp's foot
 corr = R["corridor"]
 floor_y = corr["at"][1] - corr["size"][1] / 2 - 0.025                # the corridor's floor (its volume is 0.05 short of its ceiling)
+lamp_y = floor_y + 1.4                                                  # in the floor lamp's shade (the kit's: 1.25 to 1.55 m up)
 shelf = B["linen_kt_bookshelf_1"]
 desk = B["vending_kt_desk_1"]
 d304 = B["door_door_304"]["at"]
@@ -159,6 +160,7 @@ closer_marks = [("BathDoor", [r304b["at"][0] - 0.9, floor_y, r304b["at"][2] + 0.
                 ("EntryMouth", [r304b["at"][0] - 0.3, floor_y, r304b["at"][2] + 1.4]),   # where the entry opens into the room
                 ("BedFoot", [r304b["at"][0] - 1.0, floor_y, r304b["at"][2] + 2.3])]      # at the foot of the bed
 mirror_her_at = [tub["at"][0], tub["at"][1] - tub["size"][1] / 2 + 0.08, tub["at"][2] + 0.4]   # standing in the tub, behind you at the bath's mirror
+feet_at = [d308[0] + 0.4, floor_y, corr["at"][2] + corr["size"][2] / 2 - 0.3]   # by 308's door on the corridor's side: door_feet.gd sits itself at its foot
 sg = B["stair_glass"]["at"]                                             # the stairwell's window (its glass's middle)
 land = B["stairs_fx_half_1"]["top"]                                     # the half landing's top
 sill = B["stairs__wall_n1"]["top"]                                      # the wall under the window: up to the sill
@@ -177,7 +179,8 @@ ext = [("PackedScene", "res://exports/interiors/hotel_floor/hotel_floor.glb", "h
        ("Script", "res://starter/light_shy.gd", "shy"), ("Script", "res://addons/horrorstudio_look/nodes/atmosphere.gd", "air"),
        ("Script", "res://starter/fear.gd", "fear"), ("Script", "res://starter/behind_you.gd", "behind"),
        ("Script", "res://starter/presence.gd", "presence"), ("Script", "res://starter/glimpse.gd", "glimpse"), ("Script", "res://starter/closer.gd", "closer"),
-       ("Script", "res://starter/mirror_figure.gd", "mirrorfig"),
+       ("Script", "res://starter/mirror_figure.gd", "mirrorfig"), ("Script", "res://starter/shadow_pass.gd", "shadowpass"),
+       ("Script", "res://starter/door_feet.gd", "feet"),
        ("Script", "res://addons/horrorstudio_look/nodes/air_zone.gd", "airzone"), ("Script", "res://addons/horrorstudio_look/nodes/light_shaft.gd", "shaft"),
        ("Script", "res://addons/horrorstudio_look/nodes/wall_leak.gd", "leak"), ("Script", "res://addons/horrorstudio_look/nodes/puddle.gd", "puddle"),
        ("Script", "res://addons/horrorstudio_look/nodes/pattern_light.gd", "pattern"), ("Script", "res://addons/horrorstudio_look/nodes/tape.gd", "tape"),
@@ -259,7 +262,7 @@ def zone(name, room, kids):
 zone("Stairwell", "stairs", [lambda: [nd(f"Tube{i + 1}", "Zones/Stairwell", inst="tube", props=[f"transform = {tf([L[n][0] - R['stairs']['at'][0], L[n][1] - R['stairs']['at'][1], L[n][2] - R['stairs']['at'][2]])}", "amount = 0.15"]) for i, n in enumerate(stair_tubes)]])
 zone("Corridor", "corridor", [lambda: [nd(f"Tube{i + 1}", "Zones/Corridor", inst="tube", props=[f"transform = {tf([L[n][0] - corr['at'][0], L[n][1] - corr['at'][1], L[n][2] - corr['at'][2]])}", f"amount = {1.0 if i == 2 else 0.12}", "light_energy = 1.3", "omni_range = 5.0"]) for i, n in enumerate(tubes)]])
 r304 = R["r304"]
-zone("Room304", "r304", [lambda: nd("Lamp", "Zones/Room304", "OmniLight3D", props=[f"transform = {tf([lamp[0] - r304['at'][0], lamp[1] + 0.25 - r304['at'][1], lamp[2] - r304['at'][2]])}", "light_color = Color(1, 0.78, 0.55, 1)", "light_energy = 1.1", "omni_range = 5.0", "shadow_enabled = true"])])
+zone("Room304", "r304", [lambda: nd("Lamp", "Zones/Room304", "OmniLight3D", props=[f"transform = {tf([lamp[0] - r304['at'][0], lamp_y - r304['at'][1], lamp[2] - r304['at'][2]])}", "light_color = Color(1, 0.78, 0.55, 1)", "light_energy = 1.1", "omni_range = 7.0", "shadow_enabled = true"])])   # reaching every wall of 304 (a shadow on them, shadow_pass.gd)
 ent = R["r304_entry"]
 zone("Entry304", "r304_entry", [lambda: nd("Light", "Zones/Entry304", "OmniLight3D", props=[f"transform = {tf([0, ent['size'][1] / 2 - 0.25, 0])}", "light_color = Color(1, 0.9, 0.75, 1)", "light_energy = 0.5", "omni_range = 3.5"])])
 bath = R["r304_bath"]
@@ -358,6 +361,9 @@ person("Figure", [0, 0, 0], 0.0, False, parent="Events/Closer")
 area("InBath", "Events", "event", "r304_bath")                           # walking into the bath: only its signal
 nd("MirrorHer", "Events", "Node3D", script="mirrorfig", props=[f"transform = {tf(mirror_her_at, 180.0)}"])   # in the tub, facing the mirror
 person("Figure", [0, 0, 0], 0.0, False, parent="Events/MirrorHer")
+nd("ShadowPass", "Events", "Node3D", script="shadowpass", props=['lamp = NodePath("../../Zones/Room304/Lamp")'], paths=["lamp"])   # a shadow that isn't yours
+person("Figure", [0, 0, 0], 0.0, False, parent="Events/ShadowPass")
+nd("Feet308", "Events", "Node3D", script="feet", props=[f"transform = {tf(feet_at)}", f'door = NodePath("../../Hotel/{P["door_door_308"]}")'], paths=["door"])   # someone behind 308's door
 # the player, its flashlight on a battery that's seen better days
 nd("Player", ".", inst="player", props=[f"transform = {tf(start['at'], start['turn'])}"])
 nd("Flashlight", "Player/Eye", props=["battery = 90.0", "charge = 0.5", "low_at = 0.3", 'low_says = "The flashlight is dying."',
@@ -378,6 +384,8 @@ lines += ['[connection signal="picked" from="Things/Key" to="Events/LightsDie" m
           '[connection signal="caught" from="Events/Closer" to="Fear" method="scare"]',
           '[connection signal="entered" from="Events/InBath" to="Events/MirrorHer" method="arm"]',
           '[connection signal="seen" from="Events/MirrorHer" to="Fear" method="scare"]',
+          '[connection signal="gone" from="Events/MirrorHer" to="Events/ShadowPass" method="arm"]',
+          '[connection signal="scared" from="Events/LightsOut" to="Events/Feet308" method="arm"]',
           f'[connection signal="opened" from="Hotel/{P["door_corridor_e_door"]}" to="Story" method="end"]', "", '[editable path="Hotel"]', '[editable path="Player"]', ""]
 (proj / "main.tscn").write_text("\n".join(lines), encoding="utf-8")
 pg = (proj / "project.godot").read_text(encoding="utf-8")
@@ -386,7 +394,7 @@ if "run/main_scene" not in pg:
     (proj / "project.godot").write_text(pg, encoding="utf-8")
 (proj / "tutorial.json").write_text(json.dumps({"who": who, "start": start, "her": her_at, "again": again_at, "note": note_at, "key": key_at, "batteries": bat_at,
                                                 "door304": d304, "fire": fire, "jump": jump, "floor": floor_y, "radio": radio_at, "glimpse": glimpse_at,
-                                                "closer": {n: a for n, a in closer_marks}, "mirror_her": mirror_her_at, "rooms": R, "lights": L, "paths": P, "boxes": B}, indent=1), encoding="utf-8")
+                                                "closer": {n: a for n, a in closer_marks}, "mirror_her": mirror_her_at, "lamp304": [lamp[0], lamp_y, lamp[2]], "rooms": R, "lights": L, "paths": P, "boxes": B}, indent=1), encoding="utf-8")
 for f in ["tutorial_v2_test.gd", "tutorial_v2_shots.gd"]:
     shutil.copy(ROOT / "tools/godot" / f, proj / f)
 

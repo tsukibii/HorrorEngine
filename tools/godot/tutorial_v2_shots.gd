@@ -146,6 +146,12 @@ func _initialize() -> void:
 	cfig.visible = true
 	await shot("closer", cfrom, m1 + Vector3(0, 1.05, 0))
 	cfig.visible = false
+	# a shadow that isn't yours: someone crossing behind you, her shadow on the bath's wall, the floor lamp behind you
+	var sp := main.get_node("Events/ShadowPass")
+	var you := Vector3(rc.x - 0.9, fl, rc.z - 1.2)
+	sp.pose(you, 0.5)
+	await shot("shadow", you + Vector3(0, 1.6, 0), Vector3(you.x + 0.15, fl + 1.15, you.z - 2.0), 50)
+	(sp.get("figure") as Node3D).visible = false
 	var b: Dictionary = R["r304_bath"]
 	var bc := v3(b["at"])
 	await shot("bath", Vector3(bc.x + 0.85, eye - 0.15, bc.z + 0.7), Vector3(bc.x - 0.4, fl + 0.45, bc.z - 0.4))
@@ -173,6 +179,13 @@ func _initialize() -> void:
 		Lights.set_on(l, false)
 	main.get_node("Air").fog = 0.55                             # LightsOut's fog, rolled in
 	await shot("dark", Vector3(hp.x - 6.5, eye, cz - 0.3), hp + Vector3(0, 1.2, 0), 60)
+	# feet under 308's door: its light in the dark corridor, someone standing behind it
+	var ft := main.get_node("Events/Feet308") as Node3D
+	ft.pose()
+	her.visible = false
+	torch.visible = false                                      # the light under the door alone
+	var fp := ft.global_position
+	await shot("feet", fp + ft.global_basis.z * 1.3 + Vector3(-1.4, 1.55, 0.0), fp + Vector3(0.0, 0.05, 0.0), 60)
 	# the jump scare: her right there by the fire door
 	her.visible = false
 	again.visible = true

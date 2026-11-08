@@ -2023,3 +2023,14 @@ pale one shows.
   its box's mean, and had it only because that uncovered wall darkened most of the box. With the wall gone the second
   mirror's glass is the room's brightness. Found while adding a box that should have shown in the mirror and didn't,
   even on layer 1: when a new measure fails, put the thing on the plainest settings before blaming the new part.
+- **A moment armed by a scare goes off with the scare**: the feet under 308's door, armed when the corridor went dark,
+  came at once and were gone before anyone looked: the player stood within their 6 m with the door's foot in the
+  frustum, while looking at her. What wants to be noticed waits for the eye: near (4 m), and the place within 30° of
+  where you look, not merely somewhere in the frame.
+- **Place a figure before you show it**: the shadow pass set her visible, then moved her onto her path the next frame,
+  so for one frame she stood at her node's origin (the test read her "walk" as 7.8 m).
+- **A light put inside a lampshade is boxed in by it**: 304's lamp, moved up from the floor into its floor lamp's shade
+  (where the guide always said), lit the room only through the shade's open top and bottom, and a figure's shadow on
+  the wall measured nothing (0.1419 against 0.1418): the shade's mesh casts shadows. A fabric shade lets light
+  through, so interior.gd turns the kit lamps' shadows off as it does the windows' glass. Before blaming a faint
+  shadow, render the frame with and without the thing and compare.

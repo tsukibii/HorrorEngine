@@ -10,7 +10,7 @@ res://starter/ by tools/godot_byhand.py. Yours to change.
                            its cookie; its AirBeam child (the Look plugin's HSBeam) draws the beam in the air (an
                            HSAtmosphere sets how thick the air is) and gives the light a flashlight's cookie
   interior.gd              on an interior's instance: stood at a street's marker, its doors opened with E, its lamps,
-                           its windows' glass letting light through (no shadow from it);
+                           its windows' glass and its kit lamps' shades letting light through (no shadow from them);
                            room_box(room) and fit_area(area, room): an area the size of one of its rooms
   door.gd                  a door from an interior's export swinging on its hinge (interior.gd puts it on every door);
                            locked by an item or a fact (the scene builder's lock comes with the export)
@@ -45,6 +45,10 @@ res://starter/ by tools/godot_byhand.py. Yours to change.
                            caught when you turn round, gone in a blink; arm() from a signal
   mirror_figure.gd         a figure only in the mirror (layer 19: gone when you turn round to her), or there and
                            missing from it (layer 20); arm() from a signal
+  shadow_pass.gd           a shadow that isn't yours: a figure that only casts a shadow crossing behind you when a
+                           lamp's behind you and a wall ahead; arm() from a signal
+  door_feet.gd             the light under a door and someone's feet walking into it, standing, walking away; it sits
+                           itself under its door; arm() from a signal
   arms_down.gd             under a Character Studio character: its arms down by its sides
   lights.gd, reach.gd      helpers the others use: lights switched, dimmed, flickered and blinked as the Look plugin
                            keeps them, a collider round a thing you use

@@ -1,9 +1,10 @@
 ## An interior from the scene builder's Export for Godot (Exports/interiors/<name>/<name>.glb), made usable: put this on
 ## the interior's instance (the .glb dragged into your scene). It stands where a street wants it (`street` and `marker`:
 ## the street's README names its walk-in buildings' markers, inside_<building>), in the editor too; when the game runs
-## every door under its doors/ opens and shuts with E (door.gd), `lights_on` puts its lamps on or off, and its windows'
+## every door under its doors/ opens and shuts with E (door.gd), `lights_on` puts its lamps on or off, its windows'
 ## glass casts no shadow (Godot's importer draws glTF's see-through glass with a depth pre-pass, which casts one: a
-## street lamp or the moon outside never got through a window).
+## street lamp or the moon outside never got through a window), and nor do its kit lamps (a light you put in a floor
+## lamp's shade was boxed in by the shade: a fabric shade lets its light through).
 @tool
 extends Node3D
 
@@ -34,6 +35,16 @@ func _ready() -> void:
 			d.set_script(DOOR)
 			d.setup()
 	clear_glass()
+	clear_shades()
+
+
+## the kit's lamps (a node named *_kt_*lamp*: a floor lamp, a desk lamp) cast no shadow: their light comes through
+## their shades
+func clear_shades() -> void:
+	for n in find_children("*_kt_*lamp*", "", true, false):
+		for g in [n] + n.find_children("*", "GeometryInstance3D", true, false):
+			if g is GeometryInstance3D:
+				(g as GeometryInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 
 ## the windows' glass (a mesh named for it with a see-through material) casts no shadow: light comes through
