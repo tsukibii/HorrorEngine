@@ -34,6 +34,12 @@ exported. No image or 3D generator anywhere.
                                                        your pictures laid on them; docs/PROPGEN.md §25)
         --make --bare --jobs 2 --tex 1024              make what isn't made first (a chair bare too), 2 at once
         --check                                        THUMBS: every kept picture well formed, what's missing
+    python tools/propgen.py quality reference [names]  the quality bar: the best made props measured (base colour, ORM,
+                                                       normal; density, colour range, roughness, relief, occlusion) into
+                                                       Content/Studio/Props/quality_reference.json (docs/PROPGEN.md §29)
+    python tools/propgen.py quality audit [folder]     every .glb under retro/ measured and judged good enough or not:
+                                                       Content/Studio/Props/retro_audit.json
+    python tools/propgen.py quality made [names...]    made props against the bar: what each lacks
     python tools/propgen.py check                      PROPGEN: a few recipes made small and measured
     python tools/propgen.py godot [names...]           GDPROPS: the made props imported by Godot 4.7, their materials
                                                        read back, pictured (Saved/Props/_godot/godot_props.png)
@@ -159,6 +165,9 @@ def main():
     if argv[0] == "thumbs":
         from propgen import thumbs
         sys.exit(thumbs.main(argv[1:]))
+    if argv[0] == "quality":
+        from propgen import quality
+        sys.exit(quality.main(argv[1:]))
     cpu = "--cpu" in argv
     if cpu:
         argv.remove("--cpu")
