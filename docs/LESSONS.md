@@ -3,6 +3,24 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## The retro pack: pictures read inside Blender, and a mask read upside down (2026-11-08)
+
+- **An image read inside Blender is tagged Non-Color before its pixels are touched**: Blender hands back an 8-bit
+  PNG's own values from `Image.pixels`, but decodes a 16-bit PNG into a float buffer and, the image being tagged sRGB
+  by default, converts it to linear on the way. Every ambientCG normal map on the shelf (NormalGL, NormalDX) is 16-bit,
+  so `paint.read_image` had been giving every set's normal map as 0.5 -> 0.21: each texel's normal tilted about 37
+  degrees the same way, everywhere a family laid a shelf set (the trees' bark and leaves read 40 to 45 degrees of mean
+  tilt in the quality bar), and Blender 5.1's 16-bit exports (the retro pack's textures) came back at half their
+  lightness: a road went near black. Found by the retro road's normal map being one flat light blue, and its colour
+  measured 0.31 outside Blender and 0.14 inside; `read_image` and `quality.decode` now set Non-Color first (8-bit
+  values unchanged).
+- **glTF's v runs down the image**: a texel's row is v x height, not (1 - v) x height. The quality measures first
+  flipped it and judged a bag's colours over the wrong texels (its unused corner counted, a darkening that wasn't
+  there).
+- **Relief from a picture's colours follows its features, not its pixels**: a 256-pixel texture upscaled four times
+  gave the high-pass four-texel steps, and the normal map came out in tiles; the filters are at least one source
+  texel wide now, the source's edges softened by half of one first.
+
 ## Curtains that crumpled where nothing touched them (2026-11-04, after the wood)
 
 - **A rail keeps its family's distance from the wall**: the flat's curtains were first hung 100 to 110 mm out (to
