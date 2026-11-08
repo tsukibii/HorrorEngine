@@ -36,6 +36,12 @@ res://starter/ by tools/godot_byhand.py. Yours to change.
   note.gd                  a thing read with E: its words on the Story's card
   light_shy.gd             under a character: she backs off, freezes, vanishes or comes when the flashlight holds her;
                            lit, flashed, flashed_twice to wire anything to
+  presence.gd              under a character: the signs that she's near, the lights by her and your flashlight dipping
+                           (under the flash limit), static rising on a radio, a false alarm now and then; warn()
+  glimpse.gd               a figure at the corner of your eye: there only 30 to 42 degrees off where you look, gone as
+                           you turn to it (in a lamp's blink), silent, once; arm() from a signal
+  closer.gd                a figure that moves only while it's unseen, mark by mark toward you, then right behind you;
+                           caught when you turn round, gone in a blink; arm() from a signal
   arms_down.gd             under a Character Studio character: its arms down by its sides
-  lights.gd, reach.gd      helpers the others use: lights switched and dimmed as the Look plugin keeps them, a collider
-                           round a thing you use
+  lights.gd, reach.gd      helpers the others use: lights switched, dimmed, flickered and blinked as the Look plugin
+                           keeps them, a collider round a thing you use

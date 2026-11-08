@@ -1,12 +1,14 @@
 ## The guide's pictures (tools/godot/tutorial_v2.py --pictures): guides/tutorial_v2's main.tscn drawn by Godot as the
 ## player sees it, the Story's words on screen where the guide shows them. Each shot a camera of its own at the eye's
-## height, held a while (TAA and the iris settle), saved as <out>/<name>.png.
-##   godot --path PROJECT --rendering-driver vulkan -s tutorial_v2_shots.gd -- --out=DIR
+## height, held a while (TAA and the iris settle), saved as <out>/<name>.png. `--only=a,b` makes only those (the rest of
+## the walk still set up as it goes).
+##   godot --path PROJECT --rendering-driver vulkan -s tutorial_v2_shots.gd -- --out=DIR [--only=glimpse,closer]
 extends SceneTree
 
 const Lights := preload("res://starter/lights.gd")
 
 var out_dir := ""
+var only: PackedStringArray = []
 var cam: Camera3D
 var main: Node3D
 var torch: SpotLight3D
@@ -18,6 +20,8 @@ func v3(a) -> Vector3:
 
 
 func shot(name: String, from: Vector3, at: Vector3, hold := 40) -> void:
+	if not only.is_empty() and not only.has(name):
+		return
 	cam.global_position = from
 	cam.look_at(at, Vector3.UP)
 	for i in hold:
@@ -35,6 +39,8 @@ func _initialize() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--out="):
 			out_dir = a.substr(6)
+		elif a.begins_with("--only="):
+			only = a.substr(7).split(",", false)
 	root.size = Vector2i(1600, 900)
 	cfg = JSON.parse_string(FileAccess.get_file_as_string("res://tutorial.json"))
 	main = (load("res://main.tscn") as PackedScene).instantiate() as Node3D
@@ -74,6 +80,7 @@ func _initialize() -> void:
 	var st: Dictionary = R["stairs"]
 	var her := main.get_node("Her") as Node3D
 	var again := main.get_node("HerAgain") as Node3D
+	her.get_node("Presence").process_mode = Node.PROCESS_MODE_DISABLED   # her signs held still: no lamp caught mid-dip
 	# the stairwell from its foot, up the first flight
 	var sx := float(st["at"][0])
 	var south := float(st["at"][2]) + float(st["size"][2]) / 2.0
@@ -111,6 +118,14 @@ func _initialize() -> void:
 	story.close_card()
 	story.add_line("key: Find the master key in the linen closet")
 	story._line.visible = false
+	# the corner of your eye: her at 308's door, 36 degrees off where you look
+	var gl := main.get_node("Events/Glimpse") as Node3D
+	var gfig: Node3D = gl.get("figure")
+	gfig.visible = true
+	var gfrom := Vector3(8.0, eye, cz)
+	var gto := gl.global_position + Vector3.UP * 1.3
+	await shot("glimpse", gfrom, gfrom + (gto - gfrom).normalized().rotated(Vector3.UP, deg_to_rad(36.0)) * 5.0)
+	gfig.visible = false
 	# the linen closet in the flashlight's beam: the key on the shelf
 	var key := v3(cfg["key"])
 	torch.visible = true
@@ -120,6 +135,16 @@ func _initialize() -> void:
 	var r: Dictionary = R["r304"]
 	var rc := v3(r["at"])
 	await shot("room304", Vector3(rc.x - 1.6, eye, rc.z + 1.3), Vector3(rc.x + 2.3, fl + 1.2, rc.z - 0.2))
+	# closer each time: her on her second mark, where the entry opens into the room, from where you stood at the TV
+	var cl := main.get_node("Events/Closer") as Node3D
+	var cfig: Node3D = cl.get("figure")
+	var m1 := (cl.get_node("EntryMouth") as Node3D).global_position
+	var cfrom := Vector3(rc.x + 0.6, eye, rc.z + 0.4)
+	cfig.global_position = m1
+	cfig.global_rotation = Vector3(0.0, atan2(cfrom.x - m1.x, cfrom.z - m1.z), 0.0)
+	cfig.visible = true
+	await shot("closer", cfrom, m1 + Vector3(0, 1.05, 0))
+	cfig.visible = false
 	var b: Dictionary = R["r304_bath"]
 	var bc := v3(b["at"])
 	await shot("bath", Vector3(bc.x + 0.85, eye - 0.15, bc.z + 0.7), Vector3(bc.x - 0.4, fl + 0.45, bc.z - 0.4))

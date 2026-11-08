@@ -108,7 +108,7 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
   <b>scene builder</b>, then build the whole game in Godot by hand: the <b>Look plugin</b> for the light, the weather and
   the surfaces, and the <b>starter scripts</b> for the story, the sound and the scares. No Director.</p>
   <div class="chips"><span class="chip">about two hours</span><span class="chip">Godot 4.7</span><span class="chip">the scene builder</span>
-  <span class="chip">the HorrorStudio Look plugin</span><span class="chip">15 starter scripts</span><span class="chip">the sound shelf and the four moods</span></div>
+  <span class="chip">the HorrorStudio Look plugin</span><span class="chip">22 starter scripts</span><span class="chip">the sound shelf and the four moods</span></div>
 </header>
 
 <section id="what">
@@ -580,6 +580,52 @@ step you take is answered a moment later from three metres behind you, on wood w
 else's. Stop, and it takes one step too many, then it's quiet. Turn round and there's nobody.</p>
 <p>Use it once or twice a game at most: the second time it's already less frightening. With <b>Chance Per Min</b>
 above 0 it can also come by itself while you're afraid, but never again within <b>Rest</b> seconds (ten minutes).</p>
+
+<h3 id="near">Signs that she's near</h3>
+<p>Give <code>Her</code> one more <span class="node">Node</span>, called <code>Presence</code>, with
+<code>starter/presence.gd</code>. While she's out and within 10 m of you, the lights around her dip for a moment now
+and then, more often the closer she is, and your flashlight dips with them. Put a radio on the vending corner's table
+beside the batteries (a <span class="node">BoxMesh</span> will do: someone left it on) and set <b>Static On</b> to it:
+its static rises as she comes. Silent Hill's radio does this, and so do Phasmophobia's lights.</p>
+<table class="vals">
+<tr><td><b>Radius</b> 10</td><td>how near she has to be. The lights that dip are the ones within it on her floor.</td></tr>
+<tr><td><b>Max Dips</b> 2.5</td><td>dips a second at most, right beside her. Keep it under three: three flashes a second is the limit for players with photosensitive epilepsy.</td></tr>
+<tr><td><b>False Alarm</b> 0.1</td><td>one time in ten, as she goes, the signs come back once for a few seconds without her, so they never quite mean she's there</td></tr>
+</table>
+<p>A dimming scare and her dips don't fight: each light keeps its level and her flicker apart. Connect any signal to
+<code>warn</code> to start the signs a moment before she shows.</p>
+
+<h3 id="glimpse">The corner of your eye</h3>
+<p>Add a <span class="node">Node3D</span> called <code>Glimpse</code> under <code>Events</code> with
+<code>starter/glimpse.gd</code>. Stand it at 308's door, 0.4 m out from its wall, turned to look down the corridor
+toward you, and put a copy of her under it (duplicate <code>Her</code>, then delete the copy's
+<code>LightShy</code> and <code>Presence</code>). Set <b>Flicker</b> to <code>Zones/Corridor/Tube5</code>, the tube
+over her, and connect the note's <b>read</b> signal to its <code>arm</code>.</p>
+<p>From then on she's there only while 308's door is 30 to 42° off where you're looking and 5 to 15 m away. That's
+the edge of your vision: it sees little detail, but it catches movement and fear. Turn toward her and she's gone before
+you're looking at her, in the tube's blink. She never makes a sound (a sting would make her a jump scare), she never
+comes while a note's card is up, and she comes once (<b>Times</b>). Some players will see her and most won't, so never
+hide a clue this way.</p>
+<figure><img src="img/glimpse.jpg" width="1600" height="900" alt="The corridor, her at 308's door at the right edge of the view"><figcaption>36° off where you're looking: her at 308's door.</figcaption></figure>
+
+<h3 id="closer">Closer each time you look away</h3>
+<p>Add a <span class="node">Node3D</span> called <code>Closer</code> under <code>Events</code> with
+<code>starter/closer.gd</code>. Give it three <span class="node">Marker3D</span> children, far to near:
+<code>BathDoor</code> in the entry by the bath's door, <code>EntryMouth</code> where the entry opens into the room,
+and <code>BedFoot</code> at the foot of the bed, each turned to face into the room. Then add another copy of her.
+Set <b>Blink</b> to <code>Zones/Room304/Lamp</code>, connect <code>In304</code>'s <b>entered</b> to its
+<code>arm</code>, and its <b>caught</b> to <code>Fear</code> → <code>scare</code>.</p>
+<p>When you walk into 304 she's standing by the bath's door. She never moves while you can see her. Look away for a
+second and a half and she's on the next mark, turned a little more toward you. Unseen means all of it:</p>
+<ul>
+  <li>outside your view, widened by 15° all round so that an arm at the edge counts;</li>
+  <li>every ray from your eye to her head, her middle and her feet stopped by something;</li>
+  <li>and not in a mirror you can see.</li>
+</ul>
+<p>After the foot of the bed her last step is 35 cm behind your eye. Turn round: she's there, your heart jumps, and
+after a moment she's gone in the lamp's blink. Look away instead and she's simply gone. Walk right up to her on a mark
+and she goes in a blink too: she's never seen to move or vanish.</p>
+<figure><img src="img/closer.jpg" width="1600" height="900" alt="Her standing where 304's entry opens into the room"><figcaption>Her second mark, where the entry opens into the room. You only looked at the window.</figcaption></figure>
 </section>
 
 <section id="ending">
@@ -603,11 +649,11 @@ fire door ends the night: the screen goes black and the ending's title comes up.
 </table>
 <ol class="steps">
   <li>Up the stairwell. Open the door at the top. The corridor's tubes sag, then come back.</li>
-  <li>304 is locked. Read the note on the carpet.</li>
+  <li>304 is locked. Read the note on the carpet. Was someone at 308's door just then?</li>
   <li>The linen closet is dark: <kbd>F</kbd>. Take the key and the corridor goes out behind you, one tube at a time, then comes back.</li>
-  <li>Open 304 with the key. The TV's on. The music turns to dread. Look in the bath.</li>
-  <li>The flashlight dies. Batteries in the vending corner. Walk back out and listen behind you.</li>
-  <li>On the way out she's at the end of the corridor. Your heart picks up as you near her. Shine the light on her and she backs off. Do it twice and the corridor goes dark.</li>
+  <li>Open 304 with the key. The TV's on. The music turns to dread. Look at the window, then back at the bath's door. And again.</li>
+  <li>The flashlight dies. Batteries in the vending corner, where the radio's hissing. Walk back out and listen behind you.</li>
+  <li>On the way out she's at the end of the corridor, the tubes stuttering round her. Your heart picks up as you near her. Shine the light on her and she backs off. Do it twice and the corridor goes dark.</li>
   <li>Walk to the fire exit.</li>
 </ol>
 </section>

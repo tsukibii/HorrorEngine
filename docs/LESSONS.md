@@ -1998,3 +1998,17 @@ pale one shows.
 - **`@export_enum` can't have an empty option** (the Director's notes say so too): `keep` for "leave it as it is".
 - **Pictures at night need the iris held**: a dimmed corridor shot after 40 frames looked as bright as the lit one,
   because the look's auto exposure had opened up. Eight frames shows it as the player sees it happen.
+
+## Making it intense (2026-11-08, night: the sound physics, the body, her signs, the uncanny seen)
+
+- **A cache keyed on the wall clock never goes stale in a fixed-fps test**: the sound's traces were kept for half a
+  second of `Time.get_ticks_msec`, and the play test at `--fixed-fps 60` outruns real time, so 304's knock was heard
+  through the same trace shut and open. Kept on the game's own clock (each frame's delta added up), they go stale as
+  the game does.
+- **What answers the player's steps waits for the first one**: the steps behind you, started by the batteries' pickup
+  while the player stood still, took "no step for a second" for "stopped" and ended at once, with its step too many
+  for nobody. It waits (a minute at most) for you to walk.
+- **Parse-check a new script before a long run**: the play test took six minutes to find an untyped loop variable
+  (`for h in [...]`, the lesson above, made again), which
+  `godot --headless --path PROJECT --check-only -s starter/closer.gd` reports in two seconds (exit 1, the line).
+  Every new or changed starter script gets that first.

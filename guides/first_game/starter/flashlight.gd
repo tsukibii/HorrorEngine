@@ -28,6 +28,7 @@ const WARM := 2100.0
 var is_dead := false
 var changing := false
 var tremor := 0.0                               ## degrees the beam shakes in your hand (the Fear node sets it: 8 to 10 a second)
+var flick := 1.0                                ## a flicker over its light (presence.gd's, when she's near): 1 none
 var _rot0 = null
 var b := 1.0                                    # the beam now, 0..1
 var _T := 0.0
@@ -65,6 +66,8 @@ func _process(dt: float) -> void:
 	if tremor > 0.001 or rotation != _rot0:     # the hand shaking: the light only (its beam with it), never the view
 		var a := deg_to_rad(tremor)
 		rotation = _rot0 + Vector3(sin(_T * 54.7 + 1.3) * 0.6 + sin(_T * 64.1) * 0.4, sin(_T * 59.3 + 0.4) * 0.6 + sin(_T * 51.2 + 2.1) * 0.4, 0.0) * a
+	if battery <= 0.0 and not is_dead and not changing:
+		light_energy = _full * flick             # (no batteries: only her flicker)
 	if is_dead or changing or battery <= 0.0:
 		return
 	if visible:
@@ -77,7 +80,7 @@ func _process(dt: float) -> void:
 		_die()
 		return
 	b = _beam()
-	light_energy = _full * b
+	light_energy = _full * b * flick
 	spot_range = maxf(0.5, _range * sqrt(b))
 	if kind == "bulb":
 		var k: float = 3200.0 - (3200.0 - WARM) * (1.0 - charge) * (1.0 - charge)

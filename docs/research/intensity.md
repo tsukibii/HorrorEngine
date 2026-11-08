@@ -363,6 +363,11 @@ Mine, from the three shortlists, ranked by intensity for the effort. Each would 
 the Look plugin first (the tutorials' path), then as a story word for the desk's export where it fits (a word, its
 runner and story_check in one commit, as the rules say).
 
+**Built so far** (2026-11-08, night: the user, "feel free to work on the rest and include them as part of the new
+tutorial too"; the starter kit and tutorial v2's §22): 1 (`footsteps.gd`, `behind_you.gd`), 2 (`presence.gd`; the
+breath near her waits for the cold), 4 (`glimpse.gd`, `closer.gd`), 6 (Woohill's sound physics: `acoustics.gd`,
+`sound.gd`), 8 (`fear.gd`) and 10's occlusion. Not yet for the desk's export: no story words.
+
 1. **Footsteps in 3D, and the behind-you layer** (S). The player's steps by floor at the feet (the by-hand player has
    none), then the phantom steps copying them 0.3 s late, one step too many, a door shutting out of sight.
 2. **Presence signs** (S): lights flickering within 10 m on her floor, static rising on a radio, the TV or the phone,

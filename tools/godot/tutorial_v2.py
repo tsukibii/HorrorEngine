@@ -24,7 +24,8 @@ it in DIR instead of Saved/Godot/_tutorial_v2 (a project to open in Godot and pl
     python tools/godot/tutorial_v2.py [--pictures] [--keep DIR] [--reuse]     (the desk's server running; Godot: $GODOT or godot)
 
 `--reuse` keeps the last run's project (its export and import: the hotel's takes minutes) and makes the kit and the
-scene again: for working on the guide.
+scene again: for working on the guide. `--only a,b` with `--pictures` draws only those pictures (the rest kept as they
+are; the scene builder's only when `builder` is among them).
 
 Ends "TUTORIAL2 ok"."""
 import json
@@ -150,6 +151,13 @@ key_at = [shelf["at"][0] - 0.2, shelf["at"][1] - shelf["size"][1] / 2 + 1.109, s
 bat_at = [desk["at"][0] + 0.35, desk["top"] + 0.012, desk["at"][2]]
 note_at = [d304[0] + 0.35, floor_y + 0.002, d304[2] - 0.45]            # on the carpet in front of 304's door
 jump = [fire[0] - 2.4, corr["at"][1], corr["at"][2]]
+radio_at = [desk["at"][0] - 0.32, desk["top"] + 0.075, desk["at"][2] - 0.05]   # on the vending corner's table, beside the batteries
+d308 = B["door_door_308"]["at"]
+glimpse_at = [d308[0] + 0.37, floor_y, corr["at"][2] + corr["size"][2] / 2 - 0.42]   # at 308's door, 0.42 m out from its wall
+r304b = R["r304_entry"]
+closer_marks = [("BathDoor", [r304b["at"][0] - 0.9, floor_y, r304b["at"][2] + 0.4]),     # by the bath's door, in the entry
+                ("EntryMouth", [r304b["at"][0] - 0.3, floor_y, r304b["at"][2] + 1.4]),   # where the entry opens into the room
+                ("BedFoot", [r304b["at"][0] - 1.0, floor_y, r304b["at"][2] + 2.3])]      # at the foot of the bed
 sg = B["stair_glass"]["at"]                                             # the stairwell's window (its glass's middle)
 land = B["stairs_fx_half_1"]["top"]                                     # the half landing's top
 sill = B["stairs__wall_n1"]["top"]                                      # the wall under the window: up to the sill
@@ -167,6 +175,7 @@ ext = [("PackedScene", "res://exports/interiors/hotel_floor/hotel_floor.glb", "h
        ("Script", "res://starter/pickup.gd", "pickup"), ("Script", "res://starter/note.gd", "note"), ("Script", "res://starter/door.gd", "door"),
        ("Script", "res://starter/light_shy.gd", "shy"), ("Script", "res://addons/horrorstudio_look/nodes/atmosphere.gd", "air"),
        ("Script", "res://starter/fear.gd", "fear"), ("Script", "res://starter/behind_you.gd", "behind"),
+       ("Script", "res://starter/presence.gd", "presence"), ("Script", "res://starter/glimpse.gd", "glimpse"), ("Script", "res://starter/closer.gd", "closer"),
        ("Script", "res://addons/horrorstudio_look/nodes/air_zone.gd", "airzone"), ("Script", "res://addons/horrorstudio_look/nodes/light_shaft.gd", "shaft"),
        ("Script", "res://addons/horrorstudio_look/nodes/wall_leak.gd", "leak"), ("Script", "res://addons/horrorstudio_look/nodes/puddle.gd", "puddle"),
        ("Script", "res://addons/horrorstudio_look/nodes/pattern_light.gd", "pattern"), ("Script", "res://addons/horrorstudio_look/nodes/tape.gd", "tape"),
@@ -193,7 +202,11 @@ subs = [("StandardMaterial3D", "paper", ["albedo_color = Color(0.93, 0.91, 0.84,
         ("SphereMesh", "head", ["radius = 0.1", "height = 0.23", 'material = SubResource("skin")']),
         ("SphereMesh", "scalp", ["radius = 0.118", "height = 0.25", 'material = SubResource("hair")']),
         ("CylinderMesh", "locks", ["top_radius = 0.112", "bottom_radius = 0.17", "height = 0.64", 'material = SubResource("hair")']),
-        ("CapsuleMesh", "standin", ["radius = 0.22", "height = 1.62", 'material = SubResource("skin")'])]   # (her stand-in is a figure: a gown, arms, a head, hair down over her face)
+        ("CapsuleMesh", "standin", ["radius = 0.22", "height = 1.62", 'material = SubResource("skin")']),
+        ("StandardMaterial3D", "bakelite", ["albedo_color = Color(0.2, 0.13, 0.08, 1)", "roughness = 0.45"]),
+        ("BoxMesh", "radiobox", ["size = Vector3(0.26, 0.15, 0.1)", 'material = SubResource("bakelite")']),
+        ("StandardMaterial3D", "cloth", ["albedo_color = Color(0.55, 0.48, 0.36, 1)", "roughness = 0.95"]),
+        ("QuadMesh", "grille", ["size = Vector2(0.15, 0.1)", 'material = SubResource("cloth")'])]   # (her stand-in is a figure: a gown, arms, a head, hair down over her face)
 lines = [f"[gd_scene load_steps={len(ext) + len(subs) + 1} format=3]", ""]
 lines += [f'[ext_resource type="{t}" path="{p}" id="{i}"]' for t, p, i in ext] + [""]
 for t, i, props in subs:
@@ -290,28 +303,32 @@ nd("Key", "Things", "Node3D", script="pickup", props=[f"transform = {tf(key_at, 
 nd("Mesh", "Things/Key", "MeshInstance3D", props=['mesh = SubResource("keymesh")'])
 nd("Batteries", "Things", "Node3D", script="pickup", props=[f"transform = {tf(bat_at, 30.0)}", 'item = "batteries"', 'label = "a pack of batteries"', 'tick = "batteries"'])
 nd("Mesh", "Things/Batteries", "MeshInstance3D", props=['mesh = SubResource("pack")'])
+nd("Radio", "Things", "MeshInstance3D", props=[f"transform = {tf(radio_at, -8.0)}", 'mesh = SubResource("radiobox")'])   # someone's radio, left on: static as she nears
+nd("Grille", "Things/Radio", "MeshInstance3D", props=[f"transform = {tf([-0.04, 0.0, 0.051])}", 'mesh = SubResource("grille")'])
 # her, and her again at the fire exit (the jump scare)
 
 
-def person(name, at, turn, shy):
+def person(name, at, turn, shy, parent="."):
+    me = name if parent == "." else f"{parent}/{name}"
     if who:
-        nd(name, ".", inst="her", props=[f"transform = {tf(at, turn)}", "visible = false"])
-        nd("Look", name, "Node", script="charlook", props=["wetness = 0.6", "drips = 0.5"])   # wet: she came out of the bath
-        nd("ArmsDown", name, "Node", script="arms")
+        nd(name, parent, inst="her", props=[f"transform = {tf(at, turn)}", "visible = false"])
+        nd("Look", me, "Node", script="charlook", props=["wetness = 0.6", "drips = 0.5"])   # wet: she came out of the bath
+        nd("ArmsDown", me, "Node", script="arms")
     else:
-        nd(name, ".", "Node3D", props=[f"transform = {tf(at, turn)}", "visible = false"])     # a stand-in: a pale gown, long black hair over her face
-        nd("Gown", name, "MeshInstance3D", props=[f"transform = {tf([0, 0.68, 0])}", 'mesh = SubResource("gown")'])
-        nd("ArmL", name, "MeshInstance3D", props=[f"transform = {tf([-0.185, 0.99, 0.02])}", 'mesh = SubResource("arm")'])
-        nd("ArmR", name, "MeshInstance3D", props=[f"transform = {tf([0.185, 0.99, 0.02])}", 'mesh = SubResource("arm")'])
-        nd("Head", name, "MeshInstance3D", props=[f"transform = {tf([0, 1.5, 0])}", 'mesh = SubResource("head")'])
-        nd("Scalp", name, "MeshInstance3D", props=[f"transform = {tf([0, 1.53, -0.005])}", 'mesh = SubResource("scalp")'])
-        nd("Hair", name, "MeshInstance3D", props=[f"transform = {tf([0, 1.2, 0.01])}", 'mesh = SubResource("locks")'])
-        nd("Look", name, "Node", script="charlook", props=["wetness = 0.6", "drips = 0.5"])
+        nd(name, parent, "Node3D", props=[f"transform = {tf(at, turn)}", "visible = false"])     # a stand-in: a pale gown, long black hair over her face
+        nd("Gown", me, "MeshInstance3D", props=[f"transform = {tf([0, 0.68, 0])}", 'mesh = SubResource("gown")'])
+        nd("ArmL", me, "MeshInstance3D", props=[f"transform = {tf([-0.185, 0.99, 0.02])}", 'mesh = SubResource("arm")'])
+        nd("ArmR", me, "MeshInstance3D", props=[f"transform = {tf([0.185, 0.99, 0.02])}", 'mesh = SubResource("arm")'])
+        nd("Head", me, "MeshInstance3D", props=[f"transform = {tf([0, 1.5, 0])}", 'mesh = SubResource("head")'])
+        nd("Scalp", me, "MeshInstance3D", props=[f"transform = {tf([0, 1.53, -0.005])}", 'mesh = SubResource("scalp")'])
+        nd("Hair", me, "MeshInstance3D", props=[f"transform = {tf([0, 1.2, 0.01])}", 'mesh = SubResource("locks")'])
+        nd("Look", me, "Node", script="charlook", props=["wetness = 0.6", "drips = 0.5"])
     if shy:
-        nd("LightShy", name, "Node", script="shy", props=['does = "backs off"', "distance = 2.5", "after = 0.4"])
+        nd("LightShy", me, "Node", script="shy", props=['does = "backs off"', "distance = 2.5", "after = 0.4"])
 
 
 person("Her", her_at, her_turn, True)
+nd("Presence", "Her", "Node", script="presence", props=['static_on = NodePath("../../Things/Radio")'], paths=["static_on"])   # the signs that she's near
 person("HerAgain", again_at, her_turn, False)
 # the moments and the scares
 nd("Events", ".", "Node3D")
@@ -330,6 +347,12 @@ nd("Jump", "Events", "Area3D", script="scare", props=[f"transform = {tf(jump)}",
                                                   'appear = NodePath("../../HerAgain")', 'hide = NodePath("../../Her")'], paths=["appear", "hide"])
 nd("Shape", "Events/Jump", "CollisionShape3D", props=['shape = SubResource("jumpbox")'])
 snd("Events/Jump", "big")
+nd("Glimpse", "Events", "Node3D", script="glimpse", props=[f"transform = {tf(glimpse_at, -90.0)}", 'flicker = NodePath("../../Zones/Corridor/Tube5")'], paths=["flicker"])
+person("Figure", [0, 0, 0], 0.0, False, parent="Events/Glimpse")         # at 308's door, looking down the corridor at you
+nd("Closer", "Events", "Node3D", script="closer", props=['blink = NodePath("../../Zones/Room304/Lamp")'], paths=["blink"])
+for i, (name, at) in enumerate(closer_marks):
+    nd(name, "Events/Closer", "Marker3D", props=[f"transform = {tf(at, 180.0)}"])     # facing into the room (a marker's -Z)
+person("Figure", [0, 0, 0], 0.0, False, parent="Events/Closer")
 # the player, its flashlight on a battery that's seen better days
 nd("Player", ".", inst="player", props=[f"transform = {tf(start['at'], start['turn'])}"])
 nd("Flashlight", "Player/Eye", props=["battery = 90.0", "charge = 0.5", "low_at = 0.3", 'low_says = "The flashlight is dying."',
@@ -345,6 +368,9 @@ nd(P["door_corridor_e_door"].split("/")[-1], "Hotel/" + "/".join(P["door_corrido
 lines += ['[connection signal="picked" from="Things/Key" to="Events/LightsDie" method="fire"]',
           '[connection signal="picked" from="Things/Batteries" to="BehindYou" method="start"]',
           '[connection signal="flashed_twice" from="Her/LightShy" to="Events/LightsOut" method="fire"]',
+          '[connection signal="read" from="Things/Note" to="Events/Glimpse" method="arm"]',
+          '[connection signal="entered" from="Events/In304" to="Events/Closer" method="arm"]',
+          '[connection signal="caught" from="Events/Closer" to="Fear" method="scare"]',
           f'[connection signal="opened" from="Hotel/{P["door_corridor_e_door"]}" to="Story" method="end"]', "", '[editable path="Hotel"]', '[editable path="Player"]', ""]
 (proj / "main.tscn").write_text("\n".join(lines), encoding="utf-8")
 pg = (proj / "project.godot").read_text(encoding="utf-8")
@@ -352,7 +378,8 @@ if "run/main_scene" not in pg:
     pg = pg.replace('config/name="Room 304"', 'config/name="Room 304"\nrun/main_scene="res://main.tscn"') + "\n[display]\nwindow/size/viewport_width=1600\nwindow/size/viewport_height=900\n"
     (proj / "project.godot").write_text(pg, encoding="utf-8")
 (proj / "tutorial.json").write_text(json.dumps({"who": who, "start": start, "her": her_at, "again": again_at, "note": note_at, "key": key_at, "batteries": bat_at,
-                                                "door304": d304, "fire": fire, "jump": jump, "floor": floor_y, "rooms": R, "lights": L, "paths": P, "boxes": B}, indent=1), encoding="utf-8")
+                                                "door304": d304, "fire": fire, "jump": jump, "floor": floor_y, "radio": radio_at, "glimpse": glimpse_at,
+                                                "closer": {n: a for n, a in closer_marks}, "rooms": R, "lights": L, "paths": P, "boxes": B}, indent=1), encoding="utf-8")
 for f in ["tutorial_v2_test.gd", "tutorial_v2_shots.gd"]:
     shutil.copy(ROOT / "tools/godot" / f, proj / f)
 
@@ -373,7 +400,12 @@ if "--pictures" in args and not errs:
     from PIL import Image
     shots = proj / "_shots"
     shots.mkdir(exist_ok=True)
+    only = args[args.index("--only") + 1].split(",") if "--only" in args else []
+    for old_png in shots.glob("*.png"):
+        old_png.unlink()                                   # only this run's pictures go into the guide
     cmd = [G, "--path", str(proj), "--rendering-driver", "vulkan", "--fixed-fps", "30", "-s", "tutorial_v2_shots.gd", "--", f"--out={shots}"]
+    if only:
+        cmd.append("--only=" + ",".join(o for o in only if o != "builder"))
     if shutil.which("xvfb-run"):
         cmd = ["xvfb-run", "-a", "-s", "-screen 0 1920x1080x24"] + cmd
     r = run(cmd, timeout=3600)
@@ -385,10 +417,11 @@ if "--pictures" in args and not errs:
         im = Image.open(p).convert("RGB")
         im.save(GUIDE / "img" / f"{p.stem}.jpg", quality=86, optimize=True)
         print(f"  picture: guides/tutorial_v2/img/{p.stem}.jpg ({im.width}x{im.height})")
-    r = run([node, str(ROOT / "tools/godot/tutorial_v2_builder.mjs"), "--out", str(GUIDE / "img")], cwd=ROOT, timeout=1800)
-    print("  " + "\n  ".join((r.stdout.strip() or r.stderr.strip()[-600:]).splitlines()[-8:]))
-    if r.returncode:
-        errs.append("the scene builder's pictures: " + (r.stdout + r.stderr)[-600:])
+    if not only or "builder" in only:
+        r = run([node, str(ROOT / "tools/godot/tutorial_v2_builder.mjs"), "--out", str(GUIDE / "img")], cwd=ROOT, timeout=1800)
+        print("  " + "\n  ".join((r.stdout.strip() or r.stderr.strip()[-600:]).splitlines()[-8:]))
+        if r.returncode:
+            errs.append("the scene builder's pictures: " + (r.stdout + r.stderr)[-600:])
 
 
 # 6. the guide: every picture it shows is there and every one there is shown, every link lands (its #place too)

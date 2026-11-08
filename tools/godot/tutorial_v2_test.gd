@@ -6,8 +6,11 @@
 ## corner's batteries going in; her in the corridor backing off from the light, flashed twice and the corridor going dark;
 ## the hush before the jump scare at the fire exit; the fire door and the ending. The air: the stairwell's dustier
 ## air while in it (an HSAirZone), the flashlight's beam in it, the fog rolling in when the corridor goes dark, the tape
-## breaking up at the jump, her wet look. Prints `TUTORIAL <what> <how>` lines
-## and `TUTORIAL result {errors}`, quits.
+## breaking up at the jump, her wet look. Making it intense: the sound physics (the rooms' surfaces, the floors' steps,
+## the stairwell ringing longer than the corridor, a knock muffled behind 304's door), the steps behind you, your body
+## under fear, the figure at the corner of your eye (at 308's door, gone as you turn to it), the one closer each time
+## you look away (out of 304's bath, then behind you), her signs (the tubes by her and your flashlight dipping, the
+## radio's static). Prints `TUTORIAL <what> <how>` lines and `TUTORIAL result {errors}`, quits.
 extends SceneTree
 
 const Lights := preload("res://starter/lights.gd")
@@ -258,6 +261,38 @@ func _initialize() -> void:
 	await press(KEY_E)
 	if story.card_up():
 		bad("E didn't put the note's card away (player.gd)")
+	# the corner of your eye (glimpse.gd, armed by the note): at 308's door 36 degrees off where you look, gone as you turn to it
+	var gl: Node3D = main.get_node("Events/Glimpse")
+	var gfig: Node3D = gl.figure
+	var gp := gl.global_position + Vector3.UP * 1.3
+	var gat := Vector3(8.0, fl + 0.02, cz)
+	var geye := gat + Vector3.UP * 1.6
+	var gdir := (gp - geye).normalized()
+	var was_armed: bool = gl.armed
+	stand(gat, geye + gdir.rotated(Vector3.UP, deg_to_rad(36.0)) * 5.0)
+	var g_seen := false
+	var g_ang := -1.0
+	for i in 20:
+		await frames(1)
+		if gl.shown and not g_seen:
+			g_seen = true
+			g_ang = float(gl.off_view()[0])
+	var tube5: Light3D = tubes()[4]
+	var g_blink := 1.0
+	var ga := 36.0
+	while ga > 0.0 and gl.shown:                     # turning to it, a hundred degrees a second
+		ga -= 1.7
+		look(geye + gdir.rotated(Vector3.UP, deg_to_rad(ga)) * 5.0)
+		await frames(1)
+	for i in 14:
+		g_blink = minf(g_blink, float(tube5.get_meta("hs_flick", 1.0)))
+		await frames(1)
+	say("glimpse", "armed by the note %s; at 308's door %s %.0f deg off where you looked; gone as you turned to it at %.0f deg (%s), the tube by it blinking to %.2f" % [
+		was_armed, "seen" if g_seen else "NOT SEEN", g_ang, gl.went_at, "hidden" if not gfig.visible else "STILL THERE", g_blink])
+	if not was_armed or not g_seen or g_ang < 29.0 or g_ang > 43.0:
+		bad("the glimpse (glimpse.gd): armed by the note's read %s, shown 30 to 42 deg off where you look %s (%.0f)" % [was_armed, g_seen, g_ang])
+	if gfig.visible or gl.went_at < 25.0 or g_blink > 0.5:
+		bad("the glimpse should go as you turn to it, before 25 deg, in the tube's blink: still there %s, at %.0f deg, the tube to %.2f" % [gfig.visible, gl.went_at, g_blink])
 	# 4. the linen closet: its door, the key; the corridor's lights out one by one, the farthest first, and back
 	var ld := door("door_linen")
 	var lc := ld.global_position + ld.global_basis.x * 0.38 + Vector3.UP * 1.0
@@ -309,6 +344,45 @@ func _initialize() -> void:
 		bad("304's moment (event_area.gd): find304, dread, the task out")
 	if not crt_on:
 		bad("the TV's screen hasn't the CRT shader (HSCrtScreen)")
+	# closer each time you look away (closer.gd, armed by In304's entered): out of the bath a mark at a time, then behind you
+	var cl: Node3D = main.get_node("Events/Closer")
+	var cfig: Node3D = cl.figure
+	var win := v3(cfg["boxes"]["window_304"]["at"])
+	var caught := [0]
+	cl.caught.connect(func() -> void: caught[0] += 1)
+	var marks_seen := [cl.mark]
+	look(cfig.global_position + Vector3.UP * 1.4)              # looked at, she stays
+	await secs(2.5)
+	var stayed: bool = cl.mark == 0
+	for i in 3:
+		look(win)                                              # away, at the window
+		await secs(1.8)
+		marks_seen.append(cl.mark)
+		if i < 2:
+			look(cfig.global_position + Vector3.UP * 1.4)       # and back: she's nearer
+			await secs(0.4)
+	var eye := player.get_node("Eye") as Camera3D
+	var hd := cfig.global_position + Vector3.UP * 1.5
+	var gap := Vector2(hd.x - eye.global_position.x, hd.z - eye.global_position.z).length()
+	var at_back := (hd - eye.global_position).dot(-eye.global_basis.z) < 0.0
+	var lamp304 := main.get_node("Zones/Room304/Lamp") as Light3D
+	var fear_n: Node = main.get_node("Fear")
+	var fear0 := float(fear_n.level)
+	look(hd)                                                   # turn round
+	var lamp_min := 1.0
+	var fear1 := fear0
+	for i in 90:
+		await frames(1)
+		lamp_min = minf(lamp_min, float(lamp304.get_meta("hs_flick", 1.0)))
+		fear1 = maxf(fear1, float(fear_n.level))
+	say("closer", "on the marks %s (stayed while looked at %s, steps taken while seen %d); behind you %.2f m from your eye (behind %s); turned round: caught %d, gone %s in the lamp's blink to %.2f, fear %.2f to %.2f" % [
+		str(marks_seen), stayed, cl.moved_seen, gap, at_back, caught[0], not cfig.visible, lamp_min, fear0, fear1])
+	if marks_seen != [0, 1, 2, 3] or not stayed or cl.moved_seen != 0:
+		bad("closer each time (closer.gd): the marks %s (0, 1, 2, then 3: behind you), stayed while seen %s, steps taken while seen %d" % [str(marks_seen), stayed, cl.moved_seen])
+	if absf(gap - 0.35) > 0.08 or not at_back:
+		bad("she should end 0.35 m behind your eye: %.2f m, behind %s" % [gap, at_back])
+	if caught[0] != 1 or cfig.visible or lamp_min > 0.5 or fear1 < fear0 + 0.2:
+		bad("turned round: caught %d, then gone in the lamp's blink (gone %s, the lamp to %.2f), the Fear node's scare (%.2f to %.2f)" % [caught[0], not cfig.visible, lamp_min, fear0, fear1])
 	# 6. the flashlight: on, low, dead
 	await press(KEY_F)
 	await frames(5)
@@ -341,6 +415,15 @@ func _initialize() -> void:
 	say("batteries", "picked %s, the flashlight %s at %.2f, the task %s" % [story.has("batteries"), "lit" if torch.visible else "DARK", torch.charge, "ticked" if story.done("batteries") else "NOT ticked"])
 	if not torch.visible or torch.charge < 0.99 or not story.done("batteries"):
 		bad("the batteries (pickup.gd): the flashlight lit again at full, the task ticked")
+	# her signs (presence.gd): the radio on the table hissing as she's near
+	var pres: Node = her.get_node("Presence")
+	pres.false_alarm = 0.0                                   # (the check's own: no chance in it; a warning's tried below)
+	var hiss: AudioStreamPlayer3D = pres._static
+	var radio_on: bool = hiss != null and hiss.playing
+	say("she's near", "%.1f m from her: the signs at %.2f, the radio's static %s at %.0f dB, %d dips so far" % [her.global_position.distance_to(player.global_position),
+		float(pres.near), "on" if radio_on else "OFF", hiss.volume_db if hiss != null else -80.0, int(pres.dips)])
+	if not radio_on or float(pres.near) <= 0.0 or hiss.volume_db < -40.0:
+		bad("her signs (presence.gd) by the batteries: the signs %.2f, the radio's static %s" % [float(pres.near), radio_on])
 	# the steps behind you (behind_you.gd, started by the batteries' picked): out of the vending corner
 	var bh: Node = main.get_node("BehindYou")
 	var bh_on: bool = bh.running
@@ -355,7 +438,19 @@ func _initialize() -> void:
 	# 8. her in the beam: she backs off; flashed twice, the corridor goes dark
 	var hx0 := her.global_position.x
 	stand(Vector3(hx0 - 4.5, fl + 0.02, cz), her.global_position + Vector3.UP * 1.3)
-	await secs(2.5)
+	var dips0 := int(pres.dips)
+	var tube_min := 1.0
+	var torch_min := 1.0
+	for i in 150:                                            # 2.5 s in the beam: her signs meanwhile
+		await frames(1)
+		for l in tubes():
+			if l.global_position.distance_to(her.global_position) < float(pres.radius):
+				tube_min = minf(tube_min, float(l.get_meta("hs_flick", 1.0)))
+		torch_min = minf(torch_min, float(torch.flick))
+	var dips := int(pres.dips) - dips0
+	say("her signs", "%d dips in 2.5 s (the flash limit %.1f a second), the tubes by her down to %.2f, your flashlight to %.2f" % [dips, float(pres.max_dips), tube_min, torch_min])
+	if dips < 1 or dips > int(2.5 * float(pres.max_dips)) + 1 or tube_min > 0.5 or torch_min > 0.5:
+		bad("her signs (presence.gd) in the corridor: %d dips (1 to %d), the tubes by her to %.2f, the flashlight to %.2f" % [dips, int(2.5 * float(pres.max_dips)) + 1, tube_min, torch_min])
 	var moved := her.global_position.x - hx0
 	look(her.global_position + Vector3(0, 1.3, 4.0))         # off her
 	await secs(0.5)
@@ -400,6 +495,21 @@ func _initialize() -> void:
 			tape_then = _tape_now()
 	key(KEY_W, false)
 	await secs(1.2)
+	var calm_torch := float(torch.flick)
+	if calm_torch != 1.0 or (pres._static != null and pres._static.playing):
+		bad("with her gone her signs should stop: the flashlight's flicker %.2f, the static %s" % [calm_torch, pres._static.playing])
+	pres.warn(1.5)                                           # a warning without her (a false alarm's, or before she shows)
+	var warn_torch := 1.0
+	var warn_hiss := false
+	for i in 90:
+		await frames(1)
+		warn_torch = minf(warn_torch, float(torch.flick))
+		warn_hiss = warn_hiss or (pres._static != null and pres._static.playing)
+	await secs(0.5)
+	say("a false alarm", "the signs without her for 1.5 s: your flashlight down to %.2f, the static %s; after, the flashlight %.2f, the static %s" % [
+		warn_torch, "on" if warn_hiss else "OFF", float(torch.flick), "on" if pres._static.playing else "off"])
+	if warn_torch > 0.5 or not warn_hiss or float(torch.flick) != 1.0 or pres._static.playing:
+		bad("a warning without her (presence.gd warn): the flashlight %.2f, the static %s, then back %.2f %s" % [warn_torch, warn_hiss, float(torch.flick), pres._static.playing])
 	say("jump", "she was there %s, the beds at %.3f then, gone again %s, the first one hidden %s" % [seen, duck_at, not again.visible, not her.visible])
 	if not seen or duck_at > 0.02:
 		bad("the jump scare (scare_area.gd quiet): seen %s, the beds at %.3f" % [seen, duck_at])
