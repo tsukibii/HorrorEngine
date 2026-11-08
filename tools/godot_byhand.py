@@ -3,7 +3,8 @@
 Godot instead of through Director I can"; guides/godot_by_hand): what guides/godot_by_hand's setup does, in one go.
 
     python tools/godot_byhand.py new ~/Games/MyGame [--name "My Game"]
-        a new project: project.godot (the HorrorStudio Look plugin on, its balanced settings), addons/horrorstudio_look,
+        a new project: project.godot (the HorrorStudio Look and UI plugins on, the balanced look's settings),
+        addons/horrorstudio_look, addons/horrorstudio_ui (the HUD and the quest marker),
         HumanShaders/ (the skin's and the eyes' textures), starter/ (the first game's scripts: the player, doors, a
         scare), exports/interiors, exports/streets, exports/characters (where the studio's exports go)
     python tools/godot_byhand.py install ~/Games/MyGame
@@ -24,6 +25,7 @@ from storykit import godot as GD  # noqa: E402
 from storykit import exports as EX  # noqa: E402
 
 LOOK = ROOT / "GodotPlugins" / "HorrorStudioLook" / "addons" / "horrorstudio_look"
+UI = ROOT / "GodotPlugins" / "HorrorStudioUI" / "addons" / "horrorstudio_ui"
 HUMAN = ROOT / "GodotPlugins" / "HumanShaders"
 STARTER = ROOT / "guides" / "first_game" / "starter"
 
@@ -32,7 +34,7 @@ def project_godot(name):
     """project.godot: the name, the look plugin on, the balanced look's settings (what enabling it in the editor writes)"""
     lines = ["; Engine configuration file. Made by tools/godot_byhand.py (guides/godot_by_hand); yours to change.", "",
              "config_version=5", "", "[application]", f'config/name="{name}"', "",
-             "[editor_plugins]", 'enabled=PackedStringArray("res://addons/horrorstudio_look/plugin.cfg")', ""]
+             "[editor_plugins]", 'enabled=PackedStringArray("res://addons/horrorstudio_look/plugin.cfg", "res://addons/horrorstudio_ui/plugin.cfg")', ""]
     by = {}
     for k, v in GD.PROJECT_LOOK.items():
         sec, key = k.split("/", 1)
@@ -43,13 +45,15 @@ def project_godot(name):
 
 
 def install(proj, starter=True):
-    """the look plugin, HumanShaders and (when missing, or `starter`) the starter scripts into the project"""
+    """the look and UI plugins, HumanShaders and (when missing, or `starter`) the starter scripts into the project"""
     (proj / "addons").mkdir(parents=True, exist_ok=True)
     shutil.rmtree(proj / "addons" / "horrorstudio_look", ignore_errors=True)
     shutil.copytree(LOOK, proj / "addons" / "horrorstudio_look", ignore=shutil.ignore_patterns("*.import", "demo"))
+    shutil.rmtree(proj / "addons" / "horrorstudio_ui", ignore_errors=True)
+    shutil.copytree(UI, proj / "addons" / "horrorstudio_ui", ignore=shutil.ignore_patterns("*.import", "demo"))
     shutil.rmtree(proj / "HumanShaders", ignore_errors=True)
     shutil.copytree(HUMAN, proj / "HumanShaders", ignore=shutil.ignore_patterns("*.import"))
-    did = ["addons/horrorstudio_look", "HumanShaders"]
+    did = ["addons/horrorstudio_look", "addons/horrorstudio_ui", "HumanShaders"]
     if starter or not (proj / "starter").exists():
         shutil.copytree(STARTER, proj / "starter", dirs_exist_ok=True)
         did.append("starter")

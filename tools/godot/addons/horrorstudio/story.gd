@@ -156,7 +156,7 @@ static func ja_secs(t: String) -> float:
 	return morae / 6.5 + pauses
 
 
-const Typing := preload("res://addons/horrorstudio/typing.gd")
+const Typing := preload("res://addons/horrorstudio_ui/typing.gd")
 
 
 static func clip_secs(c: Dictionary) -> float:

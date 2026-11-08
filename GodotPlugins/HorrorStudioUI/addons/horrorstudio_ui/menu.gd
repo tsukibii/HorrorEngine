@@ -7,7 +7,7 @@
 ## saves in user://saves_<game>.json. open(ctx) returns "resume", "escaped" or {"quit": "title" | "desktop"}.
 extends Control
 
-const ThemeC := preload("res://addons/horrorstudio/theme.gd")
+const ThemeC := preload("res://addons/horrorstudio_ui/theme.gd")
 const ONOFF := ["Off", "On"]
 const QUALITY := ["Low", "Medium", "High", "Epic"]
 const SETTINGS := [
@@ -185,6 +185,13 @@ func label(text: String, size: int, color = null) -> Label:
 	return l
 
 
+## the small letter-spaced capitals that name a part (Paused, Settings, a group: the HUD's OBJECTIVE and TO DO the same)
+func crumb(text: String, color = null) -> Label:
+	var l := label(text.to_upper(), 11, color if color != null else c["muted"])
+	l.add_theme_font_override("font", ThemeC.tracked(2.0))
+	return l
+
+
 func key_tile(k: String) -> PanelContainer:         # a key as a frosted tile standing on its lip, the legend in its middle
 	var p := PanelContainer.new()
 	var sb := ThemeC.box(c, 8, c["key_bg"], Color(1, 1, 1, 0.24) if c["shadow"] else Color(0.7, 0.72, 0.76))
@@ -273,7 +280,7 @@ func show_nav() -> void:
 	for ch in nav.get_children():
 		ch.queue_free()
 	var settings: bool = at.begins_with("set:") or at == "settings"
-	nav.add_child(label("Settings" if settings else "Paused", 11, c["muted"]))
+	nav.add_child(crumb("Settings" if settings else "Paused"))
 	if not settings:
 		nav.add_child(label("%s · %s" % [ctx.get("where", ctx.get("game", "")), clock(float(ctx.get("secs", 0)))], 14, c["muted"]))
 	var list: Array = []
@@ -358,7 +365,7 @@ func show_page() -> void:
 	controls_box.visible = at == "root" or at == "quit"
 	nav.position = Vector2(430, 90) if controls_box.visible else Vector2(48, 90)   # the controls on the left till a page opens
 	if at == "save":
-		page_box.add_child(label("Save game", 11, c["muted"]))
+		page_box.add_child(crumb("Save game"))
 		page_box.add_child(slot_el("Autosave", saves.get("auto"), true))
 		for n in [1, 2, 3]:
 			page_box.add_child(item("page", slot_el("Slot %d" % n, saves.get(str(n)), false, n), func(): save_to(n)))
@@ -367,7 +374,11 @@ func show_page() -> void:
 			if "set:" + p["id"] != at:
 				continue
 			for g in p["groups"]:
-				page_box.add_child(label(g["title"], 11, c["muted"]))
+				if g != p["groups"][0]:
+					var gap := Control.new()                          # a little air before the next group
+					gap.custom_minimum_size = Vector2(0, 8)
+					page_box.add_child(gap)
+				page_box.add_child(crumb(g["title"]))
 				for r in g["rows"]:
 					page_box.add_child(item("page", row_el(r), func(): step(r, 1), func(d): step(r, d)))
 

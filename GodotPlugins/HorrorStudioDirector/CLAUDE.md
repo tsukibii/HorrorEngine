@@ -4,7 +4,7 @@ The studio's third Godot plugin (DECISIONS 2026-10-30, night; docs/GODOT_DIRECTO
 user's guide): a game built in Godot's editor. The scene is the world (levels, rooms, doors, things and parts,
 characters); the story is the Director file, `director/director.json` (DECISIONS 2026-11-01: the Director puppeteers
 the game by id), compiled at play into the runtime's story with the brain beside it. It lives here, once; projects get it from
-`tools/godot_director.py` (`new`, `install`). It depends on the runtime add-on (`tools/godot/addons/horrorstudio`), whose
+`tools/godot_director.py` (`new`, `install`). It depends on the runtime add-on (`tools/godot/addons/horrorstudio`), which in turn wears the HorrorStudio UI plugin's HUD (`GodotPlugins/HorrorStudioUI`: `install` copies both), whose
 words it compiles to (STORY_FORMAT): grow the runtime, the story check and STORY_FORMAT.md together when a node needs a
 word the format doesn't have (as `move` to the player, `anim`, `talk`, `repeat`, `item:` in an `if`,
 `game.collision`, `game.track_steps` were).

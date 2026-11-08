@@ -7,7 +7,8 @@ extends RefCounted
 const THEMES := {
 	"glass": {"text": Color(1.0, 0.98, 0.94, 0.93), "muted": Color(1.0, 0.98, 0.94, 0.58), "accent": Color("#cfe6ff"), "who": Color("#f6f1e8"), "bad": Color("#ff8c84"),
 		"surface": Color(1, 1, 1, 0.06), "border": Color(1, 1, 1, 0.14), "radius": 12, "radius_l": 18, "shadow": true, "dark": Color(0.01, 0.012, 0.02, 0.9),
-		"key_bg": Color(1, 1, 1, 0.12), "key_text": Color("#fffaf0"), "scrim": Color(0.016, 0.024, 0.04, 0.62), "font": "serif"},
+		"key_bg": Color(1, 1, 1, 0.12), "key_text": Color("#fffaf0"), "scrim": Color(0.016, 0.024, 0.04, 0.62), "font": "serif",
+		"ghost": true, "halo_tint": Color(0.01, 0.015, 0.025, 1.0)},
 	"neumorph": {"text": Color("#4f5a6b"), "muted": Color("#8c96a6"), "accent": Color("#4f9bf0"), "who": Color("#4f5a6b"), "bad": Color("#e0645a"),
 		"surface": Color("#e6e9ef"), "border": Color(1, 1, 1, 0.0), "radius": 16, "radius_l": 26, "shadow": false, "dark": Color(0.08, 0.1, 0.15, 0.7),
 		"key_bg": Color("#edf0f5"), "key_text": Color("#4f5a6b"), "scrim": Color(0, 0, 0, 0), "font": "sans"},
@@ -15,6 +16,39 @@ const THEMES := {
 		"surface": Color(0.094, 0.094, 0.11, 0.82), "border": Color(1, 1, 1, 0.0), "radius": 10, "radius_l": 16, "shadow": true, "dark": Color(0, 0, 0, 0.88),
 		"key_bg": Color(1, 1, 1, 0.1), "key_text": Color("#e8e4dc"), "scrim": Color(0, 0, 0, 0.5), "font": "sans"},
 }
+
+
+## The two voices (the desk's hud.css, "Two voices"): what people say and write (lines, answers, notes) in a serif where a
+## theme's `font` is "serif", the first of these the machine has (the desk's browser stack), else the default font; the
+## game's own words (the corners, the prompt, the log, the keys) in the default sans; and small letter-spaced capitals for
+## the label that names a part (OBJECTIVE, TO DO, a settings group).
+const SERIF := ["Source Serif 4", "Noto Serif", "Georgia", "Liberation Serif", "DejaVu Serif", "Times New Roman", "Times", "serif"]
+static var _fonts := {}
+
+
+## the serif voice for a theme (null for a theme in the sans: the default font stays)
+static func serif(c: Dictionary, italic: bool = false, bold: bool = false) -> Font:
+	if c.get("font", "sans") != "serif":
+		return null
+	var k := "serif%s%s" % ["_i" if italic else "", "_b" if bold else ""]
+	if not _fonts.has(k):
+		var f := SystemFont.new()
+		f.font_names = PackedStringArray(SERIF)
+		f.font_italic = italic
+		f.font_weight = 700 if bold else 400
+		_fonts[k] = f
+	return _fonts[k]
+
+
+## the default font with `px` pixels of space between its letters (small capitals, the chapter's title)
+static func tracked(px: float = 2.0) -> Font:
+	var k := "tracked%.1f" % px
+	if not _fonts.has(k):
+		var f := FontVariation.new()
+		f.base_font = ThemeDB.fallback_font
+		f.spacing_glyph = int(round(px))
+		_fonts[k] = f
+	return _fonts[k]
 
 
 static func colors(name: String) -> Dictionary:
@@ -25,6 +59,7 @@ static func colors(name: String) -> Dictionary:
 		c["who"] = Color("#ffe6ec")
 		c["bad"] = Color("#ff9fb2")
 		c["scrim"] = Color(0.125, 0.04, 0.08, 0.58)
+		c["halo_tint"] = Color(0.03, 0.01, 0.02, 1.0)
 	return c
 
 
@@ -55,7 +90,15 @@ static func make(name: String) -> Theme:
 	t.set_color("font_shadow_color", "Label", Color(0, 0, 0, 0.85 if c["shadow"] else 0.0))
 	t.set_constant("shadow_offset_y", "Label", 1)
 	t.set_constant("shadow_outline_size", "Label", 2 if c["shadow"] else 0)
-	t.set_stylebox("panel", "PanelContainer", box(c, c["radius_l"]))
+	if c.get("ghost", false):                                 # glass: no panel to see (the user, 2026-11-08): the words, and a soft dark behind them where they need it
+		var gp := StyleBoxEmpty.new()
+		gp.content_margin_left = 18
+		gp.content_margin_right = 18
+		gp.content_margin_top = 9
+		gp.content_margin_bottom = 9
+		t.set_stylebox("panel", "PanelContainer", gp)
+	else:
+		t.set_stylebox("panel", "PanelContainer", box(c, c["radius_l"]))
 	t.set_stylebox("normal", "Button", box(c, c["radius"], c["key_bg"], c["border"]))
 	t.set_stylebox("hover", "Button", box(c, c["radius"], Color(c["key_bg"].r, c["key_bg"].g, c["key_bg"].b, min(1.0, c["key_bg"].a + 0.08)), c["border"]))
 	t.set_stylebox("pressed", "Button", box(c, c["radius"], c["accent"], c["border"]))

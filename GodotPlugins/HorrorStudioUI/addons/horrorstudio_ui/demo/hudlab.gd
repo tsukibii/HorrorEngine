@@ -54,7 +54,8 @@ func _initialize() -> void:
 	cam.fov = 60.0
 	root.add_child(cam)
 	cam.current = true
-	hud = load("res://addons/horrorstudio/hud.gd").new()
+	hud = load("res://addons/horrorstudio_ui/hud.gd").new()
+	hud.standalone = false                                  # (this bench drives the HUD and its marker itself)
 	root.add_child(hud)
 	await process_frame
 	hud.wear("glass")
@@ -157,6 +158,12 @@ func do_step(st: Dictionary) -> void:
 		for it in st["take"]:
 			list.append({"id": it["id"], "name": it.get("name", it["id"]), "model": null})
 		hud.inventory(list, int(st.get("at", 0)), bool(st.get("shown", true)), false)
+	if st.has("panel"):
+		hud.panel(st["panel"])                                 # (not awaited: it waits for its keys)
+	if st.has("menu"):                                         # the pause menu (not awaited): "root", or a page "set:display"
+		hud.menu.open({"game": "lab", "where": "The hall", "secs": 754.0, "has": {"torch": true}})
+		if str(st["menu"]) != "root":
+			hud.menu.open_page(str(st["menu"]))
 	if st.has("modal"):
 		hud.modal(bool(st["modal"]))
 	await frames(int(st.get("wait", 20)))

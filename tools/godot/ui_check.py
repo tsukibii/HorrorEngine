@@ -49,8 +49,30 @@ def main():
         print("\n".join("  " + ln for ln in shots) or "  (no pictures) " + out[-400:])
         if code != 0 or len(shots) != len([s for s in PLAN if "shot" in s]):
             ok = False
+    if ok:
+        ok = byhand()
     print("GDUI ok" if ok else "GDUI FAIL")
     sys.exit(0 if ok else 1)
+
+
+def byhand():
+    """the UI plugin made by hand: a project from tools/godot_byhand.py (no runtime, no story), a scene of a camera, a wall, an
+    HSHud and two HSQuestMarkers (demo/byhand_check.gd): the HUD sets itself up and finds the markers, one in the open, one
+    behind the wall (fainter, there)"""
+    import shutil
+    import subprocess
+    proj = ROOT / "Saved" / "Godot" / "_ui_byhand"
+    if proj.exists():
+        shutil.rmtree(proj)
+    r = subprocess.run([sys.executable, str(ROOT / "tools" / "godot_byhand.py"), "new", str(proj)], capture_output=True, text=True)
+    if r.returncode != 0 or not (proj / "addons" / "horrorstudio_ui" / "plugin.cfg").exists():
+        print("  BYHAND FAIL: godot_byhand.py new made no UI plugin:", (r.stdout + r.stderr)[-300:])
+        return False
+    shutil.copy(ROOT / "GodotPlugins" / "HorrorStudioUI" / "addons" / "horrorstudio_ui" / "demo" / "byhand_check.gd", proj / "byhand_check.gd")
+    code, out = GE.run_godot(proj, "res://byhand_check.gd", ["--fixed-fps", "60"], timeout=600)
+    tail = [ln for ln in out.splitlines() if "BYHAND" in ln or "SCRIPT ERROR" in ln or "Parse Error" in ln][-8:]
+    print("\n".join("  " + ln for ln in tail))
+    return code == 0 and "BYHAND ok" in out
 
 
 if __name__ == "__main__":

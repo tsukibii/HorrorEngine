@@ -744,7 +744,7 @@ with `{"tick": "<id>"}` at the end of that beat, not by its own trigger (the sto
   once the task is done or failed, behind a card or a choice, and with the HUD in a held scene and the pause menu. The player
   can turn it Off or make it Clear (stronger, the names from farther, the pointer at once) in the pause menu's Display page
   (Quest marker; the default is Subtle). A hidden task can have one: the marker is then how the
-  player knows. Godot's runtime draws it (`marker.gd`); the desk's Play doesn't yet. Ticked
+  player knows. Godot's runtime draws it (the HorrorStudioUI plugin's `marker.gd`, fed by play.gd; a game made by hand puts an `HSQuestMarker` node on the thing); the desk's Play doesn't yet. Ticked
   and failed are heard (`ticked`, `failed`). The list is kept with the run, through the stitches, until `untodo`
   takes a task off (`{"untodo": "mop_floor"}`) or clears it (`{"untodo": true}`).
   `tick`, `fail`: `{"tick": "mop_floor"}` ticks an open task, `{"fail": "mop_floor"}` fails it.

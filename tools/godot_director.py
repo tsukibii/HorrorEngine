@@ -49,6 +49,7 @@ from storykit import godot as G  # noqa: E402
 DIRECTOR = ROOT / "GodotPlugins" / "HorrorStudioDirector" / "addons" / "horrorstudio_director"
 RUNTIME = ROOT / "tools" / "godot" / "addons" / "horrorstudio"
 LOOK = ROOT / "GodotPlugins" / "HorrorStudioLook" / "addons" / "horrorstudio_look"
+UI = ROOT / "GodotPlugins" / "HorrorStudioUI" / "addons" / "horrorstudio_ui"
 HUMAN = ROOT / "GodotPlugins" / "HumanShaders"
 SFX = ROOT / "Content" / "Studio" / "SFX"
 LIVES = ROOT / "Content" / "Studio" / "Life" / "lives.json"
@@ -58,7 +59,7 @@ SAMPLE_FACES = ["pout_and_glance", "pout_and_glance_loop"]                # the 
 CHECK = ROOT / "Saved" / "Godot" / "_director_check"
 GUIDE_PROJECT = ROOT / "Saved" / "Godot" / "_director_guide"
 GUIDES = ROOT / "guides"
-PLUGINS = ["res://addons/horrorstudio_director/plugin.cfg", "res://addons/horrorstudio_look/plugin.cfg"]
+PLUGINS = ["res://addons/horrorstudio_director/plugin.cfg", "res://addons/horrorstudio_look/plugin.cfg", "res://addons/horrorstudio_ui/plugin.cfg"]
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -145,6 +146,7 @@ def install(out, link=False):
     out = Path(out).resolve()
     place(RUNTIME, out / "addons" / "horrorstudio", link)
     place(LOOK, out / "addons" / "horrorstudio_look", link)
+    place(UI, out / "addons" / "horrorstudio_ui", link)
     place(DIRECTOR, out / "addons" / "horrorstudio_director", link)
     if HUMAN.exists():
         place(HUMAN, out / "HumanShaders", link)

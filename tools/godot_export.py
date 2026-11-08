@@ -174,7 +174,7 @@ def main():
                 finally:
                     G.OUT = keep_out
                     shutil.rmtree(vroot, ignore_errors=True)
-            for part in ("addons/horrorstudio_look/plugin.cfg", "addons/horrorstudio_look/look.gd", "HumanShaders/skin_shader.gdshader"):
+            for part in ("addons/horrorstudio_look/plugin.cfg", "addons/horrorstudio_look/look.gd", "addons/horrorstudio_ui/plugin.cfg", "addons/horrorstudio_ui/hud.gd", "HumanShaders/skin_shader.gdshader"):
                 if not (Path(r["dir"]) / part).exists():            # the plugins (GodotPlugins/) copied in
                     print(f"  GDEXPORT FAIL: {part} missing from the export")
                     ok = False

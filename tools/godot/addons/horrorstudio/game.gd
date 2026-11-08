@@ -7,7 +7,7 @@ extends Node
 
 const StoryC := preload("res://addons/horrorstudio/story.gd")
 const PlayC := preload("res://addons/horrorstudio/play.gd")
-const HudC := preload("res://addons/horrorstudio/hud.gd")
+const HudC := preload("res://addons/horrorstudio_ui/hud.gd")
 const LifeC := preload("res://addons/horrorstudio/life.gd")
 const ScenePlayerC := preload("res://addons/horrorstudio/scene_player.gd")
 
@@ -70,6 +70,7 @@ func _ready() -> void:
 	story = StoryC.from_data(story_data) if story_data is Dictionary else StoryC.load_file("res://game/story.json")
 	hud = HudC.new()
 	hud.name = "Hud"
+	hud.standalone = false                          # the runtime drives the HUD and its pause menu itself (HorrorStudioUI's HSHud sets itself up when made by hand)
 	add_child(hud)
 	hud.words = func(w): return story.word_of(w, run["flags"] if run != null else {}, run["counters"] if run != null else {})
 	var envn = get_node_or_null("Env")
@@ -79,7 +80,7 @@ func _ready() -> void:
 	if envn != null and envn.environment != null:        # the look (game.look: realism, the default, or plain; HorrorStudioLook's HSLook; a level's own over it, enter_level)
 		HSLook.apply(get_viewport(), envn.environment, str(story.game.get("look", "balanced")))
 		look_now = str(story.game.get("look", "balanced"))
-	HSLook.shadows(get_viewport(), int(load("res://addons/horrorstudio/menu.gd").load_settings().get("shadows", 1)))   # the shadows' filter and atlas (the menu's row)
+	HSLook.shadows(get_viewport(), int(load("res://addons/horrorstudio_ui/menu.gd").load_settings().get("shadows", 1)))   # the shadows' filter and atlas (the menu's row)
 	HSLook.iris(get_viewport(), str(story.game.get("look", "balanced")) != "plain", time_of_day == "night")   # the camcorder's iris: auto exposure settling over a second, a stop under at night
 	var vhsn = get_node_or_null("VHS")
 	if vhsn != null:                             # the camcorder look (game.vhs: camcorder, worn, nightmare; off when the game names none)
@@ -88,7 +89,7 @@ func _ready() -> void:
 	post.name = "Post"
 	add_child(post)
 	post.apply(story.game.get("grade", "cinema"))
-	post.set_grain_cap(1.0 if int(load("res://addons/horrorstudio/menu.gd").load_settings().get("grain", 1)) == 1 else 0.0)
+	post.set_grain_cap(1.0 if int(load("res://addons/horrorstudio_ui/menu.gd").load_settings().get("grain", 1)) == 1 else 0.0)
 	scene_player = ScenePlayerC.new()
 	scene_player.name = "ScenePlayer"
 	scene_player.game = self

@@ -2,7 +2,7 @@
 ## shows on the HUD's log as "not in Play yet", so a stitch still runs end to end and the gap is visible.
 extends RefCounted
 
-const Typing := preload("res://addons/horrorstudio/typing.gd")
+const Typing := preload("res://addons/horrorstudio_ui/typing.gd")
 const VERBS := ["objective", "todo", "tick", "fail", "untodo", "think", "skip", "name", "say", "ask", "flag", "unflag", "give", "take", "open",
 	"karma", "count", "state", "show", "hide", "door", "light", "torch", "skin", "power", "sweep", "wait", "fade", "lookat", "sound", "music",
 	"checkpoint", "chapter", "done", "scene", "behave", "trick", "move", "anim", "expr", "focus"]

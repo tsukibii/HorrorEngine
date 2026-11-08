@@ -7,7 +7,7 @@
 ##   line {text, who, think}  a line in the footer;   log ["a", "b"]  the toasts;   hint ["Key", "does"]  a key hint
 ##   cursor [kind, label, name], progress 0..1, seen 0..1, stance "hidden|crouched|", timer secs, board "text"
 ##   chapter [title, sub]     a title card (not awaited);   choice {prompt, who, options: [label...]}
-##   take [thing ids]         things into the inventory's row, shown
+##   take [thing ids]         things into the inventory's row, shown;   panel {title, text}  a card (not awaited)
 ##   setting {guide: 0|1|2, ...}   a menu setting applied
 ##   hud true|false           the HUD shown or hidden (a clean picture of the world);   wait N                   frames (at the fixed rate) before the picture;   shot "name.png"   saved in --out
 ##   report ["id", ...]       prints each marker's numbers (k, d, sight, ...) so a check can read them
@@ -135,9 +135,13 @@ func do_step(st: Dictionary) -> void:
 				rt.take(rt.things[id])
 		rt.inv_shown = true
 		rt.inv_draw(false)
+	if st.has("panel"):
+		hud.panel(st["panel"])                                 # (not awaited: it waits for its keys)
 	if st.has("modal"):
 		hud.modal(bool(st["modal"]))
 	await frames(int(st.get("wait", 20)))
+	if st.has("hud_state"):                                    # the footer's numbers, for a check to read
+		print("UISHOT hud line_text=%s el_text=%s alpha=%.2f visible=%s in_tree=%s scrim=%.2f until=%.1f now=%.1f who=%s subs_on=%s" % [JSON.stringify(hud.line_text), JSON.stringify(hud.line_el.text), hud.line_el.modulate.a, hud.line_el.visible, hud.line_el.is_visible_in_tree(), hud.scrim.modulate.a, hud.line_until, Time.get_ticks_msec() / 1000.0, JSON.stringify(hud.who_el.text), hud.subs_on])
 	if st.has("report"):
 		for id in st["report"]:
 			var gd = hud.guide
