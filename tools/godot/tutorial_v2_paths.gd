@@ -24,7 +24,7 @@ func _initialize() -> void:
 		elif m is Light3D:
 			out["lights"][str(m.name)] = _v(m.global_position)
 	var want := {"tv_screen": ["r304_kt_tv_55_1", "kit_screen"], "mirror": ["r304_bath_kt_vanity_mirror_1", "kit_mirror"],
-		"end_glass": ["corridor_fx_win1", "kit_glass"], "window_304": ["r304_fx_win1", "kit_glass"]}
+		"end_glass": ["corridor_fx_win1", "kit_glass"], "window_304": ["r304_fx_win1", "kit_glass"], "stair_glass": ["stairs_fx_win1", "kit_glass"]}
 	for k in want:
 		var top := h.find_child(want[k][0], true, false)
 		if top != null:
@@ -34,7 +34,8 @@ func _initialize() -> void:
 					var ab: AABB = mi.global_transform * mi.get_aabb()
 					out["boxes"][k] = {"at": _v(ab.get_center()), "size": _v(ab.size)}
 					break
-	for k in ["r304_bath_fx_floor", "linen_kt_bookshelf_1", "vending_kt_desk_1", "r304_bath_fx_tub"]:
+	for k in ["r304_bath_fx_floor", "linen_kt_bookshelf_1", "vending_kt_desk_1", "r304_bath_fx_tub", "stairs_fx_half_1",
+			"stairs__wall_n0", "stairs__wall_n1", "stairs__wall_n2", "stairs__wall_n3"]:
 		var n := h.find_child(k, true, false) as Node3D
 		if n != null:
 			out["paths"][k] = str(h.get_path_to(n))

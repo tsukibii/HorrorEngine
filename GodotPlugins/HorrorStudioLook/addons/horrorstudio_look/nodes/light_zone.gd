@@ -11,6 +11,10 @@
 ##   corner of the box from it, never raised.
 ## - **Off while the box can't be seen** (`hide_unseen`, in the game): when the camera is outside the box and the box
 ##   is out of the view (or farther than `cull_distance`), its lights are switched off, shadows and all.
+## - **Their fittings' glass going with them** (`glass_follows`, in the game): what glows within `glass_reach` of a
+##   light (a mesh whose material has emission: an exported fitting's tube or diffuser, your own lamp's bulb) goes out,
+##   dims and flickers with it, its own copy of the material driven by the light's output against its full light. A
+##   light the game's runtime drives itself (play.gd's fittings) is left to it.
 ##
 ## Put it in the room (its middle), size it to the room, and put lights inside it (as its children, or anywhere in the
 ## scene: a light inside the box is its). The room_* presets are a zone with lights. The export puts one in every room.
@@ -34,6 +38,8 @@ const ZONES := 0x1FF << 1                       # layers 2 to 10, the zones' own
 @export_range(5.0, 200.0, 1.0, "suffix:m") var cull_distance: float = 40.0
 @export_range(0.0, 1.0, 0.01, "suffix:m") var margin: float = 0.25
 @export var show_box := true
+@export var glass_follows := true                ## in the game: what glows by each light (its fitting's glass) goes with it
+@export_range(0.0, 1.0, 0.01, "suffix:m") var glass_reach: float = 0.3
 var layer := 0                                  ## its render layer (2 to 10; 0: none free, keep_inside off)
 var lights: Array = []                           ## the lights it owns
 var meshes: Array = []                           ## the meshes it keeps the light to
@@ -41,6 +47,8 @@ var seen := true
 var _was: Dictionary = {}                        # instance id -> what it changed: {mask, range}
 var _key := 0
 var _outline: MeshInstance3D = null
+var glass: Array = []                            ## per light with a glowing fitting: {light, mats (its own copies), e0, was (what each surface wore), full, k}
+var _glass_at := -1                              # the frame the glass is looked for (a few after the zone's start: the runtime tags its own first)
 
 
 func _enter_tree() -> void:
@@ -98,6 +106,7 @@ func apply_now() -> void:
 	if not is_inside_tree():
 		return
 	undo()
+	_glass_at = -1                               # its glass looked for again
 	_key = _key_now()
 	layer = pick_layer() if keep_inside else 0
 	var root := scope()
@@ -171,6 +180,7 @@ func undo() -> void:
 		if now == 0:
 			now = 1
 		gi.layers = now
+	glass_back()
 	lights = []
 	meshes = []
 	_was.clear()
@@ -209,16 +219,128 @@ func seen_by(cam: Camera3D) -> bool:
 func _process(_dt: float) -> void:
 	if _key_now() != _key:
 		apply_now()
-	if Engine.is_editor_hint() or not hide_unseen:
+	if Engine.is_editor_hint():
 		return
-	var cam := get_viewport().get_camera_3d()
-	var now: bool = cam == null or seen_by(cam)
-	if now != seen:
-		seen = now
-		for l in lights:
-			if is_instance_valid(l):
-				l.set_meta("hs_zone_hidden", not seen)
-				show_light(l)
+	if hide_unseen:
+		var cam := get_viewport().get_camera_3d()
+		var now: bool = cam == null or seen_by(cam)
+		if now != seen:
+			seen = now
+			for l in lights:
+				if is_instance_valid(l):
+					l.set_meta("hs_zone_hidden", not seen)
+					show_light(l)
+	if glass_follows and seen:
+		if _glass_at < 0:
+			_glass_at = Engine.get_process_frames() + 3
+		elif _glass_at > 0 and Engine.get_process_frames() >= _glass_at:
+			_glass_at = 0
+			find_glass()
+		glass_tick()
+
+
+## each light's glass: the surfaces that glow (a BaseMaterial3D with emission) whose box comes within `glass_reach` of
+## a light; each glowing mesh goes to the nearest light that's on (an off one only when none that's on is near: an
+## export's hidden lamp markers at the same spots never take it), worn as a copy of its own
+func find_glass() -> void:
+	glass_back()
+	var root := scope()
+	if root == null:
+		return
+	var cands: Array = []
+	for l in lights:
+		if not is_instance_valid(l) or l.has_meta("hs_energy") or l.has_meta("light") or (l.get_parent() != null and l.get_parent().has_meta("light")):
+			continue                                 # an exported game's story light: its runtime drives its fitting (play.gd's fitting_light)
+		if l.get("drive") == null and not l.has_meta("hs_full") and l.light_energy < 0.001:
+			continue                                 # dark by its energy from the start: its full light isn't known
+		cands.append(l)
+	if cands.is_empty():
+		return
+	var by_light := {}
+	for mi in root.find_children("*", "MeshInstance3D", true, false):
+		if mi.mesh == null or mi.has_meta("hs_glass") or not mi.is_visible_in_tree():
+			continue
+		var surf: Array = []
+		for i in mi.mesh.get_surface_count():
+			var m: Material = mi.get_surface_override_material(i)
+			if m == null:
+				m = mi.mesh.surface_get_material(i)
+			if m is BaseMaterial3D and m.emission_enabled:
+				surf.append(i)
+		if surf.is_empty():
+			continue
+		var ab: AABB = mi.global_transform * mi.get_aabb()
+		var grown := ab.grow(glass_reach)
+		var best: Light3D = null
+		var best_key := INF
+		for l in cands:
+			if not grown.has_point(l.global_position):
+				continue
+			var on: bool = bool(l.get_meta("hs_lit")) if l.has_meta("hs_lit") else l.visible
+			var key: float = l.global_position.distance_to(ab.get_center()) + (0.0 if on else 1000.0)
+			if key < best_key:
+				best_key = key
+				best = l
+		if best == null:
+			continue
+		if not by_light.has(best):
+			by_light[best] = {"light": best, "mats": [], "e0": [], "was": [], "k": -1.0, "full": best.light_energy}
+			glass.append(by_light[best])
+		var g: Dictionary = by_light[best]
+		mi.set_meta("hs_glass", get_instance_id())
+		for i in surf:
+			var was: Material = mi.get_surface_override_material(i)
+			var own: BaseMaterial3D = (was if was != null else mi.mesh.surface_get_material(i)).duplicate()
+			mi.set_surface_override_material(i, own)
+			g["mats"].append(own)
+			g["e0"].append(own.emission_energy_multiplier)
+			g["was"].append([mi, i, was])
+
+
+## a light's full light: the starter's (lights.gd keeps it the first time it dims one), a flickering light's own (its
+## drive's), else what it had when its glass was found
+static func full_light(l: Light3D, had: float) -> float:
+	if l.has_meta("hs_full"):
+		return float(l.get_meta("hs_full"))
+	var d = l.get("drive")
+	if d != null and d.get("base") != null and float(d.get("last")) >= 0.0:
+		return float(d.base)
+	return had
+
+
+## the glass as bright as its light is now against its full light (out when it's off or the power is)
+func glass_tick() -> void:
+	for g in glass:
+		var l: Light3D = g["light"]
+		if not is_instance_valid(l):
+			continue
+		var k := 0.0
+		if l.visible:
+			k = clampf(l.light_energy / maxf(full_light(l, float(g["full"])), 0.0001), 0.0, 1.5)
+		if absf(k - float(g["k"])) < 0.004:
+			continue
+		g["k"] = k
+		for j in g["mats"].size():
+			(g["mats"][j] as BaseMaterial3D).emission_energy_multiplier = float(g["e0"][j]) * k
+
+
+## how bright a light's glass is now (0 out, 1 full; -1 it has none): the checks
+func glass_of(l: Light3D) -> float:
+	for g in glass:
+		if g["light"] == l:
+			return float(g["k"])
+	return -1.0
+
+
+## the glass's own materials taken off again
+func glass_back() -> void:
+	for g in glass:
+		for w in g["was"]:
+			if is_instance_valid(w[0]):
+				(w[0] as MeshInstance3D).set_surface_override_material(w[1], w[2])
+				if (w[0] as Node).has_meta("hs_glass"):
+					(w[0] as Node).remove_meta("hs_glass")
+	glass = []
 
 
 func _notification(what: int) -> void:

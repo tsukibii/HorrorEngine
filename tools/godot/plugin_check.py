@@ -217,6 +217,11 @@ def nodes(g, keep, env):
          abs(zr.get("b_floor_bulb_on", 1) - zr.get("b_floor_bulb_off", 0)) < 0.004 and zr.get("b_floor_bulb_free", 0) > zr.get("b_floor_bulb_off", 1) + 0.01),
         ("the next room's lamp off while the eye looks away, on when it looks back", zr.get("b_lamp_away") is False and zr.get("b_lamp_back") is True),
         ("a save puts every layer, mask and reach back, and they're on again after", zr.get("save_back") is True and zr.get("after_save") is True),
+        ("the bulb's fitting glass goes with it: found (%.2f), out with the light off (%.2f, emission %.2f), dimmed with it (%.2f of 0.3), a glowing sign across the room left alone; put back before a save (%s) and found again after (%.2f)"
+         % (zr.get("glass_on", -1), zr.get("glass_off", -1), zr.get("glass_off_energy", -1), zr.get("glass_dim", -1), zr.get("glass_put_back"), zr.get("glass_after_save", -1)),
+         abs(zr.get("glass_on", 0) - 1.0) < 0.01 and abs(zr.get("glass_on_energy", 0) - 3.0) < 0.01 and zr.get("glass_off", 9) == 0 and zr.get("glass_off_energy", 9) == 0
+         and abs(zr.get("glass_again", 0) - 1.0) < 0.01 and abs(zr.get("glass_dim", 0) - 0.3) < 0.02 and zr.get("sign_left") is True and zr.get("glass_put_back") is True
+         and abs(zr.get("glass_after_save", 0) - 1.0) < 0.01),
     ]
     text = run_godot([g, "--path", str(OUT), "--rendering-driver", "vulkan", "--fixed-fps", "60", "-s", "res://addons/horrorstudio_look/demo/air.gd", "--", f"--out={keep}"], env, timeout=2400)
     al = next((l for l in text.splitlines() if l.startswith("LOOKAIR ")), None)

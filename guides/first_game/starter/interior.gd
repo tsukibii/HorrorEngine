@@ -1,7 +1,9 @@
 ## An interior from the scene builder's Export for Godot (Exports/interiors/<name>/<name>.glb), made usable: put this on
 ## the interior's instance (the .glb dragged into your scene). It stands where a street wants it (`street` and `marker`:
 ## the street's README names its walk-in buildings' markers, inside_<building>), in the editor too; when the game runs
-## every door under its doors/ opens and shuts with E (door.gd), and `lights_on` puts its lamps on or off.
+## every door under its doors/ opens and shuts with E (door.gd), `lights_on` puts its lamps on or off, and its windows'
+## glass casts no shadow (Godot's importer draws glTF's see-through glass with a depth pre-pass, which casts one: a
+## street lamp or the moon outside never got through a window).
 @tool
 extends Node3D
 
@@ -30,6 +32,15 @@ func _ready() -> void:
 		if d.get_script() == null:
 			d.set_script(DOOR)
 			d.setup()
+	clear_glass()
+
+
+## the windows' glass (a mesh named for it with a see-through material) casts no shadow: light comes through
+func clear_glass() -> void:
+	for mi in find_children("*glass*", "MeshInstance3D", true, false):
+		var m: Material = mi.mesh.surface_get_material(0) if mi.mesh != null and mi.mesh.get_surface_count() > 0 else null   # its own (a pane may wear the rain's over it)
+		if m is BaseMaterial3D and m.transparency != BaseMaterial3D.TRANSPARENCY_DISABLED:
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 
 ## stood at the street's marker (the marker's place and turn are where the level's own origin goes)

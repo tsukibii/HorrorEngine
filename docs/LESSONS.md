@@ -24,6 +24,27 @@ the fix.
 - **An eased value can't also carry direct changes.** The air eased every change over 1.5 s, so `fog_to` lagged its
   tween and a zone let go at the default rate. The level's own numbers apply at once now; only each zone's pull
   eases, over that zone's own seconds.
+- **An additive speck adds to what's behind it, however it's capped.** The motes were capped at 1.0, under the glow's
+  1.05, but `blend_add` adds to the pixel behind: over a lit corridor wall a capped mote can take the pixel past the
+  glow, and dust shouldn't show there at all. The woods at night hid it (nothing behind). A mote reads the screen
+  behind it now: it fades as that gets lighter (dust is only seen against the dark) and never adds more than takes the
+  pixel to the cap. Judge an effect over a lit background as well as a dark one. (The corridor's soft discs themselves
+  were the size bug below: I blamed the background first.)
+- **A `.tscn` writes a Transform3D's basis by rows.** `Transform3D(xx, yx, zx, xy, yy, zy, xz, yz, zz, origin)`: a
+  helper that wrote the x, y and z axes one after another wrote the transpose, and tutorial v2's leaves light looked
+  west when it was aimed east. Print the node's `-basis.z` once it's loaded.
+- **What's found by place must prefer what's on.** The light zone gives each glowing fitting to a light beside it, and
+  the interior export brings its own lamp markers at every fitting, hidden by `interior.gd`. They came first in the
+  tree and took every tube's glass, so the tutorial's tubes had none (TUTORIAL2 caught it: the glass still lit with the
+  corridor dark). Each glowing mesh now goes to the nearest light that's on.
+- **Godot's `PROJECTION_MATRIX[1][1]` is negative under Vulkan** (the clip space's y flipped): the motes' size in
+  pixels came out negative, so every mote took the growth's cap (8-fold), dimmed by 64 and then lifted back to full
+  by the brightness cap: the near ones were 17 px soft discs, the very look the user called stylized, and the far ones
+  still looked like points, so the pictures half hid it. Found by turning the near fade and the growth off in a small
+  scene of its own. Take `abs()` of a projection term used as a size.
+- **Glass from a glTF casts a shadow in Godot**: the importer draws see-through glass with a depth pre-pass, and
+  depth pre-pass materials cast shadows (plain alpha doesn't). The street lamp outside the stairwell window lit nothing
+  inside. The starter's `interior.gd` turns the glass's shadow off in the game.
 
 ## Curtains that crumpled where nothing touched them (2026-11-04, after the wood)
 

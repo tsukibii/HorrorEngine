@@ -7,7 +7,8 @@ res://starter/ by tools/godot_byhand.py. Yours to change.
                            LED's curve, low and dead, spare sets going in by themselves; beam_on(point), weighed by
                            its cookie; its AirBeam child (the Look plugin's HSBeam) draws the beam in the air (an
                            HSAtmosphere sets how thick the air is) and gives the light a flashlight's cookie
-  interior.gd              on an interior's instance: stood at a street's marker, its doors opened with E, its lamps;
+  interior.gd              on an interior's instance: stood at a street's marker, its doors opened with E, its lamps,
+                           its windows' glass letting light through (no shadow from it);
                            room_box(room) and fit_area(area, room): an area the size of one of its rooms
   door.gd                  a door from an interior's export swinging on its hinge (interior.gd puts it on every door);
                            locked by an item or a fact (the scene builder's lock comes with the export)
@@ -15,10 +16,11 @@ res://starter/ by tools/godot_byhand.py. Yours to change.
                            the ending
   sound.gd                 the Sound node: the music by mood (music/), a room's tone, the hush before a scare
   room_tone.gd             an Area3D: a room's tone while the player's in it
-  event_area.gd            an Area3D: walked into, an objective, tasks added or ticked, a line, a fact, the music, the end
+  event_area.gd            an Area3D: walked into, an objective, tasks added or ticked, a line, a fact, the music, the
+                           air's fog rolled to a level (the scene's HSAtmosphere), the end
   scare_area.gd            an Area3D: walked into (or fire() from a signal), the lights go out, dim, flicker or go out
                            one by one, for good or for a while; someone appears (for a moment: a jump scare); a sting;
-                           a hush first
+                           a hush first; the fog rolled in; the tape breaking up for a moment (the scene's HSTape)
   pickup.gd                a thing picked up with E into the Story's pocket (batteries: a spare set)
   note.gd                  a thing read with E: its words on the Story's card
   light_shy.gd             under a character: she backs off, freezes, vanishes or comes when the flashlight holds her;

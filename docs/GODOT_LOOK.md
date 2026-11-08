@@ -71,7 +71,7 @@ beside the opening, its sides parallel, its length to the floor, its light outsi
 `room_candle`, `room_night`; the user, 2026-10-30, evening: "presets for different room lights with a cubed area
 affected, like VoxelGI, the zone is what will be lit; I'm ok limiting the architecture to boxes"). A zone is a box
 (`size`, drawn in the editor as VoxelGI's is, coloured by its layer) that owns every light inside it, its children or
-anywhere in the scene. It does three things with them:
+anywhere in the scene. It does four things with them:
 
 - **Keeps them to the box** (`keep_inside`): the meshes wholly inside it (by `margin`, so a wall between two rooms
   is in both) go on the zone's render layer, 2 to 10, chosen so that zones touching each other differ. Its lights
@@ -83,6 +83,15 @@ anywhere in the scene. It does three things with them:
 - **Switches them off unseen** (`hide_unseen`, in the game): while the eye is outside the box and the box is out of
   view or beyond `cull_distance`, its lights are off, shadow maps and all. A power cut and a zone agree through
   `HSLightZone.show_light`: a light shows when its own visibility, the power and its zone all say so.
+- **Takes their fittings' glass with them** (`glass_follows`, in the game; DECISIONS 2026-11-08, tutorial v2's dark
+  corridor, where the tubes went out and their glass kept glowing): whatever glows within `glass_reach` (0.3 m) of a
+  light (a mesh whose material has emission: an exported fitting's tube or diffuser, your own lamp's bulb) is that
+  light's glass, each taken by one light. It wears its own copy of the material, its emission the light's output
+  against its full light every frame the zone is seen: out with the light, the power or a scare; dimmed by the starter
+  kit's `Lights.set_level`; flickering with an HSFlickerLight. The full light is the starter's (`hs_full`), a
+  flickering light's own (its drive's), else what it had when its glass was found, a few frames into the game. An
+  exported game's story lights (`metadata/light`) are left to its runtime, which dims their fittings itself (play.gd
+  `fitting_light`). `glass_of(light)` says how bright a light's glass is (LOOKPLUGIN's zones stage, TUTORIAL2).
 
 In the editor the layers, cull masks and ranges are shown as the game will have them, and put back before every
 save. The room presets are a zone of 4 × 3 × 4 m about its middle, with one shadowed light, a GTX 1060's budget:
@@ -1005,6 +1014,13 @@ beam, never a camera's soft discs).
   (full at 6). A room's lamps hardly show dust, and moonlight shows none.
 - **How bright**: its size and the growth's dimming go into the sum, and the result is capped at 1.0 (`most_light`),
   under the look's glow (1.05). A speck stays a point and never blooms into a blob.
+- **Against what's behind it** (found in tutorial v2's lit corridor, 2026-11-08, where motes showed as soft blobs over
+  the walls): each mote reads the screen behind it (the opaque pass, `hint_screen_texture`). It fades out as that gets
+  lighter (`dark` 0.06 to `lit_bg` 0.5, linear), as dust does (a lit room's dust is never seen; a beam's is, against
+  the dark), and never adds more than takes the pixel to `most_light` (a mote adds to what's behind it, so over a lit
+  wall a capped speck could still pass the glow). `fragment()` passes both to `light()` in a varying.
+- **Its size on screen** uses `abs(PROJECTION_MATRIX[1][1])`: under Vulkan the term is negative, and until
+  2026-11-08 every mote took the growth's cap (8-fold), the near ones 17 px soft discs (LESSONS).
 - **On screen**: never under 1.6 px (grown and dimmed to keep its light, so TAA doesn't average it away). Faded out
   within 0.7 m of the eye (it doesn't focus that close) and at the box's edge (seen to about 3.6 m).
 - `VIEWPORT_SIZE` reads 0 in `vertex()`: the picture's height is a uniform (LESSONS).

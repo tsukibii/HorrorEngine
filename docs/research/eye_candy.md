@@ -223,6 +223,13 @@ What makes real ones read:
   dust that passes through light rays" is the same idea.
 - **Never blooming**: a mote's brightest pixel is capped under the look's glow (1.05). Specks that bloomed read as
   soft blobs, the stylized look again.
+- **Sharp, for real** (found in tutorial v2's lit corridor, 2026-11-08). The near motes were still 15 to 17 px soft
+  discs: the shader's size in pixels came out negative (Vulkan's projection flips y), so every mote took the growth's
+  cap, 8-fold. With that fixed they're the 1 to 3 px points this section asks for.
+- **Against what's behind it** (the same corridor). A mote adds to the pixel behind it, so over a lit wall even a
+  capped speck can pass the glow, and point 7 says dust is seen against the dark anyway. Each mote reads the screen
+  behind it: it fades as that gets lighter (fully seen under 0.06, gone over 0.5, linear) and never adds more than
+  takes the pixel to the cap.
 
 ### 2.4 The design that follows
 

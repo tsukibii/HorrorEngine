@@ -9,7 +9,10 @@ use of every aspect we've added so far"). The tutorial's project, made as its st
 - main.tscn as the guide builds it: the look and the grade, the hotel (its own lamps off), a light zone a room lit by
   the plugin's presets, rain at the end window and a car's lights past 304's, the TV's static, the bath's mirror, wet
   floor and blood, a room tone a room, the Story and the Sound, the note, the key and the batteries, her (who doesn't
-  like the light) and her again at the fire exit, the moments and the scares wired up, the fire door's ending.
+  like the light) and her again at the fire exit, the moments and the scares wired up, the fire door's ending; the air
+  (DECISIONS 2026-11-08: an HSAtmosphere's haze and dust, the stairwell's own air, the flashlight's beam in it, the fog
+  rolling in when the corridor goes dark), the stairwell window's shaft, leak and puddle, the leaves on 304's wall, her
+  wet look, the tape breaking up at the jump.
 
 Then played headless (tools/godot/tutorial_v2_test.gd): up the stairwell's dog-leg, the corridor's lights dimming and
 coming back, 304 locked, the note, the key and the lights going out one by one, 304 opened, the flashlight running low,
@@ -58,6 +61,8 @@ if reuse:                                                  # the project as the 
     who = json.loads((proj / "tutorial.json").read_text(encoding="utf-8")).get("who")
     BH.install(proj, starter=True)
     run([G, "--headless", "--path", str(proj), "--import"], timeout=1200)   # the scripts' classes registered again (a new class_name in the kit or the plugin)
+    shutil.copy(ROOT / "tools/godot/tutorial_v2_paths.gd", proj / "tutorial_v2_paths.gd")
+    run([G, "--headless", "--path", str(proj), "-s", "tutorial_v2_paths.gd"], timeout=600)   # the hotel's places again (new ones need no new export)
     print(f"  reusing {proj} (its exports and import kept)")
 else:
     if proj.exists() and any(proj.iterdir()) and not (proj / "tutorial.json").exists():
@@ -88,7 +93,8 @@ else:
     if not (proj / "hotel.json").is_file():
         sys.exit("TUTORIAL2 FAILED: the hotel's places: " + (r.stdout + r.stderr)[-1200:])
 H = json.loads((proj / "hotel.json").read_text(encoding="utf-8"))
-need = ["tv_screen", "mirror", "end_glass", "window_304", "r304_bath_fx_floor", "linen_kt_bookshelf_1", "vending_kt_desk_1", "door_corridor_e_door", "door_door_304"]
+need = ["tv_screen", "mirror", "end_glass", "window_304", "r304_bath_fx_floor", "linen_kt_bookshelf_1", "vending_kt_desk_1", "door_corridor_e_door", "door_door_304",
+        "stair_glass", "stairs_fx_half_1", "stairs__wall_n1"]
 miss = [k for k in need if k not in H["paths"]] + [k for k in ["stairs", "corridor", "r304", "r304_entry", "r304_bath", "vending", "linen"] if k not in H["rooms"]]
 if miss:
     sys.exit("TUTORIAL2 FAILED: the hotel's export has no " + ", ".join(miss))
@@ -106,6 +112,19 @@ def tf(pos, turn_deg=0.0):
 
 def q(s):
     return json.dumps(s, ensure_ascii=False)
+
+
+def look_tf(pos, target):
+    """a node at pos whose -Z looks at target (Godot's look_at, up +Y)"""
+    z = [pos[i] - target[i] for i in range(3)]
+    n = math.sqrt(sum(c * c for c in z))
+    z = [c / n for c in z]
+    x = [1.0 * z[2] - 0.0 * z[1], 0.0 * z[0] - 0.0 * z[2], 0.0 * z[1] - 1.0 * z[0]]   # up x z
+    n = math.sqrt(sum(c * c for c in x))
+    x = [c / n for c in x]
+    y = [z[1] * x[2] - z[2] * x[1], z[2] * x[0] - z[0] * x[2], z[0] * x[1] - z[1] * x[0]]
+    rows = [x[0], y[0], z[0], x[1], y[1], z[1], x[2], y[2], z[2]]        # a .tscn writes the basis by rows (its columns are x, y, z)
+    return "Transform3D(%s, %.4f, %.4f, %.4f)" % (", ".join("%.6f" % c for c in rows), pos[0], pos[1], pos[2])
 
 
 # the numbers the guide gives, read off the export
@@ -131,6 +150,10 @@ key_at = [shelf["at"][0] - 0.2, shelf["at"][1] - shelf["size"][1] / 2 + 1.109, s
 bat_at = [desk["at"][0] + 0.35, desk["top"] + 0.012, desk["at"][2]]
 note_at = [d304[0] + 0.35, floor_y + 0.002, d304[2] - 0.45]            # on the carpet in front of 304's door
 jump = [fire[0] - 2.4, corr["at"][1], corr["at"][2]]
+sg = B["stair_glass"]["at"]                                             # the stairwell's window (its glass's middle)
+land = B["stairs_fx_half_1"]["top"]                                     # the half landing's top
+sill = B["stairs__wall_n1"]["top"]                                      # the wall under the window: up to the sill
+wall_in = B["stairs__wall_n1"]["at"][2] + B["stairs__wall_n1"]["size"][2] / 2.0   # its face in the stairwell
 
 ext = [("PackedScene", "res://exports/interiors/hotel_floor/hotel_floor.glb", "hotel"), ("Script", "res://starter/interior.gd", "interior"),
        ("PackedScene", "res://starter/player.tscn", "player"), ("Script", "res://starter/story.gd", "story"), ("Script", "res://starter/sound.gd", "sound"),
@@ -142,14 +165,17 @@ ext = [("PackedScene", "res://exports/interiors/hotel_floor/hotel_floor.glb", "h
        ("Script", "res://addons/horrorstudio_look/nodes/crt_screen.gd", "crt"), ("Script", "res://addons/horrorstudio_look/nodes/blood_splat.gd", "blood"),
        ("Script", "res://starter/room_tone.gd", "tone"), ("Script", "res://starter/event_area.gd", "event"), ("Script", "res://starter/scare_area.gd", "scare"),
        ("Script", "res://starter/pickup.gd", "pickup"), ("Script", "res://starter/note.gd", "note"), ("Script", "res://starter/door.gd", "door"),
-       ("Script", "res://starter/light_shy.gd", "shy")]
+       ("Script", "res://starter/light_shy.gd", "shy"), ("Script", "res://addons/horrorstudio_look/nodes/atmosphere.gd", "air"),
+       ("Script", "res://addons/horrorstudio_look/nodes/air_zone.gd", "airzone"), ("Script", "res://addons/horrorstudio_look/nodes/light_shaft.gd", "shaft"),
+       ("Script", "res://addons/horrorstudio_look/nodes/wall_leak.gd", "leak"), ("Script", "res://addons/horrorstudio_look/nodes/puddle.gd", "puddle"),
+       ("Script", "res://addons/horrorstudio_look/nodes/pattern_light.gd", "pattern"), ("Script", "res://addons/horrorstudio_look/nodes/tape.gd", "tape"),
+       ("Script", "res://addons/horrorstudio_look/nodes/character_look.gd", "charlook")]
 SOUNDS = {"hum": "ambience/electric_hum_01.ogg", "hum3": "ambience/electric_hum_03.ogg", "room": "ambience/room_tone_02.ogg", "closet": "ambience/room_tone_05.ogg",
           "water": "ambience/water_running.ogg", "drone": "ambience/ambient_01.ogg", "cut": "house/power_hum_cut.ogg", "creak": "house/floorboard_creak.ogg",
           "sting": "stings/sting_short.ogg", "big": "stings/sting_big.ogg"}
 ext += [("AudioStream", f"res://sfx/{f}", "s_" + k) for k, f in SOUNDS.items()]
 if who:
-    ext += [("PackedScene", f"res://exports/characters/{who}/{who}.glb", "her"), ("Script", "res://addons/horrorstudio_look/nodes/character_look.gd", "charlook"),
-            ("Script", "res://starter/arms_down.gd", "arms")]
+    ext += [("PackedScene", f"res://exports/characters/{who}/{who}.glb", "her"), ("Script", "res://starter/arms_down.gd", "arms")]
 subs = [("StandardMaterial3D", "paper", ["albedo_color = Color(0.93, 0.91, 0.84, 1)", "roughness = 0.9"]),
         ("PlaneMesh", "sheet", ["size = Vector2(0.21, 0.297)", 'material = SubResource("paper")']),
         ("StandardMaterial3D", "brass", ["albedo_color = Color(0.78, 0.62, 0.3, 1)", "metallic = 0.9", "roughness = 0.35"]),
@@ -157,7 +183,7 @@ subs = [("StandardMaterial3D", "paper", ["albedo_color = Color(0.93, 0.91, 0.84,
         ("StandardMaterial3D", "cells", ["albedo_color = Color(0.12, 0.12, 0.13, 1)", "roughness = 0.5"]),
         ("BoxMesh", "pack", ["size = Vector3(0.06, 0.022, 0.09)", 'material = SubResource("cells")']),
         ("BoxShape3D", "jumpbox", ["size = Vector3(1.0, 2.5, 1.9)"]),
-        ("StandardMaterial3D", "skin", ["albedo_color = Color(0.82, 0.8, 0.78, 1)", "roughness = 0.8"]),
+        ("StandardMaterial3D", "skin", ['resource_name = "skin"', "albedo_color = Color(0.82, 0.8, 0.78, 1)", "roughness = 0.8"]),
         ("QuadMesh", "screen", [f"size = Vector2({B['tv_screen']['size'][2] - 0.02:.3f}, {B['tv_screen']['size'][1] - 0.02:.3f})"]),
         ("StandardMaterial3D", "dress", ["albedo_color = Color(0.86, 0.85, 0.81, 1)", "roughness = 0.85"]),
         ("StandardMaterial3D", "hair", ["albedo_color = Color(0.02, 0.02, 0.025, 1)", "roughness = 0.35"]),
@@ -199,6 +225,9 @@ def snd(parent, key, db=0.0):
 nd("Main", typ="Node3D")
 nd("Look", ".", "WorldEnvironment", script="lookenv", props=['preset = "balanced"', "editor_only = false"])
 nd("Grade", ".", "Node", script="grade", props=['preset = "cold"'])
+nd("Tape", ".", "Node", script="tape", props=['preset = "off"'])
+nd("Air", ".", "Node3D", script="air", props=["fog = 0.3", "color = Color(0.82, 0.8, 0.76, 1)", "dust = 0.4", "noise = 0.4", "wind = Vector3(0.05, 0, 0.02)"])
+nd("StairsAir", ".", "Node3D", script="airzone", props=[f"transform = {tf(R['stairs']['at'])}", f"size = {f3(R['stairs']['size'])}", "fog = 0.45", "dust = 0.85", "seconds = 2.0"])
 nd("Hotel", ".", inst="hotel", script="interior", props=["lights_on = false"])
 # light zones, a room each, lit by the Look plugin's presets
 nd("Zones", ".", "Node3D")
@@ -226,6 +255,9 @@ nd("Weather", ".", "Node3D")
 nd("Rain", "Weather", "Node3D", script="rain", props=[f"transform = {tf([glass['at'][0] - 2.2, glass['at'][1] - 0.4, glass['at'][2]])}", "size = Vector3(3.6, 7, 6)", "count = 3000", "strength = 0.75"])
 nd("StreetLamp", "Weather", "OmniLight3D", props=[f"transform = {tf([glass['at'][0] - 1.8, glass['at'][1] - 1.2, glass['at'][2] + 1.3])}", "light_color = Color(1, 0.66, 0.34, 1)",
    "light_energy = 4.0", "omni_range = 10.0", "shadow_enabled = true"])
+nd("StairShaft", "Weather", "Node3D", script="shaft", props=[f"transform = {tf([sg[0], sg[1], wall_in + 0.02], 180.0)}", "width = 0.5", "height = 0.8",
+   "sun_down = 48.0", f"floor_y = {land:.3f}", "strength = 2.5", "dust = 0.6", "color = Color(1, 0.72, 0.45, 1)"])
+nd("Lamp", "Weather/StairShaft", "SpotLight3D", props=["light_color = Color(1, 0.62, 0.32, 1)", "light_energy = 14.0", "shadow_enabled = true"])
 nd("Pane", "Weather", "Node3D", script="pane", props=[f'target = NodePath("../../Hotel/{P["end_glass"]}")', "rain = 0.7"], paths=["target"])
 nd("Sweep", "Weather", "Node3D", script="sweep", props=[f"transform = {tf([win304['at'][0], win304['at'][1], win304['at'][2] - 0.1])}", "every = 18.0", "out = 7.0", "energy = 8.0"])
 nd("Dressing", ".", "Node3D")
@@ -234,6 +266,13 @@ nd("TV", "Dressing", "MeshInstance3D", props=[f"transform = {tf([tv['at'][0] - t
 nd("Static", "Dressing/TV", "Node3D", script="crt", props=["brightness = 1.3"])
 nd("Mirror", "Dressing", "Node", script="mirror", props=[f'target = NodePath("../../Hotel/{P["mirror"]}")'], paths=["target"])
 nd("WetFloor", "Dressing", "Node3D", script="wet", props=[f'target = NodePath("../../Hotel/{P["r304_bath_fx_floor"]}")', "wetness = 0.85", "puddles = 0.6"], paths=["target"])
+nd("Leak", "Dressing", "Node3D", script="leak", props=[f"transform = {tf([sg[0], sill - 0.03, wall_in + 0.01], 180.0)}", f'target = NodePath("../../Hotel/{P["stairs__wall_n1"]}")',
+   "width = 0.35", f"length = {max(0.2, sill - land - 0.02):.3f}", "wet = 0.85", "drip = 2.0"], paths=["target"])
+nd("Puddle", "Dressing", "Node3D", script="puddle", props=[f"transform = {tf([sg[0], land + 0.005, wall_in + 0.6])}", "size = 0.8", "seed = 2"])   # in the lamp's patch
+leaves_at = [win304["at"][0] - 0.3, win304["at"][1] + 0.35, win304["at"][2] - 0.35]
+leaves_to = [tv["at"][0] - 0.05, tv["at"][1] - 0.1, tv["at"][2] + 0.45]
+nd("Leaves", "Dressing", "SpotLight3D", script="pattern", props=[f"transform = {look_tf(leaves_at, leaves_to)}", 'pattern = "leaves"', "light_energy = 3.0", "spot_range = 6.0",
+   "spot_angle = 32.0", "light_color = Color(1, 0.85, 0.6, 1)", "shadow_enabled = true", f"aim_distance = {math.dist(leaves_at, leaves_to):.2f}"])
 nd("Blood", "Dressing", "Node3D", script="blood", props=[f"transform = {tf([tub['at'][0] + 0.72, floor_y + 0.012, tub['at'][2] - 0.1])}", "size = 0.55", "seed = 3.0"])
 # a room tone a room
 nd("Tones", ".", "Node3D")
@@ -256,7 +295,7 @@ nd("Mesh", "Things/Batteries", "MeshInstance3D", props=['mesh = SubResource("pac
 def person(name, at, turn, shy):
     if who:
         nd(name, ".", inst="her", props=[f"transform = {tf(at, turn)}", "visible = false"])
-        nd("Look", name, "Node", script="charlook")
+        nd("Look", name, "Node", script="charlook", props=["wetness = 0.6", "drips = 0.5"])   # wet: she came out of the bath
         nd("ArmsDown", name, "Node", script="arms")
     else:
         nd(name, ".", "Node3D", props=[f"transform = {tf(at, turn)}", "visible = false"])     # a stand-in: a pale gown, long black hair over her face
@@ -266,6 +305,7 @@ def person(name, at, turn, shy):
         nd("Head", name, "MeshInstance3D", props=[f"transform = {tf([0, 1.5, 0])}", 'mesh = SubResource("head")'])
         nd("Scalp", name, "MeshInstance3D", props=[f"transform = {tf([0, 1.53, -0.005])}", 'mesh = SubResource("scalp")'])
         nd("Hair", name, "MeshInstance3D", props=[f"transform = {tf([0, 1.2, 0.01])}", 'mesh = SubResource("locks")'])
+        nd("Look", name, "Node", script="charlook", props=["wetness = 0.6", "drips = 0.5"])
     if shy:
         nd("LightShy", name, "Node", script="shy", props=['does = "backs off"', "distance = 2.5", "after = 0.4"])
 
@@ -283,8 +323,9 @@ area("LightsDie", "Events", "scare", None, props=['lights_do = "one by one"', "g
 snd("Events/LightsDie", "sting", -6.0)
 area("SheIsThere", "Events", "scare", "r304_entry", props=['needs = "task:find304"', 'appear = NodePath("../../Her")'], paths=["appear"])
 snd("Events/SheIsThere", "creak")
-area("LightsOut", "Events", "scare", None, props=['lights_do = "one by one"', "gap = 0.25", "walk_in = false", 'lights_of = NodePath("../../Zones/Corridor")'], paths=["lights_of"])
-nd("Jump", "Events", "Area3D", script="scare", props=[f"transform = {tf(jump)}", 'needs = "task:find304"', "quiet = 1.5", "appear_for = 0.9",
+area("LightsOut", "Events", "scare", None, props=['lights_do = "one by one"', "gap = 0.25", "walk_in = false", 'lights_of = NodePath("../../Zones/Corridor")',
+                                                 "fog = 0.55", "fog_seconds = 5.0"], paths=["lights_of"])
+nd("Jump", "Events", "Area3D", script="scare", props=[f"transform = {tf(jump)}", 'needs = "task:find304"', "quiet = 1.5", "appear_for = 0.9", 'tape = "nightmare"', "tape_for = 0.9",
                                                   'appear = NodePath("../../HerAgain")', 'hide = NodePath("../../Her")'], paths=["appear", "hide"])
 nd("Shape", "Events/Jump", "CollisionShape3D", props=['shape = SubResource("jumpbox")'])
 snd("Events/Jump", "big")

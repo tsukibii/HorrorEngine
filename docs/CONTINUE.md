@@ -20,7 +20,7 @@ systems that open, hold, move and are read; 2026-11-05, night, on `gameplay-enha
 builder's floors, the street's steel stair, climbing in Godot and on the desk). Read this after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-08, `claude/optimistic-tesla-q01qg6`): the air built, the tutorial next
+## Where it stopped last (2026-11-08, `claude/optimistic-tesla-q01qg6`): the air built and in tutorial v2
 
 The user asked for a better flashlight and the level's air: "a beam in a fog", a fog level adjuster, dust in the
 light, eye candy researched first, the system then put into tutorial v2 (DECISIONS 2026-11-08). Later the same day:
@@ -30,23 +30,32 @@ light, eye candy researched first, the system then put into tutorial v2 (DECISIO
 - **Built in the Look plugin** (GODOT_LOOK §5j):
   - `HSAtmosphere`: the fog level as one number, mist, wind, dust, `fog_to`, presets;
   - `HSBeam`: a light's beam drawn by its own cone shader, with a flashlight's cookie;
-  - `HSDust`: tumbling flakes and lint on a curl-noise flow;
+  - `HSDust`: tumbling flakes and lint on a curl-noise flow, seen only against the dark (each mote reads the screen
+    behind it: over a lit wall it fades, and it never pushes a pixel into the glow);
   - `HSAirZone`;
-  - 11 presets (52 in all).
-- **The starter kit's flashlight**: wears the beam and the cookie; `beam_on` weighs by it.
-- **Checked by LOOKPLUGIN**: `demo/air.gd`, every air preset in the nodes room, the editor test with a flashlight and
-  the air.
+  - 11 presets (52 in all);
+  - `HSLightZone` takes each light's fitting glass with it in the game (what glows within 0.3 m: out, dimmed and
+    flickering with its light; the nearest light that's on gets it; an exported game's story lights left to play.gd).
+- **The starter kit**: the flashlight wears the beam and the cookie (`beam_on` weighs by it); `event_area.gd` and
+  `scare_area.gd` roll the fog (`fog`, `fog_seconds`); `scare_area.gd` breaks the tape up for a moment (`tape`,
+  `tape_for`).
+- **Tutorial v2's §13 The air**: the hotel's haze and dust, the stairwell's dustier air zone, the beam in it, the fog
+  rolling in when the corridor goes dark; with the Look nodes it hadn't used: the street lamp's shaft through the
+  stairwell window, the leak under it and the puddle in its light, the leaves on 304's wall, her wet look, the tape at
+  the jump. Its play test checks each (and the tubes' glass going out with them); two new pictures (`landing`, `air`).
+- **Checked**: LOOKPLUGIN (`demo/air.gd`; `demo/zones.gd` now with a fitting's glass), TUTORIAL2, FIRSTGAME.
 
 Next:
-1. **Tutorial v2** (the user's "include this system part of the tutorial too"):
-   - the hotel's air: haze, dust, a dustier stairwell (an air zone);
-   - a moment that changes the fog (the starter's event and scare areas get `fog`);
-   - the Look nodes it doesn't use yet: the tape at the jump, the street lamp's shaft, the leak and a puddle in the
-     stairwell, the leaves on 304's wall, her look wet;
-   - its pictures and play test.
-2. **Eye candy A** (research §4): the TV lighting the room, a pickup's glint, eyeshine, moths, dust shaken down.
-3. **The export's torch** (play.gd: a hot spot and a spill) has no beam yet. It wants the story's `air` word (the
+1. **Eye candy A** (research §4): the TV lighting the room, a pickup's glint, eyeshine, moths, dust shaken down.
+2. **The export's torch** (play.gd: a hot spot and a spill) has no beam yet. It wants the story's `air` word (the
    level's fog, a room's) with the desk's side, the check and STORY_FORMAT in one commit; GDPLAY, GDTESTROOM, DIRECTOR.
+3. **The scene builder's round fitting in a room with fittings of its own**: the hotel corridor has a round LED from
+   the Finish under its third tube batten (builder-model.js adds one to every room with a ceiling). A room whose own
+   kit lights are ceiling fittings (not a blackboard's) could skip it; the zone hands that glass to the third tube
+   meanwhile.
+4. **GDTESTROOM fails at station 13** (2026-11-08): the tee is taken and its task ticks, but `t13_pack` (put into the
+   suitcase) never does. It fails the same with the last commit's Look plugin, so it isn't the air's change; it
+   wants a look at the runtime's `container` use and `tests/gdtestroom.gd`'s station (`--from n_things` runs it alone).
 
 ## Where it stopped before (2026-11-07, night, `claude/optimistic-tesla-q01qg6`): Tutorial v2, Room 304
 

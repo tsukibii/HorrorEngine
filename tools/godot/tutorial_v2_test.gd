@@ -1,9 +1,12 @@
 ## TUTORIAL2's playthrough (tools/godot/tutorial_v2.py): guides/tutorial_v2's main.tscn played headless as a person
 ## plays it (--fixed-fps 60). Up the stairwell's dog-leg; the stair door; the corridor's lights dimming and coming back;
-## 304 locked; the note under its door; the linen closet's key and the corridor's lights going out one by one and back;
+## 304 locked; the note under its door; the linen closet's key and the corridor's lights going out one by one and back
+## (each tube's fitting glass with it);
 ## 304 unlocked, its moment (the music to dread, the TV's static); the flashlight running low, dying, and the vending
 ## corner's batteries going in; her in the corridor backing off from the light, flashed twice and the corridor going dark;
-## the hush before the jump scare at the fire exit; the fire door and the ending. Prints `TUTORIAL <what> <how>` lines
+## the hush before the jump scare at the fire exit; the fire door and the ending. The air: the stairwell's dustier
+## air while in it (an HSAirZone), the flashlight's beam in it, the fog rolling in when the corridor goes dark, the tape
+## breaking up at the jump, her wet look. Prints `TUTORIAL <what> <how>` lines
 ## and `TUTORIAL result {errors}`, quits.
 extends SceneTree
 
@@ -88,6 +91,14 @@ func tubes() -> Array:
 	return main.get_node("Zones/Corridor").get_children().filter(func(n): return n is Light3D)
 
 
+## the tape's preset now: the VHS layer's, "off" when it's hidden
+func _tape_now() -> String:
+	for n in root.find_children("*", "CanvasLayer", true, false):
+		if n.has_method("preset") and n.get("preset_name") != null:
+			return str(n.preset_name) if n.visible else "off"
+	return "none"
+
+
 func door(id: String) -> Node3D:
 	return main.get_node("Hotel").find_child("door_" + id, true, false) as Node3D
 
@@ -158,6 +169,22 @@ func _initialize() -> void:
 	if not climbed:
 		bad("the stairwell's dog-leg wasn't climbed to the third floor (at %.2f m)" % player.global_position.y)
 		player.global_position = Vector3(sx, fl + 0.05, south - 0.6)
+	var air: Node = main.get_node("Air")
+	var in_stairs := float(air.now()["fog"])
+	var shaft: Node = main.get_node("Weather/StairShaft")
+	var leak: Node = main.get_node("Dressing/Leak")
+	var puddle: Node = main.get_node("Dressing/Puddle")
+	var glass_mi := main.get_node("Hotel").find_child("stairs_fx_win1", true, false).find_child("kit_glass", true, false) as GeometryInstance3D
+	var glass_clear := glass_mi != null and glass_mi.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	say("stairwell's air", "the fog at %.2f (the zone's 0.45, the level's %.2f); its window: the shaft %s, the glass %s, the leak %s, the puddle %s" % [in_stairs, air.fog,
+		"drawn" if shaft.beam != null else "MISSING", "letting the lamp through" if glass_clear else "CASTING A SHADOW",
+		"wet" if leak.leak != null else "DRY", "laid" if puddle.decal != null else "MISSING"])
+	if in_stairs < 0.4:
+		bad("the stairwell's air zone didn't thicken the air (HSAirZone: %.2f)" % in_stairs)
+	if shaft.beam == null or leak.leak == null or puddle.decal == null:
+		bad("the stairwell's window: the shaft, the leak and the puddle (the Look plugin's nodes)")
+	if not glass_clear:
+		bad("the stairwell window's glass casts a shadow: the street lamp's light can't come through (interior.gd clear_glass)")
 	# 2. the stair door, into the corridor: up ticked, the lights dim for 3 s and come back
 	var sd := door("stair_door")
 	var sdp := sd.global_position + sd.global_basis.x * 0.42 + Vector3.UP * 1.0
@@ -186,6 +213,10 @@ func _initialize() -> void:
 		bad("the corridor's lights didn't come back after 3 s (%.2f)" % back)
 	if sound.now_mood != "uneasy" or sound.now_tone == null:
 		bad("the Sound: music %s (uneasy), a tone %s" % [sound.now_mood, sound.now_tone])
+	var in_corridor := float(air.now()["fog"])
+	say("corridor's air", "the fog back to %.2f (the level's %.2f), dust %.2f" % [in_corridor, air.fog, float(air.now()["dust"])])
+	if absf(in_corridor - air.fog) > 0.05:
+		bad("out of the stairwell the air didn't go back to the level's (%.2f against %.2f)" % [in_corridor, air.fog])
 	# 3. 304 locked; the note under its door
 	var dc := d304.global_position + d304.global_basis.x * 0.4 + Vector3.UP * 1.0
 	await use_at(Vector3(dc.x, fl + 0.02, dc.z - 0.9), dc)
@@ -224,6 +255,11 @@ func _initialize() -> void:
 	await secs(4.5)
 	if tubes().any(func(l): return not Lights.is_on(l)):
 		bad("the corridor's lights didn't come back after the one by one")
+	var czone: Node = main.get_node("Zones/Corridor")
+	var lit_glass := tubes().filter(func(l): return czone.glass_of(l) > 0.5).size()
+	say("glass", "%d of %d tubes' fittings glowing with their lights back" % [lit_glass, tubes().size()])
+	if lit_glass != tubes().size():
+		bad("each tube's fitting glass didn't come back with its light (HSLightZone glass_follows: %d of %d)" % [lit_glass, tubes().size()])
 	# 5. 304 opened with the key; its moment
 	await use_at(Vector3(dc.x, fl + 0.02, dc.z - 0.9), dc)
 	await frames(60)
@@ -242,14 +278,21 @@ func _initialize() -> void:
 		bad("the TV's screen hasn't the CRT shader (HSCrtScreen)")
 	# 6. the flashlight: on, low, dead
 	await press(KEY_F)
+	await frames(5)
+	var beam: Node = torch.get_node("AirBeam")
+	var beam_on: bool = beam.hull != null and beam.hull.visible
 	torch.charge = 0.302
 	await secs(1.5)
 	var was_low: bool = story.has_task("batteries")
 	torch.charge = 0.035
 	await secs(2.0)
 	var dead_now: bool = torch.is_dead and not torch.visible
+	var beam_dead: bool = beam.hull == null or not beam.hull.visible
 	await press(KEY_F)
-	say("flashlight", "on, ran low (%s), died (%s), F only clicks: %s" % [was_low, dead_now, not torch.visible])
+	say("flashlight", "on (its beam in the air %s, the cookie %s), ran low (%s), died (%s, the beam %s), F only clicks: %s" % ["drawn" if beam_on else "NOT DRAWN",
+		"on" if torch.light_projector != null else "OFF", was_low, dead_now, "gone" if beam_dead else "STILL THERE", not torch.visible])
+	if not beam_on or torch.light_projector == null or not beam_dead:
+		bad("the flashlight's beam (its AirBeam, HSBeam): drawn while on %s, the cookie %s, gone when dead %s" % [beam_on, torch.light_projector != null, beam_dead])
 	if not was_low or not dead_now or torch.visible:
 		bad("the flashlight's battery (flashlight.gd): low %s, dead %s, lit after F %s" % [was_low, dead_now, torch.visible])
 	# 7. out through the entry (she's there now), the batteries in the vending corner
@@ -280,11 +323,21 @@ func _initialize() -> void:
 		bad("she didn't back off from the light (light_shy.gd: %.2f m)" % moved)
 	if dark != tubes().size():
 		bad("flashing her twice didn't put the corridor's lights out (flashed_twice to LightsOut)")
+	var dark_glass := tubes().filter(func(l): return czone.glass_of(l) == 0.0).size()
+	say("glass out", "%d of %d tubes' fitting glass out with them" % [dark_glass, tubes().size()])
+	if dark_glass != tubes().size():
+		bad("the tubes' fitting glass still glowing with their lights out (HSLightZone glass_follows: %d of %d out)" % [dark_glass, tubes().size()])
+	await secs(5.5)
+	var rolled := float(air.fog)
+	say("fog", "rolled in to %.2f with the dark (LightsOut's fog 0.55), the environment's density %.4f" % [rolled, HSAir.environment_of(air).volumetric_fog_density])
+	if absf(rolled - 0.55) > 0.02:
+		bad("the fog didn't roll in when the corridor went dark (scare_area.gd fog: %.2f)" % rolled)
 	# 9. the jump scare at the fire exit: the hush, her there for a moment
 	var jp := v3(cfg["jump"])
 	stand(Vector3(jp.x - 1.4, fl + 0.02, cz), Vector3(jp.x + 2.0, fl + 1.5, cz))
 	var duck_at := -1.0
 	var seen := false
+	var tape_then := ""
 	key(KEY_W, true)
 	for i in 300:
 		await frames(1)
@@ -293,6 +346,8 @@ func _initialize() -> void:
 		if again.visible and not seen:
 			seen = true
 			duck_at = sound.duck()
+			await frames(2)
+			tape_then = _tape_now()
 	key(KEY_W, false)
 	await secs(1.2)
 	say("jump", "she was there %s, the beds at %.3f then, gone again %s, the first one hidden %s" % [seen, duck_at, not again.visible, not her.visible])
@@ -300,6 +355,13 @@ func _initialize() -> void:
 		bad("the jump scare (scare_area.gd quiet): seen %s, the beds at %.3f" % [seen, duck_at])
 	if again.visible or her.visible:
 		bad("after the jump scare she should be gone (appear_for, hide)")
+	var tape_after := _tape_now()
+	var look: Node = again.get_node("Look")
+	say("tape and her look", "the tape %s at the jump, %s after; her skin %s" % [tape_then, tape_after, "wet (HSCharacterLook)" if look.materials.size() > 0 else "NOT WORN"])
+	if tape_then != "nightmare" or tape_after != "off":
+		bad("the jump's tape (scare_area.gd tape): %s then, %s after" % [tape_then, tape_after])
+	if look.materials.size() == 0:
+		bad("her look (HSCharacterLook) isn't worn")
 	# 10. the fire door: the ending
 	var fc := fire.global_position + fire.global_basis.x * 0.42 + Vector3.UP * 1.0
 	await use_at(Vector3(fc.x - 0.9, fl + 0.02, fc.z), fc)

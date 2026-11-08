@@ -48,17 +48,20 @@ func _initialize() -> void:
 	cam.near = 0.03
 	main.add_child(cam)
 	cam.current = true
-	torch = SpotLight3D.new()
-	torch.light_energy = 3.0
+	torch = SpotLight3D.new()                                  # the starter's flashlight: its light, its beam in the air and its cookie
+	torch.light_energy = 4.0
 	torch.spot_range = 14.0
 	torch.spot_angle = 24.0
-	torch.spot_angle_attenuation = 0.6
+	torch.spot_angle_attenuation = 2.5
 	torch.shadow_enabled = true
 	torch.light_color = Color(1, 0.94, 0.84)
 	torch.add_to_group("hs_no_zone")
 	torch.visible = false
 	cam.add_child(torch)
 	torch.position = Vector3(0.18, -0.2, -0.1)
+	var tb := HSBeam.new()
+	tb.cookie = "flashlight"
+	torch.add_child(tb)
 	var story := main.get_node("Story")
 	var hud_on := func(on: bool): story.visible = on
 	hud_on.call(false)
@@ -76,13 +79,24 @@ func _initialize() -> void:
 	var south := float(st["at"][2]) + float(st["size"][2]) / 2.0
 	var north := float(st["at"][2]) - float(st["size"][2]) / 2.0
 	await shot("stairs", Vector3(sx + 0.5, 1.6, south - 0.3), Vector3(sx - 0.2, 1.9, north + 0.6))
+	# the stairwell's window from the first flight: the street lamp's shaft, the leak under the window, the puddle on the landing
+	var sg := v3(cfg["boxes"]["stair_glass"]["at"])
+	var land_top := float(cfg["boxes"]["stairs_fx_half_1"]["top"])
+	await shot("landing", Vector3(sg.x - 0.55, land_top + 0.9, sg.z + 2.4), Vector3(sg.x + 0.05, land_top + 0.55, sg.z + 0.1), 50)
 	# the corridor from the stair door, down to the fire exit
 	var x0 := 1.3
 	await shot("corridor", Vector3(x0, eye, cz + 0.35), Vector3(x0 + 12.0, eye - 0.25, cz - 0.1))
 	for l in tubes():
 		Lights.set_level(l, 0.15)
 	await shot("corridor_dim", Vector3(x0, eye, cz + 0.35), Vector3(x0 + 12.0, eye - 0.25, cz - 0.1), 8)   # before the iris opens up: as the player sees it happen
+	# the air: the corridor dark, the flashlight's beam in its haze, dust in the beam
 	for l in tubes():
+		Lights.set_on(l, false)
+	torch.visible = true
+	await shot("air", Vector3(x0, eye, cz + 0.15), Vector3(x0 + 9.0, eye - 0.45, cz - 0.05), 40)
+	torch.visible = false
+	for l in tubes():
+		Lights.set_on(l, true)
 		Lights.set_level(l, 1.0)
 	# 304's door, the note on the carpet, the to-do list and the line
 	var d304n := main.get_node("Hotel").find_child("door_door_304", true, false) as Node3D
@@ -125,13 +139,22 @@ func _initialize() -> void:
 	await shot("her", Vector3(hp.x - 4.2, eye, cz + 0.2), hp + Vector3(0, 1.3, 0))
 	for l in tubes():
 		Lights.set_on(l, false)
-	await shot("dark", Vector3(hp.x - 6.5, eye, cz - 0.3), hp + Vector3(0, 1.2, 0))
+	main.get_node("Air").fog = 0.55                             # LightsOut's fog, rolled in
+	await shot("dark", Vector3(hp.x - 6.5, eye, cz - 0.3), hp + Vector3(0, 1.2, 0), 60)
 	# the jump scare: her right there by the fire door
 	her.visible = false
 	again.visible = true
 	var ap := again.global_position
 	hud_on.call(false)
+	var vhs: Node = null
+	for n in root.find_children("*", "CanvasLayer", true, false):
+		if n.has_method("preset") and n.get("preset_name") != null:
+			vhs = n
+	if vhs != null:
+		vhs.preset("nightmare")                                   # the jump's tape breaking up
 	await shot("jump", Vector3(ap.x - 1.15, eye, cz + 0.1), ap + Vector3(0, 1.4, 0), 30)
+	if vhs != null:
+		vhs.preset("off")
 	# the ending
 	again.visible = false
 	hud_on.call(true)

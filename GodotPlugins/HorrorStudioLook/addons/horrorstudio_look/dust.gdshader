@@ -8,6 +8,9 @@
 //   never a blob).
 // - Never under `min_px` on screen (grown and dimmed to keep its light: TAA would average a smaller one away); faded
 //   out within `near_fade` of the eye (the eye doesn't focus that close) and at the box's edge.
+// - Seen against darkness only: what's behind it (the screen before the transparent pass) is read, and a mote fades out
+//   over a lit wall (`dark` to `lit_bg`), as dust does (a lit room's dust is never seen, a beam's is against the dark);
+//   and it never adds more than takes the pixel to `most_light`, so it never blooms (the look's glow starts at 1.05).
 // INSTANCE_CUSTOM (dust_particles.gdshader): x the kind, y the size, z the tumble, w the brightness.
 shader_type spatial;
 render_mode blend_add, depth_draw_never, cull_disabled, shadows_disabled, ambient_light_disabled, specular_disabled, fog_disabled;
@@ -32,12 +35,16 @@ uniform vec4 beam_dir[4];            // its axis (world), cos of its angle
 uniform vec4 beam_col[4];            // its colour times its energy (linear), its angle attenuation
 uniform vec4 beam_shape[4];          // its cookie (0 none, 1 flashlight, 2 led, 3 lantern), tan of its angle, its decay
 uniform float beam_scatter = 30.0;   // a mote's glow in a beam (its flash is `glint`'s)
+uniform sampler2D screen_tex : hint_screen_texture, filter_nearest;   // what's behind it
+uniform float dark = 0.06;           // a background this dark (linear) or darker: a mote shows fully
+uniform float lit_bg = 0.5;          // and this light or lighter: it can't be seen
 
 varying float v_fade;                // its share of a pixel's light: its size, its brightness, the fades, the growth's dimming
 varying float v_fibre;
 varying vec3 v_face;                 // a flake's face, or a fibre's axis (view space)
 varying vec3 v_tint;
 varying vec3 v_beam;                 // the beams' light on it, glow and flash (before its share of a pixel)
+varying vec2 v_bg;                   // fragment() to light(): how well it's seen against what's behind it, the light it may still add
 
 float h1(float n) {
 	return fract(sin(n * 127.1 + 311.7) * 43758.5453);
@@ -77,7 +84,7 @@ void vertex() {
 	float size = quad_m * mix(0.45 + 2.0 * pow(cu.y, 3.0), 1.0, fibre);
 	vec3 centre = MODEL_MATRIX[3].xyz;
 	vec3 c = (VIEW_MATRIX * vec4(centre, 1.0)).xyz;
-	float px = size / max(-c.z, 0.01) * PROJECTION_MATRIX[1][1] * viewport_h * 0.5;
+	float px = size / max(-c.z, 0.01) * abs(PROJECTION_MATRIX[1][1]) * viewport_h * 0.5;   // abs: Vulkan's projection flips y (negative here, every mote grew 8-fold)
 	float grow = clamp(min_px / max(px, 1e-4), 1.0, 8.0);
 	vec3 right = INV_VIEW_MATRIX[0].xyz;
 	vec3 up = INV_VIEW_MATRIX[1].xyz;
@@ -135,8 +142,14 @@ void vertex() {
 void fragment() {
 	vec2 q = (UV - 0.5) * 2.0;
 	float a = v_fibre > 0.5 ? exp(-q.y * q.y * 3.0) * (1.0 - smoothstep(0.55, 1.0, abs(q.x))) : exp(-dot(q, q) * 3.0);
+	vec3 bg = textureLod(screen_tex, SCREEN_UV, 0.0).rgb;
+	float lb = max(max(bg.r, bg.g), bg.b);
+	float seen = 1.0 - smoothstep(dark, lit_bg, lb);
+	float room = max(most_light - lb, 0.0);
+	vec3 e = min(v_beam * v_fade * seen, vec3(room));
+	v_bg = vec2(seen, max(room - max(max(e.r, e.g), e.b), 0.0));
 	ALBEDO = v_tint * a;
-	EMISSION = min(v_beam * v_fade, vec3(most_light)) * v_tint * a;
+	EMISSION = e * v_tint * a;
 }
 
 void light() {
@@ -154,5 +167,5 @@ void light() {
 	}
 	float c = dot(-LIGHT, VIEW);
 	float ph = mix(hg(0.6, c), hg(-0.5, c), 0.45) / hg(0.6, 1.0);   // forward, and back toward the light (flakes): seen in your own beam
-	DIFFUSE_LIGHT += min(l * k * (scatter * ph + glint * flash) * v_fade, vec3(most_light));
+	DIFFUSE_LIGHT += min(l * k * (scatter * ph + glint * flash) * v_fade * v_bg.x, vec3(v_bg.y));
 }

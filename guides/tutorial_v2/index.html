@@ -80,7 +80,8 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
     <li><a href="#project">The project</a></li>
     <li><a href="#scene">The scene: the hotel and you</a></li>
     <li><a href="#light">Lighting it</a></li>
-    <li><a href="#dress">Rain, a car, the TV, the bath</a></li>
+    <li><a href="#dress">Rain, a car, the TV, a leak</a></li>
+    <li><a href="#air">The air: haze, dust, the beam</a></li>
     <li><a href="#sound">Music and room tones</a></li>
     <li><a href="#story">The story on screen</a></li>
     <li><a href="#things">A note, a key, batteries</a></li>
@@ -119,7 +120,9 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
 <ul>
   <li><b>The scene builder:</b> rooms, two floors, a dog-leg stair, doors locked by a key, windows, furniture, lamps and paint.</li>
   <li><b>The Look plugin:</b> its look, a grade, light zones, flickering tubes, a dying bulb, rain on a window, a car's
-  lights crossing a room, a CRT's static, a real mirror, a wet floor and blood.</li>
+  lights crossing a room, a CRT's static, a real mirror, a wet floor and blood, a street lamp's shaft through a window,
+  water leaking down a wall into a puddle, leaves' shadows on a wall, her skin wet, the tape breaking up, and the air
+  itself: haze, dust that glints in the light, the fog rolling in, and your flashlight a beam in it.</li>
   <li><b>The starter kit:</b> a to-do list on screen, notes, keys and pickups, music by mood, a tone for each room, lights
   that dim and come back or go out one by one, a flashlight on batteries, a character who backs off from the light, and
   a jump scare with the hush before it.</li>
@@ -293,7 +296,8 @@ You'll end with this tree (built step by step below):</p>
   <i>balanced</i>) and untick <b>Editor Only</b>. Add an <span class="node">HSGrade</span> called <code>Grade</code>, preset <i>cold</i>.</li>
   <li><b>The hotel.</b> Drag <code>exports/interiors/hotel_floor/hotel_floor.glb</code> onto <code>Main</code>, rename it
   <code>Hotel</code>, and drag <code>starter/interior.gd</code> onto it. Untick its <b>Lights On</b>: you'll light it
-  yourself. When the game runs, <code>interior.gd</code> makes every door open with <kbd>E</kbd> and keeps their locks.
+  yourself. When the game runs, <code>interior.gd</code> makes every door open with <kbd>E</kbd> and keeps their locks, and
+  lets light through the windows' glass.
   Right-click <code>Hotel</code> → <span class="ui">Editable Children</span>: you'll need its meshes and markers.</li>
   <li><b>You.</b> Drag <code>starter/player.tscn</code> onto <code>Main</code>. Put it where <code>Hotel → hotel_floor → markers → player_start</code>
   is (copy its transform): the stairwell's bottom landing, facing up the first flight.</li>
@@ -321,12 +325,15 @@ lamp never lights the next room through a wall, and they switch off while you ca
   <figure><img src="img/corridor.jpg" width="1600" height="900" alt="The corridor under its tubes"><figcaption>The corridor under its five tubes.</figcaption></figure>
   <figure><img src="img/vending.jpg" width="1600" height="900" alt="The vending corner under its dying bulb, batteries on the counter"><figcaption>The vending corner's dying bulb.</figcaption></figure>
 </div>
+<p>A zone also takes each light's <b>glass</b> with it in the game: the tube in its fitting, a lamp's bulb, whatever
+glows within 30 cm of the light. When a tube goes out, flickers or dims, its glass does too, so a dark corridor never
+has glowing tubes in it.</p>
 <div class="tip"><b>Scares' lights:</b> since each zone holds its room's lights, a scare can name the zone and get exactly
 those lights: "every light under the Corridor zone".</div>
 </section>
 
 <section id="dress">
-<h2><span class="n">12</span>Rain, a car, the TV, the bath</h2>
+<h2><span class="n">12</span>Rain, a car, the TV, the bath, a leak</h2>
 <p>The Look plugin's nodes go on the hotel's own meshes (their <b>Target</b>) or stand in the world. Make a
 <code>Weather</code> node and a <code>Dressing</code> node for them:</p>
 <table class="vals">
@@ -338,16 +345,48 @@ those lights: "every light under the Corridor zone".</div>
 <tr><td><span class="node">HSMirrorSurface</span> <code>Mirror</code></td><td>Target: the bath's mirror (<code>visual/r304_bath_kt_vanity_mirror_1/…/kit_mirror</code>): a real reflection</td></tr>
 <tr><td><span class="node">HSWetSurface</span> <code>WetFloor</code></td><td>Target: <code>visual/r304_bath_fx_floor</code> (the tiles), Wetness 0.85, Puddles 0.6</td></tr>
 <tr><td><span class="node">HSBloodSplat</span> <code>Blood</code></td><td>on the bath floor beside the tub: Size 0.55, Seed 3</td></tr>
+<tr><td><span class="node">HSLightShaft</span> <code>StairShaft</code></td><td>the stairwell's window (under Weather): at its glass's middle, its −Z into the stairwell: Width 0.5, Height 0.8 (fit the orange outline to the glass), Sun Down 48, Floor Y 1.425 (the half landing's top), Strength 2.5, Dust 0.6, an orange Color. Give it a <span class="node">SpotLight3D</span> child (orange, Energy 14, shadows on): with <b>Aim Lights</b> it's put outside and aimed along the beam. The street lamp's light falls through the little window onto the landing (<code>interior.gd</code> keeps the windows' glass from casting a shadow, so light comes through it)</td></tr>
+<tr><td><span class="node">HSWallLeak</span> <code>Leak</code></td><td>at the window's sill on the wall under it, its −Z into the stairwell, Target: <code>visual/stairs__wall_n1</code> (the wall under the window): Width 0.35, Length 0.46 (down to the landing), Wet 0.85, Drip 2. The rain is coming in</td></tr>
+<tr><td><span class="node">HSPuddle</span> <code>Puddle</code></td><td>on the half landing under it, in the lamp's patch (60 cm out from the wall): Size 0.8, Seed 2</td></tr>
+<tr><td><span class="node">HSPatternLight</span> <code>Leaves</code></td><td>in 304, high by its window, aimed at the TV's wall (Aim Distance about 3): Pattern <i>leaves</i>, Energy 3, warm (1, 0.85, 0.6). The street lamp through a tree, its shadows moving on the wall</td></tr>
 </table>
 <div class="pair">
   <figure><img src="img/window.jpg" width="1600" height="900" alt="The corridor's end window at night: the street lamp below, drops on the glass"><figcaption>The end window at night: the street lamp below, drops on the glass.</figcaption></figure>
-  <figure><img src="img/room304.jpg" width="1600" height="900" alt="Room 304: the bed, the TV's static, the lamp"><figcaption>304: the TV's static, the lamp, the curtains.</figcaption></figure>
+  <figure><img src="img/room304.jpg" width="1600" height="900" alt="Room 304: the bed, the TV's static, the lamp"><figcaption>304: the TV's static, the lamp, the leaves' shadows on the wall.</figcaption></figure>
 </div>
-<figure><img src="img/bath.jpg" width="1600" height="900" alt="304's bath: the mirror, the wet tiles, blood by the tub"><figcaption>The bath: the mirror, the wet tiles, the blood.</figcaption></figure>
+<div class="pair">
+  <figure><img src="img/bath.jpg" width="1600" height="900" alt="304's bath: the mirror, the wet tiles, blood by the tub"><figcaption>The bath: the mirror, the wet tiles, the blood.</figcaption></figure>
+  <figure><img src="img/landing.jpg" width="1600" height="900" alt="The stairwell's window: the street lamp's shaft, the leak under it, the puddle on the landing"><figcaption>The stairwell's window: the street lamp's shaft, the leak, the puddle.</figcaption></figure>
+</div>
+</section>
+
+<section id="air">
+<h2><span class="n">13</span>The air: haze, dust and the flashlight's beam</h2>
+<p>Real air isn't empty. An old hotel's corridor at night has a little haze and dust in it, and a flashlight in it is a
+beam, not just a lit spot on the wall. Add a <span class="node">Node3D</span> called <code>Air</code> with an
+<span class="node">HSAtmosphere</span> (or drag in <code>presets/air_hazy_night.tscn</code> and tune it):</p>
+<table class="vals">
+<tr><td><b>Fog</b> 0.3</td><td>the fog level: 0 clear air, 0.25 the look's own haze, 0.5 about 80 m to see through, 0.75 about 35 m, 1 about 20 m (the woods in fog)</td></tr>
+<tr><td><b>Color</b> (0.82, 0.8, 0.76)</td><td>the fog's own colour: a warm, dusty grey</td></tr>
+<tr><td><b>Dust</b> 0.4</td><td>motes in the air, seen only where a strong light catches them against the dark (in a lit corridor you won't see them, as in life): specks of many sizes that flash as they tumble, threads of lint, drifting on the room's slow air</td></tr>
+<tr><td><b>Noise</b> 0.4, <b>Wind</b> (0.05, 0, 0.02)</td><td>wisps and pockets, drifting slowly: indoors the air barely moves</td></tr>
+</table>
+<p><b>The flashlight's beam</b> comes with the starter kit. <code>Eye/Flashlight</code> has an <code>AirBeam</code> child
+(an <span class="node">HSBeam</span>) that draws its beam in the air, as thick as the air is. It also gives the light a
+flashlight's cookie: a hot core, a faint ring, a dim spill. The beam follows the battery, so it fades as the flashlight
+dims. Dust shows best in it.</p>
+<p><b>A dustier stairwell.</b> The stairwell is old concrete: give it its own air. Add an
+<span class="node">HSAirZone</span> <code>StairsAir</code> at the stairs' marker, Size 2.5 × 5.4 × 4.7 (the room's),
+<b>Fog</b> 0.45, <b>Dust</b> 0.85, <b>Seconds</b> 2. While you're in the stairwell the air thickens; out in the corridor
+it eases back.</p>
+<figure><img src="img/air.jpg" width="1600" height="900" alt="The corridor dark, the flashlight's beam in the haze with dust in it"><figcaption>The corridor's tubes off: the flashlight's beam in the haze, dust in it.</figcaption></figure>
+<div class="tip"><b>The woods:</b> outdoors, try <code>presets/air_woods_mist.tscn</code>: ground mist (<b>Mist</b>, thick at
+<b>Ground</b> and thinning with <b>Mist Height</b>) drifting on the wind, and your flashlight a beam in the fog.
+A moment can change the air too: an event or a scare's <b>Fog</b> rolls it to a level over <b>Fog Seconds</b>.</div>
 </section>
 
 <section id="sound">
-<h2><span class="n">13</span>Music and room tones</h2>
+<h2><span class="n">14</span>Music and room tones</h2>
 <p>Add a <span class="node">Node</span> called <code>Sound</code> with <code>starter/sound.gd</code>. It plays the
 studio's four moods from <code>music/</code> (calm, uneasy, dread, chase: made from the score room's cues, all at
 the same loudness) looped under the game. Moving to the next mood crossfades it in so the loudness doesn't dip. Set
@@ -367,7 +406,7 @@ to the room's id; it takes the room's size by itself. Then drag a loop from <cod
 </section>
 
 <section id="story">
-<h2><span class="n">14</span>The story on screen</h2>
+<h2><span class="n">15</span>The story on screen</h2>
 <p>Add a <span class="node">CanvasLayer</span> called <code>Story</code> with <code>starter/story.gd</code>. It draws the
 objective and a to-do list at the top left, a line at the bottom, a note's card in the middle and the ending. It also
 keeps what you carry and the facts you've set. The other scripts find it themselves. Set:</p>
@@ -380,7 +419,7 @@ keeps what you carry and the facts you've set. The other scripts find it themsel
 </section>
 
 <section id="things">
-<h2><span class="n">15</span>A note, a key, batteries</h2>
+<h2><span class="n">16</span>A note, a key, batteries</h2>
 <p>Things you use with <kbd>E</kbd> are a <span class="node">Node3D</span> with a script and a mesh under it. The script makes
 its own collider when the game runs, so E finds even a key. Make a <code>Things</code> node:</p>
 <ol class="steps">
@@ -401,7 +440,7 @@ its own collider when the game runs, so E finds even a key. Make a <code>Things<
 </section>
 
 <section id="moments">
-<h2><span class="n">16</span>Moments</h2>
+<h2><span class="n">17</span>Moments</h2>
 <p>An <span class="node">Area3D</span> with <code>starter/event_area.gd</code> is a moment when you walk in. It can set
 the objective, add or tick tasks, say a line, set a fact, change the music's mood, or end the game. With
 <b>Interior</b> <code>Hotel</code> and a <b>Room</b> it fills that room. <b>Needs</b> holds it back until something's
@@ -414,7 +453,7 @@ Make an <code>Events</code> node and:</p>
 </section>
 
 <section id="scares">
-<h2><span class="n">17</span>Scares</h2>
+<h2><span class="n">18</span>Scares</h2>
 <p>An <span class="node">Area3D</span> with <code>starter/scare_area.gd</code> is a scare. It can work the lights under
 <b>Lights Of</b>: out, dim, flicker, or out <i>one by one</i> toward you, farthest first. They stay that way, or
 come back as they were after <b>For Seconds</b>. It can also show someone (<b>Appear</b>, for good or for <b>Appear For</b>
@@ -430,7 +469,7 @@ with a sting from <code>sfx/</code>), and change the music. Untick <b>Walk In</b
 </section>
 
 <section id="flashlight">
-<h2><span class="n">18</span>The flashlight's batteries</h2>
+<h2><span class="n">19</span>The flashlight's batteries</h2>
 <p>The player's <code>Eye/Flashlight</code> runs on <code>starter/flashlight.gd</code>. Select <code>Player</code>, tick
 <span class="ui">Editable Children</span>, select <code>Eye/Flashlight</code> and set:</p>
 <table class="vals">
@@ -444,26 +483,29 @@ two seconds of dark, then full light.</p>
 </section>
 
 <section id="her">
-<h2><span class="n">19</span>Her, who hates the light</h2>
+<h2><span class="n">20</span>Her, who hates the light</h2>
 <p>Drag her <code>.glb</code> from <code>exports/characters/</code> onto <code>Main</code> and call her <code>Her</code>.
 Make her yours in the Character Studio and press its <span class="ui">Export for Godot</span>. Or use a stand-in, as
 the pictures here do: a <span class="node">Node3D</span> with a few meshes under it (a <span class="node">CylinderMesh</span> gown, two arms, a head,
 and long black hair over her face: a sphere for the scalp and a cylinder that widens as it falls). Then:</p>
 <ol class="steps">
   <li>Put her at <code>markers/spot_someone_spot</code> (the corridor's east end), facing down the corridor, and untick <b>Visible</b>: <code>SheIsThere</code> shows her.</li>
-  <li>Give her an <span class="node">HSCharacterLook</span> child (the studio's skin, eyes and hair) and a <span class="node">Node</span> with <code>starter/arms_down.gd</code>.</li>
+  <li>Give her an <span class="node">HSCharacterLook</span> child called <code>Look</code> (the studio's skin, eyes and hair) with
+  <b>Wetness</b> 0.6 and <b>Drips</b> 0.5: she's wet, and you'll see where she came from. Then a <span class="node">Node</span>
+  with <code>starter/arms_down.gd</code>.</li>
   <li>Give her a <span class="node">Node</span> called <code>LightShy</code> with <code>starter/light_shy.gd</code>:
   <b>Does</b> <i>backs off</i>, <b>Distance</b> 2.5, <b>After</b> 0.4. When the beam holds her for 0.4 s she backs away
   from you, facing you. The other choices: freezes, vanishes until the light's been off her a while, comes toward it.</li>
   <li>Its signals: <b>lit</b>, <b>flashed</b>, <b>flashed_twice</b>. Add a <code>LightsOut</code> scare (Walk In off,
-  Lights Of <code>Zones/Corridor</code>, <i>one by one</i>, Gap 0.25, for good) and connect LightShy's
-  <b>flashed_twice</b> to its <code>fire</code>. Shine the light on her twice and the corridor goes dark.</li>
+  Lights Of <code>Zones/Corridor</code>, <i>one by one</i>, Gap 0.25, for good, <b>Fog</b> 0.55 over <b>Fog Seconds</b> 5)
+  and connect LightShy's <b>flashed_twice</b> to its <code>fire</code>. Shine the light on her twice and the corridor goes
+  dark while the fog rolls in: now your flashlight is a beam.</li>
 </ol>
-<figure><img src="img/dark.jpg" width="1600" height="900" alt="The corridor dark, her in the flashlight's beam"><figcaption>After she's flashed twice: the corridor dark, only your flashlight on her.</figcaption></figure>
+<figure><img src="img/dark.jpg" width="1600" height="900" alt="The corridor dark, her in the flashlight's beam"><figcaption>After she's flashed twice: the corridor dark, the fog in, only your flashlight on her.</figcaption></figure>
 </section>
 
 <section id="jump">
-<h2><span class="n">20</span>The jump scare and the hush</h2>
+<h2><span class="n">21</span>The jump scare and the hush</h2>
 <p>Duplicate <code>Her</code> as <code>HerAgain</code>, delete its <code>LightShy</code>, and stand her just inside the
 fire door facing down the corridor. Untick her <b>Visible</b>. Add a <code>Jump</code> scare with its own
 <span class="node">CollisionShape3D</span> (a box 1 × 2.5 × 1.9 m across the corridor, 2.4 m before the fire door):</p>
@@ -472,15 +514,16 @@ fire door facing down the corridor. Untick her <b>Visible</b>. Add a <code>Jump<
 <tr><td><b>Quiet</b> 1.5</td><td>the hush first: the music and the room's tone fade to nothing. The last half second is silent.</td></tr>
 <tr><td><b>Appear</b> <code>HerAgain</code>, <b>Appear For</b> 0.9, <b>Hide</b> <code>Her</code></td><td>she's suddenly right there, then gone</td></tr>
 <tr><td><code>Sound</code></td><td><code>sfx/stings/sting_big.ogg</code></td></tr>
+<tr><td><b>Tape</b> <i>nightmare</i>, <b>Tape For</b> 0.9</td><td>the picture breaks up while she's there. Add a <span class="node">HSTape</span> <code>Tape</code> to <code>Main</code> with <b>Preset</b> <i>off</i>: the scare turns it on, then off again. (Leave it on, <i>camhybrid</i> or <i>worn</i>, for a game seen on tape.)</td></tr>
 </table>
 <p>Why the hush: a sound just before a scare warns the body and takes up to two thirds off the startle. Silence before
 the hit lets it land, and the music creeping back afterwards is the release. The studio's research is in
 <code>docs/research/jump_scares.md</code>.</p>
-<figure><img src="img/jump.jpg" width="1600" height="900" alt="Her right in front of you by the fire door"><figcaption>The jump: 0.9 seconds of her, out of silence.</figcaption></figure>
+<figure><img src="img/jump.jpg" width="1600" height="900" alt="Her right in front of you by the fire door"><figcaption>The jump: 0.9 seconds of her out of silence, the tape breaking up.</figcaption></figure>
 </section>
 
 <section id="ending">
-<h2><span class="n">21</span>The way out</h2>
+<h2><span class="n">22</span>The way out</h2>
 <p>With <code>Hotel</code>'s Editable Children on, select <code>hotel_floor/doors/door_corridor_e_door</code> (the fire
 door) and drag <code>starter/door.gd</code> onto it. Set its <b>Tick</b> to <code>out</code>. In the
 <span class="ui">Node</span> tab connect its <b>opened</b> signal to <code>Story</code> → <code>end</code>. Opening the
@@ -489,7 +532,7 @@ fire door ends the night: the screen goes black and the ending's title comes up.
 </section>
 
 <section id="play">
-<h2><span class="n">22</span>Play it</h2>
+<h2><span class="n">23</span>Play it</h2>
 <p>Press <kbd>F5</kbd>.</p>
 <table class="keys">
 <tr><td><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></td><td>walk (up the stairs too), <kbd>Shift</kbd> runs</td></tr>
@@ -510,7 +553,7 @@ fire door ends the night: the screen goes black and the ending's title comes up.
 </section>
 
 <section id="next">
-<h2><span class="n">23</span>Where to go next</h2>
+<h2><span class="n">24</span>Where to go next</h2>
 <ul>
   <li><b>Another floor</b>: in the scene builder, <span class="ui">copy ↑</span> copies a floor up with everything on it;
   export again, and the export's link puts it in your project at once.</li>

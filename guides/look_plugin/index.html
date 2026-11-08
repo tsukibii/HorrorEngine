@@ -141,7 +141,7 @@ untick <code>Editor Only</code></b> and it's the game's. <code>presets/look_bala
 <tr><td class="node">HSPatternLight</td><td>A spot throwing caustics, leaves, blinds or clouds (<code>pattern</code>, <code>feature_m</code>, <code>speed</code>).</td></tr>
 <tr><td class="node">HSLightShaft</td><td>A window's beam: put it in the opening, forward into the room, and fit its orange outline to the glass. Crisp at the glass, soft where it lands.</td></tr>
 <tr><td class="node">HSHeadlightSweep</td><td>A car passing outside the window every so often, the frame's shadow sliding across the ceiling (<code>fire()</code> one now).</td></tr>
-<tr><td class="node">HSLightZone</td><td>A room's box that owns the lights inside it. They light only what's in it, their reach fitted, off while the room's out of view.</td></tr>
+<tr><td class="node">HSLightZone</td><td>A room's box that owns the lights inside it. They light only what's in it, their reach fitted, off while the room's out of view. In the game each light's glass (what glows beside it: a tube, a bulb) goes out, dims and flickers with it.</td></tr>
 </table>
 <div class="pair">
   <figure><img src="img/pattern.jpg" width="1280" height="720" alt="Caustics thrown on a wall"><figcaption>HSPatternLight: caustics</figcaption></figure>
@@ -168,7 +168,8 @@ flashlight's beam, a hot core, a faint ring and a dim spill, on the walls and in
 air eases to its <code>fog</code>, <code>dust</code> and <code>mist</code> over <code>seconds</code>, and back when you leave.</td></tr>
 <tr><td class="node">HSDust</td><td>Motes round the eye, seen only where light reaches them, the way your eye sees dust in a beam:
 sharp specks of many sizes, flakes that flash as they tumble, threads of lint, drifting on slow eddies of the air. In
-your flashlight's beam, round a lamp, never by moonlight. An HSAtmosphere keeps one itself.</td></tr>
+your flashlight's beam, round a lamp, never by moonlight, and only against the dark: over a lit wall they fade, as dust
+does. An HSAtmosphere keeps one itself.</td></tr>
 </table>
 <p>The presets <code>flashlight</code> and <code>flashlight_led</code> are a SpotLight3D with its beam: put one under your
 camera, a little right of it and down. <code>lamp_beam</code> is a lamp's cone in the air. The starter kit's flashlight has
