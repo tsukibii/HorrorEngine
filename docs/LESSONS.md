@@ -2106,3 +2106,8 @@ pale one shows.
 - **A state that leads back to its own trigger loops**: in the hunt's check she found you 30 times in a row, because
   finding you pulled you out into the open in front of her, she turned to go, saw you, and found you again. A
   reaction that puts the player where its own trigger fires needs a once: a search finds you at most once now.
+- **A check's clock counts every frame, or it times only part of what it measures**: the hunt's check timed her
+  listening (3 to 6 s) with a counter its waiting loop advanced, but she hears you during the run before that loop
+  starts, so about 0.6 s went uncounted. It passed twice, while the dice gave her a long listen, and failed on the
+  merged tree at 2.7 s. A time the game keeps is read off the engine's own count (`Engine.get_physics_frames()` over
+  the fixed 60), never off a counter that runs only while the check is looking.

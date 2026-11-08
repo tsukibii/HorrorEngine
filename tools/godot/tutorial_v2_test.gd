@@ -883,7 +883,7 @@ func _initialize() -> void:
 	var over := [0]
 	var found_n := [0]
 	var out_moments := [0]
-	srch.heard_you.connect(func(_at: Vector3) -> void: heard_t[0] = clock[0])
+	srch.heard_you.connect(func(_at: Vector3) -> void: heard_t[0] = Engine.get_physics_frames() / 60.0)   # (every frame counted: she hears you before the loop below starts)
 	srch.search_over.connect(func() -> void: over[0] += 1)
 	srch.found.connect(func() -> void: found_n[0] += 1)
 	dread.moment.connect(func(_nm: String) -> void:
@@ -913,7 +913,7 @@ func _initialize() -> void:
 		await frames(1)
 		clock[0] += 1.0 / 60.0
 		if listened < 0.0 and srch.state != "listening" and heard_t[0] >= 0.0:
-			listened = clock[0] - heard_t[0]
+			listened = Engine.get_physics_frames() / 60.0 - heard_t[0]
 		if srch.state == "passing":
 			key(KEY_SPACE, true)                             # her in the doorway: your breath held
 			pass_t += 1.0 / 60.0
